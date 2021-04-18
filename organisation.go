@@ -1,13 +1,9 @@
 package hookstack
 
-import (
-	"github.com/google/uuid"
-)
-
 type Organisation struct {
-	ID    uuid.UUID `json:"id"`
-	Name  string    `json:"name"`
-	Token Token     `json:"token"`
+	ID    string `json:"id"`
+	Name  string `json:"name"`
+	Token Token  `json:"token"`
 }
 
 type OrganisationRepository interface {
