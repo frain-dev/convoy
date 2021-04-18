@@ -1,9 +1,15 @@
 package config
 
 import (
+	"encoding/json"
+	"errors"
 	"fmt"
+	"os"
 	"strings"
+	"sync/atomic"
 )
+
+var cfgSingleton atomic.Value
 
 type OrganisationFetchMode string
 
@@ -31,4 +37,32 @@ type Configuration struct {
 		// used
 		FilePath string `json:"file_path"`
 	} `json:"organisation"`
+}
+
+func LoadFromFile(p string) error {
+
+	f, err := os.Open(p)
+	if err != nil {
+		return err
+	}
+
+	defer f.Close()
+
+	c := new(Configuration)
+
+	if err := json.NewDecoder(f).Decode(&c); err != nil {
+		return err
+	}
+
+	cfgSingleton.Store(c)
+	return nil
+}
+
+func Get() (Configuration, error) {
+	c, ok := cfgSingleton.Load().(*Configuration)
+	if !ok {
+		return Configuration{}, errors.New("call Load before this function")
+	}
+
+	return *c, nil
 }
