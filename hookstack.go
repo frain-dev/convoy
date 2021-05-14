@@ -1,5 +1,1 @@
-package hookstack
-
-type App struct {
-	OrgLoader OrganisationRepository
-}
+package hookcamp

@@ -1,21 +1,21 @@
 package main
 
 import (
-	"errors"
 	"log"
 
-	"github.com/hookstack/hookstack"
-	"github.com/hookstack/hookstack/config"
+	"github.com/hookcamp/hookcamp"
+	"github.com/hookcamp/hookcamp/config"
+	"github.com/hookcamp/hookcamp/datastore"
 	"github.com/spf13/cobra"
 )
 
 func main() {
 
-	app := &hookstack.App{}
+	app := &app{}
 
 	cmd := &cobra.Command{
-		Use:   "hookstack",
-		Short: "Opensource webhook management",
+		Use:   "hookcamp",
+		Short: "Opensource Webhooks as a service",
 		PersistentPreRunE: func(cmd *cobra.Command, args []string) error {
 
 			cfgPath, err := cmd.Flags().GetString("config")
@@ -33,18 +33,17 @@ func main() {
 				return err
 			}
 
-			if cfg.Organisation.FetchMode != config.FileSystemOrganisationFetchMode {
-				return errors.New("unsupported fetch mode")
-			}
-
-			app.OrgLoader = hookstack.NewFileOrganisationLoader(cfg.Organisation.FilePath)
-			return nil
+			app.database, err = datastore.New(cfg)
+			return err
+		},
+		PersistentPostRunE: func(cmd *cobra.Command, args []string) error {
+			return app.database.Close()
 		},
 	}
 
 	var configFile string
 
-	cmd.PersistentFlags().StringVar(&configFile, "config", "./hookstack.json", "Configuration file for Hookstack")
+	cmd.PersistentFlags().StringVar(&configFile, "config", "./hookcamp.json", "Configuration file for Hookcamp")
 
 	cmd.AddCommand(addVersionCommand())
 	cmd.AddCommand(addOrganisationCommnad(app))
@@ -52,5 +51,8 @@ func main() {
 	if err := cmd.Execute(); err != nil {
 		log.Fatal(err)
 	}
+}
 
+type app struct {
+	database hookcamp.Datastore
 }

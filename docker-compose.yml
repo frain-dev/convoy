@@ -1,0 +1,30 @@
+version: '3'
+
+services:
+  # nats:
+  #   image: nats
+  #   ports:
+  #     - "8222:8222"
+  # nats-1:
+  #   image: nats
+  #   command: "--cluster nats://0.0.0.0:6222 --routes=nats://ruser:T0pS3cr3t@nats:6222"
+  #   depends_on: ["nats"]
+  # nats-2:
+  #   image: nats
+  #   command: "--cluster nats://0.0.0.0:6222 --routes=nats://ruser:T0pS3cr3t@nats:6222"
+  #   depends_on: ["nats"]
+
+  postgres_db:
+    image: postgres:13
+    environment:
+      - POSTGRES_PASSWORD=hookcamp
+      - POSTGRES_USER=hookcamp
+    ports:
+      - "8432:5432"
+    volumes:
+      - ./data/postgres/postgresql:/var/lib/postgres
+
+  # redis_server:
+  #   image: redis
+  #   ports:
+  #     - "9379:6379"

@@ -2,50 +2,42 @@ package main
 
 import (
 	"os"
-	"strconv"
 
-	"github.com/hookstack/hookstack"
-	"github.com/hookstack/hookstack/config"
 	"github.com/olekukonko/tablewriter"
 	"github.com/spf13/cobra"
 )
 
-func addOrganisationCommnad(a *hookstack.App) *cobra.Command {
+func addOrganisationCommnad(a *app) *cobra.Command {
 
 	cmd := &cobra.Command{
 		Use:   "org",
 		Short: "Manage organisations",
+		PersistentPreRunE: func(cmd *cobra.Command, args []string) error {
+			return nil
+		},
 	}
 
 	cmd.AddCommand(listOrganisationCommand(a))
 	return cmd
 }
 
-func listOrganisationCommand(a *hookstack.App) *cobra.Command {
+func listOrganisationCommand(a *app) *cobra.Command {
 
 	cmd := &cobra.Command{
 		Use:   "list",
 		Short: "List all organisations currently known",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			cfg, err := config.Get()
-			if err != nil {
-				return err
-			}
 
-			if err := cfg.Organisation.FetchMode.Validate(); err != nil {
-				return err
-			}
-
-			orgs, err := a.OrgLoader.LoadOrganisations()
+			orgs, err := a.database.LoadOrganisations()
 			if err != nil {
 				return err
 			}
 
 			table := tablewriter.NewWriter(os.Stdout)
-			table.SetHeader([]string{"Counter", "ID", "Name", "Token"})
+			table.SetHeader([]string{"ID", "Name", "Created at"})
 
-			for v, org := range orgs {
-				table.Append([]string{strconv.Itoa(v + 1), org.ID, org.Name, org.Token.String()})
+			for _, org := range orgs {
+				table.Append([]string{org.ID.String(), org.Name, org.CreatedAt.String()})
 			}
 
 			table.Render()

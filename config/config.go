@@ -11,34 +11,41 @@ import (
 
 var cfgSingleton atomic.Value
 
-type OrganisationFetchMode string
+// String canonlizes a database provider
+func (p DatabaseProvider) String() string { return strings.ToLower(string(p)) }
 
-const (
-	FileSystemOrganisationFetchMode OrganisationFetchMode = "file"
-	// Not supported yet though
-	DashboardOrganisationFetchMode OrganisationFetchMode = "dashboard"
-)
-
-func (o OrganisationFetchMode) String() string { return strings.ToLower(string(o)) }
-
-func (o OrganisationFetchMode) Validate() error {
-	switch o {
-	case FileSystemOrganisationFetchMode:
+// Validate makes sure we can support the said database
+func (p DatabaseProvider) Validate() error {
+	switch p {
+	case MysqlDatabaseProvider, PostgresDatabaseProvider:
 		return nil
 	default:
-		return fmt.Errorf("unkown org fetch mode (%s)", o)
+		return fmt.Errorf("unsupported database type (%s)", p)
 	}
 }
 
-type Configuration struct {
-	Organisation struct {
-		FetchMode OrganisationFetchMode `json:"fetch_mode"`
-		// This is only needed if FileSystemOrganisationFetchMode is
-		// used
-		FilePath string `json:"file_path"`
-	} `json:"organisation"`
+// DatabaseProvider is a custom string to identify a database type
+type DatabaseProvider string
+
+const (
+	// MysqlDatabaseProvider is a provider that denotes a Mysql Instance
+	MysqlDatabaseProvider = "mysql"
+	// PostgresDatabaseProvider is a provider that denotes a Postgres Instance
+	PostgresDatabaseProvider = "postgres"
+)
+
+// DatabaseConfiguration is used to configure a database for use
+type DatabaseConfiguration struct {
+	Type DatabaseProvider `json:"type"`
+	Dsn  string           `json:"dsn"`
 }
 
+// Configuration is used to configure the application on start up
+type Configuration struct {
+	Database DatabaseConfiguration
+}
+
+// LoadFromFile fetches a configuration object from the provided path p
 func LoadFromFile(p string) error {
 
 	f, err := os.Open(p)
@@ -58,6 +65,9 @@ func LoadFromFile(p string) error {
 	return nil
 }
 
+// Get fetches the application configuration. LoadFromFile must have been called
+// previously for this to work.
+// Use this when you need to get access to the config object at runtime
 func Get() (Configuration, error) {
 	c, ok := cfgSingleton.Load().(*Configuration)
 	if !ok {

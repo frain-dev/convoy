@@ -1,6 +1,0 @@
-{
-	"organisation" : {
-		"fetch_mode" : "file",
-		"file_path" : "./config/orgs.json"
-	}
-}
