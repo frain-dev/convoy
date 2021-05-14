@@ -1,0 +1,6 @@
+{
+	"database" : {
+		"dsn" : "postgres://hookcamp:hookcamp@localhost:8432?sslmode=disable",
+		"type" : "postgres"
+	}
+}

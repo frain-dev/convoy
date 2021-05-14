@@ -1,4 +1,4 @@
-package hookstack
+package hookcamp
 
 type Token string
 

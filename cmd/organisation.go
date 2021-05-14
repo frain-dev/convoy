@@ -1,16 +1,18 @@
 package main
 
 import (
+	"errors"
+	"fmt"
 	"os"
-	"strconv"
 
-	"github.com/hookstack/hookstack"
-	"github.com/hookstack/hookstack/config"
+	"github.com/google/uuid"
+	"github.com/hookcamp/hookcamp"
+	"github.com/hookcamp/hookcamp/util"
 	"github.com/olekukonko/tablewriter"
 	"github.com/spf13/cobra"
 )
 
-func addOrganisationCommnad(a *hookstack.App) *cobra.Command {
+func addOrganisationCommnad(a *app) *cobra.Command {
 
 	cmd := &cobra.Command{
 		Use:   "org",
@@ -18,34 +20,66 @@ func addOrganisationCommnad(a *hookstack.App) *cobra.Command {
 	}
 
 	cmd.AddCommand(listOrganisationCommand(a))
+	cmd.AddCommand(createOrganisatonCommand(a))
+
 	return cmd
 }
 
-func listOrganisationCommand(a *hookstack.App) *cobra.Command {
+func createOrganisatonCommand(a *app) *cobra.Command {
+
+	var name string
+
+	cmd := &cobra.Command{
+		Use:   "create",
+		Short: "Create an organisation",
+		RunE: func(cmd *cobra.Command, args []string) error {
+
+			if util.IsStringEmpty(name) {
+				return errors.New("please provide the organisation name")
+			}
+
+			ctx, cancelFn := getCtx()
+			defer cancelFn()
+
+			org := &hookcamp.Organisation{
+				Name: name,
+				ID:   uuid.New(),
+			}
+
+			if err := a.database.CreateOrganisation(ctx, org); err != nil {
+				return err
+			}
+
+			fmt.Println("Your new organsation has been created")
+			return nil
+		},
+	}
+
+	cmd.Flags().StringVar(&name, "name", "", "The name of the organisation")
+
+	return cmd
+}
+
+func listOrganisationCommand(a *app) *cobra.Command {
 
 	cmd := &cobra.Command{
 		Use:   "list",
-		Short: "List all organisations currently known",
+		Short: "List all organisations",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			cfg, err := config.Get()
-			if err != nil {
-				return err
-			}
 
-			if err := cfg.Organisation.FetchMode.Validate(); err != nil {
-				return err
-			}
+			ctx, cancelFn := getCtx()
+			defer cancelFn()
 
-			orgs, err := a.OrgLoader.LoadOrganisations()
+			orgs, err := a.database.LoadOrganisations(ctx)
 			if err != nil {
 				return err
 			}
 
 			table := tablewriter.NewWriter(os.Stdout)
-			table.SetHeader([]string{"Counter", "ID", "Name", "Token"})
+			table.SetHeader([]string{"ID", "Name", "Created at"})
 
-			for v, org := range orgs {
-				table.Append([]string{strconv.Itoa(v + 1), org.ID, org.Name, org.Token.String()})
+			for _, org := range orgs {
+				table.Append([]string{org.ID.String(), org.Name, org.CreatedAt.String()})
 			}
 
 			table.Render()
