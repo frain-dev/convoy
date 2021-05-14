@@ -15,10 +15,6 @@ type database struct {
 	dialect config.DatabaseProvider
 }
 
-func (db *database) LoadOrganisations() ([]hookcamp.Organisation, error) {
-	return nil, errors.New("not implemented")
-}
-
 func (db *database) Close() error {
 
 	d, err := db.inner.DB()
@@ -27,6 +23,10 @@ func (db *database) Close() error {
 	}
 
 	return d.Close()
+}
+
+func (db *database) Migrate() error {
+	return db.inner.AutoMigrate(hookcamp.Organisation{})
 }
 
 // New creates a new database connection

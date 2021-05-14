@@ -7,7 +7,7 @@ import (
 
 // Organisation is a model that depicts an organisation
 type Organisation struct {
-	ID   uuid.UUID `json:"id"`
+	ID   uuid.UUID `json:"id" gorm:"uniqueIndex,not null"`
 	Name string    `json:"name"`
 
 	gorm.Model

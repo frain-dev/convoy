@@ -6,4 +6,5 @@ import "io"
 type Datastore interface {
 	OrganisationRepository
 	io.Closer
+	Migrate() error
 }

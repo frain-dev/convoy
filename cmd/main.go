@@ -34,7 +34,12 @@ func main() {
 			}
 
 			app.database, err = datastore.New(cfg)
-			return err
+
+			if err != nil {
+				return err
+			}
+
+			return app.database.Migrate()
 		},
 		PersistentPostRunE: func(cmd *cobra.Command, args []string) error {
 			return app.database.Close()

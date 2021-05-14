@@ -12,9 +12,6 @@ func addOrganisationCommnad(a *app) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "org",
 		Short: "Manage organisations",
-		PersistentPreRunE: func(cmd *cobra.Command, args []string) error {
-			return nil
-		},
 	}
 
 	cmd.AddCommand(listOrganisationCommand(a))
