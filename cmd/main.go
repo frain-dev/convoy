@@ -1,7 +1,9 @@
 package main
 
 import (
+	"context"
 	"log"
+	"time"
 
 	"github.com/hookcamp/hookcamp"
 	"github.com/hookcamp/hookcamp/config"
@@ -60,4 +62,8 @@ func main() {
 
 type app struct {
 	database hookcamp.Datastore
+}
+
+func getCtx() (context.Context, context.CancelFunc) {
+	return context.WithTimeout(context.Background(), time.Second*1)
 }
