@@ -32,3 +32,23 @@ func Test_FetchOrganisationByID(t *testing.T) {
 
 	require.True(t, errors.Is(err, hookcamp.ErrOrganisationNotFound))
 }
+
+func Test_CreateOrganisation(t *testing.T) {
+
+	db, closeFn := getDB(t)
+	defer closeFn()
+
+	orgRepo := NewOrganisationRepo(db)
+
+	newOrg := &hookcamp.Organisation{
+		OrgName: "Next organisation",
+	}
+
+	require.NoError(t, orgRepo.CreateOrganisation(context.Background(), newOrg))
+
+	// Fetch org again
+	org, err := orgRepo.FetchOrganisationByID(context.Background(), newOrg.ID)
+	require.NoError(t, err)
+
+	require.Equal(t, org.ID, newOrg.ID)
+}
