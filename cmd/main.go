@@ -47,7 +47,7 @@ func main() {
 
 			app.orgRepo = datastore.NewOrganisationRepo(db)
 			app.applicationRepo = datastore.NewApplicationRepo(db)
-			app.endpointRepo = datastore.NewEndpointRepoository(db)
+			app.endpointRepo = datastore.NewEndpointRepository(db)
 
 			return nil
 		},
@@ -72,7 +72,7 @@ func main() {
 	cmd.AddCommand(addVersionCommand())
 	cmd.AddCommand(addOrganisationCommnad(app))
 	cmd.AddCommand(addApplicationCommnand(app))
-	cmd.AddCommand(createEndpointCommand(app))
+	cmd.AddCommand(addEndpointCommand(app))
 
 	if err := cmd.Execute(); err != nil {
 		log.Fatal(err)
