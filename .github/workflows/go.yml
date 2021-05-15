@@ -72,6 +72,6 @@ jobs:
     - name: Run mysql tests
       run: go test -tags integration -v ./...
       env:
-        TEST_DATABASE_DSN: "hookcamptest:mysql@localhost:3306/hookcamptest?tls=disable"
+        TEST_DATABASE_DSN: "hookcamptest:mysql@tcp(localhost:3306)/hookcamptest?tls=disable&parseTime=True"
         TEST_DB_TYPE: mysql
 
