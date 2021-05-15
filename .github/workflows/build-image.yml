@@ -8,6 +8,10 @@ jobs:
     runs-on: "ubuntu-latest"
     steps:
 
+    - name: Get the version
+      id: get_version
+      run: echo ::set-output name=tag::$(echo ${GITHUB_SHA:8})
+
     - name: Authenticate
       uses: actions-hub/docker/login@master
       env:
