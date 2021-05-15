@@ -4,9 +4,11 @@ package datastore
 
 import (
 	"context"
+	"errors"
 	"testing"
 
 	"github.com/google/uuid"
+	"github.com/hookcamp/hookcamp"
 	"github.com/stretchr/testify/require"
 )
 
@@ -24,4 +26,9 @@ func Test_FetchOrganisationByID(t *testing.T) {
 	require.NoError(t, err)
 
 	require.Equal(t, org.ID, id)
+
+	_, err = orgRepo.FetchOrganisationByID(context.Background(), uuid.New())
+	require.Error(t, err)
+
+	require.True(t, errors.Is(err, hookcamp.ErrOrganisationNotFound))
 }
