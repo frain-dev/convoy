@@ -78,7 +78,6 @@ func main() {
 }
 
 type app struct {
-	database        hookcamp.Datastore
 	orgRepo         hookcamp.OrganisationRepository
 	applicationRepo hookcamp.ApplicationRepository
 }
