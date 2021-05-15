@@ -3,7 +3,9 @@ package main
 import (
 	"context"
 	"log"
+	"os"
 	"time"
+	_ "time/tzdata"
 
 	"github.com/hookcamp/hookcamp"
 	"github.com/hookcamp/hookcamp/config"
@@ -12,6 +14,8 @@ import (
 )
 
 func main() {
+
+	os.Setenv("TZ", "") // Use UTC by default :)
 
 	app := &app{}
 
