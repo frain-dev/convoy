@@ -104,3 +104,38 @@ func createApplication(a *app) *cobra.Command {
 
 	return cmd
 }
+
+// func getApplicationCommand(a *app) *cobra.Command {
+
+// 	cmd := &cobra.Command{
+// 		Use:   "get",
+// 		Short: "Get the details of an application",
+// 		RunE: func(cmd *cobra.Command, args []string) error {
+
+// 			ID := args[0]
+
+// 			endpointID, err := uuid.Parse(ID)
+// 			if err != nil {
+// 				return fmt.Errorf("could not parse ID...%w", err)
+// 			}
+
+// 			ctx, cancelFn := getCtx()
+// 			defer cancelFn()
+
+// 			e, err := a.endpointRepo.FindEndpointByID(ctx, endpointID)
+// 			if err != nil {
+// 				return fmt.Errorf("could not fetch endpoint..%w", err)
+// 			}
+
+// 			table := tablewriter.NewWriter(os.Stdout)
+// 			table.SetHeader([]string{"ID", "Secret", "Target URL", "Description"})
+
+// 			table.Append([]string{e.ID.String(), e.Secret, e.TargetURL, e.Description})
+
+// 			table.Render()
+// 			return nil
+// 		},
+// 	}
+
+// 	return cmd
+// }
