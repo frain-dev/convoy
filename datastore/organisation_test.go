@@ -52,3 +52,15 @@ func Test_CreateOrganisation(t *testing.T) {
 
 	require.Equal(t, org.ID, newOrg.ID)
 }
+
+func Test_LoadOrganisations(t *testing.T) {
+	db, closeFn := getDB(t)
+	defer closeFn()
+
+	orgRepo := NewOrganisationRepo(db)
+
+	orgs, err := orgRepo.LoadOrganisations(context.Background())
+	require.NoError(t, err)
+
+	require.True(t, len(orgs) > 0)
+}

@@ -16,8 +16,8 @@ var (
 
 // Organisation is a model that depicts an organisation
 type Organisation struct {
-	ID      uuid.UUID `json:"id" gorm:"type:uuid;uniqueIndex;not null"`
-	OrgName string    `json:"name" gorm:"not null"`
+	ID      uuid.UUID `json:"id" gorm:"type:varchar(255);uniqueIndex;not null"`
+	OrgName string    `json:"name" gorm:"type:varchar(200);not null"`
 
 	gorm.Model
 }

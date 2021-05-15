@@ -9,7 +9,7 @@ import (
 
 // Application defines an entity that can receive webhooks.
 type Application struct {
-	ID    uuid.UUID `json:"id" gorm:"type:uuid;uniqueIndex;not null"`
+	ID    uuid.UUID `json:"id" gorm:"type:varchar(220);uniqueIndex;not null"`
 	OrgID uuid.UUID `json:"org_id" gorm:"not null"`
 	Title string    `json:"name" gorm:"not null;type:varchar(200)"`
 
@@ -19,7 +19,7 @@ type Application struct {
 
 // Endpoint defines a target service that can be reached in an application
 type Endpoint struct {
-	ID          uuid.UUID `json:"id" gorm:"type:uuid;uniqueIndex;not null"`
+	ID          uuid.UUID `json:"id" gorm:"type:varchar(220);uniqueIndex;not null"`
 	AppID       uuid.UUID `json:"app_id" gorm:"size:200;not null"`
 	TargetURL   string    `json:"target_url" gorm:"not null"`
 	Secret      string    `json:"secret" gorm:"type:varchar(200);uniqueIndex;not null"`
