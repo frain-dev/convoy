@@ -13,7 +13,6 @@ import (
 )
 
 func addOrganisationCommnad(a *app) *cobra.Command {
-
 	cmd := &cobra.Command{
 		Use:   "org",
 		Short: "Manage organisations",
@@ -26,14 +25,12 @@ func addOrganisationCommnad(a *app) *cobra.Command {
 }
 
 func createOrganisatonCommand(a *app) *cobra.Command {
-
 	var name string
 
 	cmd := &cobra.Command{
 		Use:   "create",
 		Short: "Create an organisation",
 		RunE: func(cmd *cobra.Command, args []string) error {
-
 			if util.IsStringEmpty(name) {
 				return errors.New("please provide the organisation name")
 			}
@@ -42,11 +39,11 @@ func createOrganisatonCommand(a *app) *cobra.Command {
 			defer cancelFn()
 
 			org := &hookcamp.Organisation{
-				Name: name,
-				ID:   uuid.New(),
+				OrgName: name,
+				ID:      uuid.New(),
 			}
 
-			if err := a.database.CreateOrganisation(ctx, org); err != nil {
+			if err := a.orgRepo.CreateOrganisation(ctx, org); err != nil {
 				return err
 			}
 
@@ -61,16 +58,14 @@ func createOrganisatonCommand(a *app) *cobra.Command {
 }
 
 func listOrganisationCommand(a *app) *cobra.Command {
-
 	cmd := &cobra.Command{
 		Use:   "list",
 		Short: "List all organisations",
 		RunE: func(cmd *cobra.Command, args []string) error {
-
 			ctx, cancelFn := getCtx()
 			defer cancelFn()
 
-			orgs, err := a.database.LoadOrganisations(ctx)
+			orgs, err := a.orgRepo.LoadOrganisations(ctx)
 			if err != nil {
 				return err
 			}
@@ -79,7 +74,7 @@ func listOrganisationCommand(a *app) *cobra.Command {
 			table.SetHeader([]string{"ID", "Name", "Created at"})
 
 			for _, org := range orgs {
-				table.Append([]string{org.ID.String(), org.Name, org.CreatedAt.String()})
+				table.Append([]string{org.ID.String(), org.OrgName, org.CreatedAt.String()})
 			}
 
 			table.Render()

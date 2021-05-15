@@ -22,6 +22,16 @@ jobs:
         ports: ["5432:5432"]
         options: --health-cmd pg_isready --health-interval 10s --health-timeout 5s --health-retries 5
 
+      mysql:
+        image: mysql:5.7
+        env:
+          MYSQL_DATABASE: hookcamptest
+          MYSQL_USER: hookcamptest
+          MYSQL_PASSWORD: mysql
+          MYSQL_ROOT_PASSWORD: mysql
+        ports:
+          - 3306:3306
+        options: --health-cmd="mysqladmin ping" --health-interval=10s --health-timeout=5s --health-retries=3
 
     steps:
 
@@ -53,8 +63,15 @@ jobs:
     - name: Go vet
       run: go vet ./...
 
-    - name: Run all tests
+    - name: Run postgres tests
       run: go test -tags integration -v ./...
       env:
-        TEST_POSTGRES_DSN: "postgresql://hookcamptest:postgres@localhost:5432/hookcamptest?sslmode=disable"
+        TEST_DATABASE_DSN: "postgresql://hookcamptest:postgres@localhost:5432/hookcamptest?sslmode=disable"
+        TEST_DB_TYPE: postgres
+
+    - name: Run mysql tests
+      run: go test -tags integration -v ./...
+      env:
+        TEST_DATABASE_DSN: "hookcamptest:mysql@tcp(localhost:3306)/hookcamptest?parseTime=True"
+        TEST_DB_TYPE: mysql
 

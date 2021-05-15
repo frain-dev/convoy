@@ -9,16 +9,24 @@ import (
 	"gorm.io/gorm"
 )
 
-func (db *database) LoadOrganisations(ctx context.Context) ([]hookcamp.Organisation, error) {
+type orgRepo struct {
+	inner *gorm.DB
+}
 
-	var orgs = make([]hookcamp.Organisation, 0)
+// NewOrganisationRepo creates an implementation specific to managing and
+// persisting organisations
+func NewOrganisationRepo(inner *gorm.DB) hookcamp.OrganisationRepository {
+	return &orgRepo{inner: inner}
+}
+
+func (db *orgRepo) LoadOrganisations(ctx context.Context) ([]hookcamp.Organisation, error) {
+	orgs := make([]hookcamp.Organisation, 0)
 
 	return orgs, db.inner.WithContext(ctx).
 		Find(&orgs).Error
 }
 
-func (db *database) CreateOrganisation(ctx context.Context, o *hookcamp.Organisation) error {
-
+func (db *orgRepo) CreateOrganisation(ctx context.Context, o *hookcamp.Organisation) error {
 	if o.ID == uuid.Nil {
 		o.ID = uuid.New()
 	}
@@ -26,9 +34,8 @@ func (db *database) CreateOrganisation(ctx context.Context, o *hookcamp.Organisa
 	return db.inner.WithContext(ctx).Create(o).Error
 }
 
-func (db *database) FetchOrganisationByID(ctx context.Context, id uuid.UUID) (*hookcamp.Organisation, error) {
-
-	var org = new(hookcamp.Organisation)
+func (db *orgRepo) FetchOrganisationByID(ctx context.Context, id uuid.UUID) (*hookcamp.Organisation, error) {
+	org := new(hookcamp.Organisation)
 
 	err := db.inner.WithContext(ctx).
 		Where(&hookcamp.Organisation{ID: id}).

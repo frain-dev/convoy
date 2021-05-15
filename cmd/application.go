@@ -13,7 +13,6 @@ import (
 )
 
 func addApplicationCommnand(a *app) *cobra.Command {
-
 	cmd := &cobra.Command{
 		Use:     "app",
 		Aliases: []string{"application", "apps"},
@@ -24,20 +23,17 @@ func addApplicationCommnand(a *app) *cobra.Command {
 	cmd.AddCommand(listApplications(a))
 
 	return cmd
-
 }
 
 func listApplications(a *app) *cobra.Command {
-
 	cmd := &cobra.Command{
 		Use:   "list",
 		Short: "List all applications",
 		RunE: func(cmd *cobra.Command, args []string) error {
-
 			ctx, cancelFn := getCtx()
 			defer cancelFn()
 
-			apps, err := a.database.LoadApplications(ctx)
+			apps, err := a.applicationRepo.LoadApplications(ctx)
 			if err != nil {
 				return err
 			}
@@ -46,7 +42,7 @@ func listApplications(a *app) *cobra.Command {
 			table.SetHeader([]string{"ID", "Name", "Org name", "Created at"})
 
 			for _, app := range apps {
-				table.Append([]string{app.ID.String(), app.Title, app.Organisation.Name, app.CreatedAt.String()})
+				table.Append([]string{app.ID.String(), app.Title, app.Organisation.OrgName, app.CreatedAt.String()})
 			}
 
 			table.Render()
@@ -65,7 +61,6 @@ func createApplication(a *app) *cobra.Command {
 		Use:   "create",
 		Short: "Create an application",
 		RunE: func(cmd *cobra.Command, args []string) error {
-
 			if util.IsStringEmpty(name) {
 				return errors.New("please provide application name")
 			}
@@ -82,7 +77,7 @@ func createApplication(a *app) *cobra.Command {
 			ctx, cancelFn := getCtx()
 			defer cancelFn()
 
-			org, err := a.database.FetchOrganisationByID(ctx, id)
+			org, err := a.orgRepo.FetchOrganisationByID(ctx, id)
 			if err != nil {
 				return err
 			}
@@ -95,7 +90,7 @@ func createApplication(a *app) *cobra.Command {
 			ctx, cancelFn = getCtx()
 			defer cancelFn()
 
-			if err := a.database.CreateApplication(ctx, app); err != nil {
+			if err := a.applicationRepo.CreateApplication(ctx, app); err != nil {
 				return err
 			}
 
