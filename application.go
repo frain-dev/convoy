@@ -8,9 +8,14 @@ import (
 	"gorm.io/gorm"
 )
 
-// ErrApplicationNotFound is returned when an application cannot be
-// found
-var ErrApplicationNotFound = errors.New("application not found")
+var (
+	// ErrApplicationNotFound is returned when an application cannot be
+	// found
+	ErrApplicationNotFound = errors.New("application not found")
+
+	// ErrEndpointNotFound is returned when an endpoint cannot be found
+	ErrEndpointNotFound = errors.New("endpoint not found")
+)
 
 // Application defines an entity that can receive webhooks.
 type Application struct {
@@ -52,4 +57,7 @@ type ApplicationRepository interface {
 type EndpointRepository interface {
 	// CreateEndpoint adds a new endpoint to the database
 	CreateEndpoint(context.Context, *Endpoint) error
+
+	// FindEndpointByID retrieves an endpoint by the proovided ID
+	FindEndpointByID(context.Context, uuid.UUID) (*Endpoint, error)
 }

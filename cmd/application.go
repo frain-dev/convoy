@@ -21,6 +21,7 @@ func addApplicationCommnand(a *app) *cobra.Command {
 
 	cmd.AddCommand(createApplication(a))
 	cmd.AddCommand(listApplications(a))
+	cmd.AddCommand(getApplicationCommand(a))
 
 	return cmd
 }
@@ -101,6 +102,46 @@ func createApplication(a *app) *cobra.Command {
 
 	cmd.Flags().StringVar(&name, "name", "", "The name of the application")
 	cmd.Flags().StringVar(&orgID, "org", "", "The ID of the organisation that owns this application")
+
+	return cmd
+}
+
+func getApplicationCommand(a *app) *cobra.Command {
+	cmd := &cobra.Command{
+		Use:   "get",
+		Short: "Get the details of an application",
+		Args: func(cmd *cobra.Command, args []string) error {
+			if len(args) < 1 {
+				return errors.New("requires an ID argument")
+			}
+
+			return nil
+		},
+		RunE: func(cmd *cobra.Command, args []string) error {
+			ID := args[0]
+
+			appID, err := uuid.Parse(ID)
+			if err != nil {
+				return fmt.Errorf("Please provide a valid ID..%w", err)
+			}
+
+			ctx, cancelFn := getCtx()
+			defer cancelFn()
+
+			app, err := a.applicationRepo.FindApplicationByID(ctx, appID)
+			if err != nil {
+				return fmt.Errorf("could not fetch app ID..%w", err)
+			}
+
+			table := tablewriter.NewWriter(os.Stdout)
+			table.SetHeader([]string{"ID", "Description"})
+
+			table.Append([]string{app.ID.String(), app.Title})
+
+			table.Render()
+			return nil
+		},
+	}
 
 	return cmd
 }
