@@ -2,10 +2,15 @@ package hookcamp
 
 import (
 	"context"
+	"errors"
 
 	"github.com/google/uuid"
 	"gorm.io/gorm"
 )
+
+// ErrApplicationNotFound is returned when an application cannot be
+// found
+var ErrApplicationNotFound = errors.New("application not found")
 
 // Application defines an entity that can receive webhooks.
 type Application struct {
@@ -37,8 +42,14 @@ type ApplicationRepository interface {
 
 	// LoadApplications fetches a list of all apps from the database
 	LoadApplications(context.Context) ([]Application, error)
+
+	// FindApplicationByID looks for an application by the provided ID.
+	FindApplicationByID(context.Context, uuid.UUID) (*Application, error)
 }
 
-// type EndpointRepository interface {
-// 	CreateEndpoint(context.Context, *Endpoint) error
-// }
+// EndpointRepository is an abstraction over all endpoint operations with the
+// database
+type EndpointRepository interface {
+	// CreateEndpoint adds a new endpoint to the database
+	CreateEndpoint(context.Context, *Endpoint) error
+}
