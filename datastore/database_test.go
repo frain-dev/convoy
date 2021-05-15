@@ -25,7 +25,6 @@ func getDSN() string {
 }
 
 func getConfig() config.Configuration {
-
 	var t config.DatabaseProvider
 
 	switch os.Getenv("TEST_DB_TYPE") {
@@ -95,7 +94,6 @@ func getDB(t *testing.T) (*gorm.DB, func()) {
 	require.NoError(t, err)
 
 	return db, func() {
-
 		inner, err := db.DB()
 		if err != nil {
 			t.Fatal(err)

@@ -13,7 +13,6 @@ import (
 )
 
 func Test_FetchOrganisationByID(t *testing.T) {
-
 	// See testdata/organisations.yml
 	id := uuid.MustParse("2dade341-799e-4bb7-bf4a-b04a23b551c3")
 
@@ -34,7 +33,6 @@ func Test_FetchOrganisationByID(t *testing.T) {
 }
 
 func Test_CreateOrganisation(t *testing.T) {
-
 	db, closeFn := getDB(t)
 	defer closeFn()
 

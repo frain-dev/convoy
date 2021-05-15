@@ -9,15 +9,8 @@ import (
 	"gorm.io/gorm"
 )
 
-// func (db *database) Migrate() error {
-// 	return db.inner.AutoMigrate(hookcamp.Organisation{},
-// 		hookcamp.Application{},
-// 		hookcamp.Endpoint{})
-// }
-
 // New creates a new database connection
 func New(cfg config.Configuration) (*gorm.DB, error) {
-
 	var opened gorm.Dialector
 
 	switch cfg.Database.Type {

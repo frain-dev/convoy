@@ -17,19 +17,16 @@ type orgRepo struct {
 // persisting organisations
 func NewOrganisationRepo(inner *gorm.DB) hookcamp.OrganisationRepository {
 	return &orgRepo{inner: inner}
-
 }
 
 func (db *orgRepo) LoadOrganisations(ctx context.Context) ([]hookcamp.Organisation, error) {
-
-	var orgs = make([]hookcamp.Organisation, 0)
+	orgs := make([]hookcamp.Organisation, 0)
 
 	return orgs, db.inner.WithContext(ctx).
 		Find(&orgs).Error
 }
 
 func (db *orgRepo) CreateOrganisation(ctx context.Context, o *hookcamp.Organisation) error {
-
 	if o.ID == uuid.Nil {
 		o.ID = uuid.New()
 	}
@@ -38,8 +35,7 @@ func (db *orgRepo) CreateOrganisation(ctx context.Context, o *hookcamp.Organisat
 }
 
 func (db *orgRepo) FetchOrganisationByID(ctx context.Context, id uuid.UUID) (*hookcamp.Organisation, error) {
-
-	var org = new(hookcamp.Organisation)
+	org := new(hookcamp.Organisation)
 
 	err := db.inner.WithContext(ctx).
 		Where(&hookcamp.Organisation{ID: id}).

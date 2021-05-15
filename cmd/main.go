@@ -15,7 +15,6 @@ import (
 )
 
 func main() {
-
 	os.Setenv("TZ", "") // Use UTC by default :)
 
 	app := &app{}
@@ -26,7 +25,6 @@ func main() {
 		Use:   "hookcamp",
 		Short: "Opensource Webhooks as a service",
 		PersistentPreRunE: func(cmd *cobra.Command, args []string) error {
-
 			cfgPath, err := cmd.Flags().GetString("config")
 			if err != nil {
 				return err

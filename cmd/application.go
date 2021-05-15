@@ -13,7 +13,6 @@ import (
 )
 
 func addApplicationCommnand(a *app) *cobra.Command {
-
 	cmd := &cobra.Command{
 		Use:     "app",
 		Aliases: []string{"application", "apps"},
@@ -24,16 +23,13 @@ func addApplicationCommnand(a *app) *cobra.Command {
 	cmd.AddCommand(listApplications(a))
 
 	return cmd
-
 }
 
 func listApplications(a *app) *cobra.Command {
-
 	cmd := &cobra.Command{
 		Use:   "list",
 		Short: "List all applications",
 		RunE: func(cmd *cobra.Command, args []string) error {
-
 			ctx, cancelFn := getCtx()
 			defer cancelFn()
 
@@ -65,7 +61,6 @@ func createApplication(a *app) *cobra.Command {
 		Use:   "create",
 		Short: "Create an application",
 		RunE: func(cmd *cobra.Command, args []string) error {
-
 			if util.IsStringEmpty(name) {
 				return errors.New("please provide application name")
 			}

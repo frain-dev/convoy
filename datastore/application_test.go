@@ -11,7 +11,6 @@ import (
 )
 
 func Test_CreateApplication(t *testing.T) {
-
 	db, closeFn := getDB(t)
 	defer closeFn()
 

@@ -20,7 +20,6 @@ func NewApplicationRepo(inner *gorm.DB) hookcamp.ApplicationRepository {
 
 func (db *appRepo) CreateApplication(ctx context.Context,
 	app *hookcamp.Application) error {
-
 	if app.ID == uuid.Nil {
 		app.ID = uuid.New()
 	}
@@ -29,8 +28,7 @@ func (db *appRepo) CreateApplication(ctx context.Context,
 }
 
 func (db *appRepo) LoadApplications(ctx context.Context) ([]hookcamp.Application, error) {
-
-	var apps = make([]hookcamp.Application, 0)
+	apps := make([]hookcamp.Application, 0)
 
 	return apps, db.inner.WithContext(ctx).
 		Preload("Organisation").

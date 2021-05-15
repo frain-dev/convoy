@@ -47,7 +47,6 @@ type Configuration struct {
 
 // LoadFromFile fetches a configuration object from the provided path p
 func LoadFromFile(p string) error {
-
 	f, err := os.Open(p)
 	if err != nil {
 		return err

@@ -13,7 +13,6 @@ import (
 )
 
 func addOrganisationCommnad(a *app) *cobra.Command {
-
 	cmd := &cobra.Command{
 		Use:   "org",
 		Short: "Manage organisations",
@@ -26,14 +25,12 @@ func addOrganisationCommnad(a *app) *cobra.Command {
 }
 
 func createOrganisatonCommand(a *app) *cobra.Command {
-
 	var name string
 
 	cmd := &cobra.Command{
 		Use:   "create",
 		Short: "Create an organisation",
 		RunE: func(cmd *cobra.Command, args []string) error {
-
 			if util.IsStringEmpty(name) {
 				return errors.New("please provide the organisation name")
 			}
@@ -43,7 +40,7 @@ func createOrganisatonCommand(a *app) *cobra.Command {
 
 			org := &hookcamp.Organisation{
 				OrgName: name,
-				ID:   uuid.New(),
+				ID:      uuid.New(),
 			}
 
 			if err := a.orgRepo.CreateOrganisation(ctx, org); err != nil {
@@ -61,12 +58,10 @@ func createOrganisatonCommand(a *app) *cobra.Command {
 }
 
 func listOrganisationCommand(a *app) *cobra.Command {
-
 	cmd := &cobra.Command{
 		Use:   "list",
 		Short: "List all organisations",
 		RunE: func(cmd *cobra.Command, args []string) error {
-
 			ctx, cancelFn := getCtx()
 			defer cancelFn()
 
