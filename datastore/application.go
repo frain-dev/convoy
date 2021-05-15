@@ -5,9 +5,20 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/hookcamp/hookcamp"
+	"gorm.io/gorm"
 )
 
-func (db *database) CreateApplication(ctx context.Context,
+type appRepo struct {
+	inner *gorm.DB
+}
+
+func NewApplicationRepo(inner *gorm.DB) hookcamp.ApplicationRepository {
+	return &appRepo{
+		inner: inner,
+	}
+}
+
+func (db *appRepo) CreateApplication(ctx context.Context,
 	app *hookcamp.Application) error {
 
 	if app.ID == uuid.Nil {
@@ -17,7 +28,7 @@ func (db *database) CreateApplication(ctx context.Context,
 	return db.inner.WithContext(ctx).Create(app).Error
 }
 
-func (db *database) LoadApplications(ctx context.Context) ([]hookcamp.Application, error) {
+func (db *appRepo) LoadApplications(ctx context.Context) ([]hookcamp.Application, error) {
 
 	var apps = make([]hookcamp.Application, 0)
 

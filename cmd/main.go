@@ -11,6 +11,7 @@ import (
 	"github.com/hookcamp/hookcamp/config"
 	"github.com/hookcamp/hookcamp/datastore"
 	"github.com/spf13/cobra"
+	"gorm.io/gorm"
 )
 
 func main() {
@@ -18,6 +19,8 @@ func main() {
 	os.Setenv("TZ", "") // Use UTC by default :)
 
 	app := &app{}
+
+	var db *gorm.DB
 
 	cmd := &cobra.Command{
 		Use:   "hookcamp",
@@ -39,16 +42,27 @@ func main() {
 				return err
 			}
 
-			app.database, err = datastore.New(cfg)
-
+			db, err = datastore.New(cfg)
 			if err != nil {
 				return err
 			}
 
-			return app.database.Migrate()
+			app.orgRepo = datastore.NewOrganisationRepo(db)
+			app.applicationRepo = datastore.NewApplicationRepo(db)
+
+			return nil
 		},
 		PersistentPostRunE: func(cmd *cobra.Command, args []string) error {
-			return app.database.Close()
+			if db == nil {
+				return nil
+			}
+
+			inner, err := db.DB()
+			if err != nil {
+				return err
+			}
+
+			return inner.Close()
 		},
 	}
 
@@ -66,7 +80,9 @@ func main() {
 }
 
 type app struct {
-	database hookcamp.Datastore
+	database        hookcamp.Datastore
+	orgRepo         hookcamp.OrganisationRepository
+	applicationRepo hookcamp.ApplicationRepository
 }
 
 func getCtx() (context.Context, context.CancelFunc) {

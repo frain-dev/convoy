@@ -3,36 +3,20 @@ package datastore
 import (
 	"errors"
 
-	"github.com/hookcamp/hookcamp"
 	"github.com/hookcamp/hookcamp/config"
 	"gorm.io/driver/mysql"
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
 )
 
-type database struct {
-	inner   *gorm.DB
-	dialect config.DatabaseProvider
-}
-
-func (db *database) Close() error {
-
-	d, err := db.inner.DB()
-	if err != nil {
-		return err
-	}
-
-	return d.Close()
-}
-
-func (db *database) Migrate() error {
-	return db.inner.AutoMigrate(hookcamp.Organisation{},
-		hookcamp.Application{},
-		hookcamp.Endpoint{})
-}
+// func (db *database) Migrate() error {
+// 	return db.inner.AutoMigrate(hookcamp.Organisation{},
+// 		hookcamp.Application{},
+// 		hookcamp.Endpoint{})
+// }
 
 // New creates a new database connection
-func New(cfg config.Configuration) (hookcamp.Datastore, error) {
+func New(cfg config.Configuration) (*gorm.DB, error) {
 
 	var opened gorm.Dialector
 
@@ -53,8 +37,5 @@ func New(cfg config.Configuration) (hookcamp.Datastore, error) {
 		return nil, err
 	}
 
-	return &database{
-		inner:   db,
-		dialect: cfg.Database.Type,
-	}, nil
+	return db, nil
 }

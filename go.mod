@@ -3,6 +3,7 @@ module github.com/hookcamp/hookcamp
 go 1.15
 
 require (
+	github.com/golang/mock v1.3.1
 	github.com/google/uuid v1.2.0
 	github.com/olekukonko/tablewriter v0.0.5
 	github.com/spf13/cobra v1.1.3
