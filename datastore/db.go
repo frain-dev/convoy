@@ -26,7 +26,9 @@ func (db *database) Close() error {
 }
 
 func (db *database) Migrate() error {
-	return db.inner.AutoMigrate(hookcamp.Organisation{})
+	return db.inner.AutoMigrate(hookcamp.Organisation{},
+		hookcamp.Application{},
+		hookcamp.Endpoint{})
 }
 
 // New creates a new database connection

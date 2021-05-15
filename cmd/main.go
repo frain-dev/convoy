@@ -54,6 +54,7 @@ func main() {
 
 	cmd.AddCommand(addVersionCommand())
 	cmd.AddCommand(addOrganisationCommnad(app))
+	cmd.AddCommand(addApplicationCommnand(app))
 
 	if err := cmd.Execute(); err != nil {
 		log.Fatal(err)
