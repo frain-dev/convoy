@@ -1,5 +1,9 @@
-name: Build, run all tests, push to GH Packages
-on: [push, pull_request]
+name: Build and run all tests
+on:
+  push:
+    branches:
+      - master
+  pull_request:
 
 jobs:
   test:
@@ -45,6 +49,9 @@ jobs:
 
     - name: Build app to make sure there are zero issues
       run: go build -o hookcamp ./cmd
+
+    - name: Go vet
+      run: go vet ./...
 
     - name: Run all tests
       run: go test -tags integration -v ./...
