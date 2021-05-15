@@ -12,6 +12,9 @@ jobs:
       id: get_version
       run: echo ::set-output name=tag::$(echo ${GITHUB_SHA:8})
 
+    - name: Checkout code
+      uses: actions/checkout@v2
+
     - name: Authenticate
       uses: actions-hub/docker/login@master
       env:
