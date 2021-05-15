@@ -8,11 +8,9 @@ import (
 	"gorm.io/gorm"
 )
 
-var (
-	// ErrApplicationNotFound is returned when an application cannot be
-	// found
-	ErrApplicationNotFound = errors.New("application not found")
-)
+// ErrApplicationNotFound is returned when an application cannot be
+// found
+var ErrApplicationNotFound = errors.New("application not found")
 
 // Application defines an entity that can receive webhooks.
 type Application struct {

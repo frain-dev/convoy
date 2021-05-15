@@ -41,7 +41,6 @@ func (db *appRepo) LoadApplications(ctx context.Context) ([]hookcamp.Application
 
 func (db *appRepo) FindApplicationByID(ctx context.Context,
 	id uuid.UUID) (*hookcamp.Application, error) {
-
 	app := new(hookcamp.Application)
 
 	err := db.inner.WithContext(ctx).

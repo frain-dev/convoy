@@ -14,7 +14,6 @@ import (
 )
 
 func createEndpointCommand(a *app) *cobra.Command {
-
 	cmd := &cobra.Command{
 		Use:     "endpoint",
 		Aliases: []string{"e"},
@@ -27,15 +26,13 @@ func createEndpointCommand(a *app) *cobra.Command {
 }
 
 func persistEndpointCommand(a *app) *cobra.Command {
-
-	var e = new(hookcamp.Endpoint)
+	e := new(hookcamp.Endpoint)
 	var appID string
 
 	cmd := &cobra.Command{
 		Use:   "create",
 		Short: "Create a new endpoint",
 		RunE: func(cmd *cobra.Command, args []string) error {
-
 			var err error
 
 			if util.IsStringEmpty(e.Description) {
@@ -43,7 +40,10 @@ func persistEndpointCommand(a *app) *cobra.Command {
 			}
 
 			if util.IsStringEmpty(e.Secret) {
-				e.Secret = uuid.New().String()
+				e.Secret, err = util.GenerateRandomString(25)
+				if err != nil {
+					return fmt.Errorf("could not generate secret...%v", err)
+				}
 			}
 
 			if util.IsStringEmpty(e.TargetURL) {
@@ -78,6 +78,7 @@ func persistEndpointCommand(a *app) *cobra.Command {
 			}
 
 			fmt.Println("Endpoint was successfully created")
+			fmt.Println()
 
 			table := tablewriter.NewWriter(os.Stdout)
 			table.SetHeader([]string{"ID", "Secret", "Target URL", "Description"})

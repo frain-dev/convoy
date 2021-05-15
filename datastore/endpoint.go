@@ -20,7 +20,6 @@ func NewEndpointRepoository(db *gorm.DB) hookcamp.EndpointRepository {
 
 func (e *endpointDB) CreateEndpoint(ctx context.Context,
 	endpoint *hookcamp.Endpoint) error {
-
 	if endpoint.ID == uuid.Nil {
 		endpoint.ID = uuid.New()
 	}
