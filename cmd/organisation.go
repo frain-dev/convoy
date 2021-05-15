@@ -42,7 +42,7 @@ func createOrganisatonCommand(a *app) *cobra.Command {
 			defer cancelFn()
 
 			org := &hookcamp.Organisation{
-				Name: name,
+				OrgName: name,
 				ID:   uuid.New(),
 			}
 
@@ -79,7 +79,7 @@ func listOrganisationCommand(a *app) *cobra.Command {
 			table.SetHeader([]string{"ID", "Name", "Created at"})
 
 			for _, org := range orgs {
-				table.Append([]string{org.ID.String(), org.Name, org.CreatedAt.String()})
+				table.Append([]string{org.ID.String(), org.OrgName, org.CreatedAt.String()})
 			}
 
 			table.Render()

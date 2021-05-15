@@ -1,0 +1,13 @@
+version: '3'
+
+services:
+
+  postgres_db:
+    image: postgres:13
+    environment:
+      - POSTGRES_PASSWORD=hookcamp
+      - POSTGRES_USER=hookcamptest
+    ports:
+      - "9432:5432"
+    volumes:
+      - ./data/postgres/postgresql:/var/lib/postgres

@@ -46,7 +46,7 @@ func listApplications(a *app) *cobra.Command {
 			table.SetHeader([]string{"ID", "Name", "Org name", "Created at"})
 
 			for _, app := range apps {
-				table.Append([]string{app.ID.String(), app.Title, app.Organisation.Name, app.CreatedAt.String()})
+				table.Append([]string{app.ID.String(), app.Title, app.Organisation.OrgName, app.CreatedAt.String()})
 			}
 
 			table.Render()
