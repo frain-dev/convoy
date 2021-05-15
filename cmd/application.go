@@ -37,7 +37,7 @@ func listApplications(a *app) *cobra.Command {
 			ctx, cancelFn := getCtx()
 			defer cancelFn()
 
-			apps, err := a.database.LoadApplications(ctx)
+			apps, err := a.applicationRepo.LoadApplications(ctx)
 			if err != nil {
 				return err
 			}
@@ -82,7 +82,7 @@ func createApplication(a *app) *cobra.Command {
 			ctx, cancelFn := getCtx()
 			defer cancelFn()
 
-			org, err := a.database.FetchOrganisationByID(ctx, id)
+			org, err := a.orgRepo.FetchOrganisationByID(ctx, id)
 			if err != nil {
 				return err
 			}
@@ -95,7 +95,7 @@ func createApplication(a *app) *cobra.Command {
 			ctx, cancelFn = getCtx()
 			defer cancelFn()
 
-			if err := a.database.CreateApplication(ctx, app); err != nil {
+			if err := a.applicationRepo.CreateApplication(ctx, app); err != nil {
 				return err
 			}
 

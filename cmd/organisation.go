@@ -46,7 +46,7 @@ func createOrganisatonCommand(a *app) *cobra.Command {
 				ID:   uuid.New(),
 			}
 
-			if err := a.database.CreateOrganisation(ctx, org); err != nil {
+			if err := a.orgRepo.CreateOrganisation(ctx, org); err != nil {
 				return err
 			}
 
@@ -70,7 +70,7 @@ func listOrganisationCommand(a *app) *cobra.Command {
 			ctx, cancelFn := getCtx()
 			defer cancelFn()
 
-			orgs, err := a.database.LoadOrganisations(ctx)
+			orgs, err := a.orgRepo.LoadOrganisations(ctx)
 			if err != nil {
 				return err
 			}
