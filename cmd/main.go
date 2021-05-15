@@ -47,6 +47,7 @@ func main() {
 
 			app.orgRepo = datastore.NewOrganisationRepo(db)
 			app.applicationRepo = datastore.NewApplicationRepo(db)
+			app.endpointRepo = datastore.NewEndpointRepoository(db)
 
 			return nil
 		},
@@ -71,6 +72,7 @@ func main() {
 	cmd.AddCommand(addVersionCommand())
 	cmd.AddCommand(addOrganisationCommnad(app))
 	cmd.AddCommand(addApplicationCommnand(app))
+	cmd.AddCommand(createEndpointCommand(app))
 
 	if err := cmd.Execute(); err != nil {
 		log.Fatal(err)
@@ -80,6 +82,7 @@ func main() {
 type app struct {
 	orgRepo         hookcamp.OrganisationRepository
 	applicationRepo hookcamp.ApplicationRepository
+	endpointRepo    hookcamp.EndpointRepository
 }
 
 func getCtx() (context.Context, context.CancelFunc) {
