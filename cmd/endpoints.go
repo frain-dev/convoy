@@ -4,10 +4,12 @@ import (
 	"errors"
 	"fmt"
 	"net/url"
+	"os"
 
 	"github.com/google/uuid"
 	"github.com/hookcamp/hookcamp"
 	"github.com/hookcamp/hookcamp/util"
+	"github.com/olekukonko/tablewriter"
 	"github.com/spf13/cobra"
 )
 
@@ -75,6 +77,14 @@ func persistEndpointCommand(a *app) *cobra.Command {
 				return fmt.Errorf("could not create endpoint...%w", err)
 			}
 
+			fmt.Println("Endpoint was successfully created")
+
+			table := tablewriter.NewWriter(os.Stdout)
+			table.SetHeader([]string{"ID", "Secret", "Target URL", "Description"})
+
+			table.Append([]string{e.ID.String(), e.Secret, e.TargetURL, e.Description})
+
+			table.Render()
 			return nil
 		},
 	}
