@@ -27,7 +27,6 @@ func addEndpointCommand(a *app) *cobra.Command {
 }
 
 func getEndpointCommand(a *app) *cobra.Command {
-
 	cmd := &cobra.Command{
 		Use:   "get",
 		Short: "Get the details of an endpoint",
@@ -39,7 +38,6 @@ func getEndpointCommand(a *app) *cobra.Command {
 			return nil
 		},
 		RunE: func(cmd *cobra.Command, args []string) error {
-
 			ID := args[0]
 
 			endpointID, err := uuid.Parse(ID)

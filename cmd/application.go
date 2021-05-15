@@ -21,6 +21,7 @@ func addApplicationCommnand(a *app) *cobra.Command {
 
 	cmd.AddCommand(createApplication(a))
 	cmd.AddCommand(listApplications(a))
+	cmd.AddCommand(getApplicationCommand(a))
 
 	return cmd
 }
@@ -105,37 +106,42 @@ func createApplication(a *app) *cobra.Command {
 	return cmd
 }
 
-// func getApplicationCommand(a *app) *cobra.Command {
+func getApplicationCommand(a *app) *cobra.Command {
+	cmd := &cobra.Command{
+		Use:   "get",
+		Short: "Get the details of an application",
+		Args: func(cmd *cobra.Command, args []string) error {
+			if len(args) < 1 {
+				return errors.New("requires an ID argument")
+			}
 
-// 	cmd := &cobra.Command{
-// 		Use:   "get",
-// 		Short: "Get the details of an application",
-// 		RunE: func(cmd *cobra.Command, args []string) error {
+			return nil
+		},
+		RunE: func(cmd *cobra.Command, args []string) error {
+			ID := args[0]
 
-// 			ID := args[0]
+			appID, err := uuid.Parse(ID)
+			if err != nil {
+				return fmt.Errorf("Please provide a valid ID..%w", err)
+			}
 
-// 			endpointID, err := uuid.Parse(ID)
-// 			if err != nil {
-// 				return fmt.Errorf("could not parse ID...%w", err)
-// 			}
+			ctx, cancelFn := getCtx()
+			defer cancelFn()
 
-// 			ctx, cancelFn := getCtx()
-// 			defer cancelFn()
+			app, err := a.applicationRepo.FindApplicationByID(ctx, appID)
+			if err != nil {
+				return fmt.Errorf("could not fetch app ID..%w", err)
+			}
 
-// 			e, err := a.endpointRepo.FindEndpointByID(ctx, endpointID)
-// 			if err != nil {
-// 				return fmt.Errorf("could not fetch endpoint..%w", err)
-// 			}
+			table := tablewriter.NewWriter(os.Stdout)
+			table.SetHeader([]string{"ID", "Description"})
 
-// 			table := tablewriter.NewWriter(os.Stdout)
-// 			table.SetHeader([]string{"ID", "Secret", "Target URL", "Description"})
+			table.Append([]string{app.ID.String(), app.Title})
 
-// 			table.Append([]string{e.ID.String(), e.Secret, e.TargetURL, e.Description})
+			table.Render()
+			return nil
+		},
+	}
 
-// 			table.Render()
-// 			return nil
-// 		},
-// 	}
-
-// 	return cmd
-// }
+	return cmd
+}
