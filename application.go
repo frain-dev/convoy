@@ -34,6 +34,9 @@ type Endpoint struct {
 type ApplicationRepository interface {
 	// CreateApplication when called persists an application to the database
 	CreateApplication(context.Context, *Application) error
+
+	// LoadApplications fetches a list of all apps from the database
+	LoadApplications(context.Context) ([]Application, error)
 }
 
 // type EndpointRepository interface {

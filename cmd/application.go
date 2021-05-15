@@ -3,10 +3,12 @@ package main
 import (
 	"errors"
 	"fmt"
+	"os"
 
 	"github.com/google/uuid"
 	"github.com/hookcamp/hookcamp"
 	"github.com/hookcamp/hookcamp/util"
+	"github.com/olekukonko/tablewriter"
 	"github.com/spf13/cobra"
 )
 
@@ -19,6 +21,38 @@ func addApplicationCommnand(a *app) *cobra.Command {
 	}
 
 	cmd.AddCommand(createApplication(a))
+	cmd.AddCommand(listApplications(a))
+
+	return cmd
+
+}
+
+func listApplications(a *app) *cobra.Command {
+
+	cmd := &cobra.Command{
+		Use:   "list",
+		Short: "List all applications",
+		RunE: func(cmd *cobra.Command, args []string) error {
+
+			ctx, cancelFn := getCtx()
+			defer cancelFn()
+
+			apps, err := a.database.LoadApplications(ctx)
+			if err != nil {
+				return err
+			}
+
+			table := tablewriter.NewWriter(os.Stdout)
+			table.SetHeader([]string{"ID", "Name", "Org name", "Created at"})
+
+			for _, app := range apps {
+				table.Append([]string{app.ID.String(), app.Title, app.Organisation.Name, app.CreatedAt.String()})
+			}
+
+			table.Render()
+			return nil
+		},
+	}
 
 	return cmd
 }

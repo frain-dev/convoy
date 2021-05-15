@@ -16,3 +16,12 @@ func (db *database) CreateApplication(ctx context.Context,
 
 	return db.inner.WithContext(ctx).Create(app).Error
 }
+
+func (db *database) LoadApplications(ctx context.Context) ([]hookcamp.Application, error) {
+
+	var apps = make([]hookcamp.Application, 0)
+
+	return apps, db.inner.WithContext(ctx).
+		Preload("Organisation").
+		Find(&apps).Error
+}
