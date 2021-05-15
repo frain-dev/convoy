@@ -52,20 +52,3 @@ jobs:
       env:
         TEST_POSTGRES_DSN: "postgresql://fluidcoinstest:postgres@localhost:5432/fluidcoinstest?sslmode=disable"
 
-    - name: Login into Github Actions
-      if:  github.ref == 'refs/heads/master'
-      uses: actions-hub/docker/login@master
-      env:
-        DOCKER_USERNAME: ${{ secrets.DOCKER_USERNAME }}
-        DOCKER_PASSWORD: ${{ secrets.PAT }}
-        DOCKER_REGISTRY_URL: ghcr.io
-
-    - name: Build latest image
-      if: success() &&  github.ref == 'refs/heads/master'
-      run: docker build -t ghcr.io/${GITHUB_REPOSITORY}:${{ steps.get_version.outputs.tag }} --build-arg ACCESS_TOKEN_USR=${{ secrets.DOCKER_USERNAME }} --build-arg ACCESS_TOKEN=${{ secrets.PAT }} .
-
-    - name: Push to GH packages
-      if: success() && github.ref == 'refs/heads/master'
-      uses: actions-hub/docker@master
-      with:
-        args:  push ghcr.io/${GITHUB_REPOSITORY}:${{ steps.get_version.outputs.tag }}
