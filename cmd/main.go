@@ -74,6 +74,7 @@ func main() {
 	cmd.AddCommand(addApplicationCommnand(app))
 	cmd.AddCommand(addEndpointCommand(app))
 	cmd.AddCommand(addMigrationCommand())
+	cmd.AddCommand(addCreateCommand(app))
 
 	if err := cmd.Execute(); err != nil {
 		log.Fatal(err)
