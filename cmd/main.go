@@ -10,6 +10,8 @@ import (
 	"github.com/hookcamp/hookcamp"
 	"github.com/hookcamp/hookcamp/config"
 	"github.com/hookcamp/hookcamp/datastore"
+	"github.com/hookcamp/hookcamp/queue"
+	"github.com/hookcamp/hookcamp/queue/redis"
 	"github.com/spf13/cobra"
 	"gorm.io/gorm"
 )
@@ -45,10 +47,20 @@ func main() {
 				return err
 			}
 
+			var queuer queue.Queuer
+
+			if cfg.Queue.Type == config.RedisQueueProvider {
+				queuer, err = redis.New(cfg)
+				if err != nil {
+					return err
+				}
+			}
+
 			app.orgRepo = datastore.NewOrganisationRepo(db)
 			app.applicationRepo = datastore.NewApplicationRepo(db)
 			app.endpointRepo = datastore.NewEndpointRepository(db)
 			app.messageRepo = datastore.NewMessageRepository(db)
+			app.queue = queuer
 
 			return nil
 		},
@@ -87,6 +99,7 @@ type app struct {
 	applicationRepo hookcamp.ApplicationRepository
 	endpointRepo    hookcamp.EndpointRepository
 	messageRepo     hookcamp.MessageRepository
+	queue           queue.Queuer
 }
 
 func getCtx() (context.Context, context.CancelFunc) {

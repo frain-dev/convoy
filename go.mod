@@ -4,6 +4,7 @@ go 1.15
 
 require (
 	github.com/denisenkom/go-mssqldb v0.0.0-20200620013148-b91950f658ec // indirect
+	github.com/go-redis/redis/v8 v8.8.2
 	github.com/go-testfixtures/testfixtures/v3 v3.6.0
 	github.com/golang/mock v1.4.4
 	github.com/google/uuid v1.2.0

@@ -24,28 +24,23 @@ func (p DatabaseProvider) Validate() error {
 	}
 }
 
-// DatabaseProvider is a custom string to identify a database type
 type DatabaseProvider string
 
 const (
-	// MysqlDatabaseProvider is a provider that denotes a Mysql Instance
-	MysqlDatabaseProvider = "mysql"
-	// PostgresDatabaseProvider is a provider that denotes a Postgres Instance
+	MysqlDatabaseProvider    = "mysql"
 	PostgresDatabaseProvider = "postgres"
 )
 
-// DatabaseConfiguration is used to configure a database for use
 type DatabaseConfiguration struct {
 	Type DatabaseProvider `json:"type"`
 	Dsn  string           `json:"dsn"`
 }
 
-// Configuration is used to configure the application on start up
 type Configuration struct {
-	Database DatabaseConfiguration
+	Database DatabaseConfiguration `json:"database"`
+	Queue    QueueConfiguration    `json:"queue"`
 }
 
-// LoadFromFile fetches a configuration object from the provided path p
 func LoadFromFile(p string) error {
 	f, err := os.Open(p)
 	if err != nil {
@@ -74,4 +69,17 @@ func Get() (Configuration, error) {
 	}
 
 	return *c, nil
+}
+
+type QueueProvider string
+
+const (
+	RedisQueueProvider QueueProvider = "redis"
+)
+
+type QueueConfiguration struct {
+	Type  QueueProvider `json:"type"`
+	Redis struct {
+		DSN string `json:"dsn"`
+	} `json:"redis"`
 }

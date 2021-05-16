@@ -2,5 +2,11 @@
 	"database" : {
 		"dsn" : "postgres://hookcamp:hookcamp@localhost:8432?sslmode=disable",
 		"type" : "postgres"
+	},
+	"queue" : {
+		"type" : "redis",
+		"redis" : {
+		   "dsn" : "redis://localhost:8379"
+		}
 	}
 }

@@ -24,7 +24,7 @@ services:
     volumes:
       - ./data/postgres/postgresql:/var/lib/postgres
 
-  # redis_server:
-  #   image: redis
-  #   ports:
-  #     - "9379:6379"
+  redis_server:
+    image: redis:alpine
+    ports:
+      - "8379:6379"
