@@ -27,6 +27,7 @@ func createMessageCommand(a *app) *cobra.Command {
 	var appID string
 	var filePath string
 	var eventType string
+	var publish bool
 
 	cmd := &cobra.Command{
 		Use:   "message",
@@ -103,6 +104,8 @@ func createMessageCommand(a *app) *cobra.Command {
 	cmd.Flags().StringVarP(&appID, "app", "a", "", "Application ID")
 	cmd.Flags().StringVarP(&filePath, "file", "f", "", "Path to file containing JSON data")
 	cmd.Flags().StringVar(&eventType, "event", "", "Event type")
+	cmd.Flags().BoolVar(&publish, "publish", false, `If true, it will send the data to the endpoints
+attached to the application`)
 
 	return cmd
 }
