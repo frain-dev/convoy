@@ -41,7 +41,7 @@ type EventType string
 // Message defines a payload to be sent to an application
 type Message struct {
 	ID        uuid.UUID `json:"id" gorm:"type:varchar(220);uniqueIndex;not null"`
-	AppID     uuid.UUID `json:"app_id"`
+	AppID     uuid.UUID `json:"app_id" gorm:"size:200;not null"`
 	EventType EventType `json:"event_type" gorm:"type:varchar(220);index;not null"`
 
 	// ProviderID is a custom ID that can be used to reconcile this message
@@ -55,7 +55,7 @@ type Message struct {
 
 	Metadata MessageMetada `json:"metadata" gorm:"type:text;not null"`
 
-	Status MessageStatus `json:"status" gorm:"type:small int; not null; default:1"`
+	Status MessageStatus `json:"status" gorm:"type:smallint; not null; default:1"`
 
 	gorm.Model
 	Application Application `json:"application" gorm:"foreignKey:AppID"`
