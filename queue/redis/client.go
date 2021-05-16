@@ -60,7 +60,7 @@ func (c *client) Close() error {
 }
 
 func (c *client) Read() chan queue.Message {
-	channels := make(chan queue.Message, 0)
+	channels := make(chan queue.Message)
 
 	go func() {
 		for msg := range c.pubsubChannel.Channel() {
