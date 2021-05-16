@@ -1,7 +1,9 @@
 package hookcamp
 
 import (
+	"bytes"
 	"context"
+	"database/sql/driver"
 	"encoding/json"
 
 	"github.com/google/uuid"
@@ -23,8 +25,14 @@ const (
 	RetryMessageStatus
 )
 
-// MessageMetada stores more information about a specific message
-type MessageMetada struct {
+type JSONData json.RawMessage
+
+func (j JSONData) Value() (driver.Value, error) {
+	return driver.Value(string(j)), nil
+}
+
+// MessageMetadata stores more information about a specific message
+type MessageMetadata struct {
 	// NextSendTime denotes the next time a message will be published in
 	// case it failed the first time
 	NextSendTime int64 `json:"next_send_time"`
@@ -32,6 +40,16 @@ type MessageMetada struct {
 	// NumTrials: number of times we have tried to deliver this message to
 	// an application
 	NumTrials int64 `json:"num_trials"`
+}
+
+func (m MessageMetadata) Value() (driver.Value, error) {
+	b := new(bytes.Buffer)
+
+	if err := json.NewEncoder(b).Encode(m); err != nil {
+		return driver.Value(""), err
+	}
+
+	return driver.Value(b.String()), nil
 }
 
 // EventType is used to identify an specific event.
@@ -51,9 +69,9 @@ type Message struct {
 
 	// Data is an arbitrary JSON value that gets sent as the body of the
 	// webhook to the endpoints
-	Data json.RawMessage `json:"data" gorm:"type:text;not null"`
+	Data JSONData `json:"data" gorm:"type:text;not null"`
 
-	Metadata MessageMetada `json:"metadata" gorm:"type:text;not null"`
+	Metadata *MessageMetadata `json:"metadata" gorm:"type:text;not null"`
 
 	Status MessageStatus `json:"status" gorm:"type:smallint; not null; default:1"`
 

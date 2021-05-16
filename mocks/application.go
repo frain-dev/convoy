@@ -116,3 +116,18 @@ func (mr *MockEndpointRepositoryMockRecorder) CreateEndpoint(arg0, arg1 interfac
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateEndpoint", reflect.TypeOf((*MockEndpointRepository)(nil).CreateEndpoint), arg0, arg1)
 }
+
+// FindEndpointByID mocks base method.
+func (m *MockEndpointRepository) FindEndpointByID(arg0 context.Context, arg1 uuid.UUID) (*hookcamp.Endpoint, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "FindEndpointByID", arg0, arg1)
+	ret0, _ := ret[0].(*hookcamp.Endpoint)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// FindEndpointByID indicates an expected call of FindEndpointByID.
+func (mr *MockEndpointRepositoryMockRecorder) FindEndpointByID(arg0, arg1 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "FindEndpointByID", reflect.TypeOf((*MockEndpointRepository)(nil).FindEndpointByID), arg0, arg1)
+}

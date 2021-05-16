@@ -59,7 +59,7 @@ func TestMain(m *testing.M) {
 	// }
 
 	err = db.AutoMigrate(hookcamp.Organisation{},
-		hookcamp.Application{}, hookcamp.Endpoint{})
+		hookcamp.Application{}, hookcamp.Endpoint{}, hookcamp.Message{})
 	if err != nil {
 		log.Fatal(err)
 	}
