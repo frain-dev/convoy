@@ -48,6 +48,7 @@ func main() {
 			app.orgRepo = datastore.NewOrganisationRepo(db)
 			app.applicationRepo = datastore.NewApplicationRepo(db)
 			app.endpointRepo = datastore.NewEndpointRepository(db)
+			app.messageRepo = datastore.NewMessageRepository(db)
 
 			return nil
 		},
