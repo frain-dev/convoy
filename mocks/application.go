@@ -6,10 +6,11 @@ package mocks
 
 import (
 	context "context"
+	reflect "reflect"
+
 	gomock "github.com/golang/mock/gomock"
 	uuid "github.com/google/uuid"
 	hookcamp "github.com/hookcamp/hookcamp"
-	reflect "reflect"
 )
 
 // MockApplicationRepository is a mock of ApplicationRepository interface.

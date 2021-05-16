@@ -85,6 +85,7 @@ type app struct {
 	orgRepo         hookcamp.OrganisationRepository
 	applicationRepo hookcamp.ApplicationRepository
 	endpointRepo    hookcamp.EndpointRepository
+	messageRepo     hookcamp.MessageRepository
 }
 
 func getCtx() (context.Context, context.CancelFunc) {
