@@ -2,49 +2,63 @@ package datastore
 
 import (
 	"context"
-	"errors"
 
 	"github.com/google/uuid"
 	"github.com/hookcamp/hookcamp"
-	"gorm.io/gorm"
+	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/mongo"
 )
 
 type orgRepo struct {
-	inner *gorm.DB
+	inner *mongo.Collection
 }
 
-// NewOrganisationRepo creates an implementation specific to managing and
-// persisting organisations
-func NewOrganisationRepo(inner *gorm.DB) hookcamp.OrganisationRepository {
-	return &orgRepo{inner: inner}
+const (
+	orgCollection = "organisations"
+)
+
+func NewOrganisationRepo(client *mongo.Database) hookcamp.OrganisationRepository {
+	return &orgRepo{
+		inner: client.Collection(orgCollection),
+	}
 }
 
 func (db *orgRepo) LoadOrganisations(ctx context.Context) ([]hookcamp.Organisation, error) {
 	orgs := make([]hookcamp.Organisation, 0)
 
-	return orgs, db.inner.WithContext(ctx).
-		Find(&orgs).Error
+	cur, err := db.inner.Find(ctx, nil)
+	if err != nil {
+		return orgs, err
+	}
+
+	for cur.Next(ctx) {
+		var org hookcamp.Organisation
+		if err := cur.Decode(&org); err != nil {
+			return orgs, err
+		}
+	}
+
+	if err := cur.Err(); err != nil {
+		return nil, err
+	}
+
+	return orgs, nil
 }
 
 func (db *orgRepo) CreateOrganisation(ctx context.Context, o *hookcamp.Organisation) error {
-	if o.ID == uuid.Nil {
-		o.ID = uuid.New()
+	if o.UID == uuid.Nil {
+		o.UID = uuid.New()
 	}
 
-	return db.inner.WithContext(ctx).Create(o).Error
+	_, err := db.inner.InsertOne(ctx, o)
+	return err
 }
 
 func (db *orgRepo) FetchOrganisationByID(ctx context.Context, id uuid.UUID) (*hookcamp.Organisation, error) {
 	org := new(hookcamp.Organisation)
 
-	err := db.inner.WithContext(ctx).
-		Where(&hookcamp.Organisation{ID: id}).
-		First(org).
-		Error
-
-	if errors.Is(err, gorm.ErrRecordNotFound) {
-		err = hookcamp.ErrOrganisationNotFound
-	}
+	err := db.inner.FindOne(ctx, bson.M{"uid": id.String()}).
+		Decode(&org)
 
 	return org, err
 }

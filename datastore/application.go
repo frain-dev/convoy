@@ -6,23 +6,25 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/hookcamp/hookcamp"
+	"go.mongodb.org/mongo-driver/mongo"
 	"gorm.io/gorm"
 )
 
 type appRepo struct {
-	inner *gorm.DB
+	inner  *gorm.DB
+	client *mongo.Client
 }
 
-func NewApplicationRepo(inner *gorm.DB) hookcamp.ApplicationRepository {
+func NewApplicationRepo(client *mongo.Client) hookcamp.ApplicationRepository {
 	return &appRepo{
-		inner: inner,
+		client: client,
 	}
 }
 
 func (db *appRepo) CreateApplication(ctx context.Context,
 	app *hookcamp.Application) error {
-	if app.ID == uuid.Nil {
-		app.ID = uuid.New()
+	if app.UID == uuid.Nil {
+		app.UID = uuid.New()
 	}
 
 	return db.inner.WithContext(ctx).
