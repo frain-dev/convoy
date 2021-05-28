@@ -12,6 +12,7 @@ require (
 	github.com/pkg/errors v0.9.1 // indirect
 	github.com/spf13/cobra v1.1.3
 	github.com/stretchr/testify v1.7.0
+	go.mongodb.org/mongo-driver v1.5.2 // indirect
 	gorm.io/driver/mysql v1.0.6
 	gorm.io/driver/postgres v1.1.0
 	gorm.io/gorm v1.21.9

@@ -6,16 +6,19 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/hookcamp/hookcamp"
+	"go.mongodb.org/mongo-driver/mongo"
 	"gorm.io/gorm"
 )
 
 type endpointDB struct {
-	inner *gorm.DB
+	inner  *gorm.DB
+	client *mongo.Client
 }
 
-func NewEndpointRepository(db *gorm.DB) hookcamp.EndpointRepository {
+func NewEndpointRepository(db *mongo.Client) hookcamp.EndpointRepository {
 	return &endpointDB{
-		inner: db,
+		// inner: db,
+		client: db,
 	}
 }
 

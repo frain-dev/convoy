@@ -1,34 +1,30 @@
 package datastore
 
 import (
-	"errors"
+	"context"
+	"time"
 
 	"github.com/hookcamp/hookcamp/config"
-	"gorm.io/driver/mysql"
-	"gorm.io/driver/postgres"
-	"gorm.io/gorm"
+	"go.mongodb.org/mongo-driver/mongo"
+	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
 // New creates a new database connection
-func New(cfg config.Configuration) (*gorm.DB, error) {
-	var opened gorm.Dialector
+func New(cfg config.Configuration) (*mongo.Client, error) {
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
 
-	switch cfg.Database.Type {
-	case config.PostgresDatabaseProvider:
-		opened = postgres.Open(cfg.Database.Dsn)
-
-	case config.MysqlDatabaseProvider:
-		opened = mysql.Open(cfg.Database.Dsn)
-
-	default:
-		return nil, errors.New("please provide a supported database type")
-
-	}
-
-	db, err := gorm.Open(opened, &gorm.Config{})
+	client, err := mongo.Connect(ctx, options.Client().ApplyURI(cfg.Database.Dsn))
 	if err != nil {
 		return nil, err
 	}
 
-	return db, nil
+	ctx, cancel = context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+
+	if err := client.Ping(ctx, nil); err != nil {
+		return nil, err
+	}
+
+	return client, nil
 }
