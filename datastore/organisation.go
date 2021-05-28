@@ -42,6 +42,10 @@ func (db *orgRepo) LoadOrganisations(ctx context.Context) ([]hookcamp.Organisati
 		return nil, err
 	}
 
+	if err := cur.Close(ctx); err != nil {
+		return orgs, err
+	}
+
 	return orgs, nil
 }
 
