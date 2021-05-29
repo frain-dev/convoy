@@ -17,14 +17,43 @@ func addGetComamnd(a *app) *cobra.Command {
 	}
 
 	cmd.AddCommand(getOrganisations(a))
+	cmd.AddCommand(getApplications(a))
+
+	return cmd
+}
+
+func getApplications(a *app) *cobra.Command {
+	cmd := &cobra.Command{
+		Use:     "applications",
+		Short:   "Get Applications",
+		Aliases: []string{"apps"},
+		RunE: func(cmd *cobra.Command, args []string) error {
+
+			apps, err := a.applicationRepo.LoadApplications(context.Background())
+			if err != nil {
+				return err
+			}
+
+			table := tablewriter.NewWriter(os.Stdout)
+			table.SetHeader([]string{"ID", "Name", "Created at"})
+
+			for _, app := range apps {
+				table.Append([]string{app.UID, app.Title, time.Unix(app.CreatedAt, 0).String()})
+			}
+
+			table.Render()
+			return nil
+		},
+	}
 
 	return cmd
 }
 
 func getOrganisations(a *app) *cobra.Command {
 	cmd := &cobra.Command{
-		Use:   "organisations",
-		Short: "Get organisations",
+		Use:     "organisations",
+		Short:   "Get organisations",
+		Aliases: []string{"orgs"},
 		RunE: func(cmd *cobra.Command, args []string) error {
 
 			orgs, err := a.orgRepo.LoadOrganisations(context.Background())

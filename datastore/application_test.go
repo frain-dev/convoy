@@ -66,7 +66,6 @@ func Test_CreateApplication(t *testing.T) {
 }
 
 func Test_LoadApplications(t *testing.T) {
-	t.Skip()
 	db, closeFn := getDB(t)
 	defer closeFn()
 
