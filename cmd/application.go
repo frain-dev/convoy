@@ -2,13 +2,7 @@ package main
 
 import (
 	"errors"
-	"fmt"
-	"os"
 
-	"github.com/google/uuid"
-	"github.com/hookcamp/hookcamp"
-	"github.com/hookcamp/hookcamp/util"
-	"github.com/olekukonko/tablewriter"
 	"github.com/spf13/cobra"
 )
 
@@ -31,22 +25,22 @@ func listApplications(a *app) *cobra.Command {
 		Use:   "list",
 		Short: "List all applications",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			ctx, cancelFn := getCtx()
-			defer cancelFn()
+			// ctx, cancelFn := getCtx()
+			// defer cancelFn()
 
-			apps, err := a.applicationRepo.LoadApplications(ctx)
-			if err != nil {
-				return err
-			}
+			// apps, err := a.applicationRepo.LoadApplications(ctx)
+			// if err != nil {
+			// 	return err
+			// }
 
-			table := tablewriter.NewWriter(os.Stdout)
-			table.SetHeader([]string{"ID", "Name", "Org name", "Created at"})
+			// table := tablewriter.NewWriter(os.Stdout)
+			// table.SetHeader([]string{"ID", "Name", "Org name", "Created at"})
 
-			for _, app := range apps {
-				table.Append([]string{app.ID.String(), app.Title, app.Organisation.OrgName, app.CreatedAt.String()})
-			}
+			// for _, app := range apps {
+			// 	table.Append([]string{app.UID.String(), app.Title, app.Organisation.OrgName, app.CreatedAt.String()})
+			// }
 
-			table.Render()
+			// table.Render()
 			return nil
 		},
 	}
@@ -62,40 +56,40 @@ func createApplication(a *app) *cobra.Command {
 		Use:   "create",
 		Short: "Create an application",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			if util.IsStringEmpty(name) {
-				return errors.New("please provide application name")
-			}
+			// if util.IsStringEmpty(name) {
+			// 	return errors.New("please provide application name")
+			// }
 
-			if util.IsStringEmpty(orgID) {
-				return errors.New("please provide the org ID")
-			}
+			// if util.IsStringEmpty(orgID) {
+			// 	return errors.New("please provide the org ID")
+			// }
 
-			id, err := uuid.Parse(orgID)
-			if err != nil {
-				return fmt.Errorf("could not parse org ID..%w", err)
-			}
+			// id, err := uuid.Parse(orgID)
+			// if err != nil {
+			// 	return fmt.Errorf("could not parse org ID..%w", err)
+			// }
 
-			ctx, cancelFn := getCtx()
-			defer cancelFn()
+			// ctx, cancelFn := getCtx()
+			// defer cancelFn()
 
-			org, err := a.orgRepo.FetchOrganisationByID(ctx, id)
-			if err != nil {
-				return err
-			}
+			// org, err := a.orgRepo.FetchOrganisationByID(ctx, id)
+			// if err != nil {
+			// 	return err
+			// }
 
-			app := &hookcamp.Application{
-				Title: name,
-				OrgID: org.ID,
-			}
+			// app := &hookcamp.Application{
+			// 	Title: name,
+			// 	OrgID: org.ID,
+			// }
 
-			ctx, cancelFn = getCtx()
-			defer cancelFn()
+			// ctx, cancelFn = getCtx()
+			// defer cancelFn()
 
-			if err := a.applicationRepo.CreateApplication(ctx, app); err != nil {
-				return err
-			}
+			// if err := a.applicationRepo.CreateApplication(ctx, app); err != nil {
+			// 	return err
+			// }
 
-			fmt.Printf("Your application was successfully created. ID = %s \n", app.ID)
+			// fmt.Printf("Your application was successfully created. ID = %s \n", app.ID)
 			return nil
 		},
 	}
@@ -118,27 +112,27 @@ func getApplicationCommand(a *app) *cobra.Command {
 			return nil
 		},
 		RunE: func(cmd *cobra.Command, args []string) error {
-			ID := args[0]
+			// ID := args[0]
 
-			appID, err := uuid.Parse(ID)
-			if err != nil {
-				return fmt.Errorf("Please provide a valid ID..%w", err)
-			}
+			// appID, err := uuid.Parse(ID)
+			// if err != nil {
+			// 	return fmt.Errorf("Please provide a valid ID..%w", err)
+			// }
 
-			ctx, cancelFn := getCtx()
-			defer cancelFn()
+			// ctx, cancelFn := getCtx()
+			// defer cancelFn()
 
-			app, err := a.applicationRepo.FindApplicationByID(ctx, appID)
-			if err != nil {
-				return fmt.Errorf("could not fetch app ID..%w", err)
-			}
+			// app, err := a.applicationRepo.FindApplicationByID(ctx, appID)
+			// if err != nil {
+			// 	return fmt.Errorf("could not fetch app ID..%w", err)
+			// }
 
-			table := tablewriter.NewWriter(os.Stdout)
-			table.SetHeader([]string{"ID", "Description"})
+			// table := tablewriter.NewWriter(os.Stdout)
+			// table.SetHeader([]string{"ID", "Description"})
 
-			table.Append([]string{app.ID.String(), app.Title})
+			// table.Append([]string{app.ID.String(), app.Title})
 
-			table.Render()
+			// table.Render()
 			return nil
 		},
 	}

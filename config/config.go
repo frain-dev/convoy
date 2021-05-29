@@ -3,37 +3,14 @@ package config
 import (
 	"encoding/json"
 	"errors"
-	"fmt"
 	"os"
-	"strings"
 	"sync/atomic"
 )
 
 var cfgSingleton atomic.Value
 
-// String canonlizes a database provider
-func (p DatabaseProvider) String() string { return strings.ToLower(string(p)) }
-
-// Validate makes sure we can support the said database
-func (p DatabaseProvider) Validate() error {
-	switch p {
-	case MysqlDatabaseProvider, PostgresDatabaseProvider:
-		return nil
-	default:
-		return fmt.Errorf("unsupported database type (%s)", p)
-	}
-}
-
-type DatabaseProvider string
-
-const (
-	MysqlDatabaseProvider    = "mysql"
-	PostgresDatabaseProvider = "postgres"
-)
-
 type DatabaseConfiguration struct {
-	Type DatabaseProvider `json:"type"`
-	Dsn  string           `json:"dsn"`
+	Dsn string `json:"dsn"`
 }
 
 type Configuration struct {

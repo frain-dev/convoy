@@ -1,14 +1,6 @@
 package main
 
 import (
-	"errors"
-	"fmt"
-	"os"
-
-	"github.com/google/uuid"
-	"github.com/hookcamp/hookcamp"
-	"github.com/hookcamp/hookcamp/util"
-	"github.com/olekukonko/tablewriter"
 	"github.com/spf13/cobra"
 )
 
@@ -31,23 +23,23 @@ func createOrganisatonCommand(a *app) *cobra.Command {
 		Use:   "create",
 		Short: "Create an organisation",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			if util.IsStringEmpty(name) {
-				return errors.New("please provide the organisation name")
-			}
+			// if util.IsStringEmpty(name) {
+			// 	return errors.New("please provide the organisation name")
+			// }
 
-			ctx, cancelFn := getCtx()
-			defer cancelFn()
+			// ctx, cancelFn := getCtx()
+			// defer cancelFn()
 
-			org := &hookcamp.Organisation{
-				OrgName: name,
-				ID:      uuid.New(),
-			}
+			// org := &hookcamp.Organisation{
+			// 	OrgName: name,
+			// 	ID:      uuid.New(),
+			// }
 
-			if err := a.orgRepo.CreateOrganisation(ctx, org); err != nil {
-				return err
-			}
+			// if err := a.orgRepo.CreateOrganisation(ctx, org); err != nil {
+			// 	return err
+			// }
 
-			fmt.Println("Your new organsation has been created")
+			// fmt.Println("Your new organsation has been created")
 			return nil
 		},
 	}
@@ -62,22 +54,22 @@ func listOrganisationCommand(a *app) *cobra.Command {
 		Use:   "list",
 		Short: "List all organisations",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			ctx, cancelFn := getCtx()
-			defer cancelFn()
+			// ctx, cancelFn := getCtx()
+			// defer cancelFn()
 
-			orgs, err := a.orgRepo.LoadOrganisations(ctx)
-			if err != nil {
-				return err
-			}
+			// orgs, err := a.orgRepo.LoadOrganisations(ctx)
+			// if err != nil {
+			// 	return err
+			// }
 
-			table := tablewriter.NewWriter(os.Stdout)
-			table.SetHeader([]string{"ID", "Name", "Created at"})
+			// table := tablewriter.NewWriter(os.Stdout)
+			// table.SetHeader([]string{"ID", "Name", "Created at"})
 
-			for _, org := range orgs {
-				table.Append([]string{org.ID.String(), org.OrgName, org.CreatedAt.String()})
-			}
+			// for _, org := range orgs {
+			// 	table.Append([]string{org.ID.String(), org.OrgName, org.CreatedAt.String()})
+			// }
 
-			table.Render()
+			// table.Render()
 			return nil
 		},
 	}

@@ -2,14 +2,8 @@ package main
 
 import (
 	"errors"
-	"fmt"
-	"net/url"
-	"os"
 
-	"github.com/google/uuid"
 	"github.com/hookcamp/hookcamp"
-	"github.com/hookcamp/hookcamp/util"
-	"github.com/olekukonko/tablewriter"
 	"github.com/spf13/cobra"
 )
 
@@ -38,27 +32,27 @@ func getEndpointCommand(a *app) *cobra.Command {
 			return nil
 		},
 		RunE: func(cmd *cobra.Command, args []string) error {
-			ID := args[0]
+			// ID := args[0]
 
-			endpointID, err := uuid.Parse(ID)
-			if err != nil {
-				return fmt.Errorf("Please provide a valid ID..%w", err)
-			}
+			// endpointID, err := uuid.Parse(ID)
+			// if err != nil {
+			// 	return fmt.Errorf("Please provide a valid ID..%w", err)
+			// }
 
-			ctx, cancelFn := getCtx()
-			defer cancelFn()
+			// ctx, cancelFn := getCtx()
+			// defer cancelFn()
 
-			e, err := a.endpointRepo.FindEndpointByID(ctx, endpointID)
-			if err != nil {
-				return fmt.Errorf("could not fetch endpoint..%w", err)
-			}
+			// e, err := a.endpointRepo.FindEndpointByID(ctx, endpointID)
+			// if err != nil {
+			// 	return fmt.Errorf("could not fetch endpoint..%w", err)
+			// }
 
-			table := tablewriter.NewWriter(os.Stdout)
-			table.SetHeader([]string{"ID", "Secret", "Target URL", "Description"})
+			// table := tablewriter.NewWriter(os.Stdout)
+			// table.SetHeader([]string{"ID", "Secret", "Target URL", "Description"})
 
-			table.Append([]string{e.ID.String(), e.Secret, e.TargetURL, e.Description})
+			// table.Append([]string{e.ID.String(), e.Secret, e.TargetURL, e.Description})
 
-			table.Render()
+			// table.Render()
 			return nil
 		},
 	}
@@ -74,59 +68,59 @@ func createEndpointCommand(a *app) *cobra.Command {
 		Use:   "create",
 		Short: "Create a new endpoint",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			var err error
+			// var err error
 
-			if util.IsStringEmpty(e.Description) {
-				return errors.New("please provide a description")
-			}
+			// if util.IsStringEmpty(e.Description) {
+			// 	return errors.New("please provide a description")
+			// }
 
-			if util.IsStringEmpty(e.Secret) {
-				e.Secret, err = util.GenerateRandomString(25)
-				if err != nil {
-					return fmt.Errorf("could not generate secret...%v", err)
-				}
-			}
+			// if util.IsStringEmpty(e.Secret) {
+			// 	e.Secret, err = util.GenerateRandomString(25)
+			// 	if err != nil {
+			// 		return fmt.Errorf("could not generate secret...%v", err)
+			// 	}
+			// }
 
-			if util.IsStringEmpty(e.TargetURL) {
-				return errors.New("please provide your target url")
-			}
+			// if util.IsStringEmpty(e.TargetURL) {
+			// 	return errors.New("please provide your target url")
+			// }
 
-			u, err := url.Parse(e.TargetURL)
-			if err != nil {
-				return fmt.Errorf("please provide a valid url...%w", err)
-			}
+			// u, err := url.Parse(e.TargetURL)
+			// if err != nil {
+			// 	return fmt.Errorf("please provide a valid url...%w", err)
+			// }
 
-			e.TargetURL = u.String()
+			// e.TargetURL = u.String()
 
-			e.AppID, err = uuid.Parse(appID)
-			if err != nil {
-				return fmt.Errorf("please provide a valid app id..%w", err)
-			}
+			// e.AppID, err = uuid.Parse(appID)
+			// if err != nil {
+			// 	return fmt.Errorf("please provide a valid app id..%w", err)
+			// }
 
-			ctx, cancelFn := getCtx()
-			defer cancelFn()
+			// ctx, cancelFn := getCtx()
+			// defer cancelFn()
 
-			_, err = a.applicationRepo.FindApplicationByID(ctx, e.AppID)
-			if err != nil {
-				return fmt.Errorf("could not fetch application from the database...%w", err)
-			}
+			// _, err = a.applicationRepo.FindApplicationByID(ctx, e.AppID)
+			// if err != nil {
+			// 	return fmt.Errorf("could not fetch application from the database...%w", err)
+			// }
 
-			ctx, cancelFn = getCtx()
-			defer cancelFn()
+			// ctx, cancelFn = getCtx()
+			// defer cancelFn()
 
-			if err := a.endpointRepo.CreateEndpoint(ctx, e); err != nil {
-				return fmt.Errorf("could not create endpoint...%w", err)
-			}
+			// if err := a.endpointRepo.CreateEndpoint(ctx, e); err != nil {
+			// 	return fmt.Errorf("could not create endpoint...%w", err)
+			// }
 
-			fmt.Println("Endpoint was successfully created")
-			fmt.Println()
+			// fmt.Println("Endpoint was successfully created")
+			// fmt.Println()
 
-			table := tablewriter.NewWriter(os.Stdout)
-			table.SetHeader([]string{"ID", "Secret", "Target URL", "Description"})
+			// table := tablewriter.NewWriter(os.Stdout)
+			// table.SetHeader([]string{"ID", "Secret", "Target URL", "Description"})
 
-			table.Append([]string{e.ID.String(), e.Secret, e.TargetURL, e.Description})
+			// table.Append([]string{e.ID.String(), e.Secret, e.TargetURL, e.Description})
 
-			table.Render()
+			// table.Render()
 			return nil
 		},
 	}
