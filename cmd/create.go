@@ -22,6 +22,73 @@ func addCreateCommand(a *app) *cobra.Command {
 
 	cmd.AddCommand(createMessageCommand(a))
 	cmd.AddCommand(createOrganisationCommand(a))
+	cmd.AddCommand(createApplicationCommand(a))
+
+	return cmd
+}
+
+func createApplicationCommand(a *app) *cobra.Command {
+
+	var orgID string
+
+	cmd := &cobra.Command{
+		Use:     "application",
+		Aliases: []string{"app"},
+		Short:   "Create an application",
+		Args: func(cmd *cobra.Command, args []string) error {
+			if len(args) <= 0 {
+				return errors.New("please provide the application name")
+			}
+
+			return nil
+		},
+		RunE: func(cmd *cobra.Command, args []string) error {
+
+			appName := args[0]
+			if util.IsStringEmpty(appName) {
+				return errors.New("please provide your app name")
+			}
+
+			if util.IsStringEmpty(orgID) {
+				return errors.New("please provide a valid Organisation ID")
+			}
+
+			id, err := uuid.Parse(orgID)
+			if err != nil {
+				return err
+			}
+
+			org, err := a.orgRepo.FetchOrganisationByID(context.Background(), id)
+			if err != nil {
+				return err
+			}
+
+			app := &hookcamp.Application{
+				UID:       uuid.New().String(),
+				OrgID:     org.UID,
+				Title:     appName,
+				CreatedAt: time.Now().Unix(),
+				UpdatedAt: time.Now().Unix(),
+				Endpoints: []hookcamp.Endpoint{},
+			}
+
+			err = a.applicationRepo.CreateApplication(context.Background(), app)
+			if err != nil {
+				return err
+			}
+
+			table := tablewriter.NewWriter(os.Stdout)
+			table.SetHeader([]string{"ID", "Name", "Organisation", "Created at"})
+
+			table.Append([]string{app.UID, app.Title, org.OrgName, time.Unix(app.CreatedAt, 0).String()})
+			table.Render()
+
+			return nil
+		},
+	}
+
+	cmd.Flags().StringVar(&orgID, "org", "", "Organisation that owns this application")
+
 	return cmd
 }
 
@@ -31,7 +98,7 @@ func createOrganisationCommand(a *app) *cobra.Command {
 		Use:   "organisation",
 		Short: "Create an organisation",
 		Args: func(cmd *cobra.Command, args []string) error {
-			if len(args) < 0 {
+			if len(args) <= 0 {
 				return errors.New("please provide the organisation name")
 			}
 
@@ -46,7 +113,7 @@ func createOrganisationCommand(a *app) *cobra.Command {
 			}
 
 			org := &hookcamp.Organisation{
-				UID:       uuid.New(),
+				UID:       uuid.New().String(),
 				OrgName:   name,
 				CreatedAt: time.Now().Unix(),
 				UpdatedAt: time.Now().Unix(),
@@ -60,7 +127,7 @@ func createOrganisationCommand(a *app) *cobra.Command {
 			table := tablewriter.NewWriter(os.Stdout)
 			table.SetHeader([]string{"ID", "Name", "Created at"})
 
-			table.Append([]string{org.UID.String(), org.OrgName, time.Unix(org.CreatedAt, 0).String()})
+			table.Append([]string{org.UID, org.OrgName, time.Unix(org.CreatedAt, 0).String()})
 			table.Render()
 			return nil
 		},

@@ -5,6 +5,7 @@ import (
 	"errors"
 
 	"github.com/google/uuid"
+	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
 var (
@@ -14,11 +15,15 @@ var (
 )
 
 type Application struct {
-	UID   uuid.UUID `json:"uid"`
-	OrgID uuid.UUID `json:"org_id"`
-	Title string    `json:"name"`
+	ID    primitive.ObjectID `json:"-" bson:"_id"`
+	UID   string             `json:"uid"`
+	OrgID string             `json:"org_id"`
+	Title string             `json:"name"`
 
 	Endpoints []Endpoint `json:"endpoints"`
+	CreatedAt int64      `json:"created_at" bson:"created_at"`
+	UpdatedAt int64      `json:"updated_at" bson:"updated_at"`
+	DeletedAt int64      `json:"deleted_at" bson:"deleted_at"`
 }
 
 type Endpoint struct {

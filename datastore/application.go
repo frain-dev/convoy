@@ -7,6 +7,7 @@ import (
 	"github.com/google/uuid"
 	"github.com/hookcamp/hookcamp"
 	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
 	"gorm.io/gorm"
 )
@@ -28,9 +29,8 @@ func NewApplicationRepo(client *mongo.Database) hookcamp.ApplicationRepository {
 
 func (db *appRepo) CreateApplication(ctx context.Context,
 	app *hookcamp.Application) error {
-	if app.UID == uuid.Nil {
-		app.UID = uuid.New()
-	}
+
+	app.ID = primitive.NewObjectID()
 
 	_, err := db.client.InsertOne(ctx, app)
 	return err

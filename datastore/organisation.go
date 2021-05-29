@@ -2,10 +2,12 @@ package datastore
 
 import (
 	"context"
+	"errors"
 
 	"github.com/google/uuid"
 	"github.com/hookcamp/hookcamp"
 	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
 )
 
@@ -50,9 +52,8 @@ func (db *orgRepo) LoadOrganisations(ctx context.Context) ([]hookcamp.Organisati
 }
 
 func (db *orgRepo) CreateOrganisation(ctx context.Context, o *hookcamp.Organisation) error {
-	if o.UID == uuid.Nil {
-		o.UID = uuid.New()
-	}
+
+	o.ID = primitive.NewObjectID()
 
 	_, err := db.inner.InsertOne(ctx, o)
 	return err
@@ -61,8 +62,19 @@ func (db *orgRepo) CreateOrganisation(ctx context.Context, o *hookcamp.Organisat
 func (db *orgRepo) FetchOrganisationByID(ctx context.Context, id uuid.UUID) (*hookcamp.Organisation, error) {
 	org := new(hookcamp.Organisation)
 
-	err := db.inner.FindOne(ctx, bson.M{"uid": id.String()}).
+	filter := bson.D{
+		primitive.E{
+			Key:   "uid",
+			Value: id.String(),
+		},
+	}
+
+	err := db.inner.FindOne(ctx, filter).
 		Decode(&org)
+
+	if errors.Is(err, mongo.ErrNoDocuments) {
+		err = hookcamp.ErrOrganisationNotFound
+	}
 
 	return org, err
 }
