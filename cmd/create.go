@@ -63,17 +63,12 @@ func createEndpointCommand(a *app) *cobra.Command {
 
 			e.TargetURL = u.String()
 
-			id, err := uuid.Parse(appID)
-			if err != nil {
-				return fmt.Errorf("please provide a valid app id..%w", err)
-			}
-
 			e.UID = uuid.New().String()
 
 			ctx, cancelFn := getCtx()
 			defer cancelFn()
 
-			app, err := a.applicationRepo.FindApplicationByID(ctx, id)
+			app, err := a.applicationRepo.FindApplicationByID(ctx, appID)
 			if err != nil {
 				return fmt.Errorf("could not fetch application from the database...%w", err)
 			}
@@ -136,12 +131,7 @@ func createApplicationCommand(a *app) *cobra.Command {
 				return errors.New("please provide a valid Organisation ID")
 			}
 
-			id, err := uuid.Parse(orgID)
-			if err != nil {
-				return err
-			}
-
-			org, err := a.orgRepo.FetchOrganisationByID(context.Background(), id)
+			org, err := a.orgRepo.FetchOrganisationByID(context.Background(), orgID)
 			if err != nil {
 				return err
 			}

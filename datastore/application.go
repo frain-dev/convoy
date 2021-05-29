@@ -5,7 +5,6 @@ import (
 	"errors"
 	"time"
 
-	"github.com/google/uuid"
 	"github.com/hookcamp/hookcamp"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
@@ -66,14 +65,14 @@ func (db *appRepo) LoadApplications(ctx context.Context) (
 }
 
 func (db *appRepo) FindApplicationByID(ctx context.Context,
-	id uuid.UUID) (*hookcamp.Application, error) {
+	id string) (*hookcamp.Application, error) {
 
 	app := new(hookcamp.Application)
 
 	filter := bson.D{
 		primitive.E{
 			Key:   "uid",
-			Value: id.String(),
+			Value: id,
 		},
 	}
 
@@ -96,6 +95,7 @@ func (db *appRepo) UpdateApplication(ctx context.Context,
 	update := bson.D{primitive.E{Key: "$set", Value: bson.D{
 		primitive.E{Key: "endpoints", Value: app.Endpoints},
 		primitive.E{Key: "updated_at", Value: app.UpdatedAt},
+		primitive.E{Key: "title", Value: app.Title},
 	}}}
 
 	_, err := db.client.UpdateOne(ctx, filter, update)

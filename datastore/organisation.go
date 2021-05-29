@@ -4,7 +4,6 @@ import (
 	"context"
 	"errors"
 
-	"github.com/google/uuid"
 	"github.com/hookcamp/hookcamp"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
@@ -59,13 +58,14 @@ func (db *orgRepo) CreateOrganisation(ctx context.Context, o *hookcamp.Organisat
 	return err
 }
 
-func (db *orgRepo) FetchOrganisationByID(ctx context.Context, id uuid.UUID) (*hookcamp.Organisation, error) {
+func (db *orgRepo) FetchOrganisationByID(ctx context.Context,
+	id string) (*hookcamp.Organisation, error) {
 	org := new(hookcamp.Organisation)
 
 	filter := bson.D{
 		primitive.E{
 			Key:   "uid",
-			Value: id.String(),
+			Value: id,
 		},
 	}
 

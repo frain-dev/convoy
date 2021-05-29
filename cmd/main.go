@@ -78,7 +78,6 @@ func main() {
 	cmd.AddCommand(addVersionCommand())
 	cmd.AddCommand(addOrganisationCommnad(app))
 	cmd.AddCommand(addApplicationCommnand(app))
-	// cmd.AddCommand(addEndpointCommand(app))
 	cmd.AddCommand(addCreateCommand(app))
 
 	if err := cmd.Execute(); err != nil {

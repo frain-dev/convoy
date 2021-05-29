@@ -4,7 +4,6 @@ import (
 	"context"
 	"errors"
 
-	"github.com/google/uuid"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
@@ -28,5 +27,5 @@ func (o Organisation) IsDeleted() bool { return o.DeletedAt > 0 }
 type OrganisationRepository interface {
 	LoadOrganisations(context.Context) ([]Organisation, error)
 	CreateOrganisation(context.Context, *Organisation) error
-	FetchOrganisationByID(context.Context, uuid.UUID) (*Organisation, error)
+	FetchOrganisationByID(context.Context, string) (*Organisation, error)
 }

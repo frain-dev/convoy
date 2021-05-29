@@ -4,7 +4,6 @@ import (
 	"context"
 	"errors"
 
-	"github.com/google/uuid"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
@@ -40,6 +39,6 @@ type Endpoint struct {
 type ApplicationRepository interface {
 	CreateApplication(context.Context, *Application) error
 	LoadApplications(context.Context) ([]Application, error)
-	FindApplicationByID(context.Context, uuid.UUID) (*Application, error)
+	FindApplicationByID(context.Context, string) (*Application, error)
 	UpdateApplication(context.Context, *Application) error
 }
