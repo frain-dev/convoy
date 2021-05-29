@@ -49,7 +49,6 @@ func Test_CreateOrganisation(t *testing.T) {
 }
 
 func Test_LoadOrganisations(t *testing.T) {
-	t.Skip()
 	db, closeFn := getDB(t)
 	defer closeFn()
 

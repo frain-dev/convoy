@@ -76,9 +76,8 @@ func main() {
 	cmd.PersistentFlags().StringVar(&configFile, "config", "./hookcamp.json", "Configuration file for Hookcamp")
 
 	cmd.AddCommand(addVersionCommand())
-	cmd.AddCommand(addOrganisationCommnad(app))
-	cmd.AddCommand(addApplicationCommnand(app))
 	cmd.AddCommand(addCreateCommand(app))
+	cmd.AddCommand(addGetComamnd(app))
 
 	if err := cmd.Execute(); err != nil {
 		log.Fatal(err)

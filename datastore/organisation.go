@@ -27,7 +27,7 @@ func NewOrganisationRepo(client *mongo.Database) hookcamp.OrganisationRepository
 func (db *orgRepo) LoadOrganisations(ctx context.Context) ([]hookcamp.Organisation, error) {
 	orgs := make([]hookcamp.Organisation, 0)
 
-	cur, err := db.inner.Find(ctx, nil)
+	cur, err := db.inner.Find(ctx, bson.D{{}})
 	if err != nil {
 		return orgs, err
 	}
@@ -37,6 +37,8 @@ func (db *orgRepo) LoadOrganisations(ctx context.Context) ([]hookcamp.Organisati
 		if err := cur.Decode(&org); err != nil {
 			return orgs, err
 		}
+
+		orgs = append(orgs, org)
 	}
 
 	if err := cur.Err(); err != nil {

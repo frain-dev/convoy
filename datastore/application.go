@@ -39,16 +39,18 @@ func (db *appRepo) LoadApplications(ctx context.Context) (
 
 	apps := make([]hookcamp.Application, 0)
 
-	cur, err := db.client.Find(ctx, nil)
+	cur, err := db.client.Find(ctx, bson.D{{}})
 	if err != nil {
 		return apps, err
 	}
 
 	for cur.Next(ctx) {
-		var org hookcamp.Application
-		if err := cur.Decode(&org); err != nil {
+		var app hookcamp.Application
+		if err := cur.Decode(&app); err != nil {
 			return apps, err
 		}
+
+		apps = append(apps, app)
 	}
 
 	if err := cur.Err(); err != nil {
