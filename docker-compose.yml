@@ -14,15 +14,15 @@ services:
   #   command: "--cluster nats://0.0.0.0:6222 --routes=nats://ruser:T0pS3cr3t@nats:6222"
   #   depends_on: ["nats"]
 
-  postgres_db:
-    image: postgres:13
+  mongodb:
+    image: mongo:latest
     environment:
-      - POSTGRES_PASSWORD=hookcamp
-      - POSTGRES_USER=hookcamp
+      MONGO_INITDB_ROOT_USERNAME: root
+      MONGO_INITDB_ROOT_PASSWORD: rootpassword
     ports:
-      - "8432:5432"
+      - "27017:27017"
     volumes:
-      - ./data/postgres/postgresql:/var/lib/postgres
+      - ./data/mongo:/data/db
 
   redis_server:
     image: redis:alpine

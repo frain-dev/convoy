@@ -3,54 +3,99 @@ package datastore
 import (
 	"context"
 	"errors"
+	"time"
 
-	"github.com/google/uuid"
 	"github.com/hookcamp/hookcamp"
-	"gorm.io/gorm"
+	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/bson/primitive"
+	"go.mongodb.org/mongo-driver/mongo"
 )
 
 type appRepo struct {
-	inner *gorm.DB
+	client *mongo.Collection
 }
 
-func NewApplicationRepo(inner *gorm.DB) hookcamp.ApplicationRepository {
+const (
+	appCollections = "applications"
+)
+
+func NewApplicationRepo(client *mongo.Database) hookcamp.ApplicationRepository {
 	return &appRepo{
-		inner: inner,
+		client: client.Collection(appCollections, nil),
 	}
 }
 
 func (db *appRepo) CreateApplication(ctx context.Context,
 	app *hookcamp.Application) error {
-	if app.ID == uuid.Nil {
-		app.ID = uuid.New()
-	}
 
-	return db.inner.WithContext(ctx).
-		Create(app).
-		Error
+	app.ID = primitive.NewObjectID()
+
+	_, err := db.client.InsertOne(ctx, app)
+	return err
 }
 
-func (db *appRepo) LoadApplications(ctx context.Context) ([]hookcamp.Application, error) {
+func (db *appRepo) LoadApplications(ctx context.Context) (
+	[]hookcamp.Application, error) {
+
 	apps := make([]hookcamp.Application, 0)
 
-	return apps, db.inner.WithContext(ctx).
-		Preload("Organisation").
-		Find(&apps).
-		Error
+	cur, err := db.client.Find(ctx, nil)
+	if err != nil {
+		return apps, err
+	}
+
+	for cur.Next(ctx) {
+		var org hookcamp.Application
+		if err := cur.Decode(&org); err != nil {
+			return apps, err
+		}
+	}
+
+	if err := cur.Err(); err != nil {
+		return nil, err
+	}
+
+	if err := cur.Close(ctx); err != nil {
+		return apps, err
+	}
+
+	return apps, nil
 }
 
 func (db *appRepo) FindApplicationByID(ctx context.Context,
-	id uuid.UUID) (*hookcamp.Application, error) {
+	id string) (*hookcamp.Application, error) {
+
 	app := new(hookcamp.Application)
 
-	err := db.inner.WithContext(ctx).
-		Where(&hookcamp.Application{ID: id}).
-		First(app).
-		Error
+	filter := bson.D{
+		primitive.E{
+			Key:   "uid",
+			Value: id,
+		},
+	}
 
-	if errors.Is(err, gorm.ErrRecordNotFound) {
+	err := db.client.FindOne(ctx, filter).
+		Decode(&app)
+	if errors.Is(err, mongo.ErrNoDocuments) {
 		err = hookcamp.ErrApplicationNotFound
 	}
 
 	return app, err
+}
+
+func (db *appRepo) UpdateApplication(ctx context.Context,
+	app *hookcamp.Application) error {
+
+	app.UpdatedAt = time.Now().Unix()
+
+	filter := bson.D{primitive.E{Key: "uid", Value: app.UID}}
+
+	update := bson.D{primitive.E{Key: "$set", Value: bson.D{
+		primitive.E{Key: "endpoints", Value: app.Endpoints},
+		primitive.E{Key: "updated_at", Value: app.UpdatedAt},
+		primitive.E{Key: "title", Value: app.Title},
+	}}}
+
+	_, err := db.client.UpdateOne(ctx, filter, update)
+	return err
 }

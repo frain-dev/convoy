@@ -13,7 +13,7 @@ import (
 	"github.com/hookcamp/hookcamp/queue"
 	"github.com/hookcamp/hookcamp/queue/redis"
 	"github.com/spf13/cobra"
-	"gorm.io/gorm"
+	"go.mongodb.org/mongo-driver/mongo"
 )
 
 func main() {
@@ -21,7 +21,7 @@ func main() {
 
 	app := &app{}
 
-	var db *gorm.DB
+	var db *mongo.Client
 
 	cmd := &cobra.Command{
 		Use:   "hookcamp",
@@ -56,25 +56,18 @@ func main() {
 				}
 			}
 
-			app.orgRepo = datastore.NewOrganisationRepo(db)
-			app.applicationRepo = datastore.NewApplicationRepo(db)
-			app.endpointRepo = datastore.NewEndpointRepository(db)
-			app.messageRepo = datastore.NewMessageRepository(db)
+			conn := db.Database("hookcamp", nil)
+
+			app.orgRepo = datastore.NewOrganisationRepo(conn)
+			app.applicationRepo = datastore.NewApplicationRepo(conn)
+			// app.endpointRepo = datastore.NewEndpointRepository(db)
+			// app.messageRepo = datastore.NewMessageRepository(db)
 			app.queue = queuer
 
 			return nil
 		},
 		PersistentPostRunE: func(cmd *cobra.Command, args []string) error {
-			if db == nil {
-				return nil
-			}
-
-			inner, err := db.DB()
-			if err != nil {
-				return err
-			}
-
-			return inner.Close()
+			return db.Disconnect(context.Background())
 		},
 	}
 
@@ -85,8 +78,6 @@ func main() {
 	cmd.AddCommand(addVersionCommand())
 	cmd.AddCommand(addOrganisationCommnad(app))
 	cmd.AddCommand(addApplicationCommnand(app))
-	cmd.AddCommand(addEndpointCommand(app))
-	cmd.AddCommand(addMigrationCommand())
 	cmd.AddCommand(addCreateCommand(app))
 
 	if err := cmd.Execute(); err != nil {
@@ -97,7 +88,6 @@ func main() {
 type app struct {
 	orgRepo         hookcamp.OrganisationRepository
 	applicationRepo hookcamp.ApplicationRepository
-	endpointRepo    hookcamp.EndpointRepository
 	messageRepo     hookcamp.MessageRepository
 	queue           queue.Queuer
 }

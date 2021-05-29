@@ -2,12 +2,12 @@ version: '3'
 
 services:
 
-  postgres_db:
-    image: postgres:13
+  mongodb:
+    image: mongo:latest
     environment:
-      - POSTGRES_PASSWORD=hookcamp
-      - POSTGRES_USER=hookcamptest
+      MONGO_INITDB_ROOT_USERNAME: root
+      MONGO_INITDB_ROOT_PASSWORD: rootpassword
     ports:
-      - "9432:5432"
+      - "57017:27017"
     volumes:
-      - ./data/postgres/postgresql:/var/lib/postgres
+      - ./data/mongo:/data/db

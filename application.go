@@ -4,60 +4,41 @@ import (
 	"context"
 	"errors"
 
-	"github.com/google/uuid"
-	"gorm.io/gorm"
+	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
 var (
-	// ErrApplicationNotFound is returned when an application cannot be
-	// found
 	ErrApplicationNotFound = errors.New("application not found")
 
-	// ErrEndpointNotFound is returned when an endpoint cannot be found
 	ErrEndpointNotFound = errors.New("endpoint not found")
 )
 
-// Application defines an entity that can receive webhooks.
 type Application struct {
-	ID    uuid.UUID `json:"id" gorm:"type:varchar(220);uniqueIndex;not null"`
-	OrgID uuid.UUID `json:"org_id" gorm:"not null"`
-	Title string    `json:"name" gorm:"not null;type:varchar(200)"`
+	ID    primitive.ObjectID `json:"-" bson:"_id"`
+	UID   string             `json:"uid" bson:"uid"`
+	OrgID string             `json:"org_id" bson:"org_id"`
+	Title string             `json:"name" bson:"title"`
 
-	gorm.Model
-	Organisation Organisation `json:"organisation" gorm:"foreignKey:OrgID"`
+	Endpoints []Endpoint `json:"endpoints" bson:"endpoints"`
+	CreatedAt int64      `json:"created_at" bson:"created_at"`
+	UpdatedAt int64      `json:"updated_at" bson:"updated_at"`
+	DeletedAt int64      `json:"deleted_at" bson:"deleted_at"`
 }
 
-// Endpoint defines a target service that can be reached in an application
 type Endpoint struct {
-	ID          uuid.UUID `json:"id" gorm:"type:varchar(220);uniqueIndex;not null"`
-	AppID       uuid.UUID `json:"app_id" gorm:"size:200;not null"`
-	TargetURL   string    `json:"target_url" gorm:"not null"`
-	Secret      string    `json:"secret" gorm:"type:varchar(200);uniqueIndex;not null"`
-	Description string    `json:"description" gorm:"size:220;default:''"`
+	UID         string `json:"uid" bson:"uid"`
+	TargetURL   string `json:"target_url" bson:"target_url"`
+	Secret      string `json:"secret" bson:"secret"`
+	Description string `json:"description" bson:"description"`
 
-	Application Application `json:"-" gorm:"foreignKey:AppID"`
-	gorm.Model
+	CreatedAt int64 `json:"created_at" bson:"created_at"`
+	UpdatedAt int64 `json:"updated_at" bson:"updated_at"`
+	DeletedAt int64 `json:"deleted_at" bson:"deleted_at"`
 }
 
-// ApplicationRepository is an abstraction over all database operations of an
-// application
 type ApplicationRepository interface {
-	// CreateApplication when called persists an application to the database
 	CreateApplication(context.Context, *Application) error
-
-	// LoadApplications fetches a list of all apps from the database
 	LoadApplications(context.Context) ([]Application, error)
-
-	// FindApplicationByID looks for an application by the provided ID.
-	FindApplicationByID(context.Context, uuid.UUID) (*Application, error)
-}
-
-// EndpointRepository is an abstraction over all endpoint operations with the
-// database
-type EndpointRepository interface {
-	// CreateEndpoint adds a new endpoint to the database
-	CreateEndpoint(context.Context, *Endpoint) error
-
-	// FindEndpointByID retrieves an endpoint by the proovided ID
-	FindEndpointByID(context.Context, uuid.UUID) (*Endpoint, error)
+	FindApplicationByID(context.Context, string) (*Application, error)
+	UpdateApplication(context.Context, *Application) error
 }

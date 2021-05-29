@@ -3,21 +3,13 @@
 package datastore
 
 import (
-	"database/sql"
-	"log"
+	"context"
 	"os"
 	"testing"
 
-	testfixtures "github.com/go-testfixtures/testfixtures/v3"
-	"github.com/hookcamp/hookcamp"
 	"github.com/hookcamp/hookcamp/config"
 	"github.com/stretchr/testify/require"
-	"gorm.io/gorm"
-)
-
-var (
-	db       *sql.DB
-	fixtures *testfixtures.Loader
+	"go.mongodb.org/mongo-driver/mongo"
 )
 
 func getDSN() string {
@@ -25,80 +17,20 @@ func getDSN() string {
 }
 
 func getConfig() config.Configuration {
-	var t config.DatabaseProvider
-
-	switch os.Getenv("TEST_DB_TYPE") {
-	case "postgres":
-		t = config.PostgresDatabaseProvider
-	case "mysql":
-		t = config.MysqlDatabaseProvider
-	default:
-		t = config.DatabaseProvider(os.Getenv("TEST_DB_TYPE"))
-	}
 
 	return config.Configuration{
 		Database: config.DatabaseConfiguration{
-			Type: t,
-			Dsn:  getDSN(),
+			Dsn: getDSN(),
 		},
 	}
 }
 
-func TestMain(m *testing.M) {
-	var err error
-
-	cfg := getConfig()
-
-	db, err := New(cfg)
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	// if err := db.Ping(); err != nil {
-	// 	log.Fatalf("error occurred while pinging DB... %v", err)
-	// }
-
-	err = db.AutoMigrate(hookcamp.Organisation{},
-		hookcamp.Application{}, hookcamp.Endpoint{}, hookcamp.Message{})
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	fn, err := db.DB()
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	fixtures, err = testfixtures.New(
-		testfixtures.Database(fn),
-		testfixtures.Dialect(cfg.Database.Type.String()),
-		testfixtures.Directory("testdata"),
-	)
-
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	os.Exit(m.Run())
-}
-
-func prepareTestDatabase(t *testing.T) {
-	t.Helper()
-	require.NoError(t, fixtures.Load())
-}
-
-func getDB(t *testing.T) (*gorm.DB, func()) {
-	prepareTestDatabase(t)
+func getDB(t *testing.T) (*mongo.Database, func()) {
 
 	db, err := New(getConfig())
 	require.NoError(t, err)
 
-	return db, func() {
-		inner, err := db.DB()
-		if err != nil {
-			t.Fatal(err)
-		}
-
-		require.NoError(t, inner.Close())
+	return db.Database("hookcamp", nil), func() {
+		require.NoError(t, db.Disconnect(context.Background()))
 	}
 }

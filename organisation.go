@@ -4,8 +4,7 @@ import (
 	"context"
 	"errors"
 
-	"github.com/google/uuid"
-	"gorm.io/gorm"
+	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
 // ErrOrganisationNotFound is an error that should be thrown when an
@@ -14,22 +13,19 @@ var ErrOrganisationNotFound = errors.New("organisation not found")
 
 // Organisation is a model that depicts an organisation
 type Organisation struct {
-	ID      uuid.UUID `json:"id" gorm:"type:varchar(255);uniqueIndex;not null"`
-	OrgName string    `json:"name" gorm:"type:varchar(200);not null"`
+	ID      primitive.ObjectID `json:"-" bson:"_id"`
+	UID     string             `json:"uid" bson:"uid"`
+	OrgName string             `json:"name" bson:"org_name"`
 
-	gorm.Model
+	CreatedAt int64 `json:"created_at" bson:"created_at"`
+	UpdatedAt int64 `json:"updated_at" bson:"updated_at"`
+	DeletedAt int64 `json:"deleted_at" bson:"deleted_at"`
 }
 
-// OrganisationRepository provides an abstraction for all organisation
-// persistence
+func (o Organisation) IsDeleted() bool { return o.DeletedAt > 0 }
+
 type OrganisationRepository interface {
-	// LoadOrganisations fetches all known organisations
 	LoadOrganisations(context.Context) ([]Organisation, error)
-
-	// CreateOrganisation persists a new org to the database
 	CreateOrganisation(context.Context, *Organisation) error
-
-	// FetchOrganisationByID retrieves a given organisation by the provided
-	// uuid
-	FetchOrganisationByID(context.Context, uuid.UUID) (*Organisation, error)
+	FetchOrganisationByID(context.Context, string) (*Organisation, error)
 }

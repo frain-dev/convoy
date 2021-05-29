@@ -1,30 +1,22 @@
 package datastore
 
-import (
-	"context"
+// type messageRepo struct {
+// 	inner *gorm.DB
+// }
 
-	"github.com/google/uuid"
-	"github.com/hookcamp/hookcamp"
-	"gorm.io/gorm"
-)
+// func NewMessageRepository(db *gorm.DB) hookcamp.MessageRepository {
+// 	return &messageRepo{
+// 		inner: db,
+// 	}
+// }
 
-type messageRepo struct {
-	inner *gorm.DB
-}
+// func (e *messageRepo) CreateMessage(ctx context.Context,
+// 	message *hookcamp.Message) error {
+// 	if message.ID == uuid.Nil {
+// 		message.ID = uuid.New()
+// 	}
 
-func NewMessageRepository(db *gorm.DB) hookcamp.MessageRepository {
-	return &messageRepo{
-		inner: db,
-	}
-}
-
-func (e *messageRepo) CreateMessage(ctx context.Context,
-	message *hookcamp.Message) error {
-	if message.ID == uuid.Nil {
-		message.ID = uuid.New()
-	}
-
-	return e.inner.WithContext(ctx).
-		Create(message).
-		Error
-}
+// 	return e.inner.WithContext(ctx).
+// 		Create(message).
+// 		Error
+// }
