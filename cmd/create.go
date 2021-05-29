@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"net/url"
 	"os"
 	"time"
 
@@ -23,6 +24,88 @@ func addCreateCommand(a *app) *cobra.Command {
 	cmd.AddCommand(createMessageCommand(a))
 	cmd.AddCommand(createOrganisationCommand(a))
 	cmd.AddCommand(createApplicationCommand(a))
+	cmd.AddCommand(createEndpointCommand(a))
+
+	return cmd
+}
+
+func createEndpointCommand(a *app) *cobra.Command {
+
+	e := new(hookcamp.Endpoint)
+
+	var appID string
+
+	cmd := &cobra.Command{
+		Use:   "endpoint",
+		Short: "Create a new endpoint",
+		RunE: func(cmd *cobra.Command, args []string) error {
+			var err error
+
+			if util.IsStringEmpty(e.Description) {
+				return errors.New("please provide a description")
+			}
+
+			if util.IsStringEmpty(e.Secret) {
+				e.Secret, err = util.GenerateRandomString(25)
+				if err != nil {
+					return fmt.Errorf("could not generate secret...%v", err)
+				}
+			}
+
+			if util.IsStringEmpty(e.TargetURL) {
+				return errors.New("please provide your target url")
+			}
+
+			u, err := url.Parse(e.TargetURL)
+			if err != nil {
+				return fmt.Errorf("please provide a valid url...%w", err)
+			}
+
+			e.TargetURL = u.String()
+
+			id, err := uuid.Parse(appID)
+			if err != nil {
+				return fmt.Errorf("please provide a valid app id..%w", err)
+			}
+
+			e.UID = uuid.New().String()
+
+			ctx, cancelFn := getCtx()
+			defer cancelFn()
+
+			app, err := a.applicationRepo.FindApplicationByID(ctx, id)
+			if err != nil {
+				return fmt.Errorf("could not fetch application from the database...%w", err)
+			}
+
+			app.Endpoints = append(app.Endpoints, *e)
+
+			ctx, cancelFn = getCtx()
+			defer cancelFn()
+
+			err = a.applicationRepo.UpdateApplication(ctx, app)
+			if err != nil {
+				return fmt.Errorf("could not add endpoint...%w", err)
+			}
+
+			fmt.Println("Endpoint was successfully created")
+			fmt.Println()
+
+			table := tablewriter.NewWriter(os.Stdout)
+			table.SetHeader([]string{"ID", "Secret", "Target URL", "Description"})
+
+			table.Append([]string{e.UID, e.Secret, e.TargetURL, e.Description})
+
+			table.Render()
+			return nil
+		},
+	}
+
+	cmd.Flags().StringVar(&e.Description, "description", "", "Description of this endpoint")
+	cmd.Flags().StringVar(&e.TargetURL, "target", "", "The target url of this endpoint")
+	cmd.Flags().StringVar(&e.Secret, "secret", "",
+		"Provide the secret for this endpoint. If blank, it will be automatically generated")
+	cmd.Flags().StringVar(&appID, "app", "", "The app this endpoint belongs to")
 
 	return cmd
 }

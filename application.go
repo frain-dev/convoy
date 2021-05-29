@@ -16,33 +16,30 @@ var (
 
 type Application struct {
 	ID    primitive.ObjectID `json:"-" bson:"_id"`
-	UID   string             `json:"uid"`
-	OrgID string             `json:"org_id"`
-	Title string             `json:"name"`
+	UID   string             `json:"uid" bson:"uid"`
+	OrgID string             `json:"org_id" bson:"org_id"`
+	Title string             `json:"name" bson:"title"`
 
-	Endpoints []Endpoint `json:"endpoints"`
+	Endpoints []Endpoint `json:"endpoints" bson:"endpoints"`
 	CreatedAt int64      `json:"created_at" bson:"created_at"`
 	UpdatedAt int64      `json:"updated_at" bson:"updated_at"`
 	DeletedAt int64      `json:"deleted_at" bson:"deleted_at"`
 }
 
 type Endpoint struct {
-	UID         uuid.UUID `json:"uid"`
-	AppID       uuid.UUID `json:"app_id"`
-	TargetURL   string    `json:"target_url"`
-	Secret      string    `json:"secret"`
-	Description string    `json:"description"`
+	UID         string `json:"uid" bson:"uid"`
+	TargetURL   string `json:"target_url" bson:"target_url"`
+	Secret      string `json:"secret" bson:"secret"`
+	Description string `json:"description" bson:"description"`
 
-	Application Application `json:"-"`
+	CreatedAt int64 `json:"created_at" bson:"created_at"`
+	UpdatedAt int64 `json:"updated_at" bson:"updated_at"`
+	DeletedAt int64 `json:"deleted_at" bson:"deleted_at"`
 }
 
 type ApplicationRepository interface {
 	CreateApplication(context.Context, *Application) error
 	LoadApplications(context.Context) ([]Application, error)
 	FindApplicationByID(context.Context, uuid.UUID) (*Application, error)
-}
-
-type EndpointRepository interface {
-	CreateEndpoint(context.Context, *Endpoint) error
-	FindEndpointByID(context.Context, uuid.UUID) (*Endpoint, error)
+	UpdateApplication(context.Context, *Application) error
 }

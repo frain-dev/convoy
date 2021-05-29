@@ -89,7 +89,6 @@ func main() {
 type app struct {
 	orgRepo         hookcamp.OrganisationRepository
 	applicationRepo hookcamp.ApplicationRepository
-	endpointRepo    hookcamp.EndpointRepository
 	messageRepo     hookcamp.MessageRepository
 	queue           queue.Queuer
 }

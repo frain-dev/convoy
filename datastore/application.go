@@ -3,6 +3,7 @@ package datastore
 import (
 	"context"
 	"errors"
+	"time"
 
 	"github.com/google/uuid"
 	"github.com/hookcamp/hookcamp"
@@ -69,11 +70,34 @@ func (db *appRepo) FindApplicationByID(ctx context.Context,
 
 	app := new(hookcamp.Application)
 
-	err := db.client.FindOne(ctx, bson.M{"uid": id}).
+	filter := bson.D{
+		primitive.E{
+			Key:   "uid",
+			Value: id.String(),
+		},
+	}
+
+	err := db.client.FindOne(ctx, filter).
 		Decode(&app)
 	if errors.Is(err, mongo.ErrNoDocuments) {
 		err = hookcamp.ErrApplicationNotFound
 	}
 
 	return app, err
+}
+
+func (db *appRepo) UpdateApplication(ctx context.Context,
+	app *hookcamp.Application) error {
+
+	app.UpdatedAt = time.Now().Unix()
+
+	filter := bson.D{primitive.E{Key: "uid", Value: app.UID}}
+
+	update := bson.D{primitive.E{Key: "$set", Value: bson.D{
+		primitive.E{Key: "endpoints", Value: app.Endpoints},
+		primitive.E{Key: "updated_at", Value: app.UpdatedAt},
+	}}}
+
+	_, err := db.client.UpdateOne(ctx, filter, update)
+	return err
 }
