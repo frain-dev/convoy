@@ -9,11 +9,9 @@ import (
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
-	"gorm.io/gorm"
 )
 
 type appRepo struct {
-	inner  *gorm.DB
 	client *mongo.Collection
 }
 
