@@ -78,6 +78,7 @@ func main() {
 	cmd.AddCommand(addVersionCommand())
 	cmd.AddCommand(addCreateCommand(app))
 	cmd.AddCommand(addGetComamnd(app))
+	cmd.AddCommand(addServerCommand(app))
 
 	if err := cmd.Execute(); err != nil {
 		log.Fatal(err)

@@ -25,8 +25,8 @@ func newApplicationHandler(appRepo hookcamp.ApplicationRepository,
 }
 
 type applicationResponse struct {
-	response
 	Application hookcamp.Application `json:"application"`
+	Response
 }
 
 func (a *applicationHandler) GetApp(w http.ResponseWriter, r *http.Request) {
@@ -49,7 +49,7 @@ func (a *applicationHandler) GetApp(w http.ResponseWriter, r *http.Request) {
 	}
 
 	render.Render(w, r, applicationResponse{
-		response: response{
+		Response: Response{
 			StatusCode: http.StatusOK,
 			Timestamp:  time.Now().Unix(),
 		},

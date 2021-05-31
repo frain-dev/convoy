@@ -7,5 +7,10 @@
 		"redis" : {
 		   "dsn" : "redis://localhost:8379"
 		}
+	},
+	"server" : {
+		"http" : {
+			"port" : 5005
+		}
 	}
 }
