@@ -11,10 +11,7 @@ import (
 	"github.com/hookcamp/hookcamp/config"
 )
 
-func New(cfg config.Configuration, appRepo hookcamp.ApplicationRepository,
-	orgRepo hookcamp.OrganisationRepository) *http.Server {
-
-	app := newApplicationHandler(appRepo, orgRepo)
+func buildRoutes(app *applicationHandler) http.Handler {
 
 	router := chi.NewRouter()
 
@@ -24,17 +21,22 @@ func New(cfg config.Configuration, appRepo hookcamp.ApplicationRepository,
 	router.Use(jsonResponse)
 
 	router.Route("/v1", func(r chi.Router) {
-
 		r.Route("/apps", func(appRouter chi.Router) {
-
 			appRouter.Get("/{id}", app.GetApp)
 			appRouter.Post("/{id}/message", nil)
 		})
-
 	})
 
+	return router
+}
+
+func New(cfg config.Configuration, appRepo hookcamp.ApplicationRepository,
+	orgRepo hookcamp.OrganisationRepository) *http.Server {
+
+	app := newApplicationHandler(appRepo, orgRepo)
+
 	srv := &http.Server{
-		Handler:      router,
+		Handler:      buildRoutes(app),
 		ReadTimeout:  time.Second * 10,
 		WriteTimeout: time.Second * 10,
 		Addr:         fmt.Sprintf(":%d", cfg.Server.HTTP.Port),

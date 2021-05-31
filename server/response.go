@@ -2,14 +2,12 @@ package server
 
 import (
 	"net/http"
-	"time"
 
 	"github.com/go-chi/render"
 )
 
 type Response struct {
-	StatusCode int   `json:"-"`
-	Timestamp  int64 `json:"timestamp"`
+	StatusCode int `json:"-"`
 }
 
 func (res Response) Render(w http.ResponseWriter, r *http.Request) error {
@@ -27,7 +25,6 @@ func newErrorResponse(msg string, statusCode int) errorResponse {
 		Message: msg,
 		Response: Response{
 			StatusCode: statusCode,
-			Timestamp:  time.Now().Unix(),
 		},
 	}
 }

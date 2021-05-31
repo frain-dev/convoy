@@ -9,6 +9,8 @@ require (
 	github.com/golang/mock v1.4.4
 	github.com/google/uuid v1.2.0
 	github.com/olekukonko/tablewriter v0.0.5
+	github.com/sebdah/goldie/v2 v2.5.3
+	github.com/sergi/go-diff v1.2.0 // indirect
 	github.com/spf13/cobra v1.1.3
 	github.com/stretchr/testify v1.7.0
 	go.mongodb.org/mongo-driver v1.5.2

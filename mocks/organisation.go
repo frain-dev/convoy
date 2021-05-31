@@ -6,11 +6,9 @@ package mocks
 
 import (
 	context "context"
-	reflect "reflect"
-
 	gomock "github.com/golang/mock/gomock"
-	uuid "github.com/google/uuid"
 	hookcamp "github.com/hookcamp/hookcamp"
+	reflect "reflect"
 )
 
 // MockOrganisationRepository is a mock of OrganisationRepository interface.
@@ -66,7 +64,7 @@ func (mr *MockOrganisationRepositoryMockRecorder) CreateOrganisation(arg0, arg1 
 }
 
 // FetchOrganisationByID mocks base method.
-func (m *MockOrganisationRepository) FetchOrganisationByID(arg0 context.Context, arg1 uuid.UUID) (*hookcamp.Organisation, error) {
+func (m *MockOrganisationRepository) FetchOrganisationByID(arg0 context.Context, arg1 string) (*hookcamp.Organisation, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "FetchOrganisationByID", arg0, arg1)
 	ret0, _ := ret[0].(*hookcamp.Organisation)

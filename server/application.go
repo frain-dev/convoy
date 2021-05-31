@@ -3,7 +3,6 @@ package server
 import (
 	"errors"
 	"net/http"
-	"time"
 
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/render"
@@ -51,7 +50,6 @@ func (a *applicationHandler) GetApp(w http.ResponseWriter, r *http.Request) {
 	render.Render(w, r, applicationResponse{
 		Response: Response{
 			StatusCode: http.StatusOK,
-			Timestamp:  time.Now().Unix(),
 		},
 		Application: *app,
 	})
