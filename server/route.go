@@ -4,9 +4,13 @@ import (
 	"net/http"
 
 	"github.com/go-chi/chi/v5"
+	"github.com/hookcamp/hookcamp"
 )
 
-func New() *http.Server {
+func New(appRepo hookcamp.ApplicationRepository,
+	orgRepo hookcamp.OrganisationRepository) *http.Server {
+
+	app := newApplicationHandler(appRepo, orgRepo)
 
 	router := chi.NewRouter()
 
@@ -14,8 +18,7 @@ func New() *http.Server {
 
 		r.Route("/apps", func(appRouter chi.Router) {
 
-			appRouter.Get("/", nil)
-			appRouter.Get("/{id}", nil)
+			appRouter.Get("/{id}", app.GetApp)
 			appRouter.Post("{id}/message", nil)
 		})
 
