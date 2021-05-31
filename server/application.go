@@ -43,11 +43,11 @@ func (a *applicationHandler) GetApp(w http.ResponseWriter, r *http.Request) {
 			statusCode = http.StatusNotFound
 		}
 
-		render.Render(w, r, newErrorResponse(msg, statusCode))
+		_ = render.Render(w, r, newErrorResponse(msg, statusCode))
 		return
 	}
 
-	render.Render(w, r, applicationResponse{
+	_ = render.Render(w, r, applicationResponse{
 		Response: Response{
 			StatusCode: http.StatusOK,
 		},

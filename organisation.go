@@ -20,10 +20,13 @@ type Organisation struct {
 	DeletedAt int64 `json:"deleted_at" bson:"deleted_at"`
 }
 
-func (o Organisation) IsDeleted() bool { return o.DeletedAt > 0 }
+func (o *Organisation) IsDeleted() bool { return o.DeletedAt > 0 }
+
+func (o *Organisation) IsOwner(a *Application) bool { return o.UID == a.OrgID }
 
 type OrganisationRepository interface {
-	LoadOrganisations(context.Context) ([]Organisation, error)
+	LoadOrganisations(context.Context) ([]*Organisation, error)
 	CreateOrganisation(context.Context, *Organisation) error
 	FetchOrganisationByID(context.Context, string) (*Organisation, error)
+	FetchOrganisationByAPIKey(context.Context, Token) (*Organisation, error)
 }
