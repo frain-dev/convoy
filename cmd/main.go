@@ -12,6 +12,7 @@ import (
 	"github.com/hookcamp/hookcamp/datastore"
 	"github.com/hookcamp/hookcamp/queue"
 	"github.com/hookcamp/hookcamp/queue/redis"
+	awssqs "github.com/hookcamp/hookcamp/queue/sqs"
 	"github.com/spf13/cobra"
 	"go.mongodb.org/mongo-driver/mongo"
 )
@@ -49,8 +50,14 @@ func main() {
 
 			var queuer queue.Queuer
 
-			if cfg.Queue.Type == config.RedisQueueProvider {
+			switch cfg.Queue.Type {
+			case config.RedisQueueProvider:
 				queuer, err = redis.New(cfg)
+				if err != nil {
+					return err
+				}
+			case config.SqsQueueProvider:
+				queuer, err = awssqs.New(cfg)
 				if err != nil {
 					return err
 				}

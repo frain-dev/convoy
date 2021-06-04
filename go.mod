@@ -3,6 +3,7 @@ module github.com/hookcamp/hookcamp
 go 1.15
 
 require (
+	github.com/aws/aws-sdk-go v1.34.28
 	github.com/denisenkom/go-mssqldb v0.0.0-20200620013148-b91950f658ec // indirect
 	github.com/go-redis/redis/v8 v8.8.2
 	github.com/go-testfixtures/testfixtures/v3 v3.6.0
