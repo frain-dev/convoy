@@ -128,8 +128,6 @@ func (c *client) Read() chan queue.Message {
 			Err: nil,
 			Data: m,
 		}
-
-		c.deleteMessage(msg.ReceiptHandle)
 	}
 
 	return channel
