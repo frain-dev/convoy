@@ -21,9 +21,16 @@ func buildRoutes(app *applicationHandler) http.Handler {
 	router.Use(jsonResponse)
 
 	router.Route("/v1", func(r chi.Router) {
+		r.Use(requireAuth(app.orgRepo))
+
 		r.Route("/apps", func(appRouter chi.Router) {
-			appRouter.Get("/{id}", app.GetApp)
-			appRouter.Post("/{id}/message", nil)
+
+			appRouter.Route("/{appID}", func(appSubRouter chi.Router) {
+				appSubRouter.Use(requireAppOwnership(app.appRepo))
+
+				appSubRouter.Get("/", app.GetApp)
+				appSubRouter.Post("/{id}/message", nil)
+			})
 		})
 	})
 
