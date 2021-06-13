@@ -52,7 +52,7 @@ type QueueProvider string
 
 const (
 	RedisQueueProvider QueueProvider = "redis"
-	SqsQueueProvider QueueProvider = "sqs"
+	SqsQueueProvider   QueueProvider = "sqs"
 )
 
 type QueueConfiguration struct {
@@ -61,10 +61,10 @@ type QueueConfiguration struct {
 		DSN string `json:"dsn"`
 	} `json:"redis"`
 	Sqs struct {
-		DSN string `json:"dsn"`
-		Profile string `json:"profile"`
-		DelaySeconds uint16 `json:"delaySeconds"`
-		MaxMessages uint8 `json:"maxMessages"`
+		DSN               string `json:"dsn"`
+		Profile           string `json:"profile"`
+		DelaySeconds      uint16 `json:"delaySeconds"`
+		MaxMessages       uint8  `json:"maxMessages"`
 		VisibilityTimeout uint16 `json:"visibilityTimeout"`
 	} `json:"sqs"`
 }
