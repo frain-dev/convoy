@@ -29,21 +29,15 @@ func TestApplicationHandler_GetApp(t *testing.T) {
 	org := mocks.NewMockOrganisationRepository(ctrl)
 	apprepo := mocks.NewMockApplicationRepository(ctrl)
 
-	apprepo.EXPECT().
-		FindApplicationByID(gomock.Any(), gomock.Eq("12345")).
-		Return(nil, hookcamp.ErrApplicationNotFound)
-
-	validID := "123456789"
 	orgID := "1234567890"
 
-	apprepo.EXPECT().
-		FindApplicationByID(gomock.Any(), validID).Times(1).
-		Return(&hookcamp.Application{
-			UID:       validID,
-			OrgID:     orgID,
-			Title:     "Valid application",
-			Endpoints: []hookcamp.Endpoint{},
-		}, nil)
+	organisation := &hookcamp.Organisation{
+		UID: orgID,
+	}
+
+	validID := "123456789"
+
+	// apprepo.EXPECT().
 
 	app = newApplicationHandler(apprepo, org)
 
@@ -52,18 +46,35 @@ func TestApplicationHandler_GetApp(t *testing.T) {
 		method     string
 		statusCode int
 		input      string
+		dbFn       func(appRepo *mocks.MockApplicationRepository, orgRepo *mocks.MockOrganisationRepository)
 	}{
 		{
 			name:       "app not found",
 			method:     http.MethodGet,
 			statusCode: http.StatusNotFound,
 			input:      "12345",
+			dbFn: func(appRepo *mocks.MockApplicationRepository, orgRepo *mocks.MockOrganisationRepository) {
+				appRepo.EXPECT().
+					FindApplicationByID(gomock.Any(), gomock.Any()).
+					Return(nil, hookcamp.ErrApplicationNotFound).Times(1)
+			},
 		},
 		{
 			name:       "valid application",
 			method:     http.MethodGet,
 			statusCode: http.StatusOK,
 			input:      validID,
+			dbFn: func(appRepo *mocks.MockApplicationRepository, orgRepo *mocks.MockOrganisationRepository) {
+				appRepo.EXPECT().
+					FindApplicationByID(gomock.Any(), gomock.Any()).Times(1).
+					Return(&hookcamp.Application{
+						UID:       validID,
+						OrgID:     orgID,
+						Title:     "Valid application",
+						Endpoints: []hookcamp.Endpoint{},
+					}, nil)
+
+			},
 		},
 	}
 
@@ -76,7 +87,14 @@ func TestApplicationHandler_GetApp(t *testing.T) {
 
 			request = request.WithContext(context.WithValue(request.Context(), chi.RouteCtxKey, rctx))
 
-			app.GetApp(responseRecorder, request)
+			request = request.WithContext(setOrgInContext(request.Context(), organisation))
+
+			if tc.dbFn != nil {
+				tc.dbFn(apprepo, org)
+			}
+
+			requireAppOwnership(apprepo)(http.HandlerFunc(app.GetApp)).
+				ServeHTTP(responseRecorder, request)
 
 			if responseRecorder.Code != tc.statusCode {
 				t.Errorf("Want status '%d', got '%d'", tc.statusCode, responseRecorder.Code)
