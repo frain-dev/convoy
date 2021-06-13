@@ -18,22 +18,22 @@ func Test_FetchOrganisationByAPIKey(t *testing.T) {
 
 	orgRepo := NewOrganisationRepo(db)
 
-	t := uuid.New().String()
+	tt := uuid.New().String()
 
 	newOrg := &hookcamp.Organisation{
 		OrgName: "Yet another organisation",
-		ApiKey:  t,
+		ApiKey:  tt,
 	}
 
 	require.NoError(t, orgRepo.CreateOrganisation(context.Background(), newOrg))
 
 	// Fetch org again by token
-	org, err := orgRepo.FetchOrganisationByAPIKey(context.Background(), hookcamp.Token(t))
+	org, err := orgRepo.FetchOrganisationByAPIKey(context.Background(), hookcamp.Token(tt))
 	require.NoError(t, err)
 
 	require.Equal(t, org.UID, newOrg.UID)
 
-	_, err := orgRepo.FetchOrganisationByAPIKey(context.Background(), hookcamp.Token(uuid.New().String()))
+	_, err = orgRepo.FetchOrganisationByAPIKey(context.Background(), hookcamp.Token(uuid.New().String()))
 	require.Error(t, err)
 	require.True(t, errors.Is(err, hookcamp.ErrOrganisationNotFound))
 }

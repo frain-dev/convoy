@@ -43,7 +43,7 @@ func tokenFromRequest(r *http.Request) (hookcamp.Token, error) {
 	return hookcamp.Token(splitted[1]), nil
 }
 
-func retrieveRequestID(r *http.Request) string { return middleware.GetReqID(r.Context()) }
+// func retrieveRequestID(r *http.Request) string { return middleware.GetReqID(r.Context()) }
 
 func jsonResponse(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -52,18 +52,18 @@ func jsonResponse(next http.Handler) http.Handler {
 	})
 }
 
-func requireNoAuth(next http.Handler) http.Handler {
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+// func requireNoAuth(next http.Handler) http.Handler {
+// 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 
-		// val, err := tokenFromRequest(r)
-		// if err == nil || !val.IsZero() {
-		// 	render.Render(w, r, models.ErrAccessDenied)
-		// 	return
-		// }
+// 		// val, err := tokenFromRequest(r)
+// 		// if err == nil || !val.IsZero() {
+// 		// 	render.Render(w, r, models.ErrAccessDenied)
+// 		// 	return
+// 		// }
 
-		next.ServeHTTP(w, r)
-	})
-}
+// 		next.ServeHTTP(w, r)
+// 	})
+// }
 
 func requireAppOwnership(appRepo hookcamp.ApplicationRepository) func(next http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
