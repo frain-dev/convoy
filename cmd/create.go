@@ -190,6 +190,7 @@ func createOrganisationCommand(a *app) *cobra.Command {
 				OrgName:   name,
 				CreatedAt: time.Now().Unix(),
 				UpdatedAt: time.Now().Unix(),
+				ApiKey:    uuid.New().String(),
 			}
 
 			err := a.orgRepo.CreateOrganisation(context.Background(), org)

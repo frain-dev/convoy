@@ -6,11 +6,9 @@ package mocks
 
 import (
 	context "context"
-	reflect "reflect"
-
 	gomock "github.com/golang/mock/gomock"
-	uuid "github.com/google/uuid"
 	hookcamp "github.com/hookcamp/hookcamp"
+	reflect "reflect"
 )
 
 // MockOrganisationRepository is a mock of OrganisationRepository interface.
@@ -37,10 +35,10 @@ func (m *MockOrganisationRepository) EXPECT() *MockOrganisationRepositoryMockRec
 }
 
 // LoadOrganisations mocks base method.
-func (m *MockOrganisationRepository) LoadOrganisations(arg0 context.Context) ([]hookcamp.Organisation, error) {
+func (m *MockOrganisationRepository) LoadOrganisations(arg0 context.Context) ([]*hookcamp.Organisation, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "LoadOrganisations", arg0)
-	ret0, _ := ret[0].([]hookcamp.Organisation)
+	ret0, _ := ret[0].([]*hookcamp.Organisation)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
@@ -66,7 +64,7 @@ func (mr *MockOrganisationRepositoryMockRecorder) CreateOrganisation(arg0, arg1 
 }
 
 // FetchOrganisationByID mocks base method.
-func (m *MockOrganisationRepository) FetchOrganisationByID(arg0 context.Context, arg1 uuid.UUID) (*hookcamp.Organisation, error) {
+func (m *MockOrganisationRepository) FetchOrganisationByID(arg0 context.Context, arg1 string) (*hookcamp.Organisation, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "FetchOrganisationByID", arg0, arg1)
 	ret0, _ := ret[0].(*hookcamp.Organisation)
@@ -78,4 +76,19 @@ func (m *MockOrganisationRepository) FetchOrganisationByID(arg0 context.Context,
 func (mr *MockOrganisationRepositoryMockRecorder) FetchOrganisationByID(arg0, arg1 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "FetchOrganisationByID", reflect.TypeOf((*MockOrganisationRepository)(nil).FetchOrganisationByID), arg0, arg1)
+}
+
+// FetchOrganisationByAPIKey mocks base method.
+func (m *MockOrganisationRepository) FetchOrganisationByAPIKey(arg0 context.Context, arg1 hookcamp.Token) (*hookcamp.Organisation, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "FetchOrganisationByAPIKey", arg0, arg1)
+	ret0, _ := ret[0].(*hookcamp.Organisation)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// FetchOrganisationByAPIKey indicates an expected call of FetchOrganisationByAPIKey.
+func (mr *MockOrganisationRepositoryMockRecorder) FetchOrganisationByAPIKey(arg0, arg1 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "FetchOrganisationByAPIKey", reflect.TypeOf((*MockOrganisationRepository)(nil).FetchOrganisationByAPIKey), arg0, arg1)
 }
