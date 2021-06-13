@@ -12,6 +12,7 @@ import (
 	"github.com/google/uuid"
 	"github.com/hookcamp/hookcamp"
 	"github.com/hookcamp/hookcamp/mocks"
+	"github.com/stretchr/testify/require"
 )
 
 func TestRequireAuth(t *testing.T) {
@@ -71,7 +72,9 @@ func TestRequireAuth(t *testing.T) {
 
 			fn := requireAuth(orgRepo)(http.HandlerFunc(func(rw http.ResponseWriter, r *http.Request) {
 				rw.WriteHeader(http.StatusOK)
-				rw.Write([]byte(`Hello`))
+
+				_, err := rw.Write([]byte(`Hello`))
+				require.NoError(t, err)
 			}))
 
 			recorder := httptest.NewRecorder()
