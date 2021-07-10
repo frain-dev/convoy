@@ -6,11 +6,9 @@ import (
 	"database/sql/driver"
 	"encoding/json"
 
-	"github.com/google/uuid"
-	"gorm.io/gorm"
+	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
-// MessageStatus is the current state of a message
 type MessageStatus uint
 
 const (
@@ -31,7 +29,6 @@ func (j JSONData) Value() (driver.Value, error) {
 	return driver.Value(string(j)), nil
 }
 
-// MessageMetadata stores more information about a specific message
 type MessageMetadata struct {
 	// NextSendTime denotes the next time a message will be published in
 	// case it failed the first time
@@ -54,33 +51,38 @@ func (m MessageMetadata) Value() (driver.Value, error) {
 
 // EventType is used to identify an specific event.
 // This could be "user.new"
+// This will be used for data indexing
+// Makes it easy to filter by a list of events
 type EventType string
 
 // Message defines a payload to be sent to an application
 type Message struct {
-	ID        uuid.UUID `json:"id" gorm:"type:varchar(220);uniqueIndex;not null"`
-	AppID     uuid.UUID `json:"app_id" gorm:"size:200;not null"`
-	EventType EventType `json:"event_type" gorm:"type:varchar(220);index;not null"`
+	ID        primitive.ObjectID `json:"-" bson:"_id"`
+	UID       string             `json:"id" bson:"uid"`
+	AppID     string             `json:"app_id" bson:"app_id"`
+	EventType EventType          `json:"event_type" bson:"event_type"`
 
 	// ProviderID is a custom ID that can be used to reconcile this message
 	// with your internal systems.
 	// This is optional
-	ProviderID string `json:"provider_id" gorm:"type:varchar(220);index"`
+	// If not provided, we will generate one for you
+	ProviderID string `json:"provider_id" bson:"provider_id"`
 
 	// Data is an arbitrary JSON value that gets sent as the body of the
 	// webhook to the endpoints
-	Data JSONData `json:"data" gorm:"type:text;not null"`
+	Data JSONData `json:"data" bson:"data"`
 
-	Metadata *MessageMetadata `json:"metadata" gorm:"type:text;not null"`
+	Metadata *MessageMetadata `json:"metadata" bson:"metadata"`
 
-	Status MessageStatus `json:"status" gorm:"type:smallint; not null; default:1"`
+	Status MessageStatus `json:"status" bson:"status"`
 
-	gorm.Model
-	Application Application `json:"application" gorm:"foreignKey:AppID"`
+	Application Application `json:"application" bson:"application"`
+
+	CreatedAt int64 `json:"created_at" bson:"created_at"`
+	UpdatedAt int64 `json:"updated_at" bson:"updated_at"`
+	DeletedAt int64 `json:"deleted_at" bson:"deleted_at"`
 }
 
-// MessageRepository is an abstraction over database operations of a message
 type MessageRepository interface {
-	// CreateMessage will persist a message to the database
 	CreateMessage(context.Context, *Message) error
 }

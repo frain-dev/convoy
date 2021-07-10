@@ -6,11 +6,9 @@ package mocks
 
 import (
 	context "context"
-	reflect "reflect"
-
 	gomock "github.com/golang/mock/gomock"
-	uuid "github.com/google/uuid"
 	hookcamp "github.com/hookcamp/hookcamp"
+	reflect "reflect"
 )
 
 // MockApplicationRepository is a mock of ApplicationRepository interface.
@@ -66,7 +64,7 @@ func (mr *MockApplicationRepositoryMockRecorder) LoadApplications(arg0 interface
 }
 
 // FindApplicationByID mocks base method.
-func (m *MockApplicationRepository) FindApplicationByID(arg0 context.Context, arg1 uuid.UUID) (*hookcamp.Application, error) {
+func (m *MockApplicationRepository) FindApplicationByID(arg0 context.Context, arg1 string) (*hookcamp.Application, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "FindApplicationByID", arg0, arg1)
 	ret0, _ := ret[0].(*hookcamp.Application)
@@ -80,54 +78,16 @@ func (mr *MockApplicationRepositoryMockRecorder) FindApplicationByID(arg0, arg1 
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "FindApplicationByID", reflect.TypeOf((*MockApplicationRepository)(nil).FindApplicationByID), arg0, arg1)
 }
 
-// MockEndpointRepository is a mock of EndpointRepository interface.
-type MockEndpointRepository struct {
-	ctrl     *gomock.Controller
-	recorder *MockEndpointRepositoryMockRecorder
-}
-
-// MockEndpointRepositoryMockRecorder is the mock recorder for MockEndpointRepository.
-type MockEndpointRepositoryMockRecorder struct {
-	mock *MockEndpointRepository
-}
-
-// NewMockEndpointRepository creates a new mock instance.
-func NewMockEndpointRepository(ctrl *gomock.Controller) *MockEndpointRepository {
-	mock := &MockEndpointRepository{ctrl: ctrl}
-	mock.recorder = &MockEndpointRepositoryMockRecorder{mock}
-	return mock
-}
-
-// EXPECT returns an object that allows the caller to indicate expected use.
-func (m *MockEndpointRepository) EXPECT() *MockEndpointRepositoryMockRecorder {
-	return m.recorder
-}
-
-// CreateEndpoint mocks base method.
-func (m *MockEndpointRepository) CreateEndpoint(arg0 context.Context, arg1 *hookcamp.Endpoint) error {
+// UpdateApplication mocks base method.
+func (m *MockApplicationRepository) UpdateApplication(arg0 context.Context, arg1 *hookcamp.Application) error {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "CreateEndpoint", arg0, arg1)
+	ret := m.ctrl.Call(m, "UpdateApplication", arg0, arg1)
 	ret0, _ := ret[0].(error)
 	return ret0
 }
 
-// CreateEndpoint indicates an expected call of CreateEndpoint.
-func (mr *MockEndpointRepositoryMockRecorder) CreateEndpoint(arg0, arg1 interface{}) *gomock.Call {
+// UpdateApplication indicates an expected call of UpdateApplication.
+func (mr *MockApplicationRepositoryMockRecorder) UpdateApplication(arg0, arg1 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateEndpoint", reflect.TypeOf((*MockEndpointRepository)(nil).CreateEndpoint), arg0, arg1)
-}
-
-// FindEndpointByID mocks base method.
-func (m *MockEndpointRepository) FindEndpointByID(arg0 context.Context, arg1 uuid.UUID) (*hookcamp.Endpoint, error) {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "FindEndpointByID", arg0, arg1)
-	ret0, _ := ret[0].(*hookcamp.Endpoint)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
-}
-
-// FindEndpointByID indicates an expected call of FindEndpointByID.
-func (mr *MockEndpointRepositoryMockRecorder) FindEndpointByID(arg0, arg1 interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "FindEndpointByID", reflect.TypeOf((*MockEndpointRepository)(nil).FindEndpointByID), arg0, arg1)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateApplication", reflect.TypeOf((*MockApplicationRepository)(nil).UpdateApplication), arg0, arg1)
 }

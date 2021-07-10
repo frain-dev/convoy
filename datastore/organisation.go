@@ -24,8 +24,8 @@ func NewOrganisationRepo(client *mongo.Database) hookcamp.OrganisationRepository
 	}
 }
 
-func (db *orgRepo) LoadOrganisations(ctx context.Context) ([]hookcamp.Organisation, error) {
-	orgs := make([]hookcamp.Organisation, 0)
+func (db *orgRepo) LoadOrganisations(ctx context.Context) ([]*hookcamp.Organisation, error) {
+	orgs := make([]*hookcamp.Organisation, 0)
 
 	cur, err := db.inner.Find(ctx, bson.D{{}})
 	if err != nil {
@@ -33,7 +33,7 @@ func (db *orgRepo) LoadOrganisations(ctx context.Context) ([]hookcamp.Organisati
 	}
 
 	for cur.Next(ctx) {
-		var org hookcamp.Organisation
+		var org = new(hookcamp.Organisation)
 		if err := cur.Decode(&org); err != nil {
 			return orgs, err
 		}
@@ -68,6 +68,28 @@ func (db *orgRepo) FetchOrganisationByID(ctx context.Context,
 		primitive.E{
 			Key:   "uid",
 			Value: id,
+		},
+	}
+
+	err := db.inner.FindOne(ctx, filter).
+		Decode(&org)
+
+	if errors.Is(err, mongo.ErrNoDocuments) {
+		err = hookcamp.ErrOrganisationNotFound
+	}
+
+	return org, err
+}
+
+func (db *orgRepo) FetchOrganisationByAPIKey(ctx context.Context,
+	apiKey hookcamp.Token) (*hookcamp.Organisation, error) {
+
+	org := new(hookcamp.Organisation)
+
+	filter := bson.D{
+		primitive.E{
+			Key:   "api_key",
+			Value: apiKey,
 		},
 	}
 

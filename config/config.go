@@ -16,6 +16,11 @@ type DatabaseConfiguration struct {
 type Configuration struct {
 	Database DatabaseConfiguration `json:"database"`
 	Queue    QueueConfiguration    `json:"queue"`
+	Server   struct {
+		HTTP struct {
+			Port int `json:"port"`
+		} `json:"http"`
+	}
 }
 
 func LoadFromFile(p string) error {
