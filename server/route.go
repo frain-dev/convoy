@@ -37,6 +37,11 @@ func buildRoutes(app *applicationHandler) http.Handler {
 
 				appSubRouter.Get("/", app.GetApp)
 				appSubRouter.Post("/{id}/message", nil)
+
+				appSubRouter.Route("/endpoint", func(endpointAppSubRouter chi.Router) {
+					endpointAppSubRouter.With(validateNewAppEndpoint(app.appRepo)).Post("/", app.CreateAppEndpoint)
+					endpointAppSubRouter.With(validateAppEndpointUpdate(app.appRepo)).Put("/{endpointID}", app.UpdateAppEndpoint)
+				})
 			})
 		})
 	})

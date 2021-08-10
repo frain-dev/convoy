@@ -316,3 +316,251 @@ func TestApplicationHandler_UpdateApp(t *testing.T) {
 	}
 
 }
+
+func TestApplicationHandler_CreateAppEndpoint(t *testing.T) {
+
+	var app *applicationHandler
+
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	org := mocks.NewMockOrganisationRepository(ctrl)
+	apprepo := mocks.NewMockApplicationRepository(ctrl)
+
+	orgID := "1234567890"
+
+	organisation := &hookcamp.Organisation{
+		UID: orgID,
+	}
+
+	bodyReader := strings.NewReader(`{"url": "http://localhost", "description": "Test"}`)
+
+	app = newApplicationHandler(apprepo, org)
+
+	appId := "123456789"
+
+	tt := []struct {
+		name       string
+		method     string
+		statusCode int
+		appId      string
+		body       *strings.Reader
+		dbFn       func(appRepo *mocks.MockApplicationRepository, orgRepo *mocks.MockOrganisationRepository)
+	}{
+		{
+			name:       "valid application",
+			method:     http.MethodPost,
+			statusCode: http.StatusCreated,
+			appId:      appId,
+			body:       bodyReader,
+			dbFn: func(appRepo *mocks.MockApplicationRepository, orgRepo *mocks.MockOrganisationRepository) {
+				appRepo.EXPECT().
+					UpdateApplication(gomock.Any(), gomock.Any()).Times(1).
+					Return(nil)
+
+				appRepo.EXPECT().
+					FindApplicationByID(gomock.Any(), gomock.Any()).Times(1).
+					Return(&hookcamp.Application{
+						UID:       appId,
+						OrgID:     orgID,
+						Title:     "Valid application update",
+						Endpoints: []hookcamp.Endpoint{},
+					}, nil)
+
+			},
+		},
+	}
+
+	for _, tc := range tt {
+		t.Run(tc.name, func(t *testing.T) {
+			request := httptest.NewRequest(tc.method, fmt.Sprintf("/v1/apps/%s/endpoint", tc.appId), tc.body)
+			responseRecorder := httptest.NewRecorder()
+
+			request = request.WithContext(setOrgInContext(request.Context(), organisation))
+
+			if tc.dbFn != nil {
+				tc.dbFn(apprepo, org)
+			}
+
+			validateNewAppEndpoint(apprepo)(http.HandlerFunc(app.CreateAppEndpoint)).
+				ServeHTTP(responseRecorder, request)
+
+			if responseRecorder.Code != tc.statusCode {
+				t.Errorf("Want status '%d', got '%d'", tc.statusCode, responseRecorder.Code)
+			}
+		})
+	}
+
+}
+
+func TestApplicationHandler_UpdateAppEndpoint_InvalidRequest(t *testing.T) {
+
+	var app *applicationHandler
+
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	org := mocks.NewMockOrganisationRepository(ctrl)
+	apprepo := mocks.NewMockApplicationRepository(ctrl)
+
+	orgID := "1234567890"
+
+	organisation := &hookcamp.Organisation{
+		UID: orgID,
+	}
+
+	appId := "12345"
+	endpointId := "9999900000-8888"
+	bodyReader := strings.NewReader(`{"url": "http://localhost", "description": "Test"}`)
+
+	app = newApplicationHandler(apprepo, org)
+
+	tt := []struct {
+		name       string
+		method     string
+		statusCode int
+		appId      string
+		endpointId string
+		body       *strings.Reader
+		dbFn       func(appRepo *mocks.MockApplicationRepository, orgRepo *mocks.MockOrganisationRepository)
+	}{
+		{
+			name:       "invalid application endpoint update",
+			method:     http.MethodPut,
+			statusCode: http.StatusBadRequest,
+			appId:      appId,
+			endpointId: endpointId,
+			body:       bodyReader,
+			dbFn: func(appRepo *mocks.MockApplicationRepository, orgRepo *mocks.MockOrganisationRepository) {
+				appRepo.EXPECT().
+					UpdateApplication(gomock.Any(), gomock.Any()).Times(0).
+					Return(nil)
+
+				appRepo.EXPECT().
+					FindApplicationByID(gomock.Any(), gomock.Any()).Times(1).
+					Return(&hookcamp.Application{
+						UID:       appId,
+						OrgID:     orgID,
+						Title:     "invalid application update",
+						Endpoints: []hookcamp.Endpoint{},
+					}, nil)
+
+			},
+		},
+	}
+
+	for _, tc := range tt {
+		t.Run(tc.name, func(t *testing.T) {
+			request := httptest.NewRequest(tc.method, fmt.Sprintf("/v1/apps/%s/endpoint/%s", tc.appId, tc.endpointId), tc.body)
+			responseRecorder := httptest.NewRecorder()
+			rctx := chi.NewRouteContext()
+			rctx.URLParams.Add("appID", tc.appId)
+			rctx.URLParams.Add("endpointID", tc.endpointId)
+
+			request = request.WithContext(context.WithValue(request.Context(), chi.RouteCtxKey, rctx))
+
+			request = request.WithContext(setOrgInContext(request.Context(), organisation))
+
+			if tc.dbFn != nil {
+				tc.dbFn(apprepo, org)
+			}
+
+			validateAppEndpointUpdate(apprepo)(http.HandlerFunc(app.UpdateAppEndpoint)).
+				ServeHTTP(responseRecorder, request)
+
+			if responseRecorder.Code != tc.statusCode {
+				t.Errorf("Want status '%d', got '%d'", tc.statusCode, responseRecorder.Code)
+			}
+		})
+	}
+
+}
+
+func TestApplicationHandler_UpdateAppEndpoint_ValidRequest(t *testing.T) {
+
+	var app *applicationHandler
+
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	org := mocks.NewMockOrganisationRepository(ctrl)
+	apprepo := mocks.NewMockApplicationRepository(ctrl)
+
+	orgID := "1234567890"
+
+	organisation := &hookcamp.Organisation{
+		UID: orgID,
+	}
+
+	appId := "12345"
+	endpointId := "9999900000-8888"
+	bodyReader := strings.NewReader(`{"url": "http://localhost", "description": "Test"}`)
+
+	app = newApplicationHandler(apprepo, org)
+
+	tt := []struct {
+		name       string
+		method     string
+		statusCode int
+		appId      string
+		endpointId string
+		body       *strings.Reader
+		dbFn       func(appRepo *mocks.MockApplicationRepository, orgRepo *mocks.MockOrganisationRepository)
+	}{
+		{
+			name:       "valid application endpoint update",
+			method:     http.MethodPost,
+			statusCode: http.StatusAccepted,
+			appId:      appId,
+			endpointId: endpointId,
+			body:       bodyReader,
+			dbFn: func(appRepo *mocks.MockApplicationRepository, orgRepo *mocks.MockOrganisationRepository) {
+				appRepo.EXPECT().
+					UpdateApplication(gomock.Any(), gomock.Any()).Times(1).
+					Return(nil)
+
+				appRepo.EXPECT().
+					FindApplicationByID(gomock.Any(), gomock.Any()).Times(1).
+					Return(&hookcamp.Application{
+						UID:   appId,
+						OrgID: orgID,
+						Title: "Valid application update",
+						Endpoints: []hookcamp.Endpoint{
+							{
+								UID:         endpointId,
+								TargetURL:   "http://",
+								Description: "desc",
+							},
+						},
+					}, nil)
+
+			},
+		},
+	}
+
+	for _, tc := range tt {
+		t.Run(tc.name, func(t *testing.T) {
+			request := httptest.NewRequest(tc.method, fmt.Sprintf("/v1/apps/%s/endpoint/%s", tc.appId, tc.endpointId), tc.body)
+			responseRecorder := httptest.NewRecorder()
+			rctx := chi.NewRouteContext()
+			rctx.URLParams.Add("appID", tc.appId)
+			rctx.URLParams.Add("endpointID", tc.endpointId)
+
+			request = request.WithContext(context.WithValue(request.Context(), chi.RouteCtxKey, rctx))
+
+			request = request.WithContext(setOrgInContext(request.Context(), organisation))
+
+			if tc.dbFn != nil {
+				tc.dbFn(apprepo, org)
+			}
+
+			validateAppEndpointUpdate(apprepo)(http.HandlerFunc(app.UpdateAppEndpoint)).
+				ServeHTTP(responseRecorder, request)
+
+			if responseRecorder.Code != tc.statusCode {
+				t.Errorf("Want status '%d', got '%d'", tc.statusCode, responseRecorder.Code)
+			}
+		})
+	}
+
+}
