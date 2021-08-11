@@ -134,7 +134,7 @@ func TestApplicationHandler_GetApps(t *testing.T) {
 		dbFn       func(appRepo *mocks.MockApplicationRepository, orgRepo *mocks.MockOrganisationRepository)
 	}{
 		{
-			name:       "valid application",
+			name:       "valid applications",
 			method:     http.MethodGet,
 			statusCode: http.StatusOK,
 			dbFn: func(appRepo *mocks.MockApplicationRepository, orgRepo *mocks.MockOrganisationRepository) {
@@ -170,6 +170,8 @@ func TestApplicationHandler_GetApps(t *testing.T) {
 			if responseRecorder.Code != tc.statusCode {
 				t.Errorf("Want status '%d', got '%d'", tc.statusCode, responseRecorder.Code)
 			}
+
+			verifyMatch(t, *responseRecorder)
 		})
 	}
 
@@ -312,6 +314,8 @@ func TestApplicationHandler_UpdateApp(t *testing.T) {
 			if responseRecorder.Code != tc.statusCode {
 				t.Errorf("Want status '%d', got '%d'", tc.statusCode, responseRecorder.Code)
 			}
+
+			verifyMatch(t, *responseRecorder)
 		})
 	}
 
@@ -348,7 +352,7 @@ func TestApplicationHandler_CreateAppEndpoint(t *testing.T) {
 		dbFn       func(appRepo *mocks.MockApplicationRepository, orgRepo *mocks.MockOrganisationRepository)
 	}{
 		{
-			name:       "valid application",
+			name:       "valid application endpoint",
 			method:     http.MethodPost,
 			statusCode: http.StatusCreated,
 			appId:      appId,
@@ -363,7 +367,7 @@ func TestApplicationHandler_CreateAppEndpoint(t *testing.T) {
 					Return(&hookcamp.Application{
 						UID:       appId,
 						OrgID:     orgID,
-						Title:     "Valid application update",
+						Title:     "Valid application endpoint",
 						Endpoints: []hookcamp.Endpoint{},
 					}, nil)
 
@@ -471,6 +475,8 @@ func TestApplicationHandler_UpdateAppEndpoint_InvalidRequest(t *testing.T) {
 			if responseRecorder.Code != tc.statusCode {
 				t.Errorf("Want status '%d', got '%d'", tc.statusCode, responseRecorder.Code)
 			}
+
+			verifyMatch(t, *responseRecorder)
 		})
 	}
 
