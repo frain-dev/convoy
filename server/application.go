@@ -26,6 +26,16 @@ type applicationResponse struct {
 	Response
 }
 
+type applicationsResponse struct {
+	Applications []hookcamp.Application `json:"applications"`
+	Response
+}
+
+type applicationEndpointResponse struct {
+	Endpoint hookcamp.Endpoint `json:"endpoint"`
+	Response
+}
+
 func (a *applicationHandler) GetApp(w http.ResponseWriter, r *http.Request) {
 
 	_ = render.Render(w, r, applicationResponse{
@@ -33,5 +43,55 @@ func (a *applicationHandler) GetApp(w http.ResponseWriter, r *http.Request) {
 			StatusCode: http.StatusOK,
 		},
 		Application: *getApplicationFromContext(r.Context()),
+	})
+}
+
+func (a *applicationHandler) CreateApp(w http.ResponseWriter, r *http.Request) {
+
+	_ = render.Render(w, r, applicationResponse{
+		Response: Response{
+			StatusCode: http.StatusCreated,
+		},
+		Application: *getApplicationFromContext(r.Context()),
+	})
+}
+
+func (a *applicationHandler) UpdateApp(w http.ResponseWriter, r *http.Request) {
+
+	_ = render.Render(w, r, applicationResponse{
+		Response: Response{
+			StatusCode: http.StatusAccepted,
+		},
+		Application: *getApplicationFromContext(r.Context()),
+	})
+}
+
+func (a *applicationHandler) GetApps(w http.ResponseWriter, r *http.Request) {
+
+	_ = render.Render(w, r, applicationsResponse{
+		Response: Response{
+			StatusCode: http.StatusOK,
+		},
+		Applications: *getApplicationsFromContext(r.Context()),
+	})
+}
+
+func (a *applicationHandler) CreateAppEndpoint(w http.ResponseWriter, r *http.Request) {
+
+	_ = render.Render(w, r, applicationEndpointResponse{
+		Response: Response{
+			StatusCode: http.StatusCreated,
+		},
+		Endpoint: *getApplicationEndpointFromContext(r.Context()),
+	})
+}
+
+func (a *applicationHandler) UpdateAppEndpoint(w http.ResponseWriter, r *http.Request) {
+
+	_ = render.Render(w, r, applicationEndpointResponse{
+		Response: Response{
+			StatusCode: http.StatusAccepted,
+		},
+		Endpoint: *getApplicationEndpointFromContext(r.Context()),
 	})
 }

@@ -25,11 +25,23 @@ func buildRoutes(app *applicationHandler) http.Handler {
 
 		r.Route("/apps", func(appRouter chi.Router) {
 
+			appRouter.Route("/", func(appSubRouter chi.Router) {
+				appSubRouter.With(validateNewApp(app.appRepo)).Post("/", app.CreateApp)
+				appRouter.With(fetchAllApps(app.appRepo)).Get("/", app.GetApps)
+			})
+
 			appRouter.Route("/{appID}", func(appSubRouter chi.Router) {
 				appSubRouter.Use(requireAppOwnership(app.appRepo))
 
+				appSubRouter.With(validateAppUpdate(app.appRepo)).Put("/", app.UpdateApp)
+
 				appSubRouter.Get("/", app.GetApp)
 				appSubRouter.Post("/{id}/message", nil)
+
+				appSubRouter.Route("/endpoint", func(endpointAppSubRouter chi.Router) {
+					endpointAppSubRouter.With(validateNewAppEndpoint(app.appRepo)).Post("/", app.CreateAppEndpoint)
+					endpointAppSubRouter.With(validateAppEndpointUpdate(app.appRepo)).Put("/{endpointID}", app.UpdateAppEndpoint)
+				})
 			})
 		})
 	})
