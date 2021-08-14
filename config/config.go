@@ -14,6 +14,7 @@ type DatabaseConfiguration struct {
 }
 
 type Configuration struct {
+	Auth     AuthConfiguration     `json:"auth"`
 	Database DatabaseConfiguration `json:"database"`
 	Queue    QueueConfiguration    `json:"queue"`
 	Server   struct {
@@ -53,9 +54,13 @@ func Get() (Configuration, error) {
 	return *c, nil
 }
 
+type AuthProvider string
 type QueueProvider string
 
 const (
+	NoAuthProvider    AuthProvider = "none"
+	BasicAuthProvider AuthProvider = "basic"
+
 	RedisQueueProvider QueueProvider = "redis"
 )
 
@@ -64,4 +69,12 @@ type QueueConfiguration struct {
 	Redis struct {
 		DSN string `json:"dsn"`
 	} `json:"redis"`
+}
+
+type AuthConfiguration struct {
+	Type  AuthProvider `json:"type"`
+	Basic struct {
+		Username string `json:"username"`
+		Password string `json:"password"`
+	} `json:"basic"`
 }

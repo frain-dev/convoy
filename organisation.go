@@ -13,7 +13,6 @@ type Organisation struct {
 	ID      primitive.ObjectID `json:"-" bson:"_id"`
 	UID     string             `json:"uid" bson:"uid"`
 	OrgName string             `json:"name" bson:"org_name"`
-	ApiKey  string             `json:"api_key" bson:"api_key"`
 
 	CreatedAt int64 `json:"created_at" bson:"created_at"`
 	UpdatedAt int64 `json:"updated_at" bson:"updated_at"`

@@ -32,10 +32,6 @@ func TestApplicationHandler_GetApp(t *testing.T) {
 
 	orgID := "1234567890"
 
-	organisation := &hookcamp.Organisation{
-		UID: orgID,
-	}
-
 	validID := "123456789"
 
 	// apprepo.EXPECT().
@@ -88,13 +84,11 @@ func TestApplicationHandler_GetApp(t *testing.T) {
 
 			request = request.WithContext(context.WithValue(request.Context(), chi.RouteCtxKey, rctx))
 
-			request = request.WithContext(setOrgInContext(request.Context(), organisation))
-
 			if tc.dbFn != nil {
 				tc.dbFn(apprepo, org)
 			}
 
-			requireAppOwnership(apprepo)(http.HandlerFunc(app.GetApp)).
+			requireApp(apprepo)(http.HandlerFunc(app.GetApp)).
 				ServeHTTP(responseRecorder, request)
 
 			if responseRecorder.Code != tc.statusCode {
@@ -118,10 +112,6 @@ func TestApplicationHandler_GetApps(t *testing.T) {
 	apprepo := mocks.NewMockApplicationRepository(ctrl)
 
 	orgID := "1234567890"
-
-	organisation := &hookcamp.Organisation{
-		UID: orgID,
-	}
 
 	validID := "123456789"
 
@@ -158,8 +148,6 @@ func TestApplicationHandler_GetApps(t *testing.T) {
 			request := httptest.NewRequest(tc.method, "/v1/apps", nil)
 			responseRecorder := httptest.NewRecorder()
 
-			request = request.WithContext(setOrgInContext(request.Context(), organisation))
-
 			if tc.dbFn != nil {
 				tc.dbFn(apprepo, org)
 			}
@@ -193,7 +181,7 @@ func TestApplicationHandler_CreateApp(t *testing.T) {
 		UID: orgID,
 	}
 
-	bodyReader := strings.NewReader(`{"name": "ABC_DEF_TEST"}`)
+	bodyReader := strings.NewReader(`{ "orgId": "` + orgID + `", "name": "ABC_DEF_TEST"}`)
 
 	app = newApplicationHandler(apprepo, org)
 
@@ -213,6 +201,9 @@ func TestApplicationHandler_CreateApp(t *testing.T) {
 				appRepo.EXPECT().
 					CreateApplication(gomock.Any(), gomock.Any()).Times(1).
 					Return(nil)
+				orgRepo.EXPECT().
+					FetchOrganisationByID(gomock.Any(), gomock.Any()).Times(1).
+					Return(organisation, nil)
 
 			},
 		},
@@ -223,13 +214,11 @@ func TestApplicationHandler_CreateApp(t *testing.T) {
 			request := httptest.NewRequest(tc.method, "/v1/apps", tc.body)
 			responseRecorder := httptest.NewRecorder()
 
-			request = request.WithContext(setOrgInContext(request.Context(), organisation))
-
 			if tc.dbFn != nil {
 				tc.dbFn(apprepo, org)
 			}
 
-			validateNewApp(apprepo)(http.HandlerFunc(app.CreateApp)).
+			ensureNewApp(org, apprepo)(http.HandlerFunc(app.CreateApp)).
 				ServeHTTP(responseRecorder, request)
 
 			if responseRecorder.Code != tc.statusCode {
@@ -251,10 +240,6 @@ func TestApplicationHandler_UpdateApp(t *testing.T) {
 	apprepo := mocks.NewMockApplicationRepository(ctrl)
 
 	orgID := "1234567890"
-
-	organisation := &hookcamp.Organisation{
-		UID: orgID,
-	}
 
 	appId := "12345"
 	bodyReader := strings.NewReader(`{"name": "ABC_DEF_TEST_UPDATE"}`)
@@ -302,13 +287,11 @@ func TestApplicationHandler_UpdateApp(t *testing.T) {
 
 			request = request.WithContext(context.WithValue(request.Context(), chi.RouteCtxKey, rctx))
 
-			request = request.WithContext(setOrgInContext(request.Context(), organisation))
-
 			if tc.dbFn != nil {
 				tc.dbFn(apprepo, org)
 			}
 
-			validateAppUpdate(apprepo)(http.HandlerFunc(app.UpdateApp)).
+			ensureAppUpdate(apprepo)(http.HandlerFunc(app.UpdateApp)).
 				ServeHTTP(responseRecorder, request)
 
 			if responseRecorder.Code != tc.statusCode {
@@ -332,10 +315,6 @@ func TestApplicationHandler_CreateAppEndpoint(t *testing.T) {
 	apprepo := mocks.NewMockApplicationRepository(ctrl)
 
 	orgID := "1234567890"
-
-	organisation := &hookcamp.Organisation{
-		UID: orgID,
-	}
 
 	bodyReader := strings.NewReader(`{"url": "http://localhost", "description": "Test"}`)
 
@@ -380,13 +359,11 @@ func TestApplicationHandler_CreateAppEndpoint(t *testing.T) {
 			request := httptest.NewRequest(tc.method, fmt.Sprintf("/v1/apps/%s/endpoint", tc.appId), tc.body)
 			responseRecorder := httptest.NewRecorder()
 
-			request = request.WithContext(setOrgInContext(request.Context(), organisation))
-
 			if tc.dbFn != nil {
 				tc.dbFn(apprepo, org)
 			}
 
-			validateNewAppEndpoint(apprepo)(http.HandlerFunc(app.CreateAppEndpoint)).
+			ensureNewAppEndpoint(apprepo)(http.HandlerFunc(app.CreateAppEndpoint)).
 				ServeHTTP(responseRecorder, request)
 
 			if responseRecorder.Code != tc.statusCode {
@@ -408,10 +385,6 @@ func TestApplicationHandler_UpdateAppEndpoint_InvalidRequest(t *testing.T) {
 	apprepo := mocks.NewMockApplicationRepository(ctrl)
 
 	orgID := "1234567890"
-
-	organisation := &hookcamp.Organisation{
-		UID: orgID,
-	}
 
 	appId := "12345"
 	endpointId := "9999900000-8888"
@@ -463,13 +436,11 @@ func TestApplicationHandler_UpdateAppEndpoint_InvalidRequest(t *testing.T) {
 
 			request = request.WithContext(context.WithValue(request.Context(), chi.RouteCtxKey, rctx))
 
-			request = request.WithContext(setOrgInContext(request.Context(), organisation))
-
 			if tc.dbFn != nil {
 				tc.dbFn(apprepo, org)
 			}
 
-			validateAppEndpointUpdate(apprepo)(http.HandlerFunc(app.UpdateAppEndpoint)).
+			ensureAppEndpointUpdate(apprepo)(http.HandlerFunc(app.UpdateAppEndpoint)).
 				ServeHTTP(responseRecorder, request)
 
 			if responseRecorder.Code != tc.statusCode {
@@ -493,10 +464,6 @@ func TestApplicationHandler_UpdateAppEndpoint_ValidRequest(t *testing.T) {
 	apprepo := mocks.NewMockApplicationRepository(ctrl)
 
 	orgID := "1234567890"
-
-	organisation := &hookcamp.Organisation{
-		UID: orgID,
-	}
 
 	appId := "12345"
 	endpointId := "9999900000-8888"
@@ -554,13 +521,11 @@ func TestApplicationHandler_UpdateAppEndpoint_ValidRequest(t *testing.T) {
 
 			request = request.WithContext(context.WithValue(request.Context(), chi.RouteCtxKey, rctx))
 
-			request = request.WithContext(setOrgInContext(request.Context(), organisation))
-
 			if tc.dbFn != nil {
 				tc.dbFn(apprepo, org)
 			}
 
-			validateAppEndpointUpdate(apprepo)(http.HandlerFunc(app.UpdateAppEndpoint)).
+			ensureAppEndpointUpdate(apprepo)(http.HandlerFunc(app.UpdateAppEndpoint)).
 				ServeHTTP(responseRecorder, request)
 
 			if responseRecorder.Code != tc.statusCode {
