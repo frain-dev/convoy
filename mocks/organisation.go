@@ -77,18 +77,3 @@ func (mr *MockOrganisationRepositoryMockRecorder) FetchOrganisationByID(arg0, ar
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "FetchOrganisationByID", reflect.TypeOf((*MockOrganisationRepository)(nil).FetchOrganisationByID), arg0, arg1)
 }
-
-// FetchOrganisationByAPIKey mocks base method.
-func (m *MockOrganisationRepository) FetchOrganisationByAPIKey(arg0 context.Context, arg1 hookcamp.Token) (*hookcamp.Organisation, error) {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "FetchOrganisationByAPIKey", arg0, arg1)
-	ret0, _ := ret[0].(*hookcamp.Organisation)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
-}
-
-// FetchOrganisationByAPIKey indicates an expected call of FetchOrganisationByAPIKey.
-func (mr *MockOrganisationRepositoryMockRecorder) FetchOrganisationByAPIKey(arg0, arg1 interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "FetchOrganisationByAPIKey", reflect.TypeOf((*MockOrganisationRepository)(nil).FetchOrganisationByAPIKey), arg0, arg1)
-}

@@ -5,7 +5,6 @@ import (
 	"github.com/hookcamp/hookcamp/config"
 	"net/http"
 	"net/http/httptest"
-	"strings"
 	"testing"
 
 	"github.com/golang/mock/gomock"
@@ -232,10 +231,6 @@ func TestRequireAuth_Basic(t *testing.T) {
 
 			if recorder.Code != tc.statusCode {
 				t.Errorf("Want status '%d', got '%d'", tc.statusCode, recorder.Code)
-			}
-			responseBody := strings.TrimSpace(string(recorder.Body.Bytes()))
-			if responseBody != tc.responseBody {
-				t.Errorf("Want responseBody '%s', got '%s'", tc.responseBody, responseBody)
 			}
 
 			verifyMatch(t, *recorder)
