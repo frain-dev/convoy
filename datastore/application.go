@@ -3,8 +3,10 @@ package datastore
 import (
 	"context"
 	"errors"
+	"github.com/hookcamp/hookcamp/server/models"
 	"time"
 
+	pager "github.com/gobeam/mongo-go-pagination"
 	"github.com/hookcamp/hookcamp"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
@@ -40,6 +42,64 @@ func (db *appRepo) LoadApplications(ctx context.Context) (
 	apps := make([]hookcamp.Application, 0)
 
 	cur, err := db.client.Find(ctx, bson.D{{}})
+	if err != nil {
+		return apps, err
+	}
+
+	for cur.Next(ctx) {
+		var app hookcamp.Application
+		if err := cur.Decode(&app); err != nil {
+			return apps, err
+		}
+
+		apps = append(apps, app)
+	}
+
+	if err := cur.Err(); err != nil {
+		return nil, err
+	}
+
+	if err := cur.Close(ctx); err != nil {
+		return apps, err
+	}
+
+	return apps, nil
+}
+
+func (db *appRepo) LoadApplicationsPagedByOrgId(ctx context.Context, orgId string, pageable models.Pageable) ([]hookcamp.Application, pager.PaginationData, error) {
+
+	filter := bson.D{
+		primitive.E{
+			Key:   "org_id",
+			Value: orgId,
+		},
+	}
+
+	var applications []hookcamp.Application
+	paginatedData, err := pager.New(db.client).Context(ctx).Limit(int64(pageable.PerPage)).Page(int64(pageable.Page)).Sort("price", -1).Filter(filter).Decode(&applications).Find()
+	if err != nil {
+		return applications, pager.PaginationData{}, err
+	}
+
+	if applications == nil {
+		applications = make([]hookcamp.Application, 0)
+	}
+
+	return applications, paginatedData.Pagination, nil
+}
+
+func (db *appRepo) SearchApplicationsByOrgId(ctx context.Context, orgId string, searchParams models.SearchParams) ([]hookcamp.Application, error) {
+
+	start := searchParams.CreatedAtStart
+	end := searchParams.CreatedAtEnd
+	if end == 0 || end < searchParams.CreatedAtStart {
+		end = searchParams.CreatedAtStart
+	}
+
+	filter := bson.M{"org_id": orgId, "created_at": bson.M{"$gte": start, "$lte": end}}
+
+	apps := make([]hookcamp.Application, 0)
+	cur, err := db.client.Find(ctx, filter)
 	if err != nil {
 		return apps, err
 	}

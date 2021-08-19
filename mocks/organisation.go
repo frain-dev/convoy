@@ -63,6 +63,20 @@ func (mr *MockOrganisationRepositoryMockRecorder) CreateOrganisation(arg0, arg1 
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateOrganisation", reflect.TypeOf((*MockOrganisationRepository)(nil).CreateOrganisation), arg0, arg1)
 }
 
+// UpdateOrganisation mocks base method.
+func (m *MockOrganisationRepository) UpdateOrganisation(arg0 context.Context, arg1 *hookcamp.Organisation) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "UpdateOrganisation", arg0, arg1)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// UpdateOrganisation indicates an expected call of UpdateOrganisation.
+func (mr *MockOrganisationRepositoryMockRecorder) UpdateOrganisation(arg0, arg1 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateOrganisation", reflect.TypeOf((*MockOrganisationRepository)(nil).UpdateOrganisation), arg0, arg1)
+}
+
 // FetchOrganisationByID mocks base method.
 func (m *MockOrganisationRepository) FetchOrganisationByID(arg0 context.Context, arg1 string) (*hookcamp.Organisation, error) {
 	m.ctrl.T.Helper()

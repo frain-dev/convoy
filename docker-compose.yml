@@ -1,6 +1,20 @@
 version: '3'
 
 services:
+  web:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    entrypoint: ["./cmd", "server", "--config", "hookcamp-docker.json"]
+    ports:
+      - 5005:5005
+    links:
+      - mongodb:localhost
+#      - redis_server:localhost
+    depends_on:
+      - mongodb
+      - redis_server
+
   # nats:
   #   image: nats
   #   ports:
@@ -20,7 +34,7 @@ services:
       MONGO_INITDB_ROOT_USERNAME: root
       MONGO_INITDB_ROOT_PASSWORD: rootpassword
     ports:
-      - "27017:27017"
+      - "27037:27017"
     volumes:
       - ./data/mongo:/data/db
 
