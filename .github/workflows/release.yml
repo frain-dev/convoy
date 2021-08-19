@@ -1,0 +1,27 @@
+name: Release Go Binaries
+
+on:
+  push:
+    tags:
+      # Release binary for every tag.
+      - v0.*
+
+jobs: 
+  release-matrix:
+    name: Release Go Binary
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        goos: [linux, darwin]
+        goarch: ["amd64"]
+    steps:
+      - uses: actions/checkout@v2
+      - uses: wangyoucao577/go-release-action@v1.19
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          goos: ${{ matrix.goos }}
+          goarch: ${{ matrix.goarch }}
+          goversion: "1.17"
+          project_path: "./cmd/hookcamp"
+          binary_name: "hookcamp"
+          extra_files: LICENSE README.md
