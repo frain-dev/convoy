@@ -15,3 +15,8 @@
 # vendor/
 hookstack
 .idea
+
+/server/ui/build/*
+!/server/ui/build/go_test_stub.txt
+/data/mongo/
+.DS_Store

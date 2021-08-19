@@ -26,5 +26,6 @@ func (o *Organisation) IsOwner(a *Application) bool { return o.UID == a.OrgID }
 type OrganisationRepository interface {
 	LoadOrganisations(context.Context) ([]*Organisation, error)
 	CreateOrganisation(context.Context, *Organisation) error
+	UpdateOrganisation(context.Context, *Organisation) error
 	FetchOrganisationByID(context.Context, string) (*Organisation, error)
 }

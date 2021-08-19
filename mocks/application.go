@@ -6,9 +6,12 @@ package mocks
 
 import (
 	context "context"
+	reflect "reflect"
+
+	mongopagination "github.com/gobeam/mongo-go-pagination"
 	gomock "github.com/golang/mock/gomock"
 	hookcamp "github.com/hookcamp/hookcamp"
-	reflect "reflect"
+	models "github.com/hookcamp/hookcamp/server/models"
 )
 
 // MockApplicationRepository is a mock of ApplicationRepository interface.
@@ -48,6 +51,21 @@ func (mr *MockApplicationRepositoryMockRecorder) CreateApplication(arg0, arg1 in
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateApplication", reflect.TypeOf((*MockApplicationRepository)(nil).CreateApplication), arg0, arg1)
 }
 
+// FindApplicationByID mocks base method.
+func (m *MockApplicationRepository) FindApplicationByID(arg0 context.Context, arg1 string) (*hookcamp.Application, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "FindApplicationByID", arg0, arg1)
+	ret0, _ := ret[0].(*hookcamp.Application)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// FindApplicationByID indicates an expected call of FindApplicationByID.
+func (mr *MockApplicationRepositoryMockRecorder) FindApplicationByID(arg0, arg1 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "FindApplicationByID", reflect.TypeOf((*MockApplicationRepository)(nil).FindApplicationByID), arg0, arg1)
+}
+
 // LoadApplications mocks base method.
 func (m *MockApplicationRepository) LoadApplications(arg0 context.Context) ([]hookcamp.Application, error) {
 	m.ctrl.T.Helper()
@@ -63,19 +81,35 @@ func (mr *MockApplicationRepositoryMockRecorder) LoadApplications(arg0 interface
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "LoadApplications", reflect.TypeOf((*MockApplicationRepository)(nil).LoadApplications), arg0)
 }
 
-// FindApplicationByID mocks base method.
-func (m *MockApplicationRepository) FindApplicationByID(arg0 context.Context, arg1 string) (*hookcamp.Application, error) {
+// LoadApplicationsPagedByOrgId mocks base method.
+func (m *MockApplicationRepository) LoadApplicationsPagedByOrgId(arg0 context.Context, arg1 string, arg2 models.Pageable) ([]hookcamp.Application, mongopagination.PaginationData, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "FindApplicationByID", arg0, arg1)
-	ret0, _ := ret[0].(*hookcamp.Application)
+	ret := m.ctrl.Call(m, "LoadApplicationsPagedByOrgId", arg0, arg1, arg2)
+	ret0, _ := ret[0].([]hookcamp.Application)
+	ret1, _ := ret[1].(mongopagination.PaginationData)
+	ret2, _ := ret[2].(error)
+	return ret0, ret1, ret2
+}
+
+// LoadApplicationsPagedByOrgId indicates an expected call of LoadApplicationsPagedByOrgId.
+func (mr *MockApplicationRepositoryMockRecorder) LoadApplicationsPagedByOrgId(arg0, arg1, arg2 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "LoadApplicationsPagedByOrgId", reflect.TypeOf((*MockApplicationRepository)(nil).LoadApplicationsPagedByOrgId), arg0, arg1, arg2)
+}
+
+// SearchApplicationsByOrgId mocks base method.
+func (m *MockApplicationRepository) SearchApplicationsByOrgId(arg0 context.Context, arg1 string, arg2 models.SearchParams) ([]hookcamp.Application, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "SearchApplicationsByOrgId", arg0, arg1, arg2)
+	ret0, _ := ret[0].([]hookcamp.Application)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
-// FindApplicationByID indicates an expected call of FindApplicationByID.
-func (mr *MockApplicationRepositoryMockRecorder) FindApplicationByID(arg0, arg1 interface{}) *gomock.Call {
+// SearchApplicationsByOrgId indicates an expected call of SearchApplicationsByOrgId.
+func (mr *MockApplicationRepositoryMockRecorder) SearchApplicationsByOrgId(arg0, arg1, arg2 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "FindApplicationByID", reflect.TypeOf((*MockApplicationRepository)(nil).FindApplicationByID), arg0, arg1)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SearchApplicationsByOrgId", reflect.TypeOf((*MockApplicationRepository)(nil).SearchApplicationsByOrgId), arg0, arg1, arg2)
 }
 
 // UpdateApplication mocks base method.

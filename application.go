@@ -3,6 +3,8 @@ package hookcamp
 import (
 	"context"
 	"errors"
+	pager "github.com/gobeam/mongo-go-pagination"
+	"github.com/hookcamp/hookcamp/server/models"
 
 	"go.mongodb.org/mongo-driver/bson/primitive"
 )
@@ -41,4 +43,6 @@ type ApplicationRepository interface {
 	LoadApplications(context.Context) ([]Application, error)
 	FindApplicationByID(context.Context, string) (*Application, error)
 	UpdateApplication(context.Context, *Application) error
+	LoadApplicationsPagedByOrgId(context.Context, string, models.Pageable) ([]Application, pager.PaginationData, error)
+	SearchApplicationsByOrgId(context.Context, string, models.SearchParams) ([]Application, error)
 }
