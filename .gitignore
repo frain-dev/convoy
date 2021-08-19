@@ -15,3 +15,7 @@
 # vendor/
 hookstack
 .idea
+
+# ui depencencies
+/ui/node_modules
+/build
