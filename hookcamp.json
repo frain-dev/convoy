@@ -12,5 +12,8 @@
 		"http" : {
 			"port" : 5005
 		}
+	},
+	"auth": {
+		"type": "none"
 	}
 }
