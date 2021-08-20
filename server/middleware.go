@@ -51,9 +51,12 @@ func ensureBasicAuthFromRequest(a *config.AuthConfiguration, r *http.Request) er
 	if len(auth) != 2 {
 		return errors.New("invalid header structure")
 	}
+	if len(auth) != 2 {
+		return errors.New("invalid auth header structure")
+	}
 
 	if strings.ToUpper(auth[0]) != "BASIC" {
-		return errors.New("invalid header structure")
+		return errors.New("invalid auth header structure")
 	}
 
 	credentials, err := base64.StdEncoding.DecodeString(auth[1])

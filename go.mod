@@ -3,7 +3,6 @@ module github.com/hookcamp/hookcamp
 go 1.16
 
 require (
-	github.com/aws/aws-sdk-go v1.34.28 // indirect
 	github.com/go-chi/chi/v5 v5.0.3
 	github.com/go-chi/render v1.0.1
 	github.com/go-redis/redis/v8 v8.8.2
