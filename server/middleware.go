@@ -2,10 +2,12 @@ package server
 
 import (
 	"context"
+	"encoding/base64"
 	"encoding/json"
 	"errors"
 	"fmt"
 	"github.com/google/uuid"
+	"github.com/hookcamp/hookcamp/config"
 	"github.com/hookcamp/hookcamp/server/models"
 	"github.com/hookcamp/hookcamp/util"
 	"io"
@@ -23,7 +25,6 @@ import (
 type contextKey string
 
 const (
-	orgCtx      contextKey = "org"
 	appCtx      contextKey = "app"
 	endpointCtx contextKey = "endpoint"
 )
@@ -35,21 +36,28 @@ func writeRequestIDHeader(next http.Handler) http.Handler {
 	})
 }
 
-func tokenFromRequest(r *http.Request) (hookcamp.Token, error) {
+func ensureBasicAuthFromRequest(a *config.AuthConfiguration, r *http.Request) error {
 	val := r.Header.Get("Authorization")
-	splitted := strings.Split(val, " ")
+	auth := strings.Split(val, " ")
 
-	var t hookcamp.Token
-
-	if len(splitted) != 2 {
-		return t, errors.New("invalid header structure")
+	if len(auth) != 2 {
+		return errors.New("invalid auth header structure")
 	}
 
-	if strings.ToUpper(splitted[0]) != "BEARER" {
-		return t, errors.New("invalid header structure")
+	if strings.ToUpper(auth[0]) != "BASIC" {
+		return errors.New("invalid auth header structure")
 	}
 
-	return hookcamp.Token(splitted[1]), nil
+	credentials, err := base64.StdEncoding.DecodeString(auth[1])
+	if err != nil {
+		return errors.New("invalid credentials")
+	}
+
+	if string(credentials) != fmt.Sprintf("%s:%s", a.Basic.Username, a.Basic.Password) {
+		return errors.New("authorization failed")
+	}
+
+	return nil
 }
 
 // func retrieveRequestID(r *http.Request) string { return middleware.GetReqID(r.Context()) }
@@ -74,12 +82,10 @@ func jsonResponse(next http.Handler) http.Handler {
 // 	})
 // }
 
-func requireAppOwnership(appRepo hookcamp.ApplicationRepository) func(next http.Handler) http.Handler {
+func requireApp(appRepo hookcamp.ApplicationRepository) func(next http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-
-			org := getOrgFromContext(r.Context())
 
 			appID := chi.URLParam(r, "appID")
 
@@ -98,23 +104,16 @@ func requireAppOwnership(appRepo hookcamp.ApplicationRepository) func(next http.
 				return
 			}
 
-			if !org.IsOwner(app) {
-				_ = render.Render(w, r, newErrorResponse("cannot access resource", http.StatusUnauthorized))
-				return
-			}
-
 			r = r.WithContext(setApplicationInContext(r.Context(), app))
 			next.ServeHTTP(w, r)
 		})
 	}
 }
 
-func validateNewApp(appRepo hookcamp.ApplicationRepository) func(next http.Handler) http.Handler {
+func ensureNewApp(orgRepo hookcamp.OrganisationRepository, appRepo hookcamp.ApplicationRepository) func(next http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-
-			org := getOrgFromContext(r.Context())
 
 			var newApp models.Application
 			err := json.NewDecoder(r.Body).Decode(&newApp)
@@ -126,6 +125,24 @@ func validateNewApp(appRepo hookcamp.ApplicationRepository) func(next http.Handl
 			appName := newApp.AppName
 			if util.IsStringEmpty(appName) {
 				_ = render.Render(w, r, newErrorResponse("please provide your appName", http.StatusBadRequest))
+				return
+			}
+			orgId := newApp.OrgID
+			if util.IsStringEmpty(orgId) {
+				_ = render.Render(w, r, newErrorResponse("please provide your orgId", http.StatusBadRequest))
+				return
+			}
+
+			org, err := orgRepo.FetchOrganisationByID(r.Context(), orgId)
+			if err != nil {
+				msg := "an error occurred while fetching organisation"
+				statusCode := http.StatusInternalServerError
+
+				if errors.Is(err, hookcamp.ErrOrganisationNotFound) {
+					msg = err.Error()
+					statusCode = http.StatusBadRequest
+				}
+				_ = render.Render(w, r, newErrorResponse(msg, statusCode))
 				return
 			}
 
@@ -151,7 +168,7 @@ func validateNewApp(appRepo hookcamp.ApplicationRepository) func(next http.Handl
 	}
 }
 
-func validateAppUpdate(appRepo hookcamp.ApplicationRepository) func(next http.Handler) http.Handler {
+func ensureAppUpdate(appRepo hookcamp.ApplicationRepository) func(next http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -216,7 +233,7 @@ func fetchAllApps(appRepo hookcamp.ApplicationRepository) func(next http.Handler
 	}
 }
 
-func validateNewAppEndpoint(appRepo hookcamp.ApplicationRepository) func(next http.Handler) http.Handler {
+func ensureNewAppEndpoint(appRepo hookcamp.ApplicationRepository) func(next http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -300,7 +317,7 @@ func parseEndpointFromBody(body io.ReadCloser) (models.Endpoint, error) {
 	return e, nil
 }
 
-func validateAppEndpointUpdate(appRepo hookcamp.ApplicationRepository) func(next http.Handler) http.Handler {
+func ensureAppEndpointUpdate(appRepo hookcamp.ApplicationRepository) func(next http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -361,28 +378,29 @@ func updateEndpointIfFound(endpoints *[]hookcamp.Endpoint, id string, e models.E
 	return endpoints, nil, hookcamp.ErrEndpointNotFound
 }
 
-func requireAuth(orgRepo hookcamp.OrganisationRepository) func(next http.Handler) http.Handler {
+func requireAuth() func(next http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 
-			token, err := tokenFromRequest(r)
+			cfg, err := config.Get()
 			if err != nil {
-				_ = render.Render(w, r, newErrorResponse("please provide your API key", http.StatusUnauthorized))
+				_ = render.Render(w, r, newErrorResponse("an error has occurred", http.StatusInternalServerError))
 				return
 			}
 
-			org, err := orgRepo.FetchOrganisationByAPIKey(r.Context(), token)
-			if err != nil {
-				_ = render.Render(w, r, newErrorResponse("an error occurred", http.StatusNotFound))
+			if cfg.Auth.Type == config.NoAuthProvider {
+				// full access
+			} else if cfg.Auth.Type == config.BasicAuthProvider {
+				err := ensureBasicAuthFromRequest(&cfg.Auth, r)
+				if err != nil {
+					_ = render.Render(w, r, newErrorResponse(err.Error(), http.StatusUnauthorized))
+					return
+				}
+			} else {
+				_ = render.Render(w, r, newErrorResponse("access denied", http.StatusForbidden))
 				return
 			}
 
-			if org.IsDeleted() {
-				_ = render.Render(w, r, newErrorResponse("cannot access deleted organisation", http.StatusForbidden))
-				return
-			}
-
-			r = r.WithContext(setOrgInContext(r.Context(), org))
 			next.ServeHTTP(w, r)
 		})
 	}
@@ -413,13 +431,4 @@ func setApplicationEndpointInContext(ctx context.Context,
 
 func getApplicationEndpointFromContext(ctx context.Context) *hookcamp.Endpoint {
 	return ctx.Value(endpointCtx).(*hookcamp.Endpoint)
-}
-
-func setOrgInContext(ctx context.Context,
-	org *hookcamp.Organisation) context.Context {
-	return context.WithValue(ctx, orgCtx, org)
-}
-
-func getOrgFromContext(ctx context.Context) *hookcamp.Organisation {
-	return ctx.Value(orgCtx).(*hookcamp.Organisation)
 }

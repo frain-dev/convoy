@@ -1,6 +1,7 @@
 package models
 
 type Application struct {
+	OrgID   string `json:"orgId" bson:"orgId"`
 	AppName string `json:"name" bson:"name"`
 }
 

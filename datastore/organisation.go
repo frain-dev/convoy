@@ -80,25 +80,3 @@ func (db *orgRepo) FetchOrganisationByID(ctx context.Context,
 
 	return org, err
 }
-
-func (db *orgRepo) FetchOrganisationByAPIKey(ctx context.Context,
-	apiKey hookcamp.Token) (*hookcamp.Organisation, error) {
-
-	org := new(hookcamp.Organisation)
-
-	filter := bson.D{
-		primitive.E{
-			Key:   "api_key",
-			Value: apiKey,
-		},
-	}
-
-	err := db.inner.FindOne(ctx, filter).
-		Decode(&org)
-
-	if errors.Is(err, mongo.ErrNoDocuments) {
-		err = hookcamp.ErrOrganisationNotFound
-	}
-
-	return org, err
-}
