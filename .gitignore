@@ -19,3 +19,9 @@ hookstack
 # ui depencencies
 /ui/node_modules
 /build
+
+
+/server/ui/build/*
+!/server/ui/build/go_test_stub.txt
+/data/mongo/
+.DS_Store

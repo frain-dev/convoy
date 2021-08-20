@@ -3,6 +3,7 @@ package datastore
 import (
 	"context"
 	"errors"
+	"time"
 
 	"github.com/hookcamp/hookcamp"
 	"go.mongodb.org/mongo-driver/bson"
@@ -57,6 +58,21 @@ func (db *orgRepo) CreateOrganisation(ctx context.Context, o *hookcamp.Organisat
 	o.ID = primitive.NewObjectID()
 
 	_, err := db.inner.InsertOne(ctx, o)
+	return err
+}
+
+func (db *orgRepo) UpdateOrganisation(ctx context.Context, o *hookcamp.Organisation) error {
+
+	o.UpdatedAt = time.Now().Unix()
+
+	filter := bson.D{primitive.E{Key: "uid", Value: o.UID}}
+
+	update := bson.D{primitive.E{Key: "$set", Value: bson.D{
+		primitive.E{Key: "org_name", Value: o.OrgName},
+		primitive.E{Key: "updated_at", Value: o.UpdatedAt},
+	}}}
+
+	_, err := db.inner.UpdateOne(ctx, filter, update)
 	return err
 }
 
