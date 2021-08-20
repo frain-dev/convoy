@@ -22,6 +22,6 @@ jobs:
           goos: ${{ matrix.goos }}
           goarch: ${{ matrix.goarch }}
           goversion: "1.17"
-          project_path: "./cmd/hookcamp"
+          project_path: "./cmd"
           binary_name: "hookcamp"
           extra_files: LICENSE README.md
