@@ -3,10 +3,12 @@ package server
 import (
 	"context"
 	"fmt"
+	pager "github.com/gobeam/mongo-go-pagination"
 	"net/http"
 	"net/http/httptest"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/go-chi/chi/v5"
 	"github.com/golang/mock/gomock"
@@ -531,6 +533,416 @@ func TestApplicationHandler_UpdateAppEndpoint_ValidRequest(t *testing.T) {
 			if responseRecorder.Code != tc.statusCode {
 				t.Errorf("Want status '%d', got '%d'", tc.statusCode, responseRecorder.Code)
 			}
+		})
+	}
+
+}
+
+func Test_applicationHandler_CreateOrganisation(t *testing.T) {
+
+	var app *applicationHandler
+
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	org := mocks.NewMockOrganisationRepository(ctrl)
+	apprepo := mocks.NewMockApplicationRepository(ctrl)
+
+	bodyReader := strings.NewReader(`{"name": "ABC_DEF_TEST"}`)
+
+	app = newApplicationHandler(apprepo, org)
+
+	tt := []struct {
+		name       string
+		method     string
+		statusCode int
+		body       *strings.Reader
+		dbFn       func(appRepo *mocks.MockApplicationRepository, orgRepo *mocks.MockOrganisationRepository)
+	}{
+		{
+			name:       "valid organisation",
+			method:     http.MethodPost,
+			statusCode: http.StatusCreated,
+			body:       bodyReader,
+			dbFn: func(appRepo *mocks.MockApplicationRepository, orgRepo *mocks.MockOrganisationRepository) {
+				orgRepo.EXPECT().
+					CreateOrganisation(gomock.Any(), gomock.Any()).Times(1).
+					Return(nil)
+
+			},
+		},
+	}
+
+	for _, tc := range tt {
+		t.Run(tc.name, func(t *testing.T) {
+			request := httptest.NewRequest(tc.method, "/v1/organisations", tc.body)
+			responseRecorder := httptest.NewRecorder()
+
+			if tc.dbFn != nil {
+				tc.dbFn(apprepo, org)
+			}
+
+			ensureNewOrganisation(org)(http.HandlerFunc(app.CreateOrganisation)).
+				ServeHTTP(responseRecorder, request)
+
+			if responseRecorder.Code != tc.statusCode {
+				t.Errorf("Want status '%d', got '%d'", tc.statusCode, responseRecorder.Code)
+			}
+		})
+	}
+
+}
+
+func Test_applicationHandler_UpdateOrganisation(t *testing.T) {
+
+	var app *applicationHandler
+
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	org := mocks.NewMockOrganisationRepository(ctrl)
+	apprepo := mocks.NewMockApplicationRepository(ctrl)
+
+	orgID := "1234567890"
+
+	bodyReader := strings.NewReader(`{"name": "ABC_DEF_TEST_UPDATE"}`)
+
+	app = newApplicationHandler(apprepo, org)
+
+	tt := []struct {
+		name       string
+		method     string
+		statusCode int
+		orgId      string
+		body       *strings.Reader
+		dbFn       func(appRepo *mocks.MockApplicationRepository, orgRepo *mocks.MockOrganisationRepository)
+	}{
+		{
+			name:       "valid organisation update",
+			method:     http.MethodPost,
+			statusCode: http.StatusAccepted,
+			orgId:      orgID,
+			body:       bodyReader,
+			dbFn: func(appRepo *mocks.MockApplicationRepository, orgRepo *mocks.MockOrganisationRepository) {
+				orgRepo.EXPECT().
+					UpdateOrganisation(gomock.Any(), gomock.Any()).Times(1).
+					Return(nil)
+
+				orgRepo.EXPECT().
+					FetchOrganisationByID(gomock.Any(), gomock.Any()).Times(1).
+					Return(&hookcamp.Organisation{
+						UID:     orgID,
+						OrgName: "Valid organisation update",
+					}, nil)
+
+			},
+		},
+	}
+
+	for _, tc := range tt {
+		t.Run(tc.name, func(t *testing.T) {
+			request := httptest.NewRequest(tc.method, fmt.Sprintf("/v1/organisations/%s", tc.orgId), tc.body)
+			responseRecorder := httptest.NewRecorder()
+			rctx := chi.NewRouteContext()
+			rctx.URLParams.Add("orgId", tc.orgId)
+
+			request = request.WithContext(context.WithValue(request.Context(), chi.RouteCtxKey, rctx))
+
+			if tc.dbFn != nil {
+				tc.dbFn(apprepo, org)
+			}
+
+			ensureOrganisationUpdate(org)(http.HandlerFunc(app.UpdateOrganisation)).
+				ServeHTTP(responseRecorder, request)
+
+			if responseRecorder.Code != tc.statusCode {
+				t.Errorf("Want status '%d', got '%d'", tc.statusCode, responseRecorder.Code)
+			}
+
+			verifyMatch(t, *responseRecorder)
+		})
+	}
+
+}
+
+func Test_applicationHandler_GetOrganisation(t *testing.T) {
+
+	var app *applicationHandler
+
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	org := mocks.NewMockOrganisationRepository(ctrl)
+	apprepo := mocks.NewMockApplicationRepository(ctrl)
+
+	orgID := "1234567890"
+
+	app = newApplicationHandler(apprepo, org)
+
+	tt := []struct {
+		name       string
+		method     string
+		statusCode int
+		input      string
+		dbFn       func(appRepo *mocks.MockApplicationRepository, orgRepo *mocks.MockOrganisationRepository)
+	}{
+		{
+			name:       "organisation not found",
+			method:     http.MethodGet,
+			statusCode: http.StatusNotFound,
+			input:      "12345",
+			dbFn: func(appRepo *mocks.MockApplicationRepository, orgRepo *mocks.MockOrganisationRepository) {
+				orgRepo.EXPECT().
+					FetchOrganisationByID(gomock.Any(), gomock.Any()).
+					Return(nil, hookcamp.ErrOrganisationNotFound).Times(1)
+			},
+		},
+		{
+			name:       "valid organisation",
+			method:     http.MethodGet,
+			statusCode: http.StatusOK,
+			input:      orgID,
+			dbFn: func(appRepo *mocks.MockApplicationRepository, orgRepo *mocks.MockOrganisationRepository) {
+				orgRepo.EXPECT().
+					FetchOrganisationByID(gomock.Any(), gomock.Any()).Times(1).
+					Return(&hookcamp.Organisation{
+						UID:     orgID,
+						OrgName: "Valid organisation",
+					}, nil)
+
+			},
+		},
+	}
+
+	for _, tc := range tt {
+		t.Run(tc.name, func(t *testing.T) {
+			request := httptest.NewRequest(tc.method, fmt.Sprintf("/v1/organisations/%s", tc.input), nil)
+			responseRecorder := httptest.NewRecorder()
+			rctx := chi.NewRouteContext()
+			rctx.URLParams.Add("id", tc.input)
+
+			request = request.WithContext(context.WithValue(request.Context(), chi.RouteCtxKey, rctx))
+
+			if tc.dbFn != nil {
+				tc.dbFn(apprepo, org)
+			}
+
+			requireOrganisation(app.orgRepo)(http.HandlerFunc(app.GetOrganisation)).
+				ServeHTTP(responseRecorder, request)
+
+			if responseRecorder.Code != tc.statusCode {
+				t.Errorf("Want status '%d', got '%d'", tc.statusCode, responseRecorder.Code)
+			}
+
+			verifyMatch(t, *responseRecorder)
+		})
+	}
+
+}
+
+func Test_applicationHandler_GetOrganisations(t *testing.T) {
+
+	var app *applicationHandler
+
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	org := mocks.NewMockOrganisationRepository(ctrl)
+	apprepo := mocks.NewMockApplicationRepository(ctrl)
+
+	orgID := "1234567890"
+
+	app = newApplicationHandler(apprepo, org)
+
+	tt := []struct {
+		name       string
+		method     string
+		statusCode int
+		dbFn       func(appRepo *mocks.MockApplicationRepository, orgRepo *mocks.MockOrganisationRepository)
+	}{
+		{
+			name:       "valid organisations",
+			method:     http.MethodGet,
+			statusCode: http.StatusOK,
+			dbFn: func(appRepo *mocks.MockApplicationRepository, orgRepo *mocks.MockOrganisationRepository) {
+				orgRepo.EXPECT().
+					LoadOrganisations(gomock.Any()).Times(1).
+					Return([]*hookcamp.Organisation{
+						{
+							UID:     orgID,
+							OrgName: "Valid organisations - 0",
+						},
+					}, nil)
+
+			},
+		},
+	}
+
+	for _, tc := range tt {
+		t.Run(tc.name, func(t *testing.T) {
+			request := httptest.NewRequest(tc.method, "/v1/organisations", nil)
+			responseRecorder := httptest.NewRecorder()
+
+			if tc.dbFn != nil {
+				tc.dbFn(apprepo, org)
+			}
+
+			fetchAllOrganisations(app.orgRepo)(http.HandlerFunc(app.GetOrganisations)).
+				ServeHTTP(responseRecorder, request)
+
+			if responseRecorder.Code != tc.statusCode {
+				t.Errorf("Want status '%d', got '%d'", tc.statusCode, responseRecorder.Code)
+			}
+
+			verifyMatch(t, *responseRecorder)
+		})
+	}
+
+}
+
+func Test_applicationHandler_GetDashboardSummary(t *testing.T) {
+
+	var app *applicationHandler
+
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	org := mocks.NewMockOrganisationRepository(ctrl)
+	apprepo := mocks.NewMockApplicationRepository(ctrl)
+
+	orgID := "1234567890"
+
+	organisation := &hookcamp.Organisation{
+		UID:     orgID,
+		OrgName: "Valid organisation",
+	}
+
+	app = newApplicationHandler(apprepo, org)
+
+	tt := []struct {
+		name       string
+		method     string
+		statusCode int
+		dbFn       func(appRepo *mocks.MockApplicationRepository, orgRepo *mocks.MockOrganisationRepository)
+	}{
+		{
+			name:       "valid organisations",
+			method:     http.MethodGet,
+			statusCode: http.StatusOK,
+			dbFn: func(appRepo *mocks.MockApplicationRepository, orgRepo *mocks.MockOrganisationRepository) {
+				appRepo.EXPECT().
+					SearchApplicationsByOrgId(gomock.Any(), gomock.Any(), gomock.Any()).Times(1).
+					Return([]hookcamp.Application{
+						{
+							UID:       "validID",
+							OrgID:     orgID,
+							Title:     "Valid application - 0",
+							Endpoints: []hookcamp.Endpoint{},
+						},
+					}, nil)
+
+			},
+		},
+	}
+
+	format := "2006-01-02T15:04:05"
+
+	for _, tc := range tt {
+		t.Run(tc.name, func(t *testing.T) {
+			request := httptest.NewRequest(tc.method, fmt.Sprintf("/v1/dashboard/%s/summary?startDate=%s", orgID, time.Now().Format(format)), nil)
+			responseRecorder := httptest.NewRecorder()
+			rctx := chi.NewRouteContext()
+			rctx.URLParams.Add("orgID", orgID)
+
+			request = request.WithContext(context.WithValue(request.Context(), chi.RouteCtxKey, rctx))
+			request = request.WithContext(context.WithValue(request.Context(), orgCtx, organisation))
+
+			if tc.dbFn != nil {
+				tc.dbFn(apprepo, org)
+			}
+
+			fetchDashboardSummary(apprepo)(http.HandlerFunc(app.GetDashboardSummary)).
+				ServeHTTP(responseRecorder, request)
+
+			if responseRecorder.Code != tc.statusCode {
+				t.Errorf("Want status '%d', got '%d'", tc.statusCode, responseRecorder.Code)
+			}
+		})
+	}
+
+}
+
+func Test_applicationHandler_GetPaginatedApps(t *testing.T) {
+
+	var app *applicationHandler
+
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	org := mocks.NewMockOrganisationRepository(ctrl)
+	apprepo := mocks.NewMockApplicationRepository(ctrl)
+
+	orgID := "1234567890"
+
+	organisation := &hookcamp.Organisation{
+		UID:     orgID,
+		OrgName: "Valid organisation",
+	}
+
+	app = newApplicationHandler(apprepo, org)
+
+	tt := []struct {
+		name       string
+		method     string
+		statusCode int
+		dbFn       func(appRepo *mocks.MockApplicationRepository, orgRepo *mocks.MockOrganisationRepository)
+	}{
+		{
+			name:       "valid organisations",
+			method:     http.MethodGet,
+			statusCode: http.StatusOK,
+			dbFn: func(appRepo *mocks.MockApplicationRepository, orgRepo *mocks.MockOrganisationRepository) {
+				appRepo.EXPECT().
+					LoadApplicationsPagedByOrgId(gomock.Any(), gomock.Any(), gomock.Any()).Times(1).
+					Return([]hookcamp.Application{
+						{
+							UID:       "validID",
+							OrgID:     orgID,
+							Title:     "Valid application - 0",
+							Endpoints: []hookcamp.Endpoint{},
+						},
+					},
+						pager.PaginationData{},
+						nil)
+
+			},
+		},
+	}
+
+	for _, tc := range tt {
+		t.Run(tc.name, func(t *testing.T) {
+			request := httptest.NewRequest(tc.method, fmt.Sprintf("/v1/dashboard/%s/apps?page=1", orgID), nil)
+			responseRecorder := httptest.NewRecorder()
+			rctx := chi.NewRouteContext()
+			rctx.URLParams.Add("orgID", orgID)
+
+			request = request.WithContext(context.WithValue(request.Context(), chi.RouteCtxKey, rctx))
+			request = request.WithContext(context.WithValue(request.Context(), orgCtx, organisation))
+			request = request.WithContext(context.WithValue(request.Context(), pageCtx, 1))
+			request = request.WithContext(context.WithValue(request.Context(), pageSizeCtx, 20))
+
+			if tc.dbFn != nil {
+				tc.dbFn(apprepo, org)
+			}
+
+			fetchOrganisationApps(apprepo)(http.HandlerFunc(app.GetPaginatedApps)).
+				ServeHTTP(responseRecorder, request)
+
+			if responseRecorder.Code != tc.statusCode {
+				t.Errorf("Want status '%d', got '%d'", tc.statusCode, responseRecorder.Code)
+			}
+
+			verifyMatch(t, *responseRecorder)
 		})
 	}
 
