@@ -1,15 +1,42 @@
 package server
 
 import (
+	"embed"
 	"fmt"
+	"github.com/go-chi/chi/v5/middleware"
+	"io/fs"
+	"log"
 	"net/http"
+	"path"
+	"strings"
 	"time"
 
 	"github.com/go-chi/chi/v5"
-	"github.com/go-chi/chi/v5/middleware"
 	"github.com/hookcamp/hookcamp"
 	"github.com/hookcamp/hookcamp/config"
 )
+
+//go:embed ui/build
+var reactFS embed.FS
+
+func reactRootHandler(rw http.ResponseWriter, req *http.Request) {
+	p := req.URL.Path
+	if !strings.HasPrefix(p, "/") {
+		p = "/" + p
+		req.URL.Path = p
+	}
+	p = path.Clean(p)
+	f := fs.FS(reactFS)
+	static, err := fs.Sub(f, "ui/build")
+	if err != nil {
+		log.Printf("ERR | an error has occured with the react app - %+v", err)
+		return
+	}
+	if _, err := static.Open(strings.TrimLeft(p, "/")); err != nil { // If file not found server index/html from root
+		req.URL.Path = "/"
+	}
+	http.FileServer(http.FS(static)).ServeHTTP(rw, req)
+}
 
 func buildRoutes(app *applicationHandler) http.Handler {
 
@@ -17,11 +44,27 @@ func buildRoutes(app *applicationHandler) http.Handler {
 
 	router.Use(middleware.RequestID)
 	router.Use(writeRequestIDHeader)
-	router.Use(middleware.AllowContentType("application/json"))
-	router.Use(jsonResponse)
 
 	router.Route("/v1", func(r chi.Router) {
+		r.Use(middleware.AllowContentType("application/json"))
+		r.Use(jsonResponse)
 		r.Use(requireAuth())
+
+		r.Route("/organisations", func(orgRouter chi.Router) {
+			orgRouter.Route("/", func(orgSubRouter chi.Router) {
+				orgSubRouter.With(ensureNewOrganisation(app.orgRepo)).Post("/", app.CreateOrganisation)
+
+				orgRouter.With(fetchAllOrganisations(app.orgRepo)).Get("/", app.GetOrganisations)
+			})
+
+			orgRouter.Route("/{orgID}", func(appSubRouter chi.Router) {
+				appSubRouter.Use(requireOrganisation(app.orgRepo))
+
+				appSubRouter.With(ensureOrganisationUpdate(app.orgRepo)).Put("/", app.UpdateOrganisation)
+
+				appSubRouter.Get("/", app.GetOrganisation)
+			})
+		})
 
 		r.Route("/apps", func(appRouter chi.Router) {
 
@@ -45,7 +88,16 @@ func buildRoutes(app *applicationHandler) http.Handler {
 				})
 			})
 		})
+
+		r.Route("/dashboard/{orgID}", func(dashboardRouter chi.Router) {
+			dashboardRouter.Use(requireOrganisation(app.orgRepo))
+
+			dashboardRouter.With(fetchDashboardSummary(app.appRepo)).Get("/summary", app.GetDashboardSummary)
+			dashboardRouter.With(pagination).With(fetchOrganisationApps(app.appRepo)).Get("/apps", app.GetPaginatedApps)
+		})
 	})
+
+	router.HandleFunc("/*", reactRootHandler)
 
 	return router
 }
