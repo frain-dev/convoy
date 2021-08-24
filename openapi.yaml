@@ -1,0 +1,445 @@
+openapi: 3.0.1
+info: 
+  title: Hookcamp API
+  description: Hookcamp is a fast and secure distributed webhooks service. 
+    The following details contains the API to use hookcamp.
+  termsOfService: https://hookcamp.io/terms
+  contact:
+    email: engineering@hookcamp.io
+  license:
+    name: Mozilla Public License 2.0
+    url: https://www.mozilla.org/en-US/MPL/2.0/
+  version: 0.1.0
+servers:
+  - url: TBD
+tags:
+  - name: Applications
+    description: Applications is an abstraction for the webhook receipent. It maps to one or more endpoints.
+  - name: Endpoints
+    description: Endpoints are the destination resource, each endpoint belongs to an application.
+  - name: Events
+    description: Events contains the payload of event trigger from the source. 
+  - name: DeliveryAttempts
+    description: A DeliveryAttempt is a single attempt to deliver an event to the destination. This logs the request body, response body & headers.
+paths:
+  /apps:
+    get:
+      tags:
+        - Applications
+      summary: Get all apps
+      operationId: GetApps
+      responses:
+        '200': 
+          description: Valid response.
+          content:
+            'application/json':
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/BaseApiResponse'
+                  - type: object
+                    required: 
+                    - data
+                    properties:
+                      data:
+                        type: array
+                        items: 
+                          $ref: '#/components/schemas/Application'
+    post:
+      tags:
+        - Applications
+      summary: Create an App
+      operationId: CreateApp
+      requestBody:
+        description: JSON fields to pass to create an app.
+        required: true
+        content: 
+          application/json: 
+            schema:
+              type: object
+              properties:
+                org_id:
+                  type: string
+                name: 
+                  type: string
+      responses:
+        '200':
+          description: Valid response.
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/BaseApiResponse'
+                  - type: object
+                    required:
+                    - data
+                    properties:
+                      data: 
+                        $ref: '#/components/schemas/Application'
+  /apps/{Id}:
+    get: 
+      tags:
+        - Applications
+      summary: Get specific app.
+      operationId: GetAppById
+      responses:
+        '200':
+          description: Valid response to get specific app.
+          content: 
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/BaseApiResponse'
+                  - type: object
+                    required:
+                    - data
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/Application'
+    
+    put:
+      tags:
+        - Applications
+      summary: Update specific app.
+      operationId: UpdateAppById
+      responses:
+        '200': 
+          description: Valid response.
+          content: 
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/BaseApiResponse'
+                  - type: object
+                    required: 
+                    - data
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/Application'
+    
+    delete: 
+      tags:
+        - Applications
+      summary: Delete a specific app.
+      operationId: DeleteAppById
+      responses:
+        '200':
+          description: Valid response.
+    
+    parameters:
+      - $ref: '#/components/parameters/uniqueId'
+  /endpoints:
+    get:
+      tags:
+        - Endpoints
+      summary: Get all endpoints
+      operationId: GetEndpoints
+      responses:
+        '200': 
+          description: Valid response.
+          content:
+            'application/json':
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/BaseApiResponse'
+                  - type: object
+                    required: 
+                    - data
+                    properties:
+                      data:
+                        type: array
+                        items: 
+                          $ref: '#/components/schemas/Endpoint'
+    post:
+      tags: 
+        - Endpoints
+      summary: Create an Endpoint
+      operationId: CreateEndpoint
+      requestBody:
+        description: JSON fields to pass to create an endpoint.
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                url: 
+                  type: string
+                app_id:
+                  type: string
+      
+      responses:
+        '200':
+          description: Valid response.
+          content: 
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/BaseApiResponse'
+                  - type: object
+                    required:
+                    - data
+                    properties:
+                      data: 
+                        $ref: '#/components/schemas/Endpoint'
+  /endpoints/{Id}:
+    get:
+      tags:
+        - Endpoints
+      summary: Get specific Endpoint.
+      operationId: GetEndpointById
+      responses:
+        '200':
+          description: Valid response.
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/BaseApiResponse'
+                  - type: object
+                    required: 
+                    - data
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/Endpoint'
+
+    put:
+      tags: 
+        - Endpoints
+      summary: Update an Endpoint.
+      operationId: UpdateEndpoint
+      responses: 
+        '200':
+          description: Valid response to update endpoint.
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/BaseApiResponse'
+                  - type: object
+                    required: 
+                    - data
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/Endpoint'
+    
+    delete:
+      tags:
+        - Endpoints
+      summary: Delete a specific endpoint.
+      operationId: DeleteEndpointById
+      responses:
+        '200': 
+          description: Valid response.
+    
+    parameters:
+      - $ref: '#/components/parameters/uniqueId'
+  /events:
+    get: 
+      tags: 
+        - Events
+      summary: Get all events
+      operationId: GetEvents
+      responses:
+        '200': 
+          description: Valid response.
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/BaseApiResponse'
+                  - type: object
+                    required: 
+                    - data
+                    properties:
+                      data:
+                        type: array
+                        items: 
+                          $ref: '#/components/schemas/Event'
+    post: 
+      tags:
+        - Events
+      summary: Create an event
+      operationId: CreateEvent
+      requestBody: 
+        description: JSON fields to pass while creating an event.
+        content: 
+          application/json:
+            schema:
+              type: object
+          
+      responses:
+        '200':
+          description: Valid response.
+          content: 
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/BaseApiResponse'
+                  - type: object
+                    required:
+                    - data
+                    properties:
+                      data: 
+                        $ref: '#/components/schemas/Event'
+  /events/{Id}:
+    get: 
+      tags: 
+        - Events
+      summary: Get specific event.
+      operationId: GetEventById
+      responses:
+        '200':
+          description: Valid response.
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/BaseApiResponse'
+                  - type: object
+                    required: 
+                    - data
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/Event'
+    
+    parameters:
+      - $ref: '#/components/parameters/uniqueId'
+  /deliveryattempts:
+    get: 
+      tags:
+        - DeliveryAttempts
+      summary: Get all Delivery Attempts
+      operationId: GetDeliveryAttempts
+      responses:
+        '200': 
+          description: Valid response.
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/BaseApiResponse'
+                  - type: object
+                    required: 
+                    - data
+                    properties:
+                      data:
+                        type: array
+                        items: 
+                          $ref: '#/components/schemas/DeliveryAttempt'
+  /deliveryattempts/{Id}:
+    get:
+      tags: 
+        - DeliveryAttempts
+      summary: Get specific delivery attempt
+      operationId: GetDeliveryAttemptById
+      responses:
+        '200':
+          description: Valid response.
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/BaseApiResponse'
+                  - type: object
+                    required: 
+                    - data
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/DeliveryAttempt'
+    parameters:
+      - $ref: '#/components/parameters/uniqueId'
+  
+components:
+  schemas:
+    Organisation:
+      type: object
+      properties:
+        uid:
+          type: string
+          readOnly: true
+        name:
+          type: string
+    Application:
+      type: object
+      properties:
+        uid:
+          type: string
+          readOnly: true
+        name: 
+          type: string
+        org_id:
+          type: string
+    Endpoint:
+      type: object
+      properties:
+        uid:
+          type: string
+          readOnly: true
+        url:
+          type: string
+        status:
+          type: boolean
+    Event:
+      type: object
+      properties: 
+        uid: 
+          type: string
+          readOnly: true
+    DeliveryAttempt:
+      type: object
+      properties:
+        uid: 
+          type: string
+    BaseApiResponse:
+      type: object
+      properties: 
+        status: 
+          type: string
+        message: 
+          type: string
+      required:
+        - status
+        - message
+
+  responses:
+    CreateOrganisationResponse:
+      description: Create organisation response
+      content: 
+        'application/json':
+          schema:
+            allOf:
+              - $ref: '#/components/schemas/BaseApiResponse'
+              - type: object
+                required: 
+                - data
+                properties:
+                  data: 
+                    $ref: '#/components/schemas/Organisation'
+    CreateAppResponse:
+      description: Create app response
+      content:
+        'application/json':
+          schema:
+            $ref: '#/components/schemas/Application'
+    NotFound:
+      description: This specified resource was not found.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/BaseApiResponse'
+    Unauthorized:
+      description: Unauthorized
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/BaseApiResponse'
+        
+  parameters:
+    uniqueId:
+      in: path
+      name: Id
+      description: Unique ID to identify a resource.
+      required: true
+      schema:
+        type: string
+      style: simple
