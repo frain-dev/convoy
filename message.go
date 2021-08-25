@@ -76,7 +76,7 @@ type Message struct {
 
 	Metadata *MessageMetadata `json:"metadata" bson:"metadata"`
 
-	Description string `json:"description, omitempty" bson:"description"`
+	Description string `json:"description,omitempty" bson:"description"`
 
 	Status MessageStatus `json:"status" bson:"status"`
 
