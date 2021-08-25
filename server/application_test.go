@@ -31,6 +31,7 @@ func TestApplicationHandler_GetApp(t *testing.T) {
 
 	org := mocks.NewMockOrganisationRepository(ctrl)
 	apprepo := mocks.NewMockApplicationRepository(ctrl)
+	msgRepo := mocks.NewMockMessageRepository(ctrl)
 
 	orgID := "1234567890"
 
@@ -38,7 +39,7 @@ func TestApplicationHandler_GetApp(t *testing.T) {
 
 	// apprepo.EXPECT().
 
-	app = newApplicationHandler(apprepo, org)
+	app = newApplicationHandler(msgRepo, apprepo, org)
 
 	tt := []struct {
 		name       string
@@ -112,12 +113,13 @@ func TestApplicationHandler_GetApps(t *testing.T) {
 
 	org := mocks.NewMockOrganisationRepository(ctrl)
 	apprepo := mocks.NewMockApplicationRepository(ctrl)
+	msgRepo := mocks.NewMockMessageRepository(ctrl)
 
 	orgID := "1234567890"
 
 	validID := "123456789"
 
-	app = newApplicationHandler(apprepo, org)
+	app = newApplicationHandler(msgRepo, apprepo, org)
 
 	tt := []struct {
 		name       string
@@ -176,6 +178,7 @@ func TestApplicationHandler_CreateApp(t *testing.T) {
 
 	org := mocks.NewMockOrganisationRepository(ctrl)
 	apprepo := mocks.NewMockApplicationRepository(ctrl)
+	msgRepo := mocks.NewMockMessageRepository(ctrl)
 
 	orgID := "1234567890"
 
@@ -185,7 +188,7 @@ func TestApplicationHandler_CreateApp(t *testing.T) {
 
 	bodyReader := strings.NewReader(`{ "orgId": "` + orgID + `", "name": "ABC_DEF_TEST"}`)
 
-	app = newApplicationHandler(apprepo, org)
+	app = newApplicationHandler(msgRepo, apprepo, org)
 
 	tt := []struct {
 		name       string
@@ -240,13 +243,14 @@ func TestApplicationHandler_UpdateApp(t *testing.T) {
 
 	org := mocks.NewMockOrganisationRepository(ctrl)
 	apprepo := mocks.NewMockApplicationRepository(ctrl)
+	msgRepo := mocks.NewMockMessageRepository(ctrl)
 
 	orgID := "1234567890"
 
 	appId := "12345"
 	bodyReader := strings.NewReader(`{"name": "ABC_DEF_TEST_UPDATE"}`)
 
-	app = newApplicationHandler(apprepo, org)
+	app = newApplicationHandler(msgRepo, apprepo, org)
 
 	tt := []struct {
 		name       string
@@ -315,12 +319,13 @@ func TestApplicationHandler_CreateAppEndpoint(t *testing.T) {
 
 	org := mocks.NewMockOrganisationRepository(ctrl)
 	apprepo := mocks.NewMockApplicationRepository(ctrl)
+	msgRepo := mocks.NewMockMessageRepository(ctrl)
 
 	orgID := "1234567890"
 
 	bodyReader := strings.NewReader(`{"url": "http://localhost", "description": "Test"}`)
 
-	app = newApplicationHandler(apprepo, org)
+	app = newApplicationHandler(msgRepo, apprepo, org)
 
 	appId := "123456789"
 
@@ -385,6 +390,7 @@ func TestApplicationHandler_UpdateAppEndpoint_InvalidRequest(t *testing.T) {
 
 	org := mocks.NewMockOrganisationRepository(ctrl)
 	apprepo := mocks.NewMockApplicationRepository(ctrl)
+	msgRepo := mocks.NewMockMessageRepository(ctrl)
 
 	orgID := "1234567890"
 
@@ -392,7 +398,7 @@ func TestApplicationHandler_UpdateAppEndpoint_InvalidRequest(t *testing.T) {
 	endpointId := "9999900000-8888"
 	bodyReader := strings.NewReader(`{"url": "http://localhost", "description": "Test"}`)
 
-	app = newApplicationHandler(apprepo, org)
+	app = newApplicationHandler(msgRepo, apprepo, org)
 
 	tt := []struct {
 		name       string
@@ -464,6 +470,7 @@ func TestApplicationHandler_UpdateAppEndpoint_ValidRequest(t *testing.T) {
 
 	org := mocks.NewMockOrganisationRepository(ctrl)
 	apprepo := mocks.NewMockApplicationRepository(ctrl)
+	msgRepo := mocks.NewMockMessageRepository(ctrl)
 
 	orgID := "1234567890"
 
@@ -471,7 +478,7 @@ func TestApplicationHandler_UpdateAppEndpoint_ValidRequest(t *testing.T) {
 	endpointId := "9999900000-8888"
 	bodyReader := strings.NewReader(`{"url": "http://localhost", "description": "Test"}`)
 
-	app = newApplicationHandler(apprepo, org)
+	app = newApplicationHandler(msgRepo, apprepo, org)
 
 	tt := []struct {
 		name       string
@@ -547,10 +554,11 @@ func Test_applicationHandler_CreateOrganisation(t *testing.T) {
 
 	org := mocks.NewMockOrganisationRepository(ctrl)
 	apprepo := mocks.NewMockApplicationRepository(ctrl)
+	msgRepo := mocks.NewMockMessageRepository(ctrl)
 
 	bodyReader := strings.NewReader(`{"name": "ABC_DEF_TEST"}`)
 
-	app = newApplicationHandler(apprepo, org)
+	app = newApplicationHandler(msgRepo, apprepo, org)
 
 	tt := []struct {
 		name       string
@@ -602,12 +610,13 @@ func Test_applicationHandler_UpdateOrganisation(t *testing.T) {
 
 	org := mocks.NewMockOrganisationRepository(ctrl)
 	apprepo := mocks.NewMockApplicationRepository(ctrl)
+	msgRepo := mocks.NewMockMessageRepository(ctrl)
 
 	orgID := "1234567890"
 
 	bodyReader := strings.NewReader(`{"name": "ABC_DEF_TEST_UPDATE"}`)
 
-	app = newApplicationHandler(apprepo, org)
+	app = newApplicationHandler(msgRepo, apprepo, org)
 
 	tt := []struct {
 		name       string
@@ -674,10 +683,11 @@ func Test_applicationHandler_GetOrganisation(t *testing.T) {
 
 	org := mocks.NewMockOrganisationRepository(ctrl)
 	apprepo := mocks.NewMockApplicationRepository(ctrl)
+	msgRepo := mocks.NewMockMessageRepository(ctrl)
 
 	orgID := "1234567890"
 
-	app = newApplicationHandler(apprepo, org)
+	app = newApplicationHandler(msgRepo, apprepo, org)
 
 	tt := []struct {
 		name       string
@@ -749,10 +759,11 @@ func Test_applicationHandler_GetOrganisations(t *testing.T) {
 
 	org := mocks.NewMockOrganisationRepository(ctrl)
 	apprepo := mocks.NewMockApplicationRepository(ctrl)
+	msgRepo := mocks.NewMockMessageRepository(ctrl)
 
 	orgID := "1234567890"
 
-	app = newApplicationHandler(apprepo, org)
+	app = newApplicationHandler(msgRepo, apprepo, org)
 
 	tt := []struct {
 		name       string
@@ -809,6 +820,7 @@ func Test_applicationHandler_GetDashboardSummary(t *testing.T) {
 
 	org := mocks.NewMockOrganisationRepository(ctrl)
 	apprepo := mocks.NewMockApplicationRepository(ctrl)
+	msgRepo := mocks.NewMockMessageRepository(ctrl)
 
 	orgID := "1234567890"
 
@@ -817,7 +829,7 @@ func Test_applicationHandler_GetDashboardSummary(t *testing.T) {
 		OrgName: "Valid organisation",
 	}
 
-	app = newApplicationHandler(apprepo, org)
+	app = newApplicationHandler(msgRepo, apprepo, org)
 
 	tt := []struct {
 		name       string
@@ -849,7 +861,7 @@ func Test_applicationHandler_GetDashboardSummary(t *testing.T) {
 
 	for _, tc := range tt {
 		t.Run(tc.name, func(t *testing.T) {
-			request := httptest.NewRequest(tc.method, fmt.Sprintf("/v1/dashboard/%s/summary?startDate=%s", orgID, time.Now().Format(format)), nil)
+			request := httptest.NewRequest(tc.method, fmt.Sprintf("/v1/dashboard/%s/summary?startDate=%s&type=daily", orgID, time.Now().Format(format)), nil)
 			responseRecorder := httptest.NewRecorder()
 			rctx := chi.NewRouteContext()
 			rctx.URLParams.Add("orgID", orgID)
@@ -861,7 +873,7 @@ func Test_applicationHandler_GetDashboardSummary(t *testing.T) {
 				tc.dbFn(apprepo, org)
 			}
 
-			fetchDashboardSummary(apprepo)(http.HandlerFunc(app.GetDashboardSummary)).
+			fetchDashboardSummary(apprepo, msgRepo)(http.HandlerFunc(app.GetDashboardSummary)).
 				ServeHTTP(responseRecorder, request)
 
 			if responseRecorder.Code != tc.statusCode {
@@ -881,6 +893,7 @@ func Test_applicationHandler_GetPaginatedApps(t *testing.T) {
 
 	org := mocks.NewMockOrganisationRepository(ctrl)
 	apprepo := mocks.NewMockApplicationRepository(ctrl)
+	msgRepo := mocks.NewMockMessageRepository(ctrl)
 
 	orgID := "1234567890"
 
@@ -889,7 +902,7 @@ func Test_applicationHandler_GetPaginatedApps(t *testing.T) {
 		OrgName: "Valid organisation",
 	}
 
-	app = newApplicationHandler(apprepo, org)
+	app = newApplicationHandler(msgRepo, apprepo, org)
 
 	tt := []struct {
 		name       string

@@ -11,9 +11,10 @@ import (
 	"github.com/hookcamp/hookcamp/config"
 	"github.com/hookcamp/hookcamp/server/models"
 	"github.com/hookcamp/hookcamp/util"
+	log "github.com/sirupsen/logrus"
 	"io"
-	"log"
 	"math/rand"
+
 	"net/http"
 	"net/url"
 	"strconv"
@@ -32,6 +33,7 @@ const (
 	orgCtx       contextKey = "org"
 	appCtx       contextKey = "app"
 	endpointCtx  contextKey = "endpoint"
+	msgCtx       contextKey = "message"
 	pageCtx      contextKey = "page"
 	pageSizeCtx  contextKey = "pageSize"
 	dashboardCtx contextKey = "dashboard"
@@ -573,7 +575,7 @@ func fetchOrganisationApps(appRepo hookcamp.ApplicationRepository) func(next htt
 	}
 }
 
-func fetchDashboardSummary(appRepo hookcamp.ApplicationRepository) func(next http.Handler) http.Handler {
+func fetchDashboardSummary(appRepo hookcamp.ApplicationRepository, msgRepo hookcamp.MessageRepository) func(next http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -588,8 +590,19 @@ func fetchDashboardSummary(appRepo hookcamp.ApplicationRepository) func(next htt
 
 			startT, err := time.Parse(format, startDate)
 			if err != nil {
-				log.Println("err : ", err)
+				log.Errorln("error parsing startDate - ", err)
 				_ = render.Render(w, r, newErrorResponse("please specify a startDate in the format "+format, http.StatusBadRequest))
+				return
+			}
+
+			period := r.URL.Query().Get("type")
+			if util.IsStringEmpty(period) {
+				_ = render.Render(w, r, newErrorResponse("please specify a type query", http.StatusBadRequest))
+				return
+			}
+
+			if !hookcamp.IsValidPeriod(period) {
+				_ = render.Render(w, r, newErrorResponse("please specify a type query in (daily, weekly, monthly, yearly)", http.StatusBadRequest))
 				return
 			}
 
@@ -602,6 +615,12 @@ func fetchDashboardSummary(appRepo hookcamp.ApplicationRepository) func(next htt
 					_ = render.Render(w, r, newErrorResponse("please specify an endDate in the format "+format+" or none at all", http.StatusBadRequest))
 					return
 				}
+			}
+
+			log.Info("Period is ", period)
+			if err := ensurePeriod(hookcamp.PeriodValues[period], startT, endT); err != nil {
+				_ = render.Render(w, r, newErrorResponse(fmt.Sprintf("invalid period '%s': %s", period, err.Error()), http.StatusBadRequest))
+				return
 			}
 
 			searchParams := models.SearchParams{
@@ -618,7 +637,7 @@ func fetchDashboardSummary(appRepo hookcamp.ApplicationRepository) func(next htt
 			}
 
 			// TODO: Replace with actual method to fetch messages
-			messagesSent, messageData, err := computeDashboardMessages(r.Context(), appRepo, startT)
+			messagesSent, messageData, err := computeDashboardMessages(r.Context(), org.UID, appRepo, msgRepo, startT, endT, period)
 			if err != nil {
 				_ = render.Render(w, r, newErrorResponse("an error occurred while fetching messages", http.StatusInternalServerError))
 				return
@@ -627,7 +646,7 @@ func fetchDashboardSummary(appRepo hookcamp.ApplicationRepository) func(next htt
 			dashboard := models.DashboardSummary{
 				Applications: len(apps),
 				MessagesSent: messagesSent,
-				MessageData:  messageData,
+				Daily:        &messageData,
 			}
 
 			r = r.WithContext(setDashboardSummaryInContext(r.Context(), &dashboard))
@@ -636,17 +655,42 @@ func fetchDashboardSummary(appRepo hookcamp.ApplicationRepository) func(next htt
 	}
 }
 
-func computeDashboardMessages(ctx context.Context, appRepo hookcamp.ApplicationRepository, t time.Time) (int, []models.MessageData, error) {
+func ensurePeriod(period hookcamp.Period, start time.Time, end time.Time) error {
+	if start.Unix() > end.Unix() {
+		return errors.New("startDate cannot be greater than endDate")
+	}
+
+	return ensureStrictPeriod(period, start, end)
+}
+
+func ensureStrictPeriod(period hookcamp.Period, start time.Time, end time.Time) error {
+	switch period {
+	case hookcamp.Daily:
+	case hookcamp.Weekly:
+		if end.Year() != start.Year() || end.Month() != start.Month() {
+			return errors.New("startDate and endDate must be in the same calendar month")
+		}
+		break
+	case hookcamp.Monthly:
+		if end.Year() != start.Year() {
+			return errors.New("startDate and endDate must be in the same calendar year")
+		}
+	}
+
+	return nil
+}
+
+func computeDashboardMessages(ctx context.Context, orgId string, appRepo hookcamp.ApplicationRepository, msgRepo hookcamp.MessageRepository, startT time.Time, endT time.Time, period string) (int, []models.Daily, error) {
 
 	// simulate for now
 	messagesSent := 0
 
 	var seededRand = rand.New(rand.NewSource(time.Now().UnixNano()))
 
-	messageData := make([]models.MessageData, 0)
-	for day := 1; day <= getNumberOfDays(t.Month()); day++ {
+	messageData := make([]models.Daily, 0)
+	for day := 1; day <= getNumberOfDays(startT.Month()); day++ {
 		count := seededRand.Intn(20)
-		messageData = append(messageData, models.MessageData{
+		messageData = append(messageData, models.Daily{
 			Day:   day,
 			Count: count,
 		})
@@ -695,6 +739,24 @@ func setApplicationInContext(ctx context.Context,
 
 func getApplicationFromContext(ctx context.Context) *hookcamp.Application {
 	return ctx.Value(appCtx).(*hookcamp.Application)
+}
+
+func setMessageInContext(ctx context.Context,
+	msg *hookcamp.Message) context.Context {
+	return context.WithValue(ctx, msgCtx, msg)
+}
+
+func getMessageFromContext(ctx context.Context) *hookcamp.Message {
+	return ctx.Value(msgCtx).(*hookcamp.Message)
+}
+
+func setMessagesInContext(ctx context.Context,
+	msg *[]hookcamp.Message) context.Context {
+	return context.WithValue(ctx, msgCtx, msg)
+}
+
+func getMessagesFromContext(ctx context.Context) *[]hookcamp.Message {
+	return ctx.Value(msgCtx).(*[]hookcamp.Message)
 }
 
 func setApplicationsInContext(ctx context.Context,

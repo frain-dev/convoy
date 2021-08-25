@@ -4,8 +4,8 @@ import (
 	"embed"
 	"fmt"
 	"github.com/go-chi/chi/v5/middleware"
+	log "github.com/sirupsen/logrus"
 	"io/fs"
-	"log"
 	"net/http"
 	"path"
 	"strings"
@@ -29,7 +29,7 @@ func reactRootHandler(rw http.ResponseWriter, req *http.Request) {
 	f := fs.FS(reactFS)
 	static, err := fs.Sub(f, "ui/build")
 	if err != nil {
-		log.Printf("ERR | an error has occured with the react app - %+v", err)
+		log.Errorf("an error has occurred with the react app - %+v\n", err)
 		return
 	}
 	if _, err := static.Open(strings.TrimLeft(p, "/")); err != nil { // If file not found server index/html from root
@@ -80,7 +80,11 @@ func buildRoutes(app *applicationHandler) http.Handler {
 				appSubRouter.With(ensureAppUpdate(app.appRepo)).Put("/", app.UpdateApp)
 
 				appSubRouter.Get("/", app.GetApp)
-				appSubRouter.Post("/{id}/message", nil)
+
+				appSubRouter.Route("/messages", func(msgSubRouter chi.Router) {
+					msgSubRouter.With(ensureNewMessage(app.appRepo, app.msgRepo)).Post("/", app.CreateAppMessage)
+					msgSubRouter.With(fetchAppMessages(app.appRepo, app.msgRepo)).Get("/", app.GetAppMessages)
+				})
 
 				appSubRouter.Route("/endpoint", func(endpointAppSubRouter chi.Router) {
 					endpointAppSubRouter.With(ensureNewAppEndpoint(app.appRepo)).Post("/", app.CreateAppEndpoint)
@@ -89,10 +93,22 @@ func buildRoutes(app *applicationHandler) http.Handler {
 			})
 		})
 
+		r.Route("/messages", func(msgRouter chi.Router) {
+
+			msgRouter.With(pagination).With(fetchAllMessages(app.msgRepo)).Get("/", app.GetAppMessagesPaged)
+
+			msgRouter.Route("/{msgID}", func(msgSubRouter chi.Router) {
+				msgSubRouter.Use(requireMessage(app.msgRepo))
+
+				msgSubRouter.Get("/", app.GetAppMessage)
+			})
+
+		})
+
 		r.Route("/dashboard/{orgID}", func(dashboardRouter chi.Router) {
 			dashboardRouter.Use(requireOrganisation(app.orgRepo))
 
-			dashboardRouter.With(fetchDashboardSummary(app.appRepo)).Get("/summary", app.GetDashboardSummary)
+			dashboardRouter.With(fetchDashboardSummary(app.appRepo, app.msgRepo)).Get("/summary", app.GetDashboardSummary)
 			dashboardRouter.With(pagination).With(fetchOrganisationApps(app.appRepo)).Get("/apps", app.GetPaginatedApps)
 		})
 	})
@@ -102,10 +118,9 @@ func buildRoutes(app *applicationHandler) http.Handler {
 	return router
 }
 
-func New(cfg config.Configuration, appRepo hookcamp.ApplicationRepository,
-	orgRepo hookcamp.OrganisationRepository) *http.Server {
+func New(cfg config.Configuration, msgRepo hookcamp.MessageRepository, appRepo hookcamp.ApplicationRepository, orgRepo hookcamp.OrganisationRepository) *http.Server {
 
-	app := newApplicationHandler(appRepo, orgRepo)
+	app := newApplicationHandler(msgRepo, appRepo, orgRepo)
 
 	srv := &http.Server{
 		Handler:      buildRoutes(app),

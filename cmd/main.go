@@ -2,7 +2,9 @@ package main
 
 import (
 	"context"
-	"log"
+	"github.com/hookcamp/hookcamp/worker"
+	log "github.com/sirupsen/logrus"
+	prefixed "github.com/x-cray/logrus-prefixed-formatter"
 	"os"
 	"time"
 	_ "time/tzdata"
@@ -17,6 +19,16 @@ import (
 )
 
 func main() {
+	log.SetLevel(log.InfoLevel)
+
+	log.SetFormatter(&prefixed.TextFormatter{
+		DisableColors:   false,
+		TimestampFormat: "2006-01-02 15:04:05",
+		FullTimestamp:   true,
+		ForceFormatting: true,
+	})
+	log.SetReportCaller(true)
+
 	os.Setenv("TZ", "") // Use UTC by default :)
 
 	app := &app{}
@@ -60,13 +72,24 @@ func main() {
 
 			app.orgRepo = datastore.NewOrganisationRepo(conn)
 			app.applicationRepo = datastore.NewApplicationRepo(conn)
-			// app.endpointRepo = datastore.NewEndpointRepository(db)
-			// app.messageRepo = datastore.NewMessageRepository(db)
+			app.messageRepo = datastore.NewMessageRepository(conn)
 			app.queue = queuer
+
+			ensureMongoIndices(conn)
+
+			worker.NewCleaner(&app.queue, &app.messageRepo).Start()
+			worker.NewScheduler(&app.queue, &app.messageRepo).Start()
+			worker.NewProducer(&app.queue, &app.messageRepo).Start()
 
 			return nil
 		},
 		PersistentPostRunE: func(cmd *cobra.Command, args []string) error {
+			defer func() {
+				err := app.queue.Close()
+				if err != nil {
+					log.Errorln("failed to close app queue - ", err)
+				}
+			}()
 			return db.Disconnect(context.Background())
 		},
 	}
@@ -83,6 +106,15 @@ func main() {
 	if err := cmd.Execute(); err != nil {
 		log.Fatal(err)
 	}
+}
+
+func ensureMongoIndices(conn *mongo.Database) {
+	datastore.EnsureIndex(conn, datastore.OrgCollection, "uid", true)
+
+	datastore.EnsureIndex(conn, datastore.AppCollections, "uid", true)
+
+	datastore.EnsureIndex(conn, datastore.MsgCollection, "uid", true)
+	datastore.EnsureIndex(conn, datastore.MsgCollection, "event_type", false)
 }
 
 type app struct {

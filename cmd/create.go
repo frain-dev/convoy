@@ -2,8 +2,10 @@ package main
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
+	log "github.com/sirupsen/logrus"
 	"net/url"
 	"os"
 	"time"
@@ -220,69 +222,74 @@ func createMessageCommand(a *app) *cobra.Command {
 		Use:   "message",
 		Short: "Create a message",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			// var d json.RawMessage
+			var d json.RawMessage
 
-			// if util.IsStringEmpty(eventType) {
-			// 	return errors.New("please provide an event type")
-			// }
+			if util.IsStringEmpty(eventType) {
+				return errors.New("please provide an event type")
+			}
 
-			// if util.IsStringEmpty(data) && util.IsStringEmpty(filePath) {
-			// 	return errors.New("please provide one of -f or -d")
-			// }
+			if util.IsStringEmpty(data) && util.IsStringEmpty(filePath) {
+				return errors.New("please provide one of -f or -d")
+			}
 
-			// if !util.IsStringEmpty(data) && !util.IsStringEmpty(filePath) {
-			// 	return errors.New("please provide only one of -f or -d")
-			// }
+			if !util.IsStringEmpty(data) && !util.IsStringEmpty(filePath) {
+				return errors.New("please provide only one of -f or -d")
+			}
 
-			// if !util.IsStringEmpty(data) {
-			// 	d = json.RawMessage([]byte(data))
-			// }
+			if !util.IsStringEmpty(data) {
+				d = []byte(data)
+			}
 
-			// if !util.IsStringEmpty(filePath) {
-			// 	f, err := os.Open(filePath)
-			// 	if err != nil {
-			// 		return fmt.Errorf("could not open file... %w", err)
-			// 	}
+			if !util.IsStringEmpty(filePath) {
+				f, err := os.Open(filePath)
+				if err != nil {
+					return fmt.Errorf("could not open file... %w", err)
+				}
 
-			// 	defer f.Close()
+				defer func() {
+					err := f.Close()
+					if err != nil {
+						log.Errorf("failed to close file - %+v", err)
+					}
+				}()
 
-			// 	if err := json.NewDecoder(f).Decode(&d); err != nil {
-			// 		return err
-			// 	}
-			// }
+				if err := json.NewDecoder(f).Decode(&d); err != nil {
+					return err
+				}
+			}
 
-			// id, err := uuid.Parse(appID)
-			// if err != nil {
-			// 	return fmt.Errorf("please provide a valid app ID.. %w", err)
-			// }
+			id, err := uuid.Parse(appID)
+			if err != nil {
+				return fmt.Errorf("please provide a valid app ID.. %w", err)
+			}
 
-			// ctx, cancelFn := getCtx()
-			// defer cancelFn()
+			ctx, cancelFn := getCtx()
+			defer cancelFn()
 
-			// appData, err := a.applicationRepo.FindApplicationByID(ctx, id)
-			// if err != nil {
-			// 	return err
-			// }
+			appData, err := a.applicationRepo.FindApplicationByID(ctx, id.String())
+			if err != nil {
+				return err
+			}
 
-			// msg := &hookcamp.Message{
-			// 	ID:        uuid.New(),
-			// 	AppID:     appData.ID,
-			// 	EventType: hookcamp.EventType(eventType),
-			// 	Data:      hookcamp.JSONData(d),
-			// 	Metadata: &hookcamp.MessageMetadata{
-			// 		NumTrials: 0,
-			// 	},
-			// 	Status: hookcamp.ScheduledMessageStatus,
-			// }
+			msg := &hookcamp.Message{
+				UID:       uuid.New().String(),
+				AppID:     appData.ID.String(),
+				EventType: hookcamp.EventType(eventType),
+				Data:      d,
+				Metadata: &hookcamp.MessageMetadata{
+					NumTrials: 0,
+				},
+				Status: hookcamp.ScheduledMessageStatus,
+			}
 
-			// ctx, cancelFn = getCtx()
-			// defer cancelFn()
+			ctx, cancelFn = getCtx()
+			defer cancelFn()
 
-			// if err := a.messageRepo.CreateMessage(ctx, msg); err != nil {
-			// 	return fmt.Errorf("could not create message... %w", err)
-			// }
+			if err := a.messageRepo.CreateMessage(ctx, msg); err != nil {
+				return fmt.Errorf("could not create message... %w", err)
+			}
 
-			// fmt.Println("Your message has been created. And will be sent to available endpoints")
+			fmt.Println("Your message has been created. And will be sent to available endpoints")
 			return nil
 		},
 	}

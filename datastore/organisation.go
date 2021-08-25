@@ -16,12 +16,12 @@ type orgRepo struct {
 }
 
 const (
-	orgCollection = "organisations"
+	OrgCollection = "organisations"
 )
 
 func NewOrganisationRepo(client *mongo.Database) hookcamp.OrganisationRepository {
 	return &orgRepo{
-		inner: client.Collection(orgCollection),
+		inner: client.Collection(OrgCollection),
 	}
 }
 

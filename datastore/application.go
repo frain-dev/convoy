@@ -18,12 +18,12 @@ type appRepo struct {
 }
 
 const (
-	appCollections = "applications"
+	AppCollections = "applications"
 )
 
 func NewApplicationRepo(client *mongo.Database) hookcamp.ApplicationRepository {
 	return &appRepo{
-		client: client.Collection(appCollections, nil),
+		client: client.Collection(AppCollections, nil),
 	}
 }
 
@@ -76,7 +76,7 @@ func (db *appRepo) LoadApplicationsPagedByOrgId(ctx context.Context, orgId strin
 	}
 
 	var applications []hookcamp.Application
-	paginatedData, err := pager.New(db.client).Context(ctx).Limit(int64(pageable.PerPage)).Page(int64(pageable.Page)).Sort("price", -1).Filter(filter).Decode(&applications).Find()
+	paginatedData, err := pager.New(db.client).Context(ctx).Limit(int64(pageable.PerPage)).Page(int64(pageable.Page)).Sort("created_at", -1).Filter(filter).Decode(&applications).Find()
 	if err != nil {
 		return applications, pager.PaginationData{}, err
 	}

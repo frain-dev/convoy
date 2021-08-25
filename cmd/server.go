@@ -25,7 +25,7 @@ func addServerCommand(a *app) *cobra.Command {
 				return errors.New("please provide the HTTP port in the hookcamp.json file")
 			}
 
-			srv := server.New(cfg, a.applicationRepo, a.orgRepo)
+			srv := server.New(cfg, a.messageRepo, a.applicationRepo, a.orgRepo)
 			return srv.ListenAndServe()
 		},
 	}
