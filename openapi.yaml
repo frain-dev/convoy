@@ -11,7 +11,7 @@ info:
     url: https://www.mozilla.org/en-US/MPL/2.0/
   version: 0.1.0
 servers:
-  - url: TBD
+  - url: /v1
 tags:
   - name: Applications
     description: Applications is an abstraction for the webhook receipent. It maps to one or more endpoints.
@@ -34,16 +34,8 @@ paths:
           content:
             'application/json':
               schema:
-                allOf:
-                  - $ref: '#/components/schemas/BaseApiResponse'
-                  - type: object
-                    required: 
-                    - data
-                    properties:
-                      data:
-                        type: array
-                        items: 
-                          $ref: '#/components/schemas/Application'
+                $ref: '#/components/schemas/ArrayOfApps'
+
     post:
       tags:
         - Applications
@@ -67,14 +59,7 @@ paths:
           content:
             application/json:
               schema:
-                allOf:
-                  - $ref: '#/components/schemas/BaseApiResponse'
-                  - type: object
-                    required:
-                    - data
-                    properties:
-                      data: 
-                        $ref: '#/components/schemas/Application'
+                $ref: '#/components/schemas/AppResponse'
   /apps/{Id}:
     get: 
       tags:
@@ -87,15 +72,7 @@ paths:
           content: 
             application/json:
               schema:
-                allOf:
-                  - $ref: '#/components/schemas/BaseApiResponse'
-                  - type: object
-                    required:
-                    - data
-                    properties:
-                      data:
-                        $ref: '#/components/schemas/Application'
-    
+                $ref: '#/components/schemas/AppResponse'
     put:
       tags:
         - Applications
@@ -107,15 +84,7 @@ paths:
           content: 
             application/json:
               schema:
-                allOf:
-                  - $ref: '#/components/schemas/BaseApiResponse'
-                  - type: object
-                    required: 
-                    - data
-                    properties:
-                      data:
-                        $ref: '#/components/schemas/Application'
-    
+                $ref: '#/components/schemas/AppResponse'
     delete: 
       tags:
         - Applications
@@ -124,10 +93,9 @@ paths:
       responses:
         '200':
           description: Valid response.
-    
     parameters:
       - $ref: '#/components/parameters/uniqueId'
-  /endpoints:
+  /apps/{Id}/endpoints:
     get:
       tags:
         - Endpoints
@@ -139,16 +107,8 @@ paths:
           content:
             'application/json':
               schema:
-                allOf:
-                  - $ref: '#/components/schemas/BaseApiResponse'
-                  - type: object
-                    required: 
-                    - data
-                    properties:
-                      data:
-                        type: array
-                        items: 
-                          $ref: '#/components/schemas/Endpoint'
+                $ref: '#/components/schemas/ArrayOfEndpoints'
+
     post:
       tags: 
         - Endpoints
@@ -164,7 +124,7 @@ paths:
               properties:
                 url: 
                   type: string
-                app_id:
+                description:
                   type: string
       
       responses:
@@ -173,15 +133,10 @@ paths:
           content: 
             application/json:
               schema:
-                allOf:
-                  - $ref: '#/components/schemas/BaseApiResponse'
-                  - type: object
-                    required:
-                    - data
-                    properties:
-                      data: 
-                        $ref: '#/components/schemas/Endpoint'
-  /endpoints/{Id}:
+                $ref: '#/components/schemas/EndpointResponse'
+    parameters:
+      - $ref: '#/components/parameters/uniqueId'
+  /apps/{Id}/endpoints/{Id}:
     get:
       tags:
         - Endpoints
@@ -193,15 +148,7 @@ paths:
           content:
             application/json:
               schema:
-                allOf:
-                  - $ref: '#/components/schemas/BaseApiResponse'
-                  - type: object
-                    required: 
-                    - data
-                    properties:
-                      data:
-                        $ref: '#/components/schemas/Endpoint'
-
+                $ref: '#/components/schemas/EndpointResponse'
     put:
       tags: 
         - Endpoints
@@ -213,15 +160,7 @@ paths:
           content:
             application/json:
               schema:
-                allOf:
-                  - $ref: '#/components/schemas/BaseApiResponse'
-                  - type: object
-                    required: 
-                    - data
-                    properties:
-                      data:
-                        $ref: '#/components/schemas/Endpoint'
-    
+                $ref: '#/components/schemas/EndpointResponse'
     delete:
       tags:
         - Endpoints
@@ -233,7 +172,7 @@ paths:
     
     parameters:
       - $ref: '#/components/parameters/uniqueId'
-  /events:
+  /apps/{Id}/events:
     get: 
       tags: 
         - Events
@@ -245,16 +184,7 @@ paths:
           content:
             application/json:
               schema:
-                allOf:
-                  - $ref: '#/components/schemas/BaseApiResponse'
-                  - type: object
-                    required: 
-                    - data
-                    properties:
-                      data:
-                        type: array
-                        items: 
-                          $ref: '#/components/schemas/Event'
+                $ref: '#/components/schemas/ArrayOfEvents'
     post: 
       tags:
         - Events
@@ -266,22 +196,16 @@ paths:
           application/json:
             schema:
               type: object
-          
       responses:
         '200':
           description: Valid response.
           content: 
             application/json:
               schema:
-                allOf:
-                  - $ref: '#/components/schemas/BaseApiResponse'
-                  - type: object
-                    required:
-                    - data
-                    properties:
-                      data: 
-                        $ref: '#/components/schemas/Event'
-  /events/{Id}:
+                $ref: '#/components/schemas/EventResponse'
+    parameters:
+      - $ref: '#/components/parameters/uniqueId'
+  /apps/{Id}/events/{Id}:
     get: 
       tags: 
         - Events
@@ -293,18 +217,10 @@ paths:
           content:
             application/json:
               schema:
-                allOf:
-                  - $ref: '#/components/schemas/BaseApiResponse'
-                  - type: object
-                    required: 
-                    - data
-                    properties:
-                      data:
-                        $ref: '#/components/schemas/Event'
-    
+                $ref: '#/components/schemas/EventResponse'
     parameters:
       - $ref: '#/components/parameters/uniqueId'
-  /deliveryattempts:
+  /events/{Id}/deliveryattempts:
     get: 
       tags:
         - DeliveryAttempts
@@ -316,17 +232,11 @@ paths:
           content:
             application/json:
               schema:
-                allOf:
-                  - $ref: '#/components/schemas/BaseApiResponse'
-                  - type: object
-                    required: 
-                    - data
-                    properties:
-                      data:
-                        type: array
-                        items: 
-                          $ref: '#/components/schemas/DeliveryAttempt'
-  /deliveryattempts/{Id}:
+                $ref: '#/components/schemas/ArrayOfDeliveryAttempts'
+
+    parameters: 
+      - $ref: '#/components/parameters/uniqueId'
+  /events/{Id}/deliveryattempts/{Id}:
     get:
       tags: 
         - DeliveryAttempts
@@ -338,17 +248,10 @@ paths:
           content:
             application/json:
               schema:
-                allOf:
-                  - $ref: '#/components/schemas/BaseApiResponse'
-                  - type: object
-                    required: 
-                    - data
-                    properties:
-                      data:
-                        $ref: '#/components/schemas/DeliveryAttempt'
+                $ref: '#/components/schemas/DeliveryAttemptResponse'
+
     parameters:
       - $ref: '#/components/parameters/uniqueId'
-  
 components:
   schemas:
     Organisation:
@@ -400,27 +303,87 @@ components:
       required:
         - status
         - message
-
-  responses:
-    CreateOrganisationResponse:
-      description: Create organisation response
-      content: 
-        'application/json':
-          schema:
-            allOf:
-              - $ref: '#/components/schemas/BaseApiResponse'
-              - type: object
-                required: 
-                - data
-                properties:
-                  data: 
-                    $ref: '#/components/schemas/Organisation'
-    CreateAppResponse:
-      description: Create app response
-      content:
-        'application/json':
-          schema:
+    AppResponse:
+      allOf:
+      - $ref: '#/components/schemas/BaseApiResponse'
+      - type: object
+        required:
+        - data
+        properties:
+          data:
             $ref: '#/components/schemas/Application'
+    ArrayOfApps:
+      allOf:
+      - $ref: '#/components/schemas/BaseApiResponse'
+      - type: object
+        required: 
+        - data
+        properties:
+          data:
+            type: array
+            items: 
+              $ref: '#/components/schemas/Application'
+    EndpointResponse:
+      allOf:
+      - $ref: '#/components/schemas/BaseApiResponse'
+      - type: object
+        required:
+        - data
+        properties:
+          data: 
+            $ref: '#/components/schemas/Endpoint'
+    ArrayOfEndpoints:
+      allOf:
+      - $ref: '#/components/schemas/BaseApiResponse'
+      - type: object
+        required: 
+        - data
+        properties:
+          data:
+            type: array
+            items: 
+              $ref: '#/components/schemas/Endpoint'
+    EventResponse:
+      allOf:
+      - $ref: '#/components/schemas/BaseApiResponse'
+      - type: object
+        required:
+        - data
+        properties:
+          data: 
+            $ref: '#/components/schemas/Event'
+    ArrayOfEvents:
+      allOf:
+      - $ref: '#/components/schemas/BaseApiResponse'
+      - type: object
+        required: 
+        - data
+        properties:
+          data:
+            type: array
+            items: 
+              $ref: '#/components/schemas/Event'
+    DeliveryAttemptResponse:
+      allOf:
+      - $ref: '#/components/schemas/BaseApiResponse'
+      - type: object
+        required: 
+        - data
+        properties:
+          data:
+            $ref: '#/components/schemas/DeliveryAttempt'
+    ArrayOfDeliveryAttempts:
+      allOf:
+      - $ref: '#/components/schemas/BaseApiResponse'
+      - type: object
+        required: 
+        - data
+        properties:
+          data:
+            type: array
+            items: 
+              $ref: '#/components/schemas/DeliveryAttempt'
+  responses:
     NotFound:
       description: This specified resource was not found.
       content:
