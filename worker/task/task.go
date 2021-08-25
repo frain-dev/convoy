@@ -17,7 +17,9 @@ func PostMessages(queue queue.Queuer, msgRepo hookcamp.MessageRepository) {
 	log.Debugln("loaded new messages with size: ", len(m))
 
 	err = msgRepo.UpdateStatusOfMessages(context.Background(), m, hookcamp.ProcessingMessageStatus)
-
+	if err != nil {
+		log.Errorln("failed to update staus of messages - ", err)
+	}
 	queueMessages(queue, m)
 }
 
@@ -31,7 +33,9 @@ func RetryMessages(queue queue.Queuer, msgRepo hookcamp.MessageRepository) {
 	log.Debugln("loaded retry messages with size: ", len(m))
 
 	err = msgRepo.UpdateStatusOfMessages(context.Background(), m, hookcamp.ProcessingMessageStatus)
-
+	if err != nil {
+		log.Errorln("failed to update staus of messages - ", err)
+	}
 	queueMessages(queue, m)
 }
 

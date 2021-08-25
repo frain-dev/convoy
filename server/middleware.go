@@ -670,7 +670,6 @@ func ensureStrictPeriod(period hookcamp.Period, start time.Time, end time.Time) 
 		if end.Year() != start.Year() || end.Month() != start.Month() {
 			return errors.New("startDate and endDate must be in the same calendar month")
 		}
-		break
 	case hookcamp.Monthly:
 		if end.Year() != start.Year() {
 			return errors.New("startDate and endDate must be in the same calendar year")

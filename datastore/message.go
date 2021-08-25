@@ -59,7 +59,7 @@ func (db *messageRepo) LoadMessages(ctx context.Context, orgId string, searchPar
 	}
 
 	findOptions := options.Find()
-	findOptions.SetSort(bson.D{{"created_at", -1}})
+	findOptions.SetSort(bson.D{primitive.E{Key: "created_at", Value: -1}})
 
 	log.Println("org_id", orgId)
 	filter := bson.M{"application.org_id": orgId, "created_at": bson.M{"$gte": start, "$lte": end}}

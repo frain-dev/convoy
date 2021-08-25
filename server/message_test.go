@@ -38,8 +38,6 @@ func Test_ensureNewMessage(t *testing.T) {
 	}
 
 	type args struct {
-		appRepo hookcamp.ApplicationRepository
-		msgRepo hookcamp.MessageRepository
 		message *hookcamp.Message
 	}
 
@@ -144,8 +142,6 @@ func Test_fetchAllMessages(t *testing.T) {
 	}
 
 	type args struct {
-		appRepo hookcamp.ApplicationRepository
-		msgRepo hookcamp.MessageRepository
 		message *hookcamp.Message
 	}
 
