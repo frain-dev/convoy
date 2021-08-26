@@ -6,11 +6,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	pager "github.com/gobeam/mongo-go-pagination"
-	"github.com/google/uuid"
-	"github.com/hookcamp/hookcamp/config"
-	"github.com/hookcamp/hookcamp/server/models"
-	"github.com/hookcamp/hookcamp/util"
 	"io"
 	"log"
 	"math/rand"
@@ -19,6 +14,12 @@ import (
 	"strconv"
 	"strings"
 	"time"
+
+	pager "github.com/gobeam/mongo-go-pagination"
+	"github.com/google/uuid"
+	"github.com/hookcamp/hookcamp/config"
+	"github.com/hookcamp/hookcamp/server/models"
+	"github.com/hookcamp/hookcamp/util"
 
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
@@ -76,6 +77,7 @@ func ensureBasicAuthFromRequest(a *config.AuthConfiguration, r *http.Request) er
 func jsonResponse(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
+		w.Header().Set("Access-Control-Allow-Origin", "*")
 		next.ServeHTTP(w, r)
 	})
 }

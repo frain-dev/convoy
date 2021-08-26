@@ -1,19 +1,19 @@
 {
-	"database" : {
-		"dsn" : "mongodb://root:rootpassword@localhost:27017"
-	},
-	"queue" : {
-		"type" : "redis",
-		"redis" : {
-		   "dsn" : "redis://localhost:8379"
-		}
-	},
-	"server" : {
-		"http" : {
-			"port" : 5005
-		}
-	},
-	"auth": {
-		"type": "none"
-	}
+  "database": {
+    "dsn": "mongodb://root:rootpassword@localhost:27037"
+  },
+  "queue": {
+    "type": "redis",
+    "redis": {
+      "dsn": "redis://localhost:8379"
+    }
+  },
+  "server": {
+    "http": {
+      "port": 5005
+    }
+  },
+  "auth": {
+    "type": "none"
+  }
 }

@@ -22,9 +22,16 @@
 		border-radius: 4px;
 		padding: 11px 16px;
 		display: flex;
+		justify-content: space-between;
 		align-items: center;
 		max-width: 256px;
 		width: 100%;
+		position: relative;
+
+		& > div {
+			display: flex;
+			align-items: center;
+		}
 
 		.icon {
 			width: 24px;
@@ -42,6 +49,33 @@
 			font-weight: 500;
 			font-size: 14px;
 			line-height: 14px;
+		}
+
+		.dropdown {
+			position: absolute;
+			top: 50px;
+			width: 100%;
+			background: #ffffff;
+			border: 1px solid #edeff5;
+			left: 0;
+			right: 0;
+			display: none;
+
+			ul {
+				width: 100%;
+
+				li {
+					text-align: left;
+					padding: 10px 20px;
+					width: 100%;
+				}
+			}
+		}
+
+		&:focus-within {
+			.dropdown {
+				display: block;
+			}
 		}
 	}
 }
@@ -163,23 +197,26 @@
 
 .dashboard--logs {
 	margin-top: 32px;
-	padding: 0;
+	padding: 0 0 20px;
 	display: flex;
+	max-height: 800px;
 
 	&--tabs {
-		max-width: 850px;
+		// max-width: 800px;
 		width: 100%;
 		border-right: 1px solid #edeff5;
 	}
 
 	&--details {
 		padding: 24px 0 0 32px;
-		width: 461px;
+		width: 511px;
+		overflow-y: auto;
 
 		ul {
 			padding: 8px 0 24px;
 			border-bottom: 1px solid #edeff5;
 			width: 100%;
+			margin-bottom: 30px;
 
 			li {
 				display: flex;
@@ -205,6 +242,10 @@
 				}
 			}
 		}
+
+		& > div {
+			margin: 20px 0;
+		}
 	}
 }
 
@@ -215,6 +256,7 @@
 
 	.tab {
 		padding: 18px 16px;
+		text-transform: capitalize;
 
 		&.active {
 			position: relative;
@@ -251,7 +293,7 @@ table {
 		padding: 9px 10px;
 	}
 
-	tr {
+	tbody tr {
 		font-weight: 500;
 		font-size: 14px;
 		line-height: 28px;
@@ -286,5 +328,49 @@ table {
 		font-weight: 500;
 		font-size: 14px;
 		line-height: 28px;
+	}
+}
+
+.filter {
+	display: flex;
+	align-items: center;
+	margin-bottom: 16px;
+	position: relative;
+
+	.filter--button {
+		background: #ffffff;
+		border: 1px solid #f3f5f9;
+		border-radius: 4px;
+		padding: 10px;
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+		min-width: 145px;
+		font-weight: 500;
+		font-size: 14px;
+		line-height: 14px;
+		margin-left: 8px;
+
+		div {
+			margin: 0 8px;
+		}
+	}
+
+	&.show-calendar {
+		.rdrCalendarWrapper {
+			display: flex;
+		}
+	}
+
+	.rdrCalendarWrapper {
+		width: 27.667em;
+		background: transparent;
+		margin-left: 8px;
+
+		display: none;
+		position: absolute;
+		top: 46px;
+		background: #fff;
+		border: 1px solid #f3f5f9;
 	}
 }

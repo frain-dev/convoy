@@ -1,34 +1,132 @@
-// temporarily unused
-// import React, { useState, useEffect } from 'react';
-// import * as axios from 'axios';
-import React from 'react';
+import React, { useState, useEffect } from 'react';
+import * as axios from 'axios';
 import ArrowDownIcon from '../../assets/img/arrow-down-icon.svg';
 import AppsIcon from '../../assets/img/apps-icon.svg';
 import MessageIcon from '../../assets/img/message-icon.svg';
-import EndpointsIcon from '../../assets/img/endpoints-icon.svg';
-import Chart from '../../assets/img/chart.svg';
 import RefreshIcon from '../../assets/img/refresh-icon.svg';
+import CalendarIcon from '../../assets/img/calendar-icon.svg';
 import CopyIcon from '../../assets/img/copy-icon.svg';
 import ViewIcon from '../../assets/img/view-icon.svg';
+import Chart from 'chart.js/auto';
+import { DateRange } from 'react-date-range';
+import ReactJson from 'react-json-view';
 import './app.scss';
+import 'react-date-range/dist/styles.css';
+import 'react-date-range/dist/theme/default.css';
+
+const _axios = axios.default;
+const request = _axios.create({ baseURL: 'http://localhost:5005/v1' });
+const months = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
 
 function DashboardPage() {
-	// temporarily unused code
+	const [dashboardData, setDashboardData] = useState({ apps: 0, messages: 0, messageData: [] });
+	const [apps, setAppsData] = useState([]);
+	const [tabs] = useState(['messages', 'apps']);
+	const [activeTab, setActiveTab] = useState('apps');
+	const [showFilterCalendar, toggleShowFilterCalendar] = useState(false);
+	const [organisations, setOrganisations] = useState([]);
+	const [activeorganisation, setActiveOrganisation] = useState({
+		uid: '',
+		name: '',
+		created_at: 0,
+		updated_at: 0,
+		deleted_at: 0,
+	});
+	const [detailsItem, setDetailsItem] = useState();
+	const [filterDates, setFilterDates] = useState([
+		{
+			startDate: new Date(),
+			endDate: new Date(),
+			key: 'selection',
+		},
+	]);
 
-	// const request = axios.default;
-	// const [dashboardData, setDashboardData] = useState({});
+	const [jsonStyle] = useState({
+		fontSize: '12px',
+		lineHeight: '25px',
+	});
 
-	// useEffect(() => {
-	// 	const fetchDashboardData = async () => {
-	// 		try {
-	// 			const dashboardResponse = await request.get('http://192.168.1.170:5005/v1/dashboard/d1c71511-1dcb-49e9-9ae9-e8da4d5d3560/summary?startDate=2021-08-16T00:00:00&endDate=2021-08-16T21:59:55');
-	// 			console.log('🚀 ~ file: index.js ~ line 19 ~ useEffect ~ dashboardResponse', dashboardResponse);
-	// 		} catch (error) {
-	// 			console.log('🚀 ~ file: index.js ~ line 24 ~ fetchDashboardData ~ error', error);
-	// 		}
-	// 	};
-	// 	fetchDashboardData();
-	// });
+	const [options] = useState({
+		plugins: {
+			legend: {
+				display: false,
+			},
+		},
+		scales: {
+			xAxis: {
+				display: true,
+				grid: {
+					display: false,
+				},
+			},
+		},
+	});
+
+	const [data] = useState();
+
+	const getDate = (date) => {
+		const _date = new Date(date);
+		const day = _date.getDate();
+		const month = _date.getMonth();
+		const year = _date.getFullYear();
+		return `${day} ${months[month]}, ${year}`;
+	};
+
+	useEffect(() => {
+		const getApps = async () => {
+			try {
+				const appsResponse = await request.get('/apps');
+				setAppsData(appsResponse.data.applications);
+			} catch (error) {
+				return error;
+			}
+		};
+
+		const getOrganisations = async () => {
+			try {
+				const organisationsResponse = await request.get('/organisations');
+				setOrganisations(organisationsResponse.data.organisations);
+				setActiveOrganisation(organisationsResponse.data.organisations[0]);
+				return organisationsResponse.data.organisations[0];
+			} catch (error) {
+				return error;
+			}
+		};
+
+		const fetchDashboardData = async (uid) => {
+			try {
+				const dashboardResponse = await request.get(
+					`/dashboard/${uid}/summary?startDate=${filterDates[0].startDate.toISOString().split('.')[0]}&endDate=${filterDates[0].endDate.toISOString().split('.')[0]}`,
+				);
+				setDashboardData(dashboardResponse.data.dashboard);
+
+				const chartData = dashboardResponse.data.dashboard.messageData;
+				const labels = chartData.map((label) => label.day);
+				const dataSet = chartData.map((label) => label.count);
+				const data = {
+					labels,
+					datasets: [
+						{
+							data: dataSet,
+							fill: false,
+							borderColor: '#477DB3',
+							tension: 0.5,
+							yAxisID: 'yAxis',
+							xAxisID: 'xAxis',
+						},
+					],
+				};
+				const chart = new Chart(document.getElementById('chart'), { type: 'line', data, options });
+
+				chart.update();
+			} catch (error) {
+				return error;
+			}
+		};
+
+		getOrganisations().then((organisation) => fetchDashboardData(organisation.uid));
+		if (activeTab === 'apps') getApps();
+	}, [options, activeTab, filterDates, data]);
 
 	return (
 		<div className="dashboard">
@@ -36,16 +134,35 @@ function DashboardPage() {
 				<div className="dashboard--header--container">
 					<div className="logo">Fhooks.</div>
 
-					<div className="user">
-						<div className="icon">O</div>
-						<div className="name">Company Name</div>
+					<button className="user">
+						<div>
+							<div className="icon">O</div>
+							<div className="name">{activeorganisation.name}</div>
+						</div>
 						<img src={ArrowDownIcon} alt="arrow down icon" />
-					</div>
+						<div className="dropdown organisations">
+							<ul>
+								{organisations.map((organisation, index) => (
+									<li key={index}>{organisation.name}</li>
+								))}
+							</ul>
+						</div>
+					</button>
 				</div>
 			</header>
 
 			<div className="dashboard--page">
-				<div className="filter">Filter by: </div>
+				<div className={`filter ${showFilterCalendar ? 'show-calendar' : ''}`}>
+					Filter by:
+					<button className="filter--button" onClick={() => toggleShowFilterCalendar(!showFilterCalendar)}>
+						<img src={CalendarIcon} alt="calender icon" />
+						<div>
+							{getDate(filterDates[0].startDate)} - {getDate(filterDates[0].endDate)}
+						</div>
+						<img src={ArrowDownIcon} alt="arrow down icon" />
+					</button>
+					<DateRange onChange={(item) => setFilterDates([item.selection])} moveRangeOnFirstSelection={false} ranges={filterDates} />
+				</div>
 
 				<div className="dashboard--page--details">
 					<div className="card dashboard--page--details--chart">
@@ -53,22 +170,15 @@ function DashboardPage() {
 							<li>
 								<img src={MessageIcon} alt="message icon" />
 								<div className="metric">
-									<div>2,589</div>
-									<div>Message Sent</div>
+									<div>{dashboardData.messages}</div>
+									<div>Messages Sent</div>
 								</div>
 							</li>
 							<li>
 								<img src={AppsIcon} alt="apps icon" />
 								<div className="metric">
-									<div>2,589</div>
+									<div>{dashboardData.apps}</div>
 									<div>Apps</div>
-								</div>
-							</li>
-							<li>
-								<img src={EndpointsIcon} alt="endpoints icon" />
-								<div className="metric">
-									<div>2,589</div>
-									<div>Endpoints</div>
 								</div>
 							</li>
 						</ul>
@@ -76,7 +186,7 @@ function DashboardPage() {
 						<div>
 							<h3>Message Sent</h3>
 
-							<img src={Chart} alt="chart" />
+							<canvas id="chart" width="400" height="200"></canvas>
 						</div>
 					</div>
 
@@ -116,182 +226,221 @@ function DashboardPage() {
 				<section className="card dashboard--logs">
 					<div className="dashboard--logs--tabs">
 						<div className="tabs">
-							<button className="clear tab active">Messages</button>
-							<button className="clear tab">Apps</button>
+							{tabs.map((tab, index) => (
+								<button onClick={() => setActiveTab(tab)} key={index} className={'clear tab ' + (activeTab === tab ? 'active' : '')}>
+									{tab}
+								</button>
+							))}
 						</div>
 
 						<div className="table">
-							<table>
-								<thead>
-									<tr className="table--head">
-										<th scope="col">Status</th>
-										<th scope="col">Event Type</th>
-										<th scope="col">Event ID</th>
-										<th scope="col">Created</th>
-										<th scope="col">Next Entry</th>
-									</tr>
-								</thead>
-								<tbody>
-									<tr>
-										<td>
-											<div>
-												<div className="tag">200 OK</div>
-											</div>
-										</td>
-										<td>
-											<div>customer.created</div>
-										</td>
-										<td>
-											<div>evt-136776hjfy76734uh5j</div>
-										</td>
-										<td>
-											<div>3 Aug,2021</div>
-										</td>
-										<td>
-											<div>
-												<button className="primary has-icon icon-left">
-													<img src={RefreshIcon} alt="refresh icon" /> Resend
-												</button>
-											</div>
-										</td>
-									</tr>
-									<tr>
-										<td>
-											<div>
-												<div className="tag">200 OK</div>
-											</div>
-										</td>
-										<td>
-											<div>customer.created</div>
-										</td>
-										<td>
-											<div>evt-136776hjfy76734uh5j</div>
-										</td>
-										<td>
-											<div>3 Aug,2021</div>
-										</td>
-										<td>
-											<div>
-												<button className="primary has-icon icon-left">
-													<img src={RefreshIcon} alt="refresh icon" /> Resend
-												</button>
-											</div>
-										</td>
-									</tr>
-									<tr>
-										<td>
-											<div>
-												<div className="tag">200 OK</div>
-											</div>
-										</td>
-										<td>
-											<div>customer.created</div>
-										</td>
-										<td>
-											<div>evt-136776hjfy76734uh5j</div>
-										</td>
-										<td>
-											<div>3 Aug,2021</div>
-										</td>
-										<td>
-											<div>
-												<button className="primary has-icon icon-left">
-													<img src={RefreshIcon} alt="refresh icon" /> Resend
-												</button>
-											</div>
-										</td>
-									</tr>
-									<tr>
-										<td>
-											<div>
-												<div className="tag">200 OK</div>
-											</div>
-										</td>
-										<td>
-											<div>customer.created</div>
-										</td>
-										<td>
-											<div>evt-136776hjfy76734uh5j</div>
-										</td>
-										<td>
-											<div>3 Aug,2021</div>
-										</td>
-										<td>
-											<div>
-												<button className="primary has-icon icon-left">
-													<img src={RefreshIcon} alt="refresh icon" /> Resend
-												</button>
-											</div>
-										</td>
-									</tr>
-									<tr>
-										<td>
-											<div>
-												<div className="tag">200 OK</div>
-											</div>
-										</td>
-										<td>
-											<div>customer.created</div>
-										</td>
-										<td>
-											<div>evt-136776hjfy76734uh5j</div>
-										</td>
-										<td>
-											<div>3 Aug,2021</div>
-										</td>
-										<td>
-											<div>
-												<button className="primary has-icon icon-left">
-													<img src={RefreshIcon} alt="refresh icon" /> Resend
-												</button>
-											</div>
-										</td>
-									</tr>
-									<tr>
-										<td>
-											<div>
-												<div className="tag">200 OK</div>
-											</div>
-										</td>
-										<td>
-											<div>customer.created</div>
-										</td>
-										<td>
-											<div>evt-136776hjfy76734uh5j</div>
-										</td>
-										<td>
-											<div>3 Aug,2021</div>
-										</td>
-										<td>
-											<div>
-												<button className="primary has-icon icon-left">
-													<img src={RefreshIcon} alt="refresh icon" /> Resend
-												</button>
-											</div>
-										</td>
-									</tr>
-								</tbody>
-							</table>
+							{activeTab && activeTab === 'messages' && (
+								<table>
+									<thead>
+										<tr className="table--head">
+											<th scope="col">Status</th>
+											<th scope="col">Event Type</th>
+											<th scope="col">Event ID</th>
+											<th scope="col">Created</th>
+											<th scope="col">Next Entry</th>
+										</tr>
+									</thead>
+									<tbody>
+										<tr>
+											<td>
+												<div>
+													<div className="tag">200 OK</div>
+												</div>
+											</td>
+											<td>
+												<div>customer.created</div>
+											</td>
+											<td>
+												<div>evt-136776hjfy76734uh5j</div>
+											</td>
+											<td>
+												<div>3 Aug,2021</div>
+											</td>
+											<td>
+												<div>
+													<button className="primary has-icon icon-left">
+														<img src={RefreshIcon} alt="refresh icon" /> Resend
+													</button>
+												</div>
+											</td>
+										</tr>
+										<tr>
+											<td>
+												<div>
+													<div className="tag">200 OK</div>
+												</div>
+											</td>
+											<td>
+												<div>customer.created</div>
+											</td>
+											<td>
+												<div>evt-136776hjfy76734uh5j</div>
+											</td>
+											<td>
+												<div>3 Aug,2021</div>
+											</td>
+											<td>
+												<div>
+													<button className="primary has-icon icon-left">
+														<img src={RefreshIcon} alt="refresh icon" /> Resend
+													</button>
+												</div>
+											</td>
+										</tr>
+										<tr>
+											<td>
+												<div>
+													<div className="tag">200 OK</div>
+												</div>
+											</td>
+											<td>
+												<div>customer.created</div>
+											</td>
+											<td>
+												<div>evt-136776hjfy76734uh5j</div>
+											</td>
+											<td>
+												<div>3 Aug,2021</div>
+											</td>
+											<td>
+												<div>
+													<button className="primary has-icon icon-left">
+														<img src={RefreshIcon} alt="refresh icon" /> Resend
+													</button>
+												</div>
+											</td>
+										</tr>
+										<tr>
+											<td>
+												<div>
+													<div className="tag">200 OK</div>
+												</div>
+											</td>
+											<td>
+												<div>customer.created</div>
+											</td>
+											<td>
+												<div>evt-136776hjfy76734uh5j</div>
+											</td>
+											<td>
+												<div>3 Aug,2021</div>
+											</td>
+											<td>
+												<div>
+													<button className="primary has-icon icon-left">
+														<img src={RefreshIcon} alt="refresh icon" /> Resend
+													</button>
+												</div>
+											</td>
+										</tr>
+										<tr>
+											<td>
+												<div>
+													<div className="tag">200 OK</div>
+												</div>
+											</td>
+											<td>
+												<div>customer.created</div>
+											</td>
+											<td>
+												<div>evt-136776hjfy76734uh5j</div>
+											</td>
+											<td>
+												<div>3 Aug,2021</div>
+											</td>
+											<td>
+												<div>
+													<button className="primary has-icon icon-left">
+														<img src={RefreshIcon} alt="refresh icon" /> Resend
+													</button>
+												</div>
+											</td>
+										</tr>
+										<tr>
+											<td>
+												<div>
+													<div className="tag">200 OK</div>
+												</div>
+											</td>
+											<td>
+												<div>customer.created</div>
+											</td>
+											<td>
+												<div>evt-136776hjfy76734uh5j</div>
+											</td>
+											<td>
+												<div>3 Aug,2021</div>
+											</td>
+											<td>
+												<div>
+													<button className="primary has-icon icon-left">
+														<img src={RefreshIcon} alt="refresh icon" /> Resend
+													</button>
+												</div>
+											</td>
+										</tr>
+									</tbody>
+								</table>
+							)}
+
+							{activeTab && activeTab === 'apps' && (
+								<table>
+									<thead>
+										<tr className="table--head">
+											<th scope="col">Name</th>
+											<th scope="col">Created</th>
+											<th scope="col">Updated</th>
+										</tr>
+									</thead>
+									<tbody>
+										{apps.map((app, index) => (
+											<tr key={index} onClick={() => setDetailsItem(app)}>
+												<td>
+													<div>{app.name}</div>
+												</td>
+												<td>
+													<div>{getDate(app.created_at)}</div>
+												</td>
+												<td>
+													<div>{getDate(app.updated_at)}</div>
+												</td>
+											</tr>
+										))}
+									</tbody>
+								</table>
+							)}
 						</div>
 					</div>
 
-					<div className="dashboard--logs--details">
-						<h3>Details</h3>
-						<ul>
-							<li>
-								<div className="label">Time</div>
-								<div className="value">Aug 5, 2021 12:23PM</div>
-							</li>
-							<li>
-								<div className="label">IP Address</div>
-								<div className="value">54.123.246.72</div>
-							</li>
-							<li>
-								<div className="label">API version</div>
-								<div className="value color">2021-08-27</div>
-							</li>
-						</ul>
-					</div>
+					{detailsItem && (
+						<div className="dashboard--logs--details">
+							<h3>Details</h3>
+							<ul>
+								<li>
+									<div className="label">Date Created</div>
+									<div className="value">{getDate(detailsItem.created_at)}</div>
+								</li>
+								<li>
+									<div className="label">Last Updated</div>
+									<div className="value">{getDate(detailsItem.updated_at)}</div>
+								</li>
+							</ul>
+
+							{detailsItem.endpoints.length > 0 && (
+								<React.Fragment>
+									<h4>App Endpoints</h4>
+									<div>
+										<ReactJson src={detailsItem.endpoints} iconStyle="square" displayDataTypes={false} enableClipboard={false} style={jsonStyle} />
+									</div>
+								</React.Fragment>
+							)}
+						</div>
+					)}
 				</section>
 			</div>
 		</div>
