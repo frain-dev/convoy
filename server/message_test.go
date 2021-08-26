@@ -8,6 +8,7 @@ import (
 	"github.com/golang/mock/gomock"
 	"github.com/hookcamp/hookcamp"
 	"github.com/hookcamp/hookcamp/mocks"
+	"github.com/hookcamp/hookcamp/server/models"
 	"github.com/sirupsen/logrus"
 	"net/http"
 	"net/http/httptest"
@@ -85,10 +86,14 @@ func Test_ensureNewMessage(t *testing.T) {
 				appRepo.EXPECT().
 					FindApplicationByID(gomock.Any(), gomock.Any()).Times(1).
 					Return(&hookcamp.Application{
-						UID:       appId,
-						OrgID:     orgID,
-						Title:     "Valid application",
-						Endpoints: []hookcamp.Endpoint{},
+						UID:   appId,
+						OrgID: orgID,
+						Title: "Valid application",
+						Endpoints: []hookcamp.Endpoint{
+							{
+								TargetURL: "http://localhost",
+							},
+						},
 					}, nil)
 				msgRepo.EXPECT().
 					CreateMessage(gomock.Any(), gomock.Any()).Times(1).
@@ -180,9 +185,12 @@ func Test_fetchAllMessages(t *testing.T) {
 			rctx := chi.NewRouteContext()
 			rctx.URLParams.Add("appID", tc.args.message.AppID)
 
+			pageable := models.Pageable{
+				Page:    1,
+				PerPage: 10,
+			}
 			request = request.WithContext(context.WithValue(request.Context(), chi.RouteCtxKey, rctx))
-			request = request.WithContext(context.WithValue(request.Context(), pageCtx, 1))
-			request = request.WithContext(context.WithValue(request.Context(), pageSizeCtx, 20))
+			request = request.WithContext(context.WithValue(request.Context(), pageableCtx, pageable))
 
 			if tc.dbFn != nil {
 				tc.dbFn(msgRepo, appRepo, orgRepo)

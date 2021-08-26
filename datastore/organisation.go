@@ -63,7 +63,7 @@ func (db *orgRepo) CreateOrganisation(ctx context.Context, o *hookcamp.Organisat
 
 func (db *orgRepo) UpdateOrganisation(ctx context.Context, o *hookcamp.Organisation) error {
 
-	o.UpdatedAt = time.Now().Unix()
+	o.UpdatedAt = primitive.NewDateTimeFromTime(time.Now())
 
 	filter := bson.D{primitive.E{Key: "uid", Value: o.UID}}
 

@@ -30,6 +30,11 @@ func NewMessageRepository(db *mongo.Database) hookcamp.MessageRepository {
 	}
 }
 
+var dailyIntervalFormat = "%Y-%m-%d" // 1 day
+var weeklyIntervalFormat = "%Y-%m"   // 1 week
+var monthlyIntervalFormat = "%Y-%m"  // 1 month
+var yearlyIntervalFormat = "%Y"      // 1 month
+
 func (db *messageRepo) CreateMessage(ctx context.Context,
 	message *hookcamp.Message) error {
 
@@ -50,7 +55,7 @@ func (db *messageRepo) CreateMessage(ctx context.Context,
 	return err
 }
 
-func (db *messageRepo) LoadMessages(ctx context.Context, orgId string, searchParams models.SearchParams) ([]hookcamp.Message, error) {
+func (db *messageRepo) LoadMessageIntervals(ctx context.Context, orgId string, searchParams models.SearchParams, period hookcamp.Period, interval int) ([]models.MessageInterval, error) {
 
 	start := searchParams.CreatedAtStart
 	end := searchParams.CreatedAtEnd
@@ -58,13 +63,65 @@ func (db *messageRepo) LoadMessages(ctx context.Context, orgId string, searchPar
 		end = start
 	}
 
-	findOptions := options.Find()
-	findOptions.SetSort(bson.D{primitive.E{Key: "created_at", Value: -1}})
+	matchStage := bson.D{{Key: "$match", Value: bson.D{
+		{Key: "application.org_id", Value: orgId},
+		{Key: "created_at", Value: bson.D{
+			{Key: "$gte", Value: primitive.NewDateTimeFromTime(time.Unix(start, 0))},
+			{Key: "$lte", Value: primitive.NewDateTimeFromTime(time.Unix(end, 0))},
+		},
+		}},
+	}}
 
-	log.Println("org_id", orgId)
-	filter := bson.M{"application.org_id": orgId, "created_at": bson.M{"$gte": start, "$lte": end}}
+	var timeComponent string
+	var format string
+	switch period {
+	case hookcamp.Daily:
+		timeComponent = "$dayOfYear"
+		format = dailyIntervalFormat
+	case hookcamp.Weekly:
+		timeComponent = "$week"
+		format = weeklyIntervalFormat
+	case hookcamp.Monthly:
+		timeComponent = "$month"
+		format = monthlyIntervalFormat
+	case hookcamp.Yearly:
+		timeComponent = "$year"
+		format = yearlyIntervalFormat
+	default:
+		return nil, errors.New("specified data cannot be generated for period")
+	}
+	groupStage := bson.D{
+		{Key: "$group", Value: bson.D{
+			{Key: "_id",
+				Value: bson.D{
+					{Key: "total_time",
+						Value: bson.D{{Key: "$dateToString", Value: bson.D{{Key: "date", Value: "$created_at"}, {Key: "format", Value: format}}}},
+					},
+					{Key: "index", Value: bson.D{{Key: "$trunc", Value: bson.D{{Key: "$divide", Value: bson.A{
+						bson.D{{Key: timeComponent, Value: "$created_at"}},
+						interval,
+					},
+					}}}}},
+				},
+			},
+			{Key: "count", Value: bson.D{{Key: "$sum", Value: 1}}},
+		},
+		},
+	}
+	sortStage := bson.D{{Key: "$sort", Value: bson.D{primitive.E{Key: "_id", Value: 1}}}}
 
-	return db.loadMessagesByFilter(ctx, filter, findOptions)
+	data, err := db.inner.Aggregate(ctx, mongo.Pipeline{matchStage, groupStage, sortStage})
+	if err != nil {
+		log.Errorln("aggregate error - ", err)
+		return nil, err
+	}
+	var messagesIntervals []models.MessageInterval
+	if err = data.All(ctx, &messagesIntervals); err != nil {
+		log.Errorln("marshal error - ", err)
+		return nil, err
+	}
+
+	return messagesIntervals, nil
 }
 
 func (db *messageRepo) LoadMessagesByAppId(ctx context.Context, appId string) ([]hookcamp.Message, error) {
@@ -131,7 +188,7 @@ func (db *messageRepo) LoadMessagesForPostingRetry(ctx context.Context) ([]hookc
 	filter := bson.M{
 		"$and": []bson.M{
 			{"status": hookcamp.RetryMessageStatus},
-			{"metadata.next_send_time": bson.M{"$lte": time.Now().Unix()}},
+			{"metadata.next_send_time": bson.M{"$lte": primitive.NewDateTimeFromTime(time.Now())}},
 		},
 	}
 
@@ -142,7 +199,7 @@ func (db *messageRepo) LoadAbandonedMessagesForPostingRetry(ctx context.Context)
 	filter := bson.M{
 		"$and": []bson.M{
 			{"status": hookcamp.ProcessingMessageStatus},
-			{"metadata.next_send_time": bson.M{"$lte": time.Now().Unix()}},
+			{"metadata.next_send_time": bson.M{"$lte": primitive.NewDateTimeFromTime(time.Now())}},
 		},
 	}
 
@@ -152,7 +209,7 @@ func (db *messageRepo) LoadAbandonedMessagesForPostingRetry(ctx context.Context)
 func (db *messageRepo) UpdateStatusOfMessages(ctx context.Context, messages []hookcamp.Message, status hookcamp.MessageStatus) error {
 
 	filter := bson.M{"uid": bson.M{"$in": getIds(messages)}}
-	update := bson.M{"$set": bson.M{"status": status, "updated_at": time.Now().Unix()}}
+	update := bson.M{"$set": bson.M{"status": status, "updated_at": primitive.NewDateTimeFromTime(time.Now())}}
 
 	_, err := db.inner.UpdateMany(
 		ctx,
@@ -180,12 +237,12 @@ func (db *messageRepo) UpdateMessage(ctx context.Context, m hookcamp.Message) er
 
 	update := bson.M{
 		"$set": bson.M{
-			"status":      m.Status,
-			"description": m.Description,
-			"application": m.Application,
-			"metadata":    m.Metadata,
-			"attempts":    m.MessageAttempts,
-			"updated_at":  time.Now().Unix(),
+			"status":       m.Status,
+			"description":  m.Description,
+			"app_metadata": m.AppMetadata,
+			"metadata":     m.Metadata,
+			"attempts":     m.MessageAttempts,
+			"updated_at":   primitive.NewDateTimeFromTime(time.Now()),
 		},
 	}
 
@@ -198,16 +255,19 @@ func (db *messageRepo) UpdateMessage(ctx context.Context, m hookcamp.Message) er
 	return err
 }
 
-func (db *messageRepo) LoadMessagesPaged(ctx context.Context, pageable models.Pageable) ([]hookcamp.Message, pager.PaginationData, error) {
-	filter := bson.D{
-		//primitive.E{
-		//	Key:   "org_id",
-		//	Value: orgId,
-		//},
-	} // TODO: sort for organisation
+func (db *messageRepo) LoadMessagesPaged(ctx context.Context, orgId string, pageable models.Pageable) ([]hookcamp.Message, pager.PaginationData, error) {
+	filter := bson.D{}
+	if !util.IsStringEmpty(orgId) {
+		filter = bson.D{
+			primitive.E{
+				Key:   "application.org_id",
+				Value: orgId,
+			},
+		}
+	}
 
 	var messages []hookcamp.Message
-	paginatedData, err := pager.New(db.inner).Context(ctx).Limit(int64(pageable.PerPage)).Page(int64(pageable.Page)).Sort("created_at", -1).Filter(filter).Decode(&messages).Find()
+	paginatedData, err := pager.New(db.inner).Context(ctx).Limit(int64(pageable.PerPage)).Page(int64(pageable.Page)).Sort("created_at", pageable.Sort).Filter(filter).Decode(&messages).Find()
 	if err != nil {
 		return messages, pager.PaginationData{}, err
 	}

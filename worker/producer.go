@@ -45,52 +45,60 @@ func (p *Producer) Start() {
 func (p *Producer) postMessages(msgRepo hookcamp.MessageRepository, m hookcamp.Message) {
 
 	var done = true
-	for i := range m.Application.Endpoints {
+	for i := range m.AppMetadata.Endpoints {
 
-		e := &m.Application.Endpoints[i]
-		if e.Merged != nil && *e.Merged {
+		e := &m.AppMetadata.Endpoints[i]
+		if e.Merged {
 			log.Debugf("endpoint %s already merged with message %s\n", e.TargetURL, m.UID)
 			continue
 		}
 
 		attemptStatus := hookcamp.FailureMessageStatus
+		start := time.Now()
 
 		resp, err := p.dispatch.SendRequest(e.TargetURL, string(hookcamp.HttpPost), m.Data)
-		if err == nil && resp.Response != nil && resp.Response.Status == "200 OK" {
-			log.Debugln("message sent to ", e.TargetURL)
+		status := "-"
+		if resp != nil {
+			status = resp.Status
+		}
+
+		duration := time.Since(start)
+		// log request details
+		requestLogger := log.WithFields(log.Fields{
+			"status":   status,
+			"uri":      e.TargetURL,
+			"method":   hookcamp.HttpPost,
+			"duration": duration,
+		})
+
+		if err == nil && status == "200 OK" {
+			requestLogger.Infof("%s ", m.UID)
+			log.Infof("%s sent\n", m.UID)
 			attemptStatus = hookcamp.SuccessMessageStatus
-			if e.Merged != nil {
-				*e.Merged = true
-			} else {
-				e.Merged = newBool(true)
-			}
+			e.Merged = true
 		} else {
-			log.Debugln("failed to send messages to ", e.TargetURL)
+			requestLogger.Errorf("%s", m.UID)
 			done = false
-			if e.Merged != nil {
-				*e.Merged = false
-			} else {
-				e.Merged = newBool(false)
-			}
+			e.Merged = false
 		}
 		if err != nil {
-			log.Debugln("failed to create message attempt")
+			log.Errorf("%s failed. Reason: %s\n", m.UID, err)
 		}
 
 		attempt := parseAttemptFromResponse(m, *e, resp, attemptStatus)
-		m.MessageAttempts = append(m.MessageAttempts, attempt)
+		m.MessageAttempts = append([]hookcamp.MessageAttempt{attempt}, m.MessageAttempts...)
 	}
 	if done {
 		m.Status = hookcamp.SuccessMessageStatus
 	} else {
 		m.Status = hookcamp.RetryMessageStatus
-		m.Metadata.NextSendTime = time.Now().Add(15 * time.Second).Unix() // TODO: define strategy for retrials
+		m.Metadata.NextSendTime = primitive.NewDateTimeFromTime(time.Now().Add(15 * time.Second)) // TODO: define strategy for retrials
 	}
 	m.Metadata.NumTrials += 1
 
 	if m.Metadata.NumTrials >= m.Metadata.RetryLimit {
-		log.Errorln("retry limit exceeded for message - ", m.UID)
-		m.Description = "retry limit exceeded"
+		log.Errorf("%s retry limit exceeded ", m.UID)
+		m.Description = "Retry limit exceeded"
 		m.Status = hookcamp.FailureMessageStatus
 	}
 
@@ -100,24 +108,9 @@ func (p *Producer) postMessages(msgRepo hookcamp.MessageRepository, m hookcamp.M
 	}
 }
 
-func newBool(b bool) *bool {
-	return &b
-}
+func parseAttemptFromResponse(m hookcamp.Message, e hookcamp.EndpointMetadata, resp *net.Response, attemptStatus hookcamp.MessageStatus) hookcamp.MessageAttempt {
 
-func parseAttemptFromResponse(m hookcamp.Message, e hookcamp.Endpoint, resp *net.Response, attemptStatus hookcamp.MessageStatus) hookcamp.MessageAttempt {
-	ip := ""
-	userAgent := ""
-	httpStatus := ""
 	body := make([]byte, 0)
-	if resp != nil {
-		r := resp.Response
-		if r != nil {
-			httpStatus = r.Status
-		}
-		ip = resp.IP
-		userAgent = resp.UserAgent
-		body = resp.Body
-	}
 
 	return hookcamp.MessageAttempt{
 		ID:         primitive.NewObjectID(),
@@ -126,14 +119,16 @@ func parseAttemptFromResponse(m hookcamp.Message, e hookcamp.Endpoint, resp *net
 		EndpointID: e.UID,
 		APIVersion: "2021-08-27",
 
-		IPAddress:        ip,
-		UserAgent:        userAgent,
-		HttpResponseCode: httpStatus,
+		IPAddress:        resp.IP,
+		Header:           resp.Header,
+		ContentType:      resp.ContentType,
+		HttpResponseCode: resp.Status,
 		ResponseData:     string(body),
+		Error:            resp.Error,
 		Status:           attemptStatus,
 
-		CreatedAt: time.Now().Unix(),
-		UpdatedAt: time.Now().Unix(),
+		CreatedAt: primitive.NewDateTimeFromTime(time.Now()),
+		UpdatedAt: primitive.NewDateTimeFromTime(time.Now()),
 	}
 }
 

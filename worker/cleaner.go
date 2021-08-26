@@ -21,7 +21,7 @@ func NewCleaner(queuer *queue.Queuer, msgRepo *hookcamp.MessageRepository) *Clea
 
 func (c *Cleaner) Start() {
 	go func() {
-		log.Info("Running cleanup tasks")
+		log.Debugln("Running cleanup tasks")
 		task.RetryAbandonedMessages(*c.queue, *c.msgRepo)
 	}()
 }

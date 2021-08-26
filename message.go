@@ -9,6 +9,7 @@ import (
 	pager "github.com/gobeam/mongo-go-pagination"
 	"github.com/hookcamp/hookcamp/server/models"
 	"go.mongodb.org/mongo-driver/bson/primitive"
+	"net/http"
 )
 
 type MessageStatus string
@@ -32,13 +33,26 @@ const (
 type MessageMetadata struct {
 	// NextSendTime denotes the next time a message will be published in
 	// case it failed the first time
-	NextSendTime int64 `json:"next_send_time" bson:"next_send_time"`
+	NextSendTime primitive.DateTime `json:"next_send_time" bson:"next_send_time"`
 
 	// NumTrials: number of times we have tried to deliver this message to
 	// an application
 	NumTrials int64 `json:"num_trials" bson:"num_trials"`
 
 	RetryLimit int64 `json:"retry_limit" bson:"retry_limit"`
+}
+
+type AppMetadata struct {
+	OrgID string `json:"org_id" bson:"org_id"`
+
+	Endpoints []EndpointMetadata `json:"endpoints" bson:"endpoints"`
+}
+
+type EndpointMetadata struct {
+	UID       string `json:"uid" bson:"uid"`
+	TargetURL string `json:"target_url" bson:"target_url"`
+
+	Merged bool `json:"merged" bson:"merged"`
 }
 
 func (m MessageMetadata) Value() (driver.Value, error) {
@@ -80,16 +94,15 @@ type Message struct {
 
 	Status MessageStatus `json:"status" bson:"status"`
 
-	Application *Application `json:"application,omitempty" bson:"application"`
+	AppMetadata *AppMetadata `json:"app_metadata,omitempty" bson:"app_metadata"`
 
 	MessageAttempts []MessageAttempt `json:"attempts" bson:"attempts"`
 
-	CreatedAt int64 `json:"created_at" bson:"created_at"`
-	UpdatedAt int64 `json:"updated_at" bson:"updated_at"`
-	DeletedAt int64 `json:"deleted_at" bson:"deleted_at"`
+	CreatedAt primitive.DateTime `json:"created_at,omitempty" bson:"created_at,omitempty"`
+	UpdatedAt primitive.DateTime `json:"updated_at,omitempty" bson:"updated_at,omitempty"`
+	DeletedAt primitive.DateTime `json:"deleted_at,omitempty" bson:"deleted_at,omitempty"`
 }
 
-// Message defines a payload to be sent to an application
 type MessageAttempt struct {
 	ID         primitive.ObjectID `json:"-" bson:"_id"`
 	UID        string             `json:"uid" bson:"uid"`
@@ -97,24 +110,22 @@ type MessageAttempt struct {
 	EndpointID string             `json:"endpoint_id" bson:"endpoint_id"`
 	APIVersion string             `json:"api_version" bson:"api_version"`
 
-	IPAddress        string `json:"ip_address" bson:"ip_address"`
-	UserAgent        string `json:"user_agent" bson:"user_agent"`
-	HttpResponseCode string `json:"http_status" bson:"http_status"`
-	ResponseData     string `json:"response_data" bson:"response_data"`
+	IPAddress        string        `json:"ip_address,omitempty" bson:"ip_address,omitempty"`
+	ContentType      string        `json:"content_type,omitempty" bson:"content_type,omitempty"`
+	Header           http.Header   `json:"http_header,omitempty" bson:"http_header,omitempty"`
+	HttpResponseCode string        `json:"http_status,omitempty" bson:"http_status,omitempty"`
+	ResponseData     string        `json:"response_data,omitempty" bson:"response_data,omitempty"`
+	Error            string        `json:"error,omitempty" bson:"error,omitempty"`
+	Status           MessageStatus `json:"status,omitempty" bson:"status,omitempty"`
 
-	Status MessageStatus `json:"status" bson:"status"`
-
-	Message  Message  `json:"-" bson:"msg"`
-	Endpoint Endpoint `json:"-" bson:"endpoint"`
-
-	CreatedAt int64 `json:"created_at" bson:"created_at"`
-	UpdatedAt int64 `json:"updated_at" bson:"updated_at"`
-	DeletedAt int64 `json:"deleted_at" bson:"deleted_at"`
+	CreatedAt primitive.DateTime `json:"created_at,omitempty" bson:"created_at,omitempty"`
+	UpdatedAt primitive.DateTime `json:"updated_at,omitempty" bson:"updated_at,omitempty"`
+	DeletedAt primitive.DateTime `json:"deleted_at,omitempty" bson:"deleted_at,omitempty"`
 }
 
 type MessageRepository interface {
 	CreateMessage(context.Context, *Message) error
-	LoadMessages(context.Context, string, models.SearchParams) ([]Message, error)
+	LoadMessageIntervals(context.Context, string, models.SearchParams, Period, int) ([]models.MessageInterval, error)
 	LoadMessagesByAppId(context.Context, string) ([]Message, error)
 	FindMessageByID(ctx context.Context, id string) (*Message, error)
 	LoadMessagesScheduledForPosting(context.Context) ([]Message, error)
@@ -122,5 +133,5 @@ type MessageRepository interface {
 	LoadAbandonedMessagesForPostingRetry(context.Context) ([]Message, error)
 	UpdateStatusOfMessages(context.Context, []Message, MessageStatus) error
 	UpdateMessage(ctx context.Context, m Message) error
-	LoadMessagesPaged(context.Context, models.Pageable) ([]Message, pager.PaginationData, error)
+	LoadMessagesPaged(context.Context, string, models.Pageable) ([]Message, pager.PaginationData, error)
 }

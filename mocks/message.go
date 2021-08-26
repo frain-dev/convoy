@@ -81,19 +81,19 @@ func (mr *MockMessageRepositoryMockRecorder) LoadAbandonedMessagesForPostingRetr
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "LoadAbandonedMessagesForPostingRetry", reflect.TypeOf((*MockMessageRepository)(nil).LoadAbandonedMessagesForPostingRetry), arg0)
 }
 
-// LoadMessages mocks base method.
-func (m *MockMessageRepository) LoadMessages(arg0 context.Context, arg1 string, arg2 models.SearchParams) ([]hookcamp.Message, error) {
+// LoadMessageIntervals mocks base method.
+func (m *MockMessageRepository) LoadMessageIntervals(arg0 context.Context, arg1 string, arg2 models.SearchParams, arg3 hookcamp.Period, arg4 int) ([]models.MessageInterval, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "LoadMessages", arg0, arg1, arg2)
-	ret0, _ := ret[0].([]hookcamp.Message)
+	ret := m.ctrl.Call(m, "LoadMessageIntervals", arg0, arg1, arg2, arg3, arg4)
+	ret0, _ := ret[0].([]models.MessageInterval)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
-// LoadMessages indicates an expected call of LoadMessages.
-func (mr *MockMessageRepositoryMockRecorder) LoadMessages(arg0, arg1, arg2 interface{}) *gomock.Call {
+// LoadMessageIntervals indicates an expected call of LoadMessageIntervals.
+func (mr *MockMessageRepositoryMockRecorder) LoadMessageIntervals(arg0, arg1, arg2, arg3, arg4 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "LoadMessages", reflect.TypeOf((*MockMessageRepository)(nil).LoadMessages), arg0, arg1, arg2)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "LoadMessageIntervals", reflect.TypeOf((*MockMessageRepository)(nil).LoadMessageIntervals), arg0, arg1, arg2, arg3, arg4)
 }
 
 // LoadMessagesByAppId mocks base method.
@@ -127,7 +127,7 @@ func (mr *MockMessageRepositoryMockRecorder) LoadMessagesForPostingRetry(arg0 in
 }
 
 // LoadMessagesPaged mocks base method.
-func (m *MockMessageRepository) LoadMessagesPaged(arg0 context.Context, arg1 models.Pageable) ([]hookcamp.Message, mongopagination.PaginationData, error) {
+func (m *MockMessageRepository) LoadMessagesPaged(arg0 context.Context, s string, arg1 models.Pageable) ([]hookcamp.Message, mongopagination.PaginationData, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "LoadMessagesPaged", arg0, arg1)
 	ret0, _ := ret[0].([]hookcamp.Message)

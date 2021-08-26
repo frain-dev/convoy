@@ -10,6 +10,7 @@ import (
 	"github.com/hookcamp/hookcamp/server/models"
 	"github.com/hookcamp/hookcamp/util"
 	log "github.com/sirupsen/logrus"
+	"go.mongodb.org/mongo-driver/bson/primitive"
 	"net/http"
 	"time"
 )
@@ -58,6 +59,10 @@ func ensureNewMessage(appRepo hookcamp.ApplicationRepository, msgRepo hookcamp.M
 				_ = render.Render(w, r, newErrorResponse(msg, statusCode))
 				return
 			}
+			if len(app.Endpoints) == 0 {
+				_ = render.Render(w, r, newErrorResponse("app has no configured endpoints", http.StatusBadRequest))
+				return
+			}
 
 			msg := &hookcamp.Message{
 				UID:       uuid.New().String(),
@@ -66,14 +71,17 @@ func ensureNewMessage(appRepo hookcamp.ApplicationRepository, msgRepo hookcamp.M
 				Data:      d,
 				Metadata: &hookcamp.MessageMetadata{
 					NumTrials:    0,
-					RetryLimit:   10,
-					NextSendTime: time.Now().Unix(),
+					RetryLimit:   2,
+					NextSendTime: primitive.NewDateTimeFromTime(time.Now()),
 				},
 				MessageAttempts: make([]hookcamp.MessageAttempt, 0),
-				CreatedAt:       time.Now().Unix(),
-				UpdatedAt:       time.Now().Unix(),
-				Application:     app,
-				Status:          hookcamp.ScheduledMessageStatus,
+				CreatedAt:       primitive.NewDateTimeFromTime(time.Now()),
+				UpdatedAt:       primitive.NewDateTimeFromTime(time.Now()),
+				AppMetadata: &hookcamp.AppMetadata{
+					OrgID:     app.OrgID,
+					Endpoints: parseMetadataFromEndpoints(app.Endpoints),
+				},
+				Status: hookcamp.ScheduledMessageStatus,
 			}
 
 			err = msgRepo.CreateMessage(r.Context(), msg)
@@ -87,19 +95,28 @@ func ensureNewMessage(appRepo hookcamp.ApplicationRepository, msgRepo hookcamp.M
 	}
 }
 
+func parseMetadataFromEndpoints(endpoints []hookcamp.Endpoint) []hookcamp.EndpointMetadata {
+	m := make([]hookcamp.EndpointMetadata, 0)
+	for _, e := range endpoints {
+		m = append(m, hookcamp.EndpointMetadata{
+			UID:       e.UID,
+			TargetURL: e.TargetURL,
+			Merged:    false,
+		})
+	}
+	return m
+}
+
 func fetchAllMessages(msgRepo hookcamp.MessageRepository) func(next http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 
-			page := getPageFromContext(r.Context())
-			perPage := getPageSizeFromContext(r.Context())
-			pageable := models.Pageable{
-				Page:    page,
-				PerPage: perPage,
-			}
+			pageable := getPageableFromContext(r.Context())
 
-			m, paginationData, err := msgRepo.LoadMessagesPaged(r.Context(), pageable)
+			orgId := r.URL.Query().Get("orgId")
+
+			m, paginationData, err := msgRepo.LoadMessagesPaged(r.Context(), orgId, pageable)
 			if err != nil {
 				_ = render.Render(w, r, newErrorResponse("an error occurred while fetching app messages", http.StatusInternalServerError))
 				log.Errorln("error while fetching messages - ", err)

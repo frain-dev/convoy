@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	log "github.com/sirupsen/logrus"
+	"go.mongodb.org/mongo-driver/bson/primitive"
 	"net/url"
 	"os"
 	"time"
@@ -142,8 +143,8 @@ func createApplicationCommand(a *app) *cobra.Command {
 				UID:       uuid.New().String(),
 				OrgID:     org.UID,
 				Title:     appName,
-				CreatedAt: time.Now().Unix(),
-				UpdatedAt: time.Now().Unix(),
+				CreatedAt: primitive.NewDateTimeFromTime(time.Now()),
+				UpdatedAt: primitive.NewDateTimeFromTime(time.Now()),
 				Endpoints: []hookcamp.Endpoint{},
 			}
 
@@ -155,7 +156,7 @@ func createApplicationCommand(a *app) *cobra.Command {
 			table := tablewriter.NewWriter(os.Stdout)
 			table.SetHeader([]string{"ID", "Name", "Organisation", "Created at"})
 
-			table.Append([]string{app.UID, app.Title, org.OrgName, time.Unix(app.CreatedAt, 0).String()})
+			table.Append([]string{app.UID, app.Title, org.OrgName, app.CreatedAt.Time().String()})
 			table.Render()
 
 			return nil
@@ -190,8 +191,8 @@ func createOrganisationCommand(a *app) *cobra.Command {
 			org := &hookcamp.Organisation{
 				UID:       uuid.New().String(),
 				OrgName:   name,
-				CreatedAt: time.Now().Unix(),
-				UpdatedAt: time.Now().Unix(),
+				CreatedAt: primitive.NewDateTimeFromTime(time.Now()),
+				UpdatedAt: primitive.NewDateTimeFromTime(time.Now()),
 			}
 
 			err := a.orgRepo.CreateOrganisation(context.Background(), org)
@@ -202,7 +203,7 @@ func createOrganisationCommand(a *app) *cobra.Command {
 			table := tablewriter.NewWriter(os.Stdout)
 			table.SetHeader([]string{"ID", "Name", "Created at"})
 
-			table.Append([]string{org.UID, org.OrgName, time.Unix(org.CreatedAt, 0).String()})
+			table.Append([]string{org.UID, org.OrgName, org.CreatedAt.Time().String()})
 			table.Render()
 			return nil
 		},
@@ -277,9 +278,15 @@ func createMessageCommand(a *app) *cobra.Command {
 				EventType: hookcamp.EventType(eventType),
 				Data:      d,
 				Metadata: &hookcamp.MessageMetadata{
-					NumTrials: 0,
+					NumTrials:    0,
+					RetryLimit:   1,
+					NextSendTime: primitive.NewDateTimeFromTime(time.Now()),
 				},
 				Status: hookcamp.ScheduledMessageStatus,
+			}
+
+			if len(appData.Endpoints) == 0 {
+				return errors.New("app has no configured endpoints")
 			}
 
 			ctx, cancelFn = getCtx()

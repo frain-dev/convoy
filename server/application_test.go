@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	pager "github.com/gobeam/mongo-go-pagination"
+	"github.com/hookcamp/hookcamp/server/models"
 	"net/http"
 	"net/http/httptest"
 	"strings"
@@ -14,7 +15,7 @@ import (
 	"github.com/golang/mock/gomock"
 	"github.com/hookcamp/hookcamp"
 	"github.com/hookcamp/hookcamp/mocks"
-	goldie "github.com/sebdah/goldie/v2"
+	"github.com/sebdah/goldie/v2"
 )
 
 func verifyMatch(t *testing.T, w httptest.ResponseRecorder) {
@@ -835,13 +836,13 @@ func Test_applicationHandler_GetDashboardSummary(t *testing.T) {
 		name       string
 		method     string
 		statusCode int
-		dbFn       func(appRepo *mocks.MockApplicationRepository, orgRepo *mocks.MockOrganisationRepository)
+		dbFn       func(msgRepo *mocks.MockMessageRepository, appRepo *mocks.MockApplicationRepository, orgRepo *mocks.MockOrganisationRepository)
 	}{
 		{
 			name:       "valid organisations",
 			method:     http.MethodGet,
 			statusCode: http.StatusOK,
-			dbFn: func(appRepo *mocks.MockApplicationRepository, orgRepo *mocks.MockOrganisationRepository) {
+			dbFn: func(msgRepo *mocks.MockMessageRepository, appRepo *mocks.MockApplicationRepository, orgRepo *mocks.MockOrganisationRepository) {
 				appRepo.EXPECT().
 					SearchApplicationsByOrgId(gomock.Any(), gomock.Any(), gomock.Any()).Times(1).
 					Return([]hookcamp.Application{
@@ -850,6 +851,17 @@ func Test_applicationHandler_GetDashboardSummary(t *testing.T) {
 							OrgID:     orgID,
 							Title:     "Valid application - 0",
 							Endpoints: []hookcamp.Endpoint{},
+						},
+					}, nil)
+				msgRepo.EXPECT().
+					LoadMessageIntervals(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Times(1).
+					Return([]models.MessageInterval{
+						{
+							Data: models.MessageIntervalData{
+								Interval: 12,
+								Time:     "2020-10",
+							},
+							Count: 10,
 						},
 					}, nil)
 
@@ -870,7 +882,7 @@ func Test_applicationHandler_GetDashboardSummary(t *testing.T) {
 			request = request.WithContext(context.WithValue(request.Context(), orgCtx, organisation))
 
 			if tc.dbFn != nil {
-				tc.dbFn(apprepo, org)
+				tc.dbFn(msgRepo, apprepo, org)
 			}
 
 			fetchDashboardSummary(apprepo, msgRepo)(http.HandlerFunc(app.GetDashboardSummary)).
@@ -941,8 +953,12 @@ func Test_applicationHandler_GetPaginatedApps(t *testing.T) {
 
 			request = request.WithContext(context.WithValue(request.Context(), chi.RouteCtxKey, rctx))
 			request = request.WithContext(context.WithValue(request.Context(), orgCtx, organisation))
-			request = request.WithContext(context.WithValue(request.Context(), pageCtx, 1))
-			request = request.WithContext(context.WithValue(request.Context(), pageSizeCtx, 20))
+
+			pageable := models.Pageable{
+				Page:    1,
+				PerPage: 10,
+			}
+			request = request.WithContext(context.WithValue(request.Context(), pageableCtx, pageable))
 
 			if tc.dbFn != nil {
 				tc.dbFn(apprepo, org)

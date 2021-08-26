@@ -12,9 +12,8 @@ import (
 	"github.com/hookcamp/hookcamp/server/models"
 	"github.com/hookcamp/hookcamp/util"
 	log "github.com/sirupsen/logrus"
+	"go.mongodb.org/mongo-driver/bson/primitive"
 	"io"
-	"math/rand"
-
 	"net/http"
 	"net/url"
 	"strconv"
@@ -34,8 +33,8 @@ const (
 	appCtx       contextKey = "app"
 	endpointCtx  contextKey = "endpoint"
 	msgCtx       contextKey = "message"
-	pageCtx      contextKey = "page"
-	pageSizeCtx  contextKey = "pageSize"
+	pageableCtx  contextKey = "pageable"
+	pageDataCtx  contextKey = "pageData"
 	dashboardCtx contextKey = "dashboard"
 )
 
@@ -164,8 +163,8 @@ func ensureNewApp(orgRepo hookcamp.OrganisationRepository, appRepo hookcamp.Appl
 				UID:       uid,
 				OrgID:     org.UID,
 				Title:     appName,
-				CreatedAt: time.Now().Unix(),
-				UpdatedAt: time.Now().Unix(),
+				CreatedAt: primitive.NewDateTimeFromTime(time.Now()),
+				UpdatedAt: primitive.NewDateTimeFromTime(time.Now()),
 				Endpoints: []hookcamp.Endpoint{},
 			}
 
@@ -279,8 +278,8 @@ func ensureNewAppEndpoint(appRepo hookcamp.ApplicationRepository) func(next http
 				TargetURL:   e.URL,
 				Secret:      e.Secret,
 				Description: e.Description,
-				CreatedAt:   time.Now().Unix(),
-				UpdatedAt:   time.Now().Unix(),
+				CreatedAt:   primitive.NewDateTimeFromTime(time.Now()),
+				UpdatedAt:   primitive.NewDateTimeFromTime(time.Now()),
 			}
 
 			app.Endpoints = append(app.Endpoints, *endpoint)
@@ -383,7 +382,7 @@ func updateEndpointIfFound(endpoints *[]hookcamp.Endpoint, id string, e models.E
 		if endpoint.UID == id {
 			endpoint.TargetURL = e.URL
 			endpoint.Description = e.Description
-			endpoint.UpdatedAt = time.Now().Unix()
+			endpoint.UpdatedAt = primitive.NewDateTimeFromTime(time.Now())
 			(*endpoints)[i] = endpoint
 			return endpoints, &endpoint, nil
 		}
@@ -411,8 +410,8 @@ func ensureNewOrganisation(orgRepo hookcamp.OrganisationRepository) func(next ht
 			org := &hookcamp.Organisation{
 				UID:       uuid.New().String(),
 				OrgName:   orgName,
-				CreatedAt: time.Now().Unix(),
-				UpdatedAt: time.Now().Unix(),
+				CreatedAt: primitive.NewDateTimeFromTime(time.Now()),
+				UpdatedAt: primitive.NewDateTimeFromTime(time.Now()),
 			}
 
 			err = orgRepo.CreateOrganisation(r.Context(), org)
@@ -524,6 +523,7 @@ func pagination(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		rawPerPage := r.URL.Query().Get("perPage")
 		rawPage := r.URL.Query().Get("page")
+		rawSort := r.URL.Query().Get("sort")
 
 		if len(rawPerPage) == 0 {
 			rawPerPage = "20"
@@ -531,8 +531,17 @@ func pagination(next http.Handler) http.Handler {
 		if len(rawPage) == 0 {
 			rawPage = "0"
 		}
+		if len(rawSort) == 0 {
+			rawSort = "-1"
+		}
 
 		var err error
+		var sort = -1 // desc by default
+		order := strings.ToLower(rawSort)
+		if order == "asc" {
+			sort = 1
+		}
+
 		var perPage int
 		if perPage, err = strconv.Atoi(rawPerPage); err != nil {
 			perPage = 20
@@ -542,8 +551,12 @@ func pagination(next http.Handler) http.Handler {
 		if page, err = strconv.Atoi(rawPage); err != nil {
 			page = 0
 		}
-		r = r.WithContext(setPageInContext(r.Context(), page))
-		r = r.WithContext(setPageSizeInContext(r.Context(), perPage))
+		pageable := models.Pageable{
+			Page:    page,
+			PerPage: perPage,
+			Sort:    sort,
+		}
+		r = r.WithContext(setPageableInContext(r.Context(), pageable))
 		next.ServeHTTP(w, r)
 	})
 }
@@ -553,12 +566,7 @@ func fetchOrganisationApps(appRepo hookcamp.ApplicationRepository) func(next htt
 
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 
-			page := getPageFromContext(r.Context())
-			perPage := getPageSizeFromContext(r.Context())
-			pageable := models.Pageable{
-				Page:    page,
-				PerPage: perPage,
-			}
+			pageable := getPageableFromContext(r.Context())
 
 			org := getOrganisationFromContext(r.Context())
 
@@ -617,8 +625,8 @@ func fetchDashboardSummary(appRepo hookcamp.ApplicationRepository, msgRepo hookc
 				}
 			}
 
-			log.Info("Period is ", period)
-			if err := ensurePeriod(hookcamp.PeriodValues[period], startT, endT); err != nil {
+			p := hookcamp.PeriodValues[period]
+			if err := ensurePeriod(startT, endT); err != nil {
 				_ = render.Render(w, r, newErrorResponse(fmt.Sprintf("invalid period '%s': %s", period, err.Error()), http.StatusBadRequest))
 				return
 			}
@@ -636,8 +644,7 @@ func fetchDashboardSummary(appRepo hookcamp.ApplicationRepository, msgRepo hookc
 				return
 			}
 
-			// TODO: Replace with actual method to fetch messages
-			messagesSent, messageData, err := computeDashboardMessages(r.Context(), org.UID, appRepo, msgRepo, startT, endT, period)
+			messagesSent, messages, err := computeDashboardMessages(r.Context(), org.UID, msgRepo, searchParams, p)
 			if err != nil {
 				_ = render.Render(w, r, newErrorResponse("an error occurred while fetching messages", http.StatusInternalServerError))
 				return
@@ -646,7 +653,8 @@ func fetchDashboardSummary(appRepo hookcamp.ApplicationRepository, msgRepo hookc
 			dashboard := models.DashboardSummary{
 				Applications: len(apps),
 				MessagesSent: messagesSent,
-				Daily:        &messageData,
+				Period:       period,
+				PeriodData:   &messages,
 			}
 
 			r = r.WithContext(setDashboardSummaryInContext(r.Context(), &dashboard))
@@ -655,52 +663,29 @@ func fetchDashboardSummary(appRepo hookcamp.ApplicationRepository, msgRepo hookc
 	}
 }
 
-func ensurePeriod(period hookcamp.Period, start time.Time, end time.Time) error {
+func ensurePeriod(start time.Time, end time.Time) error {
 	if start.Unix() > end.Unix() {
 		return errors.New("startDate cannot be greater than endDate")
-	}
-
-	return ensureStrictPeriod(period, start, end)
-}
-
-func ensureStrictPeriod(period hookcamp.Period, start time.Time, end time.Time) error {
-	switch period {
-	case hookcamp.Daily:
-	case hookcamp.Weekly:
-		if end.Year() != start.Year() || end.Month() != start.Month() {
-			return errors.New("startDate and endDate must be in the same calendar month")
-		}
-	case hookcamp.Monthly:
-		if end.Year() != start.Year() {
-			return errors.New("startDate and endDate must be in the same calendar year")
-		}
 	}
 
 	return nil
 }
 
-func computeDashboardMessages(ctx context.Context, orgId string, appRepo hookcamp.ApplicationRepository, msgRepo hookcamp.MessageRepository, startT time.Time, endT time.Time, period string) (int, []models.Daily, error) {
+func computeDashboardMessages(ctx context.Context, orgId string, msgRepo hookcamp.MessageRepository, searchParams models.SearchParams, period hookcamp.Period) (uint64, []models.MessageInterval, error) {
 
-	// simulate for now
-	messagesSent := 0
+	var messagesSent uint64
 
-	var seededRand = rand.New(rand.NewSource(time.Now().UnixNano()))
-
-	messageData := make([]models.Daily, 0)
-	for day := 1; day <= getNumberOfDays(startT.Month()); day++ {
-		count := seededRand.Intn(20)
-		messageData = append(messageData, models.Daily{
-			Day:   day,
-			Count: count,
-		})
-		messagesSent += count
+	messages, err := msgRepo.LoadMessageIntervals(ctx, orgId, searchParams, period, 1)
+	if err != nil {
+		log.Errorln("failed to load message intervals - ", err)
+		return 0, nil, err
 	}
 
-	return messagesSent, messageData, nil
-}
+	for _, m := range messages {
+		messagesSent += m.Count
+	}
 
-func getNumberOfDays(month time.Month) int {
-	return 31
+	return messagesSent, messages, nil
 }
 
 func requireAuth() func(next http.Handler) http.Handler {
@@ -792,28 +777,20 @@ func getOrganisationsFromContext(ctx context.Context) []*hookcamp.Organisation {
 	return ctx.Value(orgCtx).([]*hookcamp.Organisation)
 }
 
-func setPageInContext(ctx context.Context, page int) context.Context {
-	return context.WithValue(ctx, pageCtx, page)
+func setPageableInContext(ctx context.Context, pageable models.Pageable) context.Context {
+	return context.WithValue(ctx, pageableCtx, pageable)
 }
 
-func getPageFromContext(ctx context.Context) int {
-	return ctx.Value(pageCtx).(int)
-}
-
-func setPageSizeInContext(ctx context.Context, size int) context.Context {
-	return context.WithValue(ctx, pageSizeCtx, size)
-}
-
-func getPageSizeFromContext(ctx context.Context) int {
-	return ctx.Value(pageSizeCtx).(int)
+func getPageableFromContext(ctx context.Context) models.Pageable {
+	return ctx.Value(pageableCtx).(models.Pageable)
 }
 
 func setPaginationDataInContext(ctx context.Context, p *pager.PaginationData) context.Context {
-	return context.WithValue(ctx, pageSizeCtx, p)
+	return context.WithValue(ctx, pageDataCtx, p)
 }
 
 func getPaginationDataFromContext(ctx context.Context) *pager.PaginationData {
-	return ctx.Value(pageSizeCtx).(*pager.PaginationData)
+	return ctx.Value(pageDataCtx).(*pager.PaginationData)
 }
 
 func setDashboardSummaryInContext(ctx context.Context, d *models.DashboardSummary) context.Context {

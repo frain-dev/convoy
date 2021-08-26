@@ -53,6 +53,7 @@ type Endpoint struct {
 type Pageable struct {
 	Page    int `json:"page" bson:"page"`
 	PerPage int `json:"perPage" bson:"perPage"`
+	Sort    int `json:"sort" bson:"sort"`
 }
 
 type SearchParams struct {
@@ -61,27 +62,18 @@ type SearchParams struct {
 }
 
 type DashboardSummary struct {
-	MessagesSent int        `json:"messages" bson:"messages"`
-	Applications int        `json:"apps" bson:"apps"`
-	Hourly       *[]Hourly  `json:"hourly,omitempty" bson:"hourly"`
-	Daily        *[]Daily   `json:"daily,omitempty" bson:"daily"`
-	Monthly      *[]Monthly `json:"monthly,omitempty" bson:"monthly"`
-	Yearly       *[]Yearly  `json:"yearly,omitempty" bson:"yearly"`
+	MessagesSent uint64             `json:"messagesSent" bson:"messages_sent"`
+	Applications int                `json:"apps" bson:"apps"`
+	Period       string             `json:"period" bson:"period"`
+	PeriodData   *[]MessageInterval `json:"periodData,omitempty" bson:"period_data"`
 }
 
-type Hourly struct {
-	Hour  int `json:"hour" bson:"hour"`
-	Count int `json:"count" bson:"count"`
+type MessageInterval struct {
+	Data  MessageIntervalData `json:"data" bson:"_id"`
+	Count uint64              `json:"count" bson:"count"`
 }
-type Daily struct {
-	Day   int `json:"day" bson:"day"`
-	Count int `json:"count" bson:"count"`
-}
-type Monthly struct {
-	Month int `json:"month" bson:"month"`
-	Count int `json:"count" bson:"count"`
-}
-type Yearly struct {
-	Year  int `json:"year" bson:"year"`
-	Count int `json:"count" bson:"count"`
+
+type MessageIntervalData struct {
+	Interval int64  `json:"index" bson:"index"`
+	Time     string `json:"date" bson:"total_time"`
 }

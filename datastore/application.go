@@ -96,7 +96,7 @@ func (db *appRepo) SearchApplicationsByOrgId(ctx context.Context, orgId string, 
 		end = searchParams.CreatedAtStart
 	}
 
-	filter := bson.M{"org_id": orgId, "created_at": bson.M{"$gte": start, "$lte": end}}
+	filter := bson.M{"org_id": orgId, "created_at": bson.M{"$gte": primitive.NewDateTimeFromTime(time.Unix(start, 0)), "$lte": primitive.NewDateTimeFromTime(time.Unix(end, 0))}}
 
 	apps := make([]hookcamp.Application, 0)
 	cur, err := db.client.Find(ctx, filter)
@@ -148,7 +148,7 @@ func (db *appRepo) FindApplicationByID(ctx context.Context,
 func (db *appRepo) UpdateApplication(ctx context.Context,
 	app *hookcamp.Application) error {
 
-	app.UpdatedAt = time.Now().Unix()
+	app.UpdatedAt = primitive.NewDateTimeFromTime(time.Now())
 
 	filter := bson.D{primitive.E{Key: "uid", Value: app.UID}}
 

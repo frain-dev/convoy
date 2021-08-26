@@ -6,7 +6,7 @@ import (
 	log "github.com/sirupsen/logrus"
 	"io/ioutil"
 	"net/http"
-	"strings"
+	"net/http/httptrace"
 	"time"
 )
 
@@ -28,18 +28,22 @@ func (d *Dispatcher) SendRequest(endpoint, method string, jsonData json.RawMessa
 		return r, err
 	}
 
-	response, err := d.client.Do(req)
-	ip, u := GetIPAndUserAgent(req)
-	r.Response = response
-	r.IP = ip
-	r.UserAgent = u
-	if err != nil {
-		log.Errorf("error sending request to API endpoint - %+v\n", err)
-		return r, err
+	trace := &httptrace.ClientTrace{
+		GotConn: func(connInfo httptrace.GotConnInfo) {
+			r.IP = connInfo.Conn.RemoteAddr().String()
+			log.Debugf("IP address resolved to: %s\n", connInfo.Conn.RemoteAddr())
+		},
 	}
 
-	// Close the connection to reuse it
-	defer response.Body.Close()
+	req = req.WithContext(httptrace.WithClientTrace(req.Context(), trace))
+
+	response, err := d.client.Do(req)
+	if err != nil {
+		log.Debugln("error sending request to API endpoint - %+v\n", err)
+		r.Error = err.Error()
+		return r, err
+	}
+	updateDispatcherResponse(r, response)
 
 	body, err := ioutil.ReadAll(response.Body)
 	r.Body = body
@@ -47,24 +51,26 @@ func (d *Dispatcher) SendRequest(endpoint, method string, jsonData json.RawMessa
 		log.Errorf("Couldn't parse Response Body. %+v\n", err)
 		return r, err
 	}
+	err = response.Body.Close()
+	if err != nil {
+		log.Errorf("error while closing connection - %+v\n", err)
+		return r, err
+	}
 
 	return r, nil
 }
 
 type Response struct {
-	Response  *http.Response
-	Body      []byte
-	IP        string
-	UserAgent string
+	Status      string
+	ContentType string
+	Header      http.Header
+	Body        []byte
+	IP          string
+	Error       string
 }
 
-func GetIPAndUserAgent(r *http.Request) (ip string, userAgent string) {
-	ip = r.Header.Get("X-Forwarded-For")
-	if ip == "" {
-		ip = strings.Split(r.RemoteAddr, ":")[0]
-	}
-
-	userAgent = r.UserAgent()
-	return ip, userAgent
-
+func updateDispatcherResponse(r *Response, res *http.Response) {
+	r.Status = res.Status
+	r.Header = res.Header
+	r.ContentType = res.Header.Get("content-type")
 }
