@@ -39,7 +39,7 @@ func (d *Dispatcher) SendRequest(endpoint, method string, jsonData json.RawMessa
 
 	response, err := d.client.Do(req)
 	if err != nil {
-		log.Debugln("error sending request to API endpoint - %+v\n", err)
+		log.Debugf("error sending request to API endpoint - %+v\n", err)
 		r.Error = err.Error()
 		return r, err
 	}
