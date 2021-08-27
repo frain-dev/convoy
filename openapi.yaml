@@ -172,6 +172,7 @@ paths:
     
     parameters:
       - $ref: '#/components/parameters/uniqueId'
+      - $ref: '#/components/parameters/uniqueId'
   /apps/{Id}/events:
     get: 
       tags: 
@@ -220,6 +221,7 @@ paths:
                 $ref: '#/components/schemas/EventResponse'
     parameters:
       - $ref: '#/components/parameters/uniqueId'
+      - $ref: '#/components/parameters/uniqueId'
   /events/{Id}/deliveryattempts:
     get: 
       tags:
@@ -251,6 +253,7 @@ paths:
                 $ref: '#/components/schemas/DeliveryAttemptResponse'
 
     parameters:
+      - $ref: '#/components/parameters/uniqueId'
       - $ref: '#/components/parameters/uniqueId'
 components:
   schemas:
