@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, {useEffect, useState} from 'react';
 import * as axios from 'axios';
 import ArrowDownIcon from '../../assets/img/arrow-down-icon.svg';
 import AppsIcon from '../../assets/img/apps-icon.svg';
@@ -8,7 +8,7 @@ import CalendarIcon from '../../assets/img/calendar-icon.svg';
 import CopyIcon from '../../assets/img/copy-icon.svg';
 import ViewIcon from '../../assets/img/view-icon.svg';
 import Chart from 'chart.js/auto';
-import { DateRange } from 'react-date-range';
+import {DateRange} from 'react-date-range';
 import ReactJson from 'react-json-view';
 import './app.scss';
 import 'react-date-range/dist/styles.css';
@@ -96,12 +96,12 @@ function DashboardPage() {
 		const fetchDashboardData = async (uid) => {
 			try {
 				const dashboardResponse = await request.get(
-					`/dashboard/${uid}/summary?startDate=${filterDates[0].startDate.toISOString().split('.')[0]}&endDate=${filterDates[0].endDate.toISOString().split('.')[0]}`,
+					`/dashboard/${uid}/summary?type=daily&startDate=${filterDates[0].startDate.toISOString().split('.')[0]}&endDate=${filterDates[0].endDate.toISOString().split('.')[0]}`,
 				);
 				setDashboardData(dashboardResponse.data.dashboard);
 
 				const chartData = dashboardResponse.data.dashboard.messageData;
-				const labels = chartData.map((label) => label.day);
+				const labels = chartData.map((label) => label.data.index);
 				const dataSet = chartData.map((label) => label.count);
 				const data = {
 					labels,
