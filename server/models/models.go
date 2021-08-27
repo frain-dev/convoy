@@ -65,7 +65,7 @@ type DashboardSummary struct {
 	MessagesSent uint64             `json:"messagesSent" bson:"messages_sent"`
 	Applications int                `json:"apps" bson:"apps"`
 	Period       string             `json:"period" bson:"period"`
-	PeriodData   *[]MessageInterval `json:"periodData,omitempty" bson:"period_data"`
+	PeriodData   *[]MessageInterval `json:"messageData,omitempty" bson:"message_data"`
 }
 
 type MessageInterval struct {

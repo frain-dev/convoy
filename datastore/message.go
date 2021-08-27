@@ -64,7 +64,7 @@ func (db *messageRepo) LoadMessageIntervals(ctx context.Context, orgId string, s
 	}
 
 	matchStage := bson.D{{Key: "$match", Value: bson.D{
-		{Key: "application.org_id", Value: orgId},
+		{Key: "app_metadata.org_id", Value: orgId},
 		{Key: "created_at", Value: bson.D{
 			{Key: "$gte", Value: primitive.NewDateTimeFromTime(time.Unix(start, 0))},
 			{Key: "$lte", Value: primitive.NewDateTimeFromTime(time.Unix(end, 0))},
@@ -119,6 +119,9 @@ func (db *messageRepo) LoadMessageIntervals(ctx context.Context, orgId string, s
 	if err = data.All(ctx, &messagesIntervals); err != nil {
 		log.Errorln("marshal error - ", err)
 		return nil, err
+	}
+	if messagesIntervals == nil {
+		messagesIntervals = make([]models.MessageInterval, 0)
 	}
 
 	return messagesIntervals, nil
@@ -260,7 +263,7 @@ func (db *messageRepo) LoadMessagesPaged(ctx context.Context, orgId string, page
 	if !util.IsStringEmpty(orgId) {
 		filter = bson.D{
 			primitive.E{
-				Key:   "application.org_id",
+				Key:   "app_metadata.org_id",
 				Value: orgId,
 			},
 		}
