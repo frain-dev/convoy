@@ -2,8 +2,11 @@ package main
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
+	log "github.com/sirupsen/logrus"
+	"go.mongodb.org/mongo-driver/bson/primitive"
 	"net/url"
 	"os"
 	"time"
@@ -140,8 +143,8 @@ func createApplicationCommand(a *app) *cobra.Command {
 				UID:       uuid.New().String(),
 				OrgID:     org.UID,
 				Title:     appName,
-				CreatedAt: time.Now().Unix(),
-				UpdatedAt: time.Now().Unix(),
+				CreatedAt: primitive.NewDateTimeFromTime(time.Now()),
+				UpdatedAt: primitive.NewDateTimeFromTime(time.Now()),
 				Endpoints: []hookcamp.Endpoint{},
 			}
 
@@ -153,7 +156,7 @@ func createApplicationCommand(a *app) *cobra.Command {
 			table := tablewriter.NewWriter(os.Stdout)
 			table.SetHeader([]string{"ID", "Name", "Organisation", "Created at"})
 
-			table.Append([]string{app.UID, app.Title, org.OrgName, time.Unix(app.CreatedAt, 0).String()})
+			table.Append([]string{app.UID, app.Title, org.OrgName, app.CreatedAt.Time().String()})
 			table.Render()
 
 			return nil
@@ -188,8 +191,8 @@ func createOrganisationCommand(a *app) *cobra.Command {
 			org := &hookcamp.Organisation{
 				UID:       uuid.New().String(),
 				OrgName:   name,
-				CreatedAt: time.Now().Unix(),
-				UpdatedAt: time.Now().Unix(),
+				CreatedAt: primitive.NewDateTimeFromTime(time.Now()),
+				UpdatedAt: primitive.NewDateTimeFromTime(time.Now()),
 			}
 
 			err := a.orgRepo.CreateOrganisation(context.Background(), org)
@@ -200,7 +203,7 @@ func createOrganisationCommand(a *app) *cobra.Command {
 			table := tablewriter.NewWriter(os.Stdout)
 			table.SetHeader([]string{"ID", "Name", "Created at"})
 
-			table.Append([]string{org.UID, org.OrgName, time.Unix(org.CreatedAt, 0).String()})
+			table.Append([]string{org.UID, org.OrgName, org.CreatedAt.Time().String()})
 			table.Render()
 			return nil
 		},
@@ -220,69 +223,80 @@ func createMessageCommand(a *app) *cobra.Command {
 		Use:   "message",
 		Short: "Create a message",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			// var d json.RawMessage
+			var d json.RawMessage
 
-			// if util.IsStringEmpty(eventType) {
-			// 	return errors.New("please provide an event type")
-			// }
+			if util.IsStringEmpty(eventType) {
+				return errors.New("please provide an event type")
+			}
 
-			// if util.IsStringEmpty(data) && util.IsStringEmpty(filePath) {
-			// 	return errors.New("please provide one of -f or -d")
-			// }
+			if util.IsStringEmpty(data) && util.IsStringEmpty(filePath) {
+				return errors.New("please provide one of -f or -d")
+			}
 
-			// if !util.IsStringEmpty(data) && !util.IsStringEmpty(filePath) {
-			// 	return errors.New("please provide only one of -f or -d")
-			// }
+			if !util.IsStringEmpty(data) && !util.IsStringEmpty(filePath) {
+				return errors.New("please provide only one of -f or -d")
+			}
 
-			// if !util.IsStringEmpty(data) {
-			// 	d = json.RawMessage([]byte(data))
-			// }
+			if !util.IsStringEmpty(data) {
+				d = []byte(data)
+			}
 
-			// if !util.IsStringEmpty(filePath) {
-			// 	f, err := os.Open(filePath)
-			// 	if err != nil {
-			// 		return fmt.Errorf("could not open file... %w", err)
-			// 	}
+			if !util.IsStringEmpty(filePath) {
+				f, err := os.Open(filePath)
+				if err != nil {
+					return fmt.Errorf("could not open file... %w", err)
+				}
 
-			// 	defer f.Close()
+				defer func() {
+					err := f.Close()
+					if err != nil {
+						log.Errorf("failed to close file - %+v", err)
+					}
+				}()
 
-			// 	if err := json.NewDecoder(f).Decode(&d); err != nil {
-			// 		return err
-			// 	}
-			// }
+				if err := json.NewDecoder(f).Decode(&d); err != nil {
+					return err
+				}
+			}
 
-			// id, err := uuid.Parse(appID)
-			// if err != nil {
-			// 	return fmt.Errorf("please provide a valid app ID.. %w", err)
-			// }
+			id, err := uuid.Parse(appID)
+			if err != nil {
+				return fmt.Errorf("please provide a valid app ID.. %w", err)
+			}
 
-			// ctx, cancelFn := getCtx()
-			// defer cancelFn()
+			ctx, cancelFn := getCtx()
+			defer cancelFn()
 
-			// appData, err := a.applicationRepo.FindApplicationByID(ctx, id)
-			// if err != nil {
-			// 	return err
-			// }
+			appData, err := a.applicationRepo.FindApplicationByID(ctx, id.String())
+			if err != nil {
+				return err
+			}
 
-			// msg := &hookcamp.Message{
-			// 	ID:        uuid.New(),
-			// 	AppID:     appData.ID,
-			// 	EventType: hookcamp.EventType(eventType),
-			// 	Data:      hookcamp.JSONData(d),
-			// 	Metadata: &hookcamp.MessageMetadata{
-			// 		NumTrials: 0,
-			// 	},
-			// 	Status: hookcamp.ScheduledMessageStatus,
-			// }
+			msg := &hookcamp.Message{
+				UID:       uuid.New().String(),
+				AppID:     appData.ID.String(),
+				EventType: hookcamp.EventType(eventType),
+				Data:      d,
+				Metadata: &hookcamp.MessageMetadata{
+					NumTrials:    0,
+					RetryLimit:   1,
+					NextSendTime: primitive.NewDateTimeFromTime(time.Now()),
+				},
+				Status: hookcamp.ScheduledMessageStatus,
+			}
 
-			// ctx, cancelFn = getCtx()
-			// defer cancelFn()
+			if len(appData.Endpoints) == 0 {
+				return errors.New("app has no configured endpoints")
+			}
 
-			// if err := a.messageRepo.CreateMessage(ctx, msg); err != nil {
-			// 	return fmt.Errorf("could not create message... %w", err)
-			// }
+			ctx, cancelFn = getCtx()
+			defer cancelFn()
 
-			// fmt.Println("Your message has been created. And will be sent to available endpoints")
+			if err := a.messageRepo.CreateMessage(ctx, msg); err != nil {
+				return fmt.Errorf("could not create message... %w", err)
+			}
+
+			fmt.Println("Your message has been created. And will be sent to available endpoints")
 			return nil
 		},
 	}

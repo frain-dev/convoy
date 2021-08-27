@@ -21,10 +21,10 @@ type Application struct {
 	OrgID string             `json:"org_id" bson:"org_id"`
 	Title string             `json:"name" bson:"title"`
 
-	Endpoints []Endpoint `json:"endpoints" bson:"endpoints"`
-	CreatedAt int64      `json:"created_at" bson:"created_at"`
-	UpdatedAt int64      `json:"updated_at" bson:"updated_at"`
-	DeletedAt int64      `json:"deleted_at,omitempty" bson:"deleted_at"`
+	Endpoints []Endpoint         `json:"endpoints" bson:"endpoints"`
+	CreatedAt primitive.DateTime `json:"created_at,omitempty" bson:"created_at,omitempty"`
+	UpdatedAt primitive.DateTime `json:"updated_at,omitempty" bson:"updated_at,omitempty"`
+	DeletedAt primitive.DateTime `json:"deleted_at,omitempty" bson:"deleted_at,omitempty"`
 }
 
 type Endpoint struct {
@@ -33,9 +33,9 @@ type Endpoint struct {
 	Secret      string `json:"secret" bson:"secret"`
 	Description string `json:"description" bson:"description"`
 
-	CreatedAt int64 `json:"created_at" bson:"created_at"`
-	UpdatedAt int64 `json:"updated_at" bson:"updated_at"`
-	DeletedAt int64 `json:"deleted_at" bson:"deleted_at"`
+	CreatedAt primitive.DateTime `json:"created_at,omitempty" bson:"created_at,omitempty"`
+	UpdatedAt primitive.DateTime `json:"updated_at,omitempty" bson:"updated_at,omitempty"`
+	DeletedAt primitive.DateTime `json:"deleted_at,omitempty" bson:"deleted_at,omitempty"`
 }
 
 type ApplicationRepository interface {
