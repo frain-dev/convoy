@@ -4,6 +4,7 @@ import (
 	"context"
 	"github.com/google/uuid"
 	"github.com/hookcamp/hookcamp"
+	"github.com/hookcamp/hookcamp/backoff"
 	"github.com/hookcamp/hookcamp/net"
 	"github.com/hookcamp/hookcamp/queue"
 	log "github.com/sirupsen/logrus"
@@ -32,7 +33,9 @@ func (p *Producer) Start() {
 		for {
 			select {
 			case data := <-p.Data:
-				p.postMessages(*p.msgRepo, data.Data)
+				go func() {
+					p.postMessages(*p.msgRepo, data.Data)
+				}()
 			case ch := <-p.quit:
 				close(p.Data)
 				close(ch)
@@ -58,8 +61,10 @@ func (p *Producer) postMessages(msgRepo hookcamp.MessageRepository, m hookcamp.M
 
 		resp, err := p.dispatch.SendRequest(e.TargetURL, string(hookcamp.HttpPost), m.Data)
 		status := "-"
+		statusCode := 0
 		if resp != nil {
 			status = resp.Status
+			statusCode = resp.StatusCode
 		}
 
 		duration := time.Since(start)
@@ -71,7 +76,7 @@ func (p *Producer) postMessages(msgRepo hookcamp.MessageRepository, m hookcamp.M
 			"duration": duration,
 		})
 
-		if err == nil && status == "200 OK" {
+		if err == nil && statusCode >= 200 && statusCode <= 299 {
 			requestLogger.Infof("%s ", m.UID)
 			log.Infof("%s sent\n", m.UID)
 			attemptStatus = hookcamp.SuccessMessageStatus
@@ -82,7 +87,7 @@ func (p *Producer) postMessages(msgRepo hookcamp.MessageRepository, m hookcamp.M
 			e.Merged = false
 		}
 		if err != nil {
-			log.Errorf("%s failed. Reason: %s\n", m.UID, err)
+			log.Errorf("%s failed. Reason: %s", m.UID, err)
 		}
 
 		attempt := parseAttemptFromResponse(m, *e, resp, attemptStatus)
@@ -92,11 +97,19 @@ func (p *Producer) postMessages(msgRepo hookcamp.MessageRepository, m hookcamp.M
 		m.Status = hookcamp.SuccessMessageStatus
 	} else {
 		m.Status = hookcamp.RetryMessageStatus
-		m.Metadata.NextSendTime = primitive.NewDateTimeFromTime(time.Now().Add(15 * time.Second)) // TODO: define strategy for retrials
-	}
-	m.Metadata.NumTrials += 1
+		strategy := m.Metadata.BackoffStrategy
+		strategy.PreviousAttempts++
 
-	if m.Metadata.NumTrials >= m.Metadata.RetryLimit {
+		delay := backoff.GetDelay(strategy)
+		nextTime := time.Now().Add(delay)
+		m.Metadata.NextSendTime = primitive.NewDateTimeFromTime(nextTime)
+		m.Metadata.BackoffStrategy = strategy
+
+		log.Errorf("%s next retry time is %s (strategy = %s, delay = %s, attempts = %d/%d)\n", m.UID, nextTime.Format(time.ANSIC), strategy.Type, delay, strategy.PreviousAttempts, strategy.RetryLimit)
+	}
+
+	strategy := m.Metadata.BackoffStrategy
+	if strategy.PreviousAttempts >= strategy.RetryLimit {
 		log.Errorf("%s retry limit exceeded ", m.UID)
 		m.Description = "Retry limit exceeded"
 		m.Status = hookcamp.FailureMessageStatus

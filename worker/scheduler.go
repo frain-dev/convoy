@@ -25,7 +25,7 @@ func NewScheduler(queue *queue.Queuer, msgRepo *hookcamp.MessageRepository) *Sch
 
 func (s *Scheduler) Start() {
 	s.addTask("post", 5, task.PostMessages)
-	s.addTask("retry", 15, task.RetryMessages)
+	s.addTask("retry", 1, task.RetryMessages)
 
 	s.inner.StartAsync()
 }

@@ -7,6 +7,7 @@ import (
 	"encoding/json"
 	"errors"
 	pager "github.com/gobeam/mongo-go-pagination"
+	"github.com/hookcamp/hookcamp/backoff"
 	"github.com/hookcamp/hookcamp/server/models"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"net/http"
@@ -19,10 +20,7 @@ var (
 )
 
 const (
-	// UnknownMessageStatus when we don't know the state of a message
-	UnknownMessageStatus MessageStatus = "Unknown"
-	// ScheduledMessageStatus : when  a message has been scheduled for
-	// delivery
+	// ScheduledMessageStatus : when  a message has been scheduled for delivery
 	ScheduledMessageStatus  MessageStatus = "Scheduled"
 	ProcessingMessageStatus MessageStatus = "Processing"
 	FailureMessageStatus    MessageStatus = "Failure"
@@ -35,11 +33,7 @@ type MessageMetadata struct {
 	// case it failed the first time
 	NextSendTime primitive.DateTime `json:"next_send_time" bson:"next_send_time"`
 
-	// NumTrials: number of times we have tried to deliver this message to
-	// an application
-	NumTrials int64 `json:"num_trials" bson:"num_trials"`
-
-	RetryLimit int64 `json:"retry_limit" bson:"retry_limit"`
+	BackoffStrategy backoff.Strategy `json:"backoff_strategy" bson:"backoff_strategy"`
 }
 
 type AppMetadata struct {

@@ -7,6 +7,7 @@ import (
 	"github.com/go-chi/render"
 	"github.com/google/uuid"
 	"github.com/hookcamp/hookcamp"
+	"github.com/hookcamp/hookcamp/backoff"
 	"github.com/hookcamp/hookcamp/server/models"
 	"github.com/hookcamp/hookcamp/util"
 	log "github.com/sirupsen/logrus"
@@ -38,6 +39,34 @@ func ensureNewMessage(appRepo hookcamp.ApplicationRepository, msgRepo hookcamp.M
 				return
 			}
 
+			s := newMessage.BackoffStrategy
+			strategyType := backoff.Default
+			var interval uint64 = 15 // every 15 * 1 seconds
+			var retryLimit uint64 = 10
+
+			if s != nil {
+				rawType := string(s.Type)
+				if util.IsStringEmpty(rawType) {
+					_ = render.Render(w, r, newErrorResponse("please provide a type if backoffStrategy is set", http.StatusBadRequest))
+					return
+				}
+				if !backoff.IsValidType(rawType) {
+					_ = render.Render(w, r, newErrorResponse("please provide a valid backoffStrategy in (default, exponential)", http.StatusBadRequest))
+					return
+				}
+				if s.Interval < 1 {
+					_ = render.Render(w, r, newErrorResponse("please provide a positive backoffStrategy interval", http.StatusBadRequest))
+					return
+				}
+				if s.RetryLimit < 1 {
+					_ = render.Render(w, r, newErrorResponse("please provide a positive backoffStrategy retryLimit", http.StatusBadRequest))
+					return
+				}
+				strategyType = s.Type
+				interval = s.Interval
+				retryLimit = s.RetryLimit
+			}
+
 			appID := chi.URLParam(r, "appID")
 			if util.IsStringEmpty(appID) {
 				_ = render.Render(w, r, newErrorResponse("please provide your appID", http.StatusBadRequest))
@@ -64,15 +93,21 @@ func ensureNewMessage(appRepo hookcamp.ApplicationRepository, msgRepo hookcamp.M
 				return
 			}
 
+			strategy := backoff.Strategy{
+				Type:             strategyType,
+				Interval:         interval,
+				PreviousAttempts: 0,
+				RetryLimit:       retryLimit,
+			}
+
 			msg := &hookcamp.Message{
 				UID:       uuid.New().String(),
 				AppID:     app.UID,
 				EventType: hookcamp.EventType(eventType),
 				Data:      d,
 				Metadata: &hookcamp.MessageMetadata{
-					NumTrials:    0,
-					RetryLimit:   2,
-					NextSendTime: primitive.NewDateTimeFromTime(time.Now()),
+					BackoffStrategy: strategy,
+					NextSendTime:    primitive.NewDateTimeFromTime(time.Now().Add(backoff.GetDelay(strategy))),
 				},
 				MessageAttempts: make([]hookcamp.MessageAttempt, 0),
 				CreatedAt:       primitive.NewDateTimeFromTime(time.Now()),

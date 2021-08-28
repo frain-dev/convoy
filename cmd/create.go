@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/hookcamp/hookcamp/backoff"
 	log "github.com/sirupsen/logrus"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"net/url"
@@ -272,15 +273,21 @@ func createMessageCommand(a *app) *cobra.Command {
 				return err
 			}
 
+			strategy := backoff.Strategy{
+				Type:             backoff.Default,
+				Interval:         1,
+				PreviousAttempts: 0,
+				RetryLimit:       2,
+			}
+
 			msg := &hookcamp.Message{
 				UID:       uuid.New().String(),
 				AppID:     appData.ID.String(),
 				EventType: hookcamp.EventType(eventType),
 				Data:      d,
 				Metadata: &hookcamp.MessageMetadata{
-					NumTrials:    0,
-					RetryLimit:   1,
-					NextSendTime: primitive.NewDateTimeFromTime(time.Now()),
+					BackoffStrategy: strategy,
+					NextSendTime:    primitive.NewDateTimeFromTime(time.Now()),
 				},
 				Status: hookcamp.ScheduledMessageStatus,
 			}

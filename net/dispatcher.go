@@ -62,6 +62,7 @@ func (d *Dispatcher) SendRequest(endpoint, method string, jsonData json.RawMessa
 
 type Response struct {
 	Status      string
+	StatusCode  int
 	ContentType string
 	Header      http.Header
 	Body        []byte
@@ -71,6 +72,7 @@ type Response struct {
 
 func updateDispatcherResponse(r *Response, res *http.Response) {
 	r.Status = res.Status
+	r.StatusCode = res.StatusCode
 	r.Header = res.Header
 	r.ContentType = res.Header.Get("content-type")
 }

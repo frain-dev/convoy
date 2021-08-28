@@ -101,6 +101,60 @@ func Test_ensureNewMessage(t *testing.T) {
 
 			},
 		},
+		{
+			name:       "invalid message - wrong strategy type",
+			method:     http.MethodPost,
+			statusCode: http.StatusBadRequest,
+			body:       strings.NewReader(`{"eventType": "test.event", "data": { "Hello": "World", "Test": "Data" }, "backoffStrategy": { "type": "WRONG_TYPE", "interval": 5, "retryLimit": 100 }}`),
+			args: args{
+				message: message,
+			},
+			dbFn: func(msgRepo *mocks.MockMessageRepository, appRepo *mocks.MockApplicationRepository, orgRepo *mocks.MockOrganisationRepository) {
+				appRepo.EXPECT().
+					FindApplicationByID(gomock.Any(), gomock.Any()).Times(0).
+					Return(&hookcamp.Application{
+						UID:   appId,
+						OrgID: orgID,
+						Title: "Valid application",
+						Endpoints: []hookcamp.Endpoint{
+							{
+								TargetURL: "http://localhost",
+							},
+						},
+					}, nil)
+				msgRepo.EXPECT().
+					CreateMessage(gomock.Any(), gomock.Any()).Times(0).
+					Return(nil)
+
+			},
+		},
+		{
+			name:       "valid message - default strategy type",
+			method:     http.MethodPost,
+			statusCode: http.StatusCreated,
+			body:       strings.NewReader(`{"eventType": "test.event", "data": { "Hello": "World", "Test": "Data" }, "backoffStrategy": { "type": "default", "interval": 5, "retryLimit": 100 }}`),
+			args: args{
+				message: message,
+			},
+			dbFn: func(msgRepo *mocks.MockMessageRepository, appRepo *mocks.MockApplicationRepository, orgRepo *mocks.MockOrganisationRepository) {
+				appRepo.EXPECT().
+					FindApplicationByID(gomock.Any(), gomock.Any()).Times(1).
+					Return(&hookcamp.Application{
+						UID:   appId,
+						OrgID: orgID,
+						Title: "Valid application",
+						Endpoints: []hookcamp.Endpoint{
+							{
+								TargetURL: "http://localhost",
+							},
+						},
+					}, nil)
+				msgRepo.EXPECT().
+					CreateMessage(gomock.Any(), gomock.Any()).Times(1).
+					Return(nil)
+
+			},
+		},
 	}
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
