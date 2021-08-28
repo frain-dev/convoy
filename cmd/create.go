@@ -300,7 +300,7 @@ func createMessageCommand(a *app) *cobra.Command {
 			log.Println("Message ", string(d))
 			msg := &hookcamp.Message{
 				UID:       uuid.New().String(),
-				AppID:     appData.ID.String(),
+				AppID:     appData.UID,
 				EventType: hookcamp.EventType(eventType),
 				Data:      d,
 				Metadata: &hookcamp.MessageMetadata{

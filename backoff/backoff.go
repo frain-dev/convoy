@@ -38,7 +38,7 @@ func GetDelay(s Strategy) time.Duration {
 	prevAttempts := s.PreviousAttempts
 
 	if s.Type == Exponential {
-		// (1/2) * (2^attempts -1)
+		// (1/2) * (2^attempts - 1)
 		return time.Duration((math.Pow(2, float64(interval*prevAttempts))-1)/2) * time.Second
 	}
 
