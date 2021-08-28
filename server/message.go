@@ -114,7 +114,7 @@ func ensureNewMessage(appRepo hookcamp.ApplicationRepository, msgRepo hookcamp.M
 				UpdatedAt:       primitive.NewDateTimeFromTime(time.Now()),
 				AppMetadata: &hookcamp.AppMetadata{
 					OrgID:     app.OrgID,
-					Endpoints: parseMetadataFromEndpoints(app.Endpoints),
+					Endpoints: util.ParseMetadataFromEndpoints(app.Endpoints),
 				},
 				Status: hookcamp.ScheduledMessageStatus,
 			}
@@ -128,18 +128,6 @@ func ensureNewMessage(appRepo hookcamp.ApplicationRepository, msgRepo hookcamp.M
 			next.ServeHTTP(w, r)
 		})
 	}
-}
-
-func parseMetadataFromEndpoints(endpoints []hookcamp.Endpoint) []hookcamp.EndpointMetadata {
-	m := make([]hookcamp.EndpointMetadata, 0)
-	for _, e := range endpoints {
-		m = append(m, hookcamp.EndpointMetadata{
-			UID:       e.UID,
-			TargetURL: e.TargetURL,
-			Merged:    false,
-		})
-	}
-	return m
 }
 
 func fetchAllMessages(msgRepo hookcamp.MessageRepository) func(next http.Handler) http.Handler {

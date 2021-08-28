@@ -218,6 +218,9 @@ func createMessageCommand(a *app) *cobra.Command {
 	var appID string
 	var filePath string
 	var eventType string
+	var backoffType string
+	var interval uint64
+	var retryLimit uint64
 	var publish bool
 
 	cmd := &cobra.Command{
@@ -237,8 +240,22 @@ func createMessageCommand(a *app) *cobra.Command {
 			if !util.IsStringEmpty(data) && !util.IsStringEmpty(filePath) {
 				return errors.New("please provide only one of -f or -d")
 			}
+			if interval < 1 {
+				return errors.New("please provide a positive backoff interval")
+			}
+			if retryLimit < 1 {
+				return errors.New("please provide a positive backoff retry limit")
+			}
+
+			if !backoff.IsValidType(backoffType) {
+				return errors.New("please provide a valid backoff strategy")
+			}
 
 			if !util.IsStringEmpty(data) {
+				if !util.IsJSON(data) {
+					return errors.New("invalid json provided: " + data)
+				}
+
 				d = []byte(data)
 			}
 
@@ -274,12 +291,13 @@ func createMessageCommand(a *app) *cobra.Command {
 			}
 
 			strategy := backoff.Strategy{
-				Type:             backoff.Default,
-				Interval:         1,
+				Type:             backoff.Type(backoffType),
+				Interval:         interval,
 				PreviousAttempts: 0,
-				RetryLimit:       2,
+				RetryLimit:       retryLimit,
 			}
 
+			log.Println("Message ", string(d))
 			msg := &hookcamp.Message{
 				UID:       uuid.New().String(),
 				AppID:     appData.ID.String(),
@@ -289,7 +307,14 @@ func createMessageCommand(a *app) *cobra.Command {
 					BackoffStrategy: strategy,
 					NextSendTime:    primitive.NewDateTimeFromTime(time.Now()),
 				},
-				Status: hookcamp.ScheduledMessageStatus,
+				AppMetadata: &hookcamp.AppMetadata{
+					OrgID:     appData.OrgID,
+					Endpoints: util.ParseMetadataFromEndpoints(appData.Endpoints),
+				},
+				MessageAttempts: make([]hookcamp.MessageAttempt, 0),
+				CreatedAt:       primitive.NewDateTimeFromTime(time.Now()),
+				UpdatedAt:       primitive.NewDateTimeFromTime(time.Now()),
+				Status:          hookcamp.ScheduledMessageStatus,
 			}
 
 			if len(appData.Endpoints) == 0 {
@@ -311,7 +336,10 @@ func createMessageCommand(a *app) *cobra.Command {
 	cmd.Flags().StringVarP(&data, "data", "d", "", "Raw JSON data that will be sent to the endpoints")
 	cmd.Flags().StringVarP(&appID, "app", "a", "", "Application ID")
 	cmd.Flags().StringVarP(&filePath, "file", "f", "", "Path to file containing JSON data")
-	cmd.Flags().StringVar(&eventType, "event", "", "Event type")
+	cmd.Flags().StringVarP(&eventType, "event", "e", "", "Event type")
+	cmd.Flags().StringVarP(&backoffType, "backoff", "b", "default", "Backoff strategy type")
+	cmd.Flags().Uint64VarP(&interval, "interval", "i", 1, "Backoff interval")
+	cmd.Flags().Uint64VarP(&retryLimit, "retryLimit", "r", 2, "Backoff retry limit")
 	cmd.Flags().BoolVar(&publish, "publish", false, `If true, it will send the data to the endpoints
 attached to the application`)
 
