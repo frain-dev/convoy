@@ -7,7 +7,7 @@ import (
 	"encoding/json"
 	"errors"
 	pager "github.com/gobeam/mongo-go-pagination"
-	"github.com/hookcamp/hookcamp/backoff"
+	"github.com/hookcamp/hookcamp/config"
 	"github.com/hookcamp/hookcamp/server/models"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"net/http"
@@ -29,11 +29,18 @@ const (
 )
 
 type MessageMetadata struct {
+	Strategy config.Strategy `json:"strategy" bson:"strategy"`
 	// NextSendTime denotes the next time a message will be published in
 	// case it failed the first time
 	NextSendTime primitive.DateTime `json:"next_send_time" bson:"next_send_time"`
 
-	BackoffStrategy backoff.Strategy `json:"backoff_strategy" bson:"backoff_strategy"`
+	// NumTrials: number of times we have tried to deliver this message to
+	// an application
+	NumTrials uint64 `json:"num_trials" bson:"num_trials"`
+
+	IntervalSeconds uint64 `json:"interval_seconds" bson:"interval_seconds"`
+
+	RetryLimit uint64 `json:"retry_limit" bson:"retry_limit"`
 }
 
 type AppMetadata struct {
@@ -46,7 +53,7 @@ type EndpointMetadata struct {
 	UID       string `json:"uid" bson:"uid"`
 	TargetURL string `json:"target_url" bson:"target_url"`
 
-	Merged bool `json:"merged" bson:"merged"`
+	Sent bool `json:"sent" bson:"sent"`
 }
 
 func (m MessageMetadata) Value() (driver.Value, error) {

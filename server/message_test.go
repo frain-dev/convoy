@@ -7,6 +7,7 @@ import (
 	pager "github.com/gobeam/mongo-go-pagination"
 	"github.com/golang/mock/gomock"
 	"github.com/hookcamp/hookcamp"
+	"github.com/hookcamp/hookcamp/config"
 	"github.com/hookcamp/hookcamp/mocks"
 	"github.com/hookcamp/hookcamp/server/models"
 	"github.com/sirupsen/logrus"
@@ -101,63 +102,15 @@ func Test_ensureNewMessage(t *testing.T) {
 
 			},
 		},
-		{
-			name:       "invalid message - wrong strategy type",
-			method:     http.MethodPost,
-			statusCode: http.StatusBadRequest,
-			body:       strings.NewReader(`{"eventType": "test.event", "data": { "Hello": "World", "Test": "Data" }, "backoffStrategy": { "type": "WRONG_TYPE", "interval": 5, "retryLimit": 100 }}`),
-			args: args{
-				message: message,
-			},
-			dbFn: func(msgRepo *mocks.MockMessageRepository, appRepo *mocks.MockApplicationRepository, orgRepo *mocks.MockOrganisationRepository) {
-				appRepo.EXPECT().
-					FindApplicationByID(gomock.Any(), gomock.Any()).Times(0).
-					Return(&hookcamp.Application{
-						UID:   appId,
-						OrgID: orgID,
-						Title: "Valid application",
-						Endpoints: []hookcamp.Endpoint{
-							{
-								TargetURL: "http://localhost",
-							},
-						},
-					}, nil)
-				msgRepo.EXPECT().
-					CreateMessage(gomock.Any(), gomock.Any()).Times(0).
-					Return(nil)
-
-			},
-		},
-		{
-			name:       "valid message - default strategy type",
-			method:     http.MethodPost,
-			statusCode: http.StatusCreated,
-			body:       strings.NewReader(`{"eventType": "test.event", "data": { "Hello": "World", "Test": "Data" }, "backoffStrategy": { "type": "default", "interval": 5, "retryLimit": 100 }}`),
-			args: args{
-				message: message,
-			},
-			dbFn: func(msgRepo *mocks.MockMessageRepository, appRepo *mocks.MockApplicationRepository, orgRepo *mocks.MockOrganisationRepository) {
-				appRepo.EXPECT().
-					FindApplicationByID(gomock.Any(), gomock.Any()).Times(1).
-					Return(&hookcamp.Application{
-						UID:   appId,
-						OrgID: orgID,
-						Title: "Valid application",
-						Endpoints: []hookcamp.Endpoint{
-							{
-								TargetURL: "http://localhost",
-							},
-						},
-					}, nil)
-				msgRepo.EXPECT().
-					CreateMessage(gomock.Any(), gomock.Any()).Times(1).
-					Return(nil)
-
-			},
-		},
 	}
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
+
+			err := config.LoadFromFile("./testdata/TestRequireAuth_None/hookcamp.json")
+			if err != nil {
+				t.Error("Failed to load config file")
+			}
+
 			request := httptest.NewRequest(tc.method, fmt.Sprintf("/v1/apps/%s/messages", tc.args.message.AppID), tc.body)
 			responseRecorder := httptest.NewRecorder()
 			rctx := chi.NewRouteContext()

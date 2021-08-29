@@ -5,7 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/hookcamp/hookcamp/backoff"
+	"github.com/hookcamp/hookcamp/config"
 	log "github.com/sirupsen/logrus"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"net/url"
@@ -218,9 +218,6 @@ func createMessageCommand(a *app) *cobra.Command {
 	var appID string
 	var filePath string
 	var eventType string
-	var backoffType string
-	var interval uint64
-	var retryLimit uint64
 	var publish bool
 
 	cmd := &cobra.Command{
@@ -239,16 +236,6 @@ func createMessageCommand(a *app) *cobra.Command {
 
 			if !util.IsStringEmpty(data) && !util.IsStringEmpty(filePath) {
 				return errors.New("please provide only one of -f or -d")
-			}
-			if interval < 1 {
-				return errors.New("please provide a positive backoff interval")
-			}
-			if retryLimit < 1 {
-				return errors.New("please provide a positive backoff retry limit")
-			}
-
-			if !backoff.IsValidType(backoffType) {
-				return errors.New("please provide a valid backoff strategy")
 			}
 
 			if !util.IsStringEmpty(data) {
@@ -290,11 +277,19 @@ func createMessageCommand(a *app) *cobra.Command {
 				return err
 			}
 
-			strategy := backoff.Strategy{
-				Type:             backoff.Type(backoffType),
-				Interval:         interval,
-				PreviousAttempts: 0,
-				RetryLimit:       retryLimit,
+			cfg, err := config.Get()
+			if err != nil {
+				log.Errorln("error fetching config - ", err)
+				return err
+			}
+
+			var intervalSeconds uint64
+			var retryLimit uint64
+			if cfg.Strategy.Type == config.DefaultStrategy {
+				intervalSeconds = cfg.Strategy.Default.IntervalSeconds
+				retryLimit = cfg.Strategy.Default.RetryLimit
+			} else {
+				return errors.New("retry strategy not defined in configuration")
 			}
 
 			log.Println("Message ", string(d))
@@ -304,8 +299,11 @@ func createMessageCommand(a *app) *cobra.Command {
 				EventType: hookcamp.EventType(eventType),
 				Data:      d,
 				Metadata: &hookcamp.MessageMetadata{
-					BackoffStrategy: strategy,
-					NextSendTime:    primitive.NewDateTimeFromTime(time.Now()),
+					Strategy:        cfg.Strategy.Type,
+					NumTrials:       0,
+					IntervalSeconds: intervalSeconds,
+					RetryLimit:      retryLimit,
+					NextSendTime:    primitive.NewDateTimeFromTime(time.Now().Add(time.Duration(intervalSeconds))),
 				},
 				AppMetadata: &hookcamp.AppMetadata{
 					OrgID:     appData.OrgID,
@@ -337,9 +335,6 @@ func createMessageCommand(a *app) *cobra.Command {
 	cmd.Flags().StringVarP(&appID, "app", "a", "", "Application ID")
 	cmd.Flags().StringVarP(&filePath, "file", "f", "", "Path to file containing JSON data")
 	cmd.Flags().StringVarP(&eventType, "event", "e", "", "Event type")
-	cmd.Flags().StringVarP(&backoffType, "backoff", "b", "default", "Backoff strategy type")
-	cmd.Flags().Uint64VarP(&interval, "interval", "i", 1, "Backoff interval")
-	cmd.Flags().Uint64VarP(&retryLimit, "retryLimit", "r", 2, "Backoff retry limit")
 	cmd.Flags().BoolVar(&publish, "publish", false, `If true, it will send the data to the endpoints
 attached to the application`)
 

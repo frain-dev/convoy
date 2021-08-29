@@ -7,7 +7,7 @@ import (
 	"github.com/go-chi/render"
 	"github.com/google/uuid"
 	"github.com/hookcamp/hookcamp"
-	"github.com/hookcamp/hookcamp/backoff"
+	"github.com/hookcamp/hookcamp/config"
 	"github.com/hookcamp/hookcamp/server/models"
 	"github.com/hookcamp/hookcamp/util"
 	log "github.com/sirupsen/logrus"
@@ -39,34 +39,6 @@ func ensureNewMessage(appRepo hookcamp.ApplicationRepository, msgRepo hookcamp.M
 				return
 			}
 
-			s := newMessage.BackoffStrategy
-			strategyType := backoff.Default
-			var interval uint64 = 15 // every 15 * 1 seconds
-			var retryLimit uint64 = 10
-
-			if s != nil {
-				rawType := string(s.Type)
-				if util.IsStringEmpty(rawType) {
-					_ = render.Render(w, r, newErrorResponse("please provide a type if backoffStrategy is set", http.StatusBadRequest))
-					return
-				}
-				if !backoff.IsValidType(rawType) {
-					_ = render.Render(w, r, newErrorResponse("please provide a valid backoffStrategy in (default, exponential)", http.StatusBadRequest))
-					return
-				}
-				if s.Interval < 1 {
-					_ = render.Render(w, r, newErrorResponse("please provide a positive backoffStrategy interval", http.StatusBadRequest))
-					return
-				}
-				if s.RetryLimit < 1 {
-					_ = render.Render(w, r, newErrorResponse("please provide a positive backoffStrategy retryLimit", http.StatusBadRequest))
-					return
-				}
-				strategyType = s.Type
-				interval = s.Interval
-				retryLimit = s.RetryLimit
-			}
-
 			appID := chi.URLParam(r, "appID")
 			if util.IsStringEmpty(appID) {
 				_ = render.Render(w, r, newErrorResponse("please provide your appID", http.StatusBadRequest))
@@ -93,11 +65,21 @@ func ensureNewMessage(appRepo hookcamp.ApplicationRepository, msgRepo hookcamp.M
 				return
 			}
 
-			strategy := backoff.Strategy{
-				Type:             strategyType,
-				Interval:         interval,
-				PreviousAttempts: 0,
-				RetryLimit:       retryLimit,
+			cfg, err := config.Get()
+			if err != nil {
+				log.Errorln("error fetching config - ", err)
+				_ = render.Render(w, r, newErrorResponse("an error has occurred while fetching config", http.StatusInternalServerError))
+				return
+			}
+
+			var intervalSeconds uint64
+			var retryLimit uint64
+			if cfg.Strategy.Type == config.DefaultStrategy {
+				intervalSeconds = cfg.Strategy.Default.IntervalSeconds
+				retryLimit = cfg.Strategy.Default.RetryLimit
+			} else {
+				_ = render.Render(w, r, newErrorResponse("retry strategy not defined in configuration", http.StatusInternalServerError))
+				return
 			}
 
 			msg := &hookcamp.Message{
@@ -106,8 +88,11 @@ func ensureNewMessage(appRepo hookcamp.ApplicationRepository, msgRepo hookcamp.M
 				EventType: hookcamp.EventType(eventType),
 				Data:      d,
 				Metadata: &hookcamp.MessageMetadata{
-					BackoffStrategy: strategy,
-					NextSendTime:    primitive.NewDateTimeFromTime(time.Now().Add(backoff.GetDelay(strategy))),
+					Strategy:        cfg.Strategy.Type,
+					NumTrials:       0,
+					IntervalSeconds: intervalSeconds,
+					RetryLimit:      retryLimit,
+					NextSendTime:    primitive.NewDateTimeFromTime(time.Now().Add(time.Duration(intervalSeconds))),
 				},
 				MessageAttempts: make([]hookcamp.MessageAttempt, 0),
 				CreatedAt:       primitive.NewDateTimeFromTime(time.Now()),

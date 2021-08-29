@@ -8,7 +8,7 @@ func ParseMetadataFromEndpoints(endpoints []hookcamp.Endpoint) []hookcamp.Endpoi
 		m = append(m, hookcamp.EndpointMetadata{
 			UID:       e.UID,
 			TargetURL: e.TargetURL,
-			Merged:    false,
+			Sent:      false,
 		})
 	}
 	return m

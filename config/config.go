@@ -22,6 +22,7 @@ type Configuration struct {
 			Port int `json:"port"`
 		} `json:"http"`
 	}
+	Strategy StrategyConfiguration `json:"strategy"`
 }
 
 func LoadFromFile(p string) error {
@@ -56,12 +57,15 @@ func Get() (Configuration, error) {
 
 type AuthProvider string
 type QueueProvider string
+type Strategy string
 
 const (
 	NoAuthProvider    AuthProvider = "none"
 	BasicAuthProvider AuthProvider = "basic"
 
 	RedisQueueProvider QueueProvider = "redis"
+
+	DefaultStrategy Strategy = "default"
 )
 
 type QueueConfiguration struct {
@@ -77,4 +81,12 @@ type AuthConfiguration struct {
 		Username string `json:"username"`
 		Password string `json:"password"`
 	} `json:"basic"`
+}
+
+type StrategyConfiguration struct {
+	Type    Strategy `json:"type"`
+	Default struct {
+		IntervalSeconds uint64 `json:"intervalSeconds"`
+		RetryLimit      uint64 `json:"retryLimit"`
+	} `json:"default"`
 }

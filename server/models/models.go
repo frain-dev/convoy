@@ -2,7 +2,6 @@ package models
 
 import (
 	"encoding/json"
-	"github.com/hookcamp/hookcamp/backoff"
 )
 
 type Organisation struct {
@@ -23,8 +22,6 @@ type Message struct {
 
 	Status    string `json:"status" bson:"status"`
 	CreatedAt int64  `json:"createdAt" bson:"created_at"`
-
-	BackoffStrategy *backoff.Strategy `json:"backoffStrategy" bson:"backoff_strategy"`
 }
 
 type MessageAttempt struct {
