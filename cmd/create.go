@@ -303,7 +303,7 @@ func createMessageCommand(a *app) *cobra.Command {
 					NumTrials:       0,
 					IntervalSeconds: intervalSeconds,
 					RetryLimit:      retryLimit,
-					NextSendTime:    primitive.NewDateTimeFromTime(time.Now().Add(time.Duration(intervalSeconds))),
+					NextSendTime:    primitive.NewDateTimeFromTime(time.Now().Add(time.Duration(intervalSeconds) * time.Second)),
 				},
 				AppMetadata: &hookcamp.AppMetadata{
 					OrgID:     appData.OrgID,

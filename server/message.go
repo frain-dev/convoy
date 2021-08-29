@@ -92,7 +92,7 @@ func ensureNewMessage(appRepo hookcamp.ApplicationRepository, msgRepo hookcamp.M
 					NumTrials:       0,
 					IntervalSeconds: intervalSeconds,
 					RetryLimit:      retryLimit,
-					NextSendTime:    primitive.NewDateTimeFromTime(time.Now().Add(time.Duration(intervalSeconds))),
+					NextSendTime:    primitive.NewDateTimeFromTime(time.Now().Add(time.Duration(intervalSeconds) * time.Second)),
 				},
 				MessageAttempts: make([]hookcamp.MessageAttempt, 0),
 				CreatedAt:       primitive.NewDateTimeFromTime(time.Now()),
