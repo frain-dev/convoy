@@ -1,4 +1,4 @@
-import React, {useEffect, useState} from 'react';
+import React, { useEffect, useState } from 'react';
 import * as axios from 'axios';
 import ArrowDownIcon from '../../assets/img/arrow-down-icon.svg';
 import AppsIcon from '../../assets/img/apps-icon.svg';
@@ -8,7 +8,7 @@ import CalendarIcon from '../../assets/img/calendar-icon.svg';
 import CopyIcon from '../../assets/img/copy-icon.svg';
 import ViewIcon from '../../assets/img/view-icon.svg';
 import Chart from 'chart.js/auto';
-import {DateRange} from 'react-date-range';
+import { DateRange } from 'react-date-range';
 import ReactJson from 'react-json-view';
 import './app.scss';
 import 'react-date-range/dist/styles.css';
@@ -101,7 +101,7 @@ function DashboardPage() {
 				setDashboardData(dashboardResponse.data.dashboard);
 
 				const chartData = dashboardResponse.data.dashboard.messageData;
-				const labels = chartData.map((label) => label.data.index);
+				const labels = chartData.map((label) => label.day);
 				const dataSet = chartData.map((label) => label.count);
 				const data = {
 					labels,
@@ -117,9 +117,9 @@ function DashboardPage() {
 					],
 				};
 				const chart = new Chart(document.getElementById('chart'), { type: 'line', data, options });
-
 				chart.update();
 			} catch (error) {
+				console.log(error);
 				return error;
 			}
 		};
