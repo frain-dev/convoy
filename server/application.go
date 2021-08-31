@@ -12,12 +12,13 @@ import (
 type applicationHandler struct {
 	appRepo hookcamp.ApplicationRepository
 	orgRepo hookcamp.OrganisationRepository
+	msgRepo hookcamp.MessageRepository
 }
 
-func newApplicationHandler(appRepo hookcamp.ApplicationRepository,
-	orgRepo hookcamp.OrganisationRepository) *applicationHandler {
+func newApplicationHandler(msgRepo hookcamp.MessageRepository, appRepo hookcamp.ApplicationRepository, orgRepo hookcamp.OrganisationRepository) *applicationHandler {
 
 	return &applicationHandler{
+		msgRepo: msgRepo,
 		appRepo: appRepo,
 		orgRepo: orgRepo,
 	}
@@ -46,6 +47,21 @@ type dashboardSummaryResponse struct {
 
 type applicationResponse struct {
 	Application hookcamp.Application `json:"application"`
+	Response
+}
+
+type messageResponse struct {
+	Message hookcamp.Message `json:"message"`
+	Response
+}
+
+type messagesResponse struct {
+	Messages []hookcamp.Message `json:"messages"`
+	Response
+}
+type messagesPagedResponse struct {
+	Messages       []hookcamp.Message    `json:"messages"`
+	PaginationData *pager.PaginationData `json:"pagination"`
 	Response
 }
 
@@ -176,6 +192,43 @@ func (a *applicationHandler) GetPaginatedApps(w http.ResponseWriter, r *http.Req
 			StatusCode: http.StatusOK,
 		},
 		Applications:   *getApplicationsFromContext(r.Context()),
+		PaginationData: getPaginationDataFromContext(r.Context()),
+	})
+}
+
+func (a *applicationHandler) CreateAppMessage(w http.ResponseWriter, r *http.Request) {
+	_ = render.Render(w, r, messageResponse{
+		Response: Response{
+			StatusCode: http.StatusCreated,
+		},
+		Message: *getMessageFromContext(r.Context()),
+	})
+}
+
+func (a *applicationHandler) GetAppMessage(w http.ResponseWriter, r *http.Request) {
+	_ = render.Render(w, r, messageResponse{
+		Response: Response{
+			StatusCode: http.StatusOK,
+		},
+		Message: *getMessageFromContext(r.Context()),
+	})
+}
+
+func (a *applicationHandler) GetAppMessages(w http.ResponseWriter, r *http.Request) {
+	_ = render.Render(w, r, messagesResponse{
+		Response: Response{
+			StatusCode: http.StatusOK,
+		},
+		Messages: *getMessagesFromContext(r.Context()),
+	})
+}
+
+func (a *applicationHandler) GetAppMessagesPaged(w http.ResponseWriter, r *http.Request) {
+	_ = render.Render(w, r, messagesPagedResponse{
+		Response: Response{
+			StatusCode: http.StatusOK,
+		},
+		Messages:       *getMessagesFromContext(r.Context()),
 		PaginationData: getPaginationDataFromContext(r.Context()),
 	})
 }

@@ -1,6 +1,7 @@
 package hookcamp
 
 import (
+	"go.mongodb.org/mongo-driver/bson/primitive"
 	"testing"
 	"time"
 
@@ -29,7 +30,7 @@ func TestOrganisation_IsDeleted(t *testing.T) {
 		},
 		{
 			name:         "set deleted_at to current timestamp",
-			organisation: &Organisation{UID: "123456", DeletedAt: time.Now().Unix()},
+			organisation: &Organisation{UID: "123456", DeletedAt: primitive.NewDateTimeFromTime(time.Now())},
 			isDeleted:    true,
 		},
 	}
