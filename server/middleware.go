@@ -6,13 +6,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	pager "github.com/gobeam/mongo-go-pagination"
-	"github.com/google/uuid"
-	"github.com/hookcamp/hookcamp/config"
-	"github.com/hookcamp/hookcamp/server/models"
-	"github.com/hookcamp/hookcamp/util"
-	log "github.com/sirupsen/logrus"
-	"go.mongodb.org/mongo-driver/bson/primitive"
 	"io"
 	"net/http"
 	"net/url"
@@ -20,6 +13,15 @@ import (
 	"strings"
 	"time"
 
+	pager "github.com/gobeam/mongo-go-pagination"
+	"github.com/google/uuid"
+	"github.com/hookcamp/hookcamp/config"
+	"github.com/hookcamp/hookcamp/server/models"
+	"github.com/hookcamp/hookcamp/util"
+	log "github.com/sirupsen/logrus"
+	"go.mongodb.org/mongo-driver/bson/primitive"
+
+	"github.com/felixge/httpsnoop"
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
 	"github.com/go-chi/render"
@@ -37,6 +39,16 @@ const (
 	pageDataCtx  contextKey = "pageData"
 	dashboardCtx contextKey = "dashboard"
 )
+
+func instrumentPath(path string) func(http.Handler) http.Handler {
+	return func(next http.Handler) http.Handler {
+		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			m := httpsnoop.CaptureMetrics(next, w, r)
+			requestDuration.WithLabelValues(r.Method, path,
+				strconv.Itoa(m.Code)).Observe(m.Duration.Seconds())
+		})
+	}
+}
 
 func writeRequestIDHeader(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
