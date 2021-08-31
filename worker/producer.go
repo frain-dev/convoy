@@ -4,8 +4,10 @@ import (
 	"context"
 	"github.com/google/uuid"
 	"github.com/hookcamp/hookcamp"
+	"github.com/hookcamp/hookcamp/config"
 	"github.com/hookcamp/hookcamp/net"
 	"github.com/hookcamp/hookcamp/queue"
+	"github.com/hookcamp/hookcamp/util"
 	log "github.com/sirupsen/logrus"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"time"
@@ -46,6 +48,17 @@ func (p *Producer) Start() {
 
 func (p *Producer) postMessages(msgRepo hookcamp.MessageRepository, m hookcamp.Message) {
 
+	var secret = m.AppMetadata.Secret
+	cfg, err := config.Get()
+	if err != nil {
+		log.Errorf("error occurred while fetching signature from config - %+v\n", err)
+		return
+	}
+	signHeader := string(cfg.Signature.Header)
+	if util.IsStringEmpty(signHeader) {
+		log.Warnf("%s signature header is missing", m.UID)
+	}
+
 	var done = true
 	for i := range m.AppMetadata.Endpoints {
 
@@ -55,10 +68,16 @@ func (p *Producer) postMessages(msgRepo hookcamp.MessageRepository, m hookcamp.M
 			continue
 		}
 
+		hmac, err := util.ComputeJSONHmac(secret, string(m.Data), false)
+		if err != nil {
+			log.Errorf("error occurred while generating hmac signature - %+v\n", err)
+			return
+		}
+
 		attemptStatus := hookcamp.FailureMessageStatus
 		start := time.Now()
 
-		resp, err := p.dispatch.SendRequest(e.TargetURL, string(hookcamp.HttpPost), m.Data)
+		resp, err := p.dispatch.SendRequest(e.TargetURL, string(hookcamp.HttpPost), m.Data, signHeader, hmac)
 		status := "-"
 		statusCode := 0
 		if resp != nil {
@@ -111,7 +130,7 @@ func (p *Producer) postMessages(msgRepo hookcamp.MessageRepository, m hookcamp.M
 		m.Status = hookcamp.FailureMessageStatus
 	}
 
-	err := msgRepo.UpdateMessage(context.Background(), m)
+	err = msgRepo.UpdateMessage(context.Background(), m)
 	if err != nil {
 		log.Errorln("failed to update message ", m.UID)
 	}

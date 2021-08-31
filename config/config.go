@@ -22,7 +22,8 @@ type Configuration struct {
 			Port int `json:"port"`
 		} `json:"http"`
 	}
-	Strategy StrategyConfiguration `json:"strategy"`
+	Strategy  StrategyConfiguration  `json:"strategy"`
+	Signature SignatureConfiguration `json:"signature"`
 }
 
 func LoadFromFile(p string) error {
@@ -58,6 +59,7 @@ func Get() (Configuration, error) {
 type AuthProvider string
 type QueueProvider string
 type Strategy string
+type SignatureHeader string
 
 const (
 	NoAuthProvider    AuthProvider = "none"
@@ -89,4 +91,8 @@ type StrategyConfiguration struct {
 		IntervalSeconds uint64 `json:"intervalSeconds"`
 		RetryLimit      uint64 `json:"retryLimit"`
 	} `json:"default"`
+}
+
+type SignatureConfiguration struct {
+	Header SignatureHeader `json:"header"`
 }

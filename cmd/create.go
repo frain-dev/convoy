@@ -49,13 +49,6 @@ func createEndpointCommand(a *app) *cobra.Command {
 				return errors.New("please provide a description")
 			}
 
-			if util.IsStringEmpty(e.Secret) {
-				e.Secret, err = util.GenerateRandomString(25)
-				if err != nil {
-					return fmt.Errorf("could not generate secret...%v", err)
-				}
-			}
-
 			if util.IsStringEmpty(e.TargetURL) {
 				return errors.New("please provide your target url")
 			}
@@ -91,9 +84,7 @@ func createEndpointCommand(a *app) *cobra.Command {
 			fmt.Println()
 
 			table := tablewriter.NewWriter(os.Stdout)
-			table.SetHeader([]string{"ID", "Secret", "Target URL", "Description"})
-
-			table.Append([]string{e.UID, e.Secret, e.TargetURL, e.Description})
+			table.SetHeader([]string{"ID", "Target URL", "Description"})
 
 			table.Render()
 			return nil
@@ -102,8 +93,6 @@ func createEndpointCommand(a *app) *cobra.Command {
 
 	cmd.Flags().StringVar(&e.Description, "description", "", "Description of this endpoint")
 	cmd.Flags().StringVar(&e.TargetURL, "target", "", "The target url of this endpoint")
-	cmd.Flags().StringVar(&e.Secret, "secret", "",
-		"Provide the secret for this endpoint. If blank, it will be automatically generated")
 	cmd.Flags().StringVar(&appID, "app", "", "The app this endpoint belongs to")
 
 	return cmd
@@ -112,6 +101,7 @@ func createEndpointCommand(a *app) *cobra.Command {
 func createApplicationCommand(a *app) *cobra.Command {
 
 	var orgID string
+	var appSecret string
 
 	cmd := &cobra.Command{
 		Use:     "application",
@@ -140,10 +130,18 @@ func createApplicationCommand(a *app) *cobra.Command {
 				return err
 			}
 
+			if util.IsStringEmpty(appSecret) {
+				appSecret, err = util.GenerateRandomString(25)
+				if err != nil {
+					return fmt.Errorf("could not generate secret...%v", err)
+				}
+			}
+
 			app := &hookcamp.Application{
 				UID:       uuid.New().String(),
 				OrgID:     org.UID,
 				Title:     appName,
+				Secret:    appSecret,
 				CreatedAt: primitive.NewDateTimeFromTime(time.Now()),
 				UpdatedAt: primitive.NewDateTimeFromTime(time.Now()),
 				Endpoints: []hookcamp.Endpoint{},
@@ -155,9 +153,9 @@ func createApplicationCommand(a *app) *cobra.Command {
 			}
 
 			table := tablewriter.NewWriter(os.Stdout)
-			table.SetHeader([]string{"ID", "Name", "Organisation", "Created at"})
+			table.SetHeader([]string{"ID", "Name", "Organisation", "Secret", "Created at"})
 
-			table.Append([]string{app.UID, app.Title, org.OrgName, app.CreatedAt.Time().String()})
+			table.Append([]string{app.UID, app.Title, org.OrgName, app.Secret, app.CreatedAt.Time().String()})
 			table.Render()
 
 			return nil
@@ -165,6 +163,7 @@ func createApplicationCommand(a *app) *cobra.Command {
 	}
 
 	cmd.Flags().StringVar(&orgID, "org", "", "Organisation that owns this application")
+	cmd.Flags().StringVar(&appSecret, "secret", "", "Provide the secret for app endpoint(s). If blank, it will be automatically generated")
 
 	return cmd
 }

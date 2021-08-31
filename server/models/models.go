@@ -11,6 +11,7 @@ type Organisation struct {
 type Application struct {
 	OrgID   string `json:"orgId" bson:"orgId"`
 	AppName string `json:"name" bson:"name"`
+	Secret  string `json:"secret" bson:"secret"`
 }
 
 type Message struct {
