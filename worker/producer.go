@@ -2,11 +2,13 @@ package worker
 
 import (
 	"context"
+	"encoding/json"
 	"github.com/google/uuid"
 	"github.com/hookcamp/hookcamp"
 	"github.com/hookcamp/hookcamp/config"
 	"github.com/hookcamp/hookcamp/net"
 	"github.com/hookcamp/hookcamp/queue"
+	"github.com/hookcamp/hookcamp/server/models"
 	"github.com/hookcamp/hookcamp/util"
 	log "github.com/sirupsen/logrus"
 	"go.mongodb.org/mongo-driver/bson/primitive"
@@ -61,7 +63,19 @@ func (p *Producer) postMessages(msgRepo hookcamp.MessageRepository, m hookcamp.M
 			continue
 		}
 
-		hmac, err := util.ComputeJSONHmac(secret, string(m.Data), false)
+		request := models.WebhookRequest{
+			Event: string(m.EventType),
+			Data:  m.Data,
+		}
+
+		bytes, err := json.Marshal(request)
+		if err != nil {
+			log.Errorf("error occurred while parsing payload - %+v\n", err)
+			return
+		}
+
+		bStr := string(bytes)
+		hmac, err := util.ComputeJSONHmac(secret, bStr, false)
 		if err != nil {
 			log.Errorf("error occurred while generating hmac signature - %+v\n", err)
 			return
@@ -70,7 +84,7 @@ func (p *Producer) postMessages(msgRepo hookcamp.MessageRepository, m hookcamp.M
 		attemptStatus := hookcamp.FailureMessageStatus
 		start := time.Now()
 
-		resp, err := p.dispatch.SendRequest(e.TargetURL, string(hookcamp.HttpPost), m.Data, p.signatureHeader, hmac)
+		resp, err := p.dispatch.SendRequest(e.TargetURL, string(hookcamp.HttpPost), bytes, p.signatureHeader, hmac)
 		status := "-"
 		statusCode := 0
 		if resp != nil {
