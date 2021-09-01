@@ -33,7 +33,7 @@ func addServerCommand(a *app) *cobra.Command {
 
 			worker.NewCleaner(&a.queue, &a.messageRepo).Start()
 			worker.NewScheduler(&a.queue, &a.messageRepo).Start()
-			worker.NewProducer(&a.queue, &a.messageRepo).Start()
+			worker.NewProducer(&a.queue, &a.messageRepo, cfg.Signature.Header).Start()
 
 			log.Infof("Started Hookcamp server in %s", time.Since(start))
 			return srv.ListenAndServe()

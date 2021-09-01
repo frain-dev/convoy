@@ -74,7 +74,7 @@ func ensureNewMessage(appRepo hookcamp.ApplicationRepository, msgRepo hookcamp.M
 
 			var intervalSeconds uint64
 			var retryLimit uint64
-			if cfg.Strategy.Type == config.DefaultStrategy {
+			if cfg.Strategy.Type == config.DefaultStrategyProvider {
 				intervalSeconds = cfg.Strategy.Default.IntervalSeconds
 				retryLimit = cfg.Strategy.Default.RetryLimit
 			} else {

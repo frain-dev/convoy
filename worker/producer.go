@@ -4,26 +4,30 @@ import (
 	"context"
 	"github.com/google/uuid"
 	"github.com/hookcamp/hookcamp"
+	"github.com/hookcamp/hookcamp/config"
 	"github.com/hookcamp/hookcamp/net"
 	"github.com/hookcamp/hookcamp/queue"
+	"github.com/hookcamp/hookcamp/util"
 	log "github.com/sirupsen/logrus"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"time"
 )
 
 type Producer struct {
-	Data     chan queue.Message
-	msgRepo  *hookcamp.MessageRepository
-	dispatch *net.Dispatcher
-	quit     chan chan error
+	Data            chan queue.Message
+	msgRepo         *hookcamp.MessageRepository
+	dispatch        *net.Dispatcher
+	signatureHeader string
+	quit            chan chan error
 }
 
-func NewProducer(queuer *queue.Queuer, msgRepo *hookcamp.MessageRepository) *Producer {
+func NewProducer(queuer *queue.Queuer, msgRepo *hookcamp.MessageRepository, signatureHeader config.SignatureHeaderProvider) *Producer {
 	return &Producer{
-		Data:     (*queuer).Read(),
-		msgRepo:  msgRepo,
-		dispatch: net.NewDispatcher(),
-		quit:     make(chan chan error),
+		Data:            (*queuer).Read(),
+		msgRepo:         msgRepo,
+		dispatch:        net.NewDispatcher(),
+		signatureHeader: string(signatureHeader),
+		quit:            make(chan chan error),
 	}
 }
 
@@ -46,6 +50,8 @@ func (p *Producer) Start() {
 
 func (p *Producer) postMessages(msgRepo hookcamp.MessageRepository, m hookcamp.Message) {
 
+	var secret = m.AppMetadata.Secret
+
 	var done = true
 	for i := range m.AppMetadata.Endpoints {
 
@@ -55,10 +61,16 @@ func (p *Producer) postMessages(msgRepo hookcamp.MessageRepository, m hookcamp.M
 			continue
 		}
 
+		hmac, err := util.ComputeJSONHmac(secret, string(m.Data), false)
+		if err != nil {
+			log.Errorf("error occurred while generating hmac signature - %+v\n", err)
+			return
+		}
+
 		attemptStatus := hookcamp.FailureMessageStatus
 		start := time.Now()
 
-		resp, err := p.dispatch.SendRequest(e.TargetURL, string(hookcamp.HttpPost), m.Data)
+		resp, err := p.dispatch.SendRequest(e.TargetURL, string(hookcamp.HttpPost), m.Data, p.signatureHeader, hmac)
 		status := "-"
 		statusCode := 0
 		if resp != nil {

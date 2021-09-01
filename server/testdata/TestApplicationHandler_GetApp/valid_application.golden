@@ -1,1 +1,1 @@
-{"application":{"uid":"123456789","org_id":"1234567890","name":"Valid application","endpoints":[]}}
+{"application":{"uid":"123456789","org_id":"1234567890","name":"Valid application","secret":"","endpoints":[]}}
