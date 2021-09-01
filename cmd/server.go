@@ -4,6 +4,7 @@ import (
 	"errors"
 	"github.com/hookcamp/hookcamp/config"
 	"github.com/hookcamp/hookcamp/server"
+	"github.com/hookcamp/hookcamp/util"
 	"github.com/hookcamp/hookcamp/worker"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
@@ -23,6 +24,11 @@ func addServerCommand(a *app) *cobra.Command {
 			cfg, err := config.Get()
 			if err != nil {
 				return err
+			}
+
+			if util.IsStringEmpty(string(cfg.Signature.Header)) {
+				cfg.Signature.Header = config.DefaultSignatureHeader
+				log.Warnf("signature header is blank. setting default %s", config.DefaultSignatureHeader)
 			}
 
 			if cfg.Server.HTTP.Port <= 0 {

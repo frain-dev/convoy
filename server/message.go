@@ -99,6 +99,7 @@ func ensureNewMessage(appRepo hookcamp.ApplicationRepository, msgRepo hookcamp.M
 				UpdatedAt:       primitive.NewDateTimeFromTime(time.Now()),
 				AppMetadata: &hookcamp.AppMetadata{
 					OrgID:     app.OrgID,
+					Secret:    app.Secret,
 					Endpoints: util.ParseMetadataFromEndpoints(app.Endpoints),
 				},
 				Status: hookcamp.ScheduledMessageStatus,

@@ -74,3 +74,8 @@ type MessageIntervalData struct {
 	Interval int64  `json:"index" bson:"index"`
 	Time     string `json:"date" bson:"total_time"`
 }
+
+type WebhookRequest struct {
+	Event string          `json:"event" bson:"event"`
+	Data  json.RawMessage `json:"data" bson:"data"`
+}
