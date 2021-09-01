@@ -24,3 +24,7 @@ func ComputeJSONHmac(secret string, data string, order bool) (string, error) {
 
 	return sha, nil
 }
+
+func GenerateSecret() (string, error) {
+	return GenerateRandomString(25)
+}

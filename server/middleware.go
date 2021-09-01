@@ -159,7 +159,7 @@ func ensureNewApp(orgRepo hookcamp.OrganisationRepository, appRepo hookcamp.Appl
 			}
 
 			if util.IsStringEmpty(newApp.Secret) {
-				newApp.Secret, err = util.GenerateRandomString(25)
+				newApp.Secret, err = util.GenerateSecret()
 				if err != nil {
 					_ = render.Render(w, r, newErrorResponse(fmt.Sprintf("could not generate secret...%v", err.Error()), http.StatusInternalServerError))
 					return

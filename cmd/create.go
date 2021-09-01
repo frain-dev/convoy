@@ -131,7 +131,7 @@ func createApplicationCommand(a *app) *cobra.Command {
 			}
 
 			if util.IsStringEmpty(appSecret) {
-				appSecret, err = util.GenerateRandomString(25)
+				appSecret, err = util.GenerateSecret()
 				if err != nil {
 					return fmt.Errorf("could not generate secret...%v", err)
 				}
@@ -284,7 +284,7 @@ func createMessageCommand(a *app) *cobra.Command {
 
 			var intervalSeconds uint64
 			var retryLimit uint64
-			if cfg.Strategy.Type == config.DefaultStrategy {
+			if cfg.Strategy.Type == config.DefaultStrategyProvider {
 				intervalSeconds = cfg.Strategy.Default.IntervalSeconds
 				retryLimit = cfg.Strategy.Default.RetryLimit
 			} else {

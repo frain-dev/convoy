@@ -29,7 +29,7 @@ const (
 )
 
 type MessageMetadata struct {
-	Strategy config.Strategy `json:"strategy" bson:"strategy"`
+	Strategy config.StrategyProvider `json:"strategy" bson:"strategy"`
 	// NextSendTime denotes the next time a message will be published in
 	// case it failed the first time
 	NextSendTime primitive.DateTime `json:"next_send_time" bson:"next_send_time"`

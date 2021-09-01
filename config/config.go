@@ -58,8 +58,8 @@ func Get() (Configuration, error) {
 
 type AuthProvider string
 type QueueProvider string
-type Strategy string
-type SignatureHeader string
+type StrategyProvider string
+type SignatureHeaderProvider string
 
 const (
 	NoAuthProvider    AuthProvider = "none"
@@ -67,7 +67,9 @@ const (
 
 	RedisQueueProvider QueueProvider = "redis"
 
-	DefaultStrategy Strategy = "default"
+	DefaultStrategyProvider StrategyProvider = "default"
+
+	DefaultSignatureHeader SignatureHeaderProvider = "X-Courier-Signature"
 )
 
 type QueueConfiguration struct {
@@ -86,7 +88,7 @@ type AuthConfiguration struct {
 }
 
 type StrategyConfiguration struct {
-	Type    Strategy `json:"type"`
+	Type    StrategyProvider `json:"type"`
 	Default struct {
 		IntervalSeconds uint64 `json:"intervalSeconds"`
 		RetryLimit      uint64 `json:"retryLimit"`
@@ -94,5 +96,5 @@ type StrategyConfiguration struct {
 }
 
 type SignatureConfiguration struct {
-	Header SignatureHeader `json:"header"`
+	Header SignatureHeaderProvider `json:"header"`
 }

@@ -14,18 +14,20 @@ import (
 )
 
 type Producer struct {
-	Data     chan queue.Message
-	msgRepo  *hookcamp.MessageRepository
-	dispatch *net.Dispatcher
-	quit     chan chan error
+	Data            chan queue.Message
+	msgRepo         *hookcamp.MessageRepository
+	dispatch        *net.Dispatcher
+	signatureHeader string
+	quit            chan chan error
 }
 
-func NewProducer(queuer *queue.Queuer, msgRepo *hookcamp.MessageRepository) *Producer {
+func NewProducer(queuer *queue.Queuer, msgRepo *hookcamp.MessageRepository, signatureHeader config.SignatureHeaderProvider) *Producer {
 	return &Producer{
-		Data:     (*queuer).Read(),
-		msgRepo:  msgRepo,
-		dispatch: net.NewDispatcher(),
-		quit:     make(chan chan error),
+		Data:            (*queuer).Read(),
+		msgRepo:         msgRepo,
+		dispatch:        net.NewDispatcher(),
+		signatureHeader: string(signatureHeader),
+		quit:            make(chan chan error),
 	}
 }
 
@@ -49,15 +51,6 @@ func (p *Producer) Start() {
 func (p *Producer) postMessages(msgRepo hookcamp.MessageRepository, m hookcamp.Message) {
 
 	var secret = m.AppMetadata.Secret
-	cfg, err := config.Get()
-	if err != nil {
-		log.Errorf("error occurred while fetching signature from config - %+v\n", err)
-		return
-	}
-	signHeader := string(cfg.Signature.Header)
-	if util.IsStringEmpty(signHeader) {
-		log.Warnf("%s signature header is missing", m.UID)
-	}
 
 	var done = true
 	for i := range m.AppMetadata.Endpoints {
@@ -77,7 +70,7 @@ func (p *Producer) postMessages(msgRepo hookcamp.MessageRepository, m hookcamp.M
 		attemptStatus := hookcamp.FailureMessageStatus
 		start := time.Now()
 
-		resp, err := p.dispatch.SendRequest(e.TargetURL, string(hookcamp.HttpPost), m.Data, signHeader, hmac)
+		resp, err := p.dispatch.SendRequest(e.TargetURL, string(hookcamp.HttpPost), m.Data, p.signatureHeader, hmac)
 		status := "-"
 		statusCode := 0
 		if resp != nil {
@@ -130,7 +123,7 @@ func (p *Producer) postMessages(msgRepo hookcamp.MessageRepository, m hookcamp.M
 		m.Status = hookcamp.FailureMessageStatus
 	}
 
-	err = msgRepo.UpdateMessage(context.Background(), m)
+	err := msgRepo.UpdateMessage(context.Background(), m)
 	if err != nil {
 		log.Errorln("failed to update message ", m.UID)
 	}
