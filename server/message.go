@@ -3,6 +3,9 @@ package server
 import (
 	"encoding/json"
 	"errors"
+	"net/http"
+	"time"
+
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/render"
 	"github.com/google/uuid"
@@ -12,8 +15,6 @@ import (
 	"github.com/hookcamp/hookcamp/util"
 	log "github.com/sirupsen/logrus"
 	"go.mongodb.org/mongo-driver/bson/primitive"
-	"net/http"
-	"time"
 )
 
 func ensureNewMessage(appRepo hookcamp.ApplicationRepository, msgRepo hookcamp.MessageRepository) func(next http.Handler) http.Handler {
@@ -99,6 +100,7 @@ func ensureNewMessage(appRepo hookcamp.ApplicationRepository, msgRepo hookcamp.M
 				UpdatedAt:       primitive.NewDateTimeFromTime(time.Now()),
 				AppMetadata: &hookcamp.AppMetadata{
 					OrgID:     app.OrgID,
+					Secret:    app.Secret,
 					Endpoints: util.ParseMetadataFromEndpoints(app.Endpoints),
 				},
 				Status: hookcamp.ScheduledMessageStatus,
