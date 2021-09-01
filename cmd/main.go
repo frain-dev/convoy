@@ -2,7 +2,6 @@ package main
 
 import (
 	"context"
-	"github.com/hookcamp/hookcamp/util"
 	log "github.com/sirupsen/logrus"
 	prefixed "github.com/x-cray/logrus-prefixed-formatter"
 	"os"
@@ -69,11 +68,6 @@ func main() {
 				if err != nil {
 					return err
 				}
-			}
-
-			if util.IsStringEmpty(string(cfg.Signature.Header)) {
-				cfg.Signature.Header = config.DefaultSignatureHeader
-				log.Warnf("signature header is blank. setting default %s", config.DefaultSignatureHeader)
 			}
 
 			conn := db.Database("hookcamp", nil)

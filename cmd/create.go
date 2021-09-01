@@ -306,6 +306,7 @@ func createMessageCommand(a *app) *cobra.Command {
 				},
 				AppMetadata: &hookcamp.AppMetadata{
 					OrgID:     appData.OrgID,
+					Secret:    appData.Secret,
 					Endpoints: util.ParseMetadataFromEndpoints(appData.Endpoints),
 				},
 				MessageAttempts: make([]hookcamp.MessageAttempt, 0),
