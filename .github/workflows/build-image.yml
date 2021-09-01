@@ -1,8 +1,10 @@
+name: Build docker image
+
 on:
   push:
-    branches:
-      - main
-name: Build docker image
+    tags:
+      - 'v*'
+
 jobs:
   deploy:
     runs-on: "ubuntu-latest"
@@ -10,7 +12,7 @@ jobs:
 
     - name: Get the version
       id: get_version
-      run: echo ::set-output name=tag::$(echo ${GITHUB_SHA:8})
+      run: echo ::set-output name=tag::$(echo ${IMAGE_TAG})
 
     - name: Checkout code
       uses: actions/checkout@v2
