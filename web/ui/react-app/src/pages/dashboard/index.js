@@ -21,7 +21,8 @@ const months = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 
 function DashboardPage() {
 	const [dashboardData, setDashboardData] = useState({ apps: 0, messages: 0, messageData: [] });
 	const [apps, setAppsData] = useState([]);
-	const [tabs] = useState(['messages', 'apps']);
+	const [events, setEventsData] = useState([]);
+	const [tabs] = useState(['events', 'apps']);
 	const [activeTab, setActiveTab] = useState('apps');
 	const [showFilterCalendar, toggleShowFilterCalendar] = useState(false);
 	const [organisations, setOrganisations] = useState([]);
@@ -33,9 +34,10 @@ function DashboardPage() {
 		deleted_at: 0,
 	});
 	const [detailsItem, setDetailsItem] = useState();
+	const [filterFrequency, setFilterFrequency] = useState('daily');
 	const [filterDates, setFilterDates] = useState([
 		{
-			startDate: new Date(),
+			startDate: new Date(new Date().setDate(new Date().getDate() - 20)),
 			endDate: new Date(),
 			key: 'selection',
 		},
@@ -57,12 +59,10 @@ function DashboardPage() {
 				display: true,
 				grid: {
 					display: false,
-				},
-			},
+				}
+			}
 		},
 	});
-
-	const [data] = useState();
 
 	const getDate = (date) => {
 		const _date = new Date(date);
@@ -71,6 +71,17 @@ function DashboardPage() {
 		const year = _date.getFullYear();
 		return `${day} ${months[month]}, ${year}`;
 	};
+
+	const getOrganisations = async () => {
+			try {
+				const organisationsResponse = await request.get('/organisations');
+				setOrganisations(organisationsResponse.data.organisations);
+				setActiveOrganisation(organisationsResponse.data.organisations[0]);
+				return;
+			} catch (error) {
+				return error;
+			}
+		};
 
 	useEffect(() => {
 		const getApps = async () => {
@@ -81,28 +92,27 @@ function DashboardPage() {
 				return error;
 			}
 		};
-
-		const getOrganisations = async () => {
+		const getEvents = async () => {
 			try {
-				const organisationsResponse = await request.get('/organisations');
-				setOrganisations(organisationsResponse.data.organisations);
-				setActiveOrganisation(organisationsResponse.data.organisations[0]);
-				return organisationsResponse.data.organisations[0];
+				const appsResponse = await request.get('/messages');
+				setEventsData(appsResponse.data.messages);
 			} catch (error) {
 				return error;
 			}
 		};
 
-		const fetchDashboardData = async (uid) => {
+		const fetchDashboardData = async () => {
 			try {
+				if (organisations.length === 0) await getOrganisations();
+				if (!activeorganisation.uid) return;
 				const dashboardResponse = await request.get(
-					`/dashboard/${uid}/summary?type=daily&startDate=${filterDates[0].startDate.toISOString().split('.')[0]}&endDate=${filterDates[0].endDate.toISOString().split('.')[0]}`,
+					`/dashboard/${activeorganisation.uid}/summary?startDate=${filterDates[0].startDate.toISOString().split('.')[0]}&endDate=${filterDates[0].endDate.toISOString().split('.')[0]}&type=${filterFrequency || 'daily'}`,
 				);
 				setDashboardData(dashboardResponse.data.dashboard);
 
 				const chartData = dashboardResponse.data.dashboard.messageData;
-				const labels = chartData.map((label) => label.day);
-				const dataSet = chartData.map((label) => label.count);
+				const labels = [0, ...chartData.map((label) => label.data.date)];
+				const dataSet = [0, ...chartData.map((label) => label.count)];
 				const data = {
 					labels,
 					datasets: [
@@ -116,17 +126,25 @@ function DashboardPage() {
 						},
 					],
 				};
-				const chart = new Chart(document.getElementById('chart'), { type: 'line', data, options });
-				chart.update();
+
+				if (!Chart.getChart('chart') || !Chart.getChart('chart')?.canvas) {
+					new Chart(document.getElementById('chart'), { type: 'line', data, options });
+				} else {
+					const currentChart = Chart.getChart('chart');
+					currentChart.data.labels = labels;
+					currentChart.data.datasets[0].data = dataSet;
+					currentChart.update();
+				}
 			} catch (error) {
 				console.log(error);
 				return error;
 			}
 		};
 
-		getOrganisations().then((organisation) => fetchDashboardData(organisation.uid));
+		fetchDashboardData();
 		if (activeTab === 'apps') getApps();
-	}, [options, activeTab, filterDates, data]);
+		if (activeTab === 'events') getEvents();
+	}, [options, activeTab, filterDates, activeorganisation.uid, organisations.length, filterFrequency]);
 
 	return (
 		<div className="dashboard">
@@ -143,7 +161,7 @@ function DashboardPage() {
 						<div className="dropdown organisations">
 							<ul>
 								{organisations.map((organisation, index) => (
-									<li key={index}>{organisation.name}</li>
+									<li onClick={() => setActiveOrganisation(organisation)} key={index}>{organisation.name}</li>
 								))}
 							</ul>
 						</div>
@@ -162,6 +180,13 @@ function DashboardPage() {
 						<img src={ArrowDownIcon} alt="arrow down icon" />
 					</button>
 					<DateRange onChange={(item) => setFilterDates([item.selection])} moveRangeOnFirstSelection={false} ranges={filterDates} />
+
+					<select value={filterFrequency} onChange={(event) => setFilterFrequency(event.target.value)}>
+						<option value="daily">Daily</option>
+						<option value="weekly">Weekly</option>
+						<option value="monthly">Monthly</option>
+						<option value="yearly">Yearly</option>
+					</select>
 				</div>
 
 				<div className="dashboard--page--details">
@@ -170,7 +195,7 @@ function DashboardPage() {
 							<li>
 								<img src={MessageIcon} alt="message icon" />
 								<div className="metric">
-									<div>{dashboardData.messages}</div>
+									<div>{dashboardData.messagesSent}</div>
 									<div>Messages Sent</div>
 								</div>
 							</li>
@@ -234,156 +259,43 @@ function DashboardPage() {
 						</div>
 
 						<div className="table">
-							{activeTab && activeTab === 'messages' && (
+							{activeTab && activeTab === 'events' && (
 								<table>
 									<thead>
 										<tr className="table--head">
 											<th scope="col">Status</th>
 											<th scope="col">Event Type</th>
-											<th scope="col">Event ID</th>
-											<th scope="col">Created</th>
+											<th scope="col">Description</th>
+											<th scope="col">Date Created</th>
 											<th scope="col">Next Entry</th>
 										</tr>
 									</thead>
 									<tbody>
-										<tr>
-											<td>
-												<div>
-													<div className="tag">200 OK</div>
-												</div>
-											</td>
-											<td>
-												<div>customer.created</div>
-											</td>
-											<td>
-												<div>evt-136776hjfy76734uh5j</div>
-											</td>
-											<td>
-												<div>3 Aug,2021</div>
-											</td>
-											<td>
-												<div>
-													<button className="primary has-icon icon-left">
-														<img src={RefreshIcon} alt="refresh icon" /> Resend
-													</button>
-												</div>
-											</td>
-										</tr>
-										<tr>
-											<td>
-												<div>
-													<div className="tag">200 OK</div>
-												</div>
-											</td>
-											<td>
-												<div>customer.created</div>
-											</td>
-											<td>
-												<div>evt-136776hjfy76734uh5j</div>
-											</td>
-											<td>
-												<div>3 Aug,2021</div>
-											</td>
-											<td>
-												<div>
-													<button className="primary has-icon icon-left">
-														<img src={RefreshIcon} alt="refresh icon" /> Resend
-													</button>
-												</div>
-											</td>
-										</tr>
-										<tr>
-											<td>
-												<div>
-													<div className="tag">200 OK</div>
-												</div>
-											</td>
-											<td>
-												<div>customer.created</div>
-											</td>
-											<td>
-												<div>evt-136776hjfy76734uh5j</div>
-											</td>
-											<td>
-												<div>3 Aug,2021</div>
-											</td>
-											<td>
-												<div>
-													<button className="primary has-icon icon-left">
-														<img src={RefreshIcon} alt="refresh icon" /> Resend
-													</button>
-												</div>
-											</td>
-										</tr>
-										<tr>
-											<td>
-												<div>
-													<div className="tag">200 OK</div>
-												</div>
-											</td>
-											<td>
-												<div>customer.created</div>
-											</td>
-											<td>
-												<div>evt-136776hjfy76734uh5j</div>
-											</td>
-											<td>
-												<div>3 Aug,2021</div>
-											</td>
-											<td>
-												<div>
-													<button className="primary has-icon icon-left">
-														<img src={RefreshIcon} alt="refresh icon" /> Resend
-													</button>
-												</div>
-											</td>
-										</tr>
-										<tr>
-											<td>
-												<div>
-													<div className="tag">200 OK</div>
-												</div>
-											</td>
-											<td>
-												<div>customer.created</div>
-											</td>
-											<td>
-												<div>evt-136776hjfy76734uh5j</div>
-											</td>
-											<td>
-												<div>3 Aug,2021</div>
-											</td>
-											<td>
-												<div>
-													<button className="primary has-icon icon-left">
-														<img src={RefreshIcon} alt="refresh icon" /> Resend
-													</button>
-												</div>
-											</td>
-										</tr>
-										<tr>
-											<td>
-												<div>
-													<div className="tag">200 OK</div>
-												</div>
-											</td>
-											<td>
-												<div>customer.created</div>
-											</td>
-											<td>
-												<div>evt-136776hjfy76734uh5j</div>
-											</td>
-											<td>
-												<div>3 Aug,2021</div>
-											</td>
-											<td>
-												<div>
-													<button className="primary has-icon icon-left">
-														<img src={RefreshIcon} alt="refresh icon" /> Resend
-													</button>
-												</div>
-											</td>
-										</tr>
+										{events.map((event, index) => (
+											<tr key={index} onClick={() => setDetailsItem(event)}>
+												<td>
+													<div>
+														<div className="tag">{event.status}</div>
+													</div>
+												</td>
+												<td>
+													<div>{ event.event_type}</div>
+												</td>
+												<td>
+													<div>{event.description}</div>
+												</td>
+												<td>
+													<div>{getDate(event.created_at)}</div>
+												</td>
+												<td>
+													<div>
+														<button className="primary has-icon icon-left">
+															<img src={RefreshIcon} alt="refresh icon" /> Resend
+														</button>
+													</div>
+												</td>
+											</tr>
+										))}
 									</tbody>
 								</table>
 							)}

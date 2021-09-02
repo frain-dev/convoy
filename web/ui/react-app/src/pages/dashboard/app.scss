@@ -60,6 +60,7 @@
 			left: 0;
 			right: 0;
 			display: none;
+			z-index: 10;
 
 			ul {
 				width: 100%;
@@ -338,7 +339,7 @@ table {
 	margin-bottom: 16px;
 	position: relative;
 
-	.filter--button {
+	.filter--button, select {
 		background: #ffffff;
 		border: 1px solid #f3f5f9;
 		border-radius: 4px;
@@ -347,7 +348,6 @@ table {
 		align-items: center;
 		justify-content: space-between;
 		min-width: 145px;
-		font-weight: 500;
 		font-size: 14px;
 		line-height: 14px;
 		margin-left: 8px;
