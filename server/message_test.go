@@ -7,6 +7,7 @@ import (
 	pager "github.com/gobeam/mongo-go-pagination"
 	"github.com/golang/mock/gomock"
 	"github.com/hookcamp/hookcamp"
+	"github.com/hookcamp/hookcamp/config"
 	"github.com/hookcamp/hookcamp/mocks"
 	"github.com/hookcamp/hookcamp/server/models"
 	"github.com/sirupsen/logrus"
@@ -104,6 +105,12 @@ func Test_ensureNewMessage(t *testing.T) {
 	}
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
+
+			err := config.LoadFromFile("./testdata/TestRequireAuth_None/hookcamp.json")
+			if err != nil {
+				t.Error("Failed to load config file")
+			}
+
 			request := httptest.NewRequest(tc.method, fmt.Sprintf("/v1/apps/%s/messages", tc.args.message.AppID), tc.body)
 			responseRecorder := httptest.NewRecorder()
 			rctx := chi.NewRouteContext()

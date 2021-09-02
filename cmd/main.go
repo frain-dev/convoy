@@ -2,7 +2,7 @@ package main
 
 import (
 	"context"
-	"github.com/hookcamp/hookcamp/worker"
+	"github.com/hookcamp/hookcamp/util"
 	log "github.com/sirupsen/logrus"
 	prefixed "github.com/x-cray/logrus-prefixed-formatter"
 	"os"
@@ -29,7 +29,10 @@ func main() {
 	})
 	log.SetReportCaller(true)
 
-	os.Setenv("TZ", "") // Use UTC by default :)
+	err := os.Setenv("TZ", "") // Use UTC by default :)
+	if err != nil {
+		log.Fatal("failed to set env - ", err)
+	}
 
 	app := &app{}
 
@@ -68,6 +71,11 @@ func main() {
 				}
 			}
 
+			if util.IsStringEmpty(string(cfg.Signature.Header)) {
+				cfg.Signature.Header = config.DefaultSignatureHeader
+				log.Warnf("signature header is blank. setting default %s", config.DefaultSignatureHeader)
+			}
+
 			conn := db.Database("hookcamp", nil)
 
 			app.orgRepo = datastore.NewOrganisationRepo(conn)
@@ -76,10 +84,6 @@ func main() {
 			app.queue = queuer
 
 			ensureMongoIndices(conn)
-
-			worker.NewCleaner(&app.queue, &app.messageRepo).Start()
-			worker.NewScheduler(&app.queue, &app.messageRepo).Start()
-			worker.NewProducer(&app.queue, &app.messageRepo).Start()
 
 			return nil
 		},
@@ -90,7 +94,11 @@ func main() {
 					log.Errorln("failed to close app queue - ", err)
 				}
 			}()
-			return db.Disconnect(context.Background())
+			err := db.Disconnect(context.Background())
+			if err == nil {
+				os.Exit(0)
+			}
+			return err
 		},
 	}
 

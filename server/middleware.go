@@ -160,11 +160,20 @@ func ensureNewApp(orgRepo hookcamp.OrganisationRepository, appRepo hookcamp.Appl
 				return
 			}
 
+			if util.IsStringEmpty(newApp.Secret) {
+				newApp.Secret, err = util.GenerateSecret()
+				if err != nil {
+					_ = render.Render(w, r, newErrorResponse(fmt.Sprintf("could not generate secret...%v", err.Error()), http.StatusInternalServerError))
+					return
+				}
+			}
+
 			uid := uuid.New().String()
 			app := &hookcamp.Application{
 				UID:       uid,
 				OrgID:     org.UID,
 				Title:     appName,
+				Secret:    newApp.Secret,
 				CreatedAt: primitive.NewDateTimeFromTime(time.Now()),
 				UpdatedAt: primitive.NewDateTimeFromTime(time.Now()),
 				Endpoints: []hookcamp.Endpoint{},
@@ -218,6 +227,10 @@ func ensureAppUpdate(appRepo hookcamp.ApplicationRepository) func(next http.Hand
 			}
 
 			app.Title = appName
+			if !util.IsStringEmpty(appUpdate.Secret) {
+				app.Secret = appUpdate.Secret
+			}
+
 			err = appRepo.UpdateApplication(r.Context(), app)
 			if err != nil {
 				_ = render.Render(w, r, newErrorResponse("an error occurred while updating app", http.StatusInternalServerError))
@@ -278,7 +291,6 @@ func ensureNewAppEndpoint(appRepo hookcamp.ApplicationRepository) func(next http
 			endpoint := &hookcamp.Endpoint{
 				UID:         uuid.New().String(),
 				TargetURL:   e.URL,
-				Secret:      e.Secret,
 				Description: e.Description,
 				CreatedAt:   primitive.NewDateTimeFromTime(time.Now()),
 				UpdatedAt:   primitive.NewDateTimeFromTime(time.Now()),
@@ -320,13 +332,6 @@ func parseEndpointFromBody(body io.ReadCloser) (models.Endpoint, error) {
 	}
 
 	e.URL = u.String()
-
-	if util.IsStringEmpty(e.Secret) {
-		e.Secret, err = util.GenerateRandomString(25)
-		if err != nil {
-			return e, fmt.Errorf("could not generate secret...%v", err)
-		}
-	}
 
 	return e, nil
 }

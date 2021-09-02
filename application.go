@@ -21,6 +21,8 @@ type Application struct {
 	OrgID string             `json:"org_id" bson:"org_id"`
 	Title string             `json:"name" bson:"title"`
 
+	Secret string `json:"secret" bson:"secret"`
+
 	Endpoints []Endpoint         `json:"endpoints" bson:"endpoints"`
 	CreatedAt primitive.DateTime `json:"created_at,omitempty" bson:"created_at,omitempty"`
 	UpdatedAt primitive.DateTime `json:"updated_at,omitempty" bson:"updated_at,omitempty"`
@@ -30,7 +32,6 @@ type Application struct {
 type Endpoint struct {
 	UID         string `json:"uid" bson:"uid"`
 	TargetURL   string `json:"target_url" bson:"target_url"`
-	Secret      string `json:"secret" bson:"secret"`
 	Description string `json:"description" bson:"description"`
 
 	CreatedAt primitive.DateTime `json:"created_at,omitempty" bson:"created_at,omitempty"`

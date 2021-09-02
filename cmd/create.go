@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/hookcamp/hookcamp/config"
 	log "github.com/sirupsen/logrus"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"net/url"
@@ -48,13 +49,6 @@ func createEndpointCommand(a *app) *cobra.Command {
 				return errors.New("please provide a description")
 			}
 
-			if util.IsStringEmpty(e.Secret) {
-				e.Secret, err = util.GenerateRandomString(25)
-				if err != nil {
-					return fmt.Errorf("could not generate secret...%v", err)
-				}
-			}
-
 			if util.IsStringEmpty(e.TargetURL) {
 				return errors.New("please provide your target url")
 			}
@@ -90,9 +84,7 @@ func createEndpointCommand(a *app) *cobra.Command {
 			fmt.Println()
 
 			table := tablewriter.NewWriter(os.Stdout)
-			table.SetHeader([]string{"ID", "Secret", "Target URL", "Description"})
-
-			table.Append([]string{e.UID, e.Secret, e.TargetURL, e.Description})
+			table.SetHeader([]string{"ID", "Target URL", "Description"})
 
 			table.Render()
 			return nil
@@ -101,8 +93,6 @@ func createEndpointCommand(a *app) *cobra.Command {
 
 	cmd.Flags().StringVar(&e.Description, "description", "", "Description of this endpoint")
 	cmd.Flags().StringVar(&e.TargetURL, "target", "", "The target url of this endpoint")
-	cmd.Flags().StringVar(&e.Secret, "secret", "",
-		"Provide the secret for this endpoint. If blank, it will be automatically generated")
 	cmd.Flags().StringVar(&appID, "app", "", "The app this endpoint belongs to")
 
 	return cmd
@@ -111,6 +101,7 @@ func createEndpointCommand(a *app) *cobra.Command {
 func createApplicationCommand(a *app) *cobra.Command {
 
 	var orgID string
+	var appSecret string
 
 	cmd := &cobra.Command{
 		Use:     "application",
@@ -139,10 +130,18 @@ func createApplicationCommand(a *app) *cobra.Command {
 				return err
 			}
 
+			if util.IsStringEmpty(appSecret) {
+				appSecret, err = util.GenerateSecret()
+				if err != nil {
+					return fmt.Errorf("could not generate secret...%v", err)
+				}
+			}
+
 			app := &hookcamp.Application{
 				UID:       uuid.New().String(),
 				OrgID:     org.UID,
 				Title:     appName,
+				Secret:    appSecret,
 				CreatedAt: primitive.NewDateTimeFromTime(time.Now()),
 				UpdatedAt: primitive.NewDateTimeFromTime(time.Now()),
 				Endpoints: []hookcamp.Endpoint{},
@@ -154,9 +153,9 @@ func createApplicationCommand(a *app) *cobra.Command {
 			}
 
 			table := tablewriter.NewWriter(os.Stdout)
-			table.SetHeader([]string{"ID", "Name", "Organisation", "Created at"})
+			table.SetHeader([]string{"ID", "Name", "Organisation", "Secret", "Created at"})
 
-			table.Append([]string{app.UID, app.Title, org.OrgName, app.CreatedAt.Time().String()})
+			table.Append([]string{app.UID, app.Title, org.OrgName, app.Secret, app.CreatedAt.Time().String()})
 			table.Render()
 
 			return nil
@@ -164,6 +163,7 @@ func createApplicationCommand(a *app) *cobra.Command {
 	}
 
 	cmd.Flags().StringVar(&orgID, "org", "", "Organisation that owns this application")
+	cmd.Flags().StringVar(&appSecret, "secret", "", "Provide the secret for app endpoint(s). If blank, it will be automatically generated")
 
 	return cmd
 }
@@ -238,6 +238,10 @@ func createMessageCommand(a *app) *cobra.Command {
 			}
 
 			if !util.IsStringEmpty(data) {
+				if !util.IsJSON(data) {
+					return errors.New("invalid json provided: " + data)
+				}
+
 				d = []byte(data)
 			}
 
@@ -272,17 +276,43 @@ func createMessageCommand(a *app) *cobra.Command {
 				return err
 			}
 
+			cfg, err := config.Get()
+			if err != nil {
+				log.Errorln("error fetching config - ", err)
+				return err
+			}
+
+			var intervalSeconds uint64
+			var retryLimit uint64
+			if cfg.Strategy.Type == config.DefaultStrategyProvider {
+				intervalSeconds = cfg.Strategy.Default.IntervalSeconds
+				retryLimit = cfg.Strategy.Default.RetryLimit
+			} else {
+				return errors.New("retry strategy not defined in configuration")
+			}
+
+			log.Println("Message ", string(d))
 			msg := &hookcamp.Message{
 				UID:       uuid.New().String(),
-				AppID:     appData.ID.String(),
+				AppID:     appData.UID,
 				EventType: hookcamp.EventType(eventType),
 				Data:      d,
 				Metadata: &hookcamp.MessageMetadata{
-					NumTrials:    0,
-					RetryLimit:   1,
-					NextSendTime: primitive.NewDateTimeFromTime(time.Now()),
+					Strategy:        cfg.Strategy.Type,
+					NumTrials:       0,
+					IntervalSeconds: intervalSeconds,
+					RetryLimit:      retryLimit,
+					NextSendTime:    primitive.NewDateTimeFromTime(time.Now().Add(time.Duration(intervalSeconds) * time.Second)),
 				},
-				Status: hookcamp.ScheduledMessageStatus,
+				AppMetadata: &hookcamp.AppMetadata{
+					OrgID:     appData.OrgID,
+					Secret:    appData.Secret,
+					Endpoints: util.ParseMetadataFromEndpoints(appData.Endpoints),
+				},
+				MessageAttempts: make([]hookcamp.MessageAttempt, 0),
+				CreatedAt:       primitive.NewDateTimeFromTime(time.Now()),
+				UpdatedAt:       primitive.NewDateTimeFromTime(time.Now()),
+				Status:          hookcamp.ScheduledMessageStatus,
 			}
 
 			if len(appData.Endpoints) == 0 {
@@ -304,7 +334,7 @@ func createMessageCommand(a *app) *cobra.Command {
 	cmd.Flags().StringVarP(&data, "data", "d", "", "Raw JSON data that will be sent to the endpoints")
 	cmd.Flags().StringVarP(&appID, "app", "a", "", "Application ID")
 	cmd.Flags().StringVarP(&filePath, "file", "f", "", "Path to file containing JSON data")
-	cmd.Flags().StringVar(&eventType, "event", "", "Event type")
+	cmd.Flags().StringVarP(&eventType, "event", "e", "", "Event type")
 	cmd.Flags().BoolVar(&publish, "publish", false, `If true, it will send the data to the endpoints
 attached to the application`)
 

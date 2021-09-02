@@ -7,6 +7,7 @@ import (
 	"encoding/json"
 	"errors"
 	pager "github.com/gobeam/mongo-go-pagination"
+	"github.com/hookcamp/hookcamp/config"
 	"github.com/hookcamp/hookcamp/server/models"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"net/http"
@@ -19,10 +20,7 @@ var (
 )
 
 const (
-	// UnknownMessageStatus when we don't know the state of a message
-	UnknownMessageStatus MessageStatus = "Unknown"
-	// ScheduledMessageStatus : when  a message has been scheduled for
-	// delivery
+	// ScheduledMessageStatus : when  a message has been scheduled for delivery
 	ScheduledMessageStatus  MessageStatus = "Scheduled"
 	ProcessingMessageStatus MessageStatus = "Processing"
 	FailureMessageStatus    MessageStatus = "Failure"
@@ -31,19 +29,23 @@ const (
 )
 
 type MessageMetadata struct {
+	Strategy config.StrategyProvider `json:"strategy" bson:"strategy"`
 	// NextSendTime denotes the next time a message will be published in
 	// case it failed the first time
 	NextSendTime primitive.DateTime `json:"next_send_time" bson:"next_send_time"`
 
 	// NumTrials: number of times we have tried to deliver this message to
 	// an application
-	NumTrials int64 `json:"num_trials" bson:"num_trials"`
+	NumTrials uint64 `json:"num_trials" bson:"num_trials"`
 
-	RetryLimit int64 `json:"retry_limit" bson:"retry_limit"`
+	IntervalSeconds uint64 `json:"interval_seconds" bson:"interval_seconds"`
+
+	RetryLimit uint64 `json:"retry_limit" bson:"retry_limit"`
 }
 
 type AppMetadata struct {
-	OrgID string `json:"org_id" bson:"org_id"`
+	OrgID  string `json:"org_id" bson:"org_id"`
+	Secret string `json:"secret" bson:"secret"`
 
 	Endpoints []EndpointMetadata `json:"endpoints" bson:"endpoints"`
 }
@@ -52,7 +54,7 @@ type EndpointMetadata struct {
 	UID       string `json:"uid" bson:"uid"`
 	TargetURL string `json:"target_url" bson:"target_url"`
 
-	Merged bool `json:"merged" bson:"merged"`
+	Sent bool `json:"sent" bson:"sent"`
 }
 
 func (m MessageMetadata) Value() (driver.Value, error) {

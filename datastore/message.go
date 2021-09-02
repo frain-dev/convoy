@@ -154,7 +154,7 @@ func (db *messageRepo) FindMessageByID(ctx context.Context, id string) (*hookcam
 
 func (db *messageRepo) LoadMessagesScheduledForPosting(ctx context.Context) ([]hookcamp.Message, error) {
 
-	filter := bson.M{"status": hookcamp.ScheduledMessageStatus}
+	filter := bson.M{"status": hookcamp.ScheduledMessageStatus, "metadata.next_send_time": bson.M{"$lte": primitive.NewDateTimeFromTime(time.Now())}}
 
 	return db.loadMessagesByFilter(ctx, filter, nil)
 }

@@ -7,6 +7,7 @@ import (
 	"github.com/go-chi/render"
 	"github.com/google/uuid"
 	"github.com/hookcamp/hookcamp"
+	"github.com/hookcamp/hookcamp/config"
 	"github.com/hookcamp/hookcamp/server/models"
 	"github.com/hookcamp/hookcamp/util"
 	log "github.com/sirupsen/logrus"
@@ -64,22 +65,42 @@ func ensureNewMessage(appRepo hookcamp.ApplicationRepository, msgRepo hookcamp.M
 				return
 			}
 
+			cfg, err := config.Get()
+			if err != nil {
+				log.Errorln("error fetching config - ", err)
+				_ = render.Render(w, r, newErrorResponse("an error has occurred while fetching config", http.StatusInternalServerError))
+				return
+			}
+
+			var intervalSeconds uint64
+			var retryLimit uint64
+			if cfg.Strategy.Type == config.DefaultStrategyProvider {
+				intervalSeconds = cfg.Strategy.Default.IntervalSeconds
+				retryLimit = cfg.Strategy.Default.RetryLimit
+			} else {
+				_ = render.Render(w, r, newErrorResponse("retry strategy not defined in configuration", http.StatusInternalServerError))
+				return
+			}
+
 			msg := &hookcamp.Message{
 				UID:       uuid.New().String(),
 				AppID:     app.UID,
 				EventType: hookcamp.EventType(eventType),
 				Data:      d,
 				Metadata: &hookcamp.MessageMetadata{
-					NumTrials:    0,
-					RetryLimit:   2,
-					NextSendTime: primitive.NewDateTimeFromTime(time.Now()),
+					Strategy:        cfg.Strategy.Type,
+					NumTrials:       0,
+					IntervalSeconds: intervalSeconds,
+					RetryLimit:      retryLimit,
+					NextSendTime:    primitive.NewDateTimeFromTime(time.Now().Add(time.Duration(intervalSeconds) * time.Second)),
 				},
 				MessageAttempts: make([]hookcamp.MessageAttempt, 0),
 				CreatedAt:       primitive.NewDateTimeFromTime(time.Now()),
 				UpdatedAt:       primitive.NewDateTimeFromTime(time.Now()),
 				AppMetadata: &hookcamp.AppMetadata{
 					OrgID:     app.OrgID,
-					Endpoints: parseMetadataFromEndpoints(app.Endpoints),
+					Secret:    app.Secret,
+					Endpoints: util.ParseMetadataFromEndpoints(app.Endpoints),
 				},
 				Status: hookcamp.ScheduledMessageStatus,
 			}
@@ -93,18 +114,6 @@ func ensureNewMessage(appRepo hookcamp.ApplicationRepository, msgRepo hookcamp.M
 			next.ServeHTTP(w, r)
 		})
 	}
-}
-
-func parseMetadataFromEndpoints(endpoints []hookcamp.Endpoint) []hookcamp.EndpointMetadata {
-	m := make([]hookcamp.EndpointMetadata, 0)
-	for _, e := range endpoints {
-		m = append(m, hookcamp.EndpointMetadata{
-			UID:       e.UID,
-			TargetURL: e.TargetURL,
-			Merged:    false,
-		})
-	}
-	return m
 }
 
 func fetchAllMessages(msgRepo hookcamp.MessageRepository) func(next http.Handler) http.Handler {

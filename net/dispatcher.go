@@ -3,6 +3,7 @@ package net
 import (
 	"bytes"
 	"encoding/json"
+	"github.com/hookcamp/hookcamp/util"
 	log "github.com/sirupsen/logrus"
 	"io/ioutil"
 	"net/http"
@@ -20,12 +21,16 @@ func NewDispatcher() *Dispatcher {
 	}
 }
 
-func (d *Dispatcher) SendRequest(endpoint, method string, jsonData json.RawMessage) (*Response, error) {
+func (d *Dispatcher) SendRequest(endpoint, method string, jsonData json.RawMessage, signatureHeader string, hmac string) (*Response, error) {
 	r := &Response{}
+
 	req, err := http.NewRequest(method, endpoint, bytes.NewBuffer(jsonData))
 	if err != nil {
 		log.Errorf("error occurred while creating request - %+v\n", err)
 		return r, err
+	}
+	if !util.IsStringEmpty(signatureHeader) {
+		req.Header.Set(signatureHeader, hmac)
 	}
 
 	trace := &httptrace.ClientTrace{
@@ -62,6 +67,7 @@ func (d *Dispatcher) SendRequest(endpoint, method string, jsonData json.RawMessa
 
 type Response struct {
 	Status      string
+	StatusCode  int
 	ContentType string
 	Header      http.Header
 	Body        []byte
@@ -71,6 +77,7 @@ type Response struct {
 
 func updateDispatcherResponse(r *Response, res *http.Response) {
 	r.Status = res.Status
+	r.StatusCode = res.StatusCode
 	r.Header = res.Header
 	r.ContentType = res.Header.Get("content-type")
 }

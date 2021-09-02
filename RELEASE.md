@@ -75,7 +75,9 @@ Optionally, you can use this handy `.gitconfig` alias.
 
 Then release with `git tag-release`.
 
-Once a tag is created, the release process through Github actions.
+Once a tag is created, the release process through Github actions will take care of the rest. 
+
+TODO: A missing step here which should be later automated. A release needs to be created before the assets can be uploaded to match the tag. :)
 
 Finally, wait for the build step for the tag to finish. The point here is to wait for tarballs to be uploaded to the Github release and the container images to be pushed to the Docker Hub and Quay.io. Once that has happened, click _Publish release_, which will make the release publicly visible and create a GitHub notification.
 

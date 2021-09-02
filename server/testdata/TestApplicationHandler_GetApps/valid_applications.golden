@@ -1,1 +1,1 @@
-{"applications":[{"uid":"123456789","org_id":"1234567890","name":"Valid application - 0","endpoints":[]}]}
+{"status":true,"message":"Apps fetched successfully","data":[{"uid":"123456789","org_id":"1234567890","name":"Valid application - 0","secret":"","endpoints":[]}]}

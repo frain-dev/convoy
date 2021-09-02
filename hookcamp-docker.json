@@ -15,5 +15,12 @@
 	},
 	"auth": {
 		"type": "none"
+	},
+	"strategy": {
+		"type": "default",
+		"default": {
+			"intervalSeconds": 120,
+			"retryLimit": 10
+		}
 	}
 }

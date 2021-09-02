@@ -18,7 +18,7 @@ func PostMessages(queue queue.Queuer, msgRepo hookcamp.MessageRepository) {
 
 	err = msgRepo.UpdateStatusOfMessages(context.Background(), m, hookcamp.ProcessingMessageStatus)
 	if err != nil {
-		log.Errorln("failed to update staus of messages - ", err)
+		log.Errorln("failed to update status of messages - ", err)
 	}
 	queueMessages(queue, m)
 }
@@ -34,7 +34,7 @@ func RetryMessages(queue queue.Queuer, msgRepo hookcamp.MessageRepository) {
 
 	err = msgRepo.UpdateStatusOfMessages(context.Background(), m, hookcamp.ProcessingMessageStatus)
 	if err != nil {
-		log.Errorln("failed to update staus of messages - ", err)
+		log.Errorln("failed to update status of messages - ", err)
 	}
 	queueMessages(queue, m)
 }
