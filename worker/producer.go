@@ -52,6 +52,7 @@ func (p *Producer) Start() {
 
 func (p *Producer) postMessages(msgRepo hookcamp.MessageRepository, m hookcamp.Message) {
 
+	var attempt hookcamp.MessageAttempt
 	var secret = m.AppMetadata.Secret
 
 	var done = true
@@ -115,8 +116,7 @@ func (p *Producer) postMessages(msgRepo hookcamp.MessageRepository, m hookcamp.M
 			log.Errorf("%s failed. Reason: %s", m.UID, err)
 		}
 
-		attempt := parseAttemptFromResponse(m, *e, resp, attemptStatus)
-		m.MessageAttempts = append([]hookcamp.MessageAttempt{attempt}, m.MessageAttempts...)
+		attempt = parseAttemptFromResponse(m, *e, resp, attemptStatus)
 	}
 	if done {
 		m.Status = hookcamp.SuccessMessageStatus
@@ -137,7 +137,7 @@ func (p *Producer) postMessages(msgRepo hookcamp.MessageRepository, m hookcamp.M
 		m.Status = hookcamp.FailureMessageStatus
 	}
 
-	err := msgRepo.UpdateMessage(context.Background(), m)
+	err := msgRepo.UpdateMessageWithAttempt(context.Background(), m, attempt)
 	if err != nil {
 		log.Errorln("failed to update message ", m.UID)
 	}

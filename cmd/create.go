@@ -138,13 +138,14 @@ func createApplicationCommand(a *app) *cobra.Command {
 			}
 
 			app := &hookcamp.Application{
-				UID:       uuid.New().String(),
-				OrgID:     org.UID,
-				Title:     appName,
-				Secret:    appSecret,
-				CreatedAt: primitive.NewDateTimeFromTime(time.Now()),
-				UpdatedAt: primitive.NewDateTimeFromTime(time.Now()),
-				Endpoints: []hookcamp.Endpoint{},
+				UID:            uuid.New().String(),
+				OrgID:          org.UID,
+				Title:          appName,
+				Secret:         appSecret,
+				CreatedAt:      primitive.NewDateTimeFromTime(time.Now()),
+				UpdatedAt:      primitive.NewDateTimeFromTime(time.Now()),
+				Endpoints:      []hookcamp.Endpoint{},
+				DocumentStatus: hookcamp.ActiveDocumentStatus,
 			}
 
 			err = a.applicationRepo.CreateApplication(context.Background(), app)
@@ -189,10 +190,11 @@ func createOrganisationCommand(a *app) *cobra.Command {
 			}
 
 			org := &hookcamp.Organisation{
-				UID:       uuid.New().String(),
-				OrgName:   name,
-				CreatedAt: primitive.NewDateTimeFromTime(time.Now()),
-				UpdatedAt: primitive.NewDateTimeFromTime(time.Now()),
+				UID:            uuid.New().String(),
+				OrgName:        name,
+				CreatedAt:      primitive.NewDateTimeFromTime(time.Now()),
+				UpdatedAt:      primitive.NewDateTimeFromTime(time.Now()),
+				DocumentStatus: hookcamp.ActiveDocumentStatus,
 			}
 
 			err := a.orgRepo.CreateOrganisation(context.Background(), org)
@@ -313,6 +315,7 @@ func createMessageCommand(a *app) *cobra.Command {
 				CreatedAt:       primitive.NewDateTimeFromTime(time.Now()),
 				UpdatedAt:       primitive.NewDateTimeFromTime(time.Now()),
 				Status:          hookcamp.ScheduledMessageStatus,
+				DocumentStatus:  hookcamp.ActiveDocumentStatus,
 			}
 
 			if len(appData.Endpoints) == 0 {

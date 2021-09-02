@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"github.com/hookcamp/hookcamp/server/models"
+	log "github.com/sirupsen/logrus"
 	"time"
 
 	pager "github.com/gobeam/mongo-go-pagination"
@@ -14,7 +15,8 @@ import (
 )
 
 type appRepo struct {
-	client *mongo.Collection
+	innerDB *mongo.Database
+	client  *mongo.Collection
 }
 
 const (
@@ -23,7 +25,8 @@ const (
 
 func NewApplicationRepo(client *mongo.Database) hookcamp.ApplicationRepository {
 	return &appRepo{
-		client: client.Collection(AppCollections, nil),
+		innerDB: client,
+		client:  client.Collection(AppCollections, nil),
 	}
 }
 
@@ -41,7 +44,10 @@ func (db *appRepo) LoadApplications(ctx context.Context) (
 
 	apps := make([]hookcamp.Application, 0)
 
-	cur, err := db.client.Find(ctx, bson.D{{}})
+	cur, err := db.client.Find(ctx, bson.D{primitive.E{
+		Key:   "deleted_at",
+		Value: nil,
+	}})
 	if err != nil {
 		return apps, err
 	}
@@ -73,6 +79,10 @@ func (db *appRepo) LoadApplicationsPagedByOrgId(ctx context.Context, orgId strin
 			Key:   "org_id",
 			Value: orgId,
 		},
+		primitive.E{
+			Key:   "deleted_at",
+			Value: nil,
+		},
 	}
 
 	var applications []hookcamp.Application
@@ -96,7 +106,7 @@ func (db *appRepo) SearchApplicationsByOrgId(ctx context.Context, orgId string, 
 		end = searchParams.CreatedAtStart
 	}
 
-	filter := bson.M{"org_id": orgId, "created_at": bson.M{"$gte": primitive.NewDateTimeFromTime(time.Unix(start, 0)), "$lte": primitive.NewDateTimeFromTime(time.Unix(end, 0))}}
+	filter := bson.M{"org_id": orgId, "deleted_at": nil, "created_at": bson.M{"$gte": primitive.NewDateTimeFromTime(time.Unix(start, 0)), "$lte": primitive.NewDateTimeFromTime(time.Unix(end, 0))}}
 
 	apps := make([]hookcamp.Application, 0)
 	cur, err := db.client.Find(ctx, filter)
@@ -134,6 +144,10 @@ func (db *appRepo) FindApplicationByID(ctx context.Context,
 			Key:   "uid",
 			Value: id,
 		},
+		primitive.E{
+			Key:   "deleted_at",
+			Value: nil,
+		},
 	}
 
 	err := db.client.FindOne(ctx, filter).
@@ -150,7 +164,7 @@ func (db *appRepo) UpdateApplication(ctx context.Context,
 
 	app.UpdatedAt = primitive.NewDateTimeFromTime(time.Now())
 
-	filter := bson.D{primitive.E{Key: "uid", Value: app.UID}}
+	filter := bson.D{primitive.E{Key: "uid", Value: app.UID}, primitive.E{Key: "deleted_at", Value: nil}}
 
 	update := bson.D{primitive.E{Key: "$set", Value: bson.D{
 		primitive.E{Key: "endpoints", Value: app.Endpoints},
@@ -160,4 +174,71 @@ func (db *appRepo) UpdateApplication(ctx context.Context,
 
 	_, err := db.client.UpdateOne(ctx, filter, update)
 	return err
+}
+
+func (db *appRepo) DeleteApplication(ctx context.Context,
+	app *hookcamp.Application) error {
+
+	updateAsDeleted := bson.D{primitive.E{Key: "$set", Value: bson.D{
+		primitive.E{Key: "deleted_at", Value: primitive.NewDateTimeFromTime(time.Now())},
+		primitive.E{Key: "document_status", Value: hookcamp.DeletedDocumentStatus},
+	}}}
+
+	err := db.updateMessagesInApp(ctx, app, updateAsDeleted)
+	if err != nil {
+		return err
+	}
+
+	err = db.deleteApp(ctx, app, updateAsDeleted)
+	if err != nil {
+		log.Errorf("%s an error has occurred while deleting app - %s", app.UID, err)
+
+		rollback := bson.D{primitive.E{Key: "$set", Value: bson.D{
+			primitive.E{Key: "deleted_at", Value: nil},
+			primitive.E{Key: "document_status", Value: hookcamp.ActiveDocumentStatus},
+		}}}
+		err2 := db.updateMessagesInApp(ctx, app, rollback)
+		if err2 != nil {
+			log.Errorf("%s failed to rollback deleted app messages - %s", app.UID, err2)
+		}
+
+		return err
+	}
+	return nil
+}
+
+func (db *appRepo) updateMessagesInApp(ctx context.Context, app *hookcamp.Application, update bson.D) error {
+	var msgOperations []mongo.WriteModel
+
+	updateMessagesOperation := mongo.NewUpdateManyModel()
+	msgFilter := bson.M{"app_id": app.UID}
+	updateMessagesOperation.SetFilter(msgFilter)
+	updateMessagesOperation.SetUpdate(update)
+	msgOperations = append(msgOperations, updateMessagesOperation)
+
+	msgCollection := db.innerDB.Collection(MsgCollection)
+	res, err := msgCollection.BulkWrite(ctx, msgOperations)
+	if err != nil {
+		log.Errorf("failed to delete messages in %s. Reason: %s", app.UID, err)
+		return err
+	}
+	log.Infof("results of app messages op: %+v", res)
+	return nil
+}
+
+func (db *appRepo) deleteApp(ctx context.Context, app *hookcamp.Application, update bson.D) error {
+	var appOperations []mongo.WriteModel
+	updateAppOperation := mongo.NewUpdateOneModel()
+	filter := bson.D{primitive.E{Key: "uid", Value: app.UID}}
+	updateAppOperation.SetFilter(filter)
+	updateAppOperation.SetUpdate(update)
+	appOperations = append(appOperations, updateAppOperation)
+
+	res, err := db.client.BulkWrite(ctx, appOperations)
+	if err != nil {
+		log.Errorf("failed to delete app %s. Reason: %s", app.UID, err)
+		return err
+	}
+	log.Infof("results of app op: %+v", res)
+	return nil
 }

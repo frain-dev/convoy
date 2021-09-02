@@ -16,7 +16,9 @@ import (
 type MessageStatus string
 
 var (
-	ErrMessageNotFound = errors.New("message not found")
+	ErrMessageNotFound = errors.New("event not found")
+
+	ErrMessageDeliveryAttemptNotFound = errors.New("delivery attempt not found")
 )
 
 const (
@@ -98,11 +100,13 @@ type Message struct {
 
 	AppMetadata *AppMetadata `json:"app_metadata,omitempty" bson:"app_metadata"`
 
-	MessageAttempts []MessageAttempt `json:"attempts" bson:"attempts"`
+	MessageAttempts []MessageAttempt `json:"-" bson:"attempts"`
 
 	CreatedAt primitive.DateTime `json:"created_at,omitempty" bson:"created_at,omitempty"`
 	UpdatedAt primitive.DateTime `json:"updated_at,omitempty" bson:"updated_at,omitempty"`
 	DeletedAt primitive.DateTime `json:"deleted_at,omitempty" bson:"deleted_at,omitempty"`
+
+	DocumentStatus DocumentStatus `json:"-" bson:"document_status"`
 }
 
 type MessageAttempt struct {
@@ -134,6 +138,6 @@ type MessageRepository interface {
 	LoadMessagesForPostingRetry(context.Context) ([]Message, error)
 	LoadAbandonedMessagesForPostingRetry(context.Context) ([]Message, error)
 	UpdateStatusOfMessages(context.Context, []Message, MessageStatus) error
-	UpdateMessage(ctx context.Context, m Message) error
+	UpdateMessageWithAttempt(ctx context.Context, m Message, attempt MessageAttempt) error
 	LoadMessagesPaged(context.Context, string, models.Pageable) ([]Message, pager.PaginationData, error)
 }

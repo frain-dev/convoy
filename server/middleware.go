@@ -29,13 +29,14 @@ import (
 type contextKey string
 
 const (
-	orgCtx       contextKey = "org"
-	appCtx       contextKey = "app"
-	endpointCtx  contextKey = "endpoint"
-	msgCtx       contextKey = "message"
-	pageableCtx  contextKey = "pageable"
-	pageDataCtx  contextKey = "pageData"
-	dashboardCtx contextKey = "dashboard"
+	orgCtx              contextKey = "org"
+	appCtx              contextKey = "app"
+	endpointCtx         contextKey = "endpoint"
+	msgCtx              contextKey = "message"
+	pageableCtx         contextKey = "pageable"
+	pageDataCtx         contextKey = "pageData"
+	dashboardCtx        contextKey = "dashboard"
+	deliveryAttemptsCtx contextKey = "deliveryAttempts"
 )
 
 func writeRequestIDHeader(next http.Handler) http.Handler {
@@ -168,13 +169,14 @@ func ensureNewApp(orgRepo hookcamp.OrganisationRepository, appRepo hookcamp.Appl
 
 			uid := uuid.New().String()
 			app := &hookcamp.Application{
-				UID:       uid,
-				OrgID:     org.UID,
-				Title:     appName,
-				Secret:    newApp.Secret,
-				CreatedAt: primitive.NewDateTimeFromTime(time.Now()),
-				UpdatedAt: primitive.NewDateTimeFromTime(time.Now()),
-				Endpoints: []hookcamp.Endpoint{},
+				UID:            uid,
+				OrgID:          org.UID,
+				Title:          appName,
+				Secret:         newApp.Secret,
+				CreatedAt:      primitive.NewDateTimeFromTime(time.Now()),
+				UpdatedAt:      primitive.NewDateTimeFromTime(time.Now()),
+				Endpoints:      []hookcamp.Endpoint{},
+				DocumentStatus: hookcamp.ActiveDocumentStatus,
 			}
 
 			err = appRepo.CreateApplication(r.Context(), app)
@@ -207,22 +209,7 @@ func ensureAppUpdate(appRepo hookcamp.ApplicationRepository) func(next http.Hand
 				return
 			}
 
-			appID := chi.URLParam(r, "appID")
-
-			app, err := appRepo.FindApplicationByID(r.Context(), appID)
-			if err != nil {
-
-				msg := "an error occurred while retrieving app details"
-				statusCode := http.StatusInternalServerError
-
-				if errors.Is(err, hookcamp.ErrApplicationNotFound) {
-					msg = err.Error()
-					statusCode = http.StatusNotFound
-				}
-
-				_ = render.Render(w, r, newErrorResponse(msg, statusCode))
-				return
-			}
+			app := getApplicationFromContext(r.Context())
 
 			app.Title = appName
 			if !util.IsStringEmpty(appUpdate.Secret) {
@@ -236,6 +223,51 @@ func ensureAppUpdate(appRepo hookcamp.ApplicationRepository) func(next http.Hand
 			}
 
 			r = r.WithContext(setApplicationInContext(r.Context(), app))
+			next.ServeHTTP(w, r)
+		})
+	}
+}
+
+func ensureAppDeletion(appRepo hookcamp.ApplicationRepository) func(next http.Handler) http.Handler {
+	return func(next http.Handler) http.Handler {
+
+		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+
+			app := getApplicationFromContext(r.Context())
+
+			err := appRepo.DeleteApplication(r.Context(), app)
+			if err != nil {
+				log.Errorln("failed to delete app - ", err)
+				_ = render.Render(w, r, newErrorResponse("an error occurred while deleting app", http.StatusInternalServerError))
+				return
+			}
+
+			next.ServeHTTP(w, r)
+		})
+	}
+}
+
+func ensureAppEndpointDeletion(appRepo hookcamp.ApplicationRepository) func(next http.Handler) http.Handler {
+	return func(next http.Handler) http.Handler {
+
+		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+
+			app := getApplicationFromContext(r.Context())
+			e := getApplicationEndpointFromContext(r.Context())
+
+			for i, endpoint := range app.Endpoints {
+				if endpoint.UID == e.UID && endpoint.DeletedAt == 0 {
+					app.Endpoints = append(app.Endpoints[:i], app.Endpoints[i+1:]...)
+					break
+				}
+			}
+
+			err := appRepo.UpdateApplication(r.Context(), app)
+			if err != nil {
+				_ = render.Render(w, r, newErrorResponse("an error occurred while deleting app endpoint", http.StatusInternalServerError))
+				return
+			}
+
 			next.ServeHTTP(w, r)
 		})
 	}
@@ -308,6 +340,31 @@ func ensureNewAppEndpoint(appRepo hookcamp.ApplicationRepository) func(next http
 	}
 }
 
+func fetchAppEndpoints() func(next http.Handler) http.Handler {
+	return func(next http.Handler) http.Handler {
+
+		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+
+			app := getApplicationFromContext(r.Context())
+
+			app.Endpoints = filterDeletedEndpoints(app.Endpoints)
+
+			r = r.WithContext(setApplicationEndpointsInContext(r.Context(), &app.Endpoints))
+			next.ServeHTTP(w, r)
+		})
+	}
+}
+
+func filterDeletedEndpoints(endpoints []hookcamp.Endpoint) []hookcamp.Endpoint {
+	activeEndpoints := make([]hookcamp.Endpoint, 0)
+	for _, endpoint := range endpoints {
+		if endpoint.DeletedAt == 0 {
+			activeEndpoints = append(activeEndpoints, endpoint)
+		}
+	}
+	return activeEndpoints
+}
+
 func parseEndpointFromBody(body io.ReadCloser) (models.Endpoint, error) {
 	var e models.Endpoint
 	err := json.NewDecoder(body).Decode(&e)
@@ -346,21 +403,7 @@ func ensureAppEndpointUpdate(appRepo hookcamp.ApplicationRepository) func(next h
 				return
 			}
 
-			appID := chi.URLParam(r, "appID")
-			app, err := appRepo.FindApplicationByID(r.Context(), appID)
-			if err != nil {
-
-				msg := "an error occurred while retrieving app details"
-				statusCode := http.StatusInternalServerError
-
-				if errors.Is(err, hookcamp.ErrApplicationNotFound) {
-					msg = err.Error()
-					statusCode = http.StatusNotFound
-				}
-
-				_ = render.Render(w, r, newErrorResponse(msg, statusCode))
-				return
-			}
+			app := getApplicationFromContext(r.Context())
 			endPointId := chi.URLParam(r, "endpointID")
 
 			endpoints, endpoint, err := updateEndpointIfFound(&app.Endpoints, endPointId, e)
@@ -382,9 +425,29 @@ func ensureAppEndpointUpdate(appRepo hookcamp.ApplicationRepository) func(next h
 	}
 }
 
+func requireAppEndpoint() func(next http.Handler) http.Handler {
+	return func(next http.Handler) http.Handler {
+
+		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+
+			app := getApplicationFromContext(r.Context())
+			endPointId := chi.URLParam(r, "endpointID")
+
+			endpoint, err := findEndpoint(&app.Endpoints, endPointId)
+			if err != nil {
+				_ = render.Render(w, r, newErrorResponse(err.Error(), http.StatusBadRequest))
+				return
+			}
+
+			r = r.WithContext(setApplicationEndpointInContext(r.Context(), endpoint))
+			next.ServeHTTP(w, r)
+		})
+	}
+}
+
 func updateEndpointIfFound(endpoints *[]hookcamp.Endpoint, id string, e models.Endpoint) (*[]hookcamp.Endpoint, *hookcamp.Endpoint, error) {
 	for i, endpoint := range *endpoints {
-		if endpoint.UID == id {
+		if endpoint.UID == id && endpoint.DeletedAt == 0 {
 			endpoint.TargetURL = e.URL
 			endpoint.Description = e.Description
 			endpoint.UpdatedAt = primitive.NewDateTimeFromTime(time.Now())
@@ -393,6 +456,15 @@ func updateEndpointIfFound(endpoints *[]hookcamp.Endpoint, id string, e models.E
 		}
 	}
 	return endpoints, nil, hookcamp.ErrEndpointNotFound
+}
+
+func findEndpoint(endpoints *[]hookcamp.Endpoint, id string) (*hookcamp.Endpoint, error) {
+	for _, endpoint := range *endpoints {
+		if endpoint.UID == id && endpoint.DeletedAt == 0 {
+			return &endpoint, nil
+		}
+	}
+	return nil, hookcamp.ErrEndpointNotFound
 }
 
 func ensureNewOrganisation(orgRepo hookcamp.OrganisationRepository) func(next http.Handler) http.Handler {
@@ -413,10 +485,11 @@ func ensureNewOrganisation(orgRepo hookcamp.OrganisationRepository) func(next ht
 				return
 			}
 			org := &hookcamp.Organisation{
-				UID:       uuid.New().String(),
-				OrgName:   orgName,
-				CreatedAt: primitive.NewDateTimeFromTime(time.Now()),
-				UpdatedAt: primitive.NewDateTimeFromTime(time.Now()),
+				UID:            uuid.New().String(),
+				OrgName:        orgName,
+				CreatedAt:      primitive.NewDateTimeFromTime(time.Now()),
+				UpdatedAt:      primitive.NewDateTimeFromTime(time.Now()),
+				DocumentStatus: hookcamp.ActiveDocumentStatus,
 			}
 
 			err = orgRepo.CreateOrganisation(r.Context(), org)
@@ -766,6 +839,15 @@ func getApplicationEndpointFromContext(ctx context.Context) *hookcamp.Endpoint {
 	return ctx.Value(endpointCtx).(*hookcamp.Endpoint)
 }
 
+func setApplicationEndpointsInContext(ctx context.Context,
+	endpoints *[]hookcamp.Endpoint) context.Context {
+	return context.WithValue(ctx, endpointCtx, endpoints)
+}
+
+func getApplicationEndpointsFromContext(ctx context.Context) *[]hookcamp.Endpoint {
+	return ctx.Value(endpointCtx).(*[]hookcamp.Endpoint)
+}
+
 func setOrganisationInContext(ctx context.Context, organisation *hookcamp.Organisation) context.Context {
 	return context.WithValue(ctx, orgCtx, organisation)
 }
@@ -804,4 +886,22 @@ func setDashboardSummaryInContext(ctx context.Context, d *models.DashboardSummar
 
 func getDashboardSummaryFromContext(ctx context.Context) *models.DashboardSummary {
 	return ctx.Value(dashboardCtx).(*models.DashboardSummary)
+}
+
+func setDeliveryAttemptInContext(ctx context.Context,
+	attempt *hookcamp.MessageAttempt) context.Context {
+	return context.WithValue(ctx, deliveryAttemptsCtx, attempt)
+}
+
+func getDeliveryAttemptFromContext(ctx context.Context) *hookcamp.MessageAttempt {
+	return ctx.Value(deliveryAttemptsCtx).(*hookcamp.MessageAttempt)
+}
+
+func setDeliveryAttemptsInContext(ctx context.Context,
+	attempts *[]hookcamp.MessageAttempt) context.Context {
+	return context.WithValue(ctx, deliveryAttemptsCtx, attempts)
+}
+
+func getDeliveryAttemptsFromContext(ctx context.Context) *[]hookcamp.MessageAttempt {
+	return ctx.Value(deliveryAttemptsCtx).(*[]hookcamp.MessageAttempt)
 }
