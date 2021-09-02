@@ -118,11 +118,11 @@ func (p *Producer) postMessages(msgRepo hookcamp.MessageRepository, m hookcamp.M
 
 		attempt = parseAttemptFromResponse(m, *e, resp, attemptStatus)
 	}
+	m.Metadata.NumTrials++
 	if done {
 		m.Status = hookcamp.SuccessMessageStatus
 	} else {
 		m.Status = hookcamp.RetryMessageStatus
-		m.Metadata.NumTrials++
 
 		delay := m.Metadata.IntervalSeconds
 		nextTime := time.Now().Add(time.Duration(delay) * time.Second)
