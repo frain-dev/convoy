@@ -44,10 +44,9 @@ func (db *appRepo) LoadApplications(ctx context.Context) (
 
 	apps := make([]hookcamp.Application, 0)
 
-	cur, err := db.client.Find(ctx, bson.D{primitive.E{
-		Key:   "deleted_at",
-		Value: nil,
-	}})
+	filter := bson.M{"document_status": bson.M{"$ne": hookcamp.DeletedDocumentStatus}}
+
+	cur, err := db.client.Find(ctx, filter)
 	if err != nil {
 		return apps, err
 	}
@@ -74,16 +73,7 @@ func (db *appRepo) LoadApplications(ctx context.Context) (
 
 func (db *appRepo) LoadApplicationsPagedByOrgId(ctx context.Context, orgId string, pageable models.Pageable) ([]hookcamp.Application, pager.PaginationData, error) {
 
-	filter := bson.D{
-		primitive.E{
-			Key:   "org_id",
-			Value: orgId,
-		},
-		primitive.E{
-			Key:   "deleted_at",
-			Value: nil,
-		},
-	}
+	filter := bson.M{"org_id": orgId, "document_status": bson.M{"$ne": hookcamp.DeletedDocumentStatus}}
 
 	var applications []hookcamp.Application
 	paginatedData, err := pager.New(db.client).Context(ctx).Limit(int64(pageable.PerPage)).Page(int64(pageable.Page)).Sort("created_at", -1).Filter(filter).Decode(&applications).Find()
@@ -106,7 +96,7 @@ func (db *appRepo) SearchApplicationsByOrgId(ctx context.Context, orgId string, 
 		end = searchParams.CreatedAtStart
 	}
 
-	filter := bson.M{"org_id": orgId, "deleted_at": nil, "created_at": bson.M{"$gte": primitive.NewDateTimeFromTime(time.Unix(start, 0)), "$lte": primitive.NewDateTimeFromTime(time.Unix(end, 0))}}
+	filter := bson.M{"org_id": orgId, "document_status": bson.M{"$ne": hookcamp.DeletedDocumentStatus}, "created_at": bson.M{"$gte": primitive.NewDateTimeFromTime(time.Unix(start, 0)), "$lte": primitive.NewDateTimeFromTime(time.Unix(end, 0))}}
 
 	apps := make([]hookcamp.Application, 0)
 	cur, err := db.client.Find(ctx, filter)
@@ -139,16 +129,7 @@ func (db *appRepo) FindApplicationByID(ctx context.Context,
 
 	app := new(hookcamp.Application)
 
-	filter := bson.D{
-		primitive.E{
-			Key:   "uid",
-			Value: id,
-		},
-		primitive.E{
-			Key:   "deleted_at",
-			Value: nil,
-		},
-	}
+	filter := bson.M{"uid": id, "document_status": bson.M{"$ne": hookcamp.DeletedDocumentStatus}}
 
 	err := db.client.FindOne(ctx, filter).
 		Decode(&app)
@@ -164,7 +145,7 @@ func (db *appRepo) UpdateApplication(ctx context.Context,
 
 	app.UpdatedAt = primitive.NewDateTimeFromTime(time.Now())
 
-	filter := bson.D{primitive.E{Key: "uid", Value: app.UID}, primitive.E{Key: "deleted_at", Value: nil}}
+	filter := bson.M{"uid": app.UID, "document_status": bson.M{"$ne": hookcamp.DeletedDocumentStatus}}
 
 	update := bson.D{primitive.E{Key: "$set", Value: bson.D{
 		primitive.E{Key: "endpoints", Value: app.Endpoints},
