@@ -133,11 +133,12 @@ func (p *Producer) postMessages(msgRepo hookcamp.MessageRepository, m hookcamp.M
 	}
 
 	if m.Metadata.NumTrials >= m.Metadata.RetryLimit {
-		log.Errorf("%s retry limit exceeded ", m.UID)
-		m.Description = "Retry limit exceeded"
-
 		if attempt.Status != hookcamp.SuccessMessageStatus {
+			log.Errorf("%s retry limit exceeded ", m.UID)
+			m.Description = "Retry limit exceeded"
 			m.Status = hookcamp.FailureMessageStatus
+		} else {
+			m.Description = ""
 		}
 	}
 

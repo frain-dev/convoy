@@ -187,7 +187,7 @@ func Test_fetchAllMessages(t *testing.T) {
 	}
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			request := httptest.NewRequest(tc.method, fmt.Sprintf("/v1/apps/%s/messages", tc.args.message.AppID), nil)
+			request := httptest.NewRequest(tc.method, fmt.Sprintf("/v1/apps/%s/events", tc.args.message.AppID), nil)
 			responseRecorder := httptest.NewRecorder()
 			rctx := chi.NewRouteContext()
 			rctx.URLParams.Add("appID", tc.args.message.AppID)
@@ -210,6 +210,117 @@ func Test_fetchAllMessages(t *testing.T) {
 				logrus.Error(tc.args.message, responseRecorder.Body)
 				t.Errorf("Want status '%d', got '%d'", tc.statusCode, responseRecorder.Code)
 			}
+		})
+	}
+}
+
+func Test_resendMessage(t *testing.T) {
+	var app *applicationHandler
+
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	orgRepo := mocks.NewMockOrganisationRepository(ctrl)
+	appRepo := mocks.NewMockApplicationRepository(ctrl)
+	msgRepo := mocks.NewMockMessageRepository(ctrl)
+
+	appId := "12345"
+	msgId := "1122333444456"
+
+	app = newApplicationHandler(msgRepo, appRepo, orgRepo)
+
+	type args struct {
+		message *hookcamp.Message
+	}
+
+	tests := []struct {
+		name       string
+		method     string
+		statusCode int
+		args       args
+		body       *strings.Reader
+		dbFn       func(msgRepo *mocks.MockMessageRepository, appRepo *mocks.MockApplicationRepository, orgRepo *mocks.MockOrganisationRepository)
+	}{
+		{
+			name:       "invalid event to resend - already successful",
+			method:     http.MethodPut,
+			statusCode: http.StatusBadRequest,
+			body:       nil,
+			args: args{
+				message: &hookcamp.Message{
+					UID:    msgId,
+					AppID:  appId,
+					Status: hookcamp.SuccessMessageStatus,
+				},
+			},
+			dbFn: func(msgRepo *mocks.MockMessageRepository, appRepo *mocks.MockApplicationRepository, orgRepo *mocks.MockOrganisationRepository) {
+				msgRepo.EXPECT().
+					UpdateStatusOfMessages(gomock.Any(), gomock.Any(), gomock.Any()).Times(0).
+					Return(nil)
+
+			},
+		},
+		{
+			name:       "invalid event to resend - not failed",
+			method:     http.MethodPut,
+			statusCode: http.StatusBadRequest,
+			body:       nil,
+			args: args{
+				message: &hookcamp.Message{
+					UID:    msgId,
+					AppID:  appId,
+					Status: hookcamp.ProcessingMessageStatus,
+				},
+			},
+			dbFn: func(msgRepo *mocks.MockMessageRepository, appRepo *mocks.MockApplicationRepository, orgRepo *mocks.MockOrganisationRepository) {
+				msgRepo.EXPECT().
+					UpdateStatusOfMessages(gomock.Any(), gomock.Any(), gomock.Any()).Times(0).
+					Return(nil)
+
+			},
+		},
+		{
+			name:       "valid event to resend - previously failed",
+			method:     http.MethodPut,
+			statusCode: http.StatusOK,
+			body:       nil,
+			args: args{
+				message: &hookcamp.Message{
+					UID:    msgId,
+					AppID:  appId,
+					Status: hookcamp.FailureMessageStatus,
+				},
+			},
+			dbFn: func(msgRepo *mocks.MockMessageRepository, appRepo *mocks.MockApplicationRepository, orgRepo *mocks.MockOrganisationRepository) {
+				msgRepo.EXPECT().
+					UpdateStatusOfMessages(gomock.Any(), gomock.Any(), gomock.Any()).Times(1).
+					Return(nil)
+
+			},
+		},
+	}
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			request := httptest.NewRequest(tc.method, fmt.Sprintf("/v1/apps/events/%s/resend", tc.args.message.UID), nil)
+			responseRecorder := httptest.NewRecorder()
+			rctx := chi.NewRouteContext()
+			rctx.URLParams.Add("appID", tc.args.message.AppID)
+
+			request = request.WithContext(context.WithValue(request.Context(), msgCtx, tc.args.message))
+
+			if tc.dbFn != nil {
+				tc.dbFn(msgRepo, appRepo, orgRepo)
+			}
+
+			resendMessage(msgRepo)(http.HandlerFunc(app.ResendAppMessage)).
+				ServeHTTP(responseRecorder, request)
+
+			if responseRecorder.Code != tc.statusCode {
+				logrus.Error(tc.args.message, responseRecorder.Body)
+				t.Errorf("Want status '%d', got '%d'", tc.statusCode, responseRecorder.Code)
+			}
+
+			verifyMatch(t, *responseRecorder)
 		})
 	}
 }
