@@ -86,7 +86,7 @@ func buildRoutes(app *applicationHandler) http.Handler {
 
 				appSubRouter.Route("/events", func(msgSubRouter chi.Router) {
 					msgSubRouter.With(ensureNewMessage(app.appRepo, app.msgRepo)).Post("/", app.CreateAppMessage)
-					msgSubRouter.With(fetchAppMessages(app.appRepo, app.msgRepo)).Get("/", app.GetAppMessages)
+					msgSubRouter.With(pagination).With(fetchAppMessages(app.appRepo, app.msgRepo)).Get("/", app.GetAppMessagesPaged)
 
 					msgSubRouter.Route("/{eventID}", func(msgEventSubRouter chi.Router) {
 						msgEventSubRouter.Use(requireMessage(app.msgRepo))

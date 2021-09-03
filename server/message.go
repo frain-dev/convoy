@@ -145,6 +145,8 @@ func fetchAppMessages(appRepo hookcamp.ApplicationRepository, msgRepo hookcamp.M
 
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 
+			pageable := getPageableFromContext(r.Context())
+
 			appID := chi.URLParam(r, "appID")
 			app, err := appRepo.FindApplicationByID(r.Context(), appID)
 			if err != nil {
@@ -163,7 +165,7 @@ func fetchAppMessages(appRepo hookcamp.ApplicationRepository, msgRepo hookcamp.M
 				return
 			}
 
-			m, err := msgRepo.LoadMessagesByAppId(r.Context(), app.UID)
+			m, paginationData, err := msgRepo.LoadMessagesPagedByAppId(r.Context(), app.UID, pageable)
 			if err != nil {
 				_ = render.Render(w, r, newErrorResponse("an error occurred while fetching app events", http.StatusInternalServerError))
 				log.Errorln("error while fetching events - ", err)
@@ -171,6 +173,7 @@ func fetchAppMessages(appRepo hookcamp.ApplicationRepository, msgRepo hookcamp.M
 			}
 
 			r = r.WithContext(setMessagesInContext(r.Context(), &m))
+			r = r.WithContext(setPaginationDataInContext(r.Context(), &paginationData))
 			next.ServeHTTP(w, r)
 		})
 	}

@@ -132,7 +132,7 @@ type MessageAttempt struct {
 type MessageRepository interface {
 	CreateMessage(context.Context, *Message) error
 	LoadMessageIntervals(context.Context, string, models.SearchParams, Period, int) ([]models.MessageInterval, error)
-	LoadMessagesByAppId(context.Context, string) ([]Message, error)
+	LoadMessagesPagedByAppId(context.Context, string, models.Pageable) ([]Message, pager.PaginationData, error)
 	FindMessageByID(ctx context.Context, id string) (*Message, error)
 	LoadMessagesScheduledForPosting(context.Context) ([]Message, error)
 	LoadMessagesForPostingRetry(context.Context) ([]Message, error)

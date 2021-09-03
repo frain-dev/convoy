@@ -130,10 +130,20 @@ func (db *messageRepo) LoadMessageIntervals(ctx context.Context, orgId string, s
 	return messagesIntervals, nil
 }
 
-func (db *messageRepo) LoadMessagesByAppId(ctx context.Context, appId string) ([]hookcamp.Message, error) {
+func (db *messageRepo) LoadMessagesPagedByAppId(ctx context.Context, appId string, pageable models.Pageable) ([]hookcamp.Message, pager.PaginationData, error) {
 	filter := bson.M{"app_id": appId, "document_status": bson.M{"$ne": hookcamp.DeletedDocumentStatus}}
 
-	return db.loadMessagesByFilter(ctx, filter, nil)
+	var messages []hookcamp.Message
+	paginatedData, err := pager.New(db.inner).Context(ctx).Limit(int64(pageable.PerPage)).Page(int64(pageable.Page)).Sort("created_at", pageable.Sort).Filter(filter).Decode(&messages).Find()
+	if err != nil {
+		return messages, pager.PaginationData{}, err
+	}
+
+	if messages == nil {
+		messages = make([]hookcamp.Message, 0)
+	}
+
+	return messages, paginatedData.Pagination, nil
 }
 
 func (db *messageRepo) FindMessageByID(ctx context.Context, id string) (*hookcamp.Message, error) {

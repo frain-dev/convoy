@@ -131,12 +131,6 @@ func (a *applicationHandler) GetAppMessage(w http.ResponseWriter, r *http.Reques
 		*getMessageFromContext(r.Context()), http.StatusOK))
 }
 
-func (a *applicationHandler) GetAppMessages(w http.ResponseWriter, r *http.Request) {
-
-	_ = render.Render(w, r, newServerResponse("App events fetched successfully",
-		*getMessagesFromContext(r.Context()), http.StatusOK))
-}
-
 func (a *applicationHandler) GetAppMessagesPaged(w http.ResponseWriter, r *http.Request) {
 
 	_ = render.Render(w, r, newServerResponse("App events fetched successfully",
