@@ -343,7 +343,7 @@ function DashboardPage() {
 								</li>
 							</ul>
 
-							{detailsItem.app_metadata.endpoints.length > 0 && (
+							{detailsItem.app_metadata && detailsItem.app_metadata.endpoints && detailsItem.app_metadata.endpoints.length > 0 && (
 								<React.Fragment>
 									<h4>App Event Endpoints</h4>
 									<div>
