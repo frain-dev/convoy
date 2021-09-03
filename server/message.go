@@ -140,30 +140,14 @@ func fetchAllMessages(msgRepo hookcamp.MessageRepository) func(next http.Handler
 	}
 }
 
-func fetchAppMessages(appRepo hookcamp.ApplicationRepository, msgRepo hookcamp.MessageRepository) func(next http.Handler) http.Handler {
+func fetchAppMessages(msgRepo hookcamp.MessageRepository) func(next http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 
 			pageable := getPageableFromContext(r.Context())
 
-			appID := chi.URLParam(r, "appID")
-			app, err := appRepo.FindApplicationByID(r.Context(), appID)
-			if err != nil {
-
-				msg := "an error occurred while retrieving app details"
-				statusCode := http.StatusInternalServerError
-
-				if errors.Is(err, hookcamp.ErrApplicationNotFound) {
-					msg = err.Error()
-					statusCode = http.StatusNotFound
-				}
-
-				log.Errorln("error while fetching app - ", err)
-
-				_ = render.Render(w, r, newErrorResponse(msg, statusCode))
-				return
-			}
+			app := getApplicationFromContext(r.Context())
 
 			m, paginationData, err := msgRepo.LoadMessagesPagedByAppId(r.Context(), app.UID, pageable)
 			if err != nil {
@@ -248,4 +232,34 @@ func findMessageDeliveryAttempt(attempts *[]hookcamp.MessageAttempt, id string) 
 		}
 	}
 	return nil, hookcamp.ErrMessageDeliveryAttemptNotFound
+}
+
+func resendMessage(msgRepo hookcamp.MessageRepository) func(next http.Handler) http.Handler {
+	return func(next http.Handler) http.Handler {
+
+		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+
+			msg := getMessageFromContext(r.Context())
+
+			if msg.Status == hookcamp.SuccessMessageStatus {
+				_ = render.Render(w, r, newErrorResponse("event already sent", http.StatusBadRequest))
+				return
+			}
+
+			if msg.Status != hookcamp.FailureMessageStatus {
+				_ = render.Render(w, r, newErrorResponse("cannot resend event that did not fail previously", http.StatusBadRequest))
+				return
+			}
+
+			msg.Status = hookcamp.ScheduledMessageStatus
+			err := msgRepo.UpdateStatusOfMessages(r.Context(), []hookcamp.Message{*msg}, hookcamp.ScheduledMessageStatus)
+			if err != nil {
+				_ = render.Render(w, r, newErrorResponse("an error occurred while trying to resend event", http.StatusInternalServerError))
+				return
+			}
+
+			r = r.WithContext(setMessageInContext(r.Context(), msg))
+			next.ServeHTTP(w, r)
+		})
+	}
 }

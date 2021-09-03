@@ -61,6 +61,7 @@ func (p *Producer) postMessages(msgRepo hookcamp.MessageRepository, m hookcamp.M
 		e := &m.AppMetadata.Endpoints[i]
 		if e.Sent {
 			log.Debugf("endpoint %s already merged with message %s\n", e.TargetURL, m.UID)
+			attempt.Status = hookcamp.SuccessMessageStatus
 			continue
 		}
 
@@ -134,7 +135,10 @@ func (p *Producer) postMessages(msgRepo hookcamp.MessageRepository, m hookcamp.M
 	if m.Metadata.NumTrials >= m.Metadata.RetryLimit {
 		log.Errorf("%s retry limit exceeded ", m.UID)
 		m.Description = "Retry limit exceeded"
-		m.Status = hookcamp.FailureMessageStatus
+
+		if attempt.Status != hookcamp.SuccessMessageStatus {
+			m.Status = hookcamp.FailureMessageStatus
+		}
 	}
 
 	err := msgRepo.UpdateMessageWithAttempt(context.Background(), m, attempt)
