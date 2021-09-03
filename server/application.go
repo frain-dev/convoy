@@ -70,7 +70,7 @@ func (a *applicationHandler) GetAppEndpoint(w http.ResponseWriter, r *http.Reque
 		*getApplicationEndpointFromContext(r.Context()), http.StatusOK))
 }
 
-func (a *applicationHandler) GetDeletedAppEndpoint(w http.ResponseWriter, r *http.Request) {
+func (a *applicationHandler) DeleteAppEndpoint(w http.ResponseWriter, r *http.Request) {
 
 	_ = render.Render(w, r, newServerResponse("App endpoint deleted successfully",
 		nil, http.StatusOK))
@@ -144,7 +144,7 @@ func (a *applicationHandler) GetAppMessagesPaged(w http.ResponseWriter, r *http.
 			Pagination: getPaginationDataFromContext(r.Context())}, http.StatusOK))
 }
 
-func (a *applicationHandler) GetDeletedApp(w http.ResponseWriter, r *http.Request) {
+func (a *applicationHandler) DeleteApp(w http.ResponseWriter, r *http.Request) {
 
 	_ = render.Render(w, r, newServerResponse("App deleted successfully",
 		nil, http.StatusOK))

@@ -82,7 +82,7 @@ func buildRoutes(app *applicationHandler) http.Handler {
 				appSubRouter.With(ensureAppUpdate(app.appRepo)).Put("/", app.UpdateApp)
 
 				appSubRouter.Get("/", app.GetApp)
-				appSubRouter.With(ensureAppDeletion(app.appRepo)).Delete("/", app.GetDeletedApp)
+				appSubRouter.With(ensureAppDeletion(app.appRepo)).Delete("/", app.DeleteApp)
 
 				appSubRouter.Route("/events", func(msgSubRouter chi.Router) {
 					msgSubRouter.With(ensureNewMessage(app.appRepo, app.msgRepo)).Post("/", app.CreateAppMessage)
@@ -104,7 +104,7 @@ func buildRoutes(app *applicationHandler) http.Handler {
 
 						e.Get("/", app.GetAppEndpoint)
 						e.With(ensureAppEndpointUpdate(app.appRepo)).Put("/", app.UpdateAppEndpoint)
-						e.With(ensureAppEndpointDeletion(app.appRepo)).Delete("/", app.GetDeletedAppEndpoint)
+						e.With(ensureAppEndpointDeletion(app.appRepo)).Delete("/", app.DeleteAppEndpoint)
 					})
 				})
 			})
