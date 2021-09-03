@@ -1,4 +1,15 @@
-# Hookcamp
+# Courier
+Courier is a fast & secure webhooks service. It receives event data from a HTTP API and sends these event data to the configured endpoints.
+
+Requirements
+-----------------
+
+Installation
+-----------------
+
+
+Getting Started
+----------------
 
 ## hookcamp.json
 
