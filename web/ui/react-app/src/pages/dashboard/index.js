@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, {useEffect, useState} from 'react';
 import * as axios from 'axios';
 import ArrowDownIcon from '../../assets/img/arrow-down-icon.svg';
 import AppsIcon from '../../assets/img/apps-icon.svg';
@@ -9,7 +9,7 @@ import CopyIcon from '../../assets/img/copy-icon.svg';
 import LinkIcon from '../../assets/img/link-icon.svg';
 import ViewIcon from '../../assets/img/view-icon.svg';
 import Chart from 'chart.js/auto';
-import { DateRange } from 'react-date-range';
+import {DateRange} from 'react-date-range';
 import ReactJson from 'react-json-view';
 import './app.scss';
 import 'react-date-range/dist/styles.css';
@@ -118,7 +118,7 @@ function DashboardPage() {
 			try {
 				const appsResponse = await (
 					await request({
-						url: '/messages',
+						url: '/events',
 						method: 'GET',
 						headers: {
 							Authorization: `Basic ${btoa(authDetails.basic.username + ':' + authDetails.basic.password)}`,
