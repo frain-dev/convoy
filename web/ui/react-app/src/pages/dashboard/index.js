@@ -1,4 +1,4 @@
-import React, {useEffect, useState} from 'react';
+import React, { useEffect, useState } from 'react';
 import * as axios from 'axios';
 import ArrowDownIcon from '../../assets/img/arrow-down-icon.svg';
 import AppsIcon from '../../assets/img/apps-icon.svg';
@@ -9,7 +9,7 @@ import CopyIcon from '../../assets/img/copy-icon.svg';
 import LinkIcon from '../../assets/img/link-icon.svg';
 import ViewIcon from '../../assets/img/view-icon.svg';
 import Chart from 'chart.js/auto';
-import {DateRange} from 'react-date-range';
+import { DateRange } from 'react-date-range';
 import ReactJson from 'react-json-view';
 import './app.scss';
 import 'react-date-range/dist/styles.css';
@@ -75,26 +75,41 @@ function DashboardPage() {
 		return `${day} ${months[month]}, ${year}`;
 	};
 
-	const getOrganisations = async () => {
-		try {
-			const organisationsResponse = await (await request.get('/organisations')).data;
-			setOrganisations(organisationsResponse.data);
-			setActiveOrganisation(organisationsResponse.data[0]);
-		} catch (error) {
-			return error;
-		}
-	};
-
 	const copyText = (copyText) => {
 		const el = document.createElement('textarea');
 		el.value = copyText;
 		document.body.appendChild(el);
 		el.select();
 		document.execCommand('copy');
-		this.showCopyText = true;
+		el.style.display = 'none';
 	};
 
 	useEffect(() => {
+		const getRequestHeaders = () => {
+			const response =
+				authDetails.type === 'none'
+					? {}
+					: {
+							Authorization: `Basic ${btoa(authDetails.basic.username + ':' + authDetails.basic.password)}`,
+					  };
+			return response;
+		};
+
+		const getOrganisations = async () => {
+			try {
+				const organisationsResponse = await (
+					await request({
+						url: '/organisations',
+						headers: getRequestHeaders(),
+					})
+				).data;
+				setOrganisations(organisationsResponse.data);
+				setActiveOrganisation(organisationsResponse.data[0]);
+			} catch (error) {
+				return error;
+			}
+		};
+
 		const getAuthDetails = async () => {
 			try {
 				if (authDetails.type) return;
@@ -107,7 +122,12 @@ function DashboardPage() {
 
 		const getApps = async () => {
 			try {
-				const appsResponse = await (await request({ url: '/apps' })).data;
+				const appsResponse = await (
+					await request({
+						url: '/apps',
+						headers: getRequestHeaders(),
+					})
+				).data;
 				setAppsData(appsResponse.data);
 			} catch (error) {
 				return error;
@@ -120,9 +140,7 @@ function DashboardPage() {
 					await request({
 						url: '/events',
 						method: 'GET',
-						headers: {
-							Authorization: `Basic ${btoa(authDetails.basic.username + ':' + authDetails.basic.password)}`,
-						},
+						headers: getRequestHeaders(),
 					})
 				).data;
 				setEventsData(appsResponse.data.content);
@@ -135,11 +153,12 @@ function DashboardPage() {
 			try {
 				if (organisations.length === 0) await getOrganisations();
 				if (!activeorganisation.uid) return;
-				const dashboardResponse = await request.get(
-					`/dashboard/${activeorganisation.uid}/summary?startDate=${filterDates[0].startDate.toISOString().split('.')[0]}&endDate=${filterDates[0].endDate.toISOString().split('.')[0]}&type=${
+				const dashboardResponse = await request({
+					url: `/dashboard/${activeorganisation.uid}/summary?startDate=${filterDates[0].startDate.toISOString().split('.')[0]}&endDate=${filterDates[0].endDate.toISOString().split('.')[0]}&type=${
 						filterFrequency || 'daily'
 					}`,
-				);
+					headers: getRequestHeaders(),
+				});
 				setDashboardData(dashboardResponse.data.data);
 
 				const chartData = dashboardResponse.data.data.message_data;
@@ -266,6 +285,7 @@ function DashboardPage() {
 											<img src={CopyIcon} alt="copy icon" />
 										</button>
 									</div>
+
 									<div className="auth-item">
 										<div>
 											<div className="auth-item--label">Password</div>
@@ -274,6 +294,16 @@ function DashboardPage() {
 										</div>
 										<button className="copy" onClick={() => toggleViewPassword(!viewPassword)}>
 											<img src={ViewIcon} alt="view icon" />
+										</button>
+									</div>
+
+									<div className="auth-item">
+										<div>
+											<div className="auth-item--label">Organisation ID</div>
+											<div className="auth-item--item">{activeorganisation.uid}</div>
+										</div>
+										<button className="copy" onClick={() => copyText(activeorganisation.uid)}>
+											<img src={CopyIcon} alt="copy icon" />
 										</button>
 									</div>
 								</React.Fragment>

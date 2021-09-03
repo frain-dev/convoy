@@ -14,11 +14,7 @@
 		}
 	},
 	"auth": {
-		"type": "basic",
-		"basic": {
-			"username": "username",
-			"password": "password"
-		}
+		"type": "none"
 	},
 	"strategy": {
 		"type": "default",
