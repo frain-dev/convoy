@@ -3,13 +3,16 @@ package server
 import (
 	"embed"
 	"fmt"
-	"github.com/go-chi/chi/v5/middleware"
-	log "github.com/sirupsen/logrus"
 	"io/fs"
 	"net/http"
 	"path"
 	"strings"
 	"time"
+
+	"github.com/go-chi/chi/v5/middleware"
+	"github.com/prometheus/client_golang/prometheus"
+	"github.com/prometheus/client_golang/prometheus/promhttp"
+	log "github.com/sirupsen/logrus"
 
 	"github.com/go-chi/chi/v5"
 	"github.com/hookcamp/hookcamp"
@@ -84,7 +87,7 @@ func buildRoutes(app *applicationHandler) http.Handler {
 				appSubRouter.Get("/", app.GetApp)
 
 				appSubRouter.Route("/messages", func(msgSubRouter chi.Router) {
-					msgSubRouter.With(ensureNewMessage(app.appRepo, app.msgRepo)).Post("/", app.CreateAppMessage)
+					msgSubRouter.With(instrumentPath("/messages"), ensureNewMessage(app.appRepo, app.msgRepo)).Post("/", app.CreateAppMessage)
 					msgSubRouter.With(fetchAppMessages(app.appRepo, app.msgRepo)).Get("/", app.GetAppMessages)
 				})
 
@@ -122,6 +125,7 @@ func buildRoutes(app *applicationHandler) http.Handler {
 		})
 	})
 
+	router.Handle("/metrics", promhttp.Handler())
 	router.HandleFunc("/*", reactRootHandler)
 
 	return router
@@ -137,6 +141,8 @@ func New(cfg config.Configuration, msgRepo hookcamp.MessageRepository, appRepo h
 		WriteTimeout: time.Second * 10,
 		Addr:         fmt.Sprintf(":%d", cfg.Server.HTTP.Port),
 	}
+
+	prometheus.MustRegister(requestDuration)
 
 	return srv
 }
