@@ -30,7 +30,7 @@ func ensureNewMessage(appRepo hookcamp.ApplicationRepository, msgRepo hookcamp.M
 
 			eventType := newMessage.EventType
 			if util.IsStringEmpty(eventType) {
-				_ = render.Render(w, r, newErrorResponse("please provide an eventType", http.StatusBadRequest))
+				_ = render.Render(w, r, newErrorResponse("please provide an event_type", http.StatusBadRequest))
 				return
 			}
 			d := newMessage.Data
@@ -102,12 +102,13 @@ func ensureNewMessage(appRepo hookcamp.ApplicationRepository, msgRepo hookcamp.M
 					Secret:    app.Secret,
 					Endpoints: util.ParseMetadataFromEndpoints(app.Endpoints),
 				},
-				Status: hookcamp.ScheduledMessageStatus,
+				Status:         hookcamp.ScheduledMessageStatus,
+				DocumentStatus: hookcamp.ActiveDocumentStatus,
 			}
 
 			err = msgRepo.CreateMessage(r.Context(), msg)
 			if err != nil {
-				_ = render.Render(w, r, newErrorResponse("an error occurred while creating message", http.StatusInternalServerError))
+				_ = render.Render(w, r, newErrorResponse("an error occurred while creating event", http.StatusInternalServerError))
 				return
 			}
 			r = r.WithContext(setMessageInContext(r.Context(), msg))
@@ -127,8 +128,8 @@ func fetchAllMessages(msgRepo hookcamp.MessageRepository) func(next http.Handler
 
 			m, paginationData, err := msgRepo.LoadMessagesPaged(r.Context(), orgId, pageable)
 			if err != nil {
-				_ = render.Render(w, r, newErrorResponse("an error occurred while fetching app messages", http.StatusInternalServerError))
-				log.Errorln("error while fetching messages - ", err)
+				_ = render.Render(w, r, newErrorResponse("an error occurred while fetching app events", http.StatusInternalServerError))
+				log.Errorln("error while fetching events - ", err)
 				return
 			}
 
@@ -143,6 +144,8 @@ func fetchAppMessages(appRepo hookcamp.ApplicationRepository, msgRepo hookcamp.M
 	return func(next http.Handler) http.Handler {
 
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+
+			pageable := getPageableFromContext(r.Context())
 
 			appID := chi.URLParam(r, "appID")
 			app, err := appRepo.FindApplicationByID(r.Context(), appID)
@@ -162,14 +165,15 @@ func fetchAppMessages(appRepo hookcamp.ApplicationRepository, msgRepo hookcamp.M
 				return
 			}
 
-			m, err := msgRepo.LoadMessagesByAppId(r.Context(), app.UID)
+			m, paginationData, err := msgRepo.LoadMessagesPagedByAppId(r.Context(), app.UID, pageable)
 			if err != nil {
-				_ = render.Render(w, r, newErrorResponse("an error occurred while fetching app messages", http.StatusInternalServerError))
-				log.Errorln("error while fetching messages - ", err)
+				_ = render.Render(w, r, newErrorResponse("an error occurred while fetching app events", http.StatusInternalServerError))
+				log.Errorln("error while fetching events - ", err)
 				return
 			}
 
 			r = r.WithContext(setMessagesInContext(r.Context(), &m))
+			r = r.WithContext(setPaginationDataInContext(r.Context(), &paginationData))
 			next.ServeHTTP(w, r)
 		})
 	}
@@ -180,12 +184,12 @@ func requireMessage(msgRepo hookcamp.MessageRepository) func(next http.Handler) 
 
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 
-			msgId := chi.URLParam(r, "msgID")
+			msgId := chi.URLParam(r, "eventID")
 
 			msg, err := msgRepo.FindMessageByID(r.Context(), msgId)
 			if err != nil {
 
-				msg := "an error occurred while retrieving message details"
+				msg := "an error occurred while retrieving event details"
 				statusCode := http.StatusInternalServerError
 
 				if errors.Is(err, hookcamp.ErrMessageNotFound) {
@@ -201,4 +205,47 @@ func requireMessage(msgRepo hookcamp.MessageRepository) func(next http.Handler) 
 			next.ServeHTTP(w, r)
 		})
 	}
+}
+
+func fetchMessageDeliveryAttempts() func(next http.Handler) http.Handler {
+	return func(next http.Handler) http.Handler {
+
+		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+
+			msg := getMessageFromContext(r.Context())
+
+			r = r.WithContext(setDeliveryAttemptsInContext(r.Context(), &msg.MessageAttempts))
+			next.ServeHTTP(w, r)
+		})
+	}
+}
+
+func requireMessageDeliveryAttempt() func(next http.Handler) http.Handler {
+	return func(next http.Handler) http.Handler {
+
+		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+
+			id := chi.URLParam(r, "deliveryAttemptID")
+
+			attempts := getDeliveryAttemptsFromContext(r.Context())
+
+			attempt, err := findMessageDeliveryAttempt(attempts, id)
+			if err != nil {
+				_ = render.Render(w, r, newErrorResponse(err.Error(), http.StatusBadRequest))
+				return
+			}
+
+			r = r.WithContext(setDeliveryAttemptInContext(r.Context(), attempt))
+			next.ServeHTTP(w, r)
+		})
+	}
+}
+
+func findMessageDeliveryAttempt(attempts *[]hookcamp.MessageAttempt, id string) (*hookcamp.MessageAttempt, error) {
+	for _, a := range *attempts {
+		if a.UID == id {
+			return &a, nil
+		}
+	}
+	return nil, hookcamp.ErrMessageDeliveryAttemptNotFound
 }

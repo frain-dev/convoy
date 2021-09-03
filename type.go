@@ -2,6 +2,14 @@ package hookcamp
 
 type HttpMethod string
 
+type DocumentStatus string
+
+const (
+	ActiveDocumentStatus   DocumentStatus = "Active"
+	InactiveDocumentStatus DocumentStatus = "Inactive"
+	DeletedDocumentStatus  DocumentStatus = "Deleted"
+)
+
 type Period int
 
 var PeriodValues = map[string]Period{

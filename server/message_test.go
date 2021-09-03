@@ -79,7 +79,7 @@ func Test_ensureNewMessage(t *testing.T) {
 			name:       "valid message",
 			method:     http.MethodPost,
 			statusCode: http.StatusCreated,
-			body:       strings.NewReader(`{"eventType": "test.event", "data": { "Hello": "World", "Test": "Data" }}`),
+			body:       strings.NewReader(`{"event_type": "test.event", "data": { "Hello": "World", "Test": "Data" }}`),
 			args: args{
 				message: message,
 			},
@@ -111,7 +111,7 @@ func Test_ensureNewMessage(t *testing.T) {
 				t.Error("Failed to load config file")
 			}
 
-			request := httptest.NewRequest(tc.method, fmt.Sprintf("/v1/apps/%s/messages", tc.args.message.AppID), tc.body)
+			request := httptest.NewRequest(tc.method, fmt.Sprintf("/v1/apps/%s/events", tc.args.message.AppID), tc.body)
 			responseRecorder := httptest.NewRecorder()
 			rctx := chi.NewRouteContext()
 			rctx.URLParams.Add("appID", tc.args.message.AppID)
@@ -175,7 +175,7 @@ func Test_fetchAllMessages(t *testing.T) {
 			},
 			dbFn: func(msgRepo *mocks.MockMessageRepository, appRepo *mocks.MockApplicationRepository, orgRepo *mocks.MockOrganisationRepository) {
 				msgRepo.EXPECT().
-					LoadMessagesPaged(gomock.Any(), gomock.Any()).Times(1).
+					LoadMessagesPaged(gomock.Any(), gomock.Any(), gomock.Any()).Times(1).
 					Return([]hookcamp.Message{
 						*message,
 					},

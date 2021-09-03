@@ -17,6 +17,8 @@ type Organisation struct {
 	CreatedAt primitive.DateTime `json:"created_at,omitempty" bson:"created_at,omitempty"`
 	UpdatedAt primitive.DateTime `json:"updated_at,omitempty" bson:"updated_at,omitempty"`
 	DeletedAt primitive.DateTime `json:"deleted_at,omitempty" bson:"deleted_at,omitempty"`
+
+	DocumentStatus DocumentStatus `json:"-" bson:"document_status"`
 }
 
 func (o *Organisation) IsDeleted() bool { return o.DeletedAt > 0 }
