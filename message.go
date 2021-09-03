@@ -6,11 +6,12 @@ import (
 	"database/sql/driver"
 	"encoding/json"
 	"errors"
+	"net/http"
+
 	pager "github.com/gobeam/mongo-go-pagination"
 	"github.com/hookcamp/hookcamp/config"
 	"github.com/hookcamp/hookcamp/server/models"
 	"go.mongodb.org/mongo-driver/bson/primitive"
-	"net/http"
 )
 
 type MessageStatus string
@@ -29,7 +30,7 @@ const (
 )
 
 type MessageMetadata struct {
-	Strategy config.Strategy `json:"strategy" bson:"strategy"`
+	Strategy config.StrategyProvider `json:"strategy" bson:"strategy"`
 	// NextSendTime denotes the next time a message will be published in
 	// case it failed the first time
 	NextSendTime primitive.DateTime `json:"next_send_time" bson:"next_send_time"`
@@ -44,7 +45,8 @@ type MessageMetadata struct {
 }
 
 type AppMetadata struct {
-	OrgID string `json:"org_id" bson:"org_id"`
+	OrgID  string `json:"org_id" bson:"org_id"`
+	Secret string `json:"secret" bson:"secret"`
 
 	Endpoints []EndpointMetadata `json:"endpoints" bson:"endpoints"`
 }

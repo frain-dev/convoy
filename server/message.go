@@ -74,7 +74,11 @@ func ensureNewMessage(appRepo hookcamp.ApplicationRepository, msgRepo hookcamp.M
 
 			var intervalSeconds uint64
 			var retryLimit uint64
+<<<<<<< HEAD
 			if cfg.Strategy.Type == config.DefaultStrategy {
+=======
+			if cfg.Strategy.Type == config.DefaultStrategyProvider {
+>>>>>>> main
 				intervalSeconds = cfg.Strategy.Default.IntervalSeconds
 				retryLimit = cfg.Strategy.Default.RetryLimit
 			} else {
@@ -99,6 +103,10 @@ func ensureNewMessage(appRepo hookcamp.ApplicationRepository, msgRepo hookcamp.M
 				UpdatedAt:       primitive.NewDateTimeFromTime(time.Now()),
 				AppMetadata: &hookcamp.AppMetadata{
 					OrgID:     app.OrgID,
+<<<<<<< HEAD
+=======
+					Secret:    app.Secret,
+>>>>>>> main
 					Endpoints: util.ParseMetadataFromEndpoints(app.Endpoints),
 				},
 				Status: hookcamp.ScheduledMessageStatus,

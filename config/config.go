@@ -22,7 +22,8 @@ type Configuration struct {
 			Port int `json:"port"`
 		} `json:"http"`
 	}
-	Strategy StrategyConfiguration `json:"strategy"`
+	Strategy  StrategyConfiguration  `json:"strategy"`
+	Signature SignatureConfiguration `json:"signature"`
 }
 
 func LoadFromFile(p string) error {
@@ -57,7 +58,8 @@ func Get() (Configuration, error) {
 
 type AuthProvider string
 type QueueProvider string
-type Strategy string
+type StrategyProvider string
+type SignatureHeaderProvider string
 
 const (
 	NoAuthProvider    AuthProvider = "none"
@@ -65,7 +67,9 @@ const (
 
 	RedisQueueProvider QueueProvider = "redis"
 
-	DefaultStrategy Strategy = "default"
+	DefaultStrategyProvider StrategyProvider = "default"
+
+	DefaultSignatureHeader SignatureHeaderProvider = "X-Courier-Signature"
 )
 
 type QueueConfiguration struct {
@@ -84,9 +88,13 @@ type AuthConfiguration struct {
 }
 
 type StrategyConfiguration struct {
-	Type    Strategy `json:"type"`
+	Type    StrategyProvider `json:"type"`
 	Default struct {
 		IntervalSeconds uint64 `json:"intervalSeconds"`
 		RetryLimit      uint64 `json:"retryLimit"`
 	} `json:"default"`
+}
+
+type SignatureConfiguration struct {
+	Header SignatureHeaderProvider `json:"header"`
 }

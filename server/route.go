@@ -10,6 +10,9 @@ import (
 	"time"
 
 	"github.com/go-chi/chi/v5/middleware"
+	log "github.com/sirupsen/logrus"
+
+	"github.com/go-chi/chi/v5/middleware"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	log "github.com/sirupsen/logrus"
@@ -58,9 +61,10 @@ func buildRoutes(app *applicationHandler) http.Handler {
 	router.Route("/v1", func(r chi.Router) {
 		r.Use(middleware.AllowContentType("application/json"))
 		r.Use(jsonResponse)
-		r.Use(requireAuth())
 
 		r.Route("/organisations", func(orgRouter chi.Router) {
+			orgRouter.Use(requireAuth())
+
 			orgRouter.Route("/", func(orgSubRouter chi.Router) {
 				orgSubRouter.With(ensureNewOrganisation(app.orgRepo)).Post("/", app.CreateOrganisation)
 
@@ -77,6 +81,7 @@ func buildRoutes(app *applicationHandler) http.Handler {
 		})
 
 		r.Route("/apps", func(appRouter chi.Router) {
+			appRouter.Use(requireAuth())
 
 			appRouter.Route("/", func(appSubRouter chi.Router) {
 				appSubRouter.With(ensureNewApp(app.orgRepo, app.appRepo)).Post("/", app.CreateApp)
@@ -92,6 +97,11 @@ func buildRoutes(app *applicationHandler) http.Handler {
 				appSubRouter.Get("/", app.GetApp)
 
 				appSubRouter.Route("/messages", func(msgSubRouter chi.Router) {
+					msgSubRouter.With(ensureNewMessage(app.appRepo, app.msgRepo)).Post("/", app.CreateAppMessage)
+					msgSubRouter.With(fetchAppMessages(app.appRepo, app.msgRepo)).Get("/", app.GetAppMessages)
+				})
+
+				appSubRouter.Route("/messages", func(msgSubRouter chi.Router) {
 					msgSubRouter.With(instrumentPath("/messages"), ensureNewMessage(app.appRepo, app.msgRepo)).Post("/", app.CreateAppMessage)
 					msgSubRouter.With(fetchAppMessages(app.appRepo, app.msgRepo)).Get("/", app.GetAppMessages)
 				})
@@ -104,6 +114,7 @@ func buildRoutes(app *applicationHandler) http.Handler {
 		})
 
 		r.Route("/messages", func(msgRouter chi.Router) {
+			msgRouter.Use(requireAuth())
 
 			msgRouter.With(pagination).With(fetchAllMessages(app.msgRepo)).Get("/", app.GetAppMessagesPaged)
 
@@ -116,10 +127,16 @@ func buildRoutes(app *applicationHandler) http.Handler {
 		})
 
 		r.Route("/dashboard/{orgID}", func(dashboardRouter chi.Router) {
+			dashboardRouter.Use(requireAuth())
+
 			dashboardRouter.Use(requireOrganisation(app.orgRepo))
 
 			dashboardRouter.With(fetchDashboardSummary(app.appRepo, app.msgRepo)).Get("/summary", app.GetDashboardSummary)
 			dashboardRouter.With(pagination).With(fetchOrganisationApps(app.appRepo)).Get("/apps", app.GetPaginatedApps)
+		})
+
+		r.Route("/auth", func(authRouter chi.Router) {
+			authRouter.With(fetchAuthConfig()).Get("/details", app.GetAuthDetails)
 		})
 	})
 

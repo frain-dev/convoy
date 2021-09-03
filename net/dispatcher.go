@@ -3,11 +3,13 @@ package net
 import (
 	"bytes"
 	"encoding/json"
-	log "github.com/sirupsen/logrus"
 	"io/ioutil"
 	"net/http"
 	"net/http/httptrace"
 	"time"
+
+	"github.com/hookcamp/hookcamp/util"
+	log "github.com/sirupsen/logrus"
 )
 
 type Dispatcher struct {
@@ -20,12 +22,16 @@ func NewDispatcher() *Dispatcher {
 	}
 }
 
-func (d *Dispatcher) SendRequest(endpoint, method string, jsonData json.RawMessage) (*Response, error) {
+func (d *Dispatcher) SendRequest(endpoint, method string, jsonData json.RawMessage, signatureHeader string, hmac string) (*Response, error) {
 	r := &Response{}
+
 	req, err := http.NewRequest(method, endpoint, bytes.NewBuffer(jsonData))
 	if err != nil {
 		log.Errorf("error occurred while creating request - %+v\n", err)
 		return r, err
+	}
+	if !util.IsStringEmpty(signatureHeader) {
+		req.Header.Set(signatureHeader, hmac)
 	}
 
 	trace := &httptrace.ClientTrace{

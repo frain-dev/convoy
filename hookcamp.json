@@ -22,5 +22,8 @@
 			"intervalSeconds": 125,
 			"retryLimit": 15
 		}
+	},
+	"signature": {
+		"header": "X-Company-Event-WebHook-Signature"
 	}
 }

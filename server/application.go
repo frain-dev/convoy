@@ -1,9 +1,9 @@
 package server
 
 import (
-	pager "github.com/gobeam/mongo-go-pagination"
-	"github.com/hookcamp/hookcamp/server/models"
 	"net/http"
+
+	mongopagination "github.com/gobeam/mongo-go-pagination"
 
 	"github.com/go-chi/render"
 	"github.com/hookcamp/hookcamp"
@@ -15,6 +15,11 @@ type applicationHandler struct {
 	msgRepo hookcamp.MessageRepository
 }
 
+type pagedResponse struct {
+	Content    interface{}                     `json:"content,omitempty"`
+	Pagination *mongopagination.PaginationData `json:"pagination,omitempty"`
+}
+
 func newApplicationHandler(msgRepo hookcamp.MessageRepository, appRepo hookcamp.ApplicationRepository, orgRepo hookcamp.OrganisationRepository) *applicationHandler {
 
 	return &applicationHandler{
@@ -24,176 +29,108 @@ func newApplicationHandler(msgRepo hookcamp.MessageRepository, appRepo hookcamp.
 	}
 }
 
-type organisationResponse struct {
-	Organisation hookcamp.Organisation `json:"organisation"`
-	Response
-}
-
-type organisationsResponse struct {
-	Organisations []*hookcamp.Organisation `json:"organisations"`
-	Response
-}
-
-type applicationsPagedResponse struct {
-	Applications   []hookcamp.Application `json:"data"`
-	PaginationData *pager.PaginationData  `json:"pagination"`
-	Response
-}
-
-type dashboardSummaryResponse struct {
-	DashboardSummary models.DashboardSummary `json:"dashboard"`
-	Response
-}
-
-type applicationResponse struct {
-	Application hookcamp.Application `json:"application"`
-	Response
-}
-
-type messageResponse struct {
-	Message hookcamp.Message `json:"message"`
-	Response
-}
-
-type messagesResponse struct {
-	Messages []hookcamp.Message `json:"messages"`
-	Response
-}
-type messagesPagedResponse struct {
-	Messages       []hookcamp.Message    `json:"messages"`
-	PaginationData *pager.PaginationData `json:"pagination"`
-	Response
-}
-
-type applicationsResponse struct {
-	Applications []hookcamp.Application `json:"applications"`
-	Response
-}
-
-type applicationEndpointResponse struct {
-	Endpoint hookcamp.Endpoint `json:"endpoint"`
-	Response
-}
-
 func (a *applicationHandler) GetApp(w http.ResponseWriter, r *http.Request) {
 
-	_ = render.Render(w, r, applicationResponse{
-		Response: Response{
-			StatusCode: http.StatusOK,
-		},
-		Application: *getApplicationFromContext(r.Context()),
-	})
+	_ = render.Render(w, r, newServerResponse("App fetched successfully",
+		*getApplicationFromContext(r.Context()), http.StatusOK))
 }
 
 func (a *applicationHandler) CreateApp(w http.ResponseWriter, r *http.Request) {
 
-	_ = render.Render(w, r, applicationResponse{
-		Response: Response{
-			StatusCode: http.StatusCreated,
-		},
-		Application: *getApplicationFromContext(r.Context()),
-	})
+	_ = render.Render(w, r, newServerResponse("App created successfully",
+		*getApplicationFromContext(r.Context()), http.StatusCreated))
 }
 
 func (a *applicationHandler) UpdateApp(w http.ResponseWriter, r *http.Request) {
 
-	_ = render.Render(w, r, applicationResponse{
-		Response: Response{
-			StatusCode: http.StatusAccepted,
-		},
-		Application: *getApplicationFromContext(r.Context()),
-	})
+	_ = render.Render(w, r, newServerResponse("App updated successfully",
+		*getApplicationFromContext(r.Context()), http.StatusAccepted))
 }
 
 func (a *applicationHandler) GetApps(w http.ResponseWriter, r *http.Request) {
 
-	_ = render.Render(w, r, applicationsResponse{
-		Response: Response{
-			StatusCode: http.StatusOK,
-		},
-		Applications: *getApplicationsFromContext(r.Context()),
-	})
+	_ = render.Render(w, r, newServerResponse("Apps fetched successfully",
+		*getApplicationsFromContext(r.Context()), http.StatusOK))
 }
 
 func (a *applicationHandler) CreateAppEndpoint(w http.ResponseWriter, r *http.Request) {
 
-	_ = render.Render(w, r, applicationEndpointResponse{
-		Response: Response{
-			StatusCode: http.StatusCreated,
-		},
-		Endpoint: *getApplicationEndpointFromContext(r.Context()),
-	})
+	_ = render.Render(w, r, newServerResponse("App endpoint created successfully",
+		*getApplicationEndpointFromContext(r.Context()), http.StatusCreated))
 }
 
 func (a *applicationHandler) UpdateAppEndpoint(w http.ResponseWriter, r *http.Request) {
 
-	_ = render.Render(w, r, applicationEndpointResponse{
-		Response: Response{
-			StatusCode: http.StatusAccepted,
-		},
-		Endpoint: *getApplicationEndpointFromContext(r.Context()),
-	})
+	_ = render.Render(w, r, newServerResponse("Apps endpoint updated successfully",
+		*getApplicationEndpointFromContext(r.Context()), http.StatusAccepted))
 }
 
 func (a *applicationHandler) CreateOrganisation(w http.ResponseWriter, r *http.Request) {
 
-	_ = render.Render(w, r, organisationResponse{
-		Response: Response{
-			StatusCode: http.StatusCreated,
-		},
-		Organisation: *getOrganisationFromContext(r.Context()),
-	})
+	_ = render.Render(w, r, newServerResponse("Organisation created successfully",
+		*getOrganisationFromContext(r.Context()), http.StatusCreated))
 }
 
 func (a *applicationHandler) UpdateOrganisation(w http.ResponseWriter, r *http.Request) {
 
-	_ = render.Render(w, r, organisationResponse{
-		Response: Response{
-			StatusCode: http.StatusAccepted,
-		},
-		Organisation: *getOrganisationFromContext(r.Context()),
-	})
+	_ = render.Render(w, r, newServerResponse("Organisation updated successfully",
+		*getOrganisationFromContext(r.Context()), http.StatusAccepted))
 }
 
 func (a *applicationHandler) GetOrganisation(w http.ResponseWriter, r *http.Request) {
 
-	_ = render.Render(w, r, organisationResponse{
-		Response: Response{
-			StatusCode: http.StatusOK,
-		},
-		Organisation: *getOrganisationFromContext(r.Context()),
-	})
+	_ = render.Render(w, r, newServerResponse("Organisation fetched successfully",
+		*getOrganisationFromContext(r.Context()), http.StatusOK))
 }
 
 func (a *applicationHandler) GetOrganisations(w http.ResponseWriter, r *http.Request) {
 
-	_ = render.Render(w, r, organisationsResponse{
-		Response: Response{
-			StatusCode: http.StatusOK,
-		},
-		Organisations: getOrganisationsFromContext(r.Context()),
-	})
+	_ = render.Render(w, r, newServerResponse("Organisations fetched successfully",
+		getOrganisationsFromContext(r.Context()), http.StatusOK))
 }
 
 func (a *applicationHandler) GetDashboardSummary(w http.ResponseWriter, r *http.Request) {
 
-	_ = render.Render(w, r, dashboardSummaryResponse{
-		Response: Response{
-			StatusCode: http.StatusOK,
-		},
-		DashboardSummary: *getDashboardSummaryFromContext(r.Context()),
-	})
+	_ = render.Render(w, r, newServerResponse("Dashboard summary fetched successfully",
+		*getDashboardSummaryFromContext(r.Context()), http.StatusOK))
 }
 
 func (a *applicationHandler) GetPaginatedApps(w http.ResponseWriter, r *http.Request) {
 
-	_ = render.Render(w, r, applicationsPagedResponse{
-		Response: Response{
-			StatusCode: http.StatusOK,
-		},
-		Applications:   *getApplicationsFromContext(r.Context()),
-		PaginationData: getPaginationDataFromContext(r.Context()),
-	})
+	_ = render.Render(w, r, newServerResponse("Apps fetched successfully",
+		pagedResponse{Content: *getApplicationsFromContext(r.Context()),
+			Pagination: getPaginationDataFromContext(r.Context())}, http.StatusOK))
+}
+
+func (a *applicationHandler) CreateAppMessage(w http.ResponseWriter, r *http.Request) {
+
+	_ = render.Render(w, r, newServerResponse("App event created successfully",
+		*getMessageFromContext(r.Context()), http.StatusCreated))
+}
+
+func (a *applicationHandler) GetAppMessage(w http.ResponseWriter, r *http.Request) {
+
+	_ = render.Render(w, r, newServerResponse("App event fetched successfully",
+		*getMessageFromContext(r.Context()), http.StatusOK))
+}
+
+func (a *applicationHandler) GetAppMessages(w http.ResponseWriter, r *http.Request) {
+
+	_ = render.Render(w, r, newServerResponse("App events fetched successfully",
+		*getMessagesFromContext(r.Context()), http.StatusOK))
+}
+
+func (a *applicationHandler) GetAppMessagesPaged(w http.ResponseWriter, r *http.Request) {
+
+	_ = render.Render(w, r, newServerResponse("App events fetched successfully",
+		pagedResponse{Content: *getMessagesFromContext(r.Context()),
+			Pagination: getPaginationDataFromContext(r.Context())}, http.StatusOK))
+}
+
+func (a *applicationHandler) GetAuthDetails(w http.ResponseWriter, r *http.Request) {
+
+	_ = render.Render(w, r, newServerResponse("Auth details fetched successfully",
+		getAuthConfigFromContext(r.Context()), http.StatusOK))
 }
 
 func (a *applicationHandler) CreateAppMessage(w http.ResponseWriter, r *http.Request) {

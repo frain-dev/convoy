@@ -15,14 +15,32 @@ func (res Response) Render(w http.ResponseWriter, r *http.Request) error {
 	return nil
 }
 
-type errorResponse struct {
-	Response
-	Message string `json:"message"`
+func newErrorResponse(msg string, statusCode int) serverResponse {
+	return serverResponse{
+		Status:  false,
+		Message: msg,
+		Response: Response{
+			StatusCode: statusCode,
+		},
+	}
 }
 
-func newErrorResponse(msg string, statusCode int) errorResponse {
-	return errorResponse{
+type serverResponse struct {
+	Response
+	Status  bool        `json:"status"`
+	Message string      `json:"message"`
+	Data    interface{} `json:"data,omitempty"`
+}
+
+func newServerResponse(msg string, data interface{}, statusCode int) serverResponse {
+	return newServerResponseWithStatus(true, msg, data, statusCode)
+}
+
+func newServerResponseWithStatus(status bool, msg string, data interface{}, statusCode int) serverResponse {
+	return serverResponse{
+		Status:  status,
 		Message: msg,
+		Data:    data,
 		Response: Response{
 			StatusCode: statusCode,
 		},
