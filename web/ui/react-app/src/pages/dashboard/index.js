@@ -1,4 +1,4 @@
-import React, {useEffect, useState} from 'react';
+import React, { useEffect, useState } from 'react';
 import * as axios from 'axios';
 import ArrowDownIcon from '../../assets/img/arrow-down-icon.svg';
 import AppsIcon from '../../assets/img/apps-icon.svg';
@@ -6,9 +6,10 @@ import MessageIcon from '../../assets/img/message-icon.svg';
 import RefreshIcon from '../../assets/img/refresh-icon.svg';
 import CalendarIcon from '../../assets/img/calendar-icon.svg';
 import CopyIcon from '../../assets/img/copy-icon.svg';
+import LinkIcon from '../../assets/img/link-icon.svg';
 import ViewIcon from '../../assets/img/view-icon.svg';
 import Chart from 'chart.js/auto';
-import {DateRange} from 'react-date-range';
+import { DateRange } from 'react-date-range';
 import ReactJson from 'react-json-view';
 import './app.scss';
 import 'react-date-range/dist/styles.css';
@@ -20,10 +21,12 @@ const months = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 
 
 function DashboardPage() {
 	const [dashboardData, setDashboardData] = useState({ apps: 0, messages: 0, messageData: [] });
+	const [authDetails, setAuthDetails] = useState({ basic: { username: '', password: '' }, type: '' });
+	const [viewPassword, toggleViewPassword] = useState(false);
 	const [apps, setAppsData] = useState([]);
 	const [events, setEventsData] = useState([]);
 	const [tabs] = useState(['events', 'apps']);
-	const [activeTab, setActiveTab] = useState('apps');
+	const [activeTab, setActiveTab] = useState('events');
 	const [showFilterCalendar, toggleShowFilterCalendar] = useState(false);
 	const [organisations, setOrganisations] = useState([]);
 	const [activeorganisation, setActiveOrganisation] = useState({
@@ -59,8 +62,8 @@ function DashboardPage() {
 				display: true,
 				grid: {
 					display: false,
-				}
-			}
+				},
+			},
 		},
 	});
 
@@ -73,29 +76,56 @@ function DashboardPage() {
 	};
 
 	const getOrganisations = async () => {
-			try {
-				const organisationsResponse = await request.get('/organisations');
-				setOrganisations(organisationsResponse.data.data);
-				setActiveOrganisation(organisationsResponse.data.data[0]);
+		try {
+			const organisationsResponse = await (await request.get('/organisations')).data;
+			setOrganisations(organisationsResponse.data);
+			setActiveOrganisation(organisationsResponse.data[0]);
+		} catch (error) {
+			return error;
+		}
+	};
 
-			} catch (error) {
-				return error;
-			}
-		};
+	const copyText = (copyText) => {
+		const el = document.createElement('textarea');
+		el.value = copyText;
+		document.body.appendChild(el);
+		el.select();
+		document.execCommand('copy');
+		this.showCopyText = true;
+	};
 
 	useEffect(() => {
-		const getApps = async () => {
+		const getAuthDetails = async () => {
 			try {
-				const appsResponse = await request.get('/apps');
-				setAppsData(appsResponse.data.data);
+				if (authDetails.type) return;
+				const authDetailsResponse = await (await request.get('/auth/details')).data;
+				setAuthDetails(authDetailsResponse.data);
 			} catch (error) {
 				return error;
 			}
 		};
+
+		const getApps = async () => {
+			try {
+				const appsResponse = await (await request({ url: '/apps' })).data;
+				setAppsData(appsResponse.data);
+			} catch (error) {
+				return error;
+			}
+		};
+
 		const getEvents = async () => {
 			try {
-				const appsResponse = await request.get('/messages');
-				setEventsData(appsResponse.data.data.content);
+				const appsResponse = await (
+					await request({
+						url: '/messages',
+						method: 'GET',
+						headers: {
+							Authorization: `Basic ${btoa(authDetails.basic.username + ':' + authDetails.basic.password)}`,
+						},
+					})
+				).data;
+				setEventsData(appsResponse.data.content);
 			} catch (error) {
 				return error;
 			}
@@ -106,7 +136,9 @@ function DashboardPage() {
 				if (organisations.length === 0) await getOrganisations();
 				if (!activeorganisation.uid) return;
 				const dashboardResponse = await request.get(
-					`/dashboard/${activeorganisation.uid}/summary?startDate=${filterDates[0].startDate.toISOString().split('.')[0]}&endDate=${filterDates[0].endDate.toISOString().split('.')[0]}&type=${filterFrequency || 'daily'}`,
+					`/dashboard/${activeorganisation.uid}/summary?startDate=${filterDates[0].startDate.toISOString().split('.')[0]}&endDate=${filterDates[0].endDate.toISOString().split('.')[0]}&type=${
+						filterFrequency || 'daily'
+					}`,
 				);
 				setDashboardData(dashboardResponse.data.data);
 
@@ -136,15 +168,16 @@ function DashboardPage() {
 					currentChart.update();
 				}
 			} catch (error) {
-				console.log(error);
 				return error;
 			}
 		};
 
-		fetchDashboardData();
-		if (activeTab === 'apps') getApps();
-		if (activeTab === 'events') getEvents();
-	}, [options, activeTab, filterDates, activeorganisation.uid, organisations.length, filterFrequency]);
+		getAuthDetails().then(() => {
+			fetchDashboardData();
+			if (activeTab === 'apps') getApps();
+			if (activeTab === 'events') getEvents();
+		});
+	}, [options, activeTab, filterDates, activeorganisation.uid, organisations, filterFrequency, authDetails]);
 
 	return (
 		<div className="dashboard">
@@ -159,11 +192,7 @@ function DashboardPage() {
 						</div>
 						<img src={ArrowDownIcon} alt="arrow down icon" />
 						<div className="dropdown organisations">
-							<ul>
-								{organisations.map((organisation, index) => (
-									<li onClick={() => setActiveOrganisation(organisation)} key={index}>{organisation.name}</li>
-								))}
-							</ul>
+							<ul></ul>
 						</div>
 					</button>
 				</div>
@@ -180,7 +209,6 @@ function DashboardPage() {
 						<img src={ArrowDownIcon} alt="arrow down icon" />
 					</button>
 					<DateRange onChange={(item) => setFilterDates([item.selection])} moveRangeOnFirstSelection={false} ranges={filterDates} />
-
 					<select value={filterFrequency} onChange={(event) => setFilterFrequency(event.target.value)}>
 						<option value="daily">Daily</option>
 						<option value="weekly">Weekly</option>
@@ -221,24 +249,35 @@ function DashboardPage() {
 						</div>
 
 						<div className="card--container">
-							<div className="auth-item">
-								<div>
-									<div className="auth-item--label">Username</div>
-									<div className="auth-item--item">Company usersname</div>
+							{authDetails.type === 'none' && (
+								<div className="card--empty-state">
+									<p>You don't have any organisation auth details set</p>
 								</div>
-								<div className="copy">
-									<img src={CopyIcon} alt="copy icon" />
-								</div>
-							</div>
-							<div className="auth-item">
-								<div>
-									<div className="auth-item--label">Password</div>
-									<div className="auth-item--item">********</div>
-								</div>
-								<div className="copy">
-									<img src={ViewIcon} alt="view icon" />
-								</div>
-							</div>
+							)}
+
+							{authDetails.type !== 'none' && (
+								<React.Fragment>
+									<div className="auth-item">
+										<div>
+											<div className="auth-item--label">Username</div>
+											<div className="auth-item--item">{authDetails.basic.username}</div>
+										</div>
+										<button className="copy" onClick={() => copyText(authDetails.basic.username)}>
+											<img src={CopyIcon} alt="copy icon" />
+										</button>
+									</div>
+									<div className="auth-item">
+										<div>
+											<div className="auth-item--label">Password</div>
+											{viewPassword && <div className="auth-item--item">{authDetails.basic.password}</div>}
+											{!viewPassword && <div className="auth-item--item">********</div>}
+										</div>
+										<button className="copy" onClick={() => toggleViewPassword(!viewPassword)}>
+											<img src={ViewIcon} alt="view icon" />
+										</button>
+									</div>
+								</React.Fragment>
+							)}
 						</div>
 
 						<div className="card--footer">
@@ -279,7 +318,7 @@ function DashboardPage() {
 													</div>
 												</td>
 												<td>
-													<div>{ event.event_type}</div>
+													<div>{event.event_type}</div>
 												</td>
 												<td>
 													<div>{event.description}</div>
@@ -332,7 +371,7 @@ function DashboardPage() {
 					{detailsItem && (
 						<div className="dashboard--logs--details">
 							<h3>Details</h3>
-							<ul>
+							<ul className="dashboard--logs--details--meta">
 								<li>
 									<div className="label">Date Created</div>
 									<div className="value">{getDate(detailsItem.created_at)}</div>
@@ -343,12 +382,30 @@ function DashboardPage() {
 								</li>
 							</ul>
 
-							{detailsItem.app_metadata.endpoints.length > 0 && (
+							{activeTab === 'events' && (
+								<React.Fragment>
+									<h4>Event Data</h4>
+									<div>
+										<ReactJson src={detailsItem} iconStyle="square" displayDataTypes={false} enableClipboard={false} style={jsonStyle} />
+									</div>
+								</React.Fragment>
+							)}
+
+							{activeTab === 'apps' && (
 								<React.Fragment>
 									<h4>App Event Endpoints</h4>
-									<div>
-										<ReactJson src={detailsItem.app_metadata.endpoints} iconStyle="square" displayDataTypes={false} enableClipboard={false} style={jsonStyle} />
-									</div>
+									<ul className="dashboard--logs--details--endpoints">
+										{detailsItem.endpoints &&
+											detailsItem.endpoints.map((endpoint, index) => (
+												<li key={index}>
+													<h5>{endpoint.description}</h5>
+													<p>
+														<img src={LinkIcon} alt="link icon" />
+														{endpoint.target_url}
+													</p>
+												</li>
+											))}
+									</ul>
 								</React.Fragment>
 							)}
 						</div>

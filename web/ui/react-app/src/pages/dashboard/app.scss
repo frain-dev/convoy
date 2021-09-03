@@ -171,6 +171,11 @@
 					&--item {
 						line-height: 24px;
 					}
+
+					button {
+						padding: 0;
+						background: transparent;
+					}
 				}
 			}
 
@@ -213,7 +218,7 @@
 		width: 511px;
 		overflow-y: auto;
 
-		ul {
+		&--meta {
 			padding: 8px 0 24px;
 			border-bottom: 1px solid #edeff5;
 			width: 100%;
@@ -246,6 +251,32 @@
 
 		& > div {
 			margin: 20px 0;
+		}
+
+		&--endpoints {
+			margin: 20px 0;
+			border-bottom: none;
+			width: 100%;
+
+			li {
+				display: block;
+				width: 100%;
+				padding: 10px 0;
+				margin-bottom: 10px;
+				border-bottom: 1px solid #edeff5;
+
+				p {
+					font-size: 14px;
+					margin-top: 10px;
+					display: flex;
+					align-items: center;
+
+					img {
+						width: 15px;
+						margin-right: 10px;
+					}
+				}
+			}
 		}
 	}
 }
@@ -312,8 +343,9 @@ table {
 			border-radius: 8px;
 			max-width: 65px;
 			font-weight: 500;
-			font-size: 14px;
+			font-size: 12px;
 			line-height: 28px;
+			text-align: center;
 		}
 
 		td {
@@ -339,7 +371,8 @@ table {
 	margin-bottom: 16px;
 	position: relative;
 
-	.filter--button, select {
+	.filter--button,
+	select {
 		background: #ffffff;
 		border: 1px solid #f3f5f9;
 		border-radius: 4px;
@@ -374,4 +407,10 @@ table {
 		background: #fff;
 		border: 1px solid #f3f5f9;
 	}
+}
+
+.card--empty-state {
+	text-align: center;
+	font-style: italic;
+	font-size: 14px;
 }
