@@ -86,7 +86,7 @@ function DashboardPage() {
 	useEffect(() => {
 		const getApps = async () => {
 			try {
-				const appsResponse = await request.get('/apps');
+				const appsResponse = await request.get('/apps' + (activeorganisation ? "?orgId=" + activeorganisation.uid : ""));
 				setAppsData(appsResponse.data.data);
 			} catch (error) {
 				return error;
@@ -94,7 +94,7 @@ function DashboardPage() {
 		};
 		const getEvents = async () => {
 			try {
-				const appsResponse = await request.get('/messages');
+				const appsResponse = await request.get('/events' + (activeorganisation ? "?orgId=" + activeorganisation.uid : ""));
 				setEventsData(appsResponse.data.data.content);
 			} catch (error) {
 				return error;
@@ -110,7 +110,7 @@ function DashboardPage() {
 				);
 				setDashboardData(dashboardResponse.data.data);
 
-				const chartData = dashboardResponse.data.data.messageData;
+				const chartData = dashboardResponse.data.data.message_data;
 				const labels = [0, ...chartData.map((label) => label.data.date)];
 				const dataSet = [0, ...chartData.map((label) => label.count)];
 				const data = {
@@ -195,15 +195,15 @@ function DashboardPage() {
 							<li>
 								<img src={MessageIcon} alt="message icon" />
 								<div className="metric">
-									<div>{dashboardData.messagesSent}</div>
-									<div>Messages Sent</div>
+									<div>{dashboardData.messages_sent}</div>
+									<div>{dashboardData.messages_sent === 1 ? "Message" : "Messages"} Sent</div>
 								</div>
 							</li>
 							<li>
 								<img src={AppsIcon} alt="apps icon" />
 								<div className="metric">
 									<div>{dashboardData.apps}</div>
-									<div>Apps</div>
+									<div>{dashboardData.apps === 1 ? "App" : "Apps"}</div>
 								</div>
 							</li>
 						</ul>

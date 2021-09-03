@@ -51,6 +51,20 @@ func (mr *MockApplicationRepositoryMockRecorder) CreateApplication(arg0, arg1 in
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateApplication", reflect.TypeOf((*MockApplicationRepository)(nil).CreateApplication), arg0, arg1)
 }
 
+// DeleteApplication mocks base method.
+func (m *MockApplicationRepository) DeleteApplication(arg0 context.Context, arg1 *hookcamp.Application) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "DeleteApplication", arg0, arg1)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// DeleteApplication indicates an expected call of DeleteApplication.
+func (mr *MockApplicationRepositoryMockRecorder) DeleteApplication(arg0, arg1 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteApplication", reflect.TypeOf((*MockApplicationRepository)(nil).DeleteApplication), arg0, arg1)
+}
+
 // FindApplicationByID mocks base method.
 func (m *MockApplicationRepository) FindApplicationByID(arg0 context.Context, arg1 string) (*hookcamp.Application, error) {
 	m.ctrl.T.Helper()
@@ -67,7 +81,7 @@ func (mr *MockApplicationRepositoryMockRecorder) FindApplicationByID(arg0, arg1 
 }
 
 // LoadApplications mocks base method.
-func (m *MockApplicationRepository) LoadApplications(arg0 context.Context) ([]hookcamp.Application, error) {
+func (m *MockApplicationRepository) LoadApplications(arg0 context.Context, s string) ([]hookcamp.Application, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "LoadApplications", arg0)
 	ret0, _ := ret[0].([]hookcamp.Application)
