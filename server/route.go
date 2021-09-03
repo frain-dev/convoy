@@ -85,28 +85,51 @@ func buildRoutes(app *applicationHandler) http.Handler {
 				appSubRouter.With(ensureAppUpdate(app.appRepo)).Put("/", app.UpdateApp)
 
 				appSubRouter.Get("/", app.GetApp)
+				appSubRouter.With(ensureAppDeletion(app.appRepo)).Delete("/", app.DeleteApp)
 
-				appSubRouter.Route("/messages", func(msgSubRouter chi.Router) {
-					msgSubRouter.With(instrumentPath("/messages"), ensureNewMessage(app.appRepo, app.msgRepo)).Post("/", app.CreateAppMessage)
-					msgSubRouter.With(fetchAppMessages(app.appRepo, app.msgRepo)).Get("/", app.GetAppMessages)
+				appSubRouter.Route("/events", func(msgSubRouter chi.Router) {
+					msgSubRouter.With(instrumentPath("/events"), ensureNewMessage(app.appRepo, app.msgRepo)).Post("/", app.CreateAppMessage)
+					msgSubRouter.With(pagination).With(fetchAppMessages(app.appRepo, app.msgRepo)).Get("/", app.GetAppMessagesPaged)
+
+					msgSubRouter.Route("/{eventID}", func(msgEventSubRouter chi.Router) {
+						msgEventSubRouter.Use(requireMessage(app.msgRepo))
+
+						msgEventSubRouter.Get("/", app.GetAppMessage)
+					})
 				})
 
 				appSubRouter.Route("/endpoint", func(endpointAppSubRouter chi.Router) {
 					endpointAppSubRouter.With(ensureNewAppEndpoint(app.appRepo)).Post("/", app.CreateAppEndpoint)
-					endpointAppSubRouter.With(ensureAppEndpointUpdate(app.appRepo)).Put("/{endpointID}", app.UpdateAppEndpoint)
+					endpointAppSubRouter.With(fetchAppEndpoints()).Get("/", app.GetAppEndpoints)
+
+					endpointAppSubRouter.Route("/{endpointID}", func(e chi.Router) {
+						e.Use(requireAppEndpoint())
+
+						e.Get("/", app.GetAppEndpoint)
+						e.With(ensureAppEndpointUpdate(app.appRepo)).Put("/", app.UpdateAppEndpoint)
+						e.With(ensureAppEndpointDeletion(app.appRepo)).Delete("/", app.DeleteAppEndpoint)
+					})
 				})
 			})
 		})
 
-		r.Route("/messages", func(msgRouter chi.Router) {
+		r.Route("/events", func(msgRouter chi.Router) {
 			msgRouter.Use(requireAuth())
 
 			msgRouter.With(pagination).With(fetchAllMessages(app.msgRepo)).Get("/", app.GetAppMessagesPaged)
 
-			msgRouter.Route("/{msgID}", func(msgSubRouter chi.Router) {
+			msgRouter.Route("/{eventID}", func(msgSubRouter chi.Router) {
 				msgSubRouter.Use(requireMessage(app.msgRepo))
 
 				msgSubRouter.Get("/", app.GetAppMessage)
+
+				msgSubRouter.Route("/deliveryattempts", func(deliveryRouter chi.Router) {
+					deliveryRouter.Use(fetchMessageDeliveryAttempts())
+
+					deliveryRouter.Get("/", app.GetAppMessageDeliveryAttempts)
+
+					deliveryRouter.With(requireMessageDeliveryAttempt()).Get("/{deliveryAttemptID}", app.GetAppMessageDeliveryAttempt)
+				})
 			})
 
 		})
