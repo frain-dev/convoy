@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"github.com/hookcamp/hookcamp/server/models"
+	"github.com/hookcamp/hookcamp/util"
 	log "github.com/sirupsen/logrus"
 	"time"
 
@@ -39,12 +40,14 @@ func (db *appRepo) CreateApplication(ctx context.Context,
 	return err
 }
 
-func (db *appRepo) LoadApplications(ctx context.Context) (
-	[]hookcamp.Application, error) {
+func (db *appRepo) LoadApplications(ctx context.Context, orgId string) ([]hookcamp.Application, error) {
 
 	apps := make([]hookcamp.Application, 0)
 
 	filter := bson.M{"document_status": bson.M{"$ne": hookcamp.DeletedDocumentStatus}}
+	if !util.IsStringEmpty(orgId) {
+		filter = bson.M{"org_id": orgId, "document_status": bson.M{"$ne": hookcamp.DeletedDocumentStatus}}
+	}
 
 	cur, err := db.client.Find(ctx, filter)
 	if err != nil {

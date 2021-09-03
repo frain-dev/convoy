@@ -273,7 +273,7 @@ func (db *messageRepo) UpdateMessageWithAttempt(ctx context.Context, m hookcamp.
 }
 
 func (db *messageRepo) LoadMessagesPaged(ctx context.Context, orgId string, pageable models.Pageable) ([]hookcamp.Message, pager.PaginationData, error) {
-	filter := bson.M{}
+	filter := bson.M{"document_status": bson.M{"$ne": hookcamp.DeletedDocumentStatus}}
 	if !util.IsStringEmpty(orgId) {
 		filter = bson.M{"app_metadata.org_id": orgId, "document_status": bson.M{"$ne": hookcamp.DeletedDocumentStatus}}
 	}

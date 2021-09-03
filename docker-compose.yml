@@ -1,4 +1,4 @@
-version: '3'
+version: "3"
 
 services:
   web:
@@ -10,7 +10,7 @@ services:
       - 5005:5005
     links:
       - mongodb:localhost
-#      - redis_server:localhost
+    #      - redis_server:localhost
     depends_on:
       - mongodb
       - redis_server

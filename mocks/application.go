@@ -81,7 +81,7 @@ func (mr *MockApplicationRepositoryMockRecorder) FindApplicationByID(arg0, arg1 
 }
 
 // LoadApplications mocks base method.
-func (m *MockApplicationRepository) LoadApplications(arg0 context.Context) ([]hookcamp.Application, error) {
+func (m *MockApplicationRepository) LoadApplications(arg0 context.Context, s string) ([]hookcamp.Application, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "LoadApplications", arg0)
 	ret0, _ := ret[0].([]hookcamp.Application)
