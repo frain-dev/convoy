@@ -41,37 +41,6 @@ type MessageResponse struct {
 	Data   json.RawMessage `json:"data" bson:"data"`
 }
 
-type Message struct {
-	MessageID  string          `json:"msgId" bson:"msg_id"`
-	AppID      string          `json:"appId" bson:"app_id"`
-	EventType  string          `json:"eventType" bson:"event_type"`
-	ProviderID string          `json:"providerId" bson:"provider_id"`
-	Data       json.RawMessage `json:"data" bson:"data"`
-
-	Status    string `json:"status" bson:"status"`
-	CreatedAt int64  `json:"createdAt" bson:"created_at"`
-
-	NextSendTime int64          `json:"nextSendTime"`
-	AttemptCount int64          `json:"attemptCount"`
-	LastAttempt  MessageAttempt `json:"lastAttempt"`
-}
-
-type MessageAttempt struct {
-	MessageID  string `json:"msgId" bson:"msg_id"`
-	APIVersion string `json:"apiVersion" bson:"api_version"`
-	IPAddress  string `json:"ip" bson:"ip"`
-
-	Status    string `json:"status" bson:"status"`
-	CreatedAt int64  `json:"createdAt" bson:"created_at"`
-
-	MessageResponse MessageResponse `json:"response" bson:"response"`
-}
-
-type MessageResponse struct {
-	Status int             `json:"status" bson:"status"`
-	Data   json.RawMessage `json:"data" bson:"data"`
-}
-
 type Endpoint struct {
 	URL         string `json:"url" bson:"url"`
 	Secret      string `json:"secret" bson:"secret"`
