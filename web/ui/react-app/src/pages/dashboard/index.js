@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, {useEffect, useState} from 'react';
 import * as axios from 'axios';
 import ArrowDownIcon from '../../assets/img/arrow-down-icon.svg';
 import AppsIcon from '../../assets/img/apps-icon.svg';
@@ -8,7 +8,7 @@ import CalendarIcon from '../../assets/img/calendar-icon.svg';
 import CopyIcon from '../../assets/img/copy-icon.svg';
 import ViewIcon from '../../assets/img/view-icon.svg';
 import Chart from 'chart.js/auto';
-import { DateRange } from 'react-date-range';
+import {DateRange} from 'react-date-range';
 import ReactJson from 'react-json-view';
 import './app.scss';
 import 'react-date-range/dist/styles.css';
@@ -75,9 +75,9 @@ function DashboardPage() {
 	const getOrganisations = async () => {
 			try {
 				const organisationsResponse = await request.get('/organisations');
-				setOrganisations(organisationsResponse.data.organisations);
-				setActiveOrganisation(organisationsResponse.data.organisations[0]);
-				return;
+				setOrganisations(organisationsResponse.data.data);
+				setActiveOrganisation(organisationsResponse.data.data[0]);
+
 			} catch (error) {
 				return error;
 			}
@@ -87,7 +87,7 @@ function DashboardPage() {
 		const getApps = async () => {
 			try {
 				const appsResponse = await request.get('/apps');
-				setAppsData(appsResponse.data.applications);
+				setAppsData(appsResponse.data.data);
 			} catch (error) {
 				return error;
 			}
@@ -95,7 +95,7 @@ function DashboardPage() {
 		const getEvents = async () => {
 			try {
 				const appsResponse = await request.get('/messages');
-				setEventsData(appsResponse.data.messages);
+				setEventsData(appsResponse.data.data.content);
 			} catch (error) {
 				return error;
 			}
@@ -108,9 +108,9 @@ function DashboardPage() {
 				const dashboardResponse = await request.get(
 					`/dashboard/${activeorganisation.uid}/summary?startDate=${filterDates[0].startDate.toISOString().split('.')[0]}&endDate=${filterDates[0].endDate.toISOString().split('.')[0]}&type=${filterFrequency || 'daily'}`,
 				);
-				setDashboardData(dashboardResponse.data.dashboard);
+				setDashboardData(dashboardResponse.data.data);
 
-				const chartData = dashboardResponse.data.dashboard.messageData;
+				const chartData = dashboardResponse.data.data.messageData;
 				const labels = [0, ...chartData.map((label) => label.data.date)];
 				const dataSet = [0, ...chartData.map((label) => label.count)];
 				const data = {
@@ -343,11 +343,11 @@ function DashboardPage() {
 								</li>
 							</ul>
 
-							{detailsItem.endpoints.length > 0 && (
+							{detailsItem.app_metadata.endpoints.length > 0 && (
 								<React.Fragment>
-									<h4>App Endpoints</h4>
+									<h4>App Event Endpoints</h4>
 									<div>
-										<ReactJson src={detailsItem.endpoints} iconStyle="square" displayDataTypes={false} enableClipboard={false} style={jsonStyle} />
+										<ReactJson src={detailsItem.app_metadata.endpoints} iconStyle="square" displayDataTypes={false} enableClipboard={false} style={jsonStyle} />
 									</div>
 								</React.Fragment>
 							)}
