@@ -125,3 +125,9 @@ func (a *applicationHandler) GetAppMessagesPaged(w http.ResponseWriter, r *http.
 		pagedResponse{Content: *getMessagesFromContext(r.Context()),
 			Pagination: getPaginationDataFromContext(r.Context())}, http.StatusOK))
 }
+
+func (a *applicationHandler) GetAuthDetails(w http.ResponseWriter, r *http.Request) {
+
+	_ = render.Render(w, r, newServerResponse("Auth details fetched successfully",
+		getAuthConfigFromContext(r.Context()), http.StatusOK))
+}
