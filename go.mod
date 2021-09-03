@@ -3,7 +3,7 @@ module github.com/hookcamp/hookcamp
 go 1.16
 
 require (
-	github.com/antonfisher/nested-logrus-formatter v1.3.1
+	github.com/felixge/httpsnoop v1.0.2
 	github.com/go-chi/chi/v5 v5.0.3
 	github.com/go-chi/render v1.0.1
 	github.com/go-co-op/gocron v1.7.0
@@ -15,6 +15,7 @@ require (
 	github.com/klauspost/compress v1.13.4 // indirect
 	github.com/mgutz/ansi v0.0.0-20200706080929-d51e80ef957d // indirect
 	github.com/olekukonko/tablewriter v0.0.5
+	github.com/prometheus/client_golang v0.9.3
 	github.com/sebdah/goldie/v2 v2.5.3
 	github.com/sergi/go-diff v1.2.0 // indirect
 	github.com/sirupsen/logrus v1.4.2
