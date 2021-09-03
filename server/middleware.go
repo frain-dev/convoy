@@ -33,6 +33,7 @@ const (
 	appCtx              contextKey = "app"
 	endpointCtx         contextKey = "endpoint"
 	msgCtx              contextKey = "message"
+	authConfigCtx       contextKey = "authConfig"
 	pageableCtx         contextKey = "pageable"
 	pageDataCtx         contextKey = "pageData"
 	dashboardCtx        contextKey = "dashboard"
@@ -904,4 +905,12 @@ func setDeliveryAttemptsInContext(ctx context.Context,
 
 func getDeliveryAttemptsFromContext(ctx context.Context) *[]hookcamp.MessageAttempt {
 	return ctx.Value(deliveryAttemptsCtx).(*[]hookcamp.MessageAttempt)
+}
+
+func setAuthConfigInContext(ctx context.Context, a *config.AuthConfiguration) context.Context {
+	return context.WithValue(ctx, authConfigCtx, a)
+}
+
+func getAuthConfigFromContext(ctx context.Context) *config.AuthConfiguration {
+	return ctx.Value(authConfigCtx).(*config.AuthConfiguration)
 }

@@ -161,3 +161,9 @@ func (a *applicationHandler) GetAppMessageDeliveryAttempts(w http.ResponseWriter
 	_ = render.Render(w, r, newServerResponse("App event delivery attempts fetched successfully",
 		*getDeliveryAttemptsFromContext(r.Context()), http.StatusOK))
 }
+
+func (a *applicationHandler) GetAuthDetails(w http.ResponseWriter, r *http.Request) {
+
+	_ = render.Render(w, r, newServerResponse("Auth details fetched successfully",
+		getAuthConfigFromContext(r.Context()), http.StatusOK))
+}
