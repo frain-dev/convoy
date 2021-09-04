@@ -5,7 +5,6 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
-    entrypoint: ["./cmd", "server", "--config", "hookcamp-docker.json"]
     ports:
       - 5005:5005
     links:
