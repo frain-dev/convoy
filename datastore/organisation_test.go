@@ -1,3 +1,4 @@
+//go:build integration
 // +build integration
 
 package datastore
@@ -6,7 +7,7 @@ import (
 	"context"
 	"testing"
 
-	"github.com/hookcamp/hookcamp"
+	"github.com/frain-dev/convoy"
 	"github.com/stretchr/testify/require"
 )
 
@@ -16,7 +17,7 @@ func Test_FetchOrganisationByID(t *testing.T) {
 
 	orgRepo := NewOrganisationRepo(db)
 
-	newOrg := &hookcamp.Organisation{
+	newOrg := &convoy.Organisation{
 		OrgName: "Yet another organisation",
 	}
 
@@ -35,7 +36,7 @@ func Test_CreateOrganisation(t *testing.T) {
 
 	orgRepo := NewOrganisationRepo(db)
 
-	newOrg := &hookcamp.Organisation{
+	newOrg := &convoy.Organisation{
 		OrgName: "Next organisation",
 	}
 

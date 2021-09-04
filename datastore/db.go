@@ -2,11 +2,12 @@ package datastore
 
 import (
 	"context"
-	log "github.com/sirupsen/logrus"
-	"go.mongodb.org/mongo-driver/bson"
 	"time"
 
-	"github.com/hookcamp/hookcamp/config"
+	log "github.com/sirupsen/logrus"
+	"go.mongodb.org/mongo-driver/bson"
+
+	"github.com/frain-dev/convoy/config"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 )

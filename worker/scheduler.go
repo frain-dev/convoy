@@ -1,21 +1,22 @@
 package worker
 
 import (
-	"github.com/go-co-op/gocron"
-	"github.com/hookcamp/hookcamp"
-	"github.com/hookcamp/hookcamp/queue"
-	"github.com/hookcamp/hookcamp/worker/task"
-	log "github.com/sirupsen/logrus"
 	"time"
+
+	"github.com/frain-dev/convoy"
+	"github.com/frain-dev/convoy/queue"
+	"github.com/frain-dev/convoy/worker/task"
+	"github.com/go-co-op/gocron"
+	log "github.com/sirupsen/logrus"
 )
 
 type Scheduler struct {
 	inner   *gocron.Scheduler
 	queue   *queue.Queuer
-	msgRepo *hookcamp.MessageRepository
+	msgRepo *convoy.MessageRepository
 }
 
-func NewScheduler(queue *queue.Queuer, msgRepo *hookcamp.MessageRepository) *Scheduler {
+func NewScheduler(queue *queue.Queuer, msgRepo *convoy.MessageRepository) *Scheduler {
 	return &Scheduler{
 		inner:   gocron.NewScheduler(time.UTC),
 		queue:   queue,
@@ -30,7 +31,7 @@ func (s *Scheduler) Start() {
 	s.inner.StartAsync()
 }
 
-func (s *Scheduler) addTask(name string, secs int, task func(queue.Queuer, hookcamp.MessageRepository)) {
+func (s *Scheduler) addTask(name string, secs int, task func(queue.Queuer, convoy.MessageRepository)) {
 	_, err := s.inner.Every(secs).Seconds().Do(func() {
 		task(*s.queue, *s.msgRepo)
 	})

@@ -1,4 +1,4 @@
-package hookcamp
+package convoy
 
 type HttpMethod string
 

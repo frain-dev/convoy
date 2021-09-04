@@ -3,18 +3,19 @@ package server
 import (
 	"context"
 	"fmt"
-	"github.com/go-chi/chi/v5"
-	pager "github.com/gobeam/mongo-go-pagination"
-	"github.com/golang/mock/gomock"
-	"github.com/hookcamp/hookcamp"
-	"github.com/hookcamp/hookcamp/config"
-	"github.com/hookcamp/hookcamp/mocks"
-	"github.com/hookcamp/hookcamp/server/models"
-	"github.com/sirupsen/logrus"
 	"net/http"
 	"net/http/httptest"
 	"strings"
 	"testing"
+
+	"github.com/frain-dev/convoy"
+	"github.com/frain-dev/convoy/config"
+	"github.com/frain-dev/convoy/mocks"
+	"github.com/frain-dev/convoy/server/models"
+	"github.com/go-chi/chi/v5"
+	pager "github.com/gobeam/mongo-go-pagination"
+	"github.com/golang/mock/gomock"
+	"github.com/sirupsen/logrus"
 )
 
 func Test_ensureNewMessage(t *testing.T) {
@@ -34,13 +35,13 @@ func Test_ensureNewMessage(t *testing.T) {
 
 	app = newApplicationHandler(msgRepo, appRepo, orgRepo)
 
-	message := &hookcamp.Message{
+	message := &convoy.Message{
 		UID:   msgId,
 		AppID: appId,
 	}
 
 	type args struct {
-		message *hookcamp.Message
+		message *convoy.Message
 	}
 
 	tests := []struct {
@@ -63,11 +64,11 @@ func Test_ensureNewMessage(t *testing.T) {
 			dbFn: func(msgRepo *mocks.MockMessageRepository, appRepo *mocks.MockApplicationRepository, orgRepo *mocks.MockOrganisationRepository) {
 				appRepo.EXPECT().
 					FindApplicationByID(gomock.Any(), gomock.Any()).Times(0).
-					Return(&hookcamp.Application{
+					Return(&convoy.Application{
 						UID:       appId,
 						OrgID:     orgID,
 						Title:     "Valid application",
-						Endpoints: []hookcamp.Endpoint{},
+						Endpoints: []convoy.Endpoint{},
 					}, nil)
 				msgRepo.EXPECT().
 					CreateMessage(gomock.Any(), gomock.Any()).Times(0).
@@ -86,11 +87,11 @@ func Test_ensureNewMessage(t *testing.T) {
 			dbFn: func(msgRepo *mocks.MockMessageRepository, appRepo *mocks.MockApplicationRepository, orgRepo *mocks.MockOrganisationRepository) {
 				appRepo.EXPECT().
 					FindApplicationByID(gomock.Any(), gomock.Any()).Times(1).
-					Return(&hookcamp.Application{
+					Return(&convoy.Application{
 						UID:   appId,
 						OrgID: orgID,
 						Title: "Valid application",
-						Endpoints: []hookcamp.Endpoint{
+						Endpoints: []convoy.Endpoint{
 							{
 								TargetURL: "http://localhost",
 							},
@@ -106,7 +107,7 @@ func Test_ensureNewMessage(t *testing.T) {
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
 
-			err := config.LoadFromFile("./testdata/TestRequireAuth_None/hookcamp.json")
+			err := config.LoadFromFile("./testdata/TestRequireAuth_None/convoy.json")
 			if err != nil {
 				t.Error("Failed to load config file")
 			}
@@ -148,13 +149,13 @@ func Test_fetchAllMessages(t *testing.T) {
 
 	app = newApplicationHandler(msgRepo, appRepo, orgRepo)
 
-	message := &hookcamp.Message{
+	message := &convoy.Message{
 		UID:   msgId,
 		AppID: appId,
 	}
 
 	type args struct {
-		message *hookcamp.Message
+		message *convoy.Message
 	}
 
 	tests := []struct {
@@ -176,7 +177,7 @@ func Test_fetchAllMessages(t *testing.T) {
 			dbFn: func(msgRepo *mocks.MockMessageRepository, appRepo *mocks.MockApplicationRepository, orgRepo *mocks.MockOrganisationRepository) {
 				msgRepo.EXPECT().
 					LoadMessagesPaged(gomock.Any(), gomock.Any(), gomock.Any()).Times(1).
-					Return([]hookcamp.Message{
+					Return([]convoy.Message{
 						*message,
 					},
 						pager.PaginationData{},

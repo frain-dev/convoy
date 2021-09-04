@@ -17,9 +17,7 @@ func ComputeJSONHmac(secret string, data string, order bool) (string, error) {
 	}
 
 	h := hmac.New(sha256.New, []byte(secret))
-
 	h.Write([]byte(data))
-
 	sha := hex.EncodeToString(h.Sum(nil))
 
 	return sha, nil

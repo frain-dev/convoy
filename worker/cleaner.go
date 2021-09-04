@@ -1,18 +1,18 @@
 package worker
 
 import (
-	"github.com/hookcamp/hookcamp"
-	"github.com/hookcamp/hookcamp/queue"
-	"github.com/hookcamp/hookcamp/worker/task"
+	"github.com/frain-dev/convoy"
+	"github.com/frain-dev/convoy/queue"
+	"github.com/frain-dev/convoy/worker/task"
 	log "github.com/sirupsen/logrus"
 )
 
 type Cleaner struct {
 	queue   *queue.Queuer
-	msgRepo *hookcamp.MessageRepository
+	msgRepo *convoy.MessageRepository
 }
 
-func NewCleaner(queuer *queue.Queuer, msgRepo *hookcamp.MessageRepository) *Cleaner {
+func NewCleaner(queuer *queue.Queuer, msgRepo *convoy.MessageRepository) *Cleaner {
 	return &Cleaner{
 		queue:   queuer,
 		msgRepo: msgRepo,
