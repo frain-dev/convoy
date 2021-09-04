@@ -27,6 +27,8 @@ type Application struct {
 	CreatedAt primitive.DateTime `json:"created_at,omitempty" bson:"created_at,omitempty"`
 	UpdatedAt primitive.DateTime `json:"updated_at,omitempty" bson:"updated_at,omitempty"`
 	DeletedAt primitive.DateTime `json:"deleted_at,omitempty" bson:"deleted_at,omitempty"`
+
+	DocumentStatus DocumentStatus `json:"-" bson:"document_status"`
 }
 
 type Endpoint struct {
@@ -37,13 +39,16 @@ type Endpoint struct {
 	CreatedAt primitive.DateTime `json:"created_at,omitempty" bson:"created_at,omitempty"`
 	UpdatedAt primitive.DateTime `json:"updated_at,omitempty" bson:"updated_at,omitempty"`
 	DeletedAt primitive.DateTime `json:"deleted_at,omitempty" bson:"deleted_at,omitempty"`
+
+	DocumentStatus DocumentStatus `json:"-" bson:"document_status"`
 }
 
 type ApplicationRepository interface {
 	CreateApplication(context.Context, *Application) error
-	LoadApplications(context.Context) ([]Application, error)
+	LoadApplications(context.Context, string) ([]Application, error)
 	FindApplicationByID(context.Context, string) (*Application, error)
 	UpdateApplication(context.Context, *Application) error
+	DeleteApplication(context.Context, *Application) error
 	LoadApplicationsPagedByOrgId(context.Context, string, models.Pageable) ([]Application, pager.PaginationData, error)
 	SearchApplicationsByOrgId(context.Context, string, models.SearchParams) ([]Application, error)
 }

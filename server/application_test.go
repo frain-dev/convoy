@@ -187,7 +187,7 @@ func TestApplicationHandler_CreateApp(t *testing.T) {
 		UID: orgID,
 	}
 
-	bodyReader := strings.NewReader(`{ "orgId": "` + orgID + `", "name": "ABC_DEF_TEST"}`)
+	bodyReader := strings.NewReader(`{ "org_id": "` + orgID + `", "name": "ABC_DEF_TEST"}`)
 
 	app = newApplicationHandler(msgRepo, apprepo, org)
 
@@ -273,7 +273,7 @@ func TestApplicationHandler_UpdateApp(t *testing.T) {
 					Return(nil)
 
 				appRepo.EXPECT().
-					FindApplicationByID(gomock.Any(), gomock.Any()).Times(1).
+					FindApplicationByID(gomock.Any(), gomock.Any()).Times(0).
 					Return(&hookcamp.Application{
 						UID:       appId,
 						OrgID:     orgID,
@@ -290,9 +290,15 @@ func TestApplicationHandler_UpdateApp(t *testing.T) {
 			request := httptest.NewRequest(tc.method, fmt.Sprintf("/v1/apps/%s", tc.appId), tc.body)
 			responseRecorder := httptest.NewRecorder()
 			rctx := chi.NewRouteContext()
-			rctx.URLParams.Add("id", tc.appId)
+			rctx.URLParams.Add("appID", tc.appId)
 
 			request = request.WithContext(context.WithValue(request.Context(), chi.RouteCtxKey, rctx))
+			request = request.WithContext(context.WithValue(request.Context(), appCtx, &hookcamp.Application{
+				UID:       appId,
+				OrgID:     orgID,
+				Title:     "Valid application update",
+				Endpoints: []hookcamp.Endpoint{},
+			}))
 
 			if tc.dbFn != nil {
 				tc.dbFn(apprepo, org)
@@ -423,7 +429,7 @@ func TestApplicationHandler_UpdateAppEndpoint_InvalidRequest(t *testing.T) {
 					Return(nil)
 
 				appRepo.EXPECT().
-					FindApplicationByID(gomock.Any(), gomock.Any()).Times(1).
+					FindApplicationByID(gomock.Any(), gomock.Any()).Times(0).
 					Return(&hookcamp.Application{
 						UID:       appId,
 						OrgID:     orgID,
@@ -444,6 +450,12 @@ func TestApplicationHandler_UpdateAppEndpoint_InvalidRequest(t *testing.T) {
 			rctx.URLParams.Add("endpointID", tc.endpointId)
 
 			request = request.WithContext(context.WithValue(request.Context(), chi.RouteCtxKey, rctx))
+			request = request.WithContext(context.WithValue(request.Context(), appCtx, &hookcamp.Application{
+				UID:       appId,
+				OrgID:     orgID,
+				Title:     "Valid application update",
+				Endpoints: []hookcamp.Endpoint{},
+			}))
 
 			if tc.dbFn != nil {
 				tc.dbFn(apprepo, org)
@@ -503,7 +515,7 @@ func TestApplicationHandler_UpdateAppEndpoint_ValidRequest(t *testing.T) {
 					Return(nil)
 
 				appRepo.EXPECT().
-					FindApplicationByID(gomock.Any(), gomock.Any()).Times(1).
+					FindApplicationByID(gomock.Any(), gomock.Any()).Times(0).
 					Return(&hookcamp.Application{
 						UID:   appId,
 						OrgID: orgID,
@@ -530,6 +542,18 @@ func TestApplicationHandler_UpdateAppEndpoint_ValidRequest(t *testing.T) {
 			rctx.URLParams.Add("endpointID", tc.endpointId)
 
 			request = request.WithContext(context.WithValue(request.Context(), chi.RouteCtxKey, rctx))
+			request = request.WithContext(context.WithValue(request.Context(), appCtx, &hookcamp.Application{
+				UID:   appId,
+				OrgID: orgID,
+				Title: "Valid application update",
+				Endpoints: []hookcamp.Endpoint{
+					{
+						UID:         endpointId,
+						TargetURL:   "http://",
+						Description: "desc",
+					},
+				},
+			}))
 
 			if tc.dbFn != nil {
 				tc.dbFn(apprepo, org)

@@ -65,6 +65,9 @@ func (db *messageRepo) LoadMessageIntervals(ctx context.Context, orgId string, s
 
 	matchStage := bson.D{{Key: "$match", Value: bson.D{
 		{Key: "app_metadata.org_id", Value: orgId},
+		{Key: "document_status", Value: bson.D{
+			{Key: "$ne", Value: hookcamp.DeletedDocumentStatus},
+		}},
 		{Key: "created_at", Value: bson.D{
 			{Key: "$gte", Value: primitive.NewDateTimeFromTime(time.Unix(start, 0))},
 			{Key: "$lte", Value: primitive.NewDateTimeFromTime(time.Unix(end, 0))},
@@ -127,21 +130,26 @@ func (db *messageRepo) LoadMessageIntervals(ctx context.Context, orgId string, s
 	return messagesIntervals, nil
 }
 
-func (db *messageRepo) LoadMessagesByAppId(ctx context.Context, appId string) ([]hookcamp.Message, error) {
-	filter := bson.M{"app_id": appId}
+func (db *messageRepo) LoadMessagesPagedByAppId(ctx context.Context, appId string, pageable models.Pageable) ([]hookcamp.Message, pager.PaginationData, error) {
+	filter := bson.M{"app_id": appId, "document_status": bson.M{"$ne": hookcamp.DeletedDocumentStatus}}
 
-	return db.loadMessagesByFilter(ctx, filter, nil)
+	var messages []hookcamp.Message
+	paginatedData, err := pager.New(db.inner).Context(ctx).Limit(int64(pageable.PerPage)).Page(int64(pageable.Page)).Sort("created_at", pageable.Sort).Filter(filter).Decode(&messages).Find()
+	if err != nil {
+		return messages, pager.PaginationData{}, err
+	}
+
+	if messages == nil {
+		messages = make([]hookcamp.Message, 0)
+	}
+
+	return messages, paginatedData.Pagination, nil
 }
 
 func (db *messageRepo) FindMessageByID(ctx context.Context, id string) (*hookcamp.Message, error) {
 	m := new(hookcamp.Message)
 
-	filter := bson.D{
-		primitive.E{
-			Key:   "uid",
-			Value: id,
-		},
-	}
+	filter := bson.M{"uid": id, "document_status": bson.M{"$ne": hookcamp.DeletedDocumentStatus}}
 
 	err := db.inner.FindOne(ctx, filter).
 		Decode(&m)
@@ -154,7 +162,9 @@ func (db *messageRepo) FindMessageByID(ctx context.Context, id string) (*hookcam
 
 func (db *messageRepo) LoadMessagesScheduledForPosting(ctx context.Context) ([]hookcamp.Message, error) {
 
-	filter := bson.M{"status": hookcamp.ScheduledMessageStatus, "metadata.next_send_time": bson.M{"$lte": primitive.NewDateTimeFromTime(time.Now())}}
+	filter := bson.M{"status": hookcamp.ScheduledMessageStatus,
+		"document_status":         bson.M{"$ne": hookcamp.DeletedDocumentStatus},
+		"metadata.next_send_time": bson.M{"$lte": primitive.NewDateTimeFromTime(time.Now())}}
 
 	return db.loadMessagesByFilter(ctx, filter, nil)
 }
@@ -192,6 +202,7 @@ func (db *messageRepo) LoadMessagesForPostingRetry(ctx context.Context) ([]hookc
 		"$and": []bson.M{
 			{"status": hookcamp.RetryMessageStatus},
 			{"metadata.next_send_time": bson.M{"$lte": primitive.NewDateTimeFromTime(time.Now())}},
+			{"document_status": bson.M{"$ne": hookcamp.DeletedDocumentStatus}},
 		},
 	}
 
@@ -203,6 +214,7 @@ func (db *messageRepo) LoadAbandonedMessagesForPostingRetry(ctx context.Context)
 		"$and": []bson.M{
 			{"status": hookcamp.ProcessingMessageStatus},
 			{"metadata.next_send_time": bson.M{"$lte": primitive.NewDateTimeFromTime(time.Now())}},
+			{"document_status": bson.M{"$ne": hookcamp.DeletedDocumentStatus}},
 		},
 	}
 
@@ -235,7 +247,7 @@ func getIds(messages []hookcamp.Message) []string {
 	return ids
 }
 
-func (db *messageRepo) UpdateMessage(ctx context.Context, m hookcamp.Message) error {
+func (db *messageRepo) UpdateMessageWithAttempt(ctx context.Context, m hookcamp.Message, attempt hookcamp.MessageAttempt) error {
 	filter := bson.M{"uid": m.UID}
 
 	update := bson.M{
@@ -244,8 +256,10 @@ func (db *messageRepo) UpdateMessage(ctx context.Context, m hookcamp.Message) er
 			"description":  m.Description,
 			"app_metadata": m.AppMetadata,
 			"metadata":     m.Metadata,
-			"attempts":     m.MessageAttempts,
 			"updated_at":   primitive.NewDateTimeFromTime(time.Now()),
+		},
+		"$push": bson.M{
+			"attempts": attempt,
 		},
 	}
 
@@ -259,14 +273,9 @@ func (db *messageRepo) UpdateMessage(ctx context.Context, m hookcamp.Message) er
 }
 
 func (db *messageRepo) LoadMessagesPaged(ctx context.Context, orgId string, pageable models.Pageable) ([]hookcamp.Message, pager.PaginationData, error) {
-	filter := bson.D{}
+	filter := bson.M{"document_status": bson.M{"$ne": hookcamp.DeletedDocumentStatus}}
 	if !util.IsStringEmpty(orgId) {
-		filter = bson.D{
-			primitive.E{
-				Key:   "app_metadata.org_id",
-				Value: orgId,
-			},
-		}
+		filter = bson.M{"app_metadata.org_id": orgId, "document_status": bson.M{"$ne": hookcamp.DeletedDocumentStatus}}
 	}
 
 	var messages []hookcamp.Message

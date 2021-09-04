@@ -64,6 +64,24 @@ func (a *applicationHandler) UpdateAppEndpoint(w http.ResponseWriter, r *http.Re
 		*getApplicationEndpointFromContext(r.Context()), http.StatusAccepted))
 }
 
+func (a *applicationHandler) GetAppEndpoint(w http.ResponseWriter, r *http.Request) {
+
+	_ = render.Render(w, r, newServerResponse("App endpoint fetched successfully",
+		*getApplicationEndpointFromContext(r.Context()), http.StatusOK))
+}
+
+func (a *applicationHandler) DeleteAppEndpoint(w http.ResponseWriter, r *http.Request) {
+
+	_ = render.Render(w, r, newServerResponse("App endpoint deleted successfully",
+		nil, http.StatusOK))
+}
+
+func (a *applicationHandler) GetAppEndpoints(w http.ResponseWriter, r *http.Request) {
+
+	_ = render.Render(w, r, newServerResponse("App endpoints fetched successfully",
+		*getApplicationEndpointsFromContext(r.Context()), http.StatusOK))
+}
+
 func (a *applicationHandler) CreateOrganisation(w http.ResponseWriter, r *http.Request) {
 
 	_ = render.Render(w, r, newServerResponse("Organisation created successfully",
@@ -113,17 +131,29 @@ func (a *applicationHandler) GetAppMessage(w http.ResponseWriter, r *http.Reques
 		*getMessageFromContext(r.Context()), http.StatusOK))
 }
 
-func (a *applicationHandler) GetAppMessages(w http.ResponseWriter, r *http.Request) {
-
-	_ = render.Render(w, r, newServerResponse("App events fetched successfully",
-		*getMessagesFromContext(r.Context()), http.StatusOK))
-}
-
 func (a *applicationHandler) GetAppMessagesPaged(w http.ResponseWriter, r *http.Request) {
 
 	_ = render.Render(w, r, newServerResponse("App events fetched successfully",
 		pagedResponse{Content: *getMessagesFromContext(r.Context()),
 			Pagination: getPaginationDataFromContext(r.Context())}, http.StatusOK))
+}
+
+func (a *applicationHandler) DeleteApp(w http.ResponseWriter, r *http.Request) {
+
+	_ = render.Render(w, r, newServerResponse("App deleted successfully",
+		nil, http.StatusOK))
+}
+
+func (a *applicationHandler) GetAppMessageDeliveryAttempt(w http.ResponseWriter, r *http.Request) {
+
+	_ = render.Render(w, r, newServerResponse("App event delivery attempt fetched successfully",
+		*getDeliveryAttemptFromContext(r.Context()), http.StatusOK))
+}
+
+func (a *applicationHandler) GetAppMessageDeliveryAttempts(w http.ResponseWriter, r *http.Request) {
+
+	_ = render.Render(w, r, newServerResponse("App event delivery attempts fetched successfully",
+		*getDeliveryAttemptsFromContext(r.Context()), http.StatusOK))
 }
 
 func (a *applicationHandler) GetAuthDetails(w http.ResponseWriter, r *http.Request) {
