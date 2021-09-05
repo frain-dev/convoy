@@ -2,18 +2,19 @@ package main
 
 import (
 	"context"
-	"github.com/hookcamp/hookcamp/util"
-	log "github.com/sirupsen/logrus"
-	prefixed "github.com/x-cray/logrus-prefixed-formatter"
 	"os"
 	"time"
 	_ "time/tzdata"
 
-	"github.com/hookcamp/hookcamp"
-	"github.com/hookcamp/hookcamp/config"
-	"github.com/hookcamp/hookcamp/datastore"
-	"github.com/hookcamp/hookcamp/queue"
-	"github.com/hookcamp/hookcamp/queue/redis"
+	"github.com/frain-dev/convoy/util"
+	log "github.com/sirupsen/logrus"
+	prefixed "github.com/x-cray/logrus-prefixed-formatter"
+
+	"github.com/frain-dev/convoy"
+	"github.com/frain-dev/convoy/config"
+	"github.com/frain-dev/convoy/datastore"
+	"github.com/frain-dev/convoy/queue"
+	"github.com/frain-dev/convoy/queue/redis"
 	"github.com/spf13/cobra"
 	"go.mongodb.org/mongo-driver/mongo"
 )
@@ -39,8 +40,8 @@ func main() {
 	var db *mongo.Client
 
 	cmd := &cobra.Command{
-		Use:   "hookcamp",
-		Short: "Opensource Webhooks as a service",
+		Use:   "Convoy",
+		Short: "Fast & reliable webhooks service",
 		PersistentPreRunE: func(cmd *cobra.Command, args []string) error {
 			cfgPath, err := cmd.Flags().GetString("config")
 			if err != nil {
@@ -76,7 +77,7 @@ func main() {
 				log.Warnf("signature header is blank. setting default %s", config.DefaultSignatureHeader)
 			}
 
-			conn := db.Database("hookcamp", nil)
+			conn := db.Database("convoy", nil)
 
 			app.orgRepo = datastore.NewOrganisationRepo(conn)
 			app.applicationRepo = datastore.NewApplicationRepo(conn)
@@ -104,7 +105,7 @@ func main() {
 
 	var configFile string
 
-	cmd.PersistentFlags().StringVar(&configFile, "config", "./hookcamp.json", "Configuration file for Hookcamp")
+	cmd.PersistentFlags().StringVar(&configFile, "config", "./convoy.json", "Configuration file for convoy")
 
 	cmd.AddCommand(addVersionCommand())
 	cmd.AddCommand(addCreateCommand(app))
@@ -126,9 +127,9 @@ func ensureMongoIndices(conn *mongo.Database) {
 }
 
 type app struct {
-	orgRepo         hookcamp.OrganisationRepository
-	applicationRepo hookcamp.ApplicationRepository
-	messageRepo     hookcamp.MessageRepository
+	orgRepo         convoy.OrganisationRepository
+	applicationRepo convoy.ApplicationRepository
+	messageRepo     convoy.MessageRepository
 	queue           queue.Queuer
 }
 

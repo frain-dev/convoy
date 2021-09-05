@@ -23,5 +23,5 @@ jobs:
           goarch: ${{ matrix.goarch }}
           goversion: "1.17"
           project_path: "./cmd"
-          binary_name: "hookcamp"
+          binary_name: "convoy"
           extra_files: LICENSE README.md

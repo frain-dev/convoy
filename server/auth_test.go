@@ -1,13 +1,14 @@
 package server
 
 import (
-	"github.com/golang/mock/gomock"
-	"github.com/hookcamp/hookcamp/config"
-	"github.com/hookcamp/hookcamp/mocks"
-	"github.com/sirupsen/logrus"
 	"net/http"
 	"net/http/httptest"
 	"testing"
+
+	"github.com/frain-dev/convoy/config"
+	"github.com/frain-dev/convoy/mocks"
+	"github.com/golang/mock/gomock"
+	"github.com/sirupsen/logrus"
 )
 
 func Test_fetchAuthConfig(t *testing.T) {
@@ -36,7 +37,7 @@ func Test_fetchAuthConfig(t *testing.T) {
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
 
-			err := config.LoadFromFile("./testdata/TestRequireAuth_None/hookcamp.json")
+			err := config.LoadFromFile("./testdata/TestRequireAuth_None/convoy.json")
 			if err != nil {
 				t.Error("Failed to load config file")
 			}

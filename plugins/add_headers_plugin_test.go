@@ -1,15 +1,15 @@
-package hookcamp
+package convoy
 
 import (
 	"net/http"
 	"net/http/httptest"
 	"testing"
 
-	"github.com/hookcamp/hookcamp"
+	"github.com/frain-dev/convoy"
 	"github.com/stretchr/testify/require"
 )
 
-var _ hookcamp.Plugin = (*AddHeadersPlugin)(nil)
+var _ convoy.Plugin = (*AddHeadersPlugin)(nil)
 
 func TestAddHeadersPlugin(t *testing.T) {
 

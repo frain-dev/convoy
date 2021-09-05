@@ -1,4 +1,4 @@
-package hookcamp
+package convoy
 
 const (
 	HttpPost HttpMethod = "POST"

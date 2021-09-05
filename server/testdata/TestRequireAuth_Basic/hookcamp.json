@@ -1,9 +1,0 @@
-{
-	"auth": {
-		"type": "basic",
-		"basic": {
-			"username": "test",
-			"password": "test"
-		}
-	}
-}

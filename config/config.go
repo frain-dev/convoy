@@ -62,14 +62,11 @@ type StrategyProvider string
 type SignatureHeaderProvider string
 
 const (
-	NoAuthProvider    AuthProvider = "none"
-	BasicAuthProvider AuthProvider = "basic"
-
-	RedisQueueProvider QueueProvider = "redis"
-
-	DefaultStrategyProvider StrategyProvider = "default"
-
-	DefaultSignatureHeader SignatureHeaderProvider = "X-Courier-Signature"
+	NoAuthProvider          AuthProvider            = "none"
+	BasicAuthProvider       AuthProvider            = "basic"
+	RedisQueueProvider      QueueProvider           = "redis"
+	DefaultStrategyProvider StrategyProvider        = "default"
+	DefaultSignatureHeader  SignatureHeaderProvider = "X-Convoy-Signature"
 )
 
 type QueueConfiguration struct {

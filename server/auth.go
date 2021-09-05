@@ -1,10 +1,11 @@
 package server
 
 import (
-	"github.com/go-chi/render"
-	"github.com/hookcamp/hookcamp/config"
-	log "github.com/sirupsen/logrus"
 	"net/http"
+
+	"github.com/frain-dev/convoy/config"
+	"github.com/go-chi/render"
+	log "github.com/sirupsen/logrus"
 )
 
 func fetchAuthConfig() func(next http.Handler) http.Handler {

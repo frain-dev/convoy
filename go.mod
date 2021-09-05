@@ -1,4 +1,4 @@
-module github.com/hookcamp/hookcamp
+module github.com/frain-dev/convoy
 
 go 1.16
 
