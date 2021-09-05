@@ -10,12 +10,12 @@ jobs:
     runs-on: "ubuntu-latest"
     steps:
 
-    - name: Get the version
-      id: get_version
-      run: echo ::set-output name=tag::$(echo ${GITHUB_REF})
-
     - name: Checkout code
       uses: actions/checkout@v2
+
+    - name: Get the version
+      id: get_version
+      run: echo ::set-output name=tag::v$(cat VERSION)
 
     - name: Authenticate
       uses: actions-hub/docker/login@master
