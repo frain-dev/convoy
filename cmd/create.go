@@ -5,16 +5,17 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/hookcamp/hookcamp/config"
-	log "github.com/sirupsen/logrus"
-	"go.mongodb.org/mongo-driver/bson/primitive"
 	"net/url"
 	"os"
 	"time"
 
+	"github.com/frain-dev/convoy/config"
+	log "github.com/sirupsen/logrus"
+	"go.mongodb.org/mongo-driver/bson/primitive"
+
+	"github.com/frain-dev/convoy"
+	"github.com/frain-dev/convoy/util"
 	"github.com/google/uuid"
-	"github.com/hookcamp/hookcamp"
-	"github.com/hookcamp/hookcamp/util"
 	"github.com/olekukonko/tablewriter"
 	"github.com/spf13/cobra"
 )
@@ -35,7 +36,7 @@ func addCreateCommand(a *app) *cobra.Command {
 
 func createEndpointCommand(a *app) *cobra.Command {
 
-	e := new(hookcamp.Endpoint)
+	e := new(convoy.Endpoint)
 
 	var appID string
 
@@ -137,15 +138,15 @@ func createApplicationCommand(a *app) *cobra.Command {
 				}
 			}
 
-			app := &hookcamp.Application{
+			app := &convoy.Application{
 				UID:            uuid.New().String(),
 				OrgID:          org.UID,
 				Title:          appName,
 				Secret:         appSecret,
 				CreatedAt:      primitive.NewDateTimeFromTime(time.Now()),
 				UpdatedAt:      primitive.NewDateTimeFromTime(time.Now()),
-				Endpoints:      []hookcamp.Endpoint{},
-				DocumentStatus: hookcamp.ActiveDocumentStatus,
+				Endpoints:      []convoy.Endpoint{},
+				DocumentStatus: convoy.ActiveDocumentStatus,
 			}
 
 			err = a.applicationRepo.CreateApplication(context.Background(), app)
@@ -189,12 +190,12 @@ func createOrganisationCommand(a *app) *cobra.Command {
 				return errors.New("please provide a valid name")
 			}
 
-			org := &hookcamp.Organisation{
+			org := &convoy.Organisation{
 				UID:            uuid.New().String(),
 				OrgName:        name,
 				CreatedAt:      primitive.NewDateTimeFromTime(time.Now()),
 				UpdatedAt:      primitive.NewDateTimeFromTime(time.Now()),
-				DocumentStatus: hookcamp.ActiveDocumentStatus,
+				DocumentStatus: convoy.ActiveDocumentStatus,
 			}
 
 			err := a.orgRepo.CreateOrganisation(context.Background(), org)
@@ -294,28 +295,28 @@ func createMessageCommand(a *app) *cobra.Command {
 			}
 
 			log.Println("Message ", string(d))
-			msg := &hookcamp.Message{
+			msg := &convoy.Message{
 				UID:       uuid.New().String(),
 				AppID:     appData.UID,
-				EventType: hookcamp.EventType(eventType),
+				EventType: convoy.EventType(eventType),
 				Data:      d,
-				Metadata: &hookcamp.MessageMetadata{
+				Metadata: &convoy.MessageMetadata{
 					Strategy:        cfg.Strategy.Type,
 					NumTrials:       0,
 					IntervalSeconds: intervalSeconds,
 					RetryLimit:      retryLimit,
 					NextSendTime:    primitive.NewDateTimeFromTime(time.Now().Add(time.Duration(intervalSeconds) * time.Second)),
 				},
-				AppMetadata: &hookcamp.AppMetadata{
+				AppMetadata: &convoy.AppMetadata{
 					OrgID:     appData.OrgID,
 					Secret:    appData.Secret,
 					Endpoints: util.ParseMetadataFromEndpoints(appData.Endpoints),
 				},
-				MessageAttempts: make([]hookcamp.MessageAttempt, 0),
+				MessageAttempts: make([]convoy.MessageAttempt, 0),
 				CreatedAt:       primitive.NewDateTimeFromTime(time.Now()),
 				UpdatedAt:       primitive.NewDateTimeFromTime(time.Now()),
-				Status:          hookcamp.ScheduledMessageStatus,
-				DocumentStatus:  hookcamp.ActiveDocumentStatus,
+				Status:          convoy.ScheduledMessageStatus,
+				DocumentStatus:  convoy.ActiveDocumentStatus,
 			}
 
 			if len(appData.Endpoints) == 0 {

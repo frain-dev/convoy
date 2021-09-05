@@ -1,4 +1,4 @@
-package hookcamp
+package convoy
 
 import (
 	"bytes"
@@ -6,11 +6,12 @@ import (
 	"database/sql/driver"
 	"encoding/json"
 	"errors"
-	pager "github.com/gobeam/mongo-go-pagination"
-	"github.com/hookcamp/hookcamp/config"
-	"github.com/hookcamp/hookcamp/server/models"
-	"go.mongodb.org/mongo-driver/bson/primitive"
 	"net/http"
+
+	"github.com/frain-dev/convoy/config"
+	"github.com/frain-dev/convoy/server/models"
+	pager "github.com/gobeam/mongo-go-pagination"
+	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
 type MessageStatus string

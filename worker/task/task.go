@@ -2,12 +2,13 @@ package task
 
 import (
 	"context"
-	"github.com/hookcamp/hookcamp"
-	"github.com/hookcamp/hookcamp/queue"
+
+	"github.com/frain-dev/convoy"
+	"github.com/frain-dev/convoy/queue"
 	log "github.com/sirupsen/logrus"
 )
 
-func PostMessages(queue queue.Queuer, msgRepo hookcamp.MessageRepository) {
+func PostMessages(queue queue.Queuer, msgRepo convoy.MessageRepository) {
 	m, err := msgRepo.LoadMessagesScheduledForPosting(context.Background())
 	if err != nil {
 		log.Errorln("failed to load messages to post - ", err)
@@ -16,14 +17,14 @@ func PostMessages(queue queue.Queuer, msgRepo hookcamp.MessageRepository) {
 
 	log.Debugln("loaded new messages with size: ", len(m))
 
-	err = msgRepo.UpdateStatusOfMessages(context.Background(), m, hookcamp.ProcessingMessageStatus)
+	err = msgRepo.UpdateStatusOfMessages(context.Background(), m, convoy.ProcessingMessageStatus)
 	if err != nil {
 		log.Errorln("failed to update status of messages - ", err)
 	}
 	queueMessages(queue, m)
 }
 
-func RetryMessages(queue queue.Queuer, msgRepo hookcamp.MessageRepository) {
+func RetryMessages(queue queue.Queuer, msgRepo convoy.MessageRepository) {
 	m, err := msgRepo.LoadMessagesForPostingRetry(context.Background())
 	if err != nil {
 		log.Errorln("failed to load messages to retry - ", err)
@@ -32,14 +33,14 @@ func RetryMessages(queue queue.Queuer, msgRepo hookcamp.MessageRepository) {
 
 	log.Debugln("loaded retry messages with size: ", len(m))
 
-	err = msgRepo.UpdateStatusOfMessages(context.Background(), m, hookcamp.ProcessingMessageStatus)
+	err = msgRepo.UpdateStatusOfMessages(context.Background(), m, convoy.ProcessingMessageStatus)
 	if err != nil {
 		log.Errorln("failed to update status of messages - ", err)
 	}
 	queueMessages(queue, m)
 }
 
-func RetryAbandonedMessages(queue queue.Queuer, msgRepo hookcamp.MessageRepository) {
+func RetryAbandonedMessages(queue queue.Queuer, msgRepo convoy.MessageRepository) {
 	m, err := msgRepo.LoadAbandonedMessagesForPostingRetry(context.Background())
 	if err != nil {
 		log.Errorln("failed to load abandoned messages to retry - ", err)
@@ -51,7 +52,7 @@ func RetryAbandonedMessages(queue queue.Queuer, msgRepo hookcamp.MessageReposito
 	queueMessages(queue, m)
 }
 
-func queueMessages(q queue.Queuer, messages []hookcamp.Message) {
+func queueMessages(q queue.Queuer, messages []convoy.Message) {
 	for _, m := range messages {
 		err := q.Write(context.Background(), m)
 		if err != nil {

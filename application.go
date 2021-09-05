@@ -1,10 +1,11 @@
-package hookcamp
+package convoy
 
 import (
 	"context"
 	"errors"
+
+	"github.com/frain-dev/convoy/server/models"
 	pager "github.com/gobeam/mongo-go-pagination"
-	"github.com/hookcamp/hookcamp/server/models"
 
 	"go.mongodb.org/mongo-driver/bson/primitive"
 )

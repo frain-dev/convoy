@@ -6,8 +6,8 @@ package mocks
 
 import (
 	context "context"
+	convoy "github.com/frain-dev/convoy"
 	gomock "github.com/golang/mock/gomock"
-	hookcamp "github.com/hookcamp/hookcamp"
 	reflect "reflect"
 )
 
@@ -35,7 +35,7 @@ func (m *MockOrganisationRepository) EXPECT() *MockOrganisationRepositoryMockRec
 }
 
 // CreateOrganisation mocks base method.
-func (m *MockOrganisationRepository) CreateOrganisation(arg0 context.Context, arg1 *hookcamp.Organisation) error {
+func (m *MockOrganisationRepository) CreateOrganisation(arg0 context.Context, arg1 *convoy.Organisation) error {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "CreateOrganisation", arg0, arg1)
 	ret0, _ := ret[0].(error)
@@ -49,10 +49,10 @@ func (mr *MockOrganisationRepositoryMockRecorder) CreateOrganisation(arg0, arg1 
 }
 
 // FetchOrganisationByID mocks base method.
-func (m *MockOrganisationRepository) FetchOrganisationByID(arg0 context.Context, arg1 string) (*hookcamp.Organisation, error) {
+func (m *MockOrganisationRepository) FetchOrganisationByID(arg0 context.Context, arg1 string) (*convoy.Organisation, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "FetchOrganisationByID", arg0, arg1)
-	ret0, _ := ret[0].(*hookcamp.Organisation)
+	ret0, _ := ret[0].(*convoy.Organisation)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
@@ -64,10 +64,10 @@ func (mr *MockOrganisationRepositoryMockRecorder) FetchOrganisationByID(arg0, ar
 }
 
 // LoadOrganisations mocks base method.
-func (m *MockOrganisationRepository) LoadOrganisations(arg0 context.Context) ([]*hookcamp.Organisation, error) {
+func (m *MockOrganisationRepository) LoadOrganisations(arg0 context.Context) ([]*convoy.Organisation, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "LoadOrganisations", arg0)
-	ret0, _ := ret[0].([]*hookcamp.Organisation)
+	ret0, _ := ret[0].([]*convoy.Organisation)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
@@ -79,7 +79,7 @@ func (mr *MockOrganisationRepositoryMockRecorder) LoadOrganisations(arg0 interfa
 }
 
 // UpdateOrganisation mocks base method.
-func (m *MockOrganisationRepository) UpdateOrganisation(arg0 context.Context, arg1 *hookcamp.Organisation) error {
+func (m *MockOrganisationRepository) UpdateOrganisation(arg0 context.Context, arg1 *convoy.Organisation) error {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "UpdateOrganisation", arg0, arg1)
 	ret0, _ := ret[0].(error)

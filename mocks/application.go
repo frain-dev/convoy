@@ -8,10 +8,10 @@ import (
 	context "context"
 	reflect "reflect"
 
+	convoy "github.com/frain-dev/convoy"
+	models "github.com/frain-dev/convoy/server/models"
 	mongopagination "github.com/gobeam/mongo-go-pagination"
 	gomock "github.com/golang/mock/gomock"
-	hookcamp "github.com/hookcamp/hookcamp"
-	models "github.com/hookcamp/hookcamp/server/models"
 )
 
 // MockApplicationRepository is a mock of ApplicationRepository interface.
@@ -38,7 +38,7 @@ func (m *MockApplicationRepository) EXPECT() *MockApplicationRepositoryMockRecor
 }
 
 // CreateApplication mocks base method.
-func (m *MockApplicationRepository) CreateApplication(arg0 context.Context, arg1 *hookcamp.Application) error {
+func (m *MockApplicationRepository) CreateApplication(arg0 context.Context, arg1 *convoy.Application) error {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "CreateApplication", arg0, arg1)
 	ret0, _ := ret[0].(error)
@@ -52,7 +52,7 @@ func (mr *MockApplicationRepositoryMockRecorder) CreateApplication(arg0, arg1 in
 }
 
 // DeleteApplication mocks base method.
-func (m *MockApplicationRepository) DeleteApplication(arg0 context.Context, arg1 *hookcamp.Application) error {
+func (m *MockApplicationRepository) DeleteApplication(arg0 context.Context, arg1 *convoy.Application) error {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "DeleteApplication", arg0, arg1)
 	ret0, _ := ret[0].(error)
@@ -66,10 +66,10 @@ func (mr *MockApplicationRepositoryMockRecorder) DeleteApplication(arg0, arg1 in
 }
 
 // FindApplicationByID mocks base method.
-func (m *MockApplicationRepository) FindApplicationByID(arg0 context.Context, arg1 string) (*hookcamp.Application, error) {
+func (m *MockApplicationRepository) FindApplicationByID(arg0 context.Context, arg1 string) (*convoy.Application, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "FindApplicationByID", arg0, arg1)
-	ret0, _ := ret[0].(*hookcamp.Application)
+	ret0, _ := ret[0].(*convoy.Application)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
@@ -81,10 +81,10 @@ func (mr *MockApplicationRepositoryMockRecorder) FindApplicationByID(arg0, arg1 
 }
 
 // LoadApplications mocks base method.
-func (m *MockApplicationRepository) LoadApplications(arg0 context.Context, s string) ([]hookcamp.Application, error) {
+func (m *MockApplicationRepository) LoadApplications(arg0 context.Context, s string) ([]convoy.Application, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "LoadApplications", arg0)
-	ret0, _ := ret[0].([]hookcamp.Application)
+	ret0, _ := ret[0].([]convoy.Application)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
@@ -96,10 +96,10 @@ func (mr *MockApplicationRepositoryMockRecorder) LoadApplications(arg0 interface
 }
 
 // LoadApplicationsPagedByOrgId mocks base method.
-func (m *MockApplicationRepository) LoadApplicationsPagedByOrgId(arg0 context.Context, arg1 string, arg2 models.Pageable) ([]hookcamp.Application, mongopagination.PaginationData, error) {
+func (m *MockApplicationRepository) LoadApplicationsPagedByOrgId(arg0 context.Context, arg1 string, arg2 models.Pageable) ([]convoy.Application, mongopagination.PaginationData, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "LoadApplicationsPagedByOrgId", arg0, arg1, arg2)
-	ret0, _ := ret[0].([]hookcamp.Application)
+	ret0, _ := ret[0].([]convoy.Application)
 	ret1, _ := ret[1].(mongopagination.PaginationData)
 	ret2, _ := ret[2].(error)
 	return ret0, ret1, ret2
@@ -112,10 +112,10 @@ func (mr *MockApplicationRepositoryMockRecorder) LoadApplicationsPagedByOrgId(ar
 }
 
 // SearchApplicationsByOrgId mocks base method.
-func (m *MockApplicationRepository) SearchApplicationsByOrgId(arg0 context.Context, arg1 string, arg2 models.SearchParams) ([]hookcamp.Application, error) {
+func (m *MockApplicationRepository) SearchApplicationsByOrgId(arg0 context.Context, arg1 string, arg2 models.SearchParams) ([]convoy.Application, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "SearchApplicationsByOrgId", arg0, arg1, arg2)
-	ret0, _ := ret[0].([]hookcamp.Application)
+	ret0, _ := ret[0].([]convoy.Application)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
@@ -127,7 +127,7 @@ func (mr *MockApplicationRepositoryMockRecorder) SearchApplicationsByOrgId(arg0,
 }
 
 // UpdateApplication mocks base method.
-func (m *MockApplicationRepository) UpdateApplication(arg0 context.Context, arg1 *hookcamp.Application) error {
+func (m *MockApplicationRepository) UpdateApplication(arg0 context.Context, arg1 *convoy.Application) error {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "UpdateApplication", arg0, arg1)
 	ret0, _ := ret[0].(error)

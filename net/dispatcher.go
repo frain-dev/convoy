@@ -3,12 +3,13 @@ package net
 import (
 	"bytes"
 	"encoding/json"
-	"github.com/hookcamp/hookcamp/util"
-	log "github.com/sirupsen/logrus"
 	"io/ioutil"
 	"net/http"
 	"net/http/httptrace"
 	"time"
+
+	"github.com/frain-dev/convoy/util"
+	log "github.com/sirupsen/logrus"
 )
 
 type Dispatcher struct {

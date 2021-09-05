@@ -1,11 +1,11 @@
 openapi: 3.0.1
 info: 
-  title: Hookcamp API
-  description: Hookcamp is a fast and secure distributed webhooks service. 
-    The following details contains the API to use hookcamp.
-  termsOfService: https://hookcamp.io/terms
+  title: Convoy API
+  description: convoy is a fast and secure distributed webhooks service. 
+    The following details contains the API to use convoy.
+  termsOfService: https://convoy.io/terms
   contact:
-    email: engineering@hookcamp.io
+    email: engineering@convoy.io
   license:
     name: Mozilla Public License 2.0
     url: https://www.mozilla.org/en-US/MPL/2.0/

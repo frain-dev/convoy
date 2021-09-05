@@ -3,13 +3,14 @@ package datastore
 import (
 	"context"
 	"errors"
-	"github.com/hookcamp/hookcamp/server/models"
-	"github.com/hookcamp/hookcamp/util"
-	log "github.com/sirupsen/logrus"
 	"time"
 
+	"github.com/frain-dev/convoy/server/models"
+	"github.com/frain-dev/convoy/util"
+	log "github.com/sirupsen/logrus"
+
+	"github.com/frain-dev/convoy"
 	pager "github.com/gobeam/mongo-go-pagination"
-	"github.com/hookcamp/hookcamp"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
@@ -24,7 +25,7 @@ const (
 	AppCollections = "applications"
 )
 
-func NewApplicationRepo(client *mongo.Database) hookcamp.ApplicationRepository {
+func NewApplicationRepo(client *mongo.Database) convoy.ApplicationRepository {
 	return &appRepo{
 		innerDB: client,
 		client:  client.Collection(AppCollections, nil),
@@ -32,7 +33,7 @@ func NewApplicationRepo(client *mongo.Database) hookcamp.ApplicationRepository {
 }
 
 func (db *appRepo) CreateApplication(ctx context.Context,
-	app *hookcamp.Application) error {
+	app *convoy.Application) error {
 
 	app.ID = primitive.NewObjectID()
 
@@ -40,13 +41,13 @@ func (db *appRepo) CreateApplication(ctx context.Context,
 	return err
 }
 
-func (db *appRepo) LoadApplications(ctx context.Context, orgId string) ([]hookcamp.Application, error) {
+func (db *appRepo) LoadApplications(ctx context.Context, orgId string) ([]convoy.Application, error) {
 
-	apps := make([]hookcamp.Application, 0)
+	apps := make([]convoy.Application, 0)
 
-	filter := bson.M{"document_status": bson.M{"$ne": hookcamp.DeletedDocumentStatus}}
+	filter := bson.M{"document_status": bson.M{"$ne": convoy.DeletedDocumentStatus}}
 	if !util.IsStringEmpty(orgId) {
-		filter = bson.M{"org_id": orgId, "document_status": bson.M{"$ne": hookcamp.DeletedDocumentStatus}}
+		filter = bson.M{"org_id": orgId, "document_status": bson.M{"$ne": convoy.DeletedDocumentStatus}}
 	}
 
 	cur, err := db.client.Find(ctx, filter)
@@ -55,7 +56,7 @@ func (db *appRepo) LoadApplications(ctx context.Context, orgId string) ([]hookca
 	}
 
 	for cur.Next(ctx) {
-		var app hookcamp.Application
+		var app convoy.Application
 		if err := cur.Decode(&app); err != nil {
 			return apps, err
 		}
@@ -74,24 +75,24 @@ func (db *appRepo) LoadApplications(ctx context.Context, orgId string) ([]hookca
 	return apps, nil
 }
 
-func (db *appRepo) LoadApplicationsPagedByOrgId(ctx context.Context, orgId string, pageable models.Pageable) ([]hookcamp.Application, pager.PaginationData, error) {
+func (db *appRepo) LoadApplicationsPagedByOrgId(ctx context.Context, orgId string, pageable models.Pageable) ([]convoy.Application, pager.PaginationData, error) {
 
-	filter := bson.M{"org_id": orgId, "document_status": bson.M{"$ne": hookcamp.DeletedDocumentStatus}}
+	filter := bson.M{"org_id": orgId, "document_status": bson.M{"$ne": convoy.DeletedDocumentStatus}}
 
-	var applications []hookcamp.Application
+	var applications []convoy.Application
 	paginatedData, err := pager.New(db.client).Context(ctx).Limit(int64(pageable.PerPage)).Page(int64(pageable.Page)).Sort("created_at", -1).Filter(filter).Decode(&applications).Find()
 	if err != nil {
 		return applications, pager.PaginationData{}, err
 	}
 
 	if applications == nil {
-		applications = make([]hookcamp.Application, 0)
+		applications = make([]convoy.Application, 0)
 	}
 
 	return applications, paginatedData.Pagination, nil
 }
 
-func (db *appRepo) SearchApplicationsByOrgId(ctx context.Context, orgId string, searchParams models.SearchParams) ([]hookcamp.Application, error) {
+func (db *appRepo) SearchApplicationsByOrgId(ctx context.Context, orgId string, searchParams models.SearchParams) ([]convoy.Application, error) {
 
 	start := searchParams.CreatedAtStart
 	end := searchParams.CreatedAtEnd
@@ -99,16 +100,16 @@ func (db *appRepo) SearchApplicationsByOrgId(ctx context.Context, orgId string, 
 		end = searchParams.CreatedAtStart
 	}
 
-	filter := bson.M{"org_id": orgId, "document_status": bson.M{"$ne": hookcamp.DeletedDocumentStatus}, "created_at": bson.M{"$gte": primitive.NewDateTimeFromTime(time.Unix(start, 0)), "$lte": primitive.NewDateTimeFromTime(time.Unix(end, 0))}}
+	filter := bson.M{"org_id": orgId, "document_status": bson.M{"$ne": convoy.DeletedDocumentStatus}, "created_at": bson.M{"$gte": primitive.NewDateTimeFromTime(time.Unix(start, 0)), "$lte": primitive.NewDateTimeFromTime(time.Unix(end, 0))}}
 
-	apps := make([]hookcamp.Application, 0)
+	apps := make([]convoy.Application, 0)
 	cur, err := db.client.Find(ctx, filter)
 	if err != nil {
 		return apps, err
 	}
 
 	for cur.Next(ctx) {
-		var app hookcamp.Application
+		var app convoy.Application
 		if err := cur.Decode(&app); err != nil {
 			return apps, err
 		}
@@ -128,27 +129,27 @@ func (db *appRepo) SearchApplicationsByOrgId(ctx context.Context, orgId string, 
 }
 
 func (db *appRepo) FindApplicationByID(ctx context.Context,
-	id string) (*hookcamp.Application, error) {
+	id string) (*convoy.Application, error) {
 
-	app := new(hookcamp.Application)
+	app := new(convoy.Application)
 
-	filter := bson.M{"uid": id, "document_status": bson.M{"$ne": hookcamp.DeletedDocumentStatus}}
+	filter := bson.M{"uid": id, "document_status": bson.M{"$ne": convoy.DeletedDocumentStatus}}
 
 	err := db.client.FindOne(ctx, filter).
 		Decode(&app)
 	if errors.Is(err, mongo.ErrNoDocuments) {
-		err = hookcamp.ErrApplicationNotFound
+		err = convoy.ErrApplicationNotFound
 	}
 
 	return app, err
 }
 
 func (db *appRepo) UpdateApplication(ctx context.Context,
-	app *hookcamp.Application) error {
+	app *convoy.Application) error {
 
 	app.UpdatedAt = primitive.NewDateTimeFromTime(time.Now())
 
-	filter := bson.M{"uid": app.UID, "document_status": bson.M{"$ne": hookcamp.DeletedDocumentStatus}}
+	filter := bson.M{"uid": app.UID, "document_status": bson.M{"$ne": convoy.DeletedDocumentStatus}}
 
 	update := bson.D{primitive.E{Key: "$set", Value: bson.D{
 		primitive.E{Key: "endpoints", Value: app.Endpoints},
@@ -161,11 +162,11 @@ func (db *appRepo) UpdateApplication(ctx context.Context,
 }
 
 func (db *appRepo) DeleteApplication(ctx context.Context,
-	app *hookcamp.Application) error {
+	app *convoy.Application) error {
 
 	updateAsDeleted := bson.D{primitive.E{Key: "$set", Value: bson.D{
 		primitive.E{Key: "deleted_at", Value: primitive.NewDateTimeFromTime(time.Now())},
-		primitive.E{Key: "document_status", Value: hookcamp.DeletedDocumentStatus},
+		primitive.E{Key: "document_status", Value: convoy.DeletedDocumentStatus},
 	}}}
 
 	err := db.updateMessagesInApp(ctx, app, updateAsDeleted)
@@ -179,7 +180,7 @@ func (db *appRepo) DeleteApplication(ctx context.Context,
 
 		rollback := bson.D{primitive.E{Key: "$set", Value: bson.D{
 			primitive.E{Key: "deleted_at", Value: nil},
-			primitive.E{Key: "document_status", Value: hookcamp.ActiveDocumentStatus},
+			primitive.E{Key: "document_status", Value: convoy.ActiveDocumentStatus},
 		}}}
 		err2 := db.updateMessagesInApp(ctx, app, rollback)
 		if err2 != nil {
@@ -191,7 +192,7 @@ func (db *appRepo) DeleteApplication(ctx context.Context,
 	return nil
 }
 
-func (db *appRepo) updateMessagesInApp(ctx context.Context, app *hookcamp.Application, update bson.D) error {
+func (db *appRepo) updateMessagesInApp(ctx context.Context, app *convoy.Application, update bson.D) error {
 	var msgOperations []mongo.WriteModel
 
 	updateMessagesOperation := mongo.NewUpdateManyModel()
@@ -210,7 +211,7 @@ func (db *appRepo) updateMessagesInApp(ctx context.Context, app *hookcamp.Applic
 	return nil
 }
 
-func (db *appRepo) deleteApp(ctx context.Context, app *hookcamp.Application, update bson.D) error {
+func (db *appRepo) deleteApp(ctx context.Context, app *convoy.Application, update bson.D) error {
 	var appOperations []mongo.WriteModel
 	updateAppOperation := mongo.NewUpdateOneModel()
 	filter := bson.D{primitive.E{Key: "uid", Value: app.UID}}
