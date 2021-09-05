@@ -8,7 +8,7 @@ You can either download the docker image or compile from source
 
 ##### Docker 
 ```bash
-docker pull gcri.io/convoy
+docker pull ghcr.io/frain-dev/convoy:v0.1.0
 ```
 
 ##### Compile from source
