@@ -12,7 +12,7 @@ jobs:
 
     - name: Get the version
       id: get_version
-      run: echo ::set-output name=tag::$(echo ${IMAGE_TAG})
+      run: echo ::set-output name=tag::$(echo ${GITHUB_REF})
 
     - name: Checkout code
       uses: actions/checkout@v2
@@ -25,7 +25,7 @@ jobs:
         DOCKER_REGISTRY_URL: ghcr.io
 
     - name: Build latest image
-      run: docker build -t ghcr.io/${GITHUB_REPOSITORY}:${{ steps.get_version.outputs.tag }} --build-arg ACCESS_TOKEN_USR=${{ secrets.DOCKER_USERNAME }} --build-arg ACCESS_TOKEN=${{ secrets.PAT }} .
+      run: docker build -t ghcr.io/${GITHUB_REPOSITORY}:${{ steps.get_version.outputs.tag }} .
 
     - name: Push
       uses: actions-hub/docker@master
