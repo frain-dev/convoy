@@ -1,11 +1,11 @@
 package util
 
-import "github.com/hookcamp/hookcamp"
+import "github.com/frain-dev/convoy"
 
-func ParseMetadataFromEndpoints(endpoints []hookcamp.Endpoint) []hookcamp.EndpointMetadata {
-	m := make([]hookcamp.EndpointMetadata, 0)
+func ParseMetadataFromEndpoints(endpoints []convoy.Endpoint) []convoy.EndpointMetadata {
+	m := make([]convoy.EndpointMetadata, 0)
 	for _, e := range endpoints {
-		m = append(m, hookcamp.EndpointMetadata{
+		m = append(m, convoy.EndpointMetadata{
 			UID:       e.UID,
 			TargetURL: e.TargetURL,
 			Sent:      false,

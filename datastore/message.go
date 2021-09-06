@@ -3,17 +3,18 @@ package datastore
 import (
 	"context"
 	"errors"
+	"time"
+
+	"github.com/frain-dev/convoy"
+	"github.com/frain-dev/convoy/server/models"
+	"github.com/frain-dev/convoy/util"
 	pager "github.com/gobeam/mongo-go-pagination"
 	"github.com/google/uuid"
-	"github.com/hookcamp/hookcamp"
-	"github.com/hookcamp/hookcamp/server/models"
-	"github.com/hookcamp/hookcamp/util"
 	log "github.com/sirupsen/logrus"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
-	"time"
 )
 
 type messageRepo struct {
@@ -24,7 +25,7 @@ const (
 	MsgCollection = "messages"
 )
 
-func NewMessageRepository(db *mongo.Database) hookcamp.MessageRepository {
+func NewMessageRepository(db *mongo.Database) convoy.MessageRepository {
 	return &messageRepo{
 		inner: db.Collection(MsgCollection),
 	}
@@ -36,7 +37,7 @@ var monthlyIntervalFormat = "%Y-%m"  // 1 month
 var yearlyIntervalFormat = "%Y"      // 1 month
 
 func (db *messageRepo) CreateMessage(ctx context.Context,
-	message *hookcamp.Message) error {
+	message *convoy.Message) error {
 
 	message.ID = primitive.NewObjectID()
 
@@ -48,14 +49,14 @@ func (db *messageRepo) CreateMessage(ctx context.Context,
 	}
 
 	if message.MessageAttempts == nil {
-		message.MessageAttempts = make([]hookcamp.MessageAttempt, 0)
+		message.MessageAttempts = make([]convoy.MessageAttempt, 0)
 	}
 
 	_, err := db.inner.InsertOne(ctx, message)
 	return err
 }
 
-func (db *messageRepo) LoadMessageIntervals(ctx context.Context, orgId string, searchParams models.SearchParams, period hookcamp.Period, interval int) ([]models.MessageInterval, error) {
+func (db *messageRepo) LoadMessageIntervals(ctx context.Context, orgId string, searchParams models.SearchParams, period convoy.Period, interval int) ([]models.MessageInterval, error) {
 
 	start := searchParams.CreatedAtStart
 	end := searchParams.CreatedAtEnd
@@ -66,7 +67,7 @@ func (db *messageRepo) LoadMessageIntervals(ctx context.Context, orgId string, s
 	matchStage := bson.D{{Key: "$match", Value: bson.D{
 		{Key: "app_metadata.org_id", Value: orgId},
 		{Key: "document_status", Value: bson.D{
-			{Key: "$ne", Value: hookcamp.DeletedDocumentStatus},
+			{Key: "$ne", Value: convoy.DeletedDocumentStatus},
 		}},
 		{Key: "created_at", Value: bson.D{
 			{Key: "$gte", Value: primitive.NewDateTimeFromTime(time.Unix(start, 0))},
@@ -78,16 +79,16 @@ func (db *messageRepo) LoadMessageIntervals(ctx context.Context, orgId string, s
 	var timeComponent string
 	var format string
 	switch period {
-	case hookcamp.Daily:
+	case convoy.Daily:
 		timeComponent = "$dayOfYear"
 		format = dailyIntervalFormat
-	case hookcamp.Weekly:
+	case convoy.Weekly:
 		timeComponent = "$week"
 		format = weeklyIntervalFormat
-	case hookcamp.Monthly:
+	case convoy.Monthly:
 		timeComponent = "$month"
 		format = monthlyIntervalFormat
-	case hookcamp.Yearly:
+	case convoy.Yearly:
 		timeComponent = "$year"
 		format = yearlyIntervalFormat
 	default:
@@ -130,54 +131,54 @@ func (db *messageRepo) LoadMessageIntervals(ctx context.Context, orgId string, s
 	return messagesIntervals, nil
 }
 
-func (db *messageRepo) LoadMessagesPagedByAppId(ctx context.Context, appId string, pageable models.Pageable) ([]hookcamp.Message, pager.PaginationData, error) {
-	filter := bson.M{"app_id": appId, "document_status": bson.M{"$ne": hookcamp.DeletedDocumentStatus}}
+func (db *messageRepo) LoadMessagesPagedByAppId(ctx context.Context, appId string, pageable models.Pageable) ([]convoy.Message, pager.PaginationData, error) {
+	filter := bson.M{"app_id": appId, "document_status": bson.M{"$ne": convoy.DeletedDocumentStatus}}
 
-	var messages []hookcamp.Message
+	var messages []convoy.Message
 	paginatedData, err := pager.New(db.inner).Context(ctx).Limit(int64(pageable.PerPage)).Page(int64(pageable.Page)).Sort("created_at", pageable.Sort).Filter(filter).Decode(&messages).Find()
 	if err != nil {
 		return messages, pager.PaginationData{}, err
 	}
 
 	if messages == nil {
-		messages = make([]hookcamp.Message, 0)
+		messages = make([]convoy.Message, 0)
 	}
 
 	return messages, paginatedData.Pagination, nil
 }
 
-func (db *messageRepo) FindMessageByID(ctx context.Context, id string) (*hookcamp.Message, error) {
-	m := new(hookcamp.Message)
+func (db *messageRepo) FindMessageByID(ctx context.Context, id string) (*convoy.Message, error) {
+	m := new(convoy.Message)
 
-	filter := bson.M{"uid": id, "document_status": bson.M{"$ne": hookcamp.DeletedDocumentStatus}}
+	filter := bson.M{"uid": id, "document_status": bson.M{"$ne": convoy.DeletedDocumentStatus}}
 
 	err := db.inner.FindOne(ctx, filter).
 		Decode(&m)
 	if errors.Is(err, mongo.ErrNoDocuments) {
-		err = hookcamp.ErrMessageNotFound
+		err = convoy.ErrMessageNotFound
 	}
 
 	return m, err
 }
 
-func (db *messageRepo) LoadMessagesScheduledForPosting(ctx context.Context) ([]hookcamp.Message, error) {
+func (db *messageRepo) LoadMessagesScheduledForPosting(ctx context.Context) ([]convoy.Message, error) {
 
-	filter := bson.M{"status": hookcamp.ScheduledMessageStatus,
-		"document_status":         bson.M{"$ne": hookcamp.DeletedDocumentStatus},
+	filter := bson.M{"status": convoy.ScheduledMessageStatus,
+		"document_status":         bson.M{"$ne": convoy.DeletedDocumentStatus},
 		"metadata.next_send_time": bson.M{"$lte": primitive.NewDateTimeFromTime(time.Now())}}
 
 	return db.loadMessagesByFilter(ctx, filter, nil)
 }
 
-func (db *messageRepo) loadMessagesByFilter(ctx context.Context, filter bson.M, findOptions *options.FindOptions) ([]hookcamp.Message, error) {
-	messages := make([]hookcamp.Message, 0)
+func (db *messageRepo) loadMessagesByFilter(ctx context.Context, filter bson.M, findOptions *options.FindOptions) ([]convoy.Message, error) {
+	messages := make([]convoy.Message, 0)
 	cur, err := db.inner.Find(ctx, filter, findOptions)
 	if err != nil {
 		return messages, err
 	}
 
 	for cur.Next(ctx) {
-		var message hookcamp.Message
+		var message convoy.Message
 		if err := cur.Decode(&message); err != nil {
 			return messages, err
 		}
@@ -196,32 +197,32 @@ func (db *messageRepo) loadMessagesByFilter(ctx context.Context, filter bson.M, 
 	return messages, nil
 }
 
-func (db *messageRepo) LoadMessagesForPostingRetry(ctx context.Context) ([]hookcamp.Message, error) {
+func (db *messageRepo) LoadMessagesForPostingRetry(ctx context.Context) ([]convoy.Message, error) {
 
 	filter := bson.M{
 		"$and": []bson.M{
-			{"status": hookcamp.RetryMessageStatus},
+			{"status": convoy.RetryMessageStatus},
 			{"metadata.next_send_time": bson.M{"$lte": primitive.NewDateTimeFromTime(time.Now())}},
-			{"document_status": bson.M{"$ne": hookcamp.DeletedDocumentStatus}},
+			{"document_status": bson.M{"$ne": convoy.DeletedDocumentStatus}},
 		},
 	}
 
 	return db.loadMessagesByFilter(ctx, filter, nil)
 }
 
-func (db *messageRepo) LoadAbandonedMessagesForPostingRetry(ctx context.Context) ([]hookcamp.Message, error) {
+func (db *messageRepo) LoadAbandonedMessagesForPostingRetry(ctx context.Context) ([]convoy.Message, error) {
 	filter := bson.M{
 		"$and": []bson.M{
-			{"status": hookcamp.ProcessingMessageStatus},
+			{"status": convoy.ProcessingMessageStatus},
 			{"metadata.next_send_time": bson.M{"$lte": primitive.NewDateTimeFromTime(time.Now())}},
-			{"document_status": bson.M{"$ne": hookcamp.DeletedDocumentStatus}},
+			{"document_status": bson.M{"$ne": convoy.DeletedDocumentStatus}},
 		},
 	}
 
 	return db.loadMessagesByFilter(ctx, filter, nil)
 }
 
-func (db *messageRepo) UpdateStatusOfMessages(ctx context.Context, messages []hookcamp.Message, status hookcamp.MessageStatus) error {
+func (db *messageRepo) UpdateStatusOfMessages(ctx context.Context, messages []convoy.Message, status convoy.MessageStatus) error {
 
 	filter := bson.M{"uid": bson.M{"$in": getIds(messages)}}
 	update := bson.M{"$set": bson.M{"status": status, "updated_at": primitive.NewDateTimeFromTime(time.Now())}}
@@ -239,7 +240,7 @@ func (db *messageRepo) UpdateStatusOfMessages(ctx context.Context, messages []ho
 	return nil
 }
 
-func getIds(messages []hookcamp.Message) []string {
+func getIds(messages []convoy.Message) []string {
 	ids := make([]string, 0)
 	for _, message := range messages {
 		ids = append(ids, message.UID)
@@ -247,7 +248,7 @@ func getIds(messages []hookcamp.Message) []string {
 	return ids
 }
 
-func (db *messageRepo) UpdateMessageWithAttempt(ctx context.Context, m hookcamp.Message, attempt hookcamp.MessageAttempt) error {
+func (db *messageRepo) UpdateMessageWithAttempt(ctx context.Context, m convoy.Message, attempt convoy.MessageAttempt) error {
 	filter := bson.M{"uid": m.UID}
 
 	update := bson.M{
@@ -272,20 +273,20 @@ func (db *messageRepo) UpdateMessageWithAttempt(ctx context.Context, m hookcamp.
 	return err
 }
 
-func (db *messageRepo) LoadMessagesPaged(ctx context.Context, orgId string, pageable models.Pageable) ([]hookcamp.Message, pager.PaginationData, error) {
-	filter := bson.M{}
+func (db *messageRepo) LoadMessagesPaged(ctx context.Context, orgId string, pageable models.Pageable) ([]convoy.Message, pager.PaginationData, error) {
+	filter := bson.M{"document_status": bson.M{"$ne": convoy.DeletedDocumentStatus}}
 	if !util.IsStringEmpty(orgId) {
-		filter = bson.M{"app_metadata.org_id": orgId, "document_status": bson.M{"$ne": hookcamp.DeletedDocumentStatus}}
+		filter = bson.M{"app_metadata.org_id": orgId, "document_status": bson.M{"$ne": convoy.DeletedDocumentStatus}}
 	}
 
-	var messages []hookcamp.Message
+	var messages []convoy.Message
 	paginatedData, err := pager.New(db.inner).Context(ctx).Limit(int64(pageable.PerPage)).Page(int64(pageable.Page)).Sort("created_at", pageable.Sort).Filter(filter).Decode(&messages).Find()
 	if err != nil {
 		return messages, pager.PaginationData{}, err
 	}
 
 	if messages == nil {
-		messages = make([]hookcamp.Message, 0)
+		messages = make([]convoy.Message, 0)
 	}
 
 	return messages, paginatedData.Pagination, nil

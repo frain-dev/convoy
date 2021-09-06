@@ -1,17 +1,18 @@
 package server
 
 import (
-	mongopagination "github.com/gobeam/mongo-go-pagination"
 	"net/http"
 
+	mongopagination "github.com/gobeam/mongo-go-pagination"
+
+	"github.com/frain-dev/convoy"
 	"github.com/go-chi/render"
-	"github.com/hookcamp/hookcamp"
 )
 
 type applicationHandler struct {
-	appRepo hookcamp.ApplicationRepository
-	orgRepo hookcamp.OrganisationRepository
-	msgRepo hookcamp.MessageRepository
+	appRepo convoy.ApplicationRepository
+	orgRepo convoy.OrganisationRepository
+	msgRepo convoy.MessageRepository
 }
 
 type pagedResponse struct {
@@ -19,7 +20,7 @@ type pagedResponse struct {
 	Pagination *mongopagination.PaginationData `json:"pagination,omitempty"`
 }
 
-func newApplicationHandler(msgRepo hookcamp.MessageRepository, appRepo hookcamp.ApplicationRepository, orgRepo hookcamp.OrganisationRepository) *applicationHandler {
+func newApplicationHandler(msgRepo convoy.MessageRepository, appRepo convoy.ApplicationRepository, orgRepo convoy.OrganisationRepository) *applicationHandler {
 
 	return &applicationHandler{
 		msgRepo: msgRepo,

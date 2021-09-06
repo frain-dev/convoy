@@ -2,13 +2,14 @@ package main
 
 import (
 	"errors"
-	"github.com/hookcamp/hookcamp/config"
-	"github.com/hookcamp/hookcamp/server"
-	"github.com/hookcamp/hookcamp/util"
-	"github.com/hookcamp/hookcamp/worker"
+	"time"
+
+	"github.com/frain-dev/convoy/config"
+	"github.com/frain-dev/convoy/server"
+	"github.com/frain-dev/convoy/util"
+	"github.com/frain-dev/convoy/worker"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
-	"time"
 )
 
 func addServerCommand(a *app) *cobra.Command {
@@ -19,7 +20,7 @@ func addServerCommand(a *app) *cobra.Command {
 		Short:   "Start the HTTP server",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			start := time.Now()
-			log.Info("Starting Hookcamp server...")
+			log.Info("Starting Convoy server...")
 
 			cfg, err := config.Get()
 			if err != nil {
@@ -32,7 +33,7 @@ func addServerCommand(a *app) *cobra.Command {
 			}
 
 			if cfg.Server.HTTP.Port <= 0 {
-				return errors.New("please provide the HTTP port in the hookcamp.json file")
+				return errors.New("please provide the HTTP port in the convoy.json file")
 			}
 
 			srv := server.New(cfg, a.messageRepo, a.applicationRepo, a.orgRepo)
@@ -41,7 +42,7 @@ func addServerCommand(a *app) *cobra.Command {
 			worker.NewScheduler(&a.queue, &a.messageRepo).Start()
 			worker.NewProducer(&a.queue, &a.messageRepo, cfg.Signature.Header).Start()
 
-			log.Infof("Started Hookcamp server in %s", time.Since(start))
+			log.Infof("Started convoy server in %s", time.Since(start))
 			return srv.ListenAndServe()
 		},
 	}

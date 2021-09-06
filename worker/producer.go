@@ -3,27 +3,28 @@ package worker
 import (
 	"context"
 	"encoding/json"
+	"time"
+
+	"github.com/frain-dev/convoy"
+	"github.com/frain-dev/convoy/config"
+	"github.com/frain-dev/convoy/net"
+	"github.com/frain-dev/convoy/queue"
+	"github.com/frain-dev/convoy/server/models"
+	"github.com/frain-dev/convoy/util"
 	"github.com/google/uuid"
-	"github.com/hookcamp/hookcamp"
-	"github.com/hookcamp/hookcamp/config"
-	"github.com/hookcamp/hookcamp/net"
-	"github.com/hookcamp/hookcamp/queue"
-	"github.com/hookcamp/hookcamp/server/models"
-	"github.com/hookcamp/hookcamp/util"
 	log "github.com/sirupsen/logrus"
 	"go.mongodb.org/mongo-driver/bson/primitive"
-	"time"
 )
 
 type Producer struct {
 	Data            chan queue.Message
-	msgRepo         *hookcamp.MessageRepository
+	msgRepo         *convoy.MessageRepository
 	dispatch        *net.Dispatcher
 	signatureHeader string
 	quit            chan chan error
 }
 
-func NewProducer(queuer *queue.Queuer, msgRepo *hookcamp.MessageRepository, signatureHeader config.SignatureHeaderProvider) *Producer {
+func NewProducer(queuer *queue.Queuer, msgRepo *convoy.MessageRepository, signatureHeader config.SignatureHeaderProvider) *Producer {
 	return &Producer{
 		Data:            (*queuer).Read(),
 		msgRepo:         msgRepo,
@@ -50,9 +51,9 @@ func (p *Producer) Start() {
 	}()
 }
 
-func (p *Producer) postMessages(msgRepo hookcamp.MessageRepository, m hookcamp.Message) {
+func (p *Producer) postMessages(msgRepo convoy.MessageRepository, m convoy.Message) {
 
-	var attempt hookcamp.MessageAttempt
+	var attempt convoy.MessageAttempt
 	var secret = m.AppMetadata.Secret
 
 	var done = true
@@ -83,10 +84,10 @@ func (p *Producer) postMessages(msgRepo hookcamp.MessageRepository, m hookcamp.M
 			return
 		}
 
-		attemptStatus := hookcamp.FailureMessageStatus
+		attemptStatus := convoy.FailureMessageStatus
 		start := time.Now()
 
-		resp, err := p.dispatch.SendRequest(e.TargetURL, string(hookcamp.HttpPost), bytes, p.signatureHeader, hmac)
+		resp, err := p.dispatch.SendRequest(e.TargetURL, string(convoy.HttpPost), bytes, p.signatureHeader, hmac)
 		status := "-"
 		statusCode := 0
 		if resp != nil {
@@ -99,14 +100,14 @@ func (p *Producer) postMessages(msgRepo hookcamp.MessageRepository, m hookcamp.M
 		requestLogger := log.WithFields(log.Fields{
 			"status":   status,
 			"uri":      e.TargetURL,
-			"method":   hookcamp.HttpPost,
+			"method":   convoy.HttpPost,
 			"duration": duration,
 		})
 
 		if err == nil && statusCode >= 200 && statusCode <= 299 {
 			requestLogger.Infof("%s", m.UID)
 			log.Infof("%s sent\n", m.UID)
-			attemptStatus = hookcamp.SuccessMessageStatus
+			attemptStatus = convoy.SuccessMessageStatus
 			e.Sent = true
 		} else {
 			requestLogger.Errorf("%s", m.UID)
@@ -121,10 +122,10 @@ func (p *Producer) postMessages(msgRepo hookcamp.MessageRepository, m hookcamp.M
 	}
 	m.Metadata.NumTrials++
 	if done {
-		m.Status = hookcamp.SuccessMessageStatus
+		m.Status = convoy.SuccessMessageStatus
 		m.Description = ""
 	} else {
-		m.Status = hookcamp.RetryMessageStatus
+		m.Status = convoy.RetryMessageStatus
 
 		delay := m.Metadata.IntervalSeconds
 		nextTime := time.Now().Add(time.Duration(delay) * time.Second)
@@ -135,14 +136,14 @@ func (p *Producer) postMessages(msgRepo hookcamp.MessageRepository, m hookcamp.M
 
 	if m.Metadata.NumTrials >= m.Metadata.RetryLimit {
 		if done {
-			if m.Status != hookcamp.SuccessMessageStatus {
+			if m.Status != convoy.SuccessMessageStatus {
 				log.Errorln("an anomaly has occurred. retry limit exceeded, fan out is done but event status is not successful")
-				m.Status = hookcamp.FailureMessageStatus
+				m.Status = convoy.FailureMessageStatus
 			}
 		} else {
 			log.Errorf("%s retry limit exceeded ", m.UID)
 			m.Description = "Retry limit exceeded"
-			m.Status = hookcamp.FailureMessageStatus
+			m.Status = convoy.FailureMessageStatus
 		}
 	}
 
@@ -152,9 +153,9 @@ func (p *Producer) postMessages(msgRepo hookcamp.MessageRepository, m hookcamp.M
 	}
 }
 
-func parseAttemptFromResponse(m hookcamp.Message, e hookcamp.EndpointMetadata, resp *net.Response, attemptStatus hookcamp.MessageStatus) hookcamp.MessageAttempt {
+func parseAttemptFromResponse(m convoy.Message, e convoy.EndpointMetadata, resp *net.Response, attemptStatus convoy.MessageStatus) convoy.MessageAttempt {
 
-	return hookcamp.MessageAttempt{
+	return convoy.MessageAttempt{
 		ID:         primitive.NewObjectID(),
 		UID:        uuid.New().String(),
 		MsgID:      m.UID,

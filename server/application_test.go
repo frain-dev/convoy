@@ -3,18 +3,19 @@ package server
 import (
 	"context"
 	"fmt"
-	pager "github.com/gobeam/mongo-go-pagination"
-	"github.com/hookcamp/hookcamp/server/models"
 	"net/http"
 	"net/http/httptest"
 	"strings"
 	"testing"
 	"time"
 
+	"github.com/frain-dev/convoy/server/models"
+	pager "github.com/gobeam/mongo-go-pagination"
+
+	"github.com/frain-dev/convoy"
+	"github.com/frain-dev/convoy/mocks"
 	"github.com/go-chi/chi/v5"
 	"github.com/golang/mock/gomock"
-	"github.com/hookcamp/hookcamp"
-	"github.com/hookcamp/hookcamp/mocks"
 	"github.com/sebdah/goldie/v2"
 )
 
@@ -57,7 +58,7 @@ func TestApplicationHandler_GetApp(t *testing.T) {
 			dbFn: func(appRepo *mocks.MockApplicationRepository, orgRepo *mocks.MockOrganisationRepository) {
 				appRepo.EXPECT().
 					FindApplicationByID(gomock.Any(), gomock.Any()).
-					Return(nil, hookcamp.ErrApplicationNotFound).Times(1)
+					Return(nil, convoy.ErrApplicationNotFound).Times(1)
 			},
 		},
 		{
@@ -68,11 +69,11 @@ func TestApplicationHandler_GetApp(t *testing.T) {
 			dbFn: func(appRepo *mocks.MockApplicationRepository, orgRepo *mocks.MockOrganisationRepository) {
 				appRepo.EXPECT().
 					FindApplicationByID(gomock.Any(), gomock.Any()).Times(1).
-					Return(&hookcamp.Application{
+					Return(&convoy.Application{
 						UID:       validID,
 						OrgID:     orgID,
 						Title:     "Valid application",
-						Endpoints: []hookcamp.Endpoint{},
+						Endpoints: []convoy.Endpoint{},
 					}, nil)
 
 			},
@@ -135,12 +136,12 @@ func TestApplicationHandler_GetApps(t *testing.T) {
 			dbFn: func(appRepo *mocks.MockApplicationRepository, orgRepo *mocks.MockOrganisationRepository) {
 				appRepo.EXPECT().
 					LoadApplications(gomock.Any()).Times(1).
-					Return([]hookcamp.Application{
+					Return([]convoy.Application{
 						{
 							UID:       validID,
 							OrgID:     orgID,
 							Title:     "Valid application - 0",
-							Endpoints: []hookcamp.Endpoint{},
+							Endpoints: []convoy.Endpoint{},
 						},
 					}, nil)
 
@@ -183,7 +184,7 @@ func TestApplicationHandler_CreateApp(t *testing.T) {
 
 	orgID := "1234567890"
 
-	organisation := &hookcamp.Organisation{
+	organisation := &convoy.Organisation{
 		UID: orgID,
 	}
 
@@ -274,11 +275,11 @@ func TestApplicationHandler_UpdateApp(t *testing.T) {
 
 				appRepo.EXPECT().
 					FindApplicationByID(gomock.Any(), gomock.Any()).Times(0).
-					Return(&hookcamp.Application{
+					Return(&convoy.Application{
 						UID:       appId,
 						OrgID:     orgID,
 						Title:     "Valid application update",
-						Endpoints: []hookcamp.Endpoint{},
+						Endpoints: []convoy.Endpoint{},
 					}, nil)
 
 			},
@@ -293,11 +294,11 @@ func TestApplicationHandler_UpdateApp(t *testing.T) {
 			rctx.URLParams.Add("appID", tc.appId)
 
 			request = request.WithContext(context.WithValue(request.Context(), chi.RouteCtxKey, rctx))
-			request = request.WithContext(context.WithValue(request.Context(), appCtx, &hookcamp.Application{
+			request = request.WithContext(context.WithValue(request.Context(), appCtx, &convoy.Application{
 				UID:       appId,
 				OrgID:     orgID,
 				Title:     "Valid application update",
-				Endpoints: []hookcamp.Endpoint{},
+				Endpoints: []convoy.Endpoint{},
 			}))
 
 			if tc.dbFn != nil {
@@ -357,11 +358,11 @@ func TestApplicationHandler_CreateAppEndpoint(t *testing.T) {
 
 				appRepo.EXPECT().
 					FindApplicationByID(gomock.Any(), gomock.Any()).Times(1).
-					Return(&hookcamp.Application{
+					Return(&convoy.Application{
 						UID:       appId,
 						OrgID:     orgID,
 						Title:     "Valid application endpoint",
-						Endpoints: []hookcamp.Endpoint{},
+						Endpoints: []convoy.Endpoint{},
 					}, nil)
 
 			},
@@ -430,11 +431,11 @@ func TestApplicationHandler_UpdateAppEndpoint_InvalidRequest(t *testing.T) {
 
 				appRepo.EXPECT().
 					FindApplicationByID(gomock.Any(), gomock.Any()).Times(0).
-					Return(&hookcamp.Application{
+					Return(&convoy.Application{
 						UID:       appId,
 						OrgID:     orgID,
 						Title:     "invalid application update",
-						Endpoints: []hookcamp.Endpoint{},
+						Endpoints: []convoy.Endpoint{},
 					}, nil)
 
 			},
@@ -450,11 +451,11 @@ func TestApplicationHandler_UpdateAppEndpoint_InvalidRequest(t *testing.T) {
 			rctx.URLParams.Add("endpointID", tc.endpointId)
 
 			request = request.WithContext(context.WithValue(request.Context(), chi.RouteCtxKey, rctx))
-			request = request.WithContext(context.WithValue(request.Context(), appCtx, &hookcamp.Application{
+			request = request.WithContext(context.WithValue(request.Context(), appCtx, &convoy.Application{
 				UID:       appId,
 				OrgID:     orgID,
 				Title:     "Valid application update",
-				Endpoints: []hookcamp.Endpoint{},
+				Endpoints: []convoy.Endpoint{},
 			}))
 
 			if tc.dbFn != nil {
@@ -516,11 +517,11 @@ func TestApplicationHandler_UpdateAppEndpoint_ValidRequest(t *testing.T) {
 
 				appRepo.EXPECT().
 					FindApplicationByID(gomock.Any(), gomock.Any()).Times(0).
-					Return(&hookcamp.Application{
+					Return(&convoy.Application{
 						UID:   appId,
 						OrgID: orgID,
 						Title: "Valid application update",
-						Endpoints: []hookcamp.Endpoint{
+						Endpoints: []convoy.Endpoint{
 							{
 								UID:         endpointId,
 								TargetURL:   "http://",
@@ -542,11 +543,11 @@ func TestApplicationHandler_UpdateAppEndpoint_ValidRequest(t *testing.T) {
 			rctx.URLParams.Add("endpointID", tc.endpointId)
 
 			request = request.WithContext(context.WithValue(request.Context(), chi.RouteCtxKey, rctx))
-			request = request.WithContext(context.WithValue(request.Context(), appCtx, &hookcamp.Application{
+			request = request.WithContext(context.WithValue(request.Context(), appCtx, &convoy.Application{
 				UID:   appId,
 				OrgID: orgID,
 				Title: "Valid application update",
-				Endpoints: []hookcamp.Endpoint{
+				Endpoints: []convoy.Endpoint{
 					{
 						UID:         endpointId,
 						TargetURL:   "http://",
@@ -664,7 +665,7 @@ func Test_applicationHandler_UpdateOrganisation(t *testing.T) {
 
 				orgRepo.EXPECT().
 					FetchOrganisationByID(gomock.Any(), gomock.Any()).Times(1).
-					Return(&hookcamp.Organisation{
+					Return(&convoy.Organisation{
 						UID:     orgID,
 						OrgName: "Valid organisation update",
 					}, nil)
@@ -729,7 +730,7 @@ func Test_applicationHandler_GetOrganisation(t *testing.T) {
 			dbFn: func(appRepo *mocks.MockApplicationRepository, orgRepo *mocks.MockOrganisationRepository) {
 				orgRepo.EXPECT().
 					FetchOrganisationByID(gomock.Any(), gomock.Any()).
-					Return(nil, hookcamp.ErrOrganisationNotFound).Times(1)
+					Return(nil, convoy.ErrOrganisationNotFound).Times(1)
 			},
 		},
 		{
@@ -740,7 +741,7 @@ func Test_applicationHandler_GetOrganisation(t *testing.T) {
 			dbFn: func(appRepo *mocks.MockApplicationRepository, orgRepo *mocks.MockOrganisationRepository) {
 				orgRepo.EXPECT().
 					FetchOrganisationByID(gomock.Any(), gomock.Any()).Times(1).
-					Return(&hookcamp.Organisation{
+					Return(&convoy.Organisation{
 						UID:     orgID,
 						OrgName: "Valid organisation",
 					}, nil)
@@ -803,7 +804,7 @@ func Test_applicationHandler_GetOrganisations(t *testing.T) {
 			dbFn: func(appRepo *mocks.MockApplicationRepository, orgRepo *mocks.MockOrganisationRepository) {
 				orgRepo.EXPECT().
 					LoadOrganisations(gomock.Any()).Times(1).
-					Return([]*hookcamp.Organisation{
+					Return([]*convoy.Organisation{
 						{
 							UID:     orgID,
 							OrgName: "Valid organisations - 0",
@@ -849,7 +850,7 @@ func Test_applicationHandler_GetDashboardSummary(t *testing.T) {
 
 	orgID := "1234567890"
 
-	organisation := &hookcamp.Organisation{
+	organisation := &convoy.Organisation{
 		UID:     orgID,
 		OrgName: "Valid organisation",
 	}
@@ -869,12 +870,12 @@ func Test_applicationHandler_GetDashboardSummary(t *testing.T) {
 			dbFn: func(msgRepo *mocks.MockMessageRepository, appRepo *mocks.MockApplicationRepository, orgRepo *mocks.MockOrganisationRepository) {
 				appRepo.EXPECT().
 					SearchApplicationsByOrgId(gomock.Any(), gomock.Any(), gomock.Any()).Times(1).
-					Return([]hookcamp.Application{
+					Return([]convoy.Application{
 						{
 							UID:       "validID",
 							OrgID:     orgID,
 							Title:     "Valid application - 0",
-							Endpoints: []hookcamp.Endpoint{},
+							Endpoints: []convoy.Endpoint{},
 						},
 					}, nil)
 				msgRepo.EXPECT().
@@ -933,7 +934,7 @@ func Test_applicationHandler_GetPaginatedApps(t *testing.T) {
 
 	orgID := "1234567890"
 
-	organisation := &hookcamp.Organisation{
+	organisation := &convoy.Organisation{
 		UID:     orgID,
 		OrgName: "Valid organisation",
 	}
@@ -953,12 +954,12 @@ func Test_applicationHandler_GetPaginatedApps(t *testing.T) {
 			dbFn: func(appRepo *mocks.MockApplicationRepository, orgRepo *mocks.MockOrganisationRepository) {
 				appRepo.EXPECT().
 					LoadApplicationsPagedByOrgId(gomock.Any(), gomock.Any(), gomock.Any()).Times(1).
-					Return([]hookcamp.Application{
+					Return([]convoy.Application{
 						{
 							UID:       "validID",
 							OrgID:     orgID,
 							Title:     "Valid application - 0",
-							Endpoints: []hookcamp.Endpoint{},
+							Endpoints: []convoy.Endpoint{},
 						},
 					},
 						pager.PaginationData{},

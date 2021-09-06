@@ -14,18 +14,18 @@ import (
 	"time"
 
 	"github.com/felixge/httpsnoop"
+	"github.com/frain-dev/convoy/config"
+	"github.com/frain-dev/convoy/server/models"
+	"github.com/frain-dev/convoy/util"
 	pager "github.com/gobeam/mongo-go-pagination"
 	"github.com/google/uuid"
-	"github.com/hookcamp/hookcamp/config"
-	"github.com/hookcamp/hookcamp/server/models"
-	"github.com/hookcamp/hookcamp/util"
 	log "github.com/sirupsen/logrus"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 
+	"github.com/frain-dev/convoy"
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
 	"github.com/go-chi/render"
-	"github.com/hookcamp/hookcamp"
 )
 
 type contextKey string
@@ -91,6 +91,16 @@ func ensureBasicAuthFromRequest(a *config.AuthConfiguration, r *http.Request) er
 func jsonResponse(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
+
+		// TODO: Remove this cors filter bit
+		w.Header().Set("Access-Control-Allow-Origin", "*")
+		w.Header().Set("Access-Control-Allow-Methods", "POST, GET, OPTIONS, PUT, DELETE")
+		w.Header().Set("Access-Control-Allow-Headers", "Accept, Content-Type, Content-Length, Accept-Encoding, X-CSRF-Token, Authorization")
+
+		if r.Method == "OPTIONS" {
+			return
+		}
+
 		next.ServeHTTP(w, r)
 	})
 }
@@ -108,7 +118,7 @@ func jsonResponse(next http.Handler) http.Handler {
 // 	})
 // }
 
-func requireApp(appRepo hookcamp.ApplicationRepository) func(next http.Handler) http.Handler {
+func requireApp(appRepo convoy.ApplicationRepository) func(next http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -121,7 +131,7 @@ func requireApp(appRepo hookcamp.ApplicationRepository) func(next http.Handler) 
 				msg := "an error occurred while retrieving app details"
 				statusCode := http.StatusInternalServerError
 
-				if errors.Is(err, hookcamp.ErrApplicationNotFound) {
+				if errors.Is(err, convoy.ErrApplicationNotFound) {
 					msg = err.Error()
 					statusCode = http.StatusNotFound
 				}
@@ -136,7 +146,7 @@ func requireApp(appRepo hookcamp.ApplicationRepository) func(next http.Handler) 
 	}
 }
 
-func ensureNewApp(orgRepo hookcamp.OrganisationRepository, appRepo hookcamp.ApplicationRepository) func(next http.Handler) http.Handler {
+func ensureNewApp(orgRepo convoy.OrganisationRepository, appRepo convoy.ApplicationRepository) func(next http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -164,7 +174,7 @@ func ensureNewApp(orgRepo hookcamp.OrganisationRepository, appRepo hookcamp.Appl
 				msg := "an error occurred while fetching organisation"
 				statusCode := http.StatusInternalServerError
 
-				if errors.Is(err, hookcamp.ErrOrganisationNotFound) {
+				if errors.Is(err, convoy.ErrOrganisationNotFound) {
 					msg = err.Error()
 					statusCode = http.StatusBadRequest
 				}
@@ -181,15 +191,15 @@ func ensureNewApp(orgRepo hookcamp.OrganisationRepository, appRepo hookcamp.Appl
 			}
 
 			uid := uuid.New().String()
-			app := &hookcamp.Application{
+			app := &convoy.Application{
 				UID:            uid,
 				OrgID:          org.UID,
 				Title:          appName,
 				Secret:         newApp.Secret,
 				CreatedAt:      primitive.NewDateTimeFromTime(time.Now()),
 				UpdatedAt:      primitive.NewDateTimeFromTime(time.Now()),
-				Endpoints:      []hookcamp.Endpoint{},
-				DocumentStatus: hookcamp.ActiveDocumentStatus,
+				Endpoints:      []convoy.Endpoint{},
+				DocumentStatus: convoy.ActiveDocumentStatus,
 			}
 
 			err = appRepo.CreateApplication(r.Context(), app)
@@ -204,7 +214,7 @@ func ensureNewApp(orgRepo hookcamp.OrganisationRepository, appRepo hookcamp.Appl
 	}
 }
 
-func ensureAppUpdate(appRepo hookcamp.ApplicationRepository) func(next http.Handler) http.Handler {
+func ensureAppUpdate(appRepo convoy.ApplicationRepository) func(next http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -241,7 +251,7 @@ func ensureAppUpdate(appRepo hookcamp.ApplicationRepository) func(next http.Hand
 	}
 }
 
-func ensureAppDeletion(appRepo hookcamp.ApplicationRepository) func(next http.Handler) http.Handler {
+func ensureAppDeletion(appRepo convoy.ApplicationRepository) func(next http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -260,7 +270,7 @@ func ensureAppDeletion(appRepo hookcamp.ApplicationRepository) func(next http.Ha
 	}
 }
 
-func ensureAppEndpointDeletion(appRepo hookcamp.ApplicationRepository) func(next http.Handler) http.Handler {
+func ensureAppEndpointDeletion(appRepo convoy.ApplicationRepository) func(next http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -286,12 +296,14 @@ func ensureAppEndpointDeletion(appRepo hookcamp.ApplicationRepository) func(next
 	}
 }
 
-func fetchAllApps(appRepo hookcamp.ApplicationRepository) func(next http.Handler) http.Handler {
+func fetchAllApps(appRepo convoy.ApplicationRepository) func(next http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 
-			apps, err := appRepo.LoadApplications(r.Context())
+			orgId := r.URL.Query().Get("orgId")
+
+			apps, err := appRepo.LoadApplications(r.Context(), orgId)
 			if err != nil {
 				_ = render.Render(w, r, newErrorResponse("an error occurred while fetching apps", http.StatusInternalServerError))
 				return
@@ -303,7 +315,7 @@ func fetchAllApps(appRepo hookcamp.ApplicationRepository) func(next http.Handler
 	}
 }
 
-func ensureNewAppEndpoint(appRepo hookcamp.ApplicationRepository) func(next http.Handler) http.Handler {
+func ensureNewAppEndpoint(appRepo convoy.ApplicationRepository) func(next http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -322,7 +334,7 @@ func ensureNewAppEndpoint(appRepo hookcamp.ApplicationRepository) func(next http
 				msg := "an error occurred while retrieving app details"
 				statusCode := http.StatusInternalServerError
 
-				if errors.Is(err, hookcamp.ErrApplicationNotFound) {
+				if errors.Is(err, convoy.ErrApplicationNotFound) {
 					msg = err.Error()
 					statusCode = http.StatusNotFound
 				}
@@ -331,7 +343,7 @@ func ensureNewAppEndpoint(appRepo hookcamp.ApplicationRepository) func(next http
 				return
 			}
 
-			endpoint := &hookcamp.Endpoint{
+			endpoint := &convoy.Endpoint{
 				UID:         uuid.New().String(),
 				TargetURL:   e.URL,
 				Description: e.Description,
@@ -368,8 +380,8 @@ func fetchAppEndpoints() func(next http.Handler) http.Handler {
 	}
 }
 
-func filterDeletedEndpoints(endpoints []hookcamp.Endpoint) []hookcamp.Endpoint {
-	activeEndpoints := make([]hookcamp.Endpoint, 0)
+func filterDeletedEndpoints(endpoints []convoy.Endpoint) []convoy.Endpoint {
+	activeEndpoints := make([]convoy.Endpoint, 0)
 	for _, endpoint := range endpoints {
 		if endpoint.DeletedAt == 0 {
 			activeEndpoints = append(activeEndpoints, endpoint)
@@ -404,7 +416,7 @@ func parseEndpointFromBody(body io.ReadCloser) (models.Endpoint, error) {
 	return e, nil
 }
 
-func ensureAppEndpointUpdate(appRepo hookcamp.ApplicationRepository) func(next http.Handler) http.Handler {
+func ensureAppEndpointUpdate(appRepo convoy.ApplicationRepository) func(next http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -458,7 +470,7 @@ func requireAppEndpoint() func(next http.Handler) http.Handler {
 	}
 }
 
-func updateEndpointIfFound(endpoints *[]hookcamp.Endpoint, id string, e models.Endpoint) (*[]hookcamp.Endpoint, *hookcamp.Endpoint, error) {
+func updateEndpointIfFound(endpoints *[]convoy.Endpoint, id string, e models.Endpoint) (*[]convoy.Endpoint, *convoy.Endpoint, error) {
 	for i, endpoint := range *endpoints {
 		if endpoint.UID == id && endpoint.DeletedAt == 0 {
 			endpoint.TargetURL = e.URL
@@ -468,19 +480,19 @@ func updateEndpointIfFound(endpoints *[]hookcamp.Endpoint, id string, e models.E
 			return endpoints, &endpoint, nil
 		}
 	}
-	return endpoints, nil, hookcamp.ErrEndpointNotFound
+	return endpoints, nil, convoy.ErrEndpointNotFound
 }
 
-func findEndpoint(endpoints *[]hookcamp.Endpoint, id string) (*hookcamp.Endpoint, error) {
+func findEndpoint(endpoints *[]convoy.Endpoint, id string) (*convoy.Endpoint, error) {
 	for _, endpoint := range *endpoints {
 		if endpoint.UID == id && endpoint.DeletedAt == 0 {
 			return &endpoint, nil
 		}
 	}
-	return nil, hookcamp.ErrEndpointNotFound
+	return nil, convoy.ErrEndpointNotFound
 }
 
-func ensureNewOrganisation(orgRepo hookcamp.OrganisationRepository) func(next http.Handler) http.Handler {
+func ensureNewOrganisation(orgRepo convoy.OrganisationRepository) func(next http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -497,12 +509,12 @@ func ensureNewOrganisation(orgRepo hookcamp.OrganisationRepository) func(next ht
 				_ = render.Render(w, r, newErrorResponse("please provide a valid name", http.StatusBadRequest))
 				return
 			}
-			org := &hookcamp.Organisation{
+			org := &convoy.Organisation{
 				UID:            uuid.New().String(),
 				OrgName:        orgName,
 				CreatedAt:      primitive.NewDateTimeFromTime(time.Now()),
 				UpdatedAt:      primitive.NewDateTimeFromTime(time.Now()),
-				DocumentStatus: hookcamp.ActiveDocumentStatus,
+				DocumentStatus: convoy.ActiveDocumentStatus,
 			}
 
 			err = orgRepo.CreateOrganisation(r.Context(), org)
@@ -517,7 +529,7 @@ func ensureNewOrganisation(orgRepo hookcamp.OrganisationRepository) func(next ht
 	}
 }
 
-func fetchAllOrganisations(orgRepo hookcamp.OrganisationRepository) func(next http.Handler) http.Handler {
+func fetchAllOrganisations(orgRepo convoy.OrganisationRepository) func(next http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -534,7 +546,7 @@ func fetchAllOrganisations(orgRepo hookcamp.OrganisationRepository) func(next ht
 	}
 }
 
-func requireOrganisation(orgRepo hookcamp.OrganisationRepository) func(next http.Handler) http.Handler {
+func requireOrganisation(orgRepo convoy.OrganisationRepository) func(next http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -547,7 +559,7 @@ func requireOrganisation(orgRepo hookcamp.OrganisationRepository) func(next http
 				msg := "an error occurred while retrieving organisation details"
 				statusCode := http.StatusInternalServerError
 
-				if errors.Is(err, hookcamp.ErrOrganisationNotFound) {
+				if errors.Is(err, convoy.ErrOrganisationNotFound) {
 					msg = err.Error()
 					statusCode = http.StatusNotFound
 				}
@@ -562,7 +574,7 @@ func requireOrganisation(orgRepo hookcamp.OrganisationRepository) func(next http
 	}
 }
 
-func ensureOrganisationUpdate(orgRepo hookcamp.OrganisationRepository) func(next http.Handler) http.Handler {
+func ensureOrganisationUpdate(orgRepo convoy.OrganisationRepository) func(next http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -588,7 +600,7 @@ func ensureOrganisationUpdate(orgRepo hookcamp.OrganisationRepository) func(next
 				msg := "an error occurred while retrieving organisation details"
 				statusCode := http.StatusInternalServerError
 
-				if errors.Is(err, hookcamp.ErrOrganisationNotFound) {
+				if errors.Is(err, convoy.ErrOrganisationNotFound) {
 					msg = err.Error()
 					statusCode = http.StatusNotFound
 				}
@@ -652,7 +664,7 @@ func pagination(next http.Handler) http.Handler {
 	})
 }
 
-func fetchOrganisationApps(appRepo hookcamp.ApplicationRepository) func(next http.Handler) http.Handler {
+func fetchOrganisationApps(appRepo convoy.ApplicationRepository) func(next http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -674,7 +686,7 @@ func fetchOrganisationApps(appRepo hookcamp.ApplicationRepository) func(next htt
 	}
 }
 
-func fetchDashboardSummary(appRepo hookcamp.ApplicationRepository, msgRepo hookcamp.MessageRepository) func(next http.Handler) http.Handler {
+func fetchDashboardSummary(appRepo convoy.ApplicationRepository, msgRepo convoy.MessageRepository) func(next http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -700,7 +712,7 @@ func fetchDashboardSummary(appRepo hookcamp.ApplicationRepository, msgRepo hookc
 				return
 			}
 
-			if !hookcamp.IsValidPeriod(period) {
+			if !convoy.IsValidPeriod(period) {
 				_ = render.Render(w, r, newErrorResponse("please specify a type query in (daily, weekly, monthly, yearly)", http.StatusBadRequest))
 				return
 			}
@@ -716,7 +728,7 @@ func fetchDashboardSummary(appRepo hookcamp.ApplicationRepository, msgRepo hookc
 				}
 			}
 
-			p := hookcamp.PeriodValues[period]
+			p := convoy.PeriodValues[period]
 			if err := ensurePeriod(startT, endT); err != nil {
 				_ = render.Render(w, r, newErrorResponse(fmt.Sprintf("invalid period '%s': %s", period, err.Error()), http.StatusBadRequest))
 				return
@@ -762,7 +774,7 @@ func ensurePeriod(start time.Time, end time.Time) error {
 	return nil
 }
 
-func computeDashboardMessages(ctx context.Context, orgId string, msgRepo hookcamp.MessageRepository, searchParams models.SearchParams, period hookcamp.Period) (uint64, []models.MessageInterval, error) {
+func computeDashboardMessages(ctx context.Context, orgId string, msgRepo convoy.MessageRepository, searchParams models.SearchParams, period convoy.Period) (uint64, []models.MessageInterval, error) {
 
 	var messagesSent uint64
 
@@ -808,73 +820,73 @@ func requireAuth() func(next http.Handler) http.Handler {
 }
 
 func setApplicationInContext(ctx context.Context,
-	app *hookcamp.Application) context.Context {
+	app *convoy.Application) context.Context {
 	return context.WithValue(ctx, appCtx, app)
 }
 
-func getApplicationFromContext(ctx context.Context) *hookcamp.Application {
-	return ctx.Value(appCtx).(*hookcamp.Application)
+func getApplicationFromContext(ctx context.Context) *convoy.Application {
+	return ctx.Value(appCtx).(*convoy.Application)
 }
 
 func setMessageInContext(ctx context.Context,
-	msg *hookcamp.Message) context.Context {
+	msg *convoy.Message) context.Context {
 	return context.WithValue(ctx, msgCtx, msg)
 }
 
-func getMessageFromContext(ctx context.Context) *hookcamp.Message {
-	return ctx.Value(msgCtx).(*hookcamp.Message)
+func getMessageFromContext(ctx context.Context) *convoy.Message {
+	return ctx.Value(msgCtx).(*convoy.Message)
 }
 
 func setMessagesInContext(ctx context.Context,
-	msg *[]hookcamp.Message) context.Context {
+	msg *[]convoy.Message) context.Context {
 	return context.WithValue(ctx, msgCtx, msg)
 }
 
-func getMessagesFromContext(ctx context.Context) *[]hookcamp.Message {
-	return ctx.Value(msgCtx).(*[]hookcamp.Message)
+func getMessagesFromContext(ctx context.Context) *[]convoy.Message {
+	return ctx.Value(msgCtx).(*[]convoy.Message)
 }
 
 func setApplicationsInContext(ctx context.Context,
-	apps *[]hookcamp.Application) context.Context {
+	apps *[]convoy.Application) context.Context {
 	return context.WithValue(ctx, appCtx, apps)
 }
 
-func getApplicationsFromContext(ctx context.Context) *[]hookcamp.Application {
-	return ctx.Value(appCtx).(*[]hookcamp.Application)
+func getApplicationsFromContext(ctx context.Context) *[]convoy.Application {
+	return ctx.Value(appCtx).(*[]convoy.Application)
 }
 
 func setApplicationEndpointInContext(ctx context.Context,
-	endpoint *hookcamp.Endpoint) context.Context {
+	endpoint *convoy.Endpoint) context.Context {
 	return context.WithValue(ctx, endpointCtx, endpoint)
 }
 
-func getApplicationEndpointFromContext(ctx context.Context) *hookcamp.Endpoint {
-	return ctx.Value(endpointCtx).(*hookcamp.Endpoint)
+func getApplicationEndpointFromContext(ctx context.Context) *convoy.Endpoint {
+	return ctx.Value(endpointCtx).(*convoy.Endpoint)
 }
 
 func setApplicationEndpointsInContext(ctx context.Context,
-	endpoints *[]hookcamp.Endpoint) context.Context {
+	endpoints *[]convoy.Endpoint) context.Context {
 	return context.WithValue(ctx, endpointCtx, endpoints)
 }
 
-func getApplicationEndpointsFromContext(ctx context.Context) *[]hookcamp.Endpoint {
-	return ctx.Value(endpointCtx).(*[]hookcamp.Endpoint)
+func getApplicationEndpointsFromContext(ctx context.Context) *[]convoy.Endpoint {
+	return ctx.Value(endpointCtx).(*[]convoy.Endpoint)
 }
 
-func setOrganisationInContext(ctx context.Context, organisation *hookcamp.Organisation) context.Context {
+func setOrganisationInContext(ctx context.Context, organisation *convoy.Organisation) context.Context {
 	return context.WithValue(ctx, orgCtx, organisation)
 }
 
-func getOrganisationFromContext(ctx context.Context) *hookcamp.Organisation {
-	return ctx.Value(orgCtx).(*hookcamp.Organisation)
+func getOrganisationFromContext(ctx context.Context) *convoy.Organisation {
+	return ctx.Value(orgCtx).(*convoy.Organisation)
 }
 
-func setOrganisationsInContext(ctx context.Context, organisations []*hookcamp.Organisation) context.Context {
+func setOrganisationsInContext(ctx context.Context, organisations []*convoy.Organisation) context.Context {
 	return context.WithValue(ctx, orgCtx, organisations)
 }
 
-func getOrganisationsFromContext(ctx context.Context) []*hookcamp.Organisation {
-	return ctx.Value(orgCtx).([]*hookcamp.Organisation)
+func getOrganisationsFromContext(ctx context.Context) []*convoy.Organisation {
+	return ctx.Value(orgCtx).([]*convoy.Organisation)
 }
 
 func setPageableInContext(ctx context.Context, pageable models.Pageable) context.Context {
@@ -902,21 +914,21 @@ func getDashboardSummaryFromContext(ctx context.Context) *models.DashboardSummar
 }
 
 func setDeliveryAttemptInContext(ctx context.Context,
-	attempt *hookcamp.MessageAttempt) context.Context {
+	attempt *convoy.MessageAttempt) context.Context {
 	return context.WithValue(ctx, deliveryAttemptsCtx, attempt)
 }
 
-func getDeliveryAttemptFromContext(ctx context.Context) *hookcamp.MessageAttempt {
-	return ctx.Value(deliveryAttemptsCtx).(*hookcamp.MessageAttempt)
+func getDeliveryAttemptFromContext(ctx context.Context) *convoy.MessageAttempt {
+	return ctx.Value(deliveryAttemptsCtx).(*convoy.MessageAttempt)
 }
 
 func setDeliveryAttemptsInContext(ctx context.Context,
-	attempts *[]hookcamp.MessageAttempt) context.Context {
+	attempts *[]convoy.MessageAttempt) context.Context {
 	return context.WithValue(ctx, deliveryAttemptsCtx, attempts)
 }
 
-func getDeliveryAttemptsFromContext(ctx context.Context) *[]hookcamp.MessageAttempt {
-	return ctx.Value(deliveryAttemptsCtx).(*[]hookcamp.MessageAttempt)
+func getDeliveryAttemptsFromContext(ctx context.Context) *[]convoy.MessageAttempt {
+	return ctx.Value(deliveryAttemptsCtx).(*[]convoy.MessageAttempt)
 }
 
 func setAuthConfigInContext(ctx context.Context, a *config.AuthConfiguration) context.Context {

@@ -1,0 +1,29 @@
+{
+  "database": {
+    "dsn": "mongodb://root:rootpassword@localhost:27017"
+  },
+  "queue": {
+    "type": "redis",
+    "redis": {
+      "dsn": "redis://localhost:8379"
+    }
+  },
+  "server": {
+    "http": {
+      "port": 5005
+    }
+  },
+  "auth": {
+    "type": "none"
+  },
+  "strategy": {
+    "type": "default",
+    "default": {
+      "intervalSeconds": 125,
+      "retryLimit": 15
+    }
+  },
+  "signature": {
+    "header": "X-Company-Event-WebHook-Signature"
+  }
+}

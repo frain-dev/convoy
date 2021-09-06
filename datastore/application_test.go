@@ -1,3 +1,4 @@
+//go:build integration
 // +build integration
 
 package datastore
@@ -7,8 +8,8 @@ import (
 	"errors"
 	"testing"
 
+	"github.com/frain-dev/convoy"
 	"github.com/google/uuid"
-	"github.com/hookcamp/hookcamp"
 	"github.com/stretchr/testify/require"
 )
 
@@ -19,13 +20,13 @@ func Test_UpdateApplication(t *testing.T) {
 	orgRepo := NewOrganisationRepo(db)
 	appRepo := NewApplicationRepo(db)
 
-	newOrg := &hookcamp.Organisation{
+	newOrg := &convoy.Organisation{
 		OrgName: "Random new organisation",
 	}
 
 	require.NoError(t, orgRepo.CreateOrganisation(context.Background(), newOrg))
 
-	app := &hookcamp.Application{
+	app := &convoy.Application{
 		Title: "Next application name",
 		OrgID: newOrg.UID,
 	}
@@ -51,13 +52,13 @@ func Test_CreateApplication(t *testing.T) {
 	orgRepo := NewOrganisationRepo(db)
 	appRepo := NewApplicationRepo(db)
 
-	newOrg := &hookcamp.Organisation{
+	newOrg := &convoy.Organisation{
 		OrgName: "Random new organisation",
 	}
 
 	require.NoError(t, orgRepo.CreateOrganisation(context.Background(), newOrg))
 
-	app := &hookcamp.Application{
+	app := &convoy.Application{
 		Title: "Next application name",
 		OrgID: newOrg.UID,
 	}
@@ -71,7 +72,7 @@ func Test_LoadApplications(t *testing.T) {
 
 	appRepo := NewApplicationRepo(db)
 
-	apps, err := appRepo.LoadApplications(context.Background())
+	apps, err := appRepo.LoadApplications(context.Background(), "")
 	require.NoError(t, err)
 
 	require.True(t, len(apps) > 0)
@@ -86,17 +87,17 @@ func Test_FindApplicationByID(t *testing.T) {
 	app, err := appRepo.FindApplicationByID(context.Background(), uuid.New().String())
 	require.Error(t, err)
 
-	require.True(t, errors.Is(err, hookcamp.ErrApplicationNotFound))
+	require.True(t, errors.Is(err, convoy.ErrApplicationNotFound))
 
 	orgRepo := NewOrganisationRepo(db)
 
-	newOrg := &hookcamp.Organisation{
+	newOrg := &convoy.Organisation{
 		OrgName: "Yet another Random new organisation",
 	}
 
 	require.NoError(t, orgRepo.CreateOrganisation(context.Background(), newOrg))
 
-	app = &hookcamp.Application{
+	app = &convoy.Application{
 		Title: "Next application name again",
 		OrgID: newOrg.UID,
 	}

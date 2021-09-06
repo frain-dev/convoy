@@ -27,7 +27,7 @@ func getApplications(a *app) *cobra.Command {
 		Aliases: []string{"apps"},
 		RunE: func(cmd *cobra.Command, args []string) error {
 
-			apps, err := a.applicationRepo.LoadApplications(context.Background())
+			apps, err := a.applicationRepo.LoadApplications(context.Background(), "")
 			if err != nil {
 				return err
 			}

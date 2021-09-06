@@ -1,16 +1,16 @@
-version: '3'
+version: "3"
 
 services:
   web:
     build:
       context: .
       dockerfile: Dockerfile
-    entrypoint: ["./cmd", "server", "--config", "hookcamp-docker.json"]
+    entrypoint: ["./cmd", "server", "--config", "convoy-docker.json"]
     ports:
       - 5005:5005
     links:
       - mongodb:localhost
-#      - redis_server:localhost
+    #      - redis_server:localhost
     depends_on:
       - mongodb
       - redis_server

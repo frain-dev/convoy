@@ -7,15 +7,15 @@ import (
 	"errors"
 	"strings"
 
+	"github.com/frain-dev/convoy"
+	"github.com/frain-dev/convoy/config"
+	"github.com/frain-dev/convoy/queue"
+	"github.com/frain-dev/convoy/util"
 	"github.com/go-redis/redis/v8"
-	"github.com/hookcamp/hookcamp"
-	"github.com/hookcamp/hookcamp/config"
-	"github.com/hookcamp/hookcamp/queue"
-	"github.com/hookcamp/hookcamp/util"
 )
 
 const (
-	defaultChannel = "hookcamp"
+	defaultChannel = "convoy"
 )
 
 type client struct {
@@ -64,7 +64,7 @@ func (c *client) Read() chan queue.Message {
 
 	go func() {
 		for msg := range c.pubsubChannel.Channel() {
-			var m hookcamp.Message
+			var m convoy.Message
 
 			if err := json.NewDecoder(strings.
 				NewReader(msg.Payload)).
@@ -87,7 +87,7 @@ func (c *client) Read() chan queue.Message {
 }
 
 func (c *client) Write(ctx context.Context,
-	msg hookcamp.Message) error {
+	msg convoy.Message) error {
 	b := new(bytes.Buffer)
 
 	if err := json.NewEncoder(b).Encode(&msg); err != nil {

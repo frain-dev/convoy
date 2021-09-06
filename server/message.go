@@ -3,20 +3,21 @@ package server
 import (
 	"encoding/json"
 	"errors"
+	"net/http"
+	"time"
+
+	"github.com/frain-dev/convoy"
+	"github.com/frain-dev/convoy/config"
+	"github.com/frain-dev/convoy/server/models"
+	"github.com/frain-dev/convoy/util"
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/render"
 	"github.com/google/uuid"
-	"github.com/hookcamp/hookcamp"
-	"github.com/hookcamp/hookcamp/config"
-	"github.com/hookcamp/hookcamp/server/models"
-	"github.com/hookcamp/hookcamp/util"
 	log "github.com/sirupsen/logrus"
 	"go.mongodb.org/mongo-driver/bson/primitive"
-	"net/http"
-	"time"
 )
 
-func ensureNewMessage(appRepo hookcamp.ApplicationRepository, msgRepo hookcamp.MessageRepository) func(next http.Handler) http.Handler {
+func ensureNewMessage(appRepo convoy.ApplicationRepository, msgRepo convoy.MessageRepository) func(next http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -50,7 +51,7 @@ func ensureNewMessage(appRepo hookcamp.ApplicationRepository, msgRepo hookcamp.M
 				msg := "an error occurred while retrieving app details"
 				statusCode := http.StatusInternalServerError
 
-				if errors.Is(err, hookcamp.ErrApplicationNotFound) {
+				if errors.Is(err, convoy.ErrApplicationNotFound) {
 					msg = err.Error()
 					statusCode = http.StatusNotFound
 				}
@@ -82,28 +83,28 @@ func ensureNewMessage(appRepo hookcamp.ApplicationRepository, msgRepo hookcamp.M
 				return
 			}
 
-			msg := &hookcamp.Message{
+			msg := &convoy.Message{
 				UID:       uuid.New().String(),
 				AppID:     app.UID,
-				EventType: hookcamp.EventType(eventType),
+				EventType: convoy.EventType(eventType),
 				Data:      d,
-				Metadata: &hookcamp.MessageMetadata{
+				Metadata: &convoy.MessageMetadata{
 					Strategy:        cfg.Strategy.Type,
 					NumTrials:       0,
 					IntervalSeconds: intervalSeconds,
 					RetryLimit:      retryLimit,
 					NextSendTime:    primitive.NewDateTimeFromTime(time.Now().Add(time.Duration(intervalSeconds) * time.Second)),
 				},
-				MessageAttempts: make([]hookcamp.MessageAttempt, 0),
+				MessageAttempts: make([]convoy.MessageAttempt, 0),
 				CreatedAt:       primitive.NewDateTimeFromTime(time.Now()),
 				UpdatedAt:       primitive.NewDateTimeFromTime(time.Now()),
-				AppMetadata: &hookcamp.AppMetadata{
+				AppMetadata: &convoy.AppMetadata{
 					OrgID:     app.OrgID,
 					Secret:    app.Secret,
 					Endpoints: util.ParseMetadataFromEndpoints(app.Endpoints),
 				},
-				Status:         hookcamp.ScheduledMessageStatus,
-				DocumentStatus: hookcamp.ActiveDocumentStatus,
+				Status:         convoy.ScheduledMessageStatus,
+				DocumentStatus: convoy.ActiveDocumentStatus,
 			}
 
 			err = msgRepo.CreateMessage(r.Context(), msg)
@@ -117,7 +118,7 @@ func ensureNewMessage(appRepo hookcamp.ApplicationRepository, msgRepo hookcamp.M
 	}
 }
 
-func fetchAllMessages(msgRepo hookcamp.MessageRepository) func(next http.Handler) http.Handler {
+func fetchAllMessages(msgRepo convoy.MessageRepository) func(next http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -140,14 +141,29 @@ func fetchAllMessages(msgRepo hookcamp.MessageRepository) func(next http.Handler
 	}
 }
 
-func fetchAppMessages(msgRepo hookcamp.MessageRepository) func(next http.Handler) http.Handler {
+func fetchAppMessages(appRepo convoy.ApplicationRepository, msgRepo convoy.MessageRepository) func(next http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
-
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 
 			pageable := getPageableFromContext(r.Context())
 
-			app := getApplicationFromContext(r.Context())
+			appID := chi.URLParam(r, "appID")
+			app, err := appRepo.FindApplicationByID(r.Context(), appID)
+			if err != nil {
+
+				msg := "an error occurred while retrieving app details"
+				statusCode := http.StatusInternalServerError
+
+				if errors.Is(err, convoy.ErrApplicationNotFound) {
+					msg = err.Error()
+					statusCode = http.StatusNotFound
+				}
+
+				log.Errorln("error while fetching app - ", err)
+
+				_ = render.Render(w, r, newErrorResponse(msg, statusCode))
+				return
+			}
 
 			m, paginationData, err := msgRepo.LoadMessagesPagedByAppId(r.Context(), app.UID, pageable)
 			if err != nil {
@@ -163,7 +179,7 @@ func fetchAppMessages(msgRepo hookcamp.MessageRepository) func(next http.Handler
 	}
 }
 
-func requireMessage(msgRepo hookcamp.MessageRepository) func(next http.Handler) http.Handler {
+func requireMessage(msgRepo convoy.MessageRepository) func(next http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -176,7 +192,7 @@ func requireMessage(msgRepo hookcamp.MessageRepository) func(next http.Handler) 
 				msg := "an error occurred while retrieving event details"
 				statusCode := http.StatusInternalServerError
 
-				if errors.Is(err, hookcamp.ErrMessageNotFound) {
+				if errors.Is(err, convoy.ErrMessageNotFound) {
 					msg = err.Error()
 					statusCode = http.StatusNotFound
 				}
@@ -225,34 +241,34 @@ func requireMessageDeliveryAttempt() func(next http.Handler) http.Handler {
 	}
 }
 
-func findMessageDeliveryAttempt(attempts *[]hookcamp.MessageAttempt, id string) (*hookcamp.MessageAttempt, error) {
+func findMessageDeliveryAttempt(attempts *[]convoy.MessageAttempt, id string) (*convoy.MessageAttempt, error) {
 	for _, a := range *attempts {
 		if a.UID == id {
 			return &a, nil
 		}
 	}
-	return nil, hookcamp.ErrMessageDeliveryAttemptNotFound
+	return nil, convoy.ErrMessageDeliveryAttemptNotFound
 }
 
-func resendMessage(msgRepo hookcamp.MessageRepository) func(next http.Handler) http.Handler {
+func resendMessage(msgRepo convoy.MessageRepository) func(next http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 
 			msg := getMessageFromContext(r.Context())
 
-			if msg.Status == hookcamp.SuccessMessageStatus {
+			if msg.Status == convoy.SuccessMessageStatus {
 				_ = render.Render(w, r, newErrorResponse("event already sent", http.StatusBadRequest))
 				return
 			}
 
-			if msg.Status != hookcamp.FailureMessageStatus {
+			if msg.Status != convoy.FailureMessageStatus {
 				_ = render.Render(w, r, newErrorResponse("cannot resend event that did not fail previously", http.StatusBadRequest))
 				return
 			}
 
-			msg.Status = hookcamp.ScheduledMessageStatus
-			err := msgRepo.UpdateStatusOfMessages(r.Context(), []hookcamp.Message{*msg}, hookcamp.ScheduledMessageStatus)
+			msg.Status = convoy.ScheduledMessageStatus
+			err := msgRepo.UpdateStatusOfMessages(r.Context(), []convoy.Message{*msg}, convoy.ScheduledMessageStatus)
 			if err != nil {
 				_ = render.Render(w, r, newErrorResponse("an error occurred while trying to resend event", http.StatusInternalServerError))
 				return
