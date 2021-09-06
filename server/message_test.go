@@ -225,6 +225,7 @@ func Test_resendMessage(t *testing.T) {
 	appRepo := mocks.NewMockApplicationRepository(ctrl)
 	msgRepo := mocks.NewMockMessageRepository(ctrl)
 
+	orgId := "123"
 	appId := "12345"
 	msgId := "1122333444456"
 
@@ -302,7 +303,7 @@ func Test_resendMessage(t *testing.T) {
 	}
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			request := httptest.NewRequest(tc.method, fmt.Sprintf("/v1/apps/events/%s/resend", tc.args.message.UID), nil)
+			request := httptest.NewRequest(tc.method, fmt.Sprintf("/v1/dashboard/%s/events/%s/resend", orgId, tc.args.message.UID), nil)
 			responseRecorder := httptest.NewRecorder()
 			rctx := chi.NewRouteContext()
 			rctx.URLParams.Add("appID", tc.args.message.AppID)

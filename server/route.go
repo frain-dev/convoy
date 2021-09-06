@@ -3,6 +3,8 @@ package server
 import (
 	"embed"
 	"fmt"
+	"github.com/frain-dev/convoy"
+	"github.com/frain-dev/convoy/config"
 	"io/fs"
 	"net/http"
 	"path"
@@ -15,8 +17,6 @@ import (
 	log "github.com/sirupsen/logrus"
 
 	"github.com/go-chi/chi/v5"
-	"github.com/hookcamp/hookcamp"
-	"github.com/hookcamp/hookcamp/config"
 )
 
 //go:embed ui/build
@@ -89,7 +89,7 @@ func buildRoutes(app *applicationHandler) http.Handler {
 
 				appSubRouter.Route("/events", func(msgSubRouter chi.Router) {
 					msgSubRouter.With(instrumentPath("/events"), ensureNewMessage(app.appRepo, app.msgRepo)).Post("/", app.CreateAppMessage)
-					msgSubRouter.With(pagination).With(fetchAppMessages(app.msgRepo)).Get("/", app.GetAppMessagesPaged)
+					msgSubRouter.With(pagination).With(fetchAppMessages(app.appRepo, app.msgRepo)).Get("/", app.GetAppMessagesPaged)
 
 					msgSubRouter.Route("/{eventID}", func(msgEventSubRouter chi.Router) {
 						msgEventSubRouter.Use(requireMessage(app.msgRepo))
@@ -123,8 +123,6 @@ func buildRoutes(app *applicationHandler) http.Handler {
 
 				msgSubRouter.Get("/", app.GetAppMessage)
 
-				msgSubRouter.With(resendMessage(app.msgRepo)).Put("/resend", app.ResendAppMessage)
-
 				msgSubRouter.Route("/deliveryattempts", func(deliveryRouter chi.Router) {
 					deliveryRouter.Use(fetchMessageDeliveryAttempts())
 
@@ -143,6 +141,12 @@ func buildRoutes(app *applicationHandler) http.Handler {
 
 			dashboardRouter.With(fetchDashboardSummary(app.appRepo, app.msgRepo)).Get("/summary", app.GetDashboardSummary)
 			dashboardRouter.With(pagination).With(fetchOrganisationApps(app.appRepo)).Get("/apps", app.GetPaginatedApps)
+
+			dashboardRouter.Route("/events/{eventID}", func(msgSubRouter chi.Router) {
+				msgSubRouter.Use(requireMessage(app.msgRepo))
+
+				msgSubRouter.With(resendMessage(app.msgRepo)).Put("/resend", app.ResendAppMessage)
+			})
 		})
 
 		r.Route("/auth", func(authRouter chi.Router) {
@@ -156,7 +160,7 @@ func buildRoutes(app *applicationHandler) http.Handler {
 	return router
 }
 
-func New(cfg config.Configuration, msgRepo hookcamp.MessageRepository, appRepo hookcamp.ApplicationRepository, orgRepo hookcamp.OrganisationRepository) *http.Server {
+func New(cfg config.Configuration, msgRepo convoy.MessageRepository, appRepo convoy.ApplicationRepository, orgRepo convoy.OrganisationRepository) *http.Server {
 
 	app := newApplicationHandler(msgRepo, appRepo, orgRepo)
 
