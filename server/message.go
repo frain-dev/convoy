@@ -141,29 +141,12 @@ func fetchAllMessages(msgRepo convoy.MessageRepository) func(next http.Handler) 
 	}
 }
 
-func fetchAppMessages(appRepo convoy.ApplicationRepository, msgRepo convoy.MessageRepository) func(next http.Handler) http.Handler {
+func fetchAppMessages(msgRepo convoy.MessageRepository) func(next http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 
 			pageable := getPageableFromContext(r.Context())
-
-			appID := chi.URLParam(r, "appID")
-			app, err := appRepo.FindApplicationByID(r.Context(), appID)
-			if err != nil {
-
-				msg := "an error occurred while retrieving app details"
-				statusCode := http.StatusInternalServerError
-
-				if errors.Is(err, convoy.ErrApplicationNotFound) {
-					msg = err.Error()
-					statusCode = http.StatusNotFound
-				}
-
-				log.Errorln("error while fetching app - ", err)
-
-				_ = render.Render(w, r, newErrorResponse(msg, statusCode))
-				return
-			}
+			app := getApplicationFromContext(r.Context())
 
 			m, paginationData, err := msgRepo.LoadMessagesPagedByAppId(r.Context(), app.UID, pageable)
 			if err != nil {

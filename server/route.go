@@ -14,9 +14,9 @@ import (
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	log "github.com/sirupsen/logrus"
 
+	"github.com/frain-dev/convoy"
+	"github.com/frain-dev/convoy/config"
 	"github.com/go-chi/chi/v5"
-	"github.com/hookcamp/hookcamp"
-	"github.com/hookcamp/hookcamp/config"
 )
 
 //go:embed ui/build
@@ -156,7 +156,7 @@ func buildRoutes(app *applicationHandler) http.Handler {
 	return router
 }
 
-func New(cfg config.Configuration, msgRepo hookcamp.MessageRepository, appRepo hookcamp.ApplicationRepository, orgRepo hookcamp.OrganisationRepository) *http.Server {
+func New(cfg config.Configuration, msgRepo convoy.MessageRepository, appRepo convoy.ApplicationRepository, orgRepo convoy.OrganisationRepository) *http.Server {
 
 	app := newApplicationHandler(msgRepo, appRepo, orgRepo)
 
