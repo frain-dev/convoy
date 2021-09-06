@@ -62,6 +62,7 @@ func (p *Producer) postMessages(msgRepo convoy.MessageRepository, m convoy.Messa
 		e := &m.AppMetadata.Endpoints[i]
 		if e.Sent {
 			log.Debugf("endpoint %s already merged with message %s\n", e.TargetURL, m.UID)
+			done = done && true
 			continue
 		}
 
@@ -122,6 +123,7 @@ func (p *Producer) postMessages(msgRepo convoy.MessageRepository, m convoy.Messa
 	m.Metadata.NumTrials++
 	if done {
 		m.Status = convoy.SuccessMessageStatus
+		m.Description = ""
 	} else {
 		m.Status = convoy.RetryMessageStatus
 
@@ -133,9 +135,16 @@ func (p *Producer) postMessages(msgRepo convoy.MessageRepository, m convoy.Messa
 	}
 
 	if m.Metadata.NumTrials >= m.Metadata.RetryLimit {
-		log.Errorf("%s retry limit exceeded ", m.UID)
-		m.Description = "Retry limit exceeded"
-		m.Status = convoy.FailureMessageStatus
+		if done {
+			if m.Status != convoy.SuccessMessageStatus {
+				log.Errorln("an anomaly has occurred. retry limit exceeded, fan out is done but event status is not successful")
+				m.Status = convoy.FailureMessageStatus
+			}
+		} else {
+			log.Errorf("%s retry limit exceeded ", m.UID)
+			m.Description = "Retry limit exceeded"
+			m.Status = convoy.FailureMessageStatus
+		}
 	}
 
 	err := msgRepo.UpdateMessageWithAttempt(context.Background(), m, attempt)

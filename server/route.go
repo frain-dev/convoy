@@ -9,13 +9,14 @@ import (
 	"strings"
 	"time"
 
+	"github.com/frain-dev/convoy"
+	"github.com/frain-dev/convoy/config"
+
 	"github.com/go-chi/chi/v5/middleware"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	log "github.com/sirupsen/logrus"
 
-	"github.com/frain-dev/convoy"
-	"github.com/frain-dev/convoy/config"
 	"github.com/go-chi/chi/v5"
 )
 
@@ -89,12 +90,13 @@ func buildRoutes(app *applicationHandler) http.Handler {
 
 				appSubRouter.Route("/events", func(msgSubRouter chi.Router) {
 					msgSubRouter.With(instrumentPath("/events"), ensureNewMessage(app.appRepo, app.msgRepo)).Post("/", app.CreateAppMessage)
-					msgSubRouter.With(pagination).With(fetchAppMessages(app.appRepo, app.msgRepo)).Get("/", app.GetAppMessagesPaged)
+					msgSubRouter.With(pagination).With(fetchAppMessages(app.msgRepo)).Get("/", app.GetAppMessagesPaged)
 
 					msgSubRouter.Route("/{eventID}", func(msgEventSubRouter chi.Router) {
 						msgEventSubRouter.Use(requireMessage(app.msgRepo))
 
 						msgEventSubRouter.Get("/", app.GetAppMessage)
+						msgEventSubRouter.With(resendMessage(app.msgRepo)).Put("/resend", app.ResendAppMessage)
 					})
 				})
 
@@ -141,6 +143,12 @@ func buildRoutes(app *applicationHandler) http.Handler {
 
 			dashboardRouter.With(fetchDashboardSummary(app.appRepo, app.msgRepo)).Get("/summary", app.GetDashboardSummary)
 			dashboardRouter.With(pagination).With(fetchOrganisationApps(app.appRepo)).Get("/apps", app.GetPaginatedApps)
+
+			dashboardRouter.Route("/events/{eventID}", func(msgSubRouter chi.Router) {
+				msgSubRouter.Use(requireMessage(app.msgRepo))
+
+				msgSubRouter.With(resendMessage(app.msgRepo)).Put("/resend", app.ResendAppMessage)
+			})
 		})
 
 		r.Route("/auth", func(authRouter chi.Router) {

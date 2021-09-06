@@ -141,30 +141,12 @@ func fetchAllMessages(msgRepo convoy.MessageRepository) func(next http.Handler) 
 	}
 }
 
-func fetchAppMessages(appRepo convoy.ApplicationRepository, msgRepo convoy.MessageRepository) func(next http.Handler) http.Handler {
+func fetchAppMessages(msgRepo convoy.MessageRepository) func(next http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
-
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 
 			pageable := getPageableFromContext(r.Context())
-
-			appID := chi.URLParam(r, "appID")
-			app, err := appRepo.FindApplicationByID(r.Context(), appID)
-			if err != nil {
-
-				msg := "an error occurred while retrieving app details"
-				statusCode := http.StatusInternalServerError
-
-				if errors.Is(err, convoy.ErrApplicationNotFound) {
-					msg = err.Error()
-					statusCode = http.StatusNotFound
-				}
-
-				log.Errorln("error while fetching app - ", err)
-
-				_ = render.Render(w, r, newErrorResponse(msg, statusCode))
-				return
-			}
+			app := getApplicationFromContext(r.Context())
 
 			m, paginationData, err := msgRepo.LoadMessagesPagedByAppId(r.Context(), app.UID, pageable)
 			if err != nil {
@@ -249,4 +231,34 @@ func findMessageDeliveryAttempt(attempts *[]convoy.MessageAttempt, id string) (*
 		}
 	}
 	return nil, convoy.ErrMessageDeliveryAttemptNotFound
+}
+
+func resendMessage(msgRepo convoy.MessageRepository) func(next http.Handler) http.Handler {
+	return func(next http.Handler) http.Handler {
+
+		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+
+			msg := getMessageFromContext(r.Context())
+
+			if msg.Status == convoy.SuccessMessageStatus {
+				_ = render.Render(w, r, newErrorResponse("event already sent", http.StatusBadRequest))
+				return
+			}
+
+			if msg.Status != convoy.FailureMessageStatus {
+				_ = render.Render(w, r, newErrorResponse("cannot resend event that did not fail previously", http.StatusBadRequest))
+				return
+			}
+
+			msg.Status = convoy.ScheduledMessageStatus
+			err := msgRepo.UpdateStatusOfMessages(r.Context(), []convoy.Message{*msg}, convoy.ScheduledMessageStatus)
+			if err != nil {
+				_ = render.Render(w, r, newErrorResponse("an error occurred while trying to resend event", http.StatusInternalServerError))
+				return
+			}
+
+			r = r.WithContext(setMessageInContext(r.Context(), msg))
+			next.ServeHTTP(w, r)
+		})
+	}
 }

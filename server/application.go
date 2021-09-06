@@ -132,6 +132,12 @@ func (a *applicationHandler) GetAppMessage(w http.ResponseWriter, r *http.Reques
 		*getMessageFromContext(r.Context()), http.StatusOK))
 }
 
+func (a *applicationHandler) ResendAppMessage(w http.ResponseWriter, r *http.Request) {
+
+	_ = render.Render(w, r, newServerResponse("App event processed for retry successfully",
+		*getMessageFromContext(r.Context()), http.StatusOK))
+}
+
 func (a *applicationHandler) GetAppMessagesPaged(w http.ResponseWriter, r *http.Request) {
 
 	_ = render.Render(w, r, newServerResponse("App events fetched successfully",
