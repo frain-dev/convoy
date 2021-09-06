@@ -3,13 +3,14 @@ package server
 import (
 	"embed"
 	"fmt"
-	"github.com/frain-dev/convoy"
-	"github.com/frain-dev/convoy/config"
 	"io/fs"
 	"net/http"
 	"path"
 	"strings"
 	"time"
+
+	"github.com/frain-dev/convoy"
+	"github.com/frain-dev/convoy/config"
 
 	"github.com/go-chi/chi/v5/middleware"
 	"github.com/prometheus/client_golang/prometheus"
@@ -95,6 +96,7 @@ func buildRoutes(app *applicationHandler) http.Handler {
 						msgEventSubRouter.Use(requireMessage(app.msgRepo))
 
 						msgEventSubRouter.Get("/", app.GetAppMessage)
+						msgEventSubRouter.With(resendMessage(app.msgRepo)).Put("/resend", app.ResendAppMessage)
 					})
 				})
 
