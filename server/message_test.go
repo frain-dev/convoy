@@ -231,7 +231,7 @@ func Test_resendMessage(t *testing.T) {
 	app = newApplicationHandler(msgRepo, appRepo, orgRepo)
 
 	type args struct {
-		message *hookcamp.Message
+		message *convoy.Message
 	}
 
 	tests := []struct {
@@ -248,10 +248,10 @@ func Test_resendMessage(t *testing.T) {
 			statusCode: http.StatusBadRequest,
 			body:       nil,
 			args: args{
-				message: &hookcamp.Message{
+				message: &convoy.Message{
 					UID:    msgId,
 					AppID:  appId,
-					Status: hookcamp.SuccessMessageStatus,
+					Status: convoy.SuccessMessageStatus,
 				},
 			},
 			dbFn: func(msgRepo *mocks.MockMessageRepository, appRepo *mocks.MockApplicationRepository, orgRepo *mocks.MockOrganisationRepository) {
@@ -267,10 +267,10 @@ func Test_resendMessage(t *testing.T) {
 			statusCode: http.StatusBadRequest,
 			body:       nil,
 			args: args{
-				message: &hookcamp.Message{
+				message: &convoy.Message{
 					UID:    msgId,
 					AppID:  appId,
-					Status: hookcamp.ProcessingMessageStatus,
+					Status: convoy.ProcessingMessageStatus,
 				},
 			},
 			dbFn: func(msgRepo *mocks.MockMessageRepository, appRepo *mocks.MockApplicationRepository, orgRepo *mocks.MockOrganisationRepository) {
@@ -286,10 +286,10 @@ func Test_resendMessage(t *testing.T) {
 			statusCode: http.StatusOK,
 			body:       nil,
 			args: args{
-				message: &hookcamp.Message{
+				message: &convoy.Message{
 					UID:    msgId,
 					AppID:  appId,
-					Status: hookcamp.FailureMessageStatus,
+					Status: convoy.FailureMessageStatus,
 				},
 			},
 			dbFn: func(msgRepo *mocks.MockMessageRepository, appRepo *mocks.MockApplicationRepository, orgRepo *mocks.MockOrganisationRepository) {
