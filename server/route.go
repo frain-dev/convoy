@@ -16,8 +16,6 @@ import (
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	log "github.com/sirupsen/logrus"
 
-	"github.com/frain-dev/convoy"
-	"github.com/frain-dev/convoy/config"
 	"github.com/go-chi/chi/v5"
 )
 
@@ -91,7 +89,7 @@ func buildRoutes(app *applicationHandler) http.Handler {
 
 				appSubRouter.Route("/events", func(msgSubRouter chi.Router) {
 					msgSubRouter.With(instrumentPath("/events"), ensureNewMessage(app.appRepo, app.msgRepo)).Post("/", app.CreateAppMessage)
-					msgSubRouter.With(pagination).With(fetchAppMessages(app.appRepo, app.msgRepo)).Get("/", app.GetAppMessagesPaged)
+					msgSubRouter.With(pagination).With(fetchAppMessages(app.msgRepo)).Get("/", app.GetAppMessagesPaged)
 
 					msgSubRouter.Route("/{eventID}", func(msgEventSubRouter chi.Router) {
 						msgEventSubRouter.Use(requireMessage(app.msgRepo))
