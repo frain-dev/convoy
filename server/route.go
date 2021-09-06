@@ -16,6 +16,8 @@ import (
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	log "github.com/sirupsen/logrus"
 
+	"github.com/frain-dev/convoy"
+	"github.com/frain-dev/convoy/config"
 	"github.com/go-chi/chi/v5"
 )
 
