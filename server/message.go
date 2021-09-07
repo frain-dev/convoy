@@ -93,7 +93,7 @@ func ensureNewMessage(appRepo convoy.ApplicationRepository, msgRepo convoy.Messa
 					NumTrials:       0,
 					IntervalSeconds: intervalSeconds,
 					RetryLimit:      retryLimit,
-					NextSendTime:    primitive.NewDateTimeFromTime(time.Now().Add(time.Duration(intervalSeconds) * time.Second)),
+					NextSendTime:    primitive.NewDateTimeFromTime(time.Now()),
 				},
 				MessageAttempts: make([]convoy.MessageAttempt, 0),
 				CreatedAt:       primitive.NewDateTimeFromTime(time.Now()),

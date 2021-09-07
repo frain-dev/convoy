@@ -72,6 +72,17 @@ func (db *appRepo) LoadApplications(ctx context.Context, orgId string) ([]convoy
 		return apps, err
 	}
 
+	msgCollection := db.innerDB.Collection(MsgCollection)
+	for i, app := range apps {
+		filter = bson.M{"app_id": app.UID, "document_status": bson.M{"$ne": convoy.DeletedDocumentStatus}}
+		count, err := msgCollection.CountDocuments(ctx, filter)
+		if err != nil {
+			log.Errorf("failed to count events in %s. Reason: %s", app.UID, err)
+			return apps, err
+		}
+		apps[i].Events = count
+	}
+
 	return apps, nil
 }
 
@@ -87,6 +98,17 @@ func (db *appRepo) LoadApplicationsPagedByOrgId(ctx context.Context, orgId strin
 
 	if applications == nil {
 		applications = make([]convoy.Application, 0)
+	}
+
+	msgCollection := db.innerDB.Collection(MsgCollection)
+	for i, app := range applications {
+		filter = bson.M{"app_id": app.UID, "document_status": bson.M{"$ne": convoy.DeletedDocumentStatus}}
+		count, err := msgCollection.CountDocuments(ctx, filter)
+		if err != nil {
+			log.Errorf("failed to count events in %s. Reason: %s", app.UID, err)
+			return applications, pager.PaginationData{}, err
+		}
+		applications[i].Events = count
 	}
 
 	return applications, paginatedData.Pagination, nil
@@ -125,6 +147,17 @@ func (db *appRepo) SearchApplicationsByOrgId(ctx context.Context, orgId string, 
 		return apps, err
 	}
 
+	msgCollection := db.innerDB.Collection(MsgCollection)
+	for i, app := range apps {
+		filter = bson.M{"app_id": app.UID, "document_status": bson.M{"$ne": convoy.DeletedDocumentStatus}}
+		count, err := msgCollection.CountDocuments(ctx, filter)
+		if err != nil {
+			log.Errorf("failed to count events in %s. Reason: %s", app.UID, err)
+			return apps, err
+		}
+		apps[i].Events = count
+	}
+
 	return apps, nil
 }
 
@@ -139,7 +172,17 @@ func (db *appRepo) FindApplicationByID(ctx context.Context,
 		Decode(&app)
 	if errors.Is(err, mongo.ErrNoDocuments) {
 		err = convoy.ErrApplicationNotFound
+		return app, err
 	}
+
+	msgCollection := db.innerDB.Collection(MsgCollection)
+	filter = bson.M{"app_id": app.UID, "document_status": bson.M{"$ne": convoy.DeletedDocumentStatus}}
+	count, err := msgCollection.CountDocuments(ctx, filter)
+	if err != nil {
+		log.Errorf("failed to count events in %s. Reason: %s", app.UID, err)
+		return app, err
+	}
+	app.Events = count
 
 	return app, err
 }
