@@ -464,6 +464,7 @@ function DashboardPage() {
 											<th scope="col">Name</th>
 											<th scope="col">Created</th>
 											<th scope="col">Updated</th>
+											<th scope="col">Number of Events</th>
 											<th scope="col">Number of Endpoints</th>
 										</tr>
 									</thead>
@@ -478,6 +479,9 @@ function DashboardPage() {
 												</td>
 												<td>
 													<div>{getDate(app.updated_at)}</div>
+												</td>
+												<td>
+													<div>{app.events}</div>
 												</td>
 												<td>
 													<div>{app.endpoints.length}</div>
