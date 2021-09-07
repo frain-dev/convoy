@@ -100,7 +100,7 @@ func buildRoutes(app *applicationHandler) http.Handler {
 					})
 				})
 
-				appSubRouter.Route("/endpoint", func(endpointAppSubRouter chi.Router) {
+				appSubRouter.Route("/endpoints", func(endpointAppSubRouter chi.Router) {
 					endpointAppSubRouter.With(ensureNewAppEndpoint(app.appRepo)).Post("/", app.CreateAppEndpoint)
 					endpointAppSubRouter.With(fetchAppEndpoints()).Get("/", app.GetAppEndpoints)
 
