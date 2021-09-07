@@ -305,7 +305,7 @@ func createMessageCommand(a *app) *cobra.Command {
 					NumTrials:       0,
 					IntervalSeconds: intervalSeconds,
 					RetryLimit:      retryLimit,
-					NextSendTime:    primitive.NewDateTimeFromTime(time.Now().Add(time.Duration(intervalSeconds) * time.Second)),
+					NextSendTime:    primitive.NewDateTimeFromTime(time.Now()),
 				},
 				AppMetadata: &convoy.AppMetadata{
 					OrgID:     appData.OrgID,
