@@ -29,6 +29,8 @@ type Application struct {
 	UpdatedAt primitive.DateTime `json:"updated_at,omitempty" bson:"updated_at,omitempty"`
 	DeletedAt primitive.DateTime `json:"deleted_at,omitempty" bson:"deleted_at,omitempty"`
 
+	Events int64 `json:"events" bson:"-"`
+
 	DocumentStatus DocumentStatus `json:"-" bson:"document_status"`
 }
 
