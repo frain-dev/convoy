@@ -107,6 +107,16 @@
 					display: flex;
 					align-items: center;
 
+					&.messages {
+						background: url(../../assets/img/message-icon-transparent.svg) no-repeat;
+						background-position: 210px 35px;
+					}
+
+					&.apps {
+						background: url(../../assets/img/apps-icon-transparent.svg) no-repeat;
+						background-position: 210px 35px;
+					}
+
 					&:not(:last-of-type) {
 						border-right: 1px solid #eaedf3;
 					}
@@ -216,20 +226,20 @@
 
 	&--details {
 		padding: 24px 0 0 32px;
-		width: 511px;
+		width: 581px;
 		overflow-y: auto;
 
 		&--meta {
 			padding: 8px 0 24px;
 			border-bottom: 1px solid #edeff5;
 			width: 100%;
-			margin-bottom: 30px;
+			margin: 10px 0 30px;
 
 			li {
 				display: flex;
 				max-width: 300px;
 				justify-content: space-between;
-				margin-bottom: 2px;
+				margin-bottom: 5px;
 
 				.label {
 					font-weight: 500;
@@ -342,7 +352,7 @@ table {
 			padding: 1px 8px;
 			background: rgba(115, 122, 145, 0.1);
 			border-radius: 8px;
-			max-width: 65px;
+			max-width: 75px;
 			font-weight: 500;
 			font-size: 12px;
 			line-height: 28px;
@@ -414,4 +424,15 @@ table {
 	text-align: center;
 	font-style: italic;
 	font-size: 14px;
+}
+
+.pagination {
+	display: flex;
+	align-items: center;
+	justify-content: flex-end;
+	margin-top: 50px;
+
+	button {
+		padding: 5px;
+	}
 }
