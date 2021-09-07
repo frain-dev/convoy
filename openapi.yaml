@@ -18,10 +18,37 @@ tags:
   - name: Endpoints
     description: Endpoints are the destination resource, each endpoint belongs to an application.
   - name: Events
-    description: Events contains the payload of event trigger from the source. 
+    description: Events contains the payload of event trigger from the source.
   - name: DeliveryAttempts
     description: A DeliveryAttempt is a single attempt to deliver an event to the destination. This logs the request body, response body & headers.
+  - name: Organisations
+    description: An Organisation is an abstract for a webhook source. It maps to multiple apps. 
 paths:
+  /organisations:
+    get:
+      tags:
+        - Organisations
+      summary: Get all Organisations
+      operationId: GetOrganisations
+      responses:
+        '200':
+          description: Valid Response.
+          content: 
+            'application/json':
+              schema:
+                $ref: '#/components/schemas/ArrayOfOrgs'
+    post:
+      tags:
+        - Organisations
+      summary: Create an Organisation
+      operationId: CreateOrganisation
+      responses:
+        '200':
+          description: Valid Response.
+          content:
+            'application/json': 
+              schema:
+                $ref: '#/components/schemas/OrganisationResponse'
   /apps:
     get:
       tags:
@@ -30,7 +57,7 @@ paths:
       operationId: GetApps
       responses:
         '200': 
-          description: Valid response.
+          description: Valid Response.
           content:
             'application/json':
               schema:
@@ -52,6 +79,8 @@ paths:
                 org_id:
                   type: string
                 name: 
+                  type: string
+                secret:
                   type: string
       responses:
         '200':
@@ -172,7 +201,6 @@ paths:
     
     parameters:
       - $ref: '#/components/parameters/uniqueId'
-      - $ref: '#/components/parameters/uniqueId'
   /apps/{Id}/events:
     get: 
       tags: 
@@ -193,10 +221,16 @@ paths:
       operationId: CreateEvent
       requestBody: 
         description: JSON fields to pass while creating an event.
+        required: true
         content: 
           application/json:
             schema:
               type: object
+              properties:
+                event_type: 
+                  type: string
+                data: 
+                  type: object
       responses:
         '200':
           description: Valid response.
@@ -221,6 +255,20 @@ paths:
                 $ref: '#/components/schemas/EventResponse'
     parameters:
       - $ref: '#/components/parameters/uniqueId'
+  /apps/{Id}/events/{Id}/resend:
+    put:
+      tags: 
+        - Events
+      summary: Resend a failed event.
+      operationId: ResendEvent
+      responses:
+        '200':
+          description: Valid response.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EventResponse'
+    parameters:
       - $ref: '#/components/parameters/uniqueId'
   /events/{Id}/deliveryattempts:
     get: 
@@ -254,7 +302,6 @@ paths:
 
     parameters:
       - $ref: '#/components/parameters/uniqueId'
-      - $ref: '#/components/parameters/uniqueId'
 components:
   schemas:
     Organisation:
@@ -275,16 +322,18 @@ components:
           type: string
         org_id:
           type: string
+        secret:
+          type: string
     Endpoint:
       type: object
       properties:
         uid:
           type: string
           readOnly: true
-        url:
+        target_url:
           type: string
-        status:
-          type: boolean
+        description:
+          type: string
     Event:
       type: object
       properties: 
@@ -306,6 +355,15 @@ components:
       required:
         - status
         - message
+    OrganisationResponse:
+      allOf:
+      - $ref: '#/components/schemas/BaseApiResponse'
+      - type: object
+        required:
+        - data
+        properties:
+          data: 
+            $ref: '#/components/schemas/Organisation'
     AppResponse:
       allOf:
       - $ref: '#/components/schemas/BaseApiResponse'
@@ -315,6 +373,17 @@ components:
         properties:
           data:
             $ref: '#/components/schemas/Application'
+    ArrayOfOrgs:
+      allOf:
+      - $ref: '#/components/schemas/BaseApiResponse'
+      - type: object
+        required:
+        - data
+        properties:
+          data:
+            type: array
+            items:
+              $ref: '#/components/schemas/Organisation'
     ArrayOfApps:
       allOf:
       - $ref: '#/components/schemas/BaseApiResponse'
