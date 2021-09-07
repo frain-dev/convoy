@@ -107,6 +107,16 @@
 					display: flex;
 					align-items: center;
 
+					&.messages {
+						background: url(../../assets/img/message-icon-transparent.svg) no-repeat;
+						background-position: 210px 35px;
+					}
+
+					&.apps {
+						background: url(../../assets/img/apps-icon-transparent.svg) no-repeat;
+						background-position: 210px 35px;
+					}
+
 					&:not(:last-of-type) {
 						border-right: 1px solid #eaedf3;
 					}
@@ -209,27 +219,33 @@
 	max-height: 800px;
 
 	&--tabs {
-		// max-width: 800px;
 		width: 100%;
 		border-right: 1px solid #edeff5;
 	}
 
 	&--details {
 		padding: 24px 0 0 32px;
-		width: 511px;
+		width: 581px;
 		overflow-y: auto;
+
+		hr {
+			border: none;
+			height: 1px;
+			background: #eee;
+			margin-bottom: 20px;
+		}
 
 		&--meta {
 			padding: 8px 0 24px;
 			border-bottom: 1px solid #edeff5;
 			width: 100%;
-			margin-bottom: 30px;
+			margin: 10px 0 30px;
 
 			li {
 				display: flex;
 				max-width: 300px;
 				justify-content: space-between;
-				margin-bottom: 2px;
+				margin-bottom: 5px;
 
 				.label {
 					font-weight: 500;
@@ -248,6 +264,55 @@
 					}
 				}
 			}
+		}
+
+		&--response-data {
+			font-size: 13px;
+			line-height: 30px;
+			width: 362px;
+		}
+
+		&--event-data {
+			width: 362px;
+		}
+
+		&--view-more {
+			display: flex;
+			align-items: center;
+			justify-content: center;
+			padding-top: 30px;
+			margin-top: -60px !important;
+			position: relative;
+
+			&::before {
+				content: '';
+				position: absolute;
+				left: 0;
+				right: 0;
+				bottom: 0;
+				top: 0;
+				z-index: 3;
+				background: linear-gradient(transparent, #fff);
+			}
+
+			button {
+				padding: 3px 10px 3px 5px;
+				background: #fff;
+				border: 1px solid #eee;
+				font-size: 13px;
+				z-index: 5;
+
+				img {
+					margin-right: 10px;
+					width: 20px;
+				}
+			}
+		}
+
+		.data-hidden {
+			height: 100px;
+			overflow-x: hidden;
+			overflow-y: hidden;
 		}
 
 		& > div {
@@ -342,7 +407,7 @@ table {
 			padding: 1px 8px;
 			background: rgba(115, 122, 145, 0.1);
 			border-radius: 8px;
-			max-width: 65px;
+			max-width: 75px;
 			font-weight: 500;
 			font-size: 12px;
 			line-height: 28px;
@@ -414,4 +479,15 @@ table {
 	text-align: center;
 	font-style: italic;
 	font-size: 14px;
+}
+
+.pagination {
+	display: flex;
+	align-items: center;
+	justify-content: flex-end;
+	margin-top: 50px;
+
+	button {
+		padding: 5px;
+	}
 }

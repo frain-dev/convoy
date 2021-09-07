@@ -27,6 +27,7 @@ FROM gcr.io/distroless/base
 COPY --from=build-env /go/bin/cmd /
 COPY --from=build-env /go/src/frain-dev/convoy/convoy.json /convoy.json
 
-ENTRYPOINT ["/cmd", "server", "--config", "convoy.json"]
+ENTRYPOINT ["/cmd"] 
+CMD [ "server", "--config", "convoy.json" ]
 
 EXPOSE 8080

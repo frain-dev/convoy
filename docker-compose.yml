@@ -1,44 +1,29 @@
 version: "3"
 
 services:
-  web:
-    build:
-      context: .
-      dockerfile: Dockerfile
-    entrypoint: ["./cmd", "server", "--config", "convoy-docker.json"]
-    ports:
-      - 5005:5005
-    links:
-      - mongodb:localhost
-    #      - redis_server:localhost
-    depends_on:
-      - mongodb
-      - redis_server
+    web:
+        build:
+            context: .
+            dockerfile: Dockerfile
+        entrypoint: ["./cmd", "server", "--config", "convoy.json"]
+        ports:
+            - 5005:5005
+        volumes:
+            - ./convoy-docker.json:/convoy.json
+        restart: on-failure
+        depends_on:
+            - mongodb
+            - redis_server
 
-  # nats:
-  #   image: nats
-  #   ports:
-  #     - "8222:8222"
-  # nats-1:
-  #   image: nats
-  #   command: "--cluster nats://0.0.0.0:6222 --routes=nats://ruser:T0pS3cr3t@nats:6222"
-  #   depends_on: ["nats"]
-  # nats-2:
-  #   image: nats
-  #   command: "--cluster nats://0.0.0.0:6222 --routes=nats://ruser:T0pS3cr3t@nats:6222"
-  #   depends_on: ["nats"]
+    mongodb:
+        image: mongo:latest
+        environment:
+            MONGO_INITDB_ROOT_USERNAME: root
+            MONGO_INITDB_ROOT_PASSWORD: rootpassword
+        volumes:
+            - ./data/mongo:/data/db
 
-  mongodb:
-    image: mongo:latest
-    environment:
-      MONGO_INITDB_ROOT_USERNAME: root
-      MONGO_INITDB_ROOT_PASSWORD: rootpassword
-    ports:
-      - "27037:27017"
-    volumes:
-      - ./data/mongo:/data/db
-
-  redis_server:
-    image: redis:alpine
-    ports:
-      - "8379:6379"
+        redis_server:
+            image: redis:alpine
+            ports:
+                - "8379:6379"
