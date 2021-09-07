@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import * as axios from 'axios';
 import ArrowDownIcon from '../../assets/img/arrow-down-icon.svg';
 import AppsIcon from '../../assets/img/apps-icon.svg';
@@ -8,6 +8,8 @@ import CalendarIcon from '../../assets/img/calendar-icon.svg';
 import CopyIcon from '../../assets/img/copy-icon.svg';
 import LinkIcon from '../../assets/img/link-icon.svg';
 import ViewIcon from '../../assets/img/view-icon.svg';
+import AngleArrowLeftIcon from '../../assets/img/angle-arrow-left.svg';
+import AngleArrowRightIcon from '../../assets/img/angle-arrow-right.svg';
 import Chart from 'chart.js/auto';
 import { DateRange } from 'react-date-range';
 import ReactJson from 'react-json-view';
@@ -17,14 +19,14 @@ import 'react-date-range/dist/theme/default.css';
 
 const _axios = axios.default;
 const request = _axios.create({ baseURL: 'http://localhost:5005/v1' });
-const months = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+const months = ['Jan', 'Feb', 'Mar', 'April', 'May', 'June', 'July', 'Aug', 'Sept', 'Oct', 'Nov', 'Dec'];
 
 function DashboardPage() {
 	const [dashboardData, setDashboardData] = useState({ apps: 0, messages: 0, messageData: [] });
 	const [authDetails, setAuthDetails] = useState({ basic: { username: '', password: '' }, type: '' });
 	const [viewPassword, toggleViewPassword] = useState(false);
 	const [apps, setAppsData] = useState([]);
-	const [events, setEventsData] = useState([]);
+	const [events, setEventsData] = useState({ content: [], pagination: { page: 1, totalPage: 0 } });
 	const [tabs] = useState(['events', 'apps']);
 	const [activeTab, setActiveTab] = useState('events');
 	const [showFilterCalendar, toggleShowFilterCalendar] = useState(false);
@@ -33,6 +35,13 @@ function DashboardPage() {
 		uid: '',
 		name: '',
 		created_at: 0,
+		updated_at: 0,
+		deleted_at: 0,
+	});
+	const [eventDeliveryAtempt, setEventDeliveryAtempt] = useState({
+		ip_address: '',
+		http_status: '',
+		api_version: '',
 		updated_at: 0,
 		deleted_at: 0,
 	});
@@ -84,17 +93,80 @@ function DashboardPage() {
 		el.style.display = 'none';
 	};
 
-	useEffect(() => {
-		const getRequestHeaders = () => {
-			const response =
-				authDetails.type === 'none'
-					? {}
-					: {
-							Authorization: `Basic ${btoa(authDetails.basic.username + ':' + authDetails.basic.password)}`,
-					  };
-			return response;
-		};
+	const getRequestHeaders = useCallback(() => {
+		const response =
+			authDetails.type === 'none'
+				? {}
+				: {
+						Authorization: `Basic ${btoa(authDetails.basic.username + ':' + authDetails.basic.password)}`,
+				  };
+		return response;
+	}, [authDetails.basic.password, authDetails.basic.username, authDetails.type]);
 
+	const getEvents = useCallback(
+		async ({ page }) => {
+			try {
+				const appsResponse = await (
+					await request({
+						url: `/events?sort=AESC&page=${page || 1}&perPage=10&orgId=${activeorganisation.uid}`,
+						method: 'GET',
+						headers: getRequestHeaders(),
+					})
+				).data;
+				setEventsData(appsResponse.data);
+			} catch (error) {
+				return error;
+			}
+		},
+		[getRequestHeaders, activeorganisation],
+	);
+
+	const getApps = useCallback(
+		async ({ page }) => {
+			try {
+				const appsResponse = await (
+					await request({
+						url: `/apps?sort=AESC&page=${page || 1}&perPage=10&orgId=${activeorganisation.uid}`,
+						headers: getRequestHeaders(),
+					})
+				).data;
+				setAppsData(appsResponse.data);
+			} catch (error) {
+				return error;
+			}
+		},
+		[activeorganisation, getRequestHeaders],
+	);
+
+	const getDelieveryAttempts = async (eventId) => {
+		try {
+			const deliveryAttemptsResponse = await (
+				await request({
+					url: `/events/${eventId}/deliveryattempts`,
+					headers: getRequestHeaders(),
+				})
+			).data;
+			setEventDeliveryAtempt(deliveryAttemptsResponse.data[deliveryAttemptsResponse.data.length - 1]);
+		} catch (error) {
+			return error;
+		}
+	};
+
+	const retryEvent = async ({ eventId, appId }) => {
+		try {
+			await (
+				await request({
+					method: 'PUT',
+					url: `/apps/${appId}/events/${eventId}/resend`,
+					headers: getRequestHeaders(),
+				})
+			).data;
+		} catch (error) {
+			return error;
+		}
+	};
+
+	useEffect(() => {
 		const getOrganisations = async () => {
 			try {
 				const organisationsResponse = await (
@@ -115,35 +187,6 @@ function DashboardPage() {
 				if (authDetails.type) return;
 				const authDetailsResponse = await (await request.get('/auth/details')).data;
 				setAuthDetails(authDetailsResponse.data);
-			} catch (error) {
-				return error;
-			}
-		};
-
-		const getApps = async () => {
-			try {
-				const appsResponse = await (
-					await request({
-						url: '/apps',
-						headers: getRequestHeaders(),
-					})
-				).data;
-				setAppsData(appsResponse.data);
-			} catch (error) {
-				return error;
-			}
-		};
-
-		const getEvents = async () => {
-			try {
-				const appsResponse = await (
-					await request({
-						url: '/events',
-						method: 'GET',
-						headers: getRequestHeaders(),
-					})
-				).data;
-				setEventsData(appsResponse.data.content);
 			} catch (error) {
 				return error;
 			}
@@ -193,26 +236,23 @@ function DashboardPage() {
 
 		getAuthDetails().then(() => {
 			fetchDashboardData();
-			if (activeTab === 'apps') getApps();
-			if (activeTab === 'events') getEvents();
+			if (activeTab === 'apps') getApps({ page: 1 });
+			if (activeTab === 'events') getEvents({ page: 1 });
 		});
-	}, [options, activeTab, filterDates, activeorganisation.uid, organisations, filterFrequency, authDetails]);
+	}, [options, activeTab, filterDates, activeorganisation, organisations, filterFrequency, authDetails, getRequestHeaders, getEvents, getApps]);
 
 	return (
 		<div className="dashboard">
 			<header className="dashboard--header">
 				<div className="dashboard--header--container">
-					<div className="logo">Fhooks.</div>
+					<div className="logo">Convoy.</div>
 
 					<button className="user">
 						<div>
 							<div className="icon">O</div>
-							<div className="name">{activeorganisation.name}</div>
+							<div className="name">{activeorganisation && activeorganisation.name}</div>
 						</div>
 						<img src={ArrowDownIcon} alt="arrow down icon" />
-						<div className="dropdown organisations">
-							<ul></ul>
-						</div>
 					</button>
 				</div>
 			</header>
@@ -239,14 +279,14 @@ function DashboardPage() {
 				<div className="dashboard--page--details">
 					<div className="card dashboard--page--details--chart">
 						<ul>
-							<li>
+							<li className="messages">
 								<img src={MessageIcon} alt="message icon" />
 								<div className="metric">
 									<div>{dashboardData.messages_sent}</div>
-									<div>{dashboardData.messages_sent === 1 ? 'Message' : 'Messages'} Sent</div>
+									<div>{dashboardData.messages_sent === 1 ? 'Event' : 'Events'} Sent</div>
 								</div>
 							</li>
-							<li>
+							<li className="apps">
 								<img src={AppsIcon} alt="apps icon" />
 								<div className="metric">
 									<div>{dashboardData.apps}</div>
@@ -256,8 +296,7 @@ function DashboardPage() {
 						</ul>
 
 						<div>
-							<h3>Message Sent</h3>
-
+							<h3>Events Sent</h3>
 							<canvas id="chart" width="400" height="200"></canvas>
 						</div>
 					</div>
@@ -321,7 +360,21 @@ function DashboardPage() {
 					<div className="dashboard--logs--tabs">
 						<div className="tabs">
 							{tabs.map((tab, index) => (
-								<button onClick={() => setActiveTab(tab)} key={index} className={'clear tab ' + (activeTab === tab ? 'active' : '')}>
+								<button
+									onClick={() => {
+										setActiveTab(tab);
+										setDetailsItem();
+										setEventDeliveryAtempt({
+											ip_address: '',
+											http_status: '',
+											api_version: '',
+											updated_at: 0,
+											deleted_at: 0,
+										});
+									}}
+									key={index}
+									className={'clear tab ' + (activeTab === tab ? 'active' : '')}
+								>
 									{tab}
 								</button>
 							))}
@@ -329,44 +382,71 @@ function DashboardPage() {
 
 						<div className="table">
 							{activeTab && activeTab === 'events' && (
-								<table>
-									<thead>
-										<tr className="table--head">
-											<th scope="col">Status</th>
-											<th scope="col">Event Type</th>
-											<th scope="col">Description</th>
-											<th scope="col">Date Created</th>
-											<th scope="col">Next Entry</th>
-										</tr>
-									</thead>
-									<tbody>
-										{events.map((event, index) => (
-											<tr key={index} onClick={() => setDetailsItem(event)}>
-												<td>
-													<div>
-														<div className="tag">{event.status}</div>
-													</div>
-												</td>
-												<td>
-													<div>{event.event_type}</div>
-												</td>
-												<td>
-													<div>{event.description}</div>
-												</td>
-												<td>
-													<div>{getDate(event.created_at)}</div>
-												</td>
-												<td>
-													<div>
-														<button className="primary has-icon icon-left">
-															<img src={RefreshIcon} alt="refresh icon" /> Resend
-														</button>
-													</div>
-												</td>
+								<React.Fragment>
+									<table>
+										<thead>
+											<tr className="table--head">
+												<th scope="col">Status</th>
+												<th scope="col">Event Type</th>
+												<th scope="col">Attempts</th>
+												<th scope="col">Next Retry</th>
+												<th scope="col">Date Created</th>
+												<th scope="col">Next Entry</th>
 											</tr>
-										))}
-									</tbody>
-								</table>
+										</thead>
+										<tbody>
+											{events.content.map((event, index) => (
+												<tr
+													key={index}
+													onClick={() => {
+														setDetailsItem(event);
+														getDelieveryAttempts(event.uid);
+													}}
+												>
+													<td>
+														<div>
+															<div className="tag">{event.status}</div>
+														</div>
+													</td>
+													<td>
+														<div>{event.event_type}</div>
+													</td>
+													<td>
+														<div>{event.metadata.num_trials}</div>
+													</td>
+													<td>
+														<div>{getDate(event.metadata.next_send_time)}</div>
+													</td>
+													<td>
+														<div>{getDate(event.created_at)}</div>
+													</td>
+													<td>
+														<div>
+															<button
+																disabled={event.status === 'Success' || event.status === 'Scheduled'}
+																className={'primary has-icon icon-left ' + (event.status === 'Success' || event.status === 'Scheduled' ? 'disable_action' : '')}
+																onClick={() => retryEvent({ eventId: event.uid, appId: event.app_id })}
+															>
+																<img src={RefreshIcon} alt="refresh icon" /> Retry
+															</button>
+														</div>
+													</td>
+												</tr>
+											))}
+										</tbody>
+									</table>
+
+									{events.pagination.totalPage > 1 && (
+										<div className="pagination">
+											<button disabled={events.pagination.page === 1} onClick={() => getEvents({ page: events.pagination.page + 1 })} className="has-icon">
+												<img src={AngleArrowLeftIcon} alt="angle icon left" />
+											</button>
+											<button disabled={events.pagination.page === events.pagination.totalPage} onClick={() => getEvents({ page: events.pagination.page + 1 })} className="has-icon">
+												<img src={AngleArrowRightIcon} alt="angle icon right" />
+											</button>
+										</div>
+									)}
+								</React.Fragment>
 							)}
 
 							{activeTab && activeTab === 'apps' && (
@@ -402,6 +482,22 @@ function DashboardPage() {
 						<div className="dashboard--logs--details">
 							<h3>Details</h3>
 							<ul className="dashboard--logs--details--meta">
+								{eventDeliveryAtempt.ip_address && (
+									<React.Fragment>
+										<li>
+											<div className="label">IP Address</div>
+											<div className="value color">{eventDeliveryAtempt.ip_address}</div>
+										</li>
+										<li>
+											<div className="label">HTTP Status</div>
+											<div className="value">{eventDeliveryAtempt.http_status}</div>
+										</li>
+										<li>
+											<div className="label">API Version</div>
+											<div className="value color">{eventDeliveryAtempt.api_version}</div>
+										</li>
+									</React.Fragment>
+								)}
 								<li>
 									<div className="label">Date Created</div>
 									<div className="value">{getDate(detailsItem.created_at)}</div>
@@ -416,7 +512,7 @@ function DashboardPage() {
 								<React.Fragment>
 									<h4>Event Data</h4>
 									<div>
-										<ReactJson src={detailsItem} iconStyle="square" displayDataTypes={false} enableClipboard={false} style={jsonStyle} />
+										<ReactJson src={detailsItem.data} iconStyle="square" displayDataTypes={false} enableClipboard={false} style={jsonStyle} name={false} />
 									</div>
 								</React.Fragment>
 							)}
