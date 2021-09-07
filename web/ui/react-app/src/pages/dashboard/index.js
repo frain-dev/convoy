@@ -10,6 +10,8 @@ import LinkIcon from '../../assets/img/link-icon.svg';
 import ViewIcon from '../../assets/img/view-icon.svg';
 import AngleArrowLeftIcon from '../../assets/img/angle-arrow-left.svg';
 import AngleArrowRightIcon from '../../assets/img/angle-arrow-right.svg';
+import AngleArrowDownIcon from '../../assets/img/angle-arrow-down.svg';
+import AngleArrowUpIcon from '../../assets/img/angle-arrow-up.svg';
 import Chart from 'chart.js/auto';
 import { DateRange } from 'react-date-range';
 import ReactJson from 'react-json-view';
@@ -18,13 +20,16 @@ import 'react-date-range/dist/styles.css';
 import 'react-date-range/dist/theme/default.css';
 
 const _axios = axios.default;
-const request = _axios.create({ baseURL: 'http://localhost:5005/v1' });
+// eslint-disable-next-line no-restricted-globals
+const request = _axios.create({ baseURL: `${location.port === '3000' ? 'http://localhost:5005' : location.origin}/v1` });
 const months = ['Jan', 'Feb', 'Mar', 'April', 'May', 'June', 'July', 'Aug', 'Sept', 'Oct', 'Nov', 'Dec'];
 
 function DashboardPage() {
 	const [dashboardData, setDashboardData] = useState({ apps: 0, messages: 0, messageData: [] });
 	const [authDetails, setAuthDetails] = useState({ basic: { username: '', password: '' }, type: '' });
 	const [viewPassword, toggleViewPassword] = useState(false);
+	const [viewAllEventData, toggleViewAllEventDataState] = useState(false);
+	const [viewAllResponseData, toggleViewAllResponseData] = useState(false);
 	const [apps, setAppsData] = useState([]);
 	const [events, setEventsData] = useState({ content: [], pagination: { page: 1, totalPage: 0 } });
 	const [tabs] = useState(['events', 'apps']);
@@ -44,6 +49,7 @@ function DashboardPage() {
 		api_version: '',
 		updated_at: 0,
 		deleted_at: 0,
+		response_data: '',
 	});
 	const [detailsItem, setDetailsItem] = useState();
 	const [filterFrequency, setFilterFrequency] = useState('daily');
@@ -351,7 +357,9 @@ function DashboardPage() {
 
 						<div className="card--footer">
 							<p>Our documentation contains the libraries, API and SDKs you need to integrate Fhooks on your platform.</p>
-							<button className="primary">Go to docs</button>
+							<button className="primary" onClick={() => (window.location = 'https://github.com/frain-dev/convoy')}>
+								Go to docs
+							</button>
 						</div>
 					</div>
 				</div>
@@ -456,6 +464,8 @@ function DashboardPage() {
 											<th scope="col">Name</th>
 											<th scope="col">Created</th>
 											<th scope="col">Updated</th>
+											<th scope="col">Number of Events</th>
+											<th scope="col">Number of Endpoints</th>
 										</tr>
 									</thead>
 									<tbody>
@@ -470,6 +480,12 @@ function DashboardPage() {
 												<td>
 													<div>{getDate(app.updated_at)}</div>
 												</td>
+												<td>
+													<div>{app.events}</div>
+												</td>
+												<td>
+													<div>{app.endpoints.length}</div>
+												</td>
 											</tr>
 										))}
 									</tbody>
@@ -482,7 +498,7 @@ function DashboardPage() {
 						<div className="dashboard--logs--details">
 							<h3>Details</h3>
 							<ul className="dashboard--logs--details--meta">
-								{eventDeliveryAtempt.ip_address && (
+								{eventDeliveryAtempt && eventDeliveryAtempt.ip_address && (
 									<React.Fragment>
 										<li>
 											<div className="label">IP Address</div>
@@ -511,9 +527,37 @@ function DashboardPage() {
 							{activeTab === 'events' && (
 								<React.Fragment>
 									<h4>Event Data</h4>
-									<div>
+									<div className={'dashboard--logs--details--event-data ' + (viewAllEventData && detailsItem.data ? '' : 'data-hidden')}>
 										<ReactJson src={detailsItem.data} iconStyle="square" displayDataTypes={false} enableClipboard={false} style={jsonStyle} name={false} />
 									</div>
+									{detailsItem.data && (
+										<div className="dashboard--logs--details--view-more">
+											<button className="has-icon" onClick={() => toggleViewAllEventDataState(!viewAllEventData)}>
+												<img src={AngleArrowDownIcon} alt="angle arrow down" />
+												{viewAllEventData ? 'Hide more' : 'View more'}
+											</button>
+										</div>
+									)}
+
+									<hr />
+
+									<h4>Response Data</h4>
+									{eventDeliveryAtempt && (
+										<div>
+											<div className={'dashboard--logs--details--response-data ' + (viewAllResponseData && eventDeliveryAtempt.response_data ? '' : 'data-hidden')}>
+												{eventDeliveryAtempt.response_data}
+											</div>
+											{eventDeliveryAtempt.response_data && eventDeliveryAtempt.response_data.length > 60 && (
+												<div className="dashboard--logs--details--view-more">
+													<button className="has-icon" onClick={() => toggleViewAllResponseData(!viewAllResponseData)}>
+														{!viewAllResponseData && <img src={AngleArrowDownIcon} alt="angle arrow down" />}
+														{viewAllResponseData && <img src={AngleArrowUpIcon} alt="angle arrow up" />}
+														{viewAllResponseData ? 'Hide more' : 'View more'}
+													</button>
+												</div>
+											)}
+										</div>
+									)}
 								</React.Fragment>
 							)}
 
