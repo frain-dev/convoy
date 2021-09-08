@@ -1,4 +1,4 @@
-![convoy image](./web/ui/website/assets/images/logo.svg)
+![convoy image](./convoy-logo.svg)
 
 [https://getconvoy.io](https://getconvoy.io)
 
