@@ -12,6 +12,7 @@ import AngleArrowLeftIcon from '../../assets/img/angle-arrow-left.svg';
 import AngleArrowRightIcon from '../../assets/img/angle-arrow-right.svg';
 import AngleArrowDownIcon from '../../assets/img/angle-arrow-down.svg';
 import AngleArrowUpIcon from '../../assets/img/angle-arrow-up.svg';
+import ConvoyLogo from '../../assets/img/logo.svg';
 import Chart from 'chart.js/auto';
 import { DateRange } from 'react-date-range';
 import ReactJson from 'react-json-view';
@@ -251,7 +252,9 @@ function DashboardPage() {
 		<div className="dashboard">
 			<header className="dashboard--header">
 				<div className="dashboard--header--container">
-					<div className="logo">Convoy.</div>
+					<div className="logo">
+						<img src={ConvoyLogo} alt="convoy logo" />
+					</div>
 
 					<button className="user">
 						<div>
