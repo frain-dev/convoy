@@ -1,5 +1,5 @@
 # Convoy
-Convoy is a fast & secure webhooks service. It receives event data from a HTTP API and sends these event data to the configured endpoints.
+Convoy is a fast & secure webhooks service. It receives event data from a HTTP API and sends these event data to the configured endpoints. To get started download the [openapi spec](https://github.com/frain-dev/convoy/blob/main/openapi.yaml) into Postman or Insomnia.
 
 Installation
 -----------------
@@ -24,9 +24,6 @@ Concepts
 2. **Events:** An event represents a webhook event to be sent to an app.
 3. **Delivery Attempts:** A delivery attempt represents an attempt to send an event to it's respective app's endpoint. It contains the `event body`, `status code` and `response body` received on attempt. The amount of attempts on a failed delivery depends on your configured retry strategy.
 
-
-How it Works
------------------
 
 Configuration
 -----------------
