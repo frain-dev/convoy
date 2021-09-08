@@ -38,8 +38,7 @@
 
         <section class="section features" id="features">
             <div class="container">
-                <h2 class="section--title">Amazing features</h2>
-                <p class="section--description">Lorem ipsum dolor sit amet, consetetur sadipscing elitr, sed diam nonumy eirmod tempor invidunt ut labore et dolore.</p>
+                <h2 class="section--title">Why Convoy?</h2>
 
                 <ul>
                     <li>
@@ -65,7 +64,7 @@
                     <li>
                         <img src="~/assets/images/scalable-feature-icon.svg" alt="scalable feature icon" />
                         <h4>Scalable</h4>
-                        <p>Independently scale courier as your system needs grows.</p>
+                        <p>Independently scale Convoy as your system needs grows.</p>
                     </li>
                     <li>
                         <div class="features--dashboard-screenshot">
