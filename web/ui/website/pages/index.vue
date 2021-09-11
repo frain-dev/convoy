@@ -16,7 +16,7 @@
                             <a href="#features"> Features </a>
                         </li>
                         <li>
-                            <a href="https://github.com/frain-dev/convoy/discussions"> Community </a>
+                            <a target="_blank" rel="noopener noreferrer" href="https://github.com/frain-dev/convoy/discussions"> Community </a>
                         </li>
                         <li>
                             <a href="https://github.com/frain-dev/convoy">
@@ -33,13 +33,19 @@
                     <p>With out-of-the-box security, reliability and scalability for your webhooks infrastructure.</p>
                     <!-- <button>Get Started</button> -->
                 </div>
+                <div class="hero-section--img">
+                    <img src="~/assets/images/hero-img.svg" alt="hero" />
+                </div>
             </section>
         </header>
 
         <section class="section features" id="features">
             <div class="container">
-                <h2 class="section--title">Amazing features</h2>
-                <p class="section--description">Lorem ipsum dolor sit amet, consetetur sadipscing elitr, sed diam nonumy eirmod tempor invidunt ut labore et dolore.</p>
+                <h2 class="section--title">Why Convoy</h2>
+                <p class="section--description">
+                    Convoy enables you get started with delivering webhooks products in the space of minutes, along with a number of carefully thought out features to truely enable/enhance your webhooks
+                    delivery at scale.
+                </p>
 
                 <ul>
                     <li>
@@ -143,7 +149,13 @@
 
                     <ul>
                         <li>
-                            <a href="https://twitter.com/getconvoy"><img src="~/assets/images/twitter-icon.svg" alt="twitter logovc" /></a>
+                            <a target="_blank" rel="noopener noreferrer" href="https://twitter.com/getconvoy"><img src="~/assets/images/twitter-icon.svg" alt="twitter logovc" /></a>
+                        </li>
+                        <li>
+                            <a target="_blank" rel="noopener noreferrer" href="https://github.com/frain-dev/convoy"><img src="~/assets/images/github-icon.svg" alt="mail logovc" /></a>
+                        </li>
+                        <li>
+                            <a target="_blank" rel="noopener noreferrer" href="mailto:info@frain.dev"><img src="~/assets/images/mail-icon.svg" alt="mail logovc" /></a>
                         </li>
                     </ul>
                 </nav>
@@ -231,7 +243,7 @@ header {
 
             &.show {
                 padding-top: 20px;
-                height: 360px;
+                height: 175px;
                 overflow-y: auto;
                 display: block;
             }
@@ -295,9 +307,16 @@ header {
         max-width: 1106px;
         margin: auto;
         display: flex;
-        align-items: center;
+        justify-content: space-between;
         min-height: 603px;
         height: 100%;
+        flex-direction: column;
+        padding: 150px 0 100px;
+
+        @media (min-width: $desktopBreakPoint) {
+            flex-direction: row;
+            align-items: center;
+        }
 
         &--cta {
             max-width: 533px;
@@ -327,6 +346,16 @@ header {
                 margin-top: 40px;
             }
         }
+
+        &--img {
+            margin-left: 50px;
+            text-align: center;
+            display: none;
+
+            @media (min-width: $desktopBreakPoint) {
+                display: block;
+            }
+        }
     }
 }
 
@@ -354,7 +383,7 @@ header {
 }
 
 .features {
-    padding: 160px 20px 600px;
+    padding: 160px 20px 800px;
 
     @media (max-width: 1089px) {
         padding: 60px 20px 100px;
@@ -369,7 +398,7 @@ header {
     }
 
     .section--description {
-        max-width: 508px;
+        max-width: 608px;
         margin-bottom: 77px;
     }
 
@@ -415,8 +444,16 @@ header {
         position: absolute;
         left: 0;
         top: 0;
-        width: 800px;
+        width: 1100px;
         height: fit-content;
+
+        @media (max-width: 1644px) {
+            width: 1000px;
+        }
+
+        @media (max-width: 1443px) {
+            width: 800px;
+        }
 
         img {
             width: 100%;
@@ -528,6 +565,14 @@ footer {
         justify-content: space-between;
         border-bottom: 1px solid rgba(255, 255, 255, 0.1);
         padding-bottom: 29px;
+
+        li {
+            display: inline-block;
+
+            &:not(:last-of-type) {
+                margin-right: 16px;
+            }
+        }
     }
 
     p {
@@ -535,7 +580,11 @@ footer {
         font-size: 14px;
         line-height: 17px;
         margin-top: 24px;
-        text-align: right;
+        text-align: center;
+
+        @media (min-width: $desktopBreakPoint) {
+            text-align: right;
+        }
     }
 }
 </style>
