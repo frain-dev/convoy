@@ -71,7 +71,7 @@
                     <li>
                         <img src="~/assets/images/scalable-feature-icon.svg" alt="scalable feature icon" />
                         <h4>Scalable</h4>
-                        <p>Independently scale courier as your system needs grows.</p>
+                        <p>Independently scale Convoy as your system needs grows.</p>
                     </li>
                     <li>
                         <div class="features--dashboard-screenshot">
@@ -149,13 +149,13 @@
 
                     <ul>
                         <li>
-                            <a target="_blank" rel="noopener noreferrer" href="https://twitter.com/getconvoy"><img src="~/assets/images/twitter-icon.svg" alt="twitter logovc" /></a>
+                            <a target="_blank" rel="noopener noreferrer" href="https://twitter.com/getconvoy"><img src="~/assets/images/twitter-icon.svg" alt="twitter logo" /></a>
                         </li>
                         <li>
-                            <a target="_blank" rel="noopener noreferrer" href="https://github.com/frain-dev/convoy"><img src="~/assets/images/github-icon.svg" alt="mail logovc" /></a>
+                            <a target="_blank" rel="noopener noreferrer" href="https://github.com/frain-dev/convoy"><img src="~/assets/images/github-icon.svg" alt="mail logo" /></a>
                         </li>
                         <li>
-                            <a target="_blank" rel="noopener noreferrer" href="mailto:info@frain.dev"><img src="~/assets/images/mail-icon.svg" alt="mail logovc" /></a>
+                            <a target="_blank" rel="noopener noreferrer" href="mailto:info@frain.dev"><img src="~/assets/images/mail-icon.svg" alt="mail logo" /></a>
                         </li>
                     </ul>
                 </nav>
