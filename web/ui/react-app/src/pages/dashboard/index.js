@@ -254,6 +254,7 @@ function DashboardPage() {
 				<div className="dashboard--header--container">
 					<div className="logo">
 						<img src={ConvoyLogo} alt="convoy logo" />
+						<p>v0.1.1</p>
 					</div>
 
 					<button className="user">
