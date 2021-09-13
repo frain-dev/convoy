@@ -1,0 +1,35 @@
+h1 {
+    font-weight: bold;
+    font-size: 32px;
+    line-height: 32px;
+    letter-spacing: 0.01em;
+    margin-bottom: 16px;
+}
+
+h2 {
+    font-weight: bold;
+    font-size: 24px;
+    line-height: 32px;
+    letter-spacing: 0.01em;
+    margin: 32px 0 16px;
+}
+
+h3 {
+    font-weight: bold;
+    font-size: 18px;
+    line-height: 32px;
+    letter-spacing: 0.01em;
+    margin: 32px 0 16px;
+}
+
+p {
+    margin-bottom: 10px;
+    font-size: 16px;
+    line-height: 27px;
+}
+
+.nuxt-content {
+    a {
+        text-decoration: underline;
+    }
+}

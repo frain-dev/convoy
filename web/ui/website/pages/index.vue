@@ -16,6 +16,9 @@
                             <a href="#features"> Features </a>
                         </li>
                         <li>
+                            <nuxt-link to="/docs"> Docs </nuxt-link>
+                        </li>
+                        <li>
                             <a target="_blank" rel="noopener noreferrer" href="https://github.com/frain-dev/convoy/discussions"> Community </a>
                         </li>
                         <li>
@@ -171,10 +174,6 @@ export default {
         return {
             showMenu: false,
         };
-    },
-    async asyncData({ $content, params }) {
-        const pageData = await $content('api-doc').fetch();
-        return { pageData };
     },
     methods: {},
 };
