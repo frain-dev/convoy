@@ -137,7 +137,7 @@ func buildRoutes(app *applicationHandler) http.Handler {
 		})
 
 		r.Route("/dashboard/{orgID}", func(dashboardRouter chi.Router) {
-			dashboardRouter.Use(requireAuth())
+			dashboardRouter.Use(requireUIAuth())
 
 			dashboardRouter.Use(requireOrganisation(app.orgRepo))
 
@@ -152,7 +152,8 @@ func buildRoutes(app *applicationHandler) http.Handler {
 		})
 
 		r.Route("/auth", func(authRouter chi.Router) {
-			authRouter.With(fetchAuthConfig()).Get("/details", app.GetAuthDetails)
+			authRouter.With(login()).Post("/login", app.GetAuthLogin)
+			authRouter.With(requireUIAuth()).With(fetchAuthConfig()).Get("/details", app.GetAuthDetails)
 		})
 	})
 
