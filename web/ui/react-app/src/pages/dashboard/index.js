@@ -16,7 +16,7 @@ import ConvoyLogo from '../../assets/img/logo.svg';
 import Chart from 'chart.js/auto';
 import { DateRange } from 'react-date-range';
 import ReactJson from 'react-json-view';
-import './app.scss';
+import './style.scss';
 import 'react-date-range/dist/styles.css';
 import 'react-date-range/dist/theme/default.css';
 
