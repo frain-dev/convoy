@@ -7,7 +7,7 @@
             </div>
         </form>
         <ul v-if="articles.length" class="docs-search--dropdown">
-            <li v-for="article of articles" :key="article.slug">
+            <li v-for="article of articles" :key="article.slug" @click="clearSearchDropDown">
                 <NuxtLink :to="'/docs/' + article.slug">
                     <img src="~/assets/images/link-icon-2.svg" alt="link icon" />
                     {{ article.title }}
@@ -32,6 +32,11 @@ export default {
                 return;
             }
             this.articles = await this.$content('docs').search(searchQuery).fetch();
+        },
+    },
+    methods: {
+        clearSearchDropDown() {
+            this.articles = [];
         },
     },
 };

@@ -5,7 +5,7 @@
 <script>
 export default {
     layout: 'docs',
-    async asyncData({ $content, params }) {
+    async asyncData({ $content }) {
         const pageData = await $content('docs', 'index').fetch();
         return { pageData };
     },
