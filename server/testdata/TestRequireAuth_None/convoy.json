@@ -9,6 +9,10 @@
 			"retryLimit": 15
 		}
 	},
+	"signature": {
+		"header": "X-Company-Event-WebHook-Signature",
+		"hash": "SHA256"
+	},
 	"ui": {
 		"type": "basic",
 		"basic": [

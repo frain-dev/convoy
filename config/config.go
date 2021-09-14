@@ -3,7 +3,10 @@ package config
 import (
 	"encoding/json"
 	"errors"
+	"fmt"
+	"github.com/frain-dev/convoy/config/algo"
 	"os"
+	"reflect"
 	"sync/atomic"
 	"time"
 )
@@ -42,10 +45,22 @@ func LoadFromFile(p string) error {
 	if err := json.NewDecoder(f).Decode(&c); err != nil {
 		return err
 	}
+	err = ensureSignature(c.Signature)
+	if err != nil {
+		return err
+	}
 
 	c.UIAuthorizedUsers = parseAuthorizedUsers(c.UIAuth)
 
 	cfgSingleton.Store(c)
+	return nil
+}
+
+func ensureSignature(signature SignatureConfiguration) error {
+	_, ok := algo.M[signature.Hash]
+	if !ok {
+		return fmt.Errorf("invalid hash algorithm - '%s', must be one of %s", signature.Hash, reflect.ValueOf(algo.M).MapKeys())
+	}
 	return nil
 }
 
@@ -116,4 +131,5 @@ type StrategyConfiguration struct {
 
 type SignatureConfiguration struct {
 	Header SignatureHeaderProvider `json:"header"`
+	Hash   string                  `json:"hash"`
 }
