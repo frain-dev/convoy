@@ -157,17 +157,6 @@ func Test_computeJSONHmac_DifferentHashes(t *testing.T) {
 			wantErr: false,
 		},
 		{
-			name: "RIPEMD160 - payload",
-			args: args{
-				hash:   "RIPEMD160",
-				secret: "my-long-secret",
-				data:   `{"a": 1, "b": {}, "e": "123"}`,
-				order:  false,
-			},
-			want:    "57bb907dbd7ff4c7f8f44316404f9a95bdd30dc3",
-			wantErr: false,
-		},
-		{
 			name: "SHA3_256 - payload",
 			args: args{
 				hash:   "SHA3_256",
@@ -209,17 +198,6 @@ func Test_computeJSONHmac_DifferentHashes(t *testing.T) {
 				order:  false,
 			},
 			want:    "c0089311dd758cbb1161cf94e2266a35a9ef9e1ddd092cb938fc61629d619d3ec5d299f9bb8b3d599344b2c1c3fe6a3eea8dcda3a56747e227919f4776311790",
-			wantErr: false,
-		},
-		{
-			name: "MD4 - payload",
-			args: args{
-				hash:   "MD4",
-				secret: "my-long-secret",
-				data:   `{"a": 1, "b": {}, "e": "123"}`,
-				order:  false,
-			},
-			want:    "5032ace911370677285de374767edcec",
 			wantErr: false,
 		},
 		{
