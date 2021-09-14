@@ -168,3 +168,9 @@ func (a *applicationHandler) GetAuthDetails(w http.ResponseWriter, r *http.Reque
 	_ = render.Render(w, r, newServerResponse("Auth details fetched successfully",
 		getAuthConfigFromContext(r.Context()), http.StatusOK))
 }
+
+func (a *applicationHandler) GetAuthLogin(w http.ResponseWriter, r *http.Request) {
+
+	_ = render.Render(w, r, newServerResponse("Logged in successfully",
+		getAuthLoginFromContext(r.Context()), http.StatusOK))
+}

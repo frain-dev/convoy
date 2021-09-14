@@ -5,6 +5,7 @@ import (
 	"errors"
 	"os"
 	"sync/atomic"
+	"time"
 )
 
 var cfgSingleton atomic.Value
@@ -14,10 +15,12 @@ type DatabaseConfiguration struct {
 }
 
 type Configuration struct {
-	Auth     AuthConfiguration     `json:"auth"`
-	Database DatabaseConfiguration `json:"database"`
-	Queue    QueueConfiguration    `json:"queue"`
-	Server   struct {
+	Auth              AuthConfiguration   `json:"auth"`
+	UIAuth            UIAuthConfiguration `json:"ui"`
+	UIAuthorizedUsers map[string]string
+	Database          DatabaseConfiguration `json:"database"`
+	Queue             QueueConfiguration    `json:"queue"`
+	Server            struct {
 		HTTP struct {
 			Port int `json:"port"`
 		} `json:"http"`
@@ -40,8 +43,19 @@ func LoadFromFile(p string) error {
 		return err
 	}
 
+	c.UIAuthorizedUsers = parseAuthorizedUsers(c.UIAuth)
+
 	cfgSingleton.Store(c)
 	return nil
+}
+
+func parseAuthorizedUsers(auth UIAuthConfiguration) map[string]string {
+	users := auth.Basic
+	usersMap := make(map[string]string)
+	for i := 0; i < len(users); i++ {
+		usersMap[users[i].Username] = users[i].Password
+	}
+	return usersMap
 }
 
 // Get fetches the application configuration. LoadFromFile must have been called
@@ -78,10 +92,18 @@ type QueueConfiguration struct {
 
 type AuthConfiguration struct {
 	Type  AuthProvider `json:"type"`
-	Basic struct {
-		Username string `json:"username"`
-		Password string `json:"password"`
-	} `json:"basic"`
+	Basic Basic        `json:"basic"`
+}
+
+type UIAuthConfiguration struct {
+	Type                  AuthProvider  `json:"type"`
+	Basic                 []Basic       `json:"basic"`
+	JwtKey                string        `json:"jwtKey"`
+	JwtTokenExpirySeconds time.Duration `json:"jwtTokenExpirySeconds"`
+}
+type Basic struct {
+	Username string `json:"username"`
+	Password string `json:"password"`
 }
 
 type StrategyConfiguration struct {
