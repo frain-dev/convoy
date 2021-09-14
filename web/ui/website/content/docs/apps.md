@@ -1,7 +1,7 @@
 ---
-title: App
+title: Apps
 description: 'Your list of apps on Convoys'
-id: app
+id: apps
 ---
 
 # Apps
