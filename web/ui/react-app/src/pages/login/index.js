@@ -3,7 +3,6 @@ import * as axios from 'axios';
 import ConvoyLogo from '../../assets/img/logo.svg';
 import PasswordInvisibleIcon from '../../assets/img/password-visible-icon.svg';
 import PasswordVisibleIcon from '../../assets/img/password-invisible-icon.svg';
-import { useHistory } from 'react-router-dom';
 import { APIURL } from '../../helpers/get-details';
 import './style.scss';
 
@@ -14,7 +13,6 @@ function LoginPage() {
 	const [showLoginPassword, toggleShowLoginPassword] = useState(false);
 	const [disableLoginBtn, toggleDisableLoginBtn] = useState(false);
 	const [loginDetails, updateLoginDetails] = useState({ username: '', password: '' });
-	let route = useHistory();
 
 	const handleUserInput = (event) => {
 		const { name, value } = event.target;
@@ -29,7 +27,7 @@ function LoginPage() {
 			const loginResponse = await (await request({ method: 'POST', url: '/auth/login', data: loginDetails })).data;
 			localStorage.setItem('CONVOY_AUTH', JSON.stringify(loginResponse.data));
 			toggleDisableLoginBtn(false);
-			route.push('/');
+			window.open('/', '_self');
 		} catch (error) {
 			toggleDisableLoginBtn(false);
 		}

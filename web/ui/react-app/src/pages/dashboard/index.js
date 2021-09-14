@@ -161,6 +161,11 @@ function DashboardPage() {
 		}
 	};
 
+	const logout = () => {
+		localStorage.removeItem('CONVOY_AUTH');
+		window.location.replace('/login');
+	};
+
 	useEffect(() => {
 		const getOrganisations = async () => {
 			try {
@@ -236,6 +241,11 @@ function DashboardPage() {
 							<div className="name">{activeorganisation && activeorganisation.name}</div>
 						</div>
 						<img src={ArrowDownIcon} alt="arrow down icon" />
+						<div className="dropdown organisations">
+							<ul>
+								<li onClick={() => logout()}>Logout</li>
+							</ul>
+						</div>
 					</button>
 				</div>
 			</header>
