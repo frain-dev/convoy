@@ -128,7 +128,7 @@ func refresh() func(next http.Handler) http.Handler {
 				}
 			}
 
-			if time.Now().Sub(time.Unix(claims.ExpiresAt, 0)) > 30*time.Second {
+			if time.Since(time.Unix(claims.ExpiresAt, 0)) > 30*time.Second {
 				_ = render.Render(w, r, newErrorResponse("access token is not within the refresh window of 30 seconds", http.StatusBadRequest))
 				return
 			}
