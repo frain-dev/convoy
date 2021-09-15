@@ -108,13 +108,27 @@ func LoadConfig(p string) error {
 		}
 	}
 
+	if port, err := strconv.Atoi(os.Getenv("PORT")); err != nil {
+		c.Server = struct {
+			HTTP struct {
+				Port int `json:"port"`
+			} `json:"http"`
+		}{
+			HTTP: struct {
+				Port int `json:"port"`
+			}{
+				Port: port,
+			},
+		}
+	}
+
 	if signatureHeader := os.Getenv("CONVOY_SIGNATURE_HEADER"); signatureHeader != "" {
 		c.Signature.Header = SignatureHeaderProvider(signatureHeader)
 	}
 
 	if apiUsername := os.Getenv("CONVOY_API_USERNAME"); apiUsername != "" {
 		var apiPassword string
-		if apiPassword = os.Getenv("CONVOY_API_PASSWORD"); apiPassword != "" {
+		if apiPassword = os.Getenv("CONVOY_API_PASSWORD"); apiPassword == "" {
 			return errors.New("Failed to retrieve apiPassword")
 		}
 
@@ -127,15 +141,15 @@ func LoadConfig(p string) error {
 	if uiUsername := os.Getenv("CONVOY_UI_USERNAME"); uiUsername != "" {
 		var uiPassword, jwtKey, jwtExpiryString string
 		var jwtExpiry time.Duration
-		if uiPassword = os.Getenv("CONVOY_UI_PASSWORD"); uiPassword != "" {
+		if uiPassword = os.Getenv("CONVOY_UI_PASSWORD"); uiPassword == "" {
 			return errors.New("Failed to retrieve uiPassword")
 		}
 
-		if jwtKey = os.Getenv("CONVOY_JWT_KEY"); jwtKey != "" {
+		if jwtKey = os.Getenv("CONVOY_JWT_KEY"); jwtKey == "" {
 			return errors.New("Failed to retrieve jwtKey")
 		}
 
-		if jwtExpiryString = os.Getenv("CONVOY_JWT_EXPIRY"); jwtExpiryString != "" {
+		if jwtExpiryString = os.Getenv("CONVOY_JWT_EXPIRY"); jwtExpiryString == "" {
 			return errors.New("Failed to retrieve jwtExpiry")
 		}
 
