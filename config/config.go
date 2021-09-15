@@ -172,7 +172,7 @@ func parseAuthorizedUsers(auth UIAuthConfiguration) map[string]string {
 	return usersMap
 }
 
-// Get fetches the application configuration. LoadFromFile must have been called
+// Get fetches the application configuration. LoadConfig must have been called
 // previously for this to work.
 // Use this when you need to get access to the config object at runtime
 func Get() (Configuration, error) {
