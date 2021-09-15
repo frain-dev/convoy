@@ -48,7 +48,7 @@ func main() {
 				return err
 			}
 
-			err = config.LoadFromFile(cfgPath)
+			err = config.LoadConfig(cfgPath)
 			if err != nil {
 				return err
 			}

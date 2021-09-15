@@ -53,7 +53,7 @@ func TestRequireAuth_Misconfiguration(t *testing.T) {
 	for _, tc := range tt {
 		t.Run(tc.name, func(t *testing.T) {
 
-			err := config.LoadFromFile(tc.cfgPath)
+			err := config.LoadConfig(tc.cfgPath)
 			if err != nil {
 				t.Error("Failed to load config file")
 			}
@@ -127,7 +127,7 @@ func TestRequireAuth_None(t *testing.T) {
 	for _, tc := range tt {
 		t.Run(tc.name, func(t *testing.T) {
 
-			err := config.LoadFromFile(tc.cfgPath)
+			err := config.LoadConfig(tc.cfgPath)
 			if err != nil {
 				t.Error("Failed to load config file")
 			}
@@ -206,7 +206,7 @@ func TestRequireAuth_Basic(t *testing.T) {
 	for _, tc := range tt {
 		t.Run(tc.name, func(t *testing.T) {
 
-			err := config.LoadFromFile(tc.cfgPath)
+			err := config.LoadConfig(tc.cfgPath)
 			if err != nil {
 				t.Error("Failed to load config file")
 			}

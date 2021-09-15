@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"errors"
 	"os"
+	"strconv"
 	"sync/atomic"
 	"time"
 )
@@ -27,47 +28,6 @@ type Configuration struct {
 	}
 	Strategy  StrategyConfiguration  `json:"strategy"`
 	Signature SignatureConfiguration `json:"signature"`
-}
-
-func LoadFromFile(p string) error {
-	f, err := os.Open(p)
-	if err != nil {
-		return err
-	}
-
-	defer f.Close()
-
-	c := new(Configuration)
-
-	if err := json.NewDecoder(f).Decode(&c); err != nil {
-		return err
-	}
-
-	c.UIAuthorizedUsers = parseAuthorizedUsers(c.UIAuth)
-
-	cfgSingleton.Store(c)
-	return nil
-}
-
-func parseAuthorizedUsers(auth UIAuthConfiguration) map[string]string {
-	users := auth.Basic
-	usersMap := make(map[string]string)
-	for i := 0; i < len(users); i++ {
-		usersMap[users[i].Username] = users[i].Password
-	}
-	return usersMap
-}
-
-// Get fetches the application configuration. LoadFromFile must have been called
-// previously for this to work.
-// Use this when you need to get access to the config object at runtime
-func Get() (Configuration, error) {
-	c, ok := cfgSingleton.Load().(*Configuration)
-	if !ok {
-		return Configuration{}, errors.New("call Load before this function")
-	}
-
-	return *c, nil
 }
 
 type AuthProvider string
@@ -101,6 +61,7 @@ type UIAuthConfiguration struct {
 	JwtKey                string        `json:"jwtKey"`
 	JwtTokenExpirySeconds time.Duration `json:"jwtTokenExpirySeconds"`
 }
+
 type Basic struct {
 	Username string `json:"username"`
 	Password string `json:"password"`
@@ -116,4 +77,109 @@ type StrategyConfiguration struct {
 
 type SignatureConfiguration struct {
 	Header SignatureHeaderProvider `json:"header"`
+}
+
+func LoadConfig(p string) error {
+	f, err := os.Open(p)
+	if err != nil {
+		return err
+	}
+
+	defer f.Close()
+
+	c := new(Configuration)
+
+	if err := json.NewDecoder(f).Decode(&c); err != nil {
+		return err
+	}
+
+	if mongoDsn := os.Getenv("CONVOY_MONGO_DSN"); mongoDsn != "" {
+		c.Database = DatabaseConfiguration{Dsn: mongoDsn}
+	}
+
+	if queueDsn := os.Getenv("CONVOY_REDIS_DSN"); queueDsn != "" {
+		c.Queue = QueueConfiguration{
+			Type: "redis",
+			Redis: struct {
+				DSN string `json:"dsn"`
+			}{
+				DSN: queueDsn,
+			},
+		}
+	}
+
+	if signatureHeader := os.Getenv("CONVOY_SIGNATURE_HEADER"); signatureHeader != "" {
+		c.Signature.Header = SignatureHeaderProvider(signatureHeader)
+	}
+
+	if apiUsername := os.Getenv("CONVOY_API_USERNAME"); apiUsername != "" {
+		var apiPassword string
+		if apiPassword = os.Getenv("CONVOY_API_PASSWORD"); apiPassword != "" {
+			return errors.New("Failed to retrieve apiPassword")
+		}
+
+		c.Auth = AuthConfiguration{
+			Type:  "basic",
+			Basic: Basic{apiUsername, apiPassword},
+		}
+	}
+
+	if uiUsername := os.Getenv("CONVOY_UI_USERNAME"); uiUsername != "" {
+		var uiPassword, jwtKey, jwtExpiryString string
+		var jwtExpiry time.Duration
+		if uiPassword = os.Getenv("CONVOY_UI_PASSWORD"); uiPassword != "" {
+			return errors.New("Failed to retrieve uiPassword")
+		}
+
+		if jwtKey = os.Getenv("CONVOY_JWT_KEY"); jwtKey != "" {
+			return errors.New("Failed to retrieve jwtKey")
+		}
+
+		if jwtExpiryString = os.Getenv("CONVOY_JWT_EXPIRY"); jwtExpiryString != "" {
+			return errors.New("Failed to retrieve jwtExpiry")
+		}
+
+		jwtExpiryInt, err := strconv.Atoi(jwtExpiryString)
+		if err != nil {
+			return errors.New("Failed to parse jwtExpiry")
+		}
+
+		jwtExpiry = time.Duration(jwtExpiryInt) * time.Second
+
+		basicCredentials := Basic{uiUsername, uiPassword}
+		c.UIAuth = UIAuthConfiguration{
+			Type: "basic",
+			Basic: []Basic{
+				basicCredentials,
+			},
+			JwtKey:                jwtKey,
+			JwtTokenExpirySeconds: jwtExpiry,
+		}
+	}
+
+	c.UIAuthorizedUsers = parseAuthorizedUsers(c.UIAuth)
+
+	cfgSingleton.Store(c)
+	return nil
+}
+
+func parseAuthorizedUsers(auth UIAuthConfiguration) map[string]string {
+	users := auth.Basic
+	usersMap := make(map[string]string)
+	for i := 0; i < len(users); i++ {
+		usersMap[users[i].Username] = users[i].Password
+	}
+	return usersMap
+}
+
+// Get fetches the application configuration. LoadConfig must have been called
+// previously for this to work.
+// Use this when you need to get access to the config object at runtime
+func Get() (Configuration, error) {
+	c, ok := cfgSingleton.Load().(*Configuration)
+	if !ok {
+		return Configuration{}, errors.New("call Load before this function")
+	}
+
+	return *c, nil
 }
