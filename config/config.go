@@ -108,7 +108,9 @@ func LoadConfig(p string) error {
 		}
 	}
 
-	if port, err := strconv.Atoi(os.Getenv("PORT")); err != nil {
+	// This enables us deploy to Heroku where the $PORT is provided
+	// dynamically.
+	if port, err := strconv.Atoi(os.Getenv("PORT")); err == nil {
 		c.Server = struct {
 			HTTP struct {
 				Port int `json:"port"`
