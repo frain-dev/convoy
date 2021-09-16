@@ -401,7 +401,7 @@ function DashboardPage() {
 
 									{events.pagination.totalPage > 1 && (
 										<div className="pagination">
-											<button disabled={events.pagination.page === 1} onClick={() => getEvents({ page: events.pagination.page + 1 })} className="has-icon">
+											<button disabled={events.pagination.page === 1} onClick={() => getEvents({ page: events.pagination.page - 1 })} className="has-icon">
 												<img src={AngleArrowLeftIcon} alt="angle icon left" />
 											</button>
 											<button disabled={events.pagination.page === events.pagination.totalPage} onClick={() => getEvents({ page: events.pagination.page + 1 })} className="has-icon">
@@ -413,38 +413,52 @@ function DashboardPage() {
 							)}
 
 							{activeTab && activeTab === 'apps' && (
-								<table>
-									<thead>
-										<tr className="table--head">
-											<th scope="col">Name</th>
-											<th scope="col">Created</th>
-											<th scope="col">Updated</th>
-											<th scope="col">Number of Events</th>
-											<th scope="col">Number of Endpoints</th>
-										</tr>
-									</thead>
-									<tbody>
-										{apps.map((app, index) => (
-											<tr key={index} onClick={() => setDetailsItem(app)}>
-												<td>
-													<div>{app.name}</div>
-												</td>
-												<td>
-													<div>{getDate(app.created_at)}</div>
-												</td>
-												<td>
-													<div>{getDate(app.updated_at)}</div>
-												</td>
-												<td>
-													<div>{app.events}</div>
-												</td>
-												<td>
-													<div>{app.endpoints.length}</div>
-												</td>
+								<React.Fragment>
+									<table>
+										<thead>
+											<tr className="table--head">
+												<th scope="col">Name</th>
+												<th scope="col">Created</th>
+												<th scope="col">Updated</th>
+												<th scope="col">Number of Events</th>
+												<th scope="col">Number of Endpoints</th>
 											</tr>
-										))}
-									</tbody>
-								</table>
+										</thead>
+										<tbody>
+											{apps.map((app, index) => (
+												<tr key={index} onClick={() => setDetailsItem(app)}>
+													<td>
+														<div>{app.name}</div>
+													</td>
+													<td>
+														<div>{getDate(app.created_at)}</div>
+													</td>
+													<td>
+														<div>{getDate(app.updated_at)}</div>
+													</td>
+													<td>
+														<div>{app.events}</div>
+													</td>
+													<td>
+														<div>{app.endpoints.length}</div>
+													</td>
+												</tr>
+											))}
+										</tbody>
+									</table>
+
+									{/* Pending when apps pagination is done */}
+									{/* {events.pagination.totalPage > 1 && (
+										<div className="pagination">
+											<button disabled={events.pagination.page === 1} onClick={() => getApps({ page: events.pagination.page - 1 })} className="has-icon">
+												<img src={AngleArrowLeftIcon} alt="angle icon left" />
+											</button>
+											<button disabled={events.pagination.page === events.pagination.totalPage} onClick={() => getEvents({ page: events.pagination.page + 1 })} className="has-icon">
+												<img src={AngleArrowRightIcon} alt="angle icon right" />
+											</button>
+										</div>
+									)} */}
+								</React.Fragment>
 							)}
 						</div>
 					</div>
