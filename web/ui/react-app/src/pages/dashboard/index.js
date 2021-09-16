@@ -33,7 +33,7 @@ function DashboardPage() {
 	const [dashboardData, setDashboardData] = useState({ apps: 0, messages: 0, messageData: [] });
 	const [viewAllEventData, toggleViewAllEventDataState] = useState(false);
 	const [viewAllResponseData, toggleViewAllResponseData] = useState(false);
-	const [apps, setAppsData] = useState([]);
+	const [apps, setAppsData] = useState({ content: [], pagination: { page: 1, totalPage: 0 } });
 	const [events, setEventsData] = useState({ content: [], pagination: { page: 1, totalPage: 0 } });
 	const [tabs] = useState(['events', 'apps']);
 	const [activeTab, setActiveTab] = useState('events');
@@ -425,7 +425,7 @@ function DashboardPage() {
 											</tr>
 										</thead>
 										<tbody>
-											{apps.map((app, index) => (
+											{apps.content.map((app, index) => (
 												<tr key={index} onClick={() => setDetailsItem(app)}>
 													<td>
 														<div>{app.name}</div>
@@ -447,17 +447,16 @@ function DashboardPage() {
 										</tbody>
 									</table>
 
-									{/* Pending when apps pagination is done */}
-									{/* {events.pagination.totalPage > 1 && (
+									{apps.pagination.totalPage > 1 && (
 										<div className="pagination">
-											<button disabled={events.pagination.page === 1} onClick={() => getApps({ page: events.pagination.page - 1 })} className="has-icon">
+											<button disabled={apps.pagination.page === 1} onClick={() => getApps({ page: apps.pagination.page - 1 })} className="has-icon">
 												<img src={AngleArrowLeftIcon} alt="angle icon left" />
 											</button>
-											<button disabled={events.pagination.page === events.pagination.totalPage} onClick={() => getEvents({ page: events.pagination.page + 1 })} className="has-icon">
+											<button disabled={apps.pagination.page === apps.pagination.totalPage} onClick={() => getApps({ page: apps.pagination.page + 1 })} className="has-icon">
 												<img src={AngleArrowRightIcon} alt="angle icon right" />
 											</button>
 										</div>
-									)} */}
+									)}
 								</React.Fragment>
 							)}
 						</div>
