@@ -114,7 +114,7 @@ func LoadConfig(p string) error {
 
 	// This enables us deploy to Heroku where the $PORT is provided
 	// dynamically.
-	if _, err := strconv.Atoi(os.Getenv("PORT")); err == nil {
+	if port, err := strconv.Atoi(os.Getenv("PORT")); err == nil {
 		c.Server = struct {
 			HTTP struct {
 				Port int `json:"port"`
@@ -123,7 +123,7 @@ func LoadConfig(p string) error {
 			HTTP: struct {
 				Port int `json:"port"`
 			}{
-				Port: 5005,
+				Port: port,
 			},
 		}
 	}
