@@ -7,5 +7,8 @@
     "redis": {
       "dsn": "redis://localhost:8379"
     }
-  }
+  },
+	"signature": {
+		"hash": "SHA256"
+	}
 }
