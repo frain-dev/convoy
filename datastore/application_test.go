@@ -72,7 +72,7 @@ func Test_LoadApplications(t *testing.T) {
 
 	appRepo := NewApplicationRepo(db)
 
-	apps, err := appRepo.LoadApplications(context.Background(), "")
+	apps, _, err := appRepo.LoadApplicationsPaged(context.Background(), "")
 	require.NoError(t, err)
 
 	require.True(t, len(apps) > 0)

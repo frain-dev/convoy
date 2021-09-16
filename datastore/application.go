@@ -41,35 +41,21 @@ func (db *appRepo) CreateApplication(ctx context.Context,
 	return err
 }
 
-func (db *appRepo) LoadApplications(ctx context.Context, orgId string) ([]convoy.Application, error) {
-
-	apps := make([]convoy.Application, 0)
+func (db *appRepo) LoadApplicationsPaged(ctx context.Context, orgId string, pageable models.Pageable) ([]convoy.Application, pager.PaginationData, error) {
 
 	filter := bson.M{"document_status": bson.M{"$ne": convoy.DeletedDocumentStatus}}
 	if !util.IsStringEmpty(orgId) {
 		filter = bson.M{"org_id": orgId, "document_status": bson.M{"$ne": convoy.DeletedDocumentStatus}}
 	}
 
-	cur, err := db.client.Find(ctx, filter)
+	var apps []convoy.Application
+	paginatedData, err := pager.New(db.client).Context(ctx).Limit(int64(pageable.PerPage)).Page(int64(pageable.Page)).Sort("created_at", -1).Filter(filter).Decode(&apps).Find()
 	if err != nil {
-		return apps, err
+		return apps, pager.PaginationData{}, err
 	}
 
-	for cur.Next(ctx) {
-		var app convoy.Application
-		if err := cur.Decode(&app); err != nil {
-			return apps, err
-		}
-
-		apps = append(apps, app)
-	}
-
-	if err := cur.Err(); err != nil {
-		return nil, err
-	}
-
-	if err := cur.Close(ctx); err != nil {
-		return apps, err
+	if apps == nil {
+		apps = make([]convoy.Application, 0)
 	}
 
 	msgCollection := db.innerDB.Collection(MsgCollection)
@@ -78,12 +64,12 @@ func (db *appRepo) LoadApplications(ctx context.Context, orgId string) ([]convoy
 		count, err := msgCollection.CountDocuments(ctx, filter)
 		if err != nil {
 			log.Errorf("failed to count events in %s. Reason: %s", app.UID, err)
-			return apps, err
+			return apps, pager.PaginationData{}, err
 		}
 		apps[i].Events = count
 	}
 
-	return apps, nil
+	return apps, paginatedData.Pagination, nil
 }
 
 func (db *appRepo) LoadApplicationsPagedByOrgId(ctx context.Context, orgId string, pageable models.Pageable) ([]convoy.Application, pager.PaginationData, error) {

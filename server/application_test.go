@@ -135,7 +135,7 @@ func TestApplicationHandler_GetApps(t *testing.T) {
 			statusCode: http.StatusOK,
 			dbFn: func(appRepo *mocks.MockApplicationRepository, orgRepo *mocks.MockOrganisationRepository) {
 				appRepo.EXPECT().
-					LoadApplications(gomock.Any()).Times(1).
+					LoadApplicationsPaged(gomock.Any(), gomock.Any(), gomock.Any()).Times(1).
 					Return([]convoy.Application{
 						{
 							UID:       validID,
@@ -143,7 +143,7 @@ func TestApplicationHandler_GetApps(t *testing.T) {
 							Title:     "Valid application - 0",
 							Endpoints: []convoy.Endpoint{},
 						},
-					}, nil)
+					}, pager.PaginationData{}, nil)
 
 			},
 		},
@@ -153,6 +153,12 @@ func TestApplicationHandler_GetApps(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			request := httptest.NewRequest(tc.method, "/v1/apps", nil)
 			responseRecorder := httptest.NewRecorder()
+
+			pageable := models.Pageable{
+				Page:    1,
+				PerPage: 10,
+			}
+			request = request.WithContext(context.WithValue(request.Context(), pageableCtx, pageable))
 
 			if tc.dbFn != nil {
 				tc.dbFn(apprepo, org)
