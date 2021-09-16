@@ -24,7 +24,8 @@
     }
   },
   "signature": {
-    "header": "X-Company-Event-WebHook-Signature"
+    "header": "X-Company-Event-WebHook-Signature",
+    "hash": "SHA256"
   },
 	"ui": {
 		"type": "basic",
