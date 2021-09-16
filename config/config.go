@@ -223,7 +223,7 @@ func retrieveIntfromEnv(config string) (uint64, error) {
 		return 0, errors.New("Invalid - " + config)
 	}
 
-	return value, nil
+	return uint64(value), nil
 }
 
 // Get fetches the application configuration. LoadConfig must have been called
