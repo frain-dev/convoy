@@ -1,28 +1,32 @@
 {
-  "database": {
-    "dsn": "mongodb://root:rootpassword@mongodb:27017"
-  },
-  "queue": {
-    "type": "redis",
-    "redis": {
-      "dsn": "redis://redis_server:6379"
-    }
-  },
-  "server": {
-    "http": {
-      "port": 5005
-    }
-  },
-  "auth": {
-    "type": "none"
-  },
-  "strategy": {
-    "type": "default",
-    "default": {
-      "intervalSeconds": 120,
-      "retryLimit": 10
-    }
-  },
+	"database": {
+		"dsn": "mongodb://root:rootpassword@mongodb:27017"
+	},
+	"queue": {
+		"type": "redis",
+		"redis": {
+			"dsn": "redis://redis_server:6379"
+		}
+	},
+	"server": {
+		"http": {
+			"port": 5005
+		}
+	},
+	"auth": {
+		"type": "none"
+	},
+	"signature": {
+		"header": "X-Company-Event-WebHook-Signature",
+		"hash": "SHA256"
+	},
+	"strategy": {
+		"type": "default",
+		"default": {
+			"intervalSeconds": 120,
+			"retryLimit": 10
+		}
+	},
 	"ui": {
 		"type": "basic",
 		"basic": [

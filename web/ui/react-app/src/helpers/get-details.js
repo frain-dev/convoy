@@ -9,6 +9,6 @@ function AuthDetails() {
 }
 
 // eslint-disable-next-line no-restricted-globals
-const APIURL = `${location.port === '3000' ? 'http://localhost:5005' : location.origin}/v1`;
+const APIURL = `${location.port === '3000' ? 'http://localhost:5005' : location.origin}/ui`;
 
 export { APIURL, AuthDetails };
