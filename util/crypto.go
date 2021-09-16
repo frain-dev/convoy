@@ -8,12 +8,13 @@ import (
 	"crypto/sha512"
 	"encoding/hex"
 	"errors"
+	"hash"
+
 	"github.com/frain-dev/convoy/config/algo"
 	"golang.org/x/crypto/sha3"
-	"hash"
 )
 
-func ComputeJSONHmac(hash string, data string, secret string, order bool) (string, error) {
+func ComputeJSONHmac(hash, data, secret string, order bool) (string, error) {
 
 	if order {
 		d, err := JsonReMarshalString(data)
