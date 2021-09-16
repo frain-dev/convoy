@@ -23,7 +23,7 @@ services:
         volumes:
             - ./data/mongo:/data/db
 
-        redis_server:
-            image: redis:alpine
-            ports:
-                - "8379:6379"
+    redis_server:
+        image: redis:alpine
+        ports:
+            - "8379:6379"
