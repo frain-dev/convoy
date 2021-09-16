@@ -3,10 +3,14 @@ package config
 import (
 	"encoding/json"
 	"errors"
+	"fmt"
 	"os"
+	"reflect"
 	"strconv"
 	"sync/atomic"
 	"time"
+
+	"github.com/frain-dev/convoy/config/algo"
 )
 
 var cfgSingleton atomic.Value
@@ -77,6 +81,7 @@ type StrategyConfiguration struct {
 
 type SignatureConfiguration struct {
 	Header SignatureHeaderProvider `json:"header"`
+	Hash   string                  `json:"hash"`
 }
 
 func LoadConfig(p string) error {
@@ -126,6 +131,14 @@ func LoadConfig(p string) error {
 
 	if signatureHeader := os.Getenv("CONVOY_SIGNATURE_HEADER"); signatureHeader != "" {
 		c.Signature.Header = SignatureHeaderProvider(signatureHeader)
+	}
+
+	if signatureHash := os.Getenv("CONVOY_SIGNATURE_HASH"); signatureHash != "" {
+		c.Signature.Hash = signatureHash
+	}
+	err = ensureSignature(c.Signature)
+	if err != nil {
+		return err
 	}
 
 	if apiUsername := os.Getenv("CONVOY_API_USERNAME"); apiUsername != "" {
@@ -201,6 +214,14 @@ func LoadConfig(p string) error {
 	c.UIAuthorizedUsers = parseAuthorizedUsers(c.UIAuth)
 
 	cfgSingleton.Store(c)
+	return nil
+}
+
+func ensureSignature(signature SignatureConfiguration) error {
+	_, ok := algo.M[signature.Hash]
+	if !ok {
+		return fmt.Errorf("invalid hash algorithm - '%s', must be one of %s", signature.Hash, reflect.ValueOf(algo.M).MapKeys())
+	}
 	return nil
 }
 
