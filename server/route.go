@@ -138,6 +138,8 @@ func buildRoutes(app *applicationHandler) http.Handler {
 	})
 
 	router.Route("/ui", func(uiRouter chi.Router) {
+		uiRouter.Use(jsonResponse)
+
 		uiRouter.Route("/dashboard/{orgID}", func(dashboardRouter chi.Router) {
 			dashboardRouter.Use(requireUIAuth())
 
