@@ -50,7 +50,8 @@ func (a *applicationHandler) UpdateApp(w http.ResponseWriter, r *http.Request) {
 func (a *applicationHandler) GetApps(w http.ResponseWriter, r *http.Request) {
 
 	_ = render.Render(w, r, newServerResponse("Apps fetched successfully",
-		*getApplicationsFromContext(r.Context()), http.StatusOK))
+		pagedResponse{Content: *getApplicationsFromContext(r.Context()),
+			Pagination: getPaginationDataFromContext(r.Context())}, http.StatusOK))
 }
 
 func (a *applicationHandler) CreateAppEndpoint(w http.ResponseWriter, r *http.Request) {

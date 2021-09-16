@@ -48,7 +48,7 @@ type Endpoint struct {
 
 type ApplicationRepository interface {
 	CreateApplication(context.Context, *Application) error
-	LoadApplications(context.Context, string) ([]Application, error)
+	LoadApplicationsPaged(context.Context, string, models.Pageable) ([]Application, pager.PaginationData, error)
 	FindApplicationByID(context.Context, string) (*Application, error)
 	UpdateApplication(context.Context, *Application) error
 	DeleteApplication(context.Context, *Application) error

@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"github.com/frain-dev/convoy/server/models"
 	"github.com/olekukonko/tablewriter"
 	"github.com/spf13/cobra"
 	"os"
@@ -27,7 +28,10 @@ func getApplications(a *app) *cobra.Command {
 		Aliases: []string{"apps"},
 		RunE: func(cmd *cobra.Command, args []string) error {
 
-			apps, err := a.applicationRepo.LoadApplications(context.Background(), "")
+			apps, _, err := a.applicationRepo.LoadApplicationsPaged(context.Background(), "", models.Pageable{
+				Page:    0,
+				PerPage: 50,
+			})
 			if err != nil {
 				return err
 			}
