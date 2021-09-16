@@ -304,13 +304,16 @@ func fetchAllApps(appRepo convoy.ApplicationRepository) func(next http.Handler) 
 
 			orgId := r.URL.Query().Get("orgId")
 
-			apps, err := appRepo.LoadApplications(r.Context(), orgId)
+			pageable := getPageableFromContext(r.Context())
+
+			apps, paginationData, err := appRepo.LoadApplicationsPaged(r.Context(), orgId, pageable)
 			if err != nil {
 				_ = render.Render(w, r, newErrorResponse("an error occurred while fetching apps", http.StatusInternalServerError))
 				return
 			}
 
 			r = r.WithContext(setApplicationsInContext(r.Context(), &apps))
+			r = r.WithContext(setPaginationDataInContext(r.Context(), &paginationData))
 			next.ServeHTTP(w, r)
 		})
 	}
