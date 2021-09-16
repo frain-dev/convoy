@@ -3,10 +3,7 @@ package config
 import (
 	"encoding/json"
 	"errors"
-	"fmt"
-	"github.com/frain-dev/convoy/config/algo"
 	"os"
-	"reflect"
 	"strconv"
 	"sync/atomic"
 	"time"
@@ -80,7 +77,6 @@ type StrategyConfiguration struct {
 
 type SignatureConfiguration struct {
 	Header SignatureHeaderProvider `json:"header"`
-	Hash   string                  `json:"hash"`
 }
 
 func LoadConfig(p string) error {
@@ -131,13 +127,6 @@ func LoadConfig(p string) error {
 	if signatureHeader := os.Getenv("CONVOY_SIGNATURE_HEADER"); signatureHeader != "" {
 		c.Signature.Header = SignatureHeaderProvider(signatureHeader)
 	}
-	if signatureHash := os.Getenv("CONVOY_SIGNATURE_HASH"); signatureHash != "" {
-		c.Signature.Hash = signatureHash
-	}
-	err = ensureSignature(c.Signature)
-	if err != nil {
-		return err
-	}
 
 	if apiUsername := os.Getenv("CONVOY_API_USERNAME"); apiUsername != "" {
 		var apiPassword string
@@ -184,17 +173,34 @@ func LoadConfig(p string) error {
 		}
 	}
 
+	if retryStrategy := os.Getenv("CONVOY_RETRY_STRATEGY"); retryStrategy != "" {
+
+		intervalSeconds, err := retrieveIntfromEnv("CONVOY_INTERVAL_SECONDS")
+		if err != nil {
+			return err
+		}
+
+		retryLimit, err := retrieveIntfromEnv("CONVOY_RETRY_LIMIT")
+		if err != nil {
+			return err
+		}
+
+		c.Strategy = StrategyConfiguration{
+			Type: StrategyProvider(retryStrategy),
+			Default: struct {
+				IntervalSeconds uint64 `json:"intervalSeconds"`
+				RetryLimit      uint64 `json:"retryLimit"`
+			}{
+				IntervalSeconds: intervalSeconds,
+				RetryLimit:      retryLimit,
+			},
+		}
+
+	}
+
 	c.UIAuthorizedUsers = parseAuthorizedUsers(c.UIAuth)
 
 	cfgSingleton.Store(c)
-	return nil
-}
-
-func ensureSignature(signature SignatureConfiguration) error {
-	_, ok := algo.M[signature.Hash]
-	if !ok {
-		return fmt.Errorf("invalid hash algorithm - '%s', must be one of %s", signature.Hash, reflect.ValueOf(algo.M).MapKeys())
-	}
 	return nil
 }
 
@@ -205,6 +211,19 @@ func parseAuthorizedUsers(auth UIAuthConfiguration) map[string]string {
 		usersMap[users[i].Username] = users[i].Password
 	}
 	return usersMap
+}
+
+func retrieveIntfromEnv(config string) (uint64, error) {
+	value, err := strconv.Atoi(os.Getenv(config))
+	if err != nil {
+		return 0, errors.New("Failed to parse - " + config)
+	}
+
+	if value == 0 {
+		return 0, errors.New("Invalid - " + config)
+	}
+
+	return value, nil
 }
 
 // Get fetches the application configuration. LoadConfig must have been called
