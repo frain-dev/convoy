@@ -78,7 +78,7 @@ func (p *Producer) postMessages(msgRepo convoy.MessageRepository, m convoy.Messa
 		}
 
 		bStr := string(bytes)
-		hmac, err := util.ComputeJSONHmac(p.signatureConfig.Hash, secret, bStr, false)
+		hmac, err := util.ComputeJSONHmac(p.signatureConfig.Hash, bStr, secret, false)
 		if err != nil {
 			log.Errorf("error occurred while generating hmac signature - %+v\n", err)
 			return
