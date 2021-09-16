@@ -6,6 +6,7 @@ package datastore
 import (
 	"context"
 	"errors"
+	"github.com/frain-dev/convoy/server/models"
 	"testing"
 
 	"github.com/frain-dev/convoy"
@@ -66,13 +67,16 @@ func Test_CreateApplication(t *testing.T) {
 	require.NoError(t, appRepo.CreateApplication(context.Background(), app))
 }
 
-func Test_LoadApplications(t *testing.T) {
+func Test_LoadApplicationsPaged(t *testing.T) {
 	db, closeFn := getDB(t)
 	defer closeFn()
 
 	appRepo := NewApplicationRepo(db)
 
-	apps, err := appRepo.LoadApplications(context.Background(), "")
+	apps, _, err := appRepo.LoadApplicationsPaged(context.Background(), "", models.Pageable{
+		Page: 1,
+		PerPage: 10,
+	})
 	require.NoError(t, err)
 
 	require.True(t, len(apps) > 0)

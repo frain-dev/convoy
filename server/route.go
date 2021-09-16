@@ -77,7 +77,7 @@ func buildRoutes(app *applicationHandler) http.Handler {
 			appRouter.Route("/", func(appSubRouter chi.Router) {
 				appSubRouter.With(ensureNewApp(app.orgRepo, app.appRepo)).Post("/", app.CreateApp)
 
-				appRouter.With(fetchAllApps(app.appRepo)).Get("/", app.GetApps)
+				appRouter.With(pagination).With(fetchAllApps(app.appRepo)).Get("/", app.GetApps)
 			})
 
 			appRouter.Route("/{appID}", func(appSubRouter chi.Router) {
@@ -172,7 +172,7 @@ func buildRoutes(app *applicationHandler) http.Handler {
 			appRouter.Use(requireUIAuth())
 
 			appRouter.Route("/", func(appSubRouter chi.Router) {
-				appRouter.With(fetchAllApps(app.appRepo)).Get("/", app.GetApps)
+				appRouter.With(pagination).With(fetchAllApps(app.appRepo)).Get("/", app.GetApps)
 			})
 
 			appRouter.Route("/{appID}", func(appSubRouter chi.Router) {
