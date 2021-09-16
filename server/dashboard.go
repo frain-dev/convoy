@@ -11,7 +11,7 @@ type Claims struct {
 }
 
 type AuthorizedLogin struct {
-	Username   string    `json:"username"`
+	Username   string    `json:"username,omitempty"`
 	Token      string    `json:"token"`
 	ExpiryTime time.Time `json:"expiry_time"`
 }

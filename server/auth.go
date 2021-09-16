@@ -83,6 +83,76 @@ func login() func(next http.Handler) http.Handler {
 	}
 }
 
+func refresh() func(next http.Handler) http.Handler {
+	return func(next http.Handler) http.Handler {
+
+		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+
+			val := r.Header.Get("Authorization")
+			auth := strings.Split(val, " ")
+
+			if len(auth) != 2 {
+				_ = render.Render(w, r, newErrorResponse("invalid bearer header structure", http.StatusBadRequest))
+				return
+			}
+
+			if strings.ToUpper(auth[0]) != "BEARER" {
+				_ = render.Render(w, r, newErrorResponse("invalid bearer header structure", http.StatusBadRequest))
+				return
+			}
+
+			cfg, err := config.Get()
+			if err != nil {
+				log.Errorln("error while fetching auth config - ", err)
+				_ = render.Render(w, r, newErrorResponse("an error occurred while refreshing your token", http.StatusInternalServerError))
+				return
+			}
+
+			token := auth[1]
+
+			claims := &Claims{}
+			_, err = jwt.ParseWithClaims(token, claims, func(token *jwt.Token) (interface{}, error) {
+				return []byte(cfg.UIAuth.JwtKey), nil
+			})
+			if err != nil {
+				if err == jwt.ErrSignatureInvalid {
+					log.Errorln("Error validating token - ", err)
+					_ = render.Render(w, r, newErrorResponse("unauthorized", http.StatusUnauthorized))
+					return
+				}
+
+				if !strings.Contains(err.Error(), "expired") {
+					log.Errorln("Unknown error validating token - ", err)
+					_ = render.Render(w, r, newErrorResponse("invalid access token", http.StatusBadRequest))
+					return
+				}
+			}
+
+			if time.Since(time.Unix(claims.ExpiresAt, 0)) > 30*time.Second {
+				_ = render.Render(w, r, newErrorResponse("access token is not within the refresh window of 30 seconds", http.StatusBadRequest))
+				return
+			}
+
+			expiryTime := time.Now().Add(cfg.UIAuth.JwtTokenExpirySeconds * time.Second)
+			claims.ExpiresAt = expiryTime.Unix()
+			newToken := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
+			signedString, err := newToken.SignedString([]byte(cfg.UIAuth.JwtKey))
+			if err != nil {
+				log.Errorln("error while generating jwt token - ", err)
+				_ = render.Render(w, r, newErrorResponse("An error has occurred", http.StatusInternalServerError))
+				return
+			}
+
+			r = r.WithContext(setAuthLoginInContext(r.Context(), &AuthorizedLogin{
+				Username:   claims.Username,
+				Token:      signedString,
+				ExpiryTime: expiryTime,
+			}))
+			next.ServeHTTP(w, r)
+		})
+	}
+}
+
 func requireUIAuth() func(next http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
