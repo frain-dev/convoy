@@ -31,6 +31,13 @@
                 <div class="hero-section--cta">
                     <h1>A Cloud native Webhook Service</h1>
                     <p>With out-of-the-box security, reliability and scalability for your webhooks infrastructure.</p>
+
+                    <form @submit.prevent="requestAccess()">
+                        <div class="input">
+                            <input type="email" id="email" placeholder="Enter email address" aria-label="Email" />
+                        </div>
+                        <button>{{ earlyAccessFormButtonText }}</button>
+                    </form>
                     <!-- <button>Get Started</button> -->
                 </div>
                 <div class="hero-section--img">
@@ -170,13 +177,49 @@ export default {
     data() {
         return {
             showMenu: false,
+            isSubmitingloadingEarlyAccessForm: false,
+            earlyAccessFormButtonText: 'Get Early Access',
+            earlyAccessEmail: '',
         };
     },
     async asyncData({ $content, params }) {
         const pageData = await $content('api-doc').fetch();
         return { pageData };
     },
-    methods: {},
+    methods: {
+        async requestAccess() {
+            this.isSubmitingloadingEarlyAccessForm = true;
+            try {
+                const response = await fetch('/.netlify/functions/subscribe', {
+                    method: 'POST',
+                    mode: 'cors',
+                    cache: 'no-cache',
+                    credentials: 'same-origin',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    redirect: 'follow',
+                    referrerPolicy: 'no-referrer',
+                    body: JSON.stringify({
+                        email: this.earlyAccessEmail,
+                    }),
+                });
+                await response.json();
+                this.earlyAccessFormButtonText = 'Access Requested';
+                this.setDefaultAccessButtonText();
+                this.isSubmitingloadingEarlyAccessForm = false;
+            } catch (error) {
+                this.earlyAccessFormButtonText = 'Error';
+                this.setDefaultAccessButtonText();
+                this.isSubmitingloadingEarlyAccessForm = false;
+            }
+        },
+        setDefaultAccessButtonText() {
+            setTimeout(() => {
+                this.earlyAccessFormButtonText = 'Request Access';
+            }, 5000);
+        },
+    },
 };
 </script>
 
@@ -334,17 +377,6 @@ header {
                 line-height: 30px;
                 color: #ffffff;
             }
-
-            button {
-                background: #477db3;
-                border-radius: 8px;
-                padding: 9px 29px;
-                color: #ffffff;
-                font-weight: 500;
-                font-size: 16px;
-                line-height: 28px;
-                margin-top: 40px;
-            }
         }
 
         &--img {
@@ -354,6 +386,47 @@ header {
 
             @media (min-width: $desktopBreakPoint) {
                 display: block;
+            }
+        }
+
+        form {
+            background: #ffffff;
+            max-width: 430px;
+            display: flex;
+            border-radius: 8px;
+            margin-top: 40px;
+
+            .input {
+                width: 100%;
+                display: flex;
+
+                input {
+                    max-width: 278px;
+                    width: 100%;
+                    border: none;
+                    padding: 9px 23px;
+                    border-radius: 8px 0 0 8px;
+                    outline: none;
+
+                    &::placeholder {
+                        font-weight: 500;
+                        font-size: 14px;
+                        line-height: 28px;
+                        color: #bdbdbd;
+                    }
+                }
+            }
+
+            button {
+                background: #477db3;
+                border-radius: 0 8px 8px 0;
+                padding: 9px 21px;
+                color: #ffffff;
+                font-weight: 500;
+                font-size: 14px;
+                line-height: 28px;
+                max-width: 152px;
+                width: 100%;
             }
         }
     }
