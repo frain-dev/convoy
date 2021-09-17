@@ -184,6 +184,7 @@ func (db *appRepo) UpdateApplication(ctx context.Context,
 		primitive.E{Key: "endpoints", Value: app.Endpoints},
 		primitive.E{Key: "updated_at", Value: app.UpdatedAt},
 		primitive.E{Key: "title", Value: app.Title},
+		primitive.E{Key: "secret", Value: app.Secret},
 	}}}
 
 	_, err := db.client.UpdateOne(ctx, filter, update)
