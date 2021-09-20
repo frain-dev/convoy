@@ -36,7 +36,7 @@
 						<div class="input">
 							<input type="email" id="email" placeholder="Enter email address" aria-label="Email" v-model="earlyAccessEmail" />
 						</div>
-						<button>{{ earlyAccessFormButtonText }}</button>
+						<button :disabled="isSubmitingloadingEarlyAccessForm">{{ isSubmitingloadingEarlyAccessForm ? '...requesting' : earlyAccessFormButtonText }}</button>
 					</form>
 					<!-- <button>Get Started</button> -->
 				</div>
