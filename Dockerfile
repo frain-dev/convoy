@@ -1,7 +1,7 @@
 # syntax=docker/dockerfile:1
 FROM node:14 as node-env
 WORKDIR /app
-COPY ./web/ui/react-app .
+COPY ./web/ui/dashboard .
 RUN npm install --production
 RUN npm run build
 
@@ -27,7 +27,7 @@ FROM gcr.io/distroless/base
 COPY --from=build-env /go/bin/cmd /
 COPY --from=build-env /go/src/frain-dev/convoy/convoy.json /convoy.json
 
-ENTRYPOINT ["/cmd"] 
+ENTRYPOINT ["/cmd"]
 CMD [ "server", "--config", "convoy.json" ]
 
 EXPOSE 8080
