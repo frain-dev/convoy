@@ -36,7 +36,7 @@
 						<div class="input">
 							<input type="email" id="email" placeholder="Enter email address" aria-label="Email" v-model="earlyAccessEmail" />
 						</div>
-						<button>{{ earlyAccessFormButtonText }}</button>
+						<button :disabled="isSubmitingloadingEarlyAccessForm">{{ isSubmitingloadingEarlyAccessForm ? '...requesting' : earlyAccessFormButtonText }}</button>
 					</form>
 					<!-- <button>Get Started</button> -->
 				</div>
@@ -205,7 +205,7 @@ export default {
 					})
 				});
 				await response.json();
-				this.earlyAccessFormButtonText = 'Access Requested';
+				this.earlyAccessFormButtonText = 'Request Sent';
 				this.setDefaultAccessButtonText();
 				this.isSubmitingloadingEarlyAccessForm = false;
 			} catch (error) {
@@ -216,7 +216,7 @@ export default {
 		},
 		setDefaultAccessButtonText() {
 			setTimeout(() => {
-				this.earlyAccessFormButtonText = 'Request Access';
+				this.earlyAccessFormButtonText = 'Get Early Access';
 			}, 5000);
 		}
 	}
@@ -426,7 +426,7 @@ header {
 				font-weight: 500;
 				font-size: 14px;
 				line-height: 28px;
-				max-width: 152px;
+				max-width: 162px;
 				width: 100%;
 				margin: 0;
 			}
