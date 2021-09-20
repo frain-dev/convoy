@@ -1,3 +1,4 @@
+require('dotenv').config();
 const fetch = require('node-fetch');
 const { MAILCHIMP_LIST_ID, MAILCHIMP_AUTH } = process.env;
 
