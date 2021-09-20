@@ -107,7 +107,7 @@ func Test_ensureNewMessage(t *testing.T) {
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
 
-			err := config.LoadFromFile("./testdata/TestRequireAuth_None/convoy.json")
+			err := config.LoadConfig("./testdata/TestRequireAuth_None/convoy.json")
 			if err != nil {
 				t.Error("Failed to load config file")
 			}

@@ -15,7 +15,7 @@ jobs:
 
     - name: Get the version
       id: get_version
-      run: echo ::set-output name=tag::v$(cat VERSION)
+      run: echo ::set-output name=tag::$(cat VERSION)
 
     - name: Authenticate
       uses: actions-hub/docker/login@master

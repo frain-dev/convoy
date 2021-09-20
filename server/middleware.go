@@ -36,6 +36,7 @@ const (
 	endpointCtx         contextKey = "endpoint"
 	msgCtx              contextKey = "message"
 	authConfigCtx       contextKey = "authConfig"
+	authLoginCtx        contextKey = "authLogin"
 	pageableCtx         contextKey = "pageable"
 	pageDataCtx         contextKey = "pageData"
 	dashboardCtx        contextKey = "dashboard"
@@ -303,13 +304,16 @@ func fetchAllApps(appRepo convoy.ApplicationRepository) func(next http.Handler) 
 
 			orgId := r.URL.Query().Get("orgId")
 
-			apps, err := appRepo.LoadApplications(r.Context(), orgId)
+			pageable := getPageableFromContext(r.Context())
+
+			apps, paginationData, err := appRepo.LoadApplicationsPaged(r.Context(), orgId, pageable)
 			if err != nil {
 				_ = render.Render(w, r, newErrorResponse("an error occurred while fetching apps", http.StatusInternalServerError))
 				return
 			}
 
 			r = r.WithContext(setApplicationsInContext(r.Context(), &apps))
+			r = r.WithContext(setPaginationDataInContext(r.Context(), &paginationData))
 			next.ServeHTTP(w, r)
 		})
 	}
@@ -937,4 +941,12 @@ func setAuthConfigInContext(ctx context.Context, a *config.AuthConfiguration) co
 
 func getAuthConfigFromContext(ctx context.Context) *config.AuthConfiguration {
 	return ctx.Value(authConfigCtx).(*config.AuthConfiguration)
+}
+
+func setAuthLoginInContext(ctx context.Context, a *AuthorizedLogin) context.Context {
+	return context.WithValue(ctx, authLoginCtx, a)
+}
+
+func getAuthLoginFromContext(ctx context.Context) *AuthorizedLogin {
+	return ctx.Value(authLoginCtx).(*AuthorizedLogin)
 }

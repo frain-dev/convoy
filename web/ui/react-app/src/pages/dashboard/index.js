@@ -7,7 +7,6 @@ import RefreshIcon from '../../assets/img/refresh-icon.svg';
 import CalendarIcon from '../../assets/img/calendar-icon.svg';
 import CopyIcon from '../../assets/img/copy-icon.svg';
 import LinkIcon from '../../assets/img/link-icon.svg';
-import ViewIcon from '../../assets/img/view-icon.svg';
 import AngleArrowLeftIcon from '../../assets/img/angle-arrow-left.svg';
 import AngleArrowRightIcon from '../../assets/img/angle-arrow-right.svg';
 import AngleArrowDownIcon from '../../assets/img/angle-arrow-down.svg';
@@ -16,22 +15,25 @@ import ConvoyLogo from '../../assets/img/logo.svg';
 import Chart from 'chart.js/auto';
 import { DateRange } from 'react-date-range';
 import ReactJson from 'react-json-view';
-import './app.scss';
+import { AuthDetails, APIURL } from '../../helpers/get-details';
+import './style.scss';
 import 'react-date-range/dist/styles.css';
 import 'react-date-range/dist/theme/default.css';
 
 const _axios = axios.default;
-// eslint-disable-next-line no-restricted-globals
-const request = _axios.create({ baseURL: `${location.port === '3000' ? 'http://localhost:5005' : location.origin}/v1` });
+const request = _axios.create({
+	baseURL: APIURL,
+	headers: {
+		Authorization: `Bearer ${AuthDetails().token}`,
+	},
+});
 const months = ['Jan', 'Feb', 'Mar', 'April', 'May', 'June', 'July', 'Aug', 'Sept', 'Oct', 'Nov', 'Dec'];
 
 function DashboardPage() {
 	const [dashboardData, setDashboardData] = useState({ apps: 0, messages: 0, messageData: [] });
-	const [authDetails, setAuthDetails] = useState({ basic: { username: '', password: '' }, type: '' });
-	const [viewPassword, toggleViewPassword] = useState(false);
 	const [viewAllEventData, toggleViewAllEventDataState] = useState(false);
 	const [viewAllResponseData, toggleViewAllResponseData] = useState(false);
-	const [apps, setAppsData] = useState([]);
+	const [apps, setAppsData] = useState({ content: [], pagination: { page: 1, totalPage: 0 } });
 	const [events, setEventsData] = useState({ content: [], pagination: { page: 1, totalPage: 0 } });
 	const [tabs] = useState(['events', 'apps']);
 	const [activeTab, setActiveTab] = useState('events');
@@ -100,16 +102,6 @@ function DashboardPage() {
 		el.style.display = 'none';
 	};
 
-	const getRequestHeaders = useCallback(() => {
-		const response =
-			authDetails.type === 'none'
-				? {}
-				: {
-						Authorization: `Basic ${btoa(authDetails.basic.username + ':' + authDetails.basic.password)}`,
-				  };
-		return response;
-	}, [authDetails.basic.password, authDetails.basic.username, authDetails.type]);
-
 	const getEvents = useCallback(
 		async ({ page }) => {
 			try {
@@ -117,7 +109,6 @@ function DashboardPage() {
 					await request({
 						url: `/events?sort=AESC&page=${page || 1}&perPage=10&orgId=${activeorganisation.uid}`,
 						method: 'GET',
-						headers: getRequestHeaders(),
 					})
 				).data;
 				setEventsData(appsResponse.data);
@@ -125,7 +116,7 @@ function DashboardPage() {
 				return error;
 			}
 		},
-		[getRequestHeaders, activeorganisation],
+		[activeorganisation],
 	);
 
 	const getApps = useCallback(
@@ -134,7 +125,6 @@ function DashboardPage() {
 				const appsResponse = await (
 					await request({
 						url: `/apps?sort=AESC&page=${page || 1}&perPage=10&orgId=${activeorganisation.uid}`,
-						headers: getRequestHeaders(),
 					})
 				).data;
 				setAppsData(appsResponse.data);
@@ -142,7 +132,7 @@ function DashboardPage() {
 				return error;
 			}
 		},
-		[activeorganisation, getRequestHeaders],
+		[activeorganisation],
 	);
 
 	const getDelieveryAttempts = async (eventId) => {
@@ -150,7 +140,6 @@ function DashboardPage() {
 			const deliveryAttemptsResponse = await (
 				await request({
 					url: `/events/${eventId}/deliveryattempts`,
-					headers: getRequestHeaders(),
 				})
 			).data;
 			setEventDeliveryAtempt(deliveryAttemptsResponse.data[deliveryAttemptsResponse.data.length - 1]);
@@ -165,12 +154,16 @@ function DashboardPage() {
 				await request({
 					method: 'PUT',
 					url: `/apps/${appId}/events/${eventId}/resend`,
-					headers: getRequestHeaders(),
 				})
 			).data;
 		} catch (error) {
 			return error;
 		}
+	};
+
+	const logout = () => {
+		localStorage.removeItem('CONVOY_AUTH');
+		window.location.replace('/login');
 	};
 
 	useEffect(() => {
@@ -179,21 +172,10 @@ function DashboardPage() {
 				const organisationsResponse = await (
 					await request({
 						url: '/organisations',
-						headers: getRequestHeaders(),
 					})
 				).data;
 				setOrganisations(organisationsResponse.data);
 				setActiveOrganisation(organisationsResponse.data[0]);
-			} catch (error) {
-				return error;
-			}
-		};
-
-		const getAuthDetails = async () => {
-			try {
-				if (authDetails.type) return;
-				const authDetailsResponse = await (await request.get('/auth/details')).data;
-				setAuthDetails(authDetailsResponse.data);
 			} catch (error) {
 				return error;
 			}
@@ -207,7 +189,6 @@ function DashboardPage() {
 					url: `/dashboard/${activeorganisation.uid}/summary?startDate=${filterDates[0].startDate.toISOString().split('.')[0]}&endDate=${filterDates[0].endDate.toISOString().split('.')[0]}&type=${
 						filterFrequency || 'daily'
 					}`,
-					headers: getRequestHeaders(),
 				});
 				setDashboardData(dashboardResponse.data.data);
 
@@ -241,12 +222,10 @@ function DashboardPage() {
 			}
 		};
 
-		getAuthDetails().then(() => {
-			fetchDashboardData();
-			if (activeTab === 'apps') getApps({ page: 1 });
-			if (activeTab === 'events') getEvents({ page: 1 });
-		});
-	}, [options, activeTab, filterDates, activeorganisation, organisations, filterFrequency, authDetails, getRequestHeaders, getEvents, getApps]);
+		fetchDashboardData();
+		if (activeTab === 'apps') getApps({ page: 1 });
+		if (activeTab === 'events') getEvents({ page: 1 });
+	}, [options, activeTab, filterDates, activeorganisation, organisations, filterFrequency, getEvents, getApps]);
 
 	return (
 		<div className="dashboard">
@@ -262,6 +241,11 @@ function DashboardPage() {
 							<div className="name">{activeorganisation && activeorganisation.name}</div>
 						</div>
 						<img src={ArrowDownIcon} alt="arrow down icon" />
+						<div className="dropdown organisations">
+							<ul>
+								<li onClick={() => logout()}>Logout</li>
+							</ul>
+						</div>
 					</button>
 				</div>
 			</header>
@@ -316,50 +300,18 @@ function DashboardPage() {
 						</div>
 
 						<div className="card--container">
-							{authDetails.type === 'none' && (
-								<div className="card--empty-state">
-									<p>You don't have any organisation auth details set</p>
+							<div className="auth-item">
+								<div>
+									<div className="auth-item--label">Organisation ID</div>
+									<div className="auth-item--item">{activeorganisation.uid}</div>
 								</div>
-							)}
-
-							{authDetails.type !== 'none' && (
-								<React.Fragment>
-									<div className="auth-item">
-										<div>
-											<div className="auth-item--label">Username</div>
-											<div className="auth-item--item">{authDetails.basic.username}</div>
-										</div>
-										<button className="copy" onClick={() => copyText(authDetails.basic.username)}>
-											<img src={CopyIcon} alt="copy icon" />
-										</button>
-									</div>
-
-									<div className="auth-item">
-										<div>
-											<div className="auth-item--label">Password</div>
-											{viewPassword && <div className="auth-item--item">{authDetails.basic.password}</div>}
-											{!viewPassword && <div className="auth-item--item">********</div>}
-										</div>
-										<button className="copy" onClick={() => toggleViewPassword(!viewPassword)}>
-											<img src={ViewIcon} alt="view icon" />
-										</button>
-									</div>
-
-									<div className="auth-item">
-										<div>
-											<div className="auth-item--label">Organisation ID</div>
-											<div className="auth-item--item">{activeorganisation.uid}</div>
-										</div>
-										<button className="copy" onClick={() => copyText(activeorganisation.uid)}>
-											<img src={CopyIcon} alt="copy icon" />
-										</button>
-									</div>
-								</React.Fragment>
-							)}
+								<button className="copy" onClick={() => copyText(activeorganisation.uid)}>
+									<img src={CopyIcon} alt="copy icon" />
+								</button>
+							</div>
 						</div>
 
 						<div className="card--footer">
-							<p>Our documentation contains the libraries, API and SDKs you need to integrate Fhooks on your platform.</p>
 							<button className="primary" onClick={() => (window.location = 'https://github.com/frain-dev/convoy')}>
 								Go to docs
 							</button>
@@ -449,7 +401,7 @@ function DashboardPage() {
 
 									{events.pagination.totalPage > 1 && (
 										<div className="pagination">
-											<button disabled={events.pagination.page === 1} onClick={() => getEvents({ page: events.pagination.page + 1 })} className="has-icon">
+											<button disabled={events.pagination.page === 1} onClick={() => getEvents({ page: events.pagination.page - 1 })} className="has-icon">
 												<img src={AngleArrowLeftIcon} alt="angle icon left" />
 											</button>
 											<button disabled={events.pagination.page === events.pagination.totalPage} onClick={() => getEvents({ page: events.pagination.page + 1 })} className="has-icon">
@@ -461,38 +413,51 @@ function DashboardPage() {
 							)}
 
 							{activeTab && activeTab === 'apps' && (
-								<table>
-									<thead>
-										<tr className="table--head">
-											<th scope="col">Name</th>
-											<th scope="col">Created</th>
-											<th scope="col">Updated</th>
-											<th scope="col">Number of Events</th>
-											<th scope="col">Number of Endpoints</th>
-										</tr>
-									</thead>
-									<tbody>
-										{apps.map((app, index) => (
-											<tr key={index} onClick={() => setDetailsItem(app)}>
-												<td>
-													<div>{app.name}</div>
-												</td>
-												<td>
-													<div>{getDate(app.created_at)}</div>
-												</td>
-												<td>
-													<div>{getDate(app.updated_at)}</div>
-												</td>
-												<td>
-													<div>{app.events}</div>
-												</td>
-												<td>
-													<div>{app.endpoints.length}</div>
-												</td>
+								<React.Fragment>
+									<table>
+										<thead>
+											<tr className="table--head">
+												<th scope="col">Name</th>
+												<th scope="col">Created</th>
+												<th scope="col">Updated</th>
+												<th scope="col">Number of Events</th>
+												<th scope="col">Number of Endpoints</th>
 											</tr>
-										))}
-									</tbody>
-								</table>
+										</thead>
+										<tbody>
+											{apps.content.map((app, index) => (
+												<tr key={index} onClick={() => setDetailsItem(app)}>
+													<td>
+														<div>{app.name}</div>
+													</td>
+													<td>
+														<div>{getDate(app.created_at)}</div>
+													</td>
+													<td>
+														<div>{getDate(app.updated_at)}</div>
+													</td>
+													<td>
+														<div>{app.events}</div>
+													</td>
+													<td>
+														<div>{app.endpoints.length}</div>
+													</td>
+												</tr>
+											))}
+										</tbody>
+									</table>
+
+									{apps.pagination.totalPage > 1 && (
+										<div className="pagination">
+											<button disabled={apps.pagination.page === 1} onClick={() => getApps({ page: apps.pagination.page - 1 })} className="has-icon">
+												<img src={AngleArrowLeftIcon} alt="angle icon left" />
+											</button>
+											<button disabled={apps.pagination.page === apps.pagination.totalPage} onClick={() => getApps({ page: apps.pagination.page + 1 })} className="has-icon">
+												<img src={AngleArrowRightIcon} alt="angle icon right" />
+											</button>
+										</div>
+									)}
+								</React.Fragment>
 							)}
 						</div>
 					</div>

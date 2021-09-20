@@ -20,16 +20,16 @@ type Producer struct {
 	Data            chan queue.Message
 	msgRepo         *convoy.MessageRepository
 	dispatch        *net.Dispatcher
-	signatureHeader string
+	signatureConfig config.SignatureConfiguration
 	quit            chan chan error
 }
 
-func NewProducer(queuer *queue.Queuer, msgRepo *convoy.MessageRepository, signatureHeader config.SignatureHeaderProvider) *Producer {
+func NewProducer(queuer *queue.Queuer, msgRepo *convoy.MessageRepository, signatureConfig config.SignatureConfiguration) *Producer {
 	return &Producer{
 		Data:            (*queuer).Read(),
 		msgRepo:         msgRepo,
 		dispatch:        net.NewDispatcher(),
-		signatureHeader: string(signatureHeader),
+		signatureConfig: signatureConfig,
 		quit:            make(chan chan error),
 	}
 }
@@ -78,7 +78,7 @@ func (p *Producer) postMessages(msgRepo convoy.MessageRepository, m convoy.Messa
 		}
 
 		bStr := string(bytes)
-		hmac, err := util.ComputeJSONHmac(secret, bStr, false)
+		hmac, err := util.ComputeJSONHmac(p.signatureConfig.Hash, bStr, secret, false)
 		if err != nil {
 			log.Errorf("error occurred while generating hmac signature - %+v\n", err)
 			return
@@ -87,7 +87,7 @@ func (p *Producer) postMessages(msgRepo convoy.MessageRepository, m convoy.Messa
 		attemptStatus := convoy.FailureMessageStatus
 		start := time.Now()
 
-		resp, err := p.dispatch.SendRequest(e.TargetURL, string(convoy.HttpPost), bytes, p.signatureHeader, hmac)
+		resp, err := p.dispatch.SendRequest(e.TargetURL, string(convoy.HttpPost), bytes, string(p.signatureConfig.Header), hmac)
 		status := "-"
 		statusCode := 0
 		if resp != nil {

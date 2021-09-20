@@ -77,7 +77,7 @@ func buildRoutes(app *applicationHandler) http.Handler {
 			appRouter.Route("/", func(appSubRouter chi.Router) {
 				appSubRouter.With(ensureNewApp(app.orgRepo, app.appRepo)).Post("/", app.CreateApp)
 
-				appRouter.With(fetchAllApps(app.appRepo)).Get("/", app.GetApps)
+				appRouter.With(pagination).With(fetchAllApps(app.appRepo)).Get("/", app.GetApps)
 			})
 
 			appRouter.Route("/{appID}", func(appSubRouter chi.Router) {
@@ -100,7 +100,7 @@ func buildRoutes(app *applicationHandler) http.Handler {
 					})
 				})
 
-				appSubRouter.Route("/endpoint", func(endpointAppSubRouter chi.Router) {
+				appSubRouter.Route("/endpoints", func(endpointAppSubRouter chi.Router) {
 					endpointAppSubRouter.With(ensureNewAppEndpoint(app.appRepo)).Post("/", app.CreateAppEndpoint)
 					endpointAppSubRouter.With(fetchAppEndpoints()).Get("/", app.GetAppEndpoints)
 
@@ -135,9 +135,13 @@ func buildRoutes(app *applicationHandler) http.Handler {
 			})
 
 		})
+	})
 
-		r.Route("/dashboard/{orgID}", func(dashboardRouter chi.Router) {
-			dashboardRouter.Use(requireAuth())
+	router.Route("/ui", func(uiRouter chi.Router) {
+		uiRouter.Use(jsonResponse)
+
+		uiRouter.Route("/dashboard/{orgID}", func(dashboardRouter chi.Router) {
+			dashboardRouter.Use(requireUIAuth())
 
 			dashboardRouter.Use(requireOrganisation(app.orgRepo))
 
@@ -151,12 +155,81 @@ func buildRoutes(app *applicationHandler) http.Handler {
 			})
 		})
 
-		r.Route("/auth", func(authRouter chi.Router) {
-			authRouter.With(fetchAuthConfig()).Get("/details", app.GetAuthDetails)
+		uiRouter.Route("/organisations", func(orgRouter chi.Router) {
+			orgRouter.Use(requireUIAuth())
+
+			orgRouter.Route("/", func(orgSubRouter chi.Router) {
+				orgRouter.With(fetchAllOrganisations(app.orgRepo)).Get("/", app.GetOrganisations)
+			})
+
+			orgRouter.Route("/{orgID}", func(appSubRouter chi.Router) {
+				appSubRouter.Use(requireOrganisation(app.orgRepo))
+				appSubRouter.Get("/", app.GetOrganisation)
+			})
 		})
+
+		uiRouter.Route("/apps", func(appRouter chi.Router) {
+			appRouter.Use(requireUIAuth())
+
+			appRouter.Route("/", func(appSubRouter chi.Router) {
+				appRouter.With(pagination).With(fetchAllApps(app.appRepo)).Get("/", app.GetApps)
+			})
+
+			appRouter.Route("/{appID}", func(appSubRouter chi.Router) {
+				appSubRouter.Use(requireApp(app.appRepo))
+				appSubRouter.Get("/", app.GetApp)
+				appSubRouter.Route("/events", func(msgSubRouter chi.Router) {
+					msgSubRouter.With(pagination).With(fetchAppMessages(app.msgRepo)).Get("/", app.GetAppMessagesPaged)
+
+					msgSubRouter.Route("/{eventID}", func(msgEventSubRouter chi.Router) {
+						msgEventSubRouter.Use(requireMessage(app.msgRepo))
+
+						msgEventSubRouter.Get("/", app.GetAppMessage)
+						msgEventSubRouter.With(resendMessage(app.msgRepo)).Put("/resend", app.ResendAppMessage)
+					})
+				})
+
+				appSubRouter.Route("/endpoints", func(endpointAppSubRouter chi.Router) {
+					endpointAppSubRouter.With(fetchAppEndpoints()).Get("/", app.GetAppEndpoints)
+
+					endpointAppSubRouter.Route("/{endpointID}", func(e chi.Router) {
+						e.Use(requireAppEndpoint())
+
+						e.Get("/", app.GetAppEndpoint)
+					})
+				})
+			})
+		})
+
+		uiRouter.Route("/events", func(msgRouter chi.Router) {
+			msgRouter.Use(requireUIAuth())
+			msgRouter.With(pagination).With(fetchAllMessages(app.msgRepo)).Get("/", app.GetAppMessagesPaged)
+
+			msgRouter.Route("/{eventID}", func(msgSubRouter chi.Router) {
+				msgSubRouter.Use(requireMessage(app.msgRepo))
+
+				msgSubRouter.Get("/", app.GetAppMessage)
+
+				msgSubRouter.Route("/deliveryattempts", func(deliveryRouter chi.Router) {
+					deliveryRouter.Use(fetchMessageDeliveryAttempts())
+
+					deliveryRouter.Get("/", app.GetAppMessageDeliveryAttempts)
+
+					deliveryRouter.With(requireMessageDeliveryAttempt()).Get("/{deliveryAttemptID}", app.GetAppMessageDeliveryAttempt)
+				})
+			})
+
+		})
+
+		uiRouter.Route("/auth", func(authRouter chi.Router) {
+			authRouter.With(login()).Post("/login", app.GetAuthLogin)
+			authRouter.With(refresh()).Post("/refresh", app.GetAuthLogin)
+			authRouter.With(requireUIAuth()).With(fetchAuthConfig()).Get("/details", app.GetAuthDetails)
+		})
+
 	})
 
-	router.Handle("/metrics", promhttp.Handler())
+	router.Handle("/v1/metrics", promhttp.Handler())
 	router.HandleFunc("/*", reactRootHandler)
 
 	return router
