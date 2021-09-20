@@ -13,7 +13,7 @@ build_react_files()
 {
   INSTALL_NODE_VER=14
 
-  cd $SCRIPT_DIR/web/ui/react-app
+  cd $SCRIPT_DIR/web/ui/dashboard
   echo $SCRIPT_DIR
 
   source ~/.nvm/nvm.sh
