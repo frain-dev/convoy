@@ -430,6 +430,18 @@ table {
 		font-weight: 500;
 		font-size: 14px;
 		line-height: 28px;
+
+		&.spin {
+			@keyframes spin {
+				100% {
+					transform: rotate(360deg);
+				}
+			}
+
+			img {
+				animation: spin 5s linear infinite;
+			}
+		}
 	}
 }
 

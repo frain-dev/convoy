@@ -1,5 +1,4 @@
 import React, { useEffect, useState, useCallback } from 'react';
-import * as axios from 'axios';
 import ArrowDownIcon from '../../assets/img/arrow-down-icon.svg';
 import AppsIcon from '../../assets/img/apps-icon.svg';
 import MessageIcon from '../../assets/img/message-icon.svg';
@@ -15,18 +14,12 @@ import ConvoyLogo from '../../assets/img/logo.svg';
 import Chart from 'chart.js/auto';
 import { DateRange } from 'react-date-range';
 import ReactJson from 'react-json-view';
-import { AuthDetails, APIURL } from '../../helpers/get-details';
+import { request } from '../../services/https.service';
 import './style.scss';
 import 'react-date-range/dist/styles.css';
 import 'react-date-range/dist/theme/default.css';
+import { showNotification } from '../../components/app-notification';
 
-const _axios = axios.default;
-const request = _axios.create({
-	baseURL: APIURL,
-	headers: {
-		Authorization: `Bearer ${AuthDetails().token}`,
-	},
-});
 const months = ['Jan', 'Feb', 'Mar', 'April', 'May', 'June', 'July', 'Aug', 'Sept', 'Oct', 'Nov', 'Dec'];
 
 function DashboardPage() {
@@ -44,7 +37,7 @@ function DashboardPage() {
 		name: '',
 		created_at: 0,
 		updated_at: 0,
-		deleted_at: 0,
+		deleted_at: 0
 	});
 	const [eventDeliveryAtempt, setEventDeliveryAtempt] = useState({
 		ip_address: '',
@@ -52,7 +45,7 @@ function DashboardPage() {
 		api_version: '',
 		updated_at: 0,
 		deleted_at: 0,
-		response_data: '',
+		response_data: ''
 	});
 	const [detailsItem, setDetailsItem] = useState();
 	const [filterFrequency, setFilterFrequency] = useState('daily');
@@ -60,32 +53,32 @@ function DashboardPage() {
 		{
 			startDate: new Date(new Date().setDate(new Date().getDate() - 20)),
 			endDate: new Date(),
-			key: 'selection',
-		},
+			key: 'selection'
+		}
 	]);
 
 	const [jsonStyle] = useState({
 		fontSize: '12px',
-		lineHeight: '25px',
+		lineHeight: '25px'
 	});
 
 	const [options] = useState({
 		plugins: {
 			legend: {
-				display: false,
-			},
+				display: false
+			}
 		},
 		scales: {
 			xAxis: {
 				display: true,
 				grid: {
-					display: false,
-				},
-			},
-		},
+					display: false
+				}
+			}
+		}
 	});
 
-	const getDate = (date) => {
+	const getDate = date => {
 		const _date = new Date(date);
 		const day = _date.getDate();
 		const month = _date.getMonth();
@@ -93,7 +86,7 @@ function DashboardPage() {
 		return `${day} ${months[month]}, ${year}`;
 	};
 
-	const copyText = (copyText) => {
+	const copyText = copyText => {
 		const el = document.createElement('textarea');
 		el.value = copyText;
 		document.body.appendChild(el);
@@ -108,7 +101,7 @@ function DashboardPage() {
 				const appsResponse = await (
 					await request({
 						url: `/events?sort=AESC&page=${page || 1}&perPage=10&orgId=${activeorganisation.uid}`,
-						method: 'GET',
+						method: 'GET'
 					})
 				).data;
 				setEventsData(appsResponse.data);
@@ -116,7 +109,7 @@ function DashboardPage() {
 				return error;
 			}
 		},
-		[activeorganisation],
+		[activeorganisation]
 	);
 
 	const getApps = useCallback(
@@ -124,7 +117,7 @@ function DashboardPage() {
 			try {
 				const appsResponse = await (
 					await request({
-						url: `/apps?sort=AESC&page=${page || 1}&perPage=10&orgId=${activeorganisation.uid}`,
+						url: `/apps?sort=AESC&page=${page || 1}&perPage=10&orgId=${activeorganisation.uid}`
 					})
 				).data;
 				setAppsData(appsResponse.data);
@@ -132,14 +125,14 @@ function DashboardPage() {
 				return error;
 			}
 		},
-		[activeorganisation],
+		[activeorganisation]
 	);
 
-	const getDelieveryAttempts = async (eventId) => {
+	const getDelieveryAttempts = async eventId => {
 		try {
 			const deliveryAttemptsResponse = await (
 				await request({
-					url: `/events/${eventId}/deliveryattempts`,
+					url: `/events/${eventId}/deliveryattempts`
 				})
 			).data;
 			setEventDeliveryAtempt(deliveryAttemptsResponse.data[deliveryAttemptsResponse.data.length - 1]);
@@ -148,15 +141,27 @@ function DashboardPage() {
 		}
 	};
 
-	const retryEvent = async ({ eventId, appId }) => {
+	const retryEvent = async ({ eventId, appId, e, index }) => {
+		e.stopPropagation();
+		const retryButton = document.querySelector(`#event${index} button`);
+		retryButton.classList.add(['spin', 'disable_action']);
+		retryButton.disabled = true;
+
 		try {
 			await (
 				await request({
 					method: 'PUT',
-					url: `/apps/${appId}/events/${eventId}/resend`,
+					url: `/apps/${appId}/events/${eventId}/resend`
 				})
 			).data;
+			showNotification({ message: 'Retry Request Sent' });
+			retryButton.classList.remove(['spin', 'disable_action']);
+			retryButton.disabled = false;
+			getEvents({ page: events.pagination.page });
 		} catch (error) {
+			showNotification({ message: error.response.data.message });
+			retryButton.classList.remove(['spin', 'disable_action']);
+			retryButton.disabled = false;
 			return error;
 		}
 	};
@@ -171,7 +176,7 @@ function DashboardPage() {
 			try {
 				const organisationsResponse = await (
 					await request({
-						url: '/organisations',
+						url: '/organisations'
 					})
 				).data;
 				setOrganisations(organisationsResponse.data);
@@ -188,13 +193,13 @@ function DashboardPage() {
 				const dashboardResponse = await request({
 					url: `/dashboard/${activeorganisation.uid}/summary?startDate=${filterDates[0].startDate.toISOString().split('.')[0]}&endDate=${filterDates[0].endDate.toISOString().split('.')[0]}&type=${
 						filterFrequency || 'daily'
-					}`,
+					}`
 				});
 				setDashboardData(dashboardResponse.data.data);
 
 				const chartData = dashboardResponse.data.data.message_data;
-				const labels = [0, ...chartData.map((label) => label.data.date)];
-				const dataSet = [0, ...chartData.map((label) => label.count)];
+				const labels = [0, ...chartData.map(label => label.data.date)];
+				const dataSet = [0, ...chartData.map(label => label.count)];
 				const data = {
 					labels,
 					datasets: [
@@ -204,9 +209,9 @@ function DashboardPage() {
 							borderColor: '#477DB3',
 							tension: 0.5,
 							yAxisID: 'yAxis',
-							xAxisID: 'xAxis',
-						},
-					],
+							xAxisID: 'xAxis'
+						}
+					]
 				};
 
 				if (!Chart.getChart('chart') || !Chart.getChart('chart')?.canvas) {
@@ -260,8 +265,8 @@ function DashboardPage() {
 						</div>
 						<img src={ArrowDownIcon} alt="arrow down icon" />
 					</button>
-					<DateRange onChange={(item) => setFilterDates([item.selection])} moveRangeOnFirstSelection={false} ranges={filterDates} />
-					<select value={filterFrequency} onChange={(event) => setFilterFrequency(event.target.value)}>
+					<DateRange onChange={item => setFilterDates([item.selection])} moveRangeOnFirstSelection={false} ranges={filterDates} />
+					<select value={filterFrequency} onChange={event => setFilterFrequency(event.target.value)}>
 						<option value="daily">Daily</option>
 						<option value="weekly">Weekly</option>
 						<option value="monthly">Monthly</option>
@@ -332,12 +337,11 @@ function DashboardPage() {
 											http_status: '',
 											api_version: '',
 											updated_at: 0,
-											deleted_at: 0,
+											deleted_at: 0
 										});
 									}}
 									key={index}
-									className={'clear tab ' + (activeTab === tab ? 'active' : '')}
-								>
+									className={'clear tab ' + (activeTab === tab ? 'active' : '')}>
 									{tab}
 								</button>
 							))}
@@ -365,7 +369,7 @@ function DashboardPage() {
 														setDetailsItem(event);
 														getDelieveryAttempts(event.uid);
 													}}
-												>
+													id={'event' + index}>
 													<td>
 														<div>
 															<div className="tag">{event.status}</div>
@@ -388,9 +392,9 @@ function DashboardPage() {
 															<button
 																disabled={event.status === 'Success' || event.status === 'Scheduled'}
 																className={'primary has-icon icon-left ' + (event.status === 'Success' || event.status === 'Scheduled' ? 'disable_action' : '')}
-																onClick={() => retryEvent({ eventId: event.uid, appId: event.app_id })}
-															>
-																<img src={RefreshIcon} alt="refresh icon" /> Retry
+																onClick={e => retryEvent({ eventId: event.uid, appId: event.app_id, e, index })}>
+																<img src={RefreshIcon} alt="refresh icon" />
+																Retry
 															</button>
 														</div>
 													</td>
