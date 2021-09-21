@@ -2,14 +2,12 @@ package worker
 
 import (
 	"context"
-	"encoding/json"
 	"time"
 
 	"github.com/frain-dev/convoy"
 	"github.com/frain-dev/convoy/config"
 	"github.com/frain-dev/convoy/net"
 	"github.com/frain-dev/convoy/queue"
-	"github.com/frain-dev/convoy/server/models"
 	"github.com/frain-dev/convoy/util"
 	"github.com/google/uuid"
 	log "github.com/sirupsen/logrus"
@@ -66,18 +64,7 @@ func (p *Producer) postMessages(msgRepo convoy.MessageRepository, m convoy.Messa
 			continue
 		}
 
-		request := models.WebhookRequest{
-			Event: string(m.EventType),
-			Data:  m.Data,
-		}
-
-		bytes, err := json.Marshal(request)
-		if err != nil {
-			log.Errorf("error occurred while parsing payload - %+v\n", err)
-			return
-		}
-
-		bStr := string(bytes)
+		bStr := string(m.Data)
 		hmac, err := util.ComputeJSONHmac(p.signatureConfig.Hash, bStr, secret, false)
 		if err != nil {
 			log.Errorf("error occurred while generating hmac signature - %+v\n", err)
@@ -87,7 +74,7 @@ func (p *Producer) postMessages(msgRepo convoy.MessageRepository, m convoy.Messa
 		attemptStatus := convoy.FailureMessageStatus
 		start := time.Now()
 
-		resp, err := p.dispatch.SendRequest(e.TargetURL, string(convoy.HttpPost), bytes, string(p.signatureConfig.Header), hmac)
+		resp, err := p.dispatch.SendRequest(e.TargetURL, string(convoy.HttpPost), []byte(bStr), string(p.signatureConfig.Header), hmac)
 		status := "-"
 		statusCode := 0
 		if resp != nil {
