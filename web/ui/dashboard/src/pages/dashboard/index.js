@@ -6,8 +6,6 @@ import RefreshIcon from '../../assets/img/refresh-icon.svg';
 import CalendarIcon from '../../assets/img/calendar-icon.svg';
 import CopyIcon from '../../assets/img/copy-icon.svg';
 import LinkIcon from '../../assets/img/link-icon.svg';
-import AngleArrowLeftIcon from '../../assets/img/angle-arrow-left.svg';
-import AngleArrowRightIcon from '../../assets/img/angle-arrow-right.svg';
 import AngleArrowDownIcon from '../../assets/img/angle-arrow-down.svg';
 import AngleArrowUpIcon from '../../assets/img/angle-arrow-up.svg';
 import ConvoyLogo from '../../assets/img/logo.svg';
@@ -19,8 +17,7 @@ import './style.scss';
 import 'react-date-range/dist/styles.css';
 import 'react-date-range/dist/theme/default.css';
 import { showNotification } from '../../components/app-notification';
-
-const months = ['Jan', 'Feb', 'Mar', 'April', 'May', 'June', 'July', 'Aug', 'Sept', 'Oct', 'Nov', 'Dec'];
+import { getDate, copyText } from '../../helpers/common.helper';
 
 function DashboardPage() {
 	const [dashboardData, setDashboardData] = useState({ apps: 0, messages: 0, messageData: [] });
@@ -78,33 +75,23 @@ function DashboardPage() {
 		}
 	});
 
-	const getDate = date => {
-		const _date = new Date(date);
-		const day = _date.getDate();
-		const month = _date.getMonth();
-		const year = _date.getFullYear();
-		return `${day} ${months[month]}, ${year}`;
-	};
-
-	const copyText = copyText => {
-		const el = document.createElement('textarea');
-		el.value = copyText;
-		document.body.appendChild(el);
-		el.select();
-		document.execCommand('copy');
-		el.style.display = 'none';
-	};
-
 	const getEvents = useCallback(
-		async ({ page }) => {
+		async ({ page, eventsData }) => {
 			try {
-				const appsResponse = await (
+				const eventsResponse = await (
 					await request({
 						url: `/events?sort=AESC&page=${page || 1}&perPage=10&orgId=${activeorganisation.uid}`,
 						method: 'GET'
 					})
 				).data;
-				setEventsData(appsResponse.data);
+
+				if (eventsData?.pagination?.next === page) {
+					const content = [...eventsData.content, ...eventsResponse.data.content];
+					const pagination = eventsResponse.data.pagination;
+					setEventsData({ content, pagination });
+					return;
+				}
+				setEventsData(eventsResponse.data);
 			} catch (error) {
 				return error;
 			}
@@ -113,13 +100,20 @@ function DashboardPage() {
 	);
 
 	const getApps = useCallback(
-		async ({ page }) => {
+		async ({ page, appsData }) => {
 			try {
 				const appsResponse = await (
 					await request({
 						url: `/apps?sort=AESC&page=${page || 1}&perPage=10&orgId=${activeorganisation.uid}`
 					})
 				).data;
+
+				if (appsData?.pagination?.next === page) {
+					const content = [...appsData.content, ...appsResponse.data.content];
+					const pagination = appsResponse.data.pagination;
+					setAppsData({ content, pagination });
+					return;
+				}
 				setAppsData(appsResponse.data);
 			} catch (error) {
 				return error;
@@ -245,7 +239,7 @@ function DashboardPage() {
 							<div className="icon">O</div>
 							<div className="name">{activeorganisation && activeorganisation.name}</div>
 						</div>
-						<img src={ArrowDownIcon} alt="arrow down icon" />
+						<img src={AngleArrowDownIcon} alt="arrow down icon" />
 						<div className="dropdown organisations">
 							<ul>
 								<li onClick={() => logout()}>Logout</li>
@@ -263,7 +257,7 @@ function DashboardPage() {
 						<div>
 							{getDate(filterDates[0].startDate)} - {getDate(filterDates[0].endDate)}
 						</div>
-						<img src={ArrowDownIcon} alt="arrow down icon" />
+						<img src={AngleArrowDownIcon} alt="arrow down icon" />
 					</button>
 					<DateRange onChange={item => setFilterDates([item.selection])} moveRangeOnFirstSelection={false} ranges={filterDates} />
 					<select value={filterFrequency} onChange={event => setFilterFrequency(event.target.value)}>
@@ -349,7 +343,7 @@ function DashboardPage() {
 
 						<div className="table">
 							{activeTab && activeTab === 'events' && (
-								<React.Fragment>
+								<div>
 									<table>
 										<thead>
 											<tr className="table--head">
@@ -404,20 +398,21 @@ function DashboardPage() {
 									</table>
 
 									{events.pagination.totalPage > 1 && (
-										<div className="pagination">
-											<button disabled={events.pagination.page === 1} onClick={() => getEvents({ page: events.pagination.page - 1 })} className="has-icon">
-												<img src={AngleArrowLeftIcon} alt="angle icon left" />
-											</button>
-											<button disabled={events.pagination.page === events.pagination.totalPage} onClick={() => getEvents({ page: events.pagination.page + 1 })} className="has-icon">
-												<img src={AngleArrowRightIcon} alt="angle icon right" />
+										<div className=" table--load-more button-container margin-top center">
+											<button
+												className={'primary clear has-icon icon-left ' + (events.pagination.page === events.pagination.totalPage ? 'disable_action' : '')}
+												disabled={events.pagination.page === events.pagination.totalPage}
+												onClick={() => getEvents({ page: events.pagination.page + 1, eventsData: events })}>
+												<img src={ArrowDownIcon} alt="arrow down icon" />
+												Load more
 											</button>
 										</div>
 									)}
-								</React.Fragment>
+								</div>
 							)}
 
 							{activeTab && activeTab === 'apps' && (
-								<React.Fragment>
+								<div>
 									<table>
 										<thead>
 											<tr className="table--head">
@@ -452,16 +447,17 @@ function DashboardPage() {
 									</table>
 
 									{apps.pagination.totalPage > 1 && (
-										<div className="pagination">
-											<button disabled={apps.pagination.page === 1} onClick={() => getApps({ page: apps.pagination.page - 1 })} className="has-icon">
-												<img src={AngleArrowLeftIcon} alt="angle icon left" />
-											</button>
-											<button disabled={apps.pagination.page === apps.pagination.totalPage} onClick={() => getApps({ page: apps.pagination.page + 1 })} className="has-icon">
-												<img src={AngleArrowRightIcon} alt="angle icon right" />
+										<div className="table--load-more button-container margin-top center">
+											<button
+												className={'primary clear has-icon icon-left ' + (apps.pagination.page === apps.pagination.totalPage ? 'disable_action' : '')}
+												disabled={apps.pagination.page === apps.pagination.totalPage}
+												onClick={() => getApps({ page: apps.pagination.page + 1, appsData: apps })}>
+												<img src={ArrowDownIcon} alt="arrow down icon" />
+												Load more
 											</button>
 										</div>
 									)}
-								</React.Fragment>
+								</div>
 							)}
 						</div>
 					</div>
@@ -497,7 +493,7 @@ function DashboardPage() {
 							</ul>
 
 							{activeTab === 'events' && (
-								<React.Fragment>
+								<div className="dashboard--logs--details--req-res">
 									<h4>Event Data</h4>
 									<div className={'dashboard--logs--details--event-data ' + (viewAllEventData && detailsItem.data ? '' : 'data-hidden')}>
 										<ReactJson src={detailsItem.data} iconStyle="square" displayDataTypes={false} enableClipboard={false} style={jsonStyle} name={false} />
@@ -530,7 +526,7 @@ function DashboardPage() {
 											)}
 										</div>
 									)}
-								</React.Fragment>
+								</div>
 							)}
 
 							{activeTab === 'apps' && (
