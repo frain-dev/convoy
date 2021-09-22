@@ -69,7 +69,7 @@ func (p *Producer) postMessages(msgRepo convoy.MessageRepository, m convoy.Messa
 		b := new(bytes.Buffer)
 		if err := json.NewEncoder(b).Encode(m.Data); err != nil {
 			log.WithError(err).Error("error occurred while parsing json")
-			continue
+			return
 		}
 
 		hmac, err := util.ComputeJSONHmac(p.signatureConfig.Hash, b.String(), secret, false)
