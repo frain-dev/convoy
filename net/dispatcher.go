@@ -1,8 +1,7 @@
 package net
 
 import (
-	"bytes"
-	"encoding/json"
+	"io"
 	"io/ioutil"
 	"net/http"
 	"net/http/httptrace"
@@ -22,10 +21,10 @@ func NewDispatcher() *Dispatcher {
 	}
 }
 
-func (d *Dispatcher) SendRequest(endpoint, method string, jsonData json.RawMessage, signatureHeader string, hmac string) (*Response, error) {
+func (d *Dispatcher) SendRequest(endpoint, method string, data io.Reader, signatureHeader string, hmac string) (*Response, error) {
 	r := &Response{}
 
-	req, err := http.NewRequest(method, endpoint, bytes.NewBuffer(jsonData))
+	req, err := http.NewRequest(method, endpoint, data)
 	if err != nil {
 		log.Errorf("error occurred while creating request - %+v\n", err)
 		return r, err
