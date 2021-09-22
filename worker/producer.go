@@ -68,6 +68,7 @@ func (p *Producer) postMessages(msgRepo convoy.MessageRepository, m convoy.Messa
 		bytes, err := json.Marshal(m.Data)
 		if err != nil {
 			log.Errorf("error occurred while parsing json")
+			return
 		}
 
 		bStr := string(bytes)
