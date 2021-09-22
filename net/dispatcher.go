@@ -33,6 +33,8 @@ func (d *Dispatcher) SendRequest(endpoint, method string, data io.Reader, signat
 		req.Header.Set(signatureHeader, hmac)
 	}
 
+	req.Header.Add("Content-Type", "application/json")
+
 	trace := &httptrace.ClientTrace{
 		GotConn: func(connInfo httptrace.GotConnInfo) {
 			r.IP = connInfo.Conn.RemoteAddr().String()
