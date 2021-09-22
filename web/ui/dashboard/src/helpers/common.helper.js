@@ -17,4 +17,9 @@ const copyText = copyText => {
 	el.style.display = 'none';
 };
 
-export { getDate, copyText };
+const logout = () => {
+	localStorage.removeItem('CONVOY_AUTH');
+	window.location.replace('/login');
+};
+
+export { getDate, copyText, logout };

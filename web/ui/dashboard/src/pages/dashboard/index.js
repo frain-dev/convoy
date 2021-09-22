@@ -17,7 +17,7 @@ import './style.scss';
 import 'react-date-range/dist/styles.css';
 import 'react-date-range/dist/theme/default.css';
 import { showNotification } from '../../components/app-notification';
-import { getDate, copyText } from '../../helpers/common.helper';
+import { getDate, copyText, logout } from '../../helpers/common.helper';
 
 function DashboardPage() {
 	const [dashboardData, setDashboardData] = useState({ apps: 0, messages: 0, messageData: [] });
@@ -158,11 +158,6 @@ function DashboardPage() {
 			retryButton.disabled = false;
 			return error;
 		}
-	};
-
-	const logout = () => {
-		localStorage.removeItem('CONVOY_AUTH');
-		window.location.replace('/login');
 	};
 
 	useEffect(() => {

@@ -1,4 +1,5 @@
 import * as axios from 'axios';
+import { logout } from '../helpers/common.helper';
 import { AuthDetails, APIURL } from '../helpers/get-details';
 
 const _axios = axios.default;
@@ -15,7 +16,7 @@ request.interceptors.response.use(
 		return response;
 	},
 	error => {
-		if (error.response.status === 401 && error.response.config.url !== '/auth/login') window.location.replace('/login');
+		if (error.response.status === 401 && error.response.config.url !== '/auth/login') logout();
 		return Promise.reject(error);
 	}
 );
