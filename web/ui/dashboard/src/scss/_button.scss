@@ -117,6 +117,10 @@ button {
 	&.margin-top {
 		margin-top: 40px;
 	}
+
+	&.center {
+		justify-content: center;
+	}
 }
 
 .link {

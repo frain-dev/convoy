@@ -1,5 +1,4 @@
 import React, { useEffect, useState, useCallback } from 'react';
-import * as axios from 'axios';
 import ArrowDownIcon from '../../assets/img/arrow-down-icon.svg';
 import AppsIcon from '../../assets/img/apps-icon.svg';
 import MessageIcon from '../../assets/img/message-icon.svg';
@@ -7,27 +6,18 @@ import RefreshIcon from '../../assets/img/refresh-icon.svg';
 import CalendarIcon from '../../assets/img/calendar-icon.svg';
 import CopyIcon from '../../assets/img/copy-icon.svg';
 import LinkIcon from '../../assets/img/link-icon.svg';
-import AngleArrowLeftIcon from '../../assets/img/angle-arrow-left.svg';
-import AngleArrowRightIcon from '../../assets/img/angle-arrow-right.svg';
 import AngleArrowDownIcon from '../../assets/img/angle-arrow-down.svg';
 import AngleArrowUpIcon from '../../assets/img/angle-arrow-up.svg';
 import ConvoyLogo from '../../assets/img/logo.svg';
 import Chart from 'chart.js/auto';
 import { DateRange } from 'react-date-range';
 import ReactJson from 'react-json-view';
-import { AuthDetails, APIURL } from '../../helpers/get-details';
+import { request } from '../../services/https.service';
 import './style.scss';
 import 'react-date-range/dist/styles.css';
 import 'react-date-range/dist/theme/default.css';
-
-const _axios = axios.default;
-const request = _axios.create({
-	baseURL: APIURL,
-	headers: {
-		Authorization: `Bearer ${AuthDetails().token}`,
-	},
-});
-const months = ['Jan', 'Feb', 'Mar', 'April', 'May', 'June', 'July', 'Aug', 'Sept', 'Oct', 'Nov', 'Dec'];
+import { showNotification } from '../../components/app-notification';
+import { getDate, copyText, logout } from '../../helpers/common.helper';
 
 function DashboardPage() {
 	const [dashboardData, setDashboardData] = useState({ apps: 0, messages: 0, messageData: [] });
@@ -44,7 +34,7 @@ function DashboardPage() {
 		name: '',
 		created_at: 0,
 		updated_at: 0,
-		deleted_at: 0,
+		deleted_at: 0
 	});
 	const [eventDeliveryAtempt, setEventDeliveryAtempt] = useState({
 		ip_address: '',
@@ -52,7 +42,7 @@ function DashboardPage() {
 		api_version: '',
 		updated_at: 0,
 		deleted_at: 0,
-		response_data: '',
+		response_data: ''
 	});
 	const [detailsItem, setDetailsItem] = useState();
 	const [filterFrequency, setFilterFrequency] = useState('daily');
@@ -60,86 +50,83 @@ function DashboardPage() {
 		{
 			startDate: new Date(new Date().setDate(new Date().getDate() - 20)),
 			endDate: new Date(),
-			key: 'selection',
-		},
+			key: 'selection'
+		}
 	]);
 
 	const [jsonStyle] = useState({
 		fontSize: '12px',
-		lineHeight: '25px',
+		lineHeight: '25px'
 	});
 
 	const [options] = useState({
 		plugins: {
 			legend: {
-				display: false,
-			},
+				display: false
+			}
 		},
 		scales: {
 			xAxis: {
 				display: true,
 				grid: {
-					display: false,
-				},
-			},
-		},
+					display: false
+				}
+			}
+		}
 	});
 
-	const getDate = (date) => {
-		const _date = new Date(date);
-		const day = _date.getDate();
-		const month = _date.getMonth();
-		const year = _date.getFullYear();
-		return `${day} ${months[month]}, ${year}`;
-	};
-
-	const copyText = (copyText) => {
-		const el = document.createElement('textarea');
-		el.value = copyText;
-		document.body.appendChild(el);
-		el.select();
-		document.execCommand('copy');
-		el.style.display = 'none';
-	};
-
 	const getEvents = useCallback(
-		async ({ page }) => {
+		async ({ page, eventsData }) => {
 			try {
-				const appsResponse = await (
+				const eventsResponse = await (
 					await request({
 						url: `/events?sort=AESC&page=${page || 1}&perPage=10&orgId=${activeorganisation.uid}`,
-						method: 'GET',
+						method: 'GET'
 					})
 				).data;
-				setEventsData(appsResponse.data);
+
+				if (eventsData?.pagination?.next === page) {
+					const content = [...eventsData.content, ...eventsResponse.data.content];
+					const pagination = eventsResponse.data.pagination;
+					setEventsData({ content, pagination });
+					return;
+				}
+				setEventsData(eventsResponse.data);
 			} catch (error) {
 				return error;
 			}
 		},
-		[activeorganisation],
+		[activeorganisation]
 	);
 
 	const getApps = useCallback(
-		async ({ page }) => {
+		async ({ page, appsData }) => {
 			try {
 				const appsResponse = await (
 					await request({
-						url: `/apps?sort=AESC&page=${page || 1}&perPage=10&orgId=${activeorganisation.uid}`,
+						url: `/apps?sort=AESC&page=${page || 1}&perPage=10&orgId=${activeorganisation.uid}`
 					})
 				).data;
+
+				if (appsData?.pagination?.next === page) {
+					const content = [...appsData.content, ...appsResponse.data.content];
+					const pagination = appsResponse.data.pagination;
+					setAppsData({ content, pagination });
+					return;
+				}
 				setAppsData(appsResponse.data);
 			} catch (error) {
 				return error;
 			}
 		},
-		[activeorganisation],
+		[activeorganisation]
 	);
 
-	const getDelieveryAttempts = async (eventId) => {
+	const getDelieveryAttempts = async eventId => {
 		try {
 			const deliveryAttemptsResponse = await (
 				await request({
-					url: `/events/${eventId}/deliveryattempts`,
+					url: `/events/${eventId}/deliveryattempts`
 				})
 			).data;
 			setEventDeliveryAtempt(deliveryAttemptsResponse.data[deliveryAttemptsResponse.data.length - 1]);
@@ -148,22 +135,29 @@ function DashboardPage() {
 		}
 	};
 
-	const retryEvent = async ({ eventId, appId }) => {
+	const retryEvent = async ({ eventId, appId, e, index }) => {
+		e.stopPropagation();
+		const retryButton = document.querySelector(`#event${index} button`);
+		retryButton.classList.add(['spin', 'disable_action']);
+		retryButton.disabled = true;
+
 		try {
 			await (
 				await request({
 					method: 'PUT',
-					url: `/apps/${appId}/events/${eventId}/resend`,
+					url: `/apps/${appId}/events/${eventId}/resend`
 				})
 			).data;
+			showNotification({ message: 'Retry Request Sent' });
+			retryButton.classList.remove(['spin', 'disable_action']);
+			retryButton.disabled = false;
+			getEvents({ page: events.pagination.page });
 		} catch (error) {
+			showNotification({ message: error.response.data.message });
+			retryButton.classList.remove(['spin', 'disable_action']);
+			retryButton.disabled = false;
 			return error;
 		}
-	};
-
-	const logout = () => {
-		localStorage.removeItem('CONVOY_AUTH');
-		window.location.replace('/login');
 	};
 
 	useEffect(() => {
@@ -171,7 +165,7 @@ function DashboardPage() {
 			try {
 				const organisationsResponse = await (
 					await request({
-						url: '/organisations',
+						url: '/organisations'
 					})
 				).data;
 				setOrganisations(organisationsResponse.data);
@@ -188,13 +182,13 @@ function DashboardPage() {
 				const dashboardResponse = await request({
 					url: `/dashboard/${activeorganisation.uid}/summary?startDate=${filterDates[0].startDate.toISOString().split('.')[0]}&endDate=${filterDates[0].endDate.toISOString().split('.')[0]}&type=${
 						filterFrequency || 'daily'
-					}`,
+					}`
 				});
 				setDashboardData(dashboardResponse.data.data);
 
 				const chartData = dashboardResponse.data.data.message_data;
-				const labels = [0, ...chartData.map((label) => label.data.date)];
-				const dataSet = [0, ...chartData.map((label) => label.count)];
+				const labels = [0, ...chartData.map(label => label.data.date)];
+				const dataSet = [0, ...chartData.map(label => label.count)];
 				const data = {
 					labels,
 					datasets: [
@@ -204,9 +198,9 @@ function DashboardPage() {
 							borderColor: '#477DB3',
 							tension: 0.5,
 							yAxisID: 'yAxis',
-							xAxisID: 'xAxis',
-						},
-					],
+							xAxisID: 'xAxis'
+						}
+					]
 				};
 
 				if (!Chart.getChart('chart') || !Chart.getChart('chart')?.canvas) {
@@ -240,7 +234,7 @@ function DashboardPage() {
 							<div className="icon">O</div>
 							<div className="name">{activeorganisation && activeorganisation.name}</div>
 						</div>
-						<img src={ArrowDownIcon} alt="arrow down icon" />
+						<img src={AngleArrowDownIcon} alt="arrow down icon" />
 						<div className="dropdown organisations">
 							<ul>
 								<li onClick={() => logout()}>Logout</li>
@@ -258,10 +252,10 @@ function DashboardPage() {
 						<div>
 							{getDate(filterDates[0].startDate)} - {getDate(filterDates[0].endDate)}
 						</div>
-						<img src={ArrowDownIcon} alt="arrow down icon" />
+						<img src={AngleArrowDownIcon} alt="arrow down icon" />
 					</button>
-					<DateRange onChange={(item) => setFilterDates([item.selection])} moveRangeOnFirstSelection={false} ranges={filterDates} />
-					<select value={filterFrequency} onChange={(event) => setFilterFrequency(event.target.value)}>
+					<DateRange onChange={item => setFilterDates([item.selection])} moveRangeOnFirstSelection={false} ranges={filterDates} />
+					<select value={filterFrequency} onChange={event => setFilterFrequency(event.target.value)}>
 						<option value="daily">Daily</option>
 						<option value="weekly">Weekly</option>
 						<option value="monthly">Monthly</option>
@@ -332,12 +326,11 @@ function DashboardPage() {
 											http_status: '',
 											api_version: '',
 											updated_at: 0,
-											deleted_at: 0,
+											deleted_at: 0
 										});
 									}}
 									key={index}
-									className={'clear tab ' + (activeTab === tab ? 'active' : '')}
-								>
+									className={'clear tab ' + (activeTab === tab ? 'active' : '')}>
 									{tab}
 								</button>
 							))}
@@ -345,7 +338,7 @@ function DashboardPage() {
 
 						<div className="table">
 							{activeTab && activeTab === 'events' && (
-								<React.Fragment>
+								<div>
 									<table>
 										<thead>
 											<tr className="table--head">
@@ -365,7 +358,7 @@ function DashboardPage() {
 														setDetailsItem(event);
 														getDelieveryAttempts(event.uid);
 													}}
-												>
+													id={'event' + index}>
 													<td>
 														<div>
 															<div className="tag">{event.status}</div>
@@ -388,9 +381,9 @@ function DashboardPage() {
 															<button
 																disabled={event.status === 'Success' || event.status === 'Scheduled'}
 																className={'primary has-icon icon-left ' + (event.status === 'Success' || event.status === 'Scheduled' ? 'disable_action' : '')}
-																onClick={() => retryEvent({ eventId: event.uid, appId: event.app_id })}
-															>
-																<img src={RefreshIcon} alt="refresh icon" /> Retry
+																onClick={e => retryEvent({ eventId: event.uid, appId: event.app_id, e, index })}>
+																<img src={RefreshIcon} alt="refresh icon" />
+																Retry
 															</button>
 														</div>
 													</td>
@@ -400,20 +393,21 @@ function DashboardPage() {
 									</table>
 
 									{events.pagination.totalPage > 1 && (
-										<div className="pagination">
-											<button disabled={events.pagination.page === 1} onClick={() => getEvents({ page: events.pagination.page - 1 })} className="has-icon">
-												<img src={AngleArrowLeftIcon} alt="angle icon left" />
-											</button>
-											<button disabled={events.pagination.page === events.pagination.totalPage} onClick={() => getEvents({ page: events.pagination.page + 1 })} className="has-icon">
-												<img src={AngleArrowRightIcon} alt="angle icon right" />
+										<div className=" table--load-more button-container margin-top center">
+											<button
+												className={'primary clear has-icon icon-left ' + (events.pagination.page === events.pagination.totalPage ? 'disable_action' : '')}
+												disabled={events.pagination.page === events.pagination.totalPage}
+												onClick={() => getEvents({ page: events.pagination.page + 1, eventsData: events })}>
+												<img src={ArrowDownIcon} alt="arrow down icon" />
+												Load more
 											</button>
 										</div>
 									)}
-								</React.Fragment>
+								</div>
 							)}
 
 							{activeTab && activeTab === 'apps' && (
-								<React.Fragment>
+								<div>
 									<table>
 										<thead>
 											<tr className="table--head">
@@ -448,16 +442,17 @@ function DashboardPage() {
 									</table>
 
 									{apps.pagination.totalPage > 1 && (
-										<div className="pagination">
-											<button disabled={apps.pagination.page === 1} onClick={() => getApps({ page: apps.pagination.page - 1 })} className="has-icon">
-												<img src={AngleArrowLeftIcon} alt="angle icon left" />
-											</button>
-											<button disabled={apps.pagination.page === apps.pagination.totalPage} onClick={() => getApps({ page: apps.pagination.page + 1 })} className="has-icon">
-												<img src={AngleArrowRightIcon} alt="angle icon right" />
+										<div className="table--load-more button-container margin-top center">
+											<button
+												className={'primary clear has-icon icon-left ' + (apps.pagination.page === apps.pagination.totalPage ? 'disable_action' : '')}
+												disabled={apps.pagination.page === apps.pagination.totalPage}
+												onClick={() => getApps({ page: apps.pagination.page + 1, appsData: apps })}>
+												<img src={ArrowDownIcon} alt="arrow down icon" />
+												Load more
 											</button>
 										</div>
 									)}
-								</React.Fragment>
+								</div>
 							)}
 						</div>
 					</div>
@@ -493,7 +488,7 @@ function DashboardPage() {
 							</ul>
 
 							{activeTab === 'events' && (
-								<React.Fragment>
+								<div className="dashboard--logs--details--req-res">
 									<h4>Event Data</h4>
 									<div className={'dashboard--logs--details--event-data ' + (viewAllEventData && detailsItem.data ? '' : 'data-hidden')}>
 										<ReactJson src={detailsItem.data} iconStyle="square" displayDataTypes={false} enableClipboard={false} style={jsonStyle} name={false} />
@@ -526,7 +521,7 @@ function DashboardPage() {
 											)}
 										</div>
 									)}
-								</React.Fragment>
+								</div>
 							)}
 
 							{activeTab === 'apps' && (
