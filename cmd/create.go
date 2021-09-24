@@ -86,6 +86,8 @@ func createEndpointCommand(a *app) *cobra.Command {
 			table := tablewriter.NewWriter(os.Stdout)
 			table.SetHeader([]string{"ID", "Target URL", "Description"})
 
+			table.Append([]string{e.UID, e.TargetURL, e.Description})
+
 			table.Render()
 			return nil
 		},
