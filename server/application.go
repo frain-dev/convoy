@@ -175,3 +175,9 @@ func (a *applicationHandler) GetAuthLogin(w http.ResponseWriter, r *http.Request
 	_ = render.Render(w, r, newServerResponse("Logged in successfully",
 		getAuthLoginFromContext(r.Context()), http.StatusOK))
 }
+
+func (a *applicationHandler) GetAllConfigDetails(w http.ResponseWriter, r *http.Request) {
+
+	_ = render.Render(w, r, newServerResponse("Config details fetched successfully",
+		getConfigFromContext(r.Context()), http.StatusOK))
+}
