@@ -349,11 +349,12 @@ func ensureNewAppEndpoint(appRepo convoy.ApplicationRepository) func(next http.H
 			}
 
 			endpoint := &convoy.Endpoint{
-				UID:         uuid.New().String(),
-				TargetURL:   e.URL,
-				Description: e.Description,
-				CreatedAt:   primitive.NewDateTimeFromTime(time.Now()),
-				UpdatedAt:   primitive.NewDateTimeFromTime(time.Now()),
+				UID:            uuid.New().String(),
+				TargetURL:      e.URL,
+				Description:    e.Description,
+				CreatedAt:      primitive.NewDateTimeFromTime(time.Now()),
+				UpdatedAt:      primitive.NewDateTimeFromTime(time.Now()),
+				DocumentStatus: convoy.ActiveDocumentStatus,
 			}
 
 			app.Endpoints = append(app.Endpoints, *endpoint)
@@ -480,6 +481,7 @@ func updateEndpointIfFound(endpoints *[]convoy.Endpoint, id string, e models.End
 		if endpoint.UID == id && endpoint.DeletedAt == 0 {
 			endpoint.TargetURL = e.URL
 			endpoint.Description = e.Description
+			endpoint.Disabled = e.Disabled
 			endpoint.UpdatedAt = primitive.NewDateTimeFromTime(time.Now())
 			(*endpoints)[i] = endpoint
 			return endpoints, &endpoint, nil

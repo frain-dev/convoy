@@ -17,15 +17,17 @@ import (
 
 type Producer struct {
 	Data            chan queue.Message
+	appRepo         *convoy.ApplicationRepository
 	msgRepo         *convoy.MessageRepository
 	dispatch        *net.Dispatcher
 	signatureConfig config.SignatureConfiguration
 	quit            chan chan error
 }
 
-func NewProducer(queuer *queue.Queuer, msgRepo *convoy.MessageRepository, signatureConfig config.SignatureConfiguration) *Producer {
+func NewProducer(queuer *queue.Queuer, appRepo *convoy.ApplicationRepository, msgRepo *convoy.MessageRepository, signatureConfig config.SignatureConfiguration) *Producer {
 	return &Producer{
 		Data:            (*queuer).Read(),
+		appRepo:         appRepo,
 		msgRepo:         msgRepo,
 		dispatch:        net.NewDispatcher(),
 		signatureConfig: signatureConfig,
@@ -39,7 +41,7 @@ func (p *Producer) Start() {
 			select {
 			case data := <-p.Data:
 				go func() {
-					p.postMessages(*p.msgRepo, data.Data)
+					p.postMessages(*p.msgRepo, *p.appRepo, data.Data)
 				}()
 			case ch := <-p.quit:
 				close(p.Data)
@@ -50,7 +52,7 @@ func (p *Producer) Start() {
 	}()
 }
 
-func (p *Producer) postMessages(msgRepo convoy.MessageRepository, m convoy.Message) {
+func (p *Producer) postMessages(msgRepo convoy.MessageRepository, appRepo convoy.ApplicationRepository, m convoy.Message) {
 
 	var attempt convoy.MessageAttempt
 	var secret = m.AppMetadata.Secret
@@ -61,7 +63,6 @@ func (p *Producer) postMessages(msgRepo convoy.MessageRepository, m convoy.Messa
 		e := &m.AppMetadata.Endpoints[i]
 		if e.Sent {
 			log.Debugf("endpoint %s already merged with message %s\n", e.TargetURL, m.UID)
-			done = done && true
 			continue
 		}
 
@@ -139,6 +140,20 @@ func (p *Producer) postMessages(msgRepo convoy.MessageRepository, m convoy.Messa
 			m.Description = "Retry limit exceeded"
 			m.Status = convoy.FailureMessageStatus
 		}
+
+		go func() {
+			inactiveEndpoints := make([]string, 0)
+			for i := 0; i < len(m.AppMetadata.Endpoints); i++ {
+				endpoint := m.AppMetadata.Endpoints[i]
+				if !endpoint.Sent {
+					inactiveEndpoints = append(inactiveEndpoints, endpoint.UID)
+				}
+			}
+			err := appRepo.UpdateApplicationEndpointsAsDisabled(context.Background(), m.AppID, inactiveEndpoints, true)
+			if err != nil {
+				log.Errorln("failed to update disabled app endpoints", err)
+			}
+		}()
 	}
 
 	err := msgRepo.UpdateMessageWithAttempt(context.Background(), m, attempt)
