@@ -6,10 +6,10 @@ import (
 	"encoding/json"
 	"errors"
 
-	"github.com/hookcamp/hookcamp"
-	"github.com/hookcamp/hookcamp/config"
-	"github.com/hookcamp/hookcamp/queue"
-	"github.com/hookcamp/hookcamp/util"
+	"github.com/frain-dev/convoy"
+	"github.com/frain-dev/convoy/config"
+	"github.com/frain-dev/convoy/queue"
+	"github.com/frain-dev/convoy/util"
 
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/session"
