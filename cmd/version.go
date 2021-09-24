@@ -11,7 +11,7 @@ func addVersionCommand() *cobra.Command {
 		Use:   "version",
 		Short: "Print the version",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			fmt.Println("0.0.1")
+			fmt.Println("0.1.0")
 			return nil
 		},
 	}

@@ -2,15 +2,20 @@ package main
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"net/url"
 	"os"
 	"time"
 
+	"github.com/frain-dev/convoy/config"
+	log "github.com/sirupsen/logrus"
+	"go.mongodb.org/mongo-driver/bson/primitive"
+
+	"github.com/frain-dev/convoy"
+	"github.com/frain-dev/convoy/util"
 	"github.com/google/uuid"
-	"github.com/hookcamp/hookcamp"
-	"github.com/hookcamp/hookcamp/util"
 	"github.com/olekukonko/tablewriter"
 	"github.com/spf13/cobra"
 )
@@ -31,7 +36,7 @@ func addCreateCommand(a *app) *cobra.Command {
 
 func createEndpointCommand(a *app) *cobra.Command {
 
-	e := new(hookcamp.Endpoint)
+	e := new(convoy.Endpoint)
 
 	var appID string
 
@@ -43,13 +48,6 @@ func createEndpointCommand(a *app) *cobra.Command {
 
 			if util.IsStringEmpty(e.Description) {
 				return errors.New("please provide a description")
-			}
-
-			if util.IsStringEmpty(e.Secret) {
-				e.Secret, err = util.GenerateRandomString(25)
-				if err != nil {
-					return fmt.Errorf("could not generate secret...%v", err)
-				}
 			}
 
 			if util.IsStringEmpty(e.TargetURL) {
@@ -87,9 +85,7 @@ func createEndpointCommand(a *app) *cobra.Command {
 			fmt.Println()
 
 			table := tablewriter.NewWriter(os.Stdout)
-			table.SetHeader([]string{"ID", "Secret", "Target URL", "Description"})
-
-			table.Append([]string{e.UID, e.Secret, e.TargetURL, e.Description})
+			table.SetHeader([]string{"ID", "Target URL", "Description"})
 
 			table.Render()
 			return nil
@@ -98,8 +94,6 @@ func createEndpointCommand(a *app) *cobra.Command {
 
 	cmd.Flags().StringVar(&e.Description, "description", "", "Description of this endpoint")
 	cmd.Flags().StringVar(&e.TargetURL, "target", "", "The target url of this endpoint")
-	cmd.Flags().StringVar(&e.Secret, "secret", "",
-		"Provide the secret for this endpoint. If blank, it will be automatically generated")
 	cmd.Flags().StringVar(&appID, "app", "", "The app this endpoint belongs to")
 
 	return cmd
@@ -108,6 +102,7 @@ func createEndpointCommand(a *app) *cobra.Command {
 func createApplicationCommand(a *app) *cobra.Command {
 
 	var orgID string
+	var appSecret string
 
 	cmd := &cobra.Command{
 		Use:     "application",
@@ -136,13 +131,22 @@ func createApplicationCommand(a *app) *cobra.Command {
 				return err
 			}
 
-			app := &hookcamp.Application{
-				UID:       uuid.New().String(),
-				OrgID:     org.UID,
-				Title:     appName,
-				CreatedAt: time.Now().Unix(),
-				UpdatedAt: time.Now().Unix(),
-				Endpoints: []hookcamp.Endpoint{},
+			if util.IsStringEmpty(appSecret) {
+				appSecret, err = util.GenerateSecret()
+				if err != nil {
+					return fmt.Errorf("could not generate secret...%v", err)
+				}
+			}
+
+			app := &convoy.Application{
+				UID:            uuid.New().String(),
+				OrgID:          org.UID,
+				Title:          appName,
+				Secret:         appSecret,
+				CreatedAt:      primitive.NewDateTimeFromTime(time.Now()),
+				UpdatedAt:      primitive.NewDateTimeFromTime(time.Now()),
+				Endpoints:      []convoy.Endpoint{},
+				DocumentStatus: convoy.ActiveDocumentStatus,
 			}
 
 			err = a.applicationRepo.CreateApplication(context.Background(), app)
@@ -151,9 +155,9 @@ func createApplicationCommand(a *app) *cobra.Command {
 			}
 
 			table := tablewriter.NewWriter(os.Stdout)
-			table.SetHeader([]string{"ID", "Name", "Organisation", "Created at"})
+			table.SetHeader([]string{"ID", "Name", "Organisation", "Secret", "Created at"})
 
-			table.Append([]string{app.UID, app.Title, org.OrgName, time.Unix(app.CreatedAt, 0).String()})
+			table.Append([]string{app.UID, app.Title, org.OrgName, app.Secret, app.CreatedAt.Time().String()})
 			table.Render()
 
 			return nil
@@ -161,6 +165,7 @@ func createApplicationCommand(a *app) *cobra.Command {
 	}
 
 	cmd.Flags().StringVar(&orgID, "org", "", "Organisation that owns this application")
+	cmd.Flags().StringVar(&appSecret, "secret", "", "Provide the secret for app endpoint(s). If blank, it will be automatically generated")
 
 	return cmd
 }
@@ -185,11 +190,12 @@ func createOrganisationCommand(a *app) *cobra.Command {
 				return errors.New("please provide a valid name")
 			}
 
-			org := &hookcamp.Organisation{
-				UID:       uuid.New().String(),
-				OrgName:   name,
-				CreatedAt: time.Now().Unix(),
-				UpdatedAt: time.Now().Unix(),
+			org := &convoy.Organisation{
+				UID:            uuid.New().String(),
+				OrgName:        name,
+				CreatedAt:      primitive.NewDateTimeFromTime(time.Now()),
+				UpdatedAt:      primitive.NewDateTimeFromTime(time.Now()),
+				DocumentStatus: convoy.ActiveDocumentStatus,
 			}
 
 			err := a.orgRepo.CreateOrganisation(context.Background(), org)
@@ -200,7 +206,7 @@ func createOrganisationCommand(a *app) *cobra.Command {
 			table := tablewriter.NewWriter(os.Stdout)
 			table.SetHeader([]string{"ID", "Name", "Created at"})
 
-			table.Append([]string{org.UID, org.OrgName, time.Unix(org.CreatedAt, 0).String()})
+			table.Append([]string{org.UID, org.OrgName, org.CreatedAt.Time().String()})
 			table.Render()
 			return nil
 		},
@@ -220,69 +226,111 @@ func createMessageCommand(a *app) *cobra.Command {
 		Use:   "message",
 		Short: "Create a message",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			// var d json.RawMessage
+			var d json.RawMessage
 
-			// if util.IsStringEmpty(eventType) {
-			// 	return errors.New("please provide an event type")
-			// }
+			if util.IsStringEmpty(eventType) {
+				return errors.New("please provide an event type")
+			}
 
-			// if util.IsStringEmpty(data) && util.IsStringEmpty(filePath) {
-			// 	return errors.New("please provide one of -f or -d")
-			// }
+			if util.IsStringEmpty(data) && util.IsStringEmpty(filePath) {
+				return errors.New("please provide one of -f or -d")
+			}
 
-			// if !util.IsStringEmpty(data) && !util.IsStringEmpty(filePath) {
-			// 	return errors.New("please provide only one of -f or -d")
-			// }
+			if !util.IsStringEmpty(data) && !util.IsStringEmpty(filePath) {
+				return errors.New("please provide only one of -f or -d")
+			}
 
-			// if !util.IsStringEmpty(data) {
-			// 	d = json.RawMessage([]byte(data))
-			// }
+			if !util.IsStringEmpty(data) {
+				if !util.IsJSON(data) {
+					return errors.New("invalid json provided: " + data)
+				}
 
-			// if !util.IsStringEmpty(filePath) {
-			// 	f, err := os.Open(filePath)
-			// 	if err != nil {
-			// 		return fmt.Errorf("could not open file... %w", err)
-			// 	}
+				d = []byte(data)
+			}
 
-			// 	defer f.Close()
+			if !util.IsStringEmpty(filePath) {
+				f, err := os.Open(filePath)
+				if err != nil {
+					return fmt.Errorf("could not open file... %w", err)
+				}
 
-			// 	if err := json.NewDecoder(f).Decode(&d); err != nil {
-			// 		return err
-			// 	}
-			// }
+				defer func() {
+					err := f.Close()
+					if err != nil {
+						log.Errorf("failed to close file - %+v", err)
+					}
+				}()
 
-			// id, err := uuid.Parse(appID)
-			// if err != nil {
-			// 	return fmt.Errorf("please provide a valid app ID.. %w", err)
-			// }
+				if err := json.NewDecoder(f).Decode(&d); err != nil {
+					return err
+				}
+			}
 
-			// ctx, cancelFn := getCtx()
-			// defer cancelFn()
+			id, err := uuid.Parse(appID)
+			if err != nil {
+				return fmt.Errorf("please provide a valid app ID.. %w", err)
+			}
 
-			// appData, err := a.applicationRepo.FindApplicationByID(ctx, id)
-			// if err != nil {
-			// 	return err
-			// }
+			ctx, cancelFn := getCtx()
+			defer cancelFn()
 
-			// msg := &hookcamp.Message{
-			// 	ID:        uuid.New(),
-			// 	AppID:     appData.ID,
-			// 	EventType: hookcamp.EventType(eventType),
-			// 	Data:      hookcamp.JSONData(d),
-			// 	Metadata: &hookcamp.MessageMetadata{
-			// 		NumTrials: 0,
-			// 	},
-			// 	Status: hookcamp.ScheduledMessageStatus,
-			// }
+			appData, err := a.applicationRepo.FindApplicationByID(ctx, id.String())
+			if err != nil {
+				return err
+			}
 
-			// ctx, cancelFn = getCtx()
-			// defer cancelFn()
+			cfg, err := config.Get()
+			if err != nil {
+				log.Errorln("error fetching config - ", err)
+				return err
+			}
 
-			// if err := a.messageRepo.CreateMessage(ctx, msg); err != nil {
-			// 	return fmt.Errorf("could not create message... %w", err)
-			// }
+			var intervalSeconds uint64
+			var retryLimit uint64
+			if cfg.Strategy.Type == config.DefaultStrategyProvider {
+				intervalSeconds = cfg.Strategy.Default.IntervalSeconds
+				retryLimit = cfg.Strategy.Default.RetryLimit
+			} else {
+				return errors.New("retry strategy not defined in configuration")
+			}
 
-			// fmt.Println("Your message has been created. And will be sent to available endpoints")
+			log.Println("Message ", string(d))
+			msg := &convoy.Message{
+				UID:       uuid.New().String(),
+				AppID:     appData.UID,
+				EventType: convoy.EventType(eventType),
+				Data:      d,
+				Metadata: &convoy.MessageMetadata{
+					Strategy:        cfg.Strategy.Type,
+					NumTrials:       0,
+					IntervalSeconds: intervalSeconds,
+					RetryLimit:      retryLimit,
+					NextSendTime:    primitive.NewDateTimeFromTime(time.Now()),
+				},
+				AppMetadata: &convoy.AppMetadata{
+					OrgID:     appData.OrgID,
+					Secret:    appData.Secret,
+					Endpoints: util.ParseMetadataFromEndpoints(appData.Endpoints),
+				},
+				MessageAttempts: make([]convoy.MessageAttempt, 0),
+				CreatedAt:       primitive.NewDateTimeFromTime(time.Now()),
+				UpdatedAt:       primitive.NewDateTimeFromTime(time.Now()),
+				Status:          convoy.ScheduledMessageStatus,
+				DocumentStatus:  convoy.ActiveDocumentStatus,
+			}
+
+			if len(appData.Endpoints) == 0 {
+				return errors.New("app has no configured endpoints")
+			}
+
+			ctx, cancelFn = getCtx()
+			defer cancelFn()
+
+			if err := a.messageRepo.CreateMessage(ctx, msg); err != nil {
+				return fmt.Errorf("could not create message... %w", err)
+			}
+
+			fmt.Println("Your message has been created. And will be sent to available endpoints")
 			return nil
 		},
 	}
@@ -290,7 +338,7 @@ func createMessageCommand(a *app) *cobra.Command {
 	cmd.Flags().StringVarP(&data, "data", "d", "", "Raw JSON data that will be sent to the endpoints")
 	cmd.Flags().StringVarP(&appID, "app", "a", "", "Application ID")
 	cmd.Flags().StringVarP(&filePath, "file", "f", "", "Path to file containing JSON data")
-	cmd.Flags().StringVar(&eventType, "event", "", "Event type")
+	cmd.Flags().StringVarP(&eventType, "event", "e", "", "Event type")
 	cmd.Flags().BoolVar(&publish, "publish", false, `If true, it will send the data to the endpoints
 attached to the application`)
 

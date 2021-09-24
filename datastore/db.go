@@ -4,7 +4,10 @@ import (
 	"context"
 	"time"
 
-	"github.com/hookcamp/hookcamp/config"
+	log "github.com/sirupsen/logrus"
+	"go.mongodb.org/mongo-driver/bson"
+
+	"github.com/frain-dev/convoy/config"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 )
@@ -26,4 +29,26 @@ func New(cfg config.Configuration) (*mongo.Client, error) {
 	}
 
 	return client, nil
+}
+
+// EnsureIndex - ensures an index is created for a specific field in a collection
+func EnsureIndex(db *mongo.Database, collectionName string, field string, unique bool) bool {
+
+	mod := mongo.IndexModel{
+		Keys:    bson.M{field: 1}, // index in ascending order or -1 for descending order
+		Options: options.Index().SetUnique(unique),
+	}
+
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+
+	collection := db.Collection(collectionName)
+
+	_, err := collection.Indexes().CreateOne(ctx, mod)
+	if err != nil {
+		log.Errorf("failed to create index on field %s in %s - %+v\n", field, collectionName, err)
+		return false
+	}
+
+	return true
 }

@@ -14,3 +14,13 @@
 # Dependency directories (remove the comment below to include it)
 # vendor/
 hookstack
+.idea
+
+/server/ui/build/*
+!/server/ui/build/go_test_stub.txt
+/data/mongo/
+.DS_Store
+
+# ui depencencies
+/ui/node_modules
+/build

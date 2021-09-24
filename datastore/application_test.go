@@ -1,3 +1,4 @@
+//go:build integration
 // +build integration
 
 package datastore
@@ -5,10 +6,11 @@ package datastore
 import (
 	"context"
 	"errors"
+	"github.com/frain-dev/convoy/server/models"
 	"testing"
 
+	"github.com/frain-dev/convoy"
 	"github.com/google/uuid"
-	"github.com/hookcamp/hookcamp"
 	"github.com/stretchr/testify/require"
 )
 
@@ -19,13 +21,13 @@ func Test_UpdateApplication(t *testing.T) {
 	orgRepo := NewOrganisationRepo(db)
 	appRepo := NewApplicationRepo(db)
 
-	newOrg := &hookcamp.Organisation{
+	newOrg := &convoy.Organisation{
 		OrgName: "Random new organisation",
 	}
 
 	require.NoError(t, orgRepo.CreateOrganisation(context.Background(), newOrg))
 
-	app := &hookcamp.Application{
+	app := &convoy.Application{
 		Title: "Next application name",
 		OrgID: newOrg.UID,
 	}
@@ -51,13 +53,13 @@ func Test_CreateApplication(t *testing.T) {
 	orgRepo := NewOrganisationRepo(db)
 	appRepo := NewApplicationRepo(db)
 
-	newOrg := &hookcamp.Organisation{
+	newOrg := &convoy.Organisation{
 		OrgName: "Random new organisation",
 	}
 
 	require.NoError(t, orgRepo.CreateOrganisation(context.Background(), newOrg))
 
-	app := &hookcamp.Application{
+	app := &convoy.Application{
 		Title: "Next application name",
 		OrgID: newOrg.UID,
 	}
@@ -65,13 +67,16 @@ func Test_CreateApplication(t *testing.T) {
 	require.NoError(t, appRepo.CreateApplication(context.Background(), app))
 }
 
-func Test_LoadApplications(t *testing.T) {
+func Test_LoadApplicationsPaged(t *testing.T) {
 	db, closeFn := getDB(t)
 	defer closeFn()
 
 	appRepo := NewApplicationRepo(db)
 
-	apps, err := appRepo.LoadApplications(context.Background())
+	apps, _, err := appRepo.LoadApplicationsPaged(context.Background(), "", models.Pageable{
+		Page: 1,
+		PerPage: 10,
+	})
 	require.NoError(t, err)
 
 	require.True(t, len(apps) > 0)
@@ -86,17 +91,17 @@ func Test_FindApplicationByID(t *testing.T) {
 	app, err := appRepo.FindApplicationByID(context.Background(), uuid.New().String())
 	require.Error(t, err)
 
-	require.True(t, errors.Is(err, hookcamp.ErrApplicationNotFound))
+	require.True(t, errors.Is(err, convoy.ErrApplicationNotFound))
 
 	orgRepo := NewOrganisationRepo(db)
 
-	newOrg := &hookcamp.Organisation{
+	newOrg := &convoy.Organisation{
 		OrgName: "Yet another Random new organisation",
 	}
 
 	require.NoError(t, orgRepo.CreateOrganisation(context.Background(), newOrg))
 
-	app = &hookcamp.Application{
+	app = &convoy.Application{
 		Title: "Next application name again",
 		OrgID: newOrg.UID,
 	}

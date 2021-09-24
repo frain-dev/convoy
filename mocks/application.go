@@ -8,9 +8,10 @@ import (
 	context "context"
 	reflect "reflect"
 
+	convoy "github.com/frain-dev/convoy"
+	models "github.com/frain-dev/convoy/server/models"
+	mongopagination "github.com/gobeam/mongo-go-pagination"
 	gomock "github.com/golang/mock/gomock"
-	uuid "github.com/google/uuid"
-	hookcamp "github.com/hookcamp/hookcamp"
 )
 
 // MockApplicationRepository is a mock of ApplicationRepository interface.
@@ -37,7 +38,7 @@ func (m *MockApplicationRepository) EXPECT() *MockApplicationRepositoryMockRecor
 }
 
 // CreateApplication mocks base method.
-func (m *MockApplicationRepository) CreateApplication(arg0 context.Context, arg1 *hookcamp.Application) error {
+func (m *MockApplicationRepository) CreateApplication(arg0 context.Context, arg1 *convoy.Application) error {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "CreateApplication", arg0, arg1)
 	ret0, _ := ret[0].(error)
@@ -50,26 +51,25 @@ func (mr *MockApplicationRepositoryMockRecorder) CreateApplication(arg0, arg1 in
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateApplication", reflect.TypeOf((*MockApplicationRepository)(nil).CreateApplication), arg0, arg1)
 }
 
-// LoadApplications mocks base method.
-func (m *MockApplicationRepository) LoadApplications(arg0 context.Context) ([]hookcamp.Application, error) {
+// DeleteApplication mocks base method.
+func (m *MockApplicationRepository) DeleteApplication(arg0 context.Context, arg1 *convoy.Application) error {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "LoadApplications", arg0)
-	ret0, _ := ret[0].([]hookcamp.Application)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
+	ret := m.ctrl.Call(m, "DeleteApplication", arg0, arg1)
+	ret0, _ := ret[0].(error)
+	return ret0
 }
 
-// LoadApplications indicates an expected call of LoadApplications.
-func (mr *MockApplicationRepositoryMockRecorder) LoadApplications(arg0 interface{}) *gomock.Call {
+// DeleteApplication indicates an expected call of DeleteApplication.
+func (mr *MockApplicationRepositoryMockRecorder) DeleteApplication(arg0, arg1 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "LoadApplications", reflect.TypeOf((*MockApplicationRepository)(nil).LoadApplications), arg0)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteApplication", reflect.TypeOf((*MockApplicationRepository)(nil).DeleteApplication), arg0, arg1)
 }
 
 // FindApplicationByID mocks base method.
-func (m *MockApplicationRepository) FindApplicationByID(arg0 context.Context, arg1 uuid.UUID) (*hookcamp.Application, error) {
+func (m *MockApplicationRepository) FindApplicationByID(arg0 context.Context, arg1 string) (*convoy.Application, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "FindApplicationByID", arg0, arg1)
-	ret0, _ := ret[0].(*hookcamp.Application)
+	ret0, _ := ret[0].(*convoy.Application)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
@@ -80,54 +80,63 @@ func (mr *MockApplicationRepositoryMockRecorder) FindApplicationByID(arg0, arg1 
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "FindApplicationByID", reflect.TypeOf((*MockApplicationRepository)(nil).FindApplicationByID), arg0, arg1)
 }
 
-// MockEndpointRepository is a mock of EndpointRepository interface.
-type MockEndpointRepository struct {
-	ctrl     *gomock.Controller
-	recorder *MockEndpointRepositoryMockRecorder
-}
-
-// MockEndpointRepositoryMockRecorder is the mock recorder for MockEndpointRepository.
-type MockEndpointRepositoryMockRecorder struct {
-	mock *MockEndpointRepository
-}
-
-// NewMockEndpointRepository creates a new mock instance.
-func NewMockEndpointRepository(ctrl *gomock.Controller) *MockEndpointRepository {
-	mock := &MockEndpointRepository{ctrl: ctrl}
-	mock.recorder = &MockEndpointRepositoryMockRecorder{mock}
-	return mock
-}
-
-// EXPECT returns an object that allows the caller to indicate expected use.
-func (m *MockEndpointRepository) EXPECT() *MockEndpointRepositoryMockRecorder {
-	return m.recorder
-}
-
-// CreateEndpoint mocks base method.
-func (m *MockEndpointRepository) CreateEndpoint(arg0 context.Context, arg1 *hookcamp.Endpoint) error {
+// LoadApplicationsPaged mocks base method.
+func (m *MockApplicationRepository) LoadApplicationsPaged(arg0 context.Context, arg1 string, arg2 models.Pageable) ([]convoy.Application, mongopagination.PaginationData, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "CreateEndpoint", arg0, arg1)
-	ret0, _ := ret[0].(error)
-	return ret0
+	ret := m.ctrl.Call(m, "LoadApplicationsPaged", arg0, arg1, arg2)
+	ret0, _ := ret[0].([]convoy.Application)
+	ret1, _ := ret[1].(mongopagination.PaginationData)
+	ret2, _ := ret[2].(error)
+	return ret0, ret1, ret2
 }
 
-// CreateEndpoint indicates an expected call of CreateEndpoint.
-func (mr *MockEndpointRepositoryMockRecorder) CreateEndpoint(arg0, arg1 interface{}) *gomock.Call {
+// LoadApplicationsPaged indicates an expected call of LoadApplicationsPaged.
+func (mr *MockApplicationRepositoryMockRecorder) LoadApplicationsPaged(arg0, arg1, arg2 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateEndpoint", reflect.TypeOf((*MockEndpointRepository)(nil).CreateEndpoint), arg0, arg1)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "LoadApplicationsPaged", reflect.TypeOf((*MockApplicationRepository)(nil).LoadApplicationsPaged), arg0, arg1, arg2)
 }
 
-// FindEndpointByID mocks base method.
-func (m *MockEndpointRepository) FindEndpointByID(arg0 context.Context, arg1 uuid.UUID) (*hookcamp.Endpoint, error) {
+// LoadApplicationsPagedByOrgId mocks base method.
+func (m *MockApplicationRepository) LoadApplicationsPagedByOrgId(arg0 context.Context, arg1 string, arg2 models.Pageable) ([]convoy.Application, mongopagination.PaginationData, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "FindEndpointByID", arg0, arg1)
-	ret0, _ := ret[0].(*hookcamp.Endpoint)
+	ret := m.ctrl.Call(m, "LoadApplicationsPagedByOrgId", arg0, arg1, arg2)
+	ret0, _ := ret[0].([]convoy.Application)
+	ret1, _ := ret[1].(mongopagination.PaginationData)
+	ret2, _ := ret[2].(error)
+	return ret0, ret1, ret2
+}
+
+// LoadApplicationsPagedByOrgId indicates an expected call of LoadApplicationsPagedByOrgId.
+func (mr *MockApplicationRepositoryMockRecorder) LoadApplicationsPagedByOrgId(arg0, arg1, arg2 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "LoadApplicationsPagedByOrgId", reflect.TypeOf((*MockApplicationRepository)(nil).LoadApplicationsPagedByOrgId), arg0, arg1, arg2)
+}
+
+// SearchApplicationsByOrgId mocks base method.
+func (m *MockApplicationRepository) SearchApplicationsByOrgId(arg0 context.Context, arg1 string, arg2 models.SearchParams) ([]convoy.Application, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "SearchApplicationsByOrgId", arg0, arg1, arg2)
+	ret0, _ := ret[0].([]convoy.Application)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
-// FindEndpointByID indicates an expected call of FindEndpointByID.
-func (mr *MockEndpointRepositoryMockRecorder) FindEndpointByID(arg0, arg1 interface{}) *gomock.Call {
+// SearchApplicationsByOrgId indicates an expected call of SearchApplicationsByOrgId.
+func (mr *MockApplicationRepositoryMockRecorder) SearchApplicationsByOrgId(arg0, arg1, arg2 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "FindEndpointByID", reflect.TypeOf((*MockEndpointRepository)(nil).FindEndpointByID), arg0, arg1)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SearchApplicationsByOrgId", reflect.TypeOf((*MockApplicationRepository)(nil).SearchApplicationsByOrgId), arg0, arg1, arg2)
+}
+
+// UpdateApplication mocks base method.
+func (m *MockApplicationRepository) UpdateApplication(arg0 context.Context, arg1 *convoy.Application) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "UpdateApplication", arg0, arg1)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// UpdateApplication indicates an expected call of UpdateApplication.
+func (mr *MockApplicationRepositoryMockRecorder) UpdateApplication(arg0, arg1 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateApplication", reflect.TypeOf((*MockApplicationRepository)(nil).UpdateApplication), arg0, arg1)
 }

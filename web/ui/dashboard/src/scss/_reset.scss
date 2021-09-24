@@ -1,0 +1,79 @@
+body {
+	background-color: var(--color-background);
+	overflow-x: hidden;
+}
+
+body,
+html {
+	font-size: 16px;
+	font-style: normal;
+	font-weight: 300;
+	color: #16192c;
+	scroll-behavior: smooth;
+	background: #fafafe;
+}
+
+* {
+	color: #16192c;
+	box-sizing: border-box;
+	font-weight: 300;
+	font-family: 'Quicksand', sans-serif;
+}
+
+ul {
+	list-style-type: none;
+}
+
+a {
+	color: inherit;
+	text-decoration: none;
+	font-weight: 300;
+}
+
+p,
+h1,
+h2,
+h3,
+h4,
+h5,
+h6,
+ul,
+li,
+ol,
+button,
+body,
+html {
+	margin: 0;
+	padding: 0;
+}
+
+input[type='number']::-webkit-inner-spin-button,
+input[type='number']::-webkit-outer-spin-button {
+	-webkit-appearance: none;
+	margin: 0;
+}
+
+.pointer-cursor {
+	cursor: pointer;
+}
+
+.display-none {
+	display: none;
+}
+
+.text-capitalize {
+	text-transform: capitalize;
+}
+
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
+	font-weight: 700;
+}
+
+strong {
+	font-weight: bold;
+}

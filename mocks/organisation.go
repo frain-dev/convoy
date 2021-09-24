@@ -6,11 +6,9 @@ package mocks
 
 import (
 	context "context"
-	reflect "reflect"
-
+	convoy "github.com/frain-dev/convoy"
 	gomock "github.com/golang/mock/gomock"
-	uuid "github.com/google/uuid"
-	hookcamp "github.com/hookcamp/hookcamp"
+	reflect "reflect"
 )
 
 // MockOrganisationRepository is a mock of OrganisationRepository interface.
@@ -36,23 +34,8 @@ func (m *MockOrganisationRepository) EXPECT() *MockOrganisationRepositoryMockRec
 	return m.recorder
 }
 
-// LoadOrganisations mocks base method.
-func (m *MockOrganisationRepository) LoadOrganisations(arg0 context.Context) ([]hookcamp.Organisation, error) {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "LoadOrganisations", arg0)
-	ret0, _ := ret[0].([]hookcamp.Organisation)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
-}
-
-// LoadOrganisations indicates an expected call of LoadOrganisations.
-func (mr *MockOrganisationRepositoryMockRecorder) LoadOrganisations(arg0 interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "LoadOrganisations", reflect.TypeOf((*MockOrganisationRepository)(nil).LoadOrganisations), arg0)
-}
-
 // CreateOrganisation mocks base method.
-func (m *MockOrganisationRepository) CreateOrganisation(arg0 context.Context, arg1 *hookcamp.Organisation) error {
+func (m *MockOrganisationRepository) CreateOrganisation(arg0 context.Context, arg1 *convoy.Organisation) error {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "CreateOrganisation", arg0, arg1)
 	ret0, _ := ret[0].(error)
@@ -66,10 +49,10 @@ func (mr *MockOrganisationRepositoryMockRecorder) CreateOrganisation(arg0, arg1 
 }
 
 // FetchOrganisationByID mocks base method.
-func (m *MockOrganisationRepository) FetchOrganisationByID(arg0 context.Context, arg1 uuid.UUID) (*hookcamp.Organisation, error) {
+func (m *MockOrganisationRepository) FetchOrganisationByID(arg0 context.Context, arg1 string) (*convoy.Organisation, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "FetchOrganisationByID", arg0, arg1)
-	ret0, _ := ret[0].(*hookcamp.Organisation)
+	ret0, _ := ret[0].(*convoy.Organisation)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
@@ -78,4 +61,33 @@ func (m *MockOrganisationRepository) FetchOrganisationByID(arg0 context.Context,
 func (mr *MockOrganisationRepositoryMockRecorder) FetchOrganisationByID(arg0, arg1 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "FetchOrganisationByID", reflect.TypeOf((*MockOrganisationRepository)(nil).FetchOrganisationByID), arg0, arg1)
+}
+
+// LoadOrganisations mocks base method.
+func (m *MockOrganisationRepository) LoadOrganisations(arg0 context.Context) ([]*convoy.Organisation, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "LoadOrganisations", arg0)
+	ret0, _ := ret[0].([]*convoy.Organisation)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// LoadOrganisations indicates an expected call of LoadOrganisations.
+func (mr *MockOrganisationRepositoryMockRecorder) LoadOrganisations(arg0 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "LoadOrganisations", reflect.TypeOf((*MockOrganisationRepository)(nil).LoadOrganisations), arg0)
+}
+
+// UpdateOrganisation mocks base method.
+func (m *MockOrganisationRepository) UpdateOrganisation(arg0 context.Context, arg1 *convoy.Organisation) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "UpdateOrganisation", arg0, arg1)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// UpdateOrganisation indicates an expected call of UpdateOrganisation.
+func (mr *MockOrganisationRepositoryMockRecorder) UpdateOrganisation(arg0, arg1 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateOrganisation", reflect.TypeOf((*MockOrganisationRepository)(nil).UpdateOrganisation), arg0, arg1)
 }

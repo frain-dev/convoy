@@ -4,16 +4,16 @@ import (
 	"context"
 	"io"
 
-	"github.com/hookcamp/hookcamp"
+	"github.com/frain-dev/convoy"
 )
 
 type Queuer interface {
 	Read() chan Message
 	io.Closer
-	Write(context.Context, hookcamp.Message) error
+	Write(context.Context, convoy.Message) error
 }
 
 type Message struct {
-	Err  error            `json:"err"`
-	Data hookcamp.Message `json:"data"`
+	Err  error          `json:"err"`
+	Data convoy.Message `json:"data"`
 }

@@ -3,8 +3,9 @@ package datastore
 import (
 	"context"
 	"errors"
+	"time"
 
-	"github.com/hookcamp/hookcamp"
+	"github.com/frain-dev/convoy"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
@@ -15,17 +16,17 @@ type orgRepo struct {
 }
 
 const (
-	orgCollection = "organisations"
+	OrgCollection = "organisations"
 )
 
-func NewOrganisationRepo(client *mongo.Database) hookcamp.OrganisationRepository {
+func NewOrganisationRepo(client *mongo.Database) convoy.OrganisationRepository {
 	return &orgRepo{
-		inner: client.Collection(orgCollection),
+		inner: client.Collection(OrgCollection),
 	}
 }
 
-func (db *orgRepo) LoadOrganisations(ctx context.Context) ([]hookcamp.Organisation, error) {
-	orgs := make([]hookcamp.Organisation, 0)
+func (db *orgRepo) LoadOrganisations(ctx context.Context) ([]*convoy.Organisation, error) {
+	orgs := make([]*convoy.Organisation, 0)
 
 	cur, err := db.inner.Find(ctx, bson.D{{}})
 	if err != nil {
@@ -33,7 +34,7 @@ func (db *orgRepo) LoadOrganisations(ctx context.Context) ([]hookcamp.Organisati
 	}
 
 	for cur.Next(ctx) {
-		var org hookcamp.Organisation
+		var org = new(convoy.Organisation)
 		if err := cur.Decode(&org); err != nil {
 			return orgs, err
 		}
@@ -52,7 +53,7 @@ func (db *orgRepo) LoadOrganisations(ctx context.Context) ([]hookcamp.Organisati
 	return orgs, nil
 }
 
-func (db *orgRepo) CreateOrganisation(ctx context.Context, o *hookcamp.Organisation) error {
+func (db *orgRepo) CreateOrganisation(ctx context.Context, o *convoy.Organisation) error {
 
 	o.ID = primitive.NewObjectID()
 
@@ -60,9 +61,24 @@ func (db *orgRepo) CreateOrganisation(ctx context.Context, o *hookcamp.Organisat
 	return err
 }
 
+func (db *orgRepo) UpdateOrganisation(ctx context.Context, o *convoy.Organisation) error {
+
+	o.UpdatedAt = primitive.NewDateTimeFromTime(time.Now())
+
+	filter := bson.D{primitive.E{Key: "uid", Value: o.UID}}
+
+	update := bson.D{primitive.E{Key: "$set", Value: bson.D{
+		primitive.E{Key: "org_name", Value: o.OrgName},
+		primitive.E{Key: "updated_at", Value: o.UpdatedAt},
+	}}}
+
+	_, err := db.inner.UpdateOne(ctx, filter, update)
+	return err
+}
+
 func (db *orgRepo) FetchOrganisationByID(ctx context.Context,
-	id string) (*hookcamp.Organisation, error) {
-	org := new(hookcamp.Organisation)
+	id string) (*convoy.Organisation, error) {
+	org := new(convoy.Organisation)
 
 	filter := bson.D{
 		primitive.E{
@@ -75,7 +91,7 @@ func (db *orgRepo) FetchOrganisationByID(ctx context.Context,
 		Decode(&org)
 
 	if errors.Is(err, mongo.ErrNoDocuments) {
-		err = hookcamp.ErrOrganisationNotFound
+		err = convoy.ErrOrganisationNotFound
 	}
 
 	return org, err
