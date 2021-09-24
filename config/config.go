@@ -43,7 +43,7 @@ const (
 	NoAuthProvider          AuthProvider            = "none"
 	BasicAuthProvider       AuthProvider            = "basic"
 	RedisQueueProvider      QueueProvider           = "redis"
-	SqsQueueProvider   QueueProvider = "sqs"
+	SqsQueueProvider        QueueProvider           = "sqs"
 	DefaultStrategyProvider StrategyProvider        = "default"
 	DefaultSignatureHeader  SignatureHeaderProvider = "X-Convoy-Signature"
 )
