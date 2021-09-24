@@ -105,7 +105,7 @@ func (c *client) Read() chan queue.Message {
 	}
 
 	for _, msg := range sqsReadMsg.Messages {
-		var m hookcamp.Message
+		var m convoy.Message
 
 		if err := json.NewDecoder(strings.NewReader(*msg.Body)).Decode(&m); err != nil {
 			channel <- queue.Message{
@@ -124,7 +124,7 @@ func (c *client) Read() chan queue.Message {
 	return channel
 }
 
-func (c *client) Write(ctx context.Context, msg hookcamp.Message) error {
+func (c *client) Write(ctx context.Context, msg convoy.Message) error {
 	b := new(bytes.Buffer)
 
 	if err := json.NewEncoder(b).Encode(&msg); err != nil {
