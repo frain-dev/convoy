@@ -3,6 +3,7 @@ package util
 import (
 	"errors"
 	"net/url"
+	"strings"
 
 	"github.com/frain-dev/convoy"
 )
@@ -25,7 +26,8 @@ func CleanEndpoint(s string) (string, error) {
 		return "", err
 	}
 
-	if u.Hostname() == "localhost" || u.Hostname() == "127.0.0.1" {
+	switch strings.ToLower(u.Hostname()) {
+	case "localhost", "127.0.0.1":
 		return "", errors.New("cannot use localhost or 127.0.0.1")
 	}
 
@@ -33,5 +35,5 @@ func CleanEndpoint(s string) (string, error) {
 		return "", errors.New("endpoint scheme  must be HTTPs only")
 	}
 
-	return u.String(), nil
+	return strings.ToLower(u.String()), nil
 }
