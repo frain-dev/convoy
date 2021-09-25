@@ -337,7 +337,7 @@ func TestApplicationHandler_CreateAppEndpoint(t *testing.T) {
 
 	orgID := "1234567890"
 
-	bodyReader := strings.NewReader(`{"url": "http://localhost", "description": "Test"}`)
+	bodyReader := strings.NewReader(`{"url": "https://google.com", "description": "Test"}`)
 
 	app = newApplicationHandler(msgRepo, apprepo, org)
 
