@@ -496,7 +496,7 @@ func TestApplicationHandler_UpdateAppEndpoint_ValidRequest(t *testing.T) {
 
 	appId := "12345"
 	endpointId := "9999900000-8888"
-	bodyReader := strings.NewReader(`{"url": "http://localhost", "description": "Test"}`)
+	bodyReader := strings.NewReader(`{"url": "https://google.com", "description": "Test"}`)
 
 	app = newApplicationHandler(msgRepo, apprepo, org)
 

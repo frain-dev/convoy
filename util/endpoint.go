@@ -21,6 +21,10 @@ func ParseMetadataFromEndpoints(endpoints []convoy.Endpoint) []convoy.EndpointMe
 }
 
 func CleanEndpoint(s string) (string, error) {
+	if IsStringEmpty(s) {
+		return "", errors.New("please provide the endpoint url")
+	}
+
 	u, err := url.Parse(s)
 	if err != nil {
 		return "", err
