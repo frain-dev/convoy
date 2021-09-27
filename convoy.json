@@ -1,6 +1,6 @@
 {
 	"database": {
-		"dsn": "mongodb://root:rootpassword@localhost:27037"
+		"dsn": "mongodb://root:rootpassword@localhost:27017"
 	},
 	"queue": {
 		"type": "redis",

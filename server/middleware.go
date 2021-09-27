@@ -8,7 +8,6 @@ import (
 	"fmt"
 	"io"
 	"net/http"
-	"net/url"
 	"strconv"
 	"strings"
 	"time"
@@ -35,6 +34,7 @@ const (
 	appCtx              contextKey = "app"
 	endpointCtx         contextKey = "endpoint"
 	msgCtx              contextKey = "message"
+	configCtx           contextKey = "configCtx"
 	authConfigCtx       contextKey = "authConfig"
 	authLoginCtx        contextKey = "authLogin"
 	pageableCtx         contextKey = "pageable"
@@ -406,16 +406,10 @@ func parseEndpointFromBody(body io.ReadCloser) (models.Endpoint, error) {
 		return e, errors.New("please provide a description")
 	}
 
-	if util.IsStringEmpty(e.URL) {
-		return e, errors.New("please provide your url")
-	}
-
-	u, err := url.Parse(e.URL)
+	e.URL, err = util.CleanEndpoint(e.URL)
 	if err != nil {
-		return e, errors.New("please provide a valid url")
+		return e, err
 	}
-
-	e.URL = u.String()
 
 	return e, nil
 }
@@ -949,4 +943,12 @@ func setAuthLoginInContext(ctx context.Context, a *AuthorizedLogin) context.Cont
 
 func getAuthLoginFromContext(ctx context.Context) *AuthorizedLogin {
 	return ctx.Value(authLoginCtx).(*AuthorizedLogin)
+}
+
+func setConfigInContext(ctx context.Context, c *ViewableConfiguration) context.Context {
+	return context.WithValue(ctx, configCtx, c)
+}
+
+func getConfigFromContext(ctx context.Context) *ViewableConfiguration {
+	return ctx.Value(configCtx).(*ViewableConfiguration)
 }

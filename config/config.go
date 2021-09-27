@@ -19,19 +19,21 @@ type DatabaseConfiguration struct {
 	Dsn string `json:"dsn"`
 }
 
+type ServerConfiguration struct {
+	HTTP struct {
+		Port int `json:"port"`
+	} `json:"http"`
+}
+
 type Configuration struct {
-	Auth              AuthConfiguration   `json:"auth"`
-	UIAuth            UIAuthConfiguration `json:"ui"`
-	UIAuthorizedUsers map[string]string
-	Database          DatabaseConfiguration `json:"database"`
-	Queue             QueueConfiguration    `json:"queue"`
-	Server            struct {
-		HTTP struct {
-			Port int `json:"port"`
-		} `json:"http"`
-	}
-	Strategy  StrategyConfiguration  `json:"strategy"`
-	Signature SignatureConfiguration `json:"signature"`
+	Auth              AuthConfiguration      `json:"auth,omitempty"`
+	UIAuth            UIAuthConfiguration    `json:"ui,omitempty"`
+	UIAuthorizedUsers map[string]string      `json:"-"`
+	Database          DatabaseConfiguration  `json:"database"`
+	Queue             QueueConfiguration     `json:"queue"`
+	Server            ServerConfiguration    `json:"server"`
+	Strategy          StrategyConfiguration  `json:"strategy"`
+	Signature         SignatureConfiguration `json:"signature"`
 }
 
 type AuthProvider string
@@ -116,11 +118,7 @@ func LoadConfig(p string) error {
 	// This enables us deploy to Heroku where the $PORT is provided
 	// dynamically.
 	if port, err := strconv.Atoi(os.Getenv("PORT")); err == nil {
-		c.Server = struct {
-			HTTP struct {
-				Port int `json:"port"`
-			} `json:"http"`
-		}{
+		c.Server = ServerConfiguration{
 			HTTP: struct {
 				Port int `json:"port"`
 			}{

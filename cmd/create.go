@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"net/url"
 	"os"
 	"time"
 
@@ -54,12 +53,12 @@ func createEndpointCommand(a *app) *cobra.Command {
 				return errors.New("please provide your target url")
 			}
 
-			u, err := url.Parse(e.TargetURL)
+			s, err := util.CleanEndpoint(e.TargetURL)
 			if err != nil {
-				return fmt.Errorf("please provide a valid url...%w", err)
+				return err
 			}
 
-			e.TargetURL = u.String()
+			e.TargetURL = s
 
 			e.UID = uuid.New().String()
 
@@ -86,6 +85,8 @@ func createEndpointCommand(a *app) *cobra.Command {
 
 			table := tablewriter.NewWriter(os.Stdout)
 			table.SetHeader([]string{"ID", "Target URL", "Description"})
+
+			table.Append([]string{e.UID, e.TargetURL, e.Description})
 
 			table.Render()
 			return nil
