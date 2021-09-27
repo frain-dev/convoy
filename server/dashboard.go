@@ -1,12 +1,13 @@
 package server
 
 import (
+	"net/http"
+	"time"
+
 	"github.com/dgrijalva/jwt-go"
 	"github.com/frain-dev/convoy/config"
 	"github.com/go-chi/render"
 	log "github.com/sirupsen/logrus"
-	"net/http"
-	"time"
 )
 
 type Claims struct {
@@ -20,6 +21,14 @@ type AuthorizedLogin struct {
 	ExpiryTime time.Time `json:"expiry_time"`
 }
 
+type ViewableConfiguration struct {
+	Database  config.DatabaseConfiguration  `json:"database"`
+	Queue     config.QueueConfiguration     `json:"queue"`
+	Server    config.ServerConfiguration    `json:"server"`
+	Strategy  config.StrategyConfiguration  `json:"strategy"`
+	Signature config.SignatureConfiguration `json:"signature"`
+}
+
 func fetchAllConfigDetails() func(next http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 
@@ -27,12 +36,20 @@ func fetchAllConfigDetails() func(next http.Handler) http.Handler {
 
 			cfg, err := config.Get()
 			if err != nil {
-				log.Errorln("error while fetching config details - ", err)
+				log.WithError(err).Error("error while fetching config details")
 				_ = render.Render(w, r, newErrorResponse("an error occurred while fetching config details", http.StatusInternalServerError))
 				return
 			}
 
-			r = r.WithContext(setConfigInContext(r.Context(), &cfg))
+			viewableConfig := ViewableConfiguration{
+				Database:  cfg.Database,
+				Queue:     cfg.Queue,
+				Server:    cfg.Server,
+				Strategy:  cfg.Strategy,
+				Signature: cfg.Signature,
+			}
+
+			r = r.WithContext(setConfigInContext(r.Context(), &viewableConfig))
 			next.ServeHTTP(w, r)
 		})
 	}

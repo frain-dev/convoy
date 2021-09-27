@@ -952,10 +952,10 @@ func getAuthLoginFromContext(ctx context.Context) *AuthorizedLogin {
 	return ctx.Value(authLoginCtx).(*AuthorizedLogin)
 }
 
-func setConfigInContext(ctx context.Context, c *config.Configuration) context.Context {
+func setConfigInContext(ctx context.Context, c *ViewableConfiguration) context.Context {
 	return context.WithValue(ctx, configCtx, c)
 }
 
-func getConfigFromContext(ctx context.Context) *config.Configuration {
-	return ctx.Value(configCtx).(*config.Configuration)
+func getConfigFromContext(ctx context.Context) *ViewableConfiguration {
+	return ctx.Value(configCtx).(*ViewableConfiguration)
 }
