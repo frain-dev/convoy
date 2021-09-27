@@ -4,6 +4,8 @@ go 1.16
 
 require (
 	github.com/dgrijalva/jwt-go v3.2.0+incompatible
+	github.com/emersion/go-sasl v0.0.0-20200509203442-7bfe0ed36a21
+	github.com/emersion/go-smtp v0.15.0
 	github.com/felixge/httpsnoop v1.0.2
 	github.com/go-chi/chi/v5 v5.0.3
 	github.com/go-chi/render v1.0.1
@@ -25,7 +27,7 @@ require (
 	github.com/x-cray/logrus-prefixed-formatter v0.5.2
 	github.com/youmark/pkcs8 v0.0.0-20201027041543-1326539a0a0a // indirect
 	go.mongodb.org/mongo-driver v1.7.1
-	golang.org/x/crypto v0.0.0-20210813211128-0a44fdfbc16e // indirect
+	golang.org/x/crypto v0.0.0-20210813211128-0a44fdfbc16e
 	golang.org/x/net v0.0.0-20210405180319-a5a99cb37ef4 // indirect
 	golang.org/x/text v0.3.7 // indirect
 )

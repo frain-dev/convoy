@@ -19,34 +19,6 @@ type DatabaseConfiguration struct {
 	Dsn string `json:"dsn"`
 }
 
-type Configuration struct {
-	Auth              AuthConfiguration   `json:"auth"`
-	UIAuth            UIAuthConfiguration `json:"ui"`
-	UIAuthorizedUsers map[string]string
-	Database          DatabaseConfiguration `json:"database"`
-	Queue             QueueConfiguration    `json:"queue"`
-	Server            struct {
-		HTTP struct {
-			Port int `json:"port"`
-		} `json:"http"`
-	}
-	Strategy  StrategyConfiguration  `json:"strategy"`
-	Signature SignatureConfiguration `json:"signature"`
-}
-
-type AuthProvider string
-type QueueProvider string
-type StrategyProvider string
-type SignatureHeaderProvider string
-
-const (
-	NoAuthProvider          AuthProvider            = "none"
-	BasicAuthProvider       AuthProvider            = "basic"
-	RedisQueueProvider      QueueProvider           = "redis"
-	DefaultStrategyProvider StrategyProvider        = "default"
-	DefaultSignatureHeader  SignatureHeaderProvider = "X-Convoy-Signature"
-)
-
 type QueueConfiguration struct {
 	Type  QueueProvider `json:"type"`
 	Redis struct {
@@ -83,6 +55,43 @@ type SignatureConfiguration struct {
 	Header SignatureHeaderProvider `json:"header"`
 	Hash   string                  `json:"hash"`
 }
+
+type SmtpConfiguration struct {
+	Provider string `json:"provider"`
+	URL      string `json:"url"`
+	Username string `json:"username"`
+	Password string `json:"password"`
+	From     string `json:"from"`
+}
+
+type Configuration struct {
+	Auth              AuthConfiguration   `json:"auth"`
+	UIAuth            UIAuthConfiguration `json:"ui"`
+	UIAuthorizedUsers map[string]string
+	Database          DatabaseConfiguration `json:"database"`
+	Queue             QueueConfiguration    `json:"queue"`
+	Server            struct {
+		HTTP struct {
+			Port int `json:"port"`
+		} `json:"http"`
+	}
+	Strategy  StrategyConfiguration  `json:"strategy"`
+	Signature SignatureConfiguration `json:"signature"`
+	Smtp      SmtpConfiguration      `json:"smtp"`
+}
+
+type AuthProvider string
+type QueueProvider string
+type StrategyProvider string
+type SignatureHeaderProvider string
+
+const (
+	NoAuthProvider          AuthProvider            = "none"
+	BasicAuthProvider       AuthProvider            = "basic"
+	RedisQueueProvider      QueueProvider           = "redis"
+	DefaultStrategyProvider StrategyProvider        = "default"
+	DefaultSignatureHeader  SignatureHeaderProvider = "X-Convoy-Signature"
+)
 
 func LoadConfig(p string) error {
 	f, err := os.Open(p)
