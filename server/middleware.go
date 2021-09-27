@@ -34,6 +34,7 @@ const (
 	appCtx              contextKey = "app"
 	endpointCtx         contextKey = "endpoint"
 	msgCtx              contextKey = "message"
+	configCtx           contextKey = "configCtx"
 	authConfigCtx       contextKey = "authConfig"
 	authLoginCtx        contextKey = "authLogin"
 	pageableCtx         contextKey = "pageable"
@@ -942,4 +943,12 @@ func setAuthLoginInContext(ctx context.Context, a *AuthorizedLogin) context.Cont
 
 func getAuthLoginFromContext(ctx context.Context) *AuthorizedLogin {
 	return ctx.Value(authLoginCtx).(*AuthorizedLogin)
+}
+
+func setConfigInContext(ctx context.Context, c *ViewableConfiguration) context.Context {
+	return context.WithValue(ctx, configCtx, c)
+}
+
+func getConfigFromContext(ctx context.Context) *ViewableConfiguration {
+	return ctx.Value(configCtx).(*ViewableConfiguration)
 }
