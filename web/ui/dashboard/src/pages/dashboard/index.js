@@ -437,11 +437,16 @@ function DashboardPage() {
 										</thead>
 										<tbody>
 											{displayedEvents.map((eventGroup, index) => (
-												<React.Fragment>
-													<tr className="table--date-row" key={'eventGroup' + index}>
+												<React.Fragment key={'eventGroup' + index}>
+													<tr className="table--date-row">
 														<td>
 															<div>{eventGroup.date}</div>
 														</td>
+														<td></td>
+														<td></td>
+														<td></td>
+														<td></td>
+														<td></td>
 													</tr>
 													{eventGroup.events.map((event, index) => (
 														<tr
@@ -595,7 +600,7 @@ function DashboardPage() {
 									{detailsItem.data && (
 										<div className="dashboard--logs--details--view-more">
 											<button className="has-icon" onClick={() => toggleViewAllEventDataState(!viewAllEventData)}>
-												<img src={AngleArrowDownIcon} alt="angle arrow down" />
+												<img src={viewAllEventData ? AngleArrowUpIcon : AngleArrowDownIcon} alt={viewAllEventData ? 'angle arrow up' : 'angle arrow down'} />
 												{viewAllEventData ? 'Hide more' : 'View more'}
 											</button>
 										</div>
@@ -606,14 +611,13 @@ function DashboardPage() {
 									<h4>Response Data</h4>
 									{eventDeliveryAtempt && (
 										<div>
-											<div className={'dashboard--logs--details--response-data ' + (viewAllResponseData && eventDeliveryAtempt.response_data ? '' : 'data-hidden')}>
+											<div className={'dashboard--logs--details--response-data ' + (viewAllResponseData && eventDeliveryAtempt.response_data ? 'data-hidden' : '')}>
 												{eventDeliveryAtempt.response_data}
 											</div>
 											{eventDeliveryAtempt.response_data && eventDeliveryAtempt.response_data.length > 60 && (
 												<div className="dashboard--logs--details--view-more">
 													<button className="has-icon" onClick={() => toggleViewAllResponseData(!viewAllResponseData)}>
-														{!viewAllResponseData && <img src={AngleArrowDownIcon} alt="angle arrow down" />}
-														{viewAllResponseData && <img src={AngleArrowUpIcon} alt="angle arrow up" />}
+														<img src={viewAllResponseData ? AngleArrowUpIcon : AngleArrowDownIcon} alt={viewAllResponseData ? 'angle arrow up' : 'angle arrow down'} />
 														{viewAllResponseData ? 'Hide more' : 'View more'}
 													</button>
 												</div>
