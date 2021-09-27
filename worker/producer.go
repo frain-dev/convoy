@@ -151,7 +151,7 @@ func (p *Producer) postMessages(msgRepo convoy.MessageRepository, appRepo convoy
 			}
 			err := appRepo.UpdateApplicationEndpointsAsDisabled(context.Background(), m.AppID, inactiveEndpoints, true)
 			if err != nil {
-				log.Errorln("failed to update disabled app endpoints", err)
+				log.WithError(err).Error("Failed to update disabled app endpoints")
 			}
 		}()
 	}
