@@ -9,9 +9,10 @@ type Organisation struct {
 }
 
 type Application struct {
-	OrgID   string `json:"org_id" bson:"org_id"`
-	AppName string `json:"name" bson:"name"`
-	Secret  string `json:"secret" bson:"secret"`
+	OrgID        string `json:"org_id" bson:"org_id"`
+	AppName      string `json:"name" bson:"name"`
+	Secret       string `json:"secret" bson:"secret"`
+	SupportEmail string `json:"support_email" bson:"support_email"`
 }
 
 type Message struct {

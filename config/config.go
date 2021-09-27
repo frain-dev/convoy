@@ -19,6 +19,12 @@ type DatabaseConfiguration struct {
 	Dsn string `json:"dsn"`
 }
 
+type ServerConfiguration struct {
+	HTTP struct {
+		Port int `json:"port"`
+	} `json:"http"`
+}
+
 type QueueConfiguration struct {
 	Type  QueueProvider `json:"type"`
 	Redis struct {
@@ -56,7 +62,7 @@ type SignatureConfiguration struct {
 	Hash   string                  `json:"hash"`
 }
 
-type SmtpConfiguration struct {
+type SMTPConfiguration struct {
 	Provider string `json:"provider"`
 	URL      string `json:"url"`
 	Username string `json:"username"`
@@ -65,19 +71,15 @@ type SmtpConfiguration struct {
 }
 
 type Configuration struct {
-	Auth              AuthConfiguration   `json:"auth"`
-	UIAuth            UIAuthConfiguration `json:"ui"`
-	UIAuthorizedUsers map[string]string
-	Database          DatabaseConfiguration `json:"database"`
-	Queue             QueueConfiguration    `json:"queue"`
-	Server            struct {
-		HTTP struct {
-			Port int `json:"port"`
-		} `json:"http"`
-	}
-	Strategy  StrategyConfiguration  `json:"strategy"`
-	Signature SignatureConfiguration `json:"signature"`
-	Smtp      SmtpConfiguration      `json:"smtp"`
+	Auth              AuthConfiguration      `json:"auth,omitempty"`
+	UIAuth            UIAuthConfiguration    `json:"ui,omitempty"`
+	UIAuthorizedUsers map[string]string      `json:"-"`
+	Database          DatabaseConfiguration  `json:"database"`
+	Queue             QueueConfiguration     `json:"queue"`
+	Server            ServerConfiguration    `json:"server"`
+	Strategy          StrategyConfiguration  `json:"strategy"`
+	Signature         SignatureConfiguration `json:"signature"`
+	SMTP              SMTPConfiguration      `json:"smtp"`
 }
 
 type AuthProvider string
@@ -125,11 +127,7 @@ func LoadConfig(p string) error {
 	// This enables us deploy to Heroku where the $PORT is provided
 	// dynamically.
 	if port, err := strconv.Atoi(os.Getenv("PORT")); err == nil {
-		c.Server = struct {
-			HTTP struct {
-				Port int `json:"port"`
-			} `json:"http"`
-		}{
+		c.Server = ServerConfiguration{
 			HTTP: struct {
 				Port int `json:"port"`
 			}{

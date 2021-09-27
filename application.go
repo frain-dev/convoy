@@ -17,10 +17,11 @@ var (
 )
 
 type Application struct {
-	ID    primitive.ObjectID `json:"-" bson:"_id"`
-	UID   string             `json:"uid" bson:"uid"`
-	OrgID string             `json:"org_id" bson:"org_id"`
-	Title string             `json:"name" bson:"title"`
+	ID           primitive.ObjectID `json:"-" bson:"_id"`
+	UID          string             `json:"uid" bson:"uid"`
+	OrgID        string             `json:"org_id" bson:"org_id"`
+	Title        string             `json:"name" bson:"title"`
+	SupportEmail string             `json:"support_email" bson:"support_email"`
 
 	Secret string `json:"secret" bson:"secret"`
 

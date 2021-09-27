@@ -1,182 +1,225 @@
 <template>
-    <div class="page">
-        <header>
-            <nav>
-                <div>
-                    <div class="logo">
-                        <img src="~/assets/images/logo.svg" alt="logo" />
-                    </div>
+	<div class="page">
+		<header>
+			<nav>
+				<div>
+					<div class="logo">
+						<img src="~/assets/images/logo.svg" alt="logo" />
+					</div>
 
-                    <button class="menu-button" @click="showMenu = !showMenu">
-                        <img src="~/assets/images/menu-icon.svg" alt="menu icon" />
-                    </button>
+					<button class="menu-button" @click="showMenu = !showMenu">
+						<img src="~/assets/images/menu-icon.svg" alt="menu icon" />
+					</button>
 
-                    <ul :class="showMenu ? 'show' : ''">
-                        <li>
-                            <a href="#features"> Features </a>
-                        </li>
-                        <li>
-                            <a target="_blank" rel="noopener noreferrer" href="https://github.com/frain-dev/convoy/discussions"> Community </a>
-                        </li>
-                        <li>
-                            <a href="https://github.com/frain-dev/convoy">
-                                <img src="~/assets/images/github-logo.svg" alt="github logo" />
-                            </a>
-                        </li>
-                    </ul>
-                </div>
-            </nav>
+					<ul :class="showMenu ? 'show' : ''">
+						<li>
+							<a href="#features">Features</a>
+						</li>
+						<li>
+							<a target="_blank" rel="noopener noreferrer" href="https://github.com/frain-dev/convoy/discussions">Community</a>
+						</li>
+						<li>
+							<a href="https://github.com/frain-dev/convoy">
+								<img src="~/assets/images/github-logo.svg" alt="github logo" />
+							</a>
+						</li>
+					</ul>
+				</div>
+			</nav>
 
-            <section class="hero-section">
-                <div class="hero-section--cta">
-                    <h1>A Cloud native Webhook Service</h1>
-                    <p>With out-of-the-box security, reliability and scalability for your webhooks infrastructure.</p>
-                    <!-- <button>Get Started</button> -->
-                </div>
-                <div class="hero-section--img">
-                    <img src="~/assets/images/hero-img.svg" alt="hero" />
-                </div>
-            </section>
-        </header>
+			<section class="hero-section">
+				<div class="hero-section--cta">
+					<h1>A Cloud native Webhook Service</h1>
+					<p>With out-of-the-box security, reliability and scalability for your webhooks infrastructure.</p>
 
-        <section class="section features" id="features">
-            <div class="container">
-                <h2 class="section--title">Why Convoy</h2>
-                <p class="section--description">
-                    Convoy enables you get started with delivering webhooks products in the space of minutes, along with a number of carefully thought out features to truely enable/enhance your webhooks
-                    delivery at scale.
-                </p>
+					<form @submit.prevent="requestAccess()">
+						<div class="input">
+							<input type="email" id="email" placeholder="Enter email address" aria-label="Email" v-model="earlyAccessEmail" />
+						</div>
+						<button :disabled="isSubmitingloadingEarlyAccessForm">{{ isSubmitingloadingEarlyAccessForm ? '...requesting' : earlyAccessFormButtonText }}</button>
+					</form>
+					<!-- <button>Get Started</button> -->
+				</div>
+				<div class="hero-section--img">
+					<img src="~/assets/images/hero-img.svg" alt="hero" />
+				</div>
+			</section>
+		</header>
 
-                <ul>
-                    <li>
-                        <img src="~/assets/images/secure-feature-icon.svg" alt="secure feature icon" />
-                        <h4>Secure</h4>
-                        <p>Create secrets, sign payload, verify event. Increase security by enabling rolling secrets.</p>
-                    </li>
-                    <li>
-                        <img src="~/assets/images/ease-feature-icon.svg" alt="ease feature icon" />
-                        <h4>Ease of use</h4>
-                        <p>Easily filter & debug events sent to multiple applications & endpoints with Delivery Attempt Logs</p>
-                    </li>
-                    <li>
-                        <img src="~/assets/images/cloud-feature-icon.svg" alt="cloud feature icon" />
-                        <h4>Cloud & Language Agnostic</h4>
-                        <p>Deploy to any environment and send events from any language (Ruby, Golang, JavaScript etc)</p>
-                    </li>
-                    <li>
-                        <img src="~/assets/images/rate-feature-icon.svg" alt="rate feature icon" />
-                        <h4>Rate Limiting</h4>
-                        <p>Avoid blasting too much events to a single endpoint at once with flexible rate limiting controls</p>
-                    </li>
-                    <li>
-                        <img src="~/assets/images/scalable-feature-icon.svg" alt="scalable feature icon" />
-                        <h4>Scalable</h4>
-                        <p>Independently scale Convoy as your system needs grows.</p>
-                    </li>
-                    <li>
-                        <div class="features--dashboard-screenshot">
-                            <img src="~/assets/images/dashboard-img.png" alt="dashboard image" />
-                        </div>
-                    </li>
-                </ul>
-                <div class="features--dashboard-screenshot stand-alone">
-                    <img src="~/assets/images/dashboard-img.png" alt="dashboard image" />
-                </div>
-            </div>
-        </section>
+		<section class="section features" id="features">
+			<div class="container">
+				<h2 class="section--title">Why Convoy</h2>
+				<p class="section--description">
+					Convoy enables you get started with delivering webhooks products in the space of minutes, along with a number of carefully thought out features to truely enable/enhance your webhooks
+					delivery at scale.
+				</p>
 
-        <section class="section core-features">
-            <div class="container">
-                <div>
-                    <h2 class="section--title">Core Features</h2>
-                    <ul>
-                        <li>
-                            <img src="~/assets/images/feature-check-icon.svg" alt="check icon" />
-                            <p>Independently scalable</p>
-                        </li>
-                        <li>
-                            <img src="~/assets/images/feature-check-icon.svg" alt="check icon" />
-                            <p>Signatures & Rolling secrets</p>
-                        </li>
-                        <li>
-                            <img src="~/assets/images/feature-check-icon.svg" alt="check icon" />
-                            <p>Retries</p>
-                        </li>
-                        <li>
-                            <img src="~/assets/images/feature-check-icon.svg" alt="check icon" />
-                            <p>Clustering</p>
-                        </li>
-                        <li>
-                            <img src="~/assets/images/feature-check-icon.svg" alt="check icon" />
-                            <p>Language Agnostic</p>
-                        </li>
-                        <li>
-                            <img src="~/assets/images/feature-check-icon.svg" alt="check icon" />
-                            <p>Idempotency</p>
-                        </li>
-                        <li>
-                            <img src="~/assets/images/feature-check-icon.svg" alt="check icon" />
-                            <p>URL per Event Type</p>
-                        </li>
-                        <li>
-                            <img src="~/assets/images/feature-check-icon.svg" alt="check icon" />
-                            <p>Static IPs</p>
-                        </li>
-                        <li>
-                            <img src="~/assets/images/feature-check-icon.svg" alt="check icon" />
-                            <p>Rich UI - Event Logs & Querying.</p>
-                        </li>
-                        <li>
-                            <img src="~/assets/images/feature-check-icon.svg" alt="check icon" />
-                            <p>Payload Filtering</p>
-                        </li>
-                    </ul>
-                </div>
-                <div>
-                    <div class="core-features--img-container">
-                        <img src="~/assets/images/core-features-img.svg" alt="core flow" />
-                    </div>
-                </div>
-            </div>
-        </section>
+				<ul>
+					<li>
+						<img src="~/assets/images/secure-feature-icon.svg" alt="secure feature icon" />
+						<h4>Secure</h4>
+						<p>Create secrets, sign payload, verify event. Increase security by enabling rolling secrets.</p>
+					</li>
+					<li>
+						<img src="~/assets/images/ease-feature-icon.svg" alt="ease feature icon" />
+						<h4>Ease of use</h4>
+						<p>Easily filter & debug events sent to multiple applications & endpoints with Delivery Attempt Logs</p>
+					</li>
+					<li>
+						<img src="~/assets/images/cloud-feature-icon.svg" alt="cloud feature icon" />
+						<h4>Cloud & Language Agnostic</h4>
+						<p>Deploy to any environment and send events from any language (Ruby, Golang, JavaScript etc)</p>
+					</li>
+					<li>
+						<img src="~/assets/images/rate-feature-icon.svg" alt="rate feature icon" />
+						<h4>Rate Limiting</h4>
+						<p>Avoid blasting too much events to a single endpoint at once with flexible rate limiting controls</p>
+					</li>
+					<li>
+						<img src="~/assets/images/scalable-feature-icon.svg" alt="scalable feature icon" />
+						<h4>Scalable</h4>
+						<p>Independently scale Convoy as your system needs grows.</p>
+					</li>
+					<li>
+						<div class="features--dashboard-screenshot">
+							<img src="~/assets/images/dashboard-img.png" alt="dashboard image" />
+						</div>
+					</li>
+				</ul>
+				<div class="features--dashboard-screenshot stand-alone">
+					<img src="~/assets/images/dashboard-img.png" alt="dashboard image" />
+				</div>
+			</div>
+		</section>
 
-        <footer>
-            <div class="container">
-                <nav>
-                    <div class="logo">
-                        <img src="~/assets/images/logo.svg" alt="logo" />
-                    </div>
+		<section class="section core-features">
+			<div class="container">
+				<div>
+					<h2 class="section--title">Core Features</h2>
+					<ul>
+						<li>
+							<img src="~/assets/images/feature-check-icon.svg" alt="check icon" />
+							<p>Independently scalable</p>
+						</li>
+						<li>
+							<img src="~/assets/images/feature-check-icon.svg" alt="check icon" />
+							<p>Signatures & Rolling secrets</p>
+						</li>
+						<li>
+							<img src="~/assets/images/feature-check-icon.svg" alt="check icon" />
+							<p>Retries</p>
+						</li>
+						<li>
+							<img src="~/assets/images/feature-check-icon.svg" alt="check icon" />
+							<p>Clustering</p>
+						</li>
+						<li>
+							<img src="~/assets/images/feature-check-icon.svg" alt="check icon" />
+							<p>Language Agnostic</p>
+						</li>
+						<li>
+							<img src="~/assets/images/feature-check-icon.svg" alt="check icon" />
+							<p>Idempotency</p>
+						</li>
+						<li>
+							<img src="~/assets/images/feature-check-icon.svg" alt="check icon" />
+							<p>URL per Event Type</p>
+						</li>
+						<li>
+							<img src="~/assets/images/feature-check-icon.svg" alt="check icon" />
+							<p>Static IPs</p>
+						</li>
+						<li>
+							<img src="~/assets/images/feature-check-icon.svg" alt="check icon" />
+							<p>Rich UI - Event Logs & Querying.</p>
+						</li>
+						<li>
+							<img src="~/assets/images/feature-check-icon.svg" alt="check icon" />
+							<p>Payload Filtering</p>
+						</li>
+					</ul>
+				</div>
+				<div>
+					<div class="core-features--img-container">
+						<img src="~/assets/images/core-features-img.svg" alt="core flow" />
+					</div>
+				</div>
+			</div>
+		</section>
 
-                    <ul>
-                        <li>
-                            <a target="_blank" rel="noopener noreferrer" href="https://twitter.com/getconvoy"><img src="~/assets/images/twitter-icon.svg" alt="twitter logo" /></a>
-                        </li>
-                        <li>
-                            <a target="_blank" rel="noopener noreferrer" href="https://github.com/frain-dev/convoy"><img src="~/assets/images/github-icon.svg" alt="mail logo" /></a>
-                        </li>
-                        <li>
-                            <a target="_blank" rel="noopener noreferrer" href="mailto:info@frain.dev"><img src="~/assets/images/mail-icon.svg" alt="mail logo" /></a>
-                        </li>
-                    </ul>
-                </nav>
-                <p>Copyright 2021, All Rights Reserved</p>
-            </div>
-        </footer>
-    </div>
+		<footer>
+			<div class="container">
+				<nav>
+					<div class="logo">
+						<img src="~/assets/images/logo.svg" alt="logo" />
+					</div>
+
+					<ul>
+						<li>
+							<a target="_blank" rel="noopener noreferrer" href="https://twitter.com/getconvoy"><img src="~/assets/images/twitter-icon.svg" alt="twitter logo" /></a>
+						</li>
+						<li>
+							<a target="_blank" rel="noopener noreferrer" href="https://github.com/frain-dev/convoy"><img src="~/assets/images/github-icon.svg" alt="mail logo" /></a>
+						</li>
+						<li>
+							<a target="_blank" rel="noopener noreferrer" href="mailto:info@frain.dev"><img src="~/assets/images/mail-icon.svg" alt="mail logo" /></a>
+						</li>
+					</ul>
+				</nav>
+				<p>Copyright 2021, All Rights Reserved</p>
+			</div>
+		</footer>
+	</div>
 </template>
 
 <script>
 export default {
-    data() {
-        return {
-            showMenu: false,
-        };
-    },
-    async asyncData({ $content, params }) {
-        const pageData = await $content('api-doc').fetch();
-        return { pageData };
-    },
-    methods: {},
+	data() {
+		return {
+			showMenu: false,
+			isSubmitingloadingEarlyAccessForm: false,
+			earlyAccessFormButtonText: 'Get Early Access',
+			earlyAccessEmail: ''
+		};
+	},
+	async asyncData({ $content, params }) {
+		const pageData = await $content('api-doc').fetch();
+		return { pageData };
+	},
+	methods: {
+		async requestAccess() {
+			this.isSubmitingloadingEarlyAccessForm = true;
+			try {
+				const response = await fetch('/.netlify/functions/subscribe', {
+					method: 'POST',
+					mode: 'cors',
+					cache: 'no-cache',
+					credentials: 'same-origin',
+					headers: {
+						'Content-Type': 'application/json'
+					},
+					redirect: 'follow',
+					referrerPolicy: 'no-referrer',
+					body: JSON.stringify({
+						email: this.earlyAccessEmail
+					})
+				});
+				await response.json();
+				this.earlyAccessFormButtonText = 'Request Sent';
+				this.setDefaultAccessButtonText();
+				this.isSubmitingloadingEarlyAccessForm = false;
+			} catch (error) {
+				this.earlyAccessFormButtonText = 'Error';
+				this.setDefaultAccessButtonText();
+				this.isSubmitingloadingEarlyAccessForm = false;
+			}
+		},
+		setDefaultAccessButtonText() {
+			setTimeout(() => {
+				this.earlyAccessFormButtonText = 'Get Early Access';
+			}, 5000);
+		}
+	}
 };
 </script>
 
@@ -184,407 +227,439 @@ export default {
 $desktopBreakPoint: 880px;
 
 header {
-    background: url('~/assets/images/header-bg-pattern.svg') #1e252b no-repeat;
-    background-size: cover;
-    padding: 32px 20px 0;
+	background: url('~/assets/images/header-bg-pattern.svg') #1e252b no-repeat;
+	background-size: cover;
+	padding: 32px 20px 0;
 
-    nav {
-        max-width: 1376px;
-        width: 100%;
-        margin: auto;
-        background: #222a31;
-        border-radius: 16px;
-        padding: 12px 20px;
-        position: relative;
+	nav {
+		max-width: 1376px;
+		width: 100%;
+		margin: auto;
+		background: #222a31;
+		border-radius: 16px;
+		padding: 12px 20px;
+		position: relative;
 
-        & > div {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            max-width: 1106px;
-            margin: auto;
-        }
+		& > div {
+			display: flex;
+			align-items: center;
+			justify-content: space-between;
+			max-width: 1106px;
+			margin: auto;
+		}
 
-        .logo {
-            font-weight: bold;
-            font-size: 21px;
-            line-height: 26px;
-            color: #ffffff;
-            width: 80%;
+		.logo {
+			font-weight: bold;
+			font-size: 21px;
+			line-height: 26px;
+			color: #ffffff;
+			width: 80%;
 
-            img {
-                width: 140px;
-            }
-        }
+			img {
+				width: 140px;
+			}
+		}
 
-        .menu-button {
-            display: block;
+		.menu-button {
+			display: block;
 
-            img {
-                width: 40px;
-            }
+			img {
+				width: 40px;
+			}
 
-            @media (min-width: $desktopBreakPoint) {
-                display: none;
-            }
-        }
+			@media (min-width: $desktopBreakPoint) {
+				display: none;
+			}
+		}
 
-        ul {
-            transition: all 0.5s;
-            display: none;
-            position: absolute;
-            top: 55px;
-            left: 0;
-            background: #222a31;
-            width: 100%;
-            text-align: left;
-            height: 0;
-            overflow-y: hidden;
+		ul {
+			transition: all 0.5s;
+			display: none;
+			position: absolute;
+			top: 55px;
+			left: 0;
+			background: #222a31;
+			width: 100%;
+			text-align: left;
+			height: 0;
+			overflow-y: hidden;
 
-            &.show {
-                padding-top: 20px;
-                height: 175px;
-                overflow-y: auto;
-                display: block;
-            }
+			&.show {
+				padding-top: 20px;
+				height: 175px;
+				overflow-y: auto;
+				display: block;
+			}
 
-            li {
-                width: 100%;
-                padding: 15px 20px;
+			li {
+				width: 100%;
+				padding: 15px 20px;
 
-                &:not(:last-of-type) {
-                    margin-right: 40px;
-                }
+				&:not(:last-of-type) {
+					margin-right: 40px;
+				}
 
-                a {
-                    font-weight: 500;
-                    font-size: 14px;
-                    line-height: 17px;
-                    color: #ffffff;
-                    width: 100%;
+				a {
+					font-weight: 500;
+					font-size: 14px;
+					line-height: 17px;
+					color: #ffffff;
+					width: 100%;
 
-                    img {
-                        width: 24px;
-                    }
-                }
+					img {
+						width: 24px;
+					}
+				}
 
-                button {
-                    background: #477db3;
-                    border-radius: 8px;
-                    padding: 9px 29px;
-                    color: #ffffff;
-                    font-weight: 500;
-                    font-size: 16px;
-                    line-height: 28px;
-                    min-width: 146px;
-                }
-            }
+				button {
+					background: #477db3;
+					border-radius: 8px;
+					padding: 9px 29px;
+					color: #ffffff;
+					font-weight: 500;
+					font-size: 16px;
+					line-height: 28px;
+					min-width: 146px;
+				}
+			}
 
-            @media (min-width: $desktopBreakPoint) {
-                display: flex;
-                align-items: center;
-                justify-content: flex-end;
-                position: initial;
-                height: initial;
-                overflow-y: unset;
+			@media (min-width: $desktopBreakPoint) {
+				display: flex;
+				align-items: center;
+				justify-content: flex-end;
+				position: initial;
+				height: initial;
+				overflow-y: unset;
 
-                &.show {
-                    display: flex;
-                    height: unset;
-                    padding-top: 0;
-                    overflow-y: unset;
-                }
+				&.show {
+					display: flex;
+					height: unset;
+					padding-top: 0;
+					overflow-y: unset;
+				}
 
-                li {
-                    padding: 0;
-                    width: fit-content;
-                }
-            }
-        }
-    }
+				li {
+					padding: 0;
+					width: fit-content;
+				}
+			}
+		}
+	}
 
-    .hero-section {
-        max-width: 1106px;
-        margin: auto;
-        display: flex;
-        justify-content: space-between;
-        min-height: 603px;
-        height: 100%;
-        flex-direction: column;
-        padding: 150px 0 100px;
+	.hero-section {
+		max-width: 1106px;
+		margin: auto;
+		display: flex;
+		justify-content: space-between;
+		min-height: 603px;
+		height: 100%;
+		flex-direction: column;
+		padding: 150px 0 100px;
 
-        @media (min-width: $desktopBreakPoint) {
-            flex-direction: row;
-            align-items: center;
-        }
+		@media (min-width: $desktopBreakPoint) {
+			flex-direction: row;
+			align-items: center;
+		}
 
-        &--cta {
-            max-width: 533px;
+		&--cta {
+			max-width: 533px;
 
-            h1 {
-                font-weight: bold;
-                font-size: 48px;
-                line-height: 64px;
-                color: #ffffff;
-                margin-bottom: 16px;
-            }
+			h1 {
+				font-weight: bold;
+				font-size: 48px;
+				line-height: 64px;
+				color: #ffffff;
+				margin-bottom: 16px;
+			}
 
-            p {
-                font-size: 18px;
-                line-height: 30px;
-                color: #ffffff;
-            }
+			p {
+				font-size: 18px;
+				line-height: 30px;
+				color: #ffffff;
+			}
+		}
 
-            button {
-                background: #477db3;
-                border-radius: 8px;
-                padding: 9px 29px;
-                color: #ffffff;
-                font-weight: 500;
-                font-size: 16px;
-                line-height: 28px;
-                margin-top: 40px;
-            }
-        }
+		&--img {
+			margin-left: 50px;
+			text-align: center;
+			display: none;
 
-        &--img {
-            margin-left: 50px;
-            text-align: center;
-            display: none;
+			@media (min-width: $desktopBreakPoint) {
+				display: block;
+			}
+		}
 
-            @media (min-width: $desktopBreakPoint) {
-                display: block;
-            }
-        }
-    }
+		form {
+			background: #ffffff;
+			max-width: 430px;
+			display: flex;
+			border-radius: 8px;
+			margin-top: 40px;
+
+			.input {
+				width: 100%;
+				display: flex;
+
+				input {
+					max-width: 278px;
+					width: 100%;
+					border: none;
+					padding: 9px 23px;
+					border-radius: 8px 0 0 8px;
+					outline: none;
+					margin: 0;
+
+					&::placeholder {
+						font-weight: 500;
+						font-size: 14px;
+						line-height: 28px;
+						color: #bdbdbd;
+					}
+				}
+			}
+
+			button {
+				background: #477db3;
+				border-radius: 0 8px 8px 0;
+				padding: 9px 21px;
+				color: #ffffff;
+				font-weight: 500;
+				font-size: 14px;
+				line-height: 28px;
+				max-width: 162px;
+				width: 100%;
+				margin: 0;
+			}
+		}
+	}
 }
 
 .section {
-    .container {
-        max-width: 1150px;
-        margin: auto;
-    }
+	.container {
+		max-width: 1150px;
+		margin: auto;
+	}
 
-    .section--title {
-        font-weight: bold;
-        font-size: 48px;
-        line-height: 60px;
-        letter-spacing: -1.584px;
+	.section--title {
+		font-weight: bold;
+		font-size: 48px;
+		line-height: 60px;
+		letter-spacing: -1.584px;
 
-        @media (max-width: 1089px) {
-            font-size: 40px;
-        }
-    }
+		@media (max-width: 1089px) {
+			font-size: 40px;
+		}
+	}
 
-    .section--description {
-        font-size: 18px;
-        line-height: 30px;
-    }
+	.section--description {
+		font-size: 18px;
+		line-height: 30px;
+	}
 }
 
 .features {
-    padding: 160px 20px 800px;
+	padding: 160px 20px 800px;
 
-    @media (max-width: 1089px) {
-        padding: 60px 20px 100px;
-    }
+	@media (max-width: 1089px) {
+		padding: 60px 20px 100px;
+	}
 
-    .container {
-        position: relative;
-    }
+	.container {
+		position: relative;
+	}
 
-    .section--title {
-        margin-bottom: 26px;
-    }
+	.section--title {
+		margin-bottom: 26px;
+	}
 
-    .section--description {
-        max-width: 608px;
-        margin-bottom: 77px;
-    }
+	.section--description {
+		max-width: 608px;
+		margin-bottom: 77px;
+	}
 
-    ul {
-        display: grid;
-        grid-template-columns: repeat(auto-fill, minmax(238px, 1fr));
-        gap: 80px 32px;
+	ul {
+		display: grid;
+		grid-template-columns: repeat(auto-fill, minmax(238px, 1fr));
+		gap: 80px 32px;
 
-        img {
-            width: 70px;
-            margin-bottom: 36px;
-        }
+		img {
+			width: 70px;
+			margin-bottom: 36px;
+		}
 
-        li {
-            position: relative;
+		li {
+			position: relative;
 
-            @media (max-width: 1089px) {
-                .features--dashboard-screenshot {
-                    display: none;
-                }
-            }
-        }
+			@media (max-width: 1089px) {
+				.features--dashboard-screenshot {
+					display: none;
+				}
+			}
+		}
 
-        h4 {
-            font-weight: bold;
-            font-size: 18px;
-            line-height: 22px;
-            letter-spacing: -0.5px;
-            margin-bottom: 16px;
-        }
+		h4 {
+			font-weight: bold;
+			font-size: 18px;
+			line-height: 22px;
+			letter-spacing: -0.5px;
+			margin-bottom: 16px;
+		}
 
-        p {
-            font-size: 15px;
-            line-height: 22px;
+		p {
+			font-size: 15px;
+			line-height: 22px;
 
-            @media (max-width: 1089px) {
-                font-size: 16px;
-            }
-        }
-    }
+			@media (max-width: 1089px) {
+				font-size: 16px;
+			}
+		}
+	}
 
-    .features--dashboard-screenshot {
-        position: absolute;
-        left: 0;
-        top: 0;
-        width: 1100px;
-        height: fit-content;
+	.features--dashboard-screenshot {
+		position: absolute;
+		left: 0;
+		top: 0;
+		width: 1100px;
+		height: fit-content;
 
-        @media (max-width: 1644px) {
-            width: 1000px;
-        }
+		@media (max-width: 1644px) {
+			width: 1000px;
+		}
 
-        @media (max-width: 1443px) {
-            width: 800px;
-        }
+		@media (max-width: 1443px) {
+			width: 800px;
+		}
 
-        img {
-            width: 100%;
-        }
+		img {
+			width: 100%;
+		}
 
-        &.stand-alone {
-            position: unset;
-            width: 100%;
-            text-align: center;
-            display: none;
+		&.stand-alone {
+			position: unset;
+			width: 100%;
+			text-align: center;
+			display: none;
 
-            @media (max-width: 1089px) {
-                display: block;
-            }
+			@media (max-width: 1089px) {
+				display: block;
+			}
 
-            img {
-                width: 100%;
-            }
-        }
-    }
+			img {
+				width: 100%;
+			}
+		}
+	}
 }
 
 .core-features {
-    background: #2b4b6a;
-    padding: 80px 20px;
-    color: #ffffff;
-    margin-bottom: 200px;
+	background: #2b4b6a;
+	padding: 80px 20px;
+	color: #ffffff;
+	margin-bottom: 200px;
 
-    .container {
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
+	.container {
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
 
-        @media (max-width: 1089px) {
-            display: unset;
-        }
-    }
+		@media (max-width: 1089px) {
+			display: unset;
+		}
+	}
 
-    ul {
-        margin-top: 32px;
+	ul {
+		margin-top: 32px;
 
-        li {
-            display: flex;
-            align-items: center;
-            margin-bottom: 29px;
-            position: relative;
-            font-weight: 500;
-            font-size: 18px;
-            line-height: 27px;
+		li {
+			display: flex;
+			align-items: center;
+			margin-bottom: 29px;
+			position: relative;
+			font-weight: 500;
+			font-size: 18px;
+			line-height: 27px;
 
-            &:not(:last-of-type)::after {
-                content: '';
-                position: absolute;
-                height: 20px;
-                width: 1px;
-                background: #4b6680;
-                bottom: -24px;
-                left: 11px;
-            }
-        }
+			&:not(:last-of-type)::after {
+				content: '';
+				position: absolute;
+				height: 20px;
+				width: 1px;
+				background: #4b6680;
+				bottom: -24px;
+				left: 11px;
+			}
+		}
 
-        img {
-            width: 24px;
-            margin-right: 24px;
-        }
-    }
+		img {
+			width: 24px;
+			margin-right: 24px;
+		}
+	}
 
-    &--img-container {
-        background: linear-gradient(0deg, #ffffff, #ffffff);
-        box-shadow: 40px 44px 81px rgba(111, 118, 138, 0.160784);
-        border-radius: 16px;
-        height: 950px;
-        max-width: 649px;
-        width: 100%;
-        margin-top: -160px;
-        margin-bottom: -160px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        padding: 0 40px;
+	&--img-container {
+		background: linear-gradient(0deg, #ffffff, #ffffff);
+		box-shadow: 40px 44px 81px rgba(111, 118, 138, 0.160784);
+		border-radius: 16px;
+		height: 950px;
+		max-width: 649px;
+		width: 100%;
+		margin-top: -160px;
+		margin-bottom: -160px;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		padding: 0 40px;
 
-        @media (max-width: 1089px) {
-            margin: 100px auto 0;
-            height: fit-content;
-            padding: 40px 20px;
-        }
+		@media (max-width: 1089px) {
+			margin: 100px auto 0;
+			height: fit-content;
+			padding: 40px 20px;
+		}
 
-        img {
-            max-width: 467px;
-            width: 100%;
-        }
-    }
+		img {
+			max-width: 467px;
+			width: 100%;
+		}
+	}
 }
 
 footer {
-    background: #1e252b;
-    padding: 48px 20px 32px;
-    color: #ffffff;
+	background: #1e252b;
+	padding: 48px 20px 32px;
+	color: #ffffff;
 
-    .container {
-        max-width: 1376px;
-        width: 100%;
-        margin: auto;
-    }
+	.container {
+		max-width: 1376px;
+		width: 100%;
+		margin: auto;
+	}
 
-    nav {
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-        padding-bottom: 29px;
+	nav {
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+		border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+		padding-bottom: 29px;
 
-        li {
-            display: inline-block;
+		li {
+			display: inline-block;
 
-            &:not(:last-of-type) {
-                margin-right: 16px;
-            }
-        }
-    }
+			&:not(:last-of-type) {
+				margin-right: 16px;
+			}
+		}
+	}
 
-    p {
-        font-weight: 500;
-        font-size: 14px;
-        line-height: 17px;
-        margin-top: 24px;
-        text-align: center;
+	p {
+		font-weight: 500;
+		font-size: 14px;
+		line-height: 17px;
+		margin-top: 24px;
+		text-align: center;
 
-        @media (min-width: $desktopBreakPoint) {
-            text-align: right;
-        }
-    }
+		@media (min-width: $desktopBreakPoint) {
+			text-align: right;
+		}
+	}
 }
 </style>

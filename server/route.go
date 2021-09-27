@@ -153,6 +153,8 @@ func buildRoutes(app *applicationHandler) http.Handler {
 
 				msgSubRouter.With(resendMessage(app.msgRepo)).Put("/resend", app.ResendAppMessage)
 			})
+
+			dashboardRouter.With(fetchAllConfigDetails()).Get("/config", app.GetAllConfigDetails)
 		})
 
 		uiRouter.Route("/organisations", func(orgRouter chi.Router) {

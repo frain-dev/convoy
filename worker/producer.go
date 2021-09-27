@@ -9,7 +9,6 @@ import (
 	"github.com/frain-dev/convoy/config"
 	"github.com/frain-dev/convoy/net"
 	"github.com/frain-dev/convoy/queue"
-	"github.com/frain-dev/convoy/server/models"
 	"github.com/frain-dev/convoy/util"
 	"github.com/google/uuid"
 	log "github.com/sirupsen/logrus"
@@ -66,14 +65,9 @@ func (p *Producer) postMessages(msgRepo convoy.MessageRepository, m convoy.Messa
 			continue
 		}
 
-		request := models.WebhookRequest{
-			Event: string(m.EventType),
-			Data:  m.Data,
-		}
-
-		bytes, err := json.Marshal(request)
+		bytes, err := json.Marshal(m.Data)
 		if err != nil {
-			log.Errorf("error occurred while parsing payload - %+v\n", err)
+			log.Errorf("error occurred while parsing json")
 			return
 		}
 

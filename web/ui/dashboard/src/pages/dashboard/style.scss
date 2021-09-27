@@ -218,17 +218,23 @@
 	margin-top: 32px;
 	padding: 0 0 20px;
 	display: flex;
-	max-height: 800px;
+
+	.table > div {
+		max-height: calc(100vh - 950px);
+		min-height: 500px;
+		overflow: auto;
+	}
 
 	&--tabs {
 		width: 100%;
 		border-right: 1px solid #edeff5;
+		height: 100%;
+		overflow: auto;
 	}
 
 	&--details {
 		padding: 24px 0 0 32px;
 		width: 581px;
-		overflow-y: auto;
 
 		hr {
 			border: none;
@@ -241,7 +247,7 @@
 			padding: 8px 0 24px;
 			border-bottom: 1px solid #edeff5;
 			width: 100%;
-			margin: 10px 0 30px;
+			margin: 10px 0 0;
 
 			li {
 				display: flex;
@@ -317,8 +323,15 @@
 			overflow-y: hidden;
 		}
 
-		& > div {
-			margin: 20px 0;
+		&--req-res {
+			margin-top: 30px;
+			max-height: calc(100vh - (950px + 198px));
+			min-height: 300px;
+			overflow-y: auto;
+
+			& > div {
+				margin: 20px 0;
+			}
 		}
 
 		&--endpoints {
@@ -378,6 +391,15 @@
 
 .table {
 	margin: 24px;
+
+	&--load-more {
+		border-top: 1px solid #eee;
+
+		button {
+			font-weight: bold;
+			font-size: 18px;
+		}
+	}
 }
 
 table {
@@ -430,6 +452,18 @@ table {
 		font-weight: 500;
 		font-size: 14px;
 		line-height: 28px;
+
+		&.spin {
+			@keyframes spin {
+				100% {
+					transform: rotate(360deg);
+				}
+			}
+
+			img {
+				animation: spin 5s linear infinite;
+			}
+		}
 	}
 }
 

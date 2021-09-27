@@ -12,7 +12,8 @@ import (
 )
 
 func main() {
-	smtpClient := New()
+	cfg, _ := config.Get()
+	smtpClient := New(&cfg.SMTP)
 
 	email := "subomi@frain.dev"
 	err := smtpClient.SendEmailNotification(email)
@@ -29,7 +30,7 @@ type SmtpClient struct {
 	url, username, password, from string
 }
 
-func New(cfg *config.SmtpConfiguration) *SmtpClient {
+func New(cfg *config.SMTPConfiguration) *SmtpClient {
 	return &SmtpClient{
 		url:      cfg.URL,
 		username: cfg.Username,
@@ -38,13 +39,13 @@ func New(cfg *config.SmtpConfiguration) *SmtpClient {
 	}
 }
 
-func (s *SmtpClient) SendEmailNotification(email string, endpoint *convoy.Endpoint) error {
+func (s *SmtpClient) SendEmailNotification(email string, application *convoy.Application, endpoint *convoy.Endpoint) error {
 	// Set up authentication information.
 	auth := sasl.NewPlainClient("", s.username, s.password)
 
 	// Connect to the server, authenticate, set the sender and recipient,
 	// and send the email all in one step.
-	to := []string{email}
+	to := []string{application.SupportEmail}
 
 	templ, err := template.ParseFiles(NotificationTemplate)
 	if err != nil {
@@ -52,17 +53,18 @@ func (s *SmtpClient) SendEmailNotification(email string, endpoint *convoy.Endpoi
 	}
 
 	var body bytes.Buffer
-	s.buildHeaders(&body, email)
+	buildHeaders(s, &body, email)
 
 	templ.Execute(&body, struct {
 		Url    string
 		Status bool
 	}{
 		Url:    endpoint.TargetURL,
-		Status: endpoint.DocumentStatus,
+		Status: true, // endpoint.DocumentStatus,
 	})
 
-	err = smtp.SendMail(s.url, auth, s.from, to, body)
+	data := bytes.NewReader(body.Bytes())
+	err = smtp.SendMail(s.url, auth, s.from, to, data)
 	if err != nil {
 		return err
 	}
@@ -70,7 +72,7 @@ func (s *SmtpClient) SendEmailNotification(email string, endpoint *convoy.Endpoi
 	return nil
 }
 
-func (s *SmtpClient) buildHeaders(body *bytes.Buffer, email string) {
+func buildHeaders(s *SmtpClient, body *bytes.Buffer, email string) {
 	body.Write([]byte(
 		"MIME-version: 1.0;" +
 			"Content-Type: text/html;" +

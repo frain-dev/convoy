@@ -22,5 +22,4 @@ hookstack
 .DS_Store
 
 # ui depencencies
-/ui/node_modules
-/build
+**/node_modules
