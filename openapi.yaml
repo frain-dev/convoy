@@ -207,6 +207,25 @@ paths:
         - Events
       summary: Get all events
       operationId: GetEvents
+      parameters:
+        - name: "appId"
+          in: "query"
+          description: "Filter by app id"
+          required: false
+          schema:
+            type: "string"
+        - name: "startDate"
+          in: "query"
+          description: "Filter to specify start date"
+          required: false
+          schema:
+            type: "string"
+        - name: "endDate"
+          in: "query"
+          description: "Filter to specify end date"
+          required: false
+          schema:
+            type: "string"
       responses:
         '200': 
           description: Valid response.
