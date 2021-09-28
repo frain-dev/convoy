@@ -65,6 +65,11 @@ func ensureNewMessage(appRepo convoy.ApplicationRepository, msgRepo convoy.Messa
 				_ = render.Render(w, r, newErrorResponse("app has no configured endpoints", http.StatusBadRequest))
 				return
 			}
+			activeEndpoints := util.ParseMetadataFromActiveEndpoints(app.Endpoints)
+			if len(activeEndpoints) == 0 {
+				_ = render.Render(w, r, newErrorResponse("app has no enabled endpoints", http.StatusBadRequest))
+				return
+			}
 
 			cfg, err := config.Get()
 			if err != nil {
@@ -101,7 +106,7 @@ func ensureNewMessage(appRepo convoy.ApplicationRepository, msgRepo convoy.Messa
 				AppMetadata: &convoy.AppMetadata{
 					OrgID:     app.OrgID,
 					Secret:    app.Secret,
-					Endpoints: util.ParseMetadataFromEndpoints(app.Endpoints),
+					Endpoints: activeEndpoints,
 				},
 				Status:         convoy.ScheduledMessageStatus,
 				DocumentStatus: convoy.ActiveDocumentStatus,

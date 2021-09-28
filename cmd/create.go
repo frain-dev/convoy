@@ -295,6 +295,15 @@ func createMessageCommand(a *app) *cobra.Command {
 				return errors.New("retry strategy not defined in configuration")
 			}
 
+			if len(appData.Endpoints) == 0 {
+				return errors.New("app has no configured endpoints")
+			}
+
+			activeEndpoints := util.ParseMetadataFromActiveEndpoints(appData.Endpoints)
+			if len(activeEndpoints) == 0 {
+				return errors.New("app has no enabled endpoints")
+			}
+
 			log.Println("Message ", string(d))
 			msg := &convoy.Message{
 				UID:       uuid.New().String(),
@@ -311,17 +320,13 @@ func createMessageCommand(a *app) *cobra.Command {
 				AppMetadata: &convoy.AppMetadata{
 					OrgID:     appData.OrgID,
 					Secret:    appData.Secret,
-					Endpoints: util.ParseMetadataFromEndpoints(appData.Endpoints),
+					Endpoints: activeEndpoints,
 				},
 				MessageAttempts: make([]convoy.MessageAttempt, 0),
 				CreatedAt:       primitive.NewDateTimeFromTime(time.Now()),
 				UpdatedAt:       primitive.NewDateTimeFromTime(time.Now()),
 				Status:          convoy.ScheduledMessageStatus,
 				DocumentStatus:  convoy.ActiveDocumentStatus,
-			}
-
-			if len(appData.Endpoints) == 0 {
-				return errors.New("app has no configured endpoints")
 			}
 
 			ctx, cancelFn = getCtx()

@@ -43,7 +43,7 @@ func Test_EnvironmentTakesPrecedence(t *testing.T) {
 
 			cfg, _ := Get()
 
-			errString := "Environment variable - %s didn't take precendence"
+			errString := "Environment variable - %s didn't take precedence"
 			switch tc.testType {
 			case "queue":
 				if cfg.Queue.Redis.DSN != tc.envConfig {
