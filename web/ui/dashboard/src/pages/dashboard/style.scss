@@ -235,7 +235,7 @@
 
 	&--details {
 		padding: 24px 0 0 32px;
-		width: 581px;
+		width: 651px;
 
 		hr {
 			border: none;
@@ -595,4 +595,21 @@ table {
 
 .rdrDateDisplayWrapper {
 	width: 100%;
+}
+
+/*----- scrollbar styles ------*/
+
+::-webkit-scrollbar {
+	width: 7px;
+}
+
+/* track */
+::-webkit-scrollbar-track {
+	background: transparent;
+}
+
+/* handle */
+::-webkit-scrollbar-thumb {
+	background: rgb(217, 216, 216);
+	border-radius: 10px;
 }

@@ -470,7 +470,7 @@ function DashboardPage() {
 															</td>
 															<td>
 																<div>
-																	{event.metadata.num_trials < event.metadata.retry_limit
+																	{event.metadata.num_trials < event.metadata.retry_limit && event.status !== 'Success'
 																		? `${getDate(event.metadata.next_send_time)} - ${getTime(event.metadata.next_send_time)}`
 																		: '-'}
 																</div>
