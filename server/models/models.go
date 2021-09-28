@@ -46,6 +46,7 @@ type Endpoint struct {
 	URL         string `json:"url" bson:"url"`
 	Secret      string `json:"secret" bson:"secret"`
 	Description string `json:"description" bson:"description"`
+	Disabled    bool   `json:"disabled" bson:"disabled"`
 }
 
 type Pageable struct {

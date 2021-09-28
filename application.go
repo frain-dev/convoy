@@ -39,6 +39,7 @@ type Endpoint struct {
 	UID         string `json:"uid" bson:"uid"`
 	TargetURL   string `json:"target_url" bson:"target_url"`
 	Description string `json:"description" bson:"description"`
+	Disabled    bool   `json:"disabled" bson:"disabled"`
 
 	CreatedAt primitive.DateTime `json:"created_at,omitempty" bson:"created_at,omitempty"`
 	UpdatedAt primitive.DateTime `json:"updated_at,omitempty" bson:"updated_at,omitempty"`
@@ -55,4 +56,5 @@ type ApplicationRepository interface {
 	DeleteApplication(context.Context, *Application) error
 	LoadApplicationsPagedByOrgId(context.Context, string, models.Pageable) ([]Application, pager.PaginationData, error)
 	SearchApplicationsByOrgId(context.Context, string, models.SearchParams) ([]Application, error)
+	UpdateApplicationEndpointsAsDisabled(context.Context, string, []string, bool) error
 }

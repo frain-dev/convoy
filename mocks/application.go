@@ -140,3 +140,17 @@ func (mr *MockApplicationRepositoryMockRecorder) UpdateApplication(arg0, arg1 in
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateApplication", reflect.TypeOf((*MockApplicationRepository)(nil).UpdateApplication), arg0, arg1)
 }
+
+// UpdateApplicationEndpointsAsDisabled mocks base method.
+func (m *MockApplicationRepository) UpdateApplicationEndpointsAsDisabled(arg0 context.Context, arg1 string, arg2 []string, arg3 bool) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "UpdateApplicationEndpointsAsDisabled", arg0, arg1, arg2, arg3)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// UpdateApplicationEndpointsAsDisabled indicates an expected call of UpdateApplicationEndpointsAsDisabled.
+func (mr *MockApplicationRepositoryMockRecorder) UpdateApplicationEndpointsAsDisabled(arg0, arg1, arg2, arg3 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateApplicationEndpointsAsDisabled", reflect.TypeOf((*MockApplicationRepository)(nil).UpdateApplicationEndpointsAsDisabled), arg0, arg1, arg2, arg3)
+}

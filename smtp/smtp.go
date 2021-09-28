@@ -60,7 +60,7 @@ func (s *SmtpClient) SendEmailNotification(email string, application *convoy.App
 		Status bool
 	}{
 		Url:    endpoint.TargetURL,
-		Status: true, // endpoint.DocumentStatus,
+		Status: endpoint.Disabled,
 	})
 
 	data := bytes.NewReader(body.Bytes())
