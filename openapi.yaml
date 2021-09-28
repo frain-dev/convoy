@@ -208,12 +208,6 @@ paths:
       summary: Get all events
       operationId: GetEvents
       parameters:
-        - name: "appId"
-          in: "query"
-          description: "Filter by app id"
-          required: false
-          schema:
-            type: "string"
         - name: "startDate"
           in: "query"
           description: "Filter to specify start date"
@@ -289,6 +283,77 @@ paths:
                 $ref: '#/components/schemas/EventResponse'
     parameters:
       - $ref: '#/components/parameters/uniqueId'
+  /events:
+    get:
+      tags:
+        - Events
+      summary: Get all events
+      operationId: GetEvents
+      parameters:
+        - name: "orgId"
+          in: "query"
+          description: "Filter by org id"
+          required: false
+          schema:
+            type: "string"
+        - name: "appId"
+          in: "query"
+          description: "Filter by app id"
+          required: false
+          schema:
+            type: "string"
+        - name: "startDate"
+          in: "query"
+          description: "Filter to specify start date"
+          required: false
+          schema:
+            type: "string"
+        - name: "endDate"
+          in: "query"
+          description: "Filter to specify end date"
+          required: false
+          schema:
+            type: "string"
+        - name: "sort"
+          in: "query"
+          description: "Filter to sort either ASC or DESC"
+          required: false
+          schema:
+            type: "string"
+      responses:
+        '200':
+          description: Valid response.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ArrayOfEvents'
+    post:
+      tags:
+        - Events
+      summary: Create an event
+      operationId: CreateEvent
+      requestBody:
+        description: JSON fields to pass while creating an event.
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                event_type:
+                  type: string
+                data:
+                  type: object
+      responses:
+        '200':
+          description: Valid response.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EventResponse'
+    parameters:
+      - $ref: '#/components/parameters/uniqueId'
+
   /events/{Id}/deliveryattempts:
     get: 
       tags:
