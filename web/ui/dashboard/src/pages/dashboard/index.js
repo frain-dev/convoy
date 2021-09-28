@@ -22,6 +22,7 @@ import { getDate, getTime, logout } from '../../helpers/common.helper';
 function DashboardPage() {
 	const [dashboardData, setDashboardData] = useState({ apps: 0, messages: 0, messageData: [] });
 	const [viewAllEventData, toggleViewAllEventDataState] = useState(false);
+	const [showDropdown, toggleShowDropdown] = useState(true);
 	const [viewAllResponseData, toggleViewAllResponseData] = useState(false);
 	const [apps, setAppsData] = useState({ content: [], pagination: { page: 1, totalPage: 0 } });
 	const [events, setEventsData] = useState({ content: [], pagination: { page: 1, totalPage: 0 } });
@@ -288,17 +289,19 @@ function DashboardPage() {
 						<img src={ConvoyLogo} alt="convoy logo" />
 					</div>
 
-					<button className="user">
+					<button className="user" onClick={() => toggleShowDropdown(!showDropdown)}>
 						<div>
 							<div className="icon">O</div>
 							<div className="name">{activeorganisation && activeorganisation.name}</div>
 						</div>
 						<img src={AngleArrowDownIcon} alt="arrow down icon" />
-						<div className="dropdown organisations">
-							<ul>
-								<li onClick={() => logout()}>Logout</li>
-							</ul>
-						</div>
+						{showDropdown && (
+							<div className="dropdown organisations">
+								<ul>
+									<li onClick={() => logout()}>Logout</li>
+								</ul>
+							</div>
+						)}
 					</button>
 				</div>
 			</header>
