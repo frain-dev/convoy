@@ -176,7 +176,7 @@ func Test_fetchAllMessages(t *testing.T) {
 			},
 			dbFn: func(msgRepo *mocks.MockMessageRepository, appRepo *mocks.MockApplicationRepository, orgRepo *mocks.MockOrganisationRepository) {
 				msgRepo.EXPECT().
-					LoadMessagesPaged(gomock.Any(), gomock.Any(), gomock.Any()).Times(1).
+					LoadMessagesPaged(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Times(1).
 					Return([]convoy.Message{
 						*message,
 					},

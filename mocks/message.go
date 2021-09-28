@@ -112,9 +112,9 @@ func (mr *MockMessageRepositoryMockRecorder) LoadMessagesForPostingRetry(arg0 in
 }
 
 // LoadMessagesPaged mocks base method.
-func (m *MockMessageRepository) LoadMessagesPaged(arg0 context.Context, arg1 string, arg2 models.Pageable) ([]convoy.Message, mongopagination.PaginationData, error) {
+func (m *MockMessageRepository) LoadMessagesPaged(arg0 context.Context, arg1, arg2 string, arg3 models.SearchParams, arg4 models.Pageable) ([]convoy.Message, mongopagination.PaginationData, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "LoadMessagesPaged", arg0, arg1, arg2)
+	ret := m.ctrl.Call(m, "LoadMessagesPaged", arg0, arg1, arg2, arg3, arg4)
 	ret0, _ := ret[0].([]convoy.Message)
 	ret1, _ := ret[1].(mongopagination.PaginationData)
 	ret2, _ := ret[2].(error)
@@ -122,15 +122,15 @@ func (m *MockMessageRepository) LoadMessagesPaged(arg0 context.Context, arg1 str
 }
 
 // LoadMessagesPaged indicates an expected call of LoadMessagesPaged.
-func (mr *MockMessageRepositoryMockRecorder) LoadMessagesPaged(arg0, arg1, arg2 interface{}) *gomock.Call {
+func (mr *MockMessageRepositoryMockRecorder) LoadMessagesPaged(arg0, arg1, arg2, arg3, arg4 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "LoadMessagesPaged", reflect.TypeOf((*MockMessageRepository)(nil).LoadMessagesPaged), arg0, arg1, arg2)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "LoadMessagesPaged", reflect.TypeOf((*MockMessageRepository)(nil).LoadMessagesPaged), arg0, arg1, arg2, arg3, arg4)
 }
 
 // LoadMessagesPagedByAppId mocks base method.
-func (m *MockMessageRepository) LoadMessagesPagedByAppId(arg0 context.Context, arg1 string, arg2 models.Pageable) ([]convoy.Message, mongopagination.PaginationData, error) {
+func (m *MockMessageRepository) LoadMessagesPagedByAppId(arg0 context.Context, arg1 string, arg2 models.SearchParams, arg3 models.Pageable) ([]convoy.Message, mongopagination.PaginationData, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "LoadMessagesPagedByAppId", arg0, arg1, arg2)
+	ret := m.ctrl.Call(m, "LoadMessagesPagedByAppId", arg0, arg1, arg2, arg3)
 	ret0, _ := ret[0].([]convoy.Message)
 	ret1, _ := ret[1].(mongopagination.PaginationData)
 	ret2, _ := ret[2].(error)
@@ -138,9 +138,9 @@ func (m *MockMessageRepository) LoadMessagesPagedByAppId(arg0 context.Context, a
 }
 
 // LoadMessagesPagedByAppId indicates an expected call of LoadMessagesPagedByAppId.
-func (mr *MockMessageRepositoryMockRecorder) LoadMessagesPagedByAppId(arg0, arg1, arg2 interface{}) *gomock.Call {
+func (mr *MockMessageRepositoryMockRecorder) LoadMessagesPagedByAppId(arg0, arg1, arg2, arg3 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "LoadMessagesPagedByAppId", reflect.TypeOf((*MockMessageRepository)(nil).LoadMessagesPagedByAppId), arg0, arg1, arg2)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "LoadMessagesPagedByAppId", reflect.TypeOf((*MockMessageRepository)(nil).LoadMessagesPagedByAppId), arg0, arg1, arg2, arg3)
 }
 
 // LoadMessagesScheduledForPosting mocks base method.
