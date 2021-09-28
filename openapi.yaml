@@ -227,27 +227,27 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ArrayOfEvents'
-    post: 
+    post:
       tags:
         - Events
       summary: Create an event
       operationId: CreateEvent
-      requestBody: 
+      requestBody:
         description: JSON fields to pass while creating an event.
         required: true
-        content: 
+        content:
           application/json:
             schema:
               type: object
               properties:
-                event_type: 
+                event_type:
                   type: string
-                data: 
+                data:
                   type: object
       responses:
         '200':
           description: Valid response.
-          content: 
+          content:
             application/json:
               schema:
                 $ref: '#/components/schemas/EventResponse'
@@ -327,32 +327,6 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ArrayOfEvents'
-    post:
-      tags:
-        - Events
-      summary: Create an event
-      operationId: CreateEvent
-      requestBody:
-        description: JSON fields to pass while creating an event.
-        required: true
-        content:
-          application/json:
-            schema:
-              type: object
-              properties:
-                event_type:
-                  type: string
-                data:
-                  type: object
-      responses:
-        '200':
-          description: Valid response.
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/EventResponse'
-    parameters:
-      - $ref: '#/components/parameters/uniqueId'
 
   /events/{Id}/deliveryattempts:
     get: 
