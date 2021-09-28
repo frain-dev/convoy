@@ -4,11 +4,11 @@ import AppsIcon from '../../assets/img/apps-icon.svg';
 import MessageIcon from '../../assets/img/message-icon.svg';
 import RefreshIcon from '../../assets/img/refresh-icon.svg';
 import CalendarIcon from '../../assets/img/calendar-icon.svg';
-import CopyIcon from '../../assets/img/copy-icon.svg';
 import LinkIcon from '../../assets/img/link-icon.svg';
 import AngleArrowDownIcon from '../../assets/img/angle-arrow-down.svg';
 import AngleArrowUpIcon from '../../assets/img/angle-arrow-up.svg';
 import ConvoyLogo from '../../assets/img/logo.svg';
+import RetryIcon from '../../assets/img/retry-icon.svg';
 import Chart from 'chart.js/auto';
 import { DateRange } from 'react-date-range';
 import ReactJson from 'react-json-view';
@@ -17,18 +17,47 @@ import './style.scss';
 import 'react-date-range/dist/styles.css';
 import 'react-date-range/dist/theme/default.css';
 import { showNotification } from '../../components/app-notification';
-import { getDate, copyText, logout } from '../../helpers/common.helper';
+import { getDate, getTime, logout } from '../../helpers/common.helper';
 
 function DashboardPage() {
 	const [dashboardData, setDashboardData] = useState({ apps: 0, messages: 0, messageData: [] });
 	const [viewAllEventData, toggleViewAllEventDataState] = useState(false);
+	const [showDropdown, toggleShowDropdown] = useState(true);
 	const [viewAllResponseData, toggleViewAllResponseData] = useState(false);
 	const [apps, setAppsData] = useState({ content: [], pagination: { page: 1, totalPage: 0 } });
 	const [events, setEventsData] = useState({ content: [], pagination: { page: 1, totalPage: 0 } });
+	const [displayedEvents, setDisplayedEvents] = useState([]);
 	const [tabs] = useState(['events', 'apps']);
 	const [activeTab, setActiveTab] = useState('events');
 	const [showFilterCalendar, toggleShowFilterCalendar] = useState(false);
 	const [organisations, setOrganisations] = useState([]);
+	const [OrganisationDetails, setOrganisationDetails] = useState({
+		database: {
+			dsn: ''
+		},
+		queue: {
+			type: '',
+			redis: {
+				dsn: ''
+			}
+		},
+		server: {
+			http: {
+				port: 0
+			}
+		},
+		strategy: {
+			type: '',
+			default: {
+				intervalSeconds: 0,
+				retryLimit: 0
+			}
+		},
+		signature: {
+			header: '',
+			hash: ''
+		}
+	});
 	const [activeorganisation, setActiveOrganisation] = useState({
 		uid: '',
 		name: '',
@@ -75,12 +104,24 @@ function DashboardPage() {
 		}
 	});
 
+	const setEventsDisplayed = events => {
+		const dateCreateds = events.map(event => getDate(event.created_at));
+		const uniqueDateCreateds = [...new Set(dateCreateds)];
+		const displayedEvents = [];
+		uniqueDateCreateds.forEach(eventDate => {
+			const filteredEventDate = events.filter(event => getDate(event.created_at) === eventDate);
+			const eventsItem = { date: eventDate, events: filteredEventDate };
+			displayedEvents.push(eventsItem);
+		});
+		setDisplayedEvents(displayedEvents);
+	};
+
 	const getEvents = useCallback(
 		async ({ page, eventsData }) => {
 			try {
 				const eventsResponse = await (
 					await request({
-						url: `/events?sort=AESC&page=${page || 1}&perPage=10&orgId=${activeorganisation.uid}`,
+						url: `/events?sort=AESC&page=${page || 1}&perPage=20&orgId=${activeorganisation.uid}`,
 						method: 'GET'
 					})
 				).data;
@@ -89,9 +130,12 @@ function DashboardPage() {
 					const content = [...eventsData.content, ...eventsResponse.data.content];
 					const pagination = eventsResponse.data.pagination;
 					setEventsData({ content, pagination });
+					setEventsDisplayed(content);
 					return;
 				}
+
 				setEventsData(eventsResponse.data);
+				setEventsDisplayed(eventsResponse.data.content);
 			} catch (error) {
 				return error;
 			}
@@ -161,6 +205,21 @@ function DashboardPage() {
 	};
 
 	useEffect(() => {
+		const getOrganisationDetails = async () => {
+			if (activeorganisation.uid === '') return;
+
+			try {
+				const organisationDetailsResponse = await (
+					await request({
+						url: `/dashboard/${activeorganisation.uid}/config`
+					})
+				).data;
+				setOrganisationDetails(organisationDetailsResponse.data);
+			} catch (error) {
+				return error;
+			}
+		};
+
 		const getOrganisations = async () => {
 			try {
 				const organisationsResponse = await (
@@ -217,6 +276,7 @@ function DashboardPage() {
 		};
 
 		fetchDashboardData();
+		getOrganisationDetails();
 		if (activeTab === 'apps') getApps({ page: 1 });
 		if (activeTab === 'events') getEvents({ page: 1 });
 	}, [options, activeTab, filterDates, activeorganisation, organisations, filterFrequency, getEvents, getApps]);
@@ -229,24 +289,26 @@ function DashboardPage() {
 						<img src={ConvoyLogo} alt="convoy logo" />
 					</div>
 
-					<button className="user">
+					<button className="user" onClick={() => toggleShowDropdown(!showDropdown)}>
 						<div>
 							<div className="icon">O</div>
 							<div className="name">{activeorganisation && activeorganisation.name}</div>
 						</div>
 						<img src={AngleArrowDownIcon} alt="arrow down icon" />
-						<div className="dropdown organisations">
-							<ul>
-								<li onClick={() => logout()}>Logout</li>
-							</ul>
-						</div>
+						{showDropdown && (
+							<div className="dropdown organisations">
+								<ul>
+									<li onClick={() => logout()}>Logout</li>
+								</ul>
+							</div>
+						)}
 					</button>
 				</div>
 			</header>
 
 			<div className="dashboard--page">
 				<div className={`filter ${showFilterCalendar ? 'show-calendar' : ''}`}>
-					Filter by:
+					<div>Filter by:</div>
 					<button className="filter--button" onClick={() => toggleShowFilterCalendar(!showFilterCalendar)}>
 						<img src={CalendarIcon} alt="calender icon" />
 						<div>
@@ -255,12 +317,14 @@ function DashboardPage() {
 						<img src={AngleArrowDownIcon} alt="arrow down icon" />
 					</button>
 					<DateRange onChange={item => setFilterDates([item.selection])} moveRangeOnFirstSelection={false} ranges={filterDates} />
-					<select value={filterFrequency} onChange={event => setFilterFrequency(event.target.value)}>
-						<option value="daily">Daily</option>
-						<option value="weekly">Weekly</option>
-						<option value="monthly">Monthly</option>
-						<option value="yearly">Yearly</option>
-					</select>
+					<div className="select">
+						<select value={filterFrequency} onChange={event => setFilterFrequency(event.target.value)} aria-label="frequency">
+							<option value="daily">Daily</option>
+							<option value="weekly">Weekly</option>
+							<option value="monthly">Monthly</option>
+							<option value="yearly">Yearly</option>
+						</select>
+					</div>
 				</div>
 
 				<div className="dashboard--page--details">
@@ -293,23 +357,47 @@ function DashboardPage() {
 							<h2>Organization Details</h2>
 						</div>
 
-						<div className="card--container">
-							<div className="auth-item">
-								<div>
-									<div className="auth-item--label">Organisation ID</div>
-									<div className="auth-item--item">{activeorganisation.uid}</div>
-								</div>
-								<button className="copy" onClick={() => copyText(activeorganisation.uid)}>
-									<img src={CopyIcon} alt="copy icon" />
-								</button>
-							</div>
-						</div>
+						<ul className="card--container">
+							<li className="list-item">
+								<div className="list-item--label">Organisation ID</div>
+								<div className="list-item--item">{activeorganisation.uid}</div>
+							</li>
 
-						<div className="card--footer">
-							<button className="primary" onClick={() => (window.location = 'https://github.com/frain-dev/convoy')}>
-								Go to docs
-							</button>
-						</div>
+							<li className="list-item">
+								<div className="list-item--label">Database URL</div>
+								<div className="list-item--item">{OrganisationDetails.database.dsn}</div>
+							</li>
+
+							<li className="list-item">
+								<div className="list-item--label">Queue</div>
+								<div className="list-item--item">{OrganisationDetails.queue.redis.dsn}</div>
+							</li>
+
+							<li className="list-item">
+								<div className="list-item--label">Server</div>
+								<div className="list-item--item">http://localhost:{OrganisationDetails.server.http.port}</div>
+							</li>
+
+							<li className="list-item">
+								<div className="list-item--label">Request interval Seconds</div>
+								<div className="list-item--item">{OrganisationDetails.strategy.default.intervalSeconds}s</div>
+							</li>
+
+							<li className="list-item">
+								<div className="list-item--label">Retry limit</div>
+								<div className="list-item--item">{OrganisationDetails.strategy.default.retryLimit}</div>
+							</li>
+
+							<li className="list-item">
+								<div className="list-item--label">Signature header</div>
+								<div className="list-item--item">{OrganisationDetails.signature.header}</div>
+							</li>
+
+							<li className="list-item">
+								<div className="list-item--label">Signature hash</div>
+								<div className="list-item--item">{OrganisationDetails.signature.hash}</div>
+							</li>
+						</ul>
 					</div>
 				</div>
 
@@ -346,48 +434,67 @@ function DashboardPage() {
 												<th scope="col">Event Type</th>
 												<th scope="col">Attempts</th>
 												<th scope="col">Next Retry</th>
-												<th scope="col">Date Created</th>
+												<th scope="col">Created At</th>
 												<th scope="col">Next Entry</th>
 											</tr>
 										</thead>
 										<tbody>
-											{events.content.map((event, index) => (
-												<tr
-													key={index}
-													onClick={() => {
-														setDetailsItem(event);
-														getDelieveryAttempts(event.uid);
-													}}
-													id={'event' + index}>
-													<td>
-														<div>
-															<div className="tag">{event.status}</div>
-														</div>
-													</td>
-													<td>
-														<div>{event.event_type}</div>
-													</td>
-													<td>
-														<div>{event.metadata.num_trials}</div>
-													</td>
-													<td>
-														<div>{getDate(event.metadata.next_send_time)}</div>
-													</td>
-													<td>
-														<div>{getDate(event.created_at)}</div>
-													</td>
-													<td>
-														<div>
-															<button
-																disabled={event.status === 'Success' || event.status === 'Scheduled'}
-																className={'primary has-icon icon-left ' + (event.status === 'Success' || event.status === 'Scheduled' ? 'disable_action' : '')}
-																onClick={e => retryEvent({ eventId: event.uid, appId: event.app_id, e, index })}>
-																<img src={RefreshIcon} alt="refresh icon" />
-																Retry
-															</button>
-														</div>
-													</td>
-												</tr>
+											{displayedEvents.map((eventGroup, index) => (
+												<React.Fragment key={'eventGroup' + index}>
+													<tr className="table--date-row">
+														<td>
+															<div>{eventGroup.date}</div>
+														</td>
+														<td></td>
+														<td></td>
+														<td></td>
+														<td></td>
+														<td></td>
+													</tr>
+													{eventGroup.events.map((event, index) => (
+														<tr
+															key={index}
+															onClick={() => {
+																setDetailsItem(event);
+																getDelieveryAttempts(event.uid);
+															}}
+															id={'event' + index}>
+															<td>
+																<div className="has-retry">
+																	{event.metadata.num_trials > event.metadata.retry_limit && <img src={RetryIcon} alt="retry icon" title="manual retried" />}
+																	<div className={'tag tag--' + event.status}>{event.status}</div>
+																</div>
+															</td>
+															<td>
+																<div>{event.event_type}</div>
+															</td>
+															<td>
+																<div>{event.metadata.num_trials}</div>
+															</td>
+															<td>
+																<div>
+																	{event.metadata.num_trials < event.metadata.retry_limit && event.status !== 'Success'
+																		? `${getDate(event.metadata.next_send_time)} - ${getTime(event.metadata.next_send_time)}`
+																		: '-'}
+																</div>
+															</td>
+															<td>
+																<div>{getTime(event.created_at)}</div>
+															</td>
+															<td>
+																<div>
+																	<button
+																		disabled={event.status === 'Success' || event.status === 'Scheduled'}
+																		className={'primary has-icon icon-left ' + (event.status === 'Success' || event.status === 'Scheduled' ? 'disable_action' : '')}
+																		onClick={e => retryEvent({ eventId: event.uid, appId: event.app_id, e, index })}>
+																		<img src={RefreshIcon} alt="refresh icon" />
+																		Retry
+																	</button>
+																</div>
+															</td>
+														</tr>
+													))}
+												</React.Fragment>
 											))}
 										</tbody>
 									</table>
@@ -496,7 +603,7 @@ function DashboardPage() {
 									{detailsItem.data && (
 										<div className="dashboard--logs--details--view-more">
 											<button className="has-icon" onClick={() => toggleViewAllEventDataState(!viewAllEventData)}>
-												<img src={AngleArrowDownIcon} alt="angle arrow down" />
+												<img src={viewAllEventData ? AngleArrowUpIcon : AngleArrowDownIcon} alt={viewAllEventData ? 'angle arrow up' : 'angle arrow down'} />
 												{viewAllEventData ? 'Hide more' : 'View more'}
 											</button>
 										</div>
@@ -507,14 +614,13 @@ function DashboardPage() {
 									<h4>Response Data</h4>
 									{eventDeliveryAtempt && (
 										<div>
-											<div className={'dashboard--logs--details--response-data ' + (viewAllResponseData && eventDeliveryAtempt.response_data ? '' : 'data-hidden')}>
+											<div className={'dashboard--logs--details--response-data ' + (viewAllResponseData && eventDeliveryAtempt.response_data ? 'data-hidden' : '')}>
 												{eventDeliveryAtempt.response_data}
 											</div>
 											{eventDeliveryAtempt.response_data && eventDeliveryAtempt.response_data.length > 60 && (
 												<div className="dashboard--logs--details--view-more">
 													<button className="has-icon" onClick={() => toggleViewAllResponseData(!viewAllResponseData)}>
-														{!viewAllResponseData && <img src={AngleArrowDownIcon} alt="angle arrow down" />}
-														{viewAllResponseData && <img src={AngleArrowUpIcon} alt="angle arrow up" />}
+														<img src={viewAllResponseData ? AngleArrowUpIcon : AngleArrowDownIcon} alt={viewAllResponseData ? 'angle arrow up' : 'angle arrow down'} />
 														{viewAllResponseData ? 'Hide more' : 'View more'}
 													</button>
 												</div>

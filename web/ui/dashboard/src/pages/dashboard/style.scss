@@ -59,7 +59,6 @@
 			border: 1px solid #edeff5;
 			left: 0;
 			right: 0;
-			display: none;
 			z-index: 10;
 
 			ul {
@@ -72,12 +71,6 @@
 					font-size: 14px;
 					cursor: pointer;
 				}
-			}
-		}
-
-		&:focus-within {
-			.dropdown {
-				display: block;
 			}
 		}
 	}
@@ -161,17 +154,13 @@
 
 			.card--container {
 				padding: 24px 24px 16px;
-				margin-bottom: 16px;
-				border-bottom: 1px solid #edeff5;
 
-				.auth-item {
-					background: #fafbff;
+				.list-item {
 					border-radius: 8px;
-					padding: 12px 16px;
+					padding: 10px 0;
 					display: flex;
-					align-items: center;
 					justify-content: space-between;
-					margin-bottom: 16px;
+					border-bottom: 1px solid #edeff5;
 
 					&--label {
 						font-weight: 500;
@@ -183,6 +172,11 @@
 					&--item {
 						line-height: 24px;
 						font-size: 14px;
+						max-width: 245px;
+						text-align: right;
+						word-wrap: break-word;
+						color: #000000;
+						font-weight: 500;
 					}
 
 					button {
@@ -234,7 +228,7 @@
 
 	&--details {
 		padding: 24px 0 0 32px;
-		width: 581px;
+		width: 651px;
 
 		hr {
 			border: none;
@@ -300,7 +294,7 @@
 				bottom: 0;
 				top: 0;
 				z-index: 3;
-				background: linear-gradient(transparent, #fff);
+				background: linear-gradient(rgba(255, 255, 255, 0.001), #ffffff);
 			}
 
 			button {
@@ -400,6 +394,11 @@
 			font-size: 18px;
 		}
 	}
+
+	&--date-row {
+		border-top: 1px solid #eee;
+		border-bottom: 1px solid #eee;
+	}
 }
 
 table {
@@ -436,6 +435,39 @@ table {
 			font-size: 12px;
 			line-height: 28px;
 			text-align: center;
+
+			&--Failure {
+				background: #f7e5e5;
+				color: #ff0505;
+			}
+
+			&--Scheduled {
+				background: #f8e5b9;
+			}
+
+			&--Success {
+				background: #e5f7e7;
+				color: #1f9c6a;
+			}
+		}
+
+		.has-retry {
+			display: flex;
+			align-items: center;
+			position: relative;
+
+			img {
+				margin-right: 10px;
+				width: 16px;
+				position: absolute;
+				top: 50%;
+				transform: translate(-10px, -50%);
+				opacity: 0.5;
+			}
+
+			.tag {
+				margin-left: 13px;
+			}
 		}
 
 		td {
@@ -472,6 +504,13 @@ table {
 	align-items: center;
 	margin-bottom: 16px;
 	position: relative;
+	align-items: stretch;
+	max-height: 50px;
+
+	& > div {
+		display: flex;
+		align-items: center;
+	}
 
 	.filter--button,
 	select {
@@ -485,10 +524,29 @@ table {
 		min-width: 145px;
 		font-size: 14px;
 		line-height: 14px;
-		margin-left: 8px;
+		margin: 0 0 0 8px;
 
 		div {
 			margin: 0 8px;
+		}
+	}
+
+	.select {
+		width: fit-content;
+		position: relative;
+
+		&::after {
+			content: '';
+			position: absolute;
+			background: url('../../assets/img/angle-arrow-down.svg');
+			width: 26px;
+			height: 24px;
+			background-size: contain;
+			right: 5px;
+		}
+
+		select {
+			height: 46px;
 		}
 	}
 
@@ -526,4 +584,25 @@ table {
 	button {
 		padding: 5px;
 	}
+}
+
+.rdrDateDisplayWrapper {
+	width: 100%;
+}
+
+/*----- scrollbar styles ------*/
+
+::-webkit-scrollbar {
+	width: 7px;
+}
+
+/* track */
+::-webkit-scrollbar-track {
+	background: transparent;
+}
+
+/* handle */
+::-webkit-scrollbar-thumb {
+	background: rgb(217, 216, 216);
+	border-radius: 10px;
 }
