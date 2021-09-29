@@ -205,8 +205,8 @@ paths:
     get: 
       tags: 
         - Events
-      summary: Get all events
-      operationId: GetEvents
+      summary: Get all application events
+      operationId: GetAppEvents
       parameters:
         - name: "startDate"
           in: "query"
