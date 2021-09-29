@@ -22,7 +22,7 @@ import { getDate, getTime, logout } from '../../helpers/common.helper';
 function DashboardPage() {
 	const [dashboardData, setDashboardData] = useState({ apps: 0, messages: 0, messageData: [] });
 	const [viewAllEventData, toggleViewAllEventDataState] = useState(false);
-	const [showDropdown, toggleShowDropdown] = useState(true);
+	const [showDropdown, toggleShowDropdown] = useState(false);
 	const [viewAllResponseData, toggleViewAllResponseData] = useState(false);
 	const [apps, setAppsData] = useState({ content: [], pagination: { page: 1, totalPage: 0 } });
 	const [events, setEventsData] = useState({ content: [], pagination: { page: 1, totalPage: 0 } });
@@ -30,6 +30,8 @@ function DashboardPage() {
 	const [tabs] = useState(['events', 'apps']);
 	const [activeTab, setActiveTab] = useState('events');
 	const [showFilterCalendar, toggleShowFilterCalendar] = useState(false);
+	const [showEventFilterCalendar, toggleShowEventFilterCalendar] = useState(false);
+	const [eventApp, setEventApp] = useState('');
 	const [organisations, setOrganisations] = useState([]);
 	const [OrganisationDetails, setOrganisationDetails] = useState({
 		database: {
@@ -74,8 +76,15 @@ function DashboardPage() {
 		response_data: ''
 	});
 	const [detailsItem, setDetailsItem] = useState();
-	const [filterFrequency, setFilterFrequency] = useState('daily');
+	const [filterFrequency, setFilterFrequency] = useState('');
 	const [filterDates, setFilterDates] = useState([
+		{
+			startDate: new Date(new Date().setDate(new Date().getDate() - 20)),
+			endDate: new Date(),
+			key: 'selection'
+		}
+	]);
+	const [eventFilterDates, setEventFilterDates] = useState([
 		{
 			startDate: new Date(new Date().setDate(new Date().getDate() - 20)),
 			endDate: new Date(),
@@ -116,17 +125,27 @@ function DashboardPage() {
 		setDisplayedEvents(displayedEvents);
 	};
 
+	const setDateForFilter = date => {
+		const _date = String(new Date(date).toISOString()).split('.')[0];
+		return _date;
+	};
+
 	const getEvents = useCallback(
-		async ({ page, eventsData }) => {
+		async ({ page, eventsData, dates }) => {
+			if (!dates) dates = [{ startDate: null, endDate: null }];
+			let { startDate, endDate } = dates[0];
+
 			try {
 				const eventsResponse = await (
 					await request({
-						url: `/events?sort=AESC&page=${page || 1}&perPage=20&orgId=${activeorganisation.uid}`,
+						url: `/events?sort=AESC&page=${page || 1}&perPage=20&orgId=${activeorganisation.uid}&startDate=${startDate ? setDateForFilter(startDate) : ''}&endDate=${
+							endDate ? setDateForFilter(endDate) : ''
+						}&appId=${eventApp}`,
 						method: 'GET'
 					})
 				).data;
 
-				if (eventsData?.pagination?.next === page) {
+				if (eventsData && eventsData?.pagination?.next === page) {
 					const content = [...eventsData.content, ...eventsResponse.data.content];
 					const pagination = eventsResponse.data.pagination;
 					setEventsData({ content, pagination });
@@ -140,7 +159,7 @@ function DashboardPage() {
 				return error;
 			}
 		},
-		[activeorganisation]
+		[activeorganisation, eventApp]
 	);
 
 	const getApps = useCallback(
@@ -277,8 +296,8 @@ function DashboardPage() {
 
 		fetchDashboardData();
 		getOrganisationDetails();
-		if (activeTab === 'apps') getApps({ page: 1 });
-		if (activeTab === 'events') getEvents({ page: 1 });
+		getApps({ page: 1 });
+		getEvents({ page: 1 });
 	}, [options, activeTab, filterDates, activeorganisation, organisations, filterFrequency, getEvents, getApps]);
 
 	return (
@@ -403,25 +422,64 @@ function DashboardPage() {
 
 				<section className="card dashboard--logs">
 					<div className="dashboard--logs--tabs">
-						<div className="tabs">
-							{tabs.map((tab, index) => (
-								<button
-									onClick={() => {
-										setActiveTab(tab);
-										setDetailsItem();
-										setEventDeliveryAtempt({
-											ip_address: '',
-											http_status: '',
-											api_version: '',
-											updated_at: 0,
-											deleted_at: 0
-										});
-									}}
-									key={index}
-									className={'clear tab ' + (activeTab === tab ? 'active' : '')}>
-									{tab}
+						<div className="dashboard--logs--tabs--head tabs">
+							<div className="tabs">
+								{tabs.map((tab, index) => (
+									<button
+										onClick={() => {
+											setActiveTab(tab);
+											setDetailsItem();
+											setEventDeliveryAtempt({
+												ip_address: '',
+												http_status: '',
+												api_version: '',
+												updated_at: 0,
+												deleted_at: 0
+											});
+										}}
+										key={index}
+										className={'clear tab ' + (activeTab === tab ? 'active' : '')}>
+										{tab}
+									</button>
+								))}
+							</div>
+
+							<div className="filter">
+								<button className="filter--button" onClick={() => toggleShowEventFilterCalendar(!showEventFilterCalendar)}>
+									<img src={CalendarIcon} alt="calender icon" />
+									<div>Date</div>
+									<img src={AngleArrowDownIcon} alt="arrow down icon" />
 								</button>
-							))}
+								{showEventFilterCalendar && (
+									<div className="date-filter--container">
+										<DateRange onChange={item => setEventFilterDates([item.selection])} editableDateInputs={true} moveRangeOnFirstSelection={false} ranges={eventFilterDates} />
+										<div className="button-container">
+											<button className="primary" onClick={() => getEvents({ dates: eventFilterDates })}>
+												Apply
+											</button>
+											<button
+												className="primary outline"
+												onClick={() => {
+													getEvents({ page: 1 });
+													toggleShowEventFilterCalendar(!showEventFilterCalendar);
+												}}>
+												Clear
+											</button>
+										</div>
+									</div>
+								)}
+
+								<div className="select">
+									<select value={eventApp} onChange={event => setEventApp(event.target.value)} aria-label="frequency">
+										<option value="">Apps</option>
+										{apps.content.map((app, index) => (
+											<option key={index} value={app.uid}>
+												{app.name}
+											</option>
+										))}
+									</select>
+								</div>
+							</div>
 						</div>
 
 						<div className="table">
