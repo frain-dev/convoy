@@ -104,9 +104,10 @@ func ensureNewMessage(appRepo convoy.ApplicationRepository, msgRepo convoy.Messa
 				CreatedAt:       primitive.NewDateTimeFromTime(time.Now()),
 				UpdatedAt:       primitive.NewDateTimeFromTime(time.Now()),
 				AppMetadata: &convoy.AppMetadata{
-					OrgID:     app.OrgID,
-					Secret:    app.Secret,
-					Endpoints: activeEndpoints,
+					OrgID:        app.OrgID,
+					Secret:       app.Secret,
+					SupportEmail: app.SupportEmail,
+					Endpoints:    activeEndpoints,
 				},
 				Status:         convoy.ScheduledMessageStatus,
 				DocumentStatus: convoy.ActiveDocumentStatus,

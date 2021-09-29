@@ -197,6 +197,7 @@ func ensureNewApp(orgRepo convoy.OrganisationRepository, appRepo convoy.Applicat
 				OrgID:          org.UID,
 				Title:          appName,
 				Secret:         newApp.Secret,
+				SupportEmail:   newApp.SupportEmail,
 				CreatedAt:      primitive.NewDateTimeFromTime(time.Now()),
 				UpdatedAt:      primitive.NewDateTimeFromTime(time.Now()),
 				Endpoints:      []convoy.Endpoint{},
@@ -238,6 +239,10 @@ func ensureAppUpdate(appRepo convoy.ApplicationRepository) func(next http.Handle
 			app.Title = appName
 			if !util.IsStringEmpty(appUpdate.Secret) {
 				app.Secret = appUpdate.Secret
+			}
+
+			if !util.IsStringEmpty(appUpdate.SupportEmail) {
+				app.SupportEmail = appUpdate.SupportEmail
 			}
 
 			err = appRepo.UpdateApplication(r.Context(), app)

@@ -9,6 +9,7 @@ import (
 	"github.com/frain-dev/convoy/config"
 	"github.com/frain-dev/convoy/net"
 	"github.com/frain-dev/convoy/queue"
+	"github.com/frain-dev/convoy/smtp"
 	"github.com/frain-dev/convoy/util"
 	"github.com/google/uuid"
 	log "github.com/sirupsen/logrus"
@@ -21,16 +22,18 @@ type Producer struct {
 	msgRepo         *convoy.MessageRepository
 	dispatch        *net.Dispatcher
 	signatureConfig config.SignatureConfiguration
+	smtpConfig      config.SMTPConfiguration
 	quit            chan chan error
 }
 
-func NewProducer(queuer *queue.Queuer, appRepo *convoy.ApplicationRepository, msgRepo *convoy.MessageRepository, signatureConfig config.SignatureConfiguration) *Producer {
+func NewProducer(queuer *queue.Queuer, appRepo *convoy.ApplicationRepository, msgRepo *convoy.MessageRepository, signatureConfig config.SignatureConfiguration, smtpConfig config.SMTPConfiguration) *Producer {
 	return &Producer{
 		Data:            (*queuer).Read(),
 		appRepo:         appRepo,
 		msgRepo:         msgRepo,
 		dispatch:        net.NewDispatcher(),
 		signatureConfig: signatureConfig,
+		smtpConfig:      smtpConfig,
 		quit:            make(chan chan error),
 	}
 }
@@ -119,6 +122,10 @@ func (p *Producer) postMessages(msgRepo convoy.MessageRepository, appRepo convoy
 	if done {
 		m.Status = convoy.SuccessMessageStatus
 		m.Description = ""
+
+		// TODO: If endpoint is disabled.
+		// Enable it both in the Endpoint and in the EndpointMetadata.
+
 	} else {
 		m.Status = convoy.RetryMessageStatus
 
@@ -152,6 +159,19 @@ func (p *Producer) postMessages(msgRepo convoy.MessageRepository, appRepo convoy
 			err := appRepo.UpdateApplicationEndpointsAsDisabled(context.Background(), m.AppID, inactiveEndpoints, true)
 			if err != nil {
 				log.WithError(err).Error("Failed to update disabled app endpoints")
+				return
+			}
+
+			s, err := smtp.New(&p.smtpConfig)
+			if err == nil {
+				for i := 0; i < len(m.AppMetadata.Endpoints); i++ {
+					email := m.AppMetadata.SupportEmail
+					endpoint := m.AppMetadata.Endpoints[i]
+					err = s.SendEmailNotification(email, endpoint)
+					if err != nil {
+						log.WithError(err).Error("Failed to send notification email")
+					}
+				}
 			}
 		}()
 	}
