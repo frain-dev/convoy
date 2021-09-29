@@ -46,6 +46,15 @@
 			</section>
 		</header>
 
+		<section class="section companies">
+			<p>Companies using us:</p>
+			<ul>
+				<li>
+					<img src="~/assets/images/buycoins-logo.svg" style="width: 80px" alt="buycoins logo" />
+				</li>
+			</ul>
+		</section>
+
 		<section class="section features" id="features">
 			<div class="container">
 				<h2 class="section--title">Why Convoy</h2>
@@ -354,7 +363,7 @@ header {
 		min-height: 603px;
 		height: 100%;
 		flex-direction: column;
-		padding: 150px 0 100px;
+		padding: 75px 0 100px;
 
 		@media (min-width: $desktopBreakPoint) {
 			flex-direction: row;
@@ -454,6 +463,33 @@ header {
 	.section--description {
 		font-size: 18px;
 		line-height: 30px;
+	}
+}
+
+section.companies {
+	display: flex;
+	max-width: 1150px;
+	margin: -30px auto 0;
+	justify-content: space-between;
+	padding: 25px 20px;
+	background: #fafafe;
+	border-radius: 8px 8px 0px 0px;
+
+	p {
+		font-weight: bold;
+		font-size: 16px;
+		line-height: 24px;
+	}
+
+	ul {
+		display: flex;
+		align-items: center;
+
+		li {
+			&:not(:last-of-type) {
+				margin-right: 50px;
+			}
+		}
 	}
 }
 
