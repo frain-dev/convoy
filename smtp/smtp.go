@@ -69,13 +69,18 @@ func (s *SmtpClient) SendEmailNotification(email string, endpoint convoy.Endpoin
 	var body bytes.Buffer
 	buildHeaders(s, &body, email)
 
-	templ.Execute(&body, struct {
-		Url    string
-		Status bool
+	err = templ.Execute(&body, struct {
+		URL      string
+		Disabled bool
 	}{
-		Url:    endpoint.TargetURL,
-		Status: endpoint.Disabled,
+		URL:      endpoint.TargetURL,
+		Disabled: endpoint.Disabled,
 	})
+
+	if err != nil {
+		log.WithError(err).Error("Failed to build template")
+		return err
+	}
 
 	data := bytes.NewReader(body.Bytes())
 	err = smtp.SendMail(s.url, auth, s.from, to, data)
@@ -93,7 +98,7 @@ func buildHeaders(s *SmtpClient, body *bytes.Buffer, email string) {
 			"Content-Type: text/html;\r\n" +
 			"From: \"Convoy Status\" <" + s.from + ">\r\n" +
 			"To: " + email + "\r\n" +
-			"Subject: Convoy Endpoint Status Update \r\n" +
+			"Subject: Endpoint Status Update \r\n" +
 			"\r\n",
 	))
 }
