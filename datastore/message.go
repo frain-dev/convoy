@@ -131,8 +131,8 @@ func (db *messageRepo) LoadMessageIntervals(ctx context.Context, orgId string, s
 	return messagesIntervals, nil
 }
 
-func (db *messageRepo) LoadMessagesPagedByAppId(ctx context.Context, appId string, pageable models.Pageable) ([]convoy.Message, pager.PaginationData, error) {
-	filter := bson.M{"app_id": appId, "document_status": bson.M{"$ne": convoy.DeletedDocumentStatus}}
+func (db *messageRepo) LoadMessagesPagedByAppId(ctx context.Context, appId string, searchParams models.SearchParams, pageable models.Pageable) ([]convoy.Message, pager.PaginationData, error) {
+	filter := bson.M{"app_id": appId, "document_status": bson.M{"$ne": convoy.DeletedDocumentStatus}, "created_at": getCreatedDateFilter(searchParams)}
 
 	var messages []convoy.Message
 	paginatedData, err := pager.New(db.inner).Context(ctx).Limit(int64(pageable.PerPage)).Page(int64(pageable.Page)).Sort("created_at", pageable.Sort).Filter(filter).Decode(&messages).Find()
@@ -273,10 +273,21 @@ func (db *messageRepo) UpdateMessageWithAttempt(ctx context.Context, m convoy.Me
 	return err
 }
 
-func (db *messageRepo) LoadMessagesPaged(ctx context.Context, orgId string, pageable models.Pageable) ([]convoy.Message, pager.PaginationData, error) {
-	filter := bson.M{"document_status": bson.M{"$ne": convoy.DeletedDocumentStatus}}
-	if !util.IsStringEmpty(orgId) {
-		filter = bson.M{"app_metadata.org_id": orgId, "document_status": bson.M{"$ne": convoy.DeletedDocumentStatus}}
+func (db *messageRepo) LoadMessagesPaged(ctx context.Context, orgId string, appId string, searchParams models.SearchParams, pageable models.Pageable) ([]convoy.Message, pager.PaginationData, error) {
+	filter := bson.M{"document_status": bson.M{"$ne": convoy.DeletedDocumentStatus}, "created_at": getCreatedDateFilter(searchParams)}
+
+	hasAppFilter := !util.IsStringEmpty(appId)
+	hasOrgFilter := !util.IsStringEmpty(orgId)
+
+	if hasAppFilter && hasOrgFilter {
+		filter = bson.M{"app_metadata.org_id": orgId, "app_id": appId, "document_status": bson.M{"$ne": convoy.DeletedDocumentStatus},
+			"created_at": getCreatedDateFilter(searchParams)}
+	} else if hasAppFilter {
+		filter = bson.M{"app_id": appId, "document_status": bson.M{"$ne": convoy.DeletedDocumentStatus},
+			"created_at": getCreatedDateFilter(searchParams)}
+	} else if hasOrgFilter {
+		filter = bson.M{"app_metadata.org_id": orgId, "document_status": bson.M{"$ne": convoy.DeletedDocumentStatus},
+			"created_at": getCreatedDateFilter(searchParams)}
 	}
 
 	var messages []convoy.Message
@@ -290,4 +301,8 @@ func (db *messageRepo) LoadMessagesPaged(ctx context.Context, orgId string, page
 	}
 
 	return messages, paginatedData.Pagination, nil
+}
+
+func getCreatedDateFilter(searchParams models.SearchParams) bson.M {
+	return bson.M{"$gte": primitive.NewDateTimeFromTime(time.Unix(searchParams.CreatedAtStart, 0)), "$lte": primitive.NewDateTimeFromTime(time.Unix(searchParams.CreatedAtEnd, 0))}
 }
