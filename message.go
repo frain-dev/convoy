@@ -133,12 +133,12 @@ type MessageAttempt struct {
 type MessageRepository interface {
 	CreateMessage(context.Context, *Message) error
 	LoadMessageIntervals(context.Context, string, models.SearchParams, Period, int) ([]models.MessageInterval, error)
-	LoadMessagesPagedByAppId(context.Context, string, models.Pageable) ([]Message, pager.PaginationData, error)
+	LoadMessagesPagedByAppId(context.Context, string, models.SearchParams, models.Pageable) ([]Message, pager.PaginationData, error)
 	FindMessageByID(ctx context.Context, id string) (*Message, error)
 	LoadMessagesScheduledForPosting(context.Context) ([]Message, error)
 	LoadMessagesForPostingRetry(context.Context) ([]Message, error)
 	LoadAbandonedMessagesForPostingRetry(context.Context) ([]Message, error)
 	UpdateStatusOfMessages(context.Context, []Message, MessageStatus) error
 	UpdateMessageWithAttempt(ctx context.Context, m Message, attempt MessageAttempt) error
-	LoadMessagesPaged(context.Context, string, models.Pageable) ([]Message, pager.PaginationData, error)
+	LoadMessagesPaged(context.Context, string, string, models.SearchParams, models.Pageable) ([]Message, pager.PaginationData, error)
 }

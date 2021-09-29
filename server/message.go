@@ -131,8 +131,15 @@ func fetchAllMessages(msgRepo convoy.MessageRepository) func(next http.Handler) 
 			pageable := getPageableFromContext(r.Context())
 
 			orgId := r.URL.Query().Get("orgId")
+			appId := r.URL.Query().Get("appId")
 
-			m, paginationData, err := msgRepo.LoadMessagesPaged(r.Context(), orgId, pageable)
+			searchParams, err := getSearchParams(r)
+			if err != nil {
+				_ = render.Render(w, r, newErrorResponse(err.Error(), http.StatusBadRequest))
+				return
+			}
+
+			m, paginationData, err := msgRepo.LoadMessagesPaged(r.Context(), orgId, appId, searchParams, pageable)
 			if err != nil {
 				_ = render.Render(w, r, newErrorResponse("an error occurred while fetching app events", http.StatusInternalServerError))
 				log.Errorln("error while fetching events - ", err)
@@ -153,7 +160,13 @@ func fetchAppMessages(msgRepo convoy.MessageRepository) func(next http.Handler) 
 			pageable := getPageableFromContext(r.Context())
 			app := getApplicationFromContext(r.Context())
 
-			m, paginationData, err := msgRepo.LoadMessagesPagedByAppId(r.Context(), app.UID, pageable)
+			searchParams, err := getSearchParams(r)
+			if err != nil {
+				_ = render.Render(w, r, newErrorResponse(err.Error(), http.StatusBadRequest))
+				return
+			}
+
+			m, paginationData, err := msgRepo.LoadMessagesPagedByAppId(r.Context(), app.UID, searchParams, pageable)
 			if err != nil {
 				_ = render.Render(w, r, newErrorResponse("an error occurred while fetching app events", http.StatusInternalServerError))
 				log.Errorln("error while fetching events - ", err)
@@ -165,6 +178,47 @@ func fetchAppMessages(msgRepo convoy.MessageRepository) func(next http.Handler) 
 			next.ServeHTTP(w, r)
 		})
 	}
+}
+
+func getSearchParams(r *http.Request) (models.SearchParams, error) {
+	var searchParams models.SearchParams
+	format := "2006-01-02T15:04:05"
+	startDate := r.URL.Query().Get("startDate")
+	endDate := r.URL.Query().Get("endDate")
+
+	var err error
+
+	var startT time.Time
+	if len(startDate) == 0 {
+		startT = time.Unix(0, 0)
+	} else {
+		startT, err = time.Parse(format, startDate)
+		if err != nil {
+			log.Errorln("error parsing startDate - ", err)
+			return searchParams, errors.New("please specify a startDate in the format " + format)
+		}
+	}
+	var endT time.Time
+	if len(endDate) == 0 {
+		now := time.Now()
+		endT = time.Date(now.Year(), now.Month(), now.Day(), 23, 59, 59, 999999999, now.Location())
+	} else {
+		endT, err = time.Parse(format, endDate)
+		if err != nil {
+			return searchParams, errors.New("please specify a correct endDate in the format " + format + " or none at all")
+		}
+	}
+
+	if err := ensurePeriod(startT, endT); err != nil {
+		return searchParams, err
+	}
+
+	searchParams = models.SearchParams{
+		CreatedAtStart: startT.Unix(),
+		CreatedAtEnd:   endT.Unix(),
+	}
+
+	return searchParams, nil
 }
 
 func requireMessage(msgRepo convoy.MessageRepository) func(next http.Handler) http.Handler {
