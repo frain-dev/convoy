@@ -32,7 +32,7 @@
 		"url": "smtp.sendgrid.net",
 		"port": 2525,
 		"username": "apikey",
-		"password": "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",
+		"password": "<api-key-from-sendgrid>",
 		"from": "support@frain.dev"
 	},
 	"ui": {
