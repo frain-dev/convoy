@@ -161,6 +161,10 @@
 				<nav>
 					<div class="logo">
 						<img src="~/assets/images/logo.svg" alt="logo" />
+						<p>
+							by
+							<a href="https://frain.dev">Frain</a>
+						</p>
 					</div>
 
 					<ul>
@@ -663,6 +667,19 @@ footer {
 	background: #1e252b;
 	padding: 48px 20px 32px;
 	color: #ffffff;
+
+	.logo {
+		p {
+			text-align: left;
+			margin-top: 10px;
+			opacity: 0.3;
+
+			a {
+				font-weight: bold;
+				text-decoration: underline;
+			}
+		}
+	}
 
 	.container {
 		max-width: 1376px;
