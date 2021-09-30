@@ -29,7 +29,8 @@
 	},
 	"smtp": {
 		"provider": "sendgrid",
-		"url": "smtp.sendgrid.net:2525",
+		"url": "smtp.sendgrid.net",
+		"port": 2525,
 		"username": "apikey",
 		"password": "<api-key-from-sendgrid>",
 		"from": "support@frain.dev"

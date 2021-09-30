@@ -5,20 +5,21 @@ import (
 	"fmt"
 	"html/template"
 
-	"github.com/emersion/go-sasl"
-	"github.com/emersion/go-smtp"
 	"github.com/frain-dev/convoy"
 	"github.com/frain-dev/convoy/config"
 	"github.com/frain-dev/convoy/util"
 	log "github.com/sirupsen/logrus"
+	"gopkg.in/gomail.v2"
 )
 
 const (
+	NotificationSubject  = "Endpoint Status Update"
 	NotificationTemplate = "endpoint.update.html"
 )
 
 type SmtpClient struct {
 	url, username, password, from string
+	port                          uint32
 }
 
 func New(cfg *config.SMTPConfiguration) (*SmtpClient, error) {
@@ -27,6 +28,11 @@ func New(cfg *config.SMTPConfiguration) (*SmtpClient, error) {
 	errMsg := "Missing SMTP Config - %s"
 	if util.IsStringEmpty(cfg.URL) {
 		err = fmt.Errorf(errMsg, "URL")
+		log.WithError(err).Error()
+	}
+
+	if cfg.Port == 0 {
+		err = fmt.Errorf(errMsg, "Port")
 		log.WithError(err).Error()
 	}
 
@@ -47,6 +53,7 @@ func New(cfg *config.SMTPConfiguration) (*SmtpClient, error) {
 
 	return &SmtpClient{
 		url:      cfg.URL,
+		port:     cfg.Port,
 		username: cfg.Username,
 		password: cfg.Password,
 		from:     cfg.From,
@@ -54,19 +61,16 @@ func New(cfg *config.SMTPConfiguration) (*SmtpClient, error) {
 }
 
 func (s *SmtpClient) SendEmailNotification(email string, endpoint convoy.EndpointMetadata) error {
-	// Set up authentication information.
-	auth := sasl.NewPlainClient("", s.username, s.password)
+	// Compose Message
+	m := s.setHeaders(email)
 
-	to := []string{email}
-
+	// Set body
 	templ, err := template.ParseFiles(NotificationTemplate)
 	if err != nil {
 		log.WithError(err).Error("Failed to parse notification template")
 	}
 
 	var body bytes.Buffer
-	buildHeaders(s, &body, email)
-
 	err = templ.Execute(&body, struct {
 		URL      string
 		Disabled bool
@@ -79,24 +83,23 @@ func (s *SmtpClient) SendEmailNotification(email string, endpoint convoy.Endpoin
 		log.WithError(err).Error("Failed to build template")
 		return err
 	}
+	m.SetBody("text/html", body.String())
 
-	data := bytes.NewReader(body.Bytes())
-	err = smtp.SendMail(s.url, auth, s.from, to, data)
-	if err != nil {
-		log.WithError(err).Error("Failed to send email notification")
+	d := gomail.NewDialer(s.url, int(s.port), s.username, s.password)
+	// Send Email
+	if err = d.DialAndSend(m); err != nil {
 		return err
 	}
 
 	return nil
 }
 
-func buildHeaders(s *SmtpClient, body *bytes.Buffer, email string) {
-	body.Write([]byte(
-		"MIME-version: 1.0;\n" +
-			"Content-Type: text/html;\r\n" +
-			"From: \"Convoy Status\" <" + s.from + ">\r\n" +
-			"To: " + email + "\r\n" +
-			"Subject: Endpoint Status Update \r\n" +
-			"\r\n",
-	))
+func (s *SmtpClient) setHeaders(email string) *gomail.Message {
+	m := gomail.NewMessage()
+
+	m.SetHeader("From", fmt.Sprintf("Convoy Status <%s>", s.from))
+	m.SetHeader("To", email)
+	m.SetHeader("Subject", NotificationSubject)
+
+	return m
 }

@@ -21,7 +21,7 @@ type DatabaseConfiguration struct {
 
 type ServerConfiguration struct {
 	HTTP struct {
-		Port int `json:"port"`
+		Port uint32 `json:"port"`
 	} `json:"http"`
 }
 
@@ -65,6 +65,7 @@ type SignatureConfiguration struct {
 type SMTPConfiguration struct {
 	Provider string `json:"provider"`
 	URL      string `json:"url"`
+	Port     uint32 `json:"port"`
 	Username string `json:"username"`
 	Password string `json:"password"`
 	From     string `json:"from"`
@@ -129,9 +130,9 @@ func LoadConfig(p string) error {
 	if port, err := strconv.Atoi(os.Getenv("PORT")); err == nil {
 		c.Server = ServerConfiguration{
 			HTTP: struct {
-				Port int `json:"port"`
+				Port uint32 `json:"port"`
 			}{
-				Port: port,
+				Port: uint32(port),
 			},
 		}
 	}
