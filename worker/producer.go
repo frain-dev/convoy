@@ -123,9 +123,6 @@ func (p *Producer) postMessages(msgRepo convoy.MessageRepository, appRepo convoy
 		m.Status = convoy.SuccessMessageStatus
 		m.Description = ""
 
-		// TODO: If endpoint is disabled.
-		// Enable it both in the Endpoint and in the EndpointMetadata.
-
 	} else {
 		m.Status = convoy.RetryMessageStatus
 

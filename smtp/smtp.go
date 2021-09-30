@@ -57,8 +57,6 @@ func (s *SmtpClient) SendEmailNotification(email string, endpoint convoy.Endpoin
 	// Set up authentication information.
 	auth := sasl.NewPlainClient("", s.username, s.password)
 
-	// Connect to the server, authenticate, set the sender and recipient,
-	// and send the email all in one step.
 	to := []string{email}
 
 	templ, err := template.ParseFiles(NotificationTemplate)
