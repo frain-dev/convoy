@@ -11,7 +11,7 @@ import (
 func ParseMetadataFromActiveEndpoints(endpoints []convoy.Endpoint) []convoy.EndpointMetadata {
 	m := make([]convoy.EndpointMetadata, 0)
 	for _, e := range endpoints {
-		if !e.Disabled {
+		if e.Status == convoy.ActiveEndpointStatus {
 			m = append(m, convoy.EndpointMetadata{
 				UID:       e.UID,
 				TargetURL: e.TargetURL,

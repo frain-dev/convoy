@@ -96,7 +96,7 @@ func buildRoutes(app *applicationHandler) http.Handler {
 						msgEventSubRouter.Use(requireMessage(app.msgRepo))
 
 						msgEventSubRouter.Get("/", app.GetAppMessage)
-						msgEventSubRouter.With(resendMessage(app.msgRepo)).Put("/resend", app.ResendAppMessage)
+						msgEventSubRouter.With(resendMessage(app.appRepo, app.msgRepo)).Put("/resend", app.ResendAppMessage)
 					})
 				})
 
@@ -151,7 +151,7 @@ func buildRoutes(app *applicationHandler) http.Handler {
 			dashboardRouter.Route("/events/{eventID}", func(msgSubRouter chi.Router) {
 				msgSubRouter.Use(requireMessage(app.msgRepo))
 
-				msgSubRouter.With(resendMessage(app.msgRepo)).Put("/resend", app.ResendAppMessage)
+				msgSubRouter.With(resendMessage(app.appRepo, app.msgRepo)).Put("/resend", app.ResendAppMessage)
 			})
 
 			dashboardRouter.With(fetchAllConfigDetails()).Get("/config", app.GetAllConfigDetails)
@@ -187,7 +187,7 @@ func buildRoutes(app *applicationHandler) http.Handler {
 						msgEventSubRouter.Use(requireMessage(app.msgRepo))
 
 						msgEventSubRouter.Get("/", app.GetAppMessage)
-						msgEventSubRouter.With(resendMessage(app.msgRepo)).Put("/resend", app.ResendAppMessage)
+						msgEventSubRouter.With(resendMessage(app.appRepo, app.msgRepo)).Put("/resend", app.ResendAppMessage)
 					})
 				})
 

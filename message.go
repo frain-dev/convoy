@@ -55,9 +55,9 @@ type AppMetadata struct {
 }
 
 type EndpointMetadata struct {
-	UID       string `json:"uid" bson:"uid"`
-	TargetURL string `json:"target_url" bson:"target_url"`
-	Disabled  bool   `json:"disabled" bson:"disabled"`
+	UID       string         `json:"uid" bson:"uid"`
+	TargetURL string         `json:"target_url" bson:"target_url"`
+	Status    EndpointStatus `json:"status" bson:"status"`
 
 	Sent bool `json:"sent" bson:"sent"`
 }

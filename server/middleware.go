@@ -479,7 +479,7 @@ func updateEndpointIfFound(endpoints *[]convoy.Endpoint, id string, e models.End
 		if endpoint.UID == id && endpoint.DeletedAt == 0 {
 			endpoint.TargetURL = e.URL
 			endpoint.Description = e.Description
-			endpoint.Disabled = e.Disabled
+			endpoint.Status = convoy.ActiveEndpointStatus
 			endpoint.UpdatedAt = primitive.NewDateTimeFromTime(time.Now())
 			(*endpoints)[i] = endpoint
 			return endpoints, &endpoint, nil

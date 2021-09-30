@@ -72,11 +72,11 @@ func (s *SmtpClient) SendEmailNotification(email string, endpoint convoy.Endpoin
 
 	var body bytes.Buffer
 	err = templ.Execute(&body, struct {
-		URL      string
-		Disabled bool
+		URL    string
+		Status convoy.EndpointStatus
 	}{
-		URL:      endpoint.TargetURL,
-		Disabled: endpoint.Disabled,
+		URL:    endpoint.TargetURL,
+		Status: endpoint.Status,
 	})
 
 	if err != nil {

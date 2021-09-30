@@ -173,6 +173,25 @@ func (db *appRepo) FindApplicationByID(ctx context.Context,
 	return app, err
 }
 
+func (db *appRepo) FindApplicationEndpointByID(ctx context.Context, appID string, endpointID string) (*convoy.Endpoint, error) {
+
+	app, err := db.FindApplicationByID(context.Background(), appID)
+	if err != nil {
+		return nil, err
+	}
+
+	return findEndpoint(&app.Endpoints, endpointID)
+}
+
+func findEndpoint(endpoints *[]convoy.Endpoint, id string) (*convoy.Endpoint, error) {
+	for _, endpoint := range *endpoints {
+		if endpoint.UID == id && endpoint.DeletedAt == 0 {
+			return &endpoint, nil
+		}
+	}
+	return nil, convoy.ErrEndpointNotFound
+}
+
 func (db *appRepo) UpdateApplication(ctx context.Context,
 	app *convoy.Application) error {
 
@@ -259,7 +278,7 @@ func (db *appRepo) deleteApp(ctx context.Context, app *convoy.Application, updat
 	return nil
 }
 
-func (db *appRepo) UpdateApplicationEndpointsAsDisabled(ctx context.Context, appId string, endpointIds []string, disabled bool) error {
+func (db *appRepo) UpdateApplicationEndpointsStatus(ctx context.Context, appId string, endpointIds []string, status convoy.EndpointStatus) error {
 	app := new(convoy.Application)
 
 	filter := bson.M{"uid": appId, "document_status": bson.M{"$ne": convoy.DeletedDocumentStatus}}
@@ -274,7 +293,7 @@ func (db *appRepo) UpdateApplicationEndpointsAsDisabled(ctx context.Context, app
 	m := parseMapOfUIDs(endpointIds)
 	for i := 0; i < len(app.Endpoints); i++ {
 		if _, ok := m[app.Endpoints[i].UID]; ok {
-			app.Endpoints[i].Disabled = disabled
+			app.Endpoints[i].Status = status
 		}
 	}
 

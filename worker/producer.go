@@ -69,6 +69,17 @@ func (p *Producer) postMessages(msgRepo convoy.MessageRepository, appRepo convoy
 			continue
 		}
 
+		dbEndpoint, err := appRepo.FindApplicationEndpointByID(context.Background(), m.AppID, e.UID)
+		if err != nil {
+			log.WithError(err).Errorf("could not retrieve endpoint %s", e.UID)
+			continue
+		}
+
+		if dbEndpoint.Status == convoy.InactiveEndpointStatus {
+			log.Debugf("endpoint %s is inactive, failing to send.", e.TargetURL)
+			continue
+		}
+
 		bytes, err := json.Marshal(m.Data)
 		if err != nil {
 			log.Errorf("error occurred while parsing json")
@@ -118,7 +129,9 @@ func (p *Producer) postMessages(msgRepo convoy.MessageRepository, appRepo convoy
 
 		attempt = parseAttemptFromResponse(m, *e, resp, attemptStatus)
 	}
+
 	m.Metadata.NumTrials++
+
 	if done {
 		m.Status = convoy.SuccessMessageStatus
 		m.Description = ""
@@ -153,7 +166,7 @@ func (p *Producer) postMessages(msgRepo convoy.MessageRepository, appRepo convoy
 					inactiveEndpoints = append(inactiveEndpoints, endpoint.UID)
 				}
 			}
-			err := appRepo.UpdateApplicationEndpointsAsDisabled(context.Background(), m.AppID, inactiveEndpoints, true)
+			err := appRepo.UpdateApplicationEndpointsStatus(context.Background(), m.AppID, inactiveEndpoints, convoy.InactiveEndpointStatus)
 			if err != nil {
 				log.WithError(err).Error("Failed to update disabled app endpoints")
 				return
