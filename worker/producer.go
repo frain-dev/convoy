@@ -9,6 +9,7 @@ import (
 	"github.com/frain-dev/convoy/config"
 	"github.com/frain-dev/convoy/net"
 	"github.com/frain-dev/convoy/queue"
+	"github.com/frain-dev/convoy/smtp"
 	"github.com/frain-dev/convoy/util"
 	"github.com/google/uuid"
 	log "github.com/sirupsen/logrus"
@@ -21,16 +22,18 @@ type Producer struct {
 	msgRepo         *convoy.MessageRepository
 	dispatch        *net.Dispatcher
 	signatureConfig config.SignatureConfiguration
+	smtpConfig      config.SMTPConfiguration
 	quit            chan chan error
 }
 
-func NewProducer(queuer *queue.Queuer, appRepo *convoy.ApplicationRepository, msgRepo *convoy.MessageRepository, signatureConfig config.SignatureConfiguration) *Producer {
+func NewProducer(queuer *queue.Queuer, appRepo *convoy.ApplicationRepository, msgRepo *convoy.MessageRepository, signatureConfig config.SignatureConfiguration, smtpConfig config.SMTPConfiguration) *Producer {
 	return &Producer{
 		Data:            (*queuer).Read(),
 		appRepo:         appRepo,
 		msgRepo:         msgRepo,
 		dispatch:        net.NewDispatcher(),
 		signatureConfig: signatureConfig,
+		smtpConfig:      smtpConfig,
 		quit:            make(chan chan error),
 	}
 }
@@ -63,6 +66,18 @@ func (p *Producer) postMessages(msgRepo convoy.MessageRepository, appRepo convoy
 		e := &m.AppMetadata.Endpoints[i]
 		if e.Sent {
 			log.Debugf("endpoint %s already merged with message %s\n", e.TargetURL, m.UID)
+			continue
+		}
+
+		dbEndpoint, err := appRepo.FindApplicationEndpointByID(context.Background(), m.AppID, e.UID)
+		if err != nil {
+			log.WithError(err).Errorf("could not retrieve endpoint %s", e.UID)
+			continue
+		}
+
+		if dbEndpoint.Status == convoy.InactiveEndpointStatus {
+			log.Debugf("endpoint %s is inactive, failing to send.", e.TargetURL)
+			done = false
 			continue
 		}
 
@@ -104,6 +119,16 @@ func (p *Producer) postMessages(msgRepo convoy.MessageRepository, appRepo convoy
 			log.Infof("%s sent\n", m.UID)
 			attemptStatus = convoy.SuccessMessageStatus
 			e.Sent = true
+
+			if dbEndpoint.Status == convoy.PendingEndpointStatus {
+				dbEndpoint.Status = convoy.ActiveEndpointStatus
+
+				activeEnpoints := []string{dbEndpoint.UID}
+				err := appRepo.UpdateApplicationEndpointsStatus(context.Background(), m.AppID, activeEnpoints, convoy.ActiveEndpointStatus)
+				if err != nil {
+					log.WithError(err).Error("Failed to reactivate endpoint after successful retry")
+				}
+			}
 		} else {
 			requestLogger.Errorf("%s", m.UID)
 			done = false
@@ -115,10 +140,13 @@ func (p *Producer) postMessages(msgRepo convoy.MessageRepository, appRepo convoy
 
 		attempt = parseAttemptFromResponse(m, *e, resp, attemptStatus)
 	}
+
 	m.Metadata.NumTrials++
+
 	if done {
 		m.Status = convoy.SuccessMessageStatus
 		m.Description = ""
+
 	} else {
 		m.Status = convoy.RetryMessageStatus
 
@@ -149,9 +177,22 @@ func (p *Producer) postMessages(msgRepo convoy.MessageRepository, appRepo convoy
 					inactiveEndpoints = append(inactiveEndpoints, endpoint.UID)
 				}
 			}
-			err := appRepo.UpdateApplicationEndpointsAsDisabled(context.Background(), m.AppID, inactiveEndpoints, true)
+			err := appRepo.UpdateApplicationEndpointsStatus(context.Background(), m.AppID, inactiveEndpoints, convoy.InactiveEndpointStatus)
 			if err != nil {
 				log.WithError(err).Error("Failed to update disabled app endpoints")
+				return
+			}
+
+			s, err := smtp.New(&p.smtpConfig)
+			if err == nil {
+				for i := 0; i < len(m.AppMetadata.Endpoints); i++ {
+					email := m.AppMetadata.SupportEmail
+					endpoint := m.AppMetadata.Endpoints[i]
+					err = s.SendEmailNotification(email, endpoint)
+					if err != nil {
+						log.WithError(err).Error("Failed to send notification email")
+					}
+				}
 			}
 		}()
 	}
