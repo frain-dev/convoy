@@ -47,15 +47,17 @@ type MessageMetadata struct {
 }
 
 type AppMetadata struct {
-	OrgID  string `json:"org_id" bson:"org_id"`
-	Secret string `json:"secret" bson:"secret"`
+	OrgID        string `json:"org_id" bson:"org_id"`
+	Secret       string `json:"secret" bson:"secret"`
+	SupportEmail string `json:"support_email" bson:"support_email"`
 
 	Endpoints []EndpointMetadata `json:"endpoints" bson:"endpoints"`
 }
 
 type EndpointMetadata struct {
-	UID       string `json:"uid" bson:"uid"`
-	TargetURL string `json:"target_url" bson:"target_url"`
+	UID       string         `json:"uid" bson:"uid"`
+	TargetURL string         `json:"target_url" bson:"target_url"`
+	Status    EndpointStatus `json:"status" bson:"status"`
 
 	Sent bool `json:"sent" bson:"sent"`
 }
