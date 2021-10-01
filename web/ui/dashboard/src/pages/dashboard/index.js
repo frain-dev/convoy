@@ -20,6 +20,8 @@ import 'react-date-range/dist/theme/default.css';
 import { showNotification } from '../../components/app-notification';
 import { getDate, getTime, logout } from '../../helpers/common.helper';
 
+const moment = require('moment');
+
 function DashboardPage() {
 	const [dashboardData, setDashboardData] = useState({ apps: 0, messages: 0, messageData: [] });
 	const [viewAllEventData, toggleViewAllEventDataState] = useState(false);
@@ -87,7 +89,7 @@ function DashboardPage() {
 	]);
 	const [eventFilterDates, setEventFilterDates] = useState([
 		{
-			startDate: new Date(new Date().setDate(new Date().getDate() - 2)),
+			startDate: new Date(),
 			endDate: new Date(),
 			key: 'selection'
 		}
@@ -126,24 +128,24 @@ function DashboardPage() {
 		setDisplayedEvents(displayedEvents);
 	};
 
-	const setDateForFilter = date => {
-		if (!date) return '';
-		const _date = String(date.toISOString()).split('.')[0];
-		return _date;
+	const setDateForFilter = ({ startDate, endDate }) => {
+		if (!endDate && !startDate) return { startDate: '', endDate: '' };
+		startDate = String(moment(`${moment(startDate).format('YYYY[-]MM[-]DD')} 00:00:00`).toISOString(true)).split('.')[0];
+		endDate = String(moment(`${moment(endDate).format('YYYY[-]MM[-]DD')} 23:59:59`).toISOString(true)).split('.')[0];
+		return { startDate, endDate };
 	};
 
 	const getEvents = useCallback(
 		async ({ page, eventsData, dates }) => {
 			toggleShowEventFilterCalendar(false);
 			if (!dates) dates = [{ startDate: null, endDate: null }];
-			let { startDate, endDate } = dates[0];
-
-			if (startDate && setDateForFilter(startDate) === setDateForFilter(endDate)) endDate = null;
+			const dateFromPicker = dates[0];
+			const { startDate, endDate } = setDateForFilter(dateFromPicker);
 
 			try {
 				const eventsResponse = await (
 					await request({
-						url: `/events?sort=AESC&page=${page || 1}&perPage=20&orgId=${activeorganisation.uid}&startDate=${setDateForFilter(startDate)}&endDate=${setDateForFilter(endDate)}&appId=${eventApp}`,
+						url: `/events?sort=AESC&page=${page || 1}&perPage=20&orgId=${activeorganisation.uid}&startDate=${startDate}&endDate=${endDate}&appId=${eventApp}`,
 						method: 'GET'
 					})
 				).data;
@@ -260,10 +262,9 @@ function DashboardPage() {
 			try {
 				if (organisations.length === 0) await getOrganisations();
 				if (!activeorganisation.uid) return;
+				const { startDate, endDate } = setDateForFilter(filterDates[0]);
 				const dashboardResponse = await request({
-					url: `/dashboard/${activeorganisation.uid}/summary?startDate=${setDateForFilter(filterDates[0].startDate)}&endDate=${setDateForFilter(filterDates[0].endDate)}&type=${
-						filterFrequency || 'daily'
-					}`
+					url: `/dashboard/${activeorganisation.uid}/summary?startDate=${startDate}&endDate=${endDate}&type=${filterFrequency || 'daily'}`
 				});
 				setDashboardData(dashboardResponse.data.data);
 
