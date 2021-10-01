@@ -170,7 +170,7 @@ function DashboardPage() {
 			try {
 				const appsResponse = await (
 					await request({
-						url: `/apps?sort=AESC&page=2&perPage=10&orgId=${activeorganisation.uid}`
+						url: `/apps?sort=AESC&page=${page || 1}&perPage=10&orgId=${activeorganisation.uid}`
 					})
 				).data;
 
@@ -572,6 +572,13 @@ function DashboardPage() {
 								</div>
 							)}
 
+							{activeTab === 'events' && displayedEvents.length === 0 && (
+								<div className="empty-state">
+									<img src={EmptyStateImage} alt="empty state" />
+									<p>No {activeTab} to show here</p>
+								</div>
+							)}
+
 							{apps.content.length > 0 && activeTab && activeTab === 'apps' && (
 								<div>
 									<table>
@@ -621,10 +628,10 @@ function DashboardPage() {
 								</div>
 							)}
 
-							{(apps.content.length === 0 || displayedEvents.length === 0) && activeTab && (activeTab === 'events' || activeTab === 'apps') && (
+							{apps.content.length === 0 && activeTab === 'apps' && (
 								<div className="empty-state">
 									<img src={EmptyStateImage} alt="empty state" />
-									<p>No {activeTab} to show here</p>
+									<p>No eve to show here</p>
 								</div>
 							)}
 						</div>
