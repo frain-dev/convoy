@@ -86,7 +86,7 @@ function DashboardPage() {
 	]);
 	const [eventFilterDates, setEventFilterDates] = useState([
 		{
-			startDate: new Date(new Date().setDate(new Date().getDate() - 20)),
+			startDate: new Date(new Date().setDate(new Date().getDate() - 2)),
 			endDate: new Date(),
 			key: 'selection'
 		}
@@ -132,6 +132,7 @@ function DashboardPage() {
 
 	const getEvents = useCallback(
 		async ({ page, eventsData, dates }) => {
+			toggleShowEventFilterCalendar(false);
 			if (!dates) dates = [{ startDate: null, endDate: null }];
 			let { startDate, endDate } = dates[0];
 
@@ -457,12 +458,7 @@ function DashboardPage() {
 											<button className="primary" onClick={() => getEvents({ dates: eventFilterDates })}>
 												Apply
 											</button>
-											<button
-												className="primary outline"
-												onClick={() => {
-													getEvents({ page: 1 });
-													toggleShowEventFilterCalendar(!showEventFilterCalendar);
-												}}>
+											<button className="primary outline" onClick={() => getEvents({ page: 1 })}>
 												Clear
 											</button>
 										</div>

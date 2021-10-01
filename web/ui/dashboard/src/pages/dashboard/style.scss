@@ -459,6 +459,7 @@
 
 	.filter {
 		margin-bottom: 0;
+		margin-right: 16px;
 
 		.date-filter--container {
 			background: #fff;
@@ -467,6 +468,7 @@
 			border: 1px solid #f3f5f9;
 			top: 46px;
 			right: 150px;
+			z-index: 1;
 
 			.button-container{
 				padding: 0 0 10px 10px;
@@ -478,14 +480,14 @@
 					&:first-of-type {
 						margin-right: 10px;
 					}
+				}
 			}
 		}
-	}
 
-	.rdrCalendarWrapper {
-		width: 27.667em;
-		background: transparent;
-	}
+		.rdrCalendarWrapper {
+			width: 27.667em;
+			background: transparent;
+		}
 	}
 }
 
