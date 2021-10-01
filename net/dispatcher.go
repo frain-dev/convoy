@@ -6,10 +6,17 @@ import (
 	"io/ioutil"
 	"net/http"
 	"net/http/httptrace"
+	"net/url"
 	"time"
 
 	"github.com/frain-dev/convoy/util"
 	log "github.com/sirupsen/logrus"
+)
+
+type UserAgent string
+
+const (
+	DefaultUserAgent UserAgent = "Convoy/v0.2"
 )
 
 type Dispatcher struct {
@@ -35,6 +42,7 @@ func (d *Dispatcher) SendRequest(endpoint, method string, jsonData json.RawMessa
 	}
 
 	req.Header.Add("Content-Type", "application/json")
+	req.Header.Add("User-Agent", string(DefaultUserAgent))
 
 	trace := &httptrace.ClientTrace{
 		GotConn: func(connInfo httptrace.GotConnInfo) {
@@ -51,7 +59,7 @@ func (d *Dispatcher) SendRequest(endpoint, method string, jsonData json.RawMessa
 		r.Error = err.Error()
 		return r, err
 	}
-	updateDispatcherResponse(r, response)
+	updateDispatchHeaders(r, response)
 
 	body, err := ioutil.ReadAll(response.Body)
 	r.Body = body
@@ -69,18 +77,22 @@ func (d *Dispatcher) SendRequest(endpoint, method string, jsonData json.RawMessa
 }
 
 type Response struct {
-	Status      string
-	StatusCode  int
-	ContentType string
-	Header      http.Header
-	Body        []byte
-	IP          string
-	Error       string
+	Status         string
+	StatusCode     int
+	Method         string
+	URL            *url.URL
+	RequestHeader  http.Header
+	ResponseHeader http.Header
+	Body           []byte
+	IP             string
+	Error          string
 }
 
-func updateDispatcherResponse(r *Response, res *http.Response) {
+func updateDispatchHeaders(r *Response, res *http.Response) {
 	r.Status = res.Status
 	r.StatusCode = res.StatusCode
-	r.Header = res.Header
-	r.ContentType = res.Header.Get("content-type")
+	r.URL = res.Request.URL
+	r.Method = res.Request.Method
+	r.RequestHeader = res.Request.Header
+	r.ResponseHeader = res.Header
 }
