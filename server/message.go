@@ -325,12 +325,14 @@ func resendMessage(appRepo convoy.ApplicationRepository, msgRepo convoy.MessageR
 				return
 			}
 
-			pendingEndpoints := []string{e.UID}
+			if endpoint.Status == convoy.InactiveEndpointStatus {
+				pendingEndpoints := []string{e.UID}
 
-			err = appRepo.UpdateApplicationEndpointsStatus(context.Background(), msg.AppID, pendingEndpoints, convoy.PendingEndpointStatus)
-			if err != nil {
-				_ = render.Render(w, r, newErrorResponse("failed to update endpoint status", http.StatusInternalServerError))
-				return
+				err = appRepo.UpdateApplicationEndpointsStatus(context.Background(), msg.AppID, pendingEndpoints, convoy.PendingEndpointStatus)
+				if err != nil {
+					_ = render.Render(w, r, newErrorResponse("failed to update endpoint status", http.StatusInternalServerError))
+					return
+				}
 			}
 
 			msg.Status = convoy.ScheduledMessageStatus

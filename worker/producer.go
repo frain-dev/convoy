@@ -77,6 +77,7 @@ func (p *Producer) postMessages(msgRepo convoy.MessageRepository, appRepo convoy
 
 		if dbEndpoint.Status == convoy.InactiveEndpointStatus {
 			log.Debugf("endpoint %s is inactive, failing to send.", e.TargetURL)
+			done = false
 			continue
 		}
 
@@ -118,6 +119,16 @@ func (p *Producer) postMessages(msgRepo convoy.MessageRepository, appRepo convoy
 			log.Infof("%s sent\n", m.UID)
 			attemptStatus = convoy.SuccessMessageStatus
 			e.Sent = true
+
+			if dbEndpoint.Status == convoy.PendingEndpointStatus {
+				dbEndpoint.Status = convoy.ActiveEndpointStatus
+
+				activeEnpoints := []string{dbEndpoint.UID}
+				err := appRepo.UpdateApplicationEndpointsStatus(context.Background(), m.AppID, activeEnpoints, convoy.ActiveEndpointStatus)
+				if err != nil {
+					log.WithError(err).Error("Failed to reactivate endpoint after successful retry")
+				}
+			}
 		} else {
 			requestLogger.Errorf("%s", m.UID)
 			done = false

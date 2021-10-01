@@ -356,6 +356,7 @@ func ensureNewAppEndpoint(appRepo convoy.ApplicationRepository) func(next http.H
 				UID:            uuid.New().String(),
 				TargetURL:      e.URL,
 				Description:    e.Description,
+				Status:         convoy.ActiveEndpointStatus,
 				CreatedAt:      primitive.NewDateTimeFromTime(time.Now()),
 				UpdatedAt:      primitive.NewDateTimeFromTime(time.Now()),
 				DocumentStatus: convoy.ActiveDocumentStatus,

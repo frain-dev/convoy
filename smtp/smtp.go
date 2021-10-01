@@ -2,6 +2,7 @@ package smtp
 
 import (
 	"bytes"
+	_ "embed"
 	"fmt"
 	"html/template"
 
@@ -11,6 +12,9 @@ import (
 	log "github.com/sirupsen/logrus"
 	"gopkg.in/gomail.v2"
 )
+
+//go:embed endpoint.update.html
+var t string
 
 const (
 	NotificationSubject  = "Endpoint Status Update"
@@ -64,14 +68,12 @@ func (s *SmtpClient) SendEmailNotification(email string, endpoint convoy.Endpoin
 	// Compose Message
 	m := s.setHeaders(email)
 
-	// Set body
-	templ, err := template.ParseFiles(NotificationTemplate)
-	if err != nil {
-		log.WithError(err).Error("Failed to parse notification template")
-	}
+	// Parse Template
+	templ := template.Must(template.New("notificationEmail").Parse(t))
 
+	// Set data.
 	var body bytes.Buffer
-	err = templ.Execute(&body, struct {
+	err := templ.Execute(&body, struct {
 		URL    string
 		Status convoy.EndpointStatus
 	}{
@@ -85,8 +87,8 @@ func (s *SmtpClient) SendEmailNotification(email string, endpoint convoy.Endpoin
 	}
 	m.SetBody("text/html", body.String())
 
-	d := gomail.NewDialer(s.url, int(s.port), s.username, s.password)
 	// Send Email
+	d := gomail.NewDialer(s.url, int(s.port), s.username, s.password)
 	if err = d.DialAndSend(m); err != nil {
 		return err
 	}
