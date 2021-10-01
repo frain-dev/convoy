@@ -445,37 +445,39 @@ function DashboardPage() {
 								))}
 							</div>
 
-							<div className="filter">
-								<button className="filter--button" onClick={() => toggleShowEventFilterCalendar(!showEventFilterCalendar)}>
-									<img src={CalendarIcon} alt="calender icon" />
-									<div>Date</div>
-									<img src={AngleArrowDownIcon} alt="arrow down icon" />
-								</button>
-								{showEventFilterCalendar && (
-									<div className="date-filter--container">
-										<DateRange onChange={item => setEventFilterDates([item.selection])} editableDateInputs={true} moveRangeOnFirstSelection={false} ranges={eventFilterDates} />
-										<div className="button-container">
-											<button className="primary" onClick={() => getEvents({ dates: eventFilterDates })}>
-												Apply
-											</button>
-											<button className="primary outline" onClick={() => getEvents({ page: 1 })}>
-												Clear
-											</button>
+							{activeTab === 'events' && (
+								<div className="filter">
+									<button className="filter--button" onClick={() => toggleShowEventFilterCalendar(!showEventFilterCalendar)}>
+										<img src={CalendarIcon} alt="calender icon" />
+										<div>Date</div>
+										<img src={AngleArrowDownIcon} alt="arrow down icon" />
+									</button>
+									{showEventFilterCalendar && (
+										<div className="date-filter--container">
+											<DateRange onChange={item => setEventFilterDates([item.selection])} editableDateInputs={true} moveRangeOnFirstSelection={false} ranges={eventFilterDates} />
+											<div className="button-container">
+												<button className="primary" onClick={() => getEvents({ dates: eventFilterDates })}>
+													Apply
+												</button>
+												<button className="primary outline" onClick={() => getEvents({ page: 1 })}>
+													Clear
+												</button>
+											</div>
 										</div>
-									</div>
-								)}
+									)}
 
-								<div className="select">
-									<select value={eventApp} onChange={event => setEventApp(event.target.value)} aria-label="frequency">
-										<option value="">Apps</option>
-										{apps.content.map((app, index) => (
-											<option key={index} value={app.uid}>
-												{app.name}
-											</option>
-										))}
-									</select>
+									<div className="select">
+										<select value={eventApp} onChange={event => setEventApp(event.target.value)} aria-label="frequency">
+											<option value="">Apps</option>
+											{apps.content.map((app, index) => (
+												<option key={index} value={app.uid}>
+													{app.name}
+												</option>
+											))}
+										</select>
+									</div>
 								</div>
-							</div>
+							)}
 						</div>
 
 						<div className="table">
