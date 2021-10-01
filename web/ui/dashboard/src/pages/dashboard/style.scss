@@ -234,7 +234,6 @@
 
 	.filter--button {
 		min-width: 145px;
-
 	}
 
 	.filter--button,
@@ -253,6 +252,10 @@
 		div {
 			margin: 0 8px;
 		}
+
+		img:last-of-type {
+			width: 20px;
+		}
 	}
 
 	.select {
@@ -263,8 +266,8 @@
 			content: '';
 			position: absolute;
 			background: url('../../assets/img/angle-arrow-down.svg');
-			width: 26px;
-			height: 24px;
+			width: 20px;
+			height: 20px;
 			background-size: contain;
 			right: 5px;
 		}
@@ -470,7 +473,7 @@
 			right: 150px;
 			z-index: 1;
 
-			.button-container{
+			.button-container {
 				padding: 0 0 10px 10px;
 				justify-content: flex-start;
 
@@ -643,4 +646,19 @@ table {
 ::-webkit-scrollbar-thumb {
 	background: rgb(217, 216, 216);
 	border-radius: 10px;
+}
+
+.empty-state {
+	text-align: center;
+	max-width: 200px;
+	margin: auto;
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	justify-content: center;
+
+	p {
+		margin-top: 20px;
+		font-size: 14px;
+	}
 }

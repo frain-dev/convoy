@@ -9,6 +9,7 @@ import AngleArrowDownIcon from '../../assets/img/angle-arrow-down.svg';
 import AngleArrowUpIcon from '../../assets/img/angle-arrow-up.svg';
 import ConvoyLogo from '../../assets/img/logo.svg';
 import RetryIcon from '../../assets/img/retry-icon.svg';
+import EmptyStateImage from '../../assets/img/empty-state-img.svg';
 import Chart from 'chart.js/auto';
 import { DateRange } from 'react-date-range';
 import ReactJson from 'react-json-view';
@@ -79,7 +80,7 @@ function DashboardPage() {
 	const [filterFrequency, setFilterFrequency] = useState('');
 	const [filterDates, setFilterDates] = useState([
 		{
-			startDate: new Date(new Date().setDate(new Date().getDate() - 20)),
+			startDate: new Date(new Date().setDate(new Date().getDate() - 30)),
 			endDate: new Date(),
 			key: 'selection'
 		}
@@ -126,7 +127,8 @@ function DashboardPage() {
 	};
 
 	const setDateForFilter = date => {
-		const _date = String(new Date(date).toISOString()).split('.')[0];
+		if (!date) return '';
+		const _date = String(date.toISOString()).split('.')[0];
 		return _date;
 	};
 
@@ -136,12 +138,12 @@ function DashboardPage() {
 			if (!dates) dates = [{ startDate: null, endDate: null }];
 			let { startDate, endDate } = dates[0];
 
+			if (startDate && setDateForFilter(startDate) === setDateForFilter(endDate)) endDate = null;
+
 			try {
 				const eventsResponse = await (
 					await request({
-						url: `/events?sort=AESC&page=${page || 1}&perPage=20&orgId=${activeorganisation.uid}&startDate=${startDate ? setDateForFilter(startDate) : ''}&endDate=${
-							endDate ? setDateForFilter(endDate) : ''
-						}&appId=${eventApp}`,
+						url: `/events?sort=AESC&page=${page || 1}&perPage=20&orgId=${activeorganisation.uid}&startDate=${setDateForFilter(startDate)}&endDate=${setDateForFilter(endDate)}&appId=${eventApp}`,
 						method: 'GET'
 					})
 				).data;
@@ -168,7 +170,7 @@ function DashboardPage() {
 			try {
 				const appsResponse = await (
 					await request({
-						url: `/apps?sort=AESC&page=${page || 1}&perPage=10&orgId=${activeorganisation.uid}`
+						url: `/apps?sort=AESC&page=2&perPage=10&orgId=${activeorganisation.uid}`
 					})
 				).data;
 
@@ -259,7 +261,7 @@ function DashboardPage() {
 				if (organisations.length === 0) await getOrganisations();
 				if (!activeorganisation.uid) return;
 				const dashboardResponse = await request({
-					url: `/dashboard/${activeorganisation.uid}/summary?startDate=${filterDates[0].startDate.toISOString().split('.')[0]}&endDate=${filterDates[0].endDate.toISOString().split('.')[0]}&type=${
+					url: `/dashboard/${activeorganisation.uid}/summary?startDate=${setDateForFilter(filterDates[0].startDate)}&endDate=${setDateForFilter(filterDates[0].endDate)}&type=${
 						filterFrequency || 'daily'
 					}`
 				});
@@ -337,6 +339,7 @@ function DashboardPage() {
 						<img src={AngleArrowDownIcon} alt="arrow down icon" />
 					</button>
 					<DateRange onChange={item => setFilterDates([item.selection])} moveRangeOnFirstSelection={false} ranges={filterDates} />
+
 					<div className="select">
 						<select value={filterFrequency} onChange={event => setFilterFrequency(event.target.value)} aria-label="frequency">
 							<option value="daily">Daily</option>
@@ -468,7 +471,7 @@ function DashboardPage() {
 
 									<div className="select">
 										<select value={eventApp} onChange={event => setEventApp(event.target.value)} aria-label="frequency">
-											<option value="">Apps</option>
+											<option value="">All Apps</option>
 											{apps.content.map((app, index) => (
 												<option key={index} value={app.uid}>
 													{app.name}
@@ -481,7 +484,7 @@ function DashboardPage() {
 						</div>
 
 						<div className="table">
-							{activeTab && activeTab === 'events' && (
+							{displayedEvents.length > 0 && activeTab && activeTab === 'events' && (
 								<div>
 									<table>
 										<thead>
@@ -569,7 +572,7 @@ function DashboardPage() {
 								</div>
 							)}
 
-							{activeTab && activeTab === 'apps' && (
+							{apps.content.length > 0 && activeTab && activeTab === 'apps' && (
 								<div>
 									<table>
 										<thead>
@@ -615,6 +618,13 @@ function DashboardPage() {
 											</button>
 										</div>
 									)}
+								</div>
+							)}
+
+							{(apps.content.length === 0 || displayedEvents.length === 0) && activeTab && (activeTab === 'events' || activeTab === 'apps') && (
+								<div className="empty-state">
+									<img src={EmptyStateImage} alt="empty state" />
+									<p>No {activeTab} to show here</p>
 								</div>
 							)}
 						</div>
