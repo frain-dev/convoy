@@ -208,13 +208,15 @@ func parseAttemptFromResponse(m convoy.Message, e convoy.EndpointMetadata, resp 
 	return convoy.MessageAttempt{
 		ID:         primitive.NewObjectID(),
 		UID:        uuid.New().String(),
+		URL:        resp.URL.String(),
+		Method:     resp.Method,
 		MsgID:      m.UID,
 		EndpointID: e.UID,
 		APIVersion: "2021-08-27",
 
 		IPAddress:        resp.IP,
-		Header:           resp.Header,
-		ContentType:      resp.ContentType,
+		ResponseHeader:   resp.ResponseHeader,
+		RequestHeader:    resp.RequestHeader,
 		HttpResponseCode: resp.Status,
 		ResponseData:     string(resp.Body),
 		Error:            resp.Error,

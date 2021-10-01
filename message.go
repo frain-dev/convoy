@@ -116,12 +116,14 @@ type MessageAttempt struct {
 	ID         primitive.ObjectID `json:"-" bson:"_id"`
 	UID        string             `json:"uid" bson:"uid"`
 	MsgID      string             `json:"msg_id" bson:"msg_id"`
+	URL        string             `json:"url" bson:"url"`
+	Method     string             `json:"method" bson:"method"`
 	EndpointID string             `json:"endpoint_id" bson:"endpoint_id"`
 	APIVersion string             `json:"api_version" bson:"api_version"`
 
 	IPAddress        string        `json:"ip_address,omitempty" bson:"ip_address,omitempty"`
-	ContentType      string        `json:"content_type,omitempty" bson:"content_type,omitempty"`
-	Header           http.Header   `json:"http_header,omitempty" bson:"http_header,omitempty"`
+	RequestHeader    http.Header   `json:"request_http_header,omitempty" bson:"request_http_header,omitempty"`
+	ResponseHeader   http.Header   `json:"response_http_header,omitempty" bson:"response_http_header,omitempty"`
 	HttpResponseCode string        `json:"http_status,omitempty" bson:"http_status,omitempty"`
 	ResponseData     string        `json:"response_data,omitempty" bson:"response_data,omitempty"`
 	Error            string        `json:"error,omitempty" bson:"error,omitempty"`
