@@ -9,6 +9,7 @@ import AngleArrowDownIcon from '../../assets/img/angle-arrow-down.svg';
 import AngleArrowUpIcon from '../../assets/img/angle-arrow-up.svg';
 import ConvoyLogo from '../../assets/img/logo.svg';
 import RetryIcon from '../../assets/img/retry-icon.svg';
+import EmptyStateImage from '../../assets/img/empty-state-img.svg';
 import Chart from 'chart.js/auto';
 import { DateRange } from 'react-date-range';
 import ReactJson from 'react-json-view';
@@ -19,10 +20,12 @@ import 'react-date-range/dist/theme/default.css';
 import { showNotification } from '../../components/app-notification';
 import { getDate, getTime, logout } from '../../helpers/common.helper';
 
+const moment = require('moment');
+
 function DashboardPage() {
 	const [dashboardData, setDashboardData] = useState({ apps: 0, messages: 0, messageData: [] });
 	const [viewAllEventData, toggleViewAllEventDataState] = useState(false);
-	const [showDropdown, toggleShowDropdown] = useState(true);
+	const [showDropdown, toggleShowDropdown] = useState(false);
 	const [viewAllResponseData, toggleViewAllResponseData] = useState(false);
 	const [apps, setAppsData] = useState({ content: [], pagination: { page: 1, totalPage: 0 } });
 	const [events, setEventsData] = useState({ content: [], pagination: { page: 1, totalPage: 0 } });
@@ -30,6 +33,8 @@ function DashboardPage() {
 	const [tabs] = useState(['events', 'apps']);
 	const [activeTab, setActiveTab] = useState('events');
 	const [showFilterCalendar, toggleShowFilterCalendar] = useState(false);
+	const [showEventFilterCalendar, toggleShowEventFilterCalendar] = useState(false);
+	const [eventApp, setEventApp] = useState('');
 	const [organisations, setOrganisations] = useState([]);
 	const [OrganisationDetails, setOrganisationDetails] = useState({
 		database: {
@@ -74,10 +79,17 @@ function DashboardPage() {
 		response_data: ''
 	});
 	const [detailsItem, setDetailsItem] = useState();
-	const [filterFrequency, setFilterFrequency] = useState('daily');
+	const [filterFrequency, setFilterFrequency] = useState('');
 	const [filterDates, setFilterDates] = useState([
 		{
-			startDate: new Date(new Date().setDate(new Date().getDate() - 20)),
+			startDate: new Date(new Date().setDate(new Date().getDate() - 30)),
+			endDate: new Date(),
+			key: 'selection'
+		}
+	]);
+	const [eventFilterDates, setEventFilterDates] = useState([
+		{
+			startDate: new Date(),
 			endDate: new Date(),
 			key: 'selection'
 		}
@@ -116,17 +128,29 @@ function DashboardPage() {
 		setDisplayedEvents(displayedEvents);
 	};
 
+	const setDateForFilter = ({ startDate, endDate }) => {
+		if (!endDate && !startDate) return { startDate: '', endDate: '' };
+		startDate = String(moment(`${moment(startDate).format('YYYY[-]MM[-]DD')} 00:00:00`).toISOString(true)).split('.')[0];
+		endDate = String(moment(`${moment(endDate).format('YYYY[-]MM[-]DD')} 23:59:59`).toISOString(true)).split('.')[0];
+		return { startDate, endDate };
+	};
+
 	const getEvents = useCallback(
-		async ({ page, eventsData }) => {
+		async ({ page, eventsData, dates }) => {
+			toggleShowEventFilterCalendar(false);
+			if (!dates) dates = [{ startDate: null, endDate: null }];
+			const dateFromPicker = dates[0];
+			const { startDate, endDate } = setDateForFilter(dateFromPicker);
+
 			try {
 				const eventsResponse = await (
 					await request({
-						url: `/events?sort=AESC&page=${page || 1}&perPage=20&orgId=${activeorganisation.uid}`,
+						url: `/events?sort=AESC&page=${page || 1}&perPage=20&orgId=${activeorganisation.uid}&startDate=${startDate}&endDate=${endDate}&appId=${eventApp}`,
 						method: 'GET'
 					})
 				).data;
 
-				if (eventsData?.pagination?.next === page) {
+				if (eventsData && eventsData?.pagination?.next === page) {
 					const content = [...eventsData.content, ...eventsResponse.data.content];
 					const pagination = eventsResponse.data.pagination;
 					setEventsData({ content, pagination });
@@ -140,7 +164,7 @@ function DashboardPage() {
 				return error;
 			}
 		},
-		[activeorganisation]
+		[activeorganisation, eventApp]
 	);
 
 	const getApps = useCallback(
@@ -238,10 +262,9 @@ function DashboardPage() {
 			try {
 				if (organisations.length === 0) await getOrganisations();
 				if (!activeorganisation.uid) return;
+				const { startDate, endDate } = setDateForFilter(filterDates[0]);
 				const dashboardResponse = await request({
-					url: `/dashboard/${activeorganisation.uid}/summary?startDate=${filterDates[0].startDate.toISOString().split('.')[0]}&endDate=${filterDates[0].endDate.toISOString().split('.')[0]}&type=${
-						filterFrequency || 'daily'
-					}`
+					url: `/dashboard/${activeorganisation.uid}/summary?startDate=${startDate}&endDate=${endDate}&type=${filterFrequency || 'daily'}`
 				});
 				setDashboardData(dashboardResponse.data.data);
 
@@ -277,8 +300,8 @@ function DashboardPage() {
 
 		fetchDashboardData();
 		getOrganisationDetails();
-		if (activeTab === 'apps') getApps({ page: 1 });
-		if (activeTab === 'events') getEvents({ page: 1 });
+		getApps({ page: 1 });
+		getEvents({ page: 1 });
 	}, [options, activeTab, filterDates, activeorganisation, organisations, filterFrequency, getEvents, getApps]);
 
 	return (
@@ -317,6 +340,7 @@ function DashboardPage() {
 						<img src={AngleArrowDownIcon} alt="arrow down icon" />
 					</button>
 					<DateRange onChange={item => setFilterDates([item.selection])} moveRangeOnFirstSelection={false} ranges={filterDates} />
+
 					<div className="select">
 						<select value={filterFrequency} onChange={event => setFilterFrequency(event.target.value)} aria-label="frequency">
 							<option value="daily">Daily</option>
@@ -403,29 +427,65 @@ function DashboardPage() {
 
 				<section className="card dashboard--logs">
 					<div className="dashboard--logs--tabs">
-						<div className="tabs">
-							{tabs.map((tab, index) => (
-								<button
-									onClick={() => {
-										setActiveTab(tab);
-										setDetailsItem();
-										setEventDeliveryAtempt({
-											ip_address: '',
-											http_status: '',
-											api_version: '',
-											updated_at: 0,
-											deleted_at: 0
-										});
-									}}
-									key={index}
-									className={'clear tab ' + (activeTab === tab ? 'active' : '')}>
-									{tab}
-								</button>
-							))}
+						<div className="dashboard--logs--tabs--head tabs">
+							<div className="tabs">
+								{tabs.map((tab, index) => (
+									<button
+										onClick={() => {
+											setActiveTab(tab);
+											setDetailsItem();
+											setEventDeliveryAtempt({
+												ip_address: '',
+												http_status: '',
+												api_version: '',
+												updated_at: 0,
+												deleted_at: 0
+											});
+										}}
+										key={index}
+										className={'clear tab ' + (activeTab === tab ? 'active' : '')}>
+										{tab}
+									</button>
+								))}
+							</div>
+
+							{activeTab === 'events' && (
+								<div className="filter">
+									<button className="filter--button" onClick={() => toggleShowEventFilterCalendar(!showEventFilterCalendar)}>
+										<img src={CalendarIcon} alt="calender icon" />
+										<div>Date</div>
+										<img src={AngleArrowDownIcon} alt="arrow down icon" />
+									</button>
+									{showEventFilterCalendar && (
+										<div className="date-filter--container">
+											<DateRange onChange={item => setEventFilterDates([item.selection])} editableDateInputs={true} moveRangeOnFirstSelection={false} ranges={eventFilterDates} />
+											<div className="button-container">
+												<button className="primary" onClick={() => getEvents({ dates: eventFilterDates })}>
+													Apply
+												</button>
+												<button className="primary outline" onClick={() => getEvents({ page: 1 })}>
+													Clear
+												</button>
+											</div>
+										</div>
+									)}
+
+									<div className="select">
+										<select value={eventApp} onChange={event => setEventApp(event.target.value)} aria-label="frequency">
+											<option value="">All Apps</option>
+											{apps.content.map((app, index) => (
+												<option key={index} value={app.uid}>
+													{app.name}
+												</option>
+											))}
+										</select>
+									</div>
+								</div>
+							)}
 						</div>
 
 						<div className="table">
-							{activeTab && activeTab === 'events' && (
+							{displayedEvents.length > 0 && activeTab && activeTab === 'events' && (
 								<div>
 									<table>
 										<thead>
@@ -513,7 +573,14 @@ function DashboardPage() {
 								</div>
 							)}
 
-							{activeTab && activeTab === 'apps' && (
+							{activeTab === 'events' && displayedEvents.length === 0 && (
+								<div className="empty-state">
+									<img src={EmptyStateImage} alt="empty state" />
+									<p>No {activeTab} to show here</p>
+								</div>
+							)}
+
+							{apps.content.length > 0 && activeTab && activeTab === 'apps' && (
 								<div>
 									<table>
 										<thead>
@@ -559,6 +626,13 @@ function DashboardPage() {
 											</button>
 										</div>
 									)}
+								</div>
+							)}
+
+							{apps.content.length === 0 && activeTab === 'apps' && (
+								<div className="empty-state">
+									<img src={EmptyStateImage} alt="empty state" />
+									<p>No eve to show here</p>
 								</div>
 							)}
 						</div>

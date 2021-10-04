@@ -206,6 +206,83 @@
 			}
 		}
 	}
+
+	& > .filter .rdrCalendarWrapper {
+		width: 27.667em;
+		background: transparent;
+		margin-left: 8px;
+		display: none;
+		position: absolute;
+		top: 46px;
+		background: #fff;
+		border: 1px solid #f3f5f9;
+	}
+}
+
+.filter {
+	display: flex;
+	align-items: center;
+	margin-bottom: 16px;
+	position: relative;
+	align-items: stretch;
+	max-height: 50px;
+
+	& > div {
+		display: flex;
+		align-items: center;
+	}
+
+	.filter--button {
+		min-width: 145px;
+	}
+
+	.filter--button,
+	select {
+		background: #ffffff;
+		border: 1px solid #f3f5f9;
+		border-radius: 4px;
+		padding: 10px;
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+		font-size: 14px;
+		line-height: 14px;
+		margin: 0 0 0 8px;
+
+		div {
+			margin: 0 8px;
+		}
+
+		img:last-of-type {
+			width: 20px;
+		}
+	}
+
+	.select {
+		width: fit-content;
+		position: relative;
+
+		&::after {
+			content: '';
+			position: absolute;
+			background: url('../../assets/img/angle-arrow-down.svg');
+			width: 20px;
+			height: 20px;
+			background-size: contain;
+			right: 5px;
+		}
+
+		select {
+			height: 46px;
+			min-width: 145px;
+		}
+	}
+
+	&.show-calendar {
+		.rdrCalendarWrapper {
+			display: flex;
+		}
+	}
 }
 
 .dashboard--logs {
@@ -360,6 +437,7 @@
 	display: flex;
 	border-bottom: 1px solid #edeff5;
 	width: 100%;
+	align-items: center;
 
 	.tab {
 		padding: 18px 16px;
@@ -379,6 +457,39 @@
 				border-radius: 16px 16px 0px 0px;
 				position: absolute;
 			}
+		}
+	}
+
+	.filter {
+		margin-bottom: 0;
+		margin-right: 16px;
+
+		.date-filter--container {
+			background: #fff;
+			display: block;
+			position: absolute;
+			border: 1px solid #f3f5f9;
+			top: 46px;
+			right: 150px;
+			z-index: 1;
+
+			.button-container {
+				padding: 0 0 10px 10px;
+				justify-content: flex-start;
+
+				button {
+					padding: 8px 25px;
+
+					&:first-of-type {
+						margin-right: 10px;
+					}
+				}
+			}
+		}
+
+		.rdrCalendarWrapper {
+			width: 27.667em;
+			background: transparent;
 		}
 	}
 }
@@ -499,76 +610,6 @@ table {
 	}
 }
 
-.filter {
-	display: flex;
-	align-items: center;
-	margin-bottom: 16px;
-	position: relative;
-	align-items: stretch;
-	max-height: 50px;
-
-	& > div {
-		display: flex;
-		align-items: center;
-	}
-
-	.filter--button,
-	select {
-		background: #ffffff;
-		border: 1px solid #f3f5f9;
-		border-radius: 4px;
-		padding: 10px;
-		display: flex;
-		align-items: center;
-		justify-content: space-between;
-		min-width: 145px;
-		font-size: 14px;
-		line-height: 14px;
-		margin: 0 0 0 8px;
-
-		div {
-			margin: 0 8px;
-		}
-	}
-
-	.select {
-		width: fit-content;
-		position: relative;
-
-		&::after {
-			content: '';
-			position: absolute;
-			background: url('../../assets/img/angle-arrow-down.svg');
-			width: 26px;
-			height: 24px;
-			background-size: contain;
-			right: 5px;
-		}
-
-		select {
-			height: 46px;
-		}
-	}
-
-	&.show-calendar {
-		.rdrCalendarWrapper {
-			display: flex;
-		}
-	}
-
-	.rdrCalendarWrapper {
-		width: 27.667em;
-		background: transparent;
-		margin-left: 8px;
-
-		display: none;
-		position: absolute;
-		top: 46px;
-		background: #fff;
-		border: 1px solid #f3f5f9;
-	}
-}
-
 .card--empty-state {
 	text-align: center;
 	font-style: italic;
@@ -605,4 +646,19 @@ table {
 ::-webkit-scrollbar-thumb {
 	background: rgb(217, 216, 216);
 	border-radius: 10px;
+}
+
+.empty-state {
+	text-align: center;
+	max-width: 200px;
+	margin: auto;
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	justify-content: center;
+
+	p {
+		margin-top: 20px;
+		font-size: 14px;
+	}
 }

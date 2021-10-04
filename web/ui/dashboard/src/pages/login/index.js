@@ -25,7 +25,7 @@ function LoginPage() {
 			localStorage.setItem('CONVOY_AUTH', JSON.stringify(loginResponse.data));
 			window.open('/', '_self');
 		} catch (error) {
-			showNotification({ message: error.response.data.message });
+			showNotification({ message: error.response ? error.response.data.message : 'Unable to connect to API, make sure you have the server running and try again' });
 			toggleDisableLoginBtn(false);
 		}
 	};
