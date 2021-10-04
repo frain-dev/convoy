@@ -498,60 +498,6 @@ func findEndpoint(endpoints *[]convoy.Endpoint, id string) (*convoy.Endpoint, er
 	return nil, convoy.ErrEndpointNotFound
 }
 
-func ensureNewOrganisation(orgRepo convoy.OrganisationRepository) func(next http.Handler) http.Handler {
-	return func(next http.Handler) http.Handler {
-
-		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-
-			var newOrg models.Organisation
-			err := json.NewDecoder(r.Body).Decode(&newOrg)
-			if err != nil {
-				_ = render.Render(w, r, newErrorResponse("Request is invalid", http.StatusBadRequest))
-				return
-			}
-
-			orgName := newOrg.Name
-			if util.IsStringEmpty(orgName) {
-				_ = render.Render(w, r, newErrorResponse("please provide a valid name", http.StatusBadRequest))
-				return
-			}
-			org := &convoy.Organisation{
-				UID:            uuid.New().String(),
-				OrgName:        orgName,
-				CreatedAt:      primitive.NewDateTimeFromTime(time.Now()),
-				UpdatedAt:      primitive.NewDateTimeFromTime(time.Now()),
-				DocumentStatus: convoy.ActiveDocumentStatus,
-			}
-
-			err = orgRepo.CreateOrganisation(r.Context(), org)
-			if err != nil {
-				_ = render.Render(w, r, newErrorResponse("an error occurred while creating organisation", http.StatusInternalServerError))
-				return
-			}
-
-			r = r.WithContext(setOrganisationInContext(r.Context(), org))
-			next.ServeHTTP(w, r)
-		})
-	}
-}
-
-func fetchAllOrganisations(orgRepo convoy.OrganisationRepository) func(next http.Handler) http.Handler {
-	return func(next http.Handler) http.Handler {
-
-		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-
-			orgs, err := orgRepo.LoadOrganisations(r.Context())
-			if err != nil {
-				_ = render.Render(w, r, newErrorResponse("an error occurred while fetching organisations", http.StatusInternalServerError))
-				return
-			}
-
-			r = r.WithContext(setOrganisationsInContext(r.Context(), orgs))
-			next.ServeHTTP(w, r)
-		})
-	}
-}
-
 func requireOrganisation(orgRepo convoy.OrganisationRepository) func(next http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 
@@ -571,54 +517,6 @@ func requireOrganisation(orgRepo convoy.OrganisationRepository) func(next http.H
 				}
 
 				_ = render.Render(w, r, newErrorResponse(msg, statusCode))
-				return
-			}
-
-			r = r.WithContext(setOrganisationInContext(r.Context(), org))
-			next.ServeHTTP(w, r)
-		})
-	}
-}
-
-func ensureOrganisationUpdate(orgRepo convoy.OrganisationRepository) func(next http.Handler) http.Handler {
-	return func(next http.Handler) http.Handler {
-
-		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-
-			var update models.Organisation
-			err := json.NewDecoder(r.Body).Decode(&update)
-			if err != nil {
-				_ = render.Render(w, r, newErrorResponse("Request is invalid", http.StatusBadRequest))
-				return
-			}
-
-			orgName := update.Name
-			if util.IsStringEmpty(orgName) {
-				_ = render.Render(w, r, newErrorResponse("please provide a valid name", http.StatusBadRequest))
-				return
-			}
-
-			orgId := chi.URLParam(r, "orgID")
-
-			org, err := orgRepo.FetchOrganisationByID(r.Context(), orgId)
-			if err != nil {
-
-				msg := "an error occurred while retrieving organisation details"
-				statusCode := http.StatusInternalServerError
-
-				if errors.Is(err, convoy.ErrOrganisationNotFound) {
-					msg = err.Error()
-					statusCode = http.StatusNotFound
-				}
-
-				_ = render.Render(w, r, newErrorResponse(msg, statusCode))
-				return
-			}
-
-			org.OrgName = orgName
-			err = orgRepo.UpdateOrganisation(r.Context(), org)
-			if err != nil {
-				_ = render.Render(w, r, newErrorResponse("an error occurred while updating organisation", http.StatusInternalServerError))
 				return
 			}
 

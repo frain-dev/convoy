@@ -1,1 +1,1 @@
-{"organisation":{"uid":"1234567890","name":"Valid organisation","created_at":0,"updated_at":0,"deleted_at":0}}
+{"status":true,"message":"Organisation fetched successfully","data":{"uid":"1234567890","name":"Valid organisation"}}

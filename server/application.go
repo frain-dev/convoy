@@ -84,30 +84,6 @@ func (a *applicationHandler) GetAppEndpoints(w http.ResponseWriter, r *http.Requ
 		*getApplicationEndpointsFromContext(r.Context()), http.StatusOK))
 }
 
-func (a *applicationHandler) CreateOrganisation(w http.ResponseWriter, r *http.Request) {
-
-	_ = render.Render(w, r, newServerResponse("Organisation created successfully",
-		*getOrganisationFromContext(r.Context()), http.StatusCreated))
-}
-
-func (a *applicationHandler) UpdateOrganisation(w http.ResponseWriter, r *http.Request) {
-
-	_ = render.Render(w, r, newServerResponse("Organisation updated successfully",
-		*getOrganisationFromContext(r.Context()), http.StatusAccepted))
-}
-
-func (a *applicationHandler) GetOrganisation(w http.ResponseWriter, r *http.Request) {
-
-	_ = render.Render(w, r, newServerResponse("Organisation fetched successfully",
-		*getOrganisationFromContext(r.Context()), http.StatusOK))
-}
-
-func (a *applicationHandler) GetOrganisations(w http.ResponseWriter, r *http.Request) {
-
-	_ = render.Render(w, r, newServerResponse("Organisations fetched successfully",
-		getOrganisationsFromContext(r.Context()), http.StatusOK))
-}
-
 func (a *applicationHandler) GetDashboardSummary(w http.ResponseWriter, r *http.Request) {
 
 	_ = render.Render(w, r, newServerResponse("Dashboard summary fetched successfully",

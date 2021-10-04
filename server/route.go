@@ -57,17 +57,15 @@ func buildRoutes(app *applicationHandler) http.Handler {
 			orgRouter.Use(requireAuth())
 
 			orgRouter.Route("/", func(orgSubRouter chi.Router) {
-				orgSubRouter.With(ensureNewOrganisation(app.orgRepo)).Post("/", app.CreateOrganisation)
-
-				orgRouter.With(fetchAllOrganisations(app.orgRepo)).Get("/", app.GetOrganisations)
+				orgRouter.Get("/", app.GetOrganisations)
+				orgSubRouter.Post("/", app.CreateOrganisation)
 			})
 
 			orgRouter.Route("/{orgID}", func(appSubRouter chi.Router) {
 				appSubRouter.Use(requireOrganisation(app.orgRepo))
 
-				appSubRouter.With(ensureOrganisationUpdate(app.orgRepo)).Put("/", app.UpdateOrganisation)
-
 				appSubRouter.Get("/", app.GetOrganisation)
+				appSubRouter.Put("/", app.UpdateOrganisation)
 			})
 		})
 
@@ -161,7 +159,7 @@ func buildRoutes(app *applicationHandler) http.Handler {
 			orgRouter.Use(requireUIAuth())
 
 			orgRouter.Route("/", func(orgSubRouter chi.Router) {
-				orgRouter.With(fetchAllOrganisations(app.orgRepo)).Get("/", app.GetOrganisations)
+				orgRouter.Get("/", app.GetOrganisations)
 			})
 
 			orgRouter.Route("/{orgID}", func(appSubRouter chi.Router) {
