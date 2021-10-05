@@ -69,6 +69,7 @@ func (db *orgRepo) UpdateOrganisation(ctx context.Context, o *convoy.Organisatio
 
 	update := bson.D{primitive.E{Key: "$set", Value: bson.D{
 		primitive.E{Key: "org_name", Value: o.OrgName},
+		primitive.E{Key: "logo_url", Value: o.LogoURL},
 		primitive.E{Key: "updated_at", Value: o.UpdatedAt},
 	}}}
 

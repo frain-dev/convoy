@@ -13,6 +13,7 @@ type Organisation struct {
 	ID      primitive.ObjectID `json:"-" bson:"_id"`
 	UID     string             `json:"uid" bson:"uid"`
 	OrgName string             `json:"name" bson:"org_name"`
+	LogoURL string             `json:"logo_url" bson:"logo_url"`
 
 	CreatedAt primitive.DateTime `json:"created_at,omitempty" bson:"created_at,omitempty"`
 	UpdatedAt primitive.DateTime `json:"updated_at,omitempty" bson:"updated_at,omitempty"`

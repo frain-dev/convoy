@@ -69,6 +69,7 @@ type SMTPConfiguration struct {
 	Username string `json:"username"`
 	Password string `json:"password"`
 	From     string `json:"from"`
+	ReplyTo  string `json:"reply-to"`
 }
 
 type Configuration struct {
