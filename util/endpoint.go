@@ -9,9 +9,24 @@ import (
 )
 
 func ParseMetadataFromActiveEndpoints(endpoints []convoy.Endpoint) []convoy.EndpointMetadata {
+	return parseMetadataFromEndpoints(endpoints, func(e convoy.Endpoint) bool {
+		if e.Status == convoy.ActiveEndpointStatus {
+			return true
+		}
+		return false
+	})
+}
+
+func GetMetadataFromEndpoints(endpoints []convoy.Endpoint) []convoy.EndpointMetadata {
+	return parseMetadataFromEndpoints(endpoints, func(e convoy.Endpoint) bool {
+		return true
+	})
+}
+
+func parseMetadataFromEndpoints(endpoints []convoy.Endpoint, filter func(e convoy.Endpoint) bool) []convoy.EndpointMetadata {
 	m := make([]convoy.EndpointMetadata, 0)
 	for _, e := range endpoints {
-		if e.Status == convoy.ActiveEndpointStatus {
+		if filter(e) {
 			m = append(m, convoy.EndpointMetadata{
 				UID:       e.UID,
 				TargetURL: e.TargetURL,
@@ -19,6 +34,7 @@ func ParseMetadataFromActiveEndpoints(endpoints []convoy.Endpoint) []convoy.Endp
 			})
 		}
 	}
+
 	return m
 }
 
