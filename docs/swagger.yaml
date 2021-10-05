@@ -1,0 +1,82 @@
+basePath: /api/v1
+definitions:
+  models.Message:
+    properties:
+      app_id:
+        type: string
+      created_at:
+        type: integer
+      data:
+        items:
+          type: integer
+        type: array
+      event_type:
+        type: string
+      msg_id:
+        type: string
+      provider_id:
+        type: string
+      status:
+        type: string
+    type: object
+host: Set this in your config file
+info:
+  contact:
+    email: support@swagger.io
+    name: API Support
+    url: http://www.swagger.io/support
+  description: This is openapi spec of convoy
+  license:
+    name: Mozilla Public
+    url: https://github.com/frain-dev/convoy/blob/main/LICENSE
+  title: Swagger Example API
+  version: "1.0"
+paths:
+  /accounts:
+    get:
+      consumes:
+      - application/json
+      description: get accounts
+      parameters:
+      - description: name search by q
+        in: query
+        name: q
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          headers:
+            Token:
+              description: qwerty
+              type: string
+          schema:
+            items:
+              $ref: '#/definitions/models.Message'
+            type: array
+        "400":
+          description: Bad Request
+          schema:
+            type: integer
+        "404":
+          description: Not Found
+          schema:
+            type: integer
+        "500":
+          description: Internal Server Error
+          schema:
+            type: integer
+        default:
+          description: ""
+          schema:
+            type: integer
+      summary: List accounts
+securityDefinitions:
+  ApiKeyAuth:
+    in: header
+    name: Authorization
+    type: apiKey
+swagger: "2.0"
+x-extension-openapi:
+  example: value on a json format

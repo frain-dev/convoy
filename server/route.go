@@ -11,6 +11,7 @@ import (
 
 	"github.com/frain-dev/convoy"
 	"github.com/frain-dev/convoy/config"
+	_ "github.com/frain-dev/convoy/server/models"
 
 	"github.com/go-chi/chi/v5/middleware"
 	"github.com/prometheus/client_golang/prometheus"
@@ -42,6 +43,18 @@ func reactRootHandler(rw http.ResponseWriter, req *http.Request) {
 	http.FileServer(http.FS(static)).ServeHTTP(rw, req)
 }
 
+// ListAccounts godoc
+// @Summary List accounts
+// @Description get accounts
+// @Accept  json
+// @Produce  json
+// @Param q query string false "name search by q"
+// @Success 200 {array} models.Message
+// @Header 200 {string} Token "qwerty"
+// @Failure 400,404 {integer} http.StatusInternalServerError
+// @Failure 500 {integer} http.StatusInternalServerError
+// @Failure default {integer} http.StatusInternalServerError
+// @Router /accounts [get] /
 func buildRoutes(app *applicationHandler) http.Handler {
 
 	router := chi.NewRouter()
@@ -118,6 +131,12 @@ func buildRoutes(app *applicationHandler) http.Handler {
 		r.Route("/events", func(msgRouter chi.Router) {
 			msgRouter.Use(requireAuth())
 
+			// ShowAccount godoc
+			// @Summary Show an account
+			// @Description get string by ID
+			// @ID get-string-by-int
+			// @Accept  json
+			// @Produce  json
 			msgRouter.With(pagination).With(fetchAllMessages(app.msgRepo)).Get("/", app.GetAppMessagesPaged)
 
 			msgRouter.Route("/{eventID}", func(msgSubRouter chi.Router) {
