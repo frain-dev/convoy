@@ -10,17 +10,26 @@ import (
 	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
+type EndpointStatus string
+
 var (
 	ErrApplicationNotFound = errors.New("application not found")
 
 	ErrEndpointNotFound = errors.New("endpoint not found")
 )
 
+const (
+	ActiveEndpointStatus   EndpointStatus = "active"
+	InactiveEndpointStatus EndpointStatus = "inactive"
+	PendingEndpointStatus  EndpointStatus = "pending"
+)
+
 type Application struct {
-	ID    primitive.ObjectID `json:"-" bson:"_id"`
-	UID   string             `json:"uid" bson:"uid"`
-	OrgID string             `json:"org_id" bson:"org_id"`
-	Title string             `json:"name" bson:"title"`
+	ID           primitive.ObjectID `json:"-" bson:"_id"`
+	UID          string             `json:"uid" bson:"uid"`
+	OrgID        string             `json:"org_id" bson:"org_id"`
+	Title        string             `json:"name" bson:"title"`
+	SupportEmail string             `json:"support_email" bson:"support_email"`
 
 	Secret string `json:"secret" bson:"secret"`
 
@@ -35,10 +44,10 @@ type Application struct {
 }
 
 type Endpoint struct {
-	UID         string `json:"uid" bson:"uid"`
-	TargetURL   string `json:"target_url" bson:"target_url"`
-	Description string `json:"description" bson:"description"`
-	Disabled    bool   `json:"disabled" bson:"disabled"`
+	UID         string         `json:"uid" bson:"uid"`
+	TargetURL   string         `json:"target_url" bson:"target_url"`
+	Description string         `json:"description" bson:"description"`
+	Status      EndpointStatus `json:"status" bson:"status"`
 
 	CreatedAt primitive.DateTime `json:"created_at,omitempty" bson:"created_at,omitempty"`
 	UpdatedAt primitive.DateTime `json:"updated_at,omitempty" bson:"updated_at,omitempty"`
@@ -55,5 +64,6 @@ type ApplicationRepository interface {
 	DeleteApplication(context.Context, *Application) error
 	LoadApplicationsPagedByOrgId(context.Context, string, models.Pageable) ([]Application, pager.PaginationData, error)
 	SearchApplicationsByOrgId(context.Context, string, models.SearchParams) ([]Application, error)
-	UpdateApplicationEndpointsAsDisabled(context.Context, string, []string, bool) error
+	FindApplicationEndpointByID(context.Context, string, string) (*Endpoint, error)
+	UpdateApplicationEndpointsStatus(context.Context, string, []string, EndpointStatus) error
 }

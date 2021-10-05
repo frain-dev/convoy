@@ -21,33 +21,9 @@ type DatabaseConfiguration struct {
 
 type ServerConfiguration struct {
 	HTTP struct {
-		Port int `json:"port"`
+		Port uint32 `json:"port"`
 	} `json:"http"`
 }
-
-type Configuration struct {
-	Auth              AuthConfiguration      `json:"auth,omitempty"`
-	UIAuth            UIAuthConfiguration    `json:"ui,omitempty"`
-	UIAuthorizedUsers map[string]string      `json:"-"`
-	Database          DatabaseConfiguration  `json:"database"`
-	Queue             QueueConfiguration     `json:"queue"`
-	Server            ServerConfiguration    `json:"server"`
-	Strategy          StrategyConfiguration  `json:"strategy"`
-	Signature         SignatureConfiguration `json:"signature"`
-}
-
-type AuthProvider string
-type QueueProvider string
-type StrategyProvider string
-type SignatureHeaderProvider string
-
-const (
-	NoAuthProvider          AuthProvider            = "none"
-	BasicAuthProvider       AuthProvider            = "basic"
-	RedisQueueProvider      QueueProvider           = "redis"
-	DefaultStrategyProvider StrategyProvider        = "default"
-	DefaultSignatureHeader  SignatureHeaderProvider = "X-Convoy-Signature"
-)
 
 type QueueConfiguration struct {
 	Type  QueueProvider `json:"type"`
@@ -86,6 +62,40 @@ type SignatureConfiguration struct {
 	Hash   string                  `json:"hash"`
 }
 
+type SMTPConfiguration struct {
+	Provider string `json:"provider"`
+	URL      string `json:"url"`
+	Port     uint32 `json:"port"`
+	Username string `json:"username"`
+	Password string `json:"password"`
+	From     string `json:"from"`
+}
+
+type Configuration struct {
+	Auth              AuthConfiguration      `json:"auth,omitempty"`
+	UIAuth            UIAuthConfiguration    `json:"ui,omitempty"`
+	UIAuthorizedUsers map[string]string      `json:"-"`
+	Database          DatabaseConfiguration  `json:"database"`
+	Queue             QueueConfiguration     `json:"queue"`
+	Server            ServerConfiguration    `json:"server"`
+	Strategy          StrategyConfiguration  `json:"strategy"`
+	Signature         SignatureConfiguration `json:"signature"`
+	SMTP              SMTPConfiguration      `json:"smtp"`
+}
+
+type AuthProvider string
+type QueueProvider string
+type StrategyProvider string
+type SignatureHeaderProvider string
+
+const (
+	NoAuthProvider          AuthProvider            = "none"
+	BasicAuthProvider       AuthProvider            = "basic"
+	RedisQueueProvider      QueueProvider           = "redis"
+	DefaultStrategyProvider StrategyProvider        = "default"
+	DefaultSignatureHeader  SignatureHeaderProvider = "X-Convoy-Signature"
+)
+
 func LoadConfig(p string) error {
 	f, err := os.Open(p)
 	if err != nil {
@@ -120,9 +130,9 @@ func LoadConfig(p string) error {
 	if port, err := strconv.Atoi(os.Getenv("PORT")); err == nil {
 		c.Server = ServerConfiguration{
 			HTTP: struct {
-				Port int `json:"port"`
+				Port uint32 `json:"port"`
 			}{
-				Port: port,
+				Port: uint32(port),
 			},
 		}
 	}

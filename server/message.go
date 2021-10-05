@@ -1,6 +1,7 @@
 package server
 
 import (
+	"context"
 	"encoding/json"
 	"errors"
 	"net/http"
@@ -104,9 +105,10 @@ func ensureNewMessage(appRepo convoy.ApplicationRepository, msgRepo convoy.Messa
 				CreatedAt:       primitive.NewDateTimeFromTime(time.Now()),
 				UpdatedAt:       primitive.NewDateTimeFromTime(time.Now()),
 				AppMetadata: &convoy.AppMetadata{
-					OrgID:     app.OrgID,
-					Secret:    app.Secret,
-					Endpoints: activeEndpoints,
+					OrgID:        app.OrgID,
+					Secret:       app.Secret,
+					SupportEmail: app.SupportEmail,
+					Endpoints:    activeEndpoints,
 				},
 				Status:         convoy.ScheduledMessageStatus,
 				DocumentStatus: convoy.ActiveDocumentStatus,
@@ -292,7 +294,7 @@ func findMessageDeliveryAttempt(attempts *[]convoy.MessageAttempt, id string) (*
 	return nil, convoy.ErrMessageDeliveryAttemptNotFound
 }
 
-func resendMessage(msgRepo convoy.MessageRepository) func(next http.Handler) http.Handler {
+func resendMessage(appRepo convoy.ApplicationRepository, msgRepo convoy.MessageRepository) func(next http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -309,8 +311,32 @@ func resendMessage(msgRepo convoy.MessageRepository) func(next http.Handler) htt
 				return
 			}
 
+			// Retry to Inactive endpoints.
+			// System cannot handle more than one endpoint per url at this point.
+			e := msg.AppMetadata.Endpoints[0]
+			endpoint, err := appRepo.FindApplicationEndpointByID(context.Background(), msg.AppID, e.UID)
+			if err != nil {
+				_ = render.Render(w, r, newErrorResponse("cannot find endpoint", http.StatusInternalServerError))
+				return
+			}
+
+			if endpoint.Status == convoy.PendingEndpointStatus {
+				_ = render.Render(w, r, newErrorResponse("endpoint is being re-activated", http.StatusBadRequest))
+				return
+			}
+
+			if endpoint.Status == convoy.InactiveEndpointStatus {
+				pendingEndpoints := []string{e.UID}
+
+				err = appRepo.UpdateApplicationEndpointsStatus(context.Background(), msg.AppID, pendingEndpoints, convoy.PendingEndpointStatus)
+				if err != nil {
+					_ = render.Render(w, r, newErrorResponse("failed to update endpoint status", http.StatusInternalServerError))
+					return
+				}
+			}
+
 			msg.Status = convoy.ScheduledMessageStatus
-			err := msgRepo.UpdateStatusOfMessages(r.Context(), []convoy.Message{*msg}, convoy.ScheduledMessageStatus)
+			err = msgRepo.UpdateStatusOfMessages(r.Context(), []convoy.Message{*msg}, convoy.ScheduledMessageStatus)
 			if err != nil {
 				_ = render.Render(w, r, newErrorResponse("an error occurred while trying to resend event", http.StatusInternalServerError))
 				return

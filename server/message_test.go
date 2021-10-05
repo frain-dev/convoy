@@ -58,7 +58,6 @@ func Test_ensureNewMessage(t *testing.T) {
 			statusCode: http.StatusBadRequest,
 			body:       strings.NewReader(`{ "data": {}}`),
 			args: args{
-
 				message: message,
 			},
 			dbFn: func(msgRepo *mocks.MockMessageRepository, appRepo *mocks.MockApplicationRepository, orgRepo *mocks.MockOrganisationRepository) {
@@ -94,6 +93,7 @@ func Test_ensureNewMessage(t *testing.T) {
 						Endpoints: []convoy.Endpoint{
 							{
 								TargetURL: "http://localhost",
+								Status:    convoy.ActiveEndpointStatus,
 							},
 						},
 					}, nil)
@@ -291,11 +291,29 @@ func Test_resendMessage(t *testing.T) {
 					UID:    msgId,
 					AppID:  appId,
 					Status: convoy.FailureMessageStatus,
+					AppMetadata: &convoy.AppMetadata{
+						Endpoints: []convoy.EndpointMetadata{
+							convoy.EndpointMetadata{TargetURL: "http://localhost"},
+						},
+					},
 				},
 			},
 			dbFn: func(msgRepo *mocks.MockMessageRepository, appRepo *mocks.MockApplicationRepository, orgRepo *mocks.MockOrganisationRepository) {
 				msgRepo.EXPECT().
 					UpdateStatusOfMessages(gomock.Any(), gomock.Any(), gomock.Any()).Times(1).
+					Return(nil)
+
+				appRepo.EXPECT().
+					FindApplicationEndpointByID(gomock.Any(), gomock.Any(), gomock.Any()).Times(1).
+					Return(
+						&convoy.Endpoint{
+							Status: convoy.InactiveEndpointStatus,
+						},
+						nil,
+					)
+
+				appRepo.EXPECT().
+					UpdateApplicationEndpointsStatus(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Times(1).
 					Return(nil)
 
 			},
@@ -314,7 +332,7 @@ func Test_resendMessage(t *testing.T) {
 				tc.dbFn(msgRepo, appRepo, orgRepo)
 			}
 
-			resendMessage(msgRepo)(http.HandlerFunc(app.ResendAppMessage)).
+			resendMessage(appRepo, msgRepo)(http.HandlerFunc(app.ResendAppMessage)).
 				ServeHTTP(responseRecorder, request)
 
 			if responseRecorder.Code != tc.statusCode {

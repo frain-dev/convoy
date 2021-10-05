@@ -26,6 +26,7 @@ RUN go install ./cmd
 FROM gcr.io/distroless/base
 COPY --from=build-env /go/bin/cmd /
 COPY --from=build-env /go/src/frain-dev/convoy/convoy.json /convoy.json
+COPY --from=build-env /go/src/frain-dev/convoy/smtp/endpoint.update.html /
 
 ENTRYPOINT ["/cmd"]
 CMD [ "server", "--config", "convoy.json" ]

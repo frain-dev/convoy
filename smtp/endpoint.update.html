@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Email</title>
+  <link href="https://fonts.googleapis.com/css2?family=Work+Sans:wght@300&display=swap" rel="stylesheet">
+</head>
+
+  <body style="background: #F9FAFB; font-family: 'Work Sans', sans-serif;">
+    <table width="100%" border="0" cellspacing="0" cellpadding="0">
+      <tr>
+        <td align="center">
+          <div style=" max-width: 600px; width: 100%; margin: 100px auto 0;">
+            <h1 style="margin: 0 0 17px; text-align: center; max-width: 600px; width: 100%;">
+				      <img src="https://res.cloudinary.com/hivespace/image/upload/v1632913754/frain/convoy-logo.png" alt="Convoy logo">
+            </h1>
+            <div style=" text-align: center; background: #FFFFFF; box-shadow: 3px 3px 5px rgba(41, 39, 137, 0.03); max-width: 600px; width: 100%; padding: 53px 30px 63px; box-sizing: border-box;">
+				      {{if eq .Status "active"}}
+					      <p>
+						      Your Endpoint - {{.URL}}  has been enabled.
+					      </p>
+				      {{else}}
+					      <p>
+						      Your Endpoint - {{.URL}}  has been disabled.
+					      </p>
+				      {{end}}
+            </div>
+			      <div style=" text-align: center; background: #ebeef0; box-shadow: 3px 3px 5px rgba(41, 39, 137, 0.03); max-width: 600px; width: 100%; padding: 53px 30px 63px; box-sizing: border-box;">
+				      <p>Copyright © 2021 Frain Technologies, All rights reserved.</p>
+              <p>Lagos, Nigeria</p>
+				      <p><a href="https://getconvoy.io">Convoy</a></p>
+            </div>
+          </div>
+        </td>
+      </tr>
+    </table>
+  </body>
+</html>

@@ -80,6 +80,21 @@ func (mr *MockApplicationRepositoryMockRecorder) FindApplicationByID(arg0, arg1 
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "FindApplicationByID", reflect.TypeOf((*MockApplicationRepository)(nil).FindApplicationByID), arg0, arg1)
 }
 
+// FindApplicationEndpointByID mocks base method.
+func (m *MockApplicationRepository) FindApplicationEndpointByID(arg0 context.Context, arg1, arg2 string) (*convoy.Endpoint, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "FindApplicationEndpointByID", arg0, arg1, arg2)
+	ret0, _ := ret[0].(*convoy.Endpoint)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// FindApplicationEndpointByID indicates an expected call of FindApplicationEndpointByID.
+func (mr *MockApplicationRepositoryMockRecorder) FindApplicationEndpointByID(arg0, arg1, arg2 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "FindApplicationEndpointByID", reflect.TypeOf((*MockApplicationRepository)(nil).FindApplicationEndpointByID), arg0, arg1, arg2)
+}
+
 // LoadApplicationsPaged mocks base method.
 func (m *MockApplicationRepository) LoadApplicationsPaged(arg0 context.Context, arg1 string, arg2 models.Pageable) ([]convoy.Application, mongopagination.PaginationData, error) {
 	m.ctrl.T.Helper()
@@ -141,16 +156,16 @@ func (mr *MockApplicationRepositoryMockRecorder) UpdateApplication(arg0, arg1 in
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateApplication", reflect.TypeOf((*MockApplicationRepository)(nil).UpdateApplication), arg0, arg1)
 }
 
-// UpdateApplicationEndpointsAsDisabled mocks base method.
-func (m *MockApplicationRepository) UpdateApplicationEndpointsAsDisabled(arg0 context.Context, arg1 string, arg2 []string, arg3 bool) error {
+// UpdateApplicationEndpointsStatus mocks base method.
+func (m *MockApplicationRepository) UpdateApplicationEndpointsStatus(arg0 context.Context, arg1 string, arg2 []string, arg3 convoy.EndpointStatus) error {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "UpdateApplicationEndpointsAsDisabled", arg0, arg1, arg2, arg3)
+	ret := m.ctrl.Call(m, "UpdateApplicationEndpointsStatus", arg0, arg1, arg2, arg3)
 	ret0, _ := ret[0].(error)
 	return ret0
 }
 
-// UpdateApplicationEndpointsAsDisabled indicates an expected call of UpdateApplicationEndpointsAsDisabled.
-func (mr *MockApplicationRepositoryMockRecorder) UpdateApplicationEndpointsAsDisabled(arg0, arg1, arg2, arg3 interface{}) *gomock.Call {
+// UpdateApplicationEndpointsStatus indicates an expected call of UpdateApplicationEndpointsStatus.
+func (mr *MockApplicationRepositoryMockRecorder) UpdateApplicationEndpointsStatus(arg0, arg1, arg2, arg3 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateApplicationEndpointsAsDisabled", reflect.TypeOf((*MockApplicationRepository)(nil).UpdateApplicationEndpointsAsDisabled), arg0, arg1, arg2, arg3)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateApplicationEndpointsStatus", reflect.TypeOf((*MockApplicationRepository)(nil).UpdateApplicationEndpointsStatus), arg0, arg1, arg2, arg3)
 }
