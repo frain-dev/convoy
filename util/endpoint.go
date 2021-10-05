@@ -10,10 +10,7 @@ import (
 
 func ParseMetadataFromActiveEndpoints(endpoints []convoy.Endpoint) []convoy.EndpointMetadata {
 	return parseMetadataFromEndpoints(endpoints, func(e convoy.Endpoint) bool {
-		if e.Status == convoy.ActiveEndpointStatus {
-			return true
-		}
-		return false
+		return e.Status == convoy.ActiveEndpointStatus
 	})
 }
 
