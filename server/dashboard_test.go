@@ -1,13 +1,14 @@
 package server
 
 import (
+	"net/http"
+	"net/http/httptest"
+	"testing"
+
 	"github.com/frain-dev/convoy/config"
 	"github.com/frain-dev/convoy/mocks"
 	"github.com/golang/mock/gomock"
 	"github.com/sirupsen/logrus"
-	"net/http"
-	"net/http/httptest"
-	"testing"
 )
 
 func Test_fetchAllConfigDetails(t *testing.T) {
@@ -36,7 +37,7 @@ func Test_fetchAllConfigDetails(t *testing.T) {
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
 
-			err := config.LoadConfig("./testdata/TestRequireAuth_None/convoy.json")
+			err := config.LoadConfig("./testdata/Auth_Config/none-convoy.json")
 			if err != nil {
 				t.Error("Failed to load config file")
 			}

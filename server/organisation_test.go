@@ -41,7 +41,7 @@ func TestApplicationHandler_GetOrganisation(t *testing.T) {
 	}{
 		{
 			name:       "Organisation not found",
-			cfgPath:    "./testdata/TestApplicationHandler_GetOrganisation/convoy.json",
+			cfgPath:    "./testdata/Auth_Config/basic-convoy.json",
 			method:     http.MethodGet,
 			statusCode: http.StatusNotFound,
 			id:         fakeOrgID,
@@ -54,7 +54,7 @@ func TestApplicationHandler_GetOrganisation(t *testing.T) {
 		},
 		{
 			name:       "Valid Organisation",
-			cfgPath:    "./testdata/TestApplicationHandler_GetOrganisation/convoy.json",
+			cfgPath:    "./testdata/Auth_Config/basic-convoy.json",
 			method:     http.MethodGet,
 			statusCode: http.StatusOK,
 			id:         realOrgID,
@@ -131,7 +131,7 @@ func TestApplicationHandler_CreateOrganisation(t *testing.T) {
 	}{
 		{
 			name:       "Valid organisation",
-			cfgPath:    "./testdata/TestApplicationHandler_CreateOrganisation/convoy.json",
+			cfgPath:    "./testdata/Auth_Config/basic-convoy.json",
 			method:     http.MethodPost,
 			statusCode: http.StatusCreated,
 			body:       bodyReader,
@@ -201,7 +201,7 @@ func TestApplicationHandler_UpdateOrganisation(t *testing.T) {
 	}{
 		{
 			name:       "Valid organisation update",
-			cfgPath:    "./testdata/TestApplicationHandler_UpdateOrganisation/convoy.json",
+			cfgPath:    "./testdata/Auth_Config/basic-convoy.json",
 			method:     http.MethodPut,
 			statusCode: http.StatusAccepted,
 			orgID:      realOrgID,
@@ -241,6 +241,11 @@ func TestApplicationHandler_UpdateOrganisation(t *testing.T) {
 				tc.dbFn(app)
 			}
 
+			err := config.LoadConfig(tc.cfgPath)
+			if err != nil {
+				t.Error("Failed to load config file")
+			}
+
 			router := buildRoutes(app)
 
 			// Act.
@@ -272,12 +277,14 @@ func TestApplicationHandler_GetOrganisations(t *testing.T) {
 
 	tt := []struct {
 		name       string
+		cfgPath    string
 		method     string
 		statusCode int
 		dbFn       func(app *applicationHandler)
 	}{
 		{
 			name:       "valid organisations",
+			cfgPath:    "./testdata/Auth_Config/basic-convoy.json",
 			method:     http.MethodGet,
 			statusCode: http.StatusOK,
 			dbFn: func(app *applicationHandler) {
@@ -303,6 +310,11 @@ func TestApplicationHandler_GetOrganisations(t *testing.T) {
 			// Arrange Expectations
 			if tc.dbFn != nil {
 				tc.dbFn(app)
+			}
+
+			err := config.LoadConfig(tc.cfgPath)
+			if err != nil {
+				t.Error("Failed to load config file")
 			}
 
 			router := buildRoutes(app)
