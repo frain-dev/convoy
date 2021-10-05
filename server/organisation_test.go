@@ -40,7 +40,7 @@ func TestApplicationHandler_GetOrganisation(t *testing.T) {
 		dbFn       func(app *applicationHandler)
 	}{
 		{
-			name:       "Organisation not found",
+			name:       "organisation not found",
 			cfgPath:    "./testdata/Auth_Config/basic-convoy.json",
 			method:     http.MethodGet,
 			statusCode: http.StatusNotFound,
@@ -53,7 +53,7 @@ func TestApplicationHandler_GetOrganisation(t *testing.T) {
 			},
 		},
 		{
-			name:       "Valid Organisation",
+			name:       "valid organisation",
 			cfgPath:    "./testdata/Auth_Config/basic-convoy.json",
 			method:     http.MethodGet,
 			statusCode: http.StatusOK,
@@ -130,7 +130,7 @@ func TestApplicationHandler_CreateOrganisation(t *testing.T) {
 		dbFn       func(*applicationHandler)
 	}{
 		{
-			name:       "Valid organisation",
+			name:       "valid organisation",
 			cfgPath:    "./testdata/Auth_Config/basic-convoy.json",
 			method:     http.MethodPost,
 			statusCode: http.StatusCreated,
@@ -200,7 +200,7 @@ func TestApplicationHandler_UpdateOrganisation(t *testing.T) {
 		dbFn       func(app *applicationHandler)
 	}{
 		{
-			name:       "Valid organisation update",
+			name:       "valid organisation update",
 			cfgPath:    "./testdata/Auth_Config/basic-convoy.json",
 			method:     http.MethodPut,
 			statusCode: http.StatusAccepted,
