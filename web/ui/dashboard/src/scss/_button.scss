@@ -10,6 +10,7 @@ button {
 
 	&.primary {
 		--btn-color: var(--primary-color);
+		--btn-text-color: var(--primary-color);
 		background-color: var(--primary-color);
 		color: var(--primary-color-inverse);
 
@@ -50,7 +51,7 @@ button {
 		letter-spacing: 0.2px;
 		font-size: 14px;
 		line-height: 24px;
-		color: var(--btn-text-color, --btn-color);
+		color: var(--btn-text-color);
 		background-color: var(--btn-bg-color, transparent);
 		border: 1px solid var(--btn-color);
 		box-sizing: border-box;
