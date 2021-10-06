@@ -9,6 +9,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/frain-dev/convoy/config"
 	"github.com/frain-dev/convoy/server/models"
 	pager "github.com/gobeam/mongo-go-pagination"
 
@@ -39,22 +40,22 @@ func TestApplicationHandler_GetApp(t *testing.T) {
 
 	validID := "123456789"
 
-	// apprepo.EXPECT().
-
 	app = newApplicationHandler(msgRepo, apprepo, org)
 
 	tt := []struct {
 		name       string
+		cfgPath    string
 		method     string
 		statusCode int
-		input      string
+		id         string
 		dbFn       func(appRepo *mocks.MockApplicationRepository, orgRepo *mocks.MockOrganisationRepository)
 	}{
 		{
 			name:       "app not found",
+			cfgPath:    "./testdata/Auth_Config/basic-convoy.json",
 			method:     http.MethodGet,
 			statusCode: http.StatusNotFound,
-			input:      "12345",
+			id:         "12345",
 			dbFn: func(appRepo *mocks.MockApplicationRepository, orgRepo *mocks.MockOrganisationRepository) {
 				appRepo.EXPECT().
 					FindApplicationByID(gomock.Any(), gomock.Any()).
@@ -63,9 +64,10 @@ func TestApplicationHandler_GetApp(t *testing.T) {
 		},
 		{
 			name:       "valid application",
+			cfgPath:    "./testdata/Auth_Config/basic-convoy.json",
 			method:     http.MethodGet,
 			statusCode: http.StatusOK,
-			input:      validID,
+			id:         validID,
 			dbFn: func(appRepo *mocks.MockApplicationRepository, orgRepo *mocks.MockOrganisationRepository) {
 				appRepo.EXPECT().
 					FindApplicationByID(gomock.Any(), gomock.Any()).Times(1).
@@ -82,25 +84,37 @@ func TestApplicationHandler_GetApp(t *testing.T) {
 
 	for _, tc := range tt {
 		t.Run(tc.name, func(t *testing.T) {
-			request := httptest.NewRequest(tc.method, fmt.Sprintf("/v1/apps/%s", tc.input), nil)
-			responseRecorder := httptest.NewRecorder()
+			// Arrange
+			url := fmt.Sprintf("/v1/applications/%s", tc.id)
+			req := httptest.NewRequest(tc.method, url, nil)
+			req.SetBasicAuth("test", "test")
+			w := httptest.NewRecorder()
 			rctx := chi.NewRouteContext()
-			rctx.URLParams.Add("id", tc.input)
+			rctx.URLParams.Add("id", tc.id)
 
-			request = request.WithContext(context.WithValue(request.Context(), chi.RouteCtxKey, rctx))
+			req = req.WithContext(context.WithValue(req.Context(), chi.RouteCtxKey, rctx))
 
+			// Arrange Expectations
 			if tc.dbFn != nil {
 				tc.dbFn(apprepo, org)
 			}
 
-			requireApp(apprepo)(http.HandlerFunc(app.GetApp)).
-				ServeHTTP(responseRecorder, request)
-
-			if responseRecorder.Code != tc.statusCode {
-				t.Errorf("Want status '%d', got '%d'", tc.statusCode, responseRecorder.Code)
+			err := config.LoadConfig(tc.cfgPath)
+			if err != nil {
+				t.Error("Failed to load config file")
 			}
 
-			verifyMatch(t, *responseRecorder)
+			router := buildRoutes(app)
+
+			// Act
+			router.ServeHTTP(w, req)
+
+			// Assert
+			if w.Code != tc.statusCode {
+				t.Errorf("Want status '%d', got '%d'", tc.statusCode, w.Code)
+			}
+
+			verifyMatch(t, *w)
 		})
 	}
 
@@ -125,12 +139,14 @@ func TestApplicationHandler_GetApps(t *testing.T) {
 
 	tt := []struct {
 		name       string
+		cfgPath    string
 		method     string
 		statusCode int
 		dbFn       func(appRepo *mocks.MockApplicationRepository, orgRepo *mocks.MockOrganisationRepository)
 	}{
 		{
 			name:       "valid applications",
+			cfgPath:    "./testdata/Auth_Config/basic-convoy.json",
 			method:     http.MethodGet,
 			statusCode: http.StatusOK,
 			dbFn: func(appRepo *mocks.MockApplicationRepository, orgRepo *mocks.MockOrganisationRepository) {
@@ -151,27 +167,37 @@ func TestApplicationHandler_GetApps(t *testing.T) {
 
 	for _, tc := range tt {
 		t.Run(tc.name, func(t *testing.T) {
-			request := httptest.NewRequest(tc.method, "/v1/apps", nil)
-			responseRecorder := httptest.NewRecorder()
+			// Arrange
+			req := httptest.NewRequest(tc.method, "/v1/applications", nil)
+			req.SetBasicAuth("test", "test")
+			w := httptest.NewRecorder()
 
 			pageable := models.Pageable{
 				Page:    1,
 				PerPage: 10,
 			}
-			request = request.WithContext(context.WithValue(request.Context(), pageableCtx, pageable))
+			req = req.WithContext(context.WithValue(req.Context(), pageableCtx, pageable))
 
+			// Arrange Expectations.
 			if tc.dbFn != nil {
 				tc.dbFn(apprepo, org)
 			}
 
-			fetchAllApps(apprepo)(http.HandlerFunc(app.GetApps)).
-				ServeHTTP(responseRecorder, request)
-
-			if responseRecorder.Code != tc.statusCode {
-				t.Errorf("Want status '%d', got '%d'", tc.statusCode, responseRecorder.Code)
+			err := config.LoadConfig(tc.cfgPath)
+			if err != nil {
+				t.Error("Failed to load config file")
 			}
 
-			verifyMatch(t, *responseRecorder)
+			router := buildRoutes(app)
+
+			// Act
+			router.ServeHTTP(w, req)
+
+			if w.Code != tc.statusCode {
+				t.Errorf("Want status '%d', got '%d'", tc.statusCode, w.Code)
+			}
+
+			verifyMatch(t, *w)
 		})
 	}
 
@@ -200,6 +226,7 @@ func TestApplicationHandler_CreateApp(t *testing.T) {
 
 	tt := []struct {
 		name       string
+		cfgPath    string
 		method     string
 		statusCode int
 		body       *strings.Reader
@@ -207,6 +234,7 @@ func TestApplicationHandler_CreateApp(t *testing.T) {
 	}{
 		{
 			name:       "valid application",
+			cfgPath:    "./testdata/Auth_Config/basic-convoy.json",
 			method:     http.MethodPost,
 			statusCode: http.StatusCreated,
 			body:       bodyReader,
@@ -214,6 +242,7 @@ func TestApplicationHandler_CreateApp(t *testing.T) {
 				appRepo.EXPECT().
 					CreateApplication(gomock.Any(), gomock.Any()).Times(1).
 					Return(nil)
+
 				orgRepo.EXPECT().
 					FetchOrganisationByID(gomock.Any(), gomock.Any()).Times(1).
 					Return(organisation, nil)
@@ -224,18 +253,29 @@ func TestApplicationHandler_CreateApp(t *testing.T) {
 
 	for _, tc := range tt {
 		t.Run(tc.name, func(t *testing.T) {
-			request := httptest.NewRequest(tc.method, "/v1/apps", tc.body)
-			responseRecorder := httptest.NewRecorder()
+			// Arrange
+			req := httptest.NewRequest(tc.method, "/v1/applications", tc.body)
+			req.SetBasicAuth("test", "test")
+			req.Header.Add("Content-Type", "application/json")
+			w := httptest.NewRecorder()
 
+			// Arrange Expectations
 			if tc.dbFn != nil {
 				tc.dbFn(apprepo, org)
 			}
 
-			ensureNewApp(org, apprepo)(http.HandlerFunc(app.CreateApp)).
-				ServeHTTP(responseRecorder, request)
+			err := config.LoadConfig(tc.cfgPath)
+			if err != nil {
+				t.Error("Failed to load config file")
+			}
 
-			if responseRecorder.Code != tc.statusCode {
-				t.Errorf("Want status '%d', got '%d'", tc.statusCode, responseRecorder.Code)
+			router := buildRoutes(app)
+
+			// Act.
+			router.ServeHTTP(w, req)
+
+			if w.Code != tc.statusCode {
+				t.Errorf("Want status '%d', got '%d'", tc.statusCode, w.Code)
 			}
 		})
 	}
@@ -262,6 +302,7 @@ func TestApplicationHandler_UpdateApp(t *testing.T) {
 
 	tt := []struct {
 		name       string
+		cfgPath    string
 		method     string
 		statusCode int
 		appId      string
@@ -270,7 +311,8 @@ func TestApplicationHandler_UpdateApp(t *testing.T) {
 	}{
 		{
 			name:       "valid application update",
-			method:     http.MethodPost,
+			cfgPath:    "./testdata/Auth_Config/basic-convoy.json",
+			method:     http.MethodPut,
 			statusCode: http.StatusAccepted,
 			appId:      appId,
 			body:       bodyReader,
@@ -280,7 +322,7 @@ func TestApplicationHandler_UpdateApp(t *testing.T) {
 					Return(nil)
 
 				appRepo.EXPECT().
-					FindApplicationByID(gomock.Any(), gomock.Any()).Times(0).
+					FindApplicationByID(gomock.Any(), gomock.Any()).Times(1).
 					Return(&convoy.Application{
 						UID:       appId,
 						OrgID:     orgID,
@@ -294,13 +336,18 @@ func TestApplicationHandler_UpdateApp(t *testing.T) {
 
 	for _, tc := range tt {
 		t.Run(tc.name, func(t *testing.T) {
-			request := httptest.NewRequest(tc.method, fmt.Sprintf("/v1/apps/%s", tc.appId), tc.body)
-			responseRecorder := httptest.NewRecorder()
+			// Arrange
+			url := fmt.Sprintf("/v1/applications/%s", tc.appId)
+			req := httptest.NewRequest(tc.method, url, tc.body)
+			req.SetBasicAuth("test", "test")
+			req.Header.Add("Content-Type", "application/json")
+
+			w := httptest.NewRecorder()
 			rctx := chi.NewRouteContext()
 			rctx.URLParams.Add("appID", tc.appId)
 
-			request = request.WithContext(context.WithValue(request.Context(), chi.RouteCtxKey, rctx))
-			request = request.WithContext(context.WithValue(request.Context(), appCtx, &convoy.Application{
+			req = req.WithContext(context.WithValue(req.Context(), chi.RouteCtxKey, rctx))
+			req = req.WithContext(context.WithValue(req.Context(), appCtx, &convoy.Application{
 				UID:       appId,
 				OrgID:     orgID,
 				Title:     "Valid application update",
@@ -311,14 +358,21 @@ func TestApplicationHandler_UpdateApp(t *testing.T) {
 				tc.dbFn(apprepo, org)
 			}
 
-			ensureAppUpdate(apprepo)(http.HandlerFunc(app.UpdateApp)).
-				ServeHTTP(responseRecorder, request)
-
-			if responseRecorder.Code != tc.statusCode {
-				t.Errorf("Want status '%d', got '%d'", tc.statusCode, responseRecorder.Code)
+			err := config.LoadConfig(tc.cfgPath)
+			if err != nil {
+				t.Error("Failed to load config file")
 			}
 
-			verifyMatch(t, *responseRecorder)
+			router := buildRoutes(app)
+
+			// Act.
+			router.ServeHTTP(w, req)
+
+			if w.Code != tc.statusCode {
+				t.Errorf("Want status '%d', got '%d'", tc.statusCode, w.Code)
+			}
+
+			verifyMatch(t, *w)
 		})
 	}
 
@@ -345,6 +399,7 @@ func TestApplicationHandler_CreateAppEndpoint(t *testing.T) {
 
 	tt := []struct {
 		name       string
+		cfgPath    string
 		method     string
 		statusCode int
 		appId      string
@@ -353,6 +408,7 @@ func TestApplicationHandler_CreateAppEndpoint(t *testing.T) {
 	}{
 		{
 			name:       "valid application endpoint",
+			cfgPath:    "./testdata/Auth_Config/basic-convoy.json",
 			method:     http.MethodPost,
 			statusCode: http.StatusCreated,
 			appId:      appId,
@@ -363,7 +419,7 @@ func TestApplicationHandler_CreateAppEndpoint(t *testing.T) {
 					Return(nil)
 
 				appRepo.EXPECT().
-					FindApplicationByID(gomock.Any(), gomock.Any()).Times(1).
+					FindApplicationByID(gomock.Any(), gomock.Any()).Times(2).
 					Return(&convoy.Application{
 						UID:       appId,
 						OrgID:     orgID,
@@ -377,18 +433,28 @@ func TestApplicationHandler_CreateAppEndpoint(t *testing.T) {
 
 	for _, tc := range tt {
 		t.Run(tc.name, func(t *testing.T) {
-			request := httptest.NewRequest(tc.method, fmt.Sprintf("/v1/apps/%s/endpoint", tc.appId), tc.body)
-			responseRecorder := httptest.NewRecorder()
+			url := fmt.Sprintf("/v1/applications/%s/endpoints", tc.appId)
+			req := httptest.NewRequest(tc.method, url, tc.body)
+			req.SetBasicAuth("test", "test")
+			req.Header.Add("Content-Type", "application/json")
+			w := httptest.NewRecorder()
 
 			if tc.dbFn != nil {
 				tc.dbFn(apprepo, org)
 			}
 
-			ensureNewAppEndpoint(apprepo)(http.HandlerFunc(app.CreateAppEndpoint)).
-				ServeHTTP(responseRecorder, request)
+			err := config.LoadConfig(tc.cfgPath)
+			if err != nil {
+				t.Error("Failed to load config file")
+			}
 
-			if responseRecorder.Code != tc.statusCode {
-				t.Errorf("Want status '%d', got '%d'", tc.statusCode, responseRecorder.Code)
+			router := buildRoutes(app)
+
+			// Act
+			router.ServeHTTP(w, req)
+
+			if w.Code != tc.statusCode {
+				t.Errorf("Want status '%d', got '%d'", tc.statusCode, w.Code)
 			}
 		})
 	}
@@ -416,6 +482,7 @@ func TestApplicationHandler_UpdateAppEndpoint_InvalidRequest(t *testing.T) {
 
 	tt := []struct {
 		name       string
+		cfgPath    string
 		method     string
 		statusCode int
 		appId      string
@@ -425,6 +492,7 @@ func TestApplicationHandler_UpdateAppEndpoint_InvalidRequest(t *testing.T) {
 	}{
 		{
 			name:       "invalid application endpoint update",
+			cfgPath:    "./testdata/Auth_Config/basic-convoy.json",
 			method:     http.MethodPut,
 			statusCode: http.StatusBadRequest,
 			appId:      appId,
@@ -436,7 +504,7 @@ func TestApplicationHandler_UpdateAppEndpoint_InvalidRequest(t *testing.T) {
 					Return(nil)
 
 				appRepo.EXPECT().
-					FindApplicationByID(gomock.Any(), gomock.Any()).Times(0).
+					FindApplicationByID(gomock.Any(), gomock.Any()).Times(1).
 					Return(&convoy.Application{
 						UID:       appId,
 						OrgID:     orgID,
@@ -450,32 +518,45 @@ func TestApplicationHandler_UpdateAppEndpoint_InvalidRequest(t *testing.T) {
 
 	for _, tc := range tt {
 		t.Run(tc.name, func(t *testing.T) {
-			request := httptest.NewRequest(tc.method, fmt.Sprintf("/v1/apps/%s/endpoint/%s", tc.appId, tc.endpointId), tc.body)
-			responseRecorder := httptest.NewRecorder()
+			// Arrange
+			url := fmt.Sprintf("/v1/applications/%s/endpoints/%s", tc.appId, tc.endpointId)
+			req := httptest.NewRequest(tc.method, url, tc.body)
+			req.SetBasicAuth("test", "test")
+			req.Header.Add("Content-Type", "application/json")
+
+			w := httptest.NewRecorder()
 			rctx := chi.NewRouteContext()
 			rctx.URLParams.Add("appID", tc.appId)
 			rctx.URLParams.Add("endpointID", tc.endpointId)
 
-			request = request.WithContext(context.WithValue(request.Context(), chi.RouteCtxKey, rctx))
-			request = request.WithContext(context.WithValue(request.Context(), appCtx, &convoy.Application{
+			req = req.WithContext(context.WithValue(req.Context(), chi.RouteCtxKey, rctx))
+			req = req.WithContext(context.WithValue(req.Context(), appCtx, &convoy.Application{
 				UID:       appId,
 				OrgID:     orgID,
 				Title:     "Valid application update",
 				Endpoints: []convoy.Endpoint{},
 			}))
 
+			// Arrange Expectations
 			if tc.dbFn != nil {
 				tc.dbFn(apprepo, org)
 			}
 
-			ensureAppEndpointUpdate(apprepo)(http.HandlerFunc(app.UpdateAppEndpoint)).
-				ServeHTTP(responseRecorder, request)
-
-			if responseRecorder.Code != tc.statusCode {
-				t.Errorf("Want status '%d', got '%d'", tc.statusCode, responseRecorder.Code)
+			err := config.LoadConfig(tc.cfgPath)
+			if err != nil {
+				t.Error("Failed to load config file")
 			}
 
-			verifyMatch(t, *responseRecorder)
+			router := buildRoutes(app)
+
+			// Act
+			router.ServeHTTP(w, req)
+
+			if w.Code != tc.statusCode {
+				t.Errorf("Want status '%d', got '%d'", tc.statusCode, w.Code)
+			}
+
+			verifyMatch(t, *w)
 		})
 	}
 
@@ -502,6 +583,7 @@ func TestApplicationHandler_UpdateAppEndpoint_ValidRequest(t *testing.T) {
 
 	tt := []struct {
 		name       string
+		cfgPath    string
 		method     string
 		statusCode int
 		appId      string
@@ -511,7 +593,8 @@ func TestApplicationHandler_UpdateAppEndpoint_ValidRequest(t *testing.T) {
 	}{
 		{
 			name:       "valid application endpoint update",
-			method:     http.MethodPost,
+			cfgPath:    "./testdata/Auth_Config/basic-convoy.json",
+			method:     http.MethodPut,
 			statusCode: http.StatusAccepted,
 			appId:      appId,
 			endpointId: endpointId,
@@ -522,7 +605,7 @@ func TestApplicationHandler_UpdateAppEndpoint_ValidRequest(t *testing.T) {
 					Return(nil)
 
 				appRepo.EXPECT().
-					FindApplicationByID(gomock.Any(), gomock.Any()).Times(0).
+					FindApplicationByID(gomock.Any(), gomock.Any()).Times(1).
 					Return(&convoy.Application{
 						UID:   appId,
 						OrgID: orgID,
@@ -542,14 +625,18 @@ func TestApplicationHandler_UpdateAppEndpoint_ValidRequest(t *testing.T) {
 
 	for _, tc := range tt {
 		t.Run(tc.name, func(t *testing.T) {
-			request := httptest.NewRequest(tc.method, fmt.Sprintf("/v1/apps/%s/endpoint/%s", tc.appId, tc.endpointId), tc.body)
-			responseRecorder := httptest.NewRecorder()
+			url := fmt.Sprintf("/v1/applications/%s/endpoints/%s", tc.appId, tc.endpointId)
+			req := httptest.NewRequest(tc.method, url, tc.body)
+			req.SetBasicAuth("test", "test")
+			req.Header.Add("Content-Type", "application/json")
+
+			w := httptest.NewRecorder()
 			rctx := chi.NewRouteContext()
 			rctx.URLParams.Add("appID", tc.appId)
 			rctx.URLParams.Add("endpointID", tc.endpointId)
 
-			request = request.WithContext(context.WithValue(request.Context(), chi.RouteCtxKey, rctx))
-			request = request.WithContext(context.WithValue(request.Context(), appCtx, &convoy.Application{
+			req = req.WithContext(context.WithValue(req.Context(), chi.RouteCtxKey, rctx))
+			req = req.WithContext(context.WithValue(req.Context(), appCtx, &convoy.Application{
 				UID:   appId,
 				OrgID: orgID,
 				Title: "Valid application update",
@@ -566,11 +653,18 @@ func TestApplicationHandler_UpdateAppEndpoint_ValidRequest(t *testing.T) {
 				tc.dbFn(apprepo, org)
 			}
 
-			ensureAppEndpointUpdate(apprepo)(http.HandlerFunc(app.UpdateAppEndpoint)).
-				ServeHTTP(responseRecorder, request)
+			err := config.LoadConfig(tc.cfgPath)
+			if err != nil {
+				t.Error("Failed to load config file")
+			}
 
-			if responseRecorder.Code != tc.statusCode {
-				t.Errorf("Want status '%d', got '%d'", tc.statusCode, responseRecorder.Code)
+			router := buildRoutes(app)
+
+			// Act
+			router.ServeHTTP(w, req)
+
+			if w.Code != tc.statusCode {
+				t.Errorf("Want status '%d', got '%d'", tc.statusCode, w.Code)
 			}
 		})
 	}

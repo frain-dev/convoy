@@ -18,22 +18,11 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-func Test_ensureNewMessage(t *testing.T) {
-
-	var app *applicationHandler
-
-	ctrl := gomock.NewController(t)
-	defer ctrl.Finish()
-
-	orgRepo := mocks.NewMockOrganisationRepository(ctrl)
-	appRepo := mocks.NewMockApplicationRepository(ctrl)
-	msgRepo := mocks.NewMockMessageRepository(ctrl)
+func TestApplicationHandler_CreateAppMessage(t *testing.T) {
 
 	orgID := "1234567890"
 	appId := "12345"
 	msgId := "1122333444456"
-
-	app = newApplicationHandler(msgRepo, appRepo, orgRepo)
 
 	message := &convoy.Message{
 		UID:   msgId,
@@ -46,6 +35,7 @@ func Test_ensureNewMessage(t *testing.T) {
 
 	tests := []struct {
 		name       string
+		cfgPath    string
 		method     string
 		statusCode int
 		args       args
@@ -54,6 +44,7 @@ func Test_ensureNewMessage(t *testing.T) {
 	}{
 		{
 			name:       "invalid message - no event type",
+			cfgPath:    "./testdata/Auth_Config/full-convoy.json",
 			method:     http.MethodPost,
 			statusCode: http.StatusBadRequest,
 			body:       strings.NewReader(`{ "data": {}}`),
@@ -69,6 +60,7 @@ func Test_ensureNewMessage(t *testing.T) {
 						Title:     "Valid application",
 						Endpoints: []convoy.Endpoint{},
 					}, nil)
+
 				msgRepo.EXPECT().
 					CreateMessage(gomock.Any(), gomock.Any()).Times(0).
 					Return(nil)
@@ -77,9 +69,10 @@ func Test_ensureNewMessage(t *testing.T) {
 		},
 		{
 			name:       "valid message",
+			cfgPath:    "./testdata/Auth_Config/full-convoy.json",
 			method:     http.MethodPost,
 			statusCode: http.StatusCreated,
-			body:       strings.NewReader(`{"event_type": "test.event", "data": { "Hello": "World", "Test": "Data" }}`),
+			body:       strings.NewReader(`{"app_id": "12345", "event_type": "test.event", "data": { "Hello": "World", "Test": "Data" }}`),
 			args: args{
 				message: message,
 			},
@@ -97,6 +90,7 @@ func Test_ensureNewMessage(t *testing.T) {
 							},
 						},
 					}, nil)
+
 				msgRepo.EXPECT().
 					CreateMessage(gomock.Any(), gomock.Any()).Times(1).
 					Return(nil)
@@ -106,29 +100,39 @@ func Test_ensureNewMessage(t *testing.T) {
 	}
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
+			var app *applicationHandler
 
-			err := config.LoadConfig("./testdata/Auth_Config/none-convoy.json")
+			ctrl := gomock.NewController(t)
+			defer ctrl.Finish()
+
+			orgRepo := mocks.NewMockOrganisationRepository(ctrl)
+			appRepo := mocks.NewMockApplicationRepository(ctrl)
+			msgRepo := mocks.NewMockMessageRepository(ctrl)
+
+			app = newApplicationHandler(msgRepo, appRepo, orgRepo)
+
+			err := config.LoadConfig(tc.cfgPath)
 			if err != nil {
 				t.Error("Failed to load config file")
 			}
 
-			request := httptest.NewRequest(tc.method, fmt.Sprintf("/v1/apps/%s/events", tc.args.message.AppID), tc.body)
-			responseRecorder := httptest.NewRecorder()
-			rctx := chi.NewRouteContext()
-			rctx.URLParams.Add("appID", tc.args.message.AppID)
-
-			request = request.WithContext(context.WithValue(request.Context(), chi.RouteCtxKey, rctx))
+			req := httptest.NewRequest(tc.method, "/v1/events", tc.body)
+			req.SetBasicAuth("test", "test")
+			req.Header.Add("Content-Type", "application/json")
+			w := httptest.NewRecorder()
 
 			if tc.dbFn != nil {
 				tc.dbFn(msgRepo, appRepo, orgRepo)
 			}
 
-			ensureNewMessage(appRepo, msgRepo)(http.HandlerFunc(app.CreateAppMessage)).
-				ServeHTTP(responseRecorder, request)
+			router := buildRoutes(app)
 
-			if responseRecorder.Code != tc.statusCode {
-				logrus.Error(tc.args.message, responseRecorder.Body)
-				t.Errorf("Want status '%d', got '%d'", tc.statusCode, responseRecorder.Code)
+			// Act
+			router.ServeHTTP(w, req)
+
+			if w.Code != tc.statusCode {
+				logrus.Error(tc.args.message, w.Body)
+				t.Errorf("Want status '%d', got '%d'", tc.statusCode, w.Code)
 			}
 		})
 	}
@@ -160,6 +164,7 @@ func Test_fetchAllMessages(t *testing.T) {
 
 	tests := []struct {
 		name       string
+		cfgPath    string
 		method     string
 		statusCode int
 		args       args
@@ -168,6 +173,7 @@ func Test_fetchAllMessages(t *testing.T) {
 	}{
 		{
 			name:       "valid messages",
+			cfgPath:    "./testdata/Auth_Config/basic-convoy.json",
 			method:     http.MethodGet,
 			statusCode: http.StatusOK,
 			body:       nil,
@@ -188,8 +194,14 @@ func Test_fetchAllMessages(t *testing.T) {
 	}
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			request := httptest.NewRequest(tc.method, fmt.Sprintf("/v1/apps/%s/events", tc.args.message.AppID), nil)
-			responseRecorder := httptest.NewRecorder()
+			err := config.LoadConfig(tc.cfgPath)
+			if err != nil {
+				t.Error("Failed to load config file")
+			}
+
+			req := httptest.NewRequest(tc.method, "/v1/events", nil)
+			req.SetBasicAuth("test", "test")
+			w := httptest.NewRecorder()
 			rctx := chi.NewRouteContext()
 			rctx.URLParams.Add("appID", tc.args.message.AppID)
 
@@ -197,39 +209,30 @@ func Test_fetchAllMessages(t *testing.T) {
 				Page:    1,
 				PerPage: 10,
 			}
-			request = request.WithContext(context.WithValue(request.Context(), chi.RouteCtxKey, rctx))
-			request = request.WithContext(context.WithValue(request.Context(), pageableCtx, pageable))
+			req = req.WithContext(context.WithValue(req.Context(), chi.RouteCtxKey, rctx))
+			req = req.WithContext(context.WithValue(req.Context(), pageableCtx, pageable))
 
 			if tc.dbFn != nil {
 				tc.dbFn(msgRepo, appRepo, orgRepo)
 			}
 
-			fetchAllMessages(msgRepo)(http.HandlerFunc(app.GetAppMessagesPaged)).
-				ServeHTTP(responseRecorder, request)
+			router := buildRoutes(app)
 
-			if responseRecorder.Code != tc.statusCode {
-				logrus.Error(tc.args.message, responseRecorder.Body)
-				t.Errorf("Want status '%d', got '%d'", tc.statusCode, responseRecorder.Code)
+			// Act
+			router.ServeHTTP(w, req)
+
+			if w.Code != tc.statusCode {
+				logrus.Error(tc.args.message, w.Body)
+				t.Errorf("Want status '%d', got '%d'", tc.statusCode, w.Code)
 			}
 		})
 	}
 }
 
 func Test_resendMessage(t *testing.T) {
-	var app *applicationHandler
 
-	ctrl := gomock.NewController(t)
-	defer ctrl.Finish()
-
-	orgRepo := mocks.NewMockOrganisationRepository(ctrl)
-	appRepo := mocks.NewMockApplicationRepository(ctrl)
-	msgRepo := mocks.NewMockMessageRepository(ctrl)
-
-	orgId := "123"
 	appId := "12345"
 	msgId := "1122333444456"
-
-	app = newApplicationHandler(msgRepo, appRepo, orgRepo)
 
 	type args struct {
 		message *convoy.Message
@@ -237,14 +240,16 @@ func Test_resendMessage(t *testing.T) {
 
 	tests := []struct {
 		name       string
+		cfgPath    string
 		method     string
 		statusCode int
 		args       args
 		body       *strings.Reader
-		dbFn       func(msgRepo *mocks.MockMessageRepository, appRepo *mocks.MockApplicationRepository, orgRepo *mocks.MockOrganisationRepository)
+		dbFn       func(m *convoy.Message, msgRepo *mocks.MockMessageRepository, appRepo *mocks.MockApplicationRepository, orgRepo *mocks.MockOrganisationRepository)
 	}{
 		{
 			name:       "invalid event to resend - already successful",
+			cfgPath:    "./testdata/Auth_Config/full-convoy.json",
 			method:     http.MethodPut,
 			statusCode: http.StatusBadRequest,
 			body:       nil,
@@ -255,7 +260,11 @@ func Test_resendMessage(t *testing.T) {
 					Status: convoy.SuccessMessageStatus,
 				},
 			},
-			dbFn: func(msgRepo *mocks.MockMessageRepository, appRepo *mocks.MockApplicationRepository, orgRepo *mocks.MockOrganisationRepository) {
+			dbFn: func(msg *convoy.Message, msgRepo *mocks.MockMessageRepository, appRepo *mocks.MockApplicationRepository, orgRepo *mocks.MockOrganisationRepository) {
+				msgRepo.EXPECT().
+					FindMessageByID(gomock.Any(), gomock.Any()).Times(1).
+					Return(msg, nil)
+
 				msgRepo.EXPECT().
 					UpdateStatusOfMessages(gomock.Any(), gomock.Any(), gomock.Any()).Times(0).
 					Return(nil)
@@ -264,6 +273,7 @@ func Test_resendMessage(t *testing.T) {
 		},
 		{
 			name:       "invalid event to resend - not failed",
+			cfgPath:    "./testdata/Auth_Config/full-convoy.json",
 			method:     http.MethodPut,
 			statusCode: http.StatusBadRequest,
 			body:       nil,
@@ -274,7 +284,11 @@ func Test_resendMessage(t *testing.T) {
 					Status: convoy.ProcessingMessageStatus,
 				},
 			},
-			dbFn: func(msgRepo *mocks.MockMessageRepository, appRepo *mocks.MockApplicationRepository, orgRepo *mocks.MockOrganisationRepository) {
+			dbFn: func(msg *convoy.Message, msgRepo *mocks.MockMessageRepository, appRepo *mocks.MockApplicationRepository, orgRepo *mocks.MockOrganisationRepository) {
+				msgRepo.EXPECT().
+					FindMessageByID(gomock.Any(), gomock.Any()).Times(1).
+					Return(msg, nil)
+
 				msgRepo.EXPECT().
 					UpdateStatusOfMessages(gomock.Any(), gomock.Any(), gomock.Any()).Times(0).
 					Return(nil)
@@ -283,6 +297,7 @@ func Test_resendMessage(t *testing.T) {
 		},
 		{
 			name:       "valid event to resend - previously failed",
+			cfgPath:    "./testdata/Auth_Config/basic-convoy.json",
 			method:     http.MethodPut,
 			statusCode: http.StatusOK,
 			body:       nil,
@@ -293,12 +308,16 @@ func Test_resendMessage(t *testing.T) {
 					Status: convoy.FailureMessageStatus,
 					AppMetadata: &convoy.AppMetadata{
 						Endpoints: []convoy.EndpointMetadata{
-							convoy.EndpointMetadata{TargetURL: "http://localhost"},
+							{TargetURL: "http://localhost"},
 						},
 					},
 				},
 			},
-			dbFn: func(msgRepo *mocks.MockMessageRepository, appRepo *mocks.MockApplicationRepository, orgRepo *mocks.MockOrganisationRepository) {
+			dbFn: func(msg *convoy.Message, msgRepo *mocks.MockMessageRepository, appRepo *mocks.MockApplicationRepository, orgRepo *mocks.MockOrganisationRepository) {
+				msgRepo.EXPECT().
+					FindMessageByID(gomock.Any(), gomock.Any()).Times(1).
+					Return(msg, nil)
+
 				msgRepo.EXPECT().
 					UpdateStatusOfMessages(gomock.Any(), gomock.Any(), gomock.Any()).Times(1).
 					Return(nil)
@@ -321,26 +340,48 @@ func Test_resendMessage(t *testing.T) {
 	}
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			request := httptest.NewRequest(tc.method, fmt.Sprintf("/v1/dashboard/%s/events/%s/resend", orgId, tc.args.message.UID), nil)
-			responseRecorder := httptest.NewRecorder()
+			var app *applicationHandler
+
+			ctrl := gomock.NewController(t)
+			defer ctrl.Finish()
+
+			orgRepo := mocks.NewMockOrganisationRepository(ctrl)
+			appRepo := mocks.NewMockApplicationRepository(ctrl)
+			msgRepo := mocks.NewMockMessageRepository(ctrl)
+
+			app = newApplicationHandler(msgRepo, appRepo, orgRepo)
+
+			url := fmt.Sprintf("/v1/events/%s/resend", tc.args.message.UID)
+			req := httptest.NewRequest(tc.method, url, nil)
+			req.SetBasicAuth("test", "test")
+			req.Header.Add("Content-Type", "application/json")
+
+			w := httptest.NewRecorder()
 			rctx := chi.NewRouteContext()
 			rctx.URLParams.Add("appID", tc.args.message.AppID)
 
-			request = request.WithContext(context.WithValue(request.Context(), msgCtx, tc.args.message))
+			req = req.WithContext(context.WithValue(req.Context(), msgCtx, tc.args.message))
 
 			if tc.dbFn != nil {
-				tc.dbFn(msgRepo, appRepo, orgRepo)
+				tc.dbFn(tc.args.message, msgRepo, appRepo, orgRepo)
 			}
 
-			resendMessage(appRepo, msgRepo)(http.HandlerFunc(app.ResendAppMessage)).
-				ServeHTTP(responseRecorder, request)
-
-			if responseRecorder.Code != tc.statusCode {
-				logrus.Error(tc.args.message, responseRecorder.Body)
-				t.Errorf("Want status '%d', got '%d'", tc.statusCode, responseRecorder.Code)
+			err := config.LoadConfig(tc.cfgPath)
+			if err != nil {
+				t.Error("Failed to load config file")
 			}
 
-			verifyMatch(t, *responseRecorder)
+			router := buildRoutes(app)
+
+			// Act
+			router.ServeHTTP(w, req)
+
+			if w.Code != tc.statusCode {
+				logrus.Error(tc.args.message, w.Body)
+				t.Errorf("Want status '%d', got '%d'", tc.statusCode, w.Code)
+			}
+
+			verifyMatch(t, *w)
 		})
 	}
 }
