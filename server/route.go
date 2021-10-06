@@ -69,13 +69,12 @@ func buildRoutes(app *applicationHandler) http.Handler {
 			})
 		})
 
-		r.Route("/apps", func(appRouter chi.Router) {
+		r.Route("/applications", func(appRouter chi.Router) {
 			appRouter.Use(requireAuth())
 
 			appRouter.Route("/", func(appSubRouter chi.Router) {
-				appSubRouter.With(ensureNewApp(app.orgRepo, app.appRepo)).Post("/", app.CreateApp)
-
-				appRouter.With(pagination).With(fetchAllApps(app.appRepo)).Get("/", app.GetApps)
+				appSubRouter.Post("/", app.CreateApp)
+				appRouter.With(pagination).Get("/", app.GetApps)
 			})
 
 			appRouter.Route("/{appID}", func(appSubRouter chi.Router) {
