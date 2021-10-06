@@ -26,6 +26,7 @@ const (
 	// ScheduledMessageStatus : when  a message has been scheduled for delivery
 	ScheduledMessageStatus  MessageStatus = "Scheduled"
 	ProcessingMessageStatus MessageStatus = "Processing"
+	DiscardedMessageStatus  MessageStatus = "Discarded"
 	FailureMessageStatus    MessageStatus = "Failure"
 	SuccessMessageStatus    MessageStatus = "Success"
 	RetryMessageStatus      MessageStatus = "Retry"
