@@ -309,7 +309,6 @@
 
 	&--details {
 		padding: 24px 0 0 32px;
-		width: 651px;
 
 		hr {
 			border: none;
@@ -321,8 +320,8 @@
 		&--meta {
 			padding: 8px 0 24px;
 			border-bottom: 1px solid #edeff5;
-			width: 100%;
-			margin: 10px 0 0;
+			margin: 10px 0 24px;
+			width: 550px;
 
 			li {
 				display: flex;
@@ -352,11 +351,29 @@
 		&--response-data {
 			font-size: 13px;
 			line-height: 30px;
-			width: 362px;
+			width: 100%;
+			padding: 1em;
+			background: #fbfbfb;
+			margin-right: 25px;
 		}
 
-		&--event-data {
-			width: 362px;
+		&--tabs-data {
+			width: 100%;
+			padding-right: 25px;
+		}
+
+		&--tabs-data,
+		&--view-more {
+			opacity: 0;
+			position: absolute;
+			right: 1000px;
+			z-index: -1;
+
+			&.show {
+				opacity: 1;
+				position: initial;
+				z-index: initial;
+			}
 		}
 
 		&--view-more {
@@ -399,7 +416,6 @@
 		}
 
 		&--req-res {
-			margin-top: 30px;
 			max-height: calc(100vh - (950px + 198px));
 			min-height: 300px;
 			overflow-y: auto;
@@ -431,6 +447,44 @@
 						width: 15px;
 						margin-right: 10px;
 					}
+				}
+			}
+		}
+
+		.tabs {
+			border: none;
+
+			.tab {
+				padding: 0;
+
+				&:not(:last-of-type) {
+					.active button {
+						margin-right: 25px;
+					}
+				}
+
+				&.active {
+					&::after {
+						content: none;
+					}
+
+					button {
+						border-color: rgba(71, 125, 179, 0.2);
+						box-shadow: 0px 10px 25px rgba(151, 143, 175, 0.08);
+						border-radius: 8px;
+						color: var(--primary-color);
+					}
+				}
+
+				button {
+					padding: 9px 23px;
+					border: 1px solid transparent;
+					font-weight: 500;
+					font-size: 14px;
+					line-height: 16px;
+					letter-spacing: 0.01em;
+					transition: border 0.2s;
+					color: var(--color-black);
 				}
 			}
 		}
@@ -544,7 +598,8 @@ table {
 		transition: all 0.5s;
 		cursor: pointer;
 
-		&:hover {
+		&:hover,
+		&.active {
 			background: rgba(71, 125, 179, 0.05);
 		}
 
@@ -676,4 +731,9 @@ table {
 		margin-top: 20px;
 		font-size: 14px;
 	}
+}
+
+.react-json-view {
+	background: #fbfbfb !important;
+	padding: 1rem;
 }
