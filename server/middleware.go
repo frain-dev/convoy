@@ -515,11 +515,6 @@ func setMessagesInContext(ctx context.Context,
 	msg *[]convoy.Message) context.Context {
 	return context.WithValue(ctx, msgCtx, msg)
 }
-
-func getMessagesFromContext(ctx context.Context) *[]convoy.Message {
-	return ctx.Value(msgCtx).(*[]convoy.Message)
-}
-
 func setApplicationsInContext(ctx context.Context,
 	apps *[]convoy.Application) context.Context {
 	return context.WithValue(ctx, appCtx, apps)
@@ -538,29 +533,12 @@ func getApplicationEndpointFromContext(ctx context.Context) *convoy.Endpoint {
 	return ctx.Value(endpointCtx).(*convoy.Endpoint)
 }
 
-func setApplicationEndpointsInContext(ctx context.Context,
-	endpoints *[]convoy.Endpoint) context.Context {
-	return context.WithValue(ctx, endpointCtx, endpoints)
-}
-
-func getApplicationEndpointsFromContext(ctx context.Context) *[]convoy.Endpoint {
-	return ctx.Value(endpointCtx).(*[]convoy.Endpoint)
-}
-
 func setOrganisationInContext(ctx context.Context, organisation *convoy.Organisation) context.Context {
 	return context.WithValue(ctx, orgCtx, organisation)
 }
 
 func getOrganisationFromContext(ctx context.Context) *convoy.Organisation {
 	return ctx.Value(orgCtx).(*convoy.Organisation)
-}
-
-func setOrganisationsInContext(ctx context.Context, organisations []*convoy.Organisation) context.Context {
-	return context.WithValue(ctx, orgCtx, organisations)
-}
-
-func getOrganisationsFromContext(ctx context.Context) []*convoy.Organisation {
-	return ctx.Value(orgCtx).([]*convoy.Organisation)
 }
 
 func setPageableInContext(ctx context.Context, pageable models.Pageable) context.Context {
@@ -603,14 +581,6 @@ func setDeliveryAttemptsInContext(ctx context.Context,
 
 func getDeliveryAttemptsFromContext(ctx context.Context) *[]convoy.MessageAttempt {
 	return ctx.Value(deliveryAttemptsCtx).(*[]convoy.MessageAttempt)
-}
-
-func setAuthConfigInContext(ctx context.Context, a *config.AuthConfiguration) context.Context {
-	return context.WithValue(ctx, authConfigCtx, a)
-}
-
-func getAuthConfigFromContext(ctx context.Context) *config.AuthConfiguration {
-	return ctx.Value(authConfigCtx).(*config.AuthConfiguration)
 }
 
 func setAuthLoginInContext(ctx context.Context, a *AuthorizedLogin) context.Context {
