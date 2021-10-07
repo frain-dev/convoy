@@ -29,6 +29,7 @@ func newApplicationHandler(msgRepo convoy.MessageRepository, appRepo convoy.Appl
 	}
 }
 
+// GetApp
 // @Summary Get an application
 // @Description This endpoint fetches an application by it's id
 // @Tags Application
@@ -47,6 +48,7 @@ func (a *applicationHandler) GetApp(w http.ResponseWriter, r *http.Request) {
 		*getApplicationFromContext(r.Context()), http.StatusOK))
 }
 
+// CreateApp
 // @Summary Create an application
 // @Description This endpoint creates an application
 // @Tags Application
@@ -65,6 +67,7 @@ func (a *applicationHandler) CreateApp(w http.ResponseWriter, r *http.Request) {
 		*getApplicationFromContext(r.Context()), http.StatusCreated))
 }
 
+// UpdateApp
 // @Summary Update an application
 // @Description This endpoint updates an application
 // @Tags Application
@@ -84,6 +87,7 @@ func (a *applicationHandler) UpdateApp(w http.ResponseWriter, r *http.Request) {
 		*getApplicationFromContext(r.Context()), http.StatusAccepted))
 }
 
+// GetApps
 // @Summary Get all applications
 // @Description This fetches all application
 // @Tags Application
@@ -105,6 +109,7 @@ func (a *applicationHandler) GetApps(w http.ResponseWriter, r *http.Request) {
 			Pagination: getPaginationDataFromContext(r.Context())}, http.StatusOK))
 }
 
+// CreateAppEndpoint
 // @Summary Create an application endpoint
 // @Description This endpoint creates an application endpoint
 // @Tags Application
@@ -124,6 +129,7 @@ func (a *applicationHandler) CreateAppEndpoint(w http.ResponseWriter, r *http.Re
 		*getApplicationEndpointFromContext(r.Context()), http.StatusCreated))
 }
 
+// UpdateAppEndpoint
 // @Summary Update an application endpoint
 // @Description This endpoint updates an application endpoint
 // @Tags Application
@@ -144,6 +150,7 @@ func (a *applicationHandler) UpdateAppEndpoint(w http.ResponseWriter, r *http.Re
 		*getApplicationEndpointFromContext(r.Context()), http.StatusAccepted))
 }
 
+// GetAppEndpoint
 // @Summary Get application endpoint
 // @Description This endpoint fetches an application endpoint
 // @Tags Application
@@ -163,6 +170,7 @@ func (a *applicationHandler) GetAppEndpoint(w http.ResponseWriter, r *http.Reque
 		*getApplicationEndpointFromContext(r.Context()), http.StatusOK))
 }
 
+// DeleteAppEndpoint
 // @Summary Delete application endpoint
 // @Description This endpoint deletes an application endpoint
 // @Tags Application
@@ -182,6 +190,7 @@ func (a *applicationHandler) DeleteAppEndpoint(w http.ResponseWriter, r *http.Re
 		nil, http.StatusOK))
 }
 
+// GetAppEndpoints
 // @Summary Get application endpoints
 // @Description This endpoint deletes an application's endpoints
 // @Tags Application
@@ -200,6 +209,7 @@ func (a *applicationHandler) GetAppEndpoints(w http.ResponseWriter, r *http.Requ
 		*getApplicationEndpointsFromContext(r.Context()), http.StatusOK))
 }
 
+// CreateOrganisation
 // @Summary Create an organisation
 // @Description This endpoint creates an organisation
 // @Tags Organisation
@@ -218,6 +228,7 @@ func (a *applicationHandler) CreateOrganisation(w http.ResponseWriter, r *http.R
 		*getOrganisationFromContext(r.Context()), http.StatusCreated))
 }
 
+// UpdateOrganisation
 // @Summary Update an organisation
 // @Description This endpoint updates an organisation
 // @Tags Organisation
@@ -237,6 +248,7 @@ func (a *applicationHandler) UpdateOrganisation(w http.ResponseWriter, r *http.R
 		*getOrganisationFromContext(r.Context()), http.StatusAccepted))
 }
 
+// GetOrganisation
 // @Summary Get an organisation
 // @Description This endpoint fetches an organisation by it's id
 // @Tags Organisation
@@ -255,6 +267,7 @@ func (a *applicationHandler) GetOrganisation(w http.ResponseWriter, r *http.Requ
 		*getOrganisationFromContext(r.Context()), http.StatusOK))
 }
 
+// GetOrganisations
 // @Summary Get organisations
 // @Description This endpoint fetches organisations
 // @Tags Organisation
@@ -285,6 +298,7 @@ func (a *applicationHandler) GetPaginatedApps(w http.ResponseWriter, r *http.Req
 			Pagination: getPaginationDataFromContext(r.Context())}, http.StatusOK))
 }
 
+// CreateAppMessage
 // @Summary Create app message
 // @Description This endpoint creates an app message
 // @Tags Messages
@@ -303,6 +317,7 @@ func (a *applicationHandler) CreateAppMessage(w http.ResponseWriter, r *http.Req
 		*getMessageFromContext(r.Context()), http.StatusCreated))
 }
 
+// GetAppMessage
 // @Summary Get app message
 // @Description This endpoint fetches an app message
 // @Tags Messages
@@ -321,6 +336,7 @@ func (a *applicationHandler) GetAppMessage(w http.ResponseWriter, r *http.Reques
 		*getMessageFromContext(r.Context()), http.StatusOK))
 }
 
+// ResendAppMessage
 // @Summary Resend an app message
 // @Description This endpoint resends an app message
 // @Tags Messages
@@ -339,6 +355,7 @@ func (a *applicationHandler) ResendAppMessage(w http.ResponseWriter, r *http.Req
 		*getMessageFromContext(r.Context()), http.StatusOK))
 }
 
+// GetAppMessagesPaged
 // @Summary Get app messages with pagination
 // @Description This endpoint fetches app messages with pagination
 // @Tags Messages
@@ -361,6 +378,7 @@ func (a *applicationHandler) GetAppMessagesPaged(w http.ResponseWriter, r *http.
 			Pagination: getPaginationDataFromContext(r.Context())}, http.StatusOK))
 }
 
+// DeleteApp
 // @Summary Delete app
 // @Description This endpoint deletes an app
 // @Tags Messages
@@ -379,6 +397,7 @@ func (a *applicationHandler) DeleteApp(w http.ResponseWriter, r *http.Request) {
 		nil, http.StatusOK))
 }
 
+// GetAppMessageDeliveryAttempt
 // @Summary Get app message delivery attempt
 // @Description This endpoint fetches an app message delivery attempt
 // @Tags Messages
@@ -398,6 +417,7 @@ func (a *applicationHandler) GetAppMessageDeliveryAttempt(w http.ResponseWriter,
 		*getDeliveryAttemptFromContext(r.Context()), http.StatusOK))
 }
 
+// GetAppMessageDeliveryAttempts
 // @Summary Get app message delivery attempts
 // @Description This endpoint fetches an app message's delivery attempts
 // @Tags Messages
