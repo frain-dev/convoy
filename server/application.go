@@ -326,7 +326,7 @@ func (a *applicationHandler) GetAppMessage(w http.ResponseWriter, r *http.Reques
 // @Tags Messages
 // @Accept  json
 // @Produce  json
-// @Param eventID path string true "event id"
+// @Param eventIDD path string true "event id"
 // @Success 200 {object} serverResponse
 // @Failure 400 {object} serverResponse
 // @Failure 401 {object} serverResponse
