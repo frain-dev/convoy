@@ -28,15 +28,30 @@
                 border-radius: 10px;
             }
 
-            .card p {
+            .card p,
+            .card li {
                 color: #737a91;
                 font-size: 16px;
                 line-height: 25px;
             }
 
+            .card li {
+                margin-top: 10px;
+                font-size: 15px;
+            }
+            .card ul {
+                margin: 30px 0;
+            }
+
             .card p strong {
                 color: #333333;
                 font-weight: 700;
+            }
+
+            .card p.issue-text {
+                opacity: 0.5;
+                font-size: 0.8rem;
+                margin: 60px 0 -30px;
             }
 
             .card h1 {
@@ -81,23 +96,29 @@
                             <h3>Hi there,</h3>
                             {{if eq .Status "active"}}
                                 <p>
-                                    Your Endpoint - {{.URL}}  has been enabled.
+                                    Please note your endpoint has been enabled. See details:
                                 </p>
+                                <ul>
+                                    <li><strong>URL:</strong> {{.URL}}</li>
+                                </ul>
                                 <p>
                                     <strong>Important:</strong> Congrats! Your endpoint as been restored successfully. Please head over to your dashboard to retry 
                                     all failed and discarded events. 
                                 </p>
                             {{else}}
                                 <p>
-                                    Your Endpoint - {{.URL}}  has been disabled.
+                                    Please note your endpoint has been disabled. See details:
                                 </p>
+                                <ul>
+                                    <li><strong>URL:</strong> {{.URL}}</li>
+                                </ul>
                                 <p>
                                     <strong>Important:</strong> You're receiving this email because your endpoint has consecutively failed to receive events, and 
                                     needs to be checked. To re-activate your endpoint please head over to your dashboard and retry any failed event.
                                 </p>
                             {{end}}
 
-                            <p>
+                            <p class="issue-text">
                                 For any enquiry or complaint, you can reply to this email.
                             </p>
                         </div>
