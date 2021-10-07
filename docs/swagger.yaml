@@ -616,7 +616,7 @@ paths:
       parameters:
       - description: event id
         in: path
-        name: eventIDD
+        name: eventID
         required: true
         type: string
       produces:

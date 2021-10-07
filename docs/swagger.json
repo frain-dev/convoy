@@ -885,7 +885,7 @@
                     {
                         "type": "string",
                         "description": "event id",
-                        "name": "eventIDD",
+                        "name": "eventID",
                         "in": "path",
                         "required": true
                     }
