@@ -9,7 +9,7 @@ import (
 
 // ConvertDefaultHeaderToCustomHeader converts http.Header to convoy.HttpHeader
 func ConvertDefaultHeaderToCustomHeader(h *http.Header) *convoy.HttpHeader {
-	res := make(convoy.HttpHeader, 0)
+	res := make(convoy.HttpHeader)
 	for k, v := range *h {
 		res[k] = strings.Join(v, " ")
 	}
