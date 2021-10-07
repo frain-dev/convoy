@@ -15,7 +15,7 @@ const getTime = date => {
 	const seconds = _date.getSeconds();
 
 	const hour = hours > 12 ? hours - 12 : hours;
-	return `${hour} : ${minutes} : ${seconds} ${hours > 12 ? 'AM' : 'PM'}`;
+	return `${hour} : ${minutes > 9 ? minutes : '0' + minutes} : ${seconds > 9 ? seconds : '0' + seconds} ${hours > 12 ? 'AM' : 'PM'}`;
 };
 
 const getDateDifference = date => {

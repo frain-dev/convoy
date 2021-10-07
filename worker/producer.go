@@ -234,6 +234,9 @@ func sendEmailNotification(m *convoy.AppMetadata, o *convoy.OrganisationReposito
 
 func parseAttemptFromResponse(m convoy.Message, e convoy.EndpointMetadata, resp *net.Response, attemptStatus convoy.MessageStatus) convoy.MessageAttempt {
 
+	responseHeader := util.ConvertDefaultHeaderToCustomHeader(&resp.ResponseHeader)
+	requestHeader := util.ConvertDefaultHeaderToCustomHeader(&resp.RequestHeader)
+
 	return convoy.MessageAttempt{
 		ID:         primitive.NewObjectID(),
 		UID:        uuid.New().String(),
@@ -244,8 +247,8 @@ func parseAttemptFromResponse(m convoy.Message, e convoy.EndpointMetadata, resp 
 		APIVersion: "2021-08-27",
 
 		IPAddress:        resp.IP,
-		ResponseHeader:   resp.ResponseHeader,
-		RequestHeader:    resp.RequestHeader,
+		ResponseHeader:   *responseHeader,
+		RequestHeader:    *requestHeader,
 		HttpResponseCode: resp.Status,
 		ResponseData:     string(resp.Body),
 		Error:            resp.Error,

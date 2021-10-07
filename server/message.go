@@ -66,10 +66,12 @@ func ensureNewMessage(appRepo convoy.ApplicationRepository, msgRepo convoy.Messa
 				_ = render.Render(w, r, newErrorResponse("app has no configured endpoints", http.StatusBadRequest))
 				return
 			}
+
+			messageStatus := convoy.ScheduledMessageStatus
 			activeEndpoints := util.ParseMetadataFromActiveEndpoints(app.Endpoints)
 			if len(activeEndpoints) == 0 {
-				_ = render.Render(w, r, newErrorResponse("app has no enabled endpoints", http.StatusBadRequest))
-				return
+				messageStatus = convoy.DiscardedMessageStatus
+				activeEndpoints = util.GetMetadataFromEndpoints(app.Endpoints)
 			}
 
 			cfg, err := config.Get()
@@ -110,7 +112,7 @@ func ensureNewMessage(appRepo convoy.ApplicationRepository, msgRepo convoy.Messa
 					SupportEmail: app.SupportEmail,
 					Endpoints:    activeEndpoints,
 				},
-				Status:         convoy.ScheduledMessageStatus,
+				Status:         messageStatus,
 				DocumentStatus: convoy.ActiveDocumentStatus,
 			}
 
@@ -301,13 +303,12 @@ func resendMessage(appRepo convoy.ApplicationRepository, msgRepo convoy.MessageR
 
 			msg := getMessageFromContext(r.Context())
 
-			if msg.Status == convoy.SuccessMessageStatus {
+			switch msg.Status {
+			case convoy.SuccessMessageStatus:
 				_ = render.Render(w, r, newErrorResponse("event already sent", http.StatusBadRequest))
 				return
-			}
-
-			if msg.Status != convoy.FailureMessageStatus {
-				_ = render.Render(w, r, newErrorResponse("cannot resend event that did not fail previously", http.StatusBadRequest))
+			case convoy.RetryMessageStatus, convoy.ScheduledMessageStatus, convoy.ProcessingMessageStatus:
+				_ = render.Render(w, r, newErrorResponse("event is already being sent", http.StatusBadRequest))
 				return
 			}
 
