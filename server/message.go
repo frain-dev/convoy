@@ -58,10 +58,12 @@ func (a *applicationHandler) CreateAppMessage(w http.ResponseWriter, r *http.Req
 		_ = render.Render(w, r, newErrorResponse("app has no configured endpoints", http.StatusBadRequest))
 		return
 	}
+
+	messageStatus := convoy.ScheduledMessageStatus
 	activeEndpoints := util.ParseMetadataFromActiveEndpoints(app.Endpoints)
 	if len(activeEndpoints) == 0 {
-		_ = render.Render(w, r, newErrorResponse("app has no enabled endpoints", http.StatusBadRequest))
-		return
+		messageStatus = convoy.DiscardedMessageStatus
+		activeEndpoints = util.GetMetadataFromEndpoints(app.Endpoints)
 	}
 
 	cfg, err := config.Get()
@@ -102,7 +104,7 @@ func (a *applicationHandler) CreateAppMessage(w http.ResponseWriter, r *http.Req
 			SupportEmail: app.SupportEmail,
 			Endpoints:    activeEndpoints,
 		},
-		Status:         convoy.ScheduledMessageStatus,
+		Status:         messageStatus,
 		DocumentStatus: convoy.ActiveDocumentStatus,
 	}
 

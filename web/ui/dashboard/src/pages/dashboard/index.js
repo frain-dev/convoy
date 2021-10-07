@@ -10,6 +10,7 @@ import AngleArrowUpIcon from '../../assets/img/angle-arrow-up.svg';
 import ConvoyLogo from '../../assets/img/logo.svg';
 import RetryIcon from '../../assets/img/retry-icon.svg';
 import EmptyStateImage from '../../assets/img/empty-state-img.svg';
+import ViewEventsIcon from '../../assets/img/view-events-icon.svg';
 import Chart from 'chart.js/auto';
 import { DateRange } from 'react-date-range';
 import ReactJson from 'react-json-view';
@@ -33,6 +34,8 @@ function DashboardPage() {
 	const [tabs] = useState(['events', 'apps']);
 	const [activeTab, setActiveTab] = useState('events');
 	const [showFilterCalendar, toggleShowFilterCalendar] = useState(false);
+	const [eventAppFilterActive, toggleEventAppFilterActive] = useState(false);
+	const [eventDateFilterActive, toggleEventDateFilterActive] = useState(false);
 	const [showEventFilterCalendar, toggleShowEventFilterCalendar] = useState(false);
 	const [eventApp, setEventApp] = useState('');
 	const [organisations, setOrganisations] = useState([]);
@@ -138,7 +141,9 @@ function DashboardPage() {
 	const getEvents = useCallback(
 		async ({ page, eventsData, dates }) => {
 			toggleShowEventFilterCalendar(false);
+
 			if (!dates) dates = [{ startDate: null, endDate: null }];
+
 			const dateFromPicker = dates[0];
 			const { startDate, endDate } = setDateForFilter(dateFromPicker);
 
@@ -226,6 +231,18 @@ function DashboardPage() {
 			retryButton.disabled = false;
 			return error;
 		}
+	};
+
+	const toggleActiveTab = tab => {
+		setActiveTab(tab);
+		setDetailsItem();
+		setEventDeliveryAtempt({
+			ip_address: '',
+			http_status: '',
+			api_version: '',
+			updated_at: 0,
+			deleted_at: 0
+		});
 	};
 
 	useEffect(() => {
@@ -430,20 +447,7 @@ function DashboardPage() {
 						<div className="dashboard--logs--tabs--head tabs">
 							<div className="tabs">
 								{tabs.map((tab, index) => (
-									<button
-										onClick={() => {
-											setActiveTab(tab);
-											setDetailsItem();
-											setEventDeliveryAtempt({
-												ip_address: '',
-												http_status: '',
-												api_version: '',
-												updated_at: 0,
-												deleted_at: 0
-											});
-										}}
-										key={index}
-										className={'clear tab ' + (activeTab === tab ? 'active' : '')}>
+									<button onClick={() => toggleActiveTab(tab)} key={index} className={'clear tab ' + (activeTab === tab ? 'active' : '')}>
 										{tab}
 									</button>
 								))}
@@ -451,7 +455,7 @@ function DashboardPage() {
 
 							{activeTab === 'events' && (
 								<div className="filter">
-									<button className="filter--button" onClick={() => toggleShowEventFilterCalendar(!showEventFilterCalendar)}>
+									<button className={'filter--button ' + (eventDateFilterActive ? 'active' : '')} onClick={() => toggleShowEventFilterCalendar(!showEventFilterCalendar)}>
 										<img src={CalendarIcon} alt="calender icon" />
 										<div>Date</div>
 										<img src={AngleArrowDownIcon} alt="arrow down icon" />
@@ -460,10 +464,20 @@ function DashboardPage() {
 										<div className="date-filter--container">
 											<DateRange onChange={item => setEventFilterDates([item.selection])} editableDateInputs={true} moveRangeOnFirstSelection={false} ranges={eventFilterDates} />
 											<div className="button-container">
-												<button className="primary" onClick={() => getEvents({ dates: eventFilterDates })}>
+												<button
+													className="primary"
+													onClick={() => {
+														getEvents({ dates: eventFilterDates });
+														toggleEventDateFilterActive(true);
+													}}>
 													Apply
 												</button>
-												<button className="primary outline" onClick={() => getEvents({ page: 1 })}>
+												<button
+													className="primary outline"
+													onClick={() => {
+														getEvents({ page: 1 });
+														toggleEventDateFilterActive(false);
+													}}>
 													Clear
 												</button>
 											</div>
@@ -471,7 +485,14 @@ function DashboardPage() {
 									)}
 
 									<div className="select">
-										<select value={eventApp} onChange={event => setEventApp(event.target.value)} aria-label="frequency">
+										<select
+											value={eventApp}
+											className={eventAppFilterActive ? 'active' : ''}
+											onChange={event => {
+												setEventApp(event.target.value);
+												toggleEventAppFilterActive(!!event.target.value);
+											}}
+											aria-label="frequency">
 											<option value="">All Apps</option>
 											{apps.content.map((app, index) => (
 												<option key={index} value={app.uid}>
@@ -564,7 +585,7 @@ function DashboardPage() {
 											<button
 												className={'primary clear has-icon icon-left ' + (events.pagination.page === events.pagination.totalPage ? 'disable_action' : '')}
 												disabled={events.pagination.page === events.pagination.totalPage}
-												onClick={() => getEvents({ page: events.pagination.page + 1, eventsData: events })}>
+												onClick={() => getEvents({ page: events.pagination.page + 1, eventsData: events, dates: eventDateFilterActive ? eventFilterDates : null })}>
 												<img src={ArrowDownIcon} alt="arrow down icon" />
 												Load more
 											</button>
@@ -590,6 +611,7 @@ function DashboardPage() {
 												<th scope="col">Updated</th>
 												<th scope="col">Number of Events</th>
 												<th scope="col">Number of Endpoints</th>
+												<th scope="col"></th>
 											</tr>
 										</thead>
 										<tbody>
@@ -609,6 +631,23 @@ function DashboardPage() {
 													</td>
 													<td>
 														<div>{app.endpoints.length}</div>
+													</td>
+													<td>
+														<div>
+															<button
+																disabled={app.events <= 0}
+																title="view events"
+																className={'primary has-icon icon-left ' + (app.events <= 0 ? 'disable_action' : '')}
+																onClick={e => {
+																	e.stopPropagation();
+																	setEventApp(app.uid);
+																	toggleActiveTab('events');
+																	toggleEventAppFilterActive(true);
+																}}>
+																<img src={ViewEventsIcon} alt="view events icon" />
+																Events
+															</button>
+														</div>
 													</td>
 												</tr>
 											))}

@@ -6,7 +6,6 @@ import (
 	"database/sql/driver"
 	"encoding/json"
 	"errors"
-	"net/http"
 
 	"github.com/frain-dev/convoy/config"
 	"github.com/frain-dev/convoy/server/models"
@@ -15,6 +14,7 @@ import (
 )
 
 type MessageStatus string
+type HttpHeader map[string]string
 
 var (
 	ErrMessageNotFound = errors.New("event not found")
@@ -26,6 +26,7 @@ const (
 	// ScheduledMessageStatus : when  a message has been scheduled for delivery
 	ScheduledMessageStatus  MessageStatus = "Scheduled"
 	ProcessingMessageStatus MessageStatus = "Processing"
+	DiscardedMessageStatus  MessageStatus = "Discarded"
 	FailureMessageStatus    MessageStatus = "Failure"
 	SuccessMessageStatus    MessageStatus = "Success"
 	RetryMessageStatus      MessageStatus = "Retry"
@@ -122,8 +123,8 @@ type MessageAttempt struct {
 	APIVersion string             `json:"api_version" bson:"api_version"`
 
 	IPAddress        string        `json:"ip_address,omitempty" bson:"ip_address,omitempty"`
-	RequestHeader    http.Header   `json:"request_http_header,omitempty" bson:"request_http_header,omitempty"`
-	ResponseHeader   http.Header   `json:"response_http_header,omitempty" bson:"response_http_header,omitempty"`
+	RequestHeader    HttpHeader    `json:"request_http_header,omitempty" bson:"request_http_header,omitempty"`
+	ResponseHeader   HttpHeader    `json:"response_http_header,omitempty" bson:"response_http_header,omitempty"`
 	HttpResponseCode string        `json:"http_status,omitempty" bson:"http_status,omitempty"`
 	ResponseData     string        `json:"response_data,omitempty" bson:"response_data,omitempty"`
 	Error            string        `json:"error,omitempty" bson:"error,omitempty"`
