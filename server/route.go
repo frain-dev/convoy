@@ -11,7 +11,6 @@ import (
 
 	"github.com/frain-dev/convoy"
 	"github.com/frain-dev/convoy/config"
-	_ "github.com/frain-dev/convoy/server/models"
 
 	"github.com/go-chi/chi/v5/middleware"
 	"github.com/prometheus/client_golang/prometheus"
