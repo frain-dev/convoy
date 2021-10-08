@@ -418,7 +418,7 @@ func (a *applicationHandler) GetAppMessageDeliveryAttempt(w http.ResponseWriter,
 
 // GetAppMessageDeliveryAttempts
 // @Summary Get app message delivery attempts
-// @Description This endpoint fetches an app message's delivery attempts
+// @Description This endpoint  fetches an app message's delivery attempts
 // @Tags Messages
 // @Accept  json
 // @Produce  json

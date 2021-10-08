@@ -15,7 +15,7 @@ then
       exit 0
 else
   swag init --generatedTime --parseDependency --parseInternal -d server/ server/*
-  git add --all
+  git add docs/
 fi
 
 exit 0
