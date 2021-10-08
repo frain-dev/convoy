@@ -40,8 +40,41 @@ func TestApplicationHandler_CreateAppMessage(t *testing.T) {
 		statusCode int
 		args       args
 		body       *strings.Reader
-		dbFn       func(msgRepo *mocks.MockMessageRepository, appRepo *mocks.MockApplicationRepository, orgRepo *mocks.MockOrganisationRepository)
+		dbFn       func(app *applicationHandler)
 	}{
+		{
+			name:       "invalid message - malformed request",
+			cfgPath:    "./testdata/Auth_Config/full-convoy.json",
+			method:     http.MethodPost,
+			statusCode: http.StatusBadRequest,
+			body:       strings.NewReader(`{"data": {}`),
+			args: args{
+				message: message,
+			},
+			dbFn: func(app *applicationHandler) {},
+		},
+		{
+			name:       "invalid message - no app_id",
+			cfgPath:    "./testdata/Auth_Config/full-convoy.json",
+			method:     http.MethodPost,
+			statusCode: http.StatusBadRequest,
+			body:       strings.NewReader(`{ "event_type: "test", "data": {}}`),
+			args: args{
+				message: message,
+			},
+			dbFn: func(app *applicationHandler) {},
+		},
+		{
+			name:       "invalid message - no data field",
+			cfgPath:    "./testdata/Auth_Config/full-convoy.json",
+			method:     http.MethodPost,
+			statusCode: http.StatusBadRequest,
+			body:       strings.NewReader(`{ "app_id": "", "event_type: "test" }`),
+			args: args{
+				message: message,
+			},
+			dbFn: func(app *applicationHandler) {},
+		},
 		{
 			name:       "invalid message - no event type",
 			cfgPath:    "./testdata/Auth_Config/full-convoy.json",
@@ -51,20 +84,64 @@ func TestApplicationHandler_CreateAppMessage(t *testing.T) {
 			args: args{
 				message: message,
 			},
-			dbFn: func(msgRepo *mocks.MockMessageRepository, appRepo *mocks.MockApplicationRepository, orgRepo *mocks.MockOrganisationRepository) {
-				appRepo.EXPECT().
-					FindApplicationByID(gomock.Any(), gomock.Any()).Times(0).
-					Return(&convoy.Application{
-						UID:       appId,
-						OrgID:     orgID,
-						Title:     "Valid application",
-						Endpoints: []convoy.Endpoint{},
-					}, nil)
-
-				msgRepo.EXPECT().
+			dbFn: func(app *applicationHandler) {
+				m, _ := app.msgRepo.(*mocks.MockMessageRepository)
+				m.EXPECT().
 					CreateMessage(gomock.Any(), gomock.Any()).Times(0).
 					Return(nil)
 
+			},
+		},
+		{
+			name:       "valid message - no endpoints",
+			cfgPath:    "./testdata/Auth_Config/full-convoy.json",
+			method:     http.MethodPost,
+			statusCode: http.StatusBadRequest,
+			body:       strings.NewReader(`{"app_id": "12345", "event_type": "test",  "data": {}}`),
+			args: args{
+				message: message,
+			},
+			dbFn: func(app *applicationHandler) {
+				a, _ := app.appRepo.(*mocks.MockApplicationRepository)
+				a.EXPECT().
+					FindApplicationByID(gomock.Any(), gomock.Any()).Times(0).
+					Return(&convoy.Application{
+						UID:   appId,
+						OrgID: orgID,
+						Title: "Valid application",
+						Endpoints: []convoy.Endpoint{
+							{
+								TargetURL: "http://localhost",
+								Status:    convoy.ActiveEndpointStatus,
+							},
+						},
+					}, nil)
+			},
+		},
+		{
+			name:       "valid message - no active endpoints",
+			cfgPath:    "./testdata/Auth_Config/full-convoy.json",
+			method:     http.MethodPost,
+			statusCode: http.StatusBadRequest,
+			body:       strings.NewReader(`{"app_id": "12345", "event_type": "test",  "data": {}}`),
+			args: args{
+				message: message,
+			},
+			dbFn: func(app *applicationHandler) {
+				a, _ := app.appRepo.(*mocks.MockApplicationRepository)
+				a.EXPECT().
+					FindApplicationByID(gomock.Any(), gomock.Any()).Times(0).
+					Return(&convoy.Application{
+						UID:   appId,
+						OrgID: orgID,
+						Title: "Valid application",
+						Endpoints: []convoy.Endpoint{
+							{
+								TargetURL: "http://localhost",
+								Status:    convoy.InactiveEndpointStatus,
+							},
+						},
+					}, nil)
 			},
 		},
 		{
@@ -76,8 +153,9 @@ func TestApplicationHandler_CreateAppMessage(t *testing.T) {
 			args: args{
 				message: message,
 			},
-			dbFn: func(msgRepo *mocks.MockMessageRepository, appRepo *mocks.MockApplicationRepository, orgRepo *mocks.MockOrganisationRepository) {
-				appRepo.EXPECT().
+			dbFn: func(app *applicationHandler) {
+				a, _ := app.appRepo.(*mocks.MockApplicationRepository)
+				a.EXPECT().
 					FindApplicationByID(gomock.Any(), gomock.Any()).Times(1).
 					Return(&convoy.Application{
 						UID:   appId,
@@ -91,13 +169,15 @@ func TestApplicationHandler_CreateAppMessage(t *testing.T) {
 						},
 					}, nil)
 
-				msgRepo.EXPECT().
+				m, _ := app.msgRepo.(*mocks.MockMessageRepository)
+				m.EXPECT().
 					CreateMessage(gomock.Any(), gomock.Any()).Times(1).
 					Return(nil)
 
 			},
 		},
 	}
+
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
 			var app *applicationHandler
@@ -122,7 +202,7 @@ func TestApplicationHandler_CreateAppMessage(t *testing.T) {
 			w := httptest.NewRecorder()
 
 			if tc.dbFn != nil {
-				tc.dbFn(msgRepo, appRepo, orgRepo)
+				tc.dbFn(app)
 			}
 
 			router := buildRoutes(app)
@@ -139,20 +219,9 @@ func TestApplicationHandler_CreateAppMessage(t *testing.T) {
 }
 
 func Test_fetchAllMessages(t *testing.T) {
-	var app *applicationHandler
-
-	ctrl := gomock.NewController(t)
-	defer ctrl.Finish()
-
-	orgRepo := mocks.NewMockOrganisationRepository(ctrl)
-	appRepo := mocks.NewMockApplicationRepository(ctrl)
-	msgRepo := mocks.NewMockMessageRepository(ctrl)
 
 	appId := "12345"
 	msgId := "1122333444456"
-
-	app = newApplicationHandler(msgRepo, appRepo, orgRepo)
-
 	message := &convoy.Message{
 		UID:   msgId,
 		AppID: appId,
@@ -169,7 +238,7 @@ func Test_fetchAllMessages(t *testing.T) {
 		statusCode int
 		args       args
 		body       *strings.Reader
-		dbFn       func(msgRepo *mocks.MockMessageRepository, appRepo *mocks.MockApplicationRepository, orgRepo *mocks.MockOrganisationRepository)
+		dbFn       func(app *applicationHandler)
 	}{
 		{
 			name:       "valid messages",
@@ -180,8 +249,9 @@ func Test_fetchAllMessages(t *testing.T) {
 			args: args{
 				message: message,
 			},
-			dbFn: func(msgRepo *mocks.MockMessageRepository, appRepo *mocks.MockApplicationRepository, orgRepo *mocks.MockOrganisationRepository) {
-				msgRepo.EXPECT().
+			dbFn: func(app *applicationHandler) {
+				m, _ := app.msgRepo.(*mocks.MockMessageRepository)
+				m.EXPECT().
 					LoadMessagesPaged(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Times(1).
 					Return([]convoy.Message{
 						*message,
@@ -194,6 +264,17 @@ func Test_fetchAllMessages(t *testing.T) {
 	}
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
+			var app *applicationHandler
+
+			ctrl := gomock.NewController(t)
+			defer ctrl.Finish()
+
+			orgRepo := mocks.NewMockOrganisationRepository(ctrl)
+			appRepo := mocks.NewMockApplicationRepository(ctrl)
+			msgRepo := mocks.NewMockMessageRepository(ctrl)
+
+			app = newApplicationHandler(msgRepo, appRepo, orgRepo)
+
 			err := config.LoadConfig(tc.cfgPath)
 			if err != nil {
 				t.Error("Failed to load config file")
@@ -213,7 +294,7 @@ func Test_fetchAllMessages(t *testing.T) {
 			req = req.WithContext(context.WithValue(req.Context(), pageableCtx, pageable))
 
 			if tc.dbFn != nil {
-				tc.dbFn(msgRepo, appRepo, orgRepo)
+				tc.dbFn(app)
 			}
 
 			router := buildRoutes(app)
@@ -245,7 +326,7 @@ func Test_resendMessage(t *testing.T) {
 		statusCode int
 		args       args
 		body       *strings.Reader
-		dbFn       func(m *convoy.Message, msgRepo *mocks.MockMessageRepository, appRepo *mocks.MockApplicationRepository, orgRepo *mocks.MockOrganisationRepository)
+		dbFn       func(*convoy.Message, *applicationHandler)
 	}{
 		{
 			name:       "invalid event to resend - already successful",
@@ -260,12 +341,13 @@ func Test_resendMessage(t *testing.T) {
 					Status: convoy.SuccessMessageStatus,
 				},
 			},
-			dbFn: func(msg *convoy.Message, msgRepo *mocks.MockMessageRepository, appRepo *mocks.MockApplicationRepository, orgRepo *mocks.MockOrganisationRepository) {
-				msgRepo.EXPECT().
+			dbFn: func(msg *convoy.Message, app *applicationHandler) {
+				m, _ := app.msgRepo.(*mocks.MockMessageRepository)
+				m.EXPECT().
 					FindMessageByID(gomock.Any(), gomock.Any()).Times(1).
 					Return(msg, nil)
 
-				msgRepo.EXPECT().
+				m.EXPECT().
 					UpdateStatusOfMessages(gomock.Any(), gomock.Any(), gomock.Any()).Times(0).
 					Return(nil)
 
@@ -284,12 +366,13 @@ func Test_resendMessage(t *testing.T) {
 					Status: convoy.ProcessingMessageStatus,
 				},
 			},
-			dbFn: func(msg *convoy.Message, msgRepo *mocks.MockMessageRepository, appRepo *mocks.MockApplicationRepository, orgRepo *mocks.MockOrganisationRepository) {
-				msgRepo.EXPECT().
+			dbFn: func(msg *convoy.Message, app *applicationHandler) {
+				m, _ := app.msgRepo.(*mocks.MockMessageRepository)
+				m.EXPECT().
 					FindMessageByID(gomock.Any(), gomock.Any()).Times(1).
 					Return(msg, nil)
 
-				msgRepo.EXPECT().
+				m.EXPECT().
 					UpdateStatusOfMessages(gomock.Any(), gomock.Any(), gomock.Any()).Times(0).
 					Return(nil)
 
@@ -313,16 +396,18 @@ func Test_resendMessage(t *testing.T) {
 					},
 				},
 			},
-			dbFn: func(msg *convoy.Message, msgRepo *mocks.MockMessageRepository, appRepo *mocks.MockApplicationRepository, orgRepo *mocks.MockOrganisationRepository) {
-				msgRepo.EXPECT().
+			dbFn: func(msg *convoy.Message, app *applicationHandler) {
+				m, _ := app.msgRepo.(*mocks.MockMessageRepository)
+				m.EXPECT().
 					FindMessageByID(gomock.Any(), gomock.Any()).Times(1).
 					Return(msg, nil)
 
-				msgRepo.EXPECT().
+				m.EXPECT().
 					UpdateStatusOfMessages(gomock.Any(), gomock.Any(), gomock.Any()).Times(1).
 					Return(nil)
 
-				appRepo.EXPECT().
+				a, _ := app.appRepo.(*mocks.MockApplicationRepository)
+				a.EXPECT().
 					FindApplicationEndpointByID(gomock.Any(), gomock.Any(), gomock.Any()).Times(1).
 					Return(
 						&convoy.Endpoint{
@@ -331,7 +416,7 @@ func Test_resendMessage(t *testing.T) {
 						nil,
 					)
 
-				appRepo.EXPECT().
+				a.EXPECT().
 					UpdateApplicationEndpointsStatus(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Times(1).
 					Return(nil)
 
@@ -363,7 +448,7 @@ func Test_resendMessage(t *testing.T) {
 			req = req.WithContext(context.WithValue(req.Context(), msgCtx, tc.args.message))
 
 			if tc.dbFn != nil {
-				tc.dbFn(tc.args.message, msgRepo, appRepo, orgRepo)
+				tc.dbFn(tc.args.message, app)
 			}
 
 			err := config.LoadConfig(tc.cfgPath)
