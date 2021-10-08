@@ -6,7 +6,7 @@
 echo $(PWD)
 
 swag init --generatedTime --parseDependency --parseInternal -d server/ server/*
-git commit -a -m "regenerated openapi filebs"
+git commit -a -m "regenerated openapi filevbs"
 git push --no-verify
-
+sleep 1
 exit 0
