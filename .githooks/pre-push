@@ -1,0 +1,10 @@
+#!/bin/sh
+
+# git hook that runs before a push
+# this script will regenerate teh openapi.yaml file, and add it to a new commit
+
+echo $(PWD)
+
+swag init --generatedTime --parseDependency --parseInternal -d server/ server/*
+git add --all
+git commit -m "regenerated openapi files"
