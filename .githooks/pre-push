@@ -6,5 +6,7 @@
 echo $(PWD)
 
 swag init --generatedTime --parseDependency --parseInternal -d server/ server/*
-git add --all
-git commit -m "regenerated openapi files"
+git commit -a -m "regenerated openapi files"
+git push --no-verify
+
+exit 0
