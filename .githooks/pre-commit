@@ -1,0 +1,21 @@
+#!/bin/sh
+
+# git hook that runs before a commit
+# this script will regenerate the swagger docs(openapi v3 soon) file
+
+echo $(PWD)
+
+changed=$( git status -s | grep server/)
+
+echo "$changed"
+
+# if changed is empty then exit, else regenerate the docs
+if [ -z "$changed" ]
+then
+      exit 0
+else
+  swag init --generatedTime --parseDependency --parseInternal -d server/ server/*
+  git add --all
+fi
+
+exit 0
