@@ -89,7 +89,7 @@ func (a *applicationHandler) UpdateApp(w http.ResponseWriter, r *http.Request) {
 
 // GetApps
 // @Summary Get all applications
-// @Description This fetches all application
+// @Description This fetches all applications
 // @Tags Application
 // @Accept  json
 // @Produce  json
@@ -112,7 +112,7 @@ func (a *applicationHandler) GetApps(w http.ResponseWriter, r *http.Request) {
 // CreateAppEndpoint
 // @Summary Create an application endpoint
 // @Description This endpoint creates an application endpoint
-// @Tags Application
+// @Tags Application Endpoints
 // @Accept  json
 // @Produce  json
 // @Param appID path string true "application id"
@@ -132,10 +132,9 @@ func (a *applicationHandler) CreateAppEndpoint(w http.ResponseWriter, r *http.Re
 // UpdateAppEndpoint
 // @Summary Update an application endpoint
 // @Description This endpoint updates an application endpoint
-// @Tags Application
+// @Tags Application Endpoints
 // @Accept  json
 // @Produce  json
-// @Param appID path string true "application id"
 // @Param endpointID path string true "endpoint id"
 // @Param endpoint body models.Endpoint true "Endpoint Details"
 // @Success 200 {object} serverResponse
@@ -143,7 +142,7 @@ func (a *applicationHandler) CreateAppEndpoint(w http.ResponseWriter, r *http.Re
 // @Failure 401 {object} serverResponse
 // @Failure 500 {object} serverResponse
 // @Security ApiKeyAuth
-// @Router /apps/{appID}/endpoints/{endpointID} [put]
+// @Router /apps/endpoints/{endpointID} [put]
 func (a *applicationHandler) UpdateAppEndpoint(w http.ResponseWriter, r *http.Request) {
 
 	_ = render.Render(w, r, newServerResponse("Apps endpoint updated successfully",
@@ -153,7 +152,7 @@ func (a *applicationHandler) UpdateAppEndpoint(w http.ResponseWriter, r *http.Re
 // GetAppEndpoint
 // @Summary Get application endpoint
 // @Description This endpoint fetches an application endpoint
-// @Tags Application
+// @Tags Application Endpoints
 // @Accept  json
 // @Produce  json
 // @Param appID path string true "application id"
@@ -173,7 +172,7 @@ func (a *applicationHandler) GetAppEndpoint(w http.ResponseWriter, r *http.Reque
 // DeleteAppEndpoint
 // @Summary Delete application endpoint
 // @Description This endpoint deletes an application endpoint
-// @Tags Application
+// @Tags Application Endpoints
 // @Accept  json
 // @Produce  json
 // @Param appID path string true "application id"
@@ -192,8 +191,8 @@ func (a *applicationHandler) DeleteAppEndpoint(w http.ResponseWriter, r *http.Re
 
 // GetAppEndpoints
 // @Summary Get application endpoints
-// @Description This endpoint deletes an application's endpoints
-// @Tags Application
+// @Description This endpoint fetches an application's endpoints
+// @Tags Application Endpoints
 // @Accept  json
 // @Produce  json
 // @Param appID path string true "application id"
@@ -278,7 +277,7 @@ func (a *applicationHandler) GetOrganisation(w http.ResponseWriter, r *http.Requ
 // @Failure 401 {object} serverResponse
 // @Failure 500 {object} serverResponse
 // @Security ApiKeyAuth
-// @Router /organisations/{orgID} [get]
+// @Router /organisations [get]
 func (a *applicationHandler) GetOrganisations(w http.ResponseWriter, r *http.Request) {
 
 	_ = render.Render(w, r, newServerResponse("Organisations fetched successfully",

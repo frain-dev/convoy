@@ -14,7 +14,7 @@
         },
         "version": "1.0"
     },
-    "host": "{{ host }}",
+    "host": "localhost",
     "basePath": "/api/v1",
     "paths": {
         "/apps": {
@@ -974,6 +974,50 @@
             }
         },
         "/organisations": {
+            "get": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "This endpoint fetches organisations",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Organisation"
+                ],
+                "summary": "Get organisations",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/server.serverResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/server.serverResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/server.serverResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/server.serverResponse"
+                        }
+                    }
+                }
+            },
             "post": {
                 "security": [
                     {
@@ -1037,7 +1081,7 @@
                         "ApiKeyAuth": []
                     }
                 ],
-                "description": "This endpoint fetches organisations",
+                "description": "This endpoint fetches an organisation by it's id",
                 "consumes": [
                     "application/json"
                 ],
@@ -1047,7 +1091,16 @@
                 "tags": [
                     "Organisation"
                 ],
-                "summary": "Get organisations",
+                "summary": "Get an organisation",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "organisation id",
+                        "name": "orgID",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
                 "responses": {
                     "200": {
                         "description": "OK",
