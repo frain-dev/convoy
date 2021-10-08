@@ -13,7 +13,7 @@ package server
 // @license.name Mozilla Public
 // @license.url https://github.com/frain-dev/convoy/blob/main/LICENSE
 
-// @host Set this in your config file
+// @host {{ host }}
 // @BasePath /api/v1
 
 // @securityDefinitions.apikey ApiKeyAuth

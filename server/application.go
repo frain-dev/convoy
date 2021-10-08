@@ -60,7 +60,7 @@ func (a *applicationHandler) GetApp(w http.ResponseWriter, r *http.Request) {
 // @Failure 401 {object} serverResponse
 // @Failure 500 {object} serverResponse
 // @Security ApiKeyAuth
-// @Router /apps/{appID} [post]
+// @Router /apps [post]
 func (a *applicationHandler) CreateApp(w http.ResponseWriter, r *http.Request) {
 
 	_ = render.Render(w, r, newServerResponse("App created successfully",

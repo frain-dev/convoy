@@ -52,7 +52,7 @@ definitions:
       status:
         type: boolean
     type: object
-host: Set this in your config file
+host: '{{ host }}'
 info:
   contact:
     email: support@swagger.io
@@ -105,6 +105,41 @@ paths:
       security:
       - ApiKeyAuth: []
       summary: Get all applications
+      tags:
+      - Application
+    post:
+      consumes:
+      - application/json
+      description: This endpoint creates an application
+      parameters:
+      - description: Application Details
+        in: body
+        name: application
+        required: true
+        schema:
+          $ref: '#/definitions/models.Application'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/server.serverResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/server.serverResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/server.serverResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/server.serverResponse'
+      security:
+      - ApiKeyAuth: []
+      summary: Create an application
       tags:
       - Application
   /apps/{appID}:
