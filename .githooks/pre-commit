@@ -14,8 +14,9 @@ if [ -z "$changed" ]
 then
       exit 0
 else
+  # regenerate docs
   swag init --generatedTime --parseDependency --parseInternal -d server/ server/*
-  git add docs/
+  git add docs/ # add all files under the generated doc folder to git
 fi
 
 exit 0

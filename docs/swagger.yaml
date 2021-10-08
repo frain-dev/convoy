@@ -568,7 +568,7 @@ paths:
     get:
       consumes:
       - application/json
-      description: This endpoint  fetches an app message's delivery attempts
+      description: This endpoint fetches an app message's delivery attempts
       parameters:
       - description: event id
         in: path
