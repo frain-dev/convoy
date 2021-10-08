@@ -5,7 +5,7 @@
 
 echo $(PWD)
 
-changed=$( git status -s | grep server/)
+changed=$(git status -s | grep server/)
 
 echo "$changed"
 
