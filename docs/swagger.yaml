@@ -69,7 +69,7 @@ paths:
     get:
       consumes:
       - application/json
-      description: This fetches all application
+      description: This fetches all applications
       parameters:
       - description: results per page
         in: query
@@ -255,7 +255,7 @@ paths:
     get:
       consumes:
       - application/json
-      description: This endpoint deletes an application's endpoints
+      description: This endpoint fetches an application's endpoints
       parameters:
       - description: application id
         in: path
@@ -285,7 +285,7 @@ paths:
       - ApiKeyAuth: []
       summary: Get application endpoints
       tags:
-      - Application
+      - Application Endpoints
     post:
       consumes:
       - application/json
@@ -325,7 +325,7 @@ paths:
       - ApiKeyAuth: []
       summary: Create an application endpoint
       tags:
-      - Application
+      - Application Endpoints
   /apps/{appID}/endpoints/{endpointID}:
     delete:
       consumes:
@@ -365,7 +365,7 @@ paths:
       - ApiKeyAuth: []
       summary: Delete application endpoint
       tags:
-      - Application
+      - Application Endpoints
     get:
       consumes:
       - application/json
@@ -404,52 +404,7 @@ paths:
       - ApiKeyAuth: []
       summary: Get application endpoint
       tags:
-      - Application
-    put:
-      consumes:
-      - application/json
-      description: This endpoint updates an application endpoint
-      parameters:
-      - description: application id
-        in: path
-        name: appID
-        required: true
-        type: string
-      - description: endpoint id
-        in: path
-        name: endpointID
-        required: true
-        type: string
-      - description: Endpoint Details
-        in: body
-        name: endpoint
-        required: true
-        schema:
-          $ref: '#/definitions/models.Endpoint'
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/server.serverResponse'
-        "400":
-          description: Bad Request
-          schema:
-            $ref: '#/definitions/server.serverResponse'
-        "401":
-          description: Unauthorized
-          schema:
-            $ref: '#/definitions/server.serverResponse'
-        "500":
-          description: Internal Server Error
-          schema:
-            $ref: '#/definitions/server.serverResponse'
-      security:
-      - ApiKeyAuth: []
-      summary: Update an application endpoint
-      tags:
-      - Application
+      - Application Endpoints
   /apps/{appID}/events:
     get:
       consumes:
@@ -497,6 +452,47 @@ paths:
       summary: Get app messages with pagination
       tags:
       - Messages
+  /apps/endpoints/{endpointID}:
+    put:
+      consumes:
+      - application/json
+      description: This endpoint updates an application endpoint
+      parameters:
+      - description: endpoint id
+        in: path
+        name: endpointID
+        required: true
+        type: string
+      - description: Endpoint Details
+        in: body
+        name: endpoint
+        required: true
+        schema:
+          $ref: '#/definitions/models.Endpoint'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/server.serverResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/server.serverResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/server.serverResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/server.serverResponse'
+      security:
+      - ApiKeyAuth: []
+      summary: Update an application endpoint
+      tags:
+      - Application Endpoints
   /events:
     post:
       consumes:

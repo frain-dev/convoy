@@ -24,7 +24,7 @@
                         "ApiKeyAuth": []
                     }
                 ],
-                "description": "This fetches all application",
+                "description": "This fetches all applications",
                 "consumes": [
                     "application/json"
                 ],
@@ -107,6 +107,70 @@
                         "required": true,
                         "schema": {
                             "$ref": "#/definitions/models.Application"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/server.serverResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/server.serverResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/server.serverResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/server.serverResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/apps/endpoints/{endpointID}": {
+            "put": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "This endpoint updates an application endpoint",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Application Endpoints"
+                ],
+                "summary": "Update an application endpoint",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "endpoint id",
+                        "name": "endpointID",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Endpoint Details",
+                        "name": "endpoint",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/models.Endpoint"
                         }
                     }
                 ],
@@ -315,7 +379,7 @@
                         "ApiKeyAuth": []
                     }
                 ],
-                "description": "This endpoint deletes an application's endpoints",
+                "description": "This endpoint fetches an application's endpoints",
                 "consumes": [
                     "application/json"
                 ],
@@ -323,7 +387,7 @@
                     "application/json"
                 ],
                 "tags": [
-                    "Application"
+                    "Application Endpoints"
                 ],
                 "summary": "Get application endpoints",
                 "parameters": [
@@ -376,7 +440,7 @@
                     "application/json"
                 ],
                 "tags": [
-                    "Application"
+                    "Application Endpoints"
                 ],
                 "summary": "Create an application endpoint",
                 "parameters": [
@@ -440,7 +504,7 @@
                     "application/json"
                 ],
                 "tags": [
-                    "Application"
+                    "Application Endpoints"
                 ],
                 "summary": "Get application endpoint",
                 "parameters": [
@@ -486,75 +550,6 @@
                     }
                 }
             },
-            "put": {
-                "security": [
-                    {
-                        "ApiKeyAuth": []
-                    }
-                ],
-                "description": "This endpoint updates an application endpoint",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "Application"
-                ],
-                "summary": "Update an application endpoint",
-                "parameters": [
-                    {
-                        "type": "string",
-                        "description": "application id",
-                        "name": "appID",
-                        "in": "path",
-                        "required": true
-                    },
-                    {
-                        "type": "string",
-                        "description": "endpoint id",
-                        "name": "endpointID",
-                        "in": "path",
-                        "required": true
-                    },
-                    {
-                        "description": "Endpoint Details",
-                        "name": "endpoint",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "$ref": "#/definitions/models.Endpoint"
-                        }
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "$ref": "#/definitions/server.serverResponse"
-                        }
-                    },
-                    "400": {
-                        "description": "Bad Request",
-                        "schema": {
-                            "$ref": "#/definitions/server.serverResponse"
-                        }
-                    },
-                    "401": {
-                        "description": "Unauthorized",
-                        "schema": {
-                            "$ref": "#/definitions/server.serverResponse"
-                        }
-                    },
-                    "500": {
-                        "description": "Internal Server Error",
-                        "schema": {
-                            "$ref": "#/definitions/server.serverResponse"
-                        }
-                    }
-                }
-            },
             "delete": {
                 "security": [
                     {
@@ -569,7 +564,7 @@
                     "application/json"
                 ],
                 "tags": [
-                    "Application"
+                    "Application Endpoints"
                 ],
                 "summary": "Delete application endpoint",
                 "parameters": [
