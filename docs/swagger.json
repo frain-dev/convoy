@@ -803,7 +803,7 @@
                         "ApiKeyAuth": []
                     }
                 ],
-                "description": "This endpoint fetches an app message's delivery attempts",
+                "description": "This  endpoint fetches an app message's delivery attempts",
                 "consumes": [
                     "application/json"
                 ],
