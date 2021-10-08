@@ -12,7 +12,7 @@
             "name": "Mozilla Public",
             "url": "https://github.com/frain-dev/convoy/blob/main/LICENSE"
         },
-        "version": "1.0"
+        "version": "0.1.12"
     },
     "host": "localhost",
     "basePath": "/api/v1",

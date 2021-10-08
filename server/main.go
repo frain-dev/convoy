@@ -3,7 +3,7 @@ package server
 // TODO(daniel): this is the main doc file, swag cli needs it to be named main.go
 
 // @title Swagger Example API
-// @version 1.0
+// @version 0.1.12
 // @description This is openapi spec of convoy
 
 // @contact.name API Support
