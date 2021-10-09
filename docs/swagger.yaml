@@ -52,7 +52,7 @@ definitions:
       status:
         type: boolean
     type: object
-host: localhost
+host: localhost:8080
 info:
   contact:
     email: support@swagger.io
@@ -813,11 +813,12 @@ paths:
       summary: Update an organisation
       tags:
       - Organisation
+schemes:
+- http
+- https
 securityDefinitions:
   ApiKeyAuth:
     in: header
     name: Authorization
     type: apiKey
 swagger: "2.0"
-x-extension-openapi:
-  example: value on a json format

@@ -1,4 +1,8 @@
 {
+    "schemes": [
+        "http",
+        "https"
+    ],
     "swagger": "2.0",
     "info": {
         "description": "This is openapi spec of convoy",
@@ -14,7 +18,7 @@
         },
         "version": "0.1.12"
     },
-    "host": "localhost",
+    "host": "localhost:8080",
     "basePath": "/api/v1",
     "paths": {
         "/apps": {
@@ -1275,8 +1279,5 @@
             "name": "Authorization",
             "in": "header"
         }
-    },
-    "x-extension-openapi": {
-        "example": "value on a json format"
     }
 }
