@@ -5,8 +5,8 @@
     ],
     "swagger": "2.0",
     "info": {
-        "description": "This is openapi spec of  convoy",
-        "title": "Swagger Example API",
+        "description": "This is openapi spec of convoy",
+        "title": "Convoy API Specification",
         "contact": {
             "name": "API Support",
             "url": "http://www.swagger.io/support",

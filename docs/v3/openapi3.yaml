@@ -62,11 +62,11 @@ info:
     email: support@swagger.io
     name: API Support
     url: http://www.swagger.io/support
-  description: This is openapi spec of  convoy
+  description: This is openapi spec of convoy
   license:
     name: Mozilla Public
     url: https://github.com/frain-dev/convoy/blob/main/LICENSE
-  title: Swagger Example API
+  title: Convoy API Specification
   version: 0.1.12
 openapi: 3.0.3
 paths:

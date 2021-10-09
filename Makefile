@@ -1,5 +1,5 @@
-# init sets up git to recognise the .githooks directory as the hooks path for this repo
+# init-hooks sets up git to recognise the .githooks directory as the hooks path for this repo
 # it also makes all scripts in the .githooks folder executable
-init:
+init-hooks:
 	git config core.hooksPath .githooks
-	chmod +x /*
+	chmod +x .githooks/*
