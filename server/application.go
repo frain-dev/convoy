@@ -81,7 +81,7 @@ func (a *applicationHandler) CreateApp(w http.ResponseWriter, r *http.Request) {
 // @Failure 401 {object} serverResponse
 // @Failure 500 {object} serverResponse
 // @Security ApiKeyAuth
-// @Router /apps/{appID} [post]
+// @Router /apps/{appID} [put]
 func (a *applicationHandler) UpdateApp(w http.ResponseWriter, r *http.Request) {
 
 	_ = render.Render(w, r, newServerResponse("App updated successfully",
@@ -381,7 +381,7 @@ func (a *applicationHandler) GetAppMessagesPaged(w http.ResponseWriter, r *http.
 // DeleteApp
 // @Summary Delete app
 // @Description This endpoint deletes an app
-// @Tags Messages
+// @Tags Application
 // @Accept  json
 // @Produce  json
 // @Param appID path string true "application id"

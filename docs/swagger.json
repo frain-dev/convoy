@@ -5,16 +5,17 @@
     ],
     "swagger": "2.0",
     "info": {
-        "description": "This is openapi spec of convoy",
+        "description": "Convoy is a fast and secure distributed webhooks service. This document contains Convoy's API specification.",
         "title": "Convoy API Specification",
+        "termsOfService": "https://convoy.io/terms",
         "contact": {
             "name": "API Support",
             "url": "http://www.swagger.io/support",
-            "email": "support@swagger.io"
+            "email": "engineering@convoy.io"
         },
         "license": {
-            "name": "Mozilla Public",
-            "url": "https://github.com/frain-dev/convoy/blob/main/LICENSE"
+            "name": "Mozilla Public License 2.0",
+            "url": "https://www.mozilla.org/en-US/MPL/2.0/"
         },
         "version": "0.1.12"
     },
@@ -266,7 +267,7 @@
                     }
                 }
             },
-            "post": {
+            "put": {
                 "security": [
                     {
                         "ApiKeyAuth": []
@@ -342,7 +343,7 @@
                     "application/json"
                 ],
                 "tags": [
-                    "Messages"
+                    "Application"
                 ],
                 "summary": "Delete app",
                 "parameters": [

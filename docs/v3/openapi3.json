@@ -92,15 +92,16 @@
 	},
 	"info": {
 		"contact": {
-			"email": "support@swagger.io",
+			"email": "engineering@convoy.io",
 			"name": "API Support",
 			"url": "http://www.swagger.io/support"
 		},
-		"description": "This is openapi spec of convoy",
+		"description": "Convoy is a fast and secure distributed webhooks service. This document contains Convoy's API specification.",
 		"license": {
-			"name": "Mozilla Public",
-			"url": "https://github.com/frain-dev/convoy/blob/main/LICENSE"
+			"name": "Mozilla Public License 2.0",
+			"url": "https://www.mozilla.org/en-US/MPL/2.0/"
 		},
+		"termsOfService": "https://convoy.io/terms",
 		"title": "Convoy API Specification",
 		"version": "0.1.12"
 	},
@@ -406,7 +407,7 @@
 				],
 				"summary": "Delete app",
 				"tags": [
-					"Messages"
+					"Application"
 				]
 			},
 			"get": {
@@ -474,7 +475,7 @@
 					"Application"
 				]
 			},
-			"post": {
+			"put": {
 				"description": "This endpoint updates an application",
 				"parameters": [
 					{

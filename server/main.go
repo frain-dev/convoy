@@ -7,14 +7,15 @@ package server
 
 // @title Convoy API Specification
 // @version 0.1.12
-// @description This is openapi spec of convoy
+// @description Convoy is a fast and secure distributed webhooks service. This document contains Convoy's API specification.
+// @termsOfService https://convoy.io/terms
 
 // @contact.name API Support
 // @contact.url http://www.swagger.io/support
-// @contact.email support@swagger.io
+// @contact.email engineering@convoy.io
 
-// @license.name Mozilla Public
-// @license.url https://github.com/frain-dev/convoy/blob/main/LICENSE
+// @license.name Mozilla Public License 2.0
+// @license.url https://www.mozilla.org/en-US/MPL/2.0/
 
 // @schemes http https
 // @host localhost:8080
