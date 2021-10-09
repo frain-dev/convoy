@@ -35,7 +35,7 @@ func main() {
 }
 
 func loadV2() (*openapi2.T, error) {
-	const fname = "../docs/swagger.json"
+	const fname = "docs/swagger.json"
 	f, err := os.Open(fname)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to open "+fname)
@@ -61,8 +61,8 @@ func convertToV3(doc2 *openapi2.T) (*openapi3.T, error) {
 }
 
 const (
-	spec3FnameJSON = "../docs/v3/openapi3.json"
-	spec3FnameYAML = "../docs/v3/openapi3.yaml"
+	spec3FnameJSON = "docs/v3/openapi3.json"
+	spec3FnameYAML = "docs/v3/openapi3.yaml"
 )
 
 func writeOutDocV3(docV3 *openapi3.T) error {

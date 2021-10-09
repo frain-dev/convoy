@@ -59,6 +59,7 @@ func (a *applicationHandler) GetApp(w http.ResponseWriter, r *http.Request) {
 // @Failure 400 {object} serverResponse
 // @Failure 401 {object} serverResponse
 // @Failure 500 {object} serverResponse
+// @Failure 300 {object} serverResponse
 // @Security ApiKeyAuth
 // @Router /apps [post]
 func (a *applicationHandler) CreateApp(w http.ResponseWriter, r *http.Request) {

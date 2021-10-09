@@ -58,7 +58,7 @@ info:
     email: support@swagger.io
     name: API Support
     url: http://www.swagger.io/support
-  description: This is openapi spec of convoy
+  description: This is openapi spec of  convoy
   license:
     name: Mozilla Public
     url: https://github.com/frain-dev/convoy/blob/main/LICENSE
@@ -123,6 +123,10 @@ paths:
       responses:
         "200":
           description: OK
+          schema:
+            $ref: '#/definitions/server.serverResponse'
+        "300":
+          description: Multiple Choices
           schema:
             $ref: '#/definitions/server.serverResponse'
         "400":

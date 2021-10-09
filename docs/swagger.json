@@ -5,7 +5,7 @@
     ],
     "swagger": "2.0",
     "info": {
-        "description": "This is openapi spec of convoy",
+        "description": "This is openapi spec of  convoy",
         "title": "Swagger Example API",
         "contact": {
             "name": "API Support",
@@ -117,6 +117,12 @@
                 "responses": {
                     "200": {
                         "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/server.serverResponse"
+                        }
+                    },
+                    "300": {
+                        "description": "Multiple Choices",
                         "schema": {
                             "$ref": "#/definitions/server.serverResponse"
                         }
