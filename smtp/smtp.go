@@ -22,8 +22,8 @@ const (
 )
 
 type SmtpClient struct {
-	url, username, password, from string
-	port                          uint32
+	url, username, password, from, replyTo string
+	port                                   uint32
 }
 
 func New(cfg *config.SMTPConfiguration) (*SmtpClient, error) {
@@ -61,10 +61,11 @@ func New(cfg *config.SMTPConfiguration) (*SmtpClient, error) {
 		username: cfg.Username,
 		password: cfg.Password,
 		from:     cfg.From,
+		replyTo:  cfg.ReplyTo,
 	}, err
 }
 
-func (s *SmtpClient) SendEmailNotification(email string, endpoint convoy.EndpointMetadata) error {
+func (s *SmtpClient) SendEmailNotification(email, logoURL, targetURL string, status convoy.EndpointStatus) error {
 	// Compose Message
 	m := s.setHeaders(email)
 
@@ -74,11 +75,13 @@ func (s *SmtpClient) SendEmailNotification(email string, endpoint convoy.Endpoin
 	// Set data.
 	var body bytes.Buffer
 	err := templ.Execute(&body, struct {
-		URL    string
-		Status convoy.EndpointStatus
+		URL     string
+		LogoURL string
+		Status  convoy.EndpointStatus
 	}{
-		URL:    endpoint.TargetURL,
-		Status: endpoint.Status,
+		URL:     targetURL,
+		LogoURL: logoURL,
+		Status:  status,
 	})
 
 	if err != nil {
@@ -101,6 +104,11 @@ func (s *SmtpClient) setHeaders(email string) *gomail.Message {
 
 	m.SetHeader("From", fmt.Sprintf("Convoy Status <%s>", s.from))
 	m.SetHeader("To", email)
+
+	if !util.IsStringEmpty(s.replyTo) {
+		m.SetHeader("Reply-To", s.replyTo)
+	}
+
 	m.SetHeader("Subject", NotificationSubject)
 
 	return m

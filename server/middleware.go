@@ -518,6 +518,7 @@ func ensureNewOrganisation(orgRepo convoy.OrganisationRepository) func(next http
 			org := &convoy.Organisation{
 				UID:            uuid.New().String(),
 				OrgName:        orgName,
+				LogoURL:        newOrg.LogoURL,
 				CreatedAt:      primitive.NewDateTimeFromTime(time.Now()),
 				UpdatedAt:      primitive.NewDateTimeFromTime(time.Now()),
 				DocumentStatus: convoy.ActiveDocumentStatus,
@@ -616,6 +617,7 @@ func ensureOrganisationUpdate(orgRepo convoy.OrganisationRepository) func(next h
 			}
 
 			org.OrgName = orgName
+			org.LogoURL = update.LogoURL
 			err = orgRepo.UpdateOrganisation(r.Context(), org)
 			if err != nil {
 				_ = render.Render(w, r, newErrorResponse("an error occurred while updating organisation", http.StatusInternalServerError))

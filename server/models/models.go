@@ -5,7 +5,8 @@ import (
 )
 
 type Organisation struct {
-	Name string `json:"name" bson:"name"`
+	Name    string `json:"name" bson:"name"`
+	LogoURL string `json:"logo_url" bson:"logo_url"`
 }
 
 type Application struct {
