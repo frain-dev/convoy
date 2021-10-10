@@ -18,6 +18,7 @@ import (
 
 type Producer struct {
 	Data            chan queue.Message
+	orgRepo         *convoy.OrganisationRepository
 	appRepo         *convoy.ApplicationRepository
 	msgRepo         *convoy.MessageRepository
 	dispatch        *net.Dispatcher
@@ -26,9 +27,10 @@ type Producer struct {
 	quit            chan chan error
 }
 
-func NewProducer(queuer *queue.Queuer, appRepo *convoy.ApplicationRepository, msgRepo *convoy.MessageRepository, signatureConfig config.SignatureConfiguration, smtpConfig config.SMTPConfiguration) *Producer {
+func NewProducer(queuer *queue.Queuer, orgRepo *convoy.OrganisationRepository, appRepo *convoy.ApplicationRepository, msgRepo *convoy.MessageRepository, signatureConfig config.SignatureConfiguration, smtpConfig config.SMTPConfiguration) *Producer {
 	return &Producer{
 		Data:            (*queuer).Read(),
+		orgRepo:         orgRepo,
 		appRepo:         appRepo,
 		msgRepo:         msgRepo,
 		dispatch:        net.NewDispatcher(),
@@ -128,6 +130,14 @@ func (p *Producer) postMessages(msgRepo convoy.MessageRepository, appRepo convoy
 				if err != nil {
 					log.WithError(err).Error("Failed to reactivate endpoint after successful retry")
 				}
+
+				s, err := smtp.New(&p.smtpConfig)
+				if err == nil {
+					err = sendEmailNotification(m.AppMetadata, p.orgRepo, s, convoy.ActiveEndpointStatus)
+					if err != nil {
+						log.WithError(err).Error("Failed to send notification email")
+					}
+				}
 			}
 		} else {
 			requestLogger.Errorf("%s", m.UID)
@@ -183,12 +193,10 @@ func (p *Producer) postMessages(msgRepo convoy.MessageRepository, appRepo convoy
 				return
 			}
 
-			s, err := smtp.New(&p.smtpConfig)
-			if err == nil {
-				for i := 0; i < len(m.AppMetadata.Endpoints); i++ {
-					email := m.AppMetadata.SupportEmail
-					endpoint := m.AppMetadata.Endpoints[i]
-					err = s.SendEmailNotification(email, endpoint)
+			if len(inactiveEndpoints) > 0 {
+				s, err := smtp.New(&p.smtpConfig)
+				if err == nil {
+					err = sendEmailNotification(m.AppMetadata, p.orgRepo, s, convoy.InactiveEndpointStatus)
 					if err != nil {
 						log.WithError(err).Error("Failed to send notification email")
 					}
@@ -201,6 +209,27 @@ func (p *Producer) postMessages(msgRepo convoy.MessageRepository, appRepo convoy
 	if err != nil {
 		log.Errorln("failed to update message ", m.UID)
 	}
+}
+
+func sendEmailNotification(m *convoy.AppMetadata, o *convoy.OrganisationRepository, s *smtp.SmtpClient, status convoy.EndpointStatus) error {
+	email := m.SupportEmail
+
+	org, err := (*o).FetchOrganisationByID(context.Background(), m.OrgID)
+	if err != nil {
+		return err
+	}
+
+	logoURL := org.LogoURL
+
+	for i := 0; i < len(m.Endpoints); i++ {
+		endpoint := m.Endpoints[i]
+		err = s.SendEmailNotification(email, logoURL, endpoint.TargetURL, status)
+		if err != nil {
+			return err
+		}
+	}
+
+	return nil
 }
 
 func parseAttemptFromResponse(m convoy.Message, e convoy.EndpointMetadata, resp *net.Response, attemptStatus convoy.MessageStatus) convoy.MessageAttempt {
