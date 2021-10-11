@@ -49,6 +49,7 @@ func buildRoutes(app *applicationHandler) http.Handler {
 	router.Use(middleware.RequestID)
 	router.Use(writeRequestIDHeader)
 
+	// Public API.
 	router.Route("/v1", func(r chi.Router) {
 		r.Use(middleware.AllowContentType("application/json"))
 		r.Use(jsonResponse)
@@ -57,59 +58,43 @@ func buildRoutes(app *applicationHandler) http.Handler {
 			orgRouter.Use(requireAuth())
 
 			orgRouter.Route("/", func(orgSubRouter chi.Router) {
-				orgSubRouter.With(ensureNewOrganisation(app.orgRepo)).Post("/", app.CreateOrganisation)
-
-				orgRouter.With(fetchAllOrganisations(app.orgRepo)).Get("/", app.GetOrganisations)
+				orgRouter.Get("/", app.GetOrganisations)
+				orgSubRouter.Post("/", app.CreateOrganisation)
 			})
 
 			orgRouter.Route("/{orgID}", func(appSubRouter chi.Router) {
 				appSubRouter.Use(requireOrganisation(app.orgRepo))
 
-				appSubRouter.With(ensureOrganisationUpdate(app.orgRepo)).Put("/", app.UpdateOrganisation)
-
 				appSubRouter.Get("/", app.GetOrganisation)
+				appSubRouter.Put("/", app.UpdateOrganisation)
 			})
 		})
 
-		r.Route("/apps", func(appRouter chi.Router) {
+		r.Route("/applications", func(appRouter chi.Router) {
 			appRouter.Use(requireAuth())
 
 			appRouter.Route("/", func(appSubRouter chi.Router) {
-				appSubRouter.With(ensureNewApp(app.orgRepo, app.appRepo)).Post("/", app.CreateApp)
-
-				appRouter.With(pagination).With(fetchAllApps(app.appRepo)).Get("/", app.GetApps)
+				appSubRouter.Post("/", app.CreateApp)
+				appRouter.With(pagination).Get("/", app.GetApps)
 			})
 
 			appRouter.Route("/{appID}", func(appSubRouter chi.Router) {
 				appSubRouter.Use(requireApp(app.appRepo))
 
-				appSubRouter.With(ensureAppUpdate(app.appRepo)).Put("/", app.UpdateApp)
-
 				appSubRouter.Get("/", app.GetApp)
-				appSubRouter.With(ensureAppDeletion(app.appRepo)).Delete("/", app.DeleteApp)
-
-				appSubRouter.Route("/events", func(msgSubRouter chi.Router) {
-					msgSubRouter.With(instrumentPath("/events"), ensureNewMessage(app.appRepo, app.msgRepo)).Post("/", app.CreateAppMessage)
-					msgSubRouter.With(pagination).With(fetchAppMessages(app.msgRepo)).Get("/", app.GetAppMessagesPaged)
-
-					msgSubRouter.Route("/{eventID}", func(msgEventSubRouter chi.Router) {
-						msgEventSubRouter.Use(requireMessage(app.msgRepo))
-
-						msgEventSubRouter.Get("/", app.GetAppMessage)
-						msgEventSubRouter.With(resendMessage(app.appRepo, app.msgRepo)).Put("/resend", app.ResendAppMessage)
-					})
-				})
+				appSubRouter.Put("/", app.UpdateApp)
+				appSubRouter.Delete("/", app.DeleteApp)
 
 				appSubRouter.Route("/endpoints", func(endpointAppSubRouter chi.Router) {
-					endpointAppSubRouter.With(ensureNewAppEndpoint(app.appRepo)).Post("/", app.CreateAppEndpoint)
-					endpointAppSubRouter.With(fetchAppEndpoints()).Get("/", app.GetAppEndpoints)
+					endpointAppSubRouter.Post("/", app.CreateAppEndpoint)
+					endpointAppSubRouter.Get("/", app.GetAppEndpoints)
 
 					endpointAppSubRouter.Route("/{endpointID}", func(e chi.Router) {
 						e.Use(requireAppEndpoint())
 
 						e.Get("/", app.GetAppEndpoint)
-						e.With(ensureAppEndpointUpdate(app.appRepo)).Put("/", app.UpdateAppEndpoint)
-						e.With(ensureAppEndpointDeletion(app.appRepo)).Delete("/", app.DeleteAppEndpoint)
+						e.Put("/", app.UpdateAppEndpoint)
+						e.Delete("/", app.DeleteAppEndpoint)
 					})
 				})
 			})
@@ -118,18 +103,19 @@ func buildRoutes(app *applicationHandler) http.Handler {
 		r.Route("/events", func(msgRouter chi.Router) {
 			msgRouter.Use(requireAuth())
 
-			msgRouter.With(pagination).With(fetchAllMessages(app.msgRepo)).Get("/", app.GetAppMessagesPaged)
+			msgRouter.With(instrumentPath("/events")).Post("/", app.CreateAppMessage)
+			msgRouter.With(pagination).Get("/", app.GetMessagesPaged)
 
 			msgRouter.Route("/{eventID}", func(msgSubRouter chi.Router) {
 				msgSubRouter.Use(requireMessage(app.msgRepo))
 
 				msgSubRouter.Get("/", app.GetAppMessage)
+				msgSubRouter.Put("/resend", app.ResendAppMessage)
 
 				msgSubRouter.Route("/deliveryattempts", func(deliveryRouter chi.Router) {
 					deliveryRouter.Use(fetchMessageDeliveryAttempts())
 
 					deliveryRouter.Get("/", app.GetAppMessageDeliveryAttempts)
-
 					deliveryRouter.With(requireMessageDeliveryAttempt()).Get("/{deliveryAttemptID}", app.GetAppMessageDeliveryAttempt)
 				})
 			})
@@ -137,6 +123,7 @@ func buildRoutes(app *applicationHandler) http.Handler {
 		})
 	})
 
+	// UI API.
 	router.Route("/ui", func(uiRouter chi.Router) {
 		uiRouter.Use(jsonResponse)
 
@@ -151,7 +138,7 @@ func buildRoutes(app *applicationHandler) http.Handler {
 			dashboardRouter.Route("/events/{eventID}", func(msgSubRouter chi.Router) {
 				msgSubRouter.Use(requireMessage(app.msgRepo))
 
-				msgSubRouter.With(resendMessage(app.appRepo, app.msgRepo)).Put("/resend", app.ResendAppMessage)
+				msgSubRouter.Put("/resend", app.ResendAppMessage)
 			})
 
 			dashboardRouter.With(fetchAllConfigDetails()).Get("/config", app.GetAllConfigDetails)
@@ -161,7 +148,7 @@ func buildRoutes(app *applicationHandler) http.Handler {
 			orgRouter.Use(requireUIAuth())
 
 			orgRouter.Route("/", func(orgSubRouter chi.Router) {
-				orgRouter.With(fetchAllOrganisations(app.orgRepo)).Get("/", app.GetOrganisations)
+				orgRouter.Get("/", app.GetOrganisations)
 			})
 
 			orgRouter.Route("/{orgID}", func(appSubRouter chi.Router) {
@@ -174,25 +161,25 @@ func buildRoutes(app *applicationHandler) http.Handler {
 			appRouter.Use(requireUIAuth())
 
 			appRouter.Route("/", func(appSubRouter chi.Router) {
-				appRouter.With(pagination).With(fetchAllApps(app.appRepo)).Get("/", app.GetApps)
+				appRouter.With(pagination).Get("/", app.GetApps)
 			})
 
 			appRouter.Route("/{appID}", func(appSubRouter chi.Router) {
 				appSubRouter.Use(requireApp(app.appRepo))
 				appSubRouter.Get("/", app.GetApp)
 				appSubRouter.Route("/events", func(msgSubRouter chi.Router) {
-					msgSubRouter.With(pagination).With(fetchAppMessages(app.msgRepo)).Get("/", app.GetAppMessagesPaged)
+					msgSubRouter.With(pagination).Get("/", app.GetMessagesPaged)
 
 					msgSubRouter.Route("/{eventID}", func(msgEventSubRouter chi.Router) {
 						msgEventSubRouter.Use(requireMessage(app.msgRepo))
 
 						msgEventSubRouter.Get("/", app.GetAppMessage)
-						msgEventSubRouter.With(resendMessage(app.appRepo, app.msgRepo)).Put("/resend", app.ResendAppMessage)
+						msgEventSubRouter.Put("/resend", app.ResendAppMessage)
 					})
 				})
 
 				appSubRouter.Route("/endpoints", func(endpointAppSubRouter chi.Router) {
-					endpointAppSubRouter.With(fetchAppEndpoints()).Get("/", app.GetAppEndpoints)
+					endpointAppSubRouter.Get("/", app.GetAppEndpoints)
 
 					endpointAppSubRouter.Route("/{endpointID}", func(e chi.Router) {
 						e.Use(requireAppEndpoint())
@@ -205,7 +192,7 @@ func buildRoutes(app *applicationHandler) http.Handler {
 
 		uiRouter.Route("/events", func(msgRouter chi.Router) {
 			msgRouter.Use(requireUIAuth())
-			msgRouter.With(pagination).With(fetchAllMessages(app.msgRepo)).Get("/", app.GetAppMessagesPaged)
+			msgRouter.With(pagination).With(fetchAllMessages(app.msgRepo)).Get("/", app.GetMessagesPaged)
 
 			msgRouter.Route("/{eventID}", func(msgSubRouter chi.Router) {
 				msgSubRouter.Use(requireMessage(app.msgRepo))
@@ -226,7 +213,6 @@ func buildRoutes(app *applicationHandler) http.Handler {
 		uiRouter.Route("/auth", func(authRouter chi.Router) {
 			authRouter.With(login()).Post("/login", app.GetAuthLogin)
 			authRouter.With(refresh()).Post("/refresh", app.GetAuthLogin)
-			authRouter.With(requireUIAuth()).With(fetchAuthConfig()).Get("/details", app.GetAuthDetails)
 		})
 
 	})

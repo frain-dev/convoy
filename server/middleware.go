@@ -147,250 +147,6 @@ func requireApp(appRepo convoy.ApplicationRepository) func(next http.Handler) ht
 	}
 }
 
-func ensureNewApp(orgRepo convoy.OrganisationRepository, appRepo convoy.ApplicationRepository) func(next http.Handler) http.Handler {
-	return func(next http.Handler) http.Handler {
-
-		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-
-			var newApp models.Application
-			err := json.NewDecoder(r.Body).Decode(&newApp)
-			if err != nil {
-				_ = render.Render(w, r, newErrorResponse("Request is invalid", http.StatusBadRequest))
-				return
-			}
-
-			appName := newApp.AppName
-			if util.IsStringEmpty(appName) {
-				_ = render.Render(w, r, newErrorResponse("please provide your appName", http.StatusBadRequest))
-				return
-			}
-			orgId := newApp.OrgID
-			if util.IsStringEmpty(orgId) {
-				_ = render.Render(w, r, newErrorResponse("please provide your orgId", http.StatusBadRequest))
-				return
-			}
-
-			org, err := orgRepo.FetchOrganisationByID(r.Context(), orgId)
-			if err != nil {
-				msg := "an error occurred while fetching organisation"
-				statusCode := http.StatusInternalServerError
-
-				if errors.Is(err, convoy.ErrOrganisationNotFound) {
-					msg = err.Error()
-					statusCode = http.StatusBadRequest
-				}
-				_ = render.Render(w, r, newErrorResponse(msg, statusCode))
-				return
-			}
-
-			if util.IsStringEmpty(newApp.Secret) {
-				newApp.Secret, err = util.GenerateSecret()
-				if err != nil {
-					_ = render.Render(w, r, newErrorResponse(fmt.Sprintf("could not generate secret...%v", err.Error()), http.StatusInternalServerError))
-					return
-				}
-			}
-
-			uid := uuid.New().String()
-			app := &convoy.Application{
-				UID:            uid,
-				OrgID:          org.UID,
-				Title:          appName,
-				Secret:         newApp.Secret,
-				SupportEmail:   newApp.SupportEmail,
-				CreatedAt:      primitive.NewDateTimeFromTime(time.Now()),
-				UpdatedAt:      primitive.NewDateTimeFromTime(time.Now()),
-				Endpoints:      []convoy.Endpoint{},
-				DocumentStatus: convoy.ActiveDocumentStatus,
-			}
-
-			err = appRepo.CreateApplication(r.Context(), app)
-			if err != nil {
-				_ = render.Render(w, r, newErrorResponse("an error occurred while creating app", http.StatusInternalServerError))
-				return
-			}
-
-			r = r.WithContext(setApplicationInContext(r.Context(), app))
-			next.ServeHTTP(w, r)
-		})
-	}
-}
-
-func ensureAppUpdate(appRepo convoy.ApplicationRepository) func(next http.Handler) http.Handler {
-	return func(next http.Handler) http.Handler {
-
-		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-
-			var appUpdate models.Application
-			err := json.NewDecoder(r.Body).Decode(&appUpdate)
-			if err != nil {
-				_ = render.Render(w, r, newErrorResponse("Request is invalid", http.StatusBadRequest))
-				return
-			}
-
-			appName := appUpdate.AppName
-			if util.IsStringEmpty(appName) {
-				_ = render.Render(w, r, newErrorResponse("please provide your appName", http.StatusBadRequest))
-				return
-			}
-
-			app := getApplicationFromContext(r.Context())
-
-			app.Title = appName
-			if !util.IsStringEmpty(appUpdate.Secret) {
-				app.Secret = appUpdate.Secret
-			}
-
-			if !util.IsStringEmpty(appUpdate.SupportEmail) {
-				app.SupportEmail = appUpdate.SupportEmail
-			}
-
-			err = appRepo.UpdateApplication(r.Context(), app)
-			if err != nil {
-				_ = render.Render(w, r, newErrorResponse("an error occurred while updating app", http.StatusInternalServerError))
-				return
-			}
-
-			r = r.WithContext(setApplicationInContext(r.Context(), app))
-			next.ServeHTTP(w, r)
-		})
-	}
-}
-
-func ensureAppDeletion(appRepo convoy.ApplicationRepository) func(next http.Handler) http.Handler {
-	return func(next http.Handler) http.Handler {
-
-		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-
-			app := getApplicationFromContext(r.Context())
-
-			err := appRepo.DeleteApplication(r.Context(), app)
-			if err != nil {
-				log.Errorln("failed to delete app - ", err)
-				_ = render.Render(w, r, newErrorResponse("an error occurred while deleting app", http.StatusInternalServerError))
-				return
-			}
-
-			next.ServeHTTP(w, r)
-		})
-	}
-}
-
-func ensureAppEndpointDeletion(appRepo convoy.ApplicationRepository) func(next http.Handler) http.Handler {
-	return func(next http.Handler) http.Handler {
-
-		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-
-			app := getApplicationFromContext(r.Context())
-			e := getApplicationEndpointFromContext(r.Context())
-
-			for i, endpoint := range app.Endpoints {
-				if endpoint.UID == e.UID && endpoint.DeletedAt == 0 {
-					app.Endpoints = append(app.Endpoints[:i], app.Endpoints[i+1:]...)
-					break
-				}
-			}
-
-			err := appRepo.UpdateApplication(r.Context(), app)
-			if err != nil {
-				_ = render.Render(w, r, newErrorResponse("an error occurred while deleting app endpoint", http.StatusInternalServerError))
-				return
-			}
-
-			next.ServeHTTP(w, r)
-		})
-	}
-}
-
-func fetchAllApps(appRepo convoy.ApplicationRepository) func(next http.Handler) http.Handler {
-	return func(next http.Handler) http.Handler {
-
-		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-
-			orgId := r.URL.Query().Get("orgId")
-
-			pageable := getPageableFromContext(r.Context())
-
-			apps, paginationData, err := appRepo.LoadApplicationsPaged(r.Context(), orgId, pageable)
-			if err != nil {
-				_ = render.Render(w, r, newErrorResponse("an error occurred while fetching apps", http.StatusInternalServerError))
-				return
-			}
-
-			r = r.WithContext(setApplicationsInContext(r.Context(), &apps))
-			r = r.WithContext(setPaginationDataInContext(r.Context(), &paginationData))
-			next.ServeHTTP(w, r)
-		})
-	}
-}
-
-func ensureNewAppEndpoint(appRepo convoy.ApplicationRepository) func(next http.Handler) http.Handler {
-	return func(next http.Handler) http.Handler {
-
-		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-
-			var e models.Endpoint
-			e, err := parseEndpointFromBody(r.Body)
-			if err != nil {
-				_ = render.Render(w, r, newErrorResponse(err.Error(), http.StatusBadRequest))
-				return
-			}
-
-			appID := chi.URLParam(r, "appID")
-			app, err := appRepo.FindApplicationByID(r.Context(), appID)
-			if err != nil {
-
-				msg := "an error occurred while retrieving app details"
-				statusCode := http.StatusInternalServerError
-
-				if errors.Is(err, convoy.ErrApplicationNotFound) {
-					msg = err.Error()
-					statusCode = http.StatusNotFound
-				}
-
-				_ = render.Render(w, r, newErrorResponse(msg, statusCode))
-				return
-			}
-
-			endpoint := &convoy.Endpoint{
-				UID:            uuid.New().String(),
-				TargetURL:      e.URL,
-				Description:    e.Description,
-				Status:         convoy.ActiveEndpointStatus,
-				CreatedAt:      primitive.NewDateTimeFromTime(time.Now()),
-				UpdatedAt:      primitive.NewDateTimeFromTime(time.Now()),
-				DocumentStatus: convoy.ActiveDocumentStatus,
-			}
-
-			app.Endpoints = append(app.Endpoints, *endpoint)
-
-			err = appRepo.UpdateApplication(r.Context(), app)
-			if err != nil {
-				_ = render.Render(w, r, newErrorResponse("an error occurred while adding app endpoint", http.StatusInternalServerError))
-				return
-			}
-
-			r = r.WithContext(setApplicationEndpointInContext(r.Context(), endpoint))
-			next.ServeHTTP(w, r)
-		})
-	}
-}
-
-func fetchAppEndpoints() func(next http.Handler) http.Handler {
-	return func(next http.Handler) http.Handler {
-
-		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-
-			app := getApplicationFromContext(r.Context())
-
-			app.Endpoints = filterDeletedEndpoints(app.Endpoints)
-
-			r = r.WithContext(setApplicationEndpointsInContext(r.Context(), &app.Endpoints))
-			next.ServeHTTP(w, r)
-		})
-	}
-}
-
 func filterDeletedEndpoints(endpoints []convoy.Endpoint) []convoy.Endpoint {
 	activeEndpoints := make([]convoy.Endpoint, 0)
 	for _, endpoint := range endpoints {
@@ -421,40 +177,6 @@ func parseEndpointFromBody(body io.ReadCloser) (models.Endpoint, error) {
 	return e, nil
 }
 
-func ensureAppEndpointUpdate(appRepo convoy.ApplicationRepository) func(next http.Handler) http.Handler {
-	return func(next http.Handler) http.Handler {
-
-		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-
-			var e models.Endpoint
-			e, err := parseEndpointFromBody(r.Body)
-			if err != nil {
-				_ = render.Render(w, r, newErrorResponse(err.Error(), http.StatusBadRequest))
-				return
-			}
-
-			app := getApplicationFromContext(r.Context())
-			endPointId := chi.URLParam(r, "endpointID")
-
-			endpoints, endpoint, err := updateEndpointIfFound(&app.Endpoints, endPointId, e)
-			if err != nil {
-				_ = render.Render(w, r, newErrorResponse(err.Error(), http.StatusBadRequest))
-				return
-			}
-
-			app.Endpoints = *endpoints
-			err = appRepo.UpdateApplication(r.Context(), app)
-			if err != nil {
-				_ = render.Render(w, r, newErrorResponse("an error occurred while updating app endpoints", http.StatusInternalServerError))
-				return
-			}
-
-			r = r.WithContext(setApplicationEndpointInContext(r.Context(), endpoint))
-			next.ServeHTTP(w, r)
-		})
-	}
-}
-
 func requireAppEndpoint() func(next http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 
@@ -470,6 +192,55 @@ func requireAppEndpoint() func(next http.Handler) http.Handler {
 			}
 
 			r = r.WithContext(setApplicationEndpointInContext(r.Context(), endpoint))
+			next.ServeHTTP(w, r)
+		})
+	}
+}
+
+func requireMessage(msgRepo convoy.MessageRepository) func(next http.Handler) http.Handler {
+	return func(next http.Handler) http.Handler {
+
+		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+
+			msgId := chi.URLParam(r, "eventID")
+
+			msg, err := msgRepo.FindMessageByID(r.Context(), msgId)
+			if err != nil {
+
+				msg := "an error occurred while retrieving event details"
+				statusCode := http.StatusInternalServerError
+
+				if errors.Is(err, convoy.ErrMessageNotFound) {
+					msg = err.Error()
+					statusCode = http.StatusNotFound
+				}
+
+				_ = render.Render(w, r, newErrorResponse(msg, statusCode))
+				return
+			}
+
+			r = r.WithContext(setMessageInContext(r.Context(), msg))
+			next.ServeHTTP(w, r)
+		})
+	}
+}
+
+func requireMessageDeliveryAttempt() func(next http.Handler) http.Handler {
+	return func(next http.Handler) http.Handler {
+
+		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+
+			id := chi.URLParam(r, "deliveryAttemptID")
+
+			attempts := getDeliveryAttemptsFromContext(r.Context())
+
+			attempt, err := findMessageDeliveryAttempt(attempts, id)
+			if err != nil {
+				_ = render.Render(w, r, newErrorResponse(err.Error(), http.StatusBadRequest))
+				return
+			}
+
+			r = r.WithContext(setDeliveryAttemptInContext(r.Context(), attempt))
 			next.ServeHTTP(w, r)
 		})
 	}
@@ -574,55 +345,6 @@ func requireOrganisation(orgRepo convoy.OrganisationRepository) func(next http.H
 				}
 
 				_ = render.Render(w, r, newErrorResponse(msg, statusCode))
-				return
-			}
-
-			r = r.WithContext(setOrganisationInContext(r.Context(), org))
-			next.ServeHTTP(w, r)
-		})
-	}
-}
-
-func ensureOrganisationUpdate(orgRepo convoy.OrganisationRepository) func(next http.Handler) http.Handler {
-	return func(next http.Handler) http.Handler {
-
-		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-
-			var update models.Organisation
-			err := json.NewDecoder(r.Body).Decode(&update)
-			if err != nil {
-				_ = render.Render(w, r, newErrorResponse("Request is invalid", http.StatusBadRequest))
-				return
-			}
-
-			orgName := update.Name
-			if util.IsStringEmpty(orgName) {
-				_ = render.Render(w, r, newErrorResponse("please provide a valid name", http.StatusBadRequest))
-				return
-			}
-
-			orgId := chi.URLParam(r, "orgID")
-
-			org, err := orgRepo.FetchOrganisationByID(r.Context(), orgId)
-			if err != nil {
-
-				msg := "an error occurred while retrieving organisation details"
-				statusCode := http.StatusInternalServerError
-
-				if errors.Is(err, convoy.ErrOrganisationNotFound) {
-					msg = err.Error()
-					statusCode = http.StatusNotFound
-				}
-
-				_ = render.Render(w, r, newErrorResponse(msg, statusCode))
-				return
-			}
-
-			org.OrgName = orgName
-			org.LogoURL = update.LogoURL
-			err = orgRepo.UpdateOrganisation(r.Context(), org)
-			if err != nil {
-				_ = render.Render(w, r, newErrorResponse("an error occurred while updating organisation", http.StatusInternalServerError))
 				return
 			}
 
@@ -851,11 +573,6 @@ func setMessagesInContext(ctx context.Context,
 	msg *[]convoy.Message) context.Context {
 	return context.WithValue(ctx, msgCtx, msg)
 }
-
-func getMessagesFromContext(ctx context.Context) *[]convoy.Message {
-	return ctx.Value(msgCtx).(*[]convoy.Message)
-}
-
 func setApplicationsInContext(ctx context.Context,
 	apps *[]convoy.Application) context.Context {
 	return context.WithValue(ctx, appCtx, apps)
@@ -874,15 +591,6 @@ func getApplicationEndpointFromContext(ctx context.Context) *convoy.Endpoint {
 	return ctx.Value(endpointCtx).(*convoy.Endpoint)
 }
 
-func setApplicationEndpointsInContext(ctx context.Context,
-	endpoints *[]convoy.Endpoint) context.Context {
-	return context.WithValue(ctx, endpointCtx, endpoints)
-}
-
-func getApplicationEndpointsFromContext(ctx context.Context) *[]convoy.Endpoint {
-	return ctx.Value(endpointCtx).(*[]convoy.Endpoint)
-}
-
 func setOrganisationInContext(ctx context.Context, organisation *convoy.Organisation) context.Context {
 	return context.WithValue(ctx, orgCtx, organisation)
 }
@@ -893,10 +601,6 @@ func getOrganisationFromContext(ctx context.Context) *convoy.Organisation {
 
 func setOrganisationsInContext(ctx context.Context, organisations []*convoy.Organisation) context.Context {
 	return context.WithValue(ctx, orgCtx, organisations)
-}
-
-func getOrganisationsFromContext(ctx context.Context) []*convoy.Organisation {
-	return ctx.Value(orgCtx).([]*convoy.Organisation)
 }
 
 func setPageableInContext(ctx context.Context, pageable models.Pageable) context.Context {
@@ -939,14 +643,6 @@ func setDeliveryAttemptsInContext(ctx context.Context,
 
 func getDeliveryAttemptsFromContext(ctx context.Context) *[]convoy.MessageAttempt {
 	return ctx.Value(deliveryAttemptsCtx).(*[]convoy.MessageAttempt)
-}
-
-func setAuthConfigInContext(ctx context.Context, a *config.AuthConfiguration) context.Context {
-	return context.WithValue(ctx, authConfigCtx, a)
-}
-
-func getAuthConfigFromContext(ctx context.Context) *config.AuthConfiguration {
-	return ctx.Value(authConfigCtx).(*config.AuthConfiguration)
 }
 
 func setAuthLoginInContext(ctx context.Context, a *AuthorizedLogin) context.Context {

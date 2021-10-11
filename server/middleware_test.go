@@ -25,28 +25,28 @@ func TestRequireAuth_Misconfiguration(t *testing.T) {
 			name:       "credentials not provided",
 			method:     http.MethodGet,
 			statusCode: http.StatusForbidden,
-			cfgPath:    "./testdata/TestRequireAuth_Misconfiguration/convoy.json",
+			cfgPath:    "./testdata/Auth_Config/misconfigured-convoy.json",
 		},
 		{
 			name:        "invalid credentials",
 			method:      http.MethodGet,
 			statusCode:  http.StatusForbidden,
 			credentials: "--",
-			cfgPath:     "./testdata/TestRequireAuth_Misconfiguration/convoy.json",
+			cfgPath:     "./testdata/Auth_Config/misconfigured-convoy.json",
 		},
 		{
 			name:        "authorization failed",
 			method:      http.MethodGet,
 			statusCode:  http.StatusForbidden,
 			credentials: "YWRtaW46dGVzdA==",
-			cfgPath:     "./testdata/TestRequireAuth_Misconfiguration/convoy.json",
+			cfgPath:     "./testdata/Auth_Config/misconfigured-convoy.json",
 		},
 		{
 			name:        "valid credentials",
 			method:      http.MethodGet,
 			statusCode:  http.StatusForbidden,
 			credentials: "dGVzdDp0ZXN0",
-			cfgPath:     "./testdata/TestRequireAuth_Misconfiguration/convoy.json",
+			cfgPath:     "./testdata/Auth_Config/misconfigured-convoy.json",
 		},
 	}
 
@@ -99,28 +99,28 @@ func TestRequireAuth_None(t *testing.T) {
 			name:       "credentials not provided",
 			method:     http.MethodGet,
 			statusCode: http.StatusOK,
-			cfgPath:    "./testdata/TestRequireAuth_None/convoy.json",
+			cfgPath:    "./testdata/Auth_Config/none-convoy.json",
 		},
 		{
 			name:        "invalid credentials",
 			method:      http.MethodGet,
 			statusCode:  http.StatusOK,
 			credentials: "--",
-			cfgPath:     "./testdata/TestRequireAuth_None/convoy.json",
+			cfgPath:     "./testdata/Auth_Config/none-convoy.json",
 		},
 		{
 			name:        "authorization failed",
 			method:      http.MethodGet,
 			statusCode:  http.StatusOK,
 			credentials: "YWRtaW46dGVzdA==",
-			cfgPath:     "./testdata/TestRequireAuth_None/convoy.json",
+			cfgPath:     "./testdata/Auth_Config/none-convoy.json",
 		},
 		{
 			name:        "valid credentials",
 			method:      http.MethodGet,
 			statusCode:  http.StatusOK,
 			credentials: "dGVzdDp0ZXN0",
-			cfgPath:     "./testdata/TestRequireAuth_None/convoy.json",
+			cfgPath:     "./testdata/Auth_Config/none-convoy.json",
 		},
 	}
 
@@ -175,7 +175,7 @@ func TestRequireAuth_Basic(t *testing.T) {
 			method:       http.MethodGet,
 			statusCode:   http.StatusUnauthorized,
 			responseBody: `{"message":"invalid header structure"}`,
-			cfgPath:      "./testdata/TestRequireAuth_Basic/convoy.json",
+			cfgPath:      "./testdata/Auth_Config/basic-convoy.json",
 		},
 		{
 			name:         "invalid credentials",
@@ -183,7 +183,7 @@ func TestRequireAuth_Basic(t *testing.T) {
 			statusCode:   http.StatusUnauthorized,
 			responseBody: `{"message":"invalid credentials"}`,
 			credentials:  "--",
-			cfgPath:      "./testdata/TestRequireAuth_Basic/convoy.json",
+			cfgPath:      "./testdata/Auth_Config/basic-convoy.json",
 		},
 		{
 			name:         "authorization failed",
@@ -191,7 +191,7 @@ func TestRequireAuth_Basic(t *testing.T) {
 			statusCode:   http.StatusUnauthorized,
 			responseBody: `{"message":"authorization failed"}`,
 			credentials:  "YWRtaW46dGVzdA==",
-			cfgPath:      "./testdata/TestRequireAuth_Basic/convoy.json",
+			cfgPath:      "./testdata/Auth_Config/basic-convoy.json",
 		},
 		{
 			name:         "valid credentials",
@@ -199,7 +199,7 @@ func TestRequireAuth_Basic(t *testing.T) {
 			statusCode:   http.StatusOK,
 			credentials:  "dGVzdDp0ZXN0",
 			responseBody: `Hello`,
-			cfgPath:      "./testdata/TestRequireAuth_Basic/convoy.json",
+			cfgPath:      "./testdata/Auth_Config/basic-convoy.json",
 		},
 	}
 
