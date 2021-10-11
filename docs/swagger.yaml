@@ -73,7 +73,7 @@ info:
   title: Convoy API Specification
   version: 0.1.12
 paths:
-  /apps:
+  /applications:
     get:
       consumes:
       - application/json
@@ -154,7 +154,7 @@ paths:
       summary: Create an application
       tags:
       - Application
-  /apps/{appID}:
+  /applications/{appID}:
     delete:
       consumes:
       - application/json
@@ -263,7 +263,7 @@ paths:
       summary: Update an application
       tags:
       - Application
-  /apps/{appID}/endpoints:
+  /applications/{appID}/endpoints:
     get:
       consumes:
       - application/json
@@ -338,7 +338,7 @@ paths:
       summary: Create an application endpoint
       tags:
       - Application Endpoints
-  /apps/{appID}/endpoints/{endpointID}:
+  /applications/{appID}/endpoints/{endpointID}:
     delete:
       consumes:
       - application/json
@@ -417,7 +417,52 @@ paths:
       summary: Get application endpoint
       tags:
       - Application Endpoints
-  /apps/{appID}/events:
+    put:
+      consumes:
+      - application/json
+      description: This endpoint updates an application endpoint
+      parameters:
+      - description: application id
+        in: path
+        name: appID
+        required: true
+        type: string
+      - description: endpoint id
+        in: path
+        name: endpointID
+        required: true
+        type: string
+      - description: Endpoint Details
+        in: body
+        name: endpoint
+        required: true
+        schema:
+          $ref: '#/definitions/models.Endpoint'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/server.serverResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/server.serverResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/server.serverResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/server.serverResponse'
+      security:
+      - ApiKeyAuth: []
+      summary: Update an application endpoint
+      tags:
+      - Application Endpoints
+  /events:
     get:
       consumes:
       - application/json
@@ -464,48 +509,6 @@ paths:
       summary: Get app messages with pagination
       tags:
       - Messages
-  /apps/endpoints/{endpointID}:
-    put:
-      consumes:
-      - application/json
-      description: This endpoint updates an application endpoint
-      parameters:
-      - description: endpoint id
-        in: path
-        name: endpointID
-        required: true
-        type: string
-      - description: Endpoint Details
-        in: body
-        name: endpoint
-        required: true
-        schema:
-          $ref: '#/definitions/models.Endpoint'
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/server.serverResponse'
-        "400":
-          description: Bad Request
-          schema:
-            $ref: '#/definitions/server.serverResponse'
-        "401":
-          description: Unauthorized
-          schema:
-            $ref: '#/definitions/server.serverResponse'
-        "500":
-          description: Internal Server Error
-          schema:
-            $ref: '#/definitions/server.serverResponse'
-      security:
-      - ApiKeyAuth: []
-      summary: Update an application endpoint
-      tags:
-      - Application Endpoints
-  /events:
     post:
       consumes:
       - application/json

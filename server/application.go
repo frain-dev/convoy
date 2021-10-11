@@ -53,7 +53,7 @@ func newApplicationHandler(msgRepo convoy.MessageRepository, appRepo convoy.Appl
 // @Failure 401 {object} serverResponse
 // @Failure 500 {object} serverResponse
 // @Security ApiKeyAuth
-// @Router /apps/{appID} [get]
+// @Router /applications/{appID} [get]
 func (a *applicationHandler) GetApp(w http.ResponseWriter, r *http.Request) {
 
 	_ = render.Render(w, r, newServerResponse("App fetched successfully",
@@ -74,7 +74,7 @@ func (a *applicationHandler) GetApp(w http.ResponseWriter, r *http.Request) {
 // @Failure 401 {object} serverResponse
 // @Failure 500 {object} serverResponse
 // @Security ApiKeyAuth
-// @Router /apps [get]
+// @Router /applications [get]
 func (a *applicationHandler) GetApps(w http.ResponseWriter, r *http.Request) {
 	pageable := getPageableFromContext(r.Context())
 
@@ -101,7 +101,7 @@ func (a *applicationHandler) GetApps(w http.ResponseWriter, r *http.Request) {
 // @Failure 500 {object} serverResponse
 // @Failure 300 {object} serverResponse
 // @Security ApiKeyAuth
-// @Router /apps [post]
+// @Router /applications [post]
 func (a *applicationHandler) CreateApp(w http.ResponseWriter, r *http.Request) {
 
 	var newApp models.Application
@@ -178,7 +178,7 @@ func (a *applicationHandler) CreateApp(w http.ResponseWriter, r *http.Request) {
 // @Failure 401 {object} serverResponse
 // @Failure 500 {object} serverResponse
 // @Security ApiKeyAuth
-// @Router /apps/{appID} [put]
+// @Router /applications/{appID} [put]
 func (a *applicationHandler) UpdateApp(w http.ResponseWriter, r *http.Request) {
 	var appUpdate models.Application
 	err := json.NewDecoder(r.Body).Decode(&appUpdate)
@@ -225,7 +225,7 @@ func (a *applicationHandler) UpdateApp(w http.ResponseWriter, r *http.Request) {
 // @Failure 401 {object} serverResponse
 // @Failure 500 {object} serverResponse
 // @Security ApiKeyAuth
-// @Router /apps/{appID} [delete]
+// @Router /applications/{appID} [delete]
 func (a *applicationHandler) DeleteApp(w http.ResponseWriter, r *http.Request) {
 	app := getApplicationFromContext(r.Context())
 	err := a.appRepo.DeleteApplication(r.Context(), app)
@@ -251,7 +251,7 @@ func (a *applicationHandler) DeleteApp(w http.ResponseWriter, r *http.Request) {
 // @Failure 401 {object} serverResponse
 // @Failure 500 {object} serverResponse
 // @Security ApiKeyAuth
-// @Router /apps/{appID}/endpoints [post]
+// @Router /applications/{appID}/endpoints [post]
 func (a *applicationHandler) CreateAppEndpoint(w http.ResponseWriter, r *http.Request) {
 	var e models.Endpoint
 	e, err := parseEndpointFromBody(r.Body)
@@ -310,7 +310,7 @@ func (a *applicationHandler) CreateAppEndpoint(w http.ResponseWriter, r *http.Re
 // @Failure 401 {object} serverResponse
 // @Failure 500 {object} serverResponse
 // @Security ApiKeyAuth
-// @Router /apps/{appID}/endpoints/{endpointID} [get]
+// @Router /applications/{appID}/endpoints/{endpointID} [get]
 func (a *applicationHandler) GetAppEndpoint(w http.ResponseWriter, r *http.Request) {
 
 	_ = render.Render(w, r, newServerResponse("App endpoint fetched successfully",
@@ -329,7 +329,7 @@ func (a *applicationHandler) GetAppEndpoint(w http.ResponseWriter, r *http.Reque
 // @Failure 401 {object} serverResponse
 // @Failure 500 {object} serverResponse
 // @Security ApiKeyAuth
-// @Router /apps/{appID}/endpoints [get]
+// @Router /applications/{appID}/endpoints [get]
 func (a *applicationHandler) GetAppEndpoints(w http.ResponseWriter, r *http.Request) {
 	app := getApplicationFromContext(r.Context())
 
@@ -343,6 +343,7 @@ func (a *applicationHandler) GetAppEndpoints(w http.ResponseWriter, r *http.Requ
 // @Tags Application Endpoints
 // @Accept  json
 // @Produce  json
+// @Param appID path string true "application id"
 // @Param endpointID path string true "endpoint id"
 // @Param endpoint body models.Endpoint true "Endpoint Details"
 // @Success 200 {object} serverResponse
@@ -350,7 +351,7 @@ func (a *applicationHandler) GetAppEndpoints(w http.ResponseWriter, r *http.Requ
 // @Failure 401 {object} serverResponse
 // @Failure 500 {object} serverResponse
 // @Security ApiKeyAuth
-// @Router /apps/endpoints/{endpointID} [put]
+// @Router /applications/{appID}/endpoints/{endpointID} [put]
 func (a *applicationHandler) UpdateAppEndpoint(w http.ResponseWriter, r *http.Request) {
 	var e models.Endpoint
 	e, err := parseEndpointFromBody(r.Body)
@@ -391,7 +392,7 @@ func (a *applicationHandler) UpdateAppEndpoint(w http.ResponseWriter, r *http.Re
 // @Failure 401 {object} serverResponse
 // @Failure 500 {object} serverResponse
 // @Security ApiKeyAuth
-// @Router /apps/{appID}/endpoints/{endpointID} [delete]
+// @Router /applications/{appID}/endpoints/{endpointID} [delete]
 func (a *applicationHandler) DeleteAppEndpoint(w http.ResponseWriter, r *http.Request) {
 	app := getApplicationFromContext(r.Context())
 	e := getApplicationEndpointFromContext(r.Context())

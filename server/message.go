@@ -226,12 +226,10 @@ func (a *applicationHandler) ResendAppMessage(w http.ResponseWriter, r *http.Req
 // @Failure 401 {object} serverResponse
 // @Failure 500 {object} serverResponse
 // @Security ApiKeyAuth
-// @Router /apps/{appID}/events [get]
+// @Router /events [get]
 func (a *applicationHandler) GetMessagesPaged(w http.ResponseWriter, r *http.Request) {
 
 	pageable := getPageableFromContext(r.Context())
-
-	orgId := r.URL.Query().Get("orgId") // TODO(subomi): why do we need orgID here?, previously we didn't, as seen in the @Router annotation
 	appId := r.URL.Query().Get("appId")
 
 	searchParams, err := getSearchParams(r)
@@ -240,7 +238,7 @@ func (a *applicationHandler) GetMessagesPaged(w http.ResponseWriter, r *http.Req
 		return
 	}
 
-	m, paginationData, err := a.msgRepo.LoadMessagesPaged(r.Context(), orgId, appId, searchParams, pageable)
+	m, paginationData, err := a.msgRepo.LoadMessagesPaged(r.Context(), "", appId, searchParams, pageable)
 	if err != nil {
 		_ = render.Render(w, r, newErrorResponse("an error occurred while fetching app events", http.StatusInternalServerError))
 		log.Errorln("error while fetching events - ", err)

@@ -78,7 +78,7 @@ info:
   version: 0.1.12
 openapi: 3.0.3
 paths:
-  /apps:
+  /applications:
     get:
       description: This fetches all applications
       parameters:
@@ -173,7 +173,7 @@ paths:
       summary: Create an application
       tags:
       - Application
-  /apps/{appID}:
+  /applications/{appID}:
     delete:
       description: This endpoint deletes an app
       parameters:
@@ -299,7 +299,7 @@ paths:
       summary: Update an application
       tags:
       - Application
-  /apps/{appID}/endpoints:
+  /applications/{appID}/endpoints:
     get:
       description: This endpoint fetches an application's endpoints
       parameters:
@@ -386,7 +386,7 @@ paths:
       summary: Create an application endpoint
       tags:
       - Application Endpoints
-  /apps/{appID}/endpoints/{endpointID}:
+  /applications/{appID}/endpoints/{endpointID}:
     delete:
       description: This endpoint deletes an application endpoint
       parameters:
@@ -477,7 +477,60 @@ paths:
       summary: Get application endpoint
       tags:
       - Application Endpoints
-  /apps/{appID}/events:
+    put:
+      description: This endpoint updates an application endpoint
+      parameters:
+      - description: application id
+        in: path
+        name: appID
+        required: true
+        schema:
+          type: string
+      - description: endpoint id
+        in: path
+        name: endpointID
+        required: true
+        schema:
+          type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/models.Endpoint'
+        description: Endpoint Details
+        required: true
+        x-originalParamName: endpoint
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/server.serverResponse'
+          description: OK
+        "400":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/server.serverResponse'
+          description: Bad Request
+        "401":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/server.serverResponse'
+          description: Unauthorized
+        "500":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/server.serverResponse'
+          description: Internal Server Error
+      security:
+      - ApiKeyAuth: []
+      summary: Update an application endpoint
+      tags:
+      - Application Endpoints
+  /events:
     get:
       description: This endpoint fetches app messages with pagination
       parameters:
@@ -532,55 +585,6 @@ paths:
       summary: Get app messages with pagination
       tags:
       - Messages
-  /apps/endpoints/{endpointID}:
-    put:
-      description: This endpoint updates an application endpoint
-      parameters:
-      - description: endpoint id
-        in: path
-        name: endpointID
-        required: true
-        schema:
-          type: string
-      requestBody:
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/models.Endpoint'
-        description: Endpoint Details
-        required: true
-        x-originalParamName: endpoint
-      responses:
-        "200":
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/server.serverResponse'
-          description: OK
-        "400":
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/server.serverResponse'
-          description: Bad Request
-        "401":
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/server.serverResponse'
-          description: Unauthorized
-        "500":
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/server.serverResponse'
-          description: Internal Server Error
-      security:
-      - ApiKeyAuth: []
-      summary: Update an application endpoint
-      tags:
-      - Application Endpoints
-  /events:
     post:
       description: This endpoint creates an app message
       requestBody:

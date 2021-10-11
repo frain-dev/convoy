@@ -22,7 +22,7 @@
     "host": "localhost:8080",
     "basePath": "/api/v1",
     "paths": {
-        "/apps": {
+        "/applications": {
             "get": {
                 "security": [
                     {
@@ -149,71 +149,7 @@
                 }
             }
         },
-        "/apps/endpoints/{endpointID}": {
-            "put": {
-                "security": [
-                    {
-                        "ApiKeyAuth": []
-                    }
-                ],
-                "description": "This endpoint updates an application endpoint",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "Application Endpoints"
-                ],
-                "summary": "Update an application endpoint",
-                "parameters": [
-                    {
-                        "type": "string",
-                        "description": "endpoint id",
-                        "name": "endpointID",
-                        "in": "path",
-                        "required": true
-                    },
-                    {
-                        "description": "Endpoint Details",
-                        "name": "endpoint",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "$ref": "#/definitions/models.Endpoint"
-                        }
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "$ref": "#/definitions/server.serverResponse"
-                        }
-                    },
-                    "400": {
-                        "description": "Bad Request",
-                        "schema": {
-                            "$ref": "#/definitions/server.serverResponse"
-                        }
-                    },
-                    "401": {
-                        "description": "Unauthorized",
-                        "schema": {
-                            "$ref": "#/definitions/server.serverResponse"
-                        }
-                    },
-                    "500": {
-                        "description": "Internal Server Error",
-                        "schema": {
-                            "$ref": "#/definitions/server.serverResponse"
-                        }
-                    }
-                }
-            }
-        },
-        "/apps/{appID}": {
+        "/applications/{appID}": {
             "get": {
                 "security": [
                     {
@@ -383,7 +319,7 @@
                 }
             }
         },
-        "/apps/{appID}/endpoints": {
+        "/applications/{appID}/endpoints": {
             "get": {
                 "security": [
                     {
@@ -500,7 +436,7 @@
                 }
             }
         },
-        "/apps/{appID}/endpoints/{endpointID}": {
+        "/applications/{appID}/endpoints/{endpointID}": {
             "get": {
                 "security": [
                     {
@@ -532,6 +468,75 @@
                         "name": "endpointID",
                         "in": "path",
                         "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/server.serverResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/server.serverResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/server.serverResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/server.serverResponse"
+                        }
+                    }
+                }
+            },
+            "put": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "This endpoint updates an application endpoint",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Application Endpoints"
+                ],
+                "summary": "Update an application endpoint",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "application id",
+                        "name": "appID",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "endpoint id",
+                        "name": "endpointID",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Endpoint Details",
+                        "name": "endpoint",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/models.Endpoint"
+                        }
                     }
                 ],
                 "responses": {
@@ -622,7 +627,7 @@
                 }
             }
         },
-        "/apps/{appID}/events": {
+        "/events": {
             "get": {
                 "security": [
                     {
@@ -693,9 +698,7 @@
                         }
                     }
                 }
-            }
-        },
-        "/events": {
+            },
             "post": {
                 "security": [
                     {
