@@ -809,7 +809,7 @@ func Test_applicationHandler_GetOrganisations(t *testing.T) {
 			statusCode: http.StatusOK,
 			dbFn: func(appRepo *mocks.MockApplicationRepository, orgRepo *mocks.MockOrganisationRepository) {
 				orgRepo.EXPECT().
-					LoadOrganisations(gomock.Any()).Times(1).
+					LoadOrganisations(gomock.Any(), gomock.Any()).Times(1).
 					Return([]*convoy.Organisation{
 						{
 							UID:     orgID,

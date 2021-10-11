@@ -64,18 +64,18 @@ func (mr *MockOrganisationRepositoryMockRecorder) FetchOrganisationByID(arg0, ar
 }
 
 // LoadOrganisations mocks base method.
-func (m *MockOrganisationRepository) LoadOrganisations(arg0 context.Context) ([]*convoy.Organisation, error) {
+func (m *MockOrganisationRepository) LoadOrganisations(arg0 context.Context, arg1 *convoy.OrganisationFilter) ([]*convoy.Organisation, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "LoadOrganisations", arg0)
+	ret := m.ctrl.Call(m, "LoadOrganisations", arg0, arg1)
 	ret0, _ := ret[0].([]*convoy.Organisation)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // LoadOrganisations indicates an expected call of LoadOrganisations.
-func (mr *MockOrganisationRepositoryMockRecorder) LoadOrganisations(arg0 interface{}) *gomock.Call {
+func (mr *MockOrganisationRepositoryMockRecorder) LoadOrganisations(arg0, arg1 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "LoadOrganisations", reflect.TypeOf((*MockOrganisationRepository)(nil).LoadOrganisations), arg0)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "LoadOrganisations", reflect.TypeOf((*MockOrganisationRepository)(nil).LoadOrganisations), arg0, arg1)
 }
 
 // UpdateOrganisation mocks base method.
