@@ -290,7 +290,7 @@ func TestApplicationHandler_GetOrganisations(t *testing.T) {
 			dbFn: func(app *applicationHandler) {
 				o, _ := app.orgRepo.(*mocks.MockOrganisationRepository)
 				o.EXPECT().
-					LoadOrganisations(gomock.Any()).Times(1).
+					LoadOrganisations(gomock.Any(), gomock.Any()).Times(1).
 					Return([]*convoy.Organisation{
 						{
 							UID:     realOrgID,

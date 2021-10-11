@@ -96,8 +96,9 @@ func (a *applicationHandler) UpdateOrganisation(w http.ResponseWriter, r *http.R
 }
 
 func (a *applicationHandler) GetOrganisations(w http.ResponseWriter, r *http.Request) {
+	name := r.URL.Query().Get("name")
 
-	orgs, err := a.orgRepo.LoadOrganisations(r.Context())
+	orgs, err := a.orgRepo.LoadOrganisations(r.Context(), &convoy.OrganisationFilter{Name: name})
 	if err != nil {
 		_ = render.Render(w, r, newErrorResponse("an error occurred while fetching organisations", http.StatusInternalServerError))
 		return
