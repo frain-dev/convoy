@@ -13,7 +13,7 @@ import (
 	"github.com/frain-dev/convoy/mocks"
 	"github.com/go-chi/chi/v5"
 	"github.com/golang/mock/gomock"
-	"github.com/sirupsen/logrus"
+	log "github.com/sirupsen/logrus"
 )
 
 func TestApplicationHandler_CreateAppMessage(t *testing.T) {
@@ -209,7 +209,7 @@ func TestApplicationHandler_CreateAppMessage(t *testing.T) {
 			router.ServeHTTP(w, req)
 
 			if w.Code != tc.statusCode {
-				logrus.Error(tc.args.message, w.Body)
+				log.Error(tc.args.message, w.Body)
 				t.Errorf("Want status '%d', got '%d'", tc.statusCode, w.Code)
 			}
 		})
@@ -445,7 +445,7 @@ func Test_resendMessage(t *testing.T) {
 			router.ServeHTTP(w, req)
 
 			if w.Code != tc.statusCode {
-				logrus.Error(tc.args.message, w.Body)
+				log.Error(tc.args.message, w.Body)
 				t.Errorf("Want status '%d', got '%d'", tc.statusCode, w.Code)
 			}
 
