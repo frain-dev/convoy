@@ -1,11 +1,21 @@
 package server
 
 import (
+	"encoding/json"
+	"errors"
+	"fmt"
 	"net/http"
+	"time"
 
 	mongopagination "github.com/gobeam/mongo-go-pagination"
+	"github.com/google/uuid"
+	log "github.com/sirupsen/logrus"
+	"go.mongodb.org/mongo-driver/bson/primitive"
 
 	"github.com/frain-dev/convoy"
+	"github.com/frain-dev/convoy/server/models"
+	"github.com/frain-dev/convoy/util"
+	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/render"
 )
 
@@ -29,6 +39,8 @@ func newApplicationHandler(msgRepo convoy.MessageRepository, appRepo convoy.Appl
 	}
 }
 
+// TODO(daniel): using '{object} serverResponse' in doc annotations: serverResponse's data field is an interface, this makes the generated doc vauge
+
 // GetApp
 // @Summary Get an application
 // @Description This endpoint fetches an application by it's id
@@ -36,7 +48,7 @@ func newApplicationHandler(msgRepo convoy.MessageRepository, appRepo convoy.Appl
 // @Accept  json
 // @Produce  json
 // @Param appID path string true "application id"
-// @Success 200 {object} serverResponse // TODO(daniel): should this be?, serverResponse's data field is an interface, this makes the generated doc vauge
+// @Success 200 {object} serverResponse
 // @Failure 400 {object} serverResponse
 // @Failure 401 {object} serverResponse
 // @Failure 500 {object} serverResponse
@@ -46,46 +58,6 @@ func (a *applicationHandler) GetApp(w http.ResponseWriter, r *http.Request) {
 
 	_ = render.Render(w, r, newServerResponse("App fetched successfully",
 		*getApplicationFromContext(r.Context()), http.StatusOK))
-}
-
-// CreateApp
-// @Summary Create an application
-// @Description This endpoint creates an application
-// @Tags Application
-// @Accept  json
-// @Produce  json
-// @Param application body models.Application true "Application Details"
-// @Success 200 {object} serverResponse
-// @Failure 400 {object} serverResponse
-// @Failure 401 {object} serverResponse
-// @Failure 500 {object} serverResponse
-// @Failure 300 {object} serverResponse
-// @Security ApiKeyAuth
-// @Router /apps [post]
-func (a *applicationHandler) CreateApp(w http.ResponseWriter, r *http.Request) {
-
-	_ = render.Render(w, r, newServerResponse("App created successfully",
-		*getApplicationFromContext(r.Context()), http.StatusCreated))
-}
-
-// UpdateApp
-// @Summary Update an application
-// @Description This endpoint updates an application
-// @Tags Application
-// @Accept  json
-// @Produce  json
-// @Param appID path string true "application id"
-// @Param application body models.Application true "Application Details"
-// @Success 200 {object} serverResponse
-// @Failure 400 {object} serverResponse
-// @Failure 401 {object} serverResponse
-// @Failure 500 {object} serverResponse
-// @Security ApiKeyAuth
-// @Router /apps/{appID} [put]
-func (a *applicationHandler) UpdateApp(w http.ResponseWriter, r *http.Request) {
-
-	_ = render.Render(w, r, newServerResponse("App updated successfully",
-		*getApplicationFromContext(r.Context()), http.StatusAccepted))
 }
 
 // GetApps
@@ -104,10 +76,166 @@ func (a *applicationHandler) UpdateApp(w http.ResponseWriter, r *http.Request) {
 // @Security ApiKeyAuth
 // @Router /apps [get]
 func (a *applicationHandler) GetApps(w http.ResponseWriter, r *http.Request) {
+	pageable := getPageableFromContext(r.Context())
+
+	apps, paginationData, err := a.appRepo.LoadApplicationsPaged(r.Context(), "", pageable)
+	if err != nil {
+		_ = render.Render(w, r, newErrorResponse("an error occurred while fetching apps", http.StatusInternalServerError))
+		return
+	}
 
 	_ = render.Render(w, r, newServerResponse("Apps fetched successfully",
-		pagedResponse{Content: *getApplicationsFromContext(r.Context()),
-			Pagination: getPaginationDataFromContext(r.Context())}, http.StatusOK))
+		pagedResponse{Content: &apps, Pagination: &paginationData}, http.StatusOK))
+}
+
+// CreateApp
+// @Summary Create an application
+// @Description This endpoint creates an application
+// @Tags Application
+// @Accept  json
+// @Produce  json
+// @Param application body models.Application true "Application Details"
+// @Success 200 {object} serverResponse
+// @Failure 400 {object} serverResponse
+// @Failure 401 {object} serverResponse
+// @Failure 500 {object} serverResponse
+// @Failure 300 {object} serverResponse
+// @Security ApiKeyAuth
+// @Router /apps [post]
+func (a *applicationHandler) CreateApp(w http.ResponseWriter, r *http.Request) {
+
+	var newApp models.Application
+	err := json.NewDecoder(r.Body).Decode(&newApp)
+	if err != nil {
+		_ = render.Render(w, r, newErrorResponse("Request is invalid", http.StatusBadRequest))
+		return
+	}
+
+	appName := newApp.AppName
+	if util.IsStringEmpty(appName) {
+		_ = render.Render(w, r, newErrorResponse("please provide your appName", http.StatusBadRequest))
+		return
+	}
+	orgId := newApp.OrgID
+	if util.IsStringEmpty(orgId) {
+		_ = render.Render(w, r, newErrorResponse("please provide your orgId", http.StatusBadRequest))
+		return
+	}
+
+	org, err := a.orgRepo.FetchOrganisationByID(r.Context(), orgId)
+	if err != nil {
+		msg := "an error occurred while fetching organisation"
+		statusCode := http.StatusInternalServerError
+
+		if errors.Is(err, convoy.ErrOrganisationNotFound) {
+			msg = err.Error()
+			statusCode = http.StatusBadRequest
+		}
+		_ = render.Render(w, r, newErrorResponse(msg, statusCode))
+		return
+	}
+
+	if util.IsStringEmpty(newApp.Secret) {
+		newApp.Secret, err = util.GenerateSecret()
+		if err != nil {
+			_ = render.Render(w, r, newErrorResponse(fmt.Sprintf("could not generate secret...%v", err.Error()), http.StatusInternalServerError))
+			return
+		}
+	}
+
+	uid := uuid.New().String()
+	app := &convoy.Application{
+		UID:            uid,
+		OrgID:          org.UID,
+		Title:          appName,
+		Secret:         newApp.Secret,
+		SupportEmail:   newApp.SupportEmail,
+		CreatedAt:      primitive.NewDateTimeFromTime(time.Now()),
+		UpdatedAt:      primitive.NewDateTimeFromTime(time.Now()),
+		Endpoints:      []convoy.Endpoint{},
+		DocumentStatus: convoy.ActiveDocumentStatus,
+	}
+
+	err = a.appRepo.CreateApplication(r.Context(), app)
+	if err != nil {
+		_ = render.Render(w, r, newErrorResponse("an error occurred while creating app", http.StatusInternalServerError))
+		return
+	}
+
+	_ = render.Render(w, r, newServerResponse("App created successfully", app, http.StatusCreated))
+}
+
+// UpdateApp
+// @Summary Update an application
+// @Description This endpoint updates an application
+// @Tags Application
+// @Accept  json
+// @Produce  json
+// @Param appID path string true "application id"
+// @Param application body models.Application true "Application Details"
+// @Success 200 {object} serverResponse
+// @Failure 400 {object} serverResponse
+// @Failure 401 {object} serverResponse
+// @Failure 500 {object} serverResponse
+// @Security ApiKeyAuth
+// @Router /apps/{appID} [put]
+func (a *applicationHandler) UpdateApp(w http.ResponseWriter, r *http.Request) {
+	var appUpdate models.Application
+	err := json.NewDecoder(r.Body).Decode(&appUpdate)
+	if err != nil {
+		_ = render.Render(w, r, newErrorResponse("Request is invalid", http.StatusBadRequest))
+		return
+	}
+
+	appName := appUpdate.AppName
+	if util.IsStringEmpty(appName) {
+		_ = render.Render(w, r, newErrorResponse("please provide your appName", http.StatusBadRequest))
+		return
+	}
+
+	app := getApplicationFromContext(r.Context())
+
+	app.Title = appName
+	if !util.IsStringEmpty(appUpdate.Secret) {
+		app.Secret = appUpdate.Secret
+	}
+
+	if !util.IsStringEmpty(appUpdate.SupportEmail) {
+		app.SupportEmail = appUpdate.SupportEmail
+	}
+
+	err = a.appRepo.UpdateApplication(r.Context(), app)
+	if err != nil {
+		_ = render.Render(w, r, newErrorResponse("an error occurred while updating app", http.StatusInternalServerError))
+		return
+	}
+
+	_ = render.Render(w, r, newServerResponse("App updated successfully", app, http.StatusAccepted))
+}
+
+// DeleteApp
+// @Summary Delete app
+// @Description This endpoint deletes an app
+// @Tags Application
+// @Accept  json
+// @Produce  json
+// @Param appID path string true "application id"
+// @Success 200 {object} serverResponse
+// @Failure 400 {object} serverResponse
+// @Failure 401 {object} serverResponse
+// @Failure 500 {object} serverResponse
+// @Security ApiKeyAuth
+// @Router /apps/{appID} [delete]
+func (a *applicationHandler) DeleteApp(w http.ResponseWriter, r *http.Request) {
+	app := getApplicationFromContext(r.Context())
+	err := a.appRepo.DeleteApplication(r.Context(), app)
+	if err != nil {
+		log.Errorln("failed to delete app - ", err)
+		_ = render.Render(w, r, newErrorResponse("an error occurred while deleting app", http.StatusInternalServerError))
+		return
+	}
+
+	_ = render.Render(w, r, newServerResponse("App deleted successfully", nil, http.StatusOK))
 }
 
 // CreateAppEndpoint
@@ -125,29 +253,48 @@ func (a *applicationHandler) GetApps(w http.ResponseWriter, r *http.Request) {
 // @Security ApiKeyAuth
 // @Router /apps/{appID}/endpoints [post]
 func (a *applicationHandler) CreateAppEndpoint(w http.ResponseWriter, r *http.Request) {
+	var e models.Endpoint
+	e, err := parseEndpointFromBody(r.Body)
+	if err != nil {
+		_ = render.Render(w, r, newErrorResponse(err.Error(), http.StatusBadRequest))
+		return
+	}
 
-	_ = render.Render(w, r, newServerResponse("App endpoint created successfully",
-		*getApplicationEndpointFromContext(r.Context()), http.StatusCreated))
-}
+	appID := chi.URLParam(r, "appID")
+	app, err := a.appRepo.FindApplicationByID(r.Context(), appID)
+	if err != nil {
 
-// UpdateAppEndpoint
-// @Summary Update an application endpoint
-// @Description This endpoint updates an application endpoint
-// @Tags Application Endpoints
-// @Accept  json
-// @Produce  json
-// @Param endpointID path string true "endpoint id"
-// @Param endpoint body models.Endpoint true "Endpoint Details"
-// @Success 200 {object} serverResponse
-// @Failure 400 {object} serverResponse
-// @Failure 401 {object} serverResponse
-// @Failure 500 {object} serverResponse
-// @Security ApiKeyAuth
-// @Router /apps/endpoints/{endpointID} [put]
-func (a *applicationHandler) UpdateAppEndpoint(w http.ResponseWriter, r *http.Request) {
+		msg := "an error occurred while retrieving app details"
+		statusCode := http.StatusInternalServerError
 
-	_ = render.Render(w, r, newServerResponse("Apps endpoint updated successfully",
-		*getApplicationEndpointFromContext(r.Context()), http.StatusAccepted))
+		if errors.Is(err, convoy.ErrApplicationNotFound) {
+			msg = err.Error()
+			statusCode = http.StatusNotFound
+		}
+
+		_ = render.Render(w, r, newErrorResponse(msg, statusCode))
+		return
+	}
+
+	endpoint := &convoy.Endpoint{
+		UID:            uuid.New().String(),
+		TargetURL:      e.URL,
+		Description:    e.Description,
+		Status:         convoy.ActiveEndpointStatus,
+		CreatedAt:      primitive.NewDateTimeFromTime(time.Now()),
+		UpdatedAt:      primitive.NewDateTimeFromTime(time.Now()),
+		DocumentStatus: convoy.ActiveDocumentStatus,
+	}
+
+	app.Endpoints = append(app.Endpoints, *endpoint)
+
+	err = a.appRepo.UpdateApplication(r.Context(), app)
+	if err != nil {
+		_ = render.Render(w, r, newErrorResponse("an error occurred while adding app endpoint", http.StatusInternalServerError))
+		return
+	}
+
+	_ = render.Render(w, r, newServerResponse("App endpoint created successfully", endpoint, http.StatusCreated))
 }
 
 // GetAppEndpoint
@@ -170,6 +317,67 @@ func (a *applicationHandler) GetAppEndpoint(w http.ResponseWriter, r *http.Reque
 		*getApplicationEndpointFromContext(r.Context()), http.StatusOK))
 }
 
+// GetAppEndpoints
+// @Summary Get application endpoints
+// @Description This endpoint fetches an application's endpoints
+// @Tags Application Endpoints
+// @Accept  json
+// @Produce  json
+// @Param appID path string true "application id"
+// @Success 200 {object} serverResponse
+// @Failure 400 {object} serverResponse
+// @Failure 401 {object} serverResponse
+// @Failure 500 {object} serverResponse
+// @Security ApiKeyAuth
+// @Router /apps/{appID}/endpoints [get]
+func (a *applicationHandler) GetAppEndpoints(w http.ResponseWriter, r *http.Request) {
+	app := getApplicationFromContext(r.Context())
+
+	app.Endpoints = filterDeletedEndpoints(app.Endpoints)
+	_ = render.Render(w, r, newServerResponse("App endpoints fetched successfully", app.Endpoints, http.StatusOK))
+}
+
+// UpdateAppEndpoint
+// @Summary Update an application endpoint
+// @Description This endpoint updates an application endpoint
+// @Tags Application Endpoints
+// @Accept  json
+// @Produce  json
+// @Param endpointID path string true "endpoint id"
+// @Param endpoint body models.Endpoint true "Endpoint Details"
+// @Success 200 {object} serverResponse
+// @Failure 400 {object} serverResponse
+// @Failure 401 {object} serverResponse
+// @Failure 500 {object} serverResponse
+// @Security ApiKeyAuth
+// @Router /apps/endpoints/{endpointID} [put]
+func (a *applicationHandler) UpdateAppEndpoint(w http.ResponseWriter, r *http.Request) {
+	var e models.Endpoint
+	e, err := parseEndpointFromBody(r.Body)
+	if err != nil {
+		_ = render.Render(w, r, newErrorResponse(err.Error(), http.StatusBadRequest))
+		return
+	}
+
+	app := getApplicationFromContext(r.Context())
+	endPointId := chi.URLParam(r, "endpointID")
+
+	endpoints, endpoint, err := updateEndpointIfFound(&app.Endpoints, endPointId, e)
+	if err != nil {
+		_ = render.Render(w, r, newErrorResponse(err.Error(), http.StatusBadRequest))
+		return
+	}
+
+	app.Endpoints = *endpoints
+	err = a.appRepo.UpdateApplication(r.Context(), app)
+	if err != nil {
+		_ = render.Render(w, r, newErrorResponse("an error occurred while updating app endpoints", http.StatusInternalServerError))
+		return
+	}
+
+	_ = render.Render(w, r, newServerResponse("Apps endpoint updated successfully", endpoint, http.StatusAccepted))
+}
+
 // DeleteAppEndpoint
 // @Summary Delete application endpoint
 // @Description This endpoint deletes an application endpoint
@@ -185,110 +393,23 @@ func (a *applicationHandler) GetAppEndpoint(w http.ResponseWriter, r *http.Reque
 // @Security ApiKeyAuth
 // @Router /apps/{appID}/endpoints/{endpointID} [delete]
 func (a *applicationHandler) DeleteAppEndpoint(w http.ResponseWriter, r *http.Request) {
+	app := getApplicationFromContext(r.Context())
+	e := getApplicationEndpointFromContext(r.Context())
 
-	_ = render.Render(w, r, newServerResponse("App endpoint deleted successfully",
-		nil, http.StatusOK))
-}
+	for i, endpoint := range app.Endpoints {
+		if endpoint.UID == e.UID && endpoint.DeletedAt == 0 {
+			app.Endpoints = append(app.Endpoints[:i], app.Endpoints[i+1:]...)
+			break
+		}
+	}
 
-// GetAppEndpoints
-// @Summary Get application endpoints
-// @Description This endpoint fetches an application's endpoints
-// @Tags Application Endpoints
-// @Accept  json
-// @Produce  json
-// @Param appID path string true "application id"
-// @Success 200 {object} serverResponse
-// @Failure 400 {object} serverResponse
-// @Failure 401 {object} serverResponse
-// @Failure 500 {object} serverResponse
-// @Security ApiKeyAuth
-// @Router /apps/{appID}/endpoints [get]
-func (a *applicationHandler) GetAppEndpoints(w http.ResponseWriter, r *http.Request) {
+	err := a.appRepo.UpdateApplication(r.Context(), app)
+	if err != nil {
+		_ = render.Render(w, r, newErrorResponse("an error occurred while deleting app endpoint", http.StatusInternalServerError))
+		return
+	}
 
-	_ = render.Render(w, r, newServerResponse("App endpoints fetched successfully",
-		*getApplicationEndpointsFromContext(r.Context()), http.StatusOK))
-}
-
-// CreateOrganisation
-// @Summary Create an organisation
-// @Description This endpoint creates an organisation
-// @Tags Organisation
-// @Accept  json
-// @Produce  json
-// @Param organisation body models.Organisation true "Organisation Details"
-// @Success 200 {object} serverResponse
-// @Failure 400 {object} serverResponse
-// @Failure 401 {object} serverResponse
-// @Failure 500 {object} serverResponse
-// @Security ApiKeyAuth
-// @Router /organisations [post]
-func (a *applicationHandler) CreateOrganisation(w http.ResponseWriter, r *http.Request) {
-
-	_ = render.Render(w, r, newServerResponse("Organisation created successfully",
-		*getOrganisationFromContext(r.Context()), http.StatusCreated))
-}
-
-// UpdateOrganisation
-// @Summary Update an organisation
-// @Description This endpoint updates an organisation
-// @Tags Organisation
-// @Accept  json
-// @Produce  json
-// @Param orgID path string true "organisation id"
-// @Param organisation body models.Organisation true "Organisation Details"
-// @Success 200 {object} serverResponse
-// @Failure 400 {object} serverResponse
-// @Failure 401 {object} serverResponse
-// @Failure 500 {object} serverResponse
-// @Security ApiKeyAuth
-// @Router /organisations/{orgID} [put]
-func (a *applicationHandler) UpdateOrganisation(w http.ResponseWriter, r *http.Request) {
-
-	_ = render.Render(w, r, newServerResponse("Organisation updated successfully",
-		*getOrganisationFromContext(r.Context()), http.StatusAccepted))
-}
-
-// GetOrganisation
-// @Summary Get an organisation
-// @Description This endpoint fetches an organisation by it's id
-// @Tags Organisation
-// @Accept  json
-// @Produce  json
-// @Param orgID path string true "organisation id"
-// @Success 200 {object} serverResponse
-// @Failure 400 {object} serverResponse
-// @Failure 401 {object} serverResponse
-// @Failure 500 {object} serverResponse
-// @Security ApiKeyAuth
-// @Router /organisations/{orgID} [get]
-func (a *applicationHandler) GetOrganisation(w http.ResponseWriter, r *http.Request) {
-
-	_ = render.Render(w, r, newServerResponse("Organisation fetched successfully",
-		*getOrganisationFromContext(r.Context()), http.StatusOK))
-}
-
-// GetOrganisations
-// @Summary Get organisations
-// @Description This endpoint fetches organisations
-// @Tags Organisation
-// @Accept  json
-// @Produce  json
-// @Success 200 {object} serverResponse
-// @Failure 400 {object} serverResponse
-// @Failure 401 {object} serverResponse
-// @Failure 500 {object} serverResponse
-// @Security ApiKeyAuth
-// @Router /organisations [get]
-func (a *applicationHandler) GetOrganisations(w http.ResponseWriter, r *http.Request) {
-
-	_ = render.Render(w, r, newServerResponse("Organisations fetched successfully",
-		getOrganisationsFromContext(r.Context()), http.StatusOK))
-}
-
-func (a *applicationHandler) GetDashboardSummary(w http.ResponseWriter, r *http.Request) {
-
-	_ = render.Render(w, r, newServerResponse("Dashboard summary fetched successfully",
-		*getDashboardSummaryFromContext(r.Context()), http.StatusOK))
+	_ = render.Render(w, r, newServerResponse("App endpoint deleted successfully", nil, http.StatusOK))
 }
 
 func (a *applicationHandler) GetPaginatedApps(w http.ResponseWriter, r *http.Request) {
@@ -296,160 +417,4 @@ func (a *applicationHandler) GetPaginatedApps(w http.ResponseWriter, r *http.Req
 	_ = render.Render(w, r, newServerResponse("Apps fetched successfully",
 		pagedResponse{Content: *getApplicationsFromContext(r.Context()),
 			Pagination: getPaginationDataFromContext(r.Context())}, http.StatusOK))
-}
-
-// CreateAppMessage
-// @Summary Create app message
-// @Description This endpoint creates an app message
-// @Tags Messages
-// @Accept  json
-// @Produce  json
-// @Param message body models.Message true "Message Details"
-// @Success 200 {object} serverResponse
-// @Failure 400 {object} serverResponse
-// @Failure 401 {object} serverResponse
-// @Failure 500 {object} serverResponse
-// @Security ApiKeyAuth
-// @Router /events [post]
-func (a *applicationHandler) CreateAppMessage(w http.ResponseWriter, r *http.Request) {
-
-	_ = render.Render(w, r, newServerResponse("App event created successfully",
-		*getMessageFromContext(r.Context()), http.StatusCreated))
-}
-
-// GetAppMessage
-// @Summary Get app message
-// @Description This endpoint fetches an app message
-// @Tags Messages
-// @Accept  json
-// @Produce  json
-// @Param eventID path string true "event id"
-// @Success 200 {object} serverResponse
-// @Failure 400 {object} serverResponse
-// @Failure 401 {object} serverResponse
-// @Failure 500 {object} serverResponse
-// @Security ApiKeyAuth
-// @Router /events/{eventID} [get]
-func (a *applicationHandler) GetAppMessage(w http.ResponseWriter, r *http.Request) {
-
-	_ = render.Render(w, r, newServerResponse("App event fetched successfully",
-		*getMessageFromContext(r.Context()), http.StatusOK))
-}
-
-// ResendAppMessage
-// @Summary Resend an app message
-// @Description This endpoint resends an app message
-// @Tags Messages
-// @Accept  json
-// @Produce  json
-// @Param eventID path string true "event id"
-// @Success 200 {object} serverResponse
-// @Failure 400 {object} serverResponse
-// @Failure 401 {object} serverResponse
-// @Failure 500 {object} serverResponse
-// @Security ApiKeyAuth
-// @Router /events/{eventID}/resend [put]
-func (a *applicationHandler) ResendAppMessage(w http.ResponseWriter, r *http.Request) {
-
-	_ = render.Render(w, r, newServerResponse("App event processed for retry successfully",
-		*getMessageFromContext(r.Context()), http.StatusOK))
-}
-
-// GetAppMessagesPaged
-// @Summary Get app messages with pagination
-// @Description This endpoint fetches app messages with pagination
-// @Tags Messages
-// @Accept  json
-// @Produce  json
-// @Param appID path string true "application id"
-// @Param perPage query string false "results per page"
-// @Param page query string false "page number"
-// @Param sort query string false "sort order"
-// @Success 200 {object} serverResponse
-// @Failure 400 {object} serverResponse
-// @Failure 401 {object} serverResponse
-// @Failure 500 {object} serverResponse
-// @Security ApiKeyAuth
-// @Router /apps/{appID}/events [get]
-func (a *applicationHandler) GetAppMessagesPaged(w http.ResponseWriter, r *http.Request) {
-
-	_ = render.Render(w, r, newServerResponse("App events fetched successfully",
-		pagedResponse{Content: *getMessagesFromContext(r.Context()),
-			Pagination: getPaginationDataFromContext(r.Context())}, http.StatusOK))
-}
-
-// DeleteApp
-// @Summary Delete app
-// @Description This endpoint deletes an app
-// @Tags Application
-// @Accept  json
-// @Produce  json
-// @Param appID path string true "application id"
-// @Success 200 {object} serverResponse
-// @Failure 400 {object} serverResponse
-// @Failure 401 {object} serverResponse
-// @Failure 500 {object} serverResponse
-// @Security ApiKeyAuth
-// @Router /apps/{appID} [delete]
-func (a *applicationHandler) DeleteApp(w http.ResponseWriter, r *http.Request) {
-
-	_ = render.Render(w, r, newServerResponse("App deleted successfully",
-		nil, http.StatusOK))
-}
-
-// GetAppMessageDeliveryAttempt
-// @Summary Get app message delivery attempt
-// @Description This endpoint fetches an app message delivery attempt
-// @Tags Messages
-// @Accept  json
-// @Produce  json
-// @Param eventID path string true "event id"
-// @Param deliveryAttemptID path string true "delivery attempt id"
-// @Success 200 {object} serverResponse
-// @Failure 400 {object} serverResponse
-// @Failure 401 {object} serverResponse
-// @Failure 500 {object} serverResponse
-// @Security ApiKeyAuth
-// @Router /events/{eventID}/deliveryattempts/{deliveryAttemptID} [get]
-func (a *applicationHandler) GetAppMessageDeliveryAttempt(w http.ResponseWriter, r *http.Request) {
-
-	_ = render.Render(w, r, newServerResponse("App event delivery attempt fetched successfully",
-		*getDeliveryAttemptFromContext(r.Context()), http.StatusOK))
-}
-
-// GetAppMessageDeliveryAttempts
-// @Summary Get app message delivery attempts
-// @Description This endpoint fetches an app message's delivery attempts
-// @Tags Messages
-// @Accept  json
-// @Produce  json
-// @Param eventID path string true "event id"
-// @Success 200 {object} serverResponse
-// @Failure 400 {object} serverResponse
-// @Failure 401 {object} serverResponse
-// @Failure 500 {object} serverResponse
-// @Security ApiKeyAuth
-// @Router /events/{eventID}/deliveryattempts [get]
-func (a *applicationHandler) GetAppMessageDeliveryAttempts(w http.ResponseWriter, r *http.Request) {
-
-	_ = render.Render(w, r, newServerResponse("App event delivery attempts fetched successfully",
-		*getDeliveryAttemptsFromContext(r.Context()), http.StatusOK))
-}
-
-func (a *applicationHandler) GetAuthDetails(w http.ResponseWriter, r *http.Request) {
-
-	_ = render.Render(w, r, newServerResponse("Auth details fetched successfully",
-		getAuthConfigFromContext(r.Context()), http.StatusOK))
-}
-
-func (a *applicationHandler) GetAuthLogin(w http.ResponseWriter, r *http.Request) {
-
-	_ = render.Render(w, r, newServerResponse("Logged in successfully",
-		getAuthLoginFromContext(r.Context()), http.StatusOK))
-}
-
-func (a *applicationHandler) GetAllConfigDetails(w http.ResponseWriter, r *http.Request) {
-
-	_ = render.Render(w, r, newServerResponse("Config details fetched successfully",
-		getConfigFromContext(r.Context()), http.StatusOK))
 }

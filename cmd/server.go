@@ -40,7 +40,7 @@ func addServerCommand(a *app) *cobra.Command {
 
 			worker.NewCleaner(&a.queue, &a.messageRepo).Start()
 			worker.NewScheduler(&a.queue, &a.messageRepo).Start()
-			worker.NewProducer(&a.queue, &a.applicationRepo, &a.messageRepo, cfg.Signature, cfg.SMTP).Start()
+			worker.NewProducer(&a.queue, &a.orgRepo, &a.applicationRepo, &a.messageRepo, cfg.Signature, cfg.SMTP).Start()
 
 			log.Infof("Started convoy server in %s", time.Since(start))
 			return srv.ListenAndServe()

@@ -1262,6 +1262,9 @@
         "models.Organisation": {
             "type": "object",
             "properties": {
+                "logo_url": {
+                    "type": "string"
+                },
                 "name": {
                     "type": "string"
                 }
@@ -1270,7 +1273,12 @@
         "server.serverResponse": {
             "type": "object",
             "properties": {
-                "data": {},
+                "data": {
+                    "type": "array",
+                    "items": {
+                        "type": "integer"
+                    }
+                },
                 "message": {
                     "type": "string"
                 },

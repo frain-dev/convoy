@@ -41,12 +41,17 @@ components:
       type: object
     models.Organisation:
       properties:
+        logo_url:
+          type: string
         name:
           type: string
       type: object
     server.serverResponse:
       properties:
-        data: {}
+        data:
+          items:
+            type: integer
+          type: array
         message:
           type: string
         status:

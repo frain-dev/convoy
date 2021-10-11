@@ -63,6 +63,9 @@
 			},
 			"models.Organisation": {
 				"properties": {
+					"logo_url": {
+						"type": "string"
+					},
 					"name": {
 						"type": "string"
 					}
@@ -71,7 +74,12 @@
 			},
 			"server.serverResponse": {
 				"properties": {
-					"data": {},
+					"data": {
+						"items": {
+							"type": "integer"
+						},
+						"type": "array"
+					},
 					"message": {
 						"type": "string"
 					},

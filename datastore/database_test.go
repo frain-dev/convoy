@@ -31,7 +31,7 @@ func getDB(t *testing.T) (*mongo.Database, func()) {
 	db, err := New(getConfig())
 	require.NoError(t, err)
 
-	return db.Database("Convoy", nil), func() {
+	return db.Database("Convoy-Test", nil), func() {
 		require.NoError(t, db.Disconnect(context.Background()))
 	}
 }
