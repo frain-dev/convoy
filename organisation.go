@@ -22,12 +22,16 @@ type Organisation struct {
 	DocumentStatus DocumentStatus `json:"-" bson:"document_status"`
 }
 
+type OrganisationFilter struct {
+	Name string `json:"name" bson:"name"`
+}
+
 func (o *Organisation) IsDeleted() bool { return o.DeletedAt > 0 }
 
 func (o *Organisation) IsOwner(a *Application) bool { return o.UID == a.OrgID }
 
 type OrganisationRepository interface {
-	LoadOrganisations(context.Context) ([]*Organisation, error)
+	LoadOrganisations(context.Context, *OrganisationFilter) ([]*Organisation, error)
 	CreateOrganisation(context.Context, *Organisation) error
 	UpdateOrganisation(context.Context, *Organisation) error
 	FetchOrganisationByID(context.Context, string) (*Organisation, error)

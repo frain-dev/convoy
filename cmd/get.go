@@ -2,10 +2,12 @@ package main
 
 import (
 	"context"
+	"os"
+
+	"github.com/frain-dev/convoy"
 	"github.com/frain-dev/convoy/server/models"
 	"github.com/olekukonko/tablewriter"
 	"github.com/spf13/cobra"
-	"os"
 )
 
 func addGetComamnd(a *app) *cobra.Command {
@@ -56,9 +58,18 @@ func getOrganisations(a *app) *cobra.Command {
 		Use:     "organisations",
 		Short:   "Get organisations",
 		Aliases: []string{"orgs"},
+		Args: func(cmd *cobra.Command, args []string) error {
+			return nil
+		},
 		RunE: func(cmd *cobra.Command, args []string) error {
 
-			orgs, err := a.orgRepo.LoadOrganisations(context.Background())
+			f := &convoy.OrganisationFilter{}
+
+			if len(args) > 0 {
+				f.Name = args[0]
+			}
+
+			orgs, err := a.orgRepo.LoadOrganisations(context.Background(), f)
 			if err != nil {
 				return err
 			}

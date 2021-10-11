@@ -74,7 +74,7 @@ func Test_LoadApplicationsPaged(t *testing.T) {
 	appRepo := NewApplicationRepo(db)
 
 	apps, _, err := appRepo.LoadApplicationsPaged(context.Background(), "", models.Pageable{
-		Page: 1,
+		Page:    1,
 		PerPage: 10,
 	})
 	require.NoError(t, err)

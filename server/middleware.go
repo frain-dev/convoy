@@ -541,7 +541,9 @@ func fetchAllOrganisations(orgRepo convoy.OrganisationRepository) func(next http
 
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 
-			orgs, err := orgRepo.LoadOrganisations(r.Context())
+			name := r.URL.Query().Get("name")
+
+			orgs, err := orgRepo.LoadOrganisations(r.Context(), &convoy.OrganisationFilter{Name: name})
 			if err != nil {
 				_ = render.Render(w, r, newErrorResponse("an error occurred while fetching organisations", http.StatusInternalServerError))
 				return
