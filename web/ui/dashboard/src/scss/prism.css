@@ -23,9 +23,11 @@ pre[class*='language-'] {
 }
 pre[class*='language-'] {
 	padding: 1em;
-	margin: 0.5em 0;
+	margin: 3px 0;
 	overflow: auto;
 	border-radius: 0.3em;
+	width: 520px;
+	max-height: 500px;
 }
 :not(pre) > code[class*='language-'],
 pre[class*='language-'] {
@@ -73,7 +75,7 @@ pre[class*='language-'] {
 .token.operator,
 .token.url,
 .token.variable {
-	color: #f8f8f2;
+	color: #16192c;
 }
 .token.atrule,
 .token.attr-value,

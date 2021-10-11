@@ -172,7 +172,7 @@
 					&--item {
 						line-height: 24px;
 						font-size: 14px;
-						max-width: 245px;
+						max-width: 258px;
 						text-align: right;
 						word-wrap: break-word;
 						color: #000000;
@@ -240,7 +240,7 @@
 	select {
 		background: #ffffff;
 		border: 1px solid #f3f5f9;
-		border-radius: 10px;
+		border-radius: 8px;
 		padding: 10px;
 		display: flex;
 		align-items: center;
@@ -258,7 +258,10 @@
 		}
 
 		&.active {
-			border-color: var(--primary-color);
+			border-color: rgba(71, 125, 179, 0.2);
+			box-shadow: 0px 10px 25px rgba(151, 143, 175, 0.08);
+			color: var(--primary-color);
+			font-weight: 500;
 		}
 	}
 
@@ -309,6 +312,7 @@
 
 	&--details {
 		padding: 24px 0 0 32px;
+		width: 582px;
 
 		hr {
 			border: none;
@@ -321,7 +325,6 @@
 			padding: 8px 0 24px;
 			border-bottom: 1px solid #edeff5;
 			margin: 10px 0 24px;
-			width: 550px;
 
 			li {
 				display: flex;
@@ -360,51 +363,26 @@
 		&--tabs-data {
 			width: 100%;
 			padding-right: 25px;
-		}
-
-		&--tabs-data,
-		&--view-more {
 			opacity: 0;
 			position: absolute;
 			right: 1000px;
 			z-index: -1;
+			top: 0;
 
 			&.show {
 				opacity: 1;
 				position: initial;
 				z-index: initial;
 			}
-		}
 
-		&--view-more {
-			display: flex;
-			align-items: center;
-			justify-content: center;
-			padding-top: 30px;
-			margin-top: -60px !important;
-			position: relative;
+			h3 {
+				font-size: 0.8rem;
+				background: #fbfbfb;
+				padding: 10px 23px;
+				border-bottom: 2px solid var(--primary-color-inverse);
 
-			&::before {
-				content: '';
-				position: absolute;
-				left: 0;
-				right: 0;
-				bottom: 0;
-				top: 0;
-				z-index: 3;
-				background: linear-gradient(rgba(255, 255, 255, 0.001), #ffffff);
-			}
-
-			button {
-				padding: 3px 10px 3px 5px;
-				background: #fff;
-				border: 1px solid #eee;
-				font-size: 13px;
-				z-index: 5;
-
-				img {
-					margin-right: 10px;
-					width: 20px;
+				&:not(:first-of-type) {
+					margin-top: 20px;
 				}
 			}
 		}
@@ -453,6 +431,7 @@
 
 		.tabs {
 			border: none;
+			padding-bottom: 10px;
 
 			.tab {
 				padding: 0;
@@ -524,7 +503,7 @@
 
 		.select select,
 		.filter--button {
-			height: 42px;
+			height: 40px;
 			padding: 10px 8px;
 			outline: none;
 		}
@@ -598,9 +577,11 @@ table {
 		transition: all 0.5s;
 		cursor: pointer;
 
-		&:hover,
-		&.active {
-			background: rgba(71, 125, 179, 0.05);
+		&:not(.table--date-row) {
+			&:hover,
+			&.active {
+				background: rgba(71, 125, 179, 0.05);
+			}
 		}
 
 		.tag {
