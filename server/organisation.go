@@ -15,12 +15,38 @@ import (
 	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
+// GetOrganisation
+// @Summary Get an organisation
+// @Description This endpoint fetches an organisation by it's id
+// @Tags Organisation
+// @Accept  json
+// @Produce  json
+// @Param orgID path string true "organisation id"
+// @Success 200 {object} serverResponse
+// @Failure 400 {object} serverResponse
+// @Failure 401 {object} serverResponse
+// @Failure 500 {object} serverResponse
+// @Security ApiKeyAuth
+// @Router /organisations/{orgID} [get]
 func (a *applicationHandler) GetOrganisation(w http.ResponseWriter, r *http.Request) {
 
 	_ = render.Render(w, r, newServerResponse("Organisation fetched successfully",
 		*getOrganisationFromContext(r.Context()), http.StatusOK))
 }
 
+// CreateOrganisation
+// @Summary Create an organisation
+// @Description This endpoint creates an organisation
+// @Tags Organisation
+// @Accept  json
+// @Produce  json
+// @Param organisation body models.Organisation true "Organisation Details"
+// @Success 200 {object} serverResponse
+// @Failure 400 {object} serverResponse
+// @Failure 401 {object} serverResponse
+// @Failure 500 {object} serverResponse
+// @Security ApiKeyAuth
+// @Router /organisations [post]
 func (a *applicationHandler) CreateOrganisation(w http.ResponseWriter, r *http.Request) {
 
 	var newOrg models.Organisation
@@ -53,6 +79,20 @@ func (a *applicationHandler) CreateOrganisation(w http.ResponseWriter, r *http.R
 	_ = render.Render(w, r, newServerResponse("Organisation created successfully", org, http.StatusCreated))
 }
 
+// UpdateOrganisation
+// @Summary Update an organisation
+// @Description This endpoint updates an organisation
+// @Tags Organisation
+// @Accept  json
+// @Produce  json
+// @Param orgID path string true "organisation id"
+// @Param organisation body models.Organisation true "Organisation Details"
+// @Success 200 {object} serverResponse
+// @Failure 400 {object} serverResponse
+// @Failure 401 {object} serverResponse
+// @Failure 500 {object} serverResponse
+// @Security ApiKeyAuth
+// @Router /organisations/{orgID} [put]
 func (a *applicationHandler) UpdateOrganisation(w http.ResponseWriter, r *http.Request) {
 
 	var update models.Organisation
@@ -95,6 +135,18 @@ func (a *applicationHandler) UpdateOrganisation(w http.ResponseWriter, r *http.R
 	_ = render.Render(w, r, newServerResponse("Organisation updated successfully", org, http.StatusAccepted))
 }
 
+// GetOrganisations
+// @Summary Get organisations
+// @Description This endpoint fetches organisations
+// @Tags Organisation
+// @Accept  json
+// @Produce  json
+// @Success 200 {object} serverResponse
+// @Failure 400 {object} serverResponse
+// @Failure 401 {object} serverResponse
+// @Failure 500 {object} serverResponse
+// @Security ApiKeyAuth
+// @Router /organisations [get]
 func (a *applicationHandler) GetOrganisations(w http.ResponseWriter, r *http.Request) {
 
 	orgs, err := a.orgRepo.LoadOrganisations(r.Context())
