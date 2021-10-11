@@ -17,7 +17,6 @@ import (
 	"github.com/frain-dev/convoy/server/models"
 	"github.com/frain-dev/convoy/util"
 	pager "github.com/gobeam/mongo-go-pagination"
-	"github.com/google/uuid"
 	log "github.com/sirupsen/logrus"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 
@@ -267,63 +266,6 @@ func findEndpoint(endpoints *[]convoy.Endpoint, id string) (*convoy.Endpoint, er
 		}
 	}
 	return nil, convoy.ErrEndpointNotFound
-}
-
-func ensureNewOrganisation(orgRepo convoy.OrganisationRepository) func(next http.Handler) http.Handler {
-	return func(next http.Handler) http.Handler {
-
-		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-
-			var newOrg models.Organisation
-			err := json.NewDecoder(r.Body).Decode(&newOrg)
-			if err != nil {
-				_ = render.Render(w, r, newErrorResponse("Request is invalid", http.StatusBadRequest))
-				return
-			}
-
-			orgName := newOrg.Name
-			if util.IsStringEmpty(orgName) {
-				_ = render.Render(w, r, newErrorResponse("please provide a valid name", http.StatusBadRequest))
-				return
-			}
-			org := &convoy.Organisation{
-				UID:            uuid.New().String(),
-				OrgName:        orgName,
-				LogoURL:        newOrg.LogoURL,
-				CreatedAt:      primitive.NewDateTimeFromTime(time.Now()),
-				UpdatedAt:      primitive.NewDateTimeFromTime(time.Now()),
-				DocumentStatus: convoy.ActiveDocumentStatus,
-			}
-
-			err = orgRepo.CreateOrganisation(r.Context(), org)
-			if err != nil {
-				_ = render.Render(w, r, newErrorResponse("an error occurred while creating organisation", http.StatusInternalServerError))
-				return
-			}
-
-			r = r.WithContext(setOrganisationInContext(r.Context(), org))
-			next.ServeHTTP(w, r)
-		})
-	}
-}
-
-func fetchAllOrganisations(orgRepo convoy.OrganisationRepository) func(next http.Handler) http.Handler {
-	return func(next http.Handler) http.Handler {
-
-		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-
-			name := r.URL.Query().Get("name")
-
-			orgs, err := orgRepo.LoadOrganisations(r.Context(), &convoy.OrganisationFilter{Name: name})
-			if err != nil {
-				_ = render.Render(w, r, newErrorResponse("an error occurred while fetching organisations", http.StatusInternalServerError))
-				return
-			}
-
-			r = r.WithContext(setOrganisationsInContext(r.Context(), orgs))
-			next.ServeHTTP(w, r)
-		})
-	}
 }
 
 func requireOrganisation(orgRepo convoy.OrganisationRepository) func(next http.Handler) http.Handler {
@@ -597,10 +539,6 @@ func setOrganisationInContext(ctx context.Context, organisation *convoy.Organisa
 
 func getOrganisationFromContext(ctx context.Context) *convoy.Organisation {
 	return ctx.Value(orgCtx).(*convoy.Organisation)
-}
-
-func setOrganisationsInContext(ctx context.Context, organisations []*convoy.Organisation) context.Context {
-	return context.WithValue(ctx, orgCtx, organisations)
 }
 
 func setPageableInContext(ctx context.Context, pageable models.Pageable) context.Context {
