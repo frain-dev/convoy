@@ -17,6 +17,19 @@ import (
 	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
+// CreateAppMessage
+// @Summary Create app message
+// @Description This endpoint creates an app message
+// @Tags Messages
+// @Accept  json
+// @Produce  json
+// @Param message body models.Message true "Message Details"
+// @Success 200 {object} serverResponse
+// @Failure 400 {object} serverResponse
+// @Failure 401 {object} serverResponse
+// @Failure 500 {object} serverResponse
+// @Security ApiKeyAuth
+// @Router /events [post]
 func (a *applicationHandler) CreateAppMessage(w http.ResponseWriter, r *http.Request) {
 
 	var newMessage models.Message
@@ -117,12 +130,38 @@ func (a *applicationHandler) CreateAppMessage(w http.ResponseWriter, r *http.Req
 	_ = render.Render(w, r, newServerResponse("App event created successfully", msg, http.StatusCreated))
 }
 
+// GetAppMessage
+// @Summary Get app message
+// @Description This endpoint fetches an app message
+// @Tags Messages
+// @Accept  json
+// @Produce  json
+// @Param eventID path string true "event id"
+// @Success 200 {object} serverResponse
+// @Failure 400 {object} serverResponse
+// @Failure 401 {object} serverResponse
+// @Failure 500 {object} serverResponse
+// @Security ApiKeyAuth
+// @Router /events/{eventID} [get]
 func (a *applicationHandler) GetAppMessage(w http.ResponseWriter, r *http.Request) {
 
 	_ = render.Render(w, r, newServerResponse("App event fetched successfully",
 		*getMessageFromContext(r.Context()), http.StatusOK))
 }
 
+// ResendAppMessage
+// @Summary Resend an app message
+// @Description This endpoint resends an app message
+// @Tags Messages
+// @Accept  json
+// @Produce  json
+// @Param eventID path string true "event id"
+// @Success 200 {object} serverResponse
+// @Failure 400 {object} serverResponse
+// @Failure 401 {object} serverResponse
+// @Failure 500 {object} serverResponse
+// @Security ApiKeyAuth
+// @Router /events/{eventID}/resend [put]
 func (a *applicationHandler) ResendAppMessage(w http.ResponseWriter, r *http.Request) {
 
 	msg := getMessageFromContext(r.Context())
@@ -172,12 +211,30 @@ func (a *applicationHandler) ResendAppMessage(w http.ResponseWriter, r *http.Req
 		msg, http.StatusOK))
 }
 
+// GetMessagesPaged
+// @Summary Get app messages with pagination
+// @Description This endpoint fetches app messages with pagination
+// @Tags Messages
+// @Accept  json
+// @Produce  json
+// @Param appId query string false "application id"
+// @Param orgId query string false "organisation id"
+// @Param startDate query string false "start date"
+// @Param endDate query string false "end date"
+// @Param perPage query string false "results per page"
+// @Param page query string false "page number"
+// @Param sort query string false "sort order"
+// @Success 200 {object} serverResponse
+// @Failure 400 {object} serverResponse
+// @Failure 401 {object} serverResponse
+// @Failure 500 {object} serverResponse
+// @Security ApiKeyAuth
+// @Router /events [get]
 func (a *applicationHandler) GetMessagesPaged(w http.ResponseWriter, r *http.Request) {
 
 	pageable := getPageableFromContext(r.Context())
-
-	orgId := r.URL.Query().Get("orgId")
-	appId := r.URL.Query().Get("appId")
+	orgID := r.URL.Query().Get("orgId")
+	appID := r.URL.Query().Get("appId")
 
 	searchParams, err := getSearchParams(r)
 	if err != nil {
@@ -185,7 +242,7 @@ func (a *applicationHandler) GetMessagesPaged(w http.ResponseWriter, r *http.Req
 		return
 	}
 
-	m, paginationData, err := a.msgRepo.LoadMessagesPaged(r.Context(), orgId, appId, searchParams, pageable)
+	m, paginationData, err := a.msgRepo.LoadMessagesPaged(r.Context(), orgID, appID, searchParams, pageable)
 	if err != nil {
 		_ = render.Render(w, r, newErrorResponse("an error occurred while fetching app events", http.StatusInternalServerError))
 		log.Errorln("error while fetching events - ", err)
