@@ -45,15 +45,12 @@ func addServerCommand(a *app) *cobra.Command {
 				worker.NewProducer(queue).Start()
 			}
 
-			if queue, ok := a.scheduleQueue.(*convoy_queue.RedisQueue); ok {
+			if queue, ok := a.deadLetterQueue.(*convoy_queue.RedisQueue); ok {
 				worker.NewCleaner(queue).Start()
 			}
 
-			worker.NewCleaner(&a.queue, &a.messageRepo).Start()
-			worker.NewScheduler(&a.queue, &a.messageRepo).Start()
-
 			// register tasks.
-			convoy_task.CreateTask("EventProcessor", cfg, convoy_task.ProcessMessages)
+			convoy_task.CreateTask("EventProcessor", cfg, convoy_task.ProcessMessages(a.applicationRepo, a.messageRepo))
 			convoy_task.CreateTask("DeadLetterProcessor", cfg, convoy_task.ProcessDeadLetters)
 
 			log.Infof("Started convoy server in %s", time.Since(start))

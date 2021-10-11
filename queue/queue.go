@@ -17,16 +17,3 @@ type Job struct {
 	Err  error           `json:"err"`
 	Data *convoy.Message `json:"data"`
 }
-
-type EndpointError struct {
-	delay time.Duration
-	Err   error
-}
-
-func (e *EndpointError) Error() string {
-	return e.Err.Error()
-}
-
-func (e *EndpointError) Delay() time.Duration {
-	return e.delay
-}

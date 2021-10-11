@@ -1,27 +1,35 @@
 package worker
 
 import (
-	"github.com/frain-dev/convoy"
 	"github.com/frain-dev/convoy/queue"
-	convoy_task "github.com/frain-dev/convoy/worker/task"
+	convoy_redis "github.com/frain-dev/convoy/queue/redis"
 	log "github.com/sirupsen/logrus"
+	"github.com/vmihailenco/taskq/v3"
 )
 
 type Cleaner struct {
-	queue   *queue.Queuer
-	msgRepo *convoy.MessageRepository
+	deadLetterQueue queue.Queuer
+	consumer        *taskq.Consumer
+	quit            chan chan error
 }
 
-func NewCleaner(queuer *queue.Queuer, msgRepo *convoy.MessageRepository) *Cleaner {
+func NewCleaner(queue *convoy_redis.RedisQueue) *Cleaner {
+	consumer := taskq.NewConsumer(queue.Inner())
+
 	return &Cleaner{
-		queue:   queuer,
-		msgRepo: msgRepo,
+		deadLetterQueue: queue,
+		consumer:        consumer,
 	}
 }
 
 func (c *Cleaner) Start() {
 	go func() {
 		log.Debugln("Running cleanup tasks")
-		convoy_task.RetryAbandonedMessages(*c.queue, *c.msgRepo)
 	}()
+}
+
+func (p *Cleaner) Close() error {
+	ch := make(chan error)
+	p.quit <- ch
+	return <-ch
 }
