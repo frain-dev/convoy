@@ -5,13 +5,13 @@ import (
 	"time"
 
 	"github.com/frain-dev/convoy/config"
+	convoy_queue "github.com/frain-dev/convoy/queue/redis"
 	"github.com/frain-dev/convoy/server"
 	"github.com/frain-dev/convoy/util"
 	"github.com/frain-dev/convoy/worker"
 	convoy_task "github.com/frain-dev/convoy/worker/task"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
-	"github.com/vmihailenco/taskq/v3"
 )
 
 func addServerCommand(a *app) *cobra.Command {
@@ -41,13 +41,20 @@ func addServerCommand(a *app) *cobra.Command {
 			srv := server.New(cfg, a.messageRepo, a.applicationRepo, a.orgRepo, a.scheduleQueue)
 
 			// register workers.
+			if queue, ok := a.scheduleQueue.(*convoy_queue.RedisQueue); ok {
+				worker.NewProducer(queue).Start()
+			}
+
+			if queue, ok := a.scheduleQueue.(*convoy_queue.RedisQueue); ok {
+				worker.NewCleaner(queue).Start()
+			}
+
 			worker.NewCleaner(&a.queue, &a.messageRepo).Start()
 			worker.NewScheduler(&a.queue, &a.messageRepo).Start()
-			worker.NewProducer(&a.scheduleQueue).Start()
 
 			// register tasks.
-			taskq.RegisterTask(convoy_task.EventProcessor)
-			taskq.RegisterTask(convoy_task.DeadLetterProcessor)
+			convoy_task.CreateTask("EventProcessor", cfg, convoy_task.ProcessMessages)
+			convoy_task.CreateTask("DeadLetterProcessor", cfg, convoy_task.ProcessDeadLetters)
 
 			log.Infof("Started convoy server in %s", time.Since(start))
 			return srv.ListenAndServe()
