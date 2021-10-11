@@ -11,6 +11,7 @@ import (
 
 	"github.com/frain-dev/convoy"
 	"github.com/frain-dev/convoy/config"
+	"github.com/frain-dev/convoy/queue"
 
 	"github.com/go-chi/chi/v5/middleware"
 	"github.com/prometheus/client_golang/prometheus"
@@ -237,9 +238,9 @@ func buildRoutes(app *applicationHandler) http.Handler {
 	return router
 }
 
-func New(cfg config.Configuration, msgRepo convoy.MessageRepository, appRepo convoy.ApplicationRepository, orgRepo convoy.OrganisationRepository) *http.Server {
+func New(cfg config.Configuration, msgRepo convoy.MessageRepository, appRepo convoy.ApplicationRepository, orgRepo convoy.OrganisationRepository, scheduleQueue queue.Queuer) *http.Server {
 
-	app := newApplicationHandler(msgRepo, appRepo, orgRepo)
+	app := newApplicationHandler(msgRepo, appRepo, orgRepo, scheduleQueue)
 
 	srv := &http.Server{
 		Handler:      buildRoutes(app),

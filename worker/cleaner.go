@@ -3,7 +3,7 @@ package worker
 import (
 	"github.com/frain-dev/convoy"
 	"github.com/frain-dev/convoy/queue"
-	"github.com/frain-dev/convoy/worker/task"
+	convoy_task "github.com/frain-dev/convoy/worker/task"
 	log "github.com/sirupsen/logrus"
 )
 
@@ -22,6 +22,6 @@ func NewCleaner(queuer *queue.Queuer, msgRepo *convoy.MessageRepository) *Cleane
 func (c *Cleaner) Start() {
 	go func() {
 		log.Debugln("Running cleanup tasks")
-		task.RetryAbandonedMessages(*c.queue, *c.msgRepo)
+		convoy_task.RetryAbandonedMessages(*c.queue, *c.msgRepo)
 	}()
 }

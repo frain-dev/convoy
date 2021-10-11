@@ -6,13 +6,15 @@ import (
 	mongopagination "github.com/gobeam/mongo-go-pagination"
 
 	"github.com/frain-dev/convoy"
+	"github.com/frain-dev/convoy/queue"
 	"github.com/go-chi/render"
 )
 
 type applicationHandler struct {
-	appRepo convoy.ApplicationRepository
-	orgRepo convoy.OrganisationRepository
-	msgRepo convoy.MessageRepository
+	appRepo       convoy.ApplicationRepository
+	orgRepo       convoy.OrganisationRepository
+	msgRepo       convoy.MessageRepository
+	scheduleQueue queue.Queuer
 }
 
 type pagedResponse struct {
@@ -20,12 +22,13 @@ type pagedResponse struct {
 	Pagination *mongopagination.PaginationData `json:"pagination,omitempty"`
 }
 
-func newApplicationHandler(msgRepo convoy.MessageRepository, appRepo convoy.ApplicationRepository, orgRepo convoy.OrganisationRepository) *applicationHandler {
+func newApplicationHandler(msgRepo convoy.MessageRepository, appRepo convoy.ApplicationRepository, orgRepo convoy.OrganisationRepository, scheduleQueue queue.Queuer) *applicationHandler {
 
 	return &applicationHandler{
-		msgRepo: msgRepo,
-		appRepo: appRepo,
-		orgRepo: orgRepo,
+		msgRepo:       msgRepo,
+		appRepo:       appRepo,
+		orgRepo:       orgRepo,
+		scheduleQueue: scheduleQueue,
 	}
 }
 

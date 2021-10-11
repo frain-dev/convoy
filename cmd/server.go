@@ -8,8 +8,10 @@ import (
 	"github.com/frain-dev/convoy/server"
 	"github.com/frain-dev/convoy/util"
 	"github.com/frain-dev/convoy/worker"
+	convoy_task "github.com/frain-dev/convoy/worker/task"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
+	"github.com/vmihailenco/taskq/v3"
 )
 
 func addServerCommand(a *app) *cobra.Command {
@@ -36,11 +38,16 @@ func addServerCommand(a *app) *cobra.Command {
 				return errors.New("please provide the HTTP port in the convoy.json file")
 			}
 
-			srv := server.New(cfg, a.messageRepo, a.applicationRepo, a.orgRepo)
+			srv := server.New(cfg, a.messageRepo, a.applicationRepo, a.orgRepo, a.scheduleQueue)
 
+			// register workers.
 			worker.NewCleaner(&a.queue, &a.messageRepo).Start()
 			worker.NewScheduler(&a.queue, &a.messageRepo).Start()
-			worker.NewProducer(&a.queue, &a.applicationRepo, &a.messageRepo, cfg.Signature, cfg.SMTP).Start()
+			worker.NewProducer(&a.scheduleQueue).Start()
+
+			// register tasks.
+			taskq.RegisterTask(convoy_task.EventProcessor)
+			taskq.RegisterTask(convoy_task.DeadLetterProcessor)
 
 			log.Infof("Started convoy server in %s", time.Since(start))
 			return srv.ListenAndServe()

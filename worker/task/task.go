@@ -6,22 +6,19 @@ import (
 	"github.com/frain-dev/convoy"
 	"github.com/frain-dev/convoy/queue"
 	log "github.com/sirupsen/logrus"
+	"github.com/vmihailenco/taskq/v3"
 )
 
-func PostMessages(queue queue.Queuer, msgRepo convoy.MessageRepository) {
-	m, err := msgRepo.LoadMessagesScheduledForPosting(context.Background())
-	if err != nil {
-		log.Errorln("failed to load messages to post - ", err)
-		return
+var (
+	EventProcessor = taskq.TaskOptions{
+		Name:       "EventProcessor",
+		RetryLimit: 10,
+		Handler:    PostMessages,
 	}
+)
 
-	log.Debugln("loaded new messages with size: ", len(m))
+func PostMessages(job *queue.Job) {
 
-	err = msgRepo.UpdateStatusOfMessages(context.Background(), m, convoy.ProcessingMessageStatus)
-	if err != nil {
-		log.Errorln("failed to update status of messages - ", err)
-	}
-	queueMessages(queue, m)
 }
 
 func RetryMessages(queue queue.Queuer, msgRepo convoy.MessageRepository) {

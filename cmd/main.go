@@ -6,15 +6,17 @@ import (
 	"time"
 	_ "time/tzdata"
 
+	convoyRedis "github.com/frain-dev/convoy/queue/redis"
 	"github.com/frain-dev/convoy/util"
+	"github.com/go-redis/redis/v8"
 	log "github.com/sirupsen/logrus"
+	"github.com/vmihailenco/taskq/v3"
 	prefixed "github.com/x-cray/logrus-prefixed-formatter"
 
 	"github.com/frain-dev/convoy"
 	"github.com/frain-dev/convoy/config"
 	"github.com/frain-dev/convoy/datastore"
 	"github.com/frain-dev/convoy/queue"
-	"github.com/frain-dev/convoy/queue/redis"
 	"github.com/spf13/cobra"
 	"go.mongodb.org/mongo-driver/mongo"
 )
@@ -63,10 +65,11 @@ func main() {
 				return err
 			}
 
-			var queuer queue.Queuer
+			var rClient *redis.Client
+			var qFn taskq.Factory
 
 			if cfg.Queue.Type == config.RedisQueueProvider {
-				queuer, err = redis.New(cfg)
+				rClient, qFn, err = convoyRedis.NewClient(cfg)
 				if err != nil {
 					return err
 				}
@@ -82,7 +85,8 @@ func main() {
 			app.orgRepo = datastore.NewOrganisationRepo(conn)
 			app.applicationRepo = datastore.NewApplicationRepo(conn)
 			app.messageRepo = datastore.NewMessageRepository(conn)
-			app.queue = queuer
+			app.scheduleQueue = convoyRedis.NewQueue(rClient, qFn, "ScheduleQueue")
+			app.deadLetterQueue = convoyRedis.NewQueue(rClient, qFn, "DeadLetterQueue")
 
 			ensureMongoIndices(conn)
 
@@ -90,7 +94,12 @@ func main() {
 		},
 		PersistentPostRunE: func(cmd *cobra.Command, args []string) error {
 			defer func() {
-				err := app.queue.Close()
+				err := app.scheduleQueue.Close()
+				if err != nil {
+					log.Errorln("failed to close app queue - ", err)
+				}
+
+				err = app.deadLetterQueue.Close()
 				if err != nil {
 					log.Errorln("failed to close app queue - ", err)
 				}
@@ -130,7 +139,8 @@ type app struct {
 	orgRepo         convoy.OrganisationRepository
 	applicationRepo convoy.ApplicationRepository
 	messageRepo     convoy.MessageRepository
-	queue           queue.Queuer
+	scheduleQueue   queue.Queuer
+	deadLetterQueue queue.Queuer
 }
 
 func getCtx() (context.Context, context.CancelFunc) {

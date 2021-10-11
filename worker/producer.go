@@ -6,39 +6,34 @@ import (
 	"time"
 
 	"github.com/frain-dev/convoy"
-	"github.com/frain-dev/convoy/config"
 	"github.com/frain-dev/convoy/net"
 	"github.com/frain-dev/convoy/queue"
+	convoy_redis "github.com/frain-dev/convoy/queue/redis"
 	"github.com/frain-dev/convoy/smtp"
 	"github.com/frain-dev/convoy/util"
 	"github.com/google/uuid"
 	log "github.com/sirupsen/logrus"
+	"github.com/vmihailenco/taskq/v3"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
 type Producer struct {
-	Data            chan queue.Message
-	appRepo         *convoy.ApplicationRepository
-	msgRepo         *convoy.MessageRepository
-	dispatch        *net.Dispatcher
-	signatureConfig config.SignatureConfiguration
-	smtpConfig      config.SMTPConfiguration
-	quit            chan chan error
+	scheduleQueue queue.Queuer
+	consumer      *taskq.Consumer
+	quit          chan chan error
 }
 
-func NewProducer(queuer *queue.Queuer, appRepo *convoy.ApplicationRepository, msgRepo *convoy.MessageRepository, signatureConfig config.SignatureConfiguration, smtpConfig config.SMTPConfiguration) *Producer {
+func NewProducer(queue *convoy_redis.RedisQueue) *Producer {
+	consumer := taskq.NewConsumer(queue.Inner())
+
 	return &Producer{
-		Data:            (*queuer).Read(),
-		appRepo:         appRepo,
-		msgRepo:         msgRepo,
-		dispatch:        net.NewDispatcher(),
-		signatureConfig: signatureConfig,
-		smtpConfig:      smtpConfig,
-		quit:            make(chan chan error),
+		scheduleQueue: queue,
+		consumer:      consumer,
 	}
 }
 
 func (p *Producer) Start() {
+
 	go func() {
 		for {
 			select {
