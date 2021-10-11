@@ -104,7 +104,7 @@ func buildRoutes(app *applicationHandler) http.Handler {
 			msgRouter.Use(requireAuth())
 
 			msgRouter.With(instrumentPath("/events")).Post("/", app.CreateAppMessage)
-			msgRouter.With(pagination).Get("/", app.GetMessagesPaged)
+			msgRouter.With(pagination).Get("/", app.GetMessagesPaged) //TODO(subomi,daniel): this should have /applications/{appID} and be renamed to GetAppMessagesPaged or do we pass the appID param in the request body
 
 			msgRouter.Route("/{eventID}", func(msgSubRouter chi.Router) {
 				msgSubRouter.Use(requireMessage(app.msgRepo))
