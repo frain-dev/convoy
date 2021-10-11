@@ -217,7 +217,10 @@ func (a *applicationHandler) ResendAppMessage(w http.ResponseWriter, r *http.Req
 // @Tags Messages
 // @Accept  json
 // @Produce  json
-// @Param appID path string true "application id"
+// @Param appId query string false "application id"
+// @Param orgId query string false "organisation id"
+// @Param startDate query string false "start date"
+// @Param endDate query string false "end date"
 // @Param perPage query string false "results per page"
 // @Param page query string false "page number"
 // @Param sort query string false "sort order"
@@ -230,7 +233,8 @@ func (a *applicationHandler) ResendAppMessage(w http.ResponseWriter, r *http.Req
 func (a *applicationHandler) GetMessagesPaged(w http.ResponseWriter, r *http.Request) {
 
 	pageable := getPageableFromContext(r.Context())
-	appId := r.URL.Query().Get("appId")
+	orgID := r.URL.Query().Get("orgId")
+	appID := r.URL.Query().Get("appId")
 
 	searchParams, err := getSearchParams(r)
 	if err != nil {
@@ -238,7 +242,7 @@ func (a *applicationHandler) GetMessagesPaged(w http.ResponseWriter, r *http.Req
 		return
 	}
 
-	m, paginationData, err := a.msgRepo.LoadMessagesPaged(r.Context(), "", appId, searchParams, pageable)
+	m, paginationData, err := a.msgRepo.LoadMessagesPaged(r.Context(), orgID, appID, searchParams, pageable)
 	if err != nil {
 		_ = render.Render(w, r, newErrorResponse("an error occurred while fetching app events", http.StatusInternalServerError))
 		log.Errorln("error while fetching events - ", err)

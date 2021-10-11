@@ -49,7 +49,6 @@ components:
     server.serverResponse:
       properties:
         data:
-          description: 'TODO(subomi,daniel): this makes the endpoint doc vauge'
           items:
             type: integer
           type: array
@@ -535,9 +534,23 @@ paths:
       description: This endpoint fetches app messages with pagination
       parameters:
       - description: application id
-        in: path
-        name: appID
-        required: true
+        in: query
+        name: appId
+        schema:
+          type: string
+      - description: organisation id
+        in: query
+        name: orgId
+        schema:
+          type: string
+      - description: start date
+        in: query
+        name: startDate
+        schema:
+          type: string
+      - description: end date
+        in: query
+        name: endDate
         schema:
           type: string
       - description: results per page

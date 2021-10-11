@@ -27,11 +27,12 @@ func newErrorResponse(msg string, statusCode int) serverResponse {
 	}
 }
 
+// TODO(subomi,daniel): the data type of the Data field makes the generated doc vague
 type serverResponse struct {
 	Response
 	Status  bool            `json:"status"`
 	Message string          `json:"message"`
-	Data    json.RawMessage `json:"data,omitempty"` // TODO(subomi,daniel): this makes the endpoint doc vauge
+	Data    json.RawMessage `json:"data,omitempty"`
 }
 
 func newServerResponse(msg string, object interface{}, statusCode int) serverResponse {

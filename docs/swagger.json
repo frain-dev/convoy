@@ -649,9 +649,26 @@
                     {
                         "type": "string",
                         "description": "application id",
-                        "name": "appID",
-                        "in": "path",
-                        "required": true
+                        "name": "appId",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "organisation id",
+                        "name": "orgId",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "start date",
+                        "name": "startDate",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "end date",
+                        "name": "endDate",
+                        "in": "query"
                     },
                     {
                         "type": "string",
@@ -1277,7 +1294,6 @@
             "type": "object",
             "properties": {
                 "data": {
-                    "description": "TODO(subomi,daniel): this makes the endpoint doc vauge",
                     "type": "array",
                     "items": {
                         "type": "integer"
