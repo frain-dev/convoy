@@ -55,7 +55,7 @@ func Test_LoadOrganisations(t *testing.T) {
 
 	orgRepo := NewOrganisationRepo(db)
 
-	orgs, err := orgRepo.LoadOrganisations(context.Background())
+	orgs, err := orgRepo.LoadOrganisations(context.Background(), &convoy.OrganisationFilter{})
 	require.NoError(t, err)
 
 	require.True(t, len(orgs) > 0)
