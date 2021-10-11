@@ -49,6 +49,7 @@ components:
     server.serverResponse:
       properties:
         data:
+          description: 'TODO(subomi,daniel): this makes the endpoint doc vauge'
           items:
             type: integer
           type: array

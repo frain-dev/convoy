@@ -1274,6 +1274,7 @@
             "type": "object",
             "properties": {
                 "data": {
+                    "description": "TODO(subomi,daniel): this makes the endpoint doc vauge",
                     "type": "array",
                     "items": {
                         "type": "integer"
