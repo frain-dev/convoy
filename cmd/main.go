@@ -6,6 +6,8 @@ import (
 	"time"
 	_ "time/tzdata"
 
+	"github.com/getsentry/sentry-go"
+
 	"github.com/frain-dev/convoy/util"
 	log "github.com/sirupsen/logrus"
 	prefixed "github.com/x-cray/logrus-prefixed-formatter"
@@ -62,6 +64,14 @@ func main() {
 			if err != nil {
 				return err
 			}
+
+			err = sentry.Init(sentry.ClientOptions{
+				Dsn: cfg.Sentry.Dsn,
+			})
+			if err != nil {
+				return err
+			}
+			defer sentry.Flush(2 * time.Second)
 
 			var queuer queue.Queuer
 

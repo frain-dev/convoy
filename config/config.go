@@ -19,6 +19,10 @@ type DatabaseConfiguration struct {
 	Dsn string `json:"dsn"`
 }
 
+type SentryConfiguration struct {
+	Dsn string `json:"dsn"`
+}
+
 type ServerConfiguration struct {
 	HTTP struct {
 		Port uint32 `json:"port"`
@@ -77,6 +81,7 @@ type Configuration struct {
 	UIAuth            UIAuthConfiguration    `json:"ui,omitempty"`
 	UIAuthorizedUsers map[string]string      `json:"-"`
 	Database          DatabaseConfiguration  `json:"database"`
+	Sentry            SentryConfiguration    `json:"sentry"`
 	Queue             QueueConfiguration     `json:"queue"`
 	Server            ServerConfiguration    `json:"server"`
 	Strategy          StrategyConfiguration  `json:"strategy"`
@@ -136,6 +141,10 @@ func LoadConfig(p string) error {
 				Port: uint32(port),
 			},
 		}
+	}
+
+	if sentryDsn := os.Getenv("CONVOY_SENTRY_DSN"); sentryDsn != "" {
+		c.Sentry = SentryConfiguration{Dsn: sentryDsn}
 	}
 
 	if signatureHeader := os.Getenv("CONVOY_SIGNATURE_HEADER"); signatureHeader != "" {
