@@ -6,39 +6,43 @@ import RefreshIcon from '../../assets/img/refresh-icon.svg';
 import CalendarIcon from '../../assets/img/calendar-icon.svg';
 import LinkIcon from '../../assets/img/link-icon.svg';
 import AngleArrowDownIcon from '../../assets/img/angle-arrow-down.svg';
-import AngleArrowUpIcon from '../../assets/img/angle-arrow-up.svg';
 import ConvoyLogo from '../../assets/img/logo.svg';
 import RetryIcon from '../../assets/img/retry-icon.svg';
 import EmptyStateImage from '../../assets/img/empty-state-img.svg';
 import ViewEventsIcon from '../../assets/img/view-events-icon.svg';
 import Chart from 'chart.js/auto';
 import { DateRange } from 'react-date-range';
-import ReactJson from 'react-json-view';
 import { request } from '../../services/https.service';
 import './style.scss';
 import 'react-date-range/dist/styles.css';
 import 'react-date-range/dist/theme/default.css';
 import { showNotification } from '../../components/app-notification';
 import { getDate, getTime, logout } from '../../helpers/common.helper';
+import Prism from 'prismjs';
+import '../../scss/prism.css';
+import '../../helpers/prism-line-plugin';
 
 const moment = require('moment');
 
 function DashboardPage() {
 	const [dashboardData, setDashboardData] = useState({ apps: 0, messages: 0, messageData: [] });
-	const [viewAllEventData, toggleViewAllEventDataState] = useState(false);
 	const [showDropdown, toggleShowDropdown] = useState(false);
-	const [viewAllResponseData, toggleViewAllResponseData] = useState(false);
 	const [apps, setAppsData] = useState({ content: [], pagination: { page: 1, totalPage: 0 } });
 	const [events, setEventsData] = useState({ content: [], pagination: { page: 1, totalPage: 0 } });
 	const [displayedEvents, setDisplayedEvents] = useState([]);
 	const [tabs] = useState(['events', 'apps']);
 	const [activeTab, setActiveTab] = useState('events');
+	const [eventDetailsTabs] = useState([
+		{ id: 'data', label: 'Event Data' },
+		{ id: 'response', label: 'Response Header' },
+		{ id: 'request', label: 'Request Header' }
+	]);
+	const [eventDetailsActiveTab, setEventDetailsActiveTab] = useState('data');
 	const [showFilterCalendar, toggleShowFilterCalendar] = useState(false);
 	const [eventAppFilterActive, toggleEventAppFilterActive] = useState(false);
 	const [eventDateFilterActive, toggleEventDateFilterActive] = useState(false);
 	const [showEventFilterCalendar, toggleShowEventFilterCalendar] = useState(false);
 	const [eventApp, setEventApp] = useState('');
-	const [organisations, setOrganisations] = useState([]);
 	const [OrganisationDetails, setOrganisationDetails] = useState({
 		database: {
 			dsn: ''
@@ -79,7 +83,9 @@ function DashboardPage() {
 		api_version: '',
 		updated_at: 0,
 		deleted_at: 0,
-		response_data: ''
+		response_data: '',
+		response_http_header: {},
+		request_http_header: {}
 	});
 	const [detailsItem, setDetailsItem] = useState();
 	const [filterFrequency, setFilterFrequency] = useState('');
@@ -97,11 +103,6 @@ function DashboardPage() {
 			key: 'selection'
 		}
 	]);
-
-	const [jsonStyle] = useState({
-		fontSize: '12px',
-		lineHeight: '25px'
-	});
 
 	const [options] = useState({
 		plugins: {
@@ -203,6 +204,7 @@ function DashboardPage() {
 				})
 			).data;
 			setEventDeliveryAtempt(deliveryAttemptsResponse.data[deliveryAttemptsResponse.data.length - 1]);
+			Prism.highlightAll();
 		} catch (error) {
 			return error;
 		}
@@ -268,8 +270,9 @@ function DashboardPage() {
 						url: '/organisations'
 					})
 				).data;
-				setOrganisations(organisationsResponse.data);
-				setActiveOrganisation(organisationsResponse.data[0]);
+				if (organisationsResponse.data.length > 0) {
+					setActiveOrganisation(organisationsResponse.data[0]);
+				}
 			} catch (error) {
 				return error;
 			}
@@ -277,8 +280,7 @@ function DashboardPage() {
 
 		const fetchDashboardData = async () => {
 			try {
-				if (organisations.length === 0) await getOrganisations();
-				if (!activeorganisation.uid) return;
+				if (!activeorganisation.uid) await getOrganisations();
 				const { startDate, endDate } = setDateForFilter(filterDates[0]);
 				const dashboardResponse = await request({
 					url: `/dashboard/${activeorganisation.uid}/summary?startDate=${startDate}&endDate=${endDate}&type=${filterFrequency || 'daily'}`
@@ -319,7 +321,7 @@ function DashboardPage() {
 		getOrganisationDetails();
 		getApps({ page: 1 });
 		getEvents({ page: 1 });
-	}, [options, activeTab, filterDates, activeorganisation, organisations, filterFrequency, getEvents, getApps]);
+	}, [options, activeTab, filterDates, activeorganisation, filterFrequency, getEvents, getApps]);
 
 	return (
 		<div className="dashboard">
@@ -405,7 +407,7 @@ function DashboardPage() {
 							</li>
 
 							<li className="list-item">
-								<div className="list-item--label">Database URL</div>
+								<div className="list-item--label">DB URL</div>
 								<div className="list-item--item">{OrganisationDetails.database.dsn}</div>
 							</li>
 
@@ -536,9 +538,11 @@ function DashboardPage() {
 														<tr
 															key={index}
 															onClick={() => {
+																Prism.highlightAll();
 																setDetailsItem(event);
 																getDelieveryAttempts(event.uid);
 															}}
+															className={event.uid === detailsItem?.uid ? 'active' : ''}
 															id={'event' + index}>
 															<td>
 																<div className="has-retry">
@@ -553,11 +557,7 @@ function DashboardPage() {
 																<div>{event.metadata.num_trials}</div>
 															</td>
 															<td>
-																<div>
-																	{event.metadata.num_trials < event.metadata.retry_limit && event.status !== 'Success'
-																		? `${getDate(event.metadata.next_send_time)} - ${getTime(event.metadata.next_send_time)}`
-																		: '-'}
-																</div>
+																<div>{event.metadata.num_trials < event.metadata.retry_limit && event.status !== 'Success' ? getTime(event.metadata.next_send_time) : '-'}</div>
 															</td>
 															<td>
 																<div>{getTime(event.created_at)}</div>
@@ -609,14 +609,14 @@ function DashboardPage() {
 												<th scope="col">Name</th>
 												<th scope="col">Created</th>
 												<th scope="col">Updated</th>
-												<th scope="col">Number of Events</th>
-												<th scope="col">Number of Endpoints</th>
+												<th scope="col">Events No</th>
+												<th scope="col">Endpoints No</th>
 												<th scope="col"></th>
 											</tr>
 										</thead>
 										<tbody>
 											{apps.content.map((app, index) => (
-												<tr key={index} onClick={() => setDetailsItem(app)}>
+												<tr key={index} onClick={() => setDetailsItem(app)} className={app.uid === detailsItem?.uid ? 'active' : ''}>
 													<td>
 														<div>{app.name}</div>
 													</td>
@@ -705,41 +705,60 @@ function DashboardPage() {
 									<div className="label">Last Updated</div>
 									<div className="value">{getDate(detailsItem.updated_at)}</div>
 								</li>
+								{detailsItem.support_email && (
+									<li>
+										<div className="label">Support Email</div>
+										<div className="value">{detailsItem.support_email}</div>
+									</li>
+								)}
 							</ul>
 
 							{activeTab === 'events' && (
-								<div className="dashboard--logs--details--req-res">
-									<h4>Event Data</h4>
-									<div className={'dashboard--logs--details--event-data ' + (viewAllEventData && detailsItem.data ? '' : 'data-hidden')}>
-										<ReactJson src={detailsItem.data} iconStyle="square" displayDataTypes={false} enableClipboard={false} style={jsonStyle} name={false} />
-									</div>
-									{detailsItem.data && (
-										<div className="dashboard--logs--details--view-more">
-											<button className="has-icon" onClick={() => toggleViewAllEventDataState(!viewAllEventData)}>
-												<img src={viewAllEventData ? AngleArrowUpIcon : AngleArrowDownIcon} alt={viewAllEventData ? 'angle arrow up' : 'angle arrow down'} />
-												{viewAllEventData ? 'Hide more' : 'View more'}
+								<ul className="tabs">
+									{eventDetailsTabs.map(tab => (
+										<li className={'tab ' + (eventDetailsActiveTab === tab.id ? 'active' : '')} key={tab.id}>
+											<button className="primary outline" onClick={() => setEventDetailsActiveTab(tab.id)}>
+												{tab.label}
 											</button>
-										</div>
-									)}
+										</li>
+									))}
+								</ul>
+							)}
 
-									<hr />
+							{activeTab === 'events' && (
+								<div className="dashboard--logs--details--req-res">
+									<div className={'dashboard--logs--details--tabs-data ' + (eventDetailsActiveTab === 'data' ? 'show' : '')}>
+										<pre className="line-numbers">
+											<code className="lang-javascript">{detailsItem.data ? JSON.stringify(detailsItem.data, null, 4).replaceAll(/"([^"]+)":/g, '$1:') : ''}</code>
+										</pre>
+									</div>
 
-									<h4>Response Data</h4>
-									{eventDeliveryAtempt && (
-										<div>
-											<div className={'dashboard--logs--details--response-data ' + (viewAllResponseData && eventDeliveryAtempt.response_data ? 'data-hidden' : '')}>
-												{eventDeliveryAtempt.response_data}
-											</div>
-											{eventDeliveryAtempt.response_data && eventDeliveryAtempt.response_data.length > 60 && (
-												<div className="dashboard--logs--details--view-more">
-													<button className="has-icon" onClick={() => toggleViewAllResponseData(!viewAllResponseData)}>
-														<img src={viewAllResponseData ? AngleArrowUpIcon : AngleArrowDownIcon} alt={viewAllResponseData ? 'angle arrow up' : 'angle arrow down'} />
-														{viewAllResponseData ? 'Hide more' : 'View more'}
-													</button>
-												</div>
-											)}
-										</div>
-									)}
+									<div className={'dashboard--logs--details--tabs-data ' + (eventDetailsActiveTab === 'response' ? 'show' : '')}>
+										<h3>Header</h3>
+										<pre className="line-numbers">
+											<code className="lang-javascript">
+												{eventDeliveryAtempt?.response_http_header
+													? JSON.stringify(eventDeliveryAtempt.response_http_header, null, 4).replaceAll(/"([^"]+)":/g, '$1:')
+													: 'No response header was sent'}
+											</code>
+										</pre>
+
+										<h3>Body</h3>
+										<pre className="line-numbers">
+											<code className="lang-html">{eventDeliveryAtempt?.response_data ? eventDeliveryAtempt.response_data : ''}</code>
+										</pre>
+									</div>
+
+									<div className={'dashboard--logs--details--tabs-data ' + (eventDetailsActiveTab === 'request' ? 'show' : '')}>
+										<h3>Header</h3>
+										<pre className="line-numbers">
+											<code className="lang-javascript">
+												{eventDeliveryAtempt?.request_http_header
+													? JSON.stringify(eventDeliveryAtempt.request_http_header, null, 4).replaceAll(/"([^"]+)":/g, '$1:')
+													: 'No request header was sent'}
+											</code>
+										</pre>
+									</div>
 								</div>
 							)}
 
