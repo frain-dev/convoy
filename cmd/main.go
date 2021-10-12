@@ -6,6 +6,10 @@ import (
 	"time"
 	_ "time/tzdata"
 
+	"github.com/google/uuid"
+	"github.com/pkg/errors"
+	"go.mongodb.org/mongo-driver/bson/primitive"
+
 	"github.com/frain-dev/convoy/util"
 	log "github.com/sirupsen/logrus"
 	prefixed "github.com/x-cray/logrus-prefixed-formatter"
@@ -85,6 +89,10 @@ func main() {
 			app.queue = queuer
 
 			ensureMongoIndices(conn)
+			err = ensureDefaultGroup(context.Background(), app.orgRepo)
+			if err != nil {
+				return err
+			}
 
 			return nil
 		},
@@ -124,6 +132,32 @@ func ensureMongoIndices(conn *mongo.Database) {
 
 	datastore.EnsureIndex(conn, datastore.MsgCollection, "uid", true)
 	datastore.EnsureIndex(conn, datastore.MsgCollection, "event_type", false)
+}
+
+func ensureDefaultGroup(ctx context.Context, groupRepo convoy.OrganisationRepository) error {
+	groups, err := groupRepo.LoadOrganisations(ctx)
+	if err != nil {
+		return errors.Wrap(err, "failed to load groups")
+	}
+
+	// a group already exists, so return
+	if len(groups) != 0 {
+		return nil
+	}
+
+	defaultGroup := &convoy.Organisation{
+		UID:            uuid.New().String(),
+		OrgName:        "default-group",
+		CreatedAt:      primitive.NewDateTimeFromTime(time.Now()),
+		UpdatedAt:      primitive.NewDateTimeFromTime(time.Now()),
+		DocumentStatus: convoy.ActiveDocumentStatus,
+	}
+
+	err = groupRepo.CreateOrganisation(ctx, defaultGroup)
+	if err != nil {
+		return errors.Wrap(err, "failed to create default group")
+	}
+	return nil
 }
 
 type app struct {

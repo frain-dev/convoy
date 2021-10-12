@@ -126,6 +126,7 @@ func buildRoutes(app *applicationHandler) http.Handler {
 	// UI API.
 	router.Route("/ui", func(uiRouter chi.Router) {
 		uiRouter.Use(jsonResponse)
+		uiRouter.Post("/init", app.CreateOrganisation)
 
 		uiRouter.Route("/dashboard/{orgID}", func(dashboardRouter chi.Router) {
 			dashboardRouter.Use(requireUIAuth())
