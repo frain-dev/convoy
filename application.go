@@ -27,7 +27,7 @@ const (
 type Application struct {
 	ID           primitive.ObjectID `json:"-" bson:"_id"`
 	UID          string             `json:"uid" bson:"uid"`
-	OrgID        string             `json:"org_id" bson:"org_id"`
+	GroupID      string             `json:"group_id" bson:"group_id"`
 	Title        string             `json:"name" bson:"title"`
 	SupportEmail string             `json:"support_email" bson:"support_email"`
 
@@ -62,8 +62,8 @@ type ApplicationRepository interface {
 	FindApplicationByID(context.Context, string) (*Application, error)
 	UpdateApplication(context.Context, *Application) error
 	DeleteApplication(context.Context, *Application) error
-	LoadApplicationsPagedByOrgId(context.Context, string, models.Pageable) ([]Application, pager.PaginationData, error)
-	SearchApplicationsByOrgId(context.Context, string, models.SearchParams) ([]Application, error)
+	LoadApplicationsPagedByGroupId(context.Context, string, models.Pageable) ([]Application, pager.PaginationData, error)
+	SearchApplicationsByGroupId(context.Context, string, models.SearchParams) ([]Application, error)
 	FindApplicationEndpointByID(context.Context, string, string) (*Endpoint, error)
 	UpdateApplicationEndpointsStatus(context.Context, string, []string, EndpointStatus) error
 }

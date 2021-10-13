@@ -15,21 +15,10 @@ import (
 	"github.com/golang/mock/gomock"
 )
 
-func TestApplicationHandler_GetOrganisation(t *testing.T) {
-
-	var app *applicationHandler
+func TestApplicationHandler_GetGroup(t *testing.T) {
 
 	realOrgID := "1234567890"
 	fakeOrgID := "12345"
-
-	ctrl := gomock.NewController(t)
-	defer ctrl.Finish()
-
-	orgRepo := mocks.NewMockOrganisationRepository(ctrl)
-	appRepo := mocks.NewMockApplicationRepository(ctrl)
-	msgRepo := mocks.NewMockMessageRepository(ctrl)
-
-	app = newApplicationHandler(msgRepo, appRepo, orgRepo)
 
 	tt := []struct {
 		name       string
@@ -40,46 +29,62 @@ func TestApplicationHandler_GetOrganisation(t *testing.T) {
 		dbFn       func(app *applicationHandler)
 	}{
 		{
-			name:       "organisation not found",
+			name:       "group not found",
 			cfgPath:    "./testdata/Auth_Config/basic-convoy.json",
 			method:     http.MethodGet,
-			statusCode: http.StatusNotFound,
+			statusCode: http.StatusInternalServerError,
 			id:         fakeOrgID,
 			dbFn: func(app *applicationHandler) {
-				o, _ := app.orgRepo.(*mocks.MockOrganisationRepository)
-				o.EXPECT().
-					FetchOrganisationByID(gomock.Any(), fakeOrgID).
-					Return(nil, convoy.ErrOrganisationNotFound).Times(1)
+				g, _ := app.groupRepo.(*mocks.MockGroupRepository)
+				g.EXPECT().
+					LoadGroups(gomock.Any()).
+					Return(nil, convoy.ErrGroupNotFound).Times(1)
+
 			},
 		},
 		{
-			name:       "valid organisation",
+			name:       "valid group",
 			cfgPath:    "./testdata/Auth_Config/basic-convoy.json",
 			method:     http.MethodGet,
 			statusCode: http.StatusOK,
 			id:         realOrgID,
 			dbFn: func(app *applicationHandler) {
-				orgRepo.EXPECT().
-					FetchOrganisationByID(gomock.Any(), realOrgID).Times(1).
-					Return(&convoy.Organisation{
-						UID:     realOrgID,
-						OrgName: "Valid organisation",
+				g, _ := app.groupRepo.(*mocks.MockGroupRepository)
+				g.EXPECT().
+					LoadGroups(gomock.Any()).Times(1).
+					Return([]*convoy.Group{
+						{
+							UID:  realOrgID,
+							Name: "Valid group",
+						},
 					}, nil)
+
 			},
 		},
 	}
 
 	for _, tc := range tt {
 		t.Run(tc.name, func(t *testing.T) {
+			var app *applicationHandler
+
+			ctrl := gomock.NewController(t)
+			defer ctrl.Finish()
+
+			orgRepo := mocks.NewMockGroupRepository(ctrl)
+			appRepo := mocks.NewMockApplicationRepository(ctrl)
+			msgRepo := mocks.NewMockMessageRepository(ctrl)
+
+			app = newApplicationHandler(msgRepo, appRepo, orgRepo)
+
 			// Arrange
-			url := fmt.Sprintf("/v1/organisations/%s", tc.id)
+			url := fmt.Sprintf("/v1/groups/%s", tc.id)
 			req := httptest.NewRequest(tc.method, url, nil)
 			req.SetBasicAuth("test", "test")
 			req.Header.Add("Content-Type", "application/json")
 			w := httptest.NewRecorder()
 
 			rctx := chi.NewRouteContext()
-			rctx.URLParams.Add("orgID", tc.id)
+			rctx.URLParams.Add("groupID", tc.id)
 
 			req = req.Clone(context.WithValue(req.Context(), chi.RouteCtxKey, rctx))
 
@@ -107,17 +112,7 @@ func TestApplicationHandler_GetOrganisation(t *testing.T) {
 	}
 }
 
-func TestApplicationHandler_CreateOrganisation(t *testing.T) {
-	var app *applicationHandler
-
-	ctrl := gomock.NewController(t)
-	defer ctrl.Finish()
-
-	orgRepo := mocks.NewMockOrganisationRepository(ctrl)
-	appRepo := mocks.NewMockApplicationRepository(ctrl)
-	msgRepo := mocks.NewMockMessageRepository(ctrl)
-
-	app = newApplicationHandler(msgRepo, appRepo, orgRepo)
+func TestApplicationHandler_CreateGroup(t *testing.T) {
 
 	bodyReader := strings.NewReader(`{"name": "ABC_DEF_TEST_UPDATE"}`)
 
@@ -130,15 +125,15 @@ func TestApplicationHandler_CreateOrganisation(t *testing.T) {
 		dbFn       func(*applicationHandler)
 	}{
 		{
-			name:       "valid organisation",
+			name:       "valid group",
 			cfgPath:    "./testdata/Auth_Config/basic-convoy.json",
 			method:     http.MethodPost,
 			statusCode: http.StatusCreated,
 			body:       bodyReader,
 			dbFn: func(app *applicationHandler) {
-				o, _ := app.orgRepo.(*mocks.MockOrganisationRepository)
+				o, _ := app.groupRepo.(*mocks.MockGroupRepository)
 				o.EXPECT().
-					CreateOrganisation(gomock.Any(), gomock.Any()).Times(1).
+					CreateGroup(gomock.Any(), gomock.Any()).Times(1).
 					Return(nil)
 			},
 		},
@@ -146,8 +141,19 @@ func TestApplicationHandler_CreateOrganisation(t *testing.T) {
 
 	for _, tc := range tt {
 		t.Run(tc.name, func(t *testing.T) {
+			var app *applicationHandler
+
+			ctrl := gomock.NewController(t)
+			defer ctrl.Finish()
+
+			orgRepo := mocks.NewMockGroupRepository(ctrl)
+			appRepo := mocks.NewMockApplicationRepository(ctrl)
+			msgRepo := mocks.NewMockMessageRepository(ctrl)
+
+			app = newApplicationHandler(msgRepo, appRepo, orgRepo)
+
 			// Arrange
-			req := httptest.NewRequest(tc.method, "/v1/organisations", tc.body)
+			req := httptest.NewRequest(tc.method, "/v1/groups", tc.body)
 			req.SetBasicAuth("test", "test")
 			req.Header.Add("Content-Type", "application/json")
 			w := httptest.NewRecorder()
@@ -175,17 +181,7 @@ func TestApplicationHandler_CreateOrganisation(t *testing.T) {
 	}
 }
 
-func TestApplicationHandler_UpdateOrganisation(t *testing.T) {
-	var app *applicationHandler
-
-	ctrl := gomock.NewController(t)
-	defer ctrl.Finish()
-
-	orgRepo := mocks.NewMockOrganisationRepository(ctrl)
-	appRepo := mocks.NewMockApplicationRepository(ctrl)
-	msgRepo := mocks.NewMockMessageRepository(ctrl)
-
-	app = newApplicationHandler(msgRepo, appRepo, orgRepo)
+func TestApplicationHandler_UpdateGroup(t *testing.T) {
 
 	realOrgID := "1234567890"
 
@@ -200,23 +196,25 @@ func TestApplicationHandler_UpdateOrganisation(t *testing.T) {
 		dbFn       func(app *applicationHandler)
 	}{
 		{
-			name:       "valid organisation update",
+			name:       "valid group update",
 			cfgPath:    "./testdata/Auth_Config/basic-convoy.json",
 			method:     http.MethodPut,
 			statusCode: http.StatusAccepted,
 			orgID:      realOrgID,
 			body:       bodyReader,
 			dbFn: func(app *applicationHandler) {
-				o, _ := app.orgRepo.(*mocks.MockOrganisationRepository)
-				o.EXPECT().
-					UpdateOrganisation(gomock.Any(), gomock.Any()).Times(1).
+				g, _ := app.groupRepo.(*mocks.MockGroupRepository)
+				g.EXPECT().
+					UpdateGroup(gomock.Any(), gomock.Any()).Times(1).
 					Return(nil)
 
-				o.EXPECT().
-					FetchOrganisationByID(gomock.Any(), gomock.Any()).Times(2).
-					Return(&convoy.Organisation{
-						UID:     realOrgID,
-						OrgName: "Valid organisation update",
+				g.EXPECT().
+					LoadGroups(gomock.Any()).Times(1).
+					Return([]*convoy.Group{
+						{
+							UID:  realOrgID,
+							Name: "Valid group",
+						},
 					}, nil)
 			},
 		},
@@ -224,8 +222,19 @@ func TestApplicationHandler_UpdateOrganisation(t *testing.T) {
 
 	for _, tc := range tt {
 		t.Run(tc.name, func(t *testing.T) {
+			var app *applicationHandler
+
+			ctrl := gomock.NewController(t)
+			defer ctrl.Finish()
+
+			orgRepo := mocks.NewMockGroupRepository(ctrl)
+			appRepo := mocks.NewMockApplicationRepository(ctrl)
+			msgRepo := mocks.NewMockMessageRepository(ctrl)
+
+			app = newApplicationHandler(msgRepo, appRepo, orgRepo)
+
 			// Arrange
-			url := fmt.Sprintf("/v1/organisations/%s", tc.orgID)
+			url := fmt.Sprintf("/v1/groups/%s", tc.orgID)
 			req := httptest.NewRequest(tc.method, url, tc.body)
 			req.SetBasicAuth("test", "test")
 			req.Header.Add("Content-Type", "application/json")
@@ -261,17 +270,7 @@ func TestApplicationHandler_UpdateOrganisation(t *testing.T) {
 
 }
 
-func TestApplicationHandler_GetOrganisations(t *testing.T) {
-	var app *applicationHandler
-
-	ctrl := gomock.NewController(t)
-	defer ctrl.Finish()
-
-	orgRepo := mocks.NewMockOrganisationRepository(ctrl)
-	appRepo := mocks.NewMockApplicationRepository(ctrl)
-	msgRepo := mocks.NewMockMessageRepository(ctrl)
-
-	app = newApplicationHandler(msgRepo, appRepo, orgRepo)
+func TestApplicationHandler_GetGroups(t *testing.T) {
 
 	realOrgID := "1234567890"
 
@@ -283,18 +282,18 @@ func TestApplicationHandler_GetOrganisations(t *testing.T) {
 		dbFn       func(app *applicationHandler)
 	}{
 		{
-			name:       "valid organisations",
+			name:       "valid groups",
 			cfgPath:    "./testdata/Auth_Config/basic-convoy.json",
 			method:     http.MethodGet,
 			statusCode: http.StatusOK,
 			dbFn: func(app *applicationHandler) {
-				o, _ := app.orgRepo.(*mocks.MockOrganisationRepository)
+				o, _ := app.groupRepo.(*mocks.MockGroupRepository)
 				o.EXPECT().
-					LoadOrganisations(gomock.Any()).Times(1).
-					Return([]*convoy.Organisation{
+					LoadGroups(gomock.Any()).Times(1).
+					Return([]*convoy.Group{
 						{
-							UID:     realOrgID,
-							OrgName: "Valid organisations - 0",
+							UID:  realOrgID,
+							Name: "Valid groups - 0",
 						},
 					}, nil)
 			},
@@ -303,7 +302,18 @@ func TestApplicationHandler_GetOrganisations(t *testing.T) {
 
 	for _, tc := range tt {
 		t.Run(tc.name, func(t *testing.T) {
-			req := httptest.NewRequest(tc.method, "/v1/organisations", nil)
+			var app *applicationHandler
+
+			ctrl := gomock.NewController(t)
+			defer ctrl.Finish()
+
+			orgRepo := mocks.NewMockGroupRepository(ctrl)
+			appRepo := mocks.NewMockApplicationRepository(ctrl)
+			msgRepo := mocks.NewMockMessageRepository(ctrl)
+
+			app = newApplicationHandler(msgRepo, appRepo, orgRepo)
+
+			req := httptest.NewRequest(tc.method, "/v1/groups", nil)
 			req.SetBasicAuth("test", "test")
 			w := httptest.NewRecorder()
 

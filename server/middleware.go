@@ -12,6 +12,8 @@ import (
 	"strings"
 	"time"
 
+	"go.mongodb.org/mongo-driver/mongo"
+
 	"github.com/felixge/httpsnoop"
 	"github.com/frain-dev/convoy/config"
 	"github.com/frain-dev/convoy/server/models"
@@ -29,7 +31,7 @@ import (
 type contextKey string
 
 const (
-	orgCtx              contextKey = "org"
+	groupCtx            contextKey = "group"
 	appCtx              contextKey = "app"
 	endpointCtx         contextKey = "endpoint"
 	msgCtx              contextKey = "message"
@@ -268,20 +270,18 @@ func findEndpoint(endpoints *[]convoy.Endpoint, id string) (*convoy.Endpoint, er
 	return nil, convoy.ErrEndpointNotFound
 }
 
-func requireOrganisation(orgRepo convoy.OrganisationRepository) func(next http.Handler) http.Handler {
+func requireDefaultGroup(groupRepo convoy.GroupRepository) func(next http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 
-			orgId := chi.URLParam(r, "orgID")
-
-			org, err := orgRepo.FetchOrganisationByID(r.Context(), orgId)
+			groups, err := groupRepo.LoadGroups(r.Context())
 			if err != nil {
 
-				msg := "an error occurred while retrieving organisation details"
+				msg := "an error occurred while loading default group"
 				statusCode := http.StatusInternalServerError
 
-				if errors.Is(err, convoy.ErrOrganisationNotFound) {
+				if errors.Is(err, mongo.ErrNoDocuments) {
 					msg = err.Error()
 					statusCode = http.StatusNotFound
 				}
@@ -290,7 +290,7 @@ func requireOrganisation(orgRepo convoy.OrganisationRepository) func(next http.H
 				return
 			}
 
-			r = r.WithContext(setOrganisationInContext(r.Context(), org))
+			r = r.WithContext(setGroupInContext(r.Context(), groups[0]))
 			next.ServeHTTP(w, r)
 		})
 	}
@@ -338,16 +338,16 @@ func pagination(next http.Handler) http.Handler {
 	})
 }
 
-func fetchOrganisationApps(appRepo convoy.ApplicationRepository) func(next http.Handler) http.Handler {
+func fetchGroupApps(appRepo convoy.ApplicationRepository) func(next http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 
 			pageable := getPageableFromContext(r.Context())
 
-			org := getOrganisationFromContext(r.Context())
+			group := getGroupFromContext(r.Context())
 
-			apps, paginationData, err := appRepo.LoadApplicationsPagedByOrgId(r.Context(), org.UID, pageable)
+			apps, paginationData, err := appRepo.LoadApplicationsPagedByGroupId(r.Context(), group.UID, pageable)
 			if err != nil {
 				_ = render.Render(w, r, newErrorResponse("an error occurred while fetching apps", http.StatusInternalServerError))
 				return
@@ -413,15 +413,15 @@ func fetchDashboardSummary(appRepo convoy.ApplicationRepository, msgRepo convoy.
 				CreatedAtEnd:   endT.Unix(),
 			}
 
-			org := getOrganisationFromContext(r.Context())
+			group := getGroupFromContext(r.Context())
 
-			apps, err := appRepo.SearchApplicationsByOrgId(r.Context(), org.UID, searchParams)
+			apps, err := appRepo.SearchApplicationsByGroupId(r.Context(), group.UID, searchParams)
 			if err != nil {
 				_ = render.Render(w, r, newErrorResponse("an error occurred while searching apps", http.StatusInternalServerError))
 				return
 			}
 
-			messagesSent, messages, err := computeDashboardMessages(r.Context(), org.UID, msgRepo, searchParams, p)
+			messagesSent, messages, err := computeDashboardMessages(r.Context(), group.UID, msgRepo, searchParams, p)
 			if err != nil {
 				_ = render.Render(w, r, newErrorResponse("an error occurred while fetching messages", http.StatusInternalServerError))
 				return
@@ -533,12 +533,12 @@ func getApplicationEndpointFromContext(ctx context.Context) *convoy.Endpoint {
 	return ctx.Value(endpointCtx).(*convoy.Endpoint)
 }
 
-func setOrganisationInContext(ctx context.Context, organisation *convoy.Organisation) context.Context {
-	return context.WithValue(ctx, orgCtx, organisation)
+func setGroupInContext(ctx context.Context, group *convoy.Group) context.Context {
+	return context.WithValue(ctx, groupCtx, group)
 }
 
-func getOrganisationFromContext(ctx context.Context) *convoy.Organisation {
-	return ctx.Value(orgCtx).(*convoy.Organisation)
+func getGroupFromContext(ctx context.Context) *convoy.Group {
+	return ctx.Value(groupCtx).(*convoy.Group)
 }
 
 func setPageableInContext(ctx context.Context, pageable models.Pageable) context.Context {

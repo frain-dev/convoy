@@ -2,9 +2,9 @@ components:
   schemas:
     models.Application:
       properties:
-        name:
+        group_id:
           type: string
-        org_id:
+        name:
           type: string
         secret:
           type: string
@@ -18,6 +18,13 @@ components:
         secret:
           type: string
         url:
+          type: string
+      type: object
+    models.Group:
+      properties:
+        logo_url:
+          type: string
+        name:
           type: string
       type: object
     models.Message:
@@ -37,13 +44,6 @@ components:
         provider_id:
           type: string
         status:
-          type: string
-      type: object
-    models.Organisation:
-      properties:
-        logo_url:
-          type: string
-        name:
           type: string
       type: object
     server.serverResponse:
@@ -538,9 +538,9 @@ paths:
         name: appId
         schema:
           type: string
-      - description: organisation id
+      - description: group id
         in: query
-        name: orgId
+        name: groupId
         schema:
           type: string
       - description: start date
@@ -804,9 +804,9 @@ paths:
       summary: Resend an app message
       tags:
       - Messages
-  /organisations:
+  /groups:
     get:
-      description: This endpoint fetches organisations
+      description: This endpoint fetches groups
       responses:
         "200":
           content:
@@ -834,19 +834,19 @@ paths:
           description: Internal Server Error
       security:
       - ApiKeyAuth: []
-      summary: Get organisations
+      summary: Get groups
       tags:
-      - Organisation
+      - Group
     post:
-      description: This endpoint creates an organisation
+      description: This endpoint creates a group
       requestBody:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/models.Organisation'
-        description: Organisation Details
+              $ref: '#/components/schemas/models.Group'
+        description: Group Details
         required: true
-        x-originalParamName: organisation
+        x-originalParamName: group
       responses:
         "200":
           content:
@@ -874,16 +874,16 @@ paths:
           description: Internal Server Error
       security:
       - ApiKeyAuth: []
-      summary: Create an organisation
+      summary: Create a group
       tags:
-      - Organisation
-  /organisations/{orgID}:
+      - Group
+  /groups/{groupID}:
     get:
-      description: This endpoint fetches an organisation by it's id
+      description: This endpoint fetches a group by its id
       parameters:
-      - description: organisation id
+      - description: Group id
         in: path
-        name: orgID
+        name: groupID
         required: true
         schema:
           type: string
@@ -914,15 +914,15 @@ paths:
           description: Internal Server Error
       security:
       - ApiKeyAuth: []
-      summary: Get an organisation
+      summary: Get a group
       tags:
-      - Organisation
+      - Group
     put:
-      description: This endpoint updates an organisation
+      description: This endpoint updates a group
       parameters:
-      - description: organisation id
+      - description: group id
         in: path
-        name: orgID
+        name: groupID
         required: true
         schema:
           type: string
@@ -930,10 +930,10 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/models.Organisation'
-        description: Organisation Details
+              $ref: '#/components/schemas/models.Group'
+        description: Group Details
         required: true
-        x-originalParamName: organisation
+        x-originalParamName: group
       responses:
         "200":
           content:
@@ -961,9 +961,9 @@ paths:
           description: Internal Server Error
       security:
       - ApiKeyAuth: []
-      summary: Update an organisation
+      summary: Update a group
       tags:
-      - Organisation
+      - Group
 servers:
 - url: http://localhost:8080/api/v1
 - url: https://localhost:8080/api/v1

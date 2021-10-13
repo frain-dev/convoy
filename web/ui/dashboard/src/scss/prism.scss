@@ -141,3 +141,20 @@ pre.line-numbers > code {
 	padding-right: 0.8em;
 	text-align: right;
 }
+
+/*----- scrollbar styles ------*/
+
+::-webkit-scrollbar {
+	width: 7px;
+}
+
+/* track */
+::-webkit-scrollbar-track {
+	background: transparent;
+}
+
+/* handle */
+::-webkit-scrollbar-thumb {
+	background: rgb(217, 216, 216);
+	border-radius: 10px;
+}

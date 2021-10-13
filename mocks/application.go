@@ -111,35 +111,35 @@ func (mr *MockApplicationRepositoryMockRecorder) LoadApplicationsPaged(arg0, arg
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "LoadApplicationsPaged", reflect.TypeOf((*MockApplicationRepository)(nil).LoadApplicationsPaged), arg0, arg1, arg2)
 }
 
-// LoadApplicationsPagedByOrgId mocks base method.
-func (m *MockApplicationRepository) LoadApplicationsPagedByOrgId(arg0 context.Context, arg1 string, arg2 models.Pageable) ([]convoy.Application, mongopagination.PaginationData, error) {
+// LoadApplicationsPagedByGroupId mocks base method.
+func (m *MockApplicationRepository) LoadApplicationsPagedByGroupId(arg0 context.Context, arg1 string, arg2 models.Pageable) ([]convoy.Application, mongopagination.PaginationData, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "LoadApplicationsPagedByOrgId", arg0, arg1, arg2)
+	ret := m.ctrl.Call(m, "LoadApplicationsPagedByGroupId", arg0, arg1, arg2)
 	ret0, _ := ret[0].([]convoy.Application)
 	ret1, _ := ret[1].(mongopagination.PaginationData)
 	ret2, _ := ret[2].(error)
 	return ret0, ret1, ret2
 }
 
-// LoadApplicationsPagedByOrgId indicates an expected call of LoadApplicationsPagedByOrgId.
-func (mr *MockApplicationRepositoryMockRecorder) LoadApplicationsPagedByOrgId(arg0, arg1, arg2 interface{}) *gomock.Call {
+// LoadApplicationsPagedByGroupId indicates an expected call of LoadApplicationsPagedByGroupId.
+func (mr *MockApplicationRepositoryMockRecorder) LoadApplicationsPagedByGroupId(arg0, arg1, arg2 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "LoadApplicationsPagedByOrgId", reflect.TypeOf((*MockApplicationRepository)(nil).LoadApplicationsPagedByOrgId), arg0, arg1, arg2)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "LoadApplicationsPagedByGroupId", reflect.TypeOf((*MockApplicationRepository)(nil).LoadApplicationsPagedByGroupId), arg0, arg1, arg2)
 }
 
-// SearchApplicationsByOrgId mocks base method.
-func (m *MockApplicationRepository) SearchApplicationsByOrgId(arg0 context.Context, arg1 string, arg2 models.SearchParams) ([]convoy.Application, error) {
+// SearchApplicationsByGroupId mocks base method.
+func (m *MockApplicationRepository) SearchApplicationsByGroupId(arg0 context.Context, arg1 string, arg2 models.SearchParams) ([]convoy.Application, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "SearchApplicationsByOrgId", arg0, arg1, arg2)
+	ret := m.ctrl.Call(m, "SearchApplicationsByGroupId", arg0, arg1, arg2)
 	ret0, _ := ret[0].([]convoy.Application)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
-// SearchApplicationsByOrgId indicates an expected call of SearchApplicationsByOrgId.
-func (mr *MockApplicationRepositoryMockRecorder) SearchApplicationsByOrgId(arg0, arg1, arg2 interface{}) *gomock.Call {
+// SearchApplicationsByGroupId indicates an expected call of SearchApplicationsByGroupId.
+func (mr *MockApplicationRepositoryMockRecorder) SearchApplicationsByGroupId(arg0, arg1, arg2 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SearchApplicationsByOrgId", reflect.TypeOf((*MockApplicationRepository)(nil).SearchApplicationsByOrgId), arg0, arg1, arg2)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SearchApplicationsByGroupId", reflect.TypeOf((*MockApplicationRepository)(nil).SearchApplicationsByGroupId), arg0, arg1, arg2)
 }
 
 // UpdateApplication mocks base method.

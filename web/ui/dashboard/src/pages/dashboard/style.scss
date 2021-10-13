@@ -77,9 +77,10 @@
 }
 
 .dashboard--page {
-	max-width: 1310px;
+	max-width: 1374px;
 	width: 100%;
 	margin: 32px auto;
+	padding: 0 2rem;
 
 	&--details {
 		display: flex;
@@ -153,11 +154,11 @@
 			width: 100%;
 
 			.card--container {
-				padding: 24px 24px 16px;
+				padding: 16px 24px;
 
 				.list-item {
 					border-radius: 8px;
-					padding: 10px 0;
+					padding: 8px 0;
 					display: flex;
 					justify-content: space-between;
 					border-bottom: 1px solid #edeff5;
@@ -166,14 +167,12 @@
 						font-weight: 500;
 						font-size: 14px;
 						line-height: 28px;
-						color: #737a91;
+						color: #737a91b2;
 					}
 
 					&--item {
 						line-height: 24px;
 						font-size: 14px;
-						max-width: 258px;
-						text-align: right;
 						word-wrap: break-word;
 						color: #000000;
 						font-weight: 500;
@@ -182,6 +181,11 @@
 					button {
 						padding: 0;
 						background: transparent;
+						outline: var(--primary-color);
+
+						img {
+							width: 15px;
+						}
 					}
 				}
 			}
@@ -476,6 +480,10 @@
 	width: 100%;
 	align-items: center;
 
+	.tabs {
+		border: none;
+	}
+
 	.tab {
 		padding: 18px 16px;
 		text-transform: capitalize;
@@ -599,7 +607,7 @@ table {
 				color: #ff0505;
 			}
 
-			&--Scheduled {
+			&--Retry {
 				background: #f8e5b9;
 			}
 

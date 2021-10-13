@@ -7,6 +7,7 @@ import CalendarIcon from '../../assets/img/calendar-icon.svg';
 import LinkIcon from '../../assets/img/link-icon.svg';
 import AngleArrowDownIcon from '../../assets/img/angle-arrow-down.svg';
 import ConvoyLogo from '../../assets/img/logo.svg';
+import CopyIcon from '../../assets/img/copy-icon.svg';
 import RetryIcon from '../../assets/img/retry-icon.svg';
 import EmptyStateImage from '../../assets/img/empty-state-img.svg';
 import ViewEventsIcon from '../../assets/img/view-events-icon.svg';
@@ -17,12 +18,13 @@ import './style.scss';
 import 'react-date-range/dist/styles.css';
 import 'react-date-range/dist/theme/default.css';
 import { showNotification } from '../../components/app-notification';
-import { getDate, getTime, logout } from '../../helpers/common.helper';
+import { copyText, getDate, getTime, logout } from '../../helpers/common.helper';
 import Prism from 'prismjs';
-import '../../scss/prism.css';
+import '../../scss/prism.scss';
 import '../../helpers/prism-line-plugin';
 
 const moment = require('moment');
+const authDetails = localStorage.getItem('CONVOY_AUTH');
 
 function DashboardPage() {
 	const [dashboardData, setDashboardData] = useState({ apps: 0, messages: 0, messageData: [] });
@@ -69,13 +71,6 @@ function DashboardPage() {
 			header: '',
 			hash: ''
 		}
-	});
-	const [activeorganisation, setActiveOrganisation] = useState({
-		uid: '',
-		name: '',
-		created_at: 0,
-		updated_at: 0,
-		deleted_at: 0
 	});
 	const [eventDeliveryAtempt, setEventDeliveryAtempt] = useState({
 		ip_address: '',
@@ -151,7 +146,7 @@ function DashboardPage() {
 			try {
 				const eventsResponse = await (
 					await request({
-						url: `/events?sort=AESC&page=${page || 1}&perPage=20&orgId=${activeorganisation.uid}&startDate=${startDate}&endDate=${endDate}&appId=${eventApp}`,
+						url: `/events?sort=AESC&page=${page || 1}&perPage=20&startDate=${startDate}&endDate=${endDate}&appId=${eventApp}`,
 						method: 'GET'
 					})
 				).data;
@@ -170,31 +165,28 @@ function DashboardPage() {
 				return error;
 			}
 		},
-		[activeorganisation, eventApp]
+		[eventApp]
 	);
 
-	const getApps = useCallback(
-		async ({ page, appsData }) => {
-			try {
-				const appsResponse = await (
-					await request({
-						url: `/apps?sort=AESC&page=${page || 1}&perPage=10&orgId=${activeorganisation.uid}`
-					})
-				).data;
+	const getApps = useCallback(async ({ page, appsData }) => {
+		try {
+			const appsResponse = await (
+				await request({
+					url: `/apps?sort=AESC&page=${page || 1}&perPage=10`
+				})
+			).data;
 
-				if (appsData?.pagination?.next === page) {
-					const content = [...appsData.content, ...appsResponse.data.content];
-					const pagination = appsResponse.data.pagination;
-					setAppsData({ content, pagination });
-					return;
-				}
-				setAppsData(appsResponse.data);
-			} catch (error) {
-				return error;
+			if (appsData?.pagination?.next === page) {
+				const content = [...appsData.content, ...appsResponse.data.content];
+				const pagination = appsResponse.data.pagination;
+				setAppsData({ content, pagination });
+				return;
 			}
-		},
-		[activeorganisation]
-	);
+			setAppsData(appsResponse.data);
+		} catch (error) {
+			return error;
+		}
+	}, []);
 
 	const getDelieveryAttempts = async eventId => {
 		try {
@@ -249,12 +241,10 @@ function DashboardPage() {
 
 	useEffect(() => {
 		const getOrganisationDetails = async () => {
-			if (activeorganisation.uid === '') return;
-
 			try {
 				const organisationDetailsResponse = await (
 					await request({
-						url: `/dashboard/${activeorganisation.uid}/config`
+						url: `/dashboard/config`
 					})
 				).data;
 				setOrganisationDetails(organisationDetailsResponse.data);
@@ -263,27 +253,11 @@ function DashboardPage() {
 			}
 		};
 
-		const getOrganisations = async () => {
-			try {
-				const organisationsResponse = await (
-					await request({
-						url: '/organisations'
-					})
-				).data;
-				if (organisationsResponse.data.length > 0) {
-					setActiveOrganisation(organisationsResponse.data[0]);
-				}
-			} catch (error) {
-				return error;
-			}
-		};
-
 		const fetchDashboardData = async () => {
 			try {
-				if (!activeorganisation.uid) await getOrganisations();
 				const { startDate, endDate } = setDateForFilter(filterDates[0]);
 				const dashboardResponse = await request({
-					url: `/dashboard/${activeorganisation.uid}/summary?startDate=${startDate}&endDate=${endDate}&type=${filterFrequency || 'daily'}`
+					url: `/dashboard/summary?startDate=${startDate}&endDate=${endDate}&type=${filterFrequency || 'daily'}`
 				});
 				setDashboardData(dashboardResponse.data.data);
 
@@ -321,7 +295,7 @@ function DashboardPage() {
 		getOrganisationDetails();
 		getApps({ page: 1 });
 		getEvents({ page: 1 });
-	}, [options, activeTab, filterDates, activeorganisation, filterFrequency, getEvents, getApps]);
+	}, [options, activeTab, filterDates, filterFrequency, getEvents, getApps]);
 
 	return (
 		<div className="dashboard">
@@ -334,7 +308,7 @@ function DashboardPage() {
 					<button className="user" onClick={() => toggleShowDropdown(!showDropdown)}>
 						<div>
 							<div className="icon">O</div>
-							<div className="name">{activeorganisation && activeorganisation.name}</div>
+							<div className="name">{JSON.parse(authDetails).username}</div>
 						</div>
 						<img src={AngleArrowDownIcon} alt="arrow down icon" />
 						{showDropdown && (
@@ -402,43 +376,61 @@ function DashboardPage() {
 
 						<ul className="card--container">
 							<li className="list-item">
-								<div className="list-item--label">Organisation ID</div>
-								<div className="list-item--item">{activeorganisation.uid}</div>
+								<div className="list-item--label">
+									DB URL
+									<div className="list-item--item">{OrganisationDetails.database.dsn}</div>
+								</div>
+								<button onClick={() => copyText(OrganisationDetails.database.dsn)}>
+									<img src={CopyIcon} alt="copy icon" />
+								</button>
 							</li>
 
 							<li className="list-item">
-								<div className="list-item--label">DB URL</div>
-								<div className="list-item--item">{OrganisationDetails.database.dsn}</div>
+								<div className="list-item--label">
+									Queue
+									<div className="list-item--item">{OrganisationDetails.queue.redis.dsn}</div>
+								</div>
+								<button onClick={() => copyText(OrganisationDetails.queue.redis.dsn)}>
+									<img src={CopyIcon} alt="copy icon" />
+								</button>
 							</li>
 
 							<li className="list-item">
-								<div className="list-item--label">Queue</div>
-								<div className="list-item--item">{OrganisationDetails.queue.redis.dsn}</div>
+								<div className="list-item--label">
+									Server
+									<div className="list-item--item">http://localhost:{OrganisationDetails.server.http.port}</div>
+								</div>
+								<button onClick={() => copyText('http://localhost:' + OrganisationDetails.server.http.port)}>
+									<img src={CopyIcon} alt="copy icon" />
+								</button>
 							</li>
 
 							<li className="list-item">
-								<div className="list-item--label">Server</div>
-								<div className="list-item--item">http://localhost:{OrganisationDetails.server.http.port}</div>
+								<div className="list-item--label">
+									Request interval Seconds
+									<div className="list-item--item">{OrganisationDetails.strategy.default.intervalSeconds}s</div>
+								</div>
 							</li>
 
 							<li className="list-item">
-								<div className="list-item--label">Request interval Seconds</div>
-								<div className="list-item--item">{OrganisationDetails.strategy.default.intervalSeconds}s</div>
+								<div className="list-item--label">
+									Retry limit
+									<div className="list-item--item">{OrganisationDetails.strategy.default.retryLimit}</div>
+								</div>
 							</li>
 
 							<li className="list-item">
-								<div className="list-item--label">Retry limit</div>
-								<div className="list-item--item">{OrganisationDetails.strategy.default.retryLimit}</div>
+								<div className="list-item--label">
+									Signature header
+									<div className="list-item--item">{OrganisationDetails.signature.header}</div>
+								</div>
 							</li>
 
 							<li className="list-item">
-								<div className="list-item--label">Signature header</div>
-								<div className="list-item--item">{OrganisationDetails.signature.header}</div>
-							</li>
-
-							<li className="list-item">
-								<div className="list-item--label">Signature hash</div>
-								<div className="list-item--item">{OrganisationDetails.signature.hash}</div>
+								<div className="list-item--label">
+									Signature hash
+									<div className="list-item--item">{OrganisationDetails.signature.hash}</div>
+								</div>
 							</li>
 						</ul>
 					</div>

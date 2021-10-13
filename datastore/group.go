@@ -11,35 +11,35 @@ import (
 	"go.mongodb.org/mongo-driver/mongo"
 )
 
-type orgRepo struct {
+type groupRepo struct {
 	inner *mongo.Collection
 }
 
 const (
-	OrgCollection = "organisations"
+	GroupCollection = "groups"
 )
 
-func NewOrganisationRepo(client *mongo.Database) convoy.OrganisationRepository {
-	return &orgRepo{
-		inner: client.Collection(OrgCollection),
+func NewGroupRepo(client *mongo.Database) convoy.GroupRepository {
+	return &groupRepo{
+		inner: client.Collection(GroupCollection),
 	}
 }
 
-func (db *orgRepo) LoadOrganisations(ctx context.Context) ([]*convoy.Organisation, error) {
-	orgs := make([]*convoy.Organisation, 0)
+func (db *groupRepo) LoadGroups(ctx context.Context) ([]*convoy.Group, error) {
+	groups := make([]*convoy.Group, 0)
 
 	cur, err := db.inner.Find(ctx, bson.D{{}})
 	if err != nil {
-		return orgs, err
+		return groups, err
 	}
 
 	for cur.Next(ctx) {
-		var org = new(convoy.Organisation)
-		if err := cur.Decode(&org); err != nil {
-			return orgs, err
+		var group = new(convoy.Group)
+		if err := cur.Decode(&group); err != nil {
+			return groups, err
 		}
 
-		orgs = append(orgs, org)
+		groups = append(groups, group)
 	}
 
 	if err := cur.Err(); err != nil {
@@ -47,13 +47,13 @@ func (db *orgRepo) LoadOrganisations(ctx context.Context) ([]*convoy.Organisatio
 	}
 
 	if err := cur.Close(ctx); err != nil {
-		return orgs, err
+		return groups, err
 	}
 
-	return orgs, nil
+	return groups, nil
 }
 
-func (db *orgRepo) CreateOrganisation(ctx context.Context, o *convoy.Organisation) error {
+func (db *groupRepo) CreateGroup(ctx context.Context, o *convoy.Group) error {
 
 	o.ID = primitive.NewObjectID()
 
@@ -61,14 +61,14 @@ func (db *orgRepo) CreateOrganisation(ctx context.Context, o *convoy.Organisatio
 	return err
 }
 
-func (db *orgRepo) UpdateOrganisation(ctx context.Context, o *convoy.Organisation) error {
+func (db *groupRepo) UpdateGroup(ctx context.Context, o *convoy.Group) error {
 
 	o.UpdatedAt = primitive.NewDateTimeFromTime(time.Now())
 
 	filter := bson.D{primitive.E{Key: "uid", Value: o.UID}}
 
 	update := bson.D{primitive.E{Key: "$set", Value: bson.D{
-		primitive.E{Key: "org_name", Value: o.OrgName},
+		primitive.E{Key: "org_name", Value: o.Name},
 		primitive.E{Key: "logo_url", Value: o.LogoURL},
 		primitive.E{Key: "updated_at", Value: o.UpdatedAt},
 	}}}
@@ -77,9 +77,9 @@ func (db *orgRepo) UpdateOrganisation(ctx context.Context, o *convoy.Organisatio
 	return err
 }
 
-func (db *orgRepo) FetchOrganisationByID(ctx context.Context,
-	id string) (*convoy.Organisation, error) {
-	org := new(convoy.Organisation)
+func (db *groupRepo) FetchGroupByID(ctx context.Context,
+	id string) (*convoy.Group, error) {
+	org := new(convoy.Group)
 
 	filter := bson.D{
 		primitive.E{
@@ -92,7 +92,7 @@ func (db *orgRepo) FetchOrganisationByID(ctx context.Context,
 		Decode(&org)
 
 	if errors.Is(err, mongo.ErrNoDocuments) {
-		err = convoy.ErrOrganisationNotFound
+		err = convoy.ErrGroupNotFound
 	}
 
 	return org, err

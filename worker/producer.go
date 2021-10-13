@@ -18,7 +18,7 @@ import (
 
 type Producer struct {
 	Data            chan queue.Message
-	orgRepo         *convoy.OrganisationRepository
+	groupRepo       *convoy.GroupRepository
 	appRepo         *convoy.ApplicationRepository
 	msgRepo         *convoy.MessageRepository
 	dispatch        *net.Dispatcher
@@ -27,10 +27,10 @@ type Producer struct {
 	quit            chan chan error
 }
 
-func NewProducer(queuer *queue.Queuer, orgRepo *convoy.OrganisationRepository, appRepo *convoy.ApplicationRepository, msgRepo *convoy.MessageRepository, signatureConfig config.SignatureConfiguration, smtpConfig config.SMTPConfiguration) *Producer {
+func NewProducer(queuer *queue.Queuer, groupRepo *convoy.GroupRepository, appRepo *convoy.ApplicationRepository, msgRepo *convoy.MessageRepository, signatureConfig config.SignatureConfiguration, smtpConfig config.SMTPConfiguration) *Producer {
 	return &Producer{
 		Data:            (*queuer).Read(),
-		orgRepo:         orgRepo,
+		groupRepo:       groupRepo,
 		appRepo:         appRepo,
 		msgRepo:         msgRepo,
 		dispatch:        net.NewDispatcher(),
@@ -133,7 +133,7 @@ func (p *Producer) postMessages(msgRepo convoy.MessageRepository, appRepo convoy
 
 				s, err := smtp.New(&p.smtpConfig)
 				if err == nil {
-					err = sendEmailNotification(m.AppMetadata, p.orgRepo, s, convoy.ActiveEndpointStatus)
+					err = sendEmailNotification(m.AppMetadata, p.groupRepo, s, convoy.ActiveEndpointStatus)
 					if err != nil {
 						log.WithError(err).Error("Failed to send notification email")
 					}
@@ -196,7 +196,7 @@ func (p *Producer) postMessages(msgRepo convoy.MessageRepository, appRepo convoy
 			if len(inactiveEndpoints) > 0 {
 				s, err := smtp.New(&p.smtpConfig)
 				if err == nil {
-					err = sendEmailNotification(m.AppMetadata, p.orgRepo, s, convoy.InactiveEndpointStatus)
+					err = sendEmailNotification(m.AppMetadata, p.groupRepo, s, convoy.InactiveEndpointStatus)
 					if err != nil {
 						log.WithError(err).Error("Failed to send notification email")
 					}
@@ -211,10 +211,10 @@ func (p *Producer) postMessages(msgRepo convoy.MessageRepository, appRepo convoy
 	}
 }
 
-func sendEmailNotification(m *convoy.AppMetadata, o *convoy.OrganisationRepository, s *smtp.SmtpClient, status convoy.EndpointStatus) error {
+func sendEmailNotification(m *convoy.AppMetadata, o *convoy.GroupRepository, s *smtp.SmtpClient, status convoy.EndpointStatus) error {
 	email := m.SupportEmail
 
-	org, err := (*o).FetchOrganisationByID(context.Background(), m.OrgID)
+	org, err := (*o).FetchGroupByID(context.Background(), m.GroupID)
 	if err != nil {
 		return err
 	}
