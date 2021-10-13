@@ -10,7 +10,6 @@ type Group struct {
 }
 
 type Application struct {
-	GroupID      string `json:"group_id" bson:"group_id"`
 	AppName      string `json:"name" bson:"name"`
 	Secret       string `json:"secret" bson:"secret"`
 	SupportEmail string `json:"support_email" bson:"support_email"`
