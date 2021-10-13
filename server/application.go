@@ -122,18 +122,7 @@ func (a *applicationHandler) CreateApp(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	group, err := a.groupRepo.FetchGroupByID(r.Context(), groupID)
-	if err != nil {
-		msg := "an error occurred while fetching group"
-		statusCode := http.StatusInternalServerError
-
-		if errors.Is(err, convoy.ErrGroupNotFound) {
-			msg = err.Error()
-			statusCode = http.StatusBadRequest
-		}
-		_ = render.Render(w, r, newErrorResponse(msg, statusCode))
-		return
-	}
+	group := getGroupFromContext(r.Context())
 
 	if util.IsStringEmpty(newApp.Secret) {
 		newApp.Secret, err = util.GenerateSecret()

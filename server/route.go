@@ -74,7 +74,7 @@ func buildRoutes(app *applicationHandler) http.Handler {
 			appRouter.Use(requireAuth())
 
 			appRouter.Route("/", func(appSubRouter chi.Router) {
-				appSubRouter.Post("/", app.CreateApp)
+				appSubRouter.With(requireDefaultGroup(app.groupRepo)).Post("/", app.CreateApp)
 				appRouter.With(pagination).Get("/", app.GetApps)
 			})
 
