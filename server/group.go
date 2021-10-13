@@ -2,14 +2,12 @@ package server
 
 import (
 	"encoding/json"
-	"errors"
 	"net/http"
 	"time"
 
 	"github.com/frain-dev/convoy"
 	"github.com/frain-dev/convoy/server/models"
 	"github.com/frain-dev/convoy/util"
-	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/render"
 	"github.com/google/uuid"
 	"go.mongodb.org/mongo-driver/bson/primitive"
@@ -108,23 +106,7 @@ func (a *applicationHandler) UpdateGroup(w http.ResponseWriter, r *http.Request)
 		return
 	}
 
-	groupID := chi.URLParam(r, "groupID")
-
-	group, err := a.groupRepo.FetchGroupByID(r.Context(), groupID)
-	if err != nil {
-
-		msg := "an error occurred while retrieving group details"
-		statusCode := http.StatusInternalServerError
-
-		if errors.Is(err, convoy.ErrGroupNotFound) {
-			msg = err.Error()
-			statusCode = http.StatusNotFound
-		}
-
-		_ = render.Render(w, r, newErrorResponse(msg, statusCode))
-		return
-	}
-
+	group := getGroupFromContext(r.Context())
 	group.Name = groupName
 	err = a.groupRepo.UpdateGroup(r.Context(), group)
 	if err != nil {

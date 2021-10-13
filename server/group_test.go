@@ -17,19 +17,8 @@ import (
 
 func TestApplicationHandler_GetGroup(t *testing.T) {
 
-	var app *applicationHandler
-
 	realOrgID := "1234567890"
 	fakeOrgID := "12345"
-
-	ctrl := gomock.NewController(t)
-	defer ctrl.Finish()
-
-	orgRepo := mocks.NewMockGroupRepository(ctrl)
-	appRepo := mocks.NewMockApplicationRepository(ctrl)
-	msgRepo := mocks.NewMockMessageRepository(ctrl)
-
-	app = newApplicationHandler(msgRepo, appRepo, orgRepo)
 
 	tt := []struct {
 		name       string
@@ -43,13 +32,14 @@ func TestApplicationHandler_GetGroup(t *testing.T) {
 			name:       "group not found",
 			cfgPath:    "./testdata/Auth_Config/basic-convoy.json",
 			method:     http.MethodGet,
-			statusCode: http.StatusNotFound,
+			statusCode: http.StatusInternalServerError,
 			id:         fakeOrgID,
 			dbFn: func(app *applicationHandler) {
-				o, _ := app.groupRepo.(*mocks.MockGroupRepository)
-				o.EXPECT().
-					FetchGroupByID(gomock.Any(), fakeOrgID).
+				g, _ := app.groupRepo.(*mocks.MockGroupRepository)
+				g.EXPECT().
+					LoadGroups(gomock.Any()).
 					Return(nil, convoy.ErrGroupNotFound).Times(1)
+
 			},
 		},
 		{
@@ -59,18 +49,33 @@ func TestApplicationHandler_GetGroup(t *testing.T) {
 			statusCode: http.StatusOK,
 			id:         realOrgID,
 			dbFn: func(app *applicationHandler) {
-				orgRepo.EXPECT().
-					FetchGroupByID(gomock.Any(), realOrgID).Times(1).
-					Return(&convoy.Group{
-						UID:  realOrgID,
-						Name: "Valid group",
+				g, _ := app.groupRepo.(*mocks.MockGroupRepository)
+				g.EXPECT().
+					LoadGroups(gomock.Any()).Times(1).
+					Return([]*convoy.Group{
+						{
+							UID:  realOrgID,
+							Name: "Valid group",
+						},
 					}, nil)
+
 			},
 		},
 	}
 
 	for _, tc := range tt {
 		t.Run(tc.name, func(t *testing.T) {
+			var app *applicationHandler
+
+			ctrl := gomock.NewController(t)
+			defer ctrl.Finish()
+
+			orgRepo := mocks.NewMockGroupRepository(ctrl)
+			appRepo := mocks.NewMockApplicationRepository(ctrl)
+			msgRepo := mocks.NewMockMessageRepository(ctrl)
+
+			app = newApplicationHandler(msgRepo, appRepo, orgRepo)
+
 			// Arrange
 			url := fmt.Sprintf("/v1/groups/%s", tc.id)
 			req := httptest.NewRequest(tc.method, url, nil)
@@ -108,16 +113,6 @@ func TestApplicationHandler_GetGroup(t *testing.T) {
 }
 
 func TestApplicationHandler_CreateGroup(t *testing.T) {
-	var app *applicationHandler
-
-	ctrl := gomock.NewController(t)
-	defer ctrl.Finish()
-
-	orgRepo := mocks.NewMockGroupRepository(ctrl)
-	appRepo := mocks.NewMockApplicationRepository(ctrl)
-	msgRepo := mocks.NewMockMessageRepository(ctrl)
-
-	app = newApplicationHandler(msgRepo, appRepo, orgRepo)
 
 	bodyReader := strings.NewReader(`{"name": "ABC_DEF_TEST_UPDATE"}`)
 
@@ -146,6 +141,17 @@ func TestApplicationHandler_CreateGroup(t *testing.T) {
 
 	for _, tc := range tt {
 		t.Run(tc.name, func(t *testing.T) {
+			var app *applicationHandler
+
+			ctrl := gomock.NewController(t)
+			defer ctrl.Finish()
+
+			orgRepo := mocks.NewMockGroupRepository(ctrl)
+			appRepo := mocks.NewMockApplicationRepository(ctrl)
+			msgRepo := mocks.NewMockMessageRepository(ctrl)
+
+			app = newApplicationHandler(msgRepo, appRepo, orgRepo)
+
 			// Arrange
 			req := httptest.NewRequest(tc.method, "/v1/groups", tc.body)
 			req.SetBasicAuth("test", "test")
@@ -176,16 +182,6 @@ func TestApplicationHandler_CreateGroup(t *testing.T) {
 }
 
 func TestApplicationHandler_UpdateGroup(t *testing.T) {
-	var app *applicationHandler
-
-	ctrl := gomock.NewController(t)
-	defer ctrl.Finish()
-
-	orgRepo := mocks.NewMockGroupRepository(ctrl)
-	appRepo := mocks.NewMockApplicationRepository(ctrl)
-	msgRepo := mocks.NewMockMessageRepository(ctrl)
-
-	app = newApplicationHandler(msgRepo, appRepo, orgRepo)
 
 	realOrgID := "1234567890"
 
@@ -207,16 +203,18 @@ func TestApplicationHandler_UpdateGroup(t *testing.T) {
 			orgID:      realOrgID,
 			body:       bodyReader,
 			dbFn: func(app *applicationHandler) {
-				o, _ := app.groupRepo.(*mocks.MockGroupRepository)
-				o.EXPECT().
+				g, _ := app.groupRepo.(*mocks.MockGroupRepository)
+				g.EXPECT().
 					UpdateGroup(gomock.Any(), gomock.Any()).Times(1).
 					Return(nil)
 
-				o.EXPECT().
-					FetchGroupByID(gomock.Any(), gomock.Any()).Times(2).
-					Return(&convoy.Group{
-						UID:  realOrgID,
-						Name: "Valid group update",
+				g.EXPECT().
+					LoadGroups(gomock.Any()).Times(1).
+					Return([]*convoy.Group{
+						{
+							UID:  realOrgID,
+							Name: "Valid group",
+						},
 					}, nil)
 			},
 		},
@@ -224,6 +222,17 @@ func TestApplicationHandler_UpdateGroup(t *testing.T) {
 
 	for _, tc := range tt {
 		t.Run(tc.name, func(t *testing.T) {
+			var app *applicationHandler
+
+			ctrl := gomock.NewController(t)
+			defer ctrl.Finish()
+
+			orgRepo := mocks.NewMockGroupRepository(ctrl)
+			appRepo := mocks.NewMockApplicationRepository(ctrl)
+			msgRepo := mocks.NewMockMessageRepository(ctrl)
+
+			app = newApplicationHandler(msgRepo, appRepo, orgRepo)
+
 			// Arrange
 			url := fmt.Sprintf("/v1/groups/%s", tc.orgID)
 			req := httptest.NewRequest(tc.method, url, tc.body)
@@ -262,16 +271,6 @@ func TestApplicationHandler_UpdateGroup(t *testing.T) {
 }
 
 func TestApplicationHandler_GetGroups(t *testing.T) {
-	var app *applicationHandler
-
-	ctrl := gomock.NewController(t)
-	defer ctrl.Finish()
-
-	orgRepo := mocks.NewMockGroupRepository(ctrl)
-	appRepo := mocks.NewMockApplicationRepository(ctrl)
-	msgRepo := mocks.NewMockMessageRepository(ctrl)
-
-	app = newApplicationHandler(msgRepo, appRepo, orgRepo)
 
 	realOrgID := "1234567890"
 
@@ -303,6 +302,17 @@ func TestApplicationHandler_GetGroups(t *testing.T) {
 
 	for _, tc := range tt {
 		t.Run(tc.name, func(t *testing.T) {
+			var app *applicationHandler
+
+			ctrl := gomock.NewController(t)
+			defer ctrl.Finish()
+
+			orgRepo := mocks.NewMockGroupRepository(ctrl)
+			appRepo := mocks.NewMockApplicationRepository(ctrl)
+			msgRepo := mocks.NewMockMessageRepository(ctrl)
+
+			app = newApplicationHandler(msgRepo, appRepo, orgRepo)
+
 			req := httptest.NewRequest(tc.method, "/v1/groups", nil)
 			req.SetBasicAuth("test", "test")
 			w := httptest.NewRecorder()

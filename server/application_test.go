@@ -307,19 +307,6 @@ func TestApplicationHandler_CreateApp(t *testing.T) {
 			},
 		},
 		{
-			name:       "invalid request - no group id",
-			cfgPath:    "./testdata/Auth_Config/basic-convoy.json",
-			method:     http.MethodPost,
-			statusCode: http.StatusBadRequest,
-			body:       strings.NewReader(`{ "name": "ABC" }`),
-			dbFn: func(app *applicationHandler) {
-				o, _ := app.groupRepo.(*mocks.MockGroupRepository)
-				o.EXPECT().
-					LoadGroups(gomock.Any()).Times(1).
-					Return([]*convoy.Group{group}, nil)
-			},
-		},
-		{
 			name:       "valid application",
 			cfgPath:    "./testdata/Auth_Config/basic-convoy.json",
 			method:     http.MethodPost,
