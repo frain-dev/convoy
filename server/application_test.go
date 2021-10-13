@@ -286,7 +286,12 @@ func TestApplicationHandler_CreateApp(t *testing.T) {
 			method:     http.MethodPost,
 			statusCode: http.StatusBadRequest,
 			body:       strings.NewReader(``),
-			dbFn:       func(app *applicationHandler) {},
+			dbFn: func(app *applicationHandler) {
+				o, _ := app.groupRepo.(*mocks.MockGroupRepository)
+				o.EXPECT().
+					LoadGroups(gomock.Any()).Times(1).
+					Return([]*convoy.Group{group}, nil)
+			},
 		},
 		{
 			name:       "invalid request - no app name",
@@ -294,7 +299,12 @@ func TestApplicationHandler_CreateApp(t *testing.T) {
 			method:     http.MethodPost,
 			statusCode: http.StatusBadRequest,
 			body:       strings.NewReader(`{}`),
-			dbFn:       func(app *applicationHandler) {},
+			dbFn: func(app *applicationHandler) {
+				o, _ := app.groupRepo.(*mocks.MockGroupRepository)
+				o.EXPECT().
+					LoadGroups(gomock.Any()).Times(1).
+					Return([]*convoy.Group{group}, nil)
+			},
 		},
 		{
 			name:       "invalid request - no group id",
@@ -302,7 +312,12 @@ func TestApplicationHandler_CreateApp(t *testing.T) {
 			method:     http.MethodPost,
 			statusCode: http.StatusBadRequest,
 			body:       strings.NewReader(`{ "name": "ABC" }`),
-			dbFn:       func(app *applicationHandler) {},
+			dbFn: func(app *applicationHandler) {
+				o, _ := app.groupRepo.(*mocks.MockGroupRepository)
+				o.EXPECT().
+					LoadGroups(gomock.Any()).Times(1).
+					Return([]*convoy.Group{group}, nil)
+			},
 		},
 		{
 			name:       "valid application",
@@ -318,9 +333,8 @@ func TestApplicationHandler_CreateApp(t *testing.T) {
 
 				o, _ := app.groupRepo.(*mocks.MockGroupRepository)
 				o.EXPECT().
-					FetchGroupByID(gomock.Any(), gomock.Any()).Times(1).
-					Return(group, nil)
-
+					LoadGroups(gomock.Any()).Times(1).
+					Return([]*convoy.Group{group}, nil)
 			},
 		},
 	}
