@@ -12,6 +12,8 @@ import (
 	"strings"
 	"time"
 
+	"go.mongodb.org/mongo-driver/mongo"
+
 	"github.com/felixge/httpsnoop"
 	"github.com/frain-dev/convoy/config"
 	"github.com/frain-dev/convoy/server/models"
@@ -296,6 +298,32 @@ func requireGroup(groupRepo convoy.GroupRepository) func(next http.Handler) http
 	}
 }
 
+func requireDefaultGroup(groupRepo convoy.GroupRepository) func(next http.Handler) http.Handler {
+	return func(next http.Handler) http.Handler {
+
+		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+
+			groups, err := groupRepo.LoadGroups(r.Context())
+			if err != nil {
+
+				msg := "an error occurred while loading default group"
+				statusCode := http.StatusInternalServerError
+
+				if errors.Is(err, mongo.ErrNoDocuments) {
+					msg = err.Error()
+					statusCode = http.StatusNotFound
+				}
+
+				_ = render.Render(w, r, newErrorResponse(msg, statusCode))
+				return
+			}
+
+			r = r.WithContext(setGroupInContext(r.Context(), groups[0]))
+			next.ServeHTTP(w, r)
+		})
+	}
+}
+
 func pagination(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		rawPerPage := r.URL.Query().Get("perPage")
@@ -534,7 +562,7 @@ func getApplicationEndpointFromContext(ctx context.Context) *convoy.Endpoint {
 }
 
 func setGroupInContext(ctx context.Context, group *convoy.Group) context.Context {
-	return context.WithValue(ctx, orgCtx, group)
+	return context.WithValue(ctx, groupCtx, group)
 }
 
 func getGroupFromContext(ctx context.Context) *convoy.Group {

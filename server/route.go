@@ -126,12 +126,11 @@ func buildRoutes(app *applicationHandler) http.Handler {
 	// UI API.
 	router.Route("/ui", func(uiRouter chi.Router) {
 		uiRouter.Use(jsonResponse)
-		uiRouter.Post("/init", app.CreateGroup)
 
-		uiRouter.Route("/dashboard/{orgID}", func(dashboardRouter chi.Router) {
+		uiRouter.Route("/dashboard", func(dashboardRouter chi.Router) {
 			dashboardRouter.Use(requireUIAuth())
 
-			dashboardRouter.Use(requireGroup(app.groupRepo))
+			dashboardRouter.Use(requireDefaultGroup(app.groupRepo))
 
 			dashboardRouter.With(fetchDashboardSummary(app.appRepo, app.msgRepo)).Get("/summary", app.GetDashboardSummary)
 			dashboardRouter.With(pagination).With(fetchGroupApps(app.appRepo)).Get("/apps", app.GetPaginatedApps)
