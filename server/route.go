@@ -54,19 +54,19 @@ func buildRoutes(app *applicationHandler) http.Handler {
 		r.Use(middleware.AllowContentType("application/json"))
 		r.Use(jsonResponse)
 
-		r.Route("/organisations", func(orgRouter chi.Router) {
-			orgRouter.Use(requireAuth())
+		r.Route("/groups", func(groupRouter chi.Router) {
+			groupRouter.Use(requireAuth())
 
-			orgRouter.Route("/", func(orgSubRouter chi.Router) {
-				orgRouter.Get("/", app.GetOrganisations)
-				orgSubRouter.Post("/", app.CreateOrganisation)
+			groupRouter.Route("/", func(orgSubRouter chi.Router) {
+				groupRouter.Get("/", app.GetGroups)
+				orgSubRouter.Post("/", app.CreateGroup)
 			})
 
-			orgRouter.Route("/{orgID}", func(appSubRouter chi.Router) {
-				appSubRouter.Use(requireOrganisation(app.orgRepo))
+			groupRouter.Route("/{groupID}", func(appSubRouter chi.Router) {
+				appSubRouter.Use(requireGroup(app.groupRepo))
 
-				appSubRouter.Get("/", app.GetOrganisation)
-				appSubRouter.Put("/", app.UpdateOrganisation)
+				appSubRouter.Get("/", app.GetGroup)
+				appSubRouter.Put("/", app.UpdateGroup)
 			})
 		})
 
@@ -126,15 +126,15 @@ func buildRoutes(app *applicationHandler) http.Handler {
 	// UI API.
 	router.Route("/ui", func(uiRouter chi.Router) {
 		uiRouter.Use(jsonResponse)
-		uiRouter.Post("/init", app.CreateOrganisation)
+		uiRouter.Post("/init", app.CreateGroup)
 
 		uiRouter.Route("/dashboard/{orgID}", func(dashboardRouter chi.Router) {
 			dashboardRouter.Use(requireUIAuth())
 
-			dashboardRouter.Use(requireOrganisation(app.orgRepo))
+			dashboardRouter.Use(requireGroup(app.groupRepo))
 
 			dashboardRouter.With(fetchDashboardSummary(app.appRepo, app.msgRepo)).Get("/summary", app.GetDashboardSummary)
-			dashboardRouter.With(pagination).With(fetchOrganisationApps(app.appRepo)).Get("/apps", app.GetPaginatedApps)
+			dashboardRouter.With(pagination).With(fetchGroupApps(app.appRepo)).Get("/apps", app.GetPaginatedApps)
 
 			dashboardRouter.Route("/events/{eventID}", func(msgSubRouter chi.Router) {
 				msgSubRouter.Use(requireMessage(app.msgRepo))
@@ -145,16 +145,17 @@ func buildRoutes(app *applicationHandler) http.Handler {
 			dashboardRouter.With(fetchAllConfigDetails()).Get("/config", app.GetAllConfigDetails)
 		})
 
-		uiRouter.Route("/organisations", func(orgRouter chi.Router) {
-			orgRouter.Use(requireUIAuth())
+		// TODO(daniel,subomi): maybe we should remove this? since we're now giving only a default group
+		uiRouter.Route("/groups", func(groupRouter chi.Router) {
+			groupRouter.Use(requireUIAuth())
 
-			orgRouter.Route("/", func(orgSubRouter chi.Router) {
-				orgRouter.Get("/", app.GetOrganisations)
+			groupRouter.Route("/", func(orgSubRouter chi.Router) {
+				groupRouter.Get("/", app.GetGroups)
 			})
 
-			orgRouter.Route("/{orgID}", func(appSubRouter chi.Router) {
-				appSubRouter.Use(requireOrganisation(app.orgRepo))
-				appSubRouter.Get("/", app.GetOrganisation)
+			groupRouter.Route("/{groupID}", func(appSubRouter chi.Router) {
+				appSubRouter.Use(requireGroup(app.groupRepo))
+				appSubRouter.Get("/", app.GetGroup)
 			})
 		})
 
@@ -224,7 +225,7 @@ func buildRoutes(app *applicationHandler) http.Handler {
 	return router
 }
 
-func New(cfg config.Configuration, msgRepo convoy.MessageRepository, appRepo convoy.ApplicationRepository, orgRepo convoy.OrganisationRepository) *http.Server {
+func New(cfg config.Configuration, msgRepo convoy.MessageRepository, appRepo convoy.ApplicationRepository, orgRepo convoy.GroupRepository) *http.Server {
 
 	app := newApplicationHandler(msgRepo, appRepo, orgRepo)
 

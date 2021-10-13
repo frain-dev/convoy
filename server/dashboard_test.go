@@ -18,11 +18,11 @@ func Test_login(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 
-	orgRepo := mocks.NewMockOrganisationRepository(ctrl)
+	groupRepo := mocks.NewMockGroupRepository(ctrl)
 	appRepo := mocks.NewMockApplicationRepository(ctrl)
 	msgRepo := mocks.NewMockMessageRepository(ctrl)
 
-	app = newApplicationHandler(msgRepo, appRepo, orgRepo)
+	app = newApplicationHandler(msgRepo, appRepo, groupRepo)
 
 	tests := []struct {
 		name       string
@@ -83,7 +83,7 @@ func Test_fetchAllConfigDetails(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 
-	orgRepo := mocks.NewMockOrganisationRepository(ctrl)
+	orgRepo := mocks.NewMockGroupRepository(ctrl)
 	appRepo := mocks.NewMockApplicationRepository(ctrl)
 	msgRepo := mocks.NewMockMessageRepository(ctrl)
 

@@ -4,13 +4,13 @@ import (
 	"encoding/json"
 )
 
-type Organisation struct {
+type Group struct {
 	Name    string `json:"name" bson:"name"`
 	LogoURL string `json:"logo_url" bson:"logo_url"`
 }
 
 type Application struct {
-	OrgID        string `json:"org_id" bson:"org_id"`
+	GroupID      string `json:"group_id" bson:"group_id"`
 	AppName      string `json:"name" bson:"name"`
 	Secret       string `json:"secret" bson:"secret"`
 	SupportEmail string `json:"support_email" bson:"support_email"`

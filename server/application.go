@@ -20,9 +20,9 @@ import (
 )
 
 type applicationHandler struct {
-	appRepo convoy.ApplicationRepository
-	orgRepo convoy.OrganisationRepository
-	msgRepo convoy.MessageRepository
+	appRepo   convoy.ApplicationRepository
+	groupRepo convoy.GroupRepository
+	msgRepo   convoy.MessageRepository
 }
 
 type pagedResponse struct {
@@ -30,12 +30,12 @@ type pagedResponse struct {
 	Pagination *mongopagination.PaginationData `json:"pagination,omitempty"`
 }
 
-func newApplicationHandler(msgRepo convoy.MessageRepository, appRepo convoy.ApplicationRepository, orgRepo convoy.OrganisationRepository) *applicationHandler {
+func newApplicationHandler(msgRepo convoy.MessageRepository, appRepo convoy.ApplicationRepository, groupRepo convoy.GroupRepository) *applicationHandler {
 
 	return &applicationHandler{
-		msgRepo: msgRepo,
-		appRepo: appRepo,
-		orgRepo: orgRepo,
+		msgRepo:   msgRepo,
+		appRepo:   appRepo,
+		groupRepo: groupRepo,
 	}
 }
 
@@ -116,18 +116,18 @@ func (a *applicationHandler) CreateApp(w http.ResponseWriter, r *http.Request) {
 		_ = render.Render(w, r, newErrorResponse("please provide your appName", http.StatusBadRequest))
 		return
 	}
-	orgId := newApp.OrgID
-	if util.IsStringEmpty(orgId) {
-		_ = render.Render(w, r, newErrorResponse("please provide your orgId", http.StatusBadRequest))
+	groupID := newApp.GroupID
+	if util.IsStringEmpty(groupID) {
+		_ = render.Render(w, r, newErrorResponse("please provide your groupID", http.StatusBadRequest))
 		return
 	}
 
-	org, err := a.orgRepo.FetchOrganisationByID(r.Context(), orgId)
+	group, err := a.groupRepo.FetchGroupByID(r.Context(), groupID)
 	if err != nil {
-		msg := "an error occurred while fetching organisation"
+		msg := "an error occurred while fetching group"
 		statusCode := http.StatusInternalServerError
 
-		if errors.Is(err, convoy.ErrOrganisationNotFound) {
+		if errors.Is(err, convoy.ErrGroupNotFound) {
 			msg = err.Error()
 			statusCode = http.StatusBadRequest
 		}
@@ -146,7 +146,7 @@ func (a *applicationHandler) CreateApp(w http.ResponseWriter, r *http.Request) {
 	uid := uuid.New().String()
 	app := &convoy.Application{
 		UID:            uid,
-		OrgID:          org.UID,
+		GroupID:        group.UID,
 		Title:          appName,
 		Secret:         newApp.Secret,
 		SupportEmail:   newApp.SupportEmail,

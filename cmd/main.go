@@ -2,12 +2,12 @@ package main
 
 import (
 	"context"
+	"fmt"
 	"os"
 	"time"
 	_ "time/tzdata"
 
 	"github.com/google/uuid"
-	"github.com/pkg/errors"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 
 	"github.com/frain-dev/convoy/util"
@@ -83,13 +83,13 @@ func main() {
 
 			conn := db.Database("convoy", nil)
 
-			app.orgRepo = datastore.NewOrganisationRepo(conn)
+			app.groupRepo = datastore.NewGroupRepo(conn)
 			app.applicationRepo = datastore.NewApplicationRepo(conn)
 			app.messageRepo = datastore.NewMessageRepository(conn)
 			app.queue = queuer
 
 			ensureMongoIndices(conn)
-			err = ensureDefaultGroup(context.Background(), app.orgRepo)
+			err = ensureDefaultGroup(context.Background(), app.groupRepo)
 			if err != nil {
 				return err
 			}
@@ -126,7 +126,7 @@ func main() {
 }
 
 func ensureMongoIndices(conn *mongo.Database) {
-	datastore.EnsureIndex(conn, datastore.OrgCollection, "uid", true)
+	datastore.EnsureIndex(conn, datastore.GroupCollection, "uid", true)
 
 	datastore.EnsureIndex(conn, datastore.AppCollections, "uid", true)
 
@@ -134,10 +134,10 @@ func ensureMongoIndices(conn *mongo.Database) {
 	datastore.EnsureIndex(conn, datastore.MsgCollection, "event_type", false)
 }
 
-func ensureDefaultGroup(ctx context.Context, groupRepo convoy.OrganisationRepository) error {
-	groups, err := groupRepo.LoadOrganisations(ctx)
+func ensureDefaultGroup(ctx context.Context, groupRepo convoy.GroupRepository) error {
+	groups, err := groupRepo.LoadGroups(ctx)
 	if err != nil {
-		return errors.Wrap(err, "failed to load groups")
+		return fmt.Errorf("failed to load groups - %w", err)
 	}
 
 	// a group already exists, so return
@@ -145,23 +145,23 @@ func ensureDefaultGroup(ctx context.Context, groupRepo convoy.OrganisationReposi
 		return nil
 	}
 
-	defaultGroup := &convoy.Organisation{
+	defaultGroup := &convoy.Group{
 		UID:            uuid.New().String(),
-		OrgName:        "default-group",
+		Name:           "default-group",
 		CreatedAt:      primitive.NewDateTimeFromTime(time.Now()),
 		UpdatedAt:      primitive.NewDateTimeFromTime(time.Now()),
 		DocumentStatus: convoy.ActiveDocumentStatus,
 	}
 
-	err = groupRepo.CreateOrganisation(ctx, defaultGroup)
+	err = groupRepo.CreateGroup(ctx, defaultGroup)
 	if err != nil {
-		return errors.Wrap(err, "failed to create default group")
+		return fmt.Errorf("failed to create default group - %w", err)
 	}
 	return nil
 }
 
 type app struct {
-	orgRepo         convoy.OrganisationRepository
+	groupRepo       convoy.GroupRepository
 	applicationRepo convoy.ApplicationRepository
 	messageRepo     convoy.MessageRepository
 	queue           queue.Queuer
