@@ -172,6 +172,11 @@ func TestApplicationHandler_CreateAppMessage(t *testing.T) {
 					CreateMessage(gomock.Any(), gomock.Any()).Times(1).
 					Return(nil)
 
+				q, _ := app.scheduleQueue.(*mocks.MockQueuer)
+				q.EXPECT().
+					Write(gomock.Any(), gomock.Any(), gomock.Any()).Times(1).
+					Return(nil)
+
 			},
 		},
 	}
@@ -186,8 +191,9 @@ func TestApplicationHandler_CreateAppMessage(t *testing.T) {
 			orgRepo := mocks.NewMockOrganisationRepository(ctrl)
 			appRepo := mocks.NewMockApplicationRepository(ctrl)
 			msgRepo := mocks.NewMockMessageRepository(ctrl)
+			scheduleQueue := mocks.NewMockQueuer(ctrl)
 
-			app = newApplicationHandler(msgRepo, appRepo, orgRepo)
+			app = newApplicationHandler(msgRepo, appRepo, orgRepo, scheduleQueue)
 
 			err := config.LoadConfig(tc.cfgPath)
 			if err != nil {
@@ -416,8 +422,9 @@ func Test_resendMessage(t *testing.T) {
 			orgRepo := mocks.NewMockOrganisationRepository(ctrl)
 			appRepo := mocks.NewMockApplicationRepository(ctrl)
 			msgRepo := mocks.NewMockMessageRepository(ctrl)
+			scheduleQueue := mocks.NewMockQueuer(ctrl)
 
-			app = newApplicationHandler(msgRepo, appRepo, orgRepo)
+			app = newApplicationHandler(msgRepo, appRepo, orgRepo, scheduleQueue)
 
 			url := fmt.Sprintf("/v1/events/%s/resend", tc.args.message.UID)
 			req := httptest.NewRequest(tc.method, url, nil)

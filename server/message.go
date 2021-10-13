@@ -127,6 +127,13 @@ func (a *applicationHandler) CreateAppMessage(w http.ResponseWriter, r *http.Req
 		return
 	}
 
+	if messageStatus == convoy.ScheduledMessageStatus {
+		err = a.scheduleQueue.Write(r.Context(), msg, 1*time.Second)
+		if err != nil {
+			log.Errorf("Error occurred sending new event to the queue %s", err)
+		}
+	}
+
 	_ = render.Render(w, r, newServerResponse("App event created successfully", msg, http.StatusCreated))
 }
 

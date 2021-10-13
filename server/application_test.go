@@ -95,12 +95,13 @@ func TestApplicationHandler_GetApp(t *testing.T) {
 	org := mocks.NewMockOrganisationRepository(ctrl)
 	apprepo := mocks.NewMockApplicationRepository(ctrl)
 	msgRepo := mocks.NewMockMessageRepository(ctrl)
+	scheduleQueue := mocks.NewMockQueuer(ctrl)
 
 	orgID := "1234567890"
 
 	validID := "123456789"
 
-	app = newApplicationHandler(msgRepo, apprepo, org)
+	app = newApplicationHandler(msgRepo, apprepo, org, scheduleQueue)
 
 	tt := []struct {
 		name       string
@@ -190,12 +191,13 @@ func TestApplicationHandler_GetApps(t *testing.T) {
 	org := mocks.NewMockOrganisationRepository(ctrl)
 	apprepo := mocks.NewMockApplicationRepository(ctrl)
 	msgRepo := mocks.NewMockMessageRepository(ctrl)
+	scheduleQueue := mocks.NewMockQueuer(ctrl)
 
 	orgID := "1234567890"
 
 	validID := "123456789"
 
-	app = newApplicationHandler(msgRepo, apprepo, org)
+	app = newApplicationHandler(msgRepo, apprepo, org, scheduleQueue)
 
 	tt := []struct {
 		name       string
@@ -335,8 +337,9 @@ func TestApplicationHandler_CreateApp(t *testing.T) {
 			org := mocks.NewMockOrganisationRepository(ctrl)
 			apprepo := mocks.NewMockApplicationRepository(ctrl)
 			msgRepo := mocks.NewMockMessageRepository(ctrl)
+			scheduleQueue := mocks.NewMockQueuer(ctrl)
 
-			app = newApplicationHandler(msgRepo, apprepo, org)
+			app = newApplicationHandler(msgRepo, apprepo, org, scheduleQueue)
 
 			// Arrange
 			req := httptest.NewRequest(tc.method, "/v1/applications", tc.body)
@@ -509,8 +512,9 @@ func TestApplicationHandler_UpdateApp(t *testing.T) {
 			org := mocks.NewMockOrganisationRepository(ctrl)
 			apprepo := mocks.NewMockApplicationRepository(ctrl)
 			msgRepo := mocks.NewMockMessageRepository(ctrl)
+			scheduleQueue := mocks.NewMockQueuer(ctrl)
 
-			app = newApplicationHandler(msgRepo, apprepo, org)
+			app = newApplicationHandler(msgRepo, apprepo, org, scheduleQueue)
 
 			url := fmt.Sprintf("/v1/applications/%s", tc.appId)
 			req := httptest.NewRequest(tc.method, url, tc.body)
@@ -563,12 +567,13 @@ func TestApplicationHandler_CreateAppEndpoint(t *testing.T) {
 	org := mocks.NewMockOrganisationRepository(ctrl)
 	apprepo := mocks.NewMockApplicationRepository(ctrl)
 	msgRepo := mocks.NewMockMessageRepository(ctrl)
+	scheduleQueue := mocks.NewMockQueuer(ctrl)
 
 	orgID := "1234567890"
 
 	bodyReader := strings.NewReader(`{"url": "https://google.com", "description": "Test"}`)
 
-	app = newApplicationHandler(msgRepo, apprepo, org)
+	app = newApplicationHandler(msgRepo, apprepo, org, scheduleQueue)
 
 	appId := "123456789"
 
@@ -722,8 +727,9 @@ func TestApplicationHandler_UpdateAppEndpoint(t *testing.T) {
 			org := mocks.NewMockOrganisationRepository(ctrl)
 			apprepo := mocks.NewMockApplicationRepository(ctrl)
 			msgRepo := mocks.NewMockMessageRepository(ctrl)
+			scheduleQueue := mocks.NewMockQueuer(ctrl)
 
-			app = newApplicationHandler(msgRepo, apprepo, org)
+			app = newApplicationHandler(msgRepo, apprepo, org, scheduleQueue)
 
 			url := fmt.Sprintf("/v1/applications/%s/endpoints/%s", tc.appId, tc.endpointId)
 			req := httptest.NewRequest(tc.method, url, tc.body)
@@ -781,6 +787,7 @@ func Test_applicationHandler_GetDashboardSummary(t *testing.T) {
 	org := mocks.NewMockOrganisationRepository(ctrl)
 	apprepo := mocks.NewMockApplicationRepository(ctrl)
 	msgRepo := mocks.NewMockMessageRepository(ctrl)
+	scheduleQueue := mocks.NewMockQueuer(ctrl)
 
 	orgID := "1234567890"
 
@@ -789,7 +796,7 @@ func Test_applicationHandler_GetDashboardSummary(t *testing.T) {
 		OrgName: "Valid organisation",
 	}
 
-	app = newApplicationHandler(msgRepo, apprepo, org)
+	app = newApplicationHandler(msgRepo, apprepo, org, scheduleQueue)
 
 	tt := []struct {
 		name       string
@@ -865,6 +872,7 @@ func Test_applicationHandler_GetPaginatedApps(t *testing.T) {
 	org := mocks.NewMockOrganisationRepository(ctrl)
 	apprepo := mocks.NewMockApplicationRepository(ctrl)
 	msgRepo := mocks.NewMockMessageRepository(ctrl)
+	scheduleQueue := mocks.NewMockQueuer(ctrl)
 
 	orgID := "1234567890"
 
@@ -873,7 +881,7 @@ func Test_applicationHandler_GetPaginatedApps(t *testing.T) {
 		OrgName: "Valid organisation",
 	}
 
-	app = newApplicationHandler(msgRepo, apprepo, org)
+	app = newApplicationHandler(msgRepo, apprepo, org, scheduleQueue)
 
 	tt := []struct {
 		name       string

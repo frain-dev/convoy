@@ -3,6 +3,7 @@ package task
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"time"
 
 	"github.com/frain-dev/convoy"
@@ -15,6 +16,8 @@ import (
 	log "github.com/sirupsen/logrus"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 )
+
+var ErrDeliveryAttemptFailed = errors.New("Error sending event")
 
 type EndpointError struct {
 	delay time.Duration
@@ -29,106 +32,88 @@ func (e *EndpointError) Delay() time.Duration {
 	return e.delay
 }
 
-func ProcessMessages(appRepo convoy.ApplicationRepository, msgRepo convoy.MessageRepository) func(*queue.Job) EndpointError {
-	return func(job *queue.Job) EndpointError {
+func ProcessMessages(appRepo convoy.ApplicationRepository, msgRepo convoy.MessageRepository, orgRepo convoy.OrganisationRepository) func(*queue.Job) error {
+	return func(job *queue.Job) error {
 		m := job.Data
+
 		var attempt convoy.MessageAttempt
 		var secret = m.AppMetadata.Secret
 
 		cfg, err := config.Get()
 		if err != nil {
-			return EndpointError{Err: err}
+			return &EndpointError{Err: err}
 		}
 
 		dispatch := net.NewDispatcher()
 
 		var done = true
-		for _, e := range m.AppMetadata.Endpoints {
 
-			if e.Sent {
-				log.Debugf("endpoint %s already merged with message %s\n", e.TargetURL, m.UID)
-				continue
-			}
+		// It's an error state for the open core to have more than one endpoints.
+		e := m.AppMetadata.Endpoints[0]
 
-			dbEndpoint, err := appRepo.FindApplicationEndpointByID(context.Background(), m.AppID, e.UID)
-			if err != nil {
-				log.WithError(err).Errorf("could not retrieve endpoint %s", e.UID)
-				continue
-			}
-
-			if dbEndpoint.Status == convoy.InactiveEndpointStatus {
-				log.Debugf("endpoint %s is inactive, failing to send.", e.TargetURL)
-				done = false
-				continue
-			}
-
-			bytes, err := json.Marshal(m.Data)
-			if err != nil {
-				log.Errorf("error occurred while parsing json")
-				return EndpointError{Err: err}
-			}
-
-			bStr := string(bytes)
-			hmac, err := util.ComputeJSONHmac(cfg.Signature.Hash, bStr, secret, false)
-			if err != nil {
-				log.Errorf("error occurred while generating hmac signature - %+v\n", err)
-				return EndpointError{Err: err}
-			}
-
-			attemptStatus := convoy.FailureMessageStatus
-			start := time.Now()
-
-			resp, err := dispatch.SendRequest(e.TargetURL, string(convoy.HttpPost), bytes, string(cfg.Signature.Header), hmac)
-			status := "-"
-			statusCode := 0
-			if resp != nil {
-				status = resp.Status
-				statusCode = resp.StatusCode
-			}
-
-			duration := time.Since(start)
-			// log request details
-			requestLogger := log.WithFields(log.Fields{
-				"status":   status,
-				"uri":      e.TargetURL,
-				"method":   convoy.HttpPost,
-				"duration": duration,
-			})
-
-			if err == nil && statusCode >= 200 && statusCode <= 299 {
-				requestLogger.Infof("%s", m.UID)
-				log.Infof("%s sent\n", m.UID)
-				attemptStatus = convoy.SuccessMessageStatus
-				e.Sent = true
-
-				if dbEndpoint.Status == convoy.PendingEndpointStatus {
-					dbEndpoint.Status = convoy.ActiveEndpointStatus
-
-					activeEnpoints := []string{dbEndpoint.UID}
-					err := appRepo.UpdateApplicationEndpointsStatus(context.Background(), m.AppID, activeEnpoints, convoy.ActiveEndpointStatus)
-					if err != nil {
-						log.WithError(err).Error("Failed to reactivate endpoint after successful retry")
-					}
-				}
-			} else {
-				requestLogger.Errorf("%s", m.UID)
-				done = false
-				e.Sent = false
-			}
-			if err != nil {
-				log.Errorf("%s failed. Reason: %s", m.UID, err)
-			}
-
-			attempt = parseAttemptFromResponse(*m, e, resp, attemptStatus)
+		if e.Sent {
+			log.Debugf("endpoint %s already merged with message %s\n", e.TargetURL, m.UID)
+			return nil
 		}
 
-		m.Metadata.NumTrials++
+		dbEndpoint, err := appRepo.FindApplicationEndpointByID(context.Background(), m.AppID, e.UID)
+		if err != nil {
+			log.WithError(err).Errorf("could not retrieve endpoint %s", e.UID)
+			return &EndpointError{Err: err}
+		}
 
-		if done {
+		if dbEndpoint.Status == convoy.InactiveEndpointStatus {
+			log.Debugf("endpoint %s is inactive, failing to send.", e.TargetURL)
+			done = false
+			return nil
+		}
+
+		bytes, err := json.Marshal(m.Data)
+		if err != nil {
+			log.Errorf("error occurred while parsing json")
+			return &EndpointError{Err: err}
+		}
+
+		bStr := string(bytes)
+		hmac, err := util.ComputeJSONHmac(cfg.Signature.Hash, bStr, secret, false)
+		if err != nil {
+			log.Errorf("error occurred while generating hmac signature - %+v\n", err)
+			return &EndpointError{Err: err}
+		}
+
+		attemptStatus := convoy.FailureMessageStatus
+		start := time.Now()
+
+		resp, err := dispatch.SendRequest(e.TargetURL, string(convoy.HttpPost), bytes, string(cfg.Signature.Header), hmac)
+		status := "-"
+		statusCode := 0
+		if resp != nil {
+			status = resp.Status
+			statusCode = resp.StatusCode
+		}
+
+		duration := time.Since(start)
+		// log request details
+		requestLogger := log.WithFields(log.Fields{
+			"status":   status,
+			"uri":      e.TargetURL,
+			"method":   convoy.HttpPost,
+			"duration": duration,
+		})
+
+		if err == nil && statusCode >= 200 && statusCode <= 299 {
+			requestLogger.Infof("%s", m.UID)
+			log.Infof("%s sent", m.UID)
+			attemptStatus = convoy.SuccessMessageStatus
+			e.Sent = true
+
 			m.Status = convoy.SuccessMessageStatus
 			m.Description = ""
-
 		} else {
+			requestLogger.Errorf("%s", m.UID)
+			done = false
+			e.Sent = false
+
 			m.Status = convoy.RetryMessageStatus
 
 			delay := m.Metadata.IntervalSeconds
@@ -137,6 +122,43 @@ func ProcessMessages(appRepo convoy.ApplicationRepository, msgRepo convoy.Messag
 
 			log.Errorf("%s next retry time is %s (strategy = %s, delay = %d, attempts = %d/%d)\n", m.UID, nextTime.Format(time.ANSIC), m.Metadata.Strategy, delay, m.Metadata.NumTrials, m.Metadata.RetryLimit)
 		}
+
+		// Request failed but statusCode is 200 <= x <= 299
+		if err != nil {
+			log.Errorf("%s failed. Reason: %s", m.UID, err)
+		}
+
+		if done && dbEndpoint.Status == convoy.PendingEndpointStatus {
+			endpoints := []string{dbEndpoint.UID}
+			endpointStatus := convoy.ActiveEndpointStatus
+
+			err := appRepo.UpdateApplicationEndpointsStatus(context.Background(), m.AppID, endpoints, endpointStatus)
+			if err != nil {
+				log.WithError(err).Error("Failed to reactivate endpoint after successful retry")
+			}
+
+			s, err := smtp.New(&cfg.SMTP)
+			if err == nil {
+				err = sendEmailNotification(m.AppMetadata, &orgRepo, s, endpointStatus)
+				if err != nil {
+					log.WithError(err).Error("Failed to send notification email")
+				}
+			}
+		}
+
+		if !done && dbEndpoint.Status == convoy.PendingEndpointStatus {
+			endpoints := []string{dbEndpoint.UID}
+			endpointStatus := convoy.InactiveEndpointStatus
+
+			err := appRepo.UpdateApplicationEndpointsStatus(context.Background(), m.AppID, endpoints, endpointStatus)
+			if err != nil {
+				log.WithError(err).Error("Failed to reactivate endpoint after successful retry")
+			}
+		}
+
+		attempt = parseAttemptFromResponse(*m, e, resp, attemptStatus)
+
+		m.Metadata.NumTrials++
 
 		if m.Metadata.NumTrials >= m.Metadata.RetryLimit {
 			if done {
@@ -150,32 +172,23 @@ func ProcessMessages(appRepo convoy.ApplicationRepository, msgRepo convoy.Messag
 				m.Status = convoy.FailureMessageStatus
 			}
 
-			go func() {
-				inactiveEndpoints := make([]string, 0)
-				for i := 0; i < len(m.AppMetadata.Endpoints); i++ {
-					endpoint := m.AppMetadata.Endpoints[i]
-					if !endpoint.Sent {
-						inactiveEndpoints = append(inactiveEndpoints, endpoint.UID)
-					}
-				}
-				err := appRepo.UpdateApplicationEndpointsStatus(context.Background(), m.AppID, inactiveEndpoints, convoy.InactiveEndpointStatus)
+			if dbEndpoint.Status != convoy.PendingEndpointStatus {
+				endpoints := []string{dbEndpoint.UID}
+				endpointStatus := convoy.InactiveEndpointStatus
+
+				err := appRepo.UpdateApplicationEndpointsStatus(context.Background(), m.AppID, endpoints, endpointStatus)
 				if err != nil {
-					log.WithError(err).Error("Failed to update disabled app endpoints")
-					return
+					log.WithError(err).Error("Failed to reactivate endpoint after successful retry")
 				}
 
 				s, err := smtp.New(&cfg.SMTP)
 				if err == nil {
-					for i := 0; i < len(m.AppMetadata.Endpoints); i++ {
-						email := m.AppMetadata.SupportEmail
-						endpoint := m.AppMetadata.Endpoints[i]
-						err = s.SendEmailNotification(email, endpoint)
-						if err != nil {
-							log.WithError(err).Error("Failed to send notification email")
-						}
+					err = sendEmailNotification(m.AppMetadata, &orgRepo, s, endpointStatus)
+					if err != nil {
+						log.WithError(err).Error("Failed to send notification email")
 					}
 				}
-			}()
+			}
 		}
 
 		err = msgRepo.UpdateMessageWithAttempt(context.Background(), *m, attempt)
@@ -183,8 +196,34 @@ func ProcessMessages(appRepo convoy.ApplicationRepository, msgRepo convoy.Messag
 			log.Errorln("failed to update message ", m.UID)
 		}
 
-		return EndpointError{}
+		if !done && m.Metadata.NumTrials < m.Metadata.RetryLimit {
+			delay := time.Duration(m.Metadata.IntervalSeconds) * time.Second
+			return &EndpointError{Err: ErrDeliveryAttemptFailed, delay: delay}
+		}
+
+		return nil
 	}
+}
+
+func sendEmailNotification(m *convoy.AppMetadata, o *convoy.OrganisationRepository, s *smtp.SmtpClient, status convoy.EndpointStatus) error {
+	email := m.SupportEmail
+
+	org, err := (*o).FetchOrganisationByID(context.Background(), m.OrgID)
+	if err != nil {
+		return err
+	}
+
+	logoURL := org.LogoURL
+
+	for i := 0; i < len(m.Endpoints); i++ {
+		endpoint := m.Endpoints[i]
+		err = s.SendEmailNotification(email, logoURL, endpoint.TargetURL, status)
+		if err != nil {
+			return err
+		}
+	}
+
+	return nil
 }
 
 func parseAttemptFromResponse(m convoy.Message, e convoy.EndpointMetadata, resp *net.Response, attemptStatus convoy.MessageStatus) convoy.MessageAttempt {

@@ -50,7 +50,7 @@ func addServerCommand(a *app) *cobra.Command {
 			}
 
 			// register tasks.
-			convoy_task.CreateTask("EventProcessor", cfg, convoy_task.ProcessMessages(a.applicationRepo, a.messageRepo))
+			convoy_task.CreateTask("EventProcessor", cfg, convoy_task.ProcessMessages(a.applicationRepo, a.messageRepo, a.orgRepo))
 			convoy_task.CreateTask("DeadLetterProcessor", cfg, convoy_task.ProcessDeadLetters)
 
 			log.Infof("Started convoy server in %s", time.Since(start))

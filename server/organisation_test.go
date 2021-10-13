@@ -28,8 +28,9 @@ func TestApplicationHandler_GetOrganisation(t *testing.T) {
 	orgRepo := mocks.NewMockOrganisationRepository(ctrl)
 	appRepo := mocks.NewMockApplicationRepository(ctrl)
 	msgRepo := mocks.NewMockMessageRepository(ctrl)
+	scheduleQueue := mocks.NewMockQueuer(ctrl)
 
-	app = newApplicationHandler(msgRepo, appRepo, orgRepo)
+	app = newApplicationHandler(msgRepo, appRepo, orgRepo, scheduleQueue)
 
 	tt := []struct {
 		name       string
@@ -116,8 +117,9 @@ func TestApplicationHandler_CreateOrganisation(t *testing.T) {
 	orgRepo := mocks.NewMockOrganisationRepository(ctrl)
 	appRepo := mocks.NewMockApplicationRepository(ctrl)
 	msgRepo := mocks.NewMockMessageRepository(ctrl)
+	scheduleQueue := mocks.NewMockQueuer(ctrl)
 
-	app = newApplicationHandler(msgRepo, appRepo, orgRepo)
+	app = newApplicationHandler(msgRepo, appRepo, orgRepo, scheduleQueue)
 
 	bodyReader := strings.NewReader(`{"name": "ABC_DEF_TEST_UPDATE"}`)
 
@@ -184,8 +186,9 @@ func TestApplicationHandler_UpdateOrganisation(t *testing.T) {
 	orgRepo := mocks.NewMockOrganisationRepository(ctrl)
 	appRepo := mocks.NewMockApplicationRepository(ctrl)
 	msgRepo := mocks.NewMockMessageRepository(ctrl)
+	scheduleQueue := mocks.NewMockQueuer(ctrl)
 
-	app = newApplicationHandler(msgRepo, appRepo, orgRepo)
+	app = newApplicationHandler(msgRepo, appRepo, orgRepo, scheduleQueue)
 
 	realOrgID := "1234567890"
 
@@ -270,8 +273,9 @@ func TestApplicationHandler_GetOrganisations(t *testing.T) {
 	orgRepo := mocks.NewMockOrganisationRepository(ctrl)
 	appRepo := mocks.NewMockApplicationRepository(ctrl)
 	msgRepo := mocks.NewMockMessageRepository(ctrl)
+	scheduleQueue := mocks.NewMockQueuer(ctrl)
 
-	app = newApplicationHandler(msgRepo, appRepo, orgRepo)
+	app = newApplicationHandler(msgRepo, appRepo, orgRepo, scheduleQueue)
 
 	realOrgID := "1234567890"
 
