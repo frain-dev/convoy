@@ -270,34 +270,6 @@ func findEndpoint(endpoints *[]convoy.Endpoint, id string) (*convoy.Endpoint, er
 	return nil, convoy.ErrEndpointNotFound
 }
 
-func requireGroup(groupRepo convoy.GroupRepository) func(next http.Handler) http.Handler {
-	return func(next http.Handler) http.Handler {
-
-		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-
-			groupId := chi.URLParam(r, "groupID")
-
-			group, err := groupRepo.FetchGroupByID(r.Context(), groupId)
-			if err != nil {
-
-				msg := "an error occurred while retrieving group details"
-				statusCode := http.StatusInternalServerError
-
-				if errors.Is(err, convoy.ErrGroupNotFound) {
-					msg = err.Error()
-					statusCode = http.StatusNotFound
-				}
-
-				_ = render.Render(w, r, newErrorResponse(msg, statusCode))
-				return
-			}
-
-			r = r.WithContext(setGroupInContext(r.Context(), group))
-			next.ServeHTTP(w, r)
-		})
-	}
-}
-
 func requireDefaultGroup(groupRepo convoy.GroupRepository) func(next http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 

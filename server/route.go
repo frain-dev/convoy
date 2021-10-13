@@ -63,7 +63,7 @@ func buildRoutes(app *applicationHandler) http.Handler {
 			})
 
 			groupRouter.Route("/{groupID}", func(appSubRouter chi.Router) {
-				appSubRouter.Use(requireGroup(app.groupRepo))
+				appSubRouter.Use(requireDefaultGroup(app.groupRepo))
 
 				appSubRouter.Get("/", app.GetGroup)
 				appSubRouter.Put("/", app.UpdateGroup)
@@ -153,7 +153,7 @@ func buildRoutes(app *applicationHandler) http.Handler {
 			})
 
 			groupRouter.Route("/{groupID}", func(appSubRouter chi.Router) {
-				appSubRouter.Use(requireGroup(app.groupRepo))
+				appSubRouter.Use(requireDefaultGroup(app.groupRepo))
 				appSubRouter.Get("/", app.GetGroup)
 			})
 		})

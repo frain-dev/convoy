@@ -116,11 +116,6 @@ func (a *applicationHandler) CreateApp(w http.ResponseWriter, r *http.Request) {
 		_ = render.Render(w, r, newErrorResponse("please provide your appName", http.StatusBadRequest))
 		return
 	}
-	groupID := newApp.GroupID
-	if util.IsStringEmpty(groupID) {
-		_ = render.Render(w, r, newErrorResponse("please provide your groupID", http.StatusBadRequest))
-		return
-	}
 
 	group := getGroupFromContext(r.Context())
 
