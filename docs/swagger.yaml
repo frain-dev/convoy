@@ -4,8 +4,6 @@ definitions:
     properties:
       name:
         type: string
-      org_id:
-        type: string
       secret:
         type: string
       support_email:
@@ -18,6 +16,13 @@ definitions:
       secret:
         type: string
       url:
+        type: string
+    type: object
+  models.Group:
+    properties:
+      logo_url:
+        type: string
+      name:
         type: string
     type: object
   models.Message:
@@ -37,13 +42,6 @@ definitions:
       provider_id:
         type: string
       status:
-        type: string
-    type: object
-  models.Organisation:
-    properties:
-      logo_url:
-        type: string
-      name:
         type: string
     type: object
   server.serverResponse:
@@ -471,9 +469,9 @@ paths:
         in: query
         name: appId
         type: string
-      - description: organisation id
+      - description: group id
         in: query
-        name: orgId
+        name: groupId
         type: string
       - description: start date
         in: query
@@ -699,11 +697,11 @@ paths:
       summary: Resend an app message
       tags:
       - Messages
-  /organisations:
+  /groups:
     get:
       consumes:
       - application/json
-      description: This endpoint fetches organisations
+      description: This endpoint fetches groups
       produces:
       - application/json
       responses:
@@ -725,20 +723,20 @@ paths:
             $ref: '#/definitions/server.serverResponse'
       security:
       - ApiKeyAuth: []
-      summary: Get organisations
+      summary: Get groups
       tags:
-      - Organisation
+      - Group
     post:
       consumes:
       - application/json
-      description: This endpoint creates an organisation
+      description: This endpoint creates a group
       parameters:
-      - description: Organisation Details
+      - description: Group Details
         in: body
-        name: organisation
+        name: group
         required: true
         schema:
-          $ref: '#/definitions/models.Organisation'
+          $ref: '#/definitions/models.Group'
       produces:
       - application/json
       responses:
@@ -760,18 +758,18 @@ paths:
             $ref: '#/definitions/server.serverResponse'
       security:
       - ApiKeyAuth: []
-      summary: Create an organisation
+      summary: Create a group
       tags:
-      - Organisation
-  /organisations/{orgID}:
+      - Group
+  /groups/{groupID}:
     get:
       consumes:
       - application/json
-      description: This endpoint fetches an organisation by it's id
+      description: This endpoint fetches a group by its id
       parameters:
-      - description: organisation id
+      - description: Group id
         in: path
-        name: orgID
+        name: groupID
         required: true
         type: string
       produces:
@@ -795,25 +793,25 @@ paths:
             $ref: '#/definitions/server.serverResponse'
       security:
       - ApiKeyAuth: []
-      summary: Get an organisation
+      summary: Get a group
       tags:
-      - Organisation
+      - Group
     put:
       consumes:
       - application/json
-      description: This endpoint updates an organisation
+      description: This endpoint updates a group
       parameters:
-      - description: organisation id
+      - description: group id
         in: path
-        name: orgID
+        name: groupID
         required: true
         type: string
-      - description: Organisation Details
+      - description: Group Details
         in: body
-        name: organisation
+        name: group
         required: true
         schema:
-          $ref: '#/definitions/models.Organisation'
+          $ref: '#/definitions/models.Group'
       produces:
       - application/json
       responses:
@@ -835,9 +833,9 @@ paths:
             $ref: '#/definitions/server.serverResponse'
       security:
       - ApiKeyAuth: []
-      summary: Update an organisation
+      summary: Update a group
       tags:
-      - Organisation
+      - Group
 schemes:
 - http
 - https

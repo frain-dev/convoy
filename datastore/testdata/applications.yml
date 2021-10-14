@@ -1,18 +1,18 @@
 ---
 - id: 762887d3-851f-4f12-8d0a-f0832ceae3b4
-  org_id: 2dade341-799e-4bb7-bf4a-b04a23b551c3
+  group_id: 2dade341-799e-4bb7-bf4a-b04a23b551c3
   title: First application
   created_at: '2021-05-13 00:17:28.255671+00'
 - id: ad910ddc-c99c-42ce-bf7e-88e8772fabd1
-  org_id: 2dade341-799e-4bb7-bf4a-b04a23b551c3
+  group_id: 2dade341-799e-4bb7-bf4a-b04a23b551c3
   title: Second application
   created_at: '2021-05-13 00:17:28.255671+00'
 - id: d404c3c5-3a7c-408d-ad38-dd958b211eef
-  org_id: 2dade341-799e-4bb7-bf4a-b04a23b551c3
+  group_id: 2dade341-799e-4bb7-bf4a-b04a23b551c3
   title: Third application
   created_at: '2021-05-13 00:17:28.255671+00'
 - id: f98f8de6-a972-4609-88e6-61cd7ecf4e3a
-  org_id: 2dade341-799e-4bb7-bf4a-b04a23b551c3
+  group_id: 2dade341-799e-4bb7-bf4a-b04a23b551c3
   title: Fourth application
   created_at: '2021-05-13 00:17:28.255671+00'
 

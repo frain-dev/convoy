@@ -6,9 +6,6 @@
 					"name": {
 						"type": "string"
 					},
-					"org_id": {
-						"type": "string"
-					},
 					"secret": {
 						"type": "string"
 					},
@@ -27,6 +24,17 @@
 						"type": "string"
 					},
 					"url": {
+						"type": "string"
+					}
+				},
+				"type": "object"
+			},
+			"models.Group": {
+				"properties": {
+					"logo_url": {
+						"type": "string"
+					},
+					"name": {
 						"type": "string"
 					}
 				},
@@ -56,17 +64,6 @@
 						"type": "string"
 					},
 					"status": {
-						"type": "string"
-					}
-				},
-				"type": "object"
-			},
-			"models.Organisation": {
-				"properties": {
-					"logo_url": {
-						"type": "string"
-					},
-					"name": {
 						"type": "string"
 					}
 				},
@@ -875,9 +872,9 @@
 						}
 					},
 					{
-						"description": "organisation id",
+						"description": "group id",
 						"in": "query",
-						"name": "orgId",
+						"name": "groupId",
 						"schema": {
 							"type": "string"
 						}
@@ -1319,9 +1316,9 @@
 				]
 			}
 		},
-		"/organisations": {
+		"/groups": {
 			"get": {
-				"description": "This endpoint fetches organisations",
+				"description": "This endpoint fetches groups",
 				"responses": {
 					"200": {
 						"content": {
@@ -1369,24 +1366,24 @@
 						"ApiKeyAuth": []
 					}
 				],
-				"summary": "Get organisations",
+				"summary": "Get groups",
 				"tags": [
-					"Organisation"
+					"Group"
 				]
 			},
 			"post": {
-				"description": "This endpoint creates an organisation",
+				"description": "This endpoint creates a group",
 				"requestBody": {
 					"content": {
 						"application/json": {
 							"schema": {
-								"$ref": "#/components/schemas/models.Organisation"
+								"$ref": "#/components/schemas/models.Group"
 							}
 						}
 					},
-					"description": "Organisation Details",
+					"description": "Group Details",
 					"required": true,
-					"x-originalParamName": "organisation"
+					"x-originalParamName": "group"
 				},
 				"responses": {
 					"200": {
@@ -1435,20 +1432,20 @@
 						"ApiKeyAuth": []
 					}
 				],
-				"summary": "Create an organisation",
+				"summary": "Create a group",
 				"tags": [
-					"Organisation"
+					"Group"
 				]
 			}
 		},
-		"/organisations/{orgID}": {
+		"/groups/{groupID}": {
 			"get": {
-				"description": "This endpoint fetches an organisation by it's id",
+				"description": "This endpoint fetches a group by its id",
 				"parameters": [
 					{
-						"description": "organisation id",
+						"description": "Group id",
 						"in": "path",
-						"name": "orgID",
+						"name": "groupID",
 						"required": true,
 						"schema": {
 							"type": "string"
@@ -1502,18 +1499,18 @@
 						"ApiKeyAuth": []
 					}
 				],
-				"summary": "Get an organisation",
+				"summary": "Get a group",
 				"tags": [
-					"Organisation"
+					"Group"
 				]
 			},
 			"put": {
-				"description": "This endpoint updates an organisation",
+				"description": "This endpoint updates a group",
 				"parameters": [
 					{
-						"description": "organisation id",
+						"description": "group id",
 						"in": "path",
-						"name": "orgID",
+						"name": "groupID",
 						"required": true,
 						"schema": {
 							"type": "string"
@@ -1524,13 +1521,13 @@
 					"content": {
 						"application/json": {
 							"schema": {
-								"$ref": "#/components/schemas/models.Organisation"
+								"$ref": "#/components/schemas/models.Group"
 							}
 						}
 					},
-					"description": "Organisation Details",
+					"description": "Group Details",
 					"required": true,
-					"x-originalParamName": "organisation"
+					"x-originalParamName": "group"
 				},
 				"responses": {
 					"200": {
@@ -1579,9 +1576,9 @@
 						"ApiKeyAuth": []
 					}
 				],
-				"summary": "Update an organisation",
+				"summary": "Update a group",
 				"tags": [
-					"Organisation"
+					"Group"
 				]
 			}
 		}

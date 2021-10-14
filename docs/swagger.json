@@ -654,8 +654,8 @@
                     },
                     {
                         "type": "string",
-                        "description": "organisation id",
-                        "name": "orgId",
+                        "description": "group id",
+                        "name": "groupId",
                         "in": "query"
                     },
                     {
@@ -999,14 +999,14 @@
                 }
             }
         },
-        "/organisations": {
+        "/groups": {
             "get": {
                 "security": [
                     {
                         "ApiKeyAuth": []
                     }
                 ],
-                "description": "This endpoint fetches organisations",
+                "description": "This endpoint fetches groups",
                 "consumes": [
                     "application/json"
                 ],
@@ -1014,9 +1014,9 @@
                     "application/json"
                 ],
                 "tags": [
-                    "Organisation"
+                    "Group"
                 ],
-                "summary": "Get organisations",
+                "summary": "Get groups",
                 "responses": {
                     "200": {
                         "description": "OK",
@@ -1050,7 +1050,7 @@
                         "ApiKeyAuth": []
                     }
                 ],
-                "description": "This endpoint creates an organisation",
+                "description": "This endpoint creates a group",
                 "consumes": [
                     "application/json"
                 ],
@@ -1058,17 +1058,17 @@
                     "application/json"
                 ],
                 "tags": [
-                    "Organisation"
+                    "Group"
                 ],
-                "summary": "Create an organisation",
+                "summary": "Create a group",
                 "parameters": [
                     {
-                        "description": "Organisation Details",
-                        "name": "organisation",
+                        "description": "Group Details",
+                        "name": "group",
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/models.Organisation"
+                            "$ref": "#/definitions/models.Group"
                         }
                     }
                 ],
@@ -1100,14 +1100,14 @@
                 }
             }
         },
-        "/organisations/{orgID}": {
+        "/groups/{groupID}": {
             "get": {
                 "security": [
                     {
                         "ApiKeyAuth": []
                     }
                 ],
-                "description": "This endpoint fetches an organisation by it's id",
+                "description": "This endpoint fetches a group by its id",
                 "consumes": [
                     "application/json"
                 ],
@@ -1115,14 +1115,14 @@
                     "application/json"
                 ],
                 "tags": [
-                    "Organisation"
+                    "Group"
                 ],
-                "summary": "Get an organisation",
+                "summary": "Get a group",
                 "parameters": [
                     {
                         "type": "string",
-                        "description": "organisation id",
-                        "name": "orgID",
+                        "description": "Group id",
+                        "name": "groupID",
                         "in": "path",
                         "required": true
                     }
@@ -1160,7 +1160,7 @@
                         "ApiKeyAuth": []
                     }
                 ],
-                "description": "This endpoint updates an organisation",
+                "description": "This endpoint updates a group",
                 "consumes": [
                     "application/json"
                 ],
@@ -1168,24 +1168,24 @@
                     "application/json"
                 ],
                 "tags": [
-                    "Organisation"
+                    "Group"
                 ],
-                "summary": "Update an organisation",
+                "summary": "Update a group",
                 "parameters": [
                     {
                         "type": "string",
-                        "description": "organisation id",
-                        "name": "orgID",
+                        "description": "group id",
+                        "name": "groupID",
                         "in": "path",
                         "required": true
                     },
                     {
-                        "description": "Organisation Details",
-                        "name": "organisation",
+                        "description": "Group Details",
+                        "name": "group",
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/models.Organisation"
+                            "$ref": "#/definitions/models.Group"
                         }
                     }
                 ],
@@ -1225,9 +1225,6 @@
                 "name": {
                     "type": "string"
                 },
-                "org_id": {
-                    "type": "string"
-                },
                 "secret": {
                     "type": "string"
                 },
@@ -1246,6 +1243,17 @@
                     "type": "string"
                 },
                 "url": {
+                    "type": "string"
+                }
+            }
+        },
+        "models.Group": {
+            "type": "object",
+            "properties": {
+                "logo_url": {
+                    "type": "string"
+                },
+                "name": {
                     "type": "string"
                 }
             }
@@ -1275,17 +1283,6 @@
                     "type": "string"
                 },
                 "status": {
-                    "type": "string"
-                }
-            }
-        },
-        "models.Organisation": {
-            "type": "object",
-            "properties": {
-                "logo_url": {
-                    "type": "string"
-                },
-                "name": {
                     "type": "string"
                 }
             }
