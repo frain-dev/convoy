@@ -122,7 +122,12 @@ func (p *Producer) postMessages(msgRepo convoy.MessageRepository, appRepo convoy
 			attemptStatus = convoy.SuccessMessageStatus
 			e.Sent = true
 
-			if dbEndpoint.Status == convoy.PendingEndpointStatus {
+			cfg, err := config.Get()
+			if err != nil {
+				log.WithError(err).Error("Failed to load config")
+			}
+
+			if dbEndpoint.Status == convoy.PendingEndpointStatus && cfg.DisableEndpoint {
 				dbEndpoint.Status = convoy.ActiveEndpointStatus
 
 				activeEnpoints := []string{dbEndpoint.UID}
@@ -179,30 +184,37 @@ func (p *Producer) postMessages(msgRepo convoy.MessageRepository, appRepo convoy
 			m.Status = convoy.FailureMessageStatus
 		}
 
-		go func() {
-			inactiveEndpoints := make([]string, 0)
-			for i := 0; i < len(m.AppMetadata.Endpoints); i++ {
-				endpoint := m.AppMetadata.Endpoints[i]
-				if !endpoint.Sent {
-					inactiveEndpoints = append(inactiveEndpoints, endpoint.UID)
-				}
-			}
-			err := appRepo.UpdateApplicationEndpointsStatus(context.Background(), m.AppID, inactiveEndpoints, convoy.InactiveEndpointStatus)
-			if err != nil {
-				log.WithError(err).Error("Failed to update disabled app endpoints")
-				return
-			}
+		cfg, err := config.Get()
+		if err != nil {
+			log.WithError(err).Error("Failed to load config")
+		}
 
-			if len(inactiveEndpoints) > 0 {
-				s, err := smtp.New(&p.smtpConfig)
-				if err == nil {
-					err = sendEmailNotification(m.AppMetadata, p.groupRepo, s, convoy.InactiveEndpointStatus)
-					if err != nil {
-						log.WithError(err).Error("Failed to send notification email")
+		if cfg.DisableEndpoint {
+			go func() {
+				inactiveEndpoints := make([]string, 0)
+				for i := 0; i < len(m.AppMetadata.Endpoints); i++ {
+					endpoint := m.AppMetadata.Endpoints[i]
+					if !endpoint.Sent {
+						inactiveEndpoints = append(inactiveEndpoints, endpoint.UID)
 					}
 				}
-			}
-		}()
+				err := appRepo.UpdateApplicationEndpointsStatus(context.Background(), m.AppID, inactiveEndpoints, convoy.InactiveEndpointStatus)
+				if err != nil {
+					log.WithError(err).Error("Failed to update disabled app endpoints")
+					return
+				}
+
+				if len(inactiveEndpoints) > 0 {
+					s, err := smtp.New(&p.smtpConfig)
+					if err == nil {
+						err = sendEmailNotification(m.AppMetadata, p.groupRepo, s, convoy.InactiveEndpointStatus)
+						if err != nil {
+							log.WithError(err).Error("Failed to send notification email")
+						}
+					}
+				}
+			}()
+		}
 	}
 
 	err := msgRepo.UpdateMessageWithAttempt(context.Background(), m, attempt)
