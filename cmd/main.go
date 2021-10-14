@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"fmt"
+	logg "log"
 	"os"
 	"time"
 	_ "time/tzdata"
@@ -69,11 +70,16 @@ func main() {
 			}
 
 			err = sentry.Init(sentry.ClientOptions{
-				Dsn: cfg.Sentry.Dsn,
+				Debug:       true,
+				Dsn:         cfg.Sentry.Dsn,
+				Environment: cfg.Sentry.Environment,
 			})
 			if err != nil {
 				return err
 			}
+
+			defer sentry.Recover()
+			// send any events in sentry before exiting
 			defer sentry.Flush(2 * time.Second)
 
 			var queuer queue.Queuer
@@ -102,6 +108,9 @@ func main() {
 			if err != nil {
 				return err
 			}
+			sentry.CaptureMessage("almost gotten to test fatal")
+			time.Sleep(time.Second)
+			logg.Fatal("test sentry panic")
 
 			return nil
 		},

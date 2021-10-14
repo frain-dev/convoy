@@ -10,6 +10,8 @@ import (
 	"sync/atomic"
 	"time"
 
+	log "github.com/sirupsen/logrus"
+
 	"github.com/frain-dev/convoy/config/algo"
 )
 
@@ -20,7 +22,8 @@ type DatabaseConfiguration struct {
 }
 
 type SentryConfiguration struct {
-	Dsn string `json:"dsn"`
+	Dsn         string `json:"dsn"`
+	Environment string `json:"environment"`
 }
 
 type ServerConfiguration struct {
@@ -146,6 +149,7 @@ func LoadConfig(p string) error {
 	if sentryDsn := os.Getenv("CONVOY_SENTRY_DSN"); sentryDsn != "" {
 		c.Sentry = SentryConfiguration{Dsn: sentryDsn}
 	}
+	log.Infof("ser - %+v", c.Sentry)
 
 	if signatureHeader := os.Getenv("CONVOY_SIGNATURE_HEADER"); signatureHeader != "" {
 		c.Signature.Header = SignatureHeaderProvider(signatureHeader)
