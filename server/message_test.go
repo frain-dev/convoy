@@ -18,7 +18,7 @@ import (
 
 func TestApplicationHandler_CreateAppMessage(t *testing.T) {
 
-	orgID := "1234567890"
+	groupId := "1234567890"
 	appId := "12345"
 	msgId := "1122333444456"
 
@@ -105,7 +105,7 @@ func TestApplicationHandler_CreateAppMessage(t *testing.T) {
 					FindApplicationByID(gomock.Any(), gomock.Any()).Times(1).
 					Return(&convoy.Application{
 						UID:       appId,
-						OrgID:     orgID,
+						GroupID:   groupId,
 						Title:     "Valid application",
 						Endpoints: []convoy.Endpoint{},
 					}, nil)
@@ -125,9 +125,9 @@ func TestApplicationHandler_CreateAppMessage(t *testing.T) {
 				a.EXPECT().
 					FindApplicationByID(gomock.Any(), gomock.Any()).Times(1).
 					Return(&convoy.Application{
-						UID:   appId,
-						OrgID: orgID,
-						Title: "Valid application",
+						UID:     appId,
+						GroupID: groupId,
+						Title:   "Valid application",
 						Endpoints: []convoy.Endpoint{
 							{
 								TargetURL: "http://localhost",
@@ -156,9 +156,9 @@ func TestApplicationHandler_CreateAppMessage(t *testing.T) {
 				a.EXPECT().
 					FindApplicationByID(gomock.Any(), gomock.Any()).Times(1).
 					Return(&convoy.Application{
-						UID:   appId,
-						OrgID: orgID,
-						Title: "Valid application",
+						UID:     appId,
+						GroupID: groupId,
+						Title:   "Valid application",
 						Endpoints: []convoy.Endpoint{
 							{
 								TargetURL: "http://localhost",
@@ -188,12 +188,12 @@ func TestApplicationHandler_CreateAppMessage(t *testing.T) {
 			ctrl := gomock.NewController(t)
 			defer ctrl.Finish()
 
-			orgRepo := mocks.NewMockOrganisationRepository(ctrl)
+			groupRepo := mocks.NewMockGroupRepository(ctrl)
 			appRepo := mocks.NewMockApplicationRepository(ctrl)
 			msgRepo := mocks.NewMockMessageRepository(ctrl)
 			scheduleQueue := mocks.NewMockQueuer(ctrl)
 
-			app = newApplicationHandler(msgRepo, appRepo, orgRepo, scheduleQueue)
+			app = newApplicationHandler(msgRepo, appRepo, groupRepo, scheduleQueue)
 
 			err := config.LoadConfig(tc.cfgPath)
 			if err != nil {
@@ -419,12 +419,12 @@ func Test_resendMessage(t *testing.T) {
 			ctrl := gomock.NewController(t)
 			defer ctrl.Finish()
 
-			orgRepo := mocks.NewMockOrganisationRepository(ctrl)
+			groupRepo := mocks.NewMockGroupRepository(ctrl)
 			appRepo := mocks.NewMockApplicationRepository(ctrl)
 			msgRepo := mocks.NewMockMessageRepository(ctrl)
 			scheduleQueue := mocks.NewMockQueuer(ctrl)
 
-			app = newApplicationHandler(msgRepo, appRepo, orgRepo, scheduleQueue)
+			app = newApplicationHandler(msgRepo, appRepo, groupRepo, scheduleQueue)
 
 			url := fmt.Sprintf("/v1/events/%s/resend", tc.args.message.UID)
 			req := httptest.NewRequest(tc.method, url, nil)

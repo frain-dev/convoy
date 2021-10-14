@@ -32,7 +32,7 @@ func (e *EndpointError) Delay() time.Duration {
 	return e.delay
 }
 
-func ProcessMessages(appRepo convoy.ApplicationRepository, msgRepo convoy.MessageRepository, orgRepo convoy.OrganisationRepository) func(*queue.Job) error {
+func ProcessMessages(appRepo convoy.ApplicationRepository, msgRepo convoy.MessageRepository, orgRepo convoy.GroupRepository) func(*queue.Job) error {
 	return func(job *queue.Job) error {
 		m := job.Data
 
@@ -205,10 +205,10 @@ func ProcessMessages(appRepo convoy.ApplicationRepository, msgRepo convoy.Messag
 	}
 }
 
-func sendEmailNotification(m *convoy.AppMetadata, o *convoy.OrganisationRepository, s *smtp.SmtpClient, status convoy.EndpointStatus) error {
+func sendEmailNotification(m *convoy.AppMetadata, o *convoy.GroupRepository, s *smtp.SmtpClient, status convoy.EndpointStatus) error {
 	email := m.SupportEmail
 
-	org, err := (*o).FetchOrganisationByID(context.Background(), m.OrgID)
+	org, err := (*o).FetchGroupByID(context.Background(), m.GroupID)
 	if err != nil {
 		return err
 	}

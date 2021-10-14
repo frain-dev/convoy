@@ -19,7 +19,7 @@ func TestProcessMessages(t *testing.T) {
 		cfgPath       string
 		expectedError error
 		msg           *convoy.Message
-		dbFn          func(*mocks.MockApplicationRepository, *mocks.MockOrganisationRepository, *mocks.MockMessageRepository)
+		dbFn          func(*mocks.MockApplicationRepository, *mocks.MockGroupRepository, *mocks.MockMessageRepository)
 		nFn           func() func()
 	}{
 		{
@@ -50,7 +50,7 @@ func TestProcessMessages(t *testing.T) {
 					},
 				},
 			},
-			dbFn: func(a *mocks.MockApplicationRepository, o *mocks.MockOrganisationRepository, m *mocks.MockMessageRepository) {
+			dbFn: func(a *mocks.MockApplicationRepository, o *mocks.MockGroupRepository, m *mocks.MockMessageRepository) {
 				a.EXPECT().
 					FindApplicationEndpointByID(gomock.Any(), gomock.Any(), gomock.Any()).
 					Return(&convoy.Endpoint{
@@ -82,7 +82,7 @@ func TestProcessMessages(t *testing.T) {
 					},
 				},
 			},
-			dbFn: func(a *mocks.MockApplicationRepository, o *mocks.MockOrganisationRepository, m *mocks.MockMessageRepository) {
+			dbFn: func(a *mocks.MockApplicationRepository, o *mocks.MockGroupRepository, m *mocks.MockMessageRepository) {
 				a.EXPECT().
 					FindApplicationEndpointByID(gomock.Any(), gomock.Any(), gomock.Any()).
 					Return(&convoy.Endpoint{
@@ -128,7 +128,7 @@ func TestProcessMessages(t *testing.T) {
 					},
 				},
 			},
-			dbFn: func(a *mocks.MockApplicationRepository, o *mocks.MockOrganisationRepository, m *mocks.MockMessageRepository) {
+			dbFn: func(a *mocks.MockApplicationRepository, o *mocks.MockGroupRepository, m *mocks.MockMessageRepository) {
 				a.EXPECT().
 					FindApplicationEndpointByID(gomock.Any(), gomock.Any(), gomock.Any()).
 					Return(&convoy.Endpoint{
@@ -136,8 +136,8 @@ func TestProcessMessages(t *testing.T) {
 					}, nil).Times(1)
 
 				o.EXPECT().
-					FetchOrganisationByID(gomock.Any(), gomock.Any()).
-					Return(&convoy.Organisation{
+					FetchGroupByID(gomock.Any(), gomock.Any()).
+					Return(&convoy.Group{
 						LogoURL: "",
 					}, nil).Times(1)
 
@@ -184,7 +184,7 @@ func TestProcessMessages(t *testing.T) {
 					},
 				},
 			},
-			dbFn: func(a *mocks.MockApplicationRepository, o *mocks.MockOrganisationRepository, m *mocks.MockMessageRepository) {
+			dbFn: func(a *mocks.MockApplicationRepository, o *mocks.MockGroupRepository, m *mocks.MockMessageRepository) {
 				a.EXPECT().
 					FindApplicationEndpointByID(gomock.Any(), gomock.Any(), gomock.Any()).
 					Return(&convoy.Endpoint{
@@ -235,7 +235,7 @@ func TestProcessMessages(t *testing.T) {
 					},
 				},
 			},
-			dbFn: func(a *mocks.MockApplicationRepository, o *mocks.MockOrganisationRepository, m *mocks.MockMessageRepository) {
+			dbFn: func(a *mocks.MockApplicationRepository, o *mocks.MockGroupRepository, m *mocks.MockMessageRepository) {
 				a.EXPECT().
 					FindApplicationEndpointByID(gomock.Any(), gomock.Any(), gomock.Any()).
 					Return(&convoy.Endpoint{
@@ -244,8 +244,8 @@ func TestProcessMessages(t *testing.T) {
 					}, nil).Times(1)
 
 				o.EXPECT().
-					FetchOrganisationByID(gomock.Any(), gomock.Any()).
-					Return(&convoy.Organisation{
+					FetchGroupByID(gomock.Any(), gomock.Any()).
+					Return(&convoy.Group{
 						LogoURL: "",
 					}, nil).Times(1)
 
@@ -276,7 +276,7 @@ func TestProcessMessages(t *testing.T) {
 			ctrl := gomock.NewController(t)
 			defer ctrl.Finish()
 
-			orgRepo := mocks.NewMockOrganisationRepository(ctrl)
+			groupRepo := mocks.NewMockGroupRepository(ctrl)
 			appRepo := mocks.NewMockApplicationRepository(ctrl)
 			msgRepo := mocks.NewMockMessageRepository(ctrl)
 
@@ -291,10 +291,10 @@ func TestProcessMessages(t *testing.T) {
 			}
 
 			if tc.dbFn != nil {
-				tc.dbFn(appRepo, orgRepo, msgRepo)
+				tc.dbFn(appRepo, groupRepo, msgRepo)
 			}
 
-			processFn := ProcessMessages(appRepo, msgRepo, orgRepo)
+			processFn := ProcessMessages(appRepo, msgRepo, groupRepo)
 
 			job := queue.Job{
 				Data: tc.msg,

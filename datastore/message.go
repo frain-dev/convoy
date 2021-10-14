@@ -56,7 +56,7 @@ func (db *messageRepo) CreateMessage(ctx context.Context,
 	return err
 }
 
-func (db *messageRepo) LoadMessageIntervals(ctx context.Context, orgId string, searchParams models.SearchParams, period convoy.Period, interval int) ([]models.MessageInterval, error) {
+func (db *messageRepo) LoadMessageIntervals(ctx context.Context, groupID string, searchParams models.SearchParams, period convoy.Period, interval int) ([]models.MessageInterval, error) {
 
 	start := searchParams.CreatedAtStart
 	end := searchParams.CreatedAtEnd
@@ -65,7 +65,7 @@ func (db *messageRepo) LoadMessageIntervals(ctx context.Context, orgId string, s
 	}
 
 	matchStage := bson.D{{Key: "$match", Value: bson.D{
-		{Key: "app_metadata.org_id", Value: orgId},
+		{Key: "app_metadata.group_id", Value: groupID},
 		{Key: "document_status", Value: bson.D{
 			{Key: "$ne", Value: convoy.DeletedDocumentStatus},
 		}},
@@ -273,20 +273,20 @@ func (db *messageRepo) UpdateMessageWithAttempt(ctx context.Context, m convoy.Me
 	return err
 }
 
-func (db *messageRepo) LoadMessagesPaged(ctx context.Context, orgId string, appId string, searchParams models.SearchParams, pageable models.Pageable) ([]convoy.Message, pager.PaginationData, error) {
+func (db *messageRepo) LoadMessagesPaged(ctx context.Context, groupID string, appId string, searchParams models.SearchParams, pageable models.Pageable) ([]convoy.Message, pager.PaginationData, error) {
 	filter := bson.M{"document_status": bson.M{"$ne": convoy.DeletedDocumentStatus}, "created_at": getCreatedDateFilter(searchParams)}
 
 	hasAppFilter := !util.IsStringEmpty(appId)
-	hasOrgFilter := !util.IsStringEmpty(orgId)
+	hasGroupFilter := !util.IsStringEmpty(groupID)
 
-	if hasAppFilter && hasOrgFilter {
-		filter = bson.M{"app_metadata.org_id": orgId, "app_id": appId, "document_status": bson.M{"$ne": convoy.DeletedDocumentStatus},
+	if hasAppFilter && hasGroupFilter {
+		filter = bson.M{"app_metadata.group_id": groupID, "app_id": appId, "document_status": bson.M{"$ne": convoy.DeletedDocumentStatus},
 			"created_at": getCreatedDateFilter(searchParams)}
 	} else if hasAppFilter {
 		filter = bson.M{"app_id": appId, "document_status": bson.M{"$ne": convoy.DeletedDocumentStatus},
 			"created_at": getCreatedDateFilter(searchParams)}
-	} else if hasOrgFilter {
-		filter = bson.M{"app_metadata.org_id": orgId, "document_status": bson.M{"$ne": convoy.DeletedDocumentStatus},
+	} else if hasGroupFilter {
+		filter = bson.M{"app_metadata.group_id": groupID, "document_status": bson.M{"$ne": convoy.DeletedDocumentStatus},
 			"created_at": getCreatedDateFilter(searchParams)}
 	}
 
