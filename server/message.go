@@ -171,7 +171,11 @@ func (a *applicationHandler) ResendAppMessage(w http.ResponseWriter, r *http.Req
 		return
 	}
 
-	if msg.Status != convoy.FailureMessageStatus {
+	switch msg.Status {
+	case convoy.ScheduledMessageStatus,
+		convoy.ProcessingMessageStatus,
+		convoy.SuccessMessageStatus,
+		convoy.RetryMessageStatus:
 		_ = render.Render(w, r, newErrorResponse("cannot resend event that did not fail previously", http.StatusBadRequest))
 		return
 	}
