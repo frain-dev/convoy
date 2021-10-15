@@ -3,9 +3,6 @@
 		"schemas": {
 			"models.Application": {
 				"properties": {
-					"group_id": {
-						"type": "string"
-					},
 					"name": {
 						"type": "string"
 					},

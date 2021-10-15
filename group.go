@@ -21,13 +21,16 @@ type Group struct {
 
 	DocumentStatus DocumentStatus `json:"-" bson:"document_status"`
 }
+type GroupFilter struct {
+	Name string `json:"name" bson:"name"`
+}
 
 func (o *Group) IsDeleted() bool { return o.DeletedAt > 0 }
 
 func (o *Group) IsOwner(a *Application) bool { return o.UID == a.GroupID }
 
 type GroupRepository interface {
-	LoadGroups(context.Context) ([]*Group, error)
+	LoadGroups(context.Context,  *GroupFilter) ([]*Group, error)
 	CreateGroup(context.Context, *Group) error
 	UpdateGroup(context.Context, *Group) error
 	FetchGroupByID(context.Context, string) (*Group, error)

@@ -2,8 +2,6 @@ basePath: /api/v1
 definitions:
   models.Application:
     properties:
-      group_id:
-        type: string
       name:
         type: string
       secret:

@@ -371,7 +371,7 @@ function DashboardPage() {
 
 					<div className="card has-title dashboard--page--details--credentials">
 						<div className="card--title">
-							<h2>Organization Details</h2>
+							<h2>Configuration</h2>
 						</div>
 
 						<ul className="card--container">

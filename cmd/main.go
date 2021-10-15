@@ -7,6 +7,7 @@ import (
 	"time"
 	_ "time/tzdata"
 
+	"github.com/getsentry/sentry-go"
 	"github.com/google/uuid"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 
@@ -66,6 +67,21 @@ func main() {
 			if err != nil {
 				return err
 			}
+
+			err = sentry.Init(sentry.ClientOptions{
+				Debug:       true,
+				Dsn:         cfg.Sentry.Dsn,
+				Environment: cfg.Server.Environment,
+			})
+			if err != nil {
+				return err
+			}
+
+			defer sentry.Recover()              // recover any panic and report to sentry
+			defer sentry.Flush(2 * time.Second) // send any events in sentry before exiting
+
+			sentryHook := convoy.NewSentryHook(convoy.DefaultLevels)
+			log.AddHook(sentryHook)
 
 			var queuer queue.Queuer
 
@@ -135,7 +151,7 @@ func ensureMongoIndices(conn *mongo.Database) {
 }
 
 func ensureDefaultGroup(ctx context.Context, groupRepo convoy.GroupRepository) error {
-	groups, err := groupRepo.LoadGroups(ctx)
+	groups, err := groupRepo.LoadGroups(ctx, &convoy.GroupFilter{})
 	if err != nil {
 		return fmt.Errorf("failed to load groups - %w", err)
 	}
