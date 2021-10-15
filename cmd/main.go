@@ -79,9 +79,8 @@ func main() {
 				return err
 			}
 
-			defer sentry.Recover()
-			// send any events in sentry before exiting
-			defer sentry.Flush(2 * time.Second)
+			defer sentry.Recover()              // recover any panic and report to sentry
+			defer sentry.Flush(2 * time.Second) // send any events in sentry before exiting
 
 			sentryHook := log_hooks.NewSentryHook(log_hooks.DefaultLevels)
 			log.AddHook(sentryHook)

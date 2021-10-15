@@ -31,6 +31,6 @@ func (s *SentryHook) Fire(entry *log.Entry) error {
 	if err != nil {
 		return fmt.Errorf("failed to get entry string - %w", err)
 	}
-	entry.WithField("sentry_event_id", sentry.CaptureMessage(msg))
+	sentry.CaptureMessage(msg)
 	return nil
 }
