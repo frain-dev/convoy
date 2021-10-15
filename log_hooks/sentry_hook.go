@@ -8,13 +8,10 @@ import (
 )
 
 var DefaultLevels = []log.Level{
-	log.DebugLevel,
-	log.InfoLevel,
 	log.ErrorLevel,
 	log.PanicLevel,
 	log.FatalLevel,
 	log.WarnLevel,
-	log.TraceLevel,
 }
 
 type SentryHook struct {
