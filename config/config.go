@@ -20,12 +20,12 @@ type DatabaseConfiguration struct {
 }
 
 type SentryConfiguration struct {
-	Dsn         string `json:"dsn"`
-	Environment string `json:"environment"`
+	Dsn string `json:"dsn"`
 }
 
 type ServerConfiguration struct {
-	HTTP struct {
+	Environment string `json:"environment"`
+	HTTP        struct {
 		Port uint32 `json:"port"`
 	} `json:"http"`
 }
@@ -142,6 +142,15 @@ func LoadConfig(p string) error {
 				Port: uint32(port),
 			},
 		}
+	}
+
+	if serverEnv := os.Getenv("CONVOY_SERVER_ENV"); serverEnv != "" {
+		c.Server.Environment = serverEnv
+	}
+
+	// if it's still empty, set it to development
+	if c.Server.Environment == "" {
+		c.Server.Environment = "development"
 	}
 
 	if sentryDsn := os.Getenv("CONVOY_SENTRY_DSN"); sentryDsn != "" {

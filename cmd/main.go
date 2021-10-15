@@ -7,8 +7,6 @@ import (
 	"time"
 	_ "time/tzdata"
 
-	"github.com/frain-dev/convoy/log_hooks"
-
 	"github.com/getsentry/sentry-go"
 	"github.com/google/uuid"
 	"go.mongodb.org/mongo-driver/bson/primitive"
@@ -73,7 +71,7 @@ func main() {
 			err = sentry.Init(sentry.ClientOptions{
 				Debug:       true,
 				Dsn:         cfg.Sentry.Dsn,
-				Environment: cfg.Sentry.Environment,
+				Environment: cfg.Server.Environment,
 			})
 			if err != nil {
 				return err
@@ -82,7 +80,7 @@ func main() {
 			defer sentry.Recover()              // recover any panic and report to sentry
 			defer sentry.Flush(2 * time.Second) // send any events in sentry before exiting
 
-			sentryHook := log_hooks.NewSentryHook(log_hooks.DefaultLevels)
+			sentryHook := convoy.NewSentryHook(convoy.DefaultLevels)
 			log.AddHook(sentryHook)
 
 			var queuer queue.Queuer
