@@ -37,7 +37,7 @@ func TestApplicationHandler_GetGroup(t *testing.T) {
 			dbFn: func(app *applicationHandler) {
 				g, _ := app.groupRepo.(*mocks.MockGroupRepository)
 				g.EXPECT().
-					LoadGroups(gomock.Any()).
+					LoadGroups(gomock.Any(), gomock.Any()).
 					Return(nil, convoy.ErrGroupNotFound).Times(1)
 
 			},
@@ -51,7 +51,7 @@ func TestApplicationHandler_GetGroup(t *testing.T) {
 			dbFn: func(app *applicationHandler) {
 				g, _ := app.groupRepo.(*mocks.MockGroupRepository)
 				g.EXPECT().
-					LoadGroups(gomock.Any()).Times(1).
+					LoadGroups(gomock.Any(), gomock.Any()).Times(1).
 					Return([]*convoy.Group{
 						{
 							UID:  realOrgID,
@@ -209,7 +209,7 @@ func TestApplicationHandler_UpdateGroup(t *testing.T) {
 					Return(nil)
 
 				g.EXPECT().
-					LoadGroups(gomock.Any()).Times(1).
+					LoadGroups(gomock.Any(), gomock.Any()).Times(1).
 					Return([]*convoy.Group{
 						{
 							UID:  realOrgID,
