@@ -1222,9 +1222,6 @@
         "models.Application": {
             "type": "object",
             "properties": {
-                "group_id": {
-                    "type": "string"
-                },
                 "name": {
                     "type": "string"
                 },
