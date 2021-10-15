@@ -88,6 +88,7 @@ type Configuration struct {
 	Strategy          StrategyConfiguration  `json:"strategy"`
 	Signature         SignatureConfiguration `json:"signature"`
 	SMTP              SMTPConfiguration      `json:"smtp"`
+	DisableEndpoint   bool                   `json:"disable_endpoint"`
 }
 
 type AuthProvider string
