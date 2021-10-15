@@ -3,10 +3,11 @@ package main
 import (
 	"context"
 	"fmt"
-	logg "log"
 	"os"
 	"time"
 	_ "time/tzdata"
+
+	"github.com/frain-dev/convoy/log_hooks"
 
 	"github.com/getsentry/sentry-go"
 	"github.com/google/uuid"
@@ -82,6 +83,9 @@ func main() {
 			// send any events in sentry before exiting
 			defer sentry.Flush(2 * time.Second)
 
+			sentryHook := log_hooks.NewSentryHook(log_hooks.DefaultLevels)
+			log.AddHook(sentryHook)
+
 			var queuer queue.Queuer
 
 			if cfg.Queue.Type == config.RedisQueueProvider {
@@ -108,9 +112,6 @@ func main() {
 			if err != nil {
 				return err
 			}
-			sentry.CaptureMessage("almost gotten to test fatal")
-			time.Sleep(time.Second)
-			logg.Fatal("test sentry panic")
 
 			return nil
 		},
