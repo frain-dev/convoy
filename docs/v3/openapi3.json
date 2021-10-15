@@ -1,0 +1,1597 @@
+{
+	"components": {
+		"schemas": {
+			"models.Application": {
+				"properties": {
+					"group_id": {
+						"type": "string"
+					},
+					"name": {
+						"type": "string"
+					},
+					"secret": {
+						"type": "string"
+					},
+					"support_email": {
+						"type": "string"
+					}
+				},
+				"type": "object"
+			},
+			"models.Endpoint": {
+				"properties": {
+					"description": {
+						"type": "string"
+					},
+					"secret": {
+						"type": "string"
+					},
+					"url": {
+						"type": "string"
+					}
+				},
+				"type": "object"
+			},
+			"models.Group": {
+				"properties": {
+					"logo_url": {
+						"type": "string"
+					},
+					"name": {
+						"type": "string"
+					}
+				},
+				"type": "object"
+			},
+			"models.Message": {
+				"properties": {
+					"app_id": {
+						"type": "string"
+					},
+					"created_at": {
+						"type": "integer"
+					},
+					"data": {
+						"items": {
+							"type": "integer"
+						},
+						"type": "array"
+					},
+					"event_type": {
+						"type": "string"
+					},
+					"msg_id": {
+						"type": "string"
+					},
+					"provider_id": {
+						"type": "string"
+					},
+					"status": {
+						"type": "string"
+					}
+				},
+				"type": "object"
+			},
+			"server.serverResponse": {
+				"properties": {
+					"data": {
+						"items": {
+							"type": "integer"
+						},
+						"type": "array"
+					},
+					"message": {
+						"type": "string"
+					},
+					"status": {
+						"type": "boolean"
+					}
+				},
+				"type": "object"
+			}
+		},
+		"securitySchemes": {
+			"ApiKeyAuth": {
+				"in": "header",
+				"name": "Authorization",
+				"type": "apiKey"
+			}
+		}
+	},
+	"info": {
+		"contact": {
+			"email": "engineering@convoy.io",
+			"name": "API Support",
+			"url": "http://www.swagger.io/support"
+		},
+		"description": "Convoy is a fast and secure distributed webhooks service. This document contains Convoy's API specification.",
+		"license": {
+			"name": "Mozilla Public License 2.0",
+			"url": "https://www.mozilla.org/en-US/MPL/2.0/"
+		},
+		"termsOfService": "https://convoy.io/terms",
+		"title": "Convoy API Specification",
+		"version": "0.1.12"
+	},
+	"openapi": "3.0.3",
+	"paths": {
+		"/applications": {
+			"get": {
+				"description": "This fetches all applications",
+				"parameters": [
+					{
+						"description": "results per page",
+						"in": "query",
+						"name": "perPage",
+						"schema": {
+							"type": "string"
+						}
+					},
+					{
+						"description": "page number",
+						"in": "query",
+						"name": "page",
+						"schema": {
+							"type": "string"
+						}
+					},
+					{
+						"description": "sort order",
+						"in": "query",
+						"name": "sort",
+						"schema": {
+							"type": "string"
+						}
+					}
+				],
+				"responses": {
+					"200": {
+						"content": {
+							"application/json": {
+								"schema": {
+									"$ref": "#/components/schemas/server.serverResponse"
+								}
+							}
+						},
+						"description": "OK"
+					},
+					"400": {
+						"content": {
+							"application/json": {
+								"schema": {
+									"$ref": "#/components/schemas/server.serverResponse"
+								}
+							}
+						},
+						"description": "Bad Request"
+					},
+					"401": {
+						"content": {
+							"application/json": {
+								"schema": {
+									"$ref": "#/components/schemas/server.serverResponse"
+								}
+							}
+						},
+						"description": "Unauthorized"
+					},
+					"500": {
+						"content": {
+							"application/json": {
+								"schema": {
+									"$ref": "#/components/schemas/server.serverResponse"
+								}
+							}
+						},
+						"description": "Internal Server Error"
+					}
+				},
+				"security": [
+					{
+						"ApiKeyAuth": []
+					}
+				],
+				"summary": "Get all applications",
+				"tags": [
+					"Application"
+				]
+			},
+			"post": {
+				"description": "This endpoint creates an application",
+				"requestBody": {
+					"content": {
+						"application/json": {
+							"schema": {
+								"$ref": "#/components/schemas/models.Application"
+							}
+						}
+					},
+					"description": "Application Details",
+					"required": true,
+					"x-originalParamName": "application"
+				},
+				"responses": {
+					"200": {
+						"content": {
+							"application/json": {
+								"schema": {
+									"$ref": "#/components/schemas/server.serverResponse"
+								}
+							}
+						},
+						"description": "OK"
+					},
+					"300": {
+						"content": {
+							"application/json": {
+								"schema": {
+									"$ref": "#/components/schemas/server.serverResponse"
+								}
+							}
+						},
+						"description": "Multiple Choices"
+					},
+					"400": {
+						"content": {
+							"application/json": {
+								"schema": {
+									"$ref": "#/components/schemas/server.serverResponse"
+								}
+							}
+						},
+						"description": "Bad Request"
+					},
+					"401": {
+						"content": {
+							"application/json": {
+								"schema": {
+									"$ref": "#/components/schemas/server.serverResponse"
+								}
+							}
+						},
+						"description": "Unauthorized"
+					},
+					"500": {
+						"content": {
+							"application/json": {
+								"schema": {
+									"$ref": "#/components/schemas/server.serverResponse"
+								}
+							}
+						},
+						"description": "Internal Server Error"
+					}
+				},
+				"security": [
+					{
+						"ApiKeyAuth": []
+					}
+				],
+				"summary": "Create an application",
+				"tags": [
+					"Application"
+				]
+			}
+		},
+		"/applications/{appID}": {
+			"delete": {
+				"description": "This endpoint deletes an app",
+				"parameters": [
+					{
+						"description": "application id",
+						"in": "path",
+						"name": "appID",
+						"required": true,
+						"schema": {
+							"type": "string"
+						}
+					}
+				],
+				"responses": {
+					"200": {
+						"content": {
+							"application/json": {
+								"schema": {
+									"$ref": "#/components/schemas/server.serverResponse"
+								}
+							}
+						},
+						"description": "OK"
+					},
+					"400": {
+						"content": {
+							"application/json": {
+								"schema": {
+									"$ref": "#/components/schemas/server.serverResponse"
+								}
+							}
+						},
+						"description": "Bad Request"
+					},
+					"401": {
+						"content": {
+							"application/json": {
+								"schema": {
+									"$ref": "#/components/schemas/server.serverResponse"
+								}
+							}
+						},
+						"description": "Unauthorized"
+					},
+					"500": {
+						"content": {
+							"application/json": {
+								"schema": {
+									"$ref": "#/components/schemas/server.serverResponse"
+								}
+							}
+						},
+						"description": "Internal Server Error"
+					}
+				},
+				"security": [
+					{
+						"ApiKeyAuth": []
+					}
+				],
+				"summary": "Delete app",
+				"tags": [
+					"Application"
+				]
+			},
+			"get": {
+				"description": "This endpoint fetches an application by it's id",
+				"parameters": [
+					{
+						"description": "application id",
+						"in": "path",
+						"name": "appID",
+						"required": true,
+						"schema": {
+							"type": "string"
+						}
+					}
+				],
+				"responses": {
+					"200": {
+						"content": {
+							"application/json": {
+								"schema": {
+									"$ref": "#/components/schemas/server.serverResponse"
+								}
+							}
+						},
+						"description": "OK"
+					},
+					"400": {
+						"content": {
+							"application/json": {
+								"schema": {
+									"$ref": "#/components/schemas/server.serverResponse"
+								}
+							}
+						},
+						"description": "Bad Request"
+					},
+					"401": {
+						"content": {
+							"application/json": {
+								"schema": {
+									"$ref": "#/components/schemas/server.serverResponse"
+								}
+							}
+						},
+						"description": "Unauthorized"
+					},
+					"500": {
+						"content": {
+							"application/json": {
+								"schema": {
+									"$ref": "#/components/schemas/server.serverResponse"
+								}
+							}
+						},
+						"description": "Internal Server Error"
+					}
+				},
+				"security": [
+					{
+						"ApiKeyAuth": []
+					}
+				],
+				"summary": "Get an application",
+				"tags": [
+					"Application"
+				]
+			},
+			"put": {
+				"description": "This endpoint updates an application",
+				"parameters": [
+					{
+						"description": "application id",
+						"in": "path",
+						"name": "appID",
+						"required": true,
+						"schema": {
+							"type": "string"
+						}
+					}
+				],
+				"requestBody": {
+					"content": {
+						"application/json": {
+							"schema": {
+								"$ref": "#/components/schemas/models.Application"
+							}
+						}
+					},
+					"description": "Application Details",
+					"required": true,
+					"x-originalParamName": "application"
+				},
+				"responses": {
+					"200": {
+						"content": {
+							"application/json": {
+								"schema": {
+									"$ref": "#/components/schemas/server.serverResponse"
+								}
+							}
+						},
+						"description": "OK"
+					},
+					"400": {
+						"content": {
+							"application/json": {
+								"schema": {
+									"$ref": "#/components/schemas/server.serverResponse"
+								}
+							}
+						},
+						"description": "Bad Request"
+					},
+					"401": {
+						"content": {
+							"application/json": {
+								"schema": {
+									"$ref": "#/components/schemas/server.serverResponse"
+								}
+							}
+						},
+						"description": "Unauthorized"
+					},
+					"500": {
+						"content": {
+							"application/json": {
+								"schema": {
+									"$ref": "#/components/schemas/server.serverResponse"
+								}
+							}
+						},
+						"description": "Internal Server Error"
+					}
+				},
+				"security": [
+					{
+						"ApiKeyAuth": []
+					}
+				],
+				"summary": "Update an application",
+				"tags": [
+					"Application"
+				]
+			}
+		},
+		"/applications/{appID}/endpoints": {
+			"get": {
+				"description": "This endpoint fetches an application's endpoints",
+				"parameters": [
+					{
+						"description": "application id",
+						"in": "path",
+						"name": "appID",
+						"required": true,
+						"schema": {
+							"type": "string"
+						}
+					}
+				],
+				"responses": {
+					"200": {
+						"content": {
+							"application/json": {
+								"schema": {
+									"$ref": "#/components/schemas/server.serverResponse"
+								}
+							}
+						},
+						"description": "OK"
+					},
+					"400": {
+						"content": {
+							"application/json": {
+								"schema": {
+									"$ref": "#/components/schemas/server.serverResponse"
+								}
+							}
+						},
+						"description": "Bad Request"
+					},
+					"401": {
+						"content": {
+							"application/json": {
+								"schema": {
+									"$ref": "#/components/schemas/server.serverResponse"
+								}
+							}
+						},
+						"description": "Unauthorized"
+					},
+					"500": {
+						"content": {
+							"application/json": {
+								"schema": {
+									"$ref": "#/components/schemas/server.serverResponse"
+								}
+							}
+						},
+						"description": "Internal Server Error"
+					}
+				},
+				"security": [
+					{
+						"ApiKeyAuth": []
+					}
+				],
+				"summary": "Get application endpoints",
+				"tags": [
+					"Application Endpoints"
+				]
+			},
+			"post": {
+				"description": "This endpoint creates an application endpoint",
+				"parameters": [
+					{
+						"description": "application id",
+						"in": "path",
+						"name": "appID",
+						"required": true,
+						"schema": {
+							"type": "string"
+						}
+					}
+				],
+				"requestBody": {
+					"content": {
+						"application/json": {
+							"schema": {
+								"$ref": "#/components/schemas/models.Endpoint"
+							}
+						}
+					},
+					"description": "Endpoint Details",
+					"required": true,
+					"x-originalParamName": "endpoint"
+				},
+				"responses": {
+					"200": {
+						"content": {
+							"application/json": {
+								"schema": {
+									"$ref": "#/components/schemas/server.serverResponse"
+								}
+							}
+						},
+						"description": "OK"
+					},
+					"400": {
+						"content": {
+							"application/json": {
+								"schema": {
+									"$ref": "#/components/schemas/server.serverResponse"
+								}
+							}
+						},
+						"description": "Bad Request"
+					},
+					"401": {
+						"content": {
+							"application/json": {
+								"schema": {
+									"$ref": "#/components/schemas/server.serverResponse"
+								}
+							}
+						},
+						"description": "Unauthorized"
+					},
+					"500": {
+						"content": {
+							"application/json": {
+								"schema": {
+									"$ref": "#/components/schemas/server.serverResponse"
+								}
+							}
+						},
+						"description": "Internal Server Error"
+					}
+				},
+				"security": [
+					{
+						"ApiKeyAuth": []
+					}
+				],
+				"summary": "Create an application endpoint",
+				"tags": [
+					"Application Endpoints"
+				]
+			}
+		},
+		"/applications/{appID}/endpoints/{endpointID}": {
+			"delete": {
+				"description": "This endpoint deletes an application endpoint",
+				"parameters": [
+					{
+						"description": "application id",
+						"in": "path",
+						"name": "appID",
+						"required": true,
+						"schema": {
+							"type": "string"
+						}
+					},
+					{
+						"description": "endpoint id",
+						"in": "path",
+						"name": "endpointID",
+						"required": true,
+						"schema": {
+							"type": "string"
+						}
+					}
+				],
+				"responses": {
+					"200": {
+						"content": {
+							"application/json": {
+								"schema": {
+									"$ref": "#/components/schemas/server.serverResponse"
+								}
+							}
+						},
+						"description": "OK"
+					},
+					"400": {
+						"content": {
+							"application/json": {
+								"schema": {
+									"$ref": "#/components/schemas/server.serverResponse"
+								}
+							}
+						},
+						"description": "Bad Request"
+					},
+					"401": {
+						"content": {
+							"application/json": {
+								"schema": {
+									"$ref": "#/components/schemas/server.serverResponse"
+								}
+							}
+						},
+						"description": "Unauthorized"
+					},
+					"500": {
+						"content": {
+							"application/json": {
+								"schema": {
+									"$ref": "#/components/schemas/server.serverResponse"
+								}
+							}
+						},
+						"description": "Internal Server Error"
+					}
+				},
+				"security": [
+					{
+						"ApiKeyAuth": []
+					}
+				],
+				"summary": "Delete application endpoint",
+				"tags": [
+					"Application Endpoints"
+				]
+			},
+			"get": {
+				"description": "This endpoint fetches an application endpoint",
+				"parameters": [
+					{
+						"description": "application id",
+						"in": "path",
+						"name": "appID",
+						"required": true,
+						"schema": {
+							"type": "string"
+						}
+					},
+					{
+						"description": "endpoint id",
+						"in": "path",
+						"name": "endpointID",
+						"required": true,
+						"schema": {
+							"type": "string"
+						}
+					}
+				],
+				"responses": {
+					"200": {
+						"content": {
+							"application/json": {
+								"schema": {
+									"$ref": "#/components/schemas/server.serverResponse"
+								}
+							}
+						},
+						"description": "OK"
+					},
+					"400": {
+						"content": {
+							"application/json": {
+								"schema": {
+									"$ref": "#/components/schemas/server.serverResponse"
+								}
+							}
+						},
+						"description": "Bad Request"
+					},
+					"401": {
+						"content": {
+							"application/json": {
+								"schema": {
+									"$ref": "#/components/schemas/server.serverResponse"
+								}
+							}
+						},
+						"description": "Unauthorized"
+					},
+					"500": {
+						"content": {
+							"application/json": {
+								"schema": {
+									"$ref": "#/components/schemas/server.serverResponse"
+								}
+							}
+						},
+						"description": "Internal Server Error"
+					}
+				},
+				"security": [
+					{
+						"ApiKeyAuth": []
+					}
+				],
+				"summary": "Get application endpoint",
+				"tags": [
+					"Application Endpoints"
+				]
+			},
+			"put": {
+				"description": "This endpoint updates an application endpoint",
+				"parameters": [
+					{
+						"description": "application id",
+						"in": "path",
+						"name": "appID",
+						"required": true,
+						"schema": {
+							"type": "string"
+						}
+					},
+					{
+						"description": "endpoint id",
+						"in": "path",
+						"name": "endpointID",
+						"required": true,
+						"schema": {
+							"type": "string"
+						}
+					}
+				],
+				"requestBody": {
+					"content": {
+						"application/json": {
+							"schema": {
+								"$ref": "#/components/schemas/models.Endpoint"
+							}
+						}
+					},
+					"description": "Endpoint Details",
+					"required": true,
+					"x-originalParamName": "endpoint"
+				},
+				"responses": {
+					"200": {
+						"content": {
+							"application/json": {
+								"schema": {
+									"$ref": "#/components/schemas/server.serverResponse"
+								}
+							}
+						},
+						"description": "OK"
+					},
+					"400": {
+						"content": {
+							"application/json": {
+								"schema": {
+									"$ref": "#/components/schemas/server.serverResponse"
+								}
+							}
+						},
+						"description": "Bad Request"
+					},
+					"401": {
+						"content": {
+							"application/json": {
+								"schema": {
+									"$ref": "#/components/schemas/server.serverResponse"
+								}
+							}
+						},
+						"description": "Unauthorized"
+					},
+					"500": {
+						"content": {
+							"application/json": {
+								"schema": {
+									"$ref": "#/components/schemas/server.serverResponse"
+								}
+							}
+						},
+						"description": "Internal Server Error"
+					}
+				},
+				"security": [
+					{
+						"ApiKeyAuth": []
+					}
+				],
+				"summary": "Update an application endpoint",
+				"tags": [
+					"Application Endpoints"
+				]
+			}
+		},
+		"/events": {
+			"get": {
+				"description": "This endpoint fetches app messages with pagination",
+				"parameters": [
+					{
+						"description": "application id",
+						"in": "query",
+						"name": "appId",
+						"schema": {
+							"type": "string"
+						}
+					},
+					{
+						"description": "group id",
+						"in": "query",
+						"name": "groupId",
+						"schema": {
+							"type": "string"
+						}
+					},
+					{
+						"description": "start date",
+						"in": "query",
+						"name": "startDate",
+						"schema": {
+							"type": "string"
+						}
+					},
+					{
+						"description": "end date",
+						"in": "query",
+						"name": "endDate",
+						"schema": {
+							"type": "string"
+						}
+					},
+					{
+						"description": "results per page",
+						"in": "query",
+						"name": "perPage",
+						"schema": {
+							"type": "string"
+						}
+					},
+					{
+						"description": "page number",
+						"in": "query",
+						"name": "page",
+						"schema": {
+							"type": "string"
+						}
+					},
+					{
+						"description": "sort order",
+						"in": "query",
+						"name": "sort",
+						"schema": {
+							"type": "string"
+						}
+					}
+				],
+				"responses": {
+					"200": {
+						"content": {
+							"application/json": {
+								"schema": {
+									"$ref": "#/components/schemas/server.serverResponse"
+								}
+							}
+						},
+						"description": "OK"
+					},
+					"400": {
+						"content": {
+							"application/json": {
+								"schema": {
+									"$ref": "#/components/schemas/server.serverResponse"
+								}
+							}
+						},
+						"description": "Bad Request"
+					},
+					"401": {
+						"content": {
+							"application/json": {
+								"schema": {
+									"$ref": "#/components/schemas/server.serverResponse"
+								}
+							}
+						},
+						"description": "Unauthorized"
+					},
+					"500": {
+						"content": {
+							"application/json": {
+								"schema": {
+									"$ref": "#/components/schemas/server.serverResponse"
+								}
+							}
+						},
+						"description": "Internal Server Error"
+					}
+				},
+				"security": [
+					{
+						"ApiKeyAuth": []
+					}
+				],
+				"summary": "Get app messages with pagination",
+				"tags": [
+					"Messages"
+				]
+			},
+			"post": {
+				"description": "This endpoint creates an app message",
+				"requestBody": {
+					"content": {
+						"application/json": {
+							"schema": {
+								"$ref": "#/components/schemas/models.Message"
+							}
+						}
+					},
+					"description": "Message Details",
+					"required": true,
+					"x-originalParamName": "message"
+				},
+				"responses": {
+					"200": {
+						"content": {
+							"application/json": {
+								"schema": {
+									"$ref": "#/components/schemas/server.serverResponse"
+								}
+							}
+						},
+						"description": "OK"
+					},
+					"400": {
+						"content": {
+							"application/json": {
+								"schema": {
+									"$ref": "#/components/schemas/server.serverResponse"
+								}
+							}
+						},
+						"description": "Bad Request"
+					},
+					"401": {
+						"content": {
+							"application/json": {
+								"schema": {
+									"$ref": "#/components/schemas/server.serverResponse"
+								}
+							}
+						},
+						"description": "Unauthorized"
+					},
+					"500": {
+						"content": {
+							"application/json": {
+								"schema": {
+									"$ref": "#/components/schemas/server.serverResponse"
+								}
+							}
+						},
+						"description": "Internal Server Error"
+					}
+				},
+				"security": [
+					{
+						"ApiKeyAuth": []
+					}
+				],
+				"summary": "Create app message",
+				"tags": [
+					"Messages"
+				]
+			}
+		},
+		"/events/{eventID}": {
+			"get": {
+				"description": "This endpoint fetches an app message",
+				"parameters": [
+					{
+						"description": "event id",
+						"in": "path",
+						"name": "eventID",
+						"required": true,
+						"schema": {
+							"type": "string"
+						}
+					}
+				],
+				"responses": {
+					"200": {
+						"content": {
+							"application/json": {
+								"schema": {
+									"$ref": "#/components/schemas/server.serverResponse"
+								}
+							}
+						},
+						"description": "OK"
+					},
+					"400": {
+						"content": {
+							"application/json": {
+								"schema": {
+									"$ref": "#/components/schemas/server.serverResponse"
+								}
+							}
+						},
+						"description": "Bad Request"
+					},
+					"401": {
+						"content": {
+							"application/json": {
+								"schema": {
+									"$ref": "#/components/schemas/server.serverResponse"
+								}
+							}
+						},
+						"description": "Unauthorized"
+					},
+					"500": {
+						"content": {
+							"application/json": {
+								"schema": {
+									"$ref": "#/components/schemas/server.serverResponse"
+								}
+							}
+						},
+						"description": "Internal Server Error"
+					}
+				},
+				"security": [
+					{
+						"ApiKeyAuth": []
+					}
+				],
+				"summary": "Get app message",
+				"tags": [
+					"Messages"
+				]
+			}
+		},
+		"/events/{eventID}/deliveryattempts": {
+			"get": {
+				"description": "This endpoint fetches an app message's delivery attempts",
+				"parameters": [
+					{
+						"description": "event id",
+						"in": "path",
+						"name": "eventID",
+						"required": true,
+						"schema": {
+							"type": "string"
+						}
+					}
+				],
+				"responses": {
+					"200": {
+						"content": {
+							"application/json": {
+								"schema": {
+									"$ref": "#/components/schemas/server.serverResponse"
+								}
+							}
+						},
+						"description": "OK"
+					},
+					"400": {
+						"content": {
+							"application/json": {
+								"schema": {
+									"$ref": "#/components/schemas/server.serverResponse"
+								}
+							}
+						},
+						"description": "Bad Request"
+					},
+					"401": {
+						"content": {
+							"application/json": {
+								"schema": {
+									"$ref": "#/components/schemas/server.serverResponse"
+								}
+							}
+						},
+						"description": "Unauthorized"
+					},
+					"500": {
+						"content": {
+							"application/json": {
+								"schema": {
+									"$ref": "#/components/schemas/server.serverResponse"
+								}
+							}
+						},
+						"description": "Internal Server Error"
+					}
+				},
+				"security": [
+					{
+						"ApiKeyAuth": []
+					}
+				],
+				"summary": "Get app message delivery attempts",
+				"tags": [
+					"Messages"
+				]
+			}
+		},
+		"/events/{eventID}/deliveryattempts/{deliveryAttemptID}": {
+			"get": {
+				"description": "This endpoint fetches an app message delivery attempt",
+				"parameters": [
+					{
+						"description": "event id",
+						"in": "path",
+						"name": "eventID",
+						"required": true,
+						"schema": {
+							"type": "string"
+						}
+					},
+					{
+						"description": "delivery attempt id",
+						"in": "path",
+						"name": "deliveryAttemptID",
+						"required": true,
+						"schema": {
+							"type": "string"
+						}
+					}
+				],
+				"responses": {
+					"200": {
+						"content": {
+							"application/json": {
+								"schema": {
+									"$ref": "#/components/schemas/server.serverResponse"
+								}
+							}
+						},
+						"description": "OK"
+					},
+					"400": {
+						"content": {
+							"application/json": {
+								"schema": {
+									"$ref": "#/components/schemas/server.serverResponse"
+								}
+							}
+						},
+						"description": "Bad Request"
+					},
+					"401": {
+						"content": {
+							"application/json": {
+								"schema": {
+									"$ref": "#/components/schemas/server.serverResponse"
+								}
+							}
+						},
+						"description": "Unauthorized"
+					},
+					"500": {
+						"content": {
+							"application/json": {
+								"schema": {
+									"$ref": "#/components/schemas/server.serverResponse"
+								}
+							}
+						},
+						"description": "Internal Server Error"
+					}
+				},
+				"security": [
+					{
+						"ApiKeyAuth": []
+					}
+				],
+				"summary": "Get app message delivery attempt",
+				"tags": [
+					"Messages"
+				]
+			}
+		},
+		"/events/{eventID}/resend": {
+			"put": {
+				"description": "This endpoint resends an app message",
+				"parameters": [
+					{
+						"description": "event id",
+						"in": "path",
+						"name": "eventID",
+						"required": true,
+						"schema": {
+							"type": "string"
+						}
+					}
+				],
+				"responses": {
+					"200": {
+						"content": {
+							"application/json": {
+								"schema": {
+									"$ref": "#/components/schemas/server.serverResponse"
+								}
+							}
+						},
+						"description": "OK"
+					},
+					"400": {
+						"content": {
+							"application/json": {
+								"schema": {
+									"$ref": "#/components/schemas/server.serverResponse"
+								}
+							}
+						},
+						"description": "Bad Request"
+					},
+					"401": {
+						"content": {
+							"application/json": {
+								"schema": {
+									"$ref": "#/components/schemas/server.serverResponse"
+								}
+							}
+						},
+						"description": "Unauthorized"
+					},
+					"500": {
+						"content": {
+							"application/json": {
+								"schema": {
+									"$ref": "#/components/schemas/server.serverResponse"
+								}
+							}
+						},
+						"description": "Internal Server Error"
+					}
+				},
+				"security": [
+					{
+						"ApiKeyAuth": []
+					}
+				],
+				"summary": "Resend an app message",
+				"tags": [
+					"Messages"
+				]
+			}
+		},
+		"/groups": {
+			"get": {
+				"description": "This endpoint fetches groups",
+				"responses": {
+					"200": {
+						"content": {
+							"application/json": {
+								"schema": {
+									"$ref": "#/components/schemas/server.serverResponse"
+								}
+							}
+						},
+						"description": "OK"
+					},
+					"400": {
+						"content": {
+							"application/json": {
+								"schema": {
+									"$ref": "#/components/schemas/server.serverResponse"
+								}
+							}
+						},
+						"description": "Bad Request"
+					},
+					"401": {
+						"content": {
+							"application/json": {
+								"schema": {
+									"$ref": "#/components/schemas/server.serverResponse"
+								}
+							}
+						},
+						"description": "Unauthorized"
+					},
+					"500": {
+						"content": {
+							"application/json": {
+								"schema": {
+									"$ref": "#/components/schemas/server.serverResponse"
+								}
+							}
+						},
+						"description": "Internal Server Error"
+					}
+				},
+				"security": [
+					{
+						"ApiKeyAuth": []
+					}
+				],
+				"summary": "Get groups",
+				"tags": [
+					"Group"
+				]
+			},
+			"post": {
+				"description": "This endpoint creates a group",
+				"requestBody": {
+					"content": {
+						"application/json": {
+							"schema": {
+								"$ref": "#/components/schemas/models.Group"
+							}
+						}
+					},
+					"description": "Group Details",
+					"required": true,
+					"x-originalParamName": "group"
+				},
+				"responses": {
+					"200": {
+						"content": {
+							"application/json": {
+								"schema": {
+									"$ref": "#/components/schemas/server.serverResponse"
+								}
+							}
+						},
+						"description": "OK"
+					},
+					"400": {
+						"content": {
+							"application/json": {
+								"schema": {
+									"$ref": "#/components/schemas/server.serverResponse"
+								}
+							}
+						},
+						"description": "Bad Request"
+					},
+					"401": {
+						"content": {
+							"application/json": {
+								"schema": {
+									"$ref": "#/components/schemas/server.serverResponse"
+								}
+							}
+						},
+						"description": "Unauthorized"
+					},
+					"500": {
+						"content": {
+							"application/json": {
+								"schema": {
+									"$ref": "#/components/schemas/server.serverResponse"
+								}
+							}
+						},
+						"description": "Internal Server Error"
+					}
+				},
+				"security": [
+					{
+						"ApiKeyAuth": []
+					}
+				],
+				"summary": "Create a group",
+				"tags": [
+					"Group"
+				]
+			}
+		},
+		"/groups/{groupID}": {
+			"get": {
+				"description": "This endpoint fetches a group by its id",
+				"parameters": [
+					{
+						"description": "Group id",
+						"in": "path",
+						"name": "groupID",
+						"required": true,
+						"schema": {
+							"type": "string"
+						}
+					}
+				],
+				"responses": {
+					"200": {
+						"content": {
+							"application/json": {
+								"schema": {
+									"$ref": "#/components/schemas/server.serverResponse"
+								}
+							}
+						},
+						"description": "OK"
+					},
+					"400": {
+						"content": {
+							"application/json": {
+								"schema": {
+									"$ref": "#/components/schemas/server.serverResponse"
+								}
+							}
+						},
+						"description": "Bad Request"
+					},
+					"401": {
+						"content": {
+							"application/json": {
+								"schema": {
+									"$ref": "#/components/schemas/server.serverResponse"
+								}
+							}
+						},
+						"description": "Unauthorized"
+					},
+					"500": {
+						"content": {
+							"application/json": {
+								"schema": {
+									"$ref": "#/components/schemas/server.serverResponse"
+								}
+							}
+						},
+						"description": "Internal Server Error"
+					}
+				},
+				"security": [
+					{
+						"ApiKeyAuth": []
+					}
+				],
+				"summary": "Get a group",
+				"tags": [
+					"Group"
+				]
+			},
+			"put": {
+				"description": "This endpoint updates a group",
+				"parameters": [
+					{
+						"description": "group id",
+						"in": "path",
+						"name": "groupID",
+						"required": true,
+						"schema": {
+							"type": "string"
+						}
+					}
+				],
+				"requestBody": {
+					"content": {
+						"application/json": {
+							"schema": {
+								"$ref": "#/components/schemas/models.Group"
+							}
+						}
+					},
+					"description": "Group Details",
+					"required": true,
+					"x-originalParamName": "group"
+				},
+				"responses": {
+					"200": {
+						"content": {
+							"application/json": {
+								"schema": {
+									"$ref": "#/components/schemas/server.serverResponse"
+								}
+							}
+						},
+						"description": "OK"
+					},
+					"400": {
+						"content": {
+							"application/json": {
+								"schema": {
+									"$ref": "#/components/schemas/server.serverResponse"
+								}
+							}
+						},
+						"description": "Bad Request"
+					},
+					"401": {
+						"content": {
+							"application/json": {
+								"schema": {
+									"$ref": "#/components/schemas/server.serverResponse"
+								}
+							}
+						},
+						"description": "Unauthorized"
+					},
+					"500": {
+						"content": {
+							"application/json": {
+								"schema": {
+									"$ref": "#/components/schemas/server.serverResponse"
+								}
+							}
+						},
+						"description": "Internal Server Error"
+					}
+				},
+				"security": [
+					{
+						"ApiKeyAuth": []
+					}
+				],
+				"summary": "Update a group",
+				"tags": [
+					"Group"
+				]
+			}
+		}
+	},
+	"servers": [
+		{
+			"url": "http://localhost:8080/api/v1"
+		},
+		{
+			"url": "https://localhost:8080/api/v1"
+		}
+	]
+}

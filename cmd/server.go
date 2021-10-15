@@ -36,11 +36,11 @@ func addServerCommand(a *app) *cobra.Command {
 				return errors.New("please provide the HTTP port in the convoy.json file")
 			}
 
-			srv := server.New(cfg, a.messageRepo, a.applicationRepo, a.orgRepo)
+			srv := server.New(cfg, a.messageRepo, a.applicationRepo, a.groupRepo)
 
 			worker.NewCleaner(&a.queue, &a.messageRepo).Start()
 			worker.NewScheduler(&a.queue, &a.messageRepo).Start()
-			worker.NewProducer(&a.queue, &a.orgRepo, &a.applicationRepo, &a.messageRepo, cfg.Signature, cfg.SMTP).Start()
+			worker.NewProducer(&a.queue, &a.groupRepo, &a.applicationRepo, &a.messageRepo, cfg.Signature, cfg.SMTP).Start()
 
 			log.Infof("Started convoy server in %s", time.Since(start))
 			return srv.ListenAndServe()

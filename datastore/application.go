@@ -41,11 +41,11 @@ func (db *appRepo) CreateApplication(ctx context.Context,
 	return err
 }
 
-func (db *appRepo) LoadApplicationsPaged(ctx context.Context, orgId string, pageable models.Pageable) ([]convoy.Application, pager.PaginationData, error) {
+func (db *appRepo) LoadApplicationsPaged(ctx context.Context, groupID string, pageable models.Pageable) ([]convoy.Application, pager.PaginationData, error) {
 
 	filter := bson.M{"document_status": bson.M{"$ne": convoy.DeletedDocumentStatus}}
-	if !util.IsStringEmpty(orgId) {
-		filter = bson.M{"org_id": orgId, "document_status": bson.M{"$ne": convoy.DeletedDocumentStatus}}
+	if !util.IsStringEmpty(groupID) {
+		filter = bson.M{"group_id": groupID, "document_status": bson.M{"$ne": convoy.DeletedDocumentStatus}}
 	}
 
 	var apps []convoy.Application
@@ -72,9 +72,14 @@ func (db *appRepo) LoadApplicationsPaged(ctx context.Context, orgId string, page
 	return apps, paginatedData.Pagination, nil
 }
 
-func (db *appRepo) LoadApplicationsPagedByOrgId(ctx context.Context, orgId string, pageable models.Pageable) ([]convoy.Application, pager.PaginationData, error) {
+func (db *appRepo) LoadApplicationsPagedByGroupId(ctx context.Context, groupID string, pageable models.Pageable) ([]convoy.Application, pager.PaginationData, error) {
 
-	filter := bson.M{"org_id": orgId, "document_status": bson.M{"$ne": convoy.DeletedDocumentStatus}}
+	filter := bson.M{
+		"group_id": groupID,
+		"document_status": bson.M{
+			"$ne": convoy.DeletedDocumentStatus,
+		},
+	}
 
 	var applications []convoy.Application
 	paginatedData, err := pager.New(db.client).Context(ctx).Limit(int64(pageable.PerPage)).Page(int64(pageable.Page)).Sort("created_at", -1).Filter(filter).Decode(&applications).Find()
@@ -100,7 +105,7 @@ func (db *appRepo) LoadApplicationsPagedByOrgId(ctx context.Context, orgId strin
 	return applications, paginatedData.Pagination, nil
 }
 
-func (db *appRepo) SearchApplicationsByOrgId(ctx context.Context, orgId string, searchParams models.SearchParams) ([]convoy.Application, error) {
+func (db *appRepo) SearchApplicationsByGroupId(ctx context.Context, groupId string, searchParams models.SearchParams) ([]convoy.Application, error) {
 
 	start := searchParams.CreatedAtStart
 	end := searchParams.CreatedAtEnd
@@ -108,7 +113,16 @@ func (db *appRepo) SearchApplicationsByOrgId(ctx context.Context, orgId string, 
 		end = searchParams.CreatedAtStart
 	}
 
-	filter := bson.M{"org_id": orgId, "document_status": bson.M{"$ne": convoy.DeletedDocumentStatus}, "created_at": bson.M{"$gte": primitive.NewDateTimeFromTime(time.Unix(start, 0)), "$lte": primitive.NewDateTimeFromTime(time.Unix(end, 0))}}
+	filter := bson.M{
+		"group_id": groupId,
+		"document_status": bson.M{
+			"$ne": convoy.DeletedDocumentStatus,
+		},
+		"created_at": bson.M{
+			"$gte": primitive.NewDateTimeFromTime(time.Unix(start, 0)),
+			"$lte": primitive.NewDateTimeFromTime(time.Unix(end, 0)),
+		},
+	}
 
 	apps := make([]convoy.Application, 0)
 	cur, err := db.client.Find(ctx, filter)

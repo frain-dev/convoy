@@ -20,9 +20,9 @@ import (
 )
 
 type applicationHandler struct {
-	appRepo convoy.ApplicationRepository
-	orgRepo convoy.OrganisationRepository
-	msgRepo convoy.MessageRepository
+	appRepo   convoy.ApplicationRepository
+	groupRepo convoy.GroupRepository
+	msgRepo   convoy.MessageRepository
 }
 
 type pagedResponse struct {
@@ -30,21 +30,51 @@ type pagedResponse struct {
 	Pagination *mongopagination.PaginationData `json:"pagination,omitempty"`
 }
 
-func newApplicationHandler(msgRepo convoy.MessageRepository, appRepo convoy.ApplicationRepository, orgRepo convoy.OrganisationRepository) *applicationHandler {
+func newApplicationHandler(msgRepo convoy.MessageRepository, appRepo convoy.ApplicationRepository, groupRepo convoy.GroupRepository) *applicationHandler {
 
 	return &applicationHandler{
-		msgRepo: msgRepo,
-		appRepo: appRepo,
-		orgRepo: orgRepo,
+		msgRepo:   msgRepo,
+		appRepo:   appRepo,
+		groupRepo: groupRepo,
 	}
 }
 
+// TODO(daniel): using '{object} serverResponse' in doc annotations: serverResponse's data field is an interface, this makes the generated doc vauge
+
+// GetApp
+// @Summary Get an application
+// @Description This endpoint fetches an application by it's id
+// @Tags Application
+// @Accept  json
+// @Produce  json
+// @Param appID path string true "application id"
+// @Success 200 {object} serverResponse
+// @Failure 400 {object} serverResponse
+// @Failure 401 {object} serverResponse
+// @Failure 500 {object} serverResponse
+// @Security ApiKeyAuth
+// @Router /applications/{appID} [get]
 func (a *applicationHandler) GetApp(w http.ResponseWriter, r *http.Request) {
 
 	_ = render.Render(w, r, newServerResponse("App fetched successfully",
 		*getApplicationFromContext(r.Context()), http.StatusOK))
 }
 
+// GetApps
+// @Summary Get all applications
+// @Description This fetches all applications
+// @Tags Application
+// @Accept  json
+// @Produce  json
+// @Param perPage query string false "results per page"
+// @Param page query string false "page number"
+// @Param sort query string false "sort order"
+// @Success 200 {object} serverResponse
+// @Failure 400 {object} serverResponse
+// @Failure 401 {object} serverResponse
+// @Failure 500 {object} serverResponse
+// @Security ApiKeyAuth
+// @Router /applications [get]
 func (a *applicationHandler) GetApps(w http.ResponseWriter, r *http.Request) {
 	pageable := getPageableFromContext(r.Context())
 
@@ -58,6 +88,20 @@ func (a *applicationHandler) GetApps(w http.ResponseWriter, r *http.Request) {
 		pagedResponse{Content: &apps, Pagination: &paginationData}, http.StatusOK))
 }
 
+// CreateApp
+// @Summary Create an application
+// @Description This endpoint creates an application
+// @Tags Application
+// @Accept  json
+// @Produce  json
+// @Param application body models.Application true "Application Details"
+// @Success 200 {object} serverResponse
+// @Failure 400 {object} serverResponse
+// @Failure 401 {object} serverResponse
+// @Failure 500 {object} serverResponse
+// @Failure 300 {object} serverResponse
+// @Security ApiKeyAuth
+// @Router /applications [post]
 func (a *applicationHandler) CreateApp(w http.ResponseWriter, r *http.Request) {
 
 	var newApp models.Application
@@ -72,24 +116,8 @@ func (a *applicationHandler) CreateApp(w http.ResponseWriter, r *http.Request) {
 		_ = render.Render(w, r, newErrorResponse("please provide your appName", http.StatusBadRequest))
 		return
 	}
-	orgId := newApp.OrgID
-	if util.IsStringEmpty(orgId) {
-		_ = render.Render(w, r, newErrorResponse("please provide your orgId", http.StatusBadRequest))
-		return
-	}
 
-	org, err := a.orgRepo.FetchOrganisationByID(r.Context(), orgId)
-	if err != nil {
-		msg := "an error occurred while fetching organisation"
-		statusCode := http.StatusInternalServerError
-
-		if errors.Is(err, convoy.ErrOrganisationNotFound) {
-			msg = err.Error()
-			statusCode = http.StatusBadRequest
-		}
-		_ = render.Render(w, r, newErrorResponse(msg, statusCode))
-		return
-	}
+	group := getGroupFromContext(r.Context())
 
 	if util.IsStringEmpty(newApp.Secret) {
 		newApp.Secret, err = util.GenerateSecret()
@@ -102,7 +130,7 @@ func (a *applicationHandler) CreateApp(w http.ResponseWriter, r *http.Request) {
 	uid := uuid.New().String()
 	app := &convoy.Application{
 		UID:            uid,
-		OrgID:          org.UID,
+		GroupID:        group.UID,
 		Title:          appName,
 		Secret:         newApp.Secret,
 		SupportEmail:   newApp.SupportEmail,
@@ -121,6 +149,20 @@ func (a *applicationHandler) CreateApp(w http.ResponseWriter, r *http.Request) {
 	_ = render.Render(w, r, newServerResponse("App created successfully", app, http.StatusCreated))
 }
 
+// UpdateApp
+// @Summary Update an application
+// @Description This endpoint updates an application
+// @Tags Application
+// @Accept  json
+// @Produce  json
+// @Param appID path string true "application id"
+// @Param application body models.Application true "Application Details"
+// @Success 200 {object} serverResponse
+// @Failure 400 {object} serverResponse
+// @Failure 401 {object} serverResponse
+// @Failure 500 {object} serverResponse
+// @Security ApiKeyAuth
+// @Router /applications/{appID} [put]
 func (a *applicationHandler) UpdateApp(w http.ResponseWriter, r *http.Request) {
 	var appUpdate models.Application
 	err := json.NewDecoder(r.Body).Decode(&appUpdate)
@@ -155,6 +197,19 @@ func (a *applicationHandler) UpdateApp(w http.ResponseWriter, r *http.Request) {
 	_ = render.Render(w, r, newServerResponse("App updated successfully", app, http.StatusAccepted))
 }
 
+// DeleteApp
+// @Summary Delete app
+// @Description This endpoint deletes an app
+// @Tags Application
+// @Accept  json
+// @Produce  json
+// @Param appID path string true "application id"
+// @Success 200 {object} serverResponse
+// @Failure 400 {object} serverResponse
+// @Failure 401 {object} serverResponse
+// @Failure 500 {object} serverResponse
+// @Security ApiKeyAuth
+// @Router /applications/{appID} [delete]
 func (a *applicationHandler) DeleteApp(w http.ResponseWriter, r *http.Request) {
 	app := getApplicationFromContext(r.Context())
 	err := a.appRepo.DeleteApplication(r.Context(), app)
@@ -167,6 +222,20 @@ func (a *applicationHandler) DeleteApp(w http.ResponseWriter, r *http.Request) {
 	_ = render.Render(w, r, newServerResponse("App deleted successfully", nil, http.StatusOK))
 }
 
+// CreateAppEndpoint
+// @Summary Create an application endpoint
+// @Description This endpoint creates an application endpoint
+// @Tags Application Endpoints
+// @Accept  json
+// @Produce  json
+// @Param appID path string true "application id"
+// @Param endpoint body models.Endpoint true "Endpoint Details"
+// @Success 200 {object} serverResponse
+// @Failure 400 {object} serverResponse
+// @Failure 401 {object} serverResponse
+// @Failure 500 {object} serverResponse
+// @Security ApiKeyAuth
+// @Router /applications/{appID}/endpoints [post]
 func (a *applicationHandler) CreateAppEndpoint(w http.ResponseWriter, r *http.Request) {
 	var e models.Endpoint
 	e, err := parseEndpointFromBody(r.Body)
@@ -212,12 +281,39 @@ func (a *applicationHandler) CreateAppEndpoint(w http.ResponseWriter, r *http.Re
 	_ = render.Render(w, r, newServerResponse("App endpoint created successfully", endpoint, http.StatusCreated))
 }
 
+// GetAppEndpoint
+// @Summary Get application endpoint
+// @Description This endpoint fetches an application endpoint
+// @Tags Application Endpoints
+// @Accept  json
+// @Produce  json
+// @Param appID path string true "application id"
+// @Param endpointID path string true "endpoint id"
+// @Success 200 {object} serverResponse
+// @Failure 400 {object} serverResponse
+// @Failure 401 {object} serverResponse
+// @Failure 500 {object} serverResponse
+// @Security ApiKeyAuth
+// @Router /applications/{appID}/endpoints/{endpointID} [get]
 func (a *applicationHandler) GetAppEndpoint(w http.ResponseWriter, r *http.Request) {
 
 	_ = render.Render(w, r, newServerResponse("App endpoint fetched successfully",
 		*getApplicationEndpointFromContext(r.Context()), http.StatusOK))
 }
 
+// GetAppEndpoints
+// @Summary Get application endpoints
+// @Description This endpoint fetches an application's endpoints
+// @Tags Application Endpoints
+// @Accept  json
+// @Produce  json
+// @Param appID path string true "application id"
+// @Success 200 {object} serverResponse
+// @Failure 400 {object} serverResponse
+// @Failure 401 {object} serverResponse
+// @Failure 500 {object} serverResponse
+// @Security ApiKeyAuth
+// @Router /applications/{appID}/endpoints [get]
 func (a *applicationHandler) GetAppEndpoints(w http.ResponseWriter, r *http.Request) {
 	app := getApplicationFromContext(r.Context())
 
@@ -225,6 +321,21 @@ func (a *applicationHandler) GetAppEndpoints(w http.ResponseWriter, r *http.Requ
 	_ = render.Render(w, r, newServerResponse("App endpoints fetched successfully", app.Endpoints, http.StatusOK))
 }
 
+// UpdateAppEndpoint
+// @Summary Update an application endpoint
+// @Description This endpoint updates an application endpoint
+// @Tags Application Endpoints
+// @Accept  json
+// @Produce  json
+// @Param appID path string true "application id"
+// @Param endpointID path string true "endpoint id"
+// @Param endpoint body models.Endpoint true "Endpoint Details"
+// @Success 200 {object} serverResponse
+// @Failure 400 {object} serverResponse
+// @Failure 401 {object} serverResponse
+// @Failure 500 {object} serverResponse
+// @Security ApiKeyAuth
+// @Router /applications/{appID}/endpoints/{endpointID} [put]
 func (a *applicationHandler) UpdateAppEndpoint(w http.ResponseWriter, r *http.Request) {
 	var e models.Endpoint
 	e, err := parseEndpointFromBody(r.Body)
@@ -252,6 +363,20 @@ func (a *applicationHandler) UpdateAppEndpoint(w http.ResponseWriter, r *http.Re
 	_ = render.Render(w, r, newServerResponse("Apps endpoint updated successfully", endpoint, http.StatusAccepted))
 }
 
+// DeleteAppEndpoint
+// @Summary Delete application endpoint
+// @Description This endpoint deletes an application endpoint
+// @Tags Application Endpoints
+// @Accept  json
+// @Produce  json
+// @Param appID path string true "application id"
+// @Param endpointID path string true "endpoint id"
+// @Success 200 {object} serverResponse
+// @Failure 400 {object} serverResponse
+// @Failure 401 {object} serverResponse
+// @Failure 500 {object} serverResponse
+// @Security ApiKeyAuth
+// @Router /applications/{appID}/endpoints/{endpointID} [delete]
 func (a *applicationHandler) DeleteAppEndpoint(w http.ResponseWriter, r *http.Request) {
 	app := getApplicationFromContext(r.Context())
 	e := getApplicationEndpointFromContext(r.Context())

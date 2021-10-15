@@ -26,7 +26,7 @@ func addCreateCommand(a *app) *cobra.Command {
 	}
 
 	cmd.AddCommand(createMessageCommand(a))
-	cmd.AddCommand(createOrganisationCommand(a))
+	cmd.AddCommand(createGroupCommand(a))
 	cmd.AddCommand(createApplicationCommand(a))
 	cmd.AddCommand(createEndpointCommand(a))
 
@@ -102,7 +102,7 @@ func createEndpointCommand(a *app) *cobra.Command {
 
 func createApplicationCommand(a *app) *cobra.Command {
 
-	var orgID string
+	var groupID string
 	var appSecret string
 
 	cmd := &cobra.Command{
@@ -123,11 +123,11 @@ func createApplicationCommand(a *app) *cobra.Command {
 				return errors.New("please provide your app name")
 			}
 
-			if util.IsStringEmpty(orgID) {
-				return errors.New("please provide a valid Organisation ID")
+			if util.IsStringEmpty(groupID) {
+				return errors.New("please provide a valid Group ID")
 			}
 
-			org, err := a.orgRepo.FetchOrganisationByID(context.Background(), orgID)
+			group, err := a.groupRepo.FetchGroupByID(context.Background(), groupID)
 			if err != nil {
 				return err
 			}
@@ -141,7 +141,7 @@ func createApplicationCommand(a *app) *cobra.Command {
 
 			app := &convoy.Application{
 				UID:            uuid.New().String(),
-				OrgID:          org.UID,
+				GroupID:        group.UID,
 				Title:          appName,
 				Secret:         appSecret,
 				CreatedAt:      primitive.NewDateTimeFromTime(time.Now()),
@@ -156,29 +156,29 @@ func createApplicationCommand(a *app) *cobra.Command {
 			}
 
 			table := tablewriter.NewWriter(os.Stdout)
-			table.SetHeader([]string{"ID", "Name", "Organisation", "Secret", "Created at"})
+			table.SetHeader([]string{"ID", "Name", "Group", "Secret", "Created at"})
 
-			table.Append([]string{app.UID, app.Title, org.OrgName, app.Secret, app.CreatedAt.Time().String()})
+			table.Append([]string{app.UID, app.Title, group.Name, app.Secret, app.CreatedAt.Time().String()})
 			table.Render()
 
 			return nil
 		},
 	}
 
-	cmd.Flags().StringVar(&orgID, "org", "", "Organisation that owns this application")
+	cmd.Flags().StringVar(&groupID, "group", "", "Group that owns this application")
 	cmd.Flags().StringVar(&appSecret, "secret", "", "Provide the secret for app endpoint(s). If blank, it will be automatically generated")
 
 	return cmd
 }
 
-func createOrganisationCommand(a *app) *cobra.Command {
+func createGroupCommand(a *app) *cobra.Command {
 
 	cmd := &cobra.Command{
-		Use:   "organisation",
-		Short: "Create an organisation",
+		Use:   "group",
+		Short: "Create an group",
 		Args: func(cmd *cobra.Command, args []string) error {
 			if len(args) <= 0 {
-				return errors.New("please provide the organisation name")
+				return errors.New("please provide the group name")
 			}
 
 			return nil
@@ -191,23 +191,23 @@ func createOrganisationCommand(a *app) *cobra.Command {
 				return errors.New("please provide a valid name")
 			}
 
-			org := &convoy.Organisation{
+			group := &convoy.Group{
 				UID:            uuid.New().String(),
-				OrgName:        name,
+				Name:           name,
 				CreatedAt:      primitive.NewDateTimeFromTime(time.Now()),
 				UpdatedAt:      primitive.NewDateTimeFromTime(time.Now()),
 				DocumentStatus: convoy.ActiveDocumentStatus,
 			}
 
-			err := a.orgRepo.CreateOrganisation(context.Background(), org)
+			err := a.groupRepo.CreateGroup(context.Background(), group)
 			if err != nil {
-				return fmt.Errorf("could not create organisation... %w", err)
+				return fmt.Errorf("could not create group... %w", err)
 			}
 
 			table := tablewriter.NewWriter(os.Stdout)
 			table.SetHeader([]string{"ID", "Name", "Created at"})
 
-			table.Append([]string{org.UID, org.OrgName, org.CreatedAt.Time().String()})
+			table.Append([]string{group.UID, group.Name, group.CreatedAt.Time().String()})
 			table.Render()
 			return nil
 		},
@@ -318,7 +318,7 @@ func createMessageCommand(a *app) *cobra.Command {
 					NextSendTime:    primitive.NewDateTimeFromTime(time.Now()),
 				},
 				AppMetadata: &convoy.AppMetadata{
-					OrgID:     appData.OrgID,
+					GroupID:   appData.GroupID,
 					Secret:    appData.Secret,
 					Endpoints: activeEndpoints,
 				},

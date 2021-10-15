@@ -48,7 +48,7 @@ type MessageMetadata struct {
 }
 
 type AppMetadata struct {
-	OrgID        string `json:"org_id" bson:"org_id"`
+	GroupID      string `json:"group_id" bson:"group_id"`
 	Secret       string `json:"secret" bson:"secret"`
 	SupportEmail string `json:"support_email" bson:"support_email"`
 
