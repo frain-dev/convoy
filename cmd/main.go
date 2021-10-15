@@ -135,7 +135,7 @@ func ensureMongoIndices(conn *mongo.Database) {
 }
 
 func ensureDefaultGroup(ctx context.Context, groupRepo convoy.GroupRepository) error {
-	groups, err := groupRepo.LoadGroups(ctx)
+	groups, err := groupRepo.LoadGroups(ctx, &convoy.GroupFilter{})
 	if err != nil {
 		return fmt.Errorf("failed to load groups - %w", err)
 	}

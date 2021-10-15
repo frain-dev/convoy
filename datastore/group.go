@@ -6,9 +6,11 @@ import (
 	"time"
 
 	"github.com/frain-dev/convoy"
+	"github.com/frain-dev/convoy/util"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
+	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
 type groupRepo struct {
@@ -25,10 +27,18 @@ func NewGroupRepo(client *mongo.Database) convoy.GroupRepository {
 	}
 }
 
-func (db *groupRepo) LoadGroups(ctx context.Context) ([]*convoy.Group, error) {
+func (db *groupRepo) LoadGroups(ctx context.Context, f *convoy.GroupFilter) ([]*convoy.Group, error) {
 	groups := make([]*convoy.Group, 0)
 
-	cur, err := db.inner.Find(ctx, bson.D{{}})
+	query := make(bson.D, 0)
+	var opts *options.FindOptions = nil
+
+	if !util.IsStringEmpty(f.Name) {
+		query = append(query, bson.E{Key: "org_name", Value: f.Name})
+		opts = &options.FindOptions{Collation: &options.Collation{Locale: "en", Strength: 2}}
+	}
+
+	cur, err := db.inner.Find(ctx, query, opts)
 	if err != nil {
 		return groups, err
 	}

@@ -65,18 +65,18 @@ func (mr *MockGroupRepositoryMockRecorder) FetchGroupByID(arg0, arg1 interface{}
 }
 
 // LoadGroups mocks base method.
-func (m *MockGroupRepository) LoadGroups(arg0 context.Context) ([]*convoy.Group, error) {
+func (m *MockGroupRepository) LoadGroups(arg0 context.Context, arg1 *convoy.GroupFilter) ([]*convoy.Group, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "LoadGroups", arg0)
+	ret := m.ctrl.Call(m, "LoadGroups", arg0, arg1)
 	ret0, _ := ret[0].([]*convoy.Group)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // LoadGroups indicates an expected call of LoadGroups.
-func (mr *MockGroupRepositoryMockRecorder) LoadGroups(arg0 interface{}) *gomock.Call {
+func (mr *MockGroupRepositoryMockRecorder) LoadGroups(arg0, arg1 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "LoadGroups", reflect.TypeOf((*MockGroupRepository)(nil).LoadGroups), arg0)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "LoadGroups", reflect.TypeOf((*MockGroupRepository)(nil).LoadGroups), arg0, arg1)
 }
 
 // UpdateGroup mocks base method.

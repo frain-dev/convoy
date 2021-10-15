@@ -123,6 +123,7 @@ func (a *applicationHandler) UpdateGroup(w http.ResponseWriter, r *http.Request)
 // @Tags Group
 // @Accept  json
 // @Produce  json
+// @Param name query string false "group name"
 // @Success 200 {object} serverResponse
 // @Failure 400 {object} serverResponse
 // @Failure 401 {object} serverResponse
@@ -130,8 +131,9 @@ func (a *applicationHandler) UpdateGroup(w http.ResponseWriter, r *http.Request)
 // @Security ApiKeyAuth
 // @Router /groups [get]
 func (a *applicationHandler) GetGroups(w http.ResponseWriter, r *http.Request) {
-
-	orgs, err := a.groupRepo.LoadGroups(r.Context())
+	name := r.URL.Query().Get("name")
+	
+	orgs, err := a.groupRepo.LoadGroups(r.Context(), &convoy.GroupFilter{Name: name})
 	if err != nil {
 		_ = render.Render(w, r, newErrorResponse("an error occurred while fetching Groups", http.StatusInternalServerError))
 		return

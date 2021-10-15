@@ -55,7 +55,7 @@ func Test_LoadGroups(t *testing.T) {
 
 	orgRepo := NewGroupRepo(db)
 
-	orgs, err := orgRepo.LoadGroups(context.Background())
+	orgs, err := orgRepo.LoadGroups(context.Background(), &convoy.GroupFilter{})
 	require.NoError(t, err)
 
 	require.True(t, len(orgs) > 0)
