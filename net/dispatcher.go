@@ -44,6 +44,10 @@ func (d *Dispatcher) SendRequest(endpoint, method string, jsonData json.RawMessa
 	req.Header.Add("Content-Type", "application/json")
 	req.Header.Add("User-Agent", string(DefaultUserAgent))
 
+	r.RequestHeader = req.Header
+	r.URL = req.URL
+	r.Method = req.Method
+
 	trace := &httptrace.ClientTrace{
 		GotConn: func(connInfo httptrace.GotConnInfo) {
 			r.IP = connInfo.Conn.RemoteAddr().String()
@@ -55,7 +59,7 @@ func (d *Dispatcher) SendRequest(endpoint, method string, jsonData json.RawMessa
 
 	response, err := d.client.Do(req)
 	if err != nil {
-		log.Debugf("error sending request to API endpoint - %+v\n", err)
+		log.Errorf("error sending request to API endpoint - %+v\n", err)
 		r.Error = err.Error()
 		return r, err
 	}
@@ -91,8 +95,5 @@ type Response struct {
 func updateDispatchHeaders(r *Response, res *http.Response) {
 	r.Status = res.Status
 	r.StatusCode = res.StatusCode
-	r.URL = res.Request.URL
-	r.Method = res.Request.Method
-	r.RequestHeader = res.Request.Header
 	r.ResponseHeader = res.Header
 }
