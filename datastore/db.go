@@ -46,7 +46,7 @@ func EnsureIndex(db *mongo.Database, collectionName string, field string, unique
 
 	_, err := collection.Indexes().CreateOne(ctx, mod)
 	if err != nil {
-		log.Errorf("failed to create index on field %s in %s - %+v\n", field, collectionName, err)
+		log.WithError(err).Errorf("failed to create index on field %s in %s", field, collectionName)
 		return false
 	}
 

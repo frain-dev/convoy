@@ -12,11 +12,11 @@ import (
 
 type Scheduler struct {
 	inner   *gocron.Scheduler
-	queue   *queue.Queuer
-	msgRepo *convoy.MessageRepository
+	queue   queue.Queuer
+	msgRepo convoy.MessageRepository
 }
 
-func NewScheduler(queue *queue.Queuer, msgRepo *convoy.MessageRepository) *Scheduler {
+func NewScheduler(queue queue.Queuer, msgRepo convoy.MessageRepository) *Scheduler {
 	return &Scheduler{
 		inner:   gocron.NewScheduler(time.UTC),
 		queue:   queue,
@@ -33,7 +33,7 @@ func (s *Scheduler) Start() {
 
 func (s *Scheduler) addTask(name string, secs int, task func(queue.Queuer, convoy.MessageRepository)) {
 	_, err := s.inner.Every(secs).Seconds().Do(func() {
-		task(*s.queue, *s.msgRepo)
+		task(s.queue, s.msgRepo)
 	})
 	if err != nil {
 		log.Fatalf("Failed to add %s scheduler task", name)

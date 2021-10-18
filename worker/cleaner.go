@@ -8,11 +8,11 @@ import (
 )
 
 type Cleaner struct {
-	queue   *queue.Queuer
-	msgRepo *convoy.MessageRepository
+	queue   queue.Queuer
+	msgRepo convoy.MessageRepository
 }
 
-func NewCleaner(queuer *queue.Queuer, msgRepo *convoy.MessageRepository) *Cleaner {
+func NewCleaner(queuer queue.Queuer, msgRepo convoy.MessageRepository) *Cleaner {
 	return &Cleaner{
 		queue:   queuer,
 		msgRepo: msgRepo,
@@ -21,7 +21,7 @@ func NewCleaner(queuer *queue.Queuer, msgRepo *convoy.MessageRepository) *Cleane
 
 func (c *Cleaner) Start() {
 	go func() {
-		log.Debugln("Running cleanup tasks")
-		task.RetryAbandonedMessages(*c.queue, *c.msgRepo)
+		log.Infoln("Running cleanup tasks")
+		task.RetryAbandonedMessages(c.queue, c.msgRepo)
 	}()
 }
