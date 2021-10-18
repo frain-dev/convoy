@@ -34,7 +34,7 @@ func (d *Dispatcher) SendRequest(endpoint, method string, jsonData json.RawMessa
 
 	req, err := http.NewRequest(method, endpoint, bytes.NewBuffer(jsonData))
 	if err != nil {
-		log.Errorf("error occurred while creating request - %+v\n", err)
+		log.WithError(err).Error("error occurred while creating request")
 		return r, err
 	}
 	if !util.IsStringEmpty(signatureHeader) {
@@ -51,7 +51,7 @@ func (d *Dispatcher) SendRequest(endpoint, method string, jsonData json.RawMessa
 	trace := &httptrace.ClientTrace{
 		GotConn: func(connInfo httptrace.GotConnInfo) {
 			r.IP = connInfo.Conn.RemoteAddr().String()
-			log.Debugf("IP address resolved to: %s\n", connInfo.Conn.RemoteAddr())
+			log.Infof("IP address resolved to: %s", connInfo.Conn.RemoteAddr())
 		},
 	}
 
@@ -59,7 +59,7 @@ func (d *Dispatcher) SendRequest(endpoint, method string, jsonData json.RawMessa
 
 	response, err := d.client.Do(req)
 	if err != nil {
-		log.Errorf("error sending request to API endpoint - %+v\n", err)
+		log.WithError(err).Error("error sending request to API endpoint")
 		r.Error = err.Error()
 		return r, err
 	}
@@ -68,12 +68,12 @@ func (d *Dispatcher) SendRequest(endpoint, method string, jsonData json.RawMessa
 	body, err := ioutil.ReadAll(response.Body)
 	r.Body = body
 	if err != nil {
-		log.Errorf("Couldn't parse Response Body. %+v\n", err)
+		log.WithError(err).Error("couldn't parse response body")
 		return r, err
 	}
 	err = response.Body.Close()
 	if err != nil {
-		log.Errorf("error while closing connection - %+v\n", err)
+		log.WithError(err).Error("error while closing connection")
 		return r, err
 	}
 

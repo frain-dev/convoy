@@ -67,7 +67,7 @@ func (p *Producer) postMessages(msgRepo convoy.MessageRepository, appRepo convoy
 
 		e := &m.AppMetadata.Endpoints[i]
 		if e.Sent {
-			log.Debugf("endpoint %s already merged with message %s\n", e.TargetURL, m.UID)
+			log.Infof("endpoint %s already merged with message %s", e.TargetURL, m.UID)
 			continue
 		}
 
