@@ -18,18 +18,18 @@ import (
 
 type Producer struct {
 	Data            chan queue.Message
-	groupRepo       *convoy.GroupRepository
-	appRepo         *convoy.ApplicationRepository
-	msgRepo         *convoy.MessageRepository
+	groupRepo       convoy.GroupRepository
+	appRepo         convoy.ApplicationRepository
+	msgRepo         convoy.MessageRepository
 	dispatch        *net.Dispatcher
 	signatureConfig config.SignatureConfiguration
 	smtpConfig      config.SMTPConfiguration
 	quit            chan chan error
 }
 
-func NewProducer(queuer *queue.Queuer, groupRepo *convoy.GroupRepository, appRepo *convoy.ApplicationRepository, msgRepo *convoy.MessageRepository, signatureConfig config.SignatureConfiguration, smtpConfig config.SMTPConfiguration) *Producer {
+func NewProducer(queuer queue.Queuer, groupRepo convoy.GroupRepository, appRepo convoy.ApplicationRepository, msgRepo convoy.MessageRepository, signatureConfig config.SignatureConfiguration, smtpConfig config.SMTPConfiguration) *Producer {
 	return &Producer{
-		Data:            (*queuer).Read(),
+		Data:            queuer.Read(),
 		groupRepo:       groupRepo,
 		appRepo:         appRepo,
 		msgRepo:         msgRepo,
@@ -46,7 +46,7 @@ func (p *Producer) Start() {
 			select {
 			case data := <-p.Data:
 				go func() {
-					p.postMessages(*p.msgRepo, *p.appRepo, data.Data)
+					p.postMessages(p.msgRepo, p.appRepo, data.Data)
 				}()
 			case ch := <-p.quit:
 				close(p.Data)
@@ -223,10 +223,10 @@ func (p *Producer) postMessages(msgRepo convoy.MessageRepository, appRepo convoy
 	}
 }
 
-func sendEmailNotification(m *convoy.AppMetadata, o *convoy.GroupRepository, s *smtp.SmtpClient, status convoy.EndpointStatus) error {
+func sendEmailNotification(m *convoy.AppMetadata, o convoy.GroupRepository, s *smtp.SmtpClient, status convoy.EndpointStatus) error {
 	email := m.SupportEmail
 
-	org, err := (*o).FetchGroupByID(context.Background(), m.GroupID)
+	org, err := o.FetchGroupByID(context.Background(), m.GroupID)
 	if err != nil {
 		return err
 	}
