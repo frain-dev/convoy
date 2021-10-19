@@ -102,6 +102,8 @@ func TestMain(m *testing.M) {
 		}
 	}()
 
+	// allow the servers start
+	time.Sleep(2 * time.Second)
 	code := m.Run()
 	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
 	defer cancel()
