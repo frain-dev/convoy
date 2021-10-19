@@ -4,27 +4,25 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"fmt"
 	"io"
 	"net/http"
 	"os"
 	"testing"
 	"time"
 
-	"github.com/stretchr/testify/require"
+	"go.mongodb.org/mongo-driver/bson/primitive"
 
 	"github.com/frain-dev/convoy/config"
-
 	"github.com/frain-dev/convoy/server/models"
-
-	fuzz "github.com/google/gofuzz"
-
 	log "github.com/sirupsen/logrus"
+	"github.com/stretchr/testify/require"
 )
 
 const (
-	host1 = "http://localhost:2091"
-	host2 = "http://localhost:2092"
-	host3 = "http://localhost:2093"
+	host1 = "127.0.0.1:2091"
+	host2 = "127.0.0.1:2092"
+	host3 = "127.0.0.1:2093"
 )
 
 const (
@@ -44,6 +42,9 @@ var (
 	server3 = &http.Server{
 		Addr: host3,
 	}
+
+	successBody = []byte("received webhook successfully")
+	failureBody = []byte("error occurred")
 )
 
 func TestMain(m *testing.M) {
@@ -55,10 +56,10 @@ func TestMain(m *testing.M) {
 			log.WithError(err).Fatal("failed to read body")
 		}
 
-		logger.WithField("request_body", body)
+		logger.WithField("request_body", string(body))
 
 		w.WriteHeader(http.StatusOK)
-		_, _ = w.Write([]byte("received webhook successfully"))
+		_, _ = w.Write(successBody)
 
 		h := w.Header()
 		h["RequestID"] = []string{"abcd"}
@@ -70,10 +71,10 @@ func TestMain(m *testing.M) {
 			log.WithError(err).Fatal("failed to read body")
 		}
 
-		logger.WithField("request_body", body)
+		logger.WithField("request_body", string(body))
 
 		w.WriteHeader(http.StatusInternalServerError)
-		_, _ = w.Write([]byte("error occurred"))
+		_, _ = w.Write(failureBody)
 
 		h := w.Header()
 		h["RequestID"] = []string{"abcd"}
@@ -121,16 +122,17 @@ func serialize(obj interface{}) *bytes.Buffer {
 	return buf
 }
 
-func fuzzObj(obj interface{}) json.RawMessage {
-	fuzz.New().Fuzz(obj)
+func rawMessage(obj interface{}) json.RawMessage {
 	buf := serialize(obj)
 	return buf.Bytes()
 }
 
+func formatEndpoint(host, endpoint string) string {
+	return fmt.Sprintf("http://%s%s", host, endpoint)
+}
+
 func TestDispatcher_SendRequest(t *testing.T) {
-	type fields struct {
-		client *http.Client
-	}
+	client := http.DefaultClient
 	type args struct {
 		endpoint        string
 		method          string
@@ -140,23 +142,29 @@ func TestDispatcher_SendRequest(t *testing.T) {
 	}
 	tests := []struct {
 		name    string
-		fields  fields
 		args    args
 		want    *Response
 		wantErr bool
 	}{
 		{
-			name:   "should_send_message",
-			fields: fields{client: http.DefaultClient},
+			name: "should_send_message",
 			args: args{
-				endpoint:        host1 + successEndpoint,
-				method:          http.MethodPost,
-				jsonData:        fuzzObj(&models.Message{}),
+				endpoint: formatEndpoint(host1, successEndpoint),
+				method:   http.MethodPost,
+				jsonData: rawMessage(&models.Message{
+					MessageID:  "12322",
+					AppID:      "24244",
+					EventType:  "test.charge",
+					ProviderID: "",
+					Data:       nil,
+					Status:     "success",
+					CreatedAt:  int64(primitive.NewDateTimeFromTime(time.Now())),
+				}),
 				signatureHeader: config.DefaultSignatureHeader.String(),
 				hmac:            "",
 			},
 			want: &Response{
-				Status:     http.StatusText(http.StatusOK),
+				Status:     "200 OK",
 				StatusCode: http.StatusOK,
 				Method:     http.MethodPost,
 				URL:        nil,
@@ -167,7 +175,7 @@ func TestDispatcher_SendRequest(t *testing.T) {
 				ResponseHeader: http.Header{
 					"RequestID": []string{"abcd"},
 				},
-				Body:  nil,
+				Body:  successBody,
 				IP:    server1.Addr,
 				Error: "",
 			},
@@ -177,9 +185,8 @@ func TestDispatcher_SendRequest(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			d := &Dispatcher{
-				client: tt.fields.client,
-			}
+			d := &Dispatcher{client: client}
+
 			got, err := d.SendRequest(tt.args.endpoint, tt.args.method, tt.args.jsonData, tt.args.signatureHeader, tt.args.hmac)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("SendRequest() error = %v, wantErr %v", err, tt.wantErr)
@@ -187,7 +194,11 @@ func TestDispatcher_SendRequest(t *testing.T) {
 			}
 
 			require.Equal(t, tt.want.Error, got.Error)
-
+			require.Equal(t, tt.want.Status, got.Status)
+			require.Equal(t, tt.want.StatusCode, got.StatusCode)
+			require.Equal(t, tt.want.Method, got.Method)
+			require.Equal(t, tt.want.IP, got.IP)
+			require.Equal(t, tt.want.Body, got.Body)
 		})
 	}
 }
