@@ -291,7 +291,7 @@ func TestApplicationHandler_CreateApp(t *testing.T) {
 			dbFn: func(app *applicationHandler) {
 				o, _ := app.groupRepo.(*mocks.MockGroupRepository)
 				o.EXPECT().
-					LoadGroups(gomock.Any()).Times(1).
+					LoadGroups(gomock.Any(), gomock.Any()).Times(1).
 					Return([]*convoy.Group{group}, nil)
 			},
 		},
@@ -304,7 +304,7 @@ func TestApplicationHandler_CreateApp(t *testing.T) {
 			dbFn: func(app *applicationHandler) {
 				o, _ := app.groupRepo.(*mocks.MockGroupRepository)
 				o.EXPECT().
-					LoadGroups(gomock.Any()).Times(1).
+					LoadGroups(gomock.Any(), gomock.Any()).Times(1).
 					Return([]*convoy.Group{group}, nil)
 			},
 		},
@@ -322,7 +322,7 @@ func TestApplicationHandler_CreateApp(t *testing.T) {
 
 				o, _ := app.groupRepo.(*mocks.MockGroupRepository)
 				o.EXPECT().
-					LoadGroups(gomock.Any()).Times(1).
+					LoadGroups(gomock.Any(), gomock.Any()).Times(1).
 					Return([]*convoy.Group{group}, nil)
 			},
 		},

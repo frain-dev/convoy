@@ -34,7 +34,7 @@ func reactRootHandler(rw http.ResponseWriter, req *http.Request) {
 	f := fs.FS(reactFS)
 	static, err := fs.Sub(f, "ui/build")
 	if err != nil {
-		log.Errorf("an error has occurred with the react app - %+v\n", err)
+		log.WithError(err).Error("an error has occurred with the react app")
 		return
 	}
 	if _, err := static.Open(strings.TrimLeft(p, "/")); err != nil { // If file not found server index/html from root

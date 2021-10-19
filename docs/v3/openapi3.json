@@ -3,9 +3,6 @@
 		"schemas": {
 			"models.Application": {
 				"properties": {
-					"group_id": {
-						"type": "string"
-					},
 					"name": {
 						"type": "string"
 					},
@@ -1322,6 +1319,16 @@
 		"/groups": {
 			"get": {
 				"description": "This endpoint fetches groups",
+				"parameters": [
+					{
+						"description": "group name",
+						"in": "query",
+						"name": "name",
+						"schema": {
+							"type": "string"
+						}
+					}
+				],
 				"responses": {
 					"200": {
 						"content": {

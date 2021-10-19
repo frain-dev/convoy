@@ -19,8 +19,13 @@ type DatabaseConfiguration struct {
 	Dsn string `json:"dsn"`
 }
 
+type SentryConfiguration struct {
+	Dsn string `json:"dsn"`
+}
+
 type ServerConfiguration struct {
-	HTTP struct {
+	Environment string `json:"environment"`
+	HTTP        struct {
 		Port uint32 `json:"port"`
 	} `json:"http"`
 }
@@ -77,11 +82,13 @@ type Configuration struct {
 	UIAuth            UIAuthConfiguration    `json:"ui,omitempty"`
 	UIAuthorizedUsers map[string]string      `json:"-"`
 	Database          DatabaseConfiguration  `json:"database"`
+	Sentry            SentryConfiguration    `json:"sentry"`
 	Queue             QueueConfiguration     `json:"queue"`
 	Server            ServerConfiguration    `json:"server"`
 	Strategy          StrategyConfiguration  `json:"strategy"`
 	Signature         SignatureConfiguration `json:"signature"`
 	SMTP              SMTPConfiguration      `json:"smtp"`
+	DisableEndpoint   bool                   `json:"disable_endpoint"`
 }
 
 type AuthProvider string
@@ -136,6 +143,19 @@ func LoadConfig(p string) error {
 				Port: uint32(port),
 			},
 		}
+	}
+
+	if serverEnv := os.Getenv("CONVOY_SERVER_ENV"); serverEnv != "" {
+		c.Server.Environment = serverEnv
+	}
+
+	// if it's still empty, set it to development
+	if c.Server.Environment == "" {
+		c.Server.Environment = "development"
+	}
+
+	if sentryDsn := os.Getenv("CONVOY_SENTRY_DSN"); sentryDsn != "" {
+		c.Sentry = SentryConfiguration{Dsn: sentryDsn}
 	}
 
 	if signatureHeader := os.Getenv("CONVOY_SIGNATURE_HEADER"); signatureHeader != "" {
