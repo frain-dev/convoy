@@ -146,7 +146,7 @@ func TestApplicationHandler_GetApp(t *testing.T) {
 	for _, tc := range tt {
 		t.Run(tc.name, func(t *testing.T) {
 			// Arrange
-			url := fmt.Sprintf("/v1/applications/%s", tc.id)
+			url := fmt.Sprintf("/api/v1/applications/%s", tc.id)
 			req := httptest.NewRequest(tc.method, url, nil)
 			req.SetBasicAuth("test", "test")
 			w := httptest.NewRecorder()
@@ -230,7 +230,7 @@ func TestApplicationHandler_GetApps(t *testing.T) {
 	for _, tc := range tt {
 		t.Run(tc.name, func(t *testing.T) {
 			// Arrange
-			req := httptest.NewRequest(tc.method, "/v1/applications", nil)
+			req := httptest.NewRequest(tc.method, "/api/v1/applications", nil)
 			req.SetBasicAuth("test", "test")
 			w := httptest.NewRecorder()
 
@@ -343,7 +343,7 @@ func TestApplicationHandler_CreateApp(t *testing.T) {
 			app = newApplicationHandler(msgRepo, apprepo, groupRepo, scheduleQueue)
 
 			// Arrange
-			req := httptest.NewRequest(tc.method, "/v1/applications", tc.body)
+			req := httptest.NewRequest(tc.method, "/api/v1/applications", tc.body)
 			req.SetBasicAuth("test", "test")
 			req.Header.Add("Content-Type", "application/json")
 			w := httptest.NewRecorder()
@@ -517,7 +517,7 @@ func TestApplicationHandler_UpdateApp(t *testing.T) {
 
 			app = newApplicationHandler(msgRepo, apprepo, groupRepo, scheduleQueue)
 
-			url := fmt.Sprintf("/v1/applications/%s", tc.appId)
+			url := fmt.Sprintf("/api/v1/applications/%s", tc.appId)
 			req := httptest.NewRequest(tc.method, url, tc.body)
 			req.SetBasicAuth("test", "test")
 			req.Header.Add("Content-Type", "application/json")
@@ -614,7 +614,7 @@ func TestApplicationHandler_CreateAppEndpoint(t *testing.T) {
 
 	for _, tc := range tt {
 		t.Run(tc.name, func(t *testing.T) {
-			url := fmt.Sprintf("/v1/applications/%s/endpoints", tc.appId)
+			url := fmt.Sprintf("/api/v1/applications/%s/endpoints", tc.appId)
 			req := httptest.NewRequest(tc.method, url, tc.body)
 			req.SetBasicAuth("test", "test")
 			req.Header.Add("Content-Type", "application/json")
@@ -732,7 +732,7 @@ func TestApplicationHandler_UpdateAppEndpoint(t *testing.T) {
 
 			app = newApplicationHandler(msgRepo, apprepo, groupRepo, scheduleQueue)
 
-			url := fmt.Sprintf("/v1/applications/%s/endpoints/%s", tc.appId, tc.endpointId)
+			url := fmt.Sprintf("/api/v1/applications/%s/endpoints/%s", tc.appId, tc.endpointId)
 			req := httptest.NewRequest(tc.method, url, tc.body)
 			req.SetBasicAuth("test", "test")
 			req.Header.Add("Content-Type", "application/json")
@@ -840,7 +840,7 @@ func Test_applicationHandler_GetDashboardSummary(t *testing.T) {
 
 	for _, tc := range tt {
 		t.Run(tc.name, func(t *testing.T) {
-			request := httptest.NewRequest(tc.method, fmt.Sprintf("/v1/dashboard/%s/summary?startDate=%s&type=daily", groupID, time.Now().Format(format)), nil)
+			request := httptest.NewRequest(tc.method, fmt.Sprintf("/api/v1/dashboard/%s/summary?startDate=%s&type=daily", groupID, time.Now().Format(format)), nil)
 			responseRecorder := httptest.NewRecorder()
 			rctx := chi.NewRouteContext()
 			rctx.URLParams.Add("groupID", groupID)
@@ -915,7 +915,7 @@ func Test_applicationHandler_GetPaginatedApps(t *testing.T) {
 
 	for _, tc := range tt {
 		t.Run(tc.name, func(t *testing.T) {
-			request := httptest.NewRequest(tc.method, fmt.Sprintf("/v1/dashboard/%s/apps?page=1", groupID), nil)
+			request := httptest.NewRequest(tc.method, fmt.Sprintf("/api/v1/dashboard/%s/apps?page=1", groupID), nil)
 			responseRecorder := httptest.NewRecorder()
 			rctx := chi.NewRouteContext()
 			rctx.URLParams.Add("groupID", groupID)

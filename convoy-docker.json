@@ -1,7 +1,7 @@
 {
   "sentry": {
-    "dsn": "<insert-sentry-dsn>"
-  },
+    "dsn": "https://24a23bb99a6043e6ae2645cddc6d6c76@o128492.ingest.sentry.io/6005470"
+	},
     "database": {
     "environment": "dev",
 		"dsn": "mongodb://root:rootpassword@mongodb:27017"

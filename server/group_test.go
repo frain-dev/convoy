@@ -81,7 +81,7 @@ func TestApplicationHandler_GetGroup(t *testing.T) {
 			app = newApplicationHandler(msgRepo, appRepo, groupRepo, scheduleQueue)
 
 			// Arrange
-			url := fmt.Sprintf("/v1/groups/%s", tc.id)
+			url := fmt.Sprintf("/api/v1/groups/%s", tc.id)
 			req := httptest.NewRequest(tc.method, url, nil)
 			req.SetBasicAuth("test", "test")
 			req.Header.Add("Content-Type", "application/json")
@@ -161,7 +161,7 @@ func TestApplicationHandler_CreateGroup(t *testing.T) {
 			app = newApplicationHandler(msgRepo, appRepo, groupRepo, scheduleQueue)
 
 			// Arrange
-			req := httptest.NewRequest(tc.method, "/v1/groups", tc.body)
+			req := httptest.NewRequest(tc.method, "/api/v1/groups", tc.body)
 			req.SetBasicAuth("test", "test")
 			req.Header.Add("Content-Type", "application/json")
 			w := httptest.NewRecorder()
@@ -246,7 +246,7 @@ func TestApplicationHandler_UpdateGroup(t *testing.T) {
 			app = newApplicationHandler(msgRepo, appRepo, groupRepo, scheduleQueue)
 
 			// Arrange
-			url := fmt.Sprintf("/v1/groups/%s", tc.orgID)
+			url := fmt.Sprintf("/api/v1/groups/%s", tc.orgID)
 			req := httptest.NewRequest(tc.method, url, tc.body)
 			req.SetBasicAuth("test", "test")
 			req.Header.Add("Content-Type", "application/json")
@@ -329,7 +329,7 @@ func TestApplicationHandler_GetGroups(t *testing.T) {
 
 			app = newApplicationHandler(msgRepo, appRepo, groupRepo, scheduleQueue)
 
-			req := httptest.NewRequest(tc.method, "/v1/groups", nil)
+			req := httptest.NewRequest(tc.method, "/api/v1/groups", nil)
 			req.SetBasicAuth("test", "test")
 			w := httptest.NewRecorder()
 

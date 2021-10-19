@@ -27,13 +27,24 @@ func TestProcessMessages(t *testing.T) {
 			cfgPath:       "./testdata/Config/basic-convoy.json",
 			expectedError: nil,
 			msg: &convoy.Message{
-				AppMetadata: &convoy.AppMetadata{
-					Endpoints: []convoy.EndpointMetadata{
-						{
-							Sent: true,
+				UID: "",
+			},
+			dbFn: func(a *mocks.MockApplicationRepository, o *mocks.MockGroupRepository, m *mocks.MockMessageRepository) {
+				m.EXPECT().
+					FindMessageByID(gomock.Any(), gomock.Any()).
+					Return(&convoy.Message{
+						AppMetadata: &convoy.AppMetadata{
+							Endpoints: []convoy.EndpointMetadata{
+								{
+									Sent: true,
+								},
+							},
 						},
-					},
-				},
+					}, nil).Times(1)
+
+				m.EXPECT().
+					UpdateStatusOfMessages(gomock.Any(), gomock.Any(), gomock.Any()).
+					Return(nil).Times(1)
 			},
 		},
 		{
@@ -41,16 +52,26 @@ func TestProcessMessages(t *testing.T) {
 			cfgPath:       "./testdata/Config/basic-convoy.json",
 			expectedError: nil,
 			msg: &convoy.Message{
-				AppMetadata: &convoy.AppMetadata{
-					Endpoints: []convoy.EndpointMetadata{
-						{
-							Status: convoy.InactiveEndpointStatus,
-							Sent:   false,
-						},
-					},
-				},
+				UID: "",
 			},
 			dbFn: func(a *mocks.MockApplicationRepository, o *mocks.MockGroupRepository, m *mocks.MockMessageRepository) {
+				m.EXPECT().
+					FindMessageByID(gomock.Any(), gomock.Any()).
+					Return(&convoy.Message{
+						AppMetadata: &convoy.AppMetadata{
+							Endpoints: []convoy.EndpointMetadata{
+								{
+									Status: convoy.InactiveEndpointStatus,
+									Sent:   false,
+								},
+							},
+						},
+					}, nil).Times(1)
+
+				m.EXPECT().
+					UpdateStatusOfMessages(gomock.Any(), gomock.Any(), gomock.Any()).
+					Return(nil).Times(1)
+
 				a.EXPECT().
 					FindApplicationEndpointByID(gomock.Any(), gomock.Any(), gomock.Any()).
 					Return(&convoy.Endpoint{
@@ -63,26 +84,36 @@ func TestProcessMessages(t *testing.T) {
 			cfgPath:       "./testdata/Config/basic-convoy.json",
 			expectedError: &EndpointError{Err: ErrDeliveryAttemptFailed, delay: 20 * time.Second},
 			msg: &convoy.Message{
-				Data:   []byte(`{"event": "invoice.completed"}`),
-				Status: convoy.ProcessingMessageStatus,
-				Metadata: &convoy.MessageMetadata{
-					NumTrials:       0,
-					RetryLimit:      3,
-					IntervalSeconds: 20,
-				},
-				AppMetadata: &convoy.AppMetadata{
-					Secret: "aaaaaaaaaaaaaaa",
-					Endpoints: []convoy.EndpointMetadata{
-						{
-							Status:    convoy.ActiveEndpointStatus,
-							Sent:      false,
-							TargetURL: "https://google.com",
-							UID:       "1234567890",
-						},
-					},
-				},
+				UID: "",
 			},
 			dbFn: func(a *mocks.MockApplicationRepository, o *mocks.MockGroupRepository, m *mocks.MockMessageRepository) {
+				m.EXPECT().
+					FindMessageByID(gomock.Any(), gomock.Any()).
+					Return(&convoy.Message{
+						Data:   []byte(`{"event": "invoice.completed"}`),
+						Status: convoy.ScheduledMessageStatus,
+						Metadata: &convoy.MessageMetadata{
+							NumTrials:       0,
+							RetryLimit:      3,
+							IntervalSeconds: 20,
+						},
+						AppMetadata: &convoy.AppMetadata{
+							Secret: "aaaaaaaaaaaaaaa",
+							Endpoints: []convoy.EndpointMetadata{
+								{
+									Status:    convoy.ActiveEndpointStatus,
+									Sent:      false,
+									TargetURL: "https://google.com",
+									UID:       "1234567890",
+								},
+							},
+						},
+					}, nil).Times(1)
+
+				m.EXPECT().
+					UpdateStatusOfMessages(gomock.Any(), gomock.Any(), gomock.Any()).
+					Return(nil).Times(1)
+
 				a.EXPECT().
 					FindApplicationEndpointByID(gomock.Any(), gomock.Any(), gomock.Any()).
 					Return(&convoy.Endpoint{
@@ -105,30 +136,96 @@ func TestProcessMessages(t *testing.T) {
 			},
 		},
 		{
-			name:          "Max retries reached - failed",
+			name:          "Max retries reached - do not disable endpoint - failed",
 			cfgPath:       "./testdata/Config/basic-convoy.json",
 			expectedError: nil,
 			msg: &convoy.Message{
-				Data:   []byte(`{"event": "invoice.completed"}`),
-				Status: convoy.ProcessingMessageStatus,
-				Metadata: &convoy.MessageMetadata{
-					NumTrials:       2,
-					RetryLimit:      3,
-					IntervalSeconds: 20,
-				},
-				AppMetadata: &convoy.AppMetadata{
-					Secret: "aaaaaaaaaaaaaaa",
-					Endpoints: []convoy.EndpointMetadata{
-						{
-							Status:    convoy.ActiveEndpointStatus,
-							Sent:      false,
-							TargetURL: "https://google.com",
-							UID:       "1234567890",
-						},
-					},
-				},
+				UID: "",
 			},
 			dbFn: func(a *mocks.MockApplicationRepository, o *mocks.MockGroupRepository, m *mocks.MockMessageRepository) {
+				m.EXPECT().
+					FindMessageByID(gomock.Any(), gomock.Any()).
+					Return(&convoy.Message{
+						Data:   []byte(`{"event": "invoice.completed"}`),
+						Status: convoy.ScheduledMessageStatus,
+						Metadata: &convoy.MessageMetadata{
+							NumTrials:       2,
+							RetryLimit:      3,
+							IntervalSeconds: 20,
+						},
+						AppMetadata: &convoy.AppMetadata{
+							Secret: "aaaaaaaaaaaaaaa",
+							Endpoints: []convoy.EndpointMetadata{
+								{
+									Status:    convoy.ActiveEndpointStatus,
+									Sent:      false,
+									TargetURL: "https://google.com",
+									UID:       "1234567890",
+								},
+							},
+						},
+					}, nil).Times(1)
+
+				m.EXPECT().
+					UpdateStatusOfMessages(gomock.Any(), gomock.Any(), gomock.Any()).
+					Return(nil).Times(1)
+
+				a.EXPECT().
+					FindApplicationEndpointByID(gomock.Any(), gomock.Any(), gomock.Any()).
+					Return(&convoy.Endpoint{
+						Status: convoy.ActiveEndpointStatus,
+					}, nil).Times(1)
+
+				m.EXPECT().
+					UpdateMessageWithAttempt(gomock.Any(), gomock.Any(), gomock.Any()).
+					Return(nil).Times(1)
+			},
+			nFn: func() func() {
+				httpmock.Activate()
+
+				httpmock.RegisterResponder("POST", "https://google.com",
+					httpmock.NewStringResponder(200, ``))
+
+				return func() {
+					httpmock.DeactivateAndReset()
+				}
+			},
+		},
+		{
+			name:          "Max retries reached - disable endpoint - failed",
+			cfgPath:       "./testdata/Config/basic-convoy-disable-endpoint.json",
+			expectedError: nil,
+			msg: &convoy.Message{
+				UID: "",
+			},
+			dbFn: func(a *mocks.MockApplicationRepository, o *mocks.MockGroupRepository, m *mocks.MockMessageRepository) {
+				m.EXPECT().
+					FindMessageByID(gomock.Any(), gomock.Any()).
+					Return(&convoy.Message{
+						Data:   []byte(`{"event": "invoice.completed"}`),
+						Status: convoy.ScheduledMessageStatus,
+						Metadata: &convoy.MessageMetadata{
+							NumTrials:       2,
+							RetryLimit:      3,
+							IntervalSeconds: 20,
+						},
+						AppMetadata: &convoy.AppMetadata{
+							Secret: "aaaaaaaaaaaaaaa",
+							Endpoints: []convoy.EndpointMetadata{
+								{
+									Status:    convoy.ActiveEndpointStatus,
+									Sent:      false,
+									TargetURL: "https://google.com",
+									UID:       "1234567890",
+								},
+							},
+						},
+					}, nil).Times(1)
+
+				m.EXPECT().
+					UpdateStatusOfMessages(gomock.Any(), gomock.Any(), gomock.Any()).
+					Return(nil).Times(1)
+
 				a.EXPECT().
 					FindApplicationEndpointByID(gomock.Any(), gomock.Any(), gomock.Any()).
 					Return(&convoy.Endpoint{
@@ -161,35 +258,108 @@ func TestProcessMessages(t *testing.T) {
 			},
 		},
 		{
-			name:          "Manual retry failed",
+			name:          "Manual retry - no disable endpoint - failed",
 			cfgPath:       "./testdata/Config/basic-convoy.json",
 			expectedError: nil,
 			msg: &convoy.Message{
-				Data:   []byte(`{"event": "invoice.completed"}`),
-				Status: convoy.ProcessingMessageStatus,
-				Metadata: &convoy.MessageMetadata{
-					NumTrials:       3,
-					RetryLimit:      3,
-					IntervalSeconds: 20,
-				},
-				AppMetadata: &convoy.AppMetadata{
-					Secret: "aaaaaaaaaaaaaaa",
-					Endpoints: []convoy.EndpointMetadata{
-						{
-							Status:    convoy.ActiveEndpointStatus,
-							Sent:      false,
-							TargetURL: "https://google.com",
-							UID:       "1234567890",
-						},
-					},
-				},
+				UID: "",
 			},
 			dbFn: func(a *mocks.MockApplicationRepository, o *mocks.MockGroupRepository, m *mocks.MockMessageRepository) {
+				m.EXPECT().
+					FindMessageByID(gomock.Any(), gomock.Any()).
+					Return(&convoy.Message{
+						Data:   []byte(`{"event": "invoice.completed"}`),
+						Status: convoy.ScheduledMessageStatus,
+						Metadata: &convoy.MessageMetadata{
+							NumTrials:       3,
+							RetryLimit:      3,
+							IntervalSeconds: 20,
+						},
+						AppMetadata: &convoy.AppMetadata{
+							Secret: "aaaaaaaaaaaaaaa",
+							Endpoints: []convoy.EndpointMetadata{
+								{
+									Status:    convoy.ActiveEndpointStatus,
+									Sent:      false,
+									TargetURL: "https://google.com",
+									UID:       "1234567890",
+								},
+							},
+						},
+					}, nil).Times(1)
+
+				m.EXPECT().
+					UpdateStatusOfMessages(gomock.Any(), gomock.Any(), gomock.Any()).
+					Return(nil).Times(1)
+
 				a.EXPECT().
 					FindApplicationEndpointByID(gomock.Any(), gomock.Any(), gomock.Any()).
 					Return(&convoy.Endpoint{
 						UID:    "1234567890",
-						Status: convoy.PendingEndpointStatus,
+						Status: convoy.ActiveEndpointStatus,
+					}, nil).Times(1)
+
+				m.EXPECT().
+					UpdateMessageWithAttempt(gomock.Any(), gomock.Any(), gomock.Any()).
+					Return(nil).Times(1)
+			},
+			nFn: func() func() {
+				httpmock.Activate()
+
+				httpmock.RegisterResponder("POST", "https://google.com",
+					httpmock.NewStringResponder(400, ``))
+
+				return func() {
+					httpmock.DeactivateAndReset()
+				}
+			},
+		},
+		{
+			name:          "Manual retry - disable endpoint - failed",
+			cfgPath:       "./testdata/Config/basic-convoy-disable-endpoint.json",
+			expectedError: nil,
+			msg: &convoy.Message{
+				UID: "",
+			},
+			dbFn: func(a *mocks.MockApplicationRepository, o *mocks.MockGroupRepository, m *mocks.MockMessageRepository) {
+				m.EXPECT().
+					FindMessageByID(gomock.Any(), gomock.Any()).
+					Return(&convoy.Message{
+						Data:   []byte(`{"event": "invoice.completed"}`),
+						Status: convoy.ScheduledMessageStatus,
+						Metadata: &convoy.MessageMetadata{
+							NumTrials:       3,
+							RetryLimit:      3,
+							IntervalSeconds: 20,
+						},
+						AppMetadata: &convoy.AppMetadata{
+							Secret: "aaaaaaaaaaaaaaa",
+							Endpoints: []convoy.EndpointMetadata{
+								{
+									Status:    convoy.ActiveEndpointStatus,
+									Sent:      false,
+									TargetURL: "https://google.com",
+									UID:       "1234567890",
+								},
+							},
+						},
+					}, nil).Times(1)
+
+				m.EXPECT().
+					UpdateStatusOfMessages(gomock.Any(), gomock.Any(), gomock.Any()).
+					Return(nil).Times(1)
+
+				a.EXPECT().
+					FindApplicationEndpointByID(gomock.Any(), gomock.Any(), gomock.Any()).
+					Return(&convoy.Endpoint{
+						UID:    "1234567890",
+						Status: convoy.ActiveEndpointStatus,
+					}, nil).Times(1)
+
+				o.EXPECT().
+					FetchGroupByID(gomock.Any(), gomock.Any()).
+					Return(&convoy.Group{
+						LogoURL: "",
 					}, nil).Times(1)
 
 				a.EXPECT().
@@ -212,30 +382,97 @@ func TestProcessMessages(t *testing.T) {
 			},
 		},
 		{
-			name:          "Manual retry success",
+			name:          "Manual retry - no disable endpoint - success",
 			cfgPath:       "./testdata/Config/basic-convoy.json",
 			expectedError: nil,
 			msg: &convoy.Message{
-				Data:   []byte(`{"event": "invoice.completed"}`),
-				Status: convoy.ProcessingMessageStatus,
-				Metadata: &convoy.MessageMetadata{
-					NumTrials:       4,
-					RetryLimit:      3,
-					IntervalSeconds: 20,
-				},
-				AppMetadata: &convoy.AppMetadata{
-					Secret: "aaaaaaaaaaaaaaa",
-					Endpoints: []convoy.EndpointMetadata{
-						{
-							Status:    convoy.ActiveEndpointStatus,
-							Sent:      false,
-							TargetURL: "https://google.com",
-							UID:       "1234567890",
-						},
-					},
-				},
+				UID: "",
 			},
 			dbFn: func(a *mocks.MockApplicationRepository, o *mocks.MockGroupRepository, m *mocks.MockMessageRepository) {
+				m.EXPECT().
+					FindMessageByID(gomock.Any(), gomock.Any()).
+					Return(&convoy.Message{
+						Data:   []byte(`{"event": "invoice.completed"}`),
+						Status: convoy.ScheduledMessageStatus,
+						Metadata: &convoy.MessageMetadata{
+							NumTrials:       4,
+							RetryLimit:      3,
+							IntervalSeconds: 20,
+						},
+						AppMetadata: &convoy.AppMetadata{
+							Secret: "aaaaaaaaaaaaaaa",
+							Endpoints: []convoy.EndpointMetadata{
+								{
+									Status:    convoy.ActiveEndpointStatus,
+									Sent:      false,
+									TargetURL: "https://google.com",
+									UID:       "1234567890",
+								},
+							},
+						},
+					}, nil).Times(1)
+
+				m.EXPECT().
+					UpdateStatusOfMessages(gomock.Any(), gomock.Any(), gomock.Any()).
+					Return(nil).Times(1)
+
+				a.EXPECT().
+					FindApplicationEndpointByID(gomock.Any(), gomock.Any(), gomock.Any()).
+					Return(&convoy.Endpoint{
+						UID:    "1234567890",
+						Status: convoy.ActiveEndpointStatus,
+					}, nil).Times(1)
+
+				m.EXPECT().
+					UpdateMessageWithAttempt(gomock.Any(), gomock.Any(), gomock.Any()).
+					Return(nil).Times(1)
+			},
+			nFn: func() func() {
+				httpmock.Activate()
+
+				httpmock.RegisterResponder("POST", "https://google.com",
+					httpmock.NewStringResponder(200, ``))
+
+				return func() {
+					httpmock.DeactivateAndReset()
+				}
+			},
+		},
+		{
+			name:          "Manual retry - disable endpoint - success",
+			cfgPath:       "./testdata/Config/basic-convoy-disable-endpoint.json",
+			expectedError: nil,
+			msg: &convoy.Message{
+				UID: "",
+			},
+			dbFn: func(a *mocks.MockApplicationRepository, o *mocks.MockGroupRepository, m *mocks.MockMessageRepository) {
+				m.EXPECT().
+					FindMessageByID(gomock.Any(), gomock.Any()).
+					Return(&convoy.Message{
+						Data:   []byte(`{"event": "invoice.completed"}`),
+						Status: convoy.ScheduledMessageStatus,
+						Metadata: &convoy.MessageMetadata{
+							NumTrials:       4,
+							RetryLimit:      3,
+							IntervalSeconds: 20,
+						},
+						AppMetadata: &convoy.AppMetadata{
+							Secret: "aaaaaaaaaaaaaaa",
+							Endpoints: []convoy.EndpointMetadata{
+								{
+									Status:    convoy.ActiveEndpointStatus,
+									Sent:      false,
+									TargetURL: "https://google.com",
+									UID:       "1234567890",
+								},
+							},
+						},
+					}, nil).Times(1)
+
+				m.EXPECT().
+					UpdateStatusOfMessages(gomock.Any(), gomock.Any(), gomock.Any()).
+					Return(nil).Times(1)
+
 				a.EXPECT().
 					FindApplicationEndpointByID(gomock.Any(), gomock.Any(), gomock.Any()).
 					Return(&convoy.Endpoint{

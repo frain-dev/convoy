@@ -85,7 +85,6 @@ func main() {
 			sentryHook := convoy.NewSentryHook(convoy.DefaultLevels)
 			log.AddHook(sentryHook)
 
-			var queuer queue.Queuer
 			var rClient *redis.Client
 			var qFn taskq.Factory
 

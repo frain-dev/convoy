@@ -34,7 +34,27 @@ func (e *EndpointError) Delay() time.Duration {
 
 func ProcessMessages(appRepo convoy.ApplicationRepository, msgRepo convoy.MessageRepository, orgRepo convoy.GroupRepository) func(*queue.Job) error {
 	return func(job *queue.Job) error {
-		m := job.Data
+		Id := job.Data.UID
+
+		// Load message from DB and switch state to prevent concurrent processing.
+		m, err := msgRepo.FindMessageByID(context.Background(), Id)
+
+		if err != nil {
+			log.WithError(err).Errorf("Failed to load message - %s", Id)
+			return nil
+		}
+
+		switch m.Status {
+		case convoy.ProcessingMessageStatus,
+			convoy.SuccessMessageStatus:
+			return nil
+		}
+
+		err = msgRepo.UpdateStatusOfMessages(context.Background(), []convoy.Message{*m}, convoy.ProcessingMessageStatus)
+		if err != nil {
+			log.WithError(err).Error("failed to update status of messages - ")
+			return nil
+		}
 
 		var attempt convoy.MessageAttempt
 		var secret = m.AppMetadata.Secret
@@ -64,7 +84,6 @@ func ProcessMessages(appRepo convoy.ApplicationRepository, msgRepo convoy.Messag
 
 		if dbEndpoint.Status == convoy.InactiveEndpointStatus {
 			log.Debugf("endpoint %s is inactive, failing to send.", e.TargetURL)
-			done = false
 			return nil
 		}
 
@@ -119,8 +138,9 @@ func ProcessMessages(appRepo convoy.ApplicationRepository, msgRepo convoy.Messag
 			delay := m.Metadata.IntervalSeconds
 			nextTime := time.Now().Add(time.Duration(delay) * time.Second)
 			m.Metadata.NextSendTime = primitive.NewDateTimeFromTime(nextTime)
+			attempts := m.Metadata.NumTrials + 1
 
-			log.Errorf("%s next retry time is %s (strategy = %s, delay = %d, attempts = %d/%d)\n", m.UID, nextTime.Format(time.ANSIC), m.Metadata.Strategy, delay, m.Metadata.NumTrials, m.Metadata.RetryLimit)
+			log.Errorf("%s next retry time is %s (strategy = %s, delay = %d, attempts = %d/%d)\n", m.UID, nextTime.Format(time.ANSIC), m.Metadata.Strategy, delay, attempts, m.Metadata.RetryLimit)
 		}
 
 		// Request failed but statusCode is 200 <= x <= 299
@@ -128,7 +148,7 @@ func ProcessMessages(appRepo convoy.ApplicationRepository, msgRepo convoy.Messag
 			log.Errorf("%s failed. Reason: %s", m.UID, err)
 		}
 
-		if done && dbEndpoint.Status == convoy.PendingEndpointStatus {
+		if done && dbEndpoint.Status == convoy.PendingEndpointStatus && cfg.DisableEndpoint {
 			endpoints := []string{dbEndpoint.UID}
 			endpointStatus := convoy.ActiveEndpointStatus
 
@@ -172,7 +192,7 @@ func ProcessMessages(appRepo convoy.ApplicationRepository, msgRepo convoy.Messag
 				m.Status = convoy.FailureMessageStatus
 			}
 
-			if dbEndpoint.Status != convoy.PendingEndpointStatus {
+			if cfg.DisableEndpoint && dbEndpoint.Status != convoy.PendingEndpointStatus {
 				endpoints := []string{dbEndpoint.UID}
 				endpointStatus := convoy.InactiveEndpointStatus
 
@@ -193,7 +213,7 @@ func ProcessMessages(appRepo convoy.ApplicationRepository, msgRepo convoy.Messag
 
 		err = msgRepo.UpdateMessageWithAttempt(context.Background(), *m, attempt)
 		if err != nil {
-			log.Errorln("failed to update message ", m.UID)
+			log.WithError(err).Error("failed to update message ", m.UID)
 		}
 
 		if !done && m.Metadata.NumTrials < m.Metadata.RetryLimit {

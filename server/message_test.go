@@ -200,7 +200,7 @@ func TestApplicationHandler_CreateAppMessage(t *testing.T) {
 				t.Error("Failed to load config file")
 			}
 
-			req := httptest.NewRequest(tc.method, "/v1/events", tc.body)
+			req := httptest.NewRequest(tc.method, "/api/v1/events", tc.body)
 			req.SetBasicAuth("test", "test")
 			req.Header.Add("Content-Type", "application/json")
 			w := httptest.NewRecorder()
@@ -426,7 +426,7 @@ func Test_resendMessage(t *testing.T) {
 
 			app = newApplicationHandler(msgRepo, appRepo, groupRepo, scheduleQueue)
 
-			url := fmt.Sprintf("/v1/events/%s/resend", tc.args.message.UID)
+			url := fmt.Sprintf("/api/v1/events/%s/resend", tc.args.message.UID)
 			req := httptest.NewRequest(tc.method, url, nil)
 			req.SetBasicAuth("test", "test")
 			req.Header.Add("Content-Type", "application/json")
