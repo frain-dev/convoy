@@ -58,7 +58,7 @@ func TestMain(m *testing.M) {
 		logger.WithField("request_body", body)
 
 		w.WriteHeader(http.StatusOK)
-		w.Write([]byte("received webhook successfully"))
+		_, _ = w.Write([]byte("received webhook successfully"))
 
 		h := w.Header()
 		h["RequestID"] = []string{"abcd"}
@@ -73,7 +73,7 @@ func TestMain(m *testing.M) {
 		logger.WithField("request_body", body)
 
 		w.WriteHeader(http.StatusInternalServerError)
-		w.Write([]byte("error occurred"))
+		_, _ = w.Write([]byte("error occurred"))
 
 		h := w.Header()
 		h["RequestID"] = []string{"abcd"}
@@ -102,10 +102,12 @@ func TestMain(m *testing.M) {
 	}()
 
 	code := m.Run()
-	ctx, _ := context.WithTimeout(context.Background(), 3*time.Second)
-	server1.Shutdown(ctx)
-	server2.Shutdown(ctx)
-	server3.Shutdown(ctx)
+	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+	defer cancel()
+
+	_ = server1.Shutdown(ctx)
+	_ = server2.Shutdown(ctx)
+	_ = server3.Shutdown(ctx)
 
 	os.Exit(code)
 }
@@ -114,7 +116,7 @@ func TestMain(m *testing.M) {
 func serialize(obj interface{}) *bytes.Buffer {
 	buf := &bytes.Buffer{}
 	if err := json.NewEncoder(buf).Encode(obj); err != nil {
-		log.WithError(err).Fatalf("unable to serialized obj")
+		log.WithError(err).Fatalf("unable to serialize obj")
 	}
 	return buf
 }
