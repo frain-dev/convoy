@@ -218,6 +218,11 @@ func (a *applicationHandler) ResendAppMessage(w http.ResponseWriter, r *http.Req
 		return
 	}
 
+	err = a.scheduleQueue.Write(r.Context(), msg, 1*time.Second)
+	if err != nil {
+		log.WithError(err).Errorf("Error occurred re-enqueing old event - %s", msg.UID)
+	}
+
 	_ = render.Render(w, r, newServerResponse("App event processed for retry successfully",
 		msg, http.StatusOK))
 }

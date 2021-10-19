@@ -366,10 +366,15 @@ func Test_resendMessage(t *testing.T) {
 				a.EXPECT().
 					UpdateApplicationEndpointsStatus(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Times(1).
 					Return(nil)
+
+				q, _ := app.scheduleQueue.(*mocks.MockQueuer)
+				q.EXPECT().
+					Write(gomock.Any(), gomock.Any(), gomock.Any()).Times(1).
+					Return(nil)
 			},
 		},
 		{
-			name:       "valid resend - previously failed and active endpoint",
+			name:       "valid resend - previously failed - active endpoint",
 			cfgPath:    "./testdata/Auth_Config/basic-convoy.json",
 			method:     http.MethodPut,
 			statusCode: http.StatusOK,
@@ -409,6 +414,11 @@ func Test_resendMessage(t *testing.T) {
 						},
 						nil,
 					)
+
+				q, _ := app.scheduleQueue.(*mocks.MockQueuer)
+				q.EXPECT().
+					Write(gomock.Any(), gomock.Any(), gomock.Any()).Times(1).
+					Return(nil)
 			},
 		},
 	}

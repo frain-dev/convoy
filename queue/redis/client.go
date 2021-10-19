@@ -72,7 +72,6 @@ func (c *RedisQueue) Write(ctx context.Context, msg *convoy.Message, delay time.
 		Data: msg,
 	}
 	m := &taskq.Message{
-		Name:     msg.UID,
 		Ctx:      ctx,
 		TaskName: "EventProcessor", // TODO(subomi): Get this guy out of here.
 		Args:     []interface{}{*job},

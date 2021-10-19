@@ -37,6 +37,7 @@ func (d *Dispatcher) SendRequest(endpoint, method string, jsonData json.RawMessa
 		log.WithError(err).Error("error occurred while creating request")
 		return r, err
 	}
+
 	if !util.IsStringEmpty(signatureHeader) {
 		req.Header.Set(signatureHeader, hmac)
 	}
