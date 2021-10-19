@@ -6,7 +6,7 @@ require (
 	github.com/dgrijalva/jwt-go v3.2.0+incompatible
 	github.com/felixge/httpsnoop v1.0.2
 	github.com/getkin/kin-openapi v0.78.0
-	github.com/getsentry/sentry-go v0.11.0 // indirect
+	github.com/getsentry/sentry-go v0.11.0
 	github.com/ghodss/yaml v1.0.0
 	github.com/go-chi/chi/v5 v5.0.3
 	github.com/go-chi/render v1.0.1
@@ -15,6 +15,7 @@ require (
 	github.com/gobeam/mongo-go-pagination v0.0.7
 	github.com/golang/mock v1.4.4
 	github.com/golang/snappy v0.0.4 // indirect
+	github.com/google/gofuzz v1.2.0
 	github.com/google/uuid v1.2.0
 	github.com/klauspost/compress v1.13.4 // indirect
 	github.com/mgutz/ansi v0.0.0-20200706080929-d51e80ef957d // indirect

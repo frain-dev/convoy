@@ -104,6 +104,10 @@ const (
 	DefaultSignatureHeader  SignatureHeaderProvider = "X-Convoy-Signature"
 )
 
+func (s SignatureHeaderProvider) String() string {
+	return string(s)
+}
+
 func LoadConfig(p string) error {
 	f, err := os.Open(p)
 	if err != nil {
