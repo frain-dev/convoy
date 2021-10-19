@@ -43,8 +43,9 @@ var (
 		Addr: host3,
 	}
 
-	successBody = []byte("received webhook successfully")
-	failureBody = []byte("error occurred")
+	successBody      = []byte("received webhook successfully")
+	failureBody      = []byte("error occurred")
+	pageNotFoundBody = []byte("404 page not found\n")
 )
 
 func TestMain(m *testing.M) {
@@ -58,11 +59,11 @@ func TestMain(m *testing.M) {
 
 		logger.WithField("request_body", string(body))
 
+		w.Header()["request_id"] = []string{"abcd"}
+
 		w.WriteHeader(http.StatusOK)
 		_, _ = w.Write(successBody)
 
-		h := w.Header()
-		h["RequestID"] = []string{"abcd"}
 	})
 
 	mux.HandleFunc(failEndpoint, func(w http.ResponseWriter, r *http.Request) {
@@ -73,11 +74,10 @@ func TestMain(m *testing.M) {
 
 		logger.WithField("request_body", string(body))
 
+		w.Header()["request_id"] = []string{"abcd"}
+
 		w.WriteHeader(http.StatusInternalServerError)
 		_, _ = w.Write(failureBody)
-
-		h := w.Header()
-		h["RequestID"] = []string{"abcd"}
 	})
 
 	server1.Handler = mux
@@ -163,7 +163,7 @@ func TestDispatcher_SendRequest(t *testing.T) {
 					CreatedAt:  int64(primitive.NewDateTimeFromTime(time.Now())),
 				}),
 				signatureHeader: config.DefaultSignatureHeader.String(),
-				hmac:            "",
+				hmac:            "12345",
 			},
 			want: &Response{
 				Status:     "200 OK",
@@ -171,8 +171,9 @@ func TestDispatcher_SendRequest(t *testing.T) {
 				Method:     http.MethodPost,
 				URL:        nil,
 				RequestHeader: http.Header{
-					"Content-Type": []string{"application/json"},
-					"User-Agent":   []string{string(DefaultUserAgent)},
+					"Content-Type":                         []string{"application/json"},
+					"User-Agent":                           []string{string(DefaultUserAgent)},
+					config.DefaultSignatureHeader.String(): []string{"12345"}, // should equal hmac field above
 				},
 				ResponseHeader: http.Header{
 					"RequestID": []string{"abcd"},
@@ -182,6 +183,74 @@ func TestDispatcher_SendRequest(t *testing.T) {
 				Error: "",
 			},
 			wantErr: false,
+		},
+		{
+			name: "should_error_for_wrong_endpoint",
+			args: args{
+				endpoint: formatEndpoint(host1, "/undefined"),
+				method:   http.MethodPost,
+				jsonData: rawMessage(&models.Message{
+					MessageID:  "12322",
+					AppID:      "24244",
+					EventType:  "test.charge",
+					ProviderID: "",
+					Data:       nil,
+					Status:     "success",
+					CreatedAt:  int64(primitive.NewDateTimeFromTime(time.Now())),
+				}),
+				signatureHeader: config.DefaultSignatureHeader.String(),
+				hmac:            "12345",
+			},
+			want: &Response{
+				Status:     "404 Not Found",
+				StatusCode: http.StatusNotFound,
+				Method:     http.MethodPost,
+				RequestHeader: http.Header{
+					"Content-Type":                         []string{"application/json"},
+					"User-Agent":                           []string{string(DefaultUserAgent)},
+					config.DefaultSignatureHeader.String(): []string{"12345"}, // should equal hmac field above
+				},
+				ResponseHeader: http.Header{
+					"RequestID": []string{"abcd"},
+				},
+				Body:  pageNotFoundBody,
+				IP:    server1.Addr,
+				Error: "",
+			},
+			wantErr: false,
+		},
+		{
+			name: "should_refuse_connection_to_wrong_endpoint",
+			args: args{
+				endpoint: formatEndpoint("localhost:3023", "/undefined"),
+				method:   http.MethodPost,
+				jsonData: rawMessage(&models.Message{
+					MessageID:  "12322",
+					AppID:      "24244",
+					EventType:  "test.charge",
+					ProviderID: "",
+					Data:       nil,
+					Status:     "success",
+					CreatedAt:  int64(primitive.NewDateTimeFromTime(time.Now())),
+				}),
+				signatureHeader: config.DefaultSignatureHeader.String(),
+				hmac:            "12345",
+			},
+			want: &Response{
+				Status:     "",
+				StatusCode: 0,
+				Method:     http.MethodPost,
+				RequestHeader: http.Header{
+					"Content-Type":                         []string{"application/json"},
+					"User-Agent":                           []string{string(DefaultUserAgent)},
+					config.DefaultSignatureHeader.String(): []string{"12345"}, // should equal hmac field above
+				},
+				ResponseHeader: nil,
+				Body:           nil,
+				IP:             "",
+				Error:          "Post \"http://localhost:3023/undefined\": dial tcp [::1]:3023: connect: connection refused",
+			},
+			wantErr: true,
 		},
 	}
 
@@ -196,11 +265,15 @@ func TestDispatcher_SendRequest(t *testing.T) {
 			}
 
 			require.Equal(t, tt.want.Error, got.Error)
+			fmt.Println("Vv", got.Error)
 			require.Equal(t, tt.want.Status, got.Status)
 			require.Equal(t, tt.want.StatusCode, got.StatusCode)
 			require.Equal(t, tt.want.Method, got.Method)
 			require.Equal(t, tt.want.IP, got.IP)
 			require.Equal(t, tt.want.Body, got.Body)
+
+			require.Equal(t, tt.want.RequestHeader, got.RequestHeader)
+			require.Equal(t, tt.want.ResponseHeader["request_id"], got.ResponseHeader["request_id"])
 		})
 	}
 }
