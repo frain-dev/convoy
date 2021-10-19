@@ -163,7 +163,7 @@ func TestDispatcher_SendRequest(t *testing.T) {
 					config.DefaultSignatureHeader.String(): []string{"12345"}, // should equal hmac field above
 				},
 				ResponseHeader: http.Header{
-					"RequestID": []string{"abcd"},
+					http.CanonicalHeaderKey("Request_ID"): []string{"abcd"},
 				},
 				Body:  successBody,
 				IP:    server1.Addr,
@@ -197,12 +197,10 @@ func TestDispatcher_SendRequest(t *testing.T) {
 					"User-Agent":                           []string{string(DefaultUserAgent)},
 					config.DefaultSignatureHeader.String(): []string{"12345"}, // should equal hmac field above
 				},
-				ResponseHeader: http.Header{
-					"RequestID": []string{"abcd"},
-				},
-				Body:  pageNotFoundBody,
-				IP:    server1.Addr,
-				Error: "",
+				ResponseHeader: http.Header{},
+				Body:           pageNotFoundBody,
+				IP:             server2.Addr,
+				Error:          "",
 			},
 			wantErr: false,
 		},
@@ -232,10 +230,10 @@ func TestDispatcher_SendRequest(t *testing.T) {
 					"User-Agent":                           []string{string(DefaultUserAgent)},
 					config.DefaultSignatureHeader.String(): []string{"12345"}, // should equal hmac field above
 				},
-				ResponseHeader: nil,
+				ResponseHeader: http.Header{},
 				Body:           nil,
 				IP:             "",
-				Error:          "Post \"http://localhost:3023/undefined\": dial tcp [::1]:3023: connect: connection refused",
+				Error:          "connect: connection refused",
 			},
 			wantErr: true,
 		},
@@ -251,8 +249,7 @@ func TestDispatcher_SendRequest(t *testing.T) {
 				return
 			}
 
-			require.Equal(t, tt.want.Error, got.Error)
-			fmt.Println("Vv", got.Error)
+			require.Contains(t, got.Error, tt.want.Error)
 			require.Equal(t, tt.want.Status, got.Status)
 			require.Equal(t, tt.want.StatusCode, got.StatusCode)
 			require.Equal(t, tt.want.Method, got.Method)
