@@ -1017,6 +1017,14 @@
                     "Group"
                 ],
                 "summary": "Get groups",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "group name",
+                        "name": "name",
+                        "in": "query"
+                    }
+                ],
                 "responses": {
                     "200": {
                         "description": "OK",
@@ -1311,5 +1319,23 @@
             "name": "Authorization",
             "in": "header"
         }
-    }
+    },
+    "tags": [
+        {
+            "description": "Application related APIs",
+            "name": "Application"
+        },
+        {
+            "description": "Endpoint related APIs",
+            "name": "Application Endpoints"
+        },
+        {
+            "description": "Application Message related APIs",
+            "name": "Messages"
+        },
+        {
+            "description": "Group related APIs",
+            "name": "Group"
+        }
+    ]
 }

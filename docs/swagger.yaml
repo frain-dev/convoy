@@ -702,6 +702,11 @@ paths:
       consumes:
       - application/json
       description: This endpoint fetches groups
+      parameters:
+      - description: group name
+        in: query
+        name: name
+        type: string
       produces:
       - application/json
       responses:
@@ -845,3 +850,12 @@ securityDefinitions:
     name: Authorization
     type: apiKey
 swagger: "2.0"
+tags:
+- description: Application related APIs
+  name: Application
+- description: Endpoint related APIs
+  name: Application Endpoints
+- description: Application Message related APIs
+  name: Messages
+- description: Group related APIs
+  name: Group

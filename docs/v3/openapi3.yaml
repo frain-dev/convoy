@@ -805,6 +805,12 @@ paths:
   /groups:
     get:
       description: This endpoint fetches groups
+      parameters:
+      - description: group name
+        in: query
+        name: name
+        schema:
+          type: string
       responses:
         "200":
           content:
@@ -965,3 +971,12 @@ paths:
 servers:
 - url: http://localhost:8080/api/v1
 - url: https://localhost:8080/api/v1
+tags:
+- description: Application related APIs
+  name: Application
+- description: Endpoint related APIs
+  name: Application Endpoints
+- description: Application Message related APIs
+  name: Messages
+- description: Group related APIs
+  name: Group
