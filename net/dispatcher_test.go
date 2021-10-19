@@ -22,7 +22,6 @@ import (
 const (
 	host1 = "127.0.0.1:2091"
 	host2 = "127.0.0.1:2092"
-	host3 = "127.0.0.1:2093"
 )
 
 const (
@@ -37,10 +36,6 @@ var (
 
 	server2 = &http.Server{
 		Addr: host2,
-	}
-
-	server3 = &http.Server{
-		Addr: host3,
 	}
 
 	successBody      = []byte("received webhook successfully")
@@ -59,7 +54,7 @@ func TestMain(m *testing.M) {
 
 		logger.WithField("request_body", string(body))
 
-		w.Header()["request_id"] = []string{"abcd"}
+		w.Header()[http.CanonicalHeaderKey("Request_ID")] = []string{"abcd"}
 
 		w.WriteHeader(http.StatusOK)
 		_, _ = w.Write(successBody)
@@ -74,7 +69,7 @@ func TestMain(m *testing.M) {
 
 		logger.WithField("request_body", string(body))
 
-		w.Header()["request_id"] = []string{"abcd"}
+		w.Header()[http.CanonicalHeaderKey("Request_ID")] = []string{"abcd"}
 
 		w.WriteHeader(http.StatusInternalServerError)
 		_, _ = w.Write(failureBody)
@@ -82,7 +77,6 @@ func TestMain(m *testing.M) {
 
 	server1.Handler = mux
 	server2.Handler = mux
-	server3.Handler = mux
 
 	go func() {
 		if err := server1.ListenAndServe(); err != http.ErrServerClosed {
@@ -96,12 +90,6 @@ func TestMain(m *testing.M) {
 		}
 	}()
 
-	go func() {
-		if err := server3.ListenAndServe(); err != http.ErrServerClosed {
-			log.WithError(err).Fatal("server3 exited")
-		}
-	}()
-
 	// allow the servers start
 	time.Sleep(2 * time.Second)
 	code := m.Run()
@@ -110,7 +98,6 @@ func TestMain(m *testing.M) {
 
 	_ = server1.Shutdown(ctx)
 	_ = server2.Shutdown(ctx)
-	_ = server3.Shutdown(ctx)
 
 	os.Exit(code)
 }
@@ -187,7 +174,7 @@ func TestDispatcher_SendRequest(t *testing.T) {
 		{
 			name: "should_error_for_wrong_endpoint",
 			args: args{
-				endpoint: formatEndpoint(host1, "/undefined"),
+				endpoint: formatEndpoint(host2, "/undefined"),
 				method:   http.MethodPost,
 				jsonData: rawMessage(&models.Message{
 					MessageID:  "12322",
@@ -273,7 +260,7 @@ func TestDispatcher_SendRequest(t *testing.T) {
 			require.Equal(t, tt.want.Body, got.Body)
 
 			require.Equal(t, tt.want.RequestHeader, got.RequestHeader)
-			require.Equal(t, tt.want.ResponseHeader["request_id"], got.ResponseHeader["request_id"])
+			require.Equal(t, tt.want.ResponseHeader[http.CanonicalHeaderKey("Request_ID")], got.ResponseHeader[http.CanonicalHeaderKey("Request_ID")])
 		})
 	}
 }
