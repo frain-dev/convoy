@@ -1017,6 +1017,14 @@
                     "Group"
                 ],
                 "summary": "Get groups",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "group name",
+                        "name": "name",
+                        "in": "query"
+                    }
+                ],
                 "responses": {
                     "200": {
                         "description": "OK",

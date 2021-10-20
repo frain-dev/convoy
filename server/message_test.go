@@ -172,6 +172,11 @@ func TestApplicationHandler_CreateAppMessage(t *testing.T) {
 					CreateMessage(gomock.Any(), gomock.Any()).Times(1).
 					Return(nil)
 
+				q, _ := app.scheduleQueue.(*mocks.MockQueuer)
+				q.EXPECT().
+					Write(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Times(1).
+					Return(nil)
+
 			},
 		},
 	}
@@ -186,15 +191,16 @@ func TestApplicationHandler_CreateAppMessage(t *testing.T) {
 			groupRepo := mocks.NewMockGroupRepository(ctrl)
 			appRepo := mocks.NewMockApplicationRepository(ctrl)
 			msgRepo := mocks.NewMockMessageRepository(ctrl)
+			scheduleQueue := mocks.NewMockQueuer(ctrl)
 
-			app = newApplicationHandler(msgRepo, appRepo, groupRepo)
+			app = newApplicationHandler(msgRepo, appRepo, groupRepo, scheduleQueue)
 
 			err := config.LoadConfig(tc.cfgPath)
 			if err != nil {
 				t.Error("Failed to load config file")
 			}
 
-			req := httptest.NewRequest(tc.method, "/v1/events", tc.body)
+			req := httptest.NewRequest(tc.method, "/api/v1/events", tc.body)
 			req.SetBasicAuth("test", "test")
 			req.Header.Add("Content-Type", "application/json")
 			w := httptest.NewRecorder()
@@ -360,10 +366,15 @@ func Test_resendMessage(t *testing.T) {
 				a.EXPECT().
 					UpdateApplicationEndpointsStatus(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Times(1).
 					Return(nil)
+
+				q, _ := app.scheduleQueue.(*mocks.MockQueuer)
+				q.EXPECT().
+					Write(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Times(1).
+					Return(nil)
 			},
 		},
 		{
-			name:       "valid resend - previously failed and active endpoint",
+			name:       "valid resend - previously failed - active endpoint",
 			cfgPath:    "./testdata/Auth_Config/basic-convoy.json",
 			method:     http.MethodPut,
 			statusCode: http.StatusOK,
@@ -403,6 +414,11 @@ func Test_resendMessage(t *testing.T) {
 						},
 						nil,
 					)
+
+				q, _ := app.scheduleQueue.(*mocks.MockQueuer)
+				q.EXPECT().
+					Write(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Times(1).
+					Return(nil)
 			},
 		},
 	}
@@ -416,10 +432,11 @@ func Test_resendMessage(t *testing.T) {
 			groupRepo := mocks.NewMockGroupRepository(ctrl)
 			appRepo := mocks.NewMockApplicationRepository(ctrl)
 			msgRepo := mocks.NewMockMessageRepository(ctrl)
+			scheduleQueue := mocks.NewMockQueuer(ctrl)
 
-			app = newApplicationHandler(msgRepo, appRepo, groupRepo)
+			app = newApplicationHandler(msgRepo, appRepo, groupRepo, scheduleQueue)
 
-			url := fmt.Sprintf("/v1/events/%s/resend", tc.args.message.UID)
+			url := fmt.Sprintf("/api/v1/events/%s/resend", tc.args.message.UID)
 			req := httptest.NewRequest(tc.method, url, nil)
 			req.SetBasicAuth("test", "test")
 			req.Header.Add("Content-Type", "application/json")

@@ -702,6 +702,11 @@ paths:
       consumes:
       - application/json
       description: This endpoint fetches groups
+      parameters:
+      - description: group name
+        in: query
+        name: name
+        type: string
       produces:
       - application/json
       responses:

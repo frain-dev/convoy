@@ -1,7 +1,7 @@
 {
   "sentry": {
     "dsn": "<insert-sentry-dsn>"
-  },
+	},
     "database": {
     "environment": "dev",
 		"dsn": "mongodb://root:rootpassword@mongodb:27017"
