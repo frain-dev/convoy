@@ -13,10 +13,7 @@ import (
 
 	"github.com/jarcoal/httpmock"
 
-	"go.mongodb.org/mongo-driver/bson/primitive"
-
 	"github.com/frain-dev/convoy/config"
-	"github.com/frain-dev/convoy/server/models"
 	log "github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/require"
 )
@@ -177,22 +174,14 @@ func TestDispatcher_SendRequest(t *testing.T) {
 		{
 			name: "should_error_for_wrong_endpoint",
 			args: args{
-				endpoint: formatEndpoint(host2, "/undefined"),
-				method:   http.MethodPost,
-				jsonData: rawMessage(&models.Message{
-					MessageID:  "12322",
-					AppID:      "24244",
-					EventType:  "test.charge",
-					ProviderID: "",
-					Data:       nil,
-					Status:     "success",
-					CreatedAt:  int64(primitive.NewDateTimeFromTime(time.Now())),
-				}),
+				endpoint:        "https://localhost:9080",
+				method:          http.MethodPost,
+				jsonData:        bytes.NewBufferString("lol").Bytes(),
 				signatureHeader: config.DefaultSignatureHeader.String(),
 				hmac:            "12345",
 			},
 			want: &Response{
-				Status:     "404 Not Found",
+				Status:     "404",
 				StatusCode: http.StatusNotFound,
 				Method:     http.MethodPost,
 				RequestHeader: http.Header{
@@ -200,27 +189,29 @@ func TestDispatcher_SendRequest(t *testing.T) {
 					"User-Agent":                           []string{string(DefaultUserAgent)},
 					config.DefaultSignatureHeader.String(): []string{"12345"}, // should equal hmac field above
 				},
-				ResponseHeader: http.Header{},
+				ResponseHeader: nil,
 				Body:           pageNotFoundBody,
-				IP:             server2.Addr,
+				IP:             "",
 				Error:          "",
+			},
+			nFn: func() func() {
+				httpmock.Activate()
+
+				httpmock.RegisterResponder(http.MethodPost, "https://localhost:9080",
+					httpmock.NewStringResponder(http.StatusNotFound, string(pageNotFoundBody)))
+
+				return func() {
+					httpmock.DeactivateAndReset()
+				}
 			},
 			wantErr: false,
 		},
 		{
 			name: "should_refuse_connection_to_wrong_endpoint",
 			args: args{
-				endpoint: formatEndpoint("localhost:3023", "/undefined"),
-				method:   http.MethodPost,
-				jsonData: rawMessage(&models.Message{
-					MessageID:  "12322",
-					AppID:      "24244",
-					EventType:  "test.charge",
-					ProviderID: "",
-					Data:       nil,
-					Status:     "success",
-					CreatedAt:  int64(primitive.NewDateTimeFromTime(time.Now())),
-				}),
+				endpoint:        "http://localhost:3234",
+				method:          http.MethodPost,
+				jsonData:        bytes.NewBufferString("bossman").Bytes(),
 				signatureHeader: config.DefaultSignatureHeader.String(),
 				hmac:            "12345",
 			},
@@ -233,7 +224,7 @@ func TestDispatcher_SendRequest(t *testing.T) {
 					"User-Agent":                           []string{string(DefaultUserAgent)},
 					config.DefaultSignatureHeader.String(): []string{"12345"}, // should equal hmac field above
 				},
-				ResponseHeader: http.Header{},
+				ResponseHeader: nil,
 				Body:           nil,
 				IP:             "",
 				Error:          "connect: connection refused",
@@ -252,12 +243,12 @@ func TestDispatcher_SendRequest(t *testing.T) {
 			}
 
 			got, err := d.SendRequest(tt.args.endpoint, tt.args.method, tt.args.jsonData, tt.args.signatureHeader, tt.args.hmac)
-			if (err != nil) != tt.wantErr {
-				t.Errorf("SendRequest() error = %v, wantErr %v", err, tt.wantErr)
-				return
+			if tt.wantErr {
+				require.NotNil(t, err)
+				require.Contains(t, err.Error(), tt.want.Error)
+				require.Contains(t, got.Error, tt.want.Error)
 			}
 
-			require.Contains(t, got.Error, tt.want.Error)
 			require.Equal(t, tt.want.Status, got.Status)
 			require.Equal(t, tt.want.StatusCode, got.StatusCode)
 			require.Equal(t, tt.want.Method, got.Method)
@@ -265,7 +256,6 @@ func TestDispatcher_SendRequest(t *testing.T) {
 			require.Equal(t, tt.want.Body, got.Body)
 
 			require.Equal(t, tt.want.RequestHeader, got.RequestHeader)
-			require.Equal(t, tt.want.ResponseHeader[http.CanonicalHeaderKey("Request_ID")], got.ResponseHeader[http.CanonicalHeaderKey("Request_ID")])
 		})
 	}
 }
