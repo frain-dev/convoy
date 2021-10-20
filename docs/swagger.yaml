@@ -1,5 +1,85 @@
 basePath: /api/v1
 definitions:
+  convoy.AppMetadata:
+    properties:
+      endpoints:
+        items:
+          $ref: '#/definitions/convoy.EndpointMetadata'
+        type: array
+      group_id:
+        type: string
+      secret:
+        type: string
+      support_email:
+        type: string
+    type: object
+  convoy.EndpointMetadata:
+    properties:
+      sent:
+        type: boolean
+      status:
+        type: string
+      target_url:
+        type: string
+      uid:
+        type: string
+    type: object
+  convoy.Message:
+    properties:
+      app_id:
+        type: string
+      app_metadata:
+        $ref: '#/definitions/convoy.AppMetadata'
+      created_at:
+        type: integer
+      data:
+        description: |-
+          Data is an arbitrary JSON value that gets sent as the body of the
+          webhook to the endpoints
+        items:
+          type: integer
+        type: array
+      deleted_at:
+        type: integer
+      description:
+        type: string
+      event_type:
+        type: string
+      metadata:
+        $ref: '#/definitions/convoy.MessageMetadata'
+      provider_id:
+        description: |-
+          ProviderID is a custom ID that can be used to reconcile this message
+          with your internal systems.
+          This is optional
+          If not provided, we will generate one for you
+        type: string
+      status:
+        type: string
+      uid:
+        type: string
+      updated_at:
+        type: integer
+    type: object
+  convoy.MessageMetadata:
+    properties:
+      interval_seconds:
+        type: integer
+      next_send_time:
+        description: |-
+          NextSendTime denotes the next time a message will be published in
+          case it failed the first time
+        type: integer
+      num_trials:
+        description: |-
+          NumTrials: number of times we have tried to deliver this message to
+          an application
+        type: integer
+      retry_limit:
+        type: integer
+      strategy:
+        type: string
+    type: object
   models.Application:
     properties:
       name:
@@ -532,9 +612,14 @@ paths:
       - application/json
       responses:
         "200":
-          description: OK
+          description: asc
           schema:
-            $ref: '#/definitions/server.serverResponse'
+            allOf:
+            - $ref: '#/definitions/server.serverResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/convoy.Message'
+              type: object
         "400":
           description: Bad Request
           schema:
@@ -851,6 +936,14 @@ securityDefinitions:
     type: apiKey
 swagger: "2.0"
 tags:
+- description: Application related APIs
+  name: Application
+- description: Endpoint related APIs
+  name: Application Endpoints
+- description: Application Message related APIs
+  name: Messages
+- description: Group related APIs
+  name: Group
 - description: Application related APIs
   name: Application
 - description: Endpoint related APIs

@@ -36,3 +36,15 @@ package server
 
 // @tag.name Group
 // @tag.description Group related APIs
+
+// @tag.name Application
+// @tag.description Application related APIs
+
+// @tag.name Application Endpoints
+// @tag.description Endpoint related APIs
+
+// @tag.name Messages
+// @tag.description Application Message related APIs
+
+// @tag.name Group
+// @tag.description Group related APIs
