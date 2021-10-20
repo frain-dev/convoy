@@ -15,8 +15,8 @@ require (
 	github.com/gobeam/mongo-go-pagination v0.0.7
 	github.com/golang/mock v1.4.4
 	github.com/golang/snappy v0.0.4 // indirect
-	github.com/google/gofuzz v1.2.0
 	github.com/google/uuid v1.2.0
+	github.com/jarcoal/httpmock v1.0.8
 	github.com/klauspost/compress v1.13.4 // indirect
 	github.com/mgutz/ansi v0.0.0-20200706080929-d51e80ef957d // indirect
 	github.com/olekukonko/tablewriter v0.0.5

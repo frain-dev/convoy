@@ -11,6 +11,8 @@ import (
 	"testing"
 	"time"
 
+	"github.com/jarcoal/httpmock"
+
 	"go.mongodb.org/mongo-driver/bson/primitive"
 
 	"github.com/frain-dev/convoy/config"
@@ -133,22 +135,15 @@ func TestDispatcher_SendRequest(t *testing.T) {
 		name    string
 		args    args
 		want    *Response
+		nFn     func() func()
 		wantErr bool
 	}{
 		{
 			name: "should_send_message",
 			args: args{
-				endpoint: formatEndpoint(host1, successEndpoint),
-				method:   http.MethodPost,
-				jsonData: rawMessage(&models.Message{
-					MessageID:  "12322",
-					AppID:      "24244",
-					EventType:  "test.charge",
-					ProviderID: "",
-					Data:       nil,
-					Status:     "success",
-					CreatedAt:  int64(primitive.NewDateTimeFromTime(time.Now())),
-				}),
+				endpoint:        formatEndpoint(host1, successEndpoint),
+				method:          http.MethodPost,
+				jsonData:        bytes.NewBufferString("testing").Bytes(),
 				signatureHeader: config.DefaultSignatureHeader.String(),
 				hmac:            "12345",
 			},
@@ -168,6 +163,16 @@ func TestDispatcher_SendRequest(t *testing.T) {
 				Body:  successBody,
 				IP:    server1.Addr,
 				Error: "",
+			},
+			nFn: func() func() {
+				httpmock.Activate()
+
+				httpmock.RegisterResponder(http.MethodPost, "https://google.com",
+					httpmock.NewStringResponder(400, ``))
+
+				return func() {
+					httpmock.DeactivateAndReset()
+				}
 			},
 			wantErr: false,
 		},
