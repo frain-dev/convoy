@@ -20,6 +20,9 @@ func TestApplicationHandler_GetGroup(t *testing.T) {
 	realOrgID := "1234567890"
 	fakeOrgID := "12345"
 
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
 	tt := []struct {
 		name       string
 		cfgPath    string
@@ -70,14 +73,15 @@ func TestApplicationHandler_GetGroup(t *testing.T) {
 			ctrl := gomock.NewController(t)
 			defer ctrl.Finish()
 
-			orgRepo := mocks.NewMockGroupRepository(ctrl)
+			groupRepo := mocks.NewMockGroupRepository(ctrl)
 			appRepo := mocks.NewMockApplicationRepository(ctrl)
 			msgRepo := mocks.NewMockMessageRepository(ctrl)
+			scheduleQueue := mocks.NewMockQueuer(ctrl)
 
-			app = newApplicationHandler(msgRepo, appRepo, orgRepo)
+			app = newApplicationHandler(msgRepo, appRepo, groupRepo, scheduleQueue)
 
 			// Arrange
-			url := fmt.Sprintf("/v1/groups/%s", tc.id)
+			url := fmt.Sprintf("/api/v1/groups/%s", tc.id)
 			req := httptest.NewRequest(tc.method, url, nil)
 			req.SetBasicAuth("test", "test")
 			req.Header.Add("Content-Type", "application/json")
@@ -114,6 +118,9 @@ func TestApplicationHandler_GetGroup(t *testing.T) {
 
 func TestApplicationHandler_CreateGroup(t *testing.T) {
 
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
 	bodyReader := strings.NewReader(`{"name": "ABC_DEF_TEST_UPDATE"}`)
 
 	tt := []struct {
@@ -146,14 +153,15 @@ func TestApplicationHandler_CreateGroup(t *testing.T) {
 			ctrl := gomock.NewController(t)
 			defer ctrl.Finish()
 
-			orgRepo := mocks.NewMockGroupRepository(ctrl)
+			groupRepo := mocks.NewMockGroupRepository(ctrl)
 			appRepo := mocks.NewMockApplicationRepository(ctrl)
 			msgRepo := mocks.NewMockMessageRepository(ctrl)
+			scheduleQueue := mocks.NewMockQueuer(ctrl)
 
-			app = newApplicationHandler(msgRepo, appRepo, orgRepo)
+			app = newApplicationHandler(msgRepo, appRepo, groupRepo, scheduleQueue)
 
 			// Arrange
-			req := httptest.NewRequest(tc.method, "/v1/groups", tc.body)
+			req := httptest.NewRequest(tc.method, "/api/v1/groups", tc.body)
 			req.SetBasicAuth("test", "test")
 			req.Header.Add("Content-Type", "application/json")
 			w := httptest.NewRecorder()
@@ -182,6 +190,9 @@ func TestApplicationHandler_CreateGroup(t *testing.T) {
 }
 
 func TestApplicationHandler_UpdateGroup(t *testing.T) {
+
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
 
 	realOrgID := "1234567890"
 
@@ -227,14 +238,15 @@ func TestApplicationHandler_UpdateGroup(t *testing.T) {
 			ctrl := gomock.NewController(t)
 			defer ctrl.Finish()
 
-			orgRepo := mocks.NewMockGroupRepository(ctrl)
+			groupRepo := mocks.NewMockGroupRepository(ctrl)
 			appRepo := mocks.NewMockApplicationRepository(ctrl)
 			msgRepo := mocks.NewMockMessageRepository(ctrl)
+			scheduleQueue := mocks.NewMockQueuer(ctrl)
 
-			app = newApplicationHandler(msgRepo, appRepo, orgRepo)
+			app = newApplicationHandler(msgRepo, appRepo, groupRepo, scheduleQueue)
 
 			// Arrange
-			url := fmt.Sprintf("/v1/groups/%s", tc.orgID)
+			url := fmt.Sprintf("/api/v1/groups/%s", tc.orgID)
 			req := httptest.NewRequest(tc.method, url, tc.body)
 			req.SetBasicAuth("test", "test")
 			req.Header.Add("Content-Type", "application/json")
@@ -272,6 +284,9 @@ func TestApplicationHandler_UpdateGroup(t *testing.T) {
 
 func TestApplicationHandler_GetGroups(t *testing.T) {
 
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
 	realOrgID := "1234567890"
 
 	tt := []struct {
@@ -307,13 +322,14 @@ func TestApplicationHandler_GetGroups(t *testing.T) {
 			ctrl := gomock.NewController(t)
 			defer ctrl.Finish()
 
-			orgRepo := mocks.NewMockGroupRepository(ctrl)
+			groupRepo := mocks.NewMockGroupRepository(ctrl)
 			appRepo := mocks.NewMockApplicationRepository(ctrl)
 			msgRepo := mocks.NewMockMessageRepository(ctrl)
+			scheduleQueue := mocks.NewMockQueuer(ctrl)
 
-			app = newApplicationHandler(msgRepo, appRepo, orgRepo)
+			app = newApplicationHandler(msgRepo, appRepo, groupRepo, scheduleQueue)
 
-			req := httptest.NewRequest(tc.method, "/v1/groups", nil)
+			req := httptest.NewRequest(tc.method, "/api/v1/groups", nil)
 			req.SetBasicAuth("test", "test")
 			w := httptest.NewRecorder()
 

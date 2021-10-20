@@ -127,6 +127,13 @@ func (a *applicationHandler) CreateAppMessage(w http.ResponseWriter, r *http.Req
 		return
 	}
 
+	if messageStatus == convoy.ScheduledMessageStatus {
+		err = a.scheduleQueue.Write(r.Context(), convoy.EventProcessor, msg, 1*time.Second)
+		if err != nil {
+			log.Errorf("Error occurred sending new event to the queue %s", err)
+		}
+	}
+
 	_ = render.Render(w, r, newServerResponse("App event created successfully", msg, http.StatusCreated))
 }
 
@@ -209,6 +216,11 @@ func (a *applicationHandler) ResendAppMessage(w http.ResponseWriter, r *http.Req
 	if err != nil {
 		_ = render.Render(w, r, newErrorResponse("an error occurred while trying to resend event", http.StatusInternalServerError))
 		return
+	}
+
+	err = a.scheduleQueue.Write(r.Context(), convoy.EventProcessor, msg, 1*time.Second)
+	if err != nil {
+		log.WithError(err).Errorf("Error occurred re-enqueing old event - %s", msg.UID)
 	}
 
 	_ = render.Render(w, r, newServerResponse("App event processed for retry successfully",

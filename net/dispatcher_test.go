@@ -141,14 +141,14 @@ func TestDispatcher_SendRequest(t *testing.T) {
 		{
 			name: "should_send_message",
 			args: args{
-				endpoint:        formatEndpoint(host1, successEndpoint),
+				endpoint:        "https://google.com",
 				method:          http.MethodPost,
 				jsonData:        bytes.NewBufferString("testing").Bytes(),
 				signatureHeader: config.DefaultSignatureHeader.String(),
 				hmac:            "12345",
 			},
 			want: &Response{
-				Status:     "200 OK",
+				Status:     "200",
 				StatusCode: http.StatusOK,
 				Method:     http.MethodPost,
 				URL:        nil,
@@ -157,18 +157,16 @@ func TestDispatcher_SendRequest(t *testing.T) {
 					"User-Agent":                           []string{string(DefaultUserAgent)},
 					config.DefaultSignatureHeader.String(): []string{"12345"}, // should equal hmac field above
 				},
-				ResponseHeader: http.Header{
-					http.CanonicalHeaderKey("Request_ID"): []string{"abcd"},
-				},
-				Body:  successBody,
-				IP:    server1.Addr,
-				Error: "",
+				ResponseHeader: nil,
+				Body:           successBody,
+				IP:             "",
+				Error:          "",
 			},
 			nFn: func() func() {
 				httpmock.Activate()
 
 				httpmock.RegisterResponder(http.MethodPost, "https://google.com",
-					httpmock.NewStringResponder(400, ``))
+					httpmock.NewStringResponder(http.StatusOK, string(successBody)))
 
 				return func() {
 					httpmock.DeactivateAndReset()
@@ -247,6 +245,11 @@ func TestDispatcher_SendRequest(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			d := &Dispatcher{client: client}
+
+			if tt.nFn != nil {
+				deferFn := tt.nFn()
+				defer deferFn()
+			}
 
 			got, err := d.SendRequest(tt.args.endpoint, tt.args.method, tt.args.jsonData, tt.args.signatureHeader, tt.args.hmac)
 			if (err != nil) != tt.wantErr {

@@ -1,98 +1,92 @@
 package redis
 
 import (
-	"bytes"
 	"context"
-	"encoding/json"
 	"errors"
-	"strings"
+	"time"
 
 	"github.com/frain-dev/convoy"
 	"github.com/frain-dev/convoy/config"
 	"github.com/frain-dev/convoy/queue"
 	"github.com/frain-dev/convoy/util"
 	"github.com/go-redis/redis/v8"
+	"github.com/vmihailenco/taskq/v3"
+	"github.com/vmihailenco/taskq/v3/redisq"
 )
 
-const (
-	defaultChannel = "convoy"
-)
-
-type client struct {
-	inner         *redis.Client
-	pubsubChannel *redis.PubSub
-	closeChan     chan struct{}
+type RedisQueue struct {
+	Name      string
+	queue     *redisq.Queue
+	inner     *redis.Client
+	closeChan chan struct{}
 }
 
-func New(cfg config.Configuration) (queue.Queuer, error) {
+func NewClient(cfg config.Configuration) (*redis.Client, taskq.Factory, error) {
 	if cfg.Queue.Type != config.RedisQueueProvider {
-		return nil, errors.New("please select the redis driver in your config")
+		return nil, nil, errors.New("please select the redis driver in your config")
 	}
 
 	dsn := cfg.Queue.Redis.DSN
 	if util.IsStringEmpty(dsn) {
-		return nil, errors.New("please provide the Redis DSN")
+		return nil, nil, errors.New("please provide the Redis DSN")
 	}
 
 	opts, err := redis.ParseURL(dsn)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 
 	c := redis.NewClient(opts)
 	if err := c.
 		Ping(context.Background()).
 		Err(); err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 
-	pubsubCh := c.Subscribe(context.Background(), defaultChannel)
+	qFn := redisq.NewFactory()
 
-	return &client{
-		inner:         c,
-		pubsubChannel: pubsubCh,
-	}, nil
+	return c, qFn, nil
 }
 
-func (c *client) Close() error {
-	c.closeChan <- struct{}{}
-	return c.inner.Close()
+func NewQueue(c *redis.Client, factory taskq.Factory, name string) queue.Queuer {
+
+	q := factory.RegisterQueue(&taskq.QueueOptions{
+		Name:  name,
+		Redis: c,
+	})
+
+	return &RedisQueue{
+		Name:  name,
+		inner: c,
+		queue: q.(*redisq.Queue),
+	}
 }
 
-func (c *client) Read() chan queue.Message {
-	channels := make(chan queue.Message)
-
-	go func() {
-		for msg := range c.pubsubChannel.Channel() {
-			var m convoy.Message
-
-			if err := json.NewDecoder(strings.
-				NewReader(msg.Payload)).
-				Decode(&m); err != nil {
-
-				channels <- queue.Message{
-					Err: err,
-				}
-				continue
-			}
-
-			channels <- queue.Message{
-				Err:  nil,
-				Data: m,
-			}
-		}
-	}()
-
-	return channels
+func (q *RedisQueue) Close() error {
+	q.closeChan <- struct{}{}
+	return q.inner.Close()
 }
 
-func (c *client) Write(ctx context.Context,
-	msg convoy.Message) error {
-	b := new(bytes.Buffer)
+func (q *RedisQueue) Write(ctx context.Context, name convoy.TaskName, msg *convoy.Message, delay time.Duration) error {
+	job := &queue.Job{
+		MsgID: msg.UID,
+	}
 
-	if err := json.NewEncoder(b).Encode(&msg); err != nil {
+	m := &taskq.Message{
+		Ctx:      ctx,
+		TaskName: string(name),
+		Args:     []interface{}{job},
+		Delay:    delay,
+	}
+
+	err := q.queue.Add(m)
+	if err != nil {
 		return err
 	}
 
-	return c.inner.Publish(ctx, defaultChannel, b.Bytes()).Err()
+	return nil
+}
+
+func (q *RedisQueue) Consumer() taskq.QueueConsumer {
+	return q.queue.Consumer()
 }
