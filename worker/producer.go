@@ -16,11 +16,11 @@ type Producer struct {
 }
 
 func NewProducer(queue *convoy_redis.RedisQueue) *Producer {
-	consumer := taskq.NewConsumer(queue.Inner())
+	consumer := queue.Consumer()
 
 	return &Producer{
 		scheduleQueue: queue,
-		consumer:      consumer,
+		consumer:      consumer.(*taskq.Consumer),
 	}
 }
 

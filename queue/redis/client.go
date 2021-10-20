@@ -62,15 +62,16 @@ func NewQueue(c *redis.Client, factory taskq.Factory, name string) queue.Queuer 
 	}
 }
 
-func (c *RedisQueue) Close() error {
-	c.closeChan <- struct{}{}
-	return c.inner.Close()
+func (q *RedisQueue) Close() error {
+	q.closeChan <- struct{}{}
+	return q.inner.Close()
 }
 
-func (c *RedisQueue) Write(ctx context.Context, msg *convoy.Message, delay time.Duration) error {
+func (q *RedisQueue) Write(ctx context.Context, msg *convoy.Message, delay time.Duration) error {
 	job := &queue.Job{
-		Data: msg,
+		MsgID: msg.UID,
 	}
+
 	m := &taskq.Message{
 		Ctx:      ctx,
 		TaskName: "EventProcessor", // TODO(subomi): Get this guy out of here.
@@ -78,7 +79,7 @@ func (c *RedisQueue) Write(ctx context.Context, msg *convoy.Message, delay time.
 		Delay:    delay,
 	}
 
-	err := c.queue.Add(m)
+	err := q.queue.Add(m)
 	if err != nil {
 		return err
 	}
@@ -86,6 +87,6 @@ func (c *RedisQueue) Write(ctx context.Context, msg *convoy.Message, delay time.
 	return nil
 }
 
-func (c *RedisQueue) Inner() *redisq.Queue {
-	return c.queue
+func (q *RedisQueue) Consumer() taskq.QueueConsumer {
+	return q.queue.Consumer()
 }

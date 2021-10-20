@@ -534,7 +534,7 @@ func TestProcessMessages(t *testing.T) {
 			processFn := ProcessMessages(appRepo, msgRepo, groupRepo)
 
 			job := queue.Job{
-				Data: tc.msg,
+				MsgID: tc.msg.UID,
 			}
 
 			err = processFn(&job)

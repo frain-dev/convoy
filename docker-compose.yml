@@ -28,4 +28,4 @@ services:
     redis_server:
         image: redis:alpine
         ports:
-            - "6380:6379"
+            - "8379:6379"

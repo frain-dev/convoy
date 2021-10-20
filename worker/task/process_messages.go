@@ -34,7 +34,7 @@ func (e *EndpointError) Delay() time.Duration {
 
 func ProcessMessages(appRepo convoy.ApplicationRepository, msgRepo convoy.MessageRepository, orgRepo convoy.GroupRepository) func(*queue.Job) error {
 	return func(job *queue.Job) error {
-		Id := job.Data.UID
+		Id := job.MsgID
 
 		// Load message from DB and switch state to prevent concurrent processing.
 		m, err := msgRepo.FindMessageByID(context.Background(), Id)

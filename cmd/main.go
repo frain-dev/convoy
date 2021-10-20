@@ -85,11 +85,11 @@ func main() {
 			sentryHook := convoy.NewSentryHook(convoy.DefaultLevels)
 			log.AddHook(sentryHook)
 
-			var rClient *redis.Client
 			var qFn taskq.Factory
+			var rC *redis.Client
 
 			if cfg.Queue.Type == config.RedisQueueProvider {
-				rClient, qFn, err = convoyRedis.NewClient(cfg)
+				rC, qFn, err = convoyRedis.NewClient(cfg)
 				if err != nil {
 					return err
 				}
@@ -105,8 +105,8 @@ func main() {
 			app.groupRepo = datastore.NewGroupRepo(conn)
 			app.applicationRepo = datastore.NewApplicationRepo(conn)
 			app.messageRepo = datastore.NewMessageRepository(conn)
-			app.scheduleQueue = convoyRedis.NewQueue(rClient, qFn, "ScheduleQueue")
-			app.deadLetterQueue = convoyRedis.NewQueue(rClient, qFn, "DeadLetterQueue")
+			app.scheduleQueue = convoyRedis.NewQueue(rC, qFn, "ScheduleQueue")
+			app.deadLetterQueue = convoyRedis.NewQueue(rC, qFn, "DeadLetterQueue")
 
 			ensureMongoIndices(conn)
 			err = ensureDefaultGroup(context.Background(), app.groupRepo)

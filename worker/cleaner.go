@@ -14,11 +14,11 @@ type Cleaner struct {
 }
 
 func NewCleaner(queue *convoy_redis.RedisQueue) *Cleaner {
-	consumer := taskq.NewConsumer(queue.Inner())
+	consumer := queue.Consumer()
 
 	return &Cleaner{
 		deadLetterQueue: queue,
-		consumer:        consumer,
+		consumer:        consumer.(*taskq.Consumer),
 	}
 }
 

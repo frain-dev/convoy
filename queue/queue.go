@@ -14,6 +14,6 @@ type Queuer interface {
 }
 
 type Job struct {
-	Err  error           `json:"err"`
-	Data *convoy.Message `json:"data"`
+	Err   error  `json:"err"`
+	MsgID string `json:"msg_id"`
 }
