@@ -10,7 +10,7 @@ import (
 
 type Queuer interface {
 	io.Closer
-	Write(context.Context, *convoy.Message, time.Duration) error
+	Write(context.Context, convoy.TaskName, *convoy.Message, time.Duration) error
 }
 
 type Job struct {

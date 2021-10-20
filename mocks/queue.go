@@ -51,15 +51,15 @@ func (mr *MockQueuerMockRecorder) Close() *gomock.Call {
 }
 
 // Write mocks base method.
-func (m *MockQueuer) Write(arg0 context.Context, arg1 *convoy.Message, arg2 time.Duration) error {
+func (m *MockQueuer) Write(arg0 context.Context, arg1 convoy.TaskName, arg2 *convoy.Message, arg3 time.Duration) error {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "Write", arg0, arg1, arg2)
+	ret := m.ctrl.Call(m, "Write", arg0, arg1, arg2, arg3)
 	ret0, _ := ret[0].(error)
 	return ret0
 }
 
 // Write indicates an expected call of Write.
-func (mr *MockQueuerMockRecorder) Write(arg0, arg1, arg2 interface{}) *gomock.Call {
+func (mr *MockQueuerMockRecorder) Write(arg0, arg1, arg2, arg3 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Write", reflect.TypeOf((*MockQueuer)(nil).Write), arg0, arg1, arg2)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Write", reflect.TypeOf((*MockQueuer)(nil).Write), arg0, arg1, arg2, arg3)
 }

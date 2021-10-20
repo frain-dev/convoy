@@ -4,6 +4,7 @@ import (
 	"errors"
 	"time"
 
+	"github.com/frain-dev/convoy"
 	"github.com/frain-dev/convoy/config"
 	convoy_queue "github.com/frain-dev/convoy/queue/redis"
 	"github.com/frain-dev/convoy/server"
@@ -50,8 +51,8 @@ func addServerCommand(a *app) *cobra.Command {
 			}
 
 			// register tasks.
-			convoy_task.CreateTask("EventProcessor", cfg, convoy_task.ProcessMessages(a.applicationRepo, a.messageRepo, a.groupRepo))
-			convoy_task.CreateTask("DeadLetterProcessor", cfg, convoy_task.ProcessDeadLetters)
+			convoy_task.CreateTask(convoy.EventProcessor, cfg, convoy_task.ProcessMessages(a.applicationRepo, a.messageRepo, a.groupRepo))
+			convoy_task.CreateTask(convoy.DeadLetterProcessor, cfg, convoy_task.ProcessDeadLetters)
 
 			log.Infof("Started convoy server in %s", time.Since(start))
 			return srv.ListenAndServe()

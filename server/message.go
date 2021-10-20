@@ -128,7 +128,7 @@ func (a *applicationHandler) CreateAppMessage(w http.ResponseWriter, r *http.Req
 	}
 
 	if messageStatus == convoy.ScheduledMessageStatus {
-		err = a.scheduleQueue.Write(r.Context(), msg, 1*time.Second)
+		err = a.scheduleQueue.Write(r.Context(), convoy.EventProcessor, msg, 1*time.Second)
 		if err != nil {
 			log.Errorf("Error occurred sending new event to the queue %s", err)
 		}
@@ -218,7 +218,7 @@ func (a *applicationHandler) ResendAppMessage(w http.ResponseWriter, r *http.Req
 		return
 	}
 
-	err = a.scheduleQueue.Write(r.Context(), msg, 1*time.Second)
+	err = a.scheduleQueue.Write(r.Context(), convoy.EventProcessor, msg, 1*time.Second)
 	if err != nil {
 		log.WithError(err).Errorf("Error occurred re-enqueing old event - %s", msg.UID)
 	}

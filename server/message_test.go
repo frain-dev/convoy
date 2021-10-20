@@ -174,7 +174,7 @@ func TestApplicationHandler_CreateAppMessage(t *testing.T) {
 
 				q, _ := app.scheduleQueue.(*mocks.MockQueuer)
 				q.EXPECT().
-					Write(gomock.Any(), gomock.Any(), gomock.Any()).Times(1).
+					Write(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Times(1).
 					Return(nil)
 
 			},
@@ -369,7 +369,7 @@ func Test_resendMessage(t *testing.T) {
 
 				q, _ := app.scheduleQueue.(*mocks.MockQueuer)
 				q.EXPECT().
-					Write(gomock.Any(), gomock.Any(), gomock.Any()).Times(1).
+					Write(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Times(1).
 					Return(nil)
 			},
 		},
@@ -417,7 +417,7 @@ func Test_resendMessage(t *testing.T) {
 
 				q, _ := app.scheduleQueue.(*mocks.MockQueuer)
 				q.EXPECT().
-					Write(gomock.Any(), gomock.Any(), gomock.Any()).Times(1).
+					Write(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Times(1).
 					Return(nil)
 			},
 		},
