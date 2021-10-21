@@ -14,7 +14,6 @@ import (
 
 var (
 	successBody      = []byte("received webhook successfully")
-	failureBody      = []byte("error occurred")
 	pageNotFoundBody = []byte("404 page not found\n")
 )
 
