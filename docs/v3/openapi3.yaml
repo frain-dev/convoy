@@ -1065,11 +1065,3 @@ tags:
   name: Messages
 - description: Group related APIs
   name: Group
-- description: Application related APIs
-  name: Application
-- description: Endpoint related APIs
-  name: Application Endpoints
-- description: Application Message related APIs
-  name: Messages
-- description: Group related APIs
-  name: Group
