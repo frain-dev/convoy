@@ -1,5 +1,5 @@
 # Convoy
----
+=========
 - Website: https://getconvoy.io
 - Forum: [Github Discussions](https://github.com/frain-dev/convoy/discussions)
 - Documentation: [getconvoy.io/docs](https://getconvoy.io/docs)
@@ -110,5 +110,5 @@ Convoy is configured using a json file with a sample configuration below:
 }
 ```
 
-## LICENSE
+## License
 [Mozilla Public License v2.0](https://github.com/frain-dev/convoy/blob/main/LICENSE)
