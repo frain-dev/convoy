@@ -73,7 +73,7 @@ func main() {
 			err = sentry.Init(sentry.ClientOptions{
 				Debug:       true,
 				Dsn:         cfg.Sentry.Dsn,
-				Environment: cfg.Server.Environment,
+				Environment: cfg.Environment,
 			})
 			if err != nil {
 				return err

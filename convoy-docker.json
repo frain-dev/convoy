@@ -1,9 +1,6 @@
 {
-  "sentry": {
-    "dsn": "<insert-sentry-dsn>"
-	},
+	"environment": "development",
     "database": {
-    "environment": "dev",
 		"dsn": "mongodb://root:rootpassword@mongodb:27017"
 	},
 	"queue": {
