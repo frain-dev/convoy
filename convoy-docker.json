@@ -1,7 +1,7 @@
 {
-    "environment": "dev",
+	"environment": "development",
     "database": {
-		"dsn": "mongodb://root:rootpassword@mongodb:27017/newConvoy?authSource=admin"
+		"dsn": "mongodb://root:rootpassword@mongodb:27017/convoy?authSource=admin"
 	},
 	"queue": {
 		"type": "redis",
