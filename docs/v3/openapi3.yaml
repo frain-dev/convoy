@@ -13,6 +13,48 @@ components:
         support_email:
           type: string
       type: object
+    convoy.Application:
+      properties:
+        created_at:
+          type: integer
+        deleted_at:
+          type: integer
+        endpoints:
+          items:
+            $ref: '#/components/schemas/convoy.Endpoint'
+          type: array
+        events:
+          type: integer
+        group_id:
+          type: string
+        name:
+          type: string
+        secret:
+          type: string
+        support_email:
+          type: string
+        uid:
+          type: string
+        updated_at:
+          type: integer
+      type: object
+    convoy.Endpoint:
+      properties:
+        created_at:
+          type: integer
+        deleted_at:
+          type: integer
+        description:
+          type: string
+        status:
+          type: string
+        target_url:
+          type: string
+        uid:
+          type: string
+        updated_at:
+          type: integer
+      type: object
     convoy.EndpointMetadata:
       properties:
         sent:
@@ -23,6 +65,25 @@ components:
           type: string
         uid:
           type: string
+      type: object
+    convoy.Group:
+      properties:
+        created_at:
+          type: integer
+        deleted_at:
+          type: integer
+        logo_url:
+          type: string
+        name:
+          type: string
+        uid:
+          type: string
+        updated_at:
+          type: integer
+      type: object
+    convoy.HttpHeader:
+      additionalProperties:
+        type: string
       type: object
     convoy.Message:
       properties:
@@ -60,6 +121,41 @@ components:
           type: string
         updated_at:
           type: integer
+      type: object
+    convoy.MessageAttempt:
+      properties:
+        api_version:
+          type: string
+        created_at:
+          type: integer
+        deleted_at:
+          type: integer
+        endpoint_id:
+          type: string
+        error:
+          type: string
+        http_status:
+          type: string
+        ip_address:
+          type: string
+        method:
+          type: string
+        msg_id:
+          type: string
+        request_http_header:
+          $ref: '#/components/schemas/convoy.HttpHeader'
+        response_data:
+          type: string
+        response_http_header:
+          $ref: '#/components/schemas/convoy.HttpHeader'
+        status:
+          type: string
+        uid:
+          type: string
+        updated_at:
+          type: integer
+        url:
+          type: string
       type: object
     convoy.MessageMetadata:
       properties:
@@ -109,20 +205,35 @@ components:
       properties:
         app_id:
           type: string
-        created_at:
-          type: integer
         data:
           items:
             type: integer
           type: array
         event_type:
           type: string
-        msg_id:
-          type: string
-        provider_id:
-          type: string
-        status:
-          type: string
+      type: object
+    mongopagination.PaginationData:
+      properties:
+        next:
+          type: integer
+        page:
+          type: integer
+        perPage:
+          type: integer
+        prev:
+          type: integer
+        total:
+          type: integer
+        totalPage:
+          type: integer
+      type: object
+    server.Empty:
+      type: object
+    server.pagedResponse:
+      properties:
+        content: {}
+        pagination:
+          $ref: '#/components/schemas/mongopagination.PaginationData'
       type: object
     server.serverResponse:
       properties:
@@ -179,7 +290,19 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/server.serverResponse'
+                allOf:
+                - $ref: '#/components/schemas/server.serverResponse'
+                - properties:
+                    data:
+                      allOf:
+                      - $ref: '#/components/schemas/server.pagedResponse'
+                      - properties:
+                          content:
+                            items:
+                              $ref: '#/components/schemas/convoy.Application'
+                            type: array
+                        type: object
+                  type: object
           description: OK
         "400":
           content:
@@ -219,7 +342,12 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/server.serverResponse'
+                allOf:
+                - $ref: '#/components/schemas/server.serverResponse'
+                - properties:
+                    data:
+                      $ref: '#/components/schemas/convoy.Application'
+                  type: object
           description: OK
         "300":
           content:
@@ -265,7 +393,12 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/server.serverResponse'
+                allOf:
+                - $ref: '#/components/schemas/server.serverResponse'
+                - properties:
+                    data:
+                      $ref: '#/components/schemas/server.Empty'
+                  type: object
           description: OK
         "400":
           content:
@@ -304,7 +437,12 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/server.serverResponse'
+                allOf:
+                - $ref: '#/components/schemas/server.serverResponse'
+                - properties:
+                    data:
+                      $ref: '#/components/schemas/convoy.Application'
+                  type: object
           description: OK
         "400":
           content:
@@ -351,7 +489,12 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/server.serverResponse'
+                allOf:
+                - $ref: '#/components/schemas/server.serverResponse'
+                - properties:
+                    data:
+                      $ref: '#/components/schemas/convoy.Application'
+                  type: object
           description: OK
         "400":
           content:
@@ -391,7 +534,14 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/server.serverResponse'
+                allOf:
+                - $ref: '#/components/schemas/server.serverResponse'
+                - properties:
+                    data:
+                      items:
+                        $ref: '#/components/schemas/convoy.Endpoint'
+                      type: array
+                  type: object
           description: OK
         "400":
           content:
@@ -438,7 +588,12 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/server.serverResponse'
+                allOf:
+                - $ref: '#/components/schemas/server.serverResponse'
+                - properties:
+                    data:
+                      $ref: '#/components/schemas/convoy.Endpoint'
+                  type: object
           description: OK
         "400":
           content:
@@ -484,7 +639,12 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/server.serverResponse'
+                allOf:
+                - $ref: '#/components/schemas/server.serverResponse'
+                - properties:
+                    data:
+                      $ref: '#/components/schemas/server.Empty'
+                  type: object
           description: OK
         "400":
           content:
@@ -529,7 +689,12 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/server.serverResponse'
+                allOf:
+                - $ref: '#/components/schemas/server.serverResponse'
+                - properties:
+                    data:
+                      $ref: '#/components/schemas/convoy.Endpoint'
+                  type: object
           description: OK
         "400":
           content:
@@ -582,7 +747,12 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/server.serverResponse'
+                allOf:
+                - $ref: '#/components/schemas/server.serverResponse'
+                - properties:
+                    data:
+                      $ref: '#/components/schemas/convoy.Endpoint'
+                  type: object
           description: OK
         "400":
           content:
@@ -651,7 +821,19 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/server.serverResponse'
+                allOf:
+                - $ref: '#/components/schemas/server.serverResponse'
+                - properties:
+                    data:
+                      allOf:
+                      - $ref: '#/components/schemas/server.pagedResponse'
+                      - properties:
+                          content:
+                            items:
+                              $ref: '#/components/schemas/convoy.Message'
+                            type: array
+                        type: object
+                  type: object
           description: OK
         "400":
           content:
@@ -682,7 +864,12 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/models.Message'
+              allOf:
+              - $ref: '#/components/schemas/models.Message'
+              - properties:
+                  data:
+                    $ref: '#/components/schemas/server.Empty'
+                type: object
         description: Message Details
         required: true
         x-originalParamName: message
@@ -697,7 +884,7 @@ paths:
                     data:
                       $ref: '#/components/schemas/convoy.Message'
                   type: object
-          description: asc
+          description: OK
         "400":
           content:
             application/json:
@@ -736,7 +923,12 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/server.serverResponse'
+                allOf:
+                - $ref: '#/components/schemas/server.serverResponse'
+                - properties:
+                    data:
+                      $ref: '#/components/schemas/convoy.Message'
+                  type: object
           description: OK
         "400":
           content:
@@ -776,7 +968,14 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/server.serverResponse'
+                allOf:
+                - $ref: '#/components/schemas/server.serverResponse'
+                - properties:
+                    data:
+                      items:
+                        $ref: '#/components/schemas/convoy.MessageAttempt'
+                      type: array
+                  type: object
           description: OK
         "400":
           content:
@@ -822,7 +1021,12 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/server.serverResponse'
+                allOf:
+                - $ref: '#/components/schemas/server.serverResponse'
+                - properties:
+                    data:
+                      $ref: '#/components/schemas/convoy.MessageAttempt'
+                  type: object
           description: OK
         "400":
           content:
@@ -862,7 +1066,12 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/server.serverResponse'
+                allOf:
+                - $ref: '#/components/schemas/server.serverResponse'
+                - properties:
+                    data:
+                      $ref: '#/components/schemas/convoy.Message'
+                  type: object
           description: OK
         "400":
           content:
@@ -901,7 +1110,14 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/server.serverResponse'
+                allOf:
+                - $ref: '#/components/schemas/server.serverResponse'
+                - properties:
+                    data:
+                      items:
+                        $ref: '#/components/schemas/convoy.Group'
+                      type: array
+                  type: object
           description: OK
         "400":
           content:
@@ -941,7 +1157,12 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/server.serverResponse'
+                allOf:
+                - $ref: '#/components/schemas/server.serverResponse'
+                - properties:
+                    data:
+                      $ref: '#/components/schemas/convoy.Group'
+                  type: object
           description: OK
         "400":
           content:
@@ -981,7 +1202,12 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/server.serverResponse'
+                allOf:
+                - $ref: '#/components/schemas/server.serverResponse'
+                - properties:
+                    data:
+                      $ref: '#/components/schemas/convoy.Group'
+                  type: object
           description: OK
         "400":
           content:
@@ -1028,7 +1254,12 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/server.serverResponse'
+                allOf:
+                - $ref: '#/components/schemas/server.serverResponse'
+                - properties:
+                    data:
+                      $ref: '#/components/schemas/convoy.Group'
+                  type: object
           description: OK
         "400":
           content:

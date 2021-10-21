@@ -16,14 +16,9 @@ type Application struct {
 }
 
 type Message struct {
-	MessageID  string          `json:"msg_id" bson:"msg_id"`
-	AppID      string          `json:"app_id" bson:"app_id"`
-	EventType  string          `json:"event_type" bson:"event_type"`
-	ProviderID string          `json:"provider_id" bson:"provider_id"`
-	Data       json.RawMessage `json:"data" bson:"data"`
-
-	Status    string `json:"status" bson:"status"`
-	CreatedAt int64  `json:"created_at" bson:"created_at"`
+	AppID     string          `json:"app_id" bson:"app_id"`
+	EventType string          `json:"event_type" bson:"event_type"`
+	Data      json.RawMessage `json:"data" bson:"data"`
 }
 
 type MessageAttempt struct {

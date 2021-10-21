@@ -14,7 +14,7 @@ import (
 // @Produce  json
 // @Param eventID path string true "event id"
 // @Param deliveryAttemptID path string true "delivery attempt id"
-// @Success 200 {object} serverResponse
+// @Success 200 {object} serverResponse{data=convoy.MessageAttempt}
 // @Failure 400 {object} serverResponse
 // @Failure 401 {object} serverResponse
 // @Failure 500 {object} serverResponse
@@ -33,7 +33,7 @@ func (a *applicationHandler) GetAppMessageDeliveryAttempt(w http.ResponseWriter,
 // @Accept  json
 // @Produce  json
 // @Param eventID path string true "event id"
-// @Success 200 {object} serverResponse
+// @Success 200 {object} serverResponse{data=[]convoy.MessageAttempt}
 // @Failure 400 {object} serverResponse
 // @Failure 401 {object} serverResponse
 // @Failure 500 {object} serverResponse

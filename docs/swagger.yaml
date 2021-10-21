@@ -13,6 +13,48 @@ definitions:
       support_email:
         type: string
     type: object
+  convoy.Application:
+    properties:
+      created_at:
+        type: integer
+      deleted_at:
+        type: integer
+      endpoints:
+        items:
+          $ref: '#/definitions/convoy.Endpoint'
+        type: array
+      events:
+        type: integer
+      group_id:
+        type: string
+      name:
+        type: string
+      secret:
+        type: string
+      support_email:
+        type: string
+      uid:
+        type: string
+      updated_at:
+        type: integer
+    type: object
+  convoy.Endpoint:
+    properties:
+      created_at:
+        type: integer
+      deleted_at:
+        type: integer
+      description:
+        type: string
+      status:
+        type: string
+      target_url:
+        type: string
+      uid:
+        type: string
+      updated_at:
+        type: integer
+    type: object
   convoy.EndpointMetadata:
     properties:
       sent:
@@ -23,6 +65,25 @@ definitions:
         type: string
       uid:
         type: string
+    type: object
+  convoy.Group:
+    properties:
+      created_at:
+        type: integer
+      deleted_at:
+        type: integer
+      logo_url:
+        type: string
+      name:
+        type: string
+      uid:
+        type: string
+      updated_at:
+        type: integer
+    type: object
+  convoy.HttpHeader:
+    additionalProperties:
+      type: string
     type: object
   convoy.Message:
     properties:
@@ -60,6 +121,41 @@ definitions:
         type: string
       updated_at:
         type: integer
+    type: object
+  convoy.MessageAttempt:
+    properties:
+      api_version:
+        type: string
+      created_at:
+        type: integer
+      deleted_at:
+        type: integer
+      endpoint_id:
+        type: string
+      error:
+        type: string
+      http_status:
+        type: string
+      ip_address:
+        type: string
+      method:
+        type: string
+      msg_id:
+        type: string
+      request_http_header:
+        $ref: '#/definitions/convoy.HttpHeader'
+      response_data:
+        type: string
+      response_http_header:
+        $ref: '#/definitions/convoy.HttpHeader'
+      status:
+        type: string
+      uid:
+        type: string
+      updated_at:
+        type: integer
+      url:
+        type: string
     type: object
   convoy.MessageMetadata:
     properties:
@@ -109,20 +205,35 @@ definitions:
     properties:
       app_id:
         type: string
-      created_at:
-        type: integer
       data:
         items:
           type: integer
         type: array
       event_type:
         type: string
-      msg_id:
-        type: string
-      provider_id:
-        type: string
-      status:
-        type: string
+    type: object
+  mongopagination.PaginationData:
+    properties:
+      next:
+        type: integer
+      page:
+        type: integer
+      perPage:
+        type: integer
+      prev:
+        type: integer
+      total:
+        type: integer
+      totalPage:
+        type: integer
+    type: object
+  server.Empty:
+    type: object
+  server.pagedResponse:
+    properties:
+      content: {}
+      pagination:
+        $ref: '#/definitions/mongopagination.PaginationData'
     type: object
   server.serverResponse:
     properties:
@@ -174,7 +285,19 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/server.serverResponse'
+            allOf:
+            - $ref: '#/definitions/server.serverResponse'
+            - properties:
+                data:
+                  allOf:
+                  - $ref: '#/definitions/server.pagedResponse'
+                  - properties:
+                      content:
+                        items:
+                          $ref: '#/definitions/convoy.Application'
+                        type: array
+                    type: object
+              type: object
         "400":
           description: Bad Request
           schema:
@@ -209,7 +332,12 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/server.serverResponse'
+            allOf:
+            - $ref: '#/definitions/server.serverResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/convoy.Application'
+              type: object
         "300":
           description: Multiple Choices
           schema:
@@ -248,7 +376,12 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/server.serverResponse'
+            allOf:
+            - $ref: '#/definitions/server.serverResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/server.Empty'
+              type: object
         "400":
           description: Bad Request
           schema:
@@ -282,7 +415,12 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/server.serverResponse'
+            allOf:
+            - $ref: '#/definitions/server.serverResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/convoy.Application'
+              type: object
         "400":
           description: Bad Request
           schema:
@@ -322,7 +460,12 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/server.serverResponse'
+            allOf:
+            - $ref: '#/definitions/server.serverResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/convoy.Application'
+              type: object
         "400":
           description: Bad Request
           schema:
@@ -357,7 +500,14 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/server.serverResponse'
+            allOf:
+            - $ref: '#/definitions/server.serverResponse'
+            - properties:
+                data:
+                  items:
+                    $ref: '#/definitions/convoy.Endpoint'
+                  type: array
+              type: object
         "400":
           description: Bad Request
           schema:
@@ -397,7 +547,12 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/server.serverResponse'
+            allOf:
+            - $ref: '#/definitions/server.serverResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/convoy.Endpoint'
+              type: object
         "400":
           description: Bad Request
           schema:
@@ -437,7 +592,12 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/server.serverResponse'
+            allOf:
+            - $ref: '#/definitions/server.serverResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/server.Empty'
+              type: object
         "400":
           description: Bad Request
           schema:
@@ -476,7 +636,12 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/server.serverResponse'
+            allOf:
+            - $ref: '#/definitions/server.serverResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/convoy.Endpoint'
+              type: object
         "400":
           description: Bad Request
           schema:
@@ -521,7 +686,12 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/server.serverResponse'
+            allOf:
+            - $ref: '#/definitions/server.serverResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/convoy.Endpoint'
+              type: object
         "400":
           description: Bad Request
           schema:
@@ -579,7 +749,19 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/server.serverResponse'
+            allOf:
+            - $ref: '#/definitions/server.serverResponse'
+            - properties:
+                data:
+                  allOf:
+                  - $ref: '#/definitions/server.pagedResponse'
+                  - properties:
+                      content:
+                        items:
+                          $ref: '#/definitions/convoy.Message'
+                        type: array
+                    type: object
+              type: object
         "400":
           description: Bad Request
           schema:
@@ -607,12 +789,17 @@ paths:
         name: message
         required: true
         schema:
-          $ref: '#/definitions/models.Message'
+          allOf:
+          - $ref: '#/definitions/models.Message'
+          - properties:
+              data:
+                $ref: '#/definitions/server.Empty'
+            type: object
       produces:
       - application/json
       responses:
         "200":
-          description: asc
+          description: OK
           schema:
             allOf:
             - $ref: '#/definitions/server.serverResponse'
@@ -654,7 +841,12 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/server.serverResponse'
+            allOf:
+            - $ref: '#/definitions/server.serverResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/convoy.Message'
+              type: object
         "400":
           description: Bad Request
           schema:
@@ -689,7 +881,14 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/server.serverResponse'
+            allOf:
+            - $ref: '#/definitions/server.serverResponse'
+            - properties:
+                data:
+                  items:
+                    $ref: '#/definitions/convoy.MessageAttempt'
+                  type: array
+              type: object
         "400":
           description: Bad Request
           schema:
@@ -729,7 +928,12 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/server.serverResponse'
+            allOf:
+            - $ref: '#/definitions/server.serverResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/convoy.MessageAttempt'
+              type: object
         "400":
           description: Bad Request
           schema:
@@ -764,7 +968,12 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/server.serverResponse'
+            allOf:
+            - $ref: '#/definitions/server.serverResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/convoy.Message'
+              type: object
         "400":
           description: Bad Request
           schema:
@@ -798,7 +1007,14 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/server.serverResponse'
+            allOf:
+            - $ref: '#/definitions/server.serverResponse'
+            - properties:
+                data:
+                  items:
+                    $ref: '#/definitions/convoy.Group'
+                  type: array
+              type: object
         "400":
           description: Bad Request
           schema:
@@ -833,7 +1049,12 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/server.serverResponse'
+            allOf:
+            - $ref: '#/definitions/server.serverResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/convoy.Group'
+              type: object
         "400":
           description: Bad Request
           schema:
@@ -868,7 +1089,12 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/server.serverResponse'
+            allOf:
+            - $ref: '#/definitions/server.serverResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/convoy.Group'
+              type: object
         "400":
           description: Bad Request
           schema:
@@ -908,7 +1134,12 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/server.serverResponse'
+            allOf:
+            - $ref: '#/definitions/server.serverResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/convoy.Group'
+              type: object
         "400":
           description: Bad Request
           schema:
