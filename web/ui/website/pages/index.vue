@@ -34,7 +34,7 @@
 
 					<form @submit.prevent="requestAccess()">
 						<div class="input">
-							<input type="email" id="email" placeholder="Enter email address" aria-label="Email" v-model="earlyAccessEmail" />
+							<input type="text" id="github" placeholder="Enter your github username" aria-label="Github Name" v-model="earlyAccessGithubName" />
 						</div>
 						<button :disabled="isSubmitingloadingEarlyAccessForm">{{ isSubmitingloadingEarlyAccessForm ? '...requesting' : earlyAccessFormButtonText }}</button>
 					</form>
@@ -184,6 +184,11 @@
 
 					<ul>
 						<li>
+							<a target="_blank" rel="noopener noreferrer" href="https://join.slack.com/t/convoy-community/shared_invite/zt-xiuuoj0m-yPp~ylfYMCV9s038QL0IUQ">
+								<img src="~/assets/images/slack-icon.svg" alt="slack logo" />
+							</a>
+						</li>
+						<li>
 							<a target="_blank" rel="noopener noreferrer" href="https://twitter.com/getconvoy"><img src="~/assets/images/twitter-icon.svg" alt="twitter logo" /></a>
 						</li>
 						<li>
@@ -207,7 +212,7 @@ export default {
 			showMenu: false,
 			isSubmitingloadingEarlyAccessForm: false,
 			earlyAccessFormButtonText: 'Get Early Access',
-			earlyAccessEmail: ''
+			earlyAccessGithubName: ''
 		};
 	},
 	async asyncData({ $content, params }) {
@@ -229,7 +234,7 @@ export default {
 					redirect: 'follow',
 					referrerPolicy: 'no-referrer',
 					body: JSON.stringify({
-						email: this.earlyAccessEmail
+						githubName: this.earlyAccessGithubName
 					})
 				});
 				await response.json();
@@ -821,8 +826,19 @@ footer {
 		border-bottom: 1px solid rgba(255, 255, 255, 0.1);
 		padding-bottom: 29px;
 
+		ul {
+			display: flex;
+		}
+
 		li {
-			display: inline-block;
+			width: 42px;
+			height: 42px;
+			background: rgba(255, 255, 255, 0.1);
+			padding: 11px;
+			display: flex;
+			align-items: center;
+			justify-content: center;
+			border-radius: 50%;
 
 			&:not(:last-of-type) {
 				margin-right: 16px;
