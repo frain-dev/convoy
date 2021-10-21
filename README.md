@@ -5,7 +5,7 @@ Convoy
 - Website: https://getconvoy.io
 - Forum: [Github Discussions](https://github.com/frain-dev/convoy/discussions)
 - Documentation: [getconvoy.io/docs](https://getconvoy.io/docs)
-- Announcement: [Medium]()
+- Announcement: [Medium](https://medium.com/frain-technologies/tagged/convoy)
 - Slack: [Slack]()
 
 ![convoy image](./convoy-logo.svg)
