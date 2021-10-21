@@ -7,7 +7,7 @@ const _axios = axios.default;
 const request = _axios.create({
 	baseURL: APIURL,
 	headers: {
-		Authorization: `Bearer ${AuthDetails().token}`
+		Authorization: `Bearer ${AuthDetails().token || ''}`
 	}
 });
 

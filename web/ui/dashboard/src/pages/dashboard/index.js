@@ -305,20 +305,27 @@ function DashboardPage() {
 						<img src={ConvoyLogo} alt="convoy logo" />
 					</div>
 
-					<button className="user" onClick={() => toggleShowDropdown(!showDropdown)}>
-						<div>
-							<div className="icon">O</div>
-							<div className="name">{JSON.parse(authDetails).username}</div>
-						</div>
-						<img src={AngleArrowDownIcon} alt="arrow down icon" />
-						{showDropdown && (
-							<div className="dropdown organisations">
-								<ul>
-									<li onClick={() => logout()}>Logout</li>
-								</ul>
-							</div>
+					<div>
+						{/*<a target="_blank" href="https://getconvoy.io/docs" rel="noreferrer">
+							Go to docs
+						</a>*/}
+						{authDetails && (
+							<button className="user" onClick={() => toggleShowDropdown(!showDropdown)}>
+								<div>
+									<div className="icon">O</div>
+									<div className="name">{JSON.parse(authDetails).username}</div>
+								</div>
+								<img src={AngleArrowDownIcon} alt="arrow down icon" />
+								{showDropdown && (
+									<div className="dropdown organisations">
+										<ul>
+											<li onClick={() => logout()}>Logout</li>
+										</ul>
+									</div>
+								)}
+							</button>
 						)}
-					</button>
+					</div>
 				</div>
 			</header>
 
