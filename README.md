@@ -47,8 +47,7 @@ To build Convoy from source code, you need:
 * Npm [version 6 or greater](https://npmjs.com).
 
 ```bash
-git clone https://github.com/frain-dev/convoy.git
-cd convoy
+git clone https://github.com/frain-dev/convoy.git && cd convoy
 go build -o convoy ./convoy
 ```
 
