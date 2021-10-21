@@ -20,7 +20,7 @@ exports.handler = async (event, _context) => {
 			email_address: `${githubName}@github.com`,
 			status: 'subscribed',
 			merge_fields: {
-				EMAIL: 'info@frain.dev',
+				EMAIL: `${githubName}@github.com`,
 				PRODUCT: 'Convoy',
 				GITHUB: githubName
 			}
