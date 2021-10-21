@@ -1,4 +1,4 @@
-# Convoy
+Convoy
 =========
 - Website: https://getconvoy.io
 - Forum: [Github Discussions](https://github.com/frain-dev/convoy/discussions)
