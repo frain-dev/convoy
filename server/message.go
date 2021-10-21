@@ -24,7 +24,7 @@ import (
 // @Accept  json
 // @Produce  json
 // @Param message body models.Message true "Message Details"
-// @Success 200 {object} serverResponse
+// @Success 200 {object} serverResponse{data=convoy.Message} "asc"
 // @Failure 400 {object} serverResponse
 // @Failure 401 {object} serverResponse
 // @Failure 500 {object} serverResponse
