@@ -156,6 +156,21 @@
 			</div>
 		</section>
 
+		<section class="section play-ground">
+			<div class="container">
+				<h2>Convoy Play Ground</h2>
+				<p>We've deployed an instance of Convoy to the cloud so you can play with it and have a taste of how Convoy will enable your webhook service</p>
+				<div class="img">
+					<a href="https://playground.getconvoy.io/" target="_blank">
+						Try it out free
+						<img src="~/assets/images/arrow-right-icon.svg" alt="arrow right" />
+					</a>
+					<img src="~/assets/images/playground-img.png" alt="dashboard screenshot" />
+				</div>
+			</div>
+			<div class="bg"></div>
+		</section>
+
 		<footer>
 			<div class="container">
 				<nav>
@@ -595,7 +610,11 @@ section.companies {
 	background: #2b4b6a;
 	padding: 80px 20px;
 	color: #ffffff;
-	margin-bottom: 200px;
+	margin-bottom: 490px;
+
+	@media (min-width: $desktopBreakPoint) {
+		margin-bottom: 590px;
+	}
 
 	.container {
 		display: flex;
@@ -659,6 +678,114 @@ section.companies {
 		img {
 			max-width: 467px;
 			width: 100%;
+		}
+	}
+}
+
+.play-ground {
+	padding-bottom: 300px;
+	position: relative;
+
+	@media (min-width: $desktopBreakPoint) {
+		padding-bottom: 400px;
+	}
+
+	.bg {
+		content: '';
+		bottom: 0;
+		left: -300px;
+		right: -300px;
+		height: 300px;
+		background: #ffffff;
+		border-radius: 100% 100% 0 0;
+		margin-bottom: -400px;
+		margin-right: -300px;
+		margin-left: -300px;
+
+		@media (min-width: $desktopBreakPoint) {
+			height: 460px;
+		}
+	}
+
+	.container {
+		width: 90%;
+		box-shadow: 0px 15px 50px rgba(21, 37, 72, 0.05);
+		border-radius: 24px;
+		text-align: center;
+		padding: 80px 2rem 0;
+		background: url('~/assets/images/playground-bg.svg') #ffffff no-repeat;
+		background-size: contain;
+		background-position: center;
+		position: absolute;
+		left: 50%;
+		top: -300px;
+		transform: translate(-50%, 0);
+
+		@media (min-width: $desktopBreakPoint) {
+			background-position: top center;
+		}
+	}
+
+	h2 {
+		font-weight: bold;
+		font-size: 34px;
+		line-height: 60px;
+
+		@media (min-width: $desktopBreakPoint) {
+			font-size: 48px;
+		}
+	}
+
+	p {
+		font-weight: 500;
+		font-size: 18px;
+		line-height: 30px;
+		max-width: 620px;
+		margin: 16px auto 26px;
+	}
+
+	.img {
+		max-width: 830px;
+		margin: auto;
+		position: relative;
+
+		img {
+			width: 100%;
+			margin-bottom: -4px;
+		}
+
+		a {
+			position: absolute;
+			left: 50%;
+			top: 64%;
+			transform: translate(-50%, -50%);
+			padding: 17px 24px;
+			background: #477db3;
+			color: #ffffff;
+			width: 212px;
+			text-align: left;
+			border-radius: 8px;
+			display: flex;
+			align-items: center;
+			justify-content: space-between;
+			font-weight: bold;
+			font-size: 18px;
+			line-height: 22px;
+
+			&::before {
+				content: '';
+				position: absolute;
+				width: 86px;
+				height: 102px;
+				right: -40px;
+				background: url('~/assets/images/play-ground-button-bg.svg');
+				background-size: contain;
+				z-index: -1;
+			}
+
+			img {
+				width: 12px;
+			}
 		}
 	}
 }
