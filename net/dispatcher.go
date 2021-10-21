@@ -35,6 +35,7 @@ func (d *Dispatcher) SendRequest(endpoint, method string, jsonData json.RawMessa
 
 	if util.IsStringEmpty(signatureHeader) || util.IsStringEmpty(hmac) {
 		err := errors.New("signature header and hmac are required")
+		log.WithError(err).Error("Dispatcher invalid arguments")
 		r.Error = err.Error()
 		return r, err
 	}
