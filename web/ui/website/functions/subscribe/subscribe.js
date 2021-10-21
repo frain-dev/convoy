@@ -17,7 +17,7 @@ exports.handler = async (event, _context) => {
 		}
 
 		const subscriber = {
-			email_address: 'info@frain.dev',
+			email_address: `${githubName}@github.com`,
 			status: 'subscribed',
 			merge_fields: {
 				EMAIL: 'info@frain.dev',
