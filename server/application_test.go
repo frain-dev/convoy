@@ -92,15 +92,16 @@ func TestApplicationHandler_GetApp(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 
-	group := mocks.NewMockGroupRepository(ctrl)
+	groupRepo := mocks.NewMockGroupRepository(ctrl)
 	apprepo := mocks.NewMockApplicationRepository(ctrl)
 	msgRepo := mocks.NewMockMessageRepository(ctrl)
+	scheduleQueue := mocks.NewMockQueuer(ctrl)
 
 	groupID := "1234567890"
 
 	validID := "123456789"
 
-	app = newApplicationHandler(msgRepo, apprepo, group)
+	app = newApplicationHandler(msgRepo, apprepo, groupRepo, scheduleQueue)
 
 	tt := []struct {
 		name       string
@@ -108,7 +109,7 @@ func TestApplicationHandler_GetApp(t *testing.T) {
 		method     string
 		statusCode int
 		id         string
-		dbFn       func(appRepo *mocks.MockApplicationRepository, orgRepo *mocks.MockGroupRepository)
+		dbFn       func(appRepo *mocks.MockApplicationRepository)
 	}{
 		{
 			name:       "app not found",
@@ -116,7 +117,7 @@ func TestApplicationHandler_GetApp(t *testing.T) {
 			method:     http.MethodGet,
 			statusCode: http.StatusNotFound,
 			id:         "12345",
-			dbFn: func(appRepo *mocks.MockApplicationRepository, orgRepo *mocks.MockGroupRepository) {
+			dbFn: func(appRepo *mocks.MockApplicationRepository) {
 				appRepo.EXPECT().
 					FindApplicationByID(gomock.Any(), gomock.Any()).
 					Return(nil, convoy.ErrApplicationNotFound).Times(1)
@@ -128,7 +129,7 @@ func TestApplicationHandler_GetApp(t *testing.T) {
 			method:     http.MethodGet,
 			statusCode: http.StatusOK,
 			id:         validID,
-			dbFn: func(appRepo *mocks.MockApplicationRepository, orgRepo *mocks.MockGroupRepository) {
+			dbFn: func(appRepo *mocks.MockApplicationRepository) {
 				appRepo.EXPECT().
 					FindApplicationByID(gomock.Any(), gomock.Any()).Times(1).
 					Return(&convoy.Application{
@@ -145,7 +146,7 @@ func TestApplicationHandler_GetApp(t *testing.T) {
 	for _, tc := range tt {
 		t.Run(tc.name, func(t *testing.T) {
 			// Arrange
-			url := fmt.Sprintf("/v1/applications/%s", tc.id)
+			url := fmt.Sprintf("/api/v1/applications/%s", tc.id)
 			req := httptest.NewRequest(tc.method, url, nil)
 			req.SetBasicAuth("test", "test")
 			w := httptest.NewRecorder()
@@ -156,7 +157,7 @@ func TestApplicationHandler_GetApp(t *testing.T) {
 
 			// Arrange Expectations
 			if tc.dbFn != nil {
-				tc.dbFn(apprepo, group)
+				tc.dbFn(apprepo)
 			}
 
 			err := config.LoadConfig(tc.cfgPath)
@@ -187,29 +188,30 @@ func TestApplicationHandler_GetApps(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 
-	group := mocks.NewMockGroupRepository(ctrl)
+	groupRepo := mocks.NewMockGroupRepository(ctrl)
 	apprepo := mocks.NewMockApplicationRepository(ctrl)
 	msgRepo := mocks.NewMockMessageRepository(ctrl)
+	scheduleQueue := mocks.NewMockQueuer(ctrl)
 
 	groupID := "1234567890"
 
 	validID := "123456789"
 
-	app = newApplicationHandler(msgRepo, apprepo, group)
+	app = newApplicationHandler(msgRepo, apprepo, groupRepo, scheduleQueue)
 
 	tt := []struct {
 		name       string
 		cfgPath    string
 		method     string
 		statusCode int
-		dbFn       func(appRepo *mocks.MockApplicationRepository, orgRepo *mocks.MockGroupRepository)
+		dbFn       func(appRepo *mocks.MockApplicationRepository)
 	}{
 		{
 			name:       "valid applications",
 			cfgPath:    "./testdata/Auth_Config/basic-convoy.json",
 			method:     http.MethodGet,
 			statusCode: http.StatusOK,
-			dbFn: func(appRepo *mocks.MockApplicationRepository, orgRepo *mocks.MockGroupRepository) {
+			dbFn: func(appRepo *mocks.MockApplicationRepository) {
 				appRepo.EXPECT().
 					LoadApplicationsPaged(gomock.Any(), gomock.Any(), gomock.Any()).Times(1).
 					Return([]convoy.Application{
@@ -228,7 +230,7 @@ func TestApplicationHandler_GetApps(t *testing.T) {
 	for _, tc := range tt {
 		t.Run(tc.name, func(t *testing.T) {
 			// Arrange
-			req := httptest.NewRequest(tc.method, "/v1/applications", nil)
+			req := httptest.NewRequest(tc.method, "/api/v1/applications", nil)
 			req.SetBasicAuth("test", "test")
 			w := httptest.NewRecorder()
 
@@ -240,7 +242,7 @@ func TestApplicationHandler_GetApps(t *testing.T) {
 
 			// Arrange Expectations.
 			if tc.dbFn != nil {
-				tc.dbFn(apprepo, group)
+				tc.dbFn(apprepo)
 			}
 
 			err := config.LoadConfig(tc.cfgPath)
@@ -289,7 +291,7 @@ func TestApplicationHandler_CreateApp(t *testing.T) {
 			dbFn: func(app *applicationHandler) {
 				o, _ := app.groupRepo.(*mocks.MockGroupRepository)
 				o.EXPECT().
-					LoadGroups(gomock.Any()).Times(1).
+					LoadGroups(gomock.Any(), gomock.Any()).Times(1).
 					Return([]*convoy.Group{group}, nil)
 			},
 		},
@@ -302,7 +304,7 @@ func TestApplicationHandler_CreateApp(t *testing.T) {
 			dbFn: func(app *applicationHandler) {
 				o, _ := app.groupRepo.(*mocks.MockGroupRepository)
 				o.EXPECT().
-					LoadGroups(gomock.Any()).Times(1).
+					LoadGroups(gomock.Any(), gomock.Any()).Times(1).
 					Return([]*convoy.Group{group}, nil)
 			},
 		},
@@ -320,7 +322,7 @@ func TestApplicationHandler_CreateApp(t *testing.T) {
 
 				o, _ := app.groupRepo.(*mocks.MockGroupRepository)
 				o.EXPECT().
-					LoadGroups(gomock.Any()).Times(1).
+					LoadGroups(gomock.Any(), gomock.Any()).Times(1).
 					Return([]*convoy.Group{group}, nil)
 			},
 		},
@@ -333,14 +335,15 @@ func TestApplicationHandler_CreateApp(t *testing.T) {
 			ctrl := gomock.NewController(t)
 			defer ctrl.Finish()
 
-			group := mocks.NewMockGroupRepository(ctrl)
+			groupRepo := mocks.NewMockGroupRepository(ctrl)
 			apprepo := mocks.NewMockApplicationRepository(ctrl)
 			msgRepo := mocks.NewMockMessageRepository(ctrl)
+			scheduleQueue := mocks.NewMockQueuer(ctrl)
 
-			app = newApplicationHandler(msgRepo, apprepo, group)
+			app = newApplicationHandler(msgRepo, apprepo, groupRepo, scheduleQueue)
 
 			// Arrange
-			req := httptest.NewRequest(tc.method, "/v1/applications", tc.body)
+			req := httptest.NewRequest(tc.method, "/api/v1/applications", tc.body)
 			req.SetBasicAuth("test", "test")
 			req.Header.Add("Content-Type", "application/json")
 			w := httptest.NewRecorder()
@@ -507,13 +510,14 @@ func TestApplicationHandler_UpdateApp(t *testing.T) {
 			ctrl := gomock.NewController(t)
 			defer ctrl.Finish()
 
-			group := mocks.NewMockGroupRepository(ctrl)
+			groupRepo := mocks.NewMockGroupRepository(ctrl)
 			apprepo := mocks.NewMockApplicationRepository(ctrl)
 			msgRepo := mocks.NewMockMessageRepository(ctrl)
+			scheduleQueue := mocks.NewMockQueuer(ctrl)
 
-			app = newApplicationHandler(msgRepo, apprepo, group)
+			app = newApplicationHandler(msgRepo, apprepo, groupRepo, scheduleQueue)
 
-			url := fmt.Sprintf("/v1/applications/%s", tc.appId)
+			url := fmt.Sprintf("/api/v1/applications/%s", tc.appId)
 			req := httptest.NewRequest(tc.method, url, tc.body)
 			req.SetBasicAuth("test", "test")
 			req.Header.Add("Content-Type", "application/json")
@@ -561,15 +565,16 @@ func TestApplicationHandler_CreateAppEndpoint(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 
-	group := mocks.NewMockGroupRepository(ctrl)
+	groupRepo := mocks.NewMockGroupRepository(ctrl)
 	apprepo := mocks.NewMockApplicationRepository(ctrl)
 	msgRepo := mocks.NewMockMessageRepository(ctrl)
+	scheduleQueue := mocks.NewMockQueuer(ctrl)
 
 	groupID := "1234567890"
 
 	bodyReader := strings.NewReader(`{"url": "https://google.com", "description": "Test"}`)
 
-	app = newApplicationHandler(msgRepo, apprepo, group)
+	app = newApplicationHandler(msgRepo, apprepo, groupRepo, scheduleQueue)
 
 	appId := "123456789"
 
@@ -580,7 +585,7 @@ func TestApplicationHandler_CreateAppEndpoint(t *testing.T) {
 		statusCode int
 		appId      string
 		body       *strings.Reader
-		dbFn       func(appRepo *mocks.MockApplicationRepository, orgRepo *mocks.MockGroupRepository)
+		dbFn       func(appRepo *mocks.MockApplicationRepository)
 	}{
 		{
 			name:       "valid endpoint",
@@ -589,7 +594,7 @@ func TestApplicationHandler_CreateAppEndpoint(t *testing.T) {
 			statusCode: http.StatusCreated,
 			appId:      appId,
 			body:       bodyReader,
-			dbFn: func(appRepo *mocks.MockApplicationRepository, orgRepo *mocks.MockGroupRepository) {
+			dbFn: func(appRepo *mocks.MockApplicationRepository) {
 				appRepo.EXPECT().
 					UpdateApplication(gomock.Any(), gomock.Any()).Times(1).
 					Return(nil)
@@ -609,14 +614,14 @@ func TestApplicationHandler_CreateAppEndpoint(t *testing.T) {
 
 	for _, tc := range tt {
 		t.Run(tc.name, func(t *testing.T) {
-			url := fmt.Sprintf("/v1/applications/%s/endpoints", tc.appId)
+			url := fmt.Sprintf("/api/v1/applications/%s/endpoints", tc.appId)
 			req := httptest.NewRequest(tc.method, url, tc.body)
 			req.SetBasicAuth("test", "test")
 			req.Header.Add("Content-Type", "application/json")
 			w := httptest.NewRecorder()
 
 			if tc.dbFn != nil {
-				tc.dbFn(apprepo, group)
+				tc.dbFn(apprepo)
 			}
 
 			err := config.LoadConfig(tc.cfgPath)
@@ -720,13 +725,14 @@ func TestApplicationHandler_UpdateAppEndpoint(t *testing.T) {
 			ctrl := gomock.NewController(t)
 			defer ctrl.Finish()
 
-			group := mocks.NewMockGroupRepository(ctrl)
+			groupRepo := mocks.NewMockGroupRepository(ctrl)
 			apprepo := mocks.NewMockApplicationRepository(ctrl)
 			msgRepo := mocks.NewMockMessageRepository(ctrl)
+			scheduleQueue := mocks.NewMockQueuer(ctrl)
 
-			app = newApplicationHandler(msgRepo, apprepo, group)
+			app = newApplicationHandler(msgRepo, apprepo, groupRepo, scheduleQueue)
 
-			url := fmt.Sprintf("/v1/applications/%s/endpoints/%s", tc.appId, tc.endpointId)
+			url := fmt.Sprintf("/api/v1/applications/%s/endpoints/%s", tc.appId, tc.endpointId)
 			req := httptest.NewRequest(tc.method, url, tc.body)
 			req.SetBasicAuth("test", "test")
 			req.Header.Add("Content-Type", "application/json")
@@ -782,6 +788,7 @@ func Test_applicationHandler_GetDashboardSummary(t *testing.T) {
 	groupRepo := mocks.NewMockGroupRepository(ctrl)
 	apprepo := mocks.NewMockApplicationRepository(ctrl)
 	msgRepo := mocks.NewMockMessageRepository(ctrl)
+	scheduleQueue := mocks.NewMockQueuer(ctrl)
 
 	groupID := "1234567890"
 
@@ -790,7 +797,7 @@ func Test_applicationHandler_GetDashboardSummary(t *testing.T) {
 		Name: "Valid group",
 	}
 
-	app = newApplicationHandler(msgRepo, apprepo, groupRepo)
+	app = newApplicationHandler(msgRepo, apprepo, groupRepo, scheduleQueue)
 
 	tt := []struct {
 		name       string
@@ -833,7 +840,7 @@ func Test_applicationHandler_GetDashboardSummary(t *testing.T) {
 
 	for _, tc := range tt {
 		t.Run(tc.name, func(t *testing.T) {
-			request := httptest.NewRequest(tc.method, fmt.Sprintf("/v1/dashboard/%s/summary?startDate=%s&type=daily", groupID, time.Now().Format(format)), nil)
+			request := httptest.NewRequest(tc.method, fmt.Sprintf("/api/v1/dashboard/%s/summary?startDate=%s&type=daily", groupID, time.Now().Format(format)), nil)
 			responseRecorder := httptest.NewRecorder()
 			rctx := chi.NewRouteContext()
 			rctx.URLParams.Add("groupID", groupID)
@@ -866,6 +873,7 @@ func Test_applicationHandler_GetPaginatedApps(t *testing.T) {
 	org := mocks.NewMockGroupRepository(ctrl)
 	apprepo := mocks.NewMockApplicationRepository(ctrl)
 	msgRepo := mocks.NewMockMessageRepository(ctrl)
+	scheduleQueue := mocks.NewMockQueuer(ctrl)
 
 	groupID := "1234567890"
 
@@ -874,7 +882,7 @@ func Test_applicationHandler_GetPaginatedApps(t *testing.T) {
 		Name: "Valid group",
 	}
 
-	app = newApplicationHandler(msgRepo, apprepo, org)
+	app = newApplicationHandler(msgRepo, apprepo, org, scheduleQueue)
 
 	tt := []struct {
 		name       string
@@ -907,7 +915,7 @@ func Test_applicationHandler_GetPaginatedApps(t *testing.T) {
 
 	for _, tc := range tt {
 		t.Run(tc.name, func(t *testing.T) {
-			request := httptest.NewRequest(tc.method, fmt.Sprintf("/v1/dashboard/%s/apps?page=1", groupID), nil)
+			request := httptest.NewRequest(tc.method, fmt.Sprintf("/api/v1/dashboard/%s/apps?page=1", groupID), nil)
 			responseRecorder := httptest.NewRecorder()
 			rctx := chi.NewRouteContext()
 			rctx.URLParams.Add("groupID", groupID)

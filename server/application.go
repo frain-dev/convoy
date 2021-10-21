@@ -13,6 +13,7 @@ import (
 	"go.mongodb.org/mongo-driver/bson/primitive"
 
 	"github.com/frain-dev/convoy"
+	"github.com/frain-dev/convoy/queue"
 	"github.com/frain-dev/convoy/server/models"
 	"github.com/frain-dev/convoy/util"
 	"github.com/go-chi/chi/v5"
@@ -20,9 +21,10 @@ import (
 )
 
 type applicationHandler struct {
-	appRepo   convoy.ApplicationRepository
-	groupRepo convoy.GroupRepository
-	msgRepo   convoy.MessageRepository
+	appRepo       convoy.ApplicationRepository
+	msgRepo       convoy.MessageRepository
+	groupRepo     convoy.GroupRepository
+	scheduleQueue queue.Queuer
 }
 
 type pagedResponse struct {
@@ -30,12 +32,13 @@ type pagedResponse struct {
 	Pagination *mongopagination.PaginationData `json:"pagination,omitempty"`
 }
 
-func newApplicationHandler(msgRepo convoy.MessageRepository, appRepo convoy.ApplicationRepository, groupRepo convoy.GroupRepository) *applicationHandler {
+func newApplicationHandler(msgRepo convoy.MessageRepository, appRepo convoy.ApplicationRepository, groupRepo convoy.GroupRepository, scheduleQueue queue.Queuer) *applicationHandler {
 
 	return &applicationHandler{
-		msgRepo:   msgRepo,
-		appRepo:   appRepo,
-		groupRepo: groupRepo,
+		msgRepo:       msgRepo,
+		appRepo:       appRepo,
+		groupRepo:     groupRepo,
+		scheduleQueue: scheduleQueue,
 	}
 }
 

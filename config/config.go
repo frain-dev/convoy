@@ -19,6 +19,10 @@ type DatabaseConfiguration struct {
 	Dsn string `json:"dsn"`
 }
 
+type SentryConfiguration struct {
+	Dsn string `json:"dsn"`
+}
+
 type ServerConfiguration struct {
 	HTTP struct {
 		Port uint32 `json:"port"`
@@ -77,11 +81,13 @@ type Configuration struct {
 	UIAuth            UIAuthConfiguration    `json:"ui,omitempty"`
 	UIAuthorizedUsers map[string]string      `json:"-"`
 	Database          DatabaseConfiguration  `json:"database"`
+	Sentry            SentryConfiguration    `json:"sentry"`
 	Queue             QueueConfiguration     `json:"queue"`
 	Server            ServerConfiguration    `json:"server"`
 	Strategy          StrategyConfiguration  `json:"strategy"`
 	Signature         SignatureConfiguration `json:"signature"`
 	SMTP              SMTPConfiguration      `json:"smtp"`
+	Environment       string                 `json:"env"`
 	DisableEndpoint   bool                   `json:"disable_endpoint"`
 }
 
@@ -91,12 +97,20 @@ type StrategyProvider string
 type SignatureHeaderProvider string
 
 const (
+	DevelopmentEnvironment string = "development"
+)
+
+const (
 	NoAuthProvider          AuthProvider            = "none"
 	BasicAuthProvider       AuthProvider            = "basic"
 	RedisQueueProvider      QueueProvider           = "redis"
 	DefaultStrategyProvider StrategyProvider        = "default"
 	DefaultSignatureHeader  SignatureHeaderProvider = "X-Convoy-Signature"
 )
+
+func (s SignatureHeaderProvider) String() string {
+	return string(s)
+}
 
 func LoadConfig(p string) error {
 	f, err := os.Open(p)
@@ -137,6 +151,19 @@ func LoadConfig(p string) error {
 				Port: uint32(port),
 			},
 		}
+	}
+
+	if env := os.Getenv("CONVOY_ENV"); env != "" {
+		c.Environment = env
+	}
+
+	// if it's still empty, set it to development
+	if c.Environment == "" {
+		c.Environment = DevelopmentEnvironment
+	}
+
+	if sentryDsn := os.Getenv("CONVOY_SENTRY_DSN"); sentryDsn != "" {
+		c.Sentry = SentryConfiguration{Dsn: sentryDsn}
 	}
 
 	if signatureHeader := os.Getenv("CONVOY_SIGNATURE_HEADER"); signatureHeader != "" {
@@ -219,6 +246,12 @@ func LoadConfig(p string) error {
 			},
 		}
 
+	}
+
+	if e := os.Getenv("CONVOY_DISABLE_ENDPOINT"); e != "" {
+		if d, err := strconv.ParseBool(e); err != nil {
+			c.DisableEndpoint = d
+		}
 	}
 
 	c.UIAuthorizedUsers = parseAuthorizedUsers(c.UIAuth)

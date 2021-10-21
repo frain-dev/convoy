@@ -116,12 +116,12 @@ func (db *messageRepo) LoadMessageIntervals(ctx context.Context, groupID string,
 
 	data, err := db.inner.Aggregate(ctx, mongo.Pipeline{matchStage, groupStage, sortStage})
 	if err != nil {
-		log.Errorln("aggregate error - ", err)
+		log.WithError(err).Errorln("aggregate error")
 		return nil, err
 	}
 	var messagesIntervals []models.MessageInterval
 	if err = data.All(ctx, &messagesIntervals); err != nil {
-		log.Errorln("marshal error - ", err)
+		log.WithError(err).Error("marshal error")
 		return nil, err
 	}
 	if messagesIntervals == nil {

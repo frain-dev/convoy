@@ -275,7 +275,9 @@ func requireDefaultGroup(groupRepo convoy.GroupRepository) func(next http.Handle
 
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 
-			groups, err := groupRepo.LoadGroups(r.Context())
+			name := r.URL.Query().Get("name")
+
+			groups, err := groupRepo.LoadGroups(r.Context(), &convoy.GroupFilter{Name: name})
 			if err != nil {
 
 				msg := "an error occurred while loading default group"

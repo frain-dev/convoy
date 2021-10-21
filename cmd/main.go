@@ -3,22 +3,27 @@ package main
 import (
 	"context"
 	"fmt"
+	"net/url"
 	"os"
+	"strings"
 	"time"
 	_ "time/tzdata"
 
+	convoyRedis "github.com/frain-dev/convoy/queue/redis"
+	"github.com/getsentry/sentry-go"
 	"github.com/google/uuid"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 
 	"github.com/frain-dev/convoy/util"
+	"github.com/go-redis/redis/v8"
 	log "github.com/sirupsen/logrus"
+	"github.com/vmihailenco/taskq/v3"
 	prefixed "github.com/x-cray/logrus-prefixed-formatter"
 
 	"github.com/frain-dev/convoy"
 	"github.com/frain-dev/convoy/config"
 	"github.com/frain-dev/convoy/datastore"
 	"github.com/frain-dev/convoy/queue"
-	"github.com/frain-dev/convoy/queue/redis"
 	"github.com/spf13/cobra"
 	"go.mongodb.org/mongo-driver/mongo"
 )
@@ -67,10 +72,26 @@ func main() {
 				return err
 			}
 
-			var queuer queue.Queuer
+			err = sentry.Init(sentry.ClientOptions{
+				Debug:       true,
+				Dsn:         cfg.Sentry.Dsn,
+				Environment: cfg.Environment,
+			})
+			if err != nil {
+				return err
+			}
+
+			defer sentry.Recover()              // recover any panic and report to sentry
+			defer sentry.Flush(2 * time.Second) // send any events in sentry before exiting
+
+			sentryHook := convoy.NewSentryHook(convoy.DefaultLevels)
+			log.AddHook(sentryHook)
+
+			var qFn taskq.Factory
+			var rC *redis.Client
 
 			if cfg.Queue.Type == config.RedisQueueProvider {
-				queuer, err = redis.New(cfg)
+				rC, qFn, err = convoyRedis.NewClient(cfg)
 				if err != nil {
 					return err
 				}
@@ -81,12 +102,19 @@ func main() {
 				log.Warnf("signature header is blank. setting default %s", config.DefaultSignatureHeader)
 			}
 
-			conn := db.Database("convoy", nil)
+			u, err := url.Parse(cfg.Database.Dsn)
+			if err != nil {
+				return err
+			}
+
+			dbName := strings.TrimPrefix(u.Path, "/")
+			conn := db.Database(dbName, nil)
 
 			app.groupRepo = datastore.NewGroupRepo(conn)
 			app.applicationRepo = datastore.NewApplicationRepo(conn)
 			app.messageRepo = datastore.NewMessageRepository(conn)
-			app.queue = queuer
+			app.scheduleQueue = convoyRedis.NewQueue(rC, qFn, "ScheduleQueue")
+			app.deadLetterQueue = convoyRedis.NewQueue(rC, qFn, "DeadLetterQueue")
 
 			ensureMongoIndices(conn)
 			err = ensureDefaultGroup(context.Background(), app.groupRepo)
@@ -98,7 +126,12 @@ func main() {
 		},
 		PersistentPostRunE: func(cmd *cobra.Command, args []string) error {
 			defer func() {
-				err := app.queue.Close()
+				err := app.scheduleQueue.Close()
+				if err != nil {
+					log.Errorln("failed to close app queue - ", err)
+				}
+
+				err = app.deadLetterQueue.Close()
 				if err != nil {
 					log.Errorln("failed to close app queue - ", err)
 				}
@@ -135,7 +168,7 @@ func ensureMongoIndices(conn *mongo.Database) {
 }
 
 func ensureDefaultGroup(ctx context.Context, groupRepo convoy.GroupRepository) error {
-	groups, err := groupRepo.LoadGroups(ctx)
+	groups, err := groupRepo.LoadGroups(ctx, &convoy.GroupFilter{})
 	if err != nil {
 		return fmt.Errorf("failed to load groups - %w", err)
 	}
@@ -164,7 +197,8 @@ type app struct {
 	groupRepo       convoy.GroupRepository
 	applicationRepo convoy.ApplicationRepository
 	messageRepo     convoy.MessageRepository
-	queue           queue.Queuer
+	scheduleQueue   queue.Queuer
+	deadLetterQueue queue.Queuer
 }
 
 func getCtx() (context.Context, context.CancelFunc) {

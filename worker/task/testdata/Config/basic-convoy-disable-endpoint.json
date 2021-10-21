@@ -1,0 +1,29 @@
+{
+	"auth": {
+		"type": "basic",
+		"basic": {
+			"username": "test",
+			"password": "test"
+		}
+	},
+	"strategy":{
+		"type": "default",
+		"default": {
+			"intervalSeconds": 20,
+			"retryLimit": 3
+		}
+	},
+	"signature": {
+		"header": "X-Company-Event-WebHook-Signature",
+		"hash": "SHA256"
+	},
+    "smtp": {
+		"provider": "sendgrid",
+		"url": "smtp.sendgrid.net",
+		"port": 2525,
+		"username": "apikey",
+		"password": "<api-key-from-sendgrid>",
+		"from": "support@frain.dev"
+	},
+	"disable_endpoint": true
+}

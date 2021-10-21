@@ -11,6 +11,7 @@ import (
 
 	"github.com/frain-dev/convoy"
 	"github.com/frain-dev/convoy/config"
+	"github.com/frain-dev/convoy/queue"
 
 	"github.com/go-chi/chi/v5/middleware"
 	"github.com/prometheus/client_golang/prometheus"
@@ -33,7 +34,7 @@ func reactRootHandler(rw http.ResponseWriter, req *http.Request) {
 	f := fs.FS(reactFS)
 	static, err := fs.Sub(f, "ui/build")
 	if err != nil {
-		log.Errorf("an error has occurred with the react app - %+v\n", err)
+		log.WithError(err).Error("an error has occurred with the react app")
 		return
 	}
 	if _, err := static.Open(strings.TrimLeft(p, "/")); err != nil { // If file not found server index/html from root
@@ -50,76 +51,76 @@ func buildRoutes(app *applicationHandler) http.Handler {
 	router.Use(writeRequestIDHeader)
 
 	// Public API.
-	router.Route("/v1", func(r chi.Router) {
-		r.Use(middleware.AllowContentType("application/json"))
-		r.Use(jsonResponse)
+	router.Route("/api", func(v1Router chi.Router) {
+		v1Router.Route("/v1", func(r chi.Router) {
+			r.Use(middleware.AllowContentType("application/json"))
+			r.Use(jsonResponse)
 
-		r.Route("/groups", func(groupRouter chi.Router) {
-			groupRouter.Use(requireAuth())
+			r.Route("/groups", func(groupRouter chi.Router) {
+				groupRouter.Use(requireAuth())
 
-			groupRouter.Route("/", func(orgSubRouter chi.Router) {
 				groupRouter.Get("/", app.GetGroups)
-				orgSubRouter.Post("/", app.CreateGroup)
+				groupRouter.Post("/", app.CreateGroup)
+
+				groupRouter.Route("/{groupID}", func(groupSubRouter chi.Router) {
+					groupSubRouter.Use(requireDefaultGroup(app.groupRepo))
+
+					groupSubRouter.Get("/", app.GetGroup)
+					groupSubRouter.Put("/", app.UpdateGroup)
+				})
 			})
 
-			groupRouter.Route("/{groupID}", func(appSubRouter chi.Router) {
-				appSubRouter.Use(requireDefaultGroup(app.groupRepo))
+			r.Route("/applications", func(appRouter chi.Router) {
+				appRouter.Use(requireAuth())
 
-				appSubRouter.Get("/", app.GetGroup)
-				appSubRouter.Put("/", app.UpdateGroup)
-			})
-		})
+				appRouter.Route("/", func(appSubRouter chi.Router) {
+					appSubRouter.With(requireDefaultGroup(app.groupRepo)).Post("/", app.CreateApp)
+					appRouter.With(pagination).Get("/", app.GetApps)
+				})
 
-		r.Route("/applications", func(appRouter chi.Router) {
-			appRouter.Use(requireAuth())
+				appRouter.Route("/{appID}", func(appSubRouter chi.Router) {
+					appSubRouter.Use(requireApp(app.appRepo))
 
-			appRouter.Route("/", func(appSubRouter chi.Router) {
-				appSubRouter.With(requireDefaultGroup(app.groupRepo)).Post("/", app.CreateApp)
-				appRouter.With(pagination).Get("/", app.GetApps)
-			})
+					appSubRouter.Get("/", app.GetApp)
+					appSubRouter.Put("/", app.UpdateApp)
+					appSubRouter.Delete("/", app.DeleteApp)
 
-			appRouter.Route("/{appID}", func(appSubRouter chi.Router) {
-				appSubRouter.Use(requireApp(app.appRepo))
+					appSubRouter.Route("/endpoints", func(endpointAppSubRouter chi.Router) {
+						endpointAppSubRouter.Post("/", app.CreateAppEndpoint)
+						endpointAppSubRouter.Get("/", app.GetAppEndpoints)
 
-				appSubRouter.Get("/", app.GetApp)
-				appSubRouter.Put("/", app.UpdateApp)
-				appSubRouter.Delete("/", app.DeleteApp)
+						endpointAppSubRouter.Route("/{endpointID}", func(e chi.Router) {
+							e.Use(requireAppEndpoint())
 
-				appSubRouter.Route("/endpoints", func(endpointAppSubRouter chi.Router) {
-					endpointAppSubRouter.Post("/", app.CreateAppEndpoint)
-					endpointAppSubRouter.Get("/", app.GetAppEndpoints)
-
-					endpointAppSubRouter.Route("/{endpointID}", func(e chi.Router) {
-						e.Use(requireAppEndpoint())
-
-						e.Get("/", app.GetAppEndpoint)
-						e.Put("/", app.UpdateAppEndpoint)
-						e.Delete("/", app.DeleteAppEndpoint)
+							e.Get("/", app.GetAppEndpoint)
+							e.Put("/", app.UpdateAppEndpoint)
+							e.Delete("/", app.DeleteAppEndpoint)
+						})
 					})
 				})
 			})
-		})
 
-		r.Route("/events", func(msgRouter chi.Router) {
-			msgRouter.Use(requireAuth())
+			r.Route("/events", func(msgRouter chi.Router) {
+				msgRouter.Use(requireAuth())
 
-			msgRouter.With(instrumentPath("/events")).Post("/", app.CreateAppMessage)
-			msgRouter.With(pagination).Get("/", app.GetMessagesPaged)
+				msgRouter.With(instrumentPath("/events")).Post("/", app.CreateAppMessage)
+				msgRouter.With(pagination).Get("/", app.GetMessagesPaged)
 
-			msgRouter.Route("/{eventID}", func(msgSubRouter chi.Router) {
-				msgSubRouter.Use(requireMessage(app.msgRepo))
+				msgRouter.Route("/{eventID}", func(msgSubRouter chi.Router) {
+					msgSubRouter.Use(requireMessage(app.msgRepo))
 
-				msgSubRouter.Get("/", app.GetAppMessage)
-				msgSubRouter.Put("/resend", app.ResendAppMessage)
+					msgSubRouter.Get("/", app.GetAppMessage)
+					msgSubRouter.Put("/resend", app.ResendAppMessage)
 
-				msgSubRouter.Route("/deliveryattempts", func(deliveryRouter chi.Router) {
-					deliveryRouter.Use(fetchMessageDeliveryAttempts())
+					msgSubRouter.Route("/deliveryattempts", func(deliveryRouter chi.Router) {
+						deliveryRouter.Use(fetchMessageDeliveryAttempts())
 
-					deliveryRouter.Get("/", app.GetAppMessageDeliveryAttempts)
-					deliveryRouter.With(requireMessageDeliveryAttempt()).Get("/{deliveryAttemptID}", app.GetAppMessageDeliveryAttempt)
+						deliveryRouter.Get("/", app.GetAppMessageDeliveryAttempts)
+						deliveryRouter.With(requireMessageDeliveryAttempt()).Get("/{deliveryAttemptID}", app.GetAppMessageDeliveryAttempt)
+					})
 				})
-			})
 
+			})
 		})
 	})
 
@@ -224,9 +225,9 @@ func buildRoutes(app *applicationHandler) http.Handler {
 	return router
 }
 
-func New(cfg config.Configuration, msgRepo convoy.MessageRepository, appRepo convoy.ApplicationRepository, orgRepo convoy.GroupRepository) *http.Server {
+func New(cfg config.Configuration, msgRepo convoy.MessageRepository, appRepo convoy.ApplicationRepository, orgRepo convoy.GroupRepository, scheduleQueue queue.Queuer) *http.Server {
 
-	app := newApplicationHandler(msgRepo, appRepo, orgRepo)
+	app := newApplicationHandler(msgRepo, appRepo, orgRepo, scheduleQueue)
 
 	srv := &http.Server{
 		Handler:      buildRoutes(app),

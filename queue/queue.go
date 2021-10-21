@@ -3,17 +3,17 @@ package queue
 import (
 	"context"
 	"io"
+	"time"
 
 	"github.com/frain-dev/convoy"
 )
 
 type Queuer interface {
-	Read() chan Message
 	io.Closer
-	Write(context.Context, convoy.Message) error
+	Write(context.Context, convoy.TaskName, *convoy.Message, time.Duration) error
 }
 
-type Message struct {
-	Err  error          `json:"err"`
-	Data convoy.Message `json:"data"`
+type Job struct {
+	Err   error  `json:"err"`
+	MsgID string `json:"msg_id"`
 }
