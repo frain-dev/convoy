@@ -21,9 +21,7 @@ import (
 // @Produce  json
 // @Param groupID path string true "Group id"
 // @Success 200 {object} serverResponse{data=convoy.Group}
-// @Failure 400 {object} serverResponse
-// @Failure 401 {object} serverResponse
-// @Failure 500 {object} serverResponse
+// @Failure 400,401,500 {object} serverResponse{data=Empty}
 // @Security ApiKeyAuth
 // @Router /groups/{groupID} [get]
 func (a *applicationHandler) GetGroup(w http.ResponseWriter, r *http.Request) {
@@ -40,9 +38,7 @@ func (a *applicationHandler) GetGroup(w http.ResponseWriter, r *http.Request) {
 // @Produce  json
 // @Param group body models.Group true "Group Details"
 // @Success 200 {object} serverResponse{data=convoy.Group}
-// @Failure 400 {object} serverResponse
-// @Failure 401 {object} serverResponse
-// @Failure 500 {object} serverResponse
+// @Failure 400,401,500 {object} serverResponse{data=Empty}
 // @Security ApiKeyAuth
 // @Router /groups [post]
 func (a *applicationHandler) CreateGroup(w http.ResponseWriter, r *http.Request) {
@@ -86,9 +82,7 @@ func (a *applicationHandler) CreateGroup(w http.ResponseWriter, r *http.Request)
 // @Param groupID path string true "group id"
 // @Param group body models.Group true "Group Details"
 // @Success 200 {object} serverResponse{data=convoy.Group}
-// @Failure 400 {object} serverResponse
-// @Failure 401 {object} serverResponse
-// @Failure 500 {object} serverResponse
+// @Failure 400,401,500 {object} serverResponse{data=Empty}
 // @Security ApiKeyAuth
 // @Router /groups/{groupID} [put]
 func (a *applicationHandler) UpdateGroup(w http.ResponseWriter, r *http.Request) {
@@ -125,9 +119,7 @@ func (a *applicationHandler) UpdateGroup(w http.ResponseWriter, r *http.Request)
 // @Produce  json
 // @Param name query string false "group name"
 // @Success 200 {object} serverResponse{data=[]convoy.Group}
-// @Failure 400 {object} serverResponse
-// @Failure 401 {object} serverResponse
-// @Failure 500 {object} serverResponse
+// @Failure 400,401,500 {object} serverResponse{data=Empty}
 // @Security ApiKeyAuth
 // @Router /groups [get]
 func (a *applicationHandler) GetGroups(w http.ResponseWriter, r *http.Request) {
