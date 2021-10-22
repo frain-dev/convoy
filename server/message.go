@@ -23,9 +23,9 @@ import (
 // @Tags Messages
 // @Accept  json
 // @Produce  json
-// @Param message body models.Message{} true "Message Details"
+// @Param message body models.Message{data=Stub} true "Message Details"
 // @Success 200 {object} serverResponse{data=convoy.Message}
-// @Failure 400,401,500 {object} serverResponse{data=Empty}
+// @Failure 400,401,500 {object} serverResponse{data=Stub}
 // @Security ApiKeyAuth
 // @Router /events [post]
 func (a *applicationHandler) CreateAppMessage(w http.ResponseWriter, r *http.Request) {

@@ -297,6 +297,7 @@
 						"type": "string"
 					},
 					"data": {
+						"description": "Data is an arbitrary JSON value that gets sent as the body of the\nwebhook to the endpoints",
 						"items": {
 							"type": "integer"
 						},
@@ -331,7 +332,7 @@
 				},
 				"type": "object"
 			},
-			"server.Empty": {
+			"server.Stub": {
 				"type": "object"
 			},
 			"server.pagedResponse": {
@@ -464,7 +465,7 @@
 										{
 											"properties": {
 												"data": {
-													"$ref": "#/components/schemas/server.Empty"
+													"$ref": "#/components/schemas/server.Stub"
 												}
 											},
 											"type": "object"
@@ -486,7 +487,7 @@
 										{
 											"properties": {
 												"data": {
-													"$ref": "#/components/schemas/server.Empty"
+													"$ref": "#/components/schemas/server.Stub"
 												}
 											},
 											"type": "object"
@@ -508,7 +509,7 @@
 										{
 											"properties": {
 												"data": {
-													"$ref": "#/components/schemas/server.Empty"
+													"$ref": "#/components/schemas/server.Stub"
 												}
 											},
 											"type": "object"
@@ -578,7 +579,7 @@
 										{
 											"properties": {
 												"data": {
-													"$ref": "#/components/schemas/server.Empty"
+													"$ref": "#/components/schemas/server.Stub"
 												}
 											},
 											"type": "object"
@@ -600,7 +601,7 @@
 										{
 											"properties": {
 												"data": {
-													"$ref": "#/components/schemas/server.Empty"
+													"$ref": "#/components/schemas/server.Stub"
 												}
 											},
 											"type": "object"
@@ -622,7 +623,7 @@
 										{
 											"properties": {
 												"data": {
-													"$ref": "#/components/schemas/server.Empty"
+													"$ref": "#/components/schemas/server.Stub"
 												}
 											},
 											"type": "object"
@@ -671,7 +672,7 @@
 										{
 											"properties": {
 												"data": {
-													"$ref": "#/components/schemas/server.Empty"
+													"$ref": "#/components/schemas/server.Stub"
 												}
 											},
 											"type": "object"
@@ -693,7 +694,7 @@
 										{
 											"properties": {
 												"data": {
-													"$ref": "#/components/schemas/server.Empty"
+													"$ref": "#/components/schemas/server.Stub"
 												}
 											},
 											"type": "object"
@@ -715,7 +716,7 @@
 										{
 											"properties": {
 												"data": {
-													"$ref": "#/components/schemas/server.Empty"
+													"$ref": "#/components/schemas/server.Stub"
 												}
 											},
 											"type": "object"
@@ -737,7 +738,7 @@
 										{
 											"properties": {
 												"data": {
-													"$ref": "#/components/schemas/server.Empty"
+													"$ref": "#/components/schemas/server.Stub"
 												}
 											},
 											"type": "object"
@@ -806,7 +807,7 @@
 										{
 											"properties": {
 												"data": {
-													"$ref": "#/components/schemas/server.Empty"
+													"$ref": "#/components/schemas/server.Stub"
 												}
 											},
 											"type": "object"
@@ -828,7 +829,7 @@
 										{
 											"properties": {
 												"data": {
-													"$ref": "#/components/schemas/server.Empty"
+													"$ref": "#/components/schemas/server.Stub"
 												}
 											},
 											"type": "object"
@@ -850,7 +851,7 @@
 										{
 											"properties": {
 												"data": {
-													"$ref": "#/components/schemas/server.Empty"
+													"$ref": "#/components/schemas/server.Stub"
 												}
 											},
 											"type": "object"
@@ -931,7 +932,7 @@
 										{
 											"properties": {
 												"data": {
-													"$ref": "#/components/schemas/server.Empty"
+													"$ref": "#/components/schemas/server.Stub"
 												}
 											},
 											"type": "object"
@@ -953,7 +954,7 @@
 										{
 											"properties": {
 												"data": {
-													"$ref": "#/components/schemas/server.Empty"
+													"$ref": "#/components/schemas/server.Stub"
 												}
 											},
 											"type": "object"
@@ -975,7 +976,7 @@
 										{
 											"properties": {
 												"data": {
-													"$ref": "#/components/schemas/server.Empty"
+													"$ref": "#/components/schemas/server.Stub"
 												}
 											},
 											"type": "object"
@@ -1049,7 +1050,7 @@
 										{
 											"properties": {
 												"data": {
-													"$ref": "#/components/schemas/server.Empty"
+													"$ref": "#/components/schemas/server.Stub"
 												}
 											},
 											"type": "object"
@@ -1071,7 +1072,7 @@
 										{
 											"properties": {
 												"data": {
-													"$ref": "#/components/schemas/server.Empty"
+													"$ref": "#/components/schemas/server.Stub"
 												}
 											},
 											"type": "object"
@@ -1093,7 +1094,7 @@
 										{
 											"properties": {
 												"data": {
-													"$ref": "#/components/schemas/server.Empty"
+													"$ref": "#/components/schemas/server.Stub"
 												}
 											},
 											"type": "object"
@@ -1174,7 +1175,7 @@
 										{
 											"properties": {
 												"data": {
-													"$ref": "#/components/schemas/server.Empty"
+													"$ref": "#/components/schemas/server.Stub"
 												}
 											},
 											"type": "object"
@@ -1196,7 +1197,7 @@
 										{
 											"properties": {
 												"data": {
-													"$ref": "#/components/schemas/server.Empty"
+													"$ref": "#/components/schemas/server.Stub"
 												}
 											},
 											"type": "object"
@@ -1218,7 +1219,7 @@
 										{
 											"properties": {
 												"data": {
-													"$ref": "#/components/schemas/server.Empty"
+													"$ref": "#/components/schemas/server.Stub"
 												}
 											},
 											"type": "object"
@@ -1276,7 +1277,7 @@
 										{
 											"properties": {
 												"data": {
-													"$ref": "#/components/schemas/server.Empty"
+													"$ref": "#/components/schemas/server.Stub"
 												}
 											},
 											"type": "object"
@@ -1298,7 +1299,7 @@
 										{
 											"properties": {
 												"data": {
-													"$ref": "#/components/schemas/server.Empty"
+													"$ref": "#/components/schemas/server.Stub"
 												}
 											},
 											"type": "object"
@@ -1320,7 +1321,7 @@
 										{
 											"properties": {
 												"data": {
-													"$ref": "#/components/schemas/server.Empty"
+													"$ref": "#/components/schemas/server.Stub"
 												}
 											},
 											"type": "object"
@@ -1342,7 +1343,7 @@
 										{
 											"properties": {
 												"data": {
-													"$ref": "#/components/schemas/server.Empty"
+													"$ref": "#/components/schemas/server.Stub"
 												}
 											},
 											"type": "object"
@@ -1420,7 +1421,7 @@
 										{
 											"properties": {
 												"data": {
-													"$ref": "#/components/schemas/server.Empty"
+													"$ref": "#/components/schemas/server.Stub"
 												}
 											},
 											"type": "object"
@@ -1442,7 +1443,7 @@
 										{
 											"properties": {
 												"data": {
-													"$ref": "#/components/schemas/server.Empty"
+													"$ref": "#/components/schemas/server.Stub"
 												}
 											},
 											"type": "object"
@@ -1464,7 +1465,7 @@
 										{
 											"properties": {
 												"data": {
-													"$ref": "#/components/schemas/server.Empty"
+													"$ref": "#/components/schemas/server.Stub"
 												}
 											},
 											"type": "object"
@@ -1554,7 +1555,7 @@
 										{
 											"properties": {
 												"data": {
-													"$ref": "#/components/schemas/server.Empty"
+													"$ref": "#/components/schemas/server.Stub"
 												}
 											},
 											"type": "object"
@@ -1576,7 +1577,7 @@
 										{
 											"properties": {
 												"data": {
-													"$ref": "#/components/schemas/server.Empty"
+													"$ref": "#/components/schemas/server.Stub"
 												}
 											},
 											"type": "object"
@@ -1598,7 +1599,7 @@
 										{
 											"properties": {
 												"data": {
-													"$ref": "#/components/schemas/server.Empty"
+													"$ref": "#/components/schemas/server.Stub"
 												}
 											},
 											"type": "object"
@@ -1767,7 +1768,19 @@
 					"content": {
 						"application/json": {
 							"schema": {
-								"$ref": "#/components/schemas/models.Message"
+								"allOf": [
+									{
+										"$ref": "#/components/schemas/models.Message"
+									},
+									{
+										"properties": {
+											"data": {
+												"$ref": "#/components/schemas/server.Stub"
+											}
+										},
+										"type": "object"
+									}
+								]
 							}
 						}
 					},
@@ -1809,7 +1822,7 @@
 										{
 											"properties": {
 												"data": {
-													"$ref": "#/components/schemas/server.Empty"
+													"$ref": "#/components/schemas/server.Stub"
 												}
 											},
 											"type": "object"
@@ -1831,7 +1844,7 @@
 										{
 											"properties": {
 												"data": {
-													"$ref": "#/components/schemas/server.Empty"
+													"$ref": "#/components/schemas/server.Stub"
 												}
 											},
 											"type": "object"
@@ -1853,7 +1866,7 @@
 										{
 											"properties": {
 												"data": {
-													"$ref": "#/components/schemas/server.Empty"
+													"$ref": "#/components/schemas/server.Stub"
 												}
 											},
 											"type": "object"
@@ -2006,7 +2019,7 @@
 										{
 											"properties": {
 												"data": {
-													"$ref": "#/components/schemas/server.Empty"
+													"$ref": "#/components/schemas/server.Stub"
 												}
 											},
 											"type": "object"
@@ -2028,7 +2041,7 @@
 										{
 											"properties": {
 												"data": {
-													"$ref": "#/components/schemas/server.Empty"
+													"$ref": "#/components/schemas/server.Stub"
 												}
 											},
 											"type": "object"
@@ -2050,7 +2063,7 @@
 										{
 											"properties": {
 												"data": {
-													"$ref": "#/components/schemas/server.Empty"
+													"$ref": "#/components/schemas/server.Stub"
 												}
 											},
 											"type": "object"
@@ -2130,7 +2143,7 @@
 										{
 											"properties": {
 												"data": {
-													"$ref": "#/components/schemas/server.Empty"
+													"$ref": "#/components/schemas/server.Stub"
 												}
 											},
 											"type": "object"
@@ -2152,7 +2165,7 @@
 										{
 											"properties": {
 												"data": {
-													"$ref": "#/components/schemas/server.Empty"
+													"$ref": "#/components/schemas/server.Stub"
 												}
 											},
 											"type": "object"
@@ -2174,7 +2187,7 @@
 										{
 											"properties": {
 												"data": {
-													"$ref": "#/components/schemas/server.Empty"
+													"$ref": "#/components/schemas/server.Stub"
 												}
 											},
 											"type": "object"
@@ -2326,7 +2339,7 @@
 										{
 											"properties": {
 												"data": {
-													"$ref": "#/components/schemas/server.Empty"
+													"$ref": "#/components/schemas/server.Stub"
 												}
 											},
 											"type": "object"
@@ -2348,7 +2361,7 @@
 										{
 											"properties": {
 												"data": {
-													"$ref": "#/components/schemas/server.Empty"
+													"$ref": "#/components/schemas/server.Stub"
 												}
 											},
 											"type": "object"
@@ -2370,7 +2383,7 @@
 										{
 											"properties": {
 												"data": {
-													"$ref": "#/components/schemas/server.Empty"
+													"$ref": "#/components/schemas/server.Stub"
 												}
 											},
 											"type": "object"
@@ -2440,7 +2453,7 @@
 										{
 											"properties": {
 												"data": {
-													"$ref": "#/components/schemas/server.Empty"
+													"$ref": "#/components/schemas/server.Stub"
 												}
 											},
 											"type": "object"
@@ -2462,7 +2475,7 @@
 										{
 											"properties": {
 												"data": {
-													"$ref": "#/components/schemas/server.Empty"
+													"$ref": "#/components/schemas/server.Stub"
 												}
 											},
 											"type": "object"
@@ -2484,7 +2497,7 @@
 										{
 											"properties": {
 												"data": {
-													"$ref": "#/components/schemas/server.Empty"
+													"$ref": "#/components/schemas/server.Stub"
 												}
 											},
 											"type": "object"
@@ -2555,7 +2568,7 @@
 										{
 											"properties": {
 												"data": {
-													"$ref": "#/components/schemas/server.Empty"
+													"$ref": "#/components/schemas/server.Stub"
 												}
 											},
 											"type": "object"
@@ -2577,7 +2590,7 @@
 										{
 											"properties": {
 												"data": {
-													"$ref": "#/components/schemas/server.Empty"
+													"$ref": "#/components/schemas/server.Stub"
 												}
 											},
 											"type": "object"
@@ -2599,7 +2612,7 @@
 										{
 											"properties": {
 												"data": {
-													"$ref": "#/components/schemas/server.Empty"
+													"$ref": "#/components/schemas/server.Stub"
 												}
 											},
 											"type": "object"
@@ -2680,7 +2693,7 @@
 										{
 											"properties": {
 												"data": {
-													"$ref": "#/components/schemas/server.Empty"
+													"$ref": "#/components/schemas/server.Stub"
 												}
 											},
 											"type": "object"
@@ -2702,7 +2715,7 @@
 										{
 											"properties": {
 												"data": {
-													"$ref": "#/components/schemas/server.Empty"
+													"$ref": "#/components/schemas/server.Stub"
 												}
 											},
 											"type": "object"
@@ -2724,7 +2737,7 @@
 										{
 											"properties": {
 												"data": {
-													"$ref": "#/components/schemas/server.Empty"
+													"$ref": "#/components/schemas/server.Stub"
 												}
 											},
 											"type": "object"

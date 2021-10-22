@@ -105,7 +105,7 @@
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/server.Empty"
+                                            "$ref": "#/definitions/server.Stub"
                                         }
                                     }
                                 }
@@ -123,7 +123,7 @@
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/server.Empty"
+                                            "$ref": "#/definitions/server.Stub"
                                         }
                                     }
                                 }
@@ -141,7 +141,7 @@
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/server.Empty"
+                                            "$ref": "#/definitions/server.Stub"
                                         }
                                     }
                                 }
@@ -208,7 +208,7 @@
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/server.Empty"
+                                            "$ref": "#/definitions/server.Stub"
                                         }
                                     }
                                 }
@@ -226,7 +226,7 @@
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/server.Empty"
+                                            "$ref": "#/definitions/server.Stub"
                                         }
                                     }
                                 }
@@ -244,7 +244,7 @@
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/server.Empty"
+                                            "$ref": "#/definitions/server.Stub"
                                         }
                                     }
                                 }
@@ -311,7 +311,7 @@
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/server.Empty"
+                                            "$ref": "#/definitions/server.Stub"
                                         }
                                     }
                                 }
@@ -329,7 +329,7 @@
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/server.Empty"
+                                            "$ref": "#/definitions/server.Stub"
                                         }
                                     }
                                 }
@@ -347,7 +347,7 @@
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/server.Empty"
+                                            "$ref": "#/definitions/server.Stub"
                                         }
                                     }
                                 }
@@ -421,7 +421,7 @@
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/server.Empty"
+                                            "$ref": "#/definitions/server.Stub"
                                         }
                                     }
                                 }
@@ -439,7 +439,7 @@
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/server.Empty"
+                                            "$ref": "#/definitions/server.Stub"
                                         }
                                     }
                                 }
@@ -457,7 +457,7 @@
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/server.Empty"
+                                            "$ref": "#/definitions/server.Stub"
                                         }
                                     }
                                 }
@@ -504,7 +504,7 @@
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/server.Empty"
+                                            "$ref": "#/definitions/server.Stub"
                                         }
                                     }
                                 }
@@ -522,7 +522,7 @@
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/server.Empty"
+                                            "$ref": "#/definitions/server.Stub"
                                         }
                                     }
                                 }
@@ -540,7 +540,7 @@
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/server.Empty"
+                                            "$ref": "#/definitions/server.Stub"
                                         }
                                     }
                                 }
@@ -558,7 +558,7 @@
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/server.Empty"
+                                            "$ref": "#/definitions/server.Stub"
                                         }
                                     }
                                 }
@@ -628,7 +628,7 @@
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/server.Empty"
+                                            "$ref": "#/definitions/server.Stub"
                                         }
                                     }
                                 }
@@ -646,7 +646,7 @@
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/server.Empty"
+                                            "$ref": "#/definitions/server.Stub"
                                         }
                                     }
                                 }
@@ -664,7 +664,7 @@
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/server.Empty"
+                                            "$ref": "#/definitions/server.Stub"
                                         }
                                     }
                                 }
@@ -738,7 +738,7 @@
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/server.Empty"
+                                            "$ref": "#/definitions/server.Stub"
                                         }
                                     }
                                 }
@@ -756,7 +756,7 @@
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/server.Empty"
+                                            "$ref": "#/definitions/server.Stub"
                                         }
                                     }
                                 }
@@ -774,7 +774,7 @@
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/server.Empty"
+                                            "$ref": "#/definitions/server.Stub"
                                         }
                                     }
                                 }
@@ -848,7 +848,7 @@
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/server.Empty"
+                                            "$ref": "#/definitions/server.Stub"
                                         }
                                     }
                                 }
@@ -866,7 +866,7 @@
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/server.Empty"
+                                            "$ref": "#/definitions/server.Stub"
                                         }
                                     }
                                 }
@@ -884,7 +884,7 @@
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/server.Empty"
+                                            "$ref": "#/definitions/server.Stub"
                                         }
                                     }
                                 }
@@ -965,7 +965,7 @@
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/server.Empty"
+                                            "$ref": "#/definitions/server.Stub"
                                         }
                                     }
                                 }
@@ -983,7 +983,7 @@
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/server.Empty"
+                                            "$ref": "#/definitions/server.Stub"
                                         }
                                     }
                                 }
@@ -1001,7 +1001,7 @@
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/server.Empty"
+                                            "$ref": "#/definitions/server.Stub"
                                         }
                                     }
                                 }
@@ -1055,7 +1055,7 @@
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/server.Empty"
+                                            "$ref": "#/definitions/server.Stub"
                                         }
                                     }
                                 }
@@ -1073,7 +1073,7 @@
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/server.Empty"
+                                            "$ref": "#/definitions/server.Stub"
                                         }
                                     }
                                 }
@@ -1091,7 +1091,7 @@
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/server.Empty"
+                                            "$ref": "#/definitions/server.Stub"
                                         }
                                     }
                                 }
@@ -1109,7 +1109,7 @@
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/server.Empty"
+                                            "$ref": "#/definitions/server.Stub"
                                         }
                                     }
                                 }
@@ -1259,7 +1259,19 @@
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/models.Message"
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/models.Message"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/server.Stub"
+                                        }
+                                    }
+                                }
+                            ]
                         }
                     }
                 ],
@@ -1293,7 +1305,7 @@
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/server.Empty"
+                                            "$ref": "#/definitions/server.Stub"
                                         }
                                     }
                                 }
@@ -1311,7 +1323,7 @@
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/server.Empty"
+                                            "$ref": "#/definitions/server.Stub"
                                         }
                                     }
                                 }
@@ -1329,7 +1341,7 @@
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/server.Empty"
+                                            "$ref": "#/definitions/server.Stub"
                                         }
                                     }
                                 }
@@ -1466,7 +1478,7 @@
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/server.Empty"
+                                            "$ref": "#/definitions/server.Stub"
                                         }
                                     }
                                 }
@@ -1484,7 +1496,7 @@
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/server.Empty"
+                                            "$ref": "#/definitions/server.Stub"
                                         }
                                     }
                                 }
@@ -1502,7 +1514,7 @@
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/server.Empty"
+                                            "$ref": "#/definitions/server.Stub"
                                         }
                                     }
                                 }
@@ -1576,7 +1588,7 @@
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/server.Empty"
+                                            "$ref": "#/definitions/server.Stub"
                                         }
                                     }
                                 }
@@ -1594,7 +1606,7 @@
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/server.Empty"
+                                            "$ref": "#/definitions/server.Stub"
                                         }
                                     }
                                 }
@@ -1612,7 +1624,7 @@
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/server.Empty"
+                                            "$ref": "#/definitions/server.Stub"
                                         }
                                     }
                                 }
@@ -1748,7 +1760,7 @@
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/server.Empty"
+                                            "$ref": "#/definitions/server.Stub"
                                         }
                                     }
                                 }
@@ -1766,7 +1778,7 @@
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/server.Empty"
+                                            "$ref": "#/definitions/server.Stub"
                                         }
                                     }
                                 }
@@ -1784,7 +1796,7 @@
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/server.Empty"
+                                            "$ref": "#/definitions/server.Stub"
                                         }
                                     }
                                 }
@@ -1851,7 +1863,7 @@
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/server.Empty"
+                                            "$ref": "#/definitions/server.Stub"
                                         }
                                     }
                                 }
@@ -1869,7 +1881,7 @@
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/server.Empty"
+                                            "$ref": "#/definitions/server.Stub"
                                         }
                                     }
                                 }
@@ -1887,7 +1899,7 @@
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/server.Empty"
+                                            "$ref": "#/definitions/server.Stub"
                                         }
                                     }
                                 }
@@ -1954,7 +1966,7 @@
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/server.Empty"
+                                            "$ref": "#/definitions/server.Stub"
                                         }
                                     }
                                 }
@@ -1972,7 +1984,7 @@
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/server.Empty"
+                                            "$ref": "#/definitions/server.Stub"
                                         }
                                     }
                                 }
@@ -1990,7 +2002,7 @@
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/server.Empty"
+                                            "$ref": "#/definitions/server.Stub"
                                         }
                                     }
                                 }
@@ -2064,7 +2076,7 @@
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/server.Empty"
+                                            "$ref": "#/definitions/server.Stub"
                                         }
                                     }
                                 }
@@ -2082,7 +2094,7 @@
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/server.Empty"
+                                            "$ref": "#/definitions/server.Stub"
                                         }
                                     }
                                 }
@@ -2100,7 +2112,7 @@
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/server.Empty"
+                                            "$ref": "#/definitions/server.Stub"
                                         }
                                     }
                                 }
@@ -2409,6 +2421,7 @@
                     "type": "string"
                 },
                 "data": {
+                    "description": "Data is an arbitrary JSON value that gets sent as the body of the\nwebhook to the endpoints",
                     "type": "array",
                     "items": {
                         "type": "integer"
@@ -2442,7 +2455,7 @@
                 }
             }
         },
-        "server.Empty": {
+        "server.Stub": {
             "type": "object"
         },
         "server.pagedResponse": {

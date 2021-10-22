@@ -37,5 +37,5 @@ package server
 // @tag.name Group
 // @tag.description Group related APIs
 
-// Empty represents empty response bodies for our doc annotations
-type Empty struct{}
+// Stub represents empty json or arbitrary json bodies for our doc annotations
+type Stub struct{}
