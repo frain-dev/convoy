@@ -24,8 +24,7 @@ type SentryConfiguration struct {
 }
 
 type ServerConfiguration struct {
-	Environment string `json:"environment"`
-	HTTP        struct {
+	HTTP struct {
 		Port uint32 `json:"port"`
 	} `json:"http"`
 }
@@ -88,6 +87,7 @@ type Configuration struct {
 	Strategy          StrategyConfiguration  `json:"strategy"`
 	Signature         SignatureConfiguration `json:"signature"`
 	SMTP              SMTPConfiguration      `json:"smtp"`
+	Environment       string                 `json:"env"`
 	DisableEndpoint   bool                   `json:"disable_endpoint"`
 }
 
@@ -97,12 +97,20 @@ type StrategyProvider string
 type SignatureHeaderProvider string
 
 const (
+	DevelopmentEnvironment string = "development"
+)
+
+const (
 	NoAuthProvider          AuthProvider            = "none"
 	BasicAuthProvider       AuthProvider            = "basic"
 	RedisQueueProvider      QueueProvider           = "redis"
 	DefaultStrategyProvider StrategyProvider        = "default"
 	DefaultSignatureHeader  SignatureHeaderProvider = "X-Convoy-Signature"
 )
+
+func (s SignatureHeaderProvider) String() string {
+	return string(s)
+}
 
 func LoadConfig(p string) error {
 	f, err := os.Open(p)
@@ -145,13 +153,13 @@ func LoadConfig(p string) error {
 		}
 	}
 
-	if serverEnv := os.Getenv("CONVOY_SERVER_ENV"); serverEnv != "" {
-		c.Server.Environment = serverEnv
+	if env := os.Getenv("CONVOY_ENV"); env != "" {
+		c.Environment = env
 	}
 
 	// if it's still empty, set it to development
-	if c.Server.Environment == "" {
-		c.Server.Environment = "development"
+	if c.Environment == "" {
+		c.Environment = DevelopmentEnvironment
 	}
 
 	if sentryDsn := os.Getenv("CONVOY_SENTRY_DSN"); sentryDsn != "" {
@@ -238,6 +246,12 @@ func LoadConfig(p string) error {
 			},
 		}
 
+	}
+
+	if e := os.Getenv("CONVOY_DISABLE_ENDPOINT"); e != "" {
+		if d, err := strconv.ParseBool(e); err != nil {
+			c.DisableEndpoint = d
+		}
 	}
 
 	c.UIAuthorizedUsers = parseAuthorizedUsers(c.UIAuth)

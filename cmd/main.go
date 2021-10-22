@@ -3,7 +3,9 @@ package main
 import (
 	"context"
 	"fmt"
+	"net/url"
 	"os"
+	"strings"
 	"time"
 	_ "time/tzdata"
 
@@ -73,7 +75,7 @@ func main() {
 			err = sentry.Init(sentry.ClientOptions{
 				Debug:       true,
 				Dsn:         cfg.Sentry.Dsn,
-				Environment: cfg.Server.Environment,
+				Environment: cfg.Environment,
 			})
 			if err != nil {
 				return err
@@ -100,7 +102,13 @@ func main() {
 				log.Warnf("signature header is blank. setting default %s", config.DefaultSignatureHeader)
 			}
 
-			conn := db.Database("convoy", nil)
+			u, err := url.Parse(cfg.Database.Dsn)
+			if err != nil {
+				return err
+			}
+
+			dbName := strings.TrimPrefix(u.Path, "/")
+			conn := db.Database(dbName, nil)
 
 			app.groupRepo = datastore.NewGroupRepo(conn)
 			app.applicationRepo = datastore.NewApplicationRepo(conn)

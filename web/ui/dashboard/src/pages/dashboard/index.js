@@ -305,20 +305,27 @@ function DashboardPage() {
 						<img src={ConvoyLogo} alt="convoy logo" />
 					</div>
 
-					<button className="user" onClick={() => toggleShowDropdown(!showDropdown)}>
-						<div>
-							<div className="icon">O</div>
-							<div className="name">{JSON.parse(authDetails).username}</div>
-						</div>
-						<img src={AngleArrowDownIcon} alt="arrow down icon" />
-						{showDropdown && (
-							<div className="dropdown organisations">
-								<ul>
-									<li onClick={() => logout()}>Logout</li>
-								</ul>
-							</div>
+					<div>
+						{/*<a target="_blank" href="https://getconvoy.io/docs" rel="noreferrer">
+							Go to docs
+						</a>*/}
+						{authDetails && (
+							<button className="user" onClick={() => toggleShowDropdown(!showDropdown)}>
+								<div>
+									<div className="icon">O</div>
+									<div className="name">{JSON.parse(authDetails).username}</div>
+								</div>
+								<img src={AngleArrowDownIcon} alt="arrow down icon" />
+								{showDropdown && (
+									<div className="dropdown organisations">
+										<ul>
+											<li onClick={() => logout()}>Logout</li>
+										</ul>
+									</div>
+								)}
+							</button>
 						)}
-					</button>
+					</div>
 				</div>
 			</header>
 
@@ -375,36 +382,6 @@ function DashboardPage() {
 						</div>
 
 						<ul className="card--container">
-							<li className="list-item">
-								<div className="list-item--label">
-									DB URL
-									<div className="list-item--item">{OrganisationDetails.database.dsn}</div>
-								</div>
-								<button onClick={() => copyText(OrganisationDetails.database.dsn)}>
-									<img src={CopyIcon} alt="copy icon" />
-								</button>
-							</li>
-
-							<li className="list-item">
-								<div className="list-item--label">
-									Queue
-									<div className="list-item--item">{OrganisationDetails.queue.redis.dsn}</div>
-								</div>
-								<button onClick={() => copyText(OrganisationDetails.queue.redis.dsn)}>
-									<img src={CopyIcon} alt="copy icon" />
-								</button>
-							</li>
-
-							<li className="list-item">
-								<div className="list-item--label">
-									Server
-									<div className="list-item--item">http://localhost:{OrganisationDetails.server.http.port}</div>
-								</div>
-								<button onClick={() => copyText('http://localhost:' + OrganisationDetails.server.http.port)}>
-									<img src={CopyIcon} alt="copy icon" />
-								</button>
-							</li>
-
 							<li className="list-item">
 								<div className="list-item--label">
 									Request interval Seconds
@@ -726,6 +703,11 @@ function DashboardPage() {
 									</div>
 
 									<div className={'dashboard--logs--details--tabs-data ' + (eventDetailsActiveTab === 'response' ? 'show' : '')}>
+										<h3>Body</h3>
+										<pre className="line-numbers">
+											<code className="lang-html">{eventDeliveryAtempt?.response_data ? eventDeliveryAtempt.response_data : ''}</code>
+										</pre>
+
 										<h3>Header</h3>
 										<pre className="line-numbers">
 											<code className="lang-javascript">
@@ -733,11 +715,6 @@ function DashboardPage() {
 													? JSON.stringify(eventDeliveryAtempt.response_http_header, null, 4).replaceAll(/"([^"]+)":/g, '$1:')
 													: 'No response header was sent'}
 											</code>
-										</pre>
-
-										<h3>Body</h3>
-										<pre className="line-numbers">
-											<code className="lang-html">{eventDeliveryAtempt?.response_data ? eventDeliveryAtempt.response_data : ''}</code>
 										</pre>
 									</div>
 

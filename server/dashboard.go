@@ -24,9 +24,6 @@ type AuthorizedLogin struct {
 }
 
 type ViewableConfiguration struct {
-	Database  config.DatabaseConfiguration  `json:"database"`
-	Queue     config.QueueConfiguration     `json:"queue"`
-	Server    config.ServerConfiguration    `json:"server"`
 	Strategy  config.StrategyConfiguration  `json:"strategy"`
 	Signature config.SignatureConfiguration `json:"signature"`
 }
@@ -176,50 +173,58 @@ func requireUIAuth() func(next http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 
-			val := r.Header.Get("Authorization")
-			auth := strings.Split(val, " ")
-
-			if len(auth) != 2 {
-				_ = render.Render(w, r, newErrorResponse("invalid bearer header structure", http.StatusBadRequest))
-				return
-			}
-
-			if strings.ToUpper(auth[0]) != "BEARER" {
-				_ = render.Render(w, r, newErrorResponse("invalid bearer header structure", http.StatusBadRequest))
-				return
-			}
-
 			cfg, err := config.Get()
 			if err != nil {
 				_ = render.Render(w, r, newErrorResponse("an error has occurred", http.StatusInternalServerError))
 				return
 			}
 
-			token := auth[1]
+			if cfg.UIAuth.Type == config.NoAuthProvider {
+				// full access
+			} else if cfg.UIAuth.Type == config.BasicAuthProvider {
 
-			claims := &Claims{}
+				val := r.Header.Get("Authorization")
+				auth := strings.Split(val, " ")
 
-			t, err := jwt.ParseWithClaims(token, claims, func(token *jwt.Token) (interface{}, error) {
-				return []byte(cfg.UIAuth.JwtKey), nil
-			})
-			if err != nil {
-				if err == jwt.ErrSignatureInvalid {
-					log.Errorln("Error validating token - ", err)
-					_ = render.Render(w, r, newErrorResponse("unauthorized", http.StatusUnauthorized))
+				if len(auth) != 2 {
+					_ = render.Render(w, r, newErrorResponse("invalid bearer header structure", http.StatusBadRequest))
 					return
 				}
 
-				if strings.Contains(err.Error(), "expired") {
-					_ = render.Render(w, r, newErrorResponse("access token has expired", http.StatusUnauthorized))
+				if strings.ToUpper(auth[0]) != "BEARER" {
+					_ = render.Render(w, r, newErrorResponse("invalid bearer header structure", http.StatusBadRequest))
 					return
 				}
 
-				log.Errorln("Unknown error validating token - ", err)
-				_ = render.Render(w, r, newErrorResponse("invalid request", http.StatusUnauthorized))
-				return
-			}
-			if !t.Valid {
-				_ = render.Render(w, r, newErrorResponse("invalid access token", http.StatusUnauthorized))
+				token := auth[1]
+
+				claims := &Claims{}
+
+				t, err := jwt.ParseWithClaims(token, claims, func(token *jwt.Token) (interface{}, error) {
+					return []byte(cfg.UIAuth.JwtKey), nil
+				})
+				if err != nil {
+					if err == jwt.ErrSignatureInvalid {
+						log.Errorln("Error validating token - ", err)
+						_ = render.Render(w, r, newErrorResponse("unauthorized", http.StatusUnauthorized))
+						return
+					}
+
+					if strings.Contains(err.Error(), "expired") {
+						_ = render.Render(w, r, newErrorResponse("access token has expired", http.StatusUnauthorized))
+						return
+					}
+
+					log.Errorln("Unknown error validating token - ", err)
+					_ = render.Render(w, r, newErrorResponse("invalid request", http.StatusUnauthorized))
+					return
+				}
+				if !t.Valid {
+					_ = render.Render(w, r, newErrorResponse("invalid access token", http.StatusUnauthorized))
+					return
+				}
+			} else {
+				_ = render.Render(w, r, newErrorResponse("access denied", http.StatusForbidden))
 				return
 			}
 
@@ -241,9 +246,6 @@ func fetchAllConfigDetails() func(next http.Handler) http.Handler {
 			}
 
 			viewableConfig := ViewableConfiguration{
-				Database:  cfg.Database,
-				Queue:     cfg.Queue,
-				Server:    cfg.Server,
 				Strategy:  cfg.Strategy,
 				Signature: cfg.Signature,
 			}

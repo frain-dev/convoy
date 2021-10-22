@@ -3,6 +3,7 @@ package net
 import (
 	"bytes"
 	"encoding/json"
+	"errors"
 	"io/ioutil"
 	"net/http"
 	"net/http/httptrace"
@@ -32,16 +33,20 @@ func NewDispatcher() *Dispatcher {
 func (d *Dispatcher) SendRequest(endpoint, method string, jsonData json.RawMessage, signatureHeader string, hmac string) (*Response, error) {
 	r := &Response{}
 
+	if util.IsStringEmpty(signatureHeader) || util.IsStringEmpty(hmac) {
+		err := errors.New("signature header and hmac are required")
+		log.WithError(err).Error("Dispatcher invalid arguments")
+		r.Error = err.Error()
+		return r, err
+	}
+
 	req, err := http.NewRequest(method, endpoint, bytes.NewBuffer(jsonData))
 	if err != nil {
 		log.WithError(err).Error("error occurred while creating request")
 		return r, err
 	}
 
-	if !util.IsStringEmpty(signatureHeader) {
-		req.Header.Set(signatureHeader, hmac)
-	}
-
+	req.Header.Set(signatureHeader, hmac)
 	req.Header.Add("Content-Type", "application/json")
 	req.Header.Add("User-Agent", string(DefaultUserAgent))
 
