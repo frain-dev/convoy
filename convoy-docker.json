@@ -37,7 +37,7 @@
 		"from": "support@frain.dev"
 	},
 	"ui": {
-		"type": "basic",
+		"type": "none",
 		"basic": [
 			{
 				"username": "user1",
