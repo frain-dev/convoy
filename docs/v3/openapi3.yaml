@@ -27,6 +27,80 @@ components:
           type: integer
         group_id:
           type: string
+        secret:
+          type: string
+        support_email:
+          type: string
+      type: object
+    convoy.EndpointMetadata:
+      properties:
+        sent:
+          type: boolean
+        status:
+          type: string
+        target_url:
+          type: string
+        uid:
+          type: string
+      type: object
+    convoy.Message:
+      properties:
+        app_id:
+          type: string
+        app_metadata:
+          $ref: '#/components/schemas/convoy.AppMetadata'
+        created_at:
+          type: integer
+        data:
+          description: |-
+            Data is an arbitrary JSON value that gets sent as the body of the
+            webhook to the endpoints
+          items:
+            type: integer
+          type: array
+        deleted_at:
+          type: integer
+        description:
+          type: string
+        event_type:
+          type: string
+        metadata:
+          $ref: '#/components/schemas/convoy.MessageMetadata'
+        provider_id:
+          description: |-
+            ProviderID is a custom ID that can be used to reconcile this message
+            with your internal systems.
+            This is optional
+            If not provided, we will generate one for you
+          type: string
+        status:
+          type: string
+        uid:
+          type: string
+        updated_at:
+          type: integer
+      type: object
+    convoy.MessageMetadata:
+      properties:
+        interval_seconds:
+          type: integer
+        next_send_time:
+          description: |-
+            NextSendTime denotes the next time a message will be published in
+            case it failed the first time
+          type: integer
+        num_trials:
+          description: |-
+            NumTrials: number of times we have tried to deliver this message to
+            an application
+          type: integer
+        retry_limit:
+          type: integer
+        strategy:
+          type: string
+      type: object
+    models.Application:
+      properties:
         name:
           type: string
         secret:
@@ -884,7 +958,7 @@ paths:
                     data:
                       $ref: '#/components/schemas/convoy.Message'
                   type: object
-          description: OK
+          description: asc
         "400":
           content:
             application/json:

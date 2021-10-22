@@ -124,7 +124,6 @@ func (a *applicationHandler) UpdateGroup(w http.ResponseWriter, r *http.Request)
 // @Router /groups [get]
 func (a *applicationHandler) GetGroups(w http.ResponseWriter, r *http.Request) {
 	name := r.URL.Query().Get("name")
-
 	orgs, err := a.groupRepo.LoadGroups(r.Context(), &convoy.GroupFilter{Name: name})
 	if err != nil {
 		_ = render.Render(w, r, newErrorResponse("an error occurred while fetching Groups", http.StatusInternalServerError))

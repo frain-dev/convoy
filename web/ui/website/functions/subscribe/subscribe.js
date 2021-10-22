@@ -11,17 +11,18 @@ exports.handler = async (event, _context) => {
 	};
 
 	try {
-		const { email } = JSON.parse(event.body);
-		if (!email) {
+		const { githubName } = JSON.parse(event.body);
+		if (!githubName) {
 			return errorGen('Form details missing');
 		}
 
 		const subscriber = {
-			email_address: email,
+			email_address: `${githubName}@github.com`,
 			status: 'subscribed',
 			merge_fields: {
-				EMAIL: email,
-				PRODUCT: 'Convoy'
+				EMAIL: `${githubName}@github.com`,
+				PRODUCT: 'Convoy',
+				GITHUB: githubName
 			}
 		};
 
