@@ -532,6 +532,14 @@
 			outline: none;
 		}
 
+		.select select {
+			padding-right: 33px;
+			text-overflow: ellipsis;
+			white-space: nowrap;
+			overflow: hidden;
+			width: 145px;
+		}
+
 		.date-filter--container {
 			background: #fff;
 			display: block;
