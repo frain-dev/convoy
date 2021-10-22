@@ -24,7 +24,6 @@ type AuthorizedLogin struct {
 }
 
 type ViewableConfiguration struct {
-	Server    config.ServerConfiguration    `json:"server"`
 	Strategy  config.StrategyConfiguration  `json:"strategy"`
 	Signature config.SignatureConfiguration `json:"signature"`
 }
@@ -247,7 +246,6 @@ func fetchAllConfigDetails() func(next http.Handler) http.Handler {
 			}
 
 			viewableConfig := ViewableConfiguration{
-				Server:    cfg.Server,
 				Strategy:  cfg.Strategy,
 				Signature: cfg.Signature,
 			}
