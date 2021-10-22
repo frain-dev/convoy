@@ -23,7 +23,7 @@ import (
 // @Tags Messages
 // @Accept  json
 // @Produce  json
-// @Param message body models.Message{data=Empty} true "Message Details"
+// @Param message body models.Message{} true "Message Details"
 // @Success 200 {object} serverResponse{data=convoy.Message}
 // @Failure 400,401,500 {object} serverResponse{data=Empty}
 // @Security ApiKeyAuth
