@@ -1,6 +1,7 @@
 {
-	"database": {
-		"dsn": "mongodb://root:rootpassword@mongodb:27017"
+	"environment": "development",
+    "database": {
+		"dsn": "mongodb://root:rootpassword@mongodb:27017/convoy?authSource=admin"
 	},
 	"queue": {
 		"type": "redis",
@@ -36,7 +37,7 @@
 		"from": "support@frain.dev"
 	},
 	"ui": {
-		"type": "basic",
+		"type": "none",
 		"basic": [
 			{
 				"username": "user1",

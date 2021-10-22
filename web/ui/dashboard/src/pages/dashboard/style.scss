@@ -15,6 +15,18 @@
 		img {
 			width: 100px;
 		}
+
+		& + div {
+			display: flex;
+			align-items: center;
+
+			a {
+				color: var(--primary-color);
+				font-weight: bold;
+				margin-right: 20px;
+				min-width: 90px;
+			}
+		}
 	}
 
 	.user {
@@ -176,6 +188,10 @@
 						word-wrap: break-word;
 						color: #000000;
 						font-weight: 500;
+						width: 300px;
+						text-overflow: ellipsis;
+						white-space: nowrap;
+						overflow: hidden;
 					}
 
 					button {
@@ -514,6 +530,14 @@
 			height: 40px;
 			padding: 10px 8px;
 			outline: none;
+		}
+
+		.select select {
+			padding-right: 33px;
+			text-overflow: ellipsis;
+			white-space: nowrap;
+			overflow: hidden;
+			width: 145px;
 		}
 
 		.date-filter--container {

@@ -4,6 +4,7 @@ import (
 	"context"
 	"os"
 
+	"github.com/frain-dev/convoy"
 	"github.com/frain-dev/convoy/server/models"
 	"github.com/olekukonko/tablewriter"
 	"github.com/spf13/cobra"
@@ -58,8 +59,14 @@ func getGroups(a *app) *cobra.Command {
 		Short:   "Get groups",
 		Aliases: []string{"groups"},
 		RunE: func(cmd *cobra.Command, args []string) error {
+			
+			f := &convoy.GroupFilter{}
 
-			groups, err := a.groupRepo.LoadGroups(context.Background())
+			if len(args) > 0 {
+				f.Name = args[0]
+			}
+
+			groups, err := a.groupRepo.LoadGroups(context.Background(), f)
 			if err != nil {
 				return err
 			}

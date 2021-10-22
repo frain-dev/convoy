@@ -23,3 +23,10 @@ func IsValidPeriod(period string) bool {
 	_, ok := PeriodValues[period]
 	return ok
 }
+
+type TaskName string
+
+const (
+	EventProcessor      TaskName = "EventProcessor"
+	DeadLetterProcessor TaskName = "DeadLetterProcessor"
+)

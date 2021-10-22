@@ -305,20 +305,27 @@ function DashboardPage() {
 						<img src={ConvoyLogo} alt="convoy logo" />
 					</div>
 
-					<button className="user" onClick={() => toggleShowDropdown(!showDropdown)}>
-						<div>
-							<div className="icon">O</div>
-							<div className="name">{JSON.parse(authDetails).username}</div>
-						</div>
-						<img src={AngleArrowDownIcon} alt="arrow down icon" />
-						{showDropdown && (
-							<div className="dropdown organisations">
-								<ul>
-									<li onClick={() => logout()}>Logout</li>
-								</ul>
-							</div>
+					<div>
+						{/*<a target="_blank" href="https://getconvoy.io/docs" rel="noreferrer">
+							Go to docs
+						</a>*/}
+						{authDetails && (
+							<button className="user" onClick={() => toggleShowDropdown(!showDropdown)}>
+								<div>
+									<div className="icon">O</div>
+									<div className="name">{JSON.parse(authDetails).username}</div>
+								</div>
+								<img src={AngleArrowDownIcon} alt="arrow down icon" />
+								{showDropdown && (
+									<div className="dropdown organisations">
+										<ul>
+											<li onClick={() => logout()}>Logout</li>
+										</ul>
+									</div>
+								)}
+							</button>
 						)}
-					</button>
+					</div>
 				</div>
 			</header>
 
@@ -371,7 +378,7 @@ function DashboardPage() {
 
 					<div className="card has-title dashboard--page--details--credentials">
 						<div className="card--title">
-							<h2>Organization Details</h2>
+							<h2>Configuration</h2>
 						</div>
 
 						<ul className="card--container">
@@ -397,8 +404,8 @@ function DashboardPage() {
 
 							<li className="list-item">
 								<div className="list-item--label">
-									Server
-									<div className="list-item--item">http://localhost:{OrganisationDetails.server.http.port}</div>
+									Port
+									<div className="list-item--item">{OrganisationDetails.server.http.port}</div>
 								</div>
 								<button onClick={() => copyText('http://localhost:' + OrganisationDetails.server.http.port)}>
 									<img src={CopyIcon} alt="copy icon" />
@@ -726,6 +733,11 @@ function DashboardPage() {
 									</div>
 
 									<div className={'dashboard--logs--details--tabs-data ' + (eventDetailsActiveTab === 'response' ? 'show' : '')}>
+										<h3>Body</h3>
+										<pre className="line-numbers">
+											<code className="lang-html">{eventDeliveryAtempt?.response_data ? eventDeliveryAtempt.response_data : ''}</code>
+										</pre>
+
 										<h3>Header</h3>
 										<pre className="line-numbers">
 											<code className="lang-javascript">
@@ -733,11 +745,6 @@ function DashboardPage() {
 													? JSON.stringify(eventDeliveryAtempt.response_http_header, null, 4).replaceAll(/"([^"]+)":/g, '$1:')
 													: 'No response header was sent'}
 											</code>
-										</pre>
-
-										<h3>Body</h3>
-										<pre className="line-numbers">
-											<code className="lang-html">{eventDeliveryAtempt?.response_data ? eventDeliveryAtempt.response_data : ''}</code>
 										</pre>
 									</div>
 
