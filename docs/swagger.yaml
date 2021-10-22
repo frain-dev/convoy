@@ -16,9 +16,9 @@ definitions:
   convoy.Application:
     properties:
       created_at:
-        type: integer
+        type: string
       deleted_at:
-        type: integer
+        type: string
       endpoints:
         items:
           $ref: '#/definitions/convoy.Endpoint'
@@ -36,14 +36,14 @@ definitions:
       uid:
         type: string
       updated_at:
-        type: integer
+        type: string
     type: object
   convoy.Endpoint:
     properties:
       created_at:
-        type: integer
+        type: string
       deleted_at:
-        type: integer
+        type: string
       description:
         type: string
       status:
@@ -53,7 +53,7 @@ definitions:
       uid:
         type: string
       updated_at:
-        type: integer
+        type: string
     type: object
   convoy.EndpointMetadata:
     properties:
@@ -69,9 +69,9 @@ definitions:
   convoy.Group:
     properties:
       created_at:
-        type: integer
+        type: string
       deleted_at:
-        type: integer
+        type: string
       logo_url:
         type: string
       name:
@@ -79,7 +79,7 @@ definitions:
       uid:
         type: string
       updated_at:
-        type: integer
+        type: string
     type: object
   convoy.HttpHeader:
     additionalProperties:
@@ -92,7 +92,7 @@ definitions:
       app_metadata:
         $ref: '#/definitions/convoy.AppMetadata'
       created_at:
-        type: integer
+        type: string
       data:
         description: |-
           Data is an arbitrary JSON value that gets sent as the body of the
@@ -101,7 +101,7 @@ definitions:
           type: integer
         type: array
       deleted_at:
-        type: integer
+        type: string
       description:
         type: string
       event_type:
@@ -120,16 +120,16 @@ definitions:
       uid:
         type: string
       updated_at:
-        type: integer
+        type: string
     type: object
   convoy.MessageAttempt:
     properties:
       api_version:
         type: string
       created_at:
-        type: integer
+        type: string
       deleted_at:
-        type: integer
+        type: string
       endpoint_id:
         type: string
       error:
@@ -153,7 +153,7 @@ definitions:
       uid:
         type: string
       updated_at:
-        type: integer
+        type: string
       url:
         type: string
     type: object
@@ -907,22 +907,42 @@ paths:
                   - properties:
                       content:
                         items:
-                          $ref: '#/definitions/convoy.Message'
+                          allOf:
+                          - $ref: '#/definitions/convoy.Message'
+                          - properties:
+                              data:
+                                $ref: '#/definitions/server.Stub'
+                            type: object
                         type: array
                     type: object
               type: object
         "400":
           description: Bad Request
           schema:
-            $ref: '#/definitions/server.serverResponse'
+            allOf:
+            - $ref: '#/definitions/server.serverResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/server.Stub'
+              type: object
         "401":
           description: Unauthorized
           schema:
-            $ref: '#/definitions/server.serverResponse'
+            allOf:
+            - $ref: '#/definitions/server.serverResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/server.Stub'
+              type: object
         "500":
           description: Internal Server Error
           schema:
-            $ref: '#/definitions/server.serverResponse'
+            allOf:
+            - $ref: '#/definitions/server.serverResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/server.Stub'
+              type: object
       security:
       - ApiKeyAuth: []
       summary: Get app messages with pagination
@@ -954,7 +974,12 @@ paths:
             - $ref: '#/definitions/server.serverResponse'
             - properties:
                 data:
-                  $ref: '#/definitions/convoy.Message'
+                  allOf:
+                  - $ref: '#/definitions/convoy.Message'
+                  - properties:
+                      data:
+                        $ref: '#/definitions/server.Stub'
+                    type: object
               type: object
         "400":
           description: Bad Request
@@ -1009,20 +1034,40 @@ paths:
             - $ref: '#/definitions/server.serverResponse'
             - properties:
                 data:
-                  $ref: '#/definitions/convoy.Message'
+                  allOf:
+                  - $ref: '#/definitions/convoy.Message'
+                  - properties:
+                      data:
+                        $ref: '#/definitions/server.Stub'
+                    type: object
               type: object
         "400":
           description: Bad Request
           schema:
-            $ref: '#/definitions/server.serverResponse'
+            allOf:
+            - $ref: '#/definitions/server.serverResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/server.Stub'
+              type: object
         "401":
           description: Unauthorized
           schema:
-            $ref: '#/definitions/server.serverResponse'
+            allOf:
+            - $ref: '#/definitions/server.serverResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/server.Stub'
+              type: object
         "500":
           description: Internal Server Error
           schema:
-            $ref: '#/definitions/server.serverResponse'
+            allOf:
+            - $ref: '#/definitions/server.serverResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/server.Stub'
+              type: object
       security:
       - ApiKeyAuth: []
       summary: Get app message
@@ -1166,20 +1211,40 @@ paths:
             - $ref: '#/definitions/server.serverResponse'
             - properties:
                 data:
-                  $ref: '#/definitions/convoy.Message'
+                  allOf:
+                  - $ref: '#/definitions/convoy.Message'
+                  - properties:
+                      data:
+                        $ref: '#/definitions/server.Stub'
+                    type: object
               type: object
         "400":
           description: Bad Request
           schema:
-            $ref: '#/definitions/server.serverResponse'
+            allOf:
+            - $ref: '#/definitions/server.serverResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/server.Stub'
+              type: object
         "401":
           description: Unauthorized
           schema:
-            $ref: '#/definitions/server.serverResponse'
+            allOf:
+            - $ref: '#/definitions/server.serverResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/server.Stub'
+              type: object
         "500":
           description: Internal Server Error
           schema:
-            $ref: '#/definitions/server.serverResponse'
+            allOf:
+            - $ref: '#/definitions/server.serverResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/server.Stub'
+              type: object
       security:
       - ApiKeyAuth: []
       summary: Resend an app message

@@ -24,7 +24,7 @@ import (
 // @Accept  json
 // @Produce  json
 // @Param message body models.Message{data=Stub} true "Message Details"
-// @Success 200 {object} serverResponse{data=convoy.Message}
+// @Success 200 {object} serverResponse{data=convoy.Message{data=Stub}}
 // @Failure 400,401,500 {object} serverResponse{data=Stub}
 // @Security ApiKeyAuth
 // @Router /events [post]
@@ -142,8 +142,8 @@ func (a *applicationHandler) CreateAppMessage(w http.ResponseWriter, r *http.Req
 // @Accept  json
 // @Produce  json
 // @Param eventID path string true "event id"
-// @Success 200 {object} serverResponse{data=convoy.Message}
-// @Failure 400,401,500 {object} serverResponse
+// @Success 200 {object} serverResponse{data=convoy.Message{data=Stub}}
+// @Failure 400,401,500 {object} serverResponse{data=Stub}
 // @Security ApiKeyAuth
 // @Router /events/{eventID} [get]
 func (a *applicationHandler) GetAppMessage(w http.ResponseWriter, r *http.Request) {
@@ -159,8 +159,8 @@ func (a *applicationHandler) GetAppMessage(w http.ResponseWriter, r *http.Reques
 // @Accept  json
 // @Produce  json
 // @Param eventID path string true "event id"
-// @Success 200 {object} serverResponse{data=convoy.Message}
-// @Failure 400,401,500 {object} serverResponse
+// @Success 200 {object} serverResponse{data=convoy.Message{data=Stub}}
+// @Failure 400,401,500 {object} serverResponse{data=Stub}
 // @Security ApiKeyAuth
 // @Router /events/{eventID}/resend [put]
 func (a *applicationHandler) ResendAppMessage(w http.ResponseWriter, r *http.Request) {
@@ -234,8 +234,8 @@ func (a *applicationHandler) ResendAppMessage(w http.ResponseWriter, r *http.Req
 // @Param perPage query string false "results per page"
 // @Param page query string false "page number"
 // @Param sort query string false "sort order"
-// @Success 200 {object} serverResponse{data=pagedResponse{content=[]convoy.Message}}
-// @Failure 400,401,500 {object} serverResponse
+// @Success 200 {object} serverResponse{data=pagedResponse{content=[]convoy.Message{data=Stub}}}
+// @Failure 400,401,500 {object} serverResponse{data=Stub}
 // @Security ApiKeyAuth
 // @Router /events [get]
 func (a *applicationHandler) GetMessagesPaged(w http.ResponseWriter, r *http.Request) {

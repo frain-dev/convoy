@@ -24,10 +24,10 @@
 			"convoy.Application": {
 				"properties": {
 					"created_at": {
-						"type": "integer"
+						"type": "string"
 					},
 					"deleted_at": {
-						"type": "integer"
+						"type": "string"
 					},
 					"endpoints": {
 						"items": {
@@ -54,7 +54,7 @@
 						"type": "string"
 					},
 					"updated_at": {
-						"type": "integer"
+						"type": "string"
 					}
 				},
 				"type": "object"
@@ -62,10 +62,10 @@
 			"convoy.Endpoint": {
 				"properties": {
 					"created_at": {
-						"type": "integer"
+						"type": "string"
 					},
 					"deleted_at": {
-						"type": "integer"
+						"type": "string"
 					},
 					"description": {
 						"type": "string"
@@ -80,7 +80,7 @@
 						"type": "string"
 					},
 					"updated_at": {
-						"type": "integer"
+						"type": "string"
 					}
 				},
 				"type": "object"
@@ -105,10 +105,10 @@
 			"convoy.Group": {
 				"properties": {
 					"created_at": {
-						"type": "integer"
+						"type": "string"
 					},
 					"deleted_at": {
-						"type": "integer"
+						"type": "string"
 					},
 					"logo_url": {
 						"type": "string"
@@ -120,7 +120,7 @@
 						"type": "string"
 					},
 					"updated_at": {
-						"type": "integer"
+						"type": "string"
 					}
 				},
 				"type": "object"
@@ -140,7 +140,7 @@
 						"$ref": "#/components/schemas/convoy.AppMetadata"
 					},
 					"created_at": {
-						"type": "integer"
+						"type": "string"
 					},
 					"data": {
 						"description": "Data is an arbitrary JSON value that gets sent as the body of the\nwebhook to the endpoints",
@@ -150,7 +150,7 @@
 						"type": "array"
 					},
 					"deleted_at": {
-						"type": "integer"
+						"type": "string"
 					},
 					"description": {
 						"type": "string"
@@ -172,7 +172,7 @@
 						"type": "string"
 					},
 					"updated_at": {
-						"type": "integer"
+						"type": "string"
 					}
 				},
 				"type": "object"
@@ -183,10 +183,10 @@
 						"type": "string"
 					},
 					"created_at": {
-						"type": "integer"
+						"type": "string"
 					},
 					"deleted_at": {
-						"type": "integer"
+						"type": "string"
 					},
 					"endpoint_id": {
 						"type": "string"
@@ -222,7 +222,7 @@
 						"type": "string"
 					},
 					"updated_at": {
-						"type": "integer"
+						"type": "string"
 					},
 					"url": {
 						"type": "string"
@@ -1703,7 +1703,19 @@
 															"properties": {
 																"content": {
 																	"items": {
-																		"$ref": "#/components/schemas/convoy.Message"
+																		"allOf": [
+																			{
+																				"$ref": "#/components/schemas/convoy.Message"
+																			},
+																			{
+																				"properties": {
+																					"data": {
+																						"$ref": "#/components/schemas/server.Stub"
+																					}
+																				},
+																				"type": "object"
+																			}
+																		]
 																	},
 																	"type": "array"
 																}
@@ -1725,7 +1737,19 @@
 						"content": {
 							"application/json": {
 								"schema": {
-									"$ref": "#/components/schemas/server.serverResponse"
+									"allOf": [
+										{
+											"$ref": "#/components/schemas/server.serverResponse"
+										},
+										{
+											"properties": {
+												"data": {
+													"$ref": "#/components/schemas/server.Stub"
+												}
+											},
+											"type": "object"
+										}
+									]
 								}
 							}
 						},
@@ -1735,7 +1759,19 @@
 						"content": {
 							"application/json": {
 								"schema": {
-									"$ref": "#/components/schemas/server.serverResponse"
+									"allOf": [
+										{
+											"$ref": "#/components/schemas/server.serverResponse"
+										},
+										{
+											"properties": {
+												"data": {
+													"$ref": "#/components/schemas/server.Stub"
+												}
+											},
+											"type": "object"
+										}
+									]
 								}
 							}
 						},
@@ -1745,7 +1781,19 @@
 						"content": {
 							"application/json": {
 								"schema": {
-									"$ref": "#/components/schemas/server.serverResponse"
+									"allOf": [
+										{
+											"$ref": "#/components/schemas/server.serverResponse"
+										},
+										{
+											"properties": {
+												"data": {
+													"$ref": "#/components/schemas/server.Stub"
+												}
+											},
+											"type": "object"
+										}
+									]
 								}
 							}
 						},
@@ -1800,7 +1848,19 @@
 										{
 											"properties": {
 												"data": {
-													"$ref": "#/components/schemas/convoy.Message"
+													"allOf": [
+														{
+															"$ref": "#/components/schemas/convoy.Message"
+														},
+														{
+															"properties": {
+																"data": {
+																	"$ref": "#/components/schemas/server.Stub"
+																}
+															},
+															"type": "object"
+														}
+													]
 												}
 											},
 											"type": "object"
@@ -1915,7 +1975,19 @@
 										{
 											"properties": {
 												"data": {
-													"$ref": "#/components/schemas/convoy.Message"
+													"allOf": [
+														{
+															"$ref": "#/components/schemas/convoy.Message"
+														},
+														{
+															"properties": {
+																"data": {
+																	"$ref": "#/components/schemas/server.Stub"
+																}
+															},
+															"type": "object"
+														}
+													]
 												}
 											},
 											"type": "object"
@@ -1930,7 +2002,19 @@
 						"content": {
 							"application/json": {
 								"schema": {
-									"$ref": "#/components/schemas/server.serverResponse"
+									"allOf": [
+										{
+											"$ref": "#/components/schemas/server.serverResponse"
+										},
+										{
+											"properties": {
+												"data": {
+													"$ref": "#/components/schemas/server.Stub"
+												}
+											},
+											"type": "object"
+										}
+									]
 								}
 							}
 						},
@@ -1940,7 +2024,19 @@
 						"content": {
 							"application/json": {
 								"schema": {
-									"$ref": "#/components/schemas/server.serverResponse"
+									"allOf": [
+										{
+											"$ref": "#/components/schemas/server.serverResponse"
+										},
+										{
+											"properties": {
+												"data": {
+													"$ref": "#/components/schemas/server.Stub"
+												}
+											},
+											"type": "object"
+										}
+									]
 								}
 							}
 						},
@@ -1950,7 +2046,19 @@
 						"content": {
 							"application/json": {
 								"schema": {
-									"$ref": "#/components/schemas/server.serverResponse"
+									"allOf": [
+										{
+											"$ref": "#/components/schemas/server.serverResponse"
+										},
+										{
+											"properties": {
+												"data": {
+													"$ref": "#/components/schemas/server.Stub"
+												}
+											},
+											"type": "object"
+										}
+									]
 								}
 							}
 						},
@@ -2236,7 +2344,19 @@
 										{
 											"properties": {
 												"data": {
-													"$ref": "#/components/schemas/convoy.Message"
+													"allOf": [
+														{
+															"$ref": "#/components/schemas/convoy.Message"
+														},
+														{
+															"properties": {
+																"data": {
+																	"$ref": "#/components/schemas/server.Stub"
+																}
+															},
+															"type": "object"
+														}
+													]
 												}
 											},
 											"type": "object"
@@ -2251,7 +2371,19 @@
 						"content": {
 							"application/json": {
 								"schema": {
-									"$ref": "#/components/schemas/server.serverResponse"
+									"allOf": [
+										{
+											"$ref": "#/components/schemas/server.serverResponse"
+										},
+										{
+											"properties": {
+												"data": {
+													"$ref": "#/components/schemas/server.Stub"
+												}
+											},
+											"type": "object"
+										}
+									]
 								}
 							}
 						},
@@ -2261,7 +2393,19 @@
 						"content": {
 							"application/json": {
 								"schema": {
-									"$ref": "#/components/schemas/server.serverResponse"
+									"allOf": [
+										{
+											"$ref": "#/components/schemas/server.serverResponse"
+										},
+										{
+											"properties": {
+												"data": {
+													"$ref": "#/components/schemas/server.Stub"
+												}
+											},
+											"type": "object"
+										}
+									]
 								}
 							}
 						},
@@ -2271,7 +2415,19 @@
 						"content": {
 							"application/json": {
 								"schema": {
-									"$ref": "#/components/schemas/server.serverResponse"
+									"allOf": [
+										{
+											"$ref": "#/components/schemas/server.serverResponse"
+										},
+										{
+											"properties": {
+												"data": {
+													"$ref": "#/components/schemas/server.Stub"
+												}
+											},
+											"type": "object"
+										}
+									]
 								}
 							}
 						},

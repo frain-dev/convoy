@@ -32,6 +32,7 @@ func verifyMatch(t *testing.T, w httptest.ResponseRecorder) {
 
 func stripTimestamp(t *testing.T, obj string, b *bytes.Buffer) *bytes.Buffer {
 	var res serverResponse
+
 	err := json.NewDecoder(b).Decode(&res)
 	if err != nil {
 		t.Errorf("could not stripTimestamp: %s", err)

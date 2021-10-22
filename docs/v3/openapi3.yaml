@@ -16,9 +16,9 @@ components:
     convoy.Application:
       properties:
         created_at:
-          type: integer
+          type: string
         deleted_at:
-          type: integer
+          type: string
         endpoints:
           items:
             $ref: '#/components/schemas/convoy.Endpoint'
@@ -36,14 +36,14 @@ components:
         uid:
           type: string
         updated_at:
-          type: integer
+          type: string
       type: object
     convoy.Endpoint:
       properties:
         created_at:
-          type: integer
+          type: string
         deleted_at:
-          type: integer
+          type: string
         description:
           type: string
         status:
@@ -53,7 +53,7 @@ components:
         uid:
           type: string
         updated_at:
-          type: integer
+          type: string
       type: object
     convoy.EndpointMetadata:
       properties:
@@ -69,9 +69,9 @@ components:
     convoy.Group:
       properties:
         created_at:
-          type: integer
+          type: string
         deleted_at:
-          type: integer
+          type: string
         logo_url:
           type: string
         name:
@@ -79,7 +79,7 @@ components:
         uid:
           type: string
         updated_at:
-          type: integer
+          type: string
       type: object
     convoy.HttpHeader:
       additionalProperties:
@@ -92,7 +92,7 @@ components:
         app_metadata:
           $ref: '#/components/schemas/convoy.AppMetadata'
         created_at:
-          type: integer
+          type: string
         data:
           description: |-
             Data is an arbitrary JSON value that gets sent as the body of the
@@ -101,7 +101,7 @@ components:
             type: integer
           type: array
         deleted_at:
-          type: integer
+          type: string
         description:
           type: string
         event_type:
@@ -120,16 +120,16 @@ components:
         uid:
           type: string
         updated_at:
-          type: integer
+          type: string
       type: object
     convoy.MessageAttempt:
       properties:
         api_version:
           type: string
         created_at:
-          type: integer
+          type: string
         deleted_at:
-          type: integer
+          type: string
         endpoint_id:
           type: string
         error:
@@ -153,7 +153,7 @@ components:
         uid:
           type: string
         updated_at:
-          type: integer
+          type: string
         url:
           type: string
       type: object
@@ -977,7 +977,12 @@ paths:
                       - properties:
                           content:
                             items:
-                              $ref: '#/components/schemas/convoy.Message'
+                              allOf:
+                              - $ref: '#/components/schemas/convoy.Message'
+                              - properties:
+                                  data:
+                                    $ref: '#/components/schemas/server.Stub'
+                                type: object
                             type: array
                         type: object
                   type: object
@@ -986,19 +991,34 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/server.serverResponse'
+                allOf:
+                - $ref: '#/components/schemas/server.serverResponse'
+                - properties:
+                    data:
+                      $ref: '#/components/schemas/server.Stub'
+                  type: object
           description: Bad Request
         "401":
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/server.serverResponse'
+                allOf:
+                - $ref: '#/components/schemas/server.serverResponse'
+                - properties:
+                    data:
+                      $ref: '#/components/schemas/server.Stub'
+                  type: object
           description: Unauthorized
         "500":
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/server.serverResponse'
+                allOf:
+                - $ref: '#/components/schemas/server.serverResponse'
+                - properties:
+                    data:
+                      $ref: '#/components/schemas/server.Stub'
+                  type: object
           description: Internal Server Error
       security:
       - ApiKeyAuth: []
@@ -1029,7 +1049,12 @@ paths:
                 - $ref: '#/components/schemas/server.serverResponse'
                 - properties:
                     data:
-                      $ref: '#/components/schemas/convoy.Message'
+                      allOf:
+                      - $ref: '#/components/schemas/convoy.Message'
+                      - properties:
+                          data:
+                            $ref: '#/components/schemas/server.Stub'
+                        type: object
                   type: object
           description: OK
         "400":
@@ -1089,26 +1114,46 @@ paths:
                 - $ref: '#/components/schemas/server.serverResponse'
                 - properties:
                     data:
-                      $ref: '#/components/schemas/convoy.Message'
+                      allOf:
+                      - $ref: '#/components/schemas/convoy.Message'
+                      - properties:
+                          data:
+                            $ref: '#/components/schemas/server.Stub'
+                        type: object
                   type: object
           description: OK
         "400":
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/server.serverResponse'
+                allOf:
+                - $ref: '#/components/schemas/server.serverResponse'
+                - properties:
+                    data:
+                      $ref: '#/components/schemas/server.Stub'
+                  type: object
           description: Bad Request
         "401":
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/server.serverResponse'
+                allOf:
+                - $ref: '#/components/schemas/server.serverResponse'
+                - properties:
+                    data:
+                      $ref: '#/components/schemas/server.Stub'
+                  type: object
           description: Unauthorized
         "500":
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/server.serverResponse'
+                allOf:
+                - $ref: '#/components/schemas/server.serverResponse'
+                - properties:
+                    data:
+                      $ref: '#/components/schemas/server.Stub'
+                  type: object
           description: Internal Server Error
       security:
       - ApiKeyAuth: []
@@ -1262,26 +1307,46 @@ paths:
                 - $ref: '#/components/schemas/server.serverResponse'
                 - properties:
                     data:
-                      $ref: '#/components/schemas/convoy.Message'
+                      allOf:
+                      - $ref: '#/components/schemas/convoy.Message'
+                      - properties:
+                          data:
+                            $ref: '#/components/schemas/server.Stub'
+                        type: object
                   type: object
           description: OK
         "400":
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/server.serverResponse'
+                allOf:
+                - $ref: '#/components/schemas/server.serverResponse'
+                - properties:
+                    data:
+                      $ref: '#/components/schemas/server.Stub'
+                  type: object
           description: Bad Request
         "401":
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/server.serverResponse'
+                allOf:
+                - $ref: '#/components/schemas/server.serverResponse'
+                - properties:
+                    data:
+                      $ref: '#/components/schemas/server.Stub'
+                  type: object
           description: Unauthorized
         "500":
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/server.serverResponse'
+                allOf:
+                - $ref: '#/components/schemas/server.serverResponse'
+                - properties:
+                    data:
+                      $ref: '#/components/schemas/server.Stub'
+                  type: object
           description: Internal Server Error
       security:
       - ApiKeyAuth: []
