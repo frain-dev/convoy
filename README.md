@@ -6,7 +6,7 @@ Convoy
 - Forum: [Github Discussions](https://github.com/frain-dev/convoy/discussions)
 - Documentation: [getconvoy.io/docs](https://getconvoy.io/docs)
 - Announcement: [Medium](https://medium.com/frain-technologies/tagged/convoy)
-- Slack: [Slack]()
+- Slack: [Slack](https://join.slack.com/t/convoy-community/shared_invite/zt-xiuuoj0m-yPp~ylfYMCV9s038QL0IUQ)
 
 ![convoy image](./convoy-logo.svg)
 
