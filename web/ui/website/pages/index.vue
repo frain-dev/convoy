@@ -41,7 +41,7 @@
 					<!-- <button>Get Started</button> -->
 				</div>
 				<div class="hero-section--img">
-					<img src="~/assets/images/hero-img.svg" alt="hero" />
+					<img src="~/assets/images/hero-img.png" alt="hero" />
 				</div>
 			</section>
 		</header>
@@ -416,6 +416,10 @@ header {
 			margin-left: 50px;
 			text-align: center;
 			display: none;
+
+			img {
+				max-width: 330px;
+			}
 
 			@media (min-width: $desktopBreakPoint) {
 				display: block;
