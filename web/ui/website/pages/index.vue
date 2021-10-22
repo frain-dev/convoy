@@ -34,14 +34,14 @@
 
 					<form @submit.prevent="requestAccess()">
 						<div class="input">
-							<input type="email" id="email" placeholder="Enter email address" aria-label="Email" v-model="earlyAccessEmail" />
+							<input type="text" id="github" placeholder="Enter your github username" aria-label="Github Name" v-model="earlyAccessGithubName" />
 						</div>
 						<button :disabled="isSubmitingloadingEarlyAccessForm">{{ isSubmitingloadingEarlyAccessForm ? '...requesting' : earlyAccessFormButtonText }}</button>
 					</form>
 					<!-- <button>Get Started</button> -->
 				</div>
 				<div class="hero-section--img">
-					<img src="~/assets/images/hero-img.svg" alt="hero" />
+					<img src="~/assets/images/hero-img.png" alt="hero" />
 				</div>
 			</section>
 		</header>
@@ -156,6 +156,21 @@
 			</div>
 		</section>
 
+		<section class="section play-ground">
+			<div class="container">
+				<h2>Convoy Play Ground</h2>
+				<p>We've deployed an instance of Convoy to the cloud so you can play with it and have a taste of how Convoy will enable your webhook service</p>
+				<div class="img">
+					<a href="https://playground.getconvoy.io/" target="_blank">
+						Try it out free
+						<img src="~/assets/images/arrow-right-icon.svg" alt="arrow right" />
+					</a>
+					<img src="~/assets/images/playground-img.png" alt="dashboard screenshot" />
+				</div>
+			</div>
+			<div class="bg"></div>
+		</section>
+
 		<footer>
 			<div class="container">
 				<nav>
@@ -168,6 +183,11 @@
 					</div>
 
 					<ul>
+						<li>
+							<a target="_blank" rel="noopener noreferrer" href="https://join.slack.com/t/convoy-community/shared_invite/zt-xiuuoj0m-yPp~ylfYMCV9s038QL0IUQ">
+								<img src="~/assets/images/slack-icon.svg" alt="slack logo" />
+							</a>
+						</li>
 						<li>
 							<a target="_blank" rel="noopener noreferrer" href="https://twitter.com/getconvoy"><img src="~/assets/images/twitter-icon.svg" alt="twitter logo" /></a>
 						</li>
@@ -192,7 +212,7 @@ export default {
 			showMenu: false,
 			isSubmitingloadingEarlyAccessForm: false,
 			earlyAccessFormButtonText: 'Get Early Access',
-			earlyAccessEmail: ''
+			earlyAccessGithubName: ''
 		};
 	},
 	async asyncData({ $content, params }) {
@@ -214,7 +234,7 @@ export default {
 					redirect: 'follow',
 					referrerPolicy: 'no-referrer',
 					body: JSON.stringify({
-						email: this.earlyAccessEmail
+						githubName: this.earlyAccessGithubName
 					})
 				});
 				await response.json();
@@ -396,6 +416,10 @@ header {
 			margin-left: 50px;
 			text-align: center;
 			display: none;
+
+			img {
+				max-width: 330px;
+			}
 
 			@media (min-width: $desktopBreakPoint) {
 				display: block;
@@ -595,7 +619,11 @@ section.companies {
 	background: #2b4b6a;
 	padding: 80px 20px;
 	color: #ffffff;
-	margin-bottom: 200px;
+	margin-bottom: 490px;
+
+	@media (min-width: $desktopBreakPoint) {
+		margin-bottom: 590px;
+	}
 
 	.container {
 		display: flex;
@@ -663,6 +691,114 @@ section.companies {
 	}
 }
 
+.play-ground {
+	padding-bottom: 300px;
+	position: relative;
+
+	@media (min-width: $desktopBreakPoint) {
+		padding-bottom: 400px;
+	}
+
+	.bg {
+		content: '';
+		bottom: 0;
+		left: -300px;
+		right: -300px;
+		height: 300px;
+		background: #ffffff;
+		border-radius: 100% 100% 0 0;
+		margin-bottom: -400px;
+		margin-right: -300px;
+		margin-left: -300px;
+
+		@media (min-width: $desktopBreakPoint) {
+			height: 460px;
+		}
+	}
+
+	.container {
+		width: 90%;
+		box-shadow: 0px 15px 50px rgba(21, 37, 72, 0.05);
+		border-radius: 24px;
+		text-align: center;
+		padding: 80px 2rem 0;
+		background: url('~/assets/images/playground-bg.svg') #ffffff no-repeat;
+		background-size: contain;
+		background-position: center;
+		position: absolute;
+		left: 50%;
+		top: -300px;
+		transform: translate(-50%, 0);
+
+		@media (min-width: $desktopBreakPoint) {
+			background-position: top center;
+		}
+	}
+
+	h2 {
+		font-weight: bold;
+		font-size: 34px;
+		line-height: 60px;
+
+		@media (min-width: $desktopBreakPoint) {
+			font-size: 48px;
+		}
+	}
+
+	p {
+		font-weight: 500;
+		font-size: 18px;
+		line-height: 30px;
+		max-width: 620px;
+		margin: 16px auto 26px;
+	}
+
+	.img {
+		max-width: 830px;
+		margin: auto;
+		position: relative;
+
+		img {
+			width: 100%;
+			margin-bottom: -4px;
+		}
+
+		a {
+			position: absolute;
+			left: 50%;
+			top: 64%;
+			transform: translate(-50%, -50%);
+			padding: 17px 24px;
+			background: #477db3;
+			color: #ffffff;
+			width: 212px;
+			text-align: left;
+			border-radius: 8px;
+			display: flex;
+			align-items: center;
+			justify-content: space-between;
+			font-weight: bold;
+			font-size: 18px;
+			line-height: 22px;
+
+			&::before {
+				content: '';
+				position: absolute;
+				width: 86px;
+				height: 102px;
+				right: -40px;
+				background: url('~/assets/images/play-ground-button-bg.svg');
+				background-size: contain;
+				z-index: -1;
+			}
+
+			img {
+				width: 12px;
+			}
+		}
+	}
+}
+
 footer {
 	background: #1e252b;
 	padding: 48px 20px 32px;
@@ -694,8 +830,19 @@ footer {
 		border-bottom: 1px solid rgba(255, 255, 255, 0.1);
 		padding-bottom: 29px;
 
+		ul {
+			display: flex;
+		}
+
 		li {
-			display: inline-block;
+			width: 42px;
+			height: 42px;
+			background: rgba(255, 255, 255, 0.1);
+			padding: 11px;
+			display: flex;
+			align-items: center;
+			justify-content: center;
+			border-radius: 50%;
 
 			&:not(:last-of-type) {
 				margin-right: 16px;
