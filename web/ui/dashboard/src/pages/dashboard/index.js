@@ -384,6 +384,7 @@ function DashboardPage() {
 						<ul className="card--container">
 							<li className="list-item">
 								<div className="list-item--label">
+
 									Request interval Seconds
 									<div className="list-item--item">{OrganisationDetails.strategy.default.intervalSeconds}s</div>
 								</div>
