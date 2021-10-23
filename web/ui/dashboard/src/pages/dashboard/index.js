@@ -384,36 +384,7 @@ function DashboardPage() {
 						<ul className="card--container">
 							<li className="list-item">
 								<div className="list-item--label">
-									DB URL
-									<div className="list-item--item">{OrganisationDetails.database.dsn}</div>
-								</div>
-								<button onClick={() => copyText(OrganisationDetails.database.dsn)}>
-									<img src={CopyIcon} alt="copy icon" />
-								</button>
-							</li>
 
-							<li className="list-item">
-								<div className="list-item--label">
-									Queue
-									<div className="list-item--item">{OrganisationDetails.queue.redis.dsn}</div>
-								</div>
-								<button onClick={() => copyText(OrganisationDetails.queue.redis.dsn)}>
-									<img src={CopyIcon} alt="copy icon" />
-								</button>
-							</li>
-
-							<li className="list-item">
-								<div className="list-item--label">
-									Port
-									<div className="list-item--item">{OrganisationDetails.server.http.port}</div>
-								</div>
-								<button onClick={() => copyText('http://localhost:' + OrganisationDetails.server.http.port)}>
-									<img src={CopyIcon} alt="copy icon" />
-								</button>
-							</li>
-
-							<li className="list-item">
-								<div className="list-item--label">
 									Request interval Seconds
 									<div className="list-item--item">{OrganisationDetails.strategy.default.intervalSeconds}s</div>
 								</div>
