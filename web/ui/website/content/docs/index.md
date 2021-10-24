@@ -1,17 +1,19 @@
 ---
-title: Getting started
-description: 'Easy started with Convoy'
+title: Quick Start Guide
+description: 'Getting started with Convoy'
 id: welcome
 ---
 
 # Quick start guide
 
 ## 1. Create Directory
+
 ```bash[bash]
 $ mkdir convoy && cd convoy
 ```
 
-## 2. Copy Configuration 
+## 2. Copy Configuration
+
 Copy both the compose file and the configuration file to the directory created above.
 
 ```yml[docker-compose.yml]
@@ -38,7 +40,7 @@ services:
         volumes:
             - ./data/mongo:/data/db
         ports:
-           - "27017:27017"
+            - "27017:27017"
 
     redis_server:
         image: redis:alpine
@@ -76,18 +78,22 @@ services:
 ```
 
 ## 3. Start Containers
+
 ```bash[bash]
 $ docker-compose up
 ```
+
 Now, you can head over to http://localhost:5005 to view the UI, which should look something like:
 ![convoy image](../../docs-assets/convoy-ui.png)
 
 You can check the [config page](./docs/configuration) for full details on configuration.
 
 ## 4. Send Webhooks
+
 Now, let's send webhooks. We maintain an openapi spec in the repository, you can download it [here](https://raw.githubusercontent.com/frain-dev/convoy/main/docs/v3/openapi3.json) and import to Insomnia or Postman to get started.
 
 ### 4.1 Create Application
+
 ```json[Sample Payload]
 {
     "name": "myapp",
@@ -95,6 +101,7 @@ Now, let's send webhooks. We maintain an openapi spec in the repository, you can
     "support_email": "support@myapp.com"
 }
 ```
+
 ```bash[bash]
 $ curl \
     --request POST \
@@ -122,6 +129,7 @@ $ curl \
 ```
 
 ### 4.2 Add Endpoint
+
 ```json[Sample Payload]
 {
     "description": "Default Endpoint",
@@ -153,6 +161,7 @@ $ curl \
 ```
 
 ### 4.3 Send Event
+
 ```json[Sample Payload]
 {
 	"app_id": "e0e1240a-96dc-4408-a335-144eb3749d34",
@@ -237,8 +246,10 @@ $ curl \
 ```
 
 ## 5. Receive Webhooks
+
 Let's write a basic ruby app to receive events.
-```ruby
+
+```ruby[Ruby App]
 require 'sinatra'
 require 'openssl'
 

@@ -2,9 +2,10 @@
 title: Configuration
 description: 'Convoy Configuration'
 id: configuration
+order: '2'
 ---
 
-# Configuration 
+# Configuration
 
 There are two ways to configure Convoy - `convoy.json` or `environment variables`. An example configuration is shown below:
 
@@ -41,12 +42,13 @@ There are two ways to configure Convoy - `convoy.json` or `environment variables
 ```
 
 ## Parameters
-- `environment`: Configure which environment configure is running on. Defaults `development`.
-- `database`: Configures the database DSN Convoy needs to persistent events. Currently supported databases: `mongodb`, planned: `disk`, `postgres`, `dynamodb`.
-- `queue`: Essentially, Convoy is a dedicated task queue for webhooks. This configures a queueing backend to use. Currently supported queueing backends: `redis`, planned: `in-memory`, `sqs`, `rabbitmq`.
-- `port`: Specifies which port Convoy should run on.
-- `auth`: This specifies authentication mechanism used to authenticate against Convoy's public API.
-    - `type`: Convoy supports two authentication mechanisms - `none`: free access, and `basic`: `username` & `password`.
+
+-   `environment`: Configure which environment configure is running on. Defaults `development`.
+-   `database`: Configures the database DSN Convoy needs to persistent events. Currently supported databases: `mongodb`, planned: `disk`, `postgres`, `dynamodb`.
+-   `queue`: Essentially, Convoy is a dedicated task queue for webhooks. This configures a queueing backend to use. Currently supported queueing backends: `redis`, planned: `in-memory`, `sqs`, `rabbitmq`.
+-   `port`: Specifies which port Convoy should run on.
+-   `auth`: This specifies authentication mechanism used to authenticate against Convoy's public API.
+    -   `type`: Convoy supports two authentication mechanisms - `none`: free access, and `basic`: `username` & `password`.
     ```json[sample]
     {
         "auth": {
@@ -58,7 +60,8 @@ There are two ways to configure Convoy - `convoy.json` or `environment variables
         }
     }
     ```
-- `strategy`: This specifies retry mechanism for convoy to retry events. Currently supported: `constant-time-interval`, default: `constant-time-interval`, planned: `exponential-backoff`.
+-   `strategy`: This specifies retry mechanism for convoy to retry events. Currently supported: `constant-time-interval`, default: `constant-time-interval`, planned: `exponential-backoff`.
+
 ```json[sample]
 {
     "strategy": {
@@ -70,8 +73,9 @@ There are two ways to configure Convoy - `convoy.json` or `environment variables
 	}
 }
 ```
-- `ui`: Convoy ships with a UI. This blocks configures authentication for the UI. 
-    - `type`: Convoy supports two authentication mechanisms - `none`: free access, and `basic`: `username` & `password`.
+
+-   `ui`: Convoy ships with a UI. This blocks configures authentication for the UI.
+    -   `type`: Convoy supports two authentication mechanisms - `none`: free access, and `basic`: `username` & `password`.
     ```json[sample]
     {
         "ui": {
@@ -87,7 +91,8 @@ There are two ways to configure Convoy - `convoy.json` or `environment variables
         }
     }
     ```
-- `signature`: Convoy signs your payload and adds a specific request header specified here. If you omit the header, we default to `X-Convoy-Signature`.
+-   `signature`: Convoy signs your payload and adds a specific request header specified here. If you omit the header, we default to `X-Convoy-Signature`.
+
 ```json[sample]
 {
     "signature": {
@@ -96,7 +101,9 @@ There are two ways to configure Convoy - `convoy.json` or `environment variables
     }
 }
 ```
-- `smtp`: Convoy identifies [dead endpoints](./docs/overview#dead-endpoints) and sends an email to the developers to fix.
+
+-   `smtp`: Convoy identifies [dead endpoints](./docs/overview#dead-endpoints) and sends an email to the developers to fix.
+
 ```json[sample]
 {
     "smtp": {
@@ -109,8 +116,10 @@ There are two ways to configure Convoy - `convoy.json` or `environment variables
 	}
 }
 ```
-- `disable_endpoint`: Configure Convoy to disable dead endpoints or not. Defaults to `false`.
-- `sentry`: Convoy uses [sentry](https://sentry.io) for error monitoring.
+
+-   `disable_endpoint`: Configure Convoy to disable dead endpoints or not. Defaults to `false`.
+-   `sentry`: Convoy uses [sentry](https://sentry.io) for error monitoring.
+
 ```json[sample]
 {
     "sentry": {
@@ -119,24 +128,24 @@ There are two ways to configure Convoy - `convoy.json` or `environment variables
 }
 ```
 
-
 ## Environment Variables
+
 Alternatively, you can configure Convoy using the following environment variables:
 
-- `CONVOY_MONGO_DSN`
-- `CONVOY_REDIS_DSN`
-- `PORT`
-- `CONVOY_ENV`
-- `CONVOY_SENTRY_DSN`
-- `CONVOY_SIGNATURE_HEADER`
-- `CONVOY_SIGNATURE_HASH`
-- `CONVOY_API_USERNAME`
-- `CONVOY_API_PASSWORD`
-- `CONVOY_UI_USERNAME`
-- `CONVOY_UI_PASSWORD`
-- `CONVOY_JWT_KEY`
-- `CONVOY_JWT_EXPIRY`
-- `CONVOY_RETRY_STRATEGY`
-- `CONVOY_INTERVAL_SECONDS`
-- `CONVOY_RETRY_LIMIT`
-- `CONVOY_DISABLE_ENDPOINT`
+-   `CONVOY_MONGO_DSN`
+-   `CONVOY_REDIS_DSN`
+-   `PORT`
+-   `CONVOY_ENV`
+-   `CONVOY_SENTRY_DSN`
+-   `CONVOY_SIGNATURE_HEADER`
+-   `CONVOY_SIGNATURE_HASH`
+-   `CONVOY_API_USERNAME`
+-   `CONVOY_API_PASSWORD`
+-   `CONVOY_UI_USERNAME`
+-   `CONVOY_UI_PASSWORD`
+-   `CONVOY_JWT_KEY`
+-   `CONVOY_JWT_EXPIRY`
+-   `CONVOY_RETRY_STRATEGY`
+-   `CONVOY_INTERVAL_SECONDS`
+-   `CONVOY_RETRY_LIMIT`
+-   `CONVOY_DISABLE_ENDPOINT`

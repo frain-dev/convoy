@@ -1,5 +1,4 @@
 <template>
-<<<<<<< HEAD
 	<div class="page">
 		<header>
 			<nav>
@@ -204,180 +203,10 @@
 			</div>
 		</footer>
 	</div>
-=======
-    <div class="page">
-        <header>
-            <nav>
-                <div>
-                    <div class="logo">
-                        <img src="~/assets/images/logo.svg" alt="logo" />
-                    </div>
-
-                    <button class="menu-button" @click="showMenu = !showMenu">
-                        <img src="~/assets/images/menu-icon.svg" alt="menu icon" />
-                    </button>
-
-                    <ul :class="showMenu ? 'show' : ''">
-                        <li>
-                            <a href="#features"> Features </a>
-                        </li>
-                        <li>
-                            <nuxt-link to="/docs"> Docs </nuxt-link>
-                        </li>
-                        <li>
-                            <a target="_blank" rel="noopener noreferrer" href="https://github.com/frain-dev/convoy/discussions"> Community </a>
-                        </li>
-                        <li>
-                            <a href="https://github.com/frain-dev/convoy">
-                                <img src="~/assets/images/github-logo.svg" alt="github logo" />
-                            </a>
-                        </li>
-                    </ul>
-                </div>
-            </nav>
-
-            <section class="hero-section">
-                <div class="hero-section--cta">
-                    <h1>A Cloud native Webhook Service</h1>
-                    <p>With out-of-the-box security, reliability and scalability for your webhooks infrastructure.</p>
-                    <!-- <button>Get Started</button> -->
-                </div>
-                <div class="hero-section--img">
-                    <img src="~/assets/images/hero-img.svg" alt="hero" />
-                </div>
-            </section>
-        </header>
-
-        <section class="section features" id="features">
-            <div class="container">
-                <h2 class="section--title">Why Convoy</h2>
-                <p class="section--description">
-                    Convoy enables you get started with delivering webhooks products in the space of minutes, along with a number of carefully thought out features to truely enable/enhance your webhooks
-                    delivery at scale.
-                </p>
-
-                <ul>
-                    <li>
-                        <img src="~/assets/images/secure-feature-icon.svg" alt="secure feature icon" />
-                        <h4>Secure</h4>
-                        <p>Create secrets, sign payload, verify event. Increase security by enabling rolling secrets.</p>
-                    </li>
-                    <li>
-                        <img src="~/assets/images/ease-feature-icon.svg" alt="ease feature icon" />
-                        <h4>Ease of use</h4>
-                        <p>Easily filter & debug events sent to multiple applications & endpoints with Delivery Attempt Logs</p>
-                    </li>
-                    <li>
-                        <img src="~/assets/images/cloud-feature-icon.svg" alt="cloud feature icon" />
-                        <h4>Cloud & Language Agnostic</h4>
-                        <p>Deploy to any environment and send events from any language (Ruby, Golang, JavaScript etc)</p>
-                    </li>
-                    <li>
-                        <img src="~/assets/images/rate-feature-icon.svg" alt="rate feature icon" />
-                        <h4>Rate Limiting</h4>
-                        <p>Avoid blasting too much events to a single endpoint at once with flexible rate limiting controls</p>
-                    </li>
-                    <li>
-                        <img src="~/assets/images/scalable-feature-icon.svg" alt="scalable feature icon" />
-                        <h4>Scalable</h4>
-                        <p>Independently scale Convoy as your system needs grows.</p>
-                    </li>
-                    <li>
-                        <div class="features--dashboard-screenshot">
-                            <img src="~/assets/images/dashboard-img.png" alt="dashboard image" />
-                        </div>
-                    </li>
-                </ul>
-                <div class="features--dashboard-screenshot stand-alone">
-                    <img src="~/assets/images/dashboard-img.png" alt="dashboard image" />
-                </div>
-            </div>
-        </section>
-
-        <section class="section core-features">
-            <div class="container">
-                <div>
-                    <h2 class="section--title">Core Features</h2>
-                    <ul>
-                        <li>
-                            <img src="~/assets/images/feature-check-icon.svg" alt="check icon" />
-                            <p>Independently scalable</p>
-                        </li>
-                        <li>
-                            <img src="~/assets/images/feature-check-icon.svg" alt="check icon" />
-                            <p>Signatures & Rolling secrets</p>
-                        </li>
-                        <li>
-                            <img src="~/assets/images/feature-check-icon.svg" alt="check icon" />
-                            <p>Retries</p>
-                        </li>
-                        <li>
-                            <img src="~/assets/images/feature-check-icon.svg" alt="check icon" />
-                            <p>Clustering</p>
-                        </li>
-                        <li>
-                            <img src="~/assets/images/feature-check-icon.svg" alt="check icon" />
-                            <p>Language Agnostic</p>
-                        </li>
-                        <li>
-                            <img src="~/assets/images/feature-check-icon.svg" alt="check icon" />
-                            <p>Idempotency</p>
-                        </li>
-                        <li>
-                            <img src="~/assets/images/feature-check-icon.svg" alt="check icon" />
-                            <p>URL per Event Type</p>
-                        </li>
-                        <li>
-                            <img src="~/assets/images/feature-check-icon.svg" alt="check icon" />
-                            <p>Static IPs</p>
-                        </li>
-                        <li>
-                            <img src="~/assets/images/feature-check-icon.svg" alt="check icon" />
-                            <p>Rich UI - Event Logs & Querying.</p>
-                        </li>
-                        <li>
-                            <img src="~/assets/images/feature-check-icon.svg" alt="check icon" />
-                            <p>Payload Filtering</p>
-                        </li>
-                    </ul>
-                </div>
-                <div>
-                    <div class="core-features--img-container">
-                        <img src="~/assets/images/core-features-img.svg" alt="core flow" />
-                    </div>
-                </div>
-            </div>
-        </section>
-
-        <footer>
-            <div class="container">
-                <nav>
-                    <div class="logo">
-                        <img src="~/assets/images/logo.svg" alt="logo" />
-                    </div>
-
-                    <ul>
-                        <li>
-                            <a target="_blank" rel="noopener noreferrer" href="https://twitter.com/getconvoy"><img src="~/assets/images/twitter-icon.svg" alt="twitter logo" /></a>
-                        </li>
-                        <li>
-                            <a target="_blank" rel="noopener noreferrer" href="https://github.com/frain-dev/convoy"><img src="~/assets/images/github-icon.svg" alt="mail logo" /></a>
-                        </li>
-                        <li>
-                            <a target="_blank" rel="noopener noreferrer" href="mailto:info@frain.dev"><img src="~/assets/images/mail-icon.svg" alt="mail logo" /></a>
-                        </li>
-                    </ul>
-                </nav>
-                <p>Copyright 2021, All Rights Reserved</p>
-            </div>
-        </footer>
-    </div>
->>>>>>> emmanuel/feature/build-docs-page
 </template>
 
 <script>
 export default {
-<<<<<<< HEAD
 	data() {
 		return {
 			showMenu: false,
@@ -387,7 +216,7 @@ export default {
 		};
 	},
 	async asyncData({ $content, params }) {
-		const pageData = await $content('api-doc').fetch();
+		const pageData = await $content('docs').fetch();
 		return { pageData };
 	},
 	methods: {
@@ -424,14 +253,6 @@ export default {
 			}, 5000);
 		}
 	}
-=======
-    data() {
-        return {
-            showMenu: false,
-        };
-    },
-    methods: {},
->>>>>>> emmanuel/feature/build-docs-page
 };
 </script>
 

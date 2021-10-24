@@ -1,14 +1,14 @@
 <template>
-    <nuxt-content :document="pageData"></nuxt-content>
+	<nuxt-content :document="pageData"></nuxt-content>
 </template>
 
 <script>
 export default {
-    layout: 'docs',
-    async asyncData({ $content }) {
-        const pageData = await $content('docs', 'index').fetch();
-        return { pageData };
-    },
+	layout: 'docs',
+	async asyncData({ $content }) {
+		const pageData = await $content('docs', 'index').fetch();
+		return { pageData };
+	}
 };
 </script>
 

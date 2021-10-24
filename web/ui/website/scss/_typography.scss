@@ -1,35 +1,94 @@
+h2,
+h3,
+h4,
+h5,
+h6:not(:first-of-type) {
+	margin: 40px 0 5px;
+}
+
 h1 {
-    font-weight: bold;
-    font-size: 32px;
-    line-height: 32px;
-    letter-spacing: 0.01em;
-    margin-bottom: 16px;
+	font-weight: bold;
+	font-size: 32px;
+	line-height: 32px;
+	letter-spacing: 0.01em;
 }
 
 h2 {
-    font-weight: bold;
-    font-size: 24px;
-    line-height: 32px;
-    letter-spacing: 0.01em;
-    margin: 32px 0 16px;
+	font-weight: bold;
+	font-size: 24px;
+	line-height: 32px;
+	letter-spacing: 0.01em;
 }
 
 h3 {
-    font-weight: bold;
-    font-size: 18px;
-    line-height: 32px;
-    letter-spacing: 0.01em;
-    margin: 32px 0 16px;
+	font-weight: bold;
+	font-size: 18px;
+	line-height: 32px;
+	letter-spacing: 0.01em;
+	margin-top: 30px;
+}
+
+h4 {
+	font-weight: bold;
+	font-size: 16px;
+	line-height: 32px;
+	letter-spacing: 0.01em;
 }
 
 p {
-    margin-bottom: 10px;
-    font-size: 16px;
-    line-height: 27px;
+	margin: 15px 0 5px;
+	font-size: 16px;
+	line-height: 27px;
+}
+
+code {
+	background: #f3f3f8;
+	border-radius: 4px;
+	padding: 0 3px;
+	margin: 0 1px;
+	border: 1px solid rgba(0, 0, 0, 0.05);
+	font-family: 'Menlo Regular';
+	font-size: 12px;
+	color: #16192c66;
+}
+
+strong {
+	font-weight: 500;
 }
 
 .nuxt-content {
-    a {
-        text-decoration: underline;
-    }
+	a {
+		text-decoration: underline;
+		color: #47b38d;
+	}
+
+	img {
+		margin: 20px 0 10px;
+		border: 1px solid #eee;
+		border-radius: 10px;
+	}
+
+	ul li {
+		border-top: 1px solid #e3e8ee;
+		padding: 16px 0;
+
+		&:first-of-type {
+			margin-top: 20px;
+		}
+	}
+
+	ol {
+		margin-left: 20px;
+
+		li {
+			list-style-type: decimal;
+			padding: 8px 0;
+		}
+	}
+
+	hr {
+		height: 0;
+		border: 1px solid #eee;
+		margin: 20px 0 30px;
+	}
 }
