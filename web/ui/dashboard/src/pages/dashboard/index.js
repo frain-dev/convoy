@@ -7,7 +7,6 @@ import CalendarIcon from '../../assets/img/calendar-icon.svg';
 import LinkIcon from '../../assets/img/link-icon.svg';
 import AngleArrowDownIcon from '../../assets/img/angle-arrow-down.svg';
 import ConvoyLogo from '../../assets/img/logo.svg';
-import CopyIcon from '../../assets/img/copy-icon.svg';
 import RetryIcon from '../../assets/img/retry-icon.svg';
 import EmptyStateImage from '../../assets/img/empty-state-img.svg';
 import ViewEventsIcon from '../../assets/img/view-events-icon.svg';
@@ -18,7 +17,7 @@ import './style.scss';
 import 'react-date-range/dist/styles.css';
 import 'react-date-range/dist/theme/default.css';
 import { showNotification } from '../../components/app-notification';
-import { copyText, getDate, getTime, logout } from '../../helpers/common.helper';
+import { getDate, getTime, logout } from '../../helpers/common.helper';
 import Prism from 'prismjs';
 import '../../scss/prism.scss';
 import '../../helpers/prism-line-plugin';
@@ -306,9 +305,9 @@ function DashboardPage() {
 					</div>
 
 					<div>
-						{/*<a target="_blank" href="https://getconvoy.io/docs" rel="noreferrer">
+						<a target="_blank" href="https://getconvoy.io/docs" rel="noreferrer">
 							Go to docs
-						</a>*/}
+						</a>
 						{authDetails && (
 							<button className="user" onClick={() => toggleShowDropdown(!showDropdown)}>
 								<div>
