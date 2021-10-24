@@ -27,7 +27,6 @@ func newErrorResponse(msg string, statusCode int) serverResponse {
 	}
 }
 
-// TODO(subomi,daniel): the data type of the Data field makes the generated doc vague
 type serverResponse struct {
 	Response
 	Status  bool            `json:"status"`

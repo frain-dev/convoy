@@ -42,8 +42,6 @@ func newApplicationHandler(msgRepo convoy.MessageRepository, appRepo convoy.Appl
 	}
 }
 
-// TODO(daniel): using '{object} serverResponse' in doc annotations: serverResponse's data field is an interface, this makes the generated doc vauge
-
 // GetApp
 // @Summary Get an application
 // @Description This endpoint fetches an application by it's id
@@ -51,10 +49,8 @@ func newApplicationHandler(msgRepo convoy.MessageRepository, appRepo convoy.Appl
 // @Accept  json
 // @Produce  json
 // @Param appID path string true "application id"
-// @Success 200 {object} serverResponse
-// @Failure 400 {object} serverResponse
-// @Failure 401 {object} serverResponse
-// @Failure 500 {object} serverResponse
+// @Success 200 {object} serverResponse{data=convoy.Application}
+// @Failure 400,401,500 {object} serverResponse{data=Stub}
 // @Security ApiKeyAuth
 // @Router /applications/{appID} [get]
 func (a *applicationHandler) GetApp(w http.ResponseWriter, r *http.Request) {
@@ -72,10 +68,8 @@ func (a *applicationHandler) GetApp(w http.ResponseWriter, r *http.Request) {
 // @Param perPage query string false "results per page"
 // @Param page query string false "page number"
 // @Param sort query string false "sort order"
-// @Success 200 {object} serverResponse
-// @Failure 400 {object} serverResponse
-// @Failure 401 {object} serverResponse
-// @Failure 500 {object} serverResponse
+// @Success 200 {object} serverResponse{data=pagedResponse{content=[]convoy.Application}}
+// @Failure 400,401,500 {object} serverResponse{data=Stub}
 // @Security ApiKeyAuth
 // @Router /applications [get]
 func (a *applicationHandler) GetApps(w http.ResponseWriter, r *http.Request) {
@@ -98,11 +92,8 @@ func (a *applicationHandler) GetApps(w http.ResponseWriter, r *http.Request) {
 // @Accept  json
 // @Produce  json
 // @Param application body models.Application true "Application Details"
-// @Success 200 {object} serverResponse
-// @Failure 400 {object} serverResponse
-// @Failure 401 {object} serverResponse
-// @Failure 500 {object} serverResponse
-// @Failure 300 {object} serverResponse
+// @Success 200 {object} serverResponse{data=convoy.Application}
+// @Failure 400,401,500 {object} serverResponse{data=Stub}
 // @Security ApiKeyAuth
 // @Router /applications [post]
 func (a *applicationHandler) CreateApp(w http.ResponseWriter, r *http.Request) {
@@ -160,10 +151,8 @@ func (a *applicationHandler) CreateApp(w http.ResponseWriter, r *http.Request) {
 // @Produce  json
 // @Param appID path string true "application id"
 // @Param application body models.Application true "Application Details"
-// @Success 200 {object} serverResponse
-// @Failure 400 {object} serverResponse
-// @Failure 401 {object} serverResponse
-// @Failure 500 {object} serverResponse
+// @Success 200 {object} serverResponse{data=convoy.Application}
+// @Failure 400,401,500 {object} serverResponse{data=Stub}
 // @Security ApiKeyAuth
 // @Router /applications/{appID} [put]
 func (a *applicationHandler) UpdateApp(w http.ResponseWriter, r *http.Request) {
@@ -207,10 +196,8 @@ func (a *applicationHandler) UpdateApp(w http.ResponseWriter, r *http.Request) {
 // @Accept  json
 // @Produce  json
 // @Param appID path string true "application id"
-// @Success 200 {object} serverResponse
-// @Failure 400 {object} serverResponse
-// @Failure 401 {object} serverResponse
-// @Failure 500 {object} serverResponse
+// @Success 200 {object} serverResponse{data=Stub}
+// @Failure 400,401,500 {object} serverResponse{data=Stub}
 // @Security ApiKeyAuth
 // @Router /applications/{appID} [delete]
 func (a *applicationHandler) DeleteApp(w http.ResponseWriter, r *http.Request) {
@@ -233,10 +220,8 @@ func (a *applicationHandler) DeleteApp(w http.ResponseWriter, r *http.Request) {
 // @Produce  json
 // @Param appID path string true "application id"
 // @Param endpoint body models.Endpoint true "Endpoint Details"
-// @Success 200 {object} serverResponse
-// @Failure 400 {object} serverResponse
-// @Failure 401 {object} serverResponse
-// @Failure 500 {object} serverResponse
+// @Success 200 {object} serverResponse{data=convoy.Endpoint}
+// @Failure 400,401,500 {object} serverResponse{data=Stub}
 // @Security ApiKeyAuth
 // @Router /applications/{appID}/endpoints [post]
 func (a *applicationHandler) CreateAppEndpoint(w http.ResponseWriter, r *http.Request) {
@@ -292,10 +277,8 @@ func (a *applicationHandler) CreateAppEndpoint(w http.ResponseWriter, r *http.Re
 // @Produce  json
 // @Param appID path string true "application id"
 // @Param endpointID path string true "endpoint id"
-// @Success 200 {object} serverResponse
-// @Failure 400 {object} serverResponse
-// @Failure 401 {object} serverResponse
-// @Failure 500 {object} serverResponse
+// @Success 200 {object} serverResponse{data=convoy.Endpoint}
+// @Failure 400,401,500 {object} serverResponse{data=Stub}
 // @Security ApiKeyAuth
 // @Router /applications/{appID}/endpoints/{endpointID} [get]
 func (a *applicationHandler) GetAppEndpoint(w http.ResponseWriter, r *http.Request) {
@@ -311,10 +294,8 @@ func (a *applicationHandler) GetAppEndpoint(w http.ResponseWriter, r *http.Reque
 // @Accept  json
 // @Produce  json
 // @Param appID path string true "application id"
-// @Success 200 {object} serverResponse
-// @Failure 400 {object} serverResponse
-// @Failure 401 {object} serverResponse
-// @Failure 500 {object} serverResponse
+// @Success 200 {object} serverResponse{data=[]convoy.Endpoint}
+// @Failure 400,401,500 {object} serverResponse{data=Stub}
 // @Security ApiKeyAuth
 // @Router /applications/{appID}/endpoints [get]
 func (a *applicationHandler) GetAppEndpoints(w http.ResponseWriter, r *http.Request) {
@@ -333,10 +314,8 @@ func (a *applicationHandler) GetAppEndpoints(w http.ResponseWriter, r *http.Requ
 // @Param appID path string true "application id"
 // @Param endpointID path string true "endpoint id"
 // @Param endpoint body models.Endpoint true "Endpoint Details"
-// @Success 200 {object} serverResponse
-// @Failure 400 {object} serverResponse
-// @Failure 401 {object} serverResponse
-// @Failure 500 {object} serverResponse
+// @Success 200 {object} serverResponse{data=convoy.Endpoint}
+// @Failure 400,401,500 {object} serverResponse{data=Stub}
 // @Security ApiKeyAuth
 // @Router /applications/{appID}/endpoints/{endpointID} [put]
 func (a *applicationHandler) UpdateAppEndpoint(w http.ResponseWriter, r *http.Request) {
@@ -374,10 +353,8 @@ func (a *applicationHandler) UpdateAppEndpoint(w http.ResponseWriter, r *http.Re
 // @Produce  json
 // @Param appID path string true "application id"
 // @Param endpointID path string true "endpoint id"
-// @Success 200 {object} serverResponse
-// @Failure 400 {object} serverResponse
-// @Failure 401 {object} serverResponse
-// @Failure 500 {object} serverResponse
+// @Success 200 {object} serverResponse{data=Stub}
+// @Failure 400,401,500 {object} serverResponse{data=Stub}
 // @Security ApiKeyAuth
 // @Router /applications/{appID}/endpoints/{endpointID} [delete]
 func (a *applicationHandler) DeleteAppEndpoint(w http.ResponseWriter, r *http.Request) {
