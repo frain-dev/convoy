@@ -38,7 +38,7 @@
 
 					<form @submit.prevent="requestAccess()">
 						<div class="input">
-							<input type="text" id="github" placeholder="Enter your email" aria-label="Email" v-model="earlyAccessEmail" />
+							<input type="email" id="email" placeholder="Enter your email" aria-label="Email" v-model="earlyAccessEmail" />
 						</div>
 						<button :disabled="isSubmitingloadingEarlyAccessForm">{{ isSubmitingloadingEarlyAccessForm ? '...requesting' : earlyAccessFormButtonText }}</button>
 					</form>
