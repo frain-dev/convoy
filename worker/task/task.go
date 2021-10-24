@@ -1,9 +1,9 @@
 package task
 
 import (
+	"github.com/Subomi/taskq/v3"
 	"github.com/frain-dev/convoy"
 	"github.com/frain-dev/convoy/config"
-	"github.com/vmihailenco/taskq/v3"
 )
 
 func CreateTask(name convoy.TaskName, cfg config.Configuration, handler interface{}) *taskq.Task {
