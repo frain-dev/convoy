@@ -1,10 +1,10 @@
 package worker
 
 import (
+	"github.com/Subomi/taskq/v3"
 	"github.com/frain-dev/convoy/queue"
 	convoy_redis "github.com/frain-dev/convoy/queue/redis"
 	log "github.com/sirupsen/logrus"
-	"github.com/vmihailenco/taskq/v3"
 )
 
 type Cleaner struct {

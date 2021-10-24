@@ -5,13 +5,13 @@ import (
 	"errors"
 	"time"
 
+	"github.com/Subomi/taskq/v3"
+	"github.com/Subomi/taskq/v3/redisq"
 	"github.com/frain-dev/convoy"
 	"github.com/frain-dev/convoy/config"
 	"github.com/frain-dev/convoy/queue"
 	"github.com/frain-dev/convoy/util"
 	"github.com/go-redis/redis/v8"
-	"github.com/vmihailenco/taskq/v3"
-	"github.com/vmihailenco/taskq/v3/redisq"
 )
 
 type RedisQueue struct {
