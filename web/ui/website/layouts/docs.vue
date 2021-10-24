@@ -9,7 +9,7 @@
 			<nuxt-link to="/docs"><h3>QUICK START GUIDE</h3></nuxt-link>
 
 			<ul>
-				<h3>API Docs</h3>
+				<h3>Docs</h3>
 
 				<li v-for="(page, index) in pages" :key="index" v-if="page.id !== 'welcome'">
 					<nuxt-link :to="'/docs/' + page.id">
