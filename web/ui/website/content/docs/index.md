@@ -142,7 +142,7 @@ $ curl \
     --request POST \
     --data @endpoint.json \
     -H "Content-Type: application/json" \
-    http://localhost:5005/api/v1/applications/e0e1240a-96dc-4408-a335-144eb3749d34/endpoints
+    http://localhost:5005/api/v1/applications/{appID}/endpoints
 ```
 
 ```json[Response]
@@ -164,7 +164,7 @@ $ curl \
 
 ```json[Sample Payload]
 {
-	"app_id": "e0e1240a-96dc-4408-a335-144eb3749d34",
+	"app_id": "{appID}",
 	"event_type": "payment.success",
 	"data": {
 		"event": "payment.success",
