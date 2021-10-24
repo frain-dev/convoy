@@ -34,14 +34,14 @@
 				<div class="hero-section--cta">
 					<h1>A Cloud native Webhook Service</h1>
 					<p>With out-of-the-box security, reliability and scalability for your webhooks infrastructure.</p>
+					<nuxt-link to="/docs">Get Started</nuxt-link>
 
 					<form @submit.prevent="requestAccess()">
 						<div class="input">
-							<input type="text" id="github" placeholder="Enter your github username" aria-label="Github Name" v-model="earlyAccessGithubName" />
+							<input type="email" id="email" placeholder="Enter your email" aria-label="Email" v-model="earlyAccessEmail" />
 						</div>
 						<button :disabled="isSubmitingloadingEarlyAccessForm">{{ isSubmitingloadingEarlyAccessForm ? '...requesting' : earlyAccessFormButtonText }}</button>
 					</form>
-					<!-- <button>Get Started</button> -->
 				</div>
 				<div class="hero-section--img">
 					<img src="~/assets/images/hero-img.png" alt="hero" />
@@ -214,8 +214,8 @@ export default {
 		return {
 			showMenu: false,
 			isSubmitingloadingEarlyAccessForm: false,
-			earlyAccessFormButtonText: 'Get Early Access',
-			earlyAccessGithubName: ''
+			earlyAccessFormButtonText: 'Convoy Cloud Early Access',
+			earlyAccessEmail: ''
 		};
 	},
 	async asyncData({ $content, params }) {
@@ -237,7 +237,7 @@ export default {
 					redirect: 'follow',
 					referrerPolicy: 'no-referrer',
 					body: JSON.stringify({
-						githubName: this.earlyAccessGithubName
+						email: this.earlyAccessEmail
 					})
 				});
 				await response.json();
@@ -252,7 +252,7 @@ export default {
 		},
 		setDefaultAccessButtonText() {
 			setTimeout(() => {
-				this.earlyAccessFormButtonText = 'Get Early Access';
+				this.earlyAccessFormButtonText = 'Convoy Cloud Early Access';
 			}, 5000);
 		}
 	}
@@ -322,7 +322,7 @@ header {
 
 			&.show {
 				padding-top: 20px;
-				height: 175px;
+				height: 233px;
 				overflow-y: auto;
 				display: block;
 			}
@@ -429,12 +429,33 @@ header {
 			}
 		}
 
+		button,
+		a {
+			background: #477db3;
+			padding: 9px 21px;
+			color: #ffffff;
+			font-weight: 500;
+			font-size: 14px;
+			line-height: 28px;
+			margin: 20px 0 0;
+			max-width: 200px;
+			width: 100%;
+			display: block;
+			border-radius: 5px;
+			text-align: center;
+		}
+
 		form {
 			background: #ffffff;
 			max-width: 430px;
 			display: flex;
 			border-radius: 8px;
 			margin-top: 40px;
+			flex-direction: column;
+
+			@media (min-width: $desktopBreakPoint) {
+				flex-direction: row;
+			}
 
 			.input {
 				width: 100%;
@@ -459,16 +480,18 @@ header {
 			}
 
 			button {
-				background: #477db3;
-				border-radius: 0 8px 8px 0;
-				padding: 9px 21px;
-				color: #ffffff;
-				font-weight: 500;
-				font-size: 14px;
-				line-height: 28px;
-				max-width: 162px;
+				max-width: none;
 				width: 100%;
 				margin: 0;
+				border-radius: 0 0 8px 8px;
+				margin-top: 10px;
+
+				@media (min-width: $desktopBreakPoint) {
+					max-width: 220px;
+					width: 100%;
+					margin-top: 0;
+					border-radius: 0 8px 8px 0;
+				}
 			}
 		}
 	}
@@ -551,6 +574,7 @@ section.companies {
 		display: grid;
 		grid-template-columns: repeat(auto-fill, minmax(238px, 1fr));
 		gap: 80px 32px;
+		margin-bottom: 50px;
 
 		img {
 			width: 70px;
