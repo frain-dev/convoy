@@ -16,6 +16,9 @@
 							<a href="#features">Features</a>
 						</li>
 						<li>
+							<nuxt-link to="/docs">Docs</nuxt-link>
+						</li>
+						<li>
 							<a target="_blank" rel="noopener noreferrer" href="https://github.com/frain-dev/convoy/discussions">Community</a>
 						</li>
 						<li>
@@ -502,11 +505,14 @@ section.companies {
 	padding: 25px 20px;
 	background: #fafafe;
 	border-radius: 8px 8px 0px 0px;
+	align-items: center;
 
 	p {
 		font-weight: bold;
 		font-size: 16px;
 		line-height: 24px;
+		padding: 0;
+		margin: 0;
 	}
 
 	ul {
