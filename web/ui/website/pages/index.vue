@@ -252,7 +252,7 @@ export default {
 		},
 		setDefaultAccessButtonText() {
 			setTimeout(() => {
-				this.earlyAccessFormButtonText = 'Get Early Access';
+				this.earlyAccessFormButtonText = 'Convoy Cloud Early Access';
 			}, 5000);
 		}
 	}
