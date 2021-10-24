@@ -20,7 +20,6 @@ export default async function (to, from, savedPosition) {
 	const main = document.querySelector('.main');
 
 	if (to.hash) {
-		console.log('🚀 ~ file: scrollBehavior.js ~ line 23 ~ to.hash', to.hash);
 		let el = await findEl(to.hash);
 		if ('scrollBehavior' in document.documentElement.style) {
 			return main.scrollTo({ top: el.offsetTop, behavior: 'smooth' });
