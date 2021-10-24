@@ -106,9 +106,9 @@ type Message struct {
 
 	MessageAttempts []MessageAttempt `json:"-" bson:"attempts"`
 
-	CreatedAt primitive.DateTime `json:"created_at,omitempty" bson:"created_at,omitempty"`
-	UpdatedAt primitive.DateTime `json:"updated_at,omitempty" bson:"updated_at,omitempty"`
-	DeletedAt primitive.DateTime `json:"deleted_at,omitempty" bson:"deleted_at,omitempty"`
+	CreatedAt primitive.DateTime `json:"created_at,omitempty" bson:"created_at,omitempty" swaggertype:"string"`
+	UpdatedAt primitive.DateTime `json:"updated_at,omitempty" bson:"updated_at,omitempty" swaggertype:"string"`
+	DeletedAt primitive.DateTime `json:"deleted_at,omitempty" bson:"deleted_at,omitempty" swaggertype:"string"`
 
 	DocumentStatus DocumentStatus `json:"-" bson:"document_status"`
 }
@@ -130,9 +130,9 @@ type MessageAttempt struct {
 	Error            string        `json:"error,omitempty" bson:"error,omitempty"`
 	Status           MessageStatus `json:"status,omitempty" bson:"status,omitempty"`
 
-	CreatedAt primitive.DateTime `json:"created_at,omitempty" bson:"created_at,omitempty"`
-	UpdatedAt primitive.DateTime `json:"updated_at,omitempty" bson:"updated_at,omitempty"`
-	DeletedAt primitive.DateTime `json:"deleted_at,omitempty" bson:"deleted_at,omitempty"`
+	CreatedAt primitive.DateTime `json:"created_at,omitempty" bson:"created_at,omitempty" swaggertype:"string"`
+	UpdatedAt primitive.DateTime `json:"updated_at,omitempty" bson:"updated_at,omitempty" swaggertype:"string"`
+	DeletedAt primitive.DateTime `json:"deleted_at,omitempty" bson:"deleted_at,omitempty" swaggertype:"string"`
 }
 
 type MessageRepository interface {

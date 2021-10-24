@@ -64,25 +64,88 @@
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/server.serverResponse"
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/server.serverResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "allOf": [
+                                                {
+                                                    "$ref": "#/definitions/server.pagedResponse"
+                                                },
+                                                {
+                                                    "type": "object",
+                                                    "properties": {
+                                                        "content": {
+                                                            "type": "array",
+                                                            "items": {
+                                                                "$ref": "#/definitions/convoy.Application"
+                                                            }
+                                                        }
+                                                    }
+                                                }
+                                            ]
+                                        }
+                                    }
+                                }
+                            ]
                         }
                     },
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/server.serverResponse"
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/server.serverResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/server.Stub"
+                                        }
+                                    }
+                                }
+                            ]
                         }
                     },
                     "401": {
                         "description": "Unauthorized",
                         "schema": {
-                            "$ref": "#/definitions/server.serverResponse"
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/server.serverResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/server.Stub"
+                                        }
+                                    }
+                                }
+                            ]
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/server.serverResponse"
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/server.serverResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/server.Stub"
+                                        }
+                                    }
+                                }
+                            ]
                         }
                     }
                 }
@@ -119,31 +182,73 @@
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/server.serverResponse"
-                        }
-                    },
-                    "300": {
-                        "description": "Multiple Choices",
-                        "schema": {
-                            "$ref": "#/definitions/server.serverResponse"
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/server.serverResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/convoy.Application"
+                                        }
+                                    }
+                                }
+                            ]
                         }
                     },
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/server.serverResponse"
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/server.serverResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/server.Stub"
+                                        }
+                                    }
+                                }
+                            ]
                         }
                     },
                     "401": {
                         "description": "Unauthorized",
                         "schema": {
-                            "$ref": "#/definitions/server.serverResponse"
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/server.serverResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/server.Stub"
+                                        }
+                                    }
+                                }
+                            ]
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/server.serverResponse"
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/server.serverResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/server.Stub"
+                                        }
+                                    }
+                                }
+                            ]
                         }
                     }
                 }
@@ -180,25 +285,73 @@
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/server.serverResponse"
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/server.serverResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/convoy.Application"
+                                        }
+                                    }
+                                }
+                            ]
                         }
                     },
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/server.serverResponse"
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/server.serverResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/server.Stub"
+                                        }
+                                    }
+                                }
+                            ]
                         }
                     },
                     "401": {
                         "description": "Unauthorized",
                         "schema": {
-                            "$ref": "#/definitions/server.serverResponse"
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/server.serverResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/server.Stub"
+                                        }
+                                    }
+                                }
+                            ]
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/server.serverResponse"
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/server.serverResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/server.Stub"
+                                        }
+                                    }
+                                }
+                            ]
                         }
                     }
                 }
@@ -242,25 +395,73 @@
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/server.serverResponse"
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/server.serverResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/convoy.Application"
+                                        }
+                                    }
+                                }
+                            ]
                         }
                     },
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/server.serverResponse"
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/server.serverResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/server.Stub"
+                                        }
+                                    }
+                                }
+                            ]
                         }
                     },
                     "401": {
                         "description": "Unauthorized",
                         "schema": {
-                            "$ref": "#/definitions/server.serverResponse"
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/server.serverResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/server.Stub"
+                                        }
+                                    }
+                                }
+                            ]
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/server.serverResponse"
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/server.serverResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/server.Stub"
+                                        }
+                                    }
+                                }
+                            ]
                         }
                     }
                 }
@@ -295,25 +496,73 @@
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/server.serverResponse"
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/server.serverResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/server.Stub"
+                                        }
+                                    }
+                                }
+                            ]
                         }
                     },
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/server.serverResponse"
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/server.serverResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/server.Stub"
+                                        }
+                                    }
+                                }
+                            ]
                         }
                     },
                     "401": {
                         "description": "Unauthorized",
                         "schema": {
-                            "$ref": "#/definitions/server.serverResponse"
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/server.serverResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/server.Stub"
+                                        }
+                                    }
+                                }
+                            ]
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/server.serverResponse"
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/server.serverResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/server.Stub"
+                                        }
+                                    }
+                                }
+                            ]
                         }
                     }
                 }
@@ -350,25 +599,76 @@
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/server.serverResponse"
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/server.serverResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "type": "array",
+                                            "items": {
+                                                "$ref": "#/definitions/convoy.Endpoint"
+                                            }
+                                        }
+                                    }
+                                }
+                            ]
                         }
                     },
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/server.serverResponse"
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/server.serverResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/server.Stub"
+                                        }
+                                    }
+                                }
+                            ]
                         }
                     },
                     "401": {
                         "description": "Unauthorized",
                         "schema": {
-                            "$ref": "#/definitions/server.serverResponse"
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/server.serverResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/server.Stub"
+                                        }
+                                    }
+                                }
+                            ]
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/server.serverResponse"
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/server.serverResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/server.Stub"
+                                        }
+                                    }
+                                }
+                            ]
                         }
                     }
                 }
@@ -412,25 +712,73 @@
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/server.serverResponse"
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/server.serverResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/convoy.Endpoint"
+                                        }
+                                    }
+                                }
+                            ]
                         }
                     },
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/server.serverResponse"
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/server.serverResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/server.Stub"
+                                        }
+                                    }
+                                }
+                            ]
                         }
                     },
                     "401": {
                         "description": "Unauthorized",
                         "schema": {
-                            "$ref": "#/definitions/server.serverResponse"
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/server.serverResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/server.Stub"
+                                        }
+                                    }
+                                }
+                            ]
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/server.serverResponse"
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/server.serverResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/server.Stub"
+                                        }
+                                    }
+                                }
+                            ]
                         }
                     }
                 }
@@ -474,25 +822,73 @@
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/server.serverResponse"
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/server.serverResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/convoy.Endpoint"
+                                        }
+                                    }
+                                }
+                            ]
                         }
                     },
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/server.serverResponse"
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/server.serverResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/server.Stub"
+                                        }
+                                    }
+                                }
+                            ]
                         }
                     },
                     "401": {
                         "description": "Unauthorized",
                         "schema": {
-                            "$ref": "#/definitions/server.serverResponse"
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/server.serverResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/server.Stub"
+                                        }
+                                    }
+                                }
+                            ]
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/server.serverResponse"
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/server.serverResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/server.Stub"
+                                        }
+                                    }
+                                }
+                            ]
                         }
                     }
                 }
@@ -543,25 +939,73 @@
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/server.serverResponse"
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/server.serverResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/convoy.Endpoint"
+                                        }
+                                    }
+                                }
+                            ]
                         }
                     },
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/server.serverResponse"
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/server.serverResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/server.Stub"
+                                        }
+                                    }
+                                }
+                            ]
                         }
                     },
                     "401": {
                         "description": "Unauthorized",
                         "schema": {
-                            "$ref": "#/definitions/server.serverResponse"
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/server.serverResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/server.Stub"
+                                        }
+                                    }
+                                }
+                            ]
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/server.serverResponse"
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/server.serverResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/server.Stub"
+                                        }
+                                    }
+                                }
+                            ]
                         }
                     }
                 }
@@ -603,25 +1047,73 @@
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/server.serverResponse"
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/server.serverResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/server.Stub"
+                                        }
+                                    }
+                                }
+                            ]
                         }
                     },
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/server.serverResponse"
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/server.serverResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/server.Stub"
+                                        }
+                                    }
+                                }
+                            ]
                         }
                     },
                     "401": {
                         "description": "Unauthorized",
                         "schema": {
-                            "$ref": "#/definitions/server.serverResponse"
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/server.serverResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/server.Stub"
+                                        }
+                                    }
+                                }
+                            ]
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/server.serverResponse"
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/server.serverResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/server.Stub"
+                                        }
+                                    }
+                                }
+                            ]
                         }
                     }
                 }
@@ -693,25 +1185,100 @@
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/server.serverResponse"
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/server.serverResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "allOf": [
+                                                {
+                                                    "$ref": "#/definitions/server.pagedResponse"
+                                                },
+                                                {
+                                                    "type": "object",
+                                                    "properties": {
+                                                        "content": {
+                                                            "type": "array",
+                                                            "items": {
+                                                                "allOf": [
+                                                                    {
+                                                                        "$ref": "#/definitions/convoy.Message"
+                                                                    },
+                                                                    {
+                                                                        "type": "object",
+                                                                        "properties": {
+                                                                            "data": {
+                                                                                "$ref": "#/definitions/server.Stub"
+                                                                            }
+                                                                        }
+                                                                    }
+                                                                ]
+                                                            }
+                                                        }
+                                                    }
+                                                }
+                                            ]
+                                        }
+                                    }
+                                }
+                            ]
                         }
                     },
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/server.serverResponse"
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/server.serverResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/server.Stub"
+                                        }
+                                    }
+                                }
+                            ]
                         }
                     },
                     "401": {
                         "description": "Unauthorized",
                         "schema": {
-                            "$ref": "#/definitions/server.serverResponse"
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/server.serverResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/server.Stub"
+                                        }
+                                    }
+                                }
+                            ]
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/server.serverResponse"
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/server.serverResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/server.Stub"
+                                        }
+                                    }
+                                }
+                            ]
                         }
                     }
                 }
@@ -740,13 +1307,25 @@
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/models.Message"
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/models.Message"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/server.Stub"
+                                        }
+                                    }
+                                }
+                            ]
                         }
                     }
                 ],
                 "responses": {
                     "200": {
-                        "description": "asc",
+                        "description": "OK",
                         "schema": {
                             "allOf": [
                                 {
@@ -756,7 +1335,19 @@
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/convoy.Message"
+                                            "allOf": [
+                                                {
+                                                    "$ref": "#/definitions/convoy.Message"
+                                                },
+                                                {
+                                                    "type": "object",
+                                                    "properties": {
+                                                        "data": {
+                                                            "$ref": "#/definitions/server.Stub"
+                                                        }
+                                                    }
+                                                }
+                                            ]
                                         }
                                     }
                                 }
@@ -766,19 +1357,55 @@
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/server.serverResponse"
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/server.serverResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/server.Stub"
+                                        }
+                                    }
+                                }
+                            ]
                         }
                     },
                     "401": {
                         "description": "Unauthorized",
                         "schema": {
-                            "$ref": "#/definitions/server.serverResponse"
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/server.serverResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/server.Stub"
+                                        }
+                                    }
+                                }
+                            ]
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/server.serverResponse"
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/server.serverResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/server.Stub"
+                                        }
+                                    }
+                                }
+                            ]
                         }
                     }
                 }
@@ -815,25 +1442,85 @@
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/server.serverResponse"
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/server.serverResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "allOf": [
+                                                {
+                                                    "$ref": "#/definitions/convoy.Message"
+                                                },
+                                                {
+                                                    "type": "object",
+                                                    "properties": {
+                                                        "data": {
+                                                            "$ref": "#/definitions/server.Stub"
+                                                        }
+                                                    }
+                                                }
+                                            ]
+                                        }
+                                    }
+                                }
+                            ]
                         }
                     },
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/server.serverResponse"
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/server.serverResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/server.Stub"
+                                        }
+                                    }
+                                }
+                            ]
                         }
                     },
                     "401": {
                         "description": "Unauthorized",
                         "schema": {
-                            "$ref": "#/definitions/server.serverResponse"
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/server.serverResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/server.Stub"
+                                        }
+                                    }
+                                }
+                            ]
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/server.serverResponse"
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/server.serverResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/server.Stub"
+                                        }
+                                    }
+                                }
+                            ]
                         }
                     }
                 }
@@ -870,25 +1557,76 @@
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/server.serverResponse"
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/server.serverResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "type": "array",
+                                            "items": {
+                                                "$ref": "#/definitions/convoy.MessageAttempt"
+                                            }
+                                        }
+                                    }
+                                }
+                            ]
                         }
                     },
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/server.serverResponse"
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/server.serverResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/server.Stub"
+                                        }
+                                    }
+                                }
+                            ]
                         }
                     },
                     "401": {
                         "description": "Unauthorized",
                         "schema": {
-                            "$ref": "#/definitions/server.serverResponse"
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/server.serverResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/server.Stub"
+                                        }
+                                    }
+                                }
+                            ]
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/server.serverResponse"
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/server.serverResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/server.Stub"
+                                        }
+                                    }
+                                }
+                            ]
                         }
                     }
                 }
@@ -932,25 +1670,73 @@
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/server.serverResponse"
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/server.serverResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/convoy.MessageAttempt"
+                                        }
+                                    }
+                                }
+                            ]
                         }
                     },
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/server.serverResponse"
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/server.serverResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/server.Stub"
+                                        }
+                                    }
+                                }
+                            ]
                         }
                     },
                     "401": {
                         "description": "Unauthorized",
                         "schema": {
-                            "$ref": "#/definitions/server.serverResponse"
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/server.serverResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/server.Stub"
+                                        }
+                                    }
+                                }
+                            ]
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/server.serverResponse"
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/server.serverResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/server.Stub"
+                                        }
+                                    }
+                                }
+                            ]
                         }
                     }
                 }
@@ -987,25 +1773,85 @@
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/server.serverResponse"
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/server.serverResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "allOf": [
+                                                {
+                                                    "$ref": "#/definitions/convoy.Message"
+                                                },
+                                                {
+                                                    "type": "object",
+                                                    "properties": {
+                                                        "data": {
+                                                            "$ref": "#/definitions/server.Stub"
+                                                        }
+                                                    }
+                                                }
+                                            ]
+                                        }
+                                    }
+                                }
+                            ]
                         }
                     },
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/server.serverResponse"
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/server.serverResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/server.Stub"
+                                        }
+                                    }
+                                }
+                            ]
                         }
                     },
                     "401": {
                         "description": "Unauthorized",
                         "schema": {
-                            "$ref": "#/definitions/server.serverResponse"
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/server.serverResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/server.Stub"
+                                        }
+                                    }
+                                }
+                            ]
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/server.serverResponse"
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/server.serverResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/server.Stub"
+                                        }
+                                    }
+                                }
+                            ]
                         }
                     }
                 }
@@ -1041,25 +1887,76 @@
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/server.serverResponse"
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/server.serverResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "type": "array",
+                                            "items": {
+                                                "$ref": "#/definitions/convoy.Group"
+                                            }
+                                        }
+                                    }
+                                }
+                            ]
                         }
                     },
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/server.serverResponse"
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/server.serverResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/server.Stub"
+                                        }
+                                    }
+                                }
+                            ]
                         }
                     },
                     "401": {
                         "description": "Unauthorized",
                         "schema": {
-                            "$ref": "#/definitions/server.serverResponse"
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/server.serverResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/server.Stub"
+                                        }
+                                    }
+                                }
+                            ]
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/server.serverResponse"
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/server.serverResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/server.Stub"
+                                        }
+                                    }
+                                }
+                            ]
                         }
                     }
                 }
@@ -1096,25 +1993,73 @@
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/server.serverResponse"
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/server.serverResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/convoy.Group"
+                                        }
+                                    }
+                                }
+                            ]
                         }
                     },
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/server.serverResponse"
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/server.serverResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/server.Stub"
+                                        }
+                                    }
+                                }
+                            ]
                         }
                     },
                     "401": {
                         "description": "Unauthorized",
                         "schema": {
-                            "$ref": "#/definitions/server.serverResponse"
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/server.serverResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/server.Stub"
+                                        }
+                                    }
+                                }
+                            ]
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/server.serverResponse"
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/server.serverResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/server.Stub"
+                                        }
+                                    }
+                                }
+                            ]
                         }
                     }
                 }
@@ -1151,25 +2096,73 @@
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/server.serverResponse"
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/server.serverResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/convoy.Group"
+                                        }
+                                    }
+                                }
+                            ]
                         }
                     },
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/server.serverResponse"
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/server.serverResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/server.Stub"
+                                        }
+                                    }
+                                }
+                            ]
                         }
                     },
                     "401": {
                         "description": "Unauthorized",
                         "schema": {
-                            "$ref": "#/definitions/server.serverResponse"
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/server.serverResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/server.Stub"
+                                        }
+                                    }
+                                }
+                            ]
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/server.serverResponse"
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/server.serverResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/server.Stub"
+                                        }
+                                    }
+                                }
+                            ]
                         }
                     }
                 }
@@ -1213,25 +2206,73 @@
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/server.serverResponse"
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/server.serverResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/convoy.Group"
+                                        }
+                                    }
+                                }
+                            ]
                         }
                     },
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/server.serverResponse"
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/server.serverResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/server.Stub"
+                                        }
+                                    }
+                                }
+                            ]
                         }
                     },
                     "401": {
                         "description": "Unauthorized",
                         "schema": {
-                            "$ref": "#/definitions/server.serverResponse"
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/server.serverResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/server.Stub"
+                                        }
+                                    }
+                                }
+                            ]
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/server.serverResponse"
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/server.serverResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/server.Stub"
+                                        }
+                                    }
+                                }
+                            ]
                         }
                     }
                 }
@@ -1259,6 +2300,70 @@
                 }
             }
         },
+        "convoy.Application": {
+            "type": "object",
+            "properties": {
+                "created_at": {
+                    "type": "string"
+                },
+                "deleted_at": {
+                    "type": "string"
+                },
+                "endpoints": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/convoy.Endpoint"
+                    }
+                },
+                "events": {
+                    "type": "integer"
+                },
+                "group_id": {
+                    "type": "string"
+                },
+                "name": {
+                    "type": "string"
+                },
+                "secret": {
+                    "type": "string"
+                },
+                "support_email": {
+                    "type": "string"
+                },
+                "uid": {
+                    "type": "string"
+                },
+                "updated_at": {
+                    "type": "string"
+                }
+            }
+        },
+        "convoy.Endpoint": {
+            "type": "object",
+            "properties": {
+                "created_at": {
+                    "type": "string"
+                },
+                "deleted_at": {
+                    "type": "string"
+                },
+                "description": {
+                    "type": "string"
+                },
+                "status": {
+                    "type": "string"
+                },
+                "target_url": {
+                    "type": "string"
+                },
+                "uid": {
+                    "type": "string"
+                },
+                "updated_at": {
+                    "type": "string"
+                }
+            }
+        },
         "convoy.EndpointMetadata": {
             "type": "object",
             "properties": {
@@ -1276,6 +2381,35 @@
                 }
             }
         },
+        "convoy.Group": {
+            "type": "object",
+            "properties": {
+                "created_at": {
+                    "type": "string"
+                },
+                "deleted_at": {
+                    "type": "string"
+                },
+                "logo_url": {
+                    "type": "string"
+                },
+                "name": {
+                    "type": "string"
+                },
+                "uid": {
+                    "type": "string"
+                },
+                "updated_at": {
+                    "type": "string"
+                }
+            }
+        },
+        "convoy.HttpHeader": {
+            "type": "object",
+            "additionalProperties": {
+                "type": "string"
+            }
+        },
         "convoy.Message": {
             "type": "object",
             "properties": {
@@ -1286,7 +2420,7 @@
                     "$ref": "#/definitions/convoy.AppMetadata"
                 },
                 "created_at": {
-                    "type": "integer"
+                    "type": "string"
                 },
                 "data": {
                     "description": "Data is an arbitrary JSON value that gets sent as the body of the\nwebhook to the endpoints",
@@ -1296,7 +2430,7 @@
                     }
                 },
                 "deleted_at": {
-                    "type": "integer"
+                    "type": "string"
                 },
                 "description": {
                     "type": "string"
@@ -1318,7 +2452,60 @@
                     "type": "string"
                 },
                 "updated_at": {
-                    "type": "integer"
+                    "type": "string"
+                }
+            }
+        },
+        "convoy.MessageAttempt": {
+            "type": "object",
+            "properties": {
+                "api_version": {
+                    "type": "string"
+                },
+                "created_at": {
+                    "type": "string"
+                },
+                "deleted_at": {
+                    "type": "string"
+                },
+                "endpoint_id": {
+                    "type": "string"
+                },
+                "error": {
+                    "type": "string"
+                },
+                "http_status": {
+                    "type": "string"
+                },
+                "ip_address": {
+                    "type": "string"
+                },
+                "method": {
+                    "type": "string"
+                },
+                "msg_id": {
+                    "type": "string"
+                },
+                "request_http_header": {
+                    "$ref": "#/definitions/convoy.HttpHeader"
+                },
+                "response_data": {
+                    "type": "string"
+                },
+                "response_http_header": {
+                    "$ref": "#/definitions/convoy.HttpHeader"
+                },
+                "status": {
+                    "type": "string"
+                },
+                "uid": {
+                    "type": "string"
+                },
+                "updated_at": {
+                    "type": "string"
+                },
+                "url": {
+                    "type": "string"
                 }
             }
         },
@@ -1389,10 +2576,8 @@
                 "app_id": {
                     "type": "string"
                 },
-                "created_at": {
-                    "type": "integer"
-                },
                 "data": {
+                    "description": "Data is an arbitrary JSON value that gets sent as the body of the\nwebhook to the endpoints",
                     "type": "array",
                     "items": {
                         "type": "integer"
@@ -1400,15 +2585,41 @@
                 },
                 "event_type": {
                     "type": "string"
+                }
+            }
+        },
+        "mongopagination.PaginationData": {
+            "type": "object",
+            "properties": {
+                "next": {
+                    "type": "integer"
                 },
-                "msg_id": {
-                    "type": "string"
+                "page": {
+                    "type": "integer"
                 },
-                "provider_id": {
-                    "type": "string"
+                "perPage": {
+                    "type": "integer"
                 },
-                "status": {
-                    "type": "string"
+                "prev": {
+                    "type": "integer"
+                },
+                "total": {
+                    "type": "integer"
+                },
+                "totalPage": {
+                    "type": "integer"
+                }
+            }
+        },
+        "server.Stub": {
+            "type": "object"
+        },
+        "server.pagedResponse": {
+            "type": "object",
+            "properties": {
+                "content": {},
+                "pagination": {
+                    "$ref": "#/definitions/mongopagination.PaginationData"
                 }
             }
         },

@@ -13,6 +13,48 @@ definitions:
       support_email:
         type: string
     type: object
+  convoy.Application:
+    properties:
+      created_at:
+        type: string
+      deleted_at:
+        type: string
+      endpoints:
+        items:
+          $ref: '#/definitions/convoy.Endpoint'
+        type: array
+      events:
+        type: integer
+      group_id:
+        type: string
+      name:
+        type: string
+      secret:
+        type: string
+      support_email:
+        type: string
+      uid:
+        type: string
+      updated_at:
+        type: string
+    type: object
+  convoy.Endpoint:
+    properties:
+      created_at:
+        type: string
+      deleted_at:
+        type: string
+      description:
+        type: string
+      status:
+        type: string
+      target_url:
+        type: string
+      uid:
+        type: string
+      updated_at:
+        type: string
+    type: object
   convoy.EndpointMetadata:
     properties:
       sent:
@@ -24,6 +66,25 @@ definitions:
       uid:
         type: string
     type: object
+  convoy.Group:
+    properties:
+      created_at:
+        type: string
+      deleted_at:
+        type: string
+      logo_url:
+        type: string
+      name:
+        type: string
+      uid:
+        type: string
+      updated_at:
+        type: string
+    type: object
+  convoy.HttpHeader:
+    additionalProperties:
+      type: string
+    type: object
   convoy.Message:
     properties:
       app_id:
@@ -31,7 +92,7 @@ definitions:
       app_metadata:
         $ref: '#/definitions/convoy.AppMetadata'
       created_at:
-        type: integer
+        type: string
       data:
         description: |-
           Data is an arbitrary JSON value that gets sent as the body of the
@@ -40,7 +101,7 @@ definitions:
           type: integer
         type: array
       deleted_at:
-        type: integer
+        type: string
       description:
         type: string
       event_type:
@@ -59,7 +120,42 @@ definitions:
       uid:
         type: string
       updated_at:
-        type: integer
+        type: string
+    type: object
+  convoy.MessageAttempt:
+    properties:
+      api_version:
+        type: string
+      created_at:
+        type: string
+      deleted_at:
+        type: string
+      endpoint_id:
+        type: string
+      error:
+        type: string
+      http_status:
+        type: string
+      ip_address:
+        type: string
+      method:
+        type: string
+      msg_id:
+        type: string
+      request_http_header:
+        $ref: '#/definitions/convoy.HttpHeader'
+      response_data:
+        type: string
+      response_http_header:
+        $ref: '#/definitions/convoy.HttpHeader'
+      status:
+        type: string
+      uid:
+        type: string
+      updated_at:
+        type: string
+      url:
+        type: string
     type: object
   convoy.MessageMetadata:
     properties:
@@ -109,20 +205,38 @@ definitions:
     properties:
       app_id:
         type: string
-      created_at:
-        type: integer
       data:
+        description: |-
+          Data is an arbitrary JSON value that gets sent as the body of the
+          webhook to the endpoints
         items:
           type: integer
         type: array
       event_type:
         type: string
-      msg_id:
-        type: string
-      provider_id:
-        type: string
-      status:
-        type: string
+    type: object
+  mongopagination.PaginationData:
+    properties:
+      next:
+        type: integer
+      page:
+        type: integer
+      perPage:
+        type: integer
+      prev:
+        type: integer
+      total:
+        type: integer
+      totalPage:
+        type: integer
+    type: object
+  server.Stub:
+    type: object
+  server.pagedResponse:
+    properties:
+      content: {}
+      pagination:
+        $ref: '#/definitions/mongopagination.PaginationData'
     type: object
   server.serverResponse:
     properties:
@@ -174,19 +288,46 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/server.serverResponse'
+            allOf:
+            - $ref: '#/definitions/server.serverResponse'
+            - properties:
+                data:
+                  allOf:
+                  - $ref: '#/definitions/server.pagedResponse'
+                  - properties:
+                      content:
+                        items:
+                          $ref: '#/definitions/convoy.Application'
+                        type: array
+                    type: object
+              type: object
         "400":
           description: Bad Request
           schema:
-            $ref: '#/definitions/server.serverResponse'
+            allOf:
+            - $ref: '#/definitions/server.serverResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/server.Stub'
+              type: object
         "401":
           description: Unauthorized
           schema:
-            $ref: '#/definitions/server.serverResponse'
+            allOf:
+            - $ref: '#/definitions/server.serverResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/server.Stub'
+              type: object
         "500":
           description: Internal Server Error
           schema:
-            $ref: '#/definitions/server.serverResponse'
+            allOf:
+            - $ref: '#/definitions/server.serverResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/server.Stub'
+              type: object
       security:
       - ApiKeyAuth: []
       summary: Get all applications
@@ -209,23 +350,39 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/server.serverResponse'
-        "300":
-          description: Multiple Choices
-          schema:
-            $ref: '#/definitions/server.serverResponse'
+            allOf:
+            - $ref: '#/definitions/server.serverResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/convoy.Application'
+              type: object
         "400":
           description: Bad Request
           schema:
-            $ref: '#/definitions/server.serverResponse'
+            allOf:
+            - $ref: '#/definitions/server.serverResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/server.Stub'
+              type: object
         "401":
           description: Unauthorized
           schema:
-            $ref: '#/definitions/server.serverResponse'
+            allOf:
+            - $ref: '#/definitions/server.serverResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/server.Stub'
+              type: object
         "500":
           description: Internal Server Error
           schema:
-            $ref: '#/definitions/server.serverResponse'
+            allOf:
+            - $ref: '#/definitions/server.serverResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/server.Stub'
+              type: object
       security:
       - ApiKeyAuth: []
       summary: Create an application
@@ -248,19 +405,39 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/server.serverResponse'
+            allOf:
+            - $ref: '#/definitions/server.serverResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/server.Stub'
+              type: object
         "400":
           description: Bad Request
           schema:
-            $ref: '#/definitions/server.serverResponse'
+            allOf:
+            - $ref: '#/definitions/server.serverResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/server.Stub'
+              type: object
         "401":
           description: Unauthorized
           schema:
-            $ref: '#/definitions/server.serverResponse'
+            allOf:
+            - $ref: '#/definitions/server.serverResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/server.Stub'
+              type: object
         "500":
           description: Internal Server Error
           schema:
-            $ref: '#/definitions/server.serverResponse'
+            allOf:
+            - $ref: '#/definitions/server.serverResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/server.Stub'
+              type: object
       security:
       - ApiKeyAuth: []
       summary: Delete app
@@ -282,19 +459,39 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/server.serverResponse'
+            allOf:
+            - $ref: '#/definitions/server.serverResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/convoy.Application'
+              type: object
         "400":
           description: Bad Request
           schema:
-            $ref: '#/definitions/server.serverResponse'
+            allOf:
+            - $ref: '#/definitions/server.serverResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/server.Stub'
+              type: object
         "401":
           description: Unauthorized
           schema:
-            $ref: '#/definitions/server.serverResponse'
+            allOf:
+            - $ref: '#/definitions/server.serverResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/server.Stub'
+              type: object
         "500":
           description: Internal Server Error
           schema:
-            $ref: '#/definitions/server.serverResponse'
+            allOf:
+            - $ref: '#/definitions/server.serverResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/server.Stub'
+              type: object
       security:
       - ApiKeyAuth: []
       summary: Get an application
@@ -322,19 +519,39 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/server.serverResponse'
+            allOf:
+            - $ref: '#/definitions/server.serverResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/convoy.Application'
+              type: object
         "400":
           description: Bad Request
           schema:
-            $ref: '#/definitions/server.serverResponse'
+            allOf:
+            - $ref: '#/definitions/server.serverResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/server.Stub'
+              type: object
         "401":
           description: Unauthorized
           schema:
-            $ref: '#/definitions/server.serverResponse'
+            allOf:
+            - $ref: '#/definitions/server.serverResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/server.Stub'
+              type: object
         "500":
           description: Internal Server Error
           schema:
-            $ref: '#/definitions/server.serverResponse'
+            allOf:
+            - $ref: '#/definitions/server.serverResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/server.Stub'
+              type: object
       security:
       - ApiKeyAuth: []
       summary: Update an application
@@ -357,19 +574,41 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/server.serverResponse'
+            allOf:
+            - $ref: '#/definitions/server.serverResponse'
+            - properties:
+                data:
+                  items:
+                    $ref: '#/definitions/convoy.Endpoint'
+                  type: array
+              type: object
         "400":
           description: Bad Request
           schema:
-            $ref: '#/definitions/server.serverResponse'
+            allOf:
+            - $ref: '#/definitions/server.serverResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/server.Stub'
+              type: object
         "401":
           description: Unauthorized
           schema:
-            $ref: '#/definitions/server.serverResponse'
+            allOf:
+            - $ref: '#/definitions/server.serverResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/server.Stub'
+              type: object
         "500":
           description: Internal Server Error
           schema:
-            $ref: '#/definitions/server.serverResponse'
+            allOf:
+            - $ref: '#/definitions/server.serverResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/server.Stub'
+              type: object
       security:
       - ApiKeyAuth: []
       summary: Get application endpoints
@@ -397,19 +636,39 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/server.serverResponse'
+            allOf:
+            - $ref: '#/definitions/server.serverResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/convoy.Endpoint'
+              type: object
         "400":
           description: Bad Request
           schema:
-            $ref: '#/definitions/server.serverResponse'
+            allOf:
+            - $ref: '#/definitions/server.serverResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/server.Stub'
+              type: object
         "401":
           description: Unauthorized
           schema:
-            $ref: '#/definitions/server.serverResponse'
+            allOf:
+            - $ref: '#/definitions/server.serverResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/server.Stub'
+              type: object
         "500":
           description: Internal Server Error
           schema:
-            $ref: '#/definitions/server.serverResponse'
+            allOf:
+            - $ref: '#/definitions/server.serverResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/server.Stub'
+              type: object
       security:
       - ApiKeyAuth: []
       summary: Create an application endpoint
@@ -437,19 +696,39 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/server.serverResponse'
+            allOf:
+            - $ref: '#/definitions/server.serverResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/server.Stub'
+              type: object
         "400":
           description: Bad Request
           schema:
-            $ref: '#/definitions/server.serverResponse'
+            allOf:
+            - $ref: '#/definitions/server.serverResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/server.Stub'
+              type: object
         "401":
           description: Unauthorized
           schema:
-            $ref: '#/definitions/server.serverResponse'
+            allOf:
+            - $ref: '#/definitions/server.serverResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/server.Stub'
+              type: object
         "500":
           description: Internal Server Error
           schema:
-            $ref: '#/definitions/server.serverResponse'
+            allOf:
+            - $ref: '#/definitions/server.serverResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/server.Stub'
+              type: object
       security:
       - ApiKeyAuth: []
       summary: Delete application endpoint
@@ -476,19 +755,39 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/server.serverResponse'
+            allOf:
+            - $ref: '#/definitions/server.serverResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/convoy.Endpoint'
+              type: object
         "400":
           description: Bad Request
           schema:
-            $ref: '#/definitions/server.serverResponse'
+            allOf:
+            - $ref: '#/definitions/server.serverResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/server.Stub'
+              type: object
         "401":
           description: Unauthorized
           schema:
-            $ref: '#/definitions/server.serverResponse'
+            allOf:
+            - $ref: '#/definitions/server.serverResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/server.Stub'
+              type: object
         "500":
           description: Internal Server Error
           schema:
-            $ref: '#/definitions/server.serverResponse'
+            allOf:
+            - $ref: '#/definitions/server.serverResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/server.Stub'
+              type: object
       security:
       - ApiKeyAuth: []
       summary: Get application endpoint
@@ -521,19 +820,39 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/server.serverResponse'
+            allOf:
+            - $ref: '#/definitions/server.serverResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/convoy.Endpoint'
+              type: object
         "400":
           description: Bad Request
           schema:
-            $ref: '#/definitions/server.serverResponse'
+            allOf:
+            - $ref: '#/definitions/server.serverResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/server.Stub'
+              type: object
         "401":
           description: Unauthorized
           schema:
-            $ref: '#/definitions/server.serverResponse'
+            allOf:
+            - $ref: '#/definitions/server.serverResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/server.Stub'
+              type: object
         "500":
           description: Internal Server Error
           schema:
-            $ref: '#/definitions/server.serverResponse'
+            allOf:
+            - $ref: '#/definitions/server.serverResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/server.Stub'
+              type: object
       security:
       - ApiKeyAuth: []
       summary: Update an application endpoint
@@ -579,19 +898,51 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/server.serverResponse'
+            allOf:
+            - $ref: '#/definitions/server.serverResponse'
+            - properties:
+                data:
+                  allOf:
+                  - $ref: '#/definitions/server.pagedResponse'
+                  - properties:
+                      content:
+                        items:
+                          allOf:
+                          - $ref: '#/definitions/convoy.Message'
+                          - properties:
+                              data:
+                                $ref: '#/definitions/server.Stub'
+                            type: object
+                        type: array
+                    type: object
+              type: object
         "400":
           description: Bad Request
           schema:
-            $ref: '#/definitions/server.serverResponse'
+            allOf:
+            - $ref: '#/definitions/server.serverResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/server.Stub'
+              type: object
         "401":
           description: Unauthorized
           schema:
-            $ref: '#/definitions/server.serverResponse'
+            allOf:
+            - $ref: '#/definitions/server.serverResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/server.Stub'
+              type: object
         "500":
           description: Internal Server Error
           schema:
-            $ref: '#/definitions/server.serverResponse'
+            allOf:
+            - $ref: '#/definitions/server.serverResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/server.Stub'
+              type: object
       security:
       - ApiKeyAuth: []
       summary: Get app messages with pagination
@@ -607,31 +958,56 @@ paths:
         name: message
         required: true
         schema:
-          $ref: '#/definitions/models.Message'
+          allOf:
+          - $ref: '#/definitions/models.Message'
+          - properties:
+              data:
+                $ref: '#/definitions/server.Stub'
+            type: object
       produces:
       - application/json
       responses:
         "200":
-          description: asc
+          description: OK
           schema:
             allOf:
             - $ref: '#/definitions/server.serverResponse'
             - properties:
                 data:
-                  $ref: '#/definitions/convoy.Message'
+                  allOf:
+                  - $ref: '#/definitions/convoy.Message'
+                  - properties:
+                      data:
+                        $ref: '#/definitions/server.Stub'
+                    type: object
               type: object
         "400":
           description: Bad Request
           schema:
-            $ref: '#/definitions/server.serverResponse'
+            allOf:
+            - $ref: '#/definitions/server.serverResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/server.Stub'
+              type: object
         "401":
           description: Unauthorized
           schema:
-            $ref: '#/definitions/server.serverResponse'
+            allOf:
+            - $ref: '#/definitions/server.serverResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/server.Stub'
+              type: object
         "500":
           description: Internal Server Error
           schema:
-            $ref: '#/definitions/server.serverResponse'
+            allOf:
+            - $ref: '#/definitions/server.serverResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/server.Stub'
+              type: object
       security:
       - ApiKeyAuth: []
       summary: Create app message
@@ -654,19 +1030,44 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/server.serverResponse'
+            allOf:
+            - $ref: '#/definitions/server.serverResponse'
+            - properties:
+                data:
+                  allOf:
+                  - $ref: '#/definitions/convoy.Message'
+                  - properties:
+                      data:
+                        $ref: '#/definitions/server.Stub'
+                    type: object
+              type: object
         "400":
           description: Bad Request
           schema:
-            $ref: '#/definitions/server.serverResponse'
+            allOf:
+            - $ref: '#/definitions/server.serverResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/server.Stub'
+              type: object
         "401":
           description: Unauthorized
           schema:
-            $ref: '#/definitions/server.serverResponse'
+            allOf:
+            - $ref: '#/definitions/server.serverResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/server.Stub'
+              type: object
         "500":
           description: Internal Server Error
           schema:
-            $ref: '#/definitions/server.serverResponse'
+            allOf:
+            - $ref: '#/definitions/server.serverResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/server.Stub'
+              type: object
       security:
       - ApiKeyAuth: []
       summary: Get app message
@@ -689,19 +1090,41 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/server.serverResponse'
+            allOf:
+            - $ref: '#/definitions/server.serverResponse'
+            - properties:
+                data:
+                  items:
+                    $ref: '#/definitions/convoy.MessageAttempt'
+                  type: array
+              type: object
         "400":
           description: Bad Request
           schema:
-            $ref: '#/definitions/server.serverResponse'
+            allOf:
+            - $ref: '#/definitions/server.serverResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/server.Stub'
+              type: object
         "401":
           description: Unauthorized
           schema:
-            $ref: '#/definitions/server.serverResponse'
+            allOf:
+            - $ref: '#/definitions/server.serverResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/server.Stub'
+              type: object
         "500":
           description: Internal Server Error
           schema:
-            $ref: '#/definitions/server.serverResponse'
+            allOf:
+            - $ref: '#/definitions/server.serverResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/server.Stub'
+              type: object
       security:
       - ApiKeyAuth: []
       summary: Get app message delivery attempts
@@ -729,19 +1152,39 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/server.serverResponse'
+            allOf:
+            - $ref: '#/definitions/server.serverResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/convoy.MessageAttempt'
+              type: object
         "400":
           description: Bad Request
           schema:
-            $ref: '#/definitions/server.serverResponse'
+            allOf:
+            - $ref: '#/definitions/server.serverResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/server.Stub'
+              type: object
         "401":
           description: Unauthorized
           schema:
-            $ref: '#/definitions/server.serverResponse'
+            allOf:
+            - $ref: '#/definitions/server.serverResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/server.Stub'
+              type: object
         "500":
           description: Internal Server Error
           schema:
-            $ref: '#/definitions/server.serverResponse'
+            allOf:
+            - $ref: '#/definitions/server.serverResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/server.Stub'
+              type: object
       security:
       - ApiKeyAuth: []
       summary: Get app message delivery attempt
@@ -764,19 +1207,44 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/server.serverResponse'
+            allOf:
+            - $ref: '#/definitions/server.serverResponse'
+            - properties:
+                data:
+                  allOf:
+                  - $ref: '#/definitions/convoy.Message'
+                  - properties:
+                      data:
+                        $ref: '#/definitions/server.Stub'
+                    type: object
+              type: object
         "400":
           description: Bad Request
           schema:
-            $ref: '#/definitions/server.serverResponse'
+            allOf:
+            - $ref: '#/definitions/server.serverResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/server.Stub'
+              type: object
         "401":
           description: Unauthorized
           schema:
-            $ref: '#/definitions/server.serverResponse'
+            allOf:
+            - $ref: '#/definitions/server.serverResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/server.Stub'
+              type: object
         "500":
           description: Internal Server Error
           schema:
-            $ref: '#/definitions/server.serverResponse'
+            allOf:
+            - $ref: '#/definitions/server.serverResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/server.Stub'
+              type: object
       security:
       - ApiKeyAuth: []
       summary: Resend an app message
@@ -798,19 +1266,41 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/server.serverResponse'
+            allOf:
+            - $ref: '#/definitions/server.serverResponse'
+            - properties:
+                data:
+                  items:
+                    $ref: '#/definitions/convoy.Group'
+                  type: array
+              type: object
         "400":
           description: Bad Request
           schema:
-            $ref: '#/definitions/server.serverResponse'
+            allOf:
+            - $ref: '#/definitions/server.serverResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/server.Stub'
+              type: object
         "401":
           description: Unauthorized
           schema:
-            $ref: '#/definitions/server.serverResponse'
+            allOf:
+            - $ref: '#/definitions/server.serverResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/server.Stub'
+              type: object
         "500":
           description: Internal Server Error
           schema:
-            $ref: '#/definitions/server.serverResponse'
+            allOf:
+            - $ref: '#/definitions/server.serverResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/server.Stub'
+              type: object
       security:
       - ApiKeyAuth: []
       summary: Get groups
@@ -833,19 +1323,39 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/server.serverResponse'
+            allOf:
+            - $ref: '#/definitions/server.serverResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/convoy.Group'
+              type: object
         "400":
           description: Bad Request
           schema:
-            $ref: '#/definitions/server.serverResponse'
+            allOf:
+            - $ref: '#/definitions/server.serverResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/server.Stub'
+              type: object
         "401":
           description: Unauthorized
           schema:
-            $ref: '#/definitions/server.serverResponse'
+            allOf:
+            - $ref: '#/definitions/server.serverResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/server.Stub'
+              type: object
         "500":
           description: Internal Server Error
           schema:
-            $ref: '#/definitions/server.serverResponse'
+            allOf:
+            - $ref: '#/definitions/server.serverResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/server.Stub'
+              type: object
       security:
       - ApiKeyAuth: []
       summary: Create a group
@@ -868,19 +1378,39 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/server.serverResponse'
+            allOf:
+            - $ref: '#/definitions/server.serverResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/convoy.Group'
+              type: object
         "400":
           description: Bad Request
           schema:
-            $ref: '#/definitions/server.serverResponse'
+            allOf:
+            - $ref: '#/definitions/server.serverResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/server.Stub'
+              type: object
         "401":
           description: Unauthorized
           schema:
-            $ref: '#/definitions/server.serverResponse'
+            allOf:
+            - $ref: '#/definitions/server.serverResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/server.Stub'
+              type: object
         "500":
           description: Internal Server Error
           schema:
-            $ref: '#/definitions/server.serverResponse'
+            allOf:
+            - $ref: '#/definitions/server.serverResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/server.Stub'
+              type: object
       security:
       - ApiKeyAuth: []
       summary: Get a group
@@ -908,19 +1438,39 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/server.serverResponse'
+            allOf:
+            - $ref: '#/definitions/server.serverResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/convoy.Group'
+              type: object
         "400":
           description: Bad Request
           schema:
-            $ref: '#/definitions/server.serverResponse'
+            allOf:
+            - $ref: '#/definitions/server.serverResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/server.Stub'
+              type: object
         "401":
           description: Unauthorized
           schema:
-            $ref: '#/definitions/server.serverResponse'
+            allOf:
+            - $ref: '#/definitions/server.serverResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/server.Stub'
+              type: object
         "500":
           description: Internal Server Error
           schema:
-            $ref: '#/definitions/server.serverResponse'
+            allOf:
+            - $ref: '#/definitions/server.serverResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/server.Stub'
+              type: object
       security:
       - ApiKeyAuth: []
       summary: Update a group
