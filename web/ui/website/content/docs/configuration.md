@@ -102,7 +102,7 @@ There are two ways to configure Convoy - `convoy.json` or `environment variables
 }
 ```
 
--   `smtp`: Convoy identifies [dead endpoints](./docs/overview#dead-endpoints) and sends an email to the developers to fix.
+-   `smtp`: Convoy identifies [dead endpoints](./overview#dead-endpoints) and sends an email to the developers to fix.
 
 ```json[sample]
 {
