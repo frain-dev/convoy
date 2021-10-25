@@ -2,7 +2,7 @@
 title: Configuration
 description: 'Convoy Configuration'
 id: configuration
-order: '2'
+order: 2
 ---
 
 # Configuration
