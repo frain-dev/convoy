@@ -25,8 +25,17 @@ type SentryConfiguration struct {
 
 type ServerConfiguration struct {
 	HTTP struct {
-		Port uint32 `json:"port"`
+		TLS  TLSConfig `json:"tls"`
+		Port uint32    `json:"port"`
 	} `json:"http"`
+}
+
+type TLSConfig struct {
+	Hostname          string `json:"hostname"`
+	CAFile            string `json:"ca_file"`
+	CertFile          string `json:"cert_file"`
+	KeyFile           string `json:"key_file"`
+	KeyFilePassphrase string `json:"key_file_passphrase"`
 }
 
 type QueueConfiguration struct {
@@ -144,13 +153,23 @@ func LoadConfig(p string) error {
 	// This enables us deploy to Heroku where the $PORT is provided
 	// dynamically.
 	if port, err := strconv.Atoi(os.Getenv("PORT")); err == nil {
-		c.Server = ServerConfiguration{
-			HTTP: struct {
-				Port uint32 `json:"port"`
-			}{
-				Port: uint32(port),
-			},
-		}
+		c.Server.HTTP.Port = uint32(port)
+	}
+
+	if caFile := os.Getenv("CONVOY_TLS_CA_FILE"); caFile != "" {
+		c.Server.HTTP.TLS.CAFile = caFile
+	}
+
+	if certFile := os.Getenv("CONVOY_TLS_CERT_FILE"); certFile != "" {
+		c.Server.HTTP.TLS.CertFile = certFile
+	}
+
+	if keyFile := os.Getenv("CONVOY_TLS_KEY_FILE"); keyFile != "" {
+		c.Server.HTTP.TLS.KeyFile = keyFile
+	}
+
+	if keyFilePassphrase := os.Getenv("CONVOY_TLS_KEY_FILE_PASSPHRASE"); keyFilePassphrase != "" {
+		c.Server.HTTP.TLS.KeyFilePassphrase = keyFilePassphrase
 	}
 
 	if env := os.Getenv("CONVOY_ENV"); env != "" {
