@@ -2,7 +2,7 @@
 title: Deployment
 description: 'Techniques to deploy convoy to the various cloud platforms'
 id: deployment
-order: '3'
+order: 3
 ---
 
 # Deploying Convoy

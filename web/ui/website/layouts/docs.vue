@@ -60,7 +60,8 @@ export default {
 		};
 	},
 	async mounted() {
-		const pages = await this.$content('docs').only(['title', 'id', 'toc']).sortBy('order').fetch();
+		let pages = await this.$content('docs').only(['title', 'id', 'toc', 'order']).sortBy('order', 'asc').fetch();
+		pages = pages.sort((a, b) => a.order - b.order);
 		this.pages = pages;
 	}
 };
