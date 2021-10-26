@@ -56,14 +56,14 @@ func addServerCommand(a *app) *cobra.Command {
 
 			log.Infof("Started convoy server in %s", time.Since(start))
 
-			sslConfig := cfg.Server.HTTP.SSL
-			if sslConfig.SSl {
-				if sslConfig.CertFile == "" || sslConfig.KeyFile == "" {
+			httpConfig := cfg.Server.HTTP
+			if httpConfig.SSl {
+				if httpConfig.CertFile == "" || httpConfig.KeyFile == "" {
 					return errors.New("both cert_file and key_file are required for ssl")
 				}
 
-				log.Infof("Started server with SSL: cert_file: %s, key_file: %s", sslConfig.CertFile, sslConfig.KeyFile)
-				return srv.ListenAndServeTLS(sslConfig.CertFile, sslConfig.KeyFile)
+				log.Infof("Started server with SSL: cert_file: %s, key_file: %s", httpConfig.CertFile, httpConfig.KeyFile)
+				return srv.ListenAndServeTLS(httpConfig.CertFile, httpConfig.KeyFile)
 			}
 			return srv.ListenAndServe()
 		},

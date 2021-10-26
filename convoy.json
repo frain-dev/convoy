@@ -15,12 +15,9 @@
   "server": {
     "environment": "dev",
     "http": {
-      "tls": {
-        "hostname": "",
-        "ca_file": "",
-        "cert_file": "",
-        "cert_file_passphrase": ""
-      },
+      "ssl": true,
+      "ssl_cert_file": "",
+      "ssl_key_file": "",
       "port": 5005
     }
   },

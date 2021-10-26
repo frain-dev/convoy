@@ -25,15 +25,11 @@ type SentryConfiguration struct {
 
 type ServerConfiguration struct {
 	HTTP struct {
-		SSL  SSLConfig `json:"ssl"`
-		Port uint32    `json:"port"`
+		SSl      bool   `json:"ssl"`
+		CertFile string `json:"cert_file"`
+		KeyFile  string `json:"key_file"`
+		Port     uint32 `json:"port"`
 	} `json:"http"`
-}
-
-type SSLConfig struct {
-	SSl      bool   `json:"ssl"`
-	CertFile string `json:"cert_file"`
-	KeyFile  string `json:"key_file"`
 }
 
 type QueueConfiguration struct {
@@ -155,13 +151,13 @@ func LoadConfig(p string) error {
 	}
 
 	if certFile := os.Getenv("CONVOY_SSL_CERT_FILE"); certFile != "" {
-		c.Server.HTTP.SSL.SSl = true
-		c.Server.HTTP.SSL.CertFile = certFile
+		c.Server.HTTP.SSl = true
+		c.Server.HTTP.CertFile = certFile
 	}
 
 	if keyFile := os.Getenv("CONVOY_SSL_KEY_FILE"); keyFile != "" {
-		c.Server.HTTP.SSL.SSl = true
-		c.Server.HTTP.SSL.KeyFile = keyFile
+		c.Server.HTTP.SSl = true
+		c.Server.HTTP.KeyFile = keyFile
 	}
 
 	if env := os.Getenv("CONVOY_ENV"); env != "" {
