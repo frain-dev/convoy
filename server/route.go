@@ -250,6 +250,8 @@ func New(cfg config.Configuration, msgRepo convoy.MessageRepository, appRepo con
 	var xPool *x509.CertPool
 	var err error
 
+	// if a CA certificate file is provided, use it.
+	// else, use the default system cert pool
 	if tlsCfg.CAFile != "" {
 		CACert, err := ioutil.ReadFile(tlsCfg.CAFile)
 		if err != nil {
@@ -269,6 +271,8 @@ func New(cfg config.Configuration, msgRepo convoy.MessageRepository, appRepo con
 
 	var cert tls.Certificate
 
+	// if key file passphrase isn't empty, attempt to decrypt the private key
+	// else just load the pair directly
 	if tlsCfg.KeyFilePassphrase != "" {
 		ce, err := withPassphrase(tlsCfg.CertFile, tlsCfg.KeyFile, []byte(tlsCfg.KeyFilePassphrase))
 		if err != nil {
