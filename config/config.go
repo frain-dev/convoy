@@ -25,17 +25,15 @@ type SentryConfiguration struct {
 
 type ServerConfiguration struct {
 	HTTP struct {
-		TLS  TLSConfig `json:"tls"`
+		SSL  SSLConfig `json:"ssl"`
 		Port uint32    `json:"port"`
 	} `json:"http"`
 }
 
-type TLSConfig struct {
-	Hostname          string `json:"hostname"`
-	CAFile            string `json:"ca_file"`
-	CertFile          string `json:"cert_file"`
-	KeyFile           string `json:"key_file"`
-	KeyFilePassphrase string `json:"key_file_passphrase"`
+type SSLConfig struct {
+	SSl      bool   `json:"ssl"`
+	CertFile string `json:"cert_file"`
+	KeyFile  string `json:"key_file"`
 }
 
 type QueueConfiguration struct {
@@ -156,20 +154,14 @@ func LoadConfig(p string) error {
 		c.Server.HTTP.Port = uint32(port)
 	}
 
-	if caFile := os.Getenv("CONVOY_TLS_CA_FILE"); caFile != "" {
-		c.Server.HTTP.TLS.CAFile = caFile
+	if certFile := os.Getenv("CONVOY_SSL_CERT_FILE"); certFile != "" {
+		c.Server.HTTP.SSL.SSl = true
+		c.Server.HTTP.SSL.CertFile = certFile
 	}
 
-	if certFile := os.Getenv("CONVOY_TLS_CERT_FILE"); certFile != "" {
-		c.Server.HTTP.TLS.CertFile = certFile
-	}
-
-	if keyFile := os.Getenv("CONVOY_TLS_KEY_FILE"); keyFile != "" {
-		c.Server.HTTP.TLS.KeyFile = keyFile
-	}
-
-	if keyFilePassphrase := os.Getenv("CONVOY_TLS_KEY_FILE_PASSPHRASE"); keyFilePassphrase != "" {
-		c.Server.HTTP.TLS.KeyFilePassphrase = keyFilePassphrase
+	if keyFile := os.Getenv("CONVOY_SSL_KEY_FILE"); keyFile != "" {
+		c.Server.HTTP.SSL.SSl = true
+		c.Server.HTTP.SSL.KeyFile = keyFile
 	}
 
 	if env := os.Getenv("CONVOY_ENV"); env != "" {

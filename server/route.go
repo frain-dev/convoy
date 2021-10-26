@@ -1,20 +1,13 @@
 package server
 
 import (
-	"crypto/tls"
-	"crypto/x509"
 	"embed"
-	"encoding/pem"
-	"errors"
 	"fmt"
 	"io/fs"
-	"io/ioutil"
 	"net/http"
 	"path"
 	"strings"
 	"time"
-
-	"go.step.sm/crypto/pemutil"
 
 	"github.com/frain-dev/convoy"
 	"github.com/frain-dev/convoy/config"
@@ -243,101 +236,6 @@ func New(cfg config.Configuration, msgRepo convoy.MessageRepository, appRepo con
 		Addr:         fmt.Sprintf(":%d", cfg.Server.HTTP.Port),
 	}
 
-	tlsCfg := cfg.Server.HTTP.TLS
-	// if the tls configuration options are empty, return here
-	if tlsCfg == (config.TLSConfig{}) {
-		return srv, nil
-	}
-
-	var xPool *x509.CertPool
-	var err error
-
-	// if a CA certificate file is provided, use it.
-	// else, use the default system cert pool
-	if tlsCfg.CAFile != "" {
-		CACert, err := ioutil.ReadFile(tlsCfg.CAFile)
-		if err != nil {
-			return nil, err
-		}
-
-		xPool = x509.NewCertPool()
-		if !xPool.AppendCertsFromPEM(CACert) {
-			return nil, errors.New("failed to add ca cert file to cert pool")
-		}
-	} else {
-		xPool, err = x509.SystemCertPool()
-		if err != nil {
-			return nil, errors.New("failed to load system cert pool")
-		}
-	}
-
-	var cert tls.Certificate
-
-	// if key file passphrase isn't empty, attempt to decrypt the private key
-	// else just load the pair directly
-	if tlsCfg.KeyFilePassphrase != "" {
-		ce, err := withPassphrase(tlsCfg.CertFile, tlsCfg.KeyFile, []byte(tlsCfg.KeyFilePassphrase))
-		if err != nil {
-			return nil, err
-		}
-		cert = *ce
-	} else {
-		cert, err = tls.LoadX509KeyPair(tlsCfg.CertFile, tlsCfg.KeyFile)
-		if err != nil {
-			return nil, err
-		}
-	}
-
-	TLSConfig := &tls.Config{
-		RootCAs:      xPool,
-		Certificates: []tls.Certificate{cert},
-	}
-
-	// if the hostname is empty, make the server to skip verifying the hostname
-	if tlsCfg.Hostname != "" {
-		TLSConfig.ServerName = tlsCfg.Hostname
-	} else {
-		log.Warnf("no tls hostname provided, convoy will skip verifying the hostname provided by clients")
-		TLSConfig.InsecureSkipVerify = true
-	}
-
-	srv.TLSConfig = TLSConfig
 	prometheus.MustRegister(requestDuration)
-
 	return srv, nil
-}
-
-// withPassphrase takes .key and .crt file paths, decodes the .key file with the give passphrase
-// and constructs a tls.Certificate with the .crt file and the decoded .key file
-func withPassphrase(pathToCert string, pathToKey string, password []byte) (*tls.Certificate, error) {
-
-	keyFile, err := ioutil.ReadFile(pathToKey)
-	if err != nil {
-		return nil, err
-	}
-
-	certFile, err := ioutil.ReadFile(pathToCert)
-	if err != nil {
-		return nil, err
-	}
-
-	keyBlock, _ := pem.Decode(keyFile)
-
-	// Decrypt key
-	keyDER, err := pemutil.DecryptPEMBlock(keyBlock, password)
-	if err != nil {
-		return nil, err
-	}
-
-	keyBlock.Bytes = keyDER // Update keyBlock with the plaintext bytes
-	keyBlock.Headers = nil  //clear the now obsolete headers.
-
-	// Turn the key back into PEM format, so we can leverage tls.X509KeyPair,
-	// which will deal with the intricacies of error handling, different key
-	// types, certificate chains, etc.
-	cert, err := tls.X509KeyPair(certFile, pem.EncodeToMemory(keyBlock))
-	if err != nil {
-		return nil, err
-	}
-	return &cert, nil
 }
