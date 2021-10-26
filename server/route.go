@@ -283,6 +283,9 @@ func New(cfg config.Configuration, msgRepo convoy.MessageRepository, appRepo con
 		cert = *ce
 	} else {
 		cert, err = tls.LoadX509KeyPair(tlsCfg.CertFile, tlsCfg.KeyFile)
+		if err != nil {
+			return nil, err
+		}
 	}
 
 	TLSConfig := &tls.Config{
