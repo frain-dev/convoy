@@ -225,7 +225,7 @@ func buildRoutes(app *applicationHandler) http.Handler {
 	return router
 }
 
-func New(cfg config.Configuration, msgRepo convoy.MessageRepository, appRepo convoy.ApplicationRepository, orgRepo convoy.GroupRepository, scheduleQueue queue.Queuer) (*http.Server, error) {
+func New(cfg config.Configuration, msgRepo convoy.MessageRepository, appRepo convoy.ApplicationRepository, orgRepo convoy.GroupRepository, scheduleQueue queue.Queuer) *http.Server {
 
 	app := newApplicationHandler(msgRepo, appRepo, orgRepo, scheduleQueue)
 
@@ -237,5 +237,5 @@ func New(cfg config.Configuration, msgRepo convoy.MessageRepository, appRepo con
 	}
 
 	prometheus.MustRegister(requestDuration)
-	return srv, nil
+	return srv
 }

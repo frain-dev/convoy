@@ -39,10 +39,7 @@ func addServerCommand(a *app) *cobra.Command {
 				return errors.New("please provide the HTTP port in the convoy.json file")
 			}
 
-			srv, err := server.New(cfg, a.messageRepo, a.applicationRepo, a.groupRepo, a.scheduleQueue)
-			if err != nil {
-				return err
-			}
+			srv := server.New(cfg, a.messageRepo, a.applicationRepo, a.groupRepo, a.scheduleQueue)
 
 			// register workers.
 			if queue, ok := a.scheduleQueue.(*convoy_queue.RedisQueue); ok {
