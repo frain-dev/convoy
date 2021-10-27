@@ -160,6 +160,12 @@ func LoadConfig(p string) error {
 		c.Server.HTTP.KeyFile = keyFile
 	}
 
+	if c.Server.HTTP.SSl {
+		if c.Server.HTTP.CertFile == "" || c.Server.HTTP.KeyFile == "" {
+			return errors.New("both cert_file and key_file are required for ssl")
+		}
+	}
+
 	if env := os.Getenv("CONVOY_ENV"); env != "" {
 		c.Environment = env
 	}
