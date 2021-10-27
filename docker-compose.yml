@@ -1,31 +1,34 @@
 version: "3"
 
 services:
-    web:
-        build:
-            context: .
-            dockerfile: Dockerfile
-        entrypoint: ["./cmd", "server", "--config", "convoy.json"]
-        ports:
-            - 5005:5005
-        volumes:
-            - ./convoy-docker.json:/convoy.json
-        restart: on-failure
-        depends_on:
-            - mongodb
-            - redis_server
+  web:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    entrypoint: [ "./cmd", "server", "--config", "convoy.json" ]
+    ports:
+      - 5005:5005
+    volumes:
+      - ./convoy-docker.json:/convoy.json
+#      map ssl files here
+#      - ./localhost.crt:/localhost.crt map ssl
+#      - ./localhost.key:/localhost.key
+    restart: on-failure
+    depends_on:
+      - mongodb
+      - redis_server
 
-    mongodb:
-        image: mongo:latest
-        environment:
-            MONGO_INITDB_ROOT_USERNAME: root
-            MONGO_INITDB_ROOT_PASSWORD: rootpassword
-        volumes:
-            - ./data/mongo:/data/db
-        ports:
-           - "27017:27017"
+  mongodb:
+    image: mongo:latest
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: root
+      MONGO_INITDB_ROOT_PASSWORD: rootpassword
+    volumes:
+      - ./data/mongo:/data/db
+    ports:
+      - "27017:27017"
 
-    redis_server:
-        image: redis:alpine
-        ports:
-            - "8379:6379"
+  redis_server:
+    image: redis:alpine
+    ports:
+      - "8379:6379"

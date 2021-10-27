@@ -25,10 +25,10 @@ type SentryConfiguration struct {
 
 type ServerConfiguration struct {
 	HTTP struct {
-		SSl      bool   `json:"ssl"`
-		CertFile string `json:"cert_file"`
-		KeyFile  string `json:"key_file"`
-		Port     uint32 `json:"port"`
+		SSl         bool   `json:"ssl"`
+		SSLCertFile string `json:"ssl_cert_file"`
+		SSLKeyFile  string `json:"ssl_key_file"`
+		Port        uint32 `json:"port"`
 	} `json:"http"`
 }
 
@@ -152,16 +152,16 @@ func LoadConfig(p string) error {
 
 	if certFile := os.Getenv("CONVOY_SSL_CERT_FILE"); certFile != "" {
 		c.Server.HTTP.SSl = true
-		c.Server.HTTP.CertFile = certFile
+		c.Server.HTTP.SSLCertFile = certFile
 	}
 
 	if keyFile := os.Getenv("CONVOY_SSL_KEY_FILE"); keyFile != "" {
 		c.Server.HTTP.SSl = true
-		c.Server.HTTP.KeyFile = keyFile
+		c.Server.HTTP.SSLKeyFile = keyFile
 	}
 
 	if c.Server.HTTP.SSl {
-		if c.Server.HTTP.CertFile == "" || c.Server.HTTP.KeyFile == "" {
+		if c.Server.HTTP.SSLCertFile == "" || c.Server.HTTP.SSLKeyFile == "" {
 			return errors.New("both cert_file and key_file are required for ssl")
 		}
 	}
