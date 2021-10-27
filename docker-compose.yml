@@ -10,9 +10,9 @@ services:
       - 5005:5005
     volumes:
       - ./convoy-docker.json:/convoy.json
-#      map ssl files here
-#      - ./localhost.crt:/localhost.crt map ssl
-#      - ./localhost.key:/localhost.key
+      # map ssl files here
+      #- ./localhost.crt:/localhost.crt
+      #- ./localhost.key:/localhost.key
     restart: on-failure
     depends_on:
       - mongodb
