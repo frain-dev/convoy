@@ -8,7 +8,6 @@ import (
 	"time"
 
 	"github.com/frain-dev/convoy"
-	"github.com/frain-dev/convoy/config"
 	"github.com/frain-dev/convoy/server/models"
 	"github.com/frain-dev/convoy/util"
 	"github.com/go-chi/render"
@@ -70,52 +69,17 @@ func (a *applicationHandler) CreateAppMessage(w http.ResponseWriter, r *http.Req
 		return
 	}
 
-	EventStatus := convoy.ScheduledEventStatus
-	activeEndpoints := util.ParseMetadataFromActiveEndpoints(app.Endpoints)
-	if len(activeEndpoints) == 0 {
-		EventStatus = convoy.DiscardedEventStatus
-		activeEndpoints = util.GetMetadataFromEndpoints(app.Endpoints)
-	}
-
-	cfg, err := config.Get()
-	if err != nil {
-		log.Errorln("error fetching config - ", err)
-		_ = render.Render(w, r, newErrorResponse("an error has occurred while fetching config", http.StatusInternalServerError))
-		return
-	}
-
-	var intervalSeconds uint64
-	var retryLimit uint64
-	if cfg.Strategy.Type == config.DefaultStrategyProvider {
-		intervalSeconds = cfg.Strategy.Default.IntervalSeconds
-		retryLimit = cfg.Strategy.Default.RetryLimit
-	} else {
-		_ = render.Render(w, r, newErrorResponse("retry strategy not defined in configuration", http.StatusInternalServerError))
-		return
-	}
-
 	msg := &convoy.Event{
 		UID:       uuid.New().String(),
 		AppID:     app.UID,
 		EventType: convoy.EventType(eventType),
 		Data:      d,
-		Metadata: &convoy.EventMetadata{
-			Strategy:        cfg.Strategy.Type,
-			NumTrials:       0,
-			IntervalSeconds: intervalSeconds,
-			RetryLimit:      retryLimit,
-			NextSendTime:    primitive.NewDateTimeFromTime(time.Now()),
-		},
-		EventAttempts: make([]convoy.EventAttempt, 0),
-		CreatedAt:     primitive.NewDateTimeFromTime(time.Now()),
-		UpdatedAt:     primitive.NewDateTimeFromTime(time.Now()),
+		CreatedAt: primitive.NewDateTimeFromTime(time.Now()),
+		UpdatedAt: primitive.NewDateTimeFromTime(time.Now()),
 		AppMetadata: &convoy.AppMetadata{
 			GroupID:      app.GroupID,
-			Secret:       app.Secret,
 			SupportEmail: app.SupportEmail,
-			Endpoints:    activeEndpoints,
 		},
-		Status:         EventStatus,
 		DocumentStatus: convoy.ActiveDocumentStatus,
 	}
 
@@ -125,11 +89,9 @@ func (a *applicationHandler) CreateAppMessage(w http.ResponseWriter, r *http.Req
 		return
 	}
 
-	if EventStatus == convoy.ScheduledEventStatus {
-		err = a.scheduleQueue.Write(r.Context(), convoy.EventProcessor, msg, 1*time.Second)
-		if err != nil {
-			log.Errorf("Error occurred sending new event to the queue %s", err)
-		}
+	err = a.eventQueue.Write(r.Context(), convoy.EventProcessor, msg, 1*time.Second)
+	if err != nil {
+		log.Errorf("Error occurred sending new event to the queue %s", err)
 	}
 
 	_ = render.Render(w, r, newServerResponse("App event created successfully", msg, http.StatusCreated))
@@ -212,7 +174,7 @@ func (a *applicationHandler) ResendAppMessage(w http.ResponseWriter, r *http.Req
 		return
 	}
 
-	err = a.scheduleQueue.Write(r.Context(), convoy.EventProcessor, msg, 1*time.Second)
+	err = a.eventDeliveryQueue.Write(r.Context(), convoy.EventProcessor, msg, 1*time.Second)
 	if err != nil {
 		log.WithError(err).Errorf("Error occurred re-enqueing old event - %s", msg.UID)
 	}

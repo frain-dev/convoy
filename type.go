@@ -27,6 +27,7 @@ func IsValidPeriod(period string) bool {
 type TaskName string
 
 const (
-	EventProcessor      TaskName = "EventProcessor"
-	DeadLetterProcessor TaskName = "DeadLetterProcessor"
+	EventProcessor         TaskName = "EventProcessor"
+	EventDeliveryProcessor TaskName = "EventDeliveryProcessor"
+	DeadLetterProcessor    TaskName = "DeadLetterProcessor"
 )

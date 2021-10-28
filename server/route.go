@@ -225,9 +225,14 @@ func buildRoutes(app *applicationHandler) http.Handler {
 	return router
 }
 
-func New(cfg config.Configuration, eventRepo convoy.EventRepository, appRepo convoy.ApplicationRepository, orgRepo convoy.GroupRepository, scheduleQueue queue.Queuer) *http.Server {
+func New(cfg config.Configuration,
+	eventRepo convoy.EventRepository,
+	appRepo convoy.ApplicationRepository,
+	orgRepo convoy.GroupRepository,
+	eventQueue queue.Queuer,
+	eventDeliveryQueue queue.Queuer) *http.Server {
 
-	app := newApplicationHandler(eventRepo, appRepo, orgRepo, scheduleQueue)
+	app := newApplicationHandler(eventRepo, appRepo, orgRepo, eventQueue, eventDeliveryQueue)
 
 	srv := &http.Server{
 		Handler:      buildRoutes(app),

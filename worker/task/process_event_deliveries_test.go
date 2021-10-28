@@ -13,7 +13,7 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestProcessEvents(t *testing.T) {
+func TestProcessEventDeliveries(t *testing.T) {
 	tt := []struct {
 		name          string
 		cfgPath       string

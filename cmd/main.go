@@ -112,8 +112,9 @@ func main() {
 
 			app.groupRepo = datastore.NewGroupRepo(conn)
 			app.applicationRepo = datastore.NewApplicationRepo(conn)
-			app.messageRepo = datastore.NewMessageRepository(conn)
-			app.scheduleQueue = convoyRedis.NewQueue(rC, qFn, "ScheduleQueue")
+			app.eventRepo = datastore.NewEventRepository(conn)
+			app.eventQueue = convoyRedis.NewQueue(rC, qFn, "EventQueue")
+			app.eventDeliveryQueue = convoyRedis.NewQueue(rC, qFn, "EventDeliveryQueue")
 			app.deadLetterQueue = convoyRedis.NewQueue(rC, qFn, "DeadLetterQueue")
 
 			ensureMongoIndices(conn)
@@ -126,7 +127,7 @@ func main() {
 		},
 		PersistentPostRunE: func(cmd *cobra.Command, args []string) error {
 			defer func() {
-				err := app.scheduleQueue.Close()
+				err := app.eventQueue.Close()
 				if err != nil {
 					log.Errorln("failed to close app queue - ", err)
 				}
@@ -194,11 +195,12 @@ func ensureDefaultGroup(ctx context.Context, groupRepo convoy.GroupRepository) e
 }
 
 type app struct {
-	groupRepo       convoy.GroupRepository
-	applicationRepo convoy.ApplicationRepository
-	messageRepo     convoy.EventRepository
-	scheduleQueue   queue.Queuer
-	deadLetterQueue queue.Queuer
+	groupRepo          convoy.GroupRepository
+	applicationRepo    convoy.ApplicationRepository
+	eventRepo          convoy.EventRepository
+	eventQueue         queue.Queuer
+	eventDeliveryQueue queue.Queuer
+	deadLetterQueue    queue.Queuer
 }
 
 func getCtx() (context.Context, context.CancelFunc) {

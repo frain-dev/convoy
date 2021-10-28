@@ -25,7 +25,7 @@ const (
 	EventCollection = "events"
 )
 
-func NewMessageRepository(db *mongo.Database) convoy.EventRepository {
+func NewEventRepository(db *mongo.Database) convoy.EventRepository {
 	return &eventRepo{
 		inner: db.Collection(EventCollection),
 	}

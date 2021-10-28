@@ -32,7 +32,7 @@ func (e *EndpointError) Delay() time.Duration {
 	return e.delay
 }
 
-func ProcessEvents(appRepo convoy.ApplicationRepository, msgRepo convoy.EventRepository, orgRepo convoy.GroupRepository) func(*queue.Job) error {
+func ProcessEventDeliveries(appRepo convoy.ApplicationRepository, msgRepo convoy.EventRepository, orgRepo convoy.GroupRepository) func(*queue.Job) error {
 	return func(job *queue.Job) error {
 		Id := job.MsgID
 
