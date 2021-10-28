@@ -13,7 +13,6 @@
     }
   },
   "server": {
-    "environment": "dev",
     "http": {
       "ssl": false,
       "ssl_cert_file": "",

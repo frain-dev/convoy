@@ -57,7 +57,7 @@ func addServerCommand(a *app) *cobra.Command {
 			log.Infof("Started convoy server in %s", time.Since(start))
 
 			httpConfig := cfg.Server.HTTP
-			if httpConfig.SSl {
+			if httpConfig.SSL {
 				log.Infof("Started server with SSL: cert_file: %s, key_file: %s", httpConfig.SSLCertFile, httpConfig.SSLKeyFile)
 				return srv.ListenAndServeTLS(httpConfig.SSLCertFile, httpConfig.SSLKeyFile)
 			}
