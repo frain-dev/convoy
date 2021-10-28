@@ -237,6 +237,5 @@ func New(cfg config.Configuration, msgRepo convoy.MessageRepository, appRepo con
 	}
 
 	prometheus.MustRegister(requestDuration)
-
 	return srv
 }

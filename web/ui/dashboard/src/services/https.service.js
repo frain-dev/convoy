@@ -16,7 +16,7 @@ request.interceptors.response.use(
 		return response;
 	},
 	error => {
-		if ((error.response.status === 401 || error.response.status === 400) && error.response.config.url !== '/auth/login') logout();
+		if (error.response.status === 401 && error.response.config.url !== '/auth/login') logout();
 		return Promise.reject(error);
 	}
 );
