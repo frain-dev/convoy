@@ -14,6 +14,7 @@ import (
 	"github.com/frain-dev/convoy/queue"
 
 	"github.com/go-chi/chi/v5/middleware"
+	"github.com/go-chi/httprate"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	log "github.com/sirupsen/logrus"
@@ -52,6 +53,10 @@ func buildRoutes(app *applicationHandler) http.Handler {
 
 	// Public API.
 	router.Route("/api", func(v1Router chi.Router) {
+
+		// rate limit all requests.
+		v1Router.Use(httprate.LimitAll(convoy.RATE_LIMIT, convoy.RATE_LIMIT_DURATION))
+
 		v1Router.Route("/v1", func(r chi.Router) {
 			r.Use(middleware.AllowContentType("application/json"))
 			r.Use(jsonResponse)

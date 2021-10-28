@@ -9,6 +9,7 @@ require (
 	github.com/getsentry/sentry-go v0.11.0
 	github.com/ghodss/yaml v1.0.0
 	github.com/go-chi/chi/v5 v5.0.3
+	github.com/go-chi/httprate v0.5.2 // indirect
 	github.com/go-chi/render v1.0.1
 	github.com/go-redis/redis/v8 v8.11.4
 	github.com/gobeam/mongo-go-pagination v0.0.7
