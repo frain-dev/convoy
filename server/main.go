@@ -32,7 +32,7 @@ package server
 // @tag.description Endpoint related APIs
 
 // @tag.name Messages
-// @tag.description Application Message related APIs
+// @tag.description ApplicationEventrelated APIs
 
 // @tag.name Group
 // @tag.description Group related APIs

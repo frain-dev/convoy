@@ -15,7 +15,7 @@ type Application struct {
 	SupportEmail string `json:"support_email" bson:"support_email"`
 }
 
-type Message struct {
+type Event struct {
 	AppID     string `json:"app_id" bson:"app_id"`
 	EventType string `json:"event_type" bson:"event_type"`
 
@@ -24,7 +24,7 @@ type Message struct {
 	Data json.RawMessage `json:"data" bson:"data"`
 }
 
-type MessageAttempt struct {
+type EventAttempt struct {
 	MessageID  string `json:"msg_id" bson:"msg_id"`
 	APIVersion string `json:"api_version" bson:"api_version"`
 	IPAddress  string `json:"ip" bson:"ip"`
@@ -58,18 +58,18 @@ type SearchParams struct {
 }
 
 type DashboardSummary struct {
-	MessagesSent uint64             `json:"messages_sent" bson:"messages_sent"`
-	Applications int                `json:"apps" bson:"apps"`
-	Period       string             `json:"period" bson:"period"`
-	PeriodData   *[]MessageInterval `json:"message_data,omitempty" bson:"message_data"`
+	EventsSent   uint64           `json:"events_sent" bson:"events_sent"`
+	Applications int              `json:"apps" bson:"apps"`
+	Period       string           `json:"period" bson:"period"`
+	PeriodData   *[]EventInterval `json:"event_data,omitempty" bson:"event_data"`
 }
 
-type MessageInterval struct {
-	Data  MessageIntervalData `json:"data" bson:"_id"`
-	Count uint64              `json:"count" bson:"count"`
+type EventInterval struct {
+	Data  EventIntervalData `json:"data" bson:"_id"`
+	Count uint64            `json:"count" bson:"count"`
 }
 
-type MessageIntervalData struct {
+type EventIntervalData struct {
 	Interval int64  `json:"index" bson:"index"`
 	Time     string `json:"date" bson:"total_time"`
 }

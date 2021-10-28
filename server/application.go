@@ -22,7 +22,7 @@ import (
 
 type applicationHandler struct {
 	appRepo       convoy.ApplicationRepository
-	msgRepo       convoy.MessageRepository
+	eventRepo     convoy.EventRepository
 	groupRepo     convoy.GroupRepository
 	scheduleQueue queue.Queuer
 }
@@ -32,10 +32,10 @@ type pagedResponse struct {
 	Pagination *mongopagination.PaginationData `json:"pagination,omitempty"`
 }
 
-func newApplicationHandler(msgRepo convoy.MessageRepository, appRepo convoy.ApplicationRepository, groupRepo convoy.GroupRepository, scheduleQueue queue.Queuer) *applicationHandler {
+func newApplicationHandler(eventRepo convoy.EventRepository, appRepo convoy.ApplicationRepository, groupRepo convoy.GroupRepository, scheduleQueue queue.Queuer) *applicationHandler {
 
 	return &applicationHandler{
-		msgRepo:       msgRepo,
+		eventRepo:     eventRepo,
 		appRepo:       appRepo,
 		groupRepo:     groupRepo,
 		scheduleQueue: scheduleQueue,

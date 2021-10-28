@@ -107,7 +107,7 @@ func buildRoutes(app *applicationHandler) http.Handler {
 				msgRouter.With(pagination).Get("/", app.GetMessagesPaged)
 
 				msgRouter.Route("/{eventID}", func(msgSubRouter chi.Router) {
-					msgSubRouter.Use(requireMessage(app.msgRepo))
+					msgSubRouter.Use(requireMessage(app.eventRepo))
 
 					msgSubRouter.Get("/", app.GetAppMessage)
 					msgSubRouter.Put("/resend", app.ResendAppMessage)
@@ -133,11 +133,11 @@ func buildRoutes(app *applicationHandler) http.Handler {
 
 			dashboardRouter.Use(requireDefaultGroup(app.groupRepo))
 
-			dashboardRouter.With(fetchDashboardSummary(app.appRepo, app.msgRepo)).Get("/summary", app.GetDashboardSummary)
+			dashboardRouter.With(fetchDashboardSummary(app.appRepo, app.eventRepo)).Get("/summary", app.GetDashboardSummary)
 			dashboardRouter.With(pagination).With(fetchGroupApps(app.appRepo)).Get("/apps", app.GetPaginatedApps)
 
 			dashboardRouter.Route("/events/{eventID}", func(msgSubRouter chi.Router) {
-				msgSubRouter.Use(requireMessage(app.msgRepo))
+				msgSubRouter.Use(requireMessage(app.eventRepo))
 
 				msgSubRouter.Put("/resend", app.ResendAppMessage)
 			})
@@ -173,7 +173,7 @@ func buildRoutes(app *applicationHandler) http.Handler {
 					msgSubRouter.With(pagination).Get("/", app.GetMessagesPaged)
 
 					msgSubRouter.Route("/{eventID}", func(msgEventSubRouter chi.Router) {
-						msgEventSubRouter.Use(requireMessage(app.msgRepo))
+						msgEventSubRouter.Use(requireMessage(app.eventRepo))
 
 						msgEventSubRouter.Get("/", app.GetAppMessage)
 						msgEventSubRouter.Put("/resend", app.ResendAppMessage)
@@ -194,10 +194,10 @@ func buildRoutes(app *applicationHandler) http.Handler {
 
 		uiRouter.Route("/events", func(msgRouter chi.Router) {
 			msgRouter.Use(requireUIAuth())
-			msgRouter.With(pagination).With(fetchAllMessages(app.msgRepo)).Get("/", app.GetMessagesPaged)
+			msgRouter.With(pagination).With(fetchAllMessages(app.eventRepo)).Get("/", app.GetMessagesPaged)
 
 			msgRouter.Route("/{eventID}", func(msgSubRouter chi.Router) {
-				msgSubRouter.Use(requireMessage(app.msgRepo))
+				msgSubRouter.Use(requireMessage(app.eventRepo))
 
 				msgSubRouter.Get("/", app.GetAppMessage)
 
@@ -225,9 +225,9 @@ func buildRoutes(app *applicationHandler) http.Handler {
 	return router
 }
 
-func New(cfg config.Configuration, msgRepo convoy.MessageRepository, appRepo convoy.ApplicationRepository, orgRepo convoy.GroupRepository, scheduleQueue queue.Queuer) *http.Server {
+func New(cfg config.Configuration, eventRepo convoy.EventRepository, appRepo convoy.ApplicationRepository, orgRepo convoy.GroupRepository, scheduleQueue queue.Queuer) *http.Server {
 
-	app := newApplicationHandler(msgRepo, appRepo, orgRepo, scheduleQueue)
+	app := newApplicationHandler(eventRepo, appRepo, orgRepo, scheduleQueue)
 
 	srv := &http.Server{
 		Handler:      buildRoutes(app),

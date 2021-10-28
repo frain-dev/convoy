@@ -20,10 +20,10 @@ func Test_login(t *testing.T) {
 
 	groupRepo := mocks.NewMockGroupRepository(ctrl)
 	appRepo := mocks.NewMockApplicationRepository(ctrl)
-	msgRepo := mocks.NewMockMessageRepository(ctrl)
+	eventRepo := mocks.NewMockEventRepository(ctrl)
 	scheduleQueue := mocks.NewMockQueuer(ctrl)
 
-	app = newApplicationHandler(msgRepo, appRepo, groupRepo, scheduleQueue)
+	app = newApplicationHandler(eventRepo, appRepo, groupRepo, scheduleQueue)
 
 	tests := []struct {
 		name       string
@@ -86,10 +86,10 @@ func Test_fetchAllConfigDetails(t *testing.T) {
 
 	groupRepo := mocks.NewMockGroupRepository(ctrl)
 	appRepo := mocks.NewMockApplicationRepository(ctrl)
-	msgRepo := mocks.NewMockMessageRepository(ctrl)
+	eventRepo := mocks.NewMockEventRepository(ctrl)
 	scheduleQueue := mocks.NewMockQueuer(ctrl)
 
-	app = newApplicationHandler(msgRepo, appRepo, groupRepo, scheduleQueue)
+	app = newApplicationHandler(eventRepo, appRepo, groupRepo, scheduleQueue)
 
 	tests := []struct {
 		name       string

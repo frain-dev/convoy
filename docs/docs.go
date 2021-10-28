@@ -2451,7 +2451,7 @@ var doc = `{
                     "type": "string"
                 },
                 "metadata": {
-                    "$ref": "#/definitions/convoy.MessageMetadata"
+                    "$ref": "#/definitions/convoy.EventMetadata"
                 },
                 "provider_id": {
                     "description": "ProviderID is a custom ID that can be used to reconcile this message\nwith your internal systems.\nThis is optional\nIf not provided, we will generate one for you",
@@ -2521,7 +2521,7 @@ var doc = `{
                 }
             }
         },
-        "convoy.MessageMetadata": {
+        "convoy.EventMetadata": {
             "type": "object",
             "properties": {
                 "interval_seconds": {
@@ -2670,7 +2670,7 @@ var doc = `{
             "name": "Application Endpoints"
         },
         {
-            "description": "Application Message related APIs",
+            "description": "ApplicationEventrelated APIs",
             "name": "Messages"
         },
         {

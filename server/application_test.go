@@ -95,14 +95,14 @@ func TestApplicationHandler_GetApp(t *testing.T) {
 
 	groupRepo := mocks.NewMockGroupRepository(ctrl)
 	apprepo := mocks.NewMockApplicationRepository(ctrl)
-	msgRepo := mocks.NewMockMessageRepository(ctrl)
+	eventRepo := mocks.NewMockEventRepository(ctrl)
 	scheduleQueue := mocks.NewMockQueuer(ctrl)
 
 	groupID := "1234567890"
 
 	validID := "123456789"
 
-	app = newApplicationHandler(msgRepo, apprepo, groupRepo, scheduleQueue)
+	app = newApplicationHandler(eventRepo, apprepo, groupRepo, scheduleQueue)
 
 	tt := []struct {
 		name       string
@@ -191,14 +191,14 @@ func TestApplicationHandler_GetApps(t *testing.T) {
 
 	groupRepo := mocks.NewMockGroupRepository(ctrl)
 	apprepo := mocks.NewMockApplicationRepository(ctrl)
-	msgRepo := mocks.NewMockMessageRepository(ctrl)
+	eventRepo := mocks.NewMockEventRepository(ctrl)
 	scheduleQueue := mocks.NewMockQueuer(ctrl)
 
 	groupID := "1234567890"
 
 	validID := "123456789"
 
-	app = newApplicationHandler(msgRepo, apprepo, groupRepo, scheduleQueue)
+	app = newApplicationHandler(eventRepo, apprepo, groupRepo, scheduleQueue)
 
 	tt := []struct {
 		name       string
@@ -338,10 +338,10 @@ func TestApplicationHandler_CreateApp(t *testing.T) {
 
 			groupRepo := mocks.NewMockGroupRepository(ctrl)
 			apprepo := mocks.NewMockApplicationRepository(ctrl)
-			msgRepo := mocks.NewMockMessageRepository(ctrl)
+			eventRepo := mocks.NewMockEventRepository(ctrl)
 			scheduleQueue := mocks.NewMockQueuer(ctrl)
 
-			app = newApplicationHandler(msgRepo, apprepo, groupRepo, scheduleQueue)
+			app = newApplicationHandler(eventRepo, apprepo, groupRepo, scheduleQueue)
 
 			// Arrange
 			req := httptest.NewRequest(tc.method, "/api/v1/applications", tc.body)
@@ -513,10 +513,10 @@ func TestApplicationHandler_UpdateApp(t *testing.T) {
 
 			groupRepo := mocks.NewMockGroupRepository(ctrl)
 			apprepo := mocks.NewMockApplicationRepository(ctrl)
-			msgRepo := mocks.NewMockMessageRepository(ctrl)
+			eventRepo := mocks.NewMockEventRepository(ctrl)
 			scheduleQueue := mocks.NewMockQueuer(ctrl)
 
-			app = newApplicationHandler(msgRepo, apprepo, groupRepo, scheduleQueue)
+			app = newApplicationHandler(eventRepo, apprepo, groupRepo, scheduleQueue)
 
 			url := fmt.Sprintf("/api/v1/applications/%s", tc.appId)
 			req := httptest.NewRequest(tc.method, url, tc.body)
@@ -568,14 +568,14 @@ func TestApplicationHandler_CreateAppEndpoint(t *testing.T) {
 
 	groupRepo := mocks.NewMockGroupRepository(ctrl)
 	apprepo := mocks.NewMockApplicationRepository(ctrl)
-	msgRepo := mocks.NewMockMessageRepository(ctrl)
+	eventRepo := mocks.NewMockEventRepository(ctrl)
 	scheduleQueue := mocks.NewMockQueuer(ctrl)
 
 	groupID := "1234567890"
 
 	bodyReader := strings.NewReader(`{"url": "https://google.com", "description": "Test"}`)
 
-	app = newApplicationHandler(msgRepo, apprepo, groupRepo, scheduleQueue)
+	app = newApplicationHandler(eventRepo, apprepo, groupRepo, scheduleQueue)
 
 	appId := "123456789"
 
@@ -728,10 +728,10 @@ func TestApplicationHandler_UpdateAppEndpoint(t *testing.T) {
 
 			groupRepo := mocks.NewMockGroupRepository(ctrl)
 			apprepo := mocks.NewMockApplicationRepository(ctrl)
-			msgRepo := mocks.NewMockMessageRepository(ctrl)
+			eventRepo := mocks.NewMockEventRepository(ctrl)
 			scheduleQueue := mocks.NewMockQueuer(ctrl)
 
-			app = newApplicationHandler(msgRepo, apprepo, groupRepo, scheduleQueue)
+			app = newApplicationHandler(eventRepo, apprepo, groupRepo, scheduleQueue)
 
 			url := fmt.Sprintf("/api/v1/applications/%s/endpoints/%s", tc.appId, tc.endpointId)
 			req := httptest.NewRequest(tc.method, url, tc.body)
@@ -788,7 +788,7 @@ func Test_applicationHandler_GetDashboardSummary(t *testing.T) {
 
 	groupRepo := mocks.NewMockGroupRepository(ctrl)
 	apprepo := mocks.NewMockApplicationRepository(ctrl)
-	msgRepo := mocks.NewMockMessageRepository(ctrl)
+	eventRepo := mocks.NewMockEventRepository(ctrl)
 	scheduleQueue := mocks.NewMockQueuer(ctrl)
 
 	groupID := "1234567890"
@@ -798,19 +798,19 @@ func Test_applicationHandler_GetDashboardSummary(t *testing.T) {
 		Name: "Valid group",
 	}
 
-	app = newApplicationHandler(msgRepo, apprepo, groupRepo, scheduleQueue)
+	app = newApplicationHandler(eventRepo, apprepo, groupRepo, scheduleQueue)
 
 	tt := []struct {
 		name       string
 		method     string
 		statusCode int
-		dbFn       func(msgRepo *mocks.MockMessageRepository, appRepo *mocks.MockApplicationRepository, orgRepo *mocks.MockGroupRepository)
+		dbFn       func(eventRepo *mocks.MockEventRepository, appRepo *mocks.MockApplicationRepository, orgRepo *mocks.MockGroupRepository)
 	}{
 		{
 			name:       "valid groups",
 			method:     http.MethodGet,
 			statusCode: http.StatusOK,
-			dbFn: func(msgRepo *mocks.MockMessageRepository, appRepo *mocks.MockApplicationRepository, orgRepo *mocks.MockGroupRepository) {
+			dbFn: func(eventRepo *mocks.MockEventRepository, appRepo *mocks.MockApplicationRepository, orgRepo *mocks.MockGroupRepository) {
 				appRepo.EXPECT().
 					SearchApplicationsByGroupId(gomock.Any(), gomock.Any(), gomock.Any()).Times(1).
 					Return([]convoy.Application{
@@ -821,11 +821,11 @@ func Test_applicationHandler_GetDashboardSummary(t *testing.T) {
 							Endpoints: []convoy.Endpoint{},
 						},
 					}, nil)
-				msgRepo.EXPECT().
-					LoadMessageIntervals(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Times(1).
-					Return([]models.MessageInterval{
+				eventRepo.EXPECT().
+					LoadEventIntervals(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Times(1).
+					Return([]models.EventInterval{
 						{
-							Data: models.MessageIntervalData{
+							Data: models.EventIntervalData{
 								Interval: 12,
 								Time:     "2020-10",
 							},
@@ -850,10 +850,10 @@ func Test_applicationHandler_GetDashboardSummary(t *testing.T) {
 			request = request.WithContext(context.WithValue(request.Context(), groupCtx, group))
 
 			if tc.dbFn != nil {
-				tc.dbFn(msgRepo, apprepo, groupRepo)
+				tc.dbFn(eventRepo, apprepo, groupRepo)
 			}
 
-			fetchDashboardSummary(apprepo, msgRepo)(http.HandlerFunc(app.GetDashboardSummary)).
+			fetchDashboardSummary(apprepo, eventRepo)(http.HandlerFunc(app.GetDashboardSummary)).
 				ServeHTTP(responseRecorder, request)
 
 			if responseRecorder.Code != tc.statusCode {
@@ -873,7 +873,7 @@ func Test_applicationHandler_GetPaginatedApps(t *testing.T) {
 
 	org := mocks.NewMockGroupRepository(ctrl)
 	apprepo := mocks.NewMockApplicationRepository(ctrl)
-	msgRepo := mocks.NewMockMessageRepository(ctrl)
+	eventRepo := mocks.NewMockEventRepository(ctrl)
 	scheduleQueue := mocks.NewMockQueuer(ctrl)
 
 	groupID := "1234567890"
@@ -883,7 +883,7 @@ func Test_applicationHandler_GetPaginatedApps(t *testing.T) {
 		Name: "Valid group",
 	}
 
-	app = newApplicationHandler(msgRepo, apprepo, org, scheduleQueue)
+	app = newApplicationHandler(eventRepo, apprepo, org, scheduleQueue)
 
 	tt := []struct {
 		name       string

@@ -13,32 +13,32 @@ import (
 	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
-type MessageStatus string
+type EventStatus string
 type HttpHeader map[string]string
 
 var (
-	ErrMessageNotFound = errors.New("event not found")
+	ErrEventNotFound = errors.New("event not found")
 
-	ErrMessageDeliveryAttemptNotFound = errors.New("delivery attempt not found")
+	ErrEventDeliveryAttemptNotFound = errors.New("delivery attempt not found")
 )
 
 const (
-	// ScheduledMessageStatus : when  a message has been scheduled for delivery
-	ScheduledMessageStatus  MessageStatus = "Scheduled"
-	ProcessingMessageStatus MessageStatus = "Processing"
-	DiscardedMessageStatus  MessageStatus = "Discarded"
-	FailureMessageStatus    MessageStatus = "Failure"
-	SuccessMessageStatus    MessageStatus = "Success"
-	RetryMessageStatus      MessageStatus = "Retry"
+	// ScheduledEventStatus : when  a Event has been scheduled for delivery
+	ScheduledEventStatus  EventStatus = "Scheduled"
+	ProcessingEventStatus EventStatus = "Processing"
+	DiscardedEventStatus  EventStatus = "Discarded"
+	FailureEventStatus    EventStatus = "Failure"
+	SuccessEventStatus    EventStatus = "Success"
+	RetryEventStatus      EventStatus = "Retry"
 )
 
-type MessageMetadata struct {
+type EventMetadata struct {
 	Strategy config.StrategyProvider `json:"strategy" bson:"strategy"`
-	// NextSendTime denotes the next time a message will be published in
+	// NextSendTime denotes the next time a Event will be published in
 	// case it failed the first time
 	NextSendTime primitive.DateTime `json:"next_send_time" bson:"next_send_time"`
 
-	// NumTrials: number of times we have tried to deliver this message to
+	// NumTrials: number of times we have tried to deliver this Event to
 	// an application
 	NumTrials uint64 `json:"num_trials" bson:"num_trials"`
 
@@ -63,7 +63,7 @@ type EndpointMetadata struct {
 	Sent bool `json:"sent" bson:"sent"`
 }
 
-func (m MessageMetadata) Value() (driver.Value, error) {
+func (m EventMetadata) Value() (driver.Value, error) {
 	b := new(bytes.Buffer)
 
 	if err := json.NewEncoder(b).Encode(m); err != nil {
@@ -79,14 +79,14 @@ func (m MessageMetadata) Value() (driver.Value, error) {
 // Makes it easy to filter by a list of events
 type EventType string
 
-// Message defines a payload to be sent to an application
-type Message struct {
+//Eventdefines a payload to be sent to an application
+type Event struct {
 	ID        primitive.ObjectID `json:"-" bson:"_id"`
 	UID       string             `json:"uid" bson:"uid"`
 	AppID     string             `json:"app_id" bson:"app_id"`
 	EventType EventType          `json:"event_type" bson:"event_type"`
 
-	// ProviderID is a custom ID that can be used to reconcile this message
+	// ProviderID is a custom ID that can be used to reconcile this Event
 	// with your internal systems.
 	// This is optional
 	// If not provided, we will generate one for you
@@ -96,15 +96,15 @@ type Message struct {
 	// webhook to the endpoints
 	Data json.RawMessage `json:"data" bson:"data"`
 
-	Metadata *MessageMetadata `json:"metadata" bson:"metadata"`
+	Metadata *EventMetadata `json:"metadata" bson:"metadata"`
 
 	Description string `json:"description,omitempty" bson:"description"`
 
-	Status MessageStatus `json:"status" bson:"status"`
+	Status EventStatus `json:"status" bson:"status"`
 
 	AppMetadata *AppMetadata `json:"app_metadata,omitempty" bson:"app_metadata"`
 
-	MessageAttempts []MessageAttempt `json:"-" bson:"attempts"`
+	EventAttempts []EventAttempt `json:"-" bson:"attempts"`
 
 	CreatedAt primitive.DateTime `json:"created_at,omitempty" bson:"created_at,omitempty" swaggertype:"string"`
 	UpdatedAt primitive.DateTime `json:"updated_at,omitempty" bson:"updated_at,omitempty" swaggertype:"string"`
@@ -113,7 +113,7 @@ type Message struct {
 	DocumentStatus DocumentStatus `json:"-" bson:"document_status"`
 }
 
-type MessageAttempt struct {
+type EventAttempt struct {
 	ID         primitive.ObjectID `json:"-" bson:"_id"`
 	UID        string             `json:"uid" bson:"uid"`
 	MsgID      string             `json:"msg_id" bson:"msg_id"`
@@ -122,28 +122,28 @@ type MessageAttempt struct {
 	EndpointID string             `json:"endpoint_id" bson:"endpoint_id"`
 	APIVersion string             `json:"api_version" bson:"api_version"`
 
-	IPAddress        string        `json:"ip_address,omitempty" bson:"ip_address,omitempty"`
-	RequestHeader    HttpHeader    `json:"request_http_header,omitempty" bson:"request_http_header,omitempty"`
-	ResponseHeader   HttpHeader    `json:"response_http_header,omitempty" bson:"response_http_header,omitempty"`
-	HttpResponseCode string        `json:"http_status,omitempty" bson:"http_status,omitempty"`
-	ResponseData     string        `json:"response_data,omitempty" bson:"response_data,omitempty"`
-	Error            string        `json:"error,omitempty" bson:"error,omitempty"`
-	Status           MessageStatus `json:"status,omitempty" bson:"status,omitempty"`
+	IPAddress        string      `json:"ip_address,omitempty" bson:"ip_address,omitempty"`
+	RequestHeader    HttpHeader  `json:"request_http_header,omitempty" bson:"request_http_header,omitempty"`
+	ResponseHeader   HttpHeader  `json:"response_http_header,omitempty" bson:"response_http_header,omitempty"`
+	HttpResponseCode string      `json:"http_status,omitempty" bson:"http_status,omitempty"`
+	ResponseData     string      `json:"response_data,omitempty" bson:"response_data,omitempty"`
+	Error            string      `json:"error,omitempty" bson:"error,omitempty"`
+	Status           EventStatus `json:"status,omitempty" bson:"status,omitempty"`
 
 	CreatedAt primitive.DateTime `json:"created_at,omitempty" bson:"created_at,omitempty" swaggertype:"string"`
 	UpdatedAt primitive.DateTime `json:"updated_at,omitempty" bson:"updated_at,omitempty" swaggertype:"string"`
 	DeletedAt primitive.DateTime `json:"deleted_at,omitempty" bson:"deleted_at,omitempty" swaggertype:"string"`
 }
 
-type MessageRepository interface {
-	CreateMessage(context.Context, *Message) error
-	LoadMessageIntervals(context.Context, string, models.SearchParams, Period, int) ([]models.MessageInterval, error)
-	LoadMessagesPagedByAppId(context.Context, string, models.SearchParams, models.Pageable) ([]Message, pager.PaginationData, error)
-	FindMessageByID(ctx context.Context, id string) (*Message, error)
-	LoadMessagesScheduledForPosting(context.Context) ([]Message, error)
-	LoadMessagesForPostingRetry(context.Context) ([]Message, error)
-	LoadAbandonedMessagesForPostingRetry(context.Context) ([]Message, error)
-	UpdateStatusOfMessages(context.Context, []Message, MessageStatus) error
-	UpdateMessageWithAttempt(ctx context.Context, m Message, attempt MessageAttempt) error
-	LoadMessagesPaged(context.Context, string, string, models.SearchParams, models.Pageable) ([]Message, pager.PaginationData, error)
+type EventRepository interface {
+	CreateEvent(context.Context, *Event) error
+	LoadEventIntervals(context.Context, string, models.SearchParams, Period, int) ([]models.EventInterval, error)
+	LoadEventsPagedByAppId(context.Context, string, models.SearchParams, models.Pageable) ([]Event, pager.PaginationData, error)
+	FindEventByID(ctx context.Context, id string) (*Event, error)
+	LoadEventsScheduledForPosting(context.Context) ([]Event, error)
+	LoadEventsForPostingRetry(context.Context) ([]Event, error)
+	LoadAbandonedEventsForPostingRetry(context.Context) ([]Event, error)
+	UpdateStatusOfEvents(context.Context, []Event, EventStatus) error
+	UpdateEventWithAttempt(ctx context.Context, e Event, attempt EventAttempt) error
+	LoadEventsPaged(context.Context, string, string, models.SearchParams, models.Pageable) ([]Event, pager.PaginationData, error)
 }

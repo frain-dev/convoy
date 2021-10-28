@@ -198,20 +198,20 @@ func requireAppEndpoint() func(next http.Handler) http.Handler {
 	}
 }
 
-func requireMessage(msgRepo convoy.MessageRepository) func(next http.Handler) http.Handler {
+func requireMessage(msgRepo convoy.EventRepository) func(next http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 
 			msgId := chi.URLParam(r, "eventID")
 
-			msg, err := msgRepo.FindMessageByID(r.Context(), msgId)
+			msg, err := msgRepo.FindEventByID(r.Context(), msgId)
 			if err != nil {
 
 				msg := "an error occurred while retrieving event details"
 				statusCode := http.StatusInternalServerError
 
-				if errors.Is(err, convoy.ErrMessageNotFound) {
+				if errors.Is(err, convoy.ErrEventNotFound) {
 					msg = err.Error()
 					statusCode = http.StatusNotFound
 				}
@@ -362,7 +362,7 @@ func fetchGroupApps(appRepo convoy.ApplicationRepository) func(next http.Handler
 	}
 }
 
-func fetchDashboardSummary(appRepo convoy.ApplicationRepository, msgRepo convoy.MessageRepository) func(next http.Handler) http.Handler {
+func fetchDashboardSummary(appRepo convoy.ApplicationRepository, msgRepo convoy.EventRepository) func(next http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -423,7 +423,7 @@ func fetchDashboardSummary(appRepo convoy.ApplicationRepository, msgRepo convoy.
 				return
 			}
 
-			messagesSent, messages, err := computeDashboardMessages(r.Context(), group.UID, msgRepo, searchParams, p)
+			eventsSent, messages, err := computeDashboardMessages(r.Context(), group.UID, msgRepo, searchParams, p)
 			if err != nil {
 				_ = render.Render(w, r, newErrorResponse("an error occurred while fetching messages", http.StatusInternalServerError))
 				return
@@ -431,7 +431,7 @@ func fetchDashboardSummary(appRepo convoy.ApplicationRepository, msgRepo convoy.
 
 			dashboard := models.DashboardSummary{
 				Applications: len(apps),
-				MessagesSent: messagesSent,
+				EventsSent:   eventsSent,
 				Period:       period,
 				PeriodData:   &messages,
 			}
@@ -450,11 +450,11 @@ func ensurePeriod(start time.Time, end time.Time) error {
 	return nil
 }
 
-func computeDashboardMessages(ctx context.Context, orgId string, msgRepo convoy.MessageRepository, searchParams models.SearchParams, period convoy.Period) (uint64, []models.MessageInterval, error) {
+func computeDashboardMessages(ctx context.Context, orgId string, msgRepo convoy.EventRepository, searchParams models.SearchParams, period convoy.Period) (uint64, []models.EventInterval, error) {
 
 	var messagesSent uint64
 
-	messages, err := msgRepo.LoadMessageIntervals(ctx, orgId, searchParams, period, 1)
+	messages, err := msgRepo.LoadEventIntervals(ctx, orgId, searchParams, period, 1)
 	if err != nil {
 		log.Errorln("failed to load message intervals - ", err)
 		return 0, nil, err
@@ -505,16 +505,16 @@ func getApplicationFromContext(ctx context.Context) *convoy.Application {
 }
 
 func setMessageInContext(ctx context.Context,
-	msg *convoy.Message) context.Context {
+	msg *convoy.Event) context.Context {
 	return context.WithValue(ctx, msgCtx, msg)
 }
 
-func getMessageFromContext(ctx context.Context) *convoy.Message {
-	return ctx.Value(msgCtx).(*convoy.Message)
+func getMessageFromContext(ctx context.Context) *convoy.Event {
+	return ctx.Value(msgCtx).(*convoy.Event)
 }
 
 func setMessagesInContext(ctx context.Context,
-	msg *[]convoy.Message) context.Context {
+	msg *[]convoy.Event) context.Context {
 	return context.WithValue(ctx, msgCtx, msg)
 }
 func setApplicationsInContext(ctx context.Context,
@@ -568,21 +568,21 @@ func getDashboardSummaryFromContext(ctx context.Context) *models.DashboardSummar
 }
 
 func setDeliveryAttemptInContext(ctx context.Context,
-	attempt *convoy.MessageAttempt) context.Context {
+	attempt *convoy.EventAttempt) context.Context {
 	return context.WithValue(ctx, deliveryAttemptsCtx, attempt)
 }
 
-func getDeliveryAttemptFromContext(ctx context.Context) *convoy.MessageAttempt {
-	return ctx.Value(deliveryAttemptsCtx).(*convoy.MessageAttempt)
+func getDeliveryAttemptFromContext(ctx context.Context) *convoy.EventAttempt {
+	return ctx.Value(deliveryAttemptsCtx).(*convoy.EventAttempt)
 }
 
 func setDeliveryAttemptsInContext(ctx context.Context,
-	attempts *[]convoy.MessageAttempt) context.Context {
+	attempts *[]convoy.EventAttempt) context.Context {
 	return context.WithValue(ctx, deliveryAttemptsCtx, attempts)
 }
 
-func getDeliveryAttemptsFromContext(ctx context.Context) *[]convoy.MessageAttempt {
-	return ctx.Value(deliveryAttemptsCtx).(*[]convoy.MessageAttempt)
+func getDeliveryAttemptsFromContext(ctx context.Context) *[]convoy.EventAttempt {
+	return ctx.Value(deliveryAttemptsCtx).(*[]convoy.EventAttempt)
 }
 
 func setAuthLoginInContext(ctx context.Context, a *AuthorizedLogin) context.Context {

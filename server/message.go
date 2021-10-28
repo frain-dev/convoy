@@ -23,14 +23,14 @@ import (
 // @Tags Messages
 // @Accept  json
 // @Produce  json
-// @Param message body models.Message{data=Stub} true "Message Details"
-// @Success 200 {object} serverResponse{data=convoy.Message{data=Stub}}
+// @Param message body models.Event{data=Stub} true "Message Details"
+// @Success 200 {object} serverResponse{data=convoy.Event{data=Stub}}
 // @Failure 400,401,500 {object} serverResponse{data=Stub}
 // @Security ApiKeyAuth
 // @Router /events [post]
 func (a *applicationHandler) CreateAppMessage(w http.ResponseWriter, r *http.Request) {
 
-	var newMessage models.Message
+	var newMessage models.Event
 	err := json.NewDecoder(r.Body).Decode(&newMessage)
 	if err != nil {
 		_ = render.Render(w, r, newErrorResponse("Request is invalid", http.StatusBadRequest))
@@ -70,10 +70,10 @@ func (a *applicationHandler) CreateAppMessage(w http.ResponseWriter, r *http.Req
 		return
 	}
 
-	messageStatus := convoy.ScheduledMessageStatus
+	EventStatus := convoy.ScheduledEventStatus
 	activeEndpoints := util.ParseMetadataFromActiveEndpoints(app.Endpoints)
 	if len(activeEndpoints) == 0 {
-		messageStatus = convoy.DiscardedMessageStatus
+		EventStatus = convoy.DiscardedEventStatus
 		activeEndpoints = util.GetMetadataFromEndpoints(app.Endpoints)
 	}
 
@@ -94,38 +94,38 @@ func (a *applicationHandler) CreateAppMessage(w http.ResponseWriter, r *http.Req
 		return
 	}
 
-	msg := &convoy.Message{
+	msg := &convoy.Event{
 		UID:       uuid.New().String(),
 		AppID:     app.UID,
 		EventType: convoy.EventType(eventType),
 		Data:      d,
-		Metadata: &convoy.MessageMetadata{
+		Metadata: &convoy.EventMetadata{
 			Strategy:        cfg.Strategy.Type,
 			NumTrials:       0,
 			IntervalSeconds: intervalSeconds,
 			RetryLimit:      retryLimit,
 			NextSendTime:    primitive.NewDateTimeFromTime(time.Now()),
 		},
-		MessageAttempts: make([]convoy.MessageAttempt, 0),
-		CreatedAt:       primitive.NewDateTimeFromTime(time.Now()),
-		UpdatedAt:       primitive.NewDateTimeFromTime(time.Now()),
+		EventAttempts: make([]convoy.EventAttempt, 0),
+		CreatedAt:     primitive.NewDateTimeFromTime(time.Now()),
+		UpdatedAt:     primitive.NewDateTimeFromTime(time.Now()),
 		AppMetadata: &convoy.AppMetadata{
 			GroupID:      app.GroupID,
 			Secret:       app.Secret,
 			SupportEmail: app.SupportEmail,
 			Endpoints:    activeEndpoints,
 		},
-		Status:         messageStatus,
+		Status:         EventStatus,
 		DocumentStatus: convoy.ActiveDocumentStatus,
 	}
 
-	err = a.msgRepo.CreateMessage(r.Context(), msg)
+	err = a.eventRepo.CreateEvent(r.Context(), msg)
 	if err != nil {
 		_ = render.Render(w, r, newErrorResponse("an error occurred while creating event", http.StatusInternalServerError))
 		return
 	}
 
-	if messageStatus == convoy.ScheduledMessageStatus {
+	if EventStatus == convoy.ScheduledEventStatus {
 		err = a.scheduleQueue.Write(r.Context(), convoy.EventProcessor, msg, 1*time.Second)
 		if err != nil {
 			log.Errorf("Error occurred sending new event to the queue %s", err)
@@ -142,7 +142,7 @@ func (a *applicationHandler) CreateAppMessage(w http.ResponseWriter, r *http.Req
 // @Accept  json
 // @Produce  json
 // @Param eventID path string true "event id"
-// @Success 200 {object} serverResponse{data=convoy.Message{data=Stub}}
+// @Success 200 {object} serverResponse{data=convoy.Event{data=Stub}}
 // @Failure 400,401,500 {object} serverResponse{data=Stub}
 // @Security ApiKeyAuth
 // @Router /events/{eventID} [get]
@@ -159,7 +159,7 @@ func (a *applicationHandler) GetAppMessage(w http.ResponseWriter, r *http.Reques
 // @Accept  json
 // @Produce  json
 // @Param eventID path string true "event id"
-// @Success 200 {object} serverResponse{data=convoy.Message{data=Stub}}
+// @Success 200 {object} serverResponse{data=convoy.Event{data=Stub}}
 // @Failure 400,401,500 {object} serverResponse{data=Stub}
 // @Security ApiKeyAuth
 // @Router /events/{eventID}/resend [put]
@@ -167,16 +167,16 @@ func (a *applicationHandler) ResendAppMessage(w http.ResponseWriter, r *http.Req
 
 	msg := getMessageFromContext(r.Context())
 
-	if msg.Status == convoy.SuccessMessageStatus {
+	if msg.Status == convoy.SuccessEventStatus {
 		_ = render.Render(w, r, newErrorResponse("event already sent", http.StatusBadRequest))
 		return
 	}
 
 	switch msg.Status {
-	case convoy.ScheduledMessageStatus,
-		convoy.ProcessingMessageStatus,
-		convoy.SuccessMessageStatus,
-		convoy.RetryMessageStatus:
+	case convoy.ScheduledEventStatus,
+		convoy.ProcessingEventStatus,
+		convoy.SuccessEventStatus,
+		convoy.RetryEventStatus:
 		_ = render.Render(w, r, newErrorResponse("cannot resend event that did not fail previously", http.StatusBadRequest))
 		return
 	}
@@ -205,8 +205,8 @@ func (a *applicationHandler) ResendAppMessage(w http.ResponseWriter, r *http.Req
 		}
 	}
 
-	msg.Status = convoy.ScheduledMessageStatus
-	err = a.msgRepo.UpdateStatusOfMessages(r.Context(), []convoy.Message{*msg}, convoy.ScheduledMessageStatus)
+	msg.Status = convoy.ScheduledEventStatus
+	err = a.eventRepo.UpdateStatusOfEvents(r.Context(), []convoy.Event{*msg}, convoy.ScheduledEventStatus)
 	if err != nil {
 		_ = render.Render(w, r, newErrorResponse("an error occurred while trying to resend event", http.StatusInternalServerError))
 		return
@@ -234,7 +234,7 @@ func (a *applicationHandler) ResendAppMessage(w http.ResponseWriter, r *http.Req
 // @Param perPage query string false "results per page"
 // @Param page query string false "page number"
 // @Param sort query string false "sort order"
-// @Success 200 {object} serverResponse{data=pagedResponse{content=[]convoy.Message{data=Stub}}}
+// @Success 200 {object} serverResponse{data=pagedResponse{content=[]convoy.Event{data=Stub}}}
 // @Failure 400,401,500 {object} serverResponse{data=Stub}
 // @Security ApiKeyAuth
 // @Router /events [get]
@@ -250,7 +250,7 @@ func (a *applicationHandler) GetMessagesPaged(w http.ResponseWriter, r *http.Req
 		return
 	}
 
-	m, paginationData, err := a.msgRepo.LoadMessagesPaged(r.Context(), groupID, appID, searchParams, pageable)
+	m, paginationData, err := a.eventRepo.LoadEventsPaged(r.Context(), groupID, appID, searchParams, pageable)
 	if err != nil {
 		_ = render.Render(w, r, newErrorResponse("an error occurred while fetching app events", http.StatusInternalServerError))
 		log.Errorln("error while fetching events - ", err)
@@ -261,7 +261,7 @@ func (a *applicationHandler) GetMessagesPaged(w http.ResponseWriter, r *http.Req
 		pagedResponse{Content: &m, Pagination: &paginationData}, http.StatusOK))
 }
 
-func fetchAllMessages(msgRepo convoy.MessageRepository) func(next http.Handler) http.Handler {
+func fetchAllMessages(msgRepo convoy.EventRepository) func(next http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -277,7 +277,7 @@ func fetchAllMessages(msgRepo convoy.MessageRepository) func(next http.Handler) 
 				return
 			}
 
-			m, paginationData, err := msgRepo.LoadMessagesPaged(r.Context(), groupID, appId, searchParams, pageable)
+			m, paginationData, err := msgRepo.LoadEventsPaged(r.Context(), groupID, appId, searchParams, pageable)
 			if err != nil {
 				_ = render.Render(w, r, newErrorResponse("an error occurred while fetching app events", http.StatusInternalServerError))
 				log.Errorln("error while fetching events - ", err)
@@ -339,17 +339,17 @@ func fetchMessageDeliveryAttempts() func(next http.Handler) http.Handler {
 
 			msg := getMessageFromContext(r.Context())
 
-			r = r.WithContext(setDeliveryAttemptsInContext(r.Context(), &msg.MessageAttempts))
+			r = r.WithContext(setDeliveryAttemptsInContext(r.Context(), &msg.EventAttempts))
 			next.ServeHTTP(w, r)
 		})
 	}
 }
 
-func findMessageDeliveryAttempt(attempts *[]convoy.MessageAttempt, id string) (*convoy.MessageAttempt, error) {
+func findMessageDeliveryAttempt(attempts *[]convoy.EventAttempt, id string) (*convoy.EventAttempt, error) {
 	for _, a := range *attempts {
 		if a.UID == id {
 			return &a, nil
 		}
 	}
-	return nil, convoy.ErrMessageDeliveryAttemptNotFound
+	return nil, convoy.ErrEventDeliveryAttemptNotFound
 }

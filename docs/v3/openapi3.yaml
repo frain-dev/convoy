@@ -66,6 +66,25 @@ components:
         uid:
           type: string
       type: object
+    convoy.EventMetadata:
+      properties:
+        interval_seconds:
+          type: integer
+        next_send_time:
+          description: |-
+            NextSendTime denotes the next time a message will be published in
+            case it failed the first time
+          type: integer
+        num_trials:
+          description: |-
+            NumTrials: number of times we have tried to deliver this message to
+            an application
+          type: integer
+        retry_limit:
+          type: integer
+        strategy:
+          type: string
+      type: object
     convoy.Group:
       properties:
         created_at:
@@ -107,7 +126,7 @@ components:
         event_type:
           type: string
         metadata:
-          $ref: '#/components/schemas/convoy.MessageMetadata'
+          $ref: '#/components/schemas/convoy.EventMetadata'
         provider_id:
           description: |-
             ProviderID is a custom ID that can be used to reconcile this message
@@ -155,25 +174,6 @@ components:
         updated_at:
           type: string
         url:
-          type: string
-      type: object
-    convoy.MessageMetadata:
-      properties:
-        interval_seconds:
-          type: integer
-        next_send_time:
-          description: |-
-            NextSendTime denotes the next time a message will be published in
-            case it failed the first time
-          type: integer
-        num_trials:
-          description: |-
-            NumTrials: number of times we have tried to deliver this message to
-            an application
-          type: integer
-        retry_limit:
-          type: integer
-        strategy:
           type: string
       type: object
     models.Application:
@@ -1609,7 +1609,7 @@ tags:
   name: Application
 - description: Endpoint related APIs
   name: Application Endpoints
-- description: Application Message related APIs
+- description: ApplicationEventrelated APIs
   name: Messages
 - description: Group related APIs
   name: Group

@@ -22,13 +22,13 @@ func TestApplicationHandler_CreateAppMessage(t *testing.T) {
 	appId := "12345"
 	msgId := "1122333444456"
 
-	message := &convoy.Message{
+	message := &convoy.Event{
 		UID:   msgId,
 		AppID: appId,
 	}
 
 	type args struct {
-		message *convoy.Message
+		message *convoy.Event
 	}
 
 	tests := []struct {
@@ -83,9 +83,9 @@ func TestApplicationHandler_CreateAppMessage(t *testing.T) {
 				message: message,
 			},
 			dbFn: func(app *applicationHandler) {
-				m, _ := app.msgRepo.(*mocks.MockMessageRepository)
+				m, _ := app.eventRepo.(*mocks.MockEventRepository)
 				m.EXPECT().
-					CreateMessage(gomock.Any(), gomock.Any()).Times(0).
+					CreateEvent(gomock.Any(), gomock.Any()).Times(0).
 					Return(nil)
 
 			},
@@ -136,9 +136,9 @@ func TestApplicationHandler_CreateAppMessage(t *testing.T) {
 						},
 					}, nil)
 
-				o, _ := app.msgRepo.(*mocks.MockMessageRepository)
+				o, _ := app.eventRepo.(*mocks.MockEventRepository)
 				o.EXPECT().
-					CreateMessage(gomock.Any(), gomock.Any()).Times(1).
+					CreateEvent(gomock.Any(), gomock.Any()).Times(1).
 					Return(nil)
 			},
 		},
@@ -167,9 +167,9 @@ func TestApplicationHandler_CreateAppMessage(t *testing.T) {
 						},
 					}, nil)
 
-				m, _ := app.msgRepo.(*mocks.MockMessageRepository)
+				m, _ := app.eventRepo.(*mocks.MockEventRepository)
 				m.EXPECT().
-					CreateMessage(gomock.Any(), gomock.Any()).Times(1).
+					CreateEvent(gomock.Any(), gomock.Any()).Times(1).
 					Return(nil)
 
 				q, _ := app.scheduleQueue.(*mocks.MockQueuer)
@@ -190,10 +190,10 @@ func TestApplicationHandler_CreateAppMessage(t *testing.T) {
 
 			groupRepo := mocks.NewMockGroupRepository(ctrl)
 			appRepo := mocks.NewMockApplicationRepository(ctrl)
-			msgRepo := mocks.NewMockMessageRepository(ctrl)
+			eventRepo := mocks.NewMockEventRepository(ctrl)
 			scheduleQueue := mocks.NewMockQueuer(ctrl)
 
-			app = newApplicationHandler(msgRepo, appRepo, groupRepo, scheduleQueue)
+			app = newApplicationHandler(eventRepo, appRepo, groupRepo, scheduleQueue)
 
 			err := config.LoadConfig(tc.cfgPath)
 			if err != nil {
@@ -228,7 +228,7 @@ func Test_resendMessage(t *testing.T) {
 	msgId := "1122333444456"
 
 	type args struct {
-		message *convoy.Message
+		message *convoy.Event
 	}
 
 	tests := []struct {
@@ -238,7 +238,7 @@ func Test_resendMessage(t *testing.T) {
 		statusCode int
 		args       args
 		body       *strings.Reader
-		dbFn       func(*convoy.Message, *applicationHandler)
+		dbFn       func(*convoy.Event, *applicationHandler)
 	}{
 		{
 			name:       "invalid resend - event successful",
@@ -247,20 +247,20 @@ func Test_resendMessage(t *testing.T) {
 			statusCode: http.StatusBadRequest,
 			body:       nil,
 			args: args{
-				message: &convoy.Message{
+				message: &convoy.Event{
 					UID:    msgId,
 					AppID:  appId,
-					Status: convoy.SuccessMessageStatus,
+					Status: convoy.SuccessEventStatus,
 				},
 			},
-			dbFn: func(msg *convoy.Message, app *applicationHandler) {
-				m, _ := app.msgRepo.(*mocks.MockMessageRepository)
+			dbFn: func(msg *convoy.Event, app *applicationHandler) {
+				m, _ := app.eventRepo.(*mocks.MockEventRepository)
 				m.EXPECT().
-					FindMessageByID(gomock.Any(), gomock.Any()).Times(1).
+					FindEventByID(gomock.Any(), gomock.Any()).Times(1).
 					Return(msg, nil)
 
 				m.EXPECT().
-					UpdateStatusOfMessages(gomock.Any(), gomock.Any(), gomock.Any()).Times(0).
+					UpdateStatusOfEvents(gomock.Any(), gomock.Any(), gomock.Any()).Times(0).
 					Return(nil)
 
 			},
@@ -272,16 +272,16 @@ func Test_resendMessage(t *testing.T) {
 			statusCode: http.StatusBadRequest,
 			body:       nil,
 			args: args{
-				message: &convoy.Message{
+				message: &convoy.Event{
 					UID:    msgId,
 					AppID:  appId,
-					Status: convoy.ProcessingMessageStatus,
+					Status: convoy.ProcessingEventStatus,
 				},
 			},
-			dbFn: func(msg *convoy.Message, app *applicationHandler) {
-				m, _ := app.msgRepo.(*mocks.MockMessageRepository)
+			dbFn: func(msg *convoy.Event, app *applicationHandler) {
+				m, _ := app.eventRepo.(*mocks.MockEventRepository)
 				m.EXPECT().
-					FindMessageByID(gomock.Any(), gomock.Any()).Times(1).
+					FindEventByID(gomock.Any(), gomock.Any()).Times(1).
 					Return(msg, nil)
 
 			},
@@ -293,10 +293,10 @@ func Test_resendMessage(t *testing.T) {
 			statusCode: http.StatusBadRequest,
 			body:       nil,
 			args: args{
-				message: &convoy.Message{
+				message: &convoy.Event{
 					UID:    msgId,
 					AppID:  appId,
-					Status: convoy.FailureMessageStatus,
+					Status: convoy.FailureEventStatus,
 					AppMetadata: &convoy.AppMetadata{
 						Endpoints: []convoy.EndpointMetadata{
 							{
@@ -307,10 +307,10 @@ func Test_resendMessage(t *testing.T) {
 					},
 				},
 			},
-			dbFn: func(msg *convoy.Message, app *applicationHandler) {
-				m, _ := app.msgRepo.(*mocks.MockMessageRepository)
+			dbFn: func(msg *convoy.Event, app *applicationHandler) {
+				m, _ := app.eventRepo.(*mocks.MockEventRepository)
 				m.EXPECT().
-					FindMessageByID(gomock.Any(), gomock.Any()).Times(1).
+					FindEventByID(gomock.Any(), gomock.Any()).Times(1).
 					Return(msg, nil)
 
 				a, _ := app.appRepo.(*mocks.MockApplicationRepository)
@@ -329,10 +329,10 @@ func Test_resendMessage(t *testing.T) {
 			statusCode: http.StatusOK,
 			body:       nil,
 			args: args{
-				message: &convoy.Message{
+				message: &convoy.Event{
 					UID:    msgId,
 					AppID:  appId,
-					Status: convoy.FailureMessageStatus,
+					Status: convoy.FailureEventStatus,
 					AppMetadata: &convoy.AppMetadata{
 						Endpoints: []convoy.EndpointMetadata{
 							{
@@ -343,14 +343,14 @@ func Test_resendMessage(t *testing.T) {
 					},
 				},
 			},
-			dbFn: func(msg *convoy.Message, app *applicationHandler) {
-				m, _ := app.msgRepo.(*mocks.MockMessageRepository)
+			dbFn: func(msg *convoy.Event, app *applicationHandler) {
+				m, _ := app.eventRepo.(*mocks.MockEventRepository)
 				m.EXPECT().
-					FindMessageByID(gomock.Any(), gomock.Any()).Times(1).
+					FindEventByID(gomock.Any(), gomock.Any()).Times(1).
 					Return(msg, nil)
 
 				m.EXPECT().
-					UpdateStatusOfMessages(gomock.Any(), gomock.Any(), gomock.Any()).Times(1).
+					UpdateStatusOfEvents(gomock.Any(), gomock.Any(), gomock.Any()).Times(1).
 					Return(nil)
 
 				a, _ := app.appRepo.(*mocks.MockApplicationRepository)
@@ -380,10 +380,10 @@ func Test_resendMessage(t *testing.T) {
 			statusCode: http.StatusOK,
 			body:       nil,
 			args: args{
-				message: &convoy.Message{
+				message: &convoy.Event{
 					UID:    msgId,
 					AppID:  appId,
-					Status: convoy.FailureMessageStatus,
+					Status: convoy.FailureEventStatus,
 					AppMetadata: &convoy.AppMetadata{
 						Endpoints: []convoy.EndpointMetadata{
 							{
@@ -394,14 +394,14 @@ func Test_resendMessage(t *testing.T) {
 					},
 				},
 			},
-			dbFn: func(msg *convoy.Message, app *applicationHandler) {
-				m, _ := app.msgRepo.(*mocks.MockMessageRepository)
+			dbFn: func(msg *convoy.Event, app *applicationHandler) {
+				m, _ := app.eventRepo.(*mocks.MockEventRepository)
 				m.EXPECT().
-					FindMessageByID(gomock.Any(), gomock.Any()).Times(1).
+					FindEventByID(gomock.Any(), gomock.Any()).Times(1).
 					Return(msg, nil)
 
 				m.EXPECT().
-					UpdateStatusOfMessages(gomock.Any(), gomock.Any(), gomock.Any()).Times(1).
+					UpdateStatusOfEvents(gomock.Any(), gomock.Any(), gomock.Any()).Times(1).
 					Return(nil)
 
 				a, _ := app.appRepo.(*mocks.MockApplicationRepository)
@@ -431,10 +431,10 @@ func Test_resendMessage(t *testing.T) {
 
 			groupRepo := mocks.NewMockGroupRepository(ctrl)
 			appRepo := mocks.NewMockApplicationRepository(ctrl)
-			msgRepo := mocks.NewMockMessageRepository(ctrl)
+			eventRepo := mocks.NewMockEventRepository(ctrl)
 			scheduleQueue := mocks.NewMockQueuer(ctrl)
 
-			app = newApplicationHandler(msgRepo, appRepo, groupRepo, scheduleQueue)
+			app = newApplicationHandler(eventRepo, appRepo, groupRepo, scheduleQueue)
 
 			url := fmt.Sprintf("/api/v1/events/%s/resend", tc.args.message.UID)
 			req := httptest.NewRequest(tc.method, url, nil)

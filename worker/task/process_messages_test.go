@@ -13,26 +13,26 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestProcessMessages(t *testing.T) {
+func TestProcessEvents(t *testing.T) {
 	tt := []struct {
 		name          string
 		cfgPath       string
 		expectedError error
-		msg           *convoy.Message
-		dbFn          func(*mocks.MockApplicationRepository, *mocks.MockGroupRepository, *mocks.MockMessageRepository)
+		msg           *convoy.Event
+		dbFn          func(*mocks.MockApplicationRepository, *mocks.MockGroupRepository, *mocks.MockEventRepository)
 		nFn           func() func()
 	}{
 		{
-			name:          "Message already sent.",
+			name:          "Event already sent.",
 			cfgPath:       "./testdata/Config/basic-convoy.json",
 			expectedError: nil,
-			msg: &convoy.Message{
+			msg: &convoy.Event{
 				UID: "",
 			},
-			dbFn: func(a *mocks.MockApplicationRepository, o *mocks.MockGroupRepository, m *mocks.MockMessageRepository) {
+			dbFn: func(a *mocks.MockApplicationRepository, o *mocks.MockGroupRepository, m *mocks.MockEventRepository) {
 				m.EXPECT().
-					FindMessageByID(gomock.Any(), gomock.Any()).
-					Return(&convoy.Message{
+					FindEventByID(gomock.Any(), gomock.Any()).
+					Return(&convoy.Event{
 						AppMetadata: &convoy.AppMetadata{
 							Endpoints: []convoy.EndpointMetadata{
 								{
@@ -43,7 +43,7 @@ func TestProcessMessages(t *testing.T) {
 					}, nil).Times(1)
 
 				m.EXPECT().
-					UpdateStatusOfMessages(gomock.Any(), gomock.Any(), gomock.Any()).
+					UpdateStatusOfEvents(gomock.Any(), gomock.Any(), gomock.Any()).
 					Return(nil).Times(1)
 			},
 		},
@@ -51,13 +51,13 @@ func TestProcessMessages(t *testing.T) {
 			name:          "Endpoint is inactive",
 			cfgPath:       "./testdata/Config/basic-convoy.json",
 			expectedError: nil,
-			msg: &convoy.Message{
+			msg: &convoy.Event{
 				UID: "",
 			},
-			dbFn: func(a *mocks.MockApplicationRepository, o *mocks.MockGroupRepository, m *mocks.MockMessageRepository) {
+			dbFn: func(a *mocks.MockApplicationRepository, o *mocks.MockGroupRepository, m *mocks.MockEventRepository) {
 				m.EXPECT().
-					FindMessageByID(gomock.Any(), gomock.Any()).
-					Return(&convoy.Message{
+					FindEventByID(gomock.Any(), gomock.Any()).
+					Return(&convoy.Event{
 						AppMetadata: &convoy.AppMetadata{
 							Endpoints: []convoy.EndpointMetadata{
 								{
@@ -69,7 +69,7 @@ func TestProcessMessages(t *testing.T) {
 					}, nil).Times(1)
 
 				m.EXPECT().
-					UpdateStatusOfMessages(gomock.Any(), gomock.Any(), gomock.Any()).
+					UpdateStatusOfEvents(gomock.Any(), gomock.Any(), gomock.Any()).
 					Return(nil).Times(1)
 
 				a.EXPECT().
@@ -83,16 +83,16 @@ func TestProcessMessages(t *testing.T) {
 			name:          "Endpoint does not respond with 2xx",
 			cfgPath:       "./testdata/Config/basic-convoy.json",
 			expectedError: &EndpointError{Err: ErrDeliveryAttemptFailed, delay: 20 * time.Second},
-			msg: &convoy.Message{
+			msg: &convoy.Event{
 				UID: "",
 			},
-			dbFn: func(a *mocks.MockApplicationRepository, o *mocks.MockGroupRepository, m *mocks.MockMessageRepository) {
+			dbFn: func(a *mocks.MockApplicationRepository, o *mocks.MockGroupRepository, m *mocks.MockEventRepository) {
 				m.EXPECT().
-					FindMessageByID(gomock.Any(), gomock.Any()).
-					Return(&convoy.Message{
+					FindEventByID(gomock.Any(), gomock.Any()).
+					Return(&convoy.Event{
 						Data:   []byte(`{"event": "invoice.completed"}`),
-						Status: convoy.ScheduledMessageStatus,
-						Metadata: &convoy.MessageMetadata{
+						Status: convoy.ScheduledEventStatus,
+						Metadata: &convoy.EventMetadata{
 							NumTrials:       0,
 							RetryLimit:      3,
 							IntervalSeconds: 20,
@@ -111,7 +111,7 @@ func TestProcessMessages(t *testing.T) {
 					}, nil).Times(1)
 
 				m.EXPECT().
-					UpdateStatusOfMessages(gomock.Any(), gomock.Any(), gomock.Any()).
+					UpdateStatusOfEvents(gomock.Any(), gomock.Any(), gomock.Any()).
 					Return(nil).Times(1)
 
 				a.EXPECT().
@@ -121,7 +121,7 @@ func TestProcessMessages(t *testing.T) {
 					}, nil).Times(1)
 
 				m.EXPECT().
-					UpdateMessageWithAttempt(gomock.Any(), gomock.Any(), gomock.Any()).
+					UpdateEventWithAttempt(gomock.Any(), gomock.Any(), gomock.Any()).
 					Return(nil).Times(1)
 			},
 			nFn: func() func() {
@@ -139,16 +139,16 @@ func TestProcessMessages(t *testing.T) {
 			name:          "Max retries reached - do not disable endpoint - failed",
 			cfgPath:       "./testdata/Config/basic-convoy.json",
 			expectedError: nil,
-			msg: &convoy.Message{
+			msg: &convoy.Event{
 				UID: "",
 			},
-			dbFn: func(a *mocks.MockApplicationRepository, o *mocks.MockGroupRepository, m *mocks.MockMessageRepository) {
+			dbFn: func(a *mocks.MockApplicationRepository, o *mocks.MockGroupRepository, m *mocks.MockEventRepository) {
 				m.EXPECT().
-					FindMessageByID(gomock.Any(), gomock.Any()).
-					Return(&convoy.Message{
+					FindEventByID(gomock.Any(), gomock.Any()).
+					Return(&convoy.Event{
 						Data:   []byte(`{"event": "invoice.completed"}`),
-						Status: convoy.ScheduledMessageStatus,
-						Metadata: &convoy.MessageMetadata{
+						Status: convoy.ScheduledEventStatus,
+						Metadata: &convoy.EventMetadata{
 							NumTrials:       2,
 							RetryLimit:      3,
 							IntervalSeconds: 20,
@@ -167,7 +167,7 @@ func TestProcessMessages(t *testing.T) {
 					}, nil).Times(1)
 
 				m.EXPECT().
-					UpdateStatusOfMessages(gomock.Any(), gomock.Any(), gomock.Any()).
+					UpdateStatusOfEvents(gomock.Any(), gomock.Any(), gomock.Any()).
 					Return(nil).Times(1)
 
 				a.EXPECT().
@@ -177,7 +177,7 @@ func TestProcessMessages(t *testing.T) {
 					}, nil).Times(1)
 
 				m.EXPECT().
-					UpdateMessageWithAttempt(gomock.Any(), gomock.Any(), gomock.Any()).
+					UpdateEventWithAttempt(gomock.Any(), gomock.Any(), gomock.Any()).
 					Return(nil).Times(1)
 			},
 			nFn: func() func() {
@@ -195,16 +195,16 @@ func TestProcessMessages(t *testing.T) {
 			name:          "Max retries reached - disable endpoint - failed",
 			cfgPath:       "./testdata/Config/basic-convoy-disable-endpoint.json",
 			expectedError: nil,
-			msg: &convoy.Message{
+			msg: &convoy.Event{
 				UID: "",
 			},
-			dbFn: func(a *mocks.MockApplicationRepository, o *mocks.MockGroupRepository, m *mocks.MockMessageRepository) {
+			dbFn: func(a *mocks.MockApplicationRepository, o *mocks.MockGroupRepository, m *mocks.MockEventRepository) {
 				m.EXPECT().
-					FindMessageByID(gomock.Any(), gomock.Any()).
-					Return(&convoy.Message{
+					FindEventByID(gomock.Any(), gomock.Any()).
+					Return(&convoy.Event{
 						Data:   []byte(`{"event": "invoice.completed"}`),
-						Status: convoy.ScheduledMessageStatus,
-						Metadata: &convoy.MessageMetadata{
+						Status: convoy.ScheduledEventStatus,
+						Metadata: &convoy.EventMetadata{
 							NumTrials:       2,
 							RetryLimit:      3,
 							IntervalSeconds: 20,
@@ -223,7 +223,7 @@ func TestProcessMessages(t *testing.T) {
 					}, nil).Times(1)
 
 				m.EXPECT().
-					UpdateStatusOfMessages(gomock.Any(), gomock.Any(), gomock.Any()).
+					UpdateStatusOfEvents(gomock.Any(), gomock.Any(), gomock.Any()).
 					Return(nil).Times(1)
 
 				a.EXPECT().
@@ -243,7 +243,7 @@ func TestProcessMessages(t *testing.T) {
 					Return(nil).Times(1)
 
 				m.EXPECT().
-					UpdateMessageWithAttempt(gomock.Any(), gomock.Any(), gomock.Any()).
+					UpdateEventWithAttempt(gomock.Any(), gomock.Any(), gomock.Any()).
 					Return(nil).Times(1)
 			},
 			nFn: func() func() {
@@ -261,16 +261,16 @@ func TestProcessMessages(t *testing.T) {
 			name:          "Manual retry - no disable endpoint - failed",
 			cfgPath:       "./testdata/Config/basic-convoy.json",
 			expectedError: nil,
-			msg: &convoy.Message{
+			msg: &convoy.Event{
 				UID: "",
 			},
-			dbFn: func(a *mocks.MockApplicationRepository, o *mocks.MockGroupRepository, m *mocks.MockMessageRepository) {
+			dbFn: func(a *mocks.MockApplicationRepository, o *mocks.MockGroupRepository, m *mocks.MockEventRepository) {
 				m.EXPECT().
-					FindMessageByID(gomock.Any(), gomock.Any()).
-					Return(&convoy.Message{
+					FindEventByID(gomock.Any(), gomock.Any()).
+					Return(&convoy.Event{
 						Data:   []byte(`{"event": "invoice.completed"}`),
-						Status: convoy.ScheduledMessageStatus,
-						Metadata: &convoy.MessageMetadata{
+						Status: convoy.ScheduledEventStatus,
+						Metadata: &convoy.EventMetadata{
 							NumTrials:       3,
 							RetryLimit:      3,
 							IntervalSeconds: 20,
@@ -289,7 +289,7 @@ func TestProcessMessages(t *testing.T) {
 					}, nil).Times(1)
 
 				m.EXPECT().
-					UpdateStatusOfMessages(gomock.Any(), gomock.Any(), gomock.Any()).
+					UpdateStatusOfEvents(gomock.Any(), gomock.Any(), gomock.Any()).
 					Return(nil).Times(1)
 
 				a.EXPECT().
@@ -300,7 +300,7 @@ func TestProcessMessages(t *testing.T) {
 					}, nil).Times(1)
 
 				m.EXPECT().
-					UpdateMessageWithAttempt(gomock.Any(), gomock.Any(), gomock.Any()).
+					UpdateEventWithAttempt(gomock.Any(), gomock.Any(), gomock.Any()).
 					Return(nil).Times(1)
 			},
 			nFn: func() func() {
@@ -318,16 +318,16 @@ func TestProcessMessages(t *testing.T) {
 			name:          "Manual retry - disable endpoint - failed",
 			cfgPath:       "./testdata/Config/basic-convoy-disable-endpoint.json",
 			expectedError: nil,
-			msg: &convoy.Message{
+			msg: &convoy.Event{
 				UID: "",
 			},
-			dbFn: func(a *mocks.MockApplicationRepository, o *mocks.MockGroupRepository, m *mocks.MockMessageRepository) {
+			dbFn: func(a *mocks.MockApplicationRepository, o *mocks.MockGroupRepository, m *mocks.MockEventRepository) {
 				m.EXPECT().
-					FindMessageByID(gomock.Any(), gomock.Any()).
-					Return(&convoy.Message{
+					FindEventByID(gomock.Any(), gomock.Any()).
+					Return(&convoy.Event{
 						Data:   []byte(`{"event": "invoice.completed"}`),
-						Status: convoy.ScheduledMessageStatus,
-						Metadata: &convoy.MessageMetadata{
+						Status: convoy.ScheduledEventStatus,
+						Metadata: &convoy.EventMetadata{
 							NumTrials:       3,
 							RetryLimit:      3,
 							IntervalSeconds: 20,
@@ -346,7 +346,7 @@ func TestProcessMessages(t *testing.T) {
 					}, nil).Times(1)
 
 				m.EXPECT().
-					UpdateStatusOfMessages(gomock.Any(), gomock.Any(), gomock.Any()).
+					UpdateStatusOfEvents(gomock.Any(), gomock.Any(), gomock.Any()).
 					Return(nil).Times(1)
 
 				a.EXPECT().
@@ -367,7 +367,7 @@ func TestProcessMessages(t *testing.T) {
 					Return(nil).Times(1)
 
 				m.EXPECT().
-					UpdateMessageWithAttempt(gomock.Any(), gomock.Any(), gomock.Any()).
+					UpdateEventWithAttempt(gomock.Any(), gomock.Any(), gomock.Any()).
 					Return(nil).Times(1)
 			},
 			nFn: func() func() {
@@ -385,16 +385,16 @@ func TestProcessMessages(t *testing.T) {
 			name:          "Manual retry - no disable endpoint - success",
 			cfgPath:       "./testdata/Config/basic-convoy.json",
 			expectedError: nil,
-			msg: &convoy.Message{
+			msg: &convoy.Event{
 				UID: "",
 			},
-			dbFn: func(a *mocks.MockApplicationRepository, o *mocks.MockGroupRepository, m *mocks.MockMessageRepository) {
+			dbFn: func(a *mocks.MockApplicationRepository, o *mocks.MockGroupRepository, m *mocks.MockEventRepository) {
 				m.EXPECT().
-					FindMessageByID(gomock.Any(), gomock.Any()).
-					Return(&convoy.Message{
+					FindEventByID(gomock.Any(), gomock.Any()).
+					Return(&convoy.Event{
 						Data:   []byte(`{"event": "invoice.completed"}`),
-						Status: convoy.ScheduledMessageStatus,
-						Metadata: &convoy.MessageMetadata{
+						Status: convoy.ScheduledEventStatus,
+						Metadata: &convoy.EventMetadata{
 							NumTrials:       4,
 							RetryLimit:      3,
 							IntervalSeconds: 20,
@@ -413,7 +413,7 @@ func TestProcessMessages(t *testing.T) {
 					}, nil).Times(1)
 
 				m.EXPECT().
-					UpdateStatusOfMessages(gomock.Any(), gomock.Any(), gomock.Any()).
+					UpdateStatusOfEvents(gomock.Any(), gomock.Any(), gomock.Any()).
 					Return(nil).Times(1)
 
 				a.EXPECT().
@@ -424,7 +424,7 @@ func TestProcessMessages(t *testing.T) {
 					}, nil).Times(1)
 
 				m.EXPECT().
-					UpdateMessageWithAttempt(gomock.Any(), gomock.Any(), gomock.Any()).
+					UpdateEventWithAttempt(gomock.Any(), gomock.Any(), gomock.Any()).
 					Return(nil).Times(1)
 			},
 			nFn: func() func() {
@@ -442,16 +442,16 @@ func TestProcessMessages(t *testing.T) {
 			name:          "Manual retry - disable endpoint - success",
 			cfgPath:       "./testdata/Config/basic-convoy-disable-endpoint.json",
 			expectedError: nil,
-			msg: &convoy.Message{
+			msg: &convoy.Event{
 				UID: "",
 			},
-			dbFn: func(a *mocks.MockApplicationRepository, o *mocks.MockGroupRepository, m *mocks.MockMessageRepository) {
+			dbFn: func(a *mocks.MockApplicationRepository, o *mocks.MockGroupRepository, m *mocks.MockEventRepository) {
 				m.EXPECT().
-					FindMessageByID(gomock.Any(), gomock.Any()).
-					Return(&convoy.Message{
+					FindEventByID(gomock.Any(), gomock.Any()).
+					Return(&convoy.Event{
 						Data:   []byte(`{"event": "invoice.completed"}`),
-						Status: convoy.ScheduledMessageStatus,
-						Metadata: &convoy.MessageMetadata{
+						Status: convoy.ScheduledEventStatus,
+						Metadata: &convoy.EventMetadata{
 							NumTrials:       4,
 							RetryLimit:      3,
 							IntervalSeconds: 20,
@@ -470,7 +470,7 @@ func TestProcessMessages(t *testing.T) {
 					}, nil).Times(1)
 
 				m.EXPECT().
-					UpdateStatusOfMessages(gomock.Any(), gomock.Any(), gomock.Any()).
+					UpdateStatusOfEvents(gomock.Any(), gomock.Any(), gomock.Any()).
 					Return(nil).Times(1)
 
 				a.EXPECT().
@@ -491,7 +491,7 @@ func TestProcessMessages(t *testing.T) {
 					Return(nil).Times(1)
 
 				m.EXPECT().
-					UpdateMessageWithAttempt(gomock.Any(), gomock.Any(), gomock.Any()).
+					UpdateEventWithAttempt(gomock.Any(), gomock.Any(), gomock.Any()).
 					Return(nil).Times(1)
 			},
 			nFn: func() func() {
@@ -515,7 +515,7 @@ func TestProcessMessages(t *testing.T) {
 
 			groupRepo := mocks.NewMockGroupRepository(ctrl)
 			appRepo := mocks.NewMockApplicationRepository(ctrl)
-			msgRepo := mocks.NewMockMessageRepository(ctrl)
+			msgRepo := mocks.NewMockEventRepository(ctrl)
 
 			err := config.LoadConfig(tc.cfgPath)
 			if err != nil {
@@ -531,7 +531,7 @@ func TestProcessMessages(t *testing.T) {
 				tc.dbFn(appRepo, groupRepo, msgRepo)
 			}
 
-			processFn := ProcessMessages(appRepo, msgRepo, groupRepo)
+			processFn := ProcessEvents(appRepo, msgRepo, groupRepo)
 
 			job := queue.Job{
 				MsgID: tc.msg.UID,

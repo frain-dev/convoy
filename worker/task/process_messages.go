@@ -32,31 +32,31 @@ func (e *EndpointError) Delay() time.Duration {
 	return e.delay
 }
 
-func ProcessMessages(appRepo convoy.ApplicationRepository, msgRepo convoy.MessageRepository, orgRepo convoy.GroupRepository) func(*queue.Job) error {
+func ProcessEvents(appRepo convoy.ApplicationRepository, msgRepo convoy.EventRepository, orgRepo convoy.GroupRepository) func(*queue.Job) error {
 	return func(job *queue.Job) error {
 		Id := job.MsgID
 
 		// Load message from DB and switch state to prevent concurrent processing.
-		m, err := msgRepo.FindMessageByID(context.Background(), Id)
+		m, err := msgRepo.FindEventByID(context.Background(), Id)
 
 		if err != nil {
-			log.WithError(err).Errorf("Failed to load message - %s", Id)
+			log.WithError(err).Errorf("Failed to load event - %s", Id)
 			return nil
 		}
 
 		switch m.Status {
-		case convoy.ProcessingMessageStatus,
-			convoy.SuccessMessageStatus:
+		case convoy.ProcessingEventStatus,
+			convoy.SuccessEventStatus:
 			return nil
 		}
 
-		err = msgRepo.UpdateStatusOfMessages(context.Background(), []convoy.Message{*m}, convoy.ProcessingMessageStatus)
+		err = msgRepo.UpdateStatusOfEvents(context.Background(), []convoy.Event{*m}, convoy.ProcessingEventStatus)
 		if err != nil {
 			log.WithError(err).Error("failed to update status of messages - ")
 			return nil
 		}
 
-		var attempt convoy.MessageAttempt
+		var attempt convoy.EventAttempt
 		var secret = m.AppMetadata.Secret
 
 		cfg, err := config.Get()
@@ -100,7 +100,7 @@ func ProcessMessages(appRepo convoy.ApplicationRepository, msgRepo convoy.Messag
 			return &EndpointError{Err: err}
 		}
 
-		attemptStatus := convoy.FailureMessageStatus
+		attemptStatus := convoy.FailureEventStatus
 		start := time.Now()
 
 		resp, err := dispatch.SendRequest(e.TargetURL, string(convoy.HttpPost), bytes, cfg.Signature.Header.String(), hmac)
@@ -123,17 +123,17 @@ func ProcessMessages(appRepo convoy.ApplicationRepository, msgRepo convoy.Messag
 		if err == nil && statusCode >= 200 && statusCode <= 299 {
 			requestLogger.Infof("%s", m.UID)
 			log.Infof("%s sent", m.UID)
-			attemptStatus = convoy.SuccessMessageStatus
+			attemptStatus = convoy.SuccessEventStatus
 			e.Sent = true
 
-			m.Status = convoy.SuccessMessageStatus
+			m.Status = convoy.SuccessEventStatus
 			m.Description = ""
 		} else {
 			requestLogger.Errorf("%s", m.UID)
 			done = false
 			e.Sent = false
 
-			m.Status = convoy.RetryMessageStatus
+			m.Status = convoy.RetryEventStatus
 
 			delay := m.Metadata.IntervalSeconds
 			nextTime := time.Now().Add(time.Duration(delay) * time.Second)
@@ -182,14 +182,14 @@ func ProcessMessages(appRepo convoy.ApplicationRepository, msgRepo convoy.Messag
 
 		if m.Metadata.NumTrials >= m.Metadata.RetryLimit {
 			if done {
-				if m.Status != convoy.SuccessMessageStatus {
+				if m.Status != convoy.SuccessEventStatus {
 					log.Errorln("an anomaly has occurred. retry limit exceeded, fan out is done but event status is not successful")
-					m.Status = convoy.FailureMessageStatus
+					m.Status = convoy.FailureEventStatus
 				}
 			} else {
 				log.Errorf("%s retry limit exceeded ", m.UID)
 				m.Description = "Retry limit exceeded"
-				m.Status = convoy.FailureMessageStatus
+				m.Status = convoy.FailureEventStatus
 			}
 
 			if cfg.DisableEndpoint && dbEndpoint.Status != convoy.PendingEndpointStatus {
@@ -211,7 +211,7 @@ func ProcessMessages(appRepo convoy.ApplicationRepository, msgRepo convoy.Messag
 			}
 		}
 
-		err = msgRepo.UpdateMessageWithAttempt(context.Background(), *m, attempt)
+		err = msgRepo.UpdateEventWithAttempt(context.Background(), *m, attempt)
 		if err != nil {
 			log.WithError(err).Error("failed to update message ", m.UID)
 		}
@@ -246,12 +246,12 @@ func sendEmailNotification(m *convoy.AppMetadata, o *convoy.GroupRepository, s *
 	return nil
 }
 
-func parseAttemptFromResponse(m convoy.Message, e convoy.EndpointMetadata, resp *net.Response, attemptStatus convoy.MessageStatus) convoy.MessageAttempt {
+func parseAttemptFromResponse(m convoy.Event, e convoy.EndpointMetadata, resp *net.Response, attemptStatus convoy.EventStatus) convoy.EventAttempt {
 
 	responseHeader := util.ConvertDefaultHeaderToCustomHeader(&resp.ResponseHeader)
 	requestHeader := util.ConvertDefaultHeaderToCustomHeader(&resp.RequestHeader)
 
-	return convoy.MessageAttempt{
+	return convoy.EventAttempt{
 		ID:         primitive.NewObjectID(),
 		UID:        uuid.New().String(),
 		URL:        resp.URL.String(),

@@ -107,7 +107,7 @@ definitions:
       event_type:
         type: string
       metadata:
-        $ref: '#/definitions/convoy.MessageMetadata'
+        $ref: '#/definitions/convoy.EventMetadata'
       provider_id:
         description: |-
           ProviderID is a custom ID that can be used to reconcile this message
@@ -157,7 +157,7 @@ definitions:
       url:
         type: string
     type: object
-  convoy.MessageMetadata:
+  convoy.EventMetadata:
     properties:
       interval_seconds:
         type: integer
@@ -953,7 +953,7 @@ paths:
       - application/json
       description: This endpoint creates an app message
       parameters:
-      - description: Message Details
+      - description:EventDetails
         in: body
         name: message
         required: true
@@ -1490,7 +1490,7 @@ tags:
   name: Application
 - description: Endpoint related APIs
   name: Application Endpoints
-- description: Application Message related APIs
+- description: ApplicationEventrelated APIs
   name: Messages
 - description: Group related APIs
   name: Group

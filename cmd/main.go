@@ -163,8 +163,8 @@ func ensureMongoIndices(conn *mongo.Database) {
 
 	datastore.EnsureIndex(conn, datastore.AppCollections, "uid", true)
 
-	datastore.EnsureIndex(conn, datastore.MsgCollection, "uid", true)
-	datastore.EnsureIndex(conn, datastore.MsgCollection, "event_type", false)
+	datastore.EnsureIndex(conn, datastore.EventCollection, "uid", true)
+	datastore.EnsureIndex(conn, datastore.EventCollection, "event_type", false)
 }
 
 func ensureDefaultGroup(ctx context.Context, groupRepo convoy.GroupRepository) error {
@@ -196,7 +196,7 @@ func ensureDefaultGroup(ctx context.Context, groupRepo convoy.GroupRepository) e
 type app struct {
 	groupRepo       convoy.GroupRepository
 	applicationRepo convoy.ApplicationRepository
-	messageRepo     convoy.MessageRepository
+	messageRepo     convoy.EventRepository
 	scheduleQueue   queue.Queuer
 	deadLetterQueue queue.Queuer
 }

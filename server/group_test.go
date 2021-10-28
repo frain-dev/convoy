@@ -75,7 +75,7 @@ func TestApplicationHandler_GetGroup(t *testing.T) {
 
 			groupRepo := mocks.NewMockGroupRepository(ctrl)
 			appRepo := mocks.NewMockApplicationRepository(ctrl)
-			msgRepo := mocks.NewMockMessageRepository(ctrl)
+			msgRepo := mocks.NewMockEventRepository(ctrl)
 			scheduleQueue := mocks.NewMockQueuer(ctrl)
 
 			app = newApplicationHandler(msgRepo, appRepo, groupRepo, scheduleQueue)
@@ -155,7 +155,7 @@ func TestApplicationHandler_CreateGroup(t *testing.T) {
 
 			groupRepo := mocks.NewMockGroupRepository(ctrl)
 			appRepo := mocks.NewMockApplicationRepository(ctrl)
-			msgRepo := mocks.NewMockMessageRepository(ctrl)
+			msgRepo := mocks.NewMockEventRepository(ctrl)
 			scheduleQueue := mocks.NewMockQueuer(ctrl)
 
 			app = newApplicationHandler(msgRepo, appRepo, groupRepo, scheduleQueue)
@@ -240,7 +240,7 @@ func TestApplicationHandler_UpdateGroup(t *testing.T) {
 
 			groupRepo := mocks.NewMockGroupRepository(ctrl)
 			appRepo := mocks.NewMockApplicationRepository(ctrl)
-			msgRepo := mocks.NewMockMessageRepository(ctrl)
+			msgRepo := mocks.NewMockEventRepository(ctrl)
 			scheduleQueue := mocks.NewMockQueuer(ctrl)
 
 			app = newApplicationHandler(msgRepo, appRepo, groupRepo, scheduleQueue)
@@ -324,7 +324,7 @@ func TestApplicationHandler_GetGroups(t *testing.T) {
 
 			groupRepo := mocks.NewMockGroupRepository(ctrl)
 			appRepo := mocks.NewMockApplicationRepository(ctrl)
-			msgRepo := mocks.NewMockMessageRepository(ctrl)
+			msgRepo := mocks.NewMockEventRepository(ctrl)
 			scheduleQueue := mocks.NewMockQueuer(ctrl)
 
 			app = newApplicationHandler(msgRepo, appRepo, groupRepo, scheduleQueue)

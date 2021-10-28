@@ -305,12 +305,12 @@ func createMessageCommand(a *app) *cobra.Command {
 			}
 
 			log.Println("Message ", string(d))
-			msg := &convoy.Message{
+			msg := &convoy.Event{
 				UID:       uuid.New().String(),
 				AppID:     appData.UID,
 				EventType: convoy.EventType(eventType),
 				Data:      d,
-				Metadata: &convoy.MessageMetadata{
+				Metadata: &convoy.EventMetadata{
 					Strategy:        cfg.Strategy.Type,
 					NumTrials:       0,
 					IntervalSeconds: intervalSeconds,
@@ -322,17 +322,17 @@ func createMessageCommand(a *app) *cobra.Command {
 					Secret:    appData.Secret,
 					Endpoints: activeEndpoints,
 				},
-				MessageAttempts: make([]convoy.MessageAttempt, 0),
-				CreatedAt:       primitive.NewDateTimeFromTime(time.Now()),
-				UpdatedAt:       primitive.NewDateTimeFromTime(time.Now()),
-				Status:          convoy.ScheduledMessageStatus,
-				DocumentStatus:  convoy.ActiveDocumentStatus,
+				EventAttempts:  make([]convoy.EventAttempt, 0),
+				CreatedAt:      primitive.NewDateTimeFromTime(time.Now()),
+				UpdatedAt:      primitive.NewDateTimeFromTime(time.Now()),
+				Status:         convoy.ScheduledEventStatus,
+				DocumentStatus: convoy.ActiveDocumentStatus,
 			}
 
 			ctx, cancelFn = getCtx()
 			defer cancelFn()
 
-			if err := a.messageRepo.CreateMessage(ctx, msg); err != nil {
+			if err := a.messageRepo.CreateEvent(ctx, msg); err != nil {
 				return fmt.Errorf("could not create message... %w", err)
 			}
 
