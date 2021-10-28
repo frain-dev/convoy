@@ -25,7 +25,10 @@ type SentryConfiguration struct {
 
 type ServerConfiguration struct {
 	HTTP struct {
-		Port uint32 `json:"port"`
+		SSL         bool   `json:"ssl"`
+		SSLCertFile string `json:"ssl_cert_file"`
+		SSLKeyFile  string `json:"ssl_key_file"`
+		Port        uint32 `json:"port"`
 	} `json:"http"`
 }
 
@@ -144,13 +147,24 @@ func LoadConfig(p string) error {
 	// This enables us deploy to Heroku where the $PORT is provided
 	// dynamically.
 	if port, err := strconv.Atoi(os.Getenv("PORT")); err == nil {
-		c.Server = ServerConfiguration{
-			HTTP: struct {
-				Port uint32 `json:"port"`
-			}{
-				Port: uint32(port),
-			},
+		c.Server.HTTP.Port = uint32(port)
+	}
+
+	if s := os.Getenv("CONVOY_SSL"); s != "" {
+		v, err := strconv.ParseBool(s)
+		if err != nil {
+			return err
 		}
+		c.Server.HTTP.SSL = v
+
+		if c.Server.HTTP.SSL {
+			c.Server.HTTP.SSLCertFile = os.Getenv("CONVOY_SSL_CERT_FILE")
+			c.Server.HTTP.SSLKeyFile = os.Getenv("CONVOY_SSL_KEY_FILE")
+		}
+	}
+	err = ensureSSL(c.Server)
+	if err != nil {
+		return err
 	}
 
 	if env := os.Getenv("CONVOY_ENV"); env != "" {
@@ -249,7 +263,7 @@ func LoadConfig(p string) error {
 	}
 
 	if e := os.Getenv("CONVOY_DISABLE_ENDPOINT"); e != "" {
-		if d, err := strconv.ParseBool(e); err != nil {
+		if d, err := strconv.ParseBool(e); err == nil {
 			c.DisableEndpoint = d
 		}
 	}
@@ -264,6 +278,15 @@ func ensureSignature(signature SignatureConfiguration) error {
 	_, ok := algo.M[signature.Hash]
 	if !ok {
 		return fmt.Errorf("invalid hash algorithm - '%s', must be one of %s", signature.Hash, reflect.ValueOf(algo.M).MapKeys())
+	}
+	return nil
+}
+
+func ensureSSL(s ServerConfiguration) error {
+	if s.HTTP.SSL {
+		if s.HTTP.SSLCertFile == "" || s.HTTP.SSLKeyFile == "" {
+			return errors.New("both cert_file and key_file are required for ssl")
+		}
 	}
 	return nil
 }
