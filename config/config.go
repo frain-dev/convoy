@@ -10,6 +10,8 @@ import (
 	"sync/atomic"
 	"time"
 
+	log "github.com/sirupsen/logrus"
+
 	"github.com/frain-dev/convoy/config/algo"
 )
 
@@ -150,19 +152,17 @@ func LoadConfig(p string) error {
 		c.Server.HTTP.Port = uint32(port)
 	}
 
-	if certFile := os.Getenv("CONVOY_SSL_CERT_FILE"); certFile != "" {
-		c.Server.HTTP.SSl = true
-		c.Server.HTTP.SSLCertFile = certFile
-	}
+	if useSSL := os.Getenv("CONVOY_SSL"); useSSL != "" {
+		if useSSL == "true" {
+			c.Server.HTTP.SSLCertFile = os.Getenv("CONVOY_SSL_CERT_FILE")
+			c.Server.HTTP.SSLKeyFile = os.Getenv("CONVOY_SSL_KEY_FILE")
 
-	if keyFile := os.Getenv("CONVOY_SSL_KEY_FILE"); keyFile != "" {
-		c.Server.HTTP.SSl = true
-		c.Server.HTTP.SSLKeyFile = keyFile
-	}
-
-	if c.Server.HTTP.SSl {
-		if c.Server.HTTP.SSLCertFile == "" || c.Server.HTTP.SSLKeyFile == "" {
-			return errors.New("both cert_file and key_file are required for ssl")
+			if c.Server.HTTP.SSLCertFile == "" || c.Server.HTTP.SSLKeyFile == "" {
+				return errors.New("both cert_file and key_file are required for ssl")
+			}
+			c.Server.HTTP.SSl = true
+		} else if useSSL != "false" {
+			log.Warnf("invalid value for environment variable CONVOY_SSL: %s", useSSL)
 		}
 	}
 
