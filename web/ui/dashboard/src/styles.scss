@@ -1,0 +1,89 @@
+// Custom Theming for Angular Material
+// For more information: https://material.angular.io/guide/theming
+@use '~@angular/material' as mat;
+// Plus imports for other components in your app.
+
+// Include the common styles for Angular Material. We include this here so that you only
+// have to load a single css file for Angular Material in your app.
+// Be sure that you only ever include this mixin once!
+@include mat.core();
+
+$convoy-primary-palette: (
+	50: #e6f2f9,
+	100: #c2e0f1,
+	200: #9fcde8,
+	300: #80b9de,
+	400: #6baad8,
+	500: #5b9cd2,
+	600: #528fc5,
+	700: #477db3,
+	800: #3f6da1,
+	900: #315081,
+	contrast: (
+		50: rgba(black, 0.87),
+		100: rgba(black, 0.87),
+		200: rgba(black, 0.87),
+		300: rgba(black, 0.87),
+		400: rgba(black, 0.87),
+		500: rgba(black, 0.87),
+		600: rgba(black, 0.87),
+		700: rgba(black, 0.87),
+		800: rgba(black, 0.87),
+		900: rgba(black, 0.87)
+	)
+);
+// Define the palettes for your theme using the Material Design palettes available in palette.scss
+// (imported above). For each palette, you can optionally specify a default, lighter, and darker
+// hue. Available color palettes: https://material.io/design/color/
+$convoy-ng-primary: mat.define-palette($convoy-primary-palette);
+// $convoy-ng-primary: mat.define-palette(mat.$indigo-palette);
+$convoy-ng-accent: mat.define-palette($convoy-primary-palette);
+
+// The warn palette is optional (defaults to red).
+$convoy-ng-warn: mat.define-palette(mat.$red-palette);
+
+// Create the theme object. A theme consists of configurations for individual
+// theming systems such as "color" or "typography".
+$convoy-ng-theme: mat.define-light-theme(
+	(
+		color: (
+			primary: $convoy-ng-primary,
+			accent: $convoy-ng-accent,
+			warn: $convoy-ng-warn
+		)
+	)
+);
+
+// Include theme styles for core and each component used in your app.
+// Alternatively, you can import and @include the theme mixins for each component
+// that you are using.
+@include mat.all-component-themes($convoy-ng-theme);
+
+@import './scss/reset';
+@import './scss/button';
+@import './scss/card';
+@import './scss/form';
+@import './scss/table';
+@import './scss/tabs';
+@import './scss/prism.scss';
+@import '~prismjs/plugins/toolbar/prism-toolbar.css';
+
+:root {
+	--color-black: #1e1147;
+	--primary-color: #477db3;
+	--primary-color-rgb: 71, 125, 179;
+	--primary-color-inverse: #ffffff;
+	--color-black-rgb: 30, 17, 71;
+	--success-color: #32cc0e;
+	--danger-color: #ee0005;
+	--secondary-success-color: #7a9c10;
+	--secondary-success-button-color: #a2c438;
+}
+
+.mat-date-range-input-container {
+	max-width: 230px;
+}
+
+.mat-date-range-input-start-wrapper .mat-date-range-input-inner {
+	position: initial !important;
+}

@@ -1,0 +1,31 @@
+<div class="auth-page">
+	<section class="auth-page--container">
+		<img src="/assets/img/logo.svg" alt="convoy logo" />
+
+		<form [formGroup]="loginForm" (ngSubmit)="login()">
+			<div class="input">
+				<label for="username">Username</label>
+				<input type="text" id="username" name="username" autocomplete="username" placeholder="Enter username here" formControlName="username" />
+			</div>
+
+			<div class="input">
+				<label htmlFor="password">Password</label>
+				<div class="input--password">
+					<input [type]="showLoginPassword ? 'text' : 'password'" id="password" name="password" autocomplete="current-password" placeholder="Enter your password" formControlName="password" />
+					<button class="input--password__view-toggle" type="button">
+						<img
+							[src]="!showLoginPassword ? '/assets/img/password-invisible-icon.svg' : '/assets/img/password-visible-icon.svg'"
+							alt="showLoginPassword ? 'hide password icon' : 'view password icon'"
+						/>
+					</button>
+				</div>
+			</div>
+
+			<div class="button-container margin-top">
+				<button [disabled]="disableLoginBtn" class="primary full-100">
+					{{ disableLoginBtn ? 'loading....' : 'Login to Dashboard' }}
+				</button>
+			</div>
+		</form>
+	</section>
+</div>

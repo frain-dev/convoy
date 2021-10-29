@@ -1,0 +1,54 @@
+.tabs {
+	display: flex;
+	border-bottom: 1px solid #edeff5;
+	width: 100%;
+	align-items: center;
+
+	.tabs {
+		border: none;
+	}
+
+	.tab {
+		padding: 18px 16px;
+		text-transform: capitalize;
+
+		&.active {
+			position: relative;
+
+			&::after {
+				content: '';
+				bottom: 0px;
+				height: 3px;
+				width: 100%;
+				left: 0;
+				right: 0;
+				background: var(--primary-color);
+				border-radius: 16px 16px 0px 0px;
+				position: absolute;
+			}
+		}
+	}
+
+	.filter {
+		margin-bottom: 0;
+		margin-right: 16px;
+
+		.select select,
+		.filter--button {
+			height: 40px;
+			padding: 10px 8px;
+			outline: none;
+		}
+
+		.date-button {
+			min-width: 260px;
+		}
+	}
+
+	button.events-filter-clear-btn {
+		display: block;
+		background: var(--primary-color);
+		width: 100px;
+		min-width: unset;
+	}
+}

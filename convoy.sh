@@ -25,10 +25,10 @@ build_react_files()
   echo "==> Installing node js version $INSTALL_NODE_VER"
   nvm install $INSTALL_NODE_VER
 
-  exec_assert "npm install --production"
+  exec_assert "npm install"
   exec_assert "npm run build"
-  exec_assert "cp -r build/* $SCRIPT_DIR/server/ui/build"
-  exec_assert "rm -rf build"
+  exec_assert "cp -r dist/* $SCRIPT_DIR/server/ui/build"
+  exec_assert "rm -rf dist"
 }
 
 SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )"

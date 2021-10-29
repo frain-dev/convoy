@@ -116,7 +116,7 @@ pre.line-numbers > code {
 .line-numbers .line-numbers-rows {
 	position: absolute;
 	pointer-events: none;
-	top: 0;
+	top: -5px;
 	font-size: 100%;
 	left: -3.8em;
 	width: 3em; /* works for line-numbers below 1000 lines */
