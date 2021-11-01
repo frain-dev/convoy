@@ -67,9 +67,9 @@ func (q *RedisQueue) Close() error {
 	return q.inner.Close()
 }
 
-func (q *RedisQueue) Write(ctx context.Context, name convoy.TaskName, msg *convoy.Event, delay time.Duration) error {
+func (q *RedisQueue) Write(ctx context.Context, name convoy.TaskName, e *convoy.EventDelivery, delay time.Duration) error {
 	job := &queue.Job{
-		MsgID: msg.UID,
+		ID: e.UID,
 	}
 
 	m := &taskq.Message{

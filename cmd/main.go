@@ -113,8 +113,8 @@ func main() {
 			app.groupRepo = datastore.NewGroupRepo(conn)
 			app.applicationRepo = datastore.NewApplicationRepo(conn)
 			app.eventRepo = datastore.NewEventRepository(conn)
+			app.eventDeliveryRepo = datastore.NewEventDeliveryRepository(conn)
 			app.eventQueue = convoyRedis.NewQueue(rC, qFn, "EventQueue")
-			app.eventDeliveryQueue = convoyRedis.NewQueue(rC, qFn, "EventDeliveryQueue")
 			app.deadLetterQueue = convoyRedis.NewQueue(rC, qFn, "DeadLetterQueue")
 
 			ensureMongoIndices(conn)
@@ -195,12 +195,12 @@ func ensureDefaultGroup(ctx context.Context, groupRepo convoy.GroupRepository) e
 }
 
 type app struct {
-	groupRepo          convoy.GroupRepository
-	applicationRepo    convoy.ApplicationRepository
-	eventRepo          convoy.EventRepository
-	eventQueue         queue.Queuer
-	eventDeliveryQueue queue.Queuer
-	deadLetterQueue    queue.Queuer
+	groupRepo         convoy.GroupRepository
+	applicationRepo   convoy.ApplicationRepository
+	eventRepo         convoy.EventRepository
+	eventDeliveryRepo convoy.EventDeliveryRepository
+	eventQueue        queue.Queuer
+	deadLetterQueue   queue.Queuer
 }
 
 func getCtx() (context.Context, context.CancelFunc) {

@@ -105,26 +105,37 @@ func buildRoutes(app *applicationHandler) http.Handler {
 				})
 			})
 
-			r.Route("/events", func(msgRouter chi.Router) {
-				msgRouter.Use(requireAuth())
+			r.Route("/events", func(eventRouter chi.Router) {
+				eventRouter.Use(requireAuth())
 
-				msgRouter.With(instrumentPath("/events")).Post("/", app.CreateAppMessage)
-				msgRouter.With(pagination).Get("/", app.GetMessagesPaged)
+				eventRouter.With(instrumentPath("/events")).Post("/", app.CreateAppEvent)
+				eventRouter.With(pagination).Get("/", app.GetEventsPaged)
 
-				msgRouter.Route("/{eventID}", func(msgSubRouter chi.Router) {
-					msgSubRouter.Use(requireMessage(app.eventRepo))
+				eventRouter.Route("/{eventID}", func(eventSubRouter chi.Router) {
+					eventSubRouter.Use(requireEvent(app.eventRepo))
 
-					msgSubRouter.Get("/", app.GetAppMessage)
-					msgSubRouter.Put("/resend", app.ResendAppMessage)
+					eventSubRouter.Get("/", app.GetAppEvent)
 
-					msgSubRouter.Route("/deliveryattempts", func(deliveryRouter chi.Router) {
-						deliveryRouter.Use(fetchMessageDeliveryAttempts())
+					eventSubRouter.Route("/eventdelivery", func(eventDeliveryRouter chi.Router) {
+						eventDeliveryRouter.With(pagination).Get("/", app.GetEventDeliveries)
 
-						deliveryRouter.Get("/", app.GetAppMessageDeliveryAttempts)
-						deliveryRouter.With(requireMessageDeliveryAttempt()).Get("/{deliveryAttemptID}", app.GetAppMessageDeliveryAttempt)
+						eventDeliveryRouter.Route("/{eventDeliveryID}", func(eventDeliverySubRouter chi.Router) {
+							eventDeliverySubRouter.Use(requireEventDelivery(app.eventRepo))
+
+							eventDeliverySubRouter.Get("/", app.GetEventDelivery)
+							eventDeliverySubRouter.Put("/resend", app.ResendEventDelivery)
+
+							eventDeliverySubRouter.Route("/deliveryattempts", func(deliveryRouter chi.Router) {
+								deliveryRouter.Use(fetchMessageDeliveryAttempts())
+
+								deliveryRouter.Get("/", app.GetDeliveryAttempts)
+								deliveryRouter.With(requireDeliveryAttempt()).Get("/{deliveryAttemptID}", app.GetDeliveryAttempt)
+							})
+						})
+
 					})
-				})
 
+				})
 			})
 		})
 	})
@@ -232,12 +243,12 @@ func buildRoutes(app *applicationHandler) http.Handler {
 
 func New(cfg config.Configuration,
 	eventRepo convoy.EventRepository,
+	eventDeliveryRepo convoy.EventDeliveryRepository,
 	appRepo convoy.ApplicationRepository,
 	orgRepo convoy.GroupRepository,
-	eventQueue queue.Queuer,
-	eventDeliveryQueue queue.Queuer) *http.Server {
+	eventQueue queue.Queuer) *http.Server {
 
-	app := newApplicationHandler(eventRepo, appRepo, orgRepo, eventQueue, eventDeliveryQueue)
+	app := newApplicationHandler(eventRepo, eventDeliveryRepo, appRepo, orgRepo, eventQueue)
 
 	srv := &http.Server{
 		Handler:      buildRoutes(app),

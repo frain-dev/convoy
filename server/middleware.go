@@ -34,7 +34,7 @@ const (
 	groupCtx            contextKey = "group"
 	appCtx              contextKey = "app"
 	endpointCtx         contextKey = "endpoint"
-	msgCtx              contextKey = "message"
+	eventCtx            contextKey = "event"
 	configCtx           contextKey = "configCtx"
 	authConfigCtx       contextKey = "authConfig"
 	authLoginCtx        contextKey = "authLogin"
@@ -130,15 +130,15 @@ func requireApp(appRepo convoy.ApplicationRepository) func(next http.Handler) ht
 			app, err := appRepo.FindApplicationByID(r.Context(), appID)
 			if err != nil {
 
-				msg := "an error occurred while retrieving app details"
+				event := "an error occurred while retrieving app details"
 				statusCode := http.StatusInternalServerError
 
 				if errors.Is(err, convoy.ErrApplicationNotFound) {
-					msg = err.Error()
+					event = err.Error()
 					statusCode = http.StatusNotFound
 				}
 
-				_ = render.Render(w, r, newErrorResponse(msg, statusCode))
+				_ = render.Render(w, r, newErrorResponse(event, statusCode))
 				return
 			}
 
@@ -198,35 +198,61 @@ func requireAppEndpoint() func(next http.Handler) http.Handler {
 	}
 }
 
-func requireMessage(msgRepo convoy.EventRepository) func(next http.Handler) http.Handler {
+func requireEvent(eventRepo convoy.EventRepository) func(next http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 
-			msgId := chi.URLParam(r, "eventID")
+			eventId := chi.URLParam(r, "eventID")
 
-			msg, err := msgRepo.FindEventByID(r.Context(), msgId)
+			event, err := eventRepo.FindEventByID(r.Context(), eventId)
 			if err != nil {
 
-				msg := "an error occurred while retrieving event details"
+				event := "an error occurred while retrieving event details"
 				statusCode := http.StatusInternalServerError
 
 				if errors.Is(err, convoy.ErrEventNotFound) {
-					msg = err.Error()
+					event = err.Error()
 					statusCode = http.StatusNotFound
 				}
 
-				_ = render.Render(w, r, newErrorResponse(msg, statusCode))
+				_ = render.Render(w, r, newErrorResponse(event, statusCode))
 				return
 			}
 
-			r = r.WithContext(setMessageInContext(r.Context(), msg))
+			r = r.WithContext(setEventInContext(r.Context(), event))
 			next.ServeHTTP(w, r)
 		})
 	}
 }
 
-func requireMessageDeliveryAttempt() func(next http.Handler) http.Handler {
+func requireEventDelivery(eventRepo convoy.EventRepository) func(next http.Handler) http.Handler {
+	return func(next http.Handler) http.Handler {
+		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			eventDeliveryID := chi.URLParam(r, "eventDeliveryID")
+
+			eventDelivery, err := eventRepo.FindEventDeliveryByID(r.Context(), eventDeliveryID)
+			if err != nil {
+
+				eventDelivery := "an error occurred while retrieving event delivery details"
+				statusCode := http.StatusInternalServerError
+
+				if errors.Is(err, convoy.ErrEventDeliveryNotFound) {
+					eventDelivery = err.Error()
+					statusCode = http.StatusNotFound
+				}
+
+				_ = render.Render(w, r, newErrorResponse(eventDelivery, statusCode))
+				return
+			}
+
+			r = r.WithContext(setEventDeliveryInContext(r.Context(), eventDelivery))
+			next.ServeHTTP(w, r)
+		})
+	}
+}
+
+func requireDeliveryAttempt() func(next http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -280,15 +306,15 @@ func requireDefaultGroup(groupRepo convoy.GroupRepository) func(next http.Handle
 			groups, err := groupRepo.LoadGroups(r.Context(), &convoy.GroupFilter{Name: name})
 			if err != nil {
 
-				msg := "an error occurred while loading default group"
+				event := "an error occurred while loading default group"
 				statusCode := http.StatusInternalServerError
 
 				if errors.Is(err, mongo.ErrNoDocuments) {
-					msg = err.Error()
+					event = err.Error()
 					statusCode = http.StatusNotFound
 				}
 
-				_ = render.Render(w, r, newErrorResponse(msg, statusCode))
+				_ = render.Render(w, r, newErrorResponse(event, statusCode))
 				return
 			}
 
@@ -362,7 +388,7 @@ func fetchGroupApps(appRepo convoy.ApplicationRepository) func(next http.Handler
 	}
 }
 
-func fetchDashboardSummary(appRepo convoy.ApplicationRepository, msgRepo convoy.EventRepository) func(next http.Handler) http.Handler {
+func fetchDashboardSummary(appRepo convoy.ApplicationRepository, eventRepo convoy.EventRepository) func(next http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -423,7 +449,7 @@ func fetchDashboardSummary(appRepo convoy.ApplicationRepository, msgRepo convoy.
 				return
 			}
 
-			eventsSent, messages, err := computeDashboardMessages(r.Context(), group.UID, msgRepo, searchParams, p)
+			eventsSent, messages, err := computeDashboardMessages(r.Context(), group.UID, eventRepo, searchParams, p)
 			if err != nil {
 				_ = render.Render(w, r, newErrorResponse("an error occurred while fetching messages", http.StatusInternalServerError))
 				return
@@ -450,11 +476,11 @@ func ensurePeriod(start time.Time, end time.Time) error {
 	return nil
 }
 
-func computeDashboardMessages(ctx context.Context, orgId string, msgRepo convoy.EventRepository, searchParams models.SearchParams, period convoy.Period) (uint64, []models.EventInterval, error) {
+func computeDashboardMessages(ctx context.Context, orgId string, eventRepo convoy.EventRepository, searchParams models.SearchParams, period convoy.Period) (uint64, []models.EventInterval, error) {
 
 	var messagesSent uint64
 
-	messages, err := msgRepo.LoadEventIntervals(ctx, orgId, searchParams, period, 1)
+	messages, err := eventRepo.LoadEventIntervals(ctx, orgId, searchParams, period, 1)
 	if err != nil {
 		log.Errorln("failed to load message intervals - ", err)
 		return 0, nil, err
@@ -504,18 +530,18 @@ func getApplicationFromContext(ctx context.Context) *convoy.Application {
 	return ctx.Value(appCtx).(*convoy.Application)
 }
 
-func setMessageInContext(ctx context.Context,
-	msg *convoy.Event) context.Context {
-	return context.WithValue(ctx, msgCtx, msg)
+func setEventInContext(ctx context.Context,
+	event *convoy.Event) context.Context {
+	return context.WithValue(ctx, eventCtx, event)
 }
 
-func getMessageFromContext(ctx context.Context) *convoy.Event {
-	return ctx.Value(msgCtx).(*convoy.Event)
+func getEventFromContext(ctx context.Context) *convoy.Event {
+	return ctx.Value(eventCtx).(*convoy.Event)
 }
 
-func setMessagesInContext(ctx context.Context,
-	msg *[]convoy.Event) context.Context {
-	return context.WithValue(ctx, msgCtx, msg)
+func setEventsInContext(ctx context.Context,
+	event *[]convoy.Event) context.Context {
+	return context.WithValue(ctx, eventCtx, event)
 }
 func setApplicationsInContext(ctx context.Context,
 	apps *[]convoy.Application) context.Context {

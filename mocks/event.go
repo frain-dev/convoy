@@ -157,31 +157,3 @@ func (mr *MockEventRepositoryMockRecorder) LoadEventsScheduledForPosting(arg0 in
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "LoadEventsScheduledForPosting", reflect.TypeOf((*MockEventRepository)(nil).LoadEventsScheduledForPosting), arg0)
 }
-
-// UpdateEventWithAttempt mocks base method.
-func (m *MockEventRepository) UpdateEventWithAttempt(ctx context.Context, e convoy.Event, attempt convoy.EventAttempt) error {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "UpdateEventWithAttempt", ctx, e, attempt)
-	ret0, _ := ret[0].(error)
-	return ret0
-}
-
-// UpdateEventWithAttempt indicates an expected call of UpdateEventWithAttempt.
-func (mr *MockEventRepositoryMockRecorder) UpdateEventWithAttempt(ctx, e, attempt interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateEventWithAttempt", reflect.TypeOf((*MockEventRepository)(nil).UpdateEventWithAttempt), ctx, e, attempt)
-}
-
-// UpdateStatusOfEvents mocks base method.
-func (m *MockEventRepository) UpdateStatusOfEvents(arg0 context.Context, arg1 []convoy.Event, arg2 convoy.EventStatus) error {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "UpdateStatusOfEvents", arg0, arg1, arg2)
-	ret0, _ := ret[0].(error)
-	return ret0
-}
-
-// UpdateStatusOfEvents indicates an expected call of UpdateStatusOfEvents.
-func (mr *MockEventRepositoryMockRecorder) UpdateStatusOfEvents(arg0, arg1, arg2 interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateStatusOfEvents", reflect.TypeOf((*MockEventRepository)(nil).UpdateStatusOfEvents), arg0, arg1, arg2)
-}

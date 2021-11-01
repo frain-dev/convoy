@@ -39,14 +39,10 @@ func addServerCommand(a *app) *cobra.Command {
 				return errors.New("please provide the HTTP port in the convoy.json file")
 			}
 
-			srv := server.New(cfg, a.eventRepo, a.applicationRepo, a.groupRepo, a.eventQueue, a.eventDeliveryQueue)
+			srv := server.New(cfg, a.eventRepo, a.eventDeliveryRepo, a.applicationRepo, a.groupRepo, a.eventQueue)
 
 			// register workers.
 			if queue, ok := a.eventQueue.(*convoyQueue.RedisQueue); ok {
-				worker.NewProducer(queue).Start()
-			}
-
-			if queue, ok := a.eventDeliveryQueue.(*convoyQueue.RedisQueue); ok {
 				worker.NewProducer(queue).Start()
 			}
 
@@ -55,8 +51,7 @@ func addServerCommand(a *app) *cobra.Command {
 			}
 
 			// register tasks.
-			convoyTask.CreateTask(convoy.EventProcessor, cfg, convoyTask.ProcessEvent(a.eventRepo, a.eventDeliveryQueue))
-			convoyTask.CreateTask(convoy.EventDeliveryProcessor, cfg, convoyTask.ProcessEventDeliveries(a.applicationRepo, a.eventRepo, a.groupRepo))
+			convoyTask.CreateTask(convoy.EventDeliveryProcessor, cfg, convoyTask.ProcessEventDelivery(a.applicationRepo, a.eventDeliveryRepo, a.groupRepo))
 			convoyTask.CreateTask(convoy.DeadLetterProcessor, cfg, convoyTask.ProcessDeadLetters)
 
 			log.Infof("Started convoy server in %s", time.Since(start))

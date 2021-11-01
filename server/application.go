@@ -21,11 +21,11 @@ import (
 )
 
 type applicationHandler struct {
-	appRepo            convoy.ApplicationRepository
-	eventRepo          convoy.EventRepository
-	groupRepo          convoy.GroupRepository
-	eventQueue         queue.Queuer
-	eventDeliveryQueue queue.Queuer
+	appRepo           convoy.ApplicationRepository
+	eventRepo         convoy.EventRepository
+	eventDeliveryRepo convoy.EventDeliveryRepository
+	groupRepo         convoy.GroupRepository
+	eventQueue        queue.Queuer
 }
 
 type pagedResponse struct {
@@ -34,17 +34,17 @@ type pagedResponse struct {
 }
 
 func newApplicationHandler(eventRepo convoy.EventRepository,
+	eventDeliveryRepo convoy.EventDeliveryRepository,
 	appRepo convoy.ApplicationRepository,
 	groupRepo convoy.GroupRepository,
-	eventQueue queue.Queuer,
-	eventDeliveryQueue queue.Queuer) *applicationHandler {
+	eventQueue queue.Queuer) *applicationHandler {
 
 	return &applicationHandler{
-		eventRepo:          eventRepo,
-		appRepo:            appRepo,
-		groupRepo:          groupRepo,
-		eventQueue:         eventQueue,
-		eventDeliveryQueue: eventDeliveryQueue,
+		eventRepo:         eventRepo,
+		eventDeliveryRepo: eventDeliveryRepo,
+		appRepo:           appRepo,
+		groupRepo:         groupRepo,
+		eventQueue:        eventQueue,
 	}
 }
 
@@ -132,7 +132,6 @@ func (a *applicationHandler) CreateApp(w http.ResponseWriter, r *http.Request) {
 		UID:            uid,
 		GroupID:        group.UID,
 		Title:          appName,
-		Secret:         newApp.Secret,
 		SupportEmail:   newApp.SupportEmail,
 		CreatedAt:      primitive.NewDateTimeFromTime(time.Now()),
 		UpdatedAt:      primitive.NewDateTimeFromTime(time.Now()),
@@ -178,10 +177,6 @@ func (a *applicationHandler) UpdateApp(w http.ResponseWriter, r *http.Request) {
 	app := getApplicationFromContext(r.Context())
 
 	app.Title = appName
-	if !util.IsStringEmpty(appUpdate.Secret) {
-		app.Secret = appUpdate.Secret
-	}
-
 	if !util.IsStringEmpty(appUpdate.SupportEmail) {
 		app.SupportEmail = appUpdate.SupportEmail
 	}

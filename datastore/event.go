@@ -48,10 +48,6 @@ func (db *eventRepo) CreateEvent(ctx context.Context,
 		message.UID = uuid.New().String()
 	}
 
-	if message.EventAttempts == nil {
-		message.EventAttempts = make([]convoy.EventAttempt, 0)
-	}
-
 	_, err := db.inner.InsertOne(ctx, message)
 	return err
 }
@@ -220,57 +216,6 @@ func (db *eventRepo) LoadAbandonedEventsForPostingRetry(ctx context.Context) ([]
 	}
 
 	return db.loadEventsByFilter(ctx, filter, nil)
-}
-
-func (db *eventRepo) UpdateStatusOfEvents(ctx context.Context, messages []convoy.Event, status convoy.EventStatus) error {
-
-	filter := bson.M{"uid": bson.M{"$in": getIds(messages)}}
-	update := bson.M{"$set": bson.M{"status": status, "updated_at": primitive.NewDateTimeFromTime(time.Now())}}
-
-	_, err := db.inner.UpdateMany(
-		ctx,
-		filter,
-		update,
-	)
-	if err != nil {
-		log.Errorln("error updating many messages - ", err)
-		return err
-	}
-
-	return nil
-}
-
-func getIds(messages []convoy.Event) []string {
-	ids := make([]string, 0)
-	for _, message := range messages {
-		ids = append(ids, message.UID)
-	}
-	return ids
-}
-
-func (db *eventRepo) UpdateEventWithAttempt(ctx context.Context, m convoy.Event, attempt convoy.EventAttempt) error {
-	filter := bson.M{"uid": m.UID}
-
-	update := bson.M{
-		"$set": bson.M{
-			"status":       m.Status,
-			"description":  m.Description,
-			"app_metadata": m.AppMetadata,
-			"metadata":     m.Metadata,
-			"updated_at":   primitive.NewDateTimeFromTime(time.Now()),
-		},
-		"$push": bson.M{
-			"attempts": attempt,
-		},
-	}
-
-	_, err := db.inner.UpdateOne(ctx, filter, update)
-	if err != nil {
-		log.Errorf("error updating one message %s - %s\n", m.UID, err)
-		return err
-	}
-
-	return err
 }
 
 func (db *eventRepo) LoadEventsPaged(ctx context.Context, groupID string, appId string, searchParams models.SearchParams, pageable models.Pageable) ([]convoy.Event, pager.PaginationData, error) {

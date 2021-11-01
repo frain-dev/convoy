@@ -8,8 +8,6 @@ import (
 	"errors"
 
 	"github.com/frain-dev/convoy/config"
-	"github.com/frain-dev/convoy/server/models"
-	pager "github.com/gobeam/mongo-go-pagination"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
@@ -31,6 +29,10 @@ const (
 )
 
 type EventMetadata struct {
+	UID string `json:"uid" bson:"uid"`
+
+	// Data to be sent to endpoint.
+	Data     json.RawMessage         `json:"data" bson:"data"`
 	Strategy config.StrategyProvider `json:"strategy" bson:"strategy"`
 	// NextSendTime denotes the next time a Event will be published in
 	// case it failed the first time
@@ -88,13 +90,12 @@ type EventAttempt struct {
 
 //Event defines a payload to be sent to an application
 type EventDelivery struct {
-	ID primitive.ObjectID `json:"-" bson:"_id"`
-
-	// Event to be sent to a specific endpoint.
-	Event Event `json:"event", bson:"event"`
+	ID    primitive.ObjectID `json:"-" bson:"_id"`
+	UID   string             `json:"uid" bson:"uid"`
+	AppID string             `json:"app_id" bson:"app_id"`
 
 	// Endpoint contains the destination of the event.
-	Endpoint EndpointMetadata `json:"endpoints" bson:"endpoints"`
+	EndpointMetadata *EndpointMetadata `json:"endpoints" bson:"endpoints"`
 
 	AppMetadata   *AppMetadata        `json:"app_metadata,omitempty" bson:"app_metadata"`
 	Metadata      *EventMetadata      `json:"metadata" bson:"metadata"`
@@ -111,13 +112,7 @@ type EventDelivery struct {
 
 type EventDeliveryRepository interface {
 	CreateEventDelivery(context.Context, *EventDelivery) error
-	LoadEventIntervals(context.Context, string, models.SearchParams, Period, int) ([]models.EventInterval, error)
-	LoadEventsPagedByAppId(context.Context, string, models.SearchParams, models.Pageable) ([]Event, pager.PaginationData, error)
-	FindEventByID(ctx context.Context, id string) (*Event, error)
-	LoadEventsScheduledForPosting(context.Context) ([]Event, error)
-	LoadEventsForPostingRetry(context.Context) ([]Event, error)
-	LoadAbandonedEventsForPostingRetry(context.Context) ([]Event, error)
-	UpdateStatusOfEventDeliveries(context.Context, []EventDelivery, EventDeliveryStatus) error
-	UpdateEventWithAttempt(ctx context.Context, e Event, attempt EventAttempt) error
-	LoadEventsPaged(context.Context, string, string, models.SearchParams, models.Pageable) ([]Event, pager.PaginationData, error)
+	FindEventDeliveryByID(context.Context, string) (*EventDelivery, error)
+	UpdateStatusOfEventDelivery(context.Context, EventDelivery, EventDeliveryStatus) error
+	UpdateEventDeliveryWithAttempt(context.Context, EventDelivery, EventAttempt) error
 }

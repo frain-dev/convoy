@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/frain-dev/convoy"
+	"github.com/frain-dev/convoy/config"
 	"github.com/frain-dev/convoy/server/models"
 	"github.com/frain-dev/convoy/util"
 	"github.com/go-chi/render"
@@ -16,18 +17,18 @@ import (
 	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
-// CreateAppMessage
-// @Summary Create app message
-// @Description This endpoint creates an app message
-// @Tags Messages
+// CreateAppEvent
+// @Summary Create app event
+// @Description This endpoint creates an app event
+// @Tags Events
 // @Accept  json
 // @Produce  json
-// @Param message body models.Event{data=Stub} true "Message Details"
+// @Param event body models.Event{data=Stub} true "Message Details"
 // @Success 200 {object} serverResponse{data=convoy.Event{data=Stub}}
 // @Failure 400,401,500 {object} serverResponse{data=Stub}
 // @Security ApiKeyAuth
 // @Router /events [post]
-func (a *applicationHandler) CreateAppMessage(w http.ResponseWriter, r *http.Request) {
+func (a *applicationHandler) CreateAppEvent(w http.ResponseWriter, r *http.Request) {
 
 	var newMessage models.Event
 	err := json.NewDecoder(r.Body).Decode(&newMessage)
@@ -69,7 +70,7 @@ func (a *applicationHandler) CreateAppMessage(w http.ResponseWriter, r *http.Req
 		return
 	}
 
-	msg := &convoy.Event{
+	event := &convoy.Event{
 		UID:       uuid.New().String(),
 		AppID:     app.UID,
 		EventType: convoy.EventType(eventType),
@@ -83,24 +84,76 @@ func (a *applicationHandler) CreateAppMessage(w http.ResponseWriter, r *http.Req
 		DocumentStatus: convoy.ActiveDocumentStatus,
 	}
 
-	err = a.eventRepo.CreateEvent(r.Context(), msg)
+	err = a.eventRepo.CreateEvent(r.Context(), event)
 	if err != nil {
 		_ = render.Render(w, r, newErrorResponse("an error occurred while creating event", http.StatusInternalServerError))
 		return
 	}
 
-	err = a.eventQueue.Write(r.Context(), convoy.EventProcessor, msg, 1*time.Second)
+	cfg, err := config.Get()
 	if err != nil {
-		log.Errorf("Error occurred sending new event to the queue %s", err)
+		log.Errorln("error fetching config - ", err)
+		_ = render.Render(w, r, newErrorResponse("an error has occurred while fetching config", http.StatusInternalServerError))
+		return
 	}
 
-	_ = render.Render(w, r, newServerResponse("App event created successfully", msg, http.StatusCreated))
+	var intervalSeconds uint64
+	var retryLimit uint64
+	if cfg.Strategy.Type == config.DefaultStrategyProvider {
+		intervalSeconds = cfg.Strategy.Default.IntervalSeconds
+		retryLimit = cfg.Strategy.Default.RetryLimit
+	} else {
+		_ = render.Render(w, r, newErrorResponse("retry strategy not defined in configuration", http.StatusInternalServerError))
+		return
+	}
+
+	endpoints := matchEndpointsForDelivery(eventType, app.Endpoints, nil)
+	eventStatus := convoy.ScheduledEventStatus
+
+	for _, v := range endpoints {
+		if v.Status != convoy.ActiveEndpointStatus {
+			eventStatus = convoy.DiscardedEventStatus
+		}
+
+		eventDelivery := &convoy.EventDelivery{
+			UID:   uuid.New().String(),
+			AppID: app.UID,
+			EndpointMetadata: &convoy.EndpointMetadata{
+				UID:       uuid.New().String(),
+				TargetURL: v.TargetURL,
+				Status:    v.Status,
+				Secret:    v.Secret,
+				Sent:      false,
+			},
+			Metadata: &convoy.EventMetadata{
+				Data:            event.Data,
+				Strategy:        cfg.Strategy.Type,
+				NumTrials:       0,
+				IntervalSeconds: intervalSeconds,
+				RetryLimit:      retryLimit,
+				NextSendTime:    primitive.NewDateTimeFromTime(time.Now()),
+			},
+			Status:        eventStatus,
+			EventAttempts: make([]convoy.EventAttempt, 0),
+		}
+		err = a.eventDeliveryRepo.CreateEventDelivery(r.Context(), eventDelivery)
+		if err != nil {
+			log.WithError(err).Error("error occurred creating event delivery")
+		}
+
+		err = a.eventQueue.Write(r.Context(), convoy.EventProcessor, eventDelivery, 1*time.Second)
+		if err != nil {
+			log.Errorf("Error occurred sending new event to the queue %s", err)
+		}
+	}
+
+	_ = render.Render(w, r, newServerResponse("App event created successfully", event, http.StatusCreated))
 }
 
-// GetAppMessage
-// @Summary Get app message
-// @Description This endpoint fetches an app message
-// @Tags Messages
+// GetAppEvent
+// @Summary Get app event
+// @Description This endpoint fetches an app event
+// @Tags Events
 // @Accept  json
 // @Produce  json
 // @Param eventID path string true "event id"
@@ -108,33 +161,51 @@ func (a *applicationHandler) CreateAppMessage(w http.ResponseWriter, r *http.Req
 // @Failure 400,401,500 {object} serverResponse{data=Stub}
 // @Security ApiKeyAuth
 // @Router /events/{eventID} [get]
-func (a *applicationHandler) GetAppMessage(w http.ResponseWriter, r *http.Request) {
+func (a *applicationHandler) GetAppEvent(w http.ResponseWriter, r *http.Request) {
 
 	_ = render.Render(w, r, newServerResponse("App event fetched successfully",
-		*getMessageFromContext(r.Context()), http.StatusOK))
+		*getEventFromContext(r.Context()), http.StatusOK))
 }
 
-// ResendAppMessage
-// @Summary Resend an app message
-// @Description This endpoint resends an app message
-// @Tags Messages
+// GetEventDelivery
+// @Summary Get event delivery
+// @Description This endpoint fetches an event delivery.
+// @Tags Events
+// @Accept json
+// @Produce json
+// @Param eventID path string true "event id"
+// @Param eventDeliveryID path string true "event delivery id"
+// @Success 200 {object} serverResponse{data=convoy.Event{data=Stub}}
+// @Failure 400,401,500 {object} serverResponse{data=Stub}
+// @Security ApiKeyAuth
+// @Router /events/{eventID}/eventdelivery/{eventDeliveryID}
+func (a *applicationHandler) GetEventDelivery(w http.ResponseWriter, r *http.Request) {
+
+	_ = render.Render(w, r, newServerResponse("Event Delivery fetched successfully",
+		*getEventDeliveryFromContext(r.Context()), http.StatusOK))
+}
+
+// ResendEventDelivery
+// @Summary Resend an app event
+// @Description This endpoint resends an app event
+// @Tags Events
 // @Accept  json
 // @Produce  json
 // @Param eventID path string true "event id"
 // @Success 200 {object} serverResponse{data=convoy.Event{data=Stub}}
 // @Failure 400,401,500 {object} serverResponse{data=Stub}
 // @Security ApiKeyAuth
-// @Router /events/{eventID}/resend [put]
-func (a *applicationHandler) ResendAppMessage(w http.ResponseWriter, r *http.Request) {
+// @Router /events/{eventID}/eventdelivery/resend [put]
+func (a *applicationHandler) ResendEventDelivery(w http.ResponseWriter, r *http.Request) {
 
-	msg := getMessageFromContext(r.Context())
+	event := getEventFromContext(r.Context())
 
-	if msg.Status == convoy.SuccessEventStatus {
+	if event.Status == convoy.SuccessEventStatus {
 		_ = render.Render(w, r, newErrorResponse("event already sent", http.StatusBadRequest))
 		return
 	}
 
-	switch msg.Status {
+	switch event.Status {
 	case convoy.ScheduledEventStatus,
 		convoy.ProcessingEventStatus,
 		convoy.SuccessEventStatus,
@@ -145,7 +216,7 @@ func (a *applicationHandler) ResendAppMessage(w http.ResponseWriter, r *http.Req
 
 	// Retry to Inactive endpoints.
 	// System cannot handle more than one endpoint per url at this point.
-	e := msg.AppMetadata.Endpoints[0]
+	e := event.AppMetadata.Endpoints[0]
 	endpoint, err := a.appRepo.FindApplicationEndpointByID(context.Background(), msg.AppID, e.UID)
 	if err != nil {
 		_ = render.Render(w, r, newErrorResponse("cannot find endpoint", http.StatusInternalServerError))
@@ -183,10 +254,10 @@ func (a *applicationHandler) ResendAppMessage(w http.ResponseWriter, r *http.Req
 		msg, http.StatusOK))
 }
 
-// GetMessagesPaged
-// @Summary Get app messages with pagination
-// @Description This endpoint fetches app messages with pagination
-// @Tags Messages
+// GetEventsPaged
+// @Summary Get app events with pagination
+// @Description This endpoint fetches app events with pagination
+// @Tags Events
 // @Accept  json
 // @Produce  json
 // @Param appId query string false "application id"
@@ -200,7 +271,7 @@ func (a *applicationHandler) ResendAppMessage(w http.ResponseWriter, r *http.Req
 // @Failure 400,401,500 {object} serverResponse{data=Stub}
 // @Security ApiKeyAuth
 // @Router /events [get]
-func (a *applicationHandler) GetMessagesPaged(w http.ResponseWriter, r *http.Request) {
+func (a *applicationHandler) GetEventsPaged(w http.ResponseWriter, r *http.Request) {
 
 	pageable := getPageableFromContext(r.Context())
 	groupID := r.URL.Query().Get("groupId")
@@ -221,6 +292,21 @@ func (a *applicationHandler) GetMessagesPaged(w http.ResponseWriter, r *http.Req
 
 	_ = render.Render(w, r, newServerResponse("App events fetched successfully",
 		pagedResponse{Content: &m, Pagination: &paginationData}, http.StatusOK))
+}
+
+// GetEventDeliveries
+// @Summary Get event deliveries
+// @Description This endpoint fetch event deliveries.
+// @Tags Events
+// @Accept json
+// @Produce json
+// @Param eventID path string true "event id"
+// @Success 200 {object} serverResponse{data=[]convoy.EventDelivery{data=Stub}}
+// @Failure 400,401,500 {object} serverResponse{data=Stub}
+// @Security ApiKeyAuth
+// @Router /events/{eventID}/eventdelivery
+func (a *applicationHandler) GetEventDeliveries(w http.ResponseWriter, r *http.Request) {
+
 }
 
 func fetchAllMessages(msgRepo convoy.EventRepository) func(next http.Handler) http.Handler {
@@ -246,7 +332,7 @@ func fetchAllMessages(msgRepo convoy.EventRepository) func(next http.Handler) ht
 				return
 			}
 
-			r = r.WithContext(setMessagesInContext(r.Context(), &m))
+			r = r.WithContext(setEventsInContext(r.Context(), &m))
 			r = r.WithContext(setPaginationDataInContext(r.Context(), &paginationData))
 			next.ServeHTTP(w, r)
 		})
@@ -299,7 +385,7 @@ func fetchMessageDeliveryAttempts() func(next http.Handler) http.Handler {
 
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 
-			msg := getMessageFromContext(r.Context())
+			msg := getEventFromContext(r.Context())
 
 			r = r.WithContext(setDeliveryAttemptsInContext(r.Context(), &msg.EventAttempts))
 			next.ServeHTTP(w, r)
@@ -314,4 +400,24 @@ func findMessageDeliveryAttempt(attempts *[]convoy.EventAttempt, id string) (*co
 		}
 	}
 	return nil, convoy.ErrEventDeliveryAttemptNotFound
+}
+
+func matchEndpointsForDelivery(ev string, endpoints, matched []convoy.Endpoint) []convoy.Endpoint {
+	if len(endpoints) == 0 {
+		return matched
+	}
+
+	if matched == nil {
+		matched = make([]convoy.Endpoint, 0)
+	}
+
+	e := endpoints[0]
+	for _, v := range e.Events {
+		if v == ev || v == "*" {
+			matched = append(matched, e)
+			break
+		}
+	}
+
+	return matchEndpointsForDelivery(ev, endpoints[1:], matched)
 }

@@ -31,8 +31,6 @@ type Application struct {
 	Title        string             `json:"name" bson:"title"`
 	SupportEmail string             `json:"support_email" bson:"support_email"`
 
-	Secret string `json:"secret" bson:"secret"`
-
 	Endpoints []Endpoint         `json:"endpoints" bson:"endpoints"`
 	CreatedAt primitive.DateTime `json:"created_at,omitempty" bson:"created_at,omitempty" swaggertype:"string"`
 	UpdatedAt primitive.DateTime `json:"updated_at,omitempty" bson:"updated_at,omitempty" swaggertype:"string"`
@@ -48,6 +46,9 @@ type Endpoint struct {
 	TargetURL   string         `json:"target_url" bson:"target_url"`
 	Description string         `json:"description" bson:"description"`
 	Status      EndpointStatus `json:"status" bson:"status"`
+	Secret      string         `json:"secret" bson:"secret"`
+
+	Events []string `json:"events" bson:"events"`
 
 	CreatedAt primitive.DateTime `json:"created_at,omitempty" bson:"created_at,omitempty" swaggertype:"string"`
 	UpdatedAt primitive.DateTime `json:"updated_at,omitempty" bson:"updated_at,omitempty" swaggertype:"string"`

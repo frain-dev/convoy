@@ -10,10 +10,10 @@ import (
 
 type Queuer interface {
 	io.Closer
-	Write(context.Context, convoy.TaskName, *convoy.Event, time.Duration) error
+	Write(context.Context, convoy.TaskName, *convoy.EventDelivery, time.Duration) error
 }
 
 type Job struct {
-	Err   error  `json:"err"`
-	MsgID string `json:"msg_id"`
+	Err error  `json:"err"`
+	ID  string `json:"id"`
 }
