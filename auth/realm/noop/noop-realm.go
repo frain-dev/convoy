@@ -4,24 +4,24 @@ import "github.com/frain-dev/convoy/auth"
 
 type NoopRealm struct{}
 
-func (n NoopRealm) Name() string {
+func (n NoopRealm) GetName() string {
 	return "noop_realm"
 }
 
 var authUser = &auth.AuthenticatedUser{
 	Credential: auth.Credential{
-		Type:     "",
-		Username: "",
-		Password: "",
+		Type:     auth.CredentialTypeBasic,
+		Username: "default",
+		Password: "default",
 		APIKey:   "",
 	},
 	Roles: []auth.Role{auth.RoleSuperUser},
 }
 
 func (n NoopRealm) Authenticate(cred *auth.Credential) (*auth.AuthenticatedUser, error) {
-	return nil, nil
+	return authUser, nil
 }
 
-func NewNoopRealm() auth.Realm {
+func NewNoopRealm() *NoopRealm {
 	return &NoopRealm{}
 }

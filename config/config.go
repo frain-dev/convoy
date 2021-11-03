@@ -10,6 +10,13 @@ import (
 	"sync/atomic"
 	"time"
 
+	"github.com/frain-dev/convoy/auth/realm/file"
+
+	"github.com/frain-dev/convoy/auth"
+
+	"github.com/frain-dev/convoy/auth/realm/noop"
+	"github.com/frain-dev/convoy/auth/realm_chain"
+
 	"github.com/frain-dev/convoy/config/algo"
 )
 
@@ -40,8 +47,18 @@ type QueueConfiguration struct {
 }
 
 type AuthConfiguration struct {
-	Type  AuthProvider `json:"type"`
-	Basic Basic        `json:"basic"`
+	RequireAuth bool         `json:"require_auth"`
+	Type        AuthProvider `json:"type"`
+	Basic       Basic        `json:"basic"`
+	Realms      []Realm      `json:"realms"`
+}
+
+type Realm struct {
+	Name   string `json:"name"`
+	Type   string `json:"type"`
+	Path   string `json:"path"`
+	ApiKey string `json:"api_key"`
+	Url    string `json:"url"`
 }
 
 type UIAuthConfiguration struct {
@@ -141,6 +158,37 @@ func LoadConfig(p string) error {
 			}{
 				DSN: queueDsn,
 			},
+		}
+	}
+
+	if c.Auth.RequireAuth {
+		for _, r := range c.Auth.Realms {
+			realmType := auth.RealmType(r.Type)
+			switch realmType {
+			case auth.RealmTypeFile:
+				if r.Name == "" {
+					return errors.New("empty realm name")
+				}
+				if r.Path == "" {
+					return errors.New("path is required for file realm")
+				}
+
+				fr, err := file.NewFileRealm(r.Path)
+				if err != nil {
+					return fmt.Errorf("failed to initialize file realm '%s': %v", err)
+				}
+
+				err = realm_chain.Get().RegisterRealm(fr)
+				if err != nil {
+					return fmt.Errorf("failed to register file realm in realm chain: %v", err)
+				}
+			case auth.RealmTypeVault:
+			}
+		}
+	} else {
+		err = realm_chain.Get().RegisterRealm(noop.NewNoopRealm())
+		if err != nil {
+			return fmt.Errorf("failed to register noop realm in realm chain: %v", err)
 		}
 	}
 

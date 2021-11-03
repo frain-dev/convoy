@@ -1,13 +1,9 @@
 package auth
 
-type Realm interface {
-	Name() string
-	Authenticate(cred *Credential) (*AuthenticatedUser, error)
-}
-
 type AuthenticatedUser struct {
-	Credential Credential
-	Roles      []Role
+	AuthenticatedByRealm string     `json:"-"` // Name of realm that authenticated this user
+	Credential           Credential `json:"credential"`
+	Roles                []Role     `json:"roles"`
 }
 
 type Credential struct {
@@ -27,12 +23,3 @@ const (
 func (c CredentialType) String() string {
 	return string(c)
 }
-
-type Role string
-
-const (
-	RoleSuperUser = Role("super_user")
-	RoleUIAdmin   = Role("ui_admin")
-	RoleAdmin     = Role("admin")
-	RoleAPI       = Role("api")
-)
