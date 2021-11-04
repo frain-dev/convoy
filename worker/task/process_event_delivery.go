@@ -56,7 +56,7 @@ func ProcessEventDelivery(appRepo convoy.ApplicationRepository, eventDeliveryRep
 			return nil
 		}
 
-		var attempt convoy.EventAttempt
+		var attempt convoy.DeliveryAttempt
 		var secret = m.EndpointMetadata.Secret
 
 		cfg, err := config.Get()
@@ -241,12 +241,12 @@ func sendEmailNotification(m *convoy.EventDelivery, o *convoy.GroupRepository, s
 	return nil
 }
 
-func parseAttemptFromResponse(m *convoy.EventDelivery, e *convoy.EndpointMetadata, resp *net.Response, attemptStatus bool) convoy.EventAttempt {
+func parseAttemptFromResponse(m *convoy.EventDelivery, e *convoy.EndpointMetadata, resp *net.Response, attemptStatus bool) convoy.DeliveryAttempt {
 
 	responseHeader := util.ConvertDefaultHeaderToCustomHeader(&resp.ResponseHeader)
 	requestHeader := util.ConvertDefaultHeaderToCustomHeader(&resp.RequestHeader)
 
-	return convoy.EventAttempt{
+	return convoy.DeliveryAttempt{
 		ID:         primitive.NewObjectID(),
 		UID:        uuid.New().String(),
 		URL:        resp.URL.String(),

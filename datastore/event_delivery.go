@@ -78,7 +78,7 @@ func (db *eventDeliveryRepo) UpdateStatusOfEventDelivery(ctx context.Context,
 }
 
 func (db *eventDeliveryRepo) UpdateEventDeliveryWithAttempt(ctx context.Context,
-	e convoy.EventDelivery, attempt convoy.EventAttempt) error {
+	e convoy.EventDelivery, attempt convoy.DeliveryAttempt) error {
 
 	filter := bson.M{"uid": e.UID}
 	update := bson.M{

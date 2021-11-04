@@ -604,21 +604,21 @@ func getDashboardSummaryFromContext(ctx context.Context) *models.DashboardSummar
 }
 
 func setDeliveryAttemptInContext(ctx context.Context,
-	attempt *convoy.EventAttempt) context.Context {
+	attempt *convoy.DeliveryAttempt) context.Context {
 	return context.WithValue(ctx, deliveryAttemptsCtx, attempt)
 }
 
-func getDeliveryAttemptFromContext(ctx context.Context) *convoy.EventAttempt {
-	return ctx.Value(deliveryAttemptsCtx).(*convoy.EventAttempt)
+func getDeliveryAttemptFromContext(ctx context.Context) *convoy.DeliveryAttempt {
+	return ctx.Value(deliveryAttemptsCtx).(*convoy.DeliveryAttempt)
 }
 
 func setDeliveryAttemptsInContext(ctx context.Context,
-	attempts *[]convoy.EventAttempt) context.Context {
+	attempts *[]convoy.DeliveryAttempt) context.Context {
 	return context.WithValue(ctx, deliveryAttemptsCtx, attempts)
 }
 
-func getDeliveryAttemptsFromContext(ctx context.Context) *[]convoy.EventAttempt {
-	return ctx.Value(deliveryAttemptsCtx).(*[]convoy.EventAttempt)
+func getDeliveryAttemptsFromContext(ctx context.Context) *[]convoy.DeliveryAttempt {
+	return ctx.Value(deliveryAttemptsCtx).(*[]convoy.DeliveryAttempt)
 }
 
 func setAuthLoginInContext(ctx context.Context, a *AuthorizedLogin) context.Context {

@@ -133,8 +133,8 @@ func (a *applicationHandler) CreateAppEvent(w http.ResponseWriter, r *http.Reque
 				RetryLimit:      retryLimit,
 				NextSendTime:    primitive.NewDateTimeFromTime(time.Now()),
 			},
-			Status:        eventStatus,
-			EventAttempts: make([]convoy.EventAttempt, 0),
+			Status:           eventStatus,
+			DeliveryAttempts: make([]convoy.DeliveryAttempt, 0),
 		}
 		err = a.eventDeliveryRepo.CreateEventDelivery(r.Context(), eventDelivery)
 		if err != nil {
@@ -357,13 +357,13 @@ func fetchDeliveryAttempts() func(next http.Handler) http.Handler {
 
 			e := getEventDeliveryFromContext(r.Context())
 
-			r = r.WithContext(setDeliveryAttemptsInContext(r.Context(), &e.EventAttempts))
+			r = r.WithContext(setDeliveryAttemptsInContext(r.Context(), &e.DeliveryAttempts))
 			next.ServeHTTP(w, r)
 		})
 	}
 }
 
-func findMessageDeliveryAttempt(attempts *[]convoy.EventAttempt, id string) (*convoy.EventAttempt, error) {
+func findMessageDeliveryAttempt(attempts *[]convoy.DeliveryAttempt, id string) (*convoy.DeliveryAttempt, error) {
 	for _, a := range *attempts {
 		if a.UID == id {
 			return &a, nil

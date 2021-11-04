@@ -65,7 +65,7 @@ func (mr *MockEventDeliveryRepositoryMockRecorder) FindEventDeliveryByID(arg0, a
 }
 
 // UpdateEventDeliveryWithAttempt mocks base method.
-func (m *MockEventDeliveryRepository) UpdateEventDeliveryWithAttempt(arg0 context.Context, arg1 convoy.EventDelivery, arg2 convoy.EventAttempt) error {
+func (m *MockEventDeliveryRepository) UpdateEventDeliveryWithAttempt(arg0 context.Context, arg1 convoy.EventDelivery, arg2 convoy.DeliveryAttempt) error {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "UpdateEventDeliveryWithAttempt", arg0, arg1, arg2)
 	ret0, _ := ret[0].(error)

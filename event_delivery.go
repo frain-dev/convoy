@@ -67,7 +67,7 @@ func (em EventMetadata) Value() (driver.Value, error) {
 	return driver.Value(b.String()), nil
 }
 
-type EventAttempt struct {
+type DeliveryAttempt struct {
 	ID         primitive.ObjectID `json:"-" bson:"_id"`
 	UID        string             `json:"uid" bson:"uid"`
 	MsgID      string             `json:"msg_id" bson:"msg_id"`
@@ -98,11 +98,11 @@ type EventDelivery struct {
 	// Endpoint contains the destination of the event.
 	EndpointMetadata *EndpointMetadata `json:"endpoints" bson:"endpoints"`
 
-	AppMetadata   *AppMetadata        `json:"app_metadata,omitempty" bson:"app_metadata"`
-	Metadata      *EventMetadata      `json:"metadata" bson:"metadata"`
-	Description   string              `json:"description,omitempty" bson:"description"`
-	Status        EventDeliveryStatus `json:"status" bson:"status"`
-	EventAttempts []EventAttempt      `json:"-" bson:"attempts"`
+	AppMetadata      *AppMetadata        `json:"app_metadata,omitempty" bson:"app_metadata"`
+	Metadata         *EventMetadata      `json:"metadata" bson:"metadata"`
+	Description      string              `json:"description,omitempty" bson:"description"`
+	Status           EventDeliveryStatus `json:"status" bson:"status"`
+	DeliveryAttempts []DeliveryAttempt   `json:"-" bson:"attempts"`
 
 	CreatedAt primitive.DateTime `json:"created_at,omitempty" bson:"created_at,omitempty" swaggertype:"string"`
 	UpdatedAt primitive.DateTime `json:"updated_at,omitempty" bson:"updated_at,omitempty" swaggertype:"string"`
@@ -115,5 +115,5 @@ type EventDeliveryRepository interface {
 	CreateEventDelivery(context.Context, *EventDelivery) error
 	FindEventDeliveryByID(context.Context, string) (*EventDelivery, error)
 	UpdateStatusOfEventDelivery(context.Context, EventDelivery, EventDeliveryStatus) error
-	UpdateEventDeliveryWithAttempt(context.Context, EventDelivery, EventAttempt) error
+	UpdateEventDeliveryWithAttempt(context.Context, EventDelivery, DeliveryAttempt) error
 }
