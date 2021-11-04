@@ -178,7 +178,7 @@ func (a *applicationHandler) GetAppEvent(w http.ResponseWriter, r *http.Request)
 // @Success 200 {object} serverResponse{data=convoy.Event{data=Stub}}
 // @Failure 400,401,500 {object} serverResponse{data=Stub}
 // @Security ApiKeyAuth
-// @Router /events/{eventID}/eventdelivery/{eventDeliveryID}
+// @Router /events/{eventID}/eventdelivery/{eventDeliveryID} [get]
 func (a *applicationHandler) GetEventDelivery(w http.ResponseWriter, r *http.Request) {
 
 	_ = render.Render(w, r, newServerResponse("Event Delivery fetched successfully",
