@@ -339,25 +339,21 @@ func Test_resendMessage(t *testing.T) {
 			statusCode: http.StatusOK,
 			body:       nil,
 			args: args{
-				message: &convoy.Event{
+				message: &convoy.EventDelivery{
 					UID:    msgId,
 					AppID:  appId,
 					Status: convoy.FailureEventStatus,
-					AppMetadata: &convoy.AppMetadata{
-						Endpoints: []convoy.EndpointMetadata{
-							{
-								TargetURL: "http://localhost",
-								Status:    convoy.InactiveEndpointStatus,
-							},
-						},
+					EndpointMetadata: &convoy.EndpointMetadata{
+						TargetURL: "http://localhost",
+						Status:    convoy.InactiveEndpointStatus,
 					},
 				},
 			},
-			dbFn: func(msg *convoy.EventDelivery, app *applicationHandler) {
-				m, _ := app.eventRepo.(*mocks.MockEventRepository)
+			dbFn: func(e *convoy.EventDelivery, app *applicationHandler) {
+				m, _ := app.eventDeliveryRepo.(*mocks.MockEventDeliveryRepository)
 				m.EXPECT().
-					FindEventByID(gomock.Any(), gomock.Any()).Times(1).
-					Return(msg, nil)
+					FindEventDeliveryByID(gomock.Any(), gomock.Any()).Times(1).
+					Return(e, nil)
 
 				m.EXPECT().
 					UpdateStatusOfEventDelivery(gomock.Any(), gomock.Any(), gomock.Any()).Times(1).
@@ -390,24 +386,20 @@ func Test_resendMessage(t *testing.T) {
 			statusCode: http.StatusOK,
 			body:       nil,
 			args: args{
-				message: &convoy.Event{
+				message: &convoy.EventDelivery{
 					UID:    msgId,
 					AppID:  appId,
 					Status: convoy.FailureEventStatus,
-					AppMetadata: &convoy.AppMetadata{
-						Endpoints: []convoy.EndpointMetadata{
-							{
-								TargetURL: "http://localhost",
-								Status:    convoy.ActiveEndpointStatus,
-							},
-						},
+					EndpointMetadata: &convoy.EndpointMetadata{
+						TargetURL: "http://localhost",
+						Status:    convoy.ActiveEndpointStatus,
 					},
 				},
 			},
 			dbFn: func(msg *convoy.EventDelivery, app *applicationHandler) {
-				m, _ := app.eventRepo.(*mocks.MockEventRepository)
+				m, _ := app.eventDeliveryRepo.(*mocks.MockEventDeliveryRepository)
 				m.EXPECT().
-					FindEventByID(gomock.Any(), gomock.Any()).Times(1).
+					FindEventDeliveryByID(gomock.Any(), gomock.Any()).Times(1).
 					Return(msg, nil)
 
 				m.EXPECT().

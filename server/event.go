@@ -198,14 +198,14 @@ func (a *applicationHandler) GetEventDelivery(w http.ResponseWriter, r *http.Req
 // @Router /events/{eventID}/eventdelivery/resend [put]
 func (a *applicationHandler) ResendEventDelivery(w http.ResponseWriter, r *http.Request) {
 
-	event := getEventFromContext(r.Context())
+	eventDelivery := getEventDeliveryFromContext(r.Context())
 
-	if event.Status == convoy.SuccessEventStatus {
+	if eventDelivery.Status == convoy.SuccessEventStatus {
 		_ = render.Render(w, r, newErrorResponse("event already sent", http.StatusBadRequest))
 		return
 	}
 
-	switch event.Status {
+	switch eventDelivery.Status {
 	case convoy.ScheduledEventStatus,
 		convoy.ProcessingEventStatus,
 		convoy.SuccessEventStatus,
@@ -216,8 +216,8 @@ func (a *applicationHandler) ResendEventDelivery(w http.ResponseWriter, r *http.
 
 	// Retry to Inactive endpoints.
 	// System cannot handle more than one endpoint per url at this point.
-	e := event.AppMetadata.Endpoints[0]
-	endpoint, err := a.appRepo.FindApplicationEndpointByID(context.Background(), msg.AppID, e.UID)
+	e := eventDelivery.EndpointMetadata
+	endpoint, err := a.appRepo.FindApplicationEndpointByID(context.Background(), eventDelivery.AppID, e.UID)
 	if err != nil {
 		_ = render.Render(w, r, newErrorResponse("cannot find endpoint", http.StatusInternalServerError))
 		return
@@ -231,27 +231,27 @@ func (a *applicationHandler) ResendEventDelivery(w http.ResponseWriter, r *http.
 	if endpoint.Status == convoy.InactiveEndpointStatus {
 		pendingEndpoints := []string{e.UID}
 
-		err = a.appRepo.UpdateApplicationEndpointsStatus(context.Background(), msg.AppID, pendingEndpoints, convoy.PendingEndpointStatus)
+		err = a.appRepo.UpdateApplicationEndpointsStatus(context.Background(), eventDelivery.AppID, pendingEndpoints, convoy.PendingEndpointStatus)
 		if err != nil {
 			_ = render.Render(w, r, newErrorResponse("failed to update endpoint status", http.StatusInternalServerError))
 			return
 		}
 	}
 
-	msg.Status = convoy.ScheduledEventStatus
-	err = a.eventRepo.UpdateStatusOfEvents(r.Context(), []convoy.Event{*msg}, convoy.ScheduledEventStatus)
+	eventDelivery.Status = convoy.ScheduledEventStatus
+	err = a.eventDeliveryRepo.UpdateStatusOfEventDelivery(r.Context(), *eventDelivery, convoy.ScheduledEventStatus)
 	if err != nil {
 		_ = render.Render(w, r, newErrorResponse("an error occurred while trying to resend event", http.StatusInternalServerError))
 		return
 	}
 
-	err = a.eventDeliveryQueue.Write(r.Context(), convoy.EventProcessor, msg, 1*time.Second)
+	err = a.eventQueue.Write(r.Context(), convoy.EventProcessor, eventDelivery, 1*time.Second)
 	if err != nil {
-		log.WithError(err).Errorf("Error occurred re-enqueing old event - %s", msg.UID)
+		log.WithError(err).Errorf("Error occurred re-enqueing old event - %s", eventDelivery.UID)
 	}
 
 	_ = render.Render(w, r, newServerResponse("App event processed for retry successfully",
-		msg, http.StatusOK))
+		eventDelivery, http.StatusOK))
 }
 
 // GetEventsPaged
@@ -309,36 +309,6 @@ func (a *applicationHandler) GetEventDeliveries(w http.ResponseWriter, r *http.R
 
 }
 
-func fetchAllMessages(msgRepo convoy.EventRepository) func(next http.Handler) http.Handler {
-	return func(next http.Handler) http.Handler {
-
-		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-
-			pageable := getPageableFromContext(r.Context())
-
-			groupID := r.URL.Query().Get("groupId")
-			appId := r.URL.Query().Get("appId")
-
-			searchParams, err := getSearchParams(r)
-			if err != nil {
-				_ = render.Render(w, r, newErrorResponse(err.Error(), http.StatusBadRequest))
-				return
-			}
-
-			m, paginationData, err := msgRepo.LoadEventsPaged(r.Context(), groupID, appId, searchParams, pageable)
-			if err != nil {
-				_ = render.Render(w, r, newErrorResponse("an error occurred while fetching app events", http.StatusInternalServerError))
-				log.Errorln("error while fetching events - ", err)
-				return
-			}
-
-			r = r.WithContext(setEventsInContext(r.Context(), &m))
-			r = r.WithContext(setPaginationDataInContext(r.Context(), &paginationData))
-			next.ServeHTTP(w, r)
-		})
-	}
-}
-
 func getSearchParams(r *http.Request) (models.SearchParams, error) {
 	var searchParams models.SearchParams
 	format := "2006-01-02T15:04:05"
@@ -380,14 +350,14 @@ func getSearchParams(r *http.Request) (models.SearchParams, error) {
 	return searchParams, nil
 }
 
-func fetchMessageDeliveryAttempts() func(next http.Handler) http.Handler {
+func fetchDeliveryAttempts() func(next http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 
-			msg := getEventFromContext(r.Context())
+			e := getEventDeliveryFromContext(r.Context())
 
-			r = r.WithContext(setDeliveryAttemptsInContext(r.Context(), &msg.EventAttempts))
+			r = r.WithContext(setDeliveryAttemptsInContext(r.Context(), &e.EventAttempts))
 			next.ServeHTTP(w, r)
 		})
 	}

@@ -15,6 +15,7 @@ type EventDeliveryStatus string
 type HttpHeader map[string]string
 
 var (
+	ErrEventDeliveryNotFound        = errors.New("event not found")
 	ErrEventDeliveryAttemptNotFound = errors.New("delivery attempt not found")
 )
 

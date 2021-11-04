@@ -35,6 +35,7 @@ const (
 	appCtx              contextKey = "app"
 	endpointCtx         contextKey = "endpoint"
 	eventCtx            contextKey = "event"
+	eventDeliveryCtx    contextKey = "eventDelivery"
 	configCtx           contextKey = "configCtx"
 	authConfigCtx       contextKey = "authConfig"
 	authLoginCtx        contextKey = "authLogin"
@@ -226,7 +227,7 @@ func requireEvent(eventRepo convoy.EventRepository) func(next http.Handler) http
 	}
 }
 
-func requireEventDelivery(eventRepo convoy.EventRepository) func(next http.Handler) http.Handler {
+func requireEventDelivery(eventRepo convoy.EventDeliveryRepository) func(next http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			eventDeliveryID := chi.URLParam(r, "eventDeliveryID")
@@ -537,6 +538,15 @@ func setEventInContext(ctx context.Context,
 
 func getEventFromContext(ctx context.Context) *convoy.Event {
 	return ctx.Value(eventCtx).(*convoy.Event)
+}
+
+func setEventDeliveryInContext(ctx context.Context,
+	eventDelivery *convoy.EventDelivery) context.Context {
+	return context.WithValue(ctx, eventDeliveryCtx, eventDelivery)
+}
+
+func getEventDeliveryFromContext(ctx context.Context) *convoy.EventDelivery {
+	return ctx.Value(eventDeliveryCtx).(*convoy.EventDelivery)
 }
 
 func setEventsInContext(ctx context.Context,

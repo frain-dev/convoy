@@ -75,10 +75,11 @@ func TestApplicationHandler_GetGroup(t *testing.T) {
 
 			groupRepo := mocks.NewMockGroupRepository(ctrl)
 			appRepo := mocks.NewMockApplicationRepository(ctrl)
-			msgRepo := mocks.NewMockEventRepository(ctrl)
-			scheduleQueue := mocks.NewMockQueuer(ctrl)
+			eventRepo := mocks.NewMockEventRepository(ctrl)
+			eventDeliveryRepo := mocks.NewMockEventDeliveryRepository(ctrl)
+			eventQueue := mocks.NewMockQueuer(ctrl)
 
-			app = newApplicationHandler(msgRepo, appRepo, groupRepo, scheduleQueue)
+			app = newApplicationHandler(eventRepo, eventDeliveryRepo, appRepo, groupRepo, eventQueue)
 
 			// Arrange
 			url := fmt.Sprintf("/api/v1/groups/%s", tc.id)
@@ -155,10 +156,11 @@ func TestApplicationHandler_CreateGroup(t *testing.T) {
 
 			groupRepo := mocks.NewMockGroupRepository(ctrl)
 			appRepo := mocks.NewMockApplicationRepository(ctrl)
-			msgRepo := mocks.NewMockEventRepository(ctrl)
-			scheduleQueue := mocks.NewMockQueuer(ctrl)
+			eventRepo := mocks.NewMockEventRepository(ctrl)
+			eventDeliveryRepo := mocks.NewMockEventDeliveryRepository(ctrl)
+			eventQueue := mocks.NewMockQueuer(ctrl)
 
-			app = newApplicationHandler(msgRepo, appRepo, groupRepo, scheduleQueue)
+			app = newApplicationHandler(eventRepo, eventDeliveryRepo, appRepo, groupRepo, eventQueue)
 
 			// Arrange
 			req := httptest.NewRequest(tc.method, "/api/v1/groups", tc.body)
@@ -240,10 +242,11 @@ func TestApplicationHandler_UpdateGroup(t *testing.T) {
 
 			groupRepo := mocks.NewMockGroupRepository(ctrl)
 			appRepo := mocks.NewMockApplicationRepository(ctrl)
-			msgRepo := mocks.NewMockEventRepository(ctrl)
-			scheduleQueue := mocks.NewMockQueuer(ctrl)
+			eventRepo := mocks.NewMockEventRepository(ctrl)
+			eventDeliveryRepo := mocks.NewMockEventDeliveryRepository(ctrl)
+			eventQueue := mocks.NewMockQueuer(ctrl)
 
-			app = newApplicationHandler(msgRepo, appRepo, groupRepo, scheduleQueue)
+			app = newApplicationHandler(eventRepo, eventDeliveryRepo, appRepo, groupRepo, eventQueue)
 
 			// Arrange
 			url := fmt.Sprintf("/api/v1/groups/%s", tc.orgID)
@@ -324,10 +327,11 @@ func TestApplicationHandler_GetGroups(t *testing.T) {
 
 			groupRepo := mocks.NewMockGroupRepository(ctrl)
 			appRepo := mocks.NewMockApplicationRepository(ctrl)
-			msgRepo := mocks.NewMockEventRepository(ctrl)
-			scheduleQueue := mocks.NewMockQueuer(ctrl)
+			eventRepo := mocks.NewMockEventRepository(ctrl)
+			eventDeliveryRepo := mocks.NewMockEventDeliveryRepository(ctrl)
+			eventQueue := mocks.NewMockQueuer(ctrl)
 
-			app = newApplicationHandler(msgRepo, appRepo, groupRepo, scheduleQueue)
+			app = newApplicationHandler(eventRepo, eventDeliveryRepo, appRepo, groupRepo, eventQueue)
 
 			req := httptest.NewRequest(tc.method, "/api/v1/groups", nil)
 			req.SetBasicAuth("test", "test")
