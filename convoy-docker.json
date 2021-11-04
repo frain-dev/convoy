@@ -26,10 +26,9 @@
         "path": ""
       },
       {
-        "type": "vault_realm",
-        "name": "vault_realm1",
-        "api_key": "fssvsvnren",
-        "url": ""
+        "type": "file_realm",
+        "name": "file_realm1",
+        "path": ""
       }
     ]
   },
