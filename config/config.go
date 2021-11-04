@@ -175,7 +175,7 @@ func LoadConfig(p string) error {
 
 				fr, err := file.NewFileRealm(r.Path)
 				if err != nil {
-					return fmt.Errorf("failed to initialize file realm '%s': %v", err)
+					return fmt.Errorf("failed to initialize file realm '%s': %v", r.Name, err)
 				}
 
 				fr.Name = r.Name

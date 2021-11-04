@@ -12,6 +12,8 @@ import (
 	"strings"
 	"time"
 
+	"github.com/frain-dev/convoy/auth"
+
 	"go.mongodb.org/mongo-driver/mongo"
 
 	"github.com/felixge/httpsnoop"
@@ -38,6 +40,7 @@ const (
 	configCtx           contextKey = "configCtx"
 	authConfigCtx       contextKey = "authConfig"
 	authLoginCtx        contextKey = "authLogin"
+	authUserCtx         contextKey = "authUser"
 	pageableCtx         contextKey = "pageable"
 	pageDataCtx         contextKey = "pageData"
 	dashboardCtx        contextKey = "dashboard"
@@ -587,6 +590,14 @@ func getDeliveryAttemptsFromContext(ctx context.Context) *[]convoy.MessageAttemp
 
 func setAuthLoginInContext(ctx context.Context, a *AuthorizedLogin) context.Context {
 	return context.WithValue(ctx, authLoginCtx, a)
+}
+
+func setAuthUserInContext(ctx context.Context, a *auth.AuthenticatedUser) context.Context {
+	return context.WithValue(ctx, authUserCtx, a)
+}
+
+func getAuthUserFromContext(ctx context.Context) *auth.AuthenticatedUser {
+	return ctx.Value(authUserCtx).(*auth.AuthenticatedUser)
 }
 
 func getAuthLoginFromContext(ctx context.Context) *AuthorizedLogin {
