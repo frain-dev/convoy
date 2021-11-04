@@ -178,11 +178,11 @@ func LoadConfig(p string) error {
 					return fmt.Errorf("failed to initialize file realm '%s': %v", err)
 				}
 
+				fr.Name = r.Name
 				err = realm_chain.Get().RegisterRealm(fr)
 				if err != nil {
 					return fmt.Errorf("failed to register file realm in realm chain: %v", err)
 				}
-			case auth.RealmTypeVault:
 			}
 		}
 	} else {
