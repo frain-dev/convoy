@@ -2,13 +2,7 @@ basePath: /api/v1
 definitions:
   convoy.AppMetadata:
     properties:
-      endpoints:
-        items:
-          $ref: '#/definitions/convoy.EndpointMetadata'
-        type: array
       group_id:
-        type: string
-      secret:
         type: string
       support_email:
         type: string
@@ -29,8 +23,6 @@ definitions:
         type: string
       name:
         type: string
-      secret:
-        type: string
       support_email:
         type: string
       uid:
@@ -38,91 +30,7 @@ definitions:
       updated_at:
         type: string
     type: object
-  convoy.Endpoint:
-    properties:
-      created_at:
-        type: string
-      deleted_at:
-        type: string
-      description:
-        type: string
-      status:
-        type: string
-      target_url:
-        type: string
-      uid:
-        type: string
-      updated_at:
-        type: string
-    type: object
-  convoy.EndpointMetadata:
-    properties:
-      sent:
-        type: boolean
-      status:
-        type: string
-      target_url:
-        type: string
-      uid:
-        type: string
-    type: object
-  convoy.Group:
-    properties:
-      created_at:
-        type: string
-      deleted_at:
-        type: string
-      logo_url:
-        type: string
-      name:
-        type: string
-      uid:
-        type: string
-      updated_at:
-        type: string
-    type: object
-  convoy.HttpHeader:
-    additionalProperties:
-      type: string
-    type: object
-  convoy.Message:
-    properties:
-      app_id:
-        type: string
-      app_metadata:
-        $ref: '#/definitions/convoy.AppMetadata'
-      created_at:
-        type: string
-      data:
-        description: |-
-          Data is an arbitrary JSON value that gets sent as the body of the
-          webhook to the endpoints
-        items:
-          type: integer
-        type: array
-      deleted_at:
-        type: string
-      description:
-        type: string
-      event_type:
-        type: string
-      metadata:
-        $ref: '#/definitions/convoy.EventMetadata'
-      provider_id:
-        description: |-
-          ProviderID is a custom ID that can be used to reconcile this message
-          with your internal systems.
-          This is optional
-          If not provided, we will generate one for you
-        type: string
-      status:
-        type: string
-      uid:
-        type: string
-      updated_at:
-        type: string
-    type: object
-  convoy.MessageAttempt:
+  convoy.DeliveryAttempt:
     properties:
       api_version:
         type: string
@@ -149,7 +57,7 @@ definitions:
       response_http_header:
         $ref: '#/definitions/convoy.HttpHeader'
       status:
-        type: string
+        type: boolean
       uid:
         type: string
       updated_at:
@@ -157,24 +65,141 @@ definitions:
       url:
         type: string
     type: object
+  convoy.Endpoint:
+    properties:
+      created_at:
+        type: string
+      deleted_at:
+        type: string
+      description:
+        type: string
+      events:
+        items:
+          type: string
+        type: array
+      secret:
+        type: string
+      status:
+        type: string
+      target_url:
+        type: string
+      uid:
+        type: string
+      updated_at:
+        type: string
+    type: object
+  convoy.EndpointMetadata:
+    properties:
+      secret:
+        type: string
+      sent:
+        type: boolean
+      status:
+        type: string
+      target_url:
+        type: string
+      uid:
+        type: string
+    type: object
+  convoy.Event:
+    properties:
+      app_id:
+        type: string
+      app_metadata:
+        $ref: '#/definitions/convoy.AppMetadata'
+      created_at:
+        type: string
+      data:
+        description: |-
+          Data is an arbitrary JSON value that gets sent as the body of the
+          webhook to the endpoints
+        items:
+          type: integer
+        type: array
+      deleted_at:
+        type: string
+      event_type:
+        type: string
+      provider_id:
+        description: |-
+          ProviderID is a custom ID that can be used to reconcile this Event
+          with your internal systems.
+          This is optional
+          If not provided, we will generate one for you
+        type: string
+      uid:
+        type: string
+      updated_at:
+        type: string
+    type: object
+  convoy.EventDelivery:
+    properties:
+      app_id:
+        type: string
+      app_metadata:
+        $ref: '#/definitions/convoy.AppMetadata'
+      created_at:
+        type: string
+      deleted_at:
+        type: string
+      description:
+        type: string
+      endpoints:
+        $ref: '#/definitions/convoy.EndpointMetadata'
+        description: Endpoint contains the destination of the event.
+      metadata:
+        $ref: '#/definitions/convoy.EventMetadata'
+      status:
+        type: string
+      uid:
+        type: string
+      updated_at:
+        type: string
+    type: object
   convoy.EventMetadata:
     properties:
+      data:
+        description: Data to be sent to endpoint.
+        items:
+          type: integer
+        type: array
       interval_seconds:
         type: integer
       next_send_time:
         description: |-
-          NextSendTime denotes the next time a message will be published in
+          NextSendTime denotes the next time a Event will be published in
           case it failed the first time
         type: integer
       num_trials:
         description: |-
-          NumTrials: number of times we have tried to deliver this message to
+          NumTrials: number of times we have tried to deliver this Event to
           an application
         type: integer
       retry_limit:
         type: integer
       strategy:
         type: string
+      uid:
+        type: string
+    type: object
+  convoy.Group:
+    properties:
+      created_at:
+        type: string
+      deleted_at:
+        type: string
+      logo_url:
+        type: string
+      name:
+        type: string
+      uid:
+        type: string
+      updated_at:
+        type: string
+    type: object
+  convoy.HttpHeader:
+    additionalProperties:
+      type: string
     type: object
   models.Application:
     properties:
@@ -194,14 +219,7 @@ definitions:
       url:
         type: string
     type: object
-  models.Group:
-    properties:
-      logo_url:
-        type: string
-      name:
-        type: string
-    type: object
-  models.Message:
+  models.Event:
     properties:
       app_id:
         type: string
@@ -213,6 +231,13 @@ definitions:
           type: integer
         type: array
       event_type:
+        type: string
+    type: object
+  models.Group:
+    properties:
+      logo_url:
+        type: string
+      name:
         type: string
     type: object
   mongopagination.PaginationData:
@@ -862,7 +887,7 @@ paths:
     get:
       consumes:
       - application/json
-      description: This endpoint fetches app messages with pagination
+      description: This endpoint fetches app events with pagination
       parameters:
       - description: application id
         in: query
@@ -908,7 +933,7 @@ paths:
                       content:
                         items:
                           allOf:
-                          - $ref: '#/definitions/convoy.Message'
+                          - $ref: '#/definitions/convoy.Event'
                           - properties:
                               data:
                                 $ref: '#/definitions/server.Stub'
@@ -945,21 +970,21 @@ paths:
               type: object
       security:
       - ApiKeyAuth: []
-      summary: Get app messages with pagination
+      summary: Get app events with pagination
       tags:
-      - Messages
+      - Events
     post:
       consumes:
       - application/json
-      description: This endpoint creates an app message
+      description: This endpoint creates an app event
       parameters:
-      - description:EventDetails
+      - description: Message Details
         in: body
-        name: message
+        name: event
         required: true
         schema:
           allOf:
-          - $ref: '#/definitions/models.Message'
+          - $ref: '#/definitions/models.Event'
           - properties:
               data:
                 $ref: '#/definitions/server.Stub'
@@ -975,7 +1000,7 @@ paths:
             - properties:
                 data:
                   allOf:
-                  - $ref: '#/definitions/convoy.Message'
+                  - $ref: '#/definitions/convoy.Event'
                   - properties:
                       data:
                         $ref: '#/definitions/server.Stub'
@@ -1010,14 +1035,14 @@ paths:
               type: object
       security:
       - ApiKeyAuth: []
-      summary: Create app message
+      summary: Create app event
       tags:
-      - Messages
+      - Events
   /events/{eventID}:
     get:
       consumes:
       - application/json
-      description: This endpoint fetches an app message
+      description: This endpoint fetches an app event
       parameters:
       - description: event id
         in: path
@@ -1035,7 +1060,7 @@ paths:
             - properties:
                 data:
                   allOf:
-                  - $ref: '#/definitions/convoy.Message'
+                  - $ref: '#/definitions/convoy.Event'
                   - properties:
                       data:
                         $ref: '#/definitions/server.Stub'
@@ -1070,14 +1095,14 @@ paths:
               type: object
       security:
       - ApiKeyAuth: []
-      summary: Get app message
+      summary: Get app event
       tags:
-      - Messages
-  /events/{eventID}/deliveryattempts:
+      - Events
+  /events/{eventID}/eventdelivery:
     get:
       consumes:
       - application/json
-      description: This endpoint fetches an app message's delivery attempts
+      description: This endpoint fetch event deliveries.
       parameters:
       - description: event id
         in: path
@@ -1095,7 +1120,12 @@ paths:
             - properties:
                 data:
                   items:
-                    $ref: '#/definitions/convoy.MessageAttempt'
+                    allOf:
+                    - $ref: '#/definitions/convoy.EventDelivery'
+                    - properties:
+                        data:
+                          $ref: '#/definitions/server.Stub'
+                      type: object
                   type: array
               type: object
         "400":
@@ -1127,78 +1157,23 @@ paths:
               type: object
       security:
       - ApiKeyAuth: []
-      summary: Get app message delivery attempts
+      summary: Get event deliveries
       tags:
-      - Messages
-  /events/{eventID}/deliveryattempts/{deliveryAttemptID}:
+      - Events
+  /events/{eventID}/eventdelivery/{eventDeliveryID}:
     get:
       consumes:
       - application/json
-      description: This endpoint fetches an app message delivery attempt
+      description: This endpoint fetches an event delivery.
       parameters:
       - description: event id
         in: path
         name: eventID
         required: true
         type: string
-      - description: delivery attempt id
+      - description: event delivery id
         in: path
-        name: deliveryAttemptID
-        required: true
-        type: string
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            allOf:
-            - $ref: '#/definitions/server.serverResponse'
-            - properties:
-                data:
-                  $ref: '#/definitions/convoy.MessageAttempt'
-              type: object
-        "400":
-          description: Bad Request
-          schema:
-            allOf:
-            - $ref: '#/definitions/server.serverResponse'
-            - properties:
-                data:
-                  $ref: '#/definitions/server.Stub'
-              type: object
-        "401":
-          description: Unauthorized
-          schema:
-            allOf:
-            - $ref: '#/definitions/server.serverResponse'
-            - properties:
-                data:
-                  $ref: '#/definitions/server.Stub'
-              type: object
-        "500":
-          description: Internal Server Error
-          schema:
-            allOf:
-            - $ref: '#/definitions/server.serverResponse'
-            - properties:
-                data:
-                  $ref: '#/definitions/server.Stub'
-              type: object
-      security:
-      - ApiKeyAuth: []
-      summary: Get app message delivery attempt
-      tags:
-      - Messages
-  /events/{eventID}/resend:
-    put:
-      consumes:
-      - application/json
-      description: This endpoint resends an app message
-      parameters:
-      - description: event id
-        in: path
-        name: eventID
+        name: eventDeliveryID
         required: true
         type: string
       produces:
@@ -1212,7 +1187,7 @@ paths:
             - properties:
                 data:
                   allOf:
-                  - $ref: '#/definitions/convoy.Message'
+                  - $ref: '#/definitions/convoy.Event'
                   - properties:
                       data:
                         $ref: '#/definitions/server.Stub'
@@ -1247,9 +1222,196 @@ paths:
               type: object
       security:
       - ApiKeyAuth: []
-      summary: Resend an app message
+      summary: Get event delivery
       tags:
-      - Messages
+      - Events
+  /events/{eventID}/eventdelivery/{eventDeliveryID}/deliveryattempts:
+    get:
+      consumes:
+      - application/json
+      description: This endpoint fetches an app message's delivery attempts
+      parameters:
+      - description: event id
+        in: path
+        name: eventID
+        required: true
+        type: string
+      - description: event delivery id
+        in: path
+        name: eventDeliveryID
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/server.serverResponse'
+            - properties:
+                data:
+                  items:
+                    $ref: '#/definitions/convoy.DeliveryAttempt'
+                  type: array
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            allOf:
+            - $ref: '#/definitions/server.serverResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/server.Stub'
+              type: object
+        "401":
+          description: Unauthorized
+          schema:
+            allOf:
+            - $ref: '#/definitions/server.serverResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/server.Stub'
+              type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            allOf:
+            - $ref: '#/definitions/server.serverResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/server.Stub'
+              type: object
+      security:
+      - ApiKeyAuth: []
+      summary: Get delivery attempts
+      tags:
+      - DeliveryAttempts
+  /events/{eventID}/eventdelivery/{eventDeliveryID}/deliveryattempts/{deliveryAttemptID}:
+    get:
+      consumes:
+      - application/json
+      description: This endpoint fetches an app event delivery attempt
+      parameters:
+      - description: event id
+        in: path
+        name: eventID
+        required: true
+        type: string
+      - description: event delivery id
+        in: path
+        name: eventDeliveryID
+        required: true
+        type: string
+      - description: delivery attempt id
+        in: path
+        name: deliveryAttemptID
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/server.serverResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/convoy.DeliveryAttempt'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            allOf:
+            - $ref: '#/definitions/server.serverResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/server.Stub'
+              type: object
+        "401":
+          description: Unauthorized
+          schema:
+            allOf:
+            - $ref: '#/definitions/server.serverResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/server.Stub'
+              type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            allOf:
+            - $ref: '#/definitions/server.serverResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/server.Stub'
+              type: object
+      security:
+      - ApiKeyAuth: []
+      summary: Get delivery attempt
+      tags:
+      - DeliveryAttempts
+  /events/{eventID}/eventdelivery/resend:
+    put:
+      consumes:
+      - application/json
+      description: This endpoint resends an app event
+      parameters:
+      - description: event id
+        in: path
+        name: eventID
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/server.serverResponse'
+            - properties:
+                data:
+                  allOf:
+                  - $ref: '#/definitions/convoy.Event'
+                  - properties:
+                      data:
+                        $ref: '#/definitions/server.Stub'
+                    type: object
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            allOf:
+            - $ref: '#/definitions/server.serverResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/server.Stub'
+              type: object
+        "401":
+          description: Unauthorized
+          schema:
+            allOf:
+            - $ref: '#/definitions/server.serverResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/server.Stub'
+              type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            allOf:
+            - $ref: '#/definitions/server.serverResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/server.Stub'
+              type: object
+      security:
+      - ApiKeyAuth: []
+      summary: Resend an app event
+      tags:
+      - Events
   /groups:
     get:
       consumes:

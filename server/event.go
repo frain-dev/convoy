@@ -304,7 +304,7 @@ func (a *applicationHandler) GetEventsPaged(w http.ResponseWriter, r *http.Reque
 // @Success 200 {object} serverResponse{data=[]convoy.EventDelivery{data=Stub}}
 // @Failure 400,401,500 {object} serverResponse{data=Stub}
 // @Security ApiKeyAuth
-// @Router /events/{eventID}/eventdelivery
+// @Router /events/{eventID}/eventdelivery [get]
 func (a *applicationHandler) GetEventDeliveries(w http.ResponseWriter, r *http.Request) {
 
 }
