@@ -5,18 +5,25 @@ import (
 	"strings"
 )
 
-type Role string
+// Role represents the permission a user is given, if the Type is RoleSuperUser,
+// Then the user will have access to everything regardless of the value of Group.
+type Role struct {
+	Type  RoleType `json:"type"`
+	Group string   `json:"group"`
+}
+
+type RoleType string
 
 const (
-	RoleSuperUser = Role("super_user")
-	RoleUIAdmin   = Role("ui_admin")
-	RoleAdmin     = Role("admin")
-	RoleAPI       = Role("api")
+	RoleSuperUser = RoleType("super_user")
+	RoleUIAdmin   = RoleType("ui_admin")
+	RoleAdmin     = RoleType("admin")
+	RoleAPI       = RoleType("api")
 )
 
-func (r *Role) UnmarshalJSON(b []byte) error {
+func (r *RoleType) UnmarshalJSON(b []byte) error {
 	str := strings.Trim(string(b), `"`)
-	*r = Role(str)
+	*r = RoleType(str)
 
 	if !r.IsValid() {
 		return fmt.Errorf("invalid role %s", r.String())
@@ -24,7 +31,7 @@ func (r *Role) UnmarshalJSON(b []byte) error {
 	return nil
 }
 
-func (r Role) IsValid() bool {
+func (r RoleType) IsValid() bool {
 	switch r {
 	case RoleSuperUser, RoleUIAdmin, RoleAdmin, RoleAPI:
 		return true
@@ -33,6 +40,6 @@ func (r Role) IsValid() bool {
 	}
 }
 
-func (r Role) String() string {
+func (r RoleType) String() string {
 	return string(r)
 }

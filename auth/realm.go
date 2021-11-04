@@ -8,6 +8,6 @@ type Realm interface {
 type RealmType string
 
 const (
-	RealmTypeFile  = RealmType("file_realm")
-	RealmTypeVault = RealmType("vault_realm")
+	RealmTypeFile = RealmType("file_realm")
+	//RealmTypeVault = RealmType("vault_realm")
 )

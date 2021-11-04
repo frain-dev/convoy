@@ -3,7 +3,7 @@ package auth
 type AuthenticatedUser struct {
 	AuthenticatedByRealm string     `json:"-"` // Name of realm that authenticated this user
 	Credential           Credential `json:"credential"`
-	Roles                []Role     `json:"roles"`
+	Role                 Role       `json:"role"`
 }
 
 type Credential struct {

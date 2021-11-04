@@ -6,6 +6,8 @@ import (
 	"fmt"
 	"os"
 
+	"github.com/labstack/gommon/log"
+
 	"github.com/frain-dev/convoy/auth"
 )
 
@@ -14,19 +16,14 @@ var (
 )
 
 type BasicAuth struct {
-	Username string `json:"username"`
-	Password string `json:"password"`
-	Role     Role   `json:"role"`
+	Username string    `json:"username"`
+	Password string    `json:"password"`
+	Role     auth.Role `json:"role"`
 }
 
 type APIKeyAuth struct {
-	APIKey string `json:"api_key"`
-	Role   Role   `json:"role"`
-}
-
-type Role struct {
-	Type  auth.Role `json:"type"`
-	Group string    `json:"group"` // TODO(daniel,subomi): we should remove this, as it will cause major complexities in the future
+	APIKey string    `json:"api_key"`
+	Role   auth.Role `json:"role"`
 }
 
 type FileRealm struct {
@@ -54,7 +51,7 @@ func (r *FileRealm) Authenticate(cred *auth.Credential) (*auth.AuthenticatedUser
 			authUser := &auth.AuthenticatedUser{
 				AuthenticatedByRealm: r.Name,
 				Credential:           *cred,
-				Roles:                []auth.Role{b.Role.Type},
+				Role:                 b.Role,
 			}
 			return authUser, nil
 		}
@@ -68,7 +65,7 @@ func (r *FileRealm) Authenticate(cred *auth.Credential) (*auth.AuthenticatedUser
 			authUser := &auth.AuthenticatedUser{
 				AuthenticatedByRealm: r.Name,
 				Credential:           *cred,
-				Roles:                []auth.Role{b.Role.Type},
+				Role:                 b.Role,
 			}
 			return authUser, nil
 		}
@@ -80,16 +77,20 @@ func (r *FileRealm) Authenticate(cred *auth.Credential) (*auth.AuthenticatedUser
 
 // NewFileRealm constructs a new File Realm authenticator
 func NewFileRealm(path string) (*FileRealm, error) {
-	r := &FileRealm{}
+	fr := &FileRealm{}
 	buf, err := os.ReadFile(path)
 	if err != nil {
 		return nil, err
 	}
 
-	err = json.Unmarshal(buf, r)
+	err = json.Unmarshal(buf, fr)
 	if err != nil {
 		return nil, fmt.Errorf("failed to unmarshal file %s into new file realm: %v", path, err)
 	}
 
-	return r, nil
+	if fr.Basic == nil && fr.APIKey == nil {
+		log.Warnf("no authentication data supplied in file realm '%s", fr.Name)
+	}
+
+	return fr, nil
 }
