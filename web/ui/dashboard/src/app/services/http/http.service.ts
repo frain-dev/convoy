@@ -1,12 +1,13 @@
 import { HttpClient, HttpHeaders, HttpResponse } from '@angular/common/http';
 import { Injectable } from '@angular/core';
 import { HTTP_RESPONSE } from 'src/app/models/http.model';
+import { environment } from 'src/environments/environment';
 
 @Injectable({
 	providedIn: 'root'
 })
 export class HttpService {
-	APIURL = `${location.port === '4200' ? 'http://localhost:5005' : location.origin}/ui`;
+	APIURL = `${environment.production ? location.origin : 'http://localhost:5005'}/ui`;
 
 	constructor(private httpClient: HttpClient) {}
 

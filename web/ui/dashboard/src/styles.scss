@@ -1,11 +1,5 @@
-// Custom Theming for Angular Material
-// For more information: https://material.angular.io/guide/theming
+// Material design themeing
 @use '~@angular/material' as mat;
-// Plus imports for other components in your app.
-
-// Include the common styles for Angular Material. We include this here so that you only
-// have to load a single css file for Angular Material in your app.
-// Be sure that you only ever include this mixin once!
 @include mat.core();
 
 $convoy-primary-palette: (
@@ -32,18 +26,10 @@ $convoy-primary-palette: (
 		900: rgba(black, 0.87)
 	)
 );
-// Define the palettes for your theme using the Material Design palettes available in palette.scss
-// (imported above). For each palette, you can optionally specify a default, lighter, and darker
-// hue. Available color palettes: https://material.io/design/color/
+
 $convoy-ng-primary: mat.define-palette($convoy-primary-palette);
-// $convoy-ng-primary: mat.define-palette(mat.$indigo-palette);
 $convoy-ng-accent: mat.define-palette($convoy-primary-palette);
-
-// The warn palette is optional (defaults to red).
 $convoy-ng-warn: mat.define-palette(mat.$red-palette);
-
-// Create the theme object. A theme consists of configurations for individual
-// theming systems such as "color" or "typography".
 $convoy-ng-theme: mat.define-light-theme(
 	(
 		color: (
@@ -54,36 +40,30 @@ $convoy-ng-theme: mat.define-light-theme(
 	)
 );
 
-// Include theme styles for core and each component used in your app.
-// Alternatively, you can import and @include the theme mixins for each component
-// that you are using.
 @include mat.all-component-themes($convoy-ng-theme);
 
+// global styles import
 @import './scss/reset';
 @import './scss/button';
 @import './scss/card';
 @import './scss/form';
 @import './scss/table';
 @import './scss/tabs';
-@import './scss/prism.scss';
+@import './scss/prism';
+@import './scss/prism';
+@import './scss/list';
+@import './scss/material-design-reset';
 @import '~prismjs/plugins/toolbar/prism-toolbar.css';
 
+// global variables
 :root {
 	--color-black: #1e1147;
+	--color-black-rgb: 30, 17, 71;
 	--primary-color: #477db3;
 	--primary-color-rgb: 71, 125, 179;
 	--primary-color-inverse: #ffffff;
-	--color-black-rgb: 30, 17, 71;
-	--success-color: #32cc0e;
+	--success-color: #1f9c6a;
 	--danger-color: #ee0005;
-	--secondary-success-color: #7a9c10;
-	--secondary-success-button-color: #a2c438;
-}
-
-.mat-date-range-input-container {
-	max-width: 230px;
-}
-
-.mat-date-range-input-start-wrapper .mat-date-range-input-inner {
-	position: initial !important;
+	--grey-color: #1e1147;
+	--grey-color-rgb: 30, 17, 71;
 }

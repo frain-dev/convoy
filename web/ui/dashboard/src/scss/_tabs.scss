@@ -28,27 +28,4 @@
 			}
 		}
 	}
-
-	.filter {
-		margin-bottom: 0;
-		margin-right: 16px;
-
-		.select select,
-		.filter--button {
-			height: 40px;
-			padding: 10px 8px;
-			outline: none;
-		}
-
-		.date-button {
-			min-width: 260px;
-		}
-	}
-
-	button.events-filter-clear-btn {
-		display: block;
-		background: var(--primary-color);
-		width: 100px;
-		min-width: unset;
-	}
 }

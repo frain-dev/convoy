@@ -44,31 +44,6 @@ table {
 			}
 		}
 
-		.tag {
-			padding: 1px 8px;
-			background: rgba(115, 122, 145, 0.1);
-			border-radius: 8px;
-			max-width: 75px;
-			font-weight: 500;
-			font-size: 12px;
-			line-height: 28px;
-			text-align: center;
-
-			&--Failure {
-				background: #f7e5e5;
-				color: #ff0505;
-			}
-
-			&--Retry {
-				background: #f8e5b9;
-			}
-
-			&--Success {
-				background: #e5f7e7;
-				color: #1f9c6a;
-			}
-		}
-
 		.has-retry {
 			display: flex;
 			align-items: center;
@@ -94,29 +69,62 @@ table {
 			& > div {
 				padding: 9px 10px;
 			}
+
+			&.has-long-text {
+				& > div {
+					width: 150px;
+					text-overflow: ellipsis;
+					overflow: hidden;
+					white-space: nowrap;
+				}
+			}
 		}
 
-		button img {
-			width: 16px;
-		}
-	}
+		button {
+			padding: 1px 8px;
+			font-weight: 500;
+			font-size: 12px;
 
-	button {
-		padding: 1px 8px;
-		font-weight: 500;
-		font-size: 14px;
-		line-height: 28px;
+			&.spin {
+				@keyframes spin {
+					100% {
+						transform: rotate(360deg);
+					}
+				}
 
-		&.spin {
-			@keyframes spin {
-				100% {
-					transform: rotate(360deg);
+				img {
+					animation: spin 5s linear infinite;
 				}
 			}
 
 			img {
-				animation: spin 5s linear infinite;
+				width: 14px;
 			}
+		}
+	}
+
+	.tag {
+		padding: 1px 8px;
+		background: rgba(115, 122, 145, 0.1);
+		border-radius: 8px;
+		max-width: 75px;
+		font-weight: 500;
+		font-size: 12px;
+		line-height: 28px;
+		text-align: center;
+
+		&--Failure {
+			background: #f7e5e5;
+			color: #ff0505;
+		}
+
+		&--Retry {
+			background: #f8e5b9;
+		}
+
+		&--Success {
+			background: #e5f7e7;
+			color: #1f9c6a;
 		}
 	}
 }

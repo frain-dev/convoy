@@ -2,21 +2,26 @@
 	<header class="dashboard--header">
 		<div class="dashboard--header--container">
 			<div class="logo">
-				<img src="/assets/img/logo.svg" alt="convoy logo" />
+				<a target="_blank" href="https://getconvoy.io" rel="noreferrer">
+					<img src="/assets/img/logo.svg" alt="convoy logo" />
+				</a>
 			</div>
 
-			<button class="user" (click)="toggleShowDropdown(); showDropdown = !showDropdown" *ngIf="authDetails()">
-				<div>
-					<div class="icon">O</div>
-					<div class="name">{{ authDetails().username }}</div>
-				</div>
-				<img src="/assets/img/angle-arrow-down.svg" alt="arrow down icon" />
-				<div *ngIf="showDropdown" class="dropdown organisations">
-					<ul>
-						<li (click)="logout()">Logout</li>
-					</ul>
-				</div>
-			</button>
+			<div>
+				<a target="_blank" href="https://getconvoy.io/docs" rel="noreferrer">Go to docs</a>
+				<button class="user" (click)="toggleShowDropdown(); showDropdown = !showDropdown" *ngIf="authDetails()">
+					<div>
+						<div class="icon">O</div>
+						<div class="name">{{ authDetails().username }}</div>
+					</div>
+					<img src="/assets/img/angle-arrow-down.svg" alt="arrow down icon" />
+					<div *ngIf="showDropdown" class="dropdown organisations">
+						<ul>
+							<li (click)="logout()">Logout</li>
+						</ul>
+					</div>
+				</button>
+			</div>
 		</div>
 	</header>
 
@@ -45,7 +50,7 @@
 
 		<div class="dashboard--page--details">
 			<div class="card dashboard--page--details--chart">
-				<ul>
+				<ul class="metrics">
 					<li class="messages">
 						<img src="/assets/img/message-icon.svg" alt="message icon" />
 						<div class="metric">
@@ -116,7 +121,7 @@
 
 					<div class="filter" *ngIf="activeTab === 'events'">
 						<button
-							class="filter--button date-button"
+							class="filter--button date-filter-button"
 							(click)="statsPicker.open()"
 							[ngClass]="{ active: eventsFilterDateRange.value.startDate !== '' && eventsFilterDateRange.value.endDate !== '' }"
 							(click)="showEventFilterCalendar = !showEventFilterCalendar"
@@ -143,7 +148,7 @@
 							class="filter--button primary events-filter-clear-btn"
 							(click)="clearEventFilters()"
 							[disabled]="(eventsFilterDateRange.value.startDate == '' || eventsFilterDateRange.value.endDate == '') && eventApp == ''"
-							[ngClass]="{ disable_action: (eventsFilterDateRange.value.startDate == '' || eventsFilterDateRange.value.endDate == '') && eventApp == '' }"
+							[ngClass]="{ disabled: (eventsFilterDateRange.value.startDate == '' || eventsFilterDateRange.value.endDate == '') && eventApp == '' }"
 						>
 							Clear Filter
 						</button>
@@ -151,7 +156,7 @@
 				</div>
 
 				<div class="table">
-					<div *ngIf="displayedEvents.length > 0 && activeTab && activeTab === 'events'">
+					<div *ngIf="displayedEvents.length > 0 && activeTab === 'events'">
 						<table>
 							<thead>
 								<tr class="table--head">
@@ -203,7 +208,7 @@
 											<div>
 												<button
 													[disabled]="event.status === 'Success' || event.status === 'Scheduled'"
-													[class]="'primary has-icon icon-left ' + (event.status === 'Success' || event.status === 'Scheduled' ? 'disable_action' : '')"
+													[class]="'primary has-icon icon-left ' + (event.status === 'Success' || event.status === 'Scheduled' ? 'disabled' : '')"
 													(click)="retryEvent({ eventId: event.uid, appId: event.app_id, e: $event, index: this.index })"
 												>
 													<img src="/assets/img/refresh-icon.svg" alt="refresh icon" />
@@ -218,7 +223,7 @@
 
 						<div class="table--load-more button-container margin-top center" *ngIf="events.pagination.totalPage > 1">
 							<button
-								[class]="'primary clear has-icon icon-left ' + (events.pagination.page === events.pagination.totalPage ? 'disable_action' : '')"
+								[class]="'primary clear has-icon icon-left ' + (events.pagination.page === events.pagination.totalPage ? 'disabled' : '')"
 								[disabled]="events.pagination.page === events.pagination.totalPage"
 								(click)="eventsPage = eventsPage + 1; getEvents()"
 							>
@@ -230,10 +235,10 @@
 
 					<div class="empty-state" *ngIf="activeTab === 'events' && displayedEvents.length === 0">
 						<img src="/assets/img/empty-state-img.svg" alt="empty state" />
-						<p>No {{ 'activeTab' }} to show here</p>
+						<p>No event to show here</p>
 					</div>
 
-					<div *ngIf="apps?.content?.length !== 0 && activeTab && activeTab === 'apps'">
+					<div *ngIf="apps && apps.content.length > 0 && activeTab === 'apps'">
 						<table>
 							<thead>
 								<tr class="table--head">
@@ -247,7 +252,7 @@
 							</thead>
 							<tbody>
 								<tr *ngFor="let app of apps?.content" [ngClass]="{ active: app.uid === detailsItem?.uid }" (click)="detailsItem = app">
-									<td>
+									<td class="has-long-text">
 										<div>{{ app.name }}</div>
 									</td>
 									<td>
@@ -267,7 +272,7 @@
 											<button
 												[disabled]="app.events <= 0"
 												title="view events"
-												[class]="'primary has-icon icon-left ' + (app.events <= 0 ? 'disable_action' : '')"
+												[class]="'primary has-icon icon-left ' + (app.events <= 0 ? 'disabled' : '')"
 												(click)="toggleActiveTab('events'); eventApp = app.uid; getEvents()"
 											>
 												<img src="/assets/img/view-events-icon.svg" alt="view events icon" />
@@ -281,7 +286,7 @@
 
 						<div class="table--load-more button-container margin-top center" *ngIf="apps?.pagination && apps.pagination.totalPage > 1">
 							<button
-								[class]="'primary clear has-icon icon-left ' + (apps.pagination.page === apps.pagination.totalPage ? 'disable_action' : '')"
+								[class]="'primary clear has-icon icon-left ' + (apps.pagination.page === apps.pagination.totalPage ? 'disabled' : '')"
 								[disabled]="apps.pagination.page === apps.pagination.totalPage"
 							>
 								<img src="/assets/img/arrow-down-icon.svg" alt="arrow down icon" />
@@ -292,7 +297,7 @@
 
 					<div class="empty-state" *ngIf="apps?.content?.length === 0 && activeTab === 'apps'">
 						<img src="/assets/img/empty-state-img.svg" alt="empty state" />
-						<p>No event to show here</p>
+						<p>No app to show here</p>
 					</div>
 				</div>
 			</div>

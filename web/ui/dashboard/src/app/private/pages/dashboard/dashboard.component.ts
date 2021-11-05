@@ -38,9 +38,9 @@ export class DashboardComponent implements OnInit {
 	events!: { pagination: { next: number; page: number; perPage: number; prev: number; total: number; totalPage: number }; content: EVENT[] };
 	apps!: { pagination: { next: number; page: number; perPage: number; prev: number; total: number; totalPage: number }; content: APP[] };
 	eventDetailsTabs = [
-		{ id: 'data', label: 'Event Data' },
-		{ id: 'response', label: 'Response Header' },
-		{ id: 'request', label: 'Request Header' }
+		{ id: 'data', label: 'Event' },
+		{ id: 'response', label: 'Response' },
+		{ id: 'request', label: 'Request' }
 	];
 	eventDetailsActiveTab = 'data';
 	organisationDetails!: {
@@ -66,11 +66,9 @@ export class DashboardComponent implements OnInit {
 
 	constructor(private httpService: HttpService, private generalService: GeneralService, private router: Router, private formBuilder: FormBuilder) {}
 
-	ngOnInit() {
-		this.getOrganisationDetails();
-		this.fetchDashboardData();
-		this.getEvents();
-		this.getApps();
+	async ngOnInit() {
+		await Promise.all([this.getOrganisationDetails(), this.fetchDashboardData(), this.getEvents(), this.getApps()]);
+		this.toggleActiveTab('events');
 	}
 
 	toggleShowDropdown() {}
@@ -82,8 +80,13 @@ export class DashboardComponent implements OnInit {
 
 	toggleActiveTab(tab: 'events' | 'apps') {
 		this.activeTab = tab;
-		delete this.detailsItem;
-		delete this.eventDeliveryAtempt;
+
+		if (tab === 'apps' && this.apps?.content.length > 0) {
+			this.detailsItem = this.apps?.content[0];
+		} else if (tab === 'events' && this.events?.content.length > 0) {
+			this.detailsItem = this.events?.content[0];
+			this.getDelieveryAttempts(this.detailsItem?.uid);
+		}
 	}
 
 	async getOrganisationDetails() {
@@ -105,8 +108,14 @@ export class DashboardComponent implements OnInit {
 			});
 			this.dashboardData = dashboardResponse.data;
 
+			let labelsDateFormat = '';
+			if (this.dashboardFrequency === 'daily') labelsDateFormat = 'DD[, ]MMM';
+			else if (this.dashboardFrequency === 'monthly') labelsDateFormat = 'MMM';
+			else if (this.dashboardFrequency === 'yearly') labelsDateFormat = 'YYYY';
+
 			const chartData = dashboardResponse.data.message_data;
-			const labels = [0, ...chartData.map((label: { data: { date: any } }) => label.data.date)];
+			const labels = [...chartData.map((label: { data: { date: any } }) => label.data.date)].map(date => (this.dashboardFrequency === 'weekly' ? date : moment(date).format(labelsDateFormat)));
+			labels.unshift('0');
 			const dataSet = [0, ...chartData.map((label: { count: any }) => label.count)];
 			const data = {
 				labels,
@@ -265,7 +274,7 @@ export class DashboardComponent implements OnInit {
 		requestDetails.e.stopPropagation();
 		const retryButton: any = document.querySelector(`#event${requestDetails.index} button`);
 		if (retryButton) {
-			retryButton.classList.add(['spin', 'disable_action']);
+			retryButton.classList.add(['spin', 'disabled']);
 			retryButton.disabled = true;
 		}
 
@@ -275,12 +284,12 @@ export class DashboardComponent implements OnInit {
 				url: `/apps/${requestDetails.appId}/events/${requestDetails.eventId}/resend`
 			});
 			this.generalService.showNotification({ message: 'Retry Request Sent' });
-			retryButton.classList.remove(['spin', 'disable_action']);
+			retryButton.classList.remove(['spin', 'disabled']);
 			retryButton.disabled = false;
 			this.getEvents();
 		} catch (error: any) {
 			this.generalService.showNotification({ message: error.error.message });
-			retryButton.classList.remove(['spin', 'disable_action']);
+			retryButton.classList.remove(['spin', 'disabled']);
 			retryButton.disabled = false;
 			return error;
 		}

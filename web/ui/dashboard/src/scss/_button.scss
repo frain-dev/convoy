@@ -10,27 +10,28 @@ button {
 
 	&.primary {
 		--btn-color: var(--primary-color);
-		--btn-text-color: var(--primary-color);
-		background-color: var(--primary-color);
-		color: var(--primary-color-inverse);
+		--btn-text-color: var(--primary-color-inverse);
+		background-color: var(--btn-color);
+		color: var(--btn-text-color);
 
-		&.primary__transparent {
+		&.transparent {
 			background-color: rgba(var(--primary-color-rgb), 0.2);
-			color: var(--primary-color);
+			color: var(--btn-color);
 		}
 	}
 
 	&.primary-inverse {
 		--btn-color: var(--primary-color-inverse);
-		background-color: var(--primary-color-inverse);
-		color: var(--primary-color);
+		--btn-text-color: var(--primary-color);
+		background-color: var(--btn-color);
+		color: var(--btn-text-color);
 	}
 
 	&.danger {
 		--btn-color: var(--danger-color);
-		background-color: var(--primary-color-inverse);
-		color: var(--primary-color);
-		--btn-text-color: var(--danger-color);
+		--btn-text-color: var(--primary-color-inverse);
+		background-color: var(--btn-color);
+		color: var(--btn-text-color);
 	}
 
 	&.danger-btn {
@@ -40,21 +41,19 @@ button {
 	}
 
 	&.grey {
-		--btn-color: rgba(30, 17, 71, 0.16);
-		--btn-bg-color: #ffffff;
+		--btn-color: rgba(var(--grey-color-rgb), 0.16);
 		--btn-text-color: var(--color-black);
 		background-color: var(--btn-color);
-		color: var(--color-black);
+		color: var(--btn-text-color);
 	}
 
 	&.outline {
 		letter-spacing: 0.2px;
 		font-size: 14px;
 		line-height: 24px;
-		color: var(--btn-text-color);
-		background-color: var(--btn-bg-color, transparent);
+		color: var(--btn-color);
+		background-color: transparent;
 		border: 1px solid var(--btn-color);
-		box-sizing: border-box;
 		border-radius: 8px;
 	}
 
@@ -73,14 +72,6 @@ button {
 
 	&.full-100 {
 		width: 100%;
-	}
-
-	&.full-60 {
-		width: 60%;
-	}
-
-	&.full-40 {
-		width: 40%;
 	}
 
 	&.has-icon {
@@ -126,16 +117,13 @@ button {
 
 .link {
 	color: var(--primary-color);
+	text-decoration: underline;
 }
 
-.disable_action {
+.disabled {
 	cursor: not-allowed;
 	opacity: 0.5;
 	text-decoration: none;
 	pointer-events: none;
 	cursor: not-allowed;
-}
-
-button.link {
-	text-decoration: underline;
 }
