@@ -77,3 +77,21 @@ h6 {
 strong {
 	font-weight: bold;
 }
+
+/*----- scrollbar styles ------*/
+
+*::-webkit-scrollbar {
+	width: 7px;
+	height: 7px;
+}
+
+/* track */
+*::-webkit-scrollbar-track {
+	background: transparent;
+}
+
+/* handle */
+*::-webkit-scrollbar-thumb {
+	background: rgb(217, 216, 216);
+	border-radius: 10px;
+}
