@@ -7,7 +7,6 @@ import (
 	"os"
 
 	"github.com/frain-dev/convoy/auth"
-	log "github.com/sirupsen/logrus"
 )
 
 var (
@@ -87,8 +86,8 @@ func NewFileRealm(path string) (*FileRealm, error) {
 		return nil, fmt.Errorf("failed to unmarshal file %s into new file realm: %v", path, err)
 	}
 
-	if fr.Basic == nil && fr.APIKey == nil {
-		log.Warnf("no authentication data supplied in file realm '%s", fr.Name)
+	if len(fr.Basic) == 0 && len(fr.APIKey) == 0 {
+		return nil, fmt.Errorf("no authentication data supplied in file realm '%s", fr.Name)
 	}
 
 	return fr, nil
