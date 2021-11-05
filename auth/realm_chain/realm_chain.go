@@ -13,6 +13,7 @@ import (
 var (
 	ErrCastFailed = errors.New("failed to cast realm chain map")
 	ErrAuthFailed = errors.New("no realm could authenticate these credentials")
+	ErrNilRealm   = errors.New("registering a nil realm is not allowed")
 )
 
 // RealmChain represents a group of realms to be called for authentication.
@@ -42,9 +43,8 @@ func (rc *RealmChain) Authenticate(cred *auth.Credential) (*auth.AuthenticatedUs
 		authUser, err = realm.Authenticate(cred)
 		if err == nil {
 			return authUser, nil
-		} else {
-			log.WithError(err).Errorf("realm %s failed to authenticate cred: %+v", name, cred)
 		}
+		log.WithError(err).Errorf("realm %s failed to authenticate cred: %+v", name, cred)
 	}
 	return nil, ErrAuthFailed
 }
@@ -60,6 +60,10 @@ func newRealmChain() *RealmChain {
 }
 
 func (rc *RealmChain) RegisterRealm(r auth.Realm) error {
+	if r == nil {
+		return ErrNilRealm
+	}
+
 	chain, ok := rc.chain.Load().(chainMap)
 	if !ok {
 		return ErrCastFailed

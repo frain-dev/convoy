@@ -1,0 +1,45 @@
+{
+  "basic": [
+    {
+      "username": "username1",
+      "password": "password1",
+      "role": {
+        "type": "admin",
+        "group": "sendcash-pay"
+      }
+    },
+    {
+      "username": "username2",
+      "password": "password2",
+      "role": {
+        "type": "ui_admin",
+        "group": "buycoins"
+      }
+    },
+    {
+      "username": "username3",
+      "password": "password3",
+      "role": {
+        "type": "super_user",
+        "group": "paystack"
+      }
+    },
+    {
+      "username": "username4",
+      "password": "password4",
+      "role": {
+        "type": "api",
+        "group": "termii"
+      }
+    }
+  ],
+  "api_key": [
+    {
+      "api_key": "avcbajbwrohw@##Q39uekvsmbvxc.fdjhd",
+      "role": {
+        "type": "ui_admin",
+        "group": "sendcash-pay"
+      }
+    }
+  ]
+}
