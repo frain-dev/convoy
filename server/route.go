@@ -9,6 +9,8 @@ import (
 	"strings"
 	"time"
 
+	"github.com/frain-dev/convoy/auth"
+
 	"github.com/frain-dev/convoy"
 	"github.com/frain-dev/convoy/config"
 	"github.com/frain-dev/convoy/queue"
@@ -60,15 +62,17 @@ func buildRoutes(app *applicationHandler) http.Handler {
 		v1Router.Route("/v1", func(r chi.Router) {
 			r.Use(middleware.AllowContentType("application/json"))
 			r.Use(jsonResponse)
+			r.Use(requirePermission())
 
 			r.Route("/groups", func(groupRouter chi.Router) {
-				groupRouter.Use(requireAuth())
+				groupRouter.Use(requireRole(auth.RoleAdmin))
 
 				groupRouter.Get("/", app.GetGroups)
 				groupRouter.Post("/", app.CreateGroup)
 
 				groupRouter.Route("/{groupID}", func(groupSubRouter chi.Router) {
 					groupSubRouter.Use(requireDefaultGroup(app.groupRepo))
+					groupSubRouter.Use(requireGroupAccess(app.groupRepo))
 
 					groupSubRouter.Get("/", app.GetGroup)
 					groupSubRouter.Put("/", app.UpdateGroup)
@@ -76,7 +80,7 @@ func buildRoutes(app *applicationHandler) http.Handler {
 			})
 
 			r.Route("/applications", func(appRouter chi.Router) {
-				appRouter.Use(requireAuth())
+				appRouter.Use(requireRole(auth.RoleAdmin))
 
 				appRouter.Route("/", func(appSubRouter chi.Router) {
 					appSubRouter.With(requireDefaultGroup(app.groupRepo)).Post("/", app.CreateApp)
@@ -106,8 +110,6 @@ func buildRoutes(app *applicationHandler) http.Handler {
 			})
 
 			r.Route("/events", func(msgRouter chi.Router) {
-				msgRouter.Use(requireAuth())
-
 				msgRouter.With(instrumentPath("/events")).Post("/", app.CreateAppMessage)
 				msgRouter.With(pagination).Get("/", app.GetMessagesPaged)
 
@@ -132,6 +134,8 @@ func buildRoutes(app *applicationHandler) http.Handler {
 	// UI API.
 	router.Route("/ui", func(uiRouter chi.Router) {
 		uiRouter.Use(jsonResponse)
+		uiRouter.Use(requirePermission())
+		uiRouter.Use(requireRole(auth.RoleUIAdmin))
 
 		uiRouter.Route("/dashboard", func(dashboardRouter chi.Router) {
 			dashboardRouter.Use(requireUIAuth())

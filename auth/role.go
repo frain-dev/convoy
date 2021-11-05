@@ -43,3 +43,7 @@ func (r RoleType) IsValid() bool {
 func (r RoleType) String() string {
 	return string(r)
 }
+
+func (r RoleType) Is(rt RoleType) bool {
+	return r == rt
+}

@@ -301,6 +301,25 @@ func requireDefaultGroup(groupRepo convoy.GroupRepository) func(next http.Handle
 	}
 }
 
+func requireGroupAccess(groupRepo convoy.GroupRepository) func(next http.Handler) http.Handler {
+	return func(next http.Handler) http.Handler {
+		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			authUser := getAuthUserFromContext(r.Context())
+			if authUser.Role.Type.Is(auth.RoleSuperUser) {
+				// superuser has access to everything
+				return
+			}
+			group := getGroupFromContext(r.Context())
+
+			if group.Name != authUser.Role.Group {
+				_ = render.Render(w, r, newErrorResponse("unauthorized to access group", http.StatusUnauthorized))
+				return
+			}
+			next.ServeHTTP(w, r)
+		})
+	}
+}
+
 func pagination(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		rawPerPage := r.URL.Query().Get("perPage")

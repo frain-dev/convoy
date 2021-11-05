@@ -20,7 +20,6 @@ func requirePermission() func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			creds, err := getAuthFromRequest(r)
 
-			// Set authUser context.
 			rc := realm_chain.Get()
 			authUser, err := rc.Authenticate(creds)
 			if err != nil {
@@ -30,6 +29,24 @@ func requirePermission() func(next http.Handler) http.Handler {
 			}
 
 			r = r.WithContext(setAuthUserInContext(r.Context(), authUser))
+			next.ServeHTTP(w, r)
+		})
+	}
+}
+
+func requireRole(role auth.RoleType) func(next http.Handler) http.Handler {
+	return func(next http.Handler) http.Handler {
+		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			authUser := getAuthUserFromContext(r.Context())
+			if authUser.Role.Type.Is(auth.RoleSuperUser) {
+				// superuser has access to everything
+				return
+			}
+
+			if !authUser.Role.Type.Is(role) {
+				_ = render.Render(w, r, newErrorResponse("unauthorized role", http.StatusUnauthorized))
+				return
+			}
 			next.ServeHTTP(w, r)
 		})
 	}
@@ -55,7 +72,7 @@ func getAuthFromRequest(r *http.Request) (*auth.Credential, error) {
 		creds := strings.Split(string(credentials), ":")
 
 		if len(creds) != 2 {
-			return nil, errors.New("invalid credentials")
+			return nil, errors.New("invalid basic credentials")
 		}
 
 		return &auth.Credential{

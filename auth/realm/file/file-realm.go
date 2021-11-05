@@ -6,9 +6,8 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/labstack/gommon/log"
-
 	"github.com/frain-dev/convoy/auth"
+	log "github.com/sirupsen/logrus"
 )
 
 var (
