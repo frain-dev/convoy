@@ -119,14 +119,6 @@ func (a *applicationHandler) CreateApp(w http.ResponseWriter, r *http.Request) {
 
 	group := getGroupFromContext(r.Context())
 
-	if util.IsStringEmpty(newApp.Secret) {
-		newApp.Secret, err = util.GenerateSecret()
-		if err != nil {
-			_ = render.Render(w, r, newErrorResponse(fmt.Sprintf("could not generate secret...%v", err.Error()), http.StatusInternalServerError))
-			return
-		}
-	}
-
 	uid := uuid.New().String()
 	app := &convoy.Application{
 		UID:            uid,
@@ -253,10 +245,19 @@ func (a *applicationHandler) CreateAppEndpoint(w http.ResponseWriter, r *http.Re
 		UID:            uuid.New().String(),
 		TargetURL:      e.URL,
 		Description:    e.Description,
+		Events:         e.Events,
 		Status:         convoy.ActiveEndpointStatus,
 		CreatedAt:      primitive.NewDateTimeFromTime(time.Now()),
 		UpdatedAt:      primitive.NewDateTimeFromTime(time.Now()),
 		DocumentStatus: convoy.ActiveDocumentStatus,
+	}
+
+	if util.IsStringEmpty(e.Secret) {
+		endpoint.Secret, err = util.GenerateSecret()
+		if err != nil {
+			_ = render.Render(w, r, newErrorResponse(fmt.Sprintf("could not generate secret...%v", err.Error()), http.StatusInternalServerError))
+			return
+		}
 	}
 
 	app.Endpoints = append(app.Endpoints, *endpoint)

@@ -49,6 +49,21 @@ func (mr *MockEventDeliveryRepositoryMockRecorder) CreateEventDelivery(arg0, arg
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateEventDelivery", reflect.TypeOf((*MockEventDeliveryRepository)(nil).CreateEventDelivery), arg0, arg1)
 }
 
+// FindEventDeliveriesByEventID mocks base method.
+func (m *MockEventDeliveryRepository) FindEventDeliveriesByEventID(arg0 context.Context, arg1 string) ([]convoy.EventDelivery, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "FindEventDeliveriesByEventID", arg0, arg1)
+	ret0, _ := ret[0].([]convoy.EventDelivery)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// FindEventDeliveriesByEventID indicates an expected call of FindEventDeliveriesByEventID.
+func (mr *MockEventDeliveryRepositoryMockRecorder) FindEventDeliveriesByEventID(arg0, arg1 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "FindEventDeliveriesByEventID", reflect.TypeOf((*MockEventDeliveryRepository)(nil).FindEventDeliveriesByEventID), arg0, arg1)
+}
+
 // FindEventDeliveryByID mocks base method.
 func (m *MockEventDeliveryRepository) FindEventDeliveryByID(arg0 context.Context, arg1 string) (*convoy.EventDelivery, error) {
 	m.ctrl.T.Helper()

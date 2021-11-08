@@ -56,6 +56,39 @@ func (db *eventDeliveryRepo) FindEventDeliveryByID(ctx context.Context,
 	return e, err
 }
 
+func (db *eventDeliveryRepo) FindEventDeliveriesByEventID(ctx context.Context,
+	eventID string) ([]convoy.EventDelivery, error) {
+
+	log.Debug("EventID: %s", eventID)
+	filter := bson.M{"event_id": eventID, "document_status": bson.M{"$ne": convoy.DeletedDocumentStatus}}
+
+	deliveries := make([]convoy.EventDelivery, 0)
+
+	cur, err := db.inner.Find(ctx, filter, nil)
+	if err != nil {
+		return deliveries, err
+	}
+
+	for cur.Next(ctx) {
+		var delivery convoy.EventDelivery
+		if err := cur.Decode(&delivery); err != nil {
+			return deliveries, err
+		}
+
+		deliveries = append(deliveries, delivery)
+	}
+
+	if err := cur.Err(); err != nil {
+		return nil, err
+	}
+
+	if err := cur.Close(ctx); err != nil {
+		return deliveries, err
+	}
+
+	return deliveries, nil
+}
+
 func (db *eventDeliveryRepo) UpdateStatusOfEventDelivery(ctx context.Context,
 	e convoy.EventDelivery, status convoy.EventDeliveryStatus) error {
 

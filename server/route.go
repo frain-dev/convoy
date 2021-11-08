@@ -117,7 +117,7 @@ func buildRoutes(app *applicationHandler) http.Handler {
 					eventSubRouter.Get("/", app.GetAppEvent)
 
 					eventSubRouter.Route("/eventdelivery", func(eventDeliveryRouter chi.Router) {
-						eventDeliveryRouter.With(pagination).Get("/", app.GetEventDeliveries)
+						eventDeliveryRouter.Get("/", app.GetEventDeliveries)
 
 						eventDeliveryRouter.Route("/{eventDeliveryID}", func(eventDeliverySubRouter chi.Router) {
 							eventDeliverySubRouter.Use(requireEventDelivery(app.eventDeliveryRepo))

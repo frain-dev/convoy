@@ -144,12 +144,12 @@ components:
           type: string
         description:
           type: string
-        endpoints:
+        endpoint:
           $ref: '#/components/schemas/convoy.EndpointMetadata'
         event_id:
           type: string
         metadata:
-          $ref: '#/components/schemas/convoy.EventMetadata'
+          $ref: '#/components/schemas/convoy.Metadata'
         status:
           type: string
         uid:
@@ -157,7 +157,26 @@ components:
         updated_at:
           type: string
       type: object
-    convoy.EventMetadata:
+    convoy.Group:
+      properties:
+        created_at:
+          type: string
+        deleted_at:
+          type: string
+        logo_url:
+          type: string
+        name:
+          type: string
+        uid:
+          type: string
+        updated_at:
+          type: string
+      type: object
+    convoy.HttpHeader:
+      additionalProperties:
+        type: string
+      type: object
+    convoy.Metadata:
       properties:
         data:
           description: Data to be sent to endpoint.
@@ -180,33 +199,10 @@ components:
           type: integer
         strategy:
           type: string
-        uid:
-          type: string
-      type: object
-    convoy.Group:
-      properties:
-        created_at:
-          type: string
-        deleted_at:
-          type: string
-        logo_url:
-          type: string
-        name:
-          type: string
-        uid:
-          type: string
-        updated_at:
-          type: string
-      type: object
-    convoy.HttpHeader:
-      additionalProperties:
-        type: string
       type: object
     models.Application:
       properties:
         name:
-          type: string
-        secret:
           type: string
         support_email:
           type: string
@@ -215,6 +211,10 @@ components:
       properties:
         description:
           type: string
+        events:
+          items:
+            type: string
+          type: array
         secret:
           type: string
         url:
@@ -1057,13 +1057,8 @@ paths:
         content:
           application/json:
             schema:
-              allOf:
-              - $ref: '#/components/schemas/models.Event'
-              - properties:
-                  data:
-                    $ref: '#/components/schemas/server.Stub'
-                type: object
-        description: Message Details
+              $ref: '#/components/schemas/models.Event'
+        description: Event Details
         required: true
         x-originalParamName: event
       responses:
@@ -1785,7 +1780,9 @@ tags:
   name: Application
 - description: Endpoint related APIs
   name: Application Endpoints
-- description: ApplicationEventrelated APIs
-  name: Messages
+- description: Event related APIs
+  name: Events
+- description: Delivery Attempt related APIs
+  name: DeliveryAttempts
 - description: Group related APIs
   name: Group

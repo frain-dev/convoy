@@ -31,8 +31,11 @@ package server
 // @tag.name Application Endpoints
 // @tag.description Endpoint related APIs
 
-// @tag.name Messages
-// @tag.description ApplicationEventrelated APIs
+// @tag.name Events
+// @tag.description Event related APIs
+
+// @tag.name DeliveryAttempts
+// @tag.description Delivery Attempt related APIs
 
 // @tag.name Group
 // @tag.description Group related APIs

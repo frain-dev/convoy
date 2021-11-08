@@ -79,7 +79,7 @@ func TestProcessEventDelivery(t *testing.T) {
 				m.EXPECT().
 					FindEventDeliveryByID(gomock.Any(), gomock.Any()).
 					Return(&convoy.EventDelivery{
-						Metadata: &convoy.EventMetadata{
+						Metadata: &convoy.Metadata{
 							Data:            []byte(`{"event": "invoice.completed"}`),
 							NumTrials:       0,
 							RetryLimit:      3,
@@ -131,7 +131,7 @@ func TestProcessEventDelivery(t *testing.T) {
 				m.EXPECT().
 					FindEventDeliveryByID(gomock.Any(), gomock.Any()).
 					Return(&convoy.EventDelivery{
-						Metadata: &convoy.EventMetadata{
+						Metadata: &convoy.Metadata{
 							Data:            []byte(`{"event": "invoice.completed"}`),
 							NumTrials:       2,
 							RetryLimit:      3,
@@ -183,7 +183,7 @@ func TestProcessEventDelivery(t *testing.T) {
 				m.EXPECT().
 					FindEventDeliveryByID(gomock.Any(), gomock.Any()).
 					Return(&convoy.EventDelivery{
-						Metadata: &convoy.EventMetadata{
+						Metadata: &convoy.Metadata{
 							Data:            []byte(`{"event": "invoice.completed"}`),
 							NumTrials:       2,
 							RetryLimit:      3,
@@ -245,7 +245,7 @@ func TestProcessEventDelivery(t *testing.T) {
 				m.EXPECT().
 					FindEventDeliveryByID(gomock.Any(), gomock.Any()).
 					Return(&convoy.EventDelivery{
-						Metadata: &convoy.EventMetadata{
+						Metadata: &convoy.Metadata{
 							Data:            []byte(`{"event": "invoice.completed"}`),
 							NumTrials:       3,
 							RetryLimit:      3,
@@ -298,7 +298,7 @@ func TestProcessEventDelivery(t *testing.T) {
 				m.EXPECT().
 					FindEventDeliveryByID(gomock.Any(), gomock.Any()).
 					Return(&convoy.EventDelivery{
-						Metadata: &convoy.EventMetadata{
+						Metadata: &convoy.Metadata{
 							Data:            []byte(`{"event": "invoice.completed"}`),
 							NumTrials:       3,
 							RetryLimit:      3,
@@ -362,7 +362,7 @@ func TestProcessEventDelivery(t *testing.T) {
 					FindEventDeliveryByID(gomock.Any(), gomock.Any()).
 					Return(&convoy.EventDelivery{
 						Status: convoy.ScheduledEventStatus,
-						Metadata: &convoy.EventMetadata{
+						Metadata: &convoy.Metadata{
 							Data:            []byte(`{"event": "invoice.completed"}`),
 							NumTrials:       4,
 							RetryLimit:      3,
@@ -415,7 +415,7 @@ func TestProcessEventDelivery(t *testing.T) {
 					FindEventDeliveryByID(gomock.Any(), gomock.Any()).
 					Return(&convoy.EventDelivery{
 						Status: convoy.ScheduledEventStatus,
-						Metadata: &convoy.EventMetadata{
+						Metadata: &convoy.Metadata{
 							Data:            []byte(`{"event": "invoice.completed"}`),
 							NumTrials:       4,
 							RetryLimit:      3,

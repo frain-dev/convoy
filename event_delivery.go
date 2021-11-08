@@ -29,9 +29,7 @@ const (
 	RetryEventStatus      EventDeliveryStatus = "Retry"
 )
 
-type EventMetadata struct {
-	UID string `json:"uid" bson:"uid"`
-
+type Metadata struct {
 	// Data to be sent to endpoint.
 	Data     json.RawMessage         `json:"data" bson:"data"`
 	Strategy config.StrategyProvider `json:"strategy" bson:"strategy"`
@@ -57,7 +55,7 @@ type EndpointMetadata struct {
 	Sent bool `json:"sent" bson:"sent"`
 }
 
-func (em EventMetadata) Value() (driver.Value, error) {
+func (em Metadata) Value() (driver.Value, error) {
 	b := new(bytes.Buffer)
 
 	if err := json.NewEncoder(b).Encode(em); err != nil {
@@ -94,13 +92,13 @@ type EventDelivery struct {
 	ID      primitive.ObjectID `json:"-" bson:"_id"`
 	UID     string             `json:"uid" bson:"uid"`
 	AppID   string             `json:"app_id" bson:"app_id"`
-	EventID string             `json:"event_id" bson: "event_id"`
+	EventID string             `json:"event_id" bson:"event_id"`
 
 	// Endpoint contains the destination of the event.
-	EndpointMetadata *EndpointMetadata `json:"endpoints" bson:"endpoints"`
+	EndpointMetadata *EndpointMetadata `json:"endpoint" bson:"endpoint"`
 
 	AppMetadata      *AppMetadata        `json:"app_metadata,omitempty" bson:"app_metadata"`
-	Metadata         *EventMetadata      `json:"metadata" bson:"metadata"`
+	Metadata         *Metadata           `json:"metadata" bson:"metadata"`
 	Description      string              `json:"description,omitempty" bson:"description"`
 	Status           EventDeliveryStatus `json:"status" bson:"status"`
 	DeliveryAttempts []DeliveryAttempt   `json:"-" bson:"attempts"`
@@ -115,6 +113,7 @@ type EventDelivery struct {
 type EventDeliveryRepository interface {
 	CreateEventDelivery(context.Context, *EventDelivery) error
 	FindEventDeliveryByID(context.Context, string) (*EventDelivery, error)
+	FindEventDeliveriesByEventID(context.Context, string) ([]EventDelivery, error)
 	UpdateStatusOfEventDelivery(context.Context, EventDelivery, EventDeliveryStatus) error
 	UpdateEventDeliveryWithAttempt(context.Context, EventDelivery, DeliveryAttempt) error
 }

@@ -11,6 +11,7 @@ import (
 	"github.com/frain-dev/convoy/config"
 	"github.com/frain-dev/convoy/server/models"
 	"github.com/frain-dev/convoy/util"
+	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/render"
 	"github.com/google/uuid"
 	log "github.com/sirupsen/logrus"
@@ -23,7 +24,7 @@ import (
 // @Tags Events
 // @Accept  json
 // @Produce  json
-// @Param event body models.Event{data=Stub} true "Message Details"
+// @Param event body models.Event true "Event Details"
 // @Success 200 {object} serverResponse{data=convoy.Event{data=Stub}}
 // @Failure 400,401,500 {object} serverResponse{data=Stub}
 // @Security ApiKeyAuth
@@ -120,13 +121,17 @@ func (a *applicationHandler) CreateAppEvent(w http.ResponseWriter, r *http.Reque
 			AppID:   app.UID,
 			EventID: event.UID,
 			EndpointMetadata: &convoy.EndpointMetadata{
-				UID:       uuid.New().String(),
+				UID:       v.UID,
 				TargetURL: v.TargetURL,
 				Status:    v.Status,
 				Secret:    v.Secret,
 				Sent:      false,
 			},
-			Metadata: &convoy.EventMetadata{
+			AppMetadata: &convoy.AppMetadata{
+				GroupID:      app.GroupID,
+				SupportEmail: app.SupportEmail,
+			},
+			Metadata: &convoy.Metadata{
 				Data:            event.Data,
 				Strategy:        cfg.Strategy.Type,
 				NumTrials:       0,
@@ -136,6 +141,7 @@ func (a *applicationHandler) CreateAppEvent(w http.ResponseWriter, r *http.Reque
 			},
 			Status:           eventStatus,
 			DeliveryAttempts: make([]convoy.DeliveryAttempt, 0),
+			DocumentStatus:   convoy.ActiveDocumentStatus,
 		}
 		err = a.eventDeliveryRepo.CreateEventDelivery(r.Context(), eventDelivery)
 		if err != nil {
@@ -307,7 +313,17 @@ func (a *applicationHandler) GetEventsPaged(w http.ResponseWriter, r *http.Reque
 // @Security ApiKeyAuth
 // @Router /events/{eventID}/eventdelivery [get]
 func (a *applicationHandler) GetEventDeliveries(w http.ResponseWriter, r *http.Request) {
+	eventID := chi.URLParam(r, "eventID")
 
+	eventDeliveries, err := a.eventDeliveryRepo.FindEventDeliveriesByEventID(r.Context(), eventID)
+	if err != nil {
+		_ = render.Render(w, r, newErrorResponse("an error occurred while fetching event deliveries", http.StatusInternalServerError))
+		log.WithError(err)
+		return
+	}
+
+	_ = render.Render(w, r, newServerResponse("Event deliveries fetched successfully",
+		eventDeliveries, http.StatusOK))
 }
 
 func getSearchParams(r *http.Request) (models.SearchParams, error) {

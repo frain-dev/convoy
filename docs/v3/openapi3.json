@@ -209,14 +209,14 @@
 					"description": {
 						"type": "string"
 					},
-					"endpoints": {
+					"endpoint": {
 						"$ref": "#/components/schemas/convoy.EndpointMetadata"
 					},
 					"event_id": {
 						"type": "string"
 					},
 					"metadata": {
-						"$ref": "#/components/schemas/convoy.EventMetadata"
+						"$ref": "#/components/schemas/convoy.Metadata"
 					},
 					"status": {
 						"type": "string"
@@ -225,38 +225,6 @@
 						"type": "string"
 					},
 					"updated_at": {
-						"type": "string"
-					}
-				},
-				"type": "object"
-			},
-			"convoy.EventMetadata": {
-				"properties": {
-					"data": {
-						"description": "Data to be sent to endpoint.",
-						"items": {
-							"type": "integer"
-						},
-						"type": "array"
-					},
-					"interval_seconds": {
-						"type": "integer"
-					},
-					"next_send_time": {
-						"description": "NextSendTime denotes the next time a Event will be published in\ncase it failed the first time",
-						"type": "integer"
-					},
-					"num_trials": {
-						"description": "NumTrials: number of times we have tried to deliver this Event to\nan application",
-						"type": "integer"
-					},
-					"retry_limit": {
-						"type": "integer"
-					},
-					"strategy": {
-						"type": "string"
-					},
-					"uid": {
 						"type": "string"
 					}
 				},
@@ -291,12 +259,38 @@
 				},
 				"type": "object"
 			},
+			"convoy.Metadata": {
+				"properties": {
+					"data": {
+						"description": "Data to be sent to endpoint.",
+						"items": {
+							"type": "integer"
+						},
+						"type": "array"
+					},
+					"interval_seconds": {
+						"type": "integer"
+					},
+					"next_send_time": {
+						"description": "NextSendTime denotes the next time a Event will be published in\ncase it failed the first time",
+						"type": "integer"
+					},
+					"num_trials": {
+						"description": "NumTrials: number of times we have tried to deliver this Event to\nan application",
+						"type": "integer"
+					},
+					"retry_limit": {
+						"type": "integer"
+					},
+					"strategy": {
+						"type": "string"
+					}
+				},
+				"type": "object"
+			},
 			"models.Application": {
 				"properties": {
 					"name": {
-						"type": "string"
-					},
-					"secret": {
 						"type": "string"
 					},
 					"support_email": {
@@ -309,6 +303,12 @@
 				"properties": {
 					"description": {
 						"type": "string"
+					},
+					"events": {
+						"items": {
+							"type": "string"
+						},
+						"type": "array"
 					},
 					"secret": {
 						"type": "string"
@@ -1855,23 +1855,11 @@
 					"content": {
 						"application/json": {
 							"schema": {
-								"allOf": [
-									{
-										"$ref": "#/components/schemas/models.Event"
-									},
-									{
-										"properties": {
-											"data": {
-												"$ref": "#/components/schemas/server.Stub"
-											}
-										},
-										"type": "object"
-									}
-								]
+								"$ref": "#/components/schemas/models.Event"
 							}
 						}
 					},
-					"description": "Message Details",
+					"description": "Event Details",
 					"required": true,
 					"x-originalParamName": "event"
 				},
@@ -3258,8 +3246,12 @@
 			"name": "Application Endpoints"
 		},
 		{
-			"description": "ApplicationEventrelated APIs",
-			"name": "Messages"
+			"description": "Event related APIs",
+			"name": "Events"
+		},
+		{
+			"description": "Delivery Attempt related APIs",
+			"name": "DeliveryAttempts"
 		},
 		{
 			"description": "Group related APIs",

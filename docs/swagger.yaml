@@ -144,13 +144,13 @@ definitions:
         type: string
       description:
         type: string
-      endpoints:
+      endpoint:
         $ref: '#/definitions/convoy.EndpointMetadata'
         description: Endpoint contains the destination of the event.
       event_id:
         type: string
       metadata:
-        $ref: '#/definitions/convoy.EventMetadata'
+        $ref: '#/definitions/convoy.Metadata'
       status:
         type: string
       uid:
@@ -158,7 +158,26 @@ definitions:
       updated_at:
         type: string
     type: object
-  convoy.EventMetadata:
+  convoy.Group:
+    properties:
+      created_at:
+        type: string
+      deleted_at:
+        type: string
+      logo_url:
+        type: string
+      name:
+        type: string
+      uid:
+        type: string
+      updated_at:
+        type: string
+    type: object
+  convoy.HttpHeader:
+    additionalProperties:
+      type: string
+    type: object
+  convoy.Metadata:
     properties:
       data:
         description: Data to be sent to endpoint.
@@ -181,33 +200,10 @@ definitions:
         type: integer
       strategy:
         type: string
-      uid:
-        type: string
-    type: object
-  convoy.Group:
-    properties:
-      created_at:
-        type: string
-      deleted_at:
-        type: string
-      logo_url:
-        type: string
-      name:
-        type: string
-      uid:
-        type: string
-      updated_at:
-        type: string
-    type: object
-  convoy.HttpHeader:
-    additionalProperties:
-      type: string
     type: object
   models.Application:
     properties:
       name:
-        type: string
-      secret:
         type: string
       support_email:
         type: string
@@ -216,6 +212,10 @@ definitions:
     properties:
       description:
         type: string
+      events:
+        items:
+          type: string
+        type: array
       secret:
         type: string
       url:
@@ -980,17 +980,12 @@ paths:
       - application/json
       description: This endpoint creates an app event
       parameters:
-      - description: Message Details
+      - description: Event Details
         in: body
         name: event
         required: true
         schema:
-          allOf:
-          - $ref: '#/definitions/models.Event'
-          - properties:
-              data:
-                $ref: '#/definitions/server.Stub'
-            type: object
+          $ref: '#/definitions/models.Event'
       produces:
       - application/json
       responses:
@@ -1654,7 +1649,9 @@ tags:
   name: Application
 - description: Endpoint related APIs
   name: Application Endpoints
-- description: ApplicationEventrelated APIs
-  name: Messages
+- description: Event related APIs
+  name: Events
+- description: Delivery Attempt related APIs
+  name: DeliveryAttempts
 - description: Group related APIs
   name: Group

@@ -11,7 +11,6 @@ type Group struct {
 
 type Application struct {
 	AppName      string `json:"name" bson:"name"`
-	Secret       string `json:"secret" bson:"secret"`
 	SupportEmail string `json:"support_email" bson:"support_email"`
 }
 
@@ -41,9 +40,10 @@ type MessageResponse struct {
 }
 
 type Endpoint struct {
-	URL         string `json:"url" bson:"url"`
-	Secret      string `json:"secret" bson:"secret"`
-	Description string `json:"description" bson:"description"`
+	URL         string   `json:"url" bson:"url"`
+	Secret      string   `json:"secret" bson:"secret"`
+	Description string   `json:"description" bson:"description"`
+	Events      []string `json:"events" bson:"events"`
 }
 
 type Pageable struct {
