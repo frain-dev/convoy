@@ -59,7 +59,6 @@ func (db *eventDeliveryRepo) FindEventDeliveryByID(ctx context.Context,
 func (db *eventDeliveryRepo) FindEventDeliveriesByEventID(ctx context.Context,
 	eventID string) ([]convoy.EventDelivery, error) {
 
-	log.Debug("EventID: %s", eventID)
 	filter := bson.M{"event_id": eventID, "document_status": bson.M{"$ne": convoy.DeletedDocumentStatus}}
 
 	deliveries := make([]convoy.EventDelivery, 0)
@@ -128,7 +127,7 @@ func (db *eventDeliveryRepo) UpdateEventDeliveryWithAttempt(ctx context.Context,
 
 	_, err := db.inner.UpdateOne(ctx, filter, update)
 	if err != nil {
-		log.WithError(err).Error("error updating an event delivery %s -%s\n", e.UID, err)
+		log.WithError(err).Errorf("error updating an event delivery %s - %s\n", e.UID, err.Error())
 		return err
 	}
 
