@@ -7,6 +7,8 @@ import (
 	"net/http"
 	"strings"
 
+	"github.com/frain-dev/convoy/config"
+
 	"github.com/frain-dev/convoy/auth"
 	"github.com/frain-dev/convoy/auth/realm_chain"
 
@@ -19,12 +21,17 @@ func requirePermission() func(next http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			creds, err := getAuthFromRequest(r)
+			if err != nil {
+				log.WithError(err).Error("failed to get auth from request")
+				_ = render.Render(w, r, newErrorResponse(err.Error(), http.StatusUnauthorized))
+				return
+			}
 
 			rc := realm_chain.Get()
 			authUser, err := rc.Authenticate(creds)
 			if err != nil {
 				log.WithError(err).Error("failed to authenticate")
-				_ = render.Render(w, r, newErrorResponse("unauthorized", http.StatusUnauthorized))
+				_ = render.Render(w, r, newErrorResponse("authorization failed", http.StatusUnauthorized))
 				return
 			}
 
@@ -53,6 +60,16 @@ func requireRole(role auth.RoleType) func(next http.Handler) http.Handler {
 }
 
 func getAuthFromRequest(r *http.Request) (*auth.Credential, error) {
+	cfg, err := config.Get()
+	if err != nil {
+		log.WithError(err)
+		return nil, err
+	}
+
+	if !cfg.Auth.RequireAuth {
+		return nil, nil
+	}
+
 	val := r.Header.Get("Authorization")
 	authInfo := strings.Split(val, " ")
 

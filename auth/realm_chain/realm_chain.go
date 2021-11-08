@@ -28,6 +28,10 @@ func Get() *RealmChain {
 	return rc
 }
 
+func Reset() {
+	rc = newRealmChain()
+}
+
 // Authenticate calls the Authenticate method of all registered realms.
 // If at least one realm can authenticate the given auth.Credential, Authenticate will not return an error
 func (rc *RealmChain) Authenticate(cred *auth.Credential) (*auth.AuthenticatedUser, error) {

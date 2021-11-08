@@ -10,6 +10,8 @@ import (
 	"sync/atomic"
 	"time"
 
+	log "github.com/sirupsen/logrus"
+
 	"github.com/frain-dev/convoy/auth/realm/file"
 
 	"github.com/frain-dev/convoy/auth"
@@ -186,6 +188,7 @@ func LoadConfig(p string) error {
 			}
 		}
 	} else {
+		log.Warnf("using noop realm for")
 		err = realm_chain.Get().RegisterRealm(noop.NewNoopRealm())
 		if err != nil {
 			return fmt.Errorf("failed to register noop realm in realm chain: %v", err)

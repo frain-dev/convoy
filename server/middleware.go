@@ -489,33 +489,33 @@ func computeDashboardMessages(ctx context.Context, orgId string, msgRepo convoy.
 	return messagesSent, messages, nil
 }
 
-func requireAuth() func(next http.Handler) http.Handler {
-	return func(next http.Handler) http.Handler {
-		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-
-			cfg, err := config.Get()
-			if err != nil {
-				_ = render.Render(w, r, newErrorResponse("an error has occurred", http.StatusInternalServerError))
-				return
-			}
-
-			if cfg.Auth.Type == config.NoAuthProvider {
-				// full access
-			} else if cfg.Auth.Type == config.BasicAuthProvider {
-				err := ensureBasicAuthFromRequest(&cfg.Auth, r)
-				if err != nil {
-					_ = render.Render(w, r, newErrorResponse(err.Error(), http.StatusUnauthorized))
-					return
-				}
-			} else {
-				_ = render.Render(w, r, newErrorResponse("access denied", http.StatusForbidden))
-				return
-			}
-
-			next.ServeHTTP(w, r)
-		})
-	}
-}
+//func requireAuth() func(next http.Handler) http.Handler {
+//	return func(next http.Handler) http.Handler {
+//		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+//
+//			cfg, err := config.Get()
+//			if err != nil {
+//				_ = render.Render(w, r, newErrorResponse("an error has occurred", http.StatusInternalServerError))
+//				return
+//			}
+//
+//			if cfg.Auth.Type == config.NoAuthProvider {
+//				// full access
+//			} else if cfg.Auth.Type == config.BasicAuthProvider {
+//				err := ensureBasicAuthFromRequest(&cfg.Auth, r)
+//				if err != nil {
+//					_ = render.Render(w, r, newErrorResponse(err.Error(), http.StatusUnauthorized))
+//					return
+//				}
+//			} else {
+//				_ = render.Render(w, r, newErrorResponse("access denied", http.StatusForbidden))
+//				return
+//			}
+//
+//			next.ServeHTTP(w, r)
+//		})
+//	}
+//}
 
 func setApplicationInContext(ctx context.Context,
 	app *convoy.Application) context.Context {

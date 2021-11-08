@@ -6,62 +6,66 @@ import (
 	"net/http/httptest"
 	"testing"
 
+	"github.com/frain-dev/convoy/auth/realm_chain"
+
 	"github.com/frain-dev/convoy/config"
 
 	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/require"
 )
 
-func TestRequireAuth_Misconfiguration(t *testing.T) {
+func TestRequirePermission_Basic(t *testing.T) {
 
 	tt := []struct {
 		name        string
-		method      string
 		statusCode  int
 		credentials string
 		cfgPath     string
 	}{
 		{
 			name:       "credentials not provided",
-			method:     http.MethodGet,
-			statusCode: http.StatusForbidden,
-			cfgPath:    "./testdata/Auth_Config/misconfigured-convoy.json",
+			statusCode: http.StatusUnauthorized,
+			cfgPath:    "./testdata/Auth_Config/basic-convoy.json",
 		},
 		{
 			name:        "invalid credentials",
-			method:      http.MethodGet,
-			statusCode:  http.StatusForbidden,
-			credentials: "--",
-			cfgPath:     "./testdata/Auth_Config/misconfigured-convoy.json",
+			statusCode:  http.StatusUnauthorized,
+			credentials: "Basic --",
+			cfgPath:     "./testdata/Auth_Config/basic-convoy.json",
+		},
+		{
+			name:        "invalid basic credentials",
+			statusCode:  http.StatusUnauthorized,
+			credentials: "Basic ZGFuaWVs",
+			cfgPath:     "./testdata/Auth_Config/basic-convoy.json",
 		},
 		{
 			name:        "authorization failed",
-			method:      http.MethodGet,
-			statusCode:  http.StatusForbidden,
-			credentials: "YWRtaW46dGVzdA==",
-			cfgPath:     "./testdata/Auth_Config/misconfigured-convoy.json",
+			statusCode:  http.StatusUnauthorized,
+			credentials: "Basic YWRtaW46dGVzdA==",
+			cfgPath:     "./testdata/Auth_Config/basic-convoy.json",
 		},
 		{
 			name:        "valid credentials",
-			method:      http.MethodGet,
-			statusCode:  http.StatusForbidden,
-			credentials: "dGVzdDp0ZXN0",
-			cfgPath:     "./testdata/Auth_Config/misconfigured-convoy.json",
+			statusCode:  http.StatusOK,
+			credentials: "Basic dXNlcm5hbWUxOnBhc3N3b3JkMQ==",
+			cfgPath:     "./testdata/Auth_Config/basic-convoy.json",
 		},
 	}
 
 	for _, tc := range tt {
 		t.Run(tc.name, func(t *testing.T) {
+			defer realm_chain.Reset()
 
 			err := config.LoadConfig(tc.cfgPath)
 			if err != nil {
-				t.Error("Failed to load config file")
+				t.Errorf("Failed to load config file: %v", err)
 			}
 
 			ctrl := gomock.NewController(t)
 			defer ctrl.Finish()
 
-			fn := requireAuth()(http.HandlerFunc(func(rw http.ResponseWriter, r *http.Request) {
+			fn := requirePermission()(http.HandlerFunc(func(rw http.ResponseWriter, r *http.Request) {
 				rw.WriteHeader(http.StatusOK)
 
 				_, err := rw.Write([]byte(`Hello`))
@@ -72,7 +76,7 @@ func TestRequireAuth_Misconfiguration(t *testing.T) {
 			request := httptest.NewRequest(http.MethodGet, "/", nil)
 
 			if tc.credentials != "" {
-				request.Header.Add("Authorization", fmt.Sprintf("Basic %s", tc.credentials))
+				request.Header.Add("Authorization", tc.credentials)
 			}
 
 			fn.ServeHTTP(recorder, request)
@@ -86,38 +90,32 @@ func TestRequireAuth_Misconfiguration(t *testing.T) {
 	}
 }
 
-func TestRequireAuth_None(t *testing.T) {
-
+func TestRequirePermission_Noop(t *testing.T) {
 	tt := []struct {
 		name        string
-		method      string
 		statusCode  int
 		credentials string
 		cfgPath     string
 	}{
 		{
 			name:       "credentials not provided",
-			method:     http.MethodGet,
 			statusCode: http.StatusOK,
 			cfgPath:    "./testdata/Auth_Config/none-convoy.json",
 		},
 		{
 			name:        "invalid credentials",
-			method:      http.MethodGet,
 			statusCode:  http.StatusOK,
 			credentials: "--",
 			cfgPath:     "./testdata/Auth_Config/none-convoy.json",
 		},
 		{
 			name:        "authorization failed",
-			method:      http.MethodGet,
 			statusCode:  http.StatusOK,
 			credentials: "YWRtaW46dGVzdA==",
 			cfgPath:     "./testdata/Auth_Config/none-convoy.json",
 		},
 		{
 			name:        "valid credentials",
-			method:      http.MethodGet,
 			statusCode:  http.StatusOK,
 			credentials: "dGVzdDp0ZXN0",
 			cfgPath:     "./testdata/Auth_Config/none-convoy.json",
@@ -126,16 +124,17 @@ func TestRequireAuth_None(t *testing.T) {
 
 	for _, tc := range tt {
 		t.Run(tc.name, func(t *testing.T) {
+			defer realm_chain.Reset()
 
 			err := config.LoadConfig(tc.cfgPath)
 			if err != nil {
-				t.Error("Failed to load config file")
+				t.Errorf("Failed to load config file: %v", err)
 			}
 
 			ctrl := gomock.NewController(t)
 			defer ctrl.Finish()
 
-			fn := requireAuth()(http.HandlerFunc(func(rw http.ResponseWriter, r *http.Request) {
+			fn := requirePermission()(http.HandlerFunc(func(rw http.ResponseWriter, r *http.Request) {
 				rw.WriteHeader(http.StatusOK)
 
 				_, err := rw.Write([]byte(`Hello`))
@@ -158,84 +157,4 @@ func TestRequireAuth_None(t *testing.T) {
 			verifyMatch(t, *recorder)
 		})
 	}
-}
-
-func TestRequireAuth_Basic(t *testing.T) {
-
-	tt := []struct {
-		name         string
-		method       string
-		statusCode   int
-		responseBody string
-		credentials  string
-		cfgPath      string
-	}{
-		{
-			name:         "credentials not provided",
-			method:       http.MethodGet,
-			statusCode:   http.StatusUnauthorized,
-			responseBody: `{"message":"invalid header structure"}`,
-			cfgPath:      "./testdata/Auth_Config/basic-convoy.json",
-		},
-		{
-			name:         "invalid credentials",
-			method:       http.MethodGet,
-			statusCode:   http.StatusUnauthorized,
-			responseBody: `{"message":"invalid credentials"}`,
-			credentials:  "--",
-			cfgPath:      "./testdata/Auth_Config/basic-convoy.json",
-		},
-		{
-			name:         "authorization failed",
-			method:       http.MethodGet,
-			statusCode:   http.StatusUnauthorized,
-			responseBody: `{"message":"authorization failed"}`,
-			credentials:  "YWRtaW46dGVzdA==",
-			cfgPath:      "./testdata/Auth_Config/basic-convoy.json",
-		},
-		{
-			name:         "valid credentials",
-			method:       http.MethodGet,
-			statusCode:   http.StatusOK,
-			credentials:  "dGVzdDp0ZXN0",
-			responseBody: `Hello`,
-			cfgPath:      "./testdata/Auth_Config/basic-convoy.json",
-		},
-	}
-
-	for _, tc := range tt {
-		t.Run(tc.name, func(t *testing.T) {
-
-			err := config.LoadConfig(tc.cfgPath)
-			if err != nil {
-				t.Error("Failed to load config file")
-			}
-
-			ctrl := gomock.NewController(t)
-			defer ctrl.Finish()
-
-			fn := requireAuth()(http.HandlerFunc(func(rw http.ResponseWriter, r *http.Request) {
-				rw.WriteHeader(http.StatusOK)
-
-				_, err := rw.Write([]byte(`Hello`))
-				require.NoError(t, err)
-			}))
-
-			recorder := httptest.NewRecorder()
-			request := httptest.NewRequest(http.MethodGet, "/", nil)
-
-			if tc.credentials != "" {
-				request.Header.Add("Authorization", fmt.Sprintf("Basic %s", tc.credentials))
-			}
-
-			fn.ServeHTTP(recorder, request)
-
-			if recorder.Code != tc.statusCode {
-				t.Errorf("Want status '%d', got '%d'", tc.statusCode, recorder.Code)
-			}
-
-			verifyMatch(t, *recorder)
-		})
-	}
-
 }

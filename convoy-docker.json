@@ -18,17 +18,12 @@
     }
   },
   "auth": {
-    "require_auth": false,
+    "require_auth": true,
     "realms": [
       {
         "type": "file_realm",
         "name": "file_realm1",
-        "path": ""
-      },
-      {
-        "type": "file_realm",
-        "name": "file_realm1",
-        "path": ""
+        "path": "./file_realm_1.json"
       }
     ]
   },

@@ -42,7 +42,7 @@ func TestRealmChain_Authenticate(t *testing.T) {
 		wantErrMsg string
 	}{
 		{
-			name: "should__authenticate_creds_with_file_realm",
+			name: "should_authenticate_creds_with_file_realm",
 			args: args{
 				cred: &auth.Credential{
 					Type:     auth.CredentialTypeBasic,
@@ -65,7 +65,7 @@ func TestRealmChain_Authenticate(t *testing.T) {
 			wantErr: false,
 		},
 		{
-			name: "should__authenticate_creds_with_file_realm",
+			name: "should_error_for_wrong_username",
 			args: args{
 				cred: &auth.Credential{
 					Type:     auth.CredentialTypeBasic,
@@ -78,7 +78,7 @@ func TestRealmChain_Authenticate(t *testing.T) {
 			wantErr:    true,
 		},
 		{
-			name: "should__authenticate_creds_with_file_realm",
+			name: "should_error_for_wrong_password",
 			args: args{
 				cred: &auth.Credential{
 					Type:     auth.CredentialTypeBasic,

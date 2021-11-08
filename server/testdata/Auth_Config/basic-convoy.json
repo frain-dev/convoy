@@ -1,10 +1,13 @@
 {
 	"auth": {
-		"type": "basic",
-		"basic": {
-			"username": "test",
-			"password": "test"
-		}
+		"require_auth": true,
+		"realms": [
+			{
+				"type": "file_realm",
+				"name": "file_realm1",
+				"path": "./testdata/Auth_Config/basic_file_realm.json"
+			}
+		]
 	},
 	"signature": {
 		"header": "X-Company-Event-WebHook-Signature",

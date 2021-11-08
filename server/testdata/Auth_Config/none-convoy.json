@@ -1,6 +1,6 @@
 {
 	"auth": {
-		"type": "none"
+		"require_auth_false": false
 	},
 	"strategy": {
 		"type": "default",

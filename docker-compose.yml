@@ -10,6 +10,7 @@ services:
       - 5005:5005
     volumes:
       - ./convoy-docker.json:/convoy.json
+      - ./file_realm_1.json:/file_realm_1.json
     restart: on-failure
     depends_on:
       - mongodb
