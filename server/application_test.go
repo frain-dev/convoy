@@ -11,6 +11,8 @@ import (
 	"testing"
 	"time"
 
+	"github.com/frain-dev/convoy/auth/realm_chain"
+
 	"github.com/frain-dev/convoy/config"
 	"github.com/frain-dev/convoy/server/models"
 	pager "github.com/gobeam/mongo-go-pagination"
@@ -146,6 +148,8 @@ func TestApplicationHandler_GetApp(t *testing.T) {
 
 	for _, tc := range tt {
 		t.Run(tc.name, func(t *testing.T) {
+			defer realm_chain.Reset()
+
 			// Arrange
 			url := fmt.Sprintf("/api/v1/applications/%s", tc.id)
 			req := httptest.NewRequest(tc.method, url, nil)
@@ -163,7 +167,7 @@ func TestApplicationHandler_GetApp(t *testing.T) {
 
 			err := config.LoadConfig(tc.cfgPath)
 			if err != nil {
-				t.Error("Failed to load config file")
+				t.Errorf("Failed to load config file: %v", err)
 			}
 
 			router := buildRoutes(app)
@@ -331,6 +335,8 @@ func TestApplicationHandler_CreateApp(t *testing.T) {
 
 	for _, tc := range tt {
 		t.Run(tc.name, func(t *testing.T) {
+			defer realm_chain.Reset()
+
 			var app *applicationHandler
 
 			ctrl := gomock.NewController(t)
@@ -356,7 +362,7 @@ func TestApplicationHandler_CreateApp(t *testing.T) {
 
 			err := config.LoadConfig(tc.cfgPath)
 			if err != nil {
-				t.Error("Failed to load config file")
+				t.Errorf("Failed to load config file: %v", err)
 			}
 
 			router := buildRoutes(app)
@@ -505,6 +511,8 @@ func TestApplicationHandler_UpdateApp(t *testing.T) {
 
 	for _, tc := range tt {
 		t.Run(tc.name, func(t *testing.T) {
+			defer realm_chain.Reset()
+
 			// Arrange
 			var app *applicationHandler
 
@@ -541,7 +549,7 @@ func TestApplicationHandler_UpdateApp(t *testing.T) {
 
 			err := config.LoadConfig(tc.cfgPath)
 			if err != nil {
-				t.Error("Failed to load config file")
+				t.Errorf("Failed to load config file: %v", err)
 			}
 
 			router := buildRoutes(app)
@@ -720,6 +728,8 @@ func TestApplicationHandler_UpdateAppEndpoint(t *testing.T) {
 
 	for _, tc := range tt {
 		t.Run(tc.name, func(t *testing.T) {
+			defer realm_chain.Reset()
+
 			// Arrange
 			var app *applicationHandler
 
@@ -758,7 +768,7 @@ func TestApplicationHandler_UpdateAppEndpoint(t *testing.T) {
 
 			err := config.LoadConfig(tc.cfgPath)
 			if err != nil {
-				t.Error("Failed to load config file")
+				t.Errorf("Failed to load config file: %v", err)
 			}
 
 			router := buildRoutes(app)

@@ -1,8 +1,8 @@
 {
   "basic": [
     {
-      "username": "username1",
-      "password": "password1",
+      "username": "test",
+      "password": "test",
       "role": {
         "type": "admin",
         "group": "sendcash-pay"

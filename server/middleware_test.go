@@ -48,7 +48,7 @@ func TestRequirePermission_Basic(t *testing.T) {
 		{
 			name:        "valid credentials",
 			statusCode:  http.StatusOK,
-			credentials: "Basic dXNlcm5hbWUxOnBhc3N3b3JkMQ==",
+			credentials: "Basic dGVzdDp0ZXN0",
 			cfgPath:     "./testdata/Auth_Config/basic-convoy.json",
 		},
 	}
