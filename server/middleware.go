@@ -549,10 +549,6 @@ func getEventDeliveryFromContext(ctx context.Context) *convoy.EventDelivery {
 	return ctx.Value(eventDeliveryCtx).(*convoy.EventDelivery)
 }
 
-func setEventsInContext(ctx context.Context,
-	event *[]convoy.Event) context.Context {
-	return context.WithValue(ctx, eventCtx, event)
-}
 func setApplicationsInContext(ctx context.Context,
 	apps *[]convoy.Application) context.Context {
 	return context.WithValue(ctx, appCtx, apps)
