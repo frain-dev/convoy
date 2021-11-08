@@ -91,9 +91,10 @@ type DeliveryAttempt struct {
 
 //Event defines a payload to be sent to an application
 type EventDelivery struct {
-	ID    primitive.ObjectID `json:"-" bson:"_id"`
-	UID   string             `json:"uid" bson:"uid"`
-	AppID string             `json:"app_id" bson:"app_id"`
+	ID      primitive.ObjectID `json:"-" bson:"_id"`
+	UID     string             `json:"uid" bson:"uid"`
+	AppID   string             `json:"app_id" bson:"app_id"`
+	EventID string             `json:"event_id" bson: "event_id"`
 
 	// Endpoint contains the destination of the event.
 	EndpointMetadata *EndpointMetadata `json:"endpoints" bson:"endpoints"`

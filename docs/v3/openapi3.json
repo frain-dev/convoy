@@ -212,6 +212,9 @@
 					"endpoints": {
 						"$ref": "#/components/schemas/convoy.EndpointMetadata"
 					},
+					"event_id": {
+						"type": "string"
+					},
 					"metadata": {
 						"$ref": "#/components/schemas/convoy.EventMetadata"
 					},

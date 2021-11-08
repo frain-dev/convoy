@@ -16,7 +16,7 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
-func TestApplicationHandler_CreateAppMessage(t *testing.T) {
+func TestApplicationHandler_CreateAppEvent(t *testing.T) {
 
 	var app *applicationHandler
 
@@ -185,6 +185,11 @@ func TestApplicationHandler_CreateAppMessage(t *testing.T) {
 					CreateEvent(gomock.Any(), gomock.Any()).Times(1).
 					Return(nil)
 
+				ed, _ := app.eventDeliveryRepo.(*mocks.MockEventDeliveryRepository)
+				ed.EXPECT().
+					CreateEventDelivery(gomock.Any(), gomock.Any()).
+					Return(nil)
+
 				q, _ := app.eventQueue.(*mocks.MockQueuer)
 				q.EXPECT().
 					Write(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Times(1).
@@ -239,8 +244,9 @@ func Test_resendMessage(t *testing.T) {
 
 	app = newApplicationHandler(eventRepo, eventDeliveryRepo, appRepo, groupRepo, eventQueue)
 
-	appId := "12345"
-	msgId := "1122333444456"
+	appID := "12345"
+	eventID := "1122333444456"
+	eventDeliveryID := "2134453454"
 
 	type args struct {
 		message *convoy.EventDelivery
@@ -263,9 +269,10 @@ func Test_resendMessage(t *testing.T) {
 			body:       nil,
 			args: args{
 				message: &convoy.EventDelivery{
-					UID:    msgId,
-					AppID:  appId,
-					Status: convoy.SuccessEventStatus,
+					UID:     eventDeliveryID,
+					AppID:   appID,
+					EventID: eventID,
+					Status:  convoy.SuccessEventStatus,
 				},
 			},
 			dbFn: func(msg *convoy.EventDelivery, app *applicationHandler) {
@@ -288,9 +295,10 @@ func Test_resendMessage(t *testing.T) {
 			body:       nil,
 			args: args{
 				message: &convoy.EventDelivery{
-					UID:    msgId,
-					AppID:  appId,
-					Status: convoy.ProcessingEventStatus,
+					UID:     eventDeliveryID,
+					AppID:   appID,
+					EventID: eventID,
+					Status:  convoy.ProcessingEventStatus,
 				},
 			},
 			dbFn: func(msg *convoy.EventDelivery, app *applicationHandler) {
@@ -308,9 +316,10 @@ func Test_resendMessage(t *testing.T) {
 			body:       nil,
 			args: args{
 				message: &convoy.EventDelivery{
-					UID:    msgId,
-					AppID:  appId,
-					Status: convoy.FailureEventStatus,
+					UID:     eventDeliveryID,
+					AppID:   appID,
+					EventID: eventID,
+					Status:  convoy.FailureEventStatus,
 					EndpointMetadata: &convoy.EndpointMetadata{
 						TargetURL: "http://localhost",
 						Status:    convoy.PendingEndpointStatus,
@@ -340,9 +349,10 @@ func Test_resendMessage(t *testing.T) {
 			body:       nil,
 			args: args{
 				message: &convoy.EventDelivery{
-					UID:    msgId,
-					AppID:  appId,
-					Status: convoy.FailureEventStatus,
+					UID:     eventDeliveryID,
+					AppID:   appID,
+					EventID: eventID,
+					Status:  convoy.FailureEventStatus,
 					EndpointMetadata: &convoy.EndpointMetadata{
 						TargetURL: "http://localhost",
 						Status:    convoy.InactiveEndpointStatus,
@@ -387,9 +397,10 @@ func Test_resendMessage(t *testing.T) {
 			body:       nil,
 			args: args{
 				message: &convoy.EventDelivery{
-					UID:    msgId,
-					AppID:  appId,
-					Status: convoy.FailureEventStatus,
+					UID:     eventDeliveryID,
+					AppID:   appID,
+					EventID: eventID,
+					Status:  convoy.FailureEventStatus,
 					EndpointMetadata: &convoy.EndpointMetadata{
 						TargetURL: "http://localhost",
 						Status:    convoy.ActiveEndpointStatus,
@@ -427,7 +438,7 @@ func Test_resendMessage(t *testing.T) {
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
 
-			url := fmt.Sprintf("/api/v1/events/%s/eventdelivery/%s/resend", tc.args.message.Metadata.UID, tc.args.message.UID)
+			url := fmt.Sprintf("/api/v1/events/%s/eventdelivery/%s/resend", tc.args.message.EventID, tc.args.message.UID)
 			req := httptest.NewRequest(tc.method, url, nil)
 			req.SetBasicAuth("test", "test")
 			req.Header.Add("Content-Type", "application/json")

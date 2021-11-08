@@ -116,8 +116,9 @@ func (a *applicationHandler) CreateAppEvent(w http.ResponseWriter, r *http.Reque
 		}
 
 		eventDelivery := &convoy.EventDelivery{
-			UID:   uuid.New().String(),
-			AppID: app.UID,
+			UID:     uuid.New().String(),
+			AppID:   app.UID,
+			EventID: event.UID,
 			EndpointMetadata: &convoy.EndpointMetadata{
 				UID:       uuid.New().String(),
 				TargetURL: v.TargetURL,

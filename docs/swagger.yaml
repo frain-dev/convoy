@@ -147,6 +147,8 @@ definitions:
       endpoints:
         $ref: '#/definitions/convoy.EndpointMetadata'
         description: Endpoint contains the destination of the event.
+      event_id:
+        type: string
       metadata:
         $ref: '#/definitions/convoy.EventMetadata'
       status:

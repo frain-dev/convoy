@@ -2747,6 +2747,9 @@
                     "description": "Endpoint contains the destination of the event.",
                     "$ref": "#/definitions/convoy.EndpointMetadata"
                 },
+                "event_id": {
+                    "type": "string"
+                },
                 "metadata": {
                     "$ref": "#/definitions/convoy.EventMetadata"
                 },
