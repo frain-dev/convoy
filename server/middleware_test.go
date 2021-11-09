@@ -55,7 +55,7 @@ func TestRequirePermission_Basic(t *testing.T) {
 
 	for _, tc := range tt {
 		t.Run(tc.name, func(t *testing.T) {
-			defer realm_chain.Reset()
+			realm_chain.Reset()
 
 			err := config.LoadConfig(tc.cfgPath)
 			if err != nil {
@@ -124,8 +124,10 @@ func TestRequirePermission_Noop(t *testing.T) {
 
 	for _, tc := range tt {
 		t.Run(tc.name, func(t *testing.T) {
-			defer realm_chain.Reset()
-
+			realm_chain.Reset()
+			t.Cleanup(func() {
+				realm_chain.Reset()
+			})
 			err := config.LoadConfig(tc.cfgPath)
 			if err != nil {
 				t.Errorf("Failed to load config file: %v", err)

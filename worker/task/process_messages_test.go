@@ -4,6 +4,8 @@ import (
 	"testing"
 	"time"
 
+	"github.com/frain-dev/convoy/auth/realm_chain"
+
 	"github.com/frain-dev/convoy"
 	"github.com/frain-dev/convoy/config"
 	"github.com/frain-dev/convoy/mocks"
@@ -509,6 +511,7 @@ func TestProcessMessages(t *testing.T) {
 
 	for _, tc := range tt {
 		t.Run(tc.name, func(t *testing.T) {
+			realm_chain.Reset()
 
 			ctrl := gomock.NewController(t)
 			defer ctrl.Finish()
@@ -519,7 +522,7 @@ func TestProcessMessages(t *testing.T) {
 
 			err := config.LoadConfig(tc.cfgPath)
 			if err != nil {
-				t.Error("Failed to load config file")
+				t.Errorf("Failed to load config file: %v", err)
 			}
 
 			if tc.nFn != nil {

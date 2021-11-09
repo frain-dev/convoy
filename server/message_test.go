@@ -8,6 +8,8 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/frain-dev/convoy/auth/realm_chain"
+
 	"github.com/frain-dev/convoy"
 	"github.com/frain-dev/convoy/config"
 	"github.com/frain-dev/convoy/mocks"
@@ -183,6 +185,8 @@ func TestApplicationHandler_CreateAppMessage(t *testing.T) {
 
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
+			realm_chain.Reset()
+
 			var app *applicationHandler
 
 			ctrl := gomock.NewController(t)
@@ -197,7 +201,7 @@ func TestApplicationHandler_CreateAppMessage(t *testing.T) {
 
 			err := config.LoadConfig(tc.cfgPath)
 			if err != nil {
-				t.Error("Failed to load config file")
+				t.Errorf("Failed to load config file: %v", err)
 			}
 
 			req := httptest.NewRequest(tc.method, "/api/v1/events", tc.body)
@@ -424,6 +428,8 @@ func Test_resendMessage(t *testing.T) {
 	}
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
+			realm_chain.Reset()
+
 			var app *applicationHandler
 
 			ctrl := gomock.NewController(t)
@@ -453,7 +459,7 @@ func Test_resendMessage(t *testing.T) {
 
 			err := config.LoadConfig(tc.cfgPath)
 			if err != nil {
-				t.Error("Failed to load config file")
+				t.Errorf("Failed to load config file: %v", err)
 			}
 
 			router := buildRoutes(app)

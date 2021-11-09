@@ -148,7 +148,7 @@ func TestApplicationHandler_GetApp(t *testing.T) {
 
 	for _, tc := range tt {
 		t.Run(tc.name, func(t *testing.T) {
-			defer realm_chain.Reset()
+			realm_chain.Reset()
 
 			// Arrange
 			url := fmt.Sprintf("/api/v1/applications/%s", tc.id)
@@ -234,6 +234,8 @@ func TestApplicationHandler_GetApps(t *testing.T) {
 
 	for _, tc := range tt {
 		t.Run(tc.name, func(t *testing.T) {
+			realm_chain.Reset()
+
 			// Arrange
 			req := httptest.NewRequest(tc.method, "/api/v1/applications", nil)
 			req.SetBasicAuth("test", "test")
@@ -252,7 +254,7 @@ func TestApplicationHandler_GetApps(t *testing.T) {
 
 			err := config.LoadConfig(tc.cfgPath)
 			if err != nil {
-				t.Error("Failed to load config file")
+				t.Errorf("Failed to load config file: %v", err)
 			}
 
 			router := buildRoutes(app)
@@ -335,7 +337,7 @@ func TestApplicationHandler_CreateApp(t *testing.T) {
 
 	for _, tc := range tt {
 		t.Run(tc.name, func(t *testing.T) {
-			defer realm_chain.Reset()
+			realm_chain.Reset()
 
 			var app *applicationHandler
 
@@ -511,7 +513,7 @@ func TestApplicationHandler_UpdateApp(t *testing.T) {
 
 	for _, tc := range tt {
 		t.Run(tc.name, func(t *testing.T) {
-			defer realm_chain.Reset()
+			realm_chain.Reset()
 
 			// Arrange
 			var app *applicationHandler
@@ -623,6 +625,8 @@ func TestApplicationHandler_CreateAppEndpoint(t *testing.T) {
 
 	for _, tc := range tt {
 		t.Run(tc.name, func(t *testing.T) {
+			realm_chain.Reset()
+
 			url := fmt.Sprintf("/api/v1/applications/%s/endpoints", tc.appId)
 			req := httptest.NewRequest(tc.method, url, tc.body)
 			req.SetBasicAuth("test", "test")
@@ -635,7 +639,7 @@ func TestApplicationHandler_CreateAppEndpoint(t *testing.T) {
 
 			err := config.LoadConfig(tc.cfgPath)
 			if err != nil {
-				t.Error("Failed to load config file")
+				t.Errorf("Failed to load config file: %v", err)
 			}
 
 			router := buildRoutes(app)
@@ -728,7 +732,7 @@ func TestApplicationHandler_UpdateAppEndpoint(t *testing.T) {
 
 	for _, tc := range tt {
 		t.Run(tc.name, func(t *testing.T) {
-			defer realm_chain.Reset()
+			realm_chain.Reset()
 
 			// Arrange
 			var app *applicationHandler
