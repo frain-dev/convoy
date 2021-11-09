@@ -246,6 +246,7 @@ func (a *applicationHandler) CreateAppEndpoint(w http.ResponseWriter, r *http.Re
 		TargetURL:      e.URL,
 		Description:    e.Description,
 		Events:         e.Events,
+		Secret:         e.Secret,
 		Status:         convoy.ActiveEndpointStatus,
 		CreatedAt:      primitive.NewDateTimeFromTime(time.Now()),
 		UpdatedAt:      primitive.NewDateTimeFromTime(time.Now()),
