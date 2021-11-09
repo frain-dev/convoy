@@ -89,3 +89,70 @@ datalist {
 	padding: 15px;
 	appearance: none;
 }
+
+.filter {
+	display: flex;
+	align-items: center;
+	margin-bottom: 16px;
+	position: relative;
+	align-items: stretch;
+	max-height: 50px;
+
+	& > div {
+		display: flex;
+		align-items: center;
+	}
+
+	.filter--button {
+		min-width: 145px;
+	}
+
+	.filter--button,
+	select {
+		background: #ffffff;
+		border: 1px solid #f3f5f9;
+		border-radius: 8px;
+		padding: 10px;
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+		font-size: 14px;
+		line-height: 14px;
+		margin: 0 0 0 8px;
+
+		div {
+			margin: 0 8px;
+		}
+
+		img:last-of-type {
+			width: 20px;
+		}
+
+		&.active {
+			border-color: rgba(71, 125, 179, 0.2);
+			box-shadow: 0px 10px 25px rgba(151, 143, 175, 0.08);
+			color: var(--primary-color);
+			font-weight: 500;
+		}
+	}
+
+	.select {
+		width: fit-content;
+		position: relative;
+
+		&::after {
+			content: '';
+			position: absolute;
+			background: url('/assets/img/angle-arrow-down.svg');
+			width: 20px;
+			height: 20px;
+			background-size: contain;
+			right: 5px;
+		}
+
+		select {
+			height: 46px;
+			min-width: 145px;
+		}
+	}
+}

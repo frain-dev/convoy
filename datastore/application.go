@@ -58,7 +58,7 @@ func (db *appRepo) LoadApplicationsPaged(ctx context.Context, groupID string, pa
 		apps = make([]convoy.Application, 0)
 	}
 
-	msgCollection := db.innerDB.Collection(MsgCollection)
+	msgCollection := db.innerDB.Collection(EventCollection)
 	for i, app := range apps {
 		filter = bson.M{"app_id": app.UID, "document_status": bson.M{"$ne": convoy.DeletedDocumentStatus}}
 		count, err := msgCollection.CountDocuments(ctx, filter)
@@ -91,7 +91,7 @@ func (db *appRepo) LoadApplicationsPagedByGroupId(ctx context.Context, groupID s
 		applications = make([]convoy.Application, 0)
 	}
 
-	msgCollection := db.innerDB.Collection(MsgCollection)
+	msgCollection := db.innerDB.Collection(EventCollection)
 	for i, app := range applications {
 		filter = bson.M{"app_id": app.UID, "document_status": bson.M{"$ne": convoy.DeletedDocumentStatus}}
 		count, err := msgCollection.CountDocuments(ctx, filter)
@@ -147,7 +147,7 @@ func (db *appRepo) SearchApplicationsByGroupId(ctx context.Context, groupId stri
 		return apps, err
 	}
 
-	msgCollection := db.innerDB.Collection(MsgCollection)
+	msgCollection := db.innerDB.Collection(EventCollection)
 	for i, app := range apps {
 		filter = bson.M{"app_id": app.UID, "document_status": bson.M{"$ne": convoy.DeletedDocumentStatus}}
 		count, err := msgCollection.CountDocuments(ctx, filter)
@@ -175,7 +175,7 @@ func (db *appRepo) FindApplicationByID(ctx context.Context,
 		return app, err
 	}
 
-	msgCollection := db.innerDB.Collection(MsgCollection)
+	msgCollection := db.innerDB.Collection(EventCollection)
 	filter = bson.M{"app_id": app.UID, "document_status": bson.M{"$ne": convoy.DeletedDocumentStatus}}
 	count, err := msgCollection.CountDocuments(ctx, filter)
 	if err != nil {
@@ -217,7 +217,6 @@ func (db *appRepo) UpdateApplication(ctx context.Context,
 		primitive.E{Key: "endpoints", Value: app.Endpoints},
 		primitive.E{Key: "updated_at", Value: app.UpdatedAt},
 		primitive.E{Key: "title", Value: app.Title},
-		primitive.E{Key: "secret", Value: app.Secret},
 		primitive.E{Key: "support_email", Value: app.SupportEmail},
 	}}}
 
@@ -265,7 +264,7 @@ func (db *appRepo) updateMessagesInApp(ctx context.Context, app *convoy.Applicat
 	updateMessagesOperation.SetUpdate(update)
 	msgOperations = append(msgOperations, updateMessagesOperation)
 
-	msgCollection := db.innerDB.Collection(MsgCollection)
+	msgCollection := db.innerDB.Collection(EventCollection)
 	res, err := msgCollection.BulkWrite(ctx, msgOperations)
 	if err != nil {
 		log.Errorf("failed to delete messages in %s. Reason: %s", app.UID, err)

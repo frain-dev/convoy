@@ -1,0 +1,141 @@
+.table {
+	margin: 24px;
+
+	&--load-more {
+		border-top: 1px solid #eee;
+
+		button {
+			font-weight: bold;
+			font-size: 18px;
+		}
+	}
+
+	&--date-row {
+		border-top: 1px solid #eee;
+		border-bottom: 1px solid #eee;
+	}
+}
+
+table {
+	width: 100%;
+	border-collapse: collapse;
+
+	th {
+		text-align: left;
+		color: var(--primary-color);
+		font-weight: 500;
+		font-size: 14px;
+		line-height: 28px;
+		padding: 9px 10px;
+	}
+
+	tbody tr {
+		font-weight: 500;
+		font-size: 14px;
+		line-height: 28px;
+		border-radius: 8px;
+		transition: all 0.5s;
+		cursor: pointer;
+
+		&:not(.table--date-row) {
+			&:hover,
+			&.active {
+				background: rgba(71, 125, 179, 0.05);
+			}
+		}
+
+		.has-retry {
+			display: flex;
+			align-items: center;
+			position: relative;
+
+			img {
+				margin-right: 10px;
+				width: 16px;
+				position: absolute;
+				top: 50%;
+				transform: translate(-10px, -50%);
+				opacity: 0.5;
+			}
+
+			.tag {
+				margin-left: 13px;
+			}
+		}
+
+		td {
+			padding: 0;
+
+			& > div {
+				padding: 9px 10px;
+			}
+
+			&.has-long-text {
+				& > div {
+					width: 150px;
+					text-overflow: ellipsis;
+					overflow: hidden;
+					white-space: nowrap;
+				}
+			}
+		}
+
+		button {
+			padding: 1px 8px;
+			font-weight: 500;
+			font-size: 12px;
+
+			&.spin {
+				@keyframes spin {
+					100% {
+						transform: rotate(360deg);
+					}
+				}
+
+				img {
+					animation: spin 5s linear infinite;
+				}
+			}
+
+			img {
+				width: 14px;
+			}
+		}
+	}
+
+	.tag {
+		padding: 1px 8px;
+		background: rgba(115, 122, 145, 0.1);
+		border-radius: 8px;
+		max-width: 75px;
+		font-weight: 500;
+		font-size: 12px;
+		line-height: 28px;
+		text-align: center;
+
+		&--Failure {
+			background: #f7e5e5;
+			color: #ff0505;
+		}
+
+		&--Retry {
+			background: #f8e5b9;
+		}
+
+		&--Success {
+			background: #e5f7e7;
+			color: #1f9c6a;
+		}
+	}
+}
+
+.pagination {
+	display: flex;
+	align-items: center;
+	justify-content: flex-end;
+	margin-top: 50px;
+
+	button {
+		padding: 5px;
+	}
+}

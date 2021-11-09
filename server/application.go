@@ -21,10 +21,11 @@ import (
 )
 
 type applicationHandler struct {
-	appRepo       convoy.ApplicationRepository
-	msgRepo       convoy.MessageRepository
-	groupRepo     convoy.GroupRepository
-	scheduleQueue queue.Queuer
+	appRepo           convoy.ApplicationRepository
+	eventRepo         convoy.EventRepository
+	eventDeliveryRepo convoy.EventDeliveryRepository
+	groupRepo         convoy.GroupRepository
+	eventQueue        queue.Queuer
 }
 
 type pagedResponse struct {
@@ -32,13 +33,18 @@ type pagedResponse struct {
 	Pagination *mongopagination.PaginationData `json:"pagination,omitempty"`
 }
 
-func newApplicationHandler(msgRepo convoy.MessageRepository, appRepo convoy.ApplicationRepository, groupRepo convoy.GroupRepository, scheduleQueue queue.Queuer) *applicationHandler {
+func newApplicationHandler(eventRepo convoy.EventRepository,
+	eventDeliveryRepo convoy.EventDeliveryRepository,
+	appRepo convoy.ApplicationRepository,
+	groupRepo convoy.GroupRepository,
+	eventQueue queue.Queuer) *applicationHandler {
 
 	return &applicationHandler{
-		msgRepo:       msgRepo,
-		appRepo:       appRepo,
-		groupRepo:     groupRepo,
-		scheduleQueue: scheduleQueue,
+		eventRepo:         eventRepo,
+		eventDeliveryRepo: eventDeliveryRepo,
+		appRepo:           appRepo,
+		groupRepo:         groupRepo,
+		eventQueue:        eventQueue,
 	}
 }
 
@@ -113,20 +119,11 @@ func (a *applicationHandler) CreateApp(w http.ResponseWriter, r *http.Request) {
 
 	group := getGroupFromContext(r.Context())
 
-	if util.IsStringEmpty(newApp.Secret) {
-		newApp.Secret, err = util.GenerateSecret()
-		if err != nil {
-			_ = render.Render(w, r, newErrorResponse(fmt.Sprintf("could not generate secret...%v", err.Error()), http.StatusInternalServerError))
-			return
-		}
-	}
-
 	uid := uuid.New().String()
 	app := &convoy.Application{
 		UID:            uid,
 		GroupID:        group.UID,
 		Title:          appName,
-		Secret:         newApp.Secret,
 		SupportEmail:   newApp.SupportEmail,
 		CreatedAt:      primitive.NewDateTimeFromTime(time.Now()),
 		UpdatedAt:      primitive.NewDateTimeFromTime(time.Now()),
@@ -172,10 +169,6 @@ func (a *applicationHandler) UpdateApp(w http.ResponseWriter, r *http.Request) {
 	app := getApplicationFromContext(r.Context())
 
 	app.Title = appName
-	if !util.IsStringEmpty(appUpdate.Secret) {
-		app.Secret = appUpdate.Secret
-	}
-
 	if !util.IsStringEmpty(appUpdate.SupportEmail) {
 		app.SupportEmail = appUpdate.SupportEmail
 	}
@@ -252,10 +245,20 @@ func (a *applicationHandler) CreateAppEndpoint(w http.ResponseWriter, r *http.Re
 		UID:            uuid.New().String(),
 		TargetURL:      e.URL,
 		Description:    e.Description,
+		Events:         e.Events,
+		Secret:         e.Secret,
 		Status:         convoy.ActiveEndpointStatus,
 		CreatedAt:      primitive.NewDateTimeFromTime(time.Now()),
 		UpdatedAt:      primitive.NewDateTimeFromTime(time.Now()),
 		DocumentStatus: convoy.ActiveDocumentStatus,
+	}
+
+	if util.IsStringEmpty(e.Secret) {
+		endpoint.Secret, err = util.GenerateSecret()
+		if err != nil {
+			_ = render.Render(w, r, newErrorResponse(fmt.Sprintf("could not generate secret...%v", err.Error()), http.StatusInternalServerError))
+			return
+		}
 	}
 
 	app.Endpoints = append(app.Endpoints, *endpoint)

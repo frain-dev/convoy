@@ -2,7 +2,7 @@
 FROM node:14 as node-env
 WORKDIR /app
 COPY ./web/ui/dashboard .
-RUN npm install --production
+RUN npm install
 RUN npm run build
 
 FROM golang:1.16 as build-env
@@ -12,7 +12,7 @@ COPY ./go.mod /go/src/frain-dev/convoy
 COPY ./go.sum /go/src/frain-dev/convoy
 COPY ./convoy.json /go/src/frain-dev/convoy
 
-COPY --from=node-env /app/build /go/src/frain-dev/convoy/server/ui/build
+COPY --from=node-env /app/dist /go/src/frain-dev/convoy/server/ui/build
 # Get dependancies - will also be cached if we don't change mod/sum
 RUN go mod download
 RUN go mod verify

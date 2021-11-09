@@ -6,11 +6,11 @@ import (
 
 	"github.com/frain-dev/convoy"
 	"github.com/frain-dev/convoy/config"
-	convoy_queue "github.com/frain-dev/convoy/queue/redis"
+	convoyQueue "github.com/frain-dev/convoy/queue/redis"
 	"github.com/frain-dev/convoy/server"
 	"github.com/frain-dev/convoy/util"
 	"github.com/frain-dev/convoy/worker"
-	convoy_task "github.com/frain-dev/convoy/worker/task"
+	convoyTask "github.com/frain-dev/convoy/worker/task"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 )
@@ -39,20 +39,20 @@ func addServerCommand(a *app) *cobra.Command {
 				return errors.New("please provide the HTTP port in the convoy.json file")
 			}
 
-			srv := server.New(cfg, a.messageRepo, a.applicationRepo, a.groupRepo, a.scheduleQueue)
+			srv := server.New(cfg, a.eventRepo, a.eventDeliveryRepo, a.applicationRepo, a.groupRepo, a.eventQueue)
 
 			// register workers.
-			if queue, ok := a.scheduleQueue.(*convoy_queue.RedisQueue); ok {
+			if queue, ok := a.eventQueue.(*convoyQueue.RedisQueue); ok {
 				worker.NewProducer(queue).Start()
 			}
 
-			if queue, ok := a.deadLetterQueue.(*convoy_queue.RedisQueue); ok {
+			if queue, ok := a.deadLetterQueue.(*convoyQueue.RedisQueue); ok {
 				worker.NewCleaner(queue).Start()
 			}
 
 			// register tasks.
-			convoy_task.CreateTask(convoy.EventProcessor, cfg, convoy_task.ProcessMessages(a.applicationRepo, a.messageRepo, a.groupRepo))
-			convoy_task.CreateTask(convoy.DeadLetterProcessor, cfg, convoy_task.ProcessDeadLetters)
+			convoyTask.CreateTask(convoy.EventProcessor, cfg, convoyTask.ProcessEventDelivery(a.applicationRepo, a.eventDeliveryRepo, a.groupRepo))
+			convoyTask.CreateTask(convoy.DeadLetterProcessor, cfg, convoyTask.ProcessDeadLetters)
 
 			log.Infof("Started convoy server in %s", time.Since(start))
 
