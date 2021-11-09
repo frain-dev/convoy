@@ -16,19 +16,32 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
-func TestApplicationHandler_CreateAppMessage(t *testing.T) {
+func TestApplicationHandler_CreateAppEvent(t *testing.T) {
+
+	var app *applicationHandler
+
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	groupRepo := mocks.NewMockGroupRepository(ctrl)
+	appRepo := mocks.NewMockApplicationRepository(ctrl)
+	eventRepo := mocks.NewMockEventRepository(ctrl)
+	eventDeliveryRepo := mocks.NewMockEventDeliveryRepository(ctrl)
+	eventQueue := mocks.NewMockQueuer(ctrl)
+
+	app = newApplicationHandler(eventRepo, eventDeliveryRepo, appRepo, groupRepo, eventQueue)
 
 	groupId := "1234567890"
 	appId := "12345"
 	msgId := "1122333444456"
 
-	message := &convoy.Message{
+	message := &convoy.Event{
 		UID:   msgId,
 		AppID: appId,
 	}
 
 	type args struct {
-		message *convoy.Message
+		message *convoy.Event
 	}
 
 	tests := []struct {
@@ -83,9 +96,9 @@ func TestApplicationHandler_CreateAppMessage(t *testing.T) {
 				message: message,
 			},
 			dbFn: func(app *applicationHandler) {
-				m, _ := app.msgRepo.(*mocks.MockMessageRepository)
+				m, _ := app.eventRepo.(*mocks.MockEventRepository)
 				m.EXPECT().
-					CreateMessage(gomock.Any(), gomock.Any()).Times(0).
+					CreateEvent(gomock.Any(), gomock.Any()).Times(0).
 					Return(nil)
 
 			},
@@ -136,14 +149,14 @@ func TestApplicationHandler_CreateAppMessage(t *testing.T) {
 						},
 					}, nil)
 
-				o, _ := app.msgRepo.(*mocks.MockMessageRepository)
+				o, _ := app.eventRepo.(*mocks.MockEventRepository)
 				o.EXPECT().
-					CreateMessage(gomock.Any(), gomock.Any()).Times(1).
+					CreateEvent(gomock.Any(), gomock.Any()).Times(1).
 					Return(nil)
 			},
 		},
 		{
-			name:       "valid message",
+			name:       "valid message - no matching endpoints",
 			cfgPath:    "./testdata/Auth_Config/full-convoy.json",
 			method:     http.MethodPost,
 			statusCode: http.StatusCreated,
@@ -167,12 +180,50 @@ func TestApplicationHandler_CreateAppMessage(t *testing.T) {
 						},
 					}, nil)
 
-				m, _ := app.msgRepo.(*mocks.MockMessageRepository)
+				m, _ := app.eventRepo.(*mocks.MockEventRepository)
 				m.EXPECT().
-					CreateMessage(gomock.Any(), gomock.Any()).Times(1).
+					CreateEvent(gomock.Any(), gomock.Any()).Times(1).
 					Return(nil)
 
-				q, _ := app.scheduleQueue.(*mocks.MockQueuer)
+			},
+		},
+		{
+			name:       "valid message - matching endpoints",
+			cfgPath:    "./testdata/Auth_Config/full-convoy.json",
+			method:     http.MethodPost,
+			statusCode: http.StatusCreated,
+			body:       strings.NewReader(`{"app_id": "12345", "event_type": "test.event", "data": { "Hello": "World", "Test": "Data" }}`),
+			args: args{
+				message: message,
+			},
+			dbFn: func(app *applicationHandler) {
+				a, _ := app.appRepo.(*mocks.MockApplicationRepository)
+				a.EXPECT().
+					FindApplicationByID(gomock.Any(), gomock.Any()).Times(1).
+					Return(&convoy.Application{
+						UID:     appId,
+						GroupID: groupId,
+						Title:   "Valid application",
+						Endpoints: []convoy.Endpoint{
+							{
+								TargetURL: "http://localhost",
+								Status:    convoy.ActiveEndpointStatus,
+								Events:    []string{"test.event"},
+							},
+						},
+					}, nil)
+
+				m, _ := app.eventRepo.(*mocks.MockEventRepository)
+				m.EXPECT().
+					CreateEvent(gomock.Any(), gomock.Any()).Times(1).
+					Return(nil)
+
+				ed, _ := app.eventDeliveryRepo.(*mocks.MockEventDeliveryRepository)
+				ed.EXPECT().
+					CreateEventDelivery(gomock.Any(), gomock.Any()).
+					Return(nil)
+
+				q, _ := app.eventQueue.(*mocks.MockQueuer)
 				q.EXPECT().
 					Write(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Times(1).
 					Return(nil)
@@ -183,17 +234,6 @@ func TestApplicationHandler_CreateAppMessage(t *testing.T) {
 
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			var app *applicationHandler
-
-			ctrl := gomock.NewController(t)
-			defer ctrl.Finish()
-
-			groupRepo := mocks.NewMockGroupRepository(ctrl)
-			appRepo := mocks.NewMockApplicationRepository(ctrl)
-			msgRepo := mocks.NewMockMessageRepository(ctrl)
-			scheduleQueue := mocks.NewMockQueuer(ctrl)
-
-			app = newApplicationHandler(msgRepo, appRepo, groupRepo, scheduleQueue)
 
 			err := config.LoadConfig(tc.cfgPath)
 			if err != nil {
@@ -222,13 +262,28 @@ func TestApplicationHandler_CreateAppMessage(t *testing.T) {
 	}
 }
 
-func Test_resendMessage(t *testing.T) {
+func Test_resendEventDelivery(t *testing.T) {
 
-	appId := "12345"
-	msgId := "1122333444456"
+	var app *applicationHandler
+
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	groupRepo := mocks.NewMockGroupRepository(ctrl)
+	appRepo := mocks.NewMockApplicationRepository(ctrl)
+	eventRepo := mocks.NewMockEventRepository(ctrl)
+	eventDeliveryRepo := mocks.NewMockEventDeliveryRepository(ctrl)
+	eventQueue := mocks.NewMockQueuer(ctrl)
+
+	app = newApplicationHandler(eventRepo, eventDeliveryRepo, appRepo, groupRepo, eventQueue)
+
+	appID := "12345"
+	eventID := "1122333444456"
+	eventDeliveryID := "2134453454"
 
 	type args struct {
-		message *convoy.Message
+		event   *convoy.Event
+		message *convoy.EventDelivery
 	}
 
 	tests := []struct {
@@ -238,7 +293,7 @@ func Test_resendMessage(t *testing.T) {
 		statusCode int
 		args       args
 		body       *strings.Reader
-		dbFn       func(*convoy.Message, *applicationHandler)
+		dbFn       func(*convoy.Event, *convoy.EventDelivery, *applicationHandler)
 	}{
 		{
 			name:       "invalid resend - event successful",
@@ -247,20 +302,29 @@ func Test_resendMessage(t *testing.T) {
 			statusCode: http.StatusBadRequest,
 			body:       nil,
 			args: args{
-				message: &convoy.Message{
-					UID:    msgId,
-					AppID:  appId,
-					Status: convoy.SuccessMessageStatus,
+				event: &convoy.Event{
+					UID: eventID,
+				},
+				message: &convoy.EventDelivery{
+					UID:     eventDeliveryID,
+					AppID:   appID,
+					EventID: eventID,
+					Status:  convoy.SuccessEventStatus,
 				},
 			},
-			dbFn: func(msg *convoy.Message, app *applicationHandler) {
-				m, _ := app.msgRepo.(*mocks.MockMessageRepository)
+			dbFn: func(ev *convoy.Event, msg *convoy.EventDelivery, app *applicationHandler) {
+				e, _ := app.eventRepo.(*mocks.MockEventRepository)
+				e.EXPECT().
+					FindEventByID(gomock.Any(), gomock.Any()).Times(1).
+					Return(ev, nil)
+
+				m, _ := app.eventDeliveryRepo.(*mocks.MockEventDeliveryRepository)
 				m.EXPECT().
-					FindMessageByID(gomock.Any(), gomock.Any()).Times(1).
+					FindEventDeliveryByID(gomock.Any(), gomock.Any()).Times(1).
 					Return(msg, nil)
 
 				m.EXPECT().
-					UpdateStatusOfMessages(gomock.Any(), gomock.Any(), gomock.Any()).Times(0).
+					UpdateStatusOfEventDelivery(gomock.Any(), gomock.Any(), gomock.Any()).Times(0).
 					Return(nil)
 
 			},
@@ -272,18 +336,26 @@ func Test_resendMessage(t *testing.T) {
 			statusCode: http.StatusBadRequest,
 			body:       nil,
 			args: args{
-				message: &convoy.Message{
-					UID:    msgId,
-					AppID:  appId,
-					Status: convoy.ProcessingMessageStatus,
+				event: &convoy.Event{
+					UID: eventID,
+				},
+				message: &convoy.EventDelivery{
+					UID:     eventDeliveryID,
+					AppID:   appID,
+					EventID: eventID,
+					Status:  convoy.ProcessingEventStatus,
 				},
 			},
-			dbFn: func(msg *convoy.Message, app *applicationHandler) {
-				m, _ := app.msgRepo.(*mocks.MockMessageRepository)
-				m.EXPECT().
-					FindMessageByID(gomock.Any(), gomock.Any()).Times(1).
-					Return(msg, nil)
+			dbFn: func(ev *convoy.Event, msg *convoy.EventDelivery, app *applicationHandler) {
+				e, _ := app.eventRepo.(*mocks.MockEventRepository)
+				e.EXPECT().
+					FindEventByID(gomock.Any(), gomock.Any()).Times(1).
+					Return(ev, nil)
 
+				m, _ := app.eventDeliveryRepo.(*mocks.MockEventDeliveryRepository)
+				m.EXPECT().
+					FindEventDeliveryByID(gomock.Any(), gomock.Any()).Times(1).
+					Return(msg, nil)
 			},
 		},
 		{
@@ -293,24 +365,28 @@ func Test_resendMessage(t *testing.T) {
 			statusCode: http.StatusBadRequest,
 			body:       nil,
 			args: args{
-				message: &convoy.Message{
-					UID:    msgId,
-					AppID:  appId,
-					Status: convoy.FailureMessageStatus,
-					AppMetadata: &convoy.AppMetadata{
-						Endpoints: []convoy.EndpointMetadata{
-							{
-								TargetURL: "http://localhost",
-								Status:    convoy.PendingEndpointStatus,
-							},
-						},
+				event: &convoy.Event{
+					UID: eventID,
+				},
+				message: &convoy.EventDelivery{
+					UID:     eventDeliveryID,
+					AppID:   appID,
+					EventID: eventID,
+					Status:  convoy.FailureEventStatus,
+					EndpointMetadata: &convoy.EndpointMetadata{
+						TargetURL: "http://localhost",
+						Status:    convoy.PendingEndpointStatus,
 					},
 				},
 			},
-			dbFn: func(msg *convoy.Message, app *applicationHandler) {
-				m, _ := app.msgRepo.(*mocks.MockMessageRepository)
+			dbFn: func(ev *convoy.Event, msg *convoy.EventDelivery, app *applicationHandler) {
+				e, _ := app.eventRepo.(*mocks.MockEventRepository)
+				e.EXPECT().
+					FindEventByID(gomock.Any(), gomock.Any()).Times(1).
+					Return(ev, nil)
+				m, _ := app.eventDeliveryRepo.(*mocks.MockEventDeliveryRepository)
 				m.EXPECT().
-					FindMessageByID(gomock.Any(), gomock.Any()).Times(1).
+					FindEventDeliveryByID(gomock.Any(), gomock.Any()).Times(1).
 					Return(msg, nil)
 
 				a, _ := app.appRepo.(*mocks.MockApplicationRepository)
@@ -329,28 +405,32 @@ func Test_resendMessage(t *testing.T) {
 			statusCode: http.StatusOK,
 			body:       nil,
 			args: args{
-				message: &convoy.Message{
-					UID:    msgId,
-					AppID:  appId,
-					Status: convoy.FailureMessageStatus,
-					AppMetadata: &convoy.AppMetadata{
-						Endpoints: []convoy.EndpointMetadata{
-							{
-								TargetURL: "http://localhost",
-								Status:    convoy.InactiveEndpointStatus,
-							},
-						},
+				event: &convoy.Event{
+					UID: eventID,
+				},
+				message: &convoy.EventDelivery{
+					UID:     eventDeliveryID,
+					AppID:   appID,
+					EventID: eventID,
+					Status:  convoy.FailureEventStatus,
+					EndpointMetadata: &convoy.EndpointMetadata{
+						TargetURL: "http://localhost",
+						Status:    convoy.InactiveEndpointStatus,
 					},
 				},
 			},
-			dbFn: func(msg *convoy.Message, app *applicationHandler) {
-				m, _ := app.msgRepo.(*mocks.MockMessageRepository)
+			dbFn: func(ev *convoy.Event, msg *convoy.EventDelivery, app *applicationHandler) {
+				e, _ := app.eventRepo.(*mocks.MockEventRepository)
+				e.EXPECT().
+					FindEventByID(gomock.Any(), gomock.Any()).Times(1).
+					Return(ev, nil)
+				m, _ := app.eventDeliveryRepo.(*mocks.MockEventDeliveryRepository)
 				m.EXPECT().
-					FindMessageByID(gomock.Any(), gomock.Any()).Times(1).
+					FindEventDeliveryByID(gomock.Any(), gomock.Any()).Times(1).
 					Return(msg, nil)
 
 				m.EXPECT().
-					UpdateStatusOfMessages(gomock.Any(), gomock.Any(), gomock.Any()).Times(1).
+					UpdateStatusOfEventDelivery(gomock.Any(), gomock.Any(), gomock.Any()).Times(1).
 					Return(nil)
 
 				a, _ := app.appRepo.(*mocks.MockApplicationRepository)
@@ -367,7 +447,7 @@ func Test_resendMessage(t *testing.T) {
 					UpdateApplicationEndpointsStatus(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Times(1).
 					Return(nil)
 
-				q, _ := app.scheduleQueue.(*mocks.MockQueuer)
+				q, _ := app.eventQueue.(*mocks.MockQueuer)
 				q.EXPECT().
 					Write(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Times(1).
 					Return(nil)
@@ -380,28 +460,33 @@ func Test_resendMessage(t *testing.T) {
 			statusCode: http.StatusOK,
 			body:       nil,
 			args: args{
-				message: &convoy.Message{
-					UID:    msgId,
-					AppID:  appId,
-					Status: convoy.FailureMessageStatus,
-					AppMetadata: &convoy.AppMetadata{
-						Endpoints: []convoy.EndpointMetadata{
-							{
-								TargetURL: "http://localhost",
-								Status:    convoy.ActiveEndpointStatus,
-							},
-						},
+				event: &convoy.Event{
+					UID: eventID,
+				},
+				message: &convoy.EventDelivery{
+					UID:     eventDeliveryID,
+					AppID:   appID,
+					EventID: eventID,
+					Status:  convoy.FailureEventStatus,
+					EndpointMetadata: &convoy.EndpointMetadata{
+						TargetURL: "http://localhost",
+						Status:    convoy.ActiveEndpointStatus,
 					},
 				},
 			},
-			dbFn: func(msg *convoy.Message, app *applicationHandler) {
-				m, _ := app.msgRepo.(*mocks.MockMessageRepository)
+			dbFn: func(ev *convoy.Event, msg *convoy.EventDelivery, app *applicationHandler) {
+				e, _ := app.eventRepo.(*mocks.MockEventRepository)
+				e.EXPECT().
+					FindEventByID(gomock.Any(), gomock.Any()).Times(1).
+					Return(ev, nil)
+
+				m, _ := app.eventDeliveryRepo.(*mocks.MockEventDeliveryRepository)
 				m.EXPECT().
-					FindMessageByID(gomock.Any(), gomock.Any()).Times(1).
+					FindEventDeliveryByID(gomock.Any(), gomock.Any()).Times(1).
 					Return(msg, nil)
 
 				m.EXPECT().
-					UpdateStatusOfMessages(gomock.Any(), gomock.Any(), gomock.Any()).Times(1).
+					UpdateStatusOfEventDelivery(gomock.Any(), gomock.Any(), gomock.Any()).Times(1).
 					Return(nil)
 
 				a, _ := app.appRepo.(*mocks.MockApplicationRepository)
@@ -415,7 +500,7 @@ func Test_resendMessage(t *testing.T) {
 						nil,
 					)
 
-				q, _ := app.scheduleQueue.(*mocks.MockQueuer)
+				q, _ := app.eventQueue.(*mocks.MockQueuer)
 				q.EXPECT().
 					Write(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Times(1).
 					Return(nil)
@@ -424,19 +509,8 @@ func Test_resendMessage(t *testing.T) {
 	}
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			var app *applicationHandler
 
-			ctrl := gomock.NewController(t)
-			defer ctrl.Finish()
-
-			groupRepo := mocks.NewMockGroupRepository(ctrl)
-			appRepo := mocks.NewMockApplicationRepository(ctrl)
-			msgRepo := mocks.NewMockMessageRepository(ctrl)
-			scheduleQueue := mocks.NewMockQueuer(ctrl)
-
-			app = newApplicationHandler(msgRepo, appRepo, groupRepo, scheduleQueue)
-
-			url := fmt.Sprintf("/api/v1/events/%s/resend", tc.args.message.UID)
+			url := fmt.Sprintf("/api/v1/events/%s/eventdeliveries/%s/resend", tc.args.message.EventID, tc.args.message.UID)
 			req := httptest.NewRequest(tc.method, url, nil)
 			req.SetBasicAuth("test", "test")
 			req.Header.Add("Content-Type", "application/json")
@@ -445,10 +519,10 @@ func Test_resendMessage(t *testing.T) {
 			rctx := chi.NewRouteContext()
 			rctx.URLParams.Add("appID", tc.args.message.AppID)
 
-			req = req.WithContext(context.WithValue(req.Context(), msgCtx, tc.args.message))
+			req = req.WithContext(context.WithValue(req.Context(), eventCtx, tc.args.message))
 
 			if tc.dbFn != nil {
-				tc.dbFn(tc.args.message, app)
+				tc.dbFn(tc.args.event, tc.args.message, app)
 			}
 
 			err := config.LoadConfig(tc.cfgPath)

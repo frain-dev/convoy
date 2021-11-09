@@ -32,32 +32,32 @@ func (e *EndpointError) Delay() time.Duration {
 	return e.delay
 }
 
-func ProcessMessages(appRepo convoy.ApplicationRepository, msgRepo convoy.MessageRepository, orgRepo convoy.GroupRepository) func(*queue.Job) error {
+func ProcessEventDelivery(appRepo convoy.ApplicationRepository, eventDeliveryRepo convoy.EventDeliveryRepository, orgRepo convoy.GroupRepository) func(*queue.Job) error {
 	return func(job *queue.Job) error {
-		Id := job.MsgID
+		Id := job.ID
 
 		// Load message from DB and switch state to prevent concurrent processing.
-		m, err := msgRepo.FindMessageByID(context.Background(), Id)
+		m, err := eventDeliveryRepo.FindEventDeliveryByID(context.Background(), Id)
 
 		if err != nil {
-			log.WithError(err).Errorf("Failed to load message - %s", Id)
+			log.WithError(err).Errorf("Failed to load event - %s", Id)
 			return nil
 		}
 
 		switch m.Status {
-		case convoy.ProcessingMessageStatus,
-			convoy.SuccessMessageStatus:
+		case convoy.ProcessingEventStatus,
+			convoy.SuccessEventStatus:
 			return nil
 		}
 
-		err = msgRepo.UpdateStatusOfMessages(context.Background(), []convoy.Message{*m}, convoy.ProcessingMessageStatus)
+		err = eventDeliveryRepo.UpdateStatusOfEventDelivery(context.Background(), *m, convoy.ProcessingEventStatus)
 		if err != nil {
 			log.WithError(err).Error("failed to update status of messages - ")
 			return nil
 		}
 
-		var attempt convoy.MessageAttempt
-		var secret = m.AppMetadata.Secret
+		var attempt convoy.DeliveryAttempt
+		var secret = m.EndpointMetadata.Secret
 
 		cfg, err := config.Get()
 		if err != nil {
@@ -68,10 +68,8 @@ func ProcessMessages(appRepo convoy.ApplicationRepository, msgRepo convoy.Messag
 
 		var done = true
 
-		// It's an error state for the open core to have more than one endpoints.
-		e := m.AppMetadata.Endpoints[0]
-
-		if e.Sent {
+		e := m.EndpointMetadata
+		if m.Status == convoy.SuccessEventStatus {
 			log.Debugf("endpoint %s already merged with message %s\n", e.TargetURL, m.UID)
 			return nil
 		}
@@ -87,7 +85,7 @@ func ProcessMessages(appRepo convoy.ApplicationRepository, msgRepo convoy.Messag
 			return nil
 		}
 
-		bytes, err := json.Marshal(m.Data)
+		bytes, err := json.Marshal(m.Metadata.Data)
 		if err != nil {
 			log.Errorf("error occurred while parsing json")
 			return &EndpointError{Err: err}
@@ -100,7 +98,7 @@ func ProcessMessages(appRepo convoy.ApplicationRepository, msgRepo convoy.Messag
 			return &EndpointError{Err: err}
 		}
 
-		attemptStatus := convoy.FailureMessageStatus
+		attemptStatus := false
 		start := time.Now()
 
 		resp, err := dispatch.SendRequest(e.TargetURL, string(convoy.HttpPost), bytes, cfg.Signature.Header.String(), hmac)
@@ -123,17 +121,17 @@ func ProcessMessages(appRepo convoy.ApplicationRepository, msgRepo convoy.Messag
 		if err == nil && statusCode >= 200 && statusCode <= 299 {
 			requestLogger.Infof("%s", m.UID)
 			log.Infof("%s sent", m.UID)
-			attemptStatus = convoy.SuccessMessageStatus
+			attemptStatus = true
 			e.Sent = true
 
-			m.Status = convoy.SuccessMessageStatus
+			m.Status = convoy.SuccessEventStatus
 			m.Description = ""
 		} else {
 			requestLogger.Errorf("%s", m.UID)
 			done = false
 			e.Sent = false
 
-			m.Status = convoy.RetryMessageStatus
+			m.Status = convoy.RetryEventStatus
 
 			delay := m.Metadata.IntervalSeconds
 			nextTime := time.Now().Add(time.Duration(delay) * time.Second)
@@ -159,7 +157,7 @@ func ProcessMessages(appRepo convoy.ApplicationRepository, msgRepo convoy.Messag
 
 			s, err := smtp.New(&cfg.SMTP)
 			if err == nil {
-				err = sendEmailNotification(m.AppMetadata, &orgRepo, s, endpointStatus)
+				err = sendEmailNotification(m, &orgRepo, s, endpointStatus)
 				if err != nil {
 					log.WithError(err).Error("Failed to send notification email")
 				}
@@ -176,20 +174,20 @@ func ProcessMessages(appRepo convoy.ApplicationRepository, msgRepo convoy.Messag
 			}
 		}
 
-		attempt = parseAttemptFromResponse(*m, e, resp, attemptStatus)
+		attempt = parseAttemptFromResponse(m, e, resp, attemptStatus)
 
 		m.Metadata.NumTrials++
 
 		if m.Metadata.NumTrials >= m.Metadata.RetryLimit {
 			if done {
-				if m.Status != convoy.SuccessMessageStatus {
+				if m.Status != convoy.SuccessEventStatus {
 					log.Errorln("an anomaly has occurred. retry limit exceeded, fan out is done but event status is not successful")
-					m.Status = convoy.FailureMessageStatus
+					m.Status = convoy.FailureEventStatus
 				}
 			} else {
 				log.Errorf("%s retry limit exceeded ", m.UID)
 				m.Description = "Retry limit exceeded"
-				m.Status = convoy.FailureMessageStatus
+				m.Status = convoy.FailureEventStatus
 			}
 
 			if cfg.DisableEndpoint && dbEndpoint.Status != convoy.PendingEndpointStatus {
@@ -203,7 +201,7 @@ func ProcessMessages(appRepo convoy.ApplicationRepository, msgRepo convoy.Messag
 
 				s, err := smtp.New(&cfg.SMTP)
 				if err == nil {
-					err = sendEmailNotification(m.AppMetadata, &orgRepo, s, endpointStatus)
+					err = sendEmailNotification(m, &orgRepo, s, endpointStatus)
 					if err != nil {
 						log.WithError(err).Error("Failed to send notification email")
 					}
@@ -211,7 +209,7 @@ func ProcessMessages(appRepo convoy.ApplicationRepository, msgRepo convoy.Messag
 			}
 		}
 
-		err = msgRepo.UpdateMessageWithAttempt(context.Background(), *m, attempt)
+		err = eventDeliveryRepo.UpdateEventDeliveryWithAttempt(context.Background(), *m, attempt)
 		if err != nil {
 			log.WithError(err).Error("failed to update message ", m.UID)
 		}
@@ -225,33 +223,30 @@ func ProcessMessages(appRepo convoy.ApplicationRepository, msgRepo convoy.Messag
 	}
 }
 
-func sendEmailNotification(m *convoy.AppMetadata, o *convoy.GroupRepository, s *smtp.SmtpClient, status convoy.EndpointStatus) error {
-	email := m.SupportEmail
+func sendEmailNotification(m *convoy.EventDelivery, o *convoy.GroupRepository, s *smtp.SmtpClient, status convoy.EndpointStatus) error {
+	email := m.AppMetadata.SupportEmail
 
-	org, err := (*o).FetchGroupByID(context.Background(), m.GroupID)
+	group, err := (*o).FetchGroupByID(context.Background(), m.AppMetadata.GroupID)
 	if err != nil {
 		return err
 	}
 
-	logoURL := org.LogoURL
+	logoURL := group.LogoURL
 
-	for i := 0; i < len(m.Endpoints); i++ {
-		endpoint := m.Endpoints[i]
-		err = s.SendEmailNotification(email, logoURL, endpoint.TargetURL, status)
-		if err != nil {
-			return err
-		}
+	err = s.SendEmailNotification(email, logoURL, m.EndpointMetadata.TargetURL, status)
+	if err != nil {
+		return err
 	}
 
 	return nil
 }
 
-func parseAttemptFromResponse(m convoy.Message, e convoy.EndpointMetadata, resp *net.Response, attemptStatus convoy.MessageStatus) convoy.MessageAttempt {
+func parseAttemptFromResponse(m *convoy.EventDelivery, e *convoy.EndpointMetadata, resp *net.Response, attemptStatus bool) convoy.DeliveryAttempt {
 
 	responseHeader := util.ConvertDefaultHeaderToCustomHeader(&resp.ResponseHeader)
 	requestHeader := util.ConvertDefaultHeaderToCustomHeader(&resp.RequestHeader)
 
-	return convoy.MessageAttempt{
+	return convoy.DeliveryAttempt{
 		ID:         primitive.NewObjectID(),
 		UID:        uuid.New().String(),
 		URL:        resp.URL.String(),

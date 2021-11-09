@@ -6,36 +6,38 @@ import (
 	"github.com/go-chi/render"
 )
 
-// GetAppMessageDeliveryAttempt
-// @Summary Get app message delivery attempt
-// @Description This endpoint fetches an app message delivery attempt
-// @Tags Messages
+// GetDeliveryAttempt
+// @Summary Get delivery attempt
+// @Description This endpoint fetches an app event delivery attempt
+// @Tags DeliveryAttempts
 // @Accept  json
 // @Produce  json
 // @Param eventID path string true "event id"
+// @Param eventDeliveryID path string true "event delivery id"
 // @Param deliveryAttemptID path string true "delivery attempt id"
-// @Success 200 {object} serverResponse{data=convoy.MessageAttempt}
+// @Success 200 {object} serverResponse{data=convoy.DeliveryAttempt}
 // @Failure 400,401,500 {object} serverResponse{data=Stub}
 // @Security ApiKeyAuth
-// @Router /events/{eventID}/deliveryattempts/{deliveryAttemptID} [get]
-func (a *applicationHandler) GetAppMessageDeliveryAttempt(w http.ResponseWriter, r *http.Request) {
+// @Router /events/{eventID}/eventdeliveries/{eventDeliveryID}/deliveryattempts/{deliveryAttemptID} [get]
+func (a *applicationHandler) GetDeliveryAttempt(w http.ResponseWriter, r *http.Request) {
 
 	_ = render.Render(w, r, newServerResponse("App event delivery attempt fetched successfully",
 		*getDeliveryAttemptFromContext(r.Context()), http.StatusOK))
 }
 
-// GetAppMessageDeliveryAttempts
-// @Summary Get app message delivery attempts
+// GetDeliveryAttempts
+// @Summary Get delivery attempts
 // @Description This endpoint fetches an app message's delivery attempts
-// @Tags Messages
+// @Tags DeliveryAttempts
 // @Accept  json
 // @Produce  json
 // @Param eventID path string true "event id"
-// @Success 200 {object} serverResponse{data=[]convoy.MessageAttempt}
+// @Param eventDeliveryID path string true "event delivery id"
+// @Success 200 {object} serverResponse{data=[]convoy.DeliveryAttempt}
 // @Failure 400,401,500 {object} serverResponse{data=Stub}
 // @Security ApiKeyAuth
-// @Router /events/{eventID}/deliveryattempts [get]
-func (a *applicationHandler) GetAppMessageDeliveryAttempts(w http.ResponseWriter, r *http.Request) {
+// @Router /events/{eventID}/eventdeliveries/{eventDeliveryID}/deliveryattempts [get]
+func (a *applicationHandler) GetDeliveryAttempts(w http.ResponseWriter, r *http.Request) {
 
 	_ = render.Render(w, r, newServerResponse("App event delivery attempts fetched successfully",
 		*getDeliveryAttemptsFromContext(r.Context()), http.StatusOK))
