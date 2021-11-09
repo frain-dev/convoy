@@ -510,7 +510,7 @@ func Test_resendEventDelivery(t *testing.T) {
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
 
-			url := fmt.Sprintf("/api/v1/events/%s/eventdelivery/%s/resend", tc.args.message.EventID, tc.args.message.UID)
+			url := fmt.Sprintf("/api/v1/events/%s/eventdeliveries/%s/resend", tc.args.message.EventID, tc.args.message.UID)
 			req := httptest.NewRequest(tc.method, url, nil)
 			req.SetBasicAuth("test", "test")
 			req.Header.Add("Content-Type", "application/json")

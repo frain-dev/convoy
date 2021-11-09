@@ -2103,7 +2103,7 @@
 				]
 			}
 		},
-		"/events/{eventID}/eventdelivery": {
+		"/events/{eventID}/eventdeliveries": {
 			"get": {
 				"description": "This endpoint fetch event deliveries.",
 				"parameters": [
@@ -2233,134 +2233,7 @@
 				]
 			}
 		},
-		"/events/{eventID}/eventdelivery/resend": {
-			"put": {
-				"description": "This endpoint resends an app event",
-				"parameters": [
-					{
-						"description": "event id",
-						"in": "path",
-						"name": "eventID",
-						"required": true,
-						"schema": {
-							"type": "string"
-						}
-					}
-				],
-				"responses": {
-					"200": {
-						"content": {
-							"application/json": {
-								"schema": {
-									"allOf": [
-										{
-											"$ref": "#/components/schemas/server.serverResponse"
-										},
-										{
-											"properties": {
-												"data": {
-													"allOf": [
-														{
-															"$ref": "#/components/schemas/convoy.Event"
-														},
-														{
-															"properties": {
-																"data": {
-																	"$ref": "#/components/schemas/server.Stub"
-																}
-															},
-															"type": "object"
-														}
-													]
-												}
-											},
-											"type": "object"
-										}
-									]
-								}
-							}
-						},
-						"description": "OK"
-					},
-					"400": {
-						"content": {
-							"application/json": {
-								"schema": {
-									"allOf": [
-										{
-											"$ref": "#/components/schemas/server.serverResponse"
-										},
-										{
-											"properties": {
-												"data": {
-													"$ref": "#/components/schemas/server.Stub"
-												}
-											},
-											"type": "object"
-										}
-									]
-								}
-							}
-						},
-						"description": "Bad Request"
-					},
-					"401": {
-						"content": {
-							"application/json": {
-								"schema": {
-									"allOf": [
-										{
-											"$ref": "#/components/schemas/server.serverResponse"
-										},
-										{
-											"properties": {
-												"data": {
-													"$ref": "#/components/schemas/server.Stub"
-												}
-											},
-											"type": "object"
-										}
-									]
-								}
-							}
-						},
-						"description": "Unauthorized"
-					},
-					"500": {
-						"content": {
-							"application/json": {
-								"schema": {
-									"allOf": [
-										{
-											"$ref": "#/components/schemas/server.serverResponse"
-										},
-										{
-											"properties": {
-												"data": {
-													"$ref": "#/components/schemas/server.Stub"
-												}
-											},
-											"type": "object"
-										}
-									]
-								}
-							}
-						},
-						"description": "Internal Server Error"
-					}
-				},
-				"security": [
-					{
-						"ApiKeyAuth": []
-					}
-				],
-				"summary": "Resend an app event",
-				"tags": [
-					"Events"
-				]
-			}
-		},
-		"/events/{eventID}/eventdelivery/{eventDeliveryID}": {
+		"/events/{eventID}/eventdeliveries/{eventDeliveryID}": {
 			"get": {
 				"description": "This endpoint fetches an event delivery.",
 				"parameters": [
@@ -2496,7 +2369,7 @@
 				]
 			}
 		},
-		"/events/{eventID}/eventdelivery/{eventDeliveryID}/deliveryattempts": {
+		"/events/{eventID}/eventdeliveries/{eventDeliveryID}/deliveryattempts": {
 			"get": {
 				"description": "This endpoint fetches an app message's delivery attempts",
 				"parameters": [
@@ -2623,7 +2496,7 @@
 				]
 			}
 		},
-		"/events/{eventID}/eventdelivery/{eventDeliveryID}/deliveryattempts/{deliveryAttemptID}": {
+		"/events/{eventID}/eventdeliveries/{eventDeliveryID}/deliveryattempts/{deliveryAttemptID}": {
 			"get": {
 				"description": "This endpoint fetches an app event delivery attempt",
 				"parameters": [
@@ -2753,6 +2626,133 @@
 				"summary": "Get delivery attempt",
 				"tags": [
 					"DeliveryAttempts"
+				]
+			}
+		},
+		"/events/{eventID}/eventdeliveries/{eventDeliveryID}/resend": {
+			"put": {
+				"description": "This endpoint resends an app event",
+				"parameters": [
+					{
+						"description": "event id",
+						"in": "path",
+						"name": "eventID",
+						"required": true,
+						"schema": {
+							"type": "string"
+						}
+					}
+				],
+				"responses": {
+					"200": {
+						"content": {
+							"application/json": {
+								"schema": {
+									"allOf": [
+										{
+											"$ref": "#/components/schemas/server.serverResponse"
+										},
+										{
+											"properties": {
+												"data": {
+													"allOf": [
+														{
+															"$ref": "#/components/schemas/convoy.Event"
+														},
+														{
+															"properties": {
+																"data": {
+																	"$ref": "#/components/schemas/server.Stub"
+																}
+															},
+															"type": "object"
+														}
+													]
+												}
+											},
+											"type": "object"
+										}
+									]
+								}
+							}
+						},
+						"description": "OK"
+					},
+					"400": {
+						"content": {
+							"application/json": {
+								"schema": {
+									"allOf": [
+										{
+											"$ref": "#/components/schemas/server.serverResponse"
+										},
+										{
+											"properties": {
+												"data": {
+													"$ref": "#/components/schemas/server.Stub"
+												}
+											},
+											"type": "object"
+										}
+									]
+								}
+							}
+						},
+						"description": "Bad Request"
+					},
+					"401": {
+						"content": {
+							"application/json": {
+								"schema": {
+									"allOf": [
+										{
+											"$ref": "#/components/schemas/server.serverResponse"
+										},
+										{
+											"properties": {
+												"data": {
+													"$ref": "#/components/schemas/server.Stub"
+												}
+											},
+											"type": "object"
+										}
+									]
+								}
+							}
+						},
+						"description": "Unauthorized"
+					},
+					"500": {
+						"content": {
+							"application/json": {
+								"schema": {
+									"allOf": [
+										{
+											"$ref": "#/components/schemas/server.serverResponse"
+										},
+										{
+											"properties": {
+												"data": {
+													"$ref": "#/components/schemas/server.Stub"
+												}
+											},
+											"type": "object"
+										}
+									]
+								}
+							}
+						},
+						"description": "Internal Server Error"
+					}
+				},
+				"security": [
+					{
+						"ApiKeyAuth": []
+					}
+				],
+				"summary": "Resend an app event",
+				"tags": [
+					"Events"
 				]
 			}
 		},

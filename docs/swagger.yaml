@@ -1095,7 +1095,7 @@ paths:
       summary: Get app event
       tags:
       - Events
-  /events/{eventID}/eventdelivery:
+  /events/{eventID}/eventdeliveries:
     get:
       consumes:
       - application/json
@@ -1157,7 +1157,7 @@ paths:
       summary: Get event deliveries
       tags:
       - Events
-  /events/{eventID}/eventdelivery/{eventDeliveryID}:
+  /events/{eventID}/eventdeliveries/{eventDeliveryID}:
     get:
       consumes:
       - application/json
@@ -1222,7 +1222,7 @@ paths:
       summary: Get event delivery
       tags:
       - Events
-  /events/{eventID}/eventdelivery/{eventDeliveryID}/deliveryattempts:
+  /events/{eventID}/eventdeliveries/{eventDeliveryID}/deliveryattempts:
     get:
       consumes:
       - application/json
@@ -1284,7 +1284,7 @@ paths:
       summary: Get delivery attempts
       tags:
       - DeliveryAttempts
-  /events/{eventID}/eventdelivery/{eventDeliveryID}/deliveryattempts/{deliveryAttemptID}:
+  /events/{eventID}/eventdeliveries/{eventDeliveryID}/deliveryattempts/{deliveryAttemptID}:
     get:
       consumes:
       - application/json
@@ -1349,7 +1349,7 @@ paths:
       summary: Get delivery attempt
       tags:
       - DeliveryAttempts
-  /events/{eventID}/eventdelivery/resend:
+  /events/{eventID}/eventdeliveries/{eventDeliveryID}/resend:
     put:
       consumes:
       - application/json

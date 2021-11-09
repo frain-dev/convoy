@@ -185,7 +185,7 @@ func (a *applicationHandler) GetAppEvent(w http.ResponseWriter, r *http.Request)
 // @Success 200 {object} serverResponse{data=convoy.Event{data=Stub}}
 // @Failure 400,401,500 {object} serverResponse{data=Stub}
 // @Security ApiKeyAuth
-// @Router /events/{eventID}/eventdelivery/{eventDeliveryID} [get]
+// @Router /events/{eventID}/eventdeliveries/{eventDeliveryID} [get]
 func (a *applicationHandler) GetEventDelivery(w http.ResponseWriter, r *http.Request) {
 
 	_ = render.Render(w, r, newServerResponse("Event Delivery fetched successfully",
@@ -202,7 +202,7 @@ func (a *applicationHandler) GetEventDelivery(w http.ResponseWriter, r *http.Req
 // @Success 200 {object} serverResponse{data=convoy.Event{data=Stub}}
 // @Failure 400,401,500 {object} serverResponse{data=Stub}
 // @Security ApiKeyAuth
-// @Router /events/{eventID}/eventdelivery/resend [put]
+// @Router /events/{eventID}/eventdeliveries/{eventDeliveryID}/resend [put]
 func (a *applicationHandler) ResendEventDelivery(w http.ResponseWriter, r *http.Request) {
 
 	eventDelivery := getEventDeliveryFromContext(r.Context())
@@ -311,7 +311,7 @@ func (a *applicationHandler) GetEventsPaged(w http.ResponseWriter, r *http.Reque
 // @Success 200 {object} serverResponse{data=[]convoy.EventDelivery{data=Stub}}
 // @Failure 400,401,500 {object} serverResponse{data=Stub}
 // @Security ApiKeyAuth
-// @Router /events/{eventID}/eventdelivery [get]
+// @Router /events/{eventID}/eventdeliveries [get]
 func (a *applicationHandler) GetEventDeliveries(w http.ResponseWriter, r *http.Request) {
 	eventID := chi.URLParam(r, "eventID")
 

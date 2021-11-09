@@ -116,7 +116,7 @@ func buildRoutes(app *applicationHandler) http.Handler {
 
 					eventSubRouter.Get("/", app.GetAppEvent)
 
-					eventSubRouter.Route("/eventdelivery", func(eventDeliveryRouter chi.Router) {
+					eventSubRouter.Route("/eventdeliveries", func(eventDeliveryRouter chi.Router) {
 						eventDeliveryRouter.Get("/", app.GetEventDeliveries)
 
 						eventDeliveryRouter.Route("/{eventDeliveryID}", func(eventDeliverySubRouter chi.Router) {
@@ -198,7 +198,7 @@ func buildRoutes(app *applicationHandler) http.Handler {
 
 				eventSubRouter.Get("/", app.GetAppEvent)
 
-				eventSubRouter.Route("/eventdelivery", func(eventDeliveryRouter chi.Router) {
+				eventSubRouter.Route("/eventdeliveries", func(eventDeliveryRouter chi.Router) {
 					eventDeliveryRouter.With(pagination).Get("/", app.GetEventDeliveries)
 
 					eventDeliveryRouter.Route("/{eventDeliveryID}", func(eventDeliverySubRouter chi.Router) {

@@ -1181,7 +1181,7 @@ paths:
       summary: Get app event
       tags:
       - Events
-  /events/{eventID}/eventdelivery:
+  /events/{eventID}/eventdeliveries:
     get:
       description: This endpoint fetch event deliveries.
       parameters:
@@ -1248,7 +1248,7 @@ paths:
       summary: Get event deliveries
       tags:
       - Events
-  /events/{eventID}/eventdelivery/{eventDeliveryID}:
+  /events/{eventID}/eventdeliveries/{eventDeliveryID}:
     get:
       description: This endpoint fetches an event delivery.
       parameters:
@@ -1319,7 +1319,7 @@ paths:
       summary: Get event delivery
       tags:
       - Events
-  /events/{eventID}/eventdelivery/{eventDeliveryID}/deliveryattempts:
+  /events/{eventID}/eventdeliveries/{eventDeliveryID}/deliveryattempts:
     get:
       description: This endpoint fetches an app message's delivery attempts
       parameters:
@@ -1387,7 +1387,7 @@ paths:
       summary: Get delivery attempts
       tags:
       - DeliveryAttempts
-  /events/{eventID}/eventdelivery/{eventDeliveryID}/deliveryattempts/{deliveryAttemptID}:
+  /events/{eventID}/eventdeliveries/{eventDeliveryID}/deliveryattempts/{deliveryAttemptID}:
     get:
       description: This endpoint fetches an app event delivery attempt
       parameters:
@@ -1459,7 +1459,7 @@ paths:
       summary: Get delivery attempt
       tags:
       - DeliveryAttempts
-  /events/{eventID}/eventdelivery/resend:
+  /events/{eventID}/eventdeliveries/{eventDeliveryID}/resend:
     put:
       description: This endpoint resends an app event
       parameters:
