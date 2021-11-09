@@ -1,0 +1,69 @@
+// Material design themeing
+@use '~@angular/material' as mat;
+@include mat.core();
+
+$convoy-primary-palette: (
+	50: #e6f2f9,
+	100: #c2e0f1,
+	200: #9fcde8,
+	300: #80b9de,
+	400: #6baad8,
+	500: #5b9cd2,
+	600: #528fc5,
+	700: #477db3,
+	800: #3f6da1,
+	900: #315081,
+	contrast: (
+		50: rgba(black, 0.87),
+		100: rgba(black, 0.87),
+		200: rgba(black, 0.87),
+		300: rgba(black, 0.87),
+		400: rgba(black, 0.87),
+		500: rgba(black, 0.87),
+		600: rgba(black, 0.87),
+		700: rgba(black, 0.87),
+		800: rgba(black, 0.87),
+		900: rgba(black, 0.87)
+	)
+);
+
+$convoy-ng-primary: mat.define-palette($convoy-primary-palette);
+$convoy-ng-accent: mat.define-palette($convoy-primary-palette);
+$convoy-ng-warn: mat.define-palette(mat.$red-palette);
+$convoy-ng-theme: mat.define-light-theme(
+	(
+		color: (
+			primary: $convoy-ng-primary,
+			accent: $convoy-ng-accent,
+			warn: $convoy-ng-warn
+		)
+	)
+);
+
+@include mat.all-component-themes($convoy-ng-theme);
+
+// global styles import
+@import './scss/reset';
+@import './scss/button';
+@import './scss/card';
+@import './scss/form';
+@import './scss/table';
+@import './scss/tabs';
+@import './scss/prism';
+@import './scss/prism';
+@import './scss/list';
+@import './scss/material-design-reset';
+@import '~prismjs/plugins/toolbar/prism-toolbar.css';
+
+// global variables
+:root {
+	--color-black: #1e1147;
+	--color-black-rgb: 30, 17, 71;
+	--primary-color: #477db3;
+	--primary-color-rgb: 71, 125, 179;
+	--primary-color-inverse: #ffffff;
+	--success-color: #1f9c6a;
+	--danger-color: #ee0005;
+	--grey-color: #1e1147;
+	--grey-color-rgb: 30, 17, 71;
+}
