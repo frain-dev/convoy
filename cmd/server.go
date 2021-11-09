@@ -4,6 +4,10 @@ import (
 	"errors"
 	"time"
 
+	"github.com/frain-dev/convoy/auth/realm/noop"
+
+	"github.com/frain-dev/convoy/auth/realm_chain"
+
 	"github.com/frain-dev/convoy"
 	"github.com/frain-dev/convoy/config"
 	convoyQueue "github.com/frain-dev/convoy/queue/redis"
@@ -33,6 +37,27 @@ func addServerCommand(a *app) *cobra.Command {
 			if util.IsStringEmpty(string(cfg.Signature.Header)) {
 				cfg.Signature.Header = config.DefaultSignatureHeader
 				log.Warnf("signature header is blank. setting default %s", config.DefaultSignatureHeader)
+			}
+
+			if cfg.Auth.RequireAuth {
+				err = realm_chain.Init(cfg.Auth.RealmOptions...)
+				log.WithError(err).Fatal("failed to initialize realm chain")
+			} else {
+				log.Warnf("using noop realm for authentication: all requests will be authenticated with super_user role")
+				err = realm_chain.Init()
+				if err != nil {
+					log.WithError(err).Fatal("failed to initialize realm chain")
+				}
+
+				rc, err := realm_chain.Get()
+				if err != nil {
+					log.WithError(err).Fatal("failed to register noop realm in realm chain")
+				}
+
+				err = rc.RegisterRealm(noop.NewNoopRealm())
+				if err != nil {
+					log.WithError(err).Fatal("failed to register noop realm in realm chain")
+				}
 			}
 
 			if cfg.Server.HTTP.Port <= 0 {

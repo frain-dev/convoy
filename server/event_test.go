@@ -8,8 +8,6 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/frain-dev/convoy/auth/realm_chain"
-
 	"github.com/frain-dev/convoy"
 	"github.com/frain-dev/convoy/config"
 	"github.com/frain-dev/convoy/mocks"
@@ -236,12 +234,11 @@ func TestApplicationHandler_CreateAppEvent(t *testing.T) {
 
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			realm_chain.Reset()
-
 			err := config.LoadConfig(tc.cfgPath)
 			if err != nil {
 				t.Errorf("Failed to load config file: %v", err)
 			}
+			initRealmChain(t)
 
 			req := httptest.NewRequest(tc.method, "/api/v1/events", tc.body)
 			req.SetBasicAuth("test", "test")
@@ -512,8 +509,6 @@ func Test_resendEventDelivery(t *testing.T) {
 	}
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			realm_chain.Reset()
-
 			url := fmt.Sprintf("/api/v1/events/%s/eventdeliveries/%s/resend", tc.args.message.EventID, tc.args.message.UID)
 			req := httptest.NewRequest(tc.method, url, nil)
 			req.SetBasicAuth("test", "test")
@@ -533,6 +528,7 @@ func Test_resendEventDelivery(t *testing.T) {
 			if err != nil {
 				t.Errorf("Failed to load config file: %v", err)
 			}
+			initRealmChain(t)
 
 			router := buildRoutes(app)
 

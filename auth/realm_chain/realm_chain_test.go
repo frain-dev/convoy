@@ -12,20 +12,37 @@ import (
 )
 
 func TestGet(t *testing.T) {
-	require.Equal(t, rc, Get())
+	rr := newRealmChain()
+	rr.chain["abc"] = &file.FileRealm{}
+
+	realmChainSingleton.Store(rr)
+
+	rc, err := Get()
+	if err != nil {
+		require.Nil(t, err)
+		return
+	}
+
+	require.Equal(t, rr, rc)
 }
 
 func TestRealmChain_Authenticate(t *testing.T) {
-	rc = newRealmChain()
+	realmChainSingleton.Store(newRealmChain())
 
 	fr, err := file.NewFileRealm("./testdata/file_realm_1.json")
 	if err != nil {
 		require.Nil(t, err)
 		return
 	}
-
 	fr.Name = "file_realm_1"
-	err = Get().RegisterRealm(fr)
+
+	rc, err := Get()
+	if err != nil {
+		require.Nil(t, err)
+		return
+	}
+
+	err = rc.RegisterRealm(fr)
 	if err != nil {
 		require.Nil(t, err)
 		return
@@ -93,7 +110,13 @@ func TestRealmChain_Authenticate(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := Get().Authenticate(tt.args.cred)
+			rc, err := Get()
+			if err != nil {
+				require.Nil(t, err)
+				return
+			}
+
+			got, err := rc.Authenticate(tt.args.cred)
 
 			if tt.wantErr {
 				require.Equal(t, tt.wantErrMsg, err.Error())
@@ -107,7 +130,7 @@ func TestRealmChain_Authenticate(t *testing.T) {
 }
 
 func TestRealmChain_RegisterRealm(t *testing.T) {
-	rc = newRealmChain()
+	realmChainSingleton.Store(newRealmChain())
 
 	fr, err := file.NewFileRealm("./testdata/file_realm_1.json")
 	if err != nil {
@@ -154,8 +177,13 @@ func TestRealmChain_RegisterRealm(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			err := Get().RegisterRealm(tt.args.r)
+			rc, err := Get()
+			if err != nil {
+				require.Nil(t, err)
+				return
+			}
 
+			err = rc.RegisterRealm(tt.args.r)
 			if tt.wantErr {
 				require.Equal(t, tt.wantErrMsg, err.Error())
 				return

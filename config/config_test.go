@@ -3,8 +3,6 @@ package config
 import (
 	"os"
 	"testing"
-
-	"github.com/frain-dev/convoy/auth/realm_chain"
 )
 
 func Test_EnvironmentTakesPrecedence(t *testing.T) {
@@ -35,8 +33,6 @@ func Test_EnvironmentTakesPrecedence(t *testing.T) {
 	}
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			realm_chain.Reset()
-
 			// Setup.
 			os.Setenv(tc.key, tc.envConfig)
 			defer os.Unsetenv(tc.key)

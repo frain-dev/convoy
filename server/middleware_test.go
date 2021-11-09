@@ -6,8 +6,6 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	"github.com/frain-dev/convoy/auth/realm_chain"
-
 	"github.com/frain-dev/convoy/config"
 
 	"github.com/golang/mock/gomock"
@@ -55,12 +53,11 @@ func TestRequirePermission_Basic(t *testing.T) {
 
 	for _, tc := range tt {
 		t.Run(tc.name, func(t *testing.T) {
-			realm_chain.Reset()
-
 			err := config.LoadConfig(tc.cfgPath)
 			if err != nil {
 				t.Errorf("Failed to load config file: %v", err)
 			}
+			initRealmChain(t)
 
 			ctrl := gomock.NewController(t)
 			defer ctrl.Finish()
@@ -124,14 +121,11 @@ func TestRequirePermission_Noop(t *testing.T) {
 
 	for _, tc := range tt {
 		t.Run(tc.name, func(t *testing.T) {
-			realm_chain.Reset()
-			t.Cleanup(func() {
-				realm_chain.Reset()
-			})
 			err := config.LoadConfig(tc.cfgPath)
 			if err != nil {
 				t.Errorf("Failed to load config file: %v", err)
 			}
+			initRealmChain(t)
 
 			ctrl := gomock.NewController(t)
 			defer ctrl.Finish()

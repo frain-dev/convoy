@@ -1,6 +1,13 @@
 {
 	"auth": {
-		"type": "none"
+		"require_auth": true,
+		"realms": [
+			{
+				"type": "file_realm",
+				"name": "file_realm1",
+				"path": "./testdata/Auth_Config/basic_file_realm.json"
+			}
+		]
 	},
 	"strategy": {
 		"type": "default",

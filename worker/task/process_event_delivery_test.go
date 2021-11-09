@@ -477,8 +477,6 @@ func TestProcessEventDelivery(t *testing.T) {
 
 	for _, tc := range tt {
 		t.Run(tc.name, func(t *testing.T) {
-			realm_chain.Reset()
-
 			ctrl := gomock.NewController(t)
 			defer ctrl.Finish()
 
@@ -489,6 +487,16 @@ func TestProcessEventDelivery(t *testing.T) {
 			err := config.LoadConfig(tc.cfgPath)
 			if err != nil {
 				t.Errorf("Failed to load config file: %v", err)
+			}
+
+			cfg, err := config.Get()
+			if err != nil {
+				t.Errorf("failed to get config: %v", err)
+			}
+
+			err = realm_chain.Init(cfg.Auth.RealmOptions...)
+			if err != nil {
+				t.Errorf("failed to initialize realm chain : %v", err)
 			}
 
 			if tc.nFn != nil {

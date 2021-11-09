@@ -11,6 +11,9 @@ import (
 	"testing"
 	"time"
 
+	"github.com/frain-dev/convoy/auth/realm/noop"
+	log "github.com/sirupsen/logrus"
+
 	"github.com/frain-dev/convoy/auth/realm_chain"
 
 	"github.com/frain-dev/convoy/config"
@@ -30,6 +33,36 @@ func verifyMatch(t *testing.T, w httptest.ResponseRecorder) {
 		goldie.WithDiffEngine(goldie.ColoredDiff),
 	)
 	g.Assert(t, t.Name(), w.Body.Bytes())
+}
+
+func initRealmChain(t *testing.T) {
+	cfg, err := config.Get()
+	if err != nil {
+		t.Errorf("failed to get config: %v", err)
+	}
+
+	if cfg.Auth.RequireAuth {
+		fmt.Println(cfg.Auth.RealmOptions)
+		err = realm_chain.Init(cfg.Auth.RealmOptions...)
+		if err != nil {
+			t.Errorf("failed to initialize realm chain : %v", err)
+		}
+	} else {
+		err = realm_chain.Init()
+		if err != nil {
+			log.WithError(err).Fatal("failed to initialize realm chain")
+		}
+
+		rc, err := realm_chain.Get()
+		if err != nil {
+			log.WithError(err).Fatal("failed to register noop realm in realm chain")
+		}
+
+		err = rc.RegisterRealm(noop.NewNoopRealm())
+		if err != nil {
+			log.WithError(err).Fatal("failed to register noop realm in realm chain")
+		}
+	}
 }
 
 func stripTimestamp(t *testing.T, obj string, b *bytes.Buffer) *bytes.Buffer {
@@ -149,8 +182,6 @@ func TestApplicationHandler_GetApp(t *testing.T) {
 
 	for _, tc := range tt {
 		t.Run(tc.name, func(t *testing.T) {
-			realm_chain.Reset()
-
 			// Arrange
 			url := fmt.Sprintf("/api/v1/applications/%s", tc.id)
 			req := httptest.NewRequest(tc.method, url, nil)
@@ -170,6 +201,8 @@ func TestApplicationHandler_GetApp(t *testing.T) {
 			if err != nil {
 				t.Errorf("Failed to load config file: %v", err)
 			}
+
+			initRealmChain(t)
 
 			router := buildRoutes(app)
 
@@ -236,8 +269,6 @@ func TestApplicationHandler_GetApps(t *testing.T) {
 
 	for _, tc := range tt {
 		t.Run(tc.name, func(t *testing.T) {
-			realm_chain.Reset()
-
 			// Arrange
 			req := httptest.NewRequest(tc.method, "/api/v1/applications", nil)
 			req.SetBasicAuth("test", "test")
@@ -258,6 +289,8 @@ func TestApplicationHandler_GetApps(t *testing.T) {
 			if err != nil {
 				t.Errorf("Failed to load config file: %v", err)
 			}
+
+			initRealmChain(t)
 
 			router := buildRoutes(app)
 
@@ -339,8 +372,6 @@ func TestApplicationHandler_CreateApp(t *testing.T) {
 
 	for _, tc := range tt {
 		t.Run(tc.name, func(t *testing.T) {
-			realm_chain.Reset()
-
 			var app *applicationHandler
 
 			ctrl := gomock.NewController(t)
@@ -369,6 +400,8 @@ func TestApplicationHandler_CreateApp(t *testing.T) {
 			if err != nil {
 				t.Errorf("Failed to load config file: %v", err)
 			}
+
+			initRealmChain(t)
 
 			router := buildRoutes(app)
 
@@ -516,8 +549,6 @@ func TestApplicationHandler_UpdateApp(t *testing.T) {
 
 	for _, tc := range tt {
 		t.Run(tc.name, func(t *testing.T) {
-			realm_chain.Reset()
-
 			// Arrange
 			var app *applicationHandler
 
@@ -557,6 +588,8 @@ func TestApplicationHandler_UpdateApp(t *testing.T) {
 			if err != nil {
 				t.Errorf("Failed to load config file: %v", err)
 			}
+
+			initRealmChain(t)
 
 			router := buildRoutes(app)
 
@@ -630,8 +663,6 @@ func TestApplicationHandler_CreateAppEndpoint(t *testing.T) {
 
 	for _, tc := range tt {
 		t.Run(tc.name, func(t *testing.T) {
-			realm_chain.Reset()
-
 			url := fmt.Sprintf("/api/v1/applications/%s/endpoints", tc.appId)
 			req := httptest.NewRequest(tc.method, url, tc.body)
 			req.SetBasicAuth("test", "test")
@@ -646,6 +677,8 @@ func TestApplicationHandler_CreateAppEndpoint(t *testing.T) {
 			if err != nil {
 				t.Errorf("Failed to load config file: %v", err)
 			}
+
+			initRealmChain(t)
 
 			router := buildRoutes(app)
 
@@ -737,8 +770,6 @@ func TestApplicationHandler_UpdateAppEndpoint(t *testing.T) {
 
 	for _, tc := range tt {
 		t.Run(tc.name, func(t *testing.T) {
-			realm_chain.Reset()
-
 			// Arrange
 			var app *applicationHandler
 
@@ -780,6 +811,8 @@ func TestApplicationHandler_UpdateAppEndpoint(t *testing.T) {
 			if err != nil {
 				t.Errorf("Failed to load config file: %v", err)
 			}
+
+			initRealmChain(t)
 
 			router := buildRoutes(app)
 

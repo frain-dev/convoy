@@ -27,7 +27,13 @@ func requirePermission() func(next http.Handler) http.Handler {
 				return
 			}
 
-			rc := realm_chain.Get()
+			rc, err := realm_chain.Get()
+			if err != nil {
+				log.WithError(err).Error("failed to get realm chain")
+				_ = render.Render(w, r, newErrorResponse("internal server error", http.StatusInternalServerError))
+				return
+			}
+
 			authUser, err := rc.Authenticate(creds)
 			if err != nil {
 				log.WithError(err).Error("failed to authenticate")

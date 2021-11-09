@@ -6,8 +6,6 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/frain-dev/convoy/auth/realm_chain"
-
 	"github.com/frain-dev/convoy/config"
 	"github.com/frain-dev/convoy/mocks"
 	"github.com/golang/mock/gomock"
@@ -61,12 +59,12 @@ func Test_login(t *testing.T) {
 	}
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			realm_chain.Reset()
-
 			err := config.LoadConfig("./testdata/Auth_Config/none-convoy.json")
 			if err != nil {
 				t.Errorf("Failed to load config file: %v", err)
 			}
+
+			initRealmChain(t)
 
 			request := httptest.NewRequest(tc.method, "/v1/auth/login", tc.body)
 			responseRecorder := httptest.NewRecorder()
@@ -109,12 +107,11 @@ func Test_fetchAllConfigDetails(t *testing.T) {
 	}
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			realm_chain.Reset()
-
 			err := config.LoadConfig("./testdata/Auth_Config/none-convoy.json")
 			if err != nil {
 				t.Errorf("Failed to load config file: %v", err)
 			}
+			initRealmChain(t)
 
 			request := httptest.NewRequest(tc.method, "/ui/dashboard/1/config", nil)
 			responseRecorder := httptest.NewRecorder()

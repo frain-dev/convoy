@@ -8,8 +8,6 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/frain-dev/convoy/auth/realm_chain"
-
 	"github.com/frain-dev/convoy"
 	"github.com/frain-dev/convoy/config"
 	"github.com/frain-dev/convoy/mocks"
@@ -70,8 +68,6 @@ func TestApplicationHandler_GetGroup(t *testing.T) {
 
 	for _, tc := range tt {
 		t.Run(tc.name, func(t *testing.T) {
-			realm_chain.Reset()
-
 			var app *applicationHandler
 
 			ctrl := gomock.NewController(t)
@@ -106,6 +102,7 @@ func TestApplicationHandler_GetGroup(t *testing.T) {
 			if err != nil {
 				t.Errorf("Failed to load config file: %v", err)
 			}
+			initRealmChain(t)
 
 			router := buildRoutes(app)
 
@@ -153,8 +150,6 @@ func TestApplicationHandler_CreateGroup(t *testing.T) {
 
 	for _, tc := range tt {
 		t.Run(tc.name, func(t *testing.T) {
-			realm_chain.Reset()
-
 			var app *applicationHandler
 
 			ctrl := gomock.NewController(t)
@@ -183,6 +178,7 @@ func TestApplicationHandler_CreateGroup(t *testing.T) {
 			if err != nil {
 				t.Errorf("Failed to load config file: %v", err)
 			}
+			initRealmChain(t)
 
 			router := buildRoutes(app)
 
@@ -241,8 +237,6 @@ func TestApplicationHandler_UpdateGroup(t *testing.T) {
 
 	for _, tc := range tt {
 		t.Run(tc.name, func(t *testing.T) {
-			realm_chain.Reset()
-
 			var app *applicationHandler
 
 			ctrl := gomock.NewController(t)
@@ -277,6 +271,7 @@ func TestApplicationHandler_UpdateGroup(t *testing.T) {
 			if err != nil {
 				t.Errorf("Failed to load config file: %v", err)
 			}
+			initRealmChain(t)
 
 			router := buildRoutes(app)
 
@@ -328,8 +323,6 @@ func TestApplicationHandler_GetGroups(t *testing.T) {
 
 	for _, tc := range tt {
 		t.Run(tc.name, func(t *testing.T) {
-			realm_chain.Reset()
-
 			var app *applicationHandler
 
 			ctrl := gomock.NewController(t)
@@ -356,6 +349,7 @@ func TestApplicationHandler_GetGroups(t *testing.T) {
 			if err != nil {
 				t.Errorf("Failed to load config file: %v", err)
 			}
+			initRealmChain(t)
 
 			router := buildRoutes(app)
 
