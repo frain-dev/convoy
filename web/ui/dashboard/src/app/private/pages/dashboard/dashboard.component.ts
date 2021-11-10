@@ -6,7 +6,7 @@ import { GeneralService } from 'src/app/services/general/general.service';
 import { APP } from 'src/app/models/app.model';
 import { EVENT } from 'src/app/models/event.model';
 import { Router } from '@angular/router';
-import { FormBuilder, FormControl, FormGroup } from '@angular/forms';
+import { FormBuilder, FormGroup } from '@angular/forms';
 
 @Component({
 	selector: 'app-dashboard',
@@ -63,12 +63,17 @@ export class DashboardComponent implements OnInit {
 		startDate: [{ value: '', disabled: true }],
 		endDate: [{ value: '', disabled: true }]
 	});
+	selectedEventsFromEventsTable: string[] = [];
 
 	constructor(private httpService: HttpService, private generalService: GeneralService, private router: Router, private formBuilder: FormBuilder) {}
 
 	async ngOnInit() {
-		await Promise.all([this.getOrganisationDetails(), this.fetchDashboardData(), this.getEvents(), this.getApps()]);
+		await this.initDashboard();
 		this.toggleActiveTab('events');
+	}
+
+	async initDashboard() {
+		await Promise.all([this.getOrganisationDetails(), this.fetchDashboardData(), this.getEvents(), this.getApps()]);
 	}
 
 	toggleShowDropdown() {}
@@ -304,5 +309,13 @@ export class DashboardComponent implements OnInit {
 		this.eventApp = '';
 		this.eventsFilterDateRange.patchValue({ startDate: '', endDate: '' });
 		this.getEvents();
+	}
+
+	checkAllCheckboxes(event: any) {
+		const checkboxes = document.querySelectorAll('#events-table tbody input[type="checkbox"]');
+		checkboxes.forEach((checkbox: any) => {
+			this.selectedEventsFromEventsTable.push(checkbox.value);
+			checkbox.checked = event.target.checked;
+		});
 	}
 }

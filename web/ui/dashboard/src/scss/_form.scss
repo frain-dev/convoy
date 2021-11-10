@@ -90,6 +90,23 @@ datalist {
 	appearance: none;
 }
 
+input[type='checkbox'] {
+	padding: 7px;
+	position: relative;
+
+	&::after {
+		content: url('../assets/img/checkbox-icon.svg');
+		position: absolute;
+		top: 50%;
+		left: 50%;
+		transform: translate(-50%, -50%);
+	}
+
+	&:checked {
+		background: var(--primary-color);
+	}
+}
+
 .filter {
 	display: flex;
 	align-items: center;

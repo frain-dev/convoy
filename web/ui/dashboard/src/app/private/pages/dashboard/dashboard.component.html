@@ -157,10 +157,23 @@
 
 				<div class="table">
 					<div *ngIf="displayedEvents.length > 0 && activeTab === 'events'">
-						<table>
+						<div class="table--actions button-container left">
+							<button class="primary clear has-icon icon-left hover" (click)="initDashboard()">
+								<img src="../../../../assets/img/refresh-icon-2.svg" alt="refresh icon" />
+								Refresh
+							</button>
+							<button class="primary clear has-icon icon-left hover" disabled>
+								<img src="../../../../assets/img/retry-icon.svg" alt="retry icon" />
+								Bulk Retry
+							</button>
+						</div>
+						<table id="events-table">
 							<thead>
 								<tr class="table--head">
-									<th scope="col">Status</th>
+									<th scope="col" class="checkbox">
+										<div class="checkbox"><input type="checkbox" name="eventTable" id="eventTable" (change)="checkAllCheckboxes($event)" /></div>
+										Status
+									</th>
 									<th scope="col">Event Type</th>
 									<th scope="col">Attempts</th>
 									<th scope="col">Next Retry</th>
@@ -169,7 +182,7 @@
 								</tr>
 							</thead>
 							<tbody>
-								<ng-container *ngFor="let eventGroup of displayedEvents">
+								<ng-container *ngFor="let eventGroup of displayedEvents; let i = index">
 									<tr class="table--date-row">
 										<td>
 											<div>{{ eventGroup.date }}</div>
@@ -187,8 +200,9 @@
 										(click)="detailsItem = event; getDelieveryAttempts(event.uid)"
 									>
 										<td>
-											<div class="has-retry">
+											<div class="checkbox has-retry">
 												<img *ngIf="event.metadata.num_trials > event.metadata.retry_limit" src="/assets/img/retry-icon.svg" alt="retry icon" title="manually retried" />
+												<input type="checkbox" [name]="'event' + index" id="event" [value]="event.uid" />
 												<div [class]="'tag tag--' + event.status">{{ event.status }}</div>
 											</div>
 										</td>
@@ -306,22 +320,22 @@
 				<h3>Details</h3>
 				<ul class="dashboard--logs--details--meta">
 					<ng-container *ngIf="activeTab === 'events'">
-						<li>
-							<div class="label">IP Address</div>
-							<div class="value color">{{ eventDeliveryAtempt?.ip_address || '-' }}</div>
+						<li class="list-item-inline">
+							<div class="list-item-inline--label">IP Address</div>
+							<div class="list-item-inline--item color">{{ eventDeliveryAtempt?.ip_address || '-' }}</div>
 						</li>
-						<li>
-							<div class="label">HTTP Status</div>
-							<div class="value">{{ eventDeliveryAtempt?.http_status || '-' }}</div>
+						<li class="list-item-inline">
+							<div class="list-item-inline--label">HTTP Status</div>
+							<div class="list-item-inline--item">{{ eventDeliveryAtempt?.http_status || '-' }}</div>
 						</li>
-						<li>
-							<div class="label">API Version</div>
-							<div class="value color">{{ eventDeliveryAtempt?.api_version || '-' }}</div>
+						<li class="list-item-inline">
+							<div class="list-item-inline--label">API Version</div>
+							<div class="list-item-inline--item color">{{ eventDeliveryAtempt?.api_version || '-' }}</div>
 						</li>
 					</ng-container>
-					<li *ngIf="activeTab === 'apps'">
-						<div class="label">Support Email</div>
-						<div class="value">{{ detailsItem.support_email || '-' }}</div>
+					<li class="list-item-inline" *ngIf="activeTab === 'apps'">
+						<div class="list-item-inline--label">Support Email</div>
+						<div class="list-item-inline--item">{{ detailsItem.support_email || '-' }}</div>
 					</li>
 				</ul>
 
