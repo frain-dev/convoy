@@ -14,6 +14,15 @@
 		border-top: 1px solid #eee;
 		border-bottom: 1px solid #eee;
 	}
+
+	.checkbox {
+		display: flex;
+		align-items: center;
+
+		input {
+			margin: 0 20px;
+		}
+	}
 }
 
 table {
@@ -48,18 +57,14 @@ table {
 			display: flex;
 			align-items: center;
 			position: relative;
+			width: 100%;
 
 			img {
-				margin-right: 10px;
-				width: 16px;
+				width: 12px;
 				position: absolute;
 				top: 50%;
-				transform: translate(-10px, -50%);
+				transform: translate(-3px, -50%);
 				opacity: 0.5;
-			}
-
-			.tag {
-				margin-left: 13px;
 			}
 		}
 
@@ -137,5 +142,20 @@ table {
 
 	button {
 		padding: 5px;
+	}
+}
+
+.empty-state {
+	text-align: center;
+	max-width: 200px;
+	margin: auto;
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	justify-content: center;
+
+	p {
+		margin-top: 20px;
+		font-size: 14px;
 	}
 }
