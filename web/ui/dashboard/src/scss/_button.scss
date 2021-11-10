@@ -10,6 +10,7 @@ button {
 
 	&.primary {
 		--btn-color: var(--primary-color);
+		--btn-color-hover: rgba(var(--primary-color-rgb), 0.03);
 		--btn-text-color: var(--primary-color-inverse);
 		background-color: var(--btn-color);
 		color: var(--btn-text-color);
@@ -29,6 +30,7 @@ button {
 
 	&.danger {
 		--btn-color: var(--danger-color);
+		--btn-color-hover: rgba(var(--danger-color-rgb), 0.03);
 		--btn-text-color: var(--primary-color-inverse);
 		background-color: var(--btn-color);
 		color: var(--btn-text-color);
@@ -64,6 +66,14 @@ button {
 		color: var(--btn-color);
 		background: transparent;
 		padding: 0;
+	}
+
+	&.hover {
+		&:hover {
+			background-color: var(--btn-color-hover);
+			color: var(--btn-text-color);
+			transition: all 0.3s ease;
+		}
 	}
 
 	&.full {
@@ -110,8 +120,16 @@ button {
 		margin-top: 40px;
 	}
 
+	&.margin-bottom {
+		margin-bottom: 40px;
+	}
+
 	&.center {
 		justify-content: center;
+	}
+
+	&.left {
+		justify-content: flex-start;
 	}
 }
 
@@ -120,9 +138,10 @@ button {
 	text-decoration: underline;
 }
 
-.disabled {
+.disabled,
+button:disabled {
 	cursor: not-allowed;
-	opacity: 0.5;
+	opacity: 0.4;
 	text-decoration: none;
 	pointer-events: none;
 	cursor: not-allowed;

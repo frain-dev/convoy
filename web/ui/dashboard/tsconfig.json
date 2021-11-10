@@ -16,7 +16,10 @@
 		"importHelpers": true,
 		"target": "es2017",
 		"module": "es2020",
-		"lib": ["es2018", "dom", "ES2021.String"]
+		"lib": ["es2018", "dom", "ES2021.String"],
+		"paths": {
+			"tslib": ["path/to/node_modules/tslib/tslib.d.ts"]
+		}
 	},
 	"angularCompilerOptions": {
 		"enableI18nLegacyMessageIdFormat": false,
