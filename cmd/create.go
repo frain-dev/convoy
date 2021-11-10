@@ -8,7 +8,6 @@ import (
 	"os"
 	"time"
 
-	"github.com/frain-dev/convoy/config"
 	log "github.com/sirupsen/logrus"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 
@@ -143,7 +142,6 @@ func createApplicationCommand(a *app) *cobra.Command {
 				UID:            uuid.New().String(),
 				GroupID:        group.UID,
 				Title:          appName,
-				Secret:         appSecret,
 				CreatedAt:      primitive.NewDateTimeFromTime(time.Now()),
 				UpdatedAt:      primitive.NewDateTimeFromTime(time.Now()),
 				Endpoints:      []convoy.Endpoint{},
@@ -156,9 +154,9 @@ func createApplicationCommand(a *app) *cobra.Command {
 			}
 
 			table := tablewriter.NewWriter(os.Stdout)
-			table.SetHeader([]string{"ID", "Name", "Group", "Secret", "Created at"})
+			table.SetHeader([]string{"ID", "Name", "Group", "Created at"})
 
-			table.Append([]string{app.UID, app.Title, group.Name, app.Secret, app.CreatedAt.Time().String()})
+			table.Append([]string{app.UID, app.Title, group.Name, app.CreatedAt.Time().String()})
 			table.Render()
 
 			return nil
@@ -280,21 +278,6 @@ func createMessageCommand(a *app) *cobra.Command {
 				return err
 			}
 
-			cfg, err := config.Get()
-			if err != nil {
-				log.Errorln("error fetching config - ", err)
-				return err
-			}
-
-			var intervalSeconds uint64
-			var retryLimit uint64
-			if cfg.Strategy.Type == config.DefaultStrategyProvider {
-				intervalSeconds = cfg.Strategy.Default.IntervalSeconds
-				retryLimit = cfg.Strategy.Default.RetryLimit
-			} else {
-				return errors.New("retry strategy not defined in configuration")
-			}
-
 			if len(appData.Endpoints) == 0 {
 				return errors.New("app has no configured endpoints")
 			}
@@ -304,39 +287,26 @@ func createMessageCommand(a *app) *cobra.Command {
 				return errors.New("app has no enabled endpoints")
 			}
 
-			log.Println("Message ", string(d))
-			msg := &convoy.Message{
+			log.Println("Event ", string(d))
+			msg := &convoy.Event{
 				UID:       uuid.New().String(),
 				AppID:     appData.UID,
 				EventType: convoy.EventType(eventType),
 				Data:      d,
-				Metadata: &convoy.MessageMetadata{
-					Strategy:        cfg.Strategy.Type,
-					NumTrials:       0,
-					IntervalSeconds: intervalSeconds,
-					RetryLimit:      retryLimit,
-					NextSendTime:    primitive.NewDateTimeFromTime(time.Now()),
-				},
-				AppMetadata: &convoy.AppMetadata{
-					GroupID:   appData.GroupID,
-					Secret:    appData.Secret,
-					Endpoints: activeEndpoints,
-				},
-				MessageAttempts: make([]convoy.MessageAttempt, 0),
-				CreatedAt:       primitive.NewDateTimeFromTime(time.Now()),
-				UpdatedAt:       primitive.NewDateTimeFromTime(time.Now()),
-				Status:          convoy.ScheduledMessageStatus,
-				DocumentStatus:  convoy.ActiveDocumentStatus,
+
+				CreatedAt:      primitive.NewDateTimeFromTime(time.Now()),
+				UpdatedAt:      primitive.NewDateTimeFromTime(time.Now()),
+				DocumentStatus: convoy.ActiveDocumentStatus,
 			}
 
 			ctx, cancelFn = getCtx()
 			defer cancelFn()
 
-			if err := a.messageRepo.CreateMessage(ctx, msg); err != nil {
-				return fmt.Errorf("could not create message... %w", err)
+			if err := a.eventRepo.CreateEvent(ctx, msg); err != nil {
+				return fmt.Errorf("could not create event... %w", err)
 			}
 
-			fmt.Println("Your message has been created. And will be sent to available endpoints")
+			fmt.Println("Your event has been created. And will be sent to available endpoints")
 			return nil
 		},
 	}

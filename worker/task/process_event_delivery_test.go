@@ -13,63 +13,48 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestProcessMessages(t *testing.T) {
+func TestProcessEventDelivery(t *testing.T) {
 	tt := []struct {
 		name          string
 		cfgPath       string
 		expectedError error
-		msg           *convoy.Message
-		dbFn          func(*mocks.MockApplicationRepository, *mocks.MockGroupRepository, *mocks.MockMessageRepository)
+		msg           *convoy.EventDelivery
+		dbFn          func(*mocks.MockApplicationRepository, *mocks.MockGroupRepository, *mocks.MockEventDeliveryRepository)
 		nFn           func() func()
 	}{
 		{
-			name:          "Message already sent.",
+			name:          "Event already sent.",
 			cfgPath:       "./testdata/Config/basic-convoy.json",
 			expectedError: nil,
-			msg: &convoy.Message{
+			msg: &convoy.EventDelivery{
 				UID: "",
 			},
-			dbFn: func(a *mocks.MockApplicationRepository, o *mocks.MockGroupRepository, m *mocks.MockMessageRepository) {
+			dbFn: func(a *mocks.MockApplicationRepository, o *mocks.MockGroupRepository, m *mocks.MockEventDeliveryRepository) {
 				m.EXPECT().
-					FindMessageByID(gomock.Any(), gomock.Any()).
-					Return(&convoy.Message{
-						AppMetadata: &convoy.AppMetadata{
-							Endpoints: []convoy.EndpointMetadata{
-								{
-									Sent: true,
-								},
-							},
-						},
+					FindEventDeliveryByID(gomock.Any(), gomock.Any()).
+					Return(&convoy.EventDelivery{
+						Status: convoy.SuccessEventStatus,
 					}, nil).Times(1)
-
-				m.EXPECT().
-					UpdateStatusOfMessages(gomock.Any(), gomock.Any(), gomock.Any()).
-					Return(nil).Times(1)
 			},
 		},
 		{
 			name:          "Endpoint is inactive",
 			cfgPath:       "./testdata/Config/basic-convoy.json",
 			expectedError: nil,
-			msg: &convoy.Message{
+			msg: &convoy.EventDelivery{
 				UID: "",
 			},
-			dbFn: func(a *mocks.MockApplicationRepository, o *mocks.MockGroupRepository, m *mocks.MockMessageRepository) {
+			dbFn: func(a *mocks.MockApplicationRepository, o *mocks.MockGroupRepository, m *mocks.MockEventDeliveryRepository) {
 				m.EXPECT().
-					FindMessageByID(gomock.Any(), gomock.Any()).
-					Return(&convoy.Message{
-						AppMetadata: &convoy.AppMetadata{
-							Endpoints: []convoy.EndpointMetadata{
-								{
-									Status: convoy.InactiveEndpointStatus,
-									Sent:   false,
-								},
-							},
+					FindEventDeliveryByID(gomock.Any(), gomock.Any()).
+					Return(&convoy.EventDelivery{
+						EndpointMetadata: &convoy.EndpointMetadata{
+							Status: convoy.InactiveEndpointStatus,
 						},
 					}, nil).Times(1)
 
 				m.EXPECT().
-					UpdateStatusOfMessages(gomock.Any(), gomock.Any(), gomock.Any()).
+					UpdateStatusOfEventDelivery(gomock.Any(), gomock.Any(), gomock.Any()).
 					Return(nil).Times(1)
 
 				a.EXPECT().
@@ -83,35 +68,31 @@ func TestProcessMessages(t *testing.T) {
 			name:          "Endpoint does not respond with 2xx",
 			cfgPath:       "./testdata/Config/basic-convoy.json",
 			expectedError: &EndpointError{Err: ErrDeliveryAttemptFailed, delay: 20 * time.Second},
-			msg: &convoy.Message{
+			msg: &convoy.EventDelivery{
 				UID: "",
 			},
-			dbFn: func(a *mocks.MockApplicationRepository, o *mocks.MockGroupRepository, m *mocks.MockMessageRepository) {
+			dbFn: func(a *mocks.MockApplicationRepository, o *mocks.MockGroupRepository, m *mocks.MockEventDeliveryRepository) {
 				m.EXPECT().
-					FindMessageByID(gomock.Any(), gomock.Any()).
-					Return(&convoy.Message{
-						Data:   []byte(`{"event": "invoice.completed"}`),
-						Status: convoy.ScheduledMessageStatus,
-						Metadata: &convoy.MessageMetadata{
+					FindEventDeliveryByID(gomock.Any(), gomock.Any()).
+					Return(&convoy.EventDelivery{
+						Metadata: &convoy.Metadata{
+							Data:            []byte(`{"event": "invoice.completed"}`),
 							NumTrials:       0,
 							RetryLimit:      3,
 							IntervalSeconds: 20,
 						},
-						AppMetadata: &convoy.AppMetadata{
-							Secret: "aaaaaaaaaaaaaaa",
-							Endpoints: []convoy.EndpointMetadata{
-								{
-									Status:    convoy.ActiveEndpointStatus,
-									Sent:      false,
-									TargetURL: "https://google.com",
-									UID:       "1234567890",
-								},
-							},
+						EndpointMetadata: &convoy.EndpointMetadata{
+							Secret:    "aaaaaaaaaaaaaaa",
+							Status:    convoy.ActiveEndpointStatus,
+							Sent:      false,
+							TargetURL: "https://google.com",
+							UID:       "1234567890",
 						},
+						Status: convoy.ScheduledEventStatus,
 					}, nil).Times(1)
 
 				m.EXPECT().
-					UpdateStatusOfMessages(gomock.Any(), gomock.Any(), gomock.Any()).
+					UpdateStatusOfEventDelivery(gomock.Any(), gomock.Any(), gomock.Any()).
 					Return(nil).Times(1)
 
 				a.EXPECT().
@@ -121,7 +102,7 @@ func TestProcessMessages(t *testing.T) {
 					}, nil).Times(1)
 
 				m.EXPECT().
-					UpdateMessageWithAttempt(gomock.Any(), gomock.Any(), gomock.Any()).
+					UpdateEventDeliveryWithAttempt(gomock.Any(), gomock.Any(), gomock.Any()).
 					Return(nil).Times(1)
 			},
 			nFn: func() func() {
@@ -139,35 +120,31 @@ func TestProcessMessages(t *testing.T) {
 			name:          "Max retries reached - do not disable endpoint - failed",
 			cfgPath:       "./testdata/Config/basic-convoy.json",
 			expectedError: nil,
-			msg: &convoy.Message{
+			msg: &convoy.EventDelivery{
 				UID: "",
 			},
-			dbFn: func(a *mocks.MockApplicationRepository, o *mocks.MockGroupRepository, m *mocks.MockMessageRepository) {
+			dbFn: func(a *mocks.MockApplicationRepository, o *mocks.MockGroupRepository, m *mocks.MockEventDeliveryRepository) {
 				m.EXPECT().
-					FindMessageByID(gomock.Any(), gomock.Any()).
-					Return(&convoy.Message{
-						Data:   []byte(`{"event": "invoice.completed"}`),
-						Status: convoy.ScheduledMessageStatus,
-						Metadata: &convoy.MessageMetadata{
+					FindEventDeliveryByID(gomock.Any(), gomock.Any()).
+					Return(&convoy.EventDelivery{
+						Metadata: &convoy.Metadata{
+							Data:            []byte(`{"event": "invoice.completed"}`),
 							NumTrials:       2,
 							RetryLimit:      3,
 							IntervalSeconds: 20,
 						},
-						AppMetadata: &convoy.AppMetadata{
-							Secret: "aaaaaaaaaaaaaaa",
-							Endpoints: []convoy.EndpointMetadata{
-								{
-									Status:    convoy.ActiveEndpointStatus,
-									Sent:      false,
-									TargetURL: "https://google.com",
-									UID:       "1234567890",
-								},
-							},
+						EndpointMetadata: &convoy.EndpointMetadata{
+							Secret:    "aaaaaaaaaaaaaaa",
+							Status:    convoy.ActiveEndpointStatus,
+							Sent:      false,
+							TargetURL: "https://google.com",
+							UID:       "1234567890",
 						},
+						Status: convoy.ScheduledEventStatus,
 					}, nil).Times(1)
 
 				m.EXPECT().
-					UpdateStatusOfMessages(gomock.Any(), gomock.Any(), gomock.Any()).
+					UpdateStatusOfEventDelivery(gomock.Any(), gomock.Any(), gomock.Any()).
 					Return(nil).Times(1)
 
 				a.EXPECT().
@@ -177,7 +154,7 @@ func TestProcessMessages(t *testing.T) {
 					}, nil).Times(1)
 
 				m.EXPECT().
-					UpdateMessageWithAttempt(gomock.Any(), gomock.Any(), gomock.Any()).
+					UpdateEventDeliveryWithAttempt(gomock.Any(), gomock.Any(), gomock.Any()).
 					Return(nil).Times(1)
 			},
 			nFn: func() func() {
@@ -195,35 +172,34 @@ func TestProcessMessages(t *testing.T) {
 			name:          "Max retries reached - disable endpoint - failed",
 			cfgPath:       "./testdata/Config/basic-convoy-disable-endpoint.json",
 			expectedError: nil,
-			msg: &convoy.Message{
+			msg: &convoy.EventDelivery{
 				UID: "",
 			},
-			dbFn: func(a *mocks.MockApplicationRepository, o *mocks.MockGroupRepository, m *mocks.MockMessageRepository) {
+			dbFn: func(a *mocks.MockApplicationRepository, o *mocks.MockGroupRepository, m *mocks.MockEventDeliveryRepository) {
 				m.EXPECT().
-					FindMessageByID(gomock.Any(), gomock.Any()).
-					Return(&convoy.Message{
-						Data:   []byte(`{"event": "invoice.completed"}`),
-						Status: convoy.ScheduledMessageStatus,
-						Metadata: &convoy.MessageMetadata{
+					FindEventDeliveryByID(gomock.Any(), gomock.Any()).
+					Return(&convoy.EventDelivery{
+						AppMetadata: &convoy.AppMetadata{
+							SupportEmail: "aaaaaaaaaaaaaaa",
+						},
+						Metadata: &convoy.Metadata{
+							Data:            []byte(`{"event": "invoice.completed"}`),
 							NumTrials:       2,
 							RetryLimit:      3,
 							IntervalSeconds: 20,
 						},
-						AppMetadata: &convoy.AppMetadata{
-							Secret: "aaaaaaaaaaaaaaa",
-							Endpoints: []convoy.EndpointMetadata{
-								{
-									Status:    convoy.ActiveEndpointStatus,
-									Sent:      false,
-									TargetURL: "https://google.com",
-									UID:       "1234567890",
-								},
-							},
+						EndpointMetadata: &convoy.EndpointMetadata{
+							Secret:    "aaaaaaaaaaaaaaa",
+							Status:    convoy.ActiveEndpointStatus,
+							Sent:      false,
+							TargetURL: "https://google.com",
+							UID:       "1234567890",
 						},
+						Status: convoy.ScheduledEventStatus,
 					}, nil).Times(1)
 
 				m.EXPECT().
-					UpdateStatusOfMessages(gomock.Any(), gomock.Any(), gomock.Any()).
+					UpdateStatusOfEventDelivery(gomock.Any(), gomock.Any(), gomock.Any()).
 					Return(nil).Times(1)
 
 				a.EXPECT().
@@ -243,7 +219,7 @@ func TestProcessMessages(t *testing.T) {
 					Return(nil).Times(1)
 
 				m.EXPECT().
-					UpdateMessageWithAttempt(gomock.Any(), gomock.Any(), gomock.Any()).
+					UpdateEventDeliveryWithAttempt(gomock.Any(), gomock.Any(), gomock.Any()).
 					Return(nil).Times(1)
 			},
 			nFn: func() func() {
@@ -261,35 +237,31 @@ func TestProcessMessages(t *testing.T) {
 			name:          "Manual retry - no disable endpoint - failed",
 			cfgPath:       "./testdata/Config/basic-convoy.json",
 			expectedError: nil,
-			msg: &convoy.Message{
+			msg: &convoy.EventDelivery{
 				UID: "",
 			},
-			dbFn: func(a *mocks.MockApplicationRepository, o *mocks.MockGroupRepository, m *mocks.MockMessageRepository) {
+			dbFn: func(a *mocks.MockApplicationRepository, o *mocks.MockGroupRepository, m *mocks.MockEventDeliveryRepository) {
 				m.EXPECT().
-					FindMessageByID(gomock.Any(), gomock.Any()).
-					Return(&convoy.Message{
-						Data:   []byte(`{"event": "invoice.completed"}`),
-						Status: convoy.ScheduledMessageStatus,
-						Metadata: &convoy.MessageMetadata{
+					FindEventDeliveryByID(gomock.Any(), gomock.Any()).
+					Return(&convoy.EventDelivery{
+						Metadata: &convoy.Metadata{
+							Data:            []byte(`{"event": "invoice.completed"}`),
 							NumTrials:       3,
 							RetryLimit:      3,
 							IntervalSeconds: 20,
 						},
-						AppMetadata: &convoy.AppMetadata{
-							Secret: "aaaaaaaaaaaaaaa",
-							Endpoints: []convoy.EndpointMetadata{
-								{
-									Status:    convoy.ActiveEndpointStatus,
-									Sent:      false,
-									TargetURL: "https://google.com",
-									UID:       "1234567890",
-								},
-							},
+						EndpointMetadata: &convoy.EndpointMetadata{
+							Secret:    "aaaaaaaaaaaaaaa",
+							Status:    convoy.ActiveEndpointStatus,
+							Sent:      false,
+							TargetURL: "https://google.com",
+							UID:       "1234567890",
 						},
+						Status: convoy.ScheduledEventStatus,
 					}, nil).Times(1)
 
 				m.EXPECT().
-					UpdateStatusOfMessages(gomock.Any(), gomock.Any(), gomock.Any()).
+					UpdateStatusOfEventDelivery(gomock.Any(), gomock.Any(), gomock.Any()).
 					Return(nil).Times(1)
 
 				a.EXPECT().
@@ -300,7 +272,7 @@ func TestProcessMessages(t *testing.T) {
 					}, nil).Times(1)
 
 				m.EXPECT().
-					UpdateMessageWithAttempt(gomock.Any(), gomock.Any(), gomock.Any()).
+					UpdateEventDeliveryWithAttempt(gomock.Any(), gomock.Any(), gomock.Any()).
 					Return(nil).Times(1)
 			},
 			nFn: func() func() {
@@ -318,35 +290,34 @@ func TestProcessMessages(t *testing.T) {
 			name:          "Manual retry - disable endpoint - failed",
 			cfgPath:       "./testdata/Config/basic-convoy-disable-endpoint.json",
 			expectedError: nil,
-			msg: &convoy.Message{
+			msg: &convoy.EventDelivery{
 				UID: "",
 			},
-			dbFn: func(a *mocks.MockApplicationRepository, o *mocks.MockGroupRepository, m *mocks.MockMessageRepository) {
+			dbFn: func(a *mocks.MockApplicationRepository, o *mocks.MockGroupRepository, m *mocks.MockEventDeliveryRepository) {
 				m.EXPECT().
-					FindMessageByID(gomock.Any(), gomock.Any()).
-					Return(&convoy.Message{
-						Data:   []byte(`{"event": "invoice.completed"}`),
-						Status: convoy.ScheduledMessageStatus,
-						Metadata: &convoy.MessageMetadata{
+					FindEventDeliveryByID(gomock.Any(), gomock.Any()).
+					Return(&convoy.EventDelivery{
+						AppMetadata: &convoy.AppMetadata{
+							SupportEmail: "aaaaaaaaaaaaaaa",
+						},
+						Metadata: &convoy.Metadata{
+							Data:            []byte(`{"event": "invoice.completed"}`),
 							NumTrials:       3,
 							RetryLimit:      3,
 							IntervalSeconds: 20,
 						},
-						AppMetadata: &convoy.AppMetadata{
-							Secret: "aaaaaaaaaaaaaaa",
-							Endpoints: []convoy.EndpointMetadata{
-								{
-									Status:    convoy.ActiveEndpointStatus,
-									Sent:      false,
-									TargetURL: "https://google.com",
-									UID:       "1234567890",
-								},
-							},
+						EndpointMetadata: &convoy.EndpointMetadata{
+							Secret:    "aaaaaaaaaaaaaaa",
+							Status:    convoy.ActiveEndpointStatus,
+							Sent:      false,
+							TargetURL: "https://google.com",
+							UID:       "1234567890",
 						},
+						Status: convoy.ScheduledEventStatus,
 					}, nil).Times(1)
 
 				m.EXPECT().
-					UpdateStatusOfMessages(gomock.Any(), gomock.Any(), gomock.Any()).
+					UpdateStatusOfEventDelivery(gomock.Any(), gomock.Any(), gomock.Any()).
 					Return(nil).Times(1)
 
 				a.EXPECT().
@@ -367,7 +338,7 @@ func TestProcessMessages(t *testing.T) {
 					Return(nil).Times(1)
 
 				m.EXPECT().
-					UpdateMessageWithAttempt(gomock.Any(), gomock.Any(), gomock.Any()).
+					UpdateEventDeliveryWithAttempt(gomock.Any(), gomock.Any(), gomock.Any()).
 					Return(nil).Times(1)
 			},
 			nFn: func() func() {
@@ -385,35 +356,31 @@ func TestProcessMessages(t *testing.T) {
 			name:          "Manual retry - no disable endpoint - success",
 			cfgPath:       "./testdata/Config/basic-convoy.json",
 			expectedError: nil,
-			msg: &convoy.Message{
+			msg: &convoy.EventDelivery{
 				UID: "",
 			},
-			dbFn: func(a *mocks.MockApplicationRepository, o *mocks.MockGroupRepository, m *mocks.MockMessageRepository) {
+			dbFn: func(a *mocks.MockApplicationRepository, o *mocks.MockGroupRepository, m *mocks.MockEventDeliveryRepository) {
 				m.EXPECT().
-					FindMessageByID(gomock.Any(), gomock.Any()).
-					Return(&convoy.Message{
-						Data:   []byte(`{"event": "invoice.completed"}`),
-						Status: convoy.ScheduledMessageStatus,
-						Metadata: &convoy.MessageMetadata{
+					FindEventDeliveryByID(gomock.Any(), gomock.Any()).
+					Return(&convoy.EventDelivery{
+						Status: convoy.ScheduledEventStatus,
+						Metadata: &convoy.Metadata{
+							Data:            []byte(`{"event": "invoice.completed"}`),
 							NumTrials:       4,
 							RetryLimit:      3,
 							IntervalSeconds: 20,
 						},
-						AppMetadata: &convoy.AppMetadata{
-							Secret: "aaaaaaaaaaaaaaa",
-							Endpoints: []convoy.EndpointMetadata{
-								{
-									Status:    convoy.ActiveEndpointStatus,
-									Sent:      false,
-									TargetURL: "https://google.com",
-									UID:       "1234567890",
-								},
-							},
+						EndpointMetadata: &convoy.EndpointMetadata{
+							Secret:    "aaaaaaaaaaaaaaa",
+							Status:    convoy.ActiveEndpointStatus,
+							Sent:      false,
+							TargetURL: "https://google.com",
+							UID:       "1234567890",
 						},
 					}, nil).Times(1)
 
 				m.EXPECT().
-					UpdateStatusOfMessages(gomock.Any(), gomock.Any(), gomock.Any()).
+					UpdateStatusOfEventDelivery(gomock.Any(), gomock.Any(), gomock.Any()).
 					Return(nil).Times(1)
 
 				a.EXPECT().
@@ -424,7 +391,7 @@ func TestProcessMessages(t *testing.T) {
 					}, nil).Times(1)
 
 				m.EXPECT().
-					UpdateMessageWithAttempt(gomock.Any(), gomock.Any(), gomock.Any()).
+					UpdateEventDeliveryWithAttempt(gomock.Any(), gomock.Any(), gomock.Any()).
 					Return(nil).Times(1)
 			},
 			nFn: func() func() {
@@ -442,35 +409,34 @@ func TestProcessMessages(t *testing.T) {
 			name:          "Manual retry - disable endpoint - success",
 			cfgPath:       "./testdata/Config/basic-convoy-disable-endpoint.json",
 			expectedError: nil,
-			msg: &convoy.Message{
+			msg: &convoy.EventDelivery{
 				UID: "",
 			},
-			dbFn: func(a *mocks.MockApplicationRepository, o *mocks.MockGroupRepository, m *mocks.MockMessageRepository) {
+			dbFn: func(a *mocks.MockApplicationRepository, o *mocks.MockGroupRepository, m *mocks.MockEventDeliveryRepository) {
 				m.EXPECT().
-					FindMessageByID(gomock.Any(), gomock.Any()).
-					Return(&convoy.Message{
-						Data:   []byte(`{"event": "invoice.completed"}`),
-						Status: convoy.ScheduledMessageStatus,
-						Metadata: &convoy.MessageMetadata{
+					FindEventDeliveryByID(gomock.Any(), gomock.Any()).
+					Return(&convoy.EventDelivery{
+						AppMetadata: &convoy.AppMetadata{
+							SupportEmail: "aaaaaaaaaaaaaaa",
+						},
+						Status: convoy.ScheduledEventStatus,
+						Metadata: &convoy.Metadata{
+							Data:            []byte(`{"event": "invoice.completed"}`),
 							NumTrials:       4,
 							RetryLimit:      3,
 							IntervalSeconds: 20,
 						},
-						AppMetadata: &convoy.AppMetadata{
-							Secret: "aaaaaaaaaaaaaaa",
-							Endpoints: []convoy.EndpointMetadata{
-								{
-									Status:    convoy.ActiveEndpointStatus,
-									Sent:      false,
-									TargetURL: "https://google.com",
-									UID:       "1234567890",
-								},
-							},
+						EndpointMetadata: &convoy.EndpointMetadata{
+							Secret:    "aaaaaaaaaaaaaaa",
+							Status:    convoy.ActiveEndpointStatus,
+							Sent:      false,
+							TargetURL: "https://google.com",
+							UID:       "1234567890",
 						},
 					}, nil).Times(1)
 
 				m.EXPECT().
-					UpdateStatusOfMessages(gomock.Any(), gomock.Any(), gomock.Any()).
+					UpdateStatusOfEventDelivery(gomock.Any(), gomock.Any(), gomock.Any()).
 					Return(nil).Times(1)
 
 				a.EXPECT().
@@ -491,7 +457,7 @@ func TestProcessMessages(t *testing.T) {
 					Return(nil).Times(1)
 
 				m.EXPECT().
-					UpdateMessageWithAttempt(gomock.Any(), gomock.Any(), gomock.Any()).
+					UpdateEventDeliveryWithAttempt(gomock.Any(), gomock.Any(), gomock.Any()).
 					Return(nil).Times(1)
 			},
 			nFn: func() func() {
@@ -515,7 +481,7 @@ func TestProcessMessages(t *testing.T) {
 
 			groupRepo := mocks.NewMockGroupRepository(ctrl)
 			appRepo := mocks.NewMockApplicationRepository(ctrl)
-			msgRepo := mocks.NewMockMessageRepository(ctrl)
+			msgRepo := mocks.NewMockEventDeliveryRepository(ctrl)
 
 			err := config.LoadConfig(tc.cfgPath)
 			if err != nil {
@@ -531,10 +497,10 @@ func TestProcessMessages(t *testing.T) {
 				tc.dbFn(appRepo, groupRepo, msgRepo)
 			}
 
-			processFn := ProcessMessages(appRepo, msgRepo, groupRepo)
+			processFn := ProcessEventDelivery(appRepo, msgRepo, groupRepo)
 
 			job := queue.Job{
-				MsgID: tc.msg.UID,
+				ID: tc.msg.UID,
 			}
 
 			err = processFn(&job)
