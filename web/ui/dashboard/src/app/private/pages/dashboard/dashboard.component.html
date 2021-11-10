@@ -210,7 +210,7 @@
 											<div>{{ event.event_type }}</div>
 										</td>
 										<td>
-											<div>{{ event.metadata.num_trials }}</div>
+											<div>{{ event.metadata?.num_trials }}</div>
 										</td>
 										<td>
 											<div>{{ event.metadata.num_trials < event.metadata.retry_limit && event.status !== 'Success' ? getTime(event.metadata.next_send_time) : '-' }}</div>

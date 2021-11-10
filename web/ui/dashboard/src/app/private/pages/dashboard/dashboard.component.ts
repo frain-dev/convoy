@@ -112,6 +112,7 @@ export class DashboardComponent implements OnInit {
 				method: 'get'
 			});
 			this.dashboardData = dashboardResponse.data;
+			console.log('🚀 ~ file: dashboard.component.ts ~ line 115 ~ DashboardComponent ~ fetchDashboardData ~ this.dashboardData', this.dashboardData);
 
 			let labelsDateFormat = '';
 			if (this.dashboardFrequency === 'daily') labelsDateFormat = 'DD[, ]MMM';
@@ -221,6 +222,7 @@ export class DashboardComponent implements OnInit {
 			}
 
 			this.events = eventsResponse.data;
+			console.log('🚀 ~ file: dashboard.component.ts ~ line 225 ~ DashboardComponent ~ getEvents ~ this.events', this.events);
 			this.setEventsDisplayed(eventsResponse.data.content);
 		} catch (error) {
 			return error;
