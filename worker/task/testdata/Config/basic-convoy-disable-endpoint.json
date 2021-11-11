@@ -1,10 +1,16 @@
 {
 	"auth": {
 		"type": "basic",
-		"basic": {
-			"username": "test",
-			"password": "test"
-		}
+		"basic": [
+			{
+				"username": "test",
+				"password": "test",
+				"role": {
+					"type": "admin",
+					"group": "sendcash-pay"
+				}
+			}
+		]
 	},
 	"strategy":{
 		"type": "default",
