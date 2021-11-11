@@ -1,11 +1,23 @@
 {
 	"auth": {
 		"require_auth": true,
-		"realms": [
+		"basic": [
 			{
-				"type": "file_realm",
-				"name": "file_realm1",
-				"path": "./testdata/Auth_Config/basic_file_realm.json"
+				"username": "test",
+				"password": "test",
+				"role": {
+					"type": "admin",
+					"group": "sendcash-pay"
+				}
+			}
+		],
+		"api_key": [
+			{
+				"api_key": "avcbajbwrohw@##Q39uekvsmbvxc.fdjhd",
+				"role": {
+					"type": "ui_admin",
+					"group": "sendcash-pay"
+				}
 			}
 		]
 	},
