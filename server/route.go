@@ -149,7 +149,6 @@ func buildRoutes(app *applicationHandler) http.Handler {
 		uiRouter.Use(requirePermission(auth.RoleUIAdmin))
 
 		uiRouter.Route("/dashboard", func(dashboardRouter chi.Router) {
-			dashboardRouter.Use(requireUIAuth())
 			dashboardRouter.Use(requireDefaultGroup(app.groupRepo))
 
 			dashboardRouter.With(fetchDashboardSummary(app.appRepo, app.eventRepo)).Get("/summary", app.GetDashboardSummary)
@@ -158,7 +157,6 @@ func buildRoutes(app *applicationHandler) http.Handler {
 
 		// TODO(daniel,subomi): maybe we should remove this? since we're now giving only a default group
 		uiRouter.Route("/groups", func(groupRouter chi.Router) {
-			groupRouter.Use(requireUIAuth())
 
 			groupRouter.Route("/", func(orgSubRouter chi.Router) {
 				groupRouter.Get("/", app.GetGroups)
@@ -171,7 +169,6 @@ func buildRoutes(app *applicationHandler) http.Handler {
 		})
 
 		uiRouter.Route("/apps", func(appRouter chi.Router) {
-			appRouter.Use(requireUIAuth())
 
 			appRouter.Route("/", func(appSubRouter chi.Router) {
 				appRouter.With(pagination).Get("/", app.GetApps)
@@ -194,7 +191,6 @@ func buildRoutes(app *applicationHandler) http.Handler {
 		})
 
 		uiRouter.Route("/events", func(eventRouter chi.Router) {
-			eventRouter.Use(requireUIAuth())
 			eventRouter.With(pagination).Get("/", app.GetEventsPaged)
 
 			eventRouter.Route("/{eventID}", func(eventSubRouter chi.Router) {
@@ -223,12 +219,6 @@ func buildRoutes(app *applicationHandler) http.Handler {
 			})
 
 		})
-
-		uiRouter.Route("/auth", func(authRouter chi.Router) {
-			authRouter.With(login()).Post("/login", app.GetAuthLogin)
-			authRouter.With(refresh()).Post("/refresh", app.GetAuthLogin)
-		})
-
 	})
 
 	router.Handle("/v1/metrics", promhttp.Handler())

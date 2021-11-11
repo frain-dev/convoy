@@ -8,7 +8,6 @@ import (
 	"reflect"
 	"strconv"
 	"sync/atomic"
-	"time"
 
 	"github.com/frain-dev/convoy/auth"
 	"github.com/frain-dev/convoy/config/algo"
@@ -52,13 +51,6 @@ type AuthConfiguration struct {
 	File        FileRealmOption `json:"file"`
 }
 
-type UIAuthConfiguration struct {
-	Type                  AuthProvider  `json:"type"`
-	Basic                 []Basic       `json:"basic"`
-	JwtKey                string        `json:"jwtKey"`
-	JwtTokenExpirySeconds time.Duration `json:"jwtTokenExpirySeconds"`
-}
-
 type Basic struct {
 	Username string `json:"username"`
 	Password string `json:"password"`
@@ -88,18 +80,16 @@ type SMTPConfiguration struct {
 }
 
 type Configuration struct {
-	Auth              AuthConfiguration      `json:"auth,omitempty"`
-	UIAuth            UIAuthConfiguration    `json:"ui,omitempty"`
-	UIAuthorizedUsers map[string]string      `json:"-"`
-	Database          DatabaseConfiguration  `json:"database"`
-	Sentry            SentryConfiguration    `json:"sentry"`
-	Queue             QueueConfiguration     `json:"queue"`
-	Server            ServerConfiguration    `json:"server"`
-	Strategy          StrategyConfiguration  `json:"strategy"`
-	Signature         SignatureConfiguration `json:"signature"`
-	SMTP              SMTPConfiguration      `json:"smtp"`
-	Environment       string                 `json:"env"`
-	DisableEndpoint   bool                   `json:"disable_endpoint"`
+	Auth            AuthConfiguration      `json:"auth,omitempty"`
+	Database        DatabaseConfiguration  `json:"database"`
+	Sentry          SentryConfiguration    `json:"sentry"`
+	Queue           QueueConfiguration     `json:"queue"`
+	Server          ServerConfiguration    `json:"server"`
+	Strategy        StrategyConfiguration  `json:"strategy"`
+	Signature       SignatureConfiguration `json:"signature"`
+	SMTP            SMTPConfiguration      `json:"smtp"`
+	Environment     string                 `json:"env"`
+	DisableEndpoint bool                   `json:"disable_endpoint"`
 }
 
 type AuthProvider string
@@ -200,52 +190,6 @@ func LoadConfig(p string) error {
 		return err
 	}
 
-	// TODO(daniel,subomi): removing this right?
-	if apiUsername := os.Getenv("CONVOY_API_USERNAME"); apiUsername != "" {
-		var apiPassword string
-		if apiPassword = os.Getenv("CONVOY_API_PASSWORD"); apiPassword == "" {
-			return errors.New("Failed to retrieve apiPassword")
-		}
-
-		c.Auth = AuthConfiguration{
-			Type:  "basic",
-			Basic: Basic{apiUsername, apiPassword},
-		}
-	}
-
-	if uiUsername := os.Getenv("CONVOY_UI_USERNAME"); uiUsername != "" {
-		var uiPassword, jwtKey, jwtExpiryString string
-		var jwtExpiry time.Duration
-		if uiPassword = os.Getenv("CONVOY_UI_PASSWORD"); uiPassword == "" {
-			return errors.New("Failed to retrieve uiPassword")
-		}
-
-		if jwtKey = os.Getenv("CONVOY_JWT_KEY"); jwtKey == "" {
-			return errors.New("Failed to retrieve jwtKey")
-		}
-
-		if jwtExpiryString = os.Getenv("CONVOY_JWT_EXPIRY"); jwtExpiryString == "" {
-			return errors.New("Failed to retrieve jwtExpiry")
-		}
-
-		jwtExpiryInt, err := strconv.Atoi(jwtExpiryString)
-		if err != nil {
-			return errors.New("Failed to parse jwtExpiry")
-		}
-
-		jwtExpiry = time.Duration(jwtExpiryInt) * time.Second
-
-		basicCredentials := Basic{uiUsername, uiPassword}
-		c.UIAuth = UIAuthConfiguration{
-			Type: "basic",
-			Basic: []Basic{
-				basicCredentials,
-			},
-			JwtKey:                jwtKey,
-			JwtTokenExpirySeconds: jwtExpiry,
-		}
-	}
-
 	if retryStrategy := os.Getenv("CONVOY_RETRY_STRATEGY"); retryStrategy != "" {
 
 		intervalSeconds, err := retrieveIntfromEnv("CONVOY_INTERVAL_SECONDS")
@@ -277,8 +221,6 @@ func LoadConfig(p string) error {
 		}
 	}
 
-	c.UIAuthorizedUsers = parseAuthorizedUsers(c.UIAuth)
-
 	cfgSingleton.Store(c)
 	return nil
 }
@@ -298,15 +240,6 @@ func ensureSSL(s ServerConfiguration) error {
 		}
 	}
 	return nil
-}
-
-func parseAuthorizedUsers(auth UIAuthConfiguration) map[string]string {
-	users := auth.Basic
-	usersMap := make(map[string]string)
-	for i := 0; i < len(users); i++ {
-		usersMap[users[i].Username] = users[i].Password
-	}
-	return usersMap
 }
 
 func retrieveIntfromEnv(config string) (uint64, error) {

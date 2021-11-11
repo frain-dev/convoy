@@ -4,12 +4,10 @@ import (
 	"fmt"
 	"testing"
 
+	"github.com/frain-dev/convoy/auth"
 	"github.com/frain-dev/convoy/auth/realm/file"
 	"github.com/frain-dev/convoy/config"
-
 	"github.com/stretchr/testify/require"
-
-	"github.com/frain-dev/convoy/auth"
 )
 
 func TestGet(t *testing.T) {
@@ -237,6 +235,26 @@ func TestRealmChain_RegisterRealm(t *testing.T) {
 			}
 
 			require.Nil(t, err)
+		})
+	}
+}
+
+func TestInit(t *testing.T) {
+	type args struct {
+		authConfig *config.AuthConfiguration
+	}
+	tests := []struct {
+		name    string
+		args    args
+		wantErr bool
+	}{
+		// TODO: Add test cases.
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if err := Init(tt.args.authConfig); (err != nil) != tt.wantErr {
+				t.Errorf("Init() error = %v, wantErr %v", err, tt.wantErr)
+			}
 		})
 	}
 }
