@@ -5,6 +5,7 @@ import (
 	"testing"
 
 	"github.com/frain-dev/convoy/auth/realm/file"
+	"github.com/frain-dev/convoy/config"
 
 	"github.com/stretchr/testify/require"
 
@@ -26,10 +27,56 @@ func TestGet(t *testing.T) {
 	require.Equal(t, rr, rc)
 }
 
+var fileRealmOpt = &config.FileRealmOption{
+	Basic: []auth.BasicAuth{
+		{
+			Username: "username1",
+			Password: "password1",
+			Role: auth.Role{
+				Type:  auth.RoleAdmin,
+				Group: "sendcash-pay",
+			},
+		},
+		{
+			Username: "username2",
+			Password: "password2",
+			Role: auth.Role{
+				Type:  auth.RoleUIAdmin,
+				Group: "buycoins",
+			},
+		},
+		{
+			Username: "username3",
+			Password: "password3",
+			Role: auth.Role{
+				Type:  auth.RoleSuperUser,
+				Group: "paystack",
+			},
+		},
+		{
+			Username: "username4",
+			Password: "password4",
+			Role: auth.Role{
+				Type:  auth.RoleAPI,
+				Group: "termii",
+			},
+		},
+	},
+	APIKey: []auth.APIKeyAuth{
+		{
+			APIKey: "avcbajbwrohw@##Q39uekvsmbvxc.fdjhd",
+			Role: auth.Role{
+				Type:  auth.RoleUIAdmin,
+				Group: "sendcash-pay",
+			},
+		},
+	},
+}
+
 func TestRealmChain_Authenticate(t *testing.T) {
 	realmChainSingleton.Store(newRealmChain())
 
-	fr, err := file.NewFileRealm("./testdata/file_realm_1.json")
+	fr, err := file.NewFileRealm(fileRealmOpt)
 	if err != nil {
 		require.Nil(t, err)
 		return
@@ -132,7 +179,7 @@ func TestRealmChain_Authenticate(t *testing.T) {
 func TestRealmChain_RegisterRealm(t *testing.T) {
 	realmChainSingleton.Store(newRealmChain())
 
-	fr, err := file.NewFileRealm("./testdata/file_realm_1.json")
+	fr, err := file.NewFileRealm(fileRealmOpt)
 	if err != nil {
 		require.Nil(t, err)
 		return

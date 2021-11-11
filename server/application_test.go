@@ -11,9 +11,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/frain-dev/convoy/auth/realm/noop"
-	log "github.com/sirupsen/logrus"
-
 	"github.com/frain-dev/convoy/auth/realm_chain"
 
 	"github.com/frain-dev/convoy/config"
@@ -41,27 +38,9 @@ func initRealmChain(t *testing.T) {
 		t.Errorf("failed to get config: %v", err)
 	}
 
-	if cfg.Auth.RequireAuth {
-		fmt.Println(cfg.Auth.RealmOptions)
-		err = realm_chain.Init(cfg.Auth.RealmOptions...)
-		if err != nil {
-			t.Errorf("failed to initialize realm chain : %v", err)
-		}
-	} else {
-		err = realm_chain.Init()
-		if err != nil {
-			log.WithError(err).Fatal("failed to initialize realm chain")
-		}
-
-		rc, err := realm_chain.Get()
-		if err != nil {
-			log.WithError(err).Fatal("failed to register noop realm in realm chain")
-		}
-
-		err = rc.RegisterRealm(noop.NewNoopRealm())
-		if err != nil {
-			log.WithError(err).Fatal("failed to register noop realm in realm chain")
-		}
+	err = realm_chain.Init(&cfg.Auth)
+	if err != nil {
+		t.Errorf("failed to initialize realm chain : %v", err)
 	}
 }
 

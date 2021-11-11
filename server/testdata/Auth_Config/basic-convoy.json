@@ -1,25 +1,27 @@
 {
 	"auth": {
 		"require_auth": true,
-		"basic": [
-			{
-				"username": "test",
-				"password": "test",
-				"role": {
-					"type": "admin",
-					"group": "sendcash-pay"
+		"file": {
+			"basic": [
+				{
+					"username": "test",
+					"password": "test",
+					"role": {
+						"type": "admin",
+						"group": "sendcash-pay"
+					}
 				}
-			}
-		],
-		"api_key": [
-			{
-				"api_key": "avcbajbwrohw@##Q39uekvsmbvxc.fdjhd",
-				"role": {
-					"type": "ui_admin",
-					"group": "sendcash-pay"
+			],
+			"api_key": [
+				{
+					"api_key": "avcbajbwrohw@##Q39uekvsmbvxc.fdjhd",
+					"role": {
+						"type": "ui_admin",
+						"group": "sendcash-pay"
+					}
 				}
-			}
-		]
+			]
+		}
 	},
 	"signature": {
 		"header": "X-Company-Event-WebHook-Signature",

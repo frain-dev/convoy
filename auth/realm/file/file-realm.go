@@ -1,12 +1,11 @@
 package file
 
 import (
-	"encoding/json"
 	"errors"
 	"fmt"
-	"os"
 
 	"github.com/frain-dev/convoy/auth"
+	"github.com/frain-dev/convoy/config"
 )
 
 var (
@@ -74,16 +73,27 @@ func (r *FileRealm) Authenticate(cred *auth.Credential) (*auth.AuthenticatedUser
 }
 
 // NewFileRealm constructs a new File Realm authenticator
-func NewFileRealm(path string) (*FileRealm, error) {
+func NewFileRealm(opts *config.FileRealmOption) (*FileRealm, error) {
 	fr := &FileRealm{}
-	buf, err := os.ReadFile(path)
-	if err != nil {
-		return nil, err
+	for _, basicAuth := range opts.Basic {
+		fr.Basic = append(fr.Basic, BasicAuth{
+			Username: basicAuth.Username,
+			Password: basicAuth.Password,
+			Role: auth.Role{
+				Type:  basicAuth.Role.Type,
+				Group: basicAuth.Role.Group,
+			},
+		})
 	}
 
-	err = json.Unmarshal(buf, fr)
-	if err != nil {
-		return nil, fmt.Errorf("failed to unmarshal file %s into new file realm: %v", path, err)
+	for _, basicAuth := range opts.APIKey {
+		fr.APIKey = append(fr.APIKey, APIKeyAuth{
+			APIKey: basicAuth.APIKey,
+			Role: auth.Role{
+				Type:  basicAuth.Role.Type,
+				Group: basicAuth.Role.Group,
+			},
+		})
 	}
 
 	if len(fr.Basic) == 0 && len(fr.APIKey) == 0 {

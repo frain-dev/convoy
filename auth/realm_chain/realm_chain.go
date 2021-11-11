@@ -5,8 +5,11 @@ import (
 	"fmt"
 	"sync/atomic"
 
-	api_key "github.com/frain-dev/convoy/auth/realm/api-key"
-	"github.com/frain-dev/convoy/auth/realm/basic"
+	"github.com/frain-dev/convoy/auth/realm/file"
+
+	"github.com/frain-dev/convoy/auth/realm/noop"
+
+	"github.com/frain-dev/convoy/config"
 
 	log "github.com/sirupsen/logrus"
 
@@ -37,31 +40,53 @@ func Get() (*RealmChain, error) {
 	return rc, nil
 }
 
-func Init(opts ...auth.RealmOption) error {
+func Init(authConfig *config.AuthConfiguration) error {
 	rc := newRealmChain()
-	for _, opt := range opts {
-		realmType := auth.RealmType(opt.Type)
-		switch realmType {
-		case auth.RealmTypeAPIKey:
-			ar, err := api_key.NewAPIKeyRealm(opt.ApiKey)
-			if err != nil {
-				return fmt.Errorf("failed to initialize '%ss': %v", ar.GetName(), err)
+
+	// validate authentication realms
+	if authConfig.RequireAuth {
+		for _, r := range authConfig.File.Basic {
+			if r.Username == "" || r.Password == "" {
+				return errors.New("username and password are required for basic auth config")
 			}
 
-			err = rc.RegisterRealm(ar)
-			if err != nil {
-				return fmt.Errorf("failed to register file realm in realm chain: %v", err)
-			}
-		case auth.RealmTypeBasic:
-			br, err := basic.NewBasicRealm(opt.Basic)
-			if err != nil {
-				return fmt.Errorf("failed to initialize '%ss': %v", br.GetName(), err)
+			if !r.Role.Type.IsValid() {
+				return fmt.Errorf("invalid role type: %s", r.Role.Type.String())
 			}
 
-			err = rc.RegisterRealm(br)
-			if err != nil {
-				return fmt.Errorf("failed to register file realm in realm chain: %v", err)
+			if r.Role.Group == "" {
+				return errors.New("please specify a group for basic auth config")
 			}
+		}
+
+		for _, r := range authConfig.File.APIKey {
+			if r.APIKey == "" {
+				return errors.New("api-key is required for api-key auth config")
+			}
+
+			if !r.Role.Type.IsValid() {
+				return fmt.Errorf("invalid role type: %s", r.Role.Type.String())
+			}
+
+			if r.Role.Group == "" {
+				return errors.New("please specify a group for api-key auth config")
+			}
+		}
+
+		fr, err := file.NewFileRealm(&authConfig.File)
+		if err != nil {
+			return err
+		}
+
+		err = rc.RegisterRealm(fr)
+		if err != nil {
+			return errors.New("failed to register file realm in realm chain")
+		}
+	} else {
+		log.Warnf("using noop realm for authentication: all requests will be authenticated with super_user role")
+		err := rc.RegisterRealm(noop.NewNoopRealm())
+		if err != nil {
+			return errors.New("failed to register noop realm in realm chain")
 		}
 	}
 

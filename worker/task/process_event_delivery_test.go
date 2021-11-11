@@ -494,7 +494,7 @@ func TestProcessEventDelivery(t *testing.T) {
 				t.Errorf("failed to get config: %v", err)
 			}
 
-			err = realm_chain.Init(cfg.Auth.RealmOptions...)
+			err = realm_chain.Init(&cfg.Auth)
 			if err != nil {
 				t.Errorf("failed to initialize realm chain : %v", err)
 			}

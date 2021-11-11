@@ -6,11 +6,58 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"github.com/frain-dev/convoy/auth"
+	"github.com/frain-dev/convoy/config"
 )
+
+var fileRealmOpt = &config.FileRealmOption{
+	Basic: []auth.BasicAuth{
+		{
+			Username: "username1",
+			Password: "password1",
+			Role: auth.Role{
+				Type:  auth.RoleAdmin,
+				Group: "sendcash-pay",
+			},
+		},
+		{
+			Username: "username2",
+			Password: "password2",
+			Role: auth.Role{
+				Type:  auth.RoleUIAdmin,
+				Group: "buycoins",
+			},
+		},
+		{
+			Username: "username3",
+			Password: "password3",
+			Role: auth.Role{
+				Type:  auth.RoleSuperUser,
+				Group: "paystack",
+			},
+		},
+		{
+			Username: "username4",
+			Password: "password4",
+			Role: auth.Role{
+				Type:  auth.RoleAPI,
+				Group: "termii",
+			},
+		},
+	},
+	APIKey: []auth.APIKeyAuth{
+		{
+			APIKey: "avcbajbwrohw@##Q39uekvsmbvxc.fdjhd",
+			Role: auth.Role{
+				Type:  auth.RoleUIAdmin,
+				Group: "sendcash-pay",
+			},
+		},
+	},
+}
 
 func TestFileRealm_Authenticate(t *testing.T) {
 
-	fr, err := NewFileRealm("./testdata/file_realm_1.json")
+	fr, err := NewFileRealm(fileRealmOpt)
 	if err != nil {
 		require.Nil(t, err)
 		return
@@ -124,7 +171,7 @@ func TestFileRealm_Authenticate(t *testing.T) {
 
 func TestNewFileRealm(t *testing.T) {
 	type args struct {
-		path string
+		opt *config.FileRealmOption
 	}
 	tests := []struct {
 		name       string
@@ -136,7 +183,7 @@ func TestNewFileRealm(t *testing.T) {
 		{
 			name: "should_initialize_file_realm_successfully",
 			args: args{
-				path: "./testdata/file_realm_1.json",
+				opt: fileRealmOpt,
 			},
 			want: &FileRealm{
 				Basic: []BasicAuth{
@@ -189,7 +236,7 @@ func TestNewFileRealm(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := NewFileRealm(tt.args.path)
+			got, err := NewFileRealm(tt.args.opt)
 
 			if tt.wantErr {
 				require.Equal(t, tt.wantErrMsg, err.Error())

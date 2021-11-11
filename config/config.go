@@ -40,13 +40,16 @@ type QueueConfiguration struct {
 	} `json:"redis"`
 }
 
+type FileRealmOption struct {
+	Basic  []auth.BasicAuth  `json:"basic"`
+	APIKey []auth.APIKeyAuth `json:"api_key"`
+}
+
 type AuthConfiguration struct {
-	RequireAuth  bool         `json:"require_auth"`
-	Type         AuthProvider `json:"type"`
-	Basic        Basic
-	BasicAuth    []auth.BasicAuth   `json:"basic"`
-	APIKey       []auth.APIKeyAuth  `json:"api_key"`
-	RealmOptions []auth.RealmOption `json:"-"`
+	RequireAuth bool         `json:"require_auth"`
+	Type        AuthProvider `json:"type"`
+	Basic       Basic
+	File        FileRealmOption `json:"file"`
 }
 
 type UIAuthConfiguration struct {
@@ -147,53 +150,6 @@ func LoadConfig(p string) error {
 				DSN: queueDsn,
 			},
 		}
-	}
-
-	// validate authentication realms
-	if c.Auth.RequireAuth {
-		realmOptions := []auth.RealmOption{}
-		for _, r := range c.Auth.BasicAuth {
-			if r.Username == "" || r.Password == "" {
-				return errors.New("username and password are required for basic auth config")
-			}
-
-			if !r.Role.Type.IsValid() {
-				return fmt.Errorf("invalid role type: %s", r.Role.Type.String())
-			}
-
-			if r.Role.Group == "" {
-				return errors.New("please specify a group for basic auth config")
-			}
-		}
-		if len(c.Auth.BasicAuth) != 0 {
-			realmOptions = append(realmOptions, auth.RealmOption{
-				Type:  auth.RealmTypeBasic.String(),
-				Basic: c.Auth.BasicAuth,
-			})
-		}
-
-		for _, r := range c.Auth.APIKey {
-			if r.APIKey == "" {
-				return errors.New("api-key is required for api-key auth config")
-			}
-
-			if !r.Role.Type.IsValid() {
-				return fmt.Errorf("invalid role type: %s", r.Role.Type.String())
-			}
-
-			if r.Role.Group == "" {
-				return errors.New("please specify a group for api-key auth config")
-			}
-		}
-
-		if len(c.Auth.APIKey) != 0 {
-			realmOptions = append(realmOptions, auth.RealmOption{
-				Type:   auth.RealmTypeAPIKey.String(),
-				ApiKey: c.Auth.APIKey,
-			})
-		}
-
-		c.Auth.RealmOptions = realmOptions
 	}
 
 	// This enables us deploy to Heroku where the $PORT is provided

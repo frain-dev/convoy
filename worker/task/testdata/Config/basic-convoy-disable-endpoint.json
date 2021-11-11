@@ -1,18 +1,20 @@
 {
 	"auth": {
 		"type": "basic",
-		"basic": [
-			{
-				"username": "test",
-				"password": "test",
-				"role": {
-					"type": "admin",
-					"group": "sendcash-pay"
+		"file": {
+			"basic": [
+				{
+					"username": "test",
+					"password": "test",
+					"role": {
+						"type": "admin",
+						"group": "sendcash-pay"
+					}
 				}
-			}
-		]
+			]
+		}
 	},
-	"strategy":{
+	"strategy": {
 		"type": "default",
 		"default": {
 			"intervalSeconds": 20,
@@ -23,7 +25,7 @@
 		"header": "X-Company-Event-WebHook-Signature",
 		"hash": "SHA256"
 	},
-    "smtp": {
+	"smtp": {
 		"provider": "sendgrid",
 		"url": "smtp.sendgrid.net",
 		"port": 2525,
