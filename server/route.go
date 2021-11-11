@@ -62,17 +62,17 @@ func buildRoutes(app *applicationHandler) http.Handler {
 		v1Router.Route("/v1", func(r chi.Router) {
 			r.Use(middleware.AllowContentType("application/json"))
 			r.Use(jsonResponse)
-			r.Use(requirePermission())
+			r.Use(requireAuth())
 
 			r.Route("/groups", func(groupRouter chi.Router) {
-				groupRouter.Use(requireRole(auth.RoleAdmin))
+				groupRouter.Use(requirePermission(auth.RoleAdmin))
 
 				groupRouter.Get("/", app.GetGroups)
 				groupRouter.Post("/", app.CreateGroup)
 
 				groupRouter.Route("/{groupID}", func(groupSubRouter chi.Router) {
 					groupSubRouter.Use(requireDefaultGroup(app.groupRepo))
-					groupSubRouter.Use(requireGroupAccess(app.groupRepo))
+					groupSubRouter.Use(requireGroup(app.groupRepo))
 
 					groupSubRouter.Get("/", app.GetGroup)
 					groupSubRouter.Put("/", app.UpdateGroup)
@@ -80,7 +80,7 @@ func buildRoutes(app *applicationHandler) http.Handler {
 			})
 
 			r.Route("/applications", func(appRouter chi.Router) {
-				appRouter.Use(requireRole(auth.RoleAdmin))
+				appRouter.Use(requirePermission(auth.RoleAdmin))
 
 				appRouter.Route("/", func(appSubRouter chi.Router) {
 					appSubRouter.With(requireDefaultGroup(app.groupRepo)).Post("/", app.CreateApp)
@@ -145,8 +145,8 @@ func buildRoutes(app *applicationHandler) http.Handler {
 	// UI API.
 	router.Route("/ui", func(uiRouter chi.Router) {
 		uiRouter.Use(jsonResponse)
-		uiRouter.Use(requirePermission())
-		uiRouter.Use(requireRole(auth.RoleUIAdmin))
+		uiRouter.Use(requireAuth())
+		uiRouter.Use(requirePermission(auth.RoleUIAdmin))
 
 		uiRouter.Route("/dashboard", func(dashboardRouter chi.Router) {
 			dashboardRouter.Use(requireUIAuth())

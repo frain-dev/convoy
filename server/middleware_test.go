@@ -62,7 +62,7 @@ func TestRequirePermission_Basic(t *testing.T) {
 			ctrl := gomock.NewController(t)
 			defer ctrl.Finish()
 
-			fn := requirePermission()(http.HandlerFunc(func(rw http.ResponseWriter, r *http.Request) {
+			fn := requireAuth()(http.HandlerFunc(func(rw http.ResponseWriter, r *http.Request) {
 				rw.WriteHeader(http.StatusOK)
 
 				_, err := rw.Write([]byte(`Hello`))
@@ -130,7 +130,7 @@ func TestRequirePermission_Noop(t *testing.T) {
 			ctrl := gomock.NewController(t)
 			defer ctrl.Finish()
 
-			fn := requirePermission()(http.HandlerFunc(func(rw http.ResponseWriter, r *http.Request) {
+			fn := requireAuth()(http.HandlerFunc(func(rw http.ResponseWriter, r *http.Request) {
 				rw.WriteHeader(http.StatusOK)
 
 				_, err := rw.Write([]byte(`Hello`))
