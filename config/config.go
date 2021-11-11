@@ -165,10 +165,12 @@ func LoadConfig(p string) error {
 				return errors.New("please specify a group for basic auth config")
 			}
 		}
-		realmOptions = append(realmOptions, auth.RealmOption{
-			Type:  auth.RealmTypeBasic.String(),
-			Basic: c.Auth.BasicAuth,
-		})
+		if len(c.Auth.BasicAuth) != 0 {
+			realmOptions = append(realmOptions, auth.RealmOption{
+				Type:  auth.RealmTypeBasic.String(),
+				Basic: c.Auth.BasicAuth,
+			})
+		}
 
 		for _, r := range c.Auth.APIKey {
 			if r.APIKey == "" {
@@ -183,10 +185,13 @@ func LoadConfig(p string) error {
 				return errors.New("please specify a group for api-key auth config")
 			}
 		}
-		realmOptions = append(realmOptions, auth.RealmOption{
-			Type:   auth.RealmTypeAPIKey.String(),
-			ApiKey: c.Auth.APIKey,
-		})
+
+		if len(c.Auth.APIKey) != 0 {
+			realmOptions = append(realmOptions, auth.RealmOption{
+				Type:   auth.RealmTypeAPIKey.String(),
+				ApiKey: c.Auth.APIKey,
+			})
+		}
 
 		c.Auth.RealmOptions = realmOptions
 	}
