@@ -41,7 +41,9 @@ func addServerCommand(a *app) *cobra.Command {
 
 			if cfg.Auth.RequireAuth {
 				err = realm_chain.Init(cfg.Auth.RealmOptions...)
-				log.WithError(err).Fatal("failed to initialize realm chain")
+				if err != nil {
+					log.WithError(err).Fatal("failed to initialize realm chain")
+				}
 			} else {
 				log.Warnf("using noop realm for authentication: all requests will be authenticated with super_user role")
 				err = realm_chain.Init()
