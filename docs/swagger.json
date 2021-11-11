@@ -2522,6 +2522,50 @@
         }
     },
     "definitions": {
+        "config.GroupConfig": {
+            "type": "object",
+            "properties": {
+                "disableEndpoint": {
+                    "type": "boolean"
+                },
+                "signature": {
+                    "$ref": "#/definitions/config.SignatureConfiguration"
+                },
+                "strategy": {
+                    "$ref": "#/definitions/config.StrategyConfiguration"
+                }
+            }
+        },
+        "config.SignatureConfiguration": {
+            "type": "object",
+            "properties": {
+                "hash": {
+                    "type": "string"
+                },
+                "header": {
+                    "type": "string"
+                }
+            }
+        },
+        "config.StrategyConfiguration": {
+            "type": "object",
+            "properties": {
+                "default": {
+                    "type": "object",
+                    "properties": {
+                        "intervalSeconds": {
+                            "type": "integer"
+                        },
+                        "retryLimit": {
+                            "type": "integer"
+                        }
+                    }
+                },
+                "type": {
+                    "type": "string"
+                }
+            }
+        },
         "convoy.AppMetadata": {
             "type": "object",
             "properties": {
@@ -2755,6 +2799,9 @@
         "convoy.Group": {
             "type": "object",
             "properties": {
+                "config": {
+                    "$ref": "#/definitions/config.GroupConfig"
+                },
                 "created_at": {
                     "type": "string"
                 },
@@ -2862,6 +2909,9 @@
         "models.Group": {
             "type": "object",
             "properties": {
+                "config": {
+                    "$ref": "#/definitions/config.GroupConfig"
+                },
                 "logo_url": {
                     "type": "string"
                 },

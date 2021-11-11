@@ -20,15 +20,17 @@
 	"auth": {
 		"type": "none"
 	},
-	"signature": {
-		"header": "X-Company-Event-WebHook-Signature",
-		"hash": "SHA256"
-	},
-	"strategy": {
-		"type": "default",
-		"default": {
-			"intervalSeconds": 20,
-			"retryLimit": 3
+	"group": {
+		"signature": {
+			"header": "X-Company-Event-WebHook-Signature",
+			"hash": "SHA256"
+		},
+		"strategy": {
+			"type": "default",
+			"default": {
+				"intervalSeconds": 20,
+				"retryLimit": 3
+			}
 		}
 	},
 	"smtp": {

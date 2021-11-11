@@ -32,7 +32,7 @@ func (e *EndpointError) Delay() time.Duration {
 	return e.delay
 }
 
-func ProcessEventDelivery(appRepo convoy.ApplicationRepository, eventDeliveryRepo convoy.EventDeliveryRepository, orgRepo convoy.GroupRepository) func(*queue.Job) error {
+func ProcessEventDelivery(appRepo convoy.ApplicationRepository, eventDeliveryRepo convoy.EventDeliveryRepository, groupRepo convoy.GroupRepository) func(*queue.Job) error {
 	return func(job *queue.Job) error {
 		Id := job.ID
 
@@ -91,8 +91,14 @@ func ProcessEventDelivery(appRepo convoy.ApplicationRepository, eventDeliveryRep
 			return &EndpointError{Err: err}
 		}
 
+		g, err := groupRepo.FetchGroupByID(context.Background(), m.AppMetadata.GroupID)
+		if err != nil {
+			log.WithError(err).Error("could not find error")
+			return &EndpointError{Err: err}
+		}
+
 		bStr := string(bytes)
-		hmac, err := util.ComputeJSONHmac(cfg.Signature.Hash, bStr, secret, false)
+		hmac, err := util.ComputeJSONHmac(g.Config.Signature.Hash, bStr, secret, false)
 		if err != nil {
 			log.Errorf("error occurred while generating hmac signature - %+v\n", err)
 			return &EndpointError{Err: err}
@@ -101,7 +107,7 @@ func ProcessEventDelivery(appRepo convoy.ApplicationRepository, eventDeliveryRep
 		attemptStatus := false
 		start := time.Now()
 
-		resp, err := dispatch.SendRequest(e.TargetURL, string(convoy.HttpPost), bytes, cfg.Signature.Header.String(), hmac)
+		resp, err := dispatch.SendRequest(e.TargetURL, string(convoy.HttpPost), bytes, g.Config.Signature.Header.String(), hmac)
 		status := "-"
 		statusCode := 0
 		if resp != nil {
@@ -146,7 +152,7 @@ func ProcessEventDelivery(appRepo convoy.ApplicationRepository, eventDeliveryRep
 			log.Errorf("%s failed. Reason: %s", m.UID, err)
 		}
 
-		if done && dbEndpoint.Status == convoy.PendingEndpointStatus && cfg.DisableEndpoint {
+		if done && dbEndpoint.Status == convoy.PendingEndpointStatus && g.Config.DisableEndpoint {
 			endpoints := []string{dbEndpoint.UID}
 			endpointStatus := convoy.ActiveEndpointStatus
 
@@ -157,7 +163,7 @@ func ProcessEventDelivery(appRepo convoy.ApplicationRepository, eventDeliveryRep
 
 			s, err := smtp.New(&cfg.SMTP)
 			if err == nil {
-				err = sendEmailNotification(m, &orgRepo, s, endpointStatus)
+				err = sendEmailNotification(m, &groupRepo, s, endpointStatus)
 				if err != nil {
 					log.WithError(err).Error("Failed to send notification email")
 				}
@@ -190,7 +196,7 @@ func ProcessEventDelivery(appRepo convoy.ApplicationRepository, eventDeliveryRep
 				m.Status = convoy.FailureEventStatus
 			}
 
-			if cfg.DisableEndpoint && dbEndpoint.Status != convoy.PendingEndpointStatus {
+			if g.Config.DisableEndpoint && dbEndpoint.Status != convoy.PendingEndpointStatus {
 				endpoints := []string{dbEndpoint.UID}
 				endpointStatus := convoy.InactiveEndpointStatus
 
@@ -201,7 +207,7 @@ func ProcessEventDelivery(appRepo convoy.ApplicationRepository, eventDeliveryRep
 
 				s, err := smtp.New(&cfg.SMTP)
 				if err == nil {
-					err = sendEmailNotification(m, &orgRepo, s, endpointStatus)
+					err = sendEmailNotification(m, &groupRepo, s, endpointStatus)
 					if err != nil {
 						log.WithError(err).Error("Failed to send notification email")
 					}

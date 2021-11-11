@@ -1,16 +1,22 @@
 package task
 
 import (
+	"strings"
+
 	"github.com/frain-dev/convoy"
-	"github.com/frain-dev/convoy/config"
 	"github.com/vmihailenco/taskq/v3"
 )
 
-func CreateTask(name convoy.TaskName, cfg config.Configuration, handler interface{}) *taskq.Task {
+func CreateTask(t convoy.TaskName, group convoy.Group, handler interface{}) *taskq.Task {
+	var name strings.Builder
+
+	name.WriteString(group.Name)
+	name.WriteString("-")
+	name.WriteString(string(t))
 
 	options := taskq.TaskOptions{
-		Name:       string(name),
-		RetryLimit: int(cfg.Strategy.Default.RetryLimit),
+		Name:       name.String(),
+		RetryLimit: int(group.Config.Strategy.Default.RetryLimit),
 		Handler:    handler,
 	}
 

@@ -10,6 +10,7 @@ import (
 	_ "time/tzdata"
 
 	convoyRedis "github.com/frain-dev/convoy/queue/redis"
+	"github.com/frain-dev/convoy/worker/task"
 	"github.com/getsentry/sentry-go"
 	"github.com/google/uuid"
 	"go.mongodb.org/mongo-driver/bson/primitive"
@@ -97,8 +98,8 @@ func main() {
 				}
 			}
 
-			if util.IsStringEmpty(string(cfg.Signature.Header)) {
-				cfg.Signature.Header = config.DefaultSignatureHeader
+			if util.IsStringEmpty(string(cfg.GroupConfig.Signature.Header)) {
+				cfg.GroupConfig.Signature.Header = config.DefaultSignatureHeader
 				log.Warnf("signature header is blank. setting default %s", config.DefaultSignatureHeader)
 			}
 
@@ -118,7 +119,7 @@ func main() {
 			app.deadLetterQueue = convoyRedis.NewQueue(rC, qFn, "DeadLetterQueue")
 
 			ensureMongoIndices(conn)
-			err = ensureDefaultGroup(context.Background(), app.groupRepo)
+			err = ensureDefaultGroup(context.Background(), cfg, app)
 			if err != nil {
 				return err
 			}
@@ -168,29 +169,33 @@ func ensureMongoIndices(conn *mongo.Database) {
 	datastore.EnsureIndex(conn, datastore.EventCollection, "event_type", false)
 }
 
-func ensureDefaultGroup(ctx context.Context, groupRepo convoy.GroupRepository) error {
-	groups, err := groupRepo.LoadGroups(ctx, &convoy.GroupFilter{})
+func ensureDefaultGroup(ctx context.Context, cfg config.Configuration, a *app) error {
+	groups, err := a.groupRepo.LoadGroups(ctx, &convoy.GroupFilter{})
 	if err != nil {
 		return fmt.Errorf("failed to load groups - %w", err)
 	}
 
-	// a group already exists, so return
-	if len(groups) != 0 {
+	// return if a group already exists or it's a multi tenant app
+	if len(groups) != 0 || cfg.MultipleTenants {
 		return nil
 	}
 
 	defaultGroup := &convoy.Group{
 		UID:            uuid.New().String(),
 		Name:           "default-group",
+		Config:         cfg.GroupConfig,
 		CreatedAt:      primitive.NewDateTimeFromTime(time.Now()),
 		UpdatedAt:      primitive.NewDateTimeFromTime(time.Now()),
 		DocumentStatus: convoy.ActiveDocumentStatus,
 	}
 
-	err = groupRepo.CreateGroup(ctx, defaultGroup)
+	err = a.groupRepo.CreateGroup(ctx, defaultGroup)
 	if err != nil {
 		return fmt.Errorf("failed to create default group - %w", err)
 	}
+
+	task.CreateTask(convoy.EventProcessor, *defaultGroup, task.ProcessEventDelivery(a.applicationRepo, a.eventDeliveryRepo, a.groupRepo))
+
 	return nil
 }
 

@@ -238,16 +238,11 @@ func fetchAllConfigDetails() func(next http.Handler) http.Handler {
 
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 
-			cfg, err := config.Get()
-			if err != nil {
-				log.WithError(err).Error("error while fetching config details")
-				_ = render.Render(w, r, newErrorResponse("an error occurred while fetching config details", http.StatusInternalServerError))
-				return
-			}
+			g := getGroupFromContext(r.Context())
 
 			viewableConfig := ViewableConfiguration{
-				Strategy:  cfg.Strategy,
-				Signature: cfg.Signature,
+				Strategy:  g.Config.Strategy,
+				Signature: g.Config.Signature,
 			}
 
 			r = r.WithContext(setConfigInContext(r.Context(), &viewableConfig))

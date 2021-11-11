@@ -54,7 +54,7 @@ func Test_EnvironmentTakesPrecedence(t *testing.T) {
 					t.Errorf(errString, tc.testType)
 				}
 			case "header":
-				if string(cfg.Signature.Header) != tc.envConfig {
+				if string(cfg.GroupConfig.Signature.Header) != tc.envConfig {
 					t.Errorf(errString, tc.testType)
 				}
 			}

@@ -2,15 +2,17 @@
 	"auth": {
 		"type": "none"
 	},
-	"strategy": {
-		"type": "default",
-		"default": {
-			"intervalSeconds": 125,
-			"retryLimit": 15
+	"group": {
+		"strategy": {
+			"type": "default",
+			"default": {
+				"intervalSeconds": 125,
+				"retryLimit": 15
+			}
+		},
+		"signature": {
+			"header": "X-Company-Event-WebHook-Signature",
+			"hash": "SHA256"
 		}
-	},
-	"signature": {
-		"header": "X-Company-Event-WebHook-Signature",
-		"hash": "SHA256"
 	}
 }

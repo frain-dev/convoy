@@ -6,8 +6,10 @@
 			"password": "test"
 		}
 	},
-	"signature": {
-		"header": "X-Company-Event-WebHook-Signature",
-		"hash": "SHA256"
+	"group": {
+		"signature": {
+			"header": "X-Company-Event-WebHook-Signature",
+			"hash": "SHA256"
+		}
 	}
 }

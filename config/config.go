@@ -79,19 +79,24 @@ type SMTPConfiguration struct {
 	ReplyTo  string `json:"reply-to"`
 }
 
+type GroupConfig struct {
+	Strategy        StrategyConfiguration
+	Signature       SignatureConfiguration
+	DisableEndpoint bool
+}
+
 type Configuration struct {
-	Auth              AuthConfiguration      `json:"auth,omitempty"`
-	UIAuth            UIAuthConfiguration    `json:"ui,omitempty"`
-	UIAuthorizedUsers map[string]string      `json:"-"`
-	Database          DatabaseConfiguration  `json:"database"`
-	Sentry            SentryConfiguration    `json:"sentry"`
-	Queue             QueueConfiguration     `json:"queue"`
-	Server            ServerConfiguration    `json:"server"`
-	Strategy          StrategyConfiguration  `json:"strategy"`
-	Signature         SignatureConfiguration `json:"signature"`
-	SMTP              SMTPConfiguration      `json:"smtp"`
-	Environment       string                 `json:"env"`
-	DisableEndpoint   bool                   `json:"disable_endpoint"`
+	Auth              AuthConfiguration     `json:"auth,omitempty"`
+	UIAuth            UIAuthConfiguration   `json:"ui,omitempty"`
+	UIAuthorizedUsers map[string]string     `json:"-"`
+	Database          DatabaseConfiguration `json:"database"`
+	Sentry            SentryConfiguration   `json:"sentry"`
+	Queue             QueueConfiguration    `json:"queue"`
+	Server            ServerConfiguration   `json:"server"`
+	GroupConfig       GroupConfig           `json:"group"`
+	SMTP              SMTPConfiguration     `json:"smtp"`
+	Environment       string                `json:"env"`
+	MultipleTenants   bool                  `json:"multiple_tenants"`
 }
 
 type AuthProvider string
@@ -181,13 +186,13 @@ func LoadConfig(p string) error {
 	}
 
 	if signatureHeader := os.Getenv("CONVOY_SIGNATURE_HEADER"); signatureHeader != "" {
-		c.Signature.Header = SignatureHeaderProvider(signatureHeader)
+		c.GroupConfig.Signature.Header = SignatureHeaderProvider(signatureHeader)
 	}
 
 	if signatureHash := os.Getenv("CONVOY_SIGNATURE_HASH"); signatureHash != "" {
-		c.Signature.Hash = signatureHash
+		c.GroupConfig.Signature.Hash = signatureHash
 	}
-	err = ensureSignature(c.Signature)
+	err = ensureSignature(c.GroupConfig.Signature)
 	if err != nil {
 		return err
 	}
@@ -249,7 +254,7 @@ func LoadConfig(p string) error {
 			return err
 		}
 
-		c.Strategy = StrategyConfiguration{
+		c.GroupConfig.Strategy = StrategyConfiguration{
 			Type: StrategyProvider(retryStrategy),
 			Default: struct {
 				IntervalSeconds uint64 `json:"intervalSeconds"`
@@ -264,7 +269,7 @@ func LoadConfig(p string) error {
 
 	if e := os.Getenv("CONVOY_DISABLE_ENDPOINT"); e != "" {
 		if d, err := strconv.ParseBool(e); err == nil {
-			c.DisableEndpoint = d
+			c.GroupConfig.DisableEndpoint = d
 		}
 	}
 

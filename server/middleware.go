@@ -297,6 +297,26 @@ func findEndpoint(endpoints *[]convoy.Endpoint, id string) (*convoy.Endpoint, er
 	return nil, convoy.ErrEndpointNotFound
 }
 
+func requireGroup(groupRepo convoy.GroupRepository) func(next http.Handler) http.Handler {
+	return func(next http.Handler) http.Handler {
+		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			id := r.URL.Query().Get("groupId")
+
+			group, err := groupRepo.FetchGroupByID(r.Context(), id)
+			if err != nil {
+				errMsg := "an error occurred while loading group"
+				statusCode := http.StatusInternalServerError
+
+				_ = render.Render(w, r, newErrorResponse(errMsg, statusCode))
+				return
+			}
+
+			r = r.WithContext(setGroupInContext(r.Context(), group))
+			next.ServeHTTP(w, r)
+		})
+	}
+}
+
 func requireDefaultGroup(groupRepo convoy.GroupRepository) func(next http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 

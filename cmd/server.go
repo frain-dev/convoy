@@ -4,13 +4,11 @@ import (
 	"errors"
 	"time"
 
-	"github.com/frain-dev/convoy"
 	"github.com/frain-dev/convoy/config"
 	convoyQueue "github.com/frain-dev/convoy/queue/redis"
 	"github.com/frain-dev/convoy/server"
 	"github.com/frain-dev/convoy/util"
 	"github.com/frain-dev/convoy/worker"
-	convoyTask "github.com/frain-dev/convoy/worker/task"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 )
@@ -30,8 +28,8 @@ func addServerCommand(a *app) *cobra.Command {
 				return err
 			}
 
-			if util.IsStringEmpty(string(cfg.Signature.Header)) {
-				cfg.Signature.Header = config.DefaultSignatureHeader
+			if util.IsStringEmpty(string(cfg.GroupConfig.Signature.Header)) {
+				cfg.GroupConfig.Signature.Header = config.DefaultSignatureHeader
 				log.Warnf("signature header is blank. setting default %s", config.DefaultSignatureHeader)
 			}
 
@@ -49,10 +47,6 @@ func addServerCommand(a *app) *cobra.Command {
 			if queue, ok := a.deadLetterQueue.(*convoyQueue.RedisQueue); ok {
 				worker.NewCleaner(queue).Start()
 			}
-
-			// register tasks.
-			convoyTask.CreateTask(convoy.EventProcessor, cfg, convoyTask.ProcessEventDelivery(a.applicationRepo, a.eventDeliveryRepo, a.groupRepo))
-			convoyTask.CreateTask(convoy.DeadLetterProcessor, cfg, convoyTask.ProcessDeadLetters)
 
 			log.Infof("Started convoy server in %s", time.Since(start))
 

@@ -60,6 +60,7 @@ func buildRoutes(app *applicationHandler) http.Handler {
 		v1Router.Route("/v1", func(r chi.Router) {
 			r.Use(middleware.AllowContentType("application/json"))
 			r.Use(jsonResponse)
+			r.Use(requireGroup(app.groupRepo))
 
 			r.Route("/groups", func(groupRouter chi.Router) {
 				groupRouter.Use(requireAuth())
