@@ -5,10 +5,12 @@ import (
 	"fmt"
 	"sync/atomic"
 
+	api_key "github.com/frain-dev/convoy/auth/realm/api-key"
+	"github.com/frain-dev/convoy/auth/realm/basic"
+
 	log "github.com/sirupsen/logrus"
 
 	"github.com/frain-dev/convoy/auth"
-	"github.com/frain-dev/convoy/auth/realm/file"
 )
 
 type chainMap map[string]auth.Realm
@@ -40,14 +42,23 @@ func Init(opts ...auth.RealmOption) error {
 	for _, opt := range opts {
 		realmType := auth.RealmType(opt.Type)
 		switch realmType {
-		case auth.RealmTypeFile:
-			fr, err := file.NewFileRealm(opt.Path)
+		case auth.RealmTypeAPIKey:
+			ar, err := api_key.NewAPIKeyRealm(opt.ApiKey)
 			if err != nil {
-				return fmt.Errorf("failed to initialize file realm '%s': %v", opt.Name, err)
+				return fmt.Errorf("failed to initialize '%ss': %v", ar.GetName(), err)
 			}
 
-			fr.Name = opt.Name
-			err = rc.RegisterRealm(fr)
+			err = rc.RegisterRealm(ar)
+			if err != nil {
+				return fmt.Errorf("failed to register file realm in realm chain: %v", err)
+			}
+		case auth.RealmTypeBasic:
+			br, err := basic.NewBasicRealm(opt.Basic)
+			if err != nil {
+				return fmt.Errorf("failed to initialize '%ss': %v", br.GetName(), err)
+			}
+
+			err = rc.RegisterRealm(br)
 			if err != nil {
 				return fmt.Errorf("failed to register file realm in realm chain: %v", err)
 			}

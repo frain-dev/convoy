@@ -1,5 +1,11 @@
 package auth
 
+import "errors"
+
+var (
+	ErrCredentialNotFound = errors.New("credential not found")
+)
+
 type AuthenticatedUser struct {
 	AuthenticatedByRealm string     `json:"-"` // Name of realm that authenticated this user
 	Credential           Credential `json:"credential"`
