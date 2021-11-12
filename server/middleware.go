@@ -321,7 +321,6 @@ func requireGroup(groupRepo convoy.GroupRepository) func(next http.Handler) http
 			}
 
 			_ = render.Render(w, r, newErrorResponse("unauthorized to access group", http.StatusUnauthorized))
-			return
 		})
 	}
 }
@@ -680,10 +679,6 @@ func setDeliveryAttemptsInContext(ctx context.Context,
 
 func getDeliveryAttemptsFromContext(ctx context.Context) *[]convoy.DeliveryAttempt {
 	return ctx.Value(deliveryAttemptsCtx).(*[]convoy.DeliveryAttempt)
-}
-
-func setAuthLoginInContext(ctx context.Context, a *AuthorizedLogin) context.Context {
-	return context.WithValue(ctx, authLoginCtx, a)
 }
 
 func setAuthUserInContext(ctx context.Context, a *auth.AuthenticatedUser) context.Context {
