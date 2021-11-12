@@ -4,7 +4,7 @@ import Chart from 'chart.js/auto';
 import * as moment from 'moment';
 import { GeneralService } from 'src/app/services/general/general.service';
 import { APP } from 'src/app/models/app.model';
-import { EVENT } from 'src/app/models/event.model';
+import { EVENT, EVENT_DELIVERY } from 'src/app/models/event.model';
 import { Router } from '@angular/router';
 import { FormBuilder, FormGroup } from '@angular/forms';
 
@@ -16,8 +16,8 @@ import { FormBuilder, FormGroup } from '@angular/forms';
 export class DashboardComponent implements OnInit {
 	showDropdown = false;
 	showFilterCalendar = false;
-	tabs: ['events', 'apps'] = ['events', 'apps'];
-	activeTab: 'events' | 'apps' = 'events';
+	tabs: ['events', 'event deliveries', 'apps'] = ['events', 'event deliveries', 'apps'];
+	activeTab: 'events' | 'apps' | 'event deliveries' = 'events';
 	detailsItem?: any;
 	eventDeliveryAtempt?: {
 		ip_address: '';
@@ -50,7 +50,7 @@ export class DashboardComponent implements OnInit {
 		signature: { header: string; hash: string };
 		strategy: { type: 'default'; default: { intervalSeconds: number; retryLimit: number } };
 	};
-	dashboardData = { apps: 0, messages_sent: 0 };
+	dashboardData = { apps: 0, events_sent: 0 };
 	eventApp: string = '';
 	eventsPage: number = 1;
 	appsPage: number = 1;
@@ -64,6 +64,11 @@ export class DashboardComponent implements OnInit {
 		endDate: [{ value: '', disabled: true }]
 	});
 	selectedEventsFromEventsTable: string[] = [];
+	displayedEventDeliveries: {
+		date: string;
+		events: EVENT_DELIVERY[];
+	}[] = [];
+	eventDeliveries: EVENT_DELIVERY[] = [];
 
 	constructor(private httpService: HttpService, private generalService: GeneralService, private router: Router, private formBuilder: FormBuilder) {}
 
@@ -73,7 +78,7 @@ export class DashboardComponent implements OnInit {
 	}
 
 	async initDashboard() {
-		await Promise.all([this.getOrganisationDetails(), this.fetchDashboardData(), this.getEvents(), this.getApps()]);
+		await Promise.all([this.getOrganisationDetails(), this.fetchDashboardData(), this.getEvents(), this.getApps(), this.getEventDeliveries()]);
 	}
 
 	toggleShowDropdown() {}
@@ -83,14 +88,17 @@ export class DashboardComponent implements OnInit {
 		this.router.navigateByUrl('/login');
 	}
 
-	toggleActiveTab(tab: 'events' | 'apps') {
+	toggleActiveTab(tab: 'events' | 'apps' | 'event deliveries') {
 		this.activeTab = tab;
 
 		if (tab === 'apps' && this.apps?.content.length > 0) {
 			this.detailsItem = this.apps?.content[0];
 		} else if (tab === 'events' && this.events?.content.length > 0) {
+			this.eventDetailsActiveTab = 'data';
 			this.detailsItem = this.events?.content[0];
-			this.getDelieveryAttempts(this.detailsItem?.uid);
+		} else if (tab === 'event deliveries' && this.eventDeliveries?.length > 0) {
+			this.detailsItem = this.eventDeliveries?.[0];
+			this.getDelieveryAttempts({ eventDeliveryId: this.detailsItem.uid, eventId: this.detailsItem.event_id });
 		}
 	}
 
@@ -112,14 +120,13 @@ export class DashboardComponent implements OnInit {
 				method: 'get'
 			});
 			this.dashboardData = dashboardResponse.data;
-			console.log('🚀 ~ file: dashboard.component.ts ~ line 115 ~ DashboardComponent ~ fetchDashboardData ~ this.dashboardData', this.dashboardData);
 
 			let labelsDateFormat = '';
 			if (this.dashboardFrequency === 'daily') labelsDateFormat = 'DD[, ]MMM';
 			else if (this.dashboardFrequency === 'monthly') labelsDateFormat = 'MMM';
 			else if (this.dashboardFrequency === 'yearly') labelsDateFormat = 'YYYY';
 
-			const chartData = dashboardResponse.data.message_data;
+			const chartData = dashboardResponse.data.event_data;
 			const labels = [...chartData.map((label: { data: { date: any } }) => label.data.date)].map(date => (this.dashboardFrequency === 'weekly' ? date : moment(date).format(labelsDateFormat)));
 			labels.unshift('0');
 			const dataSet = [0, ...chartData.map((label: { count: any }) => label.count)];
@@ -201,7 +208,7 @@ export class DashboardComponent implements OnInit {
 			const eventsItem = { date: eventDate, events: filteredEventDate };
 			displayedEvents.push(eventsItem);
 		});
-		this.displayedEvents = displayedEvents;
+		return displayedEvents;
 	}
 
 	async getEvents() {
@@ -212,6 +219,7 @@ export class DashboardComponent implements OnInit {
 				url: `/events?sort=AESC&page=${this.eventsPage || 1}&perPage=20&startDate=${startDate}&endDate=${endDate}&appId=${this.eventApp}`,
 				method: 'get'
 			});
+			this.detailsItem = eventsResponse.data.content[0];
 
 			if (this.events && this.events?.pagination?.next === this.eventsPage) {
 				const content = [...this.events.content, ...eventsResponse.data.content];
@@ -222,8 +230,33 @@ export class DashboardComponent implements OnInit {
 			}
 
 			this.events = eventsResponse.data;
-			console.log('🚀 ~ file: dashboard.component.ts ~ line 225 ~ DashboardComponent ~ getEvents ~ this.events', this.events);
-			this.setEventsDisplayed(eventsResponse.data.content);
+			this.displayedEvents = await this.setEventsDisplayed(eventsResponse.data.content);
+		} catch (error) {
+			return error;
+		}
+	}
+
+	async getEventDeliveries(eventId?: string) {
+		const { startDate, endDate } = this.setDateForFilter(this.eventsFilterDateRange.value);
+
+		try {
+			const eventDeliveriesResponse = await this.httpService.request({
+				url: `/events/${eventId || 'a6cf38e4-f8fd-433c-ac5a-45c8b5f410b1'}/eventdeliveries`,
+				method: 'get'
+			});
+			console.log('🚀 ~ file: dashboard.component.ts ~ line 238 ~ DashboardComponent ~ getEventsDeliveries ~ eventsResponse', eventDeliveriesResponse);
+
+			// if (this.events && this.events?.pagination?.next === this.eventsPage) {
+			// 	const content = [...this.events.content, ...eventsResponse.data.content];
+			// 	const pagination = eventsResponse.data.pagination;
+			// 	this.events = { content, pagination };
+			// 	this.setEventsDisplayed(content);
+			// 	return;
+			// }
+
+			this.eventDeliveries = eventDeliveriesResponse.data;
+			this.getDelieveryAttempts({ eventDeliveryId: this.eventDeliveries[0].uid, eventId: this.eventDeliveries[0].event_id });
+			this.displayedEventDeliveries = this.setEventsDisplayed(eventDeliveriesResponse.data);
 		} catch (error) {
 			return error;
 		}
@@ -248,10 +281,10 @@ export class DashboardComponent implements OnInit {
 		}
 	}
 
-	async getDelieveryAttempts(eventId: string) {
+	async getDelieveryAttempts(requestDetails: { eventId: string; eventDeliveryId: string }) {
 		try {
 			const deliveryAttemptsResponse = await this.httpService.request({
-				url: `/events/${eventId}/deliveryattempts`,
+				url: `/events/${requestDetails.eventId}/eventdeliveries/${requestDetails.eventDeliveryId}/deliveryattempts`,
 				method: 'get'
 			});
 			this.eventDeliveryAtempt = deliveryAttemptsResponse.data[deliveryAttemptsResponse.data.length - 1];
@@ -260,10 +293,13 @@ export class DashboardComponent implements OnInit {
 		}
 	}
 
-	getCodeSnippetString(type: 'res_body' | 'event' | 'res_head' | 'req') {
+	getCodeSnippetString(type: 'res_body' | 'event' | 'event_delivery' | 'res_head' | 'req') {
 		if (type === 'event') {
 			if (!this.detailsItem?.data) return 'No event data was sent';
-			return JSON.stringify(this.detailsItem.data, null, 4).replaceAll(/"([^"]+)":/g, '$1:');
+			return JSON.stringify(this.detailsItem.data || this.detailsItem.metadata.data, null, 4).replaceAll(/"([^"]+)":/g, '$1:');
+		} else if (type === 'event_delivery') {
+			if (!this.detailsItem?.metadata?.data) return 'No event data was sent';
+			return JSON.stringify(this.detailsItem.metadata.data, null, 4).replaceAll(/"([^"]+)":/g, '$1:');
 		} else if (type === 'res_body') {
 			if (!this.eventDeliveryAtempt) return 'No response body was sent';
 			return this.eventDeliveryAtempt.response_data;
@@ -277,7 +313,7 @@ export class DashboardComponent implements OnInit {
 		return '';
 	}
 
-	async retryEvent(requestDetails: { eventId: string; appId: string; e: any; index: number }) {
+	async retryEvent(requestDetails: { eventId: string; appId: string; e: any; index: number; eventDeliveryId: string }) {
 		requestDetails.e.stopPropagation();
 		const retryButton: any = document.querySelector(`#event${requestDetails.index} button`);
 		if (retryButton) {
@@ -288,7 +324,7 @@ export class DashboardComponent implements OnInit {
 		try {
 			await this.httpService.request({
 				method: 'put',
-				url: `/apps/${requestDetails.appId}/events/${requestDetails.eventId}/resend`
+				url: `/apps/${requestDetails.appId}/events/${requestDetails.eventId}/eventdeliveries/${requestDetails.eventDeliveryId}/resend`
 			});
 			this.generalService.showNotification({ message: 'Retry Request Sent' });
 			retryButton.classList.remove(['spin', 'disabled']);
@@ -319,5 +355,10 @@ export class DashboardComponent implements OnInit {
 			this.selectedEventsFromEventsTable.push(checkbox.value);
 			checkbox.checked = event.target.checked;
 		});
+	}
+
+	async openDeliveriesTab(eventId: string) {
+		await this.getEventDeliveries(eventId);
+		this.toggleActiveTab('event deliveries');
 	}
 }
