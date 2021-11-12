@@ -74,13 +74,14 @@ func (a *applicationHandler) CreateAppEvent(w http.ResponseWriter, r *http.Reque
 
 	event := &convoy.Event{
 		UID:              uuid.New().String(),
-		AppID:            app.UID,
 		EventType:        convoy.EventType(eventType),
 		MatchedEndpoints: len(matchedEndpoints),
 		Data:             d,
 		CreatedAt:        primitive.NewDateTimeFromTime(time.Now()),
 		UpdatedAt:        primitive.NewDateTimeFromTime(time.Now()),
 		AppMetadata: &convoy.AppMetadata{
+			Title:        app.Title,
+			UID:          app.UID,
 			GroupID:      app.GroupID,
 			SupportEmail: app.SupportEmail,
 		},

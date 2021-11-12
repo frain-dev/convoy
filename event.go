@@ -16,6 +16,7 @@ var (
 
 type AppMetadata struct {
 	UID          string `json:"uid" bson:"uid"`
+	Title        string `json:"title" bson:"title"`
 	GroupID      string `json:"group_id" bson:"group_id"`
 	SupportEmail string `json:"support_email" bson:"support_email"`
 }
@@ -30,7 +31,6 @@ type EventType string
 type Event struct {
 	ID               primitive.ObjectID `json:"-" bson:"_id"`
 	UID              string             `json:"uid" bson:"uid"`
-	AppID            string             `json:"app_id" bson:"app_id"`
 	EventType        EventType          `json:"event_type" bson:"event_type"`
 	MatchedEndpoints int                `json:"matched_endpoints" bson:"matched_enpoints"`
 
