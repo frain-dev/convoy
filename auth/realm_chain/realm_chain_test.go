@@ -26,7 +26,7 @@ func TestGet(t *testing.T) {
 }
 
 var fileRealmOpt = &config.FileRealmOption{
-	Basic: []auth.BasicAuth{
+	Basic: []config.BasicAuth{
 		{
 			Username: "username1",
 			Password: "password1",
@@ -60,7 +60,7 @@ var fileRealmOpt = &config.FileRealmOption{
 			},
 		},
 	},
-	APIKey: []auth.APIKeyAuth{
+	APIKey: []config.APIKeyAuth{
 		{
 			APIKey: "avcbajbwrohw@##Q39uekvsmbvxc.fdjhd",
 			Role: auth.Role{

@@ -1,22 +1,4 @@
-package auth
-
-type Realm interface {
-	GetName() string
-	Authenticate(cred *Credential) (*AuthenticatedUser, error)
-}
-
-type RealmType string
-
-const (
-	RealmTypeAPIKey = RealmType("api_key_realm")
-	RealmTypeBasic  = RealmType("basic_realm")
-	//RealmTypeFile   = RealmType("file_realm")
-	//RealmTypeVault = RealmType("vault_realm")
-)
-
-func (r RealmType) String() string {
-	return string(r)
-}
+package config
 
 type RealmOption struct {
 	Type   string       `json:"type"`

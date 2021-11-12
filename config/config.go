@@ -9,7 +9,6 @@ import (
 	"strconv"
 	"sync/atomic"
 
-	"github.com/frain-dev/convoy/auth"
 	"github.com/frain-dev/convoy/config/algo"
 )
 
@@ -40,8 +39,8 @@ type QueueConfiguration struct {
 }
 
 type FileRealmOption struct {
-	Basic  []auth.BasicAuth  `json:"basic"`
-	APIKey []auth.APIKeyAuth `json:"api_key"`
+	Basic  []BasicAuth  `json:"basic"`
+	APIKey []APIKeyAuth `json:"api_key"`
 }
 
 type AuthConfiguration struct {
