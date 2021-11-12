@@ -46,6 +46,16 @@ type Metadata struct {
 	RetryLimit uint64 `json:"retry_limit" bson:"retry_limit"`
 }
 
+func (em Metadata) Value() (driver.Value, error) {
+	b := new(bytes.Buffer)
+
+	if err := json.NewEncoder(b).Encode(em); err != nil {
+		return driver.Value(""), err
+	}
+
+	return driver.Value(b.String()), nil
+}
+
 type EndpointMetadata struct {
 	UID       string         `json:"uid" bson:"uid"`
 	TargetURL string         `json:"target_url" bson:"target_url"`
@@ -55,14 +65,9 @@ type EndpointMetadata struct {
 	Sent bool `json:"sent" bson:"sent"`
 }
 
-func (em Metadata) Value() (driver.Value, error) {
-	b := new(bytes.Buffer)
-
-	if err := json.NewEncoder(b).Encode(em); err != nil {
-		return driver.Value(""), err
-	}
-
-	return driver.Value(b.String()), nil
+type EventMetadata struct {
+	UID       string    `json:"uid" bson:"uid"`
+	EventType EventType `json:"name" bson:"name"`
 }
 
 type DeliveryAttempt struct {
@@ -89,10 +94,9 @@ type DeliveryAttempt struct {
 
 //Event defines a payload to be sent to an application
 type EventDelivery struct {
-	ID      primitive.ObjectID `json:"-" bson:"_id"`
-	UID     string             `json:"uid" bson:"uid"`
-	AppID   string             `json:"app_id" bson:"app_id"`
-	EventID string             `json:"event_id" bson:"event_id"`
+	ID            primitive.ObjectID `json:"-" bson:"_id"`
+	UID           string             `json:"uid" bson:"uid"`
+	EventMetadata *EventMetadata     `json:"event_metadata" bson:"event_metadata"`
 
 	// Endpoint contains the destination of the event.
 	EndpointMetadata *EndpointMetadata `json:"endpoint" bson:"endpoint"`

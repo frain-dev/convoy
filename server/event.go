@@ -71,13 +71,16 @@ func (a *applicationHandler) CreateAppEvent(w http.ResponseWriter, r *http.Reque
 		return
 	}
 
+	matchedEndpoints := matchEndpointsForDelivery(eventType, app.Endpoints, nil)
+
 	event := &convoy.Event{
-		UID:       uuid.New().String(),
-		AppID:     app.UID,
-		EventType: convoy.EventType(eventType),
-		Data:      d,
-		CreatedAt: primitive.NewDateTimeFromTime(time.Now()),
-		UpdatedAt: primitive.NewDateTimeFromTime(time.Now()),
+		UID:              uuid.New().String(),
+		AppID:            app.UID,
+		EventType:        convoy.EventType(eventType),
+		MatchedEndpoints: len(matchedEndpoints),
+		Data:             d,
+		CreatedAt:        primitive.NewDateTimeFromTime(time.Now()),
+		UpdatedAt:        primitive.NewDateTimeFromTime(time.Now()),
 		AppMetadata: &convoy.AppMetadata{
 			GroupID:      app.GroupID,
 			SupportEmail: app.SupportEmail,
@@ -108,18 +111,19 @@ func (a *applicationHandler) CreateAppEvent(w http.ResponseWriter, r *http.Reque
 		return
 	}
 
-	endpoints := matchEndpointsForDelivery(eventType, app.Endpoints, nil)
 	eventStatus := convoy.ScheduledEventStatus
 
-	for _, v := range endpoints {
+	for _, v := range matchedEndpoints {
 		if v.Status != convoy.ActiveEndpointStatus {
 			eventStatus = convoy.DiscardedEventStatus
 		}
 
 		eventDelivery := &convoy.EventDelivery{
-			UID:     uuid.New().String(),
-			AppID:   app.UID,
-			EventID: event.UID,
+			UID: uuid.New().String(),
+			EventMetadata: &convoy.EventMetadata{
+				UID:       event.UID,
+				EventType: event.EventType,
+			},
 			EndpointMetadata: &convoy.EndpointMetadata{
 				UID:       v.UID,
 				TargetURL: v.TargetURL,
@@ -128,6 +132,7 @@ func (a *applicationHandler) CreateAppEvent(w http.ResponseWriter, r *http.Reque
 				Sent:      false,
 			},
 			AppMetadata: &convoy.AppMetadata{
+				UID:          app.UID,
 				GroupID:      app.GroupID,
 				SupportEmail: app.SupportEmail,
 			},
@@ -142,6 +147,8 @@ func (a *applicationHandler) CreateAppEvent(w http.ResponseWriter, r *http.Reque
 			Status:           eventStatus,
 			DeliveryAttempts: make([]convoy.DeliveryAttempt, 0),
 			DocumentStatus:   convoy.ActiveDocumentStatus,
+			CreatedAt:        primitive.NewDateTimeFromTime(time.Now()),
+			UpdatedAt:        primitive.NewDateTimeFromTime(time.Now()),
 		}
 		err = a.eventDeliveryRepo.CreateEventDelivery(r.Context(), eventDelivery)
 		if err != nil {
@@ -224,7 +231,7 @@ func (a *applicationHandler) ResendEventDelivery(w http.ResponseWriter, r *http.
 	// Retry to Inactive endpoints.
 	// System cannot handle more than one endpoint per url at this point.
 	e := eventDelivery.EndpointMetadata
-	endpoint, err := a.appRepo.FindApplicationEndpointByID(context.Background(), eventDelivery.AppID, e.UID)
+	endpoint, err := a.appRepo.FindApplicationEndpointByID(context.Background(), eventDelivery.AppMetadata.UID, e.UID)
 	if err != nil {
 		_ = render.Render(w, r, newErrorResponse("cannot find endpoint", http.StatusInternalServerError))
 		return
@@ -238,7 +245,7 @@ func (a *applicationHandler) ResendEventDelivery(w http.ResponseWriter, r *http.
 	if endpoint.Status == convoy.InactiveEndpointStatus {
 		pendingEndpoints := []string{e.UID}
 
-		err = a.appRepo.UpdateApplicationEndpointsStatus(context.Background(), eventDelivery.AppID, pendingEndpoints, convoy.PendingEndpointStatus)
+		err = a.appRepo.UpdateApplicationEndpointsStatus(context.Background(), eventDelivery.AppMetadata.UID, pendingEndpoints, convoy.PendingEndpointStatus)
 		if err != nil {
 			_ = render.Render(w, r, newErrorResponse("failed to update endpoint status", http.StatusInternalServerError))
 			return

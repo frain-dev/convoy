@@ -8,6 +8,9 @@
 					},
 					"support_email": {
 						"type": "string"
+					},
+					"uid": {
+						"type": "string"
 					}
 				},
 				"type": "object"
@@ -179,6 +182,9 @@
 					"event_type": {
 						"type": "string"
 					},
+					"matched_endpoints": {
+						"type": "integer"
+					},
 					"provider_id": {
 						"description": "ProviderID is a custom ID that can be used to reconcile this Event\nwith your internal systems.\nThis is optional\nIf not provided, we will generate one for you",
 						"type": "string"
@@ -194,9 +200,6 @@
 			},
 			"convoy.EventDelivery": {
 				"properties": {
-					"app_id": {
-						"type": "string"
-					},
 					"app_metadata": {
 						"$ref": "#/components/schemas/convoy.AppMetadata"
 					},
@@ -212,8 +215,8 @@
 					"endpoint": {
 						"$ref": "#/components/schemas/convoy.EndpointMetadata"
 					},
-					"event_id": {
-						"type": "string"
+					"event_metadata": {
+						"$ref": "#/components/schemas/convoy.EventMetadata"
 					},
 					"metadata": {
 						"$ref": "#/components/schemas/convoy.Metadata"
@@ -225,6 +228,17 @@
 						"type": "string"
 					},
 					"updated_at": {
+						"type": "string"
+					}
+				},
+				"type": "object"
+			},
+			"convoy.EventMetadata": {
+				"properties": {
+					"name": {
+						"type": "string"
+					},
+					"uid": {
 						"type": "string"
 					}
 				},

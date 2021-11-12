@@ -6,6 +6,8 @@ definitions:
         type: string
       support_email:
         type: string
+      uid:
+        type: string
     type: object
   convoy.Application:
     properties:
@@ -120,6 +122,8 @@ definitions:
         type: string
       event_type:
         type: string
+      matched_endpoints:
+        type: integer
       provider_id:
         description: |-
           ProviderID is a custom ID that can be used to reconcile this Event
@@ -134,8 +138,6 @@ definitions:
     type: object
   convoy.EventDelivery:
     properties:
-      app_id:
-        type: string
       app_metadata:
         $ref: '#/definitions/convoy.AppMetadata'
       created_at:
@@ -147,8 +149,8 @@ definitions:
       endpoint:
         $ref: '#/definitions/convoy.EndpointMetadata'
         description: Endpoint contains the destination of the event.
-      event_id:
-        type: string
+      event_metadata:
+        $ref: '#/definitions/convoy.EventMetadata'
       metadata:
         $ref: '#/definitions/convoy.Metadata'
       status:
@@ -156,6 +158,13 @@ definitions:
       uid:
         type: string
       updated_at:
+        type: string
+    type: object
+  convoy.EventMetadata:
+    properties:
+      name:
+        type: string
+      uid:
         type: string
     type: object
   convoy.Group:

@@ -6,6 +6,8 @@ components:
           type: string
         support_email:
           type: string
+        uid:
+          type: string
       type: object
     convoy.Application:
       properties:
@@ -120,6 +122,8 @@ components:
           type: string
         event_type:
           type: string
+        matched_endpoints:
+          type: integer
         provider_id:
           description: |-
             ProviderID is a custom ID that can be used to reconcile this Event
@@ -134,8 +138,6 @@ components:
       type: object
     convoy.EventDelivery:
       properties:
-        app_id:
-          type: string
         app_metadata:
           $ref: '#/components/schemas/convoy.AppMetadata'
         created_at:
@@ -146,8 +148,8 @@ components:
           type: string
         endpoint:
           $ref: '#/components/schemas/convoy.EndpointMetadata'
-        event_id:
-          type: string
+        event_metadata:
+          $ref: '#/components/schemas/convoy.EventMetadata'
         metadata:
           $ref: '#/components/schemas/convoy.Metadata'
         status:
@@ -155,6 +157,13 @@ components:
         uid:
           type: string
         updated_at:
+          type: string
+      type: object
+    convoy.EventMetadata:
+      properties:
+        name:
+          type: string
+        uid:
           type: string
       type: object
     convoy.Group:
