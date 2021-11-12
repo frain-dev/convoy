@@ -313,11 +313,15 @@ func requireGroup(groupRepo convoy.GroupRepository) func(next http.Handler) http
 			}
 			group := getGroupFromContext(r.Context())
 
-			if group.Name != authUser.Role.Group {
-				_ = render.Render(w, r, newErrorResponse("unauthorized to access group", http.StatusUnauthorized))
-				return
+			for _, v := range authUser.Role.Group {
+				if group.Name == v {
+					next.ServeHTTP(w, r)
+					return
+				}
 			}
-			next.ServeHTTP(w, r)
+
+			_ = render.Render(w, r, newErrorResponse("unauthorized to access group", http.StatusUnauthorized))
+			return
 		})
 	}
 }

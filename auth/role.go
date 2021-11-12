@@ -9,7 +9,7 @@ import (
 // Then the user will have access to everything regardless of the value of Group.
 type Role struct {
 	Type  RoleType `json:"type"`
-	Group string   `json:"group"`
+	Group []string `json:"group"`
 }
 
 type RoleType string

@@ -8,7 +8,7 @@
 					"password": "test",
 					"role": {
 						"type": "admin",
-						"group": "sendcash-pay"
+						"group": ["sendcash-pay"]
 					}
 				}
 			]
