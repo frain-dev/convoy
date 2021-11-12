@@ -98,7 +98,7 @@ export class DashboardComponent implements OnInit {
 			this.detailsItem = this.events?.content[0];
 		} else if (tab === 'event deliveries' && this.eventDeliveries?.length > 0) {
 			this.detailsItem = this.eventDeliveries?.[0];
-			this.getDelieveryAttempts({ eventDeliveryId: this.detailsItem.uid, eventId: this.detailsItem.event_id });
+			this.getDelieveryAttempts(this.detailsItem.uid);
 		}
 	}
 
@@ -241,7 +241,7 @@ export class DashboardComponent implements OnInit {
 
 		try {
 			const eventDeliveriesResponse = await this.httpService.request({
-				url: `/events/${eventId || 'a6cf38e4-f8fd-433c-ac5a-45c8b5f410b1'}/eventdeliveries`,
+				url: `/eventdeliveries?eventId=${eventId || ''}`,
 				method: 'get'
 			});
 			console.log('🚀 ~ file: dashboard.component.ts ~ line 238 ~ DashboardComponent ~ getEventsDeliveries ~ eventsResponse', eventDeliveriesResponse);
@@ -254,9 +254,9 @@ export class DashboardComponent implements OnInit {
 			// 	return;
 			// }
 
-			this.eventDeliveries = eventDeliveriesResponse.data;
-			this.getDelieveryAttempts({ eventDeliveryId: this.eventDeliveries[0].uid, eventId: this.eventDeliveries[0].event_id });
-			this.displayedEventDeliveries = this.setEventsDisplayed(eventDeliveriesResponse.data);
+			this.eventDeliveries = eventDeliveriesResponse.data.content;
+			// this.getDelieveryAttempts(this.eventDeliveries[0].uid);
+			this.displayedEventDeliveries = this.setEventsDisplayed(eventDeliveriesResponse.data.content);
 		} catch (error) {
 			return error;
 		}
@@ -281,10 +281,10 @@ export class DashboardComponent implements OnInit {
 		}
 	}
 
-	async getDelieveryAttempts(requestDetails: { eventId: string; eventDeliveryId: string }) {
+	async getDelieveryAttempts(eventDeliveryId: string) {
 		try {
 			const deliveryAttemptsResponse = await this.httpService.request({
-				url: `/events/${requestDetails.eventId}/eventdeliveries/${requestDetails.eventDeliveryId}/deliveryattempts`,
+				url: `/eventdeliveries/${eventDeliveryId}/deliveryattempts`,
 				method: 'get'
 			});
 			this.eventDeliveryAtempt = deliveryAttemptsResponse.data[deliveryAttemptsResponse.data.length - 1];

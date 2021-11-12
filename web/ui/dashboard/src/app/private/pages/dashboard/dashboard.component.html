@@ -275,7 +275,7 @@
 										*ngFor="let event of eventDeliveriesGroup.events; let index = index"
 										[ngClass]="{ active: event.uid === detailsItem?.uid }"
 										[id]="'event' + index"
-										(click)="detailsItem = event; getDelieveryAttempts({ eventId: event.event_id, eventDeliveryId: event.uid })"
+										(click)="detailsItem = event; getDelieveryAttempts(event.uid)"
 									>
 										<td>
 											<div class="checkbox has-retry">
