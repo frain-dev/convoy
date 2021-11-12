@@ -289,8 +289,10 @@ func createMessageCommand(a *app) *cobra.Command {
 
 			log.Println("Event ", string(d))
 			msg := &convoy.Event{
-				UID:       uuid.New().String(),
-				AppID:     appData.UID,
+				UID: uuid.New().String(),
+				AppMetadata: &convoy.AppMetadata{
+					UID: appData.UID,
+				},
 				EventType: convoy.EventType(eventType),
 				Data:      d,
 

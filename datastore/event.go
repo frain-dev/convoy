@@ -42,7 +42,7 @@ func (db *eventRepo) CreateEvent(ctx context.Context,
 	message.ID = primitive.NewObjectID()
 
 	if util.IsStringEmpty(message.ProviderID) {
-		message.ProviderID = message.AppID
+		message.ProviderID = message.AppMetadata.UID
 	}
 	if util.IsStringEmpty(message.UID) {
 		message.UID = uuid.New().String()
@@ -225,7 +225,7 @@ func (db *eventRepo) LoadEventsPaged(ctx context.Context, groupID string, appId 
 	hasGroupFilter := !util.IsStringEmpty(groupID)
 
 	if hasAppFilter && hasGroupFilter {
-		filter = bson.M{"app_metadata.group_id": groupID, "app_id": appId, "document_status": bson.M{"$ne": convoy.DeletedDocumentStatus},
+		filter = bson.M{"app_metadata.group_id": groupID, "app_metadata.uid": appId, "document_status": bson.M{"$ne": convoy.DeletedDocumentStatus},
 			"created_at": getCreatedDateFilter(searchParams)}
 	} else if hasAppFilter {
 		filter = bson.M{"app_id": appId, "document_status": bson.M{"$ne": convoy.DeletedDocumentStatus},

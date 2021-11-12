@@ -156,7 +156,7 @@ func (db *eventDeliveryRepo) LoadEventDeliveriesPaged(ctx context.Context, group
 	}
 
 	if hasEventFilter {
-		filter["event_metadata.event_id"] = eventID
+		filter["event_metadata.uid"] = eventID
 	}
 
 	if hasStatusFilter {

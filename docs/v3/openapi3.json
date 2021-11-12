@@ -9,6 +9,9 @@
 					"support_email": {
 						"type": "string"
 					},
+					"title": {
+						"type": "string"
+					},
 					"uid": {
 						"type": "string"
 					}
@@ -160,9 +163,6 @@
 			},
 			"convoy.Event": {
 				"properties": {
-					"app_id": {
-						"type": "string"
-					},
 					"app_metadata": {
 						"$ref": "#/components/schemas/convoy.AppMetadata"
 					},

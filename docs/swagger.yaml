@@ -6,6 +6,8 @@ definitions:
         type: string
       support_email:
         type: string
+      title:
+        type: string
       uid:
         type: string
     type: object
@@ -105,8 +107,6 @@ definitions:
     type: object
   convoy.Event:
     properties:
-      app_id:
-        type: string
       app_metadata:
         $ref: '#/definitions/convoy.AppMetadata'
       created_at:
