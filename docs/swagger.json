@@ -2590,6 +2590,9 @@
                 "support_email": {
                     "type": "string"
                 },
+                "title": {
+                    "type": "string"
+                },
                 "uid": {
                     "type": "string"
                 }
@@ -2741,9 +2744,6 @@
         "convoy.Event": {
             "type": "object",
             "properties": {
-                "app_id": {
-                    "type": "string"
-                },
                 "app_metadata": {
                     "$ref": "#/definitions/convoy.AppMetadata"
                 },

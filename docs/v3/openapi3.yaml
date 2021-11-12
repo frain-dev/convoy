@@ -6,6 +6,8 @@ components:
           type: string
         support_email:
           type: string
+        title:
+          type: string
         uid:
           type: string
       type: object
@@ -105,8 +107,6 @@ components:
       type: object
     convoy.Event:
       properties:
-        app_id:
-          type: string
         app_metadata:
           $ref: '#/components/schemas/convoy.AppMetadata'
         created_at:

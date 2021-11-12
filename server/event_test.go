@@ -36,8 +36,10 @@ func TestApplicationHandler_CreateAppEvent(t *testing.T) {
 	msgId := "1122333444456"
 
 	message := &convoy.Event{
-		UID:   msgId,
-		AppID: appId,
+		UID: msgId,
+		AppMetadata: &convoy.AppMetadata{
+			UID: appId,
+		},
 	}
 
 	type args struct {
