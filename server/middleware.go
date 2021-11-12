@@ -313,7 +313,7 @@ func requireGroup(groupRepo convoy.GroupRepository) func(next http.Handler) http
 			}
 			group := getGroupFromContext(r.Context())
 
-			for _, v := range authUser.Role.Group {
+			for _, v := range authUser.Role.Groups {
 				if group.Name == v {
 					next.ServeHTTP(w, r)
 					return

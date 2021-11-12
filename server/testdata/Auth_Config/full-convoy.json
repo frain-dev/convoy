@@ -8,7 +8,7 @@
                     "password": "test",
                     "role": {
                         "type": "admin",
-                        "group": [
+                        "groups": [
                             "sendcash-pay"
                         ]
                     }
@@ -19,7 +19,7 @@
                     "api_key": "avcbajbwrohw@##Q39uekvsmbvxc.fdjhd",
                     "role": {
                         "type": "ui_admin",
-                        "group": [
+                        "groups": [
                             "sendcash-pay"
                         ]
                     }

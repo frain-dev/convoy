@@ -6,10 +6,10 @@ import (
 )
 
 // Role represents the permission a user is given, if the Type is RoleSuperUser,
-// Then the user will have access to everything regardless of the value of Group.
+// Then the user will have access to everything regardless of the value of Groups.
 type Role struct {
-	Type  RoleType `json:"type"`
-	Group []string `json:"group"`
+	Type   RoleType `json:"type"`
+	Groups []string `json:"groups"`
 }
 
 type RoleType string

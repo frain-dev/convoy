@@ -31,32 +31,32 @@ var fileRealmOpt = &config.FileRealmOption{
 			Username: "username1",
 			Password: "password1",
 			Role: auth.Role{
-				Type:  auth.RoleAdmin,
-				Group: []string{"sendcash-pay"},
+				Type:   auth.RoleAdmin,
+				Groups: []string{"sendcash-pay"},
 			},
 		},
 		{
 			Username: "username2",
 			Password: "password2",
 			Role: auth.Role{
-				Type:  auth.RoleUIAdmin,
-				Group: []string{"buycoins"},
+				Type:   auth.RoleUIAdmin,
+				Groups: []string{"buycoins"},
 			},
 		},
 		{
 			Username: "username3",
 			Password: "password3",
 			Role: auth.Role{
-				Type:  auth.RoleSuperUser,
-				Group: []string{"paystack"},
+				Type:   auth.RoleSuperUser,
+				Groups: []string{"paystack"},
 			},
 		},
 		{
 			Username: "username4",
 			Password: "password4",
 			Role: auth.Role{
-				Type:  auth.RoleAPI,
-				Group: []string{"termii"},
+				Type:   auth.RoleAPI,
+				Groups: []string{"termii"},
 			},
 		},
 	},
@@ -64,8 +64,8 @@ var fileRealmOpt = &config.FileRealmOption{
 		{
 			APIKey: "avcbajbwrohw@##Q39uekvsmbvxc.fdjhd",
 			Role: auth.Role{
-				Type:  auth.RoleUIAdmin,
-				Group: []string{"sendcash-pay"},
+				Type:   auth.RoleUIAdmin,
+				Groups: []string{"sendcash-pay"},
 			},
 		},
 	},
@@ -120,8 +120,8 @@ func TestRealmChain_Authenticate(t *testing.T) {
 					Password: "password1",
 				},
 				Role: auth.Role{
-					Type:  auth.RoleAdmin,
-					Group: []string{"sendcash-pay"},
+					Type:   auth.RoleAdmin,
+					Groups: []string{"sendcash-pay"},
 				},
 			},
 			wantErr: false,

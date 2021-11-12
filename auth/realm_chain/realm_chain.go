@@ -54,11 +54,11 @@ func Init(authConfig *config.AuthConfiguration) error {
 				return fmt.Errorf("invalid role type: %s", r.Role.Type.String())
 			}
 
-			if r.Role.Group == nil {
+			if r.Role.Groups == nil {
 				return errors.New("please specify a groups for api-key auth config")
 			}
 
-			for _, group := range r.Role.Group {
+			for _, group := range r.Role.Groups {
 				if group == "" {
 					return errors.New("empty group not allowed for api-key auth config")
 				}
@@ -74,11 +74,11 @@ func Init(authConfig *config.AuthConfiguration) error {
 				return fmt.Errorf("invalid role type: %s", r.Role.Type.String())
 			}
 
-			if r.Role.Group == nil {
+			if r.Role.Groups == nil {
 				return errors.New("please specify a groups for api-key auth config")
 			}
 
-			for _, group := range r.Role.Group {
+			for _, group := range r.Role.Groups {
 				if group == "" {
 					return errors.New("empty group not allowed for api-key auth config")
 				}

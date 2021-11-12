@@ -80,8 +80,8 @@ func NewFileRealm(opts *config.FileRealmOption) (*FileRealm, error) {
 			Username: basicAuth.Username,
 			Password: basicAuth.Password,
 			Role: auth.Role{
-				Type:  basicAuth.Role.Type,
-				Group: basicAuth.Role.Group,
+				Type:   basicAuth.Role.Type,
+				Groups: basicAuth.Role.Groups,
 			},
 		})
 	}
@@ -90,8 +90,8 @@ func NewFileRealm(opts *config.FileRealmOption) (*FileRealm, error) {
 		fr.APIKey = append(fr.APIKey, APIKeyAuth{
 			APIKey: basicAuth.APIKey,
 			Role: auth.Role{
-				Type:  basicAuth.Role.Type,
-				Group: basicAuth.Role.Group,
+				Type:   basicAuth.Role.Type,
+				Groups: basicAuth.Role.Groups,
 			},
 		})
 	}

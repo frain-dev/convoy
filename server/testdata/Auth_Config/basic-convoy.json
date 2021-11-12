@@ -8,7 +8,7 @@
                     "password": "test",
                     "role": {
                         "type": "admin",
-                        "group": [
+                        "groups": [
                             "sendcash-pay",
                             "buycoins-api"
                         ]
@@ -19,7 +19,9 @@
                     "password": "test",
                     "role": {
                         "type": "super_user",
-                        "group": ["buycoins"]
+                        "groups": [
+                            "buycoins"
+                        ]
                     }
                 }
             ],
@@ -28,7 +30,9 @@
                     "api_key": "avcbajbwrohw@##Q39uekvsmbvxc.fdjhd",
                     "role": {
                         "type": "ui_admin",
-                        "group": ["sendcash-pay"]
+                        "groups": [
+                            "sendcash-pay"
+                        ]
                     }
                 }
             ]
