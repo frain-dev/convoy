@@ -113,33 +113,12 @@ func buildRoutes(app *applicationHandler) http.Handler {
 
 				eventRouter.Route("/{eventID}", func(eventSubRouter chi.Router) {
 					eventSubRouter.Use(requireEvent(app.eventRepo))
-
 					eventSubRouter.Get("/", app.GetAppEvent)
-
-					eventSubRouter.Route("/eventdeliveries", func(eventDeliveryRouter chi.Router) {
-						eventDeliveryRouter.Get("/", app.GetEventDeliveries)
-
-						eventDeliveryRouter.Route("/{eventDeliveryID}", func(eventDeliverySubRouter chi.Router) {
-							eventDeliverySubRouter.Use(requireEventDelivery(app.eventDeliveryRepo))
-
-							eventDeliverySubRouter.Get("/", app.GetEventDelivery)
-							eventDeliverySubRouter.Put("/resend", app.ResendEventDelivery)
-
-							eventDeliverySubRouter.Route("/deliveryattempts", func(deliveryRouter chi.Router) {
-								deliveryRouter.Use(fetchDeliveryAttempts())
-
-								deliveryRouter.Get("/", app.GetDeliveryAttempts)
-								deliveryRouter.With(requireDeliveryAttempt()).Get("/{deliveryAttemptID}", app.GetDeliveryAttempt)
-							})
-						})
-
-					})
-
 				})
 			})
 
 			r.Route("/eventdeliveries", func(eventDeliveryRouter chi.Router) {
-				eventDeliveryRouter.Get("/", app.GetEventDeliveries)
+				eventDeliveryRouter.With(pagination).Get("/", app.GetEventDeliveriesPaged)
 
 				eventDeliveryRouter.Route("/{eventDeliveryID}", func(eventDeliverySubRouter chi.Router) {
 					eventDeliverySubRouter.Use(requireEventDelivery(app.eventDeliveryRepo))
@@ -213,33 +192,12 @@ func buildRoutes(app *applicationHandler) http.Handler {
 
 			eventRouter.Route("/{eventID}", func(eventSubRouter chi.Router) {
 				eventSubRouter.Use(requireEvent(app.eventRepo))
-
 				eventSubRouter.Get("/", app.GetAppEvent)
-
-				eventSubRouter.Route("/eventdeliveries", func(eventDeliveryRouter chi.Router) {
-					eventDeliveryRouter.With(pagination).Get("/", app.GetEventDeliveries)
-
-					eventDeliveryRouter.Route("/{eventDeliveryID}", func(eventDeliverySubRouter chi.Router) {
-						eventDeliverySubRouter.Use(requireEventDelivery(app.eventDeliveryRepo))
-
-						eventDeliverySubRouter.Get("/", app.GetEventDelivery)
-						eventDeliverySubRouter.Put("/resend", app.ResendEventDelivery)
-
-						eventDeliverySubRouter.Route("/deliveryattempts", func(deliveryRouter chi.Router) {
-							deliveryRouter.Use(fetchDeliveryAttempts())
-
-							deliveryRouter.Get("/", app.GetDeliveryAttempts)
-							deliveryRouter.With(requireDeliveryAttempt()).Get("/{deliveryAttemptID}", app.GetDeliveryAttempt)
-						})
-					})
-
-				})
 			})
-
 		})
 
 		uiRouter.Route("/eventdeliveries", func(eventDeliveryRouter chi.Router) {
-			eventDeliveryRouter.Get("/", app.GetEventDeliveries)
+			eventDeliveryRouter.With(pagination).Get("/", app.GetEventDeliveriesPaged)
 
 			eventDeliveryRouter.Route("/{eventDeliveryID}", func(eventDeliverySubRouter chi.Router) {
 				eventDeliverySubRouter.Use(requireEventDelivery(app.eventDeliveryRepo))

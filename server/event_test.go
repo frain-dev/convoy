@@ -317,10 +317,6 @@ func Test_resendEventDelivery(t *testing.T) {
 				},
 			},
 			dbFn: func(ev *convoy.Event, msg *convoy.EventDelivery, app *applicationHandler) {
-				e, _ := app.eventRepo.(*mocks.MockEventRepository)
-				e.EXPECT().
-					FindEventByID(gomock.Any(), gomock.Any()).Times(1).
-					Return(ev, nil)
 
 				m, _ := app.eventDeliveryRepo.(*mocks.MockEventDeliveryRepository)
 				m.EXPECT().
@@ -355,10 +351,6 @@ func Test_resendEventDelivery(t *testing.T) {
 				},
 			},
 			dbFn: func(ev *convoy.Event, msg *convoy.EventDelivery, app *applicationHandler) {
-				e, _ := app.eventRepo.(*mocks.MockEventRepository)
-				e.EXPECT().
-					FindEventByID(gomock.Any(), gomock.Any()).Times(1).
-					Return(ev, nil)
 
 				m, _ := app.eventDeliveryRepo.(*mocks.MockEventDeliveryRepository)
 				m.EXPECT().
@@ -392,10 +384,6 @@ func Test_resendEventDelivery(t *testing.T) {
 				},
 			},
 			dbFn: func(ev *convoy.Event, msg *convoy.EventDelivery, app *applicationHandler) {
-				e, _ := app.eventRepo.(*mocks.MockEventRepository)
-				e.EXPECT().
-					FindEventByID(gomock.Any(), gomock.Any()).Times(1).
-					Return(ev, nil)
 				m, _ := app.eventDeliveryRepo.(*mocks.MockEventDeliveryRepository)
 				m.EXPECT().
 					FindEventDeliveryByID(gomock.Any(), gomock.Any()).Times(1).
@@ -436,10 +424,6 @@ func Test_resendEventDelivery(t *testing.T) {
 				},
 			},
 			dbFn: func(ev *convoy.Event, msg *convoy.EventDelivery, app *applicationHandler) {
-				e, _ := app.eventRepo.(*mocks.MockEventRepository)
-				e.EXPECT().
-					FindEventByID(gomock.Any(), gomock.Any()).Times(1).
-					Return(ev, nil)
 				m, _ := app.eventDeliveryRepo.(*mocks.MockEventDeliveryRepository)
 				m.EXPECT().
 					FindEventDeliveryByID(gomock.Any(), gomock.Any()).Times(1).
@@ -495,11 +479,6 @@ func Test_resendEventDelivery(t *testing.T) {
 				},
 			},
 			dbFn: func(ev *convoy.Event, msg *convoy.EventDelivery, app *applicationHandler) {
-				e, _ := app.eventRepo.(*mocks.MockEventRepository)
-				e.EXPECT().
-					FindEventByID(gomock.Any(), gomock.Any()).Times(1).
-					Return(ev, nil)
-
 				m, _ := app.eventDeliveryRepo.(*mocks.MockEventDeliveryRepository)
 				m.EXPECT().
 					FindEventDeliveryByID(gomock.Any(), gomock.Any()).Times(1).
@@ -530,7 +509,7 @@ func Test_resendEventDelivery(t *testing.T) {
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
 
-			url := fmt.Sprintf("/api/v1/events/%s/eventdeliveries/%s/resend", tc.args.message.EventMetadata.UID, tc.args.message.UID)
+			url := fmt.Sprintf("/api/v1/eventdeliveries/%s/resend", tc.args.message.UID)
 			req := httptest.NewRequest(tc.method, url, nil)
 			req.SetBasicAuth("test", "test")
 			req.Header.Add("Content-Type", "application/json")

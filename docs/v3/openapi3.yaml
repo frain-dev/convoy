@@ -959,6 +959,253 @@ paths:
       summary: Update an application endpoint
       tags:
       - Application Endpoints
+  /eventdeliveries:
+    get:
+      description: This endpoint fetch event deliveries.
+      parameters:
+      - description: application id
+        in: query
+        name: appId
+        schema:
+          type: string
+      - description: group id
+        in: query
+        name: groupId
+        schema:
+          type: string
+      - description: event id
+        in: query
+        name: eventId
+        schema:
+          type: string
+      - description: start date
+        in: query
+        name: startDate
+        schema:
+          type: string
+      - description: end date
+        in: query
+        name: endDate
+        schema:
+          type: string
+      - description: results per page
+        in: query
+        name: perPage
+        schema:
+          type: string
+      - description: page number
+        in: query
+        name: page
+        schema:
+          type: string
+      - description: sort order
+        in: query
+        name: sort
+        schema:
+          type: string
+      - description: status
+        in: query
+        name: status
+        schema:
+          type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                allOf:
+                - $ref: '#/components/schemas/server.serverResponse'
+                - properties:
+                    data:
+                      allOf:
+                      - $ref: '#/components/schemas/server.pagedResponse'
+                      - properties:
+                          content:
+                            items:
+                              allOf:
+                              - $ref: '#/components/schemas/convoy.EventDelivery'
+                              - properties:
+                                  data:
+                                    $ref: '#/components/schemas/server.Stub'
+                                type: object
+                            type: array
+                        type: object
+                  type: object
+          description: OK
+        "400":
+          content:
+            application/json:
+              schema:
+                allOf:
+                - $ref: '#/components/schemas/server.serverResponse'
+                - properties:
+                    data:
+                      $ref: '#/components/schemas/server.Stub'
+                  type: object
+          description: Bad Request
+        "401":
+          content:
+            application/json:
+              schema:
+                allOf:
+                - $ref: '#/components/schemas/server.serverResponse'
+                - properties:
+                    data:
+                      $ref: '#/components/schemas/server.Stub'
+                  type: object
+          description: Unauthorized
+        "500":
+          content:
+            application/json:
+              schema:
+                allOf:
+                - $ref: '#/components/schemas/server.serverResponse'
+                - properties:
+                    data:
+                      $ref: '#/components/schemas/server.Stub'
+                  type: object
+          description: Internal Server Error
+      security:
+      - ApiKeyAuth: []
+      summary: Get event deliveries
+      tags:
+      - EventDelivery
+  /eventdeliveries/{eventDeliveryID}:
+    get:
+      description: This endpoint fetches an event delivery.
+      parameters:
+      - description: event id
+        in: path
+        name: eventID
+        required: true
+        schema:
+          type: string
+      - description: event delivery id
+        in: path
+        name: eventDeliveryID
+        required: true
+        schema:
+          type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                allOf:
+                - $ref: '#/components/schemas/server.serverResponse'
+                - properties:
+                    data:
+                      allOf:
+                      - $ref: '#/components/schemas/convoy.Event'
+                      - properties:
+                          data:
+                            $ref: '#/components/schemas/server.Stub'
+                        type: object
+                  type: object
+          description: OK
+        "400":
+          content:
+            application/json:
+              schema:
+                allOf:
+                - $ref: '#/components/schemas/server.serverResponse'
+                - properties:
+                    data:
+                      $ref: '#/components/schemas/server.Stub'
+                  type: object
+          description: Bad Request
+        "401":
+          content:
+            application/json:
+              schema:
+                allOf:
+                - $ref: '#/components/schemas/server.serverResponse'
+                - properties:
+                    data:
+                      $ref: '#/components/schemas/server.Stub'
+                  type: object
+          description: Unauthorized
+        "500":
+          content:
+            application/json:
+              schema:
+                allOf:
+                - $ref: '#/components/schemas/server.serverResponse'
+                - properties:
+                    data:
+                      $ref: '#/components/schemas/server.Stub'
+                  type: object
+          description: Internal Server Error
+      security:
+      - ApiKeyAuth: []
+      summary: Get event delivery
+      tags:
+      - EventDelivery
+  /eventdeliveries/{eventDeliveryID}/resend:
+    put:
+      description: This endpoint resends an app event
+      parameters:
+      - description: event id
+        in: path
+        name: eventID
+        required: true
+        schema:
+          type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                allOf:
+                - $ref: '#/components/schemas/server.serverResponse'
+                - properties:
+                    data:
+                      allOf:
+                      - $ref: '#/components/schemas/convoy.Event'
+                      - properties:
+                          data:
+                            $ref: '#/components/schemas/server.Stub'
+                        type: object
+                  type: object
+          description: OK
+        "400":
+          content:
+            application/json:
+              schema:
+                allOf:
+                - $ref: '#/components/schemas/server.serverResponse'
+                - properties:
+                    data:
+                      $ref: '#/components/schemas/server.Stub'
+                  type: object
+          description: Bad Request
+        "401":
+          content:
+            application/json:
+              schema:
+                allOf:
+                - $ref: '#/components/schemas/server.serverResponse'
+                - properties:
+                    data:
+                      $ref: '#/components/schemas/server.Stub'
+                  type: object
+          description: Unauthorized
+        "500":
+          content:
+            application/json:
+              schema:
+                allOf:
+                - $ref: '#/components/schemas/server.serverResponse'
+                - properties:
+                    data:
+                      $ref: '#/components/schemas/server.Stub'
+                  type: object
+          description: Internal Server Error
+      security:
+      - ApiKeyAuth: []
+      summary: Resend an app event
+      tags:
+      - EventDelivery
   /events:
     get:
       description: This endpoint fetches app events with pagination
@@ -1190,144 +1437,6 @@ paths:
       summary: Get app event
       tags:
       - Events
-  /events/{eventID}/eventdeliveries:
-    get:
-      description: This endpoint fetch event deliveries.
-      parameters:
-      - description: event id
-        in: path
-        name: eventID
-        required: true
-        schema:
-          type: string
-      responses:
-        "200":
-          content:
-            application/json:
-              schema:
-                allOf:
-                - $ref: '#/components/schemas/server.serverResponse'
-                - properties:
-                    data:
-                      items:
-                        allOf:
-                        - $ref: '#/components/schemas/convoy.EventDelivery'
-                        - properties:
-                            data:
-                              $ref: '#/components/schemas/server.Stub'
-                          type: object
-                      type: array
-                  type: object
-          description: OK
-        "400":
-          content:
-            application/json:
-              schema:
-                allOf:
-                - $ref: '#/components/schemas/server.serverResponse'
-                - properties:
-                    data:
-                      $ref: '#/components/schemas/server.Stub'
-                  type: object
-          description: Bad Request
-        "401":
-          content:
-            application/json:
-              schema:
-                allOf:
-                - $ref: '#/components/schemas/server.serverResponse'
-                - properties:
-                    data:
-                      $ref: '#/components/schemas/server.Stub'
-                  type: object
-          description: Unauthorized
-        "500":
-          content:
-            application/json:
-              schema:
-                allOf:
-                - $ref: '#/components/schemas/server.serverResponse'
-                - properties:
-                    data:
-                      $ref: '#/components/schemas/server.Stub'
-                  type: object
-          description: Internal Server Error
-      security:
-      - ApiKeyAuth: []
-      summary: Get event deliveries
-      tags:
-      - Events
-  /events/{eventID}/eventdeliveries/{eventDeliveryID}:
-    get:
-      description: This endpoint fetches an event delivery.
-      parameters:
-      - description: event id
-        in: path
-        name: eventID
-        required: true
-        schema:
-          type: string
-      - description: event delivery id
-        in: path
-        name: eventDeliveryID
-        required: true
-        schema:
-          type: string
-      responses:
-        "200":
-          content:
-            application/json:
-              schema:
-                allOf:
-                - $ref: '#/components/schemas/server.serverResponse'
-                - properties:
-                    data:
-                      allOf:
-                      - $ref: '#/components/schemas/convoy.Event'
-                      - properties:
-                          data:
-                            $ref: '#/components/schemas/server.Stub'
-                        type: object
-                  type: object
-          description: OK
-        "400":
-          content:
-            application/json:
-              schema:
-                allOf:
-                - $ref: '#/components/schemas/server.serverResponse'
-                - properties:
-                    data:
-                      $ref: '#/components/schemas/server.Stub'
-                  type: object
-          description: Bad Request
-        "401":
-          content:
-            application/json:
-              schema:
-                allOf:
-                - $ref: '#/components/schemas/server.serverResponse'
-                - properties:
-                    data:
-                      $ref: '#/components/schemas/server.Stub'
-                  type: object
-          description: Unauthorized
-        "500":
-          content:
-            application/json:
-              schema:
-                allOf:
-                - $ref: '#/components/schemas/server.serverResponse'
-                - properties:
-                    data:
-                      $ref: '#/components/schemas/server.Stub'
-                  type: object
-          description: Internal Server Error
-      security:
-      - ApiKeyAuth: []
-      summary: Get event delivery
-      tags:
-      - Events
   /events/{eventID}/eventdeliveries/{eventDeliveryID}/deliveryattempts:
     get:
       description: This endpoint fetches an app message's delivery attempts
@@ -1468,71 +1577,6 @@ paths:
       summary: Get delivery attempt
       tags:
       - DeliveryAttempts
-  /events/{eventID}/eventdeliveries/{eventDeliveryID}/resend:
-    put:
-      description: This endpoint resends an app event
-      parameters:
-      - description: event id
-        in: path
-        name: eventID
-        required: true
-        schema:
-          type: string
-      responses:
-        "200":
-          content:
-            application/json:
-              schema:
-                allOf:
-                - $ref: '#/components/schemas/server.serverResponse'
-                - properties:
-                    data:
-                      allOf:
-                      - $ref: '#/components/schemas/convoy.Event'
-                      - properties:
-                          data:
-                            $ref: '#/components/schemas/server.Stub'
-                        type: object
-                  type: object
-          description: OK
-        "400":
-          content:
-            application/json:
-              schema:
-                allOf:
-                - $ref: '#/components/schemas/server.serverResponse'
-                - properties:
-                    data:
-                      $ref: '#/components/schemas/server.Stub'
-                  type: object
-          description: Bad Request
-        "401":
-          content:
-            application/json:
-              schema:
-                allOf:
-                - $ref: '#/components/schemas/server.serverResponse'
-                - properties:
-                    data:
-                      $ref: '#/components/schemas/server.Stub'
-                  type: object
-          description: Unauthorized
-        "500":
-          content:
-            application/json:
-              schema:
-                allOf:
-                - $ref: '#/components/schemas/server.serverResponse'
-                - properties:
-                    data:
-                      $ref: '#/components/schemas/server.Stub'
-                  type: object
-          description: Internal Server Error
-      security:
-      - ApiKeyAuth: []
-      summary: Resend an app event
-      tags:
-      - Events
   /groups:
     get:
       description: This endpoint fetches groups
@@ -1791,6 +1835,8 @@ tags:
   name: Application Endpoints
 - description: Event related APIs
   name: Events
+- description: EventDelivery related APIs
+  name: EventDelivery
 - description: Delivery Attempt related APIs
   name: DeliveryAttempts
 - description: Group related APIs

@@ -9,6 +9,8 @@ import (
 	reflect "reflect"
 
 	convoy "github.com/frain-dev/convoy"
+	models "github.com/frain-dev/convoy/server/models"
+	mongopagination "github.com/gobeam/mongo-go-pagination"
 	gomock "github.com/golang/mock/gomock"
 )
 
@@ -77,6 +79,22 @@ func (m *MockEventDeliveryRepository) FindEventDeliveryByID(arg0 context.Context
 func (mr *MockEventDeliveryRepositoryMockRecorder) FindEventDeliveryByID(arg0, arg1 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "FindEventDeliveryByID", reflect.TypeOf((*MockEventDeliveryRepository)(nil).FindEventDeliveryByID), arg0, arg1)
+}
+
+// LoadEventDeliveriesPaged mocks base method.
+func (m *MockEventDeliveryRepository) LoadEventDeliveriesPaged(arg0 context.Context, arg1, arg2, arg3 string, arg4 convoy.EventDeliveryStatus, arg5 models.SearchParams, arg6 models.Pageable) ([]convoy.EventDelivery, mongopagination.PaginationData, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "LoadEventDeliveriesPaged", arg0, arg1, arg2, arg3, arg4, arg5, arg6)
+	ret0, _ := ret[0].([]convoy.EventDelivery)
+	ret1, _ := ret[1].(mongopagination.PaginationData)
+	ret2, _ := ret[2].(error)
+	return ret0, ret1, ret2
+}
+
+// LoadEventDeliveriesPaged indicates an expected call of LoadEventDeliveriesPaged.
+func (mr *MockEventDeliveryRepositoryMockRecorder) LoadEventDeliveriesPaged(arg0, arg1, arg2, arg3, arg4, arg5, arg6 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "LoadEventDeliveriesPaged", reflect.TypeOf((*MockEventDeliveryRepository)(nil).LoadEventDeliveriesPaged), arg0, arg1, arg2, arg3, arg4, arg5, arg6)
 }
 
 // UpdateEventDeliveryWithAttempt mocks base method.

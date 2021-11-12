@@ -11,7 +11,6 @@ import (
 	"github.com/frain-dev/convoy/config"
 	"github.com/frain-dev/convoy/server/models"
 	"github.com/frain-dev/convoy/util"
-	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/render"
 	"github.com/google/uuid"
 	log "github.com/sirupsen/logrus"
@@ -184,7 +183,7 @@ func (a *applicationHandler) GetAppEvent(w http.ResponseWriter, r *http.Request)
 // GetEventDelivery
 // @Summary Get event delivery
 // @Description This endpoint fetches an event delivery.
-// @Tags Events
+// @Tags EventDelivery
 // @Accept json
 // @Produce json
 // @Param eventID path string true "event id"
@@ -192,7 +191,7 @@ func (a *applicationHandler) GetAppEvent(w http.ResponseWriter, r *http.Request)
 // @Success 200 {object} serverResponse{data=convoy.Event{data=Stub}}
 // @Failure 400,401,500 {object} serverResponse{data=Stub}
 // @Security ApiKeyAuth
-// @Router /events/{eventID}/eventdeliveries/{eventDeliveryID} [get]
+// @Router /eventdeliveries/{eventDeliveryID} [get]
 func (a *applicationHandler) GetEventDelivery(w http.ResponseWriter, r *http.Request) {
 
 	_ = render.Render(w, r, newServerResponse("Event Delivery fetched successfully",
@@ -202,14 +201,14 @@ func (a *applicationHandler) GetEventDelivery(w http.ResponseWriter, r *http.Req
 // ResendEventDelivery
 // @Summary Resend an app event
 // @Description This endpoint resends an app event
-// @Tags Events
+// @Tags EventDelivery
 // @Accept  json
 // @Produce  json
 // @Param eventID path string true "event id"
 // @Success 200 {object} serverResponse{data=convoy.Event{data=Stub}}
 // @Failure 400,401,500 {object} serverResponse{data=Stub}
 // @Security ApiKeyAuth
-// @Router /events/{eventID}/eventdeliveries/{eventDeliveryID}/resend [put]
+// @Router /eventdeliveries/{eventDeliveryID}/resend [put]
 func (a *applicationHandler) ResendEventDelivery(w http.ResponseWriter, r *http.Request) {
 
 	eventDelivery := getEventDeliveryFromContext(r.Context())
@@ -311,18 +310,37 @@ func (a *applicationHandler) GetEventsPaged(w http.ResponseWriter, r *http.Reque
 // GetEventDeliveries
 // @Summary Get event deliveries
 // @Description This endpoint fetch event deliveries.
-// @Tags Events
+// @Tags EventDelivery
 // @Accept json
 // @Produce json
-// @Param eventID path string true "event id"
-// @Success 200 {object} serverResponse{data=[]convoy.EventDelivery{data=Stub}}
+// @Param appId query string false "application id"
+// @Param groupId query string false "group id"
+// @Param eventId query string false "event id"
+// @Param startDate query string false "start date"
+// @Param endDate query string false "end date"
+// @Param perPage query string false "results per page"
+// @Param page query string false "page number"
+// @Param sort query string false "sort order"
+// @Param status query string false "status"
+// @Success 200 {object} serverResponse{data=pagedResponse{content=[]convoy.EventDelivery{data=Stub}}}
 // @Failure 400,401,500 {object} serverResponse{data=Stub}
 // @Security ApiKeyAuth
-// @Router /events/{eventID}/eventdeliveries [get]
-func (a *applicationHandler) GetEventDeliveries(w http.ResponseWriter, r *http.Request) {
-	eventID := chi.URLParam(r, "eventID")
+// @Router /eventdeliveries [get]
+func (a *applicationHandler) GetEventDeliveriesPaged(w http.ResponseWriter, r *http.Request) {
 
-	eventDeliveries, err := a.eventDeliveryRepo.FindEventDeliveriesByEventID(r.Context(), eventID)
+	pageable := getPageableFromContext(r.Context())
+	groupID := r.URL.Query().Get("groupId")
+	appID := r.URL.Query().Get("appId")
+	eventID := r.URL.Query().Get("eventId")
+	status := r.URL.Query().Get("status")
+
+	searchParams, err := getSearchParams(r)
+	if err != nil {
+		_ = render.Render(w, r, newErrorResponse(err.Error(), http.StatusBadRequest))
+		return
+	}
+
+	ed, paginationData, err := a.eventDeliveryRepo.LoadEventDeliveriesPaged(r.Context(), groupID, appID, eventID, convoy.EventDeliveryStatus(status), searchParams, pageable)
 	if err != nil {
 		_ = render.Render(w, r, newErrorResponse("an error occurred while fetching event deliveries", http.StatusInternalServerError))
 		log.WithError(err)
@@ -330,7 +348,7 @@ func (a *applicationHandler) GetEventDeliveries(w http.ResponseWriter, r *http.R
 	}
 
 	_ = render.Render(w, r, newServerResponse("Event deliveries fetched successfully",
-		eventDeliveries, http.StatusOK))
+		pagedResponse{Content: &ed, Pagination: &paginationData}, http.StatusOK))
 }
 
 func getSearchParams(r *http.Request) (models.SearchParams, error) {
