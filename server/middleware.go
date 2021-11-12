@@ -67,33 +67,6 @@ func writeRequestIDHeader(next http.Handler) http.Handler {
 	})
 }
 
-func ensureBasicAuthFromRequest(a *config.AuthConfiguration, r *http.Request) error {
-	val := r.Header.Get("Authorization")
-	auth := strings.Split(val, " ")
-
-	if len(auth) != 2 {
-		return errors.New("invalid header structure")
-	}
-	if len(auth) != 2 {
-		return errors.New("invalid auth header structure")
-	}
-
-	if strings.ToUpper(auth[0]) != "BASIC" {
-		return errors.New("invalid auth header structure")
-	}
-
-	credentials, err := base64.StdEncoding.DecodeString(auth[1])
-	if err != nil {
-		return errors.New("invalid credentials")
-	}
-
-	if string(credentials) != fmt.Sprintf("%s:%s", a.Basic.Username, a.Basic.Password) {
-		return errors.New("authorization failed")
-	}
-
-	return nil
-}
-
 // func retrieveRequestID(r *http.Request) string { return middleware.GetReqID(r.Context()) }
 
 func jsonResponse(next http.Handler) http.Handler {
