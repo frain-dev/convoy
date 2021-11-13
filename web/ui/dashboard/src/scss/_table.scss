@@ -20,7 +20,7 @@
 		align-items: center;
 
 		input {
-			margin: 0 20px;
+			margin: 0 20px 0 0;
 		}
 	}
 }
@@ -107,31 +107,6 @@ table {
 			}
 		}
 	}
-
-	.tag {
-		padding: 1px 8px;
-		background: rgba(115, 122, 145, 0.1);
-		border-radius: 8px;
-		max-width: 75px;
-		font-weight: 500;
-		font-size: 12px;
-		line-height: 28px;
-		text-align: center;
-
-		&--Failure {
-			background: #f7e5e5;
-			color: #ff0505;
-		}
-
-		&--Retry {
-			background: #f8e5b9;
-		}
-
-		&--Success {
-			background: #e5f7e7;
-			color: #1f9c6a;
-		}
-	}
 }
 
 .pagination {
@@ -157,5 +132,30 @@ table {
 	p {
 		margin-top: 20px;
 		font-size: 14px;
+	}
+}
+
+.tag {
+	padding: 1px 8px;
+	background: rgba(115, 122, 145, 0.1);
+	border-radius: 8px;
+	max-width: 75px;
+	font-weight: 500;
+	font-size: 12px;
+	line-height: 28px;
+	text-align: center;
+
+	&--Failure {
+		background: #f7e5e5;
+		color: #ff0505;
+	}
+
+	&--Retry {
+		background: #f8e5b9;
+	}
+
+	&--Success {
+		background: #e5f7e7;
+		color: #1f9c6a;
 	}
 }
