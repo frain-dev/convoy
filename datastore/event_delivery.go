@@ -6,7 +6,9 @@ import (
 	"time"
 
 	"github.com/frain-dev/convoy"
+	"github.com/frain-dev/convoy/server/models"
 	"github.com/frain-dev/convoy/util"
+	pager "github.com/gobeam/mongo-go-pagination"
 	"github.com/google/uuid"
 	log "github.com/sirupsen/logrus"
 
@@ -132,4 +134,44 @@ func (db *eventDeliveryRepo) UpdateEventDeliveryWithAttempt(ctx context.Context,
 	}
 
 	return nil
+}
+
+func (db *eventDeliveryRepo) LoadEventDeliveriesPaged(ctx context.Context, groupID, appID, eventID string, status convoy.EventDeliveryStatus, searchParams models.SearchParams, pageable models.Pageable) ([]convoy.EventDelivery, pager.PaginationData, error) {
+	filter := bson.M{
+		"document_status": bson.M{"$ne": convoy.DeletedDocumentStatus},
+		"created_at":      getCreatedDateFilter(searchParams),
+	}
+
+	hasAppFilter := !util.IsStringEmpty(appID)
+	hasGroupFilter := !util.IsStringEmpty(groupID)
+	hasEventFilter := !util.IsStringEmpty(eventID)
+	hasStatusFilter := !util.IsStringEmpty(string(status))
+
+	if hasAppFilter {
+		filter["app_metadata.uid"] = appID
+	}
+
+	if hasGroupFilter {
+		filter["app_metadata.group_id"] = groupID
+	}
+
+	if hasEventFilter {
+		filter["event_metadata.uid"] = eventID
+	}
+
+	if hasStatusFilter {
+		filter["status"] = status
+	}
+
+	var eventDeliveries []convoy.EventDelivery
+	paginatedData, err := pager.New(db.inner).Context(ctx).Limit(int64(pageable.PerPage)).Page(int64(pageable.Page)).Sort("created_at", pageable.Sort).Filter(filter).Decode(&eventDeliveries).Find()
+	if err != nil {
+		return eventDeliveries, pager.PaginationData{}, err
+	}
+
+	if eventDeliveries == nil {
+		eventDeliveries = make([]convoy.EventDelivery, 0)
+	}
+
+	return eventDeliveries, paginatedData.Pagination, nil
 }

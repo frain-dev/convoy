@@ -36,8 +36,10 @@ func TestApplicationHandler_CreateAppEvent(t *testing.T) {
 	msgId := "1122333444456"
 
 	message := &convoy.Event{
-		UID:   msgId,
-		AppID: appId,
+		UID: msgId,
+		AppMetadata: &convoy.AppMetadata{
+			UID: appId,
+		},
 	}
 
 	type args struct {
@@ -306,17 +308,17 @@ func Test_resendEventDelivery(t *testing.T) {
 					UID: eventID,
 				},
 				message: &convoy.EventDelivery{
-					UID:     eventDeliveryID,
-					AppID:   appID,
-					EventID: eventID,
-					Status:  convoy.SuccessEventStatus,
+					UID: eventDeliveryID,
+					EventMetadata: &convoy.EventMetadata{
+						UID: eventID,
+					},
+					Status: convoy.SuccessEventStatus,
+					AppMetadata: &convoy.AppMetadata{
+						UID: appID,
+					},
 				},
 			},
 			dbFn: func(ev *convoy.Event, msg *convoy.EventDelivery, app *applicationHandler) {
-				e, _ := app.eventRepo.(*mocks.MockEventRepository)
-				e.EXPECT().
-					FindEventByID(gomock.Any(), gomock.Any()).Times(1).
-					Return(ev, nil)
 
 				m, _ := app.eventDeliveryRepo.(*mocks.MockEventDeliveryRepository)
 				m.EXPECT().
@@ -340,17 +342,17 @@ func Test_resendEventDelivery(t *testing.T) {
 					UID: eventID,
 				},
 				message: &convoy.EventDelivery{
-					UID:     eventDeliveryID,
-					AppID:   appID,
-					EventID: eventID,
-					Status:  convoy.ProcessingEventStatus,
+					UID: eventDeliveryID,
+					EventMetadata: &convoy.EventMetadata{
+						UID: eventID,
+					},
+					Status: convoy.ProcessingEventStatus,
+					AppMetadata: &convoy.AppMetadata{
+						UID: appID,
+					},
 				},
 			},
 			dbFn: func(ev *convoy.Event, msg *convoy.EventDelivery, app *applicationHandler) {
-				e, _ := app.eventRepo.(*mocks.MockEventRepository)
-				e.EXPECT().
-					FindEventByID(gomock.Any(), gomock.Any()).Times(1).
-					Return(ev, nil)
 
 				m, _ := app.eventDeliveryRepo.(*mocks.MockEventDeliveryRepository)
 				m.EXPECT().
@@ -369,21 +371,21 @@ func Test_resendEventDelivery(t *testing.T) {
 					UID: eventID,
 				},
 				message: &convoy.EventDelivery{
-					UID:     eventDeliveryID,
-					AppID:   appID,
-					EventID: eventID,
-					Status:  convoy.FailureEventStatus,
+					UID: eventDeliveryID,
+					EventMetadata: &convoy.EventMetadata{
+						UID: eventID,
+					},
+					Status: convoy.FailureEventStatus,
 					EndpointMetadata: &convoy.EndpointMetadata{
 						TargetURL: "http://localhost",
 						Status:    convoy.PendingEndpointStatus,
 					},
+					AppMetadata: &convoy.AppMetadata{
+						UID: appID,
+					},
 				},
 			},
 			dbFn: func(ev *convoy.Event, msg *convoy.EventDelivery, app *applicationHandler) {
-				e, _ := app.eventRepo.(*mocks.MockEventRepository)
-				e.EXPECT().
-					FindEventByID(gomock.Any(), gomock.Any()).Times(1).
-					Return(ev, nil)
 				m, _ := app.eventDeliveryRepo.(*mocks.MockEventDeliveryRepository)
 				m.EXPECT().
 					FindEventDeliveryByID(gomock.Any(), gomock.Any()).Times(1).
@@ -409,21 +411,21 @@ func Test_resendEventDelivery(t *testing.T) {
 					UID: eventID,
 				},
 				message: &convoy.EventDelivery{
-					UID:     eventDeliveryID,
-					AppID:   appID,
-					EventID: eventID,
-					Status:  convoy.FailureEventStatus,
+					UID: eventDeliveryID,
+					EventMetadata: &convoy.EventMetadata{
+						UID: eventID,
+					},
+					Status: convoy.FailureEventStatus,
 					EndpointMetadata: &convoy.EndpointMetadata{
 						TargetURL: "http://localhost",
 						Status:    convoy.InactiveEndpointStatus,
 					},
+					AppMetadata: &convoy.AppMetadata{
+						UID: appID,
+					},
 				},
 			},
 			dbFn: func(ev *convoy.Event, msg *convoy.EventDelivery, app *applicationHandler) {
-				e, _ := app.eventRepo.(*mocks.MockEventRepository)
-				e.EXPECT().
-					FindEventByID(gomock.Any(), gomock.Any()).Times(1).
-					Return(ev, nil)
 				m, _ := app.eventDeliveryRepo.(*mocks.MockEventDeliveryRepository)
 				m.EXPECT().
 					FindEventDeliveryByID(gomock.Any(), gomock.Any()).Times(1).
@@ -464,22 +466,21 @@ func Test_resendEventDelivery(t *testing.T) {
 					UID: eventID,
 				},
 				message: &convoy.EventDelivery{
-					UID:     eventDeliveryID,
-					AppID:   appID,
-					EventID: eventID,
-					Status:  convoy.FailureEventStatus,
+					UID: eventDeliveryID,
+					EventMetadata: &convoy.EventMetadata{
+						UID: eventID,
+					},
+					Status: convoy.FailureEventStatus,
 					EndpointMetadata: &convoy.EndpointMetadata{
 						TargetURL: "http://localhost",
 						Status:    convoy.ActiveEndpointStatus,
 					},
+					AppMetadata: &convoy.AppMetadata{
+						UID: appID,
+					},
 				},
 			},
 			dbFn: func(ev *convoy.Event, msg *convoy.EventDelivery, app *applicationHandler) {
-				e, _ := app.eventRepo.(*mocks.MockEventRepository)
-				e.EXPECT().
-					FindEventByID(gomock.Any(), gomock.Any()).Times(1).
-					Return(ev, nil)
-
 				m, _ := app.eventDeliveryRepo.(*mocks.MockEventDeliveryRepository)
 				m.EXPECT().
 					FindEventDeliveryByID(gomock.Any(), gomock.Any()).Times(1).
@@ -510,14 +511,14 @@ func Test_resendEventDelivery(t *testing.T) {
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
 
-			url := fmt.Sprintf("/api/v1/events/%s/eventdeliveries/%s/resend", tc.args.message.EventID, tc.args.message.UID)
+			url := fmt.Sprintf("/api/v1/eventdeliveries/%s/resend", tc.args.message.UID)
 			req := httptest.NewRequest(tc.method, url, nil)
 			req.SetBasicAuth("test", "test")
 			req.Header.Add("Content-Type", "application/json")
 
 			w := httptest.NewRecorder()
 			rctx := chi.NewRouteContext()
-			rctx.URLParams.Add("appID", tc.args.message.AppID)
+			rctx.URLParams.Add("appID", tc.args.message.AppMetadata.UID)
 
 			req = req.WithContext(context.WithValue(req.Context(), eventCtx, tc.args.message))
 

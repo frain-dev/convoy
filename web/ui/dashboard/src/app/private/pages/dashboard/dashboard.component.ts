@@ -4,9 +4,11 @@ import Chart from 'chart.js/auto';
 import * as moment from 'moment';
 import { GeneralService } from 'src/app/services/general/general.service';
 import { APP } from 'src/app/models/app.model';
-import { EVENT } from 'src/app/models/event.model';
+import { EVENT, EVENT_DELIVERY } from 'src/app/models/event.model';
 import { Router } from '@angular/router';
 import { FormBuilder, FormGroup } from '@angular/forms';
+import { PAGINATION } from 'src/app/models/global.model';
+import { HTTP_RESPONSE } from 'src/app/models/http.model';
 
 @Component({
 	selector: 'app-dashboard',
@@ -16,8 +18,8 @@ import { FormBuilder, FormGroup } from '@angular/forms';
 export class DashboardComponent implements OnInit {
 	showDropdown = false;
 	showFilterCalendar = false;
-	tabs: ['events', 'apps'] = ['events', 'apps'];
-	activeTab: 'events' | 'apps' = 'events';
+	tabs: ['events', 'event deliveries', 'apps'] = ['events', 'event deliveries', 'apps'];
+	activeTab: 'events' | 'apps' | 'event deliveries' = 'events';
 	detailsItem?: any;
 	eventDeliveryAtempt?: {
 		ip_address: '';
@@ -35,8 +37,8 @@ export class DashboardComponent implements OnInit {
 		date: string;
 		events: EVENT[];
 	}[] = [];
-	events!: { pagination: { next: number; page: number; perPage: number; prev: number; total: number; totalPage: number }; content: EVENT[] };
-	apps!: { pagination: { next: number; page: number; perPage: number; prev: number; total: number; totalPage: number }; content: APP[] };
+	events!: { pagination: PAGINATION; content: EVENT[] };
+	apps!: { pagination: PAGINATION; content: APP[] };
 	eventDetailsTabs = [
 		{ id: 'data', label: 'Event' },
 		{ id: 'response', label: 'Response' },
@@ -50,9 +52,11 @@ export class DashboardComponent implements OnInit {
 		signature: { header: string; hash: string };
 		strategy: { type: 'default'; default: { intervalSeconds: number; retryLimit: number } };
 	};
-	dashboardData = { apps: 0, messages_sent: 0 };
+	dashboardData = { apps: 0, events_sent: 0 };
 	eventApp: string = '';
+	eventDeliveriesApp: string = '';
 	eventsPage: number = 1;
+	eventDeliveriesPage: number = 1;
 	appsPage: number = 1;
 	dashboardFrequency: 'daily' | 'weekly' | 'monthly' | 'yearly' = 'daily';
 	statsDateRange: FormGroup = this.formBuilder.group({
@@ -63,7 +67,14 @@ export class DashboardComponent implements OnInit {
 		startDate: [{ value: '', disabled: true }],
 		endDate: [{ value: '', disabled: true }]
 	});
+	eventDeliveriesFilterDateRange: FormGroup = this.formBuilder.group({
+		startDate: [{ value: '', disabled: true }],
+		endDate: [{ value: '', disabled: true }]
+	});
 	selectedEventsFromEventsTable: string[] = [];
+	displayedEventDeliveries: { date: string; events: EVENT_DELIVERY[] }[] = [];
+	eventDeliveries!: { pagination: PAGINATION; content: EVENT_DELIVERY[] };
+	sidebarEventDeliveries: EVENT_DELIVERY[] = [];
 
 	constructor(private httpService: HttpService, private generalService: GeneralService, private router: Router, private formBuilder: FormBuilder) {}
 
@@ -73,7 +84,7 @@ export class DashboardComponent implements OnInit {
 	}
 
 	async initDashboard() {
-		await Promise.all([this.getOrganisationDetails(), this.fetchDashboardData(), this.getEvents(), this.getApps()]);
+		await Promise.all([this.getOrganisationDetails(), this.fetchDashboardData(), this.getEvents(), this.getApps(), this.getEventDeliveries()]);
 	}
 
 	toggleShowDropdown() {}
@@ -83,14 +94,18 @@ export class DashboardComponent implements OnInit {
 		this.router.navigateByUrl('/login');
 	}
 
-	toggleActiveTab(tab: 'events' | 'apps') {
+	toggleActiveTab(tab: 'events' | 'apps' | 'event deliveries', id?: string) {
 		this.activeTab = tab;
 
 		if (tab === 'apps' && this.apps?.content.length > 0) {
 			this.detailsItem = this.apps?.content[0];
 		} else if (tab === 'events' && this.events?.content.length > 0) {
+			this.eventDetailsActiveTab = 'data';
 			this.detailsItem = this.events?.content[0];
-			this.getDelieveryAttempts(this.detailsItem?.uid);
+			this.getEventDeliveriesForSidebar(this.detailsItem.uid);
+		} else if (tab === 'event deliveries' && this.eventDeliveries?.content.length > 0) {
+			this.detailsItem = id ? this.eventDeliveries?.content.find(delivery => delivery.uid === id) : this.eventDeliveries?.content[0];
+			this.getDelieveryAttempts(id || this.detailsItem.uid);
 		}
 	}
 
@@ -118,7 +133,7 @@ export class DashboardComponent implements OnInit {
 			else if (this.dashboardFrequency === 'monthly') labelsDateFormat = 'MMM';
 			else if (this.dashboardFrequency === 'yearly') labelsDateFormat = 'YYYY';
 
-			const chartData = dashboardResponse.data.message_data;
+			const chartData = dashboardResponse.data.event_data;
 			const labels = [...chartData.map((label: { data: { date: any } }) => label.data.date)].map(date => (this.dashboardFrequency === 'weekly' ? date : moment(date).format(labelsDateFormat)));
 			labels.unshift('0');
 			const dataSet = [0, ...chartData.map((label: { count: any }) => label.count)];
@@ -172,16 +187,6 @@ export class DashboardComponent implements OnInit {
 		return { startDate, endDate };
 	}
 
-	getTime(date: Date) {
-		const _date = new Date(date);
-		const hours = _date.getHours();
-		const minutes = _date.getMinutes();
-		const seconds = _date.getSeconds();
-
-		const hour = hours > 12 ? hours - 12 : hours;
-		return `${hour} : ${minutes > 9 ? minutes : '0' + minutes} : ${seconds > 9 ? seconds : '0' + seconds} ${hours > 12 ? 'AM' : 'PM'}`;
-	}
-
 	getDate(date: Date) {
 		const months = ['Jan', 'Feb', 'Mar', 'April', 'May', 'June', 'July', 'Aug', 'Sept', 'Oct', 'Nov', 'Dec'];
 		const _date = new Date(date);
@@ -200,7 +205,7 @@ export class DashboardComponent implements OnInit {
 			const eventsItem = { date: eventDate, events: filteredEventDate };
 			displayedEvents.push(eventsItem);
 		});
-		this.displayedEvents = displayedEvents;
+		return displayedEvents;
 	}
 
 	async getEvents() {
@@ -211,20 +216,63 @@ export class DashboardComponent implements OnInit {
 				url: `/events?sort=AESC&page=${this.eventsPage || 1}&perPage=20&startDate=${startDate}&endDate=${endDate}&appId=${this.eventApp}`,
 				method: 'get'
 			});
+			this.detailsItem = eventsResponse.data.content[0];
 
 			if (this.events && this.events?.pagination?.next === this.eventsPage) {
 				const content = [...this.events.content, ...eventsResponse.data.content];
 				const pagination = eventsResponse.data.pagination;
 				this.events = { content, pagination };
-				this.setEventsDisplayed(content);
+				this.displayedEvents = this.setEventsDisplayed(content);
 				return;
 			}
 
 			this.events = eventsResponse.data;
-			this.setEventsDisplayed(eventsResponse.data.content);
+			this.displayedEvents = await this.setEventsDisplayed(eventsResponse.data.content);
 		} catch (error) {
 			return error;
 		}
+	}
+
+	async eventDeliveriesRequest(requestDetails: { eventId?: string; startDate?: string; endDate?: string }): Promise<HTTP_RESPONSE> {
+		try {
+			const eventDeliveriesResponse = await this.httpService.request({
+				url: `/eventdeliveries?eventId=${requestDetails.eventId || ''}&page=${this.eventDeliveriesPage || 1}&startDate=${requestDetails.startDate}&endDate=${requestDetails.endDate}&appId=${
+					this.eventDeliveriesApp
+				}`,
+				method: 'get'
+			});
+
+			return eventDeliveriesResponse;
+		} catch (error: any) {
+			return error;
+		}
+	}
+
+	async getEventDeliveries(eventId?: string) {
+		const { startDate, endDate } = this.setDateForFilter(this.eventDeliveriesFilterDateRange.value);
+
+		try {
+			const eventDeliveriesResponse = await this.eventDeliveriesRequest({ eventId, startDate, endDate });
+
+			if (this.eventDeliveries && this.eventDeliveries?.pagination?.next === this.eventDeliveriesPage) {
+				const content = [...this.eventDeliveries.content, ...eventDeliveriesResponse.data.content];
+				const pagination = eventDeliveriesResponse.data.pagination;
+				this.eventDeliveries = { content, pagination };
+				this.displayedEventDeliveries = this.setEventsDisplayed(content);
+				return;
+			}
+
+			this.eventDeliveries = eventDeliveriesResponse.data;
+			this.displayedEventDeliveries = this.setEventsDisplayed(eventDeliveriesResponse.data.content);
+			return eventDeliveriesResponse.data.content;
+		} catch (error) {
+			return error;
+		}
+	}
+
+	async getEventDeliveriesForSidebar(eventId: string) {
+		const response = await this.eventDeliveriesRequest({ eventId, startDate: '', endDate: '' });
+		this.sidebarEventDeliveries = response.data.content;
 	}
 
 	async getApps() {
@@ -246,10 +294,10 @@ export class DashboardComponent implements OnInit {
 		}
 	}
 
-	async getDelieveryAttempts(eventId: string) {
+	async getDelieveryAttempts(eventDeliveryId: string) {
 		try {
 			const deliveryAttemptsResponse = await this.httpService.request({
-				url: `/events/${eventId}/deliveryattempts`,
+				url: `/eventdeliveries/${eventDeliveryId}/deliveryattempts`,
 				method: 'get'
 			});
 			this.eventDeliveryAtempt = deliveryAttemptsResponse.data[deliveryAttemptsResponse.data.length - 1];
@@ -258,10 +306,13 @@ export class DashboardComponent implements OnInit {
 		}
 	}
 
-	getCodeSnippetString(type: 'res_body' | 'event' | 'res_head' | 'req') {
+	getCodeSnippetString(type: 'res_body' | 'event' | 'event_delivery' | 'res_head' | 'req') {
 		if (type === 'event') {
 			if (!this.detailsItem?.data) return 'No event data was sent';
-			return JSON.stringify(this.detailsItem.data, null, 4).replaceAll(/"([^"]+)":/g, '$1:');
+			return JSON.stringify(this.detailsItem.data || this.detailsItem.metadata.data, null, 4).replaceAll(/"([^"]+)":/g, '$1:');
+		} else if (type === 'event_delivery') {
+			if (!this.detailsItem?.metadata?.data) return 'No event data was sent';
+			return JSON.stringify(this.detailsItem.metadata.data, null, 4).replaceAll(/"([^"]+)":/g, '$1:');
 		} else if (type === 'res_body') {
 			if (!this.eventDeliveryAtempt) return 'No response body was sent';
 			return this.eventDeliveryAtempt.response_data;
@@ -275,7 +326,7 @@ export class DashboardComponent implements OnInit {
 		return '';
 	}
 
-	async retryEvent(requestDetails: { eventId: string; appId: string; e: any; index: number }) {
+	async retryEvent(requestDetails: { eventId: string; e: any; index: number; eventDeliveryId: string }) {
 		requestDetails.e.stopPropagation();
 		const retryButton: any = document.querySelector(`#event${requestDetails.index} button`);
 		if (retryButton) {
@@ -286,8 +337,9 @@ export class DashboardComponent implements OnInit {
 		try {
 			await this.httpService.request({
 				method: 'put',
-				url: `/apps/${requestDetails.appId}/events/${requestDetails.eventId}/resend`
+				url: `/events/${requestDetails.eventId}/eventdeliveries/${requestDetails.eventDeliveryId}/resend`
 			});
+
 			this.generalService.showNotification({ message: 'Retry Request Sent' });
 			retryButton.classList.remove(['spin', 'disabled']);
 			retryButton.disabled = false;
@@ -317,5 +369,10 @@ export class DashboardComponent implements OnInit {
 			this.selectedEventsFromEventsTable.push(checkbox.value);
 			checkbox.checked = event.target.checked;
 		});
+	}
+
+	async openDeliveriesTab(eventId: string) {
+		await this.getEventDeliveries(eventId);
+		this.toggleActiveTab('event deliveries');
 	}
 }
