@@ -13,6 +13,12 @@ export interface EVENT {
 		retry_limit: number;
 		strategy: string;
 	};
+	app_metadata: {
+		group_id: string;
+		support_email: string;
+		title: string;
+		uid: string;
+	};
 }
 
 export interface EVENT_DELIVERY {
@@ -21,7 +27,6 @@ export interface EVENT_DELIVERY {
 	uid: string;
 	updated_at: Date;
 	app_id: string;
-	event_type: string;
 	event_id: string;
 	metadata: {
 		interval_seconds: number;
@@ -40,5 +45,11 @@ export interface EVENT_DELIVERY {
 	app_metadata: {
 		group_id: string;
 		support_email: string;
+		title: string;
+		uid: string;
+	};
+	event_metadata: {
+		name: string;
+		uid: string;
 	};
 }

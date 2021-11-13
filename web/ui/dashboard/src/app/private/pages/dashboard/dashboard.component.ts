@@ -7,6 +7,8 @@ import { APP } from 'src/app/models/app.model';
 import { EVENT, EVENT_DELIVERY } from 'src/app/models/event.model';
 import { Router } from '@angular/router';
 import { FormBuilder, FormGroup } from '@angular/forms';
+import { PAGINATION } from 'src/app/models/global.model';
+import { HTTP_RESPONSE } from 'src/app/models/http.model';
 
 @Component({
 	selector: 'app-dashboard',
@@ -35,8 +37,8 @@ export class DashboardComponent implements OnInit {
 		date: string;
 		events: EVENT[];
 	}[] = [];
-	events!: { pagination: { next: number; page: number; perPage: number; prev: number; total: number; totalPage: number }; content: EVENT[] };
-	apps!: { pagination: { next: number; page: number; perPage: number; prev: number; total: number; totalPage: number }; content: APP[] };
+	events!: { pagination: PAGINATION; content: EVENT[] };
+	apps!: { pagination: PAGINATION; content: APP[] };
 	eventDetailsTabs = [
 		{ id: 'data', label: 'Event' },
 		{ id: 'response', label: 'Response' },
@@ -52,7 +54,9 @@ export class DashboardComponent implements OnInit {
 	};
 	dashboardData = { apps: 0, events_sent: 0 };
 	eventApp: string = '';
+	eventDeliveriesApp: string = '';
 	eventsPage: number = 1;
+	eventDeliveriesPage: number = 1;
 	appsPage: number = 1;
 	dashboardFrequency: 'daily' | 'weekly' | 'monthly' | 'yearly' = 'daily';
 	statsDateRange: FormGroup = this.formBuilder.group({
@@ -63,12 +67,14 @@ export class DashboardComponent implements OnInit {
 		startDate: [{ value: '', disabled: true }],
 		endDate: [{ value: '', disabled: true }]
 	});
+	eventDeliveriesFilterDateRange: FormGroup = this.formBuilder.group({
+		startDate: [{ value: '', disabled: true }],
+		endDate: [{ value: '', disabled: true }]
+	});
 	selectedEventsFromEventsTable: string[] = [];
-	displayedEventDeliveries: {
-		date: string;
-		events: EVENT_DELIVERY[];
-	}[] = [];
-	eventDeliveries: EVENT_DELIVERY[] = [];
+	displayedEventDeliveries: { date: string; events: EVENT_DELIVERY[] }[] = [];
+	eventDeliveries!: { pagination: PAGINATION; content: EVENT_DELIVERY[] };
+	sidebarEventDeliveries: EVENT_DELIVERY[] = [];
 
 	constructor(private httpService: HttpService, private generalService: GeneralService, private router: Router, private formBuilder: FormBuilder) {}
 
@@ -88,7 +94,7 @@ export class DashboardComponent implements OnInit {
 		this.router.navigateByUrl('/login');
 	}
 
-	toggleActiveTab(tab: 'events' | 'apps' | 'event deliveries') {
+	toggleActiveTab(tab: 'events' | 'apps' | 'event deliveries', id?: string) {
 		this.activeTab = tab;
 
 		if (tab === 'apps' && this.apps?.content.length > 0) {
@@ -96,9 +102,10 @@ export class DashboardComponent implements OnInit {
 		} else if (tab === 'events' && this.events?.content.length > 0) {
 			this.eventDetailsActiveTab = 'data';
 			this.detailsItem = this.events?.content[0];
-		} else if (tab === 'event deliveries' && this.eventDeliveries?.length > 0) {
-			this.detailsItem = this.eventDeliveries?.[0];
-			this.getDelieveryAttempts(this.detailsItem.uid);
+			this.getEventDeliveriesForSidebar(this.detailsItem.uid);
+		} else if (tab === 'event deliveries' && this.eventDeliveries?.content.length > 0) {
+			this.detailsItem = id ? this.eventDeliveries?.content.find(delivery => delivery.uid === id) : this.eventDeliveries?.content[0];
+			this.getDelieveryAttempts(id || this.detailsItem.uid);
 		}
 	}
 
@@ -180,16 +187,6 @@ export class DashboardComponent implements OnInit {
 		return { startDate, endDate };
 	}
 
-	getTime(date: Date) {
-		const _date = new Date(date);
-		const hours = _date.getHours();
-		const minutes = _date.getMinutes();
-		const seconds = _date.getSeconds();
-
-		const hour = hours > 12 ? hours - 12 : hours;
-		return `${hour} : ${minutes > 9 ? minutes : '0' + minutes} : ${seconds > 9 ? seconds : '0' + seconds} ${hours > 12 ? 'AM' : 'PM'}`;
-	}
-
 	getDate(date: Date) {
 		const months = ['Jan', 'Feb', 'Mar', 'April', 'May', 'June', 'July', 'Aug', 'Sept', 'Oct', 'Nov', 'Dec'];
 		const _date = new Date(date);
@@ -225,7 +222,7 @@ export class DashboardComponent implements OnInit {
 				const content = [...this.events.content, ...eventsResponse.data.content];
 				const pagination = eventsResponse.data.pagination;
 				this.events = { content, pagination };
-				this.setEventsDisplayed(content);
+				this.displayedEvents = this.setEventsDisplayed(content);
 				return;
 			}
 
@@ -236,30 +233,46 @@ export class DashboardComponent implements OnInit {
 		}
 	}
 
-	async getEventDeliveries(eventId?: string) {
-		const { startDate, endDate } = this.setDateForFilter(this.eventsFilterDateRange.value);
-
+	async eventDeliveriesRequest(requestDetails: { eventId?: string; startDate?: string; endDate?: string }): Promise<HTTP_RESPONSE> {
 		try {
 			const eventDeliveriesResponse = await this.httpService.request({
-				url: `/eventdeliveries?eventId=${eventId || ''}`,
+				url: `/eventdeliveries?eventId=${requestDetails.eventId || ''}&page=${this.eventDeliveriesPage || 1}&startDate=${requestDetails.startDate}&endDate=${requestDetails.endDate}&appId=${
+					this.eventDeliveriesApp
+				}`,
 				method: 'get'
 			});
-			console.log('🚀 ~ file: dashboard.component.ts ~ line 238 ~ DashboardComponent ~ getEventsDeliveries ~ eventsResponse', eventDeliveriesResponse);
 
-			// if (this.events && this.events?.pagination?.next === this.eventsPage) {
-			// 	const content = [...this.events.content, ...eventsResponse.data.content];
-			// 	const pagination = eventsResponse.data.pagination;
-			// 	this.events = { content, pagination };
-			// 	this.setEventsDisplayed(content);
-			// 	return;
-			// }
+			return eventDeliveriesResponse;
+		} catch (error: any) {
+			return error;
+		}
+	}
 
-			this.eventDeliveries = eventDeliveriesResponse.data.content;
-			// this.getDelieveryAttempts(this.eventDeliveries[0].uid);
+	async getEventDeliveries(eventId?: string) {
+		const { startDate, endDate } = this.setDateForFilter(this.eventDeliveriesFilterDateRange.value);
+
+		try {
+			const eventDeliveriesResponse = await this.eventDeliveriesRequest({ eventId, startDate, endDate });
+
+			if (this.eventDeliveries && this.eventDeliveries?.pagination?.next === this.eventDeliveriesPage) {
+				const content = [...this.eventDeliveries.content, ...eventDeliveriesResponse.data.content];
+				const pagination = eventDeliveriesResponse.data.pagination;
+				this.eventDeliveries = { content, pagination };
+				this.displayedEventDeliveries = this.setEventsDisplayed(content);
+				return;
+			}
+
+			this.eventDeliveries = eventDeliveriesResponse.data;
 			this.displayedEventDeliveries = this.setEventsDisplayed(eventDeliveriesResponse.data.content);
+			return eventDeliveriesResponse.data.content;
 		} catch (error) {
 			return error;
 		}
+	}
+
+	async getEventDeliveriesForSidebar(eventId: string) {
+		const response = await this.eventDeliveriesRequest({ eventId, startDate: '', endDate: '' });
+		this.sidebarEventDeliveries = response.data.content;
 	}
 
 	async getApps() {
@@ -313,7 +326,7 @@ export class DashboardComponent implements OnInit {
 		return '';
 	}
 
-	async retryEvent(requestDetails: { eventId: string; appId: string; e: any; index: number; eventDeliveryId: string }) {
+	async retryEvent(requestDetails: { eventId: string; e: any; index: number; eventDeliveryId: string }) {
 		requestDetails.e.stopPropagation();
 		const retryButton: any = document.querySelector(`#event${requestDetails.index} button`);
 		if (retryButton) {
@@ -324,8 +337,9 @@ export class DashboardComponent implements OnInit {
 		try {
 			await this.httpService.request({
 				method: 'put',
-				url: `/apps/${requestDetails.appId}/events/${requestDetails.eventId}/eventdeliveries/${requestDetails.eventDeliveryId}/resend`
+				url: `/events/${requestDetails.eventId}/eventdeliveries/${requestDetails.eventDeliveryId}/resend`
 			});
+
 			this.generalService.showNotification({ message: 'Retry Request Sent' });
 			retryButton.classList.remove(['spin', 'disabled']);
 			retryButton.disabled = false;
