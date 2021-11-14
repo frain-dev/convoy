@@ -35,13 +35,13 @@ import (
 type contextKey string
 
 const (
-	groupCtx            contextKey = "group"
-	appCtx              contextKey = "app"
-	endpointCtx         contextKey = "endpoint"
-	eventCtx            contextKey = "event"
-	eventDeliveryCtx    contextKey = "eventDelivery"
-	configCtx           contextKey = "configCtx"
-	authConfigCtx       contextKey = "authConfig"
+	groupCtx         contextKey = "group"
+	appCtx           contextKey = "app"
+	endpointCtx      contextKey = "endpoint"
+	eventCtx         contextKey = "event"
+	eventDeliveryCtx contextKey = "eventDelivery"
+	configCtx        contextKey = "configCtx"
+	//authConfigCtx       contextKey = "authConfig"
 	authLoginCtx        contextKey = "authLogin"
 	authUserCtx         contextKey = "authUser"
 	pageableCtx         contextKey = "pageable"
@@ -275,44 +275,55 @@ func findEndpoint(endpoints *[]convoy.Endpoint, id string) (*convoy.Endpoint, er
 	return nil, convoy.ErrEndpointNotFound
 }
 
-func requireDefaultGroup(groupRepo convoy.GroupRepository) func(next http.Handler) http.Handler {
-	return func(next http.Handler) http.Handler {
+func getDefaultGroup(r *http.Request, groupRepo convoy.GroupRepository) (*convoy.Group, error) {
+	// TODO(daniel,subomi): i think this isn't safe
+	name := r.URL.Query().Get("name")
 
-		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-
-			name := r.URL.Query().Get("name")
-
-			groups, err := groupRepo.LoadGroups(r.Context(), &convoy.GroupFilter{Name: name})
-			if err != nil {
-
-				event := "an error occurred while loading default group"
-				statusCode := http.StatusInternalServerError
-
-				if errors.Is(err, mongo.ErrNoDocuments) {
-					event = err.Error()
-					statusCode = http.StatusNotFound
-				}
-
-				_ = render.Render(w, r, newErrorResponse(event, statusCode))
-				return
-			}
-
-			r = r.WithContext(setGroupInContext(r.Context(), groups[0]))
-			next.ServeHTTP(w, r)
-		})
+	groups, err := groupRepo.LoadGroups(r.Context(), &convoy.GroupFilter{Name: name})
+	if err != nil {
+		return nil, err
 	}
+
+	return groups[0], err
 }
 
 func requireGroup(groupRepo convoy.GroupRepository) func(next http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			var group *convoy.Group
+			var err error
+
+			groupID := r.URL.Query().Get("groupID")
+			if groupID != "" {
+				group, err = groupRepo.FetchGroupByID(r.Context(), groupID)
+				if err != nil {
+					_ = render.Render(w, r, newErrorResponse("failed to fetch group by id", http.StatusInternalServerError))
+					return
+				}
+			} else {
+				group, err = getDefaultGroup(r, groupRepo)
+				if err != nil {
+					event := "an error occurred while loading default group"
+					statusCode := http.StatusInternalServerError
+
+					if errors.Is(err, mongo.ErrNoDocuments) {
+						event = err.Error()
+						statusCode = http.StatusNotFound
+					}
+
+					_ = render.Render(w, r, newErrorResponse(event, statusCode))
+					return
+				}
+			}
+
 			authUser := getAuthUserFromContext(r.Context())
 			if authUser.Role.Type.Is(auth.RoleSuperUser) {
 				// superuser has access to everything
 				return
 			}
-			group := getGroupFromContext(r.Context())
+			ctx := setGroupInContext(r.Context(), group)
 
+			r = r.WithContext(ctx)
 			for _, v := range authUser.Role.Groups {
 				if group.Name == v {
 					next.ServeHTTP(w, r)

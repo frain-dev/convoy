@@ -63,6 +63,7 @@ func buildRoutes(app *applicationHandler) http.Handler {
 			r.Use(middleware.AllowContentType("application/json"))
 			r.Use(jsonResponse)
 			r.Use(requireAuth())
+			r.Use(requireGroup(app.groupRepo))
 
 			r.Route("/groups", func(groupRouter chi.Router) {
 				groupRouter.Use(requirePermission(auth.RoleAdmin))
@@ -71,7 +72,6 @@ func buildRoutes(app *applicationHandler) http.Handler {
 				groupRouter.Post("/", app.CreateGroup)
 
 				groupRouter.Route("/{groupID}", func(groupSubRouter chi.Router) {
-					groupSubRouter.Use(requireDefaultGroup(app.groupRepo))
 					groupSubRouter.Use(requireGroup(app.groupRepo))
 
 					groupSubRouter.Get("/", app.GetGroup)
@@ -83,7 +83,7 @@ func buildRoutes(app *applicationHandler) http.Handler {
 				appRouter.Use(requirePermission(auth.RoleAdmin))
 
 				appRouter.Route("/", func(appSubRouter chi.Router) {
-					appSubRouter.With(requireDefaultGroup(app.groupRepo)).Post("/", app.CreateApp)
+					appSubRouter.Post("/", app.CreateApp)
 					appRouter.With(pagination).Get("/", app.GetApps)
 				})
 
@@ -149,13 +149,10 @@ func buildRoutes(app *applicationHandler) http.Handler {
 		uiRouter.Use(requirePermission(auth.RoleUIAdmin))
 
 		uiRouter.Route("/dashboard", func(dashboardRouter chi.Router) {
-			dashboardRouter.Use(requireDefaultGroup(app.groupRepo))
-
 			dashboardRouter.With(fetchDashboardSummary(app.appRepo, app.eventRepo)).Get("/summary", app.GetDashboardSummary)
 			dashboardRouter.With(fetchAllConfigDetails()).Get("/config", app.GetAllConfigDetails)
 		})
 
-		// TODO(daniel,subomi): maybe we should remove this? since we're now giving only a default group
 		uiRouter.Route("/groups", func(groupRouter chi.Router) {
 
 			groupRouter.Route("/", func(orgSubRouter chi.Router) {
@@ -163,7 +160,6 @@ func buildRoutes(app *applicationHandler) http.Handler {
 			})
 
 			groupRouter.Route("/{groupID}", func(appSubRouter chi.Router) {
-				appSubRouter.Use(requireDefaultGroup(app.groupRepo))
 				appSubRouter.Get("/", app.GetGroup)
 			})
 		})
@@ -217,7 +213,6 @@ func buildRoutes(app *applicationHandler) http.Handler {
 
 				})
 			})
-
 		})
 	})
 

@@ -24,13 +24,12 @@ type APIKeyAuth struct {
 }
 
 type FileRealm struct {
-	Name   string       `json:"name"`
 	Basic  []BasicAuth  `json:"basic"`
 	APIKey []APIKeyAuth `json:"api_key"`
 }
 
 func (r *FileRealm) GetName() string {
-	return r.Name
+	return "file_realm"
 }
 
 func (r *FileRealm) Authenticate(cred *auth.Credential) (*auth.AuthenticatedUser, error) {
@@ -46,7 +45,7 @@ func (r *FileRealm) Authenticate(cred *auth.Credential) (*auth.AuthenticatedUser
 			}
 
 			authUser := &auth.AuthenticatedUser{
-				AuthenticatedByRealm: r.Name,
+				AuthenticatedByRealm: r.GetName(),
 				Credential:           *cred,
 				Role:                 b.Role,
 			}
@@ -60,7 +59,7 @@ func (r *FileRealm) Authenticate(cred *auth.Credential) (*auth.AuthenticatedUser
 			}
 
 			authUser := &auth.AuthenticatedUser{
-				AuthenticatedByRealm: r.Name,
+				AuthenticatedByRealm: r.GetName(),
 				Credential:           *cred,
 				Role:                 b.Role,
 			}
@@ -97,7 +96,7 @@ func NewFileRealm(opts *config.FileRealmOption) (*FileRealm, error) {
 	}
 
 	if len(fr.Basic) == 0 && len(fr.APIKey) == 0 {
-		return nil, fmt.Errorf("no authentication data supplied in file realm '%s", fr.Name)
+		return nil, fmt.Errorf("no authentication data supplied in file realm '%s", fr.GetName())
 	}
 
 	return fr, nil
