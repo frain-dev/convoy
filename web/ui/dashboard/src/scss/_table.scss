@@ -14,6 +14,15 @@
 		border-top: 1px solid #eee;
 		border-bottom: 1px solid #eee;
 	}
+
+	.checkbox {
+		display: flex;
+		align-items: center;
+
+		input {
+			margin: 0 20px 0 0;
+		}
+	}
 }
 
 table {
@@ -48,18 +57,14 @@ table {
 			display: flex;
 			align-items: center;
 			position: relative;
+			width: 100%;
 
 			img {
-				margin-right: 10px;
-				width: 16px;
+				width: 12px;
 				position: absolute;
 				top: 50%;
-				transform: translate(-10px, -50%);
+				transform: translate(-3px, -50%);
 				opacity: 0.5;
-			}
-
-			.tag {
-				margin-left: 13px;
 			}
 		}
 
@@ -102,31 +107,6 @@ table {
 			}
 		}
 	}
-
-	.tag {
-		padding: 1px 8px;
-		background: rgba(115, 122, 145, 0.1);
-		border-radius: 8px;
-		max-width: 75px;
-		font-weight: 500;
-		font-size: 12px;
-		line-height: 28px;
-		text-align: center;
-
-		&--Failure {
-			background: #f7e5e5;
-			color: #ff0505;
-		}
-
-		&--Retry {
-			background: #f8e5b9;
-		}
-
-		&--Success {
-			background: #e5f7e7;
-			color: #1f9c6a;
-		}
-	}
 }
 
 .pagination {
@@ -137,5 +117,45 @@ table {
 
 	button {
 		padding: 5px;
+	}
+}
+
+.empty-state {
+	text-align: center;
+	max-width: 200px;
+	margin: auto;
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	justify-content: center;
+
+	p {
+		margin-top: 20px;
+		font-size: 14px;
+	}
+}
+
+.tag {
+	padding: 1px 8px;
+	background: rgba(115, 122, 145, 0.1);
+	border-radius: 8px;
+	max-width: 75px;
+	font-weight: 500;
+	font-size: 12px;
+	line-height: 28px;
+	text-align: center;
+
+	&--Failure {
+		background: #f7e5e5;
+		color: #ff0505;
+	}
+
+	&--Retry {
+		background: #f8e5b9;
+	}
+
+	&--Success {
+		background: #e5f7e7;
+		color: #1f9c6a;
 	}
 }

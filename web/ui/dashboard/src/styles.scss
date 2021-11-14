@@ -1,5 +1,5 @@
 // Material design themeing
-@use '~@angular/material' as mat;
+@use '@angular/material' as mat;
 @include mat.core();
 
 $convoy-primary-palette: (
@@ -52,6 +52,7 @@ $convoy-ng-theme: mat.define-light-theme(
 @import './scss/prism';
 @import './scss/prism';
 @import './scss/list';
+@import './scss/page';
 @import './scss/material-design-reset';
 @import '~prismjs/plugins/toolbar/prism-toolbar.css';
 
@@ -64,6 +65,7 @@ $convoy-ng-theme: mat.define-light-theme(
 	--primary-color-inverse: #ffffff;
 	--success-color: #1f9c6a;
 	--danger-color: #ee0005;
+	--danger-color-rgb: 238, 0, 5;
 	--grey-color: #1e1147;
 	--grey-color-rgb: 30, 17, 71;
 }
