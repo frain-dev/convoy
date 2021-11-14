@@ -146,6 +146,30 @@
 									</option>
 								</select>
 							</div>
+							<div class="status_container">
+								<button class="filter--button" (click)="toggleShowDropdown()">
+									Status
+									<img src="/assets/img/angle-arrow-down.svg" alt="arrow down icon" />
+								</button>
+								<div class="dropdown active" *ngIf="showDropdown">
+									<div>
+										<input type="checkbox" id="All" name="status" value="All" checked />
+										<label for="All">All</label>
+									</div>
+									<div>
+										<input type="checkbox" id="Successful" name="status" value="Successful" />
+										<label for="Successful">Successful</label>
+									</div>
+									<div>
+										<input type="checkbox" id="Failed" name="status" value="Failed" />
+										<label for="Failed">Failed</label>
+									</div>
+									<div>
+										<input type="checkbox" id="Retry" name="status" value="Retry" />
+										<label for="Retry">Retry</label>
+									</div>
+								</div>
+							</div>
 
 							<button
 								class="filter--button primary events-filter-clear-btn"
@@ -450,9 +474,7 @@
 							<li class="list-item-inline" *ngIf="detailsItem.metadata.num_trials < detailsItem.metadata.retry_limit && detailsItem.status !== 'Success'">
 								<div class="list-item-inline--label">Next Retry</div>
 								<div class="list-item-inline--item color">
-									{{
-										detailsItem.metadata.next_send_time | date: 'mediumTime'
-									}}
+									{{ detailsItem.metadata.next_send_time | date: 'mediumTime' }}
 								</div>
 							</li>
 							<li class="list-item-inline">

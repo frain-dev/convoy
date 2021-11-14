@@ -173,3 +173,21 @@ input[type='checkbox'] {
 		}
 	}
 }
+.status_container {
+	position: relative;
+	font-size: 14px;
+	line-height: 14px;
+	display: flex;
+	align-items: flex-start;
+}
+.dropdown {
+	position: absolute;
+	font-size: 12px;
+	margin-top: 138px;
+	margin-left: 10px;
+	border: 1px solid #f3f5f9;
+	border-radius: 8px;
+	min-width: 145px;
+	box-shadow: 0px 10px 25px rgba(151, 143, 175, 0.08);
+	border-color: rgba(71, 125, 179, 0.2);
+}
