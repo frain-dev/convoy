@@ -72,8 +72,6 @@ func buildRoutes(app *applicationHandler) http.Handler {
 				groupRouter.Post("/", app.CreateGroup)
 
 				groupRouter.Route("/{groupID}", func(groupSubRouter chi.Router) {
-					groupSubRouter.Use(requireGroup(app.groupRepo))
-
 					groupSubRouter.Get("/", app.GetGroup)
 					groupSubRouter.Put("/", app.UpdateGroup)
 				})

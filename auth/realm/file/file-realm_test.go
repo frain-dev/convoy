@@ -83,6 +83,7 @@ func TestFileRealm_Authenticate(t *testing.T) {
 				},
 			},
 			want: &auth.AuthenticatedUser{
+				AuthenticatedByRealm: fr.GetName(),
 				Credential: auth.Credential{
 					Type:     auth.CredentialTypeBasic,
 					Username: "username1",
@@ -104,6 +105,7 @@ func TestFileRealm_Authenticate(t *testing.T) {
 				},
 			},
 			want: &auth.AuthenticatedUser{
+				AuthenticatedByRealm: fr.GetName(),
 				Credential: auth.Credential{
 					Type:   auth.CredentialTypeAPIKey,
 					APIKey: "avcbajbwrohw@##Q39uekvsmbvxc.fdjhd",
@@ -164,7 +166,7 @@ func TestFileRealm_Authenticate(t *testing.T) {
 			}
 
 			require.Nil(t, err)
-			require.Equal(t, got, tt.want)
+			require.Equal(t, tt.want, got)
 		})
 	}
 }

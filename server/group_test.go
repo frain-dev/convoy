@@ -33,35 +33,33 @@ func TestApplicationHandler_GetGroup(t *testing.T) {
 	}{
 		{
 			name:       "group not found",
-			cfgPath:    "./testdata/Auth_Config/basic-convoy.json",
+			cfgPath:    "./testdata/Auth_Config/no-auth-convoy.json",
 			method:     http.MethodGet,
 			statusCode: http.StatusInternalServerError,
 			id:         fakeOrgID,
 			dbFn: func(app *applicationHandler) {
-				g, _ := app.groupRepo.(*mocks.MockGroupRepository)
-				g.EXPECT().
-					LoadGroups(gomock.Any(), gomock.Any()).
-					Return(nil, convoy.ErrGroupNotFound).Times(1)
+				o, _ := app.groupRepo.(*mocks.MockGroupRepository)
 
+				o.EXPECT().
+					FetchGroupByID(gomock.Any(), gomock.Any()).Times(1).
+					Return(nil, convoy.ErrGroupNotFound)
 			},
 		},
 		{
 			name:       "valid group",
-			cfgPath:    "./testdata/Auth_Config/basic-convoy.json",
+			cfgPath:    "./testdata/Auth_Config/no-auth-convoy.json",
 			method:     http.MethodGet,
 			statusCode: http.StatusOK,
 			id:         realOrgID,
 			dbFn: func(app *applicationHandler) {
-				g, _ := app.groupRepo.(*mocks.MockGroupRepository)
-				g.EXPECT().
-					LoadGroups(gomock.Any(), gomock.Any()).Times(1).
-					Return([]*convoy.Group{
-						{
-							UID:  realOrgID,
-							Name: "sendcash-pay",
-						},
-					}, nil)
+				o, _ := app.groupRepo.(*mocks.MockGroupRepository)
 
+				o.EXPECT().
+					FetchGroupByID(gomock.Any(), gomock.Any()).Times(1).
+					Return(&convoy.Group{
+						UID:  realOrgID,
+						Name: "sendcash-pay",
+					}, nil)
 			},
 		},
 	}
@@ -108,7 +106,6 @@ func TestApplicationHandler_GetGroup(t *testing.T) {
 
 			// Act
 			router.ServeHTTP(w, req)
-
 			if w.Code != tc.statusCode {
 				t.Errorf("Want status '%d', got '%d'", tc.statusCode, w.Code)
 			}
@@ -144,6 +141,15 @@ func TestApplicationHandler_CreateGroup(t *testing.T) {
 				o.EXPECT().
 					CreateGroup(gomock.Any(), gomock.Any()).Times(1).
 					Return(nil)
+
+				o.EXPECT().
+					LoadGroups(gomock.Any(), gomock.Any()).Times(1).
+					Return([]*convoy.Group{
+						{
+							UID:  "1234567",
+							Name: "sendcash-pay",
+						},
+					}, nil)
 			},
 		},
 	}
@@ -310,11 +316,11 @@ func TestApplicationHandler_GetGroups(t *testing.T) {
 			dbFn: func(app *applicationHandler) {
 				o, _ := app.groupRepo.(*mocks.MockGroupRepository)
 				o.EXPECT().
-					LoadGroups(gomock.Any(), gomock.Any()).Times(1).
+					LoadGroups(gomock.Any(), gomock.Any()).Times(2).
 					Return([]*convoy.Group{
 						{
 							UID:  realOrgID,
-							Name: "Valid groups - 0",
+							Name: "sendcash-pay",
 						},
 					}, nil)
 			},
@@ -355,7 +361,7 @@ func TestApplicationHandler_GetGroups(t *testing.T) {
 
 			// Act
 			router.ServeHTTP(w, req)
-
+			fmt.Println("Ffff", w.Body.String())
 			if w.Code != tc.statusCode {
 				t.Errorf("Want status '%d', got '%d'", tc.statusCode, w.Code)
 			}

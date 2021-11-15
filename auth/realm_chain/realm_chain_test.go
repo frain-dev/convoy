@@ -79,7 +79,6 @@ func TestRealmChain_Authenticate(t *testing.T) {
 		require.Nil(t, err)
 		return
 	}
-	fr.Name = "file_realm_1"
 
 	rc, err := Get()
 	if err != nil {
@@ -113,7 +112,7 @@ func TestRealmChain_Authenticate(t *testing.T) {
 				},
 			},
 			want: &auth.AuthenticatedUser{
-				AuthenticatedByRealm: fr.Name,
+				AuthenticatedByRealm: fr.GetName(),
 				Credential: auth.Credential{
 					Type:     auth.CredentialTypeBasic,
 					Username: "username1",
@@ -182,8 +181,6 @@ func TestRealmChain_RegisterRealm(t *testing.T) {
 		require.Nil(t, err)
 		return
 	}
-	fr.Name = "file_realm_1"
-
 	frClone := *fr
 	type args struct {
 		r auth.Realm
@@ -207,7 +204,7 @@ func TestRealmChain_RegisterRealm(t *testing.T) {
 			args: args{
 				r: &frClone,
 			},
-			wantErrMsg: fmt.Errorf("a realm with the name '%s' has already been registered", frClone.Name).Error(),
+			wantErrMsg: fmt.Errorf("a realm with the name '%s' has already been registered", frClone.GetName()).Error(),
 			wantErr:    true,
 		},
 		{

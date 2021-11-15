@@ -114,6 +114,7 @@ func TestApplicationHandler_GetApp(t *testing.T) {
 	eventQueue := mocks.NewMockQueuer(ctrl)
 
 	groupID := "1234567890"
+	group := &convoy.Group{UID: groupID}
 
 	validID := "123456789"
 
@@ -125,28 +126,36 @@ func TestApplicationHandler_GetApp(t *testing.T) {
 		method     string
 		statusCode int
 		id         string
-		dbFn       func(appRepo *mocks.MockApplicationRepository)
+		dbFn       func(app *applicationHandler)
 	}{
 		{
 			name:       "app not found",
-			cfgPath:    "./testdata/Auth_Config/basic-convoy.json",
+			cfgPath:    "./testdata/Auth_Config/no-auth-convoy.json",
 			method:     http.MethodGet,
 			statusCode: http.StatusNotFound,
 			id:         "12345",
-			dbFn: func(appRepo *mocks.MockApplicationRepository) {
-				appRepo.EXPECT().
-					FindApplicationByID(gomock.Any(), gomock.Any()).
-					Return(nil, convoy.ErrApplicationNotFound).Times(1)
+			dbFn: func(app *applicationHandler) {
+				a, _ := app.appRepo.(*mocks.MockApplicationRepository)
+				a.EXPECT().
+					FindApplicationByID(gomock.Any(), gomock.Any()).Times(1).
+					Return(nil, convoy.ErrApplicationNotFound)
+
+				o, _ := app.groupRepo.(*mocks.MockGroupRepository)
+
+				o.EXPECT().
+					LoadGroups(gomock.Any(), gomock.Any()).Times(1).
+					Return([]*convoy.Group{group}, nil)
 			},
 		},
 		{
 			name:       "valid application",
-			cfgPath:    "./testdata/Auth_Config/basic-convoy.json",
+			cfgPath:    "./testdata/Auth_Config/no-auth-convoy.json",
 			method:     http.MethodGet,
 			statusCode: http.StatusOK,
 			id:         validID,
-			dbFn: func(appRepo *mocks.MockApplicationRepository) {
-				appRepo.EXPECT().
+			dbFn: func(app *applicationHandler) {
+				a, _ := app.appRepo.(*mocks.MockApplicationRepository)
+				a.EXPECT().
 					FindApplicationByID(gomock.Any(), gomock.Any()).Times(1).
 					Return(&convoy.Application{
 						UID:       validID,
@@ -155,6 +164,10 @@ func TestApplicationHandler_GetApp(t *testing.T) {
 						Endpoints: []convoy.Endpoint{},
 					}, nil)
 
+				o, _ := app.groupRepo.(*mocks.MockGroupRepository)
+				o.EXPECT().
+					LoadGroups(gomock.Any(), gomock.Any()).Times(1).
+					Return([]*convoy.Group{group}, nil)
 			},
 		},
 	}
@@ -173,7 +186,7 @@ func TestApplicationHandler_GetApp(t *testing.T) {
 
 			// Arrange Expectations
 			if tc.dbFn != nil {
-				tc.dbFn(appRepo)
+				tc.dbFn(app)
 			}
 
 			err := config.LoadConfig(tc.cfgPath)
@@ -213,6 +226,7 @@ func TestApplicationHandler_GetApps(t *testing.T) {
 	eventQueue := mocks.NewMockQueuer(ctrl)
 
 	groupID := "1234567890"
+	group := &convoy.Group{UID: groupID}
 
 	validID := "123456789"
 
@@ -223,15 +237,16 @@ func TestApplicationHandler_GetApps(t *testing.T) {
 		cfgPath    string
 		method     string
 		statusCode int
-		dbFn       func(appRepo *mocks.MockApplicationRepository)
+		dbFn       func(app *applicationHandler)
 	}{
 		{
 			name:       "valid applications",
-			cfgPath:    "./testdata/Auth_Config/basic-convoy.json",
+			cfgPath:    "./testdata/Auth_Config/no-auth-convoy.json",
 			method:     http.MethodGet,
 			statusCode: http.StatusOK,
-			dbFn: func(appRepo *mocks.MockApplicationRepository) {
-				appRepo.EXPECT().
+			dbFn: func(app *applicationHandler) {
+				a, _ := app.appRepo.(*mocks.MockApplicationRepository)
+				a.EXPECT().
 					LoadApplicationsPaged(gomock.Any(), gomock.Any(), gomock.Any()).Times(1).
 					Return([]convoy.Application{
 						{
@@ -242,6 +257,10 @@ func TestApplicationHandler_GetApps(t *testing.T) {
 						},
 					}, pager.PaginationData{}, nil)
 
+				o, _ := app.groupRepo.(*mocks.MockGroupRepository)
+				o.EXPECT().
+					LoadGroups(gomock.Any(), gomock.Any()).Times(1).
+					Return([]*convoy.Group{group}, nil)
 			},
 		},
 	}
@@ -261,7 +280,7 @@ func TestApplicationHandler_GetApps(t *testing.T) {
 
 			// Arrange Expectations.
 			if tc.dbFn != nil {
-				tc.dbFn(appRepo)
+				tc.dbFn(app)
 			}
 
 			err := config.LoadConfig(tc.cfgPath)
@@ -305,7 +324,7 @@ func TestApplicationHandler_CreateApp(t *testing.T) {
 	}{
 		{
 			name:       "invalid request",
-			cfgPath:    "./testdata/Auth_Config/basic-convoy.json",
+			cfgPath:    "./testdata/Auth_Config/no-auth-convoy.json",
 			method:     http.MethodPost,
 			statusCode: http.StatusBadRequest,
 			body:       strings.NewReader(``),
@@ -318,7 +337,7 @@ func TestApplicationHandler_CreateApp(t *testing.T) {
 		},
 		{
 			name:       "invalid request - no app name",
-			cfgPath:    "./testdata/Auth_Config/basic-convoy.json",
+			cfgPath:    "./testdata/Auth_Config/no-auth-convoy.json",
 			method:     http.MethodPost,
 			statusCode: http.StatusBadRequest,
 			body:       strings.NewReader(`{}`),
@@ -331,7 +350,7 @@ func TestApplicationHandler_CreateApp(t *testing.T) {
 		},
 		{
 			name:       "valid application",
-			cfgPath:    "./testdata/Auth_Config/basic-convoy.json",
+			cfgPath:    "./testdata/Auth_Config/no-auth-convoy.json",
 			method:     http.MethodPost,
 			statusCode: http.StatusCreated,
 			body:       bodyReader,
@@ -342,6 +361,7 @@ func TestApplicationHandler_CreateApp(t *testing.T) {
 					Return(nil)
 
 				o, _ := app.groupRepo.(*mocks.MockGroupRepository)
+
 				o.EXPECT().
 					LoadGroups(gomock.Any(), gomock.Any()).Times(1).
 					Return([]*convoy.Group{group}, nil)
@@ -391,6 +411,7 @@ func TestApplicationHandler_CreateApp(t *testing.T) {
 				t.Errorf("Want status '%d', got '%d'", tc.statusCode, w.Code)
 			}
 
+			fmt.Printf("bodyyy: '%s'\n", w.Body.String())
 			d := stripTimestamp(t, "application", w.Body)
 
 			w.Body = d
@@ -403,6 +424,7 @@ func TestApplicationHandler_CreateApp(t *testing.T) {
 func TestApplicationHandler_UpdateApp(t *testing.T) {
 
 	groupID := "1234567890"
+	group := &convoy.Group{UID: groupID}
 
 	appId := "12345"
 	bodyReader := strings.NewReader(`{"name": "ABC_DEF_TEST_UPDATE"}`)
@@ -418,7 +440,7 @@ func TestApplicationHandler_UpdateApp(t *testing.T) {
 	}{
 		{
 			name:       "invalid request",
-			cfgPath:    "./testdata/Auth_Config/basic-convoy.json",
+			cfgPath:    "./testdata/Auth_Config/no-auth-convoy.json",
 			method:     http.MethodPut,
 			statusCode: http.StatusBadRequest,
 			appId:      appId,
@@ -433,11 +455,17 @@ func TestApplicationHandler_UpdateApp(t *testing.T) {
 						Title:     "Valid application update",
 						Endpoints: []convoy.Endpoint{},
 					}, nil)
+
+				o, _ := app.groupRepo.(*mocks.MockGroupRepository)
+
+				o.EXPECT().
+					LoadGroups(gomock.Any(), gomock.Any()).Times(1).
+					Return([]*convoy.Group{group}, nil)
 			},
 		},
 		{
 			name:       "invalid request - no app name",
-			cfgPath:    "./testdata/Auth_Config/basic-convoy.json",
+			cfgPath:    "./testdata/Auth_Config/no-auth-convoy.json",
 			method:     http.MethodPut,
 			statusCode: http.StatusBadRequest,
 			appId:      appId,
@@ -452,11 +480,17 @@ func TestApplicationHandler_UpdateApp(t *testing.T) {
 						Title:     "Valid application update",
 						Endpoints: []convoy.Endpoint{},
 					}, nil)
+
+				o, _ := app.groupRepo.(*mocks.MockGroupRepository)
+
+				o.EXPECT().
+					LoadGroups(gomock.Any(), gomock.Any()).Times(1).
+					Return([]*convoy.Group{group}, nil)
 			},
 		},
 		{
 			name:       "valid request - update secret",
-			cfgPath:    "./testdata/Auth_Config/basic-convoy.json",
+			cfgPath:    "./testdata/Auth_Config/no-auth-convoy.json",
 			method:     http.MethodPut,
 			statusCode: http.StatusAccepted,
 			appId:      appId,
@@ -475,11 +509,17 @@ func TestApplicationHandler_UpdateApp(t *testing.T) {
 				a.EXPECT().
 					UpdateApplication(gomock.Any(), gomock.Any()).Times(1).
 					Return(nil)
+
+				o, _ := app.groupRepo.(*mocks.MockGroupRepository)
+
+				o.EXPECT().
+					LoadGroups(gomock.Any(), gomock.Any()).Times(1).
+					Return([]*convoy.Group{group}, nil)
 			},
 		},
 		{
 			name:       "valid request - update support email",
-			cfgPath:    "./testdata/Auth_Config/basic-convoy.json",
+			cfgPath:    "./testdata/Auth_Config/no-auth-convoy.json",
 			method:     http.MethodPut,
 			statusCode: http.StatusAccepted,
 			appId:      appId,
@@ -498,11 +538,17 @@ func TestApplicationHandler_UpdateApp(t *testing.T) {
 						Title:     "Valid application update",
 						Endpoints: []convoy.Endpoint{},
 					}, nil)
+
+				o, _ := app.groupRepo.(*mocks.MockGroupRepository)
+
+				o.EXPECT().
+					LoadGroups(gomock.Any(), gomock.Any()).Times(1).
+					Return([]*convoy.Group{group}, nil)
 			},
 		},
 		{
 			name:       "valid application update",
-			cfgPath:    "./testdata/Auth_Config/basic-convoy.json",
+			cfgPath:    "./testdata/Auth_Config/no-auth-convoy.json",
 			method:     http.MethodPut,
 			statusCode: http.StatusAccepted,
 			appId:      appId,
@@ -522,6 +568,11 @@ func TestApplicationHandler_UpdateApp(t *testing.T) {
 						Endpoints: []convoy.Endpoint{},
 					}, nil)
 
+				o, _ := app.groupRepo.(*mocks.MockGroupRepository)
+
+				o.EXPECT().
+					LoadGroups(gomock.Any(), gomock.Any()).Times(1).
+					Return([]*convoy.Group{group}, nil)
 			},
 		},
 	}
@@ -599,6 +650,7 @@ func TestApplicationHandler_CreateAppEndpoint(t *testing.T) {
 	eventQueue := mocks.NewMockQueuer(ctrl)
 
 	groupID := "1234567890"
+	group := &convoy.Group{UID: groupID}
 
 	bodyReader := strings.NewReader(`{"url": "https://google.com", "description": "Test"}`)
 
@@ -613,21 +665,22 @@ func TestApplicationHandler_CreateAppEndpoint(t *testing.T) {
 		statusCode int
 		appId      string
 		body       *strings.Reader
-		dbFn       func(appRepo *mocks.MockApplicationRepository)
+		dbFn       func(app *applicationHandler)
 	}{
 		{
 			name:       "valid endpoint",
-			cfgPath:    "./testdata/Auth_Config/basic-convoy.json",
+			cfgPath:    "./testdata/Auth_Config/no-auth-convoy.json",
 			method:     http.MethodPost,
 			statusCode: http.StatusCreated,
 			appId:      appId,
 			body:       bodyReader,
-			dbFn: func(appRepo *mocks.MockApplicationRepository) {
-				appRepo.EXPECT().
+			dbFn: func(app *applicationHandler) {
+				a, _ := app.appRepo.(*mocks.MockApplicationRepository)
+				a.EXPECT().
 					UpdateApplication(gomock.Any(), gomock.Any()).Times(1).
 					Return(nil)
 
-				appRepo.EXPECT().
+				a.EXPECT().
 					FindApplicationByID(gomock.Any(), gomock.Any()).Times(2).
 					Return(&convoy.Application{
 						UID:       appId,
@@ -636,6 +689,11 @@ func TestApplicationHandler_CreateAppEndpoint(t *testing.T) {
 						Endpoints: []convoy.Endpoint{},
 					}, nil)
 
+				o, _ := app.groupRepo.(*mocks.MockGroupRepository)
+
+				o.EXPECT().
+					LoadGroups(gomock.Any(), gomock.Any()).Times(1).
+					Return([]*convoy.Group{group}, nil)
 			},
 		},
 	}
@@ -649,7 +707,7 @@ func TestApplicationHandler_CreateAppEndpoint(t *testing.T) {
 			w := httptest.NewRecorder()
 
 			if tc.dbFn != nil {
-				tc.dbFn(appRepo)
+				tc.dbFn(app)
 			}
 
 			err := config.LoadConfig(tc.cfgPath)
@@ -675,6 +733,7 @@ func TestApplicationHandler_CreateAppEndpoint(t *testing.T) {
 func TestApplicationHandler_UpdateAppEndpoint(t *testing.T) {
 
 	groupID := "1234567890"
+	group := &convoy.Group{UID: groupID}
 
 	appId := "12345"
 	endpointId := "9999900000-8888"
@@ -691,7 +750,7 @@ func TestApplicationHandler_UpdateAppEndpoint(t *testing.T) {
 	}{
 		{
 			name:       "invalid request",
-			cfgPath:    "./testdata/Auth_Config/basic-convoy.json",
+			cfgPath:    "./testdata/Auth_Config/no-auth-convoy.json",
 			method:     http.MethodPut,
 			statusCode: http.StatusBadRequest,
 			appId:      appId,
@@ -712,11 +771,16 @@ func TestApplicationHandler_UpdateAppEndpoint(t *testing.T) {
 						Endpoints: []convoy.Endpoint{},
 					}, nil)
 
+				o, _ := app.groupRepo.(*mocks.MockGroupRepository)
+
+				o.EXPECT().
+					LoadGroups(gomock.Any(), gomock.Any()).Times(1).
+					Return([]*convoy.Group{group}, nil)
 			},
 		},
 		{
 			name:       "valid application",
-			cfgPath:    "./testdata/Auth_Config/basic-convoy.json",
+			cfgPath:    "./testdata/Auth_Config/no-auth-convoy.json",
 			method:     http.MethodPut,
 			statusCode: http.StatusAccepted,
 			appId:      appId,
@@ -743,6 +807,11 @@ func TestApplicationHandler_UpdateAppEndpoint(t *testing.T) {
 						},
 					}, nil)
 
+				o, _ := app.groupRepo.(*mocks.MockGroupRepository)
+
+				o.EXPECT().
+					LoadGroups(gomock.Any(), gomock.Any()).Times(1).
+					Return([]*convoy.Group{group}, nil)
 			},
 		},
 	}

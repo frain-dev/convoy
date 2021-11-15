@@ -300,12 +300,19 @@ func requireGroup(groupRepo convoy.GroupRepository) func(next http.Handler) http
 					_ = render.Render(w, r, newErrorResponse("failed to fetch group by id", http.StatusInternalServerError))
 					return
 				}
+			} else if groupID = chi.URLParam(r, "groupID"); groupID != "" {
+				group, err = groupRepo.FetchGroupByID(r.Context(), groupID)
+				if err != nil {
+					_ = render.Render(w, r, newErrorResponse("failed to fetch group by id", http.StatusInternalServerError))
+					return
+				}
 			} else {
 				group, err = getDefaultGroup(r, groupRepo)
 				if err != nil {
 					event := "an error occurred while loading default group"
 					statusCode := http.StatusInternalServerError
 
+					// TODO(daniel,subomi): this should be impossible, because we call ensureDefaultGroup on app startup, find a better way to report this?
 					if errors.Is(err, mongo.ErrNoDocuments) {
 						event = err.Error()
 						statusCode = http.StatusNotFound
@@ -315,15 +322,16 @@ func requireGroup(groupRepo convoy.GroupRepository) func(next http.Handler) http
 					return
 				}
 			}
+			ctx := setGroupInContext(r.Context(), group)
+			r = r.WithContext(ctx)
 
 			authUser := getAuthUserFromContext(r.Context())
 			if authUser.Role.Type.Is(auth.RoleSuperUser) {
 				// superuser has access to everything
+				next.ServeHTTP(w, r)
 				return
 			}
-			ctx := setGroupInContext(r.Context(), group)
 
-			r = r.WithContext(ctx)
 			for _, v := range authUser.Role.Groups {
 				if group.Name == v {
 					next.ServeHTTP(w, r)
@@ -372,6 +380,7 @@ func requirePermission(role auth.RoleType) func(next http.Handler) http.Handler 
 			authUser := getAuthUserFromContext(r.Context())
 			if authUser.Role.Type.Is(auth.RoleSuperUser) {
 				// superuser has access to everything
+				next.ServeHTTP(w, r)
 				return
 			}
 
