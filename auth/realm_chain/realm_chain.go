@@ -125,7 +125,8 @@ func checkRole(role *config.Role, credType string) error {
 		return fmt.Errorf("invalid role type: %s", role.Type.String())
 	}
 
-	if len(role.Groups) == 0 {
+	// groups will never be checked for superusers
+	if len(role.Groups) == 0 && !role.Type.Is(auth.RoleSuperUser) {
 		return fmt.Errorf("please specify groups for %s", credType)
 	}
 

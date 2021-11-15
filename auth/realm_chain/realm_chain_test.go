@@ -268,6 +268,27 @@ func TestInit(t *testing.T) {
 			wantErr: false,
 		},
 		{
+			name: "should_allow_empty_group_for_superuser",
+			args: args{
+				authConfig: &config.AuthConfiguration{
+					RequireAuth: true,
+					File: config.FileRealmOption{
+						Basic: []config.BasicAuth{
+							{
+								Username: "test",
+								Password: "test",
+								Role: auth.Role{
+									Type:   auth.RoleSuperUser,
+									Groups: nil,
+								},
+							},
+						},
+					},
+				},
+			},
+			wantErr: false,
+		},
+		{
 			name: "should_error_for_empty_username",
 			args: args{
 				authConfig: &config.AuthConfiguration{
