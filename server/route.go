@@ -142,6 +142,7 @@ func buildRoutes(app *applicationHandler) http.Handler {
 		uiRouter.Use(jsonResponse)
 		uiRouter.Use(requireAuth())
 		uiRouter.Use(requirePermission(auth.RoleUIAdmin))
+		uiRouter.Use(requireGroup(app.groupRepo))
 
 		uiRouter.Route("/dashboard", func(dashboardRouter chi.Router) {
 			dashboardRouter.With(fetchDashboardSummary(app.appRepo, app.eventRepo)).Get("/summary", app.GetDashboardSummary)

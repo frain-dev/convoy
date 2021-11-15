@@ -5,15 +5,11 @@ import (
 	"fmt"
 	"sync/atomic"
 
-	"github.com/frain-dev/convoy/auth/realm/file"
-
-	"github.com/frain-dev/convoy/auth/realm/noop"
-
-	"github.com/frain-dev/convoy/config"
-
-	log "github.com/sirupsen/logrus"
-
 	"github.com/frain-dev/convoy/auth"
+	"github.com/frain-dev/convoy/auth/realm/file"
+	"github.com/frain-dev/convoy/auth/realm/noop"
+	"github.com/frain-dev/convoy/config"
+	log "github.com/sirupsen/logrus"
 )
 
 type chainMap map[string]auth.Realm
