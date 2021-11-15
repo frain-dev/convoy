@@ -43,6 +43,7 @@ func Get() (*RealmChain, error) {
 func Init(authConfig *config.AuthConfiguration) error {
 	rc := newRealmChain()
 
+	var err error
 	// validate authentication realms
 	if authConfig.RequireAuth {
 		for _, r := range authConfig.File.Basic {
@@ -50,18 +51,9 @@ func Init(authConfig *config.AuthConfiguration) error {
 				return errors.New("username and password are required for basic auth config")
 			}
 
-			if !r.Role.Type.IsValid() {
-				return fmt.Errorf("invalid role type: %s", r.Role.Type.String())
-			}
-
-			if r.Role.Groups == nil {
-				return errors.New("please specify a groups for api-key auth config")
-			}
-
-			for _, group := range r.Role.Groups {
-				if group == "" {
-					return errors.New("empty group not allowed for api-key auth config")
-				}
+			err = checkRole(&r.Role, "basic auth")
+			if err != nil {
+				return err
 			}
 		}
 
@@ -70,18 +62,9 @@ func Init(authConfig *config.AuthConfiguration) error {
 				return errors.New("api-key is required for api-key auth config")
 			}
 
-			if !r.Role.Type.IsValid() {
-				return fmt.Errorf("invalid role type: %s", r.Role.Type.String())
-			}
-
-			if r.Role.Groups == nil {
-				return errors.New("please specify a groups for api-key auth config")
-			}
-
-			for _, group := range r.Role.Groups {
-				if group == "" {
-					return errors.New("empty group not allowed for api-key auth config")
-				}
+			err = checkRole(&r.Role, "api-key auth")
+			if err != nil {
+				return err
 			}
 		}
 
@@ -138,5 +121,22 @@ func (rc *RealmChain) RegisterRealm(r auth.Realm) error {
 	}
 	rc.chain[name] = r
 
+	return nil
+}
+
+func checkRole(role *config.Role, credType string) error {
+	if !role.Type.IsValid() {
+		return fmt.Errorf("invalid role type: %s", role.Type.String())
+	}
+
+	if len(role.Groups) == 0 {
+		return fmt.Errorf("please specify groups for %s", credType)
+	}
+
+	for _, group := range role.Groups {
+		if group == "" {
+			return fmt.Errorf("empty group name not allowed for %s", credType)
+		}
+	}
 	return nil
 }

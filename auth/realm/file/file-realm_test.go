@@ -155,6 +155,30 @@ func TestFileRealm_Authenticate(t *testing.T) {
 			wantErr:    true,
 			wantErrMsg: "credential not found",
 		},
+		{
+			name: "should_error_for_credential_type",
+			args: args{
+				cred: &auth.Credential{
+					Type:   auth.CredentialType("abc"),
+					APIKey: "1234",
+				},
+			},
+			want:       nil,
+			wantErr:    true,
+			wantErrMsg: "unsupported credential type: abc",
+		},
+		{
+			name: "should_error_for_empty_credential_type",
+			args: args{
+				cred: &auth.Credential{
+					Type:   auth.CredentialType(""),
+					APIKey: "1234",
+				},
+			},
+			want:       nil,
+			wantErr:    true,
+			wantErrMsg: "unsupported credential type: ",
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -233,6 +257,14 @@ func TestNewFileRealm(t *testing.T) {
 				},
 			},
 			wantErr: false,
+		},
+		{
+			name: "should_error_for_empty_auth_data",
+			args: args{
+				opt: &config.FileRealmOption{Basic: []config.BasicAuth{}, APIKey: []config.APIKeyAuth{}},
+			},
+			wantErr:    true,
+			wantErrMsg: "no authentication data supplied in 'file_realm'",
 		},
 	}
 

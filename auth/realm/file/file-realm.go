@@ -96,7 +96,7 @@ func NewFileRealm(opts *config.FileRealmOption) (*FileRealm, error) {
 	}
 
 	if len(fr.Basic) == 0 && len(fr.APIKey) == 0 {
-		return nil, fmt.Errorf("no authentication data supplied in file realm '%s", fr.GetName())
+		return nil, fmt.Errorf("no authentication data supplied in '%s'", fr.GetName())
 	}
 
 	return fr, nil

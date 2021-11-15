@@ -241,17 +241,237 @@ func TestInit(t *testing.T) {
 		authConfig *config.AuthConfiguration
 	}
 	tests := []struct {
-		name    string
-		args    args
-		wantErr bool
+		name       string
+		args       args
+		wantErr    bool
+		wantErrMsg string
 	}{
-		// TODO: Add test cases.
+		{
+			name: "should_init_successfully",
+			args: args{
+				authConfig: &config.AuthConfiguration{
+					RequireAuth: true,
+					File: config.FileRealmOption{
+						Basic: []config.BasicAuth{
+							{
+								Username: "test",
+								Password: "test",
+								Role: auth.Role{
+									Type:   auth.RoleAPI,
+									Groups: []string{"paystack"},
+								},
+							},
+						},
+					},
+				},
+			},
+			wantErr: false,
+		},
+		{
+			name: "should_error_for_empty_username",
+			args: args{
+				authConfig: &config.AuthConfiguration{
+					RequireAuth: true,
+					File: config.FileRealmOption{
+						Basic: []config.BasicAuth{
+							{
+								Username: "",
+								Password: "test",
+								Role: auth.Role{
+									Type:   auth.RoleAPI,
+									Groups: []string{"paystack"},
+								},
+							},
+						},
+					},
+				},
+			},
+			wantErr:    true,
+			wantErrMsg: "username and password are required for basic auth config",
+		},
+		{
+			name: "should_error_for_empty_password",
+			args: args{
+				authConfig: &config.AuthConfiguration{
+					RequireAuth: true,
+					File: config.FileRealmOption{
+						Basic: []config.BasicAuth{
+							{
+								Username: "test",
+								Password: "",
+								Role: auth.Role{
+									Type:   auth.RoleAPI,
+									Groups: []string{"paystack"},
+								},
+							},
+						},
+					},
+				},
+			},
+			wantErr:    true,
+			wantErrMsg: "username and password are required for basic auth config",
+		},
+		{
+			name: "should_error_for_invalid_role_type",
+			args: args{
+				authConfig: &config.AuthConfiguration{
+					RequireAuth: true,
+					File: config.FileRealmOption{
+						Basic: []config.BasicAuth{
+							{
+								Username: "test",
+								Password: "test",
+								Role: auth.Role{
+									Type:   "abc",
+									Groups: []string{"paystack"},
+								},
+							},
+						},
+					},
+				},
+			},
+			wantErr:    true,
+			wantErrMsg: "invalid role type: abc",
+		},
+		{
+			name: "should_error_for_nil_groups",
+			args: args{
+				authConfig: &config.AuthConfiguration{
+					RequireAuth: true,
+					File: config.FileRealmOption{
+						Basic: []config.BasicAuth{
+							{
+								Username: "test",
+								Password: "test",
+								Role: auth.Role{
+									Type:   auth.RoleAPI,
+									Groups: nil,
+								},
+							},
+						},
+					},
+				},
+			},
+			wantErr:    true,
+			wantErrMsg: "please specify groups for basic auth",
+		},
+		{
+			name: "should_error_for_empty_groups",
+			args: args{
+				authConfig: &config.AuthConfiguration{
+					RequireAuth: true,
+					File: config.FileRealmOption{
+						Basic: []config.BasicAuth{
+							{
+								Username: "test",
+								Password: "test",
+								Role: auth.Role{
+									Type:   auth.RoleAPI,
+									Groups: []string{},
+								},
+							},
+						},
+					},
+				},
+			},
+			wantErr:    true,
+			wantErrMsg: "please specify groups for basic auth",
+		},
+		{
+			name: "should_error_for_empty_group_name",
+			args: args{
+				authConfig: &config.AuthConfiguration{
+					RequireAuth: true,
+					File: config.FileRealmOption{
+						Basic: []config.BasicAuth{
+							{
+								Username: "test",
+								Password: "test",
+								Role: auth.Role{
+									Type:   auth.RoleAPI,
+									Groups: []string{""},
+								},
+							},
+						},
+					},
+				},
+			},
+			wantErr:    true,
+			wantErrMsg: "empty group name not allowed for basic auth",
+		},
+
+		{
+			name: "should_init_with_api_key_config",
+			args: args{
+				authConfig: &config.AuthConfiguration{
+					RequireAuth: true,
+					File: config.FileRealmOption{
+						APIKey: []config.APIKeyAuth{
+							{
+								APIKey: "1234567",
+								Role: auth.Role{
+									Type:   auth.RoleAPI,
+									Groups: []string{"paystack"},
+								},
+							},
+						},
+					},
+				},
+			},
+			wantErr: false,
+		},
+		{
+			name: "should_error_for_empty_api_key",
+			args: args{
+				authConfig: &config.AuthConfiguration{
+					RequireAuth: true,
+					File: config.FileRealmOption{
+						APIKey: []config.APIKeyAuth{
+							{
+								APIKey: "",
+								Role: auth.Role{
+									Type:   auth.RoleAPI,
+									Groups: []string{"paystack"},
+								},
+							},
+						},
+					},
+				},
+			},
+			wantErr:    true,
+			wantErrMsg: "api-key is required for api-key auth config",
+		},
+		{
+			name: "should_error_for_invalid_role_type",
+			args: args{
+				authConfig: &config.AuthConfiguration{
+					RequireAuth: true,
+					File: config.FileRealmOption{
+						APIKey: []config.APIKeyAuth{
+							{
+								APIKey: "123456",
+								Role: auth.Role{
+									Type:   "abc",
+									Groups: []string{"paystack"},
+								},
+							},
+						},
+					},
+				},
+			},
+			wantErr:    true,
+			wantErrMsg: "invalid role type: abc",
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if err := Init(tt.args.authConfig); (err != nil) != tt.wantErr {
-				t.Errorf("Init() error = %v, wantErr %v", err, tt.wantErr)
+			err := Init(tt.args.authConfig)
+			if tt.wantErr {
+				require.Equal(t, tt.wantErrMsg, err.Error())
+				return
 			}
+
+			require.Nil(t, err)
 		})
 	}
 }
