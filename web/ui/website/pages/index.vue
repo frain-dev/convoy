@@ -53,13 +53,19 @@
 			<p>Companies using us:</p>
 			<ul>
 				<li>
-					<img src="~/assets/images/buycoins-logo.svg" style="width: 80px" alt="buycoins logo" />
+					<a target="_blank" rel="noopener noreferrer" href="https://buycoins.africa/">
+						<img src="~/assets/images/buycoins-logo.svg" style="width: 80px" alt="buycoins logo" />
+					</a>
 				</li>
 				<li>
-					<img src="~/assets/images/termii-logo.png" style="width: 80px" alt="termii logo" />
+					<a target="_blank" rel="noopener noreferrer" href="https://termii.com/">
+						<img src="~/assets/images/termii-logo.png" style="width: 80px" alt="termii logo" />
+					</a>
 				</li>
 				<li>
-					<img src="~/assets/images/getwallets-logo.svg" style="width: 80px" alt="getwallets logo" />
+					<a target="_blank" rel="noopener noreferrer" href="https://www.getwallets.co/">
+						<img src="~/assets/images/getwallets-logo.svg" style="width: 80px" alt="getwallets logo" />
+					</a>
 				</li>
 			</ul>
 		</section>
@@ -557,6 +563,11 @@ section.companies {
 
 			img {
 				filter: grayscale(100%);
+				transition: all 0.3s ease-in-out;
+
+				&:hover {
+					filter: grayscale(0%);
+				}
 			}
 		}
 	}
