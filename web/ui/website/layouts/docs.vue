@@ -61,12 +61,7 @@ export default {
 	},
 	async mounted() {
 		let pages = await this.$content('docs').only(['title', 'id', 'toc', 'order']).sortBy('order', 'asc').fetch();
-		pages = pages.sort((a, b) => {
-			console.log('🚀 ~ file: docs.vue ~ line 65 ~ pages=pages.sort ~ a, b', a, b);
-			console.log(a.order - b.order);
-			return a.order - b.order;
-		});
-		console.log('🚀 ~ file: docs.vue ~ line 65 ~ mounted ~ pages', pages);
+		pages = pages.sort((a, b) => a.order - b.order);
 		this.pages = pages;
 	}
 };
