@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/frain-dev/convoy"
+	"github.com/frain-dev/convoy/auth"
 	"github.com/frain-dev/convoy/server/models"
 	"github.com/frain-dev/convoy/util"
 	"github.com/go-chi/render"
@@ -123,12 +124,35 @@ func (a *applicationHandler) UpdateGroup(w http.ResponseWriter, r *http.Request)
 // @Security ApiKeyAuth
 // @Router /groups [get]
 func (a *applicationHandler) GetGroups(w http.ResponseWriter, r *http.Request) {
+	user := getAuthUserFromContext(r.Context())
 	name := r.URL.Query().Get("name")
-	orgs, err := a.groupRepo.LoadGroups(r.Context(), &convoy.GroupFilter{Name: name})
+	userGroups := user.Role.Groups
+
+	var filter *convoy.GroupFilter
+
+	if !util.IsStringEmpty(name) {
+		for _, g := range userGroups {
+			if name == g {
+				filter = &convoy.GroupFilter{Names: []string{name}}
+				break
+			}
+		}
+
+		if filter == nil {
+			_ = render.Render(w, r, newErrorResponse("invalid group access", http.StatusForbidden))
+			return
+		}
+	} else if user.Role.Type == auth.RoleSuperUser {
+		filter = &convoy.GroupFilter{}
+	} else {
+		filter = &convoy.GroupFilter{Names: userGroups}
+	}
+
+	groups, err := a.groupRepo.LoadGroups(r.Context(), filter)
 	if err != nil {
 		_ = render.Render(w, r, newErrorResponse("an error occurred while fetching Groups", http.StatusInternalServerError))
 		return
 	}
 
-	_ = render.Render(w, r, newServerResponse("Groups fetched successfully", orgs, http.StatusOK))
+	_ = render.Render(w, r, newServerResponse("Groups fetched successfully", groups, http.StatusOK))
 }

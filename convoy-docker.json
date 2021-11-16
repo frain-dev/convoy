@@ -1,58 +1,90 @@
 {
-	"environment": "development",
+    "environment": "development",
     "database": {
-		"dsn": "mongodb://root:rootpassword@mongodb:27017/convoy?authSource=admin"
-	},
-	"queue": {
-		"type": "redis",
-		"redis": {
-			"dsn": "redis://redis_server:6379"
-		}
-	},
-	"server": {
-		"http": {
-          	"ssl": false,
-          	"ssl_cert_file": "",
-          	"ssl_key_file": "",
-			"port": 5005
-		}
-	},
-	"auth": {
-		"type": "none"
-	},
-	"signature": {
-		"header": "X-Company-Event-WebHook-Signature",
-		"hash": "SHA256"
-	},
-	"strategy": {
-		"type": "default",
-		"default": {
-			"intervalSeconds": 20,
-			"retryLimit": 3
-		}
-	},
-	"smtp": {
-		"provider": "sendgrid",
-		"url": "smtp.sendgrid.net",
-		"port": 2525,
-		"username": "apikey",
-		"password": "<api-key-from-sendgrid>",
-		"from": "support@frain.dev"
-	},
-	"ui": {
-		"type": "none",
-		"basic": [
-			{
-				"username": "user1",
-				"password": "password1"
-			},
-			{
-				"username": "user2",
-				"password": "password2"
-			}
-		],
-		"jwtKey": "eyJhbGciOiJIUzI1NiJ9.eyJSb2xlIjoiQWRtaW4iLCJJc3N1ZXIiOiJDb252b3kgVGVzdCIsIlVzZXJuYW1lIjoiU21hcnQiLCJleHAiOjE2MzE2MjMzOTAsImlhdCI6MTYzMTYyMzM5MH0.u4kHClCgj9KjdyHfebQn8_AnU0DlXeJX8zvJvpMLCkQ",
-		"jwtTokenExpirySeconds": 3600
-	},
-	"disable_endpoint": false
+        "dsn": "mongodb://root:rootpassword@mongodb:27017/convoy?authSource=admin"
+    },
+    "auth": {
+        "require_auth": true,
+        "file": {
+            "basic": [
+                {
+                    "username": "default",
+                    "password": "default",
+                    "role": {
+                        "type": "super_user",
+                        "groups": [
+                            "sendcash-pay",
+                            "buycoins-api"
+                        ]
+                    }
+                },
+                {
+                    "username": "convoy",
+                    "password": "convoy",
+                    "role": {
+                        "type": "admin",
+                        "groups": [
+                            "sendcash-pay",
+                            "buycoins-api"
+                        ]
+                    }
+                },
+                {
+                    "username": "termii-user",
+                    "password": "convoy",
+                    "role": {
+                        "type": "admin",
+                        "groups": [
+                            "termii"
+                        ]
+                    }
+                }
+            ],
+            "api_key": [
+                {
+                    "api_key": "<insert-api-key>",
+                    "role": {
+                        "type": "super_user",
+                        "groups": [
+                            "sendcash-pay"
+                        ]
+                    }
+                }
+            ]
+        }
+    },
+    "queue": {
+        "type": "redis",
+        "redis": {
+            "dsn": "redis://redis_server:6379"
+        }
+    },
+    "server": {
+        "http": {
+            "ssl": false,
+            "ssl_cert_file": "",
+            "ssl_key_file": "",
+            "port": 5005
+        }
+    },
+    "signature": {
+        "header": "X-Company-Event-WebHook-Signature",
+        "hash": "SHA256"
+    },
+    "strategy": {
+        "type": "default",
+        "default": {
+            "intervalSeconds": 20,
+            "retryLimit": 3
+        }
+    },
+    "smtp": {
+        "provider": "sendgrid",
+        "url": "smtp.sendgrid.net",
+        "port": 2525,
+        "username": "apikey",
+        "password": "<api-key-from-sendgrid>",
+        "from": "support@frain.dev"
+    },
+    "disable_endpoint": false
 }

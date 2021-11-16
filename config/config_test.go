@@ -39,7 +39,10 @@ func Test_EnvironmentTakesPrecedence(t *testing.T) {
 
 			// Assert.
 			configFile := "./testdata/Test_ConfigurationFromEnvironment/convoy.json"
-			_ = LoadConfig(configFile)
+			err := LoadConfig(configFile)
+			if err != nil {
+				t.Errorf("Failed to load config file: %v", err)
+			}
 
 			cfg, _ := Get()
 

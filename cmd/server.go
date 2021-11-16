@@ -4,6 +4,8 @@ import (
 	"errors"
 	"time"
 
+	"github.com/frain-dev/convoy/auth/realm_chain"
+
 	"github.com/frain-dev/convoy"
 	"github.com/frain-dev/convoy/config"
 	convoyQueue "github.com/frain-dev/convoy/queue/redis"
@@ -33,6 +35,11 @@ func addServerCommand(a *app) *cobra.Command {
 			if util.IsStringEmpty(string(cfg.Signature.Header)) {
 				cfg.Signature.Header = config.DefaultSignatureHeader
 				log.Warnf("signature header is blank. setting default %s", config.DefaultSignatureHeader)
+			}
+
+			err = realm_chain.Init(&cfg.Auth)
+			if err != nil {
+				log.WithError(err).Fatal("failed to initialize realm chain")
 			}
 
 			if cfg.Server.HTTP.Port <= 0 {
