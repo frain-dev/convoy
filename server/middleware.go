@@ -276,12 +276,14 @@ func findEndpoint(endpoints *[]convoy.Endpoint, id string) (*convoy.Endpoint, er
 }
 
 func getDefaultGroup(r *http.Request, groupRepo convoy.GroupRepository) (*convoy.Group, error) {
-	// TODO(daniel,subomi): i think this isn't safe
-	name := r.URL.Query().Get("name")
 
-	groups, err := groupRepo.LoadGroups(r.Context(), &convoy.GroupFilter{Name: name})
+	groups, err := groupRepo.LoadGroups(r.Context(), &convoy.GroupFilter{Names: []string{"default-group"}})
 	if err != nil {
 		return nil, err
+	}
+
+	if !(len(groups) > 0) {
+		return nil, errors.New("no default group, please your config")
 	}
 
 	return groups[0], err
@@ -322,24 +324,8 @@ func requireGroup(groupRepo convoy.GroupRepository) func(next http.Handler) http
 					return
 				}
 			}
-			ctx := setGroupInContext(r.Context(), group)
-			r = r.WithContext(ctx)
-
-			authUser := getAuthUserFromContext(r.Context())
-			if authUser.Role.Type.Is(auth.RoleSuperUser) {
-				// superuser has access to everything
-				next.ServeHTTP(w, r)
-				return
-			}
-
-			for _, v := range authUser.Role.Groups {
-				if group.Name == v {
-					next.ServeHTTP(w, r)
-					return
-				}
-			}
-
-			_ = render.Render(w, r, newErrorResponse("unauthorized to access group", http.StatusUnauthorized))
+			r = r.WithContext(setGroupInContext(r.Context(), group))
+			next.ServeHTTP(w, r)
 		})
 	}
 }
@@ -388,7 +374,16 @@ func requirePermission(role auth.RoleType) func(next http.Handler) http.Handler 
 				_ = render.Render(w, r, newErrorResponse("unauthorized role", http.StatusUnauthorized))
 				return
 			}
-			next.ServeHTTP(w, r)
+
+			group := getGroupFromContext(r.Context())
+			for _, v := range authUser.Role.Groups {
+				if group.Name == v {
+					next.ServeHTTP(w, r)
+					return
+				}
+			}
+
+			_ = render.Render(w, r, newErrorResponse("unauthorized to access group", http.StatusUnauthorized))
 		})
 	}
 }

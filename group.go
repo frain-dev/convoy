@@ -22,7 +22,7 @@ type Group struct {
 	DocumentStatus DocumentStatus `json:"-" bson:"document_status"`
 }
 type GroupFilter struct {
-	Name string `json:"name" bson:"name"`
+	Names []string `json:"name" bson:"name"`
 }
 
 func (o *Group) IsDeleted() bool { return o.DeletedAt > 0 }

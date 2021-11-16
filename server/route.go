@@ -63,21 +63,21 @@ func buildRoutes(app *applicationHandler) http.Handler {
 			r.Use(middleware.AllowContentType("application/json"))
 			r.Use(jsonResponse)
 			r.Use(requireAuth())
-			r.Use(requireGroup(app.groupRepo))
 
 			r.Route("/groups", func(groupRouter chi.Router) {
-				groupRouter.Use(requirePermission(auth.RoleAdmin))
-
 				groupRouter.Get("/", app.GetGroups)
-				groupRouter.Post("/", app.CreateGroup)
+				groupRouter.With(requirePermission(auth.RoleSuperUser)).Post("/", app.CreateGroup)
 
 				groupRouter.Route("/{groupID}", func(groupSubRouter chi.Router) {
-					groupSubRouter.Get("/", app.GetGroup)
-					groupSubRouter.Put("/", app.UpdateGroup)
+					groupSubRouter.Use(requireGroup(app.groupRepo))
+
+					groupSubRouter.With(requirePermission(auth.RoleAdmin)).Get("/", app.GetGroup)
+					groupSubRouter.With(requirePermission(auth.RoleSuperUser)).Put("/", app.UpdateGroup)
 				})
 			})
 
 			r.Route("/applications", func(appRouter chi.Router) {
+				appRouter.Use(requireGroup(app.groupRepo))
 				appRouter.Use(requirePermission(auth.RoleAdmin))
 
 				appRouter.Route("/", func(appSubRouter chi.Router) {
@@ -108,6 +108,9 @@ func buildRoutes(app *applicationHandler) http.Handler {
 			})
 
 			r.Route("/events", func(eventRouter chi.Router) {
+				eventRouter.Use(requireGroup(app.groupRepo))
+				eventRouter.Use(requirePermission(auth.RoleAdmin))
+
 				eventRouter.With(instrumentPath("/events")).Post("/", app.CreateAppEvent)
 				eventRouter.With(pagination).Get("/", app.GetEventsPaged)
 
@@ -118,6 +121,9 @@ func buildRoutes(app *applicationHandler) http.Handler {
 			})
 
 			r.Route("/eventdeliveries", func(eventDeliveryRouter chi.Router) {
+				eventDeliveryRouter.Use(requireGroup(app.groupRepo))
+				eventDeliveryRouter.Use(requirePermission(auth.RoleAdmin))
+
 				eventDeliveryRouter.With(pagination).Get("/", app.GetEventDeliveriesPaged)
 
 				eventDeliveryRouter.Route("/{eventDeliveryID}", func(eventDeliverySubRouter chi.Router) {
@@ -141,8 +147,6 @@ func buildRoutes(app *applicationHandler) http.Handler {
 	router.Route("/ui", func(uiRouter chi.Router) {
 		uiRouter.Use(jsonResponse)
 		uiRouter.Use(requireAuth())
-		uiRouter.Use(requirePermission(auth.RoleUIAdmin))
-		uiRouter.Use(requireGroup(app.groupRepo))
 
 		uiRouter.Route("/dashboard", func(dashboardRouter chi.Router) {
 			dashboardRouter.With(fetchDashboardSummary(app.appRepo, app.eventRepo)).Get("/summary", app.GetDashboardSummary)
@@ -156,11 +160,13 @@ func buildRoutes(app *applicationHandler) http.Handler {
 			})
 
 			groupRouter.Route("/{groupID}", func(appSubRouter chi.Router) {
-				appSubRouter.Get("/", app.GetGroup)
+				appSubRouter.With(requirePermission(auth.RoleUIAdmin)).Get("/", app.GetGroup)
 			})
 		})
 
 		uiRouter.Route("/apps", func(appRouter chi.Router) {
+			appRouter.Use(requireGroup(app.groupRepo))
+			appRouter.Use(requirePermission(auth.RoleUIAdmin))
 
 			appRouter.Route("/", func(appSubRouter chi.Router) {
 				appRouter.With(pagination).Get("/", app.GetApps)
@@ -183,6 +189,9 @@ func buildRoutes(app *applicationHandler) http.Handler {
 		})
 
 		uiRouter.Route("/events", func(eventRouter chi.Router) {
+			eventRouter.Use(requireGroup(app.groupRepo))
+			eventRouter.Use(requirePermission(auth.RoleUIAdmin))
+
 			eventRouter.With(pagination).Get("/", app.GetEventsPaged)
 
 			eventRouter.Route("/{eventID}", func(eventSubRouter chi.Router) {
@@ -192,6 +201,9 @@ func buildRoutes(app *applicationHandler) http.Handler {
 		})
 
 		uiRouter.Route("/eventdeliveries", func(eventDeliveryRouter chi.Router) {
+			eventDeliveryRouter.Use(requireGroup(app.groupRepo))
+			eventDeliveryRouter.Use(requirePermission(auth.RoleUIAdmin))
+
 			eventDeliveryRouter.With(pagination).Get("/", app.GetEventDeliveriesPaged)
 
 			eventDeliveryRouter.Route("/{eventDeliveryID}", func(eventDeliverySubRouter chi.Router) {

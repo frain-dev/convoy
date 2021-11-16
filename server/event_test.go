@@ -327,7 +327,7 @@ func Test_resendEventDelivery(t *testing.T) {
 
 	app = newApplicationHandler(eventRepo, eventDeliveryRepo, appRepo, groupRepo, eventQueue)
 
-	group := &convoy.Group{UID: "1234567890"}
+	group := &convoy.Group{Name: "default-group", UID: "1234567890"}
 
 	appID := "12345"
 	eventID := "1122333444456"
@@ -380,7 +380,6 @@ func Test_resendEventDelivery(t *testing.T) {
 					Return(nil)
 
 				o, _ := app.groupRepo.(*mocks.MockGroupRepository)
-
 				o.EXPECT().
 					LoadGroups(gomock.Any(), gomock.Any()).Times(1).
 					Return([]*convoy.Group{group}, nil)

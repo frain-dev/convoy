@@ -142,14 +142,6 @@ func TestApplicationHandler_CreateGroup(t *testing.T) {
 					CreateGroup(gomock.Any(), gomock.Any()).Times(1).
 					Return(nil)
 
-				o.EXPECT().
-					LoadGroups(gomock.Any(), gomock.Any()).Times(1).
-					Return([]*convoy.Group{
-						{
-							UID:  "1234567",
-							Name: "sendcash-pay",
-						},
-					}, nil)
 			},
 		},
 	}
@@ -230,12 +222,10 @@ func TestApplicationHandler_UpdateGroup(t *testing.T) {
 					Return(nil)
 
 				g.EXPECT().
-					LoadGroups(gomock.Any(), gomock.Any()).Times(1).
-					Return([]*convoy.Group{
-						{
-							UID:  realOrgID,
-							Name: "sendcash-pay",
-						},
+					FetchGroupByID(gomock.Any(), gomock.Any()).Times(1).
+					Return(&convoy.Group{
+						UID:  realOrgID,
+						Name: "sendcash-pay",
 					}, nil)
 			},
 		},
@@ -316,7 +306,7 @@ func TestApplicationHandler_GetGroups(t *testing.T) {
 			dbFn: func(app *applicationHandler) {
 				o, _ := app.groupRepo.(*mocks.MockGroupRepository)
 				o.EXPECT().
-					LoadGroups(gomock.Any(), gomock.Any()).Times(2).
+					LoadGroups(gomock.Any(), gomock.Any()).Times(1).
 					Return([]*convoy.Group{
 						{
 							UID:  realOrgID,
@@ -361,7 +351,6 @@ func TestApplicationHandler_GetGroups(t *testing.T) {
 
 			// Act
 			router.ServeHTTP(w, req)
-			fmt.Println("Ffff", w.Body.String())
 			if w.Code != tc.statusCode {
 				t.Errorf("Want status '%d', got '%d'", tc.statusCode, w.Code)
 			}

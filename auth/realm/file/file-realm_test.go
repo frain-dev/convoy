@@ -258,14 +258,6 @@ func TestNewFileRealm(t *testing.T) {
 			},
 			wantErr: false,
 		},
-		{
-			name: "should_error_for_empty_auth_data",
-			args: args{
-				opt: &config.FileRealmOption{Basic: []config.BasicAuth{}, APIKey: []config.APIKeyAuth{}},
-			},
-			wantErr:    true,
-			wantErrMsg: "no authentication data supplied in 'file_realm'",
-		},
 	}
 
 	for _, tt := range tests {

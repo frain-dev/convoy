@@ -39,31 +39,8 @@ func Get() (*RealmChain, error) {
 func Init(authConfig *config.AuthConfiguration) error {
 	rc := newRealmChain()
 
-	var err error
 	// validate authentication realms
 	if authConfig.RequireAuth {
-		for _, r := range authConfig.File.Basic {
-			if r.Username == "" || r.Password == "" {
-				return errors.New("username and password are required for basic auth config")
-			}
-
-			err = checkRole(&r.Role, "basic auth")
-			if err != nil {
-				return err
-			}
-		}
-
-		for _, r := range authConfig.File.APIKey {
-			if r.APIKey == "" {
-				return errors.New("api-key is required for api-key auth config")
-			}
-
-			err = checkRole(&r.Role, "api-key auth")
-			if err != nil {
-				return err
-			}
-		}
-
 		fr, err := file.NewFileRealm(&authConfig.File)
 		if err != nil {
 			return err
@@ -117,23 +94,5 @@ func (rc *RealmChain) RegisterRealm(r auth.Realm) error {
 	}
 	rc.chain[name] = r
 
-	return nil
-}
-
-func checkRole(role *config.Role, credType string) error {
-	if !role.Type.IsValid() {
-		return fmt.Errorf("invalid role type: %s", role.Type.String())
-	}
-
-	// groups will never be checked for superusers
-	if len(role.Groups) == 0 && !role.Type.Is(auth.RoleSuperUser) {
-		return fmt.Errorf("please specify groups for %s", credType)
-	}
-
-	for _, group := range role.Groups {
-		if group == "" {
-			return fmt.Errorf("empty group name not allowed for %s", credType)
-		}
-	}
 	return nil
 }

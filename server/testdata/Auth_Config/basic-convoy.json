@@ -4,7 +4,7 @@
         "file": {
             "basic": [
                 {
-                    "username": "test",
+                    "username": "testx",
                     "password": "test",
                     "role": {
                         "type": "admin",

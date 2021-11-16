@@ -1,15 +1,10 @@
 package file
 
 import (
-	"errors"
 	"fmt"
 
 	"github.com/frain-dev/convoy/auth"
 	"github.com/frain-dev/convoy/config"
-)
-
-var (
-	ErrCredentialNotFound = errors.New("credential not found")
 )
 
 type BasicAuth struct {
@@ -51,7 +46,7 @@ func (r *FileRealm) Authenticate(cred *auth.Credential) (*auth.AuthenticatedUser
 			}
 			return authUser, nil
 		}
-		return nil, ErrCredentialNotFound
+		return nil, auth.ErrCredentialNotFound
 	case auth.CredentialTypeAPIKey:
 		for _, b := range r.APIKey {
 			if cred.APIKey != b.APIKey {
@@ -65,7 +60,7 @@ func (r *FileRealm) Authenticate(cred *auth.Credential) (*auth.AuthenticatedUser
 			}
 			return authUser, nil
 		}
-		return nil, ErrCredentialNotFound
+		return nil, auth.ErrCredentialNotFound
 	default:
 		return nil, fmt.Errorf("unsupported credential type: %s", cred.Type.String())
 	}
@@ -93,10 +88,6 @@ func NewFileRealm(opts *config.FileRealmOption) (*FileRealm, error) {
 				Groups: basicAuth.Role.Groups,
 			},
 		})
-	}
-
-	if len(fr.Basic) == 0 && len(fr.APIKey) == 0 {
-		return nil, fmt.Errorf("no authentication data supplied in '%s'", fr.GetName())
 	}
 
 	return fr, nil
