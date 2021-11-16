@@ -55,6 +55,12 @@
 				<li>
 					<img src="~/assets/images/buycoins-logo.svg" style="width: 80px" alt="buycoins logo" />
 				</li>
+				<li>
+					<img src="~/assets/images/termii-logo.png" style="width: 80px" alt="termii logo" />
+				</li>
+				<li>
+					<img src="~/assets/images/getwallets-logo.svg" style="width: 80px" alt="getwallets logo" />
+				</li>
 			</ul>
 		</section>
 
@@ -62,8 +68,8 @@
 			<div class="container">
 				<h2 class="section--title">Why Convoy</h2>
 				<p class="section--description">
-					Convoy enables you get started with delivering webhooks products in the space of minutes, along with a number of carefully thought out features to truely enable/enhance your webhooks
-					delivery at scale.
+					Convoy enables you get started with delivering webhooks products in the space of minutes, along with a number of carefully thought out features to truly enable/enhance your webhooks delivery
+					at scale.
 				</p>
 
 				<ul>
@@ -529,22 +535,28 @@ section.companies {
 	background: #fafafe;
 	border-radius: 8px 8px 0px 0px;
 	align-items: center;
+	flex-wrap: wrap;
 
 	p {
 		font-weight: bold;
 		font-size: 16px;
 		line-height: 24px;
 		padding: 0;
-		margin: 0;
+		margin: 0 0 20px;
 	}
 
 	ul {
 		display: flex;
 		align-items: center;
+		margin-bottom: 10px;
 
 		li {
 			&:not(:last-of-type) {
 				margin-right: 50px;
+			}
+
+			img {
+				filter: grayscale(100%);
 			}
 		}
 	}
