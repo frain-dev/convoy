@@ -1,5 +1,3 @@
-
-
 .dashboard--page {
 	width: 1374px;
 	margin: 32px auto;
@@ -90,8 +88,12 @@
 
 	.table--container {
 		max-height: calc(100vh - 950px);
-		min-height: 500px;
+		min-height: 521px;
 		overflow: auto;
+
+		&.smaller-table {
+			min-height: 567px;
+		}
 	}
 
 	&--tabs {
@@ -111,8 +113,13 @@
 				font-size: 12px;
 			}
 
-			.date-filter-button {
-				min-width: 260px;
+			.event-button {
+				width: 120px;
+				min-width: unset;
+
+				img {
+					width: 13px;
+				}
 			}
 
 			.select select {
@@ -135,7 +142,7 @@
 		padding: 24px;
 		width: 480px;
 		max-height: calc(100vh - 950px);
-		min-height: 705px;
+		min-height: 707px;
 		overflow: auto;
 
 		& > h3 {
@@ -190,8 +197,6 @@
 		}
 
 		&--req-res {
-			// max-height: calc(100vh - (950px + 198px));
-			// min-height: 322px;
 			overflow-y: auto;
 
 			& > div {
@@ -235,6 +240,14 @@
 					img {
 						width: 15px;
 						margin-right: 10px;
+					}
+				}
+				.events {
+					margin-top: 10px;
+
+					.tag {
+						display: inline-block;
+						margin: 5px 10px 5px 0;
 					}
 				}
 			}

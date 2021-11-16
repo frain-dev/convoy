@@ -75,6 +75,7 @@ export class DashboardComponent implements OnInit {
 	displayedEventDeliveries: { date: string; events: EVENT_DELIVERY[] }[] = [];
 	eventDeliveries!: { pagination: PAGINATION; content: EVENT_DELIVERY[] };
 	sidebarEventDeliveries: EVENT_DELIVERY[] = [];
+	eventDeliveryFilteredByEventId = '';
 
 	constructor(private httpService: HttpService, private generalService: GeneralService, private router: Router, private formBuilder: FormBuilder) {}
 
@@ -94,7 +95,7 @@ export class DashboardComponent implements OnInit {
 		this.router.navigateByUrl('/login');
 	}
 
-	toggleActiveTab(tab: 'events' | 'apps' | 'event deliveries', id?: string) {
+	toggleActiveTab(tab: 'events' | 'apps' | 'event deliveries') {
 		this.activeTab = tab;
 
 		if (tab === 'apps' && this.apps?.content.length > 0) {
@@ -104,8 +105,8 @@ export class DashboardComponent implements OnInit {
 			this.detailsItem = this.events?.content[0];
 			this.getEventDeliveriesForSidebar(this.detailsItem.uid);
 		} else if (tab === 'event deliveries' && this.eventDeliveries?.content.length > 0) {
-			this.detailsItem = id ? this.eventDeliveries?.content.find(delivery => delivery.uid === id) : this.eventDeliveries?.content[0];
-			this.getDelieveryAttempts(id || this.detailsItem.uid);
+			this.detailsItem = this.eventDeliveries?.content[0];
+			this.getDelieveryAttempts(this.detailsItem.uid);
 		}
 	}
 
@@ -248,11 +249,11 @@ export class DashboardComponent implements OnInit {
 		}
 	}
 
-	async getEventDeliveries(eventId?: string) {
+	async getEventDeliveries() {
 		const { startDate, endDate } = this.setDateForFilter(this.eventDeliveriesFilterDateRange.value);
 
 		try {
-			const eventDeliveriesResponse = await this.eventDeliveriesRequest({ eventId, startDate, endDate });
+			const eventDeliveriesResponse = await this.eventDeliveriesRequest({ eventId: this.eventDeliveryFilteredByEventId, startDate, endDate });
 
 			if (this.eventDeliveries && this.eventDeliveries?.pagination?.next === this.eventDeliveriesPage) {
 				const content = [...this.eventDeliveries.content, ...eventDeliveriesResponse.data.content];
@@ -326,7 +327,7 @@ export class DashboardComponent implements OnInit {
 		return '';
 	}
 
-	async retryEvent(requestDetails: { eventId: string; e: any; index: number; eventDeliveryId: string }) {
+	async retryEvent(requestDetails: { e: any; index: number; eventDeliveryId: string }) {
 		requestDetails.e.stopPropagation();
 		const retryButton: any = document.querySelector(`#event${requestDetails.index} button`);
 		if (retryButton) {
@@ -337,13 +338,13 @@ export class DashboardComponent implements OnInit {
 		try {
 			await this.httpService.request({
 				method: 'put',
-				url: `/events/${requestDetails.eventId}/eventdeliveries/${requestDetails.eventDeliveryId}/resend`
+				url: `/eventdeliveries/${requestDetails.eventDeliveryId}/resend`
 			});
 
 			this.generalService.showNotification({ message: 'Retry Request Sent' });
 			retryButton.classList.remove(['spin', 'disabled']);
 			retryButton.disabled = false;
-			this.getEvents();
+			this.getEventDeliveries();
 		} catch (error: any) {
 			this.generalService.showNotification({ message: error.error.message });
 			retryButton.classList.remove(['spin', 'disabled']);
@@ -357,10 +358,24 @@ export class DashboardComponent implements OnInit {
 		return authDetails ? JSON.parse(authDetails) : false;
 	}
 
-	clearEventFilters() {
-		this.eventApp = '';
-		this.eventsFilterDateRange.patchValue({ startDate: '', endDate: '' });
-		this.getEvents();
+	clearEventFilters(tableName: 'events' | 'event deliveries') {
+		switch (tableName) {
+			case 'events':
+				this.eventApp = '';
+				this.eventsFilterDateRange.patchValue({ startDate: '', endDate: '' });
+				this.getEvents();
+				break;
+
+			case 'event deliveries':
+				this.eventDeliveriesApp = '';
+				this.eventDeliveriesFilterDateRange.patchValue({ startDate: '', endDate: '' });
+				this.eventDeliveryFilteredByEventId = '';
+				this.getEventDeliveries();
+				break;
+
+			default:
+				break;
+		}
 	}
 
 	checkAllCheckboxes(event: any) {
@@ -371,8 +386,13 @@ export class DashboardComponent implements OnInit {
 		});
 	}
 
-	async openDeliveriesTab(eventId: string) {
-		await this.getEventDeliveries(eventId);
+	async openDeliveriesTab() {
+		await this.getEventDeliveries();
+		this.toggleActiveTab('event deliveries');
+	}
+
+	async refreshTables() {
+		await this.initDashboard();
 		this.toggleActiveTab('event deliveries');
 	}
 }
