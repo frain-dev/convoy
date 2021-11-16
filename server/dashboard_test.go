@@ -3,7 +3,6 @@ package server
 import (
 	"net/http"
 	"net/http/httptest"
-	"strings"
 	"testing"
 
 	"github.com/frain-dev/convoy/config"
@@ -12,7 +11,7 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
-func Test_login(t *testing.T) {
+func Test_fetchAllConfigDetails(t *testing.T) {
 	var app *applicationHandler
 
 	ctrl := gomock.NewController(t)
@@ -29,52 +28,33 @@ func Test_login(t *testing.T) {
 	tests := []struct {
 		name       string
 		method     string
-		body       *strings.Reader
 		statusCode int
 	}{
 		{
-			name:       "bad login - no request body",
-			method:     http.MethodPost,
-			body:       strings.NewReader(``),
-			statusCode: http.StatusBadRequest,
-		},
-		{
-			name:       "bad login - unauthorized user password",
-			method:     http.MethodPost,
-			body:       strings.NewReader(`{"username": "user1","password": "wrong password"}`),
-			statusCode: http.StatusUnauthorized,
-		},
-		{
-			name:       "bad login - unauthorized user name",
-			method:     http.MethodPost,
-			body:       strings.NewReader(`{"username": "user1000000","password": "password1"}`),
-			statusCode: http.StatusUnauthorized,
-		},
-		{
-			name:       "successful login",
-			method:     http.MethodPost,
-			body:       strings.NewReader(`{"username": "user1","password": "password1"}`),
+			name:       "successful config fetch",
+			method:     http.MethodGet,
 			statusCode: http.StatusOK,
 		},
 	}
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-
 			err := config.LoadConfig("./testdata/Auth_Config/none-convoy.json")
 			if err != nil {
-				t.Error("Failed to load config file")
+				t.Errorf("Failed to load config file: %v", err)
 			}
+			initRealmChain(t)
 
-			request := httptest.NewRequest(tc.method, "/v1/auth/login", tc.body)
+			request := httptest.NewRequest(tc.method, "/ui/dashboard/1/config", nil)
 			responseRecorder := httptest.NewRecorder()
 
-			login()(http.HandlerFunc(app.GetAuthLogin)).
+			fetchAllConfigDetails()(http.HandlerFunc(app.GetAllConfigDetails)).
 				ServeHTTP(responseRecorder, request)
 
 			if responseRecorder.Code != tc.statusCode {
 				log.Error(tc.name, responseRecorder.Body)
 				t.Errorf("Want status '%d', got '%d'", tc.statusCode, responseRecorder.Code)
 			}
+
 		})
 	}
 }

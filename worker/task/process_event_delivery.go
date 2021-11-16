@@ -74,7 +74,7 @@ func ProcessEventDelivery(appRepo convoy.ApplicationRepository, eventDeliveryRep
 			return nil
 		}
 
-		dbEndpoint, err := appRepo.FindApplicationEndpointByID(context.Background(), m.AppID, e.UID)
+		dbEndpoint, err := appRepo.FindApplicationEndpointByID(context.Background(), m.AppMetadata.UID, e.UID)
 		if err != nil {
 			log.WithError(err).Errorf("could not retrieve endpoint %s", e.UID)
 			return &EndpointError{Err: err}
@@ -156,7 +156,7 @@ func ProcessEventDelivery(appRepo convoy.ApplicationRepository, eventDeliveryRep
 			endpoints := []string{dbEndpoint.UID}
 			endpointStatus := convoy.ActiveEndpointStatus
 
-			err := appRepo.UpdateApplicationEndpointsStatus(context.Background(), m.AppID, endpoints, endpointStatus)
+			err := appRepo.UpdateApplicationEndpointsStatus(context.Background(), m.AppMetadata.UID, endpoints, endpointStatus)
 			if err != nil {
 				log.WithError(err).Error("Failed to reactivate endpoint after successful retry")
 			}
@@ -174,7 +174,7 @@ func ProcessEventDelivery(appRepo convoy.ApplicationRepository, eventDeliveryRep
 			endpoints := []string{dbEndpoint.UID}
 			endpointStatus := convoy.InactiveEndpointStatus
 
-			err := appRepo.UpdateApplicationEndpointsStatus(context.Background(), m.AppID, endpoints, endpointStatus)
+			err := appRepo.UpdateApplicationEndpointsStatus(context.Background(), m.AppMetadata.UID, endpoints, endpointStatus)
 			if err != nil {
 				log.WithError(err).Error("Failed to reactivate endpoint after successful retry")
 			}
@@ -200,7 +200,7 @@ func ProcessEventDelivery(appRepo convoy.ApplicationRepository, eventDeliveryRep
 				endpoints := []string{dbEndpoint.UID}
 				endpointStatus := convoy.InactiveEndpointStatus
 
-				err := appRepo.UpdateApplicationEndpointsStatus(context.Background(), m.AppID, endpoints, endpointStatus)
+				err := appRepo.UpdateApplicationEndpointsStatus(context.Background(), m.AppMetadata.UID, endpoints, endpointStatus)
 				if err != nil {
 					log.WithError(err).Error("Failed to reactivate endpoint after successful retry")
 				}

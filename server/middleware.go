@@ -12,6 +12,10 @@ import (
 	"strings"
 	"time"
 
+	"github.com/frain-dev/convoy/auth/realm_chain"
+
+	"github.com/frain-dev/convoy/auth"
+
 	"go.mongodb.org/mongo-driver/mongo"
 
 	"github.com/felixge/httpsnoop"
@@ -31,14 +35,15 @@ import (
 type contextKey string
 
 const (
-	groupCtx            contextKey = "group"
-	appCtx              contextKey = "app"
-	endpointCtx         contextKey = "endpoint"
-	eventCtx            contextKey = "event"
-	eventDeliveryCtx    contextKey = "eventDelivery"
-	configCtx           contextKey = "configCtx"
-	authConfigCtx       contextKey = "authConfig"
+	groupCtx         contextKey = "group"
+	appCtx           contextKey = "app"
+	endpointCtx      contextKey = "endpoint"
+	eventCtx         contextKey = "event"
+	eventDeliveryCtx contextKey = "eventDelivery"
+	configCtx        contextKey = "configCtx"
+	//authConfigCtx       contextKey = "authConfig"
 	authLoginCtx        contextKey = "authLogin"
+	authUserCtx         contextKey = "authUser"
 	pageableCtx         contextKey = "pageable"
 	pageDataCtx         contextKey = "pageData"
 	dashboardCtx        contextKey = "dashboard"
@@ -60,33 +65,6 @@ func writeRequestIDHeader(next http.Handler) http.Handler {
 		w.Header().Set("X-Request-ID", r.Context().Value(middleware.RequestIDKey).(string))
 		next.ServeHTTP(w, r)
 	})
-}
-
-func ensureBasicAuthFromRequest(a *config.AuthConfiguration, r *http.Request) error {
-	val := r.Header.Get("Authorization")
-	auth := strings.Split(val, " ")
-
-	if len(auth) != 2 {
-		return errors.New("invalid header structure")
-	}
-	if len(auth) != 2 {
-		return errors.New("invalid auth header structure")
-	}
-
-	if strings.ToUpper(auth[0]) != "BASIC" {
-		return errors.New("invalid auth header structure")
-	}
-
-	credentials, err := base64.StdEncoding.DecodeString(auth[1])
-	if err != nil {
-		return errors.New("invalid credentials")
-	}
-
-	if string(credentials) != fmt.Sprintf("%s:%s", a.Basic.Username, a.Basic.Password) {
-		return errors.New("authorization failed")
-	}
-
-	return nil
 }
 
 // func retrieveRequestID(r *http.Request) string { return middleware.GetReqID(r.Context()) }
@@ -297,51 +275,160 @@ func findEndpoint(endpoints *[]convoy.Endpoint, id string) (*convoy.Endpoint, er
 	return nil, convoy.ErrEndpointNotFound
 }
 
+func getDefaultGroup(r *http.Request, groupRepo convoy.GroupRepository) (*convoy.Group, error) {
+
+	groups, err := groupRepo.LoadGroups(r.Context(), &convoy.GroupFilter{Names: []string{"default-group"}})
+	if err != nil {
+		return nil, err
+	}
+
+	if !(len(groups) > 0) {
+		return nil, errors.New("no default group, please your config")
+	}
+
+	return groups[0], err
+}
+
 func requireGroup(groupRepo convoy.GroupRepository) func(next http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			id := r.URL.Query().Get("groupId")
+			var group *convoy.Group
+			var err error
 
-			group, err := groupRepo.FetchGroupByID(r.Context(), id)
-			if err != nil {
-				errMsg := "an error occurred while loading group"
-				statusCode := http.StatusInternalServerError
+			groupID := r.URL.Query().Get("groupID")
+			if groupID != "" {
+				group, err = groupRepo.FetchGroupByID(r.Context(), groupID)
+				if err != nil {
+					_ = render.Render(w, r, newErrorResponse("failed to fetch group by id", http.StatusInternalServerError))
+					return
+				}
+			} else if groupID = chi.URLParam(r, "groupID"); groupID != "" {
+				group, err = groupRepo.FetchGroupByID(r.Context(), groupID)
+				if err != nil {
+					_ = render.Render(w, r, newErrorResponse("failed to fetch group by id", http.StatusInternalServerError))
+					return
+				}
+			} else {
+				group, err = getDefaultGroup(r, groupRepo)
+				if err != nil {
+					event := "an error occurred while loading default group"
+					statusCode := http.StatusInternalServerError
 
-				_ = render.Render(w, r, newErrorResponse(errMsg, statusCode))
-				return
+					// TODO(daniel,subomi): this should be impossible, because we call ensureDefaultGroup on app startup, find a better way to report this?
+					if errors.Is(err, mongo.ErrNoDocuments) {
+						event = err.Error()
+						statusCode = http.StatusNotFound
+					}
+
+					_ = render.Render(w, r, newErrorResponse(event, statusCode))
+					return
+				}
 			}
-
 			r = r.WithContext(setGroupInContext(r.Context(), group))
 			next.ServeHTTP(w, r)
 		})
 	}
 }
 
-func requireDefaultGroup(groupRepo convoy.GroupRepository) func(next http.Handler) http.Handler {
+func requireAuth() func(next http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
-
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-
-			name := r.URL.Query().Get("name")
-
-			groups, err := groupRepo.LoadGroups(r.Context(), &convoy.GroupFilter{Name: name})
+			creds, err := getAuthFromRequest(r)
 			if err != nil {
-
-				event := "an error occurred while loading default group"
-				statusCode := http.StatusInternalServerError
-
-				if errors.Is(err, mongo.ErrNoDocuments) {
-					event = err.Error()
-					statusCode = http.StatusNotFound
-				}
-
-				_ = render.Render(w, r, newErrorResponse(event, statusCode))
+				log.WithError(err).Error("failed to get auth from request")
+				_ = render.Render(w, r, newErrorResponse(err.Error(), http.StatusUnauthorized))
 				return
 			}
 
-			r = r.WithContext(setGroupInContext(r.Context(), groups[0]))
+			rc, err := realm_chain.Get()
+			if err != nil {
+				log.WithError(err).Error("failed to get realm chain")
+				_ = render.Render(w, r, newErrorResponse("internal server error", http.StatusInternalServerError))
+				return
+			}
+
+			authUser, err := rc.Authenticate(creds)
+			if err != nil {
+				log.WithError(err).Error("failed to authenticate")
+				_ = render.Render(w, r, newErrorResponse("authorization failed", http.StatusUnauthorized))
+				return
+			}
+
+			r = r.WithContext(setAuthUserInContext(r.Context(), authUser))
 			next.ServeHTTP(w, r)
 		})
+	}
+}
+
+func requirePermission(role auth.RoleType) func(next http.Handler) http.Handler {
+	return func(next http.Handler) http.Handler {
+		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			authUser := getAuthUserFromContext(r.Context())
+			if authUser.Role.Type.Is(auth.RoleSuperUser) {
+				// superuser has access to everything
+				next.ServeHTTP(w, r)
+				return
+			}
+
+			if !authUser.Role.Type.Is(role) {
+				_ = render.Render(w, r, newErrorResponse("unauthorized role", http.StatusUnauthorized))
+				return
+			}
+
+			group := getGroupFromContext(r.Context())
+			for _, v := range authUser.Role.Groups {
+				if group.Name == v {
+					next.ServeHTTP(w, r)
+					return
+				}
+			}
+
+			_ = render.Render(w, r, newErrorResponse("unauthorized to access group", http.StatusUnauthorized))
+		})
+	}
+}
+
+func getAuthFromRequest(r *http.Request) (*auth.Credential, error) {
+	cfg, err := config.Get()
+	if err != nil {
+		log.WithError(err)
+		return nil, err
+	}
+
+	if !cfg.Auth.RequireAuth {
+		return nil, nil
+	}
+
+	val := r.Header.Get("Authorization")
+	authInfo := strings.Split(val, " ")
+
+	if len(authInfo) != 2 {
+		return nil, errors.New("invalid header structure")
+	}
+
+	credType := auth.CredentialType(strings.ToUpper(authInfo[0]))
+	switch credType {
+	case auth.CredentialTypeBasic:
+
+		credentials, err := base64.StdEncoding.DecodeString(authInfo[1])
+		if err != nil {
+			return nil, errors.New("invalid credentials")
+		}
+
+		creds := strings.Split(string(credentials), ":")
+
+		if len(creds) != 2 {
+			return nil, errors.New("invalid basic credentials")
+		}
+
+		return &auth.Credential{
+			Type:     auth.CredentialTypeBasic,
+			Username: creds[0],
+			Password: creds[1],
+		}, nil
+
+	default:
+		return nil, fmt.Errorf("unknown credential type: %s", credType.String())
 	}
 }
 
@@ -514,34 +601,6 @@ func computeDashboardMessages(ctx context.Context, orgId string, eventRepo convo
 	return messagesSent, messages, nil
 }
 
-func requireAuth() func(next http.Handler) http.Handler {
-	return func(next http.Handler) http.Handler {
-		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-
-			cfg, err := config.Get()
-			if err != nil {
-				_ = render.Render(w, r, newErrorResponse("an error has occurred", http.StatusInternalServerError))
-				return
-			}
-
-			if cfg.Auth.Type == config.NoAuthProvider {
-				// full access
-			} else if cfg.Auth.Type == config.BasicAuthProvider {
-				err := ensureBasicAuthFromRequest(&cfg.Auth, r)
-				if err != nil {
-					_ = render.Render(w, r, newErrorResponse(err.Error(), http.StatusUnauthorized))
-					return
-				}
-			} else {
-				_ = render.Render(w, r, newErrorResponse("access denied", http.StatusForbidden))
-				return
-			}
-
-			next.ServeHTTP(w, r)
-		})
-	}
-}
-
 func setApplicationInContext(ctx context.Context,
 	app *convoy.Application) context.Context {
 	return context.WithValue(ctx, appCtx, app)
@@ -637,8 +696,12 @@ func getDeliveryAttemptsFromContext(ctx context.Context) *[]convoy.DeliveryAttem
 	return ctx.Value(deliveryAttemptsCtx).(*[]convoy.DeliveryAttempt)
 }
 
-func setAuthLoginInContext(ctx context.Context, a *AuthorizedLogin) context.Context {
-	return context.WithValue(ctx, authLoginCtx, a)
+func setAuthUserInContext(ctx context.Context, a *auth.AuthenticatedUser) context.Context {
+	return context.WithValue(ctx, authUserCtx, a)
+}
+
+func getAuthUserFromContext(ctx context.Context) *auth.AuthenticatedUser {
+	return ctx.Value(authUserCtx).(*auth.AuthenticatedUser)
 }
 
 func getAuthLoginFromContext(ctx context.Context) *AuthorizedLogin {

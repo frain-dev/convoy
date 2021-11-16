@@ -13,13 +13,13 @@ import (
 	"github.com/frain-dev/convoy/worker/task"
 	"github.com/getsentry/sentry-go"
 	"github.com/google/uuid"
+	prefixed "github.com/x-cray/logrus-prefixed-formatter"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 
 	"github.com/frain-dev/convoy/util"
 	"github.com/go-redis/redis/v8"
 	log "github.com/sirupsen/logrus"
 	"github.com/vmihailenco/taskq/v3"
-	prefixed "github.com/x-cray/logrus-prefixed-formatter"
 
 	"github.com/frain-dev/convoy"
 	"github.com/frain-dev/convoy/config"
@@ -162,9 +162,8 @@ func main() {
 
 func ensureMongoIndices(conn *mongo.Database) {
 	datastore.EnsureIndex(conn, datastore.GroupCollection, "uid", true)
-
+	datastore.EnsureIndex(conn, datastore.GroupCollection, "name", true)
 	datastore.EnsureIndex(conn, datastore.AppCollections, "uid", true)
-
 	datastore.EnsureIndex(conn, datastore.EventCollection, "uid", true)
 	datastore.EnsureIndex(conn, datastore.EventCollection, "event_type", false)
 }

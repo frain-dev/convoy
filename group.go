@@ -25,7 +25,7 @@ type Group struct {
 }
 
 type GroupFilter struct {
-	Name string `json:"name" bson:"name"`
+	Names []string `json:"name" bson:"name"`
 }
 
 func (o *Group) IsDeleted() bool { return o.DeletedAt > 0 }

@@ -32,12 +32,16 @@ func TestApplicationHandler_CreateAppEvent(t *testing.T) {
 	app = newApplicationHandler(eventRepo, eventDeliveryRepo, appRepo, groupRepo, eventQueue)
 
 	groupId := "1234567890"
+	group := &convoy.Group{UID: groupId}
+
 	appId := "12345"
 	msgId := "1122333444456"
 
 	message := &convoy.Event{
-		UID:   msgId,
-		AppID: appId,
+		UID: msgId,
+		AppMetadata: &convoy.AppMetadata{
+			UID: appId,
+		},
 	}
 
 	type args struct {
@@ -55,40 +59,59 @@ func TestApplicationHandler_CreateAppEvent(t *testing.T) {
 	}{
 		{
 			name:       "invalid message - malformed request",
-			cfgPath:    "./testdata/Auth_Config/full-convoy.json",
+			cfgPath:    "./testdata/Auth_Config/no-auth-convoy.json",
 			method:     http.MethodPost,
 			statusCode: http.StatusBadRequest,
 			body:       strings.NewReader(`{"data": {}`),
 			args: args{
 				message: message,
 			},
-			dbFn: func(app *applicationHandler) {},
+			dbFn: func(app *applicationHandler) {
+				o, _ := app.groupRepo.(*mocks.MockGroupRepository)
+
+				o.EXPECT().
+					LoadGroups(gomock.Any(), gomock.Any()).Times(1).
+					Return([]*convoy.Group{group}, nil)
+			},
 		},
 		{
 			name:       "invalid message - no app_id",
-			cfgPath:    "./testdata/Auth_Config/full-convoy.json",
+			cfgPath:    "./testdata/Auth_Config/no-auth-convoy.json",
 			method:     http.MethodPost,
 			statusCode: http.StatusBadRequest,
 			body:       strings.NewReader(`{ "event_type: "test", "data": {}}`),
 			args: args{
 				message: message,
 			},
-			dbFn: func(app *applicationHandler) {},
+			dbFn: func(app *applicationHandler) {
+				o, _ := app.groupRepo.(*mocks.MockGroupRepository)
+
+				o.EXPECT().
+					LoadGroups(gomock.Any(), gomock.Any()).Times(1).
+					Return([]*convoy.Group{group}, nil)
+
+			},
 		},
 		{
 			name:       "invalid message - no data field",
-			cfgPath:    "./testdata/Auth_Config/full-convoy.json",
+			cfgPath:    "./testdata/Auth_Config/no-auth-convoy.json",
 			method:     http.MethodPost,
 			statusCode: http.StatusBadRequest,
 			body:       strings.NewReader(`{ "app_id": "", "event_type: "test" }`),
 			args: args{
 				message: message,
 			},
-			dbFn: func(app *applicationHandler) {},
+			dbFn: func(app *applicationHandler) {
+				o, _ := app.groupRepo.(*mocks.MockGroupRepository)
+
+				o.EXPECT().
+					LoadGroups(gomock.Any(), gomock.Any()).Times(1).
+					Return([]*convoy.Group{group}, nil)
+			},
 		},
 		{
 			name:       "invalid message - no event type",
-			cfgPath:    "./testdata/Auth_Config/full-convoy.json",
+			cfgPath:    "./testdata/Auth_Config/no-auth-convoy.json",
 			method:     http.MethodPost,
 			statusCode: http.StatusBadRequest,
 			body:       strings.NewReader(`{ "data": {}}`),
@@ -101,11 +124,16 @@ func TestApplicationHandler_CreateAppEvent(t *testing.T) {
 					CreateEvent(gomock.Any(), gomock.Any()).Times(0).
 					Return(nil)
 
+				o, _ := app.groupRepo.(*mocks.MockGroupRepository)
+
+				o.EXPECT().
+					LoadGroups(gomock.Any(), gomock.Any()).Times(1).
+					Return([]*convoy.Group{group}, nil)
 			},
 		},
 		{
 			name:       "valid message - no endpoints",
-			cfgPath:    "./testdata/Auth_Config/full-convoy.json",
+			cfgPath:    "./testdata/Auth_Config/no-auth-convoy.json",
 			method:     http.MethodPost,
 			statusCode: http.StatusBadRequest,
 			body:       strings.NewReader(`{"app_id": "12345", "event_type": "test",  "data": {}}`),
@@ -122,11 +150,17 @@ func TestApplicationHandler_CreateAppEvent(t *testing.T) {
 						Title:     "Valid application",
 						Endpoints: []convoy.Endpoint{},
 					}, nil)
+
+				o, _ := app.groupRepo.(*mocks.MockGroupRepository)
+
+				o.EXPECT().
+					LoadGroups(gomock.Any(), gomock.Any()).Times(1).
+					Return([]*convoy.Group{group}, nil)
 			},
 		},
 		{
 			name:       "valid message - no active endpoints",
-			cfgPath:    "./testdata/Auth_Config/full-convoy.json",
+			cfgPath:    "./testdata/Auth_Config/no-auth-convoy.json",
 			method:     http.MethodPost,
 			statusCode: http.StatusCreated,
 			body:       strings.NewReader(`{"app_id": "12345", "event_type": "test",  "data": {}}`),
@@ -149,15 +183,21 @@ func TestApplicationHandler_CreateAppEvent(t *testing.T) {
 						},
 					}, nil)
 
-				o, _ := app.eventRepo.(*mocks.MockEventRepository)
-				o.EXPECT().
+				e, _ := app.eventRepo.(*mocks.MockEventRepository)
+				e.EXPECT().
 					CreateEvent(gomock.Any(), gomock.Any()).Times(1).
 					Return(nil)
+
+				o, _ := app.groupRepo.(*mocks.MockGroupRepository)
+
+				o.EXPECT().
+					LoadGroups(gomock.Any(), gomock.Any()).Times(1).
+					Return([]*convoy.Group{group}, nil)
 			},
 		},
 		{
 			name:       "valid message - no matching endpoints",
-			cfgPath:    "./testdata/Auth_Config/full-convoy.json",
+			cfgPath:    "./testdata/Auth_Config/no-auth-convoy.json",
 			method:     http.MethodPost,
 			statusCode: http.StatusCreated,
 			body:       strings.NewReader(`{"app_id": "12345", "event_type": "test.event", "data": { "Hello": "World", "Test": "Data" }}`),
@@ -185,11 +225,16 @@ func TestApplicationHandler_CreateAppEvent(t *testing.T) {
 					CreateEvent(gomock.Any(), gomock.Any()).Times(1).
 					Return(nil)
 
+				o, _ := app.groupRepo.(*mocks.MockGroupRepository)
+
+				o.EXPECT().
+					LoadGroups(gomock.Any(), gomock.Any()).Times(1).
+					Return([]*convoy.Group{group}, nil)
 			},
 		},
 		{
 			name:       "valid message - matching endpoints",
-			cfgPath:    "./testdata/Auth_Config/full-convoy.json",
+			cfgPath:    "./testdata/Auth_Config/no-auth-convoy.json",
 			method:     http.MethodPost,
 			statusCode: http.StatusCreated,
 			body:       strings.NewReader(`{"app_id": "12345", "event_type": "test.event", "data": { "Hello": "World", "Test": "Data" }}`),
@@ -228,17 +273,22 @@ func TestApplicationHandler_CreateAppEvent(t *testing.T) {
 					Write(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Times(1).
 					Return(nil)
 
+				o, _ := app.groupRepo.(*mocks.MockGroupRepository)
+
+				o.EXPECT().
+					LoadGroups(gomock.Any(), gomock.Any()).Times(1).
+					Return([]*convoy.Group{group}, nil)
 			},
 		},
 	}
 
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-
 			err := config.LoadConfig(tc.cfgPath)
 			if err != nil {
-				t.Error("Failed to load config file")
+				t.Errorf("Failed to load config file: %v", err)
 			}
+			initRealmChain(t)
 
 			req := httptest.NewRequest(tc.method, "/api/v1/events", tc.body)
 			req.SetBasicAuth("test", "test")
@@ -277,6 +327,8 @@ func Test_resendEventDelivery(t *testing.T) {
 
 	app = newApplicationHandler(eventRepo, eventDeliveryRepo, appRepo, groupRepo, eventQueue)
 
+	group := &convoy.Group{Name: "default-group", UID: "1234567890"}
+
 	appID := "12345"
 	eventID := "1122333444456"
 	eventDeliveryID := "2134453454"
@@ -297,7 +349,7 @@ func Test_resendEventDelivery(t *testing.T) {
 	}{
 		{
 			name:       "invalid resend - event successful",
-			cfgPath:    "./testdata/Auth_Config/full-convoy.json",
+			cfgPath:    "./testdata/Auth_Config/no-auth-convoy.json",
 			method:     http.MethodPut,
 			statusCode: http.StatusBadRequest,
 			body:       nil,
@@ -306,17 +358,17 @@ func Test_resendEventDelivery(t *testing.T) {
 					UID: eventID,
 				},
 				message: &convoy.EventDelivery{
-					UID:     eventDeliveryID,
-					AppID:   appID,
-					EventID: eventID,
-					Status:  convoy.SuccessEventStatus,
+					UID: eventDeliveryID,
+					EventMetadata: &convoy.EventMetadata{
+						UID: eventID,
+					},
+					Status: convoy.SuccessEventStatus,
+					AppMetadata: &convoy.AppMetadata{
+						UID: appID,
+					},
 				},
 			},
 			dbFn: func(ev *convoy.Event, msg *convoy.EventDelivery, app *applicationHandler) {
-				e, _ := app.eventRepo.(*mocks.MockEventRepository)
-				e.EXPECT().
-					FindEventByID(gomock.Any(), gomock.Any()).Times(1).
-					Return(ev, nil)
 
 				m, _ := app.eventDeliveryRepo.(*mocks.MockEventDeliveryRepository)
 				m.EXPECT().
@@ -327,11 +379,15 @@ func Test_resendEventDelivery(t *testing.T) {
 					UpdateStatusOfEventDelivery(gomock.Any(), gomock.Any(), gomock.Any()).Times(0).
 					Return(nil)
 
+				o, _ := app.groupRepo.(*mocks.MockGroupRepository)
+				o.EXPECT().
+					LoadGroups(gomock.Any(), gomock.Any()).Times(1).
+					Return([]*convoy.Group{group}, nil)
 			},
 		},
 		{
 			name:       "invalid resend - event not failed",
-			cfgPath:    "./testdata/Auth_Config/full-convoy.json",
+			cfgPath:    "./testdata/Auth_Config/no-auth-convoy.json",
 			method:     http.MethodPut,
 			statusCode: http.StatusBadRequest,
 			body:       nil,
@@ -340,27 +396,33 @@ func Test_resendEventDelivery(t *testing.T) {
 					UID: eventID,
 				},
 				message: &convoy.EventDelivery{
-					UID:     eventDeliveryID,
-					AppID:   appID,
-					EventID: eventID,
-					Status:  convoy.ProcessingEventStatus,
+					UID: eventDeliveryID,
+					EventMetadata: &convoy.EventMetadata{
+						UID: eventID,
+					},
+					Status: convoy.ProcessingEventStatus,
+					AppMetadata: &convoy.AppMetadata{
+						UID: appID,
+					},
 				},
 			},
 			dbFn: func(ev *convoy.Event, msg *convoy.EventDelivery, app *applicationHandler) {
-				e, _ := app.eventRepo.(*mocks.MockEventRepository)
-				e.EXPECT().
-					FindEventByID(gomock.Any(), gomock.Any()).Times(1).
-					Return(ev, nil)
 
 				m, _ := app.eventDeliveryRepo.(*mocks.MockEventDeliveryRepository)
 				m.EXPECT().
 					FindEventDeliveryByID(gomock.Any(), gomock.Any()).Times(1).
 					Return(msg, nil)
+
+				o, _ := app.groupRepo.(*mocks.MockGroupRepository)
+
+				o.EXPECT().
+					LoadGroups(gomock.Any(), gomock.Any()).Times(1).
+					Return([]*convoy.Group{group}, nil)
 			},
 		},
 		{
 			name:       "invalid  resend - pending endpoint",
-			cfgPath:    "./testdata/Auth_Config/full-convoy.json",
+			cfgPath:    "./testdata/Auth_Config/no-auth-convoy.json",
 			method:     http.MethodPut,
 			statusCode: http.StatusBadRequest,
 			body:       nil,
@@ -369,21 +431,21 @@ func Test_resendEventDelivery(t *testing.T) {
 					UID: eventID,
 				},
 				message: &convoy.EventDelivery{
-					UID:     eventDeliveryID,
-					AppID:   appID,
-					EventID: eventID,
-					Status:  convoy.FailureEventStatus,
+					UID: eventDeliveryID,
+					EventMetadata: &convoy.EventMetadata{
+						UID: eventID,
+					},
+					Status: convoy.FailureEventStatus,
 					EndpointMetadata: &convoy.EndpointMetadata{
 						TargetURL: "http://localhost",
 						Status:    convoy.PendingEndpointStatus,
 					},
+					AppMetadata: &convoy.AppMetadata{
+						UID: appID,
+					},
 				},
 			},
 			dbFn: func(ev *convoy.Event, msg *convoy.EventDelivery, app *applicationHandler) {
-				e, _ := app.eventRepo.(*mocks.MockEventRepository)
-				e.EXPECT().
-					FindEventByID(gomock.Any(), gomock.Any()).Times(1).
-					Return(ev, nil)
 				m, _ := app.eventDeliveryRepo.(*mocks.MockEventDeliveryRepository)
 				m.EXPECT().
 					FindEventDeliveryByID(gomock.Any(), gomock.Any()).Times(1).
@@ -396,11 +458,17 @@ func Test_resendEventDelivery(t *testing.T) {
 						TargetURL: "http://localhost",
 						Status:    convoy.PendingEndpointStatus,
 					}, nil)
+
+				o, _ := app.groupRepo.(*mocks.MockGroupRepository)
+
+				o.EXPECT().
+					LoadGroups(gomock.Any(), gomock.Any()).Times(1).
+					Return([]*convoy.Group{group}, nil)
 			},
 		},
 		{
 			name:       "valid resend - previously failed and inactive endpoint",
-			cfgPath:    "./testdata/Auth_Config/basic-convoy.json",
+			cfgPath:    "./testdata/Auth_Config/no-auth-convoy.json",
 			method:     http.MethodPut,
 			statusCode: http.StatusOK,
 			body:       nil,
@@ -409,21 +477,21 @@ func Test_resendEventDelivery(t *testing.T) {
 					UID: eventID,
 				},
 				message: &convoy.EventDelivery{
-					UID:     eventDeliveryID,
-					AppID:   appID,
-					EventID: eventID,
-					Status:  convoy.FailureEventStatus,
+					UID: eventDeliveryID,
+					EventMetadata: &convoy.EventMetadata{
+						UID: eventID,
+					},
+					Status: convoy.FailureEventStatus,
 					EndpointMetadata: &convoy.EndpointMetadata{
 						TargetURL: "http://localhost",
 						Status:    convoy.InactiveEndpointStatus,
 					},
+					AppMetadata: &convoy.AppMetadata{
+						UID: appID,
+					},
 				},
 			},
 			dbFn: func(ev *convoy.Event, msg *convoy.EventDelivery, app *applicationHandler) {
-				e, _ := app.eventRepo.(*mocks.MockEventRepository)
-				e.EXPECT().
-					FindEventByID(gomock.Any(), gomock.Any()).Times(1).
-					Return(ev, nil)
 				m, _ := app.eventDeliveryRepo.(*mocks.MockEventDeliveryRepository)
 				m.EXPECT().
 					FindEventDeliveryByID(gomock.Any(), gomock.Any()).Times(1).
@@ -451,11 +519,17 @@ func Test_resendEventDelivery(t *testing.T) {
 				q.EXPECT().
 					Write(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Times(1).
 					Return(nil)
+
+				o, _ := app.groupRepo.(*mocks.MockGroupRepository)
+
+				o.EXPECT().
+					LoadGroups(gomock.Any(), gomock.Any()).Times(1).
+					Return([]*convoy.Group{group}, nil)
 			},
 		},
 		{
 			name:       "valid resend - previously failed - active endpoint",
-			cfgPath:    "./testdata/Auth_Config/basic-convoy.json",
+			cfgPath:    "./testdata/Auth_Config/no-auth-convoy.json",
 			method:     http.MethodPut,
 			statusCode: http.StatusOK,
 			body:       nil,
@@ -464,22 +538,21 @@ func Test_resendEventDelivery(t *testing.T) {
 					UID: eventID,
 				},
 				message: &convoy.EventDelivery{
-					UID:     eventDeliveryID,
-					AppID:   appID,
-					EventID: eventID,
-					Status:  convoy.FailureEventStatus,
+					UID: eventDeliveryID,
+					EventMetadata: &convoy.EventMetadata{
+						UID: eventID,
+					},
+					Status: convoy.FailureEventStatus,
 					EndpointMetadata: &convoy.EndpointMetadata{
 						TargetURL: "http://localhost",
 						Status:    convoy.ActiveEndpointStatus,
 					},
+					AppMetadata: &convoy.AppMetadata{
+						UID: appID,
+					},
 				},
 			},
 			dbFn: func(ev *convoy.Event, msg *convoy.EventDelivery, app *applicationHandler) {
-				e, _ := app.eventRepo.(*mocks.MockEventRepository)
-				e.EXPECT().
-					FindEventByID(gomock.Any(), gomock.Any()).Times(1).
-					Return(ev, nil)
-
 				m, _ := app.eventDeliveryRepo.(*mocks.MockEventDeliveryRepository)
 				m.EXPECT().
 					FindEventDeliveryByID(gomock.Any(), gomock.Any()).Times(1).
@@ -504,20 +577,25 @@ func Test_resendEventDelivery(t *testing.T) {
 				q.EXPECT().
 					Write(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Times(1).
 					Return(nil)
+
+				o, _ := app.groupRepo.(*mocks.MockGroupRepository)
+
+				o.EXPECT().
+					LoadGroups(gomock.Any(), gomock.Any()).Times(1).
+					Return([]*convoy.Group{group}, nil)
 			},
 		},
 	}
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-
-			url := fmt.Sprintf("/api/v1/events/%s/eventdeliveries/%s/resend", tc.args.message.EventID, tc.args.message.UID)
+			url := fmt.Sprintf("/api/v1/eventdeliveries/%s/resend", tc.args.message.UID)
 			req := httptest.NewRequest(tc.method, url, nil)
 			req.SetBasicAuth("test", "test")
 			req.Header.Add("Content-Type", "application/json")
 
 			w := httptest.NewRecorder()
 			rctx := chi.NewRouteContext()
-			rctx.URLParams.Add("appID", tc.args.message.AppID)
+			rctx.URLParams.Add("appID", tc.args.message.AppMetadata.UID)
 
 			req = req.WithContext(context.WithValue(req.Context(), eventCtx, tc.args.message))
 
@@ -527,8 +605,9 @@ func Test_resendEventDelivery(t *testing.T) {
 
 			err := config.LoadConfig(tc.cfgPath)
 			if err != nil {
-				t.Error("Failed to load config file")
+				t.Errorf("Failed to load config file: %v", err)
 			}
+			initRealmChain(t)
 
 			router := buildRoutes(app)
 

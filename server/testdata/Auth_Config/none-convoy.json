@@ -1,6 +1,6 @@
 {
 	"auth": {
-		"type": "none"
+		"require_auth": false
 	},
 	"group": {
 		"strategy": {

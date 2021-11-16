@@ -36,7 +36,7 @@ $ docker run \
 	-p 5005:5005 \
 	--name convoy-server \ 
 	-v `pwd`/convoy.json:convoy.json \
-	ghcr.io/frain-dev/convoy
+	ghcr.io/frain-dev/convoy:v0.2.5
 ```
 
 You can download a sample configuration of [convoy.json](https://github.com/frain-dev/convoy/blob/main/convoy.json).
