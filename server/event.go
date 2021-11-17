@@ -227,6 +227,17 @@ func (a *applicationHandler) ResendEventDelivery(w http.ResponseWriter, r *http.
 		eventDelivery, http.StatusOK))
 }
 
+// BatchResendEventDelivery
+// @Summary Batch Resend app events
+// @Description This endpoint resends multiple app events
+// @Tags EventDelivery
+// @Accept json
+// @Produce json
+// @Param delivery ids body Stub{ids=[]string} true "event delivery ids"
+// @Success 200 {object} serverResponse{data=convoy.Event{data=Stub}}
+// @Failure 400,401,500 {object} serverResponse{data=Stub}
+// @Security ApiKeyAuth
+// @Router /eventdeliveries/batch_resend [post]
 func (a *applicationHandler) BatchResendEventDelivery(w http.ResponseWriter, r *http.Request) {
 	eventDeliveryIDs := struct {
 		IDs []string `json:"ids"`

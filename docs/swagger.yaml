@@ -1117,6 +1117,74 @@ paths:
       summary: Resend an app event
       tags:
       - EventDelivery
+  /eventdeliveries/batch_resend:
+    post:
+      consumes:
+      - application/json
+      description: This endpoint resends multiple app events
+      parameters:
+      - description: event delivery ids
+        in: body
+        name: ids
+        required: true
+        schema:
+          allOf:
+          - $ref: '#/definitions/server.Stub'
+          - properties:
+              ids:
+                items:
+                  type: string
+                type: array
+            type: object
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/server.serverResponse'
+            - properties:
+                data:
+                  allOf:
+                  - $ref: '#/definitions/convoy.Event'
+                  - properties:
+                      data:
+                        $ref: '#/definitions/server.Stub'
+                    type: object
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            allOf:
+            - $ref: '#/definitions/server.serverResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/server.Stub'
+              type: object
+        "401":
+          description: Unauthorized
+          schema:
+            allOf:
+            - $ref: '#/definitions/server.serverResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/server.Stub'
+              type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            allOf:
+            - $ref: '#/definitions/server.serverResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/server.Stub'
+              type: object
+      security:
+      - ApiKeyAuth: []
+      summary: Batch Resend app events
+      tags:
+      - EventDelivery
   /events:
     get:
       consumes:
