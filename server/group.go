@@ -74,7 +74,8 @@ func (a *applicationHandler) CreateGroup(w http.ResponseWriter, r *http.Request)
 	}
 
 	// register task.
-	task.CreateTask(convoy.EventProcessor, *group, task.ProcessEventDelivery(a.appRepo, a.eventDeliveryRepo, a.groupRepo))
+	taskName := convoy.EventProcessor.SetPrefix(groupName)
+	task.CreateTask(taskName, *group, task.ProcessEventDelivery(a.appRepo, a.eventDeliveryRepo, a.groupRepo))
 
 	_ = render.Render(w, r, newServerResponse("Group created successfully", group, http.StatusCreated))
 }

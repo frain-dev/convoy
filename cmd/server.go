@@ -5,6 +5,7 @@ import (
 	"time"
 
 	"github.com/frain-dev/convoy/auth/realm_chain"
+	"github.com/frain-dev/convoy/worker/task"
 
 	"github.com/frain-dev/convoy/config"
 	convoyQueue "github.com/frain-dev/convoy/queue/redis"
@@ -45,6 +46,11 @@ func addServerCommand(a *app) *cobra.Command {
 			}
 
 			srv := server.New(cfg, a.eventRepo, a.eventDeliveryRepo, a.applicationRepo, a.groupRepo, a.eventQueue)
+
+			// register server.
+			handler := task.ProcessEventDelivery(a.applicationRepo, a.eventDeliveryRepo, a.groupRepo)
+			monitor := worker.NewMonitor(handler, a.groupRepo)
+			monitor.Start()
 
 			// register workers.
 			if queue, ok := a.eventQueue.(*convoyQueue.RedisQueue); ok {

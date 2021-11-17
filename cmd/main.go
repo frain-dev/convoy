@@ -193,7 +193,8 @@ func ensureDefaultGroup(ctx context.Context, cfg config.Configuration, a *app) e
 		return fmt.Errorf("failed to create default group - %w", err)
 	}
 
-	task.CreateTask(convoy.EventProcessor, *defaultGroup, task.ProcessEventDelivery(a.applicationRepo, a.eventDeliveryRepo, a.groupRepo))
+	taskName := convoy.EventProcessor.SetPrefix(defaultGroup.Name)
+	task.CreateTask(taskName, *defaultGroup, task.ProcessEventDelivery(a.applicationRepo, a.eventDeliveryRepo, a.groupRepo))
 
 	return nil
 }

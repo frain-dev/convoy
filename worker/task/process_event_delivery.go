@@ -223,7 +223,6 @@ func ProcessEventDelivery(appRepo convoy.ApplicationRepository, eventDeliveryRep
 
 		if !done && m.Metadata.NumTrials < m.Metadata.RetryLimit {
 			delay := time.Duration(m.Metadata.IntervalSeconds) * time.Second
-			log.WithError(err).Error("Eweeeeey")
 			return &EndpointError{Err: ErrDeliveryAttemptFailed, delay: delay}
 		}
 

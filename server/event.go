@@ -150,7 +150,9 @@ func (a *applicationHandler) CreateAppEvent(w http.ResponseWriter, r *http.Reque
 			log.WithError(err).Error("error occurred creating event delivery")
 		}
 
-		err = a.eventQueue.Write(r.Context(), convoy.EventProcessor, eventDelivery, 1*time.Second)
+		taskName := convoy.EventProcessor.SetPrefix(g.Name)
+
+		err = a.eventQueue.Write(r.Context(), taskName, eventDelivery, 1*time.Second)
 		if err != nil {
 			log.Errorf("Error occurred sending new event to the queue %s", err)
 		}
