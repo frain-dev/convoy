@@ -39,24 +39,13 @@ func (a *applicationHandler) GetAuthLogin(w http.ResponseWriter, r *http.Request
 
 func (a *applicationHandler) GetAllConfigDetails(w http.ResponseWriter, r *http.Request) {
 
-	_ = render.Render(w, r, newServerResponse("Config details fetched successfully",
-		getConfigFromContext(r.Context()), http.StatusOK))
-}
+	g := getGroupFromContext(r.Context())
 
-func fetchAllConfigDetails() func(next http.Handler) http.Handler {
-	return func(next http.Handler) http.Handler {
-
-		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-
-			g := getGroupFromContext(r.Context())
-
-			viewableConfig := ViewableConfiguration{
-				Strategy:  g.Config.Strategy,
-				Signature: g.Config.Signature,
-			}
-
-			r = r.WithContext(setConfigInContext(r.Context(), &viewableConfig))
-			next.ServeHTTP(w, r)
-		})
+	viewableConfig := ViewableConfiguration{
+		Strategy:  g.Config.Strategy,
+		Signature: g.Config.Signature,
 	}
+
+	_ = render.Render(w, r, newServerResponse("Config details fetched successfully",
+		viewableConfig, http.StatusOK))
 }

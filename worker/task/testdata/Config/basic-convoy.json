@@ -16,16 +16,18 @@
             ]
         }
     },
-    "strategy": {
-        "type": "default",
-        "default": {
-            "intervalSeconds": 20,
-            "retryLimit": 3
+    "group": {
+        "strategy": {
+            "type": "default",
+            "default": {
+                "intervalSeconds": 20,
+                "retryLimit": 3
+            }
+        },
+        "signature": {
+            "header": "X-Company-Event-WebHook-Signature",
+            "hash": "SHA256"
         }
-    },
-    "signature": {
-        "header": "X-Company-Event-WebHook-Signature",
-        "hash": "SHA256"
     },
     "smtp": {
         "provider": "sendgrid",

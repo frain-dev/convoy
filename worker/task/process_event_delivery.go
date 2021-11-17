@@ -100,6 +100,7 @@ func ProcessEventDelivery(appRepo convoy.ApplicationRepository, eventDeliveryRep
 		bStr := string(bytes)
 		hmac, err := util.ComputeJSONHmac(g.Config.Signature.Hash, bStr, secret, false)
 		if err != nil {
+			log.Printf("GroupConfig: %v", g.Config)
 			log.Errorf("error occurred while generating hmac signature - %+v\n", err)
 			return &EndpointError{Err: err}
 		}
@@ -163,7 +164,7 @@ func ProcessEventDelivery(appRepo convoy.ApplicationRepository, eventDeliveryRep
 
 			s, err := smtp.New(&cfg.SMTP)
 			if err == nil {
-				err = sendEmailNotification(m, &groupRepo, s, endpointStatus)
+				err = sendEmailNotification(m, g, s, endpointStatus)
 				if err != nil {
 					log.WithError(err).Error("Failed to send notification email")
 				}
@@ -207,7 +208,7 @@ func ProcessEventDelivery(appRepo convoy.ApplicationRepository, eventDeliveryRep
 
 				s, err := smtp.New(&cfg.SMTP)
 				if err == nil {
-					err = sendEmailNotification(m, &groupRepo, s, endpointStatus)
+					err = sendEmailNotification(m, g, s, endpointStatus)
 					if err != nil {
 						log.WithError(err).Error("Failed to send notification email")
 					}
@@ -222,6 +223,7 @@ func ProcessEventDelivery(appRepo convoy.ApplicationRepository, eventDeliveryRep
 
 		if !done && m.Metadata.NumTrials < m.Metadata.RetryLimit {
 			delay := time.Duration(m.Metadata.IntervalSeconds) * time.Second
+			log.WithError(err).Error("Eweeeeey")
 			return &EndpointError{Err: ErrDeliveryAttemptFailed, delay: delay}
 		}
 
@@ -229,17 +231,12 @@ func ProcessEventDelivery(appRepo convoy.ApplicationRepository, eventDeliveryRep
 	}
 }
 
-func sendEmailNotification(m *convoy.EventDelivery, o *convoy.GroupRepository, s *smtp.SmtpClient, status convoy.EndpointStatus) error {
+func sendEmailNotification(m *convoy.EventDelivery, g *convoy.Group, s *smtp.SmtpClient, status convoy.EndpointStatus) error {
 	email := m.AppMetadata.SupportEmail
 
-	group, err := (*o).FetchGroupByID(context.Background(), m.AppMetadata.GroupID)
-	if err != nil {
-		return err
-	}
+	logoURL := g.LogoURL
 
-	logoURL := group.LogoURL
-
-	err = s.SendEmailNotification(email, logoURL, m.EndpointMetadata.TargetURL, status)
+	err := s.SendEmailNotification(email, logoURL, m.EndpointMetadata.TargetURL, status)
 	if err != nil {
 		return err
 	}

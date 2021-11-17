@@ -182,7 +182,7 @@ func ensureDefaultGroup(ctx context.Context, cfg config.Configuration, a *app) e
 	defaultGroup := &convoy.Group{
 		UID:            uuid.New().String(),
 		Name:           "default-group",
-		Config:         cfg.GroupConfig,
+		Config:         &cfg.GroupConfig,
 		CreatedAt:      primitive.NewDateTimeFromTime(time.Now()),
 		UpdatedAt:      primitive.NewDateTimeFromTime(time.Now()),
 		DocumentStatus: convoy.ActiveDocumentStatus,

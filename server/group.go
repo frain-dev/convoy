@@ -61,7 +61,7 @@ func (a *applicationHandler) CreateGroup(w http.ResponseWriter, r *http.Request)
 	group := &convoy.Group{
 		UID:            uuid.New().String(),
 		Name:           groupName,
-		Config:         newGroup.Config,
+		Config:         &newGroup.Config,
 		CreatedAt:      primitive.NewDateTimeFromTime(time.Now()),
 		UpdatedAt:      primitive.NewDateTimeFromTime(time.Now()),
 		DocumentStatus: convoy.ActiveDocumentStatus,
@@ -108,7 +108,7 @@ func (a *applicationHandler) UpdateGroup(w http.ResponseWriter, r *http.Request)
 
 	group := getGroupFromContext(r.Context())
 	group.Name = groupName
-	group.Config = update.Config
+	group.Config = &update.Config
 	err = a.groupRepo.UpdateGroup(r.Context(), group)
 	if err != nil {
 		_ = render.Render(w, r, newErrorResponse("an error occurred while updating Group", http.StatusInternalServerError))

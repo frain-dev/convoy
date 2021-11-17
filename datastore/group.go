@@ -81,6 +81,7 @@ func (db *groupRepo) UpdateGroup(ctx context.Context, o *convoy.Group) error {
 		primitive.E{Key: "name", Value: o.Name},
 		primitive.E{Key: "logo_url", Value: o.LogoURL},
 		primitive.E{Key: "updated_at", Value: o.UpdatedAt},
+		primitive.E{Key: "config", Value: o.Config},
 	}}}
 
 	_, err := db.inner.UpdateOne(ctx, filter, update)

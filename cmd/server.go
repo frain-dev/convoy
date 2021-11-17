@@ -4,12 +4,8 @@ import (
 	"errors"
 	"time"
 
-<<<<<<< HEAD
-=======
 	"github.com/frain-dev/convoy/auth/realm_chain"
 
-	"github.com/frain-dev/convoy"
->>>>>>> main
 	"github.com/frain-dev/convoy/config"
 	convoyQueue "github.com/frain-dev/convoy/queue/redis"
 	"github.com/frain-dev/convoy/server"
