@@ -238,7 +238,9 @@ func (a *applicationHandler) BatchResendEventDelivery(w http.ResponseWriter, r *
 		return
 	}
 
-	deliveries, err := a.eventDeliveryRepo.FindEventDeliveriesByIDs(r.Context(), eventDeliveryIDs.IDs)
+	var deliveries []convoy.EventDelivery
+
+	deliveries, err = a.eventDeliveryRepo.FindEventDeliveriesByIDs(r.Context(), eventDeliveryIDs.IDs)
 	err = json.NewDecoder(r.Body).Decode(&eventDeliveryIDs)
 	if err != nil {
 		log.WithError(err).Error("failed to fetch event deliveries by ids")
