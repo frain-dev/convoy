@@ -149,8 +149,10 @@ func buildRoutes(app *applicationHandler) http.Handler {
 		uiRouter.Use(requireAuth())
 
 		uiRouter.Route("/dashboard", func(dashboardRouter chi.Router) {
-			dashboardRouter.With(fetchDashboardSummary(app.appRepo, app.eventRepo)).Get("/summary", app.GetDashboardSummary)
-			dashboardRouter.With(requireGroup(app.groupRepo)).Get("/config", app.GetAllConfigDetails)
+			dashboardRouter.Use(requireGroup(app.groupRepo))
+
+			dashboardRouter.Get("/summary", app.GetDashboardSummary)
+			dashboardRouter.Get("/config", app.GetAllConfigDetails)
 		})
 
 		uiRouter.Route("/groups", func(groupRouter chi.Router) {
