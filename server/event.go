@@ -94,18 +94,13 @@ func (a *applicationHandler) CreateAppEvent(w http.ResponseWriter, r *http.Reque
 		return
 	}
 
-	cfg, err := config.Get()
-	if err != nil {
-		log.Errorln("error fetching config - ", err)
-		_ = render.Render(w, r, newErrorResponse("an error has occurred while fetching config", http.StatusInternalServerError))
-		return
-	}
+	g := getGroupFromContext(r.Context())
 
 	var intervalSeconds uint64
 	var retryLimit uint64
-	if cfg.Strategy.Type == config.DefaultStrategyProvider {
-		intervalSeconds = cfg.Strategy.Default.IntervalSeconds
-		retryLimit = cfg.Strategy.Default.RetryLimit
+	if g.Config.Strategy.Type == config.DefaultStrategyProvider {
+		intervalSeconds = g.Config.Strategy.Default.IntervalSeconds
+		retryLimit = g.Config.Strategy.Default.RetryLimit
 	} else {
 		_ = render.Render(w, r, newErrorResponse("retry strategy not defined in configuration", http.StatusInternalServerError))
 		return
@@ -138,7 +133,7 @@ func (a *applicationHandler) CreateAppEvent(w http.ResponseWriter, r *http.Reque
 			},
 			Metadata: &convoy.Metadata{
 				Data:            event.Data,
-				Strategy:        cfg.Strategy.Type,
+				Strategy:        g.Config.Strategy.Type,
 				NumTrials:       0,
 				IntervalSeconds: intervalSeconds,
 				RetryLimit:      retryLimit,
@@ -155,7 +150,9 @@ func (a *applicationHandler) CreateAppEvent(w http.ResponseWriter, r *http.Reque
 			log.WithError(err).Error("error occurred creating event delivery")
 		}
 
-		err = a.eventQueue.Write(r.Context(), convoy.EventProcessor, eventDelivery, 1*time.Second)
+		taskName := convoy.EventProcessor.SetPrefix(g.Name)
+
+		err = a.eventQueue.Write(r.Context(), taskName, eventDelivery, 1*time.Second)
 		if err != nil {
 			log.Errorf("Error occurred sending new event to the queue %s", err)
 		}
@@ -288,7 +285,7 @@ func (a *applicationHandler) ResendEventDelivery(w http.ResponseWriter, r *http.
 func (a *applicationHandler) GetEventsPaged(w http.ResponseWriter, r *http.Request) {
 
 	pageable := getPageableFromContext(r.Context())
-	groupID := r.URL.Query().Get("groupId")
+	group := getGroupFromContext(r.Context())
 	appID := r.URL.Query().Get("appId")
 
 	searchParams, err := getSearchParams(r)
@@ -297,7 +294,7 @@ func (a *applicationHandler) GetEventsPaged(w http.ResponseWriter, r *http.Reque
 		return
 	}
 
-	m, paginationData, err := a.eventRepo.LoadEventsPaged(r.Context(), groupID, appID, searchParams, pageable)
+	m, paginationData, err := a.eventRepo.LoadEventsPaged(r.Context(), group.UID, appID, searchParams, pageable)
 	if err != nil {
 		_ = render.Render(w, r, newErrorResponse("an error occurred while fetching app events", http.StatusInternalServerError))
 		log.Errorln("error while fetching events - ", err)
@@ -330,7 +327,7 @@ func (a *applicationHandler) GetEventsPaged(w http.ResponseWriter, r *http.Reque
 func (a *applicationHandler) GetEventDeliveriesPaged(w http.ResponseWriter, r *http.Request) {
 
 	pageable := getPageableFromContext(r.Context())
-	groupID := r.URL.Query().Get("groupId")
+	group := getGroupFromContext(r.Context())
 	appID := r.URL.Query().Get("appId")
 	eventID := r.URL.Query().Get("eventId")
 	status := r.URL.Query().Get("status")
@@ -341,7 +338,7 @@ func (a *applicationHandler) GetEventDeliveriesPaged(w http.ResponseWriter, r *h
 		return
 	}
 
-	ed, paginationData, err := a.eventDeliveryRepo.LoadEventDeliveriesPaged(r.Context(), groupID, appID, eventID, convoy.EventDeliveryStatus(status), searchParams, pageable)
+	ed, paginationData, err := a.eventDeliveryRepo.LoadEventDeliveriesPaged(r.Context(), group.UID, appID, eventID, convoy.EventDeliveryStatus(status), searchParams, pageable)
 	if err != nil {
 		_ = render.Render(w, r, newErrorResponse("an error occurred while fetching event deliveries", http.StatusInternalServerError))
 		log.WithError(err)

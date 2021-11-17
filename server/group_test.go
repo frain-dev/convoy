@@ -33,35 +33,33 @@ func TestApplicationHandler_GetGroup(t *testing.T) {
 	}{
 		{
 			name:       "group not found",
-			cfgPath:    "./testdata/Auth_Config/basic-convoy.json",
+			cfgPath:    "./testdata/Auth_Config/no-auth-convoy.json",
 			method:     http.MethodGet,
 			statusCode: http.StatusInternalServerError,
 			id:         fakeOrgID,
 			dbFn: func(app *applicationHandler) {
-				g, _ := app.groupRepo.(*mocks.MockGroupRepository)
-				g.EXPECT().
-					LoadGroups(gomock.Any(), gomock.Any()).
-					Return(nil, convoy.ErrGroupNotFound).Times(1)
+				o, _ := app.groupRepo.(*mocks.MockGroupRepository)
 
+				o.EXPECT().
+					FetchGroupByID(gomock.Any(), gomock.Any()).Times(1).
+					Return(nil, convoy.ErrGroupNotFound)
 			},
 		},
 		{
 			name:       "valid group",
-			cfgPath:    "./testdata/Auth_Config/basic-convoy.json",
+			cfgPath:    "./testdata/Auth_Config/no-auth-convoy.json",
 			method:     http.MethodGet,
 			statusCode: http.StatusOK,
 			id:         realOrgID,
 			dbFn: func(app *applicationHandler) {
-				g, _ := app.groupRepo.(*mocks.MockGroupRepository)
-				g.EXPECT().
-					LoadGroups(gomock.Any(), gomock.Any()).Times(1).
-					Return([]*convoy.Group{
-						{
-							UID:  realOrgID,
-							Name: "Valid group",
-						},
-					}, nil)
+				o, _ := app.groupRepo.(*mocks.MockGroupRepository)
 
+				o.EXPECT().
+					FetchGroupByID(gomock.Any(), gomock.Any()).Times(1).
+					Return(&convoy.Group{
+						UID:  realOrgID,
+						Name: "sendcash-pay",
+					}, nil)
 			},
 		},
 	}
@@ -100,14 +98,14 @@ func TestApplicationHandler_GetGroup(t *testing.T) {
 
 			err := config.LoadConfig(tc.cfgPath)
 			if err != nil {
-				t.Error("Failed to load config file")
+				t.Errorf("Failed to load config file: %v", err)
 			}
+			initRealmChain(t)
 
 			router := buildRoutes(app)
 
 			// Act
 			router.ServeHTTP(w, req)
-
 			if w.Code != tc.statusCode {
 				t.Errorf("Want status '%d', got '%d'", tc.statusCode, w.Code)
 			}
@@ -143,6 +141,7 @@ func TestApplicationHandler_CreateGroup(t *testing.T) {
 				o.EXPECT().
 					CreateGroup(gomock.Any(), gomock.Any()).Times(1).
 					Return(nil)
+
 			},
 		},
 	}
@@ -175,8 +174,9 @@ func TestApplicationHandler_CreateGroup(t *testing.T) {
 
 			err := config.LoadConfig(tc.cfgPath)
 			if err != nil {
-				t.Error("Failed to load config file")
+				t.Errorf("Failed to load config file: %v", err)
 			}
+			initRealmChain(t)
 
 			router := buildRoutes(app)
 
@@ -222,12 +222,10 @@ func TestApplicationHandler_UpdateGroup(t *testing.T) {
 					Return(nil)
 
 				g.EXPECT().
-					LoadGroups(gomock.Any(), gomock.Any()).Times(1).
-					Return([]*convoy.Group{
-						{
-							UID:  realOrgID,
-							Name: "Valid group",
-						},
+					FetchGroupByID(gomock.Any(), gomock.Any()).Times(1).
+					Return(&convoy.Group{
+						UID:  realOrgID,
+						Name: "sendcash-pay",
 					}, nil)
 			},
 		},
@@ -267,8 +265,9 @@ func TestApplicationHandler_UpdateGroup(t *testing.T) {
 
 			err := config.LoadConfig(tc.cfgPath)
 			if err != nil {
-				t.Error("Failed to load config file")
+				t.Errorf("Failed to load config file: %v", err)
 			}
+			initRealmChain(t)
 
 			router := buildRoutes(app)
 
@@ -311,7 +310,7 @@ func TestApplicationHandler_GetGroups(t *testing.T) {
 					Return([]*convoy.Group{
 						{
 							UID:  realOrgID,
-							Name: "Valid groups - 0",
+							Name: "sendcash-pay",
 						},
 					}, nil)
 			},
@@ -344,14 +343,14 @@ func TestApplicationHandler_GetGroups(t *testing.T) {
 
 			err := config.LoadConfig(tc.cfgPath)
 			if err != nil {
-				t.Error("Failed to load config file")
+				t.Errorf("Failed to load config file: %v", err)
 			}
+			initRealmChain(t)
 
 			router := buildRoutes(app)
 
 			// Act
 			router.ServeHTTP(w, req)
-
 			if w.Code != tc.statusCode {
 				t.Errorf("Want status '%d', got '%d'", tc.statusCode, w.Code)
 			}

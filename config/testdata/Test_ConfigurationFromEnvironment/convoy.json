@@ -8,7 +8,9 @@
       "dsn": "redis://localhost:8379"
     }
   },
-	"signature": {
-		"hash": "SHA256"
-	}
+  "group": {
+    "signature": {
+      "hash": "SHA256"
+    }
+  }
 }

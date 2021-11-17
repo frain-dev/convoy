@@ -2,6 +2,7 @@
 title: Quick Start Guide
 description: 'Getting started with Convoy'
 id: welcome
+order: 1
 ---
 
 # Quick start guide

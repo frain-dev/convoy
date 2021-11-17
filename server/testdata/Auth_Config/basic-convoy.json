@@ -1,13 +1,48 @@
 {
-	"auth": {
-		"type": "basic",
-		"basic": {
-			"username": "test",
-			"password": "test"
-		}
-	},
-	"signature": {
-		"header": "X-Company-Event-WebHook-Signature",
-		"hash": "SHA256"
-	}
+    "auth": {
+        "require_auth": true,
+        "file": {
+            "basic": [
+                {
+                    "username": "testx",
+                    "password": "test",
+                    "role": {
+                        "type": "admin",
+                        "groups": [
+                            "sendcash-pay",
+                            "buycoins-api"
+                        ]
+                    }
+                },
+                {
+                    "username": "test",
+                    "password": "test",
+                    "role": {
+                        "type": "super_user",
+                        "groups": [
+                            "buycoins"
+                        ]
+                    }
+                }
+            ],
+            "api_key": [
+                {
+                    "api_key": "avcbajbwrohw@##Q39uekvsmbvxc.fdjhd",
+                    "role": {
+                        "type": "ui_admin",
+                        "groups": [
+                            "sendcash-pay"
+                        ]
+                    }
+                }
+            ]
+        }
+    },
+    "group": {
+        "signature": {
+            "header": "X-Company-Event-WebHook-Signature",
+            "hash": "SHA256"
+        }
+    }
+
 }
