@@ -9,9 +9,9 @@ import (
 	"github.com/frain-dev/convoy/server/models"
 	"github.com/frain-dev/convoy/util"
 	pager "github.com/gobeam/mongo-go-pagination"
+	_ "github.com/golang/mock/mockgen/model"
 	"github.com/google/uuid"
 	log "github.com/sirupsen/logrus"
-
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
@@ -56,6 +56,37 @@ func (db *eventDeliveryRepo) FindEventDeliveryByID(ctx context.Context,
 	}
 
 	return e, err
+}
+
+func (db *eventDeliveryRepo) FindEventDeliveriesByIDs(ctx context.Context,
+	ids []string) ([]convoy.EventDelivery, error) {
+
+	filter := bson.M{
+		"uid": bson.M{
+			"$in": ids,
+		},
+		"document_status": bson.M{
+			"$ne": convoy.DeletedDocumentStatus,
+		},
+	}
+
+	deliveries := make([]convoy.EventDelivery, 0)
+
+	cur, err := db.inner.Find(ctx, filter, nil)
+	if err != nil {
+		return deliveries, err
+	}
+
+	for cur.Next(ctx) {
+		var delivery convoy.EventDelivery
+		if err := cur.Decode(&delivery); err != nil {
+			return deliveries, err
+		}
+
+		deliveries = append(deliveries, delivery)
+	}
+
+	return deliveries, err
 }
 
 func (db *eventDeliveryRepo) FindEventDeliveriesByEventID(ctx context.Context,

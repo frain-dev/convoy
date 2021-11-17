@@ -119,6 +119,7 @@ type EventDelivery struct {
 type EventDeliveryRepository interface {
 	CreateEventDelivery(context.Context, *EventDelivery) error
 	FindEventDeliveryByID(context.Context, string) (*EventDelivery, error)
+	FindEventDeliveriesByIDs(context.Context, []string) ([]EventDelivery, error)
 	FindEventDeliveriesByEventID(context.Context, string) ([]EventDelivery, error)
 	UpdateStatusOfEventDelivery(context.Context, EventDelivery, EventDeliveryStatus) error
 	UpdateEventDeliveryWithAttempt(context.Context, EventDelivery, DeliveryAttempt) error
