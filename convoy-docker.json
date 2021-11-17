@@ -1,5 +1,6 @@
 {
     "environment": "development",
+    "multiple_tenants": false,
     "database": {
 		"dsn": "mongodb://root:rootpassword@mongodb:27017/convoy?authSource=admin"
 	},
@@ -19,7 +20,7 @@
 	},
 	"group": {
 		"signature": {
-			"header": "X-Company-Event-WebHook-Signature",
+			"header": "X-Company-WebHook-Signature",
 			"hash": "SHA256"
 		},
 		"strategy": {

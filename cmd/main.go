@@ -169,32 +169,59 @@ func ensureMongoIndices(conn *mongo.Database) {
 }
 
 func ensureDefaultGroup(ctx context.Context, cfg config.Configuration, a *app) error {
-	groups, err := a.groupRepo.LoadGroups(ctx, &convoy.GroupFilter{})
+	var filter *convoy.GroupFilter
+	var groups []*convoy.Group
+	var group *convoy.Group
+	var err error
+
+	filter = &convoy.GroupFilter{}
+	groups, err = a.groupRepo.LoadGroups(ctx, filter)
 	if err != nil {
 		return fmt.Errorf("failed to load groups - %w", err)
 	}
 
 	// return if a group already exists or it's a multi tenant app
-	if len(groups) != 0 || cfg.MultipleTenants {
+	if cfg.MultipleTenants {
 		return nil
 	}
 
-	defaultGroup := &convoy.Group{
-		UID:            uuid.New().String(),
-		Name:           "default-group",
-		Config:         &cfg.GroupConfig,
-		CreatedAt:      primitive.NewDateTimeFromTime(time.Now()),
-		UpdatedAt:      primitive.NewDateTimeFromTime(time.Now()),
-		DocumentStatus: convoy.ActiveDocumentStatus,
+	if len(groups) > 1 {
+		filter = &convoy.GroupFilter{Names: []string{"default-group"}}
+		groups, err = a.groupRepo.LoadGroups(ctx, filter)
+		if err != nil {
+			return fmt.Errorf("failed to load groups - %w", err)
+		}
 	}
 
-	err = a.groupRepo.CreateGroup(ctx, defaultGroup)
+	if len(groups) == 0 {
+		defaultGroup := &convoy.Group{
+			UID:            uuid.New().String(),
+			Name:           "default-group",
+			Config:         &cfg.GroupConfig,
+			CreatedAt:      primitive.NewDateTimeFromTime(time.Now()),
+			UpdatedAt:      primitive.NewDateTimeFromTime(time.Now()),
+			DocumentStatus: convoy.ActiveDocumentStatus,
+		}
+
+		err = a.groupRepo.CreateGroup(ctx, defaultGroup)
+		if err != nil {
+			return fmt.Errorf("failed to create default group - %w", err)
+		}
+
+		groups = append(groups, defaultGroup)
+	}
+
+	group = groups[0]
+
+	group.Config = &cfg.GroupConfig
+	err = a.groupRepo.UpdateGroup(ctx, group)
 	if err != nil {
-		return fmt.Errorf("failed to create default group - %w", err)
+		log.WithError(err).Error("Default group update failed.")
+		return err
 	}
 
-	taskName := convoy.EventProcessor.SetPrefix(defaultGroup.Name)
-	task.CreateTask(taskName, *defaultGroup, task.ProcessEventDelivery(a.applicationRepo, a.eventDeliveryRepo, a.groupRepo))
+	taskName := convoy.EventProcessor.SetPrefix(group.Name)
+	task.CreateTask(taskName, *group, task.ProcessEventDelivery(a.applicationRepo, a.eventDeliveryRepo, a.groupRepo))
 
 	return nil
 }
