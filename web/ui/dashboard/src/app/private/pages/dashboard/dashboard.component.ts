@@ -88,7 +88,9 @@ export class DashboardComponent implements OnInit {
 		await Promise.all([this.getOrganisationDetails(), this.fetchDashboardData(), this.getEvents(), this.getApps(), this.getEventDeliveries()]);
 	}
 
-	toggleShowDropdown() {}
+	toggleShowDropdown() {
+		this.showDropdown = !this.showDropdown;
+	}
 
 	logout() {
 		localStorage.removeItem('CONVOY_AUTH');
