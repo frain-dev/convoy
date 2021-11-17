@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"net/http"
+	"sync"
 	"time"
 
 	"github.com/frain-dev/convoy"
@@ -227,6 +228,47 @@ func (a *applicationHandler) ResendEventDelivery(w http.ResponseWriter, r *http.
 }
 
 func (a *applicationHandler) BatchResendEventDelivery(w http.ResponseWriter, r *http.Request) {
+	eventDeliveryIDs := struct {
+		IDs []string `json:"ids"`
+	}{}
+
+	err := json.NewDecoder(r.Body).Decode(&eventDeliveryIDs)
+	if err != nil {
+		_ = render.Render(w, r, newErrorResponse("Request is invalid", http.StatusBadRequest))
+		return
+	}
+
+	deliveries, err := a.eventDeliveryRepo.FindEventDeliveriesByIDs(r.Context(), eventDeliveryIDs.IDs)
+	err = json.NewDecoder(r.Body).Decode(&eventDeliveryIDs)
+	if err != nil {
+		log.WithError(err).Error("failed to fetch event deliveries by ids")
+		_ = render.Render(w, r, newErrorResponse("failed to fetch event deliveries", http.StatusInternalServerError))
+		return
+	}
+
+	ctx := r.Context()
+	var wg sync.WaitGroup
+	errchan := make(chan *EndpointError, len(deliveries))
+	for _, delivery := range deliveries {
+		wg.Add(1)
+		go func(delivery convoy.EventDelivery) {
+			err := a.resendEventDelivery(ctx, &delivery)
+			errchan <- err
+			wg.Done()
+		}(delivery)
+	}
+
+	wg.Wait()
+	close(errchan)
+
+	for endpointError := range errchan {
+		if endpointError != nil {
+			log.WithError(endpointError).Error("an item in the batch retry failed")
+		}
+	}
+
+	_ = render.Render(w, r, newServerResponse("App events processed for retry successfully",
+		nil, http.StatusOK))
 }
 
 func (a *applicationHandler) resendEventDelivery(ctx context.Context, eventDelivery *convoy.EventDelivery) *EndpointError {
@@ -334,7 +376,7 @@ func (a *applicationHandler) GetEventsPaged(w http.ResponseWriter, r *http.Reque
 		pagedResponse{Content: &m, Pagination: &paginationData}, http.StatusOK))
 }
 
-// GetEventDeliveries
+// GetEventDeliveriesPaged
 // @Summary Get event deliveries
 // @Description This endpoint fetch event deliveries.
 // @Tags EventDelivery
