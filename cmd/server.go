@@ -49,7 +49,10 @@ func addServerCommand(a *app) *cobra.Command {
 
 			// register tasks.
 			handler := task.ProcessEventDelivery(a.applicationRepo, a.eventDeliveryRepo, a.groupRepo)
-			task.CreateTasks(a.groupRepo, handler)
+			if err := task.CreateTasks(a.groupRepo, handler); err != nil {
+				log.WithError(err).Error("failed to register tasks")
+				return err
+			}
 
 			// register workers.
 			if queue, ok := a.eventQueue.(*convoyQueue.RedisQueue); ok {
