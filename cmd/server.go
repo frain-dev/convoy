@@ -47,10 +47,9 @@ func addServerCommand(a *app) *cobra.Command {
 
 			srv := server.New(cfg, a.eventRepo, a.eventDeliveryRepo, a.applicationRepo, a.groupRepo, a.eventQueue)
 
-			// register server.
+			// register tasks.
 			handler := task.ProcessEventDelivery(a.applicationRepo, a.eventDeliveryRepo, a.groupRepo)
-			monitor := worker.NewMonitor(handler, a.groupRepo)
-			monitor.Start()
+			task.CreateTasks(a.groupRepo, handler)
 
 			// register workers.
 			if queue, ok := a.eventQueue.(*convoyQueue.RedisQueue); ok {
