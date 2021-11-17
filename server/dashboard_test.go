@@ -5,10 +5,11 @@ import (
 	"net/http/httptest"
 	"testing"
 
+	"github.com/frain-dev/convoy"
 	"github.com/frain-dev/convoy/config"
 	"github.com/frain-dev/convoy/mocks"
 	"github.com/golang/mock/gomock"
-	"github.com/sirupsen/logrus"
+	log "github.com/sirupsen/logrus"
 )
 
 func Test_fetchAllConfigDetails(t *testing.T) {
@@ -29,11 +30,21 @@ func Test_fetchAllConfigDetails(t *testing.T) {
 		name       string
 		method     string
 		statusCode int
+		dbFn       func(app *applicationHandler)
 	}{
 		{
 			name:       "successful config fetch",
 			method:     http.MethodGet,
 			statusCode: http.StatusOK,
+			dbFn: func(app *applicationHandler) {
+				g, _ := app.groupRepo.(*mocks.MockGroupRepository)
+
+				g.EXPECT().
+					FetchGroupByID(gomock.Any(), gomock.Any()).Times(1).
+					Return(&convoy.Group{
+						Config: &config.GroupConfig{},
+					}, nil)
+			},
 		},
 	}
 	for _, tc := range tests {
@@ -44,14 +55,18 @@ func Test_fetchAllConfigDetails(t *testing.T) {
 			}
 			initRealmChain(t)
 
-			request := httptest.NewRequest(tc.method, "/ui/dashboard/1/config", nil)
+			if tc.dbFn != nil {
+				tc.dbFn(app)
+			}
+
+			req := httptest.NewRequest(tc.method, "/ui/dashboard/config?groupID=12345", nil)
 			responseRecorder := httptest.NewRecorder()
 
-			fetchAllConfigDetails()(http.HandlerFunc(app.GetAllConfigDetails)).
-				ServeHTTP(responseRecorder, request)
+			requireGroup(app.groupRepo)(http.HandlerFunc(app.GetAllConfigDetails)).
+				ServeHTTP(responseRecorder, req)
 
 			if responseRecorder.Code != tc.statusCode {
-				logrus.Error(tc.name, responseRecorder.Body)
+				log.Error(tc.name, responseRecorder.Body)
 				t.Errorf("Want status '%d', got '%d'", tc.statusCode, responseRecorder.Code)
 			}
 

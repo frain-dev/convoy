@@ -1,6 +1,50 @@
 {
 	"components": {
 		"schemas": {
+			"config.GroupConfig": {
+				"properties": {
+					"disableEndpoint": {
+						"type": "boolean"
+					},
+					"signature": {
+						"$ref": "#/components/schemas/config.SignatureConfiguration"
+					},
+					"strategy": {
+						"$ref": "#/components/schemas/config.StrategyConfiguration"
+					}
+				},
+				"type": "object"
+			},
+			"config.SignatureConfiguration": {
+				"properties": {
+					"hash": {
+						"type": "string"
+					},
+					"header": {
+						"type": "string"
+					}
+				},
+				"type": "object"
+			},
+			"config.StrategyConfiguration": {
+				"properties": {
+					"default": {
+						"properties": {
+							"intervalSeconds": {
+								"type": "integer"
+							},
+							"retryLimit": {
+								"type": "integer"
+							}
+						},
+						"type": "object"
+					},
+					"type": {
+						"type": "string"
+					}
+				},
+				"type": "object"
+			},
 			"convoy.AppMetadata": {
 				"properties": {
 					"group_id": {
@@ -246,6 +290,9 @@
 			},
 			"convoy.Group": {
 				"properties": {
+					"config": {
+						"$ref": "#/components/schemas/config.GroupConfig"
+					},
 					"created_at": {
 						"type": "string"
 					},
@@ -353,6 +400,9 @@
 			},
 			"models.Group": {
 				"properties": {
+					"config": {
+						"$ref": "#/components/schemas/config.GroupConfig"
+					},
 					"logo_url": {
 						"type": "string"
 					},
