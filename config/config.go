@@ -8,7 +8,6 @@ import (
 	"reflect"
 	"strconv"
 	"sync/atomic"
-	"time"
 
 	"github.com/frain-dev/convoy/config/algo"
 )
@@ -39,16 +38,16 @@ type QueueConfiguration struct {
 	} `json:"redis"`
 }
 
-type AuthConfiguration struct {
-	Type  AuthProvider `json:"type"`
-	Basic Basic        `json:"basic"`
+type FileRealmOption struct {
+	Basic  []BasicAuth  `json:"basic"`
+	APIKey []APIKeyAuth `json:"api_key"`
 }
 
-type UIAuthConfiguration struct {
-	Type                  AuthProvider  `json:"type"`
-	Basic                 []Basic       `json:"basic"`
-	JwtKey                string        `json:"jwtKey"`
-	JwtTokenExpirySeconds time.Duration `json:"jwtTokenExpirySeconds"`
+type AuthConfiguration struct {
+	RequireAuth bool         `json:"require_auth"`
+	Type        AuthProvider `json:"type"`
+	Basic       Basic
+	File        FileRealmOption `json:"file"`
 }
 
 type Basic struct {
@@ -79,19 +78,23 @@ type SMTPConfiguration struct {
 	ReplyTo  string `json:"reply-to"`
 }
 
+type GroupConfig struct {
+	Strategy        StrategyConfiguration
+	Signature       SignatureConfiguration
+	DisableEndpoint bool
+}
+
 type Configuration struct {
-	Auth              AuthConfiguration      `json:"auth,omitempty"`
-	UIAuth            UIAuthConfiguration    `json:"ui,omitempty"`
-	UIAuthorizedUsers map[string]string      `json:"-"`
-	Database          DatabaseConfiguration  `json:"database"`
-	Sentry            SentryConfiguration    `json:"sentry"`
-	Queue             QueueConfiguration     `json:"queue"`
-	Server            ServerConfiguration    `json:"server"`
-	Strategy          StrategyConfiguration  `json:"strategy"`
-	Signature         SignatureConfiguration `json:"signature"`
-	SMTP              SMTPConfiguration      `json:"smtp"`
-	Environment       string                 `json:"env"`
-	DisableEndpoint   bool                   `json:"disable_endpoint"`
+	Auth              AuthConfiguration     `json:"auth,omitempty"`
+	UIAuthorizedUsers map[string]string     `json:"-"`
+	Database          DatabaseConfiguration `json:"database"`
+	Sentry            SentryConfiguration   `json:"sentry"`
+	Queue             QueueConfiguration    `json:"queue"`
+	Server            ServerConfiguration   `json:"server"`
+	GroupConfig       GroupConfig           `json:"group"`
+	SMTP              SMTPConfiguration     `json:"smtp"`
+	Environment       string                `json:"env"`
+	MultipleTenants   bool                  `json:"multiple_tenants"`
 }
 
 type AuthProvider string
@@ -181,60 +184,15 @@ func LoadConfig(p string) error {
 	}
 
 	if signatureHeader := os.Getenv("CONVOY_SIGNATURE_HEADER"); signatureHeader != "" {
-		c.Signature.Header = SignatureHeaderProvider(signatureHeader)
+		c.GroupConfig.Signature.Header = SignatureHeaderProvider(signatureHeader)
 	}
 
 	if signatureHash := os.Getenv("CONVOY_SIGNATURE_HASH"); signatureHash != "" {
-		c.Signature.Hash = signatureHash
+		c.GroupConfig.Signature.Hash = signatureHash
 	}
-	err = ensureSignature(c.Signature)
+	err = ensureSignature(c.GroupConfig.Signature)
 	if err != nil {
 		return err
-	}
-
-	if apiUsername := os.Getenv("CONVOY_API_USERNAME"); apiUsername != "" {
-		var apiPassword string
-		if apiPassword = os.Getenv("CONVOY_API_PASSWORD"); apiPassword == "" {
-			return errors.New("Failed to retrieve apiPassword")
-		}
-
-		c.Auth = AuthConfiguration{
-			Type:  "basic",
-			Basic: Basic{apiUsername, apiPassword},
-		}
-	}
-
-	if uiUsername := os.Getenv("CONVOY_UI_USERNAME"); uiUsername != "" {
-		var uiPassword, jwtKey, jwtExpiryString string
-		var jwtExpiry time.Duration
-		if uiPassword = os.Getenv("CONVOY_UI_PASSWORD"); uiPassword == "" {
-			return errors.New("Failed to retrieve uiPassword")
-		}
-
-		if jwtKey = os.Getenv("CONVOY_JWT_KEY"); jwtKey == "" {
-			return errors.New("Failed to retrieve jwtKey")
-		}
-
-		if jwtExpiryString = os.Getenv("CONVOY_JWT_EXPIRY"); jwtExpiryString == "" {
-			return errors.New("Failed to retrieve jwtExpiry")
-		}
-
-		jwtExpiryInt, err := strconv.Atoi(jwtExpiryString)
-		if err != nil {
-			return errors.New("Failed to parse jwtExpiry")
-		}
-
-		jwtExpiry = time.Duration(jwtExpiryInt) * time.Second
-
-		basicCredentials := Basic{uiUsername, uiPassword}
-		c.UIAuth = UIAuthConfiguration{
-			Type: "basic",
-			Basic: []Basic{
-				basicCredentials,
-			},
-			JwtKey:                jwtKey,
-			JwtTokenExpirySeconds: jwtExpiry,
-		}
 	}
 
 	if retryStrategy := os.Getenv("CONVOY_RETRY_STRATEGY"); retryStrategy != "" {
@@ -249,7 +207,7 @@ func LoadConfig(p string) error {
 			return err
 		}
 
-		c.Strategy = StrategyConfiguration{
+		c.GroupConfig.Strategy = StrategyConfiguration{
 			Type: StrategyProvider(retryStrategy),
 			Default: struct {
 				IntervalSeconds uint64 `json:"intervalSeconds"`
@@ -264,13 +222,43 @@ func LoadConfig(p string) error {
 
 	if e := os.Getenv("CONVOY_DISABLE_ENDPOINT"); e != "" {
 		if d, err := strconv.ParseBool(e); err == nil {
-			c.DisableEndpoint = d
+			c.GroupConfig.DisableEndpoint = d
 		}
 	}
 
-	c.UIAuthorizedUsers = parseAuthorizedUsers(c.UIAuth)
+	err = ensureAuthConfig(c.Auth)
+	if err != nil {
+		return err
+	}
 
 	cfgSingleton.Store(c)
+	return nil
+}
+
+func ensureAuthConfig(auth AuthConfiguration) error {
+	var err error
+	for _, r := range auth.File.Basic {
+		if r.Username == "" || r.Password == "" {
+			return errors.New("username and password are required for basic auth config")
+		}
+
+		err = checkRole(&r.Role, "basic auth")
+		if err != nil {
+			return err
+		}
+	}
+
+	for _, r := range auth.File.APIKey {
+		if r.APIKey == "" {
+			return errors.New("api-key is required for api-key auth config")
+		}
+
+		err = checkRole(&r.Role, "api-key auth")
+		if err != nil {
+			return err
+		}
+	}
+
 	return nil
 }
 
@@ -289,15 +277,6 @@ func ensureSSL(s ServerConfiguration) error {
 		}
 	}
 	return nil
-}
-
-func parseAuthorizedUsers(auth UIAuthConfiguration) map[string]string {
-	users := auth.Basic
-	usersMap := make(map[string]string)
-	for i := 0; i < len(users); i++ {
-		usersMap[users[i].Username] = users[i].Password
-	}
-	return usersMap
 }
 
 func retrieveIntfromEnv(config string) (uint64, error) {

@@ -9,6 +9,8 @@ import (
 	"strings"
 	"time"
 
+	"github.com/frain-dev/convoy/auth"
+
 	"github.com/frain-dev/convoy"
 	"github.com/frain-dev/convoy/config"
 	"github.com/frain-dev/convoy/queue"
@@ -60,26 +62,26 @@ func buildRoutes(app *applicationHandler) http.Handler {
 		v1Router.Route("/v1", func(r chi.Router) {
 			r.Use(middleware.AllowContentType("application/json"))
 			r.Use(jsonResponse)
+			r.Use(requireAuth())
 
 			r.Route("/groups", func(groupRouter chi.Router) {
-				groupRouter.Use(requireAuth())
-
 				groupRouter.Get("/", app.GetGroups)
-				groupRouter.Post("/", app.CreateGroup)
+				groupRouter.With(requirePermission(auth.RoleSuperUser)).Post("/", app.CreateGroup)
 
 				groupRouter.Route("/{groupID}", func(groupSubRouter chi.Router) {
-					groupSubRouter.Use(requireDefaultGroup(app.groupRepo))
+					groupSubRouter.Use(requireGroup(app.groupRepo))
 
-					groupSubRouter.Get("/", app.GetGroup)
-					groupSubRouter.Put("/", app.UpdateGroup)
+					groupSubRouter.With(requirePermission(auth.RoleAdmin)).Get("/", app.GetGroup)
+					groupSubRouter.With(requirePermission(auth.RoleSuperUser)).Put("/", app.UpdateGroup)
 				})
 			})
 
 			r.Route("/applications", func(appRouter chi.Router) {
-				appRouter.Use(requireAuth())
+				appRouter.Use(requireGroup(app.groupRepo))
+				appRouter.Use(requirePermission(auth.RoleAdmin))
 
 				appRouter.Route("/", func(appSubRouter chi.Router) {
-					appSubRouter.With(requireDefaultGroup(app.groupRepo)).Post("/", app.CreateApp)
+					appSubRouter.Post("/", app.CreateApp)
 					appRouter.With(pagination).Get("/", app.GetApps)
 				})
 
@@ -106,7 +108,8 @@ func buildRoutes(app *applicationHandler) http.Handler {
 			})
 
 			r.Route("/events", func(eventRouter chi.Router) {
-				eventRouter.Use(requireAuth())
+				eventRouter.Use(requireGroup(app.groupRepo))
+				eventRouter.Use(requirePermission(auth.RoleAdmin))
 
 				eventRouter.With(instrumentPath("/events")).Post("/", app.CreateAppEvent)
 				eventRouter.With(pagination).Get("/", app.GetEventsPaged)
@@ -118,6 +121,9 @@ func buildRoutes(app *applicationHandler) http.Handler {
 			})
 
 			r.Route("/eventdeliveries", func(eventDeliveryRouter chi.Router) {
+				eventDeliveryRouter.Use(requireGroup(app.groupRepo))
+				eventDeliveryRouter.Use(requirePermission(auth.RoleAdmin))
+
 				eventDeliveryRouter.With(pagination).Get("/", app.GetEventDeliveriesPaged)
 
 				eventDeliveryRouter.Route("/{eventDeliveryID}", func(eventDeliverySubRouter chi.Router) {
@@ -140,31 +146,29 @@ func buildRoutes(app *applicationHandler) http.Handler {
 	// UI API.
 	router.Route("/ui", func(uiRouter chi.Router) {
 		uiRouter.Use(jsonResponse)
+		uiRouter.Use(requireAuth())
 
 		uiRouter.Route("/dashboard", func(dashboardRouter chi.Router) {
-			dashboardRouter.Use(requireUIAuth())
-			dashboardRouter.Use(requireDefaultGroup(app.groupRepo))
+			dashboardRouter.Use(requireGroup(app.groupRepo))
 
-			dashboardRouter.With(fetchDashboardSummary(app.appRepo, app.eventRepo)).Get("/summary", app.GetDashboardSummary)
-			dashboardRouter.With(fetchAllConfigDetails()).Get("/config", app.GetAllConfigDetails)
+			dashboardRouter.Get("/summary", app.GetDashboardSummary)
+			dashboardRouter.Get("/config", app.GetAllConfigDetails)
 		})
 
-		// TODO(daniel,subomi): maybe we should remove this? since we're now giving only a default group
 		uiRouter.Route("/groups", func(groupRouter chi.Router) {
-			groupRouter.Use(requireUIAuth())
 
 			groupRouter.Route("/", func(orgSubRouter chi.Router) {
 				groupRouter.Get("/", app.GetGroups)
 			})
 
 			groupRouter.Route("/{groupID}", func(appSubRouter chi.Router) {
-				appSubRouter.Use(requireDefaultGroup(app.groupRepo))
-				appSubRouter.Get("/", app.GetGroup)
+				appSubRouter.With(requirePermission(auth.RoleUIAdmin)).Get("/", app.GetGroup)
 			})
 		})
 
 		uiRouter.Route("/apps", func(appRouter chi.Router) {
-			appRouter.Use(requireUIAuth())
+			appRouter.Use(requireGroup(app.groupRepo))
+			appRouter.Use(requirePermission(auth.RoleUIAdmin))
 
 			appRouter.Route("/", func(appSubRouter chi.Router) {
 				appRouter.With(pagination).Get("/", app.GetApps)
@@ -187,7 +191,9 @@ func buildRoutes(app *applicationHandler) http.Handler {
 		})
 
 		uiRouter.Route("/events", func(eventRouter chi.Router) {
-			eventRouter.Use(requireUIAuth())
+			eventRouter.Use(requireGroup(app.groupRepo))
+			eventRouter.Use(requirePermission(auth.RoleUIAdmin))
+
 			eventRouter.With(pagination).Get("/", app.GetEventsPaged)
 
 			eventRouter.Route("/{eventID}", func(eventSubRouter chi.Router) {
@@ -197,6 +203,9 @@ func buildRoutes(app *applicationHandler) http.Handler {
 		})
 
 		uiRouter.Route("/eventdeliveries", func(eventDeliveryRouter chi.Router) {
+			eventDeliveryRouter.Use(requireGroup(app.groupRepo))
+			eventDeliveryRouter.Use(requirePermission(auth.RoleUIAdmin))
+
 			eventDeliveryRouter.With(pagination).Get("/", app.GetEventDeliveriesPaged)
 
 			eventDeliveryRouter.Route("/{eventDeliveryID}", func(eventDeliverySubRouter chi.Router) {
@@ -213,12 +222,6 @@ func buildRoutes(app *applicationHandler) http.Handler {
 				})
 			})
 		})
-
-		uiRouter.Route("/auth", func(authRouter chi.Router) {
-			authRouter.With(login()).Post("/login", app.GetAuthLogin)
-			authRouter.With(refresh()).Post("/refresh", app.GetAuthLogin)
-		})
-
 	})
 
 	router.Handle("/v1/metrics", promhttp.Handler())

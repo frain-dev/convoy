@@ -2,7 +2,7 @@
 title: Overview
 description: 'Your list of apps on Convoys'
 id: overview
-order: 1
+order: 2
 ---
 
 # What is Convoy?

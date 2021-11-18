@@ -1,8 +1,0 @@
-{
-	"auth": {
-	},
-	"signature": {
-		"header": "X-Company-Event-WebHook-Signature",
-		"hash": "SHA256"
-	}
-}

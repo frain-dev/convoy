@@ -34,8 +34,8 @@ You can launch a Convoy Container to try it out with
 ```bash
 $ docker run \
 	-p 5005:5005 \
-	--name convoy-server \ 
-	-v `pwd`/convoy.json:convoy.json \
+	--name convoy-server \
+	-v `pwd`/convoy.json:/convoy.json \
 	ghcr.io/frain-dev/convoy:v0.2.5
 ```
 
