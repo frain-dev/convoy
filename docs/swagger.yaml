@@ -1178,12 +1178,7 @@ paths:
             - $ref: '#/definitions/server.serverResponse'
             - properties:
                 data:
-                  allOf:
-                  - $ref: '#/definitions/convoy.Event'
-                  - properties:
-                      data:
-                        $ref: '#/definitions/server.Stub'
-                    type: object
+                  $ref: '#/definitions/server.Stub'
               type: object
         "400":
           description: Bad Request

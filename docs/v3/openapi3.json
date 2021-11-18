@@ -1972,19 +1972,7 @@
 										{
 											"properties": {
 												"data": {
-													"allOf": [
-														{
-															"$ref": "#/components/schemas/convoy.Event"
-														},
-														{
-															"properties": {
-																"data": {
-																	"$ref": "#/components/schemas/server.Stub"
-																}
-															},
-															"type": "object"
-														}
-													]
+													"$ref": "#/components/schemas/server.Stub"
 												}
 											},
 											"type": "object"

@@ -231,7 +231,7 @@ func (a *applicationHandler) ResendEventDelivery(w http.ResponseWriter, r *http.
 // @Accept json
 // @Produce json
 // @Param delivery ids body Stub{ids=[]string} true "event delivery ids"
-// @Success 200 {object} serverResponse{data=convoy.Event{data=Stub}}
+// @Success 200 {object} serverResponse{data=Stub}
 // @Failure 400,401,500 {object} serverResponse{data=Stub}
 // @Security ApiKeyAuth
 // @Router /eventdeliveries/batchresend [post]
