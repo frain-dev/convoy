@@ -4,8 +4,8 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"net/http"
-	"sync"
 	"time"
 
 	"github.com/frain-dev/convoy"
@@ -237,7 +237,7 @@ func (a *applicationHandler) ResendEventDelivery(w http.ResponseWriter, r *http.
 // @Success 200 {object} serverResponse{data=convoy.Event{data=Stub}}
 // @Failure 400,401,500 {object} serverResponse{data=Stub}
 // @Security ApiKeyAuth
-// @Router /eventdeliveries/batch_resend [post]
+// @Router /eventdeliveries/batchresend [post]
 func (a *applicationHandler) BatchResendEventDelivery(w http.ResponseWriter, r *http.Request) {
 	eventDeliveryIDs := struct {
 		IDs []string `json:"ids"`
@@ -259,28 +259,22 @@ func (a *applicationHandler) BatchResendEventDelivery(w http.ResponseWriter, r *
 	}
 
 	ctx := r.Context()
-	var wg sync.WaitGroup
-	errchan := make(chan *EndpointError, len(deliveries))
+	failures := 0
+
 	for _, delivery := range deliveries {
-		wg.Add(1)
-		go func(delivery convoy.EventDelivery) {
-			err := a.resendEventDelivery(ctx, &delivery)
-			errchan <- err
-			wg.Done()
-		}(delivery)
-	}
-
-	wg.Wait()
-	close(errchan)
-
-	for endpointError := range errchan {
-		if endpointError != nil {
-			log.WithError(endpointError).Error("an item in the batch retry failed")
+		err := a.resendEventDelivery(ctx, &delivery)
+		if err != nil {
+			failures++
+			log.WithError(err).Error("an item in the batch retry failed")
 		}
 	}
 
-	_ = render.Render(w, r, newServerResponse("App events processed for retry successfully",
-		nil, http.StatusOK))
+	msg := "App events processed for retry successfully"
+	if failures > 0 {
+		msg = "Some app events could not be processed for retry successfully"
+	}
+
+	_ = render.Render(w, r, newServerResponse(msg, fmt.Sprintf("%d successful, %d failed", len(deliveries)-failures, failures), http.StatusOK))
 }
 
 func (a *applicationHandler) resendEventDelivery(ctx context.Context, eventDelivery *convoy.EventDelivery) *EndpointError {

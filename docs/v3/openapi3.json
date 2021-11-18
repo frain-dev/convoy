@@ -1880,7 +1880,7 @@
 				]
 			}
 		},
-		"/eventdeliveries/batch_resend": {
+		"/eventdeliveries/batchresend": {
 			"post": {
 				"description": "This endpoint resends multiple app events",
 				"requestBody": {
