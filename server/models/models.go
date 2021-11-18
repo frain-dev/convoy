@@ -23,6 +23,10 @@ type Event struct {
 	Data json.RawMessage `json:"data" bson:"data"`
 }
 
+type IDs struct {
+	IDs []string `json:"ids"`
+}
+
 type DeliveryAttempt struct {
 	MessageID  string `json:"msg_id" bson:"msg_id"`
 	APIVersion string `json:"api_version" bson:"api_version"`

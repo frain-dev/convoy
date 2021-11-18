@@ -239,9 +239,7 @@ func (a *applicationHandler) ResendEventDelivery(w http.ResponseWriter, r *http.
 // @Security ApiKeyAuth
 // @Router /eventdeliveries/batchresend [post]
 func (a *applicationHandler) BatchResendEventDelivery(w http.ResponseWriter, r *http.Request) {
-	eventDeliveryIDs := struct {
-		IDs []string `json:"ids"`
-	}{}
+	eventDeliveryIDs := models.IDs{}
 
 	err := json.NewDecoder(r.Body).Decode(&eventDeliveryIDs)
 	if err != nil {
@@ -269,12 +267,7 @@ func (a *applicationHandler) BatchResendEventDelivery(w http.ResponseWriter, r *
 		}
 	}
 
-	msg := "App events processed for retry successfully"
-	if failures > 0 {
-		msg = "Some app events could not be processed for retry successfully"
-	}
-
-	_ = render.Render(w, r, newServerResponse(msg, fmt.Sprintf("%d successful, %d failed", len(deliveries)-failures, failures), http.StatusOK))
+	_ = render.Render(w, r, newServerResponse(fmt.Sprintf("%d successful, %d failed", len(deliveries)-failures, failures), nil, http.StatusOK))
 }
 
 func (a *applicationHandler) resendEventDelivery(ctx context.Context, eventDelivery *convoy.EventDelivery) *EndpointError {
