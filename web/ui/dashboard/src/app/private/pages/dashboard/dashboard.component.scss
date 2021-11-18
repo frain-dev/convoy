@@ -33,6 +33,12 @@
 			}
 		}
 	}
+
+	&--head {
+		display: flex;
+		justify-content: space-between;
+		align-items: center;
+	}
 }
 
 .metrics {
@@ -110,7 +116,6 @@
 				height: 35px;
 				padding: 0px 8px;
 				outline: none;
-				font-size: 12px;
 			}
 
 			.event-button {
