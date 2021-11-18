@@ -89,7 +89,7 @@ export class DashboardComponent implements OnInit {
 
 	async initDashboard() {
 		await this.getGroups();
-		await Promise.all([this.getOrganisationDetails(), this.fetchDashboardData(), this.getEvents(), this.getApps()]);
+		await Promise.all([this.getOrganisationDetails(), this.fetchDashboardData(), this.getEvents(), this.getApps(), this.getEventDeliveries()]);
 		return;
 	}
 
@@ -282,7 +282,7 @@ export class DashboardComponent implements OnInit {
 	}
 
 	toggleActiveGroup() {
-		Promise.all([this.getOrganisationDetails(), this.fetchDashboardData(), this.getEvents(), this.getApps()]);
+		Promise.all([this.getOrganisationDetails(), this.fetchDashboardData(), this.getEvents(), this.getApps(), this.getEventDeliveries()]);
 	}
 
 	async getGroups() {
@@ -293,6 +293,7 @@ export class DashboardComponent implements OnInit {
 			});
 
 			this.groups = groupsResponse.data;
+			this.activeGroup = this.groups[0]?.uid ?? null;
 		} catch (error) {
 			return error;
 		}
