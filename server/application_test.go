@@ -955,7 +955,7 @@ func Test_applicationHandler_GetDashboardSummary(t *testing.T) {
 				tc.dbFn(eventRepo, appRepo, groupRepo)
 			}
 
-			fetchDashboardSummary(appRepo, eventRepo)(http.HandlerFunc(app.GetDashboardSummary)).
+			(http.HandlerFunc(app.GetDashboardSummary)).
 				ServeHTTP(responseRecorder, request)
 
 			if responseRecorder.Code != tc.statusCode {

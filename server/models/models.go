@@ -2,11 +2,14 @@ package models
 
 import (
 	"encoding/json"
+
+	"github.com/frain-dev/convoy/config"
 )
 
 type Group struct {
 	Name    string `json:"name" bson:"name"`
 	LogoURL string `json:"logo_url" bson:"logo_url"`
+	Config  config.GroupConfig
 }
 
 type Application struct {

@@ -32,7 +32,26 @@ func TestApplicationHandler_CreateAppEvent(t *testing.T) {
 	app = newApplicationHandler(eventRepo, eventDeliveryRepo, appRepo, groupRepo, eventQueue)
 
 	groupId := "1234567890"
-	group := &convoy.Group{UID: groupId}
+	group := &convoy.Group{
+		UID: groupId,
+		Config: &config.GroupConfig{
+			Signature: config.SignatureConfiguration{
+				Header: config.SignatureHeaderProvider("X-Convoy-Signature"),
+				Hash:   "SHA256",
+			},
+			Strategy: config.StrategyConfiguration{
+				Type: config.StrategyProvider("default"),
+				Default: struct {
+					IntervalSeconds uint64 `json:"intervalSeconds"`
+					RetryLimit      uint64 `json:"retryLimit"`
+				}{
+					IntervalSeconds: 60,
+					RetryLimit:      1,
+				},
+			},
+			DisableEndpoint: true,
+		},
+	}
 
 	appId := "12345"
 	msgId := "1122333444456"

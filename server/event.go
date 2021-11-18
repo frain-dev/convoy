@@ -95,18 +95,13 @@ func (a *applicationHandler) CreateAppEvent(w http.ResponseWriter, r *http.Reque
 		return
 	}
 
-	cfg, err := config.Get()
-	if err != nil {
-		log.Errorln("error fetching config - ", err)
-		_ = render.Render(w, r, newErrorResponse("an error has occurred while fetching config", http.StatusInternalServerError))
-		return
-	}
+	g := getGroupFromContext(r.Context())
 
 	var intervalSeconds uint64
 	var retryLimit uint64
-	if cfg.Strategy.Type == config.DefaultStrategyProvider {
-		intervalSeconds = cfg.Strategy.Default.IntervalSeconds
-		retryLimit = cfg.Strategy.Default.RetryLimit
+	if g.Config.Strategy.Type == config.DefaultStrategyProvider {
+		intervalSeconds = g.Config.Strategy.Default.IntervalSeconds
+		retryLimit = g.Config.Strategy.Default.RetryLimit
 	} else {
 		_ = render.Render(w, r, newErrorResponse("retry strategy not defined in configuration", http.StatusInternalServerError))
 		return
@@ -141,7 +136,7 @@ func (a *applicationHandler) CreateAppEvent(w http.ResponseWriter, r *http.Reque
 			},
 			Metadata: &convoy.Metadata{
 				Data:            event.Data,
-				Strategy:        cfg.Strategy.Type,
+				Strategy:        g.Config.Strategy.Type,
 				NumTrials:       0,
 				IntervalSeconds: intervalSeconds,
 				RetryLimit:      retryLimit,
@@ -158,7 +153,9 @@ func (a *applicationHandler) CreateAppEvent(w http.ResponseWriter, r *http.Reque
 			log.WithError(err).Error("error occurred creating event delivery")
 		}
 
-		err = a.eventQueue.Write(r.Context(), convoy.EventProcessor, eventDelivery, 1*time.Second)
+		taskName := convoy.EventProcessor.SetPrefix(g.Name)
+
+		err = a.eventQueue.Write(r.Context(), taskName, eventDelivery, 1*time.Second)
 		if err != nil {
 			log.Errorf("Error occurred sending new event to the queue %s", err)
 		}
