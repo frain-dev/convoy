@@ -126,6 +126,7 @@ func buildRoutes(app *applicationHandler) http.Handler {
 
 				eventDeliveryRouter.With(pagination).Get("/", app.GetEventDeliveriesPaged)
 				eventDeliveryRouter.Post("/batchresend", app.BatchResendEventDelivery)
+				eventDeliveryRouter.Post("/forceresend", app.ForceResendEventDeliveries)
 
 				eventDeliveryRouter.Route("/{eventDeliveryID}", func(eventDeliverySubRouter chi.Router) {
 					eventDeliverySubRouter.Use(requireEventDelivery(app.eventDeliveryRepo))

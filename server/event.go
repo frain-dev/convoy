@@ -214,7 +214,7 @@ func (a *applicationHandler) ResendEventDelivery(w http.ResponseWriter, r *http.
 
 	eventDelivery := getEventDeliveryFromContext(r.Context())
 
-	endpointError := a.resendEventDelivery(r.Context(), eventDelivery)
+	endpointError := a.resendEventDelivery(r.Context(), eventDelivery, false)
 	if endpointError != nil {
 		_ = render.Render(w, r, newErrorResponse(endpointError.Error(), endpointError.StatusCode))
 		return
@@ -257,7 +257,7 @@ func (a *applicationHandler) BatchResendEventDelivery(w http.ResponseWriter, r *
 	failures := 0
 
 	for _, delivery := range deliveries {
-		err := a.resendEventDelivery(ctx, &delivery)
+		err := a.resendEventDelivery(ctx, &delivery, false)
 		if err != nil {
 			failures++
 			log.WithError(err).Error("an item in the batch retry failed")
@@ -267,23 +267,67 @@ func (a *applicationHandler) BatchResendEventDelivery(w http.ResponseWriter, r *
 	_ = render.Render(w, r, newServerResponse(fmt.Sprintf("%d successful, %d failed", len(deliveries)-failures, failures), nil, http.StatusOK))
 }
 
-func (a *applicationHandler) resendEventDelivery(ctx context.Context, eventDelivery *convoy.EventDelivery) *EndpointError {
+// ForceResendEventDeliveries
+// @Summary Batch Resend app events
+// @Description This endpoint force resends multiple app events
+// @Tags EventDelivery
+// @Accept json
+// @Produce json
+// @Param delivery ids body Stub{ids=[]string} true "event delivery ids"
+// @Success 200 {object} serverResponse{data=Stub}
+// @Failure 400,401,500 {object} serverResponse{data=Stub}
+// @Security ApiKeyAuth
+// @Router /eventdeliveries/forceresend [post]
+func (a *applicationHandler) ForceResendEventDeliveries(w http.ResponseWriter, r *http.Request) {
+	eventDeliveryIDs := models.IDs{}
 
-	if eventDelivery.Status == convoy.SuccessEventStatus {
-		return &EndpointError{
-			Err:        errors.New("event already sent"),
-			StatusCode: http.StatusBadRequest,
+	err := json.NewDecoder(r.Body).Decode(&eventDeliveryIDs)
+	if err != nil {
+		_ = render.Render(w, r, newErrorResponse("Request is invalid", http.StatusBadRequest))
+		return
+	}
+
+	var deliveries []convoy.EventDelivery
+
+	deliveries, err = a.eventDeliveryRepo.FindEventDeliveriesByIDs(r.Context(), eventDeliveryIDs.IDs)
+	if err != nil {
+		log.WithError(err).Error("failed to fetch event deliveries by ids")
+		_ = render.Render(w, r, newErrorResponse("failed to fetch event deliveries", http.StatusInternalServerError))
+		return
+	}
+
+	ctx := r.Context()
+	failures := 0
+
+	for _, delivery := range deliveries {
+		err := a.resendEventDelivery(ctx, &delivery, true)
+		if err != nil {
+			failures++
+			log.WithError(err).Error("an item in the force resend batch failed")
 		}
 	}
 
-	switch eventDelivery.Status {
-	case convoy.ScheduledEventStatus,
-		convoy.ProcessingEventStatus,
-		convoy.SuccessEventStatus,
-		convoy.RetryEventStatus:
-		return &EndpointError{
-			Err:        errors.New("cannot resend event that did not fail previously"),
-			StatusCode: http.StatusBadRequest,
+	_ = render.Render(w, r, newServerResponse(fmt.Sprintf("%d successful, %d failed", len(deliveries)-failures, failures), nil, http.StatusOK))
+}
+
+func (a *applicationHandler) resendEventDelivery(ctx context.Context, eventDelivery *convoy.EventDelivery, forceResend bool) *EndpointError {
+	if !forceResend {
+		if eventDelivery.Status == convoy.SuccessEventStatus {
+			return &EndpointError{
+				Err:        errors.New("event already sent"),
+				StatusCode: http.StatusBadRequest,
+			}
+		}
+
+		switch eventDelivery.Status {
+		case convoy.ScheduledEventStatus,
+			convoy.ProcessingEventStatus,
+			convoy.SuccessEventStatus,
+			convoy.RetryEventStatus:
+			return &EndpointError{
+				Err:        errors.New("cannot resend event that did not fail previously"),
+				StatusCode: http.StatusBadRequest,
+			}
 		}
 	}
 
