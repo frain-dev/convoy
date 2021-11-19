@@ -1232,7 +1232,7 @@ paths:
       summary: Resend an app event
       tags:
       - EventDelivery
-  /eventdeliveries/batchresend:
+  /eventdeliveries/batchretry:
     post:
       description: This endpoint resends multiple app events
       requestBody:
