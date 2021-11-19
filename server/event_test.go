@@ -852,7 +852,7 @@ func TestApplicationHandler_BatchResendEventDelivery(t *testing.T) {
 	}
 }
 
-func TestApplicationHandler_ForceResendEventDelivery(t *testing.T) {
+func TestApplicationHandler_ForceRetryEventDelivery(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 
@@ -1007,7 +1007,7 @@ func TestApplicationHandler_ForceResendEventDelivery(t *testing.T) {
 	}
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			url := "/api/v1/eventdeliveries/forceresend"
+			url := "/api/v1/eventdeliveries/forceretry"
 			req := httptest.NewRequest(tc.method, url, tc.body)
 			req.SetBasicAuth("test", "test")
 			req.Header.Add("Content-Type", "application/json")
