@@ -324,7 +324,10 @@ func (a *applicationHandler) resendEventDelivery(ctx context.Context, eventDeliv
 		}
 	}
 
-	err = a.eventQueue.Write(ctx, convoy.EventProcessor, eventDelivery, 1*time.Second)
+	g := getGroupFromContext(ctx)
+	taskName := convoy.EventProcessor.SetPrefix(g.Name)
+
+	err = a.eventQueue.Write(ctx, taskName, eventDelivery, 1*time.Second)
 	if err != nil {
 		log.WithError(err).Errorf("error occurred re-enqueing old event - %s", eventDelivery.UID)
 	}
