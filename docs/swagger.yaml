@@ -1149,7 +1149,7 @@ paths:
       summary: Resend an app event
       tags:
       - EventDelivery
-  /eventdeliveries/batchresend:
+  /eventdeliveries/batchretry:
     post:
       consumes:
       - application/json
