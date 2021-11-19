@@ -1557,13 +1557,6 @@
                 "parameters": [
                     {
                         "type": "string",
-                        "description": "event id",
-                        "name": "eventID",
-                        "in": "path",
-                        "required": true
-                    },
-                    {
-                        "type": "string",
                         "description": "event delivery id",
                         "name": "eventDeliveryID",
                         "in": "path",
@@ -1679,8 +1672,8 @@
                 "parameters": [
                     {
                         "type": "string",
-                        "description": "event id",
-                        "name": "eventID",
+                        "description": "event delivery id",
+                        "name": "eventDeliveryID",
                         "in": "path",
                         "required": true
                     }

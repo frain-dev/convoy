@@ -1106,12 +1106,6 @@ paths:
     get:
       description: This endpoint fetches an event delivery.
       parameters:
-      - description: event id
-        in: path
-        name: eventID
-        required: true
-        schema:
-          type: string
       - description: event delivery id
         in: path
         name: eventDeliveryID
@@ -1177,9 +1171,9 @@ paths:
     put:
       description: This endpoint resends an app event
       parameters:
-      - description: event id
+      - description: event delivery id
         in: path
-        name: eventID
+        name: eventDeliveryID
         required: true
         schema:
           type: string
