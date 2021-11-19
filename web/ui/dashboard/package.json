@@ -5,7 +5,7 @@
 		"ng": "ng",
 		"start": "ng serve --hmr",
 		"build": "ng build",
-        "postbuild": "node post-build-css.js",
+		"postbuild": "node post-build-css.js",
 		"watch": "ng build --watch --configuration development",
 		"test": "ng test"
 	},

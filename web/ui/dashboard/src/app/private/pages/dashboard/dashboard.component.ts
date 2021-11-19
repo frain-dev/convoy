@@ -9,6 +9,7 @@ import { Router } from '@angular/router';
 import { FormBuilder, FormGroup } from '@angular/forms';
 import { PAGINATION } from 'src/app/models/global.model';
 import { HTTP_RESPONSE } from 'src/app/models/http.model';
+import { GROUP } from 'src/app/models/group.model';
 
 @Component({
 	selector: 'app-dashboard',
@@ -76,6 +77,8 @@ export class DashboardComponent implements OnInit {
 	eventDeliveries!: { pagination: PAGINATION; content: EVENT_DELIVERY[] };
 	sidebarEventDeliveries: EVENT_DELIVERY[] = [];
 	eventDeliveryFilteredByEventId = '';
+	groups: GROUP[] = [];
+	activeGroup!: string;
 
 	constructor(private httpService: HttpService, private generalService: GeneralService, private router: Router, private formBuilder: FormBuilder) {}
 
@@ -85,7 +88,9 @@ export class DashboardComponent implements OnInit {
 	}
 
 	async initDashboard() {
+		await this.getGroups();
 		await Promise.all([this.getOrganisationDetails(), this.fetchDashboardData(), this.getEvents(), this.getApps(), this.getEventDeliveries()]);
+		return;
 	}
 
 	toggleShowDropdown() {}
@@ -124,7 +129,7 @@ export class DashboardComponent implements OnInit {
 		try {
 			const { startDate, endDate } = this.setDateForFilter(this.statsDateRange.value);
 			const dashboardResponse = await this.httpService.request({
-				url: `/dashboard/summary?startDate=${startDate || ''}&endDate=${endDate || ''}&type=${this.dashboardFrequency}`,
+				url: `/dashboard/summary?groupID=${this.activeGroup || ''}&startDate=${startDate || ''}&endDate=${endDate || ''}&type=${this.dashboardFrequency}`,
 				method: 'get'
 			});
 			this.dashboardData = dashboardResponse.data;
@@ -214,7 +219,7 @@ export class DashboardComponent implements OnInit {
 
 		try {
 			const eventsResponse = await this.httpService.request({
-				url: `/events?sort=AESC&page=${this.eventsPage || 1}&perPage=20&startDate=${startDate}&endDate=${endDate}&appId=${this.eventApp}`,
+				url: `/events?groupID=${this.activeGroup || ''}&sort=AESC&page=${this.eventsPage || 1}&perPage=20&startDate=${startDate}&endDate=${endDate}&appId=${this.eventApp}`,
 				method: 'get'
 			});
 			this.detailsItem = eventsResponse.data.content[0];
@@ -237,9 +242,9 @@ export class DashboardComponent implements OnInit {
 	async eventDeliveriesRequest(requestDetails: { eventId?: string; startDate?: string; endDate?: string }): Promise<HTTP_RESPONSE> {
 		try {
 			const eventDeliveriesResponse = await this.httpService.request({
-				url: `/eventdeliveries?eventId=${requestDetails.eventId || ''}&page=${this.eventDeliveriesPage || 1}&startDate=${requestDetails.startDate}&endDate=${requestDetails.endDate}&appId=${
-					this.eventDeliveriesApp
-				}`,
+				url: `/eventdeliveries?groupID=${this.activeGroup || ''}&eventId=${requestDetails.eventId || ''}&page=${this.eventDeliveriesPage || 1}&startDate=${requestDetails.startDate}&endDate=${
+					requestDetails.endDate
+				}&appId=${this.eventDeliveriesApp}`,
 				method: 'get'
 			});
 
@@ -276,10 +281,28 @@ export class DashboardComponent implements OnInit {
 		this.sidebarEventDeliveries = response.data.content;
 	}
 
+	toggleActiveGroup() {
+		Promise.all([this.getOrganisationDetails(), this.fetchDashboardData(), this.getEvents(), this.getApps(), this.getEventDeliveries()]);
+	}
+
+	async getGroups() {
+		try {
+			const groupsResponse = await this.httpService.request({
+				url: `/groups`,
+				method: 'get'
+			});
+
+			this.groups = groupsResponse.data;
+			this.activeGroup = this.groups[0]?.uid ?? null;
+		} catch (error) {
+			return error;
+		}
+	}
+
 	async getApps() {
 		try {
 			const appsResponse = await this.httpService.request({
-				url: `/apps?sort=AESC&page=${this.appsPage || 1}&perPage=10`,
+				url: `/apps?groupID=${this.activeGroup || ''}&sort=AESC&page=${this.appsPage || 1}&perPage=10`,
 				method: 'get'
 			});
 
@@ -298,7 +321,7 @@ export class DashboardComponent implements OnInit {
 	async getDelieveryAttempts(eventDeliveryId: string) {
 		try {
 			const deliveryAttemptsResponse = await this.httpService.request({
-				url: `/eventdeliveries/${eventDeliveryId}/deliveryattempts`,
+				url: `/eventdeliveries/${eventDeliveryId}/deliveryattempts?groupID=${this.activeGroup || ''}`,
 				method: 'get'
 			});
 			this.eventDeliveryAtempt = deliveryAttemptsResponse.data[deliveryAttemptsResponse.data.length - 1];
@@ -338,7 +361,7 @@ export class DashboardComponent implements OnInit {
 		try {
 			await this.httpService.request({
 				method: 'put',
-				url: `/eventdeliveries/${requestDetails.eventDeliveryId}/resend`
+				url: `/eventdeliveries/${requestDetails.eventDeliveryId}/resend?groupID=${this.activeGroup || ''}`
 			});
 
 			this.generalService.showNotification({ message: 'Retry Request Sent' });
