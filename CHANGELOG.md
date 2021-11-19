@@ -1,3 +1,8 @@
+## 0.3.0-alpha
+* [Feature] URL/Events: User can specify events to each endpoint.
+* [Feature] Batch Retries: User can batch retry multiple event deliveries at once.
+* [Feature] Unified auth configuration with minimal rbac.
+
 ## 0.2.0
 * [Feature] Add disable events and send email notifications.
 * [Feature] Re-activate endpoints by re-trying a non-successful event.
