@@ -1207,7 +1207,7 @@ paths:
       summary: Batch Resend app events
       tags:
       - EventDelivery
-  /eventdeliveries/forceresend:
+  /eventdeliveries/forceretry:
     post:
       consumes:
       - application/json

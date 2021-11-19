@@ -276,7 +276,7 @@ func (a *applicationHandler) BatchResendEventDelivery(w http.ResponseWriter, r *
 // @Success 200 {object} serverResponse{data=Stub}
 // @Failure 400,401,500 {object} serverResponse{data=Stub}
 // @Security ApiKeyAuth
-// @Router /eventdeliveries/forceresend [post]
+// @Router /eventdeliveries/forceretry [post]
 func (a *applicationHandler) ForceRetryEventDeliveries(w http.ResponseWriter, r *http.Request) {
 	eventDeliveryIDs := models.IDs{}
 

@@ -1300,7 +1300,7 @@ paths:
       summary: Batch Resend app events
       tags:
       - EventDelivery
-  /eventdeliveries/forceresend:
+  /eventdeliveries/forceretry:
     post:
       description: This endpoint force resends multiple app events
       requestBody:
