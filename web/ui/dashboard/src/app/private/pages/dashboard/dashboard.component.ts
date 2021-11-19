@@ -128,7 +128,6 @@ export class DashboardComponent implements OnInit {
 
 	getFiltersFromURL() {
 		const filters = this.route.snapshot.queryParams;
-		console.log('🚀 ~ file: dashboard.component.ts ~ line 131 ~ DashboardComponent ~ getFiltersFromURL ~ filters', filters);
 		if (Object.keys(filters).length == 0) return;
 
 		// for dashboard filters
@@ -137,12 +136,17 @@ export class DashboardComponent implements OnInit {
 
 		// for events filters
 		this.eventsFilterDateRange.patchValue({ startDate: filters.eventsStartDate ? new Date(filters.eventsStartDate) : '', endDate: filters.eventsEndDate ? new Date(filters.eventsEndDate) : '' });
-		console.log('🚀 ~ file: dashboard.component.ts ~ line 140 ~ DashboardComponent ~ getFiltersFromURL ~ this.eventsFilterDateRange', this.eventsFilterDateRange.value);
 		this.eventApp = filters.eventsApp ?? '';
 
-		// for events filters
-		this.eventsFilterDateRange.patchValue({ startDate: filters.eventDelsStartDate ? new Date(filters.eventDelsStartDate) : '', endDate: filters.eventDelsEndDate ? new Date(filters.eventDelsEndDate) : '' });
+		// for event deliveries filters
+		this.eventDeliveriesFilterDateRange.patchValue({
+			startDate: filters.eventDelsStartDate ? new Date(filters.eventDelsStartDate) : '',
+			endDate: filters.eventDelsEndDate ? new Date(filters.eventDelsEndDate) : ''
+		});
 		this.eventDeliveriesApp = filters.eventDelsApp ?? '';
+
+		// for group filter
+		// this.activeGroup = filters.group ?? '';
 	}
 
 	async fetchDashboardData() {
@@ -260,7 +264,7 @@ export class DashboardComponent implements OnInit {
 		}
 	}
 
-	addFilterToURL(requestDetails: { section: 'events' | 'eventDels' | 'dashboard' }) {
+	addFilterToURL(requestDetails: { section: 'events' | 'eventDels' | 'dashboard' | 'group' }) {
 		const currentURLfilters = this.route.snapshot.queryParams;
 		const queryParams: any = {};
 
@@ -269,9 +273,6 @@ export class DashboardComponent implements OnInit {
 			if (startDate) queryParams.eventsStartDate = startDate;
 			if (endDate) queryParams.eventsEndDate = endDate;
 			if (this.eventApp) queryParams.eventsApp = this.eventApp;
-
-			this.router.navigate([], { queryParams: Object.assign({}, currentURLfilters, queryParams) });
-			return;
 		}
 
 		if (requestDetails.section === 'eventDels') {
@@ -279,9 +280,6 @@ export class DashboardComponent implements OnInit {
 			if (startDate) queryParams.eventDelsStartDate = startDate;
 			if (endDate) queryParams.eventDelsEndDate = endDate;
 			if (this.eventDeliveriesApp) queryParams.eventDelsApp = this.eventDeliveriesApp;
-
-			this.router.navigate([], { queryParams: Object.assign({}, currentURLfilters, queryParams) });
-			return;
 		}
 
 		if (requestDetails.section === 'dashboard') {
@@ -289,10 +287,13 @@ export class DashboardComponent implements OnInit {
 			if (startDate) queryParams.dashboardStartDate = startDate;
 			if (endDate) queryParams.dashboardEndDate = endDate;
 			if (this.dashboardFrequency) queryParams.dashboardFrequency = this.dashboardFrequency;
-
-			this.router.navigate([], { queryParams: Object.assign({}, currentURLfilters, queryParams) });
-			return;
 		}
+
+		if (requestDetails.section === 'group') {
+			queryParams.group = this.activeGroup;
+		}
+
+		this.router.navigate([], { queryParams: Object.assign({}, currentURLfilters, queryParams) });
 	}
 
 	async eventDeliveriesRequest(requestDetails: { eventId?: string; startDate?: string; endDate?: string }): Promise<HTTP_RESPONSE> {
@@ -340,6 +341,7 @@ export class DashboardComponent implements OnInit {
 	}
 
 	toggleActiveGroup() {
+		this.addFilterToURL({ section: 'group' });
 		Promise.all([this.getOrganisationDetails(), this.fetchDashboardData(), this.getEvents(), this.getApps(), this.getEventDeliveries()]);
 	}
 
@@ -351,7 +353,7 @@ export class DashboardComponent implements OnInit {
 			});
 
 			this.groups = groupsResponse.data;
-			this.activeGroup = this.groups[0]?.uid ?? null;
+			if (!this.activeGroup) this.activeGroup = this.groups[0]?.uid ?? null;
 		} catch (error) {
 			return error;
 		}
