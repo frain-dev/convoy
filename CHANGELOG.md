@@ -1,7 +1,8 @@
 ## 0.3.0-alpha
 * [Feature] URL/Events: User can specify events to each endpoint.
 * [Feature] Batch Retries: User can batch retry multiple event deliveries at once.
-* [Feature] Unified auth configuration with minimal rbac.
+* [Feature] Unified auth configuration for both UI and API.
+* [Feature] Added minimal rbac for super user, admin and ui admin.
 
 ## 0.2.0
 * [Feature] Add disable events and send email notifications.
