@@ -268,7 +268,7 @@ func (a *applicationHandler) BatchResendEventDelivery(w http.ResponseWriter, r *
 }
 
 // ForceResendEventDeliveries
-// @Summary Batch Resend app events
+// @Summary Force Resend app events
 // @Description This endpoint force resends multiple app events
 // @Tags EventDelivery
 // @Accept json

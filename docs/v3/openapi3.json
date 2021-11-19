@@ -2186,7 +2186,7 @@
 						"ApiKeyAuth": []
 					}
 				],
-				"summary": "Batch Resend app events",
+				"summary": "Force Resend app events",
 				"tags": [
 					"EventDelivery"
 				]

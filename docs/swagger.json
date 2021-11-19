@@ -1433,7 +1433,7 @@
                 "tags": [
                     "EventDelivery"
                 ],
-                "summary": "Batch Resend app events",
+                "summary": "Force Resend app events",
                 "parameters": [
                     {
                         "description": "event delivery ids",

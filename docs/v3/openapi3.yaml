@@ -1371,7 +1371,7 @@ paths:
           description: Internal Server Error
       security:
       - ApiKeyAuth: []
-      summary: Batch Resend app events
+      summary: Force Resend app events
       tags:
       - EventDelivery
   /events:
