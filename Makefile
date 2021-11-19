@@ -3,3 +3,6 @@
 init-hooks:
 	git config core.hooksPath .githooks
 	chmod +x .githooks/*
+
+mockgen:
+	go generate ./...
