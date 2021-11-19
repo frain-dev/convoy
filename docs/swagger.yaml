@@ -1,5 +1,33 @@
 basePath: /api/v1
 definitions:
+  config.GroupConfig:
+    properties:
+      disableEndpoint:
+        type: boolean
+      signature:
+        $ref: '#/definitions/config.SignatureConfiguration'
+      strategy:
+        $ref: '#/definitions/config.StrategyConfiguration'
+    type: object
+  config.SignatureConfiguration:
+    properties:
+      hash:
+        type: string
+      header:
+        type: string
+    type: object
+  config.StrategyConfiguration:
+    properties:
+      default:
+        properties:
+          intervalSeconds:
+            type: integer
+          retryLimit:
+            type: integer
+        type: object
+      type:
+        type: string
+    type: object
   convoy.AppMetadata:
     properties:
       group_id:
@@ -169,6 +197,8 @@ definitions:
     type: object
   convoy.Group:
     properties:
+      config:
+        $ref: '#/definitions/config.GroupConfig'
       created_at:
         type: string
       deleted_at:
@@ -246,6 +276,8 @@ definitions:
     type: object
   models.Group:
     properties:
+      config:
+        $ref: '#/definitions/config.GroupConfig'
       logo_url:
         type: string
       name:
@@ -1115,6 +1147,69 @@ paths:
       security:
       - ApiKeyAuth: []
       summary: Resend an app event
+      tags:
+      - EventDelivery
+  /eventdeliveries/batchresend:
+    post:
+      consumes:
+      - application/json
+      description: This endpoint resends multiple app events
+      parameters:
+      - description: event delivery ids
+        in: body
+        name: ids
+        required: true
+        schema:
+          allOf:
+          - $ref: '#/definitions/server.Stub'
+          - properties:
+              ids:
+                items:
+                  type: string
+                type: array
+            type: object
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/server.serverResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/server.Stub'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            allOf:
+            - $ref: '#/definitions/server.serverResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/server.Stub'
+              type: object
+        "401":
+          description: Unauthorized
+          schema:
+            allOf:
+            - $ref: '#/definitions/server.serverResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/server.Stub'
+              type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            allOf:
+            - $ref: '#/definitions/server.serverResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/server.Stub'
+              type: object
+      security:
+      - ApiKeyAuth: []
+      summary: Batch Resend app events
       tags:
       - EventDelivery
   /events:

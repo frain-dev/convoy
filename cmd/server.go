@@ -4,13 +4,14 @@ import (
 	"errors"
 	"time"
 
-	"github.com/frain-dev/convoy"
+	"github.com/frain-dev/convoy/auth/realm_chain"
+	"github.com/frain-dev/convoy/worker/task"
+
 	"github.com/frain-dev/convoy/config"
 	convoyQueue "github.com/frain-dev/convoy/queue/redis"
 	"github.com/frain-dev/convoy/server"
 	"github.com/frain-dev/convoy/util"
 	"github.com/frain-dev/convoy/worker"
-	convoyTask "github.com/frain-dev/convoy/worker/task"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 )
@@ -30,9 +31,14 @@ func addServerCommand(a *app) *cobra.Command {
 				return err
 			}
 
-			if util.IsStringEmpty(string(cfg.Signature.Header)) {
-				cfg.Signature.Header = config.DefaultSignatureHeader
+			if util.IsStringEmpty(string(cfg.GroupConfig.Signature.Header)) {
+				cfg.GroupConfig.Signature.Header = config.DefaultSignatureHeader
 				log.Warnf("signature header is blank. setting default %s", config.DefaultSignatureHeader)
+			}
+
+			err = realm_chain.Init(&cfg.Auth)
+			if err != nil {
+				log.WithError(err).Fatal("failed to initialize realm chain")
 			}
 
 			if cfg.Server.HTTP.Port <= 0 {
@@ -40,6 +46,13 @@ func addServerCommand(a *app) *cobra.Command {
 			}
 
 			srv := server.New(cfg, a.eventRepo, a.eventDeliveryRepo, a.applicationRepo, a.groupRepo, a.eventQueue)
+
+			// register tasks.
+			handler := task.ProcessEventDelivery(a.applicationRepo, a.eventDeliveryRepo, a.groupRepo)
+			if err := task.CreateTasks(a.groupRepo, handler); err != nil {
+				log.WithError(err).Error("failed to register tasks")
+				return err
+			}
 
 			// register workers.
 			if queue, ok := a.eventQueue.(*convoyQueue.RedisQueue); ok {
@@ -49,10 +62,6 @@ func addServerCommand(a *app) *cobra.Command {
 			if queue, ok := a.deadLetterQueue.(*convoyQueue.RedisQueue); ok {
 				worker.NewCleaner(queue).Start()
 			}
-
-			// register tasks.
-			convoyTask.CreateTask(convoy.EventProcessor, cfg, convoyTask.ProcessEventDelivery(a.applicationRepo, a.eventDeliveryRepo, a.groupRepo))
-			convoyTask.CreateTask(convoy.DeadLetterProcessor, cfg, convoyTask.ProcessDeadLetters)
 
 			log.Infof("Started convoy server in %s", time.Since(start))
 

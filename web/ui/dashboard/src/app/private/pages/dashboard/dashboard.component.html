@@ -26,25 +26,36 @@
 	</header>
 
 	<div class="dashboard--page">
-		<div class="filter" [ngClass]="{ 'show-calendar': showFilterCalendar }">
-			<div>Filter by:</div>
-			<button class="filter--button" (click)="statsPicker.open()">
-				<img src="/assets/img/calendar-icon.svg" alt="calender icon" />
-				<mat-date-range-input [formGroup]="statsDateRange" [rangePicker]="statsPicker">
-					<input matStartDate formControlName="startDate" placeholder="Start date" />
-					<input matEndDate formControlName="endDate" placeholder="End date" (dateChange)="fetchDashboardData()" />
-				</mat-date-range-input>
-				<mat-date-range-picker #statsPicker [disabled]="false"></mat-date-range-picker>
-				<img src="/assets/img/angle-arrow-down.svg" alt="arrow down icon" />
-			</button>
+		<div class="dashboard--page--head">
+			<div class="filter" [ngClass]="{ 'show-calendar': showFilterCalendar }">
+				<div>Filter by:</div>
+				<button class="filter--button" (click)="statsPicker.open()">
+					<img src="/assets/img/calendar-icon.svg" alt="calender icon" />
+					<mat-date-range-input [formGroup]="statsDateRange" [rangePicker]="statsPicker">
+						<input matStartDate formControlName="startDate" placeholder="Start date" />
+						<input matEndDate formControlName="endDate" placeholder="End date" (dateChange)="fetchDashboardData()" />
+					</mat-date-range-input>
+					<mat-date-range-picker #statsPicker [disabled]="false"></mat-date-range-picker>
+					<img src="/assets/img/angle-arrow-down.svg" alt="arrow down icon" />
+				</button>
 
-			<div class="select">
-				<select value="daily" [(ngModel)]="dashboardFrequency" (change)="fetchDashboardData()">
-					<option value="daily">Daily</option>
-					<option value="weekly">Weekly</option>
-					<option value="monthly">Monthly</option>
-					<option value="yearly">Yearly</option>
-				</select>
+				<div class="select">
+					<select value="daily" [(ngModel)]="dashboardFrequency" (change)="fetchDashboardData()">
+						<option value="daily">Daily</option>
+						<option value="weekly">Weekly</option>
+						<option value="monthly">Monthly</option>
+						<option value="yearly">Yearly</option>
+					</select>
+				</div>
+			</div>
+
+			<div class="filter" [ngClass]="{ 'show-calendar': showFilterCalendar }">
+				<div>Active Group:</div>
+				<div class="select">
+					<select [value]="activeGroup" [(ngModel)]="activeGroup" (change)="toggleActiveGroup()">
+						<option [value]="group.uid" *ngFor="let group of groups">{{ group.name }}</option>
+					</select>
+				</div>
 			</div>
 		</div>
 

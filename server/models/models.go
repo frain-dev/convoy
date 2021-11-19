@@ -2,11 +2,14 @@ package models
 
 import (
 	"encoding/json"
+
+	"github.com/frain-dev/convoy/config"
 )
 
 type Group struct {
 	Name    string `json:"name" bson:"name"`
 	LogoURL string `json:"logo_url" bson:"logo_url"`
+	Config  config.GroupConfig
 }
 
 type Application struct {
@@ -21,6 +24,10 @@ type Event struct {
 	// Data is an arbitrary JSON value that gets sent as the body of the
 	// webhook to the endpoints
 	Data json.RawMessage `json:"data" bson:"data"`
+}
+
+type IDs struct {
+	IDs []string `json:"ids"`
 }
 
 type DeliveryAttempt struct {

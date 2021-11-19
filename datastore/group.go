@@ -6,7 +6,6 @@ import (
 	"time"
 
 	"github.com/frain-dev/convoy"
-	"github.com/frain-dev/convoy/util"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
@@ -30,15 +29,16 @@ func NewGroupRepo(client *mongo.Database) convoy.GroupRepository {
 func (db *groupRepo) LoadGroups(ctx context.Context, f *convoy.GroupFilter) ([]*convoy.Group, error) {
 	groups := make([]*convoy.Group, 0)
 
-	query := make(bson.D, 0)
-	var opts *options.FindOptions = nil
-
-	if !util.IsStringEmpty(f.Name) {
-		query = append(query, bson.E{Key: "org_name", Value: f.Name})
-		opts = &options.FindOptions{Collation: &options.Collation{Locale: "en", Strength: 2}}
+	opts := &options.FindOptions{Collation: &options.Collation{Locale: "en", Strength: 2}}
+	filter := bson.M{
+		"document_status": bson.M{"$ne": convoy.DeletedDocumentStatus},
 	}
 
-	cur, err := db.inner.Find(ctx, query, opts)
+	if len(f.Names) > 0 {
+		filter["name"] = bson.M{"$in": f.Names}
+	}
+
+	cur, err := db.inner.Find(ctx, filter, opts)
 	if err != nil {
 		return groups, err
 	}
@@ -78,9 +78,10 @@ func (db *groupRepo) UpdateGroup(ctx context.Context, o *convoy.Group) error {
 	filter := bson.D{primitive.E{Key: "uid", Value: o.UID}}
 
 	update := bson.D{primitive.E{Key: "$set", Value: bson.D{
-		primitive.E{Key: "org_name", Value: o.Name},
+		primitive.E{Key: "name", Value: o.Name},
 		primitive.E{Key: "logo_url", Value: o.LogoURL},
 		primitive.E{Key: "updated_at", Value: o.UpdatedAt},
+		primitive.E{Key: "config", Value: o.Config},
 	}}}
 
 	_, err := db.inner.UpdateOne(ctx, filter, update)

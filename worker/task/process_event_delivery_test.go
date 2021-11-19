@@ -4,6 +4,8 @@ import (
 	"testing"
 	"time"
 
+	"github.com/frain-dev/convoy/auth/realm_chain"
+
 	"github.com/frain-dev/convoy"
 	"github.com/frain-dev/convoy/config"
 	"github.com/frain-dev/convoy/mocks"
@@ -93,6 +95,29 @@ func TestProcessEventDelivery(t *testing.T) {
 						Status: convoy.ScheduledEventStatus,
 					}, nil).Times(1)
 
+				o.EXPECT().
+					FetchGroupByID(gomock.Any(), gomock.Any()).
+					Return(&convoy.Group{
+						LogoURL: "",
+						Config: &config.GroupConfig{
+							Signature: config.SignatureConfiguration{
+								Header: config.SignatureHeaderProvider("X-Convoy-Signature"),
+								Hash:   "SHA256",
+							},
+							Strategy: config.StrategyConfiguration{
+								Type: config.StrategyProvider("default"),
+								Default: struct {
+									IntervalSeconds uint64 `json:"intervalSeconds"`
+									RetryLimit      uint64 `json:"retryLimit"`
+								}{
+									IntervalSeconds: 60,
+									RetryLimit:      1,
+								},
+							},
+							DisableEndpoint: true,
+						},
+					}, nil).Times(1)
+
 				m.EXPECT().
 					UpdateStatusOfEventDelivery(gomock.Any(), gomock.Any(), gomock.Any()).
 					Return(nil).Times(1)
@@ -144,6 +169,29 @@ func TestProcessEventDelivery(t *testing.T) {
 							UID:       "1234567890",
 						},
 						Status: convoy.ScheduledEventStatus,
+					}, nil).Times(1)
+
+				o.EXPECT().
+					FetchGroupByID(gomock.Any(), gomock.Any()).
+					Return(&convoy.Group{
+						LogoURL: "",
+						Config: &config.GroupConfig{
+							Signature: config.SignatureConfiguration{
+								Header: config.SignatureHeaderProvider("X-Convoy-Signature"),
+								Hash:   "SHA256",
+							},
+							Strategy: config.StrategyConfiguration{
+								Type: config.StrategyProvider("default"),
+								Default: struct {
+									IntervalSeconds uint64 `json:"intervalSeconds"`
+									RetryLimit      uint64 `json:"retryLimit"`
+								}{
+									IntervalSeconds: 60,
+									RetryLimit:      1,
+								},
+							},
+							DisableEndpoint: false,
+						},
 					}, nil).Times(1)
 
 				m.EXPECT().
@@ -215,6 +263,23 @@ func TestProcessEventDelivery(t *testing.T) {
 					FetchGroupByID(gomock.Any(), gomock.Any()).
 					Return(&convoy.Group{
 						LogoURL: "",
+						Config: &config.GroupConfig{
+							Signature: config.SignatureConfiguration{
+								Header: config.SignatureHeaderProvider("X-Convoy-Signature"),
+								Hash:   "SHA256",
+							},
+							Strategy: config.StrategyConfiguration{
+								Type: config.StrategyProvider("default"),
+								Default: struct {
+									IntervalSeconds uint64 `json:"intervalSeconds"`
+									RetryLimit      uint64 `json:"retryLimit"`
+								}{
+									IntervalSeconds: 60,
+									RetryLimit:      1,
+								},
+							},
+							DisableEndpoint: true,
+						},
 					}, nil).Times(1)
 
 				a.EXPECT().
@@ -262,6 +327,29 @@ func TestProcessEventDelivery(t *testing.T) {
 							UID:       "1234567890",
 						},
 						Status: convoy.ScheduledEventStatus,
+					}, nil).Times(1)
+
+				o.EXPECT().
+					FetchGroupByID(gomock.Any(), gomock.Any()).
+					Return(&convoy.Group{
+						LogoURL: "",
+						Config: &config.GroupConfig{
+							Signature: config.SignatureConfiguration{
+								Header: config.SignatureHeaderProvider("X-Convoy-Signature"),
+								Hash:   "SHA256",
+							},
+							Strategy: config.StrategyConfiguration{
+								Type: config.StrategyProvider("default"),
+								Default: struct {
+									IntervalSeconds uint64 `json:"intervalSeconds"`
+									RetryLimit      uint64 `json:"retryLimit"`
+								}{
+									IntervalSeconds: 60,
+									RetryLimit:      1,
+								},
+							},
+							DisableEndpoint: false,
+						},
 					}, nil).Times(1)
 
 				m.EXPECT().
@@ -335,6 +423,23 @@ func TestProcessEventDelivery(t *testing.T) {
 					FetchGroupByID(gomock.Any(), gomock.Any()).
 					Return(&convoy.Group{
 						LogoURL: "",
+						Config: &config.GroupConfig{
+							Signature: config.SignatureConfiguration{
+								Header: config.SignatureHeaderProvider("X-Convoy-Signature"),
+								Hash:   "SHA256",
+							},
+							Strategy: config.StrategyConfiguration{
+								Type: config.StrategyProvider("default"),
+								Default: struct {
+									IntervalSeconds uint64 `json:"intervalSeconds"`
+									RetryLimit      uint64 `json:"retryLimit"`
+								}{
+									IntervalSeconds: 60,
+									RetryLimit:      1,
+								},
+							},
+							DisableEndpoint: true,
+						},
 					}, nil).Times(1)
 
 				a.EXPECT().
@@ -381,6 +486,29 @@ func TestProcessEventDelivery(t *testing.T) {
 							Sent:      false,
 							TargetURL: "https://google.com",
 							UID:       "1234567890",
+						},
+					}, nil).Times(1)
+
+				o.EXPECT().
+					FetchGroupByID(gomock.Any(), gomock.Any()).
+					Return(&convoy.Group{
+						LogoURL: "",
+						Config: &config.GroupConfig{
+							Signature: config.SignatureConfiguration{
+								Header: config.SignatureHeaderProvider("X-Convoy-Signature"),
+								Hash:   "SHA256",
+							},
+							Strategy: config.StrategyConfiguration{
+								Type: config.StrategyProvider("default"),
+								Default: struct {
+									IntervalSeconds uint64 `json:"intervalSeconds"`
+									RetryLimit      uint64 `json:"retryLimit"`
+								}{
+									IntervalSeconds: 60,
+									RetryLimit:      1,
+								},
+							},
+							DisableEndpoint: false,
 						},
 					}, nil).Times(1)
 
@@ -455,6 +583,23 @@ func TestProcessEventDelivery(t *testing.T) {
 					FetchGroupByID(gomock.Any(), gomock.Any()).
 					Return(&convoy.Group{
 						LogoURL: "",
+						Config: &config.GroupConfig{
+							Signature: config.SignatureConfiguration{
+								Header: config.SignatureHeaderProvider("X-Convoy-Signature"),
+								Hash:   "SHA256",
+							},
+							Strategy: config.StrategyConfiguration{
+								Type: config.StrategyProvider("default"),
+								Default: struct {
+									IntervalSeconds uint64 `json:"intervalSeconds"`
+									RetryLimit      uint64 `json:"retryLimit"`
+								}{
+									IntervalSeconds: 60,
+									RetryLimit:      1,
+								},
+							},
+							DisableEndpoint: true,
+						},
 					}, nil).Times(1)
 
 				a.EXPECT().
@@ -480,7 +625,6 @@ func TestProcessEventDelivery(t *testing.T) {
 
 	for _, tc := range tt {
 		t.Run(tc.name, func(t *testing.T) {
-
 			ctrl := gomock.NewController(t)
 			defer ctrl.Finish()
 
@@ -490,7 +634,17 @@ func TestProcessEventDelivery(t *testing.T) {
 
 			err := config.LoadConfig(tc.cfgPath)
 			if err != nil {
-				t.Error("Failed to load config file")
+				t.Errorf("Failed to load config file: %v", err)
+			}
+
+			cfg, err := config.Get()
+			if err != nil {
+				t.Errorf("failed to get config: %v", err)
+			}
+
+			err = realm_chain.Init(&cfg.Auth)
+			if err != nil {
+				t.Errorf("failed to initialize realm chain : %v", err)
 			}
 
 			if tc.nFn != nil {

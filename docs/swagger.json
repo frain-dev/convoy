@@ -1296,6 +1296,126 @@
                 }
             }
         },
+        "/eventdeliveries/batchresend": {
+            "post": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "This endpoint resends multiple app events",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "EventDelivery"
+                ],
+                "summary": "Batch Resend app events",
+                "parameters": [
+                    {
+                        "description": "event delivery ids",
+                        "name": "ids",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/server.Stub"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "ids": {
+                                            "type": "array",
+                                            "items": {
+                                                "type": "string"
+                                            }
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/server.serverResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/server.Stub"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/server.serverResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/server.Stub"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/server.serverResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/server.Stub"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/server.serverResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/server.Stub"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    }
+                }
+            }
+        },
         "/eventdeliveries/{eventDeliveryID}": {
             "get": {
                 "security": [
@@ -2581,6 +2701,50 @@
         }
     },
     "definitions": {
+        "config.GroupConfig": {
+            "type": "object",
+            "properties": {
+                "disableEndpoint": {
+                    "type": "boolean"
+                },
+                "signature": {
+                    "$ref": "#/definitions/config.SignatureConfiguration"
+                },
+                "strategy": {
+                    "$ref": "#/definitions/config.StrategyConfiguration"
+                }
+            }
+        },
+        "config.SignatureConfiguration": {
+            "type": "object",
+            "properties": {
+                "hash": {
+                    "type": "string"
+                },
+                "header": {
+                    "type": "string"
+                }
+            }
+        },
+        "config.StrategyConfiguration": {
+            "type": "object",
+            "properties": {
+                "default": {
+                    "type": "object",
+                    "properties": {
+                        "intervalSeconds": {
+                            "type": "integer"
+                        },
+                        "retryLimit": {
+                            "type": "integer"
+                        }
+                    }
+                },
+                "type": {
+                    "type": "string"
+                }
+            }
+        },
         "convoy.AppMetadata": {
             "type": "object",
             "properties": {
@@ -2828,6 +2992,9 @@
         "convoy.Group": {
             "type": "object",
             "properties": {
+                "config": {
+                    "$ref": "#/definitions/config.GroupConfig"
+                },
                 "created_at": {
                     "type": "string"
                 },
@@ -2935,6 +3102,9 @@
         "models.Group": {
             "type": "object",
             "properties": {
+                "config": {
+                    "$ref": "#/definitions/config.GroupConfig"
+                },
                 "logo_url": {
                     "type": "string"
                 },

@@ -3,81 +3,14 @@ package server
 import (
 	"net/http"
 	"net/http/httptest"
-	"strings"
 	"testing"
 
+	"github.com/frain-dev/convoy"
 	"github.com/frain-dev/convoy/config"
 	"github.com/frain-dev/convoy/mocks"
 	"github.com/golang/mock/gomock"
-	"github.com/sirupsen/logrus"
+	log "github.com/sirupsen/logrus"
 )
-
-func Test_login(t *testing.T) {
-	var app *applicationHandler
-
-	ctrl := gomock.NewController(t)
-	defer ctrl.Finish()
-
-	groupRepo := mocks.NewMockGroupRepository(ctrl)
-	appRepo := mocks.NewMockApplicationRepository(ctrl)
-	eventRepo := mocks.NewMockEventRepository(ctrl)
-	eventDeliveryRepo := mocks.NewMockEventDeliveryRepository(ctrl)
-	eventQueue := mocks.NewMockQueuer(ctrl)
-
-	app = newApplicationHandler(eventRepo, eventDeliveryRepo, appRepo, groupRepo, eventQueue)
-
-	tests := []struct {
-		name       string
-		method     string
-		body       *strings.Reader
-		statusCode int
-	}{
-		{
-			name:       "bad login - no request body",
-			method:     http.MethodPost,
-			body:       strings.NewReader(``),
-			statusCode: http.StatusBadRequest,
-		},
-		{
-			name:       "bad login - unauthorized user password",
-			method:     http.MethodPost,
-			body:       strings.NewReader(`{"username": "user1","password": "wrong password"}`),
-			statusCode: http.StatusUnauthorized,
-		},
-		{
-			name:       "bad login - unauthorized user name",
-			method:     http.MethodPost,
-			body:       strings.NewReader(`{"username": "user1000000","password": "password1"}`),
-			statusCode: http.StatusUnauthorized,
-		},
-		{
-			name:       "successful login",
-			method:     http.MethodPost,
-			body:       strings.NewReader(`{"username": "user1","password": "password1"}`),
-			statusCode: http.StatusOK,
-		},
-	}
-	for _, tc := range tests {
-		t.Run(tc.name, func(t *testing.T) {
-
-			err := config.LoadConfig("./testdata/Auth_Config/none-convoy.json")
-			if err != nil {
-				t.Error("Failed to load config file")
-			}
-
-			request := httptest.NewRequest(tc.method, "/v1/auth/login", tc.body)
-			responseRecorder := httptest.NewRecorder()
-
-			login()(http.HandlerFunc(app.GetAuthLogin)).
-				ServeHTTP(responseRecorder, request)
-
-			if responseRecorder.Code != tc.statusCode {
-				logrus.Error(tc.name, responseRecorder.Body)
-				t.Errorf("Want status '%d', got '%d'", tc.statusCode, responseRecorder.Code)
-			}
-		})
-	}
-}
 
 func Test_fetchAllConfigDetails(t *testing.T) {
 	var app *applicationHandler
@@ -97,29 +30,43 @@ func Test_fetchAllConfigDetails(t *testing.T) {
 		name       string
 		method     string
 		statusCode int
+		dbFn       func(app *applicationHandler)
 	}{
 		{
 			name:       "successful config fetch",
 			method:     http.MethodGet,
 			statusCode: http.StatusOK,
+			dbFn: func(app *applicationHandler) {
+				g, _ := app.groupRepo.(*mocks.MockGroupRepository)
+
+				g.EXPECT().
+					FetchGroupByID(gomock.Any(), gomock.Any()).Times(1).
+					Return(&convoy.Group{
+						Config: &config.GroupConfig{},
+					}, nil)
+			},
 		},
 	}
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-
 			err := config.LoadConfig("./testdata/Auth_Config/none-convoy.json")
 			if err != nil {
-				t.Error("Failed to load config file")
+				t.Errorf("Failed to load config file: %v", err)
+			}
+			initRealmChain(t)
+
+			if tc.dbFn != nil {
+				tc.dbFn(app)
 			}
 
-			request := httptest.NewRequest(tc.method, "/ui/dashboard/1/config", nil)
+			req := httptest.NewRequest(tc.method, "/ui/dashboard/config?groupID=12345", nil)
 			responseRecorder := httptest.NewRecorder()
 
-			fetchAllConfigDetails()(http.HandlerFunc(app.GetAllConfigDetails)).
-				ServeHTTP(responseRecorder, request)
+			requireGroup(app.groupRepo)(http.HandlerFunc(app.GetAllConfigDetails)).
+				ServeHTTP(responseRecorder, req)
 
 			if responseRecorder.Code != tc.statusCode {
-				logrus.Error(tc.name, responseRecorder.Body)
+				log.Error(tc.name, responseRecorder.Body)
 				t.Errorf("Want status '%d', got '%d'", tc.statusCode, responseRecorder.Code)
 			}
 

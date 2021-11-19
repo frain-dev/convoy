@@ -1,31 +1,18 @@
 {
 	"auth": {
-		"type": "none"
+		"require_auth": false
 	},
-	"strategy": {
-		"type": "default",
-		"default": {
-			"intervalSeconds": 125,
-			"retryLimit": 15
-		}
-	},
-	"signature": {
-		"header": "X-Company-Event-WebHook-Signature",
-		"hash": "SHA256"
-	},
-	"ui": {
-		"type": "basic",
-		"basic": [
-			{
-				"username": "user1",
-				"password": "password1"
-			},
-			{
-				"username": "user2",
-				"password": "password2"
+	"group": {
+		"strategy": {
+			"type": "default",
+			"default": {
+				"intervalSeconds": 125,
+				"retryLimit": 15
 			}
-		],
-		"jwtKey": "eyJhbGciOiJIUzI1NiJ9.eyJSb2xlIjoiQWRtaW4iLCJJc3N1ZXIiOiJDb252b3kgVGVzdCIsIlVzZXJuYW1lIjoiU21hcnQiLCJleHAiOjE2MzE2MjMzOTAsImlhdCI6MTYzMTYyMzM5MH0.u4kHClCgj9KjdyHfebQn8_AnU0DlXeJX8zvJvpMLCkQ",
-		"jwtTokenExpirySeconds": 3600
+		},
+		"signature": {
+			"header": "X-Company-Event-WebHook-Signature",
+			"hash": "SHA256"
+		}
 	}
 }
