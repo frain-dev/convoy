@@ -72,13 +72,14 @@ export class DashboardComponent implements OnInit {
 		startDate: [{ value: '', disabled: true }],
 		endDate: [{ value: '', disabled: true }]
 	});
-	selectedEventsFromEventsTable: string[] = [];
+	selectedEventsFromEventDeliveriesTable: string[] = [];
 	displayedEventDeliveries: { date: string; events: EVENT_DELIVERY[] }[] = [];
 	eventDeliveries!: { pagination: PAGINATION; content: EVENT_DELIVERY[] };
 	sidebarEventDeliveries: EVENT_DELIVERY[] = [];
 	eventDeliveryFilteredByEventId = '';
 	groups: GROUP[] = [];
 	activeGroup!: string;
+	allEventdeliveriesChecked = false;
 
 	constructor(private httpService: HttpService, private generalService: GeneralService, private router: Router, private formBuilder: FormBuilder, private route: ActivatedRoute) {}
 
@@ -436,6 +437,22 @@ export class DashboardComponent implements OnInit {
 		}
 	}
 
+	async batchRetryEvent() {
+		try {
+			await this.httpService.request({
+				method: 'post',
+				url: `/eventdeliveries/batchretry`,
+				body: { ids: this.selectedEventsFromEventDeliveriesTable }
+			});
+
+			this.generalService.showNotification({ message: 'Batch Retry Request Sent' });
+			this.getEventDeliveries();
+		} catch (error: any) {
+			this.generalService.showNotification({ message: error.error.message });
+			return error;
+		}
+	}
+
 	authDetails() {
 		const authDetails = localStorage.getItem('CONVOY_AUTH');
 		return authDetails ? JSON.parse(authDetails) : false;
@@ -462,11 +479,37 @@ export class DashboardComponent implements OnInit {
 	}
 
 	checkAllCheckboxes(event: any) {
-		const checkboxes = document.querySelectorAll('#events-table tbody input[type="checkbox"]');
+		const checkboxes = document.querySelectorAll('#event-deliveries-table tbody input[type="checkbox"]');
+
 		checkboxes.forEach((checkbox: any) => {
-			this.selectedEventsFromEventsTable.push(checkbox.value);
+			this.selectedEventsFromEventDeliveriesTable.push(checkbox.value);
 			checkbox.checked = event.target.checked;
 		});
+
+		if (!event.target.checked) this.selectedEventsFromEventDeliveriesTable = [];
+		this.allEventdeliveriesChecked = event.target.checked;
+	}
+
+	checkEventDeliveryBox(event: any) {
+		const checkbox = event.target;
+		if (checkbox.checked) {
+			this.selectedEventsFromEventDeliveriesTable.push(checkbox.value);
+		} else {
+			this.selectedEventsFromEventDeliveriesTable = this.selectedEventsFromEventDeliveriesTable.filter(eventId => eventId !== checkbox.value);
+		}
+		this.allEventdeliveriesChecked = false;
+		const parentCheckbox: any = document.querySelector('#eventDeliveryTable');
+		parentCheckbox.checked = false;
+	}
+
+	async loadMoreEventDeliveries() {
+		this.eventDeliveriesPage = this.eventDeliveriesPage + 1;
+		await this.getEventDeliveries();
+		setTimeout(() => {
+			if (this.allEventdeliveriesChecked) {
+				this.checkAllCheckboxes({ target: { checked: true } });
+			}
+		}, 200);
 	}
 
 	async openDeliveriesTab() {
