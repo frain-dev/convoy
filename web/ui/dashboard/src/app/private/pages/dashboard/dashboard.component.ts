@@ -380,8 +380,8 @@ export class DashboardComponent implements OnInit {
 	async batchRetryEvent() {
 		try {
 			await this.httpService.request({
-				method: 'put',
-				url: `/eventdeliveries/batchresend`,
+				method: 'post',
+				url: `/eventdeliveries/batchretry`,
 				body: { ids: this.selectedEventsFromEventDeliveriesTable }
 			});
 
@@ -425,6 +425,8 @@ export class DashboardComponent implements OnInit {
 			this.selectedEventsFromEventDeliveriesTable.push(checkbox.value);
 			checkbox.checked = event.target.checked;
 		});
+
+		if (!event.target.checked) this.selectedEventsFromEventDeliveriesTable = [];
 		this.allEventdeliveriesChecked = event.target.checked;
 	}
 
