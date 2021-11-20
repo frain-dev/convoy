@@ -33,14 +33,14 @@
 					<img src="/assets/img/calendar-icon.svg" alt="calender icon" />
 					<mat-date-range-input [formGroup]="statsDateRange" [rangePicker]="statsPicker">
 						<input matStartDate formControlName="startDate" placeholder="Start date" />
-						<input matEndDate formControlName="endDate" placeholder="End date" (dateChange)="fetchDashboardData()" />
+						<input matEndDate formControlName="endDate" placeholder="End date" (dateChange)="addFilterToURL({ section: 'dashboard' }); fetchDashboardData()" />
 					</mat-date-range-input>
 					<mat-date-range-picker #statsPicker [disabled]="false"></mat-date-range-picker>
 					<img src="/assets/img/angle-arrow-down.svg" alt="arrow down icon" />
 				</button>
 
 				<div class="select">
-					<select value="daily" [(ngModel)]="dashboardFrequency" (change)="fetchDashboardData()">
+					<select value="daily" [(ngModel)]="dashboardFrequency" (change)="addFilterToURL({ section: 'dashboard' }); fetchDashboardData()">
 						<option value="daily">Daily</option>
 						<option value="weekly">Weekly</option>
 						<option value="monthly">Monthly</option>
@@ -143,14 +143,14 @@
 								<img src="/assets/img/calendar-icon.svg" alt="calender icon" />
 								<mat-date-range-input [formGroup]="eventsFilterDateRange" [rangePicker]="eventsFilterPicker">
 									<input matStartDate formControlName="startDate" placeholder="Start date" />
-									<input matEndDate formControlName="endDate" placeholder="End date" (dateChange)="getEvents()" />
+									<input matEndDate formControlName="endDate" placeholder="End date" (dateChange)="addFilterToURL({ section: 'events' }); getEvents()" />
 								</mat-date-range-input>
 								<mat-date-range-picker #eventsFilterPicker [disabled]="false"></mat-date-range-picker>
 								<img src="/assets/img/angle-arrow-down.svg" alt="arrow down icon" />
 							</button>
 
 							<div class="select">
-								<select [ngClass]="{ active: !!eventApp }" aria-label="frequency" [(ngModel)]="eventApp" (change)="getEvents()">
+								<select [ngClass]="{ active: !!eventApp }" aria-label="frequency" [(ngModel)]="eventApp" (change)="addFilterToURL({ section: 'events' }); getEvents()">
 									<option value="">All Apps</option>
 									<option [value]="app.uid" *ngFor="let app of apps?.content">
 										{{ app.name }}
@@ -245,14 +245,19 @@
 								<img src="/assets/img/calendar-icon.svg" alt="calender icon" />
 								<mat-date-range-input [formGroup]="eventDeliveriesFilterDateRange" [rangePicker]="eventDeliveriesFilterPicker">
 									<input matStartDate formControlName="startDate" placeholder="Start date" />
-									<input matEndDate formControlName="endDate" placeholder="End date" (dateChange)="getEvents()" />
+									<input matEndDate formControlName="endDate" placeholder="End date" (dateChange)="addFilterToURL({ section: 'eventDels' }); getEventDeliveries()" />
 								</mat-date-range-input>
 								<mat-date-range-picker #eventDeliveriesFilterPicker [disabled]="false"></mat-date-range-picker>
 								<img src="/assets/img/angle-arrow-down.svg" alt="arrow down icon" />
 							</button>
 
 							<div class="select">
-								<select [ngClass]="{ active: !!eventDeliveriesApp }" aria-label="frequency" [(ngModel)]="eventDeliveriesApp" (change)="getEventDeliveries()">
+								<select
+									[ngClass]="{ active: !!eventDeliveriesApp }"
+									aria-label="frequency"
+									[(ngModel)]="eventDeliveriesApp"
+									(change)="addFilterToURL({ section: 'eventDels' }); getEventDeliveries()"
+								>
 									<option value="">All Apps</option>
 									<option [value]="app.uid" *ngFor="let app of apps?.content">
 										{{ app.name }}
@@ -287,18 +292,18 @@
 								<img src="../../../../assets/img/refresh-icon-2.svg" alt="refresh icon" />
 								Refresh
 							</button>
-							<button class="primary clear has-icon icon-left hover" disabled>
+							<button class="primary clear has-icon icon-left hover" (click)="batchRetryEvent()" [disabled]="selectedEventsFromEventDeliveriesTable.length <= 0">
 								<img src="../../../../assets/img/retry-icon.svg" alt="retry icon" />
 								Bulk Retry
 							</button>
 						</div>
 
 						<div class="table--container" *ngIf="displayedEventDeliveries.length > 0">
-							<table id="events-table">
+							<table id="event-deliveries-table">
 								<thead>
 									<tr class="table--head">
 										<th scope="col" class="checkbox">
-											<div class="checkbox"><input type="checkbox" name="eventTable" id="eventTable" (change)="checkAllCheckboxes($event)" /></div>
+											<div class="checkbox"><input type="checkbox" name="eventDeliveryTable" id="eventDeliveryTable" (change)="checkAllCheckboxes($event)" /></div>
 											Status
 										</th>
 										<th scope="col">Event Type</th>
@@ -327,7 +332,7 @@
 											<td>
 												<div class="checkbox has-retry">
 													<img *ngIf="event.metadata.num_trials > event.metadata.retry_limit" src="/assets/img/retry-icon.svg" alt="retry icon" title="manually retried" />
-													<input type="checkbox" [name]="'event' + index" id="event" [value]="event.uid" />
+													<input type="checkbox" [name]="'event' + index" id="event" [value]="event.uid" (change)="checkEventDeliveryBox($event)" />
 													<div [class]="'tag tag--' + event.status">{{ event.status }}</div>
 												</div>
 											</td>
@@ -358,11 +363,7 @@
 							</table>
 
 							<div class="table--load-more button-container center" *ngIf="eventDeliveries.pagination.totalPage > 1">
-								<button
-									[class]="'primary clear has-icon icon-left'"
-									[disabled]="eventDeliveries.pagination.page === eventDeliveries.pagination.totalPage"
-									(click)="eventDeliveriesPage = eventDeliveriesPage + 1; getEventDeliveries()"
-								>
+								<button [class]="'primary clear has-icon icon-left'" [disabled]="eventDeliveries.pagination.page === eventDeliveries.pagination.totalPage" (click)="loadMoreEventDeliveries()">
 									<img src="/assets/img/arrow-down-icon.svg" alt="arrow down icon" />
 									Load more
 								</button>
