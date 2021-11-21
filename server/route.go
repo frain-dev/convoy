@@ -111,7 +111,7 @@ func buildRoutes(app *applicationHandler) http.Handler {
 				eventRouter.Use(requireGroup(app.groupRepo))
 				eventRouter.Use(requirePermission(auth.RoleAdmin))
 
-				eventRouter.With(instrumentPath("/events")).Post("/", app.CreateAppEvent)
+				eventRouter.With(rateLimitByGroup(), instrumentPath("/events")).Post("/", app.CreateAppEvent)
 				eventRouter.With(pagination).Get("/", app.GetEventsPaged)
 
 				eventRouter.Route("/{eventID}", func(eventSubRouter chi.Router) {
