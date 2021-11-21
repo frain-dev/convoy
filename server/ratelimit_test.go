@@ -29,9 +29,9 @@ func TestRateLimitByGroup(t *testing.T) {
 		{
 			name:          "block-same-group",
 			requestsLimit: 2,
-			windowLength:  3 * time.Microsecond,
+			windowLength:  20 * time.Millisecond,
 			groupIDs:        []string {"b", "b", "b"},
-			respCodes:     []int{200, 429, 200},
+			respCodes:     []int{200, 200, 429},
 		},
 		{
 			name: "no-block-different-group",
@@ -44,6 +44,7 @@ func TestRateLimitByGroup(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			h := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				time.Sleep(10 * time.Millisecond)
 			})
 			router := rateLimitByGroupWithParams(tt.requestsLimit, tt.windowLength)(h)
 
