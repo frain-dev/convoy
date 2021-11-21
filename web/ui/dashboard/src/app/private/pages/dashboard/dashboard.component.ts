@@ -91,11 +91,9 @@ export class DashboardComponent implements OnInit {
 	async initDashboard() {
 		await this.getGroups();
 		this.getFiltersFromURL();
-		await Promise.all([this.getOrganisationDetails(), this.fetchDashboardData(), this.getEvents(), this.getApps(), this.getEventDeliveries()]);
+		await Promise.all([this.getConfigDetails(), this.fetchDashboardData(), this.getEvents(), this.getApps(), this.getEventDeliveries()]);
 		return;
 	}
-
-	toggleShowDropdown() {}
 
 	logout() {
 		localStorage.removeItem('CONVOY_AUTH');
@@ -117,10 +115,10 @@ export class DashboardComponent implements OnInit {
 		}
 	}
 
-	async getOrganisationDetails() {
+	async getConfigDetails() {
 		try {
 			const organisationDetailsResponse = await this.httpService.request({
-				url: `/dashboard/config`,
+				url: `/dashboard/config?groupID=${this.activeGroup || ''}`,
 				method: 'get'
 			});
 			this.organisationDetails = organisationDetailsResponse.data;
@@ -130,10 +128,6 @@ export class DashboardComponent implements OnInit {
 	getFiltersFromURL() {
 		const filters = this.route.snapshot.queryParams;
 		if (Object.keys(filters).length == 0) return;
-
-		// for dashboard filters
-		this.statsDateRange.patchValue({ startDate: new Date(filters.dashboardStartDate), endDate: new Date(filters.dashboardEndDate) });
-		this.dashboardFrequency = filters.dashboardFrequency;
 
 		// for events filters
 		this.eventsFilterDateRange.patchValue({ startDate: filters.eventsStartDate ? new Date(filters.eventsStartDate) : '', endDate: filters.eventsEndDate ? new Date(filters.eventsEndDate) : '' });
@@ -145,9 +139,6 @@ export class DashboardComponent implements OnInit {
 			endDate: filters.eventDelsEndDate ? new Date(filters.eventDelsEndDate) : ''
 		});
 		this.eventDeliveriesApp = filters.eventDelsApp ?? '';
-
-		// for group filter
-		// this.activeGroup = filters.group ?? '';
 	}
 
 	async fetchDashboardData() {
@@ -265,7 +256,7 @@ export class DashboardComponent implements OnInit {
 		}
 	}
 
-	addFilterToURL(requestDetails: { section: 'events' | 'eventDels' | 'dashboard' | 'group' }) {
+	addFilterToURL(requestDetails: { section: 'events' | 'eventDels' | 'group' }) {
 		const currentURLfilters = this.route.snapshot.queryParams;
 		const queryParams: any = {};
 
@@ -281,13 +272,6 @@ export class DashboardComponent implements OnInit {
 			if (startDate) queryParams.eventDelsStartDate = startDate;
 			if (endDate) queryParams.eventDelsEndDate = endDate;
 			if (this.eventDeliveriesApp) queryParams.eventDelsApp = this.eventDeliveriesApp;
-		}
-
-		if (requestDetails.section === 'dashboard') {
-			const { startDate, endDate } = this.setDateForFilter(this.statsDateRange.value);
-			if (startDate) queryParams.dashboardStartDate = startDate;
-			if (endDate) queryParams.dashboardEndDate = endDate;
-			if (this.dashboardFrequency) queryParams.dashboardFrequency = this.dashboardFrequency;
 		}
 
 		if (requestDetails.section === 'group') {
@@ -343,7 +327,7 @@ export class DashboardComponent implements OnInit {
 
 	toggleActiveGroup() {
 		this.addFilterToURL({ section: 'group' });
-		Promise.all([this.getOrganisationDetails(), this.fetchDashboardData(), this.getEvents(), this.getApps(), this.getEventDeliveries()]);
+		Promise.all([this.getConfigDetails(), this.fetchDashboardData(), this.getEvents(), this.getApps(), this.getEventDeliveries()]);
 	}
 
 	async getGroups() {
@@ -352,9 +336,11 @@ export class DashboardComponent implements OnInit {
 				url: `/groups`,
 				method: 'get'
 			});
-
 			this.groups = groupsResponse.data;
-			if (!this.activeGroup) this.activeGroup = this.groups[0]?.uid ?? null;
+
+			// check group existing filter in url and set active group
+			this.activeGroup = this.route.snapshot.queryParams.group ?? this.groups[0]?.uid;
+			return;
 		} catch (error) {
 			return error;
 		}
@@ -374,6 +360,7 @@ export class DashboardComponent implements OnInit {
 				return;
 			}
 			this.apps = appsResponse.data;
+			return;
 		} catch (error) {
 			return error;
 		}
@@ -386,6 +373,7 @@ export class DashboardComponent implements OnInit {
 				method: 'get'
 			});
 			this.eventDeliveryAtempt = deliveryAttemptsResponse.data[deliveryAttemptsResponse.data.length - 1];
+			return;
 		} catch (error) {
 			return error;
 		}
@@ -459,15 +447,20 @@ export class DashboardComponent implements OnInit {
 	}
 
 	clearEventFilters(tableName: 'events' | 'event deliveries') {
+		const activeFilters = Object.assign({}, this.route.snapshot.queryParams);
+		let filterItems: string[] = [];
+
 		switch (tableName) {
 			case 'events':
 				this.eventApp = '';
+				filterItems = ['eventsStartDate', 'eventsEndDate', 'eventsApp'];
 				this.eventsFilterDateRange.patchValue({ startDate: '', endDate: '' });
 				this.getEvents();
 				break;
 
 			case 'event deliveries':
 				this.eventDeliveriesApp = '';
+				filterItems = ['eventDelsStartDate', 'eventDelsEndDate', 'eventDelsApp'];
 				this.eventDeliveriesFilterDateRange.patchValue({ startDate: '', endDate: '' });
 				this.eventDeliveryFilteredByEventId = '';
 				this.getEventDeliveries();
@@ -476,6 +469,9 @@ export class DashboardComponent implements OnInit {
 			default:
 				break;
 		}
+
+		filterItems.forEach(key => (activeFilters.hasOwnProperty(key) ? delete activeFilters[key] : null));
+		this.router.navigate([], { relativeTo: this.route, queryParams: activeFilters });
 	}
 
 	checkAllCheckboxes(event: any) {
