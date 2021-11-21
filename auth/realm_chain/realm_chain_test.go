@@ -2,6 +2,7 @@ package realm_chain
 
 import (
 	"fmt"
+	"sync/atomic"
 	"testing"
 
 	"github.com/frain-dev/convoy/auth"
@@ -10,7 +11,7 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func TestGet(t *testing.T) {
+func TestvGet(t *testing.T) {
 	rr := newRealmChain()
 	rr.chain["abc"] = &file.FileRealm{}
 
@@ -23,6 +24,55 @@ func TestGet(t *testing.T) {
 	}
 
 	require.Equal(t, rr, rc)
+}
+
+func TestGet(t *testing.T) {
+	tests := []struct {
+		name       string
+		nFn        func(*atomic.Value)
+		want       *RealmChain
+		wantErr    bool
+		wantErrMsg string
+	}{
+		{
+			name: "should_get_successfully",
+			nFn: func(v *atomic.Value) {
+				rr := newRealmChain()
+				rr.chain["abc"] = &file.FileRealm{}
+				v.Store(rr)
+			},
+			want: &RealmChain{
+				chain: chainMap{
+					"abc": &file.FileRealm{},
+				},
+			},
+			wantErr: false,
+		},
+		{
+			name:       "should_error",
+			nFn:        func(v *atomic.Value) { *v = atomic.Value{} },
+			want:       nil,
+			wantErr:    true,
+			wantErrMsg: "call Init before this function",
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if tt.nFn != nil {
+				tt.nFn(&realmChainSingleton)
+			}
+
+			got, err := Get()
+			if tt.wantErr {
+				require.NotNil(t, err)
+				require.Equal(t, tt.wantErrMsg, err.Error())
+				return
+			}
+
+			require.Nil(t, err)
+			require.Equal(t, tt.want, got)
+		})
+	}
 }
 
 var fileRealmOpt = &config.FileRealmOption{
@@ -204,7 +254,7 @@ func TestRealmChain_RegisterRealm(t *testing.T) {
 			args: args{
 				r: &frClone,
 			},
-			wantErrMsg: fmt.Errorf("a realm with the name '%s' has already been registered", frClone.GetName()).Error(),
+			wantErrMsg: fmt.Sprintf("a realm with the name '%s' has already been registered", frClone.GetName()),
 			wantErr:    true,
 		},
 		{
@@ -263,6 +313,15 @@ func TestInit(t *testing.T) {
 							},
 						},
 					},
+				},
+			},
+			wantErr: false,
+		},
+		{
+			name: "should_init_with_noop_realm_successfully",
+			args: args{
+				authConfig: &config.AuthConfiguration{
+					RequireAuth: false,
 				},
 			},
 			wantErr: false,
