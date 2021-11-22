@@ -29,7 +29,7 @@ func TestRateLimitByGroup(t *testing.T) {
 		{
 			name:          "block-same-group",
 			requestsLimit: 2,
-			windowLength:  20 * time.Millisecond,
+			windowLength:  5 * time.Second,
 			groupIDs:        []string {"b", "b", "b"},
 			respCodes:     []int{200, 200, 429},
 		},
