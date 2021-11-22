@@ -9,7 +9,7 @@
 
 			<div>
 				<a target="_blank" href="https://getconvoy.io/docs" rel="noreferrer">Go to docs</a>
-				<button class="user" (click)="toggleShowDropdown(); showDropdown = !showDropdown" *ngIf="authDetails()">
+				<button class="user" (click)="showDropdown = !showDropdown" *ngIf="authDetails()">
 					<div>
 						<div class="icon">O</div>
 						<div class="name">{{ authDetails().username }}</div>
@@ -33,14 +33,14 @@
 					<img src="/assets/img/calendar-icon.svg" alt="calender icon" />
 					<mat-date-range-input [formGroup]="statsDateRange" [rangePicker]="statsPicker">
 						<input matStartDate formControlName="startDate" placeholder="Start date" />
-						<input matEndDate formControlName="endDate" placeholder="End date" (dateChange)="addFilterToURL({ section: 'dashboard' }); fetchDashboardData()" />
+						<input matEndDate formControlName="endDate" placeholder="End date" (dateChange)="fetchDashboardData()" />
 					</mat-date-range-input>
 					<mat-date-range-picker #statsPicker [disabled]="false"></mat-date-range-picker>
 					<img src="/assets/img/angle-arrow-down.svg" alt="arrow down icon" />
 				</button>
 
 				<div class="select">
-					<select value="daily" [(ngModel)]="dashboardFrequency" (change)="addFilterToURL({ section: 'dashboard' }); fetchDashboardData()">
+					<select value="daily" [(ngModel)]="dashboardFrequency" (change)="fetchDashboardData()">
 						<option value="daily">Daily</option>
 						<option value="weekly">Weekly</option>
 						<option value="monthly">Monthly</option>
