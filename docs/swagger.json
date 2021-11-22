@@ -2701,6 +2701,17 @@
         }
     },
     "definitions": {
+        "config.DefaultStrategyConfiguration": {
+            "type": "object",
+            "properties": {
+                "intervalSeconds": {
+                    "type": "integer"
+                },
+                "retryLimit": {
+                    "type": "integer"
+                }
+            }
+        },
         "config.GroupConfig": {
             "type": "object",
             "properties": {
@@ -2730,15 +2741,7 @@
             "type": "object",
             "properties": {
                 "default": {
-                    "type": "object",
-                    "properties": {
-                        "intervalSeconds": {
-                            "type": "integer"
-                        },
-                        "retryLimit": {
-                            "type": "integer"
-                        }
-                    }
+                    "$ref": "#/definitions/config.DefaultStrategyConfiguration"
                 },
                 "type": {
                     "type": "string"

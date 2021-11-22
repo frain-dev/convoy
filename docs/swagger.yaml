@@ -1,5 +1,12 @@
 basePath: /api/v1
 definitions:
+  config.DefaultStrategyConfiguration:
+    properties:
+      intervalSeconds:
+        type: integer
+      retryLimit:
+        type: integer
+    type: object
   config.GroupConfig:
     properties:
       disableEndpoint:
@@ -19,12 +26,7 @@ definitions:
   config.StrategyConfiguration:
     properties:
       default:
-        properties:
-          intervalSeconds:
-            type: integer
-          retryLimit:
-            type: integer
-        type: object
+        $ref: '#/definitions/config.DefaultStrategyConfiguration'
       type:
         type: string
     type: object

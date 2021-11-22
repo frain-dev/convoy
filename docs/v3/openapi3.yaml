@@ -1,5 +1,12 @@
 components:
   schemas:
+    config.DefaultStrategyConfiguration:
+      properties:
+        intervalSeconds:
+          type: integer
+        retryLimit:
+          type: integer
+      type: object
     config.GroupConfig:
       properties:
         disableEndpoint:
@@ -19,12 +26,7 @@ components:
     config.StrategyConfiguration:
       properties:
         default:
-          properties:
-            intervalSeconds:
-              type: integer
-            retryLimit:
-              type: integer
-          type: object
+          $ref: '#/components/schemas/config.DefaultStrategyConfiguration'
         type:
           type: string
       type: object
