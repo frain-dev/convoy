@@ -231,12 +231,15 @@ export class DashboardComponent implements OnInit {
 		return displayedEvents;
 	}
 
-	async getEvents() {
+	async getEvents(requestDetails?: { appId?: string; addToURL?: boolean }) {
+		if (requestDetails?.appId) this.eventApp = requestDetails.appId;
+		if (requestDetails?.addToURL) this.addFilterToURL({ section: 'events' });
+
 		const { startDate, endDate } = this.setDateForFilter(this.eventsFilterDateRange.value);
 
 		try {
 			const eventsResponse = await this.httpService.request({
-				url: `/events?groupID=${this.activeGroup || ''}&sort=AESC&page=${this.eventsPage || 1}&perPage=20&startDate=${startDate}&endDate=${endDate}&appId=${this.eventApp}`,
+				url: `/events?groupID=${this.activeGroup || ''}&sort=AESC&page=${this.eventsPage || 1}&perPage=20&startDate=${startDate}&endDate=${endDate}&appId=${requestDetails?.appId ?? this.eventApp}`,
 				method: 'get'
 			});
 			this.detailsItem = eventsResponse.data.content[0];
@@ -298,7 +301,8 @@ export class DashboardComponent implements OnInit {
 		}
 	}
 
-	async getEventDeliveries() {
+	async getEventDeliveries(requestDetails?: { addToURL?: boolean }) {
+		if (requestDetails?.addToURL) this.addFilterToURL({ section: 'eventDels' });
 		const { startDate, endDate } = this.setDateForFilter(this.eventDeliveriesFilterDateRange.value);
 
 		try {
@@ -325,12 +329,15 @@ export class DashboardComponent implements OnInit {
 		this.sidebarEventDeliveries = response.data.content;
 	}
 
-	toggleActiveGroup() {
+	async toggleActiveGroup() {
+		await Promise.all([this.clearEventFilters('event deliveries'), this.clearEventFilters('events')]);
 		this.addFilterToURL({ section: 'group' });
 		Promise.all([this.getConfigDetails(), this.fetchDashboardData(), this.getEvents(), this.getApps(), this.getEventDeliveries()]);
 	}
 
-	async getGroups() {
+	async getGroups(requestDetails?: { addToURL?: boolean }) {
+		if (requestDetails?.addToURL) this.addFilterToURL({ section: 'group' });
+
 		try {
 			const groupsResponse = await this.httpService.request({
 				url: `/groups`,
@@ -446,7 +453,7 @@ export class DashboardComponent implements OnInit {
 		return authDetails ? JSON.parse(authDetails) : false;
 	}
 
-	clearEventFilters(tableName: 'events' | 'event deliveries') {
+	async clearEventFilters(tableName: 'events' | 'event deliveries') {
 		const activeFilters = Object.assign({}, this.route.snapshot.queryParams);
 		let filterItems: string[] = [];
 
@@ -471,7 +478,7 @@ export class DashboardComponent implements OnInit {
 		}
 
 		filterItems.forEach(key => (activeFilters.hasOwnProperty(key) ? delete activeFilters[key] : null));
-		this.router.navigate([], { relativeTo: this.route, queryParams: activeFilters });
+		await this.router.navigate([], { relativeTo: this.route, queryParams: activeFilters });
 	}
 
 	checkAllCheckboxes(event: any) {
