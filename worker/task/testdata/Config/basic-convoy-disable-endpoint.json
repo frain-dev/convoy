@@ -1,6 +1,11 @@
 {
+    "queue": {
+        "type": "redis",
+        "redis": {
+            "dsn": "abc"
+        }
+    },
     "auth": {
-        "type": "basic",
         "file": {
             "basic": [
                 {

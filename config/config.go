@@ -35,7 +35,7 @@ type HTTPServerConfiguration struct {
 }
 
 type QueueConfiguration struct {
-	Type  QueueProvider           `json:"type"`
+	Type  QueueProvider           `json:"type" envconfig:"CONVOY_QUEUE_PROVIDER"`
 	Redis RedisQueueConfiguration `json:"redis"`
 }
 
@@ -50,13 +50,7 @@ type FileRealmOption struct {
 
 type AuthConfiguration struct {
 	RequireAuth bool            `json:"require_auth"`
-	Type        AuthProvider    `json:"type"`
 	File        FileRealmOption `json:"file"`
-}
-
-type Basic struct {
-	Username string `json:"username"`
-	Password string `json:"password"`
 }
 
 type StrategyConfiguration struct {
@@ -103,7 +97,6 @@ type Configuration struct {
 	MultipleTenants   bool                  `json:"multiple_tenants"`
 }
 
-type AuthProvider string
 type QueueProvider string
 type StrategyProvider string
 type SignatureHeaderProvider string
@@ -113,8 +106,6 @@ const (
 )
 
 const (
-	NoAuthProvider          AuthProvider            = "none"
-	BasicAuthProvider       AuthProvider            = "basic"
 	RedisQueueProvider      QueueProvider           = "redis"
 	DefaultStrategyProvider StrategyProvider        = "default"
 	DefaultSignatureHeader  SignatureHeaderProvider = "X-Convoy-Signature"
@@ -149,6 +140,14 @@ func LoadConfig(p string) error {
 	}
 
 	err = ensureSignature(c.GroupConfig.Signature)
+	if err != nil {
+		return err
+	}
+	if c.GroupConfig.Signature.Header == "" {
+		c.GroupConfig.Signature.Header = DefaultSignatureHeader
+	}
+
+	err = ensureQueueConfig(c.Queue)
 	if err != nil {
 		return err
 	}
@@ -202,6 +201,18 @@ func ensureSSL(s ServerConfiguration) error {
 		if s.HTTP.SSLCertFile == "" || s.HTTP.SSLKeyFile == "" {
 			return errors.New("both cert_file and key_file are required for ssl")
 		}
+	}
+	return nil
+}
+
+func ensureQueueConfig(queueCfg QueueConfiguration) error {
+	switch queueCfg.Type {
+	case RedisQueueProvider:
+		if queueCfg.Redis.DSN == "" {
+			return errors.New("redis queue dsn is empty")
+		}
+	default:
+		return fmt.Errorf("unsupported queue type: %s", queueCfg.Type)
 	}
 	return nil
 }

@@ -1,4 +1,10 @@
 {
+    "queue": {
+        "type": "redis",
+        "redis": {
+            "dsn": "abc"
+        }
+    },
     "auth": {
         "require_auth": true,
         "file": {
@@ -40,5 +46,4 @@
             "hash": "SHA256"
         }
     }
-
 }
