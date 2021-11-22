@@ -201,7 +201,7 @@
 													<div class="tag">{{ event.event_type }}</div>
 												</div>
 											</td>
-											<td>
+											<td class="has-long-text">
 												<div>{{ event.app_metadata.title }}</div>
 											</td>
 											<td>
@@ -402,7 +402,12 @@
 									</td>
 									<td>
 										<div>
-											<button [disabled]="app.events <= 0" title="view events" [class]="'primary has-icon icon-left'" (click)="toggleActiveTab('events'); getEvents({ appId: app.uid })">
+											<button
+												[disabled]="app.events <= 0"
+												title="view events"
+												[class]="'primary has-icon icon-left'"
+												(click)="toggleActiveTab('events'); getEvents({ addToURL: true, appId: app.uid })"
+											>
 												<img src="/assets/img/view-events-icon.svg" alt="view events icon" />
 												Events
 											</button>

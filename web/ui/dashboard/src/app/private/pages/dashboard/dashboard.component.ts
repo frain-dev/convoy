@@ -85,13 +85,15 @@ export class DashboardComponent implements OnInit {
 
 	async ngOnInit() {
 		await this.initDashboard();
-		this.toggleActiveTab('events');
 	}
 
 	async initDashboard() {
 		await this.getGroups();
 		this.getFiltersFromURL();
 		await Promise.all([this.getConfigDetails(), this.fetchDashboardData(), this.getEvents(), this.getApps(), this.getEventDeliveries()]);
+
+		// get active tab from url and apply, after getting the details from above requests so that the data is available ahead
+		this.toggleActiveTab(this.route.snapshot.queryParams.activeTab ?? 'events');
 		return;
 	}
 
@@ -102,6 +104,7 @@ export class DashboardComponent implements OnInit {
 
 	toggleActiveTab(tab: 'events' | 'apps' | 'event deliveries') {
 		this.activeTab = tab;
+		this.addFilterToURL({ section: 'logTab' });
 
 		if (tab === 'apps' && this.apps?.content.length > 0) {
 			this.detailsItem = this.apps?.content[0];
@@ -242,7 +245,7 @@ export class DashboardComponent implements OnInit {
 				url: `/events?groupID=${this.activeGroup || ''}&sort=AESC&page=${this.eventsPage || 1}&perPage=20&startDate=${startDate}&endDate=${endDate}&appId=${requestDetails?.appId ?? this.eventApp}`,
 				method: 'get'
 			});
-			this.detailsItem = eventsResponse.data.content[0];
+			if (this.activeTab === 'events') this.detailsItem = eventsResponse.data.content[0];
 
 			if (this.events && this.events?.pagination?.next === this.eventsPage) {
 				const content = [...this.events.content, ...eventsResponse.data.content];
@@ -259,7 +262,7 @@ export class DashboardComponent implements OnInit {
 		}
 	}
 
-	addFilterToURL(requestDetails: { section: 'events' | 'eventDels' | 'group' }) {
+	addFilterToURL(requestDetails: { section: 'events' | 'eventDels' | 'group' | 'logTab' }) {
 		const currentURLfilters = this.route.snapshot.queryParams;
 		const queryParams: any = {};
 
@@ -277,9 +280,9 @@ export class DashboardComponent implements OnInit {
 			if (this.eventDeliveriesApp) queryParams.eventDelsApp = this.eventDeliveriesApp;
 		}
 
-		if (requestDetails.section === 'group') {
-			queryParams.group = this.activeGroup;
-		}
+		if (requestDetails.section === 'group') queryParams.group = this.activeGroup;
+
+		if (requestDetails.section === 'logTab') queryParams.activeTab = this.activeTab;
 
 		this.router.navigate([], { queryParams: Object.assign({}, currentURLfilters, queryParams) });
 	}
@@ -307,6 +310,7 @@ export class DashboardComponent implements OnInit {
 
 		try {
 			const eventDeliveriesResponse = await this.eventDeliveriesRequest({ eventId: this.eventDeliveryFilteredByEventId, startDate, endDate });
+			if (this.activeTab === 'event deliveries') this.detailsItem = eventDeliveriesResponse.data.content[0];
 
 			if (this.eventDeliveries && this.eventDeliveries?.pagination?.next === this.eventDeliveriesPage) {
 				const content = [...this.eventDeliveries.content, ...eventDeliveriesResponse.data.content];
@@ -367,6 +371,7 @@ export class DashboardComponent implements OnInit {
 				return;
 			}
 			this.apps = appsResponse.data;
+			if (this.activeTab === 'apps') this.detailsItem = this.apps?.content[0];
 			return;
 		} catch (error) {
 			return error;
