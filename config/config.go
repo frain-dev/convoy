@@ -6,8 +6,9 @@ import (
 	"fmt"
 	"os"
 	"reflect"
-	"strconv"
 	"sync/atomic"
+
+	"github.com/kelseyhightower/envconfig"
 
 	"github.com/frain-dev/convoy/config/algo"
 )
@@ -15,38 +16,41 @@ import (
 var cfgSingleton atomic.Value
 
 type DatabaseConfiguration struct {
-	Dsn string `json:"dsn"`
+	Dsn string `json:"dsn" envconfig:"CONVOY_MONGO_DSN"`
 }
 
 type SentryConfiguration struct {
-	Dsn string `json:"dsn"`
+	Dsn string `json:"dsn" envconfig:"CONVOY_SENTRY_DSN"`
 }
 
 type ServerConfiguration struct {
-	HTTP struct {
-		SSL         bool   `json:"ssl"`
-		SSLCertFile string `json:"ssl_cert_file"`
-		SSLKeyFile  string `json:"ssl_key_file"`
-		Port        uint32 `json:"port"`
-	} `json:"http"`
+	HTTP HTTPServerConfiguration `json:"http"`
+}
+
+type HTTPServerConfiguration struct {
+	SSL         bool   `json:"ssl" envconfig:"SSL"`
+	SSLCertFile string `json:"ssl_cert_file" envconfig:"CONVOY_SSL_CERT_FILE"`
+	SSLKeyFile  string `json:"ssl_key_file" envconfig:"CONVOY_SSL_KEY_FILE"`
+	Port        uint32 `json:"port" envconfig:"PORT"`
 }
 
 type QueueConfiguration struct {
-	Type  QueueProvider `json:"type"`
-	Redis struct {
-		DSN string `json:"dsn"`
-	} `json:"redis"`
+	Type  QueueProvider           `json:"type"`
+	Redis RedisQueueConfiguration `json:"redis"`
+}
+
+type RedisQueueConfiguration struct {
+	DSN string `json:"dsn" envconfig:"CONVOY_REDIS_DSN"`
 }
 
 type FileRealmOption struct {
-	Basic  []BasicAuth  `json:"basic"`
+	Basic  []BasicAuth  `json:"basic" bson:"basic"`
 	APIKey []APIKeyAuth `json:"api_key"`
 }
 
 type AuthConfiguration struct {
-	RequireAuth bool         `json:"require_auth"`
-	Type        AuthProvider `json:"type"`
-	Basic       Basic
+	RequireAuth bool            `json:"require_auth"`
+	Type        AuthProvider    `json:"type"`
 	File        FileRealmOption `json:"file"`
 }
 
@@ -56,16 +60,18 @@ type Basic struct {
 }
 
 type StrategyConfiguration struct {
-	Type    StrategyProvider `json:"type"`
-	Default struct {
-		IntervalSeconds uint64 `json:"intervalSeconds"`
-		RetryLimit      uint64 `json:"retryLimit"`
-	} `json:"default"`
+	Type    StrategyProvider             `json:"type"`
+	Default DefaultStrategyConfiguration `json:"default"`
+}
+
+type DefaultStrategyConfiguration struct {
+	IntervalSeconds uint64 `json:"intervalSeconds" envconfig:"CONVOY_INTERVAL_SECONDS"`
+	RetryLimit      uint64 `json:"retryLimit" envconfig:"CONVOY_RETRY_LIMIT"`
 }
 
 type SignatureConfiguration struct {
-	Header SignatureHeaderProvider `json:"header"`
-	Hash   string                  `json:"hash"`
+	Header SignatureHeaderProvider `json:"header" envconfig:"CONVOY_SIGNATURE_HEADER"`
+	Hash   string                  `json:"hash" envconfig:"CONVOY_SIGNATURE_HASH"`
 }
 
 type SMTPConfiguration struct {
@@ -81,7 +87,7 @@ type SMTPConfiguration struct {
 type GroupConfig struct {
 	Strategy        StrategyConfiguration
 	Signature       SignatureConfiguration
-	DisableEndpoint bool
+	DisableEndpoint bool `envconfig:"CONVOY_DISABLE_ENDPOINT"`
 }
 
 type Configuration struct {
@@ -93,7 +99,7 @@ type Configuration struct {
 	Server            ServerConfiguration   `json:"server"`
 	GroupConfig       GroupConfig           `json:"group"`
 	SMTP              SMTPConfiguration     `json:"smtp"`
-	Environment       string                `json:"env"`
+	Environment       string                `json:"env" envconfig:"CONVOY_ENV" default:"development"`
 	MultipleTenants   bool                  `json:"multiple_tenants"`
 }
 
@@ -132,98 +138,19 @@ func LoadConfig(p string) error {
 		return err
 	}
 
-	if mongoDsn := os.Getenv("CONVOY_MONGO_DSN"); mongoDsn != "" {
-		c.Database = DatabaseConfiguration{Dsn: mongoDsn}
+	err = envconfig.Process("CONVOY", c)
+	if err != nil {
+		return err
 	}
 
-	if queueDsn := os.Getenv("CONVOY_REDIS_DSN"); queueDsn != "" {
-		c.Queue = QueueConfiguration{
-			Type: "redis",
-			Redis: struct {
-				DSN string `json:"dsn"`
-			}{
-				DSN: queueDsn,
-			},
-		}
-	}
-
-	// This enables us deploy to Heroku where the $PORT is provided
-	// dynamically.
-	if port, err := strconv.Atoi(os.Getenv("PORT")); err == nil {
-		c.Server.HTTP.Port = uint32(port)
-	}
-
-	if s := os.Getenv("CONVOY_SSL"); s != "" {
-		v, err := strconv.ParseBool(s)
-		if err != nil {
-			return err
-		}
-		c.Server.HTTP.SSL = v
-
-		if c.Server.HTTP.SSL {
-			c.Server.HTTP.SSLCertFile = os.Getenv("CONVOY_SSL_CERT_FILE")
-			c.Server.HTTP.SSLKeyFile = os.Getenv("CONVOY_SSL_KEY_FILE")
-		}
-	}
 	err = ensureSSL(c.Server)
 	if err != nil {
 		return err
 	}
 
-	if env := os.Getenv("CONVOY_ENV"); env != "" {
-		c.Environment = env
-	}
-
-	// if it's still empty, set it to development
-	if c.Environment == "" {
-		c.Environment = DevelopmentEnvironment
-	}
-
-	if sentryDsn := os.Getenv("CONVOY_SENTRY_DSN"); sentryDsn != "" {
-		c.Sentry = SentryConfiguration{Dsn: sentryDsn}
-	}
-
-	if signatureHeader := os.Getenv("CONVOY_SIGNATURE_HEADER"); signatureHeader != "" {
-		c.GroupConfig.Signature.Header = SignatureHeaderProvider(signatureHeader)
-	}
-
-	if signatureHash := os.Getenv("CONVOY_SIGNATURE_HASH"); signatureHash != "" {
-		c.GroupConfig.Signature.Hash = signatureHash
-	}
 	err = ensureSignature(c.GroupConfig.Signature)
 	if err != nil {
 		return err
-	}
-
-	if retryStrategy := os.Getenv("CONVOY_RETRY_STRATEGY"); retryStrategy != "" {
-
-		intervalSeconds, err := retrieveIntfromEnv("CONVOY_INTERVAL_SECONDS")
-		if err != nil {
-			return err
-		}
-
-		retryLimit, err := retrieveIntfromEnv("CONVOY_RETRY_LIMIT")
-		if err != nil {
-			return err
-		}
-
-		c.GroupConfig.Strategy = StrategyConfiguration{
-			Type: StrategyProvider(retryStrategy),
-			Default: struct {
-				IntervalSeconds uint64 `json:"intervalSeconds"`
-				RetryLimit      uint64 `json:"retryLimit"`
-			}{
-				IntervalSeconds: intervalSeconds,
-				RetryLimit:      retryLimit,
-			},
-		}
-
-	}
-
-	if e := os.Getenv("CONVOY_DISABLE_ENDPOINT"); e != "" {
-		if d, err := strconv.ParseBool(e); err == nil {
-			c.GroupConfig.DisableEndpoint = d
-		}
 	}
 
 	err = ensureAuthConfig(c.Auth)
@@ -279,18 +206,18 @@ func ensureSSL(s ServerConfiguration) error {
 	return nil
 }
 
-func retrieveIntfromEnv(config string) (uint64, error) {
-	value, err := strconv.Atoi(os.Getenv(config))
-	if err != nil {
-		return 0, errors.New("Failed to parse - " + config)
-	}
-
-	if value == 0 {
-		return 0, errors.New("Invalid - " + config)
-	}
-
-	return uint64(value), nil
-}
+//func retrieveIntfromEnv(config string) (uint64, error) {
+//	value, err := strconv.Atoi(os.Getenv(config))
+//	if err != nil {
+//		return 0, errors.New("Failed to parse - " + config)
+//	}
+//
+//	if value == 0 {
+//		return 0, errors.New("Invalid - " + config)
+//	}
+//
+//	return uint64(value), nil
+//}
 
 // Get fetches the application configuration. LoadConfig must have been called
 // previously for this to work.
