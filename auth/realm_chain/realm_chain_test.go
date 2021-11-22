@@ -11,21 +11,6 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func TestvGet(t *testing.T) {
-	rr := newRealmChain()
-	rr.chain["abc"] = &file.FileRealm{}
-
-	realmChainSingleton.Store(rr)
-
-	rc, err := Get()
-	if err != nil {
-		require.Nil(t, err)
-		return
-	}
-
-	require.Equal(t, rr, rc)
-}
-
 func TestGet(t *testing.T) {
 	tests := []struct {
 		name       string
