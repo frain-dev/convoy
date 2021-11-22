@@ -85,16 +85,15 @@ type GroupConfig struct {
 }
 
 type Configuration struct {
-	Auth              AuthConfiguration     `json:"auth,omitempty"`
-	UIAuthorizedUsers map[string]string     `json:"-"`
-	Database          DatabaseConfiguration `json:"database"`
-	Sentry            SentryConfiguration   `json:"sentry"`
-	Queue             QueueConfiguration    `json:"queue"`
-	Server            ServerConfiguration   `json:"server"`
-	GroupConfig       GroupConfig           `json:"group"`
-	SMTP              SMTPConfiguration     `json:"smtp"`
-	Environment       string                `json:"env" envconfig:"CONVOY_ENV" default:"development"`
-	MultipleTenants   bool                  `json:"multiple_tenants"`
+	Auth            AuthConfiguration     `json:"auth,omitempty"`
+	Database        DatabaseConfiguration `json:"database"`
+	Sentry          SentryConfiguration   `json:"sentry"`
+	Queue           QueueConfiguration    `json:"queue"`
+	Server          ServerConfiguration   `json:"server"`
+	GroupConfig     GroupConfig           `json:"group"`
+	SMTP            SMTPConfiguration     `json:"smtp"`
+	Environment     string                `json:"env" envconfig:"CONVOY_ENV" default:"development"`
+	MultipleTenants bool                  `json:"multiple_tenants"`
 }
 
 type QueueProvider string
@@ -148,6 +147,11 @@ func LoadConfig(p string) error {
 	}
 
 	err = ensureQueueConfig(c.Queue)
+	if err != nil {
+		return err
+	}
+
+	err = ensureStrategyConfig(c.GroupConfig.Strategy)
 	if err != nil {
 		return err
 	}
@@ -213,6 +217,19 @@ func ensureQueueConfig(queueCfg QueueConfiguration) error {
 		}
 	default:
 		return fmt.Errorf("unsupported queue type: %s", queueCfg.Type)
+	}
+	return nil
+}
+
+func ensureStrategyConfig(strategyCfg StrategyConfiguration) error {
+	switch strategyCfg.Type {
+	case DefaultStrategyProvider:
+		d := &strategyCfg.Default
+		if d.IntervalSeconds == 0 || d.RetryLimit == 0 {
+			return errors.New("both interval seconds and retry limit are required for default strategy configuration")
+		}
+	default:
+		return fmt.Errorf("unsupported strategy type: %s", strategyCfg.Type)
 	}
 	return nil
 }
