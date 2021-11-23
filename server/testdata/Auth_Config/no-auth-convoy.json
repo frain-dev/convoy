@@ -8,6 +8,11 @@
     "auth": {
         "require_auth": false
     },
+    "server": {
+        "http": {
+            "port": 80
+        }
+    },
     "group": {
         "strategy": {
             "type": "default",

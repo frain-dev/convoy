@@ -5,6 +5,11 @@
             "dsn": "abc"
         }
     },
+    "server": {
+        "http": {
+            "port": 80
+        }
+    },
     "auth": {
         "require_auth": true,
         "file": {
