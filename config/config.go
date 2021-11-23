@@ -104,7 +104,7 @@ type Configuration struct {
 	Server          ServerConfiguration   `json:"server"`
 	GroupConfig     GroupConfig           `json:"group"`
 	SMTP            SMTPConfiguration     `json:"smtp"`
-	Environment     string                `json:"env" envconfig:"CONVOY_ENV" default:"development"`
+	Environment     string                `json:"env" envconfig:"CONVOY_ENV"`
 	MultipleTenants bool                  `json:"multiple_tenants"`
 }
 
@@ -143,6 +143,11 @@ func LoadConfig(p string) error {
 	err = envconfig.Process("CONVOY", c)
 	if err != nil {
 		return err
+	}
+
+	// if it's still empty, set it to development
+	if c.Environment == "" {
+		c.Environment = DevelopmentEnvironment
 	}
 
 	if c.Server.HTTP.Port == 0 {
