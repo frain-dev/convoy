@@ -60,7 +60,7 @@ func (db *appRepo) LoadApplicationsPaged(ctx context.Context, groupID string, pa
 
 	msgCollection := db.innerDB.Collection(EventCollection)
 	for i, app := range apps {
-		filter = bson.M{"app_id": app.UID, "document_status": bson.M{"$ne": convoy.DeletedDocumentStatus}}
+		filter = bson.M{"app_metadata.uid": app.UID, "document_status": bson.M{"$ne": convoy.DeletedDocumentStatus}}
 		count, err := msgCollection.CountDocuments(ctx, filter)
 		if err != nil {
 			log.Errorf("failed to count events in %s. Reason: %s", app.UID, err)
