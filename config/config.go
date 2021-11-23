@@ -5,8 +5,9 @@ import (
 	"errors"
 	"fmt"
 	"os"
-	"reflect"
 	"sync/atomic"
+
+	log "github.com/sirupsen/logrus"
 
 	"github.com/kelseyhightower/envconfig"
 
@@ -46,6 +47,17 @@ type RedisQueueConfiguration struct {
 type FileRealmOption struct {
 	Basic  []BasicAuth  `json:"basic" bson:"basic"`
 	APIKey []APIKeyAuth `json:"api_key"`
+}
+
+type BasicAuth struct {
+	Username string `json:"username"`
+	Password string `json:"password"`
+	Role     Role   `json:"role"`
+}
+
+type APIKeyAuth struct {
+	APIKey string `json:"api_key"`
+	Role   Role   `json:"role"`
 }
 
 type AuthConfiguration struct {
@@ -133,6 +145,10 @@ func LoadConfig(p string) error {
 		return err
 	}
 
+	if c.Server.HTTP.Port == 0 {
+		return errors.New("http port cannot be zero")
+	}
+
 	err = ensureSSL(c.Server)
 	if err != nil {
 		return err
@@ -144,14 +160,15 @@ func LoadConfig(p string) error {
 	}
 	if c.GroupConfig.Signature.Header == "" {
 		c.GroupConfig.Signature.Header = DefaultSignatureHeader
+		log.Warnf("using default signature header: %s", DefaultSignatureHeader)
 	}
 
-	err = ensureQueueConfig(c.Queue)
+	err = ensureStrategyConfig(c.GroupConfig.Strategy)
 	if err != nil {
 		return err
 	}
 
-	err = ensureStrategyConfig(c.GroupConfig.Strategy)
+	err = ensureQueueConfig(c.Queue)
 	if err != nil {
 		return err
 	}
@@ -166,6 +183,10 @@ func LoadConfig(p string) error {
 }
 
 func ensureAuthConfig(auth AuthConfiguration) error {
+	if !auth.RequireAuth {
+		return nil
+	}
+
 	var err error
 	for _, r := range auth.File.Basic {
 		if r.Username == "" || r.Password == "" {
@@ -195,7 +216,7 @@ func ensureAuthConfig(auth AuthConfiguration) error {
 func ensureSignature(signature SignatureConfiguration) error {
 	_, ok := algo.M[signature.Hash]
 	if !ok {
-		return fmt.Errorf("invalid hash algorithm - '%s', must be one of %s", signature.Hash, reflect.ValueOf(algo.M).MapKeys())
+		return fmt.Errorf("invalid hash algorithm - '%s', must be one of %s", signature.Hash, algo.Algos)
 	}
 	return nil
 }
@@ -224,8 +245,7 @@ func ensureQueueConfig(queueCfg QueueConfiguration) error {
 func ensureStrategyConfig(strategyCfg StrategyConfiguration) error {
 	switch strategyCfg.Type {
 	case DefaultStrategyProvider:
-		d := &strategyCfg.Default
-		if d.IntervalSeconds == 0 || d.RetryLimit == 0 {
+		if strategyCfg.Default.IntervalSeconds == 0 || strategyCfg.Default.RetryLimit == 0 {
 			return errors.New("both interval seconds and retry limit are required for default strategy configuration")
 		}
 	default:
@@ -233,19 +253,6 @@ func ensureStrategyConfig(strategyCfg StrategyConfiguration) error {
 	}
 	return nil
 }
-
-//func retrieveIntfromEnv(config string) (uint64, error) {
-//	value, err := strconv.Atoi(os.Getenv(config))
-//	if err != nil {
-//		return 0, errors.New("Failed to parse - " + config)
-//	}
-//
-//	if value == 0 {
-//		return 0, errors.New("Invalid - " + config)
-//	}
-//
-//	return uint64(value), nil
-//}
 
 // Get fetches the application configuration. LoadConfig must have been called
 // previously for this to work.

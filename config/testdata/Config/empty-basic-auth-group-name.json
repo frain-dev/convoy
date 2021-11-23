@@ -1,4 +1,21 @@
 {
+    "auth": {
+        "require_auth": true,
+        "file": {
+            "basic": [
+                {
+                    "username": "123",
+                    "password": "abc",
+                    "role": {
+                        "type": "admin",
+                        "groups": [
+                            ""
+                        ]
+                    }
+                }
+            ]
+        }
+    },
     "database": {
         "dsn": "mongodb://inside-config-file"
     },
