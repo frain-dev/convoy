@@ -90,7 +90,8 @@ datalist {
 	appearance: none;
 }
 
-input[type='checkbox'] {
+input[type='checkbox'],
+input[type='radio'] {
 	padding: 7px;
 	position: relative;
 
@@ -121,7 +122,7 @@ input[type='checkbox'] {
 	}
 
 	.filter--button {
-		min-width: 145px;
+		min-width: 130px;
 	}
 
 	.filter--button,
