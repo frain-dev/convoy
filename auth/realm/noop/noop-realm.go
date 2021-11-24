@@ -22,6 +22,6 @@ func (n NoopRealm) Authenticate(cred *auth.Credential) (*auth.AuthenticatedUser,
 	return authUser, nil
 }
 
-func NewNoopRealm() *NoopRealm {
-	return &NoopRealm{}
+func NewNoopRealm() NoopRealm {
+	return NoopRealm{}
 }
