@@ -250,7 +250,6 @@
 								<mat-date-range-picker #eventDeliveriesFilterPicker [disabled]="false"></mat-date-range-picker>
 								<img src="/assets/img/angle-arrow-down.svg" alt="arrow down icon" />
 							</button>
-
 							<div class="dropdown">
 								<button
 									class="filter--button dropdown--button"
@@ -275,7 +274,6 @@
 									</div>
 								</div>
 							</div>
-
 							<div class="select">
 								<select [ngClass]="{ active: !!eventDeliveriesApp }" aria-label="frequency" [(ngModel)]="eventDeliveriesApp" (change)="getEventDeliveries({ addToURL: true })">
 									<option value="">All Apps</option>
