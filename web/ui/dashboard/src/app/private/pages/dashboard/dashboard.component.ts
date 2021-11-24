@@ -80,6 +80,10 @@ export class DashboardComponent implements OnInit {
 	groups: GROUP[] = [];
 	activeGroup!: string;
 	allEventdeliveriesChecked = false;
+	eventDeliveryStatuses = ['', 'Success', 'Failure', 'Retry', 'Scheduled', 'Processing', 'Discarded'];
+	eventDeliveryFilteredByStatus: '' | 'Success' | 'Failure' | 'Retry' | 'Scheduled' | 'Processing' | 'Discarded' = '';
+	showOverlay = false;
+	showEventDeliveriesStatusDropdown = false;
 
 	constructor(private httpService: HttpService, private generalService: GeneralService, private router: Router, private formBuilder: FormBuilder, private route: ActivatedRoute) {}
 
@@ -142,6 +146,7 @@ export class DashboardComponent implements OnInit {
 			endDate: filters.eventDelsEndDate ? new Date(filters.eventDelsEndDate) : ''
 		});
 		this.eventDeliveriesApp = filters.eventDelsApp ?? '';
+		this.eventDeliveryFilteredByStatus = filters.eventDelsStatus ?? null;
 	}
 
 	async fetchDashboardData() {
@@ -278,6 +283,7 @@ export class DashboardComponent implements OnInit {
 			if (startDate) queryParams.eventDelsStartDate = startDate;
 			if (endDate) queryParams.eventDelsEndDate = endDate;
 			if (this.eventDeliveriesApp) queryParams.eventDelsApp = this.eventDeliveriesApp;
+			queryParams.eventDelsStatus = this.eventDeliveryFilteredByStatus || '';
 		}
 
 		if (requestDetails.section === 'group') queryParams.group = this.activeGroup;
@@ -294,7 +300,7 @@ export class DashboardComponent implements OnInit {
 			const eventDeliveriesResponse = await this.httpService.request({
 				url: `/eventdeliveries?groupID=${this.activeGroup || ''}&eventId=${requestDetails.eventId || ''}&page=${this.eventDeliveriesPage || 1}&startDate=${startDate}&endDate=${endDate}&appId=${
 					this.eventDeliveriesApp
-				}`,
+				}&status=${this.eventDeliveryFilteredByStatus || ''}`,
 				method: 'get'
 			});
 
@@ -472,9 +478,10 @@ export class DashboardComponent implements OnInit {
 
 			case 'event deliveries':
 				this.eventDeliveriesApp = '';
-				filterItems = ['eventDelsStartDate', 'eventDelsEndDate', 'eventDelsApp'];
+				filterItems = ['eventDelsStartDate', 'eventDelsEndDate', 'eventDelsApp', 'eventDelsStatus'];
 				this.eventDeliveriesFilterDateRange.patchValue({ startDate: '', endDate: '' });
 				this.eventDeliveryFilteredByEventId = '';
+				this.eventDeliveryFilteredByStatus = '';
 				this.getEventDeliveries();
 				break;
 

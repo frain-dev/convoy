@@ -250,7 +250,30 @@
 								<mat-date-range-picker #eventDeliveriesFilterPicker [disabled]="false"></mat-date-range-picker>
 								<img src="/assets/img/angle-arrow-down.svg" alt="arrow down icon" />
 							</button>
-
+							<div class="dropdown">
+								<button
+									class="filter--button dropdown--button"
+									[ngClass]="{ active: eventDeliveryFilteredByStatus }"
+									(click)="showOverlay = true; showEventDeliveriesStatusDropdown = !showEventDeliveriesStatusDropdown"
+								>
+									<img src="/assets/img/status-filter-icon.svg" alt="status filter icon" />
+									<span>{{ eventDeliveryFilteredByStatus || 'Status' }}</span>
+									<img src="/assets/img/angle-arrow-down.svg" alt="arrow down icon" />
+								</button>
+								<div class="dropdown--list" *ngIf="showEventDeliveriesStatusDropdown">
+									<div class="dropdown--list--item" *ngFor="let status of eventDeliveryStatuses">
+										<input
+											type="radio"
+											name="status"
+											[value]="status"
+											[(ngModel)]="eventDeliveryFilteredByStatus"
+											[id]="status"
+											(change)="showOverlay = false; showEventDeliveriesStatusDropdown = false; getEventDeliveries({ addToURL: true })"
+										/>
+										<label [for]="status">{{ status || 'None' }}</label>
+									</div>
+								</div>
+							</div>
 							<div class="select">
 								<select [ngClass]="{ active: !!eventDeliveriesApp }" aria-label="frequency" [(ngModel)]="eventDeliveriesApp" (change)="getEventDeliveries({ addToURL: true })">
 									<option value="">All Apps</option>
@@ -273,7 +296,8 @@
 								[disabled]="
 									(eventDeliveriesFilterDateRange.value.startDate == '' || eventDeliveriesFilterDateRange.value.endDate == '') &&
 									eventDeliveriesApp == '' &&
-									eventDeliveryFilteredByEventId == ''
+									eventDeliveryFilteredByEventId == '' &&
+									!eventDeliveryFilteredByStatus
 								"
 							>
 								Clear Filter
@@ -537,3 +561,5 @@
 		</section>
 	</div>
 </div>
+
+<div class="overlay" *ngIf="showOverlay" (click)="showOverlay = false; showEventDeliveriesStatusDropdown = false"></div>
