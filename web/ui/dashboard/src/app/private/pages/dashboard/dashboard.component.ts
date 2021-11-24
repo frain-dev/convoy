@@ -447,12 +447,13 @@ export class DashboardComponent implements OnInit {
 		try {
 			await this.httpService.request({
 				method: 'post',
-				url: `/eventdeliveries/batchretry`,
+				url: `/eventdeliveries/batchretry?groupID=${this.activeGroup || ''}`,
 				body: { ids: this.selectedEventsFromEventDeliveriesTable }
 			});
 
 			this.generalService.showNotification({ message: 'Batch Retry Request Sent' });
 			this.getEventDeliveries();
+			this.selectedEventsFromEventDeliveriesTable = [];
 		} catch (error: any) {
 			this.generalService.showNotification({ message: error.error.message });
 			return error;
