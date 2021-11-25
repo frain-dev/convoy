@@ -24,7 +24,6 @@ import (
 	"github.com/frain-dev/convoy/util"
 	pager "github.com/gobeam/mongo-go-pagination"
 	log "github.com/sirupsen/logrus"
-	"go.mongodb.org/mongo-driver/bson/primitive"
 
 	"github.com/frain-dev/convoy"
 	"github.com/go-chi/chi/v5"
@@ -246,20 +245,6 @@ func requireDeliveryAttempt() func(next http.Handler) http.Handler {
 			next.ServeHTTP(w, r)
 		})
 	}
-}
-
-func updateEndpointIfFound(endpoints *[]convoy.Endpoint, id string, e models.Endpoint) (*[]convoy.Endpoint, *convoy.Endpoint, error) {
-	for i, endpoint := range *endpoints {
-		if endpoint.UID == id && endpoint.DeletedAt == 0 {
-			endpoint.TargetURL = e.URL
-			endpoint.Description = e.Description
-			endpoint.Status = convoy.ActiveEndpointStatus
-			endpoint.UpdatedAt = primitive.NewDateTimeFromTime(time.Now())
-			(*endpoints)[i] = endpoint
-			return endpoints, &endpoint, nil
-		}
-	}
-	return endpoints, nil, convoy.ErrEndpointNotFound
 }
 
 func findEndpoint(endpoints *[]convoy.Endpoint, id string) (*convoy.Endpoint, error) {
