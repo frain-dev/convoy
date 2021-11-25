@@ -23,6 +23,33 @@
 			margin: 0 20px 0;
 		}
 	}
+
+	.dropdown {
+		position: relative;
+
+		.dropdown--list {
+			position: absolute;
+			top: 110%;
+			background: var(--primary-color-inverse);
+			width: 95%;
+			left: 5%;
+			padding: 5px 10px;
+			font-size: 14px;
+			border: 1px solid #f3f5f9;
+			border-radius: 8px;
+			z-index: 5;
+
+			&--item {
+				display: flex;
+				align-items: center;
+				margin: 5px 0;
+
+				input {
+					margin-right: 10px;
+				}
+			}
+		}
+	}
 }
 
 table {

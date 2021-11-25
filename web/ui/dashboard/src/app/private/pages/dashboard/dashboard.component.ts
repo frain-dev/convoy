@@ -80,18 +80,24 @@ export class DashboardComponent implements OnInit {
 	groups: GROUP[] = [];
 	activeGroup!: string;
 	allEventdeliveriesChecked = false;
+	eventDeliveryStatuses = ['', 'Success', 'Failure', 'Retry', 'Scheduled', 'Processing', 'Discarded'];
+	eventDeliveryFilteredByStatus: '' | 'Success' | 'Failure' | 'Retry' | 'Scheduled' | 'Processing' | 'Discarded' = '';
+	showOverlay = false;
+	showEventDeliveriesStatusDropdown = false;
 
 	constructor(private httpService: HttpService, private generalService: GeneralService, private router: Router, private formBuilder: FormBuilder, private route: ActivatedRoute) {}
 
 	async ngOnInit() {
 		await this.initDashboard();
-		this.toggleActiveTab('events');
 	}
 
 	async initDashboard() {
 		await this.getGroups();
 		this.getFiltersFromURL();
 		await Promise.all([this.getConfigDetails(), this.fetchDashboardData(), this.getEvents(), this.getApps(), this.getEventDeliveries()]);
+
+		// get active tab from url and apply, after getting the details from above requests so that the data is available ahead
+		this.toggleActiveTab(this.route.snapshot.queryParams.activeTab ?? 'events');
 		return;
 	}
 
@@ -102,6 +108,7 @@ export class DashboardComponent implements OnInit {
 
 	toggleActiveTab(tab: 'events' | 'apps' | 'event deliveries') {
 		this.activeTab = tab;
+		this.addFilterToURL({ section: 'logTab' });
 
 		if (tab === 'apps' && this.apps?.content.length > 0) {
 			this.detailsItem = this.apps?.content[0];
@@ -139,6 +146,7 @@ export class DashboardComponent implements OnInit {
 			endDate: filters.eventDelsEndDate ? new Date(filters.eventDelsEndDate) : ''
 		});
 		this.eventDeliveriesApp = filters.eventDelsApp ?? '';
+		this.eventDeliveryFilteredByStatus = filters.eventDelsStatus ?? null;
 	}
 
 	async fetchDashboardData() {
@@ -231,15 +239,18 @@ export class DashboardComponent implements OnInit {
 		return displayedEvents;
 	}
 
-	async getEvents() {
+	async getEvents(requestDetails?: { appId?: string; addToURL?: boolean }) {
+		if (requestDetails?.appId) this.eventApp = requestDetails.appId;
+		if (requestDetails?.addToURL) this.addFilterToURL({ section: 'events' });
+
 		const { startDate, endDate } = this.setDateForFilter(this.eventsFilterDateRange.value);
 
 		try {
 			const eventsResponse = await this.httpService.request({
-				url: `/events?groupID=${this.activeGroup || ''}&sort=AESC&page=${this.eventsPage || 1}&perPage=20&startDate=${startDate}&endDate=${endDate}&appId=${this.eventApp}`,
+				url: `/events?groupID=${this.activeGroup || ''}&sort=AESC&page=${this.eventsPage || 1}&perPage=20&startDate=${startDate}&endDate=${endDate}&appId=${requestDetails?.appId ?? this.eventApp}`,
 				method: 'get'
 			});
-			this.detailsItem = eventsResponse.data.content[0];
+			if (this.activeTab === 'events') this.detailsItem = eventsResponse.data.content[0];
 
 			if (this.events && this.events?.pagination?.next === this.eventsPage) {
 				const content = [...this.events.content, ...eventsResponse.data.content];
@@ -256,7 +267,7 @@ export class DashboardComponent implements OnInit {
 		}
 	}
 
-	addFilterToURL(requestDetails: { section: 'events' | 'eventDels' | 'group' }) {
+	addFilterToURL(requestDetails: { section: 'events' | 'eventDels' | 'group' | 'logTab' }) {
 		const currentURLfilters = this.route.snapshot.queryParams;
 		const queryParams: any = {};
 
@@ -272,11 +283,12 @@ export class DashboardComponent implements OnInit {
 			if (startDate) queryParams.eventDelsStartDate = startDate;
 			if (endDate) queryParams.eventDelsEndDate = endDate;
 			if (this.eventDeliveriesApp) queryParams.eventDelsApp = this.eventDeliveriesApp;
+			queryParams.eventDelsStatus = this.eventDeliveryFilteredByStatus || '';
 		}
 
-		if (requestDetails.section === 'group') {
-			queryParams.group = this.activeGroup;
-		}
+		if (requestDetails.section === 'group') queryParams.group = this.activeGroup;
+
+		if (requestDetails.section === 'logTab') queryParams.activeTab = this.activeTab;
 
 		this.router.navigate([], { queryParams: Object.assign({}, currentURLfilters, queryParams) });
 	}
@@ -288,7 +300,7 @@ export class DashboardComponent implements OnInit {
 			const eventDeliveriesResponse = await this.httpService.request({
 				url: `/eventdeliveries?groupID=${this.activeGroup || ''}&eventId=${requestDetails.eventId || ''}&page=${this.eventDeliveriesPage || 1}&startDate=${startDate}&endDate=${endDate}&appId=${
 					this.eventDeliveriesApp
-				}`,
+				}&status=${this.eventDeliveryFilteredByStatus || ''}`,
 				method: 'get'
 			});
 
@@ -298,11 +310,13 @@ export class DashboardComponent implements OnInit {
 		}
 	}
 
-	async getEventDeliveries() {
+	async getEventDeliveries(requestDetails?: { addToURL?: boolean }) {
+		if (requestDetails?.addToURL) this.addFilterToURL({ section: 'eventDels' });
 		const { startDate, endDate } = this.setDateForFilter(this.eventDeliveriesFilterDateRange.value);
 
 		try {
 			const eventDeliveriesResponse = await this.eventDeliveriesRequest({ eventId: this.eventDeliveryFilteredByEventId, startDate, endDate });
+			if (this.activeTab === 'event deliveries') this.detailsItem = eventDeliveriesResponse.data.content[0];
 
 			if (this.eventDeliveries && this.eventDeliveries?.pagination?.next === this.eventDeliveriesPage) {
 				const content = [...this.eventDeliveries.content, ...eventDeliveriesResponse.data.content];
@@ -325,12 +339,15 @@ export class DashboardComponent implements OnInit {
 		this.sidebarEventDeliveries = response.data.content;
 	}
 
-	toggleActiveGroup() {
+	async toggleActiveGroup() {
+		await Promise.all([this.clearEventFilters('event deliveries'), this.clearEventFilters('events')]);
 		this.addFilterToURL({ section: 'group' });
 		Promise.all([this.getConfigDetails(), this.fetchDashboardData(), this.getEvents(), this.getApps(), this.getEventDeliveries()]);
 	}
 
-	async getGroups() {
+	async getGroups(requestDetails?: { addToURL?: boolean }) {
+		if (requestDetails?.addToURL) this.addFilterToURL({ section: 'group' });
+
 		try {
 			const groupsResponse = await this.httpService.request({
 				url: `/groups`,
@@ -360,6 +377,7 @@ export class DashboardComponent implements OnInit {
 				return;
 			}
 			this.apps = appsResponse.data;
+			if (this.activeTab === 'apps') this.detailsItem = this.apps?.content[0];
 			return;
 		} catch (error) {
 			return error;
@@ -429,12 +447,13 @@ export class DashboardComponent implements OnInit {
 		try {
 			await this.httpService.request({
 				method: 'post',
-				url: `/eventdeliveries/batchretry`,
+				url: `/eventdeliveries/batchretry?groupID=${this.activeGroup || ''}`,
 				body: { ids: this.selectedEventsFromEventDeliveriesTable }
 			});
 
 			this.generalService.showNotification({ message: 'Batch Retry Request Sent' });
 			this.getEventDeliveries();
+			this.selectedEventsFromEventDeliveriesTable = [];
 		} catch (error: any) {
 			this.generalService.showNotification({ message: error.error.message });
 			return error;
@@ -446,7 +465,7 @@ export class DashboardComponent implements OnInit {
 		return authDetails ? JSON.parse(authDetails) : false;
 	}
 
-	clearEventFilters(tableName: 'events' | 'event deliveries') {
+	async clearEventFilters(tableName: 'events' | 'event deliveries') {
 		const activeFilters = Object.assign({}, this.route.snapshot.queryParams);
 		let filterItems: string[] = [];
 
@@ -460,9 +479,10 @@ export class DashboardComponent implements OnInit {
 
 			case 'event deliveries':
 				this.eventDeliveriesApp = '';
-				filterItems = ['eventDelsStartDate', 'eventDelsEndDate', 'eventDelsApp'];
+				filterItems = ['eventDelsStartDate', 'eventDelsEndDate', 'eventDelsApp', 'eventDelsStatus'];
 				this.eventDeliveriesFilterDateRange.patchValue({ startDate: '', endDate: '' });
 				this.eventDeliveryFilteredByEventId = '';
+				this.eventDeliveryFilteredByStatus = '';
 				this.getEventDeliveries();
 				break;
 
@@ -471,7 +491,7 @@ export class DashboardComponent implements OnInit {
 		}
 
 		filterItems.forEach(key => (activeFilters.hasOwnProperty(key) ? delete activeFilters[key] : null));
-		this.router.navigate([], { relativeTo: this.route, queryParams: activeFilters });
+		await this.router.navigate([], { relativeTo: this.route, queryParams: activeFilters });
 	}
 
 	checkAllCheckboxes(event: any) {
