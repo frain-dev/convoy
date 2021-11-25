@@ -242,6 +242,14 @@ func (a *applicationHandler) CreateAppEndpoint(w http.ResponseWriter, r *http.Re
 		return
 	}
 
+	// Events being nil means it wasn't passed at all, which automatically
+	// translates into a accept all scenario. This is quite different from
+	// an empty array which signifies a blacklist all events -- no events
+	// will be sent to such endpoints.
+	if e.Events == nil {
+		e.Events = []string{"*"}
+	}
+
 	endpoint := &convoy.Endpoint{
 		UID:            uuid.New().String(),
 		TargetURL:      e.URL,
@@ -386,4 +394,19 @@ func (a *applicationHandler) GetPaginatedApps(w http.ResponseWriter, r *http.Req
 	_ = render.Render(w, r, newServerResponse("Apps fetched successfully",
 		pagedResponse{Content: *getApplicationsFromContext(r.Context()),
 			Pagination: getPaginationDataFromContext(r.Context())}, http.StatusOK))
+}
+
+func updateEndpointIfFound(endpoints *[]convoy.Endpoint, id string, e models.Endpoint) (*[]convoy.Endpoint, *convoy.Endpoint, error) {
+	for i, endpoint := range *endpoints {
+		if endpoint.UID == id && endpoint.DeletedAt == 0 {
+			endpoint.TargetURL = e.URL
+			endpoint.Description = e.Description
+			endpoint.Events = e.Events
+			endpoint.Status = convoy.ActiveEndpointStatus
+			endpoint.UpdatedAt = primitive.NewDateTimeFromTime(time.Now())
+			(*endpoints)[i] = endpoint
+			return endpoints, &endpoint, nil
+		}
+	}
+	return endpoints, nil, convoy.ErrEndpointNotFound
 }
