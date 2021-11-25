@@ -51,8 +51,9 @@ services:
 
 ```json[convoy.json]
 {
+  "environment": "development",
   "database": {
-    "dsn": "mongodb://root:rootpassword@mongodb:27017"
+    "dsn": "mongodb://root:rootpassword@mongodb:27017/convoy?authSource=admin"
   },
   "queue": {
     "type": "redis",
@@ -68,14 +69,34 @@ services:
   "auth": {
     "type": "none"
   },
+  "signature": {
+    "header": "X-Convoy-Signature",
+    "hash": "SHA256"
+  },
   "strategy": {
     "type": "default",
     "default": {
-      "intervalSeconds": 120,
-      "retryLimit": 10
+      "intervalSeconds": 20,
+      "retryLimit": 3
     }
+  },
+  "ui": {
+    "type": "basic",
+    "basic": [
+      {
+        "username": "user1",
+        "password": "password1"
+      },
+      {
+        "username": "user2",
+        "password": "password2"
+      }
+    ],
+    "jwtKey": "U21hcnQiLCJleHAiOjE2MzE2MjMzOTAsImlhdCI6MTYzMTYyMzM5MH0.u4kHClCgj9KjdyHfebQn8_AnU0DlXeJX8zvJvpMLCkQ",
+    "jwtTokenExpirySeconds": 3600
   }
 }
+
 ```
 
 ## 3. Start Containers
