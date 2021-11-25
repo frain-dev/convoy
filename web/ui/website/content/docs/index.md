@@ -63,7 +63,7 @@ services:
   },
   "server": {
     "http": {
-      "port": 5008
+      "port": 5005
     }
   },
   "auth": {
