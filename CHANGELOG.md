@@ -3,6 +3,12 @@
 * [Feature] Batch Retries: User can batch retry multiple event deliveries at once.
 * [Feature] Unified auth configuration for both UI and API.
 * [Feature] Added minimal rbac for super user, admin and ui admin.
+* [Feature] Multiple endpoints per app
+* [Feature] New tab to view event deliveries for events. 
+* [Feature] Filter event deliveries by delivery status, app and date range
+* [Feature] View event deliveries status for each event from event's details section. 
+* [Feature] Introducing Groups: Groups can be regarded as different products within an organization sending out events to different sets of apps in each group. Dashboard UI also supports groups, meaning you can also switch between groups to view each group's dashboard details.
+* [Feature] Persist events and event deliveries filters, active group and active logs tab with page reload.
 
 ## 0.2.0
 * [Feature] Add disable events and send email notifications.
