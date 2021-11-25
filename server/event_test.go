@@ -642,3 +642,211 @@ func Test_resendEventDelivery(t *testing.T) {
 		})
 	}
 }
+
+func TestApplicationHandler_BatchRetryEventDelivery(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	groupRepo := mocks.NewMockGroupRepository(ctrl)
+	appRepo := mocks.NewMockApplicationRepository(ctrl)
+	eventRepo := mocks.NewMockEventRepository(ctrl)
+	eventDeliveryRepo := mocks.NewMockEventDeliveryRepository(ctrl)
+	eventQueue := mocks.NewMockQueuer(ctrl)
+
+	app := newApplicationHandler(eventRepo, eventDeliveryRepo, appRepo, groupRepo, eventQueue)
+	group := &convoy.Group{Name: "default-group", UID: "1234567890"}
+
+	type args struct {
+		event   *convoy.Event
+		message []convoy.EventDelivery
+	}
+	tests := []struct {
+		name       string
+		cfgPath    string
+		method     string
+		statusCode int
+		args       args
+		body       *strings.Reader
+		dbFn       func(*convoy.Event, []convoy.EventDelivery, *applicationHandler)
+	}{
+		{
+			name:       "should_batch_retry_all_successfully",
+			cfgPath:    "./testdata/Auth_Config/no-auth-convoy.json",
+			method:     http.MethodPost,
+			statusCode: http.StatusOK,
+			args: args{
+				event: &convoy.Event{
+					UID: "1111",
+				},
+				message: []convoy.EventDelivery{
+					{
+						UID:    "123",
+						Status: convoy.FailureEventStatus,
+						EventMetadata: &convoy.EventMetadata{
+							UID: "abcd",
+						},
+						EndpointMetadata: &convoy.EndpointMetadata{
+							UID: "1234",
+						},
+						AppMetadata: &convoy.AppMetadata{
+							UID: "123",
+						},
+					},
+				},
+			},
+			body: strings.NewReader(`{"ids":["1234","12345"]}`),
+			dbFn: func(ev *convoy.Event, msg []convoy.EventDelivery, app *applicationHandler) {
+				e, _ := app.eventDeliveryRepo.(*mocks.MockEventDeliveryRepository)
+				e.EXPECT().
+					FindEventDeliveriesByIDs(gomock.Any(), gomock.Any()).Times(1).
+					Return(msg, nil)
+
+				e.EXPECT().
+					UpdateStatusOfEventDelivery(gomock.Any(), gomock.Any(), gomock.Any()).Times(1).
+					Return(nil)
+
+				a, _ := app.appRepo.(*mocks.MockApplicationRepository)
+				a.EXPECT().
+					FindApplicationEndpointByID(gomock.Any(), gomock.Any(), gomock.Any()).Times(1).
+					Return(
+						&convoy.Endpoint{
+							Status: convoy.InactiveEndpointStatus,
+						},
+						nil,
+					)
+
+				a.EXPECT().
+					UpdateApplicationEndpointsStatus(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Times(1).
+					Return(nil)
+
+				o, _ := app.groupRepo.(*mocks.MockGroupRepository)
+				o.EXPECT().
+					LoadGroups(gomock.Any(), gomock.Any()).Times(1).
+					Return([]*convoy.Group{group}, nil)
+
+				q, _ := app.eventQueue.(*mocks.MockQueuer)
+				q.EXPECT().
+					Write(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Times(1).
+					Return(nil)
+			},
+		},
+		{
+			name:       "should_batch_retry_one_successfully",
+			cfgPath:    "./testdata/Auth_Config/no-auth-convoy.json",
+			method:     http.MethodPost,
+			statusCode: http.StatusOK,
+			args: args{
+				event: &convoy.Event{
+					UID: "1111",
+				},
+				message: []convoy.EventDelivery{
+					{
+						UID:    "123",
+						Status: convoy.FailureEventStatus,
+						EventMetadata: &convoy.EventMetadata{
+							UID: "abcd",
+						},
+						EndpointMetadata: &convoy.EndpointMetadata{
+							UID: "1234",
+						},
+						AppMetadata: &convoy.AppMetadata{
+							UID: "123",
+						},
+					},
+					{
+						UID:    "123",
+						Status: convoy.SuccessEventStatus,
+						EventMetadata: &convoy.EventMetadata{
+							UID: "abcd",
+						},
+						EndpointMetadata: &convoy.EndpointMetadata{
+							UID: "1234",
+						},
+						AppMetadata: &convoy.AppMetadata{
+							UID: "123",
+						},
+					},
+				},
+			},
+			body: strings.NewReader(`{"ids":["1234","12345"]}`),
+			dbFn: func(ev *convoy.Event, msg []convoy.EventDelivery, app *applicationHandler) {
+				e, _ := app.eventDeliveryRepo.(*mocks.MockEventDeliveryRepository)
+				e.EXPECT().
+					FindEventDeliveriesByIDs(gomock.Any(), gomock.Any()).Times(1).
+					Return(msg, nil)
+
+				e.EXPECT().
+					UpdateStatusOfEventDelivery(gomock.Any(), gomock.Any(), gomock.Any()).Times(1).
+					Return(nil)
+
+				a, _ := app.appRepo.(*mocks.MockApplicationRepository)
+				a.EXPECT().
+					FindApplicationEndpointByID(gomock.Any(), gomock.Any(), gomock.Any()).Times(1).
+					Return(
+						&convoy.Endpoint{
+							Status: convoy.InactiveEndpointStatus,
+						},
+						nil,
+					)
+
+				a.EXPECT().
+					UpdateApplicationEndpointsStatus(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Times(1).
+					Return(nil)
+
+				o, _ := app.groupRepo.(*mocks.MockGroupRepository)
+				o.EXPECT().
+					LoadGroups(gomock.Any(), gomock.Any()).Times(1).
+					Return([]*convoy.Group{group}, nil)
+
+				q, _ := app.eventQueue.(*mocks.MockQueuer)
+				q.EXPECT().
+					Write(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Times(1).
+					Return(nil)
+			},
+		},
+		{
+			name:       "should_error_for_malformed_body",
+			cfgPath:    "./testdata/Auth_Config/no-auth-convoy.json",
+			method:     http.MethodPost,
+			statusCode: http.StatusBadRequest,
+			body:       strings.NewReader(`{"ids":"12345"}`),
+			dbFn: func(ev *convoy.Event, msg []convoy.EventDelivery, app *applicationHandler) {
+				o, _ := app.groupRepo.(*mocks.MockGroupRepository)
+				o.EXPECT().
+					LoadGroups(gomock.Any(), gomock.Any()).Times(1).
+					Return([]*convoy.Group{group}, nil)
+			},
+		},
+	}
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			url := "/api/v1/eventdeliveries/batchretry"
+			req := httptest.NewRequest(tc.method, url, tc.body)
+			req.SetBasicAuth("test", "test")
+			req.Header.Add("Content-Type", "application/json")
+
+			w := httptest.NewRecorder()
+
+			if tc.dbFn != nil {
+				tc.dbFn(tc.args.event, tc.args.message, app)
+			}
+
+			err := config.LoadConfig(tc.cfgPath)
+			if err != nil {
+				t.Errorf("Failed to load config file: %v", err)
+			}
+			initRealmChain(t)
+
+			router := buildRoutes(app)
+
+			// Act
+			router.ServeHTTP(w, req)
+
+			if w.Code != tc.statusCode {
+				t.Errorf("Want status '%d', got '%d'", tc.statusCode, w.Code)
+			}
+
+			verifyMatch(t, *w)
+		})
+	}
+}

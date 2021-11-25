@@ -5,7 +5,7 @@ import * as moment from 'moment';
 import { GeneralService } from 'src/app/services/general/general.service';
 import { APP } from 'src/app/models/app.model';
 import { EVENT, EVENT_DELIVERY } from 'src/app/models/event.model';
-import { Router } from '@angular/router';
+import { ActivatedRoute, Router } from '@angular/router';
 import { FormBuilder, FormGroup } from '@angular/forms';
 import { PAGINATION } from 'src/app/models/global.model';
 import { HTTP_RESPONSE } from 'src/app/models/http.model';
@@ -72,28 +72,34 @@ export class DashboardComponent implements OnInit {
 		startDate: [{ value: '', disabled: true }],
 		endDate: [{ value: '', disabled: true }]
 	});
-	selectedEventsFromEventsTable: string[] = [];
+	selectedEventsFromEventDeliveriesTable: string[] = [];
 	displayedEventDeliveries: { date: string; events: EVENT_DELIVERY[] }[] = [];
 	eventDeliveries!: { pagination: PAGINATION; content: EVENT_DELIVERY[] };
 	sidebarEventDeliveries: EVENT_DELIVERY[] = [];
 	eventDeliveryFilteredByEventId = '';
 	groups: GROUP[] = [];
 	activeGroup!: string;
+	allEventdeliveriesChecked = false;
+	eventDeliveryStatuses = ['', 'Success', 'Failure', 'Retry', 'Scheduled', 'Processing', 'Discarded'];
+	eventDeliveryFilteredByStatus: '' | 'Success' | 'Failure' | 'Retry' | 'Scheduled' | 'Processing' | 'Discarded' = '';
+	showOverlay = false;
+	showEventDeliveriesStatusDropdown = false;
 
-	constructor(private httpService: HttpService, private generalService: GeneralService, private router: Router, private formBuilder: FormBuilder) {}
+	constructor(private httpService: HttpService, private generalService: GeneralService, private router: Router, private formBuilder: FormBuilder, private route: ActivatedRoute) {}
 
 	async ngOnInit() {
 		await this.initDashboard();
-		this.toggleActiveTab('events');
 	}
 
 	async initDashboard() {
 		await this.getGroups();
-		await Promise.all([this.getOrganisationDetails(), this.fetchDashboardData(), this.getEvents(), this.getApps(), this.getEventDeliveries()]);
+		this.getFiltersFromURL();
+		await Promise.all([this.getConfigDetails(), this.fetchDashboardData(), this.getEvents(), this.getApps(), this.getEventDeliveries()]);
+
+		// get active tab from url and apply, after getting the details from above requests so that the data is available ahead
+		this.toggleActiveTab(this.route.snapshot.queryParams.activeTab ?? 'events');
 		return;
 	}
-
-	toggleShowDropdown() {}
 
 	logout() {
 		localStorage.removeItem('CONVOY_AUTH');
@@ -102,6 +108,7 @@ export class DashboardComponent implements OnInit {
 
 	toggleActiveTab(tab: 'events' | 'apps' | 'event deliveries') {
 		this.activeTab = tab;
+		this.addFilterToURL({ section: 'logTab' });
 
 		if (tab === 'apps' && this.apps?.content.length > 0) {
 			this.detailsItem = this.apps?.content[0];
@@ -115,19 +122,37 @@ export class DashboardComponent implements OnInit {
 		}
 	}
 
-	async getOrganisationDetails() {
+	async getConfigDetails() {
 		try {
 			const organisationDetailsResponse = await this.httpService.request({
-				url: `/dashboard/config`,
+				url: `/dashboard/config?groupID=${this.activeGroup || ''}`,
 				method: 'get'
 			});
 			this.organisationDetails = organisationDetailsResponse.data;
 		} catch (error) {}
 	}
 
+	getFiltersFromURL() {
+		const filters = this.route.snapshot.queryParams;
+		if (Object.keys(filters).length == 0) return;
+
+		// for events filters
+		this.eventsFilterDateRange.patchValue({ startDate: filters.eventsStartDate ? new Date(filters.eventsStartDate) : '', endDate: filters.eventsEndDate ? new Date(filters.eventsEndDate) : '' });
+		this.eventApp = filters.eventsApp ?? '';
+
+		// for event deliveries filters
+		this.eventDeliveriesFilterDateRange.patchValue({
+			startDate: filters.eventDelsStartDate ? new Date(filters.eventDelsStartDate) : '',
+			endDate: filters.eventDelsEndDate ? new Date(filters.eventDelsEndDate) : ''
+		});
+		this.eventDeliveriesApp = filters.eventDelsApp ?? '';
+		this.eventDeliveryFilteredByStatus = filters.eventDelsStatus ?? null;
+	}
+
 	async fetchDashboardData() {
 		try {
 			const { startDate, endDate } = this.setDateForFilter(this.statsDateRange.value);
+
 			const dashboardResponse = await this.httpService.request({
 				url: `/dashboard/summary?groupID=${this.activeGroup || ''}&startDate=${startDate || ''}&endDate=${endDate || ''}&type=${this.dashboardFrequency}`,
 				method: 'get'
@@ -214,15 +239,18 @@ export class DashboardComponent implements OnInit {
 		return displayedEvents;
 	}
 
-	async getEvents() {
+	async getEvents(requestDetails?: { appId?: string; addToURL?: boolean }) {
+		if (requestDetails?.appId) this.eventApp = requestDetails.appId;
+		if (requestDetails?.addToURL) this.addFilterToURL({ section: 'events' });
+
 		const { startDate, endDate } = this.setDateForFilter(this.eventsFilterDateRange.value);
 
 		try {
 			const eventsResponse = await this.httpService.request({
-				url: `/events?groupID=${this.activeGroup || ''}&sort=AESC&page=${this.eventsPage || 1}&perPage=20&startDate=${startDate}&endDate=${endDate}&appId=${this.eventApp}`,
+				url: `/events?groupID=${this.activeGroup || ''}&sort=AESC&page=${this.eventsPage || 1}&perPage=20&startDate=${startDate}&endDate=${endDate}&appId=${requestDetails?.appId ?? this.eventApp}`,
 				method: 'get'
 			});
-			this.detailsItem = eventsResponse.data.content[0];
+			if (this.activeTab === 'events') this.detailsItem = eventsResponse.data.content[0];
 
 			if (this.events && this.events?.pagination?.next === this.eventsPage) {
 				const content = [...this.events.content, ...eventsResponse.data.content];
@@ -239,12 +267,40 @@ export class DashboardComponent implements OnInit {
 		}
 	}
 
+	addFilterToURL(requestDetails: { section: 'events' | 'eventDels' | 'group' | 'logTab' }) {
+		const currentURLfilters = this.route.snapshot.queryParams;
+		const queryParams: any = {};
+
+		if (requestDetails.section === 'events') {
+			const { startDate, endDate } = this.setDateForFilter(this.eventsFilterDateRange.value);
+			if (startDate) queryParams.eventsStartDate = startDate;
+			if (endDate) queryParams.eventsEndDate = endDate;
+			if (this.eventApp) queryParams.eventsApp = this.eventApp;
+		}
+
+		if (requestDetails.section === 'eventDels') {
+			const { startDate, endDate } = this.setDateForFilter(this.eventDeliveriesFilterDateRange.value);
+			if (startDate) queryParams.eventDelsStartDate = startDate;
+			if (endDate) queryParams.eventDelsEndDate = endDate;
+			if (this.eventDeliveriesApp) queryParams.eventDelsApp = this.eventDeliveriesApp;
+			queryParams.eventDelsStatus = this.eventDeliveryFilteredByStatus || '';
+		}
+
+		if (requestDetails.section === 'group') queryParams.group = this.activeGroup;
+
+		if (requestDetails.section === 'logTab') queryParams.activeTab = this.activeTab;
+
+		this.router.navigate([], { queryParams: Object.assign({}, currentURLfilters, queryParams) });
+	}
+
 	async eventDeliveriesRequest(requestDetails: { eventId?: string; startDate?: string; endDate?: string }): Promise<HTTP_RESPONSE> {
+		const { startDate, endDate } = this.setDateForFilter(this.eventDeliveriesFilterDateRange.value);
+
 		try {
 			const eventDeliveriesResponse = await this.httpService.request({
-				url: `/eventdeliveries?groupID=${this.activeGroup || ''}&eventId=${requestDetails.eventId || ''}&page=${this.eventDeliveriesPage || 1}&startDate=${requestDetails.startDate}&endDate=${
-					requestDetails.endDate
-				}&appId=${this.eventDeliveriesApp}`,
+				url: `/eventdeliveries?groupID=${this.activeGroup || ''}&eventId=${requestDetails.eventId || ''}&page=${this.eventDeliveriesPage || 1}&startDate=${startDate}&endDate=${endDate}&appId=${
+					this.eventDeliveriesApp
+				}&status=${this.eventDeliveryFilteredByStatus || ''}`,
 				method: 'get'
 			});
 
@@ -254,11 +310,13 @@ export class DashboardComponent implements OnInit {
 		}
 	}
 
-	async getEventDeliveries() {
+	async getEventDeliveries(requestDetails?: { addToURL?: boolean }) {
+		if (requestDetails?.addToURL) this.addFilterToURL({ section: 'eventDels' });
 		const { startDate, endDate } = this.setDateForFilter(this.eventDeliveriesFilterDateRange.value);
 
 		try {
 			const eventDeliveriesResponse = await this.eventDeliveriesRequest({ eventId: this.eventDeliveryFilteredByEventId, startDate, endDate });
+			if (this.activeTab === 'event deliveries') this.detailsItem = eventDeliveriesResponse.data.content[0];
 
 			if (this.eventDeliveries && this.eventDeliveries?.pagination?.next === this.eventDeliveriesPage) {
 				const content = [...this.eventDeliveries.content, ...eventDeliveriesResponse.data.content];
@@ -281,19 +339,25 @@ export class DashboardComponent implements OnInit {
 		this.sidebarEventDeliveries = response.data.content;
 	}
 
-	toggleActiveGroup() {
-		Promise.all([this.getOrganisationDetails(), this.fetchDashboardData(), this.getEvents(), this.getApps(), this.getEventDeliveries()]);
+	async toggleActiveGroup() {
+		await Promise.all([this.clearEventFilters('event deliveries'), this.clearEventFilters('events')]);
+		this.addFilterToURL({ section: 'group' });
+		Promise.all([this.getConfigDetails(), this.fetchDashboardData(), this.getEvents(), this.getApps(), this.getEventDeliveries()]);
 	}
 
-	async getGroups() {
+	async getGroups(requestDetails?: { addToURL?: boolean }) {
+		if (requestDetails?.addToURL) this.addFilterToURL({ section: 'group' });
+
 		try {
 			const groupsResponse = await this.httpService.request({
 				url: `/groups`,
 				method: 'get'
 			});
-
 			this.groups = groupsResponse.data;
-			this.activeGroup = this.groups[0]?.uid ?? null;
+
+			// check group existing filter in url and set active group
+			this.activeGroup = this.route.snapshot.queryParams.group ?? this.groups[0]?.uid;
+			return;
 		} catch (error) {
 			return error;
 		}
@@ -313,6 +377,8 @@ export class DashboardComponent implements OnInit {
 				return;
 			}
 			this.apps = appsResponse.data;
+			if (this.activeTab === 'apps') this.detailsItem = this.apps?.content[0];
+			return;
 		} catch (error) {
 			return error;
 		}
@@ -325,6 +391,7 @@ export class DashboardComponent implements OnInit {
 				method: 'get'
 			});
 			this.eventDeliveryAtempt = deliveryAttemptsResponse.data[deliveryAttemptsResponse.data.length - 1];
+			return;
 		} catch (error) {
 			return error;
 		}
@@ -376,37 +443,89 @@ export class DashboardComponent implements OnInit {
 		}
 	}
 
+	async batchRetryEvent() {
+		try {
+			await this.httpService.request({
+				method: 'post',
+				url: `/eventdeliveries/batchretry?groupID=${this.activeGroup || ''}`,
+				body: { ids: this.selectedEventsFromEventDeliveriesTable }
+			});
+
+			this.generalService.showNotification({ message: 'Batch Retry Request Sent' });
+			this.getEventDeliveries();
+			this.selectedEventsFromEventDeliveriesTable = [];
+		} catch (error: any) {
+			this.generalService.showNotification({ message: error.error.message });
+			return error;
+		}
+	}
+
 	authDetails() {
 		const authDetails = localStorage.getItem('CONVOY_AUTH');
 		return authDetails ? JSON.parse(authDetails) : false;
 	}
 
-	clearEventFilters(tableName: 'events' | 'event deliveries') {
+	async clearEventFilters(tableName: 'events' | 'event deliveries') {
+		const activeFilters = Object.assign({}, this.route.snapshot.queryParams);
+		let filterItems: string[] = [];
+
 		switch (tableName) {
 			case 'events':
 				this.eventApp = '';
+				filterItems = ['eventsStartDate', 'eventsEndDate', 'eventsApp'];
 				this.eventsFilterDateRange.patchValue({ startDate: '', endDate: '' });
 				this.getEvents();
 				break;
 
 			case 'event deliveries':
 				this.eventDeliveriesApp = '';
+				filterItems = ['eventDelsStartDate', 'eventDelsEndDate', 'eventDelsApp', 'eventDelsStatus'];
 				this.eventDeliveriesFilterDateRange.patchValue({ startDate: '', endDate: '' });
 				this.eventDeliveryFilteredByEventId = '';
+				this.eventDeliveryFilteredByStatus = '';
 				this.getEventDeliveries();
 				break;
 
 			default:
 				break;
 		}
+
+		filterItems.forEach(key => (activeFilters.hasOwnProperty(key) ? delete activeFilters[key] : null));
+		await this.router.navigate([], { relativeTo: this.route, queryParams: activeFilters });
 	}
 
 	checkAllCheckboxes(event: any) {
-		const checkboxes = document.querySelectorAll('#events-table tbody input[type="checkbox"]');
+		const checkboxes = document.querySelectorAll('#event-deliveries-table tbody input[type="checkbox"]');
+
 		checkboxes.forEach((checkbox: any) => {
-			this.selectedEventsFromEventsTable.push(checkbox.value);
+			this.selectedEventsFromEventDeliveriesTable.push(checkbox.value);
 			checkbox.checked = event.target.checked;
 		});
+
+		if (!event.target.checked) this.selectedEventsFromEventDeliveriesTable = [];
+		this.allEventdeliveriesChecked = event.target.checked;
+	}
+
+	checkEventDeliveryBox(event: any) {
+		const checkbox = event.target;
+		if (checkbox.checked) {
+			this.selectedEventsFromEventDeliveriesTable.push(checkbox.value);
+		} else {
+			this.selectedEventsFromEventDeliveriesTable = this.selectedEventsFromEventDeliveriesTable.filter(eventId => eventId !== checkbox.value);
+		}
+		this.allEventdeliveriesChecked = false;
+		const parentCheckbox: any = document.querySelector('#eventDeliveryTable');
+		parentCheckbox.checked = false;
+	}
+
+	async loadMoreEventDeliveries() {
+		this.eventDeliveriesPage = this.eventDeliveriesPage + 1;
+		await this.getEventDeliveries();
+		setTimeout(() => {
+			if (this.allEventdeliveriesChecked) {
+				this.checkAllCheckboxes({ target: { checked: true } });
+			}
+		}, 200);
 	}
 
 	async openDeliveriesTab() {

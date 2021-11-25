@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"net/http"
 	"time"
 
@@ -109,6 +110,8 @@ func (a *applicationHandler) CreateAppEvent(w http.ResponseWriter, r *http.Reque
 	eventStatus := convoy.ScheduledEventStatus
 
 	for _, v := range matchedEndpoints {
+		// TODO(daniel,subomi): what if the first endpoint is inactive, and then the second one is active?
+		// how do we reset eventStatus?
 		if v.Status != convoy.ActiveEndpointStatus {
 			eventStatus = convoy.DiscardedEventStatus
 		}
@@ -128,6 +131,7 @@ func (a *applicationHandler) CreateAppEvent(w http.ResponseWriter, r *http.Reque
 			},
 			AppMetadata: &convoy.AppMetadata{
 				UID:          app.UID,
+				Title:        app.Title,
 				GroupID:      app.GroupID,
 				SupportEmail: app.SupportEmail,
 			},
@@ -211,9 +215,66 @@ func (a *applicationHandler) ResendEventDelivery(w http.ResponseWriter, r *http.
 
 	eventDelivery := getEventDeliveryFromContext(r.Context())
 
-	if eventDelivery.Status == convoy.SuccessEventStatus {
-		_ = render.Render(w, r, newErrorResponse("event already sent", http.StatusBadRequest))
+	endpointError := a.resendEventDelivery(r.Context(), eventDelivery)
+	if endpointError != nil {
+		_ = render.Render(w, r, newErrorResponse(endpointError.Error(), endpointError.StatusCode))
 		return
+	}
+
+	_ = render.Render(w, r, newServerResponse("App event processed for retry successfully",
+		eventDelivery, http.StatusOK))
+}
+
+// BatchRetryEventDelivery
+// @Summary Batch Resend app events
+// @Description This endpoint resends multiple app events
+// @Tags EventDelivery
+// @Accept json
+// @Produce json
+// @Param delivery ids body Stub{ids=[]string} true "event delivery ids"
+// @Success 200 {object} serverResponse{data=Stub}
+// @Failure 400,401,500 {object} serverResponse{data=Stub}
+// @Security ApiKeyAuth
+// @Router /eventdeliveries/batchretry [post]
+func (a *applicationHandler) BatchRetryEventDelivery(w http.ResponseWriter, r *http.Request) {
+	eventDeliveryIDs := models.IDs{}
+
+	err := json.NewDecoder(r.Body).Decode(&eventDeliveryIDs)
+	if err != nil {
+		_ = render.Render(w, r, newErrorResponse("Request is invalid", http.StatusBadRequest))
+		return
+	}
+
+	var deliveries []convoy.EventDelivery
+
+	deliveries, err = a.eventDeliveryRepo.FindEventDeliveriesByIDs(r.Context(), eventDeliveryIDs.IDs)
+	if err != nil {
+		log.WithError(err).Error("failed to fetch event deliveries by ids")
+		_ = render.Render(w, r, newErrorResponse("failed to fetch event deliveries", http.StatusInternalServerError))
+		return
+	}
+
+	ctx := r.Context()
+	failures := 0
+
+	for _, delivery := range deliveries {
+		err := a.resendEventDelivery(ctx, &delivery)
+		if err != nil {
+			failures++
+			log.WithError(err).Error("an item in the batch retry failed")
+		}
+	}
+
+	_ = render.Render(w, r, newServerResponse(fmt.Sprintf("%d successful, %d failed", len(deliveries)-failures, failures), nil, http.StatusOK))
+}
+
+func (a *applicationHandler) resendEventDelivery(ctx context.Context, eventDelivery *convoy.EventDelivery) *EndpointError {
+
+	if eventDelivery.Status == convoy.SuccessEventStatus {
+		return &EndpointError{
+			Err:        errors.New("event already sent"),
+			StatusCode: http.StatusBadRequest,
+		}
 	}
 
 	switch eventDelivery.Status {
@@ -221,22 +282,26 @@ func (a *applicationHandler) ResendEventDelivery(w http.ResponseWriter, r *http.
 		convoy.ProcessingEventStatus,
 		convoy.SuccessEventStatus,
 		convoy.RetryEventStatus:
-		_ = render.Render(w, r, newErrorResponse("cannot resend event that did not fail previously", http.StatusBadRequest))
-		return
+		return &EndpointError{
+			Err:        errors.New("cannot resend event that did not fail previously"),
+			StatusCode: http.StatusBadRequest,
+		}
 	}
 
-	// Retry to Inactive endpoints.
-	// System cannot handle more than one endpoint per url at this point.
 	e := eventDelivery.EndpointMetadata
 	endpoint, err := a.appRepo.FindApplicationEndpointByID(context.Background(), eventDelivery.AppMetadata.UID, e.UID)
 	if err != nil {
-		_ = render.Render(w, r, newErrorResponse("cannot find endpoint", http.StatusInternalServerError))
-		return
+		return &EndpointError{
+			Err:        errors.New("cannot find endpoint"),
+			StatusCode: http.StatusInternalServerError,
+		}
 	}
 
 	if endpoint.Status == convoy.PendingEndpointStatus {
-		_ = render.Render(w, r, newErrorResponse("endpoint is being re-activated", http.StatusBadRequest))
-		return
+		return &EndpointError{
+			Err:        errors.New("endpoint is being re-activated"),
+			StatusCode: http.StatusBadRequest,
+		}
 	}
 
 	if endpoint.Status == convoy.InactiveEndpointStatus {
@@ -244,25 +309,31 @@ func (a *applicationHandler) ResendEventDelivery(w http.ResponseWriter, r *http.
 
 		err = a.appRepo.UpdateApplicationEndpointsStatus(context.Background(), eventDelivery.AppMetadata.UID, pendingEndpoints, convoy.PendingEndpointStatus)
 		if err != nil {
-			_ = render.Render(w, r, newErrorResponse("failed to update endpoint status", http.StatusInternalServerError))
-			return
+			return &EndpointError{
+				Err:        errors.New("failed to update endpoint status"),
+				StatusCode: http.StatusInternalServerError,
+			}
 		}
 	}
 
 	eventDelivery.Status = convoy.ScheduledEventStatus
-	err = a.eventDeliveryRepo.UpdateStatusOfEventDelivery(r.Context(), *eventDelivery, convoy.ScheduledEventStatus)
+	err = a.eventDeliveryRepo.UpdateStatusOfEventDelivery(ctx, *eventDelivery, convoy.ScheduledEventStatus)
 	if err != nil {
-		_ = render.Render(w, r, newErrorResponse("an error occurred while trying to resend event", http.StatusInternalServerError))
-		return
+		return &EndpointError{
+			Err:        errors.New("an error occurred while trying to resend event"),
+			StatusCode: http.StatusInternalServerError,
+		}
 	}
 
-	err = a.eventQueue.Write(r.Context(), convoy.EventProcessor, eventDelivery, 1*time.Second)
+	g := getGroupFromContext(ctx)
+	taskName := convoy.EventProcessor.SetPrefix(g.Name)
+
+	err = a.eventQueue.Write(ctx, taskName, eventDelivery, 1*time.Second)
 	if err != nil {
-		log.WithError(err).Errorf("Error occurred re-enqueing old event - %s", eventDelivery.UID)
+		log.WithError(err).Errorf("error occurred re-enqueing old event - %s", eventDelivery.UID)
 	}
 
-	_ = render.Render(w, r, newServerResponse("App event processed for retry successfully",
-		eventDelivery, http.StatusOK))
+	return nil
 }
 
 // GetEventsPaged
@@ -305,7 +376,7 @@ func (a *applicationHandler) GetEventsPaged(w http.ResponseWriter, r *http.Reque
 		pagedResponse{Content: &m, Pagination: &paginationData}, http.StatusOK))
 }
 
-// GetEventDeliveries
+// GetEventDeliveriesPaged
 // @Summary Get event deliveries
 // @Description This endpoint fetch event deliveries.
 // @Tags EventDelivery

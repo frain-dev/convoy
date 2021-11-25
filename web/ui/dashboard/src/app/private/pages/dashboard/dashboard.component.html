@@ -9,7 +9,7 @@
 
 			<div>
 				<a target="_blank" href="https://getconvoy.io/docs" rel="noreferrer">Go to docs</a>
-				<button class="user" (click)="toggleShowDropdown(); showDropdown = !showDropdown" *ngIf="authDetails()">
+				<button class="user" (click)="showDropdown = !showDropdown" *ngIf="authDetails()">
 					<div>
 						<div class="icon">O</div>
 						<div class="name">{{ authDetails().username }}</div>
@@ -143,14 +143,14 @@
 								<img src="/assets/img/calendar-icon.svg" alt="calender icon" />
 								<mat-date-range-input [formGroup]="eventsFilterDateRange" [rangePicker]="eventsFilterPicker">
 									<input matStartDate formControlName="startDate" placeholder="Start date" />
-									<input matEndDate formControlName="endDate" placeholder="End date" (dateChange)="getEvents()" />
+									<input matEndDate formControlName="endDate" placeholder="End date" (dateChange)="getEvents({ addToURL: true })" />
 								</mat-date-range-input>
 								<mat-date-range-picker #eventsFilterPicker [disabled]="false"></mat-date-range-picker>
 								<img src="/assets/img/angle-arrow-down.svg" alt="arrow down icon" />
 							</button>
 
 							<div class="select">
-								<select [ngClass]="{ active: !!eventApp }" aria-label="frequency" [(ngModel)]="eventApp" (change)="getEvents()">
+								<select [ngClass]="{ active: !!eventApp }" aria-label="frequency" [(ngModel)]="eventApp" (change)="getEvents({ addToURL: true })">
 									<option value="">All Apps</option>
 									<option [value]="app.uid" *ngFor="let app of apps?.content">
 										{{ app.name }}
@@ -201,7 +201,7 @@
 													<div class="tag">{{ event.event_type }}</div>
 												</div>
 											</td>
-											<td>
+											<td class="has-long-text">
 												<div>{{ event.app_metadata.title }}</div>
 											</td>
 											<td>
@@ -245,14 +245,37 @@
 								<img src="/assets/img/calendar-icon.svg" alt="calender icon" />
 								<mat-date-range-input [formGroup]="eventDeliveriesFilterDateRange" [rangePicker]="eventDeliveriesFilterPicker">
 									<input matStartDate formControlName="startDate" placeholder="Start date" />
-									<input matEndDate formControlName="endDate" placeholder="End date" (dateChange)="getEvents()" />
+									<input matEndDate formControlName="endDate" placeholder="End date" (dateChange)="getEventDeliveries({ addToURL: true })" />
 								</mat-date-range-input>
 								<mat-date-range-picker #eventDeliveriesFilterPicker [disabled]="false"></mat-date-range-picker>
 								<img src="/assets/img/angle-arrow-down.svg" alt="arrow down icon" />
 							</button>
-
+							<div class="dropdown">
+								<button
+									class="filter--button dropdown--button"
+									[ngClass]="{ active: eventDeliveryFilteredByStatus }"
+									(click)="showOverlay = true; showEventDeliveriesStatusDropdown = !showEventDeliveriesStatusDropdown"
+								>
+									<img src="/assets/img/status-filter-icon.svg" alt="status filter icon" />
+									<span>{{ eventDeliveryFilteredByStatus || 'Status' }}</span>
+									<img src="/assets/img/angle-arrow-down.svg" alt="arrow down icon" />
+								</button>
+								<div class="dropdown--list" *ngIf="showEventDeliveriesStatusDropdown">
+									<div class="dropdown--list--item" *ngFor="let status of eventDeliveryStatuses">
+										<input
+											type="radio"
+											name="status"
+											[value]="status"
+											[(ngModel)]="eventDeliveryFilteredByStatus"
+											[id]="status"
+											(change)="showOverlay = false; showEventDeliveriesStatusDropdown = false; getEventDeliveries({ addToURL: true })"
+										/>
+										<label [for]="status">{{ status || 'None' }}</label>
+									</div>
+								</div>
+							</div>
 							<div class="select">
-								<select [ngClass]="{ active: !!eventDeliveriesApp }" aria-label="frequency" [(ngModel)]="eventDeliveriesApp" (change)="getEventDeliveries()">
+								<select [ngClass]="{ active: !!eventDeliveriesApp }" aria-label="frequency" [(ngModel)]="eventDeliveriesApp" (change)="getEventDeliveries({ addToURL: true })">
 									<option value="">All Apps</option>
 									<option [value]="app.uid" *ngFor="let app of apps?.content">
 										{{ app.name }}
@@ -273,7 +296,8 @@
 								[disabled]="
 									(eventDeliveriesFilterDateRange.value.startDate == '' || eventDeliveriesFilterDateRange.value.endDate == '') &&
 									eventDeliveriesApp == '' &&
-									eventDeliveryFilteredByEventId == ''
+									eventDeliveryFilteredByEventId == '' &&
+									!eventDeliveryFilteredByStatus
 								"
 							>
 								Clear Filter
@@ -287,18 +311,18 @@
 								<img src="../../../../assets/img/refresh-icon-2.svg" alt="refresh icon" />
 								Refresh
 							</button>
-							<button class="primary clear has-icon icon-left hover" disabled>
+							<button class="primary clear has-icon icon-left hover" (click)="batchRetryEvent()" [disabled]="selectedEventsFromEventDeliveriesTable.length <= 0">
 								<img src="../../../../assets/img/retry-icon.svg" alt="retry icon" />
 								Bulk Retry
 							</button>
 						</div>
 
 						<div class="table--container" *ngIf="displayedEventDeliveries.length > 0">
-							<table id="events-table">
+							<table id="event-deliveries-table">
 								<thead>
 									<tr class="table--head">
 										<th scope="col" class="checkbox">
-											<div class="checkbox"><input type="checkbox" name="eventTable" id="eventTable" (change)="checkAllCheckboxes($event)" /></div>
+											<div class="checkbox"><input type="checkbox" name="eventDeliveryTable" id="eventDeliveryTable" (change)="checkAllCheckboxes($event)" /></div>
 											Status
 										</th>
 										<th scope="col">Event Type</th>
@@ -327,7 +351,7 @@
 											<td>
 												<div class="checkbox has-retry">
 													<img *ngIf="event.metadata.num_trials > event.metadata.retry_limit" src="/assets/img/retry-icon.svg" alt="retry icon" title="manually retried" />
-													<input type="checkbox" [name]="'event' + index" id="event" [value]="event.uid" />
+													<input type="checkbox" [name]="'event' + index" id="event" [value]="event.uid" (change)="checkEventDeliveryBox($event)" />
 													<div [class]="'tag tag--' + event.status">{{ event.status }}</div>
 												</div>
 											</td>
@@ -358,11 +382,7 @@
 							</table>
 
 							<div class="table--load-more button-container center" *ngIf="eventDeliveries.pagination.totalPage > 1">
-								<button
-									[class]="'primary clear has-icon icon-left'"
-									[disabled]="eventDeliveries.pagination.page === eventDeliveries.pagination.totalPage"
-									(click)="eventDeliveriesPage = eventDeliveriesPage + 1; getEventDeliveries()"
-								>
+								<button [class]="'primary clear has-icon icon-left'" [disabled]="eventDeliveries.pagination.page === eventDeliveries.pagination.totalPage" (click)="loadMoreEventDeliveries()">
 									<img src="/assets/img/arrow-down-icon.svg" alt="arrow down icon" />
 									Load more
 								</button>
@@ -406,7 +426,12 @@
 									</td>
 									<td>
 										<div>
-											<button [disabled]="app.events <= 0" title="view events" [class]="'primary has-icon icon-left'" (click)="toggleActiveTab('events'); eventApp = app.uid; getEvents()">
+											<button
+												[disabled]="app.events <= 0"
+												title="view events"
+												[class]="'primary has-icon icon-left'"
+												(click)="toggleActiveTab('events'); getEvents({ addToURL: true, appId: app.uid })"
+											>
 												<img src="/assets/img/view-events-icon.svg" alt="view events icon" />
 												Events
 											</button>
@@ -536,3 +561,5 @@
 		</section>
 	</div>
 </div>
+
+<div class="overlay" *ngIf="showOverlay" (click)="showOverlay = false; showEventDeliveriesStatusDropdown = false"></div>
