@@ -2704,7 +2704,7 @@
         "config.GroupConfig": {
             "type": "object",
             "properties": {
-                "disableEndpoint": {
+                "disable_endpoint": {
                     "type": "boolean"
                 },
                 "signature": {
