@@ -2,7 +2,7 @@ basePath: /api/v1
 definitions:
   config.GroupConfig:
     properties:
-      disableEndpoint:
+      disable_endpoint:
         type: boolean
       signature:
         $ref: '#/definitions/config.SignatureConfiguration'
