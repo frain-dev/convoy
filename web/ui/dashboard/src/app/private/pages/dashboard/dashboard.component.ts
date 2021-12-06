@@ -84,6 +84,7 @@ export class DashboardComponent implements OnInit {
 	eventDeliveryFilteredByStatus: '' | 'Success' | 'Failure' | 'Retry' | 'Scheduled' | 'Processing' | 'Discarded' = '';
 	showOverlay = false;
 	showEventDeliveriesStatusDropdown = false;
+	testshowEventDeliveriesStatusDropdown = false;
 
 	constructor(private httpService: HttpService, private generalService: GeneralService, private router: Router, private formBuilder: FormBuilder, private route: ActivatedRoute) {}
 
