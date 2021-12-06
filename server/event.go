@@ -131,6 +131,7 @@ func (a *applicationHandler) CreateAppEvent(w http.ResponseWriter, r *http.Reque
 			},
 			AppMetadata: &convoy.AppMetadata{
 				UID:          app.UID,
+				Title:        app.Title,
 				GroupID:      app.GroupID,
 				SupportEmail: app.SupportEmail,
 			},
