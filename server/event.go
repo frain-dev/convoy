@@ -156,10 +156,13 @@ func (a *applicationHandler) CreateAppEvent(w http.ResponseWriter, r *http.Reque
 
 		taskName := convoy.EventProcessor.SetPrefix(g.Name)
 
-		err = a.eventQueue.Write(r.Context(), taskName, eventDelivery, 1*time.Second)
-		if err != nil {
-			log.Errorf("Error occurred sending new event to the queue %s", err)
+		if eventDelivery.Status != convoy.DiscardedEventStatus {
+			err = a.eventQueue.Write(r.Context(), taskName, eventDelivery, 1*time.Second)
+			if err != nil {
+				log.Errorf("Error occurred sending new event to the queue %s", err)
+			}
 		}
+
 	}
 
 	_ = render.Render(w, r, newServerResponse("App event created successfully", event, http.StatusCreated))

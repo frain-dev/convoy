@@ -79,9 +79,9 @@ type SMTPConfiguration struct {
 }
 
 type GroupConfig struct {
-	Strategy        StrategyConfiguration
-	Signature       SignatureConfiguration
-	DisableEndpoint bool
+	Strategy        StrategyConfiguration  `json:"strategy"`
+	Signature       SignatureConfiguration `json:"signature"`
+	DisableEndpoint bool                   `json:"disable_endpoint"`
 }
 
 type Configuration struct {
