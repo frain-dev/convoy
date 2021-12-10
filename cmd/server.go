@@ -45,7 +45,7 @@ func addServerCommand(a *app) *cobra.Command {
 				return errors.New("please provide the HTTP port in the convoy.json file")
 			}
 
-			srv := server.New(cfg, a.eventRepo, a.eventDeliveryRepo, a.applicationRepo, a.groupRepo, a.eventQueue)
+			srv := server.New(cfg, a.eventRepo, a.eventDeliveryRepo, a.applicationRepo, a.groupRepo, a.eventQueue, a.logger, a.tracer)
 
 			// register tasks.
 			handler := task.ProcessEventDelivery(a.applicationRepo, a.eventDeliveryRepo, a.groupRepo)

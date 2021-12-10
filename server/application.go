@@ -7,17 +7,18 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/frain-dev/convoy"
+	"github.com/frain-dev/convoy/logger"
+	"github.com/frain-dev/convoy/queue"
+	"github.com/frain-dev/convoy/server/models"
+	"github.com/frain-dev/convoy/tracer"
+	"github.com/frain-dev/convoy/util"
+	"github.com/go-chi/chi/v5"
+	"github.com/go-chi/render"
 	mongopagination "github.com/gobeam/mongo-go-pagination"
 	"github.com/google/uuid"
 	log "github.com/sirupsen/logrus"
 	"go.mongodb.org/mongo-driver/bson/primitive"
-
-	"github.com/frain-dev/convoy"
-	"github.com/frain-dev/convoy/queue"
-	"github.com/frain-dev/convoy/server/models"
-	"github.com/frain-dev/convoy/util"
-	"github.com/go-chi/chi/v5"
-	"github.com/go-chi/render"
 )
 
 type applicationHandler struct {
@@ -26,6 +27,8 @@ type applicationHandler struct {
 	eventDeliveryRepo convoy.EventDeliveryRepository
 	groupRepo         convoy.GroupRepository
 	eventQueue        queue.Queuer
+	logger            logger.Logger
+	tracer            tracer.Tracer
 }
 
 type pagedResponse struct {
@@ -37,7 +40,7 @@ func newApplicationHandler(eventRepo convoy.EventRepository,
 	eventDeliveryRepo convoy.EventDeliveryRepository,
 	appRepo convoy.ApplicationRepository,
 	groupRepo convoy.GroupRepository,
-	eventQueue queue.Queuer) *applicationHandler {
+	eventQueue queue.Queuer, logger logger.Logger, tracer tracer.Tracer) *applicationHandler {
 
 	return &applicationHandler{
 		eventRepo:         eventRepo,
@@ -45,6 +48,8 @@ func newApplicationHandler(eventRepo convoy.EventRepository,
 		appRepo:           appRepo,
 		groupRepo:         groupRepo,
 		eventQueue:        eventQueue,
+		logger:            logger,
+		tracer:            tracer,
 	}
 }
 

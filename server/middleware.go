@@ -13,6 +13,9 @@ import (
 	"time"
 
 	"github.com/frain-dev/convoy/auth/realm_chain"
+	"github.com/frain-dev/convoy/logger"
+	"github.com/frain-dev/convoy/tracer"
+	"github.com/newrelic/go-agent/v3/newrelic"
 
 	"github.com/frain-dev/convoy/auth"
 
@@ -55,6 +58,30 @@ func instrumentPath(path string) func(http.Handler) http.Handler {
 			m := httpsnoop.CaptureMetrics(next, w, r)
 			requestDuration.WithLabelValues(r.Method, path,
 				strconv.Itoa(m.Code)).Observe(m.Duration.Seconds())
+		})
+	}
+}
+
+func instrumentRequests(tr tracer.Tracer) func(next http.Handler) http.Handler {
+	return func(next http.Handler) http.Handler {
+		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			cfg, err := config.Get()
+
+			if err != nil {
+				log.WithError(err).Error("failed to load configuration")
+				return
+			}
+
+			if cfg.Tracer.Type == config.NewRelicTracerProvider {
+				txn := tr.StartTransaction(r.URL.Path)
+				defer txn.End()
+
+				tr.SetWebRequestHTTP(r, txn)
+				w = tr.SetWebResponse(w, txn)
+				r = tr.RequestWithTransactionContext(r, txn)
+			}
+
+			next.ServeHTTP(w, r)
 		})
 	}
 }
@@ -453,6 +480,124 @@ func pagination(next http.Handler) http.Handler {
 		r = r.WithContext(setPageableInContext(r.Context(), pageable))
 		next.ServeHTTP(w, r)
 	})
+}
+
+func logHttpRequest(log logger.Logger) func(next http.Handler) http.Handler {
+	return func(next http.Handler) http.Handler {
+		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+
+			ww := middleware.NewWrapResponseWriter(w, r.ProtoMajor)
+			start := time.Now()
+
+			defer func() {
+				requestFields := requestLogFields(r)
+				responseFields := responseLogFields(ww, start)
+
+				logFields := map[string]interface{}{
+					"httpRequest":  requestFields,
+					"httpResponse": responseFields,
+				}
+
+				log.WithLogger().WithFields(logFields).Log(statusLevel(ww.Status()), requestFields["requestURL"])
+			}()
+
+			next.ServeHTTP(ww, r)
+		})
+	}
+}
+
+func requestLogFields(r *http.Request) map[string]interface{} {
+	scheme := "http"
+
+	if r.TLS != nil {
+		scheme = "https"
+	}
+
+	requestURL := fmt.Sprintf("%s://%s%s", scheme, r.Host, r.RequestURI)
+
+	requestFields := map[string]interface{}{
+		"requestURL":    requestURL,
+		"requestMethod": r.Method,
+		"requestPath":   r.URL.Path,
+		"remoteIP":      r.RemoteAddr,
+		"proto":         r.Proto,
+		"scheme":        scheme,
+	}
+
+	if reqID := middleware.GetReqID(r.Context()); reqID != "" {
+		requestFields["x-request-id"] = reqID
+	}
+
+	if len(r.Header) > 0 {
+		requestFields["header"] = headerFields(r.Header)
+	}
+
+	cfg, err := config.Get()
+	if err != nil {
+		log.WithError(err).Error("failed to load configuration")
+		return nil
+	}
+
+	if cfg.Tracer.Type == config.NewRelicTracerProvider {
+		txn := newrelic.FromContext(r.Context()).GetLinkingMetadata()
+
+		requestFields["traceID"] = txn.TraceID
+		requestFields["spanID"] = txn.SpanID
+		requestFields["entityGUID"] = txn.EntityGUID
+		requestFields["entityType"] = txn.EntityType
+	}
+
+	return requestFields
+}
+
+func responseLogFields(w middleware.WrapResponseWriter, t time.Time) map[string]interface{} {
+	responseFields := map[string]interface{}{
+		"status":  w.Status(),
+		"byes":    w.BytesWritten(),
+		"latency": time.Since(t),
+	}
+
+	if len(w.Header()) > 0 {
+		responseFields["header"] = headerFields(w.Header())
+	}
+
+	return responseFields
+}
+
+func statusLevel(status int) log.Level {
+	switch {
+	case status <= 0:
+		return log.WarnLevel
+	case status < 400:
+		return log.InfoLevel
+	case status >= 400 && status < 500:
+		return log.WarnLevel
+	case status >= 500:
+		return log.ErrorLevel
+	default:
+		return log.InfoLevel
+	}
+}
+
+func headerFields(header http.Header) map[string]string {
+	headerField := map[string]string{}
+
+	for k, v := range header {
+		k = strings.ToLower(k)
+		switch {
+		case len(v) == 0:
+			continue
+		case len(v) == 1:
+			headerField[k] = v[0]
+		default:
+			headerField[k] = fmt.Sprintf("[%s]", strings.Join(v, "], ["))
+		}
+		if k == "authorization" || k == "cookie" || k == "set-cookie" {
+			headerField[k] = "***"
+		}
+	}
+
+	return headerField
 }
 
 func fetchGroupApps(appRepo convoy.ApplicationRepository) func(next http.Handler) http.Handler {

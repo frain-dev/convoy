@@ -9,7 +9,9 @@ import (
 	"time"
 	_ "time/tzdata"
 
+	"github.com/frain-dev/convoy/logger"
 	convoyRedis "github.com/frain-dev/convoy/queue/redis"
+	"github.com/frain-dev/convoy/tracer"
 	"github.com/frain-dev/convoy/worker/task"
 	"github.com/getsentry/sentry-go"
 	"github.com/google/uuid"
@@ -90,9 +92,25 @@ func main() {
 
 			var qFn taskq.Factory
 			var rC *redis.Client
+			var lo logger.Logger
+			var tr tracer.Tracer
 
 			if cfg.Queue.Type == config.RedisQueueProvider {
 				rC, qFn, err = convoyRedis.NewClient(cfg)
+				if err != nil {
+					return err
+				}
+			}
+
+			if cfg.Logger.Type != "" {
+				lo, err = logger.NewLogger(cfg)
+				if err != nil {
+					return err
+				}
+			}
+
+			if cfg.Tracer.Type == config.NewRelicTracerProvider {
+				tr, err = tracer.NewNRClient(cfg.Tracer, lo.WithLogger())
 				if err != nil {
 					return err
 				}
@@ -117,6 +135,8 @@ func main() {
 			app.eventDeliveryRepo = datastore.NewEventDeliveryRepository(conn)
 			app.eventQueue = convoyRedis.NewQueue(rC, qFn, "EventQueue")
 			app.deadLetterQueue = convoyRedis.NewQueue(rC, qFn, "DeadLetterQueue")
+			app.logger = lo
+			app.tracer = tr
 
 			ensureMongoIndices(conn)
 			err = ensureDefaultGroup(context.Background(), cfg, app)
@@ -233,6 +253,8 @@ type app struct {
 	eventDeliveryRepo convoy.EventDeliveryRepository
 	eventQueue        queue.Queuer
 	deadLetterQueue   queue.Queuer
+	logger            logger.Logger
+	tracer            tracer.Tracer
 }
 
 func getCtx() (context.Context, context.CancelFunc) {

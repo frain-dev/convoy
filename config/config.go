@@ -84,6 +84,22 @@ type GroupConfig struct {
 	DisableEndpoint bool                   `json:"disable_endpoint"`
 }
 
+type LoggerConfiguration struct {
+	Type  LoggerProvider `json:"type"`
+	Level string         `json:"level"`
+	LogHttpRequest bool  `json:"log_http_request"`
+}
+
+type TracerConfiguration struct {
+	Type     TracerProvider `json:"type"`
+	NewRelic struct {
+		AppName                  string `json:"app_name"`
+		LicenseKey               string `json:"license_key"`
+		ConfigEnabled            bool   `json:"config_enabled"`
+		DistributedTracerEnabled bool   `json:"distributed_tracer_enabled"`
+	} `json:"new_relic"`
+}
+
 type Configuration struct {
 	Auth              AuthConfiguration     `json:"auth,omitempty"`
 	UIAuthorizedUsers map[string]string     `json:"-"`
@@ -95,12 +111,16 @@ type Configuration struct {
 	SMTP              SMTPConfiguration     `json:"smtp"`
 	Environment       string                `json:"env"`
 	MultipleTenants   bool                  `json:"multiple_tenants"`
+	Logger            LoggerConfiguration   `json:"logger"`
+	Tracer            TracerConfiguration   `json:"tracer"`
 }
 
 type AuthProvider string
 type QueueProvider string
 type StrategyProvider string
 type SignatureHeaderProvider string
+type LoggerProvider string
+type TracerProvider string
 
 const (
 	DevelopmentEnvironment string = "development"
@@ -112,6 +132,8 @@ const (
 	RedisQueueProvider      QueueProvider           = "redis"
 	DefaultStrategyProvider StrategyProvider        = "default"
 	DefaultSignatureHeader  SignatureHeaderProvider = "X-Convoy-Signature"
+	ConsoleLoggerProvider   LoggerProvider          = "console"
+	NewRelicTracerProvider  TracerProvider          = "new_relic"
 )
 
 func (s SignatureHeaderProvider) String() string {

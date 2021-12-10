@@ -10,6 +10,8 @@ import (
 	"time"
 
 	"github.com/frain-dev/convoy/auth"
+	"github.com/frain-dev/convoy/logger"
+	"github.com/frain-dev/convoy/tracer"
 
 	"github.com/frain-dev/convoy"
 	"github.com/frain-dev/convoy/config"
@@ -52,6 +54,8 @@ func buildRoutes(app *applicationHandler) http.Handler {
 
 	router.Use(middleware.RequestID)
 	router.Use(writeRequestIDHeader)
+	router.Use(instrumentRequests(app.tracer))
+	router.Use(logHttpRequest(app.logger))
 
 	// Public API.
 	router.Route("/api", func(v1Router chi.Router) {
@@ -238,9 +242,12 @@ func New(cfg config.Configuration,
 	eventDeliveryRepo convoy.EventDeliveryRepository,
 	appRepo convoy.ApplicationRepository,
 	orgRepo convoy.GroupRepository,
-	eventQueue queue.Queuer) *http.Server {
+	eventQueue queue.Queuer,
+	logger logger.Logger,
+	tracer tracer.Tracer,
+) *http.Server {
 
-	app := newApplicationHandler(eventRepo, eventDeliveryRepo, appRepo, orgRepo, eventQueue)
+	app := newApplicationHandler(eventRepo, eventDeliveryRepo, appRepo, orgRepo, eventQueue, logger, tracer)
 
 	srv := &http.Server{
 		Handler:      buildRoutes(app),
