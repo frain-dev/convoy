@@ -16,11 +16,6 @@ type NewRelicClient struct {
 }
 
 func NewNRClient(cfg config.TracerConfiguration, logger *logrus.Logger) (*NewRelicClient, error) {
-
-	if cfg.Type != config.NewRelicTracerProvider {
-		return nil, errors.New("Tracer is not supported")
-	}
-
 	if util.IsStringEmpty(cfg.NewRelic.LicenseKey) {
 		return nil, errors.New("please provide the New Relic License Key")
 	}

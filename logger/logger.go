@@ -17,12 +17,13 @@ type Logger interface {
 	WithLogger() *logrus.Logger
 }
 
-func NewLogger(cfg config.Configuration) (Logger, error) {
-	if cfg.Logger.Type != config.ConsoleLoggerProvider {
+func NewLogger(cfg config.LoggerConfiguration) (Logger, error) {
+
+	if cfg.Type != config.ConsoleLoggerProvider {
 		return nil, errors.New("Logger is not supported")
 	}
 
-	switch cfg.Logger.Type {
+	switch cfg.Type {
 	case config.ConsoleLoggerProvider:
 		lo := NewConsoleLogger(cfg)
 		return lo, nil

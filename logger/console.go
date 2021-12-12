@@ -11,7 +11,7 @@ type ConsoleLogger struct {
 	Logger *logrus.Logger
 }
 
-func NewConsoleLogger(cfg config.Configuration) *ConsoleLogger {
+func NewConsoleLogger(cfg config.LoggerConfiguration) *ConsoleLogger {
 	logger := logrus.New()
 	logger.SetOutput(os.Stdout)
 	logger.SetFormatter(&logrus.JSONFormatter{
