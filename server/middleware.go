@@ -486,24 +486,36 @@ func logHttpRequest(log logger.Logger) func(next http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 
+			cfg, err := config.Get()
+			if err != nil {
+				return
+			}
+
 			ww := middleware.NewWrapResponseWriter(w, r.ProtoMajor)
-			start := time.Now()
 
-			defer func() {
-				requestFields := requestLogFields(r)
-				responseFields := responseLogFields(ww, start)
+			if isLogHttpRequestEnabled(cfg.Logger) && cfg.Logger.Type != "" {
+				start := time.Now()
 
-				logFields := map[string]interface{}{
-					"httpRequest":  requestFields,
-					"httpResponse": responseFields,
-				}
+				defer func() {
+					requestFields := requestLogFields(r)
+					responseFields := responseLogFields(ww, start)
 
-				log.WithLogger().WithFields(logFields).Log(statusLevel(ww.Status()), requestFields["requestURL"])
-			}()
+					logFields := map[string]interface{}{
+						"httpRequest":  requestFields,
+						"httpResponse": responseFields,
+					}
 
+					log.WithLogger().WithFields(logFields).Log(statusLevel(ww.Status()), requestFields["requestURL"])
+				}()
+
+			}
 			next.ServeHTTP(ww, r)
 		})
 	}
+}
+
+func isLogHttpRequestEnabled(cfg config.LoggerConfiguration) bool {
+	return cfg.LogHttpRequest
 }
 
 func requestLogFields(r *http.Request) map[string]interface{} {

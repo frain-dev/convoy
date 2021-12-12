@@ -1,6 +1,8 @@
 package logger
 
 import (
+	"errors"
+
 	"github.com/frain-dev/convoy/config"
 	"github.com/sirupsen/logrus"
 )
@@ -16,6 +18,10 @@ type Logger interface {
 }
 
 func NewLogger(cfg config.Configuration) (Logger, error) {
+	if cfg.Logger.Type != config.ConsoleLoggerProvider {
+		return nil, errors.New("Logger is not supported")
+	}
+
 	switch cfg.Logger.Type {
 	case config.ConsoleLoggerProvider:
 		lo := NewConsoleLogger(cfg)
