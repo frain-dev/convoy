@@ -3,7 +3,6 @@ module github.com/frain-dev/convoy
 go 1.16
 
 require (
-	github.com/dgrijalva/jwt-go v3.2.0+incompatible
 	github.com/felixge/httpsnoop v1.0.2
 	github.com/fsnotify/fsnotify v1.5.1 // indirect
 	github.com/getkin/kin-openapi v0.78.0
