@@ -22,27 +22,27 @@ func NewConsoleLogger(cfg config.LoggerConfiguration) *ConsoleLogger {
 }
 
 func (n *ConsoleLogger) Log(level logrus.Level, args ...interface{}) {
-	n.Logger.Log(level, args)
+	n.Logger.Log(level, args...)
 }
 
 func (n *ConsoleLogger) Info(args ...interface{}) {
-	n.Logger.Info(args)
+	n.Logger.Info(args...)
 }
 
 func (n *ConsoleLogger) Debug(args ...interface{}) {
-	n.Logger.Debug(args)
+	n.Logger.Debug(args...)
 }
 
 func (n *ConsoleLogger) Warn(args ...interface{}) {
-	n.Logger.Warn(args)
+	n.Logger.Warn(args...)
 }
 
 func (n *ConsoleLogger) Trace(args ...interface{}) {
-	n.Logger.Trace(args)
+	n.Logger.Trace(args...)
 }
 
 func (n *ConsoleLogger) Error(args ...interface{}) {
-	n.Logger.Error(args)
+	n.Logger.Error(args...)
 }
 
 func (n *ConsoleLogger) WithLogger() *logrus.Logger {
