@@ -1,6 +1,7 @@
 package realm_chain
 
 import (
+	"context"
 	"fmt"
 	"sync/atomic"
 	"testing"
@@ -195,7 +196,7 @@ func TestRealmChain_Authenticate(t *testing.T) {
 				return
 			}
 
-			got, err := rc.Authenticate(tt.args.cred)
+			got, err := rc.Authenticate(context.Background(), tt.args.cred)
 
 			if tt.wantErr {
 				require.Equal(t, tt.wantErrMsg, err.Error())

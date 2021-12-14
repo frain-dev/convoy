@@ -25,6 +25,7 @@ type applicationHandler struct {
 	eventRepo         convoy.EventRepository
 	eventDeliveryRepo convoy.EventDeliveryRepository
 	groupRepo         convoy.GroupRepository
+	apiKeyRepo        convoy.APIKeyRepo
 	eventQueue        queue.Queuer
 }
 

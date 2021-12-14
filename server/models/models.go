@@ -2,6 +2,7 @@ package models
 
 import (
 	"encoding/json"
+	"time"
 
 	"github.com/frain-dev/convoy/config"
 )
@@ -10,6 +11,12 @@ type Group struct {
 	Name    string `json:"name" bson:"name"`
 	LogoURL string `json:"logo_url" bson:"logo_url"`
 	Config  config.GroupConfig
+}
+
+type APIKey struct {
+	Group       string     `json:"group"`
+	Key         string     `json:"key"`
+	ExpiresDate *time.Time `json:"expires_date"`
 }
 
 type Application struct {

@@ -66,6 +66,17 @@ func getHashFunction(algorithm string) (func() hash.Hash, error) {
 	return nil, errors.New("unknown hash algorithm")
 }
 
+func ComputeSHA256(data string) (string, error) {
+	fn := sha256.New()
+
+	_, err := fn.Write([]byte(data))
+	if err != nil {
+		return "", err
+	}
+
+	return string(fn.Sum(nil)), nil
+}
+
 func GenerateSecret() (string, error) {
 	return GenerateRandomString(25)
 }

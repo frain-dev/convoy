@@ -328,7 +328,7 @@ func requireAuth() func(next http.Handler) http.Handler {
 				return
 			}
 
-			authUser, err := rc.Authenticate(creds)
+			authUser, err := rc.Authenticate(r.Context(), creds)
 			if err != nil {
 				log.WithError(err).Error("failed to authenticate")
 				_ = render.Render(w, r, newErrorResponse("authorization failed", http.StatusUnauthorized))

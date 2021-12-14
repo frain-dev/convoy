@@ -1,6 +1,7 @@
 package realm_chain
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"sync/atomic"
@@ -64,15 +65,16 @@ func Init(authConfig *config.AuthConfiguration) error {
 
 // Authenticate calls the Authenticate method of all registered realms.
 // If at least one realm can authenticate the given auth.Credential, Authenticate will not return an error
-func (rc *RealmChain) Authenticate(cred *auth.Credential) (*auth.AuthenticatedUser, error) {
+func (rc *RealmChain) Authenticate(ctx context.Context, cred *auth.Credential) (*auth.AuthenticatedUser, error) {
 	var err error
 	var authUser *auth.AuthenticatedUser
 
 	for name, realm := range rc.chain {
-		authUser, err = realm.Authenticate(cred)
+		authUser, err = realm.Authenticate(ctx, cred)
 		if err == nil {
 			return authUser, nil
 		}
+		// TODO(daniel): starting to think logging cred itself doesn't add any value
 		log.WithError(err).Errorf("realm %s failed to authenticate cred: %s", name, cred)
 	}
 	return nil, ErrAuthFailed
