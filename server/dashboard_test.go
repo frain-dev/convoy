@@ -23,8 +23,10 @@ func Test_fetchAllConfigDetails(t *testing.T) {
 	eventRepo := mocks.NewMockEventRepository(ctrl)
 	eventDeliveryRepo := mocks.NewMockEventDeliveryRepository(ctrl)
 	eventQueue := mocks.NewMockQueuer(ctrl)
+	logger := mocks.NewMockLogger(ctrl)
+	tracer := mocks.NewMockTracer(ctrl)
 
-	app = newApplicationHandler(eventRepo, eventDeliveryRepo, appRepo, groupRepo, eventQueue)
+	app = newApplicationHandler(eventRepo, eventDeliveryRepo, appRepo, groupRepo, eventQueue, logger, tracer)
 
 	tests := []struct {
 		name       string
