@@ -1,8 +1,10 @@
 package worker
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
+	"strings"
 	"time"
 
 	"github.com/frain-dev/convoy"
@@ -65,13 +67,14 @@ func (p *Producer) postMessages(msgRepo convoy.MessageRepository, m convoy.Messa
 			continue
 		}
 
-		bytes, err := json.Marshal(m.Data)
-		if err != nil {
-			log.Errorf("error occurred while parsing json")
-			return
+		buff := bytes.NewBuffer([]byte{})
+		encoder := json.NewEncoder(buff)
+		encoder.SetEscapeHTML(false)
+		if err := encoder.Encode(m.Data); err != nil {
+			log.WithError(err).Error("Failed to encode data")
 		}
 
-		bStr := string(bytes)
+		bStr := strings.TrimSuffix(buff.String(), "\n")
 		hmac, err := util.ComputeJSONHmac(p.signatureConfig.Hash, bStr, secret, false)
 		if err != nil {
 			log.Errorf("error occurred while generating hmac signature - %+v\n", err)
@@ -81,7 +84,7 @@ func (p *Producer) postMessages(msgRepo convoy.MessageRepository, m convoy.Messa
 		attemptStatus := convoy.FailureMessageStatus
 		start := time.Now()
 
-		resp, err := p.dispatch.SendRequest(e.TargetURL, string(convoy.HttpPost), bytes, string(p.signatureConfig.Header), hmac)
+		resp, err := p.dispatch.SendRequest(e.TargetURL, string(convoy.HttpPost), buff.Bytes(), string(p.signatureConfig.Header), hmac)
 		status := "-"
 		statusCode := 0
 		if resp != nil {
