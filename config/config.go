@@ -38,6 +38,10 @@ type QueueConfiguration struct {
 	} `json:"redis"`
 }
 
+type ConsulConfiguration struct {
+	DSN string `json:"dsn"`
+}
+
 type FileRealmOption struct {
 	Basic  []BasicAuth  `json:"basic"`
 	APIKey []APIKeyAuth `json:"api_key"`
@@ -90,6 +94,7 @@ type Configuration struct {
 	Database          DatabaseConfiguration `json:"database"`
 	Sentry            SentryConfiguration   `json:"sentry"`
 	Queue             QueueConfiguration    `json:"queue"`
+	Consul            ConsulConfiguration   `json:"consul"`
 	Server            ServerConfiguration   `json:"server"`
 	GroupConfig       GroupConfig           `json:"group"`
 	SMTP              SMTPConfiguration     `json:"smtp"`
