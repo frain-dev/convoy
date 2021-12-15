@@ -96,9 +96,9 @@ func (mr *MockAPIKeyRepoMockRecorder) FindAPIKeyByID(ctx, uid interface{}) *gomo
 }
 
 // LoadAPIKeysPaged mocks base method.
-func (m *MockAPIKeyRepo) LoadAPIKeysPaged(ctx context.Context, group string, pageable *models.Pageable) ([]convoy.APIKey, *mongopagination.PaginationData, error) {
+func (m *MockAPIKeyRepo) LoadAPIKeysPaged(ctx context.Context, pageable *models.Pageable) ([]convoy.APIKey, *mongopagination.PaginationData, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "LoadAPIKeysPaged", ctx, group, pageable)
+	ret := m.ctrl.Call(m, "LoadAPIKeysPaged", ctx, pageable)
 	ret0, _ := ret[0].([]convoy.APIKey)
 	ret1, _ := ret[1].(*mongopagination.PaginationData)
 	ret2, _ := ret[2].(error)
@@ -106,9 +106,23 @@ func (m *MockAPIKeyRepo) LoadAPIKeysPaged(ctx context.Context, group string, pag
 }
 
 // LoadAPIKeysPaged indicates an expected call of LoadAPIKeysPaged.
-func (mr *MockAPIKeyRepoMockRecorder) LoadAPIKeysPaged(ctx, group, pageable interface{}) *gomock.Call {
+func (mr *MockAPIKeyRepoMockRecorder) LoadAPIKeysPaged(ctx, pageable interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "LoadAPIKeysPaged", reflect.TypeOf((*MockAPIKeyRepo)(nil).LoadAPIKeysPaged), ctx, group, pageable)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "LoadAPIKeysPaged", reflect.TypeOf((*MockAPIKeyRepo)(nil).LoadAPIKeysPaged), ctx, pageable)
+}
+
+// RevokeAPIKeys mocks base method.
+func (m *MockAPIKeyRepo) RevokeAPIKeys(ctx context.Context, uids []string) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "RevokeAPIKeys", ctx, uids)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// RevokeAPIKeys indicates an expected call of RevokeAPIKeys.
+func (mr *MockAPIKeyRepoMockRecorder) RevokeAPIKeys(ctx, uids interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "RevokeAPIKeys", reflect.TypeOf((*MockAPIKeyRepo)(nil).RevokeAPIKeys), ctx, uids)
 }
 
 // UpdateAPIKey mocks base method.

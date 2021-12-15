@@ -46,16 +46,33 @@ func (a *apiKeyRepo) FindAPIKeyByID(ctx context.Context, uid string) (*convoy.AP
 	return apiKey, err
 }
 
+func (a *apiKeyRepo) RevokeAPIKeys(ctx context.Context, uids []string) error {
+	filter := bson.M{
+		"uid": bson.M{
+			"$in": uids,
+		},
+	}
+
+	update := bson.D{
+		{"$set",
+			bson.D{
+				{Key: "revoked", Value: true},
+			},
+		},
+	}
+
+	_, err := a.client.UpdateMany(ctx, filter, update)
+	return err
+}
+
 func (a *apiKeyRepo) FindAPIKeyByHash(ctx context.Context, hash string) (*convoy.APIKey, error) {
 	apiKey := &convoy.APIKey{}
 	err := a.client.FindOne(ctx, bson.M{"hash": hash}).Decode(apiKey)
 	return apiKey, err
 }
 
-func (a *apiKeyRepo) LoadAPIKeysPaged(ctx context.Context, group string, pageable *models.Pageable) ([]convoy.APIKey, *pager.PaginationData, error) {
+func (a *apiKeyRepo) LoadAPIKeysPaged(ctx context.Context, pageable *models.Pageable) ([]convoy.APIKey, *pager.PaginationData, error) {
 	var apiKeys []convoy.APIKey
-
-	filter := bson.M{"group": group}
 
 	paginatedData, err := pager.
 		New(a.client).
@@ -63,7 +80,6 @@ func (a *apiKeyRepo) LoadAPIKeysPaged(ctx context.Context, group string, pageabl
 		Limit(int64(pageable.PerPage)).
 		Page(int64(pageable.Page)).
 		Sort("created_at", pageable.Sort).
-		Filter(filter).
 		Decode(&apiKeys).
 		Find()
 

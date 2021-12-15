@@ -407,7 +407,15 @@ func getAuthFromRequest(r *http.Request) (*auth.Credential, error) {
 			Username: creds[0],
 			Password: creds[1],
 		}, nil
+	case auth.CredentialTypeAPIKey:
+		if util.IsStringEmpty(authInfo[1]) {
+			return nil, errors.New("empty api key")
+		}
 
+		return &auth.Credential{
+			Type:   auth.CredentialTypeAPIKey,
+			APIKey: authInfo[1],
+		}, nil
 	default:
 		return nil, fmt.Errorf("unknown credential type: %s", credType.String())
 	}

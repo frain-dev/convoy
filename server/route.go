@@ -141,6 +141,15 @@ func buildRoutes(app *applicationHandler) http.Handler {
 					})
 				})
 			})
+
+			r.Route("/security", func(securityRouter chi.Router) {
+				securityRouter.Use(requirePermission(auth.RoleSuperUser))
+
+				securityRouter.Post("/keys", app.CreateAPIKey)
+				securityRouter.With(pagination).Get("/", app.GetAPIKeys)
+				securityRouter.Get("/keys/{keyID}", app.GetAPIKeyByID)
+				securityRouter.Put("/keys/revoke", app.RevokeAPIKeys)
+			})
 		})
 	})
 

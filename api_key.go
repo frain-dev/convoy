@@ -24,6 +24,7 @@ type APIKeyRepo interface {
 	UpdateAPIKey(ctx context.Context, apiKey *APIKey) error
 	FindAPIKeyByID(ctx context.Context, uid string) (*APIKey, error)
 	FindAPIKeyByHash(ctx context.Context, hash string) (*APIKey, error)
-	LoadAPIKeysPaged(ctx context.Context, group string, pageable *models.Pageable) ([]APIKey, *pager.PaginationData, error)
+	RevokeAPIKeys(ctx context.Context, uids []string) error
+	LoadAPIKeysPaged(ctx context.Context, pageable *models.Pageable) ([]APIKey, *pager.PaginationData, error)
 	DeleteAPIKey(ctx context.Context, uid string) error
 }
