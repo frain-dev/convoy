@@ -14,7 +14,7 @@ services:
     depends_on:
       - mongodb
       - redis_server
-
+      - consul
   mongodb:
     image: mongo:latest
     environment:
@@ -29,3 +29,10 @@ services:
     image: redis:alpine
     ports:
       - "8379:6379"
+
+  consul:    
+    image: consul
+    command: "agent -dev -client 0.0.0.0"
+    ports:
+      - "8300:8300"
+      - "8500:8500"

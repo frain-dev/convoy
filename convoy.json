@@ -3,9 +3,6 @@
         "environment": "dev",
         "dsn": "mongodb://root:rootpassword@localhost:27017/convoy?authSource=admin"
     },
-    "sentry": {
-        "dsn": "<insert-sentry-dsn>"
-    },
     "queue": {
         "type": "redis",
         "redis": {
@@ -19,6 +16,9 @@
             "ssl_key_file": "",
             "port": 5005
         }
+    },
+    "consul": {
+        "dsn": "localhost:8500"
     },
     "auth": {
         "require_auth": false,
