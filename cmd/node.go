@@ -47,7 +47,10 @@ func nodeMasterCommand(a *app) *cobra.Command {
 
 			//Start Consul Session
 
-			client, sID, doneCh = startConsulSession(cfg)
+			client, sID, doneCh, err = startConsulSession(cfg)
+			if err != nil {
+				log.Fatalf("Consul session failed: %v", err)
+			}
 
 			kv, _, err := client.KV().Get(convoy.ServiceKey, nil)
 			if err != nil {
@@ -108,7 +111,10 @@ func nodeWorkerCommand(a *app) *cobra.Command {
 
 			//Start Consul Session
 
-			client, sID, doneCh = startConsulSession(cfg)
+			client, sID, doneCh, err = startConsulSession(cfg)
+			if err != nil {
+				log.Fatalf("Consul session failed: %v", err)
+			}
 
 			go func() {
 				hostName, err := os.Hostname()
@@ -178,7 +184,7 @@ func destroyConsulSession(client *api.Client, sID string, doneCh chan struct{}) 
 	os.Exit(0)
 }
 
-func startConsulSession(cfg config.Configuration) (*api.Client, string, chan struct{}) {
+func startConsulSession(cfg config.Configuration) (*api.Client, string, chan struct{}, error) {
 	// build consul client
 	config := api.DefaultConfig()
 	config.Address = cfg.Consul.DSN
@@ -209,7 +215,7 @@ func startConsulSession(cfg config.Configuration) (*api.Client, string, chan str
 
 	log.Printf("Starting consul session!\n")
 
-	return client, sID, doneCh
+	return client, sID, doneCh, err
 }
 
 func startConvoyServer(a *app, cfg config.Configuration) error {
