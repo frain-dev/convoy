@@ -54,8 +54,8 @@ func (a *apiKeyRepo) RevokeAPIKeys(ctx context.Context, uids []string) error {
 	}
 
 	update := bson.D{
-		{"$set",
-			bson.D{
+		{Key: "$set",
+			Value: bson.D{
 				{Key: "revoked", Value: true},
 			},
 		},
