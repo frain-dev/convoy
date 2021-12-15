@@ -2,7 +2,9 @@ package native
 
 import (
 	"context"
+	"errors"
 	"fmt"
+	"time"
 
 	"github.com/frain-dev/convoy"
 	"github.com/frain-dev/convoy/auth"
@@ -30,6 +32,15 @@ func (n *NativeRealm) Authenticate(ctx context.Context, cred *auth.Credential) (
 	apiKey, err := n.apiKeyRepo.FindAPIKeyByHash(ctx, hash)
 	if err != nil {
 		return nil, fmt.Errorf("failed to hash api key: %v", err)
+	}
+
+	if apiKey.Revoked {
+		return nil, errors.New("api key has been revoked")
+	}
+
+	// if the current time id after the specified expiry date then the key has expired
+	if apiKey.ExpiresAt != 0 && time.Now().After(apiKey.ExpiresAt.Time()) {
+		return nil, errors.New("api key has expired")
 	}
 
 	authUser := &auth.AuthenticatedUser{
