@@ -115,6 +115,7 @@ func main() {
 			app.applicationRepo = datastore.NewApplicationRepo(conn)
 			app.eventRepo = datastore.NewEventRepository(conn)
 			app.eventDeliveryRepo = datastore.NewEventDeliveryRepository(conn)
+			app.apiKeyRepo = datastore.NewApiKeyRepo(conn)
 			app.eventQueue = convoyRedis.NewQueue(rC, qFn, "EventQueue")
 			app.deadLetterQueue = convoyRedis.NewQueue(rC, qFn, "DeadLetterQueue")
 
@@ -231,6 +232,7 @@ type app struct {
 	applicationRepo   convoy.ApplicationRepository
 	eventRepo         convoy.EventRepository
 	eventDeliveryRepo convoy.EventDeliveryRepository
+	apiKeyRepo        convoy.APIKeyRepo
 	eventQueue        queue.Queuer
 	deadLetterQueue   queue.Queuer
 }
