@@ -2993,6 +2993,7 @@
             "type": "object",
             "properties": {
                 "config": {
+                    "description": "TODO(daniel): importing config here isn't a good idea, this is the root package, it shouldn't import any other packages",
                     "$ref": "#/definitions/config.GroupConfig"
                 },
                 "created_at": {

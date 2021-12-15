@@ -199,6 +199,8 @@ definitions:
     properties:
       config:
         $ref: '#/definitions/config.GroupConfig'
+        description: 'TODO(daniel): importing config here isn''t a good idea, this
+          is the root package, it shouldn''t import any other packages'
       created_at:
         type: string
       deleted_at:

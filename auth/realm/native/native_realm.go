@@ -35,10 +35,7 @@ func (n *NativeRealm) Authenticate(ctx context.Context, cred *auth.Credential) (
 	authUser := &auth.AuthenticatedUser{
 		AuthenticatedByRealm: n.GetName(),
 		Credential:           *cred,
-		Role: auth.Role{
-			Type:   "",
-			Groups: []string{apiKey.Group},
-		},
+		Role:                 apiKey.Role,
 	}
 
 	return authUser, nil

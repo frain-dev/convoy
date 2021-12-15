@@ -3,6 +3,7 @@ package convoy
 import (
 	"context"
 
+	"github.com/frain-dev/convoy/auth"
 	"github.com/frain-dev/convoy/server/models"
 	pager "github.com/gobeam/mongo-go-pagination"
 	"go.mongodb.org/mongo-driver/bson/primitive"
@@ -11,7 +12,7 @@ import (
 type APIKey struct {
 	ID        primitive.ObjectID `json:"-" bson:"_id"`
 	UID       string             `json:"uid" bson:"uid"`
-	Group     string             `json:"group" bson:"group"`
+	Role      auth.Role          `json:"role" bson:"role"`
 	Hash      string             `json:"-" bson:"hash"`
 	Revoked   bool               `json:"revoked" bson:"revoked"`
 	ExpiresAt primitive.DateTime `json:"expires_at" bson:"expires_at"`

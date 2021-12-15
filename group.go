@@ -11,11 +11,12 @@ import (
 var ErrGroupNotFound = errors.New("group not found")
 
 type Group struct {
-	ID      primitive.ObjectID  `json:"-" bson:"_id"`
-	UID     string              `json:"uid" bson:"uid"`
-	Name    string              `json:"name" bson:"name"`
-	LogoURL string              `json:"logo_url" bson:"logo_url"`
-	Config  *config.GroupConfig `json:"config" bson:"config"`
+	ID      primitive.ObjectID `json:"-" bson:"_id"`
+	UID     string             `json:"uid" bson:"uid"`
+	Name    string             `json:"name" bson:"name"`
+	LogoURL string             `json:"logo_url" bson:"logo_url"`
+	// TODO(daniel): importing config here isn't a good idea, this is the root package, it shouldn't import any other packages
+	Config *config.GroupConfig `json:"config" bson:"config"`
 
 	CreatedAt primitive.DateTime `json:"created_at,omitempty" bson:"created_at,omitempty" swaggertype:"string"`
 	UpdatedAt primitive.DateTime `json:"updated_at,omitempty" bson:"updated_at,omitempty" swaggertype:"string"`

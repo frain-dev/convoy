@@ -4,6 +4,8 @@ import (
 	"encoding/json"
 	"time"
 
+	"github.com/frain-dev/convoy/auth"
+
 	"github.com/frain-dev/convoy/config"
 )
 
@@ -14,8 +16,8 @@ type Group struct {
 }
 
 type APIKey struct {
-	Group       string     `json:"group"`
 	Key         string     `json:"key"`
+	Role        auth.Role  `json:"role"`
 	ExpiresDate *time.Time `json:"expires_date"`
 }
 

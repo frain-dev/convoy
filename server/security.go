@@ -29,11 +29,6 @@ func (a *applicationHandler) CreateAPIKey(w http.ResponseWriter, r *http.Request
 		return
 	}
 
-	if util.IsStringEmpty(newApiKey.Group) {
-		_ = render.Render(w, r, newErrorResponse("expiry date is invalid", http.StatusBadRequest))
-		return
-	}
-
 	if util.IsStringEmpty(newApiKey.Key) {
 		newApiKey.Key, err = util.GenerateSecret()
 		if err != nil {
@@ -52,7 +47,7 @@ func (a *applicationHandler) CreateAPIKey(w http.ResponseWriter, r *http.Request
 
 	apiKey := &convoy.APIKey{
 		UID:       uuid.New().String(),
-		Group:     newApiKey.Group,
+		Role:      newApiKey.Role,
 		Hash:      hashedKey,
 		CreatedAt: primitive.NewDateTimeFromTime(time.Now()),
 	}
@@ -70,7 +65,7 @@ func (a *applicationHandler) CreateAPIKey(w http.ResponseWriter, r *http.Request
 
 	resp := map[string]interface{}{
 		"key":         newApiKey.Key,
-		"group":       newApiKey.Group,
+		"role":        newApiKey.Role,
 		"expiry_date": newApiKey.ExpiresDate.Format(time.RFC3339),
 		"created_at":  apiKey.CreatedAt.Time().Format(time.RFC3339),
 		"uid":         apiKey.UID,
