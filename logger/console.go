@@ -11,14 +11,22 @@ type ConsoleLogger struct {
 	Logger *logrus.Logger
 }
 
-func NewConsoleLogger(cfg config.LoggerConfiguration) *ConsoleLogger {
+func NewConsoleLogger(cfg config.LoggerConfiguration) (*ConsoleLogger, error) {
 	logger := logrus.New()
 	logger.SetOutput(os.Stdout)
 	logger.SetFormatter(&logrus.JSONFormatter{
 		TimestampFormat: "2006-01-02 15:04:05",
 	})
 
-	return &ConsoleLogger{Logger: logger}
+	level, err := logrus.ParseLevel(DefaultLogLevel(cfg.Level))
+
+	if err != nil {
+		return nil, err
+	}
+
+	logger.SetLevel(level)
+
+	return &ConsoleLogger{Logger: logger}, nil
 }
 
 func (n *ConsoleLogger) Log(level logrus.Level, args ...interface{}) {

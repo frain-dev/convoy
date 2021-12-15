@@ -7,6 +7,14 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
+func DefaultLogLevel(lvl string) string {
+	if lvl == "" {
+		return "info"
+	}
+
+	return lvl
+}
+
 type Logger interface {
 	Log(level logrus.Level, args ...interface{})
 	Info(args ...interface{})
@@ -25,7 +33,10 @@ func NewLogger(cfg config.LoggerConfiguration) (Logger, error) {
 
 	switch cfg.Type {
 	case config.ConsoleLoggerProvider:
-		lo := NewConsoleLogger(cfg)
+		lo, err := NewConsoleLogger(cfg)
+		if err != nil {
+			return nil, err
+		}
 		return lo, nil
 	}
 
