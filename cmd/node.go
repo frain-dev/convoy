@@ -78,7 +78,10 @@ func nodeMasterCommand(a *app) *cobra.Command {
 
 				if acquired {
 					log.Printf("Master node intitialized!\n")
-					startConvoyServer(a, cfg)
+					err := startConvoyServer(a, cfg)
+					if err != nil {
+						log.Printf("Error starting convoy server: %v", err)
+					}
 				}
 			}
 			return nil
@@ -150,7 +153,11 @@ func nodeWorkerCommand(a *app) *cobra.Command {
 						if acquired {
 							isLeader = true
 							log.Printf("I'm the master now!\n")
-							startConvoyServer(a, cfg)
+							err := startConvoyServer(a, cfg)
+							if err != nil {
+								log.Printf("Error starting convoy server: %v", err)
+							}
+
 						}
 					}
 
