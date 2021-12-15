@@ -85,18 +85,8 @@ func nodeMasterCommand(a *app) *cobra.Command {
 		},
 		PersistentPostRunE: func(cmd *cobra.Command, args []string) error {
 			// wait for SIGINT or SIGTERM, clean up and exit
-			sigCh := make(chan os.Signal, 1)
-			signal.Notify(sigCh, syscall.SIGINT, syscall.SIGTERM)
-
-			<-sigCh
-			close(doneCh)
-			log.Printf("Destroying consul session and leaving ...")
-			_, err := client.Session().Destroy(sID, nil)
-			if err != nil {
-				log.Fatalf("session destroy err: %v", err)
-			}
-			os.Exit(0)
-			return err
+			destroyConsulSession(client, sID, doneCh)
+			return nil
 		},
 	}
 
@@ -172,24 +162,14 @@ func nodeWorkerCommand(a *app) *cobra.Command {
 		},
 		PersistentPostRunE: func(cmd *cobra.Command, args []string) error {
 			// wait for SIGINT or SIGTERM, clean up and exit
-			sigCh := make(chan os.Signal, 1)
-			signal.Notify(sigCh, syscall.SIGINT, syscall.SIGTERM)
-
-			<-sigCh
-			close(doneCh)
-			log.Printf("Destroying consul session and leaving ...")
-			_, err := client.Session().Destroy(sID, nil)
-			if err != nil {
-				log.Fatalf("session destroy err: %v", err)
-			}
-			os.Exit(0)
-			return err
+			destroyConsulSession(client, sID, doneCh)
+			return nil
 		},
 	}
 	return cmd
 }
 
-func destroyConsulSession(client *api.Client, sID string, doneCh chan struct{}) error {
+func destroyConsulSession(client *api.Client, sID string, doneCh chan struct{}) {
 	sigCh := make(chan os.Signal, 1)
 	signal.Notify(sigCh, syscall.SIGINT, syscall.SIGTERM)
 
@@ -201,7 +181,6 @@ func destroyConsulSession(client *api.Client, sID string, doneCh chan struct{}) 
 		log.Fatalf("session destroy err: %v", err)
 	}
 	os.Exit(0)
-	return err
 }
 
 func startConsulSession(cfg config.Configuration) (*api.Client, string, chan struct{}, error) {
