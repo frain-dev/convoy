@@ -84,7 +84,7 @@ func (p *Producer) postMessages(msgRepo convoy.MessageRepository, m convoy.Messa
 		attemptStatus := convoy.FailureMessageStatus
 		start := time.Now()
 
-		resp, err := p.dispatch.SendRequest(e.TargetURL, string(convoy.HttpPost), buff.Bytes(), string(p.signatureConfig.Header), hmac)
+		resp, err := p.dispatch.SendRequest(e.TargetURL, string(convoy.HttpPost), []byte(bStr), string(p.signatureConfig.Header), hmac)
 		status := "-"
 		statusCode := 0
 		if resp != nil {
