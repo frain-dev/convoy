@@ -237,10 +237,11 @@ func New(cfg config.Configuration,
 	eventRepo convoy.EventRepository,
 	eventDeliveryRepo convoy.EventDeliveryRepository,
 	appRepo convoy.ApplicationRepository,
+	apiKeyRepo convoy.APIKeyRepo,
 	orgRepo convoy.GroupRepository,
 	eventQueue queue.Queuer) *http.Server {
 
-	app := newApplicationHandler(eventRepo, eventDeliveryRepo, appRepo, orgRepo, eventQueue)
+	app := newApplicationHandler(eventRepo, eventDeliveryRepo, appRepo, orgRepo, apiKeyRepo, eventQueue)
 
 	srv := &http.Server{
 		Handler:      buildRoutes(app),

@@ -38,11 +38,13 @@ func newApplicationHandler(eventRepo convoy.EventRepository,
 	eventDeliveryRepo convoy.EventDeliveryRepository,
 	appRepo convoy.ApplicationRepository,
 	groupRepo convoy.GroupRepository,
+	apiKeyRepo convoy.APIKeyRepo,
 	eventQueue queue.Queuer) *applicationHandler {
 
 	return &applicationHandler{
 		eventRepo:         eventRepo,
 		eventDeliveryRepo: eventDeliveryRepo,
+		apiKeyRepo:        apiKeyRepo,
 		appRepo:           appRepo,
 		groupRepo:         groupRepo,
 		eventQueue:        eventQueue,

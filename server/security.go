@@ -38,6 +38,13 @@ func (a *applicationHandler) CreateAPIKey(w http.ResponseWriter, r *http.Request
 		}
 	}
 
+	err = newApiKey.Role.Validate("api key")
+	if err != nil {
+		log.WithError(err).Error("invalid api key role")
+		_ = render.Render(w, r, newErrorResponse("invalid api key role", http.StatusBadRequest))
+		return
+	}
+
 	hashedKey, err := util.ComputeSHA256(newApiKey.Key)
 	if err != nil {
 		log.WithError(err).Error("failed to hash api key")
