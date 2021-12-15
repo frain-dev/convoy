@@ -14,8 +14,13 @@ import (
 )
 
 type apiKeyRepo struct {
-	innerDB *mongo.Database
-	client  *mongo.Collection
+	client *mongo.Collection
+}
+
+const APIKeyCollection = "apiKeys"
+
+func NewApiKeyRepo(db *mongo.Database) *apiKeyRepo {
+	return &apiKeyRepo{client: db.Collection(APIKeyCollection)}
 }
 
 func (a *apiKeyRepo) CreateAPIKey(ctx context.Context, apiKey *convoy.APIKey) error {
