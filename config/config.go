@@ -235,25 +235,25 @@ func LoadConfig(p string) error {
 	return nil
 }
 
-func ensureAuthConfig(auth AuthConfiguration) error {
+func ensureAuthConfig(authCfg AuthConfiguration) error {
 	var err error
-	for _, r := range auth.File.Basic {
+	for _, r := range authCfg.File.Basic {
 		if r.Username == "" || r.Password == "" {
 			return errors.New("username and password are required for basic auth config")
 		}
 
-		err = checkRole(&r.Role, "basic auth")
+		err = r.Role.Validate("basic auth")
 		if err != nil {
 			return err
 		}
 	}
 
-	for _, r := range auth.File.APIKey {
+	for _, r := range authCfg.File.APIKey {
 		if r.APIKey == "" {
 			return errors.New("api-key is required for api-key auth config")
 		}
 
-		err = checkRole(&r.Role, "api-key auth")
+		err = r.Role.Validate("api-key auth")
 		if err != nil {
 			return err
 		}
