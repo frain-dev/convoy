@@ -5,6 +5,8 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/go-chi/chi/v5"
+
 	"github.com/frain-dev/convoy"
 	"github.com/frain-dev/convoy/server/models"
 	"github.com/frain-dev/convoy/util"
@@ -69,11 +71,14 @@ func (a *applicationHandler) CreateAPIKey(w http.ResponseWriter, r *http.Request
 	}
 
 	resp := map[string]interface{}{
-		"key":         newApiKey.Key,
-		"role":        newApiKey.Role,
-		"expiry_date": newApiKey.ExpiresDate.Format(time.RFC3339),
-		"created_at":  apiKey.CreatedAt.Time().Format(time.RFC3339),
-		"uid":         apiKey.UID,
+		"key":        newApiKey.Key,
+		"role":       newApiKey.Role,
+		"created_at": apiKey.CreatedAt.Time().Format(time.RFC3339),
+		"uid":        apiKey.UID,
+	}
+
+	if newApiKey.ExpiresDate != nil {
+		resp["expiry_date"] = newApiKey.ExpiresDate.Format(time.RFC3339)
 	}
 
 	_ = render.Render(w, r, newServerResponse("API Key created successfully", resp, http.StatusCreated))
@@ -117,7 +122,7 @@ func (a *applicationHandler) DeleteAPIKey(w http.ResponseWriter, r *http.Request
 }
 
 func (a *applicationHandler) GetAPIKeyByID(w http.ResponseWriter, r *http.Request) {
-	uid := r.URL.Query().Get("keyID")
+	uid := chi.URLParam(r, "keyID")
 
 	if util.IsStringEmpty(uid) {
 		_ = render.Render(w, r, newErrorResponse("key id is empty", http.StatusBadRequest))
