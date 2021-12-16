@@ -100,11 +100,11 @@ func (a *applicationHandler) RevokeAPIKeys(w http.ResponseWriter, r *http.Reques
 		return
 	}
 
-	_ = render.Render(w, r, newServerResponse("api key revoked successfully", nil, http.StatusOK))
+	_ = render.Render(w, r, newServerResponse("api keys revoked successfully", nil, http.StatusOK))
 }
 
 func (a *applicationHandler) DeleteAPIKey(w http.ResponseWriter, r *http.Request) {
-	uid := r.URL.Query().Get("keyID")
+	uid := chi.URLParam(r, "keyID")
 
 	if util.IsStringEmpty(uid) {
 		_ = render.Render(w, r, newErrorResponse("key id is empty", http.StatusBadRequest))
