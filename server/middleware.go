@@ -453,7 +453,7 @@ func pagination(next http.Handler) http.Handler {
 		if page, err = strconv.Atoi(rawPage); err != nil {
 			page = 0
 		}
-		pageable := models.Pageable{
+		pageable := convoy.Pageable{
 			Page:    page,
 			PerPage: perPage,
 			Sort:    sort,
@@ -493,7 +493,7 @@ func ensurePeriod(start time.Time, end time.Time) error {
 	return nil
 }
 
-func computeDashboardMessages(ctx context.Context, orgId string, eventRepo convoy.EventRepository, searchParams models.SearchParams, period convoy.Period) (uint64, []models.EventInterval, error) {
+func computeDashboardMessages(ctx context.Context, orgId string, eventRepo convoy.EventRepository, searchParams convoy.SearchParams, period convoy.Period) (uint64, []convoy.EventInterval, error) {
 
 	var messagesSent uint64
 
@@ -563,12 +563,12 @@ func getGroupFromContext(ctx context.Context) *convoy.Group {
 	return ctx.Value(groupCtx).(*convoy.Group)
 }
 
-func setPageableInContext(ctx context.Context, pageable models.Pageable) context.Context {
+func setPageableInContext(ctx context.Context, pageable convoy.Pageable) context.Context {
 	return context.WithValue(ctx, pageableCtx, pageable)
 }
 
-func getPageableFromContext(ctx context.Context) models.Pageable {
-	return ctx.Value(pageableCtx).(models.Pageable)
+func getPageableFromContext(ctx context.Context) convoy.Pageable {
+	return ctx.Value(pageableCtx).(convoy.Pageable)
 }
 
 func setPaginationDataInContext(ctx context.Context, p *pager.PaginationData) context.Context {

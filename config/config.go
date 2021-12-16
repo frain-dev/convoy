@@ -34,7 +34,7 @@ type ServerConfiguration struct {
 }
 
 type QueueConfiguration struct {
-	Type  QueueProvider `json:"type"`
+	Type  convoy.QueueProvider `json:"type"`
 	Redis struct {
 		DSN string `json:"dsn"`
 	} `json:"redis"`
@@ -47,7 +47,6 @@ type FileRealmOption struct {
 
 type AuthConfiguration struct {
 	RequireAuth bool              `json:"require_auth"`
-	Type        AuthProvider      `json:"type"`
 	File        FileRealmOption   `json:"file"`
 	Native      bool              `json:"native"`
 	APIKeyRepo  convoy.APIKeyRepo `json:"-"`
@@ -56,19 +55,6 @@ type AuthConfiguration struct {
 type Basic struct {
 	Username string `json:"username"`
 	Password string `json:"password"`
-}
-
-type StrategyConfiguration struct {
-	Type    StrategyProvider `json:"type"`
-	Default struct {
-		IntervalSeconds uint64 `json:"intervalSeconds"`
-		RetryLimit      uint64 `json:"retryLimit"`
-	} `json:"default"`
-}
-
-type SignatureConfiguration struct {
-	Header SignatureHeaderProvider `json:"header"`
-	Hash   string                  `json:"hash"`
 }
 
 type SMTPConfiguration struct {
@@ -81,12 +67,6 @@ type SMTPConfiguration struct {
 	ReplyTo  string `json:"reply-to"`
 }
 
-type GroupConfig struct {
-	Strategy        StrategyConfiguration  `json:"strategy"`
-	Signature       SignatureConfiguration `json:"signature"`
-	DisableEndpoint bool                   `json:"disable_endpoint"`
-}
-
 type Configuration struct {
 	Auth              AuthConfiguration     `json:"auth,omitempty"`
 	UIAuthorizedUsers map[string]string     `json:"-"`
@@ -94,32 +74,21 @@ type Configuration struct {
 	Sentry            SentryConfiguration   `json:"sentry"`
 	Queue             QueueConfiguration    `json:"queue"`
 	Server            ServerConfiguration   `json:"server"`
-	GroupConfig       GroupConfig           `json:"group"`
+	GroupConfig       convoy.GroupConfig    `json:"group"`
 	SMTP              SMTPConfiguration     `json:"smtp"`
 	Environment       string                `json:"env"`
 	MultipleTenants   bool                  `json:"multiple_tenants"`
 }
-
-type AuthProvider string
-type QueueProvider string
-type StrategyProvider string
-type SignatureHeaderProvider string
 
 const (
 	DevelopmentEnvironment string = "development"
 )
 
 const (
-	NoAuthProvider          AuthProvider            = "none"
-	BasicAuthProvider       AuthProvider            = "basic"
-	RedisQueueProvider      QueueProvider           = "redis"
-	DefaultStrategyProvider StrategyProvider        = "default"
-	DefaultSignatureHeader  SignatureHeaderProvider = "X-Convoy-Signature"
+	RedisQueueProvider      convoy.QueueProvider           = "redis"
+	DefaultStrategyProvider convoy.StrategyProvider        = "default"
+	DefaultSignatureHeader  convoy.SignatureHeaderProvider = "X-Convoy-Signature"
 )
-
-func (s SignatureHeaderProvider) String() string {
-	return string(s)
-}
 
 func LoadConfig(p string) error {
 	f, err := os.Open(p)
@@ -187,7 +156,7 @@ func LoadConfig(p string) error {
 	}
 
 	if signatureHeader := os.Getenv("CONVOY_SIGNATURE_HEADER"); signatureHeader != "" {
-		c.GroupConfig.Signature.Header = SignatureHeaderProvider(signatureHeader)
+		c.GroupConfig.Signature.Header = convoy.SignatureHeaderProvider(signatureHeader)
 	}
 
 	if signatureHash := os.Getenv("CONVOY_SIGNATURE_HASH"); signatureHash != "" {
@@ -210,8 +179,8 @@ func LoadConfig(p string) error {
 			return err
 		}
 
-		c.GroupConfig.Strategy = StrategyConfiguration{
-			Type: StrategyProvider(retryStrategy),
+		c.GroupConfig.Strategy = convoy.StrategyConfiguration{
+			Type: convoy.StrategyProvider(retryStrategy),
 			Default: struct {
 				IntervalSeconds uint64 `json:"intervalSeconds"`
 				RetryLimit      uint64 `json:"retryLimit"`
@@ -265,7 +234,7 @@ func ensureAuthConfig(authCfg AuthConfiguration) error {
 	return nil
 }
 
-func ensureSignature(signature SignatureConfiguration) error {
+func ensureSignature(signature convoy.SignatureConfiguration) error {
 	_, ok := algo.M[signature.Hash]
 	if !ok {
 		return fmt.Errorf("invalid hash algorithm - '%s', must be one of %s", signature.Hash, reflect.ValueOf(algo.M).MapKeys())

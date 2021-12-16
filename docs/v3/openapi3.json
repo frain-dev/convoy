@@ -1,50 +1,6 @@
 {
 	"components": {
 		"schemas": {
-			"config.GroupConfig": {
-				"properties": {
-					"disable_endpoint": {
-						"type": "boolean"
-					},
-					"signature": {
-						"$ref": "#/components/schemas/config.SignatureConfiguration"
-					},
-					"strategy": {
-						"$ref": "#/components/schemas/config.StrategyConfiguration"
-					}
-				},
-				"type": "object"
-			},
-			"config.SignatureConfiguration": {
-				"properties": {
-					"hash": {
-						"type": "string"
-					},
-					"header": {
-						"type": "string"
-					}
-				},
-				"type": "object"
-			},
-			"config.StrategyConfiguration": {
-				"properties": {
-					"default": {
-						"properties": {
-							"intervalSeconds": {
-								"type": "integer"
-							},
-							"retryLimit": {
-								"type": "integer"
-							}
-						},
-						"type": "object"
-					},
-					"type": {
-						"type": "string"
-					}
-				},
-				"type": "object"
-			},
 			"convoy.AppMetadata": {
 				"properties": {
 					"group_id": {
@@ -291,7 +247,7 @@
 			"convoy.Group": {
 				"properties": {
 					"config": {
-						"$ref": "#/components/schemas/config.GroupConfig"
+						"$ref": "#/components/schemas/convoy.GroupConfig"
 					},
 					"created_at": {
 						"type": "string"
@@ -310,6 +266,20 @@
 					},
 					"updated_at": {
 						"type": "string"
+					}
+				},
+				"type": "object"
+			},
+			"convoy.GroupConfig": {
+				"properties": {
+					"disable_endpoint": {
+						"type": "boolean"
+					},
+					"signature": {
+						"$ref": "#/components/schemas/convoy.SignatureConfiguration"
+					},
+					"strategy": {
+						"$ref": "#/components/schemas/convoy.StrategyConfiguration"
 					}
 				},
 				"type": "object"
@@ -344,6 +314,36 @@
 						"type": "integer"
 					},
 					"strategy": {
+						"type": "string"
+					}
+				},
+				"type": "object"
+			},
+			"convoy.SignatureConfiguration": {
+				"properties": {
+					"hash": {
+						"type": "string"
+					},
+					"header": {
+						"type": "string"
+					}
+				},
+				"type": "object"
+			},
+			"convoy.StrategyConfiguration": {
+				"properties": {
+					"default": {
+						"properties": {
+							"intervalSeconds": {
+								"type": "integer"
+							},
+							"retryLimit": {
+								"type": "integer"
+							}
+						},
+						"type": "object"
+					},
+					"type": {
 						"type": "string"
 					}
 				},
@@ -401,7 +401,7 @@
 			"models.Group": {
 				"properties": {
 					"config": {
-						"$ref": "#/components/schemas/config.GroupConfig"
+						"$ref": "#/components/schemas/convoy.GroupConfig"
 					},
 					"logo_url": {
 						"type": "string"

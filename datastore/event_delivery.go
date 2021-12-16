@@ -6,7 +6,6 @@ import (
 	"time"
 
 	"github.com/frain-dev/convoy"
-	"github.com/frain-dev/convoy/server/models"
 	"github.com/frain-dev/convoy/util"
 	pager "github.com/gobeam/mongo-go-pagination"
 	"github.com/google/uuid"
@@ -166,7 +165,7 @@ func (db *eventDeliveryRepo) UpdateEventDeliveryWithAttempt(ctx context.Context,
 	return nil
 }
 
-func (db *eventDeliveryRepo) LoadEventDeliveriesPaged(ctx context.Context, groupID, appID, eventID string, status convoy.EventDeliveryStatus, searchParams models.SearchParams, pageable models.Pageable) ([]convoy.EventDelivery, pager.PaginationData, error) {
+func (db *eventDeliveryRepo) LoadEventDeliveriesPaged(ctx context.Context, groupID, appID, eventID string, status convoy.EventDeliveryStatus, searchParams convoy.SearchParams, pageable convoy.Pageable) ([]convoy.EventDelivery, pager.PaginationData, error) {
 	filter := bson.M{
 		"document_status": bson.M{"$ne": convoy.DeletedDocumentStatus},
 		"created_at":      getCreatedDateFilter(searchParams),

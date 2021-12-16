@@ -42,6 +42,7 @@
 	"disable_endpoint": false,
     "auth": {
         "require_auth": true,
+        "native": true,
         "file": {
             "basic": [
                 {

@@ -1,33 +1,5 @@
 basePath: /api/v1
 definitions:
-  config.GroupConfig:
-    properties:
-      disable_endpoint:
-        type: boolean
-      signature:
-        $ref: '#/definitions/config.SignatureConfiguration'
-      strategy:
-        $ref: '#/definitions/config.StrategyConfiguration'
-    type: object
-  config.SignatureConfiguration:
-    properties:
-      hash:
-        type: string
-      header:
-        type: string
-    type: object
-  config.StrategyConfiguration:
-    properties:
-      default:
-        properties:
-          intervalSeconds:
-            type: integer
-          retryLimit:
-            type: integer
-        type: object
-      type:
-        type: string
-    type: object
   convoy.AppMetadata:
     properties:
       group_id:
@@ -198,7 +170,7 @@ definitions:
   convoy.Group:
     properties:
       config:
-        $ref: '#/definitions/config.GroupConfig'
+        $ref: '#/definitions/convoy.GroupConfig'
         description: 'TODO(daniel): importing config here isn''t a good idea, this
           is the root package, it shouldn''t import any other packages'
       created_at:
@@ -213,6 +185,15 @@ definitions:
         type: string
       updated_at:
         type: string
+    type: object
+  convoy.GroupConfig:
+    properties:
+      disable_endpoint:
+        type: boolean
+      signature:
+        $ref: '#/definitions/convoy.SignatureConfiguration'
+      strategy:
+        $ref: '#/definitions/convoy.StrategyConfiguration'
     type: object
   convoy.HttpHeader:
     additionalProperties:
@@ -240,6 +221,25 @@ definitions:
       retry_limit:
         type: integer
       strategy:
+        type: string
+    type: object
+  convoy.SignatureConfiguration:
+    properties:
+      hash:
+        type: string
+      header:
+        type: string
+    type: object
+  convoy.StrategyConfiguration:
+    properties:
+      default:
+        properties:
+          intervalSeconds:
+            type: integer
+          retryLimit:
+            type: integer
+        type: object
+      type:
         type: string
     type: object
   models.Application:
@@ -279,7 +279,7 @@ definitions:
   models.Group:
     properties:
       config:
-        $ref: '#/definitions/config.GroupConfig'
+        $ref: '#/definitions/convoy.GroupConfig'
       logo_url:
         type: string
       name:

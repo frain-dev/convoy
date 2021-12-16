@@ -423,8 +423,8 @@ func (a *applicationHandler) GetEventDeliveriesPaged(w http.ResponseWriter, r *h
 		pagedResponse{Content: &ed, Pagination: &paginationData}, http.StatusOK))
 }
 
-func getSearchParams(r *http.Request) (models.SearchParams, error) {
-	var searchParams models.SearchParams
+func getSearchParams(r *http.Request) (convoy.SearchParams, error) {
+	var searchParams convoy.SearchParams
 	format := "2006-01-02T15:04:05"
 	startDate := r.URL.Query().Get("startDate")
 	endDate := r.URL.Query().Get("endDate")
@@ -456,7 +456,7 @@ func getSearchParams(r *http.Request) (models.SearchParams, error) {
 		return searchParams, err
 	}
 
-	searchParams = models.SearchParams{
+	searchParams = convoy.SearchParams{
 		CreatedAtStart: startT.Unix(),
 		CreatedAtEnd:   endT.Unix(),
 	}

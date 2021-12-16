@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"errors"
 
-	"github.com/frain-dev/convoy/server/models"
 	pager "github.com/gobeam/mongo-go-pagination"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 )
@@ -19,6 +18,16 @@ type AppMetadata struct {
 	Title        string `json:"title" bson:"title"`
 	GroupID      string `json:"group_id" bson:"group_id"`
 	SupportEmail string `json:"support_email" bson:"support_email"`
+}
+
+type EventInterval struct {
+	Data  EventIntervalData `json:"data" bson:"_id"`
+	Count uint64            `json:"count" bson:"count"`
+}
+
+type EventIntervalData struct {
+	Interval int64  `json:"index" bson:"index"`
+	Time     string `json:"date" bson:"total_time"`
 }
 
 // EventType is used to identify an specific event.
@@ -55,11 +64,11 @@ type Event struct {
 
 type EventRepository interface {
 	CreateEvent(context.Context, *Event) error
-	LoadEventIntervals(context.Context, string, models.SearchParams, Period, int) ([]models.EventInterval, error)
-	LoadEventsPagedByAppId(context.Context, string, models.SearchParams, models.Pageable) ([]Event, pager.PaginationData, error)
+	LoadEventIntervals(context.Context, string, SearchParams, Period, int) ([]EventInterval, error)
+	LoadEventsPagedByAppId(context.Context, string, SearchParams, Pageable) ([]Event, pager.PaginationData, error)
 	FindEventByID(ctx context.Context, id string) (*Event, error)
 	LoadEventsScheduledForPosting(context.Context) ([]Event, error)
 	LoadEventsForPostingRetry(context.Context) ([]Event, error)
 	LoadAbandonedEventsForPostingRetry(context.Context) ([]Event, error)
-	LoadEventsPaged(context.Context, string, string, models.SearchParams, models.Pageable) ([]Event, pager.PaginationData, error)
+	LoadEventsPaged(context.Context, string, string, SearchParams, Pageable) ([]Event, pager.PaginationData, error)
 }

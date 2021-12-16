@@ -6,7 +6,6 @@ import (
 	"time"
 
 	"github.com/frain-dev/convoy"
-	"github.com/frain-dev/convoy/server/models"
 	"github.com/frain-dev/convoy/util"
 	pager "github.com/gobeam/mongo-go-pagination"
 	"github.com/google/uuid"
@@ -52,7 +51,7 @@ func (db *eventRepo) CreateEvent(ctx context.Context,
 	return err
 }
 
-func (db *eventRepo) LoadEventIntervals(ctx context.Context, groupID string, searchParams models.SearchParams, period convoy.Period, interval int) ([]models.EventInterval, error) {
+func (db *eventRepo) LoadEventIntervals(ctx context.Context, groupID string, searchParams convoy.SearchParams, period convoy.Period, interval int) ([]convoy.EventInterval, error) {
 
 	start := searchParams.CreatedAtStart
 	end := searchParams.CreatedAtEnd
@@ -115,19 +114,19 @@ func (db *eventRepo) LoadEventIntervals(ctx context.Context, groupID string, sea
 		log.WithError(err).Errorln("aggregate error")
 		return nil, err
 	}
-	var eventsIntervals []models.EventInterval
+	var eventsIntervals []convoy.EventInterval
 	if err = data.All(ctx, &eventsIntervals); err != nil {
 		log.WithError(err).Error("marshal error")
 		return nil, err
 	}
 	if eventsIntervals == nil {
-		eventsIntervals = make([]models.EventInterval, 0)
+		eventsIntervals = make([]convoy.EventInterval, 0)
 	}
 
 	return eventsIntervals, nil
 }
 
-func (db *eventRepo) LoadEventsPagedByAppId(ctx context.Context, appId string, searchParams models.SearchParams, pageable models.Pageable) ([]convoy.Event, pager.PaginationData, error) {
+func (db *eventRepo) LoadEventsPagedByAppId(ctx context.Context, appId string, searchParams convoy.SearchParams, pageable convoy.Pageable) ([]convoy.Event, pager.PaginationData, error) {
 	filter := bson.M{"app_id": appId, "document_status": bson.M{"$ne": convoy.DeletedDocumentStatus}, "created_at": getCreatedDateFilter(searchParams)}
 
 	var messages []convoy.Event
@@ -218,7 +217,7 @@ func (db *eventRepo) LoadAbandonedEventsForPostingRetry(ctx context.Context) ([]
 	return db.loadEventsByFilter(ctx, filter, nil)
 }
 
-func (db *eventRepo) LoadEventsPaged(ctx context.Context, groupID string, appId string, searchParams models.SearchParams, pageable models.Pageable) ([]convoy.Event, pager.PaginationData, error) {
+func (db *eventRepo) LoadEventsPaged(ctx context.Context, groupID string, appId string, searchParams convoy.SearchParams, pageable convoy.Pageable) ([]convoy.Event, pager.PaginationData, error) {
 	filter := bson.M{"document_status": bson.M{"$ne": convoy.DeletedDocumentStatus}, "created_at": getCreatedDateFilter(searchParams)}
 
 	hasAppFilter := !util.IsStringEmpty(appId)
@@ -248,6 +247,6 @@ func (db *eventRepo) LoadEventsPaged(ctx context.Context, groupID string, appId 
 	return messages, paginatedData.Pagination, nil
 }
 
-func getCreatedDateFilter(searchParams models.SearchParams) bson.M {
+func getCreatedDateFilter(searchParams convoy.SearchParams) bson.M {
 	return bson.M{"$gte": primitive.NewDateTimeFromTime(time.Unix(searchParams.CreatedAtStart, 0)), "$lte": primitive.NewDateTimeFromTime(time.Unix(searchParams.CreatedAtEnd, 0))}
 }

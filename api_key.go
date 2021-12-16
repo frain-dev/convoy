@@ -4,7 +4,6 @@ import (
 	"context"
 
 	"github.com/frain-dev/convoy/auth"
-	"github.com/frain-dev/convoy/server/models"
 	pager "github.com/gobeam/mongo-go-pagination"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 )
@@ -25,6 +24,6 @@ type APIKeyRepo interface {
 	FindAPIKeyByID(ctx context.Context, uid string) (*APIKey, error)
 	FindAPIKeyByHash(ctx context.Context, hash string) (*APIKey, error)
 	RevokeAPIKeys(ctx context.Context, uids []string) error
-	LoadAPIKeysPaged(ctx context.Context, pageable *models.Pageable) ([]APIKey, *pager.PaginationData, error)
+	LoadAPIKeysPaged(ctx context.Context, pageable *Pageable) ([]APIKey, *pager.PaginationData, error)
 	DeleteAPIKey(ctx context.Context, uid string) error
 }

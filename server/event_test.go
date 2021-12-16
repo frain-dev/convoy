@@ -35,13 +35,13 @@ func TestApplicationHandler_CreateAppEvent(t *testing.T) {
 	groupId := "1234567890"
 	group := &convoy.Group{
 		UID: groupId,
-		Config: &config.GroupConfig{
-			Signature: config.SignatureConfiguration{
-				Header: config.SignatureHeaderProvider("X-Convoy-Signature"),
+		Config: &convoy.GroupConfig{
+			Signature: convoy.SignatureConfiguration{
+				Header: convoy.SignatureHeaderProvider("X-Convoy-Signature"),
 				Hash:   "SHA256",
 			},
-			Strategy: config.StrategyConfiguration{
-				Type: config.StrategyProvider("default"),
+			Strategy: convoy.StrategyConfiguration{
+				Type: convoy.StrategyProvider("default"),
 				Default: struct {
 					IntervalSeconds uint64 `json:"intervalSeconds"`
 					RetryLimit      uint64 `json:"retryLimit"`

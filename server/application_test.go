@@ -14,7 +14,6 @@ import (
 	"github.com/frain-dev/convoy/auth/realm_chain"
 
 	"github.com/frain-dev/convoy/config"
-	"github.com/frain-dev/convoy/server/models"
 	pager "github.com/gobeam/mongo-go-pagination"
 
 	"github.com/frain-dev/convoy"
@@ -274,7 +273,7 @@ func TestApplicationHandler_GetApps(t *testing.T) {
 			req.SetBasicAuth("test", "test")
 			w := httptest.NewRecorder()
 
-			pageable := models.Pageable{
+			pageable := convoy.Pageable{
 				Page:    1,
 				PerPage: 10,
 			}
@@ -932,9 +931,9 @@ func Test_applicationHandler_GetDashboardSummary(t *testing.T) {
 					}, nil)
 				eventRepo.EXPECT().
 					LoadEventIntervals(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Times(1).
-					Return([]models.EventInterval{
+					Return([]convoy.EventInterval{
 						{
-							Data: models.EventIntervalData{
+							Data: convoy.EventIntervalData{
 								Interval: 12,
 								Time:     "2020-10",
 							},
@@ -1035,7 +1034,7 @@ func Test_applicationHandler_GetPaginatedApps(t *testing.T) {
 			request = request.WithContext(context.WithValue(request.Context(), chi.RouteCtxKey, rctx))
 			request = request.WithContext(context.WithValue(request.Context(), groupCtx, group))
 
-			pageable := models.Pageable{
+			pageable := convoy.Pageable{
 				Page:    1,
 				PerPage: 10,
 			}

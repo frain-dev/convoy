@@ -6,7 +6,6 @@ import (
 	"time"
 
 	"github.com/frain-dev/convoy"
-	"github.com/frain-dev/convoy/config"
 	"github.com/frain-dev/convoy/server/models"
 	"github.com/frain-dev/convoy/util"
 	"github.com/go-chi/render"
@@ -20,8 +19,8 @@ type AuthorizedLogin struct {
 }
 
 type ViewableConfiguration struct {
-	Strategy  config.StrategyConfiguration  `json:"strategy"`
-	Signature config.SignatureConfiguration `json:"signature"`
+	Strategy  convoy.StrategyConfiguration  `json:"strategy"`
+	Signature convoy.SignatureConfiguration `json:"signature"`
 }
 
 func (a *applicationHandler) GetDashboardSummary(w http.ResponseWriter, r *http.Request) {
@@ -68,7 +67,7 @@ func (a *applicationHandler) GetDashboardSummary(w http.ResponseWriter, r *http.
 		return
 	}
 
-	searchParams := models.SearchParams{
+	searchParams := convoy.SearchParams{
 		CreatedAtStart: startT.Unix(),
 		CreatedAtEnd:   endT.Unix(),
 	}

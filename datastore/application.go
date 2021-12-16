@@ -5,7 +5,6 @@ import (
 	"errors"
 	"time"
 
-	"github.com/frain-dev/convoy/server/models"
 	"github.com/frain-dev/convoy/util"
 	log "github.com/sirupsen/logrus"
 
@@ -41,7 +40,7 @@ func (db *appRepo) CreateApplication(ctx context.Context,
 	return err
 }
 
-func (db *appRepo) LoadApplicationsPaged(ctx context.Context, groupID string, pageable models.Pageable) ([]convoy.Application, pager.PaginationData, error) {
+func (db *appRepo) LoadApplicationsPaged(ctx context.Context, groupID string, pageable convoy.Pageable) ([]convoy.Application, pager.PaginationData, error) {
 
 	filter := bson.M{"document_status": bson.M{"$ne": convoy.DeletedDocumentStatus}}
 	if !util.IsStringEmpty(groupID) {
@@ -72,7 +71,7 @@ func (db *appRepo) LoadApplicationsPaged(ctx context.Context, groupID string, pa
 	return apps, paginatedData.Pagination, nil
 }
 
-func (db *appRepo) LoadApplicationsPagedByGroupId(ctx context.Context, groupID string, pageable models.Pageable) ([]convoy.Application, pager.PaginationData, error) {
+func (db *appRepo) LoadApplicationsPagedByGroupId(ctx context.Context, groupID string, pageable convoy.Pageable) ([]convoy.Application, pager.PaginationData, error) {
 
 	filter := bson.M{
 		"group_id": groupID,
@@ -105,7 +104,7 @@ func (db *appRepo) LoadApplicationsPagedByGroupId(ctx context.Context, groupID s
 	return applications, paginatedData.Pagination, nil
 }
 
-func (db *appRepo) SearchApplicationsByGroupId(ctx context.Context, groupId string, searchParams models.SearchParams) ([]convoy.Application, error) {
+func (db *appRepo) SearchApplicationsByGroupId(ctx context.Context, groupId string, searchParams convoy.SearchParams) ([]convoy.Application, error) {
 
 	start := searchParams.CreatedAtStart
 	end := searchParams.CreatedAtEnd

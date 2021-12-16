@@ -4,7 +4,6 @@ import (
 	"context"
 
 	"github.com/frain-dev/convoy"
-	"github.com/frain-dev/convoy/server/models"
 	"github.com/frain-dev/convoy/util"
 	pager "github.com/gobeam/mongo-go-pagination"
 	"github.com/google/uuid"
@@ -71,7 +70,7 @@ func (a *apiKeyRepo) FindAPIKeyByHash(ctx context.Context, hash string) (*convoy
 	return apiKey, err
 }
 
-func (a *apiKeyRepo) LoadAPIKeysPaged(ctx context.Context, pageable *models.Pageable) ([]convoy.APIKey, *pager.PaginationData, error) {
+func (a *apiKeyRepo) LoadAPIKeysPaged(ctx context.Context, pageable *convoy.Pageable) ([]convoy.APIKey, *pager.PaginationData, error) {
 	var apiKeys []convoy.APIKey
 
 	paginatedData, err := pager.

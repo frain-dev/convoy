@@ -9,7 +9,6 @@ import (
 	reflect "reflect"
 
 	convoy "github.com/frain-dev/convoy"
-	models "github.com/frain-dev/convoy/server/models"
 	mongopagination "github.com/gobeam/mongo-go-pagination"
 	gomock "github.com/golang/mock/gomock"
 )
@@ -96,7 +95,7 @@ func (mr *MockAPIKeyRepoMockRecorder) FindAPIKeyByID(ctx, uid interface{}) *gomo
 }
 
 // LoadAPIKeysPaged mocks base method.
-func (m *MockAPIKeyRepo) LoadAPIKeysPaged(ctx context.Context, pageable *models.Pageable) ([]convoy.APIKey, *mongopagination.PaginationData, error) {
+func (m *MockAPIKeyRepo) LoadAPIKeysPaged(ctx context.Context, pageable *convoy.Pageable) ([]convoy.APIKey, *mongopagination.PaginationData, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "LoadAPIKeysPaged", ctx, pageable)
 	ret0, _ := ret[0].([]convoy.APIKey)

@@ -9,7 +9,6 @@ import (
 	reflect "reflect"
 
 	convoy "github.com/frain-dev/convoy"
-	models "github.com/frain-dev/convoy/server/models"
 	mongopagination "github.com/gobeam/mongo-go-pagination"
 	gomock "github.com/golang/mock/gomock"
 )
@@ -82,10 +81,10 @@ func (mr *MockEventRepositoryMockRecorder) LoadAbandonedEventsForPostingRetry(ar
 }
 
 // LoadEventIntervals mocks base method.
-func (m *MockEventRepository) LoadEventIntervals(arg0 context.Context, arg1 string, arg2 models.SearchParams, arg3 convoy.Period, arg4 int) ([]models.EventInterval, error) {
+func (m *MockEventRepository) LoadEventIntervals(arg0 context.Context, arg1 string, arg2 convoy.SearchParams, arg3 convoy.Period, arg4 int) ([]convoy.EventInterval, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "LoadEventIntervals", arg0, arg1, arg2, arg3, arg4)
-	ret0, _ := ret[0].([]models.EventInterval)
+	ret0, _ := ret[0].([]convoy.EventInterval)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
@@ -112,7 +111,7 @@ func (mr *MockEventRepositoryMockRecorder) LoadEventsForPostingRetry(arg0 interf
 }
 
 // LoadEventsPaged mocks base method.
-func (m *MockEventRepository) LoadEventsPaged(arg0 context.Context, arg1, arg2 string, arg3 models.SearchParams, arg4 models.Pageable) ([]convoy.Event, mongopagination.PaginationData, error) {
+func (m *MockEventRepository) LoadEventsPaged(arg0 context.Context, arg1, arg2 string, arg3 convoy.SearchParams, arg4 convoy.Pageable) ([]convoy.Event, mongopagination.PaginationData, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "LoadEventsPaged", arg0, arg1, arg2, arg3, arg4)
 	ret0, _ := ret[0].([]convoy.Event)
@@ -128,7 +127,7 @@ func (mr *MockEventRepositoryMockRecorder) LoadEventsPaged(arg0, arg1, arg2, arg
 }
 
 // LoadEventsPagedByAppId mocks base method.
-func (m *MockEventRepository) LoadEventsPagedByAppId(arg0 context.Context, arg1 string, arg2 models.SearchParams, arg3 models.Pageable) ([]convoy.Event, mongopagination.PaginationData, error) {
+func (m *MockEventRepository) LoadEventsPagedByAppId(arg0 context.Context, arg1 string, arg2 convoy.SearchParams, arg3 convoy.Pageable) ([]convoy.Event, mongopagination.PaginationData, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "LoadEventsPagedByAppId", arg0, arg1, arg2, arg3)
 	ret0, _ := ret[0].([]convoy.Event)

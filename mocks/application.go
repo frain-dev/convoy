@@ -9,7 +9,6 @@ import (
 	reflect "reflect"
 
 	convoy "github.com/frain-dev/convoy"
-	models "github.com/frain-dev/convoy/server/models"
 	mongopagination "github.com/gobeam/mongo-go-pagination"
 	gomock "github.com/golang/mock/gomock"
 )
@@ -96,7 +95,7 @@ func (mr *MockApplicationRepositoryMockRecorder) FindApplicationEndpointByID(arg
 }
 
 // LoadApplicationsPaged mocks base method.
-func (m *MockApplicationRepository) LoadApplicationsPaged(arg0 context.Context, arg1 string, arg2 models.Pageable) ([]convoy.Application, mongopagination.PaginationData, error) {
+func (m *MockApplicationRepository) LoadApplicationsPaged(arg0 context.Context, arg1 string, arg2 convoy.Pageable) ([]convoy.Application, mongopagination.PaginationData, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "LoadApplicationsPaged", arg0, arg1, arg2)
 	ret0, _ := ret[0].([]convoy.Application)
@@ -112,7 +111,7 @@ func (mr *MockApplicationRepositoryMockRecorder) LoadApplicationsPaged(arg0, arg
 }
 
 // LoadApplicationsPagedByGroupId mocks base method.
-func (m *MockApplicationRepository) LoadApplicationsPagedByGroupId(arg0 context.Context, arg1 string, arg2 models.Pageable) ([]convoy.Application, mongopagination.PaginationData, error) {
+func (m *MockApplicationRepository) LoadApplicationsPagedByGroupId(arg0 context.Context, arg1 string, arg2 convoy.Pageable) ([]convoy.Application, mongopagination.PaginationData, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "LoadApplicationsPagedByGroupId", arg0, arg1, arg2)
 	ret0, _ := ret[0].([]convoy.Application)
@@ -128,7 +127,7 @@ func (mr *MockApplicationRepositoryMockRecorder) LoadApplicationsPagedByGroupId(
 }
 
 // SearchApplicationsByGroupId mocks base method.
-func (m *MockApplicationRepository) SearchApplicationsByGroupId(arg0 context.Context, arg1 string, arg2 models.SearchParams) ([]convoy.Application, error) {
+func (m *MockApplicationRepository) SearchApplicationsByGroupId(arg0 context.Context, arg1 string, arg2 convoy.SearchParams) ([]convoy.Application, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "SearchApplicationsByGroupId", arg0, arg1, arg2)
 	ret0, _ := ret[0].([]convoy.Application)

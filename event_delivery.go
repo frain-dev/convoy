@@ -7,8 +7,6 @@ import (
 	"encoding/json"
 	"errors"
 
-	"github.com/frain-dev/convoy/config"
-	"github.com/frain-dev/convoy/server/models"
 	pager "github.com/gobeam/mongo-go-pagination"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 )
@@ -33,8 +31,8 @@ const (
 
 type Metadata struct {
 	// Data to be sent to endpoint.
-	Data     json.RawMessage         `json:"data" bson:"data"`
-	Strategy config.StrategyProvider `json:"strategy" bson:"strategy"`
+	Data     json.RawMessage  `json:"data" bson:"data"`
+	Strategy StrategyProvider `json:"strategy" bson:"strategy"`
 	// NextSendTime denotes the next time a Event will be published in
 	// case it failed the first time
 	NextSendTime primitive.DateTime `json:"next_send_time" bson:"next_send_time"`
@@ -123,5 +121,5 @@ type EventDeliveryRepository interface {
 	FindEventDeliveriesByEventID(context.Context, string) ([]EventDelivery, error)
 	UpdateStatusOfEventDelivery(context.Context, EventDelivery, EventDeliveryStatus) error
 	UpdateEventDeliveryWithAttempt(context.Context, EventDelivery, DeliveryAttempt) error
-	LoadEventDeliveriesPaged(context.Context, string, string, string, EventDeliveryStatus, models.SearchParams, models.Pageable) ([]EventDelivery, pager.PaginationData, error)
+	LoadEventDeliveriesPaged(context.Context, string, string, string, EventDeliveryStatus, SearchParams, Pageable) ([]EventDelivery, pager.PaginationData, error)
 }
