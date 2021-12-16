@@ -9,6 +9,8 @@ import (
 	"strconv"
 	"sync/atomic"
 
+	"github.com/frain-dev/convoy"
+
 	"github.com/frain-dev/convoy/config/algo"
 )
 
@@ -44,10 +46,11 @@ type FileRealmOption struct {
 }
 
 type AuthConfiguration struct {
-	RequireAuth bool         `json:"require_auth"`
-	Type        AuthProvider `json:"type"`
-	Basic       Basic
-	File        FileRealmOption `json:"file"`
+	RequireAuth bool              `json:"require_auth"`
+	Type        AuthProvider      `json:"type"`
+	File        FileRealmOption   `json:"file"`
+	Native      bool              `json:"native"`
+	APIKeyRepo  convoy.APIKeyRepo `json:"-"`
 }
 
 type Basic struct {

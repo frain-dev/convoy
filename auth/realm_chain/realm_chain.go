@@ -6,6 +6,8 @@ import (
 	"fmt"
 	"sync/atomic"
 
+	"github.com/frain-dev/convoy/auth/realm/native"
+
 	"github.com/frain-dev/convoy/auth"
 	"github.com/frain-dev/convoy/auth/realm/file"
 	"github.com/frain-dev/convoy/auth/realm/noop"
@@ -50,6 +52,14 @@ func Init(authConfig *config.AuthConfiguration) error {
 		err = rc.RegisterRealm(fr)
 		if err != nil {
 			return errors.New("failed to register file realm in realm chain")
+		}
+
+		if authConfig.Native {
+			nr := native.NewNativeRealm(authConfig.APIKeyRepo)
+			err = rc.RegisterRealm(nr)
+			if err != nil {
+				return errors.New("failed to register file realm in realm chain")
+			}
 		}
 	} else {
 		log.Warnf("using noop realm for authentication: all requests will be authenticated with super_user role")
