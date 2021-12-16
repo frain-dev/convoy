@@ -74,7 +74,9 @@ func ComputeSHA256(data string) (string, error) {
 		return "", err
 	}
 
-	return string(fn.Sum(nil)), nil
+	h := hex.EncodeToString(fn.Sum(nil))
+
+	return h, nil
 }
 
 func GenerateSecret() (string, error) {
