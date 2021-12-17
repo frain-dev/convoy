@@ -43,6 +43,15 @@ func initRealmChain(t *testing.T) {
 	}
 }
 
+func serialize(t *testing.T, obj interface{}) *bytes.Buffer {
+	buf := &bytes.Buffer{}
+	if err := json.NewEncoder(buf).Encode(obj); err != nil {
+		t.Error("unable to serialize obj")
+		return nil
+	}
+	return buf
+}
+
 func stripTimestamp(t *testing.T, obj string, b *bytes.Buffer) *bytes.Buffer {
 	var res serverResponse
 

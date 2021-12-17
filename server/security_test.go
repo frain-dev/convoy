@@ -2,15 +2,15 @@ package server
 
 import (
 	"context"
+	"errors"
 	"net/http"
 	"net/http/httptest"
 	"strings"
 	"testing"
 
+	"github.com/frain-dev/convoy/config"
 	"github.com/frain-dev/convoy/mocks"
 	"github.com/go-chi/chi/v5"
-
-	"github.com/frain-dev/convoy/config"
 	"github.com/golang/mock/gomock"
 )
 
@@ -168,5 +168,84 @@ func TestApplicationHandler_CreateAPIKey(t *testing.T) {
 			verifyMatch(t, *w)
 		})
 	}
+}
 
+func TestApplicationHandler_RevokeAPIKeys(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	groupRepo := mocks.NewMockGroupRepository(ctrl)
+	appRepo := mocks.NewMockApplicationRepository(ctrl)
+	eventRepo := mocks.NewMockEventRepository(ctrl)
+	eventDeliveryRepo := mocks.NewMockEventDeliveryRepository(ctrl)
+	eventQueue := mocks.NewMockQueuer(ctrl)
+	apiKeyRepo := mocks.NewMockAPIKeyRepo(ctrl)
+
+	app := newApplicationHandler(eventRepo, eventDeliveryRepo, appRepo, groupRepo, apiKeyRepo, eventQueue)
+
+	tt := []struct {
+		name       string
+		cfgPath    string
+		statusCode int
+		body       []string
+		dbFn       func(app *applicationHandler)
+	}{
+		{
+			name:       "revoke api keys",
+			cfgPath:    "./testdata/Auth_Config/no-auth-convoy.json",
+			statusCode: http.StatusOK,
+			body:       []string{"abc", "123"},
+			dbFn: func(app *applicationHandler) {
+				a, _ := app.apiKeyRepo.(*mocks.MockAPIKeyRepo)
+				a.EXPECT().RevokeAPIKeys(gomock.Any(), gomock.Any()).Times(1).Return(nil)
+			},
+		},
+		{
+			name:       "should error for revoke api keys",
+			cfgPath:    "./testdata/Auth_Config/no-auth-convoy.json",
+			statusCode: http.StatusInternalServerError,
+			body:       []string{"abc", "123"},
+			dbFn: func(app *applicationHandler) {
+				a, _ := app.apiKeyRepo.(*mocks.MockAPIKeyRepo)
+				a.EXPECT().RevokeAPIKeys(gomock.Any(), gomock.Any()).Times(1).Return(errors.New("abc"))
+			},
+		},
+	}
+
+	for _, tc := range tt {
+		t.Run(tc.name, func(t *testing.T) {
+			// Arrange
+			url := "/api/v1/security/keys/revoke"
+			req := httptest.NewRequest(http.MethodPut, url, serialize(t, tc.body))
+			req.SetBasicAuth("test", "test")
+			w := httptest.NewRecorder()
+			rctx := chi.NewRouteContext()
+			req.Header.Add("Content-Type", "application/json")
+
+			req = req.WithContext(context.WithValue(req.Context(), chi.RouteCtxKey, rctx))
+
+			// Arrange Expectations
+			if tc.dbFn != nil {
+				tc.dbFn(app)
+			}
+
+			err := config.LoadConfig(tc.cfgPath)
+			if err != nil {
+				t.Errorf("Failed to load config file: %v", err)
+			}
+			initRealmChain(t)
+
+			router := buildRoutes(app)
+
+			// Act
+			router.ServeHTTP(w, req)
+
+			// Assert
+			if w.Code != tc.statusCode {
+				t.Errorf("Want status '%d', got '%d'", tc.statusCode, w.Code)
+			}
+
+			verifyMatch(t, *w)
+		})
+	}
 }

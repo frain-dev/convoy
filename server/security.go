@@ -95,29 +95,11 @@ func (a *applicationHandler) RevokeAPIKeys(w http.ResponseWriter, r *http.Reques
 	err = a.apiKeyRepo.RevokeAPIKeys(r.Context(), uids)
 	if err != nil {
 		log.WithError(err).Error("failed to revoke api keys")
-		_ = render.Render(w, r, newErrorResponse("failed to update api key", http.StatusInternalServerError))
+		_ = render.Render(w, r, newErrorResponse("failed to revoke api keys", http.StatusInternalServerError))
 		return
 	}
 
 	_ = render.Render(w, r, newServerResponse("api keys revoked successfully", nil, http.StatusOK))
-}
-
-func (a *applicationHandler) DeleteAPIKey(w http.ResponseWriter, r *http.Request) {
-	uid := chi.URLParam(r, "keyID")
-
-	if util.IsStringEmpty(uid) {
-		_ = render.Render(w, r, newErrorResponse("key id is empty", http.StatusBadRequest))
-		return
-	}
-
-	err := a.apiKeyRepo.DeleteAPIKey(r.Context(), uid)
-	if err != nil {
-		log.WithError(err).Error("failed to delete api key")
-		_ = render.Render(w, r, newErrorResponse("failed to delete api key", http.StatusInternalServerError))
-		return
-	}
-
-	_ = render.Render(w, r, newServerResponse("api key deleted successfully", nil, http.StatusOK))
 }
 
 func (a *applicationHandler) GetAPIKeyByID(w http.ResponseWriter, r *http.Request) {
