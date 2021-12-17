@@ -42,8 +42,6 @@ func Get() (*RealmChain, error) {
 func Init(authConfig *config.AuthConfiguration) error {
 	rc := newRealmChain()
 
-	fmt.Println("require auth", authConfig.RequireAuth)
-	fmt.Println("require auth", authConfig.Native)
 	// validate authentication realms
 	if authConfig.RequireAuth {
 		fr, err := file.NewFileRealm(&authConfig.File)

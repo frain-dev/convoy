@@ -5,11 +5,10 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/go-chi/chi/v5"
-
 	"github.com/frain-dev/convoy"
 	"github.com/frain-dev/convoy/server/models"
 	"github.com/frain-dev/convoy/util"
+	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/render"
 	"github.com/google/uuid"
 	log "github.com/sirupsen/logrus"
@@ -24,7 +23,7 @@ func (a *applicationHandler) CreateAPIKey(w http.ResponseWriter, r *http.Request
 		return
 	}
 
-	if newApiKey.ExpiresDate != nil && newApiKey.ExpiresDate.Before(time.Now()) {
+	if newApiKey.ExpiresAt != nil && newApiKey.ExpiresAt.Before(time.Now()) {
 		_ = render.Render(w, r, newErrorResponse("expiry date is invalid", http.StatusBadRequest))
 		return
 	}
@@ -59,8 +58,8 @@ func (a *applicationHandler) CreateAPIKey(w http.ResponseWriter, r *http.Request
 		CreatedAt: primitive.NewDateTimeFromTime(time.Now()),
 	}
 
-	if newApiKey.ExpiresDate != nil {
-		apiKey.ExpiresAt = primitive.NewDateTimeFromTime(*newApiKey.ExpiresDate)
+	if newApiKey.ExpiresAt != nil {
+		apiKey.ExpiresAt = primitive.NewDateTimeFromTime(*newApiKey.ExpiresAt)
 	}
 
 	err = a.apiKeyRepo.CreateAPIKey(r.Context(), apiKey)
@@ -72,13 +71,13 @@ func (a *applicationHandler) CreateAPIKey(w http.ResponseWriter, r *http.Request
 
 	resp := map[string]interface{}{
 		"key":        newApiKey.Key,
-		"role":       newApiKey.Role,
+		"role":       apiKey.Role,
 		"created_at": apiKey.CreatedAt.Time().Format(time.RFC3339),
 		"uid":        apiKey.UID,
 	}
 
-	if newApiKey.ExpiresDate != nil {
-		resp["expiry_date"] = newApiKey.ExpiresDate.Format(time.RFC3339)
+	if apiKey.ExpiresAt != 0 {
+		resp["expiry_date"] = apiKey.ExpiresAt.Time().Format(time.RFC3339)
 	}
 
 	_ = render.Render(w, r, newServerResponse("API Key created successfully", resp, http.StatusCreated))

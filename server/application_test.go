@@ -91,6 +91,23 @@ func stripTimestamp(t *testing.T, obj string, b *bytes.Buffer) *bytes.Buffer {
 		}
 
 		return bytes.NewBuffer(jsonData)
+	case "apiKey":
+		var e convoy.APIKey
+		err := json.Unmarshal(res.Data, &e)
+		if err != nil {
+			t.Errorf("could not stripTimestamp: %s", err)
+			t.FailNow()
+		}
+
+		e.UID = ""
+		e.CreatedAt = 0
+
+		jsonData, err := json.Marshal(e)
+		if err != nil {
+			t.Error(err)
+		}
+
+		return bytes.NewBuffer(jsonData)
 	default:
 		t.Errorf("invalid data body - %v of type %T", obj, obj)
 		t.FailNow()

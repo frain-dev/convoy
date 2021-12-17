@@ -16,9 +16,9 @@ type Group struct {
 }
 
 type APIKey struct {
-	Key         string     `json:"key"`
-	Role        auth.Role  `json:"role"`
-	ExpiresDate *time.Time `json:"expires_date"`
+	Key       string     `json:"key"`
+	Role      auth.Role  `json:"role"`
+	ExpiresAt *time.Time `json:"expires_at"`
 }
 
 type Application struct {

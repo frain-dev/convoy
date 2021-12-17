@@ -14,8 +14,8 @@ type APIKey struct {
 	Role      auth.Role          `json:"role" bson:"role"`
 	Hash      string             `json:"-" bson:"hash"`
 	Revoked   bool               `json:"revoked" bson:"revoked"`
-	ExpiresAt primitive.DateTime `json:"expires_at" bson:"expires_at"`
-	CreatedAt primitive.DateTime `json:"created_at" bson:"created_at"`
+	ExpiresAt primitive.DateTime `json:"expires_at,omitempty" bson:"expires_at,omitempty'"`
+	CreatedAt primitive.DateTime `json:"created_at,omitempty" bson:"created_at"`
 }
 
 type APIKeyRepo interface {
