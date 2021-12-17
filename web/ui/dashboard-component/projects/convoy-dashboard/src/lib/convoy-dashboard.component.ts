@@ -1,7 +1,7 @@
 import { Component, Input, OnInit } from '@angular/core';
 // import { HttpService } from 'src/app/services/http/http.service';
 import Chart from 'chart.js/auto';
-import * as moment from 'moment';
+// import * as moment from 'moment';
 // import { GeneralService } from 'src/app/services/general/general.service';
 import { APP } from './models/app.model';
 import { EVENT, EVENT_DELIVERY } from './models/event.model';
@@ -11,14 +11,14 @@ import { PAGINATION } from './models/global.model';
 import { HTTP_RESPONSE } from './models/http.model';
 import { GROUP } from './models/group.model';
 import { ConvoyDashboardService } from './convoy-dashboard.service';
+import { format } from 'date-fns';
 
 @Component({
-	selector: 'lib-convoy-dashboard',
+	selector: 'convoy-dashboard',
 	templateUrl: './convoy-dashboard.component.html',
-	styles: []
+	styleUrls: ['./convoy-dashboard.component.scss']
 })
 export class ConvoyDashboardComponent implements OnInit {
-	showDropdown = false;
 	showFilterCalendar = false;
 	tabs: ['events', 'event deliveries', 'apps'] = ['events', 'event deliveries', 'apps'];
 	activeTab: 'events' | 'apps' | 'event deliveries' = 'events';
@@ -85,7 +85,7 @@ export class ConvoyDashboardComponent implements OnInit {
 	eventDeliveryFilteredByStatus: '' | 'Success' | 'Failure' | 'Retry' | 'Scheduled' | 'Processing' | 'Discarded' = '';
 	showOverlay = false;
 	showEventDeliveriesStatusDropdown = false;
-	@Input('production') isProduction!: boolean;
+	@Input('production') isProduction: boolean = false;
 
 	constructor(private convyDashboardService: ConvoyDashboardService, private router: Router, private formBuilder: FormBuilder, private route: ActivatedRoute) {}
 
@@ -101,11 +101,6 @@ export class ConvoyDashboardComponent implements OnInit {
 		// get active tab from url and apply, after getting the details from above requests so that the data is available ahead
 		this.toggleActiveTab(this.route.snapshot.queryParams.activeTab ?? 'events');
 		return;
-	}
-
-	logout() {
-		localStorage.removeItem('CONVOY_AUTH');
-		this.router.navigateByUrl('/login');
 	}
 
 	toggleActiveTab(tab: 'events' | 'apps' | 'event deliveries') {
@@ -127,7 +122,7 @@ export class ConvoyDashboardComponent implements OnInit {
 	async getConfigDetails() {
 		try {
 			const organisationDetailsResponse = await this.convyDashboardService.request({
-				url: `/dashboard/config?groupID=${this.activeGroup || ''}`,
+				url: this.getAPIURL(`/dashboard/config?groupID=${this.activeGroup || ''}`),
 				method: 'get'
 			});
 			this.organisationDetails = organisationDetailsResponse.data;
@@ -156,18 +151,20 @@ export class ConvoyDashboardComponent implements OnInit {
 			const { startDate, endDate } = this.setDateForFilter(this.statsDateRange.value);
 
 			const dashboardResponse = await this.convyDashboardService.request({
-				url: `/dashboard/summary?groupID=${this.activeGroup || ''}&startDate=${startDate || ''}&endDate=${endDate || ''}&type=${this.dashboardFrequency}`,
+				url: this.getAPIURL(`/dashboard/summary?groupID=${this.activeGroup || ''}&startDate=${startDate || ''}&endDate=${endDate || ''}&type=${this.dashboardFrequency}`),
 				method: 'get'
 			});
 			this.dashboardData = dashboardResponse.data;
 
 			let labelsDateFormat = '';
-			if (this.dashboardFrequency === 'daily') labelsDateFormat = 'DD[, ]MMM';
+			if (this.dashboardFrequency === 'daily') labelsDateFormat = 'do, MMM';
 			else if (this.dashboardFrequency === 'monthly') labelsDateFormat = 'MMM';
-			else if (this.dashboardFrequency === 'yearly') labelsDateFormat = 'YYYY';
+			else if (this.dashboardFrequency === 'yearly') labelsDateFormat = 'yyyy';
 
 			const chartData = dashboardResponse.data.event_data;
-			const labels = [...chartData.map((label: { data: { date: any } }) => label.data.date)].map(date => (this.dashboardFrequency === 'weekly' ? date : moment(date).format(labelsDateFormat)));
+			const labels = [...chartData.map((label: { data: { date: any } }) => label.data.date)].map(date => {
+				return this.dashboardFrequency === 'weekly' ? date : format(new Date(date), labelsDateFormat);
+			});
 			labels.unshift('0');
 			const dataSet = [0, ...chartData.map((label: { count: any }) => label.count)];
 			const data = {
@@ -200,23 +197,24 @@ export class ConvoyDashboardComponent implements OnInit {
 				}
 			};
 
-			if (!Chart.getChart('chart') || !Chart.getChart('chart')?.canvas) {
-				new Chart('chart', { type: 'line', data, options });
+			if (!Chart.getChart('dahboard_events_chart') || !Chart.getChart('dahboard_events_chart')?.canvas) {
+				new Chart('dahboard_events_chart', { type: 'line', data, options });
 			} else {
-				const currentChart = Chart.getChart('chart');
+				const currentChart = Chart.getChart('dahboard_events_chart');
 				if (currentChart) {
 					currentChart.data.labels = labels;
 					currentChart.data.datasets[0].data = dataSet;
 					currentChart.update();
 				}
 			}
+			console.log(Chart.getChart('dahboard_events_chart'));
 		} catch (error) {}
 	}
 
 	setDateForFilter(requestDetails: { startDate: Date; endDate: Date }) {
 		if (!requestDetails.endDate && !requestDetails.startDate) return { startDate: '', endDate: '' };
-		const startDate = requestDetails.startDate ? String(moment(`${moment(requestDetails.startDate.toISOString()).format('YYYY[-]MM[-]DD')} 00:00:00`).toISOString(true)).split('.')[0] : '';
-		const endDate = requestDetails.endDate ? String(moment(`${moment(requestDetails.endDate.toISOString()).format('YYYY[-]MM[-]DD')} 23:59:59`).toISOString(true)).split('.')[0] : '';
+		const startDate = requestDetails.startDate ? `${format(requestDetails.startDate, 'yyyy-M-d')}T00:00:00` : '';
+		const endDate = requestDetails.endDate ? `${format(requestDetails.endDate, 'yyyy-M-d')}T00:00:00` : '';
 		return { startDate, endDate };
 	}
 
@@ -249,7 +247,9 @@ export class ConvoyDashboardComponent implements OnInit {
 
 		try {
 			const eventsResponse = await this.convyDashboardService.request({
-				url: `/events?groupID=${this.activeGroup || ''}&sort=AESC&page=${this.eventsPage || 1}&perPage=20&startDate=${startDate}&endDate=${endDate}&appId=${requestDetails?.appId ?? this.eventApp}`,
+				url: this.getAPIURL(
+					`/events?groupID=${this.activeGroup || ''}&sort=AESC&page=${this.eventsPage || 1}&perPage=20&startDate=${startDate}&endDate=${endDate}&appId=${requestDetails?.appId ?? this.eventApp}`
+				),
 				method: 'get'
 			});
 			if (this.activeTab === 'events') this.detailsItem = eventsResponse.data.content[0];
@@ -300,9 +300,11 @@ export class ConvoyDashboardComponent implements OnInit {
 
 		try {
 			const eventDeliveriesResponse = await this.convyDashboardService.request({
-				url: `/eventdeliveries?groupID=${this.activeGroup || ''}&eventId=${requestDetails.eventId || ''}&page=${this.eventDeliveriesPage || 1}&startDate=${startDate}&endDate=${endDate}&appId=${
-					this.eventDeliveriesApp
-				}&status=${this.eventDeliveryFilteredByStatus || ''}`,
+				url: this.getAPIURL(
+					`/eventdeliveries?groupID=${this.activeGroup || ''}&eventId=${requestDetails.eventId || ''}&page=${this.eventDeliveriesPage || 1}&startDate=${startDate}&endDate=${endDate}&appId=${
+						this.eventDeliveriesApp
+					}&status=${this.eventDeliveryFilteredByStatus || ''}`
+				),
 				method: 'get'
 			});
 
@@ -352,7 +354,7 @@ export class ConvoyDashboardComponent implements OnInit {
 
 		try {
 			const groupsResponse = await this.convyDashboardService.request({
-				url: `/groups`,
+				url: this.getAPIURL(`/groups`),
 				method: 'get'
 			});
 			this.groups = groupsResponse.data;
@@ -368,7 +370,7 @@ export class ConvoyDashboardComponent implements OnInit {
 	async getApps() {
 		try {
 			const appsResponse = await this.convyDashboardService.request({
-				url: `/apps?groupID=${this.activeGroup || ''}&sort=AESC&page=${this.appsPage || 1}&perPage=10`,
+				url: this.getAPIURL(`/apps?groupID=${this.activeGroup || ''}&sort=AESC&page=${this.appsPage || 1}&perPage=10`),
 				method: 'get'
 			});
 
@@ -389,7 +391,7 @@ export class ConvoyDashboardComponent implements OnInit {
 	async getDelieveryAttempts(eventDeliveryId: string) {
 		try {
 			const deliveryAttemptsResponse = await this.convyDashboardService.request({
-				url: `/eventdeliveries/${eventDeliveryId}/deliveryattempts?groupID=${this.activeGroup || ''}`,
+				url: this.getAPIURL(`/eventdeliveries/${eventDeliveryId}/deliveryattempts?groupID=${this.activeGroup || ''}`),
 				method: 'get'
 			});
 			this.eventDeliveryAtempt = deliveryAttemptsResponse.data[deliveryAttemptsResponse.data.length - 1];
@@ -430,7 +432,7 @@ export class ConvoyDashboardComponent implements OnInit {
 		try {
 			await this.convyDashboardService.request({
 				method: 'put',
-				url: `/eventdeliveries/${requestDetails.eventDeliveryId}/resend?groupID=${this.activeGroup || ''}`
+				url: this.getAPIURL(`/eventdeliveries/${requestDetails.eventDeliveryId}/resend?groupID=${this.activeGroup || ''}`)
 			});
 
 			this.convyDashboardService.showNotification({ message: 'Retry Request Sent' });
@@ -449,7 +451,7 @@ export class ConvoyDashboardComponent implements OnInit {
 		try {
 			await this.convyDashboardService.request({
 				method: 'post',
-				url: `/eventdeliveries/batchretry?groupID=${this.activeGroup || ''}`,
+				url: this.getAPIURL(`/eventdeliveries/batchretry?groupID=${this.activeGroup || ''}`),
 				body: { ids: this.selectedEventsFromEventDeliveriesTable }
 			});
 
@@ -460,11 +462,6 @@ export class ConvoyDashboardComponent implements OnInit {
 			this.convyDashboardService.showNotification({ message: error.error.message });
 			return error;
 		}
-	}
-
-	authDetails() {
-		const authDetails = localStorage.getItem('CONVOY_AUTH');
-		return authDetails ? JSON.parse(authDetails) : false;
 	}
 
 	async clearEventFilters(tableName: 'events' | 'event deliveries') {
@@ -540,7 +537,7 @@ export class ConvoyDashboardComponent implements OnInit {
 		this.toggleActiveTab('event deliveries');
 	}
 
-	getAPIURL() {
-		return `${this.isProduction ? location.origin : 'http://localhost:5005'}/ui`;
+	getAPIURL(url: string) {
+		return `${this.isProduction ? location.origin : 'http://localhost:5005'}/ui${url}`;
 	}
 }

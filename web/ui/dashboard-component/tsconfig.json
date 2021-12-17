@@ -19,7 +19,9 @@
 		"importHelpers": true,
 		"target": "es2017",
 		"module": "es2020",
-		"lib": ["es2021", "dom", "ES2021.String"]
+		"lib": ["es2021", "dom", "ES2021.String"],
+		"esModuleInterop": true,
+		"allowSyntheticDefaultImports": true
 	},
 	"angularCompilerOptions": {
 		"enableI18nLegacyMessageIdFormat": false,

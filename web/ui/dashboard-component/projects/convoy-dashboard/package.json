@@ -1,11 +1,30 @@
 {
-  "name": "convoy-dashboard",
-  "version": "0.0.1",
-  "peerDependencies": {
-    "@angular/common": "^12.2.0",
-    "@angular/core": "^12.2.0"
-  },
-  "dependencies": {
-    "tslib": "^2.3.0"
-  }
+	"name": "convoy-dashboard",
+	"version": "0.0.2",
+	"description": "Convoy Dashboard UI",
+	"repository": {
+		"type": "git",
+		"url": "git+https://github.com/frain-dev/convoy.git"
+	},
+	"keywords": [
+		"convoy",
+		"dashboard",
+		"frain",
+		"angular"
+	],
+	"author": "Frain Technologies",
+	"bugs": {
+		"url": "https://github.com/frain-dev/convoy/issues"
+	},
+	"homepage": "https://github.com/frain-dev/convoy/blob/main/web/ui/dashboard-component/README.md",
+	"peerDependencies": {
+		"@angular/common": "^12.2.0",
+		"@angular/core": "^12.2.0"
+	},
+	"dependencies": {
+		"tslib": "^2.3.0"
+	},
+	"devDependencies": {
+		"@types/prismjs": "^1.16.6"
+	}
 }

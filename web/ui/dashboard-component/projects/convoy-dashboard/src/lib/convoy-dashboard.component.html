@@ -1,30 +1,4 @@
 <div class="dashboard">
-	<header class="dashboard--header">
-		<div class="dashboard--header--container">
-			<div class="logo">
-				<a target="_blank" href="https://getconvoy.io" rel="noreferrer">
-					<img src="/assets/img/logo.svg" alt="convoy logo" />
-				</a>
-			</div>
-
-			<div>
-				<a target="_blank" href="https://getconvoy.io/docs" rel="noreferrer">Go to docs</a>
-				<button class="user" (click)="showDropdown = !showDropdown" *ngIf="authDetails()">
-					<div>
-						<div class="icon">O</div>
-						<div class="name">{{ authDetails().username }}</div>
-					</div>
-					<img src="/assets/img/angle-arrow-down.svg" alt="arrow down icon" />
-					<div *ngIf="showDropdown" class="dropdown organisations">
-						<ul>
-							<li (click)="logout()">Logout</li>
-						</ul>
-					</div>
-				</button>
-			</div>
-		</div>
-	</header>
-
 	<div class="dashboard--page">
 		<div class="dashboard--page--head">
 			<div class="filter" [ngClass]="{ 'show-calendar': showFilterCalendar }">
@@ -80,7 +54,7 @@
 
 				<div>
 					<h3>Events Sent</h3>
-					<canvas id="chart" width="400" height="200"></canvas>
+					<canvas id="dahboard_events_chart" width="400" height="200"></canvas>
 				</div>
 			</div>
 
@@ -510,20 +484,20 @@
 					<div class="dashboard--logs--details--req-res" *ngIf="activeTab === 'events' || activeTab === 'event deliveries'">
 						<div [class]="'dashboard--logs--details--tabs-data ' + (eventDetailsActiveTab === 'data' ? 'show' : '')">
 							<h3>Event</h3>
-							<!-- <app-shared language="json" [code]="getCodeSnippetString(activeTab === 'events' ? 'event' : 'event_delivery')"></app-shared> -->
+							<prism language="json" [code]="getCodeSnippetString(activeTab === 'events' ? 'event' : 'event_delivery')"></prism>
 						</div>
 
 						<div [class]="'dashboard--logs--details--tabs-data ' + (eventDetailsActiveTab === 'response' ? 'show' : '')">
 							<h3>Header</h3>
-							<!-- <app-shared language="json" [code]="getCodeSnippetString('res_head')"></app-shared> -->
+							<prism language="json" [code]="getCodeSnippetString('res_head')"></prism>
 
 							<h3>Body</h3>
-							<!-- <app-shared language="json" [code]="getCodeSnippetString('res_body')"></app-shared> -->
+							<prism language="json" [code]="getCodeSnippetString('res_body')"></prism>
 						</div>
 
 						<div [class]="'dashboard--logs--details--tabs-data ' + (eventDetailsActiveTab === 'request' ? 'show' : '')">
 							<h3>Header</h3>
-							<!-- <app-shared language="json" [code]="getCodeSnippetString('req')"></app-shared> -->
+							<prism language="json" [code]="getCodeSnippetString('req')"></prism>
 						</div>
 					</div>
 
