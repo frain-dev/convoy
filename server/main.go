@@ -34,6 +34,9 @@ package server
 // @tag.name Events
 // @tag.description Event related APIs
 
+// @tag.name APIKey
+// @tag.description API Key related APIs
+
 // @tag.name EventDelivery
 // @tag.description EventDelivery related APIs
 

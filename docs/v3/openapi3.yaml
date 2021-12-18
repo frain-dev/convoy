@@ -2234,6 +2234,8 @@ tags:
   name: Application Endpoints
 - description: Event related APIs
   name: Events
+- description: API Key related APIs
+  name: APIKey
 - description: EventDelivery related APIs
   name: EventDelivery
 - description: Delivery Attempt related APIs

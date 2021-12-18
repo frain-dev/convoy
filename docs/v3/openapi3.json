@@ -4073,6 +4073,10 @@
 			"name": "Events"
 		},
 		{
+			"description": "API Key related APIs",
+			"name": "APIKey"
+		},
+		{
 			"description": "EventDelivery related APIs",
 			"name": "EventDelivery"
 		},
