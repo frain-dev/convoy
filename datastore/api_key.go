@@ -78,6 +78,7 @@ func (a *apiKeyRepo) LoadAPIKeysPaged(ctx context.Context, pageable *convoy.Page
 		Context(ctx).
 		Limit(int64(pageable.PerPage)).
 		Page(int64(pageable.Page)).
+		Filter(bson.M{}).
 		Sort("created_at", pageable.Sort).
 		Decode(&apiKeys).
 		Find()

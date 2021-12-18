@@ -2823,13 +2823,13 @@
                     }
                 }
             },
-            "put": {
+            "post": {
                 "security": [
                     {
                         "ApiKeyAuth": []
                     }
                 ],
-                "description": "This endpoint revokes multiple api keys",
+                "description": "This endpoint creates an api key that will be used by the native auth realm",
                 "consumes": [
                     "application/json"
                 ],
@@ -2839,18 +2839,15 @@
                 "tags": [
                     "APIKey"
                 ],
-                "summary": "Revoke multiple api keys",
+                "summary": "Create an api key",
                 "parameters": [
                     {
-                        "description": "API Key ids",
-                        "name": "ids",
+                        "description": "API Key",
+                        "name": "apiKey",
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "type": "array",
-                            "items": {
-                                "type": "string"
-                            }
+                            "$ref": "#/definitions/models.APIKey"
                         }
                     }
                 ],
@@ -2866,7 +2863,7 @@
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/server.Stub"
+                                            "$ref": "#/definitions/models.APIKeyResponse"
                                         }
                                     }
                                 }
@@ -2928,14 +2925,16 @@
                         }
                     }
                 }
-            },
-            "post": {
+            }
+        },
+        "/security/keys/revoke": {
+            "put": {
                 "security": [
                     {
                         "ApiKeyAuth": []
                     }
                 ],
-                "description": "This endpoint creates an api key that will be used by the native auth realm",
+                "description": "This endpoint revokes multiple api keys",
                 "consumes": [
                     "application/json"
                 ],
@@ -2945,15 +2944,18 @@
                 "tags": [
                     "APIKey"
                 ],
-                "summary": "Create an api key",
+                "summary": "Revoke multiple api keys",
                 "parameters": [
                     {
-                        "description": "API Key",
-                        "name": "apiKey",
+                        "description": "API Key ids",
+                        "name": "ids",
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/models.APIKey"
+                            "type": "array",
+                            "items": {
+                                "type": "string"
+                            }
                         }
                     }
                 ],
@@ -2969,7 +2971,7 @@
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/models.APIKeyResponse"
+                                            "$ref": "#/definitions/server.Stub"
                                         }
                                     }
                                 }

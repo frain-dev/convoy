@@ -1943,6 +1943,62 @@ paths:
       summary: Create an api key
       tags:
       - APIKey
+  /security/keys/{keyID}:
+    get:
+      consumes:
+      - application/json
+      description: This endpoint fetches an api key by it's id
+      parameters:
+      - description: API Key id
+        in: path
+        name: keyID
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/server.serverResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/convoy.APIKey'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            allOf:
+            - $ref: '#/definitions/server.serverResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/server.Stub'
+              type: object
+        "401":
+          description: Unauthorized
+          schema:
+            allOf:
+            - $ref: '#/definitions/server.serverResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/server.Stub'
+              type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            allOf:
+            - $ref: '#/definitions/server.serverResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/server.Stub'
+              type: object
+      security:
+      - ApiKeyAuth: []
+      summary: Get api key by id
+      tags:
+      - APIKey
+  /security/keys/revoke:
     put:
       consumes:
       - application/json
@@ -1998,61 +2054,6 @@ paths:
       security:
       - ApiKeyAuth: []
       summary: Revoke multiple api keys
-      tags:
-      - APIKey
-  /security/keys/{keyID}:
-    get:
-      consumes:
-      - application/json
-      description: This endpoint fetches an api key by it's id
-      parameters:
-      - description: API Key id
-        in: path
-        name: keyID
-        required: true
-        type: string
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            allOf:
-            - $ref: '#/definitions/server.serverResponse'
-            - properties:
-                data:
-                  $ref: '#/definitions/convoy.APIKey'
-              type: object
-        "400":
-          description: Bad Request
-          schema:
-            allOf:
-            - $ref: '#/definitions/server.serverResponse'
-            - properties:
-                data:
-                  $ref: '#/definitions/server.Stub'
-              type: object
-        "401":
-          description: Unauthorized
-          schema:
-            allOf:
-            - $ref: '#/definitions/server.serverResponse'
-            - properties:
-                data:
-                  $ref: '#/definitions/server.Stub'
-              type: object
-        "500":
-          description: Internal Server Error
-          schema:
-            allOf:
-            - $ref: '#/definitions/server.serverResponse'
-            - properties:
-                data:
-                  $ref: '#/definitions/server.Stub'
-              type: object
-      security:
-      - ApiKeyAuth: []
-      summary: Get api key by id
       tags:
       - APIKey
 schemes:
