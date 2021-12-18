@@ -110,6 +110,7 @@ func stripTimestamp(t *testing.T, obj string, b *bytes.Buffer) *bytes.Buffer {
 
 		e.UID = ""
 		e.CreatedAt = 0
+		e.ExpiresAt = 0
 
 		jsonData, err := json.Marshal(e)
 		if err != nil {
