@@ -1,19 +1,19 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 
-import { DashboardComponent } from './dashboard.component';
+import { PrismComponent } from './prism.component';
 
-describe('DashboardComponent', () => {
-	let component: DashboardComponent;
-	let fixture: ComponentFixture<DashboardComponent>;
+describe('SharedComponent', () => {
+	let component: PrismComponent;
+	let fixture: ComponentFixture<PrismComponent>;
 
 	beforeEach(async () => {
 		await TestBed.configureTestingModule({
-			declarations: [DashboardComponent]
+			declarations: [PrismComponent]
 		}).compileComponents();
 	});
 
 	beforeEach(() => {
-		fixture = TestBed.createComponent(DashboardComponent);
+		fixture = TestBed.createComponent(PrismComponent);
 		component = fixture.componentInstance;
 		fixture.detectChanges();
 	});

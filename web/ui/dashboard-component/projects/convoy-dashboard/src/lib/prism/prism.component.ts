@@ -2,11 +2,11 @@ import { AfterViewInit, Component, ElementRef, Input, OnChanges, ViewChild } fro
 import * as Prism from 'prismjs';
 
 @Component({
-	selector: 'app-shared',
-	templateUrl: './shared.component.html',
-	styleUrls: ['./shared.component.scss']
+	selector: 'prism',
+	templateUrl: './prism.component.html',
+	styleUrls: ['./prism.component.scss']
 })
-export class SharedComponent implements AfterViewInit, OnChanges {
+export class PrismComponent implements AfterViewInit, OnChanges {
 	@ViewChild('codeEle') codeEle!: ElementRef;
 	@Input() code?: string;
 	@Input() language?: string;

@@ -3,6 +3,9 @@
 	"compileOnSave": false,
 	"compilerOptions": {
 		"baseUrl": "./",
+		"paths": {
+			"convoy-dashboard": ["dist/convoy-dashboard/convoy-dashboard", "dist/convoy-dashboard"]
+		},
 		"outDir": "./dist/out-tsc",
 		"forceConsistentCasingInFileNames": true,
 		"strict": true,
@@ -17,10 +20,8 @@
 		"target": "es2017",
 		"module": "es2020",
 		"lib": ["es2021", "dom", "ES2021.String"],
-		"paths": {
-			"tslib": ["path/to/node_modules/tslib/tslib.d.ts"]
-		},
-		"allowJs": true
+		"esModuleInterop": true,
+		"allowSyntheticDefaultImports": true
 	},
 	"angularCompilerOptions": {
 		"enableI18nLegacyMessageIdFormat": false,

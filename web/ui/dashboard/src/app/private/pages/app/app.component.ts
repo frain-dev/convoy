@@ -1,15 +1,13 @@
 import { Component, OnInit } from '@angular/core';
 import { Router } from '@angular/router';
-import { environment } from 'src/environments/environment';
 
 @Component({
-	selector: 'app-dashboard',
-	templateUrl: './dashboard.component.html',
-	styleUrls: ['./dashboard.component.scss']
+	selector: 'app-app',
+	templateUrl: './app.component.html',
+	styleUrls: ['./app.component.scss']
 })
-export class DashboardComponent implements OnInit {
+export class AppComponent implements OnInit {
 	showDropdown = false;
-	environment = environment;
 
 	constructor(private router: Router) {}
 
