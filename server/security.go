@@ -15,6 +15,17 @@ import (
 	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
+// CreateAPIKey
+// @Summary Create an api key
+// @Description This endpoint creates an api key that will be used by the native auth realm
+// @Tags APIKey
+// @Accept  json
+// @Produce  json
+// @Param apiKey body models.APIKey true "API Key"
+// @Success 200 {object} serverResponse{data=models.APIKeyResponse}
+// @Failure 400,401,500 {object} serverResponse{data=Stub}
+// @Security ApiKeyAuth
+// @Router /security/keys [post]
 func (a *applicationHandler) CreateAPIKey(w http.ResponseWriter, r *http.Request) {
 	var newApiKey models.APIKey
 	err := json.NewDecoder(r.Body).Decode(&newApiKey)
@@ -69,20 +80,28 @@ func (a *applicationHandler) CreateAPIKey(w http.ResponseWriter, r *http.Request
 		return
 	}
 
-	resp := map[string]interface{}{
-		"key":        newApiKey.Key,
-		"role":       apiKey.Role,
-		"created_at": apiKey.CreatedAt.Time().Format(time.RFC3339),
-		"uid":        apiKey.UID,
+	resp := models.APIKeyResponse{
+		UID:       apiKey.UID,
+		CreatedAt: apiKey.CreatedAt.Time(),
 	}
-
-	if apiKey.ExpiresAt != 0 {
-		resp["expiry_date"] = apiKey.ExpiresAt.Time().Format(time.RFC3339)
-	}
+	resp.Role = apiKey.Role
+	resp.Key = newApiKey.Key
+	resp.ExpiresAt = newApiKey.ExpiresAt
 
 	_ = render.Render(w, r, newServerResponse("API Key created successfully", resp, http.StatusCreated))
 }
 
+// RevokeAPIKeys
+// @Summary Revoke multiple api keys
+// @Description This endpoint revokes multiple api keys
+// @Tags APIKey
+// @Accept  json
+// @Produce  json
+// @Param ids body []string true "API Key ids"
+// @Success 200 {object} serverResponse{data=Stub}
+// @Failure 400,401,500 {object} serverResponse{data=Stub}
+// @Security ApiKeyAuth
+// @Router /security/keys [put]
 func (a *applicationHandler) RevokeAPIKeys(w http.ResponseWriter, r *http.Request) {
 	var uids []string
 
@@ -102,6 +121,17 @@ func (a *applicationHandler) RevokeAPIKeys(w http.ResponseWriter, r *http.Reques
 	_ = render.Render(w, r, newServerResponse("api keys revoked successfully", nil, http.StatusOK))
 }
 
+// GetAPIKeyByID
+// @Summary Get api key by id
+// @Description This endpoint fetches an api key by it's id
+// @Tags APIKey
+// @Accept  json
+// @Produce  json
+// @Param keyID path string true "API Key id"
+// @Success 200 {object} serverResponse{data=convoy.APIKey}
+// @Failure 400,401,500 {object} serverResponse{data=Stub}
+// @Security ApiKeyAuth
+// @Router /security/keys/{keyID} [get]
 func (a *applicationHandler) GetAPIKeyByID(w http.ResponseWriter, r *http.Request) {
 	uid := chi.URLParam(r, "keyID")
 
@@ -120,6 +150,19 @@ func (a *applicationHandler) GetAPIKeyByID(w http.ResponseWriter, r *http.Reques
 	_ = render.Render(w, r, newServerResponse("api key fetched successfully", apiKey, http.StatusOK))
 }
 
+// GetAPIKeys
+// @Summary Fetch multiple api keys
+// @Description This endpoint fetches multiple api keys
+// @Tags APIKey
+// @Accept  json
+// @Produce  json
+// @Param perPage query string false "results per page"
+// @Param page query string false "page number"
+// @Param sort query string false "sort order"
+// @Success 200 {object} serverResponse{data=pagedResponse{content=[]convoy.APIKey}}
+// @Failure 400,401,500 {object} serverResponse{data=Stub}
+// @Security ApiKeyAuth
+// @Router /security/keys [get]
 func (a *applicationHandler) GetAPIKeys(w http.ResponseWriter, r *http.Request) {
 	pageable := getPageableFromContext(r.Context())
 

@@ -21,6 +21,12 @@ type APIKey struct {
 	ExpiresAt *time.Time `json:"expires_at"`
 }
 
+type APIKeyResponse struct {
+	APIKey
+	UID       string    `json:"uid"`
+	CreatedAt time.Time `json:"created_at"`
+}
+
 type Application struct {
 	AppName      string `json:"name" bson:"name"`
 	SupportEmail string `json:"support_email" bson:"support_email"`
