@@ -77,11 +77,7 @@ func (d *Dispatcher) SendRequest(endpoint, method string, jsonData json.RawMessa
 		log.WithError(err).Error("couldn't parse response body")
 		return r, err
 	}
-	err = response.Body.Close()
-	if err != nil {
-		log.WithError(err).Error("error while closing connection")
-		return r, err
-	}
+	defer response.Body.Close()
 
 	return r, nil
 }

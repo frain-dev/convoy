@@ -147,6 +147,7 @@ func buildRoutes(app *applicationHandler) http.Handler {
 	// UI API.
 	router.Route("/ui", func(uiRouter chi.Router) {
 		uiRouter.Use(jsonResponse)
+		uiRouter.Use(setupCORS)
 		uiRouter.Use(requireAuth())
 
 		uiRouter.Route("/dashboard", func(dashboardRouter chi.Router) {

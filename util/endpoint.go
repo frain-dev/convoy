@@ -45,13 +45,15 @@ func CleanEndpoint(s string) (string, error) {
 		return "", err
 	}
 
+	switch u.Scheme {
+	case "http", "https":
+	default:
+		return "", errors.New("invalid endpoint scheme")
+	}
+
 	switch strings.ToLower(u.Hostname()) {
 	case "localhost", "127.0.0.1":
 		return "", errors.New("cannot use localhost or 127.0.0.1")
-	}
-
-	if u.Scheme != "https" {
-		return "", errors.New("endpoint scheme  must be HTTPs only")
 	}
 
 	return strings.ToLower(u.String()), nil

@@ -9,7 +9,7 @@ components:
       type: object
     config.GroupConfig:
       properties:
-        disableEndpoint:
+        disable_endpoint:
           type: boolean
         signature:
           $ref: '#/components/schemas/config.SignatureConfiguration'
