@@ -191,7 +191,6 @@ func (a *applicationHandler) GetAppEvent(w http.ResponseWriter, r *http.Request)
 // @Tags EventDelivery
 // @Accept json
 // @Produce json
-// @Param eventID path string true "event id"
 // @Param eventDeliveryID path string true "event delivery id"
 // @Success 200 {object} serverResponse{data=convoy.Event{data=Stub}}
 // @Failure 400,401,500 {object} serverResponse{data=Stub}
@@ -209,7 +208,7 @@ func (a *applicationHandler) GetEventDelivery(w http.ResponseWriter, r *http.Req
 // @Tags EventDelivery
 // @Accept  json
 // @Produce  json
-// @Param eventID path string true "event id"
+// @Param eventDeliveryID path string true "event delivery id"
 // @Success 200 {object} serverResponse{data=convoy.Event{data=Stub}}
 // @Failure 400,401,500 {object} serverResponse{data=Stub}
 // @Security ApiKeyAuth
