@@ -6,7 +6,7 @@ on:
       # Release binary for every tag.
       - v0.*
 
-jobs: 
+jobs:
   release-matrix:
     name: Release Go Binary
     runs-on: ubuntu-latest
@@ -25,3 +25,7 @@ jobs:
           project_path: "./cmd"
           binary_name: "convoy"
           extra_files: LICENSE README.md
+          pre_command: |
+            cd web/ui/dashboard
+            npm install && npm run build
+            mv dist/* ../../../server/ui/build
