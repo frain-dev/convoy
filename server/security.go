@@ -123,13 +123,13 @@ func (a *applicationHandler) GetAPIKeyByID(w http.ResponseWriter, r *http.Reques
 func (a *applicationHandler) GetAPIKeys(w http.ResponseWriter, r *http.Request) {
 	pageable := getPageableFromContext(r.Context())
 
-	apiKey, paginationData, err := a.apiKeyRepo.LoadAPIKeysPaged(r.Context(), &pageable)
+	apiKeys, paginationData, err := a.apiKeyRepo.LoadAPIKeysPaged(r.Context(), &pageable)
 	if err != nil {
-		log.WithError(err).Error("failed to fetch api key")
-		_ = render.Render(w, r, newErrorResponse("failed to fetch api key", http.StatusInternalServerError))
+		log.WithError(err).Error("failed to load api keys")
+		_ = render.Render(w, r, newErrorResponse("failed to load api keys", http.StatusInternalServerError))
 		return
 	}
 
 	_ = render.Render(w, r, newServerResponse("api keys fetched successfully",
-		pagedResponse{Content: &apiKey, Pagination: paginationData}, http.StatusOK))
+		pagedResponse{Content: &apiKeys, Pagination: paginationData}, http.StatusOK))
 }

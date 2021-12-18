@@ -9,6 +9,8 @@ import (
 	"strings"
 	"testing"
 
+	mongopagination "github.com/gobeam/mongo-go-pagination"
+
 	"github.com/frain-dev/convoy"
 
 	"github.com/frain-dev/convoy/config"
@@ -333,7 +335,92 @@ func TestApplicationHandler_GetAPIKeyByID(t *testing.T) {
 			if w.Code != tc.statusCode {
 				t.Errorf("Want status '%d', got '%d'", tc.statusCode, w.Code)
 			}
-			fmt.Println(w.Body.String())
+
+			verifyMatch(t, *w)
+		})
+	}
+}
+
+func TestApplicationHandler_GetAPIKeys(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	groupRepo := mocks.NewMockGroupRepository(ctrl)
+	appRepo := mocks.NewMockApplicationRepository(ctrl)
+	eventRepo := mocks.NewMockEventRepository(ctrl)
+	eventDeliveryRepo := mocks.NewMockEventDeliveryRepository(ctrl)
+	eventQueue := mocks.NewMockQueuer(ctrl)
+	apiKeyRepo := mocks.NewMockAPIKeyRepo(ctrl)
+
+	app := newApplicationHandler(eventRepo, eventDeliveryRepo, appRepo, groupRepo, apiKeyRepo, eventQueue)
+
+	keyID := "12345"
+	apiKey := &convoy.APIKey{UID: keyID}
+
+	page := &convoy.Pageable{
+		Page:    1,
+		PerPage: 100,
+		Sort:    1,
+	}
+
+	tt := []struct {
+		name       string
+		cfgPath    string
+		statusCode int
+		dbFn       func(app *applicationHandler)
+	}{
+		{
+			name:       "should_load_api_keys",
+			cfgPath:    "./testdata/Auth_Config/no-auth-convoy.json",
+			statusCode: http.StatusOK,
+			dbFn: func(app *applicationHandler) {
+				a, _ := app.apiKeyRepo.(*mocks.MockAPIKeyRepo)
+				a.EXPECT().LoadAPIKeysPaged(gomock.Any(), gomock.Any()).Times(1).Return([]convoy.APIKey{*apiKey}, &mongopagination.PaginationData{PerPage: int64(page.PerPage)}, nil)
+			},
+		},
+		{
+			name:       "should_fail_to_load_api_keys",
+			cfgPath:    "./testdata/Auth_Config/no-auth-convoy.json",
+			statusCode: http.StatusInternalServerError,
+			dbFn: func(app *applicationHandler) {
+				a, _ := app.apiKeyRepo.(*mocks.MockAPIKeyRepo)
+				a.EXPECT().LoadAPIKeysPaged(gomock.Any(), gomock.Any()).Times(1).Return(nil, nil, errors.New("abc"))
+			},
+		},
+	}
+
+	for _, tc := range tt {
+		t.Run(tc.name, func(t *testing.T) {
+			// Arrange
+			url := fmt.Sprintf("/api/v1/security/keys?perPage=%d&page=%d&sort=%d", page.PerPage, page.Page, page.Sort)
+			req := httptest.NewRequest(http.MethodGet, url, nil)
+			req.SetBasicAuth("test", "test")
+			w := httptest.NewRecorder()
+			rctx := chi.NewRouteContext()
+			req.Header.Add("Content-Type", "application/json")
+
+			req = req.WithContext(context.WithValue(req.Context(), chi.RouteCtxKey, rctx))
+
+			// Arrange Expectations
+			if tc.dbFn != nil {
+				tc.dbFn(app)
+			}
+
+			err := config.LoadConfig(tc.cfgPath)
+			if err != nil {
+				t.Errorf("Failed to load config file: %v", err)
+			}
+			initRealmChain(t)
+
+			router := buildRoutes(app)
+
+			// Act
+			router.ServeHTTP(w, req)
+
+			// Assert
+			if w.Code != tc.statusCode {
+				t.Errorf("Want status '%d', got '%d'", tc.statusCode, w.Code)
+			}
 
 			verifyMatch(t, *w)
 		})
