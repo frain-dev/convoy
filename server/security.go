@@ -101,7 +101,7 @@ func (a *applicationHandler) CreateAPIKey(w http.ResponseWriter, r *http.Request
 // @Success 200 {object} serverResponse{data=Stub}
 // @Failure 400,401,500 {object} serverResponse{data=Stub}
 // @Security ApiKeyAuth
-// @Router /security/keys [put]
+// @Router /security/keys/revoke [put]
 func (a *applicationHandler) RevokeAPIKeys(w http.ResponseWriter, r *http.Request) {
 	var uids []string
 
