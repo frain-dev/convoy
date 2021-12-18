@@ -968,8 +968,10 @@ paths:
         type: string
       - description: status
         in: query
+        items:
+          type: string
         name: status
-        type: string
+        type: array
       produces:
       - application/json
       responses:

@@ -1039,7 +1039,9 @@ paths:
         in: query
         name: status
         schema:
-          type: string
+          items:
+            type: string
+          type: array
       responses:
         "200":
           content:

@@ -96,7 +96,7 @@ func (mr *MockEventDeliveryRepositoryMockRecorder) FindEventDeliveryByID(arg0, a
 }
 
 // LoadEventDeliveriesPaged mocks base method.
-func (m *MockEventDeliveryRepository) LoadEventDeliveriesPaged(arg0 context.Context, arg1, arg2, arg3 string, arg4 convoy.EventDeliveryStatus, arg5 convoy.SearchParams, arg6 convoy.Pageable) ([]convoy.EventDelivery, mongopagination.PaginationData, error) {
+func (m *MockEventDeliveryRepository) LoadEventDeliveriesPaged(arg0 context.Context, arg1, arg2, arg3 string, arg4 []convoy.EventDeliveryStatus, arg5 convoy.SearchParams, arg6 convoy.Pageable) ([]convoy.EventDelivery, mongopagination.PaginationData, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "LoadEventDeliveriesPaged", arg0, arg1, arg2, arg3, arg4, arg5, arg6)
 	ret0, _ := ret[0].([]convoy.EventDelivery)

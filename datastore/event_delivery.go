@@ -165,7 +165,7 @@ func (db *eventDeliveryRepo) UpdateEventDeliveryWithAttempt(ctx context.Context,
 	return nil
 }
 
-func (db *eventDeliveryRepo) LoadEventDeliveriesPaged(ctx context.Context, groupID, appID, eventID string, status convoy.EventDeliveryStatus, searchParams convoy.SearchParams, pageable convoy.Pageable) ([]convoy.EventDelivery, pager.PaginationData, error) {
+func (db *eventDeliveryRepo) LoadEventDeliveriesPaged(ctx context.Context, groupID, appID, eventID string, status []convoy.EventDeliveryStatus, searchParams convoy.SearchParams, pageable convoy.Pageable) ([]convoy.EventDelivery, pager.PaginationData, error) {
 	filter := bson.M{
 		"document_status": bson.M{"$ne": convoy.DeletedDocumentStatus},
 		"created_at":      getCreatedDateFilter(searchParams),
@@ -174,7 +174,7 @@ func (db *eventDeliveryRepo) LoadEventDeliveriesPaged(ctx context.Context, group
 	hasAppFilter := !util.IsStringEmpty(appID)
 	hasGroupFilter := !util.IsStringEmpty(groupID)
 	hasEventFilter := !util.IsStringEmpty(eventID)
-	hasStatusFilter := !util.IsStringEmpty(string(status))
+	hasStatusFilter := len(status) > 0
 
 	if hasAppFilter {
 		filter["app_metadata.uid"] = appID
@@ -189,7 +189,7 @@ func (db *eventDeliveryRepo) LoadEventDeliveriesPaged(ctx context.Context, group
 	}
 
 	if hasStatusFilter {
-		filter["status"] = status
+		filter["status"] = bson.M{"$in": status}
 	}
 
 	var eventDeliveries []convoy.EventDelivery

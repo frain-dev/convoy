@@ -1187,7 +1187,10 @@
                         "in": "query"
                     },
                     {
-                        "type": "string",
+                        "type": "array",
+                        "items": {
+                            "type": "string"
+                        },
                         "description": "status",
                         "name": "status",
                         "in": "query"
