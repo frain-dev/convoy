@@ -6,14 +6,14 @@ on:
       # Release binary for every tag.
       - v0.*
 
-jobs: 
+jobs:
   release-matrix:
     name: Release Go Binary
     runs-on: ubuntu-latest
     strategy:
       matrix:
         goos: [linux, darwin]
-        goarch: ["amd64"]
+        goarch: ["amd64", "arm64"]
     steps:
       - uses: actions/checkout@v2
       - uses: wangyoucao577/go-release-action@v1.19
@@ -25,3 +25,7 @@ jobs:
           project_path: "./cmd"
           binary_name: "convoy"
           extra_files: LICENSE README.md
+          pre_command: |
+            cd web/ui/dashboard
+            npm install && npm run build
+            mv dist/* ../../../server/ui/build
