@@ -5,10 +5,30 @@ on:
     tags:
       # Release binary for every tag.
       - v0.*
+  pull_request:
 
 jobs:
+  build_ui:
+    name: Build UI
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - name: Build Artifact
+        uses: actions/setup-node@v2
+        with:
+          node-version: "16.x"
+        run: "make ui_install"
+      - name: Archive Build artifacts
+        uses: actions/upload-artifact@v2
+        with:
+          name: dist-without-markdown
+          path: |
+            web/ui/dashboard/dist
+            !web/ui/dashboard/dist/**/*.md
+
   release-matrix:
     name: Release Go Binary
+    needs: build_ui
     runs-on: ubuntu-latest
     strategy:
       matrix:
@@ -16,6 +36,12 @@ jobs:
         goarch: ["amd64", "arm64"]
     steps:
       - uses: actions/checkout@v2
+      - name: Download Build Artifact
+        uses: actions/download-artifact@v2
+        with:
+          name: dist-without-markdown
+          path: server/ui/build
+
       - uses: wangyoucao577/go-release-action@v1.19
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
