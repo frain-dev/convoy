@@ -10,4 +10,5 @@ mockgen:
 ui_install:
 	cd web/ui/dashboard && \
 	npm install && \
-       	npm run build
+  npm run build
+
