@@ -2,11 +2,11 @@ name: Release Go Binaries
 
 on:
   push:
+    branches:
+      - subomi/fix/go-release-ci
     tags:
       # Release binary for every tag.
       - v0.*
-      - main
-  pull_request:
 
 jobs:
   build_ui:
