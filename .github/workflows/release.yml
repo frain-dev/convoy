@@ -18,9 +18,6 @@ jobs:
     steps:
       - uses: actions/checkout@v2
       - name: Build Artifact
-        uses: actions/setup-node@v2
-        with:
-          node-version: "16.x"
         run: "make ui_install"
       - name: Archive Build artifacts
         uses: actions/upload-artifact@v2
