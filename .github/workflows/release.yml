@@ -1,9 +1,12 @@
 name: Release Go Binaries
 
 on:
+  workflow_dispatch:
+    inputs:
+      name:
+        description: "Manual workflow name"
+        required: true
   push:
-    branches:
-      - subomi/fix/go-release-ci
     tags:
       # Release binary for every tag.
       - v0.*
