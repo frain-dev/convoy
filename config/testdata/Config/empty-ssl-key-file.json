@@ -10,6 +10,9 @@
     },
     "server": {
         "http": {
+            "ssl": true,
+            "ssl_key_file": "",
+            "ssl_cert_file": "abc",
             "port": 80
         }
     },

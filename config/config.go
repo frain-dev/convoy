@@ -5,9 +5,11 @@ import (
 	"errors"
 	"fmt"
 	"os"
-	"reflect"
-	"strconv"
 	"sync/atomic"
+
+	log "github.com/sirupsen/logrus"
+
+	"github.com/kelseyhightower/envconfig"
 
 	"github.com/frain-dev/convoy/config/algo"
 )
@@ -15,57 +17,67 @@ import (
 var cfgSingleton atomic.Value
 
 type DatabaseConfiguration struct {
-	Dsn string `json:"dsn"`
+	Dsn string `json:"dsn" envconfig:"CONVOY_MONGO_DSN"`
 }
 
 type SentryConfiguration struct {
-	Dsn string `json:"dsn"`
+	Dsn string `json:"dsn" envconfig:"CONVOY_SENTRY_DSN"`
 }
 
 type ServerConfiguration struct {
-	HTTP struct {
-		SSL         bool   `json:"ssl"`
-		SSLCertFile string `json:"ssl_cert_file"`
-		SSLKeyFile  string `json:"ssl_key_file"`
-		Port        uint32 `json:"port"`
-	} `json:"http"`
+	HTTP HTTPServerConfiguration `json:"http"`
+}
+
+type HTTPServerConfiguration struct {
+	SSL         bool   `json:"ssl" envconfig:"SSL"`
+	SSLCertFile string `json:"ssl_cert_file" envconfig:"CONVOY_SSL_CERT_FILE"`
+	SSLKeyFile  string `json:"ssl_key_file" envconfig:"CONVOY_SSL_KEY_FILE"`
+	Port        uint32 `json:"port" envconfig:"PORT"`
 }
 
 type QueueConfiguration struct {
-	Type  QueueProvider `json:"type"`
-	Redis struct {
-		DSN string `json:"dsn"`
-	} `json:"redis"`
+	Type  QueueProvider           `json:"type" envconfig:"CONVOY_QUEUE_PROVIDER"`
+	Redis RedisQueueConfiguration `json:"redis"`
+}
+
+type RedisQueueConfiguration struct {
+	DSN string `json:"dsn" envconfig:"CONVOY_REDIS_DSN"`
 }
 
 type FileRealmOption struct {
-	Basic  []BasicAuth  `json:"basic"`
+	Basic  []BasicAuth  `json:"basic" bson:"basic"`
 	APIKey []APIKeyAuth `json:"api_key"`
 }
 
+type BasicAuth struct {
+	Username string `json:"username"`
+	Password string `json:"password"`
+	Role     Role   `json:"role"`
+}
+
+type APIKeyAuth struct {
+	APIKey string `json:"api_key"`
+	Role   Role   `json:"role"`
+}
+
 type AuthConfiguration struct {
-	RequireAuth bool         `json:"require_auth"`
-	Type        AuthProvider `json:"type"`
-	Basic       Basic
+	RequireAuth bool            `json:"require_auth"`
 	File        FileRealmOption `json:"file"`
 }
 
-type Basic struct {
-	Username string `json:"username"`
-	Password string `json:"password"`
+type StrategyConfiguration struct {
+	Type    StrategyProvider             `json:"type"`
+	Default DefaultStrategyConfiguration `json:"default"`
 }
 
-type StrategyConfiguration struct {
-	Type    StrategyProvider `json:"type"`
-	Default struct {
-		IntervalSeconds uint64 `json:"intervalSeconds"`
-		RetryLimit      uint64 `json:"retryLimit"`
-	} `json:"default"`
+type DefaultStrategyConfiguration struct {
+	IntervalSeconds uint64 `json:"intervalSeconds" envconfig:"CONVOY_INTERVAL_SECONDS"`
+	RetryLimit      uint64 `json:"retryLimit" envconfig:"CONVOY_RETRY_LIMIT"`
 }
 
 type SignatureConfiguration struct {
-	Header SignatureHeaderProvider `json:"header"`
-	Hash   string                  `json:"hash"`
+	Header SignatureHeaderProvider `json:"header" envconfig:"CONVOY_SIGNATURE_HEADER"`
+	Hash   string                  `json:"hash" envconfig:"CONVOY_SIGNATURE_HASH"`
 }
 
 type SMTPConfiguration struct {
@@ -79,36 +91,32 @@ type SMTPConfiguration struct {
 }
 
 type GroupConfig struct {
-	Strategy        StrategyConfiguration  `json:"strategy"`
-	Signature       SignatureConfiguration `json:"signature"`
-	DisableEndpoint bool                   `json:"disable_endpoint"`
+	Strategy        StrategyConfiguration
+	Signature       SignatureConfiguration
+	DisableEndpoint bool `envconfig:"CONVOY_DISABLE_ENDPOINT"`
 }
 
 type Configuration struct {
-	Auth              AuthConfiguration     `json:"auth,omitempty"`
-	UIAuthorizedUsers map[string]string     `json:"-"`
-	Database          DatabaseConfiguration `json:"database"`
-	Sentry            SentryConfiguration   `json:"sentry"`
-	Queue             QueueConfiguration    `json:"queue"`
-	Server            ServerConfiguration   `json:"server"`
-	GroupConfig       GroupConfig           `json:"group"`
-	SMTP              SMTPConfiguration     `json:"smtp"`
-	Environment       string                `json:"env"`
-	MultipleTenants   bool                  `json:"multiple_tenants"`
+	Auth            AuthConfiguration     `json:"auth,omitempty"`
+	Database        DatabaseConfiguration `json:"database"`
+	Sentry          SentryConfiguration   `json:"sentry"`
+	Queue           QueueConfiguration    `json:"queue"`
+	Server          ServerConfiguration   `json:"server"`
+	GroupConfig     GroupConfig           `json:"group"`
+	SMTP            SMTPConfiguration     `json:"smtp"`
+	Environment     string                `json:"env" envconfig:"CONVOY_ENV" required:"true" default:"development"`
+	MultipleTenants bool                  `json:"multiple_tenants"`
 }
 
-type AuthProvider string
 type QueueProvider string
 type StrategyProvider string
 type SignatureHeaderProvider string
 
 const (
-	DevelopmentEnvironment string = "development"
-)
+	envPrefix string = "convoy"
 
-const (
-	NoAuthProvider          AuthProvider            = "none"
-	BasicAuthProvider       AuthProvider            = "basic"
+	DevelopmentEnvironment string = "development"
+
 	RedisQueueProvider      QueueProvider           = "redis"
 	DefaultStrategyProvider StrategyProvider        = "default"
 	DefaultSignatureHeader  SignatureHeaderProvider = "X-Convoy-Signature"
@@ -118,6 +126,20 @@ func (s SignatureHeaderProvider) String() string {
 	return string(s)
 }
 
+// Get fetches the application configuration. LoadConfig must have been called
+// previously for this to work.
+// Use this when you need to get access to the config object at runtime
+func Get() (Configuration, error) {
+	c, ok := cfgSingleton.Load().(*Configuration)
+	if !ok {
+		return Configuration{}, errors.New("call Load before this function")
+	}
+
+	return *c, nil
+}
+
+// LoadConfig is used to load the configuration from either the json config file
+// or the environment variables.
 func LoadConfig(p string) error {
 	f, err := os.Open(p)
 	if err != nil {
@@ -132,46 +154,9 @@ func LoadConfig(p string) error {
 		return err
 	}
 
-	if mongoDsn := os.Getenv("CONVOY_MONGO_DSN"); mongoDsn != "" {
-		c.Database = DatabaseConfiguration{Dsn: mongoDsn}
-	}
-
-	if queueDsn := os.Getenv("CONVOY_REDIS_DSN"); queueDsn != "" {
-		c.Queue = QueueConfiguration{
-			Type: "redis",
-			Redis: struct {
-				DSN string `json:"dsn"`
-			}{
-				DSN: queueDsn,
-			},
-		}
-	}
-
-	// This enables us deploy to Heroku where the $PORT is provided
-	// dynamically.
-	if port, err := strconv.Atoi(os.Getenv("PORT")); err == nil {
-		c.Server.HTTP.Port = uint32(port)
-	}
-
-	if s := os.Getenv("CONVOY_SSL"); s != "" {
-		v, err := strconv.ParseBool(s)
-		if err != nil {
-			return err
-		}
-		c.Server.HTTP.SSL = v
-
-		if c.Server.HTTP.SSL {
-			c.Server.HTTP.SSLCertFile = os.Getenv("CONVOY_SSL_CERT_FILE")
-			c.Server.HTTP.SSLKeyFile = os.Getenv("CONVOY_SSL_KEY_FILE")
-		}
-	}
-	err = ensureSSL(c.Server)
+	err = envconfig.Process(envPrefix, c)
 	if err != nil {
 		return err
-	}
-
-	if env := os.Getenv("CONVOY_ENV"); env != "" {
-		c.Environment = env
 	}
 
 	// if it's still empty, set it to development
@@ -179,51 +164,33 @@ func LoadConfig(p string) error {
 		c.Environment = DevelopmentEnvironment
 	}
 
-	if sentryDsn := os.Getenv("CONVOY_SENTRY_DSN"); sentryDsn != "" {
-		c.Sentry = SentryConfiguration{Dsn: sentryDsn}
+	if c.Server.HTTP.Port == 0 {
+		return errors.New("http port cannot be zero")
 	}
 
-	if signatureHeader := os.Getenv("CONVOY_SIGNATURE_HEADER"); signatureHeader != "" {
-		c.GroupConfig.Signature.Header = SignatureHeaderProvider(signatureHeader)
+	err = ensureSSL(c.Server)
+	if err != nil {
+		return err
 	}
 
-	if signatureHash := os.Getenv("CONVOY_SIGNATURE_HASH"); signatureHash != "" {
-		c.GroupConfig.Signature.Hash = signatureHash
-	}
 	err = ensureSignature(c.GroupConfig.Signature)
 	if err != nil {
 		return err
 	}
 
-	if retryStrategy := os.Getenv("CONVOY_RETRY_STRATEGY"); retryStrategy != "" {
-
-		intervalSeconds, err := retrieveIntfromEnv("CONVOY_INTERVAL_SECONDS")
-		if err != nil {
-			return err
-		}
-
-		retryLimit, err := retrieveIntfromEnv("CONVOY_RETRY_LIMIT")
-		if err != nil {
-			return err
-		}
-
-		c.GroupConfig.Strategy = StrategyConfiguration{
-			Type: StrategyProvider(retryStrategy),
-			Default: struct {
-				IntervalSeconds uint64 `json:"intervalSeconds"`
-				RetryLimit      uint64 `json:"retryLimit"`
-			}{
-				IntervalSeconds: intervalSeconds,
-				RetryLimit:      retryLimit,
-			},
-		}
-
+	if c.GroupConfig.Signature.Header == "" {
+		c.GroupConfig.Signature.Header = DefaultSignatureHeader
+		log.Warnf("using default signature header: %s", DefaultSignatureHeader)
 	}
 
-	if e := os.Getenv("CONVOY_DISABLE_ENDPOINT"); e != "" {
-		if d, err := strconv.ParseBool(e); err == nil {
-			c.GroupConfig.DisableEndpoint = d
-		}
+	err = ensureStrategyConfig(c.GroupConfig.Strategy)
+	if err != nil {
+		return err
+	}
+
+	err = ensureQueueConfig(c.Queue)
+	if err != nil {
+		return err
 	}
 
 	err = ensureAuthConfig(c.Auth)
@@ -236,6 +203,10 @@ func LoadConfig(p string) error {
 }
 
 func ensureAuthConfig(auth AuthConfiguration) error {
+	if !auth.RequireAuth {
+		return nil
+	}
+
 	var err error
 	for _, r := range auth.File.Basic {
 		if r.Username == "" || r.Password == "" {
@@ -265,7 +236,7 @@ func ensureAuthConfig(auth AuthConfiguration) error {
 func ensureSignature(signature SignatureConfiguration) error {
 	_, ok := algo.M[signature.Hash]
 	if !ok {
-		return fmt.Errorf("invalid hash algorithm - '%s', must be one of %s", signature.Hash, reflect.ValueOf(algo.M).MapKeys())
+		return fmt.Errorf("invalid hash algorithm - '%s', must be one of %s", signature.Hash, algo.Algos)
 	}
 	return nil
 }
@@ -279,27 +250,26 @@ func ensureSSL(s ServerConfiguration) error {
 	return nil
 }
 
-func retrieveIntfromEnv(config string) (uint64, error) {
-	value, err := strconv.Atoi(os.Getenv(config))
-	if err != nil {
-		return 0, errors.New("Failed to parse - " + config)
+func ensureQueueConfig(queueCfg QueueConfiguration) error {
+	switch queueCfg.Type {
+	case RedisQueueProvider:
+		if queueCfg.Redis.DSN == "" {
+			return errors.New("redis queue dsn is empty")
+		}
+	default:
+		return fmt.Errorf("unsupported queue type: %s", queueCfg.Type)
 	}
-
-	if value == 0 {
-		return 0, errors.New("Invalid - " + config)
-	}
-
-	return uint64(value), nil
+	return nil
 }
 
-// Get fetches the application configuration. LoadConfig must have been called
-// previously for this to work.
-// Use this when you need to get access to the config object at runtime
-func Get() (Configuration, error) {
-	c, ok := cfgSingleton.Load().(*Configuration)
-	if !ok {
-		return Configuration{}, errors.New("call Load before this function")
+func ensureStrategyConfig(strategyCfg StrategyConfiguration) error {
+	switch strategyCfg.Type {
+	case DefaultStrategyProvider:
+		if strategyCfg.Default.IntervalSeconds == 0 || strategyCfg.Default.RetryLimit == 0 {
+			return errors.New("both interval seconds and retry limit are required for default strategy configuration")
+		}
+	default:
+		return fmt.Errorf("unsupported strategy type: %s", strategyCfg.Type)
 	}
-
-	return *c, nil
+	return nil
 }

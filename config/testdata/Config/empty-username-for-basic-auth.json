@@ -1,4 +1,22 @@
 {
+    "auth": {
+        "require_auth": true,
+        "file": {
+            "basic": [
+                {
+                    "username": "",
+                    "password": "default",
+                    "role": {
+                        "type": "super_user",
+                        "groups": [
+                            "sendcash-pay",
+                            "buycoins-api"
+                        ]
+                    }
+                }
+            ]
+        }
+    },
     "database": {
         "dsn": "mongodb://inside-config-file"
     },

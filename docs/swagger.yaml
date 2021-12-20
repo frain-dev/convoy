@@ -1,8 +1,15 @@
 basePath: /api/v1
 definitions:
+  config.DefaultStrategyConfiguration:
+    properties:
+      intervalSeconds:
+        type: integer
+      retryLimit:
+        type: integer
+    type: object
   config.GroupConfig:
     properties:
-      disable_endpoint:
+      disableEndpoint:
         type: boolean
       signature:
         $ref: '#/definitions/config.SignatureConfiguration'
@@ -19,12 +26,7 @@ definitions:
   config.StrategyConfiguration:
     properties:
       default:
-        properties:
-          intervalSeconds:
-            type: integer
-          retryLimit:
-            type: integer
-        type: object
+        $ref: '#/definitions/config.DefaultStrategyConfiguration'
       type:
         type: string
     type: object
@@ -966,8 +968,10 @@ paths:
         type: string
       - description: status
         in: query
+        items:
+          type: string
         name: status
-        type: string
+        type: array
       produces:
       - application/json
       responses:

@@ -1,36 +1,27 @@
 {
-    "queue": {
-        "type": "redis",
-        "redis": {
-            "dsn": "abc"
-        }
-    },
     "auth": {
         "require_auth": true,
         "file": {
-            "basic": [
-                {
-                    "username": "test",
-                    "password": "test",
-                    "role": {
-                        "type": "admin",
-                        "groups": [
-                            "sendcash-pay"
-                        ]
-                    }
-                }
-            ],
             "api_key": [
                 {
-                    "api_key": "avcbajbwrohw@##Q39uekvsmbvxc.fdjhd",
+                    "api_key": "",
                     "role": {
-                        "type": "ui_admin",
+                        "type": "super_user",
                         "groups": [
                             "sendcash-pay"
                         ]
                     }
                 }
             ]
+        }
+    },
+    "database": {
+        "dsn": "mongodb://inside-config-file"
+    },
+    "queue": {
+        "type": "redis",
+        "redis": {
+            "dsn": "redis://localhost:8379"
         }
     },
     "server": {
@@ -47,8 +38,7 @@
             }
         },
         "signature": {
-            "header": "X-Company-Event-WebHook-Signature",
             "hash": "SHA256"
         }
     }
-}
+},

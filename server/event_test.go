@@ -41,10 +41,7 @@ func TestApplicationHandler_CreateAppEvent(t *testing.T) {
 			},
 			Strategy: config.StrategyConfiguration{
 				Type: config.StrategyProvider("default"),
-				Default: struct {
-					IntervalSeconds uint64 `json:"intervalSeconds"`
-					RetryLimit      uint64 `json:"retryLimit"`
-				}{
+				Default: config.DefaultStrategyConfiguration{
 					IntervalSeconds: 60,
 					RetryLimit:      1,
 				},

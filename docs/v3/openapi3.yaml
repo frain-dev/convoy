@@ -1,8 +1,15 @@
 components:
   schemas:
+    config.DefaultStrategyConfiguration:
+      properties:
+        intervalSeconds:
+          type: integer
+        retryLimit:
+          type: integer
+      type: object
     config.GroupConfig:
       properties:
-        disable_endpoint:
+        disableEndpoint:
           type: boolean
         signature:
           $ref: '#/components/schemas/config.SignatureConfiguration'
@@ -19,12 +26,7 @@ components:
     config.StrategyConfiguration:
       properties:
         default:
-          properties:
-            intervalSeconds:
-              type: integer
-            retryLimit:
-              type: integer
-          type: object
+          $ref: '#/components/schemas/config.DefaultStrategyConfiguration'
         type:
           type: string
       type: object
@@ -1039,7 +1041,9 @@ paths:
         in: query
         name: status
         schema:
-          type: string
+          items:
+            type: string
+          type: array
       responses:
         "200":
           content:
