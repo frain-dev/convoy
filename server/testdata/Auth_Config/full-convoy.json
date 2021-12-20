@@ -1,4 +1,10 @@
 {
+    "queue": {
+        "type": "redis",
+        "redis": {
+            "dsn": "abc"
+        }
+    },
     "auth": {
         "require_auth": true,
         "file": {
@@ -27,6 +33,11 @@
             ]
         }
     },
+    "server": {
+        "http": {
+            "port": 80
+        }
+    },
     "group": {
         "strategy": {
             "type": "default",
@@ -40,5 +51,4 @@
             "hash": "SHA256"
         }
     }
-
 }
