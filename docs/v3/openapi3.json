@@ -14,7 +14,7 @@
 			},
 			"config.GroupConfig": {
 				"properties": {
-					"disable_endpoint": {
+					"disableEndpoint": {
 						"type": "boolean"
 					},
 					"signature": {
@@ -1801,7 +1801,10 @@
 						"in": "query",
 						"name": "status",
 						"schema": {
-							"type": "string"
+							"items": {
+								"type": "string"
+							},
+							"type": "array"
 						}
 					}
 				],

@@ -199,15 +199,6 @@ func TestLoadConfig(t *testing.T) {
 			wantErrMsg: "both cert_file and key_file are required for ssl",
 		},
 		{
-			name: "should_error_for_empty_ssl_key_file",
-			args: args{
-				path: "./testdata/Config/empty-ssl-key-file.json",
-			},
-			wantCfg:    Configuration{},
-			wantErr:    true,
-			wantErrMsg: "both cert_file and key_file are required for ssl",
-		},
-		{
 			name: "should_error_for_invalid_signature_hash",
 			args: args{
 				path: "./testdata/Config/invalid-signature-hash.json",

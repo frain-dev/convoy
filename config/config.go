@@ -104,7 +104,7 @@ type Configuration struct {
 	Server          ServerConfiguration   `json:"server"`
 	GroupConfig     GroupConfig           `json:"group"`
 	SMTP            SMTPConfiguration     `json:"smtp"`
-	Environment     string                `json:"env" envconfig:"CONVOY_ENV"`
+	Environment     string                `json:"env" envconfig:"CONVOY_ENV" required:"true" default:"development"`
 	MultipleTenants bool                  `json:"multiple_tenants"`
 }
 
@@ -113,10 +113,10 @@ type StrategyProvider string
 type SignatureHeaderProvider string
 
 const (
-	DevelopmentEnvironment string = "development"
-)
+	envPrefix string = "convoy"
 
-const (
+	DevelopmentEnvironment string = "development"
+
 	RedisQueueProvider      QueueProvider           = "redis"
 	DefaultStrategyProvider StrategyProvider        = "default"
 	DefaultSignatureHeader  SignatureHeaderProvider = "X-Convoy-Signature"
@@ -126,6 +126,20 @@ func (s SignatureHeaderProvider) String() string {
 	return string(s)
 }
 
+// Get fetches the application configuration. LoadConfig must have been called
+// previously for this to work.
+// Use this when you need to get access to the config object at runtime
+func Get() (Configuration, error) {
+	c, ok := cfgSingleton.Load().(*Configuration)
+	if !ok {
+		return Configuration{}, errors.New("call Load before this function")
+	}
+
+	return *c, nil
+}
+
+// LoadConfig is used to load the configuration from either the json config file
+// or the environment variables.
 func LoadConfig(p string) error {
 	f, err := os.Open(p)
 	if err != nil {
@@ -140,7 +154,7 @@ func LoadConfig(p string) error {
 		return err
 	}
 
-	err = envconfig.Process("CONVOY", c)
+	err = envconfig.Process(envPrefix, c)
 	if err != nil {
 		return err
 	}
@@ -163,6 +177,7 @@ func LoadConfig(p string) error {
 	if err != nil {
 		return err
 	}
+
 	if c.GroupConfig.Signature.Header == "" {
 		c.GroupConfig.Signature.Header = DefaultSignatureHeader
 		log.Warnf("using default signature header: %s", DefaultSignatureHeader)
@@ -257,16 +272,4 @@ func ensureStrategyConfig(strategyCfg StrategyConfiguration) error {
 		return fmt.Errorf("unsupported strategy type: %s", strategyCfg.Type)
 	}
 	return nil
-}
-
-// Get fetches the application configuration. LoadConfig must have been called
-// previously for this to work.
-// Use this when you need to get access to the config object at runtime
-func Get() (Configuration, error) {
-	c, ok := cfgSingleton.Load().(*Configuration)
-	if !ok {
-		return Configuration{}, errors.New("call Load before this function")
-	}
-
-	return *c, nil
 }

@@ -1187,7 +1187,10 @@
                         "in": "query"
                     },
                     {
-                        "type": "string",
+                        "type": "array",
+                        "items": {
+                            "type": "string"
+                        },
                         "description": "status",
                         "name": "status",
                         "in": "query"
@@ -2715,7 +2718,7 @@
         "config.GroupConfig": {
             "type": "object",
             "properties": {
-                "disable_endpoint": {
+                "disableEndpoint": {
                     "type": "boolean"
                 },
                 "signature": {
