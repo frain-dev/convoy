@@ -5,6 +5,7 @@ on:
     tags:
       # Release binary for every tag.
       - v0.*
+      - main
   pull_request:
 
 jobs:
