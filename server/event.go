@@ -99,7 +99,7 @@ func (a *applicationHandler) CreateAppEvent(w http.ResponseWriter, r *http.Reque
 
 	var intervalSeconds uint64
 	var retryLimit uint64
-	if g.Config.Strategy.Type == config.DefaultStrategyProvider {
+	if string(g.Config.Strategy.Type) == string(config.DefaultStrategyProvider) {
 		intervalSeconds = g.Config.Strategy.Default.IntervalSeconds
 		retryLimit = g.Config.Strategy.Default.RetryLimit
 	} else {

@@ -34,7 +34,7 @@ type ServerConfiguration struct {
 }
 
 type QueueConfiguration struct {
-	Type  convoy.QueueProvider `json:"type"`
+	Type  QueueProvider `json:"type"`
 	Redis struct {
 		DSN string `json:"dsn"`
 	} `json:"redis"`
@@ -74,7 +74,7 @@ type Configuration struct {
 	Sentry            SentryConfiguration   `json:"sentry"`
 	Queue             QueueConfiguration    `json:"queue"`
 	Server            ServerConfiguration   `json:"server"`
-	GroupConfig       convoy.GroupConfig    `json:"group"`
+	GroupConfig       GroupConfig           `json:"group"`
 	SMTP              SMTPConfiguration     `json:"smtp"`
 	Environment       string                `json:"env"`
 	MultipleTenants   bool                  `json:"multiple_tenants"`
@@ -85,10 +85,38 @@ const (
 )
 
 const (
-	RedisQueueProvider      convoy.QueueProvider           = "redis"
-	DefaultStrategyProvider convoy.StrategyProvider        = "default"
-	DefaultSignatureHeader  convoy.SignatureHeaderProvider = "X-Convoy-Signature"
+	RedisQueueProvider      QueueProvider           = "redis"
+	DefaultStrategyProvider StrategyProvider        = "default"
+	DefaultSignatureHeader  SignatureHeaderProvider = "X-Convoy-Signature"
 )
+
+type GroupConfig struct {
+	Strategy        StrategyConfiguration  `json:"strategy"`
+	Signature       SignatureConfiguration `json:"signature"`
+	DisableEndpoint bool                   `json:"disable_endpoint"`
+}
+
+type StrategyConfiguration struct {
+	Type    StrategyProvider `json:"type"`
+	Default struct {
+		IntervalSeconds uint64 `json:"intervalSeconds"`
+		RetryLimit      uint64 `json:"retryLimit"`
+	} `json:"default"`
+}
+
+type SignatureConfiguration struct {
+	Header SignatureHeaderProvider `json:"header"`
+	Hash   string                  `json:"hash"`
+}
+
+type AuthProvider string
+type QueueProvider string
+type StrategyProvider string
+type SignatureHeaderProvider string
+
+func (s SignatureHeaderProvider) String() string {
+	return string(s)
+}
 
 func LoadConfig(p string) error {
 	f, err := os.Open(p)
@@ -156,7 +184,7 @@ func LoadConfig(p string) error {
 	}
 
 	if signatureHeader := os.Getenv("CONVOY_SIGNATURE_HEADER"); signatureHeader != "" {
-		c.GroupConfig.Signature.Header = convoy.SignatureHeaderProvider(signatureHeader)
+		c.GroupConfig.Signature.Header = SignatureHeaderProvider(signatureHeader)
 	}
 
 	if signatureHash := os.Getenv("CONVOY_SIGNATURE_HASH"); signatureHash != "" {
@@ -179,8 +207,8 @@ func LoadConfig(p string) error {
 			return err
 		}
 
-		c.GroupConfig.Strategy = convoy.StrategyConfiguration{
-			Type: convoy.StrategyProvider(retryStrategy),
+		c.GroupConfig.Strategy = StrategyConfiguration{
+			Type: StrategyProvider(retryStrategy),
 			Default: struct {
 				IntervalSeconds uint64 `json:"intervalSeconds"`
 				RetryLimit      uint64 `json:"retryLimit"`
@@ -234,7 +262,7 @@ func ensureAuthConfig(authCfg AuthConfiguration) error {
 	return nil
 }
 
-func ensureSignature(signature convoy.SignatureConfiguration) error {
+func ensureSignature(signature SignatureConfiguration) error {
 	_, ok := algo.M[signature.Hash]
 	if !ok {
 		return fmt.Errorf("invalid hash algorithm - '%s', must be one of %s", signature.Hash, reflect.ValueOf(algo.M).MapKeys())

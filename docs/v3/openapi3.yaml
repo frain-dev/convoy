@@ -265,8 +265,6 @@ components:
       properties:
         expires_at:
           type: string
-        key:
-          type: string
         role:
           $ref: '#/components/schemas/auth.Role'
       type: object
@@ -2104,7 +2102,7 @@ paths:
       - APIKey
   /security/keys/{keyID}:
     get:
-      description: This endpoint fetches an api key by it's id
+      description: This endpoint fetches an api key by its id
       parameters:
       - description: API Key id
         in: path
@@ -2162,19 +2160,16 @@ paths:
       summary: Get api key by id
       tags:
       - APIKey
-  /security/keys/revoke:
-    put:
+  /security/keys/{keyID}/revoke:
+    get:
       description: This endpoint revokes multiple api keys
-      requestBody:
-        content:
-          application/json:
-            schema:
-              items:
-                type: string
-              type: array
-        description: API Key ids
+      parameters:
+      - description: API Key id
+        in: path
+        name: keyID
         required: true
-        x-originalParamName: ids
+        schema:
+          type: string
       responses:
         "200":
           content:

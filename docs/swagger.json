@@ -2927,14 +2927,14 @@
                 }
             }
         },
-        "/security/keys/revoke": {
-            "put": {
+        "/security/keys/{keyID}": {
+            "get": {
                 "security": [
                     {
                         "ApiKeyAuth": []
                     }
                 ],
-                "description": "This endpoint revokes multiple api keys",
+                "description": "This endpoint fetches an api key by its id",
                 "consumes": [
                     "application/json"
                 ],
@@ -2944,19 +2944,14 @@
                 "tags": [
                     "APIKey"
                 ],
-                "summary": "Revoke multiple api keys",
+                "summary": "Get api key by id",
                 "parameters": [
                     {
-                        "description": "API Key ids",
-                        "name": "ids",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "type": "array",
-                            "items": {
-                                "type": "string"
-                            }
-                        }
+                        "type": "string",
+                        "description": "API Key id",
+                        "name": "keyID",
+                        "in": "path",
+                        "required": true
                     }
                 ],
                 "responses": {
@@ -2971,7 +2966,7 @@
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/server.Stub"
+                                            "$ref": "#/definitions/convoy.APIKey"
                                         }
                                     }
                                 }
@@ -3035,14 +3030,14 @@
                 }
             }
         },
-        "/security/keys/{keyID}": {
+        "/security/keys/{keyID}/revoke": {
             "get": {
                 "security": [
                     {
                         "ApiKeyAuth": []
                     }
                 ],
-                "description": "This endpoint fetches an api key by it's id",
+                "description": "This endpoint revokes multiple api keys",
                 "consumes": [
                     "application/json"
                 ],
@@ -3052,7 +3047,7 @@
                 "tags": [
                     "APIKey"
                 ],
-                "summary": "Get api key by id",
+                "summary": "Revoke multiple api keys",
                 "parameters": [
                     {
                         "type": "string",
@@ -3074,7 +3069,7 @@
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/convoy.APIKey"
+                                            "$ref": "#/definitions/server.Stub"
                                         }
                                     }
                                 }
@@ -3528,9 +3523,6 @@
             "type": "object",
             "properties": {
                 "expires_at": {
-                    "type": "string"
-                },
-                "key": {
                     "type": "string"
                 },
                 "role": {

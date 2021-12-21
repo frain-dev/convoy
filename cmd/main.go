@@ -194,11 +194,29 @@ func ensureDefaultGroup(ctx context.Context, cfg config.Configuration, a *app) e
 		}
 	}
 
+	groupCfg := &convoy.GroupConfig{
+		Strategy: convoy.StrategyConfiguration{
+			Type: convoy.StrategyProvider(cfg.GroupConfig.Strategy.Type),
+			Default: struct {
+				IntervalSeconds uint64 `json:"intervalSeconds"`
+				RetryLimit      uint64 `json:"retryLimit"`
+			}{
+				IntervalSeconds: cfg.GroupConfig.Strategy.Default.IntervalSeconds,
+				RetryLimit:      cfg.GroupConfig.Strategy.Default.RetryLimit,
+			},
+		},
+		Signature: convoy.SignatureConfiguration{
+			Header: convoy.SignatureHeaderProvider(cfg.GroupConfig.Signature.Header),
+			Hash:   cfg.GroupConfig.Signature.Hash,
+		},
+		DisableEndpoint: cfg.GroupConfig.DisableEndpoint,
+	}
+
 	if len(groups) == 0 {
 		defaultGroup := &convoy.Group{
 			UID:            uuid.New().String(),
 			Name:           "default-group",
-			Config:         &cfg.GroupConfig,
+			Config:         groupCfg,
 			CreatedAt:      primitive.NewDateTimeFromTime(time.Now()),
 			UpdatedAt:      primitive.NewDateTimeFromTime(time.Now()),
 			DocumentStatus: convoy.ActiveDocumentStatus,
@@ -214,7 +232,7 @@ func ensureDefaultGroup(ctx context.Context, cfg config.Configuration, a *app) e
 
 	group = groups[0]
 
-	group.Config = &cfg.GroupConfig
+	group.Config = groupCfg
 	err = a.groupRepo.UpdateGroup(ctx, group)
 	if err != nil {
 		log.WithError(err).Error("Default group update failed.")
