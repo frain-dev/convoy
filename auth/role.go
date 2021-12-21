@@ -1,10 +1,5 @@
 package auth
 
-import (
-	"fmt"
-	"strings"
-)
-
 // Role represents the permission a user is given, if the Type is RoleSuperUser,
 // Then the user will have access to everything regardless of the value of Groups.
 type Role struct {
@@ -20,16 +15,6 @@ const (
 	RoleAdmin     = RoleType("admin")
 	RoleAPI       = RoleType("api")
 )
-
-func (r *RoleType) UnmarshalJSON(b []byte) error {
-	str := strings.Trim(string(b), `"`)
-	*r = RoleType(str)
-
-	if !r.IsValid() {
-		return fmt.Errorf("invalid role %s", r.String())
-	}
-	return nil
-}
 
 func (r RoleType) IsValid() bool {
 	switch r {

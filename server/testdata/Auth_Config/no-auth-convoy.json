@@ -1,19 +1,29 @@
 {
-	"auth": {
-		"require_auth": false
-	},
-	"group": {
-		"strategy": {
-			"type": "default",
-			"default": {
-				"intervalSeconds": 125,
-				"retryLimit": 15
-			}
-		},
-		"signature": {
-			"header": "X-Company-Event-WebHook-Signature",
-			"hash": "SHA256"
-		}
-	}
-
+    "queue": {
+        "type": "redis",
+        "redis": {
+            "dsn": "abc"
+        }
+    },
+    "auth": {
+        "require_auth": false
+    },
+    "server": {
+        "http": {
+            "port": 80
+        }
+    },
+    "group": {
+        "strategy": {
+            "type": "default",
+            "default": {
+                "intervalSeconds": 125,
+                "retryLimit": 15
+            }
+        },
+        "signature": {
+            "header": "X-Company-Event-WebHook-Signature",
+            "hash": "SHA256"
+        }
+    }
 }

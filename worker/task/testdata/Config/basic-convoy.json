@@ -1,4 +1,15 @@
 {
+    "queue": {
+        "type": "redis",
+        "redis": {
+            "dsn": "abc"
+        }
+    },
+    "server": {
+        "http": {
+            "port": 80
+        }
+    },
     "auth": {
         "type": "basic",
         "file": {
