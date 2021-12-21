@@ -280,7 +280,7 @@ func TestApplicationHandler_UpdateGroup(t *testing.T) {
 			if w.Code != tc.statusCode {
 				t.Errorf("Want status '%d', got '%d'", tc.statusCode, w.Code)
 			}
-
+			fmt.Println("s", w.Body.String())
 			verifyMatch(t, *w)
 		})
 	}

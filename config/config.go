@@ -98,16 +98,18 @@ type GroupConfig struct {
 }
 
 type StrategyConfiguration struct {
-	Type    StrategyProvider `json:"type"`
-	Default struct {
-		IntervalSeconds uint64 `json:"intervalSeconds"`
-		RetryLimit      uint64 `json:"retryLimit"`
-	} `json:"default"`
+	Type    StrategyProvider             `json:"type"`
+	Default DefaultStrategyConfiguration `json:"default"`
+}
+
+type DefaultStrategyConfiguration struct {
+	IntervalSeconds uint64 `json:"intervalSeconds" envconfig:"CONVOY_INTERVAL_SECONDS"`
+	RetryLimit      uint64 `json:"retryLimit" envconfig:"CONVOY_RETRY_LIMIT"`
 }
 
 type SignatureConfiguration struct {
-	Header SignatureHeaderProvider `json:"header"`
-	Hash   string                  `json:"hash"`
+	Header SignatureHeaderProvider `json:"header" envconfig:"CONVOY_SIGNATURE_HEADER"`
+	Hash   string                  `json:"hash" envconfig:"CONVOY_SIGNATURE_HASH"`
 }
 
 type AuthProvider string

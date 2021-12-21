@@ -1,5 +1,7 @@
 package auth
 
+import "fmt"
+
 // Role represents the permission a user is given, if the Type is RoleSuperUser,
 // Then the user will have access to everything regardless of the value of Groups.
 type Role struct {
