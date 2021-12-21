@@ -39,15 +39,6 @@ func (a *applicationHandler) CreateAPIKey(w http.ResponseWriter, r *http.Request
 		return
 	}
 
-	if util.IsStringEmpty(newApiKey.Key) {
-		newApiKey.Key, err = util.GenerateSecret()
-		if err != nil {
-			log.WithError(err).Error("failed to generate api key")
-			_ = render.Render(w, r, newErrorResponse("failed to generate api key", http.StatusInternalServerError))
-			return
-		}
-	}
-
 	err = newApiKey.Role.Validate("api key")
 	if err != nil {
 		log.WithError(err).Error("invalid api key role")
@@ -55,7 +46,14 @@ func (a *applicationHandler) CreateAPIKey(w http.ResponseWriter, r *http.Request
 		return
 	}
 
-	hashedKey, err := util.ComputeSHA256(newApiKey.Key)
+	key, err := util.GenerateSecret()
+	if err != nil {
+		log.WithError(err).Error("failed to generate api key")
+		_ = render.Render(w, r, newErrorResponse("failed to generate api key", http.StatusInternalServerError))
+		return
+	}
+
+	hashedKey, err := util.ComputeSHA256(key)
 	if err != nil {
 		log.WithError(err).Error("failed to hash api key")
 		_ = render.Render(w, r, newErrorResponse("failed to hash api key", http.StatusInternalServerError))
@@ -85,45 +83,44 @@ func (a *applicationHandler) CreateAPIKey(w http.ResponseWriter, r *http.Request
 		CreatedAt: apiKey.CreatedAt.Time(),
 	}
 	resp.Role = apiKey.Role
-	resp.Key = newApiKey.Key
+	resp.Key = key
 	resp.ExpiresAt = newApiKey.ExpiresAt
 
 	_ = render.Render(w, r, newServerResponse("API Key created successfully", resp, http.StatusCreated))
 }
 
-// RevokeAPIKeys
+// RevokeAPIKey
 // @Summary Revoke multiple api keys
 // @Description This endpoint revokes multiple api keys
 // @Tags APIKey
 // @Accept  json
 // @Produce  json
-// @Param ids body []string true "API Key ids"
+// @Param keyID path string true "API Key id"
 // @Success 200 {object} serverResponse{data=Stub}
 // @Failure 400,401,500 {object} serverResponse{data=Stub}
 // @Security ApiKeyAuth
-// @Router /security/keys/revoke [put]
-func (a *applicationHandler) RevokeAPIKeys(w http.ResponseWriter, r *http.Request) {
-	var uids []string
+// @Router /security/keys/{keyID}/revoke [get]
+func (a *applicationHandler) RevokeAPIKey(w http.ResponseWriter, r *http.Request) {
+	uid := chi.URLParam(r, "keyID")
 
-	err := json.NewDecoder(r.Body).Decode(&uids)
-	if err != nil {
-		_ = render.Render(w, r, newErrorResponse("Request is invalid", http.StatusBadRequest))
+	if util.IsStringEmpty(uid) {
+		_ = render.Render(w, r, newErrorResponse("key id is empty", http.StatusBadRequest))
 		return
 	}
 
-	err = a.apiKeyRepo.RevokeAPIKeys(r.Context(), uids)
+	err := a.apiKeyRepo.RevokeAPIKeys(r.Context(), []string{uid})
 	if err != nil {
-		log.WithError(err).Error("failed to revoke api keys")
-		_ = render.Render(w, r, newErrorResponse("failed to revoke api keys", http.StatusInternalServerError))
+		log.WithError(err).Error("failed to revoke api key")
+		_ = render.Render(w, r, newErrorResponse("failed to revoke api key", http.StatusInternalServerError))
 		return
 	}
 
-	_ = render.Render(w, r, newServerResponse("api keys revoked successfully", nil, http.StatusOK))
+	_ = render.Render(w, r, newServerResponse("api key revoked successfully", nil, http.StatusOK))
 }
 
 // GetAPIKeyByID
 // @Summary Get api key by id
-// @Description This endpoint fetches an api key by it's id
+// @Description This endpoint fetches an api key by its id
 // @Tags APIKey
 // @Accept  json
 // @Produce  json

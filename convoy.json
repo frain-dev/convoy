@@ -22,7 +22,9 @@
     },
     "auth": {
         "require_auth": false,
-        "native": true,
+        "native": {
+            "enabled": true
+        },
         "file": {
             "basic": [
                 {
@@ -51,16 +53,16 @@
         }
     },
     "group": {
-		"signature": {
-			"header": "X-Company-Event-WebHook-Signature",
-			"hash": "SHA256"
-		},
-		"strategy": {
-			"type": "default",
-			"default": {
-				"intervalSeconds": 20,
-				"retryLimit": 3
-			}
-		}
-	}
+        "signature": {
+            "header": "X-Company-Event-WebHook-Signature",
+            "hash": "SHA256"
+        },
+        "strategy": {
+            "type": "default",
+            "default": {
+                "intervalSeconds": 20,
+                "retryLimit": 3
+            }
+        }
+    }
 }

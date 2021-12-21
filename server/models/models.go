@@ -16,13 +16,13 @@ type Group struct {
 }
 
 type APIKey struct {
-	Key       string     `json:"key"`
 	Role      auth.Role  `json:"role"`
 	ExpiresAt *time.Time `json:"expires_at"`
 }
 
 type APIKeyResponse struct {
 	APIKey
+	Key       string    `json:"key"`
 	UID       string    `json:"uid"`
 	CreatedAt time.Time `json:"created_at"`
 }

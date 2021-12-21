@@ -113,7 +113,7 @@ func (mr *MockAPIKeyRepoMockRecorder) LoadAPIKeysPaged(ctx, pageable interface{}
 // RevokeAPIKeys mocks base method.
 func (m *MockAPIKeyRepo) RevokeAPIKeys(ctx context.Context, uids []string) error {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "RevokeAPIKeys", ctx, uids)
+	ret := m.ctrl.Call(m, "RevokeAPIKey", ctx, uids)
 	ret0, _ := ret[0].(error)
 	return ret0
 }
@@ -121,7 +121,7 @@ func (m *MockAPIKeyRepo) RevokeAPIKeys(ctx context.Context, uids []string) error
 // RevokeAPIKeys indicates an expected call of RevokeAPIKeys.
 func (mr *MockAPIKeyRepoMockRecorder) RevokeAPIKeys(ctx, uids interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "RevokeAPIKeys", reflect.TypeOf((*MockAPIKeyRepo)(nil).RevokeAPIKeys), ctx, uids)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "RevokeAPIKey", reflect.TypeOf((*MockAPIKeyRepo)(nil).RevokeAPIKeys), ctx, uids)
 }
 
 // UpdateAPIKey mocks base method.

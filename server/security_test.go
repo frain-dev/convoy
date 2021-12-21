@@ -175,7 +175,7 @@ func TestApplicationHandler_CreateAPIKey(t *testing.T) {
 	}
 }
 
-func TestApplicationHandler_RevokeAPIKeys(t *testing.T) {
+func TestApplicationHandler_RevokeAPIKey(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 
@@ -192,24 +192,24 @@ func TestApplicationHandler_RevokeAPIKeys(t *testing.T) {
 		name       string
 		cfgPath    string
 		statusCode int
-		body       []string
+		keyID      string
 		dbFn       func(app *applicationHandler)
 	}{
 		{
-			name:       "revoke api keys",
+			name:       "revoke api key",
 			cfgPath:    "./testdata/Auth_Config/no-auth-convoy.json",
 			statusCode: http.StatusOK,
-			body:       []string{"abc", "123"},
+			keyID:      "123",
 			dbFn: func(app *applicationHandler) {
 				a, _ := app.apiKeyRepo.(*mocks.MockAPIKeyRepo)
 				a.EXPECT().RevokeAPIKeys(gomock.Any(), gomock.Any()).Times(1).Return(nil)
 			},
 		},
 		{
-			name:       "should error for revoke api keys",
+			name:       "should error for revoke api key",
 			cfgPath:    "./testdata/Auth_Config/no-auth-convoy.json",
 			statusCode: http.StatusInternalServerError,
-			body:       []string{"abc", "123"},
+			keyID:      "123",
 			dbFn: func(app *applicationHandler) {
 				a, _ := app.apiKeyRepo.(*mocks.MockAPIKeyRepo)
 				a.EXPECT().RevokeAPIKeys(gomock.Any(), gomock.Any()).Times(1).Return(errors.New("abc"))
@@ -220,8 +220,8 @@ func TestApplicationHandler_RevokeAPIKeys(t *testing.T) {
 	for _, tc := range tt {
 		t.Run(tc.name, func(t *testing.T) {
 			// Arrange
-			url := "/api/v1/security/keys/revoke"
-			req := httptest.NewRequest(http.MethodPut, url, serialize(t, tc.body))
+			url := fmt.Sprintf("/api/v1/security/keys/%s/revoke", tc.keyID)
+			req := httptest.NewRequest(http.MethodPut, url, nil)
 			req.SetBasicAuth("test", "test")
 			w := httptest.NewRecorder()
 			rctx := chi.NewRouteContext()

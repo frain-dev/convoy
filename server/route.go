@@ -148,7 +148,7 @@ func buildRoutes(app *applicationHandler) http.Handler {
 				securityRouter.Post("/keys", app.CreateAPIKey)
 				securityRouter.With(pagination).Get("/keys", app.GetAPIKeys)
 				securityRouter.Get("/keys/{keyID}", app.GetAPIKeyByID)
-				securityRouter.Put("/keys/revoke", app.RevokeAPIKeys)
+				securityRouter.Put("/keys/{keyID}/revoke", app.RevokeAPIKey)
 			})
 		})
 	})
