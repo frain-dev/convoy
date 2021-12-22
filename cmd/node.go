@@ -152,7 +152,7 @@ func nodeWorkerCommand(a *app) *cobra.Command {
 
 						if acquired {
 							isLeader = true
-							log.Printf("I'm the server now!\n")
+							log.Printf("Leader aquisition successful!\n")
 							err := startConvoyServer(a, cfg)
 							if err != nil {
 								log.Printf("Error starting convoy server: %v", err)
