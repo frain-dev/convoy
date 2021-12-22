@@ -23,22 +23,22 @@ import (
 func addNodeCommand(a *app) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "node",
-		Short: "Start a master/worker node",
+		Short: "Start a server/worker node",
 	}
 
-	cmd.AddCommand(nodeMasterCommand(a))
+	cmd.AddCommand(nodeServerCommand(a))
 	cmd.AddCommand(nodeWorkerCommand(a))
 
 	return cmd
 }
 
-func nodeMasterCommand(a *app) *cobra.Command {
+func nodeServerCommand(a *app) *cobra.Command {
 	var client *api.Client
 	var sID string
 	var doneCh chan struct{}
 	cmd := &cobra.Command{
-		Use:   "master",
-		Short: "Create a master node",
+		Use:   "server",
+		Short: "Create a server node",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			cfg, err := config.Get()
 			if err != nil {
@@ -58,8 +58,8 @@ func nodeMasterCommand(a *app) *cobra.Command {
 			}
 
 			if kv != nil && kv.Session != "" {
-				// there is a master already
-				log.Fatalf("There is a master node already.")
+				// there is a server already
+				log.Fatalf("There is a server node already.")
 			} else {
 				hostName, err := os.Hostname()
 				if err != nil {
@@ -77,7 +77,7 @@ func nodeMasterCommand(a *app) *cobra.Command {
 				}
 
 				if acquired {
-					log.Printf("Master node intitialized!\n")
+					log.Printf("Server node intitialized!\n")
 					err := startConvoyServer(a, cfg)
 					if err != nil {
 						log.Printf("Error starting convoy server: %v", err)
@@ -152,7 +152,7 @@ func nodeWorkerCommand(a *app) *cobra.Command {
 
 						if acquired {
 							isLeader = true
-							log.Printf("I'm the master now!\n")
+							log.Printf("I'm the server now!\n")
 							err := startConvoyServer(a, cfg)
 							if err != nil {
 								log.Printf("Error starting convoy server: %v", err)
