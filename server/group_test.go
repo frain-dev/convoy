@@ -10,6 +10,7 @@ import (
 
 	"github.com/frain-dev/convoy"
 	"github.com/frain-dev/convoy/config"
+	"github.com/frain-dev/convoy/logger"
 	"github.com/frain-dev/convoy/mocks"
 	"github.com/go-chi/chi/v5"
 	"github.com/golang/mock/gomock"
@@ -76,7 +77,7 @@ func TestApplicationHandler_GetGroup(t *testing.T) {
 			eventRepo := mocks.NewMockEventRepository(ctrl)
 			eventDeliveryRepo := mocks.NewMockEventDeliveryRepository(ctrl)
 			eventQueue := mocks.NewMockQueuer(ctrl)
-			logger := mocks.NewMockLogger(ctrl)
+			logger := logger.NewNoopLogger()
 			tracer := mocks.NewMockTracer(ctrl)
 
 			app = newApplicationHandler(eventRepo, eventDeliveryRepo, appRepo, groupRepo, eventQueue, logger, tracer)
@@ -160,7 +161,7 @@ func TestApplicationHandler_CreateGroup(t *testing.T) {
 			eventRepo := mocks.NewMockEventRepository(ctrl)
 			eventDeliveryRepo := mocks.NewMockEventDeliveryRepository(ctrl)
 			eventQueue := mocks.NewMockQueuer(ctrl)
-			logger := mocks.NewMockLogger(ctrl)
+			logger := logger.NewNoopLogger()
 			tracer := mocks.NewMockTracer(ctrl)
 
 			app = newApplicationHandler(eventRepo, eventDeliveryRepo, appRepo, groupRepo, eventQueue, logger, tracer)
@@ -247,7 +248,7 @@ func TestApplicationHandler_UpdateGroup(t *testing.T) {
 			eventRepo := mocks.NewMockEventRepository(ctrl)
 			eventDeliveryRepo := mocks.NewMockEventDeliveryRepository(ctrl)
 			eventQueue := mocks.NewMockQueuer(ctrl)
-			logger := mocks.NewMockLogger(ctrl)
+			logger := logger.NewNoopLogger()
 			tracer := mocks.NewMockTracer(ctrl)
 
 			app = newApplicationHandler(eventRepo, eventDeliveryRepo, appRepo, groupRepo, eventQueue, logger, tracer)
@@ -335,7 +336,7 @@ func TestApplicationHandler_GetGroups(t *testing.T) {
 			eventRepo := mocks.NewMockEventRepository(ctrl)
 			eventDeliveryRepo := mocks.NewMockEventDeliveryRepository(ctrl)
 			eventQueue := mocks.NewMockQueuer(ctrl)
-			logger := mocks.NewMockLogger(ctrl)
+			logger := logger.NewNoopLogger()
 			tracer := mocks.NewMockTracer(ctrl)
 
 			app = newApplicationHandler(eventRepo, eventDeliveryRepo, appRepo, groupRepo, eventQueue, logger, tracer)

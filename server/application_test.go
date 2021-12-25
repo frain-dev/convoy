@@ -12,6 +12,7 @@ import (
 	"time"
 
 	"github.com/frain-dev/convoy/auth/realm_chain"
+	"github.com/frain-dev/convoy/logger"
 
 	"github.com/frain-dev/convoy/config"
 	"github.com/frain-dev/convoy/server/models"
@@ -112,7 +113,7 @@ func TestApplicationHandler_GetApp(t *testing.T) {
 	eventRepo := mocks.NewMockEventRepository(ctrl)
 	eventDeliveryRepo := mocks.NewMockEventDeliveryRepository(ctrl)
 	eventQueue := mocks.NewMockQueuer(ctrl)
-	logger := mocks.NewMockLogger(ctrl)
+	logger := logger.NewNoopLogger()
 	tracer := mocks.NewMockTracer(ctrl)
 
 	groupID := "1234567890"
@@ -226,7 +227,7 @@ func TestApplicationHandler_GetApps(t *testing.T) {
 	eventRepo := mocks.NewMockEventRepository(ctrl)
 	eventDeliveryRepo := mocks.NewMockEventDeliveryRepository(ctrl)
 	eventQueue := mocks.NewMockQueuer(ctrl)
-	logger := mocks.NewMockLogger(ctrl)
+	logger := logger.NewNoopLogger()
 	tracer := mocks.NewMockTracer(ctrl)
 
 	groupID := "1234567890"
@@ -385,7 +386,7 @@ func TestApplicationHandler_CreateApp(t *testing.T) {
 			eventRepo := mocks.NewMockEventRepository(ctrl)
 			eventDeliveryRepo := mocks.NewMockEventDeliveryRepository(ctrl)
 			eventQueue := mocks.NewMockQueuer(ctrl)
-			logger := mocks.NewMockLogger(ctrl)
+			logger := logger.NewNoopLogger()
 			tracer := mocks.NewMockTracer(ctrl)
 
 			app = newApplicationHandler(eventRepo, eventDeliveryRepo, appRepo, groupRepo, eventQueue, logger, tracer)
@@ -596,7 +597,7 @@ func TestApplicationHandler_UpdateApp(t *testing.T) {
 			eventRepo := mocks.NewMockEventRepository(ctrl)
 			eventDeliveryRepo := mocks.NewMockEventDeliveryRepository(ctrl)
 			eventQueue := mocks.NewMockQueuer(ctrl)
-			logger := mocks.NewMockLogger(ctrl)
+			logger := logger.NewNoopLogger()
 			tracer := mocks.NewMockTracer(ctrl)
 
 			app = newApplicationHandler(eventRepo, eventDeliveryRepo, appRepo, groupRepo, eventQueue, logger, tracer)
@@ -656,7 +657,7 @@ func TestApplicationHandler_CreateAppEndpoint(t *testing.T) {
 	eventRepo := mocks.NewMockEventRepository(ctrl)
 	eventDeliveryRepo := mocks.NewMockEventDeliveryRepository(ctrl)
 	eventQueue := mocks.NewMockQueuer(ctrl)
-	logger := mocks.NewMockLogger(ctrl)
+	logger := logger.NewNoopLogger()
 	tracer := mocks.NewMockTracer(ctrl)
 
 	groupID := "1234567890"
@@ -839,7 +840,7 @@ func TestApplicationHandler_UpdateAppEndpoint(t *testing.T) {
 			eventRepo := mocks.NewMockEventRepository(ctrl)
 			eventDeliveryRepo := mocks.NewMockEventDeliveryRepository(ctrl)
 			eventQueue := mocks.NewMockQueuer(ctrl)
-			logger := mocks.NewMockLogger(ctrl)
+			logger := logger.NewNoopLogger()
 			tracer := mocks.NewMockTracer(ctrl)
 
 			app = newApplicationHandler(eventRepo, eventDeliveryRepo, appRepo, groupRepo, eventQueue, logger, tracer)
@@ -904,7 +905,7 @@ func Test_applicationHandler_GetDashboardSummary(t *testing.T) {
 	eventRepo := mocks.NewMockEventRepository(ctrl)
 	eventDeliveryRepo := mocks.NewMockEventDeliveryRepository(ctrl)
 	eventQueue := mocks.NewMockQueuer(ctrl)
-	logger := mocks.NewMockLogger(ctrl)
+	logger := logger.NewNoopLogger()
 	tracer := mocks.NewMockTracer(ctrl)
 
 	groupID := "1234567890"
@@ -992,7 +993,7 @@ func Test_applicationHandler_GetPaginatedApps(t *testing.T) {
 	eventRepo := mocks.NewMockEventRepository(ctrl)
 	eventDeliveryRepo := mocks.NewMockEventDeliveryRepository(ctrl)
 	eventQueue := mocks.NewMockQueuer(ctrl)
-	logger := mocks.NewMockLogger(ctrl)
+	logger := logger.NewNoopLogger()
 	tracer := mocks.NewMockTracer(ctrl)
 
 	groupID := "1234567890"

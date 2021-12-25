@@ -1,15 +1,16 @@
 package logger
 
 import (
-	"errors"
-
 	"github.com/frain-dev/convoy/config"
 	"github.com/sirupsen/logrus"
+	"github.com/sirupsen/logrus/hooks/test"
 )
+
+var InfoLevel = "info"
 
 func DefaultLogLevel(lvl string) string {
 	if lvl == "" {
-		return "info"
+		return InfoLevel
 	}
 
 	return lvl
@@ -25,12 +26,26 @@ type Logger interface {
 	WithLogger() *logrus.Logger
 }
 
+type NoopLogger struct {
+	Logger *logrus.Logger
+}
+
+func (NoopLogger) Log(level logrus.Level, args ...interface{}) {}
+func (NoopLogger) Info(args ...interface{})                    {}
+func (NoopLogger) Debug(args ...interface{})                   {}
+func (NoopLogger) Warn(args ...interface{})                    {}
+func (NoopLogger) Trace(args ...interface{})                   {}
+func (NoopLogger) Error(args ...interface{})                   {}
+func (n NoopLogger) WithLogger() *logrus.Logger {
+	return n.Logger
+}
+
+func NewNoopLogger() Logger {
+	logger, _ := test.NewNullLogger()
+	return &NoopLogger{Logger: logger}
+}
+
 func NewLogger(cfg config.LoggerConfiguration) (Logger, error) {
-
-	if cfg.Type != config.ConsoleLoggerProvider {
-		return nil, errors.New("Logger is not supported")
-	}
-
 	switch cfg.Type {
 	case config.ConsoleLoggerProvider:
 		lo, err := NewConsoleLogger(cfg)
@@ -38,7 +53,16 @@ func NewLogger(cfg config.LoggerConfiguration) (Logger, error) {
 			return nil, err
 		}
 		return lo, nil
-	}
+	default:
+		lo, err := NewConsoleLogger(cfg)
+		if err != nil {
+			return nil, err
+		}
 
-	return nil, nil
+		return lo, nil
+	}
+}
+
+func CanLogHttpRequest(log Logger) bool {
+	return log.WithLogger().IsLevelEnabled(logrus.InfoLevel)
 }

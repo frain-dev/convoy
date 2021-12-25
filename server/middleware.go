@@ -486,14 +486,9 @@ func logHttpRequest(log logger.Logger) func(next http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 
-			cfg, err := config.Get()
-			if err != nil {
-				return
-			}
-
 			ww := middleware.NewWrapResponseWriter(w, r.ProtoMajor)
 
-			if isLogHttpRequestEnabled(cfg.Logger) && cfg.Logger.Type != "" {
+			if logger.CanLogHttpRequest(log) {
 				start := time.Now()
 
 				defer func() {
@@ -512,10 +507,6 @@ func logHttpRequest(log logger.Logger) func(next http.Handler) http.Handler {
 			next.ServeHTTP(ww, r)
 		})
 	}
-}
-
-func isLogHttpRequestEnabled(cfg config.LoggerConfiguration) bool {
-	return cfg.LogHttpRequest
 }
 
 func requestLogFields(r *http.Request) map[string]interface{} {
@@ -553,7 +544,7 @@ func requestLogFields(r *http.Request) map[string]interface{} {
 	if cfg.Tracer.Type == config.NewRelicTracerProvider {
 		txn := newrelic.FromContext(r.Context()).GetLinkingMetadata()
 
-		if cfg.Tracer.NewRelic.DistributedTracerEnabled {
+		if cfg.NewRelic.DistributedTracerEnabled {
 			requestFields["traceID"] = txn.TraceID
 			requestFields["spanID"] = txn.SpanID
 		}

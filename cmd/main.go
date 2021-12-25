@@ -102,15 +102,13 @@ func main() {
 				}
 			}
 
-			if cfg.Logger.Type != "" {
-				lo, err = logger.NewLogger(cfg.Logger)
-				if err != nil {
-					return err
-				}
+			lo, err = logger.NewLogger(cfg.Logger)
+			if err != nil {
+				return err
 			}
 
 			if cfg.Tracer.Type == config.NewRelicTracerProvider {
-				tr, err = tracer.NewTracer(cfg.Tracer, lo.WithLogger())
+				tr, err = tracer.NewTracer(cfg, lo.WithLogger())
 				if err != nil {
 					return err
 				}

@@ -14,16 +14,18 @@
     },
     "logger": {
         "type": "console",
-        "log_http_request": true
+        "server_log": {
+            "level": "info"
+        }
     },
     "tracer": {
-        "type": "new_relic",
-        "new_relic": {
-            "license_key": "<new-relic-license-key>",
-            "app_name": "convoy",
-            "config_enabled": true,
-            "distributed_tracer_enabled": true
-        }
+        "type": "new_relic"
+    },
+    "new_relic": {
+        "license_key": "<new-relic-license-key>",
+        "app_name": "convoy",
+        "config_enabled": true,
+        "distributed_tracer_enabled": true
     },
     "server": {
         "http": {

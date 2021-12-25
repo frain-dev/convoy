@@ -18,7 +18,7 @@ func NewConsoleLogger(cfg config.LoggerConfiguration) (*ConsoleLogger, error) {
 		TimestampFormat: "2006-01-02 15:04:05",
 	})
 
-	level, err := logrus.ParseLevel(DefaultLogLevel(cfg.Level))
+	level, err := logrus.ParseLevel(DefaultLogLevel(cfg.ServerLog.Level))
 
 	if err != nil {
 		return nil, err

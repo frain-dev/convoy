@@ -16,14 +16,14 @@ type Tracer interface {
 	RequestWithTransactionContext(r *http.Request, txn *newrelic.Transaction) *http.Request
 }
 
-func NewTracer(cfg config.TracerConfiguration, logger *logrus.Logger) (Tracer, error) {
-	if cfg.Type != config.NewRelicTracerProvider {
+func NewTracer(cfg config.Configuration, logger *logrus.Logger) (Tracer, error) {
+	if cfg.Tracer.Type != config.NewRelicTracerProvider {
 		return nil, errors.New("Tracer is not supported")
 	}
 
-	switch cfg.Type {
+	switch cfg.Tracer.Type {
 	case config.NewRelicTracerProvider:
-		tr, err := NewNRClient(cfg, logger)
+		tr, err := NewNRClient(cfg.NewRelic, logger)
 
 		if err != nil {
 			return nil, err

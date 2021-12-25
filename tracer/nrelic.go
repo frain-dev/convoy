@@ -15,16 +15,16 @@ type NewRelicClient struct {
 	Application *newrelic.Application
 }
 
-func NewNRClient(cfg config.TracerConfiguration, logger *logrus.Logger) (*NewRelicClient, error) {
-	if util.IsStringEmpty(cfg.NewRelic.LicenseKey) {
+func NewNRClient(cfg config.NewRelicConfiguration, logger *logrus.Logger) (*NewRelicClient, error) {
+	if util.IsStringEmpty(cfg.LicenseKey) {
 		return nil, errors.New("please provide the New Relic License Key")
 	}
 
 	app, err := newrelic.NewApplication(
-		newrelic.ConfigAppName(cfg.NewRelic.AppName),
-		newrelic.ConfigLicense(cfg.NewRelic.LicenseKey),
-		newrelic.ConfigDistributedTracerEnabled(cfg.NewRelic.DistributedTracerEnabled),
-		newrelic.ConfigEnabled(cfg.NewRelic.ConfigEnabled),
+		newrelic.ConfigAppName(cfg.AppName),
+		newrelic.ConfigLicense(cfg.LicenseKey),
+		newrelic.ConfigDistributedTracerEnabled(cfg.DistributedTracerEnabled),
+		newrelic.ConfigEnabled(cfg.ConfigEnabled),
 		nrlogrus.ConfigLogger(logger),
 	)
 

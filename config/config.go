@@ -85,19 +85,21 @@ type GroupConfig struct {
 }
 
 type LoggerConfiguration struct {
-	Type  LoggerProvider `json:"type"`
-	Level string         `json:"level"`
-	LogHttpRequest bool  `json:"log_http_request"`
+	Type      LoggerProvider `json:"type"`
+	ServerLog struct {
+		Level string `json:"level"`
+	} `json:"server_log"`
 }
 
 type TracerConfiguration struct {
-	Type     TracerProvider `json:"type"`
-	NewRelic struct {
-		AppName                  string `json:"app_name"`
-		LicenseKey               string `json:"license_key"`
-		ConfigEnabled            bool   `json:"config_enabled"`
-		DistributedTracerEnabled bool   `json:"distributed_tracer_enabled"`
-	} `json:"new_relic"`
+	Type TracerProvider `json:"type"`
+}
+
+type NewRelicConfiguration struct {
+	AppName                  string `json:"app_name"`
+	LicenseKey               string `json:"license_key"`
+	ConfigEnabled            bool   `json:"config_enabled"`
+	DistributedTracerEnabled bool   `json:"distributed_tracer_enabled"`
 }
 
 type Configuration struct {
@@ -113,6 +115,7 @@ type Configuration struct {
 	MultipleTenants   bool                  `json:"multiple_tenants"`
 	Logger            LoggerConfiguration   `json:"logger"`
 	Tracer            TracerConfiguration   `json:"tracer"`
+	NewRelic          NewRelicConfiguration `json:"new_relic"`
 }
 
 type AuthProvider string
