@@ -1,7 +1,7 @@
 <div class="dashboard--page">
 	<div class="dashboard--page--head">
 		<div class="filter" [ngClass]="{ 'show-calendar': showFilterCalendar }">
-			<div (click)="dodo()">Filter by:</div>
+			<div>Filter by:</div>
 			<button class="filter--button" (click)="statsPicker.open()">
 				<img src="/assets/img/calendar-icon.svg" alt="calender icon" />
 				<mat-date-range-input [formGroup]="statsDateRange" [rangePicker]="statsPicker">
