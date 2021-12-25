@@ -2,7 +2,7 @@
 * [Bugfix] Fixed hash computation bug #269
 * [Bugfix] Bundled UI into binary builds. #273
 * [Bugfix] Don't enqueue discarded events #253
-* [Enhancement] Build Convoy dashboard UI into npm package in `dashboard-component`
+* [Enhancement] Build Convoy dashboard UI into npm package in `dashboard-component` #272
 
 ## 0.3.0-rc
 * [Feature] URL/Events: User can specify events to each endpoint.
