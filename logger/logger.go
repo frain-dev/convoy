@@ -41,8 +41,8 @@ func (n NoopLogger) WithLogger() *logrus.Logger {
 }
 
 func NewNoopLogger() Logger {
-	logger, _ := test.NewNullLogger()
-	return &NoopLogger{Logger: logger}
+	lo, _ := test.NewNullLogger()
+	return &NoopLogger{Logger: lo}
 }
 
 func NewLogger(cfg config.LoggerConfiguration) (Logger, error) {

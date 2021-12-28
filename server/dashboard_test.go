@@ -7,6 +7,7 @@ import (
 
 	"github.com/frain-dev/convoy"
 	"github.com/frain-dev/convoy/config"
+	"github.com/frain-dev/convoy/logger"
 	"github.com/frain-dev/convoy/mocks"
 	"github.com/golang/mock/gomock"
 	log "github.com/sirupsen/logrus"
@@ -23,7 +24,7 @@ func Test_fetchAllConfigDetails(t *testing.T) {
 	eventRepo := mocks.NewMockEventRepository(ctrl)
 	eventDeliveryRepo := mocks.NewMockEventDeliveryRepository(ctrl)
 	eventQueue := mocks.NewMockQueuer(ctrl)
-	logger := mocks.NewMockLogger(ctrl)
+	logger := logger.NewNoopLogger()
 	tracer := mocks.NewMockTracer(ctrl)
 
 	app = newApplicationHandler(eventRepo, eventDeliveryRepo, appRepo, groupRepo, eventQueue, logger, tracer)
