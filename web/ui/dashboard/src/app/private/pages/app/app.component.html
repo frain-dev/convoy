@@ -1,0 +1,30 @@
+<div class="dashboard">
+	<header class="dashboard--header">
+		<div class="dashboard--header--container">
+			<div class="logo">
+				<a target="_blank" href="https://getconvoy.io" rel="noreferrer">
+					<img src="/assets/img/logo.svg" alt="convoy logo" />
+				</a>
+			</div>
+
+			<div>
+				<a target="_blank" href="https://getconvoy.io/docs" rel="noreferrer">Go to docs</a>
+				<button class="user" (click)="showDropdown = !showDropdown" *ngIf="authDetails()">
+					<div>
+						<div class="icon">O</div>
+						<div class="name">{{ authDetails().username }}</div>
+					</div>
+					<img src="/assets/img/angle-arrow-down.svg" alt="arrow down icon" />
+					<div *ngIf="showDropdown" class="dropdown organisations">
+						<ul>
+							<li (click)="logout()">Logout</li>
+						</ul>
+					</div>
+				</button>
+			</div>
+		</div>
+	</header>
+
+	<!-- <convoy-app-portal></convoy-app-portal> -->
+	<app-portal></app-portal>
+</div>
