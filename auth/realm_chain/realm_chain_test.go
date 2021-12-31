@@ -6,6 +6,9 @@ import (
 	"sync/atomic"
 	"testing"
 
+	"github.com/frain-dev/convoy/mocks"
+	"github.com/golang/mock/gomock"
+
 	"github.com/frain-dev/convoy/auth"
 	"github.com/frain-dev/convoy/auth/realm/file"
 	"github.com/frain-dev/convoy/config"
@@ -315,7 +318,8 @@ func TestInit(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			err := Init(tt.args.authConfig)
+			mockAPIKeyRepo := mocks.NewMockAPIKeyRepo(gomock.NewController(t))
+			err := Init(tt.args.authConfig, mockAPIKeyRepo)
 			if tt.wantErr {
 				require.Equal(t, tt.wantErrMsg, err.Error())
 				return

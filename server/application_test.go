@@ -31,13 +31,13 @@ func verifyMatch(t *testing.T, w httptest.ResponseRecorder) {
 	g.Assert(t, t.Name(), w.Body.Bytes())
 }
 
-func initRealmChain(t *testing.T) {
+func initRealmChain(t *testing.T, apiKeyRepo convoy.APIKeyRepo) {
 	cfg, err := config.Get()
 	if err != nil {
 		t.Errorf("failed to get config: %v", err)
 	}
 
-	err = realm_chain.Init(&cfg.Auth)
+	err = realm_chain.Init(&cfg.Auth, apiKeyRepo)
 	if err != nil {
 		t.Errorf("failed to initialize realm chain : %v", err)
 	}
@@ -212,7 +212,7 @@ func TestApplicationHandler_GetApp(t *testing.T) {
 				t.Errorf("Failed to load config file: %v", err)
 			}
 
-			initRealmChain(t)
+			initRealmChain(t, app.apiKeyRepo)
 
 			router := buildRoutes(app)
 
@@ -307,7 +307,7 @@ func TestApplicationHandler_GetApps(t *testing.T) {
 				t.Errorf("Failed to load config file: %v", err)
 			}
 
-			initRealmChain(t)
+			initRealmChain(t, app.apiKeyRepo)
 
 			router := buildRoutes(app)
 
@@ -420,7 +420,7 @@ func TestApplicationHandler_CreateApp(t *testing.T) {
 				t.Errorf("Failed to load config file: %v", err)
 			}
 
-			initRealmChain(t)
+			initRealmChain(t, app.apiKeyRepo)
 
 			router := buildRoutes(app)
 
@@ -640,7 +640,7 @@ func TestApplicationHandler_UpdateApp(t *testing.T) {
 				t.Errorf("Failed to load config file: %v", err)
 			}
 
-			initRealmChain(t)
+			initRealmChain(t, app.apiKeyRepo)
 
 			router := buildRoutes(app)
 
@@ -737,7 +737,7 @@ func TestApplicationHandler_CreateAppEndpoint(t *testing.T) {
 				t.Errorf("Failed to load config file: %v", err)
 			}
 
-			initRealmChain(t)
+			initRealmChain(t, app.apiKeyRepo)
 
 			router := buildRoutes(app)
 
@@ -883,7 +883,7 @@ func TestApplicationHandler_UpdateAppEndpoint(t *testing.T) {
 				t.Errorf("Failed to load config file: %v", err)
 			}
 
-			initRealmChain(t)
+			initRealmChain(t, app.apiKeyRepo)
 
 			router := buildRoutes(app)
 

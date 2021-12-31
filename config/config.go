@@ -7,12 +7,9 @@ import (
 	"os"
 	"sync/atomic"
 
-	"github.com/frain-dev/convoy"
-	log "github.com/sirupsen/logrus"
-
-	"github.com/kelseyhightower/envconfig"
-
 	"github.com/frain-dev/convoy/config/algo"
+	"github.com/kelseyhightower/envconfig"
+	log "github.com/sirupsen/logrus"
 )
 
 var cfgSingleton atomic.Value
@@ -51,10 +48,13 @@ type FileRealmOption struct {
 }
 
 type AuthConfiguration struct {
-	RequireAuth bool              `json:"require_auth"`
-	File        FileRealmOption   `json:"file"`
-	Native      bool              `json:"native"`
-	APIKeyRepo  convoy.APIKeyRepo `json:"-"`
+	RequireAuth bool               `json:"require_auth"`
+	File        FileRealmOption    `json:"file"`
+	Native      NativeRealmOptions `json:"native"`
+}
+
+type NativeRealmOptions struct {
+	Enabled bool `json:"enabled"`
 }
 
 type SMTPConfiguration struct {

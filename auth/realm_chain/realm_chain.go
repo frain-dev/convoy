@@ -6,10 +6,10 @@ import (
 	"fmt"
 	"sync/atomic"
 
-	"github.com/frain-dev/convoy/auth/realm/native"
-
+	"github.com/frain-dev/convoy"
 	"github.com/frain-dev/convoy/auth"
 	"github.com/frain-dev/convoy/auth/realm/file"
+	"github.com/frain-dev/convoy/auth/realm/native"
 	"github.com/frain-dev/convoy/auth/realm/noop"
 	"github.com/frain-dev/convoy/config"
 	log "github.com/sirupsen/logrus"
@@ -39,7 +39,7 @@ func Get() (*RealmChain, error) {
 	return rc, nil
 }
 
-func Init(authConfig *config.AuthConfiguration) error {
+func Init(authConfig *config.AuthConfiguration, apiKeyRepo convoy.APIKeyRepo) error {
 	rc := newRealmChain()
 
 	// validate authentication realms
@@ -54,8 +54,8 @@ func Init(authConfig *config.AuthConfiguration) error {
 			return errors.New("failed to register file realm in realm chain")
 		}
 
-		if authConfig.Native {
-			nr := native.NewNativeRealm(authConfig.APIKeyRepo)
+		if authConfig.Native.Enabled {
+			nr := native.NewNativeRealm(apiKeyRepo)
 			err = rc.RegisterRealm(nr)
 			if err != nil {
 				return errors.New("failed to register file realm in realm chain")

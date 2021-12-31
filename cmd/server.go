@@ -36,8 +36,7 @@ func addServerCommand(a *app) *cobra.Command {
 				log.Warnf("signature header is blank. setting default %s", config.DefaultSignatureHeader)
 			}
 
-			cfg.Auth.APIKeyRepo = a.apiKeyRepo
-			err = realm_chain.Init(&cfg.Auth)
+			err = realm_chain.Init(&cfg.Auth, a.apiKeyRepo)
 			if err != nil {
 				log.WithError(err).Fatal("failed to initialize realm chain")
 			}
