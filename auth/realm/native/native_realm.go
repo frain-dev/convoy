@@ -12,10 +12,10 @@ import (
 )
 
 type NativeRealm struct {
-	apiKeyRepo convoy.APIKeyRepo
+	apiKeyRepo convoy.APIKeyRepository
 }
 
-func NewNativeRealm(apiKeyRepo convoy.APIKeyRepo) *NativeRealm {
+func NewNativeRealm(apiKeyRepo convoy.APIKeyRepository) *NativeRealm {
 	return &NativeRealm{apiKeyRepo: apiKeyRepo}
 }
 

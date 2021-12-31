@@ -31,7 +31,7 @@ func verifyMatch(t *testing.T, w httptest.ResponseRecorder) {
 	g.Assert(t, t.Name(), w.Body.Bytes())
 }
 
-func initRealmChain(t *testing.T, apiKeyRepo convoy.APIKeyRepo) {
+func initRealmChain(t *testing.T, apiKeyRepo convoy.APIKeyRepository) {
 	cfg, err := config.Get()
 	if err != nil {
 		t.Errorf("failed to get config: %v", err)

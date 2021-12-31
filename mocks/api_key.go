@@ -13,7 +13,7 @@ import (
 	gomock "github.com/golang/mock/gomock"
 )
 
-// MockAPIKeyRepo is a mock of APIKeyRepo interface.
+// MockAPIKeyRepo is a mock of APIKeyRepository interface.
 type MockAPIKeyRepo struct {
 	ctrl     *gomock.Controller
 	recorder *MockAPIKeyRepoMockRecorder

@@ -25,7 +25,7 @@ type applicationHandler struct {
 	eventRepo         convoy.EventRepository
 	eventDeliveryRepo convoy.EventDeliveryRepository
 	groupRepo         convoy.GroupRepository
-	apiKeyRepo        convoy.APIKeyRepo
+	apiKeyRepo        convoy.APIKeyRepository
 	eventQueue        queue.Queuer
 }
 
@@ -38,7 +38,7 @@ func newApplicationHandler(eventRepo convoy.EventRepository,
 	eventDeliveryRepo convoy.EventDeliveryRepository,
 	appRepo convoy.ApplicationRepository,
 	groupRepo convoy.GroupRepository,
-	apiKeyRepo convoy.APIKeyRepo,
+	apiKeyRepo convoy.APIKeyRepository,
 	eventQueue queue.Queuer) *applicationHandler {
 
 	return &applicationHandler{

@@ -18,7 +18,7 @@ type APIKey struct {
 	CreatedAt primitive.DateTime `json:"created_at,omitempty" bson:"created_at"`
 }
 
-type APIKeyRepo interface {
+type APIKeyRepository interface {
 	CreateAPIKey(ctx context.Context, apiKey *APIKey) error
 	UpdateAPIKey(ctx context.Context, apiKey *APIKey) error
 	FindAPIKeyByID(ctx context.Context, uid string) (*APIKey, error)

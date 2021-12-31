@@ -246,7 +246,7 @@ func New(cfg config.Configuration,
 	eventRepo convoy.EventRepository,
 	eventDeliveryRepo convoy.EventDeliveryRepository,
 	appRepo convoy.ApplicationRepository,
-	apiKeyRepo convoy.APIKeyRepo,
+	apiKeyRepo convoy.APIKeyRepository,
 	orgRepo convoy.GroupRepository,
 	eventQueue queue.Queuer) *http.Server {
 

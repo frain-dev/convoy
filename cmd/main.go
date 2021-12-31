@@ -250,7 +250,7 @@ type app struct {
 	applicationRepo   convoy.ApplicationRepository
 	eventRepo         convoy.EventRepository
 	eventDeliveryRepo convoy.EventDeliveryRepository
-	apiKeyRepo        convoy.APIKeyRepo
+	apiKeyRepo        convoy.APIKeyRepository
 	eventQueue        queue.Queuer
 	deadLetterQueue   queue.Queuer
 }

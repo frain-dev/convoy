@@ -39,7 +39,7 @@ func Get() (*RealmChain, error) {
 	return rc, nil
 }
 
-func Init(authConfig *config.AuthConfiguration, apiKeyRepo convoy.APIKeyRepo) error {
+func Init(authConfig *config.AuthConfiguration, apiKeyRepo convoy.APIKeyRepository) error {
 	rc := newRealmChain()
 
 	// validate authentication realms
