@@ -57,7 +57,7 @@ func TestRequirePermission_Basic(t *testing.T) {
 			if err != nil {
 				t.Errorf("Failed to load config file: %v", err)
 			}
-			initRealmChain(t)
+			initRealmChain(t, nil)
 
 			ctrl := gomock.NewController(t)
 			defer ctrl.Finish()
@@ -125,7 +125,7 @@ func TestRequirePermission_Noop(t *testing.T) {
 			if err != nil {
 				t.Errorf("Failed to load config file: %v", err)
 			}
-			initRealmChain(t)
+			initRealmChain(t, nil)
 
 			ctrl := gomock.NewController(t)
 			defer ctrl.Finish()

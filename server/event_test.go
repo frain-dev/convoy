@@ -351,7 +351,7 @@ func TestApplicationHandler_CreateAppEvent(t *testing.T) {
 			if err != nil {
 				t.Errorf("Failed to load config file: %v", err)
 			}
-			initRealmChain(t)
+			initRealmChain(t, app.apiKeyRepo)
 
 			req := httptest.NewRequest(tc.method, "/api/v1/events", tc.body)
 			req.SetBasicAuth("test", "test")
@@ -671,7 +671,7 @@ func Test_resendEventDelivery(t *testing.T) {
 			if err != nil {
 				t.Errorf("Failed to load config file: %v", err)
 			}
-			initRealmChain(t)
+			initRealmChain(t, app.apiKeyRepo)
 
 			router := buildRoutes(app)
 
@@ -881,7 +881,7 @@ func TestApplicationHandler_BatchRetryEventDelivery(t *testing.T) {
 			if err != nil {
 				t.Errorf("Failed to load config file: %v", err)
 			}
-			initRealmChain(t)
+			initRealmChain(t, app.apiKeyRepo)
 
 			router := buildRoutes(app)
 

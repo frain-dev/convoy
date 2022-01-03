@@ -54,7 +54,7 @@ func Test_fetchAllConfigDetails(t *testing.T) {
 			if err != nil {
 				t.Errorf("Failed to load config file: %v", err)
 			}
-			initRealmChain(t)
+			initRealmChain(t, app.apiKeyRepo)
 
 			if tc.dbFn != nil {
 				tc.dbFn(app)
