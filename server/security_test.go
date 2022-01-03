@@ -48,27 +48,7 @@ func TestApplicationHandler_CreateAPIKey(t *testing.T) {
 			cfgPath:        "./testdata/Auth_Config/no-auth-convoy.json",
 			statusCode:     http.StatusCreated,
 			body: strings.NewReader(`{
-					"key": "12344",
-					"expires_at": "2022-01-02T15:04:05+01:00",
-                    "role": {
-                        "type": "admin",
-                        "groups": [
-                            "sendcash-pay"
-                        ]
-                    }
-                }`),
-			dbFn: func(app *applicationHandler) {
-				a, _ := app.apiKeyRepo.(*mocks.MockAPIKeyRepo)
-				a.EXPECT().CreateAPIKey(gomock.Any(), gomock.Any()).Times(1).Return(nil)
-			},
-		},
-		{
-			name:           "create api key without key field",
-			stripTimestamp: true,
-			cfgPath:        "./testdata/Auth_Config/no-auth-convoy.json",
-			statusCode:     http.StatusCreated,
-			body: strings.NewReader(`{
-					"expires_at": "2022-01-02T15:04:05+01:00", 
+					"expires_at": "2029-01-02T15:04:05+01:00", 
 					"role": {
                         "type": "ui_admin",
                         "groups": [
@@ -122,7 +102,7 @@ func TestApplicationHandler_CreateAPIKey(t *testing.T) {
 			statusCode:     http.StatusBadRequest,
 			body: strings.NewReader(`{
 					"key": "12344",
-					"expires_at": "2022-01-02T15:04:05+01:00",
+					"expires_at": "2029-01-02T15:04:05+01:00",
                     "role": {
                         "type": "admin",
                         "groups": []
@@ -153,7 +133,7 @@ func TestApplicationHandler_CreateAPIKey(t *testing.T) {
 			if err != nil {
 				t.Errorf("Failed to load config file: %v", err)
 			}
-			initRealmChain(t)
+			initRealmChain(t, app.apiKeyRepo)
 
 			router := buildRoutes(app)
 
@@ -164,6 +144,8 @@ func TestApplicationHandler_CreateAPIKey(t *testing.T) {
 			if w.Code != tc.statusCode {
 				t.Errorf("Want status '%d', got '%d'", tc.statusCode, w.Code)
 			}
+
+			fmt.Println("d", w.Body.String())
 
 			if tc.stripTimestamp {
 				d := stripTimestamp(t, "apiKey", w.Body)
@@ -238,7 +220,7 @@ func TestApplicationHandler_RevokeAPIKey(t *testing.T) {
 			if err != nil {
 				t.Errorf("Failed to load config file: %v", err)
 			}
-			initRealmChain(t)
+			initRealmChain(t, app.apiKeyRepo)
 
 			router := buildRoutes(app)
 
@@ -324,7 +306,7 @@ func TestApplicationHandler_GetAPIKeyByID(t *testing.T) {
 			if err != nil {
 				t.Errorf("Failed to load config file: %v", err)
 			}
-			initRealmChain(t)
+			initRealmChain(t, app.apiKeyRepo)
 
 			router := buildRoutes(app)
 
@@ -410,7 +392,7 @@ func TestApplicationHandler_GetAPIKeys(t *testing.T) {
 			if err != nil {
 				t.Errorf("Failed to load config file: %v", err)
 			}
-			initRealmChain(t)
+			initRealmChain(t, app.apiKeyRepo)
 
 			router := buildRoutes(app)
 
