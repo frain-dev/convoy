@@ -41,10 +41,7 @@ func TestApplicationHandler_CreateAppEvent(t *testing.T) {
 			},
 			Strategy: config.StrategyConfiguration{
 				Type: config.StrategyProvider("default"),
-				Default: struct {
-					IntervalSeconds uint64 `json:"intervalSeconds"`
-					RetryLimit      uint64 `json:"retryLimit"`
-				}{
+				Default: config.DefaultStrategyConfiguration{
 					IntervalSeconds: 60,
 					RetryLimit:      1,
 				},
@@ -290,6 +287,49 @@ func TestApplicationHandler_CreateAppEvent(t *testing.T) {
 				q, _ := app.eventQueue.(*mocks.MockQueuer)
 				q.EXPECT().
 					Write(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Times(1).
+					Return(nil)
+
+				o, _ := app.groupRepo.(*mocks.MockGroupRepository)
+
+				o.EXPECT().
+					LoadGroups(gomock.Any(), gomock.Any()).Times(1).
+					Return([]*convoy.Group{group}, nil)
+			},
+		},
+		{
+			name:       "valid message - matching inactive endpoints",
+			cfgPath:    "./testdata/Auth_Config/no-auth-convoy.json",
+			method:     http.MethodPost,
+			statusCode: http.StatusCreated,
+			body:       strings.NewReader(`{"app_id": "12345", "event_type": "test.event", "data": { "Hello": "World", "Test": "Data" }}`),
+			args: args{
+				message: message,
+			},
+			dbFn: func(app *applicationHandler) {
+				a, _ := app.appRepo.(*mocks.MockApplicationRepository)
+				a.EXPECT().
+					FindApplicationByID(gomock.Any(), gomock.Any()).Times(1).
+					Return(&convoy.Application{
+						UID:     appId,
+						GroupID: groupId,
+						Title:   "Valid application",
+						Endpoints: []convoy.Endpoint{
+							{
+								TargetURL: "http://localhost",
+								Status:    convoy.InactiveEndpointStatus,
+								Events:    []string{"test.event"},
+							},
+						},
+					}, nil)
+
+				m, _ := app.eventRepo.(*mocks.MockEventRepository)
+				m.EXPECT().
+					CreateEvent(gomock.Any(), gomock.Any()).Times(1).
+					Return(nil)
+
+				ed, _ := app.eventDeliveryRepo.(*mocks.MockEventDeliveryRepository)
+				ed.EXPECT().
+					CreateEventDelivery(gomock.Any(), gomock.Any()).
 					Return(nil)
 
 				o, _ := app.groupRepo.(*mocks.MockGroupRepository)

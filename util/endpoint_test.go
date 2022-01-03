@@ -15,7 +15,7 @@ func TestCleanEndpoint(t *testing.T) {
 		{"localhost:8080", true},
 		{"https://localhost:8080", true},
 		{"https://google.com", false},
-		{"http://google.com", true},
+		{"http://google.com", false},
 		{"https://localhost", true},
 		{"https://LocaLhOsT", true},
 		{"https://127.0.0.1", true},
