@@ -123,5 +123,5 @@ type EventDeliveryRepository interface {
 	FindEventDeliveriesByEventID(context.Context, string) ([]EventDelivery, error)
 	UpdateStatusOfEventDelivery(context.Context, EventDelivery, EventDeliveryStatus) error
 	UpdateEventDeliveryWithAttempt(context.Context, EventDelivery, DeliveryAttempt) error
-	LoadEventDeliveriesPaged(context.Context, string, string, string, EventDeliveryStatus, models.SearchParams, models.Pageable) ([]EventDelivery, pager.PaginationData, error)
+	LoadEventDeliveriesPaged(context.Context, string, string, string, []EventDeliveryStatus, models.SearchParams, models.Pageable) ([]EventDelivery, pager.PaginationData, error)
 }

@@ -5,7 +5,6 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/dgrijalva/jwt-go"
 	"github.com/frain-dev/convoy"
 	"github.com/frain-dev/convoy/config"
 	"github.com/frain-dev/convoy/server/models"
@@ -13,11 +12,6 @@ import (
 	"github.com/go-chi/render"
 	log "github.com/sirupsen/logrus"
 )
-
-type Claims struct {
-	Username string `json:"username"`
-	jwt.StandardClaims
-}
 
 type AuthorizedLogin struct {
 	Username   string    `json:"username,omitempty"`

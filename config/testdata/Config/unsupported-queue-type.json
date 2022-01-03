@@ -3,7 +3,7 @@
         "dsn": "mongodb://inside-config-file"
     },
     "queue": {
-        "type": "redis",
+        "type": "abc",
         "redis": {
             "dsn": "redis://localhost:8379"
         }

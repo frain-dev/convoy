@@ -22,7 +22,7 @@
             }
         },
         "signature": {
-            "hash": "SHA256"
+            "hash": "SHA100"
         }
     }
 }

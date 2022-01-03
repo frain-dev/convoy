@@ -17,7 +17,7 @@
         "strategy": {
             "type": "default",
             "default": {
-                "intervalSeconds": 125,
+                "intervalSeconds": 0,
                 "retryLimit": 15
             }
         },

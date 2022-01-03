@@ -15,7 +15,7 @@
     },
     "group": {
         "strategy": {
-            "type": "default",
+            "type": "abc",
             "default": {
                 "intervalSeconds": 125,
                 "retryLimit": 15

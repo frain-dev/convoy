@@ -23,3 +23,6 @@ hookstack
 
 # ui depencencies
 **/node_modules
+
+# Convoy specific
+convoy.json

@@ -6,3 +6,9 @@ init-hooks:
 
 mockgen:
 	go generate ./...
+
+ui_install:
+	cd web/ui/dashboard && \
+	npm install && \
+  npm run build
+
