@@ -1,8 +1,5 @@
 import { Component, Input, OnInit } from '@angular/core';
-// import { HttpService } from 'src/app/services/http/http.service';
 import Chart from 'chart.js/auto';
-// import * as moment from 'moment';
-// import { GeneralService } from 'src/app/services/general/general.service';
 import { APP } from './models/app.model';
 import { EVENT, EVENT_DELIVERY } from './models/event.model';
 import { ActivatedRoute, Router } from '@angular/router';

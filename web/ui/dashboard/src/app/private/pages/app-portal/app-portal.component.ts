@@ -10,7 +10,6 @@ import { FormBuilder, FormGroup } from '@angular/forms';
 import { PAGINATION } from 'src/app/models/global.model';
 import { HTTP_RESPONSE } from 'src/app/models/http.model';
 import { GROUP } from 'src/app/models/group.model';
-import * as Prism from 'prismjs';
 
 @Component({
 	selector: 'app-portal',

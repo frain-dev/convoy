@@ -73,6 +73,10 @@ table {
 		transition: all 0.5s;
 		cursor: pointer;
 
+		&.has-border {
+			border-top: 1px solid #edeff5;
+		}
+
 		&:not(.table--date-row) {
 			&:hover,
 			&.active {
