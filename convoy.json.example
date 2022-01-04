@@ -1,7 +1,7 @@
 {
+  "environment": "dev",
   "database": {
-    "environment": "dev",
-    "dsn": "mongodb://root:rootpassword@localhost:27017/convoy?authSource=admin"
+    "dsn": "<insert-mongodb-dsn>"
   },
   "sentry": {
     "dsn": "<insert-sentry-dsn>"
@@ -9,7 +9,7 @@
   "queue": {
     "type": "redis",
     "redis": {
-      "dsn": "redis://localhost:8379"
+      "dsn": "<insert-redis-dsn>"
     }
   },
   "logger": {
@@ -22,7 +22,7 @@
     "type": "new_relic"
   },
   "new_relic": {
-    "license_key": "<new-relic-license-key>",
+    "license_key": "<insert-new-relic-license-key>",
     "app_name": "convoy",
     "config_enabled": true,
     "distributed_tracer_enabled": true
