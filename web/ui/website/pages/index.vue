@@ -1,34 +1,7 @@
 <template>
 	<div class="page">
 		<header>
-			<nav>
-				<div>
-					<div class="logo">
-						<img src="~/assets/images/logo.svg" alt="logo" />
-					</div>
-
-					<button class="menu-button" @click="showMenu = !showMenu">
-						<img src="~/assets/images/menu-icon.svg" alt="menu icon" />
-					</button>
-
-					<ul :class="showMenu ? 'show' : ''">
-						<li>
-							<a href="#features">Features</a>
-						</li>
-						<li>
-							<nuxt-link to="/docs">Docs</nuxt-link>
-						</li>
-						<li>
-							<a target="_blank" rel="noopener noreferrer" href="https://github.com/frain-dev/convoy/discussions">Community</a>
-						</li>
-						<li>
-							<a href="https://github.com/frain-dev/convoy">
-								<img src="~/assets/images/github-logo.svg" alt="github logo" />
-							</a>
-						</li>
-					</ul>
-				</div>
-			</nav>
+			<Header></Header>
 
 			<section class="hero-section">
 				<div class="hero-section--cta">
@@ -197,7 +170,7 @@
 						</p>
 					</div>
 
-					<ul>
+					<ul class="socials">
 						<li>
 							<a target="_blank" rel="noopener noreferrer" href="https://join.slack.com/t/convoy-community/shared_invite/zt-xiuuoj0m-yPp~ylfYMCV9s038QL0IUQ">
 								<img src="~/assets/images/slack-icon.svg" alt="slack logo" />
@@ -214,7 +187,7 @@
 						</li>
 					</ul>
 				</nav>
-				<p>Copyright 2021, All Rights Reserved</p>
+				<p>Copyright 2022, All Rights Reserved</p>
 			</div>
 		</footer>
 	</div>
@@ -224,7 +197,6 @@
 export default {
 	data() {
 		return {
-			showMenu: false,
 			isSubmitingloadingEarlyAccessForm: false,
 			earlyAccessFormButtonText: 'Convoy Cloud Early Access',
 			earlyAccessEmail: ''
@@ -278,121 +250,6 @@ header {
 	background: url('~/assets/images/header-bg-pattern.svg') #1e252b no-repeat;
 	background-size: cover;
 	padding: 32px 20px 0;
-
-	nav {
-		max-width: 1376px;
-		width: 100%;
-		margin: auto;
-		background: #222a31;
-		border-radius: 16px;
-		padding: 12px 20px;
-		position: relative;
-
-		& > div {
-			display: flex;
-			align-items: center;
-			justify-content: space-between;
-			max-width: 1106px;
-			margin: auto;
-		}
-
-		.logo {
-			font-weight: bold;
-			font-size: 21px;
-			line-height: 26px;
-			color: #ffffff;
-			width: 80%;
-
-			img {
-				width: 140px;
-			}
-		}
-
-		.menu-button {
-			display: block;
-
-			img {
-				width: 40px;
-			}
-
-			@media (min-width: $desktopBreakPoint) {
-				display: none;
-			}
-		}
-
-		ul {
-			transition: all 0.5s;
-			display: none;
-			position: absolute;
-			top: 55px;
-			left: 0;
-			background: #222a31;
-			width: 100%;
-			text-align: left;
-			height: 0;
-			overflow-y: hidden;
-
-			&.show {
-				padding-top: 20px;
-				height: 233px;
-				overflow-y: auto;
-				display: block;
-			}
-
-			li {
-				width: 100%;
-				padding: 15px 20px;
-
-				&:not(:last-of-type) {
-					margin-right: 40px;
-				}
-
-				a {
-					font-weight: 500;
-					font-size: 14px;
-					line-height: 17px;
-					color: #ffffff;
-					width: 100%;
-
-					img {
-						width: 24px;
-					}
-				}
-
-				button {
-					background: #477db3;
-					border-radius: 8px;
-					padding: 9px 29px;
-					color: #ffffff;
-					font-weight: 500;
-					font-size: 16px;
-					line-height: 28px;
-					min-width: 146px;
-				}
-			}
-
-			@media (min-width: $desktopBreakPoint) {
-				display: flex;
-				align-items: center;
-				justify-content: flex-end;
-				position: initial;
-				height: initial;
-				overflow-y: unset;
-
-				&.show {
-					display: flex;
-					height: unset;
-					padding-top: 0;
-					overflow-y: unset;
-				}
-
-				li {
-					padding: 0;
-					width: fit-content;
-				}
-			}
-		}
-	}
 
 	.hero-section {
 		max-width: 1106px;
@@ -848,70 +705,6 @@ section.companies {
 			img {
 				width: 12px;
 			}
-		}
-	}
-}
-
-footer {
-	background: #1e252b;
-	padding: 48px 20px 32px;
-	color: #ffffff;
-
-	.logo {
-		p {
-			text-align: left;
-			margin-top: 10px;
-			opacity: 0.3;
-
-			a {
-				font-weight: bold;
-				text-decoration: underline;
-			}
-		}
-	}
-
-	.container {
-		max-width: 1376px;
-		width: 100%;
-		margin: auto;
-	}
-
-	nav {
-		display: flex;
-		align-items: center;
-		justify-content: space-between;
-		border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-		padding-bottom: 29px;
-
-		ul {
-			display: flex;
-		}
-
-		li {
-			width: 42px;
-			height: 42px;
-			background: rgba(255, 255, 255, 0.1);
-			padding: 11px;
-			display: flex;
-			align-items: center;
-			justify-content: center;
-			border-radius: 50%;
-
-			&:not(:last-of-type) {
-				margin-right: 16px;
-			}
-		}
-	}
-
-	p {
-		font-weight: 500;
-		font-size: 14px;
-		line-height: 17px;
-		margin-top: 24px;
-		text-align: center;
-
-		@media (min-width: $desktopBreakPoint) {
-			text-align: right;
 		}
 	}
 }

@@ -1,0 +1,205 @@
+$desktopBreakPoint: 880px;
+
+footer {
+	background: #1e252b;
+	padding: 48px 20px 32px;
+	color: #ffffff;
+
+	.logo {
+		p {
+			text-align: left;
+			margin-top: 10px;
+			opacity: 0.3;
+
+			a {
+				font-weight: bold;
+				text-decoration: underline;
+			}
+		}
+	}
+
+	.container {
+		max-width: 1376px;
+		width: 100%;
+		margin: auto;
+	}
+
+	nav {
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+		border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+		padding-bottom: 29px;
+	}
+
+	p {
+		font-weight: 500;
+		font-size: 14px;
+		line-height: 17px;
+		margin-top: 24px;
+		text-align: center;
+
+		@media (min-width: $desktopBreakPoint) {
+			text-align: right;
+		}
+	}
+}
+
+.socials {
+	display: flex;
+
+	li {
+		width: 42px;
+		height: 42px;
+		background: rgba(255, 255, 255, 0.1);
+		padding: 11px;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		border-radius: 50%;
+
+		&:not(:last-of-type) {
+			margin-right: 16px;
+		}
+	}
+}
+
+.newsletter {
+	display: flex;
+	max-width: 970px;
+	padding: 32px 24px;
+	margin-top: 74px;
+	flex-direction: column;
+
+	@media (min-width: $desktopBreakPoint) {
+		padding: 33px 70px 10px;
+		margin-top: 95px;
+		flex-direction: row;
+		justify-content: space-around;
+	}
+
+	& > img {
+		width: 180px;
+		order: 1;
+		margin: auto;
+
+		@media (min-width: $desktopBreakPoint) {
+			order: 2;
+			margin: initial;
+		}
+	}
+
+	h5 {
+		margin-bottom: 10px;
+	}
+
+	h5,
+	p {
+		font-size: 14px;
+		line-height: 22px;
+		font-style: normal;
+		font-weight: normal;
+		text-align: center;
+
+		@media (min-width: $desktopBreakPoint) {
+			text-align: left;
+		}
+	}
+
+	div {
+		max-width: 430px;
+		order: 2;
+		margin: 0 auto;
+
+		@media (min-width: $desktopBreakPoint) {
+			order: 1;
+			margin: 0;
+		}
+	}
+
+	form {
+		background: #f5f5fa;
+		border: 1px solid #e6eaee;
+		box-sizing: border-box;
+		border-radius: 8px;
+		display: flex;
+		padding: 10px 11px;
+		margin-top: 25px;
+
+		img {
+			width: 32px;
+		}
+
+		input {
+			width: 100%;
+			background: transparent;
+			border: none;
+			outline: none;
+		}
+
+		button {
+			img {
+				width: 24px;
+			}
+		}
+	}
+}
+
+aside {
+	width: 240px;
+	display: none;
+
+	@media (min-width: $desktopBreakPoint) {
+		display: block;
+		padding-left: 20px;
+		padding-right: 32px;
+	}
+
+	h3 {
+		font-weight: bold;
+		font-size: 16px;
+		line-height: 24px;
+		color: #000624;
+		margin-bottom: 19px;
+	}
+
+	ul {
+		padding: 0;
+
+		li {
+			font-weight: 600;
+			font-size: 14px;
+			line-height: 22px;
+			margin-bottom: 30px;
+			color: #5f5f68;
+		}
+	}
+
+	form {
+		background: #ffffff;
+		border: 1px solid rgba(115, 122, 145, 0.16);
+		box-sizing: border-box;
+		border-radius: 4px;
+		width: 100%;
+		padding: 11px 0 11px 17px;
+		display: flex;
+
+		img {
+			width: 15px;
+			margin-right: 10px;
+		}
+
+		input {
+			border: none;
+			width: 100%;
+			outline: none;
+		}
+	}
+
+	.social {
+		margin-top: 208px;
+		li {
+			background: rgba(115, 122, 145, 0.1);
+		}
+	}
+}
