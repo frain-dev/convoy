@@ -13,14 +13,15 @@ func addVersionCommand() *cobra.Command {
 		Use:   "version",
 		Short: "Print the version",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			var version string
+			v := "0.1.0"
 
 			f, err := os.ReadFile("VERSION")
 			if err != nil {
-				version = "0.1.0"
+				fmt.Println(v)
+				return nil
 			}
-			version = strings.TrimSuffix(string(f), "\n")
-			fmt.Println(version)
+			v = strings.TrimSuffix(string(f), "\n")
+			fmt.Println(v)
 			return nil
 		},
 	}
