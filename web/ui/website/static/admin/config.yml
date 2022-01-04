@@ -6,12 +6,6 @@ backend:
 media_folder: static/blog/img
 public_folder: /blog/img
 
-media_library:
-	name: cloudinary
-	config:
-		cloud_name: frain
-		api_key: 149165965747484
-
 site_url: https://getconvoy.netlify.app
 show_preview_links: true
 
@@ -29,26 +23,6 @@ collections:
 		fields:
 			- { label: 'Title', name: 'title', widget: 'string' }
 			- { label: 'Publish Date', name: 'date', widget: 'datetime' }
-			- label: 'Featured Image'
-				name: 'featureImg'
-				widget: 'image'
-				media_library:
-				config:
-					default_transformations:
-						- fetch_format: auto
-							width: 367
-							quality: auto
-							crop: 'scale'
-			- label: 'Post Image'
-				name: 'thumbnail'
-				widget: 'image'
-				media_library:
-				config:
-					default_transformations:
-						- fetch_format: auto
-							width: 461
-							quality: auto
-							crop: 'scale'
 			- { label: 'Description', name: 'description', widget: 'string' }
 			- { label: 'Description', name: 'description', widget: 'string' }
 			- { label: 'Body', name: 'body', widget: 'markdown' }
