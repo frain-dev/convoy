@@ -2,8 +2,17 @@ backend:
     name: git-gateway
     branch: emmanuel/feature/blog # Branch to update (optional; defaults to master)
 
-media_folder: static/img
-public_folder: /img
+media_folder: static/blog/img
+public_folder: /blog/img
+
+media_library:
+	name: cloudinary
+	config:
+		cloud_name: frain
+		api_key: 149165965747484
+
+site_url: https://getconvoy.netlify.app
+show_preview_links: true
 
 collections:
     - name: 'blog'
@@ -12,10 +21,34 @@ collections:
       format: 'frontmatter'
       create: true
       slug: '{{slug}}'
+	  extension: 'markdown'
+	  preview_path: 'blog/{{slug}}'
       editor:
-          preview: false
+          preview: true
       fields:
           - { label: 'Title', name: 'title', widget: 'string' }
           - { label: 'Publish Date', name: 'date', widget: 'datetime' }
+		  - label: 'Featured Image'
+		  	name: 'featureImg'
+			widget: 'image'
+			media_library:
+			config:
+				default_transformations:
+				  - fetch_format: auto
+					width: 367
+					quality: auto
+					crop: 'scale'
+		  - label: 'Post Image'
+		  	name: 'thumbnail'
+			widget: 'image'
+			media_library:
+			config:
+				default_transformations:
+				  - fetch_format: auto
+					width: 461
+					quality: auto
+					crop: 'scale'
+          - { label: 'Description', name: 'description', widget: 'string' }
           - { label: 'Description', name: 'description', widget: 'string' }
           - { label: 'Body', name: 'body', widget: 'markdown' }
+		  - { label: 'Tags', name: 'tags', widget: 'list', default: ['convoy'] }

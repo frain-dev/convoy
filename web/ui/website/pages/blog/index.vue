@@ -61,7 +61,7 @@
 			</div>
 			<p>Semper purus aliquam id sed. Egestas sit scelerisque sagittis leo blandit et viverra.</p>
 
-			<div class="featured card">
+			<div class="featured card posts">
 				<div class="post">
 					<div class="post--head">
 						<div class="tag">FEATURED</div>
