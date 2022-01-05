@@ -51,13 +51,13 @@ collections:
                           crop: 'scale'
           - { label: 'Body', name: 'body', widget: 'markdown' }
           - { label: 'Tags', name: 'tags', widget: 'list', default: ['convoy'] }
-          - label: "Author"
-						name: "author"
-						widget: "select"
-						options:
-							- { label: "Emmanuel Aina", value: 'emmanuelaina_' }
-          - label: "Author Role"
-						name: "authorRole"
-						widget: "select"
-						options:
-							- { label: "Emmanuel Aina", value: 'Co-Founder/Snr Engr' }
+          - label: 'Author'
+            name: 'author'
+            widget: 'select'
+            options:
+                - { label: 'Emmanuel Aina', value: 'emmanuelaina_' }
+          - label: 'Author Role'
+            name: 'authorRole'
+            widget: 'select'
+            options:
+                - { label: 'Emmanuel Aina', value: 'Co-Founder/Snr Engr' }
