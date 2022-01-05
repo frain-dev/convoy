@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/frain-dev/convoy"
+	log "github.com/sirupsen/logrus"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
@@ -13,7 +14,8 @@ import (
 )
 
 type groupRepo struct {
-	inner *mongo.Collection
+	innerDB *mongo.Database
+	inner   *mongo.Collection
 }
 
 const (
@@ -22,7 +24,8 @@ const (
 
 func NewGroupRepo(client *mongo.Database) convoy.GroupRepository {
 	return &groupRepo{
-		inner: client.Collection(GroupCollection),
+		innerDB: client,
+		inner:   client.Collection(GroupCollection),
 	}
 }
 
@@ -107,4 +110,56 @@ func (db *groupRepo) FetchGroupByID(ctx context.Context,
 	}
 
 	return org, err
+}
+
+func (db *groupRepo) DeleteGroup(ctx context.Context, uid string) error {
+
+	update := bson.M{
+		"deleted_at":      primitive.NewDateTimeFromTime(time.Now()),
+		"document_status": convoy.DeletedDocumentStatus,
+	}
+
+	rollback := bson.M{
+		"deleted_at":      nil,
+		"document_status": convoy.ActiveDocumentStatus,
+	}
+
+	groupFilter := bson.M{"uid": uid}
+	_, err := db.inner.UpdateOne(ctx, groupFilter, update)
+	if err != nil {
+		return err
+	}
+
+	appFilter := bson.M{"group_id": uid}
+
+	appCollection := db.innerDB.Collection(AppCollections)
+	_, err = appCollection.UpdateOne(ctx, appFilter, update)
+	if err != nil {
+		_, err = db.inner.UpdateOne(ctx, groupFilter, rollback)
+		if err != nil {
+			log.WithError(err).Error("failed to rollback group delete")
+		}
+
+		return err
+	}
+
+	msgFilter := bson.M{"app_metadata.group_id": uid}
+	msgCollection := db.innerDB.Collection(EventCollection)
+	_, err = msgCollection.UpdateOne(ctx, msgFilter, rollback)
+	if err != nil {
+		// rollback app delete
+		_, err = appCollection.UpdateOne(ctx, appFilter, rollback)
+		if err != nil {
+			log.WithError(err).Error("failed to rollback group delete")
+		}
+
+		// rollback group delete
+		_, err = db.inner.UpdateOne(ctx, groupFilter, rollback)
+		if err != nil {
+			log.WithError(err).Error("failed to rollback group delete")
+		}
+		return err
+	}
+
+	return err
 }
