@@ -8,8 +8,8 @@ public_folder: /blog/img
 media_library:
     name: cloudinary
     config:
-    cloud_name: frain
-    api_key: 149165965747484
+        cloud_name: frain
+        api_key: 149165965747484
 
 site_url: https://getconvoy.netlify.app
 show_preview_links: true
