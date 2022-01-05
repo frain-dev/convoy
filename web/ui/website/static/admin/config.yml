@@ -1,29 +1,32 @@
+site_url: https://getconvoy.netlify.app
+
 publish_mode: editorial_workflow
 backend:
-	name: git-gateway
-	branch: emmanuel/feature/blog # Branch to update (optional; defaults to master)
+  name: git-gateway
+  branch: emmanuel/feature/blog
+  squash_merges: true
+
+# used together with `npx netlify-cms-proxy-server`. https://www.netlifycms.org/docs/beta-features/#working-with-a-local-git-repository
+local_backend: true
 
 media_folder: static/blog/img
 public_folder: /blog/img
 
-site_url: https://getconvoy.netlify.app
-show_preview_links: true
-
+# Docs: https://www.netlifycms.org/docs/configuration-options/#collections
 collections:
-	- name: 'blog'
-		label: 'Blog'
-		folder: 'content/blog'
-		format: 'frontmatter'
-		create: true
-		slug: '{{slug}}'
+  - name: 'blog'
+    label: 'Blog'
+    folder: 'content/blog'
+    create: true
+    format: 'frontmatter'
+    slug: '{{slug}}'
 		extension: 'markdown'
 		preview_path: 'blog/{{slug}}'
-		editor:
-				preview: true
-		fields:
-			- { label: 'Title', name: 'title', widget: 'string' }
-			- { label: 'Publish Date', name: 'date', widget: 'datetime' }
-			- { label: 'Description', name: 'description', widget: 'string' }
-			- { label: 'Description', name: 'description', widget: 'string' }
-			- { label: 'Body', name: 'body', widget: 'markdown' }
-			- { label: 'Tags', name: 'tags', widget: 'list', default: ['convoy'] }
+    editor:
+      preview: true
+    fields:
+			- { label: 'Publish Date', name: 'date', widget: 'datetime', required: true }
+      - { label: 'Title', name: 'title', widget: 'string', required: true }
+      - { label: 'Description', name: 'description', widget: 'string', required: true }
+			- { label: 'Tags', name: 'tags', widget: 'list', default: ['convoy'], required: true }
+      - { label: 'Body', name: 'body', widget: 'markdown', required: true }
