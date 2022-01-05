@@ -15,6 +15,18 @@ site_url: https://getconvoy.netlify.app
 show_preview_links: true
 
 collections:
+    - name: 'authors'
+      label: 'Authors'
+      folder: 'content/blog-authors'
+      format: 'json'
+      create: true
+      slug: '{{name}}'
+      fields:
+          - { label: 'Name', name: 'name', widget: 'string' }
+          - { label: 'Twitter Handle', name: 'twitter', widget: 'string' }
+          - { label: 'Github User Name', name: 'github', widget: 'string' }
+          - { label: 'Role', name: 'role', widget: 'string' }
+
     - name: 'blog'
       label: 'Blog'
       folder: 'content/blog'
@@ -51,13 +63,10 @@ collections:
                           crop: 'scale'
           - { label: 'Body', name: 'body', widget: 'markdown' }
           - { label: 'Tags', name: 'tags', widget: 'list', default: ['convoy'] }
-          - label: 'Author'
+          - label: 'Post Author'
             name: 'author'
-            widget: 'select'
-            options:
-                - { label: 'Emmanuel Aina', value: 'emmanuelaina_' }
-          - label: 'Author Role'
-            name: 'authorRole'
-            widget: 'select'
-            options:
-                - { label: 'Emmanuel Aina', value: 'Co-Founder/Snr Engr' }
+            widget: 'relation'
+            collection: 'authors'
+            search_fields: ['name', 'twitter', 'github']
+            value_field: '{{slug}}'
+            display_fields: [''name', 'twitter', 'github']
