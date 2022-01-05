@@ -2,6 +2,7 @@ package server
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"net/http"
 	"net/http/httptest"
@@ -351,6 +352,119 @@ func TestApplicationHandler_GetGroups(t *testing.T) {
 
 			// Act
 			router.ServeHTTP(w, req)
+			if w.Code != tc.statusCode {
+				t.Errorf("Want status '%d', got '%d'", tc.statusCode, w.Code)
+			}
+
+			verifyMatch(t, *w)
+		})
+	}
+}
+
+func TestApplicationHandler_DeleteGroup(t *testing.T) {
+
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	realOrgID := "1234567890"
+
+	bodyReader := strings.NewReader(`{"name": "ABC_DEF_TEST_UPDATE"}`)
+	tt := []struct {
+		name       string
+		cfgPath    string
+		method     string
+		statusCode int
+		orgID      string
+		body       *strings.Reader
+		dbFn       func(app *applicationHandler)
+	}{
+		{
+			name:       "valid group delete",
+			cfgPath:    "./testdata/Auth_Config/no-auth-convoy.json",
+			method:     http.MethodDelete,
+			statusCode: http.StatusOK,
+			orgID:      realOrgID,
+			body:       bodyReader,
+			dbFn: func(app *applicationHandler) {
+				g, _ := app.groupRepo.(*mocks.MockGroupRepository)
+				g.EXPECT().
+					FetchGroupByID(gomock.Any(), gomock.Any()).Times(1).
+					Return(&convoy.Group{
+						UID:  realOrgID,
+						Name: "sendcash-pay",
+					}, nil)
+
+				g.EXPECT().
+					DeleteGroup(gomock.Any(), gomock.Any()).Times(1).
+					Return(nil)
+			},
+		},
+		{
+			name:       "failed group delete",
+			cfgPath:    "./testdata/Auth_Config/no-auth-convoy.json",
+			method:     http.MethodDelete,
+			statusCode: http.StatusInternalServerError,
+			orgID:      realOrgID,
+			body:       bodyReader,
+			dbFn: func(app *applicationHandler) {
+				g, _ := app.groupRepo.(*mocks.MockGroupRepository)
+				g.EXPECT().
+					FetchGroupByID(gomock.Any(), gomock.Any()).Times(1).
+					Return(&convoy.Group{
+						UID:  realOrgID,
+						Name: "sendcash-pay",
+					}, nil)
+
+				g.EXPECT().
+					DeleteGroup(gomock.Any(), gomock.Any()).Times(1).
+					Return(errors.New("abc"))
+			},
+		},
+	}
+
+	for _, tc := range tt {
+		t.Run(tc.name, func(t *testing.T) {
+			var app *applicationHandler
+
+			ctrl := gomock.NewController(t)
+			defer ctrl.Finish()
+
+			groupRepo := mocks.NewMockGroupRepository(ctrl)
+			appRepo := mocks.NewMockApplicationRepository(ctrl)
+			eventRepo := mocks.NewMockEventRepository(ctrl)
+			eventDeliveryRepo := mocks.NewMockEventDeliveryRepository(ctrl)
+			eventQueue := mocks.NewMockQueuer(ctrl)
+
+			app = newApplicationHandler(eventRepo, eventDeliveryRepo, appRepo, groupRepo, eventQueue)
+
+			// Arrange
+			url := fmt.Sprintf("/api/v1/groups/%s", tc.orgID)
+			req := httptest.NewRequest(tc.method, url, tc.body)
+			req.SetBasicAuth("test", "test")
+			req.Header.Add("Content-Type", "application/json")
+			w := httptest.NewRecorder()
+
+			rctx := chi.NewRouteContext()
+			rctx.URLParams.Add("orgID", tc.orgID)
+
+			req = req.WithContext(context.WithValue(req.Context(), chi.RouteCtxKey, rctx))
+
+			// Arrange Expectations
+			if tc.dbFn != nil {
+				tc.dbFn(app)
+			}
+
+			err := config.LoadConfig(tc.cfgPath)
+			if err != nil {
+				t.Errorf("Failed to load config file: %v", err)
+			}
+			initRealmChain(t)
+
+			router := buildRoutes(app)
+
+			// Act.
+			router.ServeHTTP(w, req)
+
 			if w.Code != tc.statusCode {
 				t.Errorf("Want status '%d', got '%d'", tc.statusCode, w.Code)
 			}

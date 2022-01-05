@@ -3265,7 +3265,7 @@
 		},
 		"/groups/{groupID}": {
 			"delete": {
-				"description": "This endpoint fetches a group by its id",
+				"description": "This endpoint deletes a group using its id",
 				"parameters": [
 					{
 						"description": "Group id",
