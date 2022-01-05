@@ -34,7 +34,7 @@ func (a *applicationHandler) GetGroup(w http.ResponseWriter, r *http.Request) {
 
 // DeleteGroup
 // @Summary Delete a group
-// @Description This endpoint fetches a group by its id
+// @Description This endpoint deletes a group using its id
 // @Tags Group
 // @Accept  json
 // @Produce  json
@@ -44,9 +44,9 @@ func (a *applicationHandler) GetGroup(w http.ResponseWriter, r *http.Request) {
 // @Security ApiKeyAuth
 // @Router /groups/{groupID} [delete]
 func (a *applicationHandler) DeleteGroup(w http.ResponseWriter, r *http.Request) {
-	g := getGroupFromContext(r.Context())
+	group := getGroupFromContext(r.Context())
 
-	err := a.groupRepo.DeleteGroup(r.Context(), g.UID)
+	err := a.groupRepo.DeleteGroup(r.Context(), group.UID)
 	if err != nil {
 		_ = render.Render(w, r, newErrorResponse("failed to delete group", http.StatusInternalServerError))
 		return
