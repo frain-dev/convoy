@@ -69,4 +69,4 @@ collections:
             collection: 'authors'
             search_fields: ['name', 'twitter', 'github']
             value_field: '{{slug}}'
-            display_fields: [''name', 'twitter', 'github']
+            display_fields: ['name', 'twitter', 'github']
