@@ -1,6 +1,8 @@
+publish_mode: editorial_workflow
 backend:
     name: git-gateway
-    branch: main # Branch to update (optional; defaults to master)
+    branch: main
+    squash_merges: true
 
 media_folder: static/blog/img
 public_folder: /blog/img
@@ -36,7 +38,7 @@ collections:
       create: true
       slug: '{{slug}}'
       editor:
-          preview: false
+          preview: true
       fields:
           - { label: 'Title', name: 'title', widget: 'string' }
           - { label: 'Publish Date', name: 'date', widget: 'datetime' }
