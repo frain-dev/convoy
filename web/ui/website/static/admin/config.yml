@@ -1,7 +1,7 @@
 publish_mode: editorial_workflow
 backend:
     name: git-gateway
-    branch: main
+    branch: emmanuel/feature/blog
     squash_merges: true
 
 media_folder: static/blog/img
@@ -18,7 +18,7 @@ show_preview_links: true
 
 collections:
     - name: 'authors'
-      label: 'Authors'
+      label: 'Author'
       folder: 'content/blog-authors'
       format: 'json'
       create: true
