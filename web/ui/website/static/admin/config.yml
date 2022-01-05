@@ -19,12 +19,24 @@ collections:
       label: 'Blog'
       folder: 'content/blog'
       format: 'frontmatter'
+      extension: 'markdown'
+      preview_path: 'blog/{{slug}}'
       create: true
-      slug: '{{year}}-{{month}}-{{day}}-{{slug}}'
+      slug: '{{slug}}'
       editor:
           preview: false
       fields:
           - { label: 'Title', name: 'title', widget: 'string' }
           - { label: 'Publish Date', name: 'date', widget: 'datetime' }
           - { label: 'Description', name: 'description', widget: 'string' }
+          - label: 'Featured Image'
+            name: 'featureImg'
+            widget: 'image'
+            media_library:
+                config:
+                    default_transformations:
+                        - fetch_format: auto
+                          width: 367
+                          quality: auto
+                          crop: 'scale'
           - { label: 'Body', name: 'body', widget: 'markdown' }
