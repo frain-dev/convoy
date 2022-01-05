@@ -50,3 +50,9 @@ collections:
                           quality: auto
                           crop: 'scale'
           - { label: 'Body', name: 'body', widget: 'markdown' }
+          - { label: 'Tags', name: 'tags', widget: 'list', default: ['convoy'] }
+          - label: 'Author'
+            name: 'author'
+            widget: 'select'
+            options:
+                - { label: 'Emmanuel Aina', value: { twitter: 'emmanuelaina_' } }
