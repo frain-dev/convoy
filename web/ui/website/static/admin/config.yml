@@ -39,4 +39,14 @@ collections:
                           width: 367
                           quality: auto
                           crop: 'scale'
+          - label: 'Post Image'
+            name: 'thumbnail'
+            widget: 'image'
+            media_library:
+                config:
+                    default_transformations:
+                        - fetch_format: auto
+                          width: 461
+                          quality: auto
+                          crop: 'scale'
           - { label: 'Body', name: 'body', widget: 'markdown' }
