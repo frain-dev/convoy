@@ -343,7 +343,7 @@ func TestApplicationHandler_CreateAppEvent(t *testing.T) {
 
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			err := config.LoadConfig(tc.cfgPath)
+			err := config.LoadConfig(tc.cfgPath, provideFakeOverride())
 			if err != nil {
 				t.Errorf("Failed to load config file: %v", err)
 			}
@@ -662,7 +662,7 @@ func Test_resendEventDelivery(t *testing.T) {
 				tc.dbFn(tc.args.event, tc.args.message, app)
 			}
 
-			err := config.LoadConfig(tc.cfgPath)
+			err := config.LoadConfig(tc.cfgPath, provideFakeOverride())
 			if err != nil {
 				t.Errorf("Failed to load config file: %v", err)
 			}
@@ -871,7 +871,7 @@ func TestApplicationHandler_BatchRetryEventDelivery(t *testing.T) {
 				tc.dbFn(tc.args.event, tc.args.message, app)
 			}
 
-			err := config.LoadConfig(tc.cfgPath)
+			err := config.LoadConfig(tc.cfgPath, provideFakeOverride())
 			if err != nil {
 				t.Errorf("Failed to load config file: %v", err)
 			}

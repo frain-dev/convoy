@@ -58,7 +58,22 @@ func main() {
 				return err
 			}
 
-			err = config.LoadConfig(cfgPath)
+			override := new(config.Configuration)
+
+			// override config with cli flags
+			redisCliDsn, err := cmd.Flags().GetString("queue")
+			if err != nil {
+				return err
+			}
+			override.Queue.Redis.DSN = redisCliDsn
+
+			mongoCliDsn, err := cmd.Flags().GetString("db")
+			if err != nil {
+				return err
+			}
+			override.Database.Dsn = mongoCliDsn
+
+			err = config.LoadConfig(cfgPath, override)
 			if err != nil {
 				return err
 			}
@@ -67,21 +82,6 @@ func main() {
 			if err != nil {
 				return err
 			}
-
-			// override config with cli flags
-			redisCliDsn, err := cmd.Flags().GetString("queue")
-			if err != nil {
-				return err
-			}
-			cfg.Queue.Redis.DSN = redisCliDsn
-
-			mongoCliDsn, err := cmd.Flags().GetString("db")
-			if err != nil {
-				return err
-			}
-			cfg.Database.Dsn = mongoCliDsn
-
-			// init connections
 
 			db, err = datastore.New(cfg)
 			if err != nil {
