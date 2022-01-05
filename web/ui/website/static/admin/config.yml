@@ -55,4 +55,7 @@ collections:
             name: 'author'
             widget: 'select'
             options:
-                - { label: 'Emmanuel Aina', value: { twitter: 'emmanuelaina_' } }
+                - label: 'Emmanuel Aina'
+                  value:
+                      twitter: 'emmanuelaina_'
+                      github: 'emmanuelaina_'
