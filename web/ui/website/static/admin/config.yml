@@ -5,9 +5,14 @@ backend:
 media_folder: static/blog/img
 public_folder: /blog/img
 
-local_backend:
-    # when using a custom proxy server port
-    url: http://localhost:8081
+media_library:
+    name: cloudinary
+    config:
+    cloud_name: frain
+    api_key: 149165965747484
+
+site_url: https://getconvoy.netlify.app
+show_preview_links: true
 
 collections:
     - name: 'blog'
