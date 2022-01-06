@@ -6,7 +6,7 @@ description: After weeks of work, I’m pleased to announce our new tool — bui
   third-party monitoring, every user we spoke to wanted asynchronous events —
   “Do you provide webhooks to notify us about downtime?”.
 featureImg: /blog/img/convoy-dashboard_okeuo8.png
-thumbnail: /blog/img/convoy-dashboard_okeuo8.png
+thumbnail: /convoy-dashboard_okeuo8.png
 tags:
   - convoy
 featurePost: true
