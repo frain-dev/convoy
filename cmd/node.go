@@ -10,6 +10,7 @@ import (
 	"github.com/frain-dev/convoy"
 	"github.com/frain-dev/convoy/auth/realm_chain"
 	"github.com/frain-dev/convoy/config"
+	convoyMemberlist "github.com/frain-dev/convoy/memberlist"
 	convoyQueue "github.com/frain-dev/convoy/queue/redis"
 	"github.com/frain-dev/convoy/server"
 	"github.com/frain-dev/convoy/util"
@@ -78,6 +79,10 @@ func nodeServerCommand(a *app) *cobra.Command {
 
 				if acquired {
 					log.Printf("Server node intitialized!\n")
+
+					if err := convoyMemberlist.CreateMemberlist(""); err != nil {
+						log.Fatal("Error creating memberlist: %v", err)
+					}
 					err := startConvoyServer(a, cfg)
 					if err != nil {
 						log.Printf("Error starting convoy server: %v", err)
@@ -87,7 +92,6 @@ func nodeServerCommand(a *app) *cobra.Command {
 			return nil
 		},
 		PersistentPostRunE: func(cmd *cobra.Command, args []string) error {
-			// wait for SIGINT or SIGTERM, clean up and exit
 			destroyConsulSession(client, sID, doneCh)
 			return nil
 		},
@@ -102,6 +106,7 @@ func nodeWorkerCommand(a *app) *cobra.Command {
 	var client *api.Client
 	var sID string
 	var doneCh chan struct{}
+	var clusterMembers string
 
 	cmd := &cobra.Command{
 		Use:   "worker",
@@ -139,6 +144,9 @@ func nodeWorkerCommand(a *app) *cobra.Command {
 						}
 						if !isConsuming && !acquired {
 							log.Printf("Worker node intitialized!\n")
+							if err := convoyMemberlist.CreateMemberlist(clusterMembers); err != nil {
+								log.Fatal("Error creating memberlist: %v", err)
+							}
 							// register workers.
 							if queue, ok := a.eventQueue.(*convoyQueue.RedisQueue); ok {
 								worker.NewProducer(queue).Start()
@@ -168,11 +176,11 @@ func nodeWorkerCommand(a *app) *cobra.Command {
 			return nil
 		},
 		PersistentPostRunE: func(cmd *cobra.Command, args []string) error {
-			// wait for SIGINT or SIGTERM, clean up and exit
 			destroyConsulSession(client, sID, doneCh)
 			return nil
 		},
 	}
+	cmd.Flags().StringVar(&clusterMembers, "members", "", "comma seperated list of members")
 	return cmd
 }
 
