@@ -22,7 +22,7 @@ version: "3"
 
 services:
     web:
-        image: ghcr.io/frain-dev/convoy:0.2.4
+        image: ghcr.io/frain-dev/convoy:v0.2.5
         entrypoint: ["./cmd", "server", "--config", "convoy.json"]
         ports:
             - 5005:5005

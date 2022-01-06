@@ -106,10 +106,7 @@ func TestProcessEventDelivery(t *testing.T) {
 							},
 							Strategy: config.StrategyConfiguration{
 								Type: config.StrategyProvider("default"),
-								Default: struct {
-									IntervalSeconds uint64 `json:"intervalSeconds"`
-									RetryLimit      uint64 `json:"retryLimit"`
-								}{
+								Default: config.DefaultStrategyConfiguration{
 									IntervalSeconds: 60,
 									RetryLimit:      1,
 								},
@@ -182,10 +179,7 @@ func TestProcessEventDelivery(t *testing.T) {
 							},
 							Strategy: config.StrategyConfiguration{
 								Type: config.StrategyProvider("default"),
-								Default: struct {
-									IntervalSeconds uint64 `json:"intervalSeconds"`
-									RetryLimit      uint64 `json:"retryLimit"`
-								}{
+								Default: config.DefaultStrategyConfiguration{
 									IntervalSeconds: 60,
 									RetryLimit:      1,
 								},
@@ -270,10 +264,7 @@ func TestProcessEventDelivery(t *testing.T) {
 							},
 							Strategy: config.StrategyConfiguration{
 								Type: config.StrategyProvider("default"),
-								Default: struct {
-									IntervalSeconds uint64 `json:"intervalSeconds"`
-									RetryLimit      uint64 `json:"retryLimit"`
-								}{
+								Default: config.DefaultStrategyConfiguration{
 									IntervalSeconds: 60,
 									RetryLimit:      1,
 								},
@@ -340,10 +331,7 @@ func TestProcessEventDelivery(t *testing.T) {
 							},
 							Strategy: config.StrategyConfiguration{
 								Type: config.StrategyProvider("default"),
-								Default: struct {
-									IntervalSeconds uint64 `json:"intervalSeconds"`
-									RetryLimit      uint64 `json:"retryLimit"`
-								}{
+								Default: config.DefaultStrategyConfiguration{
 									IntervalSeconds: 60,
 									RetryLimit:      1,
 								},
@@ -430,10 +418,7 @@ func TestProcessEventDelivery(t *testing.T) {
 							},
 							Strategy: config.StrategyConfiguration{
 								Type: config.StrategyProvider("default"),
-								Default: struct {
-									IntervalSeconds uint64 `json:"intervalSeconds"`
-									RetryLimit      uint64 `json:"retryLimit"`
-								}{
+								Default: config.DefaultStrategyConfiguration{
 									IntervalSeconds: 60,
 									RetryLimit:      1,
 								},
@@ -500,10 +485,7 @@ func TestProcessEventDelivery(t *testing.T) {
 							},
 							Strategy: config.StrategyConfiguration{
 								Type: config.StrategyProvider("default"),
-								Default: struct {
-									IntervalSeconds uint64 `json:"intervalSeconds"`
-									RetryLimit      uint64 `json:"retryLimit"`
-								}{
+								Default: config.DefaultStrategyConfiguration{
 									IntervalSeconds: 60,
 									RetryLimit:      1,
 								},
@@ -590,10 +572,7 @@ func TestProcessEventDelivery(t *testing.T) {
 							},
 							Strategy: config.StrategyConfiguration{
 								Type: config.StrategyProvider("default"),
-								Default: struct {
-									IntervalSeconds uint64 `json:"intervalSeconds"`
-									RetryLimit      uint64 `json:"retryLimit"`
-								}{
+								Default: config.DefaultStrategyConfiguration{
 									IntervalSeconds: 60,
 									RetryLimit:      1,
 								},
@@ -632,7 +611,7 @@ func TestProcessEventDelivery(t *testing.T) {
 			appRepo := mocks.NewMockApplicationRepository(ctrl)
 			msgRepo := mocks.NewMockEventDeliveryRepository(ctrl)
 
-			err := config.LoadConfig(tc.cfgPath)
+			err := config.LoadConfig(tc.cfgPath, new(config.Configuration))
 			if err != nil {
 				t.Errorf("Failed to load config file: %v", err)
 			}

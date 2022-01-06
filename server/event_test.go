@@ -41,10 +41,7 @@ func TestApplicationHandler_CreateAppEvent(t *testing.T) {
 			},
 			Strategy: config.StrategyConfiguration{
 				Type: config.StrategyProvider("default"),
-				Default: struct {
-					IntervalSeconds uint64 `json:"intervalSeconds"`
-					RetryLimit      uint64 `json:"retryLimit"`
-				}{
+				Default: config.DefaultStrategyConfiguration{
 					IntervalSeconds: 60,
 					RetryLimit:      1,
 				},
@@ -346,7 +343,7 @@ func TestApplicationHandler_CreateAppEvent(t *testing.T) {
 
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			err := config.LoadConfig(tc.cfgPath)
+			err := config.LoadConfig(tc.cfgPath, provideFakeOverride())
 			if err != nil {
 				t.Errorf("Failed to load config file: %v", err)
 			}
@@ -665,7 +662,7 @@ func Test_resendEventDelivery(t *testing.T) {
 				tc.dbFn(tc.args.event, tc.args.message, app)
 			}
 
-			err := config.LoadConfig(tc.cfgPath)
+			err := config.LoadConfig(tc.cfgPath, provideFakeOverride())
 			if err != nil {
 				t.Errorf("Failed to load config file: %v", err)
 			}
@@ -874,7 +871,7 @@ func TestApplicationHandler_BatchRetryEventDelivery(t *testing.T) {
 				tc.dbFn(tc.args.event, tc.args.message, app)
 			}
 
-			err := config.LoadConfig(tc.cfgPath)
+			err := config.LoadConfig(tc.cfgPath, provideFakeOverride())
 			if err != nil {
 				t.Errorf("Failed to load config file: %v", err)
 			}

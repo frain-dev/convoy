@@ -1,9 +1,11 @@
 package task
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"errors"
+	"strings"
 	"time"
 
 	"github.com/frain-dev/convoy"
@@ -85,11 +87,15 @@ func ProcessEventDelivery(appRepo convoy.ApplicationRepository, eventDeliveryRep
 			return nil
 		}
 
-		bytes, err := json.Marshal(m.Metadata.Data)
-		if err != nil {
-			log.Errorf("error occurred while parsing json")
+		buff := bytes.NewBuffer([]byte{})
+		encoder := json.NewEncoder(buff)
+		encoder.SetEscapeHTML(false)
+		if err := encoder.Encode(m.Metadata.Data); err != nil {
+			log.WithError(err).Error("Failed to encode data")
 			return &EndpointError{Err: err}
 		}
+
+		bStr := strings.TrimSuffix(buff.String(), "\n")
 
 		g, err := groupRepo.FetchGroupByID(context.Background(), m.AppMetadata.GroupID)
 		if err != nil {
@@ -97,10 +103,8 @@ func ProcessEventDelivery(appRepo convoy.ApplicationRepository, eventDeliveryRep
 			return &EndpointError{Err: err}
 		}
 
-		bStr := string(bytes)
 		hmac, err := util.ComputeJSONHmac(g.Config.Signature.Hash, bStr, secret, false)
 		if err != nil {
-			log.Printf("GroupConfig: %v", g.Config)
 			log.Errorf("error occurred while generating hmac signature - %+v\n", err)
 			return &EndpointError{Err: err}
 		}
@@ -108,7 +112,7 @@ func ProcessEventDelivery(appRepo convoy.ApplicationRepository, eventDeliveryRep
 		attemptStatus := false
 		start := time.Now()
 
-		resp, err := dispatch.SendRequest(e.TargetURL, string(convoy.HttpPost), bytes, g.Config.Signature.Header.String(), hmac)
+		resp, err := dispatch.SendRequest(e.TargetURL, string(convoy.HttpPost), []byte(bStr), g.Config.Signature.Header.String(), hmac)
 		status := "-"
 		statusCode := 0
 		if resp != nil {
