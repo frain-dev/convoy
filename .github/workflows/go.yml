@@ -5,8 +5,8 @@ on:
       - main
   pull_request:
     branches-ignore:
-      - "ui/*"
-      - "cms/*"
+      - "ui/**"
+      - "cms/**"
 
 jobs:
   test:
