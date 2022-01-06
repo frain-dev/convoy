@@ -41,7 +41,7 @@ func Test_EnvironmentTakesPrecedence(t *testing.T) {
 
 			// Assert.
 			configFile := "./testdata/Test_ConfigurationFromEnvironment/convoy.json"
-			err := LoadConfig(configFile)
+			err := LoadConfig(configFile, new(Configuration))
 			if err != nil {
 				t.Errorf("Failed to load config file: %v", err)
 			}
@@ -301,7 +301,7 @@ func TestLoadConfig(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			err := LoadConfig(tt.args.path)
+			err := LoadConfig(tt.args.path, new(Configuration))
 			if tt.wantErr {
 				require.NotNil(t, err)
 				require.Equal(t, tt.wantErrMsg, err.Error())

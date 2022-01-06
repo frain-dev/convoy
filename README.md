@@ -10,7 +10,7 @@ Convoy
 
 ![convoy image](./convoy-logo.svg)
 
-Convoy is a fast & secure webhooks service. It receives event data from a HTTP API and sends these event data to the configured endpoints. To get started download the [openapi spec](https://github.com/frain-dev/convoy/blob/main/openapi.yaml) into Postman or Insomnia.
+Convoy is a fast & secure webhooks service. It receives event data from a HTTP API and sends these event data to the configured endpoints. To get started download the [openapi spec](https://github.com/frain-dev/convoy/blob/main/docs/v3/openapi3.yaml) into Postman or Insomnia.
 
 It includes the following features
 - **Sign payload:** Configure hash function to use in signing payload.

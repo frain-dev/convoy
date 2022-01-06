@@ -8,16 +8,12 @@ import (
 	"net/http"
 	"net/http/httptrace"
 	"net/url"
+	"os"
+	"strings"
 	"time"
 
 	"github.com/frain-dev/convoy/util"
 	log "github.com/sirupsen/logrus"
-)
-
-type UserAgent string
-
-const (
-	DefaultUserAgent UserAgent = "Convoy/v0.2"
 )
 
 type Dispatcher struct {
@@ -48,7 +44,7 @@ func (d *Dispatcher) SendRequest(endpoint, method string, jsonData json.RawMessa
 
 	req.Header.Set(signatureHeader, hmac)
 	req.Header.Add("Content-Type", "application/json")
-	req.Header.Add("User-Agent", string(DefaultUserAgent))
+	req.Header.Add("User-Agent", defaultUserAgent())
 
 	r.RequestHeader = req.Header
 	r.URL = req.URL
@@ -98,4 +94,12 @@ func updateDispatchHeaders(r *Response, res *http.Response) {
 	r.Status = res.Status
 	r.StatusCode = res.StatusCode
 	r.ResponseHeader = res.Header
+}
+
+func defaultUserAgent() string {
+	f, err := os.ReadFile("VERSION")
+	if err != nil {
+		return "Convoy/v0.1.0"
+	}
+	return "Convoy/" + strings.TrimSuffix(string(f), "\n")
 }
