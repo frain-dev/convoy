@@ -10,6 +10,7 @@ public_folder: /blog/img
 
 media_library:
     name: cloudinary
+    output_filename_only: true
     config:
         cloud_name: frain
         api_key: 149165965747484
@@ -34,7 +35,7 @@ collections:
       label: 'Blog'
       folder: 'web/ui/website/content/blog'
       format: 'frontmatter'
-      extension: 'markdown'
+      extension: 'md'
       preview_path: 'blog/{{slug}}'
       create: true
       slug: '{{slug}}'
@@ -44,26 +45,8 @@ collections:
           - { label: 'Title', name: 'title', widget: 'string' }
           - { label: 'Publish Date', name: 'date', widget: 'datetime' }
           - { label: 'Description', name: 'description', widget: 'string' }
-          - label: 'Featured Image'
-            name: 'featureImg'
-            widget: 'image'
-            media_library:
-                config:
-                    default_transformations:
-                        - fetch_format: auto
-                          width: 367
-                          quality: auto
-                          crop: 'scale'
-          - label: 'Post Image'
-            name: 'thumbnail'
-            widget: 'image'
-            media_library:
-                config:
-                    default_transformations:
-                        - fetch_format: auto
-                          width: 461
-                          quality: auto
-                          crop: 'scale'
+          - { label: 'Featured Image', name: 'featureImg', widget: 'image' }
+          - { label: 'Post Image', name: 'thumbnail', widget: 'image' }
           - { label: 'Body', name: 'body', widget: 'markdown' }
           - { label: 'Tags', name: 'tags', widget: 'list', default: ['convoy'] }
           - { label: 'Feature Post', name: 'featurePost', widget: 'boolean', default: false }
