@@ -17,9 +17,9 @@
 					<li>
 						<a href="#features">Features</a>
 					</li>
-					<li>
+					<!-- <li>
 						<nuxt-link to="/blog">Blog</nuxt-link>
-					</li>
+					</li> -->
 					<li>
 						<nuxt-link to="/docs">Docs</nuxt-link>
 					</li>

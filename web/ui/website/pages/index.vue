@@ -354,6 +354,7 @@ header {
 				margin: 0;
 				border-radius: 0 0 8px 8px;
 				margin-top: 10px;
+				font-size: 12px;
 
 				@media (min-width: $desktopBreakPoint) {
 					max-width: 220px;
