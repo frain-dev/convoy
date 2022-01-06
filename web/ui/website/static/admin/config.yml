@@ -42,7 +42,7 @@ collections:
           preview: true
       fields:
           - { label: 'Title', name: 'title', widget: 'string' }
-          - { label: 'Publish Date', name: 'date', widget: 'datetime' }1
+          - { label: 'Publish Date', name: 'date', widget: 'datetime' }
           - { label: 'Description', name: 'description', widget: 'string' }
           - label: 'Featured Image'
             name: 'featureImg'
@@ -66,7 +66,7 @@ collections:
                           crop: 'scale'
           - { label: 'Body', name: 'body', widget: 'markdown' }
           - { label: 'Tags', name: 'tags', widget: 'list', default: ['convoy'] }
-          - {label: "Feature Post", name: "featurePost", widget: "boolean", default: false}
+          - { label: 'Feature Post', name: 'featurePost', widget: 'boolean', default: false }
           - label: 'Post Author'
             name: 'author'
             widget: 'relation'
