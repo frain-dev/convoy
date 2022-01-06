@@ -1,6 +1,8 @@
 @font-face {
-    font-family: 'Menlo Regular';
-    font-style: normal;
-    font-weight: normal;
-    src: local('Menlo Regular'), url('./fonts/Menlo-Regular.woff') format('woff');
+	font-family: 'Menlo Regular';
+	font-style: normal;
+	font-weight: normal;
+	src: local('Menlo Regular'), url('./fonts/Menlo-Regular.woff') format('woff');
 }
+
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@100;200;300;400;500;600;700&display=swap');

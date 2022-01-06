@@ -26,3 +26,4 @@ hookstack
 
 # Convoy specific
 convoy.json
+docker-compose.yml

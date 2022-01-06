@@ -55,6 +55,11 @@ export default {
 		}
 	},
 
+	env: {
+		url: process.env.NODE_ENV === 'production' ? process.env.URL || 'http://getconvoy.io' : 'http://localhost:3000',
+		lang: 'en-US'
+	},
+
 	// Build Configuration: https://go.nuxtjs.dev/config-build
 	build: {},
 	runtimeCompiler: true
