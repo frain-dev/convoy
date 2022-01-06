@@ -6,7 +6,7 @@ backend:
     squash_merges: true
 
 media_folder: web/ui/website/static/blog/img
-public_folder: /blog/img
+public_folder: /
 
 media_library:
     name: cloudinary
