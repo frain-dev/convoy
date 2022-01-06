@@ -46,7 +46,7 @@
 			font-weight: bold;
 			line-height: 42px;
 			color: #16192c;
-			margin-bottom: 16px;
+			margin: 16px 0 14px;
 			font-size: 24px;
 
 			@media (min-width: $desktopBreakPoint) {
@@ -106,6 +106,10 @@
 		&--img {
 			margin-bottom: 28px;
 			width: 100%;
+
+			img {
+				border-radius: 8px 8px 0px 0px;
+			}
 		}
 	}
 }

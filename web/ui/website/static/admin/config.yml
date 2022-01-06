@@ -2,10 +2,10 @@ publish_mode: editorial_workflow
 backend:
     name: github
     repo: frain-dev/convoy
-    branch: emmanuel/feature/blog
+    branch: main
     squash_merges: true
 
-media_folder: static/blog/img
+media_folder: web/ui/website/static/blog/img
 public_folder: /blog/img
 
 media_library:
@@ -20,7 +20,7 @@ show_preview_links: true
 collections:
     - name: 'authors'
       label: 'Author'
-      folder: 'content/blog-authors'
+      folder: 'web/ui/website/content/blog-authors'
       format: 'json'
       create: true
       slug: '{{name}}'
@@ -32,7 +32,7 @@ collections:
 
     - name: 'blog'
       label: 'Blog'
-      folder: 'content/blog'
+      folder: 'web/ui/website/content/blog'
       format: 'frontmatter'
       extension: 'markdown'
       preview_path: 'blog/{{slug}}'
@@ -42,7 +42,7 @@ collections:
           preview: true
       fields:
           - { label: 'Title', name: 'title', widget: 'string' }
-          - { label: 'Publish Date', name: 'date', widget: 'datetime' }
+          - { label: 'Publish Date', name: 'date', widget: 'datetime' }1
           - { label: 'Description', name: 'description', widget: 'string' }
           - label: 'Featured Image'
             name: 'featureImg'
@@ -66,10 +66,11 @@ collections:
                           crop: 'scale'
           - { label: 'Body', name: 'body', widget: 'markdown' }
           - { label: 'Tags', name: 'tags', widget: 'list', default: ['convoy'] }
+					- {label: "Feature Post", name: "featurePost", widget: "boolean", default: false}
           - label: 'Post Author'
             name: 'author'
             widget: 'relation'
             collection: 'authors'
             search_fields: ['name', 'twitter', 'github']
             value_field: '{{slug}}'
-            display_fields: ['name', 'twitter', 'github']
+            display_fields: ['{{name}}, {{role}}']

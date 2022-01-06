@@ -2,16 +2,17 @@
 title: Introducing Convoy
 date: 2021-10-25T17:10:13.696Z
 description: After weeks of work, I’m pleased to announce our new tool — built
-  to send webhooks efficiently. While building out our initial API on
-  third-party monitoring, every user we spoke to wanted asynchronous events —
-  “Do you provide webhooks to notify us about downtime?”.
+    to send webhooks efficiently. While building out our initial API on
+    third-party monitoring, every user we spoke to wanted asynchronous events —
+    “Do you provide webhooks to notify us about downtime?”.
 featureImg: https://res.cloudinary.com/frain/image/upload/c_crop,f_auto,q_auto,w_367,x_41,y_41/v1641490017/blog/Introducing%20Convoy/convoy-dashboard_okeuo8.png
 thumbnail: https://res.cloudinary.com/frain/image/upload/c_fill,h_179,w_461,x_0,y_0/v1641490017/blog/Introducing%20Convoy/convoy-dashboard_okeuo8.png
 tags:
-  - convoy
-  - webhooks
+    - convoy
+    - featured
 author: subomi-oluwalana
 ---
+
 # Introducing Convoy
 
 After weeks of work, I’m pleased to announce our new tool — built to send webhooks efficiently. While building out our initial API on third-party monitoring, every user we spoke to wanted asynchronous events — “Do you provide webhooks to notify us about downtime?”. We looked around, and sadly, we couldn’t find a great tool — language agnostic and cloud-native to build this. So we built it.
@@ -42,7 +43,7 @@ Convoy dashboard with retry button enabled
 
 ## Monitoring and Alerts
 
-Alright, we get it. I can search my event logs and debug fast. What’s left in webhooks. You see, a successful event means your servers respond with a 200. If your server consistently fails to return a 200 for whatever reason, there’s no reason to continue bombarding the endpoint with more events; It’s a dead endpoint. But how do you know & triage quickly? Essentially, you can implement different solutions — uptime monitoring, monitor average request/minute on your webhooks route, and flag it when you’re below a certain threshold. But obviously, the webhooks provider can see the failed delivery attempts over x time or x events. Without a monitoring and alerts solution, your customers become your Prometheus ( ._.). With Convoy after an endpoint consistently fails we disable the endpoint and send an email to the developers to triage.
+Alright, we get it. I can search my event logs and debug fast. What’s left in webhooks. You see, a successful event means your servers respond with a 200. If your server consistently fails to return a 200 for whatever reason, there’s no reason to continue bombarding the endpoint with more events; It’s a dead endpoint. But how do you know & triage quickly? Essentially, you can implement different solutions — uptime monitoring, monitor average request/minute on your webhooks route, and flag it when you’re below a certain threshold. But obviously, the webhooks provider can see the failed delivery attempts over x time or x events. Without a monitoring and alerts solution, your customers become your Prometheus ( .\_.). With Convoy after an endpoint consistently fails we disable the endpoint and send an email to the developers to triage.
 
 ![](https://miro.medium.com/max/1400/1*8as-x-tv8n8Kh677FgEJpQ.png)
 
