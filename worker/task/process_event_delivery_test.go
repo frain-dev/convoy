@@ -611,7 +611,7 @@ func TestProcessEventDelivery(t *testing.T) {
 			appRepo := mocks.NewMockApplicationRepository(ctrl)
 			msgRepo := mocks.NewMockEventDeliveryRepository(ctrl)
 
-			err := config.LoadConfig(tc.cfgPath)
+			err := config.LoadConfig(tc.cfgPath, new(config.Configuration))
 			if err != nil {
 				t.Errorf("Failed to load config file: %v", err)
 			}
