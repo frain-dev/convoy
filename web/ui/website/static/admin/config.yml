@@ -1,6 +1,6 @@
 publish_mode: editorial_workflow
 backend:
-    name: git-gateway
+    name: github
     branch: main
     squash_merges: true
 
