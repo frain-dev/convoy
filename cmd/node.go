@@ -1,21 +1,18 @@
 package main
 
 import (
-	"errors"
 	"os"
 	"os/signal"
 	"syscall"
 	"time"
 
 	"github.com/frain-dev/convoy"
-	"github.com/frain-dev/convoy/auth/realm_chain"
 	"github.com/frain-dev/convoy/config"
 	convoyMemberlist "github.com/frain-dev/convoy/memberlist"
 	convoyQueue "github.com/frain-dev/convoy/queue/redis"
-	"github.com/frain-dev/convoy/server"
 	"github.com/frain-dev/convoy/util"
 	"github.com/frain-dev/convoy/worker"
-	"github.com/frain-dev/convoy/worker/task"
+	"github.com/google/uuid"
 	"github.com/hashicorp/consul/api"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
@@ -37,6 +34,8 @@ func nodeServerCommand(a *app) *cobra.Command {
 	var client *api.Client
 	var sID string
 	var doneCh chan struct{}
+	var serviceKey string
+
 	cmd := &cobra.Command{
 		Use:   "server",
 		Short: "Create a server node",
@@ -47,43 +46,48 @@ func nodeServerCommand(a *app) *cobra.Command {
 			}
 
 			//Start Consul Session
-
 			client, sID, doneCh, err = startConsulSession(cfg)
 			if err != nil {
 				log.Fatalf("Consul session failed: %v", err)
 			}
 
-			kv, _, err := client.KV().Get(convoy.ServiceKey, nil)
+			if util.IsStringEmpty(serviceKey) {
+				serviceKey = convoy.ServiceKey
+			}
+
+			kv, _, err := client.KV().Get(serviceKey, nil)
 			if err != nil {
 				log.Fatalf("kv acquire err: %v", err)
 			}
 
 			if kv != nil && kv.Session != "" {
-				// there is a server already
-				log.Fatalf("There is a server node already.")
+				// there is a server node already (in this cluster)
+				log.Fatalf("There is a server node with a lock on servicekey %v", serviceKey)
 			} else {
 				hostName, err := os.Hostname()
 				if err != nil {
-					log.Fatalf("hostname err: %v", err)
+					log.Fatalf("Hostname err: %v", err)
 				}
 
+				hostName = hostName + "-" + uuid.NewString()
 				acquireKv := &api.KVPair{
 					Session: sID,
-					Key:     convoy.ServiceKey,
+					Key:     serviceKey,
 					Value:   []byte(hostName),
 				}
+
 				acquired, _, err := client.KV().Acquire(acquireKv, nil)
 				if err != nil {
-					log.Fatalf("kv acquire err: %v", err)
+					log.Fatalf("key-value acquire err: %v", err)
 				}
 
 				if acquired {
 					log.Printf("Server node intitialized!\n")
 
-					if err := convoyMemberlist.CreateMemberlist(""); err != nil {
+					if err := convoyMemberlist.CreateMemberlist("", hostName); err != nil {
 						log.Fatal("Error creating memberlist: %v", err)
 					}
-					err := startConvoyServer(a, cfg)
+					err := StartConvoyServer(a, cfg)
 					if err != nil {
 						log.Printf("Error starting convoy server: %v", err)
 					}
@@ -96,7 +100,7 @@ func nodeServerCommand(a *app) *cobra.Command {
 			return nil
 		},
 	}
-
+	cmd.Flags().StringVar(&serviceKey, "service key", "", "service key for leader election, if blank default is used.")
 	return cmd
 }
 
@@ -107,6 +111,7 @@ func nodeWorkerCommand(a *app) *cobra.Command {
 	var sID string
 	var doneCh chan struct{}
 	var clusterMembers string
+	var serviceKey string
 
 	cmd := &cobra.Command{
 		Use:   "worker",
@@ -127,12 +132,15 @@ func nodeWorkerCommand(a *app) *cobra.Command {
 			go func() {
 				hostName, err := os.Hostname()
 				if err != nil {
-					log.Fatalf("hostname err: %v", err)
+					log.Fatalf("Hostname err: %v", err)
 				}
-
+				hostName = hostName + "-" + uuid.NewString()
+				if util.IsStringEmpty(serviceKey) {
+					serviceKey = convoy.ServiceKey
+				}
 				acquireKv := &api.KVPair{
 					Session: sID,
-					Key:     convoy.ServiceKey,
+					Key:     serviceKey,
 					Value:   []byte(hostName),
 				}
 				//Leader aquisition loop
@@ -144,7 +152,7 @@ func nodeWorkerCommand(a *app) *cobra.Command {
 						}
 						if !isConsuming && !acquired {
 							log.Printf("Worker node intitialized!\n")
-							if err := convoyMemberlist.CreateMemberlist(clusterMembers); err != nil {
+							if err := convoyMemberlist.CreateMemberlist(clusterMembers, hostName); err != nil {
 								log.Fatal("Error creating memberlist: %v", err)
 							}
 							// register workers.
@@ -161,7 +169,7 @@ func nodeWorkerCommand(a *app) *cobra.Command {
 						if acquired {
 							isLeader = true
 							log.Printf("Leader aquisition successful!\n")
-							err := startConvoyServer(a, cfg)
+							err := StartConvoyServer(a, cfg)
 							if err != nil {
 								log.Printf("Error starting convoy server: %v", err)
 							}
@@ -181,6 +189,7 @@ func nodeWorkerCommand(a *app) *cobra.Command {
 		},
 	}
 	cmd.Flags().StringVar(&clusterMembers, "members", "", "comma seperated list of members")
+	cmd.Flags().StringVar(&serviceKey, "service key", "", "service key for leader election, if blank, default is used.")
 	return cmd
 }
 
@@ -230,38 +239,4 @@ func startConsulSession(cfg config.Configuration) (*api.Client, string, chan str
 	log.Printf("Starting consul session!\n")
 
 	return client, sID, doneCh, err
-}
-
-func startConvoyServer(a *app, cfg config.Configuration) error {
-	start := time.Now()
-	log.Info("Starting Convoy server...")
-	if util.IsStringEmpty(string(cfg.GroupConfig.Signature.Header)) {
-		cfg.GroupConfig.Signature.Header = config.DefaultSignatureHeader
-		log.Warnf("signature header is blank. setting default %s", config.DefaultSignatureHeader)
-	}
-
-	err := realm_chain.Init(&cfg.Auth)
-	if err != nil {
-		log.WithError(err).Fatal("failed to initialize realm chain")
-	}
-
-	if cfg.Server.HTTP.Port <= 0 {
-		return errors.New("please provide the HTTP port in the convoy.json file")
-	}
-	// register tasks.
-	handler := task.ProcessEventDelivery(a.applicationRepo, a.eventDeliveryRepo, a.groupRepo)
-	if err := task.CreateTasks(a.groupRepo, handler); err != nil {
-		log.WithError(err).Error("failed to register tasks")
-		return err
-	}
-	srv := server.New(cfg, a.eventRepo, a.eventDeliveryRepo, a.applicationRepo, a.groupRepo, a.eventQueue)
-
-	log.Infof("Started convoy server in %s", time.Since(start))
-
-	httpConfig := cfg.Server.HTTP
-	if httpConfig.SSL {
-		log.Infof("Started server with SSL: cert_file: %s, key_file: %s", httpConfig.SSLCertFile, httpConfig.SSLKeyFile)
-		return srv.ListenAndServeTLS(httpConfig.SSLCertFile, httpConfig.SSLKeyFile)
-	}
-	return srv.ListenAndServe()
 }
