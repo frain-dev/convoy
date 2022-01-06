@@ -92,54 +92,22 @@
 			</div>
 
 			<div class="posts">
-				<div class="post">
+				<div class="post" v-for="(post, index) in posts" :key="index">
 					<div class="post--img">
-						<img src="~/assets/images/post-img.png" alt="post image" />
+						<img :src="post.thumbnail" alt="post image" />
 					</div>
-					<div class="post--head">
-						<div class="tag clear">FEATURED</div>
-					</div>
-					<h3 class="post--title small">Understanding The Convoy UI</h3>
-					<p class="post--body">
-						One of the major issues and problems of webhook over the years has been the ability to monitor and understand the state of your webhooks service at any time, and that’s a major part of
-						what we’re solving with Convoy as opposed to waiting for users to report failures before…
-					</p>
+					<div class="tag clear">FEATURED</div>
+					<h3 class="post--title small">{{ post.title }}</h3>
+					<p class="post--body">{{ post.description }}</p>
 					<div class="post--footer">
 						<div class="post--author">
 							<img src="~/assets/images/author-img.png" alt="author imge" />
 							<div>
-								<h5>Emmanuel Aina</h5>
-								<p>Co-Founder Convoy</p>
+								<h5>{{ author(post.author).name }}</h5>
+								<p>{{ author(post.author).role }} Convoy</p>
 							</div>
 						</div>
-						<nuxt-link to="#">
-							Read More
-							<img src="~/assets/images/angle-right-primary.svg" alt="read more icon" />
-						</nuxt-link>
-					</div>
-				</div>
-
-				<div class="post">
-					<div class="post--img">
-						<img src="~/assets/images/post-img.png" alt="post image" />
-					</div>
-					<div class="post--head">
-						<div class="tag clear">FEATURED</div>
-					</div>
-					<h3 class="post--title small">Understanding The Convoy UI</h3>
-					<p class="post--body">
-						One of the major issues and problems of webhook over the years has been the ability to monitor and understand the state of your webhooks service at any time, and that’s a major part of
-						what we’re solving with Convoy as opposed to waiting for users to report failures before…
-					</p>
-					<div class="post--footer">
-						<div class="post--author">
-							<img src="~/assets/images/author-img.png" alt="author imge" />
-							<div>
-								<h5>Emmanuel Aina</h5>
-								<p>Co-Founder Convoy</p>
-							</div>
-						</div>
-						<nuxt-link to="#">
+						<nuxt-link :to="'blog/' + post.slug">
 							Read More
 							<img src="~/assets/images/angle-right-primary.svg" alt="read more icon" />
 						</nuxt-link>
@@ -161,62 +129,6 @@
 				</div>
 				<img src="~/assets/images/mailbox.gif" alt="mailbox animation" />
 			</div>
-
-			<div class="posts">
-				<div class="post">
-					<div class="post--img">
-						<img src="~/assets/images/post-img.png" alt="post image" />
-					</div>
-					<div class="post--head">
-						<div class="tag clear">FEATURED</div>
-					</div>
-					<h3 class="post--title small">Understanding The Convoy UI</h3>
-					<p class="post--body">
-						One of the major issues and problems of webhook over the years has been the ability to monitor and understand the state of your webhooks service at any time, and that’s a major part of
-						what we’re solving with Convoy as opposed to waiting for users to report failures before…
-					</p>
-					<div class="post--footer">
-						<div class="post--author">
-							<img src="~/assets/images/author-img.png" alt="author imge" />
-							<div>
-								<h5>Emmanuel Aina</h5>
-								<p>Co-Founder Convoy</p>
-							</div>
-						</div>
-						<nuxt-link to="#">
-							Read More
-							<img src="~/assets/images/angle-right-primary.svg" alt="read more icon" />
-						</nuxt-link>
-					</div>
-				</div>
-
-				<div class="post">
-					<div class="post--img">
-						<img src="~/assets/images/post-img.png" alt="post image" />
-					</div>
-					<div class="post--head">
-						<div class="tag clear">FEATURED</div>
-					</div>
-					<h3 class="post--title small">Understanding The Convoy UI</h3>
-					<p class="post--body">
-						One of the major issues and problems of webhook over the years has been the ability to monitor and understand the state of your webhooks service at any time, and that’s a major part of
-						what we’re solving with Convoy as opposed to waiting for users to report failures before…
-					</p>
-					<div class="post--footer">
-						<div class="post--author">
-							<img src="~/assets/images/author-img.png" alt="author imge" />
-							<div>
-								<h5>Emmanuel Aina</h5>
-								<p>Co-Founder Convoy</p>
-							</div>
-						</div>
-						<nuxt-link to="#">
-							Read More
-							<img src="~/assets/images/angle-right-primary.svg" alt="read more icon" />
-						</nuxt-link>
-					</div>
-				</div>
-			</div>
 		</main>
 	</div>
 </template>
@@ -228,6 +140,18 @@ export default {
 		return {
 			showCategories: false
 		};
+	},
+	async asyncData({ $content }) {
+		const posts = await $content('blog').only(['author', 'id', 'description', 'createdAt', 'featureImg', 'slug', 'thumbnail', 'title', 'tags']).fetch();
+		const authors = await $content('blog-authors').fetch();
+		console.log('🚀 ~ file: index.vue ~ line 234 ~ asyncData ~ pageData', posts);
+		return { posts, authors };
+	},
+	methods: {
+		author(authorSlug) {
+			console.log(this.authors.find(author => author.slug === authorSlug));
+			return this.authors.find(author => author.slug === authorSlug);
+		}
 	}
 };
 </script>
