@@ -454,7 +454,7 @@ func TestApplicationHandler_DeleteGroup(t *testing.T) {
 				tc.dbFn(app)
 			}
 
-			err := config.LoadConfig(tc.cfgPath)
+			err := config.LoadConfig(tc.cfgPath, new(config.Configuration))
 			if err != nil {
 				t.Errorf("Failed to load config file: %v", err)
 			}
