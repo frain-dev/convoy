@@ -12,6 +12,7 @@ import (
 	"github.com/frain-dev/convoy/worker/task"
 	"github.com/go-chi/render"
 	"github.com/google/uuid"
+	log "github.com/sirupsen/logrus"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
@@ -48,6 +49,7 @@ func (a *applicationHandler) DeleteGroup(w http.ResponseWriter, r *http.Request)
 
 	err := a.groupRepo.DeleteGroup(r.Context(), group.UID)
 	if err != nil {
+		log.WithError(err).Error("failed to delete group")
 		_ = render.Render(w, r, newErrorResponse("failed to delete group", http.StatusInternalServerError))
 		return
 	}
