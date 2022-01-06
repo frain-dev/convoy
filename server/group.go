@@ -2,11 +2,14 @@ package server
 
 import (
 	"encoding/json"
+	"fmt"
 	"net/http"
 	"time"
 
 	"github.com/frain-dev/convoy"
 	"github.com/frain-dev/convoy/auth"
+	"github.com/frain-dev/convoy/config"
+	"github.com/frain-dev/convoy/config/algo"
 	"github.com/frain-dev/convoy/server/models"
 	"github.com/frain-dev/convoy/util"
 	"github.com/frain-dev/convoy/worker/task"
@@ -55,6 +58,41 @@ func (a *applicationHandler) CreateGroup(w http.ResponseWriter, r *http.Request)
 	groupName := newGroup.Name
 	if util.IsStringEmpty(groupName) {
 		_ = render.Render(w, r, newErrorResponse("please provide a valid name", http.StatusBadRequest))
+		return
+	}
+
+	if util.IsStringEmpty(string(newGroup.Config.Strategy.Type)) {
+		_ = render.Render(w, r, newErrorResponse("please provide a valid strategy type", http.StatusBadRequest))
+		return
+	}
+
+	if string(newGroup.Config.Strategy.Type) != string(config.DefaultStrategyProvider) {
+		_ = render.Render(w, r, newErrorResponse(fmt.Sprintf("unsupported strategy type: %s", newGroup.Config.Strategy.Type), http.StatusBadRequest))
+		return
+	}
+
+	if newGroup.Config.Strategy.Default.IntervalSeconds == 0 {
+		_ = render.Render(w, r, newErrorResponse("please provide a valid interval seconds", http.StatusBadRequest))
+		return
+	}
+
+	if newGroup.Config.Strategy.Default.RetryLimit == 0 {
+		_ = render.Render(w, r, newErrorResponse("please provide a valid retry limit", http.StatusBadRequest))
+		return
+	}
+
+	if util.IsStringEmpty(string(newGroup.Config.Signature.Header)) {
+		_ = render.Render(w, r, newErrorResponse("please provide a valid signature header", http.StatusBadRequest))
+		return
+	}
+
+	if util.IsStringEmpty(string(newGroup.Config.Signature.Hash)) {
+		_ = render.Render(w, r, newErrorResponse("please provide a valid hash", http.StatusBadRequest))
+		return
+	}
+
+	if _, ok := algo.M[newGroup.Config.Signature.Hash]; !ok {
+		_ = render.Render(w, r, newErrorResponse(fmt.Sprintf("invalid hash algorithm - '%s', must be one of %s", newGroup.Config.Signature.Hash, algo.Algos), http.StatusBadRequest))
 		return
 	}
 
