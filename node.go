@@ -15,7 +15,9 @@ type QueueMeta struct {
 	QueueType string `json:"queueType"`
 }
 
-var ServiceKey = "service/distributed-worker/leader"
+//Default service key for leader.
+var ServiceKey = "service/defaultservice/leader"
+
 var ServiceName = "distributed-worker"
 
 var EventQueueKey = "eventqueue/meta/data"
