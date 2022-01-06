@@ -199,7 +199,7 @@ func LoadConfig(p string, override *Configuration) error {
 	}
 
 	if len(override.Queue.Redis.DSN) > 0 {
-		c.Queue.Redis.DSN = override.Database.Dsn
+		c.Queue.Redis.DSN = override.Queue.Redis.DSN
 	}
 
 	if len(override.Database.Dsn) > 0 {
