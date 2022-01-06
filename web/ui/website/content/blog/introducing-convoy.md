@@ -2,14 +2,14 @@
 title: Introducing Convoy
 date: 2021-10-25T17:10:13.696Z
 description: After weeks of work, I’m pleased to announce our new tool — built
-    to send webhooks efficiently. While building out our initial API on
-    third-party monitoring, every user we spoke to wanted asynchronous events —
-    “Do you provide webhooks to notify us about downtime?”.
-featureImg: https://res.cloudinary.com/frain/image/upload/c_crop,f_auto,q_auto,w_367,x_41,y_41/v1641490017/blog/Introducing%20Convoy/convoy-dashboard_okeuo8.png
-thumbnail: https://res.cloudinary.com/frain/image/upload/c_fill,h_179,w_461,x_0,y_0/v1641490017/blog/Introducing%20Convoy/convoy-dashboard_okeuo8.png
+  to send webhooks efficiently. While building out our initial API on
+  third-party monitoring, every user we spoke to wanted asynchronous events —
+  “Do you provide webhooks to notify us about downtime?”.
+featureImg: /convoy-dashboard_okeuo8.png
+thumbnail: /convoy-dashboard_okeuo8.png
 tags:
-    - convoy
-    - featured
+  - convoy
+featurePost: true
 author: subomi-oluwalana
 ---
 
