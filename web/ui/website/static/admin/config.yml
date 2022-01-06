@@ -1,6 +1,7 @@
 publish_mode: editorial_workflow
 backend:
     name: github
+    repo: frain-dev/convoy
     branch: main
     squash_merges: true
 
