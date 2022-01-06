@@ -1,6 +1,8 @@
 name: golangci-lint
 on:
   pull_request:
+    branches-ignore:
+      - "cms/*"
 jobs:
   golangci:
     name: lint
