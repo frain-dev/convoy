@@ -115,13 +115,17 @@ func (db *groupRepo) FetchGroupByID(ctx context.Context,
 func (db *groupRepo) DeleteGroup(ctx context.Context, uid string) error {
 
 	update := bson.M{
-		"deleted_at":      primitive.NewDateTimeFromTime(time.Now()),
-		"document_status": convoy.DeletedDocumentStatus,
+		"$set": bson.M{
+			"deleted_at":      primitive.NewDateTimeFromTime(time.Now()),
+			"document_status": convoy.DeletedDocumentStatus,
+		},
 	}
 
 	rollback := bson.M{
-		"deleted_at":      nil,
-		"document_status": convoy.ActiveDocumentStatus,
+		"$set": bson.M{
+			"deleted_at":      nil,
+			"document_status": convoy.ActiveDocumentStatus,
+		},
 	}
 
 	groupFilter := bson.M{"uid": uid}
@@ -133,9 +137,9 @@ func (db *groupRepo) DeleteGroup(ctx context.Context, uid string) error {
 	appFilter := bson.M{"group_id": uid}
 
 	appCollection := db.innerDB.Collection(AppCollections)
-	_, err = appCollection.UpdateOne(ctx, appFilter, update)
+	_, err = appCollection.UpdateMany(ctx, appFilter, update)
 	if err != nil {
-		_, err = db.inner.UpdateOne(ctx, groupFilter, rollback)
+		_, err = db.inner.UpdateMany(ctx, groupFilter, rollback)
 		if err != nil {
 			log.WithError(err).Error("failed to rollback group delete")
 		}
@@ -145,10 +149,10 @@ func (db *groupRepo) DeleteGroup(ctx context.Context, uid string) error {
 
 	msgFilter := bson.M{"app_metadata.group_id": uid}
 	msgCollection := db.innerDB.Collection(EventCollection)
-	_, err = msgCollection.UpdateOne(ctx, msgFilter, rollback)
+	_, err = msgCollection.UpdateMany(ctx, msgFilter, update)
 	if err != nil {
 		// rollback app delete
-		_, err = appCollection.UpdateOne(ctx, appFilter, rollback)
+		_, err = appCollection.UpdateMany(ctx, appFilter, rollback)
 		if err != nil {
 			log.WithError(err).Error("failed to rollback group delete")
 		}
