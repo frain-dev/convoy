@@ -2,7 +2,6 @@ package memberlist
 
 import (
 	"encoding/json"
-	"flag"
 	"fmt"
 	"log"
 	"net/http"
@@ -15,7 +14,6 @@ import (
 
 var (
 	mtx        sync.RWMutex
-	items      = map[string]string{}
 	broadcasts *memberlist.TransmitLimitedQueue
 )
 
@@ -28,10 +26,6 @@ type delegate struct{}
 
 type update struct {
 	Action string // kill
-}
-
-func init() {
-	flag.Parse()
 }
 
 func (b *broadcast) Invalidates(other memberlist.Broadcast) bool {
@@ -66,8 +60,6 @@ func (d *delegate) NotifyMsg(b []byte) {
 		mtx.Lock()
 		for _, u := range updates {
 			switch u.Action {
-			case "add":
-				fmt.Printf("add")
 			case "kill":
 				os.Exit(0)
 			}
@@ -82,42 +74,27 @@ func (d *delegate) GetBroadcasts(overhead, limit int) [][]byte {
 
 func (d *delegate) LocalState(join bool) []byte {
 	mtx.RLock()
-	m := items
+	m, _ := json.Marshal([]*update{})
 	mtx.RUnlock()
 	b, _ := json.Marshal(m)
 	return b
 }
 
 func (d *delegate) MergeRemoteState(buf []byte, join bool) {
-	if len(buf) == 0 {
-		return
-	}
-	if !join {
-		return
-	}
-	var m map[string]string
-	if err := json.Unmarshal(buf, &m); err != nil {
-		return
-	}
-	mtx.Lock()
-	for k, v := range m {
-		items[k] = v
-	}
-	mtx.Unlock()
 }
 
 type eventDelegate struct{}
 
 func (ed *eventDelegate) NotifyJoin(node *memberlist.Node) {
-	log.Printf("A node has joined: " + node.String())
+	fmt.Println("A node has joined: " + node.String())
 }
 
 func (ed *eventDelegate) NotifyLeave(node *memberlist.Node) {
-	log.Printf("A node has left: " + node.String())
+	fmt.Println("A node has left: " + node.String())
 }
 
 func (ed *eventDelegate) NotifyUpdate(node *memberlist.Node) {
-	log.Printf("A node was updated: " + node.String())
+	fmt.Println("A node was updated: " + node.String())
 }
 
 //Create a memberlist or join one if a member is specified.
