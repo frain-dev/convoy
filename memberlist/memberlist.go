@@ -10,7 +10,6 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/google/uuid"
 	"github.com/hashicorp/memberlist"
 )
 
@@ -122,13 +121,12 @@ func (ed *eventDelegate) NotifyUpdate(node *memberlist.Node) {
 }
 
 //Create a memberlist or join one if a member is specified.
-func CreateMemberlist(members string) error {
-	hostname, _ := os.Hostname()
+func CreateMemberlist(members string, hostname string) error {
 	c := memberlist.DefaultLocalConfig()
 	c.Events = &eventDelegate{}
 	c.Delegate = &delegate{}
 	c.BindPort = 0
-	c.Name = hostname + "-" + uuid.NewString()
+	c.Name = hostname
 	m, err := memberlist.Create(c)
 	if err != nil {
 		return err
