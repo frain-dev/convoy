@@ -140,7 +140,7 @@ func Get() (Configuration, error) {
 
 // LoadConfig is used to load the configuration from either the json config file
 // or the environment variables.
-func LoadConfig(p string) error {
+func LoadConfig(p string, override *Configuration) error {
 	f, err := os.Open(p)
 	if err != nil {
 		return err
@@ -196,6 +196,14 @@ func LoadConfig(p string) error {
 	err = ensureAuthConfig(c.Auth)
 	if err != nil {
 		return err
+	}
+
+	if len(override.Queue.Redis.DSN) > 0 {
+		c.Queue.Redis.DSN = override.Database.Dsn
+	}
+
+	if len(override.Database.Dsn) > 0 {
+		c.Database.Dsn = override.Database.Dsn
 	}
 
 	cfgSingleton.Store(c)

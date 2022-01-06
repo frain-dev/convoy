@@ -97,7 +97,7 @@ func TestApplicationHandler_GetGroup(t *testing.T) {
 				tc.dbFn(app)
 			}
 
-			err := config.LoadConfig(tc.cfgPath)
+			err := config.LoadConfig(tc.cfgPath, provideFakeOverride())
 			if err != nil {
 				t.Errorf("Failed to load config file: %v", err)
 			}
@@ -173,7 +173,7 @@ func TestApplicationHandler_CreateGroup(t *testing.T) {
 				tc.dbFn(app)
 			}
 
-			err := config.LoadConfig(tc.cfgPath)
+			err := config.LoadConfig(tc.cfgPath, provideFakeOverride())
 			if err != nil {
 				t.Errorf("Failed to load config file: %v", err)
 			}
@@ -264,7 +264,7 @@ func TestApplicationHandler_UpdateGroup(t *testing.T) {
 				tc.dbFn(app)
 			}
 
-			err := config.LoadConfig(tc.cfgPath)
+			err := config.LoadConfig(tc.cfgPath, provideFakeOverride())
 			if err != nil {
 				t.Errorf("Failed to load config file: %v", err)
 			}
@@ -342,7 +342,7 @@ func TestApplicationHandler_GetGroups(t *testing.T) {
 				tc.dbFn(app)
 			}
 
-			err := config.LoadConfig(tc.cfgPath)
+			err := config.LoadConfig(tc.cfgPath, provideFakeOverride())
 			if err != nil {
 				t.Errorf("Failed to load config file: %v", err)
 			}
