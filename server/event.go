@@ -407,7 +407,9 @@ func (a *applicationHandler) GetEventDeliveriesPaged(w http.ResponseWriter, r *h
 	status := make([]convoy.EventDeliveryStatus, 0)
 
 	for _, s := range r.URL.Query()["status"] {
-		status = append(status, convoy.EventDeliveryStatus(s))
+		if !util.IsStringEmpty(s) {
+			status = append(status, convoy.EventDeliveryStatus(s))
+		}
 	}
 
 	searchParams, err := getSearchParams(r)
