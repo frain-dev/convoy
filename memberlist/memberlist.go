@@ -2,14 +2,13 @@ package memberlist
 
 import (
 	"encoding/json"
-	"fmt"
-	"log"
 	"net/http"
 	"os"
 	"strings"
 	"sync"
 
 	"github.com/hashicorp/memberlist"
+	log "github.com/sirupsen/logrus"
 )
 
 var (
@@ -86,15 +85,15 @@ func (d *delegate) MergeRemoteState(buf []byte, join bool) {
 type eventDelegate struct{}
 
 func (ed *eventDelegate) NotifyJoin(node *memberlist.Node) {
-	fmt.Println("A node has joined: " + node.String())
+	log.Infof("A node has joined: " + node.String())
 }
 
 func (ed *eventDelegate) NotifyLeave(node *memberlist.Node) {
-	fmt.Println("A node has left: " + node.String())
+	log.Infof("A node has left: " + node.String())
 }
 
 func (ed *eventDelegate) NotifyUpdate(node *memberlist.Node) {
-	fmt.Println("A node was updated: " + node.String())
+	log.Infof("A node was updated: " + node.String())
 }
 
 //Create a memberlist or join one if a member is specified.
@@ -122,7 +121,7 @@ func CreateMemberlist(members string, hostname string) error {
 		RetransmitMult: 3,
 	}
 	node := m.LocalNode()
-	log.Printf("Local member %s:%d\n", node.Addr, node.Port)
+	log.Infof("Local member %s:%d\n", node.Addr, node.Port)
 	return nil
 }
 
