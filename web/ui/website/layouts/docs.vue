@@ -42,12 +42,6 @@
 			<main class="page--container">
 				<Nuxt />
 			</main>
-
-			<footer>
-				<div>
-					<img src="" alt="" />
-				</div>
-			</footer>
 		</div>
 	</div>
 </template>

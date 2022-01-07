@@ -58,7 +58,22 @@ func main() {
 				return err
 			}
 
-			err = config.LoadConfig(cfgPath)
+			override := new(config.Configuration)
+
+			// override config with cli flags
+			redisCliDsn, err := cmd.Flags().GetString("queue")
+			if err != nil {
+				return err
+			}
+			override.Queue.Redis.DSN = redisCliDsn
+
+			mongoCliDsn, err := cmd.Flags().GetString("db")
+			if err != nil {
+				return err
+			}
+			override.Database.Dsn = mongoCliDsn
+
+			err = config.LoadConfig(cfgPath, override)
 			if err != nil {
 				return err
 			}
@@ -147,8 +162,12 @@ func main() {
 	}
 
 	var configFile string
+	var redisDsn string
+	var mongoDsn string
 
 	cmd.PersistentFlags().StringVar(&configFile, "config", "./convoy.json", "Configuration file for convoy")
+	cmd.PersistentFlags().StringVar(&redisDsn, "queue", "", "Redis DSN")
+	cmd.PersistentFlags().StringVar(&mongoDsn, "db", "", "MongoDB DSN")
 
 	cmd.AddCommand(addVersionCommand())
 	cmd.AddCommand(addCreateCommand(app))

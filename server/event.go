@@ -131,6 +131,7 @@ func (a *applicationHandler) CreateAppEvent(w http.ResponseWriter, r *http.Reque
 			},
 			AppMetadata: &convoy.AppMetadata{
 				UID:          app.UID,
+				Title:        app.Title,
 				GroupID:      app.GroupID,
 				SupportEmail: app.SupportEmail,
 			},
@@ -155,10 +156,13 @@ func (a *applicationHandler) CreateAppEvent(w http.ResponseWriter, r *http.Reque
 
 		taskName := convoy.EventProcessor.SetPrefix(g.Name)
 
-		err = a.eventQueue.Write(r.Context(), taskName, eventDelivery, 1*time.Second)
-		if err != nil {
-			log.Errorf("Error occurred sending new event to the queue %s", err)
+		if eventDelivery.Status != convoy.DiscardedEventStatus {
+			err = a.eventQueue.Write(r.Context(), taskName, eventDelivery, 1*time.Second)
+			if err != nil {
+				log.Errorf("Error occurred sending new event to the queue %s", err)
+			}
 		}
+
 	}
 
 	_ = render.Render(w, r, newServerResponse("App event created successfully", event, http.StatusCreated))
@@ -432,7 +436,7 @@ func (a *applicationHandler) GetEventsPaged(w http.ResponseWriter, r *http.Reque
 // @Param perPage query string false "results per page"
 // @Param page query string false "page number"
 // @Param sort query string false "sort order"
-// @Param status query string false "status"
+// @Param status query []string false "status"
 // @Success 200 {object} serverResponse{data=pagedResponse{content=[]convoy.EventDelivery{data=Stub}}}
 // @Failure 400,401,500 {object} serverResponse{data=Stub}
 // @Security ApiKeyAuth
@@ -443,7 +447,13 @@ func (a *applicationHandler) GetEventDeliveriesPaged(w http.ResponseWriter, r *h
 	group := getGroupFromContext(r.Context())
 	appID := r.URL.Query().Get("appId")
 	eventID := r.URL.Query().Get("eventId")
-	status := r.URL.Query().Get("status")
+	status := make([]convoy.EventDeliveryStatus, 0)
+
+	for _, s := range r.URL.Query()["status"] {
+		if !util.IsStringEmpty(s) {
+			status = append(status, convoy.EventDeliveryStatus(s))
+		}
+	}
 
 	searchParams, err := getSearchParams(r)
 	if err != nil {
@@ -451,7 +461,7 @@ func (a *applicationHandler) GetEventDeliveriesPaged(w http.ResponseWriter, r *h
 		return
 	}
 
-	ed, paginationData, err := a.eventDeliveryRepo.LoadEventDeliveriesPaged(r.Context(), group.UID, appID, eventID, convoy.EventDeliveryStatus(status), searchParams, pageable)
+	ed, paginationData, err := a.eventDeliveryRepo.LoadEventDeliveriesPaged(r.Context(), group.UID, appID, eventID, status, searchParams, pageable)
 	if err != nil {
 		_ = render.Render(w, r, newErrorResponse("an error occurred while fetching event deliveries", http.StatusInternalServerError))
 		log.WithError(err)

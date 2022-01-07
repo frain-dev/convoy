@@ -1,6 +1,17 @@
 {
 	"components": {
 		"schemas": {
+			"config.DefaultStrategyConfiguration": {
+				"properties": {
+					"intervalSeconds": {
+						"type": "integer"
+					},
+					"retryLimit": {
+						"type": "integer"
+					}
+				},
+				"type": "object"
+			},
 			"config.GroupConfig": {
 				"properties": {
 					"disableEndpoint": {
@@ -29,15 +40,7 @@
 			"config.StrategyConfiguration": {
 				"properties": {
 					"default": {
-						"properties": {
-							"intervalSeconds": {
-								"type": "integer"
-							},
-							"retryLimit": {
-								"type": "integer"
-							}
-						},
-						"type": "object"
+						"$ref": "#/components/schemas/config.DefaultStrategyConfiguration"
 					},
 					"type": {
 						"type": "string"
@@ -1798,7 +1801,10 @@
 						"in": "query",
 						"name": "status",
 						"schema": {
-							"type": "string"
+							"items": {
+								"type": "string"
+							},
+							"type": "array"
 						}
 					}
 				],
