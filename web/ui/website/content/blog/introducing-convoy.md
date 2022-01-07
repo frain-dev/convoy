@@ -2,17 +2,15 @@
 title: Introducing Convoy
 date: 2021-10-25T17:10:13.696Z
 description: After weeks of work, I’m pleased to announce our new tool — built
-  to send webhooks efficiently. While building out our initial API on
-  third-party monitoring, every user we spoke to wanted asynchronous events —
-  “Do you provide webhooks to notify us about downtime?”.
+    to send webhooks efficiently. While building out our initial API on
+    third-party monitoring, every user we spoke to wanted asynchronous events —
+    “Do you provide webhooks to notify us about downtime?”.
 featureImg: /convoy-dashboard_dw7hp1.png
 thumbnail: /convoy-dashboard_dw7hp1.png
 featurePost: true
 author: subomi-oluwalana
 tag: convoy
 ---
-
-# Introducing Convoy
 
 After weeks of work, I’m pleased to announce our new tool — built to send webhooks efficiently. While building out our initial API on third-party monitoring, every user we spoke to wanted asynchronous events — “Do you provide webhooks to notify us about downtime?”. We looked around, and sadly, we couldn’t find a great tool — language agnostic and cloud-native to build this. So we built it.
 

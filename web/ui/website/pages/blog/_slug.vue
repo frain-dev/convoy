@@ -35,15 +35,13 @@
 
 					<ul class="socials">
 						<li>
-							<a target="_blank" rel="noopener noreferrer" href="https://join.slack.com/t/convoy-community/shared_invite/zt-xiuuoj0m-yPp~ylfYMCV9s038QL0IUQ">
-								<img src="~/assets/images/slack-grey-icon.svg" alt="slack logo" />
+							<a
+								rel="noopener noreferrer"
+								:href="'https://twitter.com/intent/tweet/?text=' + blogPost.title + '%20from%20@fraindev&url=https://getconvoy.io/blog/' + blogPost.slug + '&via=frainDev'"
+								target="_blank"
+							>
+								<img src="~/assets/images/twitter-grey-icon.svg" alt="twitter logo" />
 							</a>
-						</li>
-						<li>
-							<a target="_blank" rel="noopener noreferrer" href="https://twitter.com/fraindev"><img src="~/assets/images/twitter-grey-icon.svg" alt="twitter logo" /></a>
-						</li>
-						<li>
-							<a target="_blank" rel="noopener noreferrer" href="https://github.com/frain-dev/convoy"><img src="~/assets/images/github-grey-icon.svg" alt="mail logo" /></a>
 						</li>
 					</ul>
 				</div>
@@ -59,32 +57,7 @@
 		<div class="more-posts">
 			<h1>More Posts</h1>
 			<div class="posts">
-				<div class="post" v-for="(post, index) in posts" :key="'post' + index">
-					<div class="post--img">
-						<img src="~/assets/images/post-img.png" alt="post image" />
-					</div>
-					<div class="post--head">
-						<div class="tag clear">FEATURED</div>
-					</div>
-					<h3 class="post--title small">Understanding The Convoy UI</h3>
-					<p class="post--body">
-						One of the major issues and problems of webhook over the years has been the ability to monitor and understand the state of your webhooks service at any time, and that’s a major part of
-						what we’re solving with Convoy as opposed to waiting for users to report failures before…
-					</p>
-					<div class="post--footer">
-						<div class="post--author">
-							<img src="~/assets/images/author-img.png" alt="author imge" />
-							<div>
-								<h5>Emmanuel Aina</h5>
-								<p>Co-Founder Convoy</p>
-							</div>
-						</div>
-						<nuxt-link to="#">
-							Read More
-							<img src="~/assets/images/angle-right-primary.svg" alt="read more icon" />
-						</nuxt-link>
-					</div>
-				</div>
+				<Post v-for="(post, index) in posts" :key="index" :post="post" :authors="authors" />
 			</div>
 		</div>
 	</div>
@@ -97,17 +70,10 @@ export default {
 		return {};
 	},
 	async asyncData({ $content, params }) {
-		try {
-			const blogPost = await $content('blog/' + params.slug || 'index').fetch();
-			const morePosts = await $content('blog').only(['author', 'description', 'slug', 'thumbnail', 'title', 'date', 'tag']).fetch();
-			const posts = morePosts.slice(0, 3);
-			const authors = await $content('blog-authors').fetch();
-			return { blogPost, authors, posts };
-		} catch (error) {
-			console.log('🚀 ~ file: _slug.vue ~ line 173 ~ asyncData ~ error', error);
-			// const pageData = await $content('404').fetch();
-			// return { pageData };
-		}
+		const blogPost = await $content('blog/' + params.slug || 'index').fetch();
+		const posts = await $content('blog').only(['author', 'description', 'slug', 'thumbnail', 'title', 'date', 'tag']).fetch();
+		const authors = await $content('blog-authors').fetch();
+		return { blogPost, authors, posts };
 	},
 	methods: {
 		author(authorSlug) {
@@ -243,7 +209,7 @@ main {
 	&--body {
 		font-size: 16px;
 		line-height: 24px;
-		color: #5f5f68;
+		color: #737a91;
 
 		ul {
 			list-style-type: disc;

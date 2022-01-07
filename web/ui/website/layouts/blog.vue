@@ -45,9 +45,9 @@
 								</div>
 								<img src="~/assets/images/mailbox.gif" alt="mailbox animation" />
 							</div>
-							<form>
+							<form @submit.prevent="requestAccess()">
 								<img src="~/assets/images/mail-primary-icon.svg" alt="mail icon" />
-								<input type="email" placeholder="Your Emaill" />
+								<input type="email" id="email" placeholder="Your email" aria-label="Email" v-model="earlyAccessEmail" />
 								<button>
 									<img src="~/assets/images/send-primary-icon.svg" alt="send icon" />
 								</button>
@@ -66,13 +66,41 @@ export default {
 	data: () => {
 		return {
 			showMenu: false,
-			pages: []
+			pages: [],
+			earlyAccessEmail: '',
+			isSubmitingloadingEarlyAccessForm: false
 		};
 	},
 	async mounted() {
 		let pages = await this.$content('docs').only(['title', 'id', 'toc', 'order']).sortBy('order', 'asc').fetch();
 		pages = pages.sort((a, b) => a.order - b.order);
 		this.pages = pages;
+	},
+	methods: {
+		async requestAccess() {
+			this.isSubmitingloadingEarlyAccessForm = true;
+			try {
+				const response = await fetch('/.netlify/functions/subscribe', {
+					method: 'POST',
+					mode: 'cors',
+					cache: 'no-cache',
+					credentials: 'same-origin',
+					headers: {
+						'Content-Type': 'application/json'
+					},
+					redirect: 'follow',
+					referrerPolicy: 'no-referrer',
+					body: JSON.stringify({
+						email: this.earlyAccessEmail
+					})
+				});
+				await response.json();
+				this.earlyAccessEmail = '';
+				this.isSubmitingloadingEarlyAccessForm = false;
+			} catch (error) {
+				this.isSubmitingloadingEarlyAccessForm = false;
+			}
+		}
 	}
 };
 </script>
@@ -161,6 +189,8 @@ footer {
 
 	nav {
 		flex-wrap: wrap;
+		max-width: 1106px;
+		margin: auto;
 	}
 }
 </style>

@@ -42,17 +42,8 @@
 					</button>
 				</h1>
 				<ul class="dropdown" v-if="showCategories">
-					<li>
-						<nuxt-link to="#">All Posts</nuxt-link>
-					</li>
-					<li>
-						<nuxt-link to="#">Engineering</nuxt-link>
-					</li>
-					<li>
-						<nuxt-link to="#">Support</nuxt-link>
-					</li>
-					<li>
-						<nuxt-link to="#">Marketing</nuxt-link>
+					<li v-for="(tag, index) in tags" :key="'tag' + index">
+						<nuxt-link :to="'/blog?tag=' + tag.slug">{{ tag.name }}</nuxt-link>
 					</li>
 				</ul>
 			</div>
@@ -80,41 +71,21 @@
 					</div>
 				</div>
 				<div class="img">
-					<img :src="'https://res.cloudinary.com/frain/image/upload/c_crop,f_auto,q_auto,w_367,h_350,x_41,y_41/' + featurePosts[0].featureImg" alt="featured post img" />
+					<img :src="'https://res.cloudinary.com/frain/image/upload/c_crop,f_auto,q_auto,w_367,h_330,x_41,y_41/' + featurePosts[0].featureImg" alt="featured post img" />
 				</div>
 			</div>
 
 			<div class="posts">
-				<div class="post" v-for="(post, index) in posts" :key="index">
-					<div class="post--img">
-						<img :src="'https://res.cloudinary.com/frain/image/upload/c_fill,g_north,h_179,w_461,x_0,y_0/' + post.thumbnail" alt="post image" />
-					</div>
-					<div class="tag clear">{{ post.tag }}</div>
-					<h3 class="post--title small">{{ post.title }}</h3>
-					<p class="post--body">{{ post.description }}</p>
-					<div class="post--footer">
-						<div class="post--author">
-							<img src="~/assets/images/author-img.png" alt="author imge" />
-							<div>
-								<h5>{{ author(post.author).name }}</h5>
-								<p>{{ author(post.author).role }} Convoy</p>
-							</div>
-						</div>
-						<nuxt-link :to="'blog/' + post.slug">
-							Read More
-							<img src="~/assets/images/angle-right-primary.svg" alt="read more icon" />
-						</nuxt-link>
-					</div>
-				</div>
+				<Post v-for="(post, index) in posts" :key="index" :post="post" :authors="authors" />
 			</div>
 
 			<div class="newsletter card">
 				<div>
 					<h5>Join our newsletter</h5>
 					<p>No spam! Just articles, events, and talks.</p>
-					<form>
+					<form @submit.prevent="requestAccess()">
 						<img src="~/assets/images/mail-primary-icon.svg" alt="mail icon" />
-						<input type="email" placeholder="Your Emaill" />
+						<input type="email" id="email" placeholder="Your email" aria-label="Email" v-model="earlyAccessEmail" />
 						<button>
 							<img src="~/assets/images/send-primary-icon.svg" alt="send icon" />
 						</button>
@@ -131,17 +102,45 @@ export default {
 	layout: 'blog',
 	data: () => {
 		return {
-			showCategories: false
+			showCategories: false,
+			earlyAccessEmail: '',
+			isSubmitingloadingEarlyAccessForm: false
 		};
 	},
-	async asyncData({ $content }) {
-		const posts = await $content('blog').only(['author', 'description', 'featureImg', 'slug', 'thumbnail', 'title', 'featurePost', 'date', 'tag']).fetch();
-		const featurePosts = posts.filter(post => post.featurePost === true);
+	async asyncData({ $content, route }) {
+		const posts = route.query?.tag
+			? await $content('blog').only(['author', 'description', 'featureImg', 'slug', 'thumbnail', 'title', 'featurePost', 'date', 'tag']).where({ tag: route.query.tag }).fetch()
+			: await $content('blog').only(['author', 'description', 'featureImg', 'slug', 'thumbnail', 'title', 'featurePost', 'date', 'tag']).fetch();
+		const featurePosts = posts.length > 0 ? posts.filter(post => post.featurePost === true) : [];
 		const authors = await $content('blog-authors').fetch();
 		const tags = await $content('blog-tags').fetch();
 		return { posts, authors, featurePosts, tags };
 	},
 	methods: {
+		async requestAccess() {
+			this.isSubmitingloadingEarlyAccessForm = true;
+			try {
+				const response = await fetch('/.netlify/functions/subscribe', {
+					method: 'POST',
+					mode: 'cors',
+					cache: 'no-cache',
+					credentials: 'same-origin',
+					headers: {
+						'Content-Type': 'application/json'
+					},
+					redirect: 'follow',
+					referrerPolicy: 'no-referrer',
+					body: JSON.stringify({
+						email: this.earlyAccessEmail
+					})
+				});
+				await response.json();
+				this.earlyAccessEmail = '';
+				this.isSubmitingloadingEarlyAccessForm = false;
+			} catch (error) {
+				this.isSubmitingloadingEarlyAccessForm = false;
+			}
+		},
 		author(authorSlug) {
 			return this.authors.find(author => author.slug === authorSlug);
 		}
@@ -202,7 +201,7 @@ main {
 	max-width: 970px;
 
 	@media (min-width: $desktopBreakPoint) {
-		padding: 70px 0 0 46px;
+		padding: 56px 0 0 56px;
 		display: flex;
 		justify-content: space-between;
 		flex-wrap: wrap;
@@ -243,7 +242,7 @@ main {
 .card {
 	background: #ffffff;
 	box-shadow: 10px 20px 81px rgb(111 118 138 / 8%);
-	border-radius: 32px;
+	border-radius: 8px;
 }
 
 .dropdown-container {
