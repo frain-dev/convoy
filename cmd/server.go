@@ -5,6 +5,8 @@ import (
 	"time"
 
 	"github.com/frain-dev/convoy/auth/realm_chain"
+	convoyQueue "github.com/frain-dev/convoy/queue/redis"
+	"github.com/frain-dev/convoy/worker"
 	"github.com/frain-dev/convoy/worker/task"
 
 	"github.com/frain-dev/convoy/config"
@@ -26,7 +28,8 @@ func addServerCommand(a *app) *cobra.Command {
 				return err
 			}
 
-			err = StartConvoyServer(a, cfg)
+			err = StartConvoyServer(a, cfg, true)
+
 			if err != nil {
 				log.Printf("Error starting convoy server: %v", err)
 				return err
@@ -38,7 +41,7 @@ func addServerCommand(a *app) *cobra.Command {
 	return cmd
 }
 
-func StartConvoyServer(a *app, cfg config.Configuration) error {
+func StartConvoyServer(a *app, cfg config.Configuration, withWorkers bool) error {
 	start := time.Now()
 	log.Info("Starting Convoy server...")
 	if util.IsStringEmpty(string(cfg.GroupConfig.Signature.Header)) {
@@ -61,6 +64,17 @@ func StartConvoyServer(a *app, cfg config.Configuration) error {
 	if err := task.CreateTasks(a.groupRepo, handler); err != nil {
 		log.WithError(err).Error("failed to register tasks")
 		return err
+	}
+
+	if withWorkers {
+		// register workers.
+		if queue, ok := a.eventQueue.(*convoyQueue.RedisQueue); ok {
+			worker.NewProducer(queue).Start()
+		}
+
+		if queue, ok := a.deadLetterQueue.(*convoyQueue.RedisQueue); ok {
+			worker.NewCleaner(queue).Start()
+		}
 	}
 
 	log.Infof("Started convoy server in %s", time.Since(start))
