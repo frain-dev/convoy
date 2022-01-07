@@ -1058,7 +1058,7 @@ func TestApplicationHandler_ForceRetryEventDelivery(t *testing.T) {
 				tc.dbFn(tc.args.event, tc.args.message, app)
 			}
 
-			err := config.LoadConfig(tc.cfgPath)
+			err := config.LoadConfig(tc.cfgPath, new(config.Configuration))
 			if err != nil {
 				t.Errorf("Failed to load config file: %v", err)
 			}
