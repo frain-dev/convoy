@@ -25,6 +25,8 @@ collections:
       format: 'json'
       create: true
       slug: '{{name}}'
+      editor:
+          preview: false
       fields:
           - { label: 'Name', name: 'name', widget: 'string' }
           - { label: 'Twitter Handle', name: 'twitter', widget: 'string' }
@@ -37,6 +39,8 @@ collections:
       format: 'json'
       create: true
       slug: '{{name}}'
+      editor:
+          preview: false
       fields:
           - { label: 'Name', name: 'name', widget: 'string' }
 
