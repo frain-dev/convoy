@@ -166,8 +166,8 @@ func main() {
 	var mongoDsn string
 
 	cmd.PersistentFlags().StringVar(&configFile, "config", "./convoy.json", "Configuration file for convoy")
-	cmd.PersistentFlags().StringVar(&redisDsn, "queue", "redis://localhost:6379", "Redis DSN")
-	cmd.PersistentFlags().StringVar(&mongoDsn, "db", "mongodb://localhost:27017", "MongoDB DSN")
+	cmd.PersistentFlags().StringVar(&redisDsn, "queue", "", "Redis DSN")
+	cmd.PersistentFlags().StringVar(&mongoDsn, "db", "", "MongoDB DSN")
 
 	cmd.AddCommand(addVersionCommand())
 	cmd.AddCommand(addCreateCommand(app))

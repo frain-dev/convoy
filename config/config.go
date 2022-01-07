@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"os"
+	"strings"
 	"sync/atomic"
 
 	log "github.com/sirupsen/logrus"
@@ -204,11 +205,11 @@ func LoadConfig(p string, override *Configuration) error {
 		return err
 	}
 
-	if len(override.Queue.Redis.DSN) > 0 {
-		c.Queue.Redis.DSN = override.Database.Dsn
+	if len(strings.TrimSpace(override.Queue.Redis.DSN)) > 0 {
+		c.Queue.Redis.DSN = override.Queue.Redis.DSN
 	}
 
-	if len(override.Database.Dsn) > 0 {
+	if len(strings.TrimSpace(override.Database.Dsn)) > 0 {
 		c.Database.Dsn = override.Database.Dsn
 	}
 
