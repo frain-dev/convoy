@@ -4,18 +4,15 @@
 			<ul>
 				<h3>CATEGORIES</h3>
 
-				<li>
-					<nuxt-link to="/blog">Blog</nuxt-link>
-				</li>
-				<li>
-					<nuxt-link to="/docs">Docs</nuxt-link>
+				<li v-for="(tag, index) in tags" :key="'tag' + index">
+					<nuxt-link :to="'/blog?tag=' + tag.slug">{{ tag.name }}</nuxt-link>
 				</li>
 			</ul>
 
-			<form>
+			<!-- <form>
 				<img src="~/assets/images/search-icon.svg" alt="search icon" />
 				<input type="search" placeholder="Search" />
-			</form>
+			</form> -->
 
 			<div class="social">
 				<h3>Follow Us</h3>
@@ -92,7 +89,7 @@
 					<div class="post--img">
 						<img :src="'https://res.cloudinary.com/frain/image/upload/c_fill,g_north,h_179,w_461,x_0,y_0/' + post.thumbnail" alt="post image" />
 					</div>
-					<div class="tag clear">FEATURED</div>
+					<div class="tag clear">{{ post.tag }}</div>
 					<h3 class="post--title small">{{ post.title }}</h3>
 					<p class="post--body">{{ post.description }}</p>
 					<div class="post--footer">
@@ -138,10 +135,11 @@ export default {
 		};
 	},
 	async asyncData({ $content }) {
-		const posts = await $content('blog').only(['author', 'id', 'description', 'createdAt', 'featureImg', 'slug', 'thumbnail', 'title', 'tags', 'featurePost', 'date']).fetch();
+		const posts = await $content('blog').only(['author', 'description', 'featureImg', 'slug', 'thumbnail', 'title', 'featurePost', 'date', 'tag']).fetch();
 		const featurePosts = posts.filter(post => post.featurePost === true);
 		const authors = await $content('blog-authors').fetch();
-		return { posts, authors, featurePosts };
+		const tags = await $content('blog-tags').fetch();
+		return { posts, authors, featurePosts, tags };
 	},
 	methods: {
 		author(authorSlug) {
@@ -155,9 +153,13 @@ export default {
 $desktopBreakPoint: 880px;
 
 .main {
-	margin-top: 0;
-	margin-bottom: 0;
-	padding-bottom: 0;
+	margin: 0 auto;
+	padding-bottom: 100px;
+	display: flex;
+	justify-content: space-between;
+	max-width: calc(1035px + 170px + 32px);
+	height: unset;
+	padding-top: 0;
 }
 
 main {

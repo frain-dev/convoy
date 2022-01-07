@@ -18,13 +18,19 @@ export default async function (to, from, savedPosition) {
 	};
 
 	const main = document.querySelector('.main');
+	// const blog = document.querySelector('body');
 
 	if (to.hash) {
 		let el = await findEl(to.hash);
 		if ('scrollBehavior' in document.documentElement.style) {
-			return main.scrollTo({ top: el.offsetTop, behavior: 'smooth' });
+			console.log('🚀 ~ file: router.scrollBehavior.js ~ line 24 ~ to.hash', el.offsetTop);
+			main.scrollTo({ top: el.offsetTop - 170, behavior: 'smooth' });
+			// blog.scrollTo({ top: el.offsetTop, behavior: 'smooth' });
+			return;
 		} else {
-			return main.scrollTo(0, el.offsetTop);
+			main.scrollTo(0, el.offsetTop);
+			// blog.scrollTo(0, el.offsetTop);
+			return;
 		}
 	}
 
