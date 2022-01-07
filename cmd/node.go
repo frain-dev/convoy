@@ -87,7 +87,7 @@ func nodeServerCommand(a *app) *cobra.Command {
 					if err := convoyMemberlist.CreateMemberlist("", hostName); err != nil {
 						log.Fatal("Error creating memberlist: %v", err)
 					}
-					err := StartConvoyServer(a, cfg)
+					err := StartConvoyServer(a, cfg, false)
 					if err != nil {
 						log.Printf("Error starting convoy server: %v", err)
 					}
@@ -100,7 +100,7 @@ func nodeServerCommand(a *app) *cobra.Command {
 			return nil
 		},
 	}
-	cmd.Flags().StringVar(&serviceKey, "service key", "", "service key for leader election, if blank default is used.")
+	cmd.Flags().StringVar(&serviceKey, "servicekey", "", "service key for leader election, if blank, default is used.")
 	return cmd
 }
 
@@ -148,7 +148,7 @@ func nodeWorkerCommand(a *app) *cobra.Command {
 					if !isLeader {
 						acquired, _, err := client.KV().Acquire(acquireKv, nil)
 						if err != nil {
-							log.Fatalf("kv acquire err: %v", err)
+							log.Fatalf("key-value acquire err: %v", err)
 						}
 						if !isConsuming && !acquired {
 							log.Printf("Worker node intitialized!\n")
@@ -169,7 +169,7 @@ func nodeWorkerCommand(a *app) *cobra.Command {
 						if acquired {
 							isLeader = true
 							log.Printf("Leader aquisition successful!\n")
-							err := StartConvoyServer(a, cfg)
+							err := StartConvoyServer(a, cfg, false)
 							if err != nil {
 								log.Printf("Error starting convoy server: %v", err)
 							}
@@ -189,7 +189,7 @@ func nodeWorkerCommand(a *app) *cobra.Command {
 		},
 	}
 	cmd.Flags().StringVar(&clusterMembers, "members", "", "comma seperated list of members")
-	cmd.Flags().StringVar(&serviceKey, "service key", "", "service key for leader election, if blank, default is used.")
+	cmd.Flags().StringVar(&serviceKey, "servicekey", "", "service key for leader election, if blank, default is used.")
 	return cmd
 }
 
@@ -216,6 +216,7 @@ func startConsulSession(cfg config.Configuration) (*api.Client, string, chan str
 		log.Fatalf("Consul client err: %v", err)
 	}
 
+	log.Printf("Starting consul session!\n")
 	// create session
 	sEntry := &api.SessionEntry{
 		Name:      convoy.ServiceName,
@@ -235,8 +236,5 @@ func startConsulSession(cfg config.Configuration) (*api.Client, string, chan str
 			log.Fatalf("Consul session renew err: %v", err)
 		}
 	}()
-
-	log.Printf("Starting consul session!\n")
-
 	return client, sID, doneCh, err
 }
