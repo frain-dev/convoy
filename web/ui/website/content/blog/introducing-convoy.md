@@ -7,10 +7,11 @@ description: After weeks of work, I’m pleased to announce our new tool — bui
   “Do you provide webhooks to notify us about downtime?”.
 featureImg: /convoy-dashboard_dw7hp1.png
 thumbnail: /convoy-dashboard_dw7hp1.png
-tags:
-  - convoy
 featurePost: true
 author: subomi-oluwalana
+tags:
+  - convoy
+tag: convoy
 ---
 
 # Introducing Convoy
