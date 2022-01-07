@@ -61,7 +61,6 @@ collections:
           - { label: 'Featured Image', name: 'featureImg', widget: 'image' }
           - { label: 'Post Image', name: 'thumbnail', widget: 'image' }
           - { label: 'Body', name: 'body', widget: 'markdown' }
-          - { label: '', name: '', widget: 'list', default: ['convoy'] }
           - { label: 'Feature Post', name: 'featurePost', widget: 'boolean', default: false }
           - label: 'Post Author'
             name: 'author'
