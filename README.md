@@ -36,7 +36,7 @@ $ docker run \
 	-p 5005:5005 \
 	--name convoy-server \
 	-v `pwd`/convoy.json:/convoy.json \
-	ghcr.io/frain-dev/convoy:v0.2.5
+	ghcr.io/frain-dev/convoy:v0.3.0
 ```
 
 You can download a sample configuration of [convoy.json](https://github.com/frain-dev/convoy/blob/main/convoy.json).
@@ -82,16 +82,21 @@ Convoy is configured using a json file with a sample configuration below:
 	"auth": {
 		"type": "none"
 	},
-	"strategy": {
-		"type": "default",
-		"default": {
-			"intervalSeconds": 125,
-			"retryLimit": 15
+	"group": {
+		"strategy": {
+			"type": "default",
+			"default": {
+				"intervalSeconds": 125,
+				"retryLimit": 15
+			}
+		},
+		"signature": {
+			"header": "X-Company-Event-Webhook-Signature"
 		}
-	},
-	"signature": {
-		"header": "X-Company-Event-Webhook-Signature"
 	}
+	"environment": "development",
+	"disable_endpoint": false
+	"multiple_tenants": false
 }
 ```
 
