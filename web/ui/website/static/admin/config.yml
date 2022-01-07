@@ -31,6 +31,15 @@ collections:
           - { label: 'Github User Name', name: 'github', widget: 'string' }
           - { label: 'Role', name: 'role', widget: 'string' }
 
+    - name: 'tags'
+      label: 'Tag'
+      folder: 'web/ui/website/content/blog-tags'
+      format: 'json'
+      create: true
+      slug: '{{name}}'
+      fields:
+          - { label: 'Name', name: 'name', widget: 'string' }
+
     - name: 'blog'
       label: 'Blog'
       folder: 'web/ui/website/content/blog'
@@ -48,7 +57,7 @@ collections:
           - { label: 'Featured Image', name: 'featureImg', widget: 'image' }
           - { label: 'Post Image', name: 'thumbnail', widget: 'image' }
           - { label: 'Body', name: 'body', widget: 'markdown' }
-          - { label: 'Tags', name: 'tags', widget: 'list', default: ['convoy'] }
+          - { label: '', name: '', widget: 'list', default: ['convoy'] }
           - { label: 'Feature Post', name: 'featurePost', widget: 'boolean', default: false }
           - label: 'Post Author'
             name: 'author'
@@ -57,3 +66,10 @@ collections:
             search_fields: ['name', 'twitter', 'github']
             value_field: '{{slug}}'
             display_fields: ['{{name}}, {{role}}']
+          - label: 'Tags'
+            name: 'tag'
+            widget: 'relation'
+            collection: 'tags'
+            search_fields: ['name']
+            value_field: '{{slug}}'
+            display_fields: ['name']

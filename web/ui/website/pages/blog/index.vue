@@ -59,7 +59,6 @@
 					</li>
 				</ul>
 			</div>
-			<p>Semper purus aliquam id sed. Egestas sit scelerisque sagittis leo blandit et viverra.</p>
 
 			<div class="featured card posts">
 				<div class="post">
@@ -214,6 +213,10 @@ main {
 			width: 367px;
 			right: 0;
 			bottom: 0;
+
+			img {
+				border-radius: 10px 0 0 0;
+			}
 		}
 
 		@media (max-width: 1111px) {
