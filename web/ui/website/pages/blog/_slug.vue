@@ -79,6 +79,87 @@ export default {
 		author(authorSlug) {
 			return this.authors.find(author => author.slug === authorSlug);
 		}
+	},
+	head() {
+		return {
+			title: this.blogPost.title,
+			meta: [
+				{ hid: 'description', name: 'description', content: this.blogPost.description },
+				{
+					hid: 'article:tag',
+					name: 'article:tag',
+					content: this.blogPost.tag
+				},
+				{
+					hid: 'twitter:label1',
+					name: 'twitter:label1',
+					content: 'Written by'
+				},
+				{
+					hid: 'twitter:data1',
+					name: 'twitter:data1',
+					content: this.author(this.blogPost.author).twitter
+				},
+				{
+					hid: 'twitter:label2',
+					name: 'twitter:label2',
+					content: 'Filed under'
+				},
+				{
+					hid: 'twitter:data2',
+					name: 'twitter:data2',
+					content: `Convoy`
+				},
+				{
+					hid: 'apple-mobile-web-app-title',
+					name: 'apple-mobile-web-app-title',
+					content: this.blogPost.title
+				},
+				{ hid: 'og:title', name: 'og:title', content: this.blogPost.title },
+				{ hid: 'og:type', name: 'og:type', content: 'article' },
+				{
+					hid: 'og:description',
+					name: 'og:description',
+					content: this.blogPost.description
+				},
+				{
+					hid: 'og:url',
+					name: 'og:url',
+					content: `https://getconvoy.io/blog/${this.blogPost.slug}`
+				},
+				{
+					hid: 'twitter:title',
+					name: 'twitter:title',
+					content: this.blogPost.title
+				},
+				{
+					hid: 'twitter:text:title',
+					name: 'twitter:text:title',
+					content: this.blogPost.title
+				},
+				{
+					hid: 'twitter:description',
+					name: 'twitter:description',
+					content: this.blogPost.description
+				},
+				{
+					hid: 'og:image',
+					property: 'og:image',
+					content: 'https://res.cloudinary.com/frain/image/upload/c_fill,g_north,h_179,w_461,x_0,y_0/' + this.blogPost.thumbnail
+				},
+				{
+					hid: 'twitter:image',
+					property: 'twitter:image',
+					content: 'https://res.cloudinary.com/frain/image/upload/c_fill,g_north,h_179,w_461,x_0,y_0/' + this.blogPost.thumbnail
+				},
+				{
+					hid: 'twitter:url',
+					name: 'twitter:url',
+					content: `https://getconvoy.io/blog/${this.postId}`
+				}
+			],
+			link: [{ rel: 'canonical', href: `https://getconvoy.io/${this.blogPost.slug}` }]
+		};
 	}
 };
 </script>
