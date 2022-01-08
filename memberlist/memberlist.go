@@ -2,7 +2,6 @@ package memberlist
 
 import (
 	"encoding/json"
-	"net/http"
 	"os"
 	"strings"
 	"sync"
@@ -16,29 +15,10 @@ var (
 	broadcasts *memberlist.TransmitLimitedQueue
 )
 
-type broadcast struct {
-	msg    []byte
-	notify chan<- struct{}
-}
-
 type delegate struct{}
 
 type update struct {
 	Action string // kill
-}
-
-func (b *broadcast) Invalidates(other memberlist.Broadcast) bool {
-	return false
-}
-
-func (b *broadcast) Message() []byte {
-	return b.msg
-}
-
-func (b *broadcast) Finished() {
-	if b.notify != nil {
-		close(b.notify)
-	}
 }
 
 func (d *delegate) NodeMeta(limit int) []byte {
@@ -123,21 +103,4 @@ func CreateMemberlist(members string, hostname string) error {
 	node := m.LocalNode()
 	log.Infof("Local member %s:%d\n", node.Addr, node.Port)
 	return nil
-}
-
-func killHandler(w http.ResponseWriter, r *http.Request) {
-	b, err := json.Marshal([]*update{
-		{
-			Action: "kill",
-		},
-	})
-	if err != nil {
-		http.Error(w, err.Error(), 500)
-		return
-	}
-
-	broadcasts.QueueBroadcast(&broadcast{
-		msg:    append([]byte("d"), b...),
-		notify: nil,
-	})
 }

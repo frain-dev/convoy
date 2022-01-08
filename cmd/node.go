@@ -85,7 +85,7 @@ func nodeServerCommand(a *app) *cobra.Command {
 					log.Printf("Server node intitialized!\n")
 
 					if err := convoyMemberlist.CreateMemberlist("", hostName); err != nil {
-						log.Fatal("Error creating memberlist: %v", err)
+						log.Fatalf("Error creating memberlist: %v", err)
 					}
 					err := StartConvoyServer(a, cfg, false)
 					if err != nil {
@@ -153,7 +153,7 @@ func nodeWorkerCommand(a *app) *cobra.Command {
 						if !isConsuming && !acquired {
 							log.Printf("Worker node intitialized!\n")
 							if err := convoyMemberlist.CreateMemberlist(clusterMembers, hostName); err != nil {
-								log.Fatal("Error creating memberlist: %v", err)
+								log.Fatalf("Error creating memberlist: %v", err)
 							}
 							// register workers.
 							if queue, ok := a.eventQueue.(*convoyQueue.RedisQueue); ok {
