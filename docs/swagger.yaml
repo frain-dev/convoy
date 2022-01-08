@@ -209,10 +209,19 @@ definitions:
         type: string
       name:
         type: string
+      statistics:
+        $ref: '#/definitions/convoy.GroupStatistics'
       uid:
         type: string
       updated_at:
         type: string
+    type: object
+  convoy.GroupStatistics:
+    properties:
+      messages_sent:
+        type: integer
+      total_apps:
+        type: integer
     type: object
   convoy.HttpHeader:
     additionalProperties:
