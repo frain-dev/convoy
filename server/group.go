@@ -189,7 +189,7 @@ func (a *applicationHandler) GetGroups(w http.ResponseWriter, r *http.Request) {
 	for _, group := range groups {
 		err = a.fillGroupStatistics(r.Context(), group)
 		if err != nil {
-			log.WithError(err).Error("failed to fill statistics of group %s", group.UID)
+			log.WithError(err).Errorf("failed to fill statistics of group %s", group.UID)
 		}
 	}
 
