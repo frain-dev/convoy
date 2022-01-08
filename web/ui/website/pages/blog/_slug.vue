@@ -4,17 +4,17 @@
 			<nuxt-link tag="button" to="/blog" class="back-button">
 				<img src="~/assets/images/angle-left-black-icon.svg" alt="back icon" />
 			</nuxt-link>
-			<div class="tag">FEATURED</div>
-			<div class="date">March 11, 2021</div>
+			<div class="tag">{{ blogPost.tag }}</div>
+			<div class="date">{{ blogPost.date | date }}</div>
 		</div>
 
-		<h3 class="post-page--title">Interview - What it’s like to work remotely in big sized product development?</h3>
+		<h3 class="post-page--title">{{ blogPost.title }}</h3>
 
 		<div class="post-page--author">
 			<img src="~/assets/images/author-img.png" alt="author imge" />
 			<div>
-				<h5>Emmanuel Aina</h5>
-				<p>Co-Founder Convoy</p>
+				<h5>{{ author(blogPost.author).name }}</h5>
+				<p>{{ author(blogPost.author).role }} Convoy</p>
 			</div>
 		</div>
 
@@ -25,11 +25,8 @@
 				<ul>
 					<h3>CONTENTS</h3>
 
-					<li>
-						<nuxt-link to="/blog">Blog</nuxt-link>
-					</li>
-					<li>
-						<nuxt-link to="/docs">Docs</nuxt-link>
+					<li v-for="(heading, index) in blogPost.toc" :key="'heading' + index">
+						<nuxt-link :to="{ path: '/blog/' + blogPost.slug, hash: '#' + heading.id }">{{ heading.text }}</nuxt-link>
 					</li>
 				</ul>
 
@@ -38,15 +35,13 @@
 
 					<ul class="socials">
 						<li>
-							<a target="_blank" rel="noopener noreferrer" href="https://join.slack.com/t/convoy-community/shared_invite/zt-xiuuoj0m-yPp~ylfYMCV9s038QL0IUQ">
-								<img src="~/assets/images/slack-grey-icon.svg" alt="slack logo" />
+							<a
+								rel="noopener noreferrer"
+								:href="'https://twitter.com/intent/tweet/?text=' + blogPost.title + '%20from%20@fraindev&url=https://getconvoy.io/blog/' + blogPost.slug + '&via=frainDev'"
+								target="_blank"
+							>
+								<img src="~/assets/images/twitter-grey-icon.svg" alt="twitter logo" />
 							</a>
-						</li>
-						<li>
-							<a target="_blank" rel="noopener noreferrer" href="https://twitter.com/fraindev"><img src="~/assets/images/twitter-grey-icon.svg" alt="twitter logo" /></a>
-						</li>
-						<li>
-							<a target="_blank" rel="noopener noreferrer" href="https://github.com/frain-dev/convoy"><img src="~/assets/images/github-grey-icon.svg" alt="mail logo" /></a>
 						</li>
 					</ul>
 				</div>
@@ -54,46 +49,7 @@
 
 			<main>
 				<div class="post-page--body">
-					<p>
-						One of the major issues and problems of webhook over the years has been the ability to monitor and understand the state of your webhooks service at any time, and that’s a major part of
-						what we’re solving with Convoy as opposed to waiting for users to report failures before…
-					</p>
-
-					<h1>Lorem Ipsum dolor Set amit</h1>
-					<p>
-						Nisl, proin commodo viverra orci phasellus placerat gravida. Vel luctus viverra odio leo iaculis hendrerit. Enim, faucibus est vivamus sed lacus, nulla congue et. Sed aenean interdum
-						morbi morbi. Ultrices mattis eu tellus, sed etiam tellus nam lectus vulputate. Sed pulvinar ut id risus.
-					</p>
-
-					<h2>Lorem Ipsum dolor Set amit</h2>
-					<p>
-						Nisl, proin commodo viverra orci phasellus placerat gravida. Vel luctus viverra odio leo iaculis hendrerit. Enim, faucibus est vivamus sed lacus, nulla congue et. Sed aenean interdum
-						morbi morbi. Ultrices mattis eu tellus, sed etiam tellus nam lectus vulputate. Sed pulvinar ut id risus.
-					</p>
-
-					<h3>Lorem Ipsum dolor Set amit</h3>
-					<img src="~/assets/images/post-img.png" alt="post image" />
-
-					<p>
-						Nisl, proin commodo viverra orci phasellus placerat gravida. Vel luctus viverra odio leo iaculis hendrerit. Enim, faucibus est vivamus sed lacus, nulla congue et. Sed aenean interdum
-						Nisl, proin commodo viverra orci phasellus placerat gravida. Vel luctus viverra odio leo iaculis hendrerit. Enim, faucibus est vivamus sed lacus, nulla congue et. Sed aenean interdum
-						morbi morbi. Ultrices mattis eu tellus, sed etiam tellus nam lectus vulputate. Sed pulvinar ut id risus.
-					</p>
-
-					<h4>Lorem Ipsum dolor Set amit</h4>
-					<p>
-						Nisl, proin commodo viverra orci phasellus placerat gravida. Vel luctus viverra odio leo iaculis hendrerit. Enim, faucibus est vivamus sed lacus, nulla congue et. Sed aenean interdum
-						Nisl, proin commodo viverra orci phasellus placerat gravida. Vel luctus viverra odio leo iaculis hendrerit. Enim, faucibus est vivamus sed lacus, nulla congue et. Sed aenean interdum
-						morbi morbi. Ultrices mattis eu tellus, sed etiam tellus nam lectus vulputate. Sed pulvinar ut id risus.
-					</p>
-
-					<ul>
-						<li>Lorem ipsum dolor sit amet consectetur, adipisicing elit. Optio placeat non eaque vero harum nisi esse</li>
-						<li>Lorem ipsum dolor sit amet consectetur, adipisicing elit. Optio placeat non eaque vero harum nisi esse</li>
-						<li>Lorem ipsum dolor sit amet consectetur, adipisicing elit. Optio placeat non eaque vero harum nisi esse</li>
-						<li>Lorem ipsum dolor sit amet consectetur, adipisicing elit. Optio placeat non eaque vero harum nisi esse</li>
-						<li>Lorem ipsum dolor sit amet consectetur, adipisicing elit. Optio placeat non eaque vero harum nisi esse</li>
-					</ul>
+					<nuxt-content :document="blogPost"></nuxt-content>
 				</div>
 			</main>
 		</div>
@@ -101,59 +57,7 @@
 		<div class="more-posts">
 			<h1>More Posts</h1>
 			<div class="posts">
-				<div class="post">
-					<div class="post--img">
-						<img src="~/assets/images/post-img.png" alt="post image" />
-					</div>
-					<div class="post--head">
-						<div class="tag clear">FEATURED</div>
-					</div>
-					<h3 class="post--title small">Understanding The Convoy UI</h3>
-					<p class="post--body">
-						One of the major issues and problems of webhook over the years has been the ability to monitor and understand the state of your webhooks service at any time, and that’s a major part of
-						what we’re solving with Convoy as opposed to waiting for users to report failures before…
-					</p>
-					<div class="post--footer">
-						<div class="post--author">
-							<img src="~/assets/images/author-img.png" alt="author imge" />
-							<div>
-								<h5>Emmanuel Aina</h5>
-								<p>Co-Founder Convoy</p>
-							</div>
-						</div>
-						<nuxt-link to="#">
-							Read More
-							<img src="~/assets/images/angle-right-primary.svg" alt="read more icon" />
-						</nuxt-link>
-					</div>
-				</div>
-
-				<div class="post">
-					<div class="post--img">
-						<img src="~/assets/images/post-img.png" alt="post image" />
-					</div>
-					<div class="post--head">
-						<div class="tag clear">FEATURED</div>
-					</div>
-					<h3 class="post--title small">Understanding The Convoy UI</h3>
-					<p class="post--body">
-						One of the major issues and problems of webhook over the years has been the ability to monitor and understand the state of your webhooks service at any time, and that’s a major part of
-						what we’re solving with Convoy as opposed to waiting for users to report failures before…
-					</p>
-					<div class="post--footer">
-						<div class="post--author">
-							<img src="~/assets/images/author-img.png" alt="author imge" />
-							<div>
-								<h5>Emmanuel Aina</h5>
-								<p>Co-Founder Convoy</p>
-							</div>
-						</div>
-						<nuxt-link to="#">
-							Read More
-							<img src="~/assets/images/angle-right-primary.svg" alt="read more icon" />
-						</nuxt-link>
-					</div>
-				</div>
+				<Post v-for="(post, index) in posts" :key="index" :post="post" :authors="authors" />
 			</div>
 		</div>
 	</div>
@@ -164,6 +68,98 @@ export default {
 	layout: 'blog',
 	data: () => {
 		return {};
+	},
+	async asyncData({ $content, params }) {
+		const blogPost = await $content('blog/' + params.slug || 'index').fetch();
+		const posts = await $content('blog').only(['author', 'description', 'slug', 'thumbnail', 'title', 'date', 'tag']).fetch();
+		const authors = await $content('blog-authors').fetch();
+		return { blogPost, authors, posts };
+	},
+	methods: {
+		author(authorSlug) {
+			return this.authors.find(author => author.slug === authorSlug);
+		}
+	},
+	head() {
+		return {
+			title: this.blogPost.title,
+			meta: [
+				{ hid: 'description', name: 'description', content: this.blogPost.description },
+				{
+					hid: 'article:tag',
+					name: 'article:tag',
+					content: this.blogPost.tag
+				},
+				{
+					hid: 'twitter:label1',
+					name: 'twitter:label1',
+					content: 'Written by'
+				},
+				{
+					hid: 'twitter:data1',
+					name: 'twitter:data1',
+					content: this.author(this.blogPost.author).twitter
+				},
+				{
+					hid: 'twitter:label2',
+					name: 'twitter:label2',
+					content: 'Filed under'
+				},
+				{
+					hid: 'twitter:data2',
+					name: 'twitter:data2',
+					content: `Convoy`
+				},
+				{
+					hid: 'apple-mobile-web-app-title',
+					name: 'apple-mobile-web-app-title',
+					content: this.blogPost.title
+				},
+				{ hid: 'og:title', name: 'og:title', content: this.blogPost.title },
+				{ hid: 'og:type', name: 'og:type', content: 'article' },
+				{
+					hid: 'og:description',
+					name: 'og:description',
+					content: this.blogPost.description
+				},
+				{
+					hid: 'og:url',
+					name: 'og:url',
+					content: `https://getconvoy.io/blog/${this.blogPost.slug}`
+				},
+				{
+					hid: 'twitter:title',
+					name: 'twitter:title',
+					content: this.blogPost.title
+				},
+				{
+					hid: 'twitter:text:title',
+					name: 'twitter:text:title',
+					content: this.blogPost.title
+				},
+				{
+					hid: 'twitter:description',
+					name: 'twitter:description',
+					content: this.blogPost.description
+				},
+				{
+					hid: 'og:image',
+					property: 'og:image',
+					content: 'https://res.cloudinary.com/frain/image/upload/c_fill,g_north,h_179,w_461,x_0,y_0/' + this.blogPost.thumbnail
+				},
+				{
+					hid: 'twitter:image',
+					property: 'twitter:image',
+					content: 'https://res.cloudinary.com/frain/image/upload/c_fill,g_north,h_179,w_461,x_0,y_0/' + this.blogPost.thumbnail
+				},
+				{
+					hid: 'twitter:url',
+					name: 'twitter:url',
+					content: `https://getconvoy.io/blog/${this.postId}`
+				}
+			],
+			link: [{ rel: 'canonical', href: `https://getconvoy.io/${this.blogPost.slug}` }]
+		};
 	}
 };
 </script>
@@ -172,13 +168,18 @@ export default {
 $desktopBreakPoint: 880px;
 
 .main {
-	margin-top: 0;
-	margin-bottom: 0;
-	padding-bottom: 0;
-	display: unset;
+	margin: 0 auto;
+	display: block;
+	height: unset;
+	padding-top: 0;
+	max-width: calc(1035px + 170px + 32px);
+	padding-bottom: 100px;
 }
 
 aside {
+	position: sticky;
+	top: 0;
+
 	h3 {
 		font-size: 14px;
 		line-height: 17px;
@@ -259,6 +260,7 @@ main {
 			font-weight: bold;
 			font-size: 15px;
 			line-height: 140%;
+			text-transform: uppercase;
 		}
 
 		.date {
@@ -288,7 +290,7 @@ main {
 	&--body {
 		font-size: 16px;
 		line-height: 24px;
-		color: #5f5f68;
+		color: #737a91;
 
 		ul {
 			list-style-type: disc;
@@ -305,6 +307,7 @@ main {
 			font-size: 16px;
 			line-height: 24px;
 			margin-bottom: 24px;
+			color: #737a91;
 		}
 
 		h1 {
@@ -343,7 +346,36 @@ main {
 		}
 
 		img {
-			margin-bottom: 24px;
+			margin: 0;
+		}
+
+		a {
+			color: #477db3;
+		}
+
+		blockquote {
+			border-radius: 16px;
+			padding: 100px 64px 64px;
+			background: url('~assets/images/blockquote-bg.svg') no-repeat #477db3;
+			background-position: top right;
+			margin: 0 0 44px;
+			position: relative;
+
+			&::after {
+				position: absolute;
+				content: url('~assets/images/quote-left.svg');
+				top: 67px;
+				left: 50%;
+				transform: translate(0, -50%);
+			}
+
+			p {
+				font-size: 26px;
+				line-height: 60px;
+				text-align: center;
+				letter-spacing: 0.09px;
+				color: #ffffff;
+			}
 		}
 	}
 

@@ -6,10 +6,11 @@ backend:
     squash_merges: true
 
 media_folder: web/ui/website/static/blog/img
-public_folder: /blog/img
+public_folder: /
 
 media_library:
     name: cloudinary
+    output_filename_only: true
     config:
         cloud_name: frain
         api_key: 149165965747484
@@ -24,17 +25,30 @@ collections:
       format: 'json'
       create: true
       slug: '{{name}}'
+      editor:
+          preview: false
       fields:
           - { label: 'Name', name: 'name', widget: 'string' }
           - { label: 'Twitter Handle', name: 'twitter', widget: 'string' }
           - { label: 'Github User Name', name: 'github', widget: 'string' }
           - { label: 'Role', name: 'role', widget: 'string' }
 
+    - name: 'tags'
+      label: 'Tag'
+      folder: 'web/ui/website/content/blog-tags'
+      format: 'json'
+      create: true
+      slug: '{{name}}'
+      editor:
+          preview: false
+      fields:
+          - { label: 'Name', name: 'name', widget: 'string' }
+
     - name: 'blog'
       label: 'Blog'
       folder: 'web/ui/website/content/blog'
       format: 'frontmatter'
-      extension: 'markdown'
+      extension: 'md'
       preview_path: 'blog/{{slug}}'
       create: true
       slug: '{{slug}}'
@@ -44,28 +58,9 @@ collections:
           - { label: 'Title', name: 'title', widget: 'string' }
           - { label: 'Publish Date', name: 'date', widget: 'datetime' }
           - { label: 'Description', name: 'description', widget: 'string' }
-          - label: 'Featured Image'
-            name: 'featureImg'
-            widget: 'image'
-            media_library:
-                config:
-                    default_transformations:
-                        - fetch_format: auto
-                          width: 367
-                          quality: auto
-                          crop: 'scale'
-          - label: 'Post Image'
-            name: 'thumbnail'
-            widget: 'image'
-            media_library:
-                config:
-                    default_transformations:
-                        - fetch_format: auto
-                          width: 461
-                          quality: auto
-                          crop: 'scale'
+          - { label: 'Featured Image', name: 'featureImg', widget: 'image' }
+          - { label: 'Post Image', name: 'thumbnail', widget: 'image' }
           - { label: 'Body', name: 'body', widget: 'markdown' }
-          - { label: 'Tags', name: 'tags', widget: 'list', default: ['convoy'] }
           - { label: 'Feature Post', name: 'featurePost', widget: 'boolean', default: false }
           - label: 'Post Author'
             name: 'author'
@@ -74,3 +69,10 @@ collections:
             search_fields: ['name', 'twitter', 'github']
             value_field: '{{slug}}'
             display_fields: ['{{name}}, {{role}}']
+          - label: 'Tags'
+            name: 'tag'
+            widget: 'relation'
+            collection: 'tags'
+            search_fields: ['name']
+            value_field: '{{slug}}'
+            display_fields: ['name']

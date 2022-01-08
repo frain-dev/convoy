@@ -2,26 +2,25 @@
 title: Understanding The Convoy UI
 date: 2021-11-11T15:23:31.879Z
 description: One of the major issues and problems of webhook over the years has
-  been the ability to monitor and understand the state of your webhooks service
-  at any time, and that’s a major part of what we’re solving with Convoy as
-  opposed to waiting for users to report failures before you know there is a bug
-  or something wrong somewhere. Understanding how much of a pain point this is,
-  we built a dashboard that helps you solve this problem.
+    been the ability to monitor and understand the state of your webhooks service
+    at any time, and that’s a major part of what we’re solving with Convoy as
+    opposed to waiting for users to report failures...
 featureImg: /convoy-dashboard_owvlon.png
 thumbnail: /convoy-dashboard_owvlon.png
-"": []
+'': []
 featurePost: false
 author: emmanuel-aina
 tag: convoy
 ---
+
 One of the major issues and problems of webhook over the years has been the ability to monitor and understand the state of your webhooks service at any time, and that’s a major part of what we’re solving with Convoy as opposed to waiting for users to report failures before you know there is a bug or something wrong somewhere. Understanding how much of a pain point this is, we built a dashboard that helps you solve this problem.
 
 ![](https://miro.medium.com/max/1400/1*OtJBG3ykPyBsUMtPGJ9T6A.png)
 
 Convoy dashboard helps to monitor 2 important metrics:
 
-* Events sent
-* Applications
+-   Events sent
+-   Applications
 
 ![](https://miro.medium.com/max/1400/1*nueVgbjiVigwQMx6jHDNoQ.png)
 
