@@ -63,6 +63,8 @@ type ApplicationRepository interface {
 	FindApplicationByID(context.Context, string) (*Application, error)
 	UpdateApplication(context.Context, *Application) error
 	DeleteApplication(context.Context, *Application) error
+
+	CountGroupApplications(ctx context.Context, groupID string) (int64, error)
 	LoadApplicationsPagedByGroupId(context.Context, string, models.Pageable) ([]Application, pager.PaginationData, error)
 	SearchApplicationsByGroupId(context.Context, string, models.SearchParams) ([]Application, error)
 	FindApplicationEndpointByID(context.Context, string, string) (*Endpoint, error)
