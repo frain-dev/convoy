@@ -397,6 +397,15 @@ func TestApplicationHandler_DeleteGroup(t *testing.T) {
 				g.EXPECT().
 					DeleteGroup(gomock.Any(), gomock.Any()).Times(1).
 					Return(nil)
+
+				a, _ := app.appRepo.(*mocks.MockApplicationRepository)
+				a.EXPECT().DeleteGroupApps(gomock.Any(), gomock.AssignableToTypeOf("")).Times(1).
+					Return(nil)
+
+				e, _ := app.eventRepo.(*mocks.MockEventRepository)
+				e.EXPECT().DeleteGroupEvents(gomock.Any(), gomock.AssignableToTypeOf("")).Times(1).
+					Return(nil)
+
 			},
 		},
 		{
