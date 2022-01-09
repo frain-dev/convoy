@@ -65,6 +65,20 @@ func (mr *MockApplicationRepositoryMockRecorder) DeleteApplication(arg0, arg1 in
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteApplication", reflect.TypeOf((*MockApplicationRepository)(nil).DeleteApplication), arg0, arg1)
 }
 
+// DeleteGroupApps mocks base method.
+func (m *MockApplicationRepository) DeleteGroupApps(arg0 context.Context, arg1 string) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "DeleteGroupApps", arg0, arg1)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// DeleteGroupApps indicates an expected call of DeleteGroupApps.
+func (mr *MockApplicationRepositoryMockRecorder) DeleteGroupApps(arg0, arg1 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteGroupApps", reflect.TypeOf((*MockApplicationRepository)(nil).DeleteGroupApps), arg0, arg1)
+}
+
 // FindApplicationByID mocks base method.
 func (m *MockApplicationRepository) FindApplicationByID(arg0 context.Context, arg1 string) (*convoy.Application, error) {
 	m.ctrl.T.Helper()

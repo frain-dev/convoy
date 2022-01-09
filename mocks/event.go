@@ -51,6 +51,20 @@ func (mr *MockEventRepositoryMockRecorder) CreateEvent(arg0, arg1 interface{}) *
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateEvent", reflect.TypeOf((*MockEventRepository)(nil).CreateEvent), arg0, arg1)
 }
 
+// DeleteGroupEvents mocks base method.
+func (m *MockEventRepository) DeleteGroupEvents(arg0 context.Context, arg1 string) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "DeleteGroupEvents", arg0, arg1)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// DeleteGroupEvents indicates an expected call of DeleteGroupEvents.
+func (mr *MockEventRepositoryMockRecorder) DeleteGroupEvents(arg0, arg1 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteGroupEvents", reflect.TypeOf((*MockEventRepository)(nil).DeleteGroupEvents), arg0, arg1)
+}
+
 // FindEventByID mocks base method.
 func (m *MockEventRepository) FindEventByID(ctx context.Context, id string) (*convoy.Event, error) {
 	m.ctrl.T.Helper()
