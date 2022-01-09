@@ -34,6 +34,12 @@ func (a *applicationHandler) GetGroup(w http.ResponseWriter, r *http.Request) {
 
 	group := getGroupFromContext(r.Context())
 
+	err := a.fillGroupStatistics(r.Context(), group)
+	if err != nil {
+		_ = render.Render(w, r, newErrorResponse("failed to fetch group statistics", http.StatusInternalServerError))
+		return
+	}
+
 	_ = render.Render(w, r, newServerResponse("Group fetched successfully",
 		group, http.StatusOK))
 }
