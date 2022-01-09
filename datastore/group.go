@@ -6,7 +6,6 @@ import (
 	"time"
 
 	"github.com/frain-dev/convoy"
-	log "github.com/sirupsen/logrus"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
@@ -113,7 +112,6 @@ func (db *groupRepo) FetchGroupByID(ctx context.Context,
 }
 
 func (db *groupRepo) DeleteGroup(ctx context.Context, uid string) error {
-
 	update := bson.M{
 		"$set": bson.M{
 			"deleted_at":      primitive.NewDateTimeFromTime(time.Now()),
@@ -121,49 +119,10 @@ func (db *groupRepo) DeleteGroup(ctx context.Context, uid string) error {
 		},
 	}
 
-	rollback := bson.M{
-		"$set": bson.M{
-			"deleted_at":      nil,
-			"document_status": convoy.ActiveDocumentStatus,
-		},
-	}
-
-	groupFilter := bson.M{"uid": uid}
-	_, err := db.inner.UpdateOne(ctx, groupFilter, update)
+	_, err := db.inner.UpdateOne(ctx, bson.M{"uid": uid}, update)
 	if err != nil {
 		return err
 	}
 
-	appFilter := bson.M{"group_id": uid}
-
-	appCollection := db.innerDB.Collection(AppCollections)
-	_, err = appCollection.UpdateMany(ctx, appFilter, update)
-	if err != nil {
-		_, err = db.inner.UpdateMany(ctx, groupFilter, rollback)
-		if err != nil {
-			log.WithError(err).Error("failed to rollback group delete")
-		}
-
-		return err
-	}
-
-	msgFilter := bson.M{"app_metadata.group_id": uid}
-	msgCollection := db.innerDB.Collection(EventCollection)
-	_, err = msgCollection.UpdateMany(ctx, msgFilter, update)
-	if err != nil {
-		// rollback app delete
-		_, err = appCollection.UpdateMany(ctx, appFilter, rollback)
-		if err != nil {
-			log.WithError(err).Error("failed to rollback group delete")
-		}
-
-		// rollback group delete
-		_, err = db.inner.UpdateOne(ctx, groupFilter, rollback)
-		if err != nil {
-			log.WithError(err).Error("failed to rollback group delete")
-		}
-		return err
-	}
-
-	return err
+	return nil
 }
