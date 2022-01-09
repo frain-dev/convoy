@@ -54,6 +54,21 @@ func (a *applicationHandler) DeleteGroup(w http.ResponseWriter, r *http.Request)
 		return
 	}
 
+	// TODO(daniel,subomi): is returning http error necessary for these? since the group itself has been deleted
+	err = a.appRepo.DeleteGroupApps(r.Context(), group.UID)
+	if err != nil {
+		log.WithError(err).Error("failed to delete group apps")
+		_ = render.Render(w, r, newErrorResponse("failed to delete group apps", http.StatusInternalServerError))
+		return
+	}
+
+	err = a.eventRepo.DeleteGroupEvents(r.Context(), group.UID)
+	if err != nil {
+		log.WithError(err).Error("failed to delete group events")
+		_ = render.Render(w, r, newErrorResponse("failed to delete group events", http.StatusInternalServerError))
+		return
+	}
+
 	_ = render.Render(w, r, newServerResponse("Group deleted successfully",
 		nil, http.StatusOK))
 }
