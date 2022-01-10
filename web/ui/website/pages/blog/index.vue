@@ -156,7 +156,6 @@ $desktopBreakPoint: 880px;
 	padding-bottom: 100px;
 	display: flex;
 	justify-content: space-between;
-	max-width: calc(1035px + 170px + 32px);
 	height: unset;
 	padding-top: 0;
 }
