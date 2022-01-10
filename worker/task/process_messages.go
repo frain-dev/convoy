@@ -103,7 +103,7 @@ func ProcessMessages(appRepo convoy.ApplicationRepository, msgRepo convoy.Messag
 		attemptStatus := convoy.FailureMessageStatus
 		start := time.Now()
 
-		resp, err := dispatch.SendRequest(e.TargetURL, string(convoy.HttpPost), bytes, cfg.Signature.Header.String(), hmac)
+		resp, err := dispatch.SendRequest(e.TargetURL, string(convoy.HttpPost), bytes, cfg.Signature.Header.String(), hmac, int64(cfg.MaxResponseSize))
 		status := "-"
 		statusCode := 0
 		if resp != nil {
