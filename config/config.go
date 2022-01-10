@@ -11,9 +11,12 @@ import (
 	"time"
 
 	"github.com/frain-dev/convoy/config/algo"
+	log "github.com/sirupsen/logrus"
 )
 
 var cfgSingleton atomic.Value
+
+const MaxResponseSize = 50 * 1024
 
 type DatabaseConfiguration struct {
 	Dsn string `json:"dsn"`
@@ -86,6 +89,7 @@ type Configuration struct {
 	Server            ServerConfiguration    `json:"server"`
 	Strategy          StrategyConfiguration  `json:"strategy"`
 	Signature         SignatureConfiguration `json:"signature"`
+	MaxResponseSize   uint64                 `json:"max_response_size"`
 	SMTP              SMTPConfiguration      `json:"smtp"`
 	Environment       string                 `json:"env"`
 	DisableEndpoint   bool                   `json:"disable_endpoint"`
@@ -252,6 +256,16 @@ func LoadConfig(p string) error {
 		if d, err := strconv.ParseBool(e); err != nil {
 			c.DisableEndpoint = d
 		}
+	}
+
+	kb := c.MaxResponseSize * 1024 // to kilobyte
+	if kb == 0 {
+		c.MaxResponseSize = MaxResponseSize
+	} else if kb > MaxResponseSize {
+		log.Warnf("maximum response size of %dkb too large, using default value of 50kb", c.MaxResponseSize)
+		c.MaxResponseSize = MaxResponseSize
+	} else {
+		c.MaxResponseSize = kb
 	}
 
 	c.UIAuthorizedUsers = parseAuthorizedUsers(c.UIAuth)
