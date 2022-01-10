@@ -41,11 +41,15 @@ func (db *appRepo) CreateApplication(ctx context.Context,
 	return err
 }
 
-func (db *appRepo) LoadApplicationsPaged(ctx context.Context, groupID string, pageable models.Pageable) ([]convoy.Application, pager.PaginationData, error) {
+func (db *appRepo) LoadApplicationsPaged(ctx context.Context, groupID, q string, pageable models.Pageable) ([]convoy.Application, pager.PaginationData, error) {
 
 	filter := bson.M{"document_status": bson.M{"$ne": convoy.DeletedDocumentStatus}}
 	if !util.IsStringEmpty(groupID) {
 		filter = bson.M{"group_id": groupID, "document_status": bson.M{"$ne": convoy.DeletedDocumentStatus}}
+	}
+
+	if !util.IsStringEmpty(q) {
+		filter = bson.M{"group_id": groupID, "document_status": bson.M{"$ne": convoy.DeletedDocumentStatus}, "title": bson.M{"$regex": primitive.Regex{Pattern: q, Options: "i"}}}
 	}
 
 	var apps []convoy.Application

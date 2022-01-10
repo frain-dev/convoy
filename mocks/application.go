@@ -96,9 +96,9 @@ func (mr *MockApplicationRepositoryMockRecorder) FindApplicationEndpointByID(arg
 }
 
 // LoadApplicationsPaged mocks base method.
-func (m *MockApplicationRepository) LoadApplicationsPaged(arg0 context.Context, arg1 string, arg2 models.Pageable) ([]convoy.Application, mongopagination.PaginationData, error) {
+func (m *MockApplicationRepository) LoadApplicationsPaged(arg0 context.Context, arg1, arg2 string, arg3 models.Pageable) ([]convoy.Application, mongopagination.PaginationData, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "LoadApplicationsPaged", arg0, arg1, arg2)
+	ret := m.ctrl.Call(m, "LoadApplicationsPaged", arg0, arg1, arg2, arg3)
 	ret0, _ := ret[0].([]convoy.Application)
 	ret1, _ := ret[1].(mongopagination.PaginationData)
 	ret2, _ := ret[2].(error)
@@ -106,9 +106,9 @@ func (m *MockApplicationRepository) LoadApplicationsPaged(arg0 context.Context, 
 }
 
 // LoadApplicationsPaged indicates an expected call of LoadApplicationsPaged.
-func (mr *MockApplicationRepositoryMockRecorder) LoadApplicationsPaged(arg0, arg1, arg2 interface{}) *gomock.Call {
+func (mr *MockApplicationRepositoryMockRecorder) LoadApplicationsPaged(arg0, arg1, arg2, arg3 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "LoadApplicationsPaged", reflect.TypeOf((*MockApplicationRepository)(nil).LoadApplicationsPaged), arg0, arg1, arg2)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "LoadApplicationsPaged", reflect.TypeOf((*MockApplicationRepository)(nil).LoadApplicationsPaged), arg0, arg1, arg2, arg3)
 }
 
 // LoadApplicationsPagedByGroupId mocks base method.
