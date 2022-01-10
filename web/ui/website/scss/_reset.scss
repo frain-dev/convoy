@@ -14,7 +14,8 @@ html {
 
 * {
 	box-sizing: border-box;
-	font-family: 'Quicksand', sans-serif;
+	font-family: 'Inter', sans-serif;
+	// font-family: 'Quicksand', sans-serif;
 	font-weight: 300;
 }
 
@@ -57,4 +58,9 @@ button {
 
 img {
 	width: 100%;
+}
+
+input::placeholder {
+	color: #737a91;
+	opacity: 0.64;
 }
