@@ -65,7 +65,7 @@
 								<p>{{ author(featurePosts[0].author).role }} Convoy</p>
 							</div>
 						</div>
-						<nuxt-link :to="'blog/' + featurePosts[0].slug">
+						<nuxt-link :to="'/blog/' + featurePosts[0].slug">
 							Read More
 							<img src="~/assets/images/angle-right-primary.svg" alt="read more icon" />
 						</nuxt-link>
