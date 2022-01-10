@@ -7,7 +7,6 @@
 		<div class="main">
 			<Nuxt />
 		</div>
-
 		<footer>
 			<div class="container">
 				<nav>
@@ -37,7 +36,6 @@
 							</li>
 						</ul>
 					</div>
-
 					<div class="newsletter">
 						<div>
 							<div>
@@ -55,8 +53,8 @@
 						</form>
 					</div>
 				</nav>
-				<p>Copyright 2022, All Rights Reserved</p>
 			</div>
+			<p>Copyright 2022, All Rights Reserved</p>
 		</footer>
 	</div>
 </template>
@@ -190,16 +188,16 @@ footer {
 		flex-wrap: wrap;
 		max-width: 1106px;
 		margin: auto;
+	}
 
-		& + p {
-			max-width: 1106px;
-			margin-left: auto;
-			margin-right: auto;
-			text-align: left;
+	& > p {
+		max-width: 1106px;
+		margin-left: auto;
+		margin-right: auto;
+		text-align: left;
 
-			@media (min-width: $desktopBreakPoint) {
-				text-align: right;
-			}
+		@media (min-width: $desktopBreakPoint) {
+			text-align: right;
 		}
 	}
 }
