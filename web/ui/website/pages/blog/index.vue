@@ -1,6 +1,6 @@
 <template>
-	<div class="main">
-		<aside>
+	<div class="main blog-home">
+		<aside class="categories">
 			<ul>
 				<h3>CATEGORIES</h3>
 
@@ -9,6 +9,7 @@
 				</li>
 			</ul>
 
+			<!-- Pending when there is enough content for this -->
 			<!-- <form>
 				<img src="~/assets/images/search-icon.svg" alt="search icon" />
 				<input type="search" placeholder="Search" />

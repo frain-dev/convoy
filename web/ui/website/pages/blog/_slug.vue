@@ -91,7 +91,7 @@ export default {
 			const scrollIndicator = document.querySelector('.post-page--loader div');
 			if (scrollIndicator) scrollIndicator.style.width = scrolled + '%';
 		},
-		shouldFixTableContent() {
+		shouldFixOnPage() {
 			const viewportHeight = window.screen.height;
 			const checkElement = document.querySelector('.post-page--body').getBoundingClientRect();
 			const elementToCheckToRemoveFix = document.querySelector('.newsletter').getBoundingClientRect();
@@ -196,13 +196,13 @@ export default {
 	beforeDestroy() {
 		document.querySelector('body').removeEventListener('scroll', () => {
 			this.scrollIndicator;
-			this.shouldFixTableContent();
+			this.shouldFixOnPage();
 		});
 	},
 	beforeMount() {
 		document.querySelector('body').addEventListener('scroll', () => {
 			this.scrollIndicator();
-			if (document.querySelector('.blog-post')) this.shouldFixTableContent();
+			if (document.querySelector('.blog-post')) this.shouldFixOnPage();
 		});
 	}
 };
