@@ -1,5 +1,5 @@
 <template>
-	<div class="main">
+	<div class="main blog-post">
 		<div class="post-page--head">
 			<nuxt-link tag="button" to="/blog" class="back-button">
 				<img src="~/assets/images/angle-left-black-icon.svg" alt="back icon" />
@@ -18,32 +18,36 @@
 			</div>
 		</div>
 
-		<div class="post-page--loader"></div>
+		<div class="post-page--loader">
+			<div></div>
+		</div>
 
 		<div class="post-page--content">
 			<aside>
-				<ul>
-					<h3>CONTENTS</h3>
+				<div>
+					<ul>
+						<h3>CONTENTS</h3>
 
-					<li v-for="(heading, index) in blogPost.toc" :key="'heading' + index">
-						<nuxt-link :to="{ path: '/blog/' + blogPost.slug, hash: '#' + heading.id }">{{ heading.text }}</nuxt-link>
-					</li>
-				</ul>
-
-				<div class="social">
-					<h3>Share Via</h3>
-
-					<ul class="socials">
-						<li>
-							<a
-								rel="noopener noreferrer"
-								:href="'https://twitter.com/intent/tweet/?text=' + blogPost.title + '%20from%20@fraindev&url=https://getconvoy.io/blog/' + blogPost.slug + '&via=frainDev'"
-								target="_blank"
-							>
-								<img src="~/assets/images/twitter-grey-icon.svg" alt="twitter logo" />
-							</a>
+						<li v-for="(heading, index) in blogPost.toc" :key="'heading' + index">
+							<nuxt-link :to="{ path: '/blog/' + blogPost.slug, hash: '#' + heading.id }">{{ heading.text }}</nuxt-link>
 						</li>
 					</ul>
+
+					<div class="social">
+						<h3>Share Via</h3>
+
+						<ul class="socials">
+							<li>
+								<a
+									rel="noopener noreferrer"
+									:href="'https://twitter.com/intent/tweet/?text=' + blogPost.title + '%20from%20@fraindev&url=https://getconvoy.io/blog/' + blogPost.slug + '&via=frainDev'"
+									target="_blank"
+								>
+									<img src="~/assets/images/twitter-grey-icon.svg" alt="twitter logo" />
+								</a>
+							</li>
+						</ul>
+					</div>
 				</div>
 			</aside>
 
@@ -75,9 +79,37 @@ export default {
 		const authors = await $content('blog-authors').fetch();
 		return { blogPost, authors, posts };
 	},
+	mounted() {},
 	methods: {
 		author(authorSlug) {
 			return this.authors.find(author => author.slug === authorSlug);
+		},
+		scrollIndicator() {
+			const winScroll = document.body.scrollTop || document.documentElement.scrollTop;
+			const height = document.querySelector('body').scrollHeight - document.documentElement.clientHeight;
+			const scrolled = (winScroll / height) * 100;
+			const scrollIndicator = document.querySelector('.post-page--loader div');
+			if (scrollIndicator) scrollIndicator.style.width = scrolled + '%';
+		},
+		shouldFixOnPage() {
+			const viewportHeight = window.screen.height;
+			const checkElement = document.querySelector('.post-page--body').getBoundingClientRect();
+			const elementToCheckToRemoveFix = document.querySelector('.newsletter').getBoundingClientRect();
+			const elementToFix = document.querySelector('.post-page--loader').classList;
+			const elementToFix2 = document.querySelector('.blog-post aside > div').classList;
+			const topPercElementToFix = (checkElement.top / viewportHeight) * 100;
+			const topPercElementToCheckToRemoveFix = (elementToCheckToRemoveFix.top / viewportHeight) * 100;
+			if (topPercElementToFix < 10) {
+				elementToFix.add('fix');
+				elementToFix2.add('fix');
+			} else {
+				elementToFix.remove('fix');
+				elementToFix2.remove('fix');
+			}
+			if (topPercElementToCheckToRemoveFix < 70) {
+				elementToFix.remove('fix');
+				elementToFix2.remove('fix');
+			}
 		}
 	},
 	head() {
@@ -160,6 +192,18 @@ export default {
 			],
 			link: [{ rel: 'canonical', href: `https://getconvoy.io/${this.blogPost.slug}` }]
 		};
+	},
+	beforeDestroy() {
+		document.querySelector('body').removeEventListener('scroll', () => {
+			this.scrollIndicator;
+			this.shouldFixOnPage();
+		});
+	},
+	beforeMount() {
+		document.querySelector('body').addEventListener('scroll', () => {
+			this.scrollIndicator();
+			if (document.querySelector('.blog-post')) this.shouldFixOnPage();
+		});
 	}
 };
 </script>
@@ -169,16 +213,17 @@ $desktopBreakPoint: 880px;
 
 .main {
 	margin: 0 auto;
-	display: block;
-	height: unset;
-	padding-top: 0;
-	max-width: calc(1035px + 170px + 32px);
-	padding-bottom: 100px;
+	padding: 0;
 }
 
 aside {
 	position: sticky;
 	top: 0;
+
+	& > div.fix {
+		position: fixed;
+		top: 150px;
+	}
 
 	h3 {
 		font-size: 14px;
@@ -274,12 +319,17 @@ main {
 		width: 100%;
 		height: 5px;
 		background: #e6e6e6;
-		position: relative;
+		position: sticky;
 		margin-bottom: 52px;
 
-		&::after {
-			width: 40%;
-			content: '';
+		&.fix {
+			position: fixed;
+			max-width: calc(1035px + 170px + 32px);
+			top: 90px;
+			z-index: 5;
+		}
+
+		div {
 			position: absolute;
 			background: #5cc685;
 			left: 0;
@@ -355,11 +405,15 @@ main {
 
 		blockquote {
 			border-radius: 16px;
-			padding: 100px 64px 64px;
+			padding: 100px 34px 64px;
 			background: url('~assets/images/blockquote-bg.svg') no-repeat #477db3;
 			background-position: top right;
 			margin: 0 0 44px;
 			position: relative;
+
+			@media (min-width: $desktopBreakPoint) {
+				padding: 100px 64px 64px;
+			}
 
 			&::after {
 				position: absolute;
@@ -370,11 +424,16 @@ main {
 			}
 
 			p {
-				font-size: 26px;
-				line-height: 60px;
+				font-size: 18px;
+				line-height: 40px;
 				text-align: center;
 				letter-spacing: 0.09px;
 				color: #ffffff;
+
+				@media (min-width: $desktopBreakPoint) {
+					font-size: 26px;
+					line-height: 60px;
+				}
 			}
 		}
 	}
