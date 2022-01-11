@@ -1,7 +1,6 @@
 package server
 
 import (
-	"encoding/json"
 	"errors"
 	"fmt"
 	"net/http"
@@ -106,9 +105,9 @@ func (a *applicationHandler) GetApps(w http.ResponseWriter, r *http.Request) {
 func (a *applicationHandler) CreateApp(w http.ResponseWriter, r *http.Request) {
 
 	var newApp models.Application
-	err := json.NewDecoder(r.Body).Decode(&newApp)
+	err := util.ReadJSON(r, &newApp)
 	if err != nil {
-		_ = render.Render(w, r, newErrorResponse("Request is invalid", http.StatusBadRequest))
+		_ = render.Render(w, r, newErrorResponse(err.Error(), http.StatusBadRequest))
 		return
 	}
 
@@ -155,9 +154,9 @@ func (a *applicationHandler) CreateApp(w http.ResponseWriter, r *http.Request) {
 // @Router /applications/{appID} [put]
 func (a *applicationHandler) UpdateApp(w http.ResponseWriter, r *http.Request) {
 	var appUpdate models.Application
-	err := json.NewDecoder(r.Body).Decode(&appUpdate)
+	err := util.ReadJSON(r, &appUpdate)
 	if err != nil {
-		_ = render.Render(w, r, newErrorResponse("Request is invalid", http.StatusBadRequest))
+		_ = render.Render(w, r, newErrorResponse(err.Error(), http.StatusBadRequest))
 		return
 	}
 
@@ -220,7 +219,7 @@ func (a *applicationHandler) DeleteApp(w http.ResponseWriter, r *http.Request) {
 // @Router /applications/{appID}/endpoints [post]
 func (a *applicationHandler) CreateAppEndpoint(w http.ResponseWriter, r *http.Request) {
 	var e models.Endpoint
-	e, err := parseEndpointFromBody(r.Body)
+	e, err := parseEndpointFromBody(r)
 	if err != nil {
 		_ = render.Render(w, r, newErrorResponse(err.Error(), http.StatusBadRequest))
 		return
@@ -332,7 +331,7 @@ func (a *applicationHandler) GetAppEndpoints(w http.ResponseWriter, r *http.Requ
 // @Router /applications/{appID}/endpoints/{endpointID} [put]
 func (a *applicationHandler) UpdateAppEndpoint(w http.ResponseWriter, r *http.Request) {
 	var e models.Endpoint
-	e, err := parseEndpointFromBody(r.Body)
+	e, err := parseEndpointFromBody(r)
 	if err != nil {
 		_ = render.Render(w, r, newErrorResponse(err.Error(), http.StatusBadRequest))
 		return

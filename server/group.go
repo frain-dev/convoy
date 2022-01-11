@@ -1,7 +1,6 @@
 package server
 
 import (
-	"encoding/json"
 	"net/http"
 	"time"
 
@@ -46,9 +45,9 @@ func (a *applicationHandler) GetGroup(w http.ResponseWriter, r *http.Request) {
 func (a *applicationHandler) CreateGroup(w http.ResponseWriter, r *http.Request) {
 
 	var newGroup models.Group
-	err := json.NewDecoder(r.Body).Decode(&newGroup)
+	err := util.ReadJSON(r, &newGroup)
 	if err != nil {
-		_ = render.Render(w, r, newErrorResponse("Request is invalid", http.StatusBadRequest))
+		_ = render.Render(w, r, newErrorResponse(err.Error(), http.StatusBadRequest))
 		return
 	}
 
@@ -95,7 +94,7 @@ func (a *applicationHandler) CreateGroup(w http.ResponseWriter, r *http.Request)
 func (a *applicationHandler) UpdateGroup(w http.ResponseWriter, r *http.Request) {
 
 	var update models.Group
-	err := json.NewDecoder(r.Body).Decode(&update)
+	err := util.ReadJSON(r, &update)
 	if err != nil {
 		_ = render.Render(w, r, newErrorResponse("Request is invalid", http.StatusBadRequest))
 		return
