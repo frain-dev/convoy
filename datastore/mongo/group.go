@@ -1,4 +1,4 @@
-package datastore
+package mongo
 
 import (
 	"context"
@@ -16,13 +16,9 @@ type groupRepo struct {
 	inner *mongo.Collection
 }
 
-const (
-	GroupCollection = "groups"
-)
-
-func NewGroupRepo(client *mongo.Database) convoy.GroupRepository {
+func NewGroupRepo(db *mongo.Database) convoy.GroupRepository {
 	return &groupRepo{
-		inner: client.Collection(GroupCollection),
+		inner: db.Collection(GroupCollection),
 	}
 }
 

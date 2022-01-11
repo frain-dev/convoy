@@ -1,4 +1,4 @@
-package datastore
+package mongo
 
 import (
 	"context"
@@ -20,10 +20,6 @@ import (
 type eventRepo struct {
 	inner *mongo.Collection
 }
-
-const (
-	EventCollection = "events"
-)
 
 func NewEventRepository(db *mongo.Database) convoy.EventRepository {
 	return &eventRepo{

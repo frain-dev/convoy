@@ -3,9 +3,7 @@ package main
 import (
 	"context"
 	"fmt"
-	"net/url"
 	"os"
-	"strings"
 	"time"
 	_ "time/tzdata"
 
@@ -26,7 +24,8 @@ import (
 	"github.com/frain-dev/convoy/datastore"
 	"github.com/frain-dev/convoy/queue"
 	"github.com/spf13/cobra"
-	"go.mongodb.org/mongo-driver/mongo"
+
+	"github.com/frain-dev/convoy/datastore/mongo"
 )
 
 func main() {
@@ -47,7 +46,7 @@ func main() {
 
 	app := &app{}
 
-	var db *mongo.Client
+	var db datastore.DatabaseClient
 
 	cmd := &cobra.Command{
 		Use:   "Convoy",
@@ -83,7 +82,7 @@ func main() {
 				return err
 			}
 
-			db, err = datastore.New(cfg)
+			db, err = mongo.New(cfg)
 			if err != nil {
 				return err
 			}
@@ -118,22 +117,14 @@ func main() {
 				log.Warnf("signature header is blank. setting default %s", config.DefaultSignatureHeader)
 			}
 
-			u, err := url.Parse(cfg.Database.Dsn)
-			if err != nil {
-				return err
-			}
+			app.groupRepo = db.GroupRepo()
+			app.eventRepo = db.EventRepo()
+			app.applicationRepo = db.AppRepo()
+			app.eventDeliveryRepo = db.EventDeliveryRepo()
 
-			dbName := strings.TrimPrefix(u.Path, "/")
-			conn := db.Database(dbName, nil)
-
-			app.groupRepo = datastore.NewGroupRepo(conn)
-			app.applicationRepo = datastore.NewApplicationRepo(conn)
-			app.eventRepo = datastore.NewEventRepository(conn)
-			app.eventDeliveryRepo = datastore.NewEventDeliveryRepository(conn)
 			app.eventQueue = convoyRedis.NewQueue(rC, qFn, "EventQueue")
 			app.deadLetterQueue = convoyRedis.NewQueue(rC, qFn, "DeadLetterQueue")
 
-			ensureMongoIndices(conn)
 			err = ensureDefaultGroup(context.Background(), cfg, app)
 			if err != nil {
 				return err
@@ -177,14 +168,6 @@ func main() {
 	if err := cmd.Execute(); err != nil {
 		log.Fatal(err)
 	}
-}
-
-func ensureMongoIndices(conn *mongo.Database) {
-	datastore.EnsureIndex(conn, datastore.GroupCollection, "uid", true)
-	datastore.EnsureIndex(conn, datastore.GroupCollection, "name", true)
-	datastore.EnsureIndex(conn, datastore.AppCollections, "uid", true)
-	datastore.EnsureIndex(conn, datastore.EventCollection, "uid", true)
-	datastore.EnsureIndex(conn, datastore.EventCollection, "event_type", false)
 }
 
 func ensureDefaultGroup(ctx context.Context, cfg config.Configuration, a *app) error {

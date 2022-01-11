@@ -1,4 +1,4 @@
-package datastore
+package mongo
 
 import (
 	"context"
@@ -21,14 +21,10 @@ type appRepo struct {
 	client  *mongo.Collection
 }
 
-const (
-	AppCollections = "applications"
-)
-
-func NewApplicationRepo(client *mongo.Database) convoy.ApplicationRepository {
+func NewApplicationRepo(db *mongo.Database) convoy.ApplicationRepository {
 	return &appRepo{
-		innerDB: client,
-		client:  client.Collection(AppCollections, nil),
+		innerDB: db,
+		client:  db.Collection(AppCollections, nil),
 	}
 }
 
