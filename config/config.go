@@ -262,7 +262,7 @@ func LoadConfig(p string) error {
 	if kb == 0 {
 		c.MaxResponseSize = MaxResponseSize
 	} else if kb > MaxResponseSize {
-		log.Warnf("maximum response size of %dkb too large, using default value of 50kb", c.MaxResponseSize)
+		log.Warnf("maximum response size of %dkb too large, using default value of %dkb", c.MaxResponseSize, MaxResponseSize/1024)
 		c.MaxResponseSize = MaxResponseSize
 	} else {
 		c.MaxResponseSize = kb
