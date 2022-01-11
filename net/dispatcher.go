@@ -76,7 +76,7 @@ func (d *Dispatcher) SendRequest(endpoint, method string, jsonData json.RawMessa
 	r.Body = body[:n]
 
 	// ignore EOF because the response body may be empty
-	if err != nil && err != io.EOF {
+	if err != nil && err != io.EOF && err != io.ErrUnexpectedEOF {
 		log.WithError(err).Error("couldn't parse response body")
 		return r, err
 	}
