@@ -9,6 +9,7 @@ import (
 	"time"
 	_ "time/tzdata"
 
+	convoyMemqueue "github.com/frain-dev/convoy/queue/memqueue"
 	convoyRedis "github.com/frain-dev/convoy/queue/redis"
 	"github.com/frain-dev/convoy/worker/task"
 	"github.com/getsentry/sentry-go"
@@ -17,7 +18,6 @@ import (
 	"go.mongodb.org/mongo-driver/bson/primitive"
 
 	"github.com/frain-dev/convoy/util"
-	"github.com/go-redis/redis/v8"
 	log "github.com/sirupsen/logrus"
 	"github.com/vmihailenco/taskq/v3"
 
@@ -104,13 +104,13 @@ func main() {
 			log.AddHook(sentryHook)
 
 			var qFn taskq.Factory
-			var rC *redis.Client
+			var sC *queue.StorageClient
 
-			if cfg.Queue.Type == config.RedisQueueProvider {
-				rC, qFn, err = convoyRedis.NewClient(cfg)
-				if err != nil {
-					return err
-				}
+			convoyQueue := getQueueClient(cfg)
+
+			sC, qFn, err = convoyQueue.NewClient(cfg)
+			if err != nil {
+				return err
 			}
 
 			if util.IsStringEmpty(string(cfg.GroupConfig.Signature.Header)) {
@@ -130,8 +130,8 @@ func main() {
 			app.applicationRepo = datastore.NewApplicationRepo(conn)
 			app.eventRepo = datastore.NewEventRepository(conn)
 			app.eventDeliveryRepo = datastore.NewEventDeliveryRepository(conn)
-			app.eventQueue = convoyRedis.NewQueue(rC, qFn, "EventQueue")
-			app.deadLetterQueue = convoyRedis.NewQueue(rC, qFn, "DeadLetterQueue")
+			app.eventQueue = convoyQueue.NewQueue(*sC, qFn, "EventQueue")
+			app.deadLetterQueue = convoyQueue.NewQueue(*sC, qFn, "DeadLetterQueue")
 
 			ensureMongoIndices(conn)
 			err = ensureDefaultGroup(context.Background(), cfg, app)
@@ -177,6 +177,18 @@ func main() {
 	if err := cmd.Execute(); err != nil {
 		log.Fatal(err)
 	}
+}
+
+func getQueueClient(cfg config.Configuration) queue.QueueClient {
+	var queueClient queue.QueueClient
+	if cfg.Queue.Type == config.RedisQueueProvider {
+		queueClient = convoyRedis.NewQueueClient()
+	}
+	if cfg.Queue.Type == config.InMemoryQueueProvider {
+		queueClient = convoyMemqueue.NewQueueClient()
+	}
+
+	return queueClient
 }
 
 func ensureMongoIndices(conn *mongo.Database) {
