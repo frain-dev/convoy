@@ -94,8 +94,8 @@ func (a *applicationHandler) CreateGroup(w http.ResponseWriter, r *http.Request)
 	}
 
 	groupName := newGroup.Name
-	if util.IsStringEmpty(groupName) {
-		_ = render.Render(w, r, newErrorResponse("please provide a valid name", http.StatusBadRequest))
+	if err = util.Validate(newGroup); err != nil {
+		_ = render.Render(w, r, newErrorResponse(err.Error(), http.StatusBadRequest))
 		return
 	}
 
@@ -143,7 +143,7 @@ func (a *applicationHandler) UpdateGroup(w http.ResponseWriter, r *http.Request)
 	}
 
 	groupName := update.Name
-	if util.IsStringEmpty(groupName) {
+	if err = util.Validate(update); err != nil {
 		_ = render.Render(w, r, newErrorResponse("please provide a valid name", http.StatusBadRequest))
 		return
 	}
