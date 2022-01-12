@@ -72,7 +72,7 @@ type StrategyConfiguration struct {
 }
 
 type DefaultStrategyConfiguration struct {
-	IntervalSeconds uint64 `json:"intervalSeconds" envconfig:"CONVOY_INTERVAL_SECONDS" valid:"required~please provide a valid interval seconds,int`
+	IntervalSeconds uint64 `json:"intervalSeconds" envconfig:"CONVOY_INTERVAL_SECONDS" valid:"required~please provide a valid interval seconds,int"`
 	RetryLimit      uint64 `json:"retryLimit" envconfig:"CONVOY_RETRY_LIMIT" valid:"required~please provide a valid retry limit,int"`
 }
 
