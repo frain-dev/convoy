@@ -13,12 +13,14 @@ import (
 )
 
 type groupRepo struct {
-	inner *mongo.Collection
+	innerDB *mongo.Database
+	inner   *mongo.Collection
 }
 
 func NewGroupRepo(db *mongo.Database) convoy.GroupRepository {
 	return &groupRepo{
-		inner: db.Collection(GroupCollection),
+		innerDB: db,
+		inner:   db.Collection(GroupCollection),
 	}
 }
 
@@ -103,4 +105,20 @@ func (db *groupRepo) FetchGroupByID(ctx context.Context,
 	}
 
 	return org, err
+}
+
+func (db *groupRepo) DeleteGroup(ctx context.Context, uid string) error {
+	update := bson.M{
+		"$set": bson.M{
+			"deleted_at":      primitive.NewDateTimeFromTime(time.Now()),
+			"document_status": convoy.DeletedDocumentStatus,
+		},
+	}
+
+	_, err := db.inner.UpdateOne(ctx, bson.M{"uid": uid}, update)
+	if err != nil {
+		return err
+	}
+
+	return nil
 }

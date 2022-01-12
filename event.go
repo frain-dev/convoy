@@ -61,4 +61,5 @@ type EventRepository interface {
 	LoadEventsForPostingRetry(context.Context) ([]Event, error)
 	LoadAbandonedEventsForPostingRetry(context.Context) ([]Event, error)
 	LoadEventsPaged(context.Context, string, string, models.SearchParams, models.Pageable) ([]Event, models.PaginationData, error)
+	DeleteGroupEvents(context.Context, string) error
 }

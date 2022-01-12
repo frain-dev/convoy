@@ -98,7 +98,7 @@ func (db *appRepo) LoadApplicationsPagedByGroupId(ctx context.Context, groupID s
 		applications[i].Events = count
 	}
 
-	return applications, models.PaginationData(models.PaginationData(paginatedData.Pagination)), nil
+	return applications, models.PaginationData(paginatedData.Pagination), nil
 }
 
 func (db *appRepo) SearchApplicationsByGroupId(ctx context.Context, groupId string, searchParams models.SearchParams) ([]convoy.Application, error) {
@@ -218,6 +218,23 @@ func (db *appRepo) UpdateApplication(ctx context.Context,
 
 	_, err := db.client.UpdateOne(ctx, filter, update)
 	return err
+}
+
+func (db *appRepo) DeleteGroupApps(ctx context.Context, groupID string) error {
+
+	update := bson.M{
+		"$set": bson.M{
+			"deleted_at":      primitive.NewDateTimeFromTime(time.Now()),
+			"document_status": convoy.DeletedDocumentStatus,
+		},
+	}
+
+	_, err := db.client.UpdateMany(ctx, bson.M{"group_id": groupID}, update)
+	if err != nil {
+		return err
+	}
+
+	return nil
 }
 
 func (db *appRepo) DeleteApplication(ctx context.Context,
