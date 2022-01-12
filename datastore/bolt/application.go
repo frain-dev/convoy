@@ -63,3 +63,7 @@ func (a *appRepo) DeleteApplication(ctx context.Context, app *convoy.Application
 func (a *appRepo) UpdateApplicationEndpointsStatus(ctx context.Context, appId string, endpointIds []string, status convoy.EndpointStatus) error {
 	return nil
 }
+
+func (a *appRepo) DeleteGroupApps(context.Context, string) error {
+	return nil
+}
