@@ -98,7 +98,7 @@ func (db *appRepo) LoadApplicationsPagedByGroupId(ctx context.Context, groupID s
 		applications[i].Events = count
 	}
 
-	return applications, models.PaginationData(models.PaginationData(paginatedData.Pagination)), nil
+	return applications, models.PaginationData(paginatedData.Pagination), nil
 }
 
 func (db *appRepo) SearchApplicationsByGroupId(ctx context.Context, groupId string, searchParams models.SearchParams) ([]convoy.Application, error) {
