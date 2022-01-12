@@ -29,7 +29,6 @@ func JsonReMarshalString(s string) (string, error) {
 func ReadJSON(r *http.Request, dst interface{}) error {
 	var syntaxError *json.SyntaxError
 	var unmarshalTypeError *json.UnmarshalTypeError
-	var invalidUnMarshalError *json.InvalidUnmarshalError
 
 	err := json.NewDecoder(r.Body).Decode(dst)
 	if err != nil {
@@ -47,8 +46,6 @@ func ReadJSON(r *http.Request, dst interface{}) error {
 		case errors.Is(err, io.EOF):
 			return errors.New("body must not be empty")
 
-		case errors.As(err, &invalidUnMarshalError):
-			panic(err)
 		default:
 			return err
 		}
