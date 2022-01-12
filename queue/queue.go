@@ -6,6 +6,9 @@ import (
 	"time"
 
 	"github.com/frain-dev/convoy"
+	"github.com/frain-dev/convoy/config"
+	"github.com/go-redis/redis/v8"
+	"github.com/vmihailenco/taskq/v3"
 )
 
 type Queuer interface {
@@ -13,7 +16,17 @@ type Queuer interface {
 	Write(context.Context, convoy.TaskName, *convoy.EventDelivery, time.Duration) error
 }
 
+type QueueClient interface {
+	NewClient(config.Configuration) (*StorageClient, taskq.Factory, error)
+	NewQueue(StorageClient, taskq.Factory, string) Queuer
+}
+
 type Job struct {
 	Err error  `json:"err"`
 	ID  string `json:"id"`
+}
+
+type StorageClient struct {
+	Redisclient *redis.Client
+	Memclient   Storage
 }
