@@ -1,6 +1,6 @@
 <template>
-	<div class="main">
-		<aside>
+	<div class="main blog-home">
+		<aside class="categories">
 			<ul>
 				<h3>CATEGORIES</h3>
 
@@ -9,6 +9,7 @@
 				</li>
 			</ul>
 
+			<!-- Pending when there is enough content for this -->
 			<!-- <form>
 				<img src="~/assets/images/search-icon.svg" alt="search icon" />
 				<input type="search" placeholder="Search" />
@@ -64,7 +65,7 @@
 								<p>{{ author(featurePosts[0].author).role }} Convoy</p>
 							</div>
 						</div>
-						<nuxt-link :to="'blog/' + featurePosts[0].slug">
+						<nuxt-link :to="'/blog/' + featurePosts[0].slug">
 							Read More
 							<img src="~/assets/images/angle-right-primary.svg" alt="read more icon" />
 						</nuxt-link>
@@ -156,7 +157,6 @@ $desktopBreakPoint: 880px;
 	padding-bottom: 100px;
 	display: flex;
 	justify-content: space-between;
-	max-width: calc(1035px + 170px + 32px);
 	height: unset;
 	padding-top: 0;
 }

@@ -12,6 +12,7 @@ import (
 	"github.com/frain-dev/convoy/worker/task"
 	"github.com/go-chi/render"
 	"github.com/google/uuid"
+	log "github.com/sirupsen/logrus"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
@@ -30,6 +31,46 @@ func (a *applicationHandler) GetGroup(w http.ResponseWriter, r *http.Request) {
 
 	_ = render.Render(w, r, newServerResponse("Group fetched successfully",
 		*getGroupFromContext(r.Context()), http.StatusOK))
+}
+
+// DeleteGroup
+// @Summary Delete a group
+// @Description This endpoint deletes a group using its id
+// @Tags Group
+// @Accept  json
+// @Produce  json
+// @Param groupID path string true "Group id"
+// @Success 200 {object} serverResponse{data=Stub}
+// @Failure 400,401,500 {object} serverResponse{data=Stub}
+// @Security ApiKeyAuth
+// @Router /groups/{groupID} [delete]
+func (a *applicationHandler) DeleteGroup(w http.ResponseWriter, r *http.Request) {
+	group := getGroupFromContext(r.Context())
+
+	err := a.groupRepo.DeleteGroup(r.Context(), group.UID)
+	if err != nil {
+		log.WithError(err).Error("failed to delete group")
+		_ = render.Render(w, r, newErrorResponse("failed to delete group", http.StatusInternalServerError))
+		return
+	}
+
+	// TODO(daniel,subomi): is returning http error necessary for these? since the group itself has been deleted
+	err = a.appRepo.DeleteGroupApps(r.Context(), group.UID)
+	if err != nil {
+		log.WithError(err).Error("failed to delete group apps")
+		_ = render.Render(w, r, newErrorResponse("failed to delete group apps", http.StatusInternalServerError))
+		return
+	}
+
+	err = a.eventRepo.DeleteGroupEvents(r.Context(), group.UID)
+	if err != nil {
+		log.WithError(err).Error("failed to delete group events")
+		_ = render.Render(w, r, newErrorResponse("failed to delete group events", http.StatusInternalServerError))
+		return
+	}
+
+	_ = render.Render(w, r, newServerResponse("Group deleted successfully",
+		nil, http.StatusOK))
 }
 
 // CreateGroup
