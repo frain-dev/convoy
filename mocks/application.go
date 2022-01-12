@@ -10,7 +10,6 @@ import (
 
 	convoy "github.com/frain-dev/convoy"
 	models "github.com/frain-dev/convoy/server/models"
-	mongopagination "github.com/gobeam/mongo-go-pagination"
 	gomock "github.com/golang/mock/gomock"
 )
 
@@ -96,11 +95,11 @@ func (mr *MockApplicationRepositoryMockRecorder) FindApplicationEndpointByID(arg
 }
 
 // LoadApplicationsPaged mocks base method.
-func (m *MockApplicationRepository) LoadApplicationsPaged(arg0 context.Context, arg1 string, arg2 models.Pageable) ([]convoy.Application, mongopagination.PaginationData, error) {
+func (m *MockApplicationRepository) LoadApplicationsPaged(arg0 context.Context, arg1 string, arg2 models.Pageable) ([]convoy.Application, models.PaginationData, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "LoadApplicationsPaged", arg0, arg1, arg2)
 	ret0, _ := ret[0].([]convoy.Application)
-	ret1, _ := ret[1].(mongopagination.PaginationData)
+	ret1, _ := ret[1].(models.PaginationData)
 	ret2, _ := ret[2].(error)
 	return ret0, ret1, ret2
 }
@@ -112,11 +111,11 @@ func (mr *MockApplicationRepositoryMockRecorder) LoadApplicationsPaged(arg0, arg
 }
 
 // LoadApplicationsPagedByGroupId mocks base method.
-func (m *MockApplicationRepository) LoadApplicationsPagedByGroupId(arg0 context.Context, arg1 string, arg2 models.Pageable) ([]convoy.Application, mongopagination.PaginationData, error) {
+func (m *MockApplicationRepository) LoadApplicationsPagedByGroupId(arg0 context.Context, arg1 string, arg2 models.Pageable) ([]convoy.Application, models.PaginationData, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "LoadApplicationsPagedByGroupId", arg0, arg1, arg2)
 	ret0, _ := ret[0].([]convoy.Application)
-	ret1, _ := ret[1].(mongopagination.PaginationData)
+	ret1, _ := ret[1].(models.PaginationData)
 	ret2, _ := ret[2].(error)
 	return ret0, ret1, ret2
 }

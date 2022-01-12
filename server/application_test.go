@@ -15,7 +15,6 @@ import (
 
 	"github.com/frain-dev/convoy/config"
 	"github.com/frain-dev/convoy/server/models"
-	pager "github.com/gobeam/mongo-go-pagination"
 
 	"github.com/frain-dev/convoy"
 	"github.com/frain-dev/convoy/mocks"
@@ -259,7 +258,7 @@ func TestApplicationHandler_GetApps(t *testing.T) {
 							Title:     "Valid application - 0",
 							Endpoints: []convoy.Endpoint{},
 						},
-					}, pager.PaginationData{}, nil)
+					}, models.PaginationData{}, nil)
 
 				o, _ := app.groupRepo.(*mocks.MockGroupRepository)
 				o.EXPECT().
@@ -1014,7 +1013,7 @@ func Test_applicationHandler_GetPaginatedApps(t *testing.T) {
 							Endpoints: []convoy.Endpoint{},
 						},
 					},
-						pager.PaginationData{},
+						models.PaginationData{},
 						nil)
 
 			},

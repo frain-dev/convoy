@@ -22,7 +22,6 @@ import (
 	"github.com/frain-dev/convoy/config"
 	"github.com/frain-dev/convoy/server/models"
 	"github.com/frain-dev/convoy/util"
-	pager "github.com/gobeam/mongo-go-pagination"
 	log "github.com/sirupsen/logrus"
 
 	"github.com/frain-dev/convoy"
@@ -563,12 +562,12 @@ func getPageableFromContext(ctx context.Context) models.Pageable {
 	return ctx.Value(pageableCtx).(models.Pageable)
 }
 
-func setPaginationDataInContext(ctx context.Context, p *pager.PaginationData) context.Context {
+func setPaginationDataInContext(ctx context.Context, p *models.PaginationData) context.Context {
 	return context.WithValue(ctx, pageDataCtx, p)
 }
 
-func getPaginationDataFromContext(ctx context.Context) *pager.PaginationData {
-	return ctx.Value(pageDataCtx).(*pager.PaginationData)
+func getPaginationDataFromContext(ctx context.Context) *models.PaginationData {
+	return ctx.Value(pageDataCtx).(*models.PaginationData)
 }
 
 func setDashboardSummaryInContext(ctx context.Context, d *models.DashboardSummary) context.Context {

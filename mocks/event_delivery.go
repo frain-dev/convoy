@@ -10,7 +10,6 @@ import (
 
 	convoy "github.com/frain-dev/convoy"
 	models "github.com/frain-dev/convoy/server/models"
-	mongopagination "github.com/gobeam/mongo-go-pagination"
 	gomock "github.com/golang/mock/gomock"
 )
 
@@ -97,11 +96,11 @@ func (mr *MockEventDeliveryRepositoryMockRecorder) FindEventDeliveryByID(arg0, a
 }
 
 // LoadEventDeliveriesPaged mocks base method.
-func (m *MockEventDeliveryRepository) LoadEventDeliveriesPaged(arg0 context.Context, arg1, arg2, arg3 string, arg4 []convoy.EventDeliveryStatus, arg5 models.SearchParams, arg6 models.Pageable) ([]convoy.EventDelivery, mongopagination.PaginationData, error) {
+func (m *MockEventDeliveryRepository) LoadEventDeliveriesPaged(arg0 context.Context, arg1, arg2, arg3 string, arg4 []convoy.EventDeliveryStatus, arg5 models.SearchParams, arg6 models.Pageable) ([]convoy.EventDelivery, models.PaginationData, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "LoadEventDeliveriesPaged", arg0, arg1, arg2, arg3, arg4, arg5, arg6)
 	ret0, _ := ret[0].([]convoy.EventDelivery)
-	ret1, _ := ret[1].(mongopagination.PaginationData)
+	ret1, _ := ret[1].(models.PaginationData)
 	ret2, _ := ret[2].(error)
 	return ret0, ret1, ret2
 }

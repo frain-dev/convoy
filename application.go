@@ -5,7 +5,6 @@ import (
 	"errors"
 
 	"github.com/frain-dev/convoy/server/models"
-	pager "github.com/gobeam/mongo-go-pagination"
 
 	"go.mongodb.org/mongo-driver/bson/primitive"
 )
@@ -59,11 +58,11 @@ type Endpoint struct {
 
 type ApplicationRepository interface {
 	CreateApplication(context.Context, *Application) error
-	LoadApplicationsPaged(context.Context, string, models.Pageable) ([]Application, pager.PaginationData, error)
+	LoadApplicationsPaged(context.Context, string, models.Pageable) ([]Application, models.PaginationData, error)
 	FindApplicationByID(context.Context, string) (*Application, error)
 	UpdateApplication(context.Context, *Application) error
 	DeleteApplication(context.Context, *Application) error
-	LoadApplicationsPagedByGroupId(context.Context, string, models.Pageable) ([]Application, pager.PaginationData, error)
+	LoadApplicationsPagedByGroupId(context.Context, string, models.Pageable) ([]Application, models.PaginationData, error)
 	SearchApplicationsByGroupId(context.Context, string, models.SearchParams) ([]Application, error)
 	FindApplicationEndpointByID(context.Context, string, string) (*Endpoint, error)
 	UpdateApplicationEndpointsStatus(context.Context, string, []string, EndpointStatus) error
