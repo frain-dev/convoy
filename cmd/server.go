@@ -8,7 +8,6 @@ import (
 	"github.com/frain-dev/convoy/worker/task"
 
 	"github.com/frain-dev/convoy/config"
-	convoyQueue "github.com/frain-dev/convoy/queue/redis"
 	"github.com/frain-dev/convoy/server"
 	"github.com/frain-dev/convoy/util"
 	"github.com/frain-dev/convoy/worker"
@@ -55,13 +54,9 @@ func addServerCommand(a *app) *cobra.Command {
 			}
 
 			// register workers.
-			if queue, ok := a.eventQueue.(*convoyQueue.RedisQueue); ok {
-				worker.NewProducer(queue).Start()
-			}
+			worker.NewProducer(cfg, a.eventQueue).Start()
 
-			if queue, ok := a.deadLetterQueue.(*convoyQueue.RedisQueue); ok {
-				worker.NewCleaner(queue).Start()
-			}
+			worker.NewCleaner(cfg, a.deadLetterQueue).Start()
 
 			log.Infof("Started convoy server in %s", time.Since(start))
 
