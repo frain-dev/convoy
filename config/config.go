@@ -119,6 +119,7 @@ const (
 	DevelopmentEnvironment string = "development"
 
 	RedisQueueProvider      QueueProvider           = "redis"
+	InMemoryQueueProvider   QueueProvider           = "in-memory"
 	DefaultStrategyProvider StrategyProvider        = "default"
 	DefaultSignatureHeader  SignatureHeaderProvider = "X-Convoy-Signature"
 )
@@ -265,6 +266,10 @@ func ensureQueueConfig(queueCfg QueueConfiguration) error {
 		if queueCfg.Redis.DSN == "" {
 			return errors.New("redis queue dsn is empty")
 		}
+
+	case InMemoryQueueProvider:
+		return nil
+
 	default:
 		return fmt.Errorf("unsupported queue type: %s", queueCfg.Type)
 	}
