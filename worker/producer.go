@@ -30,7 +30,10 @@ func NewProducer(cfg config.Configuration, eventQueue queue.Queuer) *Producer {
 	if cfg.Queue.Type == config.InMemoryQueueProvider {
 		if queue, ok := eventQueue.(*convoyMemqueue.MemQueue); ok {
 			consumer = queue.Consumer()
-			consumer.Stop()
+			err := consumer.Stop()
+			if err != nil {
+				log.Fatal(err)
+			}
 		}
 	}
 
