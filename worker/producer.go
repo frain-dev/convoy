@@ -3,7 +3,9 @@ package worker
 import (
 	"context"
 
+	"github.com/frain-dev/convoy/config"
 	"github.com/frain-dev/convoy/queue"
+	convoyMemqueue "github.com/frain-dev/convoy/queue/memqueue"
 	convoyRedis "github.com/frain-dev/convoy/queue/redis"
 	log "github.com/sirupsen/logrus"
 	"github.com/vmihailenco/taskq/v3"
@@ -15,8 +17,22 @@ type Producer struct {
 	quit          chan chan error
 }
 
-func NewProducer(queue *convoyRedis.RedisQueue) *Producer {
-	consumer := queue.Consumer()
+func NewProducer(cfg config.Configuration, eventQueue queue.Queuer) *Producer {
+	var consumer taskq.QueueConsumer
+	var queue queue.Queuer
+
+	if cfg.Queue.Type == config.RedisQueueProvider {
+		if queue, ok := eventQueue.(*convoyRedis.RedisQueue); ok {
+			consumer = queue.Consumer()
+		}
+	}
+
+	if cfg.Queue.Type == config.InMemoryQueueProvider {
+		if queue, ok := eventQueue.(*convoyMemqueue.MemQueue); ok {
+			consumer = queue.Consumer()
+			consumer.Stop()
+		}
+	}
 
 	return &Producer{
 		scheduleQueue: queue,
