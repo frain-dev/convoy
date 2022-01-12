@@ -71,12 +71,16 @@ func (d *Dispatcher) SendRequest(endpoint, method string, jsonData json.RawMessa
 	}
 	updateDispatchHeaders(r, response)
 
-	body := make([]byte, maxResponseSize)
-	n, err := io.ReadFull(response.Body, body)
-	r.Body = body[:n]
+	// io.LimitReader will attempt to read from response.Body until maxResponseSize is reached.
+	// if response.Body's length is less than maxResponseSize. body.Read will return io.EOF,
+	// if it is greater than maxResponseSize. body.Read will return io.EOF,
+	// if it is equal to maxResponseSize. body.Read will return io.EOF,
+	// in all cases, io.ReadAll ignores io.EOF.
+	body := io.LimitReader(response.Body, maxResponseSize)
+	buf, err := io.ReadAll(body)
+	r.Body = buf
 
-	// ignore EOF because the response body may be empty
-	if err != nil && err != io.EOF && err != io.ErrUnexpectedEOF {
+	if err != nil {
 		log.WithError(err).Error("couldn't parse response body")
 		return r, err
 	}
