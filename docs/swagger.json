@@ -3114,11 +3114,25 @@
                 "name": {
                     "type": "string"
                 },
+                "statistics": {
+                    "$ref": "#/definitions/convoy.GroupStatistics"
+                },
                 "uid": {
                     "type": "string"
                 },
                 "updated_at": {
                     "type": "string"
+                }
+            }
+        },
+        "convoy.GroupStatistics": {
+            "type": "object",
+            "properties": {
+                "messages_sent": {
+                    "type": "integer"
+                },
+                "total_apps": {
+                    "type": "integer"
                 }
             }
         },

@@ -57,6 +57,7 @@ type EventRepository interface {
 	LoadEventIntervals(context.Context, string, models.SearchParams, Period, int) ([]models.EventInterval, error)
 	LoadEventsPagedByAppId(context.Context, string, models.SearchParams, models.Pageable) ([]Event, models.PaginationData, error)
 	FindEventByID(ctx context.Context, id string) (*Event, error)
+	CountGroupMessages(ctx context.Context, groupID string) (int64, error)
 	LoadEventsScheduledForPosting(context.Context) ([]Event, error)
 	LoadEventsForPostingRetry(context.Context) ([]Event, error)
 	LoadAbandonedEventsForPostingRetry(context.Context) ([]Event, error)
