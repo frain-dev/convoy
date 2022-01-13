@@ -112,7 +112,7 @@ func ProcessEventDelivery(appRepo convoy.ApplicationRepository, eventDeliveryRep
 		attemptStatus := false
 		start := time.Now()
 
-		resp, err := dispatch.SendRequest(e.TargetURL, string(convoy.HttpPost), []byte(bStr), g.Config.Signature.Header.String(), hmac)
+		resp, err := dispatch.SendRequest(e.TargetURL, string(convoy.HttpPost), []byte(bStr), g.Config.Signature.Header.String(), hmac, int64(cfg.MaxResponseSize))
 		status := "-"
 		statusCode := 0
 		if resp != nil {
