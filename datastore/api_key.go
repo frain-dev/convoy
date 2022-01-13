@@ -2,6 +2,8 @@ package datastore
 
 import (
 	"context"
+	"errors"
+	"time"
 
 	"github.com/frain-dev/convoy"
 	"github.com/frain-dev/convoy/util"
@@ -13,72 +15,88 @@ import (
 )
 
 type apiKeyRepo struct {
-	client *mongo.Collection
+	innerDB *mongo.Database
+	client  *mongo.Collection
 }
 
 const APIKeyCollection = "apiKeys"
 
-func NewApiKeyRepo(db *mongo.Database) *apiKeyRepo {
-	return &apiKeyRepo{client: db.Collection(APIKeyCollection)}
+func NewApiKeyRepo(client *mongo.Database) convoy.APIKeyRepository {
+	return &apiKeyRepo{
+		innerDB: client,
+		client:  client.Collection(APIKeyCollection, nil),
+	}
 }
 
-func (a *apiKeyRepo) CreateAPIKey(ctx context.Context, apiKey *convoy.APIKey) error {
+func (db *apiKeyRepo) CreateAPIKey(ctx context.Context, apiKey *convoy.APIKey) error {
 	apiKey.ID = primitive.NewObjectID()
 
 	if util.IsStringEmpty(apiKey.UID) {
 		apiKey.UID = uuid.New().String()
 	}
 
-	_, err := a.client.InsertOne(ctx, apiKey)
+	_, err := db.client.InsertOne(ctx, apiKey)
 	return err
 }
 
-func (a *apiKeyRepo) UpdateAPIKey(ctx context.Context, apiKey *convoy.APIKey) error {
+func (db *apiKeyRepo) UpdateAPIKey(ctx context.Context, apiKey *convoy.APIKey) error {
 	filter := bson.M{"uid": apiKey.UID}
-	_, err := a.client.UpdateOne(ctx, filter, apiKey)
+	_, err := db.client.UpdateOne(ctx, filter, apiKey)
 	return err
 }
 
-func (a *apiKeyRepo) FindAPIKeyByID(ctx context.Context, uid string) (*convoy.APIKey, error) {
+func (db *apiKeyRepo) FindAPIKeyByID(ctx context.Context, uid string) (*convoy.APIKey, error) {
 	apiKey := &convoy.APIKey{}
-	err := a.client.FindOne(ctx, bson.M{"uid": uid}).Decode(apiKey)
+	err := db.client.FindOne(ctx, bson.M{"uid": uid}).Decode(apiKey)
 	return apiKey, err
 }
 
-func (a *apiKeyRepo) RevokeAPIKeys(ctx context.Context, uids []string) error {
+func (db *apiKeyRepo) FindAPIKeyByMaskID(ctx context.Context, maskID string) (*convoy.APIKey, error) {
+	apiKey := new(convoy.APIKey)
+	err := db.client.FindOne(ctx, bson.M{"mask_id": maskID}).Decode(apiKey)
+
+	if errors.Is(err, mongo.ErrNoDocuments) {
+		err = convoy.ErrAPIKeyNotFound
+	}
+
+	return apiKey, nil
+}
+
+func (db *apiKeyRepo) RevokeAPIKeys(ctx context.Context, uids []string) error {
 	filter := bson.M{
 		"uid": bson.M{
 			"$in": uids,
 		},
 	}
 
-	update := bson.D{
-		{Key: "$set",
-			Value: bson.D{
-				{Key: "revoked", Value: true},
-			},
-		},
-	}
+	updateAsDeleted := bson.D{primitive.E{Key: "$set", Value: bson.D{
+		primitive.E{Key: "deleted_at", Value: primitive.NewDateTimeFromTime(time.Now())},
+		primitive.E{Key: "document_status", Value: convoy.DeletedDocumentStatus},
+	}}}
 
-	_, err := a.client.UpdateMany(ctx, filter, update)
+	_, err := db.client.UpdateMany(ctx, filter, updateAsDeleted)
 	return err
 }
 
-func (a *apiKeyRepo) FindAPIKeyByHash(ctx context.Context, hash string) (*convoy.APIKey, error) {
+func (db *apiKeyRepo) FindAPIKeyByHash(ctx context.Context, hash string) (*convoy.APIKey, error) {
 	apiKey := &convoy.APIKey{}
-	err := a.client.FindOne(ctx, bson.M{"hash": hash}).Decode(apiKey)
+	err := db.client.FindOne(ctx, bson.M{"hash": hash}).Decode(apiKey)
 	return apiKey, err
 }
 
-func (a *apiKeyRepo) LoadAPIKeysPaged(ctx context.Context, pageable *convoy.Pageable) ([]convoy.APIKey, *pager.PaginationData, error) {
+func (db *apiKeyRepo) LoadAPIKeysPaged(ctx context.Context, pageable *convoy.Pageable) ([]convoy.APIKey, *pager.PaginationData, error) {
 	var apiKeys []convoy.APIKey
 
+	filter := bson.M{"$or": bson.A{
+		bson.M{"document_status": bson.M{"$ne": convoy.DeletedDocumentStatus}},
+	}}
+
 	paginatedData, err := pager.
-		New(a.client).
+		New(db.client).
 		Context(ctx).
 		Limit(int64(pageable.PerPage)).
 		Page(int64(pageable.Page)).
-		Filter(bson.M{}).
+		Filter(filter).
 		Sort("created_at", pageable.Sort).
 		Decode(&apiKeys).
 		Find()
@@ -88,10 +106,4 @@ func (a *apiKeyRepo) LoadAPIKeysPaged(ctx context.Context, pageable *convoy.Page
 	}
 
 	return apiKeys, &paginatedData.Pagination, nil
-}
-
-// TODO(daniel): i believe deleting it completely makes sense in this case
-func (a *apiKeyRepo) DeleteAPIKey(ctx context.Context, uid string) error {
-	_, err := a.client.DeleteOne(ctx, bson.M{"uid": uid})
-	return err
 }

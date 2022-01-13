@@ -631,7 +631,7 @@ func TestProcessEventDelivery(t *testing.T) {
 			groupRepo := mocks.NewMockGroupRepository(ctrl)
 			appRepo := mocks.NewMockApplicationRepository(ctrl)
 			msgRepo := mocks.NewMockEventDeliveryRepository(ctrl)
-			apiKeyRepo := mocks.NewMockAPIKeyRepo(ctrl)
+			apiKeyRepo := mocks.NewMockAPIKeyRepository(ctrl)
 
 			err := config.LoadConfig(tc.cfgPath, new(config.Configuration))
 			if err != nil {

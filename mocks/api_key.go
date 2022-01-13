@@ -13,91 +13,92 @@ import (
 	gomock "github.com/golang/mock/gomock"
 )
 
-// MockAPIKeyRepo is a mock of APIKeyRepository interface.
-type MockAPIKeyRepo struct {
+// MockAPIKeyRepository is a mock of APIKeyRepository interface.
+type MockAPIKeyRepository struct {
 	ctrl     *gomock.Controller
-	recorder *MockAPIKeyRepoMockRecorder
+	recorder *MockAPIKeyRepositoryMockRecorder
 }
 
-// MockAPIKeyRepoMockRecorder is the mock recorder for MockAPIKeyRepo.
-type MockAPIKeyRepoMockRecorder struct {
-	mock *MockAPIKeyRepo
+// MockAPIKeyRepositoryMockRecorder is the mock recorder for MockAPIKeyRepository.
+type MockAPIKeyRepositoryMockRecorder struct {
+	mock *MockAPIKeyRepository
 }
 
-// NewMockAPIKeyRepo creates a new mock instance.
-func NewMockAPIKeyRepo(ctrl *gomock.Controller) *MockAPIKeyRepo {
-	mock := &MockAPIKeyRepo{ctrl: ctrl}
-	mock.recorder = &MockAPIKeyRepoMockRecorder{mock}
+// NewMockAPIKeyRepository creates a new mock instance.
+func NewMockAPIKeyRepository(ctrl *gomock.Controller) *MockAPIKeyRepository {
+	mock := &MockAPIKeyRepository{ctrl: ctrl}
+	mock.recorder = &MockAPIKeyRepositoryMockRecorder{mock}
 	return mock
 }
 
 // EXPECT returns an object that allows the caller to indicate expected use.
-func (m *MockAPIKeyRepo) EXPECT() *MockAPIKeyRepoMockRecorder {
+func (m *MockAPIKeyRepository) EXPECT() *MockAPIKeyRepositoryMockRecorder {
 	return m.recorder
 }
 
 // CreateAPIKey mocks base method.
-func (m *MockAPIKeyRepo) CreateAPIKey(ctx context.Context, apiKey *convoy.APIKey) error {
+func (m *MockAPIKeyRepository) CreateAPIKey(arg0 context.Context, arg1 *convoy.APIKey) error {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "CreateAPIKey", ctx, apiKey)
+	ret := m.ctrl.Call(m, "CreateAPIKey", arg0, arg1)
 	ret0, _ := ret[0].(error)
 	return ret0
 }
 
 // CreateAPIKey indicates an expected call of CreateAPIKey.
-func (mr *MockAPIKeyRepoMockRecorder) CreateAPIKey(ctx, apiKey interface{}) *gomock.Call {
+func (mr *MockAPIKeyRepositoryMockRecorder) CreateAPIKey(arg0, arg1 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateAPIKey", reflect.TypeOf((*MockAPIKeyRepo)(nil).CreateAPIKey), ctx, apiKey)
-}
-
-// DeleteAPIKey mocks base method.
-func (m *MockAPIKeyRepo) DeleteAPIKey(ctx context.Context, uid string) error {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "DeleteAPIKey", ctx, uid)
-	ret0, _ := ret[0].(error)
-	return ret0
-}
-
-// DeleteAPIKey indicates an expected call of DeleteAPIKey.
-func (mr *MockAPIKeyRepoMockRecorder) DeleteAPIKey(ctx, uid interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteAPIKey", reflect.TypeOf((*MockAPIKeyRepo)(nil).DeleteAPIKey), ctx, uid)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateAPIKey", reflect.TypeOf((*MockAPIKeyRepository)(nil).CreateAPIKey), arg0, arg1)
 }
 
 // FindAPIKeyByHash mocks base method.
-func (m *MockAPIKeyRepo) FindAPIKeyByHash(ctx context.Context, hash string) (*convoy.APIKey, error) {
+func (m *MockAPIKeyRepository) FindAPIKeyByHash(arg0 context.Context, arg1 string) (*convoy.APIKey, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "FindAPIKeyByHash", ctx, hash)
+	ret := m.ctrl.Call(m, "FindAPIKeyByHash", arg0, arg1)
 	ret0, _ := ret[0].(*convoy.APIKey)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // FindAPIKeyByHash indicates an expected call of FindAPIKeyByHash.
-func (mr *MockAPIKeyRepoMockRecorder) FindAPIKeyByHash(ctx, hash interface{}) *gomock.Call {
+func (mr *MockAPIKeyRepositoryMockRecorder) FindAPIKeyByHash(arg0, arg1 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "FindAPIKeyByHash", reflect.TypeOf((*MockAPIKeyRepo)(nil).FindAPIKeyByHash), ctx, hash)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "FindAPIKeyByHash", reflect.TypeOf((*MockAPIKeyRepository)(nil).FindAPIKeyByHash), arg0, arg1)
 }
 
 // FindAPIKeyByID mocks base method.
-func (m *MockAPIKeyRepo) FindAPIKeyByID(ctx context.Context, uid string) (*convoy.APIKey, error) {
+func (m *MockAPIKeyRepository) FindAPIKeyByID(arg0 context.Context, arg1 string) (*convoy.APIKey, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "FindAPIKeyByID", ctx, uid)
+	ret := m.ctrl.Call(m, "FindAPIKeyByID", arg0, arg1)
 	ret0, _ := ret[0].(*convoy.APIKey)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // FindAPIKeyByID indicates an expected call of FindAPIKeyByID.
-func (mr *MockAPIKeyRepoMockRecorder) FindAPIKeyByID(ctx, uid interface{}) *gomock.Call {
+func (mr *MockAPIKeyRepositoryMockRecorder) FindAPIKeyByID(arg0, arg1 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "FindAPIKeyByID", reflect.TypeOf((*MockAPIKeyRepo)(nil).FindAPIKeyByID), ctx, uid)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "FindAPIKeyByID", reflect.TypeOf((*MockAPIKeyRepository)(nil).FindAPIKeyByID), arg0, arg1)
+}
+
+// FindAPIKeyByMaskID mocks base method.
+func (m *MockAPIKeyRepository) FindAPIKeyByMaskID(arg0 context.Context, arg1 string) (*convoy.APIKey, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "FindAPIKeyByMaskID", arg0, arg1)
+	ret0, _ := ret[0].(*convoy.APIKey)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// FindAPIKeyByMaskID indicates an expected call of FindAPIKeyByMaskID.
+func (mr *MockAPIKeyRepositoryMockRecorder) FindAPIKeyByMaskID(arg0, arg1 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "FindAPIKeyByMaskID", reflect.TypeOf((*MockAPIKeyRepository)(nil).FindAPIKeyByMaskID), arg0, arg1)
 }
 
 // LoadAPIKeysPaged mocks base method.
-func (m *MockAPIKeyRepo) LoadAPIKeysPaged(ctx context.Context, pageable *convoy.Pageable) ([]convoy.APIKey, *mongopagination.PaginationData, error) {
+func (m *MockAPIKeyRepository) LoadAPIKeysPaged(arg0 context.Context, arg1 *convoy.Pageable) ([]convoy.APIKey, *mongopagination.PaginationData, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "LoadAPIKeysPaged", ctx, pageable)
+	ret := m.ctrl.Call(m, "LoadAPIKeysPaged", arg0, arg1)
 	ret0, _ := ret[0].([]convoy.APIKey)
 	ret1, _ := ret[1].(*mongopagination.PaginationData)
 	ret2, _ := ret[2].(error)
@@ -105,35 +106,35 @@ func (m *MockAPIKeyRepo) LoadAPIKeysPaged(ctx context.Context, pageable *convoy.
 }
 
 // LoadAPIKeysPaged indicates an expected call of LoadAPIKeysPaged.
-func (mr *MockAPIKeyRepoMockRecorder) LoadAPIKeysPaged(ctx, pageable interface{}) *gomock.Call {
+func (mr *MockAPIKeyRepositoryMockRecorder) LoadAPIKeysPaged(arg0, arg1 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "LoadAPIKeysPaged", reflect.TypeOf((*MockAPIKeyRepo)(nil).LoadAPIKeysPaged), ctx, pageable)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "LoadAPIKeysPaged", reflect.TypeOf((*MockAPIKeyRepository)(nil).LoadAPIKeysPaged), arg0, arg1)
 }
 
 // RevokeAPIKeys mocks base method.
-func (m *MockAPIKeyRepo) RevokeAPIKeys(ctx context.Context, uids []string) error {
+func (m *MockAPIKeyRepository) RevokeAPIKeys(arg0 context.Context, arg1 []string) error {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "RevokeAPIKey", ctx, uids)
+	ret := m.ctrl.Call(m, "RevokeAPIKeys", arg0, arg1)
 	ret0, _ := ret[0].(error)
 	return ret0
 }
 
 // RevokeAPIKeys indicates an expected call of RevokeAPIKeys.
-func (mr *MockAPIKeyRepoMockRecorder) RevokeAPIKeys(ctx, uids interface{}) *gomock.Call {
+func (mr *MockAPIKeyRepositoryMockRecorder) RevokeAPIKeys(arg0, arg1 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "RevokeAPIKey", reflect.TypeOf((*MockAPIKeyRepo)(nil).RevokeAPIKeys), ctx, uids)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "RevokeAPIKeys", reflect.TypeOf((*MockAPIKeyRepository)(nil).RevokeAPIKeys), arg0, arg1)
 }
 
 // UpdateAPIKey mocks base method.
-func (m *MockAPIKeyRepo) UpdateAPIKey(ctx context.Context, apiKey *convoy.APIKey) error {
+func (m *MockAPIKeyRepository) UpdateAPIKey(arg0 context.Context, arg1 *convoy.APIKey) error {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "UpdateAPIKey", ctx, apiKey)
+	ret := m.ctrl.Call(m, "UpdateAPIKey", arg0, arg1)
 	ret0, _ := ret[0].(error)
 	return ret0
 }
 
 // UpdateAPIKey indicates an expected call of UpdateAPIKey.
-func (mr *MockAPIKeyRepoMockRecorder) UpdateAPIKey(ctx, apiKey interface{}) *gomock.Call {
+func (mr *MockAPIKeyRepositoryMockRecorder) UpdateAPIKey(arg0, arg1 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateAPIKey", reflect.TypeOf((*MockAPIKeyRepo)(nil).UpdateAPIKey), ctx, apiKey)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateAPIKey", reflect.TypeOf((*MockAPIKeyRepository)(nil).UpdateAPIKey), arg0, arg1)
 }

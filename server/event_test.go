@@ -28,7 +28,7 @@ func TestApplicationHandler_CreateAppEvent(t *testing.T) {
 	eventRepo := mocks.NewMockEventRepository(ctrl)
 	eventDeliveryRepo := mocks.NewMockEventDeliveryRepository(ctrl)
 	eventQueue := mocks.NewMockQueuer(ctrl)
-	apiKeyRepo := mocks.NewMockAPIKeyRepo(ctrl)
+	apiKeyRepo := mocks.NewMockAPIKeyRepository(ctrl)
 
 	app = newApplicationHandler(eventRepo, eventDeliveryRepo, appRepo, groupRepo, apiKeyRepo, eventQueue)
 
@@ -387,7 +387,7 @@ func Test_resendEventDelivery(t *testing.T) {
 	eventRepo := mocks.NewMockEventRepository(ctrl)
 	eventDeliveryRepo := mocks.NewMockEventDeliveryRepository(ctrl)
 	eventQueue := mocks.NewMockQueuer(ctrl)
-	apiKeyRepo := mocks.NewMockAPIKeyRepo(ctrl)
+	apiKeyRepo := mocks.NewMockAPIKeyRepository(ctrl)
 
 	app = newApplicationHandler(eventRepo, eventDeliveryRepo, appRepo, groupRepo, apiKeyRepo, eventQueue)
 
@@ -697,7 +697,7 @@ func TestApplicationHandler_BatchRetryEventDelivery(t *testing.T) {
 	eventRepo := mocks.NewMockEventRepository(ctrl)
 	eventDeliveryRepo := mocks.NewMockEventDeliveryRepository(ctrl)
 	eventQueue := mocks.NewMockQueuer(ctrl)
-	apiKeyRepo := mocks.NewMockAPIKeyRepo(ctrl)
+	apiKeyRepo := mocks.NewMockAPIKeyRepository(ctrl)
 
 	app := newApplicationHandler(eventRepo, eventDeliveryRepo, appRepo, groupRepo, apiKeyRepo, eventQueue)
 	group := &convoy.Group{Name: "default-group", UID: "1234567890"}

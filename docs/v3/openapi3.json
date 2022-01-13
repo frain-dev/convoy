@@ -20,17 +20,26 @@
 					"created_at": {
 						"type": "integer"
 					},
+					"delted_at": {
+						"type": "integer"
+					},
 					"expires_at": {
 						"type": "integer"
 					},
-					"revoked": {
-						"type": "boolean"
+					"key_type": {
+						"type": "string"
+					},
+					"name": {
+						"type": "string"
 					},
 					"role": {
 						"$ref": "#/components/schemas/auth.Role"
 					},
 					"uid": {
 						"type": "string"
+					},
+					"updated_at": {
+						"type": "integer"
 					}
 				},
 				"type": "object"
@@ -388,6 +397,12 @@
 					"expires_at": {
 						"type": "string"
 					},
+					"key_type": {
+						"type": "string"
+					},
+					"name": {
+						"type": "string"
+					},
 					"role": {
 						"$ref": "#/components/schemas/auth.Role"
 					}
@@ -403,6 +418,12 @@
 						"type": "string"
 					},
 					"key": {
+						"type": "string"
+					},
+					"key_type": {
+						"type": "string"
+					},
+					"name": {
 						"type": "string"
 					},
 					"role": {
@@ -3931,7 +3952,7 @@
 			}
 		},
 		"/security/keys/{keyID}/revoke": {
-			"get": {
+			"put": {
 				"description": "This endpoint revokes multiple api keys",
 				"parameters": [
 					{
@@ -4039,7 +4060,7 @@
 						"ApiKeyAuth": []
 					}
 				],
-				"summary": "Revoke multiple api keys",
+				"summary": "Revoke API Key",
 				"tags": [
 					"APIKey"
 				]

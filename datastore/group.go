@@ -108,3 +108,32 @@ func (db *groupRepo) FetchGroupByID(ctx context.Context,
 
 	return org, err
 }
+
+func (db *groupRepo) FetchGroupsByIDs(ctx context.Context, ids []string) ([]convoy.Group, error) {
+	filter := bson.M{
+		"uid": bson.M{
+			"$in": ids,
+		},
+		"document_status": bson.M{
+			"$ne": convoy.DeletedDocumentStatus,
+		},
+	}
+
+	groups := make([]convoy.Group, 0)
+
+	cur, err := db.inner.Find(ctx, filter, nil)
+	if err != nil {
+		return groups, err
+	}
+
+	for cur.Next(ctx) {
+		var group convoy.Group
+		if err := cur.Decode(&group); err != nil {
+			return groups, err
+		}
+
+		groups = append(groups, group)
+	}
+
+	return groups, err
+}

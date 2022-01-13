@@ -18,7 +18,7 @@ import (
 func TestNativeRealm_Authenticate(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
-	mockApiKeyRepo := mocks.NewMockAPIKeyRepo(ctrl)
+	mockApiKeyRepo := mocks.NewMockAPIKeyRepository(ctrl)
 
 	nr := NewNativeRealm(mockApiKeyRepo)
 
@@ -28,7 +28,7 @@ func TestNativeRealm_Authenticate(t *testing.T) {
 	tests := []struct {
 		name       string
 		args       args
-		nFn        func(apiKeyRepo *mocks.MockAPIKeyRepo)
+		nFn        func(apiKeyRepo *mocks.MockAPIKeyRepository)
 		want       *auth.AuthenticatedUser
 		wantErr    bool
 		wantErrMsg string
@@ -38,20 +38,21 @@ func TestNativeRealm_Authenticate(t *testing.T) {
 			args: args{
 				cred: &auth.Credential{
 					Type:   auth.CredentialTypeAPIKey,
-					APIKey: "abcde",
+					APIKey: "CO.DkwB9HnZxy4DqZMi.0JUxUfnQJ7NHqvD2ikHsHFx4Wd5nnlTMgsOfUs4eW8oU2G7dA75BWrHfFYYvrash",
 				},
 			},
-			nFn: func(apiKeyRepo *mocks.MockAPIKeyRepo) {
+			nFn: func(apiKeyRepo *mocks.MockAPIKeyRepository) {
 				apiKeyRepo.EXPECT().
-					FindAPIKeyByHash(gomock.Any(), gomock.AssignableToTypeOf("")).
+					FindAPIKeyByMaskID(gomock.Any(), gomock.Any()).
 					Times(1).Return(&convoy.APIKey{
 					UID: "abcd",
 					Role: auth.Role{
 						Type:   auth.RoleUIAdmin,
 						Groups: []string{"paystack"},
 					},
-					Hash:      "abcd",
-					Revoked:   false,
+					MaskID:    "DkwB9HnZxy4DqZMi",
+					Hash:      "R4rtPIELUaJ9fx6suLreIpH3IaLzbxRcODy3a0Zm1qM=",
+					Salt:      "6y9yQZWqbE1AMHvfUewuYwasycmoe_zg5g==",
 					ExpiresAt: 0,
 					CreatedAt: 0,
 				}, nil)
@@ -60,7 +61,7 @@ func TestNativeRealm_Authenticate(t *testing.T) {
 				AuthenticatedByRealm: nr.GetName(),
 				Credential: auth.Credential{
 					Type:   auth.CredentialTypeAPIKey,
-					APIKey: "abcde",
+					APIKey: "CO.DkwB9HnZxy4DqZMi.0JUxUfnQJ7NHqvD2ikHsHFx4Wd5nnlTMgsOfUs4eW8oU2G7dA75BWrHfFYYvrash",
 				},
 				Role: auth.Role{
 					Type:   auth.RoleUIAdmin,
@@ -73,34 +74,35 @@ func TestNativeRealm_Authenticate(t *testing.T) {
 			name: "should_error_for_wrong_cred_type",
 			args: args{
 				cred: &auth.Credential{
-					Type:   auth.CredentialTypeBasic,
-					APIKey: "abcde",
+					Type: auth.CredentialTypeBasic,
 				},
 			},
 			nFn:        nil,
 			want:       nil,
 			wantErr:    true,
-			wantErrMsg: fmt.Sprintf("%s only authenticates credential type API_KEY", nr.GetName()),
+			wantErrMsg: fmt.Sprintf("%s only authenticates credential type BEARER", nr.GetName()),
 		},
 		{
 			name: "should_error_for_revoked_key",
 			args: args{
 				cred: &auth.Credential{
 					Type:   auth.CredentialTypeAPIKey,
-					APIKey: "abcde",
+					APIKey: "CO.DkwB9HnZxy4DqZMi.0JUxUfnQJ7NHqvD2ikHsHFx4Wd5nnlTMgsOfUs4eW8oU2G7dA75BWrHfFYYvrash",
 				},
 			},
-			nFn: func(apiKeyRepo *mocks.MockAPIKeyRepo) {
+			nFn: func(apiKeyRepo *mocks.MockAPIKeyRepository) {
 				apiKeyRepo.EXPECT().
-					FindAPIKeyByHash(gomock.Any(), gomock.AssignableToTypeOf("")).
+					FindAPIKeyByMaskID(gomock.Any(), gomock.Any()).
 					Times(1).Return(&convoy.APIKey{
 					UID: "abcd",
 					Role: auth.Role{
 						Type:   auth.RoleUIAdmin,
 						Groups: []string{"paystack"},
 					},
-					Hash:      "abcd",
-					Revoked:   true,
+					MaskID:    "DkwB9HnZxy4DqZMi",
+					Hash:      "R4rtPIELUaJ9fx6suLreIpH3IaLzbxRcODy3a0Zm1qM=",
+					Salt:      "6y9yQZWqbE1AMHvfUewuYwasycmoe_zg5g==",
+					DeletedAt: primitive.NewDateTimeFromTime(time.Now()),
 					ExpiresAt: 0,
 					CreatedAt: 0,
 				}, nil)
@@ -114,20 +116,21 @@ func TestNativeRealm_Authenticate(t *testing.T) {
 			args: args{
 				cred: &auth.Credential{
 					Type:   auth.CredentialTypeAPIKey,
-					APIKey: "abcde",
+					APIKey: "CO.DkwB9HnZxy4DqZMi.0JUxUfnQJ7NHqvD2ikHsHFx4Wd5nnlTMgsOfUs4eW8oU2G7dA75BWrHfFYYvrash",
 				},
 			},
-			nFn: func(apiKeyRepo *mocks.MockAPIKeyRepo) {
+			nFn: func(apiKeyRepo *mocks.MockAPIKeyRepository) {
 				apiKeyRepo.EXPECT().
-					FindAPIKeyByHash(gomock.Any(), gomock.AssignableToTypeOf("")).
+					FindAPIKeyByMaskID(gomock.Any(), gomock.Any()).
 					Times(1).Return(&convoy.APIKey{
 					UID: "abcd",
 					Role: auth.Role{
 						Type:   auth.RoleUIAdmin,
 						Groups: []string{"paystack"},
 					},
-					Hash:      "abcd",
-					Revoked:   false,
+					MaskID:    "DkwB9HnZxy4DqZMi",
+					Hash:      "R4rtPIELUaJ9fx6suLreIpH3IaLzbxRcODy3a0Zm1qM=",
+					Salt:      "6y9yQZWqbE1AMHvfUewuYwasycmoe_zg5g==",
 					ExpiresAt: primitive.NewDateTimeFromTime(time.Date(2021, 11, 1, 0, 0, 0, 0, time.UTC)),
 					CreatedAt: 0,
 				}, nil)
@@ -141,12 +144,12 @@ func TestNativeRealm_Authenticate(t *testing.T) {
 			args: args{
 				cred: &auth.Credential{
 					Type:   auth.CredentialTypeAPIKey,
-					APIKey: "abcde",
+					APIKey: "CO.DkwB9HnZxy4DqZMi.0JUxUfnQJ7NHqvD2ikHsHFx4Wd5nnlTMgsOfUs4eW8oU2G7dA75BWrHfFYYvrash",
 				},
 			},
-			nFn: func(apiKeyRepo *mocks.MockAPIKeyRepo) {
+			nFn: func(apiKeyRepo *mocks.MockAPIKeyRepository) {
 				apiKeyRepo.EXPECT().
-					FindAPIKeyByHash(gomock.Any(), gomock.AssignableToTypeOf("")).
+					FindAPIKeyByMaskID(gomock.Any(), gomock.Any()).
 					Times(1).Return(nil, errors.New("no documents in result"))
 			},
 			want:       nil,

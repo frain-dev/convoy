@@ -23,7 +23,7 @@ func Test_fetchAllConfigDetails(t *testing.T) {
 	eventRepo := mocks.NewMockEventRepository(ctrl)
 	eventDeliveryRepo := mocks.NewMockEventDeliveryRepository(ctrl)
 	eventQueue := mocks.NewMockQueuer(ctrl)
-	apiKeyRepo := mocks.NewMockAPIKeyRepo(ctrl)
+	apiKeyRepo := mocks.NewMockAPIKeyRepository(ctrl)
 
 	app = newApplicationHandler(eventRepo, eventDeliveryRepo, appRepo, groupRepo, apiKeyRepo, eventQueue)
 

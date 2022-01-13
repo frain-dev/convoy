@@ -318,7 +318,7 @@ func TestInit(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			mockAPIKeyRepo := mocks.NewMockAPIKeyRepo(gomock.NewController(t))
+			mockAPIKeyRepo := mocks.NewMockAPIKeyRepository(gomock.NewController(t))
 			err := Init(tt.args.authConfig, mockAPIKeyRepo)
 			if tt.wantErr {
 				require.Equal(t, tt.wantErrMsg, err.Error())

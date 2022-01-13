@@ -1,6 +1,8 @@
 package server
 
 import (
+	"crypto/sha256"
+	"encoding/base64"
 	"encoding/json"
 	"net/http"
 	"time"
@@ -13,6 +15,7 @@ import (
 	"github.com/google/uuid"
 	log "github.com/sirupsen/logrus"
 	"go.mongodb.org/mongo-driver/bson/primitive"
+	"golang.org/x/crypto/pbkdf2"
 )
 
 // CreateAPIKey
@@ -34,7 +37,7 @@ func (a *applicationHandler) CreateAPIKey(w http.ResponseWriter, r *http.Request
 		return
 	}
 
-	if newApiKey.ExpiresAt != nil && newApiKey.ExpiresAt.Before(time.Now()) {
+	if newApiKey.ExpiresAt != (time.Time{}) && newApiKey.ExpiresAt.Before(time.Now()) {
 		_ = render.Render(w, r, newErrorResponse("expiry date is invalid", http.StatusBadRequest))
 		return
 	}
@@ -46,29 +49,44 @@ func (a *applicationHandler) CreateAPIKey(w http.ResponseWriter, r *http.Request
 		return
 	}
 
-	key, err := util.GenerateSecret()
+	groups, err := a.groupRepo.FetchGroupsByIDs(r.Context(), newApiKey.Role.Groups)
 	if err != nil {
-		log.WithError(err).Error("failed to generate api key")
-		_ = render.Render(w, r, newErrorResponse("failed to generate api key", http.StatusInternalServerError))
+		_ = render.Render(w, r, newErrorResponse("invalid group", http.StatusBadRequest))
 		return
 	}
 
-	hashedKey, err := util.ComputeSHA256(key)
-	if err != nil {
-		log.WithError(err).Error("failed to hash api key")
-		_ = render.Render(w, r, newErrorResponse("failed to hash api key", http.StatusInternalServerError))
+	if len(groups) != len(newApiKey.Role.Groups) {
+		_ = render.Render(w, r, newErrorResponse("cannot find group", http.StatusBadRequest))
 		return
 	}
+
+	maskID, key := util.GenerateAPIKey()
+
+	salt, err := util.GenerateSecret()
+	if err != nil {
+		log.WithError(err).Error("failed to generate salt")
+		_ = render.Render(w, r, newErrorResponse("something went wrong", http.StatusInternalServerError))
+		return
+	}
+
+	dk := pbkdf2.Key([]byte(key), []byte(salt), 4096, 32, sha256.New)
+	encodedKey := base64.URLEncoding.EncodeToString(dk)
 
 	apiKey := &convoy.APIKey{
-		UID:       uuid.New().String(),
-		Role:      newApiKey.Role,
-		Hash:      hashedKey,
-		CreatedAt: primitive.NewDateTimeFromTime(time.Now()),
+		UID:            uuid.New().String(),
+		MaskID:         maskID,
+		Name:           newApiKey.Name,
+		Type:           newApiKey.Type,
+		Role:           newApiKey.Role,
+		Hash:           encodedKey,
+		Salt:           salt,
+		CreatedAt:      primitive.NewDateTimeFromTime(time.Now()),
+		UpdatedAt:      primitive.NewDateTimeFromTime(time.Now()),
+		DocumentStatus: convoy.ActiveDocumentStatus,
 	}
 
-	if newApiKey.ExpiresAt != nil {
-		apiKey.ExpiresAt = primitive.NewDateTimeFromTime(*newApiKey.ExpiresAt)
+	if newApiKey.ExpiresAt != (time.Time{}) {
+		apiKey.ExpiresAt = primitive.NewDateTimeFromTime(newApiKey.ExpiresAt)
 	}
 
 	err = a.apiKeyRepo.CreateAPIKey(r.Context(), apiKey)
@@ -79,18 +97,22 @@ func (a *applicationHandler) CreateAPIKey(w http.ResponseWriter, r *http.Request
 	}
 
 	resp := models.APIKeyResponse{
+		APIKey: models.APIKey{
+			Name:      apiKey.Name,
+			Role:      apiKey.Role,
+			Type:      apiKey.Type,
+			ExpiresAt: apiKey.ExpiresAt.Time(),
+		},
 		UID:       apiKey.UID,
 		CreatedAt: apiKey.CreatedAt.Time(),
+		Key:       key,
 	}
-	resp.Role = apiKey.Role
-	resp.Key = key
-	resp.ExpiresAt = newApiKey.ExpiresAt
 
 	_ = render.Render(w, r, newServerResponse("API Key created successfully", resp, http.StatusCreated))
 }
 
 // RevokeAPIKey
-// @Summary Revoke multiple api keys
+// @Summary Revoke API Key
 // @Description This endpoint revokes multiple api keys
 // @Tags APIKey
 // @Accept  json
@@ -99,7 +121,7 @@ func (a *applicationHandler) CreateAPIKey(w http.ResponseWriter, r *http.Request
 // @Success 200 {object} serverResponse{data=Stub}
 // @Failure 400,401,500 {object} serverResponse{data=Stub}
 // @Security ApiKeyAuth
-// @Router /security/keys/{keyID}/revoke [get]
+// @Router /security/keys/{keyID}/revoke [put]
 func (a *applicationHandler) RevokeAPIKey(w http.ResponseWriter, r *http.Request) {
 	uid := chi.URLParam(r, "keyID")
 

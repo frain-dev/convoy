@@ -1,14 +1,18 @@
 package native
 
 import (
+	"bytes"
 	"context"
+	"crypto/sha256"
+	"encoding/base64"
 	"errors"
 	"fmt"
+	"strings"
 	"time"
 
 	"github.com/frain-dev/convoy"
 	"github.com/frain-dev/convoy/auth"
-	"github.com/frain-dev/convoy/util"
+	"golang.org/x/crypto/pbkdf2"
 )
 
 type NativeRealm struct {
@@ -24,17 +28,28 @@ func (n *NativeRealm) Authenticate(ctx context.Context, cred *auth.Credential) (
 		return nil, fmt.Errorf("%s only authenticates credential type %s", n.GetName(), auth.CredentialTypeAPIKey.String())
 	}
 
-	hash, err := util.ComputeSHA256(cred.APIKey)
+	key := cred.APIKey
+	maskID := strings.Split(key, ".")[1]
+
+	apiKey, err := n.apiKeyRepo.FindAPIKeyByMaskID(ctx, maskID)
 	if err != nil {
 		return nil, fmt.Errorf("failed to hash api key: %v", err)
 	}
 
-	apiKey, err := n.apiKeyRepo.FindAPIKeyByHash(ctx, hash)
+	decodedKey, err := base64.URLEncoding.DecodeString(apiKey.Hash)
 	if err != nil {
-		return nil, fmt.Errorf("failed to hash api key: %v", err)
+		return nil, fmt.Errorf("failed to decode string: %v", err)
 	}
 
-	if apiKey.Revoked {
+	// compute hash & compare.
+	dk := pbkdf2.Key([]byte(cred.APIKey), []byte(apiKey.Salt), 4096, 32, sha256.New)
+
+	if bytes.Compare(dk, decodedKey) != 0 {
+		// Not Match.
+		return nil, errors.New("invalid api key")
+	}
+
+	if apiKey.DeletedAt != 0 {
 		return nil, errors.New("api key has been revoked")
 	}
 

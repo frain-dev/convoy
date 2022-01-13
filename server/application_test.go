@@ -133,7 +133,7 @@ func TestApplicationHandler_GetApp(t *testing.T) {
 	eventRepo := mocks.NewMockEventRepository(ctrl)
 	eventDeliveryRepo := mocks.NewMockEventDeliveryRepository(ctrl)
 	eventQueue := mocks.NewMockQueuer(ctrl)
-	apiKeyRepo := mocks.NewMockAPIKeyRepo(ctrl)
+	apiKeyRepo := mocks.NewMockAPIKeyRepository(ctrl)
 
 	groupID := "1234567890"
 	group := &convoy.Group{UID: groupID}
@@ -246,7 +246,7 @@ func TestApplicationHandler_GetApps(t *testing.T) {
 	eventRepo := mocks.NewMockEventRepository(ctrl)
 	eventDeliveryRepo := mocks.NewMockEventDeliveryRepository(ctrl)
 	eventQueue := mocks.NewMockQueuer(ctrl)
-	apiKeyRepo := mocks.NewMockAPIKeyRepo(ctrl)
+	apiKeyRepo := mocks.NewMockAPIKeyRepository(ctrl)
 
 	groupID := "1234567890"
 	group := &convoy.Group{UID: groupID}
@@ -404,7 +404,7 @@ func TestApplicationHandler_CreateApp(t *testing.T) {
 			eventRepo := mocks.NewMockEventRepository(ctrl)
 			eventDeliveryRepo := mocks.NewMockEventDeliveryRepository(ctrl)
 			eventQueue := mocks.NewMockQueuer(ctrl)
-			apiKeyRepo := mocks.NewMockAPIKeyRepo(ctrl)
+			apiKeyRepo := mocks.NewMockAPIKeyRepository(ctrl)
 
 			app = newApplicationHandler(eventRepo, eventDeliveryRepo, appRepo, groupRepo, apiKeyRepo, eventQueue)
 
@@ -614,7 +614,7 @@ func TestApplicationHandler_UpdateApp(t *testing.T) {
 			eventRepo := mocks.NewMockEventRepository(ctrl)
 			eventDeliveryRepo := mocks.NewMockEventDeliveryRepository(ctrl)
 			eventQueue := mocks.NewMockQueuer(ctrl)
-			apiKeyRepo := mocks.NewMockAPIKeyRepo(ctrl)
+			apiKeyRepo := mocks.NewMockAPIKeyRepository(ctrl)
 
 			app = newApplicationHandler(eventRepo, eventDeliveryRepo, appRepo, groupRepo, apiKeyRepo, eventQueue)
 
@@ -673,7 +673,7 @@ func TestApplicationHandler_CreateAppEndpoint(t *testing.T) {
 	eventRepo := mocks.NewMockEventRepository(ctrl)
 	eventDeliveryRepo := mocks.NewMockEventDeliveryRepository(ctrl)
 	eventQueue := mocks.NewMockQueuer(ctrl)
-	apiKeyRepo := mocks.NewMockAPIKeyRepo(ctrl)
+	apiKeyRepo := mocks.NewMockAPIKeyRepository(ctrl)
 
 	groupID := "1234567890"
 	group := &convoy.Group{UID: groupID}
@@ -855,7 +855,7 @@ func TestApplicationHandler_UpdateAppEndpoint(t *testing.T) {
 			eventRepo := mocks.NewMockEventRepository(ctrl)
 			eventDeliveryRepo := mocks.NewMockEventDeliveryRepository(ctrl)
 			eventQueue := mocks.NewMockQueuer(ctrl)
-			apiKeyRepo := mocks.NewMockAPIKeyRepo(ctrl)
+			apiKeyRepo := mocks.NewMockAPIKeyRepository(ctrl)
 
 			app = newApplicationHandler(eventRepo, eventDeliveryRepo, appRepo, groupRepo, apiKeyRepo, eventQueue)
 
@@ -919,7 +919,7 @@ func Test_applicationHandler_GetDashboardSummary(t *testing.T) {
 	eventRepo := mocks.NewMockEventRepository(ctrl)
 	eventDeliveryRepo := mocks.NewMockEventDeliveryRepository(ctrl)
 	eventQueue := mocks.NewMockQueuer(ctrl)
-	apiKeyRepo := mocks.NewMockAPIKeyRepo(ctrl)
+	apiKeyRepo := mocks.NewMockAPIKeyRepository(ctrl)
 
 	groupID := "1234567890"
 
@@ -1006,7 +1006,7 @@ func Test_applicationHandler_GetPaginatedApps(t *testing.T) {
 	eventRepo := mocks.NewMockEventRepository(ctrl)
 	eventDeliveryRepo := mocks.NewMockEventDeliveryRepository(ctrl)
 	eventQueue := mocks.NewMockQueuer(ctrl)
-	apiKeyRepo := mocks.NewMockAPIKeyRepo(ctrl)
+	apiKeyRepo := mocks.NewMockAPIKeyRepository(ctrl)
 
 	groupID := "1234567890"
 

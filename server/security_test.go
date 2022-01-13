@@ -30,9 +30,31 @@ func TestApplicationHandler_CreateAPIKey(t *testing.T) {
 	eventRepo := mocks.NewMockEventRepository(ctrl)
 	eventDeliveryRepo := mocks.NewMockEventDeliveryRepository(ctrl)
 	eventQueue := mocks.NewMockQueuer(ctrl)
-	apiKeyRepo := mocks.NewMockAPIKeyRepo(ctrl)
+	apiKeyRepo := mocks.NewMockAPIKeyRepository(ctrl)
 
 	app = newApplicationHandler(eventRepo, eventDeliveryRepo, appRepo, groupRepo, apiKeyRepo, eventQueue)
+
+	groupId := "1234567890"
+	group := &convoy.Group{
+		UID: groupId,
+		Config: &convoy.GroupConfig{
+			Signature: convoy.SignatureConfiguration{
+				Header: convoy.SignatureHeaderProvider("X-Convoy-Signature"),
+				Hash:   "SHA256",
+			},
+			Strategy: convoy.StrategyConfiguration{
+				Type: convoy.StrategyProvider("default"),
+				Default: struct {
+					IntervalSeconds uint64 `json:"intervalSeconds"`
+					RetryLimit      uint64 `json:"retryLimit"`
+				}{
+					IntervalSeconds: 60,
+					RetryLimit:      1,
+				},
+			},
+			DisableEndpoint: true,
+		},
+	}
 
 	tt := []struct {
 		name           string
@@ -57,7 +79,11 @@ func TestApplicationHandler_CreateAPIKey(t *testing.T) {
                     }
                 }`),
 			dbFn: func(app *applicationHandler) {
-				a, _ := app.apiKeyRepo.(*mocks.MockAPIKeyRepo)
+				a, _ := app.apiKeyRepo.(*mocks.MockAPIKeyRepository)
+				g, _ := app.groupRepo.(*mocks.MockGroupRepository)
+				g.EXPECT().
+					FetchGroupsByIDs(gomock.Any(), gomock.Any()).
+					Times(2).Return([]convoy.Group{*group}, nil)
 				a.EXPECT().CreateAPIKey(gomock.Any(), gomock.Any()).Times(1).Return(nil)
 			},
 		},
@@ -91,7 +117,7 @@ func TestApplicationHandler_CreateAPIKey(t *testing.T) {
                     }
                 }`),
 			dbFn: func(app *applicationHandler) {
-				a, _ := app.apiKeyRepo.(*mocks.MockAPIKeyRepo)
+				a, _ := app.apiKeyRepo.(*mocks.MockAPIKeyRepository)
 				a.EXPECT().CreateAPIKey(gomock.Any(), gomock.Any()).Times(1).Return(nil)
 			},
 		},
@@ -104,7 +130,7 @@ func TestApplicationHandler_CreateAPIKey(t *testing.T) {
 					"key": "12344",
 					"expires_at": "2029-01-02T15:04:05+01:00",
                     "role": {
-                        "type": "admin",
+                        "type": "invalid-role",
                         "groups": []
                     }
                 }`),
@@ -129,7 +155,7 @@ func TestApplicationHandler_CreateAPIKey(t *testing.T) {
 				tc.dbFn(app)
 			}
 
-			err := config.LoadConfig(tc.cfgPath)
+			err := config.LoadConfig(tc.cfgPath, new(config.Configuration))
 			if err != nil {
 				t.Errorf("Failed to load config file: %v", err)
 			}
@@ -166,7 +192,7 @@ func TestApplicationHandler_RevokeAPIKey(t *testing.T) {
 	eventRepo := mocks.NewMockEventRepository(ctrl)
 	eventDeliveryRepo := mocks.NewMockEventDeliveryRepository(ctrl)
 	eventQueue := mocks.NewMockQueuer(ctrl)
-	apiKeyRepo := mocks.NewMockAPIKeyRepo(ctrl)
+	apiKeyRepo := mocks.NewMockAPIKeyRepository(ctrl)
 
 	app := newApplicationHandler(eventRepo, eventDeliveryRepo, appRepo, groupRepo, apiKeyRepo, eventQueue)
 
@@ -183,7 +209,7 @@ func TestApplicationHandler_RevokeAPIKey(t *testing.T) {
 			statusCode: http.StatusOK,
 			keyID:      "123",
 			dbFn: func(app *applicationHandler) {
-				a, _ := app.apiKeyRepo.(*mocks.MockAPIKeyRepo)
+				a, _ := app.apiKeyRepo.(*mocks.MockAPIKeyRepository)
 				a.EXPECT().RevokeAPIKeys(gomock.Any(), gomock.Any()).Times(1).Return(nil)
 			},
 		},
@@ -193,7 +219,7 @@ func TestApplicationHandler_RevokeAPIKey(t *testing.T) {
 			statusCode: http.StatusInternalServerError,
 			keyID:      "123",
 			dbFn: func(app *applicationHandler) {
-				a, _ := app.apiKeyRepo.(*mocks.MockAPIKeyRepo)
+				a, _ := app.apiKeyRepo.(*mocks.MockAPIKeyRepository)
 				a.EXPECT().RevokeAPIKeys(gomock.Any(), gomock.Any()).Times(1).Return(errors.New("abc"))
 			},
 		},
@@ -216,7 +242,7 @@ func TestApplicationHandler_RevokeAPIKey(t *testing.T) {
 				tc.dbFn(app)
 			}
 
-			err := config.LoadConfig(tc.cfgPath)
+			err := config.LoadConfig(tc.cfgPath, new(config.Configuration))
 			if err != nil {
 				t.Errorf("Failed to load config file: %v", err)
 			}
@@ -246,7 +272,7 @@ func TestApplicationHandler_GetAPIKeyByID(t *testing.T) {
 	eventRepo := mocks.NewMockEventRepository(ctrl)
 	eventDeliveryRepo := mocks.NewMockEventDeliveryRepository(ctrl)
 	eventQueue := mocks.NewMockQueuer(ctrl)
-	apiKeyRepo := mocks.NewMockAPIKeyRepo(ctrl)
+	apiKeyRepo := mocks.NewMockAPIKeyRepository(ctrl)
 
 	app := newApplicationHandler(eventRepo, eventDeliveryRepo, appRepo, groupRepo, apiKeyRepo, eventQueue)
 
@@ -268,7 +294,7 @@ func TestApplicationHandler_GetAPIKeyByID(t *testing.T) {
 			statusCode:     http.StatusOK,
 			keyID:          keyID,
 			dbFn: func(app *applicationHandler) {
-				a, _ := app.apiKeyRepo.(*mocks.MockAPIKeyRepo)
+				a, _ := app.apiKeyRepo.(*mocks.MockAPIKeyRepository)
 				a.EXPECT().FindAPIKeyByID(gomock.Any(), gomock.Any()).Times(1).Return(apiKey, nil)
 			},
 		},
@@ -279,7 +305,7 @@ func TestApplicationHandler_GetAPIKeyByID(t *testing.T) {
 			statusCode:     http.StatusInternalServerError,
 			keyID:          keyID,
 			dbFn: func(app *applicationHandler) {
-				a, _ := app.apiKeyRepo.(*mocks.MockAPIKeyRepo)
+				a, _ := app.apiKeyRepo.(*mocks.MockAPIKeyRepository)
 				a.EXPECT().FindAPIKeyByID(gomock.Any(), gomock.Any()).Times(1).Return(nil, errors.New("abc"))
 			},
 		},
@@ -302,7 +328,7 @@ func TestApplicationHandler_GetAPIKeyByID(t *testing.T) {
 				tc.dbFn(app)
 			}
 
-			err := config.LoadConfig(tc.cfgPath)
+			err := config.LoadConfig(tc.cfgPath, new(config.Configuration))
 			if err != nil {
 				t.Errorf("Failed to load config file: %v", err)
 			}
@@ -332,7 +358,7 @@ func TestApplicationHandler_GetAPIKeys(t *testing.T) {
 	eventRepo := mocks.NewMockEventRepository(ctrl)
 	eventDeliveryRepo := mocks.NewMockEventDeliveryRepository(ctrl)
 	eventQueue := mocks.NewMockQueuer(ctrl)
-	apiKeyRepo := mocks.NewMockAPIKeyRepo(ctrl)
+	apiKeyRepo := mocks.NewMockAPIKeyRepository(ctrl)
 
 	app := newApplicationHandler(eventRepo, eventDeliveryRepo, appRepo, groupRepo, apiKeyRepo, eventQueue)
 
@@ -356,7 +382,7 @@ func TestApplicationHandler_GetAPIKeys(t *testing.T) {
 			cfgPath:    "./testdata/Auth_Config/no-auth-convoy.json",
 			statusCode: http.StatusOK,
 			dbFn: func(app *applicationHandler) {
-				a, _ := app.apiKeyRepo.(*mocks.MockAPIKeyRepo)
+				a, _ := app.apiKeyRepo.(*mocks.MockAPIKeyRepository)
 				a.EXPECT().LoadAPIKeysPaged(gomock.Any(), gomock.Any()).Times(1).Return([]convoy.APIKey{*apiKey}, &mongopagination.PaginationData{PerPage: int64(page.PerPage)}, nil)
 			},
 		},
@@ -365,7 +391,7 @@ func TestApplicationHandler_GetAPIKeys(t *testing.T) {
 			cfgPath:    "./testdata/Auth_Config/no-auth-convoy.json",
 			statusCode: http.StatusInternalServerError,
 			dbFn: func(app *applicationHandler) {
-				a, _ := app.apiKeyRepo.(*mocks.MockAPIKeyRepo)
+				a, _ := app.apiKeyRepo.(*mocks.MockAPIKeyRepository)
 				a.EXPECT().LoadAPIKeysPaged(gomock.Any(), gomock.Any()).Times(1).Return(nil, nil, errors.New("abc"))
 			},
 		},
@@ -388,7 +414,7 @@ func TestApplicationHandler_GetAPIKeys(t *testing.T) {
 				tc.dbFn(app)
 			}
 
-			err := config.LoadConfig(tc.cfgPath)
+			err := config.LoadConfig(tc.cfgPath, new(config.Configuration))
 			if err != nil {
 				t.Errorf("Failed to load config file: %v", err)
 			}

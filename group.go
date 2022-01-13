@@ -37,4 +37,5 @@ type GroupRepository interface {
 	CreateGroup(context.Context, *Group) error
 	UpdateGroup(context.Context, *Group) error
 	FetchGroupByID(context.Context, string) (*Group, error)
+	FetchGroupsByIDs(context.Context, []string) ([]Group, error)
 }
