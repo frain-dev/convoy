@@ -93,7 +93,7 @@ var doc = `{
                                                         "content": {
                                                             "type": "array",
                                                             "items": {
-                                                                "$ref": "#/definitions/convoy.Application"
+                                                                "$ref": "#/definitions/datastore.Application"
                                                             }
                                                         }
                                                     }
@@ -201,7 +201,7 @@ var doc = `{
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/convoy.Application"
+                                            "$ref": "#/definitions/datastore.Application"
                                         }
                                     }
                                 }
@@ -304,7 +304,7 @@ var doc = `{
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/convoy.Application"
+                                            "$ref": "#/definitions/datastore.Application"
                                         }
                                     }
                                 }
@@ -414,7 +414,7 @@ var doc = `{
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/convoy.Application"
+                                            "$ref": "#/definitions/datastore.Application"
                                         }
                                     }
                                 }
@@ -620,7 +620,7 @@ var doc = `{
                                         "data": {
                                             "type": "array",
                                             "items": {
-                                                "$ref": "#/definitions/convoy.Endpoint"
+                                                "$ref": "#/definitions/datastore.Endpoint"
                                             }
                                         }
                                     }
@@ -731,7 +731,7 @@ var doc = `{
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/convoy.Endpoint"
+                                            "$ref": "#/definitions/datastore.Endpoint"
                                         }
                                     }
                                 }
@@ -841,7 +841,7 @@ var doc = `{
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/convoy.Endpoint"
+                                            "$ref": "#/definitions/datastore.Endpoint"
                                         }
                                     }
                                 }
@@ -958,7 +958,7 @@ var doc = `{
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/convoy.Endpoint"
+                                            "$ref": "#/definitions/datastore.Endpoint"
                                         }
                                     }
                                 }
@@ -1231,7 +1231,7 @@ var doc = `{
                                                             "items": {
                                                                 "allOf": [
                                                                     {
-                                                                        "$ref": "#/definitions/convoy.EventDelivery"
+                                                                        "$ref": "#/definitions/datastore.EventDelivery"
                                                                     },
                                                                     {
                                                                         "type": "object",
@@ -1478,7 +1478,7 @@ var doc = `{
                                         "data": {
                                             "allOf": [
                                                 {
-                                                    "$ref": "#/definitions/convoy.Event"
+                                                    "$ref": "#/definitions/datastore.Event"
                                                 },
                                                 {
                                                     "type": "object",
@@ -1593,7 +1593,7 @@ var doc = `{
                                         "data": {
                                             "allOf": [
                                                 {
-                                                    "$ref": "#/definitions/convoy.Event"
+                                                    "$ref": "#/definitions/datastore.Event"
                                                 },
                                                 {
                                                     "type": "object",
@@ -1753,7 +1753,7 @@ var doc = `{
                                                             "items": {
                                                                 "allOf": [
                                                                     {
-                                                                        "$ref": "#/definitions/convoy.Event"
+                                                                        "$ref": "#/definitions/datastore.Event"
                                                                     },
                                                                     {
                                                                         "type": "object",
@@ -1873,7 +1873,7 @@ var doc = `{
                                         "data": {
                                             "allOf": [
                                                 {
-                                                    "$ref": "#/definitions/convoy.Event"
+                                                    "$ref": "#/definitions/datastore.Event"
                                                 },
                                                 {
                                                     "type": "object",
@@ -1988,7 +1988,7 @@ var doc = `{
                                         "data": {
                                             "allOf": [
                                                 {
-                                                    "$ref": "#/definitions/convoy.Event"
+                                                    "$ref": "#/definitions/datastore.Event"
                                                 },
                                                 {
                                                     "type": "object",
@@ -2332,7 +2332,7 @@ var doc = `{
                                         "data": {
                                             "type": "array",
                                             "items": {
-                                                "$ref": "#/definitions/convoy.Group"
+                                                "$ref": "#/definitions/datastore.Group"
                                             }
                                         }
                                     }
@@ -2436,7 +2436,7 @@ var doc = `{
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/convoy.Group"
+                                            "$ref": "#/definitions/datastore.Group"
                                         }
                                     }
                                 }
@@ -2539,7 +2539,7 @@ var doc = `{
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/convoy.Group"
+                                            "$ref": "#/definitions/datastore.Group"
                                         }
                                     }
                                 }
@@ -2649,7 +2649,7 @@ var doc = `{
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/convoy.Group"
+                                            "$ref": "#/definitions/datastore.Group"
                                         }
                                     }
                                 }
@@ -2880,7 +2880,7 @@ var doc = `{
                 }
             }
         },
-        "convoy.Application": {
+        "datastore.Application": {
             "type": "object",
             "properties": {
                 "created_at": {
@@ -2892,7 +2892,7 @@ var doc = `{
                 "endpoints": {
                     "type": "array",
                     "items": {
-                        "$ref": "#/definitions/convoy.Endpoint"
+                        "$ref": "#/definitions/datastore.Endpoint"
                     }
                 },
                 "events": {
@@ -2968,7 +2968,7 @@ var doc = `{
                 }
             }
         },
-        "convoy.Endpoint": {
+        "datastore.Endpoint": {
             "type": "object",
             "properties": {
                 "created_at": {
@@ -3003,7 +3003,7 @@ var doc = `{
                 }
             }
         },
-        "convoy.EndpointMetadata": {
+        "datastore.EndpointMetadata": {
             "type": "object",
             "properties": {
                 "secret": {
@@ -3023,7 +3023,7 @@ var doc = `{
                 }
             }
         },
-        "convoy.Event": {
+        "datastore.Event": {
             "type": "object",
             "properties": {
                 "app_metadata": {
@@ -3060,7 +3060,7 @@ var doc = `{
                 }
             }
         },
-        "convoy.EventDelivery": {
+        "datastore.EventDelivery": {
             "type": "object",
             "properties": {
                 "app_metadata": {
@@ -3077,10 +3077,10 @@ var doc = `{
                 },
                 "endpoint": {
                     "description": "Endpoint contains the destination of the event.",
-                    "$ref": "#/definitions/convoy.EndpointMetadata"
+                    "$ref": "#/definitions/datastore.EndpointMetadata"
                 },
                 "event_metadata": {
-                    "$ref": "#/definitions/convoy.EventMetadata"
+                    "$ref": "#/definitions/datastore.EventMetadata"
                 },
                 "metadata": {
                     "$ref": "#/definitions/convoy.Metadata"
@@ -3096,7 +3096,7 @@ var doc = `{
                 }
             }
         },
-        "convoy.EventMetadata": {
+        "datastore.EventMetadata": {
             "type": "object",
             "properties": {
                 "name": {
@@ -3107,7 +3107,7 @@ var doc = `{
                 }
             }
         },
-        "convoy.Group": {
+        "datastore.Group": {
             "type": "object",
             "properties": {
                 "config": {
@@ -3126,7 +3126,7 @@ var doc = `{
                     "type": "string"
                 },
                 "statistics": {
-                    "$ref": "#/definitions/convoy.GroupStatistics"
+                    "$ref": "#/definitions/datastore.GroupStatistics"
                 },
                 "uid": {
                     "type": "string"
@@ -3136,7 +3136,7 @@ var doc = `{
                 }
             }
         },
-        "convoy.GroupStatistics": {
+        "datastore.GroupStatistics": {
             "type": "object",
             "properties": {
                 "messages_sent": {
