@@ -68,6 +68,23 @@ func (db *eventRepo) CountGroupMessages(ctx context.Context, groupID string) (in
 	return count, nil
 }
 
+func (db *eventRepo) DeleteGroupEvents(ctx context.Context, groupID string) error {
+	update := bson.M{
+		"$set": bson.M{
+			"deleted_at":      primitive.NewDateTimeFromTime(time.Now()),
+			"document_status": convoy.DeletedDocumentStatus,
+		},
+	}
+
+	filter := bson.M{"app_metadata.group_id": groupID}
+	_, err := db.inner.UpdateMany(ctx, filter, update)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
 func (db *eventRepo) LoadEventIntervals(ctx context.Context, groupID string, searchParams models.SearchParams, period convoy.Period, interval int) ([]models.EventInterval, error) {
 
 	start := searchParams.CreatedAtStart

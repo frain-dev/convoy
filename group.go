@@ -42,5 +42,6 @@ type GroupRepository interface {
 	LoadGroups(context.Context, *GroupFilter) ([]*Group, error)
 	CreateGroup(context.Context, *Group) error
 	UpdateGroup(context.Context, *Group) error
+	DeleteGroup(ctx context.Context, uid string) error
 	FetchGroupByID(context.Context, string) (*Group, error)
 }
