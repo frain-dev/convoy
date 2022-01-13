@@ -12,11 +12,8 @@ import (
 	"time"
 
 	"github.com/frain-dev/convoy/auth/realm_chain"
-	"github.com/frain-dev/convoy/datastore"
-
 	"github.com/frain-dev/convoy/config"
-	"github.com/frain-dev/convoy/server/models"
-
+	"github.com/frain-dev/convoy/datastore"
 	"github.com/frain-dev/convoy/mocks"
 	"github.com/go-chi/chi/v5"
 	"github.com/golang/mock/gomock"
@@ -31,13 +28,13 @@ func verifyMatch(t *testing.T, w httptest.ResponseRecorder) {
 	g.Assert(t, t.Name(), w.Body.Bytes())
 }
 
-func initRealmChain(t *testing.T) {
+func initRealmChain(t *testing.T, apiKeyRepo datastore.APIKeyRepository) {
 	cfg, err := config.Get()
 	if err != nil {
 		t.Errorf("failed to get config: %v", err)
 	}
 
-	err = realm_chain.Init(&cfg.Auth)
+	err = realm_chain.Init(&cfg.Auth, apiKeyRepo)
 	if err != nil {
 		t.Errorf("failed to initialize realm chain : %v", err)
 	}
@@ -91,6 +88,24 @@ func stripTimestamp(t *testing.T, obj string, b *bytes.Buffer) *bytes.Buffer {
 		}
 
 		return bytes.NewBuffer(jsonData)
+	case "apiKey":
+		var e datastore.APIKey
+		err := json.Unmarshal(res.Data, &e)
+		if err != nil {
+			t.Errorf("could not stripTimestamp: %s", err)
+			t.FailNow()
+		}
+
+		e.UID = ""
+		e.CreatedAt = 0
+		e.ExpiresAt = 0
+
+		jsonData, err := json.Marshal(e)
+		if err != nil {
+			t.Error(err)
+		}
+
+		return bytes.NewBuffer(jsonData)
 	default:
 		t.Errorf("invalid data body - %v of type %T", obj, obj)
 		t.FailNow()
@@ -115,13 +130,14 @@ func TestApplicationHandler_GetApp(t *testing.T) {
 	eventRepo := mocks.NewMockEventRepository(ctrl)
 	eventDeliveryRepo := mocks.NewMockEventDeliveryRepository(ctrl)
 	eventQueue := mocks.NewMockQueuer(ctrl)
+	apiKeyRepo := mocks.NewMockAPIKeyRepository(ctrl)
 
 	groupID := "1234567890"
 	group := &datastore.Group{UID: groupID}
 
 	validID := "123456789"
 
-	app = newApplicationHandler(eventRepo, eventDeliveryRepo, appRepo, groupRepo, eventQueue)
+	app = newApplicationHandler(eventRepo, eventDeliveryRepo, appRepo, groupRepo, apiKeyRepo, eventQueue)
 
 	tt := []struct {
 		name       string
@@ -133,7 +149,7 @@ func TestApplicationHandler_GetApp(t *testing.T) {
 	}{
 		{
 			name:       "app not found",
-			cfgPath:    "./testdata/Auth_Config/no-auth-convoy.json",
+			cfgPath:    "./testdata/Auth_Config/no-auth-datastore.json",
 			method:     http.MethodGet,
 			statusCode: http.StatusNotFound,
 			id:         "12345",
@@ -152,7 +168,7 @@ func TestApplicationHandler_GetApp(t *testing.T) {
 		},
 		{
 			name:       "valid application",
-			cfgPath:    "./testdata/Auth_Config/no-auth-convoy.json",
+			cfgPath:    "./testdata/Auth_Config/no-auth-datastore.json",
 			method:     http.MethodGet,
 			statusCode: http.StatusOK,
 			id:         validID,
@@ -197,7 +213,7 @@ func TestApplicationHandler_GetApp(t *testing.T) {
 				t.Errorf("Failed to load config file: %v", err)
 			}
 
-			initRealmChain(t)
+			initRealmChain(t, app.apiKeyRepo)
 
 			router := buildRoutes(app)
 
@@ -227,13 +243,14 @@ func TestApplicationHandler_GetApps(t *testing.T) {
 	eventRepo := mocks.NewMockEventRepository(ctrl)
 	eventDeliveryRepo := mocks.NewMockEventDeliveryRepository(ctrl)
 	eventQueue := mocks.NewMockQueuer(ctrl)
+	apiKeyRepo := mocks.NewMockAPIKeyRepository(ctrl)
 
 	groupID := "1234567890"
 	group := &datastore.Group{UID: groupID}
 
 	validID := "123456789"
 
-	app = newApplicationHandler(eventRepo, eventDeliveryRepo, appRepo, groupRepo, eventQueue)
+	app = newApplicationHandler(eventRepo, eventDeliveryRepo, appRepo, groupRepo, apiKeyRepo, eventQueue)
 
 	tt := []struct {
 		name       string
@@ -244,7 +261,7 @@ func TestApplicationHandler_GetApps(t *testing.T) {
 	}{
 		{
 			name:       "valid applications",
-			cfgPath:    "./testdata/Auth_Config/no-auth-convoy.json",
+			cfgPath:    "./testdata/Auth_Config/no-auth-datastore.json",
 			method:     http.MethodGet,
 			statusCode: http.StatusOK,
 			dbFn: func(app *applicationHandler) {
@@ -258,7 +275,7 @@ func TestApplicationHandler_GetApps(t *testing.T) {
 							Title:     "Valid application - 0",
 							Endpoints: []datastore.Endpoint{},
 						},
-					}, models.PaginationData{}, nil)
+					}, datastore.PaginationData{}, nil)
 
 				o, _ := app.groupRepo.(*mocks.MockGroupRepository)
 				o.EXPECT().
@@ -275,7 +292,7 @@ func TestApplicationHandler_GetApps(t *testing.T) {
 			req.SetBasicAuth("test", "test")
 			w := httptest.NewRecorder()
 
-			pageable := models.Pageable{
+			pageable := datastore.Pageable{
 				Page:    1,
 				PerPage: 10,
 			}
@@ -291,7 +308,7 @@ func TestApplicationHandler_GetApps(t *testing.T) {
 				t.Errorf("Failed to load config file: %v", err)
 			}
 
-			initRealmChain(t)
+			initRealmChain(t, app.apiKeyRepo)
 
 			router := buildRoutes(app)
 
@@ -327,7 +344,7 @@ func TestApplicationHandler_CreateApp(t *testing.T) {
 	}{
 		{
 			name:       "invalid request",
-			cfgPath:    "./testdata/Auth_Config/no-auth-convoy.json",
+			cfgPath:    "./testdata/Auth_Config/no-auth-datastore.json",
 			method:     http.MethodPost,
 			statusCode: http.StatusBadRequest,
 			body:       strings.NewReader(``),
@@ -340,7 +357,7 @@ func TestApplicationHandler_CreateApp(t *testing.T) {
 		},
 		{
 			name:       "invalid request - no app name",
-			cfgPath:    "./testdata/Auth_Config/no-auth-convoy.json",
+			cfgPath:    "./testdata/Auth_Config/no-auth-datastore.json",
 			method:     http.MethodPost,
 			statusCode: http.StatusBadRequest,
 			body:       strings.NewReader(`{}`),
@@ -353,7 +370,7 @@ func TestApplicationHandler_CreateApp(t *testing.T) {
 		},
 		{
 			name:       "valid application",
-			cfgPath:    "./testdata/Auth_Config/no-auth-convoy.json",
+			cfgPath:    "./testdata/Auth_Config/no-auth-datastore.json",
 			method:     http.MethodPost,
 			statusCode: http.StatusCreated,
 			body:       bodyReader,
@@ -384,8 +401,9 @@ func TestApplicationHandler_CreateApp(t *testing.T) {
 			eventRepo := mocks.NewMockEventRepository(ctrl)
 			eventDeliveryRepo := mocks.NewMockEventDeliveryRepository(ctrl)
 			eventQueue := mocks.NewMockQueuer(ctrl)
+			apiKeyRepo := mocks.NewMockAPIKeyRepository(ctrl)
 
-			app = newApplicationHandler(eventRepo, eventDeliveryRepo, appRepo, groupRepo, eventQueue)
+			app = newApplicationHandler(eventRepo, eventDeliveryRepo, appRepo, groupRepo, apiKeyRepo, eventQueue)
 
 			// Arrange
 			req := httptest.NewRequest(tc.method, "/api/v1/applications", tc.body)
@@ -403,7 +421,7 @@ func TestApplicationHandler_CreateApp(t *testing.T) {
 				t.Errorf("Failed to load config file: %v", err)
 			}
 
-			initRealmChain(t)
+			initRealmChain(t, app.apiKeyRepo)
 
 			router := buildRoutes(app)
 
@@ -443,7 +461,7 @@ func TestApplicationHandler_UpdateApp(t *testing.T) {
 	}{
 		{
 			name:       "invalid request",
-			cfgPath:    "./testdata/Auth_Config/no-auth-convoy.json",
+			cfgPath:    "./testdata/Auth_Config/no-auth-datastore.json",
 			method:     http.MethodPut,
 			statusCode: http.StatusBadRequest,
 			appId:      appId,
@@ -468,7 +486,7 @@ func TestApplicationHandler_UpdateApp(t *testing.T) {
 		},
 		{
 			name:       "invalid request - no app name",
-			cfgPath:    "./testdata/Auth_Config/no-auth-convoy.json",
+			cfgPath:    "./testdata/Auth_Config/no-auth-datastore.json",
 			method:     http.MethodPut,
 			statusCode: http.StatusBadRequest,
 			appId:      appId,
@@ -493,7 +511,7 @@ func TestApplicationHandler_UpdateApp(t *testing.T) {
 		},
 		{
 			name:       "valid request - update secret",
-			cfgPath:    "./testdata/Auth_Config/no-auth-convoy.json",
+			cfgPath:    "./testdata/Auth_Config/no-auth-datastore.json",
 			method:     http.MethodPut,
 			statusCode: http.StatusAccepted,
 			appId:      appId,
@@ -522,7 +540,7 @@ func TestApplicationHandler_UpdateApp(t *testing.T) {
 		},
 		{
 			name:       "valid request - update support email",
-			cfgPath:    "./testdata/Auth_Config/no-auth-convoy.json",
+			cfgPath:    "./testdata/Auth_Config/no-auth-datastore.json",
 			method:     http.MethodPut,
 			statusCode: http.StatusAccepted,
 			appId:      appId,
@@ -551,7 +569,7 @@ func TestApplicationHandler_UpdateApp(t *testing.T) {
 		},
 		{
 			name:       "valid application update",
-			cfgPath:    "./testdata/Auth_Config/no-auth-convoy.json",
+			cfgPath:    "./testdata/Auth_Config/no-auth-datastore.json",
 			method:     http.MethodPut,
 			statusCode: http.StatusAccepted,
 			appId:      appId,
@@ -593,8 +611,9 @@ func TestApplicationHandler_UpdateApp(t *testing.T) {
 			eventRepo := mocks.NewMockEventRepository(ctrl)
 			eventDeliveryRepo := mocks.NewMockEventDeliveryRepository(ctrl)
 			eventQueue := mocks.NewMockQueuer(ctrl)
+			apiKeyRepo := mocks.NewMockAPIKeyRepository(ctrl)
 
-			app = newApplicationHandler(eventRepo, eventDeliveryRepo, appRepo, groupRepo, eventQueue)
+			app = newApplicationHandler(eventRepo, eventDeliveryRepo, appRepo, groupRepo, apiKeyRepo, eventQueue)
 
 			url := fmt.Sprintf("/api/v1/applications/%s", tc.appId)
 			req := httptest.NewRequest(tc.method, url, tc.body)
@@ -622,7 +641,7 @@ func TestApplicationHandler_UpdateApp(t *testing.T) {
 				t.Errorf("Failed to load config file: %v", err)
 			}
 
-			initRealmChain(t)
+			initRealmChain(t, app.apiKeyRepo)
 
 			router := buildRoutes(app)
 
@@ -651,13 +670,14 @@ func TestApplicationHandler_CreateAppEndpoint(t *testing.T) {
 	eventRepo := mocks.NewMockEventRepository(ctrl)
 	eventDeliveryRepo := mocks.NewMockEventDeliveryRepository(ctrl)
 	eventQueue := mocks.NewMockQueuer(ctrl)
+	apiKeyRepo := mocks.NewMockAPIKeyRepository(ctrl)
 
 	groupID := "1234567890"
 	group := &datastore.Group{UID: groupID}
 
 	bodyReader := strings.NewReader(`{"url": "https://google.com", "description": "Test"}`)
 
-	app = newApplicationHandler(eventRepo, eventDeliveryRepo, appRepo, groupRepo, eventQueue)
+	app = newApplicationHandler(eventRepo, eventDeliveryRepo, appRepo, groupRepo, apiKeyRepo, eventQueue)
 
 	appId := "123456789"
 
@@ -672,7 +692,7 @@ func TestApplicationHandler_CreateAppEndpoint(t *testing.T) {
 	}{
 		{
 			name:       "valid endpoint",
-			cfgPath:    "./testdata/Auth_Config/no-auth-convoy.json",
+			cfgPath:    "./testdata/Auth_Config/no-auth-datastore.json",
 			method:     http.MethodPost,
 			statusCode: http.StatusCreated,
 			appId:      appId,
@@ -718,7 +738,7 @@ func TestApplicationHandler_CreateAppEndpoint(t *testing.T) {
 				t.Errorf("Failed to load config file: %v", err)
 			}
 
-			initRealmChain(t)
+			initRealmChain(t, app.apiKeyRepo)
 
 			router := buildRoutes(app)
 
@@ -753,7 +773,7 @@ func TestApplicationHandler_UpdateAppEndpoint(t *testing.T) {
 	}{
 		{
 			name:       "invalid request",
-			cfgPath:    "./testdata/Auth_Config/no-auth-convoy.json",
+			cfgPath:    "./testdata/Auth_Config/no-auth-datastore.json",
 			method:     http.MethodPut,
 			statusCode: http.StatusBadRequest,
 			appId:      appId,
@@ -783,7 +803,7 @@ func TestApplicationHandler_UpdateAppEndpoint(t *testing.T) {
 		},
 		{
 			name:       "valid application",
-			cfgPath:    "./testdata/Auth_Config/no-auth-convoy.json",
+			cfgPath:    "./testdata/Auth_Config/no-auth-datastore.json",
 			method:     http.MethodPut,
 			statusCode: http.StatusAccepted,
 			appId:      appId,
@@ -832,8 +852,9 @@ func TestApplicationHandler_UpdateAppEndpoint(t *testing.T) {
 			eventRepo := mocks.NewMockEventRepository(ctrl)
 			eventDeliveryRepo := mocks.NewMockEventDeliveryRepository(ctrl)
 			eventQueue := mocks.NewMockQueuer(ctrl)
+			apiKeyRepo := mocks.NewMockAPIKeyRepository(ctrl)
 
-			app = newApplicationHandler(eventRepo, eventDeliveryRepo, appRepo, groupRepo, eventQueue)
+			app = newApplicationHandler(eventRepo, eventDeliveryRepo, appRepo, groupRepo, apiKeyRepo, eventQueue)
 
 			url := fmt.Sprintf("/api/v1/applications/%s/endpoints/%s", tc.appId, tc.endpointId)
 			req := httptest.NewRequest(tc.method, url, tc.body)
@@ -863,7 +884,7 @@ func TestApplicationHandler_UpdateAppEndpoint(t *testing.T) {
 				t.Errorf("Failed to load config file: %v", err)
 			}
 
-			initRealmChain(t)
+			initRealmChain(t, app.apiKeyRepo)
 
 			router := buildRoutes(app)
 
@@ -895,6 +916,7 @@ func Test_applicationHandler_GetDashboardSummary(t *testing.T) {
 	eventRepo := mocks.NewMockEventRepository(ctrl)
 	eventDeliveryRepo := mocks.NewMockEventDeliveryRepository(ctrl)
 	eventQueue := mocks.NewMockQueuer(ctrl)
+	apiKeyRepo := mocks.NewMockAPIKeyRepository(ctrl)
 
 	groupID := "1234567890"
 
@@ -903,7 +925,7 @@ func Test_applicationHandler_GetDashboardSummary(t *testing.T) {
 		Name: "Valid group",
 	}
 
-	app = newApplicationHandler(eventRepo, eventDeliveryRepo, appRepo, groupRepo, eventQueue)
+	app = newApplicationHandler(eventRepo, eventDeliveryRepo, appRepo, groupRepo, apiKeyRepo, eventQueue)
 
 	tt := []struct {
 		name       string
@@ -928,9 +950,9 @@ func Test_applicationHandler_GetDashboardSummary(t *testing.T) {
 					}, nil)
 				eventRepo.EXPECT().
 					LoadEventIntervals(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Times(1).
-					Return([]models.EventInterval{
+					Return([]datastore.EventInterval{
 						{
-							Data: models.EventIntervalData{
+							Data: datastore.EventIntervalData{
 								Interval: 12,
 								Time:     "2020-10",
 							},
@@ -981,6 +1003,7 @@ func Test_applicationHandler_GetPaginatedApps(t *testing.T) {
 	eventRepo := mocks.NewMockEventRepository(ctrl)
 	eventDeliveryRepo := mocks.NewMockEventDeliveryRepository(ctrl)
 	eventQueue := mocks.NewMockQueuer(ctrl)
+	apiKeyRepo := mocks.NewMockAPIKeyRepository(ctrl)
 
 	groupID := "1234567890"
 
@@ -989,7 +1012,7 @@ func Test_applicationHandler_GetPaginatedApps(t *testing.T) {
 		Name: "Valid group",
 	}
 
-	app = newApplicationHandler(eventRepo, eventDeliveryRepo, appRepo, groupRepo, eventQueue)
+	app = newApplicationHandler(eventRepo, eventDeliveryRepo, appRepo, groupRepo, apiKeyRepo, eventQueue)
 
 	tt := []struct {
 		name       string
@@ -1013,7 +1036,7 @@ func Test_applicationHandler_GetPaginatedApps(t *testing.T) {
 							Endpoints: []datastore.Endpoint{},
 						},
 					},
-						models.PaginationData{},
+						datastore.PaginationData{},
 						nil)
 
 			},
@@ -1030,7 +1053,7 @@ func Test_applicationHandler_GetPaginatedApps(t *testing.T) {
 			request = request.WithContext(context.WithValue(request.Context(), chi.RouteCtxKey, rctx))
 			request = request.WithContext(context.WithValue(request.Context(), groupCtx, group))
 
-			pageable := models.Pageable{
+			pageable := datastore.Pageable{
 				Page:    1,
 				PerPage: 10,
 			}

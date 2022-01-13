@@ -12,6 +12,7 @@ import (
 	"github.com/frain-dev/convoy/config"
 	"github.com/frain-dev/convoy/datastore"
 	"github.com/frain-dev/convoy/mocks"
+
 	"github.com/go-chi/chi/v5"
 	"github.com/golang/mock/gomock"
 )
@@ -34,7 +35,7 @@ func TestApplicationHandler_GetGroup(t *testing.T) {
 	}{
 		{
 			name:       "group not found",
-			cfgPath:    "./testdata/Auth_Config/no-auth-convoy.json",
+			cfgPath:    "./testdata/Auth_Config/no-auth-datastore.json",
 			method:     http.MethodGet,
 			statusCode: http.StatusInternalServerError,
 			id:         fakeOrgID,
@@ -48,7 +49,7 @@ func TestApplicationHandler_GetGroup(t *testing.T) {
 		},
 		{
 			name:       "valid group",
-			cfgPath:    "./testdata/Auth_Config/no-auth-convoy.json",
+			cfgPath:    "./testdata/Auth_Config/no-auth-datastore.json",
 			method:     http.MethodGet,
 			statusCode: http.StatusOK,
 			id:         realOrgID,
@@ -87,8 +88,9 @@ func TestApplicationHandler_GetGroup(t *testing.T) {
 			eventRepo := mocks.NewMockEventRepository(ctrl)
 			eventDeliveryRepo := mocks.NewMockEventDeliveryRepository(ctrl)
 			eventQueue := mocks.NewMockQueuer(ctrl)
+			apiKeyRepo := mocks.NewMockAPIKeyRepository(ctrl)
 
-			app = newApplicationHandler(eventRepo, eventDeliveryRepo, appRepo, groupRepo, eventQueue)
+			app = newApplicationHandler(eventRepo, eventDeliveryRepo, appRepo, groupRepo, apiKeyRepo, eventQueue)
 
 			// Arrange
 			url := fmt.Sprintf("/api/v1/groups/%s", tc.id)
@@ -111,7 +113,7 @@ func TestApplicationHandler_GetGroup(t *testing.T) {
 			if err != nil {
 				t.Errorf("Failed to load config file: %v", err)
 			}
-			initRealmChain(t)
+			initRealmChain(t, app.apiKeyRepo)
 
 			router := buildRoutes(app)
 
@@ -143,7 +145,7 @@ func TestApplicationHandler_CreateGroup(t *testing.T) {
 	}{
 		{
 			name:       "valid group",
-			cfgPath:    "./testdata/Auth_Config/basic-convoy.json",
+			cfgPath:    "./testdata/Auth_Config/basic-datastore.json",
 			method:     http.MethodPost,
 			statusCode: http.StatusCreated,
 			body:       bodyReader,
@@ -169,8 +171,9 @@ func TestApplicationHandler_CreateGroup(t *testing.T) {
 			eventRepo := mocks.NewMockEventRepository(ctrl)
 			eventDeliveryRepo := mocks.NewMockEventDeliveryRepository(ctrl)
 			eventQueue := mocks.NewMockQueuer(ctrl)
+			apiKeyRepo := mocks.NewMockAPIKeyRepository(ctrl)
 
-			app = newApplicationHandler(eventRepo, eventDeliveryRepo, appRepo, groupRepo, eventQueue)
+			app = newApplicationHandler(eventRepo, eventDeliveryRepo, appRepo, groupRepo, apiKeyRepo, eventQueue)
 
 			// Arrange
 			req := httptest.NewRequest(tc.method, "/api/v1/groups", tc.body)
@@ -187,7 +190,7 @@ func TestApplicationHandler_CreateGroup(t *testing.T) {
 			if err != nil {
 				t.Errorf("Failed to load config file: %v", err)
 			}
-			initRealmChain(t)
+			initRealmChain(t, app.apiKeyRepo)
 
 			router := buildRoutes(app)
 
@@ -221,7 +224,7 @@ func TestApplicationHandler_UpdateGroup(t *testing.T) {
 	}{
 		{
 			name:       "valid group update",
-			cfgPath:    "./testdata/Auth_Config/basic-convoy.json",
+			cfgPath:    "./testdata/Auth_Config/basic-datastore.json",
 			method:     http.MethodPut,
 			statusCode: http.StatusAccepted,
 			orgID:      realOrgID,
@@ -254,8 +257,9 @@ func TestApplicationHandler_UpdateGroup(t *testing.T) {
 			eventRepo := mocks.NewMockEventRepository(ctrl)
 			eventDeliveryRepo := mocks.NewMockEventDeliveryRepository(ctrl)
 			eventQueue := mocks.NewMockQueuer(ctrl)
+			apiKeyRepo := mocks.NewMockAPIKeyRepository(ctrl)
 
-			app = newApplicationHandler(eventRepo, eventDeliveryRepo, appRepo, groupRepo, eventQueue)
+			app = newApplicationHandler(eventRepo, eventDeliveryRepo, appRepo, groupRepo, apiKeyRepo, eventQueue)
 
 			// Arrange
 			url := fmt.Sprintf("/api/v1/groups/%s", tc.orgID)
@@ -278,7 +282,7 @@ func TestApplicationHandler_UpdateGroup(t *testing.T) {
 			if err != nil {
 				t.Errorf("Failed to load config file: %v", err)
 			}
-			initRealmChain(t)
+			initRealmChain(t, app.apiKeyRepo)
 
 			router := buildRoutes(app)
 
@@ -288,7 +292,7 @@ func TestApplicationHandler_UpdateGroup(t *testing.T) {
 			if w.Code != tc.statusCode {
 				t.Errorf("Want status '%d', got '%d'", tc.statusCode, w.Code)
 			}
-
+			fmt.Println("s", w.Body.String())
 			verifyMatch(t, *w)
 		})
 	}
@@ -311,7 +315,7 @@ func TestApplicationHandler_GetGroups(t *testing.T) {
 	}{
 		{
 			name:       "valid groups",
-			cfgPath:    "./testdata/Auth_Config/basic-convoy.json",
+			cfgPath:    "./testdata/Auth_Config/basic-datastore.json",
 			method:     http.MethodGet,
 			statusCode: http.StatusOK,
 			dbFn: func(app *applicationHandler) {
@@ -350,8 +354,9 @@ func TestApplicationHandler_GetGroups(t *testing.T) {
 			eventRepo := mocks.NewMockEventRepository(ctrl)
 			eventDeliveryRepo := mocks.NewMockEventDeliveryRepository(ctrl)
 			eventQueue := mocks.NewMockQueuer(ctrl)
+			apiKeyRepo := mocks.NewMockAPIKeyRepository(ctrl)
 
-			app = newApplicationHandler(eventRepo, eventDeliveryRepo, appRepo, groupRepo, eventQueue)
+			app = newApplicationHandler(eventRepo, eventDeliveryRepo, appRepo, groupRepo, apiKeyRepo, eventQueue)
 
 			req := httptest.NewRequest(tc.method, "/api/v1/groups", nil)
 			req.SetBasicAuth("test", "test")
@@ -366,7 +371,7 @@ func TestApplicationHandler_GetGroups(t *testing.T) {
 			if err != nil {
 				t.Errorf("Failed to load config file: %v", err)
 			}
-			initRealmChain(t)
+			initRealmChain(t, app.apiKeyRepo)
 
 			router := buildRoutes(app)
 
@@ -400,7 +405,7 @@ func TestApplicationHandler_DeleteGroup(t *testing.T) {
 	}{
 		{
 			name:       "valid group delete",
-			cfgPath:    "./testdata/Auth_Config/no-auth-convoy.json",
+			cfgPath:    "./testdata/Auth_Config/no-auth-datastore.json",
 			method:     http.MethodDelete,
 			statusCode: http.StatusOK,
 			orgID:      realOrgID,
@@ -430,7 +435,7 @@ func TestApplicationHandler_DeleteGroup(t *testing.T) {
 		},
 		{
 			name:       "failed group delete",
-			cfgPath:    "./testdata/Auth_Config/no-auth-convoy.json",
+			cfgPath:    "./testdata/Auth_Config/no-auth-datastore.json",
 			method:     http.MethodDelete,
 			statusCode: http.StatusInternalServerError,
 			orgID:      realOrgID,

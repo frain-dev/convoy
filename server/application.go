@@ -15,6 +15,7 @@ import (
 	"github.com/frain-dev/convoy/queue"
 	"github.com/frain-dev/convoy/server/models"
 	"github.com/frain-dev/convoy/util"
+
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/render"
 )
@@ -24,23 +25,26 @@ type applicationHandler struct {
 	eventRepo         datastore.EventRepository
 	eventDeliveryRepo datastore.EventDeliveryRepository
 	groupRepo         datastore.GroupRepository
+	apiKeyRepo        datastore.APIKeyRepository
 	eventQueue        queue.Queuer
 }
 
 type pagedResponse struct {
-	Content    interface{}            `json:"content,omitempty"`
-	Pagination *models.PaginationData `json:"pagination,omitempty"`
+	Content    interface{}               `json:"content,omitempty"`
+	Pagination *datastore.PaginationData `json:"pagination,omitempty"`
 }
 
 func newApplicationHandler(eventRepo datastore.EventRepository,
 	eventDeliveryRepo datastore.EventDeliveryRepository,
 	appRepo datastore.ApplicationRepository,
 	groupRepo datastore.GroupRepository,
+	apiKeyRepo datastore.APIKeyRepository,
 	eventQueue queue.Queuer) *applicationHandler {
 
 	return &applicationHandler{
 		eventRepo:         eventRepo,
 		eventDeliveryRepo: eventDeliveryRepo,
+		apiKeyRepo:        apiKeyRepo,
 		appRepo:           appRepo,
 		groupRepo:         groupRepo,
 		eventQueue:        eventQueue,

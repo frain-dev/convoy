@@ -23,8 +23,9 @@ func Test_fetchAllConfigDetails(t *testing.T) {
 	eventRepo := mocks.NewMockEventRepository(ctrl)
 	eventDeliveryRepo := mocks.NewMockEventDeliveryRepository(ctrl)
 	eventQueue := mocks.NewMockQueuer(ctrl)
+	apiKeyRepo := mocks.NewMockAPIKeyRepository(ctrl)
 
-	app = newApplicationHandler(eventRepo, eventDeliveryRepo, appRepo, groupRepo, eventQueue)
+	app = newApplicationHandler(eventRepo, eventDeliveryRepo, appRepo, groupRepo, apiKeyRepo, eventQueue)
 
 	tests := []struct {
 		name       string
@@ -49,11 +50,11 @@ func Test_fetchAllConfigDetails(t *testing.T) {
 	}
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			err := config.LoadConfig("./testdata/Auth_Config/none-convoy.json", provideFakeOverride())
+			err := config.LoadConfig("./testdata/Auth_Config/none-datastore.json", provideFakeOverride())
 			if err != nil {
 				t.Errorf("Failed to load config file: %v", err)
 			}
-			initRealmChain(t)
+			initRealmChain(t, app.apiKeyRepo)
 
 			if tc.dbFn != nil {
 				tc.dbFn(app)

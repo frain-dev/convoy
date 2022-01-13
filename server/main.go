@@ -5,14 +5,14 @@ package server
 // TODO(daniel): we need a support url & email
 // TODO(daniel): we need a public test api
 
-// @title Convoy API Specification
+// @title datastore.API Specification
 // @version 0.1.12
-// @description Convoy is a fast and secure distributed webhooks service. This document contains Convoy's API specification.
-// @termsOfService https://convoy.io/terms
+// @description datastore.is a fast and secure distributed webhooks service. This document contains datastore.s API specification.
+// @termsOfService https://datastore.io/terms
 
 // @contact.name API Support
 // @contact.url http://www.swagger.io/support
-// @contact.email engineering@convoy.io
+// @contact.email engineering@datastore.io
 
 // @license.name Mozilla Public License 2.0
 // @license.url https://www.mozilla.org/en-US/MPL/2.0/
@@ -33,6 +33,9 @@ package server
 
 // @tag.name Events
 // @tag.description Event related APIs
+
+// @tag.name APIKey
+// @tag.description API Key related APIs
 
 // @tag.name EventDelivery
 // @tag.description EventDelivery related APIs

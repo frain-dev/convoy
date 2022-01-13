@@ -1,6 +1,7 @@
 package file
 
 import (
+	"context"
 	"testing"
 
 	"github.com/stretchr/testify/require"
@@ -182,7 +183,7 @@ func TestFileRealm_Authenticate(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := fr.Authenticate(tt.args.cred)
+			got, err := fr.Authenticate(context.Background(), tt.args.cred)
 
 			if tt.wantErr {
 				require.Equal(t, tt.wantErrMsg, err.Error())

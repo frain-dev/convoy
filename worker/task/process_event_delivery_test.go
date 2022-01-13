@@ -106,7 +106,10 @@ func TestProcessEventDelivery(t *testing.T) {
 							},
 							Strategy: config.StrategyConfiguration{
 								Type: config.StrategyProvider("default"),
-								Default: config.DefaultStrategyConfiguration{
+								Default: struct {
+									IntervalSeconds uint64 `json:"intervalSeconds" envconfig:"CONVOY_INTERVAL_SECONDS"`
+									RetryLimit      uint64 `json:"retryLimit" envconfig:"CONVOY_RETRY_LIMIT"`
+								}{
 									IntervalSeconds: 60,
 									RetryLimit:      1,
 								},
@@ -179,7 +182,10 @@ func TestProcessEventDelivery(t *testing.T) {
 							},
 							Strategy: config.StrategyConfiguration{
 								Type: config.StrategyProvider("default"),
-								Default: config.DefaultStrategyConfiguration{
+								Default: struct {
+									IntervalSeconds uint64 `json:"intervalSeconds" envconfig:"CONVOY_INTERVAL_SECONDS"`
+									RetryLimit      uint64 `json:"retryLimit" envconfig:"CONVOY_RETRY_LIMIT"`
+								}{
 									IntervalSeconds: 60,
 									RetryLimit:      1,
 								},
@@ -264,7 +270,10 @@ func TestProcessEventDelivery(t *testing.T) {
 							},
 							Strategy: config.StrategyConfiguration{
 								Type: config.StrategyProvider("default"),
-								Default: config.DefaultStrategyConfiguration{
+								Default: struct {
+									IntervalSeconds uint64 `json:"intervalSeconds" envconfig:"CONVOY_INTERVAL_SECONDS"`
+									RetryLimit      uint64 `json:"retryLimit" envconfig:"CONVOY_RETRY_LIMIT"`
+								}{
 									IntervalSeconds: 60,
 									RetryLimit:      1,
 								},
@@ -331,7 +340,10 @@ func TestProcessEventDelivery(t *testing.T) {
 							},
 							Strategy: config.StrategyConfiguration{
 								Type: config.StrategyProvider("default"),
-								Default: config.DefaultStrategyConfiguration{
+								Default: struct {
+									IntervalSeconds uint64 `json:"intervalSeconds" envconfig:"CONVOY_INTERVAL_SECONDS"`
+									RetryLimit      uint64 `json:"retryLimit" envconfig:"CONVOY_RETRY_LIMIT"`
+								}{
 									IntervalSeconds: 60,
 									RetryLimit:      1,
 								},
@@ -418,7 +430,10 @@ func TestProcessEventDelivery(t *testing.T) {
 							},
 							Strategy: config.StrategyConfiguration{
 								Type: config.StrategyProvider("default"),
-								Default: config.DefaultStrategyConfiguration{
+								Default: struct {
+									IntervalSeconds uint64 `json:"intervalSeconds" envconfig:"CONVOY_INTERVAL_SECONDS"`
+									RetryLimit      uint64 `json:"retryLimit" envconfig:"CONVOY_RETRY_LIMIT"`
+								}{
 									IntervalSeconds: 60,
 									RetryLimit:      1,
 								},
@@ -485,7 +500,10 @@ func TestProcessEventDelivery(t *testing.T) {
 							},
 							Strategy: config.StrategyConfiguration{
 								Type: config.StrategyProvider("default"),
-								Default: config.DefaultStrategyConfiguration{
+								Default: struct {
+									IntervalSeconds uint64 `json:"intervalSeconds" envconfig:"CONVOY_INTERVAL_SECONDS"`
+									RetryLimit      uint64 `json:"retryLimit" envconfig:"CONVOY_RETRY_LIMIT"`
+								}{
 									IntervalSeconds: 60,
 									RetryLimit:      1,
 								},
@@ -572,7 +590,10 @@ func TestProcessEventDelivery(t *testing.T) {
 							},
 							Strategy: config.StrategyConfiguration{
 								Type: config.StrategyProvider("default"),
-								Default: config.DefaultStrategyConfiguration{
+								Default: struct {
+									IntervalSeconds uint64 `json:"intervalSeconds" envconfig:"CONVOY_INTERVAL_SECONDS"`
+									RetryLimit      uint64 `json:"retryLimit" envconfig:"CONVOY_RETRY_LIMIT"`
+								}{
 									IntervalSeconds: 60,
 									RetryLimit:      1,
 								},
@@ -610,6 +631,7 @@ func TestProcessEventDelivery(t *testing.T) {
 			groupRepo := mocks.NewMockGroupRepository(ctrl)
 			appRepo := mocks.NewMockApplicationRepository(ctrl)
 			msgRepo := mocks.NewMockEventDeliveryRepository(ctrl)
+			apiKeyRepo := mocks.NewMockAPIKeyRepository(ctrl)
 
 			err := config.LoadConfig(tc.cfgPath, new(config.Configuration))
 			if err != nil {
@@ -621,7 +643,7 @@ func TestProcessEventDelivery(t *testing.T) {
 				t.Errorf("failed to get config: %v", err)
 			}
 
-			err = realm_chain.Init(&cfg.Auth)
+			err = realm_chain.Init(&cfg.Auth, apiKeyRepo)
 			if err != nil {
 				t.Errorf("failed to initialize realm chain : %v", err)
 			}

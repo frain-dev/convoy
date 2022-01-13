@@ -9,6 +9,7 @@ type DatabaseClient interface {
 	Client() interface{}
 	Disconnect(context.Context) error
 
+	APIRepo() APIKeyRepository
 	GroupRepo() GroupRepository
 	EventRepo() EventRepository
 	AppRepo() ApplicationRepository

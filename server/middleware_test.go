@@ -7,7 +7,6 @@ import (
 	"testing"
 
 	"github.com/frain-dev/convoy/config"
-
 	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/require"
 )
@@ -23,31 +22,31 @@ func TestRequirePermission_Basic(t *testing.T) {
 		{
 			name:       "credentials not provided",
 			statusCode: http.StatusUnauthorized,
-			cfgPath:    "./testdata/Auth_Config/basic-convoy.json",
+			cfgPath:    "./testdata/Auth_Config/basic-datastore.json",
 		},
 		{
 			name:        "invalid credentials",
 			statusCode:  http.StatusUnauthorized,
 			credentials: "Basic --",
-			cfgPath:     "./testdata/Auth_Config/basic-convoy.json",
+			cfgPath:     "./testdata/Auth_Config/basic-datastore.json",
 		},
 		{
 			name:        "invalid basic credentials",
 			statusCode:  http.StatusUnauthorized,
 			credentials: "Basic ZGFuaWVs",
-			cfgPath:     "./testdata/Auth_Config/basic-convoy.json",
+			cfgPath:     "./testdata/Auth_Config/basic-datastore.json",
 		},
 		{
 			name:        "authorization failed",
 			statusCode:  http.StatusUnauthorized,
 			credentials: "Basic YWRtaW46dGVzdA==",
-			cfgPath:     "./testdata/Auth_Config/basic-convoy.json",
+			cfgPath:     "./testdata/Auth_Config/basic-datastore.json",
 		},
 		{
 			name:        "valid credentials",
 			statusCode:  http.StatusOK,
 			credentials: "Basic dGVzdDp0ZXN0",
-			cfgPath:     "./testdata/Auth_Config/basic-convoy.json",
+			cfgPath:     "./testdata/Auth_Config/basic-datastore.json",
 		},
 	}
 
@@ -57,7 +56,7 @@ func TestRequirePermission_Basic(t *testing.T) {
 			if err != nil {
 				t.Errorf("Failed to load config file: %v", err)
 			}
-			initRealmChain(t)
+			initRealmChain(t, nil)
 
 			ctrl := gomock.NewController(t)
 			defer ctrl.Finish()
@@ -97,25 +96,25 @@ func TestRequirePermission_Noop(t *testing.T) {
 		{
 			name:       "credentials not provided",
 			statusCode: http.StatusOK,
-			cfgPath:    "./testdata/Auth_Config/none-convoy.json",
+			cfgPath:    "./testdata/Auth_Config/none-datastore.json",
 		},
 		{
 			name:        "invalid credentials",
 			statusCode:  http.StatusOK,
 			credentials: "--",
-			cfgPath:     "./testdata/Auth_Config/none-convoy.json",
+			cfgPath:     "./testdata/Auth_Config/none-datastore.json",
 		},
 		{
 			name:        "authorization failed",
 			statusCode:  http.StatusOK,
 			credentials: "YWRtaW46dGVzdA==",
-			cfgPath:     "./testdata/Auth_Config/none-convoy.json",
+			cfgPath:     "./testdata/Auth_Config/none-datastore.json",
 		},
 		{
 			name:        "valid credentials",
 			statusCode:  http.StatusOK,
 			credentials: "dGVzdDp0ZXN0",
-			cfgPath:     "./testdata/Auth_Config/none-convoy.json",
+			cfgPath:     "./testdata/Auth_Config/none-datastore.json",
 		},
 	}
 
@@ -125,7 +124,7 @@ func TestRequirePermission_Noop(t *testing.T) {
 			if err != nil {
 				t.Errorf("Failed to load config file: %v", err)
 			}
-			initRealmChain(t)
+			initRealmChain(t, nil)
 
 			ctrl := gomock.NewController(t)
 			defer ctrl.Finish()
