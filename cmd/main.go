@@ -122,13 +122,6 @@ func main() {
 			app.applicationRepo = db.AppRepo()
 			app.eventDeliveryRepo = db.EventDeliveryRepo()
 
-			dbName := strings.TrimPrefix(u.Path, "/")
-			conn := db.Database(dbName, nil)
-
-			app.groupRepo = datastore.NewGroupRepo(conn)
-			app.applicationRepo = datastore.NewApplicationRepo(conn)
-			app.eventRepo = datastore.NewEventRepository(conn)
-			app.eventDeliveryRepo = datastore.NewEventDeliveryRepository(conn)
 			app.eventQueue = convoyQueue.NewQueue(*sC, qFn, "EventQueue")
 			app.deadLetterQueue = convoyQueue.NewQueue(*sC, qFn, "DeadLetterQueue")
 
@@ -187,14 +180,6 @@ func getQueueClient(cfg config.Configuration) queue.QueueClient {
 	}
 
 	return queueClient
-}
-
-func ensureMongoIndices(conn *mongo.Database) {
-	datastore.EnsureIndex(conn, datastore.GroupCollection, "uid", true)
-	datastore.EnsureIndex(conn, datastore.GroupCollection, "name", true)
-	datastore.EnsureIndex(conn, datastore.AppCollections, "uid", true)
-	datastore.EnsureIndex(conn, datastore.EventCollection, "uid", true)
-	datastore.EnsureIndex(conn, datastore.EventCollection, "event_type", false)
 }
 
 func ensureDefaultGroup(ctx context.Context, cfg config.Configuration, a *app) error {
