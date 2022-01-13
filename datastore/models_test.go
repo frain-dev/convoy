@@ -1,4 +1,4 @@
-package convoy
+package datastore
 
 import (
 	"testing"

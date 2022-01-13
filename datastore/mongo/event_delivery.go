@@ -5,7 +5,7 @@ import (
 	"errors"
 	"time"
 
-	"github.com/frain-dev/convoy"
+	"github.com/frain-dev/convoy/datastore"
 	"github.com/frain-dev/convoy/server/models"
 	"github.com/frain-dev/convoy/util"
 	pager "github.com/gobeam/mongo-go-pagination"
@@ -24,14 +24,14 @@ const (
 	EventDeliveryCollection = "eventdeliveries"
 )
 
-func NewEventDeliveryRepository(db *mongo.Database) convoy.EventDeliveryRepository {
+func NewEventDeliveryRepository(db *mongo.Database) datastore.EventDeliveryRepository {
 	return &eventDeliveryRepo{
 		inner: db.Collection(EventDeliveryCollection),
 	}
 }
 
 func (db *eventDeliveryRepo) CreateEventDelivery(ctx context.Context,
-	eventDelivery *convoy.EventDelivery) error {
+	eventDelivery *datastore.EventDelivery) error {
 
 	eventDelivery.ID = primitive.NewObjectID()
 	if util.IsStringEmpty(eventDelivery.UID) {
@@ -43,33 +43,33 @@ func (db *eventDeliveryRepo) CreateEventDelivery(ctx context.Context,
 }
 
 func (db *eventDeliveryRepo) FindEventDeliveryByID(ctx context.Context,
-	id string) (*convoy.EventDelivery, error) {
-	e := new(convoy.EventDelivery)
+	id string) (*datastore.EventDelivery, error) {
+	e := new(datastore.EventDelivery)
 
-	filter := bson.M{"uid": id, "document_status": bson.M{"$ne": convoy.DeletedDocumentStatus}}
+	filter := bson.M{"uid": id, "document_status": bson.M{"$ne": datastore.DeletedDocumentStatus}}
 
 	err := db.inner.FindOne(ctx, filter).Decode(&e)
 
 	if errors.Is(err, mongo.ErrNoDocuments) {
-		err = convoy.ErrEventDeliveryNotFound
+		err = datastore.ErrEventDeliveryNotFound
 	}
 
 	return e, err
 }
 
 func (db *eventDeliveryRepo) FindEventDeliveriesByIDs(ctx context.Context,
-	ids []string) ([]convoy.EventDelivery, error) {
+	ids []string) ([]datastore.EventDelivery, error) {
 
 	filter := bson.M{
 		"uid": bson.M{
 			"$in": ids,
 		},
 		"document_status": bson.M{
-			"$ne": convoy.DeletedDocumentStatus,
+			"$ne": datastore.DeletedDocumentStatus,
 		},
 	}
 
-	deliveries := make([]convoy.EventDelivery, 0)
+	deliveries := make([]datastore.EventDelivery, 0)
 
 	cur, err := db.inner.Find(ctx, filter, nil)
 	if err != nil {
@@ -77,7 +77,7 @@ func (db *eventDeliveryRepo) FindEventDeliveriesByIDs(ctx context.Context,
 	}
 
 	for cur.Next(ctx) {
-		var delivery convoy.EventDelivery
+		var delivery datastore.EventDelivery
 		if err := cur.Decode(&delivery); err != nil {
 			return deliveries, err
 		}
@@ -89,11 +89,11 @@ func (db *eventDeliveryRepo) FindEventDeliveriesByIDs(ctx context.Context,
 }
 
 func (db *eventDeliveryRepo) FindEventDeliveriesByEventID(ctx context.Context,
-	eventID string) ([]convoy.EventDelivery, error) {
+	eventID string) ([]datastore.EventDelivery, error) {
 
-	filter := bson.M{"event_id": eventID, "document_status": bson.M{"$ne": convoy.DeletedDocumentStatus}}
+	filter := bson.M{"event_id": eventID, "document_status": bson.M{"$ne": datastore.DeletedDocumentStatus}}
 
-	deliveries := make([]convoy.EventDelivery, 0)
+	deliveries := make([]datastore.EventDelivery, 0)
 
 	cur, err := db.inner.Find(ctx, filter, nil)
 	if err != nil {
@@ -101,7 +101,7 @@ func (db *eventDeliveryRepo) FindEventDeliveriesByEventID(ctx context.Context,
 	}
 
 	for cur.Next(ctx) {
-		var delivery convoy.EventDelivery
+		var delivery datastore.EventDelivery
 		if err := cur.Decode(&delivery); err != nil {
 			return deliveries, err
 		}
@@ -121,7 +121,7 @@ func (db *eventDeliveryRepo) FindEventDeliveriesByEventID(ctx context.Context,
 }
 
 func (db *eventDeliveryRepo) UpdateStatusOfEventDelivery(ctx context.Context,
-	e convoy.EventDelivery, status convoy.EventDeliveryStatus) error {
+	e datastore.EventDelivery, status datastore.EventDeliveryStatus) error {
 
 	filter := bson.M{"uid": e.UID}
 	update := bson.M{
@@ -142,7 +142,7 @@ func (db *eventDeliveryRepo) UpdateStatusOfEventDelivery(ctx context.Context,
 }
 
 func (db *eventDeliveryRepo) UpdateEventDeliveryWithAttempt(ctx context.Context,
-	e convoy.EventDelivery, attempt convoy.DeliveryAttempt) error {
+	e datastore.EventDelivery, attempt datastore.DeliveryAttempt) error {
 
 	filter := bson.M{"uid": e.UID}
 	update := bson.M{
@@ -166,9 +166,9 @@ func (db *eventDeliveryRepo) UpdateEventDeliveryWithAttempt(ctx context.Context,
 	return nil
 }
 
-func (db *eventDeliveryRepo) LoadEventDeliveriesPaged(ctx context.Context, groupID, appID, eventID string, status []convoy.EventDeliveryStatus, searchParams models.SearchParams, pageable models.Pageable) ([]convoy.EventDelivery, models.PaginationData, error) {
+func (db *eventDeliveryRepo) LoadEventDeliveriesPaged(ctx context.Context, groupID, appID, eventID string, status []datastore.EventDeliveryStatus, searchParams models.SearchParams, pageable models.Pageable) ([]datastore.EventDelivery, models.PaginationData, error) {
 	filter := bson.M{
-		"document_status": bson.M{"$ne": convoy.DeletedDocumentStatus},
+		"document_status": bson.M{"$ne": datastore.DeletedDocumentStatus},
 		"created_at":      getCreatedDateFilter(searchParams),
 	}
 
@@ -193,14 +193,14 @@ func (db *eventDeliveryRepo) LoadEventDeliveriesPaged(ctx context.Context, group
 		filter["status"] = bson.M{"$in": status}
 	}
 
-	var eventDeliveries []convoy.EventDelivery
+	var eventDeliveries []datastore.EventDelivery
 	paginatedData, err := pager.New(db.inner).Context(ctx).Limit(int64(pageable.PerPage)).Page(int64(pageable.Page)).Sort("created_at", pageable.Sort).Filter(filter).Decode(&eventDeliveries).Find()
 	if err != nil {
 		return eventDeliveries, models.PaginationData{}, err
 	}
 
 	if eventDeliveries == nil {
-		eventDeliveries = make([]convoy.EventDelivery, 0)
+		eventDeliveries = make([]datastore.EventDelivery, 0)
 	}
 
 	return eventDeliveries, models.PaginationData(paginatedData.Pagination), nil

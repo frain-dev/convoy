@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/frain-dev/convoy/auth"
+	"github.com/frain-dev/convoy/datastore"
 
 	"github.com/frain-dev/convoy"
 	"github.com/frain-dev/convoy/config"
@@ -236,10 +237,10 @@ func buildRoutes(app *applicationHandler) http.Handler {
 }
 
 func New(cfg config.Configuration,
-	eventRepo convoy.EventRepository,
-	eventDeliveryRepo convoy.EventDeliveryRepository,
-	appRepo convoy.ApplicationRepository,
-	orgRepo convoy.GroupRepository,
+	eventRepo datastore.EventRepository,
+	eventDeliveryRepo datastore.EventDeliveryRepository,
+	appRepo datastore.ApplicationRepository,
+	orgRepo datastore.GroupRepository,
 	eventQueue queue.Queuer) *http.Server {
 
 	app := newApplicationHandler(eventRepo, eventDeliveryRepo, appRepo, orgRepo, eventQueue)
