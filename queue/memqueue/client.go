@@ -7,6 +7,7 @@ import (
 
 	"github.com/frain-dev/convoy"
 	"github.com/frain-dev/convoy/config"
+	"github.com/frain-dev/convoy/datastore"
 	"github.com/frain-dev/convoy/queue"
 	"github.com/vmihailenco/taskq/v3"
 	"github.com/vmihailenco/taskq/v3/memqueue"
@@ -56,7 +57,7 @@ func (q *MemQueue) Close() error {
 	return q.inner.Close()
 }
 
-func (q *MemQueue) Write(ctx context.Context, name convoy.TaskName, e *convoy.EventDelivery, delay time.Duration) error {
+func (q *MemQueue) Write(ctx context.Context, name convoy.TaskName, e *datastore.EventDelivery, delay time.Duration) error {
 	job := &queue.Job{
 		ID: e.UID,
 	}

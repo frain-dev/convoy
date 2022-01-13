@@ -7,9 +7,9 @@ import (
 
 	"github.com/frain-dev/convoy"
 	"github.com/frain-dev/convoy/config"
+	"github.com/frain-dev/convoy/datastore"
 	"github.com/go-redis/redis/v8"
 	"github.com/vmihailenco/taskq/v3"
-	"github.com/frain-dev/convoy/datastore"
 )
 
 type Queuer interface {
