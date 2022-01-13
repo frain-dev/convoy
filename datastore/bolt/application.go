@@ -4,7 +4,8 @@ import (
 	"context"
 	"encoding/json"
 
-	"github.com/frain-dev/convoy"
+	"github.com/frain-dev/convoy/datastore"
+
 	"github.com/frain-dev/convoy/server/models"
 	"go.etcd.io/bbolt"
 )
@@ -13,11 +14,11 @@ type appRepo struct {
 	db *bbolt.DB
 }
 
-func NewApplicationRepo(db *bbolt.DB) convoy.ApplicationRepository {
+func NewApplicationRepo(db *bbolt.DB) datastore.ApplicationRepository {
 	return &appRepo{db: db}
 }
 
-func (a *appRepo) CreateApplication(ctx context.Context, app *convoy.Application) error {
+func (a *appRepo) CreateApplication(ctx context.Context, app *datastore.Application) error {
 	tx, err := a.db.Begin(true)
 	if err != nil {
 		return err
@@ -32,35 +33,35 @@ func (a *appRepo) CreateApplication(ctx context.Context, app *convoy.Application
 	return bucket.Put([]byte(app.Title), groupJson)
 }
 
-func (a *appRepo) LoadApplicationsPaged(ctx context.Context, groupID string, pageable models.Pageable) ([]convoy.Application, models.PaginationData, error) {
-	return make([]convoy.Application, 0), models.PaginationData{}, nil
+func (a *appRepo) LoadApplicationsPaged(ctx context.Context, groupID string, pageable models.Pageable) ([]datastore.Application, models.PaginationData, error) {
+	return make([]datastore.Application, 0), models.PaginationData{}, nil
 }
 
-func (a *appRepo) LoadApplicationsPagedByGroupId(ctx context.Context, groupID string, pageable models.Pageable) ([]convoy.Application, models.PaginationData, error) {
-	return make([]convoy.Application, 0), models.PaginationData{}, nil
+func (a *appRepo) LoadApplicationsPagedByGroupId(ctx context.Context, groupID string, pageable models.Pageable) ([]datastore.Application, models.PaginationData, error) {
+	return make([]datastore.Application, 0), models.PaginationData{}, nil
 }
 
-func (a *appRepo) SearchApplicationsByGroupId(ctx context.Context, groupId string, searchParams models.SearchParams) ([]convoy.Application, error) {
+func (a *appRepo) SearchApplicationsByGroupId(ctx context.Context, groupId string, searchParams models.SearchParams) ([]datastore.Application, error) {
 	return nil, nil
 }
 
-func (a *appRepo) FindApplicationByID(ctx context.Context, id string) (*convoy.Application, error) {
+func (a *appRepo) FindApplicationByID(ctx context.Context, id string) (*datastore.Application, error) {
 	return nil, nil
 }
 
-func (a *appRepo) FindApplicationEndpointByID(ctx context.Context, appID string, endpointID string) (*convoy.Endpoint, error) {
+func (a *appRepo) FindApplicationEndpointByID(ctx context.Context, appID string, endpointID string) (*datastore.Endpoint, error) {
 	return nil, nil
 }
 
-func (a *appRepo) UpdateApplication(ctx context.Context, app *convoy.Application) error {
+func (a *appRepo) UpdateApplication(ctx context.Context, app *datastore.Application) error {
 	return nil
 }
 
-func (a *appRepo) DeleteApplication(ctx context.Context, app *convoy.Application) error {
+func (a *appRepo) DeleteApplication(ctx context.Context, app *datastore.Application) error {
 	return nil
 }
 
-func (a *appRepo) UpdateApplicationEndpointsStatus(ctx context.Context, appId string, endpointIds []string, status convoy.EndpointStatus) error {
+func (a *appRepo) UpdateApplicationEndpointsStatus(ctx context.Context, appId string, endpointIds []string, status datastore.EndpointStatus) error {
 	return nil
 }
 

@@ -6,7 +6,8 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/frain-dev/convoy"
+	"github.com/frain-dev/convoy/datastore"
+
 	"github.com/frain-dev/convoy/server/models"
 	"github.com/frain-dev/convoy/util"
 	log "github.com/sirupsen/logrus"
@@ -20,15 +21,15 @@ type eventDeliveryRepo struct {
 	db *bbolt.DB
 }
 
-func NewEventDeliveryRepo(db *bbolt.DB) convoy.EventDeliveryRepository {
+func NewEventDeliveryRepo(db *bbolt.DB) datastore.EventDeliveryRepository {
 	return &eventDeliveryRepo{db: db}
 }
 
-func (e *eventDeliveryRepo) CreateEventDelivery(ctx context.Context, delivery *convoy.EventDelivery) error {
+func (e *eventDeliveryRepo) CreateEventDelivery(ctx context.Context, delivery *datastore.EventDelivery) error {
 	return createUpdateEventDelivery(e.db, delivery)
 }
 
-func createUpdateEventDelivery(db *bbolt.DB, delivery *convoy.EventDelivery) error {
+func createUpdateEventDelivery(db *bbolt.DB, delivery *datastore.EventDelivery) error {
 	return db.Update(func(tx *bbolt.Tx) error {
 		b := tx.Bucket([]byte(eventDeliveryBucketName))
 
@@ -46,8 +47,8 @@ func createUpdateEventDelivery(db *bbolt.DB, delivery *convoy.EventDelivery) err
 	})
 }
 
-func (e *eventDeliveryRepo) FindEventDeliveryByID(ctx context.Context, uid string) (*convoy.EventDelivery, error) {
-	var delivery *convoy.EventDelivery
+func (e *eventDeliveryRepo) FindEventDeliveryByID(ctx context.Context, uid string) (*datastore.EventDelivery, error) {
+	var delivery *datastore.EventDelivery
 	err := e.db.View(func(tx *bbolt.Tx) error {
 
 		buf := tx.Bucket([]byte(eventDeliveryBucketName)).Get([]byte(uid))
@@ -66,13 +67,13 @@ func (e *eventDeliveryRepo) FindEventDeliveryByID(ctx context.Context, uid strin
 	return delivery, err
 }
 
-func (e *eventDeliveryRepo) FindEventDeliveriesByIDs(ctx context.Context, uids []string) ([]convoy.EventDelivery, error) {
-	deliveries := make([]convoy.EventDelivery, len(uids))
+func (e *eventDeliveryRepo) FindEventDeliveriesByIDs(ctx context.Context, uids []string) ([]datastore.EventDelivery, error) {
+	deliveries := make([]datastore.EventDelivery, len(uids))
 
 	err := e.db.View(func(tx *bbolt.Tx) error {
 
 		for i, uid := range uids {
-			var delivery *convoy.EventDelivery
+			var delivery *datastore.EventDelivery
 			buf := tx.Bucket([]byte(eventDeliveryBucketName)).Get([]byte(uid))
 			if buf == nil {
 				log.Errorf("event delivery with id (%s) does not exist", uid)
@@ -92,8 +93,8 @@ func (e *eventDeliveryRepo) FindEventDeliveriesByIDs(ctx context.Context, uids [
 	return deliveries, err
 }
 
-func (e *eventDeliveryRepo) FindEventDeliveriesByEventID(ctx context.Context, eventID string) ([]convoy.EventDelivery, error) {
-	var deliveries []convoy.EventDelivery
+func (e *eventDeliveryRepo) FindEventDeliveriesByEventID(ctx context.Context, eventID string) ([]datastore.EventDelivery, error) {
+	var deliveries []datastore.EventDelivery
 
 	type eid struct {
 		EventID string `json:"event_id"`
@@ -122,9 +123,9 @@ func (e *eventDeliveryRepo) FindEventDeliveriesByEventID(ctx context.Context, ev
 			deliverySlice = append(deliverySlice, v)
 		}
 
-		deliveries = make([]convoy.EventDelivery, len(deliverySlice))
+		deliveries = make([]datastore.EventDelivery, len(deliverySlice))
 		for i, buf := range deliverySlice {
-			var delivery convoy.EventDelivery
+			var delivery datastore.EventDelivery
 			err := json.Unmarshal(buf, &delivery)
 			if err != nil {
 				return err
@@ -139,27 +140,27 @@ func (e *eventDeliveryRepo) FindEventDeliveriesByEventID(ctx context.Context, ev
 	return deliveries, err
 }
 
-func (e *eventDeliveryRepo) UpdateStatusOfEventDelivery(ctx context.Context, delivery convoy.EventDelivery, status convoy.EventDeliveryStatus) error {
+func (e *eventDeliveryRepo) UpdateStatusOfEventDelivery(ctx context.Context, delivery datastore.EventDelivery, status datastore.EventDeliveryStatus) error {
 	delivery.Status = status
 	delivery.UpdatedAt = primitive.NewDateTimeFromTime(time.Now())
 
 	return createUpdateEventDelivery(e.db, &delivery)
 }
 
-func (e eventDeliveryRepo) UpdateEventDeliveryWithAttempt(ctx context.Context, delivery convoy.EventDelivery, attempt convoy.DeliveryAttempt) error {
+func (e eventDeliveryRepo) UpdateEventDeliveryWithAttempt(ctx context.Context, delivery datastore.EventDelivery, attempt datastore.DeliveryAttempt) error {
 	delivery.DeliveryAttempts = append(delivery.DeliveryAttempts, attempt)
 
 	return createUpdateEventDelivery(e.db, &delivery)
 }
 
-func (e *eventDeliveryRepo) LoadEventDeliveriesPaged(ctx context.Context, groupID, appID, eventID string, status []convoy.EventDeliveryStatus, searchParams models.SearchParams, pageable models.Pageable) ([]convoy.EventDelivery, models.PaginationData, error) {
+func (e *eventDeliveryRepo) LoadEventDeliveriesPaged(ctx context.Context, groupID, appID, eventID string, status []datastore.EventDeliveryStatus, searchParams models.SearchParams, pageable models.Pageable) ([]datastore.EventDelivery, models.PaginationData, error) {
 	hasAppFilter := !util.IsStringEmpty(appID)
 	hasGroupFilter := !util.IsStringEmpty(groupID)
 	hasEventFilter := !util.IsStringEmpty(eventID)
 	hasStatusFilter := len(status) > 0
 	hasDateFilter := searchParams.CreatedAtEnd > 0 || searchParams.CreatedAtStart > 0
 
-	var deliveries []convoy.EventDelivery
+	var deliveries []datastore.EventDelivery
 
 	err := e.db.View(func(tx *bbolt.Tx) error {
 
@@ -170,7 +171,7 @@ func (e *eventDeliveryRepo) LoadEventDeliveriesPaged(ctx context.Context, groupI
 		for k, v := c.First(); k != nil; k, v = c.Next() {
 			fmt.Printf("key=%s, value=%s\n", k, v)
 
-			var d convoy.EventDelivery
+			var d datastore.EventDelivery
 			err := json.Unmarshal(v, &d)
 			if err != nil {
 				return err
