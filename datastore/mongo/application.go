@@ -5,11 +5,11 @@ import (
 	"errors"
 	"time"
 
+	"github.com/frain-dev/convoy/datastore"
 	"github.com/frain-dev/convoy/server/models"
 	"github.com/frain-dev/convoy/util"
 	log "github.com/sirupsen/logrus"
 
-	"github.com/frain-dev/convoy"
 	pager "github.com/gobeam/mongo-go-pagination"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
@@ -21,7 +21,7 @@ type appRepo struct {
 	client  *mongo.Collection
 }
 
-func NewApplicationRepo(db *mongo.Database) convoy.ApplicationRepository {
+func NewApplicationRepo(db *mongo.Database) datastore.ApplicationRepository {
 	return &appRepo{
 		innerDB: db,
 		client:  db.Collection(AppCollections, nil),
@@ -29,7 +29,7 @@ func NewApplicationRepo(db *mongo.Database) convoy.ApplicationRepository {
 }
 
 func (db *appRepo) CreateApplication(ctx context.Context,
-	app *convoy.Application) error {
+	app *datastore.Application) error {
 
 	app.ID = primitive.NewObjectID()
 
@@ -37,26 +37,26 @@ func (db *appRepo) CreateApplication(ctx context.Context,
 	return err
 }
 
-func (db *appRepo) LoadApplicationsPaged(ctx context.Context, groupID string, pageable models.Pageable) ([]convoy.Application, models.PaginationData, error) {
+func (db *appRepo) LoadApplicationsPaged(ctx context.Context, groupID string, pageable models.Pageable) ([]datastore.Application, models.PaginationData, error) {
 
-	filter := bson.M{"document_status": bson.M{"$ne": convoy.DeletedDocumentStatus}}
+	filter := bson.M{"document_status": bson.M{"$ne": datastore.DeletedDocumentStatus}}
 	if !util.IsStringEmpty(groupID) {
-		filter = bson.M{"group_id": groupID, "document_status": bson.M{"$ne": convoy.DeletedDocumentStatus}}
+		filter = bson.M{"group_id": groupID, "document_status": bson.M{"$ne": datastore.DeletedDocumentStatus}}
 	}
 
-	var apps []convoy.Application
+	var apps []datastore.Application
 	paginatedData, err := pager.New(db.client).Context(ctx).Limit(int64(pageable.PerPage)).Page(int64(pageable.Page)).Sort("created_at", -1).Filter(filter).Decode(&apps).Find()
 	if err != nil {
 		return apps, models.PaginationData{}, err
 	}
 
 	if apps == nil {
-		apps = make([]convoy.Application, 0)
+		apps = make([]datastore.Application, 0)
 	}
 
 	msgCollection := db.innerDB.Collection(EventCollection)
 	for i, app := range apps {
-		filter = bson.M{"app_metadata.uid": app.UID, "document_status": bson.M{"$ne": convoy.DeletedDocumentStatus}}
+		filter = bson.M{"app_metadata.uid": app.UID, "document_status": bson.M{"$ne": datastore.DeletedDocumentStatus}}
 		count, err := msgCollection.CountDocuments(ctx, filter)
 		if err != nil {
 			log.Errorf("failed to count events in %s. Reason: %s", app.UID, err)
@@ -68,28 +68,28 @@ func (db *appRepo) LoadApplicationsPaged(ctx context.Context, groupID string, pa
 	return apps, models.PaginationData(models.PaginationData(paginatedData.Pagination)), nil
 }
 
-func (db *appRepo) LoadApplicationsPagedByGroupId(ctx context.Context, groupID string, pageable models.Pageable) ([]convoy.Application, models.PaginationData, error) {
+func (db *appRepo) LoadApplicationsPagedByGroupId(ctx context.Context, groupID string, pageable models.Pageable) ([]datastore.Application, models.PaginationData, error) {
 
 	filter := bson.M{
 		"group_id": groupID,
 		"document_status": bson.M{
-			"$ne": convoy.DeletedDocumentStatus,
+			"$ne": datastore.DeletedDocumentStatus,
 		},
 	}
 
-	var applications []convoy.Application
+	var applications []datastore.Application
 	paginatedData, err := pager.New(db.client).Context(ctx).Limit(int64(pageable.PerPage)).Page(int64(pageable.Page)).Sort("created_at", -1).Filter(filter).Decode(&applications).Find()
 	if err != nil {
 		return applications, models.PaginationData{}, err
 	}
 
 	if applications == nil {
-		applications = make([]convoy.Application, 0)
+		applications = make([]datastore.Application, 0)
 	}
 
 	msgCollection := db.innerDB.Collection(EventCollection)
 	for i, app := range applications {
-		filter = bson.M{"app_id": app.UID, "document_status": bson.M{"$ne": convoy.DeletedDocumentStatus}}
+		filter = bson.M{"app_id": app.UID, "document_status": bson.M{"$ne": datastore.DeletedDocumentStatus}}
 		count, err := msgCollection.CountDocuments(ctx, filter)
 		if err != nil {
 			log.Errorf("failed to count events in %s. Reason: %s", app.UID, err)
@@ -105,7 +105,7 @@ func (db *appRepo) CountGroupApplications(ctx context.Context, groupID string) (
 	filter := bson.M{
 		"group_id": groupID,
 		"document_status": bson.M{
-			"$ne": convoy.DeletedDocumentStatus,
+			"$ne": datastore.DeletedDocumentStatus,
 		},
 	}
 
@@ -117,7 +117,7 @@ func (db *appRepo) CountGroupApplications(ctx context.Context, groupID string) (
 	return count, nil
 }
 
-func (db *appRepo) SearchApplicationsByGroupId(ctx context.Context, groupId string, searchParams models.SearchParams) ([]convoy.Application, error) {
+func (db *appRepo) SearchApplicationsByGroupId(ctx context.Context, groupId string, searchParams models.SearchParams) ([]datastore.Application, error) {
 
 	start := searchParams.CreatedAtStart
 	end := searchParams.CreatedAtEnd
@@ -128,7 +128,7 @@ func (db *appRepo) SearchApplicationsByGroupId(ctx context.Context, groupId stri
 	filter := bson.M{
 		"group_id": groupId,
 		"document_status": bson.M{
-			"$ne": convoy.DeletedDocumentStatus,
+			"$ne": datastore.DeletedDocumentStatus,
 		},
 		"created_at": bson.M{
 			"$gte": primitive.NewDateTimeFromTime(time.Unix(start, 0)),
@@ -136,14 +136,14 @@ func (db *appRepo) SearchApplicationsByGroupId(ctx context.Context, groupId stri
 		},
 	}
 
-	apps := make([]convoy.Application, 0)
+	apps := make([]datastore.Application, 0)
 	cur, err := db.client.Find(ctx, filter)
 	if err != nil {
 		return apps, err
 	}
 
 	for cur.Next(ctx) {
-		var app convoy.Application
+		var app datastore.Application
 		if err := cur.Decode(&app); err != nil {
 			return apps, err
 		}
@@ -161,7 +161,7 @@ func (db *appRepo) SearchApplicationsByGroupId(ctx context.Context, groupId stri
 
 	msgCollection := db.innerDB.Collection(EventCollection)
 	for i, app := range apps {
-		filter = bson.M{"app_id": app.UID, "document_status": bson.M{"$ne": convoy.DeletedDocumentStatus}}
+		filter = bson.M{"app_id": app.UID, "document_status": bson.M{"$ne": datastore.DeletedDocumentStatus}}
 		count, err := msgCollection.CountDocuments(ctx, filter)
 		if err != nil {
 			log.Errorf("failed to count events in %s. Reason: %s", app.UID, err)
@@ -174,21 +174,21 @@ func (db *appRepo) SearchApplicationsByGroupId(ctx context.Context, groupId stri
 }
 
 func (db *appRepo) FindApplicationByID(ctx context.Context,
-	id string) (*convoy.Application, error) {
+	id string) (*datastore.Application, error) {
 
-	app := new(convoy.Application)
+	app := new(datastore.Application)
 
-	filter := bson.M{"uid": id, "document_status": bson.M{"$ne": convoy.DeletedDocumentStatus}}
+	filter := bson.M{"uid": id, "document_status": bson.M{"$ne": datastore.DeletedDocumentStatus}}
 
 	err := db.client.FindOne(ctx, filter).
 		Decode(&app)
 	if errors.Is(err, mongo.ErrNoDocuments) {
-		err = convoy.ErrApplicationNotFound
+		err = datastore.ErrApplicationNotFound
 		return app, err
 	}
 
 	msgCollection := db.innerDB.Collection(EventCollection)
-	filter = bson.M{"app_id": app.UID, "document_status": bson.M{"$ne": convoy.DeletedDocumentStatus}}
+	filter = bson.M{"app_id": app.UID, "document_status": bson.M{"$ne": datastore.DeletedDocumentStatus}}
 	count, err := msgCollection.CountDocuments(ctx, filter)
 	if err != nil {
 		log.Errorf("failed to count events in %s. Reason: %s", app.UID, err)
@@ -199,7 +199,7 @@ func (db *appRepo) FindApplicationByID(ctx context.Context,
 	return app, err
 }
 
-func (db *appRepo) FindApplicationEndpointByID(ctx context.Context, appID string, endpointID string) (*convoy.Endpoint, error) {
+func (db *appRepo) FindApplicationEndpointByID(ctx context.Context, appID string, endpointID string) (*datastore.Endpoint, error) {
 
 	app, err := db.FindApplicationByID(context.Background(), appID)
 	if err != nil {
@@ -209,21 +209,21 @@ func (db *appRepo) FindApplicationEndpointByID(ctx context.Context, appID string
 	return findEndpoint(&app.Endpoints, endpointID)
 }
 
-func findEndpoint(endpoints *[]convoy.Endpoint, id string) (*convoy.Endpoint, error) {
+func findEndpoint(endpoints *[]datastore.Endpoint, id string) (*datastore.Endpoint, error) {
 	for _, endpoint := range *endpoints {
 		if endpoint.UID == id && endpoint.DeletedAt == 0 {
 			return &endpoint, nil
 		}
 	}
-	return nil, convoy.ErrEndpointNotFound
+	return nil, datastore.ErrEndpointNotFound
 }
 
 func (db *appRepo) UpdateApplication(ctx context.Context,
-	app *convoy.Application) error {
+	app *datastore.Application) error {
 
 	app.UpdatedAt = primitive.NewDateTimeFromTime(time.Now())
 
-	filter := bson.M{"uid": app.UID, "document_status": bson.M{"$ne": convoy.DeletedDocumentStatus}}
+	filter := bson.M{"uid": app.UID, "document_status": bson.M{"$ne": datastore.DeletedDocumentStatus}}
 
 	update := bson.D{primitive.E{Key: "$set", Value: bson.D{
 		primitive.E{Key: "endpoints", Value: app.Endpoints},
@@ -241,7 +241,7 @@ func (db *appRepo) DeleteGroupApps(ctx context.Context, groupID string) error {
 	update := bson.M{
 		"$set": bson.M{
 			"deleted_at":      primitive.NewDateTimeFromTime(time.Now()),
-			"document_status": convoy.DeletedDocumentStatus,
+			"document_status": datastore.DeletedDocumentStatus,
 		},
 	}
 
@@ -254,11 +254,11 @@ func (db *appRepo) DeleteGroupApps(ctx context.Context, groupID string) error {
 }
 
 func (db *appRepo) DeleteApplication(ctx context.Context,
-	app *convoy.Application) error {
+	app *datastore.Application) error {
 
 	updateAsDeleted := bson.D{primitive.E{Key: "$set", Value: bson.D{
 		primitive.E{Key: "deleted_at", Value: primitive.NewDateTimeFromTime(time.Now())},
-		primitive.E{Key: "document_status", Value: convoy.DeletedDocumentStatus},
+		primitive.E{Key: "document_status", Value: datastore.DeletedDocumentStatus},
 	}}}
 
 	err := db.updateMessagesInApp(ctx, app, updateAsDeleted)
@@ -272,7 +272,7 @@ func (db *appRepo) DeleteApplication(ctx context.Context,
 
 		rollback := bson.D{primitive.E{Key: "$set", Value: bson.D{
 			primitive.E{Key: "deleted_at", Value: nil},
-			primitive.E{Key: "document_status", Value: convoy.ActiveDocumentStatus},
+			primitive.E{Key: "document_status", Value: datastore.ActiveDocumentStatus},
 		}}}
 		err2 := db.updateMessagesInApp(ctx, app, rollback)
 		if err2 != nil {
@@ -284,7 +284,7 @@ func (db *appRepo) DeleteApplication(ctx context.Context,
 	return nil
 }
 
-func (db *appRepo) updateMessagesInApp(ctx context.Context, app *convoy.Application, update bson.D) error {
+func (db *appRepo) updateMessagesInApp(ctx context.Context, app *datastore.Application, update bson.D) error {
 	var msgOperations []mongo.WriteModel
 
 	updateMessagesOperation := mongo.NewUpdateManyModel()
@@ -303,7 +303,7 @@ func (db *appRepo) updateMessagesInApp(ctx context.Context, app *convoy.Applicat
 	return nil
 }
 
-func (db *appRepo) deleteApp(ctx context.Context, app *convoy.Application, update bson.D) error {
+func (db *appRepo) deleteApp(ctx context.Context, app *datastore.Application, update bson.D) error {
 	var appOperations []mongo.WriteModel
 	updateAppOperation := mongo.NewUpdateOneModel()
 	filter := bson.D{primitive.E{Key: "uid", Value: app.UID}}
@@ -320,15 +320,15 @@ func (db *appRepo) deleteApp(ctx context.Context, app *convoy.Application, updat
 	return nil
 }
 
-func (db *appRepo) UpdateApplicationEndpointsStatus(ctx context.Context, appId string, endpointIds []string, status convoy.EndpointStatus) error {
-	app := new(convoy.Application)
+func (db *appRepo) UpdateApplicationEndpointsStatus(ctx context.Context, appId string, endpointIds []string, status datastore.EndpointStatus) error {
+	app := new(datastore.Application)
 
-	filter := bson.M{"uid": appId, "document_status": bson.M{"$ne": convoy.DeletedDocumentStatus}}
+	filter := bson.M{"uid": appId, "document_status": bson.M{"$ne": datastore.DeletedDocumentStatus}}
 
 	err := db.client.FindOne(ctx, filter).
 		Decode(&app)
 	if errors.Is(err, mongo.ErrNoDocuments) {
-		err = convoy.ErrApplicationNotFound
+		err = datastore.ErrApplicationNotFound
 		return err
 	}
 

@@ -10,6 +10,7 @@ import (
 	time "time"
 
 	convoy "github.com/frain-dev/convoy"
+	datastore "github.com/frain-dev/convoy/datastore"
 	gomock "github.com/golang/mock/gomock"
 )
 
@@ -51,7 +52,7 @@ func (mr *MockQueuerMockRecorder) Close() *gomock.Call {
 }
 
 // Write mocks base method.
-func (m *MockQueuer) Write(arg0 context.Context, arg1 convoy.TaskName, arg2 *convoy.EventDelivery, arg3 time.Duration) error {
+func (m *MockQueuer) Write(arg0 context.Context, arg1 convoy.TaskName, arg2 *datastore.EventDelivery, arg3 time.Duration) error {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "Write", arg0, arg1, arg2, arg3)
 	ret0, _ := ret[0].(error)
