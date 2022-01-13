@@ -1,7 +1,7 @@
 //go:build integration
 // +build integration
 
-package datastore
+package mongo
 
 import (
 	"context"
@@ -24,6 +24,7 @@ func Test_UpdateApplication(t *testing.T) {
 
 	newGroup := &convoy.Group{
 		Name: "Random new group",
+		UID:  uuid.NewString(),
 	}
 
 	require.NoError(t, groupRepo.CreateGroup(context.Background(), newGroup))
@@ -55,7 +56,8 @@ func Test_CreateApplication(t *testing.T) {
 	appRepo := NewApplicationRepo(db)
 
 	newOrg := &convoy.Group{
-		Name: "Random new group",
+		Name: "Random new group 2",
+		UID:  uuid.NewString(),
 	}
 
 	require.NoError(t, groupRepo.CreateGroup(context.Background(), newOrg))
@@ -63,6 +65,7 @@ func Test_CreateApplication(t *testing.T) {
 	app := &convoy.Application{
 		Title:   "Next application name",
 		GroupID: newOrg.UID,
+		UID:     uuid.NewString(),
 	}
 
 	require.NoError(t, appRepo.CreateApplication(context.Background(), app))
@@ -89,7 +92,7 @@ func Test_FindApplicationByID(t *testing.T) {
 
 	appRepo := NewApplicationRepo(db)
 
-	app, err := appRepo.FindApplicationByID(context.Background(), uuid.New().String())
+	_, err := appRepo.FindApplicationByID(context.Background(), uuid.New().String())
 	require.Error(t, err)
 
 	require.True(t, errors.Is(err, convoy.ErrApplicationNotFound))
@@ -102,9 +105,10 @@ func Test_FindApplicationByID(t *testing.T) {
 
 	require.NoError(t, groupRepo.CreateGroup(context.Background(), newGroup))
 
-	app = &convoy.Application{
+	app := &convoy.Application{
 		Title:   "Next application name again",
 		GroupID: newGroup.UID,
+		UID:     uuid.NewString(),
 	}
 
 	require.NoError(t, appRepo.CreateApplication(context.Background(), app))

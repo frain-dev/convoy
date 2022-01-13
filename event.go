@@ -6,7 +6,6 @@ import (
 	"errors"
 
 	"github.com/frain-dev/convoy/server/models"
-	pager "github.com/gobeam/mongo-go-pagination"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
@@ -56,12 +55,12 @@ type Event struct {
 type EventRepository interface {
 	CreateEvent(context.Context, *Event) error
 	LoadEventIntervals(context.Context, string, models.SearchParams, Period, int) ([]models.EventInterval, error)
-	LoadEventsPagedByAppId(context.Context, string, models.SearchParams, models.Pageable) ([]Event, pager.PaginationData, error)
+	LoadEventsPagedByAppId(context.Context, string, models.SearchParams, models.Pageable) ([]Event, models.PaginationData, error)
 	FindEventByID(ctx context.Context, id string) (*Event, error)
 	CountGroupMessages(ctx context.Context, groupID string) (int64, error)
 	LoadEventsScheduledForPosting(context.Context) ([]Event, error)
 	LoadEventsForPostingRetry(context.Context) ([]Event, error)
 	LoadAbandonedEventsForPostingRetry(context.Context) ([]Event, error)
-	LoadEventsPaged(context.Context, string, string, models.SearchParams, models.Pageable) ([]Event, pager.PaginationData, error)
+	LoadEventsPaged(context.Context, string, string, models.SearchParams, models.Pageable) ([]Event, models.PaginationData, error)
 	DeleteGroupEvents(context.Context, string) error
 }

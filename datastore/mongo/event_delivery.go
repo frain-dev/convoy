@@ -1,4 +1,4 @@
-package datastore
+package mongo
 
 import (
 	"context"
@@ -166,7 +166,7 @@ func (db *eventDeliveryRepo) UpdateEventDeliveryWithAttempt(ctx context.Context,
 	return nil
 }
 
-func (db *eventDeliveryRepo) LoadEventDeliveriesPaged(ctx context.Context, groupID, appID, eventID string, status []convoy.EventDeliveryStatus, searchParams models.SearchParams, pageable models.Pageable) ([]convoy.EventDelivery, pager.PaginationData, error) {
+func (db *eventDeliveryRepo) LoadEventDeliveriesPaged(ctx context.Context, groupID, appID, eventID string, status []convoy.EventDeliveryStatus, searchParams models.SearchParams, pageable models.Pageable) ([]convoy.EventDelivery, models.PaginationData, error) {
 	filter := bson.M{
 		"document_status": bson.M{"$ne": convoy.DeletedDocumentStatus},
 		"created_at":      getCreatedDateFilter(searchParams),
@@ -196,12 +196,12 @@ func (db *eventDeliveryRepo) LoadEventDeliveriesPaged(ctx context.Context, group
 	var eventDeliveries []convoy.EventDelivery
 	paginatedData, err := pager.New(db.inner).Context(ctx).Limit(int64(pageable.PerPage)).Page(int64(pageable.Page)).Sort("created_at", pageable.Sort).Filter(filter).Decode(&eventDeliveries).Find()
 	if err != nil {
-		return eventDeliveries, pager.PaginationData{}, err
+		return eventDeliveries, models.PaginationData{}, err
 	}
 
 	if eventDeliveries == nil {
 		eventDeliveries = make([]convoy.EventDelivery, 0)
 	}
 
-	return eventDeliveries, paginatedData.Pagination, nil
+	return eventDeliveries, models.PaginationData(paginatedData.Pagination), nil
 }
