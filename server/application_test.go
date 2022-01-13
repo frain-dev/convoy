@@ -15,7 +15,6 @@ import (
 
 	"github.com/frain-dev/convoy/config"
 	"github.com/frain-dev/convoy/server/models"
-	pager "github.com/gobeam/mongo-go-pagination"
 
 	"github.com/frain-dev/convoy"
 	"github.com/frain-dev/convoy/mocks"
@@ -98,6 +97,10 @@ func stripTimestamp(t *testing.T, obj string, b *bytes.Buffer) *bytes.Buffer {
 	}
 
 	return nil
+}
+
+func provideFakeOverride() *config.Configuration {
+	return new(config.Configuration)
 }
 
 func TestApplicationHandler_GetApp(t *testing.T) {
@@ -189,7 +192,7 @@ func TestApplicationHandler_GetApp(t *testing.T) {
 				tc.dbFn(app)
 			}
 
-			err := config.LoadConfig(tc.cfgPath)
+			err := config.LoadConfig(tc.cfgPath, new(config.Configuration))
 			if err != nil {
 				t.Errorf("Failed to load config file: %v", err)
 			}
@@ -255,7 +258,7 @@ func TestApplicationHandler_GetApps(t *testing.T) {
 							Title:     "Valid application - 0",
 							Endpoints: []convoy.Endpoint{},
 						},
-					}, pager.PaginationData{}, nil)
+					}, models.PaginationData{}, nil)
 
 				o, _ := app.groupRepo.(*mocks.MockGroupRepository)
 				o.EXPECT().
@@ -283,7 +286,7 @@ func TestApplicationHandler_GetApps(t *testing.T) {
 				tc.dbFn(app)
 			}
 
-			err := config.LoadConfig(tc.cfgPath)
+			err := config.LoadConfig(tc.cfgPath, new(config.Configuration))
 			if err != nil {
 				t.Errorf("Failed to load config file: %v", err)
 			}
@@ -395,7 +398,7 @@ func TestApplicationHandler_CreateApp(t *testing.T) {
 				tc.dbFn(app)
 			}
 
-			err := config.LoadConfig(tc.cfgPath)
+			err := config.LoadConfig(tc.cfgPath, new(config.Configuration))
 			if err != nil {
 				t.Errorf("Failed to load config file: %v", err)
 			}
@@ -614,7 +617,7 @@ func TestApplicationHandler_UpdateApp(t *testing.T) {
 				tc.dbFn(app)
 			}
 
-			err := config.LoadConfig(tc.cfgPath)
+			err := config.LoadConfig(tc.cfgPath, new(config.Configuration))
 			if err != nil {
 				t.Errorf("Failed to load config file: %v", err)
 			}
@@ -710,7 +713,7 @@ func TestApplicationHandler_CreateAppEndpoint(t *testing.T) {
 				tc.dbFn(app)
 			}
 
-			err := config.LoadConfig(tc.cfgPath)
+			err := config.LoadConfig(tc.cfgPath, new(config.Configuration))
 			if err != nil {
 				t.Errorf("Failed to load config file: %v", err)
 			}
@@ -855,7 +858,7 @@ func TestApplicationHandler_UpdateAppEndpoint(t *testing.T) {
 				tc.dbFn(app)
 			}
 
-			err := config.LoadConfig(tc.cfgPath)
+			err := config.LoadConfig(tc.cfgPath, provideFakeOverride())
 			if err != nil {
 				t.Errorf("Failed to load config file: %v", err)
 			}
@@ -1010,7 +1013,7 @@ func Test_applicationHandler_GetPaginatedApps(t *testing.T) {
 							Endpoints: []convoy.Endpoint{},
 						},
 					},
-						pager.PaginationData{},
+						models.PaginationData{},
 						nil)
 
 			},

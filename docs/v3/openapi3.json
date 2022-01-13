@@ -308,11 +308,25 @@
 					"name": {
 						"type": "string"
 					},
+					"statistics": {
+						"$ref": "#/components/schemas/convoy.GroupStatistics"
+					},
 					"uid": {
 						"type": "string"
 					},
 					"updated_at": {
 						"type": "string"
+					}
+				},
+				"type": "object"
+			},
+			"convoy.GroupStatistics": {
+				"properties": {
+					"messages_sent": {
+						"type": "integer"
+					},
+					"total_apps": {
+						"type": "integer"
 					}
 				},
 				"type": "object"
@@ -3264,6 +3278,119 @@
 			}
 		},
 		"/groups/{groupID}": {
+			"delete": {
+				"description": "This endpoint deletes a group using its id",
+				"parameters": [
+					{
+						"description": "Group id",
+						"in": "path",
+						"name": "groupID",
+						"required": true,
+						"schema": {
+							"type": "string"
+						}
+					}
+				],
+				"responses": {
+					"200": {
+						"content": {
+							"application/json": {
+								"schema": {
+									"allOf": [
+										{
+											"$ref": "#/components/schemas/server.serverResponse"
+										},
+										{
+											"properties": {
+												"data": {
+													"$ref": "#/components/schemas/server.Stub"
+												}
+											},
+											"type": "object"
+										}
+									]
+								}
+							}
+						},
+						"description": "OK"
+					},
+					"400": {
+						"content": {
+							"application/json": {
+								"schema": {
+									"allOf": [
+										{
+											"$ref": "#/components/schemas/server.serverResponse"
+										},
+										{
+											"properties": {
+												"data": {
+													"$ref": "#/components/schemas/server.Stub"
+												}
+											},
+											"type": "object"
+										}
+									]
+								}
+							}
+						},
+						"description": "Bad Request"
+					},
+					"401": {
+						"content": {
+							"application/json": {
+								"schema": {
+									"allOf": [
+										{
+											"$ref": "#/components/schemas/server.serverResponse"
+										},
+										{
+											"properties": {
+												"data": {
+													"$ref": "#/components/schemas/server.Stub"
+												}
+											},
+											"type": "object"
+										}
+									]
+								}
+							}
+						},
+						"description": "Unauthorized"
+					},
+					"500": {
+						"content": {
+							"application/json": {
+								"schema": {
+									"allOf": [
+										{
+											"$ref": "#/components/schemas/server.serverResponse"
+										},
+										{
+											"properties": {
+												"data": {
+													"$ref": "#/components/schemas/server.Stub"
+												}
+											},
+											"type": "object"
+										}
+									]
+								}
+							}
+						},
+						"description": "Internal Server Error"
+					}
+				},
+				"security": [
+					{
+						"ApiKeyAuth": []
+					}
+				],
+				"summary": "Delete a group",
+				"tags": [
+					"Group"
+				]
+			},
 			"get": {
 				"description": "This endpoint fetches a group by its id",
 				"parameters": [

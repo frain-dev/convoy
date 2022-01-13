@@ -9,7 +9,6 @@ import (
 
 	"github.com/frain-dev/convoy/config"
 	"github.com/frain-dev/convoy/server/models"
-	pager "github.com/gobeam/mongo-go-pagination"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
@@ -123,5 +122,5 @@ type EventDeliveryRepository interface {
 	FindEventDeliveriesByEventID(context.Context, string) ([]EventDelivery, error)
 	UpdateStatusOfEventDelivery(context.Context, EventDelivery, EventDeliveryStatus) error
 	UpdateEventDeliveryWithAttempt(context.Context, EventDelivery, DeliveryAttempt) error
-	LoadEventDeliveriesPaged(context.Context, string, string, string, []EventDeliveryStatus, models.SearchParams, models.Pageable) ([]EventDelivery, pager.PaginationData, error)
+	LoadEventDeliveriesPaged(context.Context, string, string, string, []EventDeliveryStatus, models.SearchParams, models.Pageable) ([]EventDelivery, models.PaginationData, error)
 }

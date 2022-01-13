@@ -4,6 +4,9 @@ on:
     branches:
       - main
   pull_request:
+    branches-ignore:
+      - "ui/**"
+      - "cms/**"
 
 jobs:
   test:
@@ -11,7 +14,7 @@ jobs:
       matrix:
         go-version: [1.16.x, 1.17.x]
         os: [ubuntu-latest, macos-latest]
-        mongodb-version: ['4.0', '4.2', '4.4']
+        mongodb-version: ["4.0", "4.2", "4.4"]
 
     runs-on: ubuntu-latest
 
@@ -36,42 +39,40 @@ jobs:
     #     options: --health-cmd="mysqladmin ping" --health-interval=10s --health-timeout=5s --health-retries=3
 
     steps:
+      - name: Start MongoDB
+        uses: supercharge/mongodb-github-action@1.4.1
+        with:
+          mongodb-version: ${{ matrix.mongodb-version }}
 
-    - name: Start MongoDB
-      uses: supercharge/mongodb-github-action@1.4.1
-      with:
-        mongodb-version: ${{ matrix.mongodb-version }}
+      - name: Get the version
+        id: get_version
+        run: echo ::set-output name=tag::$(echo ${GITHUB_SHA:8})
 
-    - name: Get the version
-      id: get_version
-      run: echo ::set-output name=tag::$(echo ${GITHUB_SHA:8})
+      - name: Set up Go
+        uses: actions/setup-go@v2
+        with:
+          go-version: ${{ matrix.go-version }}
 
-    - name: Set up Go
-      uses: actions/setup-go@v2
-      with:
-        go-version: ${{ matrix.go-version }}
+      - name: Cache go modules
+        uses: actions/cache@v1
+        with:
+          path: ~/go/pkg/mod
+          key: ${{ runner.os }}-go-${{ hashFiles('go.sum') }}
+          restore-keys: ${{ runner.os }}-go-${{ hashFiles('go.sum') }}
 
-    - name: Cache go modules
-      uses: actions/cache@v1
-      with:
-        path: ~/go/pkg/mod
-        key: ${{ runner.os }}-go-${{ hashFiles('go.sum') }}
-        restore-keys: ${{ runner.os }}-go-${{ hashFiles('go.sum') }}
+      - name: Check out code
+        uses: actions/checkout@v2
 
-    - name: Check out code
-      uses: actions/checkout@v2
+      - name: Get and verify dependencies
+        run: go mod download && go mod verify
 
-    - name: Get and verify dependencies
-      run: go mod download && go mod verify
+      - name: Build app to make sure there are zero issues
+        run: go build -o hookcamp ./cmd
 
-    - name: Build app to make sure there are zero issues
-      run: go build -o hookcamp ./cmd
+      - name: Go vet
+        run: go vet ./...
 
-    - name: Go vet
-      run: go vet ./...
-
-    - name: Run Mongo integration tests
-      run: go test -tags integration -v ./...
-      env:
-        TEST_DATABASE_DSN: "mongodb://localhost:27017"
-
+      - name: Run Mongo integration tests
+        run: go test -tags integration -v ./...
+        env:
+          TEST_DATABASE_DSN: "mongodb://localhost:27017/testdb"
