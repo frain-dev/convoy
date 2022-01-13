@@ -52,6 +52,22 @@ func (db *eventRepo) CreateEvent(ctx context.Context,
 	return err
 }
 
+func (db *eventRepo) CountGroupMessages(ctx context.Context, groupID string) (int64, error) {
+	filter := bson.M{
+		"app_metadata.group_id": groupID,
+		"document_status": bson.M{
+			"$ne": convoy.DeletedDocumentStatus,
+		},
+	}
+
+	count, err := db.inner.CountDocuments(ctx, filter)
+	if err != nil {
+		log.WithError(err).Errorf("failed to count events in group %s", groupID)
+		return 0, err
+	}
+	return count, nil
+}
+
 func (db *eventRepo) DeleteGroupEvents(ctx context.Context, groupID string) error {
 	update := bson.M{
 		"$set": bson.M{

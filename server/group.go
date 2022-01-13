@@ -1,7 +1,9 @@
 package server
 
 import (
+	"context"
 	"encoding/json"
+	"fmt"
 	"net/http"
 	"time"
 
@@ -29,8 +31,35 @@ import (
 // @Router /groups/{groupID} [get]
 func (a *applicationHandler) GetGroup(w http.ResponseWriter, r *http.Request) {
 
+	group := getGroupFromContext(r.Context())
+
+	err := a.fillGroupStatistics(r.Context(), group)
+	if err != nil {
+		_ = render.Render(w, r, newErrorResponse("failed to fetch group statistics", http.StatusInternalServerError))
+		return
+	}
+
 	_ = render.Render(w, r, newServerResponse("Group fetched successfully",
-		*getGroupFromContext(r.Context()), http.StatusOK))
+		group, http.StatusOK))
+}
+
+func (a *applicationHandler) fillGroupStatistics(ctx context.Context, group *convoy.Group) error {
+	appCount, err := a.appRepo.CountGroupApplications(ctx, group.UID)
+	if err != nil {
+		return fmt.Errorf("failed to count group messages: %v", err)
+	}
+
+	msgCount, err := a.eventRepo.CountGroupMessages(ctx, group.UID)
+	if err != nil {
+		return fmt.Errorf("failed to count group messages: %v", err)
+	}
+
+	group.Statistics = &convoy.GroupStatistics{
+		MessagesSent: msgCount,
+		TotalApps:    appCount,
+	}
+
+	return nil
 }
 
 // DeleteGroup
@@ -200,6 +229,13 @@ func (a *applicationHandler) GetGroups(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		_ = render.Render(w, r, newErrorResponse("an error occurred while fetching Groups", http.StatusInternalServerError))
 		return
+	}
+
+	for _, group := range groups {
+		err = a.fillGroupStatistics(r.Context(), group)
+		if err != nil {
+			log.WithError(err).Errorf("failed to fill statistics of group %s", group.UID)
+		}
 	}
 
 	_ = render.Render(w, r, newServerResponse("Groups fetched successfully", groups, http.StatusOK))

@@ -61,6 +61,16 @@ func TestApplicationHandler_GetGroup(t *testing.T) {
 						UID:  realOrgID,
 						Name: "sendcash-pay",
 					}, nil)
+
+				a, _ := app.appRepo.(*mocks.MockApplicationRepository)
+				a.EXPECT().
+					CountGroupApplications(gomock.Any(), gomock.AssignableToTypeOf("")).Times(1).
+					Return(int64(1), nil)
+
+				e, _ := app.eventRepo.(*mocks.MockEventRepository)
+				e.EXPECT().
+					CountGroupMessages(gomock.Any(), gomock.AssignableToTypeOf("")).Times(1).
+					Return(int64(1), nil)
 			},
 		},
 	}
@@ -314,6 +324,16 @@ func TestApplicationHandler_GetGroups(t *testing.T) {
 							Name: "sendcash-pay",
 						},
 					}, nil)
+
+				a, _ := app.appRepo.(*mocks.MockApplicationRepository)
+				a.EXPECT().
+					CountGroupApplications(gomock.Any(), gomock.AssignableToTypeOf("")).Times(1).
+					Return(int64(1), nil)
+
+				e, _ := app.eventRepo.(*mocks.MockEventRepository)
+				e.EXPECT().
+					CountGroupMessages(gomock.Any(), gomock.AssignableToTypeOf("")).Times(1).
+					Return(int64(1), nil)
 			},
 		},
 	}
