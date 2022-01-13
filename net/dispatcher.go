@@ -4,7 +4,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"errors"
-	"io/ioutil"
+	"io"
 	"net/http"
 	"net/http/httptrace"
 	"net/url"
@@ -30,7 +30,7 @@ func NewDispatcher() *Dispatcher {
 	}
 }
 
-func (d *Dispatcher) SendRequest(endpoint, method string, jsonData json.RawMessage, signatureHeader string, hmac string) (*Response, error) {
+func (d *Dispatcher) SendRequest(endpoint, method string, jsonData json.RawMessage, signatureHeader string, hmac string, maxResponseSize int64) (*Response, error) {
 	r := &Response{}
 
 	if util.IsStringEmpty(signatureHeader) || util.IsStringEmpty(hmac) {
@@ -71,8 +71,15 @@ func (d *Dispatcher) SendRequest(endpoint, method string, jsonData json.RawMessa
 	}
 	updateDispatchHeaders(r, response)
 
-	body, err := ioutil.ReadAll(response.Body)
-	r.Body = body
+	// io.LimitReader will attempt to read from response.Body until maxResponseSize is reached.
+	// if response.Body's length is less than maxResponseSize. body.Read will return io.EOF,
+	// if it is greater than maxResponseSize. body.Read will return io.EOF,
+	// if it is equal to maxResponseSize. body.Read will return io.EOF,
+	// in all cases, io.ReadAll ignores io.EOF.
+	body := io.LimitReader(response.Body, maxResponseSize)
+	buf, err := io.ReadAll(body)
+	r.Body = buf
+
 	if err != nil {
 		log.WithError(err).Error("couldn't parse response body")
 		return r, err
