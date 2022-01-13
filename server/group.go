@@ -1,7 +1,9 @@
 package server
 
 import (
+	"context"
 	"encoding/json"
+	"fmt"
 	"net/http"
 	"time"
 
@@ -12,6 +14,7 @@ import (
 	"github.com/frain-dev/convoy/worker/task"
 	"github.com/go-chi/render"
 	"github.com/google/uuid"
+	log "github.com/sirupsen/logrus"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
@@ -28,8 +31,75 @@ import (
 // @Router /groups/{groupID} [get]
 func (a *applicationHandler) GetGroup(w http.ResponseWriter, r *http.Request) {
 
+	group := getGroupFromContext(r.Context())
+
+	err := a.fillGroupStatistics(r.Context(), group)
+	if err != nil {
+		_ = render.Render(w, r, newErrorResponse("failed to fetch group statistics", http.StatusInternalServerError))
+		return
+	}
+
 	_ = render.Render(w, r, newServerResponse("Group fetched successfully",
-		*getGroupFromContext(r.Context()), http.StatusOK))
+		group, http.StatusOK))
+}
+
+func (a *applicationHandler) fillGroupStatistics(ctx context.Context, group *convoy.Group) error {
+	appCount, err := a.appRepo.CountGroupApplications(ctx, group.UID)
+	if err != nil {
+		return fmt.Errorf("failed to count group messages: %v", err)
+	}
+
+	msgCount, err := a.eventRepo.CountGroupMessages(ctx, group.UID)
+	if err != nil {
+		return fmt.Errorf("failed to count group messages: %v", err)
+	}
+
+	group.Statistics = &convoy.GroupStatistics{
+		MessagesSent: msgCount,
+		TotalApps:    appCount,
+	}
+
+	return nil
+}
+
+// DeleteGroup
+// @Summary Delete a group
+// @Description This endpoint deletes a group using its id
+// @Tags Group
+// @Accept  json
+// @Produce  json
+// @Param groupID path string true "Group id"
+// @Success 200 {object} serverResponse{data=Stub}
+// @Failure 400,401,500 {object} serverResponse{data=Stub}
+// @Security ApiKeyAuth
+// @Router /groups/{groupID} [delete]
+func (a *applicationHandler) DeleteGroup(w http.ResponseWriter, r *http.Request) {
+	group := getGroupFromContext(r.Context())
+
+	err := a.groupRepo.DeleteGroup(r.Context(), group.UID)
+	if err != nil {
+		log.WithError(err).Error("failed to delete group")
+		_ = render.Render(w, r, newErrorResponse("failed to delete group", http.StatusInternalServerError))
+		return
+	}
+
+	// TODO(daniel,subomi): is returning http error necessary for these? since the group itself has been deleted
+	err = a.appRepo.DeleteGroupApps(r.Context(), group.UID)
+	if err != nil {
+		log.WithError(err).Error("failed to delete group apps")
+		_ = render.Render(w, r, newErrorResponse("failed to delete group apps", http.StatusInternalServerError))
+		return
+	}
+
+	err = a.eventRepo.DeleteGroupEvents(r.Context(), group.UID)
+	if err != nil {
+		log.WithError(err).Error("failed to delete group events")
+		_ = render.Render(w, r, newErrorResponse("failed to delete group events", http.StatusInternalServerError))
+		return
+	}
+
+	_ = render.Render(w, r, newServerResponse("Group deleted successfully",
+		nil, http.StatusOK))
 }
 
 // CreateGroup
@@ -159,6 +229,13 @@ func (a *applicationHandler) GetGroups(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		_ = render.Render(w, r, newErrorResponse("an error occurred while fetching Groups", http.StatusInternalServerError))
 		return
+	}
+
+	for _, group := range groups {
+		err = a.fillGroupStatistics(r.Context(), group)
+		if err != nil {
+			log.WithError(err).Errorf("failed to fill statistics of group %s", group.UID)
+		}
 	}
 
 	_ = render.Render(w, r, newServerResponse("Groups fetched successfully", groups, http.StatusOK))

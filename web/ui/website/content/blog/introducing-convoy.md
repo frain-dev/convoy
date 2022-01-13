@@ -2,24 +2,19 @@
 title: Introducing Convoy
 date: 2021-10-25T17:10:13.696Z
 description: After weeks of work, I’m pleased to announce our new tool — built
-  to send webhooks efficiently. While building out our initial API on
-  third-party monitoring, every user we spoke to wanted asynchronous events —
-  “Do you provide webhooks to notify us about downtime?”.
-featureImg: /convoy-dashboard_okeuo8.png
-thumbnail: /convoy-dashboard_okeuo8.png
-tags:
-  - convoy
+    to send webhooks efficiently. While building out our initial API on
+    third-party monitoring, every user we spoke to wanted asynchronous events —
+    “Do you provide webhooks to notify us about downtime?”.
+featureImg: /convoy-dashboard_dw7hp1.png
+thumbnail: /convoy-dashboard_dw7hp1.png
 featurePost: true
 author: subomi-oluwalana
+tag: convoy
 ---
-
-# Introducing Convoy
 
 After weeks of work, I’m pleased to announce our new tool — built to send webhooks efficiently. While building out our initial API on third-party monitoring, every user we spoke to wanted asynchronous events — “Do you provide webhooks to notify us about downtime?”. We looked around, and sadly, we couldn’t find a great tool — language agnostic and cloud-native to build this. So we built it.
 
 ![](https://miro.medium.com/max/1400/1*LlrJI0W8XxNNrha1cpe_mg.png)
-
-Convoy Dashboard
 
 # Problems & Our Solutions
 
@@ -31,15 +26,11 @@ Essentially, a failed webhooks event has a direct customer impact. A failed even
 
 ![Golang and Docker](https://miro.medium.com/max/1400/1*xR4T978ZKbQUDORnx0w1KQ.jpeg)
 
-Golang and Docker
-
 ## Developer Experience
 
 Ok, let’s be honest. In the cloud, everything fails — I mean literally \[Looking at Facebook :( ]. The question is; what is our mean time to recovery (MTTR). How fast can we resend failed events? Do we have to reach out to Paystack to resend events that didn’t make it? Or events that were sent but we didn’t handle properly? Oh. Flutterwave is sending the wrong data format? How do we verify this hypothesis fast? Can we see what was sent & what our server’s response body is? Who’s the culprit — DNS? Nginx? Essentially, the developer experience around your webhooks infrastructure becomes critical to debugging and recovery. We built Convoy with a web interface, that should enable both Paystack & Paystack’s customers to filter through event logs and resend events easily and fast.
 
 ![](https://miro.medium.com/max/1400/1*mTpTVnnR_EXUSrfimzOXFw.png)
-
-Convoy dashboard with retry button enabled
 
 ## Monitoring and Alerts
 

@@ -1,13 +1,14 @@
 //go:build integration
 // +build integration
 
-package datastore
+package mongo
 
 import (
 	"context"
 	"testing"
 
 	"github.com/frain-dev/convoy"
+	"github.com/google/uuid"
 	"github.com/stretchr/testify/require"
 )
 
@@ -19,6 +20,7 @@ func Test_FetchGroupByID(t *testing.T) {
 
 	newOrg := &convoy.Group{
 		Name: "Yet another group",
+		UID:  uuid.NewString(),
 	}
 
 	require.NoError(t, groupRepo.CreateGroup(context.Background(), newOrg))
@@ -38,6 +40,7 @@ func Test_CreateGroup(t *testing.T) {
 
 	newOrg := &convoy.Group{
 		Name: "Next group",
+		UID:  uuid.NewString(),
 	}
 
 	require.NoError(t, groupRepo.CreateGroup(context.Background(), newOrg))

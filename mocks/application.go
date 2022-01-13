@@ -10,7 +10,6 @@ import (
 
 	convoy "github.com/frain-dev/convoy"
 	models "github.com/frain-dev/convoy/server/models"
-	mongopagination "github.com/gobeam/mongo-go-pagination"
 	gomock "github.com/golang/mock/gomock"
 )
 
@@ -35,6 +34,21 @@ func NewMockApplicationRepository(ctrl *gomock.Controller) *MockApplicationRepos
 // EXPECT returns an object that allows the caller to indicate expected use.
 func (m *MockApplicationRepository) EXPECT() *MockApplicationRepositoryMockRecorder {
 	return m.recorder
+}
+
+// CountGroupApplications mocks base method.
+func (m *MockApplicationRepository) CountGroupApplications(ctx context.Context, groupID string) (int64, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "CountGroupApplications", ctx, groupID)
+	ret0, _ := ret[0].(int64)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// CountGroupApplications indicates an expected call of CountGroupApplications.
+func (mr *MockApplicationRepositoryMockRecorder) CountGroupApplications(ctx, groupID interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CountGroupApplications", reflect.TypeOf((*MockApplicationRepository)(nil).CountGroupApplications), ctx, groupID)
 }
 
 // CreateApplication mocks base method.
@@ -63,6 +77,20 @@ func (m *MockApplicationRepository) DeleteApplication(arg0 context.Context, arg1
 func (mr *MockApplicationRepositoryMockRecorder) DeleteApplication(arg0, arg1 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteApplication", reflect.TypeOf((*MockApplicationRepository)(nil).DeleteApplication), arg0, arg1)
+}
+
+// DeleteGroupApps mocks base method.
+func (m *MockApplicationRepository) DeleteGroupApps(arg0 context.Context, arg1 string) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "DeleteGroupApps", arg0, arg1)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// DeleteGroupApps indicates an expected call of DeleteGroupApps.
+func (mr *MockApplicationRepositoryMockRecorder) DeleteGroupApps(arg0, arg1 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteGroupApps", reflect.TypeOf((*MockApplicationRepository)(nil).DeleteGroupApps), arg0, arg1)
 }
 
 // FindApplicationByID mocks base method.
@@ -96,11 +124,11 @@ func (mr *MockApplicationRepositoryMockRecorder) FindApplicationEndpointByID(arg
 }
 
 // LoadApplicationsPaged mocks base method.
-func (m *MockApplicationRepository) LoadApplicationsPaged(arg0 context.Context, arg1 string, arg2 models.Pageable) ([]convoy.Application, mongopagination.PaginationData, error) {
+func (m *MockApplicationRepository) LoadApplicationsPaged(arg0 context.Context, arg1 string, arg2 models.Pageable) ([]convoy.Application, models.PaginationData, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "LoadApplicationsPaged", arg0, arg1, arg2)
 	ret0, _ := ret[0].([]convoy.Application)
-	ret1, _ := ret[1].(mongopagination.PaginationData)
+	ret1, _ := ret[1].(models.PaginationData)
 	ret2, _ := ret[2].(error)
 	return ret0, ret1, ret2
 }
@@ -112,11 +140,11 @@ func (mr *MockApplicationRepositoryMockRecorder) LoadApplicationsPaged(arg0, arg
 }
 
 // LoadApplicationsPagedByGroupId mocks base method.
-func (m *MockApplicationRepository) LoadApplicationsPagedByGroupId(arg0 context.Context, arg1 string, arg2 models.Pageable) ([]convoy.Application, mongopagination.PaginationData, error) {
+func (m *MockApplicationRepository) LoadApplicationsPagedByGroupId(arg0 context.Context, arg1 string, arg2 models.Pageable) ([]convoy.Application, models.PaginationData, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "LoadApplicationsPagedByGroupId", arg0, arg1, arg2)
 	ret0, _ := ret[0].([]convoy.Application)
-	ret1, _ := ret[1].(mongopagination.PaginationData)
+	ret1, _ := ret[1].(models.PaginationData)
 	ret2, _ := ret[2].(error)
 	return ret0, ret1, ret2
 }

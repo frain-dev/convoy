@@ -16,6 +16,7 @@
 			font-size: 14px;
 			line-height: 22px;
 			color: #477db3;
+			text-transform: uppercase;
 
 			&.clear {
 				background: transparent;
@@ -39,7 +40,7 @@
 		&--body {
 			font-size: 16px;
 			line-height: 24px;
-			color: #5f5f68;
+			color: #737a91;
 		}
 
 		&--title {
@@ -106,9 +107,18 @@
 		&--img {
 			margin-bottom: 28px;
 			width: 100%;
+			background: #efefef;
+			height: 179px;
+			border-radius: 8px 8px 0px 0px;
+			overflow: hidden;
+			border: 1px solid #edf2f7;
+			box-sizing: border-box;
+			backdrop-filter: blur(3.4767px);
+			border-radius: 6.95339px 6.95339px 0px 0px;
 
 			img {
 				border-radius: 8px 8px 0px 0px;
+				width: 100%;
 			}
 		}
 	}
