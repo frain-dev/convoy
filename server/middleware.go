@@ -13,6 +13,7 @@ import (
 	"time"
 
 	"github.com/frain-dev/convoy/auth/realm_chain"
+	"github.com/frain-dev/convoy/datastore"
 
 	"github.com/frain-dev/convoy/auth"
 
@@ -22,10 +23,8 @@ import (
 	"github.com/frain-dev/convoy/config"
 	"github.com/frain-dev/convoy/server/models"
 	"github.com/frain-dev/convoy/util"
-	pager "github.com/gobeam/mongo-go-pagination"
 	log "github.com/sirupsen/logrus"
 
-	"github.com/frain-dev/convoy"
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
 	"github.com/go-chi/render"
@@ -94,7 +93,7 @@ func jsonResponse(next http.Handler) http.Handler {
 	})
 }
 
-func requireApp(appRepo convoy.ApplicationRepository) func(next http.Handler) http.Handler {
+func requireApp(appRepo datastore.ApplicationRepository) func(next http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -107,7 +106,7 @@ func requireApp(appRepo convoy.ApplicationRepository) func(next http.Handler) ht
 				event := "an error occurred while retrieving app details"
 				statusCode := http.StatusInternalServerError
 
-				if errors.Is(err, convoy.ErrApplicationNotFound) {
+				if errors.Is(err, datastore.ErrApplicationNotFound) {
 					event = err.Error()
 					statusCode = http.StatusNotFound
 				}
@@ -122,8 +121,8 @@ func requireApp(appRepo convoy.ApplicationRepository) func(next http.Handler) ht
 	}
 }
 
-func filterDeletedEndpoints(endpoints []convoy.Endpoint) []convoy.Endpoint {
-	activeEndpoints := make([]convoy.Endpoint, 0)
+func filterDeletedEndpoints(endpoints []datastore.Endpoint) []datastore.Endpoint {
+	activeEndpoints := make([]datastore.Endpoint, 0)
 	for _, endpoint := range endpoints {
 		if endpoint.DeletedAt == 0 {
 			activeEndpoints = append(activeEndpoints, endpoint)
@@ -172,7 +171,7 @@ func requireAppEndpoint() func(next http.Handler) http.Handler {
 	}
 }
 
-func requireEvent(eventRepo convoy.EventRepository) func(next http.Handler) http.Handler {
+func requireEvent(eventRepo datastore.EventRepository) func(next http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -185,7 +184,7 @@ func requireEvent(eventRepo convoy.EventRepository) func(next http.Handler) http
 				event := "an error occurred while retrieving event details"
 				statusCode := http.StatusInternalServerError
 
-				if errors.Is(err, convoy.ErrEventNotFound) {
+				if errors.Is(err, datastore.ErrEventNotFound) {
 					event = err.Error()
 					statusCode = http.StatusNotFound
 				}
@@ -200,7 +199,7 @@ func requireEvent(eventRepo convoy.EventRepository) func(next http.Handler) http
 	}
 }
 
-func requireEventDelivery(eventRepo convoy.EventDeliveryRepository) func(next http.Handler) http.Handler {
+func requireEventDelivery(eventRepo datastore.EventDeliveryRepository) func(next http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			eventDeliveryID := chi.URLParam(r, "eventDeliveryID")
@@ -211,7 +210,7 @@ func requireEventDelivery(eventRepo convoy.EventDeliveryRepository) func(next ht
 				eventDelivery := "an error occurred while retrieving event delivery details"
 				statusCode := http.StatusInternalServerError
 
-				if errors.Is(err, convoy.ErrEventDeliveryNotFound) {
+				if errors.Is(err, datastore.ErrEventDeliveryNotFound) {
 					eventDelivery = err.Error()
 					statusCode = http.StatusNotFound
 				}
@@ -247,18 +246,18 @@ func requireDeliveryAttempt() func(next http.Handler) http.Handler {
 	}
 }
 
-func findEndpoint(endpoints *[]convoy.Endpoint, id string) (*convoy.Endpoint, error) {
+func findEndpoint(endpoints *[]datastore.Endpoint, id string) (*datastore.Endpoint, error) {
 	for _, endpoint := range *endpoints {
 		if endpoint.UID == id && endpoint.DeletedAt == 0 {
 			return &endpoint, nil
 		}
 	}
-	return nil, convoy.ErrEndpointNotFound
+	return nil, datastore.ErrEndpointNotFound
 }
 
-func getDefaultGroup(r *http.Request, groupRepo convoy.GroupRepository) (*convoy.Group, error) {
+func getDefaultGroup(r *http.Request, groupRepo datastore.GroupRepository) (*datastore.Group, error) {
 
-	groups, err := groupRepo.LoadGroups(r.Context(), &convoy.GroupFilter{Names: []string{"default-group"}})
+	groups, err := groupRepo.LoadGroups(r.Context(), &datastore.GroupFilter{Names: []string{"default-group"}})
 	if err != nil {
 		return nil, err
 	}
@@ -270,10 +269,10 @@ func getDefaultGroup(r *http.Request, groupRepo convoy.GroupRepository) (*convoy
 	return groups[0], err
 }
 
-func requireGroup(groupRepo convoy.GroupRepository) func(next http.Handler) http.Handler {
+func requireGroup(groupRepo datastore.GroupRepository) func(next http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			var group *convoy.Group
+			var group *datastore.Group
 			var err error
 
 			groupID := r.URL.Query().Get("groupID")
@@ -455,7 +454,7 @@ func pagination(next http.Handler) http.Handler {
 	})
 }
 
-func fetchGroupApps(appRepo convoy.ApplicationRepository) func(next http.Handler) http.Handler {
+func fetchGroupApps(appRepo datastore.ApplicationRepository) func(next http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -485,7 +484,7 @@ func ensurePeriod(start time.Time, end time.Time) error {
 	return nil
 }
 
-func computeDashboardMessages(ctx context.Context, orgId string, eventRepo convoy.EventRepository, searchParams models.SearchParams, period convoy.Period) (uint64, []models.EventInterval, error) {
+func computeDashboardMessages(ctx context.Context, orgId string, eventRepo datastore.EventRepository, searchParams models.SearchParams, period datastore.Period) (uint64, []models.EventInterval, error) {
 
 	var messagesSent uint64
 
@@ -503,56 +502,56 @@ func computeDashboardMessages(ctx context.Context, orgId string, eventRepo convo
 }
 
 func setApplicationInContext(ctx context.Context,
-	app *convoy.Application) context.Context {
+	app *datastore.Application) context.Context {
 	return context.WithValue(ctx, appCtx, app)
 }
 
-func getApplicationFromContext(ctx context.Context) *convoy.Application {
-	return ctx.Value(appCtx).(*convoy.Application)
+func getApplicationFromContext(ctx context.Context) *datastore.Application {
+	return ctx.Value(appCtx).(*datastore.Application)
 }
 
 func setEventInContext(ctx context.Context,
-	event *convoy.Event) context.Context {
+	event *datastore.Event) context.Context {
 	return context.WithValue(ctx, eventCtx, event)
 }
 
-func getEventFromContext(ctx context.Context) *convoy.Event {
-	return ctx.Value(eventCtx).(*convoy.Event)
+func getEventFromContext(ctx context.Context) *datastore.Event {
+	return ctx.Value(eventCtx).(*datastore.Event)
 }
 
 func setEventDeliveryInContext(ctx context.Context,
-	eventDelivery *convoy.EventDelivery) context.Context {
+	eventDelivery *datastore.EventDelivery) context.Context {
 	return context.WithValue(ctx, eventDeliveryCtx, eventDelivery)
 }
 
-func getEventDeliveryFromContext(ctx context.Context) *convoy.EventDelivery {
-	return ctx.Value(eventDeliveryCtx).(*convoy.EventDelivery)
+func getEventDeliveryFromContext(ctx context.Context) *datastore.EventDelivery {
+	return ctx.Value(eventDeliveryCtx).(*datastore.EventDelivery)
 }
 
 func setApplicationsInContext(ctx context.Context,
-	apps *[]convoy.Application) context.Context {
+	apps *[]datastore.Application) context.Context {
 	return context.WithValue(ctx, appCtx, apps)
 }
 
-func getApplicationsFromContext(ctx context.Context) *[]convoy.Application {
-	return ctx.Value(appCtx).(*[]convoy.Application)
+func getApplicationsFromContext(ctx context.Context) *[]datastore.Application {
+	return ctx.Value(appCtx).(*[]datastore.Application)
 }
 
 func setApplicationEndpointInContext(ctx context.Context,
-	endpoint *convoy.Endpoint) context.Context {
+	endpoint *datastore.Endpoint) context.Context {
 	return context.WithValue(ctx, endpointCtx, endpoint)
 }
 
-func getApplicationEndpointFromContext(ctx context.Context) *convoy.Endpoint {
-	return ctx.Value(endpointCtx).(*convoy.Endpoint)
+func getApplicationEndpointFromContext(ctx context.Context) *datastore.Endpoint {
+	return ctx.Value(endpointCtx).(*datastore.Endpoint)
 }
 
-func setGroupInContext(ctx context.Context, group *convoy.Group) context.Context {
+func setGroupInContext(ctx context.Context, group *datastore.Group) context.Context {
 	return context.WithValue(ctx, groupCtx, group)
 }
 
-func getGroupFromContext(ctx context.Context) *convoy.Group {
-	return ctx.Value(groupCtx).(*convoy.Group)
+func getGroupFromContext(ctx context.Context) *datastore.Group {
+	return ctx.Value(groupCtx).(*datastore.Group)
 }
 
 func setPageableInContext(ctx context.Context, pageable models.Pageable) context.Context {
@@ -563,12 +562,12 @@ func getPageableFromContext(ctx context.Context) models.Pageable {
 	return ctx.Value(pageableCtx).(models.Pageable)
 }
 
-func setPaginationDataInContext(ctx context.Context, p *pager.PaginationData) context.Context {
+func setPaginationDataInContext(ctx context.Context, p *models.PaginationData) context.Context {
 	return context.WithValue(ctx, pageDataCtx, p)
 }
 
-func getPaginationDataFromContext(ctx context.Context) *pager.PaginationData {
-	return ctx.Value(pageDataCtx).(*pager.PaginationData)
+func getPaginationDataFromContext(ctx context.Context) *models.PaginationData {
+	return ctx.Value(pageDataCtx).(*models.PaginationData)
 }
 
 func setDashboardSummaryInContext(ctx context.Context, d *models.DashboardSummary) context.Context {
@@ -580,21 +579,21 @@ func getDashboardSummaryFromContext(ctx context.Context) *models.DashboardSummar
 }
 
 func setDeliveryAttemptInContext(ctx context.Context,
-	attempt *convoy.DeliveryAttempt) context.Context {
+	attempt *datastore.DeliveryAttempt) context.Context {
 	return context.WithValue(ctx, deliveryAttemptsCtx, attempt)
 }
 
-func getDeliveryAttemptFromContext(ctx context.Context) *convoy.DeliveryAttempt {
-	return ctx.Value(deliveryAttemptsCtx).(*convoy.DeliveryAttempt)
+func getDeliveryAttemptFromContext(ctx context.Context) *datastore.DeliveryAttempt {
+	return ctx.Value(deliveryAttemptsCtx).(*datastore.DeliveryAttempt)
 }
 
 func setDeliveryAttemptsInContext(ctx context.Context,
-	attempts *[]convoy.DeliveryAttempt) context.Context {
+	attempts *[]datastore.DeliveryAttempt) context.Context {
 	return context.WithValue(ctx, deliveryAttemptsCtx, attempts)
 }
 
-func getDeliveryAttemptsFromContext(ctx context.Context) *[]convoy.DeliveryAttempt {
-	return ctx.Value(deliveryAttemptsCtx).(*[]convoy.DeliveryAttempt)
+func getDeliveryAttemptsFromContext(ctx context.Context) *[]datastore.DeliveryAttempt {
+	return ctx.Value(deliveryAttemptsCtx).(*[]datastore.DeliveryAttempt)
 }
 
 func setAuthUserInContext(ctx context.Context, a *auth.AuthenticatedUser) context.Context {
