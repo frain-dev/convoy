@@ -67,3 +67,7 @@ func (a *appRepo) UpdateApplicationEndpointsStatus(ctx context.Context, appId st
 func (a *appRepo) DeleteGroupApps(context.Context, string) error {
 	return nil
 }
+
+func (a *appRepo) CountGroupApplications(ctx context.Context, groupID string) (int64, error) {
+	return 0, nil
+}
