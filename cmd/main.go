@@ -25,6 +25,7 @@ import (
 	"github.com/frain-dev/convoy/queue"
 	"github.com/spf13/cobra"
 
+	"github.com/frain-dev/convoy/datastore/bolt"
 	"github.com/frain-dev/convoy/datastore/mongo"
 )
 
@@ -87,6 +88,11 @@ func main() {
 				return err
 			}
 
+			bolt, err := bolt.New(cfg)
+			if err != nil {
+				return err
+			}
+
 			err = sentry.Init(sentry.ClientOptions{
 				Debug:       true,
 				Dsn:         cfg.Sentry.Dsn,
@@ -117,7 +123,7 @@ func main() {
 				log.Warnf("signature header is blank. setting default %s", config.DefaultSignatureHeader)
 			}
 
-			app.groupRepo = db.GroupRepo()
+			app.groupRepo = bolt.GroupRepo()
 			app.eventRepo = db.EventRepo()
 			app.applicationRepo = db.AppRepo()
 			app.eventDeliveryRepo = db.EventDeliveryRepo()
