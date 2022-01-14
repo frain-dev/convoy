@@ -104,7 +104,7 @@ func requireApp(appRepo convoy.ApplicationRepository) func(next http.Handler) ht
 			if err != nil {
 
 				event := "an error occurred while retrieving app details"
-				statusCode := http.StatusInternalServerError
+				statusCode := http.StatusBadRequest
 
 				if errors.Is(err, convoy.ErrApplicationNotFound) {
 					event = err.Error()

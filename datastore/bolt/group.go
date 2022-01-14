@@ -3,7 +3,6 @@ package bolt
 import (
 	"context"
 	"encoding/json"
-	"fmt"
 
 	"github.com/frain-dev/convoy"
 	"go.etcd.io/bbolt"
@@ -72,15 +71,15 @@ func (g *groupRepo) FetchGroupByID(ctx context.Context, gid string) (*convoy.Gro
 
 		grp := b.Get([]byte(gid))
 		if grp == nil {
-			return fmt.Errorf("group with id (%s) does not exist", gid)
+			return convoy.ErrGroupNotFound
 		}
 
-		var _grp *convoy.Group
-		mErr := json.Unmarshal(grp, &_grp)
-		if mErr != nil {
-			return mErr
+		var temp *convoy.Group
+		err := json.Unmarshal(grp, &temp)
+		if err != nil {
+			return err
 		}
-		group = _grp
+		group = temp
 
 		return nil
 	})
