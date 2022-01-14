@@ -4,7 +4,7 @@ import (
 	"context"
 	"encoding/json"
 
-	"github.com/frain-dev/convoy"
+	"github.com/frain-dev/convoy/datastore"
 	"go.etcd.io/bbolt"
 )
 
@@ -13,7 +13,7 @@ type groupRepo struct {
 	bucketName string
 }
 
-func NewGroupRepo(db *bbolt.DB) convoy.GroupRepository {
+func NewGroupRepo(db *bbolt.DB) datastore.GroupRepository {
 	bucketName := "groups"
 	err := db.Update(func(tx *bbolt.Tx) error {
 		_, err := tx.CreateBucketIfNotExists([]byte(bucketName))
@@ -27,13 +27,13 @@ func NewGroupRepo(db *bbolt.DB) convoy.GroupRepository {
 	return &groupRepo{db: db, bucketName: bucketName}
 }
 
-func (g *groupRepo) LoadGroups(ctx context.Context, filter *convoy.GroupFilter) ([]*convoy.Group, error) {
-	var groups []*convoy.Group
+func (g *groupRepo) LoadGroups(ctx context.Context, filter *datastore.GroupFilter) ([]*datastore.Group, error) {
+	var groups []*datastore.Group
 	err := g.db.View(func(tx *bbolt.Tx) error {
 		b := tx.Bucket([]byte(g.bucketName))
 
 		return b.ForEach(func(k, v []byte) error {
-			var grp *convoy.Group
+			var grp *datastore.Group
 			err := json.Unmarshal(v, &grp)
 			if err != nil {
 				return err
@@ -56,25 +56,25 @@ func (g *groupRepo) LoadGroups(ctx context.Context, filter *convoy.GroupFilter) 
 	return groups, err
 }
 
-func (g *groupRepo) CreateGroup(ctx context.Context, group *convoy.Group) error {
+func (g *groupRepo) CreateGroup(ctx context.Context, group *datastore.Group) error {
 	return g.createUpdateGroup(group)
 }
 
-func (g *groupRepo) UpdateGroup(_ context.Context, group *convoy.Group) error {
+func (g *groupRepo) UpdateGroup(_ context.Context, group *datastore.Group) error {
 	return g.createUpdateGroup(group)
 }
 
-func (g *groupRepo) FetchGroupByID(ctx context.Context, gid string) (*convoy.Group, error) {
-	var group *convoy.Group
+func (g *groupRepo) FetchGroupByID(ctx context.Context, gid string) (*datastore.Group, error) {
+	var group *datastore.Group
 	err := g.db.View(func(tx *bbolt.Tx) error {
 		b := tx.Bucket([]byte(g.bucketName))
 
 		grp := b.Get([]byte(gid))
 		if grp == nil {
-			return convoy.ErrGroupNotFound
+			return datastore.ErrGroupNotFound
 		}
 
-		var temp *convoy.Group
+		var temp *datastore.Group
 		err := json.Unmarshal(grp, &temp)
 		if err != nil {
 			return err
@@ -94,7 +94,7 @@ func (g *groupRepo) DeleteGroup(ctx context.Context, gid string) error {
 	})
 }
 
-func (g *groupRepo) createUpdateGroup(group *convoy.Group) error {
+func (g *groupRepo) createUpdateGroup(group *datastore.Group) error {
 	return g.db.Update(func(tx *bbolt.Tx) error {
 		b := tx.Bucket([]byte(g.bucketName))
 

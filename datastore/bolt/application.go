@@ -6,7 +6,7 @@ import (
 	"math"
 	"time"
 
-	"github.com/frain-dev/convoy"
+	"github.com/frain-dev/convoy/datastore"
 	"github.com/frain-dev/convoy/server/models"
 	"github.com/frain-dev/convoy/util"
 	"go.etcd.io/bbolt"
@@ -18,7 +18,7 @@ type appRepo struct {
 	bucketName string
 }
 
-func NewApplicationRepo(db *bbolt.DB) convoy.ApplicationRepository {
+func NewApplicationRepo(db *bbolt.DB) datastore.ApplicationRepository {
 	bucketName := "applications"
 	err := db.Update(func(tx *bbolt.Tx) error {
 		_, err := tx.CreateBucketIfNotExists([]byte(bucketName))
@@ -32,16 +32,16 @@ func NewApplicationRepo(db *bbolt.DB) convoy.ApplicationRepository {
 	return &appRepo{db: db, bucketName: bucketName}
 }
 
-func (a *appRepo) CreateApplication(ctx context.Context, app *convoy.Application) error {
+func (a *appRepo) CreateApplication(ctx context.Context, app *datastore.Application) error {
 	return a.createUpdateApplication(app)
 }
 
-func (a *appRepo) UpdateApplication(ctx context.Context, app *convoy.Application) error {
+func (a *appRepo) UpdateApplication(ctx context.Context, app *datastore.Application) error {
 	return a.createUpdateApplication(app)
 }
 
-func (a *appRepo) LoadApplicationsPaged(ctx context.Context, gid string, pageable models.Pageable) ([]convoy.Application, models.PaginationData, error) {
-	var apps []convoy.Application = make([]convoy.Application, 0)
+func (a *appRepo) LoadApplicationsPaged(ctx context.Context, gid string, pageable models.Pageable) ([]datastore.Application, models.PaginationData, error) {
+	var apps []datastore.Application = make([]datastore.Application, 0)
 	data := models.PaginationData{}
 	prevPage := pageable.Page
 
@@ -62,7 +62,7 @@ func (a *appRepo) LoadApplicationsPaged(ctx context.Context, gid string, pageabl
 			}
 
 			if i >= pageable.PerPage*prevPage && i < pageable.PerPage*pageable.Page {
-				var app convoy.Application
+				var app datastore.Application
 				err := json.Unmarshal(v, &app)
 				if err != nil {
 					return err
@@ -96,17 +96,17 @@ func (a *appRepo) LoadApplicationsPaged(ctx context.Context, gid string, pageabl
 	return apps, data, err
 }
 
-func (a *appRepo) LoadApplicationsPagedByGroupId(ctx context.Context, gid string, pageable models.Pageable) ([]convoy.Application, models.PaginationData, error) {
+func (a *appRepo) LoadApplicationsPagedByGroupId(ctx context.Context, gid string, pageable models.Pageable) ([]datastore.Application, models.PaginationData, error) {
 	return a.LoadApplicationsPaged(ctx, gid, pageable)
 }
 
-func (a *appRepo) SearchApplicationsByGroupId(ctx context.Context, gid string, searchParams models.SearchParams) ([]convoy.Application, error) {
-	var apps []convoy.Application
+func (a *appRepo) SearchApplicationsByGroupId(ctx context.Context, gid string, searchParams models.SearchParams) ([]datastore.Application, error) {
+	var apps []datastore.Application
 	err := a.db.View(func(tx *bbolt.Tx) error {
 		b := tx.Bucket([]byte(a.bucketName))
 
 		return b.ForEach(func(k, v []byte) error {
-			var app convoy.Application
+			var app datastore.Application
 			err := json.Unmarshal(v, &app)
 			if err != nil {
 				return err
@@ -123,17 +123,17 @@ func (a *appRepo) SearchApplicationsByGroupId(ctx context.Context, gid string, s
 	return apps, err
 }
 
-func (a *appRepo) FindApplicationByID(ctx context.Context, aid string) (*convoy.Application, error) {
-	var application *convoy.Application
+func (a *appRepo) FindApplicationByID(ctx context.Context, aid string) (*datastore.Application, error) {
+	var application *datastore.Application
 	err := a.db.View(func(tx *bbolt.Tx) error {
 		b := tx.Bucket([]byte(a.bucketName))
 
 		appBytes := b.Get([]byte(aid))
 		if appBytes == nil {
-			return convoy.ErrApplicationNotFound
+			return datastore.ErrApplicationNotFound
 		}
 
-		var app *convoy.Application
+		var app *datastore.Application
 		err := json.Unmarshal(appBytes, &app)
 		if err != nil {
 			return err
@@ -146,17 +146,17 @@ func (a *appRepo) FindApplicationByID(ctx context.Context, aid string) (*convoy.
 	return application, err
 }
 
-func (a *appRepo) FindApplicationEndpointByID(ctx context.Context, appID string, endpointID string) (*convoy.Endpoint, error) {
-	var endpoint *convoy.Endpoint
+func (a *appRepo) FindApplicationEndpointByID(ctx context.Context, appID string, endpointID string) (*datastore.Endpoint, error) {
+	var endpoint *datastore.Endpoint
 	err := a.db.Update(func(tx *bbolt.Tx) error {
 		b := tx.Bucket([]byte(a.bucketName))
 
 		appBytes := b.Get([]byte(appID))
 		if appBytes == nil {
-			return convoy.ErrApplicationNotFound
+			return datastore.ErrApplicationNotFound
 		}
 
-		var app *convoy.Application
+		var app *datastore.Application
 		err := json.Unmarshal(appBytes, &app)
 		if err != nil {
 			return err
@@ -174,14 +174,14 @@ func (a *appRepo) FindApplicationEndpointByID(ctx context.Context, appID string,
 	return endpoint, err
 }
 
-func (a *appRepo) DeleteApplication(ctx context.Context, app *convoy.Application) error {
+func (a *appRepo) DeleteApplication(ctx context.Context, app *datastore.Application) error {
 	return a.db.Update(func(tx *bbolt.Tx) error {
 		b := tx.Bucket([]byte(a.bucketName))
 		return b.Delete([]byte(app.UID))
 	})
 }
 
-func (a *appRepo) UpdateApplicationEndpointsStatus(ctx context.Context, aid string, endpointIds []string, status convoy.EndpointStatus) error {
+func (a *appRepo) UpdateApplicationEndpointsStatus(ctx context.Context, aid string, endpointIds []string, status datastore.EndpointStatus) error {
 	endpointMap := make(map[string]bool)
 	for i := 0; i < len(endpointIds); i++ {
 		endpointMap[endpointIds[i]] = true
@@ -192,10 +192,10 @@ func (a *appRepo) UpdateApplicationEndpointsStatus(ctx context.Context, aid stri
 
 		appBytes := b.Get([]byte(aid))
 		if appBytes == nil {
-			return convoy.ErrApplicationNotFound
+			return datastore.ErrApplicationNotFound
 		}
 
-		var app *convoy.Application
+		var app *datastore.Application
 		err := json.Unmarshal(appBytes, &app)
 		if err != nil {
 			return err
@@ -227,7 +227,7 @@ func (a *appRepo) DeleteGroupApps(ctx context.Context, gid string) error {
 		b := tx.Bucket([]byte(a.bucketName))
 
 		return b.ForEach(func(k, v []byte) error {
-			var app *convoy.Application
+			var app *datastore.Application
 			err := json.Unmarshal(v, &app)
 			if err != nil {
 				return err
@@ -251,7 +251,7 @@ func (a *appRepo) CountGroupApplications(ctx context.Context, gid string) (int64
 		b := tx.Bucket([]byte(a.bucketName))
 
 		return b.ForEach(func(k, v []byte) error {
-			var app *convoy.Application
+			var app *datastore.Application
 			err := json.Unmarshal(v, &app)
 			if err != nil {
 				return err
@@ -268,7 +268,7 @@ func (a *appRepo) CountGroupApplications(ctx context.Context, gid string) (int64
 	return count, err
 }
 
-func (a *appRepo) createUpdateApplication(app *convoy.Application) error {
+func (a *appRepo) createUpdateApplication(app *datastore.Application) error {
 	return a.db.Update(func(tx *bbolt.Tx) error {
 		b := tx.Bucket([]byte(a.bucketName))
 
