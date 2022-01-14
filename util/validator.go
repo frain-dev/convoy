@@ -20,9 +20,7 @@ func Validate(dst interface{}) error {
 			messages = append(messages, fmt.Sprintf("%s:%s", field, message))
 		}
 
-		validationMessages := strings.Join(messages, ", ")
-
-		return errors.New(validationMessages)
+		return errors.New(strings.Join(messages, ", "))
 	}
 
 	return nil

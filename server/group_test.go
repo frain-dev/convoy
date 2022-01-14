@@ -131,22 +131,7 @@ func TestApplicationHandler_CreateGroup(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 
-	bodyReader := strings.NewReader(`{
-		"name": "ABC_DEF_TEST_UPDATE",
-		"config": {
-		  "strategy": {
-			"type": "default",
-			"default": {
-			  "intervalSeconds": 10,
-			  "retryLimit": 3
-			}
-		  },
-		  "signature": {
-			"header": "X-Company-Signature",
-			"hash": "SHA1"
-		  }
-		}
-	  }`)
+	bodyReader := strings.NewReader(`{"name": "ABC_DEF_TEST_UPDATE"}`)
 
 	tt := []struct {
 		name       string
@@ -169,6 +154,14 @@ func TestApplicationHandler_CreateGroup(t *testing.T) {
 					Return(nil)
 
 			},
+		},
+
+		{
+			name:       "invalid request - no group name",
+			cfgPath:    "./testdata/Auth_Config/basic-convoy.json",
+			method:     http.MethodPost,
+			statusCode: http.StatusBadRequest,
+			body:       strings.NewReader(`{}`),
 		},
 	}
 
@@ -224,22 +217,7 @@ func TestApplicationHandler_UpdateGroup(t *testing.T) {
 
 	realOrgID := "1234567890"
 
-	bodyReader := strings.NewReader(`{
-		"name": "ABC_DEF_TEST_UPDATE",
-		"config": {
-		  "strategy": {
-			"type": "default",
-			"default": {
-			  "intervalSeconds": 10,
-			  "retryLimit": 3
-			}
-		  },
-		  "signature": {
-			"header": "X-Company-Signature",
-			"hash": "SHA1"
-		  }
-		}
-	  }`)
+	bodyReader := strings.NewReader(`{"name": "ABC_DEF_TEST_UPDATE"}`)
 
 	tt := []struct {
 		name       string

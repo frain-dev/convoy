@@ -67,18 +67,18 @@ type AuthConfiguration struct {
 }
 
 type StrategyConfiguration struct {
-	Type    StrategyProvider             `json:"type" valid:"required~please provide a valid strategy type,in(default)~unsupported strategy type"`
-	Default DefaultStrategyConfiguration `json:"default" valid:"required~please provide the default field"`
+	Type    StrategyProvider             `json:"type"`
+	Default DefaultStrategyConfiguration `json:"default"`
 }
 
 type DefaultStrategyConfiguration struct {
-	IntervalSeconds uint64 `json:"intervalSeconds" envconfig:"CONVOY_INTERVAL_SECONDS" valid:"required~please provide a valid interval seconds,int"`
-	RetryLimit      uint64 `json:"retryLimit" envconfig:"CONVOY_RETRY_LIMIT" valid:"required~please provide a valid retry limit,int"`
+	IntervalSeconds uint64 `json:"intervalSeconds" envconfig:"CONVOY_INTERVAL_SECONDS"`
+	RetryLimit      uint64 `json:"retryLimit" envconfig:"CONVOY_RETRY_LIMIT"`
 }
 
 type SignatureConfiguration struct {
-	Header SignatureHeaderProvider `json:"header" envconfig:"CONVOY_SIGNATURE_HEADER" valid:"required~please provide a valid signature header"`
-	Hash   string                  `json:"hash" envconfig:"CONVOY_SIGNATURE_HASH" valid:"required~please provide a valid hash,supported_hash~unsupported hash type"`
+	Header SignatureHeaderProvider `json:"header" envconfig:"CONVOY_SIGNATURE_HEADER"`
+	Hash   string                  `json:"hash" envconfig:"CONVOY_SIGNATURE_HASH"`
 }
 
 type SMTPConfiguration struct {
