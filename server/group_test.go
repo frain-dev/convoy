@@ -9,8 +9,8 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/frain-dev/convoy"
 	"github.com/frain-dev/convoy/config"
+	"github.com/frain-dev/convoy/datastore"
 	"github.com/frain-dev/convoy/mocks"
 	"github.com/go-chi/chi/v5"
 	"github.com/golang/mock/gomock"
@@ -43,7 +43,7 @@ func TestApplicationHandler_GetGroup(t *testing.T) {
 
 				o.EXPECT().
 					FetchGroupByID(gomock.Any(), gomock.Any()).Times(1).
-					Return(nil, convoy.ErrGroupNotFound)
+					Return(nil, datastore.ErrGroupNotFound)
 			},
 		},
 		{
@@ -57,7 +57,7 @@ func TestApplicationHandler_GetGroup(t *testing.T) {
 
 				o.EXPECT().
 					FetchGroupByID(gomock.Any(), gomock.Any()).Times(1).
-					Return(&convoy.Group{
+					Return(&datastore.Group{
 						UID:  realOrgID,
 						Name: "sendcash-pay",
 					}, nil)
@@ -234,7 +234,7 @@ func TestApplicationHandler_UpdateGroup(t *testing.T) {
 
 				g.EXPECT().
 					FetchGroupByID(gomock.Any(), gomock.Any()).Times(1).
-					Return(&convoy.Group{
+					Return(&datastore.Group{
 						UID:  realOrgID,
 						Name: "sendcash-pay",
 					}, nil)
@@ -318,7 +318,7 @@ func TestApplicationHandler_GetGroups(t *testing.T) {
 				o, _ := app.groupRepo.(*mocks.MockGroupRepository)
 				o.EXPECT().
 					LoadGroups(gomock.Any(), gomock.Any()).Times(1).
-					Return([]*convoy.Group{
+					Return([]*datastore.Group{
 						{
 							UID:  realOrgID,
 							Name: "sendcash-pay",
@@ -409,7 +409,7 @@ func TestApplicationHandler_DeleteGroup(t *testing.T) {
 				g, _ := app.groupRepo.(*mocks.MockGroupRepository)
 				g.EXPECT().
 					FetchGroupByID(gomock.Any(), gomock.Any()).Times(1).
-					Return(&convoy.Group{
+					Return(&datastore.Group{
 						UID:  realOrgID,
 						Name: "sendcash-pay",
 					}, nil)
@@ -439,7 +439,7 @@ func TestApplicationHandler_DeleteGroup(t *testing.T) {
 				g, _ := app.groupRepo.(*mocks.MockGroupRepository)
 				g.EXPECT().
 					FetchGroupByID(gomock.Any(), gomock.Any()).Times(1).
-					Return(&convoy.Group{
+					Return(&datastore.Group{
 						UID:  realOrgID,
 						Name: "sendcash-pay",
 					}, nil)

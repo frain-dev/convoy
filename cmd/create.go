@@ -11,7 +11,7 @@ import (
 	log "github.com/sirupsen/logrus"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 
-	"github.com/frain-dev/convoy"
+	"github.com/frain-dev/convoy/datastore"
 	"github.com/frain-dev/convoy/util"
 	"github.com/google/uuid"
 	"github.com/olekukonko/tablewriter"
@@ -34,7 +34,7 @@ func addCreateCommand(a *app) *cobra.Command {
 
 func createEndpointCommand(a *app) *cobra.Command {
 
-	e := new(convoy.Endpoint)
+	e := new(datastore.Endpoint)
 
 	var appID string
 
@@ -138,14 +138,14 @@ func createApplicationCommand(a *app) *cobra.Command {
 				}
 			}
 
-			app := &convoy.Application{
+			app := &datastore.Application{
 				UID:            uuid.New().String(),
 				GroupID:        group.UID,
 				Title:          appName,
 				CreatedAt:      primitive.NewDateTimeFromTime(time.Now()),
 				UpdatedAt:      primitive.NewDateTimeFromTime(time.Now()),
-				Endpoints:      []convoy.Endpoint{},
-				DocumentStatus: convoy.ActiveDocumentStatus,
+				Endpoints:      []datastore.Endpoint{},
+				DocumentStatus: datastore.ActiveDocumentStatus,
 			}
 
 			err = a.applicationRepo.CreateApplication(context.Background(), app)
@@ -189,12 +189,12 @@ func createGroupCommand(a *app) *cobra.Command {
 				return errors.New("please provide a valid name")
 			}
 
-			group := &convoy.Group{
+			group := &datastore.Group{
 				UID:            uuid.New().String(),
 				Name:           name,
 				CreatedAt:      primitive.NewDateTimeFromTime(time.Now()),
 				UpdatedAt:      primitive.NewDateTimeFromTime(time.Now()),
-				DocumentStatus: convoy.ActiveDocumentStatus,
+				DocumentStatus: datastore.ActiveDocumentStatus,
 			}
 
 			err := a.groupRepo.CreateGroup(context.Background(), group)
@@ -288,17 +288,17 @@ func createMessageCommand(a *app) *cobra.Command {
 			}
 
 			log.Println("Event ", string(d))
-			msg := &convoy.Event{
+			msg := &datastore.Event{
 				UID: uuid.New().String(),
-				AppMetadata: &convoy.AppMetadata{
+				AppMetadata: &datastore.AppMetadata{
 					UID: appData.UID,
 				},
-				EventType: convoy.EventType(eventType),
+				EventType: datastore.EventType(eventType),
 				Data:      d,
 
 				CreatedAt:      primitive.NewDateTimeFromTime(time.Now()),
 				UpdatedAt:      primitive.NewDateTimeFromTime(time.Now()),
-				DocumentStatus: convoy.ActiveDocumentStatus,
+				DocumentStatus: datastore.ActiveDocumentStatus,
 			}
 
 			ctx, cancelFn = getCtx()
