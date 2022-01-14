@@ -26,7 +26,7 @@ func TestProcessEventDelivery(t *testing.T) {
 	}{
 		{
 			name:          "Event already sent.",
-			cfgPath:       "./testdata/Config/basic-datastore.json",
+			cfgPath:       "./testdata/Config/basic-convoy.json",
 			expectedError: nil,
 			msg: &datastore.EventDelivery{
 				UID: "",
@@ -41,7 +41,7 @@ func TestProcessEventDelivery(t *testing.T) {
 		},
 		{
 			name:          "Endpoint is inactive",
-			cfgPath:       "./testdata/Config/basic-datastore.json",
+			cfgPath:       "./testdata/Config/basic-convoy.json",
 			expectedError: nil,
 			msg: &datastore.EventDelivery{
 				UID: "",
@@ -69,7 +69,7 @@ func TestProcessEventDelivery(t *testing.T) {
 		},
 		{
 			name:          "Endpoint does not respond with 2xx",
-			cfgPath:       "./testdata/Config/basic-datastore.json",
+			cfgPath:       "./testdata/Config/basic-convoy.json",
 			expectedError: &EndpointError{Err: ErrDeliveryAttemptFailed, delay: 20 * time.Second},
 			msg: &datastore.EventDelivery{
 				UID: "",
@@ -145,7 +145,7 @@ func TestProcessEventDelivery(t *testing.T) {
 		},
 		{
 			name:          "Max retries reached - do not disable endpoint - failed",
-			cfgPath:       "./testdata/Config/basic-datastore.json",
+			cfgPath:       "./testdata/Config/basic-convoy.json",
 			expectedError: nil,
 			msg: &datastore.EventDelivery{
 				UID: "",
@@ -303,7 +303,7 @@ func TestProcessEventDelivery(t *testing.T) {
 		},
 		{
 			name:          "Manual retry - no disable endpoint - failed",
-			cfgPath:       "./testdata/Config/basic-datastore.json",
+			cfgPath:       "./testdata/Config/basic-convoy.json",
 			expectedError: nil,
 			msg: &datastore.EventDelivery{
 				UID: "",
@@ -463,7 +463,7 @@ func TestProcessEventDelivery(t *testing.T) {
 		},
 		{
 			name:          "Manual retry - no disable endpoint - success",
-			cfgPath:       "./testdata/Config/basic-datastore.json",
+			cfgPath:       "./testdata/Config/basic-convoy.json",
 			expectedError: nil,
 			msg: &datastore.EventDelivery{
 				UID: "",

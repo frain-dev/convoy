@@ -7,7 +7,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/frain-dev/convoy"
+	"github.com/frain-dev/convoy/datastore"
 	"github.com/frain-dev/convoy/auth"
 	"github.com/frain-dev/convoy/mocks"
 	"github.com/golang/mock/gomock"
@@ -44,7 +44,7 @@ func TestNativeRealm_Authenticate(t *testing.T) {
 			nFn: func(apiKeyRepo *mocks.MockAPIKeyRepository) {
 				apiKeyRepo.EXPECT().
 					FindAPIKeyByMaskID(gomock.Any(), gomock.Any()).
-					Times(1).Return(&convoy.APIKey{
+					Times(1).Return(&datastore.APIKey{
 					UID: "abcd",
 					Role: auth.Role{
 						Type:   auth.RoleUIAdmin,
@@ -93,7 +93,7 @@ func TestNativeRealm_Authenticate(t *testing.T) {
 			nFn: func(apiKeyRepo *mocks.MockAPIKeyRepository) {
 				apiKeyRepo.EXPECT().
 					FindAPIKeyByMaskID(gomock.Any(), gomock.Any()).
-					Times(1).Return(&convoy.APIKey{
+					Times(1).Return(&datastore.APIKey{
 					UID: "abcd",
 					Role: auth.Role{
 						Type:   auth.RoleUIAdmin,
@@ -112,6 +112,18 @@ func TestNativeRealm_Authenticate(t *testing.T) {
 			wantErrMsg: "api key has been revoked",
 		},
 		{
+			name: "should_error_for_invalid_key_format",
+			args: args{
+				cred: &auth.Credential{
+					Type:   auth.CredentialTypeAPIKey,
+					APIKey: "abcd",
+				},
+			},
+			want:       nil,
+			wantErr:    true,
+			wantErrMsg: "invalid api key format",
+		},
+		{
 			name: "should_error_for_expired_key",
 			args: args{
 				cred: &auth.Credential{
@@ -122,16 +134,17 @@ func TestNativeRealm_Authenticate(t *testing.T) {
 			nFn: func(apiKeyRepo *mocks.MockAPIKeyRepository) {
 				apiKeyRepo.EXPECT().
 					FindAPIKeyByMaskID(gomock.Any(), gomock.Any()).
-					Times(1).Return(&convoy.APIKey{
+					Times(1).Return(&datastore.APIKey{
 					UID: "abcd",
 					Role: auth.Role{
 						Type:   auth.RoleUIAdmin,
-						Groups: []string{"paystack"},
+						Groups: []string{"paystackx"},
 					},
 					MaskID:    "DkwB9HnZxy4DqZMi",
 					Hash:      "R4rtPIELUaJ9fx6suLreIpH3IaLzbxRcODy3a0Zm1qM=",
 					Salt:      "6y9yQZWqbE1AMHvfUewuYwasycmoe_zg5g==",
-					ExpiresAt: primitive.NewDateTimeFromTime(time.Date(2021, 11, 1, 0, 0, 0, 0, time.UTC)),
+					ExpiresAt: primitive.NewDateTimeFromTime(time.Now().Add(time.Second * -10)),
+					DeletedAt: 0,
 					CreatedAt: 0,
 				}, nil)
 			},

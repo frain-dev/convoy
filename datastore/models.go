@@ -291,7 +291,6 @@ type EventDelivery struct {
 
 	DocumentStatus DocumentStatus `json:"-" bson:"document_status"`
 }
-<<<<<<< HEAD
 
 var (
 	ErrAPIKeyNotFound = errors.New("api key not found")
@@ -315,5 +314,3 @@ type APIKey struct {
 
 	DocumentStatus DocumentStatus `json:"-" bson:"document_status"`
 }
-=======
->>>>>>> main

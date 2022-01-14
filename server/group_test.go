@@ -35,7 +35,7 @@ func TestApplicationHandler_GetGroup(t *testing.T) {
 	}{
 		{
 			name:       "group not found",
-			cfgPath:    "./testdata/Auth_Config/no-auth-datastore.json",
+			cfgPath:    "./testdata/Auth_Config/no-auth-convoy.json",
 			method:     http.MethodGet,
 			statusCode: http.StatusInternalServerError,
 			id:         fakeOrgID,
@@ -49,7 +49,7 @@ func TestApplicationHandler_GetGroup(t *testing.T) {
 		},
 		{
 			name:       "valid group",
-			cfgPath:    "./testdata/Auth_Config/no-auth-datastore.json",
+			cfgPath:    "./testdata/Auth_Config/no-auth-convoy.json",
 			method:     http.MethodGet,
 			statusCode: http.StatusOK,
 			id:         realOrgID,
@@ -145,7 +145,7 @@ func TestApplicationHandler_CreateGroup(t *testing.T) {
 	}{
 		{
 			name:       "valid group",
-			cfgPath:    "./testdata/Auth_Config/basic-datastore.json",
+			cfgPath:    "./testdata/Auth_Config/basic-convoy.json",
 			method:     http.MethodPost,
 			statusCode: http.StatusCreated,
 			body:       bodyReader,
@@ -224,7 +224,7 @@ func TestApplicationHandler_UpdateGroup(t *testing.T) {
 	}{
 		{
 			name:       "valid group update",
-			cfgPath:    "./testdata/Auth_Config/basic-datastore.json",
+			cfgPath:    "./testdata/Auth_Config/basic-convoy.json",
 			method:     http.MethodPut,
 			statusCode: http.StatusAccepted,
 			orgID:      realOrgID,
@@ -315,7 +315,7 @@ func TestApplicationHandler_GetGroups(t *testing.T) {
 	}{
 		{
 			name:       "valid groups",
-			cfgPath:    "./testdata/Auth_Config/basic-datastore.json",
+			cfgPath:    "./testdata/Auth_Config/basic-convoy.json",
 			method:     http.MethodGet,
 			statusCode: http.StatusOK,
 			dbFn: func(app *applicationHandler) {
@@ -405,7 +405,7 @@ func TestApplicationHandler_DeleteGroup(t *testing.T) {
 	}{
 		{
 			name:       "valid group delete",
-			cfgPath:    "./testdata/Auth_Config/no-auth-datastore.json",
+			cfgPath:    "./testdata/Auth_Config/no-auth-convoy.json",
 			method:     http.MethodDelete,
 			statusCode: http.StatusOK,
 			orgID:      realOrgID,
@@ -435,7 +435,7 @@ func TestApplicationHandler_DeleteGroup(t *testing.T) {
 		},
 		{
 			name:       "failed group delete",
-			cfgPath:    "./testdata/Auth_Config/no-auth-datastore.json",
+			cfgPath:    "./testdata/Auth_Config/no-auth-convoy.json",
 			method:     http.MethodDelete,
 			statusCode: http.StatusInternalServerError,
 			orgID:      realOrgID,
@@ -464,12 +464,13 @@ func TestApplicationHandler_DeleteGroup(t *testing.T) {
 			defer ctrl.Finish()
 
 			groupRepo := mocks.NewMockGroupRepository(ctrl)
+			apiKeyRepo := mocks.NewMockAPIKeyRepository(ctrl)
 			appRepo := mocks.NewMockApplicationRepository(ctrl)
 			eventRepo := mocks.NewMockEventRepository(ctrl)
 			eventDeliveryRepo := mocks.NewMockEventDeliveryRepository(ctrl)
 			eventQueue := mocks.NewMockQueuer(ctrl)
 
-			app = newApplicationHandler(eventRepo, eventDeliveryRepo, appRepo, groupRepo, eventQueue)
+			app = newApplicationHandler(eventRepo, eventDeliveryRepo, appRepo, groupRepo, apiKeyRepo, eventQueue)
 
 			// Arrange
 			url := fmt.Sprintf("/api/v1/groups/%s", tc.orgID)
@@ -492,7 +493,7 @@ func TestApplicationHandler_DeleteGroup(t *testing.T) {
 			if err != nil {
 				t.Errorf("Failed to load config file: %v", err)
 			}
-			initRealmChain(t)
+			initRealmChain(t, app.apiKeyRepo)
 
 			router := buildRoutes(app)
 

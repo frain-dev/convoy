@@ -14,10 +14,7 @@ import (
 	"github.com/frain-dev/convoy/auth/realm_chain"
 	"github.com/frain-dev/convoy/config"
 	"github.com/frain-dev/convoy/datastore"
-	"github.com/frain-dev/convoy/datastore"
 
-	"github.com/frain-dev/convoy/config"
-	"github.com/frain-dev/convoy/server/models"
 
 	"github.com/frain-dev/convoy/mocks"
 	"github.com/go-chi/chi/v5"
@@ -154,7 +151,7 @@ func TestApplicationHandler_GetApp(t *testing.T) {
 	}{
 		{
 			name:       "app not found",
-			cfgPath:    "./testdata/Auth_Config/no-auth-datastore.json",
+			cfgPath:    "./testdata/Auth_Config/no-auth-convoy.json",
 			method:     http.MethodGet,
 			statusCode: http.StatusNotFound,
 			id:         "12345",
@@ -173,7 +170,7 @@ func TestApplicationHandler_GetApp(t *testing.T) {
 		},
 		{
 			name:       "valid application",
-			cfgPath:    "./testdata/Auth_Config/no-auth-datastore.json",
+			cfgPath:    "./testdata/Auth_Config/no-auth-convoy.json",
 			method:     http.MethodGet,
 			statusCode: http.StatusOK,
 			id:         validID,
@@ -266,7 +263,7 @@ func TestApplicationHandler_GetApps(t *testing.T) {
 	}{
 		{
 			name:       "valid applications",
-			cfgPath:    "./testdata/Auth_Config/no-auth-datastore.json",
+			cfgPath:    "./testdata/Auth_Config/no-auth-convoy.json",
 			method:     http.MethodGet,
 			statusCode: http.StatusOK,
 			dbFn: func(app *applicationHandler) {
@@ -349,7 +346,7 @@ func TestApplicationHandler_CreateApp(t *testing.T) {
 	}{
 		{
 			name:       "invalid request",
-			cfgPath:    "./testdata/Auth_Config/no-auth-datastore.json",
+			cfgPath:    "./testdata/Auth_Config/no-auth-convoy.json",
 			method:     http.MethodPost,
 			statusCode: http.StatusBadRequest,
 			body:       strings.NewReader(``),
@@ -362,7 +359,7 @@ func TestApplicationHandler_CreateApp(t *testing.T) {
 		},
 		{
 			name:       "invalid request - no app name",
-			cfgPath:    "./testdata/Auth_Config/no-auth-datastore.json",
+			cfgPath:    "./testdata/Auth_Config/no-auth-convoy.json",
 			method:     http.MethodPost,
 			statusCode: http.StatusBadRequest,
 			body:       strings.NewReader(`{}`),
@@ -375,7 +372,7 @@ func TestApplicationHandler_CreateApp(t *testing.T) {
 		},
 		{
 			name:       "valid application",
-			cfgPath:    "./testdata/Auth_Config/no-auth-datastore.json",
+			cfgPath:    "./testdata/Auth_Config/no-auth-convoy.json",
 			method:     http.MethodPost,
 			statusCode: http.StatusCreated,
 			body:       bodyReader,
@@ -466,7 +463,7 @@ func TestApplicationHandler_UpdateApp(t *testing.T) {
 	}{
 		{
 			name:       "invalid request",
-			cfgPath:    "./testdata/Auth_Config/no-auth-datastore.json",
+			cfgPath:    "./testdata/Auth_Config/no-auth-convoy.json",
 			method:     http.MethodPut,
 			statusCode: http.StatusBadRequest,
 			appId:      appId,
@@ -491,7 +488,7 @@ func TestApplicationHandler_UpdateApp(t *testing.T) {
 		},
 		{
 			name:       "invalid request - no app name",
-			cfgPath:    "./testdata/Auth_Config/no-auth-datastore.json",
+			cfgPath:    "./testdata/Auth_Config/no-auth-convoy.json",
 			method:     http.MethodPut,
 			statusCode: http.StatusBadRequest,
 			appId:      appId,
@@ -516,7 +513,7 @@ func TestApplicationHandler_UpdateApp(t *testing.T) {
 		},
 		{
 			name:       "valid request - update secret",
-			cfgPath:    "./testdata/Auth_Config/no-auth-datastore.json",
+			cfgPath:    "./testdata/Auth_Config/no-auth-convoy.json",
 			method:     http.MethodPut,
 			statusCode: http.StatusAccepted,
 			appId:      appId,
@@ -545,7 +542,7 @@ func TestApplicationHandler_UpdateApp(t *testing.T) {
 		},
 		{
 			name:       "valid request - update support email",
-			cfgPath:    "./testdata/Auth_Config/no-auth-datastore.json",
+			cfgPath:    "./testdata/Auth_Config/no-auth-convoy.json",
 			method:     http.MethodPut,
 			statusCode: http.StatusAccepted,
 			appId:      appId,
@@ -574,7 +571,7 @@ func TestApplicationHandler_UpdateApp(t *testing.T) {
 		},
 		{
 			name:       "valid application update",
-			cfgPath:    "./testdata/Auth_Config/no-auth-datastore.json",
+			cfgPath:    "./testdata/Auth_Config/no-auth-convoy.json",
 			method:     http.MethodPut,
 			statusCode: http.StatusAccepted,
 			appId:      appId,
@@ -697,7 +694,7 @@ func TestApplicationHandler_CreateAppEndpoint(t *testing.T) {
 	}{
 		{
 			name:       "valid endpoint",
-			cfgPath:    "./testdata/Auth_Config/no-auth-datastore.json",
+			cfgPath:    "./testdata/Auth_Config/no-auth-convoy.json",
 			method:     http.MethodPost,
 			statusCode: http.StatusCreated,
 			appId:      appId,
@@ -778,7 +775,7 @@ func TestApplicationHandler_UpdateAppEndpoint(t *testing.T) {
 	}{
 		{
 			name:       "invalid request",
-			cfgPath:    "./testdata/Auth_Config/no-auth-datastore.json",
+			cfgPath:    "./testdata/Auth_Config/no-auth-convoy.json",
 			method:     http.MethodPut,
 			statusCode: http.StatusBadRequest,
 			appId:      appId,
@@ -808,7 +805,7 @@ func TestApplicationHandler_UpdateAppEndpoint(t *testing.T) {
 		},
 		{
 			name:       "valid application",
-			cfgPath:    "./testdata/Auth_Config/no-auth-datastore.json",
+			cfgPath:    "./testdata/Auth_Config/no-auth-convoy.json",
 			method:     http.MethodPut,
 			statusCode: http.StatusAccepted,
 			appId:      appId,

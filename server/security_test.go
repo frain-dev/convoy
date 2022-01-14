@@ -9,9 +9,9 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/frain-dev/convoy/datastore"
 	"github.com/frain-dev/convoy/config"
 	"github.com/frain-dev/convoy/mocks"
-	mongopagination "github.com/gobeam/mongo-go-pagination"
 
 	"github.com/go-chi/chi/v5"
 	"github.com/golang/mock/gomock"
@@ -35,16 +35,16 @@ func TestApplicationHandler_CreateAPIKey(t *testing.T) {
 	groupId := "1234567890"
 	group := &datastore.Group{
 		UID: groupId,
-		Config: &datastore.GroupConfig{
-			Signature: datastore.SignatureConfiguration{
-				Header: datastore.SignatureHeaderProvider("X-datastore.Signature"),
+		Config: &config.GroupConfig{
+			Signature: config.SignatureConfiguration{
+				Header: config.SignatureHeaderProvider("X-datastore.Signature"),
 				Hash:   "SHA256",
 			},
-			Strategy: datastore.StrategyConfiguration{
-				Type: datastore.StrategyProvider("default"),
+			Strategy: config.StrategyConfiguration{
+				Type: config.StrategyProvider("default"),
 				Default: struct {
-					IntervalSeconds uint64 `json:"intervalSeconds"`
-					RetryLimit      uint64 `json:"retryLimit"`
+					IntervalSeconds uint64 `json:"intervalSeconds" envconfig:"CONVOY_INTERVAL_SECONDS"`
+					RetryLimit      uint64 `json:"retryLimit" envconfig:"CONVOY_RETRY_LIMIT"`
 				}{
 					IntervalSeconds: 60,
 					RetryLimit:      1,
@@ -65,7 +65,7 @@ func TestApplicationHandler_CreateAPIKey(t *testing.T) {
 		{
 			name:           "create api key",
 			stripTimestamp: true,
-			cfgPath:        "./testdata/Auth_Config/no-auth-datastore.json",
+			cfgPath:        "./testdata/Auth_Config/no-auth-convoy.json",
 			statusCode:     http.StatusCreated,
 			body: strings.NewReader(`{
 					"expires_at": "2029-01-02T15:04:05+01:00", 
@@ -88,7 +88,7 @@ func TestApplicationHandler_CreateAPIKey(t *testing.T) {
 		{
 			name:           "invalid expiry date",
 			stripTimestamp: false,
-			cfgPath:        "./testdata/Auth_Config/no-auth-datastore.json",
+			cfgPath:        "./testdata/Auth_Config/no-auth-convoy.json",
 			statusCode:     http.StatusBadRequest,
 			body: strings.NewReader(`{
 					"expires_at": "2020-01-02T15:04:05+01:00", 
@@ -104,7 +104,7 @@ func TestApplicationHandler_CreateAPIKey(t *testing.T) {
 		{
 			name:           "create api key without expires_at field",
 			stripTimestamp: true,
-			cfgPath:        "./testdata/Auth_Config/no-auth-datastore.json",
+			cfgPath:        "./testdata/Auth_Config/no-auth-convoy.json",
 			statusCode:     http.StatusCreated,
 			body: strings.NewReader(`{
 					"role": {
@@ -122,7 +122,7 @@ func TestApplicationHandler_CreateAPIKey(t *testing.T) {
 		{
 			name:           "invalid role",
 			stripTimestamp: false,
-			cfgPath:        "./testdata/Auth_Config/no-auth-datastore.json",
+			cfgPath:        "./testdata/Auth_Config/no-auth-convoy.json",
 			statusCode:     http.StatusBadRequest,
 			body: strings.NewReader(`{
 					"key": "12344",
@@ -203,7 +203,7 @@ func TestApplicationHandler_RevokeAPIKey(t *testing.T) {
 	}{
 		{
 			name:       "revoke api key",
-			cfgPath:    "./testdata/Auth_Config/no-auth-datastore.json",
+			cfgPath:    "./testdata/Auth_Config/no-auth-convoy.json",
 			statusCode: http.StatusOK,
 			keyID:      "123",
 			dbFn: func(app *applicationHandler) {
@@ -213,7 +213,7 @@ func TestApplicationHandler_RevokeAPIKey(t *testing.T) {
 		},
 		{
 			name:       "should error for revoke api key",
-			cfgPath:    "./testdata/Auth_Config/no-auth-datastore.json",
+			cfgPath:    "./testdata/Auth_Config/no-auth-convoy.json",
 			statusCode: http.StatusInternalServerError,
 			keyID:      "123",
 			dbFn: func(app *applicationHandler) {
@@ -288,7 +288,7 @@ func TestApplicationHandler_GetAPIKeyByID(t *testing.T) {
 		{
 			name:           "should_find_api_key",
 			stripTimestamp: true,
-			cfgPath:        "./testdata/Auth_Config/no-auth-datastore.json",
+			cfgPath:        "./testdata/Auth_Config/no-auth-convoy.json",
 			statusCode:     http.StatusOK,
 			keyID:          keyID,
 			dbFn: func(app *applicationHandler) {
@@ -299,7 +299,7 @@ func TestApplicationHandler_GetAPIKeyByID(t *testing.T) {
 		{
 			name:           "should_fail_to_find_api_key",
 			stripTimestamp: false,
-			cfgPath:        "./testdata/Auth_Config/no-auth-datastore.json",
+			cfgPath:        "./testdata/Auth_Config/no-auth-convoy.json",
 			statusCode:     http.StatusInternalServerError,
 			keyID:          keyID,
 			dbFn: func(app *applicationHandler) {
@@ -377,20 +377,27 @@ func TestApplicationHandler_GetAPIKeys(t *testing.T) {
 	}{
 		{
 			name:       "should_load_api_keys",
-			cfgPath:    "./testdata/Auth_Config/no-auth-datastore.json",
+			cfgPath:    "./testdata/Auth_Config/no-auth-convoy.json",
 			statusCode: http.StatusOK,
 			dbFn: func(app *applicationHandler) {
 				a, _ := app.apiKeyRepo.(*mocks.MockAPIKeyRepository)
-				a.EXPECT().LoadAPIKeysPaged(gomock.Any(), gomock.Any()).Times(1).Return([]datastore.APIKey{*apiKey}, &mongopagination.PaginationData{PerPage: int64(page.PerPage)}, nil)
+				a.EXPECT().
+					LoadAPIKeysPaged(gomock.Any(), gomock.Any()).
+					Times(1).
+					Return(
+						[]datastore.APIKey{*apiKey}, 
+						datastore.PaginationData{PerPage: int64(page.PerPage)}, nil)
 			},
 		},
 		{
 			name:       "should_fail_to_load_api_keys",
-			cfgPath:    "./testdata/Auth_Config/no-auth-datastore.json",
+			cfgPath:    "./testdata/Auth_Config/no-auth-convoy.json",
 			statusCode: http.StatusInternalServerError,
 			dbFn: func(app *applicationHandler) {
 				a, _ := app.apiKeyRepo.(*mocks.MockAPIKeyRepository)
-				a.EXPECT().LoadAPIKeysPaged(gomock.Any(), gomock.Any()).Times(1).Return(nil, nil, errors.New("abc"))
+				a.EXPECT().
+					LoadAPIKeysPaged(gomock.Any(), gomock.Any()).
+					Times(1).Return(nil, datastore.PaginationData{}, errors.New("abc"))
 			},
 		},
 	}

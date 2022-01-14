@@ -9,9 +9,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/frain-dev/convoy/auth"
-	"github.com/frain-dev/convoy/datastore"
-
 	"github.com/frain-dev/convoy"
 	"github.com/frain-dev/convoy/auth"
 	"github.com/frain-dev/convoy/config"

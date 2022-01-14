@@ -29,7 +29,12 @@ func (n *NativeRealm) Authenticate(ctx context.Context, cred *auth.Credential) (
 	}
 
 	key := cred.APIKey
-	maskID := strings.Split(key, ".")[1]
+	var maskID string
+
+	if keySplit := strings.Split(key, "."); len(keySplit) != 3 {
+		return nil, errors.New("invalid api key format")
+		maskID = keySplit[1]
+	}
 
 	apiKey, err := n.apiKeyRepo.FindAPIKeyByMaskID(ctx, maskID)
 	if err != nil {
@@ -49,13 +54,15 @@ func (n *NativeRealm) Authenticate(ctx context.Context, cred *auth.Credential) (
 		return nil, errors.New("invalid api key")
 	}
 
-	if apiKey.DeletedAt != 0 {
-		return nil, errors.New("api key has been revoked")
-	}
-
 	// if the current time is after the specified expiry date then the key has expired
+	fmt.Printf("apiKey: %v", apiKey.ExpiresAt != 0 && time.Now().After(apiKey.ExpiresAt.Time()))
+	fmt.Printf("APIKEY: %v\n", apiKey)
 	if apiKey.ExpiresAt != 0 && time.Now().After(apiKey.ExpiresAt.Time()) {
 		return nil, errors.New("api key has expired")
+	}
+
+	if apiKey.DeletedAt != 0 {
+		return nil, errors.New("api key has been revoked")
 	}
 
 	authUser := &auth.AuthenticatedUser{

@@ -37,15 +37,15 @@ func TestApplicationHandler_CreateAppEvent(t *testing.T) {
 	group := &datastore.Group{
 		UID: groupId,
 		Config: &config.GroupConfig{
-			Signature: datastore.SignatureConfiguration{
-				Header: datastore.SignatureHeaderProvider("X-datastore.Signature"),
+			Signature: config.SignatureConfiguration{
+				Header: config.SignatureHeaderProvider("X-datastore.Signature"),
 				Hash:   "SHA256",
 			},
-			Strategy: datastore.StrategyConfiguration{
-				Type: datastore.StrategyProvider("default"),
+			Strategy: config.StrategyConfiguration{
+				Type: config.StrategyProvider("default"),
 				Default: struct {
-					IntervalSeconds uint64 `json:"intervalSeconds"`
-					RetryLimit      uint64 `json:"retryLimit"`
+					IntervalSeconds uint64 `json:"intervalSeconds" envconfig:"CONVOY_INTERVAL_SECONDS"`
+					RetryLimit      uint64 `json:"retryLimit" envconfig:"CONVOY_RETRY_LIMIT"`
 				}{
 					IntervalSeconds: 60,
 					RetryLimit:      1,
@@ -80,7 +80,7 @@ func TestApplicationHandler_CreateAppEvent(t *testing.T) {
 	}{
 		{
 			name:       "invalid message - malformed request",
-			cfgPath:    "./testdata/Auth_Config/no-auth-datastore.json",
+			cfgPath:    "./testdata/Auth_Config/no-auth-convoy.json",
 			method:     http.MethodPost,
 			statusCode: http.StatusBadRequest,
 			body:       strings.NewReader(`{"data": {}`),
@@ -97,7 +97,7 @@ func TestApplicationHandler_CreateAppEvent(t *testing.T) {
 		},
 		{
 			name:       "invalid message - no app_id",
-			cfgPath:    "./testdata/Auth_Config/no-auth-datastore.json",
+			cfgPath:    "./testdata/Auth_Config/no-auth-convoy.json",
 			method:     http.MethodPost,
 			statusCode: http.StatusBadRequest,
 			body:       strings.NewReader(`{ "event_type: "test", "data": {}}`),
@@ -115,7 +115,7 @@ func TestApplicationHandler_CreateAppEvent(t *testing.T) {
 		},
 		{
 			name:       "invalid message - no data field",
-			cfgPath:    "./testdata/Auth_Config/no-auth-datastore.json",
+			cfgPath:    "./testdata/Auth_Config/no-auth-convoy.json",
 			method:     http.MethodPost,
 			statusCode: http.StatusBadRequest,
 			body:       strings.NewReader(`{ "app_id": "", "event_type: "test" }`),
@@ -132,7 +132,7 @@ func TestApplicationHandler_CreateAppEvent(t *testing.T) {
 		},
 		{
 			name:       "invalid message - no event type",
-			cfgPath:    "./testdata/Auth_Config/no-auth-datastore.json",
+			cfgPath:    "./testdata/Auth_Config/no-auth-convoy.json",
 			method:     http.MethodPost,
 			statusCode: http.StatusBadRequest,
 			body:       strings.NewReader(`{ "data": {}}`),
@@ -154,7 +154,7 @@ func TestApplicationHandler_CreateAppEvent(t *testing.T) {
 		},
 		{
 			name:       "valid message - no endpoints",
-			cfgPath:    "./testdata/Auth_Config/no-auth-datastore.json",
+			cfgPath:    "./testdata/Auth_Config/no-auth-convoy.json",
 			method:     http.MethodPost,
 			statusCode: http.StatusBadRequest,
 			body:       strings.NewReader(`{"app_id": "12345", "event_type": "test",  "data": {}}`),
@@ -181,7 +181,7 @@ func TestApplicationHandler_CreateAppEvent(t *testing.T) {
 		},
 		{
 			name:       "valid message - no active endpoints",
-			cfgPath:    "./testdata/Auth_Config/no-auth-datastore.json",
+			cfgPath:    "./testdata/Auth_Config/no-auth-convoy.json",
 			method:     http.MethodPost,
 			statusCode: http.StatusCreated,
 			body:       strings.NewReader(`{"app_id": "12345", "event_type": "test",  "data": {}}`),
@@ -218,7 +218,7 @@ func TestApplicationHandler_CreateAppEvent(t *testing.T) {
 		},
 		{
 			name:       "valid message - no matching endpoints",
-			cfgPath:    "./testdata/Auth_Config/no-auth-datastore.json",
+			cfgPath:    "./testdata/Auth_Config/no-auth-convoy.json",
 			method:     http.MethodPost,
 			statusCode: http.StatusCreated,
 			body:       strings.NewReader(`{"app_id": "12345", "event_type": "test.event", "data": { "Hello": "World", "Test": "Data" }}`),
@@ -255,7 +255,7 @@ func TestApplicationHandler_CreateAppEvent(t *testing.T) {
 		},
 		{
 			name:       "valid message - matching endpoints",
-			cfgPath:    "./testdata/Auth_Config/no-auth-datastore.json",
+			cfgPath:    "./testdata/Auth_Config/no-auth-convoy.json",
 			method:     http.MethodPost,
 			statusCode: http.StatusCreated,
 			body:       strings.NewReader(`{"app_id": "12345", "event_type": "test.event", "data": { "Hello": "World", "Test": "Data" }}`),
@@ -303,7 +303,7 @@ func TestApplicationHandler_CreateAppEvent(t *testing.T) {
 		},
 		{
 			name:       "valid message - matching inactive endpoints",
-			cfgPath:    "./testdata/Auth_Config/no-auth-datastore.json",
+			cfgPath:    "./testdata/Auth_Config/no-auth-convoy.json",
 			method:     http.MethodPost,
 			statusCode: http.StatusCreated,
 			body:       strings.NewReader(`{"app_id": "12345", "event_type": "test.event", "data": { "Hello": "World", "Test": "Data" }}`),
@@ -414,7 +414,7 @@ func Test_resendEventDelivery(t *testing.T) {
 	}{
 		{
 			name:       "invalid resend - event successful",
-			cfgPath:    "./testdata/Auth_Config/no-auth-datastore.json",
+			cfgPath:    "./testdata/Auth_Config/no-auth-convoy.json",
 			method:     http.MethodPut,
 			statusCode: http.StatusBadRequest,
 			body:       nil,
@@ -452,7 +452,7 @@ func Test_resendEventDelivery(t *testing.T) {
 		},
 		{
 			name:       "invalid resend - event not failed",
-			cfgPath:    "./testdata/Auth_Config/no-auth-datastore.json",
+			cfgPath:    "./testdata/Auth_Config/no-auth-convoy.json",
 			method:     http.MethodPut,
 			statusCode: http.StatusBadRequest,
 			body:       nil,
@@ -487,7 +487,7 @@ func Test_resendEventDelivery(t *testing.T) {
 		},
 		{
 			name:       "invalid  resend - pending endpoint",
-			cfgPath:    "./testdata/Auth_Config/no-auth-datastore.json",
+			cfgPath:    "./testdata/Auth_Config/no-auth-convoy.json",
 			method:     http.MethodPut,
 			statusCode: http.StatusBadRequest,
 			body:       nil,
@@ -533,7 +533,7 @@ func Test_resendEventDelivery(t *testing.T) {
 		},
 		{
 			name:       "valid resend - previously failed and inactive endpoint",
-			cfgPath:    "./testdata/Auth_Config/no-auth-datastore.json",
+			cfgPath:    "./testdata/Auth_Config/no-auth-convoy.json",
 			method:     http.MethodPut,
 			statusCode: http.StatusOK,
 			body:       nil,
@@ -594,7 +594,7 @@ func Test_resendEventDelivery(t *testing.T) {
 		},
 		{
 			name:       "valid resend - previously failed - active endpoint",
-			cfgPath:    "./testdata/Auth_Config/no-auth-datastore.json",
+			cfgPath:    "./testdata/Auth_Config/no-auth-convoy.json",
 			method:     http.MethodPut,
 			statusCode: http.StatusOK,
 			body:       nil,
@@ -718,7 +718,7 @@ func TestApplicationHandler_BatchRetryEventDelivery(t *testing.T) {
 	}{
 		{
 			name:       "should_batch_retry_all_successfully",
-			cfgPath:    "./testdata/Auth_Config/no-auth-datastore.json",
+			cfgPath:    "./testdata/Auth_Config/no-auth-convoy.json",
 			method:     http.MethodPost,
 			statusCode: http.StatusOK,
 			args: args{
@@ -779,7 +779,7 @@ func TestApplicationHandler_BatchRetryEventDelivery(t *testing.T) {
 		},
 		{
 			name:       "should_batch_retry_one_successfully",
-			cfgPath:    "./testdata/Auth_Config/no-auth-datastore.json",
+			cfgPath:    "./testdata/Auth_Config/no-auth-convoy.json",
 			method:     http.MethodPost,
 			statusCode: http.StatusOK,
 			args: args{
@@ -853,7 +853,7 @@ func TestApplicationHandler_BatchRetryEventDelivery(t *testing.T) {
 		},
 		{
 			name:       "should_error_for_malformed_body",
-			cfgPath:    "./testdata/Auth_Config/no-auth-datastore.json",
+			cfgPath:    "./testdata/Auth_Config/no-auth-convoy.json",
 			method:     http.MethodPost,
 			statusCode: http.StatusBadRequest,
 			body:       strings.NewReader(`{"ids":"12345"}`),
