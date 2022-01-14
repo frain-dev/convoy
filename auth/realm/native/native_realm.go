@@ -28,14 +28,14 @@ func (n *NativeRealm) Authenticate(ctx context.Context, cred *auth.Credential) (
 		return nil, fmt.Errorf("%s only authenticates credential type %s", n.GetName(), auth.CredentialTypeAPIKey.String())
 	}
 
-	key := cred.APIKey
-	var maskID string
-
-	if keySplit := strings.Split(key, "."); len(keySplit) != 3 {
+	key := cred.APIKey	
+	keySplit := strings.Split(key, ".");
+	
+	if len(keySplit) != 3 {
 		return nil, errors.New("invalid api key format")
-		maskID = keySplit[1]
 	}
 
+	maskID := keySplit[1]
 	apiKey, err := n.apiKeyRepo.FindAPIKeyByMaskID(ctx, maskID)
 	if err != nil {
 		return nil, fmt.Errorf("failed to hash api key: %v", err)
