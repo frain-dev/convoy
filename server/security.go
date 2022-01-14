@@ -113,7 +113,7 @@ func (a *applicationHandler) CreateAPIKey(w http.ResponseWriter, r *http.Request
 
 // RevokeAPIKey
 // @Summary Revoke API Key
-// @Description This endpoint revokes multiple api keys
+// @Description This endpoint revokes an api key
 // @Tags APIKey
 // @Accept  json
 // @Produce  json
