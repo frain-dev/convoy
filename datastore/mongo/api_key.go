@@ -59,7 +59,7 @@ func (db *apiKeyRepo) FindAPIKeyByMaskID(ctx context.Context, maskID string) (*d
 		err = datastore.ErrAPIKeyNotFound
 	}
 
-	return apiKey, nil
+	return apiKey, err
 }
 
 func (db *apiKeyRepo) RevokeAPIKeys(ctx context.Context, uids []string) error {
