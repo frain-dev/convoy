@@ -65,41 +65,6 @@
 				},
 				"type": "object"
 			},
-			"convoy.Application": {
-				"properties": {
-					"created_at": {
-						"type": "string"
-					},
-					"deleted_at": {
-						"type": "string"
-					},
-					"endpoints": {
-						"items": {
-							"$ref": "#/components/schemas/convoy.Endpoint"
-						},
-						"type": "array"
-					},
-					"events": {
-						"type": "integer"
-					},
-					"group_id": {
-						"type": "string"
-					},
-					"name": {
-						"type": "string"
-					},
-					"support_email": {
-						"type": "string"
-					},
-					"uid": {
-						"type": "string"
-					},
-					"updated_at": {
-						"type": "string"
-					}
-				},
-				"type": "object"
-			},
 			"convoy.DeliveryAttempt": {
 				"properties": {
 					"api_version": {
@@ -153,7 +118,77 @@
 				},
 				"type": "object"
 			},
-			"convoy.Endpoint": {
+			"convoy.HttpHeader": {
+				"additionalProperties": {
+					"type": "string"
+				},
+				"type": "object"
+			},
+			"convoy.Metadata": {
+				"properties": {
+					"data": {
+						"description": "Data to be sent to endpoint.",
+						"items": {
+							"type": "integer"
+						},
+						"type": "array"
+					},
+					"interval_seconds": {
+						"type": "integer"
+					},
+					"next_send_time": {
+						"description": "NextSendTime denotes the next time a Event will be published in\ncase it failed the first time",
+						"type": "integer"
+					},
+					"num_trials": {
+						"description": "NumTrials: number of times we have tried to deliver this Event to\nan application",
+						"type": "integer"
+					},
+					"retry_limit": {
+						"type": "integer"
+					},
+					"strategy": {
+						"type": "string"
+					}
+				},
+				"type": "object"
+			},
+			"datastore.Application": {
+				"properties": {
+					"created_at": {
+						"type": "string"
+					},
+					"deleted_at": {
+						"type": "string"
+					},
+					"endpoints": {
+						"items": {
+							"$ref": "#/components/schemas/datastore.Endpoint"
+						},
+						"type": "array"
+					},
+					"events": {
+						"type": "integer"
+					},
+					"group_id": {
+						"type": "string"
+					},
+					"name": {
+						"type": "string"
+					},
+					"support_email": {
+						"type": "string"
+					},
+					"uid": {
+						"type": "string"
+					},
+					"updated_at": {
+						"type": "string"
+					}
+				},
+				"type": "object"
+			},
+			"datastore.Endpoint": {
 				"properties": {
 					"created_at": {
 						"type": "string"
@@ -188,7 +223,7 @@
 				},
 				"type": "object"
 			},
-			"convoy.EndpointMetadata": {
+			"datastore.EndpointMetadata": {
 				"properties": {
 					"secret": {
 						"type": "string"
@@ -208,7 +243,7 @@
 				},
 				"type": "object"
 			},
-			"convoy.Event": {
+			"datastore.Event": {
 				"properties": {
 					"app_metadata": {
 						"$ref": "#/components/schemas/convoy.AppMetadata"
@@ -245,7 +280,7 @@
 				},
 				"type": "object"
 			},
-			"convoy.EventDelivery": {
+			"datastore.EventDelivery": {
 				"properties": {
 					"app_metadata": {
 						"$ref": "#/components/schemas/convoy.AppMetadata"
@@ -260,10 +295,10 @@
 						"type": "string"
 					},
 					"endpoint": {
-						"$ref": "#/components/schemas/convoy.EndpointMetadata"
+						"$ref": "#/components/schemas/datastore.EndpointMetadata"
 					},
 					"event_metadata": {
-						"$ref": "#/components/schemas/convoy.EventMetadata"
+						"$ref": "#/components/schemas/datastore.EventMetadata"
 					},
 					"metadata": {
 						"$ref": "#/components/schemas/convoy.Metadata"
@@ -280,7 +315,7 @@
 				},
 				"type": "object"
 			},
-			"convoy.EventMetadata": {
+			"datastore.EventMetadata": {
 				"properties": {
 					"name": {
 						"type": "string"
@@ -291,7 +326,7 @@
 				},
 				"type": "object"
 			},
-			"convoy.Group": {
+			"datastore.Group": {
 				"properties": {
 					"config": {
 						"$ref": "#/components/schemas/config.GroupConfig"
@@ -309,7 +344,7 @@
 						"type": "string"
 					},
 					"statistics": {
-						"$ref": "#/components/schemas/convoy.GroupStatistics"
+						"$ref": "#/components/schemas/datastore.GroupStatistics"
 					},
 					"uid": {
 						"type": "string"
@@ -320,48 +355,13 @@
 				},
 				"type": "object"
 			},
-			"convoy.GroupStatistics": {
+			"datastore.GroupStatistics": {
 				"properties": {
 					"messages_sent": {
 						"type": "integer"
 					},
 					"total_apps": {
 						"type": "integer"
-					}
-				},
-				"type": "object"
-			},
-			"convoy.HttpHeader": {
-				"additionalProperties": {
-					"type": "string"
-				},
-				"type": "object"
-			},
-			"convoy.Metadata": {
-				"properties": {
-					"data": {
-						"description": "Data to be sent to endpoint.",
-						"items": {
-							"type": "integer"
-						},
-						"type": "array"
-					},
-					"interval_seconds": {
-						"type": "integer"
-					},
-					"next_send_time": {
-						"description": "NextSendTime denotes the next time a Event will be published in\ncase it failed the first time",
-						"type": "integer"
-					},
-					"num_trials": {
-						"description": "NumTrials: number of times we have tried to deliver this Event to\nan application",
-						"type": "integer"
-					},
-					"retry_limit": {
-						"type": "integer"
-					},
-					"strategy": {
-						"type": "string"
 					}
 				},
 				"type": "object"
@@ -556,7 +556,7 @@
 															"properties": {
 																"content": {
 																	"items": {
-																		"$ref": "#/components/schemas/convoy.Application"
+																		"$ref": "#/components/schemas/datastore.Application"
 																	},
 																	"type": "array"
 																}
@@ -677,7 +677,7 @@
 										{
 											"properties": {
 												"data": {
-													"$ref": "#/components/schemas/convoy.Application"
+													"$ref": "#/components/schemas/datastore.Application"
 												}
 											},
 											"type": "object"
@@ -905,7 +905,7 @@
 										{
 											"properties": {
 												"data": {
-													"$ref": "#/components/schemas/convoy.Application"
+													"$ref": "#/components/schemas/datastore.Application"
 												}
 											},
 											"type": "object"
@@ -1030,7 +1030,7 @@
 										{
 											"properties": {
 												"data": {
-													"$ref": "#/components/schemas/convoy.Application"
+													"$ref": "#/components/schemas/datastore.Application"
 												}
 											},
 											"type": "object"
@@ -1146,7 +1146,7 @@
 											"properties": {
 												"data": {
 													"items": {
-														"$ref": "#/components/schemas/convoy.Endpoint"
+														"$ref": "#/components/schemas/datastore.Endpoint"
 													},
 													"type": "array"
 												}
@@ -1273,7 +1273,7 @@
 										{
 											"properties": {
 												"data": {
-													"$ref": "#/components/schemas/convoy.Endpoint"
+													"$ref": "#/components/schemas/datastore.Endpoint"
 												}
 											},
 											"type": "object"
@@ -1519,7 +1519,7 @@
 										{
 											"properties": {
 												"data": {
-													"$ref": "#/components/schemas/convoy.Endpoint"
+													"$ref": "#/components/schemas/datastore.Endpoint"
 												}
 											},
 											"type": "object"
@@ -1653,7 +1653,7 @@
 										{
 											"properties": {
 												"data": {
-													"$ref": "#/components/schemas/convoy.Endpoint"
+													"$ref": "#/components/schemas/datastore.Endpoint"
 												}
 											},
 											"type": "object"
@@ -1844,7 +1844,7 @@
 																	"items": {
 																		"allOf": [
 																			{
-																				"$ref": "#/components/schemas/convoy.EventDelivery"
+																				"$ref": "#/components/schemas/datastore.EventDelivery"
 																			},
 																			{
 																				"properties": {
@@ -2118,7 +2118,7 @@
 												"data": {
 													"allOf": [
 														{
-															"$ref": "#/components/schemas/convoy.Event"
+															"$ref": "#/components/schemas/datastore.Event"
 														},
 														{
 															"properties": {
@@ -2245,7 +2245,7 @@
 												"data": {
 													"allOf": [
 														{
-															"$ref": "#/components/schemas/convoy.Event"
+															"$ref": "#/components/schemas/datastore.Event"
 														},
 														{
 															"properties": {
@@ -2427,7 +2427,7 @@
 																	"items": {
 																		"allOf": [
 																			{
-																				"$ref": "#/components/schemas/convoy.Event"
+																				"$ref": "#/components/schemas/datastore.Event"
 																			},
 																			{
 																				"properties": {
@@ -2560,7 +2560,7 @@
 												"data": {
 													"allOf": [
 														{
-															"$ref": "#/components/schemas/convoy.Event"
+															"$ref": "#/components/schemas/datastore.Event"
 														},
 														{
 															"properties": {
@@ -2687,7 +2687,7 @@
 												"data": {
 													"allOf": [
 														{
-															"$ref": "#/components/schemas/convoy.Event"
+															"$ref": "#/components/schemas/datastore.Event"
 														},
 														{
 															"properties": {
@@ -3072,7 +3072,7 @@
 											"properties": {
 												"data": {
 													"items": {
-														"$ref": "#/components/schemas/convoy.Group"
+														"$ref": "#/components/schemas/datastore.Group"
 													},
 													"type": "array"
 												}
@@ -3188,7 +3188,7 @@
 										{
 											"properties": {
 												"data": {
-													"$ref": "#/components/schemas/convoy.Group"
+													"$ref": "#/components/schemas/datastore.Group"
 												}
 											},
 											"type": "object"
@@ -3416,7 +3416,7 @@
 										{
 											"properties": {
 												"data": {
-													"$ref": "#/components/schemas/convoy.Group"
+													"$ref": "#/components/schemas/datastore.Group"
 												}
 											},
 											"type": "object"
@@ -3541,7 +3541,7 @@
 										{
 											"properties": {
 												"data": {
-													"$ref": "#/components/schemas/convoy.Group"
+													"$ref": "#/components/schemas/datastore.Group"
 												}
 											},
 											"type": "object"

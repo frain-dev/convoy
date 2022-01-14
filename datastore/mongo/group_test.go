@@ -7,7 +7,7 @@ import (
 	"context"
 	"testing"
 
-	"github.com/frain-dev/convoy"
+	"github.com/frain-dev/convoy/datastore"
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/require"
 )
@@ -18,7 +18,7 @@ func Test_FetchGroupByID(t *testing.T) {
 
 	groupRepo := NewGroupRepo(db)
 
-	newOrg := &convoy.Group{
+	newOrg := &datastore.Group{
 		Name: "Yet another group",
 		UID:  uuid.NewString(),
 	}
@@ -38,7 +38,7 @@ func Test_CreateGroup(t *testing.T) {
 
 	groupRepo := NewGroupRepo(db)
 
-	newOrg := &convoy.Group{
+	newOrg := &datastore.Group{
 		Name: "Next group",
 		UID:  uuid.NewString(),
 	}
@@ -58,7 +58,7 @@ func Test_LoadGroups(t *testing.T) {
 
 	orgRepo := NewGroupRepo(db)
 
-	orgs, err := orgRepo.LoadGroups(context.Background(), &convoy.GroupFilter{})
+	orgs, err := orgRepo.LoadGroups(context.Background(), &datastore.GroupFilter{})
 	require.NoError(t, err)
 
 	require.True(t, len(orgs) > 0)

@@ -171,12 +171,12 @@ func main() {
 }
 
 func ensureDefaultGroup(ctx context.Context, cfg config.Configuration, a *app) error {
-	var filter *convoy.GroupFilter
-	var groups []*convoy.Group
-	var group *convoy.Group
+	var filter *datastore.GroupFilter
+	var groups []*datastore.Group
+	var group *datastore.Group
 	var err error
 
-	filter = &convoy.GroupFilter{}
+	filter = &datastore.GroupFilter{}
 	groups, err = a.groupRepo.LoadGroups(ctx, filter)
 	if err != nil {
 		return fmt.Errorf("failed to load groups - %w", err)
@@ -188,7 +188,7 @@ func ensureDefaultGroup(ctx context.Context, cfg config.Configuration, a *app) e
 	}
 
 	if len(groups) > 1 {
-		filter = &convoy.GroupFilter{Names: []string{"default-group"}}
+		filter = &datastore.GroupFilter{Names: []string{"default-group"}}
 		groups, err = a.groupRepo.LoadGroups(ctx, filter)
 		if err != nil {
 			return fmt.Errorf("failed to load groups - %w", err)
@@ -196,13 +196,13 @@ func ensureDefaultGroup(ctx context.Context, cfg config.Configuration, a *app) e
 	}
 
 	if len(groups) == 0 {
-		defaultGroup := &convoy.Group{
+		defaultGroup := &datastore.Group{
 			UID:            uuid.New().String(),
 			Name:           "default-group",
 			Config:         &cfg.GroupConfig,
 			CreatedAt:      primitive.NewDateTimeFromTime(time.Now()),
 			UpdatedAt:      primitive.NewDateTimeFromTime(time.Now()),
-			DocumentStatus: convoy.ActiveDocumentStatus,
+			DocumentStatus: datastore.ActiveDocumentStatus,
 		}
 
 		err = a.groupRepo.CreateGroup(ctx, defaultGroup)
@@ -229,10 +229,10 @@ func ensureDefaultGroup(ctx context.Context, cfg config.Configuration, a *app) e
 }
 
 type app struct {
-	groupRepo         convoy.GroupRepository
-	applicationRepo   convoy.ApplicationRepository
-	eventRepo         convoy.EventRepository
-	eventDeliveryRepo convoy.EventDeliveryRepository
+	groupRepo         datastore.GroupRepository
+	applicationRepo   datastore.ApplicationRepository
+	eventRepo         datastore.EventRepository
+	eventDeliveryRepo datastore.EventDeliveryRepository
 	eventQueue        queue.Queuer
 	deadLetterQueue   queue.Queuer
 }

@@ -5,8 +5,8 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	"github.com/frain-dev/convoy"
 	"github.com/frain-dev/convoy/config"
+	"github.com/frain-dev/convoy/datastore"
 	"github.com/frain-dev/convoy/mocks"
 	"github.com/golang/mock/gomock"
 	log "github.com/sirupsen/logrus"
@@ -41,7 +41,7 @@ func Test_fetchAllConfigDetails(t *testing.T) {
 
 				g.EXPECT().
 					FetchGroupByID(gomock.Any(), gomock.Any()).Times(1).
-					Return(&convoy.Group{
+					Return(&datastore.Group{
 						Config: &config.GroupConfig{},
 					}, nil)
 			},

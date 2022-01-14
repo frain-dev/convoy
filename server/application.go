@@ -10,7 +10,7 @@ import (
 	log "github.com/sirupsen/logrus"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 
-	"github.com/frain-dev/convoy"
+	"github.com/frain-dev/convoy/datastore"
 	"github.com/frain-dev/convoy/queue"
 	"github.com/frain-dev/convoy/server/models"
 	"github.com/frain-dev/convoy/util"
@@ -19,10 +19,10 @@ import (
 )
 
 type applicationHandler struct {
-	appRepo           convoy.ApplicationRepository
-	eventRepo         convoy.EventRepository
-	eventDeliveryRepo convoy.EventDeliveryRepository
-	groupRepo         convoy.GroupRepository
+	appRepo           datastore.ApplicationRepository
+	eventRepo         datastore.EventRepository
+	eventDeliveryRepo datastore.EventDeliveryRepository
+	groupRepo         datastore.GroupRepository
 	eventQueue        queue.Queuer
 }
 
@@ -31,10 +31,10 @@ type pagedResponse struct {
 	Pagination *models.PaginationData `json:"pagination,omitempty"`
 }
 
-func newApplicationHandler(eventRepo convoy.EventRepository,
-	eventDeliveryRepo convoy.EventDeliveryRepository,
-	appRepo convoy.ApplicationRepository,
-	groupRepo convoy.GroupRepository,
+func newApplicationHandler(eventRepo datastore.EventRepository,
+	eventDeliveryRepo datastore.EventDeliveryRepository,
+	appRepo datastore.ApplicationRepository,
+	groupRepo datastore.GroupRepository,
 	eventQueue queue.Queuer) *applicationHandler {
 
 	return &applicationHandler{
@@ -53,7 +53,7 @@ func newApplicationHandler(eventRepo convoy.EventRepository,
 // @Accept  json
 // @Produce  json
 // @Param appID path string true "application id"
-// @Success 200 {object} serverResponse{data=convoy.Application}
+// @Success 200 {object} serverResponse{data=datastore.Application}
 // @Failure 400,401,500 {object} serverResponse{data=Stub}
 // @Security ApiKeyAuth
 // @Router /applications/{appID} [get]
@@ -72,7 +72,7 @@ func (a *applicationHandler) GetApp(w http.ResponseWriter, r *http.Request) {
 // @Param perPage query string false "results per page"
 // @Param page query string false "page number"
 // @Param sort query string false "sort order"
-// @Success 200 {object} serverResponse{data=pagedResponse{content=[]convoy.Application}}
+// @Success 200 {object} serverResponse{data=pagedResponse{content=[]datastore.Application}}
 // @Failure 400,401,500 {object} serverResponse{data=Stub}
 // @Security ApiKeyAuth
 // @Router /applications [get]
@@ -97,7 +97,7 @@ func (a *applicationHandler) GetApps(w http.ResponseWriter, r *http.Request) {
 // @Accept  json
 // @Produce  json
 // @Param application body models.Application true "Application Details"
-// @Success 200 {object} serverResponse{data=convoy.Application}
+// @Success 200 {object} serverResponse{data=datastore.Application}
 // @Failure 400,401,500 {object} serverResponse{data=Stub}
 // @Security ApiKeyAuth
 // @Router /applications [post]
@@ -119,15 +119,15 @@ func (a *applicationHandler) CreateApp(w http.ResponseWriter, r *http.Request) {
 	group := getGroupFromContext(r.Context())
 
 	uid := uuid.New().String()
-	app := &convoy.Application{
+	app := &datastore.Application{
 		UID:            uid,
 		GroupID:        group.UID,
 		Title:          appName,
 		SupportEmail:   newApp.SupportEmail,
 		CreatedAt:      primitive.NewDateTimeFromTime(time.Now()),
 		UpdatedAt:      primitive.NewDateTimeFromTime(time.Now()),
-		Endpoints:      []convoy.Endpoint{},
-		DocumentStatus: convoy.ActiveDocumentStatus,
+		Endpoints:      []datastore.Endpoint{},
+		DocumentStatus: datastore.ActiveDocumentStatus,
 	}
 
 	err = a.appRepo.CreateApplication(r.Context(), app)
@@ -147,7 +147,7 @@ func (a *applicationHandler) CreateApp(w http.ResponseWriter, r *http.Request) {
 // @Produce  json
 // @Param appID path string true "application id"
 // @Param application body models.Application true "Application Details"
-// @Success 200 {object} serverResponse{data=convoy.Application}
+// @Success 200 {object} serverResponse{data=datastore.Application}
 // @Failure 400,401,500 {object} serverResponse{data=Stub}
 // @Security ApiKeyAuth
 // @Router /applications/{appID} [put]
@@ -212,7 +212,7 @@ func (a *applicationHandler) DeleteApp(w http.ResponseWriter, r *http.Request) {
 // @Produce  json
 // @Param appID path string true "application id"
 // @Param endpoint body models.Endpoint true "Endpoint Details"
-// @Success 200 {object} serverResponse{data=convoy.Endpoint}
+// @Success 200 {object} serverResponse{data=datastore.Endpoint}
 // @Failure 400,401,500 {object} serverResponse{data=Stub}
 // @Security ApiKeyAuth
 // @Router /applications/{appID}/endpoints [post]
@@ -231,7 +231,7 @@ func (a *applicationHandler) CreateAppEndpoint(w http.ResponseWriter, r *http.Re
 		msg := "an error occurred while retrieving app details"
 		statusCode := http.StatusInternalServerError
 
-		if errors.Is(err, convoy.ErrApplicationNotFound) {
+		if errors.Is(err, datastore.ErrApplicationNotFound) {
 			msg = err.Error()
 			statusCode = http.StatusNotFound
 		}
@@ -248,16 +248,16 @@ func (a *applicationHandler) CreateAppEndpoint(w http.ResponseWriter, r *http.Re
 		e.Events = []string{"*"}
 	}
 
-	endpoint := &convoy.Endpoint{
+	endpoint := &datastore.Endpoint{
 		UID:            uuid.New().String(),
 		TargetURL:      e.URL,
 		Description:    e.Description,
 		Events:         e.Events,
 		Secret:         e.Secret,
-		Status:         convoy.ActiveEndpointStatus,
+		Status:         datastore.ActiveEndpointStatus,
 		CreatedAt:      primitive.NewDateTimeFromTime(time.Now()),
 		UpdatedAt:      primitive.NewDateTimeFromTime(time.Now()),
-		DocumentStatus: convoy.ActiveDocumentStatus,
+		DocumentStatus: datastore.ActiveDocumentStatus,
 	}
 
 	if util.IsStringEmpty(e.Secret) {
@@ -287,7 +287,7 @@ func (a *applicationHandler) CreateAppEndpoint(w http.ResponseWriter, r *http.Re
 // @Produce  json
 // @Param appID path string true "application id"
 // @Param endpointID path string true "endpoint id"
-// @Success 200 {object} serverResponse{data=convoy.Endpoint}
+// @Success 200 {object} serverResponse{data=datastore.Endpoint}
 // @Failure 400,401,500 {object} serverResponse{data=Stub}
 // @Security ApiKeyAuth
 // @Router /applications/{appID}/endpoints/{endpointID} [get]
@@ -304,7 +304,7 @@ func (a *applicationHandler) GetAppEndpoint(w http.ResponseWriter, r *http.Reque
 // @Accept  json
 // @Produce  json
 // @Param appID path string true "application id"
-// @Success 200 {object} serverResponse{data=[]convoy.Endpoint}
+// @Success 200 {object} serverResponse{data=[]datastore.Endpoint}
 // @Failure 400,401,500 {object} serverResponse{data=Stub}
 // @Security ApiKeyAuth
 // @Router /applications/{appID}/endpoints [get]
@@ -324,7 +324,7 @@ func (a *applicationHandler) GetAppEndpoints(w http.ResponseWriter, r *http.Requ
 // @Param appID path string true "application id"
 // @Param endpointID path string true "endpoint id"
 // @Param endpoint body models.Endpoint true "Endpoint Details"
-// @Success 200 {object} serverResponse{data=convoy.Endpoint}
+// @Success 200 {object} serverResponse{data=datastore.Endpoint}
 // @Failure 400,401,500 {object} serverResponse{data=Stub}
 // @Security ApiKeyAuth
 // @Router /applications/{appID}/endpoints/{endpointID} [put]
@@ -394,17 +394,17 @@ func (a *applicationHandler) GetPaginatedApps(w http.ResponseWriter, r *http.Req
 			Pagination: getPaginationDataFromContext(r.Context())}, http.StatusOK))
 }
 
-func updateEndpointIfFound(endpoints *[]convoy.Endpoint, id string, e models.Endpoint) (*[]convoy.Endpoint, *convoy.Endpoint, error) {
+func updateEndpointIfFound(endpoints *[]datastore.Endpoint, id string, e models.Endpoint) (*[]datastore.Endpoint, *datastore.Endpoint, error) {
 	for i, endpoint := range *endpoints {
 		if endpoint.UID == id && endpoint.DeletedAt == 0 {
 			endpoint.TargetURL = e.URL
 			endpoint.Description = e.Description
 			endpoint.Events = e.Events
-			endpoint.Status = convoy.ActiveEndpointStatus
+			endpoint.Status = datastore.ActiveEndpointStatus
 			endpoint.UpdatedAt = primitive.NewDateTimeFromTime(time.Now())
 			(*endpoints)[i] = endpoint
 			return endpoints, &endpoint, nil
 		}
 	}
-	return endpoints, nil, convoy.ErrEndpointNotFound
+	return endpoints, nil, datastore.ErrEndpointNotFound
 }

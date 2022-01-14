@@ -8,6 +8,7 @@ import (
 
 	"github.com/frain-dev/convoy"
 	"github.com/frain-dev/convoy/auth"
+	"github.com/frain-dev/convoy/datastore"
 	"github.com/frain-dev/convoy/server/models"
 	"github.com/frain-dev/convoy/util"
 	"github.com/frain-dev/convoy/worker/task"
@@ -24,7 +25,7 @@ import (
 // @Accept  json
 // @Produce  json
 // @Param groupID path string true "Group id"
-// @Success 200 {object} serverResponse{data=convoy.Group}
+// @Success 200 {object} serverResponse{data=datastore.Group}
 // @Failure 400,401,500 {object} serverResponse{data=Stub}
 // @Security ApiKeyAuth
 // @Router /groups/{groupID} [get]
@@ -42,7 +43,7 @@ func (a *applicationHandler) GetGroup(w http.ResponseWriter, r *http.Request) {
 		group, http.StatusOK))
 }
 
-func (a *applicationHandler) fillGroupStatistics(ctx context.Context, group *convoy.Group) error {
+func (a *applicationHandler) fillGroupStatistics(ctx context.Context, group *datastore.Group) error {
 	appCount, err := a.appRepo.CountGroupApplications(ctx, group.UID)
 	if err != nil {
 		return fmt.Errorf("failed to count group messages: %v", err)
@@ -53,7 +54,7 @@ func (a *applicationHandler) fillGroupStatistics(ctx context.Context, group *con
 		return fmt.Errorf("failed to count group messages: %v", err)
 	}
 
-	group.Statistics = &convoy.GroupStatistics{
+	group.Statistics = &datastore.GroupStatistics{
 		MessagesSent: msgCount,
 		TotalApps:    appCount,
 	}
@@ -108,7 +109,7 @@ func (a *applicationHandler) DeleteGroup(w http.ResponseWriter, r *http.Request)
 // @Accept  json
 // @Produce  json
 // @Param group body models.Group true "Group Details"
-// @Success 200 {object} serverResponse{data=convoy.Group}
+// @Success 200 {object} serverResponse{data=datastore.Group}
 // @Failure 400,401,500 {object} serverResponse{data=Stub}
 // @Security ApiKeyAuth
 // @Router /groups [post]
@@ -127,13 +128,13 @@ func (a *applicationHandler) CreateGroup(w http.ResponseWriter, r *http.Request)
 		return
 	}
 
-	group := &convoy.Group{
+	group := &datastore.Group{
 		UID:            uuid.New().String(),
 		Name:           groupName,
 		Config:         &newGroup.Config,
 		CreatedAt:      primitive.NewDateTimeFromTime(time.Now()),
 		UpdatedAt:      primitive.NewDateTimeFromTime(time.Now()),
-		DocumentStatus: convoy.ActiveDocumentStatus,
+		DocumentStatus: datastore.ActiveDocumentStatus,
 	}
 
 	err = a.groupRepo.CreateGroup(r.Context(), group)
@@ -157,7 +158,7 @@ func (a *applicationHandler) CreateGroup(w http.ResponseWriter, r *http.Request)
 // @Produce  json
 // @Param groupID path string true "group id"
 // @Param group body models.Group true "Group Details"
-// @Success 200 {object} serverResponse{data=convoy.Group}
+// @Success 200 {object} serverResponse{data=datastore.Group}
 // @Failure 400,401,500 {object} serverResponse{data=Stub}
 // @Security ApiKeyAuth
 // @Router /groups/{groupID} [put]
@@ -195,7 +196,7 @@ func (a *applicationHandler) UpdateGroup(w http.ResponseWriter, r *http.Request)
 // @Accept  json
 // @Produce  json
 // @Param name query string false "group name"
-// @Success 200 {object} serverResponse{data=[]convoy.Group}
+// @Success 200 {object} serverResponse{data=[]datastore.Group}
 // @Failure 400,401,500 {object} serverResponse{data=Stub}
 // @Security ApiKeyAuth
 // @Router /groups [get]
@@ -204,12 +205,12 @@ func (a *applicationHandler) GetGroups(w http.ResponseWriter, r *http.Request) {
 	name := r.URL.Query().Get("name")
 	userGroups := user.Role.Groups
 
-	var filter *convoy.GroupFilter
+	var filter *datastore.GroupFilter
 
 	if !util.IsStringEmpty(name) {
 		for _, g := range userGroups {
 			if name == g {
-				filter = &convoy.GroupFilter{Names: []string{name}}
+				filter = &datastore.GroupFilter{Names: []string{name}}
 				break
 			}
 		}
@@ -219,9 +220,9 @@ func (a *applicationHandler) GetGroups(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 	} else if user.Role.Type == auth.RoleSuperUser {
-		filter = &convoy.GroupFilter{}
+		filter = &datastore.GroupFilter{}
 	} else {
-		filter = &convoy.GroupFilter{Names: userGroups}
+		filter = &datastore.GroupFilter{Names: userGroups}
 	}
 
 	groups, err := a.groupRepo.LoadGroups(r.Context(), filter)
