@@ -1,7 +1,7 @@
 //go:build integration
 // +build integration
 
-package datastore
+package mongo
 
 import (
 	"context"
@@ -9,8 +9,8 @@ import (
 	"testing"
 
 	"github.com/frain-dev/convoy/server/models"
+	"github.com/frain-dev/convoy/datastore"
 
-	"github.com/frain-dev/convoy"
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/require"
 )
@@ -22,13 +22,14 @@ func Test_UpdateApplication(t *testing.T) {
 	groupRepo := NewGroupRepo(db)
 	appRepo := NewApplicationRepo(db)
 
-	newGroup := &convoy.Group{
+	newGroup := &datastore.Group{
 		Name: "Random new group",
+		UID:  uuid.NewString(),
 	}
 
 	require.NoError(t, groupRepo.CreateGroup(context.Background(), newGroup))
 
-	app := &convoy.Application{
+	app := &datastore.Application{
 		Title:   "Next application name",
 		GroupID: newGroup.UID,
 	}
@@ -54,15 +55,17 @@ func Test_CreateApplication(t *testing.T) {
 	groupRepo := NewGroupRepo(db)
 	appRepo := NewApplicationRepo(db)
 
-	newOrg := &convoy.Group{
-		Name: "Random new group",
+	newOrg := &datastore.Group{
+		Name: "Random new group 2",
+		UID:  uuid.NewString(),
 	}
 
 	require.NoError(t, groupRepo.CreateGroup(context.Background(), newOrg))
 
-	app := &convoy.Application{
+	app := &datastore.Application{
 		Title:   "Next application name",
 		GroupID: newOrg.UID,
+		UID:     uuid.NewString(),
 	}
 
 	require.NoError(t, appRepo.CreateApplication(context.Background(), app))
@@ -89,22 +92,23 @@ func Test_FindApplicationByID(t *testing.T) {
 
 	appRepo := NewApplicationRepo(db)
 
-	app, err := appRepo.FindApplicationByID(context.Background(), uuid.New().String())
+	_, err := appRepo.FindApplicationByID(context.Background(), uuid.New().String())
 	require.Error(t, err)
 
-	require.True(t, errors.Is(err, convoy.ErrApplicationNotFound))
+	require.True(t, errors.Is(err, datastore.ErrApplicationNotFound))
 
 	groupRepo := NewGroupRepo(db)
 
-	newGroup := &convoy.Group{
+	newGroup := &datastore.Group{
 		Name: "Yet another Random new group",
 	}
 
 	require.NoError(t, groupRepo.CreateGroup(context.Background(), newGroup))
 
-	app = &convoy.Application{
+	app := &datastore.Application{
 		Title:   "Next application name again",
 		GroupID: newGroup.UID,
+		UID:     uuid.NewString(),
 	}
 
 	require.NoError(t, appRepo.CreateApplication(context.Background(), app))

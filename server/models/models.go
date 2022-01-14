@@ -59,6 +59,15 @@ type Pageable struct {
 	Sort    int `json:"sort" bson:"sort"`
 }
 
+type PaginationData struct {
+	Total     int64 `json:"total"`
+	Page      int64 `json:"page"`
+	PerPage   int64 `json:"perPage"`
+	Prev      int64 `json:"prev"`
+	Next      int64 `json:"next"`
+	TotalPage int64 `json:"totalPage"`
+}
+
 type SearchParams struct {
 	CreatedAtStart int64 `json:"created_at_start" bson:"created_at_start"`
 	CreatedAtEnd   int64 `json:"created_at_end" bson:"created_at_end"`

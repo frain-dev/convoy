@@ -41,29 +41,6 @@ components:
         uid:
           type: string
       type: object
-    convoy.Application:
-      properties:
-        created_at:
-          type: string
-        deleted_at:
-          type: string
-        endpoints:
-          items:
-            $ref: '#/components/schemas/convoy.Endpoint'
-          type: array
-        events:
-          type: integer
-        group_id:
-          type: string
-        name:
-          type: string
-        support_email:
-          type: string
-        uid:
-          type: string
-        updated_at:
-          type: string
-      type: object
     convoy.DeliveryAttempt:
       properties:
         api_version:
@@ -99,7 +76,58 @@ components:
         url:
           type: string
       type: object
-    convoy.Endpoint:
+    convoy.HttpHeader:
+      additionalProperties:
+        type: string
+      type: object
+    convoy.Metadata:
+      properties:
+        data:
+          description: Data to be sent to endpoint.
+          items:
+            type: integer
+          type: array
+        interval_seconds:
+          type: integer
+        next_send_time:
+          description: |-
+            NextSendTime denotes the next time a Event will be published in
+            case it failed the first time
+          type: integer
+        num_trials:
+          description: |-
+            NumTrials: number of times we have tried to deliver this Event to
+            an application
+          type: integer
+        retry_limit:
+          type: integer
+        strategy:
+          type: string
+      type: object
+    datastore.Application:
+      properties:
+        created_at:
+          type: string
+        deleted_at:
+          type: string
+        endpoints:
+          items:
+            $ref: '#/components/schemas/datastore.Endpoint'
+          type: array
+        events:
+          type: integer
+        group_id:
+          type: string
+        name:
+          type: string
+        support_email:
+          type: string
+        uid:
+          type: string
+        updated_at:
+          type: string
+      type: object
+    datastore.Endpoint:
       properties:
         created_at:
           type: string
@@ -122,7 +150,7 @@ components:
         updated_at:
           type: string
       type: object
-    convoy.EndpointMetadata:
+    datastore.EndpointMetadata:
       properties:
         secret:
           type: string
@@ -135,7 +163,7 @@ components:
         uid:
           type: string
       type: object
-    convoy.Event:
+    datastore.Event:
       properties:
         app_metadata:
           $ref: '#/components/schemas/convoy.AppMetadata'
@@ -166,7 +194,7 @@ components:
         updated_at:
           type: string
       type: object
-    convoy.EventDelivery:
+    datastore.EventDelivery:
       properties:
         app_metadata:
           $ref: '#/components/schemas/convoy.AppMetadata'
@@ -177,9 +205,9 @@ components:
         description:
           type: string
         endpoint:
-          $ref: '#/components/schemas/convoy.EndpointMetadata'
+          $ref: '#/components/schemas/datastore.EndpointMetadata'
         event_metadata:
-          $ref: '#/components/schemas/convoy.EventMetadata'
+          $ref: '#/components/schemas/datastore.EventMetadata'
         metadata:
           $ref: '#/components/schemas/convoy.Metadata'
         status:
@@ -189,14 +217,14 @@ components:
         updated_at:
           type: string
       type: object
-    convoy.EventMetadata:
+    datastore.EventMetadata:
       properties:
         name:
           type: string
         uid:
           type: string
       type: object
-    convoy.Group:
+    datastore.Group:
       properties:
         config:
           $ref: '#/components/schemas/config.GroupConfig'
@@ -208,38 +236,19 @@ components:
           type: string
         name:
           type: string
+        statistics:
+          $ref: '#/components/schemas/datastore.GroupStatistics'
         uid:
           type: string
         updated_at:
           type: string
       type: object
-    convoy.HttpHeader:
-      additionalProperties:
-        type: string
-      type: object
-    convoy.Metadata:
+    datastore.GroupStatistics:
       properties:
-        data:
-          description: Data to be sent to endpoint.
-          items:
-            type: integer
-          type: array
-        interval_seconds:
+        messages_sent:
           type: integer
-        next_send_time:
-          description: |-
-            NextSendTime denotes the next time a Event will be published in
-            case it failed the first time
+        total_apps:
           type: integer
-        num_trials:
-          description: |-
-            NumTrials: number of times we have tried to deliver this Event to
-            an application
-          type: integer
-        retry_limit:
-          type: integer
-        strategy:
-          type: string
       type: object
     models.Application:
       properties:
@@ -371,7 +380,7 @@ paths:
                       - properties:
                           content:
                             items:
-                              $ref: '#/components/schemas/convoy.Application'
+                              $ref: '#/components/schemas/datastore.Application'
                             type: array
                         type: object
                   type: object
@@ -433,7 +442,7 @@ paths:
                 - $ref: '#/components/schemas/server.serverResponse'
                 - properties:
                     data:
-                      $ref: '#/components/schemas/convoy.Application'
+                      $ref: '#/components/schemas/datastore.Application'
                   type: object
           description: OK
         "400":
@@ -552,7 +561,7 @@ paths:
                 - $ref: '#/components/schemas/server.serverResponse'
                 - properties:
                     data:
-                      $ref: '#/components/schemas/convoy.Application'
+                      $ref: '#/components/schemas/datastore.Application'
                   type: object
           description: OK
         "400":
@@ -619,7 +628,7 @@ paths:
                 - $ref: '#/components/schemas/server.serverResponse'
                 - properties:
                     data:
-                      $ref: '#/components/schemas/convoy.Application'
+                      $ref: '#/components/schemas/datastore.Application'
                   type: object
           description: OK
         "400":
@@ -680,7 +689,7 @@ paths:
                 - properties:
                     data:
                       items:
-                        $ref: '#/components/schemas/convoy.Endpoint'
+                        $ref: '#/components/schemas/datastore.Endpoint'
                       type: array
                   type: object
           description: OK
@@ -748,7 +757,7 @@ paths:
                 - $ref: '#/components/schemas/server.serverResponse'
                 - properties:
                     data:
-                      $ref: '#/components/schemas/convoy.Endpoint'
+                      $ref: '#/components/schemas/datastore.Endpoint'
                   type: object
           description: OK
         "400":
@@ -879,7 +888,7 @@ paths:
                 - $ref: '#/components/schemas/server.serverResponse'
                 - properties:
                     data:
-                      $ref: '#/components/schemas/convoy.Endpoint'
+                      $ref: '#/components/schemas/datastore.Endpoint'
                   type: object
           description: OK
         "400":
@@ -952,7 +961,7 @@ paths:
                 - $ref: '#/components/schemas/server.serverResponse'
                 - properties:
                     data:
-                      $ref: '#/components/schemas/convoy.Endpoint'
+                      $ref: '#/components/schemas/datastore.Endpoint'
                   type: object
           description: OK
         "400":
@@ -1059,7 +1068,7 @@ paths:
                           content:
                             items:
                               allOf:
-                              - $ref: '#/components/schemas/convoy.EventDelivery'
+                              - $ref: '#/components/schemas/datastore.EventDelivery'
                               - properties:
                                   data:
                                     $ref: '#/components/schemas/server.Stub'
@@ -1132,7 +1141,7 @@ paths:
                 - properties:
                     data:
                       allOf:
-                      - $ref: '#/components/schemas/convoy.Event'
+                      - $ref: '#/components/schemas/datastore.Event'
                       - properties:
                           data:
                             $ref: '#/components/schemas/server.Stub'
@@ -1197,7 +1206,7 @@ paths:
                 - properties:
                     data:
                       allOf:
-                      - $ref: '#/components/schemas/convoy.Event'
+                      - $ref: '#/components/schemas/datastore.Event'
                       - properties:
                           data:
                             $ref: '#/components/schemas/server.Stub'
@@ -1364,7 +1373,7 @@ paths:
                           content:
                             items:
                               allOf:
-                              - $ref: '#/components/schemas/convoy.Event'
+                              - $ref: '#/components/schemas/datastore.Event'
                               - properties:
                                   data:
                                     $ref: '#/components/schemas/server.Stub'
@@ -1431,7 +1440,7 @@ paths:
                 - properties:
                     data:
                       allOf:
-                      - $ref: '#/components/schemas/convoy.Event'
+                      - $ref: '#/components/schemas/datastore.Event'
                       - properties:
                           data:
                             $ref: '#/components/schemas/server.Stub'
@@ -1496,7 +1505,7 @@ paths:
                 - properties:
                     data:
                       allOf:
-                      - $ref: '#/components/schemas/convoy.Event'
+                      - $ref: '#/components/schemas/datastore.Event'
                       - properties:
                           data:
                             $ref: '#/components/schemas/server.Stub'
@@ -1700,7 +1709,7 @@ paths:
                 - properties:
                     data:
                       items:
-                        $ref: '#/components/schemas/convoy.Group'
+                        $ref: '#/components/schemas/datastore.Group'
                       type: array
                   type: object
           description: OK
@@ -1761,7 +1770,7 @@ paths:
                 - $ref: '#/components/schemas/server.serverResponse'
                 - properties:
                     data:
-                      $ref: '#/components/schemas/convoy.Group'
+                      $ref: '#/components/schemas/datastore.Group'
                   type: object
           description: OK
         "400":
@@ -1880,7 +1889,7 @@ paths:
                 - $ref: '#/components/schemas/server.serverResponse'
                 - properties:
                     data:
-                      $ref: '#/components/schemas/convoy.Group'
+                      $ref: '#/components/schemas/datastore.Group'
                   type: object
           description: OK
         "400":
@@ -1947,7 +1956,7 @@ paths:
                 - $ref: '#/components/schemas/server.serverResponse'
                 - properties:
                     data:
-                      $ref: '#/components/schemas/convoy.Group'
+                      $ref: '#/components/schemas/datastore.Group'
                   type: object
           description: OK
         "400":
