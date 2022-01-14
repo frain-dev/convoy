@@ -359,7 +359,7 @@ func Test_eventDeliveryRepo_LoadEventDeliveriesPaged(t *testing.T) {
 		return
 	}
 
-	deliveries, _, err := e.LoadEventDeliveriesPaged(context.Background(), "", "", "", nil, models.SearchParams{}, models.Pageable{PerPage: 10, Page: 3})
+	deliveries, _, err := e.LoadEventDeliveriesPaged(context.Background(), "", "", "", nil, models.SearchParams{}, models.Pageable{PerPage: 10, Page: 1})
 	if err != nil {
 		require.NoError(t, err)
 		return
