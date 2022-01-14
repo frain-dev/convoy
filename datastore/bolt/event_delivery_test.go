@@ -20,7 +20,12 @@ func Test_EventDeliveryRepo_CreateEventDelivery(t *testing.T) {
 		return
 	}
 
-	defer database.Disconnect(context.Background())
+	defer func(database datastore.DatabaseClient, ctx context.Context) {
+		err := database.Disconnect(ctx)
+		if err != nil {
+			require.NoError(t, err)
+		}
+	}(database, context.Background())
 
 	e := database.EventDeliveryRepo()
 
@@ -82,7 +87,12 @@ func Test_eventDeliveryRepo_FindEventDeliveryByID(t *testing.T) {
 		return
 	}
 
-	defer database.Disconnect(context.Background())
+	defer func(database datastore.DatabaseClient, ctx context.Context) {
+		err := database.Disconnect(ctx)
+		if err != nil {
+			require.NoError(t, err)
+		}
+	}(database, context.Background())
 
 	e := database.EventDeliveryRepo()
 
@@ -146,7 +156,12 @@ func Test_eventDeliveryRepo_FindEventDeliveriesByIDs(t *testing.T) {
 		return
 	}
 
-	defer database.Disconnect(context.Background())
+	defer func(database datastore.DatabaseClient, ctx context.Context) {
+		err := database.Disconnect(ctx)
+		if err != nil {
+			require.NoError(t, err)
+		}
+	}(database, context.Background())
 
 	e := database.EventDeliveryRepo()
 
@@ -198,7 +213,12 @@ func Test_eventDeliveryRepo_FindEventDeliveriesByEventID(t *testing.T) {
 		return
 	}
 
-	defer database.Disconnect(context.Background())
+	defer func(database datastore.DatabaseClient, ctx context.Context) {
+		err := database.Disconnect(ctx)
+		if err != nil {
+			require.NoError(t, err)
+		}
+	}(database, context.Background())
 
 	e := database.EventDeliveryRepo()
 
@@ -241,8 +261,8 @@ func Test_eventDeliveryRepo_FindEventDeliveriesByEventID(t *testing.T) {
 	}
 
 	require.Equal(t, 2, len(got))
-	require.Equal(t, delivery1, got[0])
-	require.Equal(t, delivery2, got[1])
+	require.Equal(t, delivery1.EventMetadata.UID, eventID)
+	require.Equal(t, delivery2.EventMetadata.UID, eventID)
 }
 
 func Test_eventDeliveryRepo_UpdateStatusOfEventDelivery(t *testing.T) {
@@ -252,7 +272,12 @@ func Test_eventDeliveryRepo_UpdateStatusOfEventDelivery(t *testing.T) {
 		return
 	}
 
-	defer database.Disconnect(context.Background())
+	defer func(database datastore.DatabaseClient, ctx context.Context) {
+		err := database.Disconnect(ctx)
+		if err != nil {
+			require.NoError(t, err)
+		}
+	}(database, context.Background())
 
 	e := database.EventDeliveryRepo()
 
@@ -295,7 +320,12 @@ func Test_eventDeliveryRepo_LoadEventDeliveriesPaged(t *testing.T) {
 		return
 	}
 
-	defer database.Disconnect(context.Background())
+	defer func(database datastore.DatabaseClient, ctx context.Context) {
+		err := database.Disconnect(ctx)
+		if err != nil {
+			require.NoError(t, err)
+		}
+	}(database, context.Background())
 
 	e := database.EventDeliveryRepo()
 
