@@ -28,9 +28,9 @@ func (n *NativeRealm) Authenticate(ctx context.Context, cred *auth.Credential) (
 		return nil, fmt.Errorf("%s only authenticates credential type %s", n.GetName(), auth.CredentialTypeAPIKey.String())
 	}
 
-	key := cred.APIKey	
-	keySplit := strings.Split(key, ".");
-	
+	key := cred.APIKey
+	keySplit := strings.Split(key, ".")
+
 	if len(keySplit) != 3 {
 		return nil, errors.New("invalid api key format")
 	}
@@ -55,8 +55,6 @@ func (n *NativeRealm) Authenticate(ctx context.Context, cred *auth.Credential) (
 	}
 
 	// if the current time is after the specified expiry date then the key has expired
-	fmt.Printf("apiKey: %v", apiKey.ExpiresAt != 0 && time.Now().After(apiKey.ExpiresAt.Time()))
-	fmt.Printf("APIKEY: %v\n", apiKey)
 	if apiKey.ExpiresAt != 0 && time.Now().After(apiKey.ExpiresAt.Time()) {
 		return nil, errors.New("api key has expired")
 	}
