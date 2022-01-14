@@ -7,7 +7,7 @@ import (
 	"context"
 	"testing"
 
-	"github.com/frain-dev/convoy"
+	"github.com/frain-dev/convoy/datastore"
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/require"
 )

@@ -93,7 +93,7 @@ func Test_FindApplicationByID(t *testing.T) {
 	_, err := appRepo.FindApplicationByID(context.Background(), uuid.New().String())
 	require.Error(t, err)
 
-	require.True(t, errors.Is(err, convoy.ErrApplicationNotFound))
+	require.True(t, errors.Is(err, datastore.ErrApplicationNotFound))
 
 	groupRepo := NewGroupRepo(db)
 

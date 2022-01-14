@@ -14,6 +14,11 @@ import (
 	"github.com/frain-dev/convoy/auth/realm_chain"
 	"github.com/frain-dev/convoy/config"
 	"github.com/frain-dev/convoy/datastore"
+	"github.com/frain-dev/convoy/datastore"
+
+	"github.com/frain-dev/convoy/config"
+	"github.com/frain-dev/convoy/server/models"
+
 	"github.com/frain-dev/convoy/mocks"
 	"github.com/go-chi/chi/v5"
 	"github.com/golang/mock/gomock"
