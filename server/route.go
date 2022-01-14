@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/frain-dev/convoy/auth"
+	"github.com/frain-dev/convoy/datastore"
 
 	"github.com/frain-dev/convoy"
 	"github.com/frain-dev/convoy/config"
@@ -73,6 +74,7 @@ func buildRoutes(app *applicationHandler) http.Handler {
 
 					groupSubRouter.With(requirePermission(auth.RoleAdmin)).Get("/", app.GetGroup)
 					groupSubRouter.With(requirePermission(auth.RoleSuperUser)).Put("/", app.UpdateGroup)
+					groupSubRouter.With(requirePermission(auth.RoleSuperUser)).Delete("/", app.DeleteGroup)
 				})
 			})
 
@@ -163,8 +165,9 @@ func buildRoutes(app *applicationHandler) http.Handler {
 				groupRouter.Get("/", app.GetGroups)
 			})
 
-			groupRouter.Route("/{groupID}", func(appSubRouter chi.Router) {
-				appSubRouter.With(requirePermission(auth.RoleUIAdmin)).Get("/", app.GetGroup)
+			groupRouter.Route("/{groupID}", func(groupSubRouter chi.Router) {
+				groupSubRouter.With(requirePermission(auth.RoleUIAdmin)).Get("/", app.GetGroup)
+				groupSubRouter.With(requirePermission(auth.RoleSuperUser)).Delete("/", app.DeleteGroup)
 			})
 		})
 
@@ -234,10 +237,10 @@ func buildRoutes(app *applicationHandler) http.Handler {
 }
 
 func New(cfg config.Configuration,
-	eventRepo convoy.EventRepository,
-	eventDeliveryRepo convoy.EventDeliveryRepository,
-	appRepo convoy.ApplicationRepository,
-	orgRepo convoy.GroupRepository,
+	eventRepo datastore.EventRepository,
+	eventDeliveryRepo datastore.EventDeliveryRepository,
+	appRepo datastore.ApplicationRepository,
+	orgRepo datastore.GroupRepository,
 	eventQueue queue.Queuer) *http.Server {
 
 	app := newApplicationHandler(eventRepo, eventDeliveryRepo, appRepo, orgRepo, eventQueue)

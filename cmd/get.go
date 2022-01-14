@@ -4,7 +4,7 @@ import (
 	"context"
 	"os"
 
-	"github.com/frain-dev/convoy"
+	"github.com/frain-dev/convoy/datastore"
 	"github.com/frain-dev/convoy/server/models"
 	"github.com/olekukonko/tablewriter"
 	"github.com/spf13/cobra"
@@ -60,7 +60,7 @@ func getGroups(a *app) *cobra.Command {
 		Aliases: []string{"groups"},
 		RunE: func(cmd *cobra.Command, args []string) error {
 
-			f := &convoy.GroupFilter{}
+			f := &datastore.GroupFilter{}
 
 			if len(args) > 0 {
 				f.Names = []string{args[0]}

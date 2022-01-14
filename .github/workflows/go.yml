@@ -75,4 +75,4 @@ jobs:
       - name: Run Mongo integration tests
         run: go test -tags integration -v ./...
         env:
-          TEST_DATABASE_DSN: "mongodb://localhost:27017"
+          TEST_DATABASE_DSN: "mongodb://localhost:27017/testdb"

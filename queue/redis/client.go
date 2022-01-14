@@ -7,6 +7,7 @@ import (
 
 	"github.com/frain-dev/convoy"
 	"github.com/frain-dev/convoy/config"
+	"github.com/frain-dev/convoy/datastore"
 	"github.com/frain-dev/convoy/queue"
 	"github.com/frain-dev/convoy/util"
 	"github.com/go-redis/redis/v8"
@@ -67,7 +68,7 @@ func (q *RedisQueue) Close() error {
 	return q.inner.Close()
 }
 
-func (q *RedisQueue) Write(ctx context.Context, name convoy.TaskName, e *convoy.EventDelivery, delay time.Duration) error {
+func (q *RedisQueue) Write(ctx context.Context, name convoy.TaskName, e *datastore.EventDelivery, delay time.Duration) error {
 	job := &queue.Job{
 		ID: e.UID,
 	}
