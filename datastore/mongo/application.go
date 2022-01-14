@@ -1,4 +1,4 @@
-package datastore
+package mongo
 
 import (
 	"context"
@@ -21,14 +21,10 @@ type appRepo struct {
 	client  *mongo.Collection
 }
 
-const (
-	AppCollections = "applications"
-)
-
-func NewApplicationRepo(client *mongo.Database) convoy.ApplicationRepository {
+func NewApplicationRepo(db *mongo.Database) convoy.ApplicationRepository {
 	return &appRepo{
-		innerDB: client,
-		client:  client.Collection(AppCollections, nil),
+		innerDB: db,
+		client:  db.Collection(AppCollections, nil),
 	}
 }
 
@@ -41,7 +37,7 @@ func (db *appRepo) CreateApplication(ctx context.Context,
 	return err
 }
 
-func (db *appRepo) LoadApplicationsPaged(ctx context.Context, groupID string, pageable models.Pageable) ([]convoy.Application, pager.PaginationData, error) {
+func (db *appRepo) LoadApplicationsPaged(ctx context.Context, groupID string, pageable models.Pageable) ([]convoy.Application, models.PaginationData, error) {
 
 	filter := bson.M{"document_status": bson.M{"$ne": convoy.DeletedDocumentStatus}}
 	if !util.IsStringEmpty(groupID) {
@@ -51,7 +47,7 @@ func (db *appRepo) LoadApplicationsPaged(ctx context.Context, groupID string, pa
 	var apps []convoy.Application
 	paginatedData, err := pager.New(db.client).Context(ctx).Limit(int64(pageable.PerPage)).Page(int64(pageable.Page)).Sort("created_at", -1).Filter(filter).Decode(&apps).Find()
 	if err != nil {
-		return apps, pager.PaginationData{}, err
+		return apps, models.PaginationData{}, err
 	}
 
 	if apps == nil {
@@ -64,15 +60,15 @@ func (db *appRepo) LoadApplicationsPaged(ctx context.Context, groupID string, pa
 		count, err := msgCollection.CountDocuments(ctx, filter)
 		if err != nil {
 			log.Errorf("failed to count events in %s. Reason: %s", app.UID, err)
-			return apps, pager.PaginationData{}, err
+			return apps, models.PaginationData{}, err
 		}
 		apps[i].Events = count
 	}
 
-	return apps, paginatedData.Pagination, nil
+	return apps, models.PaginationData(models.PaginationData(paginatedData.Pagination)), nil
 }
 
-func (db *appRepo) LoadApplicationsPagedByGroupId(ctx context.Context, groupID string, pageable models.Pageable) ([]convoy.Application, pager.PaginationData, error) {
+func (db *appRepo) LoadApplicationsPagedByGroupId(ctx context.Context, groupID string, pageable models.Pageable) ([]convoy.Application, models.PaginationData, error) {
 
 	filter := bson.M{
 		"group_id": groupID,
@@ -84,7 +80,7 @@ func (db *appRepo) LoadApplicationsPagedByGroupId(ctx context.Context, groupID s
 	var applications []convoy.Application
 	paginatedData, err := pager.New(db.client).Context(ctx).Limit(int64(pageable.PerPage)).Page(int64(pageable.Page)).Sort("created_at", -1).Filter(filter).Decode(&applications).Find()
 	if err != nil {
-		return applications, pager.PaginationData{}, err
+		return applications, models.PaginationData{}, err
 	}
 
 	if applications == nil {
@@ -97,12 +93,28 @@ func (db *appRepo) LoadApplicationsPagedByGroupId(ctx context.Context, groupID s
 		count, err := msgCollection.CountDocuments(ctx, filter)
 		if err != nil {
 			log.Errorf("failed to count events in %s. Reason: %s", app.UID, err)
-			return applications, pager.PaginationData{}, err
+			return applications, models.PaginationData{}, err
 		}
 		applications[i].Events = count
 	}
 
-	return applications, paginatedData.Pagination, nil
+	return applications, models.PaginationData(paginatedData.Pagination), nil
+}
+
+func (db *appRepo) CountGroupApplications(ctx context.Context, groupID string) (int64, error) {
+	filter := bson.M{
+		"group_id": groupID,
+		"document_status": bson.M{
+			"$ne": convoy.DeletedDocumentStatus,
+		},
+	}
+
+	count, err := db.client.CountDocuments(ctx, filter)
+	if err != nil {
+		log.WithError(err).Errorf("failed to count apps in group %s", groupID)
+		return 0, err
+	}
+	return count, nil
 }
 
 func (db *appRepo) SearchApplicationsByGroupId(ctx context.Context, groupId string, searchParams models.SearchParams) ([]convoy.Application, error) {
@@ -222,6 +234,23 @@ func (db *appRepo) UpdateApplication(ctx context.Context,
 
 	_, err := db.client.UpdateOne(ctx, filter, update)
 	return err
+}
+
+func (db *appRepo) DeleteGroupApps(ctx context.Context, groupID string) error {
+
+	update := bson.M{
+		"$set": bson.M{
+			"deleted_at":      primitive.NewDateTimeFromTime(time.Now()),
+			"document_status": convoy.DeletedDocumentStatus,
+		},
+	}
+
+	_, err := db.client.UpdateMany(ctx, bson.M{"group_id": groupID}, update)
+	if err != nil {
+		return err
+	}
+
+	return nil
 }
 
 func (db *appRepo) DeleteApplication(ctx context.Context,

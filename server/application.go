@@ -6,7 +6,6 @@ import (
 	"net/http"
 	"time"
 
-	mongopagination "github.com/gobeam/mongo-go-pagination"
 	"github.com/google/uuid"
 	log "github.com/sirupsen/logrus"
 	"go.mongodb.org/mongo-driver/bson/primitive"
@@ -28,8 +27,8 @@ type applicationHandler struct {
 }
 
 type pagedResponse struct {
-	Content    interface{}                     `json:"content,omitempty"`
-	Pagination *mongopagination.PaginationData `json:"pagination,omitempty"`
+	Content    interface{}            `json:"content,omitempty"`
+	Pagination *models.PaginationData `json:"pagination,omitempty"`
 }
 
 func newApplicationHandler(eventRepo convoy.EventRepository,
