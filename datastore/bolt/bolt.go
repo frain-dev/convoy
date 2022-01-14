@@ -26,7 +26,16 @@ func New(cfg config.Configuration) (datastore.DatabaseClient, error) {
 	}
 
 	bErr := db.Update(func(tx *bbolt.Tx) error {
-		_, err := tx.CreateBucketIfNotExists([]byte(bucketName))
+		root, err := tx.CreateBucketIfNotExists([]byte(bucketName))
+		if err != nil {
+			return err
+		}
+
+		_, err = root.CreateBucketIfNotExists([]byte(eventDeliveryBucketName))
+		if err != nil {
+			return err
+		}
+
 		return err
 	})
 
@@ -39,7 +48,7 @@ func New(cfg config.Configuration) (datastore.DatabaseClient, error) {
 		groupRepo: NewGroupRepo(db),
 		// applicationRepo:   NewApplicationRepo(conn),
 		// eventRepo:         NewEventRepository(conn),
-		// eventDeliveryRepo: NewEventDeliveryRepository(conn),
+		eventDeliveryRepo: NewEventDeliveryRepository(db),
 	}
 
 	return c, nil
