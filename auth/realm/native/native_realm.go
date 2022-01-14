@@ -49,7 +49,7 @@ func (n *NativeRealm) Authenticate(ctx context.Context, cred *auth.Credential) (
 	// compute hash & compare.
 	dk := pbkdf2.Key([]byte(cred.APIKey), []byte(apiKey.Salt), 4096, 32, sha256.New)
 
-	if bytes.Compare(dk, decodedKey) != 0 {
+	if !bytes.Equal(dk, decodedKey) {
 		// Not Match.
 		return nil, errors.New("invalid api key")
 	}
