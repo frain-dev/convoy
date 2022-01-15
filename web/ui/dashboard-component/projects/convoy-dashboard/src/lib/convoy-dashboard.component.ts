@@ -78,8 +78,8 @@ export class ConvoyDashboardComponent implements OnInit {
 	groups: GROUP[] = [];
 	activeGroup!: string;
 	allEventdeliveriesChecked = false;
-	eventDeliveryStatuses = ['', 'Success', 'Failure', 'Retry', 'Scheduled', 'Processing', 'Discarded'];
-	eventDeliveryFilteredByStatus: '' | 'Success' | 'Failure' | 'Retry' | 'Scheduled' | 'Processing' | 'Discarded' = '';
+	eventDeliveryStatuses = ['Success', 'Failure', 'Retry', 'Scheduled', 'Processing', 'Discarded'];
+	eventDeliveryFilteredByStatus: string[] = [];
 	showOverlay = false;
 	showEventDeliveriesStatusDropdown = false;
 	@Input('production') isProduction: boolean = false;
@@ -140,7 +140,7 @@ export class ConvoyDashboardComponent implements OnInit {
 			endDate: filters.eventDelsEndDate ? new Date(filters.eventDelsEndDate) : ''
 		});
 		this.eventDeliveriesApp = filters.eventDelsApp ?? '';
-		this.eventDeliveryFilteredByStatus = filters.eventDelsStatus ?? null;
+		this.eventDeliveryFilteredByStatus = filters.eventDelsStatus ? JSON.parse(filters.eventDelsStatus) : [];
 	}
 
 	async fetchDashboardData() {
@@ -204,14 +204,13 @@ export class ConvoyDashboardComponent implements OnInit {
 					currentChart.update();
 				}
 			}
-			console.log(Chart.getChart('dahboard_events_chart'));
 		} catch (error) {}
 	}
 
 	setDateForFilter(requestDetails: { startDate: Date; endDate: Date }) {
 		if (!requestDetails.endDate && !requestDetails.startDate) return { startDate: '', endDate: '' };
-		const startDate = requestDetails.startDate ? `${format(requestDetails.startDate, 'yyyy-M-d')}T00:00:00` : '';
-		const endDate = requestDetails.endDate ? `${format(requestDetails.endDate, 'yyyy-M-d')}T00:00:00` : '';
+		const startDate = requestDetails.startDate ? `${format(requestDetails.startDate, 'yyyy-MM-dd')}T00:00:00` : '';
+		const endDate = requestDetails.endDate ? `${format(requestDetails.endDate, 'yyyy-MM-dd')}T23:59:59` : '';
 		return { startDate, endDate };
 	}
 
@@ -282,7 +281,7 @@ export class ConvoyDashboardComponent implements OnInit {
 			if (startDate) queryParams.eventDelsStartDate = startDate;
 			if (endDate) queryParams.eventDelsEndDate = endDate;
 			if (this.eventDeliveriesApp) queryParams.eventDelsApp = this.eventDeliveriesApp;
-			queryParams.eventDelsStatus = this.eventDeliveryFilteredByStatus || '';
+			queryParams.eventDelsStatus = this.eventDeliveryFilteredByStatus.length > 0 ? JSON.stringify(this.eventDeliveryFilteredByStatus) : '';
 		}
 
 		if (requestDetails.section === 'group') queryParams.group = this.activeGroup;
@@ -293,6 +292,8 @@ export class ConvoyDashboardComponent implements OnInit {
 	}
 
 	async eventDeliveriesRequest(requestDetails: { eventId?: string; startDate?: string; endDate?: string }): Promise<HTTP_RESPONSE> {
+		let eventDeliveryStatusFilterQuery = '';
+		this.eventDeliveryFilteredByStatus.forEach((status: string) => (eventDeliveryStatusFilterQuery += `&status=${status}`));
 		const { startDate, endDate } = this.setDateForFilter(this.eventDeliveriesFilterDateRange.value);
 
 		try {
@@ -300,7 +301,7 @@ export class ConvoyDashboardComponent implements OnInit {
 				url: this.getAPIURL(
 					`/eventdeliveries?groupID=${this.activeGroup || ''}&eventId=${requestDetails.eventId || ''}&page=${this.eventDeliveriesPage || 1}&startDate=${startDate}&endDate=${endDate}&appId=${
 						this.eventDeliveriesApp
-					}&status=${this.eventDeliveryFilteredByStatus || ''}`
+					}${eventDeliveryStatusFilterQuery || ''}`
 				),
 				method: 'get'
 			});
@@ -308,6 +309,15 @@ export class ConvoyDashboardComponent implements OnInit {
 			return eventDeliveriesResponse;
 		} catch (error: any) {
 			return error;
+		}
+	}
+
+	updateEventDevliveryStatusFilter(status: string, isChecked: any) {
+		if (isChecked.target.checked) {
+			this.eventDeliveryFilteredByStatus.push(status);
+		} else {
+			let index = this.eventDeliveryFilteredByStatus.findIndex(x => x === status);
+			this.eventDeliveryFilteredByStatus.splice(index, 1);
 		}
 	}
 
@@ -478,7 +488,7 @@ export class ConvoyDashboardComponent implements OnInit {
 				filterItems = ['eventDelsStartDate', 'eventDelsEndDate', 'eventDelsApp', 'eventDelsStatus'];
 				this.eventDeliveriesFilterDateRange.patchValue({ startDate: '', endDate: '' });
 				this.eventDeliveryFilteredByEventId = '';
-				this.eventDeliveryFilteredByStatus = '';
+				this.eventDeliveryFilteredByStatus = [];
 				this.getEventDeliveries();
 				break;
 
@@ -536,5 +546,9 @@ export class ConvoyDashboardComponent implements OnInit {
 
 	getAPIURL(url: string) {
 		return `${this.isProduction ? location.origin : 'http://localhost:5005'}/ui${url}`;
+	}
+
+	checkIfEventDeliveryStatusFilterOptionIsSelected(status: string): boolean {
+		return this.eventDeliveryFilteredByStatus?.length > 0 ? this.eventDeliveryFilteredByStatus.includes(status) : false;
 	}
 }
