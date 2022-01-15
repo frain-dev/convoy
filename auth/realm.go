@@ -1,6 +1,8 @@
 package auth
 
+import "context"
+
 type Realm interface {
 	GetName() string
-	Authenticate(cred *Credential) (*AuthenticatedUser, error)
+	Authenticate(ctx context.Context, cred *Credential) (*AuthenticatedUser, error)
 }

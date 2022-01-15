@@ -6,7 +6,6 @@ import (
 	"time"
 
 	"github.com/frain-dev/convoy/datastore"
-	"github.com/frain-dev/convoy/server/models"
 	"github.com/frain-dev/convoy/util"
 	pager "github.com/gobeam/mongo-go-pagination"
 	"github.com/google/uuid"
@@ -81,7 +80,7 @@ func (db *eventRepo) DeleteGroupEvents(ctx context.Context, groupID string) erro
 	return nil
 }
 
-func (db *eventRepo) LoadEventIntervals(ctx context.Context, groupID string, searchParams models.SearchParams, period datastore.Period, interval int) ([]models.EventInterval, error) {
+func (db *eventRepo) LoadEventIntervals(ctx context.Context, groupID string, searchParams datastore.SearchParams, period datastore.Period, interval int) ([]datastore.EventInterval, error) {
 
 	start := searchParams.CreatedAtStart
 	end := searchParams.CreatedAtEnd
@@ -144,32 +143,32 @@ func (db *eventRepo) LoadEventIntervals(ctx context.Context, groupID string, sea
 		log.WithError(err).Errorln("aggregate error")
 		return nil, err
 	}
-	var eventsIntervals []models.EventInterval
+	var eventsIntervals []datastore.EventInterval
 	if err = data.All(ctx, &eventsIntervals); err != nil {
 		log.WithError(err).Error("marshal error")
 		return nil, err
 	}
 	if eventsIntervals == nil {
-		eventsIntervals = make([]models.EventInterval, 0)
+		eventsIntervals = make([]datastore.EventInterval, 0)
 	}
 
 	return eventsIntervals, nil
 }
 
-func (db *eventRepo) LoadEventsPagedByAppId(ctx context.Context, appId string, searchParams models.SearchParams, pageable models.Pageable) ([]datastore.Event, models.PaginationData, error) {
+func (db *eventRepo) LoadEventsPagedByAppId(ctx context.Context, appId string, searchParams datastore.SearchParams, pageable datastore.Pageable) ([]datastore.Event, datastore.PaginationData, error) {
 	filter := bson.M{"app_id": appId, "document_status": bson.M{"$ne": datastore.DeletedDocumentStatus}, "created_at": getCreatedDateFilter(searchParams)}
 
 	var messages []datastore.Event
 	paginatedData, err := pager.New(db.inner).Context(ctx).Limit(int64(pageable.PerPage)).Page(int64(pageable.Page)).Sort("created_at", pageable.Sort).Filter(filter).Decode(&messages).Find()
 	if err != nil {
-		return messages, models.PaginationData{}, err
+		return messages, datastore.PaginationData{}, err
 	}
 
 	if messages == nil {
 		messages = make([]datastore.Event, 0)
 	}
 
-	return messages, models.PaginationData(paginatedData.Pagination), nil
+	return messages, datastore.PaginationData(paginatedData.Pagination), nil
 }
 
 func (db *eventRepo) FindEventByID(ctx context.Context, id string) (*datastore.Event, error) {
@@ -247,7 +246,7 @@ func (db *eventRepo) LoadAbandonedEventsForPostingRetry(ctx context.Context) ([]
 	return db.loadEventsByFilter(ctx, filter, nil)
 }
 
-func (db *eventRepo) LoadEventsPaged(ctx context.Context, groupID string, appId string, searchParams models.SearchParams, pageable models.Pageable) ([]datastore.Event, models.PaginationData, error) {
+func (db *eventRepo) LoadEventsPaged(ctx context.Context, groupID string, appId string, searchParams datastore.SearchParams, pageable datastore.Pageable) ([]datastore.Event, datastore.PaginationData, error) {
 	filter := bson.M{"document_status": bson.M{"$ne": datastore.DeletedDocumentStatus}, "created_at": getCreatedDateFilter(searchParams)}
 
 	hasAppFilter := !util.IsStringEmpty(appId)
@@ -267,16 +266,16 @@ func (db *eventRepo) LoadEventsPaged(ctx context.Context, groupID string, appId 
 	var messages []datastore.Event
 	paginatedData, err := pager.New(db.inner).Context(ctx).Limit(int64(pageable.PerPage)).Page(int64(pageable.Page)).Sort("created_at", pageable.Sort).Filter(filter).Decode(&messages).Find()
 	if err != nil {
-		return messages, models.PaginationData{}, err
+		return messages, datastore.PaginationData{}, err
 	}
 
 	if messages == nil {
 		messages = make([]datastore.Event, 0)
 	}
 
-	return messages, models.PaginationData(paginatedData.Pagination), nil
+	return messages, datastore.PaginationData(paginatedData.Pagination), nil
 }
 
-func getCreatedDateFilter(searchParams models.SearchParams) bson.M {
+func getCreatedDateFilter(searchParams datastore.SearchParams) bson.M {
 	return bson.M{"$gte": primitive.NewDateTimeFromTime(time.Unix(searchParams.CreatedAtStart, 0)), "$lte": primitive.NewDateTimeFromTime(time.Unix(searchParams.CreatedAtEnd, 0))}
 }
