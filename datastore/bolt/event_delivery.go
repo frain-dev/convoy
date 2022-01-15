@@ -31,7 +31,7 @@ func (e *eventDeliveryRepo) CreateEventDelivery(ctx context.Context, delivery *d
 
 func createUpdateEventDelivery(db *bbolt.DB, delivery *datastore.EventDelivery) error {
 	return db.Update(func(tx *bbolt.Tx) error {
-		b := getSubBucket(tx, eventDeliveryBucketName)
+		b := tx.Bucket([]byte(eventDeliveryBucketName))
 
 		buf, err := json.Marshal(delivery)
 		if err != nil {
@@ -51,7 +51,7 @@ func (e *eventDeliveryRepo) FindEventDeliveryByID(ctx context.Context, uid strin
 	var delivery datastore.EventDelivery
 	err := e.db.View(func(tx *bbolt.Tx) error {
 
-		buf := getSubBucket(tx, eventDeliveryBucketName).Get([]byte(uid))
+		buf := tx.Bucket([]byte(eventDeliveryBucketName)).Get([]byte(uid))
 		if buf == nil {
 			return fmt.Errorf("event delivery with id (%s) does not exist", uid)
 		}
@@ -73,7 +73,7 @@ func (e *eventDeliveryRepo) FindEventDeliveriesByIDs(ctx context.Context, uids [
 	err := e.db.View(func(tx *bbolt.Tx) error {
 		for i, uid := range uids {
 			var delivery datastore.EventDelivery
-			buf := getSubBucket(tx, eventDeliveryBucketName).Get([]byte(uid))
+			buf := tx.Bucket([]byte(eventDeliveryBucketName)).Get([]byte(uid))
 			if buf == nil {
 				log.Errorf("event delivery with id (%s) does not exist", uid)
 				continue
@@ -104,7 +104,7 @@ func (e *eventDeliveryRepo) FindEventDeliveriesByEventID(ctx context.Context, ev
 	err := e.db.View(func(tx *bbolt.Tx) error {
 
 		var eid eid
-		c := getSubBucket(tx, eventDeliveryBucketName).Cursor()
+		c := tx.Bucket([]byte(eventDeliveryBucketName)).Cursor()
 
 		var deliverySlice [][]byte
 
@@ -176,7 +176,7 @@ func (e *eventDeliveryRepo) LoadEventDeliveriesPaged(ctx context.Context, groupI
 	var pg models.PaginationData
 	err := e.db.View(func(tx *bbolt.Tx) error {
 
-		b := getSubBucket(tx, eventDeliveryBucketName)
+		b := tx.Bucket([]byte(eventDeliveryBucketName))
 		c := b.Cursor()
 
 		i := 0
@@ -253,8 +253,4 @@ func (e *eventDeliveryRepo) LoadEventDeliveriesPaged(ctx context.Context, groupI
 	})
 
 	return deliveries, pg, err
-}
-
-func getSubBucket(tx *bbolt.Tx, subBucketName string) *bbolt.Bucket {
-	return tx.Bucket([]byte(bucketName)).Bucket([]byte(subBucketName))
 }

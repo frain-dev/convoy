@@ -26,12 +26,12 @@ func New(cfg config.Configuration) (datastore.DatabaseClient, error) {
 	}
 
 	bErr := db.Update(func(tx *bbolt.Tx) error {
-		root, err := tx.CreateBucketIfNotExists([]byte(bucketName))
+		_, err := tx.CreateBucketIfNotExists([]byte(bucketName))
 		if err != nil {
 			return err
 		}
 
-		_, err = root.CreateBucketIfNotExists([]byte(eventDeliveryBucketName))
+		_, err = tx.CreateBucketIfNotExists([]byte(eventDeliveryBucketName))
 		if err != nil {
 			return err
 		}
