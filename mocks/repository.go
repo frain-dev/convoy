@@ -9,9 +9,134 @@ import (
 	reflect "reflect"
 
 	datastore "github.com/frain-dev/convoy/datastore"
-	models "github.com/frain-dev/convoy/server/models"
 	gomock "github.com/golang/mock/gomock"
 )
+
+// MockAPIKeyRepository is a mock of APIKeyRepository interface.
+type MockAPIKeyRepository struct {
+	ctrl     *gomock.Controller
+	recorder *MockAPIKeyRepositoryMockRecorder
+}
+
+// MockAPIKeyRepositoryMockRecorder is the mock recorder for MockAPIKeyRepository.
+type MockAPIKeyRepositoryMockRecorder struct {
+	mock *MockAPIKeyRepository
+}
+
+// NewMockAPIKeyRepository creates a new mock instance.
+func NewMockAPIKeyRepository(ctrl *gomock.Controller) *MockAPIKeyRepository {
+	mock := &MockAPIKeyRepository{ctrl: ctrl}
+	mock.recorder = &MockAPIKeyRepositoryMockRecorder{mock}
+	return mock
+}
+
+// EXPECT returns an object that allows the caller to indicate expected use.
+func (m *MockAPIKeyRepository) EXPECT() *MockAPIKeyRepositoryMockRecorder {
+	return m.recorder
+}
+
+// CreateAPIKey mocks base method.
+func (m *MockAPIKeyRepository) CreateAPIKey(arg0 context.Context, arg1 *datastore.APIKey) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "CreateAPIKey", arg0, arg1)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// CreateAPIKey indicates an expected call of CreateAPIKey.
+func (mr *MockAPIKeyRepositoryMockRecorder) CreateAPIKey(arg0, arg1 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateAPIKey", reflect.TypeOf((*MockAPIKeyRepository)(nil).CreateAPIKey), arg0, arg1)
+}
+
+// FindAPIKeyByHash mocks base method.
+func (m *MockAPIKeyRepository) FindAPIKeyByHash(arg0 context.Context, arg1 string) (*datastore.APIKey, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "FindAPIKeyByHash", arg0, arg1)
+	ret0, _ := ret[0].(*datastore.APIKey)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// FindAPIKeyByHash indicates an expected call of FindAPIKeyByHash.
+func (mr *MockAPIKeyRepositoryMockRecorder) FindAPIKeyByHash(arg0, arg1 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "FindAPIKeyByHash", reflect.TypeOf((*MockAPIKeyRepository)(nil).FindAPIKeyByHash), arg0, arg1)
+}
+
+// FindAPIKeyByID mocks base method.
+func (m *MockAPIKeyRepository) FindAPIKeyByID(arg0 context.Context, arg1 string) (*datastore.APIKey, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "FindAPIKeyByID", arg0, arg1)
+	ret0, _ := ret[0].(*datastore.APIKey)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// FindAPIKeyByID indicates an expected call of FindAPIKeyByID.
+func (mr *MockAPIKeyRepositoryMockRecorder) FindAPIKeyByID(arg0, arg1 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "FindAPIKeyByID", reflect.TypeOf((*MockAPIKeyRepository)(nil).FindAPIKeyByID), arg0, arg1)
+}
+
+// FindAPIKeyByMaskID mocks base method.
+func (m *MockAPIKeyRepository) FindAPIKeyByMaskID(arg0 context.Context, arg1 string) (*datastore.APIKey, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "FindAPIKeyByMaskID", arg0, arg1)
+	ret0, _ := ret[0].(*datastore.APIKey)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// FindAPIKeyByMaskID indicates an expected call of FindAPIKeyByMaskID.
+func (mr *MockAPIKeyRepositoryMockRecorder) FindAPIKeyByMaskID(arg0, arg1 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "FindAPIKeyByMaskID", reflect.TypeOf((*MockAPIKeyRepository)(nil).FindAPIKeyByMaskID), arg0, arg1)
+}
+
+// LoadAPIKeysPaged mocks base method.
+func (m *MockAPIKeyRepository) LoadAPIKeysPaged(arg0 context.Context, arg1 *datastore.Pageable) ([]datastore.APIKey, datastore.PaginationData, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "LoadAPIKeysPaged", arg0, arg1)
+	ret0, _ := ret[0].([]datastore.APIKey)
+	ret1, _ := ret[1].(datastore.PaginationData)
+	ret2, _ := ret[2].(error)
+	return ret0, ret1, ret2
+}
+
+// LoadAPIKeysPaged indicates an expected call of LoadAPIKeysPaged.
+func (mr *MockAPIKeyRepositoryMockRecorder) LoadAPIKeysPaged(arg0, arg1 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "LoadAPIKeysPaged", reflect.TypeOf((*MockAPIKeyRepository)(nil).LoadAPIKeysPaged), arg0, arg1)
+}
+
+// RevokeAPIKeys mocks base method.
+func (m *MockAPIKeyRepository) RevokeAPIKeys(arg0 context.Context, arg1 []string) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "RevokeAPIKeys", arg0, arg1)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// RevokeAPIKeys indicates an expected call of RevokeAPIKeys.
+func (mr *MockAPIKeyRepositoryMockRecorder) RevokeAPIKeys(arg0, arg1 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "RevokeAPIKeys", reflect.TypeOf((*MockAPIKeyRepository)(nil).RevokeAPIKeys), arg0, arg1)
+}
+
+// UpdateAPIKey mocks base method.
+func (m *MockAPIKeyRepository) UpdateAPIKey(arg0 context.Context, arg1 *datastore.APIKey) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "UpdateAPIKey", arg0, arg1)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// UpdateAPIKey indicates an expected call of UpdateAPIKey.
+func (mr *MockAPIKeyRepositoryMockRecorder) UpdateAPIKey(arg0, arg1 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateAPIKey", reflect.TypeOf((*MockAPIKeyRepository)(nil).UpdateAPIKey), arg0, arg1)
+}
 
 // MockEventDeliveryRepository is a mock of EventDeliveryRepository interface.
 type MockEventDeliveryRepository struct {
@@ -96,11 +221,11 @@ func (mr *MockEventDeliveryRepositoryMockRecorder) FindEventDeliveryByID(arg0, a
 }
 
 // LoadEventDeliveriesPaged mocks base method.
-func (m *MockEventDeliveryRepository) LoadEventDeliveriesPaged(arg0 context.Context, arg1, arg2, arg3 string, arg4 []datastore.EventDeliveryStatus, arg5 models.SearchParams, arg6 models.Pageable) ([]datastore.EventDelivery, models.PaginationData, error) {
+func (m *MockEventDeliveryRepository) LoadEventDeliveriesPaged(arg0 context.Context, arg1, arg2, arg3 string, arg4 []datastore.EventDeliveryStatus, arg5 datastore.SearchParams, arg6 datastore.Pageable) ([]datastore.EventDelivery, datastore.PaginationData, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "LoadEventDeliveriesPaged", arg0, arg1, arg2, arg3, arg4, arg5, arg6)
 	ret0, _ := ret[0].([]datastore.EventDelivery)
-	ret1, _ := ret[1].(models.PaginationData)
+	ret1, _ := ret[1].(datastore.PaginationData)
 	ret2, _ := ret[2].(error)
 	return ret0, ret1, ret2
 }
@@ -236,10 +361,10 @@ func (mr *MockEventRepositoryMockRecorder) LoadAbandonedEventsForPostingRetry(ar
 }
 
 // LoadEventIntervals mocks base method.
-func (m *MockEventRepository) LoadEventIntervals(arg0 context.Context, arg1 string, arg2 models.SearchParams, arg3 datastore.Period, arg4 int) ([]models.EventInterval, error) {
+func (m *MockEventRepository) LoadEventIntervals(arg0 context.Context, arg1 string, arg2 datastore.SearchParams, arg3 datastore.Period, arg4 int) ([]datastore.EventInterval, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "LoadEventIntervals", arg0, arg1, arg2, arg3, arg4)
-	ret0, _ := ret[0].([]models.EventInterval)
+	ret0, _ := ret[0].([]datastore.EventInterval)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
@@ -266,11 +391,11 @@ func (mr *MockEventRepositoryMockRecorder) LoadEventsForPostingRetry(arg0 interf
 }
 
 // LoadEventsPaged mocks base method.
-func (m *MockEventRepository) LoadEventsPaged(arg0 context.Context, arg1, arg2 string, arg3 models.SearchParams, arg4 models.Pageable) ([]datastore.Event, models.PaginationData, error) {
+func (m *MockEventRepository) LoadEventsPaged(arg0 context.Context, arg1, arg2 string, arg3 datastore.SearchParams, arg4 datastore.Pageable) ([]datastore.Event, datastore.PaginationData, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "LoadEventsPaged", arg0, arg1, arg2, arg3, arg4)
 	ret0, _ := ret[0].([]datastore.Event)
-	ret1, _ := ret[1].(models.PaginationData)
+	ret1, _ := ret[1].(datastore.PaginationData)
 	ret2, _ := ret[2].(error)
 	return ret0, ret1, ret2
 }
@@ -282,11 +407,11 @@ func (mr *MockEventRepositoryMockRecorder) LoadEventsPaged(arg0, arg1, arg2, arg
 }
 
 // LoadEventsPagedByAppId mocks base method.
-func (m *MockEventRepository) LoadEventsPagedByAppId(arg0 context.Context, arg1 string, arg2 models.SearchParams, arg3 models.Pageable) ([]datastore.Event, models.PaginationData, error) {
+func (m *MockEventRepository) LoadEventsPagedByAppId(arg0 context.Context, arg1 string, arg2 datastore.SearchParams, arg3 datastore.Pageable) ([]datastore.Event, datastore.PaginationData, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "LoadEventsPagedByAppId", arg0, arg1, arg2, arg3)
 	ret0, _ := ret[0].([]datastore.Event)
-	ret1, _ := ret[1].(models.PaginationData)
+	ret1, _ := ret[1].(datastore.PaginationData)
 	ret2, _ := ret[2].(error)
 	return ret0, ret1, ret2
 }
@@ -376,6 +501,21 @@ func (m *MockGroupRepository) FetchGroupByID(arg0 context.Context, arg1 string) 
 func (mr *MockGroupRepositoryMockRecorder) FetchGroupByID(arg0, arg1 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "FetchGroupByID", reflect.TypeOf((*MockGroupRepository)(nil).FetchGroupByID), arg0, arg1)
+}
+
+// FetchGroupsByIDs mocks base method.
+func (m *MockGroupRepository) FetchGroupsByIDs(arg0 context.Context, arg1 []string) ([]datastore.Group, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "FetchGroupsByIDs", arg0, arg1)
+	ret0, _ := ret[0].([]datastore.Group)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// FetchGroupsByIDs indicates an expected call of FetchGroupsByIDs.
+func (mr *MockGroupRepositoryMockRecorder) FetchGroupsByIDs(arg0, arg1 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "FetchGroupsByIDs", reflect.TypeOf((*MockGroupRepository)(nil).FetchGroupsByIDs), arg0, arg1)
 }
 
 // LoadGroups mocks base method.
@@ -518,11 +658,11 @@ func (mr *MockApplicationRepositoryMockRecorder) FindApplicationEndpointByID(arg
 }
 
 // LoadApplicationsPaged mocks base method.
-func (m *MockApplicationRepository) LoadApplicationsPaged(arg0 context.Context, arg1 string, arg2 models.Pageable) ([]datastore.Application, models.PaginationData, error) {
+func (m *MockApplicationRepository) LoadApplicationsPaged(arg0 context.Context, arg1 string, arg2 datastore.Pageable) ([]datastore.Application, datastore.PaginationData, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "LoadApplicationsPaged", arg0, arg1, arg2)
 	ret0, _ := ret[0].([]datastore.Application)
-	ret1, _ := ret[1].(models.PaginationData)
+	ret1, _ := ret[1].(datastore.PaginationData)
 	ret2, _ := ret[2].(error)
 	return ret0, ret1, ret2
 }
@@ -534,11 +674,11 @@ func (mr *MockApplicationRepositoryMockRecorder) LoadApplicationsPaged(arg0, arg
 }
 
 // LoadApplicationsPagedByGroupId mocks base method.
-func (m *MockApplicationRepository) LoadApplicationsPagedByGroupId(arg0 context.Context, arg1 string, arg2 models.Pageable) ([]datastore.Application, models.PaginationData, error) {
+func (m *MockApplicationRepository) LoadApplicationsPagedByGroupId(arg0 context.Context, arg1 string, arg2 datastore.Pageable) ([]datastore.Application, datastore.PaginationData, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "LoadApplicationsPagedByGroupId", arg0, arg1, arg2)
 	ret0, _ := ret[0].([]datastore.Application)
-	ret1, _ := ret[1].(models.PaginationData)
+	ret1, _ := ret[1].(datastore.PaginationData)
 	ret2, _ := ret[2].(error)
 	return ret0, ret1, ret2
 }
@@ -550,7 +690,7 @@ func (mr *MockApplicationRepositoryMockRecorder) LoadApplicationsPagedByGroupId(
 }
 
 // SearchApplicationsByGroupId mocks base method.
-func (m *MockApplicationRepository) SearchApplicationsByGroupId(arg0 context.Context, arg1 string, arg2 models.SearchParams) ([]datastore.Application, error) {
+func (m *MockApplicationRepository) SearchApplicationsByGroupId(arg0 context.Context, arg1 string, arg2 datastore.SearchParams) ([]datastore.Application, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "SearchApplicationsByGroupId", arg0, arg1, arg2)
 	ret0, _ := ret[0].([]datastore.Application)

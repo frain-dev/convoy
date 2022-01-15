@@ -7,7 +7,6 @@ import (
 	"testing"
 
 	"github.com/frain-dev/convoy/datastore"
-	"github.com/frain-dev/convoy/server/models"
 
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/require"
@@ -36,7 +35,7 @@ func Test_LoadApplicationsPaged(t *testing.T) {
 		require.NoError(t, appRepo.CreateApplication(context.Background(), a))
 	}
 
-	_, pageData, err := appRepo.LoadApplicationsPaged(context.Background(), "", models.Pageable{
+	_, pageData, err := appRepo.LoadApplicationsPaged(context.Background(), "", datastore.Pageable{
 		Page:    1,
 		PerPage: 3,
 	})

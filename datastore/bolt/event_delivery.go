@@ -8,7 +8,6 @@ import (
 	"time"
 
 	"github.com/frain-dev/convoy/datastore"
-	"github.com/frain-dev/convoy/server/models"
 	"github.com/frain-dev/convoy/util"
 	log "github.com/sirupsen/logrus"
 	"go.etcd.io/bbolt"
@@ -163,7 +162,7 @@ func (e *eventDeliveryRepo) UpdateEventDeliveryWithAttempt(ctx context.Context, 
 	return createUpdateEventDelivery(e.db, &delivery)
 }
 
-func (e *eventDeliveryRepo) LoadEventDeliveriesPaged(ctx context.Context, groupID, appID, eventID string, status []datastore.EventDeliveryStatus, searchParams models.SearchParams, pageable models.Pageable) ([]datastore.EventDelivery, models.PaginationData, error) {
+func (e *eventDeliveryRepo) LoadEventDeliveriesPaged(ctx context.Context, groupID, appID, eventID string, status []datastore.EventDeliveryStatus, searchParams datastore.SearchParams, pageable datastore.Pageable) ([]datastore.EventDelivery, datastore.PaginationData, error) {
 	hasAppFilter := !util.IsStringEmpty(appID)
 	hasGroupFilter := !util.IsStringEmpty(groupID)
 	hasEventFilter := !util.IsStringEmpty(eventID)
@@ -182,7 +181,7 @@ func (e *eventDeliveryRepo) LoadEventDeliveriesPaged(ctx context.Context, groupI
 	upperBound := pageable.PerPage * pageable.Page
 
 	var deliveries []datastore.EventDelivery
-	var pg models.PaginationData
+	var pg datastore.PaginationData
 	err := e.db.View(func(tx *bbolt.Tx) error {
 
 		b := tx.Bucket([]byte(eventDeliveryBucketName))
@@ -250,7 +249,7 @@ func (e *eventDeliveryRepo) LoadEventDeliveriesPaged(ctx context.Context, groupI
 			}
 		}
 
-		pg = models.PaginationData{
+		pg = datastore.PaginationData{
 			Total:     int64(b.Stats().KeyN),
 			Page:      int64(pageable.Page),
 			PerPage:   int64(pageable.PerPage),

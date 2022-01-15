@@ -1,6 +1,10 @@
 package noop
 
-import "github.com/frain-dev/convoy/auth"
+import (
+	"context"
+
+	"github.com/frain-dev/convoy/auth"
+)
 
 type NoopRealm struct{}
 
@@ -18,7 +22,7 @@ var authUser = &auth.AuthenticatedUser{
 	Role: auth.Role{Type: auth.RoleSuperUser, Groups: []string{}},
 }
 
-func (n NoopRealm) Authenticate(cred *auth.Credential) (*auth.AuthenticatedUser, error) {
+func (n NoopRealm) Authenticate(ctx context.Context, cred *auth.Credential) (*auth.AuthenticatedUser, error) {
 	return authUser, nil
 }
 

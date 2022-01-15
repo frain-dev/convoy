@@ -6,7 +6,6 @@ import (
 	"time"
 
 	"github.com/frain-dev/convoy/datastore"
-	"github.com/frain-dev/convoy/server/models"
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/require"
 	"go.mongodb.org/mongo-driver/bson/primitive"
@@ -298,7 +297,7 @@ func Test_eventDeliveryRepo_LoadEventDeliveriesPaged(t *testing.T) {
 		return
 	}
 
-	deliveries, _, err := e.LoadEventDeliveriesPaged(context.Background(), "", "", "", nil, models.SearchParams{}, models.Pageable{PerPage: 10, Page: 1})
+	deliveries, _, err := e.LoadEventDeliveriesPaged(context.Background(), "", "", "", nil, datastore.SearchParams{}, datastore.Pageable{PerPage: 10, Page: 1})
 	if err != nil {
 		require.NoError(t, err)
 		return

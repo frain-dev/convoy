@@ -68,7 +68,7 @@ func (a *applicationHandler) GetDashboardSummary(w http.ResponseWriter, r *http.
 		return
 	}
 
-	searchParams := models.SearchParams{
+	searchParams := datastore.SearchParams{
 		CreatedAtStart: startT.Unix(),
 		CreatedAtEnd:   endT.Unix(),
 	}
