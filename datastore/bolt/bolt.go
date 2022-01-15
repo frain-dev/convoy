@@ -18,7 +18,7 @@ type Client struct {
 }
 
 func New(cfg config.Configuration) (datastore.DatabaseClient, error) {
-	db, err := bbolt.Open("convoy.db", 0666, nil)
+	db, err := bbolt.Open(cfg.Database.Dsn, 0666, nil)
 	if err != nil {
 		return nil, err
 	}

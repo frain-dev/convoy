@@ -42,26 +42,37 @@ func (a *appRepo) UpdateApplication(ctx context.Context, app *datastore.Applicat
 
 func (a *appRepo) LoadApplicationsPaged(ctx context.Context, gid string, pageable models.Pageable) ([]datastore.Application, models.PaginationData, error) {
 	var apps []datastore.Application = make([]datastore.Application, 0)
-	data := models.PaginationData{}
-	prevPage := pageable.Page
 
-	if pageable.Page == 0 {
-		prevPage = 0
+	page := pageable.Page
+	prevPage := pageable.Page
+	perPage := pageable.PerPage
+	data := models.PaginationData{}
+
+	if pageable.Page < 1 {
+		page = 1
+	}
+
+	if pageable.PerPage < 1 {
+		perPage = 1
+	}
+
+	if page < 1 {
+		prevPage = 1
 	} else {
-		prevPage = pageable.Page - 1
+		prevPage = page - 1
 	}
 
 	err := a.db.View(func(tx *bbolt.Tx) error {
 		b := tx.Bucket([]byte(a.bucketName))
 		c := b.Cursor()
-		i := 0
+		i := 1
 
 		for k, v := c.First(); k != nil; k, v = c.Next() {
-			if k == nil || v == nil {
+			if v == nil {
 				continue
 			}
 
-			if i >= pageable.PerPage*prevPage && i < pageable.PerPage*pageable.Page {
+			if i > perPage*prevPage && i <= perPage*page {
 				var app datastore.Application
 				err := json.Unmarshal(v, &app)
 				if err != nil {
@@ -78,16 +89,16 @@ func (a *appRepo) LoadApplicationsPaged(ctx context.Context, gid string, pageabl
 			}
 			i++
 
-			if i == pageable.PerPage*pageable.Page {
+			if i == (perPage*page)+perPage {
 				break
 			}
 		}
 
-		data.TotalPage = int64(math.Ceil(float64(b.Stats().KeyN) / float64(pageable.PerPage)))
-		data.PerPage = int64(pageable.PerPage)
-		data.Next = int64(pageable.Page + 1)
+		data.TotalPage = int64(math.Ceil(float64(b.Stats().KeyN) / float64(perPage)))
+		data.PerPage = int64(perPage)
+		data.Next = int64(page + 1)
 		data.Total = int64(b.Stats().KeyN)
-		data.Page = int64(pageable.Page)
+		data.Page = int64(page)
 		data.Prev = int64(prevPage)
 
 		return nil

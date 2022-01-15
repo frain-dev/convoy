@@ -125,7 +125,7 @@ func main() {
 
 			app.groupRepo = bolt.GroupRepo()
 			app.eventRepo = db.EventRepo()
-			app.applicationRepo = db.AppRepo()
+			app.applicationRepo = bolt.AppRepo()
 			app.eventDeliveryRepo = db.EventDeliveryRepo()
 
 			app.eventQueue = convoyRedis.NewQueue(rC, qFn, "EventQueue")
