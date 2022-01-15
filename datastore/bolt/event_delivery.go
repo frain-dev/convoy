@@ -22,6 +22,15 @@ type eventDeliveryRepo struct {
 }
 
 func NewEventDeliveryRepository(db *bbolt.DB) datastore.EventDeliveryRepository {
+	err := db.Update(func(tx *bbolt.Tx) error {
+		_, err := tx.CreateBucketIfNotExists([]byte(eventDeliveryBucketName))
+		return err
+	})
+
+	if err != nil {
+		return nil
+	}
+
 	return &eventDeliveryRepo{db: db}
 }
 

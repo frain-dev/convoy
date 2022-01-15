@@ -65,7 +65,7 @@ func (db *appRepo) LoadApplicationsPaged(ctx context.Context, groupID string, pa
 		apps[i].Events = count
 	}
 
-	return apps, models.PaginationData(models.PaginationData(paginatedData.Pagination)), nil
+	return apps, models.PaginationData(paginatedData.Pagination), nil
 }
 
 func (db *appRepo) LoadApplicationsPagedByGroupId(ctx context.Context, groupID string, pageable models.Pageable) ([]datastore.Application, models.PaginationData, error) {

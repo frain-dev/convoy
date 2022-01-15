@@ -175,7 +175,7 @@ func (a *applicationHandler) UpdateApp(w http.ResponseWriter, r *http.Request) {
 
 	err = a.appRepo.UpdateApplication(r.Context(), app)
 	if err != nil {
-		_ = render.Render(w, r, newErrorResponse("an error occurred while updating app", http.StatusInternalServerError))
+		_ = render.Render(w, r, newErrorResponse("an error occurred while updating app", http.StatusBadRequest))
 		return
 	}
 
@@ -230,7 +230,7 @@ func (a *applicationHandler) CreateAppEndpoint(w http.ResponseWriter, r *http.Re
 	if err != nil {
 
 		msg := "an error occurred while retrieving app details"
-		statusCode := http.StatusInternalServerError
+		statusCode := http.StatusBadRequest
 
 		if errors.Is(err, datastore.ErrApplicationNotFound) {
 			msg = err.Error()

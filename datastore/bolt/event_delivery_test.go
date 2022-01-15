@@ -5,7 +5,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/frain-dev/convoy/config"
 	"github.com/frain-dev/convoy/datastore"
 	"github.com/frain-dev/convoy/server/models"
 	"github.com/google/uuid"
@@ -14,20 +13,10 @@ import (
 )
 
 func Test_EventDeliveryRepo_CreateEventDelivery(t *testing.T) {
-	database, err := New(config.Configuration{})
-	if err != nil {
-		require.NoError(t, err)
-		return
-	}
+	db, closeFn := getDB(t)
+	defer closeFn()
 
-	defer func(database datastore.DatabaseClient, ctx context.Context) {
-		err := database.Disconnect(ctx)
-		if err != nil {
-			require.NoError(t, err)
-		}
-	}(database, context.Background())
-
-	e := database.EventDeliveryRepo()
+	e := NewEventDeliveryRepository(db)
 
 	type args struct {
 		ctx      context.Context
@@ -81,20 +70,10 @@ func Test_EventDeliveryRepo_CreateEventDelivery(t *testing.T) {
 }
 
 func Test_eventDeliveryRepo_FindEventDeliveryByID(t *testing.T) {
-	database, err := New(config.Configuration{})
-	if err != nil {
-		require.NoError(t, err)
-		return
-	}
+	db, closeFn := getDB(t)
+	defer closeFn()
 
-	defer func(database datastore.DatabaseClient, ctx context.Context) {
-		err := database.Disconnect(ctx)
-		if err != nil {
-			require.NoError(t, err)
-		}
-	}(database, context.Background())
-
-	e := database.EventDeliveryRepo()
+	e := NewEventDeliveryRepository(db)
 
 	type args struct {
 		ctx context.Context
@@ -150,20 +129,10 @@ func Test_eventDeliveryRepo_FindEventDeliveryByID(t *testing.T) {
 }
 
 func Test_eventDeliveryRepo_FindEventDeliveriesByIDs(t *testing.T) {
-	database, err := New(config.Configuration{})
-	if err != nil {
-		require.NoError(t, err)
-		return
-	}
+	db, closeFn := getDB(t)
+	defer closeFn()
 
-	defer func(database datastore.DatabaseClient, ctx context.Context) {
-		err := database.Disconnect(ctx)
-		if err != nil {
-			require.NoError(t, err)
-		}
-	}(database, context.Background())
-
-	e := database.EventDeliveryRepo()
+	e := NewEventDeliveryRepository(db)
 
 	delivery1 := datastore.EventDelivery{
 		UID: uuid.NewString(),
@@ -174,7 +143,7 @@ func Test_eventDeliveryRepo_FindEventDeliveriesByIDs(t *testing.T) {
 		AppMetadata: &datastore.AppMetadata{UID: uuid.NewString()},
 	}
 
-	err = e.CreateEventDelivery(context.Background(), &delivery1)
+	err := e.CreateEventDelivery(context.Background(), &delivery1)
 	if err != nil {
 		require.NoError(t, err)
 		return
@@ -207,20 +176,10 @@ func Test_eventDeliveryRepo_FindEventDeliveriesByIDs(t *testing.T) {
 }
 
 func Test_eventDeliveryRepo_FindEventDeliveriesByEventID(t *testing.T) {
-	database, err := New(config.Configuration{})
-	if err != nil {
-		require.NoError(t, err)
-		return
-	}
+	db, closeFn := getDB(t)
+	defer closeFn()
 
-	defer func(database datastore.DatabaseClient, ctx context.Context) {
-		err := database.Disconnect(ctx)
-		if err != nil {
-			require.NoError(t, err)
-		}
-	}(database, context.Background())
-
-	e := database.EventDeliveryRepo()
+	e := NewEventDeliveryRepository(db)
 
 	eventID := uuid.NewString()
 
@@ -233,7 +192,7 @@ func Test_eventDeliveryRepo_FindEventDeliveriesByEventID(t *testing.T) {
 		AppMetadata: &datastore.AppMetadata{UID: uuid.NewString()},
 	}
 
-	err = e.CreateEventDelivery(context.Background(), &delivery1)
+	err := e.CreateEventDelivery(context.Background(), &delivery1)
 	if err != nil {
 		require.NoError(t, err)
 		return
@@ -266,20 +225,10 @@ func Test_eventDeliveryRepo_FindEventDeliveriesByEventID(t *testing.T) {
 }
 
 func Test_eventDeliveryRepo_UpdateStatusOfEventDelivery(t *testing.T) {
-	database, err := New(config.Configuration{})
-	if err != nil {
-		require.NoError(t, err)
-		return
-	}
+	db, closeFn := getDB(t)
+	defer closeFn()
 
-	defer func(database datastore.DatabaseClient, ctx context.Context) {
-		err := database.Disconnect(ctx)
-		if err != nil {
-			require.NoError(t, err)
-		}
-	}(database, context.Background())
-
-	e := database.EventDeliveryRepo()
+	e := NewEventDeliveryRepository(db)
 
 	delivery := datastore.EventDelivery{
 		UID: uuid.NewString(),
@@ -291,7 +240,7 @@ func Test_eventDeliveryRepo_UpdateStatusOfEventDelivery(t *testing.T) {
 		Status:      datastore.ScheduledEventStatus,
 	}
 
-	err = e.CreateEventDelivery(context.Background(), &delivery)
+	err := e.CreateEventDelivery(context.Background(), &delivery)
 	if err != nil {
 		require.NoError(t, err)
 		return
@@ -314,20 +263,10 @@ func Test_eventDeliveryRepo_UpdateStatusOfEventDelivery(t *testing.T) {
 }
 
 func Test_eventDeliveryRepo_LoadEventDeliveriesPaged(t *testing.T) {
-	database, err := New(config.Configuration{})
-	if err != nil {
-		require.NoError(t, err)
-		return
-	}
+	db, closeFn := getDB(t)
+	defer closeFn()
 
-	defer func(database datastore.DatabaseClient, ctx context.Context) {
-		err := database.Disconnect(ctx)
-		if err != nil {
-			require.NoError(t, err)
-		}
-	}(database, context.Background())
-
-	e := database.EventDeliveryRepo()
+	e := NewEventDeliveryRepository(db)
 
 	delivery1 := datastore.EventDelivery{
 		UID: uuid.NewString(),
@@ -338,7 +277,7 @@ func Test_eventDeliveryRepo_LoadEventDeliveriesPaged(t *testing.T) {
 		AppMetadata: &datastore.AppMetadata{UID: uuid.NewString()},
 	}
 
-	err = e.CreateEventDelivery(context.Background(), &delivery1)
+	err := e.CreateEventDelivery(context.Background(), &delivery1)
 	if err != nil {
 		require.NoError(t, err)
 		return
