@@ -4,12 +4,11 @@ on:
     branches:
       - main
   pull_request:
-    branches-ignore:
-      - "ui/**"
-      - "cms/**"
 
 jobs:
   test:
+    if: startsWith(github.head_ref, "ui/") == false
+    if: startsWith(github.head_ref, "cms/") == false
     strategy:
       matrix:
         go-version: [1.16.x, 1.17.x]
@@ -17,27 +16,6 @@ jobs:
         mongodb-version: ["4.0", "4.2", "4.4"]
 
     runs-on: ubuntu-latest
-
-    # services:
-    #   postgres:
-    #     image: postgres:13
-    #     env:
-    #       POSTGRES_PASSWORD: postgres
-    #       POSTGRES_USER: hookcamptest
-    #     ports: ["5432:5432"]
-    #     options: --health-cmd pg_isready --health-interval 10s --health-timeout 5s --health-retries 5
-
-    #   mysql:
-    #     image: mysql:5.7
-    #     env:
-    #       MYSQL_DATABASE: hookcamptest
-    #       MYSQL_USER: hookcamptest
-    #       MYSQL_PASSWORD: mysql
-    #       MYSQL_ROOT_PASSWORD: mysql
-    #     ports:
-    #       - 3306:3306
-    #     options: --health-cmd="mysqladmin ping" --health-interval=10s --health-timeout=5s --health-retries=3
-
     steps:
       - name: Start MongoDB
         uses: supercharge/mongodb-github-action@1.4.1

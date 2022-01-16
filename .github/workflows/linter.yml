@@ -1,12 +1,11 @@
 name: golangci-lint
 on:
   pull_request:
-    branches-ignore:
-      - "ui/**"
-      - "cms/**"
 
 jobs:
   golangci:
+    if: startsWith(github.head_ref, "ui/") == false
+    if: startsWith(github.head_ref, "cms/") == false
     name: lint
     runs-on: ubuntu-latest
     steps:
