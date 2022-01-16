@@ -27,7 +27,7 @@ type QueueOptions struct {
 
 	Type string
 
-	Redis redis.Client
+	Redis *redis.Client
 
 	Factory taskq.Factory
 
