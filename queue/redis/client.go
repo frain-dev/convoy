@@ -22,13 +22,7 @@ type RedisQueue struct {
 	closeChan chan struct{}
 }
 
-type RClient struct{}
-
-func NewQueueClient() queue.QueueClient {
-	return &RClient{}
-}
-
-func (client *RClient) NewClient(cfg config.Configuration) (*queue.StorageClient, taskq.Factory, error) {
+func NewClient(cfg config.Configuration) (*redis.Client, taskq.Factory, error) {
 	if cfg.Queue.Type != config.RedisQueueProvider {
 		return nil, nil, errors.New("please select the redis driver in your config")
 	}
@@ -49,25 +43,22 @@ func (client *RClient) NewClient(cfg config.Configuration) (*queue.StorageClient
 		Err(); err != nil {
 		return nil, nil, err
 	}
-	sc := &queue.StorageClient{
-		Redisclient: c,
-	}
 
 	qFn := redisq.NewFactory()
 
-	return sc, qFn, nil
+	return c, qFn, nil
 }
 
-func (client *RClient) NewQueue(c queue.StorageClient, factory taskq.Factory, name string) queue.Queuer {
+func NewQueue(opts queue.QueueOptions) queue.Queuer {
 
-	q := factory.RegisterQueue(&taskq.QueueOptions{
-		Name:  name,
-		Redis: c.Redisclient,
+	q := opts.Factory.RegisterQueue(&taskq.QueueOptions{
+		Name:  opts.Name,
+		Redis: opts.Redis,
 	})
 
 	return &RedisQueue{
-		Name:  name,
-		inner: c.Redisclient,
+		Name:  opts.Name,
+		inner: opts.Redis,
 		queue: q.(*redisq.Queue),
 	}
 }

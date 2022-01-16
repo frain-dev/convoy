@@ -9,6 +9,7 @@ import (
 	"github.com/frain-dev/convoy/config"
 	"github.com/frain-dev/convoy/datastore"
 	"github.com/frain-dev/convoy/queue"
+	log "github.com/sirupsen/logrus"
 	"github.com/vmihailenco/taskq/v3"
 	"github.com/vmihailenco/taskq/v3/memqueue"
 )
@@ -20,34 +21,26 @@ type MemQueue struct {
 	closeChan chan struct{}
 }
 
-type MClient struct{}
-
-func NewQueueClient() queue.QueueClient {
-	return &MClient{}
-}
-
-func (client *MClient) NewClient(cfg config.Configuration) (*queue.StorageClient, taskq.Factory, error) {
+func NewClient(cfg config.Configuration) (queue.Storage, taskq.Factory, error) {
 	if cfg.Queue.Type != config.InMemoryQueueProvider {
-		return nil, nil, errors.New("please select the in-memory driver in your config")
+		return nil, nil, errors.New("please select the in-memory queue in your config")
 	}
 
 	qFn := memqueue.NewFactory()
 
-	sc := &queue.StorageClient{
-		Memclient: queue.NewLocalStorage(),
-	}
+	storage := queue.NewLocalStorage()
 
-	return sc, qFn, nil
+	return storage, qFn, nil
 }
 
-func (client *MClient) NewQueue(localstorage queue.StorageClient, factory taskq.Factory, name string) queue.Queuer {
-	q := factory.RegisterQueue(&taskq.QueueOptions{
-		Name:    name,
-		Storage: localstorage.Memclient,
+func NewQueue(opts queue.QueueOptions) queue.Queuer {
+	q := opts.Factory.RegisterQueue(&taskq.QueueOptions{
+		Name:    opts.Name,
+		Storage: opts.Storage,
 	})
 
 	return &MemQueue{
-		Name:  name,
+		Name:  opts.Name,
 		queue: q.(*memqueue.Queue),
 	}
 }
@@ -78,5 +71,9 @@ func (q *MemQueue) Write(ctx context.Context, name convoy.TaskName, e *datastore
 }
 
 func (q *MemQueue) Consumer() taskq.QueueConsumer {
+	err := q.queue.Consumer().Stop()
+	if err != nil {
+		log.Fatal(err)
+	}
 	return q.queue.Consumer()
 }
