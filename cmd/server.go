@@ -35,7 +35,7 @@ func addServerCommand(a *app) *cobra.Command {
 				log.Warnf("signature header is blank. setting default %s", config.DefaultSignatureHeader)
 			}
 
-			err = realm_chain.Init(&cfg.Auth)
+			err = realm_chain.Init(&cfg.Auth, a.apiKeyRepo)
 			if err != nil {
 				log.WithError(err).Fatal("failed to initialize realm chain")
 			}
@@ -44,7 +44,7 @@ func addServerCommand(a *app) *cobra.Command {
 				return errors.New("please provide the HTTP port in the convoy.json file")
 			}
 
-			srv := server.New(cfg, a.eventRepo, a.eventDeliveryRepo, a.applicationRepo, a.groupRepo, a.eventQueue)
+			srv := server.New(cfg, a.eventRepo, a.eventDeliveryRepo, a.applicationRepo, a.apiKeyRepo, a.groupRepo, a.eventQueue)
 
 			// register tasks.
 			handler := task.ProcessEventDelivery(a.applicationRepo, a.eventDeliveryRepo, a.groupRepo)

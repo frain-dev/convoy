@@ -6,7 +6,6 @@ import (
 	"time"
 
 	"github.com/frain-dev/convoy/datastore"
-	"github.com/frain-dev/convoy/server/models"
 	"github.com/frain-dev/convoy/util"
 	log "github.com/sirupsen/logrus"
 
@@ -37,7 +36,7 @@ func (db *appRepo) CreateApplication(ctx context.Context,
 	return err
 }
 
-func (db *appRepo) LoadApplicationsPaged(ctx context.Context, groupID string, pageable models.Pageable) ([]datastore.Application, models.PaginationData, error) {
+func (db *appRepo) LoadApplicationsPaged(ctx context.Context, groupID string, pageable datastore.Pageable) ([]datastore.Application, datastore.PaginationData, error) {
 
 	filter := bson.M{"document_status": bson.M{"$ne": datastore.DeletedDocumentStatus}}
 	if !util.IsStringEmpty(groupID) {
@@ -47,7 +46,7 @@ func (db *appRepo) LoadApplicationsPaged(ctx context.Context, groupID string, pa
 	var apps []datastore.Application
 	paginatedData, err := pager.New(db.client).Context(ctx).Limit(int64(pageable.PerPage)).Page(int64(pageable.Page)).Sort("created_at", -1).Filter(filter).Decode(&apps).Find()
 	if err != nil {
-		return apps, models.PaginationData{}, err
+		return apps, datastore.PaginationData{}, err
 	}
 
 	if apps == nil {
@@ -60,15 +59,15 @@ func (db *appRepo) LoadApplicationsPaged(ctx context.Context, groupID string, pa
 		count, err := msgCollection.CountDocuments(ctx, filter)
 		if err != nil {
 			log.Errorf("failed to count events in %s. Reason: %s", app.UID, err)
-			return apps, models.PaginationData{}, err
+			return apps, datastore.PaginationData{}, err
 		}
 		apps[i].Events = count
 	}
 
-	return apps, models.PaginationData(models.PaginationData(paginatedData.Pagination)), nil
+	return apps, datastore.PaginationData(datastore.PaginationData(paginatedData.Pagination)), nil
 }
 
-func (db *appRepo) LoadApplicationsPagedByGroupId(ctx context.Context, groupID string, pageable models.Pageable) ([]datastore.Application, models.PaginationData, error) {
+func (db *appRepo) LoadApplicationsPagedByGroupId(ctx context.Context, groupID string, pageable datastore.Pageable) ([]datastore.Application, datastore.PaginationData, error) {
 
 	filter := bson.M{
 		"group_id": groupID,
@@ -80,7 +79,7 @@ func (db *appRepo) LoadApplicationsPagedByGroupId(ctx context.Context, groupID s
 	var applications []datastore.Application
 	paginatedData, err := pager.New(db.client).Context(ctx).Limit(int64(pageable.PerPage)).Page(int64(pageable.Page)).Sort("created_at", -1).Filter(filter).Decode(&applications).Find()
 	if err != nil {
-		return applications, models.PaginationData{}, err
+		return applications, datastore.PaginationData{}, err
 	}
 
 	if applications == nil {
@@ -93,12 +92,12 @@ func (db *appRepo) LoadApplicationsPagedByGroupId(ctx context.Context, groupID s
 		count, err := msgCollection.CountDocuments(ctx, filter)
 		if err != nil {
 			log.Errorf("failed to count events in %s. Reason: %s", app.UID, err)
-			return applications, models.PaginationData{}, err
+			return applications, datastore.PaginationData{}, err
 		}
 		applications[i].Events = count
 	}
 
-	return applications, models.PaginationData(paginatedData.Pagination), nil
+	return applications, datastore.PaginationData(paginatedData.Pagination), nil
 }
 
 func (db *appRepo) CountGroupApplications(ctx context.Context, groupID string) (int64, error) {
@@ -117,7 +116,7 @@ func (db *appRepo) CountGroupApplications(ctx context.Context, groupID string) (
 	return count, nil
 }
 
-func (db *appRepo) SearchApplicationsByGroupId(ctx context.Context, groupId string, searchParams models.SearchParams) ([]datastore.Application, error) {
+func (db *appRepo) SearchApplicationsByGroupId(ctx context.Context, groupId string, searchParams datastore.SearchParams) ([]datastore.Application, error) {
 
 	start := searchParams.CreatedAtStart
 	end := searchParams.CreatedAtEnd

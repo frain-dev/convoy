@@ -9,9 +9,17 @@ import (
 	"encoding/hex"
 	"errors"
 	"hash"
+	"strings"
+
+	"github.com/dchest/uniuri"
 
 	"github.com/frain-dev/convoy/config/algo"
 	"golang.org/x/crypto/sha3"
+)
+
+const (
+	prefix    string = "CO"
+	seperator string = "."
 )
 
 func ComputeJSONHmac(hash, data, secret string, order bool) (string, error) {
@@ -68,4 +76,19 @@ func getHashFunction(algorithm string) (func() hash.Hash, error) {
 
 func GenerateSecret() (string, error) {
 	return GenerateRandomString(25)
+}
+
+func GenerateAPIKey() (string, string) {
+	mask := uniuri.NewLen(16)
+	key := uniuri.NewLen(64)
+
+	var api_key strings.Builder
+
+	api_key.WriteString(prefix)
+	api_key.WriteString(seperator)
+	api_key.WriteString(mask)
+	api_key.WriteString(seperator)
+	api_key.WriteString(key)
+
+	return mask, api_key.String()
 }

@@ -137,6 +137,7 @@ func main() {
 				log.Warnf("signature header is blank. setting default %s", config.DefaultSignatureHeader)
 			}
 
+			app.apiKeyRepo = db.APIRepo()
 			app.groupRepo = db.GroupRepo()
 			app.eventRepo = db.EventRepo()
 			app.applicationRepo = db.AppRepo()
@@ -232,11 +233,30 @@ func ensureDefaultGroup(ctx context.Context, cfg config.Configuration, a *app) e
 		}
 	}
 
+	groupCfg := &config.GroupConfig{
+		Strategy: config.StrategyConfiguration{
+			Type: cfg.GroupConfig.Strategy.Type,
+			Default: struct {
+				IntervalSeconds uint64 `json:"intervalSeconds" envconfig:"CONVOY_INTERVAL_SECONDS"`
+				RetryLimit      uint64 `json:"retryLimit" envconfig:"CONVOY_RETRY_LIMIT"`
+			}{
+				IntervalSeconds: cfg.GroupConfig.Strategy.Default.IntervalSeconds,
+				RetryLimit:      cfg.GroupConfig.Strategy.Default.RetryLimit,
+			},
+			
+		},
+		Signature: config.SignatureConfiguration{
+			Header: config.SignatureHeaderProvider(cfg.GroupConfig.Signature.Header),
+			Hash:   cfg.GroupConfig.Signature.Hash,
+		},
+		DisableEndpoint: cfg.GroupConfig.DisableEndpoint,
+	}
+
 	if len(groups) == 0 {
 		defaultGroup := &datastore.Group{
 			UID:            uuid.New().String(),
 			Name:           "default-group",
-			Config:         &cfg.GroupConfig,
+			Config:         groupCfg,
 			CreatedAt:      primitive.NewDateTimeFromTime(time.Now()),
 			UpdatedAt:      primitive.NewDateTimeFromTime(time.Now()),
 			DocumentStatus: datastore.ActiveDocumentStatus,
@@ -252,7 +272,7 @@ func ensureDefaultGroup(ctx context.Context, cfg config.Configuration, a *app) e
 
 	group = groups[0]
 
-	group.Config = &cfg.GroupConfig
+	group.Config = groupCfg
 	err = a.groupRepo.UpdateGroup(ctx, group)
 	if err != nil {
 		log.WithError(err).Error("Default group update failed.")
@@ -266,6 +286,7 @@ func ensureDefaultGroup(ctx context.Context, cfg config.Configuration, a *app) e
 }
 
 type app struct {
+	apiKeyRepo        datastore.APIKeyRepository
 	groupRepo         datastore.GroupRepository
 	applicationRepo   datastore.ApplicationRepository
 	eventRepo         datastore.EventRepository

@@ -122,3 +122,32 @@ func (db *groupRepo) DeleteGroup(ctx context.Context, uid string) error {
 
 	return nil
 }
+
+func (db *groupRepo) FetchGroupsByIDs(ctx context.Context, ids []string) ([]datastore.Group, error) {
+	filter := bson.M{
+		"uid": bson.M{
+			"$in": ids,
+		},
+		"document_status": bson.M{
+			"$ne": datastore.DeletedDocumentStatus,
+		},
+	}
+
+	groups := make([]datastore.Group, 0)
+
+	cur, err := db.inner.Find(ctx, filter, nil)
+	if err != nil {
+		return groups, err
+	}
+
+	for cur.Next(ctx) {
+		var group datastore.Group
+		if err := cur.Decode(&group); err != nil {
+			return groups, err
+		}
+
+		groups = append(groups, group)
+	}
+
+	return groups, err
+}

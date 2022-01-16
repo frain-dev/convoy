@@ -1,9 +1,13 @@
 package realm_chain
 
 import (
+	"context"
 	"fmt"
 	"sync/atomic"
 	"testing"
+
+	"github.com/frain-dev/convoy/mocks"
+	"github.com/golang/mock/gomock"
 
 	"github.com/frain-dev/convoy/auth"
 	"github.com/frain-dev/convoy/auth/realm/file"
@@ -195,7 +199,7 @@ func TestRealmChain_Authenticate(t *testing.T) {
 				return
 			}
 
-			got, err := rc.Authenticate(tt.args.cred)
+			got, err := rc.Authenticate(context.Background(), tt.args.cred)
 
 			if tt.wantErr {
 				require.Equal(t, tt.wantErrMsg, err.Error())
@@ -314,7 +318,8 @@ func TestInit(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			err := Init(tt.args.authConfig)
+			mockAPIKeyRepo := mocks.NewMockAPIKeyRepository(gomock.NewController(t))
+			err := Init(tt.args.authConfig, mockAPIKeyRepo)
 			if tt.wantErr {
 				require.Equal(t, tt.wantErrMsg, err.Error())
 				return
