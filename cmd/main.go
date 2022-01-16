@@ -202,7 +202,7 @@ func NewQueue(opts queue.QueueOptions, name string) queue.Queuer {
 		opts.Name = name
 		convoyQueue = redisqueue.NewQueue(opts)
 	default:
-		log.Errorln("Invalid queue type: %v", optsType)
+		log.Errorf("Invalid queue type: %v", optsType)
 	}
 	return convoyQueue
 }
