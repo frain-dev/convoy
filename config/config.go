@@ -102,7 +102,7 @@ type GroupConfig struct {
 type StrategyConfiguration struct {
 	Type               StrategyProvider                        `json:"type"`
 	Default            DefaultStrategyConfiguration            `json:"default"`
-	ExponentialBackoff ExponentialBackoffStrategyConfiguration `json:"exponentialBackoff,omitempty`
+	ExponentialBackoff ExponentialBackoffStrategyConfiguration `json:"exponentialBackoff,omitempty"`
 }
 
 type DefaultStrategyConfiguration struct {
