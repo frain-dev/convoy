@@ -4,7 +4,7 @@ on:
 
 jobs:
   golangci:
-    if: ${{ !(startsWith(github.head_ref, 'ui/')) || !(startsWith(github.head_ref, 'cms/')) }}
+    if: ${{ !(contains(github.head_ref, 'ui/')) || !(contains(github.head_ref, 'cms/')) }}
     name: lint
     runs-on: ubuntu-latest
     steps:
