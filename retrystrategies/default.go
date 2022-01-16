@@ -9,7 +9,7 @@ type DefaultRetryStrategy struct {
 }
 
 func (r *DefaultRetryStrategy) NextDuration(attempts uint64) time.Duration {
-	return time.Duration(r.intervalSeconds)
+	return time.Duration(r.intervalSeconds) * time.Second
 }
 
 func NewDefault(intervalSeconds uint64) *DefaultRetryStrategy {
