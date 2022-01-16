@@ -15,7 +15,7 @@ import (
 // @Param eventID path string true "event id"
 // @Param eventDeliveryID path string true "event delivery id"
 // @Param deliveryAttemptID path string true "delivery attempt id"
-// @Success 200 {object} serverResponse{data=convoy.DeliveryAttempt}
+// @Success 200 {object} serverResponse{data=datastore.DeliveryAttempt}
 // @Failure 400,401,500 {object} serverResponse{data=Stub}
 // @Security ApiKeyAuth
 // @Router /events/{eventID}/eventdeliveries/{eventDeliveryID}/deliveryattempts/{deliveryAttemptID} [get]
@@ -33,7 +33,7 @@ func (a *applicationHandler) GetDeliveryAttempt(w http.ResponseWriter, r *http.R
 // @Produce  json
 // @Param eventID path string true "event id"
 // @Param eventDeliveryID path string true "event delivery id"
-// @Success 200 {object} serverResponse{data=[]convoy.DeliveryAttempt}
+// @Success 200 {object} serverResponse{data=[]datastore.DeliveryAttempt}
 // @Failure 400,401,500 {object} serverResponse{data=Stub}
 // @Security ApiKeyAuth
 // @Router /events/{eventID}/eventdeliveries/{eventDeliveryID}/deliveryattempts [get]

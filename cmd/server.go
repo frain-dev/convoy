@@ -44,12 +44,13 @@ func addServerCommand(a *app) *cobra.Command {
 func StartConvoyServer(a *app, cfg config.Configuration, withWorkers bool) error {
 	start := time.Now()
 	log.Info("Starting Convoy server...")
+
 	if util.IsStringEmpty(string(cfg.GroupConfig.Signature.Header)) {
 		cfg.GroupConfig.Signature.Header = config.DefaultSignatureHeader
 		log.Warnf("signature header is blank. setting default %s", config.DefaultSignatureHeader)
 	}
 
-	err := realm_chain.Init(&cfg.Auth)
+	err := realm_chain.Init(&cfg.Auth, a.apiKeyRepo)
 	if err != nil {
 		log.WithError(err).Fatal("failed to initialize realm chain")
 	}
@@ -57,7 +58,8 @@ func StartConvoyServer(a *app, cfg config.Configuration, withWorkers bool) error
 	if cfg.Server.HTTP.Port <= 0 {
 		return errors.New("please provide the HTTP port in the convoy.json file")
 	}
-	srv := server.New(cfg, a.eventRepo, a.eventDeliveryRepo, a.applicationRepo, a.groupRepo, a.eventQueue)
+
+	srv := server.New(cfg, a.eventRepo, a.eventDeliveryRepo, a.applicationRepo, a.apiKeyRepo, a.groupRepo, a.eventQueue)
 
 	// register tasks.
 	handler := task.ProcessEventDelivery(a.applicationRepo, a.eventDeliveryRepo, a.groupRepo)
@@ -65,7 +67,6 @@ func StartConvoyServer(a *app, cfg config.Configuration, withWorkers bool) error
 		log.WithError(err).Error("failed to register tasks")
 		return err
 	}
-
 	if withWorkers {
 		// register workers.
 		if queue, ok := a.eventQueue.(*convoyQueue.RedisQueue); ok {
@@ -75,6 +76,7 @@ func StartConvoyServer(a *app, cfg config.Configuration, withWorkers bool) error
 		if queue, ok := a.deadLetterQueue.(*convoyQueue.RedisQueue); ok {
 			worker.NewCleaner(queue).Start()
 		}
+
 	}
 
 	log.Infof("Started convoy server in %s", time.Since(start))
