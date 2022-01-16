@@ -206,7 +206,6 @@ func ensureDefaultGroup(ctx context.Context, cfg config.Configuration, a *app) e
 				IntervalSeconds: cfg.GroupConfig.Strategy.Default.IntervalSeconds,
 				RetryLimit:      cfg.GroupConfig.Strategy.Default.RetryLimit,
 			},
-			
 		},
 		Signature: config.SignatureConfiguration{
 			Header: config.SignatureHeaderProvider(cfg.GroupConfig.Signature.Header),
