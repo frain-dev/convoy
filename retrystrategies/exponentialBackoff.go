@@ -5,9 +5,12 @@ import (
 	"time"
 )
 
+type JitterFn func(uint) int
+
 // based off https://blog.gopheracademy.com/advent-2014/backoff/
 type ExponentialBackoffRetryStrategy struct {
-	millis []uint
+	millis   []uint
+	jitterFn JitterFn
 }
 
 func (r *ExponentialBackoffRetryStrategy) NextDuration(attempts uint64) time.Duration {
@@ -15,7 +18,7 @@ func (r *ExponentialBackoffRetryStrategy) NextDuration(attempts uint64) time.Dur
 		attempts = uint64(len(r.millis) - 1)
 	}
 
-	return time.Duration(jitter(r.millis[attempts])) * time.Millisecond
+	return time.Duration(r.jitterFn(r.millis[attempts])) * time.Millisecond
 }
 
 func jitter(millis uint) int {
@@ -28,7 +31,15 @@ func jitter(millis uint) int {
 
 func NewExponential(millis []uint) *ExponentialBackoffRetryStrategy {
 	return &ExponentialBackoffRetryStrategy{
-		millis: millis,
+		millis:   millis,
+		jitterFn: jitter,
+	}
+}
+
+func NewExponentialWithJitter(millis []uint, customJitter JitterFn) *ExponentialBackoffRetryStrategy {
+	return &ExponentialBackoffRetryStrategy{
+		millis:   millis,
+		jitterFn: customJitter,
 	}
 }
 
