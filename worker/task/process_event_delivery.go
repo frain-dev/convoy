@@ -13,6 +13,7 @@ import (
 	"github.com/frain-dev/convoy/datastore"
 	"github.com/frain-dev/convoy/net"
 	"github.com/frain-dev/convoy/queue"
+	"github.com/frain-dev/convoy/retrystrategies"
 	"github.com/frain-dev/convoy/smtp"
 	"github.com/frain-dev/convoy/util"
 	"github.com/google/uuid"
@@ -130,6 +131,7 @@ func ProcessEventDelivery(appRepo datastore.ApplicationRepository, eventDelivery
 			"duration": duration,
 		})
 
+		var delayDuration time.Duration = retrystrategies.NewRetryStrategyFromMetadata(*m.Metadata).NextDuration(m.Metadata.NumTrials)
 		if err == nil && statusCode >= 200 && statusCode <= 299 {
 			requestLogger.Infof("%s", m.UID)
 			log.Infof("%s sent", m.UID)
@@ -145,12 +147,11 @@ func ProcessEventDelivery(appRepo datastore.ApplicationRepository, eventDelivery
 
 			m.Status = datastore.RetryEventStatus
 
-			delay := m.Metadata.IntervalSeconds
-			nextTime := time.Now().Add(time.Duration(delay) * time.Second)
+			nextTime := time.Now().Add(delayDuration)
 			m.Metadata.NextSendTime = primitive.NewDateTimeFromTime(nextTime)
 			attempts := m.Metadata.NumTrials + 1
 
-			log.Errorf("%s next retry time is %s (strategy = %s, delay = %d, attempts = %d/%d)\n", m.UID, nextTime.Format(time.ANSIC), m.Metadata.Strategy, delay, attempts, m.Metadata.RetryLimit)
+			log.Errorf("%s next retry time is %s (strategy = %s, delay = %d, attempts = %d/%d)\n", m.UID, nextTime.Format(time.ANSIC), m.Metadata.Strategy, m.Metadata.IntervalSeconds, attempts, m.Metadata.RetryLimit)
 		}
 
 		// Request failed but statusCode is 200 <= x <= 299
@@ -227,8 +228,7 @@ func ProcessEventDelivery(appRepo datastore.ApplicationRepository, eventDelivery
 		}
 
 		if !done && m.Metadata.NumTrials < m.Metadata.RetryLimit {
-			delay := time.Duration(m.Metadata.IntervalSeconds) * time.Second
-			return &EndpointError{Err: ErrDeliveryAttemptFailed, delay: delay}
+			return &EndpointError{Err: ErrDeliveryAttemptFailed, delay: delayDuration}
 		}
 
 		return nil

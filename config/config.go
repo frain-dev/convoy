@@ -87,9 +87,10 @@ const (
 )
 
 const (
-	RedisQueueProvider      QueueProvider           = "redis"
-	DefaultStrategyProvider StrategyProvider        = "default"
-	DefaultSignatureHeader  SignatureHeaderProvider = "X-Convoy-Signature"
+	RedisQueueProvider                 QueueProvider           = "redis"
+	DefaultStrategyProvider            StrategyProvider        = "default"
+	ExponentialBackoffStrategyProvider StrategyProvider        = "exponential-backoff"
+	DefaultSignatureHeader             SignatureHeaderProvider = "X-Convoy-Signature"
 )
 
 type GroupConfig struct {
@@ -99,13 +100,18 @@ type GroupConfig struct {
 }
 
 type StrategyConfiguration struct {
-	Type    StrategyProvider             `json:"type"`
-	Default DefaultStrategyConfiguration `json:"default"`
+	Type               StrategyProvider                        `json:"type"`
+	Default            DefaultStrategyConfiguration            `json:"default"`
+	ExponentialBackoff ExponentialBackoffStrategyConfiguration `json:"exponentialBackoff,omitempty`
 }
 
 type DefaultStrategyConfiguration struct {
 	IntervalSeconds uint64 `json:"intervalSeconds" envconfig:"CONVOY_INTERVAL_SECONDS"`
 	RetryLimit      uint64 `json:"retryLimit" envconfig:"CONVOY_RETRY_LIMIT"`
+}
+
+type ExponentialBackoffStrategyConfiguration struct {
+	RetryLimit uint64 `json:"retryLimit" envconfig:"CONVOY_RETRY_LIMIT"`
 }
 
 type SignatureConfiguration struct {
@@ -267,6 +273,10 @@ func ensureStrategyConfig(strategyCfg StrategyConfiguration) error {
 	case DefaultStrategyProvider:
 		if strategyCfg.Default.IntervalSeconds == 0 || strategyCfg.Default.RetryLimit == 0 {
 			return errors.New("both interval seconds and retry limit are required for default strategy configuration")
+		}
+	case ExponentialBackoffStrategyProvider:
+		if strategyCfg.ExponentialBackoff.RetryLimit == 0 {
+			return errors.New("retry limit is required for exponential backoff retry strategy configuration")
 		}
 	default:
 		return fmt.Errorf("unsupported strategy type: %s", strategyCfg.Type)
