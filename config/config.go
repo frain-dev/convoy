@@ -45,10 +45,6 @@ type RedisQueueConfiguration struct {
 	DSN string `json:"dsn" envconfig:"CONVOY_REDIS_DSN"`
 }
 
-type ConsulConfiguration struct {
-	DSN string `json:"dsn"`
-}
-
 type FileRealmOption struct {
 	Basic  []BasicAuth  `json:"basic" bson:"basic"`
 	APIKey []APIKeyAuth `json:"api_key"`
