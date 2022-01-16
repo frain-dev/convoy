@@ -7,10 +7,11 @@ import (
 	"time"
 	_ "time/tzdata"
 
-	convoyMemqueue "github.com/frain-dev/convoy/queue/memqueue"
-	convoyRedis "github.com/frain-dev/convoy/queue/redis"
+	memqueue "github.com/frain-dev/convoy/queue/memqueue"
+	redisqueue "github.com/frain-dev/convoy/queue/redis"
 	"github.com/frain-dev/convoy/worker/task"
 	"github.com/getsentry/sentry-go"
+	"github.com/go-redis/redis/v8"
 	"github.com/google/uuid"
 	prefixed "github.com/x-cray/logrus-prefixed-formatter"
 	"go.mongodb.org/mongo-driver/bson/primitive"
@@ -103,13 +104,32 @@ func main() {
 			log.AddHook(sentryHook)
 
 			var qFn taskq.Factory
-			var sC *queue.StorageClient
+			var rC *redis.Client
+			var lS queue.Storage
+			var opts queue.QueueOptions
 
-			convoyQueue := getQueueClient(cfg)
+			if cfg.Queue.Type == config.RedisQueueProvider {
+				rC, qFn, err = redisqueue.NewClient(cfg)
+				if err != nil {
+					return err
+				}
+				opts = queue.QueueOptions{
+					Type:    "redis",
+					Redis:   rC,
+					Factory: qFn,
+				}
+			}
 
-			sC, qFn, err = convoyQueue.NewClient(cfg)
-			if err != nil {
-				return err
+			if cfg.Queue.Type == config.InMemoryQueueProvider {
+				lS, qFn, err = memqueue.NewClient(cfg)
+				if err != nil {
+					return err
+				}
+				opts = queue.QueueOptions{
+					Type:    "in-memory",
+					Storage: lS,
+					Factory: qFn,
+				}
 			}
 
 			if util.IsStringEmpty(string(cfg.GroupConfig.Signature.Header)) {
@@ -122,8 +142,8 @@ func main() {
 			app.applicationRepo = db.AppRepo()
 			app.eventDeliveryRepo = db.EventDeliveryRepo()
 
-			app.eventQueue = convoyQueue.NewQueue(*sC, qFn, "EventQueue")
-			app.deadLetterQueue = convoyQueue.NewQueue(*sC, qFn, "DeadLetterQueue")
+			app.eventQueue = NewQueue(opts, "EventQueue")
+			app.deadLetterQueue = NewQueue(opts, "DeadLetterQueue")
 
 			err = ensureDefaultGroup(context.Background(), cfg, app)
 			if err != nil {
@@ -170,16 +190,21 @@ func main() {
 	}
 }
 
-func getQueueClient(cfg config.Configuration) queue.QueueClient {
-	var queueClient queue.QueueClient
-	if cfg.Queue.Type == config.RedisQueueProvider {
-		queueClient = convoyRedis.NewQueueClient()
-	}
-	if cfg.Queue.Type == config.InMemoryQueueProvider {
-		queueClient = convoyMemqueue.NewQueueClient()
-	}
+func NewQueue(opts queue.QueueOptions, name string) queue.Queuer {
+	optsType := opts.Type
+	var convoyQueue queue.Queuer
+	switch optsType {
+	case "in-memory":
+		opts.Name = name
+		convoyQueue = memqueue.NewQueue(opts)
 
-	return queueClient
+	case "redis":
+		opts.Name = name
+		convoyQueue = redisqueue.NewQueue(opts)
+	default:
+		log.Errorln("Invalid queue type: %v", optsType)
+	}
+	return convoyQueue
 }
 
 func ensureDefaultGroup(ctx context.Context, cfg config.Configuration, a *app) error {
