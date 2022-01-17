@@ -224,30 +224,34 @@
 								<mat-date-range-picker #eventDeliveriesFilterPicker [disabled]="false"></mat-date-range-picker>
 								<img src="/assets/img/angle-arrow-down.svg" alt="arrow down icon" />
 							</button>
+
 							<div class="dropdown">
 								<button
 									class="filter--button dropdown--button"
-									[ngClass]="{ active: eventDeliveryFilteredByStatus }"
+									[ngClass]="{ active: eventDeliveryFilteredByStatus.length > 0 }"
 									(click)="showOverlay = true; showEventDeliveriesStatusDropdown = !showEventDeliveriesStatusDropdown"
 								>
 									<img src="/assets/img/status-filter-icon.svg" alt="status filter icon" />
-									<span>{{ eventDeliveryFilteredByStatus || 'Status' }}</span>
+									<span>Status</span>
 									<img src="/assets/img/angle-arrow-down.svg" alt="arrow down icon" />
 								</button>
-								<div class="dropdown--list" *ngIf="showEventDeliveriesStatusDropdown">
+								<div class="dropdown--list" [ngClass]="{ show: showEventDeliveriesStatusDropdown }">
 									<div class="dropdown--list--item" *ngFor="let status of eventDeliveryStatuses">
 										<input
-											type="radio"
+											type="checkbox"
 											name="status"
 											[value]="status"
-											[(ngModel)]="eventDeliveryFilteredByStatus"
 											[id]="status"
-											(change)="showOverlay = false; showEventDeliveriesStatusDropdown = false; getEventDeliveries({ addToURL: true })"
+											[checked]="checkIfEventDeliveryStatusFilterOptionIsSelected(status)"
+											(change)="updateEventDevliveryStatusFilter(status, $event)"
 										/>
 										<label [for]="status">{{ status || 'None' }}</label>
 									</div>
+
+									<button class="primary" (click)="showOverlay = false; showEventDeliveriesStatusDropdown = false; this.getEventDeliveries({ addToURL: true })">Apply</button>
 								</div>
 							</div>
+
 							<div class="select">
 								<select [ngClass]="{ active: !!eventDeliveriesApp }" aria-label="frequency" [(ngModel)]="eventDeliveriesApp" (change)="getEventDeliveries({ addToURL: true })">
 									<option value="">All Apps</option>
@@ -271,7 +275,7 @@
 									(eventDeliveriesFilterDateRange.value.startDate == '' || eventDeliveriesFilterDateRange.value.endDate == '') &&
 									eventDeliveriesApp == '' &&
 									eventDeliveryFilteredByEventId == '' &&
-									!eventDeliveryFilteredByStatus
+									eventDeliveryFilteredByStatus == []
 								"
 							>
 								Clear Filter
