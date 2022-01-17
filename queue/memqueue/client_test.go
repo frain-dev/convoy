@@ -72,10 +72,12 @@ func TestWritetoQueue(t *testing.T) {
 			}
 
 			eventQueue := NewQueue(opts)
-			eventQueue.Consumer().Start(context.TODO())
 			switch tc.testType {
 			case "writer":
 				eventQueue.Write(context.TODO(), taskName, evenDelivery, 0)
+				if err != nil {
+					t.Fatalf("Failed to get queue length")
+				}
 				queueLength, err := eventQueue.Consumer().Queue().Len()
 
 				if err != nil {
