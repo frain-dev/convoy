@@ -3,26 +3,23 @@ package server
 import (
 	"context"
 	"encoding/base64"
-	"encoding/json"
 	"errors"
 	"fmt"
-	"io"
 	"net/http"
 	"strconv"
 	"strings"
 	"time"
 
-	"github.com/frain-dev/convoy/auth/realm_chain"
-	"github.com/frain-dev/convoy/datastore"
-
-	"github.com/frain-dev/convoy/auth"
-
 	"go.mongodb.org/mongo-driver/mongo"
 
 	"github.com/felixge/httpsnoop"
+	"github.com/frain-dev/convoy/auth"
+	"github.com/frain-dev/convoy/auth/realm_chain"
 	"github.com/frain-dev/convoy/config"
+	"github.com/frain-dev/convoy/datastore"
 	"github.com/frain-dev/convoy/server/models"
 	"github.com/frain-dev/convoy/util"
+
 	log "github.com/sirupsen/logrus"
 
 	"github.com/go-chi/chi/v5"
@@ -131,11 +128,11 @@ func filterDeletedEndpoints(endpoints []datastore.Endpoint) []datastore.Endpoint
 	return activeEndpoints
 }
 
-func parseEndpointFromBody(body io.ReadCloser) (models.Endpoint, error) {
+func parseEndpointFromBody(r *http.Request) (models.Endpoint, error) {
 	var e models.Endpoint
-	err := json.NewDecoder(body).Decode(&e)
+	err := util.ReadJSON(r, &e)
 	if err != nil {
-		return e, errors.New("request is invalid")
+		return e, err
 	}
 
 	description := e.Description
@@ -327,7 +324,7 @@ func requireAuth() func(next http.Handler) http.Handler {
 				return
 			}
 
-			authUser, err := rc.Authenticate(creds)
+			authUser, err := rc.Authenticate(r.Context(), creds)
 			if err != nil {
 				log.WithError(err).Error("failed to authenticate")
 				_ = render.Render(w, r, newErrorResponse("authorization failed", http.StatusUnauthorized))
@@ -406,7 +403,15 @@ func getAuthFromRequest(r *http.Request) (*auth.Credential, error) {
 			Username: creds[0],
 			Password: creds[1],
 		}, nil
+	case auth.CredentialTypeAPIKey:
+		if util.IsStringEmpty(authInfo[1]) {
+			return nil, errors.New("empty api key")
+		}
 
+		return &auth.Credential{
+			Type:   auth.CredentialTypeAPIKey,
+			APIKey: authInfo[1],
+		}, nil
 	default:
 		return nil, fmt.Errorf("unknown credential type: %s", credType.String())
 	}
@@ -444,7 +449,7 @@ func pagination(next http.Handler) http.Handler {
 		if page, err = strconv.Atoi(rawPage); err != nil {
 			page = 0
 		}
-		pageable := models.Pageable{
+		pageable := datastore.Pageable{
 			Page:    page,
 			PerPage: perPage,
 			Sort:    sort,
@@ -484,7 +489,7 @@ func ensurePeriod(start time.Time, end time.Time) error {
 	return nil
 }
 
-func computeDashboardMessages(ctx context.Context, orgId string, eventRepo datastore.EventRepository, searchParams models.SearchParams, period datastore.Period) (uint64, []models.EventInterval, error) {
+func computeDashboardMessages(ctx context.Context, orgId string, eventRepo datastore.EventRepository, searchParams datastore.SearchParams, period datastore.Period) (uint64, []datastore.EventInterval, error) {
 
 	var messagesSent uint64
 
@@ -554,20 +559,20 @@ func getGroupFromContext(ctx context.Context) *datastore.Group {
 	return ctx.Value(groupCtx).(*datastore.Group)
 }
 
-func setPageableInContext(ctx context.Context, pageable models.Pageable) context.Context {
+func setPageableInContext(ctx context.Context, pageable datastore.Pageable) context.Context {
 	return context.WithValue(ctx, pageableCtx, pageable)
 }
 
-func getPageableFromContext(ctx context.Context) models.Pageable {
-	return ctx.Value(pageableCtx).(models.Pageable)
+func getPageableFromContext(ctx context.Context) datastore.Pageable {
+	return ctx.Value(pageableCtx).(datastore.Pageable)
 }
 
-func setPaginationDataInContext(ctx context.Context, p *models.PaginationData) context.Context {
+func setPaginationDataInContext(ctx context.Context, p *datastore.PaginationData) context.Context {
 	return context.WithValue(ctx, pageDataCtx, p)
 }
 
-func getPaginationDataFromContext(ctx context.Context) *models.PaginationData {
-	return ctx.Value(pageDataCtx).(*models.PaginationData)
+func getPaginationDataFromContext(ctx context.Context) *datastore.PaginationData {
+	return ctx.Value(pageDataCtx).(*datastore.PaginationData)
 }
 
 func setDashboardSummaryInContext(ctx context.Context, d *models.DashboardSummary) context.Context {

@@ -12,6 +12,7 @@ import (
 	"github.com/frain-dev/convoy/config"
 	"github.com/frain-dev/convoy/datastore"
 	"github.com/frain-dev/convoy/mocks"
+
 	"github.com/go-chi/chi/v5"
 	"github.com/golang/mock/gomock"
 )
@@ -87,8 +88,9 @@ func TestApplicationHandler_GetGroup(t *testing.T) {
 			eventRepo := mocks.NewMockEventRepository(ctrl)
 			eventDeliveryRepo := mocks.NewMockEventDeliveryRepository(ctrl)
 			eventQueue := mocks.NewMockQueuer(ctrl)
+			apiKeyRepo := mocks.NewMockAPIKeyRepository(ctrl)
 
-			app = newApplicationHandler(eventRepo, eventDeliveryRepo, appRepo, groupRepo, eventQueue)
+			app = newApplicationHandler(eventRepo, eventDeliveryRepo, appRepo, groupRepo, apiKeyRepo, eventQueue)
 
 			// Arrange
 			url := fmt.Sprintf("/api/v1/groups/%s", tc.id)
@@ -111,7 +113,7 @@ func TestApplicationHandler_GetGroup(t *testing.T) {
 			if err != nil {
 				t.Errorf("Failed to load config file: %v", err)
 			}
-			initRealmChain(t)
+			initRealmChain(t, app.apiKeyRepo)
 
 			router := buildRoutes(app)
 
@@ -177,8 +179,9 @@ func TestApplicationHandler_CreateGroup(t *testing.T) {
 			eventRepo := mocks.NewMockEventRepository(ctrl)
 			eventDeliveryRepo := mocks.NewMockEventDeliveryRepository(ctrl)
 			eventQueue := mocks.NewMockQueuer(ctrl)
+			apiKeyRepo := mocks.NewMockAPIKeyRepository(ctrl)
 
-			app = newApplicationHandler(eventRepo, eventDeliveryRepo, appRepo, groupRepo, eventQueue)
+			app = newApplicationHandler(eventRepo, eventDeliveryRepo, appRepo, groupRepo, apiKeyRepo, eventQueue)
 
 			// Arrange
 			req := httptest.NewRequest(tc.method, "/api/v1/groups", tc.body)
@@ -195,7 +198,7 @@ func TestApplicationHandler_CreateGroup(t *testing.T) {
 			if err != nil {
 				t.Errorf("Failed to load config file: %v", err)
 			}
-			initRealmChain(t)
+			initRealmChain(t, app.apiKeyRepo)
 
 			router := buildRoutes(app)
 
@@ -263,8 +266,9 @@ func TestApplicationHandler_UpdateGroup(t *testing.T) {
 			eventRepo := mocks.NewMockEventRepository(ctrl)
 			eventDeliveryRepo := mocks.NewMockEventDeliveryRepository(ctrl)
 			eventQueue := mocks.NewMockQueuer(ctrl)
+			apiKeyRepo := mocks.NewMockAPIKeyRepository(ctrl)
 
-			app = newApplicationHandler(eventRepo, eventDeliveryRepo, appRepo, groupRepo, eventQueue)
+			app = newApplicationHandler(eventRepo, eventDeliveryRepo, appRepo, groupRepo, apiKeyRepo, eventQueue)
 
 			// Arrange
 			url := fmt.Sprintf("/api/v1/groups/%s", tc.orgID)
@@ -287,7 +291,7 @@ func TestApplicationHandler_UpdateGroup(t *testing.T) {
 			if err != nil {
 				t.Errorf("Failed to load config file: %v", err)
 			}
-			initRealmChain(t)
+			initRealmChain(t, app.apiKeyRepo)
 
 			router := buildRoutes(app)
 
@@ -297,7 +301,7 @@ func TestApplicationHandler_UpdateGroup(t *testing.T) {
 			if w.Code != tc.statusCode {
 				t.Errorf("Want status '%d', got '%d'", tc.statusCode, w.Code)
 			}
-
+			fmt.Println("s", w.Body.String())
 			verifyMatch(t, *w)
 		})
 	}
@@ -359,8 +363,9 @@ func TestApplicationHandler_GetGroups(t *testing.T) {
 			eventRepo := mocks.NewMockEventRepository(ctrl)
 			eventDeliveryRepo := mocks.NewMockEventDeliveryRepository(ctrl)
 			eventQueue := mocks.NewMockQueuer(ctrl)
+			apiKeyRepo := mocks.NewMockAPIKeyRepository(ctrl)
 
-			app = newApplicationHandler(eventRepo, eventDeliveryRepo, appRepo, groupRepo, eventQueue)
+			app = newApplicationHandler(eventRepo, eventDeliveryRepo, appRepo, groupRepo, apiKeyRepo, eventQueue)
 
 			req := httptest.NewRequest(tc.method, "/api/v1/groups", nil)
 			req.SetBasicAuth("test", "test")
@@ -375,7 +380,7 @@ func TestApplicationHandler_GetGroups(t *testing.T) {
 			if err != nil {
 				t.Errorf("Failed to load config file: %v", err)
 			}
-			initRealmChain(t)
+			initRealmChain(t, app.apiKeyRepo)
 
 			router := buildRoutes(app)
 
@@ -468,12 +473,13 @@ func TestApplicationHandler_DeleteGroup(t *testing.T) {
 			defer ctrl.Finish()
 
 			groupRepo := mocks.NewMockGroupRepository(ctrl)
+			apiKeyRepo := mocks.NewMockAPIKeyRepository(ctrl)
 			appRepo := mocks.NewMockApplicationRepository(ctrl)
 			eventRepo := mocks.NewMockEventRepository(ctrl)
 			eventDeliveryRepo := mocks.NewMockEventDeliveryRepository(ctrl)
 			eventQueue := mocks.NewMockQueuer(ctrl)
 
-			app = newApplicationHandler(eventRepo, eventDeliveryRepo, appRepo, groupRepo, eventQueue)
+			app = newApplicationHandler(eventRepo, eventDeliveryRepo, appRepo, groupRepo, apiKeyRepo, eventQueue)
 
 			// Arrange
 			url := fmt.Sprintf("/api/v1/groups/%s", tc.orgID)
@@ -496,7 +502,7 @@ func TestApplicationHandler_DeleteGroup(t *testing.T) {
 			if err != nil {
 				t.Errorf("Failed to load config file: %v", err)
 			}
-			initRealmChain(t)
+			initRealmChain(t, app.apiKeyRepo)
 
 			router := buildRoutes(app)
 
