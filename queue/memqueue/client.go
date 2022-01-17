@@ -71,6 +71,5 @@ func (q *MemQueue) Write(ctx context.Context, name convoy.TaskName, e *datastore
 }
 
 func (q *MemQueue) Consumer() taskq.QueueConsumer {
-	q.queue.Consumer().Start(context.TODO())
 	return q.queue.Consumer()
 }
