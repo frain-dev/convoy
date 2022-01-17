@@ -37,12 +37,6 @@ type pagedResponse struct {
 	Pagination *datastore.PaginationData `json:"pagination,omitempty"`
 }
 
-// func newApplicationHandler(eventRepo convoy.EventRepository,
-// 	eventDeliveryRepo convoy.EventDeliveryRepository,
-// 	appRepo convoy.ApplicationRepository,
-// 	groupRepo convoy.GroupRepository,
-// 	eventQueue queue.Queuer, logger logger.Logger, tracer tracer.Tracer) *applicationHandler {
-
 func newApplicationHandler(eventRepo datastore.EventRepository,
 	eventDeliveryRepo datastore.EventDeliveryRepository,
 	appRepo datastore.ApplicationRepository,
