@@ -5,17 +5,17 @@ import (
 
 	"go.etcd.io/bbolt"
 
-	"github.com/frain-dev/convoy"
 	"github.com/frain-dev/convoy/config"
 	"github.com/frain-dev/convoy/datastore"
 )
 
 type Client struct {
 	db                *bbolt.DB
-	groupRepo         convoy.GroupRepository
-	eventRepo         convoy.EventRepository
-	applicationRepo   convoy.ApplicationRepository
-	eventDeliveryRepo convoy.EventDeliveryRepository
+	apiKeyRepo        datastore.APIKeyRepository
+	groupRepo         datastore.GroupRepository
+	eventRepo         datastore.EventRepository
+	applicationRepo   datastore.ApplicationRepository
+	eventDeliveryRepo datastore.EventDeliveryRepository
 }
 
 const bucketName string = "convoy"
@@ -58,18 +58,22 @@ func (c *Client) Client() interface{} {
 	return c.db
 }
 
-func (c *Client) GroupRepo() convoy.GroupRepository {
+func (c *Client) APIRepo() datastore.APIKeyRepository {
+	return c.apiKeyRepo
+}
+
+func (c *Client) GroupRepo() datastore.GroupRepository {
 	return c.groupRepo
 }
 
-func (c *Client) AppRepo() convoy.ApplicationRepository {
+func (c *Client) AppRepo() datastore.ApplicationRepository {
 	return c.applicationRepo
 }
 
-func (c *Client) EventRepo() convoy.EventRepository {
+func (c *Client) EventRepo() datastore.EventRepository {
 	return c.eventRepo
 }
 
-func (c *Client) EventDeliveryRepo() convoy.EventDeliveryRepository {
+func (c *Client) EventDeliveryRepo() datastore.EventDeliveryRepository {
 	return c.eventDeliveryRepo
 }
