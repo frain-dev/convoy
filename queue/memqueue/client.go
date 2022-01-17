@@ -9,7 +9,6 @@ import (
 	"github.com/frain-dev/convoy/config"
 	"github.com/frain-dev/convoy/datastore"
 	"github.com/frain-dev/convoy/queue"
-	log "github.com/sirupsen/logrus"
 	"github.com/vmihailenco/taskq/v3"
 	"github.com/vmihailenco/taskq/v3/memqueue"
 )
@@ -41,6 +40,7 @@ func NewQueue(opts queue.QueueOptions) queue.Queuer {
 
 	return &MemQueue{
 		Name:  opts.Name,
+		inner: opts.Factory,
 		queue: q.(*memqueue.Queue),
 	}
 }
@@ -71,9 +71,6 @@ func (q *MemQueue) Write(ctx context.Context, name convoy.TaskName, e *datastore
 }
 
 func (q *MemQueue) Consumer() taskq.QueueConsumer {
-	err := q.queue.Consumer().Stop()
-	if err != nil {
-		log.Fatal(err)
-	}
+	q.queue.Consumer().Start(context.TODO())
 	return q.queue.Consumer()
 }

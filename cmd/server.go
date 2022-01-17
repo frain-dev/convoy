@@ -54,9 +54,14 @@ func addServerCommand(a *app) *cobra.Command {
 			}
 
 			// register workers.
-			worker.NewProducer(a.eventQueue).Start()
+			producer := worker.NewProducer(a.eventQueue)
 
-			worker.NewCleaner(a.deadLetterQueue).Start()
+			cleaner := worker.NewCleaner(a.deadLetterQueue)
+
+			if cfg.Queue.Type != config.InMemoryQueueProvider {
+				producer.Start()
+				cleaner.Start()
+			}
 
 			log.Infof("Started convoy server in %s", time.Since(start))
 
