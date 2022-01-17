@@ -23,6 +23,8 @@ hookstack
 
 # ui depencencies
 **/node_modules
+**/.angular/cache
 
 # Convoy specific
 convoy.json
+docker-compose.yml

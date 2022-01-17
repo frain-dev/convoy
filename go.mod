@@ -3,6 +3,7 @@ module github.com/frain-dev/convoy
 go 1.16
 
 require (
+	github.com/dchest/uniuri v0.0.0-20200228104902-7aecb25e1fe5 // indirect
 	github.com/felixge/httpsnoop v1.0.2
 	github.com/fsnotify/fsnotify v1.5.1 // indirect
 	github.com/getkin/kin-openapi v0.78.0
@@ -17,7 +18,7 @@ require (
 	github.com/golang/snappy v0.0.4 // indirect
 	github.com/google/uuid v1.3.0
 	github.com/jarcoal/httpmock v1.0.8
-	github.com/kelseyhightower/envconfig v1.4.0 // indirect
+	github.com/kelseyhightower/envconfig v1.4.0
 	github.com/mattn/go-colorable v0.1.11 // indirect
 	github.com/mgutz/ansi v0.0.0-20200706080929-d51e80ef957d // indirect
 	github.com/newrelic/go-agent/v3 v3.15.2
@@ -35,10 +36,10 @@ require (
 	github.com/vmihailenco/taskq/v3 v3.2.7
 	github.com/x-cray/logrus-prefixed-formatter v0.5.2
 	github.com/youmark/pkcs8 v0.0.0-20201027041543-1326539a0a0a // indirect
+	go.etcd.io/bbolt v1.3.6 // indirect
 	go.mongodb.org/mongo-driver v1.7.1
-	golang.org/x/crypto v0.0.0-20210921155107-089bfa567519
+	golang.org/x/crypto v0.0.0-20211215153901-e495a2d5b3d3
 	golang.org/x/mod v0.5.0 // indirect
-	golang.org/x/net v0.0.0-20210913180222-943fd674d43e // indirect
 	golang.org/x/sys v0.0.0-20211013075003-97ac67df715c // indirect
 	golang.org/x/text v0.3.7 // indirect
 	golang.org/x/tools v0.1.7 // indirect

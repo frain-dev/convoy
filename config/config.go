@@ -5,13 +5,12 @@ import (
 	"errors"
 	"fmt"
 	"os"
+	"strings"
 	"sync/atomic"
 
-	log "github.com/sirupsen/logrus"
-
-	"github.com/kelseyhightower/envconfig"
-
 	"github.com/frain-dev/convoy/config/algo"
+	"github.com/kelseyhightower/envconfig"
+	log "github.com/sirupsen/logrus"
 )
 
 var cfgSingleton atomic.Value
@@ -49,35 +48,14 @@ type FileRealmOption struct {
 	APIKey []APIKeyAuth `json:"api_key"`
 }
 
-type BasicAuth struct {
-	Username string `json:"username"`
-	Password string `json:"password"`
-	Role     Role   `json:"role"`
-}
-
-type APIKeyAuth struct {
-	APIKey string `json:"api_key"`
-	Role   Role   `json:"role"`
-}
-
 type AuthConfiguration struct {
-	RequireAuth bool            `json:"require_auth"`
-	File        FileRealmOption `json:"file"`
+	RequireAuth bool               `json:"require_auth"`
+	File        FileRealmOption    `json:"file"`
+	Native      NativeRealmOptions `json:"native"`
 }
 
-type StrategyConfiguration struct {
-	Type    StrategyProvider             `json:"type"`
-	Default DefaultStrategyConfiguration `json:"default"`
-}
-
-type DefaultStrategyConfiguration struct {
-	IntervalSeconds uint64 `json:"intervalSeconds" envconfig:"CONVOY_INTERVAL_SECONDS"`
-	RetryLimit      uint64 `json:"retryLimit" envconfig:"CONVOY_RETRY_LIMIT"`
-}
-
-type SignatureConfiguration struct {
-	Header SignatureHeaderProvider `json:"header" envconfig:"CONVOY_SIGNATURE_HEADER"`
-	Hash   string                  `json:"hash" envconfig:"CONVOY_SIGNATURE_HASH"`
+type NativeRealmOptions struct {
+	Enabled bool `json:"enabled"`
 }
 
 type SMTPConfiguration struct {
@@ -89,13 +67,6 @@ type SMTPConfiguration struct {
 	From     string `json:"from"`
 	ReplyTo  string `json:"reply-to"`
 }
-
-type GroupConfig struct {
-	Strategy        StrategyConfiguration
-	Signature       SignatureConfiguration
-	DisableEndpoint bool `envconfig:"CONVOY_DISABLE_ENDPOINT"`
-}
-
 type LoggerConfiguration struct {
 	Type      LoggerProvider `json:"type"`
 	ServerLog struct {
@@ -129,23 +100,47 @@ type Configuration struct {
 	NewRelic        NewRelicConfiguration `json:"new_relic"`
 }
 
-type QueueProvider string
-type StrategyProvider string
-type SignatureHeaderProvider string
-type LoggerProvider string
-type TracerProvider string
-
 const (
 	envPrefix string = "convoy"
 
 	DevelopmentEnvironment string = "development"
+)
 
+const (
 	RedisQueueProvider      QueueProvider           = "redis"
 	DefaultStrategyProvider StrategyProvider        = "default"
 	DefaultSignatureHeader  SignatureHeaderProvider = "X-Convoy-Signature"
 	ConsoleLoggerProvider   LoggerProvider          = "console"
 	NewRelicTracerProvider  TracerProvider          = "new_relic"
 )
+
+type GroupConfig struct {
+	Strategy        StrategyConfiguration  `json:"strategy"`
+	Signature       SignatureConfiguration `json:"signature"`
+	DisableEndpoint bool                   `json:"disable_endpoint"`
+}
+
+type StrategyConfiguration struct {
+	Type    StrategyProvider             `json:"type"`
+	Default DefaultStrategyConfiguration `json:"default"`
+}
+
+type DefaultStrategyConfiguration struct {
+	IntervalSeconds uint64 `json:"intervalSeconds" envconfig:"CONVOY_INTERVAL_SECONDS"`
+	RetryLimit      uint64 `json:"retryLimit" envconfig:"CONVOY_RETRY_LIMIT"`
+}
+
+type SignatureConfiguration struct {
+	Header SignatureHeaderProvider `json:"header" envconfig:"CONVOY_SIGNATURE_HEADER"`
+	Hash   string                  `json:"hash" envconfig:"CONVOY_SIGNATURE_HASH"`
+}
+
+type AuthProvider string
+type QueueProvider string
+type StrategyProvider string
+type SignatureHeaderProvider string
+type LoggerProvider string
+type TracerProvider string
 
 func (s SignatureHeaderProvider) String() string {
 	return string(s)
@@ -165,7 +160,7 @@ func Get() (Configuration, error) {
 
 // LoadConfig is used to load the configuration from either the json config file
 // or the environment variables.
-func LoadConfig(p string) error {
+func LoadConfig(p string, override *Configuration) error {
 	f, err := os.Open(p)
 	if err != nil {
 		return err
@@ -223,33 +218,37 @@ func LoadConfig(p string) error {
 		return err
 	}
 
+	if len(strings.TrimSpace(override.Queue.Redis.DSN)) > 0 {
+		c.Queue.Redis.DSN = override.Queue.Redis.DSN
+	}
+
+	if len(strings.TrimSpace(override.Database.Dsn)) > 0 {
+		c.Database.Dsn = override.Database.Dsn
+	}
+
 	cfgSingleton.Store(c)
 	return nil
 }
 
-func ensureAuthConfig(auth AuthConfiguration) error {
-	if !auth.RequireAuth {
-		return nil
-	}
-
+func ensureAuthConfig(authCfg AuthConfiguration) error {
 	var err error
-	for _, r := range auth.File.Basic {
+	for _, r := range authCfg.File.Basic {
 		if r.Username == "" || r.Password == "" {
 			return errors.New("username and password are required for basic auth config")
 		}
 
-		err = checkRole(&r.Role, "basic auth")
+		err = r.Role.Validate("basic auth")
 		if err != nil {
 			return err
 		}
 	}
 
-	for _, r := range auth.File.APIKey {
+	for _, r := range authCfg.File.APIKey {
 		if r.APIKey == "" {
 			return errors.New("api-key is required for api-key auth config")
 		}
 
-		err = checkRole(&r.Role, "api-key auth")
+		err = r.Role.Validate("api-key auth")
 		if err != nil {
 			return err
 		}

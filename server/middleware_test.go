@@ -7,7 +7,6 @@ import (
 	"testing"
 
 	"github.com/frain-dev/convoy/config"
-
 	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/require"
 )
@@ -53,11 +52,11 @@ func TestRequirePermission_Basic(t *testing.T) {
 
 	for _, tc := range tt {
 		t.Run(tc.name, func(t *testing.T) {
-			err := config.LoadConfig(tc.cfgPath)
+			err := config.LoadConfig(tc.cfgPath, provideFakeOverride())
 			if err != nil {
 				t.Errorf("Failed to load config file: %v", err)
 			}
-			initRealmChain(t)
+			initRealmChain(t, nil)
 
 			ctrl := gomock.NewController(t)
 			defer ctrl.Finish()
@@ -121,11 +120,11 @@ func TestRequirePermission_Noop(t *testing.T) {
 
 	for _, tc := range tt {
 		t.Run(tc.name, func(t *testing.T) {
-			err := config.LoadConfig(tc.cfgPath)
+			err := config.LoadConfig(tc.cfgPath, provideFakeOverride())
 			if err != nil {
 				t.Errorf("Failed to load config file: %v", err)
 			}
-			initRealmChain(t)
+			initRealmChain(t, nil)
 
 			ctrl := gomock.NewController(t)
 			defer ctrl.Finish()

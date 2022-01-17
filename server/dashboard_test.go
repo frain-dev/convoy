@@ -5,8 +5,8 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	"github.com/frain-dev/convoy"
 	"github.com/frain-dev/convoy/config"
+	"github.com/frain-dev/convoy/datastore"
 	"github.com/frain-dev/convoy/logger"
 	"github.com/frain-dev/convoy/mocks"
 	"github.com/golang/mock/gomock"
@@ -26,8 +26,9 @@ func Test_fetchAllConfigDetails(t *testing.T) {
 	eventQueue := mocks.NewMockQueuer(ctrl)
 	logger := logger.NewNoopLogger()
 	tracer := mocks.NewMockTracer(ctrl)
+	apiKeyRepo := mocks.NewMockAPIKeyRepository(ctrl)
 
-	app = newApplicationHandler(eventRepo, eventDeliveryRepo, appRepo, groupRepo, eventQueue, logger, tracer)
+	app = newApplicationHandler(eventRepo, eventDeliveryRepo, appRepo, groupRepo, apiKeyRepo, eventQueue, logger, tracer)
 
 	tests := []struct {
 		name       string
@@ -44,7 +45,7 @@ func Test_fetchAllConfigDetails(t *testing.T) {
 
 				g.EXPECT().
 					FetchGroupByID(gomock.Any(), gomock.Any()).Times(1).
-					Return(&convoy.Group{
+					Return(&datastore.Group{
 						Config: &config.GroupConfig{},
 					}, nil)
 			},
@@ -52,11 +53,11 @@ func Test_fetchAllConfigDetails(t *testing.T) {
 	}
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			err := config.LoadConfig("./testdata/Auth_Config/none-convoy.json")
+			err := config.LoadConfig("./testdata/Auth_Config/none-convoy.json", provideFakeOverride())
 			if err != nil {
 				t.Errorf("Failed to load config file: %v", err)
 			}
-			initRealmChain(t)
+			initRealmChain(t, app.apiKeyRepo)
 
 			if tc.dbFn != nil {
 				tc.dbFn(app)

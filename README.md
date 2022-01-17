@@ -10,7 +10,7 @@ Convoy
 
 ![convoy image](./convoy-logo.svg)
 
-Convoy is a fast & secure webhooks service. It receives event data from a HTTP API and sends these event data to the configured endpoints. To get started download the [openapi spec](https://github.com/frain-dev/convoy/blob/main/openapi.yaml) into Postman or Insomnia.
+Convoy is a fast & secure webhooks service. It receives event data from a HTTP API and sends these event data to the configured endpoints. To get started download the [openapi spec](https://github.com/frain-dev/convoy/blob/main/docs/v3/openapi3.yaml) into Postman or Insomnia.
 
 It includes the following features
 - **Sign payload:** Configure hash function to use in signing payload.
@@ -36,7 +36,7 @@ $ docker run \
 	-p 5005:5005 \
 	--name convoy-server \
 	-v `pwd`/convoy.json:/convoy.json \
-	ghcr.io/frain-dev/convoy:v0.2.5
+	ghcr.io/frain-dev/convoy:v0.3.0
 ```
 
 You can download a sample configuration of [convoy.json](https://github.com/frain-dev/convoy/blob/main/convoy.json).
@@ -82,16 +82,21 @@ Convoy is configured using a json file with a sample configuration below:
 	"auth": {
 		"type": "none"
 	},
-	"strategy": {
-		"type": "default",
-		"default": {
-			"intervalSeconds": 125,
-			"retryLimit": 15
+	"group": {
+		"strategy": {
+			"type": "default",
+			"default": {
+				"intervalSeconds": 125,
+				"retryLimit": 15
+			}
+		},
+		"signature": {
+			"header": "X-Company-Event-Webhook-Signature"
 		}
-	},
-	"signature": {
-		"header": "X-Company-Event-Webhook-Signature"
 	}
+	"environment": "development",
+	"disable_endpoint": false
+	"multiple_tenants": false
 }
 ```
 

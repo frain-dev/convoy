@@ -38,6 +38,9 @@
 			border: 1px solid #f3f5f9;
 			border-radius: 8px;
 			z-index: 5;
+			opacity: 0;
+			height: 0px;
+			overflow: hidden;
 
 			&--item {
 				display: flex;
@@ -47,6 +50,12 @@
 				input {
 					margin-right: 10px;
 				}
+			}
+
+			&.show {
+				opacity: 1;
+				height: unset;
+				overflow: unset;
 			}
 		}
 	}
@@ -72,6 +81,10 @@ table {
 		border-radius: 8px;
 		transition: all 0.5s;
 		cursor: pointer;
+
+		&.has-border {
+			border-top: 1px solid #edeff5;
+		}
 
 		&:not(.table--date-row) {
 			&:hover,

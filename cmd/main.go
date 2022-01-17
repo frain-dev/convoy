@@ -3,9 +3,7 @@ package main
 import (
 	"context"
 	"fmt"
-	"net/url"
 	"os"
-	"strings"
 	"time"
 	_ "time/tzdata"
 
@@ -28,7 +26,8 @@ import (
 	"github.com/frain-dev/convoy/datastore"
 	"github.com/frain-dev/convoy/queue"
 	"github.com/spf13/cobra"
-	"go.mongodb.org/mongo-driver/mongo"
+
+	"github.com/frain-dev/convoy/datastore/mongo"
 )
 
 func main() {
@@ -49,7 +48,7 @@ func main() {
 
 	app := &app{}
 
-	var db *mongo.Client
+	var db datastore.DatabaseClient
 
 	cmd := &cobra.Command{
 		Use:   "Convoy",
@@ -60,7 +59,22 @@ func main() {
 				return err
 			}
 
-			err = config.LoadConfig(cfgPath)
+			override := new(config.Configuration)
+
+			// override config with cli flags
+			redisCliDsn, err := cmd.Flags().GetString("queue")
+			if err != nil {
+				return err
+			}
+			override.Queue.Redis.DSN = redisCliDsn
+
+			mongoCliDsn, err := cmd.Flags().GetString("db")
+			if err != nil {
+				return err
+			}
+			override.Database.Dsn = mongoCliDsn
+
+			err = config.LoadConfig(cfgPath, override)
 			if err != nil {
 				return err
 			}
@@ -70,7 +84,7 @@ func main() {
 				return err
 			}
 
-			db, err = datastore.New(cfg)
+			db, err = mongo.New(cfg)
 			if err != nil {
 				return err
 			}
@@ -119,24 +133,17 @@ func main() {
 				log.Warnf("signature header is blank. setting default %s", config.DefaultSignatureHeader)
 			}
 
-			u, err := url.Parse(cfg.Database.Dsn)
-			if err != nil {
-				return err
-			}
+			app.apiKeyRepo = db.APIRepo()
+			app.groupRepo = db.GroupRepo()
+			app.eventRepo = db.EventRepo()
+			app.applicationRepo = db.AppRepo()
+			app.eventDeliveryRepo = db.EventDeliveryRepo()
 
-			dbName := strings.TrimPrefix(u.Path, "/")
-			conn := db.Database(dbName, nil)
-
-			app.groupRepo = datastore.NewGroupRepo(conn)
-			app.applicationRepo = datastore.NewApplicationRepo(conn)
-			app.eventRepo = datastore.NewEventRepository(conn)
-			app.eventDeliveryRepo = datastore.NewEventDeliveryRepository(conn)
 			app.eventQueue = convoyRedis.NewQueue(rC, qFn, "EventQueue")
 			app.deadLetterQueue = convoyRedis.NewQueue(rC, qFn, "DeadLetterQueue")
 			app.logger = lo
 			app.tracer = tr
 
-			ensureMongoIndices(conn)
 			err = ensureDefaultGroup(context.Background(), cfg, app)
 			if err != nil {
 				return err
@@ -165,8 +172,12 @@ func main() {
 	}
 
 	var configFile string
+	var redisDsn string
+	var mongoDsn string
 
 	cmd.PersistentFlags().StringVar(&configFile, "config", "./convoy.json", "Configuration file for convoy")
+	cmd.PersistentFlags().StringVar(&redisDsn, "queue", "", "Redis DSN")
+	cmd.PersistentFlags().StringVar(&mongoDsn, "db", "", "MongoDB DSN")
 
 	cmd.AddCommand(addVersionCommand())
 	cmd.AddCommand(addCreateCommand(app))
@@ -178,21 +189,13 @@ func main() {
 	}
 }
 
-func ensureMongoIndices(conn *mongo.Database) {
-	datastore.EnsureIndex(conn, datastore.GroupCollection, "uid", true)
-	datastore.EnsureIndex(conn, datastore.GroupCollection, "name", true)
-	datastore.EnsureIndex(conn, datastore.AppCollections, "uid", true)
-	datastore.EnsureIndex(conn, datastore.EventCollection, "uid", true)
-	datastore.EnsureIndex(conn, datastore.EventCollection, "event_type", false)
-}
-
 func ensureDefaultGroup(ctx context.Context, cfg config.Configuration, a *app) error {
-	var filter *convoy.GroupFilter
-	var groups []*convoy.Group
-	var group *convoy.Group
+	var filter *datastore.GroupFilter
+	var groups []*datastore.Group
+	var group *datastore.Group
 	var err error
 
-	filter = &convoy.GroupFilter{}
+	filter = &datastore.GroupFilter{}
 	groups, err = a.groupRepo.LoadGroups(ctx, filter)
 	if err != nil {
 		return fmt.Errorf("failed to load groups - %w", err)
@@ -204,21 +207,40 @@ func ensureDefaultGroup(ctx context.Context, cfg config.Configuration, a *app) e
 	}
 
 	if len(groups) > 1 {
-		filter = &convoy.GroupFilter{Names: []string{"default-group"}}
+		filter = &datastore.GroupFilter{Names: []string{"default-group"}}
 		groups, err = a.groupRepo.LoadGroups(ctx, filter)
 		if err != nil {
 			return fmt.Errorf("failed to load groups - %w", err)
 		}
 	}
 
+	groupCfg := &config.GroupConfig{
+		Strategy: config.StrategyConfiguration{
+			Type: cfg.GroupConfig.Strategy.Type,
+			Default: struct {
+				IntervalSeconds uint64 `json:"intervalSeconds" envconfig:"CONVOY_INTERVAL_SECONDS"`
+				RetryLimit      uint64 `json:"retryLimit" envconfig:"CONVOY_RETRY_LIMIT"`
+			}{
+				IntervalSeconds: cfg.GroupConfig.Strategy.Default.IntervalSeconds,
+				RetryLimit:      cfg.GroupConfig.Strategy.Default.RetryLimit,
+			},
+			
+		},
+		Signature: config.SignatureConfiguration{
+			Header: config.SignatureHeaderProvider(cfg.GroupConfig.Signature.Header),
+			Hash:   cfg.GroupConfig.Signature.Hash,
+		},
+		DisableEndpoint: cfg.GroupConfig.DisableEndpoint,
+	}
+
 	if len(groups) == 0 {
-		defaultGroup := &convoy.Group{
+		defaultGroup := &datastore.Group{
 			UID:            uuid.New().String(),
 			Name:           "default-group",
-			Config:         &cfg.GroupConfig,
+			Config:         groupCfg,
 			CreatedAt:      primitive.NewDateTimeFromTime(time.Now()),
 			UpdatedAt:      primitive.NewDateTimeFromTime(time.Now()),
-			DocumentStatus: convoy.ActiveDocumentStatus,
+			DocumentStatus: datastore.ActiveDocumentStatus,
 		}
 
 		err = a.groupRepo.CreateGroup(ctx, defaultGroup)
@@ -231,7 +253,7 @@ func ensureDefaultGroup(ctx context.Context, cfg config.Configuration, a *app) e
 
 	group = groups[0]
 
-	group.Config = &cfg.GroupConfig
+	group.Config = groupCfg
 	err = a.groupRepo.UpdateGroup(ctx, group)
 	if err != nil {
 		log.WithError(err).Error("Default group update failed.")
@@ -245,10 +267,11 @@ func ensureDefaultGroup(ctx context.Context, cfg config.Configuration, a *app) e
 }
 
 type app struct {
-	groupRepo         convoy.GroupRepository
-	applicationRepo   convoy.ApplicationRepository
-	eventRepo         convoy.EventRepository
-	eventDeliveryRepo convoy.EventDeliveryRepository
+	apiKeyRepo        datastore.APIKeyRepository
+	groupRepo         datastore.GroupRepository
+	applicationRepo   datastore.ApplicationRepository
+	eventRepo         datastore.EventRepository
+	eventDeliveryRepo datastore.EventDeliveryRepository
 	eventQueue        queue.Queuer
 	deadLetterQueue   queue.Queuer
 	logger            logger.Logger
