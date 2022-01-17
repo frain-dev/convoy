@@ -23,6 +23,7 @@ hookstack
 
 # ui depencencies
 **/node_modules
+**/.angular/cache
 
 # Convoy specific
 convoy.json

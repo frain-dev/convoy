@@ -1,23 +1,21 @@
-import { Component, ElementRef, OnInit, ViewChild } from '@angular/core';
-import { HttpService } from 'src/app/services/http/http.service';
+import { Component, Input, OnInit } from '@angular/core';
 import Chart from 'chart.js/auto';
-import * as moment from 'moment';
-import { GeneralService } from 'src/app/services/general/general.service';
-import { APP } from 'src/app/models/app.model';
-import { EVENT, EVENT_DELIVERY } from 'src/app/models/event.model';
+import { APP } from './models/app.model';
+import { EVENT, EVENT_DELIVERY } from './models/event.model';
 import { ActivatedRoute, Router } from '@angular/router';
 import { FormBuilder, FormGroup } from '@angular/forms';
-import { PAGINATION } from 'src/app/models/global.model';
-import { HTTP_RESPONSE } from 'src/app/models/http.model';
-import { GROUP } from 'src/app/models/group.model';
+import { PAGINATION } from './models/global.model';
+import { HTTP_RESPONSE } from './models/http.model';
+import { GROUP } from './models/group.model';
+import { ConvoyAppService } from './convoy-app.service';
+import { format } from 'date-fns';
 
 @Component({
-	selector: 'app-portal',
-	templateUrl: './app-portal.component.html',
-	styleUrls: ['./app-portal.component.scss']
+	selector: 'convoy-app',
+	templateUrl: './convoy-app.component.html',
+	styleUrls: ['./convoy-app.component.scss']
 })
-export class AppPortalComponent implements OnInit {
-	showDropdown = false;
+export class ConvoyAppComponent implements OnInit {
 	showFilterCalendar = false;
 	tabs: ['events', 'event deliveries', 'apps'] = ['events', 'event deliveries', 'apps'];
 	activeTab: 'events' | 'apps' | 'event deliveries' = 'events';
@@ -51,7 +49,10 @@ export class AppPortalComponent implements OnInit {
 		queue: { type: string; redis: { dsn: string } };
 		server: { http: { port: number } };
 		signature: { header: string; hash: string };
-		strategy: { type: 'default'; default: { intervalSeconds: number; retryLimit: number } };
+		strategy: {
+			type: 'default';
+			default: { intervalSeconds: number; retryLimit: number };
+		};
 	};
 	dashboardData = { apps: 0, events_sent: 0 };
 	eventApp: string = '';
@@ -61,7 +62,12 @@ export class AppPortalComponent implements OnInit {
 	appsPage: number = 1;
 	dashboardFrequency: 'daily' | 'weekly' | 'monthly' | 'yearly' = 'daily';
 	statsDateRange: FormGroup = this.formBuilder.group({
-		startDate: [{ value: new Date(new Date().setDate(new Date().getDate() - 30)), disabled: true }],
+		startDate: [
+			{
+				value: new Date(new Date().setDate(new Date().getDate() - 30)),
+				disabled: true
+			}
+		],
 		endDate: [{ value: new Date(), disabled: true }]
 	});
 	eventsFilterDateRange: FormGroup = this.formBuilder.group({
@@ -84,47 +90,12 @@ export class AppPortalComponent implements OnInit {
 	eventDeliveryFilteredByStatus: '' | 'Success' | 'Failure' | 'Retry' | 'Scheduled' | 'Processing' | 'Discarded' = '';
 	showOverlay = false;
 	showEventDeliveriesStatusDropdown = false;
-	prismProcessingDone = false;
-	@ViewChild('codeEle') codeEle!: ElementRef;
+	@Input('production') isProduction: boolean = false;
 
-	constructor(private httpService: HttpService, private generalService: GeneralService, private router: Router, private formBuilder: FormBuilder, private route: ActivatedRoute) {}
-
-	ngAfterViewInit() {
-		// Prism.highlightElement(this.codeEle.nativeElement);
-		// while (!this.prismProcessingDone) {
-		// 	Prism.highlightElement(this.codeEle.nativeElement);
-		// }
-	}
-
-	ngOnChanges(): void {
-		if (this.codeEle?.nativeElement) {
-			// this.codeEle.nativeElement.textContent = this.code;
-			// Prism.highlightElement(this.codeEle.nativeElement);
-		}
-	}
+	constructor(private convyAppService: ConvoyAppService, private router: Router, private formBuilder: FormBuilder, private route: ActivatedRoute) {}
 
 	async ngOnInit() {
 		await this.initDashboard();
-	}
-
-	// async ngAfterViewChecked() {
-	// 	console.log('ngAfterViewChecked', this.codeEle, this.prismProcessingDone);
-	// 	if (this.codeEle?.nativeElement && !this.prismProcessingDone) {
-	// 		// Prism.highlightAll(true, f => {
-	// 		// 	console.log('🚀 ~ file: app-portal.component.ts ~ line 120 ~ AppPortalComponent ~ Prism.highlightAll ~ f', f);
-	// 		// 	console.log('prism done');
-	// 		// });
-	// 		this.prismProcessingDone = true;
-	// 	}
-	// }
-
-	dodo() {
-		// Prism.highlightAll(true, () => {
-		// 	console.log('prism done');
-		// });
-		// console.log(
-		// 	Prism.highlightElement()
-		// );
 	}
 
 	async initDashboard() {
@@ -135,11 +106,6 @@ export class AppPortalComponent implements OnInit {
 		// get active tab from url and apply, after getting the details from above requests so that the data is available ahead
 		this.toggleActiveTab(this.route.snapshot.queryParams.activeTab ?? 'events');
 		return;
-	}
-
-	logout() {
-		localStorage.removeItem('CONVOY_AUTH');
-		this.router.navigateByUrl('/login');
 	}
 
 	toggleActiveTab(tab: 'events' | 'apps' | 'event deliveries') {
@@ -160,8 +126,8 @@ export class AppPortalComponent implements OnInit {
 
 	async getConfigDetails() {
 		try {
-			const organisationDetailsResponse = await this.httpService.request({
-				url: `/dashboard/config?groupID=${this.activeGroup || ''}`,
+			const organisationDetailsResponse = await this.convyAppService.request({
+				url: this.getAPIURL(`/dashboard/config?groupID=${this.activeGroup || ''}`),
 				method: 'get'
 			});
 			this.organisationDetails = organisationDetailsResponse.data;
@@ -173,7 +139,10 @@ export class AppPortalComponent implements OnInit {
 		if (Object.keys(filters).length == 0) return;
 
 		// for events filters
-		this.eventsFilterDateRange.patchValue({ startDate: filters.eventsStartDate ? new Date(filters.eventsStartDate) : '', endDate: filters.eventsEndDate ? new Date(filters.eventsEndDate) : '' });
+		this.eventsFilterDateRange.patchValue({
+			startDate: filters.eventsStartDate ? new Date(filters.eventsStartDate) : '',
+			endDate: filters.eventsEndDate ? new Date(filters.eventsEndDate) : ''
+		});
 		this.eventApp = filters.eventsApp ?? '';
 
 		// for event deliveries filters
@@ -189,19 +158,21 @@ export class AppPortalComponent implements OnInit {
 		try {
 			const { startDate, endDate } = this.setDateForFilter(this.statsDateRange.value);
 
-			const dashboardResponse = await this.httpService.request({
-				url: `/dashboard/summary?groupID=${this.activeGroup || ''}&startDate=${startDate || ''}&endDate=${endDate || ''}&type=${this.dashboardFrequency}`,
+			const dashboardResponse = await this.convyAppService.request({
+				url: this.getAPIURL(`/dashboard/summary?groupID=${this.activeGroup || ''}&startDate=${startDate || ''}&endDate=${endDate || ''}&type=${this.dashboardFrequency}`),
 				method: 'get'
 			});
 			this.dashboardData = dashboardResponse.data;
 
 			let labelsDateFormat = '';
-			if (this.dashboardFrequency === 'daily') labelsDateFormat = 'DD[, ]MMM';
+			if (this.dashboardFrequency === 'daily') labelsDateFormat = 'do, MMM';
 			else if (this.dashboardFrequency === 'monthly') labelsDateFormat = 'MMM';
-			else if (this.dashboardFrequency === 'yearly') labelsDateFormat = 'YYYY';
+			else if (this.dashboardFrequency === 'yearly') labelsDateFormat = 'yyyy';
 
 			const chartData = dashboardResponse.data.event_data;
-			const labels = [...chartData.map((label: { data: { date: any } }) => label.data.date)].map(date => (this.dashboardFrequency === 'weekly' ? date : moment(date).format(labelsDateFormat)));
+			const labels = [...chartData.map((label: { data: { date: any } }) => label.data.date)].map(date => {
+				return this.dashboardFrequency === 'weekly' ? date : format(new Date(date), labelsDateFormat);
+			});
 			labels.unshift('0');
 			const dataSet = [0, ...chartData.map((label: { count: any }) => label.count)];
 			const data = {
@@ -234,23 +205,28 @@ export class AppPortalComponent implements OnInit {
 				}
 			};
 
-			if (!Chart.getChart('chart') || !Chart.getChart('chart')?.canvas) {
-				new Chart('chart', { type: 'line', data, options });
+			if (!Chart.getChart('dahboard_events_chart') || !Chart.getChart('dahboard_events_chart')?.canvas) {
+				new Chart('dahboard_events_chart', {
+					type: 'line',
+					data,
+					options
+				});
 			} else {
-				const currentChart = Chart.getChart('chart');
+				const currentChart = Chart.getChart('dahboard_events_chart');
 				if (currentChart) {
 					currentChart.data.labels = labels;
 					currentChart.data.datasets[0].data = dataSet;
 					currentChart.update();
 				}
 			}
+			console.log(Chart.getChart('dahboard_events_chart'));
 		} catch (error) {}
 	}
 
 	setDateForFilter(requestDetails: { startDate: Date; endDate: Date }) {
 		if (!requestDetails.endDate && !requestDetails.startDate) return { startDate: '', endDate: '' };
-		const startDate = requestDetails.startDate ? String(moment(`${moment(requestDetails.startDate.toISOString()).format('YYYY[-]MM[-]DD')} 00:00:00`).toISOString(true)).split('.')[0] : '';
-		const endDate = requestDetails.endDate ? String(moment(`${moment(requestDetails.endDate.toISOString()).format('YYYY[-]MM[-]DD')} 23:59:59`).toISOString(true)).split('.')[0] : '';
+		const startDate = requestDetails.startDate ? `${format(requestDetails.startDate, 'yyyy-M-d')}T00:00:00` : '';
+		const endDate = requestDetails.endDate ? `${format(requestDetails.endDate, 'yyyy-M-d')}T00:00:00` : '';
 		return { startDate, endDate };
 	}
 
@@ -282,8 +258,10 @@ export class AppPortalComponent implements OnInit {
 		const { startDate, endDate } = this.setDateForFilter(this.eventsFilterDateRange.value);
 
 		try {
-			const eventsResponse = await this.httpService.request({
-				url: `/events?groupID=${this.activeGroup || ''}&sort=AESC&page=${this.eventsPage || 1}&perPage=20&startDate=${startDate}&endDate=${endDate}&appId=${requestDetails?.appId ?? this.eventApp}`,
+			const eventsResponse = await this.convyAppService.request({
+				url: this.getAPIURL(
+					`/events?groupID=${this.activeGroup || ''}&sort=AESC&page=${this.eventsPage || 1}&perPage=20&startDate=${startDate}&endDate=${endDate}&appId=${requestDetails?.appId ?? this.eventApp}`
+				),
 				method: 'get'
 			});
 			if (this.activeTab === 'events') this.detailsItem = eventsResponse.data.content[0];
@@ -326,17 +304,21 @@ export class AppPortalComponent implements OnInit {
 
 		if (requestDetails.section === 'logTab') queryParams.activeTab = this.activeTab;
 
-		this.router.navigate([], { queryParams: Object.assign({}, currentURLfilters, queryParams) });
+		this.router.navigate([], {
+			queryParams: Object.assign({}, currentURLfilters, queryParams)
+		});
 	}
 
 	async eventDeliveriesRequest(requestDetails: { eventId?: string; startDate?: string; endDate?: string }): Promise<HTTP_RESPONSE> {
 		const { startDate, endDate } = this.setDateForFilter(this.eventDeliveriesFilterDateRange.value);
 
 		try {
-			const eventDeliveriesResponse = await this.httpService.request({
-				url: `/eventdeliveries?groupID=${this.activeGroup || ''}&eventId=${requestDetails.eventId || ''}&page=${this.eventDeliveriesPage || 1}&startDate=${startDate}&endDate=${endDate}&appId=${
-					this.eventDeliveriesApp
-				}&status=${this.eventDeliveryFilteredByStatus || ''}`,
+			const eventDeliveriesResponse = await this.convyAppService.request({
+				url: this.getAPIURL(
+					`/eventdeliveries?groupID=${this.activeGroup || ''}&eventId=${requestDetails.eventId || ''}&page=${this.eventDeliveriesPage || 1}&startDate=${startDate}&endDate=${endDate}&appId=${
+						this.eventDeliveriesApp
+					}&status=${this.eventDeliveryFilteredByStatus || ''}`
+				),
 				method: 'get'
 			});
 
@@ -351,7 +333,11 @@ export class AppPortalComponent implements OnInit {
 		const { startDate, endDate } = this.setDateForFilter(this.eventDeliveriesFilterDateRange.value);
 
 		try {
-			const eventDeliveriesResponse = await this.eventDeliveriesRequest({ eventId: this.eventDeliveryFilteredByEventId, startDate, endDate });
+			const eventDeliveriesResponse = await this.eventDeliveriesRequest({
+				eventId: this.eventDeliveryFilteredByEventId,
+				startDate,
+				endDate
+			});
 			if (this.activeTab === 'event deliveries') this.detailsItem = eventDeliveriesResponse.data.content[0];
 
 			if (this.eventDeliveries && this.eventDeliveries?.pagination?.next === this.eventDeliveriesPage) {
@@ -371,7 +357,11 @@ export class AppPortalComponent implements OnInit {
 	}
 
 	async getEventDeliveriesForSidebar(eventId: string) {
-		const response = await this.eventDeliveriesRequest({ eventId, startDate: '', endDate: '' });
+		const response = await this.eventDeliveriesRequest({
+			eventId,
+			startDate: '',
+			endDate: ''
+		});
 		this.sidebarEventDeliveries = response.data.content;
 	}
 
@@ -385,8 +375,8 @@ export class AppPortalComponent implements OnInit {
 		if (requestDetails?.addToURL) this.addFilterToURL({ section: 'group' });
 
 		try {
-			const groupsResponse = await this.httpService.request({
-				url: `/groups`,
+			const groupsResponse = await this.convyAppService.request({
+				url: this.getAPIURL(`/groups`),
 				method: 'get'
 			});
 			this.groups = groupsResponse.data;
@@ -401,8 +391,8 @@ export class AppPortalComponent implements OnInit {
 
 	async getApps() {
 		try {
-			const appsResponse = await this.httpService.request({
-				url: `/apps?groupID=${this.activeGroup || ''}&sort=AESC&page=${this.appsPage || 1}&perPage=10`,
+			const appsResponse = await this.convyAppService.request({
+				url: this.getAPIURL(`/apps?groupID=${this.activeGroup || ''}&sort=AESC&page=${this.appsPage || 1}&perPage=10`),
 				method: 'get'
 			});
 
@@ -422,8 +412,8 @@ export class AppPortalComponent implements OnInit {
 
 	async getDelieveryAttempts(eventDeliveryId: string) {
 		try {
-			const deliveryAttemptsResponse = await this.httpService.request({
-				url: `/eventdeliveries/${eventDeliveryId}/deliveryattempts?groupID=${this.activeGroup || ''}`,
+			const deliveryAttemptsResponse = await this.convyAppService.request({
+				url: this.getAPIURL(`/eventdeliveries/${eventDeliveryId}/deliveryattempts?groupID=${this.activeGroup || ''}`),
 				method: 'get'
 			});
 			this.eventDeliveryAtempt = deliveryAttemptsResponse.data[deliveryAttemptsResponse.data.length - 1];
@@ -462,17 +452,21 @@ export class AppPortalComponent implements OnInit {
 		}
 
 		try {
-			await this.httpService.request({
+			await this.convyAppService.request({
 				method: 'put',
-				url: `/eventdeliveries/${requestDetails.eventDeliveryId}/resend?groupID=${this.activeGroup || ''}`
+				url: this.getAPIURL(`/eventdeliveries/${requestDetails.eventDeliveryId}/resend?groupID=${this.activeGroup || ''}`)
 			});
 
-			this.generalService.showNotification({ message: 'Retry Request Sent' });
+			this.convyAppService.showNotification({
+				message: 'Retry Request Sent'
+			});
 			retryButton.classList.remove(['spin', 'disabled']);
 			retryButton.disabled = false;
 			this.getEventDeliveries();
 		} catch (error: any) {
-			this.generalService.showNotification({ message: error.error.message });
+			this.convyAppService.showNotification({
+				message: error.error.message
+			});
 			retryButton.classList.remove(['spin', 'disabled']);
 			retryButton.disabled = false;
 			return error;
@@ -481,24 +475,23 @@ export class AppPortalComponent implements OnInit {
 
 	async batchRetryEvent() {
 		try {
-			await this.httpService.request({
+			await this.convyAppService.request({
 				method: 'post',
-				url: `/eventdeliveries/batchretry?groupID=${this.activeGroup || ''}`,
+				url: this.getAPIURL(`/eventdeliveries/batchretry?groupID=${this.activeGroup || ''}`),
 				body: { ids: this.selectedEventsFromEventDeliveriesTable }
 			});
 
-			this.generalService.showNotification({ message: 'Batch Retry Request Sent' });
+			this.convyAppService.showNotification({
+				message: 'Batch Retry Request Sent'
+			});
 			this.getEventDeliveries();
 			this.selectedEventsFromEventDeliveriesTable = [];
 		} catch (error: any) {
-			this.generalService.showNotification({ message: error.error.message });
+			this.convyAppService.showNotification({
+				message: error.error.message
+			});
 			return error;
 		}
-	}
-
-	authDetails() {
-		const authDetails = localStorage.getItem('CONVOY_AUTH');
-		return authDetails ? JSON.parse(authDetails) : false;
 	}
 
 	async clearEventFilters(tableName: 'events' | 'event deliveries') {
@@ -509,14 +502,20 @@ export class AppPortalComponent implements OnInit {
 			case 'events':
 				this.eventApp = '';
 				filterItems = ['eventsStartDate', 'eventsEndDate', 'eventsApp'];
-				this.eventsFilterDateRange.patchValue({ startDate: '', endDate: '' });
+				this.eventsFilterDateRange.patchValue({
+					startDate: '',
+					endDate: ''
+				});
 				this.getEvents();
 				break;
 
 			case 'event deliveries':
 				this.eventDeliveriesApp = '';
 				filterItems = ['eventDelsStartDate', 'eventDelsEndDate', 'eventDelsApp', 'eventDelsStatus'];
-				this.eventDeliveriesFilterDateRange.patchValue({ startDate: '', endDate: '' });
+				this.eventDeliveriesFilterDateRange.patchValue({
+					startDate: '',
+					endDate: ''
+				});
 				this.eventDeliveryFilteredByEventId = '';
 				this.eventDeliveryFilteredByStatus = '';
 				this.getEventDeliveries();
@@ -527,7 +526,10 @@ export class AppPortalComponent implements OnInit {
 		}
 
 		filterItems.forEach(key => (activeFilters.hasOwnProperty(key) ? delete activeFilters[key] : null));
-		await this.router.navigate([], { relativeTo: this.route, queryParams: activeFilters });
+		await this.router.navigate([], {
+			relativeTo: this.route,
+			queryParams: activeFilters
+		});
 	}
 
 	checkAllCheckboxes(event: any) {
@@ -572,5 +574,9 @@ export class AppPortalComponent implements OnInit {
 	async refreshTables() {
 		await this.initDashboard();
 		this.toggleActiveTab('event deliveries');
+	}
+
+	getAPIURL(url: string) {
+		return `${this.isProduction ? location.origin : 'http://localhost:5005'}/ui${url}`;
 	}
 }
