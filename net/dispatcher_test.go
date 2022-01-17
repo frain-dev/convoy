@@ -3,6 +3,7 @@ package net
 import (
 	"bytes"
 	"encoding/json"
+	"math/rand"
 	"net/http"
 	"testing"
 
@@ -18,6 +19,11 @@ var (
 
 func TestDispatcher_SendRequest(t *testing.T) {
 	client := http.DefaultClient
+
+	buf := make([]byte, config.MaxResponseSize*2)
+
+	_, _ = rand.Read(buf)
+
 	type args struct {
 		endpoint        string
 		method          string
@@ -61,6 +67,42 @@ func TestDispatcher_SendRequest(t *testing.T) {
 
 				httpmock.RegisterResponder(http.MethodPost, "https://google.com",
 					httpmock.NewStringResponder(http.StatusOK, string(successBody)))
+
+				return func() {
+					httpmock.DeactivateAndReset()
+				}
+			},
+			wantErr: false,
+		},
+		{
+			name: "should_cut_down_oversized_response_body",
+			args: args{
+				endpoint:        "https://google.com",
+				method:          http.MethodPost,
+				jsonData:        bytes.NewBufferString("testing").Bytes(),
+				signatureHeader: config.DefaultSignatureHeader.String(),
+				hmac:            "12345",
+			},
+			want: &Response{
+				Status:     "200",
+				StatusCode: http.StatusOK,
+				Method:     http.MethodPost,
+				URL:        nil,
+				RequestHeader: http.Header{
+					"Content-Type":                         []string{"application/json"},
+					"User-Agent":                           []string{defaultUserAgent()},
+					config.DefaultSignatureHeader.String(): []string{"12345"}, // should equal hmac field above
+				},
+				ResponseHeader: nil,
+				Body:           buf[:config.MaxResponseSize],
+				IP:             "",
+				Error:          "",
+			},
+			nFn: func() func() {
+				httpmock.Activate()
+
+				httpmock.RegisterResponder(http.MethodPost, "https://google.com",
+					httpmock.NewBytesResponder(http.StatusOK, buf))
 
 				return func() {
 					httpmock.DeactivateAndReset()
