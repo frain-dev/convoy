@@ -66,7 +66,7 @@ func TestWritetoQueue(t *testing.T) {
 			if cfg.Queue.Type == config.RedisQueueProvider {
 				rC, qFn, err = NewClient(cfg)
 				if err != nil {
-					t.Fatalf("Failed to load new client")
+					t.Fatalf("Failed to load new client: %v", err)
 				}
 				opts = queue.QueueOptions{
 					Name:    uuid.NewString(),
