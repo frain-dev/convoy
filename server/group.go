@@ -123,8 +123,8 @@ func (a *applicationHandler) CreateGroup(w http.ResponseWriter, r *http.Request)
 	}
 
 	groupName := newGroup.Name
-	if util.IsStringEmpty(groupName) {
-		_ = render.Render(w, r, newErrorResponse("please provide a valid name", http.StatusBadRequest))
+	if err = util.Validate(newGroup); err != nil {
+		_ = render.Render(w, r, newErrorResponse(err.Error(), http.StatusBadRequest))
 		return
 	}
 
@@ -167,13 +167,13 @@ func (a *applicationHandler) UpdateGroup(w http.ResponseWriter, r *http.Request)
 	var update models.Group
 	err := util.ReadJSON(r, &update)
 	if err != nil {
-		_ = render.Render(w, r, newErrorResponse("Request is invalid", http.StatusBadRequest))
+		_ = render.Render(w, r, newErrorResponse(err.Error(), http.StatusBadRequest))
 		return
 	}
 
 	groupName := update.Name
-	if util.IsStringEmpty(groupName) {
-		_ = render.Render(w, r, newErrorResponse("please provide a valid name", http.StatusBadRequest))
+	if err = util.Validate(update); err != nil {
+		_ = render.Render(w, r, newErrorResponse(err.Error(), http.StatusBadRequest))
 		return
 	}
 
