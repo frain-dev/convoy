@@ -1,3 +1,6 @@
+//go:build integration
+// +build integration
+
 package memqueue
 
 import (
@@ -32,7 +35,7 @@ func TestWritetoQueue(t *testing.T) {
 			eventID := uuid.NewString()
 			eventDeliveryID := uuid.NewString()
 
-			evenDelivery := &datastore.EventDelivery{
+			eventDelivery := &datastore.EventDelivery{
 				UID: eventDeliveryID,
 				EventMetadata: &datastore.EventMetadata{
 					UID: eventID,
@@ -58,23 +61,21 @@ func TestWritetoQueue(t *testing.T) {
 			var lS queue.Storage
 			var opts queue.QueueOptions
 
-			if cfg.Queue.Type == config.InMemoryQueueProvider {
-				lS, qFn, err = NewClient(cfg)
-				if err != nil {
-					t.Fatalf("Failed to load new client")
-				}
-				opts = queue.QueueOptions{
-					Name:    uuid.NewString(),
-					Type:    "in-memory",
-					Storage: lS,
-					Factory: qFn,
-				}
+			lS, qFn, err = NewClient(cfg)
+			if err != nil {
+				t.Fatalf("Failed to load new client")
+			}
+			opts = queue.QueueOptions{
+				Name:    uuid.NewString(),
+				Type:    "in-memory",
+				Storage: lS,
+				Factory: qFn,
 			}
 
 			eventQueue := NewQueue(opts)
 			switch tc.testType {
 			case "writer":
-				err := eventQueue.Write(context.TODO(), taskName, evenDelivery, 0)
+				err := eventQueue.Write(context.TODO(), taskName, eventDelivery, 0)
 				if err != nil {
 					t.Fatalf("Failed to get queue length")
 				}

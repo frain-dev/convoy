@@ -1,3 +1,6 @@
+//go:build integration
+// +build integration
+
 package redis
 
 import (
@@ -37,7 +40,7 @@ func TestWritetoQueue(t *testing.T) {
 			eventID := uuid.NewString()
 			eventDeliveryID := uuid.NewString()
 
-			evenDelivery := &datastore.EventDelivery{
+			eventDelivery := &datastore.EventDelivery{
 				UID: eventDeliveryID,
 				EventMetadata: &datastore.EventMetadata{
 					UID: eventID,
@@ -63,23 +66,21 @@ func TestWritetoQueue(t *testing.T) {
 			var rC *redis.Client
 			var opts queue.QueueOptions
 
-			if cfg.Queue.Type == config.RedisQueueProvider {
-				rC, qFn, err = NewClient(cfg)
-				if err != nil {
-					t.Fatalf("Failed to load new client: %v", err)
-				}
-				opts = queue.QueueOptions{
-					Name:    uuid.NewString(),
-					Type:    "redis",
-					Redis:   rC,
-					Factory: qFn,
-				}
+			rC, qFn, err = NewClient(cfg)
+			if err != nil {
+				t.Fatalf("Failed to load new client: %v", err)
+			}
+			opts = queue.QueueOptions{
+				Name:    uuid.NewString(),
+				Type:    "redis",
+				Redis:   rC,
+				Factory: qFn,
 			}
 
 			eventQueue := NewQueue(opts)
 			switch tc.testType {
 			case "writer":
-				err := eventQueue.Write(context.TODO(), taskName, evenDelivery, 0)
+				err := eventQueue.Write(context.TODO(), taskName, eventDelivery, 0)
 				if err != nil {
 					t.Fatalf("Failed to get queue length")
 				}
