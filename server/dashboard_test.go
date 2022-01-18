@@ -43,7 +43,7 @@ func Test_fetchAllConfigDetails(t *testing.T) {
 				g.EXPECT().
 					FetchGroupByID(gomock.Any(), gomock.Any()).Times(1).
 					Return(&datastore.Group{
-						Config: &config.GroupConfig{},
+						Config: &datastore.GroupConfig{},
 					}, nil)
 			},
 		},

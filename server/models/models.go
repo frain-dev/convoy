@@ -5,14 +5,13 @@ import (
 	"time"
 
 	"github.com/frain-dev/convoy/auth"
-	"github.com/frain-dev/convoy/config"
 	"github.com/frain-dev/convoy/datastore"
 )
 
 type Group struct {
 	Name    string `json:"name" bson:"name" valid:"required~please provide a valid name"`
 	LogoURL string `json:"logo_url" bson:"logo_url" valid:"url~please provide a valid logo url,optional"`
-	Config  config.GroupConfig
+	Config  datastore.GroupConfig
 }
 
 type APIKey struct {

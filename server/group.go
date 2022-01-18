@@ -173,7 +173,7 @@ func (a *applicationHandler) UpdateGroup(w http.ResponseWriter, r *http.Request)
 
 	groupName := update.Name
 	if err = util.Validate(update); err != nil {
-		_ = render.Render(w, r, newErrorResponse("please provide a valid name", http.StatusBadRequest))
+		_ = render.Render(w, r, newErrorResponse(err.Error(), http.StatusBadRequest))
 		return
 	}
 
