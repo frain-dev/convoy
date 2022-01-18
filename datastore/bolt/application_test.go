@@ -8,7 +8,6 @@ import (
 	"time"
 
 	"github.com/frain-dev/convoy/datastore"
-	"github.com/frain-dev/convoy/server/models"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 
 	"github.com/google/uuid"
@@ -20,12 +19,12 @@ func Test_LoadApplicationsPaged(t *testing.T) {
 		UID      string
 		Name     string
 		AppCount int
-		pageData models.Pageable
+		pageData datastore.Pageable
 	}
 
 	type Expected struct {
 		group_id       string
-		paginationData models.PaginationData
+		paginationData datastore.PaginationData
 	}
 
 	tests := []struct {
@@ -40,13 +39,13 @@ func Test_LoadApplicationsPaged(t *testing.T) {
 					UID:      "uid-1",
 					Name:     "Group 1",
 					AppCount: 10,
-					pageData: models.Pageable{Page: 1, PerPage: 3},
+					pageData: datastore.Pageable{Page: 1, PerPage: 3},
 				},
 			},
 			expected: []Expected{
 				{
 					group_id:       "",
-					paginationData: models.PaginationData{Total: 10, TotalPage: 4, Page: 1, PerPage: 3, Prev: 0, Next: 2},
+					paginationData: datastore.PaginationData{Total: 10, TotalPage: 4, Page: 1, PerPage: 3, Prev: 0, Next: 2},
 				},
 			},
 		},
@@ -57,33 +56,33 @@ func Test_LoadApplicationsPaged(t *testing.T) {
 					UID:      "uid-1",
 					Name:     "Group 1",
 					AppCount: 10,
-					pageData: models.Pageable{Page: 1, PerPage: 3},
+					pageData: datastore.Pageable{Page: 1, PerPage: 3},
 				},
 				{
 					UID:      "uid-2",
 					Name:     "Group 2",
 					AppCount: 5,
-					pageData: models.Pageable{Page: 2, PerPage: 3},
+					pageData: datastore.Pageable{Page: 2, PerPage: 3},
 				},
 				{
 					UID:      "uid-3",
 					Name:     "Group 3",
 					AppCount: 15,
-					pageData: models.Pageable{Page: 3, PerPage: 6},
+					pageData: datastore.Pageable{Page: 3, PerPage: 6},
 				},
 			},
 			expected: []Expected{
 				{
 					group_id:       "uid-1",
-					paginationData: models.PaginationData{Total: 10, TotalPage: 4, Page: 1, PerPage: 3, Prev: 0, Next: 2},
+					paginationData: datastore.PaginationData{Total: 10, TotalPage: 4, Page: 1, PerPage: 3, Prev: 0, Next: 2},
 				},
 				{
 					group_id:       "uid-2",
-					paginationData: models.PaginationData{Total: 5, TotalPage: 2, Page: 2, PerPage: 3, Prev: 1, Next: 3},
+					paginationData: datastore.PaginationData{Total: 5, TotalPage: 2, Page: 2, PerPage: 3, Prev: 1, Next: 3},
 				},
 				{
 					group_id:       "uid-2",
-					paginationData: models.PaginationData{Total: 15, TotalPage: 3, Page: 3, PerPage: 6, Prev: 2, Next: 4},
+					paginationData: datastore.PaginationData{Total: 15, TotalPage: 3, Page: 3, PerPage: 6, Prev: 2, Next: 4},
 				},
 			},
 		},
@@ -114,7 +113,7 @@ func Test_LoadApplicationsPaged(t *testing.T) {
 			for i, g := range tc.args {
 				if g.UID == tc.expected[i].group_id {
 					_, pageData, err := appRepo.LoadApplicationsPaged(context.Background(), tc.args[i].UID,
-						models.Pageable{Page: tc.args[i].pageData.Page, PerPage: tc.args[i].pageData.PerPage})
+						datastore.Pageable{Page: tc.args[i].pageData.Page, PerPage: tc.args[i].pageData.PerPage})
 
 					require.NoError(t, err)
 
@@ -246,12 +245,12 @@ func Test_SearchApplicationsByGroupId(t *testing.T) {
 	tests := []struct {
 		name     string
 		args     []Args
-		params   models.SearchParams
+		params   datastore.SearchParams
 		expected Expected
 	}{
 		{
 			name:   "No Search Params",
-			params: models.SearchParams{},
+			params: datastore.SearchParams{},
 			args: []Args{
 				{
 					uid:      "uid-1",
@@ -265,7 +264,7 @@ func Test_SearchApplicationsByGroupId(t *testing.T) {
 		},
 		{
 			name:   "Search Params - Only CreatedAtStart",
-			params: models.SearchParams{CreatedAtStart: times[4].Unix()},
+			params: datastore.SearchParams{CreatedAtStart: times[4].Unix()},
 			args: []Args{
 				{
 					uid:      "uid-1",
@@ -284,7 +283,7 @@ func Test_SearchApplicationsByGroupId(t *testing.T) {
 		},
 		{
 			name:   "Search Params - Only CreatedAtEnd",
-			params: models.SearchParams{CreatedAtEnd: times[4].Unix()},
+			params: datastore.SearchParams{CreatedAtEnd: times[4].Unix()},
 			args: []Args{
 				{
 					uid:      "uid-1",
@@ -303,7 +302,7 @@ func Test_SearchApplicationsByGroupId(t *testing.T) {
 		},
 		{
 			name:   "Search Params - CreatedAtEnd and CreatedAtEnd (Valid interval)",
-			params: models.SearchParams{CreatedAtStart: times[4].Unix(), CreatedAtEnd: times[6].Unix()},
+			params: datastore.SearchParams{CreatedAtStart: times[4].Unix(), CreatedAtEnd: times[6].Unix()},
 			args: []Args{
 				{
 					uid:      "uid-1",
@@ -322,7 +321,7 @@ func Test_SearchApplicationsByGroupId(t *testing.T) {
 		},
 		{
 			name:   "Search Params - CreatedAtEnd and CreatedAtEnd (Invalid interval)",
-			params: models.SearchParams{CreatedAtStart: times[6].Unix(), CreatedAtEnd: times[4].Unix()},
+			params: datastore.SearchParams{CreatedAtStart: times[6].Unix(), CreatedAtEnd: times[4].Unix()},
 			args: []Args{
 				{
 					uid:      "uid-1",

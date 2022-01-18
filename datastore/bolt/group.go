@@ -1,10 +1,8 @@
 package bolt
 
 import (
-	"bytes"
 	"context"
 	"encoding/json"
-	"fmt"
 
 	"github.com/frain-dev/convoy/datastore"
 	"go.etcd.io/bbolt"
@@ -87,6 +85,31 @@ func (g *groupRepo) FetchGroupByID(ctx context.Context, gid string) (*datastore.
 	})
 
 	return group, err
+}
+
+func (g *groupRepo) FetchGroupsByIDs(ctx context.Context, ids []string) ([]datastore.Group, error) {
+	var groups []datastore.Group
+	err := g.db.View(func(tx *bbolt.Tx) error {
+		b := tx.Bucket([]byte(g.bucketName))
+
+		return b.ForEach(func(k, v []byte) error {
+			var grp datastore.Group
+			err := json.Unmarshal(v, &grp)
+			if err != nil {
+				return err
+			}
+
+			for _, id := range ids {
+				if id == grp.UID {
+					groups = append(groups, grp)
+				}
+			}
+
+			return nil
+		})
+	})
+
+	return groups, err
 }
 
 func (g *groupRepo) DeleteGroup(ctx context.Context, gid string) error {
