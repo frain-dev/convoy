@@ -16,79 +16,73 @@ import (
 	"github.com/vmihailenco/taskq/v3"
 )
 
-func TestWritetoQueue(t *testing.T) {
+func TestMemqueueQueue(t *testing.T) {
+	for scenario, fn := range map[string]func(t *testing.T){
+		"memqueue queue write": testWritetoQueue,
+	} {
+		t.Run(scenario, func(t *testing.T) {
+			fn(t)
+		})
+	}
+}
+
+func testWritetoQueue(t *testing.T) {
 	configfile := "../testdata/convoy_memqueue.json"
 
-	tests := []struct {
-		name     string
-		testType string
-	}{
-		{
-			name:     "Test Write to Queue",
-			testType: "writer",
+	appID := uuid.NewString()
+	eventID := uuid.NewString()
+	eventDeliveryID := uuid.NewString()
+
+	eventDelivery := &datastore.EventDelivery{
+		UID: eventDeliveryID,
+		EventMetadata: &datastore.EventMetadata{
+			UID: eventID,
+		},
+		Status: datastore.SuccessEventStatus,
+		AppMetadata: &datastore.AppMetadata{
+			UID: appID,
 		},
 	}
+	taskName := convoy.TaskName(uuid.NewString())
+	configFile := configfile
+	err := config.LoadConfig(configFile, new(config.Configuration))
+	if err != nil {
+		t.Fatalf("Failed to load config file: %v", err)
+	}
+	cfg, err := config.Get()
+	if err != nil {
+		t.Fatalf("Failed to get config")
 
-	for _, tc := range tests {
-		t.Run(tc.name, func(t *testing.T) {
-			appID := uuid.NewString()
-			eventID := uuid.NewString()
-			eventDeliveryID := uuid.NewString()
+	}
 
-			eventDelivery := &datastore.EventDelivery{
-				UID: eventDeliveryID,
-				EventMetadata: &datastore.EventMetadata{
-					UID: eventID,
-				},
-				Status: datastore.SuccessEventStatus,
-				AppMetadata: &datastore.AppMetadata{
-					UID: appID,
-				},
-			}
-			taskName := convoy.TaskName(uuid.NewString())
-			configFile := configfile
-			err := config.LoadConfig(configFile, new(config.Configuration))
-			if err != nil {
-				t.Fatalf("Failed to load config file: %v", err)
-			}
-			cfg, err := config.Get()
-			if err != nil {
-				t.Fatalf("Failed to get config")
+	var qFn taskq.Factory
+	var lS queue.Storage
+	var opts queue.QueueOptions
 
-			}
+	lS, qFn, err = NewClient(cfg)
+	if err != nil {
+		t.Fatalf("Failed to load new client")
+	}
+	opts = queue.QueueOptions{
+		Name:    uuid.NewString(),
+		Type:    "in-memory",
+		Storage: lS,
+		Factory: qFn,
+	}
 
-			var qFn taskq.Factory
-			var lS queue.Storage
-			var opts queue.QueueOptions
+	eventQueue := NewQueue(opts)
 
-			lS, qFn, err = NewClient(cfg)
-			if err != nil {
-				t.Fatalf("Failed to load new client")
-			}
-			opts = queue.QueueOptions{
-				Name:    uuid.NewString(),
-				Type:    "in-memory",
-				Storage: lS,
-				Factory: qFn,
-			}
+	err = eventQueue.Write(context.TODO(), taskName, eventDelivery, 0)
+	if err != nil {
+		t.Fatalf("Failed to get queue length")
+	}
+	queueLength, err := eventQueue.Consumer().Queue().Len()
 
-			eventQueue := NewQueue(opts)
-			switch tc.testType {
-			case "writer":
-				err := eventQueue.Write(context.TODO(), taskName, eventDelivery, 0)
-				if err != nil {
-					t.Fatalf("Failed to get queue length")
-				}
-				queueLength, err := eventQueue.Consumer().Queue().Len()
+	if err != nil {
+		t.Fatalf("Failed to get queue length")
+	}
+	if fmt.Sprint(queueLength) != "1" {
+		t.Fatalf("Length = %q, Want: %v", queueLength, 1)
 
-				if err != nil {
-					t.Fatalf("Failed to get queue length")
-				}
-				if fmt.Sprint(queueLength) != "1" {
-					t.Fatalf("Length = %q, Want: %v", queueLength, 1)
-
-				}
-			}
-		})
 	}
 }
