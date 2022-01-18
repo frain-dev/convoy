@@ -5,9 +5,7 @@ date: 2022-01-18T23:21:10.750Z
 description: Frain technologies, a Nigerian developer-tooling startup dedicated
   to building webhooks infrastructure has recently completed a $473k pre-seed
   round. The pre-seed round, led by Rally Cap Ventures, also saw participation
-  from Musha Ventures, Future Africa, Eric Idiah, Tomiwa Lasebikan, Prosper
-  Otemuyiwa, Odunayo Eweniyi, Timi Ajiboye, Opeyemi Awoyemi, and several other
-  angels.
+  from Prosper Otemuyiwa, Odunayo Eweniyi, Timi Ajiboye,...
 featureImg: /convoy-blog-head_xez1t2.png
 thumbnail: /convoy-blog-head_xez1t2.png
 featurePost: true
