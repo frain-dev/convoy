@@ -56,13 +56,8 @@ jobs:
       - name: Go vet
         run: go vet ./...
 
-      - name: Run Mongo integration tests
+      - name: Run integration tests
         run: go test -tags integration -v ./...
         env:
           TEST_DATABASE_DSN: "mongodb://localhost:27017/testdb"
-
-      - name: Run Redis integration tests
-        run: go test -tags integration -v ./...
-        env:
           TEST_REDIS_DSN: "redis://localhost:6379"
-          TEST_DATABASE_DSN: "mongodb://localhost:27017/testdb"
