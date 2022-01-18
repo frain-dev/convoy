@@ -58,7 +58,7 @@ func TestWritetoQueue(t *testing.T) {
 			}
 			cfg, err := config.Get()
 			if err != nil {
-				t.Fatalf("Failed to get config")
+				t.Fatalf("Failed to get config: %v", err)
 
 			}
 
@@ -82,12 +82,12 @@ func TestWritetoQueue(t *testing.T) {
 			case "writer":
 				err := eventQueue.Write(context.TODO(), taskName, eventDelivery, 0)
 				if err != nil {
-					t.Fatalf("Failed to get queue length")
+					t.Fatalf("Failed to write to queue: %v", err)
 				}
 				queueLength, err := eventQueue.Consumer().Queue().Len()
 
 				if err != nil {
-					t.Fatalf("Failed to get queue length")
+					t.Fatalf("Failed to get queue length: %v", err)
 				}
 				if fmt.Sprint(queueLength) != "1" {
 					t.Fatalf("Length = %q, Want: %v", queueLength, 1)
@@ -96,7 +96,7 @@ func TestWritetoQueue(t *testing.T) {
 			case "consumer":
 				err = eventQueue.Consumer().Start(context.TODO())
 				if err != nil {
-					t.Fatalf("Unable to start consumer")
+					t.Fatalf("Unable to start consumer: %v", err)
 				}
 			}
 
