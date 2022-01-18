@@ -11,6 +11,7 @@ import (
 
 type Client struct {
 	db                *bbolt.DB
+	apiKeyRepo        datastore.APIKeyRepository
 	groupRepo         datastore.GroupRepository
 	eventRepo         datastore.EventRepository
 	applicationRepo   datastore.ApplicationRepository
@@ -44,6 +45,10 @@ func (c *Client) GetName() string {
 
 func (c *Client) Client() interface{} {
 	return c.db
+}
+
+func (c *Client) APIRepo() datastore.APIKeyRepository {
+	return c.apiKeyRepo
 }
 
 func (c *Client) GroupRepo() datastore.GroupRepository {

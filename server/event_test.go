@@ -11,6 +11,7 @@ import (
 	"github.com/frain-dev/convoy/config"
 	"github.com/frain-dev/convoy/datastore"
 	"github.com/frain-dev/convoy/mocks"
+
 	"github.com/go-chi/chi/v5"
 	"github.com/golang/mock/gomock"
 	log "github.com/sirupsen/logrus"
@@ -28,20 +29,21 @@ func TestApplicationHandler_CreateAppEvent(t *testing.T) {
 	eventRepo := mocks.NewMockEventRepository(ctrl)
 	eventDeliveryRepo := mocks.NewMockEventDeliveryRepository(ctrl)
 	eventQueue := mocks.NewMockQueuer(ctrl)
+	apiKeyRepo := mocks.NewMockAPIKeyRepository(ctrl)
 
-	app = newApplicationHandler(eventRepo, eventDeliveryRepo, appRepo, groupRepo, eventQueue)
+	app = newApplicationHandler(eventRepo, eventDeliveryRepo, appRepo, groupRepo, apiKeyRepo, eventQueue)
 
 	groupId := "1234567890"
 	group := &datastore.Group{
 		UID: groupId,
-		Config: &config.GroupConfig{
-			Signature: config.SignatureConfiguration{
-				Header: config.SignatureHeaderProvider("X-Convoy-Signature"),
+		Config: &datastore.GroupConfig{
+			Signature: datastore.SignatureConfiguration{
+				Header: config.SignatureHeaderProvider("X-datastore.Signature"),
 				Hash:   "SHA256",
 			},
-			Strategy: config.StrategyConfiguration{
+			Strategy: datastore.StrategyConfiguration{
 				Type: config.StrategyProvider("default"),
-				Default: config.DefaultStrategyConfiguration{
+				Default: datastore.DefaultStrategyConfiguration{
 					IntervalSeconds: 60,
 					RetryLimit:      1,
 				},
@@ -347,7 +349,7 @@ func TestApplicationHandler_CreateAppEvent(t *testing.T) {
 			if err != nil {
 				t.Errorf("Failed to load config file: %v", err)
 			}
-			initRealmChain(t)
+			initRealmChain(t, app.apiKeyRepo)
 
 			req := httptest.NewRequest(tc.method, "/api/v1/events", tc.body)
 			req.SetBasicAuth("test", "test")
@@ -383,8 +385,9 @@ func Test_resendEventDelivery(t *testing.T) {
 	eventRepo := mocks.NewMockEventRepository(ctrl)
 	eventDeliveryRepo := mocks.NewMockEventDeliveryRepository(ctrl)
 	eventQueue := mocks.NewMockQueuer(ctrl)
+	apiKeyRepo := mocks.NewMockAPIKeyRepository(ctrl)
 
-	app = newApplicationHandler(eventRepo, eventDeliveryRepo, appRepo, groupRepo, eventQueue)
+	app = newApplicationHandler(eventRepo, eventDeliveryRepo, appRepo, groupRepo, apiKeyRepo, eventQueue)
 
 	group := &datastore.Group{Name: "default-group", UID: "1234567890"}
 
@@ -666,7 +669,7 @@ func Test_resendEventDelivery(t *testing.T) {
 			if err != nil {
 				t.Errorf("Failed to load config file: %v", err)
 			}
-			initRealmChain(t)
+			initRealmChain(t, app.apiKeyRepo)
 
 			router := buildRoutes(app)
 
@@ -692,8 +695,9 @@ func TestApplicationHandler_BatchRetryEventDelivery(t *testing.T) {
 	eventRepo := mocks.NewMockEventRepository(ctrl)
 	eventDeliveryRepo := mocks.NewMockEventDeliveryRepository(ctrl)
 	eventQueue := mocks.NewMockQueuer(ctrl)
+	apiKeyRepo := mocks.NewMockAPIKeyRepository(ctrl)
 
-	app := newApplicationHandler(eventRepo, eventDeliveryRepo, appRepo, groupRepo, eventQueue)
+	app := newApplicationHandler(eventRepo, eventDeliveryRepo, appRepo, groupRepo, apiKeyRepo, eventQueue)
 	group := &datastore.Group{Name: "default-group", UID: "1234567890"}
 
 	type args struct {
@@ -875,7 +879,7 @@ func TestApplicationHandler_BatchRetryEventDelivery(t *testing.T) {
 			if err != nil {
 				t.Errorf("Failed to load config file: %v", err)
 			}
-			initRealmChain(t)
+			initRealmChain(t, app.apiKeyRepo)
 
 			router := buildRoutes(app)
 

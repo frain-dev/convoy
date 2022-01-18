@@ -4,6 +4,8 @@ import (
 	"os"
 	"testing"
 
+	"github.com/frain-dev/convoy/auth"
+
 	"github.com/stretchr/testify/require"
 )
 
@@ -259,7 +261,7 @@ func TestLoadConfig(t *testing.T) {
 							{
 								Username: "123",
 								Password: "abc",
-								Role: Role{
+								Role: auth.Role{
 									Type: "super_user",
 								},
 							},

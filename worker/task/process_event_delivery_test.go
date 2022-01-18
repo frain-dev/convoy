@@ -99,14 +99,14 @@ func TestProcessEventDelivery(t *testing.T) {
 					FetchGroupByID(gomock.Any(), gomock.Any()).
 					Return(&datastore.Group{
 						LogoURL: "",
-						Config: &config.GroupConfig{
-							Signature: config.SignatureConfiguration{
+						Config: &datastore.GroupConfig{
+							Signature: datastore.SignatureConfiguration{
 								Header: config.SignatureHeaderProvider("X-Convoy-Signature"),
 								Hash:   "SHA256",
 							},
-							Strategy: config.StrategyConfiguration{
+							Strategy: datastore.StrategyConfiguration{
 								Type: config.StrategyProvider("default"),
-								Default: config.DefaultStrategyConfiguration{
+								Default: datastore.DefaultStrategyConfiguration{
 									IntervalSeconds: 60,
 									RetryLimit:      1,
 								},
@@ -172,14 +172,14 @@ func TestProcessEventDelivery(t *testing.T) {
 					FetchGroupByID(gomock.Any(), gomock.Any()).
 					Return(&datastore.Group{
 						LogoURL: "",
-						Config: &config.GroupConfig{
-							Signature: config.SignatureConfiguration{
+						Config: &datastore.GroupConfig{
+							Signature: datastore.SignatureConfiguration{
 								Header: config.SignatureHeaderProvider("X-Convoy-Signature"),
 								Hash:   "SHA256",
 							},
-							Strategy: config.StrategyConfiguration{
+							Strategy: datastore.StrategyConfiguration{
 								Type: config.StrategyProvider("default"),
-								Default: config.DefaultStrategyConfiguration{
+								Default: datastore.DefaultStrategyConfiguration{
 									IntervalSeconds: 60,
 									RetryLimit:      1,
 								},
@@ -257,14 +257,14 @@ func TestProcessEventDelivery(t *testing.T) {
 					FetchGroupByID(gomock.Any(), gomock.Any()).
 					Return(&datastore.Group{
 						LogoURL: "",
-						Config: &config.GroupConfig{
-							Signature: config.SignatureConfiguration{
+						Config: &datastore.GroupConfig{
+							Signature: datastore.SignatureConfiguration{
 								Header: config.SignatureHeaderProvider("X-Convoy-Signature"),
 								Hash:   "SHA256",
 							},
-							Strategy: config.StrategyConfiguration{
+							Strategy: datastore.StrategyConfiguration{
 								Type: config.StrategyProvider("default"),
-								Default: config.DefaultStrategyConfiguration{
+								Default: datastore.DefaultStrategyConfiguration{
 									IntervalSeconds: 60,
 									RetryLimit:      1,
 								},
@@ -324,14 +324,14 @@ func TestProcessEventDelivery(t *testing.T) {
 					FetchGroupByID(gomock.Any(), gomock.Any()).
 					Return(&datastore.Group{
 						LogoURL: "",
-						Config: &config.GroupConfig{
-							Signature: config.SignatureConfiguration{
+						Config: &datastore.GroupConfig{
+							Signature: datastore.SignatureConfiguration{
 								Header: config.SignatureHeaderProvider("X-Convoy-Signature"),
 								Hash:   "SHA256",
 							},
-							Strategy: config.StrategyConfiguration{
+							Strategy: datastore.StrategyConfiguration{
 								Type: config.StrategyProvider("default"),
-								Default: config.DefaultStrategyConfiguration{
+								Default: datastore.DefaultStrategyConfiguration{
 									IntervalSeconds: 60,
 									RetryLimit:      1,
 								},
@@ -411,14 +411,14 @@ func TestProcessEventDelivery(t *testing.T) {
 					FetchGroupByID(gomock.Any(), gomock.Any()).
 					Return(&datastore.Group{
 						LogoURL: "",
-						Config: &config.GroupConfig{
-							Signature: config.SignatureConfiguration{
+						Config: &datastore.GroupConfig{
+							Signature: datastore.SignatureConfiguration{
 								Header: config.SignatureHeaderProvider("X-Convoy-Signature"),
 								Hash:   "SHA256",
 							},
-							Strategy: config.StrategyConfiguration{
+							Strategy: datastore.StrategyConfiguration{
 								Type: config.StrategyProvider("default"),
-								Default: config.DefaultStrategyConfiguration{
+								Default: datastore.DefaultStrategyConfiguration{
 									IntervalSeconds: 60,
 									RetryLimit:      1,
 								},
@@ -478,14 +478,14 @@ func TestProcessEventDelivery(t *testing.T) {
 					FetchGroupByID(gomock.Any(), gomock.Any()).
 					Return(&datastore.Group{
 						LogoURL: "",
-						Config: &config.GroupConfig{
-							Signature: config.SignatureConfiguration{
+						Config: &datastore.GroupConfig{
+							Signature: datastore.SignatureConfiguration{
 								Header: config.SignatureHeaderProvider("X-Convoy-Signature"),
 								Hash:   "SHA256",
 							},
-							Strategy: config.StrategyConfiguration{
+							Strategy: datastore.StrategyConfiguration{
 								Type: config.StrategyProvider("default"),
-								Default: config.DefaultStrategyConfiguration{
+								Default: datastore.DefaultStrategyConfiguration{
 									IntervalSeconds: 60,
 									RetryLimit:      1,
 								},
@@ -565,14 +565,14 @@ func TestProcessEventDelivery(t *testing.T) {
 					FetchGroupByID(gomock.Any(), gomock.Any()).
 					Return(&datastore.Group{
 						LogoURL: "",
-						Config: &config.GroupConfig{
-							Signature: config.SignatureConfiguration{
+						Config: &datastore.GroupConfig{
+							Signature: datastore.SignatureConfiguration{
 								Header: config.SignatureHeaderProvider("X-Convoy-Signature"),
 								Hash:   "SHA256",
 							},
-							Strategy: config.StrategyConfiguration{
+							Strategy: datastore.StrategyConfiguration{
 								Type: config.StrategyProvider("default"),
-								Default: config.DefaultStrategyConfiguration{
+								Default: datastore.DefaultStrategyConfiguration{
 									IntervalSeconds: 60,
 									RetryLimit:      1,
 								},
@@ -610,6 +610,7 @@ func TestProcessEventDelivery(t *testing.T) {
 			groupRepo := mocks.NewMockGroupRepository(ctrl)
 			appRepo := mocks.NewMockApplicationRepository(ctrl)
 			msgRepo := mocks.NewMockEventDeliveryRepository(ctrl)
+			apiKeyRepo := mocks.NewMockAPIKeyRepository(ctrl)
 
 			err := config.LoadConfig(tc.cfgPath, new(config.Configuration))
 			if err != nil {
@@ -621,7 +622,7 @@ func TestProcessEventDelivery(t *testing.T) {
 				t.Errorf("failed to get config: %v", err)
 			}
 
-			err = realm_chain.Init(&cfg.Auth)
+			err = realm_chain.Init(&cfg.Auth, apiKeyRepo)
 			if err != nil {
 				t.Errorf("failed to initialize realm chain : %v", err)
 			}

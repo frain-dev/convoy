@@ -12,6 +12,7 @@ import (
 	"github.com/frain-dev/convoy/config"
 	"github.com/frain-dev/convoy/datastore"
 	"github.com/frain-dev/convoy/mocks"
+
 	"github.com/go-chi/chi/v5"
 	"github.com/golang/mock/gomock"
 )
@@ -87,8 +88,9 @@ func TestApplicationHandler_GetGroup(t *testing.T) {
 			eventRepo := mocks.NewMockEventRepository(ctrl)
 			eventDeliveryRepo := mocks.NewMockEventDeliveryRepository(ctrl)
 			eventQueue := mocks.NewMockQueuer(ctrl)
+			apiKeyRepo := mocks.NewMockAPIKeyRepository(ctrl)
 
-			app = newApplicationHandler(eventRepo, eventDeliveryRepo, appRepo, groupRepo, eventQueue)
+			app = newApplicationHandler(eventRepo, eventDeliveryRepo, appRepo, groupRepo, apiKeyRepo, eventQueue)
 
 			// Arrange
 			url := fmt.Sprintf("/api/v1/groups/%s", tc.id)
@@ -111,7 +113,7 @@ func TestApplicationHandler_GetGroup(t *testing.T) {
 			if err != nil {
 				t.Errorf("Failed to load config file: %v", err)
 			}
-			initRealmChain(t)
+			initRealmChain(t, app.apiKeyRepo)
 
 			router := buildRoutes(app)
 
@@ -131,7 +133,7 @@ func TestApplicationHandler_CreateGroup(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 
-	bodyReader := strings.NewReader(`{"name": "ABC_DEF_TEST_UPDATE"}`)
+	bodyReader := strings.NewReader(`{"name": "ABC_DEF_TEST_UPDATE", "config": {"strategy": {"type": "default", "default": {"intervalSeconds": 10, "retryLimit": 3 }}, "signature": { "header": "X-Company-Signature", "hash": "SHA1" }}}`)
 
 	tt := []struct {
 		name       string
@@ -155,6 +157,70 @@ func TestApplicationHandler_CreateGroup(t *testing.T) {
 
 			},
 		},
+
+		{
+			name:       "invalid request - no group name",
+			cfgPath:    "./testdata/Auth_Config/basic-convoy.json",
+			method:     http.MethodPost,
+			statusCode: http.StatusBadRequest,
+			body:       strings.NewReader(`{"config": {"strategy": {"type": "default", "default": {"intervalSeconds": 10, "retryLimit": 3 }}, "signature": { "header": "X-Company-Signature", "hash": "SHA1" }}}`),
+		},
+
+		{
+			name:       "invalid request - no group strategy type field",
+			cfgPath:    "./testdata/Auth_Config/basic-convoy.json",
+			method:     http.MethodPost,
+			statusCode: http.StatusBadRequest,
+			body:       strings.NewReader(`{"name": "ABC_DEF_TEST_UPDATE", "config": {"strategy": {"default": {"intervalSeconds": 10, "retryLimit": 3 }}, "signature": { "header": "X-Company-Signature", "hash": "SHA1" }}}`),
+		},
+
+		{
+			name:       "invalid request - unsupported group strategy type",
+			cfgPath:    "./testdata/Auth_Config/basic-convoy.json",
+			method:     http.MethodPost,
+			statusCode: http.StatusBadRequest,
+			body:       strings.NewReader(`{"name": "ABC_DEF_TEST_UPDATE", "config": {"strategy": {"type": "unsupported", "default": {"intervalSeconds": 10, "retryLimit": 3 }}, "signature": { "header": "X-Company-Signature", "hash": "SHA1" }}}`),
+		},
+
+		{
+			name:       "invalid request - no group interval seconds field",
+			cfgPath:    "./testdata/Auth_Config/basic-convoy.json",
+			method:     http.MethodPost,
+			statusCode: http.StatusBadRequest,
+			body:       strings.NewReader(`{"name": "ABC_DEF_TEST_UPDATE", "config": {"strategy": {"type": "default", "default": {"retryLimit": 3 }}, "signature": { "header": "X-Company-Signature", "hash": "SHA1" }}}`),
+		},
+
+		{
+			name:       "invalid request - no group retry limit field",
+			cfgPath:    "./testdata/Auth_Config/basic-convoy.json",
+			method:     http.MethodPost,
+			statusCode: http.StatusBadRequest,
+			body:       strings.NewReader(`{"name": "ABC_DEF_TEST_UPDATE", "config": {"strategy": {"type": "default", "default": {"intervalSeconds": 10 }}, "signature": { "header": "X-Company-Signature", "hash": "SHA1" }}}`),
+		},
+
+		{
+			name:       "invalid request - no group header field",
+			cfgPath:    "./testdata/Auth_Config/basic-convoy.json",
+			method:     http.MethodPost,
+			statusCode: http.StatusBadRequest,
+			body:       strings.NewReader(`{"name": "ABC_DEF_TEST_UPDATE", "config": {"strategy": {"type": "default", "default": {"intervalSeconds": 10, "retryLimit": 3 }}, "signature": {"hash": "SHA1" }}}`),
+		},
+
+		{
+			name:       "invalid request - no group hash field",
+			cfgPath:    "./testdata/Auth_Config/basic-convoy.json",
+			method:     http.MethodPost,
+			statusCode: http.StatusBadRequest,
+			body:       strings.NewReader(`{"name": "ABC_DEF_TEST_UPDATE", "config": {"strategy": {"type": "default", "default": {"intervalSeconds": 10, "retryLimit": 3 }}, "signature": { "header": "X-Company-Signature" }}}`),
+		},
+
+		{
+			name:       "invalid request - unsupported group hash field",
+			cfgPath:    "./testdata/Auth_Config/basic-convoy.json",
+			method:     http.MethodPost,
+			statusCode: http.StatusBadRequest,
+			body:       strings.NewReader(`{"name": "ABC_DEF_TEST_UPDATE", "config": {"strategy": {"type": "default", "default": {"intervalSeconds": 10, "retryLimit": 3 }}, "signature": { "header": "X-Company-Signature", "hash": "unsupported" }}}`),
+		},
 	}
 
 	for _, tc := range tt {
@@ -169,8 +235,9 @@ func TestApplicationHandler_CreateGroup(t *testing.T) {
 			eventRepo := mocks.NewMockEventRepository(ctrl)
 			eventDeliveryRepo := mocks.NewMockEventDeliveryRepository(ctrl)
 			eventQueue := mocks.NewMockQueuer(ctrl)
+			apiKeyRepo := mocks.NewMockAPIKeyRepository(ctrl)
 
-			app = newApplicationHandler(eventRepo, eventDeliveryRepo, appRepo, groupRepo, eventQueue)
+			app = newApplicationHandler(eventRepo, eventDeliveryRepo, appRepo, groupRepo, apiKeyRepo, eventQueue)
 
 			// Arrange
 			req := httptest.NewRequest(tc.method, "/api/v1/groups", tc.body)
@@ -187,7 +254,7 @@ func TestApplicationHandler_CreateGroup(t *testing.T) {
 			if err != nil {
 				t.Errorf("Failed to load config file: %v", err)
 			}
-			initRealmChain(t)
+			initRealmChain(t, app.apiKeyRepo)
 
 			router := buildRoutes(app)
 
@@ -209,7 +276,8 @@ func TestApplicationHandler_UpdateGroup(t *testing.T) {
 
 	realOrgID := "1234567890"
 
-	bodyReader := strings.NewReader(`{"name": "ABC_DEF_TEST_UPDATE"}`)
+	bodyReader := strings.NewReader(`{"name": "ABC_DEF_TEST_UPDATE", "config": {"strategy": {"type": "default", "default": {"intervalSeconds": 10, "retryLimit": 3 }}, "signature": { "header": "X-Company-Signature", "hash": "SHA1" }}}`)
+
 	tt := []struct {
 		name       string
 		cfgPath    string
@@ -254,8 +322,9 @@ func TestApplicationHandler_UpdateGroup(t *testing.T) {
 			eventRepo := mocks.NewMockEventRepository(ctrl)
 			eventDeliveryRepo := mocks.NewMockEventDeliveryRepository(ctrl)
 			eventQueue := mocks.NewMockQueuer(ctrl)
+			apiKeyRepo := mocks.NewMockAPIKeyRepository(ctrl)
 
-			app = newApplicationHandler(eventRepo, eventDeliveryRepo, appRepo, groupRepo, eventQueue)
+			app = newApplicationHandler(eventRepo, eventDeliveryRepo, appRepo, groupRepo, apiKeyRepo, eventQueue)
 
 			// Arrange
 			url := fmt.Sprintf("/api/v1/groups/%s", tc.orgID)
@@ -278,7 +347,7 @@ func TestApplicationHandler_UpdateGroup(t *testing.T) {
 			if err != nil {
 				t.Errorf("Failed to load config file: %v", err)
 			}
-			initRealmChain(t)
+			initRealmChain(t, app.apiKeyRepo)
 
 			router := buildRoutes(app)
 
@@ -288,7 +357,7 @@ func TestApplicationHandler_UpdateGroup(t *testing.T) {
 			if w.Code != tc.statusCode {
 				t.Errorf("Want status '%d', got '%d'", tc.statusCode, w.Code)
 			}
-
+			fmt.Println("s", w.Body.String())
 			verifyMatch(t, *w)
 		})
 	}
@@ -350,8 +419,9 @@ func TestApplicationHandler_GetGroups(t *testing.T) {
 			eventRepo := mocks.NewMockEventRepository(ctrl)
 			eventDeliveryRepo := mocks.NewMockEventDeliveryRepository(ctrl)
 			eventQueue := mocks.NewMockQueuer(ctrl)
+			apiKeyRepo := mocks.NewMockAPIKeyRepository(ctrl)
 
-			app = newApplicationHandler(eventRepo, eventDeliveryRepo, appRepo, groupRepo, eventQueue)
+			app = newApplicationHandler(eventRepo, eventDeliveryRepo, appRepo, groupRepo, apiKeyRepo, eventQueue)
 
 			req := httptest.NewRequest(tc.method, "/api/v1/groups", nil)
 			req.SetBasicAuth("test", "test")
@@ -366,7 +436,7 @@ func TestApplicationHandler_GetGroups(t *testing.T) {
 			if err != nil {
 				t.Errorf("Failed to load config file: %v", err)
 			}
-			initRealmChain(t)
+			initRealmChain(t, app.apiKeyRepo)
 
 			router := buildRoutes(app)
 
@@ -459,12 +529,13 @@ func TestApplicationHandler_DeleteGroup(t *testing.T) {
 			defer ctrl.Finish()
 
 			groupRepo := mocks.NewMockGroupRepository(ctrl)
+			apiKeyRepo := mocks.NewMockAPIKeyRepository(ctrl)
 			appRepo := mocks.NewMockApplicationRepository(ctrl)
 			eventRepo := mocks.NewMockEventRepository(ctrl)
 			eventDeliveryRepo := mocks.NewMockEventDeliveryRepository(ctrl)
 			eventQueue := mocks.NewMockQueuer(ctrl)
 
-			app = newApplicationHandler(eventRepo, eventDeliveryRepo, appRepo, groupRepo, eventQueue)
+			app = newApplicationHandler(eventRepo, eventDeliveryRepo, appRepo, groupRepo, apiKeyRepo, eventQueue)
 
 			// Arrange
 			url := fmt.Sprintf("/api/v1/groups/%s", tc.orgID)
@@ -487,7 +558,7 @@ func TestApplicationHandler_DeleteGroup(t *testing.T) {
 			if err != nil {
 				t.Errorf("Failed to load config file: %v", err)
 			}
-			initRealmChain(t)
+			initRealmChain(t, app.apiKeyRepo)
 
 			router := buildRoutes(app)
 

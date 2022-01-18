@@ -6,9 +6,25 @@ import (
 	"encoding/json"
 	"errors"
 
+	"github.com/frain-dev/convoy/auth"
 	"github.com/frain-dev/convoy/config"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 )
+
+type Pageable struct {
+	Page    int `json:"page" bson:"page"`
+	PerPage int `json:"per_page" bson:"per_page"`
+	Sort    int `json:"sort" bson:"sort"`
+}
+
+type PaginationData struct {
+	Total     int64 `json:"total"`
+	Page      int64 `json:"page"`
+	PerPage   int64 `json:"perPage"`
+	Prev      int64 `json:"prev"`
+	Next      int64 `json:"next"`
+	TotalPage int64 `json:"totalPage"`
+}
 
 type Period int
 
@@ -32,6 +48,11 @@ func IsValidPeriod(period string) bool {
 }
 
 type DocumentStatus string
+
+type SearchParams struct {
+	CreatedAtStart int64 `json:"created_at_start" bson:"created_at_start"`
+	CreatedAtEnd   int64 `json:"created_at_end" bson:"created_at_end"`
+}
 
 const (
 	ActiveDocumentStatus   DocumentStatus = "Active"
@@ -88,18 +109,38 @@ type Endpoint struct {
 var ErrGroupNotFound = errors.New("group not found")
 
 type Group struct {
-	ID         primitive.ObjectID  `json:"-" bson:"_id"`
-	UID        string              `json:"uid" bson:"uid"`
-	Name       string              `json:"name" bson:"name"`
-	LogoURL    string              `json:"logo_url" bson:"logo_url"`
-	Config     *config.GroupConfig `json:"config" bson:"config"`
-	Statistics *GroupStatistics    `json:"statistics" bson:"-"`
+	ID         primitive.ObjectID `json:"-" bson:"_id"`
+	UID        string             `json:"uid" bson:"uid"`
+	Name       string             `json:"name" bson:"name"`
+	LogoURL    string             `json:"logo_url" bson:"logo_url"`
+	Config     *GroupConfig       `json:"config" bson:"config"`
+	Statistics *GroupStatistics   `json:"statistics" bson:"-"`
 
 	CreatedAt primitive.DateTime `json:"created_at,omitempty" bson:"created_at,omitempty" swaggertype:"string"`
 	UpdatedAt primitive.DateTime `json:"updated_at,omitempty" bson:"updated_at,omitempty" swaggertype:"string"`
 	DeletedAt primitive.DateTime `json:"deleted_at,omitempty" bson:"deleted_at,omitempty" swaggertype:"string"`
 
 	DocumentStatus DocumentStatus `json:"-" bson:"document_status"`
+}
+
+type GroupConfig struct {
+	Strategy        StrategyConfiguration  `json:"strategy"`
+	Signature       SignatureConfiguration `json:"signature"`
+	DisableEndpoint bool                   `json:"disable_endpoint"`
+}
+type StrategyConfiguration struct {
+	Type    config.StrategyProvider      `json:"type" valid:"required~please provide a valid strategy type, in(default)~unsupported strategy type"`
+	Default DefaultStrategyConfiguration `json:"default"`
+}
+
+type DefaultStrategyConfiguration struct {
+	IntervalSeconds uint64 `json:"intervalSeconds" valid:"required~please provide a valid interval seconds,int"`
+	RetryLimit      uint64 `json:"retryLimit" valid:"required~please provide a valid interval seconds,int"`
+}
+
+type SignatureConfiguration struct {
+	Header config.SignatureHeaderProvider `json:"header" valid:"required~please provide a valid signature header"`
+	Hash   string                         `json:"hash" valid:"required~please provide a valid hash,supported_hash~unsupported hash type"`
 }
 
 type GroupStatistics struct {
@@ -212,6 +253,16 @@ type EndpointMetadata struct {
 	Sent bool `json:"sent" bson:"sent"`
 }
 
+type EventIntervalData struct {
+	Interval int64  `json:"index" bson:"index"`
+	Time     string `json:"date" bson:"total_time"`
+}
+
+type EventInterval struct {
+	Data  EventIntervalData `json:"data" bson:"_id"`
+	Count uint64            `json:"count" bson:"count"`
+}
+
 type EventMetadata struct {
 	UID       string    `json:"uid" bson:"uid"`
 	EventType EventType `json:"name" bson:"name"`
@@ -257,6 +308,29 @@ type EventDelivery struct {
 	CreatedAt primitive.DateTime `json:"created_at,omitempty" bson:"created_at,omitempty" swaggertype:"string"`
 	UpdatedAt primitive.DateTime `json:"updated_at,omitempty" bson:"updated_at,omitempty" swaggertype:"string"`
 	DeletedAt primitive.DateTime `json:"deleted_at,omitempty" bson:"deleted_at,omitempty" swaggertype:"string"`
+
+	DocumentStatus DocumentStatus `json:"-" bson:"document_status"`
+}
+
+var (
+	ErrAPIKeyNotFound = errors.New("api key not found")
+)
+
+type KeyType string
+
+type APIKey struct {
+	ID        primitive.ObjectID `json:"-" bson:"_id"`
+	UID       string             `json:"uid" bson:"uid"`
+	MaskID    string             `json:"-" bson:"mask_id"`
+	Name      string             `json:"name" bson:"name"`
+	Role      auth.Role          `json:"role" bson:"role"`
+	Hash      string             `json:"-" bson:"hash"`
+	Salt      string             `json:"-" bson:"salt"`
+	Type      KeyType            `json:"key_type" bson:"key_type"`
+	ExpiresAt primitive.DateTime `json:"expires_at,omitempty" bson:"expires_at,omitempty"`
+	CreatedAt primitive.DateTime `json:"created_at,omitempty" bson:"created_at"`
+	UpdatedAt primitive.DateTime `json:"updated_at,omitempty" bson:"updated_at"`
+	DeletedAt primitive.DateTime `json:"delted_at,omitempty" bson:"deleted_at"`
 
 	DocumentStatus DocumentStatus `json:"-" bson:"document_status"`
 }

@@ -1,6 +1,7 @@
 package file
 
 import (
+	"context"
 	"fmt"
 
 	"github.com/frain-dev/convoy/auth"
@@ -27,7 +28,7 @@ func (r *FileRealm) GetName() string {
 	return "file_realm"
 }
 
-func (r *FileRealm) Authenticate(cred *auth.Credential) (*auth.AuthenticatedUser, error) {
+func (r *FileRealm) Authenticate(ctx context.Context, cred *auth.Credential) (*auth.AuthenticatedUser, error) {
 	switch cred.Type {
 	case auth.CredentialTypeBasic:
 		for _, b := range r.Basic {

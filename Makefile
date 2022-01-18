@@ -7,6 +7,8 @@ init-hooks:
 mockgen:
 	go generate ./...
 
+setup: init-hooks
+
 ui_install:
 	cd web/ui/dashboard && \
 	npm install && \

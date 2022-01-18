@@ -7,7 +7,6 @@ import (
 	"time"
 
 	"github.com/frain-dev/convoy/datastore"
-	"github.com/frain-dev/convoy/server/models"
 	"github.com/frain-dev/convoy/util"
 	"go.etcd.io/bbolt"
 	"go.mongodb.org/mongo-driver/bson/primitive"
@@ -40,13 +39,13 @@ func (a *appRepo) UpdateApplication(ctx context.Context, app *datastore.Applicat
 	return a.createUpdateApplication(app)
 }
 
-func (a *appRepo) LoadApplicationsPaged(ctx context.Context, gid string, pageable models.Pageable) ([]datastore.Application, models.PaginationData, error) {
+func (a *appRepo) LoadApplicationsPaged(ctx context.Context, gid string, pageable datastore.Pageable) ([]datastore.Application, datastore.PaginationData, error) {
 	var apps []datastore.Application = make([]datastore.Application, 0)
 
 	page := pageable.Page
 	prevPage := pageable.Page
 	perPage := pageable.PerPage
-	data := models.PaginationData{}
+	data := datastore.PaginationData{}
 
 	if pageable.Page < 1 {
 		page = 1
@@ -118,11 +117,11 @@ func (a *appRepo) LoadApplicationsPaged(ctx context.Context, gid string, pageabl
 	return apps, data, err
 }
 
-func (a *appRepo) LoadApplicationsPagedByGroupId(ctx context.Context, gid string, pageable models.Pageable) ([]datastore.Application, models.PaginationData, error) {
+func (a *appRepo) LoadApplicationsPagedByGroupId(ctx context.Context, gid string, pageable datastore.Pageable) ([]datastore.Application, datastore.PaginationData, error) {
 	return a.LoadApplicationsPaged(ctx, gid, pageable)
 }
 
-func (a *appRepo) SearchApplicationsByGroupId(ctx context.Context, gid string, searchParams models.SearchParams) ([]datastore.Application, error) {
+func (a *appRepo) SearchApplicationsByGroupId(ctx context.Context, gid string, searchParams datastore.SearchParams) ([]datastore.Application, error) {
 	var apps []datastore.Application
 	err := a.db.View(func(tx *bbolt.Tx) error {
 		b := tx.Bucket([]byte(a.bucketName))

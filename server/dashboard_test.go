@@ -23,8 +23,9 @@ func Test_fetchAllConfigDetails(t *testing.T) {
 	eventRepo := mocks.NewMockEventRepository(ctrl)
 	eventDeliveryRepo := mocks.NewMockEventDeliveryRepository(ctrl)
 	eventQueue := mocks.NewMockQueuer(ctrl)
+	apiKeyRepo := mocks.NewMockAPIKeyRepository(ctrl)
 
-	app = newApplicationHandler(eventRepo, eventDeliveryRepo, appRepo, groupRepo, eventQueue)
+	app = newApplicationHandler(eventRepo, eventDeliveryRepo, appRepo, groupRepo, apiKeyRepo, eventQueue)
 
 	tests := []struct {
 		name       string
@@ -42,7 +43,7 @@ func Test_fetchAllConfigDetails(t *testing.T) {
 				g.EXPECT().
 					FetchGroupByID(gomock.Any(), gomock.Any()).Times(1).
 					Return(&datastore.Group{
-						Config: &config.GroupConfig{},
+						Config: &datastore.GroupConfig{},
 					}, nil)
 			},
 		},
@@ -53,7 +54,7 @@ func Test_fetchAllConfigDetails(t *testing.T) {
 			if err != nil {
 				t.Errorf("Failed to load config file: %v", err)
 			}
-			initRealmChain(t)
+			initRealmChain(t, app.apiKeyRepo)
 
 			if tc.dbFn != nil {
 				tc.dbFn(app)

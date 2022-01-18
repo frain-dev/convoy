@@ -10,7 +10,6 @@ import { FormBuilder, FormGroup } from '@angular/forms';
 import { PAGINATION } from 'src/app/models/global.model';
 import { HTTP_RESPONSE } from 'src/app/models/http.model';
 import { GROUP } from 'src/app/models/group.model';
-import * as Prism from 'prismjs';
 
 @Component({
 	selector: 'app-portal',
@@ -90,8 +89,42 @@ export class AppPortalComponent implements OnInit {
 
 	constructor(private httpService: HttpService, private generalService: GeneralService, private router: Router, private formBuilder: FormBuilder, private route: ActivatedRoute) {}
 
+	ngAfterViewInit() {
+		// Prism.highlightElement(this.codeEle.nativeElement);
+		// while (!this.prismProcessingDone) {
+		// 	Prism.highlightElement(this.codeEle.nativeElement);
+		// }
+	}
+
+	ngOnChanges(): void {
+		if (this.codeEle?.nativeElement) {
+			// this.codeEle.nativeElement.textContent = this.code;
+			// Prism.highlightElement(this.codeEle.nativeElement);
+		}
+	}
+
 	async ngOnInit() {
 		await this.initDashboard();
+	}
+
+	// async ngAfterViewChecked() {
+	// 	console.log('ngAfterViewChecked', this.codeEle, this.prismProcessingDone);
+	// 	if (this.codeEle?.nativeElement && !this.prismProcessingDone) {
+	// 		// Prism.highlightAll(true, f => {
+	// 		// 	console.log('🚀 ~ file: app-portal.component.ts ~ line 120 ~ AppPortalComponent ~ Prism.highlightAll ~ f', f);
+	// 		// 	console.log('prism done');
+	// 		// });
+	// 		this.prismProcessingDone = true;
+	// 	}
+	// }
+
+	dodo() {
+		// Prism.highlightAll(true, () => {
+		// 	console.log('prism done');
+		// });
+		// console.log(
+		// 	Prism.highlightElement()
+		// );
 	}
 
 	async initDashboard() {
