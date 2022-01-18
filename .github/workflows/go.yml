@@ -63,3 +63,5 @@ jobs:
 
       - name: Run Redis integration tests
         run: go test -tags integration -v ./...
+        env:
+          TEST_REDIS_DSN: "redis://localhost:6379"
