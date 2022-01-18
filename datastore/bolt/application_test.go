@@ -16,36 +16,118 @@ import (
 )
 
 func Test_LoadApplicationsPaged(t *testing.T) {
-	db, closeFn := getDB(t)
-	defer closeFn()
-
-	groupRepo := NewGroupRepo(db)
-	appRepo := NewApplicationRepo(db)
-
-	newOrg := &datastore.Group{
-		Name: "Group 1",
-		UID:  uuid.NewString(),
+	type Args struct {
+		UID      string
+		Name     string
+		AppCount int
+		pageData models.Pageable
 	}
 
-	require.NoError(t, groupRepo.CreateGroup(context.Background(), newOrg))
-
-	for i := 0; i < 10; i++ {
-		a := &datastore.Application{
-			Title:   fmt.Sprintf("Application %v", i),
-			GroupID: newOrg.UID,
-			UID:     uuid.NewString(),
-		}
-		require.NoError(t, appRepo.CreateApplication(context.Background(), a))
+	type Expected struct {
+		group_id       string
+		paginationData models.PaginationData
 	}
 
-	_, pageData, err := appRepo.LoadApplicationsPaged(context.Background(), "", models.Pageable{
-		Page:    1,
-		PerPage: 3,
-	})
+	tests := []struct {
+		name string
+		args []Args
 
-	require.NoError(t, err)
+		expected []Expected
+	}{
+		{
+			name: "No Group ID",
+			args: []Args{
+				{
+					UID:      "uid-1",
+					Name:     "Group 1",
+					AppCount: 10,
+					pageData: models.Pageable{Page: 1, PerPage: 3},
+				},
+			},
+			expected: []Expected{
+				{
+					group_id:       "",
+					paginationData: models.PaginationData{Total: 10, TotalPage: 4, Page: 1, PerPage: 3, Prev: 0, Next: 2},
+				},
+			},
+		},
+		{
+			name: "Filtering using Group ID",
+			args: []Args{
+				{
+					UID:      "uid-1",
+					Name:     "Group 1",
+					AppCount: 10,
+					pageData: models.Pageable{Page: 1, PerPage: 3},
+				},
+				{
+					UID:      "uid-2",
+					Name:     "Group 2",
+					AppCount: 5,
+					pageData: models.Pageable{Page: 2, PerPage: 3},
+				},
+				{
+					UID:      "uid-3",
+					Name:     "Group 3",
+					AppCount: 15,
+					pageData: models.Pageable{Page: 3, PerPage: 6},
+				},
+			},
+			expected: []Expected{
+				{
+					group_id:       "uid-1",
+					paginationData: models.PaginationData{Total: 10, TotalPage: 4, Page: 1, PerPage: 3, Prev: 0, Next: 2},
+				},
+				{
+					group_id:       "uid-2",
+					paginationData: models.PaginationData{Total: 5, TotalPage: 2, Page: 2, PerPage: 3, Prev: 1, Next: 3},
+				},
+				{
+					group_id:       "uid-2",
+					paginationData: models.PaginationData{Total: 15, TotalPage: 3, Page: 3, PerPage: 6, Prev: 2, Next: 4},
+				},
+			},
+		},
+	}
 
-	require.Equal(t, pageData.TotalPage, int64(4))
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			db, closeFn := getDB(t)
+			defer closeFn()
+
+			groupRepo := NewGroupRepo(db)
+			appRepo := NewApplicationRepo(db)
+
+			for _, g := range tc.args {
+				require.NoError(t, groupRepo.CreateGroup(context.Background(), &datastore.Group{UID: g.UID, Name: g.Name}))
+
+				for i := 0; i < g.AppCount; i++ {
+					a := &datastore.Application{
+						Title:   fmt.Sprintf("Application %v", i),
+						GroupID: g.UID,
+						UID:     uuid.NewString(),
+					}
+					require.NoError(t, appRepo.CreateApplication(context.Background(), a))
+				}
+			}
+
+			for i, g := range tc.args {
+				if g.UID == tc.expected[i].group_id {
+					_, pageData, err := appRepo.LoadApplicationsPaged(context.Background(), tc.args[i].UID,
+						models.Pageable{Page: tc.args[i].pageData.Page, PerPage: tc.args[i].pageData.PerPage})
+
+					require.NoError(t, err)
+
+					require.Equal(t, pageData.TotalPage, tc.expected[i].paginationData.TotalPage)
+					require.Equal(t, pageData.Next, tc.expected[i].paginationData.Next)
+					require.Equal(t, pageData.Page, tc.expected[i].paginationData.Page)
+					require.Equal(t, pageData.PerPage, tc.expected[i].paginationData.PerPage)
+					require.Equal(t, pageData.Prev, tc.expected[i].paginationData.Prev)
+					require.Equal(t, pageData.Total, tc.expected[i].paginationData.Total)
+				}
+			}
+		})
+	}
 }
 
 func Test_LoadApplicationsPaged_GroupIdFilter(t *testing.T) {
