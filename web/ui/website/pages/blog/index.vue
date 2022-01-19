@@ -80,7 +80,7 @@
 			</div>
 
 			<div class="posts">
-				<Post v-for="(post, index) in posts.slice(0, 2)" :key="index" :post="post" :authors="authors" />
+				<Post v-for="(post, index) in posts.slice(1, 3)" :key="index" :post="post" :authors="authors" />
 			</div>
 
 			<div class="newsletter card">
@@ -99,7 +99,7 @@
 			</div>
 
 			<div class="posts">
-				<Post v-for="(post, index) in posts.slice(2)" :key="index" :post="post" :authors="authors" />
+				<Post v-for="(post, index) in posts.slice(3)" :key="index" :post="post" :authors="authors" />
 			</div>
 		</main>
 	</div>
