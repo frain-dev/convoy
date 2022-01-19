@@ -207,7 +207,6 @@ export class ConvoyDashboardComponent implements OnInit {
 					currentChart.update();
 				}
 			}
-			console.log(Chart.getChart('dahboard_events_chart'));
 		} catch (error) {}
 	}
 
