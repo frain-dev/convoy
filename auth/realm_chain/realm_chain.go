@@ -73,7 +73,7 @@ func (rc *RealmChain) Authenticate(cred *auth.Credential) (*auth.AuthenticatedUs
 		if err == nil {
 			return authUser, nil
 		}
-		log.WithError(err).Errorf("realm %s failed to authenticate cred: %+v", name, cred)
+		log.WithError(err).Errorf("realm %s failed to authenticate cred: %s", name, cred)
 	}
 	return nil, ErrAuthFailed
 }

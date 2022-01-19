@@ -19,6 +19,10 @@ type Credential struct {
 	APIKey   string         `json:"api_key"`
 }
 
+func (c *Credential) String() string {
+	return c.Username
+}
+
 type CredentialType string
 
 const (
