@@ -15,75 +15,90 @@ import (
 )
 
 func Test_LoadApplicationsPaged(t *testing.T) {
-	type Args struct {
+	type Group struct {
 		UID      string
 		Name     string
 		AppCount int
-		pageData datastore.Pageable
 	}
 
 	type Expected struct {
-		group_id       string
+		AppCount       int
 		paginationData datastore.PaginationData
 	}
 
 	tests := []struct {
 		name     string
-		args     []Args
-		expected []Expected
+		gid      string
+		pageData datastore.Pageable
+		groups   []Group
+		expected Expected
 	}{
 		{
-			name: "No Group ID",
-			args: []Args{
+			name:     "No Group ID",
+			pageData: datastore.Pageable{Page: 1, PerPage: 3},
+			groups: []Group{
 				{
 					UID:      "uid-1",
 					Name:     "Group 1",
 					AppCount: 10,
-					pageData: datastore.Pageable{Page: 1, PerPage: 3},
 				},
 			},
-			expected: []Expected{
-				{
-					group_id:       "",
-					paginationData: datastore.PaginationData{Total: 10, TotalPage: 4, Page: 1, PerPage: 3, Prev: 0, Next: 2},
-				},
+			gid: "",
+			expected: Expected{
+				AppCount:       3,
+				paginationData: datastore.PaginationData{Total: 10, TotalPage: 4, Page: 1, PerPage: 3, Prev: 0, Next: 2},
 			},
 		},
 		{
-			name: "Filtering using Group ID",
-			args: []Args{
+			name:     "Filtering using Group ID",
+			pageData: datastore.Pageable{Page: 1, PerPage: 3},
+			gid:      "uid-1",
+			groups: []Group{
 				{
 					UID:      "uid-1",
 					Name:     "Group 1",
 					AppCount: 10,
-					pageData: datastore.Pageable{Page: 1, PerPage: 3},
 				},
 				{
 					UID:      "uid-2",
 					Name:     "Group 2",
 					AppCount: 5,
-					pageData: datastore.Pageable{Page: 2, PerPage: 3},
 				},
 				{
 					UID:      "uid-3",
 					Name:     "Group 3",
 					AppCount: 15,
-					pageData: datastore.Pageable{Page: 3, PerPage: 6},
 				},
 			},
-			expected: []Expected{
+			expected: Expected{
+				AppCount:       3,
+				paginationData: datastore.PaginationData{Total: 10, TotalPage: 4, Page: 1, PerPage: 3, Prev: 0, Next: 2},
+			},
+		},
+		{
+			name:     "Filtering using Group ID - Total less than PerPage",
+			pageData: datastore.Pageable{Page: 1, PerPage: 10},
+			gid:      "uid-1",
+			groups: []Group{
 				{
-					group_id:       "uid-1",
-					paginationData: datastore.PaginationData{Total: 10, TotalPage: 4, Page: 1, PerPage: 3, Prev: 0, Next: 2},
+					UID:      "uid-1",
+					Name:     "Group 1",
+					AppCount: 5,
 				},
 				{
-					group_id:       "uid-2",
-					paginationData: datastore.PaginationData{Total: 5, TotalPage: 2, Page: 2, PerPage: 3, Prev: 1, Next: 3},
+					UID:      "uid-2",
+					Name:     "Group 2",
+					AppCount: 3,
 				},
 				{
-					group_id:       "uid-2",
-					paginationData: datastore.PaginationData{Total: 15, TotalPage: 3, Page: 3, PerPage: 6, Prev: 2, Next: 4},
+					UID:      "uid-3",
+					Name:     "Group 3",
+					AppCount: 1,
 				},
+			},
+			expected: Expected{
+				AppCount:       5,
+				paginationData: datastore.PaginationData{Total: 5, TotalPage: 1, Page: 1, PerPage: 10, Prev: 0, Next: 2},
 			},
 		},
 	}
@@ -97,7 +112,7 @@ func Test_LoadApplicationsPaged(t *testing.T) {
 			appRepo := NewApplicationRepo(db)
 
 			// create the groups and group applications
-			for _, g := range tc.args {
+			for _, g := range tc.groups {
 				require.NoError(t, groupRepo.CreateGroup(context.Background(), &datastore.Group{UID: g.UID, Name: g.Name}))
 
 				for i := 0; i < g.AppCount; i++ {
@@ -110,21 +125,16 @@ func Test_LoadApplicationsPaged(t *testing.T) {
 				}
 			}
 
-			for i, g := range tc.args {
-				if g.UID == tc.expected[i].group_id {
-					_, pageData, err := appRepo.LoadApplicationsPaged(context.Background(), tc.args[i].UID,
-						datastore.Pageable{Page: tc.args[i].pageData.Page, PerPage: tc.args[i].pageData.PerPage})
+			_, data, err := appRepo.LoadApplicationsPaged(context.Background(), tc.gid, tc.pageData)
 
-					require.NoError(t, err)
+			require.NoError(t, err)
 
-					require.Equal(t, pageData.TotalPage, tc.expected[i].paginationData.TotalPage)
-					require.Equal(t, pageData.Next, tc.expected[i].paginationData.Next)
-					require.Equal(t, pageData.Page, tc.expected[i].paginationData.Page)
-					require.Equal(t, pageData.PerPage, tc.expected[i].paginationData.PerPage)
-					require.Equal(t, pageData.Prev, tc.expected[i].paginationData.Prev)
-					require.Equal(t, pageData.Total, tc.expected[i].paginationData.Total)
-				}
-			}
+			require.Equal(t, tc.expected.paginationData.TotalPage, data.TotalPage)
+			require.Equal(t, tc.expected.paginationData.Next, data.Next)
+			require.Equal(t, tc.expected.paginationData.Page, data.Page)
+			require.Equal(t, tc.expected.paginationData.PerPage, data.PerPage)
+			require.Equal(t, tc.expected.paginationData.Prev, data.Prev)
+			require.Equal(t, tc.expected.paginationData.Total, data.Total)
 		})
 	}
 }

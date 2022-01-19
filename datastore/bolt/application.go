@@ -102,6 +102,8 @@ func (a *appRepo) LoadApplicationsPaged(ctx context.Context, gid string, pageabl
 				return nil
 			}
 
+			println(total)
+
 			data.TotalPage = int64(math.Ceil(float64(total) / float64(perPage)))
 			data.Total = int64(total)
 		}

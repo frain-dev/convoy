@@ -16,7 +16,8 @@ import (
 var cfgSingleton atomic.Value
 
 type DatabaseConfiguration struct {
-	Dsn string `json:"dsn" envconfig:"CONVOY_MONGO_DSN"`
+	Type string `json:"type" envconfig:"CONVOY_DB_TYPE"`
+	Dsn  string `json:"dsn" envconfig:"CONVOY_DB_DSN"`
 }
 
 type SentryConfiguration struct {

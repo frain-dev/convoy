@@ -14,7 +14,7 @@ import (
 )
 
 func getDSN() string {
-	return os.Getenv("TEST_DATABASE_DSN")
+	return os.Getenv("TEST_MONGO_DSN")
 }
 
 func getConfig() config.Configuration {

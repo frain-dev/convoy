@@ -18,7 +18,7 @@ func Test_EnvironmentTakesPrecedence(t *testing.T) {
 	}{
 		{
 			name:      "DB DSN - Takes priority",
-			key:       "CONVOY_MONGO_DSN",
+			key:       "CONVOY_DB_DSN",
 			testType:  "db",
 			envConfig: "subomi",
 		},
@@ -134,7 +134,7 @@ func Test_CliFlagsTakePrecedenceOverEnvironmentVariables(t *testing.T) {
 			name:      "DB DSN - Takes priority",
 			testType:  "db",
 			flagValue: "mongo://some-link",
-			key:       "CONVOY_MONGO_DSN",
+			key:       "CONVOY_DB_DSN",
 			envConfig: "subomi",
 		},
 		{

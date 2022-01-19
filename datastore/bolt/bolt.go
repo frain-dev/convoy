@@ -27,8 +27,9 @@ func New(cfg config.Configuration) (datastore.DatabaseClient, error) {
 	c := &Client{
 		db:              db,
 		groupRepo:       NewGroupRepo(db),
+		apiKeyRepo:      NewApiRoleRepo(db),
 		applicationRepo: NewApplicationRepo(db),
-		// eventRepo:         NewEventRepository(conn),
+		// eventRepo:       NewEventRepo(db),
 		// eventDeliveryRepo: NewEventDeliveryRepository(conn),
 	}
 

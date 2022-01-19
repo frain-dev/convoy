@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"os"
 	"time"
@@ -83,12 +84,7 @@ func main() {
 				return err
 			}
 
-			db, err = mongo.New(cfg)
-			if err != nil {
-				return err
-			}
-
-			bolt, err := bolt.New(cfg)
+			db, err = NewDB(cfg)
 			if err != nil {
 				return err
 			}
@@ -126,7 +122,7 @@ func main() {
 			app.apiKeyRepo = db.APIRepo()
 			app.groupRepo = db.GroupRepo()
 			app.eventRepo = db.EventRepo()
-			app.applicationRepo = bolt.AppRepo()
+			app.applicationRepo = db.AppRepo()
 			app.eventDeliveryRepo = db.EventDeliveryRepo()
 
 			app.eventQueue = convoyRedis.NewQueue(rC, qFn, "EventQueue")
@@ -209,7 +205,6 @@ func ensureDefaultGroup(ctx context.Context, cfg config.Configuration, a *app) e
 				IntervalSeconds: cfg.GroupConfig.Strategy.Default.IntervalSeconds,
 				RetryLimit:      cfg.GroupConfig.Strategy.Default.RetryLimit,
 			},
-			
 		},
 		Signature: datastore.SignatureConfiguration{
 			Header: config.SignatureHeaderProvider(cfg.GroupConfig.Signature.Header),
@@ -263,4 +258,23 @@ type app struct {
 
 func getCtx() (context.Context, context.CancelFunc) {
 	return context.WithTimeout(context.Background(), time.Second*1)
+}
+
+func NewDB(cfg config.Configuration) (datastore.DatabaseClient, error) {
+	switch cfg.Database.Type {
+	case "mongodb":
+		db, err := mongo.New(cfg)
+		if err != nil {
+			return nil, err
+		}
+		return db, nil
+	case "bolt":
+		bolt, err := bolt.New(cfg)
+		if err != nil {
+			return nil, err
+		}
+		return bolt, nil
+	default:
+		return nil, errors.New("invalid database type")
+	}
 }

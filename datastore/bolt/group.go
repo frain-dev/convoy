@@ -69,19 +69,12 @@ func (g *groupRepo) FetchGroupByID(ctx context.Context, gid string) (*datastore.
 	err := g.db.View(func(tx *bbolt.Tx) error {
 		b := tx.Bucket([]byte(g.bucketName))
 
-		grp := b.Get([]byte(gid))
-		if grp == nil {
+		buf := b.Get([]byte(gid))
+		if buf == nil {
 			return datastore.ErrGroupNotFound
 		}
 
-		var temp *datastore.Group
-		err := json.Unmarshal(grp, &temp)
-		if err != nil {
-			return err
-		}
-		group = temp
-
-		return nil
+		return json.Unmarshal(buf, &group)
 	})
 
 	return group, err
