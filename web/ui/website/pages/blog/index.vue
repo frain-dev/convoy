@@ -80,7 +80,7 @@
 			</div>
 
 			<div class="posts">
-				<Post v-for="(post, index) in posts" :key="index" :post="post" :authors="authors" />
+				<Post v-for="(post, index) in posts.slice(0, 2)" :key="index" :post="post" :authors="authors" />
 			</div>
 
 			<div class="newsletter card">
@@ -96,6 +96,10 @@
 					</form>
 				</div>
 				<img src="~/assets/images/mailbox.gif" alt="mailbox animation" />
+			</div>
+
+			<div class="posts">
+				<Post v-for="(post, index) in posts.slice(2)" :key="index" :post="post" :authors="authors" />
 			</div>
 		</main>
 	</div>
@@ -114,7 +118,7 @@ export default {
 	async asyncData({ $content, route }) {
 		const posts = route.query?.tag
 			? await $content('blog').only(['author', 'description', 'featureImg', 'slug', 'thumbnail', 'title', 'featurePost', 'date', 'tag']).where({ tag: route.query.tag }).fetch()
-			: await $content('blog').only(['author', 'description', 'featureImg', 'slug', 'thumbnail', 'title', 'featurePost', 'date', 'tag']).fetch();
+			: await $content('blog').only(['author', 'description', 'featureImg', 'slug', 'thumbnail', 'title', 'featurePost', 'date', 'tag']).sortBy('date', 'desc').fetch();
 		const featurePosts = posts.length > 0 ? posts.filter(post => post.featurePost === true) : [];
 		const authors = await $content('blog-authors').fetch();
 		const tags = await $content('blog-tags').fetch();
