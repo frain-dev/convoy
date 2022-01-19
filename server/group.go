@@ -2,7 +2,6 @@ package server
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"net/http"
 	"time"
@@ -14,7 +13,7 @@ import (
 	"github.com/frain-dev/convoy/util"
 	"github.com/frain-dev/convoy/worker/task"
 	"github.com/go-chi/render"
-	"github.com/google/uuid"
+	"github.com/google/uuid" 
 	log "github.com/sirupsen/logrus"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 )
@@ -117,15 +116,15 @@ func (a *applicationHandler) DeleteGroup(w http.ResponseWriter, r *http.Request)
 func (a *applicationHandler) CreateGroup(w http.ResponseWriter, r *http.Request) {
 
 	var newGroup models.Group
-	err := json.NewDecoder(r.Body).Decode(&newGroup)
+	err := util.ReadJSON(r, &newGroup)
 	if err != nil {
-		_ = render.Render(w, r, newErrorResponse("Request is invalid", http.StatusBadRequest))
+		_ = render.Render(w, r, newErrorResponse(err.Error(), http.StatusBadRequest))
 		return
 	}
 
 	groupName := newGroup.Name
-	if util.IsStringEmpty(groupName) {
-		_ = render.Render(w, r, newErrorResponse("please provide a valid name", http.StatusBadRequest))
+	if err = util.Validate(newGroup); err != nil {
+		_ = render.Render(w, r, newErrorResponse(err.Error(), http.StatusBadRequest))
 		return
 	}
 
@@ -166,15 +165,15 @@ func (a *applicationHandler) CreateGroup(w http.ResponseWriter, r *http.Request)
 func (a *applicationHandler) UpdateGroup(w http.ResponseWriter, r *http.Request) {
 
 	var update models.Group
-	err := json.NewDecoder(r.Body).Decode(&update)
+	err := util.ReadJSON(r, &update)
 	if err != nil {
-		_ = render.Render(w, r, newErrorResponse("Request is invalid", http.StatusBadRequest))
+		_ = render.Render(w, r, newErrorResponse(err.Error(), http.StatusBadRequest))
 		return
 	}
 
 	groupName := update.Name
-	if util.IsStringEmpty(groupName) {
-		_ = render.Render(w, r, newErrorResponse("please provide a valid name", http.StatusBadRequest))
+	if err = util.Validate(update); err != nil {
+		_ = render.Render(w, r, newErrorResponse(err.Error(), http.StatusBadRequest))
 		return
 	}
 

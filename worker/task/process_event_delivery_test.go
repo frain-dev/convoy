@@ -99,17 +99,14 @@ func TestProcessEventDelivery(t *testing.T) {
 					FetchGroupByID(gomock.Any(), gomock.Any()).
 					Return(&datastore.Group{
 						LogoURL: "",
-						Config: &config.GroupConfig{
-							Signature: config.SignatureConfiguration{
+						Config: &datastore.GroupConfig{
+							Signature: datastore.SignatureConfiguration{
 								Header: config.SignatureHeaderProvider("X-Convoy-Signature"),
 								Hash:   "SHA256",
 							},
-							Strategy: config.StrategyConfiguration{
+							Strategy: datastore.StrategyConfiguration{
 								Type: config.StrategyProvider("default"),
-								Default: struct {
-									IntervalSeconds uint64 `json:"intervalSeconds" envconfig:"CONVOY_INTERVAL_SECONDS"`
-									RetryLimit      uint64 `json:"retryLimit" envconfig:"CONVOY_RETRY_LIMIT"`
-								}{
+								Default: datastore.DefaultStrategyConfiguration{
 									IntervalSeconds: 60,
 									RetryLimit:      1,
 								},
@@ -175,17 +172,14 @@ func TestProcessEventDelivery(t *testing.T) {
 					FetchGroupByID(gomock.Any(), gomock.Any()).
 					Return(&datastore.Group{
 						LogoURL: "",
-						Config: &config.GroupConfig{
-							Signature: config.SignatureConfiguration{
+						Config: &datastore.GroupConfig{
+							Signature: datastore.SignatureConfiguration{
 								Header: config.SignatureHeaderProvider("X-Convoy-Signature"),
 								Hash:   "SHA256",
 							},
-							Strategy: config.StrategyConfiguration{
+							Strategy: datastore.StrategyConfiguration{
 								Type: config.StrategyProvider("default"),
-								Default: struct {
-									IntervalSeconds uint64 `json:"intervalSeconds" envconfig:"CONVOY_INTERVAL_SECONDS"`
-									RetryLimit      uint64 `json:"retryLimit" envconfig:"CONVOY_RETRY_LIMIT"`
-								}{
+								Default: datastore.DefaultStrategyConfiguration{
 									IntervalSeconds: 60,
 									RetryLimit:      1,
 								},
@@ -263,17 +257,14 @@ func TestProcessEventDelivery(t *testing.T) {
 					FetchGroupByID(gomock.Any(), gomock.Any()).
 					Return(&datastore.Group{
 						LogoURL: "",
-						Config: &config.GroupConfig{
-							Signature: config.SignatureConfiguration{
+						Config: &datastore.GroupConfig{
+							Signature: datastore.SignatureConfiguration{
 								Header: config.SignatureHeaderProvider("X-Convoy-Signature"),
 								Hash:   "SHA256",
 							},
-							Strategy: config.StrategyConfiguration{
+							Strategy: datastore.StrategyConfiguration{
 								Type: config.StrategyProvider("default"),
-								Default: struct {
-									IntervalSeconds uint64 `json:"intervalSeconds" envconfig:"CONVOY_INTERVAL_SECONDS"`
-									RetryLimit      uint64 `json:"retryLimit" envconfig:"CONVOY_RETRY_LIMIT"`
-								}{
+								Default: datastore.DefaultStrategyConfiguration{
 									IntervalSeconds: 60,
 									RetryLimit:      1,
 								},
@@ -333,17 +324,14 @@ func TestProcessEventDelivery(t *testing.T) {
 					FetchGroupByID(gomock.Any(), gomock.Any()).
 					Return(&datastore.Group{
 						LogoURL: "",
-						Config: &config.GroupConfig{
-							Signature: config.SignatureConfiguration{
+						Config: &datastore.GroupConfig{
+							Signature: datastore.SignatureConfiguration{
 								Header: config.SignatureHeaderProvider("X-Convoy-Signature"),
 								Hash:   "SHA256",
 							},
-							Strategy: config.StrategyConfiguration{
+							Strategy: datastore.StrategyConfiguration{
 								Type: config.StrategyProvider("default"),
-								Default: struct {
-									IntervalSeconds uint64 `json:"intervalSeconds" envconfig:"CONVOY_INTERVAL_SECONDS"`
-									RetryLimit      uint64 `json:"retryLimit" envconfig:"CONVOY_RETRY_LIMIT"`
-								}{
+								Default: datastore.DefaultStrategyConfiguration{
 									IntervalSeconds: 60,
 									RetryLimit:      1,
 								},
@@ -423,17 +411,14 @@ func TestProcessEventDelivery(t *testing.T) {
 					FetchGroupByID(gomock.Any(), gomock.Any()).
 					Return(&datastore.Group{
 						LogoURL: "",
-						Config: &config.GroupConfig{
-							Signature: config.SignatureConfiguration{
+						Config: &datastore.GroupConfig{
+							Signature: datastore.SignatureConfiguration{
 								Header: config.SignatureHeaderProvider("X-Convoy-Signature"),
 								Hash:   "SHA256",
 							},
-							Strategy: config.StrategyConfiguration{
+							Strategy: datastore.StrategyConfiguration{
 								Type: config.StrategyProvider("default"),
-								Default: struct {
-									IntervalSeconds uint64 `json:"intervalSeconds" envconfig:"CONVOY_INTERVAL_SECONDS"`
-									RetryLimit      uint64 `json:"retryLimit" envconfig:"CONVOY_RETRY_LIMIT"`
-								}{
+								Default: datastore.DefaultStrategyConfiguration{
 									IntervalSeconds: 60,
 									RetryLimit:      1,
 								},
@@ -493,17 +478,14 @@ func TestProcessEventDelivery(t *testing.T) {
 					FetchGroupByID(gomock.Any(), gomock.Any()).
 					Return(&datastore.Group{
 						LogoURL: "",
-						Config: &config.GroupConfig{
-							Signature: config.SignatureConfiguration{
+						Config: &datastore.GroupConfig{
+							Signature: datastore.SignatureConfiguration{
 								Header: config.SignatureHeaderProvider("X-Convoy-Signature"),
 								Hash:   "SHA256",
 							},
-							Strategy: config.StrategyConfiguration{
+							Strategy: datastore.StrategyConfiguration{
 								Type: config.StrategyProvider("default"),
-								Default: struct {
-									IntervalSeconds uint64 `json:"intervalSeconds" envconfig:"CONVOY_INTERVAL_SECONDS"`
-									RetryLimit      uint64 `json:"retryLimit" envconfig:"CONVOY_RETRY_LIMIT"`
-								}{
+								Default: datastore.DefaultStrategyConfiguration{
 									IntervalSeconds: 60,
 									RetryLimit:      1,
 								},
@@ -583,17 +565,14 @@ func TestProcessEventDelivery(t *testing.T) {
 					FetchGroupByID(gomock.Any(), gomock.Any()).
 					Return(&datastore.Group{
 						LogoURL: "",
-						Config: &config.GroupConfig{
-							Signature: config.SignatureConfiguration{
+						Config: &datastore.GroupConfig{
+							Signature: datastore.SignatureConfiguration{
 								Header: config.SignatureHeaderProvider("X-Convoy-Signature"),
 								Hash:   "SHA256",
 							},
-							Strategy: config.StrategyConfiguration{
+							Strategy: datastore.StrategyConfiguration{
 								Type: config.StrategyProvider("default"),
-								Default: struct {
-									IntervalSeconds uint64 `json:"intervalSeconds" envconfig:"CONVOY_INTERVAL_SECONDS"`
-									RetryLimit      uint64 `json:"retryLimit" envconfig:"CONVOY_RETRY_LIMIT"`
-								}{
+								Default: datastore.DefaultStrategyConfiguration{
 									IntervalSeconds: 60,
 									RetryLimit:      1,
 								},

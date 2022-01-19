@@ -2,7 +2,6 @@ package server
 
 import (
 	"context"
-	"encoding/json"
 	"errors"
 	"fmt"
 	"net/http"
@@ -33,20 +32,17 @@ import (
 func (a *applicationHandler) CreateAppEvent(w http.ResponseWriter, r *http.Request) {
 
 	var newMessage models.Event
-	err := json.NewDecoder(r.Body).Decode(&newMessage)
+	err := util.ReadJSON(r, &newMessage)
 	if err != nil {
-		_ = render.Render(w, r, newErrorResponse("Request is invalid", http.StatusBadRequest))
+		_ = render.Render(w, r, newErrorResponse(err.Error(), http.StatusBadRequest))
 		return
 	}
 
 	eventType := newMessage.EventType
-	if util.IsStringEmpty(eventType) {
-		_ = render.Render(w, r, newErrorResponse("please provide an event_type", http.StatusBadRequest))
-		return
-	}
 	d := newMessage.Data
-	if d == nil {
-		_ = render.Render(w, r, newErrorResponse("please provide your data", http.StatusBadRequest))
+
+	if err = util.Validate(newMessage); err != nil {
+		_ = render.Render(w, r, newErrorResponse(err.Error(), http.StatusBadRequest))
 		return
 	}
 
@@ -242,9 +238,9 @@ func (a *applicationHandler) ResendEventDelivery(w http.ResponseWriter, r *http.
 func (a *applicationHandler) BatchRetryEventDelivery(w http.ResponseWriter, r *http.Request) {
 	eventDeliveryIDs := models.IDs{}
 
-	err := json.NewDecoder(r.Body).Decode(&eventDeliveryIDs)
+	err := util.ReadJSON(r, &eventDeliveryIDs)
 	if err != nil {
-		_ = render.Render(w, r, newErrorResponse("Request is invalid", http.StatusBadRequest))
+		_ = render.Render(w, r, newErrorResponse(err.Error(), http.StatusBadRequest))
 		return
 	}
 
