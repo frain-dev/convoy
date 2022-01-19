@@ -31,8 +31,8 @@ func addServerCommand(a *app) *cobra.Command {
 				return err
 			}
 
-			if util.IsStringEmpty(string(cfg.GroupConfig.Signature.Header)) {
-				cfg.GroupConfig.Signature.Header = config.DefaultSignatureHeader
+			if util.IsStringEmpty(string(cfg.Signature.Header)) {
+				cfg.Signature.Header = config.DefaultSignatureHeader
 				log.Warnf("signature header is blank. setting default %s", config.DefaultSignatureHeader)
 			}
 

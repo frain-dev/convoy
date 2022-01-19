@@ -61,7 +61,7 @@ func Test_EnvironmentTakesPrecedence(t *testing.T) {
 					t.Errorf(errString, tc.testType)
 				}
 			case "header":
-				if string(cfg.GroupConfig.Signature.Header) != tc.envConfig {
+				if string(cfg.Signature.Header) != tc.envConfig {
 					t.Errorf(errString, tc.testType)
 				}
 			}
@@ -214,18 +214,14 @@ func TestLoadConfig(t *testing.T) {
 						Port: 80,
 					},
 				},
-				GroupConfig: GroupConfig{
-					Strategy: StrategyConfiguration{
-						Type: "default",
-						Default: DefaultStrategyConfiguration{
-							IntervalSeconds: 125,
-							RetryLimit:      15,
-						},
-					},
-					Signature: SignatureConfiguration{
-						Header: DefaultSignatureHeader,
-						Hash:   "SHA256",
-					},
+				Signature: SignatureConfiguration{
+					Header: DefaultSignatureHeader,
+					Hash: "SHA256",
+				},
+				Strategy: StrategyConfiguration{
+					Type: "default",
+					IntervalSeconds: 125,
+					RetryLimit: 15,
 					DisableEndpoint: false,
 				},
 				Environment:     DevelopmentEnvironment,
@@ -268,18 +264,14 @@ func TestLoadConfig(t *testing.T) {
 						},
 					},
 				},
-				GroupConfig: GroupConfig{
-					Strategy: StrategyConfiguration{
-						Type: "default",
-						Default: DefaultStrategyConfiguration{
-							IntervalSeconds: 125,
-							RetryLimit:      15,
-						},
-					},
-					Signature: SignatureConfiguration{
-						Header: DefaultSignatureHeader,
-						Hash:   "SHA256",
-					},
+				Signature: SignatureConfiguration{
+					Header: DefaultSignatureHeader,
+					Hash: "SHA256",
+				},
+				Strategy: StrategyConfiguration{
+					Type: "default",
+					IntervalSeconds: 125,
+					RetryLimit: 15,
 					DisableEndpoint: false,
 				},
 				Environment:     DevelopmentEnvironment,

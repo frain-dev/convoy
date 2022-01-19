@@ -13,16 +13,12 @@
             "port": 80
         }
     },
-    "group": {
-        "strategy": {
-            "type": "default",
-            "default": {
-                "intervalSeconds": 125,
-                "retryLimit": 15
-            }
-        },
-        "signature": {
-            "hash": "SHA100"
-        }
+    "signature": {
+        "hash": "SHA100"
+    },
+    "strategy": {
+        "type": "default",
+        "intervalSeconds": 125,
+        "retryLimit": 15
     }
 }

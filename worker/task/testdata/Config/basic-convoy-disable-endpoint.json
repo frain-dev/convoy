@@ -26,18 +26,15 @@
             ]
         }
     },
-    "group": {
-        "strategy": {
-            "type": "default",
-            "default": {
-                "intervalSeconds": 20,
-                "retryLimit": 3
-            }
-        },
-        "signature": {
-            "header": "X-Company-Event-WebHook-Signature",
-            "hash": "SHA256"
-        }
+    "signature": {
+        "header": "X-Company-Event-WebHook-Signature",
+        "hash": "SHA256"
+    },
+    "strategy": {
+        "type": "default",
+        "intervalSeconds": 125,
+        "retryLimit": 15,
+        "disable_endpoint": true
     },
     "smtp": {
         "provider": "sendgrid",
@@ -46,6 +43,5 @@
         "username": "apikey",
         "password": "<api-key-from-sendgrid>",
         "from": "support@frain.dev"
-    },
-    "disable_endpoint": true
+    }
 }

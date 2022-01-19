@@ -112,8 +112,8 @@ func main() {
 				}
 			}
 
-			if util.IsStringEmpty(string(cfg.GroupConfig.Signature.Header)) {
-				cfg.GroupConfig.Signature.Header = config.DefaultSignatureHeader
+			if util.IsStringEmpty(string(cfg.Signature.Header)) {
+				cfg.Signature.Header = config.DefaultSignatureHeader
 				log.Warnf("signature header is blank. setting default %s", config.DefaultSignatureHeader)
 			}
 
@@ -198,18 +198,18 @@ func ensureDefaultGroup(ctx context.Context, cfg config.Configuration, a *app) e
 
 	groupCfg := &datastore.GroupConfig{
 		Strategy: datastore.StrategyConfiguration{
-			Type: cfg.GroupConfig.Strategy.Type,
+			Type: cfg.Strategy.Type,
 			Default: datastore.DefaultStrategyConfiguration{
-				IntervalSeconds: cfg.GroupConfig.Strategy.Default.IntervalSeconds,
-				RetryLimit:      cfg.GroupConfig.Strategy.Default.RetryLimit,
+				IntervalSeconds: cfg.Strategy.IntervalSeconds,
+				RetryLimit:      cfg.Strategy.RetryLimit,
 			},
 			
 		},
 		Signature: datastore.SignatureConfiguration{
-			Header: config.SignatureHeaderProvider(cfg.GroupConfig.Signature.Header),
-			Hash:   cfg.GroupConfig.Signature.Hash,
+			Header: config.SignatureHeaderProvider(cfg.Signature.Header),
+			Hash:   cfg.Signature.Hash,
 		},
-		DisableEndpoint: cfg.GroupConfig.DisableEndpoint,
+		DisableEndpoint: cfg.Strategy.DisableEndpoint,
 	}
 
 	if len(groups) == 0 {

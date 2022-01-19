@@ -69,15 +69,16 @@ type SMTPConfiguration struct {
 }
 
 type Configuration struct {
-	Auth            AuthConfiguration     `json:"auth,omitempty"`
-	Database        DatabaseConfiguration `json:"database"`
-	Sentry          SentryConfiguration   `json:"sentry"`
-	Queue           QueueConfiguration    `json:"queue"`
-	Server          ServerConfiguration   `json:"server"`
-	GroupConfig     GroupConfig           `json:"group"`
-	SMTP            SMTPConfiguration     `json:"smtp"`
-	Environment     string                `json:"env" envconfig:"CONVOY_ENV" required:"true" default:"development"`
-	MultipleTenants bool                  `json:"multiple_tenants"`
+	Auth            AuthConfiguration      `json:"auth,omitempty"`
+	Database        DatabaseConfiguration  `json:"database"`
+	Sentry          SentryConfiguration    `json:"sentry"`
+	Queue           QueueConfiguration     `json:"queue"`
+	Server          ServerConfiguration    `json:"server"`
+	Signature       SignatureConfiguration `json:"signature"`
+	Strategy        StrategyConfiguration  `json:"strategy"`
+	SMTP            SMTPConfiguration      `json:"smtp"`
+	Environment     string                 `json:"env" envconfig:"CONVOY_ENV" required:"true" default:"development"`
+	MultipleTenants bool                   `json:"multiple_tenants"`
 }
 
 const (
@@ -92,25 +93,16 @@ const (
 	DefaultSignatureHeader  SignatureHeaderProvider = "X-Convoy-Signature"
 )
 
-type GroupConfig struct {
-	Strategy        StrategyConfiguration  `json:"strategy"`
-	Signature       SignatureConfiguration `json:"signature"`
-	DisableEndpoint bool                   `json:"disable_endpoint"`
-}
-
-type StrategyConfiguration struct {
-	Type    StrategyProvider             `json:"type"`
-	Default DefaultStrategyConfiguration `json:"default"`
-}
-
-type DefaultStrategyConfiguration struct {
-	IntervalSeconds uint64 `json:"intervalSeconds" envconfig:"CONVOY_INTERVAL_SECONDS"`
-	RetryLimit      uint64 `json:"retryLimit" envconfig:"CONVOY_RETRY_LIMIT"`
-}
-
 type SignatureConfiguration struct {
 	Header SignatureHeaderProvider `json:"header" envconfig:"CONVOY_SIGNATURE_HEADER"`
 	Hash   string                  `json:"hash" envconfig:"CONVOY_SIGNATURE_HASH"`
+}
+
+type StrategyConfiguration struct {
+	Type            StrategyProvider `json:"type"`
+	IntervalSeconds uint64           `json:"intervalSeconds" envconfig:"CONVOY_INTERVAL_SECONDS"`
+	RetryLimit      uint64           `json:"retryLimit" envconfig:"CONVOY_RETRY_LIMIT"`
+	DisableEndpoint bool             `json:"disable_endpoint"`
 }
 
 type AuthProvider string
@@ -169,17 +161,17 @@ func LoadConfig(p string, override *Configuration) error {
 		return err
 	}
 
-	err = ensureSignature(c.GroupConfig.Signature)
+	err = ensureSignature(c.Signature)
 	if err != nil {
 		return err
 	}
 
-	if c.GroupConfig.Signature.Header == "" {
-		c.GroupConfig.Signature.Header = DefaultSignatureHeader
+	if c.Signature.Header == "" {
+		c.Signature.Header = DefaultSignatureHeader
 		log.Warnf("using default signature header: %s", DefaultSignatureHeader)
 	}
 
-	err = ensureStrategyConfig(c.GroupConfig.Strategy)
+	err = ensureStrategyConfig(c.Strategy)
 	if err != nil {
 		return err
 	}
@@ -265,7 +257,7 @@ func ensureQueueConfig(queueCfg QueueConfiguration) error {
 func ensureStrategyConfig(strategyCfg StrategyConfiguration) error {
 	switch strategyCfg.Type {
 	case DefaultStrategyProvider:
-		if strategyCfg.Default.IntervalSeconds == 0 || strategyCfg.Default.RetryLimit == 0 {
+		if strategyCfg.IntervalSeconds == 0 || strategyCfg.RetryLimit == 0 {
 			return errors.New("both interval seconds and retry limit are required for default strategy configuration")
 		}
 	default:
