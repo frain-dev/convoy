@@ -27,7 +27,7 @@
 			<ul>
 				<li>
 					<a target="_blank" rel="noopener noreferrer" href="https://buycoins.africa/">
-						<img src="~/assets/images/buycoins-logo.svg" style="width: 80px" alt="buycoins logo" />
+						<img src="~/assets/images/buycoins-logo.svg" style="width: 70px" alt="buycoins logo" />
 					</a>
 				</li>
 				<li>
@@ -38,6 +38,11 @@
 				<li>
 					<a target="_blank" rel="noopener noreferrer" href="https://www.getwallets.co/">
 						<img src="~/assets/images/getwallets-logo.svg" style="width: 80px" alt="getwallets logo" />
+					</a>
+				</li>
+				<li>
+					<a target="_blank" rel="noopener noreferrer" href="https://www.dojah.io/">
+						<img src="~/assets/images/dojah-logo.png" style="width: 50px" alt="dojah logo" />
 					</a>
 				</li>
 			</ul>
@@ -395,7 +400,7 @@ section.companies {
 	max-width: 1150px;
 	margin: -30px auto 0;
 	justify-content: space-between;
-	padding: 25px 20px;
+	padding: 20px 20px 25px;
 	background: #fafafe;
 	border-radius: 8px 8px 0px 0px;
 	align-items: center;
@@ -413,6 +418,7 @@ section.companies {
 		display: flex;
 		align-items: center;
 		margin-bottom: 10px;
+		flex-wrap: wrap;
 
 		li {
 			&:not(:last-of-type) {
@@ -422,6 +428,7 @@ section.companies {
 			img {
 				filter: grayscale(100%);
 				transition: all 0.3s ease-in-out;
+				margin-bottom: 20px;
 
 				&:hover {
 					filter: grayscale(0%);

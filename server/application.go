@@ -121,8 +121,8 @@ func (a *applicationHandler) CreateApp(w http.ResponseWriter, r *http.Request) {
 	}
 
 	appName := newApp.AppName
-	if util.IsStringEmpty(appName) {
-		_ = render.Render(w, r, newErrorResponse("please provide your appName", http.StatusBadRequest))
+	if err = util.Validate(newApp); err != nil {
+		_ = render.Render(w, r, newErrorResponse(err.Error(), http.StatusBadRequest))
 		return
 	}
 
@@ -170,7 +170,7 @@ func (a *applicationHandler) UpdateApp(w http.ResponseWriter, r *http.Request) {
 	}
 
 	appName := appUpdate.AppName
-	if util.IsStringEmpty(appName) {
+	if err = util.Validate(appUpdate); err != nil {
 		_ = render.Render(w, r, newErrorResponse("please provide your appName", http.StatusBadRequest))
 		return
 	}

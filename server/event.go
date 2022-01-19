@@ -39,13 +39,10 @@ func (a *applicationHandler) CreateAppEvent(w http.ResponseWriter, r *http.Reque
 	}
 
 	eventType := newMessage.EventType
-	if util.IsStringEmpty(eventType) {
-		_ = render.Render(w, r, newErrorResponse("please provide an event_type", http.StatusBadRequest))
-		return
-	}
 	d := newMessage.Data
-	if d == nil {
-		_ = render.Render(w, r, newErrorResponse("please provide your data", http.StatusBadRequest))
+
+	if err = util.Validate(newMessage); err != nil {
+		_ = render.Render(w, r, newErrorResponse(err.Error(), http.StatusBadRequest))
 		return
 	}
 
