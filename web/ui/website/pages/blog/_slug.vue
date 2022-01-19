@@ -317,7 +317,8 @@ main {
 	}
 
 	&--loader {
-		width: 100%;
+		width: 80%;
+		left: 10%;
 		height: 5px;
 		background: #e6e6e6;
 		position: sticky;
