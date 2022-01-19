@@ -11,7 +11,8 @@
 		<h3 class="post-page--title">{{ blogPost.title }}</h3>
 
 		<div class="post-page--author">
-			<img src="~/assets/images/author-img.png" alt="author imge" />
+			<!-- Pending when we have icon for authors -->
+			<!-- <img src="~/assets/images/author-img.png" alt="author imge" /> -->
 			<div>
 				<h5>{{ author(blogPost.author).name }}</h5>
 				<p>{{ author(blogPost.author).role }} Convoy</p>
