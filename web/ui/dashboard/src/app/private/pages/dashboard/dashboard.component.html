@@ -445,6 +445,7 @@
 							<button
 								[class]="'primary clear has-icon icon-left ' + (apps.pagination.page === apps.pagination.totalPage ? 'disabled' : '')"
 								[disabled]="apps.pagination.page === apps.pagination.totalPage"
+								(click)="appsPage = appsPage + 1; getApps()"
 							>
 								<img src="/assets/img/arrow-down-icon.svg" alt="arrow down icon" />
 								Load more
