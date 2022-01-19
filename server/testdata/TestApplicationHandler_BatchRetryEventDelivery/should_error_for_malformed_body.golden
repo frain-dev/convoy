@@ -1,1 +1,1 @@
-{"status":false,"message":"Request is invalid"}
+{"status":false,"message":"body contains incorrect JSON type for field \"ids\""}
