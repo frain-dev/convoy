@@ -1,6 +1,6 @@
 {
 	"name": "convoy-dashboard",
-	"version": "0.0.2",
+	"version": "0.2.0",
 	"description": "Convoy Dashboard UI",
 	"repository": {
 		"type": "git",
@@ -19,7 +19,10 @@
 	"homepage": "https://github.com/frain-dev/convoy/blob/main/web/ui/dashboard-component/README.md",
 	"peerDependencies": {
 		"@angular/common": "^12.2.0",
-		"@angular/core": "^12.2.0"
+		"@angular/core": "^12.2.0",
+		"chart.js": "^3.6.0",
+		"date-fns": "^2.27.0",
+		"prismjs": "^1.25.0"
 	},
 	"dependencies": {
 		"tslib": "^2.3.0"
