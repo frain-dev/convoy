@@ -17,7 +17,8 @@ func getDSN() string {
 func getConfig() config.Configuration {
 	return config.Configuration{
 		Database: config.DatabaseConfiguration{
-			Dsn: getDSN(),
+			Type: "bolt",
+			Dsn:  getDSN(),
 		},
 	}
 }
