@@ -3,7 +3,7 @@ title: Frain Technologies raises $473K in pre-seed funding to build Webhooks
   Infrastructure
 date: 2022-01-18T23:21:10.750Z
 description: Frain technologies, a Nigerian developer-tooling startup dedicated
-  to building webhooks infrastructure has...
+  to building webhooks infrastructure has recently completed a $473k pre-seed round...
 featureImg: /convoy-blog-head_xez1t2.png
 thumbnail: /convoy-blog-head_xez1t2.png
 featurePost: true
