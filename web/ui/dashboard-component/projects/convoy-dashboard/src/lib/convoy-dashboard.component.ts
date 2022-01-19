@@ -213,8 +213,8 @@ export class ConvoyDashboardComponent implements OnInit {
 
 	setDateForFilter(requestDetails: { startDate: Date; endDate: Date }) {
 		if (!requestDetails.endDate && !requestDetails.startDate) return { startDate: '', endDate: '' };
-		const startDate = requestDetails.startDate ? `${format(requestDetails.startDate, 'yyyy-M-d')}T00:00:00` : '';
-		const endDate = requestDetails.endDate ? `${format(requestDetails.endDate, 'yyyy-M-d')}T00:00:00` : '';
+		const startDate = requestDetails.startDate ? `${format(requestDetails.startDate, 'yyyy-MM-dd')}T00:00:00` : '';
+		const endDate = requestDetails.endDate ? `${format(requestDetails.endDate, 'yyyy-MM-dd')}T23:59:59` : '';
 		return { startDate, endDate };
 	}
 
