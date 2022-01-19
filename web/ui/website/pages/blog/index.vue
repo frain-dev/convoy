@@ -55,11 +55,14 @@
 						<div class="tag">FEATURED</div>
 						<div class="date">{{ featurePosts[0].date | date }}</div>
 					</div>
-					<h3 class="post--title">{{ featurePosts[0].title }}</h3>
+					<nuxt-link :to="'/blog/' + featurePosts[0].slug">
+						<h3 class="post--title">{{ featurePosts[0].title }}</h3>
+					</nuxt-link>
 					<p class="post--body">{{ featurePosts[0].description }}</p>
 					<div class="post--footer">
 						<div class="post--author">
-							<img src="~/assets/images/author-img.png" alt="author imge" />
+							<!-- Pending when we have icon for authors -->
+							<!-- <img src="~/assets/images/author-img.png" alt="author imge" /> -->
 							<div>
 								<h5>{{ author(featurePosts[0].author).name }}</h5>
 								<p>{{ author(featurePosts[0].author).role }} Convoy</p>
@@ -154,7 +157,7 @@ $desktopBreakPoint: 880px;
 
 .main {
 	margin: 0 auto;
-	padding-bottom: 100px;
+	padding-bottom: 0;
 	display: flex;
 	justify-content: space-between;
 	height: unset;
@@ -201,7 +204,7 @@ main {
 	max-width: 970px;
 
 	@media (min-width: $desktopBreakPoint) {
-		padding: 56px 0 0 56px;
+		padding: 56px 0 57px 56px;
 		display: flex;
 		justify-content: space-between;
 		flex-wrap: wrap;
