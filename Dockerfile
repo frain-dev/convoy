@@ -10,7 +10,6 @@ WORKDIR /go/src/frain-dev/convoy
 
 COPY ./go.mod /go/src/frain-dev/convoy
 COPY ./go.sum /go/src/frain-dev/convoy
-COPY ./convoy.json /go/src/frain-dev/convoy
 
 COPY --from=node-env /app/dist /go/src/frain-dev/convoy/server/ui/build
 # Get dependancies - will also be cached if we don't change mod/sum
@@ -25,7 +24,6 @@ RUN go install ./cmd
 
 FROM gcr.io/distroless/base
 COPY --from=build-env /go/bin/cmd /
-COPY --from=build-env /go/src/frain-dev/convoy/convoy.json /convoy.json
 COPY --from=build-env /go/src/frain-dev/convoy/smtp/endpoint.update.html /
 
 ENTRYPOINT ["/cmd"]
