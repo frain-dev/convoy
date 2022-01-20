@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"os"
 	"time"
@@ -25,6 +26,7 @@ import (
 	"github.com/frain-dev/convoy/queue"
 	"github.com/spf13/cobra"
 
+	"github.com/frain-dev/convoy/datastore/bolt"
 	"github.com/frain-dev/convoy/datastore/mongo"
 )
 
@@ -82,7 +84,7 @@ func main() {
 				return err
 			}
 
-			db, err = mongo.New(cfg)
+			db, err = NewDB(cfg)
 			if err != nil {
 				return err
 			}
@@ -203,7 +205,6 @@ func ensureDefaultGroup(ctx context.Context, cfg config.Configuration, a *app) e
 				IntervalSeconds: cfg.GroupConfig.Strategy.Default.IntervalSeconds,
 				RetryLimit:      cfg.GroupConfig.Strategy.Default.RetryLimit,
 			},
-			
 		},
 		Signature: datastore.SignatureConfiguration{
 			Header: config.SignatureHeaderProvider(cfg.GroupConfig.Signature.Header),
@@ -257,4 +258,23 @@ type app struct {
 
 func getCtx() (context.Context, context.CancelFunc) {
 	return context.WithTimeout(context.Background(), time.Second*1)
+}
+
+func NewDB(cfg config.Configuration) (datastore.DatabaseClient, error) {
+	switch cfg.Database.Type {
+	case "mongodb":
+		db, err := mongo.New(cfg)
+		if err != nil {
+			return nil, err
+		}
+		return db, nil
+	case "bolt":
+		bolt, err := bolt.New(cfg)
+		if err != nil {
+			return nil, err
+		}
+		return bolt, nil
+	default:
+		return nil, errors.New("invalid database type")
+	}
 }
