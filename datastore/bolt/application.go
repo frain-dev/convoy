@@ -52,7 +52,7 @@ func (a *appRepo) LoadApplicationsPaged(ctx context.Context, gid string, pageabl
 	}
 
 	if pageable.PerPage < 1 {
-		perPage = 1
+		perPage = 10
 	}
 
 	if page < 1 {
@@ -93,10 +93,23 @@ func (a *appRepo) LoadApplicationsPaged(ctx context.Context, gid string, pageabl
 			}
 		}
 
-		data.TotalPage = int64(math.Ceil(float64(b.Stats().KeyN) / float64(perPage)))
+		if util.IsStringEmpty(gid) {
+			data.TotalPage = int64(math.Ceil(float64(b.Stats().KeyN) / float64(perPage)))
+			data.Total = int64(b.Stats().KeyN)
+		} else {
+			total, err := a.CountGroupApplications(ctx, gid)
+			if err != nil {
+				return nil
+			}
+
+			println(total)
+
+			data.TotalPage = int64(math.Ceil(float64(total) / float64(perPage)))
+			data.Total = int64(total)
+		}
+
 		data.PerPage = int64(perPage)
 		data.Next = int64(page + 1)
-		data.Total = int64(b.Stats().KeyN)
 		data.Page = int64(page)
 		data.Prev = int64(prevPage)
 
@@ -122,7 +135,20 @@ func (a *appRepo) SearchApplicationsByGroupId(ctx context.Context, gid string, s
 				return err
 			}
 
+			shouldAdd := false
 			if app.GroupID == gid {
+				shouldAdd = true
+
+				if searchParams.CreatedAtStart != 0 && app.CreatedAt.Time().Unix() < searchParams.CreatedAtStart {
+					shouldAdd = false
+				}
+
+				if searchParams.CreatedAtEnd != 0 && app.CreatedAt.Time().Unix() > searchParams.CreatedAtEnd {
+					shouldAdd = false
+				}
+			}
+
+			if shouldAdd {
 				apps = append(apps, app)
 			}
 
@@ -233,7 +259,7 @@ func (a *appRepo) UpdateApplicationEndpointsStatus(ctx context.Context, aid stri
 }
 
 func (a *appRepo) DeleteGroupApps(ctx context.Context, gid string) error {
-	return a.db.View(func(tx *bbolt.Tx) error {
+	return a.db.Update(func(tx *bbolt.Tx) error {
 		b := tx.Bucket([]byte(a.bucketName))
 
 		return b.ForEach(func(k, v []byte) error {

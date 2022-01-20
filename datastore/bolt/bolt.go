@@ -11,11 +11,11 @@ import (
 
 type Client struct {
 	db                *bbolt.DB
+	apiKeyRepo        datastore.APIKeyRepository
 	groupRepo         datastore.GroupRepository
 	eventRepo         datastore.EventRepository
 	applicationRepo   datastore.ApplicationRepository
 	eventDeliveryRepo datastore.EventDeliveryRepository
-	apiKeyRepo        datastore.APIKeyRepository
 }
 
 func New(cfg config.Configuration) (datastore.DatabaseClient, error) {
@@ -27,8 +27,9 @@ func New(cfg config.Configuration) (datastore.DatabaseClient, error) {
 	c := &Client{
 		db:              db,
 		groupRepo:       NewGroupRepo(db),
+		apiKeyRepo:      NewApiRoleRepo(db),
 		applicationRepo: NewApplicationRepo(db),
-		// eventRepo:         NewEventRepository(conn),
+		// eventRepo:       NewEventRepo(db),
 		eventDeliveryRepo: NewEventDeliveryRepository(db),
 	}
 

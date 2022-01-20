@@ -2,6 +2,7 @@ package bolt
 
 import (
 	"context"
+	"os"
 	"testing"
 
 	"github.com/frain-dev/convoy/config"
@@ -10,13 +11,14 @@ import (
 )
 
 func getDSN() string {
-	return "database.db"
+	return os.Getenv("TEST_BOLT_DSN")
 }
 
 func getConfig() config.Configuration {
 	return config.Configuration{
 		Database: config.DatabaseConfiguration{
-			Dsn: getDSN(),
+			Type: "bolt",
+			Dsn:  getDSN(),
 		},
 	}
 }

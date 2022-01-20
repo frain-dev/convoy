@@ -3,10 +3,8 @@ package server
 import (
 	"context"
 	"encoding/base64"
-	"encoding/json"
 	"errors"
 	"fmt"
-	"io"
 	"net/http"
 	"strconv"
 	"strings"
@@ -130,11 +128,11 @@ func filterDeletedEndpoints(endpoints []datastore.Endpoint) []datastore.Endpoint
 	return activeEndpoints
 }
 
-func parseEndpointFromBody(body io.ReadCloser) (models.Endpoint, error) {
+func parseEndpointFromBody(r *http.Request) (models.Endpoint, error) {
 	var e models.Endpoint
-	err := json.NewDecoder(body).Decode(&e)
+	err := util.ReadJSON(r, &e)
 	if err != nil {
-		return e, errors.New("request is invalid")
+		return e, err
 	}
 
 	description := e.Description

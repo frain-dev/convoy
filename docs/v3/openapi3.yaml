@@ -9,36 +9,6 @@ components:
         type:
           type: string
       type: object
-    config.DefaultStrategyConfiguration:
-      properties:
-        intervalSeconds:
-          type: integer
-        retryLimit:
-          type: integer
-      type: object
-    config.GroupConfig:
-      properties:
-        disable_endpoint:
-          type: boolean
-        signature:
-          $ref: '#/components/schemas/config.SignatureConfiguration'
-        strategy:
-          $ref: '#/components/schemas/config.StrategyConfiguration'
-      type: object
-    config.SignatureConfiguration:
-      properties:
-        hash:
-          type: string
-        header:
-          type: string
-      type: object
-    config.StrategyConfiguration:
-      properties:
-        default:
-          $ref: '#/components/schemas/config.DefaultStrategyConfiguration'
-        type:
-          type: string
-      type: object
     datastore.APIKey:
       properties:
         created_at:
@@ -91,6 +61,13 @@ components:
           type: string
         updated_at:
           type: string
+      type: object
+    datastore.DefaultStrategyConfiguration:
+      properties:
+        intervalSeconds:
+          type: integer
+        retryLimit:
+          type: integer
       type: object
     datastore.DeliveryAttempt:
       properties:
@@ -227,7 +204,7 @@ components:
     datastore.Group:
       properties:
         config:
-          $ref: '#/components/schemas/config.GroupConfig'
+          $ref: '#/components/schemas/datastore.GroupConfig'
         created_at:
           type: string
         deleted_at:
@@ -242,6 +219,15 @@ components:
           type: string
         updated_at:
           type: string
+      type: object
+    datastore.GroupConfig:
+      properties:
+        disable_endpoint:
+          type: boolean
+        signature:
+          $ref: '#/components/schemas/datastore.SignatureConfiguration'
+        strategy:
+          $ref: '#/components/schemas/datastore.StrategyConfiguration'
       type: object
     datastore.GroupStatistics:
       properties:
@@ -292,6 +278,20 @@ components:
           type: integer
         totalPage:
           type: integer
+      type: object
+    datastore.SignatureConfiguration:
+      properties:
+        hash:
+          type: string
+        header:
+          type: string
+      type: object
+    datastore.StrategyConfiguration:
+      properties:
+        default:
+          $ref: '#/components/schemas/datastore.DefaultStrategyConfiguration'
+        type:
+          type: string
       type: object
     models.APIKey:
       properties:
@@ -358,7 +358,7 @@ components:
     models.Group:
       properties:
         config:
-          $ref: '#/components/schemas/config.GroupConfig'
+          $ref: '#/components/schemas/datastore.GroupConfig'
         logo_url:
           type: string
         name:

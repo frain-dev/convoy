@@ -5,7 +5,6 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/frain-dev/convoy/config"
 	"github.com/frain-dev/convoy/datastore"
 	"github.com/frain-dev/convoy/server/models"
 	"github.com/frain-dev/convoy/util"
@@ -20,8 +19,8 @@ type AuthorizedLogin struct {
 }
 
 type ViewableConfiguration struct {
-	Strategy  config.StrategyConfiguration  `json:"strategy"`
-	Signature config.SignatureConfiguration `json:"signature"`
+	Strategy  datastore.StrategyConfiguration  `json:"strategy"`
+	Signature datastore.SignatureConfiguration `json:"signature"`
 }
 
 func (a *applicationHandler) GetDashboardSummary(w http.ResponseWriter, r *http.Request) {

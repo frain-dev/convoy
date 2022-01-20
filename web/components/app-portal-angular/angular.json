@@ -1,0 +1,42 @@
+{
+  "$schema": "./node_modules/@angular/cli/lib/config/schema.json",
+  "cli": {
+    "analytics": "40c61fd9-8411-450e-9817-732d710765d5"
+  },
+  "version": 1,
+  "newProjectRoot": "projects",
+  "projects": {
+    "convoy-app": {
+      "projectType": "library",
+      "root": "projects/convoy-app",
+      "sourceRoot": "projects/convoy-app/src",
+      "prefix": "lib",
+      "architect": {
+        "build": {
+          "builder": "@angular-devkit/build-angular:ng-packagr",
+          "options": {
+            "project": "projects/convoy-app/ng-package.json"
+          },
+          "configurations": {
+            "production": {
+              "tsConfig": "projects/convoy-app/tsconfig.lib.prod.json"
+            },
+            "development": {
+              "tsConfig": "projects/convoy-app/tsconfig.lib.json"
+            }
+          },
+          "defaultConfiguration": "production"
+        },
+        "test": {
+          "builder": "@angular-devkit/build-angular:karma",
+          "options": {
+            "main": "projects/convoy-app/src/test.ts",
+            "tsConfig": "projects/convoy-app/tsconfig.spec.json",
+            "karmaConfig": "projects/convoy-app/karma.conf.js"
+          }
+        }
+      }
+    }
+  },
+  "defaultProject": "convoy-app"
+}

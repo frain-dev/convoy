@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 
 	"github.com/frain-dev/convoy/datastore"
-	"github.com/sirupsen/logrus"
 	"go.etcd.io/bbolt"
 )
 
@@ -70,46 +69,37 @@ func (g *groupRepo) FetchGroupByID(ctx context.Context, gid string) (*datastore.
 	err := g.db.View(func(tx *bbolt.Tx) error {
 		b := tx.Bucket([]byte(g.bucketName))
 
-		grp := b.Get([]byte(gid))
-		if grp == nil {
+		buf := b.Get([]byte(gid))
+		if buf == nil {
 			return datastore.ErrGroupNotFound
 		}
 
-		var temp *datastore.Group
-		err := json.Unmarshal(grp, &temp)
-		if err != nil {
-			return err
-		}
-		group = temp
-
-		return nil
+		return json.Unmarshal(buf, &group)
 	})
 
 	return group, err
 }
 
 func (g *groupRepo) FetchGroupsByIDs(ctx context.Context, ids []string) ([]datastore.Group, error) {
-	groups := make([]datastore.Group, 0, len(ids))
-
+	var groups []datastore.Group
 	err := g.db.View(func(tx *bbolt.Tx) error {
 		b := tx.Bucket([]byte(g.bucketName))
 
-		for _, id := range ids {
-			buf := b.Get([]byte(id))
-			if buf == nil {
-				logrus.Errorf("failed to fetch group (%s)", id)
-			}
-
+		return b.ForEach(func(k, v []byte) error {
 			var grp datastore.Group
-			err := json.Unmarshal(buf, &grp)
+			err := json.Unmarshal(v, &grp)
 			if err != nil {
 				return err
 			}
 
-			groups = append(groups, grp)
+			for _, id := range ids {
+				if id == grp.UID {
+					groups = append(groups, grp)
+				}
+			}
 
-		}
-		return nil
+			return nil
+		})
 	})
 
 	return groups, err

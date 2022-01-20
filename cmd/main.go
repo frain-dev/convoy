@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"os"
 	"time"
@@ -83,7 +84,7 @@ func main() {
 				return err
 			}
 
-			db, err = mongo.New(cfg)
+			db, err = NewDB(cfg)
 			if err != nil {
 				return err
 			}
@@ -203,18 +204,15 @@ func ensureDefaultGroup(ctx context.Context, cfg config.Configuration, a *app) e
 		}
 	}
 
-	groupCfg := &config.GroupConfig{
-		Strategy: config.StrategyConfiguration{
+	groupCfg := &datastore.GroupConfig{
+		Strategy: datastore.StrategyConfiguration{
 			Type: cfg.GroupConfig.Strategy.Type,
-			Default: struct {
-				IntervalSeconds uint64 `json:"intervalSeconds" envconfig:"CONVOY_INTERVAL_SECONDS"`
-				RetryLimit      uint64 `json:"retryLimit" envconfig:"CONVOY_RETRY_LIMIT"`
-			}{
+			Default: datastore.DefaultStrategyConfiguration{
 				IntervalSeconds: cfg.GroupConfig.Strategy.Default.IntervalSeconds,
 				RetryLimit:      cfg.GroupConfig.Strategy.Default.RetryLimit,
 			},
 		},
-		Signature: config.SignatureConfiguration{
+		Signature: datastore.SignatureConfiguration{
 			Header: config.SignatureHeaderProvider(cfg.GroupConfig.Signature.Header),
 			Hash:   cfg.GroupConfig.Signature.Hash,
 		},
@@ -266,4 +264,23 @@ type app struct {
 
 func getCtx() (context.Context, context.CancelFunc) {
 	return context.WithTimeout(context.Background(), time.Second*1)
+}
+
+func NewDB(cfg config.Configuration) (datastore.DatabaseClient, error) {
+	switch cfg.Database.Type {
+	case "mongodb":
+		db, err := mongo.New(cfg)
+		if err != nil {
+			return nil, err
+		}
+		return db, nil
+	case "bolt":
+		bolt, err := bolt.New(cfg)
+		if err != nil {
+			return nil, err
+		}
+		return bolt, nil
+	default:
+		return nil, errors.New("invalid database type")
+	}
 }
