@@ -30,6 +30,7 @@ func Test_LoadApplicationsPaged(t *testing.T) {
 		name     string
 		gid      string
 		pageData datastore.Pageable
+		q string
 		groups   []Group
 		expected Expected
 	}{
@@ -101,6 +102,34 @@ func Test_LoadApplicationsPaged(t *testing.T) {
 				paginationData: datastore.PaginationData{Total: 5, TotalPage: 1, Page: 1, PerPage: 10, Prev: 0, Next: 2},
 			},
 		},
+
+		{
+			name:     "Filtering using Title",
+			pageData: datastore.Pageable{Page: 1, PerPage: 10},
+			gid:      "uid-1",
+			q: "5",
+			groups: []Group{
+				{
+					UID:      "uid-1",
+					Name:     "Group 1",
+					AppCount: 5,
+				},
+				{
+					UID:      "uid-2",
+					Name:     "Group 2",
+					AppCount: 3,
+				},
+				{
+					UID:      "uid-3",
+					Name:     "Group 3",
+					AppCount: 1,
+				},
+			},
+			expected: Expected{
+				AppCount:       5,
+				paginationData: datastore.PaginationData{Total: 5, TotalPage: 1, Page: 1, PerPage: 10, Prev: 0, Next: 2},
+			},
+		},
 	}
 
 	for _, tc := range tests {
@@ -125,7 +154,7 @@ func Test_LoadApplicationsPaged(t *testing.T) {
 				}
 			}
 
-			_, data, err := appRepo.LoadApplicationsPaged(context.Background(), tc.gid, tc.pageData)
+			_, data, err := appRepo.LoadApplicationsPaged(context.Background(), tc.gid, tc.q, tc.pageData)
 
 			require.NoError(t, err)
 

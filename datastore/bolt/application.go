@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"math"
+	"strings"
 	"time"
 
 	"github.com/frain-dev/convoy/datastore"
@@ -39,7 +40,7 @@ func (a *appRepo) UpdateApplication(ctx context.Context, app *datastore.Applicat
 	return a.createUpdateApplication(app)
 }
 
-func (a *appRepo) LoadApplicationsPaged(ctx context.Context, gid string, pageable datastore.Pageable) ([]datastore.Application, datastore.PaginationData, error) {
+func (a *appRepo) LoadApplicationsPaged(ctx context.Context, gid, q string, pageable datastore.Pageable) ([]datastore.Application, datastore.PaginationData, error) {
 	var apps []datastore.Application = make([]datastore.Application, 0)
 
 	page := pageable.Page
@@ -78,11 +79,23 @@ func (a *appRepo) LoadApplicationsPaged(ctx context.Context, gid string, pageabl
 					return err
 				}
 
-				if !util.IsStringEmpty(gid) {
-					if app.GroupID == gid {
-						apps = append(apps, app)
-					}
-				} else {
+				shouldAdd := false 
+
+				if !util.IsStringEmpty(gid) && app.GroupID == gid {
+					shouldAdd = true
+
+					if !util.IsStringEmpty(q) && !strings.Contains(app.Title, q) {
+						shouldAdd = false
+					} 
+				} else if util.IsStringEmpty(gid){
+					shouldAdd = true
+
+					if !util.IsStringEmpty(q) && !strings.Contains(app.Title, q) {
+						shouldAdd = false
+					} 
+				}
+
+				if shouldAdd {
 					apps = append(apps, app)
 				}
 			}
@@ -120,7 +133,7 @@ func (a *appRepo) LoadApplicationsPaged(ctx context.Context, gid string, pageabl
 }
 
 func (a *appRepo) LoadApplicationsPagedByGroupId(ctx context.Context, gid string, pageable datastore.Pageable) ([]datastore.Application, datastore.PaginationData, error) {
-	return a.LoadApplicationsPaged(ctx, gid, pageable)
+	return a.LoadApplicationsPaged(ctx, gid, "", pageable)
 }
 
 func (a *appRepo) SearchApplicationsByGroupId(ctx context.Context, gid string, searchParams datastore.SearchParams) ([]datastore.Application, error) {

@@ -83,10 +83,12 @@ func (a *applicationHandler) GetApp(w http.ResponseWriter, r *http.Request) {
 func (a *applicationHandler) GetApps(w http.ResponseWriter, r *http.Request) {
 	pageable := getPageableFromContext(r.Context())
 	group := getGroupFromContext(r.Context())
+	q := r.URL.Query().Get("q")
 
-	apps, paginationData, err := a.appRepo.LoadApplicationsPaged(r.Context(), group.UID, pageable)
+	apps, paginationData, err := a.appRepo.LoadApplicationsPaged(r.Context(), group.UID, q, pageable)
 	if err != nil {
-		_ = render.Render(w, r, newErrorResponse("an error occurred while fetching apps", http.StatusInternalServerError))
+		print(err.Error())
+		_ = render.Render(w, r, newErrorResponse("an error occurred while fetching apps. Error: "+err.Error(), http.StatusBadRequest))
 		return
 	}
 
