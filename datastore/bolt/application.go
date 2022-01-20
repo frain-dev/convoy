@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"math"
 	"strings"
+
 	"time"
 
 	"github.com/frain-dev/convoy/datastore"
@@ -79,47 +80,45 @@ func (a *appRepo) LoadApplicationsPaged(ctx context.Context, gid, q string, page
 					return err
 				}
 
-				shouldAdd := false 
+				x := util.IsStringEmpty(q)
+				m := strings.Contains(strings.ToLower(app.Title), strings.ToLower(q))
 
-				if !util.IsStringEmpty(gid) && app.GroupID == gid {
-					shouldAdd = true
+				y := util.IsStringEmpty(gid)
+				n := app.GroupID == gid
 
-					if !util.IsStringEmpty(q) && !strings.Contains(app.Title, q) {
-						shouldAdd = false
-					} 
-				} else if util.IsStringEmpty(gid){
-					shouldAdd = true
-
-					if !util.IsStringEmpty(q) && !strings.Contains(app.Title, q) {
-						shouldAdd = false
-					} 
-				}
-
-				if shouldAdd {
+				if x && y {
 					apps = append(apps, app)
+					i++
+				} else if !x && y {
+					if m {
+						apps = append(apps, app)
+						i++
+					}
+				} else if x && !y {
+					if n {
+						apps = append(apps, app)
+						i++
+					}
+				} else if !x && !y {
+					if n && m {
+						apps = append(apps, app)
+						i++
+					}
 				}
 			}
-			i++
 
 			if i == (perPage*page)+perPage {
 				break
 			}
 		}
 
-		if util.IsStringEmpty(gid) {
-			data.TotalPage = int64(math.Ceil(float64(b.Stats().KeyN) / float64(perPage)))
-			data.Total = int64(b.Stats().KeyN)
-		} else {
-			total, err := a.CountGroupApplications(ctx, gid)
-			if err != nil {
-				return nil
-			}
-
-			println(total)
-
-			data.TotalPage = int64(math.Ceil(float64(total) / float64(perPage)))
-			data.Total = int64(total)
+		total, err := a.countGroupApplicationsWithFilter(ctx, gid, q)
+		if err != nil {
+			return nil
 		}
+
+		data.TotalPage = int64(math.Ceil(float64(total) / float64(perPage)))
+		data.Total = int64(total)
 
 		data.PerPage = int64(perPage)
 		data.Next = int64(page + 1)
@@ -315,6 +314,47 @@ func (a *appRepo) CountGroupApplications(ctx context.Context, gid string) (int64
 	})
 
 	return count, err
+}
+
+func (a *appRepo) countGroupApplicationsWithFilter(ctx context.Context, gid, q string) (int64, error) {
+	i := int64(0)
+	err := a.db.View(func(tx *bbolt.Tx) error {
+		b := tx.Bucket([]byte(a.bucketName))
+
+		return b.ForEach(func(k, v []byte) error {
+			var app *datastore.Application
+			err := json.Unmarshal(v, &app)
+			if err != nil {
+				return err
+			}
+
+			x := util.IsStringEmpty(q)
+			m := strings.Contains(strings.ToLower(app.Title), strings.ToLower(q))
+
+			y := util.IsStringEmpty(gid)
+			n := app.GroupID == gid
+
+			if x && y {
+				i++
+			} else if !x && y {
+				if m {
+					i++
+				}
+			} else if x && !y {
+				if n {
+					i++
+				}
+			} else if !x && !y {
+				if n && m {
+					i++
+				}
+			}
+
+			return nil
+		})
+	})
+
+	return i, err
 }
 
 func (a *appRepo) createUpdateApplication(app *datastore.Application) error {
