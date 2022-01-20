@@ -8,7 +8,6 @@
             "dsn": "redis://localhost:8379"
         }
     },
-    "max_response_size": 40,
     "server": {
         "http": {
             "port": 80

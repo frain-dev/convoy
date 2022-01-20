@@ -214,6 +214,89 @@ func TestLoadConfig(t *testing.T) {
 						Port: 80,
 					},
 				},
+				MaxResponseSize: 40 * 1024,
+				GroupConfig: GroupConfig{
+					Strategy: StrategyConfiguration{
+						Type: "default",
+						Default: DefaultStrategyConfiguration{
+							IntervalSeconds: 125,
+							RetryLimit:      15,
+						},
+					},
+					Signature: SignatureConfiguration{
+						Header: DefaultSignatureHeader,
+						Hash:   "SHA256",
+					},
+					DisableEndpoint: false,
+				},
+				Environment:     DevelopmentEnvironment,
+				MultipleTenants: false,
+			},
+			wantErr:    false,
+			wantErrMsg: "",
+		},
+		{
+			name: "should_switch_to_default_MaxResponseSize_for_too_large_config",
+			args: args{
+				path: "./testdata/Config/too-large-max-response-size-convoy.json",
+			},
+			wantCfg: Configuration{
+				Database: DatabaseConfiguration{
+					Dsn: "mongodb://inside-config-file",
+				},
+				Queue: QueueConfiguration{
+					Type: RedisQueueProvider,
+					Redis: RedisQueueConfiguration{
+						DSN: "redis://localhost:8379",
+					},
+				},
+				Server: ServerConfiguration{
+					HTTP: HTTPServerConfiguration{
+						Port: 80,
+					},
+				},
+				MaxResponseSize: MaxResponseSize,
+				GroupConfig: GroupConfig{
+					Strategy: StrategyConfiguration{
+						Type: "default",
+						Default: DefaultStrategyConfiguration{
+							IntervalSeconds: 125,
+							RetryLimit:      15,
+						},
+					},
+					Signature: SignatureConfiguration{
+						Header: DefaultSignatureHeader,
+						Hash:   "SHA256",
+					},
+					DisableEndpoint: false,
+				},
+				Environment:     DevelopmentEnvironment,
+				MultipleTenants: false,
+			},
+			wantErr:    false,
+			wantErrMsg: "",
+		},
+		{
+			name: "should_switch_to_default_MaxResponseSize_for_zero_config",
+			args: args{
+				path: "./testdata/Config/zero-max-response-size-convoy.json",
+			},
+			wantCfg: Configuration{
+				Database: DatabaseConfiguration{
+					Dsn: "mongodb://inside-config-file",
+				},
+				Queue: QueueConfiguration{
+					Type: RedisQueueProvider,
+					Redis: RedisQueueConfiguration{
+						DSN: "redis://localhost:8379",
+					},
+				},
+				Server: ServerConfiguration{
+					HTTP: HTTPServerConfiguration{
+						Port: 80,
+					},
+				},
+				MaxResponseSize: MaxResponseSize,
 				GroupConfig: GroupConfig{
 					Strategy: StrategyConfiguration{
 						Type: "default",
@@ -254,6 +337,7 @@ func TestLoadConfig(t *testing.T) {
 						Port: 80,
 					},
 				},
+				MaxResponseSize: MaxResponseSize,
 				Auth: AuthConfiguration{
 					RequireAuth: true,
 					File: FileRealmOption{
