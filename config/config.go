@@ -13,10 +13,13 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
+const MaxResponseSize = 50 * 1024
+
 var cfgSingleton atomic.Value
 
 type DatabaseConfiguration struct {
-	Dsn string `json:"dsn" envconfig:"CONVOY_MONGO_DSN"`
+	Type string `json:"type" envconfig:"CONVOY_DB_TYPE"`
+	Dsn  string `json:"dsn" envconfig:"CONVOY_DB_DSN"`
 }
 
 type SentryConfiguration struct {
@@ -74,6 +77,7 @@ type Configuration struct {
 	Sentry          SentryConfiguration   `json:"sentry"`
 	Queue           QueueConfiguration    `json:"queue"`
 	Server          ServerConfiguration   `json:"server"`
+	MaxResponseSize uint64                `json:"max_response_size"`
 	GroupConfig     GroupConfig           `json:"group"`
 	SMTP            SMTPConfiguration     `json:"smtp"`
 	Environment     string                `json:"env" envconfig:"CONVOY_ENV" required:"true" default:"development"`
@@ -177,6 +181,16 @@ func LoadConfig(p string, override *Configuration) error {
 	if c.GroupConfig.Signature.Header == "" {
 		c.GroupConfig.Signature.Header = DefaultSignatureHeader
 		log.Warnf("using default signature header: %s", DefaultSignatureHeader)
+	}
+
+	kb := c.MaxResponseSize * 1024 // to kilobyte
+	if kb == 0 {
+		c.MaxResponseSize = MaxResponseSize
+	} else if kb > MaxResponseSize {
+		log.Warnf("maximum response size of %dkb too large, using default value of %dkb", c.MaxResponseSize, MaxResponseSize/1024)
+		c.MaxResponseSize = MaxResponseSize
+	} else {
+		c.MaxResponseSize = kb
 	}
 
 	err = ensureStrategyConfig(c.GroupConfig.Strategy)
