@@ -5,13 +5,13 @@
     ],
     "swagger": "2.0",
     "info": {
-        "description": "datastore.is a fast and secure distributed webhooks service. This document contains datastore.s API specification.",
-        "title": "datastore.API Specification",
-        "termsOfService": "https://datastore.io/terms",
+        "description": "Convoy is a fast and secure distributed webhooks service. This document contains datastore.s API specification.",
+        "title": "Convoy API Specification",
+        "termsOfService": "https://getconvoy.io/terms",
         "contact": {
             "name": "API Support",
             "url": "http://www.swagger.io/support",
-            "email": "engineering@datastore.io"
+            "email": "engineering@getconvoy.io"
         },
         "license": {
             "name": "Mozilla Public License 2.0",
@@ -3138,7 +3138,7 @@
                         "ApiKeyAuth": []
                     }
                 ],
-                "description": "This endpoint revokes multiple api keys",
+                "description": "This endpoint revokes an api key",
                 "consumes": [
                     "application/json"
                 ],
@@ -3250,53 +3250,6 @@
                 }
             }
         },
-        "config.DefaultStrategyConfiguration": {
-            "type": "object",
-            "properties": {
-                "intervalSeconds": {
-                    "type": "integer"
-                },
-                "retryLimit": {
-                    "type": "integer"
-                }
-            }
-        },
-        "config.GroupConfig": {
-            "type": "object",
-            "properties": {
-                "disable_endpoint": {
-                    "type": "boolean"
-                },
-                "signature": {
-                    "$ref": "#/definitions/config.SignatureConfiguration"
-                },
-                "strategy": {
-                    "$ref": "#/definitions/config.StrategyConfiguration"
-                }
-            }
-        },
-        "config.SignatureConfiguration": {
-            "type": "object",
-            "properties": {
-                "hash": {
-                    "type": "string"
-                },
-                "header": {
-                    "type": "string"
-                }
-            }
-        },
-        "config.StrategyConfiguration": {
-            "type": "object",
-            "properties": {
-                "default": {
-                    "$ref": "#/definitions/config.DefaultStrategyConfiguration"
-                },
-                "type": {
-                    "type": "string"
-                }
-            }
-        },
         "datastore.APIKey": {
             "type": "object",
             "properties": {
@@ -3375,6 +3328,17 @@
                 },
                 "updated_at": {
                     "type": "string"
+                }
+            }
+        },
+        "datastore.DefaultStrategyConfiguration": {
+            "type": "object",
+            "properties": {
+                "intervalSeconds": {
+                    "type": "integer"
+                },
+                "retryLimit": {
+                    "type": "integer"
                 }
             }
         },
@@ -3574,7 +3538,7 @@
             "type": "object",
             "properties": {
                 "config": {
-                    "$ref": "#/definitions/config.GroupConfig"
+                    "$ref": "#/definitions/datastore.GroupConfig"
                 },
                 "created_at": {
                     "type": "string"
@@ -3596,6 +3560,20 @@
                 },
                 "updated_at": {
                     "type": "string"
+                }
+            }
+        },
+        "datastore.GroupConfig": {
+            "type": "object",
+            "properties": {
+                "disable_endpoint": {
+                    "type": "boolean"
+                },
+                "signature": {
+                    "$ref": "#/definitions/datastore.SignatureConfiguration"
+                },
+                "strategy": {
+                    "$ref": "#/definitions/datastore.StrategyConfiguration"
                 }
             }
         },
@@ -3665,6 +3643,28 @@
                 },
                 "totalPage": {
                     "type": "integer"
+                }
+            }
+        },
+        "datastore.SignatureConfiguration": {
+            "type": "object",
+            "properties": {
+                "hash": {
+                    "type": "string"
+                },
+                "header": {
+                    "type": "string"
+                }
+            }
+        },
+        "datastore.StrategyConfiguration": {
+            "type": "object",
+            "properties": {
+                "default": {
+                    "$ref": "#/definitions/datastore.DefaultStrategyConfiguration"
+                },
+                "type": {
+                    "type": "string"
                 }
             }
         },
@@ -3764,7 +3764,7 @@
             "type": "object",
             "properties": {
                 "config": {
-                    "$ref": "#/definitions/config.GroupConfig"
+                    "$ref": "#/definitions/datastore.GroupConfig"
                 },
                 "logo_url": {
                     "type": "string"
