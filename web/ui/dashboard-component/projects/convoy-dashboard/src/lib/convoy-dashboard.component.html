@@ -23,14 +23,16 @@
 				</div>
 			</div>
 
-			<div class="filter" [ngClass]="{ 'show-calendar': showFilterCalendar }">
-				<div>Active Group:</div>
-				<div class="select">
-					<select [value]="activeGroup" [(ngModel)]="activeGroup" (change)="toggleActiveGroup()">
-						<option [value]="group.uid" *ngFor="let group of groups">{{ group.name }}</option>
-					</select>
+			<ng-container *ngIf="!isCloud">
+				<div class="filter" [ngClass]="{ 'show-calendar': showFilterCalendar }">
+					<div>Active Group:</div>
+					<div class="select">
+						<select [value]="activeGroup" [(ngModel)]="activeGroup" (change)="toggleActiveGroup()">
+							<option [value]="group.uid" *ngFor="let group of groups">{{ group.name }}</option>
+						</select>
+					</div>
 				</div>
-			</div>
+			</ng-container>
 		</div>
 
 		<div class="dashboard--page--details">

@@ -82,12 +82,17 @@ export class ConvoyDashboardComponent implements OnInit {
 	eventDeliveryFilteredByStatus: string[] = [];
 	showOverlay = false;
 	showEventDeliveriesStatusDropdown = false;
-	@Input('production') isProduction: boolean = false;
+	@Input('apiURL') apiURL: string = '';
+	@Input('isCloud') isCloud: boolean = false;
+	@Input('groupId') groupId: string = '';
 
 	constructor(private convyDashboardService: ConvoyDashboardService, private router: Router, private formBuilder: FormBuilder, private route: ActivatedRoute) {}
 
 	async ngOnInit() {
-		await this.initDashboard();
+		if (!this.apiURL) return this.convyDashboardService.showNotification({ message: 'Please provide API URL for Convoy dashboard component.' });
+		if (this.isCloud && !this.groupId) return this.convyDashboardService.showNotification({ message: 'Please provide group ID for Convoy dashboard component.' });
+		if (this.isCloud) this.activeGroup = this.groupId;
+		return await this.initDashboard();
 	}
 
 	async initDashboard() {
@@ -545,7 +550,7 @@ export class ConvoyDashboardComponent implements OnInit {
 	}
 
 	getAPIURL(url: string) {
-		return `${this.isProduction ? location.origin : 'http://localhost:5005'}/ui${url}`;
+		return this.apiURL + url;
 	}
 
 	checkIfEventDeliveryStatusFilterOptionIsSelected(status: string): boolean {
