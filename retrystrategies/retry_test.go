@@ -14,7 +14,8 @@ func TestRetry_CreatesExponential(t *testing.T) {
 		IntervalSeconds: 5,
 	}
 	var r RetryStrategy = NewRetryStrategyFromMetadata(m)
-	assert.NotEqual(t, r.NextDuration(1), r.NextDuration(3))
+	_, isExponential := r.(*ExponentialBackoffRetryStrategy)
+	assert.True(t, isExponential)
 }
 
 func TestRetry_CreatesDefault(t *testing.T) {
@@ -25,7 +26,8 @@ func TestRetry_CreatesDefault(t *testing.T) {
 	}
 
 	var r RetryStrategy = NewRetryStrategyFromMetadata(m)
-	assert.Equal(t, r.NextDuration(1), r.NextDuration(3))
+	_, isDefault := r.(*DefaultRetryStrategy)
+	assert.True(t, isDefault)
 }
 
 func TestRetry_FallsBackToDefault(t *testing.T) {
@@ -35,5 +37,6 @@ func TestRetry_FallsBackToDefault(t *testing.T) {
 		IntervalSeconds: 5,
 	}
 	var r RetryStrategy = NewRetryStrategyFromMetadata(m)
-	assert.Equal(t, r.NextDuration(1), r.NextDuration(3))
+	_, isDefault := r.(*DefaultRetryStrategy)
+	assert.True(t, isDefault)
 }
