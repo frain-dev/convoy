@@ -27,7 +27,7 @@ type CredentialType string
 
 const (
 	CredentialTypeBasic  = CredentialType("BASIC")
-	CredentialTypeAPIKey = CredentialType("API_KEY")
+	CredentialTypeAPIKey = CredentialType("BEARER")
 )
 
 func (c CredentialType) String() string {

@@ -12,12 +12,10 @@ import (
 	"time"
 
 	"github.com/frain-dev/convoy/auth/realm_chain"
-
 	"github.com/frain-dev/convoy/config"
-	"github.com/frain-dev/convoy/server/models"
-	pager "github.com/gobeam/mongo-go-pagination"
+	"github.com/frain-dev/convoy/datastore"
 
-	"github.com/frain-dev/convoy"
+
 	"github.com/frain-dev/convoy/mocks"
 	"github.com/go-chi/chi/v5"
 	"github.com/golang/mock/gomock"
@@ -32,13 +30,13 @@ func verifyMatch(t *testing.T, w httptest.ResponseRecorder) {
 	g.Assert(t, t.Name(), w.Body.Bytes())
 }
 
-func initRealmChain(t *testing.T) {
+func initRealmChain(t *testing.T, apiKeyRepo datastore.APIKeyRepository) {
 	cfg, err := config.Get()
 	if err != nil {
 		t.Errorf("failed to get config: %v", err)
 	}
 
-	err = realm_chain.Init(&cfg.Auth)
+	err = realm_chain.Init(&cfg.Auth, apiKeyRepo)
 	if err != nil {
 		t.Errorf("failed to initialize realm chain : %v", err)
 	}
@@ -59,7 +57,7 @@ func stripTimestamp(t *testing.T, obj string, b *bytes.Buffer) *bytes.Buffer {
 
 	switch obj {
 	case "application":
-		var a convoy.Application
+		var a datastore.Application
 		err := json.Unmarshal(res.Data, &a)
 		if err != nil {
 			t.Errorf("could not stripTimestamp: %s", err)
@@ -76,7 +74,7 @@ func stripTimestamp(t *testing.T, obj string, b *bytes.Buffer) *bytes.Buffer {
 
 		return bytes.NewBuffer(jsonData)
 	case "endpoint":
-		var e convoy.Endpoint
+		var e datastore.Endpoint
 		err := json.Unmarshal(res.Data, &e)
 		if err != nil {
 			t.Errorf("could not stripTimestamp: %s", err)
@@ -85,6 +83,24 @@ func stripTimestamp(t *testing.T, obj string, b *bytes.Buffer) *bytes.Buffer {
 
 		e.UID = ""
 		e.CreatedAt, e.UpdatedAt, e.DeletedAt = 0, 0, 0
+
+		jsonData, err := json.Marshal(e)
+		if err != nil {
+			t.Error(err)
+		}
+
+		return bytes.NewBuffer(jsonData)
+	case "apiKey":
+		var e datastore.APIKey
+		err := json.Unmarshal(res.Data, &e)
+		if err != nil {
+			t.Errorf("could not stripTimestamp: %s", err)
+			t.FailNow()
+		}
+
+		e.UID = ""
+		e.CreatedAt = 0
+		e.ExpiresAt = 0
 
 		jsonData, err := json.Marshal(e)
 		if err != nil {
@@ -116,13 +132,14 @@ func TestApplicationHandler_GetApp(t *testing.T) {
 	eventRepo := mocks.NewMockEventRepository(ctrl)
 	eventDeliveryRepo := mocks.NewMockEventDeliveryRepository(ctrl)
 	eventQueue := mocks.NewMockQueuer(ctrl)
+	apiKeyRepo := mocks.NewMockAPIKeyRepository(ctrl)
 
 	groupID := "1234567890"
-	group := &convoy.Group{UID: groupID}
+	group := &datastore.Group{UID: groupID}
 
 	validID := "123456789"
 
-	app = newApplicationHandler(eventRepo, eventDeliveryRepo, appRepo, groupRepo, eventQueue)
+	app = newApplicationHandler(eventRepo, eventDeliveryRepo, appRepo, groupRepo, apiKeyRepo, eventQueue)
 
 	tt := []struct {
 		name       string
@@ -142,13 +159,13 @@ func TestApplicationHandler_GetApp(t *testing.T) {
 				a, _ := app.appRepo.(*mocks.MockApplicationRepository)
 				a.EXPECT().
 					FindApplicationByID(gomock.Any(), gomock.Any()).Times(1).
-					Return(nil, convoy.ErrApplicationNotFound)
+					Return(nil, datastore.ErrApplicationNotFound)
 
 				o, _ := app.groupRepo.(*mocks.MockGroupRepository)
 
 				o.EXPECT().
 					LoadGroups(gomock.Any(), gomock.Any()).Times(1).
-					Return([]*convoy.Group{group}, nil)
+					Return([]*datastore.Group{group}, nil)
 			},
 		},
 		{
@@ -161,17 +178,17 @@ func TestApplicationHandler_GetApp(t *testing.T) {
 				a, _ := app.appRepo.(*mocks.MockApplicationRepository)
 				a.EXPECT().
 					FindApplicationByID(gomock.Any(), gomock.Any()).Times(1).
-					Return(&convoy.Application{
+					Return(&datastore.Application{
 						UID:       validID,
 						GroupID:   groupID,
 						Title:     "Valid application",
-						Endpoints: []convoy.Endpoint{},
+						Endpoints: []datastore.Endpoint{},
 					}, nil)
 
 				o, _ := app.groupRepo.(*mocks.MockGroupRepository)
 				o.EXPECT().
 					LoadGroups(gomock.Any(), gomock.Any()).Times(1).
-					Return([]*convoy.Group{group}, nil)
+					Return([]*datastore.Group{group}, nil)
 			},
 		},
 	}
@@ -198,7 +215,7 @@ func TestApplicationHandler_GetApp(t *testing.T) {
 				t.Errorf("Failed to load config file: %v", err)
 			}
 
-			initRealmChain(t)
+			initRealmChain(t, app.apiKeyRepo)
 
 			router := buildRoutes(app)
 
@@ -228,13 +245,14 @@ func TestApplicationHandler_GetApps(t *testing.T) {
 	eventRepo := mocks.NewMockEventRepository(ctrl)
 	eventDeliveryRepo := mocks.NewMockEventDeliveryRepository(ctrl)
 	eventQueue := mocks.NewMockQueuer(ctrl)
+	apiKeyRepo := mocks.NewMockAPIKeyRepository(ctrl)
 
 	groupID := "1234567890"
-	group := &convoy.Group{UID: groupID}
+	group := &datastore.Group{UID: groupID}
 
 	validID := "123456789"
 
-	app = newApplicationHandler(eventRepo, eventDeliveryRepo, appRepo, groupRepo, eventQueue)
+	app = newApplicationHandler(eventRepo, eventDeliveryRepo, appRepo, groupRepo, apiKeyRepo, eventQueue)
 
 	tt := []struct {
 		name       string
@@ -252,19 +270,19 @@ func TestApplicationHandler_GetApps(t *testing.T) {
 				a, _ := app.appRepo.(*mocks.MockApplicationRepository)
 				a.EXPECT().
 					LoadApplicationsPaged(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Times(1).
-					Return([]convoy.Application{
+					Return([]datastore.Application{
 						{
 							UID:       validID,
 							GroupID:   groupID,
 							Title:     "Valid application - 0",
-							Endpoints: []convoy.Endpoint{},
+							Endpoints: []datastore.Endpoint{},
 						},
-					}, pager.PaginationData{}, nil)
+					}, datastore.PaginationData{}, nil)
 
 				o, _ := app.groupRepo.(*mocks.MockGroupRepository)
 				o.EXPECT().
 					LoadGroups(gomock.Any(), gomock.Any()).Times(1).
-					Return([]*convoy.Group{group}, nil)
+					Return([]*datastore.Group{group}, nil)
 			},
 		},
 	}
@@ -276,7 +294,7 @@ func TestApplicationHandler_GetApps(t *testing.T) {
 			req.SetBasicAuth("test", "test")
 			w := httptest.NewRecorder()
 
-			pageable := models.Pageable{
+			pageable := datastore.Pageable{
 				Page:    1,
 				PerPage: 10,
 			}
@@ -292,7 +310,7 @@ func TestApplicationHandler_GetApps(t *testing.T) {
 				t.Errorf("Failed to load config file: %v", err)
 			}
 
-			initRealmChain(t)
+			initRealmChain(t, app.apiKeyRepo)
 
 			router := buildRoutes(app)
 
@@ -312,7 +330,7 @@ func TestApplicationHandler_GetApps(t *testing.T) {
 func TestApplicationHandler_CreateApp(t *testing.T) {
 
 	groupID := "1234567890"
-	group := &convoy.Group{
+	group := &datastore.Group{
 		UID: groupID,
 	}
 
@@ -336,7 +354,7 @@ func TestApplicationHandler_CreateApp(t *testing.T) {
 				o, _ := app.groupRepo.(*mocks.MockGroupRepository)
 				o.EXPECT().
 					LoadGroups(gomock.Any(), gomock.Any()).Times(1).
-					Return([]*convoy.Group{group}, nil)
+					Return([]*datastore.Group{group}, nil)
 			},
 		},
 		{
@@ -349,7 +367,7 @@ func TestApplicationHandler_CreateApp(t *testing.T) {
 				o, _ := app.groupRepo.(*mocks.MockGroupRepository)
 				o.EXPECT().
 					LoadGroups(gomock.Any(), gomock.Any()).Times(1).
-					Return([]*convoy.Group{group}, nil)
+					Return([]*datastore.Group{group}, nil)
 			},
 		},
 		{
@@ -368,7 +386,7 @@ func TestApplicationHandler_CreateApp(t *testing.T) {
 
 				o.EXPECT().
 					LoadGroups(gomock.Any(), gomock.Any()).Times(1).
-					Return([]*convoy.Group{group}, nil)
+					Return([]*datastore.Group{group}, nil)
 			},
 		},
 	}
@@ -385,8 +403,9 @@ func TestApplicationHandler_CreateApp(t *testing.T) {
 			eventRepo := mocks.NewMockEventRepository(ctrl)
 			eventDeliveryRepo := mocks.NewMockEventDeliveryRepository(ctrl)
 			eventQueue := mocks.NewMockQueuer(ctrl)
+			apiKeyRepo := mocks.NewMockAPIKeyRepository(ctrl)
 
-			app = newApplicationHandler(eventRepo, eventDeliveryRepo, appRepo, groupRepo, eventQueue)
+			app = newApplicationHandler(eventRepo, eventDeliveryRepo, appRepo, groupRepo, apiKeyRepo, eventQueue)
 
 			// Arrange
 			req := httptest.NewRequest(tc.method, "/api/v1/applications", tc.body)
@@ -404,7 +423,7 @@ func TestApplicationHandler_CreateApp(t *testing.T) {
 				t.Errorf("Failed to load config file: %v", err)
 			}
 
-			initRealmChain(t)
+			initRealmChain(t, app.apiKeyRepo)
 
 			router := buildRoutes(app)
 
@@ -428,7 +447,7 @@ func TestApplicationHandler_CreateApp(t *testing.T) {
 func TestApplicationHandler_UpdateApp(t *testing.T) {
 
 	groupID := "1234567890"
-	group := &convoy.Group{UID: groupID}
+	group := &datastore.Group{UID: groupID}
 
 	appId := "12345"
 	bodyReader := strings.NewReader(`{"name": "ABC_DEF_TEST_UPDATE"}`)
@@ -453,18 +472,18 @@ func TestApplicationHandler_UpdateApp(t *testing.T) {
 				a, _ := app.appRepo.(*mocks.MockApplicationRepository)
 				a.EXPECT().
 					FindApplicationByID(gomock.Any(), gomock.Any()).Times(1).
-					Return(&convoy.Application{
+					Return(&datastore.Application{
 						UID:       appId,
 						GroupID:   groupID,
 						Title:     "Valid application update",
-						Endpoints: []convoy.Endpoint{},
+						Endpoints: []datastore.Endpoint{},
 					}, nil)
 
 				o, _ := app.groupRepo.(*mocks.MockGroupRepository)
 
 				o.EXPECT().
 					LoadGroups(gomock.Any(), gomock.Any()).Times(1).
-					Return([]*convoy.Group{group}, nil)
+					Return([]*datastore.Group{group}, nil)
 			},
 		},
 		{
@@ -478,18 +497,18 @@ func TestApplicationHandler_UpdateApp(t *testing.T) {
 				a, _ := app.appRepo.(*mocks.MockApplicationRepository)
 				a.EXPECT().
 					FindApplicationByID(gomock.Any(), gomock.Any()).Times(1).
-					Return(&convoy.Application{
+					Return(&datastore.Application{
 						UID:       appId,
 						GroupID:   groupID,
 						Title:     "Valid application update",
-						Endpoints: []convoy.Endpoint{},
+						Endpoints: []datastore.Endpoint{},
 					}, nil)
 
 				o, _ := app.groupRepo.(*mocks.MockGroupRepository)
 
 				o.EXPECT().
 					LoadGroups(gomock.Any(), gomock.Any()).Times(1).
-					Return([]*convoy.Group{group}, nil)
+					Return([]*datastore.Group{group}, nil)
 			},
 		},
 		{
@@ -503,11 +522,11 @@ func TestApplicationHandler_UpdateApp(t *testing.T) {
 				a, _ := app.appRepo.(*mocks.MockApplicationRepository)
 				a.EXPECT().
 					FindApplicationByID(gomock.Any(), gomock.Any()).Times(1).
-					Return(&convoy.Application{
+					Return(&datastore.Application{
 						UID:       appId,
 						GroupID:   groupID,
 						Title:     "Valid application update",
-						Endpoints: []convoy.Endpoint{},
+						Endpoints: []datastore.Endpoint{},
 					}, nil)
 
 				a.EXPECT().
@@ -518,7 +537,7 @@ func TestApplicationHandler_UpdateApp(t *testing.T) {
 
 				o.EXPECT().
 					LoadGroups(gomock.Any(), gomock.Any()).Times(1).
-					Return([]*convoy.Group{group}, nil)
+					Return([]*datastore.Group{group}, nil)
 			},
 		},
 		{
@@ -536,18 +555,18 @@ func TestApplicationHandler_UpdateApp(t *testing.T) {
 
 				a.EXPECT().
 					FindApplicationByID(gomock.Any(), gomock.Any()).Times(1).
-					Return(&convoy.Application{
+					Return(&datastore.Application{
 						UID:       appId,
 						GroupID:   groupID,
 						Title:     "Valid application update",
-						Endpoints: []convoy.Endpoint{},
+						Endpoints: []datastore.Endpoint{},
 					}, nil)
 
 				o, _ := app.groupRepo.(*mocks.MockGroupRepository)
 
 				o.EXPECT().
 					LoadGroups(gomock.Any(), gomock.Any()).Times(1).
-					Return([]*convoy.Group{group}, nil)
+					Return([]*datastore.Group{group}, nil)
 			},
 		},
 		{
@@ -565,18 +584,18 @@ func TestApplicationHandler_UpdateApp(t *testing.T) {
 
 				a.EXPECT().
 					FindApplicationByID(gomock.Any(), gomock.Any()).Times(1).
-					Return(&convoy.Application{
+					Return(&datastore.Application{
 						UID:       appId,
 						GroupID:   groupID,
 						Title:     "Valid application update",
-						Endpoints: []convoy.Endpoint{},
+						Endpoints: []datastore.Endpoint{},
 					}, nil)
 
 				o, _ := app.groupRepo.(*mocks.MockGroupRepository)
 
 				o.EXPECT().
 					LoadGroups(gomock.Any(), gomock.Any()).Times(1).
-					Return([]*convoy.Group{group}, nil)
+					Return([]*datastore.Group{group}, nil)
 			},
 		},
 	}
@@ -594,8 +613,9 @@ func TestApplicationHandler_UpdateApp(t *testing.T) {
 			eventRepo := mocks.NewMockEventRepository(ctrl)
 			eventDeliveryRepo := mocks.NewMockEventDeliveryRepository(ctrl)
 			eventQueue := mocks.NewMockQueuer(ctrl)
+			apiKeyRepo := mocks.NewMockAPIKeyRepository(ctrl)
 
-			app = newApplicationHandler(eventRepo, eventDeliveryRepo, appRepo, groupRepo, eventQueue)
+			app = newApplicationHandler(eventRepo, eventDeliveryRepo, appRepo, groupRepo, apiKeyRepo, eventQueue)
 
 			url := fmt.Sprintf("/api/v1/applications/%s", tc.appId)
 			req := httptest.NewRequest(tc.method, url, tc.body)
@@ -607,11 +627,11 @@ func TestApplicationHandler_UpdateApp(t *testing.T) {
 			rctx.URLParams.Add("appID", tc.appId)
 
 			req = req.WithContext(context.WithValue(req.Context(), chi.RouteCtxKey, rctx))
-			req = req.WithContext(context.WithValue(req.Context(), appCtx, &convoy.Application{
+			req = req.WithContext(context.WithValue(req.Context(), appCtx, &datastore.Application{
 				UID:       appId,
 				GroupID:   groupID,
 				Title:     "Valid application update",
-				Endpoints: []convoy.Endpoint{},
+				Endpoints: []datastore.Endpoint{},
 			}))
 
 			if tc.dbFn != nil {
@@ -623,7 +643,7 @@ func TestApplicationHandler_UpdateApp(t *testing.T) {
 				t.Errorf("Failed to load config file: %v", err)
 			}
 
-			initRealmChain(t)
+			initRealmChain(t, app.apiKeyRepo)
 
 			router := buildRoutes(app)
 
@@ -652,13 +672,14 @@ func TestApplicationHandler_CreateAppEndpoint(t *testing.T) {
 	eventRepo := mocks.NewMockEventRepository(ctrl)
 	eventDeliveryRepo := mocks.NewMockEventDeliveryRepository(ctrl)
 	eventQueue := mocks.NewMockQueuer(ctrl)
+	apiKeyRepo := mocks.NewMockAPIKeyRepository(ctrl)
 
 	groupID := "1234567890"
-	group := &convoy.Group{UID: groupID}
+	group := &datastore.Group{UID: groupID}
 
 	bodyReader := strings.NewReader(`{"url": "https://google.com", "description": "Test"}`)
 
-	app = newApplicationHandler(eventRepo, eventDeliveryRepo, appRepo, groupRepo, eventQueue)
+	app = newApplicationHandler(eventRepo, eventDeliveryRepo, appRepo, groupRepo, apiKeyRepo, eventQueue)
 
 	appId := "123456789"
 
@@ -686,18 +707,18 @@ func TestApplicationHandler_CreateAppEndpoint(t *testing.T) {
 
 				a.EXPECT().
 					FindApplicationByID(gomock.Any(), gomock.Any()).Times(2).
-					Return(&convoy.Application{
+					Return(&datastore.Application{
 						UID:       appId,
 						GroupID:   groupID,
 						Title:     "Valid application endpoint",
-						Endpoints: []convoy.Endpoint{},
+						Endpoints: []datastore.Endpoint{},
 					}, nil)
 
 				o, _ := app.groupRepo.(*mocks.MockGroupRepository)
 
 				o.EXPECT().
 					LoadGroups(gomock.Any(), gomock.Any()).Times(1).
-					Return([]*convoy.Group{group}, nil)
+					Return([]*datastore.Group{group}, nil)
 			},
 		},
 	}
@@ -719,7 +740,7 @@ func TestApplicationHandler_CreateAppEndpoint(t *testing.T) {
 				t.Errorf("Failed to load config file: %v", err)
 			}
 
-			initRealmChain(t)
+			initRealmChain(t, app.apiKeyRepo)
 
 			router := buildRoutes(app)
 
@@ -737,7 +758,7 @@ func TestApplicationHandler_CreateAppEndpoint(t *testing.T) {
 func TestApplicationHandler_UpdateAppEndpoint(t *testing.T) {
 
 	groupID := "1234567890"
-	group := &convoy.Group{UID: groupID}
+	group := &datastore.Group{UID: groupID}
 
 	appId := "12345"
 	endpointId := "9999900000-8888"
@@ -768,18 +789,18 @@ func TestApplicationHandler_UpdateAppEndpoint(t *testing.T) {
 
 				a.EXPECT().
 					FindApplicationByID(gomock.Any(), gomock.Any()).Times(1).
-					Return(&convoy.Application{
+					Return(&datastore.Application{
 						UID:       appId,
 						GroupID:   groupID,
 						Title:     "invalid application update",
-						Endpoints: []convoy.Endpoint{},
+						Endpoints: []datastore.Endpoint{},
 					}, nil)
 
 				o, _ := app.groupRepo.(*mocks.MockGroupRepository)
 
 				o.EXPECT().
 					LoadGroups(gomock.Any(), gomock.Any()).Times(1).
-					Return([]*convoy.Group{group}, nil)
+					Return([]*datastore.Group{group}, nil)
 			},
 		},
 		{
@@ -798,11 +819,11 @@ func TestApplicationHandler_UpdateAppEndpoint(t *testing.T) {
 
 				a.EXPECT().
 					FindApplicationByID(gomock.Any(), gomock.Any()).Times(1).
-					Return(&convoy.Application{
+					Return(&datastore.Application{
 						UID:     appId,
 						GroupID: groupID,
 						Title:   "Valid application update",
-						Endpoints: []convoy.Endpoint{
+						Endpoints: []datastore.Endpoint{
 							{
 								UID:         endpointId,
 								TargetURL:   "http://",
@@ -815,7 +836,7 @@ func TestApplicationHandler_UpdateAppEndpoint(t *testing.T) {
 
 				o.EXPECT().
 					LoadGroups(gomock.Any(), gomock.Any()).Times(1).
-					Return([]*convoy.Group{group}, nil)
+					Return([]*datastore.Group{group}, nil)
 			},
 		},
 	}
@@ -833,8 +854,9 @@ func TestApplicationHandler_UpdateAppEndpoint(t *testing.T) {
 			eventRepo := mocks.NewMockEventRepository(ctrl)
 			eventDeliveryRepo := mocks.NewMockEventDeliveryRepository(ctrl)
 			eventQueue := mocks.NewMockQueuer(ctrl)
+			apiKeyRepo := mocks.NewMockAPIKeyRepository(ctrl)
 
-			app = newApplicationHandler(eventRepo, eventDeliveryRepo, appRepo, groupRepo, eventQueue)
+			app = newApplicationHandler(eventRepo, eventDeliveryRepo, appRepo, groupRepo, apiKeyRepo, eventQueue)
 
 			url := fmt.Sprintf("/api/v1/applications/%s/endpoints/%s", tc.appId, tc.endpointId)
 			req := httptest.NewRequest(tc.method, url, tc.body)
@@ -847,11 +869,11 @@ func TestApplicationHandler_UpdateAppEndpoint(t *testing.T) {
 			rctx.URLParams.Add("endpointID", tc.endpointId)
 
 			req = req.WithContext(context.WithValue(req.Context(), chi.RouteCtxKey, rctx))
-			req = req.WithContext(context.WithValue(req.Context(), appCtx, &convoy.Application{
+			req = req.WithContext(context.WithValue(req.Context(), appCtx, &datastore.Application{
 				UID:       appId,
 				GroupID:   groupID,
 				Title:     "Valid application update",
-				Endpoints: []convoy.Endpoint{},
+				Endpoints: []datastore.Endpoint{},
 			}))
 
 			// Arrange Expectations
@@ -864,7 +886,7 @@ func TestApplicationHandler_UpdateAppEndpoint(t *testing.T) {
 				t.Errorf("Failed to load config file: %v", err)
 			}
 
-			initRealmChain(t)
+			initRealmChain(t, app.apiKeyRepo)
 
 			router := buildRoutes(app)
 
@@ -896,15 +918,16 @@ func Test_applicationHandler_GetDashboardSummary(t *testing.T) {
 	eventRepo := mocks.NewMockEventRepository(ctrl)
 	eventDeliveryRepo := mocks.NewMockEventDeliveryRepository(ctrl)
 	eventQueue := mocks.NewMockQueuer(ctrl)
+	apiKeyRepo := mocks.NewMockAPIKeyRepository(ctrl)
 
 	groupID := "1234567890"
 
-	group := &convoy.Group{
+	group := &datastore.Group{
 		UID:  groupID,
 		Name: "Valid group",
 	}
 
-	app = newApplicationHandler(eventRepo, eventDeliveryRepo, appRepo, groupRepo, eventQueue)
+	app = newApplicationHandler(eventRepo, eventDeliveryRepo, appRepo, groupRepo, apiKeyRepo, eventQueue)
 
 	tt := []struct {
 		name       string
@@ -919,19 +942,19 @@ func Test_applicationHandler_GetDashboardSummary(t *testing.T) {
 			dbFn: func(eventRepo *mocks.MockEventRepository, appRepo *mocks.MockApplicationRepository, orgRepo *mocks.MockGroupRepository) {
 				appRepo.EXPECT().
 					SearchApplicationsByGroupId(gomock.Any(), gomock.Any(), gomock.Any()).Times(1).
-					Return([]convoy.Application{
+					Return([]datastore.Application{
 						{
 							UID:       "validID",
 							GroupID:   groupID,
 							Title:     "Valid application - 0",
-							Endpoints: []convoy.Endpoint{},
+							Endpoints: []datastore.Endpoint{},
 						},
 					}, nil)
 				eventRepo.EXPECT().
 					LoadEventIntervals(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Times(1).
-					Return([]models.EventInterval{
+					Return([]datastore.EventInterval{
 						{
-							Data: models.EventIntervalData{
+							Data: datastore.EventIntervalData{
 								Interval: 12,
 								Time:     "2020-10",
 							},
@@ -982,15 +1005,16 @@ func Test_applicationHandler_GetPaginatedApps(t *testing.T) {
 	eventRepo := mocks.NewMockEventRepository(ctrl)
 	eventDeliveryRepo := mocks.NewMockEventDeliveryRepository(ctrl)
 	eventQueue := mocks.NewMockQueuer(ctrl)
+	apiKeyRepo := mocks.NewMockAPIKeyRepository(ctrl)
 
 	groupID := "1234567890"
 
-	group := &convoy.Group{
+	group := &datastore.Group{
 		UID:  groupID,
 		Name: "Valid group",
 	}
 
-	app = newApplicationHandler(eventRepo, eventDeliveryRepo, appRepo, groupRepo, eventQueue)
+	app = newApplicationHandler(eventRepo, eventDeliveryRepo, appRepo, groupRepo, apiKeyRepo, eventQueue)
 
 	tt := []struct {
 		name       string
@@ -1006,15 +1030,15 @@ func Test_applicationHandler_GetPaginatedApps(t *testing.T) {
 			dbFn: func(appRepo *mocks.MockApplicationRepository, groupRepo *mocks.MockGroupRepository) {
 				appRepo.EXPECT().
 					LoadApplicationsPagedByGroupId(gomock.Any(), gomock.Any(), gomock.Any()).Times(1).
-					Return([]convoy.Application{
+					Return([]datastore.Application{
 						{
 							UID:       "validID",
 							GroupID:   groupID,
 							Title:     "Valid application - 0",
-							Endpoints: []convoy.Endpoint{},
+							Endpoints: []datastore.Endpoint{},
 						},
 					},
-						pager.PaginationData{},
+						datastore.PaginationData{},
 						nil)
 
 			},
@@ -1031,7 +1055,7 @@ func Test_applicationHandler_GetPaginatedApps(t *testing.T) {
 			request = request.WithContext(context.WithValue(request.Context(), chi.RouteCtxKey, rctx))
 			request = request.WithContext(context.WithValue(request.Context(), groupCtx, group))
 
-			pageable := models.Pageable{
+			pageable := datastore.Pageable{
 				Page:    1,
 				PerPage: 10,
 			}
