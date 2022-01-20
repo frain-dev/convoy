@@ -123,53 +123,6 @@ func Test_CreateGroup(t *testing.T) {
 	}
 }
 
-func Test_CannotCreateGroupWithExistingName(t *testing.T) {
-	db, closeFn := getDB(t)
-	defer closeFn()
-
-	groupRepo := NewGroupRepo(db)
-
-	org := &datastore.Group{
-		Name:           "Next group",
-		UID:            uuid.NewString(),
-		DocumentStatus: datastore.ActiveDocumentStatus,
-	}
-
-	require.NoError(t, groupRepo.CreateGroup(context.Background(), org))
-
-	org = &datastore.Group{
-		Name:           "Next group",
-		UID:            uuid.NewString(),
-		DocumentStatus: datastore.ActiveDocumentStatus,
-	}
-
-	require.Error(t, groupRepo.CreateGroup(context.Background(), org))
-}
-
-func Test_CanCreateGroupWithExistingNameThatHasBeenDeleted(t *testing.T) {
-	db, closeFn := getDB(t)
-	defer closeFn()
-
-	groupRepo := NewGroupRepo(db)
-
-	newOrg := &datastore.Group{
-		Name:           "Existing group",
-		UID:            uuid.NewString(),
-		DeletedAt:      primitive.NewDateTimeFromTime(time.Now()),
-		DocumentStatus: datastore.DeletedDocumentStatus,
-	}
-
-	require.NoError(t, groupRepo.CreateGroup(context.Background(), newOrg))
-
-	newOrg = &datastore.Group{
-		Name:           "Existing group",
-		UID:            uuid.NewString(),
-		DocumentStatus: datastore.ActiveDocumentStatus,
-	}
-
-	require.NoError(t, groupRepo.CreateGroup(context.Background(), newOrg))
-}
-
 func Test_LoadGroups(t *testing.T) {
 	db, closeFn := getDB(t)
 	defer closeFn()
