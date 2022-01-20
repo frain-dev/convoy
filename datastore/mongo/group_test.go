@@ -6,12 +6,10 @@ package mongo
 import (
 	"context"
 	"testing"
-	"time"
 
 	"github.com/frain-dev/convoy/datastore"
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/require"
-	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
 func Test_FetchGroupByID(t *testing.T) {
