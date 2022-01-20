@@ -77,7 +77,7 @@ type Configuration struct {
 	Sentry          SentryConfiguration    `json:"sentry"`
 	Queue           QueueConfiguration     `json:"queue"`
 	Server          ServerConfiguration    `json:"server"`
-	MaxResponseSize uint64                `json:"max_response_size"`
+	MaxResponseSize uint64                 `json:"max_response_size"`
 	Signature       SignatureConfiguration `json:"signature"`
 	Strategy        StrategyConfiguration  `json:"strategy"`
 	SMTP            SMTPConfiguration      `json:"smtp"`
