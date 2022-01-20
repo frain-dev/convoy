@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"os"
 	"time"
@@ -25,6 +26,7 @@ import (
 	"github.com/frain-dev/convoy/queue"
 	"github.com/spf13/cobra"
 
+	"github.com/frain-dev/convoy/datastore/bolt"
 	"github.com/frain-dev/convoy/datastore/mongo"
 )
 
@@ -82,7 +84,7 @@ func main() {
 				return err
 			}
 
-			db, err = mongo.New(cfg)
+			db, err = NewDB(cfg)
 			if err != nil {
 				return err
 			}
@@ -117,6 +119,7 @@ func main() {
 				log.Warnf("signature header is blank. setting default %s", config.DefaultSignatureHeader)
 			}
 
+			app.apiKeyRepo = db.APIRepo()
 			app.groupRepo = db.GroupRepo()
 			app.eventRepo = db.EventRepo()
 			app.applicationRepo = db.AppRepo()
@@ -171,12 +174,12 @@ func main() {
 }
 
 func ensureDefaultGroup(ctx context.Context, cfg config.Configuration, a *app) error {
-	var filter *convoy.GroupFilter
-	var groups []*convoy.Group
-	var group *convoy.Group
+	var filter *datastore.GroupFilter
+	var groups []*datastore.Group
+	var group *datastore.Group
 	var err error
 
-	filter = &convoy.GroupFilter{}
+	filter = &datastore.GroupFilter{}
 	groups, err = a.groupRepo.LoadGroups(ctx, filter)
 	if err != nil {
 		return fmt.Errorf("failed to load groups - %w", err)
@@ -188,21 +191,36 @@ func ensureDefaultGroup(ctx context.Context, cfg config.Configuration, a *app) e
 	}
 
 	if len(groups) > 1 {
-		filter = &convoy.GroupFilter{Names: []string{"default-group"}}
+		filter = &datastore.GroupFilter{Names: []string{"default-group"}}
 		groups, err = a.groupRepo.LoadGroups(ctx, filter)
 		if err != nil {
 			return fmt.Errorf("failed to load groups - %w", err)
 		}
 	}
 
+	groupCfg := &datastore.GroupConfig{
+		Strategy: datastore.StrategyConfiguration{
+			Type: cfg.GroupConfig.Strategy.Type,
+			Default: datastore.DefaultStrategyConfiguration{
+				IntervalSeconds: cfg.GroupConfig.Strategy.Default.IntervalSeconds,
+				RetryLimit:      cfg.GroupConfig.Strategy.Default.RetryLimit,
+			},
+		},
+		Signature: datastore.SignatureConfiguration{
+			Header: config.SignatureHeaderProvider(cfg.GroupConfig.Signature.Header),
+			Hash:   cfg.GroupConfig.Signature.Hash,
+		},
+		DisableEndpoint: cfg.GroupConfig.DisableEndpoint,
+	}
+
 	if len(groups) == 0 {
-		defaultGroup := &convoy.Group{
+		defaultGroup := &datastore.Group{
 			UID:            uuid.New().String(),
 			Name:           "default-group",
-			Config:         &cfg.GroupConfig,
+			Config:         groupCfg,
 			CreatedAt:      primitive.NewDateTimeFromTime(time.Now()),
 			UpdatedAt:      primitive.NewDateTimeFromTime(time.Now()),
-			DocumentStatus: convoy.ActiveDocumentStatus,
+			DocumentStatus: datastore.ActiveDocumentStatus,
 		}
 
 		err = a.groupRepo.CreateGroup(ctx, defaultGroup)
@@ -215,7 +233,7 @@ func ensureDefaultGroup(ctx context.Context, cfg config.Configuration, a *app) e
 
 	group = groups[0]
 
-	group.Config = &cfg.GroupConfig
+	group.Config = groupCfg
 	err = a.groupRepo.UpdateGroup(ctx, group)
 	if err != nil {
 		log.WithError(err).Error("Default group update failed.")
@@ -229,14 +247,34 @@ func ensureDefaultGroup(ctx context.Context, cfg config.Configuration, a *app) e
 }
 
 type app struct {
-	groupRepo         convoy.GroupRepository
-	applicationRepo   convoy.ApplicationRepository
-	eventRepo         convoy.EventRepository
-	eventDeliveryRepo convoy.EventDeliveryRepository
+	apiKeyRepo        datastore.APIKeyRepository
+	groupRepo         datastore.GroupRepository
+	applicationRepo   datastore.ApplicationRepository
+	eventRepo         datastore.EventRepository
+	eventDeliveryRepo datastore.EventDeliveryRepository
 	eventQueue        queue.Queuer
 	deadLetterQueue   queue.Queuer
 }
 
 func getCtx() (context.Context, context.CancelFunc) {
 	return context.WithTimeout(context.Background(), time.Second*1)
+}
+
+func NewDB(cfg config.Configuration) (datastore.DatabaseClient, error) {
+	switch cfg.Database.Type {
+	case "mongodb":
+		db, err := mongo.New(cfg)
+		if err != nil {
+			return nil, err
+		}
+		return db, nil
+	case "bolt":
+		bolt, err := bolt.New(cfg)
+		if err != nil {
+			return nil, err
+		}
+		return bolt, nil
+	default:
+		return nil, errors.New("invalid database type")
+	}
 }

@@ -2,8 +2,6 @@ package datastore
 
 import (
 	"context"
-
-	"github.com/frain-dev/convoy"
 )
 
 type DatabaseClient interface {
@@ -11,8 +9,9 @@ type DatabaseClient interface {
 	Client() interface{}
 	Disconnect(context.Context) error
 
-	GroupRepo() convoy.GroupRepository
-	EventRepo() convoy.EventRepository
-	AppRepo() convoy.ApplicationRepository
-	EventDeliveryRepo() convoy.EventDeliveryRepository
+	APIRepo() APIKeyRepository
+	GroupRepo() GroupRepository
+	EventRepo() EventRepository
+	AppRepo() ApplicationRepository
+	EventDeliveryRepo() EventDeliveryRepository
 }

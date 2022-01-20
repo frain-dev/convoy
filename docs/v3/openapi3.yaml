@@ -1,5 +1,14 @@
 components:
   schemas:
+    auth.Role:
+      properties:
+        groups:
+          items:
+            type: string
+          type: array
+        type:
+          type: string
+      type: object
     config.DefaultStrategyConfiguration:
       properties:
         intervalSeconds:
@@ -9,7 +18,7 @@ components:
       type: object
     config.GroupConfig:
       properties:
-        disableEndpoint:
+        disable_endpoint:
           type: boolean
         signature:
           $ref: '#/components/schemas/config.SignatureConfiguration'
@@ -30,7 +39,26 @@ components:
         type:
           type: string
       type: object
-    convoy.AppMetadata:
+    datastore.APIKey:
+      properties:
+        created_at:
+          type: integer
+        delted_at:
+          type: integer
+        expires_at:
+          type: integer
+        key_type:
+          type: string
+        name:
+          type: string
+        role:
+          $ref: '#/components/schemas/auth.Role'
+        uid:
+          type: string
+        updated_at:
+          type: integer
+      type: object
+    datastore.AppMetadata:
       properties:
         group_id:
           type: string
@@ -41,7 +69,7 @@ components:
         uid:
           type: string
       type: object
-    convoy.Application:
+    datastore.Application:
       properties:
         created_at:
           type: string
@@ -49,7 +77,7 @@ components:
           type: string
         endpoints:
           items:
-            $ref: '#/components/schemas/convoy.Endpoint'
+            $ref: '#/components/schemas/datastore.Endpoint'
           type: array
         events:
           type: integer
@@ -64,7 +92,7 @@ components:
         updated_at:
           type: string
       type: object
-    convoy.DeliveryAttempt:
+    datastore.DeliveryAttempt:
       properties:
         api_version:
           type: string
@@ -85,11 +113,11 @@ components:
         msg_id:
           type: string
         request_http_header:
-          $ref: '#/components/schemas/convoy.HttpHeader'
+          $ref: '#/components/schemas/datastore.HttpHeader'
         response_data:
           type: string
         response_http_header:
-          $ref: '#/components/schemas/convoy.HttpHeader'
+          $ref: '#/components/schemas/datastore.HttpHeader'
         status:
           type: boolean
         uid:
@@ -99,7 +127,7 @@ components:
         url:
           type: string
       type: object
-    convoy.Endpoint:
+    datastore.Endpoint:
       properties:
         created_at:
           type: string
@@ -122,7 +150,7 @@ components:
         updated_at:
           type: string
       type: object
-    convoy.EndpointMetadata:
+    datastore.EndpointMetadata:
       properties:
         secret:
           type: string
@@ -135,10 +163,10 @@ components:
         uid:
           type: string
       type: object
-    convoy.Event:
+    datastore.Event:
       properties:
         app_metadata:
-          $ref: '#/components/schemas/convoy.AppMetadata'
+          $ref: '#/components/schemas/datastore.AppMetadata'
         created_at:
           type: string
         data:
@@ -166,10 +194,10 @@ components:
         updated_at:
           type: string
       type: object
-    convoy.EventDelivery:
+    datastore.EventDelivery:
       properties:
         app_metadata:
-          $ref: '#/components/schemas/convoy.AppMetadata'
+          $ref: '#/components/schemas/datastore.AppMetadata'
         created_at:
           type: string
         deleted_at:
@@ -177,11 +205,11 @@ components:
         description:
           type: string
         endpoint:
-          $ref: '#/components/schemas/convoy.EndpointMetadata'
+          $ref: '#/components/schemas/datastore.EndpointMetadata'
         event_metadata:
-          $ref: '#/components/schemas/convoy.EventMetadata'
+          $ref: '#/components/schemas/datastore.EventMetadata'
         metadata:
-          $ref: '#/components/schemas/convoy.Metadata'
+          $ref: '#/components/schemas/datastore.Metadata'
         status:
           type: string
         uid:
@@ -189,14 +217,14 @@ components:
         updated_at:
           type: string
       type: object
-    convoy.EventMetadata:
+    datastore.EventMetadata:
       properties:
         name:
           type: string
         uid:
           type: string
       type: object
-    convoy.Group:
+    datastore.Group:
       properties:
         config:
           $ref: '#/components/schemas/config.GroupConfig'
@@ -209,24 +237,24 @@ components:
         name:
           type: string
         statistics:
-          $ref: '#/components/schemas/convoy.GroupStatistics'
+          $ref: '#/components/schemas/datastore.GroupStatistics'
         uid:
           type: string
         updated_at:
           type: string
       type: object
-    convoy.GroupStatistics:
+    datastore.GroupStatistics:
       properties:
         messages_sent:
           type: integer
         total_apps:
           type: integer
       type: object
-    convoy.HttpHeader:
+    datastore.HttpHeader:
       additionalProperties:
         type: string
       type: object
-    convoy.Metadata:
+    datastore.Metadata:
       properties:
         data:
           description: Data to be sent to endpoint.
@@ -248,6 +276,49 @@ components:
         retry_limit:
           type: integer
         strategy:
+          type: string
+      type: object
+    datastore.PaginationData:
+      properties:
+        next:
+          type: integer
+        page:
+          type: integer
+        perPage:
+          type: integer
+        prev:
+          type: integer
+        total:
+          type: integer
+        totalPage:
+          type: integer
+      type: object
+    models.APIKey:
+      properties:
+        expires_at:
+          type: string
+        key_type:
+          type: string
+        name:
+          type: string
+        role:
+          $ref: '#/components/schemas/auth.Role'
+      type: object
+    models.APIKeyResponse:
+      properties:
+        created_at:
+          type: string
+        expires_at:
+          type: string
+        key:
+          type: string
+        key_type:
+          type: string
+        name:
+          type: string
+        role:
+          $ref: '#/components/schemas/auth.Role'
+        uid:
           type: string
       type: object
     models.Application:
@@ -293,28 +364,13 @@ components:
         name:
           type: string
       type: object
-    mongopagination.PaginationData:
-      properties:
-        next:
-          type: integer
-        page:
-          type: integer
-        perPage:
-          type: integer
-        prev:
-          type: integer
-        total:
-          type: integer
-        totalPage:
-          type: integer
-      type: object
     server.Stub:
       type: object
     server.pagedResponse:
       properties:
         content: {}
         pagination:
-          $ref: '#/components/schemas/mongopagination.PaginationData'
+          $ref: '#/components/schemas/datastore.PaginationData'
       type: object
     server.serverResponse:
       properties:
@@ -334,16 +390,16 @@ components:
       type: apiKey
 info:
   contact:
-    email: engineering@convoy.io
+    email: engineering@datastore.io
     name: API Support
     url: http://www.swagger.io/support
-  description: Convoy is a fast and secure distributed webhooks service. This document
-    contains Convoy's API specification.
+  description: datastore.is a fast and secure distributed webhooks service. This document
+    contains datastore.s API specification.
   license:
     name: Mozilla Public License 2.0
     url: https://www.mozilla.org/en-US/MPL/2.0/
-  termsOfService: https://convoy.io/terms
-  title: Convoy API Specification
+  termsOfService: https://datastore.io/terms
+  title: datastore.API Specification
   version: 0.1.12
 openapi: 3.0.3
 paths:
@@ -380,7 +436,7 @@ paths:
                       - properties:
                           content:
                             items:
-                              $ref: '#/components/schemas/convoy.Application'
+                              $ref: '#/components/schemas/datastore.Application'
                             type: array
                         type: object
                   type: object
@@ -442,7 +498,7 @@ paths:
                 - $ref: '#/components/schemas/server.serverResponse'
                 - properties:
                     data:
-                      $ref: '#/components/schemas/convoy.Application'
+                      $ref: '#/components/schemas/datastore.Application'
                   type: object
           description: OK
         "400":
@@ -561,7 +617,7 @@ paths:
                 - $ref: '#/components/schemas/server.serverResponse'
                 - properties:
                     data:
-                      $ref: '#/components/schemas/convoy.Application'
+                      $ref: '#/components/schemas/datastore.Application'
                   type: object
           description: OK
         "400":
@@ -628,7 +684,7 @@ paths:
                 - $ref: '#/components/schemas/server.serverResponse'
                 - properties:
                     data:
-                      $ref: '#/components/schemas/convoy.Application'
+                      $ref: '#/components/schemas/datastore.Application'
                   type: object
           description: OK
         "400":
@@ -689,7 +745,7 @@ paths:
                 - properties:
                     data:
                       items:
-                        $ref: '#/components/schemas/convoy.Endpoint'
+                        $ref: '#/components/schemas/datastore.Endpoint'
                       type: array
                   type: object
           description: OK
@@ -757,7 +813,7 @@ paths:
                 - $ref: '#/components/schemas/server.serverResponse'
                 - properties:
                     data:
-                      $ref: '#/components/schemas/convoy.Endpoint'
+                      $ref: '#/components/schemas/datastore.Endpoint'
                   type: object
           description: OK
         "400":
@@ -888,7 +944,7 @@ paths:
                 - $ref: '#/components/schemas/server.serverResponse'
                 - properties:
                     data:
-                      $ref: '#/components/schemas/convoy.Endpoint'
+                      $ref: '#/components/schemas/datastore.Endpoint'
                   type: object
           description: OK
         "400":
@@ -961,7 +1017,7 @@ paths:
                 - $ref: '#/components/schemas/server.serverResponse'
                 - properties:
                     data:
-                      $ref: '#/components/schemas/convoy.Endpoint'
+                      $ref: '#/components/schemas/datastore.Endpoint'
                   type: object
           description: OK
         "400":
@@ -1068,7 +1124,7 @@ paths:
                           content:
                             items:
                               allOf:
-                              - $ref: '#/components/schemas/convoy.EventDelivery'
+                              - $ref: '#/components/schemas/datastore.EventDelivery'
                               - properties:
                                   data:
                                     $ref: '#/components/schemas/server.Stub'
@@ -1119,12 +1175,6 @@ paths:
     get:
       description: This endpoint fetches an event delivery.
       parameters:
-      - description: event id
-        in: path
-        name: eventID
-        required: true
-        schema:
-          type: string
       - description: event delivery id
         in: path
         name: eventDeliveryID
@@ -1141,7 +1191,7 @@ paths:
                 - properties:
                     data:
                       allOf:
-                      - $ref: '#/components/schemas/convoy.Event'
+                      - $ref: '#/components/schemas/datastore.Event'
                       - properties:
                           data:
                             $ref: '#/components/schemas/server.Stub'
@@ -1190,9 +1240,9 @@ paths:
     put:
       description: This endpoint resends an app event
       parameters:
-      - description: event id
+      - description: event delivery id
         in: path
-        name: eventID
+        name: eventDeliveryID
         required: true
         schema:
           type: string
@@ -1206,7 +1256,7 @@ paths:
                 - properties:
                     data:
                       allOf:
-                      - $ref: '#/components/schemas/convoy.Event'
+                      - $ref: '#/components/schemas/datastore.Event'
                       - properties:
                           data:
                             $ref: '#/components/schemas/server.Stub'
@@ -1373,7 +1423,7 @@ paths:
                           content:
                             items:
                               allOf:
-                              - $ref: '#/components/schemas/convoy.Event'
+                              - $ref: '#/components/schemas/datastore.Event'
                               - properties:
                                   data:
                                     $ref: '#/components/schemas/server.Stub'
@@ -1440,7 +1490,7 @@ paths:
                 - properties:
                     data:
                       allOf:
-                      - $ref: '#/components/schemas/convoy.Event'
+                      - $ref: '#/components/schemas/datastore.Event'
                       - properties:
                           data:
                             $ref: '#/components/schemas/server.Stub'
@@ -1505,7 +1555,7 @@ paths:
                 - properties:
                     data:
                       allOf:
-                      - $ref: '#/components/schemas/convoy.Event'
+                      - $ref: '#/components/schemas/datastore.Event'
                       - properties:
                           data:
                             $ref: '#/components/schemas/server.Stub'
@@ -1576,7 +1626,7 @@ paths:
                 - properties:
                     data:
                       items:
-                        $ref: '#/components/schemas/convoy.DeliveryAttempt'
+                        $ref: '#/components/schemas/datastore.DeliveryAttempt'
                       type: array
                   type: object
           description: OK
@@ -1649,7 +1699,7 @@ paths:
                 - $ref: '#/components/schemas/server.serverResponse'
                 - properties:
                     data:
-                      $ref: '#/components/schemas/convoy.DeliveryAttempt'
+                      $ref: '#/components/schemas/datastore.DeliveryAttempt'
                   type: object
           description: OK
         "400":
@@ -1709,7 +1759,7 @@ paths:
                 - properties:
                     data:
                       items:
-                        $ref: '#/components/schemas/convoy.Group'
+                        $ref: '#/components/schemas/datastore.Group'
                       type: array
                   type: object
           description: OK
@@ -1770,7 +1820,7 @@ paths:
                 - $ref: '#/components/schemas/server.serverResponse'
                 - properties:
                     data:
-                      $ref: '#/components/schemas/convoy.Group'
+                      $ref: '#/components/schemas/datastore.Group'
                   type: object
           description: OK
         "400":
@@ -1889,7 +1939,7 @@ paths:
                 - $ref: '#/components/schemas/server.serverResponse'
                 - properties:
                     data:
-                      $ref: '#/components/schemas/convoy.Group'
+                      $ref: '#/components/schemas/datastore.Group'
                   type: object
           description: OK
         "400":
@@ -1956,7 +2006,7 @@ paths:
                 - $ref: '#/components/schemas/server.serverResponse'
                 - properties:
                     data:
-                      $ref: '#/components/schemas/convoy.Group'
+                      $ref: '#/components/schemas/datastore.Group'
                   type: object
           description: OK
         "400":
@@ -1997,6 +2047,263 @@ paths:
       summary: Update a group
       tags:
       - Group
+  /security/keys:
+    get:
+      description: This endpoint fetches multiple api keys
+      parameters:
+      - description: results per page
+        in: query
+        name: perPage
+        schema:
+          type: string
+      - description: page number
+        in: query
+        name: page
+        schema:
+          type: string
+      - description: sort order
+        in: query
+        name: sort
+        schema:
+          type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                allOf:
+                - $ref: '#/components/schemas/server.serverResponse'
+                - properties:
+                    data:
+                      allOf:
+                      - $ref: '#/components/schemas/server.pagedResponse'
+                      - properties:
+                          content:
+                            items:
+                              $ref: '#/components/schemas/datastore.APIKey'
+                            type: array
+                        type: object
+                  type: object
+          description: OK
+        "400":
+          content:
+            application/json:
+              schema:
+                allOf:
+                - $ref: '#/components/schemas/server.serverResponse'
+                - properties:
+                    data:
+                      $ref: '#/components/schemas/server.Stub'
+                  type: object
+          description: Bad Request
+        "401":
+          content:
+            application/json:
+              schema:
+                allOf:
+                - $ref: '#/components/schemas/server.serverResponse'
+                - properties:
+                    data:
+                      $ref: '#/components/schemas/server.Stub'
+                  type: object
+          description: Unauthorized
+        "500":
+          content:
+            application/json:
+              schema:
+                allOf:
+                - $ref: '#/components/schemas/server.serverResponse'
+                - properties:
+                    data:
+                      $ref: '#/components/schemas/server.Stub'
+                  type: object
+          description: Internal Server Error
+      security:
+      - ApiKeyAuth: []
+      summary: Fetch multiple api keys
+      tags:
+      - APIKey
+    post:
+      description: This endpoint creates an api key that will be used by the native
+        auth realm
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/models.APIKey'
+        description: API Key
+        required: true
+        x-originalParamName: apiKey
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                allOf:
+                - $ref: '#/components/schemas/server.serverResponse'
+                - properties:
+                    data:
+                      $ref: '#/components/schemas/models.APIKeyResponse'
+                  type: object
+          description: OK
+        "400":
+          content:
+            application/json:
+              schema:
+                allOf:
+                - $ref: '#/components/schemas/server.serverResponse'
+                - properties:
+                    data:
+                      $ref: '#/components/schemas/server.Stub'
+                  type: object
+          description: Bad Request
+        "401":
+          content:
+            application/json:
+              schema:
+                allOf:
+                - $ref: '#/components/schemas/server.serverResponse'
+                - properties:
+                    data:
+                      $ref: '#/components/schemas/server.Stub'
+                  type: object
+          description: Unauthorized
+        "500":
+          content:
+            application/json:
+              schema:
+                allOf:
+                - $ref: '#/components/schemas/server.serverResponse'
+                - properties:
+                    data:
+                      $ref: '#/components/schemas/server.Stub'
+                  type: object
+          description: Internal Server Error
+      security:
+      - ApiKeyAuth: []
+      summary: Create an api key
+      tags:
+      - APIKey
+  /security/keys/{keyID}:
+    get:
+      description: This endpoint fetches an api key by its id
+      parameters:
+      - description: API Key id
+        in: path
+        name: keyID
+        required: true
+        schema:
+          type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                allOf:
+                - $ref: '#/components/schemas/server.serverResponse'
+                - properties:
+                    data:
+                      $ref: '#/components/schemas/datastore.APIKey'
+                  type: object
+          description: OK
+        "400":
+          content:
+            application/json:
+              schema:
+                allOf:
+                - $ref: '#/components/schemas/server.serverResponse'
+                - properties:
+                    data:
+                      $ref: '#/components/schemas/server.Stub'
+                  type: object
+          description: Bad Request
+        "401":
+          content:
+            application/json:
+              schema:
+                allOf:
+                - $ref: '#/components/schemas/server.serverResponse'
+                - properties:
+                    data:
+                      $ref: '#/components/schemas/server.Stub'
+                  type: object
+          description: Unauthorized
+        "500":
+          content:
+            application/json:
+              schema:
+                allOf:
+                - $ref: '#/components/schemas/server.serverResponse'
+                - properties:
+                    data:
+                      $ref: '#/components/schemas/server.Stub'
+                  type: object
+          description: Internal Server Error
+      security:
+      - ApiKeyAuth: []
+      summary: Get api key by id
+      tags:
+      - APIKey
+  /security/keys/{keyID}/revoke:
+    put:
+      description: This endpoint revokes multiple api keys
+      parameters:
+      - description: API Key id
+        in: path
+        name: keyID
+        required: true
+        schema:
+          type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                allOf:
+                - $ref: '#/components/schemas/server.serverResponse'
+                - properties:
+                    data:
+                      $ref: '#/components/schemas/server.Stub'
+                  type: object
+          description: OK
+        "400":
+          content:
+            application/json:
+              schema:
+                allOf:
+                - $ref: '#/components/schemas/server.serverResponse'
+                - properties:
+                    data:
+                      $ref: '#/components/schemas/server.Stub'
+                  type: object
+          description: Bad Request
+        "401":
+          content:
+            application/json:
+              schema:
+                allOf:
+                - $ref: '#/components/schemas/server.serverResponse'
+                - properties:
+                    data:
+                      $ref: '#/components/schemas/server.Stub'
+                  type: object
+          description: Unauthorized
+        "500":
+          content:
+            application/json:
+              schema:
+                allOf:
+                - $ref: '#/components/schemas/server.serverResponse'
+                - properties:
+                    data:
+                      $ref: '#/components/schemas/server.Stub'
+                  type: object
+          description: Internal Server Error
+      security:
+      - ApiKeyAuth: []
+      summary: Revoke API Key
+      tags:
+      - APIKey
 servers:
 - url: http://localhost:8080/api/v1
 - url: https://localhost:8080/api/v1
@@ -2007,6 +2314,8 @@ tags:
   name: Application Endpoints
 - description: Event related APIs
   name: Events
+- description: API Key related APIs
+  name: APIKey
 - description: EventDelivery related APIs
   name: EventDelivery
 - description: Delivery Attempt related APIs

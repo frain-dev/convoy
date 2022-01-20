@@ -2,7 +2,6 @@ package server
 
 import (
 	"context"
-	"encoding/json"
 	"errors"
 	"fmt"
 	"net/http"
@@ -10,6 +9,7 @@ import (
 
 	"github.com/frain-dev/convoy"
 	"github.com/frain-dev/convoy/config"
+	"github.com/frain-dev/convoy/datastore"
 	"github.com/frain-dev/convoy/server/models"
 	"github.com/frain-dev/convoy/util"
 	"github.com/go-chi/render"
@@ -25,27 +25,24 @@ import (
 // @Accept  json
 // @Produce  json
 // @Param event body models.Event true "Event Details"
-// @Success 200 {object} serverResponse{data=convoy.Event{data=Stub}}
+// @Success 200 {object} serverResponse{data=datastore.Event{data=Stub}}
 // @Failure 400,401,500 {object} serverResponse{data=Stub}
 // @Security ApiKeyAuth
 // @Router /events [post]
 func (a *applicationHandler) CreateAppEvent(w http.ResponseWriter, r *http.Request) {
 
 	var newMessage models.Event
-	err := json.NewDecoder(r.Body).Decode(&newMessage)
+	err := util.ReadJSON(r, &newMessage)
 	if err != nil {
-		_ = render.Render(w, r, newErrorResponse("Request is invalid", http.StatusBadRequest))
+		_ = render.Render(w, r, newErrorResponse(err.Error(), http.StatusBadRequest))
 		return
 	}
 
 	eventType := newMessage.EventType
-	if util.IsStringEmpty(eventType) {
-		_ = render.Render(w, r, newErrorResponse("please provide an event_type", http.StatusBadRequest))
-		return
-	}
 	d := newMessage.Data
-	if d == nil {
-		_ = render.Render(w, r, newErrorResponse("please provide your data", http.StatusBadRequest))
+
+	if err = util.Validate(newMessage); err != nil {
+		_ = render.Render(w, r, newErrorResponse(err.Error(), http.StatusBadRequest))
 		return
 	}
 
@@ -55,7 +52,7 @@ func (a *applicationHandler) CreateAppEvent(w http.ResponseWriter, r *http.Reque
 		msg := "an error occurred while retrieving app details"
 		statusCode := http.StatusInternalServerError
 
-		if errors.Is(err, convoy.ErrApplicationNotFound) {
+		if errors.Is(err, datastore.ErrApplicationNotFound) {
 			msg = err.Error()
 			statusCode = http.StatusNotFound
 		}
@@ -73,20 +70,20 @@ func (a *applicationHandler) CreateAppEvent(w http.ResponseWriter, r *http.Reque
 
 	matchedEndpoints := matchEndpointsForDelivery(eventType, app.Endpoints, nil)
 
-	event := &convoy.Event{
+	event := &datastore.Event{
 		UID:              uuid.New().String(),
-		EventType:        convoy.EventType(eventType),
+		EventType:        datastore.EventType(eventType),
 		MatchedEndpoints: len(matchedEndpoints),
 		Data:             d,
 		CreatedAt:        primitive.NewDateTimeFromTime(time.Now()),
 		UpdatedAt:        primitive.NewDateTimeFromTime(time.Now()),
-		AppMetadata: &convoy.AppMetadata{
+		AppMetadata: &datastore.AppMetadata{
 			Title:        app.Title,
 			UID:          app.UID,
 			GroupID:      app.GroupID,
 			SupportEmail: app.SupportEmail,
 		},
-		DocumentStatus: convoy.ActiveDocumentStatus,
+		DocumentStatus: datastore.ActiveDocumentStatus,
 	}
 
 	err = a.eventRepo.CreateEvent(r.Context(), event)
@@ -99,7 +96,7 @@ func (a *applicationHandler) CreateAppEvent(w http.ResponseWriter, r *http.Reque
 
 	var intervalSeconds uint64
 	var retryLimit uint64
-	if g.Config.Strategy.Type == config.DefaultStrategyProvider {
+	if string(g.Config.Strategy.Type) == string(config.DefaultStrategyProvider) {
 		intervalSeconds = g.Config.Strategy.Default.IntervalSeconds
 		retryLimit = g.Config.Strategy.Default.RetryLimit
 	} else {
@@ -107,35 +104,35 @@ func (a *applicationHandler) CreateAppEvent(w http.ResponseWriter, r *http.Reque
 		return
 	}
 
-	eventStatus := convoy.ScheduledEventStatus
+	eventStatus := datastore.ScheduledEventStatus
 
 	for _, v := range matchedEndpoints {
 		// TODO(daniel,subomi): what if the first endpoint is inactive, and then the second one is active?
 		// how do we reset eventStatus?
-		if v.Status != convoy.ActiveEndpointStatus {
-			eventStatus = convoy.DiscardedEventStatus
+		if v.Status != datastore.ActiveEndpointStatus {
+			eventStatus = datastore.DiscardedEventStatus
 		}
 
-		eventDelivery := &convoy.EventDelivery{
+		eventDelivery := &datastore.EventDelivery{
 			UID: uuid.New().String(),
-			EventMetadata: &convoy.EventMetadata{
+			EventMetadata: &datastore.EventMetadata{
 				UID:       event.UID,
 				EventType: event.EventType,
 			},
-			EndpointMetadata: &convoy.EndpointMetadata{
+			EndpointMetadata: &datastore.EndpointMetadata{
 				UID:       v.UID,
 				TargetURL: v.TargetURL,
 				Status:    v.Status,
 				Secret:    v.Secret,
 				Sent:      false,
 			},
-			AppMetadata: &convoy.AppMetadata{
+			AppMetadata: &datastore.AppMetadata{
 				UID:          app.UID,
 				Title:        app.Title,
 				GroupID:      app.GroupID,
 				SupportEmail: app.SupportEmail,
 			},
-			Metadata: &convoy.Metadata{
+			Metadata: &datastore.Metadata{
 				Data:            event.Data,
 				Strategy:        g.Config.Strategy.Type,
 				NumTrials:       0,
@@ -144,8 +141,8 @@ func (a *applicationHandler) CreateAppEvent(w http.ResponseWriter, r *http.Reque
 				NextSendTime:    primitive.NewDateTimeFromTime(time.Now()),
 			},
 			Status:           eventStatus,
-			DeliveryAttempts: make([]convoy.DeliveryAttempt, 0),
-			DocumentStatus:   convoy.ActiveDocumentStatus,
+			DeliveryAttempts: make([]datastore.DeliveryAttempt, 0),
+			DocumentStatus:   datastore.ActiveDocumentStatus,
 			CreatedAt:        primitive.NewDateTimeFromTime(time.Now()),
 			UpdatedAt:        primitive.NewDateTimeFromTime(time.Now()),
 		}
@@ -156,7 +153,7 @@ func (a *applicationHandler) CreateAppEvent(w http.ResponseWriter, r *http.Reque
 
 		taskName := convoy.EventProcessor.SetPrefix(g.Name)
 
-		if eventDelivery.Status != convoy.DiscardedEventStatus {
+		if eventDelivery.Status != datastore.DiscardedEventStatus {
 			err = a.eventQueue.Write(r.Context(), taskName, eventDelivery, 1*time.Second)
 			if err != nil {
 				log.Errorf("Error occurred sending new event to the queue %s", err)
@@ -175,7 +172,7 @@ func (a *applicationHandler) CreateAppEvent(w http.ResponseWriter, r *http.Reque
 // @Accept  json
 // @Produce  json
 // @Param eventID path string true "event id"
-// @Success 200 {object} serverResponse{data=convoy.Event{data=Stub}}
+// @Success 200 {object} serverResponse{data=datastore.Event{data=Stub}}
 // @Failure 400,401,500 {object} serverResponse{data=Stub}
 // @Security ApiKeyAuth
 // @Router /events/{eventID} [get]
@@ -191,9 +188,8 @@ func (a *applicationHandler) GetAppEvent(w http.ResponseWriter, r *http.Request)
 // @Tags EventDelivery
 // @Accept json
 // @Produce json
-// @Param eventID path string true "event id"
 // @Param eventDeliveryID path string true "event delivery id"
-// @Success 200 {object} serverResponse{data=convoy.Event{data=Stub}}
+// @Success 200 {object} serverResponse{data=datastore.Event{data=Stub}}
 // @Failure 400,401,500 {object} serverResponse{data=Stub}
 // @Security ApiKeyAuth
 // @Router /eventdeliveries/{eventDeliveryID} [get]
@@ -209,8 +205,8 @@ func (a *applicationHandler) GetEventDelivery(w http.ResponseWriter, r *http.Req
 // @Tags EventDelivery
 // @Accept  json
 // @Produce  json
-// @Param eventID path string true "event id"
-// @Success 200 {object} serverResponse{data=convoy.Event{data=Stub}}
+// @Param eventDeliveryID path string true "event delivery id"
+// @Success 200 {object} serverResponse{data=datastore.Event{data=Stub}}
 // @Failure 400,401,500 {object} serverResponse{data=Stub}
 // @Security ApiKeyAuth
 // @Router /eventdeliveries/{eventDeliveryID}/resend [put]
@@ -242,13 +238,13 @@ func (a *applicationHandler) ResendEventDelivery(w http.ResponseWriter, r *http.
 func (a *applicationHandler) BatchRetryEventDelivery(w http.ResponseWriter, r *http.Request) {
 	eventDeliveryIDs := models.IDs{}
 
-	err := json.NewDecoder(r.Body).Decode(&eventDeliveryIDs)
+	err := util.ReadJSON(r, &eventDeliveryIDs)
 	if err != nil {
-		_ = render.Render(w, r, newErrorResponse("Request is invalid", http.StatusBadRequest))
+		_ = render.Render(w, r, newErrorResponse(err.Error(), http.StatusBadRequest))
 		return
 	}
 
-	var deliveries []convoy.EventDelivery
+	var deliveries []datastore.EventDelivery
 
 	deliveries, err = a.eventDeliveryRepo.FindEventDeliveriesByIDs(r.Context(), eventDeliveryIDs.IDs)
 	if err != nil {
@@ -271,9 +267,9 @@ func (a *applicationHandler) BatchRetryEventDelivery(w http.ResponseWriter, r *h
 	_ = render.Render(w, r, newServerResponse(fmt.Sprintf("%d successful, %d failed", len(deliveries)-failures, failures), nil, http.StatusOK))
 }
 
-func (a *applicationHandler) resendEventDelivery(ctx context.Context, eventDelivery *convoy.EventDelivery) *EndpointError {
+func (a *applicationHandler) resendEventDelivery(ctx context.Context, eventDelivery *datastore.EventDelivery) *EndpointError {
 
-	if eventDelivery.Status == convoy.SuccessEventStatus {
+	if eventDelivery.Status == datastore.SuccessEventStatus {
 		return &EndpointError{
 			Err:        errors.New("event already sent"),
 			StatusCode: http.StatusBadRequest,
@@ -281,10 +277,10 @@ func (a *applicationHandler) resendEventDelivery(ctx context.Context, eventDeliv
 	}
 
 	switch eventDelivery.Status {
-	case convoy.ScheduledEventStatus,
-		convoy.ProcessingEventStatus,
-		convoy.SuccessEventStatus,
-		convoy.RetryEventStatus:
+	case datastore.ScheduledEventStatus,
+		datastore.ProcessingEventStatus,
+		datastore.SuccessEventStatus,
+		datastore.RetryEventStatus:
 		return &EndpointError{
 			Err:        errors.New("cannot resend event that did not fail previously"),
 			StatusCode: http.StatusBadRequest,
@@ -300,17 +296,17 @@ func (a *applicationHandler) resendEventDelivery(ctx context.Context, eventDeliv
 		}
 	}
 
-	if endpoint.Status == convoy.PendingEndpointStatus {
+	if endpoint.Status == datastore.PendingEndpointStatus {
 		return &EndpointError{
 			Err:        errors.New("endpoint is being re-activated"),
 			StatusCode: http.StatusBadRequest,
 		}
 	}
 
-	if endpoint.Status == convoy.InactiveEndpointStatus {
+	if endpoint.Status == datastore.InactiveEndpointStatus {
 		pendingEndpoints := []string{e.UID}
 
-		err = a.appRepo.UpdateApplicationEndpointsStatus(context.Background(), eventDelivery.AppMetadata.UID, pendingEndpoints, convoy.PendingEndpointStatus)
+		err = a.appRepo.UpdateApplicationEndpointsStatus(context.Background(), eventDelivery.AppMetadata.UID, pendingEndpoints, datastore.PendingEndpointStatus)
 		if err != nil {
 			return &EndpointError{
 				Err:        errors.New("failed to update endpoint status"),
@@ -319,8 +315,8 @@ func (a *applicationHandler) resendEventDelivery(ctx context.Context, eventDeliv
 		}
 	}
 
-	eventDelivery.Status = convoy.ScheduledEventStatus
-	err = a.eventDeliveryRepo.UpdateStatusOfEventDelivery(ctx, *eventDelivery, convoy.ScheduledEventStatus)
+	eventDelivery.Status = datastore.ScheduledEventStatus
+	err = a.eventDeliveryRepo.UpdateStatusOfEventDelivery(ctx, *eventDelivery, datastore.ScheduledEventStatus)
 	if err != nil {
 		return &EndpointError{
 			Err:        errors.New("an error occurred while trying to resend event"),
@@ -352,7 +348,7 @@ func (a *applicationHandler) resendEventDelivery(ctx context.Context, eventDeliv
 // @Param perPage query string false "results per page"
 // @Param page query string false "page number"
 // @Param sort query string false "sort order"
-// @Success 200 {object} serverResponse{data=pagedResponse{content=[]convoy.Event{data=Stub}}}
+// @Success 200 {object} serverResponse{data=pagedResponse{content=[]datastore.Event{data=Stub}}}
 // @Failure 400,401,500 {object} serverResponse{data=Stub}
 // @Security ApiKeyAuth
 // @Router /events [get]
@@ -394,7 +390,7 @@ func (a *applicationHandler) GetEventsPaged(w http.ResponseWriter, r *http.Reque
 // @Param page query string false "page number"
 // @Param sort query string false "sort order"
 // @Param status query []string false "status"
-// @Success 200 {object} serverResponse{data=pagedResponse{content=[]convoy.EventDelivery{data=Stub}}}
+// @Success 200 {object} serverResponse{data=pagedResponse{content=[]datastore.EventDelivery{data=Stub}}}
 // @Failure 400,401,500 {object} serverResponse{data=Stub}
 // @Security ApiKeyAuth
 // @Router /eventdeliveries [get]
@@ -404,11 +400,11 @@ func (a *applicationHandler) GetEventDeliveriesPaged(w http.ResponseWriter, r *h
 	group := getGroupFromContext(r.Context())
 	appID := r.URL.Query().Get("appId")
 	eventID := r.URL.Query().Get("eventId")
-	status := make([]convoy.EventDeliveryStatus, 0)
+	status := make([]datastore.EventDeliveryStatus, 0)
 
 	for _, s := range r.URL.Query()["status"] {
 		if !util.IsStringEmpty(s) {
-			status = append(status, convoy.EventDeliveryStatus(s))
+			status = append(status, datastore.EventDeliveryStatus(s))
 		}
 	}
 
@@ -429,8 +425,8 @@ func (a *applicationHandler) GetEventDeliveriesPaged(w http.ResponseWriter, r *h
 		pagedResponse{Content: &ed, Pagination: &paginationData}, http.StatusOK))
 }
 
-func getSearchParams(r *http.Request) (models.SearchParams, error) {
-	var searchParams models.SearchParams
+func getSearchParams(r *http.Request) (datastore.SearchParams, error) {
+	var searchParams datastore.SearchParams
 	format := "2006-01-02T15:04:05"
 	startDate := r.URL.Query().Get("startDate")
 	endDate := r.URL.Query().Get("endDate")
@@ -462,7 +458,7 @@ func getSearchParams(r *http.Request) (models.SearchParams, error) {
 		return searchParams, err
 	}
 
-	searchParams = models.SearchParams{
+	searchParams = datastore.SearchParams{
 		CreatedAtStart: startT.Unix(),
 		CreatedAtEnd:   endT.Unix(),
 	}
@@ -483,22 +479,22 @@ func fetchDeliveryAttempts() func(next http.Handler) http.Handler {
 	}
 }
 
-func findMessageDeliveryAttempt(attempts *[]convoy.DeliveryAttempt, id string) (*convoy.DeliveryAttempt, error) {
+func findMessageDeliveryAttempt(attempts *[]datastore.DeliveryAttempt, id string) (*datastore.DeliveryAttempt, error) {
 	for _, a := range *attempts {
 		if a.UID == id {
 			return &a, nil
 		}
 	}
-	return nil, convoy.ErrEventDeliveryAttemptNotFound
+	return nil, datastore.ErrEventDeliveryAttemptNotFound
 }
 
-func matchEndpointsForDelivery(ev string, endpoints, matched []convoy.Endpoint) []convoy.Endpoint {
+func matchEndpointsForDelivery(ev string, endpoints, matched []datastore.Endpoint) []datastore.Endpoint {
 	if len(endpoints) == 0 {
 		return matched
 	}
 
 	if matched == nil {
-		matched = make([]convoy.Endpoint, 0)
+		matched = make([]datastore.Endpoint, 0)
 	}
 
 	e := endpoints[0]

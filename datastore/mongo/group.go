@@ -5,7 +5,7 @@ import (
 	"errors"
 	"time"
 
-	"github.com/frain-dev/convoy"
+	"github.com/frain-dev/convoy/datastore"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
@@ -17,19 +17,19 @@ type groupRepo struct {
 	inner   *mongo.Collection
 }
 
-func NewGroupRepo(db *mongo.Database) convoy.GroupRepository {
+func NewGroupRepo(db *mongo.Database) datastore.GroupRepository {
 	return &groupRepo{
 		innerDB: db,
 		inner:   db.Collection(GroupCollection),
 	}
 }
 
-func (db *groupRepo) LoadGroups(ctx context.Context, f *convoy.GroupFilter) ([]*convoy.Group, error) {
-	groups := make([]*convoy.Group, 0)
+func (db *groupRepo) LoadGroups(ctx context.Context, f *datastore.GroupFilter) ([]*datastore.Group, error) {
+	groups := make([]*datastore.Group, 0)
 
 	opts := &options.FindOptions{Collation: &options.Collation{Locale: "en", Strength: 2}}
 	filter := bson.M{
-		"document_status": bson.M{"$ne": convoy.DeletedDocumentStatus},
+		"document_status": bson.M{"$ne": datastore.DeletedDocumentStatus},
 	}
 
 	if len(f.Names) > 0 {
@@ -42,7 +42,7 @@ func (db *groupRepo) LoadGroups(ctx context.Context, f *convoy.GroupFilter) ([]*
 	}
 
 	for cur.Next(ctx) {
-		var group = new(convoy.Group)
+		var group = new(datastore.Group)
 		if err := cur.Decode(&group); err != nil {
 			return groups, err
 		}
@@ -61,7 +61,7 @@ func (db *groupRepo) LoadGroups(ctx context.Context, f *convoy.GroupFilter) ([]*
 	return groups, nil
 }
 
-func (db *groupRepo) CreateGroup(ctx context.Context, o *convoy.Group) error {
+func (db *groupRepo) CreateGroup(ctx context.Context, o *datastore.Group) error {
 
 	o.ID = primitive.NewObjectID()
 
@@ -69,7 +69,7 @@ func (db *groupRepo) CreateGroup(ctx context.Context, o *convoy.Group) error {
 	return err
 }
 
-func (db *groupRepo) UpdateGroup(ctx context.Context, o *convoy.Group) error {
+func (db *groupRepo) UpdateGroup(ctx context.Context, o *datastore.Group) error {
 
 	o.UpdatedAt = primitive.NewDateTimeFromTime(time.Now())
 
@@ -87,8 +87,8 @@ func (db *groupRepo) UpdateGroup(ctx context.Context, o *convoy.Group) error {
 }
 
 func (db *groupRepo) FetchGroupByID(ctx context.Context,
-	id string) (*convoy.Group, error) {
-	org := new(convoy.Group)
+	id string) (*datastore.Group, error) {
+	org := new(datastore.Group)
 
 	filter := bson.D{
 		primitive.E{
@@ -101,7 +101,7 @@ func (db *groupRepo) FetchGroupByID(ctx context.Context,
 		Decode(&org)
 
 	if errors.Is(err, mongo.ErrNoDocuments) {
-		err = convoy.ErrGroupNotFound
+		err = datastore.ErrGroupNotFound
 	}
 
 	return org, err
@@ -111,7 +111,7 @@ func (db *groupRepo) DeleteGroup(ctx context.Context, uid string) error {
 	update := bson.M{
 		"$set": bson.M{
 			"deleted_at":      primitive.NewDateTimeFromTime(time.Now()),
-			"document_status": convoy.DeletedDocumentStatus,
+			"document_status": datastore.DeletedDocumentStatus,
 		},
 	}
 
@@ -121,4 +121,33 @@ func (db *groupRepo) DeleteGroup(ctx context.Context, uid string) error {
 	}
 
 	return nil
+}
+
+func (db *groupRepo) FetchGroupsByIDs(ctx context.Context, ids []string) ([]datastore.Group, error) {
+	filter := bson.M{
+		"uid": bson.M{
+			"$in": ids,
+		},
+		"document_status": bson.M{
+			"$ne": datastore.DeletedDocumentStatus,
+		},
+	}
+
+	groups := make([]datastore.Group, 0)
+
+	cur, err := db.inner.Find(ctx, filter, nil)
+	if err != nil {
+		return groups, err
+	}
+
+	for cur.Next(ctx) {
+		var group datastore.Group
+		if err := cur.Decode(&group); err != nil {
+			return groups, err
+		}
+
+		groups = append(groups, group)
+	}
+
+	return groups, err
 }

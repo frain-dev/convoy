@@ -9,12 +9,11 @@ import (
 	"strings"
 	"time"
 
-	"github.com/frain-dev/convoy/auth"
-
 	"github.com/frain-dev/convoy"
+	"github.com/frain-dev/convoy/auth"
 	"github.com/frain-dev/convoy/config"
+	"github.com/frain-dev/convoy/datastore"
 	"github.com/frain-dev/convoy/queue"
-
 	"github.com/go-chi/chi/v5/middleware"
 	"github.com/go-chi/httprate"
 	"github.com/prometheus/client_golang/prometheus"
@@ -142,6 +141,15 @@ func buildRoutes(app *applicationHandler) http.Handler {
 					})
 				})
 			})
+
+			r.Route("/security", func(securityRouter chi.Router) {
+				securityRouter.Use(requirePermission(auth.RoleSuperUser))
+
+				securityRouter.Post("/keys", app.CreateAPIKey)
+				securityRouter.With(pagination).Get("/keys", app.GetAPIKeys)
+				securityRouter.Get("/keys/{keyID}", app.GetAPIKeyByID)
+				securityRouter.Put("/keys/{keyID}/revoke", app.RevokeAPIKey)
+			})
 		})
 	})
 
@@ -236,13 +244,14 @@ func buildRoutes(app *applicationHandler) http.Handler {
 }
 
 func New(cfg config.Configuration,
-	eventRepo convoy.EventRepository,
-	eventDeliveryRepo convoy.EventDeliveryRepository,
-	appRepo convoy.ApplicationRepository,
-	orgRepo convoy.GroupRepository,
+	eventRepo datastore.EventRepository,
+	eventDeliveryRepo datastore.EventDeliveryRepository,
+	appRepo datastore.ApplicationRepository,
+	apiKeyRepo datastore.APIKeyRepository,
+	orgRepo datastore.GroupRepository,
 	eventQueue queue.Queuer) *http.Server {
 
-	app := newApplicationHandler(eventRepo, eventDeliveryRepo, appRepo, orgRepo, eventQueue)
+	app := newApplicationHandler(eventRepo, eventDeliveryRepo, appRepo, orgRepo, apiKeyRepo, eventQueue)
 
 	srv := &http.Server{
 		Handler:      buildRoutes(app),

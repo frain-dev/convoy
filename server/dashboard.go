@@ -5,8 +5,7 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/frain-dev/convoy"
-	"github.com/frain-dev/convoy/config"
+	"github.com/frain-dev/convoy/datastore"
 	"github.com/frain-dev/convoy/server/models"
 	"github.com/frain-dev/convoy/util"
 	"github.com/go-chi/render"
@@ -20,8 +19,8 @@ type AuthorizedLogin struct {
 }
 
 type ViewableConfiguration struct {
-	Strategy  config.StrategyConfiguration  `json:"strategy"`
-	Signature config.SignatureConfiguration `json:"signature"`
+	Strategy  datastore.StrategyConfiguration  `json:"strategy"`
+	Signature datastore.SignatureConfiguration `json:"signature"`
 }
 
 func (a *applicationHandler) GetDashboardSummary(w http.ResponseWriter, r *http.Request) {
@@ -46,7 +45,7 @@ func (a *applicationHandler) GetDashboardSummary(w http.ResponseWriter, r *http.
 		return
 	}
 
-	if !convoy.IsValidPeriod(period) {
+	if !datastore.IsValidPeriod(period) {
 		_ = render.Render(w, r, newErrorResponse("please specify a type query in (daily, weekly, monthly, yearly)", http.StatusBadRequest))
 		return
 	}
@@ -62,13 +61,13 @@ func (a *applicationHandler) GetDashboardSummary(w http.ResponseWriter, r *http.
 		}
 	}
 
-	p := convoy.PeriodValues[period]
+	p := datastore.PeriodValues[period]
 	if err := ensurePeriod(startT, endT); err != nil {
 		_ = render.Render(w, r, newErrorResponse(fmt.Sprintf("invalid period '%s': %s", period, err.Error()), http.StatusBadRequest))
 		return
 	}
 
-	searchParams := models.SearchParams{
+	searchParams := datastore.SearchParams{
 		CreatedAtStart: startT.Unix(),
 		CreatedAtEnd:   endT.Unix(),
 	}

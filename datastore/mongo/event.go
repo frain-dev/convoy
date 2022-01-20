@@ -5,8 +5,7 @@ import (
 	"errors"
 	"time"
 
-	"github.com/frain-dev/convoy"
-	"github.com/frain-dev/convoy/server/models"
+	"github.com/frain-dev/convoy/datastore"
 	"github.com/frain-dev/convoy/util"
 	pager "github.com/gobeam/mongo-go-pagination"
 	"github.com/google/uuid"
@@ -21,7 +20,7 @@ type eventRepo struct {
 	inner *mongo.Collection
 }
 
-func NewEventRepository(db *mongo.Database) convoy.EventRepository {
+func NewEventRepository(db *mongo.Database) datastore.EventRepository {
 	return &eventRepo{
 		inner: db.Collection(EventCollection),
 	}
@@ -33,7 +32,7 @@ var monthlyIntervalFormat = "%Y-%m"  // 1 month
 var yearlyIntervalFormat = "%Y"      // 1 month
 
 func (db *eventRepo) CreateEvent(ctx context.Context,
-	message *convoy.Event) error {
+	message *datastore.Event) error {
 
 	message.ID = primitive.NewObjectID()
 
@@ -52,7 +51,7 @@ func (db *eventRepo) CountGroupMessages(ctx context.Context, groupID string) (in
 	filter := bson.M{
 		"app_metadata.group_id": groupID,
 		"document_status": bson.M{
-			"$ne": convoy.DeletedDocumentStatus,
+			"$ne": datastore.DeletedDocumentStatus,
 		},
 	}
 
@@ -68,7 +67,7 @@ func (db *eventRepo) DeleteGroupEvents(ctx context.Context, groupID string) erro
 	update := bson.M{
 		"$set": bson.M{
 			"deleted_at":      primitive.NewDateTimeFromTime(time.Now()),
-			"document_status": convoy.DeletedDocumentStatus,
+			"document_status": datastore.DeletedDocumentStatus,
 		},
 	}
 
@@ -81,7 +80,7 @@ func (db *eventRepo) DeleteGroupEvents(ctx context.Context, groupID string) erro
 	return nil
 }
 
-func (db *eventRepo) LoadEventIntervals(ctx context.Context, groupID string, searchParams models.SearchParams, period convoy.Period, interval int) ([]models.EventInterval, error) {
+func (db *eventRepo) LoadEventIntervals(ctx context.Context, groupID string, searchParams datastore.SearchParams, period datastore.Period, interval int) ([]datastore.EventInterval, error) {
 
 	start := searchParams.CreatedAtStart
 	end := searchParams.CreatedAtEnd
@@ -92,7 +91,7 @@ func (db *eventRepo) LoadEventIntervals(ctx context.Context, groupID string, sea
 	matchStage := bson.D{{Key: "$match", Value: bson.D{
 		{Key: "app_metadata.group_id", Value: groupID},
 		{Key: "document_status", Value: bson.D{
-			{Key: "$ne", Value: convoy.DeletedDocumentStatus},
+			{Key: "$ne", Value: datastore.DeletedDocumentStatus},
 		}},
 		{Key: "created_at", Value: bson.D{
 			{Key: "$gte", Value: primitive.NewDateTimeFromTime(time.Unix(start, 0))},
@@ -104,16 +103,16 @@ func (db *eventRepo) LoadEventIntervals(ctx context.Context, groupID string, sea
 	var timeComponent string
 	var format string
 	switch period {
-	case convoy.Daily:
+	case datastore.Daily:
 		timeComponent = "$dayOfYear"
 		format = dailyIntervalFormat
-	case convoy.Weekly:
+	case datastore.Weekly:
 		timeComponent = "$week"
 		format = weeklyIntervalFormat
-	case convoy.Monthly:
+	case datastore.Monthly:
 		timeComponent = "$month"
 		format = monthlyIntervalFormat
-	case convoy.Yearly:
+	case datastore.Yearly:
 		timeComponent = "$year"
 		format = yearlyIntervalFormat
 	default:
@@ -144,66 +143,66 @@ func (db *eventRepo) LoadEventIntervals(ctx context.Context, groupID string, sea
 		log.WithError(err).Errorln("aggregate error")
 		return nil, err
 	}
-	var eventsIntervals []models.EventInterval
+	var eventsIntervals []datastore.EventInterval
 	if err = data.All(ctx, &eventsIntervals); err != nil {
 		log.WithError(err).Error("marshal error")
 		return nil, err
 	}
 	if eventsIntervals == nil {
-		eventsIntervals = make([]models.EventInterval, 0)
+		eventsIntervals = make([]datastore.EventInterval, 0)
 	}
 
 	return eventsIntervals, nil
 }
 
-func (db *eventRepo) LoadEventsPagedByAppId(ctx context.Context, appId string, searchParams models.SearchParams, pageable models.Pageable) ([]convoy.Event, models.PaginationData, error) {
-	filter := bson.M{"app_id": appId, "document_status": bson.M{"$ne": convoy.DeletedDocumentStatus}, "created_at": getCreatedDateFilter(searchParams)}
+func (db *eventRepo) LoadEventsPagedByAppId(ctx context.Context, appId string, searchParams datastore.SearchParams, pageable datastore.Pageable) ([]datastore.Event, datastore.PaginationData, error) {
+	filter := bson.M{"app_id": appId, "document_status": bson.M{"$ne": datastore.DeletedDocumentStatus}, "created_at": getCreatedDateFilter(searchParams)}
 
-	var messages []convoy.Event
+	var messages []datastore.Event
 	paginatedData, err := pager.New(db.inner).Context(ctx).Limit(int64(pageable.PerPage)).Page(int64(pageable.Page)).Sort("created_at", pageable.Sort).Filter(filter).Decode(&messages).Find()
 	if err != nil {
-		return messages, models.PaginationData{}, err
+		return messages, datastore.PaginationData{}, err
 	}
 
 	if messages == nil {
-		messages = make([]convoy.Event, 0)
+		messages = make([]datastore.Event, 0)
 	}
 
-	return messages, models.PaginationData(paginatedData.Pagination), nil
+	return messages, datastore.PaginationData(paginatedData.Pagination), nil
 }
 
-func (db *eventRepo) FindEventByID(ctx context.Context, id string) (*convoy.Event, error) {
-	m := new(convoy.Event)
+func (db *eventRepo) FindEventByID(ctx context.Context, id string) (*datastore.Event, error) {
+	m := new(datastore.Event)
 
-	filter := bson.M{"uid": id, "document_status": bson.M{"$ne": convoy.DeletedDocumentStatus}}
+	filter := bson.M{"uid": id, "document_status": bson.M{"$ne": datastore.DeletedDocumentStatus}}
 
 	err := db.inner.FindOne(ctx, filter).
 		Decode(&m)
 	if errors.Is(err, mongo.ErrNoDocuments) {
-		err = convoy.ErrEventNotFound
+		err = datastore.ErrEventNotFound
 	}
 
 	return m, err
 }
 
-func (db *eventRepo) LoadEventsScheduledForPosting(ctx context.Context) ([]convoy.Event, error) {
+func (db *eventRepo) LoadEventsScheduledForPosting(ctx context.Context) ([]datastore.Event, error) {
 
-	filter := bson.M{"status": convoy.ScheduledEventStatus,
-		"document_status":         bson.M{"$ne": convoy.DeletedDocumentStatus},
+	filter := bson.M{"status": datastore.ScheduledEventStatus,
+		"document_status":         bson.M{"$ne": datastore.DeletedDocumentStatus},
 		"metadata.next_send_time": bson.M{"$lte": primitive.NewDateTimeFromTime(time.Now())}}
 
 	return db.loadEventsByFilter(ctx, filter, nil)
 }
 
-func (db *eventRepo) loadEventsByFilter(ctx context.Context, filter bson.M, findOptions *options.FindOptions) ([]convoy.Event, error) {
-	messages := make([]convoy.Event, 0)
+func (db *eventRepo) loadEventsByFilter(ctx context.Context, filter bson.M, findOptions *options.FindOptions) ([]datastore.Event, error) {
+	messages := make([]datastore.Event, 0)
 	cur, err := db.inner.Find(ctx, filter, findOptions)
 	if err != nil {
 		return messages, err
 	}
 
 	for cur.Next(ctx) {
-		var message convoy.Event
+		var message datastore.Event
 		if err := cur.Decode(&message); err != nil {
 			return messages, err
 		}
@@ -222,61 +221,61 @@ func (db *eventRepo) loadEventsByFilter(ctx context.Context, filter bson.M, find
 	return messages, nil
 }
 
-func (db *eventRepo) LoadEventsForPostingRetry(ctx context.Context) ([]convoy.Event, error) {
+func (db *eventRepo) LoadEventsForPostingRetry(ctx context.Context) ([]datastore.Event, error) {
 
 	filter := bson.M{
 		"$and": []bson.M{
-			{"status": convoy.RetryEventStatus},
+			{"status": datastore.RetryEventStatus},
 			{"metadata.next_send_time": bson.M{"$lte": primitive.NewDateTimeFromTime(time.Now())}},
-			{"document_status": bson.M{"$ne": convoy.DeletedDocumentStatus}},
+			{"document_status": bson.M{"$ne": datastore.DeletedDocumentStatus}},
 		},
 	}
 
 	return db.loadEventsByFilter(ctx, filter, nil)
 }
 
-func (db *eventRepo) LoadAbandonedEventsForPostingRetry(ctx context.Context) ([]convoy.Event, error) {
+func (db *eventRepo) LoadAbandonedEventsForPostingRetry(ctx context.Context) ([]datastore.Event, error) {
 	filter := bson.M{
 		"$and": []bson.M{
-			{"status": convoy.ProcessingEventStatus},
+			{"status": datastore.ProcessingEventStatus},
 			{"metadata.next_send_time": bson.M{"$lte": primitive.NewDateTimeFromTime(time.Now())}},
-			{"document_status": bson.M{"$ne": convoy.DeletedDocumentStatus}},
+			{"document_status": bson.M{"$ne": datastore.DeletedDocumentStatus}},
 		},
 	}
 
 	return db.loadEventsByFilter(ctx, filter, nil)
 }
 
-func (db *eventRepo) LoadEventsPaged(ctx context.Context, groupID string, appId string, searchParams models.SearchParams, pageable models.Pageable) ([]convoy.Event, models.PaginationData, error) {
-	filter := bson.M{"document_status": bson.M{"$ne": convoy.DeletedDocumentStatus}, "created_at": getCreatedDateFilter(searchParams)}
+func (db *eventRepo) LoadEventsPaged(ctx context.Context, groupID string, appId string, searchParams datastore.SearchParams, pageable datastore.Pageable) ([]datastore.Event, datastore.PaginationData, error) {
+	filter := bson.M{"document_status": bson.M{"$ne": datastore.DeletedDocumentStatus}, "created_at": getCreatedDateFilter(searchParams)}
 
 	hasAppFilter := !util.IsStringEmpty(appId)
 	hasGroupFilter := !util.IsStringEmpty(groupID)
 
 	if hasAppFilter && hasGroupFilter {
-		filter = bson.M{"app_metadata.group_id": groupID, "app_metadata.uid": appId, "document_status": bson.M{"$ne": convoy.DeletedDocumentStatus},
+		filter = bson.M{"app_metadata.group_id": groupID, "app_metadata.uid": appId, "document_status": bson.M{"$ne": datastore.DeletedDocumentStatus},
 			"created_at": getCreatedDateFilter(searchParams)}
 	} else if hasAppFilter {
-		filter = bson.M{"app_id": appId, "document_status": bson.M{"$ne": convoy.DeletedDocumentStatus},
+		filter = bson.M{"app_id": appId, "document_status": bson.M{"$ne": datastore.DeletedDocumentStatus},
 			"created_at": getCreatedDateFilter(searchParams)}
 	} else if hasGroupFilter {
-		filter = bson.M{"app_metadata.group_id": groupID, "document_status": bson.M{"$ne": convoy.DeletedDocumentStatus},
+		filter = bson.M{"app_metadata.group_id": groupID, "document_status": bson.M{"$ne": datastore.DeletedDocumentStatus},
 			"created_at": getCreatedDateFilter(searchParams)}
 	}
 
-	var messages []convoy.Event
+	var messages []datastore.Event
 	paginatedData, err := pager.New(db.inner).Context(ctx).Limit(int64(pageable.PerPage)).Page(int64(pageable.Page)).Sort("created_at", pageable.Sort).Filter(filter).Decode(&messages).Find()
 	if err != nil {
-		return messages, models.PaginationData{}, err
+		return messages, datastore.PaginationData{}, err
 	}
 
 	if messages == nil {
-		messages = make([]convoy.Event, 0)
+		messages = make([]datastore.Event, 0)
 	}
 
-	return messages, models.PaginationData(paginatedData.Pagination), nil
+	return messages, datastore.PaginationData(paginatedData.Pagination), nil
 }
 
-func getCreatedDateFilter(searchParams models.SearchParams) bson.M {
+func getCreatedDateFilter(searchParams datastore.SearchParams) bson.M {
 	return bson.M{"$gte": primitive.NewDateTimeFromTime(time.Unix(searchParams.CreatedAtStart, 0)), "$lte": primitive.NewDateTimeFromTime(time.Unix(searchParams.CreatedAtEnd, 0))}
 }
