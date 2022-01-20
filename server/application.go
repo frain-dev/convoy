@@ -76,6 +76,7 @@ func (a *applicationHandler) GetApp(w http.ResponseWriter, r *http.Request) {
 // @Param perPage query string false "results per page"
 // @Param page query string false "page number"
 // @Param sort query string false "sort order"
+// @Param q query string false "app title"
 // @Success 200 {object} serverResponse{data=pagedResponse{content=[]datastore.Application}}
 // @Failure 400,401,500 {object} serverResponse{data=Stub}
 // @Security ApiKeyAuth
