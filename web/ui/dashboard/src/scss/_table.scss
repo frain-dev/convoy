@@ -27,6 +27,10 @@
 	.dropdown {
 		position: relative;
 
+		&.large {
+			min-width: 145px;
+		}
+
 		.dropdown--list {
 			position: absolute;
 			top: 110%;
