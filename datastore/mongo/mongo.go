@@ -101,19 +101,24 @@ func (c *Client) EventDeliveryRepo() datastore.EventDeliveryRepository {
 }
 
 func (c *Client) ensureMongoIndices() {
-	c.ensureIndex(GroupCollection, "uid", true)
-	c.ensureIndex(GroupCollection, "name", true)
-	c.ensureIndex(AppCollections, "uid", true)
-	c.ensureIndex(EventCollection, "uid", true)
-	c.ensureIndex(EventCollection, "event_type", false)
+	c.ensureIndex(GroupCollection, "uid", true, nil)
+	c.ensureIndex(GroupCollection, "name", true, bson.M{"document_status": bson.M{"$eq": datastore.ActiveDocumentStatus}})
+	c.ensureIndex(AppCollections, "uid", true, nil)
+	c.ensureIndex(EventCollection, "uid", true, nil)
+	c.ensureIndex(EventCollection, "event_type", false, nil)
 }
 
 // ensureIndex - ensures an index is created for a specific field in a collection
-func (c *Client) ensureIndex(collectionName string, field string, unique bool) bool {
+func (c *Client) ensureIndex(collectionName string, field string, unique bool, partialFilterExpression interface{}) bool {
+	createIndexOpts := &options.IndexOptions{Unique: &unique}
+
+	if partialFilterExpression != nil {
+		createIndexOpts.SetPartialFilterExpression(partialFilterExpression)
+	}
 
 	mod := mongo.IndexModel{
 		Keys:    bson.M{field: 1}, // index in ascending order or -1 for descending order
-		Options: options.Index().SetUnique(unique),
+		Options: createIndexOpts,
 	}
 
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
