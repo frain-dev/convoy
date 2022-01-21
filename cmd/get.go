@@ -29,7 +29,7 @@ func getApplications(a *app) *cobra.Command {
 		Aliases: []string{"apps"},
 		RunE: func(cmd *cobra.Command, args []string) error {
 
-			apps, _, err := a.applicationRepo.LoadApplicationsPaged(context.Background(), "", datastore.Pageable{
+			apps, _, err := a.applicationRepo.LoadApplicationsPaged(context.Background(), "", "", datastore.Pageable{
 				Page:    0,
 				PerPage: 50,
 			})

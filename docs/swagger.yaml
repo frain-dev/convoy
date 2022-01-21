@@ -417,6 +417,10 @@ paths:
         in: query
         name: sort
         type: string
+      - description: app title
+        in: query
+        name: q
+        type: string
       produces:
       - application/json
       responses:

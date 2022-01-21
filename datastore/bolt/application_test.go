@@ -29,6 +29,7 @@ func Test_LoadApplicationsPaged(t *testing.T) {
 		name     string
 		gid      string
 		pageData datastore.Pageable
+		q        string
 		groups   []Group
 		expected Expected
 	}{
@@ -45,13 +46,14 @@ func Test_LoadApplicationsPaged(t *testing.T) {
 			gid: "",
 			expected: Expected{
 				AppCount:       3,
-				paginationData: datastore.PaginationData{Total: 10, TotalPage: 4, Page: 1, PerPage: 3, Prev: 0, Next: 2},
+				paginationData: datastore.PaginationData{Total: 12, TotalPage: 4, Page: 1, PerPage: 3, Prev: 0, Next: 2},
 			},
 		},
 		{
 			name:     "Filtering using Group ID",
 			pageData: datastore.Pageable{Page: 1, PerPage: 3},
 			gid:      "uid-1",
+			q:        "",
 			groups: []Group{
 				{
 					UID:      "uid-1",
@@ -71,13 +73,14 @@ func Test_LoadApplicationsPaged(t *testing.T) {
 			},
 			expected: Expected{
 				AppCount:       3,
-				paginationData: datastore.PaginationData{Total: 10, TotalPage: 4, Page: 1, PerPage: 3, Prev: 0, Next: 2},
+				paginationData: datastore.PaginationData{Total: 12, TotalPage: 4, Page: 1, PerPage: 3, Prev: 0, Next: 2},
 			},
 		},
 		{
 			name:     "Filtering using Group ID - Total less than PerPage",
 			pageData: datastore.Pageable{Page: 1, PerPage: 10},
 			gid:      "uid-1",
+			q:        "",
 			groups: []Group{
 				{
 					UID:      "uid-1",
@@ -96,8 +99,89 @@ func Test_LoadApplicationsPaged(t *testing.T) {
 				},
 			},
 			expected: Expected{
-				AppCount:       5,
-				paginationData: datastore.PaginationData{Total: 5, TotalPage: 1, Page: 1, PerPage: 10, Prev: 0, Next: 2},
+				AppCount:       7,
+				paginationData: datastore.PaginationData{Total: 7, TotalPage: 1, Page: 1, PerPage: 10, Prev: 0, Next: 2},
+			},
+		},
+		{
+			name:     "Filtering using only title",
+			pageData: datastore.Pageable{Page: 1, PerPage: 10},
+			gid:      "",
+			q:        "App",
+			groups: []Group{
+				{
+					UID:      "uid-1",
+					Name:     "Group 1",
+					AppCount: 5,
+				},
+				{
+					UID:      "uid-2",
+					Name:     "Group 2",
+					AppCount: 3,
+				},
+				{
+					UID:      "uid-3",
+					Name:     "Group 3",
+					AppCount: 2,
+				},
+			},
+			expected: Expected{
+				AppCount:       10,
+				paginationData: datastore.PaginationData{Total: 10, TotalPage: 1, Page: 1, PerPage: 10, Prev: 0, Next: 2},
+			},
+		},
+		{
+			name:     "Filtering using Title and Group ID",
+			pageData: datastore.Pageable{Page: 1, PerPage: 10},
+			gid:      "uid-2",
+			q:        "v",
+			groups: []Group{
+				{
+					UID:      "uid-1",
+					Name:     "Group 1",
+					AppCount: 5,
+				},
+				{
+					UID:      "uid-2",
+					Name:     "Group 2",
+					AppCount: 3,
+				},
+				{
+					UID:      "uid-3",
+					Name:     "Group 3",
+					AppCount: 1,
+				},
+			},
+			expected: Expected{
+				AppCount:       2,
+				paginationData: datastore.PaginationData{Total: 2, TotalPage: 1, Page: 1, PerPage: 10, Prev: 0, Next: 2},
+			},
+		},
+		{
+			name:     "Filtering using Title and Group ID Again",
+			pageData: datastore.Pageable{Page: 1, PerPage: 10},
+			gid:      "uid-2",
+			q:        "1",
+			groups: []Group{
+				{
+					UID:      "uid-1",
+					Name:     "Group 1",
+					AppCount: 5,
+				},
+				{
+					UID:      "uid-2",
+					Name:     "Group 2",
+					AppCount: 3,
+				},
+				{
+					UID:      "uid-3",
+					Name:     "Group 3",
+					AppCount: 1,
+				},
+			},
+			expected: Expected{
+				AppCount:       1,
+				paginationData: datastore.PaginationData{Total: 1, TotalPage: 1, Page: 1, PerPage: 10, Prev: 0, Next: 2},
 			},
 		},
 	}
@@ -124,16 +208,35 @@ func Test_LoadApplicationsPaged(t *testing.T) {
 				}
 			}
 
-			_, data, err := appRepo.LoadApplicationsPaged(context.Background(), tc.gid, tc.pageData)
+			// obvious apps for filter
+			a := &datastore.Application{
+				Title:   "David",
+				GroupID: tc.gid,
+				UID:     uuid.NewString(),
+			}
+			require.NoError(t, appRepo.CreateApplication(context.Background(), a))
+
+			b := &datastore.Application{
+				Title:   "Villan",
+				GroupID: tc.gid,
+				UID:     uuid.NewString(),
+			}
+			require.NoError(t, appRepo.CreateApplication(context.Background(), b))
+
+			apps, data, err := appRepo.LoadApplicationsPaged(context.Background(), tc.gid, tc.q, tc.pageData)
 
 			require.NoError(t, err)
 
+			require.Equal(t, tc.expected.AppCount, len(apps))
+
+			require.Equal(t, tc.expected.paginationData.Total, data.Total)
 			require.Equal(t, tc.expected.paginationData.TotalPage, data.TotalPage)
+
 			require.Equal(t, tc.expected.paginationData.Next, data.Next)
+			require.Equal(t, tc.expected.paginationData.Prev, data.Prev)
+
 			require.Equal(t, tc.expected.paginationData.Page, data.Page)
 			require.Equal(t, tc.expected.paginationData.PerPage, data.PerPage)
-			require.Equal(t, tc.expected.paginationData.Prev, data.Prev)
-			require.Equal(t, tc.expected.paginationData.Total, data.Total)
 		})
 	}
 }

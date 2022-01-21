@@ -422,6 +422,11 @@ paths:
         name: sort
         schema:
           type: string
+      - description: app title
+        in: query
+        name: q
+        schema:
+          type: string
       responses:
         "200":
           content:
