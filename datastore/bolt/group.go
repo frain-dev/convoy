@@ -1,114 +1,127 @@
 package bolt
 
 import (
-	"bytes"
 	"context"
 	"encoding/json"
-	"fmt"
 
 	"github.com/frain-dev/convoy/datastore"
 	"go.etcd.io/bbolt"
 )
 
-const name string = "groups"
-
 type groupRepo struct {
-	db *bbolt.DB
+	db         *bbolt.DB
+	bucketName string
 }
 
 func NewGroupRepo(db *bbolt.DB) datastore.GroupRepository {
-	return &groupRepo{db: db}
+	bucketName := "groups"
+	err := db.Update(func(tx *bbolt.Tx) error {
+		_, err := tx.CreateBucketIfNotExists([]byte(bucketName))
+		return err
+	})
+
+	if err != nil {
+		return nil
+	}
+
+	return &groupRepo{db: db, bucketName: bucketName}
 }
 
-func (g *groupRepo) FetchGroupsByIDs(ctx context.Context, ids []string) ([]datastore.Group, error) {
-	return nil, nil
-}
-
-func (g *groupRepo) LoadGroups(context.Context, *datastore.GroupFilter) ([]*datastore.Group, error) {
+func (g *groupRepo) LoadGroups(ctx context.Context, filter *datastore.GroupFilter) ([]*datastore.Group, error) {
 	var groups []*datastore.Group
 	err := g.db.View(func(tx *bbolt.Tx) error {
-		c := tx.Bucket([]byte(bucketName)).Cursor()
+		b := tx.Bucket([]byte(g.bucketName))
 
-		prefix := []byte(name)
-		var grpSlice [][]byte
-
-		for k, v := c.Seek(prefix); k != nil && bytes.HasPrefix(k, prefix); k, v = c.Next() {
-			fmt.Printf("key=%s, value=%s\n", k, v)
-			grpSlice = append(grpSlice, v)
-		}
-
-		for i := 0; i < len(grpSlice); i++ {
+		return b.ForEach(func(k, v []byte) error {
 			var grp *datastore.Group
-			mErr := json.Unmarshal(grpSlice[i], &grp)
-			if mErr != nil {
-				return mErr
+			err := json.Unmarshal(v, &grp)
+			if err != nil {
+				return err
 			}
 
-			groups = append(groups, grp)
-		}
+			if len(filter.Names) > 0 {
+				for _, grpName := range filter.Names {
+					if grpName == grp.Name {
+						groups = append(groups, grp)
+					}
+				}
+			} else {
+				groups = append(groups, grp)
+			}
 
-		return nil
+			return nil
+		})
 	})
 
 	return groups, err
 }
 
 func (g *groupRepo) CreateGroup(ctx context.Context, group *datastore.Group) error {
-	return createUpdateGroup(g.db, group)
+	return g.createUpdateGroup(group)
 }
 
 func (g *groupRepo) UpdateGroup(_ context.Context, group *datastore.Group) error {
-	return createUpdateGroup(g.db, group)
+	return g.createUpdateGroup(group)
 }
 
 func (g *groupRepo) FetchGroupByID(ctx context.Context, gid string) (*datastore.Group, error) {
 	var group *datastore.Group
 	err := g.db.View(func(tx *bbolt.Tx) error {
-		id := name + ":" + gid
+		b := tx.Bucket([]byte(g.bucketName))
 
-		grp := tx.Bucket([]byte(bucketName)).Get([]byte(id))
-		if grp == nil {
-			return fmt.Errorf("group with id (%s) does not exist", gid)
+		buf := b.Get([]byte(gid))
+		if buf == nil {
+			return datastore.ErrGroupNotFound
 		}
 
-		var _grp *datastore.Group
-		mErr := json.Unmarshal(grp, &_grp)
-		if mErr != nil {
-			return mErr
-		}
-		group = _grp
-
-		return nil
+		return json.Unmarshal(buf, &group)
 	})
 
 	return group, err
 }
 
-func (g *groupRepo) DeleteGroup(ctx context.Context, gid string) error {
-	return g.db.Update(func(tx *bbolt.Tx) error {
-		id := name + ":" + gid
+func (g *groupRepo) FetchGroupsByIDs(ctx context.Context, ids []string) ([]datastore.Group, error) {
+	var groups []datastore.Group
+	err := g.db.View(func(tx *bbolt.Tx) error {
+		b := tx.Bucket([]byte(g.bucketName))
 
-		grp := tx.Bucket([]byte(bucketName)).Delete([]byte(id))
-		if grp == nil {
-			return fmt.Errorf("group with id (%s) does not exist", gid)
-		}
+		return b.ForEach(func(k, v []byte) error {
+			var grp datastore.Group
+			err := json.Unmarshal(v, &grp)
+			if err != nil {
+				return err
+			}
 
-		return nil
+			for _, id := range ids {
+				if id == grp.UID {
+					groups = append(groups, grp)
+				}
+			}
+
+			return nil
+		})
 	})
 
+	return groups, err
 }
 
-func createUpdateGroup(db *bbolt.DB, group *datastore.Group) error {
-	return db.Update(func(tx *bbolt.Tx) error {
-		b := tx.Bucket([]byte(bucketName))
+func (g *groupRepo) DeleteGroup(ctx context.Context, gid string) error {
+	return g.db.Update(func(tx *bbolt.Tx) error {
+		b := tx.Bucket([]byte(g.bucketName))
+		return b.Delete([]byte(gid))
+	})
+}
+
+func (g *groupRepo) createUpdateGroup(group *datastore.Group) error {
+	return g.db.Update(func(tx *bbolt.Tx) error {
+		b := tx.Bucket([]byte(g.bucketName))
 
 		grp, err := json.Marshal(group)
 		if err != nil {
 			return err
 		}
 
-		id := name + ":" + group.UID
-		pErr := b.Put([]byte(id), grp)
+		pErr := b.Put([]byte(group.UID), grp)
 		if pErr != nil {
 			return pErr
 		}
