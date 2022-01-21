@@ -24,6 +24,8 @@ type ViewableConfiguration struct {
 }
 
 func (a *applicationHandler) GetDashboardSummary(w http.ResponseWriter, r *http.Request) {
+	txn := a.tracer.StartTransaction("dashboard_summary")
+	defer txn.End()
 	format := "2006-01-02T15:04:05"
 	startDate := r.URL.Query().Get("startDate")
 	endDate := r.URL.Query().Get("endDate")
@@ -72,15 +74,17 @@ func (a *applicationHandler) GetDashboardSummary(w http.ResponseWriter, r *http.
 		CreatedAtEnd:   endT.Unix(),
 	}
 
-	group := getGroupFromContext(r.Context())
+	ctx := a.tracer.NewContext(r.Context(), txn)
 
-	apps, err := a.appRepo.SearchApplicationsByGroupId(r.Context(), group.UID, searchParams)
+	group := getGroupFromContext(ctx)
+
+	apps, err := a.appRepo.SearchApplicationsByGroupId(ctx, group.UID, searchParams)
 	if err != nil {
 		_ = render.Render(w, r, newErrorResponse("an error occurred while searching apps", http.StatusInternalServerError))
 		return
 	}
 
-	eventsSent, messages, err := computeDashboardMessages(r.Context(), group.UID, a.eventRepo, searchParams, p)
+	eventsSent, messages, err := computeDashboardMessages(ctx, group.UID, a.eventRepo, searchParams, p)
 	if err != nil {
 		_ = render.Render(w, r, newErrorResponse("an error occurred while fetching messages", http.StatusInternalServerError))
 		return

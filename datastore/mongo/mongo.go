@@ -13,6 +13,7 @@ import (
 	"github.com/frain-dev/convoy/datastore"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
+	"github.com/newrelic/go-agent/v3/integrations/nrmongo"
 )
 
 const (
@@ -34,7 +35,9 @@ func New(cfg config.Configuration) (datastore.DatabaseClient, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 
-	client, err := mongo.Connect(ctx, options.Client().ApplyURI(cfg.Database.Dsn))
+	nrMon := nrmongo.NewCommandMonitor(nil)
+
+	client, err := mongo.Connect(ctx, options.Client().ApplyURI(cfg.Database.Dsn).SetMonitor(nrMon))
 	if err != nil {
 		return nil, err
 	}

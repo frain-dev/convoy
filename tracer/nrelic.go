@@ -1,6 +1,7 @@
 package tracer
 
 import (
+	"context"
 	"errors"
 	"net/http"
 
@@ -51,4 +52,8 @@ func (nr *NewRelicClient) SetWebResponse(w http.ResponseWriter, txn *newrelic.Tr
 
 func (nr *NewRelicClient) RequestWithTransactionContext(r *http.Request, txn *newrelic.Transaction) *http.Request {
 	return newrelic.RequestWithTransactionContext(r, txn)
+}
+
+func (nr *NewRelicClient) NewContext(context context.Context, txn *newrelic.Transaction) context.Context {
+	return newrelic.NewContext(context, txn)
 }
