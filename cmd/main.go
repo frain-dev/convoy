@@ -119,7 +119,6 @@ func main() {
 				log.Warnf("signature header is blank. setting default %s", config.DefaultSignatureHeader)
 			}
 
-			app.groupRepo = db.GroupRepo()
 			app.apiKeyRepo = db.APIRepo()
 			app.groupRepo = db.GroupRepo()
 			app.eventRepo = db.EventRepo()
