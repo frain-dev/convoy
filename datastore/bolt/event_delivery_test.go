@@ -262,45 +262,691 @@ func Test_eventDeliveryRepo_UpdateStatusOfEventDelivery(t *testing.T) {
 }
 
 func Test_eventDeliveryRepo_LoadEventDeliveriesPaged(t *testing.T) {
-	db, closeFn := getDB(t)
-	defer closeFn()
+	ctx := context.Background()
 
-	e := NewEventDeliveryRepository(db)
+	type args struct {
+		groupID      string
+		appID        string
+		eventID      string
+		status       []datastore.EventDeliveryStatus
+		searchParams datastore.SearchParams
+		pageable     datastore.Pageable
+	}
 
-	delivery1 := datastore.EventDelivery{
-		UID: uuid.NewString(),
-		EventMetadata: &datastore.EventMetadata{
-			UID:       uuid.NewString(),
-			EventType: "*",
+	tests := []struct {
+		name               string
+		args               args
+		eventDeliveries    []datastore.EventDelivery
+		wantCount          int
+		wantPaginationData datastore.PaginationData
+		wantErr            bool
+	}{
+		{
+			name: "should_filter_event_deliveries_by_app_id_successfully",
+			args: args{
+				groupID: "",
+				appID:   "123",
+				eventID: "",
+				status:  nil,
+				searchParams: datastore.SearchParams{
+					CreatedAtStart: 0,
+					CreatedAtEnd:   0,
+				},
+				pageable: datastore.Pageable{
+					Page:    1,
+					PerPage: 10,
+					Sort:    0,
+				},
+			},
+			eventDeliveries: []datastore.EventDelivery{
+				{
+					ID:  primitive.NewObjectID(),
+					UID: uuid.NewString(),
+					EventMetadata: &datastore.EventMetadata{
+						UID: "abcd",
+					},
+					AppMetadata: &datastore.AppMetadata{
+						UID:     "123",
+						GroupID: "abc",
+					},
+					Status:         datastore.ScheduledEventStatus,
+					CreatedAt:      primitive.NewDateTimeFromTime(time.Now()),
+					UpdatedAt:      primitive.NewDateTimeFromTime(time.Now()),
+					DocumentStatus: datastore.ActiveDocumentStatus,
+				},
+				{
+					ID:  primitive.NewObjectID(),
+					UID: uuid.NewString(),
+					EventMetadata: &datastore.EventMetadata{
+						UID: "daniel",
+					},
+					AppMetadata: &datastore.AppMetadata{
+						UID:     "123",
+						GroupID: "junior",
+					},
+					Status:         datastore.ScheduledEventStatus,
+					CreatedAt:      primitive.NewDateTimeFromTime(time.Now()),
+					UpdatedAt:      primitive.NewDateTimeFromTime(time.Now()),
+					DocumentStatus: datastore.ActiveDocumentStatus,
+				},
+				{
+					ID:  primitive.NewObjectID(),
+					UID: uuid.NewString(),
+					EventMetadata: &datastore.EventMetadata{
+						UID: uuid.NewString(),
+					},
+					AppMetadata: &datastore.AppMetadata{
+						UID:     uuid.NewString(),
+						GroupID: uuid.NewString(),
+					},
+					Status:         datastore.ScheduledEventStatus,
+					CreatedAt:      primitive.NewDateTimeFromTime(time.Now()),
+					UpdatedAt:      primitive.NewDateTimeFromTime(time.Now()),
+					DocumentStatus: datastore.ActiveDocumentStatus,
+				},
+			},
+			wantCount: 2,
+			wantPaginationData: datastore.PaginationData{
+				Total:     2,
+				Page:      1,
+				PerPage:   10,
+				Prev:      0,
+				Next:      2,
+				TotalPage: 1,
+			},
+			wantErr: false,
 		},
-		AppMetadata: &datastore.AppMetadata{UID: uuid.NewString()},
-	}
-
-	err := e.CreateEventDelivery(context.Background(), &delivery1)
-	if err != nil {
-		require.NoError(t, err)
-		return
-	}
-
-	delivery2 := datastore.EventDelivery{
-		UID: uuid.NewString(),
-		EventMetadata: &datastore.EventMetadata{
-			UID:       uuid.NewString(),
-			EventType: "*",
+		{
+			name: "should_filter_event_deliveries_by_group_id_successfully",
+			args: args{
+				groupID: "group2",
+				appID:   "",
+				eventID: "",
+				status:  nil,
+				searchParams: datastore.SearchParams{
+					CreatedAtStart: 0,
+					CreatedAtEnd:   0,
+				},
+				pageable: datastore.Pageable{
+					Page:    1,
+					PerPage: 10,
+					Sort:    0,
+				},
+			},
+			eventDeliveries: []datastore.EventDelivery{
+				{
+					ID:  primitive.NewObjectID(),
+					UID: uuid.NewString(),
+					EventMetadata: &datastore.EventMetadata{
+						UID: uuid.NewString(),
+					},
+					AppMetadata: &datastore.AppMetadata{
+						UID:     uuid.NewString(),
+						GroupID: "group2",
+					},
+					Status:         datastore.ScheduledEventStatus,
+					CreatedAt:      primitive.NewDateTimeFromTime(time.Now()),
+					UpdatedAt:      primitive.NewDateTimeFromTime(time.Now()),
+					DocumentStatus: datastore.ActiveDocumentStatus,
+				},
+				{
+					ID:  primitive.NewObjectID(),
+					UID: uuid.NewString(),
+					EventMetadata: &datastore.EventMetadata{
+						UID: uuid.NewString(),
+					},
+					AppMetadata: &datastore.AppMetadata{
+						UID:     uuid.NewString(),
+						GroupID: "group2",
+					},
+					Status:         datastore.ScheduledEventStatus,
+					CreatedAt:      primitive.NewDateTimeFromTime(time.Now()),
+					UpdatedAt:      primitive.NewDateTimeFromTime(time.Now()),
+					DocumentStatus: datastore.ActiveDocumentStatus,
+				},
+				{
+					ID:  primitive.NewObjectID(),
+					UID: uuid.NewString(),
+					EventMetadata: &datastore.EventMetadata{
+						UID: uuid.NewString(),
+					},
+					AppMetadata: &datastore.AppMetadata{
+						UID:     uuid.NewString(),
+						GroupID: uuid.NewString(),
+					},
+					Status:         datastore.ScheduledEventStatus,
+					CreatedAt:      primitive.NewDateTimeFromTime(time.Now()),
+					UpdatedAt:      primitive.NewDateTimeFromTime(time.Now()),
+					DocumentStatus: datastore.ActiveDocumentStatus,
+				},
+			},
+			wantCount: 2,
+			wantPaginationData: datastore.PaginationData{
+				Total:     2,
+				Page:      1,
+				PerPage:   10,
+				Prev:      0,
+				Next:      2,
+				TotalPage: 1,
+			},
+			wantErr: false,
 		},
-		AppMetadata: &datastore.AppMetadata{UID: uuid.NewString()},
+		{
+			name: "should_filter_event_deliveries_by_event_id_successfully",
+			args: args{
+				groupID: "",
+				appID:   "",
+				eventID: "event3",
+				status:  nil,
+				searchParams: datastore.SearchParams{
+					CreatedAtStart: 0,
+					CreatedAtEnd:   0,
+				},
+				pageable: datastore.Pageable{
+					Page:    1,
+					PerPage: 10,
+					Sort:    0,
+				},
+			},
+			eventDeliveries: []datastore.EventDelivery{
+				{
+					ID:  primitive.NewObjectID(),
+					UID: uuid.NewString(),
+					EventMetadata: &datastore.EventMetadata{
+						UID: "event3",
+					},
+					AppMetadata: &datastore.AppMetadata{
+						UID:     uuid.NewString(),
+						GroupID: uuid.NewString(),
+					},
+					Status:         datastore.ScheduledEventStatus,
+					CreatedAt:      primitive.NewDateTimeFromTime(time.Now()),
+					UpdatedAt:      primitive.NewDateTimeFromTime(time.Now()),
+					DocumentStatus: datastore.ActiveDocumentStatus,
+				},
+				{
+					ID:  primitive.NewObjectID(),
+					UID: uuid.NewString(),
+					EventMetadata: &datastore.EventMetadata{
+						UID: "event3",
+					},
+					AppMetadata: &datastore.AppMetadata{
+						UID:     uuid.NewString(),
+						GroupID: uuid.NewString(),
+					},
+					Status:         datastore.ScheduledEventStatus,
+					CreatedAt:      primitive.NewDateTimeFromTime(time.Now()),
+					UpdatedAt:      primitive.NewDateTimeFromTime(time.Now()),
+					DocumentStatus: datastore.ActiveDocumentStatus,
+				},
+				{
+					ID:  primitive.NewObjectID(),
+					UID: uuid.NewString(),
+					EventMetadata: &datastore.EventMetadata{
+						UID: uuid.NewString(),
+					},
+					AppMetadata: &datastore.AppMetadata{
+						UID:     uuid.NewString(),
+						GroupID: uuid.NewString(),
+					},
+					Status:         datastore.ScheduledEventStatus,
+					CreatedAt:      primitive.NewDateTimeFromTime(time.Now()),
+					UpdatedAt:      primitive.NewDateTimeFromTime(time.Now()),
+					DocumentStatus: datastore.ActiveDocumentStatus,
+				},
+			},
+			wantCount: 2,
+			wantPaginationData: datastore.PaginationData{
+				Total:     2,
+				Page:      1,
+				PerPage:   10,
+				Prev:      0,
+				Next:      2,
+				TotalPage: 1,
+			},
+			wantErr: false,
+		},
+		{
+			name: "should_filter_event_deliveries_by_status_successfully",
+			args: args{
+				groupID: "",
+				appID:   "",
+				eventID: "",
+				status:  []datastore.EventDeliveryStatus{datastore.ProcessingEventStatus, datastore.ScheduledEventStatus},
+				searchParams: datastore.SearchParams{
+					CreatedAtStart: 0,
+					CreatedAtEnd:   0,
+				},
+				pageable: datastore.Pageable{
+					Page:    1,
+					PerPage: 10,
+					Sort:    0,
+				},
+			},
+			eventDeliveries: []datastore.EventDelivery{
+				{
+					ID:  primitive.NewObjectID(),
+					UID: uuid.NewString(),
+					EventMetadata: &datastore.EventMetadata{
+						UID: uuid.NewString(),
+					},
+					AppMetadata: &datastore.AppMetadata{
+						UID:     uuid.NewString(),
+						GroupID: uuid.NewString(),
+					},
+					Status:         datastore.ScheduledEventStatus,
+					CreatedAt:      primitive.NewDateTimeFromTime(time.Now()),
+					UpdatedAt:      primitive.NewDateTimeFromTime(time.Now()),
+					DocumentStatus: datastore.ActiveDocumentStatus,
+				},
+				{
+					ID:  primitive.NewObjectID(),
+					UID: uuid.NewString(),
+					EventMetadata: &datastore.EventMetadata{
+						UID: uuid.NewString(),
+					},
+					AppMetadata: &datastore.AppMetadata{
+						UID:     uuid.NewString(),
+						GroupID: uuid.NewString(),
+					},
+					Status:         datastore.ProcessingEventStatus,
+					CreatedAt:      primitive.NewDateTimeFromTime(time.Now()),
+					UpdatedAt:      primitive.NewDateTimeFromTime(time.Now()),
+					DocumentStatus: datastore.ActiveDocumentStatus,
+				},
+				{
+					ID:  primitive.NewObjectID(),
+					UID: uuid.NewString(),
+					EventMetadata: &datastore.EventMetadata{
+						UID: uuid.NewString(),
+					},
+					AppMetadata: &datastore.AppMetadata{
+						UID:     uuid.NewString(),
+						GroupID: uuid.NewString(),
+					},
+					Status:         datastore.RetryEventStatus,
+					CreatedAt:      primitive.NewDateTimeFromTime(time.Now()),
+					UpdatedAt:      primitive.NewDateTimeFromTime(time.Now()),
+					DocumentStatus: datastore.ActiveDocumentStatus,
+				},
+				{
+					ID:  primitive.NewObjectID(),
+					UID: uuid.NewString(),
+					EventMetadata: &datastore.EventMetadata{
+						UID: uuid.NewString(),
+					},
+					AppMetadata: &datastore.AppMetadata{
+						UID:     uuid.NewString(),
+						GroupID: uuid.NewString(),
+					},
+					Status:         datastore.DiscardedEventStatus,
+					CreatedAt:      primitive.NewDateTimeFromTime(time.Now()),
+					UpdatedAt:      primitive.NewDateTimeFromTime(time.Now()),
+					DocumentStatus: datastore.ActiveDocumentStatus,
+				},
+				{
+					ID:  primitive.NewObjectID(),
+					UID: uuid.NewString(),
+					EventMetadata: &datastore.EventMetadata{
+						UID: uuid.NewString(),
+					},
+					AppMetadata: &datastore.AppMetadata{
+						UID:     uuid.NewString(),
+						GroupID: uuid.NewString(),
+					},
+					Status:         datastore.FailureEventStatus,
+					CreatedAt:      primitive.NewDateTimeFromTime(time.Now()),
+					UpdatedAt:      primitive.NewDateTimeFromTime(time.Now()),
+					DocumentStatus: datastore.ActiveDocumentStatus,
+				},
+			},
+			wantCount: 2,
+			wantPaginationData: datastore.PaginationData{
+				Total:     2,
+				Page:      1,
+				PerPage:   10,
+				Prev:      0,
+				Next:      2,
+				TotalPage: 1,
+			},
+			wantErr: false,
+		},
+		{
+			name: "should_filter_event_deliveries_by_status_successfully",
+			args: args{
+				groupID: "",
+				appID:   "",
+				eventID: "",
+				status:  []datastore.EventDeliveryStatus{datastore.ProcessingEventStatus, datastore.ScheduledEventStatus},
+				searchParams: datastore.SearchParams{
+					CreatedAtStart: 0,
+					CreatedAtEnd:   0,
+				},
+				pageable: datastore.Pageable{
+					Page:    1,
+					PerPage: 10,
+					Sort:    0,
+				},
+			},
+			eventDeliveries: []datastore.EventDelivery{
+				{
+					ID:  primitive.NewObjectID(),
+					UID: uuid.NewString(),
+					EventMetadata: &datastore.EventMetadata{
+						UID: uuid.NewString(),
+					},
+					AppMetadata: &datastore.AppMetadata{
+						UID:     uuid.NewString(),
+						GroupID: uuid.NewString(),
+					},
+					Status:         datastore.ScheduledEventStatus,
+					CreatedAt:      primitive.NewDateTimeFromTime(time.Now()),
+					UpdatedAt:      primitive.NewDateTimeFromTime(time.Now()),
+					DocumentStatus: datastore.ActiveDocumentStatus,
+				},
+				{
+					ID:  primitive.NewObjectID(),
+					UID: uuid.NewString(),
+					EventMetadata: &datastore.EventMetadata{
+						UID: uuid.NewString(),
+					},
+					AppMetadata: &datastore.AppMetadata{
+						UID:     uuid.NewString(),
+						GroupID: uuid.NewString(),
+					},
+					Status:         datastore.ProcessingEventStatus,
+					CreatedAt:      primitive.NewDateTimeFromTime(time.Now()),
+					UpdatedAt:      primitive.NewDateTimeFromTime(time.Now()),
+					DocumentStatus: datastore.ActiveDocumentStatus,
+				},
+				{
+					ID:  primitive.NewObjectID(),
+					UID: uuid.NewString(),
+					EventMetadata: &datastore.EventMetadata{
+						UID: uuid.NewString(),
+					},
+					AppMetadata: &datastore.AppMetadata{
+						UID:     uuid.NewString(),
+						GroupID: uuid.NewString(),
+					},
+					Status:         datastore.RetryEventStatus,
+					CreatedAt:      primitive.NewDateTimeFromTime(time.Now()),
+					UpdatedAt:      primitive.NewDateTimeFromTime(time.Now()),
+					DocumentStatus: datastore.ActiveDocumentStatus,
+				},
+				{
+					ID:  primitive.NewObjectID(),
+					UID: uuid.NewString(),
+					EventMetadata: &datastore.EventMetadata{
+						UID: uuid.NewString(),
+					},
+					AppMetadata: &datastore.AppMetadata{
+						UID:     uuid.NewString(),
+						GroupID: uuid.NewString(),
+					},
+					Status:         datastore.DiscardedEventStatus,
+					CreatedAt:      primitive.NewDateTimeFromTime(time.Now()),
+					UpdatedAt:      primitive.NewDateTimeFromTime(time.Now()),
+					DocumentStatus: datastore.ActiveDocumentStatus,
+				},
+				{
+					ID:  primitive.NewObjectID(),
+					UID: uuid.NewString(),
+					EventMetadata: &datastore.EventMetadata{
+						UID: uuid.NewString(),
+					},
+					AppMetadata: &datastore.AppMetadata{
+						UID:     uuid.NewString(),
+						GroupID: uuid.NewString(),
+					},
+					Status:         datastore.FailureEventStatus,
+					CreatedAt:      primitive.NewDateTimeFromTime(time.Now()),
+					UpdatedAt:      primitive.NewDateTimeFromTime(time.Now()),
+					DocumentStatus: datastore.ActiveDocumentStatus,
+				},
+			},
+			wantCount: 2,
+			wantPaginationData: datastore.PaginationData{
+				Total:     2,
+				Page:      1,
+				PerPage:   10,
+				Prev:      0,
+				Next:      2,
+				TotalPage: 1,
+			},
+			wantErr: false,
+		},
+		{
+			name: "should_filter_event_deliveries_by_status_successfully",
+			args: args{
+				groupID: "",
+				appID:   "",
+				eventID: "",
+				status:  nil,
+				searchParams: datastore.SearchParams{
+					CreatedAtStart: time.Date(2021, time.January, 1, 0, 0, 0, 0, time.Local).Unix(),
+					CreatedAtEnd:   time.Date(2021, time.August, 1, 0, 0, 0, 0, time.Local).Unix(),
+				},
+				pageable: datastore.Pageable{
+					Page:    1,
+					PerPage: 10,
+					Sort:    0,
+				},
+			},
+			eventDeliveries: []datastore.EventDelivery{
+				{
+					ID:  primitive.NewObjectID(),
+					UID: uuid.NewString(),
+					EventMetadata: &datastore.EventMetadata{
+						UID: uuid.NewString(),
+					},
+					AppMetadata: &datastore.AppMetadata{
+						UID:     uuid.NewString(),
+						GroupID: uuid.NewString(),
+					},
+					Status:         datastore.ScheduledEventStatus,
+					CreatedAt:      primitive.NewDateTimeFromTime(time.Date(2021, time.February, 1, 0, 0, 0, 0, time.Local)),
+					UpdatedAt:      primitive.NewDateTimeFromTime(time.Date(2021, time.February, 1, 0, 0, 0, 0, time.Local)),
+					DocumentStatus: datastore.ActiveDocumentStatus,
+				},
+				{
+					ID:  primitive.NewObjectID(),
+					UID: uuid.NewString(),
+					EventMetadata: &datastore.EventMetadata{
+						UID: uuid.NewString(),
+					},
+					AppMetadata: &datastore.AppMetadata{
+						UID:     uuid.NewString(),
+						GroupID: uuid.NewString(),
+					},
+					Status:         datastore.ProcessingEventStatus,
+					CreatedAt:      primitive.NewDateTimeFromTime(time.Date(2021, time.March, 1, 0, 0, 0, 0, time.Local)),
+					UpdatedAt:      primitive.NewDateTimeFromTime(time.Date(2021, time.March, 1, 0, 0, 0, 0, time.Local)),
+					DocumentStatus: datastore.ActiveDocumentStatus,
+				},
+				{
+					ID:  primitive.NewObjectID(),
+					UID: uuid.NewString(),
+					EventMetadata: &datastore.EventMetadata{
+						UID: uuid.NewString(),
+					},
+					AppMetadata: &datastore.AppMetadata{
+						UID:     uuid.NewString(),
+						GroupID: uuid.NewString(),
+					},
+					Status:         datastore.RetryEventStatus,
+					CreatedAt:      primitive.NewDateTimeFromTime(time.Date(2021, time.June, 1, 0, 0, 0, 0, time.Local)),
+					UpdatedAt:      primitive.NewDateTimeFromTime(time.Date(2021, time.June, 1, 0, 0, 0, 0, time.Local)),
+					DocumentStatus: datastore.ActiveDocumentStatus,
+				},
+				{
+					ID:  primitive.NewObjectID(),
+					UID: uuid.NewString(),
+					EventMetadata: &datastore.EventMetadata{
+						UID: uuid.NewString(),
+					},
+					AppMetadata: &datastore.AppMetadata{
+						UID:     uuid.NewString(),
+						GroupID: uuid.NewString(),
+					},
+					Status:         datastore.DiscardedEventStatus,
+					CreatedAt:      primitive.NewDateTimeFromTime(time.Now()),
+					UpdatedAt:      primitive.NewDateTimeFromTime(time.Now()),
+					DocumentStatus: datastore.ActiveDocumentStatus,
+				},
+				{
+					ID:  primitive.NewObjectID(),
+					UID: uuid.NewString(),
+					EventMetadata: &datastore.EventMetadata{
+						UID: uuid.NewString(),
+					},
+					AppMetadata: &datastore.AppMetadata{
+						UID:     uuid.NewString(),
+						GroupID: uuid.NewString(),
+					},
+					Status:         datastore.FailureEventStatus,
+					CreatedAt:      primitive.NewDateTimeFromTime(time.Now()),
+					UpdatedAt:      primitive.NewDateTimeFromTime(time.Now()),
+					DocumentStatus: datastore.ActiveDocumentStatus,
+				},
+			},
+			wantCount: 3,
+			wantPaginationData: datastore.PaginationData{
+				Total:     3,
+				Page:      1,
+				PerPage:   10,
+				Prev:      0,
+				Next:      2,
+				TotalPage: 1,
+			},
+			wantErr: false,
+		},
+		{
+			name: "should_fetch_event_deliveries_with_correct_pagination_data",
+			args: args{
+				groupID:      "",
+				appID:        "",
+				eventID:      "",
+				status:       nil,
+				searchParams: datastore.SearchParams{},
+				pageable: datastore.Pageable{
+					Page:    4,
+					PerPage: 1,
+					Sort:    0,
+				},
+			},
+			eventDeliveries: []datastore.EventDelivery{
+				{
+					ID:  primitive.NewObjectID(),
+					UID: uuid.NewString(),
+					EventMetadata: &datastore.EventMetadata{
+						UID: uuid.NewString(),
+					},
+					AppMetadata: &datastore.AppMetadata{
+						UID:     uuid.NewString(),
+						GroupID: uuid.NewString(),
+					},
+					Status:         datastore.ScheduledEventStatus,
+					CreatedAt:      primitive.NewDateTimeFromTime(time.Date(2021, time.February, 1, 0, 0, 0, 0, time.Local)),
+					UpdatedAt:      primitive.NewDateTimeFromTime(time.Date(2021, time.February, 1, 0, 0, 0, 0, time.Local)),
+					DocumentStatus: datastore.ActiveDocumentStatus,
+				},
+				{
+					ID:  primitive.NewObjectID(),
+					UID: uuid.NewString(),
+					EventMetadata: &datastore.EventMetadata{
+						UID: uuid.NewString(),
+					},
+					AppMetadata: &datastore.AppMetadata{
+						UID:     uuid.NewString(),
+						GroupID: uuid.NewString(),
+					},
+					Status:         datastore.ProcessingEventStatus,
+					CreatedAt:      primitive.NewDateTimeFromTime(time.Date(2021, time.March, 1, 0, 0, 0, 0, time.Local)),
+					UpdatedAt:      primitive.NewDateTimeFromTime(time.Date(2021, time.March, 1, 0, 0, 0, 0, time.Local)),
+					DocumentStatus: datastore.ActiveDocumentStatus,
+				},
+				{
+					ID:  primitive.NewObjectID(),
+					UID: uuid.NewString(),
+					EventMetadata: &datastore.EventMetadata{
+						UID: uuid.NewString(),
+					},
+					AppMetadata: &datastore.AppMetadata{
+						UID:     uuid.NewString(),
+						GroupID: uuid.NewString(),
+					},
+					Status:         datastore.RetryEventStatus,
+					CreatedAt:      primitive.NewDateTimeFromTime(time.Date(2021, time.June, 1, 0, 0, 0, 0, time.Local)),
+					UpdatedAt:      primitive.NewDateTimeFromTime(time.Date(2021, time.June, 1, 0, 0, 0, 0, time.Local)),
+					DocumentStatus: datastore.ActiveDocumentStatus,
+				},
+				{
+					ID:  primitive.NewObjectID(),
+					UID: uuid.NewString(),
+					EventMetadata: &datastore.EventMetadata{
+						UID: "uuid.NewString()",
+					},
+					AppMetadata: &datastore.AppMetadata{
+						UID:     uuid.NewString(),
+						GroupID: uuid.NewString(),
+					},
+					Status:         datastore.DiscardedEventStatus,
+					CreatedAt:      primitive.NewDateTimeFromTime(time.Now()),
+					UpdatedAt:      primitive.NewDateTimeFromTime(time.Now()),
+					DocumentStatus: datastore.ActiveDocumentStatus,
+				},
+				{
+					ID:  primitive.NewObjectID(),
+					UID: uuid.NewString(),
+					EventMetadata: &datastore.EventMetadata{
+						UID: uuid.NewString(),
+					},
+					AppMetadata: &datastore.AppMetadata{
+						UID:     uuid.NewString(),
+						GroupID: uuid.NewString(),
+					},
+					Status:         datastore.FailureEventStatus,
+					CreatedAt:      primitive.NewDateTimeFromTime(time.Now()),
+					UpdatedAt:      primitive.NewDateTimeFromTime(time.Now()),
+					DocumentStatus: datastore.ActiveDocumentStatus,
+				},
+			},
+			wantCount: 1,
+			wantPaginationData: datastore.PaginationData{
+				Total:     1,
+				Page:      4,
+				PerPage:   1,
+				Prev:      3,
+				Next:      5,
+				TotalPage: 5,
+			},
+			wantErr: false,
+		},
 	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			db, closeFn := getDB(t)
+			defer closeFn()
 
-	err = e.CreateEventDelivery(context.Background(), &delivery2)
-	if err != nil {
-		require.NoError(t, err)
-		return
-	}
+			e := NewEventDeliveryRepository(db)
 
-	deliveries, _, err := e.LoadEventDeliveriesPaged(context.Background(), "", "", "", nil, datastore.SearchParams{}, datastore.Pageable{PerPage: 10, Page: 1})
-	if err != nil {
-		require.NoError(t, err)
-		return
+			var err error
+			for _, delivery := range tt.eventDeliveries {
+				err = e.CreateEventDelivery(ctx, &delivery)
+				require.NoError(t, err)
+			}
+
+			eventDeliveries, paginationData, err := e.LoadEventDeliveriesPaged(ctx, tt.args.groupID, tt.args.appID, tt.args.eventID, tt.args.status, tt.args.searchParams, tt.args.pageable)
+			if tt.wantErr {
+				require.Error(t, err)
+				return
+			}
+
+			require.Equal(t, tt.wantCount, len(eventDeliveries))
+			require.NoError(t, err)
+			require.Equal(t, tt.wantPaginationData, paginationData)
+			//t.FailNow()
+		})
 	}
-	require.LessOrEqual(t, 2, len(deliveries))
 }

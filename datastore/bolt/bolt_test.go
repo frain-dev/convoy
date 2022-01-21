@@ -30,7 +30,7 @@ func getDB(t *testing.T) (*bbolt.DB, func()) {
 
 	e := db.Client().(*bbolt.DB).Update(func(tx *bbolt.Tx) error {
 
-		buckets := []string{"groups", "applications"}
+		buckets := []string{"groups", "applications", "eventdeliveries"}
 		for _, v := range buckets {
 			require.NoError(t, tx.DeleteBucket([]byte(v)))
 		}

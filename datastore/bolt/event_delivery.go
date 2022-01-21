@@ -39,13 +39,12 @@ func (e *eventDeliveryRepo) CreateEventDelivery(ctx context.Context, delivery *d
 
 func createUpdateEventDelivery(db *bbolt.DB, delivery *datastore.EventDelivery) error {
 	return db.Update(func(tx *bbolt.Tx) error {
-		b := tx.Bucket([]byte(eventDeliveryBucketName))
-
 		buf, err := json.Marshal(delivery)
 		if err != nil {
 			return err
 		}
 
+		b := tx.Bucket([]byte(eventDeliveryBucketName))
 		err = b.Put([]byte(delivery.UID), buf)
 		if err != nil {
 			return err
@@ -163,17 +162,26 @@ func (e *eventDeliveryRepo) UpdateEventDeliveryWithAttempt(ctx context.Context, 
 }
 
 func (e *eventDeliveryRepo) LoadEventDeliveriesPaged(ctx context.Context, groupID, appID, eventID string, status []datastore.EventDeliveryStatus, searchParams datastore.SearchParams, pageable datastore.Pageable) ([]datastore.EventDelivery, datastore.PaginationData, error) {
-	hasAppFilter := !util.IsStringEmpty(appID)
-	hasGroupFilter := !util.IsStringEmpty(groupID)
-	hasEventFilter := !util.IsStringEmpty(eventID)
-	hasStatusFilter := len(status) > 0
-	hasDateFilter := searchParams.CreatedAtEnd > 0 || searchParams.CreatedAtStart > 0
+	f := &filter{
+		groupID:      groupID,
+		appID:        appID,
+		eventID:      eventID,
+		status:       status,
+		searchParams: searchParams,
 
-	if pageable.Page <= 0 {
+		hasAppFilter:       !util.IsStringEmpty(appID),
+		hasGroupFilter:     !util.IsStringEmpty(groupID),
+		hasEventFilter:     !util.IsStringEmpty(eventID),
+		hasStatusFilter:    len(status) > 0,
+		hasStartDateFilter: searchParams.CreatedAtStart > 0,
+		hasEndDateFilter:   searchParams.CreatedAtEnd > 0,
+	}
+
+	if pageable.Page < 1 {
 		pageable.Page = 1
 	}
-	if pageable.PerPage <= 0 {
-		pageable.PerPage = 1
+	if pageable.PerPage < 1 {
+		pageable.PerPage = 10
 	}
 
 	prevPage := pageable.Page - 1
@@ -191,56 +199,16 @@ func (e *eventDeliveryRepo) LoadEventDeliveriesPaged(ctx context.Context, groupI
 		// seek all event deliveries
 		for k, v := c.First(); k != nil; k, v = c.Next() {
 			if i >= lowerBound && i < upperBound {
-				fmt.Printf("key=%s, value=%s\n", k, v)
-
 				var d datastore.EventDelivery
 				err := json.Unmarshal(v, &d)
 				if err != nil {
 					return err
 				}
 
-				if hasAppFilter && d.AppMetadata.UID != appID {
+				if !e.filterEventDelivery(f, &d) {
 					continue
 				}
 
-				if hasGroupFilter && d.AppMetadata.GroupID != groupID {
-					continue
-				}
-
-				if hasEventFilter && d.EventMetadata.UID != eventID {
-					continue
-				}
-
-				if hasStatusFilter {
-					found := false
-					for _, deliveryStatus := range status {
-						if d.Status == deliveryStatus {
-							found = true
-						}
-					}
-
-					if !found {
-						continue
-					}
-				}
-
-				if hasDateFilter {
-					createdEnd := primitive.NewDateTimeFromTime(time.Unix(searchParams.CreatedAtEnd, 0))
-					createdStart := primitive.NewDateTimeFromTime(time.Unix(searchParams.CreatedAtStart, 0))
-
-					ok := false
-					if d.CreatedAt <= createdEnd {
-						ok = true
-					}
-
-					if d.CreatedAt >= createdStart {
-						ok = true
-					}
-
-					if !ok {
-						continue
-					}
-				}
 				deliveries = append(deliveries, d)
 			}
 			i++
@@ -249,16 +217,107 @@ func (e *eventDeliveryRepo) LoadEventDeliveriesPaged(ctx context.Context, groupI
 			}
 		}
 
+		total, err := e.countEventDeliveriesWithFilter(f)
+		if err != nil {
+			return err
+		}
+
 		pg = datastore.PaginationData{
-			Total:     int64(b.Stats().KeyN),
+			Total:     int64(len(deliveries)),
 			Page:      int64(pageable.Page),
 			PerPage:   int64(pageable.PerPage),
 			Prev:      int64(prevPage),
 			Next:      int64(pageable.Page + 1),
-			TotalPage: int64(math.Ceil(float64(b.Stats().KeyN) / float64(pageable.PerPage))),
+			TotalPage: int64(math.Ceil(float64(total) / float64(pageable.PerPage))),
 		}
 		return nil
 	})
 
 	return deliveries, pg, err
+}
+
+// countEventDeliveriesWithFilter counts all the event deliveries in the database that satisfy the filter
+func (e *eventDeliveryRepo) countEventDeliveriesWithFilter(f *filter) (int64, error) {
+	i := int64(0)
+	err := e.db.View(func(tx *bbolt.Tx) error {
+		b := tx.Bucket([]byte(eventDeliveryBucketName))
+		c := b.Cursor()
+
+		// seek all event deliveries
+		var d datastore.EventDelivery
+		for k, v := c.First(); k != nil; k, v = c.Next() {
+			err := json.Unmarshal(v, &d)
+			if err != nil {
+				return err
+			}
+
+			if e.filterEventDelivery(f, &d) {
+				i++
+			}
+		}
+
+		return nil
+	})
+
+	return i, err
+}
+
+type filter struct {
+	groupID      string
+	appID        string
+	eventID      string
+	status       []datastore.EventDeliveryStatus
+	searchParams datastore.SearchParams
+
+	hasAppFilter       bool
+	hasGroupFilter     bool
+	hasEventFilter     bool
+	hasStatusFilter    bool
+	hasStartDateFilter bool
+	hasEndDateFilter   bool
+}
+
+func (e *eventDeliveryRepo) filterEventDelivery(f *filter, d *datastore.EventDelivery) bool {
+	if f.hasAppFilter && d.AppMetadata.UID != f.appID {
+		return false
+	}
+
+	if f.hasGroupFilter && d.AppMetadata.GroupID != f.groupID {
+		return false
+	}
+
+	if f.hasEventFilter && d.EventMetadata.UID != f.eventID {
+		return false
+	}
+
+	if f.hasStatusFilter {
+		found := false
+		for _, deliveryStatus := range f.status {
+			if d.Status == deliveryStatus {
+				found = true
+			}
+		}
+
+		if !found {
+			return false
+		}
+	}
+
+	if f.hasStartDateFilter {
+		createdStart := primitive.NewDateTimeFromTime(time.Unix(f.searchParams.CreatedAtStart, 0))
+		ok := d.CreatedAt >= createdStart
+		if !ok {
+			return false
+		}
+	}
+
+	if f.hasEndDateFilter {
+		createdEnd := primitive.NewDateTimeFromTime(time.Unix(f.searchParams.CreatedAtEnd, 0))
+		ok := d.CreatedAt <= createdEnd
+		if !ok {
+			return false
+		}
+	}
+
+	return true
 }
