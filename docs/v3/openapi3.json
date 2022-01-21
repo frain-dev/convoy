@@ -15,53 +15,6 @@
 				},
 				"type": "object"
 			},
-			"config.DefaultStrategyConfiguration": {
-				"properties": {
-					"intervalSeconds": {
-						"type": "integer"
-					},
-					"retryLimit": {
-						"type": "integer"
-					}
-				},
-				"type": "object"
-			},
-			"config.GroupConfig": {
-				"properties": {
-					"disable_endpoint": {
-						"type": "boolean"
-					},
-					"signature": {
-						"$ref": "#/components/schemas/config.SignatureConfiguration"
-					},
-					"strategy": {
-						"$ref": "#/components/schemas/config.StrategyConfiguration"
-					}
-				},
-				"type": "object"
-			},
-			"config.SignatureConfiguration": {
-				"properties": {
-					"hash": {
-						"type": "string"
-					},
-					"header": {
-						"type": "string"
-					}
-				},
-				"type": "object"
-			},
-			"config.StrategyConfiguration": {
-				"properties": {
-					"default": {
-						"$ref": "#/components/schemas/config.DefaultStrategyConfiguration"
-					},
-					"type": {
-						"type": "string"
-					}
-				},
-				"type": "object"
-			},
 			"datastore.APIKey": {
 				"properties": {
 					"created_at": {
@@ -139,6 +92,17 @@
 					},
 					"updated_at": {
 						"type": "string"
+					}
+				},
+				"type": "object"
+			},
+			"datastore.DefaultStrategyConfiguration": {
+				"properties": {
+					"intervalSeconds": {
+						"type": "integer"
+					},
+					"retryLimit": {
+						"type": "integer"
 					}
 				},
 				"type": "object"
@@ -337,7 +301,7 @@
 			"datastore.Group": {
 				"properties": {
 					"config": {
-						"$ref": "#/components/schemas/config.GroupConfig"
+						"$ref": "#/components/schemas/datastore.GroupConfig"
 					},
 					"created_at": {
 						"type": "string"
@@ -359,6 +323,20 @@
 					},
 					"updated_at": {
 						"type": "string"
+					}
+				},
+				"type": "object"
+			},
+			"datastore.GroupConfig": {
+				"properties": {
+					"disable_endpoint": {
+						"type": "boolean"
+					},
+					"signature": {
+						"$ref": "#/components/schemas/datastore.SignatureConfiguration"
+					},
+					"strategy": {
+						"$ref": "#/components/schemas/datastore.StrategyConfiguration"
 					}
 				},
 				"type": "object"
@@ -428,6 +406,28 @@
 					},
 					"totalPage": {
 						"type": "integer"
+					}
+				},
+				"type": "object"
+			},
+			"datastore.SignatureConfiguration": {
+				"properties": {
+					"hash": {
+						"type": "string"
+					},
+					"header": {
+						"type": "string"
+					}
+				},
+				"type": "object"
+			},
+			"datastore.StrategyConfiguration": {
+				"properties": {
+					"default": {
+						"$ref": "#/components/schemas/datastore.DefaultStrategyConfiguration"
+					},
+					"type": {
+						"type": "string"
 					}
 				},
 				"type": "object"
@@ -527,7 +527,7 @@
 			"models.Group": {
 				"properties": {
 					"config": {
-						"$ref": "#/components/schemas/config.GroupConfig"
+						"$ref": "#/components/schemas/datastore.GroupConfig"
 					},
 					"logo_url": {
 						"type": "string"
@@ -578,17 +578,17 @@
 	},
 	"info": {
 		"contact": {
-			"email": "engineering@datastore.io",
+			"email": "engineering@getconvoy.io",
 			"name": "API Support",
 			"url": "http://www.swagger.io/support"
 		},
-		"description": "datastore.is a fast and secure distributed webhooks service. This document contains datastore.s API specification.",
+		"description": "Convoy is a fast and secure distributed webhooks service. This document contains datastore.s API specification.",
 		"license": {
 			"name": "Mozilla Public License 2.0",
 			"url": "https://www.mozilla.org/en-US/MPL/2.0/"
 		},
-		"termsOfService": "https://datastore.io/terms",
-		"title": "datastore.API Specification",
+		"termsOfService": "https://getconvoy.io/terms",
+		"title": "Convoy API Specification",
 		"version": "0.1.12"
 	},
 	"openapi": "3.0.3",
@@ -617,6 +617,14 @@
 						"description": "sort order",
 						"in": "query",
 						"name": "sort",
+						"schema": {
+							"type": "string"
+						}
+					},
+					{
+						"description": "app title",
+						"in": "query",
+						"name": "q",
 						"schema": {
 							"type": "string"
 						}
@@ -4083,7 +4091,7 @@
 		},
 		"/security/keys/{keyID}/revoke": {
 			"put": {
-				"description": "This endpoint revokes multiple api keys",
+				"description": "This endpoint revokes an api key",
 				"parameters": [
 					{
 						"description": "API Key id",

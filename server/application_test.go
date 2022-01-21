@@ -269,7 +269,7 @@ func TestApplicationHandler_GetApps(t *testing.T) {
 			dbFn: func(app *applicationHandler) {
 				a, _ := app.appRepo.(*mocks.MockApplicationRepository)
 				a.EXPECT().
-					LoadApplicationsPaged(gomock.Any(), gomock.Any(), gomock.Any()).Times(1).
+					LoadApplicationsPaged(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Times(1).
 					Return([]datastore.Application{
 						{
 							UID:       validID,
