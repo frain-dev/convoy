@@ -37,6 +37,21 @@ func (m *MockApplicationRepository) EXPECT() *MockApplicationRepositoryMockRecor
 	return m.recorder
 }
 
+// CountGroupApplications mocks base method.
+func (m *MockApplicationRepository) CountGroupApplications(arg0 context.Context, arg1 string) (int64, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "CountGroupApplications", arg0, arg1)
+	ret0, _ := ret[0].(int64)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// CountGroupApplications indicates an expected call of CountGroupApplications.
+func (mr *MockApplicationRepositoryMockRecorder) CountGroupApplications(arg0, arg1 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CountGroupApplications", reflect.TypeOf((*MockApplicationRepository)(nil).CountGroupApplications), arg0, arg1)
+}
+
 // CreateApplication mocks base method.
 func (m *MockApplicationRepository) CreateApplication(arg0 context.Context, arg1 *convoy.Application) error {
 	m.ctrl.T.Helper()

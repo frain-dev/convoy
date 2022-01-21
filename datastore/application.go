@@ -41,6 +41,22 @@ func (db *appRepo) CreateApplication(ctx context.Context,
 	return err
 }
 
+func (db *appRepo) CountGroupApplications(ctx context.Context, groupID string) (int64, error) {
+	filter := bson.M{
+		"group_id": groupID,
+		"document_status": bson.M{
+			"$ne": convoy.DeletedDocumentStatus,
+		},
+	}
+
+	count, err := db.client.CountDocuments(ctx, filter)
+	if err != nil {
+		log.WithError(err).Errorf("failed to count apps in group %s", groupID)
+		return 0, err
+	}
+	return count, nil
+}
+
 func (db *appRepo) LoadApplicationsPaged(ctx context.Context, groupID string, pageable models.Pageable) ([]convoy.Application, pager.PaginationData, error) {
 
 	filter := bson.M{"document_status": bson.M{"$ne": convoy.DeletedDocumentStatus}}

@@ -75,7 +75,7 @@ func (a *applicationHandler) GetDashboardSummary(w http.ResponseWriter, r *http.
 
 	group := getGroupFromContext(r.Context())
 
-	apps, err := a.appRepo.SearchApplicationsByGroupId(r.Context(), group.UID, searchParams)
+	appCount, err := a.appRepo.CountGroupApplications(r.Context(), group.UID)
 	if err != nil {
 		_ = render.Render(w, r, newErrorResponse("an error occurred while searching apps", http.StatusInternalServerError))
 		return
@@ -88,7 +88,7 @@ func (a *applicationHandler) GetDashboardSummary(w http.ResponseWriter, r *http.
 	}
 
 	dashboard := models.DashboardSummary{
-		Applications: len(apps),
+		Applications: int(appCount),
 		EventsSent:   eventsSent,
 		Period:       period,
 		PeriodData:   &messages,

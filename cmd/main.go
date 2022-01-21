@@ -163,7 +163,9 @@ func main() {
 func ensureMongoIndices(conn *mongo.Database) {
 	datastore.EnsureIndex(conn, datastore.GroupCollection, "uid", true)
 	datastore.EnsureIndex(conn, datastore.GroupCollection, "name", true)
+	datastore.EnsureIndex(conn, datastore.EventCollection, "app_metadata.uid", false)
 	datastore.EnsureIndex(conn, datastore.AppCollections, "uid", true)
+	datastore.EnsureIndex(conn, datastore.AppCollections, "group_id", false)
 	datastore.EnsureIndex(conn, datastore.EventCollection, "uid", true)
 	datastore.EnsureIndex(conn, datastore.EventCollection, "event_type", false)
 }
