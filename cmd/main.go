@@ -89,11 +89,6 @@ func main() {
 				return err
 			}
 
-			db, err := NewDB(cfg)
-			if err != nil {
-				return err
-			}
-
 			err = sentry.Init(sentry.ClientOptions{
 				Debug:       true,
 				Dsn:         cfg.Sentry.Dsn,
