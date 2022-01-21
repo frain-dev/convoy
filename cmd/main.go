@@ -89,7 +89,7 @@ func main() {
 				return err
 			}
 
-			bolt, err := bolt.New(cfg)
+			db, err := NewDB(cfg)
 			if err != nil {
 				return err
 			}
@@ -124,11 +124,11 @@ func main() {
 				log.Warnf("signature header is blank. setting default %s", config.DefaultSignatureHeader)
 			}
 
-			app.groupRepo = bolt.GroupRepo()
+			app.groupRepo = db.GroupRepo()
 			app.apiKeyRepo = db.APIRepo()
 			app.groupRepo = db.GroupRepo()
 			app.eventRepo = db.EventRepo()
-			app.applicationRepo = bolt.AppRepo()
+			app.applicationRepo = db.AppRepo()
 			app.eventDeliveryRepo = db.EventDeliveryRepo()
 
 			app.eventQueue = convoyRedis.NewQueue(rC, qFn, "EventQueue")
