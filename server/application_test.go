@@ -914,15 +914,8 @@ func Test_applicationHandler_GetDashboardSummary(t *testing.T) {
 			statusCode: http.StatusOK,
 			dbFn: func(eventRepo *mocks.MockEventRepository, appRepo *mocks.MockApplicationRepository, orgRepo *mocks.MockGroupRepository) {
 				appRepo.EXPECT().
-					SearchApplicationsByGroupId(gomock.Any(), gomock.Any(), gomock.Any()).Times(1).
-					Return([]convoy.Application{
-						{
-							UID:       "validID",
-							GroupID:   groupID,
-							Title:     "Valid application - 0",
-							Endpoints: []convoy.Endpoint{},
-						},
-					}, nil)
+					CountGroupApplications(gomock.Any(), gomock.Any()).Times(1).
+					Return(int64(5), nil)
 				eventRepo.EXPECT().
 					LoadEventIntervals(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Times(1).
 					Return([]models.EventInterval{
