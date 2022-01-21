@@ -5,14 +5,13 @@ import (
 	"time"
 
 	"github.com/frain-dev/convoy/auth"
-	"github.com/frain-dev/convoy/config"
 	"github.com/frain-dev/convoy/datastore"
 )
 
 type Group struct {
-	Name    string `json:"name" bson:"name"`
-	LogoURL string `json:"logo_url" bson:"logo_url"`
-	Config  config.GroupConfig
+	Name    string `json:"name" bson:"name" valid:"required~please provide a valid name"`
+	LogoURL string `json:"logo_url" bson:"logo_url" valid:"url~please provide a valid logo url,optional"`
+	Config  datastore.GroupConfig
 }
 
 type APIKey struct {
@@ -30,17 +29,17 @@ type APIKeyResponse struct {
 }
 
 type Application struct {
-	AppName      string `json:"name" bson:"name"`
-	SupportEmail string `json:"support_email" bson:"support_email"`
+	AppName      string `json:"name" bson:"name" valid:"required~please provide your appName"`
+	SupportEmail string `json:"support_email" bson:"support_email" valid:"email~please provide a valid email"`
 }
 
 type Event struct {
-	AppID     string `json:"app_id" bson:"app_id"`
-	EventType string `json:"event_type" bson:"event_type"`
+	AppID     string `json:"app_id" bson:"app_id" valid:"required~please provide an app id"`
+	EventType string `json:"event_type" bson:"event_type" valid:"required~please provide an event type"`
 
 	// Data is an arbitrary JSON value that gets sent as the body of the
 	// webhook to the endpoints
-	Data json.RawMessage `json:"data" bson:"data"`
+	Data json.RawMessage `json:"data" bson:"data" valid:"required~please provide your data"`
 }
 
 type IDs struct {
