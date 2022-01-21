@@ -106,6 +106,8 @@ func (c *Client) ensureMongoIndices() {
 	c.ensureIndex(AppCollections, "uid", true, nil)
 	c.ensureIndex(EventCollection, "uid", true, nil)
 	c.ensureIndex(EventCollection, "event_type", false, nil)
+	c.ensureIndex(EventCollection, "app_metadata.uid", false, nil)
+	c.ensureIndex(AppCollections, "group_id", false, nil)
 }
 
 // ensureIndex - ensures an index is created for a specific field in a collection
