@@ -36,11 +36,15 @@ func (db *appRepo) CreateApplication(ctx context.Context,
 	return err
 }
 
-func (db *appRepo) LoadApplicationsPaged(ctx context.Context, groupID string, pageable datastore.Pageable) ([]datastore.Application, datastore.PaginationData, error) {
+func (db *appRepo) LoadApplicationsPaged(ctx context.Context, groupID, q string, pageable datastore.Pageable) ([]datastore.Application, datastore.PaginationData, error) {
 
 	filter := bson.M{"document_status": bson.M{"$ne": datastore.DeletedDocumentStatus}}
 	if !util.IsStringEmpty(groupID) {
 		filter = bson.M{"group_id": groupID, "document_status": bson.M{"$ne": datastore.DeletedDocumentStatus}}
+	}
+
+	if !util.IsStringEmpty(q) {
+		filter = bson.M{"group_id": groupID, "document_status": bson.M{"$ne": datastore.DeletedDocumentStatus}, "title": bson.M{"$regex": primitive.Regex{Pattern: q, Options: "i"}}}
 	}
 
 	var apps []datastore.Application
