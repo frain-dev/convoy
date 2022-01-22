@@ -1,12 +1,13 @@
 import { Injectable } from '@angular/core';
-import { HttpClient, HttpHeaders, HttpResponse } from '@angular/common/http';
+import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { HTTP_RESPONSE } from './models/http.model';
+import { Router } from '@angular/router';
 
 @Injectable({
 	providedIn: 'root'
 })
 export class ConvoyDashboardService {
-	constructor(private httpClient: HttpClient) {}
+	constructor(private httpClient: HttpClient, private router: Router) {}
 
 	authDetails() {
 		const authDetails = localStorage.getItem('CONVOY_AUTH');
@@ -19,10 +20,16 @@ export class ConvoyDashboardService {
 	}
 
 	request(requestDetails: { url: string; body?: any; method: 'get' | 'post' | 'delete' | 'put' }): Promise<HTTP_RESPONSE> {
+		const token = this.authDetails().token;
+		if (!token) {
+			this.showNotification({ message: 'You are not logged in' });
+			this.router.navigate(['/login']);
+		}
+
 		return new Promise(async (resolve, reject) => {
 			try {
 				const requestHeader = new HttpHeaders({
-					Authorization: `Basic ${this.authDetails().token}`
+					Authorization: `Basic ${token}`
 				});
 				const requestResponse: any = await this.httpClient.request(requestDetails.method, requestDetails.url, { headers: requestHeader, body: requestDetails.body }).toPromise();
 				return resolve(requestResponse);
