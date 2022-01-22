@@ -1,7 +1,6 @@
 package tracer
 
 import (
-	"context"
 	"errors"
 	"net/http"
 
@@ -15,7 +14,6 @@ type Tracer interface {
 	SetWebRequestHTTP(r *http.Request, txn *newrelic.Transaction)
 	SetWebResponse(w http.ResponseWriter, txn *newrelic.Transaction) http.ResponseWriter
 	RequestWithTransactionContext(r *http.Request, txn *newrelic.Transaction) *http.Request
-	NewContext(context context.Context, txn *newrelic.Transaction) context.Context
 }
 
 func NewTracer(cfg config.Configuration, logger *logrus.Logger) (Tracer, error) {
