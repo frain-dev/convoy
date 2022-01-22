@@ -11,8 +11,8 @@ export class ConvoyDashboardService {
 	authDetails() {
 		const authDetails = localStorage.getItem('CONVOY_AUTH');
 		if (authDetails) {
-			const { username, password } = JSON.parse(authDetails);
-			return { token: btoa(`${username + ':' + password}`), authState: true };
+			const { username, password, managed_service_token } = JSON.parse(authDetails);
+			return { token: managed_service_token || btoa(`${username + ':' + password}`), authState: true };
 		} else {
 			return { authState: false };
 		}
