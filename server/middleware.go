@@ -130,7 +130,7 @@ func requireApp(appRepo datastore.ApplicationRepository) func(next http.Handler)
 			if err != nil {
 
 				event := "an error occurred while retrieving app details"
-				statusCode := http.StatusInternalServerError
+				statusCode := http.StatusBadRequest
 
 				if errors.Is(err, datastore.ErrApplicationNotFound) {
 					event = err.Error()

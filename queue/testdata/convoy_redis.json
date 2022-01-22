@@ -5,10 +5,9 @@
     "queue": {
         "type": "redis",
         "redis": {
-            "dsn": "redis://localhost:8379"
+            "dsn": "redis://localhost:6379"
         }
     },
-    "max_response_size": 40,
     "server": {
         "http": {
             "port": 80

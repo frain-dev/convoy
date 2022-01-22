@@ -3,12 +3,8 @@
         "dsn": "mongodb://inside-config-file"
     },
     "queue": {
-        "type": "redis",
-        "redis": {
-            "dsn": "redis://localhost:8379"
-        }
+        "type": "in-memory"
     },
-    "max_response_size": 40,
     "server": {
         "http": {
             "port": 80

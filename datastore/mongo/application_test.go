@@ -75,7 +75,7 @@ func Test_LoadApplicationsPaged(t *testing.T) {
 
 	appRepo := NewApplicationRepo(db)
 
-	apps, _, err := appRepo.LoadApplicationsPaged(context.Background(), "", datastore.Pageable{
+	apps, _, err := appRepo.LoadApplicationsPaged(context.Background(), "", "", datastore.Pageable{
 		Page:    1,
 		PerPage: 10,
 	})
