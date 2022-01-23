@@ -4,7 +4,6 @@ import (
 	"context"
 
 	"github.com/frain-dev/convoy/queue"
-	convoyRedis "github.com/frain-dev/convoy/queue/redis"
 	log "github.com/sirupsen/logrus"
 	"github.com/vmihailenco/taskq/v3"
 )
@@ -15,7 +14,7 @@ type Producer struct {
 	quit          chan chan error
 }
 
-func NewProducer(queue *convoyRedis.RedisQueue) *Producer {
+func NewProducer(queue queue.Queuer) *Producer {
 	consumer := queue.Consumer()
 
 	return &Producer{

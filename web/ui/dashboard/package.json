@@ -24,7 +24,7 @@
 		"@angular/router": "~13.0.0",
 		"angular-prism": "^0.1.20",
 		"chart.js": "^3.6.0",
-		"convoy-dashboard": "0.0.4",
+		"convoy-dashboard": "0.3.1",
 		"date-fns": "^2.27.0",
 		"moment": "^2.29.1",
 		"ng2-prism": "^2.3.2",

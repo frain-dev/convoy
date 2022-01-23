@@ -322,3 +322,37 @@
 	font-size: 12px;
 	margin-top: 10px;
 }
+
+.dropdown {
+	&.large {
+		.dropdown--list {
+			width: 249px;
+		}
+
+		p {
+			text-align: center;
+			font-style: italic;
+		}
+	}
+}
+
+.search {
+	display: flex;
+	background: #ffffff;
+	border: 1px solid #edeff5;
+	box-sizing: border-box;
+	border-radius: 10px;
+	padding: 10px 15px;
+	align-items: center;
+	margin-bottom: 20px;
+
+	img {
+		margin-right: 10px;
+	}
+
+	input {
+		font-size: 14px;
+		border: none;
+		padding: 0;
+	}
+}
