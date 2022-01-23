@@ -383,7 +383,7 @@ func requirePermission(role auth.RoleType) func(next http.Handler) http.Handler 
 
 			group := getGroupFromContext(r.Context())
 			for _, v := range authUser.Role.Groups {
-				if group.Name == v {
+				if group.Name == v || group.UID == v {
 					next.ServeHTTP(w, r)
 					return
 				}
