@@ -84,6 +84,7 @@ export class ConvoyDashboardComponent implements OnInit {
 	showOverlay = false;
 	showEventDeliveriesStatusDropdown = false;
 	showEventDeliveriesAppsDropdown = false;
+	showEventsAppsDropdown = false;
 	@Input('apiURL') apiURL: string = '';
 	@Input('isCloud') isCloud: boolean = false;
 	@Input('groupId') groupId: string = '';
@@ -328,9 +329,11 @@ export class ConvoyDashboardComponent implements OnInit {
 		}
 	}
 
-	updateEventDevliveryAppFilter(appId: string, isChecked: any) {
-		if (isChecked.target.checked) this.eventDeliveriesApp = appId;
-		this.getEventDeliveries({ addToURL: true });
+	updateEventDevliveryAppFilter(appId: string, isChecked: any, activeSection: 'eventDels' | 'events') {
+		if (isChecked.target.checked) {
+			activeSection === 'eventDels' ? (this.eventDeliveriesApp = appId) : (this.eventApp = appId);
+		}
+		activeSection === 'eventDels' ? this.getEventDeliveries({ addToURL: true }) : this.getEvents({ addToURL: true });
 	}
 
 	async getEventDeliveries(requestDetails?: { addToURL?: boolean }) {
