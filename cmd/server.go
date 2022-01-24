@@ -66,6 +66,9 @@ func StartConvoyServer(a *app, cfg config.Configuration, withWorkers bool) error
 		log.WithError(err).Error("failed to register tasks")
 		return err
 	}
+	//Routine to create tasks for dynamically created groups
+	worker.NewGroupTask(a.groupRepo, a.applicationRepo, a.eventDeliveryRepo)
+
 	if withWorkers {
 		// register workers.
 		producer := worker.NewProducer(a.eventQueue)
