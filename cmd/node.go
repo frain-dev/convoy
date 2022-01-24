@@ -2,7 +2,6 @@ package main
 
 import (
 	"github.com/frain-dev/convoy/config"
-	convoyQueue "github.com/frain-dev/convoy/queue/redis"
 	"github.com/frain-dev/convoy/worker"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
@@ -47,12 +46,18 @@ func nodeWorkerCommand(a *app) *cobra.Command {
 		RunE: func(cmd *cobra.Command, args []string) error {
 
 			// register workers.
-			if queue, ok := a.eventQueue.(*convoyQueue.RedisQueue); ok {
-				worker.NewProducer(queue).Start()
+			cfg, err := config.Get()
+			if err != nil {
+				return err
 			}
+			// register workers.
+			producer := worker.NewProducer(a.eventQueue)
 
-			if queue, ok := a.deadLetterQueue.(*convoyQueue.RedisQueue); ok {
-				worker.NewCleaner(queue).Start()
+			cleaner := worker.NewCleaner(a.deadLetterQueue)
+
+			if cfg.Queue.Type != config.InMemoryQueueProvider {
+				producer.Start()
+				cleaner.Start()
 			}
 			return nil
 		},
