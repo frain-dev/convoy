@@ -345,21 +345,6 @@ func (mr *MockEventRepositoryMockRecorder) FindEventByID(ctx, id interface{}) *g
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "FindEventByID", reflect.TypeOf((*MockEventRepository)(nil).FindEventByID), ctx, id)
 }
 
-// LoadAbandonedEventsForPostingRetry mocks base method.
-func (m *MockEventRepository) LoadAbandonedEventsForPostingRetry(arg0 context.Context) ([]datastore.Event, error) {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "LoadAbandonedEventsForPostingRetry", arg0)
-	ret0, _ := ret[0].([]datastore.Event)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
-}
-
-// LoadAbandonedEventsForPostingRetry indicates an expected call of LoadAbandonedEventsForPostingRetry.
-func (mr *MockEventRepositoryMockRecorder) LoadAbandonedEventsForPostingRetry(arg0 interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "LoadAbandonedEventsForPostingRetry", reflect.TypeOf((*MockEventRepository)(nil).LoadAbandonedEventsForPostingRetry), arg0)
-}
-
 // LoadEventIntervals mocks base method.
 func (m *MockEventRepository) LoadEventIntervals(arg0 context.Context, arg1 string, arg2 datastore.SearchParams, arg3 datastore.Period, arg4 int) ([]datastore.EventInterval, error) {
 	m.ctrl.T.Helper()
@@ -373,21 +358,6 @@ func (m *MockEventRepository) LoadEventIntervals(arg0 context.Context, arg1 stri
 func (mr *MockEventRepositoryMockRecorder) LoadEventIntervals(arg0, arg1, arg2, arg3, arg4 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "LoadEventIntervals", reflect.TypeOf((*MockEventRepository)(nil).LoadEventIntervals), arg0, arg1, arg2, arg3, arg4)
-}
-
-// LoadEventsForPostingRetry mocks base method.
-func (m *MockEventRepository) LoadEventsForPostingRetry(arg0 context.Context) ([]datastore.Event, error) {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "LoadEventsForPostingRetry", arg0)
-	ret0, _ := ret[0].([]datastore.Event)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
-}
-
-// LoadEventsForPostingRetry indicates an expected call of LoadEventsForPostingRetry.
-func (mr *MockEventRepositoryMockRecorder) LoadEventsForPostingRetry(arg0 interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "LoadEventsForPostingRetry", reflect.TypeOf((*MockEventRepository)(nil).LoadEventsForPostingRetry), arg0)
 }
 
 // LoadEventsPaged mocks base method.
@@ -420,21 +390,6 @@ func (m *MockEventRepository) LoadEventsPagedByAppId(arg0 context.Context, arg1 
 func (mr *MockEventRepositoryMockRecorder) LoadEventsPagedByAppId(arg0, arg1, arg2, arg3 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "LoadEventsPagedByAppId", reflect.TypeOf((*MockEventRepository)(nil).LoadEventsPagedByAppId), arg0, arg1, arg2, arg3)
-}
-
-// LoadEventsScheduledForPosting mocks base method.
-func (m *MockEventRepository) LoadEventsScheduledForPosting(arg0 context.Context) ([]datastore.Event, error) {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "LoadEventsScheduledForPosting", arg0)
-	ret0, _ := ret[0].([]datastore.Event)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
-}
-
-// LoadEventsScheduledForPosting indicates an expected call of LoadEventsScheduledForPosting.
-func (mr *MockEventRepositoryMockRecorder) LoadEventsScheduledForPosting(arg0 interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "LoadEventsScheduledForPosting", reflect.TypeOf((*MockEventRepository)(nil).LoadEventsScheduledForPosting), arg0)
 }
 
 // MockGroupRepository is a mock of GroupRepository interface.

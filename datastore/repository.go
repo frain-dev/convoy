@@ -30,9 +30,6 @@ type EventRepository interface {
 	LoadEventsPagedByAppId(context.Context, string, SearchParams, Pageable) ([]Event, PaginationData, error)
 	FindEventByID(ctx context.Context, id string) (*Event, error)
 	CountGroupMessages(ctx context.Context, groupID string) (int64, error)
-	LoadEventsScheduledForPosting(context.Context) ([]Event, error)
-	LoadEventsForPostingRetry(context.Context) ([]Event, error)
-	LoadAbandonedEventsForPostingRetry(context.Context) ([]Event, error)
 	LoadEventsPaged(context.Context, string, string, SearchParams, Pageable) ([]Event, PaginationData, error)
 	DeleteGroupEvents(context.Context, string) error
 }
