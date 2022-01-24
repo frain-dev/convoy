@@ -49,16 +49,16 @@ func NewClient(cfg config.Configuration) (*redis.Client, taskq.Factory, error) {
 	return c, qFn, nil
 }
 
-func NewQueue(c *redis.Client, factory taskq.Factory, name string) queue.Queuer {
+func NewQueue(opts queue.QueueOptions) queue.Queuer {
 
-	q := factory.RegisterQueue(&taskq.QueueOptions{
-		Name:  name,
-		Redis: c,
+	q := opts.Factory.RegisterQueue(&taskq.QueueOptions{
+		Name:  opts.Name,
+		Redis: opts.Redis,
 	})
 
 	return &RedisQueue{
-		Name:  name,
-		inner: c,
+		Name:  opts.Name,
+		inner: opts.Redis,
 		queue: q.(*redisq.Queue),
 	}
 }

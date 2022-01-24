@@ -38,6 +38,7 @@ export class ConvoyDashboardComponent implements OnInit {
 	}[] = [];
 	events!: { pagination: PAGINATION; content: EVENT[] };
 	apps!: { pagination: PAGINATION; content: APP[] };
+	filteredApps!: APP[];
 	eventDetailsTabs = [
 		{ id: 'data', label: 'Event' },
 		{ id: 'response', label: 'Response' },
@@ -82,6 +83,7 @@ export class ConvoyDashboardComponent implements OnInit {
 	eventDeliveryFilteredByStatus: string[] = [];
 	showOverlay = false;
 	showEventDeliveriesStatusDropdown = false;
+	showEventDeliveriesAppsDropdown = false;
 	@Input('apiURL') apiURL: string = '';
 	@Input('isCloud') isCloud: boolean = false;
 	@Input('groupId') groupId: string = '';
@@ -326,6 +328,11 @@ export class ConvoyDashboardComponent implements OnInit {
 		}
 	}
 
+	updateEventDevliveryAppFilter(appId: string, isChecked: any) {
+		if (isChecked.target.checked) this.eventDeliveriesApp = appId;
+		this.getEventDeliveries({ addToURL: true });
+	}
+
 	async getEventDeliveries(requestDetails?: { addToURL?: boolean }) {
 		if (requestDetails?.addToURL) this.addFilterToURL({ section: 'eventDels' });
 		const { startDate, endDate } = this.setDateForFilter(this.eventDeliveriesFilterDateRange.value);
@@ -379,20 +386,22 @@ export class ConvoyDashboardComponent implements OnInit {
 		}
 	}
 
-	async getApps() {
+	async getApps(search?: string) {
 		try {
 			const appsResponse = await this.convyDashboardService.request({
-				url: this.getAPIURL(`/apps?groupID=${this.activeGroup || ''}&sort=AESC&page=${this.appsPage || 1}&perPage=10`),
+				url: this.getAPIURL(`/apps?groupID=${this.activeGroup || ''}&sort=AESC&page=${this.appsPage || 1}&perPage=10${search ? `&q=${search}` : ''}`),
 				method: 'get'
 			});
 
-			if (this.apps?.pagination?.next === this.appsPage) {
+			if (!search && this.apps?.pagination?.next === this.appsPage) {
 				const content = [...this.apps.content, ...appsResponse.data.content];
 				const pagination = appsResponse.data.pagination;
 				this.apps = { content, pagination };
 				return;
 			}
-			this.apps = appsResponse.data;
+
+			if (!search) this.apps = appsResponse.data;
+			this.filteredApps = appsResponse.data.content;
 			if (this.activeTab === 'apps') this.detailsItem = this.apps?.content[0];
 			return;
 		} catch (error) {
@@ -555,5 +564,14 @@ export class ConvoyDashboardComponent implements OnInit {
 
 	checkIfEventDeliveryStatusFilterOptionIsSelected(status: string): boolean {
 		return this.eventDeliveryFilteredByStatus?.length > 0 ? this.eventDeliveryFilteredByStatus.includes(status) : false;
+	}
+
+	checkIfEventDeliveryAppFilterOptionIsSelected(appId: string): boolean {
+		return appId === this.eventDeliveriesApp;
+	}
+
+	searchApps(searchInput: any) {
+		const searchString = searchInput.target.value;
+		searchString ? this.getApps(searchString) : (this.filteredApps = this.apps.content);
 	}
 }
