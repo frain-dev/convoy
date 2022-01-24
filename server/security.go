@@ -166,7 +166,17 @@ func (a *applicationHandler) GetAPIKeyByID(w http.ResponseWriter, r *http.Reques
 		return
 	}
 
-	_ = render.Render(w, r, newServerResponse("api key fetched successfully", apiKey, http.StatusOK))
+	resp := models.APIKeyByIDResponse{
+		UID:       apiKey.UID,
+		Name:      apiKey.Name,
+		Role:      apiKey.Role,
+		Type:      apiKey.Type,
+		ExpiresAt: apiKey.ExpiresAt,
+		UpdatedAt: apiKey.UpdatedAt,
+		CreatedAt: apiKey.CreatedAt,
+	}
+
+	_ = render.Render(w, r, newServerResponse("api key fetched successfully", resp, http.StatusOK))
 }
 
 // GetAPIKeys
@@ -186,6 +196,9 @@ func (a *applicationHandler) GetAPIKeys(w http.ResponseWriter, r *http.Request) 
 	pageable := getPageableFromContext(r.Context())
 
 	apiKeys, paginationData, err := a.apiKeyRepo.LoadAPIKeysPaged(r.Context(), &pageable)
+
+	apiKeyByIDResponse := apiKeyByIDResponse(apiKeys)
+
 	if err != nil {
 		log.WithError(err).Error("failed to load api keys")
 		_ = render.Render(w, r, newErrorResponse("failed to load api keys", http.StatusInternalServerError))
@@ -193,5 +206,26 @@ func (a *applicationHandler) GetAPIKeys(w http.ResponseWriter, r *http.Request) 
 	}
 
 	_ = render.Render(w, r, newServerResponse("api keys fetched successfully",
-		pagedResponse{Content: &apiKeys, Pagination: &paginationData}, http.StatusOK))
+		pagedResponse{Content: &apiKeyByIDResponse, Pagination: &paginationData}, http.StatusOK))
+}
+
+func apiKeyByIDResponse(apiKeys []datastore.APIKey) []models.APIKeyByIDResponse {
+	apiKeyByIDResponse := []models.APIKeyByIDResponse{}
+
+	for _, apiKey := range apiKeys {
+		resp := models.APIKeyByIDResponse{
+			UID:       apiKey.UID,
+			Name:      apiKey.Name,
+			Role:      apiKey.Role,
+			Type:      apiKey.Type,
+			ExpiresAt: apiKey.ExpiresAt,
+			UpdatedAt: apiKey.UpdatedAt,
+			CreatedAt: apiKey.CreatedAt,
+		}
+
+		apiKeyByIDResponse = append(apiKeyByIDResponse, resp)
+	}
+
+	return apiKeyByIDResponse
+
 }

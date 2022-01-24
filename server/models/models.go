@@ -6,6 +6,7 @@ import (
 
 	"github.com/frain-dev/convoy/auth"
 	"github.com/frain-dev/convoy/datastore"
+	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
 type Group struct {
@@ -19,6 +20,17 @@ type APIKey struct {
 	Role      auth.Role         `json:"role"`
 	Type      datastore.KeyType `json:"key_type"`
 	ExpiresAt time.Time         `json:"expires_at"`
+}
+
+type APIKeyByIDResponse struct {
+	UID       string             `json:"uid"`
+	Name      string             `json:"name"`
+	Role      auth.Role          `json:"role"`
+	Type      datastore.KeyType  `json:"key_type"`
+	ExpiresAt primitive.DateTime `json:"expires_at,omitempty"`
+	CreatedAt primitive.DateTime `json:"created_at,omitempty"`
+	UpdatedAt primitive.DateTime `json:"updated_at,omitempty"`
+	DeletedAt primitive.DateTime `json:"deleted_at,omitempty"`
 }
 
 type APIKeyResponse struct {
