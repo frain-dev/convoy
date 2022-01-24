@@ -14,14 +14,15 @@ import (
 )
 
 func getDSN() string {
-	return os.Getenv("TEST_DATABASE_DSN")
+	return os.Getenv("TEST_MONGO_DSN")
 }
 
 func getConfig() config.Configuration {
 
 	return config.Configuration{
 		Database: config.DatabaseConfiguration{
-			Dsn: getDSN(),
+			Type: "mongo",
+			Dsn:  getDSN(),
 		},
 	}
 }

@@ -101,7 +101,7 @@ func requireApp(appRepo datastore.ApplicationRepository) func(next http.Handler)
 			if err != nil {
 
 				event := "an error occurred while retrieving app details"
-				statusCode := http.StatusInternalServerError
+				statusCode := http.StatusBadRequest
 
 				if errors.Is(err, datastore.ErrApplicationNotFound) {
 					event = err.Error()
@@ -354,7 +354,7 @@ func requirePermission(role auth.RoleType) func(next http.Handler) http.Handler 
 
 			group := getGroupFromContext(r.Context())
 			for _, v := range authUser.Role.Groups {
-				if group.Name == v {
+				if group.Name == v || group.UID == v {
 					next.ServeHTTP(w, r)
 					return
 				}

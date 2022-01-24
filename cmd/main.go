@@ -2,20 +2,22 @@ package main
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"os"
 	"time"
 	_ "time/tzdata"
 
-	convoyRedis "github.com/frain-dev/convoy/queue/redis"
+	memqueue "github.com/frain-dev/convoy/queue/memqueue"
+	redisqueue "github.com/frain-dev/convoy/queue/redis"
 	"github.com/frain-dev/convoy/worker/task"
 	"github.com/getsentry/sentry-go"
+	"github.com/go-redis/redis/v8"
 	"github.com/google/uuid"
 	prefixed "github.com/x-cray/logrus-prefixed-formatter"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 
 	"github.com/frain-dev/convoy/util"
-	"github.com/go-redis/redis/v8"
 	log "github.com/sirupsen/logrus"
 	"github.com/vmihailenco/taskq/v3"
 
@@ -25,6 +27,7 @@ import (
 	"github.com/frain-dev/convoy/queue"
 	"github.com/spf13/cobra"
 
+	"github.com/frain-dev/convoy/datastore/bolt"
 	"github.com/frain-dev/convoy/datastore/mongo"
 )
 
@@ -82,7 +85,7 @@ func main() {
 				return err
 			}
 
-			db, err = mongo.New(cfg)
+			db, err = NewDB(cfg)
 			if err != nil {
 				return err
 			}
@@ -104,11 +107,30 @@ func main() {
 
 			var qFn taskq.Factory
 			var rC *redis.Client
+			var lS queue.Storage
+			var opts queue.QueueOptions
 
 			if cfg.Queue.Type == config.RedisQueueProvider {
-				rC, qFn, err = convoyRedis.NewClient(cfg)
+				rC, qFn, err = redisqueue.NewClient(cfg)
 				if err != nil {
 					return err
+				}
+				opts = queue.QueueOptions{
+					Type:    "redis",
+					Redis:   rC,
+					Factory: qFn,
+				}
+			}
+
+			if cfg.Queue.Type == config.InMemoryQueueProvider {
+				lS, qFn, err = memqueue.NewClient(cfg)
+				if err != nil {
+					return err
+				}
+				opts = queue.QueueOptions{
+					Type:    "in-memory",
+					Storage: lS,
+					Factory: qFn,
 				}
 			}
 
@@ -123,8 +145,8 @@ func main() {
 			app.applicationRepo = db.AppRepo()
 			app.eventDeliveryRepo = db.EventDeliveryRepo()
 
-			app.eventQueue = convoyRedis.NewQueue(rC, qFn, "EventQueue")
-			app.deadLetterQueue = convoyRedis.NewQueue(rC, qFn, "DeadLetterQueue")
+			app.eventQueue = NewQueue(opts, "EventQueue")
+			app.deadLetterQueue = NewQueue(opts, "DeadLetterQueue")
 
 			err = ensureDefaultGroup(context.Background(), cfg, app)
 			if err != nil {
@@ -169,6 +191,23 @@ func main() {
 	if err := cmd.Execute(); err != nil {
 		log.Fatal(err)
 	}
+}
+
+func NewQueue(opts queue.QueueOptions, name string) queue.Queuer {
+	optsType := opts.Type
+	var convoyQueue queue.Queuer
+	switch optsType {
+	case "in-memory":
+		opts.Name = name
+		convoyQueue = memqueue.NewQueue(opts)
+
+	case "redis":
+		opts.Name = name
+		convoyQueue = redisqueue.NewQueue(opts)
+	default:
+		log.Errorf("Invalid queue type: %v", optsType)
+	}
+	return convoyQueue
 }
 
 func ensureDefaultGroup(ctx context.Context, cfg config.Configuration, a *app) error {
@@ -256,4 +295,23 @@ type app struct {
 
 func getCtx() (context.Context, context.CancelFunc) {
 	return context.WithTimeout(context.Background(), time.Second*1)
+}
+
+func NewDB(cfg config.Configuration) (datastore.DatabaseClient, error) {
+	switch cfg.Database.Type {
+	case "mongodb":
+		db, err := mongo.New(cfg)
+		if err != nil {
+			return nil, err
+		}
+		return db, nil
+	case "bolt":
+		bolt, err := bolt.New(cfg)
+		if err != nil {
+			return nil, err
+		}
+		return bolt, nil
+	default:
+		return nil, errors.New("invalid database type")
+	}
 }
