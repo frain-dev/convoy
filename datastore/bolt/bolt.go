@@ -18,28 +18,18 @@ type Client struct {
 	eventDeliveryRepo datastore.EventDeliveryRepository
 }
 
-const bucketName string = "convoy"
-
 func New(cfg config.Configuration) (datastore.DatabaseClient, error) {
-	db, err := bbolt.Open("convoy.db", 0666, nil)
+	db, err := bbolt.Open(cfg.Database.Dsn, 0666, nil)
 	if err != nil {
 		return nil, err
 	}
 
-	bErr := db.Update(func(tx *bbolt.Tx) error {
-		_, err := tx.CreateBucketIfNotExists([]byte(bucketName))
-		return err
-	})
-
-	if bErr != nil {
-		return nil, bErr
-	}
-
 	c := &Client{
-		db:        db,
-		groupRepo: NewGroupRepo(db),
-		// applicationRepo:   NewApplicationRepo(conn),
-		// eventRepo:         NewEventRepository(conn),
+		db:              db,
+		groupRepo:       NewGroupRepo(db),
+		apiKeyRepo:      NewApiRoleRepo(db),
+		applicationRepo: NewApplicationRepo(db),
+		// eventRepo:       NewEventRepo(db),
 		// eventDeliveryRepo: NewEventDeliveryRepository(conn),
 	}
 

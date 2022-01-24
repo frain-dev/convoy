@@ -5,7 +5,6 @@ import (
 	"time"
 
 	"github.com/frain-dev/convoy/auth/realm_chain"
-	convoyQueue "github.com/frain-dev/convoy/queue/redis"
 	"github.com/frain-dev/convoy/worker"
 	"github.com/frain-dev/convoy/worker/task"
 
@@ -69,12 +68,13 @@ func StartConvoyServer(a *app, cfg config.Configuration, withWorkers bool) error
 	}
 	if withWorkers {
 		// register workers.
-		if queue, ok := a.eventQueue.(*convoyQueue.RedisQueue); ok {
-			worker.NewProducer(queue).Start()
-		}
+		producer := worker.NewProducer(a.eventQueue)
 
-		if queue, ok := a.deadLetterQueue.(*convoyQueue.RedisQueue); ok {
-			worker.NewCleaner(queue).Start()
+		cleaner := worker.NewCleaner(a.deadLetterQueue)
+
+		if cfg.Queue.Type != config.InMemoryQueueProvider {
+			producer.Start()
+			cleaner.Start()
 		}
 
 	}
