@@ -223,7 +223,7 @@ func (e *eventDeliveryRepo) LoadEventDeliveriesPaged(ctx context.Context, groupI
 		}
 
 		pg = datastore.PaginationData{
-			Total:     int64(len(deliveries)),
+			Total:     total,
 			Page:      int64(pageable.Page),
 			PerPage:   int64(pageable.PerPage),
 			Prev:      int64(prevPage),

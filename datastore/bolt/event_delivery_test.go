@@ -914,7 +914,7 @@ func Test_eventDeliveryRepo_LoadEventDeliveriesPaged(t *testing.T) {
 			},
 			wantCount: 1,
 			wantPaginationData: datastore.PaginationData{
-				Total:     1,
+				Total:     5,
 				Page:      4,
 				PerPage:   1,
 				Prev:      3,
