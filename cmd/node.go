@@ -59,6 +59,8 @@ func nodeWorkerCommand(a *app) *cobra.Command {
 				producer.Start()
 				cleaner.Start()
 			}
+			//Routine to create tasks for dynamically created groups
+			worker.NewGroupTask(a.groupRepo, a.applicationRepo, a.eventDeliveryRepo)
 			return nil
 		},
 	}
