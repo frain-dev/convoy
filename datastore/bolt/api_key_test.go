@@ -14,7 +14,7 @@ import (
 	"github.com/frain-dev/convoy/util"
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/require"
-	"github.com/xdg-go/pbkdf2"
+	"golang.org/x/crypto/pbkdf2"
 )
 
 func Test_CreateAPIKey(t *testing.T) {
