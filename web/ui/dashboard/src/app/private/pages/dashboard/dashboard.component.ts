@@ -31,4 +31,13 @@ export class DashboardComponent implements OnInit {
 	apiURL(): string {
 		return `${environment.production ? location.origin : 'http://localhost:5005'}/ui`;
 	}
+
+	requestToken(): string {
+		if (this.authDetails()) {
+			const { username, password } = this.authDetails();
+			return btoa(`${username + ':' + password}`);
+		} else {
+			return '';
+		}
+	}
 }
