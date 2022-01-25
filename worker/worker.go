@@ -1,5 +1,7 @@
 package worker
 
+import "context"
+
 type Worker interface {
-	Start()
+	Start(context.Context)
 }
