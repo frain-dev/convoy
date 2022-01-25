@@ -77,37 +77,36 @@ func (a *apiKeyRepo) FindAPIKeyByID(ctx context.Context, uid string) (*datastore
 }
 
 func (a *apiKeyRepo) FindAPIKeyByMaskID(ctx context.Context, maskID string) (*datastore.APIKey, error) {
-	var apiKeys []datastore.APIKey = make([]datastore.APIKey, 0, 1)
-	var apiKey datastore.APIKey
+	var apiKey *datastore.APIKey
 
 	err := a.db.View(func(tx *bbolt.Tx) error {
 		b := tx.Bucket([]byte(a.bucketName))
-		c := b.Cursor()
 
-		for k, v := c.First(); k != nil; k, v = c.Next() {
-			err := json.Unmarshal(v, &apiKey)
+		return b.ForEach(func(k, v []byte) error {
+			var temp *datastore.APIKey
+			err := json.Unmarshal(v, &temp)
 			if err != nil {
 				return err
 			}
 
-			if apiKey.MaskID == maskID {
-				apiKeys = append(apiKeys, apiKey)
-				break
+			if temp.MaskID == maskID {
+				apiKey = temp
+				return nil
 			}
-		}
 
-		return nil
+			return nil
+		})
 	})
 
-	if err != nil && len(apiKeys) == 0 {
-		return &apiKey, err
+	if err != nil {
+		return nil, err
 	}
 
-	if err == nil && len(apiKeys) == 0 {
-		return &apiKey, datastore.ErrAPIKeyNotFound
+	if apiKey == nil {
+		return nil, datastore.ErrAPIKeyNotFound
 	}
 
-	return &apiKeys[0], err
+	return apiKey, err
 }
 
 func (a *apiKeyRepo) RevokeAPIKeys(ctx context.Context, uids []string) error {
@@ -127,37 +126,36 @@ func (a *apiKeyRepo) RevokeAPIKeys(ctx context.Context, uids []string) error {
 }
 
 func (a *apiKeyRepo) FindAPIKeyByHash(ctx context.Context, hash string) (*datastore.APIKey, error) {
-	var apiKeys []datastore.APIKey = make([]datastore.APIKey, 0, 1)
-	var apiKey datastore.APIKey
+	var apiKey *datastore.APIKey
 
 	err := a.db.View(func(tx *bbolt.Tx) error {
 		b := tx.Bucket([]byte(a.bucketName))
-		c := b.Cursor()
 
-		for k, v := c.First(); k != nil; k, v = c.Next() {
-			err := json.Unmarshal(v, &apiKey)
+		return b.ForEach(func(k, v []byte) error {
+			var temp *datastore.APIKey
+			err := json.Unmarshal(v, &temp)
 			if err != nil {
 				return err
 			}
 
-			if apiKey.Hash == hash {
-				apiKeys = append(apiKeys, apiKey)
-				break
+			if temp.Hash == hash {
+				apiKey = temp
+				return nil
 			}
-		}
 
-		return nil
+			return nil
+		})
 	})
 
-	if err != nil && len(apiKeys) == 0 {
-		return &apiKey, err
+	if err != nil {
+		return nil, err
 	}
 
-	if err == nil && len(apiKeys) == 0 {
-		return &apiKey, datastore.ErrAPIKeyNotFound
+	if apiKey == nil {
+		return nil, datastore.ErrAPIKeyNotFound
 	}
 
-	return &apiKeys[0], err
+	return apiKey, err
 }
 
 func (a *apiKeyRepo) LoadAPIKeysPaged(ctx context.Context, pageable *datastore.Pageable) ([]datastore.APIKey, datastore.PaginationData, error) {
@@ -167,7 +165,7 @@ func (a *apiKeyRepo) LoadAPIKeysPaged(ctx context.Context, pageable *datastore.P
 	prevPage := pageable.Page
 	perPage := pageable.PerPage
 	data := datastore.PaginationData{}
-	
+
 	if pageable.Page < 1 {
 		page = 1
 	}
@@ -179,7 +177,6 @@ func (a *apiKeyRepo) LoadAPIKeysPaged(ctx context.Context, pageable *datastore.P
 	prevPage = page - 1
 	lowerBound := perPage * prevPage
 	upperBound := perPage * page
-
 
 	err := a.db.View(func(tx *bbolt.Tx) error {
 		b := tx.Bucket([]byte(a.bucketName))
