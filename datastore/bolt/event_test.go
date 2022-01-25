@@ -453,36 +453,36 @@ func Test_LoadEventsPaged(t *testing.T) {
 		expected Expected
 		pageData datastore.Pageable
 	}{
-		// {
-		// 	name: "Load Event Paged - Start and End Date",
-		// 	group: Group{
-		// 		UID:  "gid-1",
-		// 		Name: "Group 1",
-		// 	},
-		// 	app: App{
-		// 		Title:   "Application 1",
-		// 		GroupID: "gid-1",
-		// 		UID:     "aid-1",
-		// 	},
-		// 	times: []string{
-		// 		"2021-11-01T00:01:20",
-		// 		"2021-11-11T00:01:20",
-		// 		"2021-11-12T00:01:20",
-		// 		"2021-12-12T00:01:20",
-		// 		"2022-01-01T00:01:20",
-		// 		"2022-01-02T00:01:20",
-		// 		"2022-01-12T00:01:20",
-		// 		"2022-02-06T00:01:20",
-		// 		"2022-02-01T00:01:20",
-		// 		"2022-02-12T00:01:20",
-		// 	},
-		// 	params:   Params{start: "2021-11-01T00:00:00", end: "2022-02-01T00:00:00"},
-		// 	pageData: datastore.Pageable{Page: 1, PerPage: 3},
-		// 	expected: Expected{
-		// 		EventCount:     3,
-		// 		paginationData: datastore.PaginationData{Total: 7, TotalPage: 3, Page: 1, PerPage: 3, Prev: 0, Next: 2},
-		// 	},
-		// },
+		{
+			name: "Load Event Paged - Start and End Date",
+			group: Group{
+				UID:  "gid-1",
+				Name: "Group 1",
+			},
+			app: App{
+				Title:   "Application 1",
+				GroupID: "gid-1",
+				UID:     "aid-1",
+			},
+			times: []string{
+				"2021-11-01T00:01:20",
+				"2021-11-11T00:01:20",
+				"2021-11-12T00:01:20",
+				"2021-12-12T00:01:20",
+				"2022-01-01T00:01:20",
+				"2022-01-02T00:01:20",
+				"2022-01-12T00:01:20",
+				"2022-02-06T00:01:20",
+				"2022-02-01T00:01:20",
+				"2022-02-12T00:01:20",
+			},
+			params:   Params{start: "2021-11-01T00:00:00", end: "2022-02-01T00:00:00"},
+			pageData: datastore.Pageable{Page: 1, PerPage: 3},
+			expected: Expected{
+				EventCount:     3,
+				paginationData: datastore.PaginationData{Total: 7, TotalPage: 3, Page: 1, PerPage: 3, Prev: 0, Next: 2},
+			},
+		},
 		{
 			name: "Load Event Paged - Start Date Only",
 			group: Group{
