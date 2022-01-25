@@ -296,7 +296,6 @@ func (e *eventRepo) LoadEventsPaged(ctx context.Context, groupId string, appId s
 		c := b.Cursor()
 
 		i := 0
-		// seek all event deliveries
 		for k, v := c.First(); k != nil; k, v = c.Next() {
 			if i >= lowerBound && i < upperBound {
 				var evt datastore.Event
@@ -307,9 +306,9 @@ func (e *eventRepo) LoadEventsPaged(ctx context.Context, groupId string, appId s
 
 				if e.filterEvents(f, &evt) {
 					events = append(events, evt)
+					i++
 				}
 			}
-			i++
 
 			if i == upperBound+pageable.PerPage {
 				break
