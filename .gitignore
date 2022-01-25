@@ -20,6 +20,7 @@ hookstack
 !/server/ui/build/go_test_stub.txt
 /data/mongo/
 .DS_Store
+*.db
 
 # ui depencencies
 **/node_modules

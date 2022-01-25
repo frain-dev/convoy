@@ -403,7 +403,7 @@ export class ConvoyDashboardComponent implements OnInit {
 			this.groups = groupsResponse.data;
 
 			// check group existing filter in url and set active group
-			this.activeGroup = this.route.snapshot.queryParams.group ?? this.groups[0]?.uid;
+			if (!this.isCloud) this.activeGroup = this.route.snapshot.queryParams.group ?? this.groups[0]?.uid;
 			return;
 		} catch (error) {
 			return error;
