@@ -5,7 +5,6 @@ import (
 
 	"github.com/frain-dev/convoy/config"
 	"github.com/frain-dev/convoy/worker"
-	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 )
 
@@ -25,11 +24,8 @@ func addWorkerCommand(a *app) *cobra.Command {
 				producer.Start(ctx)
 			}
 
-			select {
-			case <-ctx.Done():
-				log.Println("Worker crashed")
-				return ctx.Err()
-			}
+			<-ctx.Done()
+			return ctx.Err()
 		},
 	}
 	return cmd
