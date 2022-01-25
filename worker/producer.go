@@ -23,9 +23,9 @@ func NewProducer(queue queue.Queuer) *Producer {
 	}
 }
 
-func (p *Producer) Start() {
+func (p *Producer) Start(ctx context.Context) {
 	go func() {
-		err := p.consumer.Start(context.TODO())
+		err := p.consumer.Start(ctx)
 		if err != nil {
 			log.Fatal(err)
 		}
