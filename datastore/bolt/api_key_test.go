@@ -218,7 +218,7 @@ func Test_LoadAPIKeysPaged(t *testing.T) {
 		expected Expected
 	}{
 		{
-			name:     "Load API Keys Paged",
+			name:     "Load API Keys Paged with 10 records",
 			pageData: datastore.Pageable{Page: 1, PerPage: 3},
 			apiKeys: []ApiKey{
 				{
@@ -230,6 +230,22 @@ func Test_LoadAPIKeysPaged(t *testing.T) {
 			expected: Expected{
 				ApiKeyCount:    3,
 				paginationData: datastore.PaginationData{Total: 10, TotalPage: 4, Page: 1, PerPage: 3, Prev: 0, Next: 2},
+			},
+		},
+
+		{
+			name:     "Load API Keys Paged with 13 records",
+			pageData: datastore.Pageable{Page: 2, PerPage: 5},
+			apiKeys: []ApiKey{
+				{
+					UID:   uuid.NewString(),
+					Name:  "Group 2",
+					Count: 13,
+				},
+			},
+			expected: Expected{
+				ApiKeyCount:    5,
+				paginationData: datastore.PaginationData{Total: 13, TotalPage: 3, Page: 2, PerPage: 5, Prev: 1, Next: 3},
 			},
 		},
 	}

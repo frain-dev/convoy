@@ -30,10 +30,10 @@ func NewApiRoleRepo(db *bbolt.DB) datastore.APIKeyRepository {
 }
 
 func (a *apiKeyRepo) CreateAPIKey(ctx context.Context, apiKey *datastore.APIKey) error {
-	return a.createUpdateApplication(apiKey)
+	return a.createUpdateAPIKey(apiKey)
 }
 
-func (a *apiKeyRepo) createUpdateApplication(apiKey *datastore.APIKey) error {
+func (a *apiKeyRepo) createUpdateAPIKey(apiKey *datastore.APIKey) error {
 	return a.db.Update(func(tx *bbolt.Tx) error {
 		b := tx.Bucket([]byte(a.bucketName))
 
@@ -52,7 +52,7 @@ func (a *apiKeyRepo) createUpdateApplication(apiKey *datastore.APIKey) error {
 }
 
 func (a *apiKeyRepo) UpdateAPIKey(ctx context.Context, apiKey *datastore.APIKey) error {
-	return a.createUpdateApplication(apiKey)
+	return a.createUpdateAPIKey(apiKey)
 }
 
 func (a *apiKeyRepo) FindAPIKeyByID(ctx context.Context, uid string) (*datastore.APIKey, error) {
@@ -167,7 +167,7 @@ func (a *apiKeyRepo) LoadAPIKeysPaged(ctx context.Context, pageable *datastore.P
 	prevPage := pageable.Page
 	perPage := pageable.PerPage
 	data := datastore.PaginationData{}
-
+	
 	if pageable.Page < 1 {
 		page = 1
 	}
@@ -176,11 +176,10 @@ func (a *apiKeyRepo) LoadAPIKeysPaged(ctx context.Context, pageable *datastore.P
 		perPage = 10
 	}
 
-	if page < 1 {
-		prevPage = 1
-	} else {
-		prevPage = page - 1
-	}
+	prevPage = page - 1
+	lowerBound := perPage * prevPage
+	upperBound := perPage * page
+
 
 	err := a.db.View(func(tx *bbolt.Tx) error {
 		b := tx.Bucket([]byte(a.bucketName))
@@ -192,7 +191,7 @@ func (a *apiKeyRepo) LoadAPIKeysPaged(ctx context.Context, pageable *datastore.P
 				continue
 			}
 
-			if i > perPage*prevPage && i <= perPage*page {
+			if i > lowerBound && i <= upperBound {
 				var apiKey datastore.APIKey
 				err := json.Unmarshal(v, &apiKey)
 				if err != nil {
@@ -208,10 +207,7 @@ func (a *apiKeyRepo) LoadAPIKeysPaged(ctx context.Context, pageable *datastore.P
 			}
 		}
 
-		total, err := a.countAPIKeys()
-		if err != nil {
-			return err
-		}
+		total := int64(b.Stats().KeyN)
 
 		data.Total = total
 		data.TotalPage = int64(math.Ceil(float64(total) / float64(perPage)))
@@ -224,27 +220,4 @@ func (a *apiKeyRepo) LoadAPIKeysPaged(ctx context.Context, pageable *datastore.P
 	})
 
 	return apiKeys, data, err
-}
-
-func (a *apiKeyRepo) countAPIKeys() (int64, error) {
-	i := int64(0)
-
-	err := a.db.View(func(tx *bbolt.Tx) error {
-		b := tx.Bucket([]byte(a.bucketName))
-		c := b.Cursor()
-
-		var apiKey datastore.APIKey
-		for k, v := c.First(); k != nil; k, v = c.Next() {
-			err := json.Unmarshal(v, &apiKey)
-			if err != nil {
-				return err
-			}
-
-			i++
-		}
-
-		return nil
-	})
-
-	return i, err
 }
