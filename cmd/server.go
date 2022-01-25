@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"errors"
 	"time"
 
@@ -17,6 +18,8 @@ import (
 
 func addServerCommand(a *app) *cobra.Command {
 
+	var withWorkers bool
+
 	cmd := &cobra.Command{
 		Use:     "server",
 		Aliases: []string{"serve", "s"},
@@ -27,7 +30,7 @@ func addServerCommand(a *app) *cobra.Command {
 				return err
 			}
 
-			err = StartConvoyServer(a, cfg, true)
+			err = StartConvoyServer(a, cfg, withWorkers)
 
 			if err != nil {
 				log.Printf("Error starting convoy server: %v", err)
@@ -36,6 +39,8 @@ func addServerCommand(a *app) *cobra.Command {
 			return nil
 		},
 	}
+
+	cmd.Flags().BoolVarP(&withWorkers, "with-workers", "w", true, "Should run workers")
 
 	return cmd
 }
@@ -67,14 +72,13 @@ func StartConvoyServer(a *app, cfg config.Configuration, withWorkers bool) error
 		return err
 	}
 	if withWorkers {
+		log.Infof("Starting Convoy workers...")
 		// register workers.
+		ctx := context.Background()
 		producer := worker.NewProducer(a.eventQueue)
 
-		cleaner := worker.NewCleaner(a.deadLetterQueue)
-
 		if cfg.Queue.Type != config.InMemoryQueueProvider {
-			producer.Start()
-			cleaner.Start()
+			producer.Start(ctx)
 		}
 
 	}
