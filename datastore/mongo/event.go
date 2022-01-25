@@ -154,22 +154,6 @@ func (db *eventRepo) LoadEventIntervals(ctx context.Context, groupID string, sea
 	return eventsIntervals, nil
 }
 
-func (db *eventRepo) LoadEventsPagedByAppId(ctx context.Context, appId string, searchParams datastore.SearchParams, pageable datastore.Pageable) ([]datastore.Event, datastore.PaginationData, error) {
-	filter := bson.M{"app_id": appId, "document_status": bson.M{"$ne": datastore.DeletedDocumentStatus}, "created_at": getCreatedDateFilter(searchParams)}
-
-	var messages []datastore.Event
-	paginatedData, err := pager.New(db.inner).Context(ctx).Limit(int64(pageable.PerPage)).Page(int64(pageable.Page)).Sort("created_at", pageable.Sort).Filter(filter).Decode(&messages).Find()
-	if err != nil {
-		return messages, datastore.PaginationData{}, err
-	}
-
-	if messages == nil {
-		messages = make([]datastore.Event, 0)
-	}
-
-	return messages, datastore.PaginationData(paginatedData.Pagination), nil
-}
-
 func (db *eventRepo) FindEventByID(ctx context.Context, id string) (*datastore.Event, error) {
 	m := new(datastore.Event)
 
