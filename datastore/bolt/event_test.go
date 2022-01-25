@@ -509,8 +509,8 @@ func Test_LoadEventsPaged(t *testing.T) {
 			params:   Params{start: "2022-01-01T00:00:00"},
 			pageData: datastore.Pageable{Page: 1, PerPage: 10},
 			expected: Expected{
-				EventCount:     1,
-				paginationData: datastore.PaginationData{Total: 6, TotalPage: 2, Page: 2, PerPage: 5, Prev: 1, Next: 3},
+				EventCount:     6,
+				paginationData: datastore.PaginationData{Total: 6, TotalPage: 1, Page: 1, PerPage: 10, Prev: 0, Next: 2},
 			},
 		},
 	}
