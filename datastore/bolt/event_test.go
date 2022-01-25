@@ -513,6 +513,36 @@ func Test_LoadEventsPaged(t *testing.T) {
 				paginationData: datastore.PaginationData{Total: 6, TotalPage: 1, Page: 1, PerPage: 10, Prev: 0, Next: 2},
 			},
 		},
+		{
+			name: "Load Event Paged - End Date Only",
+			group: Group{
+				UID:  "gid-1",
+				Name: "Group 1",
+			},
+			app: App{
+				Title:   "Application 1",
+				GroupID: "gid-1",
+				UID:     "aid-1",
+			},
+			times: []string{
+				"2021-11-01T00:01:20",
+				"2021-11-11T00:01:20",
+				"2021-11-12T00:01:20",
+				"2021-12-12T00:01:20",
+				"2022-01-01T00:01:20",
+				"2022-01-02T00:01:20",
+				"2022-01-12T00:01:20",
+				"2022-02-01T00:01:20",
+				"2022-02-06T00:01:20",
+				"2022-02-12T00:01:20",
+			},
+			params:   Params{end: "2022-01-01T00:00:00"},
+			pageData: datastore.Pageable{Page: 1, PerPage: 5},
+			expected: Expected{
+				EventCount:     4,
+				paginationData: datastore.PaginationData{Total: 4, TotalPage: 1, Page: 1, PerPage: 5, Prev: 0, Next: 2},
+			},
+		},
 	}
 
 	for _, tc := range tests {
@@ -560,13 +590,22 @@ func Test_LoadEventsPaged(t *testing.T) {
 				require.NoError(t, eventRepo.CreateEvent(context.Background(), event))
 			}
 
-			startDate, err := time.Parse(timeFormat, tc.params.start)
-			require.NoError(t, err)
-
+			var err error
 			var endDate time.Time
+			var startDate time.Time
+
+			if !util.IsStringEmpty(tc.params.start) {
+				startDate, err = time.Parse(timeFormat, tc.params.start)
+				require.NoError(t, err)
+			} else {
+				startDate = time.Unix(0, 0)
+			}
+
 			if !util.IsStringEmpty(tc.params.end) {
 				endDate, err = time.Parse(timeFormat, tc.params.end)
 				require.NoError(t, err)
+			} else {
+				endDate = time.Unix(0, 0)
 			}
 
 			events, data, err := eventRepo.LoadEventsPaged(context.Background(), tc.group.UID, tc.app.UID, datastore.SearchParams{
