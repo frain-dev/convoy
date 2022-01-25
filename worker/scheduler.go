@@ -10,7 +10,7 @@ import (
 	"github.com/vmihailenco/taskq/v3"
 )
 
-func NewGroupTask(groupRepo datastore.GroupRepository, applicationRepo datastore.ApplicationRepository, eventDeliveryRepo datastore.EventDeliveryRepository) {
+func RegisterNewGroupTask(applicationRepo datastore.ApplicationRepository, eventDeliveryRepo datastore.EventDeliveryRepository, groupRepo datastore.GroupRepository) {
 	go func() {
 		for {
 			filter := &datastore.GroupFilter{}
