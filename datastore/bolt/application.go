@@ -56,12 +56,7 @@ func (a *appRepo) LoadApplicationsPaged(ctx context.Context, gid, q string, page
 	if pageable.PerPage < 1 {
 		perPage = 10
 	}
-
-	if page < 1 {
-		prevPage = 1
-	} else {
-		prevPage = page - 1
-	}
+	prevPage = page - 1
 
 	err := a.db.View(func(tx *bbolt.Tx) error {
 		b := tx.Bucket([]byte(a.bucketName))

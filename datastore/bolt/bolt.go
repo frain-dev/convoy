@@ -25,12 +25,12 @@ func New(cfg config.Configuration) (datastore.DatabaseClient, error) {
 	}
 
 	c := &Client{
-		db:              db,
-		groupRepo:       NewGroupRepo(db),
-		eventRepo:       NewEventRepo(db),
-		apiKeyRepo:      NewApiRoleRepo(db),
-		applicationRepo: NewApplicationRepo(db),
-		// eventDeliveryRepo: NewEventDeliveryRepository(conn),
+		db:                db,
+		groupRepo:         NewGroupRepo(db),
+		eventRepo:         NewEventRepo(db),
+		apiKeyRepo:        NewApiRoleRepo(db),
+		applicationRepo:   NewApplicationRepo(db),
+		eventDeliveryRepo: NewEventDeliveryRepository(db),
 	}
 
 	return c, nil
@@ -48,10 +48,6 @@ func (c *Client) Client() interface{} {
 	return c.db
 }
 
-func (c *Client) APIRepo() datastore.APIKeyRepository {
-	return c.apiKeyRepo
-}
-
 func (c *Client) GroupRepo() datastore.GroupRepository {
 	return c.groupRepo
 }
@@ -66,4 +62,8 @@ func (c *Client) EventRepo() datastore.EventRepository {
 
 func (c *Client) EventDeliveryRepo() datastore.EventDeliveryRepository {
 	return c.eventDeliveryRepo
+}
+
+func (c *Client) APIRepo() datastore.APIKeyRepository {
+	return c.apiKeyRepo
 }
