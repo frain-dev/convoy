@@ -14,13 +14,13 @@ import (
 	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
-const eventDeliveryBucketName = "eventdeliveries"
-
 type eventDeliveryRepo struct {
-	db *bbolt.DB
+	bucketName string
+	db         *bbolt.DB
 }
 
 func NewEventDeliveryRepository(db *bbolt.DB) datastore.EventDeliveryRepository {
+	eventDeliveryBucketName := "eventdeliveries"
 	err := db.Update(func(tx *bbolt.Tx) error {
 		_, err := tx.CreateBucketIfNotExists([]byte(eventDeliveryBucketName))
 		return err
@@ -30,21 +30,21 @@ func NewEventDeliveryRepository(db *bbolt.DB) datastore.EventDeliveryRepository 
 		return nil
 	}
 
-	return &eventDeliveryRepo{db: db}
+	return &eventDeliveryRepo{db: db, bucketName: eventDeliveryBucketName}
 }
 
 func (e *eventDeliveryRepo) CreateEventDelivery(ctx context.Context, delivery *datastore.EventDelivery) error {
-	return createUpdateEventDelivery(e.db, delivery)
+	return e.createUpdateEventDelivery(delivery)
 }
 
-func createUpdateEventDelivery(db *bbolt.DB, delivery *datastore.EventDelivery) error {
-	return db.Update(func(tx *bbolt.Tx) error {
+func (e *eventDeliveryRepo) createUpdateEventDelivery(delivery *datastore.EventDelivery) error {
+	return e.db.Update(func(tx *bbolt.Tx) error {
 		buf, err := json.Marshal(delivery)
 		if err != nil {
 			return err
 		}
 
-		b := tx.Bucket([]byte(eventDeliveryBucketName))
+		b := tx.Bucket([]byte(e.bucketName))
 		err = b.Put([]byte(delivery.UID), buf)
 		if err != nil {
 			return err
@@ -58,7 +58,7 @@ func (e *eventDeliveryRepo) FindEventDeliveryByID(ctx context.Context, uid strin
 	var delivery datastore.EventDelivery
 	err := e.db.View(func(tx *bbolt.Tx) error {
 
-		buf := tx.Bucket([]byte(eventDeliveryBucketName)).Get([]byte(uid))
+		buf := tx.Bucket([]byte(e.bucketName)).Get([]byte(uid))
 		if buf == nil {
 			return fmt.Errorf("event delivery with id (%s) does not exist", uid)
 		}
@@ -80,7 +80,7 @@ func (e *eventDeliveryRepo) FindEventDeliveriesByIDs(ctx context.Context, uids [
 	err := e.db.View(func(tx *bbolt.Tx) error {
 		for i, uid := range uids {
 			var delivery datastore.EventDelivery
-			buf := tx.Bucket([]byte(eventDeliveryBucketName)).Get([]byte(uid))
+			buf := tx.Bucket([]byte(e.bucketName)).Get([]byte(uid))
 			if buf == nil {
 				log.Errorf("event delivery with id (%s) does not exist", uid)
 				continue
@@ -111,7 +111,7 @@ func (e *eventDeliveryRepo) FindEventDeliveriesByEventID(ctx context.Context, ev
 	err := e.db.View(func(tx *bbolt.Tx) error {
 
 		var eid eid
-		c := tx.Bucket([]byte(eventDeliveryBucketName)).Cursor()
+		c := tx.Bucket([]byte(e.bucketName)).Cursor()
 
 		var deliverySlice [][]byte
 
@@ -152,13 +152,13 @@ func (e *eventDeliveryRepo) UpdateStatusOfEventDelivery(ctx context.Context, del
 	delivery.Status = status
 	delivery.UpdatedAt = primitive.NewDateTimeFromTime(time.Now())
 
-	return createUpdateEventDelivery(e.db, &delivery)
+	return e.createUpdateEventDelivery(&delivery)
 }
 
 func (e *eventDeliveryRepo) UpdateEventDeliveryWithAttempt(ctx context.Context, delivery datastore.EventDelivery, attempt datastore.DeliveryAttempt) error {
 	delivery.DeliveryAttempts = append(delivery.DeliveryAttempts, attempt)
 
-	return createUpdateEventDelivery(e.db, &delivery)
+	return e.createUpdateEventDelivery(&delivery)
 }
 
 func (e *eventDeliveryRepo) LoadEventDeliveriesPaged(ctx context.Context, groupID, appID, eventID string, status []datastore.EventDeliveryStatus, searchParams datastore.SearchParams, pageable datastore.Pageable) ([]datastore.EventDelivery, datastore.PaginationData, error) {
@@ -192,7 +192,7 @@ func (e *eventDeliveryRepo) LoadEventDeliveriesPaged(ctx context.Context, groupI
 	var pg datastore.PaginationData
 	err := e.db.View(func(tx *bbolt.Tx) error {
 
-		b := tx.Bucket([]byte(eventDeliveryBucketName))
+		b := tx.Bucket([]byte(e.bucketName))
 		c := b.Cursor()
 
 		i := 0
@@ -240,7 +240,7 @@ func (e *eventDeliveryRepo) LoadEventDeliveriesPaged(ctx context.Context, groupI
 func (e *eventDeliveryRepo) countEventDeliveriesWithFilter(f *filter) (int64, error) {
 	i := int64(0)
 	err := e.db.View(func(tx *bbolt.Tx) error {
-		b := tx.Bucket([]byte(eventDeliveryBucketName))
+		b := tx.Bucket([]byte(e.bucketName))
 		c := b.Cursor()
 
 		// seek all event deliveries
