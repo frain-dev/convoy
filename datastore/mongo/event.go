@@ -13,7 +13,6 @@ import (
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
-	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
 type eventRepo struct {
@@ -155,22 +154,6 @@ func (db *eventRepo) LoadEventIntervals(ctx context.Context, groupID string, sea
 	return eventsIntervals, nil
 }
 
-func (db *eventRepo) LoadEventsPagedByAppId(ctx context.Context, appId string, searchParams datastore.SearchParams, pageable datastore.Pageable) ([]datastore.Event, datastore.PaginationData, error) {
-	filter := bson.M{"app_id": appId, "document_status": bson.M{"$ne": datastore.DeletedDocumentStatus}, "created_at": getCreatedDateFilter(searchParams)}
-
-	var messages []datastore.Event
-	paginatedData, err := pager.New(db.inner).Context(ctx).Limit(int64(pageable.PerPage)).Page(int64(pageable.Page)).Sort("created_at", pageable.Sort).Filter(filter).Decode(&messages).Find()
-	if err != nil {
-		return messages, datastore.PaginationData{}, err
-	}
-
-	if messages == nil {
-		messages = make([]datastore.Event, 0)
-	}
-
-	return messages, datastore.PaginationData(paginatedData.Pagination), nil
-}
-
 func (db *eventRepo) FindEventByID(ctx context.Context, id string) (*datastore.Event, error) {
 	m := new(datastore.Event)
 
@@ -183,67 +166,6 @@ func (db *eventRepo) FindEventByID(ctx context.Context, id string) (*datastore.E
 	}
 
 	return m, err
-}
-
-func (db *eventRepo) LoadEventsScheduledForPosting(ctx context.Context) ([]datastore.Event, error) {
-
-	filter := bson.M{"status": datastore.ScheduledEventStatus,
-		"document_status":         bson.M{"$ne": datastore.DeletedDocumentStatus},
-		"metadata.next_send_time": bson.M{"$lte": primitive.NewDateTimeFromTime(time.Now())}}
-
-	return db.loadEventsByFilter(ctx, filter, nil)
-}
-
-func (db *eventRepo) loadEventsByFilter(ctx context.Context, filter bson.M, findOptions *options.FindOptions) ([]datastore.Event, error) {
-	messages := make([]datastore.Event, 0)
-	cur, err := db.inner.Find(ctx, filter, findOptions)
-	if err != nil {
-		return messages, err
-	}
-
-	for cur.Next(ctx) {
-		var message datastore.Event
-		if err := cur.Decode(&message); err != nil {
-			return messages, err
-		}
-
-		messages = append(messages, message)
-	}
-
-	if err := cur.Err(); err != nil {
-		return nil, err
-	}
-
-	if err := cur.Close(ctx); err != nil {
-		return messages, err
-	}
-
-	return messages, nil
-}
-
-func (db *eventRepo) LoadEventsForPostingRetry(ctx context.Context) ([]datastore.Event, error) {
-
-	filter := bson.M{
-		"$and": []bson.M{
-			{"status": datastore.RetryEventStatus},
-			{"metadata.next_send_time": bson.M{"$lte": primitive.NewDateTimeFromTime(time.Now())}},
-			{"document_status": bson.M{"$ne": datastore.DeletedDocumentStatus}},
-		},
-	}
-
-	return db.loadEventsByFilter(ctx, filter, nil)
-}
-
-func (db *eventRepo) LoadAbandonedEventsForPostingRetry(ctx context.Context) ([]datastore.Event, error) {
-	filter := bson.M{
-		"$and": []bson.M{
-			{"status": datastore.ProcessingEventStatus},
-			{"metadata.next_send_time": bson.M{"$lte": primitive.NewDateTimeFromTime(time.Now())}},
-			{"document_status": bson.M{"$ne": datastore.DeletedDocumentStatus}},
-		},
-	}
-
-	return db.loadEventsByFilter(ctx, filter, nil)
 }
 
 func (db *eventRepo) LoadEventsPaged(ctx context.Context, groupID string, appId string, searchParams datastore.SearchParams, pageable datastore.Pageable) ([]datastore.Event, datastore.PaginationData, error) {
