@@ -8,8 +8,10 @@ import (
 	"time"
 	_ "time/tzdata"
 
+	"github.com/frain-dev/convoy/logger"
 	memqueue "github.com/frain-dev/convoy/queue/memqueue"
 	redisqueue "github.com/frain-dev/convoy/queue/redis"
+	"github.com/frain-dev/convoy/tracer"
 	"github.com/frain-dev/convoy/worker/task"
 	"github.com/getsentry/sentry-go"
 	"github.com/go-redis/redis/v8"
@@ -107,6 +109,8 @@ func main() {
 
 			var qFn taskq.Factory
 			var rC *redis.Client
+			var lo logger.Logger
+			var tr tracer.Tracer
 			var lS queue.Storage
 			var opts queue.QueueOptions
 
@@ -134,6 +138,18 @@ func main() {
 				}
 			}
 
+			lo, err = logger.NewLogger(cfg.Logger)
+			if err != nil {
+				return err
+			}
+
+			if cfg.Tracer.Type == config.NewRelicTracerProvider {
+				tr, err = tracer.NewTracer(cfg, lo.WithLogger())
+				if err != nil {
+					return err
+				}
+			}
+
 			if util.IsStringEmpty(string(cfg.GroupConfig.Signature.Header)) {
 				cfg.GroupConfig.Signature.Header = config.DefaultSignatureHeader
 				log.Warnf("signature header is blank. setting default %s", config.DefaultSignatureHeader)
@@ -147,6 +163,8 @@ func main() {
 
 			app.eventQueue = NewQueue(opts, "EventQueue")
 			app.deadLetterQueue = NewQueue(opts, "DeadLetterQueue")
+			app.logger = lo
+			app.tracer = tr
 
 			err = ensureDefaultGroup(context.Background(), cfg, app)
 			if err != nil {
@@ -291,6 +309,8 @@ type app struct {
 	eventDeliveryRepo datastore.EventDeliveryRepository
 	eventQueue        queue.Queuer
 	deadLetterQueue   queue.Queuer
+	logger            logger.Logger
+	tracer            tracer.Tracer
 }
 
 func getCtx() (context.Context, context.CancelFunc) {

@@ -70,6 +70,23 @@ type SMTPConfiguration struct {
 	From     string `json:"from"`
 	ReplyTo  string `json:"reply-to"`
 }
+type LoggerConfiguration struct {
+	Type      LoggerProvider `json:"type"`
+	ServerLog struct {
+		Level string `json:"level"`
+	} `json:"server_log"`
+}
+
+type TracerConfiguration struct {
+	Type TracerProvider `json:"type"`
+}
+
+type NewRelicConfiguration struct {
+	AppName                  string `json:"app_name"`
+	LicenseKey               string `json:"license_key"`
+	ConfigEnabled            bool   `json:"config_enabled"`
+	DistributedTracerEnabled bool   `json:"distributed_tracer_enabled"`
+}
 
 type Configuration struct {
 	Auth            AuthConfiguration     `json:"auth,omitempty"`
@@ -82,6 +99,9 @@ type Configuration struct {
 	SMTP            SMTPConfiguration     `json:"smtp"`
 	Environment     string                `json:"env" envconfig:"CONVOY_ENV" required:"true" default:"development"`
 	MultipleTenants bool                  `json:"multiple_tenants"`
+	Logger          LoggerConfiguration   `json:"logger"`
+	Tracer          TracerConfiguration   `json:"tracer"`
+	NewRelic        NewRelicConfiguration `json:"new_relic"`
 }
 
 const (
@@ -95,6 +115,8 @@ const (
 	InMemoryQueueProvider   QueueProvider           = "in-memory"
 	DefaultStrategyProvider StrategyProvider        = "default"
 	DefaultSignatureHeader  SignatureHeaderProvider = "X-Convoy-Signature"
+	ConsoleLoggerProvider   LoggerProvider          = "console"
+	NewRelicTracerProvider  TracerProvider          = "new_relic"
 )
 
 type GroupConfig struct {
@@ -122,6 +144,8 @@ type AuthProvider string
 type QueueProvider string
 type StrategyProvider string
 type SignatureHeaderProvider string
+type LoggerProvider string
+type TracerProvider string
 
 func (s SignatureHeaderProvider) String() string {
 	return string(s)
