@@ -35,7 +35,7 @@ require (
 	github.com/spf13/cobra v1.2.1
 	github.com/stretchr/testify v1.7.0
 	github.com/swaggo/swag v1.7.3
-	github.com/vmihailenco/taskq/v3 v3.2.7
+	github.com/vmihailenco/taskq/v3 v3.2.8
 	github.com/x-cray/logrus-prefixed-formatter v0.5.2
 	github.com/youmark/pkcs8 v0.0.0-20201027041543-1326539a0a0a // indirect
 	go.etcd.io/bbolt v1.3.6

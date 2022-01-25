@@ -1,28 +1,19 @@
 import { Injectable } from '@angular/core';
-import { HttpClient, HttpHeaders, HttpResponse } from '@angular/common/http';
+import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { HTTP_RESPONSE } from './models/http.model';
+import { Router } from '@angular/router';
 
 @Injectable({
 	providedIn: 'root'
 })
 export class ConvoyDashboardService {
-	constructor(private httpClient: HttpClient) {}
+	constructor(private httpClient: HttpClient, private router: Router) {}
 
-	authDetails() {
-		const authDetails = localStorage.getItem('CONVOY_AUTH');
-		if (authDetails) {
-			const { username, password } = JSON.parse(authDetails);
-			return { token: btoa(`${username + ':' + password}`), authState: true };
-		} else {
-			return { authState: false };
-		}
-	}
-
-	request(requestDetails: { url: string; body?: any; method: 'get' | 'post' | 'delete' | 'put' }): Promise<HTTP_RESPONSE> {
+	request(requestDetails: { url: string; body?: any; method: 'get' | 'post' | 'delete' | 'put'; token: string; authType: 'Bearer' | 'Basic' }): Promise<HTTP_RESPONSE> {
 		return new Promise(async (resolve, reject) => {
 			try {
 				const requestHeader = new HttpHeaders({
-					Authorization: `Basic ${this.authDetails().token}`
+					Authorization: `${requestDetails.authType} ${requestDetails.token}`
 				});
 				const requestResponse: any = await this.httpClient.request(requestDetails.method, requestDetails.url, { headers: requestHeader, body: requestDetails.body }).toPromise();
 				return resolve(requestResponse);
