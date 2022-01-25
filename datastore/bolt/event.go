@@ -4,11 +4,12 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
-	"fmt"
+	"math"
 	"sort"
 	"time"
 
 	"github.com/frain-dev/convoy/datastore"
+	"github.com/frain-dev/convoy/util"
 	"go.etcd.io/bbolt"
 )
 
@@ -172,8 +173,6 @@ func (e *eventRepo) LoadEventIntervals(ctx context.Context, groupID string, sear
 				event.CreatedAt.Time().Unix() <= end {
 				format := event.CreatedAt.Time().Format(timeFormat)
 
-				fmt.Printf("%v\n", format)
-
 				if _, ok := eventsIntervalsMap[format]; ok {
 					eventsIntervalsMap[format]++
 				}
@@ -265,10 +264,133 @@ func getInterval(date, timeFormat string, period datastore.Period) (int64, error
 	return int64(interval), nil
 }
 
-func (e *eventRepo) LoadEventsPagedByAppId(ctx context.Context, appId string, searchParams datastore.SearchParams, pageable datastore.Pageable) ([]datastore.Event, datastore.PaginationData, error) {
-	return []datastore.Event{}, datastore.PaginationData{}, nil
+func (e *eventRepo) LoadEventsPaged(ctx context.Context, groupId string, appId string, searchParams datastore.SearchParams, pageable datastore.Pageable) ([]datastore.Event, datastore.PaginationData, error) {
+	f := &Filter{
+		appID:        appId,
+		groupID:      groupId,
+		searchParams: searchParams,
+
+		hasAppFilter:       !util.IsStringEmpty(appId),
+		hasGroupFilter:     !util.IsStringEmpty(groupId),
+		hasEndDateFilter:   searchParams.CreatedAtEnd > 0,
+		hasStartDateFilter: searchParams.CreatedAtStart > 0,
+	}
+
+	if pageable.Page < 1 {
+		pageable.Page = 1
+	}
+
+	if pageable.PerPage < 1 {
+		pageable.PerPage = 10
+	}
+
+	prevPage := pageable.Page - 1
+	lowerBound := pageable.PerPage * prevPage
+	upperBound := pageable.PerPage * pageable.Page
+
+	var events []datastore.Event
+	var pg datastore.PaginationData
+
+	err := e.db.View(func(tx *bbolt.Tx) error {
+		b := tx.Bucket([]byte(e.bucketName))
+		c := b.Cursor()
+
+		i := 0
+		// seek all event deliveries
+		for k, v := c.First(); k != nil; k, v = c.Next() {
+			if i >= lowerBound && i < upperBound {
+				var evt datastore.Event
+				err := json.Unmarshal(v, &evt)
+				if err != nil {
+					return err
+				}
+
+				if e.filterEvents(f, &evt) {
+					events = append(events, evt)
+				}
+			}
+			i++
+
+			if i == upperBound+pageable.PerPage {
+				break
+			}
+		}
+
+		total, err := e.countEventsWithFilter(f)
+		if err != nil {
+			return err
+		}
+
+		pg = datastore.PaginationData{
+			Total:     total,
+			Page:      int64(pageable.Page),
+			PerPage:   int64(pageable.PerPage),
+			Prev:      int64(prevPage),
+			Next:      int64(pageable.Page + 1),
+			TotalPage: int64(math.Ceil(float64(total) / float64(pageable.PerPage))),
+		}
+		return nil
+	})
+
+	return events, pg, err
 }
 
-func (e *eventRepo) LoadEventsPaged(ctx context.Context, groupID string, appId string, searchParams datastore.SearchParams, pageable datastore.Pageable) ([]datastore.Event, datastore.PaginationData, error) {
-	return []datastore.Event{}, datastore.PaginationData{}, nil
+type Filter struct {
+	groupID      string
+	appID        string
+	searchParams datastore.SearchParams
+
+	hasAppFilter       bool
+	hasGroupFilter     bool
+	hasStartDateFilter bool
+	hasEndDateFilter   bool
+}
+
+func (e *eventRepo) filterEvents(filter *Filter, evt *datastore.Event) bool {
+	if filter.hasAppFilter && evt.AppMetadata.UID != filter.appID {
+		return false
+	}
+
+	if filter.hasGroupFilter && evt.AppMetadata.GroupID != filter.groupID {
+		return false
+	}
+
+	if filter.hasStartDateFilter {
+		ok := evt.CreatedAt.Time().Unix() >= filter.searchParams.CreatedAtStart
+		if !ok {
+			return false
+		}
+	}
+
+	if filter.hasEndDateFilter {
+		ok := evt.CreatedAt.Time().Unix() <= filter.searchParams.CreatedAtEnd
+		if !ok {
+			return false
+		}
+	}
+
+	return true
+}
+
+func (e *eventRepo) countEventsWithFilter(filter *Filter) (int64, error) {
+	i := int64(0)
+	err := e.db.View(func(tx *bbolt.Tx) error {
+		b := tx.Bucket([]byte(e.bucketName))
+
+		var event datastore.Event
+		return b.ForEach(func(k, v []byte) error {
+			err := json.Unmarshal(v, &event)
+			if err != nil {
+				return err
+			}
+
+			if e.filterEvents(filter, &event) {
+				i++
+			}
+
+			return nil
+		})
+	})
+
+	return i, err
 }

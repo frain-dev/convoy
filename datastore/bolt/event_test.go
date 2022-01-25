@@ -416,8 +416,176 @@ func Test_LoadEventIntervals(t *testing.T) {
 
 			require.NoError(t, err)
 
-			// require.Equal(t, len(tc.expected), len(intervals))
+			require.Equal(t, len(tc.expected), len(intervals))
 			require.Equal(t, tc.expected, intervals)
+		})
+	}
+}
+
+func Test_LoadEventsPaged(t *testing.T) {
+	type Group struct {
+		UID  string
+		Name string
+	}
+
+	type App struct {
+		Title   string
+		GroupID string
+		UID     string
+	}
+
+	type Params struct {
+		start string
+		end   string
+	}
+
+	type Expected struct {
+		EventCount     int
+		paginationData datastore.PaginationData
+	}
+
+	tests := []struct {
+		name     string
+		group    Group
+		app      App
+		times    []string
+		params   Params
+		expected Expected
+		pageData datastore.Pageable
+	}{
+		// {
+		// 	name: "Load Event Paged - Start and End Date",
+		// 	group: Group{
+		// 		UID:  "gid-1",
+		// 		Name: "Group 1",
+		// 	},
+		// 	app: App{
+		// 		Title:   "Application 1",
+		// 		GroupID: "gid-1",
+		// 		UID:     "aid-1",
+		// 	},
+		// 	times: []string{
+		// 		"2021-11-01T00:01:20",
+		// 		"2021-11-11T00:01:20",
+		// 		"2021-11-12T00:01:20",
+		// 		"2021-12-12T00:01:20",
+		// 		"2022-01-01T00:01:20",
+		// 		"2022-01-02T00:01:20",
+		// 		"2022-01-12T00:01:20",
+		// 		"2022-02-06T00:01:20",
+		// 		"2022-02-01T00:01:20",
+		// 		"2022-02-12T00:01:20",
+		// 	},
+		// 	params:   Params{start: "2021-11-01T00:00:00", end: "2022-02-01T00:00:00"},
+		// 	pageData: datastore.Pageable{Page: 1, PerPage: 3},
+		// 	expected: Expected{
+		// 		EventCount:     3,
+		// 		paginationData: datastore.PaginationData{Total: 7, TotalPage: 3, Page: 1, PerPage: 3, Prev: 0, Next: 2},
+		// 	},
+		// },
+		{
+			name: "Load Event Paged - Start Date Only",
+			group: Group{
+				UID:  "gid-1",
+				Name: "Group 1",
+			},
+			app: App{
+				Title:   "Application 1",
+				GroupID: "gid-1",
+				UID:     "aid-1",
+			},
+			times: []string{
+				"2021-11-01T00:01:20",
+				"2021-11-11T00:01:20",
+				"2021-11-12T00:01:20",
+				"2021-12-12T00:01:20",
+				"2022-01-01T00:01:20",
+				"2022-01-02T00:01:20",
+				"2022-01-12T00:01:20",
+				"2022-02-01T00:01:20",
+				"2022-02-06T00:01:20",
+				"2022-02-12T00:01:20",
+			},
+			params:   Params{start: "2022-01-01T00:00:00"},
+			pageData: datastore.Pageable{Page: 1, PerPage: 10},
+			expected: Expected{
+				EventCount:     1,
+				paginationData: datastore.PaginationData{Total: 6, TotalPage: 2, Page: 2, PerPage: 5, Prev: 1, Next: 3},
+			},
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			db, closeFn := getDB(t)
+			defer closeFn()
+
+			eventRepo := NewEventRepo(db)
+			groupRepo := NewGroupRepo(db)
+			appRepo := NewApplicationRepo(db)
+
+			app := &datastore.Application{
+				Title:   tc.app.Title,
+				GroupID: tc.app.GroupID,
+				UID:     tc.app.UID,
+			}
+
+			// create the group and group application
+			require.NoError(t, groupRepo.CreateGroup(context.Background(), &datastore.Group{
+				UID:  tc.group.UID,
+				Name: tc.group.Name,
+			}))
+
+			require.NoError(t, appRepo.CreateApplication(context.Background(), app))
+
+			for _, tt := range tc.times {
+				createdAt, err := time.Parse(timeFormat, tt)
+
+				require.NoError(t, err)
+
+				event := &datastore.Event{
+					UID:              uuid.NewString(),
+					EventType:        "king.taker",
+					MatchedEndpoints: 1,
+					Data:             []byte("{\"key\":\"value\"}"),
+					CreatedAt:        primitive.NewDateTimeFromTime(createdAt),
+					DocumentStatus:   datastore.ActiveDocumentStatus,
+					AppMetadata: &datastore.AppMetadata{
+						Title:        app.Title,
+						UID:          app.UID,
+						GroupID:      app.GroupID,
+						SupportEmail: app.SupportEmail,
+					},
+				}
+				require.NoError(t, eventRepo.CreateEvent(context.Background(), event))
+			}
+
+			startDate, err := time.Parse(timeFormat, tc.params.start)
+			require.NoError(t, err)
+
+			var endDate time.Time
+			if !util.IsStringEmpty(tc.params.end) {
+				endDate, err = time.Parse(timeFormat, tc.params.end)
+				require.NoError(t, err)
+			}
+
+			events, data, err := eventRepo.LoadEventsPaged(context.Background(), tc.group.UID, tc.app.UID, datastore.SearchParams{
+				CreatedAtStart: startDate.Unix(),
+				CreatedAtEnd:   endDate.Unix(),
+			}, tc.pageData)
+
+			require.NoError(t, err)
+
+			require.Equal(t, tc.expected.EventCount, len(events))
+
+			require.Equal(t, tc.expected.paginationData.Total, data.Total)
+			require.Equal(t, tc.expected.paginationData.TotalPage, data.TotalPage)
+
+			require.Equal(t, tc.expected.paginationData.Next, data.Next)
+			require.Equal(t, tc.expected.paginationData.Prev, data.Prev)
+
+			require.Equal(t, tc.expected.paginationData.Page, data.Page)
+			require.Equal(t, tc.expected.paginationData.PerPage, data.PerPage)
 		})
 	}
 }
