@@ -8,10 +8,9 @@ import (
 	"time"
 
 	"github.com/frain-dev/convoy/datastore"
-	"go.mongodb.org/mongo-driver/bson/primitive"
-
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/require"
+	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
 func Test_LoadApplicationsPaged(t *testing.T) {
