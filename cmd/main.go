@@ -166,12 +166,8 @@ func main() {
 			app.logger = lo
 			app.tracer = tr
 
-			err = ensureDefaultGroup(context.Background(), cfg, app)
-			if err != nil {
-				return err
-			}
+			return ensureDefaultGroup(context.Background(), cfg, app)
 
-			return nil
 		},
 		PersistentPostRunE: func(cmd *cobra.Command, args []string) error {
 			defer func() {
