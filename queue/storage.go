@@ -39,10 +39,5 @@ func (s *localStorage) Exists(_ context.Context, key string) bool {
 		}
 	}
 
-	if ok := s.cache.Contains(key); ok {
-		return true
-	}
-
-	s.cache.Add(key, nil)
-	return false
+	return s.cache.Contains(key)
 }
