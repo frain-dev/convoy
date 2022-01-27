@@ -109,7 +109,7 @@ func (db *appRepo) LoadApplicationsPagedByGroupId(ctx context.Context, groupID s
 
 	msgCollection := db.innerDB.Collection(EventCollection)
 	for i, app := range applications {
-		filter = bson.M{"app_id": app.UID, "document_status": bson.M{"$ne": convoy.DeletedDocumentStatus}}
+		filter = bson.M{"app_metadata.uid": app.UID, "document_status": bson.M{"$ne": convoy.DeletedDocumentStatus}}
 		count, err := msgCollection.CountDocuments(ctx, filter)
 		if err != nil {
 			log.Errorf("failed to count events in %s. Reason: %s", app.UID, err)
@@ -165,7 +165,7 @@ func (db *appRepo) SearchApplicationsByGroupId(ctx context.Context, groupId stri
 
 	msgCollection := db.innerDB.Collection(EventCollection)
 	for i, app := range apps {
-		filter = bson.M{"app_id": app.UID, "document_status": bson.M{"$ne": convoy.DeletedDocumentStatus}}
+		filter = bson.M{"app_metadata.uid": app.UID, "document_status": bson.M{"$ne": convoy.DeletedDocumentStatus}}
 		count, err := msgCollection.CountDocuments(ctx, filter)
 		if err != nil {
 			log.Errorf("failed to count events in %s. Reason: %s", app.UID, err)
@@ -192,7 +192,7 @@ func (db *appRepo) FindApplicationByID(ctx context.Context,
 	}
 
 	msgCollection := db.innerDB.Collection(EventCollection)
-	filter = bson.M{"app_id": app.UID, "document_status": bson.M{"$ne": convoy.DeletedDocumentStatus}}
+	filter = bson.M{"app_metadata.uid": app.UID, "document_status": bson.M{"$ne": convoy.DeletedDocumentStatus}}
 	count, err := msgCollection.CountDocuments(ctx, filter)
 	if err != nil {
 		log.Errorf("failed to count events in %s. Reason: %s", app.UID, err)
@@ -275,7 +275,7 @@ func (db *appRepo) updateMessagesInApp(ctx context.Context, app *convoy.Applicat
 	var msgOperations []mongo.WriteModel
 
 	updateMessagesOperation := mongo.NewUpdateManyModel()
-	msgFilter := bson.M{"app_id": app.UID}
+	msgFilter := bson.M{"app_metadata.uid": app.UID}
 	updateMessagesOperation.SetFilter(msgFilter)
 	updateMessagesOperation.SetUpdate(update)
 	msgOperations = append(msgOperations, updateMessagesOperation)
