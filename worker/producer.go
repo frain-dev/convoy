@@ -2,6 +2,7 @@ package worker
 
 import (
 	"context"
+	"time"
 
 	"github.com/frain-dev/convoy/queue"
 	convoyRedis "github.com/frain-dev/convoy/queue/redis"
@@ -25,10 +26,23 @@ func NewProducer(queue *convoyRedis.RedisQueue) *Producer {
 }
 
 func (p *Producer) Start() {
+	ctx := context.Background()
 	go func() {
-		err := p.consumer.Start(context.TODO())
+		err := p.consumer.Start(ctx)
 		if err != nil {
 			log.Fatal(err)
+		}
+
+		ticker := time.NewTicker(2000 * time.Millisecond)
+
+		for {
+			select {
+			case <-ticker.C:
+				log.Printf("Consumer Stats: %+v\n", p.consumer.Stats())
+			case <-ctx.Done():
+				log.Println("Consumer quiting")
+				return
+			}
 		}
 	}()
 }
