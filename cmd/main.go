@@ -168,6 +168,10 @@ func ensureMongoIndices(conn *mongo.Database) {
 	datastore.EnsureIndex(conn, datastore.AppCollections, "group_id", false)
 	datastore.EnsureIndex(conn, datastore.EventCollection, "uid", true)
 	datastore.EnsureIndex(conn, datastore.EventCollection, "event_type", false)
+
+	datastore.EnsureCompoundIndex(conn, datastore.AppCollections)
+	datastore.EnsureCompoundIndex(conn, datastore.EventCollection)
+	datastore.EnsureCompoundIndex(conn, datastore.EventDeliveryCollection)
 }
 
 func ensureDefaultGroup(ctx context.Context, cfg config.Configuration, a *app) error {
