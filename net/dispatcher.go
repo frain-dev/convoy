@@ -39,12 +39,6 @@ func (d *Dispatcher) SendRequest(endpoint, method string, jsonData json.RawMessa
 
 	req, err := http.NewRequest(method, endpoint, bytes.NewBuffer(jsonData))
 	if err != nil {
-		if errT, ok := err.(net.Error); ok && errT.Timeout() {
-			log.WithError(errT).Error("http request timed out")
-			r.Error = "http connection to endpoint timed out"
-			return r, err
-		}
-
 		log.WithError(err).Error("error occurred while creating request")
 		return r, err
 	}
@@ -68,6 +62,12 @@ func (d *Dispatcher) SendRequest(endpoint, method string, jsonData json.RawMessa
 
 	response, err := d.client.Do(req)
 	if err != nil {
+		if errT, ok := err.(net.Error); ok && errT.Timeout() {
+			log.WithError(errT).Error("http request timed out")
+			r.Error = "http connection to endpoint timed out"
+			return r, err
+		}
+
 		log.WithError(err).Error("error sending request to API endpoint")
 		r.Error = err.Error()
 		return r, err
