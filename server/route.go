@@ -244,8 +244,8 @@ func New(cfg config.Configuration,
 
 	srv := &http.Server{
 		Handler:      buildRoutes(app),
-		ReadTimeout:  time.Second * 10,
-		WriteTimeout: time.Second * 10,
+		ReadTimeout:  time.Second * 30,
+		WriteTimeout: time.Second * 30,
 		Addr:         fmt.Sprintf(":%d", cfg.Server.HTTP.Port),
 	}
 
