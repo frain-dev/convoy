@@ -46,7 +46,7 @@ func (db *eventDeliveryRepo) FindEventDeliveryByID(ctx context.Context,
 	id string) (*convoy.EventDelivery, error) {
 	e := new(convoy.EventDelivery)
 
-	filter := bson.M{"uid": id, "document_status": bson.M{"$ne": convoy.DeletedDocumentStatus}}
+	filter := bson.M{"uid": id, "document_status": convoy.ActiveDocumentStatus}
 
 	err := db.inner.FindOne(ctx, filter).Decode(&e)
 
@@ -64,9 +64,7 @@ func (db *eventDeliveryRepo) FindEventDeliveriesByIDs(ctx context.Context,
 		"uid": bson.M{
 			"$in": ids,
 		},
-		"document_status": bson.M{
-			"$ne": convoy.DeletedDocumentStatus,
-		},
+		"document_status": convoy.ActiveDocumentStatus,
 	}
 
 	deliveries := make([]convoy.EventDelivery, 0)
@@ -91,7 +89,7 @@ func (db *eventDeliveryRepo) FindEventDeliveriesByIDs(ctx context.Context,
 func (db *eventDeliveryRepo) FindEventDeliveriesByEventID(ctx context.Context,
 	eventID string) ([]convoy.EventDelivery, error) {
 
-	filter := bson.M{"event_id": eventID, "document_status": bson.M{"$ne": convoy.DeletedDocumentStatus}}
+	filter := bson.M{"event_id": eventID, "document_status": convoy.ActiveDocumentStatus}
 
 	deliveries := make([]convoy.EventDelivery, 0)
 
@@ -168,7 +166,7 @@ func (db *eventDeliveryRepo) UpdateEventDeliveryWithAttempt(ctx context.Context,
 
 func (db *eventDeliveryRepo) LoadEventDeliveriesPaged(ctx context.Context, groupID, appID, eventID string, status []convoy.EventDeliveryStatus, searchParams models.SearchParams, pageable models.Pageable) ([]convoy.EventDelivery, pager.PaginationData, error) {
 	filter := bson.M{
-		"document_status": bson.M{"$ne": convoy.DeletedDocumentStatus},
+		"document_status": convoy.ActiveDocumentStatus,
 		"created_at":      getCreatedDateFilter(searchParams),
 	}
 

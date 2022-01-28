@@ -18,7 +18,8 @@ func Test_FetchGroupByID(t *testing.T) {
 	groupRepo := NewGroupRepo(db)
 
 	newOrg := &convoy.Group{
-		Name: "Yet another group",
+		Name:           "Yet another group",
+		DocumentStatus: convoy.ActiveDocumentStatus,
 	}
 
 	require.NoError(t, groupRepo.CreateGroup(context.Background(), newOrg))
@@ -37,7 +38,8 @@ func Test_CreateGroup(t *testing.T) {
 	groupRepo := NewGroupRepo(db)
 
 	newOrg := &convoy.Group{
-		Name: "Next group",
+		Name:           "Next group",
+		DocumentStatus: convoy.ActiveDocumentStatus,
 	}
 
 	require.NoError(t, groupRepo.CreateGroup(context.Background(), newOrg))

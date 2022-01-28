@@ -29,8 +29,9 @@ func Test_UpdateApplication(t *testing.T) {
 	require.NoError(t, groupRepo.CreateGroup(context.Background(), newGroup))
 
 	app := &convoy.Application{
-		Title:   "Next application name",
-		GroupID: newGroup.UID,
+		Title:          "Next application name",
+		GroupID:        newGroup.UID,
+		DocumentStatus: convoy.ActiveDocumentStatus,
 	}
 
 	require.NoError(t, appRepo.CreateApplication(context.Background(), app))

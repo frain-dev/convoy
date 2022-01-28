@@ -31,7 +31,7 @@ func (db *groupRepo) LoadGroups(ctx context.Context, f *convoy.GroupFilter) ([]*
 
 	opts := &options.FindOptions{Collation: &options.Collation{Locale: "en", Strength: 2}}
 	filter := bson.M{
-		"document_status": bson.M{"$ne": convoy.DeletedDocumentStatus},
+		"document_status": convoy.ActiveDocumentStatus,
 	}
 
 	if len(f.Names) > 0 {
