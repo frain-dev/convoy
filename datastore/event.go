@@ -62,9 +62,7 @@ func (db *eventRepo) LoadEventIntervals(ctx context.Context, groupID string, sea
 
 	matchStage := bson.D{{Key: "$match", Value: bson.D{
 		{Key: "app_metadata.group_id", Value: groupID},
-		{Key: "document_status", Value: bson.D{
-			{Key: "$ne", Value: convoy.DeletedDocumentStatus},
-		}},
+		{Key: "document_status", Value: convoy.ActiveDocumentStatus},
 		{Key: "created_at", Value: bson.D{
 			{Key: "$gte", Value: primitive.NewDateTimeFromTime(time.Unix(start, 0))},
 			{Key: "$lte", Value: primitive.NewDateTimeFromTime(time.Unix(end, 0))},
@@ -128,7 +126,7 @@ func (db *eventRepo) LoadEventIntervals(ctx context.Context, groupID string, sea
 }
 
 func (db *eventRepo) LoadEventsPagedByAppId(ctx context.Context, appId string, searchParams models.SearchParams, pageable models.Pageable) ([]convoy.Event, pager.PaginationData, error) {
-	filter := bson.M{"app_metadata.uid": appId, "document_status": bson.M{"$ne": convoy.DeletedDocumentStatus}, "created_at": getCreatedDateFilter(searchParams)}
+	filter := bson.M{"app_metadata.uid": appId, "document_status": convoy.ActiveDocumentStatus, "created_at": getCreatedDateFilter(searchParams)}
 
 	var messages []convoy.Event
 	paginatedData, err := pager.New(db.inner).Context(ctx).Limit(int64(pageable.PerPage)).Page(int64(pageable.Page)).Sort("created_at", pageable.Sort).Filter(filter).Decode(&messages).Find()
@@ -146,7 +144,7 @@ func (db *eventRepo) LoadEventsPagedByAppId(ctx context.Context, appId string, s
 func (db *eventRepo) FindEventByID(ctx context.Context, id string) (*convoy.Event, error) {
 	m := new(convoy.Event)
 
-	filter := bson.M{"uid": id, "document_status": bson.M{"$ne": convoy.DeletedDocumentStatus}}
+	filter := bson.M{"uid": id, "document_status": convoy.ActiveDocumentStatus}
 
 	err := db.inner.FindOne(ctx, filter).
 		Decode(&m)
@@ -160,7 +158,7 @@ func (db *eventRepo) FindEventByID(ctx context.Context, id string) (*convoy.Even
 func (db *eventRepo) LoadEventsScheduledForPosting(ctx context.Context) ([]convoy.Event, error) {
 
 	filter := bson.M{"status": convoy.ScheduledEventStatus,
-		"document_status":         bson.M{"$ne": convoy.DeletedDocumentStatus},
+		"document_status":         convoy.ActiveDocumentStatus,
 		"metadata.next_send_time": bson.M{"$lte": primitive.NewDateTimeFromTime(time.Now())}}
 
 	return db.loadEventsByFilter(ctx, filter, nil)
@@ -199,7 +197,7 @@ func (db *eventRepo) LoadEventsForPostingRetry(ctx context.Context) ([]convoy.Ev
 		"$and": []bson.M{
 			{"status": convoy.RetryEventStatus},
 			{"metadata.next_send_time": bson.M{"$lte": primitive.NewDateTimeFromTime(time.Now())}},
-			{"document_status": bson.M{"$ne": convoy.DeletedDocumentStatus}},
+			{"document_status": convoy.ActiveDocumentStatus},
 		},
 	}
 
@@ -211,7 +209,7 @@ func (db *eventRepo) LoadAbandonedEventsForPostingRetry(ctx context.Context) ([]
 		"$and": []bson.M{
 			{"status": convoy.ProcessingEventStatus},
 			{"metadata.next_send_time": bson.M{"$lte": primitive.NewDateTimeFromTime(time.Now())}},
-			{"document_status": bson.M{"$ne": convoy.DeletedDocumentStatus}},
+			{"document_status": convoy.ActiveDocumentStatus},
 		},
 	}
 
@@ -219,19 +217,19 @@ func (db *eventRepo) LoadAbandonedEventsForPostingRetry(ctx context.Context) ([]
 }
 
 func (db *eventRepo) LoadEventsPaged(ctx context.Context, groupID string, appId string, searchParams models.SearchParams, pageable models.Pageable) ([]convoy.Event, pager.PaginationData, error) {
-	filter := bson.M{"document_status": bson.M{"$ne": convoy.DeletedDocumentStatus}, "created_at": getCreatedDateFilter(searchParams)}
+	filter := bson.M{"document_status": convoy.ActiveDocumentStatus, "created_at": getCreatedDateFilter(searchParams)}
 
 	hasAppFilter := !util.IsStringEmpty(appId)
 	hasGroupFilter := !util.IsStringEmpty(groupID)
 
 	if hasAppFilter && hasGroupFilter {
-		filter = bson.M{"app_metadata.group_id": groupID, "app_metadata.uid": appId, "document_status": bson.M{"$ne": convoy.DeletedDocumentStatus},
+		filter = bson.M{"app_metadata.group_id": groupID, "app_metadata.uid": appId, "document_status": convoy.ActiveDocumentStatus,
 			"created_at": getCreatedDateFilter(searchParams)}
 	} else if hasAppFilter {
-		filter = bson.M{"app_metadata.uid": appId, "document_status": bson.M{"$ne": convoy.DeletedDocumentStatus},
+		filter = bson.M{"app_metadata.uid": appId, "document_status": convoy.ActiveDocumentStatus,
 			"created_at": getCreatedDateFilter(searchParams)}
 	} else if hasGroupFilter {
-		filter = bson.M{"app_metadata.group_id": groupID, "document_status": bson.M{"$ne": convoy.DeletedDocumentStatus},
+		filter = bson.M{"app_metadata.group_id": groupID, "document_status": convoy.ActiveDocumentStatus,
 			"created_at": getCreatedDateFilter(searchParams)}
 	}
 

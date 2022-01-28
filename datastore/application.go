@@ -43,10 +43,8 @@ func (db *appRepo) CreateApplication(ctx context.Context,
 
 func (db *appRepo) CountGroupApplications(ctx context.Context, groupID string) (int64, error) {
 	filter := bson.M{
-		"group_id": groupID,
-		"document_status": bson.M{
-			"$ne": convoy.DeletedDocumentStatus,
-		},
+		"group_id":        groupID,
+		"document_status": convoy.ActiveDocumentStatus,
 	}
 
 	count, err := db.client.CountDocuments(ctx, filter)
@@ -59,9 +57,9 @@ func (db *appRepo) CountGroupApplications(ctx context.Context, groupID string) (
 
 func (db *appRepo) LoadApplicationsPaged(ctx context.Context, groupID string, pageable models.Pageable) ([]convoy.Application, pager.PaginationData, error) {
 
-	filter := bson.M{"document_status": bson.M{"$ne": convoy.DeletedDocumentStatus}}
+	filter := bson.M{"document_status": convoy.ActiveDocumentStatus}
 	if !util.IsStringEmpty(groupID) {
-		filter = bson.M{"group_id": groupID, "document_status": bson.M{"$ne": convoy.DeletedDocumentStatus}}
+		filter = bson.M{"group_id": groupID, "document_status": convoy.ActiveDocumentStatus}
 	}
 
 	var apps []convoy.Application
@@ -76,7 +74,7 @@ func (db *appRepo) LoadApplicationsPaged(ctx context.Context, groupID string, pa
 
 	msgCollection := db.innerDB.Collection(EventCollection)
 	for i, app := range apps {
-		filter = bson.M{"app_metadata.uid": app.UID, "document_status": bson.M{"$ne": convoy.DeletedDocumentStatus}}
+		filter = bson.M{"app_metadata.uid": app.UID, "document_status": convoy.ActiveDocumentStatus}
 		count, err := msgCollection.CountDocuments(ctx, filter)
 		if err != nil {
 			log.Errorf("failed to count events in %s. Reason: %s", app.UID, err)
@@ -91,10 +89,8 @@ func (db *appRepo) LoadApplicationsPaged(ctx context.Context, groupID string, pa
 func (db *appRepo) LoadApplicationsPagedByGroupId(ctx context.Context, groupID string, pageable models.Pageable) ([]convoy.Application, pager.PaginationData, error) {
 
 	filter := bson.M{
-		"group_id": groupID,
-		"document_status": bson.M{
-			"$ne": convoy.DeletedDocumentStatus,
-		},
+		"group_id":        groupID,
+		"document_status": convoy.ActiveDocumentStatus,
 	}
 
 	var applications []convoy.Application
@@ -109,7 +105,7 @@ func (db *appRepo) LoadApplicationsPagedByGroupId(ctx context.Context, groupID s
 
 	msgCollection := db.innerDB.Collection(EventCollection)
 	for i, app := range applications {
-		filter = bson.M{"app_metadata.uid": app.UID, "document_status": bson.M{"$ne": convoy.DeletedDocumentStatus}}
+		filter = bson.M{"app_metadata.uid": app.UID, "document_status": convoy.ActiveDocumentStatus}
 		count, err := msgCollection.CountDocuments(ctx, filter)
 		if err != nil {
 			log.Errorf("failed to count events in %s. Reason: %s", app.UID, err)
@@ -130,10 +126,8 @@ func (db *appRepo) SearchApplicationsByGroupId(ctx context.Context, groupId stri
 	}
 
 	filter := bson.M{
-		"group_id": groupId,
-		"document_status": bson.M{
-			"$ne": convoy.DeletedDocumentStatus,
-		},
+		"group_id":        groupId,
+		"document_status": convoy.ActiveDocumentStatus,
 		"created_at": bson.M{
 			"$gte": primitive.NewDateTimeFromTime(time.Unix(start, 0)),
 			"$lte": primitive.NewDateTimeFromTime(time.Unix(end, 0)),
@@ -165,7 +159,7 @@ func (db *appRepo) SearchApplicationsByGroupId(ctx context.Context, groupId stri
 
 	msgCollection := db.innerDB.Collection(EventCollection)
 	for i, app := range apps {
-		filter = bson.M{"app_metadata.uid": app.UID, "document_status": bson.M{"$ne": convoy.DeletedDocumentStatus}}
+		filter = bson.M{"app_metadata.uid": app.UID, "document_status": convoy.ActiveDocumentStatus}
 		count, err := msgCollection.CountDocuments(ctx, filter)
 		if err != nil {
 			log.Errorf("failed to count events in %s. Reason: %s", app.UID, err)
@@ -182,7 +176,7 @@ func (db *appRepo) FindApplicationByID(ctx context.Context,
 
 	app := new(convoy.Application)
 
-	filter := bson.M{"uid": id, "document_status": bson.M{"$ne": convoy.DeletedDocumentStatus}}
+	filter := bson.M{"uid": id, "document_status": convoy.ActiveDocumentStatus}
 
 	err := db.client.FindOne(ctx, filter).
 		Decode(&app)
@@ -192,7 +186,7 @@ func (db *appRepo) FindApplicationByID(ctx context.Context,
 	}
 
 	msgCollection := db.innerDB.Collection(EventCollection)
-	filter = bson.M{"app_metadata.uid": app.UID, "document_status": bson.M{"$ne": convoy.DeletedDocumentStatus}}
+	filter = bson.M{"app_metadata.uid": app.UID, "document_status": convoy.ActiveDocumentStatus}
 	count, err := msgCollection.CountDocuments(ctx, filter)
 	if err != nil {
 		log.Errorf("failed to count events in %s. Reason: %s", app.UID, err)
@@ -227,7 +221,7 @@ func (db *appRepo) UpdateApplication(ctx context.Context,
 
 	app.UpdatedAt = primitive.NewDateTimeFromTime(time.Now())
 
-	filter := bson.M{"uid": app.UID, "document_status": bson.M{"$ne": convoy.DeletedDocumentStatus}}
+	filter := bson.M{"uid": app.UID, "document_status": convoy.ActiveDocumentStatus}
 
 	update := bson.D{primitive.E{Key: "$set", Value: bson.D{
 		primitive.E{Key: "endpoints", Value: app.Endpoints},
@@ -310,7 +304,7 @@ func (db *appRepo) deleteApp(ctx context.Context, app *convoy.Application, updat
 func (db *appRepo) UpdateApplicationEndpointsStatus(ctx context.Context, appId string, endpointIds []string, status convoy.EndpointStatus) error {
 	app := new(convoy.Application)
 
-	filter := bson.M{"uid": appId, "document_status": bson.M{"$ne": convoy.DeletedDocumentStatus}}
+	filter := bson.M{"uid": appId, "document_status": convoy.ActiveDocumentStatus}
 
 	err := db.client.FindOne(ctx, filter).
 		Decode(&app)
