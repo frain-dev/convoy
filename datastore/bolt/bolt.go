@@ -3,9 +3,6 @@ package bolt
 import (
 	"context"
 
-	"github.com/dgraph-io/badger/v3"
-	"github.com/timshannon/badgerhold/v4"
-
 	"go.etcd.io/bbolt"
 
 	"github.com/frain-dev/convoy/config"
@@ -13,7 +10,6 @@ import (
 )
 
 type Client struct {
-	dbh               *badgerhold.Store
 	db                *bbolt.DB
 	apiKeyRepo        datastore.APIKeyRepository
 	groupRepo         datastore.GroupRepository
@@ -23,25 +19,12 @@ type Client struct {
 }
 
 func New(cfg config.Configuration) (datastore.DatabaseClient, error) {
-	st, err := badgerhold.Open(badgerhold.Options{
-		Encoder:          badgerhold.DefaultEncode,
-		Decoder:          badgerhold.DefaultDecode,
-		SequenceBandwith: 100,
-		Options: badger.DefaultOptions("convoy_tmp_db").
-			WithZSTDCompressionLevel(0).
-			WithCompression(0),
-	})
-	if err != nil {
-		return nil, err
-	}
-
 	db, err := bbolt.Open(cfg.Database.Dsn, 0666, nil)
 	if err != nil {
 		return nil, err
 	}
 
 	c := &Client{
-		dbh:               st,
 		db:                db,
 		groupRepo:         NewGroupRepo(db),
 		eventRepo:         NewEventRepo(db),
