@@ -156,6 +156,39 @@ func compoundIndices() map[string][]mongo.IndexModel {
 
 			{
 				Keys: bson.D{
+					{Key: "event_metadata.uid", Value: 1},
+					{Key: "document_status", Value: 1},
+					{Key: "created_at", Value: 1},
+					{Key: "status", Value: 1},
+				},
+			},
+
+			{
+				Keys: bson.D{
+					{Key: "document_status", Value: 1},
+					{Key: "created_at", Value: 1},
+					{Key: "app_metadata.group_id", Value: 1},
+					{Key: "status", Value: 1},
+				},
+			},
+
+			{
+				Keys: bson.D{
+					{Key: "uid", Value: 1},
+					{Key: "document_status", Value: 1},
+				},
+			},
+
+			{
+				Keys: bson.D{
+					{Key: "app_metadata.group_id", Value: 1},
+					{Key: "document_status", Value: 1},
+					{Key: "created_at", Value: 1},
+				},
+			},
+
+			{
+				Keys: bson.D{
 					{Key: "document_status", Value: 1},
 					{Key: "created_at", Value: -1},
 					{Key: "app_metadata.group_id", Value: 1},
