@@ -84,16 +84,28 @@ export class ConvoyDashboardComponent implements OnInit {
 	showOverlay = false;
 	showEventDeliveriesStatusDropdown = false;
 	showEventDeliveriesAppsDropdown = false;
+	showEventsAppsDropdown = false;
 	@Input('apiURL') apiURL: string = '';
 	@Input('isCloud') isCloud: boolean = false;
 	@Input('groupId') groupId: string = '';
+	@Input('requestToken') requestToken: string = '';
+	apiAuthType: 'Basic' | 'Bearer' = 'Basic';
 
 	constructor(private convyDashboardService: ConvoyDashboardService, private router: Router, private formBuilder: FormBuilder, private route: ActivatedRoute) {}
 
 	async ngOnInit() {
+		if (!this.requestToken || this.requestToken == '') {
+			this.convyDashboardService.showNotification({ message: 'You are not logged in' });
+			return this.router.navigate(['/login']);
+		}
+
 		if (!this.apiURL) return this.convyDashboardService.showNotification({ message: 'Please provide API URL for Convoy dashboard component.' });
 		if (this.isCloud && !this.groupId) return this.convyDashboardService.showNotification({ message: 'Please provide group ID for Convoy dashboard component.' });
-		if (this.isCloud) this.activeGroup = this.groupId;
+		if (this.isCloud) {
+			this.activeGroup = this.groupId;
+			this.apiAuthType = 'Bearer';
+		}
+
 		return await this.initDashboard();
 	}
 
@@ -127,6 +139,8 @@ export class ConvoyDashboardComponent implements OnInit {
 		try {
 			const organisationDetailsResponse = await this.convyDashboardService.request({
 				url: this.getAPIURL(`/dashboard/config?groupID=${this.activeGroup || ''}`),
+				token: this.requestToken,
+				authType: this.apiAuthType,
 				method: 'get'
 			});
 			this.organisationDetails = organisationDetailsResponse.data;
@@ -156,6 +170,8 @@ export class ConvoyDashboardComponent implements OnInit {
 
 			const dashboardResponse = await this.convyDashboardService.request({
 				url: this.getAPIURL(`/dashboard/summary?groupID=${this.activeGroup || ''}&startDate=${startDate || ''}&endDate=${endDate || ''}&type=${this.dashboardFrequency}`),
+				token: this.requestToken,
+				authType: this.apiAuthType,
 				method: 'get'
 			});
 			this.dashboardData = dashboardResponse.data;
@@ -253,6 +269,8 @@ export class ConvoyDashboardComponent implements OnInit {
 				url: this.getAPIURL(
 					`/events?groupID=${this.activeGroup || ''}&sort=AESC&page=${this.eventsPage || 1}&perPage=20&startDate=${startDate}&endDate=${endDate}&appId=${requestDetails?.appId ?? this.eventApp}`
 				),
+				token: this.requestToken,
+				authType: this.apiAuthType,
 				method: 'get'
 			});
 			if (this.activeTab === 'events') this.detailsItem = eventsResponse.data.content[0];
@@ -310,6 +328,8 @@ export class ConvoyDashboardComponent implements OnInit {
 						this.eventDeliveriesApp
 					}${eventDeliveryStatusFilterQuery || ''}`
 				),
+				token: this.requestToken,
+				authType: this.apiAuthType,
 				method: 'get'
 			});
 
@@ -328,9 +348,11 @@ export class ConvoyDashboardComponent implements OnInit {
 		}
 	}
 
-	updateEventDevliveryAppFilter(appId: string, isChecked: any) {
-		if (isChecked.target.checked) this.eventDeliveriesApp = appId;
-		this.getEventDeliveries({ addToURL: true });
+	updateEventDevliveryAppFilter(appId: string, isChecked: any, activeSection: 'eventDels' | 'events') {
+		if (isChecked.target.checked) {
+			activeSection === 'eventDels' ? (this.eventDeliveriesApp = appId) : (this.eventApp = appId);
+		}
+		activeSection === 'eventDels' ? this.getEventDeliveries({ addToURL: true }) : this.getEvents({ addToURL: true });
 	}
 
 	async getEventDeliveries(requestDetails?: { addToURL?: boolean }) {
@@ -374,12 +396,14 @@ export class ConvoyDashboardComponent implements OnInit {
 		try {
 			const groupsResponse = await this.convyDashboardService.request({
 				url: this.getAPIURL(`/groups`),
+				token: this.requestToken,
+				authType: this.apiAuthType,
 				method: 'get'
 			});
 			this.groups = groupsResponse.data;
 
 			// check group existing filter in url and set active group
-			this.activeGroup = this.route.snapshot.queryParams.group ?? this.groups[0]?.uid;
+			if (!this.isCloud) this.activeGroup = this.route.snapshot.queryParams.group ?? this.groups[0]?.uid;
 			return;
 		} catch (error) {
 			return error;
@@ -390,6 +414,8 @@ export class ConvoyDashboardComponent implements OnInit {
 		try {
 			const appsResponse = await this.convyDashboardService.request({
 				url: this.getAPIURL(`/apps?groupID=${this.activeGroup || ''}&sort=AESC&page=${this.appsPage || 1}&perPage=10${search ? `&q=${search}` : ''}`),
+				token: this.requestToken,
+				authType: this.apiAuthType,
 				method: 'get'
 			});
 
@@ -413,6 +439,8 @@ export class ConvoyDashboardComponent implements OnInit {
 		try {
 			const deliveryAttemptsResponse = await this.convyDashboardService.request({
 				url: this.getAPIURL(`/eventdeliveries/${eventDeliveryId}/deliveryattempts?groupID=${this.activeGroup || ''}`),
+				token: this.requestToken,
+				authType: this.apiAuthType,
 				method: 'get'
 			});
 			this.eventDeliveryAtempt = deliveryAttemptsResponse.data[deliveryAttemptsResponse.data.length - 1];
@@ -453,6 +481,8 @@ export class ConvoyDashboardComponent implements OnInit {
 		try {
 			await this.convyDashboardService.request({
 				method: 'put',
+				token: this.requestToken,
+				authType: this.apiAuthType,
 				url: this.getAPIURL(`/eventdeliveries/${requestDetails.eventDeliveryId}/resend?groupID=${this.activeGroup || ''}`)
 			});
 
@@ -473,6 +503,8 @@ export class ConvoyDashboardComponent implements OnInit {
 			await this.convyDashboardService.request({
 				method: 'post',
 				url: this.getAPIURL(`/eventdeliveries/batchretry?groupID=${this.activeGroup || ''}`),
+				token: this.requestToken,
+				authType: this.apiAuthType,
 				body: { ids: this.selectedEventsFromEventDeliveriesTable }
 			});
 
