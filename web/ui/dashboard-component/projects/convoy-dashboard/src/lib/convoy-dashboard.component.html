@@ -36,7 +36,9 @@
 		</div>
 
 		<div class="dashboard--page--details">
-			<div class="card dashboard--page--details--chart">
+			<div class="card dashboard--page--details--chart has-loader">
+				<convoy-loader *ngIf="isloadingDashboardData"></convoy-loader>
+
 				<ul class="metrics">
 					<li class="messages">
 						<img src="/assets/img/message-icon.svg" alt="message icon" />
@@ -60,7 +62,9 @@
 				</div>
 			</div>
 
-			<div class="card has-title dashboard--page--details--credentials">
+			<div class="card has-title dashboard--page--details--credentials has-loader">
+				<convoy-loader *ngIf="isloadingConfig"></convoy-loader>
+
 				<div class="card--title">
 					<h2>Configuration</h2>
 				</div>
@@ -97,7 +101,9 @@
 			</div>
 		</div>
 
-		<section class="card dashboard--logs">
+		<section class="card dashboard--logs has-loader">
+			<convoy-loader *ngIf="isloadingLogData"></convoy-loader>
+
 			<div class="dashboard--logs--tabs">
 				<div class="dashboard--logs--tabs--head tabs">
 					<div class="tabs">
@@ -108,7 +114,7 @@
 				</div>
 
 				<div class="table">
-					<ng-container *ngIf="activeTab === 'events'">
+					<div *ngIf="activeTab === 'events'">
 						<div class="filter">
 							<button
 								class="filter--button date-filter-button"
@@ -156,7 +162,9 @@
 
 						<hr />
 
-						<div class="table--container smaller-table" *ngIf="displayedEvents.length > 0">
+						<div class="table--container smaller-table has-loader" *ngIf="displayedEvents.length > 0">
+							<!-- <convoy-loader></convoy-loader> -->
+
 							<table id="events-table">
 								<thead>
 									<tr class="table--head">
@@ -218,9 +226,9 @@
 							<img src="/assets/img/empty-state-img.svg" alt="empty state" />
 							<p>No event to show here</p>
 						</div>
-					</ng-container>
+					</div>
 
-					<ng-container *ngIf="activeTab === 'event deliveries'">
+					<div *ngIf="activeTab === 'event deliveries'">
 						<div class="filter">
 							<button
 								class="filter--button date-filter-button"
@@ -405,7 +413,7 @@
 							<img src="/assets/img/empty-state-img.svg" alt="empty state" />
 							<p>No event to show here</p>
 						</div>
-					</ng-container>
+					</div>
 
 					<div class="table--container smaller-table" *ngIf="apps && apps.content.length > 0 && activeTab === 'apps'">
 						<table>

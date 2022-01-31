@@ -90,6 +90,9 @@ export class ConvoyDashboardComponent implements OnInit {
 	@Input('groupId') groupId: string = '';
 	@Input('requestToken') requestToken: string = '';
 	apiAuthType: 'Basic' | 'Bearer' = 'Basic';
+	isloadingDashboardData = true;
+	isloadingLogData = true;
+	isloadingConfig = true;
 
 	constructor(private convyDashboardService: ConvoyDashboardService, private router: Router, private formBuilder: FormBuilder, private route: ActivatedRoute) {}
 
@@ -112,7 +115,9 @@ export class ConvoyDashboardComponent implements OnInit {
 	async initDashboard() {
 		await this.getGroups();
 		this.getFiltersFromURL();
+		this.isloadingLogData = true;
 		await Promise.all([this.getConfigDetails(), this.fetchDashboardData(), this.getEvents(), this.getApps(), this.getEventDeliveries()]);
+		this.isloadingLogData = false;
 
 		// get active tab from url and apply, after getting the details from above requests so that the data is available ahead
 		this.toggleActiveTab(this.route.snapshot.queryParams.activeTab ?? 'events');
@@ -124,18 +129,20 @@ export class ConvoyDashboardComponent implements OnInit {
 		this.addFilterToURL({ section: 'logTab' });
 
 		if (tab === 'apps' && this.apps?.content.length > 0) {
-			this.detailsItem = this.apps?.content[0];
+			// this.detailsItem = this.apps?.content[0];
 		} else if (tab === 'events' && this.events?.content.length > 0) {
-			this.eventDetailsActiveTab = 'data';
-			this.detailsItem = this.events?.content[0];
-			this.getEventDeliveriesForSidebar(this.detailsItem.uid);
+			// this.eventDetailsActiveTab = 'data';
+			// this.detailsItem = this.events?.content[0];
+			// this.getEventDeliveriesForSidebar(this.detailsItem.uid);
 		} else if (tab === 'event deliveries' && this.eventDeliveries?.content.length > 0) {
-			this.detailsItem = this.eventDeliveries?.content[0];
-			this.getDelieveryAttempts(this.detailsItem.uid);
+			// this.detailsItem = this.eventDeliveries?.content[0];
+			// this.getDelieveryAttempts(this.detailsItem.uid);
 		}
 	}
 
 	async getConfigDetails() {
+		this.isloadingConfig = true;
+
 		try {
 			const organisationDetailsResponse = await this.convyDashboardService.request({
 				url: this.getAPIURL(`/dashboard/config?groupID=${this.activeGroup || ''}`),
@@ -144,7 +151,10 @@ export class ConvoyDashboardComponent implements OnInit {
 				method: 'get'
 			});
 			this.organisationDetails = organisationDetailsResponse.data;
-		} catch (error) {}
+			this.isloadingConfig = false;
+		} catch (error) {
+			this.isloadingConfig = false;
+		}
 	}
 
 	getFiltersFromURL() {
@@ -166,6 +176,7 @@ export class ConvoyDashboardComponent implements OnInit {
 
 	async fetchDashboardData() {
 		try {
+			this.isloadingDashboardData = true;
 			const { startDate, endDate } = this.setDateForFilter(this.statsDateRange.value);
 
 			const dashboardResponse = await this.convyDashboardService.request({
@@ -175,6 +186,7 @@ export class ConvoyDashboardComponent implements OnInit {
 				method: 'get'
 			});
 			this.dashboardData = dashboardResponse.data;
+			this.isloadingDashboardData = false;
 
 			let labelsDateFormat = '';
 			if (this.dashboardFrequency === 'daily') labelsDateFormat = 'do, MMM';
