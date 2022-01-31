@@ -44,6 +44,7 @@ func getDB(t *testing.T) (*bbolt.DB, func()) {
 	require.NoError(t, e)
 
 	return db.Client().(*bbolt.DB), func() {
+		require.NoError(t, db.(*Client).dbh.Close())
 		require.NoError(t, db.Disconnect(context.Background()))
 	}
 }
