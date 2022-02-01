@@ -2,7 +2,6 @@ package bolt
 
 import (
 	"context"
-	"github.com/timshannon/badgerhold/v4"
 	"os"
 	"testing"
 
