@@ -391,6 +391,7 @@ func TestLoadConfig(t *testing.T) {
 						Port: 80,
 					},
 				},
+				MaxResponseSize: MaxResponseSize,
 				Auth: AuthConfiguration{
 					RequireAuth: true,
 					File: FileRealmOption{
