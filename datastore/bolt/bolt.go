@@ -44,7 +44,7 @@ func New(cfg config.Configuration) (datastore.DatabaseClient, error) {
 		store:             st,
 		db:                db,
 		groupRepo:         NewGroupRepo(st),
-		eventRepo:         NewEventRepo(db),
+		eventRepo:         NewEventRepo(st),
 		apiKeyRepo:        NewApiRoleRepo(st),
 		applicationRepo:   NewApplicationRepo(db),
 		eventDeliveryRepo: NewEventDeliveryRepository(st),
