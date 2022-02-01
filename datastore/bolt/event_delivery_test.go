@@ -170,8 +170,8 @@ func Test_eventDeliveryRepo_FindEventDeliveriesByIDs(t *testing.T) {
 	}
 
 	require.Equal(t, 2, len(got))
-	require.Equal(t, delivery1, got[0])
-	require.Equal(t, delivery2, got[1])
+	require.Contains(t, got, delivery1)
+	require.Contains(t, got, delivery2)
 }
 
 func Test_eventDeliveryRepo_FindEventDeliveriesByEventID(t *testing.T) {
@@ -219,8 +219,9 @@ func Test_eventDeliveryRepo_FindEventDeliveriesByEventID(t *testing.T) {
 	}
 
 	require.Equal(t, 2, len(got))
-	require.Equal(t, delivery1.EventMetadata.UID, eventID)
-	require.Equal(t, delivery2.EventMetadata.UID, eventID)
+	for _, delivery := range got {
+		require.Equal(t, delivery.EventMetadata.UID, eventID)
+	}
 }
 
 func Test_eventDeliveryRepo_UpdateStatusOfEventDelivery(t *testing.T) {
@@ -946,7 +947,6 @@ func Test_eventDeliveryRepo_LoadEventDeliveriesPaged(t *testing.T) {
 			require.Equal(t, tt.wantCount, len(eventDeliveries))
 			require.NoError(t, err)
 			require.Equal(t, tt.wantPaginationData, paginationData)
-			//t.FailNow()
 		})
 	}
 }

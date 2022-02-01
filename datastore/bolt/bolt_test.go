@@ -6,6 +6,8 @@ import (
 	"os"
 	"testing"
 
+	"github.com/timshannon/badgerhold/v4"
+
 	"github.com/frain-dev/convoy/config"
 	"github.com/stretchr/testify/require"
 )
