@@ -112,16 +112,19 @@ func (a *appRepo) FindApplicationByID(ctx context.Context, aid string) (*datasto
 
 func (a *appRepo) FindApplicationEndpointByID(ctx context.Context, appID string, endpointID string) (*datastore.Endpoint, error) {
 	var endpoint *datastore.Endpoint
+	var application *datastore.Application
 
-	err := a.db.ForEach(badgerhold.Where("UID").Eq(appID), func(application *datastore.Application) error {
-		for _, a := range application.Endpoints {
-			if a.UID == endpointID {
-				endpoint = &a
-			}
+	err := a.db.Get(appID, &application)
+
+	if err != nil && errors.Is(err, badgerhold.ErrNotFound) {
+		return endpoint, datastore.ErrApplicationNotFound
+	}
+
+	for _, a := range application.Endpoints {
+		if a.UID == endpointID {
+			endpoint = &a
 		}
-
-		return nil
-	})
+	}
 
 	if endpoint == nil {
 		return nil, datastore.ErrEndpointNotFound
@@ -131,7 +134,7 @@ func (a *appRepo) FindApplicationEndpointByID(ctx context.Context, appID string,
 }
 
 func (a *appRepo) DeleteApplication(ctx context.Context, app *datastore.Application) error {
-	return a.db.DeleteMatching(&datastore.Application{}, badgerhold.Where("UID").Eq(app.UID))
+	return a.db.Delete(app.UID, app)
 }
 
 func (a *appRepo) UpdateApplicationEndpointsStatus(ctx context.Context, aid string, endpointIds []string, status datastore.EndpointStatus) error {
