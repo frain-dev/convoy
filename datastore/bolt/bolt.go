@@ -13,7 +13,7 @@ import (
 )
 
 type Client struct {
-	dbh               *badgerhold.Store
+	store               *badgerhold.Store
 	db                *bbolt.DB
 	apiKeyRepo        datastore.APIKeyRepository
 	groupRepo         datastore.GroupRepository
@@ -41,9 +41,9 @@ func New(cfg config.Configuration) (datastore.DatabaseClient, error) {
 	}
 
 	c := &Client{
-		dbh:               st,
+		store:             st,
 		db:                db,
-		groupRepo:         NewGroupRepo(db),
+		groupRepo:         NewGroupRepo(st),
 		eventRepo:         NewEventRepo(db),
 		apiKeyRepo:        NewApiRoleRepo(db),
 		applicationRepo:   NewApplicationRepo(db),
@@ -54,7 +54,7 @@ func New(cfg config.Configuration) (datastore.DatabaseClient, error) {
 }
 
 func (c *Client) Disconnect(ctx context.Context) error {
-	return c.db.Close()
+	return c.store.Close()
 }
 
 func (c *Client) GetName() string {
@@ -62,7 +62,7 @@ func (c *Client) GetName() string {
 }
 
 func (c *Client) Client() interface{} {
-	return c.db
+	return c.store
 }
 
 func (c *Client) GroupRepo() datastore.GroupRepository {

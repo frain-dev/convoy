@@ -2,12 +2,12 @@ package bolt
 
 import (
 	"context"
+	"github.com/timshannon/badgerhold/v4"
 	"os"
 	"testing"
 
 	"github.com/frain-dev/convoy/config"
 	"github.com/stretchr/testify/require"
-	"go.etcd.io/bbolt"
 )
 
 func getDSN() string {
@@ -23,7 +23,7 @@ func getConfig() config.Configuration {
 	}
 }
 
-func getDB(t *testing.T) (*bbolt.DB, func()) {
+func getDB(t *testing.T) (*badgerhold.Store, func()) {
 	db, err := New(getConfig())
 
 	require.NoError(t, err)
@@ -31,20 +31,8 @@ func getDB(t *testing.T) (*bbolt.DB, func()) {
 	errr := os.Setenv("TZ", "") // Use UTC by default :)
 	require.NoError(t, errr)
 
-	e := db.Client().(*bbolt.DB).Update(func(tx *bbolt.Tx) error {
-
-		buckets := []string{"groups", "applications", "eventdeliveries", "events", "apiKeys"}
-		for _, v := range buckets {
-			require.NoError(t, tx.DeleteBucket([]byte(v)))
-		}
-
-		return nil
-	})
-
-	require.NoError(t, e)
-
-	return db.Client().(*bbolt.DB), func() {
-		require.NoError(t, db.(*Client).dbh.Close())
+	return db.Client().(*badgerhold.Store), func() {
+		require.NoError(t, db.Client().(*badgerhold.Store).Badger().DropAll())
 		require.NoError(t, db.Disconnect(context.Background()))
 	}
 }
