@@ -373,3 +373,18 @@
 .has-loader {
 	position: relative;
 }
+
+.loading-icon {
+	animation: rotating 1s linear infinite;
+	width: 10%;
+
+	@keyframes rotating {
+		from {
+			transform: rotate(0);
+		}
+
+		to {
+			transform: rotate(360deg);
+		}
+	}
+}

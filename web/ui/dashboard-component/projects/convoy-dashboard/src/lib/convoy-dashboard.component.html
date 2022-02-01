@@ -162,9 +162,7 @@
 
 						<hr />
 
-						<div class="table--container smaller-table has-loader" *ngIf="displayedEvents.length > 0">
-							<!-- <convoy-loader></convoy-loader> -->
-
+						<div class="table--container smaller-table" *ngIf="displayedEvents.length > 0">
 							<table id="events-table">
 								<thead>
 									<tr class="table--head">
@@ -186,9 +184,9 @@
 										</tr>
 										<tr
 											*ngFor="let event of eventGroup.events; let index = index"
-											[ngClass]="{ active: event.uid === detailsItem?.uid }"
+											[ngClass]="{ active: event.uid === eventsDetailsItem?.uid }"
 											[id]="'event' + index"
-											(click)="detailsItem = event; getEventDeliveriesForSidebar(event.uid)"
+											(click)="eventsDetailsItem = event; getEventDeliveriesForSidebar(event.uid)"
 										>
 											<td>
 												<div>
@@ -216,7 +214,8 @@
 
 							<div class="table--load-more button-container center" *ngIf="events.pagination.totalPage > 1">
 								<button [class]="'primary clear has-icon icon-left '" [disabled]="events.pagination.page === events.pagination.totalPage" (click)="eventsPage = eventsPage + 1; getEvents()">
-									<img src="/assets/img/arrow-down-icon.svg" alt="arrow down icon" />
+									<img src="/assets/img/arrow-down-icon.svg" *ngIf="!isloadingEvents" alt="arrow down icon" />
+									<img src="/assets/img/rotate-icon.svg" class="loading-icon" *ngIf="isloadingEvents" alt="rotate icon" />
 									Load more
 								</button>
 							</div>
@@ -364,9 +363,9 @@
 										</tr>
 										<tr
 											*ngFor="let event of eventDeliveriesGroup.events; let index = index"
-											[ngClass]="{ active: event.uid === detailsItem?.uid }"
+											[ngClass]="{ active: event.uid === eventDelsDetailsItem?.uid }"
 											[id]="'event' + index"
-											(click)="detailsItem = event; getDelieveryAttempts(event.uid)"
+											(click)="eventDelsDetailsItem = event; getDelieveryAttempts(event.uid)"
 										>
 											<td>
 												<div class="checkbox has-retry">
@@ -415,123 +414,145 @@
 						</div>
 					</div>
 
-					<div class="table--container smaller-table" [hidden]="apps && apps.content.length > 0 && activeTab === 'apps'">
-						<table>
-							<thead>
-								<tr class="table--head">
-									<th scope="col">Name</th>
-									<th scope="col">Created</th>
-									<th scope="col">Updated</th>
-									<th scope="col">Events</th>
-									<th scope="col">Endpoints</th>
-									<th scope="col"></th>
-								</tr>
-							</thead>
-							<tbody>
-								<tr *ngFor="let app of apps?.content" [ngClass]="{ active: app.uid === detailsItem?.uid }" (click)="detailsItem = app">
-									<td class="has-long-text">
-										<div>{{ app.name }}</div>
-									</td>
-									<td>
-										<div>{{ app.created_at | date }}</div>
-									</td>
-									<td>
-										<div>{{ app.updated_at | date }}</div>
-									</td>
-									<td>
-										<div>{{ app.events }}</div>
-									</td>
-									<td>
-										<div>{{ app.endpoints.length }}</div>
-									</td>
-									<td>
-										<div>
-											<button
-												[disabled]="app.events <= 0"
-												title="view events"
-												[class]="'primary has-icon icon-left'"
-												(click)="toggleActiveTab('events'); getEvents({ addToURL: true, appId: app.uid })"
-											>
-												<img src="/assets/img/view-events-icon.svg" alt="view events icon" />
-												Events
-											</button>
-										</div>
-									</td>
-								</tr>
-							</tbody>
-						</table>
+					<div [hidden]="activeTab !== 'apps'">
+						<div class="table--container smaller-table" [hidden]="!apps || apps.content.length === 0">
+							<table>
+								<thead>
+									<tr class="table--head">
+										<th scope="col">Name</th>
+										<th scope="col">Created</th>
+										<th scope="col">Updated</th>
+										<th scope="col">Events</th>
+										<th scope="col">Endpoints</th>
+										<th scope="col"></th>
+									</tr>
+								</thead>
+								<tbody>
+									<tr *ngFor="let app of apps?.content" [ngClass]="{ active: app.uid === appsDetailsItem?.uid }" (click)="appsDetailsItem = app">
+										<td class="has-long-text">
+											<div>{{ app.name }}</div>
+										</td>
+										<td>
+											<div>{{ app.created_at | date }}</div>
+										</td>
+										<td>
+											<div>{{ app.updated_at | date }}</div>
+										</td>
+										<td>
+											<div>{{ app.events }}</div>
+										</td>
+										<td>
+											<div>{{ app.endpoints.length }}</div>
+										</td>
+										<td>
+											<div>
+												<button
+													[disabled]="app.events <= 0"
+													title="view events"
+													[class]="'primary has-icon icon-left'"
+													(click)="toggleActiveTab('events'); getEvents({ addToURL: true, appId: app.uid })"
+												>
+													<img src="/assets/img/view-events-icon.svg" alt="view events icon" />
+													Events
+												</button>
+											</div>
+										</td>
+									</tr>
+								</tbody>
+							</table>
 
-						<div class="table--load-more button-container margin-top center" *ngIf="apps?.pagination && apps.pagination.totalPage > 1">
-							<button
-								[class]="'primary clear has-icon icon-left ' + (apps.pagination.page === apps.pagination.totalPage ? 'disabled' : '')"
-								[disabled]="apps.pagination.page === apps.pagination.totalPage"
-								(click)="appsPage = appsPage + 1; getApps()"
-							>
-								<img src="/assets/img/arrow-down-icon.svg" alt="arrow down icon" />
-								Load more
-							</button>
+							<div class="table--load-more button-container margin-top center" *ngIf="apps?.pagination && apps.pagination.totalPage > 1">
+								<button
+									[class]="'primary clear has-icon icon-left ' + (apps.pagination.page === apps.pagination.totalPage ? 'disabled' : '')"
+									[disabled]="apps.pagination.page === apps.pagination.totalPage"
+									(click)="appsPage = appsPage + 1; getApps()"
+								>
+									<img src="/assets/img/arrow-down-icon.svg" alt="arrow down icon" />
+									Load more
+								</button>
+							</div>
 						</div>
-					</div>
 
-					<div class="empty-state" *ngIf="apps?.content?.length === 0 && activeTab === 'apps'">
-						<img src="/assets/img/empty-state-img.svg" alt="empty state" />
-						<p>No app to show here</p>
+						<div class="empty-state" *ngIf="apps?.content?.length === 0">
+							<img src="/assets/img/empty-state-img.svg" alt="empty state" />
+							<p>No app to show here</p>
+						</div>
 					</div>
 				</div>
 			</div>
 
 			<div class="dashboard--logs--details">
-				<ng-container *ngIf="detailsItem">
+				<ng-container *ngIf="activeTab === 'apps'">
 					<h3>Details</h3>
-					<ul class="dashboard--logs--details--meta" *ngIf="activeTab === 'apps' || activeTab === 'event deliveries'">
-						<ng-container *ngIf="activeTab === 'event deliveries'">
-							<li class="list-item-inline">
-								<div class="list-item-inline--label">IP Address</div>
-								<div class="list-item-inline--item color">{{ eventDeliveryAtempt?.ip_address || '-' }}</div>
-							</li>
-							<li class="list-item-inline">
-								<div class="list-item-inline--label">HTTP Status</div>
-								<div class="list-item-inline--item">{{ eventDeliveryAtempt?.http_status || '-' }}</div>
-							</li>
-							<li class="list-item-inline">
-								<div class="list-item-inline--label">API Version</div>
-								<div class="list-item-inline--item color">{{ eventDeliveryAtempt?.api_version || '-' }}</div>
-							</li>
-							<li class="list-item-inline">
-								<div class="list-item-inline--label">Endpoint</div>
-								<div class="list-item-inline--item color" [title]="detailsItem.endpoint?.target_url">
-									{{ detailsItem.endpoint?.target_url }}
-								</div>
-							</li>
-							<li class="list-item-inline" *ngIf="detailsItem.metadata?.num_trials < detailsItem.metadata?.retry_limit && detailsItem.status !== 'Success'">
-								<div class="list-item-inline--label">Next Retry</div>
-								<div class="list-item-inline--item color">
-									{{ detailsItem.metadata?.next_send_time | date: 'mediumTime' }}
-								</div>
-							</li>
-							<li class="list-item-inline">
-								<div class="list-item-inline--label">App Name</div>
-								<div class="list-item-inline--item color">
-									{{ detailsItem.app_metadata?.title }}
-								</div>
-							</li>
-						</ng-container>
-						<li class="list-item-inline" *ngIf="activeTab === 'apps'">
+					<ul class="dashboard--logs--details--meta">
+						<li class="list-item-inline">
 							<div class="list-item-inline--label">Support Email</div>
-							<div class="list-item-inline--item">{{ detailsItem?.support_email || '-' }}</div>
+							<div class="list-item-inline--item">{{ appsDetailsItem?.support_email || '-' }}</div>
 						</li>
 					</ul>
 
-					<ul class="tabs" *ngIf="activeTab === 'event deliveries'">
+					<h4>App Event Endpoints</h4>
+					<ul class="dashboard--logs--details--endpoints">
+						<ng-container *ngIf="appsDetailsItem?.endpoints">
+							<li *ngFor="let endpoint of appsDetailsItem.endpoints">
+								<h5>{{ endpoint.description }}</h5>
+								<p>
+									<img src="/assets/img/link-icon.svg" alt="link icon" />
+									{{ endpoint.target_url }}
+								</p>
+								<div class="events">
+									<div class="tag" *ngFor="let event of endpoint.events">{{ event == '*' ? 'all events' : event }}</div>
+								</div>
+							</li>
+						</ng-container>
+					</ul>
+				</ng-container>
+
+				<ng-container *ngIf="activeTab === 'event deliveries'">
+					<h3>Details</h3>
+					<ul class="dashboard--logs--details--meta">
+						<li class="list-item-inline">
+							<div class="list-item-inline--label">IP Address</div>
+							<div class="list-item-inline--item color">{{ eventDeliveryAtempt?.ip_address || '-' }}</div>
+						</li>
+						<li class="list-item-inline">
+							<div class="list-item-inline--label">HTTP Status</div>
+							<div class="list-item-inline--item">{{ eventDeliveryAtempt?.http_status || '-' }}</div>
+						</li>
+						<li class="list-item-inline">
+							<div class="list-item-inline--label">API Version</div>
+							<div class="list-item-inline--item color">{{ eventDeliveryAtempt?.api_version || '-' }}</div>
+						</li>
+						<li class="list-item-inline">
+							<div class="list-item-inline--label">Endpoint</div>
+							<div class="list-item-inline--item color" [title]="eventDelsDetailsItem.endpoint?.target_url">
+								{{ eventDelsDetailsItem.endpoint?.target_url }}
+							</div>
+						</li>
+						<li class="list-item-inline" *ngIf="eventDelsDetailsItem.metadata?.num_trials < eventDelsDetailsItem.metadata?.retry_limit && eventDelsDetailsItem.status !== 'Success'">
+							<div class="list-item-inline--label">Next Retry</div>
+							<div class="list-item-inline--item color">
+								{{ eventDelsDetailsItem.metadata?.next_send_time | date: 'mediumTime' }}
+							</div>
+						</li>
+						<li class="list-item-inline">
+							<div class="list-item-inline--label">App Name</div>
+							<div class="list-item-inline--item color">
+								{{ eventDelsDetailsItem.app_metadata?.title }}
+							</div>
+						</li>
+					</ul>
+
+					<ul class="tabs">
 						<li *ngFor="let tab of eventDetailsTabs" [class]="'tab ' + (eventDetailsActiveTab === tab.id ? 'active' : '')">
 							<button class="primary outline" (click)="eventDetailsActiveTab = tab.id">{{ tab.label }}</button>
 						</li>
 					</ul>
 
-					<div class="dashboard--logs--details--req-res" *ngIf="activeTab === 'events' || activeTab === 'event deliveries'">
+					<div class="dashboard--logs--details--req-res">
 						<div [class]="'dashboard--logs--details--tabs-data ' + (eventDetailsActiveTab === 'data' ? 'show' : '')">
 							<h3>Event</h3>
-							<prism language="json" [code]="getCodeSnippetString(activeTab === 'events' ? 'event' : 'event_delivery')"></prism>
+							<prism language="json" [code]="getCodeSnippetString('event_delivery')"></prism>
 						</div>
 
 						<div [class]="'dashboard--logs--details--tabs-data ' + (eventDetailsActiveTab === 'response' ? 'show' : '')">
@@ -547,36 +568,26 @@
 							<prism language="json" [code]="getCodeSnippetString('req')"></prism>
 						</div>
 					</div>
+				</ng-container>
 
-					<ng-container *ngIf="activeTab === 'events'">
-						<h4>Deliveries Overview</h4>
-						<ul class="dashboard--logs--details--endpoints inline">
-							<li *ngFor="let delivery of sidebarEventDeliveries">
-								<div [class]="'tag tag--' + delivery.status">{{ delivery.status }}</div>
-								<div class="url" [title]="delivery.endpoint.target_url">
-									{{ delivery.endpoint.target_url }}
-								</div>
-							</li>
-						</ul>
-					</ng-container>
+				<ng-container *ngIf="activeTab === 'events'">
+					<h3>Details</h3>
+					<div class="dashboard--logs--details--req-res">
+						<div class="dashboard--logs--details--tabs-data show">
+							<h3>Event</h3>
+							<prism language="json" [code]="getCodeSnippetString('event')"></prism>
+						</div>
+					</div>
 
-					<ng-container *ngIf="activeTab === 'apps'">
-						<h4>App Event Endpoints</h4>
-						<ul class="dashboard--logs--details--endpoints">
-							<ng-container *ngIf="detailsItem?.endpoints">
-								<li *ngFor="let endpoint of detailsItem.endpoints">
-									<h5>{{ endpoint.description }}</h5>
-									<p>
-										<img src="/assets/img/link-icon.svg" alt="link icon" />
-										{{ endpoint.target_url }}
-									</p>
-									<div class="events">
-										<div class="tag" *ngFor="let event of endpoint.events">{{ event == '*' ? 'all events' : event }}</div>
-									</div>
-								</li>
-							</ng-container>
-						</ul>
-					</ng-container>
+					<h4>Deliveries Overview</h4>
+					<ul class="dashboard--logs--details--endpoints inline">
+						<li *ngFor="let delivery of sidebarEventDeliveries">
+							<div [class]="'tag tag--' + delivery.status">{{ delivery.status }}</div>
+							<div class="url" [title]="delivery.endpoint.target_url">
+								{{ delivery.endpoint.target_url }}
+							</div>
+						</li>
+					</ul>
 				</ng-container>
 			</div>
 		</section>

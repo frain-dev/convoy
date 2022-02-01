@@ -1,9 +1,9 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, Input, OnInit } from '@angular/core';
 
 @Component({
 	selector: 'convoy-loader',
 	template: `
-		<div class="loader">
+		<div [class]="'loader ' + (isTransparent ? 'transparent' : '')">
 			<img src="/assets/img/loader.gif" alt="loader" />
 		</div>
 	`,
@@ -21,17 +21,21 @@ import { Component, OnInit } from '@angular/core';
 				background: #fff;
 				border-radius: 8px;
 				z-index: 1;
-				/* opacity: 0; */
 			}
 
 			.loader img {
 				width: 25%;
+			}
+
+			.loader.transparent {
+				opacity: 0.5;
 			}
 		`
 	]
 })
 export class ConvoyLoaderComponent implements OnInit {
 	constructor() {}
+	@Input('isTransparent') isTransparent: boolean = false;
 
 	async ngOnInit() {}
 }

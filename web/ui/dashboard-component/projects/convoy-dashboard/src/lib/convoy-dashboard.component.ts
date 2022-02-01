@@ -19,7 +19,9 @@ export class ConvoyDashboardComponent implements OnInit {
 	showFilterCalendar = false;
 	tabs: ['events', 'event deliveries', 'apps'] = ['events', 'event deliveries', 'apps'];
 	activeTab: 'events' | 'apps' | 'event deliveries' = 'events';
-	detailsItem?: any;
+	appsDetailsItem?: any;
+	eventsDetailsItem?: any;
+	eventDelsDetailsItem?: any;
 	eventDeliveryAtempt?: {
 		ip_address: '';
 		http_status: '';
@@ -93,6 +95,9 @@ export class ConvoyDashboardComponent implements OnInit {
 	isloadingDashboardData = true;
 	isloadingLogData = true;
 	isloadingConfig = true;
+	isloadingEvents = true;
+	isloadingEventDeliveries = true;
+	isloadingApps = true;
 
 	constructor(private convyDashboardService: ConvoyDashboardService, private router: Router, private formBuilder: FormBuilder, private route: ActivatedRoute) {}
 
@@ -129,14 +134,17 @@ export class ConvoyDashboardComponent implements OnInit {
 		this.addFilterToURL({ section: 'logTab' });
 
 		if (tab === 'apps' && this.apps?.content.length > 0) {
-			// this.detailsItem = this.apps?.content[0];
+			if (!this.appsDetailsItem) this.appsDetailsItem = this.apps?.content[0];
 		} else if (tab === 'events' && this.events?.content.length > 0) {
-			// this.eventDetailsActiveTab = 'data';
-			// this.detailsItem = this.events?.content[0];
-			// this.getEventDeliveriesForSidebar(this.detailsItem.uid);
+			if (!this.eventsDetailsItem) {
+				this.eventsDetailsItem = this.events?.content[0];
+				this.getEventDeliveriesForSidebar(this.eventsDetailsItem.uid);
+			}
 		} else if (tab === 'event deliveries' && this.eventDeliveries?.content.length > 0) {
-			// this.detailsItem = this.eventDeliveries?.content[0];
-			// this.getDelieveryAttempts(this.detailsItem.uid);
+			if (!this.eventDelsDetailsItem) {
+				this.eventDelsDetailsItem = this.eventDeliveries?.content[0];
+				this.getDelieveryAttempts(this.eventDelsDetailsItem.uid);
+			}
 		}
 	}
 
@@ -271,6 +279,7 @@ export class ConvoyDashboardComponent implements OnInit {
 	}
 
 	async getEvents(requestDetails?: { appId?: string; addToURL?: boolean }) {
+		this.isloadingEvents = true;
 		if (requestDetails?.appId) this.eventApp = requestDetails.appId;
 		if (requestDetails?.addToURL) this.addFilterToURL({ section: 'events' });
 
@@ -285,7 +294,7 @@ export class ConvoyDashboardComponent implements OnInit {
 				authType: this.apiAuthType,
 				method: 'get'
 			});
-			if (this.activeTab === 'events') this.detailsItem = eventsResponse.data.content[0];
+			this.isloadingEvents = false;
 
 			if (this.events && this.events?.pagination?.next === this.eventsPage) {
 				const content = [...this.events.content, ...eventsResponse.data.content];
@@ -298,6 +307,7 @@ export class ConvoyDashboardComponent implements OnInit {
 			this.events = eventsResponse.data;
 			this.displayedEvents = await this.setEventsDisplayed(eventsResponse.data.content);
 		} catch (error) {
+			this.isloadingEvents = false;
 			return error;
 		}
 	}
@@ -368,12 +378,13 @@ export class ConvoyDashboardComponent implements OnInit {
 	}
 
 	async getEventDeliveries(requestDetails?: { addToURL?: boolean }) {
+		this.isloadingEventDeliveries = true;
 		if (requestDetails?.addToURL) this.addFilterToURL({ section: 'eventDels' });
 		const { startDate, endDate } = this.setDateForFilter(this.eventDeliveriesFilterDateRange.value);
 
 		try {
 			const eventDeliveriesResponse = await this.eventDeliveriesRequest({ eventId: this.eventDeliveryFilteredByEventId, startDate, endDate });
-			if (this.activeTab === 'event deliveries') this.detailsItem = eventDeliveriesResponse.data.content[0];
+			this.isloadingEventDeliveries = false;
 
 			if (this.eventDeliveries && this.eventDeliveries?.pagination?.next === this.eventDeliveriesPage) {
 				const content = [...this.eventDeliveries.content, ...eventDeliveriesResponse.data.content];
@@ -387,6 +398,7 @@ export class ConvoyDashboardComponent implements OnInit {
 			this.displayedEventDeliveries = this.setEventsDisplayed(eventDeliveriesResponse.data.content);
 			return eventDeliveriesResponse.data.content;
 		} catch (error) {
+			this.isloadingEventDeliveries = false;
 			return error;
 		}
 	}
@@ -423,6 +435,8 @@ export class ConvoyDashboardComponent implements OnInit {
 	}
 
 	async getApps(search?: string) {
+		this.isloadingApps = true;
+
 		try {
 			const appsResponse = await this.convyDashboardService.request({
 				url: this.getAPIURL(`/apps?groupID=${this.activeGroup || ''}&sort=AESC&page=${this.appsPage || 1}&perPage=10${search ? `&q=${search}` : ''}`),
@@ -430,6 +444,7 @@ export class ConvoyDashboardComponent implements OnInit {
 				authType: this.apiAuthType,
 				method: 'get'
 			});
+			this.isloadingApps = false;
 
 			if (!search && this.apps?.pagination?.next === this.appsPage) {
 				const content = [...this.apps.content, ...appsResponse.data.content];
@@ -440,9 +455,9 @@ export class ConvoyDashboardComponent implements OnInit {
 
 			if (!search) this.apps = appsResponse.data;
 			this.filteredApps = appsResponse.data.content;
-			if (this.activeTab === 'apps') this.detailsItem = this.apps?.content[0];
 			return;
 		} catch (error) {
+			this.isloadingApps = false;
 			return error;
 		}
 	}
@@ -464,11 +479,11 @@ export class ConvoyDashboardComponent implements OnInit {
 
 	getCodeSnippetString(type: 'res_body' | 'event' | 'event_delivery' | 'res_head' | 'req') {
 		if (type === 'event') {
-			if (!this.detailsItem?.data) return 'No event data was sent';
-			return JSON.stringify(this.detailsItem.data || this.detailsItem.metadata.data, null, 4).replaceAll(/"([^"]+)":/g, '$1:');
+			if (!this.eventsDetailsItem?.data) return 'No event data was sent';
+			return JSON.stringify(this.eventsDetailsItem?.data || this.eventsDetailsItem?.metadata?.data, null, 4).replaceAll(/"([^"]+)":/g, '$1:');
 		} else if (type === 'event_delivery') {
-			if (!this.detailsItem?.metadata?.data) return 'No event data was sent';
-			return JSON.stringify(this.detailsItem.metadata.data, null, 4).replaceAll(/"([^"]+)":/g, '$1:');
+			if (!this.eventDelsDetailsItem?.metadata?.data) return 'No event data was sent';
+			return JSON.stringify(this.eventDelsDetailsItem.metadata.data, null, 4).replaceAll(/"([^"]+)":/g, '$1:');
 		} else if (type === 'res_body') {
 			if (!this.eventDeliveryAtempt) return 'No response body was sent';
 			return this.eventDeliveryAtempt.response_data;
