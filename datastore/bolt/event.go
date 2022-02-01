@@ -208,7 +208,7 @@ func (e *eventRepo) LoadEventsPaged(ctx context.Context, groupId string, appId s
 		return nil, datastore.PaginationData{}, err
 	}
 
-	total, err := e.db.Count(&datastore.EventDelivery{}, e.generateQuery(f))
+	total, err := e.db.Count(&datastore.Event{}, e.generateQuery(f))
 	if err != nil {
 		return nil, datastore.PaginationData{}, err
 	}
