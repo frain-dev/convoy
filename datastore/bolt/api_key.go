@@ -18,7 +18,7 @@ func NewApiRoleRepo(db *badgerhold.Store) datastore.APIKeyRepository {
 }
 
 func (a *apiKeyRepo) CreateAPIKey(ctx context.Context, apiKey *datastore.APIKey) error {
-	return a.db.Insert(apiKey.UID, apiKey)
+	return a.db.Upsert(apiKey.UID, apiKey)
 }
 
 func (a *apiKeyRepo) UpdateAPIKey(ctx context.Context, apiKey *datastore.APIKey) error {

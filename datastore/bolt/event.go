@@ -30,7 +30,7 @@ type TimeDuration struct {
 }
 
 func (e *eventRepo) CreateEvent(ctx context.Context, event *datastore.Event) error {
-	return e.db.Insert(event.UID, event)
+	return e.db.Upsert(event.UID, event)
 }
 
 func (e *eventRepo) CountGroupMessages(ctx context.Context, gid string) (int64, error) {

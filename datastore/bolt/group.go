@@ -26,7 +26,7 @@ func (g *groupRepo) LoadGroups(ctx context.Context, filter *datastore.GroupFilte
 }
 
 func (g *groupRepo) CreateGroup(ctx context.Context, group *datastore.Group) error {
-	return g.db.Insert(group.UID, group)
+	return g.db.Upsert(group.UID, group)
 }
 
 func (g *groupRepo) UpdateGroup(_ context.Context, group *datastore.Group) error {

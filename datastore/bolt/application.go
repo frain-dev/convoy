@@ -23,7 +23,7 @@ func NewApplicationRepo(db *badgerhold.Store) datastore.ApplicationRepository {
 }
 
 func (a *appRepo) CreateApplication(ctx context.Context, app *datastore.Application) error {
-	return a.db.Insert(app.UID, app)
+	return a.db.Upsert(app.UID, app)
 }
 
 func (a *appRepo) UpdateApplication(ctx context.Context, app *datastore.Application) error {
