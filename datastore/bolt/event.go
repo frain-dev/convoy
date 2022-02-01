@@ -4,14 +4,13 @@ import (
 	"context"
 	"errors"
 	"math"
+	"sort"
 	"time"
-
-	"go.mongodb.org/mongo-driver/bson/primitive"
-
-	"github.com/timshannon/badgerhold/v4"
 
 	"github.com/frain-dev/convoy/datastore"
 	"github.com/frain-dev/convoy/util"
+	"github.com/timshannon/badgerhold/v4"
+	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
 var ErrInvalidPeriod = errors.New("specified data cannot be generated for period")
@@ -83,54 +82,41 @@ func (e *eventRepo) LoadEventIntervals(ctx context.Context, groupID string, sear
 		}
 	}
 
-	//err := e.db.View(func(tx *bbolt.Tx) error {
-	//	b := tx.Bucket([]byte(""))
-	//
-	//	err := b.ForEach(func(k, v []byte) error {
-	//		var event datastore.Event
-	//		err := json.Unmarshal(v, &event)
-	//		if err != nil {
-	//			return err
-	//		}
-	//
-	//		if event.AppMetadata.GroupID == groupID &&
-	//			event.DocumentStatus != datastore.DeletedDocumentStatus &&
-	//			event.CreatedAt.Time().Unix() >= start &&
-	//			event.CreatedAt.Time().Unix() <= end {
-	//			format := event.CreatedAt.Time().Format(timeFormat)
-	//
-	//			if _, ok := eventsIntervalsMap[format]; ok {
-	//				eventsIntervalsMap[format]++
-	//			}
-	//		}
-	//
-	//		return nil
-	//	})
-	//
-	//	if err != nil {
-	//		return err
-	//	}
-	//
-	//	for date, count := range eventsIntervalsMap {
-	//		interval, err := getInterval(date, timeFormat, period)
-	//
-	//		if err != nil {
-	//			return err
-	//		}
-	//
-	//		if count > 0 {
-	//			eventsIntervals = append(eventsIntervals, datastore.EventInterval{
-	//				Data:  datastore.EventIntervalData{Interval: interval, Time: date},
-	//				Count: uint64(count)})
-	//		}
-	//	}
-	//
-	//	sort.SliceStable(eventsIntervals, func(i, j int) bool {
-	//		return eventsIntervals[i].Data.Time < eventsIntervals[j].Data.Time
-	//	})
-	//
-	//	return nil
-	//})
+	var events []datastore.Event
+	err := e.db.Find(&events,
+		badgerhold.Where("AppMetadata.GroupID").Eq(groupID).
+			And("CreatedAt").Ge(primitive.NewDateTimeFromTime(time.Unix(start, 0))).
+			And("CreatedAt").Le(primitive.NewDateTimeFromTime(time.Unix(end, 0))),
+	)
+	if err != nil {
+		return nil, err
+	}
+
+	for _, event := range events {
+		format := event.CreatedAt.Time().Format(timeFormat)
+
+		if _, ok := eventsIntervalsMap[format]; ok {
+			eventsIntervalsMap[format]++
+		}
+	}
+
+	for date, count := range eventsIntervalsMap {
+		interval, err := getInterval(date, timeFormat, period)
+
+		if err != nil {
+			return nil, err
+		}
+
+		if count > 0 {
+			eventsIntervals = append(eventsIntervals, datastore.EventInterval{
+				Data:  datastore.EventIntervalData{Interval: interval, Time: date},
+				Count: uint64(count)})
+		}
+	}
+
+	sort.SliceStable(eventsIntervals, func(i, j int) bool {
+		return eventsIntervals[i].Data.Time < eventsIntervals[j].Data.Time
+	})
 
 	return eventsIntervals, nil
 }
