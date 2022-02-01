@@ -2,160 +2,68 @@ package bolt
 
 import (
 	"context"
-	"encoding/json"
+	"errors"
 	"math"
 
 	"github.com/frain-dev/convoy/datastore"
-	"go.etcd.io/bbolt"
+	"github.com/timshannon/badgerhold/v4"
 )
 
-const apiKeyBucketName = "apiKeys"
-
 type apiKeyRepo struct {
-	db         *bbolt.DB
-	bucketName string
+	db *badgerhold.Store
 }
 
-func NewApiRoleRepo(db *bbolt.DB) datastore.APIKeyRepository {
-	err := db.Update(func(tx *bbolt.Tx) error {
-		_, err := tx.CreateBucketIfNotExists([]byte(apiKeyBucketName))
-		return err
-	})
-
-	if err != nil {
-		return nil
-	}
-
-	return &apiKeyRepo{db: db, bucketName: apiKeyBucketName}
+func NewApiRoleRepo(db *badgerhold.Store) datastore.APIKeyRepository {
+	return &apiKeyRepo{db: db}
 }
 
 func (a *apiKeyRepo) CreateAPIKey(ctx context.Context, apiKey *datastore.APIKey) error {
-	return a.createUpdateAPIKey(apiKey)
-}
-
-func (a *apiKeyRepo) createUpdateAPIKey(apiKey *datastore.APIKey) error {
-	return a.db.Update(func(tx *bbolt.Tx) error {
-		b := tx.Bucket([]byte(a.bucketName))
-
-		aJson, err := json.Marshal(apiKey)
-		if err != nil {
-			return err
-		}
-
-		err = b.Put([]byte(apiKey.UID), aJson)
-		if err != nil {
-			return err
-		}
-
-		return nil
-	})
+	return a.db.Insert(apiKey.UID, apiKey)
 }
 
 func (a *apiKeyRepo) UpdateAPIKey(ctx context.Context, apiKey *datastore.APIKey) error {
-	return a.createUpdateAPIKey(apiKey)
+	return a.db.Update(apiKey.UID, apiKey)
 }
 
 func (a *apiKeyRepo) FindAPIKeyByID(ctx context.Context, uid string) (*datastore.APIKey, error) {
 	var apiKey datastore.APIKey
 
-	err := a.db.View(func(tx *bbolt.Tx) error {
-		buf := tx.Bucket([]byte(a.bucketName)).Get([]byte(uid))
+	err := a.db.Get(uid, &apiKey)
 
-		if buf == nil {
-			return datastore.ErrAPIKeyNotFound
-		}
-
-		err := json.Unmarshal(buf, &apiKey)
-		if err != nil {
-			return err
-		}
-
-		return nil
-	})
+	if err != nil && errors.Is(err, badgerhold.ErrNotFound) {
+		return &apiKey, datastore.ErrAPIKeyNotFound
+	}
 
 	return &apiKey, err
 }
 
 func (a *apiKeyRepo) FindAPIKeyByMaskID(ctx context.Context, maskID string) (*datastore.APIKey, error) {
-	var apiKey *datastore.APIKey
+	var apiKey datastore.APIKey
 
-	err := a.db.View(func(tx *bbolt.Tx) error {
-		b := tx.Bucket([]byte(a.bucketName))
+	err := a.db.FindOne(&apiKey, badgerhold.Where("MaskID").Eq(maskID))
 
-		return b.ForEach(func(k, v []byte) error {
-			var temp *datastore.APIKey
-			err := json.Unmarshal(v, &temp)
-			if err != nil {
-				return err
-			}
-
-			if temp.MaskID == maskID {
-				apiKey = temp
-				return nil
-			}
-
-			return nil
-		})
-	})
-
-	if err != nil {
-		return nil, err
+	if err != nil && errors.Is(err, badgerhold.ErrNotFound) {
+		return &apiKey, datastore.ErrAPIKeyNotFound
 	}
 
-	if apiKey == nil {
-		return nil, datastore.ErrAPIKeyNotFound
-	}
-
-	return apiKey, err
+	return &apiKey, err
 }
 
 func (a *apiKeyRepo) RevokeAPIKeys(ctx context.Context, uids []string) error {
-	err := a.db.Update(func(tx *bbolt.Tx) error {
-		b := tx.Bucket([]byte(a.bucketName))
-		for _, uid := range uids {
-			err := b.Delete([]byte(uid))
-			if err != nil {
-				return err
-			}
-		}
+	return a.db.DeleteMatching(&datastore.APIKey{}, badgerhold.Where("UID").In(badgerhold.Slice(uids)...))
 
-		return nil
-	})
-
-	return err
 }
 
 func (a *apiKeyRepo) FindAPIKeyByHash(ctx context.Context, hash string) (*datastore.APIKey, error) {
-	var apiKey *datastore.APIKey
+	var apiKey datastore.APIKey
 
-	err := a.db.View(func(tx *bbolt.Tx) error {
-		b := tx.Bucket([]byte(a.bucketName))
+	err := a.db.FindOne(&apiKey, badgerhold.Where("Hash").Eq(hash))
 
-		return b.ForEach(func(k, v []byte) error {
-			var temp *datastore.APIKey
-			err := json.Unmarshal(v, &temp)
-			if err != nil {
-				return err
-			}
-
-			if temp.Hash == hash {
-				apiKey = temp
-				return nil
-			}
-
-			return nil
-		})
-	})
-
-	if err != nil {
-		return nil, err
+	if err != nil && errors.Is(err, badgerhold.ErrNotFound) {
+		return &apiKey, datastore.ErrAPIKeyNotFound
 	}
 
-	if apiKey == nil {
-		return nil, datastore.ErrAPIKeyNotFound
-	}
-
-	return apiKey, err
+	return &apiKey, err
 }
 
 func (a *apiKeyRepo) LoadAPIKeysPaged(ctx context.Context, pageable *datastore.Pageable) ([]datastore.APIKey, datastore.PaginationData, error) {
@@ -176,45 +84,27 @@ func (a *apiKeyRepo) LoadAPIKeysPaged(ctx context.Context, pageable *datastore.P
 
 	prevPage = page - 1
 	lowerBound := perPage * prevPage
-	upperBound := perPage * page
 
-	err := a.db.View(func(tx *bbolt.Tx) error {
-		b := tx.Bucket([]byte(a.bucketName))
-		c := b.Cursor()
-		i := 1
+	q := &badgerhold.Query{}
 
-		for k, v := c.First(); k != nil; k, v = c.Next() {
-			if v == nil {
-				continue
-			}
+	err := a.db.Find(&apiKeys, q.Skip(lowerBound).Limit(perPage))
 
-			if i > lowerBound && i <= upperBound {
-				var apiKey datastore.APIKey
-				err := json.Unmarshal(v, &apiKey)
-				if err != nil {
-					return err
-				}
+	if err != nil {
+		return nil, datastore.PaginationData{}, err
+	}
 
-				apiKeys = append(apiKeys, apiKey)
-			}
-			i++
+	total, err := a.db.Count(&datastore.APIKey{}, &badgerhold.Query{})
 
-			if i == (perPage*page)+perPage {
-				break
-			}
-		}
+	if err != nil {
+		return nil, datastore.PaginationData{}, err
+	}
 
-		total := int64(b.Stats().KeyN)
-
-		data.Total = total
-		data.TotalPage = int64(math.Ceil(float64(total) / float64(perPage)))
-		data.PerPage = int64(perPage)
-		data.Next = int64(page + 1)
-		data.Page = int64(page)
-		data.Prev = int64(prevPage)
-
-		return nil
-	})
+	data.Total = int64(total)
+	data.TotalPage = int64(math.Ceil(float64(total) / float64(perPage)))
+	data.PerPage = int64(perPage)
+	data.Next = int64(page + 1)
+	data.Page = int64(page)
+	data.Prev = int64(prevPage)
 
 	return apiKeys, data, err
 }
