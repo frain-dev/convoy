@@ -2,12 +2,13 @@ package bolt
 
 import (
 	"context"
+	"io"
 
 	"github.com/dgraph-io/badger/v3"
-	"github.com/timshannon/badgerhold/v4"
-
 	"github.com/frain-dev/convoy/config"
 	"github.com/frain-dev/convoy/datastore"
+	"github.com/sirupsen/logrus"
+	"github.com/timshannon/badgerhold/v4"
 )
 
 type Client struct {
@@ -26,7 +27,7 @@ func New(cfg config.Configuration) (datastore.DatabaseClient, error) {
 		SequenceBandwith: 100,
 		Options: badger.DefaultOptions("convoy_tmp_db").
 			WithZSTDCompressionLevel(0).
-			WithCompression(0),
+			WithCompression(0).WithLogger(&logrus.Logger{Out: io.Discard}),
 	})
 	if err != nil {
 		return nil, err
