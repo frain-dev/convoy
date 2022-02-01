@@ -480,7 +480,7 @@
 							</div>
 						</div>
 
-						<div class="empty-state" *ngIf="apps?.content?.length === 0">
+						<div class="empty-state table--container" *ngIf="apps?.content?.length === 0">
 							<img src="/assets/img/empty-state-img.svg" alt="empty state" />
 							<p>No app to show here</p>
 						</div>
@@ -491,7 +491,7 @@
 			<div class="dashboard--logs--details has-loader">
 				<convoy-loader *ngIf="(activeTab === 'apps' && isloadingApps) || (activeTab === 'events' && isloadingEvents) || (activeTab === 'event deliveries' && isloadingEventDeliveries)"></convoy-loader>
 
-				<ng-container *ngIf="activeTab === 'apps'">
+				<ng-container *ngIf="activeTab === 'apps' && appsDetailsItem">
 					<h3>Details</h3>
 					<ul class="dashboard--logs--details--meta">
 						<li class="list-item-inline">
@@ -517,7 +517,7 @@
 					</ul>
 				</ng-container>
 
-				<ng-container *ngIf="activeTab === 'event deliveries'">
+				<ng-container *ngIf="activeTab === 'event deliveries' && eventDelsDetailsItem">
 					<h3>Details</h3>
 					<ul class="dashboard--logs--details--meta">
 						<li class="list-item-inline">
@@ -579,7 +579,7 @@
 					</div>
 				</ng-container>
 
-				<ng-container *ngIf="activeTab === 'events'">
+				<ng-container *ngIf="activeTab === 'events' && eventsDetailsItem">
 					<h3>Details</h3>
 					<div class="dashboard--logs--details--req-res">
 						<div class="dashboard--logs--details--tabs-data show">
