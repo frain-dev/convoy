@@ -16,7 +16,7 @@ import (
 type MemQueue struct {
 	Name      string
 	queue     *memqueue.Queue
-	inner     taskq.Factory
+	Inner     taskq.Factory
 	closeChan chan struct{}
 }
 
@@ -40,14 +40,14 @@ func NewQueue(opts queue.QueueOptions) queue.Queuer {
 
 	return &MemQueue{
 		Name:  opts.Name,
-		inner: opts.Factory,
+		Inner: opts.Factory,
 		queue: q.(*memqueue.Queue),
 	}
 }
 
 func (q *MemQueue) Close() error {
 	q.closeChan <- struct{}{}
-	return q.inner.Close()
+	return q.Inner.Close()
 }
 
 func (q *MemQueue) Write(ctx context.Context, name convoy.TaskName, e *datastore.EventDelivery, delay time.Duration) error {

@@ -18,7 +18,7 @@ import (
 type RedisQueue struct {
 	Name      string
 	queue     *redisq.Queue
-	inner     *redis.Client
+	Inner     *redis.Client
 	closeChan chan struct{}
 }
 
@@ -58,14 +58,14 @@ func NewQueue(opts queue.QueueOptions) queue.Queuer {
 
 	return &RedisQueue{
 		Name:  opts.Name,
-		inner: opts.Redis,
+		Inner: opts.Redis,
 		queue: q.(*redisq.Queue),
 	}
 }
 
 func (q *RedisQueue) Close() error {
 	q.closeChan <- struct{}{}
-	return q.inner.Close()
+	return q.Inner.Close()
 }
 
 func (q *RedisQueue) Write(ctx context.Context, name convoy.TaskName, e *datastore.EventDelivery, delay time.Duration) error {
