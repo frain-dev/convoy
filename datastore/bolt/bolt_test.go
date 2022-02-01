@@ -2,6 +2,7 @@ package bolt
 
 import (
 	"context"
+	"github.com/timshannon/badgerhold/v4"
 	"os"
 	"testing"
 
@@ -29,16 +30,11 @@ func getDB(t *testing.T) (*badgerhold.Store, func()) {
 
 	require.NoError(t, err)
 
-	err = db.Client().(*badgerhold.Store).Badger().DropAll()
-	require.NoError(t, err)
-
-	err = os.Setenv("TZ", "") // Use UTC by default :)
-	require.NoError(t, err)
+	errr := os.Setenv("TZ", "") // Use UTC by default :)
+	require.NoError(t, errr)
 
 	return db.Client().(*badgerhold.Store), func() {
 		require.NoError(t, db.Client().(*badgerhold.Store).Badger().DropAll())
-
-	return db.Client().(*bbolt.DB), func() {
 		require.NoError(t, db.Disconnect(context.Background()))
 	}
 }
