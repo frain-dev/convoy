@@ -18,7 +18,7 @@ func NewApiRoleRepo(db *badgerhold.Store) datastore.APIKeyRepository {
 }
 
 func (a *apiKeyRepo) CreateAPIKey(ctx context.Context, apiKey *datastore.APIKey) error {
-	return a.db.Insert(apiKey.UID, apiKey)
+	return a.db.Upsert(apiKey.UID, apiKey)
 }
 
 func (a *apiKeyRepo) UpdateAPIKey(ctx context.Context, apiKey *datastore.APIKey) error {
@@ -70,7 +70,6 @@ func (a *apiKeyRepo) LoadAPIKeysPaged(ctx context.Context, pageable *datastore.P
 	var apiKeys []datastore.APIKey = make([]datastore.APIKey, 0)
 
 	page := pageable.Page
-	prevPage := pageable.Page
 	perPage := pageable.PerPage
 	data := datastore.PaginationData{}
 
@@ -82,7 +81,7 @@ func (a *apiKeyRepo) LoadAPIKeysPaged(ctx context.Context, pageable *datastore.P
 		perPage = 10
 	}
 
-	prevPage = page - 1
+	prevPage := page - 1
 	lowerBound := perPage * prevPage
 
 	q := &badgerhold.Query{}

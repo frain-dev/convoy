@@ -20,7 +20,7 @@ func NewEventDeliveryRepository(db *badgerhold.Store) datastore.EventDeliveryRep
 }
 
 func (e *eventDeliveryRepo) CreateEventDelivery(ctx context.Context, delivery *datastore.EventDelivery) error {
-	return e.db.Insert(delivery.UID, delivery)
+	return e.db.Upsert(delivery.UID, delivery)
 }
 
 func (e *eventDeliveryRepo) FindEventDeliveryByID(ctx context.Context, uid string) (*datastore.EventDelivery, error) {

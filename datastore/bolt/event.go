@@ -2,7 +2,6 @@ package bolt
 
 import (
 	"context"
-	"encoding/json"
 	"errors"
 	"math"
 	"sort"
@@ -10,28 +9,18 @@ import (
 
 	"github.com/frain-dev/convoy/datastore"
 	"github.com/frain-dev/convoy/util"
-	"go.etcd.io/bbolt"
+	"github.com/timshannon/badgerhold/v4"
+	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
 var ErrInvalidPeriod = errors.New("specified data cannot be generated for period")
 
 type eventRepo struct {
-	db         *bbolt.DB
-	bucketName string
+	db *badgerhold.Store
 }
 
-func NewEventRepo(db *bbolt.DB) datastore.EventRepository {
-	bucketName := "events"
-	err := db.Update(func(tx *bbolt.Tx) error {
-		_, err := tx.CreateBucketIfNotExists([]byte(bucketName))
-		return err
-	})
-
-	if err != nil {
-		return nil
-	}
-
-	return &eventRepo{db: db, bucketName: bucketName}
+func NewEventRepo(db *badgerhold.Store) datastore.EventRepository {
+	return &eventRepo{db: db}
 }
 
 type TimeDuration struct {
@@ -41,88 +30,24 @@ type TimeDuration struct {
 }
 
 func (e *eventRepo) CreateEvent(ctx context.Context, event *datastore.Event) error {
-	return e.db.Update(func(tx *bbolt.Tx) error {
-		b := tx.Bucket([]byte(e.bucketName))
-
-		evt, err := json.Marshal(event)
-		if err != nil {
-			return err
-		}
-
-		pErr := b.Put([]byte(event.UID), evt)
-		if pErr != nil {
-			return pErr
-		}
-
-		return nil
-	})
+	return e.db.Upsert(event.UID, event)
 }
 
 func (e *eventRepo) CountGroupMessages(ctx context.Context, gid string) (int64, error) {
-	count := int64(0)
-	err := e.db.View(func(tx *bbolt.Tx) error {
-		b := tx.Bucket([]byte(e.bucketName))
+	count, err := e.db.Count(&datastore.Event{}, badgerhold.Where("AppMetadata.GroupID").Eq(gid))
 
-		return b.ForEach(func(k, v []byte) error {
-			var event *datastore.Event
-			err := json.Unmarshal(v, &event)
-			if err != nil {
-				return err
-			}
-
-			if event.AppMetadata.GroupID == gid {
-				count++
-			}
-
-			return nil
-		})
-	})
-
-	return count, err
+	return int64(count), err
 }
 
 func (e *eventRepo) DeleteGroupEvents(ctx context.Context, gid string) error {
-	return e.db.Update(func(tx *bbolt.Tx) error {
-		b := tx.Bucket([]byte(e.bucketName))
-
-		return b.ForEach(func(k, v []byte) error {
-			var event *datastore.Event
-			err := json.Unmarshal(v, &event)
-			if err != nil {
-				return err
-			}
-
-			if event.AppMetadata.GroupID == gid {
-				err := b.Delete([]byte(event.UID))
-				if err != nil {
-					return err
-				}
-			}
-
-			return nil
-		})
-	})
+	return e.db.DeleteMatching(&datastore.Event{}, badgerhold.Where("AppMetadata.GroupID").Eq(gid))
 }
 
 func (e *eventRepo) FindEventByID(ctx context.Context, eid string) (*datastore.Event, error) {
-	var event *datastore.Event
-	err := e.db.View(func(tx *bbolt.Tx) error {
-		b := tx.Bucket([]byte(e.bucketName))
+	var event datastore.Event
+	err := e.db.Get(eid, &event)
 
-		eventBytes := b.Get([]byte(eid))
-		if eventBytes == nil {
-			return datastore.ErrEventNotFound
-		}
-
-		err := json.Unmarshal(eventBytes, &event)
-		if err != nil {
-			return err
-		}
-
-		return nil
-	})
-
-	return event, err
+	return &event, err
 }
 
 func (e *eventRepo) LoadEventIntervals(ctx context.Context, groupID string, searchParams datastore.SearchParams, period datastore.Period, interval int) ([]datastore.EventInterval, error) {
@@ -157,56 +82,43 @@ func (e *eventRepo) LoadEventIntervals(ctx context.Context, groupID string, sear
 		}
 	}
 
-	err := e.db.View(func(tx *bbolt.Tx) error {
-		b := tx.Bucket([]byte(e.bucketName))
+	var events []datastore.Event
+	err := e.db.Find(&events,
+		badgerhold.Where("AppMetadata.GroupID").Eq(groupID).
+			And("CreatedAt").Ge(primitive.NewDateTimeFromTime(time.Unix(start, 0))).
+			And("CreatedAt").Le(primitive.NewDateTimeFromTime(time.Unix(end, 0))),
+	)
+	if err != nil {
+		return nil, err
+	}
 
-		err := b.ForEach(func(k, v []byte) error {
-			var event datastore.Event
-			err := json.Unmarshal(v, &event)
-			if err != nil {
-				return err
-			}
+	for _, event := range events {
+		format := event.CreatedAt.Time().Format(timeFormat)
 
-			if event.AppMetadata.GroupID == groupID &&
-				event.DocumentStatus != datastore.DeletedDocumentStatus &&
-				event.CreatedAt.Time().Unix() >= start &&
-				event.CreatedAt.Time().Unix() <= end {
-				format := event.CreatedAt.Time().Format(timeFormat)
+		if _, ok := eventsIntervalsMap[format]; ok {
+			eventsIntervalsMap[format]++
+		}
+	}
 
-				if _, ok := eventsIntervalsMap[format]; ok {
-					eventsIntervalsMap[format]++
-				}
-			}
-
-			return nil
-		})
+	for date, count := range eventsIntervalsMap {
+		interval, err := getInterval(date, timeFormat, period)
 
 		if err != nil {
-			return err
+			return nil, err
 		}
 
-		for date, count := range eventsIntervalsMap {
-			interval, err := getInterval(date, timeFormat, period)
-
-			if err != nil {
-				return err
-			}
-
-			if count > 0 {
-				eventsIntervals = append(eventsIntervals, datastore.EventInterval{
-					Data:  datastore.EventIntervalData{Interval: interval, Time: date},
-					Count: uint64(count)})
-			}
+		if count > 0 {
+			eventsIntervals = append(eventsIntervals, datastore.EventInterval{
+				Data:  datastore.EventIntervalData{Interval: interval, Time: date},
+				Count: uint64(count)})
 		}
+	}
 
-		sort.SliceStable(eventsIntervals, func(i, j int) bool {
-			return eventsIntervals[i].Data.Time < eventsIntervals[j].Data.Time
-		})
-
-		return nil
+	sort.SliceStable(eventsIntervals, func(i, j int) bool {
+		return eventsIntervals[i].Data.Time < eventsIntervals[j].Data.Time
 	})
 
-	return eventsIntervals, err
+	return eventsIntervals, nil
 }
 
 func getFormat(period datastore.Period) (TimeDuration, string, error) {
@@ -265,7 +177,7 @@ func getInterval(date, timeFormat string, period datastore.Period) (int64, error
 }
 
 func (e *eventRepo) LoadEventsPaged(ctx context.Context, groupId string, appId string, searchParams datastore.SearchParams, pageable datastore.Pageable) ([]datastore.Event, datastore.PaginationData, error) {
-	f := &Filter{
+	f := &filter{
 		appID:        appId,
 		groupID:      groupId,
 		searchParams: searchParams,
@@ -286,110 +198,54 @@ func (e *eventRepo) LoadEventsPaged(ctx context.Context, groupId string, appId s
 
 	prevPage := pageable.Page - 1
 	lowerBound := pageable.PerPage * prevPage
-	upperBound := pageable.PerPage * pageable.Page
 
 	var events []datastore.Event
 	var pg datastore.PaginationData
 
-	err := e.db.View(func(tx *bbolt.Tx) error {
-		b := tx.Bucket([]byte(e.bucketName))
-		c := b.Cursor()
+	q := e.generateQuery(f).Skip(lowerBound).Limit(pageable.PerPage)
+	err := e.db.Find(&events, q)
+	if err != nil {
+		return nil, datastore.PaginationData{}, err
+	}
 
-		i := 0
-		for k, v := c.First(); k != nil; k, v = c.Next() {
-			if i >= lowerBound && i < upperBound {
-				var evt datastore.Event
-				err := json.Unmarshal(v, &evt)
-				if err != nil {
-					return err
-				}
+	total, err := e.db.Count(&datastore.Event{}, e.generateQuery(f))
+	if err != nil {
+		return nil, datastore.PaginationData{}, err
+	}
 
-				if e.filterEvents(f, &evt) {
-					events = append(events, evt)
-					i++
-				}
-			}
-
-			if i == upperBound+pageable.PerPage {
-				break
-			}
-		}
-
-		total, err := e.countEventsWithFilter(f)
-		if err != nil {
-			return err
-		}
-
-		pg = datastore.PaginationData{
-			Total:     total,
-			Page:      int64(pageable.Page),
-			PerPage:   int64(pageable.PerPage),
-			Prev:      int64(prevPage),
-			Next:      int64(pageable.Page + 1),
-			TotalPage: int64(math.Ceil(float64(total) / float64(pageable.PerPage))),
-		}
-		return nil
-	})
+	pg = datastore.PaginationData{
+		Total:     int64(total),
+		Page:      int64(pageable.Page),
+		PerPage:   int64(pageable.PerPage),
+		Prev:      int64(prevPage),
+		Next:      int64(pageable.Page + 1),
+		TotalPage: int64(math.Ceil(float64(total) / float64(pageable.PerPage))),
+	}
 
 	return events, pg, err
 }
 
-type Filter struct {
-	groupID      string
-	appID        string
-	searchParams datastore.SearchParams
+func (e *eventRepo) generateQuery(f *filter) *badgerhold.Query {
+	qFunc := badgerhold.Where
 
-	hasAppFilter       bool
-	hasGroupFilter     bool
-	hasStartDateFilter bool
-	hasEndDateFilter   bool
-}
-
-func (e *eventRepo) filterEvents(filter *Filter, evt *datastore.Event) bool {
-	if filter.hasAppFilter && evt.AppMetadata.UID != filter.appID {
-		return false
+	if f.hasAppFilter {
+		qFunc = qFunc("AppMetadata.UID").Eq(f.appID).And
 	}
 
-	if filter.hasGroupFilter && evt.AppMetadata.GroupID != filter.groupID {
-		return false
+	if f.hasGroupFilter {
+		qFunc = qFunc("AppMetadata.GroupID").Eq(f.groupID).And
 	}
 
-	if filter.hasStartDateFilter {
-		ok := evt.CreatedAt.Time().Unix() >= filter.searchParams.CreatedAtStart
-		if !ok {
-			return false
-		}
+	if f.hasStartDateFilter {
+		createdStart := primitive.NewDateTimeFromTime(time.Unix(f.searchParams.CreatedAtStart, 0))
+		qFunc = qFunc("CreatedAt").Ge(createdStart).And
 	}
 
-	if filter.hasEndDateFilter {
-		ok := evt.CreatedAt.Time().Unix() <= filter.searchParams.CreatedAtEnd
-		if !ok {
-			return false
-		}
+	if f.hasEndDateFilter {
+		createdEnd := primitive.NewDateTimeFromTime(time.Unix(f.searchParams.CreatedAtEnd, 0))
+		qFunc = qFunc("CreatedAt").Le(createdEnd).And
 	}
 
-	return true
-}
-
-func (e *eventRepo) countEventsWithFilter(filter *Filter) (int64, error) {
-	i := int64(0)
-	err := e.db.View(func(tx *bbolt.Tx) error {
-		b := tx.Bucket([]byte(e.bucketName))
-
-		var event datastore.Event
-		return b.ForEach(func(k, v []byte) error {
-			err := json.Unmarshal(v, &event)
-			if err != nil {
-				return err
-			}
-
-			if e.filterEvents(filter, &event) {
-				i++
-			}
-
-			return nil
-		})
-	})
-
-	return i, err
+	// this is a play-safe workaround, uid will never be empty so use it to get the query object
+	return qFunc("UID").Ne("")
 }

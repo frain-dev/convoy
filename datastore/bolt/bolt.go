@@ -2,19 +2,17 @@ package bolt
 
 import (
 	"context"
+	"io"
 
 	"github.com/dgraph-io/badger/v3"
-	"github.com/timshannon/badgerhold/v4"
-
-	"go.etcd.io/bbolt"
-
 	"github.com/frain-dev/convoy/config"
 	"github.com/frain-dev/convoy/datastore"
+	"github.com/sirupsen/logrus"
+	"github.com/timshannon/badgerhold/v4"
 )
 
 type Client struct {
 	store             *badgerhold.Store
-	db                *bbolt.DB
 	apiKeyRepo        datastore.APIKeyRepository
 	groupRepo         datastore.GroupRepository
 	eventRepo         datastore.EventRepository
@@ -27,24 +25,18 @@ func New(cfg config.Configuration) (datastore.DatabaseClient, error) {
 		Encoder:          badgerhold.DefaultEncode,
 		Decoder:          badgerhold.DefaultDecode,
 		SequenceBandwith: 100,
-		Options: badger.DefaultOptions("convoy_tmp_db").
+		Options: badger.DefaultOptions(cfg.Database.Dsn).
 			WithZSTDCompressionLevel(0).
-			WithCompression(0),
+			WithCompression(0).WithLogger(&logrus.Logger{Out: io.Discard}),
 	})
-	if err != nil {
-		return nil, err
-	}
-
-	db, err := bbolt.Open(cfg.Database.Dsn, 0666, nil)
 	if err != nil {
 		return nil, err
 	}
 
 	c := &Client{
 		store:             st,
-		db:                db,
 		groupRepo:         NewGroupRepo(st),
-		eventRepo:         NewEventRepo(db),
+		eventRepo:         NewEventRepo(st),
 		apiKeyRepo:        NewApiRoleRepo(st),
 		applicationRepo:   NewApplicationRepo(st),
 		eventDeliveryRepo: NewEventDeliveryRepository(st),
@@ -53,12 +45,12 @@ func New(cfg config.Configuration) (datastore.DatabaseClient, error) {
 	return c, nil
 }
 
-func (c *Client) Disconnect(ctx context.Context) error {
+func (c *Client) Disconnect(context.Context) error {
 	return c.store.Close()
 }
 
 func (c *Client) GetName() string {
-	return "bolt"
+	return "badger"
 }
 
 func (c *Client) Client() interface{} {
