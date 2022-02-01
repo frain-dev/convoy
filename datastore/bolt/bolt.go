@@ -25,7 +25,7 @@ func New(cfg config.Configuration) (datastore.DatabaseClient, error) {
 		Encoder:          badgerhold.DefaultEncode,
 		Decoder:          badgerhold.DefaultDecode,
 		SequenceBandwith: 100,
-		Options: badger.DefaultOptions("convoy_tmp_db").
+		Options: badger.DefaultOptions(cfg.Database.Dsn).
 			WithZSTDCompressionLevel(0).
 			WithCompression(0).WithLogger(&logrus.Logger{Out: io.Discard}),
 	})
