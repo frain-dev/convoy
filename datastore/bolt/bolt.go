@@ -43,7 +43,7 @@ func New(cfg config.Configuration) (datastore.DatabaseClient, error) {
 	c := &Client{
 		store:             st,
 		db:                db,
-		groupRepo:         NewGroupRepo(db),
+		groupRepo:         NewGroupRepo(st),
 		eventRepo:         NewEventRepo(db),
 		apiKeyRepo:        NewApiRoleRepo(st),
 		applicationRepo:   NewApplicationRepo(db),
