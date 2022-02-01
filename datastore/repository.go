@@ -27,12 +27,8 @@ type EventDeliveryRepository interface {
 type EventRepository interface {
 	CreateEvent(context.Context, *Event) error
 	LoadEventIntervals(context.Context, string, SearchParams, Period, int) ([]EventInterval, error)
-	LoadEventsPagedByAppId(context.Context, string, SearchParams, Pageable) ([]Event, PaginationData, error)
 	FindEventByID(ctx context.Context, id string) (*Event, error)
 	CountGroupMessages(ctx context.Context, groupID string) (int64, error)
-	LoadEventsScheduledForPosting(context.Context) ([]Event, error)
-	LoadEventsForPostingRetry(context.Context) ([]Event, error)
-	LoadAbandonedEventsForPostingRetry(context.Context) ([]Event, error)
 	LoadEventsPaged(context.Context, string, string, SearchParams, Pageable) ([]Event, PaginationData, error)
 	DeleteGroupEvents(context.Context, string) error
 }
@@ -48,7 +44,7 @@ type GroupRepository interface {
 
 type ApplicationRepository interface {
 	CreateApplication(context.Context, *Application) error
-	LoadApplicationsPaged(context.Context, string, Pageable) ([]Application, PaginationData, error)
+	LoadApplicationsPaged(context.Context, string, string, Pageable) ([]Application, PaginationData, error)
 	FindApplicationByID(context.Context, string) (*Application, error)
 	UpdateApplication(context.Context, *Application) error
 	DeleteApplication(context.Context, *Application) error

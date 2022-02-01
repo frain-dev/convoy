@@ -109,18 +109,38 @@ type Endpoint struct {
 var ErrGroupNotFound = errors.New("group not found")
 
 type Group struct {
-	ID         primitive.ObjectID  `json:"-" bson:"_id"`
-	UID        string              `json:"uid" bson:"uid"`
-	Name       string              `json:"name" bson:"name"`
-	LogoURL    string              `json:"logo_url" bson:"logo_url"`
-	Config     *config.GroupConfig `json:"config" bson:"config"`
-	Statistics *GroupStatistics    `json:"statistics" bson:"-"`
+	ID         primitive.ObjectID `json:"-" bson:"_id"`
+	UID        string             `json:"uid" bson:"uid"`
+	Name       string             `json:"name" bson:"name"`
+	LogoURL    string             `json:"logo_url" bson:"logo_url"`
+	Config     *GroupConfig       `json:"config" bson:"config"`
+	Statistics *GroupStatistics   `json:"statistics" bson:"-"`
 
 	CreatedAt primitive.DateTime `json:"created_at,omitempty" bson:"created_at,omitempty" swaggertype:"string"`
 	UpdatedAt primitive.DateTime `json:"updated_at,omitempty" bson:"updated_at,omitempty" swaggertype:"string"`
 	DeletedAt primitive.DateTime `json:"deleted_at,omitempty" bson:"deleted_at,omitempty" swaggertype:"string"`
 
 	DocumentStatus DocumentStatus `json:"-" bson:"document_status"`
+}
+
+type GroupConfig struct {
+	Strategy        StrategyConfiguration  `json:"strategy"`
+	Signature       SignatureConfiguration `json:"signature"`
+	DisableEndpoint bool                   `json:"disable_endpoint"`
+}
+type StrategyConfiguration struct {
+	Type    config.StrategyProvider      `json:"type" valid:"required~please provide a valid strategy type, in(default)~unsupported strategy type"`
+	Default DefaultStrategyConfiguration `json:"default"`
+}
+
+type DefaultStrategyConfiguration struct {
+	IntervalSeconds uint64 `json:"intervalSeconds" valid:"required~please provide a valid interval seconds,int"`
+	RetryLimit      uint64 `json:"retryLimit" valid:"required~please provide a valid interval seconds,int"`
+}
+
+type SignatureConfiguration struct {
+	Header config.SignatureHeaderProvider `json:"header" valid:"required~please provide a valid signature header"`
+	Hash   string                         `json:"hash" valid:"required~please provide a valid hash,supported_hash~unsupported hash type"`
 }
 
 type GroupStatistics struct {
@@ -301,11 +321,11 @@ type KeyType string
 type APIKey struct {
 	ID        primitive.ObjectID `json:"-" bson:"_id"`
 	UID       string             `json:"uid" bson:"uid"`
-	MaskID    string             `json:"-" bson:"mask_id"`
+	MaskID    string             `json:"mask_id,omitempty" bson:"mask_id"`
 	Name      string             `json:"name" bson:"name"`
 	Role      auth.Role          `json:"role" bson:"role"`
-	Hash      string             `json:"-" bson:"hash"`
-	Salt      string             `json:"-" bson:"salt"`
+	Hash      string             `json:"hash,omitempty" bson:"hash"`
+	Salt      string             `json:"salt,omitempty" bson:"salt"`
 	Type      KeyType            `json:"key_type" bson:"key_type"`
 	ExpiresAt primitive.DateTime `json:"expires_at,omitempty" bson:"expires_at,omitempty"`
 	CreatedAt primitive.DateTime `json:"created_at,omitempty" bson:"created_at"`

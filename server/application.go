@@ -6,17 +6,19 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/frain-dev/convoy/logger"
 	"github.com/google/uuid"
-	log "github.com/sirupsen/logrus"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 
 	"github.com/frain-dev/convoy/datastore"
 	"github.com/frain-dev/convoy/queue"
 	"github.com/frain-dev/convoy/server/models"
+	"github.com/frain-dev/convoy/tracer"
 	"github.com/frain-dev/convoy/util"
 
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/render"
+	log "github.com/sirupsen/logrus"
 )
 
 type applicationHandler struct {
@@ -26,6 +28,8 @@ type applicationHandler struct {
 	groupRepo         datastore.GroupRepository
 	apiKeyRepo        datastore.APIKeyRepository
 	eventQueue        queue.Queuer
+	logger            logger.Logger
+	tracer            tracer.Tracer
 }
 
 type pagedResponse struct {
@@ -38,7 +42,7 @@ func newApplicationHandler(eventRepo datastore.EventRepository,
 	appRepo datastore.ApplicationRepository,
 	groupRepo datastore.GroupRepository,
 	apiKeyRepo datastore.APIKeyRepository,
-	eventQueue queue.Queuer) *applicationHandler {
+	eventQueue queue.Queuer, logger logger.Logger, tracer tracer.Tracer) *applicationHandler {
 
 	return &applicationHandler{
 		eventRepo:         eventRepo,
@@ -47,6 +51,8 @@ func newApplicationHandler(eventRepo datastore.EventRepository,
 		appRepo:           appRepo,
 		groupRepo:         groupRepo,
 		eventQueue:        eventQueue,
+		logger:            logger,
+		tracer:            tracer,
 	}
 }
 
@@ -76,6 +82,7 @@ func (a *applicationHandler) GetApp(w http.ResponseWriter, r *http.Request) {
 // @Param perPage query string false "results per page"
 // @Param page query string false "page number"
 // @Param sort query string false "sort order"
+// @Param q query string false "app title"
 // @Success 200 {object} serverResponse{data=pagedResponse{content=[]datastore.Application}}
 // @Failure 400,401,500 {object} serverResponse{data=Stub}
 // @Security ApiKeyAuth
@@ -83,10 +90,12 @@ func (a *applicationHandler) GetApp(w http.ResponseWriter, r *http.Request) {
 func (a *applicationHandler) GetApps(w http.ResponseWriter, r *http.Request) {
 	pageable := getPageableFromContext(r.Context())
 	group := getGroupFromContext(r.Context())
+	q := r.URL.Query().Get("q")
 
-	apps, paginationData, err := a.appRepo.LoadApplicationsPaged(r.Context(), group.UID, pageable)
+	apps, paginationData, err := a.appRepo.LoadApplicationsPaged(r.Context(), group.UID, q, pageable)
 	if err != nil {
-		_ = render.Render(w, r, newErrorResponse("an error occurred while fetching apps", http.StatusInternalServerError))
+		print(err.Error())
+		_ = render.Render(w, r, newErrorResponse("an error occurred while fetching apps. Error: "+err.Error(), http.StatusBadRequest))
 		return
 	}
 
@@ -115,8 +124,8 @@ func (a *applicationHandler) CreateApp(w http.ResponseWriter, r *http.Request) {
 	}
 
 	appName := newApp.AppName
-	if util.IsStringEmpty(appName) {
-		_ = render.Render(w, r, newErrorResponse("please provide your appName", http.StatusBadRequest))
+	if err = util.Validate(newApp); err != nil {
+		_ = render.Render(w, r, newErrorResponse(err.Error(), http.StatusBadRequest))
 		return
 	}
 
@@ -164,7 +173,7 @@ func (a *applicationHandler) UpdateApp(w http.ResponseWriter, r *http.Request) {
 	}
 
 	appName := appUpdate.AppName
-	if util.IsStringEmpty(appName) {
+	if err = util.Validate(appUpdate); err != nil {
 		_ = render.Render(w, r, newErrorResponse("please provide your appName", http.StatusBadRequest))
 		return
 	}
@@ -178,7 +187,7 @@ func (a *applicationHandler) UpdateApp(w http.ResponseWriter, r *http.Request) {
 
 	err = a.appRepo.UpdateApplication(r.Context(), app)
 	if err != nil {
-		_ = render.Render(w, r, newErrorResponse("an error occurred while updating app", http.StatusInternalServerError))
+		_ = render.Render(w, r, newErrorResponse("an error occurred while updating app", http.StatusBadRequest))
 		return
 	}
 
@@ -233,7 +242,7 @@ func (a *applicationHandler) CreateAppEndpoint(w http.ResponseWriter, r *http.Re
 	if err != nil {
 
 		msg := "an error occurred while retrieving app details"
-		statusCode := http.StatusInternalServerError
+		statusCode := http.StatusBadRequest
 
 		if errors.Is(err, datastore.ErrApplicationNotFound) {
 			msg = err.Error()

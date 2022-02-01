@@ -11,6 +11,7 @@ import (
 
 	"github.com/frain-dev/convoy/datastore"
 	"github.com/frain-dev/convoy/config"
+	"github.com/frain-dev/convoy/logger"
 	"github.com/frain-dev/convoy/mocks"
 
 	"github.com/go-chi/chi/v5"
@@ -29,23 +30,22 @@ func TestApplicationHandler_CreateAPIKey(t *testing.T) {
 	eventDeliveryRepo := mocks.NewMockEventDeliveryRepository(ctrl)
 	eventQueue := mocks.NewMockQueuer(ctrl)
 	apiKeyRepo := mocks.NewMockAPIKeyRepository(ctrl)
+	logger := logger.NewNoopLogger()
+	tracer := mocks.NewMockTracer(ctrl)
 
-	app = newApplicationHandler(eventRepo, eventDeliveryRepo, appRepo, groupRepo, apiKeyRepo, eventQueue)
+	app = newApplicationHandler(eventRepo, eventDeliveryRepo, appRepo, groupRepo, apiKeyRepo, eventQueue, logger, tracer)
 
 	groupId := "1234567890"
 	group := &datastore.Group{
 		UID: groupId,
-		Config: &config.GroupConfig{
-			Signature: config.SignatureConfiguration{
+		Config: &datastore.GroupConfig{
+			Signature: datastore.SignatureConfiguration{
 				Header: config.SignatureHeaderProvider("X-datastore.Signature"),
 				Hash:   "SHA256",
 			},
-			Strategy: config.StrategyConfiguration{
+			Strategy: datastore.StrategyConfiguration{
 				Type: config.StrategyProvider("default"),
-				Default: struct {
-					IntervalSeconds uint64 `json:"intervalSeconds" envconfig:"CONVOY_INTERVAL_SECONDS"`
-					RetryLimit      uint64 `json:"retryLimit" envconfig:"CONVOY_RETRY_LIMIT"`
-				}{
+				Default: datastore.DefaultStrategyConfiguration{
 					IntervalSeconds: 60,
 					RetryLimit:      1,
 				},
@@ -191,8 +191,11 @@ func TestApplicationHandler_RevokeAPIKey(t *testing.T) {
 	eventDeliveryRepo := mocks.NewMockEventDeliveryRepository(ctrl)
 	eventQueue := mocks.NewMockQueuer(ctrl)
 	apiKeyRepo := mocks.NewMockAPIKeyRepository(ctrl)
+	logger := logger.NewNoopLogger()
+	tracer := mocks.NewMockTracer(ctrl)
+	
 
-	app := newApplicationHandler(eventRepo, eventDeliveryRepo, appRepo, groupRepo, apiKeyRepo, eventQueue)
+	app := newApplicationHandler(eventRepo, eventDeliveryRepo, appRepo, groupRepo, apiKeyRepo, eventQueue, logger, tracer)
 
 	tt := []struct {
 		name       string
@@ -271,8 +274,10 @@ func TestApplicationHandler_GetAPIKeyByID(t *testing.T) {
 	eventDeliveryRepo := mocks.NewMockEventDeliveryRepository(ctrl)
 	eventQueue := mocks.NewMockQueuer(ctrl)
 	apiKeyRepo := mocks.NewMockAPIKeyRepository(ctrl)
+	logger := logger.NewNoopLogger()
+	tracer := mocks.NewMockTracer(ctrl)
 
-	app := newApplicationHandler(eventRepo, eventDeliveryRepo, appRepo, groupRepo, apiKeyRepo, eventQueue)
+	app := newApplicationHandler(eventRepo, eventDeliveryRepo, appRepo, groupRepo, apiKeyRepo, eventQueue, logger, tracer)
 
 	keyID := "12345"
 	apiKey := &datastore.APIKey{UID: keyID}
@@ -357,8 +362,10 @@ func TestApplicationHandler_GetAPIKeys(t *testing.T) {
 	eventDeliveryRepo := mocks.NewMockEventDeliveryRepository(ctrl)
 	eventQueue := mocks.NewMockQueuer(ctrl)
 	apiKeyRepo := mocks.NewMockAPIKeyRepository(ctrl)
+	logger := logger.NewNoopLogger()
+	tracer := mocks.NewMockTracer(ctrl)
 
-	app := newApplicationHandler(eventRepo, eventDeliveryRepo, appRepo, groupRepo, apiKeyRepo, eventQueue)
+	app := newApplicationHandler(eventRepo, eventDeliveryRepo, appRepo, groupRepo, apiKeyRepo, eventQueue, logger, tracer)
 
 	keyID := "12345"
 	apiKey := &datastore.APIKey{UID: keyID}

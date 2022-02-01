@@ -9,7 +9,6 @@ import { environment } from 'src/environments/environment';
 })
 export class DashboardComponent implements OnInit {
 	showDropdown = false;
-	environment = environment;
 
 	constructor(private router: Router) {}
 
@@ -27,5 +26,18 @@ export class DashboardComponent implements OnInit {
 	authDetails() {
 		const authDetails = localStorage.getItem('CONVOY_AUTH');
 		return authDetails ? JSON.parse(authDetails) : false;
+	}
+
+	apiURL(): string {
+		return `${environment.production ? location.origin : 'http://localhost:5005'}/ui`;
+	}
+
+	requestToken(): string {
+		if (this.authDetails()) {
+			const { username, password } = this.authDetails();
+			return btoa(`${username + ':' + password}`);
+		} else {
+			return '';
+		}
 	}
 }

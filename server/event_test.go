@@ -10,6 +10,7 @@ import (
 
 	"github.com/frain-dev/convoy/config"
 	"github.com/frain-dev/convoy/datastore"
+	"github.com/frain-dev/convoy/logger"
 	"github.com/frain-dev/convoy/mocks"
 
 	"github.com/go-chi/chi/v5"
@@ -29,24 +30,23 @@ func TestApplicationHandler_CreateAppEvent(t *testing.T) {
 	eventRepo := mocks.NewMockEventRepository(ctrl)
 	eventDeliveryRepo := mocks.NewMockEventDeliveryRepository(ctrl)
 	eventQueue := mocks.NewMockQueuer(ctrl)
+	logger := logger.NewNoopLogger()
+	tracer := mocks.NewMockTracer(ctrl)
 	apiKeyRepo := mocks.NewMockAPIKeyRepository(ctrl)
 
-	app = newApplicationHandler(eventRepo, eventDeliveryRepo, appRepo, groupRepo, apiKeyRepo, eventQueue)
+	app = newApplicationHandler(eventRepo, eventDeliveryRepo, appRepo, groupRepo, apiKeyRepo, eventQueue, logger, tracer)
 
 	groupId := "1234567890"
 	group := &datastore.Group{
 		UID: groupId,
-		Config: &config.GroupConfig{
-			Signature: config.SignatureConfiguration{
+		Config: &datastore.GroupConfig{
+			Signature: datastore.SignatureConfiguration{
 				Header: config.SignatureHeaderProvider("X-datastore.Signature"),
 				Hash:   "SHA256",
 			},
-			Strategy: config.StrategyConfiguration{
+			Strategy: datastore.StrategyConfiguration{
 				Type: config.StrategyProvider("default"),
-				Default: struct {
-					IntervalSeconds uint64 `json:"intervalSeconds" envconfig:"CONVOY_INTERVAL_SECONDS"`
-					RetryLimit      uint64 `json:"retryLimit" envconfig:"CONVOY_RETRY_LIMIT"`
-				}{
+				Default: datastore.DefaultStrategyConfiguration{
 					IntervalSeconds: 60,
 					RetryLimit:      1,
 				},
@@ -388,9 +388,11 @@ func Test_resendEventDelivery(t *testing.T) {
 	eventRepo := mocks.NewMockEventRepository(ctrl)
 	eventDeliveryRepo := mocks.NewMockEventDeliveryRepository(ctrl)
 	eventQueue := mocks.NewMockQueuer(ctrl)
+	logger := logger.NewNoopLogger()
+	tracer := mocks.NewMockTracer(ctrl)
 	apiKeyRepo := mocks.NewMockAPIKeyRepository(ctrl)
 
-	app = newApplicationHandler(eventRepo, eventDeliveryRepo, appRepo, groupRepo, apiKeyRepo, eventQueue)
+	app = newApplicationHandler(eventRepo, eventDeliveryRepo, appRepo, groupRepo, apiKeyRepo, eventQueue, logger, tracer)
 
 	group := &datastore.Group{Name: "default-group", UID: "1234567890"}
 
@@ -698,9 +700,11 @@ func TestApplicationHandler_BatchRetryEventDelivery(t *testing.T) {
 	eventRepo := mocks.NewMockEventRepository(ctrl)
 	eventDeliveryRepo := mocks.NewMockEventDeliveryRepository(ctrl)
 	eventQueue := mocks.NewMockQueuer(ctrl)
+	logger := logger.NewNoopLogger()
+	tracer := mocks.NewMockTracer(ctrl)
 	apiKeyRepo := mocks.NewMockAPIKeyRepository(ctrl)
 
-	app := newApplicationHandler(eventRepo, eventDeliveryRepo, appRepo, groupRepo, apiKeyRepo, eventQueue)
+	app := newApplicationHandler(eventRepo, eventDeliveryRepo, appRepo, groupRepo, apiKeyRepo, eventQueue, logger, tracer)
 	group := &datastore.Group{Name: "default-group", UID: "1234567890"}
 
 	type args struct {

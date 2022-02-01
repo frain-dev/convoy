@@ -132,7 +132,7 @@ There are two ways to configure Convoy - `convoy.json` or `environment variables
 
 Alternatively, you can configure Convoy using the following environment variables:
 
--   `CONVOY_MONGO_DSN`
+-   `CONVOY_DB_DSN`
 -   `CONVOY_REDIS_DSN`
 -   `PORT`
 -   `CONVOY_ENV`

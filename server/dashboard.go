@@ -5,7 +5,6 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/frain-dev/convoy/config"
 	"github.com/frain-dev/convoy/datastore"
 	"github.com/frain-dev/convoy/server/models"
 	"github.com/frain-dev/convoy/util"
@@ -20,8 +19,8 @@ type AuthorizedLogin struct {
 }
 
 type ViewableConfiguration struct {
-	Strategy  config.StrategyConfiguration  `json:"strategy"`
-	Signature config.SignatureConfiguration `json:"signature"`
+	Strategy  datastore.StrategyConfiguration  `json:"strategy"`
+	Signature datastore.SignatureConfiguration `json:"signature"`
 }
 
 func (a *applicationHandler) GetDashboardSummary(w http.ResponseWriter, r *http.Request) {
@@ -75,7 +74,7 @@ func (a *applicationHandler) GetDashboardSummary(w http.ResponseWriter, r *http.
 
 	group := getGroupFromContext(r.Context())
 
-	apps, err := a.appRepo.SearchApplicationsByGroupId(r.Context(), group.UID, searchParams)
+	apps, err := a.appRepo.CountGroupApplications(r.Context(), group.UID)
 	if err != nil {
 		_ = render.Render(w, r, newErrorResponse("an error occurred while searching apps", http.StatusInternalServerError))
 		return
@@ -88,7 +87,7 @@ func (a *applicationHandler) GetDashboardSummary(w http.ResponseWriter, r *http.
 	}
 
 	dashboard := models.DashboardSummary{
-		Applications: len(apps),
+		Applications: int(apps),
 		EventsSent:   eventsSent,
 		Period:       period,
 		PeriodData:   &messages,

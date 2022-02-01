@@ -12,9 +12,10 @@ import (
 	"time"
 
 	"github.com/frain-dev/convoy/auth/realm_chain"
+	"github.com/frain-dev/convoy/logger"
+
 	"github.com/frain-dev/convoy/config"
 	"github.com/frain-dev/convoy/datastore"
-
 
 	"github.com/frain-dev/convoy/mocks"
 	"github.com/go-chi/chi/v5"
@@ -133,13 +134,15 @@ func TestApplicationHandler_GetApp(t *testing.T) {
 	eventDeliveryRepo := mocks.NewMockEventDeliveryRepository(ctrl)
 	eventQueue := mocks.NewMockQueuer(ctrl)
 	apiKeyRepo := mocks.NewMockAPIKeyRepository(ctrl)
+	logger := logger.NewNoopLogger()
+	tracer := mocks.NewMockTracer(ctrl)
 
 	groupID := "1234567890"
 	group := &datastore.Group{UID: groupID}
 
 	validID := "123456789"
 
-	app = newApplicationHandler(eventRepo, eventDeliveryRepo, appRepo, groupRepo, apiKeyRepo, eventQueue)
+	app = newApplicationHandler(eventRepo, eventDeliveryRepo, appRepo, groupRepo, apiKeyRepo, eventQueue, logger, tracer)
 
 	tt := []struct {
 		name       string
@@ -246,13 +249,15 @@ func TestApplicationHandler_GetApps(t *testing.T) {
 	eventDeliveryRepo := mocks.NewMockEventDeliveryRepository(ctrl)
 	eventQueue := mocks.NewMockQueuer(ctrl)
 	apiKeyRepo := mocks.NewMockAPIKeyRepository(ctrl)
+	logger := logger.NewNoopLogger()
+	tracer := mocks.NewMockTracer(ctrl)
 
 	groupID := "1234567890"
 	group := &datastore.Group{UID: groupID}
 
 	validID := "123456789"
 
-	app = newApplicationHandler(eventRepo, eventDeliveryRepo, appRepo, groupRepo, apiKeyRepo, eventQueue)
+	app = newApplicationHandler(eventRepo, eventDeliveryRepo, appRepo, groupRepo, apiKeyRepo, eventQueue, logger, tracer)
 
 	tt := []struct {
 		name       string
@@ -269,7 +274,7 @@ func TestApplicationHandler_GetApps(t *testing.T) {
 			dbFn: func(app *applicationHandler) {
 				a, _ := app.appRepo.(*mocks.MockApplicationRepository)
 				a.EXPECT().
-					LoadApplicationsPaged(gomock.Any(), gomock.Any(), gomock.Any()).Times(1).
+					LoadApplicationsPaged(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Times(1).
 					Return([]datastore.Application{
 						{
 							UID:       validID,
@@ -403,9 +408,11 @@ func TestApplicationHandler_CreateApp(t *testing.T) {
 			eventRepo := mocks.NewMockEventRepository(ctrl)
 			eventDeliveryRepo := mocks.NewMockEventDeliveryRepository(ctrl)
 			eventQueue := mocks.NewMockQueuer(ctrl)
+			logger := logger.NewNoopLogger()
+			tracer := mocks.NewMockTracer(ctrl)
 			apiKeyRepo := mocks.NewMockAPIKeyRepository(ctrl)
 
-			app = newApplicationHandler(eventRepo, eventDeliveryRepo, appRepo, groupRepo, apiKeyRepo, eventQueue)
+			app = newApplicationHandler(eventRepo, eventDeliveryRepo, appRepo, groupRepo, apiKeyRepo, eventQueue, logger, tracer)
 
 			// Arrange
 			req := httptest.NewRequest(tc.method, "/api/v1/applications", tc.body)
@@ -613,9 +620,11 @@ func TestApplicationHandler_UpdateApp(t *testing.T) {
 			eventRepo := mocks.NewMockEventRepository(ctrl)
 			eventDeliveryRepo := mocks.NewMockEventDeliveryRepository(ctrl)
 			eventQueue := mocks.NewMockQueuer(ctrl)
+			logger := logger.NewNoopLogger()
+			tracer := mocks.NewMockTracer(ctrl)
 			apiKeyRepo := mocks.NewMockAPIKeyRepository(ctrl)
 
-			app = newApplicationHandler(eventRepo, eventDeliveryRepo, appRepo, groupRepo, apiKeyRepo, eventQueue)
+			app = newApplicationHandler(eventRepo, eventDeliveryRepo, appRepo, groupRepo, apiKeyRepo, eventQueue, logger, tracer)
 
 			url := fmt.Sprintf("/api/v1/applications/%s", tc.appId)
 			req := httptest.NewRequest(tc.method, url, tc.body)
@@ -672,6 +681,8 @@ func TestApplicationHandler_CreateAppEndpoint(t *testing.T) {
 	eventRepo := mocks.NewMockEventRepository(ctrl)
 	eventDeliveryRepo := mocks.NewMockEventDeliveryRepository(ctrl)
 	eventQueue := mocks.NewMockQueuer(ctrl)
+	logger := logger.NewNoopLogger()
+	tracer := mocks.NewMockTracer(ctrl)
 	apiKeyRepo := mocks.NewMockAPIKeyRepository(ctrl)
 
 	groupID := "1234567890"
@@ -679,7 +690,7 @@ func TestApplicationHandler_CreateAppEndpoint(t *testing.T) {
 
 	bodyReader := strings.NewReader(`{"url": "https://google.com", "description": "Test"}`)
 
-	app = newApplicationHandler(eventRepo, eventDeliveryRepo, appRepo, groupRepo, apiKeyRepo, eventQueue)
+	app = newApplicationHandler(eventRepo, eventDeliveryRepo, appRepo, groupRepo, apiKeyRepo, eventQueue, logger, tracer)
 
 	appId := "123456789"
 
@@ -854,9 +865,11 @@ func TestApplicationHandler_UpdateAppEndpoint(t *testing.T) {
 			eventRepo := mocks.NewMockEventRepository(ctrl)
 			eventDeliveryRepo := mocks.NewMockEventDeliveryRepository(ctrl)
 			eventQueue := mocks.NewMockQueuer(ctrl)
+			logger := logger.NewNoopLogger()
+			tracer := mocks.NewMockTracer(ctrl)
 			apiKeyRepo := mocks.NewMockAPIKeyRepository(ctrl)
 
-			app = newApplicationHandler(eventRepo, eventDeliveryRepo, appRepo, groupRepo, apiKeyRepo, eventQueue)
+			app = newApplicationHandler(eventRepo, eventDeliveryRepo, appRepo, groupRepo, apiKeyRepo, eventQueue, logger, tracer)
 
 			url := fmt.Sprintf("/api/v1/applications/%s/endpoints/%s", tc.appId, tc.endpointId)
 			req := httptest.NewRequest(tc.method, url, tc.body)
@@ -918,6 +931,8 @@ func Test_applicationHandler_GetDashboardSummary(t *testing.T) {
 	eventRepo := mocks.NewMockEventRepository(ctrl)
 	eventDeliveryRepo := mocks.NewMockEventDeliveryRepository(ctrl)
 	eventQueue := mocks.NewMockQueuer(ctrl)
+	logger := logger.NewNoopLogger()
+	tracer := mocks.NewMockTracer(ctrl)
 	apiKeyRepo := mocks.NewMockAPIKeyRepository(ctrl)
 
 	groupID := "1234567890"
@@ -927,7 +942,7 @@ func Test_applicationHandler_GetDashboardSummary(t *testing.T) {
 		Name: "Valid group",
 	}
 
-	app = newApplicationHandler(eventRepo, eventDeliveryRepo, appRepo, groupRepo, apiKeyRepo, eventQueue)
+	app = newApplicationHandler(eventRepo, eventDeliveryRepo, appRepo, groupRepo, apiKeyRepo, eventQueue, logger, tracer)
 
 	tt := []struct {
 		name       string
@@ -941,15 +956,8 @@ func Test_applicationHandler_GetDashboardSummary(t *testing.T) {
 			statusCode: http.StatusOK,
 			dbFn: func(eventRepo *mocks.MockEventRepository, appRepo *mocks.MockApplicationRepository, orgRepo *mocks.MockGroupRepository) {
 				appRepo.EXPECT().
-					SearchApplicationsByGroupId(gomock.Any(), gomock.Any(), gomock.Any()).Times(1).
-					Return([]datastore.Application{
-						{
-							UID:       "validID",
-							GroupID:   groupID,
-							Title:     "Valid application - 0",
-							Endpoints: []datastore.Endpoint{},
-						},
-					}, nil)
+					CountGroupApplications(gomock.Any(), gomock.Any()).Times(1).
+					Return(int64(5), nil)
 				eventRepo.EXPECT().
 					LoadEventIntervals(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Times(1).
 					Return([]datastore.EventInterval{
@@ -1005,6 +1013,8 @@ func Test_applicationHandler_GetPaginatedApps(t *testing.T) {
 	eventRepo := mocks.NewMockEventRepository(ctrl)
 	eventDeliveryRepo := mocks.NewMockEventDeliveryRepository(ctrl)
 	eventQueue := mocks.NewMockQueuer(ctrl)
+	logger := logger.NewNoopLogger()
+	tracer := mocks.NewMockTracer(ctrl)
 	apiKeyRepo := mocks.NewMockAPIKeyRepository(ctrl)
 
 	groupID := "1234567890"
@@ -1014,7 +1024,7 @@ func Test_applicationHandler_GetPaginatedApps(t *testing.T) {
 		Name: "Valid group",
 	}
 
-	app = newApplicationHandler(eventRepo, eventDeliveryRepo, appRepo, groupRepo, apiKeyRepo, eventQueue)
+	app = newApplicationHandler(eventRepo, eventDeliveryRepo, appRepo, groupRepo, apiKeyRepo, eventQueue, logger, tracer)
 
 	tt := []struct {
 		name       string

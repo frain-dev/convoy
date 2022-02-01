@@ -11,7 +11,8 @@
 		<h3 class="post-page--title">{{ blogPost.title }}</h3>
 
 		<div class="post-page--author">
-			<img src="~/assets/images/author-img.png" alt="author imge" />
+			<!-- Pending when we have icon for authors -->
+			<!-- <img src="~/assets/images/author-img.png" alt="author imge" /> -->
 			<div>
 				<h5>{{ author(blogPost.author).name }}</h5>
 				<p>{{ author(blogPost.author).role }} Convoy</p>
@@ -75,7 +76,7 @@ export default {
 	},
 	async asyncData({ $content, params }) {
 		const blogPost = await $content('blog/' + params.slug || 'index').fetch();
-		const posts = await $content('blog').only(['author', 'description', 'slug', 'thumbnail', 'title', 'date', 'tag']).fetch();
+		const posts = await $content('blog').only(['author', 'description', 'slug', 'thumbnail', 'title', 'date', 'tag']).sortBy('date', 'asc').limit(2).fetch();
 		const authors = await $content('blog-authors').fetch();
 		return { blogPost, authors, posts };
 	},
@@ -89,7 +90,7 @@ export default {
 			const height = document.querySelector('body').scrollHeight - document.documentElement.clientHeight;
 			const scrolled = (winScroll / height) * 100;
 			const scrollIndicator = document.querySelector('.post-page--loader div');
-			if (scrollIndicator) scrollIndicator.style.width = scrolled + '%';
+			if (scrollIndicator) scrollIndicator.style.width = scrolled * 1.5 + '%';
 		},
 		shouldFixOnPage() {
 			const viewportHeight = window.screen.height;
@@ -100,14 +101,14 @@ export default {
 			const topPercElementToFix = (checkElement.top / viewportHeight) * 100;
 			const topPercElementToCheckToRemoveFix = (elementToCheckToRemoveFix.top / viewportHeight) * 100;
 			if (topPercElementToFix < 10) {
-				elementToFix.add('fix');
 				elementToFix2.add('fix');
+				elementToFix.add('fix');
 			} else {
-				elementToFix.remove('fix');
 				elementToFix2.remove('fix');
-			}
-			if (topPercElementToCheckToRemoveFix < 70) {
 				elementToFix.remove('fix');
+			}
+
+			if (topPercElementToCheckToRemoveFix < 157.89988425925927) {
 				elementToFix2.remove('fix');
 			}
 		}
@@ -316,11 +317,13 @@ main {
 	}
 
 	&--loader {
-		width: 100%;
+		width: 80%;
+		left: 10%;
 		height: 5px;
 		background: #e6e6e6;
 		position: sticky;
 		margin-bottom: 52px;
+		overflow: hidden;
 
 		&.fix {
 			position: fixed;
