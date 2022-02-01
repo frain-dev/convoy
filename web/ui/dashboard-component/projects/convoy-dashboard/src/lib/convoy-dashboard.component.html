@@ -114,7 +114,7 @@
 				</div>
 
 				<div class="table">
-					<div *ngIf="activeTab === 'events'">
+					<div [hidden]="activeTab !== 'events'">
 						<div class="filter">
 							<button
 								class="filter--button date-filter-button"
@@ -228,7 +228,7 @@
 						</div>
 					</div>
 
-					<div *ngIf="activeTab === 'event deliveries'">
+					<div [hidden]="activeTab !== 'event deliveries'">
 						<div class="filter">
 							<button
 								class="filter--button date-filter-button"
@@ -415,7 +415,7 @@
 						</div>
 					</div>
 
-					<div class="table--container smaller-table" *ngIf="apps && apps.content.length > 0 && activeTab === 'apps'">
+					<div class="table--container smaller-table" [hidden]="apps && apps.content.length > 0 && activeTab === 'apps'">
 						<table>
 							<thead>
 								<tr class="table--head">
