@@ -34,7 +34,6 @@ func (a *appRepo) LoadApplicationsPaged(ctx context.Context, gid, q string, page
 	var apps []datastore.Application = make([]datastore.Application, 0)
 
 	page := pageable.Page
-	prevPage := pageable.Page
 	perPage := pageable.PerPage
 	data := datastore.PaginationData{}
 
@@ -46,7 +45,7 @@ func (a *appRepo) LoadApplicationsPaged(ctx context.Context, gid, q string, page
 		perPage = 10
 	}
 
-	prevPage = page - 1
+	prevPage := page - 1
 	lowerBound := perPage * prevPage
 
 	af := &appFilter{
