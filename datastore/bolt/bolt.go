@@ -13,7 +13,7 @@ import (
 )
 
 type Client struct {
-	store               *badgerhold.Store
+	store             *badgerhold.Store
 	db                *bbolt.DB
 	apiKeyRepo        datastore.APIKeyRepository
 	groupRepo         datastore.GroupRepository
