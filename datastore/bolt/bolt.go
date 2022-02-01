@@ -45,7 +45,7 @@ func New(cfg config.Configuration) (datastore.DatabaseClient, error) {
 	return c, nil
 }
 
-func (c *Client) Disconnect(ctx context.Context) error {
+func (c *Client) Disconnect(context.Context) error {
 	return c.store.Close()
 }
 
