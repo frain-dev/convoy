@@ -69,17 +69,12 @@ func getZSETLength(a *app) *cobra.Command {
 		Short: "get ZSET Length",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			q := a.eventQueue.(*redisqueue.RedisQueue)
-			redisStreamClient := q.Inner
 			ctx := context.Background()
 			ticker := time.NewTicker(time.Duration(timeInterval) * time.Millisecond)
-			zset := "taskq:" + "{" + q.Name + "}:zset"
 			for {
 				select {
 				case <-ticker.C:
-					bodies, err := redisStreamClient.ZRangeByScore(ctx, zset, &redis.ZRangeBy{
-						Min: "-inf",
-						Max: "+inf",
-					}).Result()
+					bodies, err := q.ZRangebyScore(ctx, "-inf", "+inf")
 					if err != nil {
 						log.Printf("Error ZSET Length: %v", err)
 					}
@@ -103,13 +98,11 @@ func getStreamInfo(a *app) *cobra.Command {
 		RunE: func(cmd *cobra.Command, args []string) error {
 			ctx := context.Background()
 			q := a.eventQueue.(*redisqueue.RedisQueue)
-			redisStreamClient := q.Inner
 			ticker := time.NewTicker(time.Duration(timeInterval) * time.Millisecond)
-			stream := "taskq:" + "{" + q.Name + "}:stream"
 			for {
 				select {
 				case <-ticker.C:
-					r, err := redisStreamClient.XInfoStream(ctx, stream).Result()
+					r, err := q.XInfoStream(ctx).Result()
 					if err != nil {
 						log.Printf("XInfoStream err: %v", err)
 					}
@@ -132,19 +125,16 @@ func getConsumersInfo(a *app) *cobra.Command {
 		Short: "get consumers info",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			q := a.eventQueue.(*redisqueue.RedisQueue)
-			redisStreamClient := q.Inner
 			ctx := context.Background()
 			ticker := time.NewTicker(time.Duration(timeInterval) * time.Millisecond)
-			stream := "taskq:" + "{" + q.Name + "}:stream"
-			streamGroup := "taskq"
 			for {
 				select {
 				case <-ticker.C:
-					r, err := redisStreamClient.XInfoConsumers(ctx, stream, streamGroup).Result()
+					ci, err := q.XInfoConsumers(ctx).Result()
 					if err != nil {
 						log.Printf("XInfoConsumers err: %v", err)
 					}
-					log.Printf("Consumers Info: %+v\n\n", r)
+					log.Printf("Consumers Info: %+v\n\n", ci)
 				case <-ctx.Done():
 					return nil
 				}
@@ -163,15 +153,12 @@ func getPendingInfo(a *app) *cobra.Command {
 		Short: "get Pending info",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			q := a.eventQueue.(*redisqueue.RedisQueue)
-			redisStreamClient := q.Inner
 			ctx := context.Background()
 			ticker := time.NewTicker(time.Duration(timeInterval) * time.Millisecond)
-			stream := "taskq:" + "{" + q.Name + "}:stream"
-			streamGroup := "taskq"
 			for {
 				select {
 				case <-ticker.C:
-					pending, err := redisStreamClient.XPending(ctx, stream, streamGroup).Result()
+					pending, err := q.XPending(ctx).Result()
 					if err != nil {
 						log.Printf("Error Pending: %v", err)
 					}
@@ -199,9 +186,7 @@ func checkEventDeliveryonQueue(a *app) *cobra.Command {
 			}
 			ctx := context.Background()
 			q := a.eventQueue.(*redisqueue.RedisQueue)
-			redisStreamClient := q.Inner
-			stream := "taskq:" + "{" + q.Name + "}:stream"
-			xmsgs, err := redisStreamClient.XRange(ctx, stream, "-", "+").Result()
+			xmsgs, err := q.XRange(ctx, "-", "+").Result()
 			if err != nil {
 				return err
 			}
@@ -257,12 +242,7 @@ func checkEventDeliveryinZSET(a *app) *cobra.Command {
 			}
 			ctx := context.Background()
 			q := a.eventQueue.(*redisqueue.RedisQueue)
-			redisStreamClient := q.Inner
-			zset := "taskq:" + "{" + q.Name + "}:zset"
-			bodies, err := redisStreamClient.ZRangeByScore(ctx, zset, &redis.ZRangeBy{
-				Min: "-inf",
-				Max: "+inf",
-			}).Result()
+			bodies, err := q.ZRangebyScore(ctx, "-inf", "+inf")
 			if err != nil {
 				return err
 			}
@@ -313,15 +293,7 @@ func checkEventDeliveryinPending(a *app) *cobra.Command {
 			}
 			ctx := context.Background()
 			q := a.eventQueue.(*redisqueue.RedisQueue)
-			redisStreamClient := q.Inner
-			stream := "taskq:" + "{" + q.Name + "}:stream"
-			streamGroup := "taskq"
-			pending, err := redisStreamClient.XPendingExt(ctx, &redis.XPendingExtArgs{
-				Stream: stream,
-				Group:  streamGroup,
-				Start:  "-",
-				End:    "+",
-			}).Result()
+			pending, err := q.XPendingExt(ctx, "-", "+")
 			if err != nil {
 				log.Printf("Error fetching Pending: %v", err)
 			}
@@ -333,13 +305,13 @@ func checkEventDeliveryinPending(a *app) *cobra.Command {
 				xmsgInfo := &pending[i]
 				id := xmsgInfo.ID
 
-				xmsgs, err := redisStreamClient.XRangeN(ctx, stream, id, id, 1).Result()
+				xmsgs, err := q.XRangeN(ctx, id, id, 1).Result()
 				if err != nil {
 					return err
 				}
 
 				if len(xmsgs) != 1 {
-					log.Printf("redisq: can't find pending message id=%q in stream=%q", id, stream)
+					log.Printf("redisq: can't find pending message id=%q", id)
 				}
 				err = unmarshalMessage(msg, &xmsgs[0])
 				if err != nil {
