@@ -2,43 +2,32 @@ package bolt
 
 import (
 	"context"
-	"encoding/json"
+	"errors"
+	"fmt"
 	"math"
 	"strings"
-
 	"time"
 
 	"github.com/frain-dev/convoy/datastore"
 	"github.com/frain-dev/convoy/util"
-	"go.etcd.io/bbolt"
+	"github.com/timshannon/badgerhold/v4"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
 type appRepo struct {
-	db         *bbolt.DB
-	bucketName string
+	db *badgerhold.Store
 }
 
-func NewApplicationRepo(db *bbolt.DB) datastore.ApplicationRepository {
-	bucketName := "applications"
-	err := db.Update(func(tx *bbolt.Tx) error {
-		_, err := tx.CreateBucketIfNotExists([]byte(bucketName))
-		return err
-	})
-
-	if err != nil {
-		return nil
-	}
-
-	return &appRepo{db: db, bucketName: bucketName}
+func NewApplicationRepo(db *badgerhold.Store) datastore.ApplicationRepository {
+	return &appRepo{db: db}
 }
 
 func (a *appRepo) CreateApplication(ctx context.Context, app *datastore.Application) error {
-	return a.createUpdateApplication(app)
+	return a.db.Insert(app.UID, app)
 }
 
 func (a *appRepo) UpdateApplication(ctx context.Context, app *datastore.Application) error {
-	return a.createUpdateApplication(app)
+	return a.db.Update(app.UID, app)
 }
 
 func (a *appRepo) LoadApplicationsPaged(ctx context.Context, gid, q string, pageable datastore.Pageable) ([]datastore.Application, datastore.PaginationData, error) {
@@ -56,72 +45,35 @@ func (a *appRepo) LoadApplicationsPaged(ctx context.Context, gid, q string, page
 	if pageable.PerPage < 1 {
 		perPage = 10
 	}
+
 	prevPage = page - 1
+	lowerBound := perPage * prevPage
 
-	err := a.db.View(func(tx *bbolt.Tx) error {
-		b := tx.Bucket([]byte(a.bucketName))
-		c := b.Cursor()
-		i := 1
+	af := &appFilter{
+		hasTitle:   !util.IsStringEmpty(q),
+		hasGroupId: !util.IsStringEmpty(gid),
+		title:      q,
+		groupId:    gid,
+	}
 
-		for k, v := c.First(); k != nil; k, v = c.Next() {
-			if v == nil {
-				continue
-			}
+	err := a.db.Find(&apps, a.generateQuery(af).Skip(lowerBound).Limit(perPage))
 
-			if i > perPage*prevPage && i <= perPage*page {
-				var app datastore.Application
-				err := json.Unmarshal(v, &app)
-				if err != nil {
-					return err
-				}
+	if err != nil {
+		return nil, datastore.PaginationData{}, err
+	}
 
-				x := util.IsStringEmpty(q)
-				m := strings.Contains(strings.ToLower(app.Title), strings.ToLower(q))
+	total, err := a.db.Count(&datastore.Application{}, a.generateQuery(af))
+	if err != nil {
+		return nil, datastore.PaginationData{}, err
+	}
 
-				y := util.IsStringEmpty(gid)
-				n := app.GroupID == gid
+	data.TotalPage = int64(math.Ceil(float64(total) / float64(perPage)))
+	data.Total = int64(total)
 
-				if x && y {
-					apps = append(apps, app)
-					i++
-				} else if !x && y {
-					if m {
-						apps = append(apps, app)
-						i++
-					}
-				} else if x && !y {
-					if n {
-						apps = append(apps, app)
-						i++
-					}
-				} else if !x && !y {
-					if n && m {
-						apps = append(apps, app)
-						i++
-					}
-				}
-			}
-
-			if i == (perPage*page)+perPage {
-				break
-			}
-		}
-
-		total, err := a.countGroupApplicationsWithFilter(ctx, gid, q)
-		if err != nil {
-			return nil
-		}
-
-		data.TotalPage = int64(math.Ceil(float64(total) / float64(perPage)))
-		data.Total = int64(total)
-
-		data.PerPage = int64(perPage)
-		data.Next = int64(page + 1)
-		data.Page = int64(page)
-		data.Prev = int64(prevPage)
-
-		return nil
-	})
+	data.PerPage = int64(perPage)
+	data.Next = int64(page + 1)
+	data.Page = int64(page)
+	data.Prev = int64(prevPage)
 
 	return apps, data, err
 }
@@ -132,240 +84,134 @@ func (a *appRepo) LoadApplicationsPagedByGroupId(ctx context.Context, gid string
 
 func (a *appRepo) SearchApplicationsByGroupId(ctx context.Context, gid string, searchParams datastore.SearchParams) ([]datastore.Application, error) {
 	var apps []datastore.Application
-	err := a.db.View(func(tx *bbolt.Tx) error {
-		b := tx.Bucket([]byte(a.bucketName))
 
-		return b.ForEach(func(k, v []byte) error {
-			var app datastore.Application
-			err := json.Unmarshal(v, &app)
-			if err != nil {
-				return err
-			}
+	af := &appFilter{
+		hasGroupId:   !util.IsStringEmpty(gid),
+		groupId:      gid,
+		hasStartDate: searchParams.CreatedAtStart > 0,
+		hasEndDate:   searchParams.CreatedAtEnd > 0,
+		searchParams: searchParams,
+	}
 
-			shouldAdd := false
-			if app.GroupID == gid {
-				shouldAdd = true
-
-				if searchParams.CreatedAtStart != 0 && app.CreatedAt.Time().Unix() < searchParams.CreatedAtStart {
-					shouldAdd = false
-				}
-
-				if searchParams.CreatedAtEnd != 0 && app.CreatedAt.Time().Unix() > searchParams.CreatedAtEnd {
-					shouldAdd = false
-				}
-			}
-
-			if shouldAdd {
-				apps = append(apps, app)
-			}
-
-			return nil
-		})
-	})
+	err := a.db.Find(&apps, a.generateQuery(af))
 
 	return apps, err
 }
 
 func (a *appRepo) FindApplicationByID(ctx context.Context, aid string) (*datastore.Application, error) {
 	var application *datastore.Application
-	err := a.db.View(func(tx *bbolt.Tx) error {
-		b := tx.Bucket([]byte(a.bucketName))
 
-		appBytes := b.Get([]byte(aid))
-		if appBytes == nil {
-			return datastore.ErrApplicationNotFound
-		}
+	err := a.db.Get(aid, &application)
 
-		var app *datastore.Application
-		err := json.Unmarshal(appBytes, &app)
-		if err != nil {
-			return err
-		}
-		application = app
-
-		return nil
-	})
+	if err != nil && errors.Is(err, badgerhold.ErrNotFound) {
+		return application, datastore.ErrApplicationNotFound
+	}
 
 	return application, err
 }
 
 func (a *appRepo) FindApplicationEndpointByID(ctx context.Context, appID string, endpointID string) (*datastore.Endpoint, error) {
 	var endpoint *datastore.Endpoint
-	err := a.db.Update(func(tx *bbolt.Tx) error {
-		b := tx.Bucket([]byte(a.bucketName))
+	var application *datastore.Application
 
-		appBytes := b.Get([]byte(appID))
-		if appBytes == nil {
-			return datastore.ErrApplicationNotFound
+	err := a.db.Get(appID, &application)
+
+	if err != nil && errors.Is(err, badgerhold.ErrNotFound) {
+		return endpoint, datastore.ErrApplicationNotFound
+	}
+
+	for _, a := range application.Endpoints {
+		if a.UID == endpointID {
+			endpoint = &a
 		}
+	}
 
-		var app *datastore.Application
-		err := json.Unmarshal(appBytes, &app)
-		if err != nil {
-			return err
-		}
-
-		for _, v := range app.Endpoints {
-			if v.UID == endpointID {
-				endpoint = &v
-			}
-		}
-
-		return nil
-	})
+	if endpoint == nil {
+		return nil, datastore.ErrEndpointNotFound
+	}
 
 	return endpoint, err
 }
 
 func (a *appRepo) DeleteApplication(ctx context.Context, app *datastore.Application) error {
-	return a.db.Update(func(tx *bbolt.Tx) error {
-		b := tx.Bucket([]byte(a.bucketName))
-		return b.Delete([]byte(app.UID))
-	})
+	return a.db.Delete(app.UID, app)
 }
 
 func (a *appRepo) UpdateApplicationEndpointsStatus(ctx context.Context, aid string, endpointIds []string, status datastore.EndpointStatus) error {
 	endpointMap := make(map[string]bool)
+	var application *datastore.Application
+
 	for i := 0; i < len(endpointIds); i++ {
 		endpointMap[endpointIds[i]] = true
 	}
 
-	return a.db.Update(func(tx *bbolt.Tx) error {
-		b := tx.Bucket([]byte(a.bucketName))
+	err := a.db.Get(aid, &application)
 
-		appBytes := b.Get([]byte(aid))
-		if appBytes == nil {
-			return datastore.ErrApplicationNotFound
+	if err != nil && errors.Is(err, badgerhold.ErrNotFound) {
+		return datastore.ErrApplicationNotFound
+	}
+
+	for i := 0; i < len(application.Endpoints); i++ {
+		if _, ok := endpointMap[application.Endpoints[i].UID]; ok {
+			application.Endpoints[i].Status = status
 		}
+	}
 
-		var app *datastore.Application
-		err := json.Unmarshal(appBytes, &app)
-		if err != nil {
-			return err
-		}
+	err = a.UpdateApplication(ctx, application)
 
-		for i := 0; i < len(app.Endpoints); i++ {
-			if _, ok := endpointMap[app.Endpoints[i].UID]; ok {
-				app.Endpoints[i].Status = status
-			}
-		}
-		app.UpdatedAt = primitive.NewDateTimeFromTime(time.Now())
-
-		aJson, err := json.Marshal(app)
-		if err != nil {
-			return err
-		}
-
-		pErr := b.Put([]byte(aid), aJson)
-		if pErr != nil {
-			return pErr
-		}
-
-		return nil
-	})
+	return err
 }
 
 func (a *appRepo) DeleteGroupApps(ctx context.Context, gid string) error {
-	return a.db.Update(func(tx *bbolt.Tx) error {
-		b := tx.Bucket([]byte(a.bucketName))
-
-		return b.ForEach(func(k, v []byte) error {
-			var app *datastore.Application
-			err := json.Unmarshal(v, &app)
-			if err != nil {
-				return err
-			}
-
-			if app.GroupID == gid {
-				err := b.Delete([]byte(app.UID))
-				if err != nil {
-					return err
-				}
-			}
-
-			return nil
-		})
-	})
+	return a.db.DeleteMatching(&datastore.Application{}, badgerhold.Where("GroupID").Eq(gid))
 }
 
 func (a *appRepo) CountGroupApplications(ctx context.Context, gid string) (int64, error) {
-	count := int64(0)
-	err := a.db.View(func(tx *bbolt.Tx) error {
-		b := tx.Bucket([]byte(a.bucketName))
+	af := &appFilter{hasGroupId: !util.IsStringEmpty(gid), groupId: gid}
 
-		return b.ForEach(func(k, v []byte) error {
-			var app *datastore.Application
-			err := json.Unmarshal(v, &app)
-			if err != nil {
-				return err
-			}
+	count, err := a.db.Count(&datastore.Application{}, a.generateQuery(af))
 
-			if app.GroupID == gid {
-				count += 1
-			}
-
-			return nil
-		})
-	})
-
-	return count, err
+	return int64(count), err
 }
 
-func (a *appRepo) countGroupApplicationsWithFilter(ctx context.Context, gid, q string) (int64, error) {
-	i := int64(0)
-	err := a.db.View(func(tx *bbolt.Tx) error {
-		b := tx.Bucket([]byte(a.bucketName))
-
-		return b.ForEach(func(k, v []byte) error {
-			var app *datastore.Application
-			err := json.Unmarshal(v, &app)
-			if err != nil {
-				return err
-			}
-
-			x := util.IsStringEmpty(q)
-			m := strings.Contains(strings.ToLower(app.Title), strings.ToLower(q))
-
-			y := util.IsStringEmpty(gid)
-			n := app.GroupID == gid
-
-			if x && y {
-				i++
-			} else if !x && y {
-				if m {
-					i++
-				}
-			} else if x && !y {
-				if n {
-					i++
-				}
-			} else if !x && !y {
-				if n && m {
-					i++
-				}
-			}
-
-			return nil
-		})
-	})
-
-	return i, err
+type appFilter struct {
+	hasTitle     bool
+	hasGroupId   bool
+	hasStartDate bool
+	hasEndDate   bool
+	title        string
+	groupId      string
+	searchParams datastore.SearchParams
 }
 
-func (a *appRepo) createUpdateApplication(app *datastore.Application) error {
-	return a.db.Update(func(tx *bbolt.Tx) error {
-		b := tx.Bucket([]byte(a.bucketName))
+func (a *appRepo) generateQuery(f *appFilter) *badgerhold.Query {
+	qFunc := badgerhold.Where
 
-		aJson, err := json.Marshal(app)
-		if err != nil {
-			return err
-		}
+	if f.hasTitle {
+		qFunc = qFunc("Title").MatchFunc(func(ra *badgerhold.RecordAccess) (bool, error) {
+			field := ra.Field()
+			_, ok := field.(string)
+			if !ok {
+				return false, fmt.Errorf("Field not a string, it's a %T!", field)
+			}
 
-		pErr := b.Put([]byte(app.UID), aJson)
-		if pErr != nil {
-			return pErr
-		}
+			return strings.Contains(strings.ToLower(field.(string)), strings.ToLower(f.title)), nil
+		}).And
+	}
 
-		return nil
-	})
+	if f.hasGroupId {
+		qFunc = qFunc("GroupID").Eq(f.groupId).And
+	}
+
+	if f.hasStartDate {
+		createdStart := primitive.NewDateTimeFromTime(time.Unix(f.searchParams.CreatedAtStart, 0))
+		qFunc = qFunc("CreatedAt").Ge(createdStart).And
+	}
+
+	if f.hasEndDate {
+		createdEnd := primitive.NewDateTimeFromTime(time.Unix(f.searchParams.CreatedAtEnd, 0))
+		qFunc = qFunc("CreatedAt").Le(createdEnd).And
+	}
+
+	return qFunc("UID").Ne("")
 }
