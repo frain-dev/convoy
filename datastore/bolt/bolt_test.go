@@ -38,6 +38,7 @@ func getDB(t *testing.T) (*badgerhold.Store, func()) {
 	return db.Client().(*badgerhold.Store), func() {
 		require.NoError(t, db.Client().(*badgerhold.Store).Badger().DropAll())
 
+	return db.Client().(*bbolt.DB), func() {
 		require.NoError(t, db.Disconnect(context.Background()))
 	}
 }
