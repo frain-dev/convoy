@@ -20,7 +20,7 @@ func Test_FindEventByID(t *testing.T) {
 
 	eventRepo := NewEventRepo(db)
 	groupRepo := NewGroupRepo(db)
-	appRepo := NewApplicationRepo(nil, db)
+	appRepo := NewApplicationRepo(db)
 
 	newGroup := &datastore.Group{
 		UID:  uuid.NewString(),
@@ -176,7 +176,7 @@ func Test_CountGroupMessages(t *testing.T) {
 
 			eventRepo := NewEventRepo(db)
 			groupRepo := NewGroupRepo(db)
-			appRepo := NewApplicationRepo(nil, db)
+			appRepo := NewApplicationRepo(db)
 
 			app := &datastore.Application{
 				Title:   "My Application",
@@ -363,7 +363,7 @@ func Test_LoadEventIntervals(t *testing.T) {
 
 			eventRepo := NewEventRepo(db)
 			groupRepo := NewGroupRepo(db)
-			appRepo := NewApplicationRepo(nil, db)
+			appRepo := NewApplicationRepo(db)
 
 			app := &datastore.Application{
 				Title:   "My Application",
@@ -552,7 +552,7 @@ func Test_LoadEventsPaged(t *testing.T) {
 
 			eventRepo := NewEventRepo(db)
 			groupRepo := NewGroupRepo(db)
-			appRepo := NewApplicationRepo(nil, db)
+			appRepo := NewApplicationRepo(db)
 
 			app := &datastore.Application{
 				Title:   tc.app.Title,
