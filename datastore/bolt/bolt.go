@@ -6,15 +6,12 @@ import (
 	"github.com/dgraph-io/badger/v3"
 	"github.com/timshannon/badgerhold/v4"
 
-	"go.etcd.io/bbolt"
-
 	"github.com/frain-dev/convoy/config"
 	"github.com/frain-dev/convoy/datastore"
 )
 
 type Client struct {
 	store             *badgerhold.Store
-	db                *bbolt.DB
 	apiKeyRepo        datastore.APIKeyRepository
 	groupRepo         datastore.GroupRepository
 	eventRepo         datastore.EventRepository
@@ -35,14 +32,8 @@ func New(cfg config.Configuration) (datastore.DatabaseClient, error) {
 		return nil, err
 	}
 
-	db, err := bbolt.Open(cfg.Database.Dsn, 0666, nil)
-	if err != nil {
-		return nil, err
-	}
-
 	c := &Client{
 		store:             st,
-		db:                db,
 		groupRepo:         NewGroupRepo(st),
 		eventRepo:         NewEventRepo(st),
 		apiKeyRepo:        NewApiRoleRepo(st),
@@ -58,7 +49,7 @@ func (c *Client) Disconnect(ctx context.Context) error {
 }
 
 func (c *Client) GetName() string {
-	return "bolt"
+	return "badger"
 }
 
 func (c *Client) Client() interface{} {
