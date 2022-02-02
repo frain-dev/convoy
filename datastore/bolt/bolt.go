@@ -2,6 +2,7 @@ package bolt
 
 import (
 	"context"
+	"encoding/json"
 	"io"
 
 	"github.com/dgraph-io/badger/v3"
@@ -22,8 +23,8 @@ type Client struct {
 
 func New(cfg config.Configuration) (datastore.DatabaseClient, error) {
 	st, err := badgerhold.Open(badgerhold.Options{
-		Encoder:          badgerhold.DefaultEncode,
-		Decoder:          badgerhold.DefaultDecode,
+		Encoder:          json.Marshal,
+		Decoder:          json.Unmarshal,
 		SequenceBandwith: 100,
 		Options: badger.DefaultOptions(cfg.Database.Dsn).
 			WithZSTDCompressionLevel(0).
