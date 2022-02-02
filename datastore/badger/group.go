@@ -1,4 +1,4 @@
-package bolt
+package badger
 
 import (
 	"context"
