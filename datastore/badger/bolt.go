@@ -5,6 +5,8 @@ import (
 	"encoding/json"
 	"io"
 
+	"github.com/frain-dev/convoy/util"
+
 	"github.com/dgraph-io/badger/v3"
 	"github.com/frain-dev/convoy/config"
 	"github.com/frain-dev/convoy/datastore"
@@ -22,11 +24,16 @@ type Client struct {
 }
 
 func New(cfg config.Configuration) (datastore.DatabaseClient, error) {
+	dsn := cfg.Database.Dsn
+	if util.IsStringEmpty(dsn) {
+		dsn = "./convoy_db"
+	}
+
 	st, err := badgerhold.Open(badgerhold.Options{
 		Encoder:          json.Marshal,
 		Decoder:          json.Unmarshal,
 		SequenceBandwith: 100,
-		Options: badger.DefaultOptions(cfg.Database.Dsn).
+		Options: badger.DefaultOptions(dsn).
 			WithZSTDCompressionLevel(0).
 			WithCompression(0).WithLogger(&logrus.Logger{Out: io.Discard}),
 	})
