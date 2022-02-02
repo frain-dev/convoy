@@ -6,6 +6,7 @@ import (
 	"log"
 	"time"
 
+	"github.com/frain-dev/convoy/config"
 	redisqueue "github.com/frain-dev/convoy/queue/redis"
 	"github.com/frain-dev/convoy/util"
 	"github.com/go-redis/redis/v8"
@@ -26,7 +27,7 @@ func addQueueCommand(a *app) *cobra.Command {
 	cmd.AddCommand(getStreamInfo(a))
 	cmd.AddCommand(getConsumersInfo(a))
 	cmd.AddCommand(getPendingInfo(a))
-	cmd.AddCommand(checkEventDeliveryonQueue(a))
+	cmd.AddCommand(checkEventDeliveryinStream(a))
 	cmd.AddCommand(checkEventDeliveryinZSET(a))
 	cmd.AddCommand(checkEventDeliveryinPending(a))
 	return cmd
@@ -68,6 +69,13 @@ func getZSETLength(a *app) *cobra.Command {
 		Use:   "zsetlength",
 		Short: "get ZSET Length",
 		RunE: func(cmd *cobra.Command, args []string) error {
+			cfg, err := config.Get()
+			if err != nil {
+				return err
+			}
+			if cfg.Queue.Type != config.RedisQueueProvider {
+				log.Fatalf("Queue type error: Command is available for redis queue only.")
+			}
 			q := a.eventQueue.(*redisqueue.RedisQueue)
 			ctx := context.Background()
 			ticker := time.NewTicker(time.Duration(timeInterval) * time.Millisecond)
@@ -96,6 +104,13 @@ func getStreamInfo(a *app) *cobra.Command {
 		Use:   "streaminfo",
 		Short: "get stream info",
 		RunE: func(cmd *cobra.Command, args []string) error {
+			cfg, err := config.Get()
+			if err != nil {
+				return err
+			}
+			if cfg.Queue.Type != config.RedisQueueProvider {
+				log.Fatalf("Queue type error: Command is available for redis queue only.")
+			}
 			ctx := context.Background()
 			q := a.eventQueue.(*redisqueue.RedisQueue)
 			ticker := time.NewTicker(time.Duration(timeInterval) * time.Millisecond)
@@ -124,6 +139,13 @@ func getConsumersInfo(a *app) *cobra.Command {
 		Use:   "consumerinfo",
 		Short: "get consumers info",
 		RunE: func(cmd *cobra.Command, args []string) error {
+			cfg, err := config.Get()
+			if err != nil {
+				return err
+			}
+			if cfg.Queue.Type != config.RedisQueueProvider {
+				log.Fatalf("Queue type error: Command is available for redis queue only.")
+			}
 			q := a.eventQueue.(*redisqueue.RedisQueue)
 			ctx := context.Background()
 			ticker := time.NewTicker(time.Duration(timeInterval) * time.Millisecond)
@@ -152,6 +174,13 @@ func getPendingInfo(a *app) *cobra.Command {
 		Use:   "pendinginfo",
 		Short: "get Pending info",
 		RunE: func(cmd *cobra.Command, args []string) error {
+			cfg, err := config.Get()
+			if err != nil {
+				return err
+			}
+			if cfg.Queue.Type != config.RedisQueueProvider {
+				log.Fatalf("Queue type error: Command is available for redis queue only.")
+			}
 			q := a.eventQueue.(*redisqueue.RedisQueue)
 			ctx := context.Background()
 			ticker := time.NewTicker(time.Duration(timeInterval) * time.Millisecond)
@@ -174,13 +203,20 @@ func getPendingInfo(a *app) *cobra.Command {
 }
 
 //Check if eventDelivery is on the queue (stream)
-func checkEventDeliveryonQueue(a *app) *cobra.Command {
+func checkEventDeliveryinStream(a *app) *cobra.Command {
 	var id string
 	var idType string
 	cmd := &cobra.Command{
-		Use:   "checkqueue",
-		Short: "Event delivery on queue",
+		Use:   "checkstream",
+		Short: "Event delivery in stream",
 		RunE: func(cmd *cobra.Command, args []string) error {
+			cfg, err := config.Get()
+			if err != nil {
+				return err
+			}
+			if cfg.Queue.Type != config.RedisQueueProvider {
+				log.Fatalf("Queue type error: Command is available for redis queue only.")
+			}
 			if util.IsStringEmpty(id) {
 				return errors.New("please provide an eventDelivery ID or equivalent taskq.Message ID")
 			}
@@ -237,6 +273,13 @@ func checkEventDeliveryinZSET(a *app) *cobra.Command {
 		Use:   "checkzset",
 		Short: "Event delivery in ZSET",
 		RunE: func(cmd *cobra.Command, args []string) error {
+			cfg, err := config.Get()
+			if err != nil {
+				return err
+			}
+			if cfg.Queue.Type != config.RedisQueueProvider {
+				log.Fatalf("Queue type error: Command is available for redis queue only.")
+			}
 			if util.IsStringEmpty(id) {
 				return errors.New("please provide an eventDelivery ID or equivalent taskq.Message ID")
 			}
@@ -288,6 +331,13 @@ func checkEventDeliveryinPending(a *app) *cobra.Command {
 		Use:   "checkpending",
 		Short: "Event delivery on pending",
 		RunE: func(cmd *cobra.Command, args []string) error {
+			cfg, err := config.Get()
+			if err != nil {
+				return err
+			}
+			if cfg.Queue.Type != config.RedisQueueProvider {
+				log.Fatalf("Queue type error: Command is available for redis queue only.")
+			}
 			if util.IsStringEmpty(id) {
 				return errors.New("please provide an eventDelivery Id or taskq.Message ID")
 			}
