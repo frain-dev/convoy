@@ -322,7 +322,7 @@ func NewDB(cfg config.Configuration) (datastore.DatabaseClient, error) {
 			return nil, err
 		}
 		return db, nil
-	case "bolt":
+	case "in-memory":
 		bolt, err := badger.New(cfg)
 		if err != nil {
 			return nil, err
