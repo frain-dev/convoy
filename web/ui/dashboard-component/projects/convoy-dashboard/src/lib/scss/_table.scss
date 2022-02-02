@@ -59,7 +59,8 @@
 			&.show {
 				opacity: 1;
 				height: unset;
-				overflow: unset;
+				max-height: 300px;
+				overflow: auto;
 			}
 		}
 	}

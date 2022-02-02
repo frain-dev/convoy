@@ -1,6 +1,7 @@
 @import './scss/form';
 @import './scss/material-design-reset';
 @import './scss/table';
+@import './scss/list';
 
 .dashboard--page {
 	width: 1374px;
@@ -114,6 +115,11 @@
 
 		.filter {
 			margin-right: 16px;
+
+			& > .search {
+				height: 36px;
+				margin-bottom: 0;
+			}
 
 			.select select,
 			.filter--button {

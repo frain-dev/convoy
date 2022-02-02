@@ -1,4 +1,4 @@
-import { Component, Input, OnInit } from '@angular/core';
+import { ChangeDetectionStrategy, Component, Input, OnInit } from '@angular/core';
 import Chart from 'chart.js/auto';
 import { APP } from './models/app.model';
 import { EVENT, EVENT_DELIVERY } from './models/event.model';
@@ -13,7 +13,8 @@ import { format } from 'date-fns';
 @Component({
 	selector: 'convoy-dashboard',
 	templateUrl: './convoy-dashboard.component.html',
-	styleUrls: ['./convoy-dashboard.component.scss']
+	styleUrls: ['./convoy-dashboard.component.scss'],
+	changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class ConvoyDashboardComponent implements OnInit {
 	showFilterCalendar = false;
@@ -100,6 +101,7 @@ export class ConvoyDashboardComponent implements OnInit {
 	isloadingMoreEvents = false;
 	isloadingMoreEventDeliveries = false;
 	isloadingMoreApps = false;
+	isloadingDeliveryAttempt = false;
 
 	constructor(private convyDashboardService: ConvoyDashboardService, private router: Router, private formBuilder: FormBuilder, private route: ActivatedRoute) {}
 
@@ -122,7 +124,7 @@ export class ConvoyDashboardComponent implements OnInit {
 	async initDashboard() {
 		await this.getGroups();
 		this.getFiltersFromURL();
-		await Promise.all([this.getConfigDetails(), this.fetchDashboardData(), this.getEvents(), this.getApps(), this.getEventDeliveries()]);
+		await Promise.all([this.getConfigDetails(), this.fetchDashboardData(), this.getEvents(), this.getApps({ type: 'apps' }), this.getEventDeliveries()]);
 
 		// get active tab from url and apply, after getting the details from above requests so that the data is available ahead
 		this.toggleActiveTab(this.route.snapshot.queryParams.activeTab ?? 'events');
@@ -136,15 +138,11 @@ export class ConvoyDashboardComponent implements OnInit {
 		if (tab === 'apps' && this.apps?.content.length > 0) {
 			if (!this.appsDetailsItem) this.appsDetailsItem = this.apps?.content[0];
 		} else if (tab === 'events' && this.events?.content.length > 0) {
-			if (!this.eventsDetailsItem) {
-				this.eventsDetailsItem = this.events?.content[0];
-				this.getEventDeliveriesForSidebar(this.eventsDetailsItem.uid);
-			}
+			if (!this.eventsDetailsItem) this.eventsDetailsItem = this.events?.content[0];
+			if (this.eventsDetailsItem?.uid) this.getEventDeliveriesForSidebar(this.eventsDetailsItem.uid);
 		} else if (tab === 'event deliveries' && this.eventDeliveries?.content.length > 0) {
-			if (!this.eventDelsDetailsItem) {
-				this.eventDelsDetailsItem = this.eventDeliveries?.content[0];
-				this.getDelieveryAttempts(this.eventDelsDetailsItem.uid);
-			}
+			if (!this.eventDelsDetailsItem) this.eventDelsDetailsItem = this.eventDeliveries?.content[0];
+			if (this.eventDelsDetailsItem?.uid) this.getDelieveryAttempts(this.eventDelsDetailsItem.uid);
 		}
 	}
 
@@ -431,7 +429,7 @@ export class ConvoyDashboardComponent implements OnInit {
 	async toggleActiveGroup() {
 		await Promise.all([this.clearEventFilters('event deliveries'), this.clearEventFilters('events')]);
 		this.addFilterToURL({ section: 'group' });
-		Promise.all([this.getConfigDetails(), this.fetchDashboardData(), this.getEvents(), this.getApps(), this.getEventDeliveries()]);
+		Promise.all([this.getConfigDetails(), this.fetchDashboardData(), this.getEvents(), this.getApps({ type: 'apps' }), this.getEventDeliveries()]);
 	}
 
 	async getGroups(requestDetails?: { addToURL?: boolean }) {
@@ -454,18 +452,19 @@ export class ConvoyDashboardComponent implements OnInit {
 		}
 	}
 
-	async getApps(search?: string) {
-		!search && this.apps?.pagination?.next === this.appsPage ? (this.isloadingMoreApps = true) : (this.isloadingApps = true);
+	async getApps(requestDetails?: { search?: string; type: 'filter' | 'apps' }) {
+		if (this.apps?.pagination?.next === this.appsPage) this.isloadingMoreApps = true;
+		if (requestDetails?.type === 'apps') this.isloadingApps = true;
 
 		try {
 			const appsResponse = await this.convyDashboardService.request({
-				url: this.getAPIURL(`/apps?groupID=${this.activeGroup || ''}&sort=AESC&page=${this.appsPage || 1}&perPage=10${search ? `&q=${search}` : ''}`),
+				url: this.getAPIURL(`/apps?groupID=${this.activeGroup || ''}&sort=AESC&page=${this.appsPage || 1}&perPage=10${requestDetails?.search ? `&q=${requestDetails?.search}` : ''}`),
 				token: this.requestToken,
 				authType: this.apiAuthType,
 				method: 'get'
 			});
 
-			if (!search && this.apps?.pagination?.next === this.appsPage) {
+			if (!requestDetails?.search && this.apps?.pagination?.next === this.appsPage) {
 				const content = [...this.apps.content, ...appsResponse.data.content];
 				const pagination = appsResponse.data.pagination;
 				this.apps = { content, pagination };
@@ -473,7 +472,7 @@ export class ConvoyDashboardComponent implements OnInit {
 				return;
 			}
 
-			if (!search) this.apps = appsResponse.data;
+			if (requestDetails?.type === 'apps') this.apps = appsResponse.data;
 			this.filteredApps = appsResponse.data.content;
 			this.isloadingApps = false;
 			return;
@@ -485,6 +484,8 @@ export class ConvoyDashboardComponent implements OnInit {
 	}
 
 	async getDelieveryAttempts(eventDeliveryId: string) {
+		this.isloadingDeliveryAttempt = true;
+
 		try {
 			const deliveryAttemptsResponse = await this.convyDashboardService.request({
 				url: this.getAPIURL(`/eventdeliveries/${eventDeliveryId}/deliveryattempts?groupID=${this.activeGroup || ''}`),
@@ -493,8 +494,11 @@ export class ConvoyDashboardComponent implements OnInit {
 				method: 'get'
 			});
 			this.eventDeliveryAtempt = deliveryAttemptsResponse.data[deliveryAttemptsResponse.data.length - 1];
+			this.isloadingDeliveryAttempt = false;
+
 			return;
 		} catch (error) {
+			this.isloadingDeliveryAttempt = false;
 			return error;
 		}
 	}
@@ -630,7 +634,8 @@ export class ConvoyDashboardComponent implements OnInit {
 	}
 
 	async openDeliveriesTab() {
-		await this.getEventDeliveries();
+		await this.getEventDeliveries({ addToURL: true });
+		delete this.eventDelsDetailsItem;
 		this.toggleActiveTab('event deliveries');
 	}
 
@@ -651,8 +656,12 @@ export class ConvoyDashboardComponent implements OnInit {
 		return appId === this.eventDeliveriesApp;
 	}
 
-	searchApps(searchInput: any) {
-		const searchString = searchInput.target.value;
-		searchString ? this.getApps(searchString) : (this.filteredApps = this.apps.content);
+	searchApps(searchDetails: { searchInput: any; type: 'filter' | 'apps' }) {
+		const searchString: string = searchDetails.searchInput.target.value;
+		if (searchString && searchString.length > 1) {
+			this.getApps({ search: searchString, type: searchDetails.type });
+		} else {
+			searchDetails.type === 'filter' ? (this.filteredApps = this.apps.content) : this.getApps({ type: 'apps' });
+		}
 	}
 }

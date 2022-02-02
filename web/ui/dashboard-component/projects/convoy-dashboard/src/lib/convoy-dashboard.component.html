@@ -112,9 +112,7 @@
 				</div>
 
 				<div class="table">
-					<div [hidden]="activeTab !== 'events'" class="has-loader">
-						<convoy-loader *ngIf="isloadingEvents"></convoy-loader>
-
+					<div [hidden]="activeTab !== 'events'">
 						<div class="filter">
 							<button
 								class="filter--button date-filter-button"
@@ -140,7 +138,7 @@
 								<div class="dropdown--list" [ngClass]="{ show: showEventsAppsDropdown }">
 									<div class="search">
 										<img src="/assets/img/search-icon.svg" alt="search icon" />
-										<input type="search" placeholder="Search apps here" (input)="searchApps($event)" />
+										<input type="search" placeholder="Search apps here" (input)="searchApps({ searchInput: $event, type: 'filter' })" />
 									</div>
 									<div class="dropdown--list--item" *ngFor="let app of filteredApps">
 										<input type="radio" name="app" [value]="app.uid" [id]="app.uid" [checked]="app.uid === eventApp" (change)="updateAppFilter(app.uid, $event, 'events')" />
@@ -162,7 +160,9 @@
 
 						<hr />
 
-						<div class="table--container smaller-table" *ngIf="displayedEvents.length > 0">
+						<div class="table--container smaller-table has-loader" *ngIf="displayedEvents.length > 0">
+							<convoy-loader *ngIf="isloadingEvents"></convoy-loader>
+
 							<table id="events-table">
 								<thead>
 									<tr class="table--head">
@@ -231,9 +231,7 @@
 						</div>
 					</div>
 
-					<div [hidden]="activeTab !== 'event deliveries'" class="has-loader">
-						<convoy-loader *ngIf="isloadingEventDeliveries"></convoy-loader>
-
+					<div [hidden]="activeTab !== 'event deliveries'">
 						<div class="filter">
 							<button
 								class="filter--button date-filter-button"
@@ -290,7 +288,7 @@
 								<div class="dropdown--list" [ngClass]="{ show: showEventDeliveriesAppsDropdown }">
 									<div class="search">
 										<img src="/assets/img/search-icon.svg" alt="search icon" />
-										<input type="search" placeholder="Search apps here" (input)="searchApps($event)" />
+										<input type="search" placeholder="Search apps here" (input)="searchApps({ searchInput: $event, type: 'filter' })" />
 									</div>
 									<div class="dropdown--list--item" *ngFor="let app of filteredApps">
 										<input type="radio" name="app" [value]="app.uid" [id]="app.uid" [checked]="app.uid === eventDeliveriesApp" (change)="updateAppFilter(app.uid, $event, 'eventDels')" />
@@ -335,7 +333,9 @@
 							</button>
 						</div>
 
-						<div class="table--container" *ngIf="displayedEventDeliveries.length > 0">
+						<div class="table--container has-loader" *ngIf="displayedEventDeliveries.length > 0">
+							<convoy-loader *ngIf="isloadingEventDeliveries"></convoy-loader>
+
 							<table id="event-deliveries-table">
 								<thead>
 									<tr class="table--head">
@@ -418,10 +418,19 @@
 						</div>
 					</div>
 
-					<div [hidden]="activeTab !== 'apps'" class="has-loader">
-						<convoy-loader *ngIf="isloadingApps"></convoy-loader>
+					<div [hidden]="activeTab !== 'apps'">
+						<div class="filter">
+							<div class="search">
+								<img src="/assets/img/search-icon.svg" alt="search icon" />
+								<input type="search" placeholder="Search apps here" (input)="searchApps({ searchInput: $event, type: 'apps' })" />
+							</div>
+						</div>
 
-						<div class="table--container smaller-table" [hidden]="!apps || apps.content.length === 0">
+						<hr />
+
+						<div class="table--container smaller-table has-loader" [hidden]="!apps || apps.content.length === 0">
+							<convoy-loader *ngIf="isloadingApps"></convoy-loader>
+
 							<table>
 								<thead>
 									<tr class="table--head">
@@ -471,7 +480,7 @@
 								<button
 									[class]="'primary clear has-icon icon-left ' + (apps.pagination.page === apps.pagination.totalPage ? 'disabled' : '')"
 									[disabled]="apps.pagination.page === apps.pagination.totalPage || isloadingMoreApps"
-									(click)="appsPage = appsPage + 1; getApps()"
+									(click)="appsPage = appsPage + 1; getApps({ type: 'apps' })"
 								>
 									<img src="/assets/img/arrow-down-icon.svg" alt="arrow down icon" *ngIf="!isloadingMoreApps" />
 									<img src="/assets/img/rotate-icon.svg" class="loading-icon" *ngIf="isloadingMoreApps" alt="loading icon" />
@@ -496,7 +505,7 @@
 					<ul class="dashboard--logs--details--meta">
 						<li class="list-item-inline">
 							<div class="list-item-inline--label">Support Email</div>
-							<div class="list-item-inline--item">{{ appsDetailsItem?.support_email || '-' }}</div>
+							<div [class]="'list-item-inline--item ' + (appsDetailsItem?.support_email ? '' : 'fint')">{{ appsDetailsItem?.support_email || '...no support email provided' }}</div>
 						</li>
 					</ul>
 
@@ -515,6 +524,11 @@
 							</li>
 						</ng-container>
 					</ul>
+
+					<div class="empty-state table--container" *ngIf="appsDetailsItem?.endpoints?.length === 0">
+						<img src="/assets/img/empty-state-img.svg" alt="empty state" />
+						<p>No endpoint has been added for selected app yet</p>
+					</div>
 				</ng-container>
 
 				<ng-container *ngIf="activeTab === 'event deliveries' && eventDelsDetailsItem">
@@ -558,13 +572,15 @@
 						</li>
 					</ul>
 
-					<div class="dashboard--logs--details--req-res">
+					<div class="dashboard--logs--details--req-res has-loader">
+						<convoy-loader *ngIf="(eventDetailsActiveTab === 'response' || eventDetailsActiveTab === 'request') && isloadingDeliveryAttempt"></convoy-loader>
+
 						<div [class]="'dashboard--logs--details--tabs-data ' + (eventDetailsActiveTab === 'data' ? 'show' : '')">
 							<h3>Event</h3>
 							<prism language="json" [code]="getCodeSnippetString('event_delivery')"></prism>
 						</div>
 
-						<div [class]="'dashboard--logs--details--tabs-data ' + (eventDetailsActiveTab === 'response' ? 'show' : '')">
+						<div [class]="'dashboard--logs--details--tabs-data ' + (eventDetailsActiveTab === 'response' && !isloadingDeliveryAttempt ? 'show' : '')">
 							<h3>Header</h3>
 							<prism language="json" [code]="getCodeSnippetString('res_head')"></prism>
 
@@ -572,7 +588,7 @@
 							<prism language="json" [code]="getCodeSnippetString('res_body')"></prism>
 						</div>
 
-						<div [class]="'dashboard--logs--details--tabs-data ' + (eventDetailsActiveTab === 'request' ? 'show' : '')">
+						<div [class]="'dashboard--logs--details--tabs-data ' + (eventDetailsActiveTab === 'request' && !isloadingDeliveryAttempt ? 'show' : '')">
 							<h3>Header</h3>
 							<prism language="json" [code]="getCodeSnippetString('req')"></prism>
 						</div>

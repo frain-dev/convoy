@@ -1,7 +1,8 @@
-import { Component, Input, OnInit } from '@angular/core';
+import { ChangeDetectionStrategy, Component, Input, OnInit } from '@angular/core';
 
 @Component({
 	selector: 'convoy-loader',
+	changeDetection: ChangeDetectionStrategy.OnPush,
 	template: `
 		<div [class]="'loader ' + (isTransparent ? 'transparent' : '')">
 			<img src="/assets/img/loader.gif" alt="loader" />
