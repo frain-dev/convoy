@@ -5,7 +5,6 @@ package redis
 
 import (
 	"context"
-	"fmt"
 	"strconv"
 	"testing"
 
@@ -240,8 +239,6 @@ func TestCheckEventDeliveryinPending(t *testing.T) {
 			configFile: "../testdata/convoy_redis.json",
 			tFN: func(ctx context.Context, q *RedisQueue) (string, error) {
 				pending, err := q.XPending(ctx).Result()
-				fmt.Printf("lenpending: %v\n", pending.Count)
-
 				if err != nil {
 					return "", err
 				}
@@ -281,7 +278,6 @@ func TestCheckEventDeliveryinPending(t *testing.T) {
 			if err != nil {
 				t.Fatalf("Error: %v", err)
 			}
-			fmt.Printf("id: %v\n", id)
 			if id != "" {
 				check, err := eventQueue.CheckEventDeliveryinPending(context.Background(), id)
 				if err != nil {

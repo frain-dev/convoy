@@ -280,7 +280,10 @@ func checkBatchEventDeliveryinStream(a *app) *cobra.Command {
 					return err
 				}
 				out := scanner.Text() + "\t\t" + strconv.FormatBool(onQueue) + "\n"
-				outputfile.WriteString(out)
+				_, err = outputfile.WriteString(out)
+				if err != nil {
+					log.Fatalf("failed writing to file: %s", err)
+				}
 			}
 
 			if err := scanner.Err(); err != nil {
@@ -368,7 +371,10 @@ func checkBatchEventDeliveryinZSET(a *app) *cobra.Command {
 					return err
 				}
 				out := scanner.Text() + "\t\t" + strconv.FormatBool(inZSET) + "\n"
-				outputfile.WriteString(out)
+				_, err = outputfile.WriteString(out)
+				if err != nil {
+					log.Fatalf("failed writing to file: %s", err)
+				}
 			}
 
 			if err := scanner.Err(); err != nil {
@@ -454,7 +460,10 @@ func checkBatchEventDeliveryinPending(a *app) *cobra.Command {
 					return err
 				}
 				out := scanner.Text() + "\t\t" + strconv.FormatBool(inPending) + "\n"
-				outputfile.WriteString(out)
+				_, err = outputfile.WriteString(out)
+				if err != nil {
+					log.Fatalf("failed writing to file: %s", err)
+				}
 			}
 
 			if err := scanner.Err(); err != nil {
