@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"math"
+	"strings"
 	"time"
 
 	"github.com/frain-dev/convoy"
@@ -196,7 +197,11 @@ func (q *RedisQueue) CheckEventDeliveryinZSET(ctx context.Context, id string, mi
 func (q *RedisQueue) CheckEventDeliveryinPending(ctx context.Context, id string) (bool, error) {
 	pending, err := q.XPending(ctx).Result()
 	if err != nil {
-		return false, nil
+		if strings.HasPrefix(err.Error(), "NOGROUP") {
+			_ = q.inner.XGroupCreateMkStream(ctx, q.stringifyStreamWithQName(), convoy.StreamGroup, "0").Err()
+			return false, err
+		}
+		return false, err
 	}
 	if pending.Count <= 0 {
 		return false, nil

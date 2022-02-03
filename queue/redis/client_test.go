@@ -6,6 +6,7 @@ package redis
 import (
 	"context"
 	"strconv"
+	"strings"
 	"testing"
 
 	"github.com/frain-dev/convoy"
@@ -240,6 +241,9 @@ func TestCheckEventDeliveryinPending(t *testing.T) {
 			tFN: func(ctx context.Context, q *RedisQueue) (string, error) {
 				pending, err := q.XPending(ctx).Result()
 				if err != nil {
+					if strings.HasPrefix(err.Error(), "NOGROUP") {
+						return "", nil
+					}
 					return "", err
 				}
 				if pending.Count <= 0 {
