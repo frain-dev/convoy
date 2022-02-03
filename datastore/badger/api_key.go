@@ -85,7 +85,10 @@ func (a *apiKeyRepo) LoadAPIKeysPaged(ctx context.Context, pageable *datastore.P
 	lowerBound := perPage * prevPage
 
 	q := &badgerhold.Query{}
-
+	q.SortBy("CreatedAt")
+	if pageable.Sort == -1 {
+		q.Reverse()
+	}
 	err := a.db.Find(&apiKeys, q.Skip(lowerBound).Limit(perPage))
 
 	if err != nil {
