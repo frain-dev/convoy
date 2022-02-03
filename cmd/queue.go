@@ -1,14 +1,18 @@
 package main
 
 import (
+	"bufio"
 	"context"
 	"errors"
 	"log"
+	"os"
+	"strconv"
 	"time"
 
 	"github.com/frain-dev/convoy/config"
 	redisqueue "github.com/frain-dev/convoy/queue/redis"
 	"github.com/frain-dev/convoy/util"
+	"github.com/google/uuid"
 	"github.com/spf13/cobra"
 )
 
@@ -26,6 +30,9 @@ func addQueueCommand(a *app) *cobra.Command {
 	cmd.AddCommand(checkEventDeliveryinStream(a))
 	cmd.AddCommand(checkEventDeliveryinZSET(a))
 	cmd.AddCommand(checkEventDeliveryinPending(a))
+	cmd.AddCommand(checkBatchEventDeliveryinStream(a))
+	cmd.AddCommand(checkBatchEventDeliveryinZSET(a))
+	cmd.AddCommand(checkBatchEventDeliveryinPending(a))
 	return cmd
 }
 
@@ -235,6 +242,57 @@ func checkEventDeliveryinStream(a *app) *cobra.Command {
 	return cmd
 }
 
+//Check batch eventDelivery is on the queue (stream)
+func checkBatchEventDeliveryinStream(a *app) *cobra.Command {
+	var file string
+	var outputfile = "inStream_" + uuid.NewString() + ".txt"
+	cmd := &cobra.Command{
+		Use:   "batchcheckstream",
+		Short: "Event delivery in stream",
+		RunE: func(cmd *cobra.Command, args []string) error {
+			cfg, err := config.Get()
+			if err != nil {
+				return err
+			}
+			if cfg.Queue.Type != config.RedisQueueProvider {
+				log.Fatalf("Queue type error: Command is available for redis queue only.")
+			}
+			if util.IsStringEmpty(file) {
+				return errors.New("please provide a file name")
+			}
+			ctx := context.Background()
+			q := a.eventQueue.(*redisqueue.RedisQueue)
+			file, err := os.Open(file)
+			if err != nil {
+				log.Fatal(err)
+			}
+			outputfile, err := os.Create(outputfile)
+			if err != nil {
+				log.Fatalf("failed creating outputfile: %s", err)
+			}
+			defer outputfile.Close()
+			defer file.Close()
+
+			scanner := bufio.NewScanner(file)
+			for scanner.Scan() {
+				onQueue, err := q.CheckEventDeliveryinStream(ctx, scanner.Text(), "-", "+")
+				if err != nil {
+					return err
+				}
+				out := scanner.Text() + "\t\t" + strconv.FormatBool(onQueue) + "\n"
+				outputfile.WriteString(out)
+			}
+
+			if err := scanner.Err(); err != nil {
+				log.Fatal(err)
+			}
+			return nil
+		},
+	}
+	cmd.Flags().StringVar(&file, "file", "", "path to file with batch IDs")
+	return cmd
+}
+
 //check if eventDelivery is in ZSET
 func checkEventDeliveryinZSET(a *app) *cobra.Command {
 	var id string
@@ -272,6 +330,57 @@ func checkEventDeliveryinZSET(a *app) *cobra.Command {
 	return cmd
 }
 
+//check if batch eventDelivery is in ZSET
+func checkBatchEventDeliveryinZSET(a *app) *cobra.Command {
+	var file string
+	var outputfile = "inZset_" + uuid.NewString() + ".txt"
+	cmd := &cobra.Command{
+		Use:   "batchcheckzset",
+		Short: "Batch Event delivery in ZSET",
+		RunE: func(cmd *cobra.Command, args []string) error {
+			cfg, err := config.Get()
+			if err != nil {
+				return err
+			}
+			if cfg.Queue.Type != config.RedisQueueProvider {
+				log.Fatalf("Queue type error: Command is available for redis queue only.")
+			}
+			if util.IsStringEmpty(file) {
+				return errors.New("please provide file containing IDs")
+			}
+			ctx := context.Background()
+			q := a.eventQueue.(*redisqueue.RedisQueue)
+			file, err := os.Open(file)
+			if err != nil {
+				log.Fatal(err)
+			}
+			outputfile, err := os.Create(outputfile)
+			if err != nil {
+				log.Fatalf("failed creating outputfile: %s", err)
+			}
+			defer outputfile.Close()
+			defer file.Close()
+
+			scanner := bufio.NewScanner(file)
+			for scanner.Scan() {
+				inZSET, err := q.CheckEventDeliveryinZSET(ctx, scanner.Text(), "-inf", "+inf")
+				if err != nil {
+					return err
+				}
+				out := scanner.Text() + "\t\t" + strconv.FormatBool(inZSET) + "\n"
+				outputfile.WriteString(out)
+			}
+
+			if err := scanner.Err(); err != nil {
+				log.Fatal(err)
+			}
+			return nil
+		},
+	}
+	cmd.Flags().StringVar(&file, "file", "", "path to file with batch IDs")
+	return cmd
+}
+
 //Check if eventDelivery is in pending (stream)
 func checkEventDeliveryinPending(a *app) *cobra.Command {
 	var id string
@@ -287,7 +396,7 @@ func checkEventDeliveryinPending(a *app) *cobra.Command {
 				log.Fatalf("Queue type error: Command is available for redis queue only.")
 			}
 			if util.IsStringEmpty(id) {
-				return errors.New("please provide an eventDelivery Id or taskq.Message ID")
+				return errors.New("please provide an eventDelivery Id")
 			}
 			ctx := context.Background()
 			q := a.eventQueue.(*redisqueue.RedisQueue)
@@ -304,5 +413,56 @@ func checkEventDeliveryinPending(a *app) *cobra.Command {
 		},
 	}
 	cmd.Flags().StringVar(&id, "id", "", "eventDelivery ID")
+	return cmd
+}
+
+//Check if eventDelivery is in pending (stream)
+func checkBatchEventDeliveryinPending(a *app) *cobra.Command {
+	var file string
+	var outputfile = "inPending_" + uuid.NewString() + ".txt"
+	cmd := &cobra.Command{
+		Use:   "batchcheckpending",
+		Short: "Event delivery on pending",
+		RunE: func(cmd *cobra.Command, args []string) error {
+			cfg, err := config.Get()
+			if err != nil {
+				return err
+			}
+			if cfg.Queue.Type != config.RedisQueueProvider {
+				log.Fatalf("Queue type error: Command is available for redis queue only.")
+			}
+			if util.IsStringEmpty(file) {
+				return errors.New("please provide file containing batch Ids")
+			}
+			ctx := context.Background()
+			q := a.eventQueue.(*redisqueue.RedisQueue)
+			file, err := os.Open(file)
+			if err != nil {
+				log.Fatal(err)
+			}
+			outputfile, err := os.Create(outputfile)
+			if err != nil {
+				log.Fatalf("failed creating outputfile: %s", err)
+			}
+			defer outputfile.Close()
+			defer file.Close()
+
+			scanner := bufio.NewScanner(file)
+			for scanner.Scan() {
+				inPending, err := q.CheckEventDeliveryinPending(ctx, scanner.Text())
+				if err != nil {
+					return err
+				}
+				out := scanner.Text() + "\t\t" + strconv.FormatBool(inPending) + "\n"
+				outputfile.WriteString(out)
+			}
+
+			if err := scanner.Err(); err != nil {
+				log.Fatal(err)
+			}
+			return nil
+		},
+	}
+	cmd.Flags().StringVar(&file, "file", "", "path to file with batch IDs")
 	return cmd
 }

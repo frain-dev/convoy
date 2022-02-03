@@ -16,7 +16,7 @@ import (
 	"github.com/vmihailenco/taskq/v3/redisq"
 )
 
-const count = math.MaxInt
+const count = math.MaxInt64
 
 type RedisQueue struct {
 	Name      string
