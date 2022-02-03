@@ -239,7 +239,7 @@ func TestCheckEventDeliveryinPending(t *testing.T) {
 			queueName:  "EventQueue",
 			configFile: "../testdata/convoy_redis.json",
 			tFN: func(ctx context.Context, q *RedisQueue) (string, error) {
-				pending, err := q.XPending(ctx).Result()
+				pending, err := q.XPending(ctx)
 				if err != nil {
 					if strings.HasPrefix(err.Error(), "NOGROUP") {
 						return "", nil
