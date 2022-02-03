@@ -1,6 +1,7 @@
 @import './scss/form';
 @import './scss/material-design-reset';
 @import './scss/table';
+@import './scss/list';
 
 .dashboard--page {
 	width: 1374px;
@@ -114,6 +115,11 @@
 
 		.filter {
 			margin-right: 16px;
+
+			& > .search {
+				height: 36px;
+				margin-bottom: 0;
+			}
 
 			.select select,
 			.filter--button {
@@ -368,4 +374,23 @@
 	left: 0;
 	width: 100%;
 	height: 100%;
+}
+
+.has-loader {
+	position: relative;
+}
+
+.loading-icon {
+	animation: rotating 1s linear infinite;
+	width: 10%;
+
+	@keyframes rotating {
+		from {
+			transform: rotate(0);
+		}
+
+		to {
+			transform: rotate(360deg);
+		}
+	}
 }
