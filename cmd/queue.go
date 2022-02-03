@@ -190,7 +190,7 @@ func getPendingInfo(a *app) *cobra.Command {
 			for {
 				select {
 				case <-ticker.C:
-					pending, err := q.XPending(ctx).Result()
+					pending, err := q.XPending(ctx)
 					if err != nil {
 						log.Printf("Error Pending: %v", err)
 					}

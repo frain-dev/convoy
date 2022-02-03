@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"math"
+	"strings"
 	"time"
 
 	"github.com/frain-dev/convoy"
@@ -112,6 +113,9 @@ func (q *RedisQueue) XPendingExt(ctx context.Context, start string, end string) 
 		Count:  count,
 	}).Result()
 	if err != nil {
+		if strings.HasPrefix(err.Error(), "NOGROUP") {
+			_ = q.inner.XGroupCreateMkStream(ctx, q.stringifyStreamWithQName(), convoy.StreamGroup, "0").Err()
+		}
 		return nil, err
 	}
 	return pending, nil
@@ -129,10 +133,15 @@ func (q *RedisQueue) XRangeN(ctx context.Context, start string, end string, coun
 	return xrange
 }
 
-func (q *RedisQueue) XPending(ctx context.Context) *redis.XPendingCmd {
+func (q *RedisQueue) XPending(ctx context.Context) (*redis.XPending, error) {
 	stream := q.stringifyStreamWithQName()
-	pending := q.inner.XPending(ctx, stream, convoy.StreamGroup)
-	return pending
+	pending, err := q.inner.XPending(ctx, stream, convoy.StreamGroup).Result()
+	if err != nil {
+		if strings.HasPrefix(err.Error(), "NOGROUP") {
+			_ = q.inner.XGroupCreateMkStream(ctx, q.stringifyStreamWithQName(), convoy.StreamGroup, "0").Err()
+		}
+	}
+	return pending, err
 }
 
 func (q *RedisQueue) XInfoConsumers(ctx context.Context) *redis.XInfoConsumersCmd {
@@ -194,9 +203,9 @@ func (q *RedisQueue) CheckEventDeliveryinZSET(ctx context.Context, id string, mi
 }
 
 func (q *RedisQueue) CheckEventDeliveryinPending(ctx context.Context, id string) (bool, error) {
-	pending, err := q.XPending(ctx).Result()
+	pending, err := q.XPending(ctx)
 	if err != nil {
-		return false, nil
+		return false, err
 	}
 	if pending.Count <= 0 {
 		return false, nil
