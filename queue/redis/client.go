@@ -16,6 +16,8 @@ import (
 	"github.com/vmihailenco/taskq/v3/redisq"
 )
 
+const count = math.MaxInt
+
 type RedisQueue struct {
 	Name      string
 	queue     *redisq.Queue
@@ -112,7 +114,7 @@ func (q *RedisQueue) XPendingExt(ctx context.Context, start string, end string) 
 		Group:  convoy.StreamGroup,
 		Start:  start,
 		End:    end,
-		Count:  math.MaxInt,
+		Count:  count,
 	}).Result()
 	if err != nil {
 		return nil, err
