@@ -9,12 +9,8 @@ import (
 	"github.com/frain-dev/convoy/config"
 	redisqueue "github.com/frain-dev/convoy/queue/redis"
 	"github.com/frain-dev/convoy/util"
-	"github.com/go-redis/redis/v8"
 	"github.com/spf13/cobra"
-	"github.com/vmihailenco/taskq/v3"
 )
-
-const argsSlice = 12
 
 func addQueueCommand(a *app) *cobra.Command {
 	cmd := &cobra.Command{
@@ -205,7 +201,6 @@ func getPendingInfo(a *app) *cobra.Command {
 //Check if eventDelivery is on the queue (stream)
 func checkEventDeliveryinStream(a *app) *cobra.Command {
 	var id string
-	var idType string
 	cmd := &cobra.Command{
 		Use:   "checkstream",
 		Short: "Event delivery in stream",
@@ -218,40 +213,16 @@ func checkEventDeliveryinStream(a *app) *cobra.Command {
 				log.Fatalf("Queue type error: Command is available for redis queue only.")
 			}
 			if util.IsStringEmpty(id) {
-				return errors.New("please provide an eventDelivery ID or equivalent taskq.Message ID")
+				return errors.New("please provide an eventDelivery ID")
 			}
 			ctx := context.Background()
 			q := a.eventQueue.(*redisqueue.RedisQueue)
-			xmsgs, err := q.XRange(ctx, "-", "+").Result()
+
+			onQueue, err := q.CheckEventDeliveryinStream(ctx, id, "-", "+")
 			if err != nil {
 				return err
 			}
 
-			onQueue := false
-
-			msgs := make([]taskq.Message, len(xmsgs))
-			for i := range xmsgs {
-				xmsg := &xmsgs[i]
-				msg := &msgs[i]
-
-				err = unmarshalMessage(msg, xmsg)
-
-				if err != nil {
-					return err
-				}
-				switch idType {
-				case "eventdev":
-					value := string(msg.ArgsBin[argsSlice:])
-					if value == id {
-						onQueue = true
-					}
-				case "msg":
-					if msg.ID == id {
-						onQueue = true
-					}
-				}
-
-			}
 			if onQueue {
 				log.Printf("ID: %v on Queue: True", id)
 			} else {
@@ -260,15 +231,13 @@ func checkEventDeliveryinStream(a *app) *cobra.Command {
 			return nil
 		},
 	}
-	cmd.Flags().StringVar(&id, "id", "", "eventDelivery ID or taskq.Message ID")
-	cmd.Flags().StringVar(&idType, "type", "eventdev", "eventdev or msg")
+	cmd.Flags().StringVar(&id, "id", "", "eventDelivery ID")
 	return cmd
 }
 
 //check if eventDelivery is in ZSET
 func checkEventDeliveryinZSET(a *app) *cobra.Command {
 	var id string
-	var idType string
 	cmd := &cobra.Command{
 		Use:   "checkzset",
 		Short: "Event delivery in ZSET",
@@ -281,35 +250,16 @@ func checkEventDeliveryinZSET(a *app) *cobra.Command {
 				log.Fatalf("Queue type error: Command is available for redis queue only.")
 			}
 			if util.IsStringEmpty(id) {
-				return errors.New("please provide an eventDelivery ID or equivalent taskq.Message ID")
+				return errors.New("please provide an eventDelivery ID")
 			}
 			ctx := context.Background()
 			q := a.eventQueue.(*redisqueue.RedisQueue)
-			bodies, err := q.ZRangebyScore(ctx, "-inf", "+inf")
+
+			inZSET, err := q.CheckEventDeliveryinZSET(ctx, id, "-inf", "+inf")
 			if err != nil {
 				return err
 			}
 
-			inZSET := false
-
-			var msg taskq.Message
-			for _, body := range bodies {
-				err := msg.UnmarshalBinary([]byte(body))
-				if err != nil {
-					return err
-				}
-				switch idType {
-				case "eventdev":
-					value := string(msg.ArgsBin[argsSlice:])
-					if value == id {
-						inZSET = true
-					}
-				case "msg":
-					if msg.ID == id {
-						inZSET = true
-					}
-				}
-			}
 			if inZSET {
 				log.Printf("Event ID: %v in inZSET: True", id)
 			} else {
@@ -318,15 +268,13 @@ func checkEventDeliveryinZSET(a *app) *cobra.Command {
 			return nil
 		},
 	}
-	cmd.Flags().StringVar(&id, "id", "", "eventDelivery ID or taskq.Message ID")
-	cmd.Flags().StringVar(&idType, "type", "eventdev", "eventdev or msg")
+	cmd.Flags().StringVar(&id, "id", "", "eventDelivery ID")
 	return cmd
 }
 
 //Check if eventDelivery is in pending (stream)
 func checkEventDeliveryinPending(a *app) *cobra.Command {
 	var id string
-	var idType string
 	cmd := &cobra.Command{
 		Use:   "checkpending",
 		Short: "Event delivery on pending",
@@ -343,42 +291,10 @@ func checkEventDeliveryinPending(a *app) *cobra.Command {
 			}
 			ctx := context.Background()
 			q := a.eventQueue.(*redisqueue.RedisQueue)
-			pending, err := q.XPendingExt(ctx, "-", "+")
+
+			inPending, err := q.CheckEventDeliveryinPending(ctx, id, "-", "+")
 			if err != nil {
 				log.Printf("Error fetching Pending: %v", err)
-			}
-
-			inPending := false
-
-			var msg *taskq.Message
-			for i := range pending {
-				xmsgInfo := &pending[i]
-				id := xmsgInfo.ID
-
-				xmsgs, err := q.XRangeN(ctx, id, id, 1).Result()
-				if err != nil {
-					return err
-				}
-
-				if len(xmsgs) != 1 {
-					log.Printf("redisq: can't find pending message id=%q", id)
-				}
-				err = unmarshalMessage(msg, &xmsgs[0])
-				if err != nil {
-					return err
-				}
-				switch idType {
-				case "eventdev":
-					value := string(msg.ArgsBin[argsSlice:])
-					if value == id {
-						inPending = true
-					}
-				case "msg":
-					if msg.ID == id {
-						inPending = true
-					}
-				}
-
 			}
 			if inPending {
 				log.Printf("ID: %v in Pending: True", id)
@@ -388,17 +304,6 @@ func checkEventDeliveryinPending(a *app) *cobra.Command {
 			return nil
 		},
 	}
-	cmd.Flags().StringVar(&id, "id", "", "eventDelivery ID or taskq.Message ID")
-	cmd.Flags().StringVar(&idType, "type", "eventdev", "eventdev or msg")
+	cmd.Flags().StringVar(&id, "id", "", "eventDelivery ID")
 	return cmd
-}
-func unmarshalMessage(msg *taskq.Message, xmsg *redis.XMessage) error {
-	body := xmsg.Values["body"].(string)
-	err := msg.UnmarshalBinary([]byte(body))
-	if err != nil {
-		return err
-	}
-
-	msg.ID = xmsg.ID
-	return nil
 }

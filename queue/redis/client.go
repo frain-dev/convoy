@@ -93,7 +93,7 @@ func (q *RedisQueue) Consumer() taskq.QueueConsumer {
 }
 
 func (q *RedisQueue) ZRangebyScore(ctx context.Context, min string, max string) ([]string, error) {
-	zset := "taskq:" + "{" + q.Name + "}:zset"
+	zset := q.stringifyZSETWithQName()
 	bodies, err := q.inner.ZRangeByScore(ctx, zset, &redis.ZRangeBy{
 		Min: min,
 		Max: max,
@@ -105,11 +105,10 @@ func (q *RedisQueue) ZRangebyScore(ctx context.Context, min string, max string) 
 }
 
 func (q *RedisQueue) XPendingExt(ctx context.Context, start string, end string) ([]redis.XPendingExt, error) {
-	stream := "taskq:" + "{" + q.Name + "}:stream"
-	streamGroup := "taskq"
+	stream := q.stringifyStreamWithQName()
 	pending, err := q.inner.XPendingExt(ctx, &redis.XPendingExtArgs{
 		Stream: stream,
-		Group:  streamGroup,
+		Group:  convoy.StreamGroup,
 		Start:  start,
 		End:    end,
 	}).Result()
@@ -120,33 +119,133 @@ func (q *RedisQueue) XPendingExt(ctx context.Context, start string, end string) 
 }
 
 func (q *RedisQueue) XRange(ctx context.Context, start string, end string) *redis.XMessageSliceCmd {
-	stream := "taskq:" + "{" + q.Name + "}:stream"
+	stream := q.stringifyStreamWithQName()
 	xrange := q.inner.XRange(ctx, stream, start, end)
 	return xrange
 }
 
 func (q *RedisQueue) XRangeN(ctx context.Context, start string, end string, count int64) *redis.XMessageSliceCmd {
-	stream := "taskq:" + "{" + q.Name + "}:stream"
+	stream := q.stringifyStreamWithQName()
 	xrange := q.inner.XRangeN(ctx, stream, start, end, count)
 	return xrange
 }
 
 func (q *RedisQueue) XPending(ctx context.Context) *redis.XPendingCmd {
-	stream := "taskq:" + "{" + q.Name + "}:stream"
-	streamGroup := "taskq"
-	pending := q.inner.XPending(ctx, stream, streamGroup)
+	stream := q.stringifyStreamWithQName()
+	pending := q.inner.XPending(ctx, stream, convoy.StreamGroup)
 	return pending
 }
 
 func (q *RedisQueue) XInfoConsumers(ctx context.Context) *redis.XInfoConsumersCmd {
-	stream := "taskq:" + "{" + q.Name + "}:stream"
-	streamGroup := "taskq"
-	consumersInfo := q.inner.XInfoConsumers(ctx, stream, streamGroup)
+	stream := q.stringifyStreamWithQName()
+	consumersInfo := q.inner.XInfoConsumers(ctx, stream, convoy.StreamGroup)
 	return consumersInfo
 }
 
 func (q *RedisQueue) XInfoStream(ctx context.Context) *redis.XInfoStreamCmd {
-	stream := "taskq:" + "{" + q.Name + "}:stream"
+	stream := q.stringifyStreamWithQName()
 	infoStream := q.inner.XInfoStream(ctx, stream)
 	return infoStream
+}
+
+func (q *RedisQueue) CheckEventDeliveryinStream(ctx context.Context, id string, start string, end string) (bool, error) {
+	xmsgs, err := q.XRange(ctx, start, end).Result()
+	if err != nil {
+		return false, err
+	}
+
+	check := false
+
+	msgs := make([]taskq.Message, len(xmsgs))
+	for i := range xmsgs {
+		xmsg := &xmsgs[i]
+		msg := &msgs[i]
+
+		err = unmarshalMessage(msg, xmsg)
+
+		if err != nil {
+			return false, err
+		}
+
+		value := string(msg.ArgsBin[convoy.EventDeliveryIDLength:])
+		if value == id {
+			check = true
+		}
+	}
+	return check, nil
+}
+
+func (q *RedisQueue) CheckEventDeliveryinZSET(ctx context.Context, id string, min string, max string) (bool, error) {
+	bodies, err := q.ZRangebyScore(ctx, min, max)
+	if err != nil {
+		return false, err
+	}
+	check := false
+	var msg taskq.Message
+	for _, body := range bodies {
+		err := msg.UnmarshalBinary([]byte(body))
+
+		if err != nil {
+			return false, err
+		}
+
+		value := string(msg.ArgsBin[convoy.EventDeliveryIDLength:])
+		if value == id {
+			check = true
+		}
+	}
+	return check, nil
+}
+
+func (q *RedisQueue) CheckEventDeliveryinPending(ctx context.Context, id string, min string, max string) (bool, error) {
+	pending, err := q.XPendingExt(ctx, min, max)
+	if err != nil {
+		return false, nil
+	}
+
+	check := false
+
+	var msg *taskq.Message
+	for i := range pending {
+		xmsgInfo := &pending[i]
+		id := xmsgInfo.ID
+
+		xmsgs, err := q.XRangeN(ctx, id, id, 1).Result()
+
+		if err != nil {
+			return false, err
+		}
+
+		if len(xmsgs) == 1 {
+			err = unmarshalMessage(msg, &xmsgs[0])
+			if err != nil {
+				return false, err
+			}
+
+			value := string(msg.ArgsBin[convoy.EventDeliveryIDLength:])
+			if value == id {
+				check = true
+			}
+		}
+
+	}
+	return check, nil
+}
+
+func (q *RedisQueue) stringifyStreamWithQName() string {
+	return "taskq:" + "{" + q.Name + "}:stream"
+}
+func (q *RedisQueue) stringifyZSETWithQName() string {
+	return "taskq:" + "{" + q.Name + "}:zset"
+}
+
+func unmarshalMessage(msg *taskq.Message, xmsg *redis.XMessage) error {
+	body := xmsg.Values["body"].(string)
+	err := msg.UnmarshalBinary([]byte(body))
+	if err != nil {
+		return err
+	}
+
+	msg.ID = xmsg.ID
+	return nil
 }
