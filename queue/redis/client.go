@@ -3,6 +3,7 @@ package redis
 import (
 	"context"
 	"errors"
+	"math"
 	"time"
 
 	"github.com/frain-dev/convoy"
@@ -111,11 +112,12 @@ func (q *RedisQueue) XPendingExt(ctx context.Context, start string, end string) 
 		Group:  convoy.StreamGroup,
 		Start:  start,
 		End:    end,
+		Count:  math.MaxInt,
 	}).Result()
 	if err != nil {
 		return nil, err
 	}
-	return pending, redis.Nil
+	return pending, nil
 }
 
 func (q *RedisQueue) XRange(ctx context.Context, start string, end string) *redis.XMessageSliceCmd {
@@ -154,8 +156,6 @@ func (q *RedisQueue) CheckEventDeliveryinStream(ctx context.Context, id string, 
 		return false, err
 	}
 
-	check := false
-
 	msgs := make([]taskq.Message, len(xmsgs))
 	for i := range xmsgs {
 		xmsg := &xmsgs[i]
@@ -169,10 +169,10 @@ func (q *RedisQueue) CheckEventDeliveryinStream(ctx context.Context, id string, 
 
 		value := string(msg.ArgsBin[convoy.EventDeliveryIDLength:])
 		if value == id {
-			check = true
+			return true, nil
 		}
 	}
-	return check, nil
+	return false, nil
 }
 
 func (q *RedisQueue) CheckEventDeliveryinZSET(ctx context.Context, id string, min string, max string) (bool, error) {
@@ -180,7 +180,6 @@ func (q *RedisQueue) CheckEventDeliveryinZSET(ctx context.Context, id string, mi
 	if err != nil {
 		return false, err
 	}
-	check := false
 	var msg taskq.Message
 	for _, body := range bodies {
 		err := msg.UnmarshalBinary([]byte(body))
@@ -191,45 +190,70 @@ func (q *RedisQueue) CheckEventDeliveryinZSET(ctx context.Context, id string, mi
 
 		value := string(msg.ArgsBin[convoy.EventDeliveryIDLength:])
 		if value == id {
-			check = true
+			return true, nil
 		}
 	}
-	return check, nil
+	return false, nil
 }
 
-func (q *RedisQueue) CheckEventDeliveryinPending(ctx context.Context, id string, min string, max string) (bool, error) {
-	pending, err := q.XPendingExt(ctx, min, max)
+func (q *RedisQueue) CheckEventDeliveryinPending(ctx context.Context, id string) (bool, error) {
+	pending, err := q.XPending(ctx).Result()
 	if err != nil {
 		return false, nil
 	}
+	if pending.Count <= 0 {
+		return false, nil
+	}
+	pendingXmgs, err := q.XRangeN(ctx, pending.Lower, pending.Higher, pending.Count).Result()
+	if err != nil {
+		return false, err
+	}
 
-	check := false
+	msgs := make([]taskq.Message, len(pendingXmgs))
 
-	var msg *taskq.Message
-	for i := range pending {
-		xmsgInfo := &pending[i]
-		id := xmsgInfo.ID
+	for i := range pendingXmgs {
+		xmsg := &pendingXmgs[i]
+		msg := &msgs[i]
 
-		xmsgs, err := q.XRangeN(ctx, id, id, 1).Result()
+		err = unmarshalMessage(msg, xmsg)
+		if err != nil {
+			return false, err
+		}
+
+		value := string(msg.ArgsBin[convoy.EventDeliveryIDLength:])
+		if value == id {
+			return true, nil
+		}
+
+	}
+	return false, nil
+}
+
+func (q *RedisQueue) DeleteEvenDeliveryfromStream(ctx context.Context, id string) (bool, error) {
+	xmsgs, err := q.XRange(ctx, "-", "+").Result()
+	if err != nil {
+		return false, err
+	}
+	msgs := make([]taskq.Message, len(xmsgs))
+	for i := range xmsgs {
+		xmsg := &xmsgs[i]
+		msg := &msgs[i]
+
+		err = unmarshalMessage(msg, xmsg)
 
 		if err != nil {
 			return false, err
 		}
 
-		if len(xmsgs) == 1 {
-			err = unmarshalMessage(msg, &xmsgs[0])
-			if err != nil {
-				return false, err
+		value := string(msg.ArgsBin[convoy.EventDeliveryIDLength:])
+		if value == id {
+			if err := q.inner.XAck(ctx, q.stringifyStreamWithQName(), convoy.StreamGroup, xmsg.ID).Err(); err != nil {
+				return true, err
 			}
-
-			value := string(msg.ArgsBin[convoy.EventDeliveryIDLength:])
-			if value == id {
-				check = true
-			}
+			return true, q.inner.XDel(ctx, q.stringifyStreamWithQName(), xmsg.ID).Err()
 		}
-
 	}
-	return check, nil
+	return false, nil
 }
 
 func (q *RedisQueue) stringifyStreamWithQName() string {

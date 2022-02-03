@@ -291,8 +291,7 @@ func checkEventDeliveryinPending(a *app) *cobra.Command {
 			}
 			ctx := context.Background()
 			q := a.eventQueue.(*redisqueue.RedisQueue)
-
-			inPending, err := q.CheckEventDeliveryinPending(ctx, id, "-", "+")
+			inPending, err := q.CheckEventDeliveryinPending(ctx, id)
 			if err != nil {
 				log.Printf("Error fetching Pending: %v", err)
 			}

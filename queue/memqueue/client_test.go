@@ -18,6 +18,7 @@ import (
 func TestWrite(t *testing.T) {
 	tests := []struct {
 		name            string
+		queueName       string
 		appID           string
 		configFile      string
 		eventID         string
@@ -27,6 +28,7 @@ func TestWrite(t *testing.T) {
 	}{
 		{
 			name:            "Write a single event to queue",
+			queueName:       uuid.NewString(),
 			appID:           uuid.NewString(),
 			configFile:      "../testdata/convoy_memqueue.json",
 			eventID:         uuid.NewString(),
@@ -49,34 +51,8 @@ func TestWrite(t *testing.T) {
 			}
 			taskName := convoy.TaskName(uuid.NewString())
 			configFile := tc.configFile
-
-			err := config.LoadConfig(configFile, new(config.Configuration))
-			if err != nil {
-				t.Fatalf("Failed to load config file: %v", err)
-			}
-			cfg, err := config.Get()
-			if err != nil {
-				t.Fatalf("Failed to get config: %v", err)
-
-			}
-
-			var qFn taskq.Factory
-			var lS queue.Storage
-			var opts queue.QueueOptions
-
-			lS, qFn, err = NewClient(cfg)
-			if err != nil {
-				t.Fatalf("Failed to load new client: %v", err)
-			}
-			opts = queue.QueueOptions{
-				Name:    uuid.NewString(),
-				Type:    "in-memory",
-				Storage: lS,
-				Factory: qFn,
-			}
-
-			eventQueue := NewQueue(opts)
-			err = eventQueue.Write(context.TODO(), taskName, eventDelivery, 0)
+			eventQueue := initializeQueue(configFile, tc.queueName, t)
+			err := eventQueue.Write(context.TODO(), taskName, eventDelivery, 0)
 			if err != nil {
 				t.Fatalf("Failed to write to queue: %v", err)
 			}
@@ -98,11 +74,13 @@ func TestWrite(t *testing.T) {
 func TestConsumer(t *testing.T) {
 	tests := []struct {
 		name       string
+		queueName  string
 		configFile string
 		err        string
 	}{
 		{
 			name:       "Consumer already started",
+			queueName:  uuid.NewString(),
 			configFile: "../testdata/convoy_memqueue.json",
 			err:        "taskq: Consumer is already started",
 		},
@@ -112,33 +90,8 @@ func TestConsumer(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			configFile := tc.configFile
 
-			err := config.LoadConfig(configFile, new(config.Configuration))
-			if err != nil {
-				t.Fatalf("Failed to load config file: %v", err)
-			}
-			cfg, err := config.Get()
-			if err != nil {
-				t.Fatalf("Failed to get config: %v", err)
-
-			}
-
-			var qFn taskq.Factory
-			var lS queue.Storage
-			var opts queue.QueueOptions
-
-			lS, qFn, err = NewClient(cfg)
-			if err != nil {
-				t.Fatalf("Failed to load new client: %v", err)
-			}
-			opts = queue.QueueOptions{
-				Name:    uuid.NewString(),
-				Type:    "in-memory",
-				Storage: lS,
-				Factory: qFn,
-			}
-
-			eventQueue := NewQueue(opts)
-			err = eventQueue.Consumer().Start(context.TODO())
+			eventQueue := initializeQueue(configFile, tc.queueName, t)
+			err := eventQueue.Consumer().Start(context.TODO())
 			if err != nil {
 				if err.Error() != tc.err {
 					t.Fatalf("Expected: %v, got: %s", tc.err, err)
@@ -146,4 +99,34 @@ func TestConsumer(t *testing.T) {
 			}
 		})
 	}
+}
+
+func initializeQueue(configFile string, name string, t *testing.T) queue.Queuer {
+	err := config.LoadConfig(configFile, new(config.Configuration))
+	if err != nil {
+		t.Fatalf("Failed to load config file: %v", err)
+	}
+	cfg, err := config.Get()
+	if err != nil {
+		t.Fatalf("Failed to get config: %v", err)
+
+	}
+
+	var qFn taskq.Factory
+	var lS queue.Storage
+	var opts queue.QueueOptions
+
+	lS, qFn, err = NewClient(cfg)
+	if err != nil {
+		t.Fatalf("Failed to load new client: %v", err)
+	}
+	opts = queue.QueueOptions{
+		Name:    name,
+		Type:    "in-memory",
+		Storage: lS,
+		Factory: qFn,
+	}
+
+	eventQueue := NewQueue(opts)
+	return eventQueue
 }
