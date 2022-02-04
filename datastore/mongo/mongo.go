@@ -108,6 +108,10 @@ func (c *Client) ensureMongoIndices() {
 	c.ensureIndex(EventCollection, "event_type", false, nil)
 	c.ensureIndex(EventCollection, "app_metadata.uid", false, nil)
 	c.ensureIndex(AppCollections, "group_id", false, nil)
+
+	c.ensureCompoundIndex(AppCollections)
+	c.ensureCompoundIndex(EventCollection)
+	c.ensureCompoundIndex(EventDeliveryCollection)
 }
 
 // ensureIndex - ensures an index is created for a specific field in a collection
@@ -135,4 +139,176 @@ func (c *Client) ensureIndex(collectionName string, field string, unique bool, p
 	}
 
 	return true
+}
+
+func (c *Client) ensureCompoundIndex(collectionName string) bool {
+	collection := c.db.Collection(collectionName)
+
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+
+	compoundIndices := compoundIndices()
+
+	compoundIndex, ok := compoundIndices[collectionName]
+
+	if !ok {
+		return false
+	}
+
+	_, err := collection.Indexes().CreateMany(ctx, compoundIndex)
+
+	if err != nil {
+		log.WithError(err).Errorf("failed to create index on collection %s", collectionName)
+		return false
+	}
+
+	return true
+}
+
+func compoundIndices() map[string][]mongo.IndexModel {
+	compoundIndices := map[string][]mongo.IndexModel{
+		EventCollection: {
+			{
+				Keys: bson.D{
+					{Key: "app_metadata.group_id", Value: 1},
+					{Key: "document_status", Value: 1},
+					{Key: "created_at", Value: -1},
+				},
+			},
+
+			{
+				Keys: bson.D{
+					{Key: "app_metadata.group_id", Value: 1},
+					{Key: "app_metadata.uid", Value: 1},
+					{Key: "document_status", Value: 1},
+					{Key: "created_at", Value: -1},
+				},
+			},
+
+			{
+				Keys: bson.D{
+					{Key: "app_metadata.uid", Value: 1},
+					{Key: "document_status", Value: 1},
+					{Key: "created_at", Value: -1},
+				},
+			},
+
+			{
+				Keys: bson.D{
+					{Key: "app_metadata.group_id", Value: 1},
+					{Key: "app_metadata.uid", Value: 1},
+					{Key: "created_at", Value: -1},
+				},
+			},
+
+			{
+				Keys: bson.D{
+					{Key: "app_metadata.uid", Value: 1},
+					{Key: "app_metadata.group_id", Value: 1},
+					{Key: "document_status", Value: 1},
+					{Key: "created_at", Value: 1},
+				},
+			},
+
+			{
+				Keys: bson.D{
+					{Key: "app_metadata.uid", Value: 1},
+					{Key: "document_status", Value: 1},
+					{Key: "created_at", Value: 1},
+				},
+			},
+
+			{
+				Keys: bson.D{
+					{Key: "app_metadata.group_id", Value: 1},
+					{Key: "document_status", Value: 1},
+					{Key: "created_at", Value: 1},
+				},
+			},
+
+			{
+				Keys: bson.D{
+					{Key: "created_at", Value: -1},
+				},
+			},
+		},
+
+		EventDeliveryCollection: {
+			{
+				Keys: bson.D{
+					{Key: "event_metadata.uid", Value: 1},
+					{Key: "document_status", Value: 1},
+					{Key: "created_at", Value: 1},
+				},
+			},
+
+			{
+				Keys: bson.D{
+					{Key: "event_metadata.uid", Value: 1},
+					{Key: "document_status", Value: 1},
+					{Key: "created_at", Value: 1},
+					{Key: "status", Value: 1},
+				},
+			},
+
+			{
+				Keys: bson.D{
+					{Key: "document_status", Value: 1},
+					{Key: "created_at", Value: 1},
+					{Key: "app_metadata.group_id", Value: 1},
+					{Key: "status", Value: 1},
+				},
+			},
+
+			{
+				Keys: bson.D{
+					{Key: "uid", Value: 1},
+					{Key: "document_status", Value: 1},
+				},
+			},
+
+			{
+				Keys: bson.D{
+					{Key: "app_metadata.group_id", Value: 1},
+					{Key: "document_status", Value: 1},
+					{Key: "created_at", Value: 1},
+				},
+			},
+
+			{
+				Keys: bson.D{
+					{Key: "document_status", Value: 1},
+					{Key: "created_at", Value: -1},
+					{Key: "app_metadata.group_id", Value: 1},
+				},
+			},
+
+			{
+				Keys: bson.D{
+					{Key: "document_status", Value: 1},
+					{Key: "created_at", Value: -1},
+					{Key: "app_metadata.uid", Value: 1},
+					{Key: "app_metadata.group_id", Value: 1},
+				},
+			},
+
+			{
+				Keys: bson.D{
+					{Key: "created_at", Value: -1},
+				},
+			},
+		},
+
+		AppCollections: {
+			{
+				Keys: bson.D{
+					{Key: "group_id", Value: 1},
+					{Key: "document_status", Value: 1},
+					{Key: "created_at", Value: 1},
+				},
+			},
+		},
+	}
+
+	return compoundIndices
 }
