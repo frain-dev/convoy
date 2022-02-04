@@ -80,12 +80,7 @@ func (q *RedisQueue) Write(ctx context.Context, name convoy.TaskName, e *datasto
 		Delay:    delay,
 	}
 
-	err := q.queue.Add(m)
-	if err != nil {
-		return err
-	}
-
-	return nil
+	return q.queue.Add(m)
 }
 
 func (q *RedisQueue) Consumer() taskq.QueueConsumer {

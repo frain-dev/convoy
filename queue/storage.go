@@ -13,15 +13,18 @@ type Storage interface {
 
 var _ Storage = (*localStorage)(nil)
 
+const defaultStorageSize = 128000
+
 // LOCAL
 
 type localStorage struct {
 	mu    sync.Mutex
 	cache *simplelru.LRU
+	size  int
 }
 
 func NewLocalStorage() Storage {
-	return &localStorage{}
+	return &localStorage{size: defaultStorageSize}
 }
 
 func (s *localStorage) Exists(_ context.Context, key string) bool {
@@ -30,17 +33,11 @@ func (s *localStorage) Exists(_ context.Context, key string) bool {
 
 	if s.cache == nil {
 		var err error
-		s.cache, err = simplelru.NewLRU(128000, nil)
+		s.cache, err = simplelru.NewLRU(s.size, nil)
 		if err != nil {
 			panic(err)
 		}
 	}
 
-	_, ok := s.cache.Get(key)
-	if ok {
-		return true
-	}
-
-	s.cache.Add(key, nil)
-	return false
+	return s.cache.Contains(key)
 }

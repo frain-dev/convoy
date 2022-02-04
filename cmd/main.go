@@ -8,6 +8,8 @@ import (
 	"time"
 	_ "time/tzdata"
 
+	"github.com/frain-dev/convoy/datastore/badger"
+
 	"github.com/frain-dev/convoy/logger"
 	memqueue "github.com/frain-dev/convoy/queue/memqueue"
 	redisqueue "github.com/frain-dev/convoy/queue/redis"
@@ -29,7 +31,6 @@ import (
 	"github.com/frain-dev/convoy/queue"
 	"github.com/spf13/cobra"
 
-	"github.com/frain-dev/convoy/datastore/bolt"
 	"github.com/frain-dev/convoy/datastore/mongo"
 )
 
@@ -166,12 +167,8 @@ func main() {
 			app.logger = lo
 			app.tracer = tr
 
-			err = ensureDefaultGroup(context.Background(), cfg, app)
-			if err != nil {
-				return err
-			}
+			return ensureDefaultGroup(context.Background(), cfg, app)
 
-			return nil
 		},
 		PersistentPostRunE: func(cmd *cobra.Command, args []string) error {
 			defer func() {
@@ -325,8 +322,8 @@ func NewDB(cfg config.Configuration) (datastore.DatabaseClient, error) {
 			return nil, err
 		}
 		return db, nil
-	case "bolt":
-		bolt, err := bolt.New(cfg)
+	case "in-memory":
+		bolt, err := badger.New(cfg)
 		if err != nil {
 			return nil, err
 		}

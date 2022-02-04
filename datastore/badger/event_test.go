@@ -1,4 +1,4 @@
-package bolt
+package badger
 
 import (
 	"context"
@@ -49,7 +49,7 @@ func Test_FindEventByID(t *testing.T) {
 
 	app.Endpoints = append(app.Endpoints, endpoint)
 
-	require.NoError(t, appRepo.UpdateApplication(context.Background(), app))
+	require.NoError(t, appRepo.CreateApplication(context.Background(), app))
 
 	event := &datastore.Event{
 		UID:              "eid-1",
