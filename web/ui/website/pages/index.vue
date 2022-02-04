@@ -246,8 +246,34 @@
 
 		<section class="section blog">
 			<div class="container">
-				<img src="~/assets/images/Featured.svg" alt="blogpost" />
-				<img src="~/assets/images/Featured-small.svg" class="small" alt="blogpost" />
+				<div class="blog-post">
+					<div class="blog-post-details">
+						<div class="blog-post-details-header">
+							<div class="blogpost">BLOG POST</div>
+							<div class="date">March 11, 2021</div>
+						</div>
+						<h4>Understanding The Convoy UI</h4>
+						<p>
+							One of the major issues and problems of webhook over the years has been the ability to monitor and understand the state of your webhooks service at any time, and that’s a major part
+							of what we’re solving with Convoy as opposed to waiting for users to report failures before…
+						</p>
+						<div class="blog-post-details-bottom">
+							<div class="author">
+								<img src="~/assets/images/author-img.png" alt="avatar" />
+								<div>
+									<p class="bold">Emmanuel Aina</p>
+									<p>CO-Founder Convoy</p>
+								</div>
+							</div>
+							<a class="read-more">
+								Read More
+								<img src="~/assets/images/angle-right-primary.svg" alt="right" />
+							</a>
+						</div>
+					</div>
+					<img src="~/assets/images/Featured.svg" class="blog-img" alt="blogpost" />
+					<img src="~/assets/images/Featured-small.svg" class="blog-img small" alt="blogpost" />
+				</div>
 			</div>
 		</section>
 
@@ -561,7 +587,6 @@ header {
 		line-height: 30px;
 	}
 }
-
 
 .features {
 	padding: 160px 20px 130px;
@@ -1064,9 +1089,12 @@ a {
 	}
 }
 .offers {
-	margin-bottom: 300px;
+	margin-bottom: 400px;
 	@media (max-width: 1085px) {
 		padding: 20px;
+	}
+	@media (min-width: $desktopBreakPoint) {
+		margin-bottom: 500px;
 	}
 	h3 {
 		font-weight: bold;
@@ -1125,8 +1153,133 @@ a {
 }
 .blog {
 	background: linear-gradient(180deg, #2c2f3e 0%, #422f41 100%);
-	padding: 80px 0px 0 40px;
+	padding: 80px 20px;
+	@media (min-width: $desktopBreakPoint) {
+		padding: 80px;
+	}
+	&-post {
+		background: #ffffff;
+		box-shadow: 40px 44px 81px rgba(111, 118, 138, 0.08);
+		border-radius: 32px;
+		padding: 40px 16px 0 16px;
+		display: flex;
+		flex-wrap: wrap;
+		max-width: 970px;
+		margin: 0 auto;
+		@media (min-width: $desktopBreakPoint) {
+			padding: 56px 0 0 56px;
+			flex-wrap: nowrap;
+		}
 
+		&-details {
+			@media (min-width: $desktopBreakPoint) {
+				margin-right: 56px;
+			}
+			&-header {
+				display: flex;
+				justify-content: space-between;
+				align-items: center;
+				margin-bottom: 24px;
+
+				.blogpost {
+					background: rgba(7, 71, 166, 0.1);
+					border-radius: 4px;
+					padding: 3px 16px;
+					font-weight: 500;
+					font-size: 14px;
+					line-height: 22px;
+					color: #477db3;
+				}
+				.date {
+					font-weight: 500;
+					font-size: 14px;
+					line-height: 22px;
+					color: #5f5f68;
+				}
+			}
+			&-bottom {
+				display: flex;
+				align-items: center;
+				justify-content: space-between;
+				margin-bottom: 57px;
+				flex-wrap: wrap;
+				.author {
+					display: flex;
+					align-items: center;
+					img {
+						width: 40px;
+						height: 40px;
+						margin-right: 12px;
+						display: block;
+					}
+					p {
+						font-size: 12px;
+						line-height: 20px;
+						color: #31323d;
+						margin-bottom: 0;
+						&.bold {
+							font-weight: 500;
+							font-size: 16px;
+							line-height: 23px;
+						}
+					}
+				}
+				.read-more {
+					font-weight: 500;
+					font-size: 14px;
+					line-height: 22px;
+					color: #477db3;
+					display: flex;
+					align-items: center;
+					img {
+						display: block;
+						width: 20px;
+						height: 20px;
+						margin-left: 16px;
+					}
+
+					@media(max-width: 320px){
+						margin-top: 42px;
+					}
+				}
+			}
+			h4 {
+				font-weight: bold;
+				font-size: 24px;
+				line-height: 32px;
+				color: #16192c;
+				max-width: 312px;
+				margin-bottom: 16px;
+			}
+			p {
+				font-size: 16px;
+				line-height: 24px;
+				color: #737a91;
+				margin-bottom: 29px;
+			}
+			@media (min-width: $desktopBreakPoint) {
+				h4 {
+					font-size: 32px;
+					line-height: 42px;
+					max-width: 100%;
+				}
+			}
+		}
+
+		img.blog-img {
+			border-radius: 0 0 32px 0;
+			display: none;
+			&.small {
+				display: block;
+			}
+			@media (min-width: $desktopBreakPoint) {
+				display: block;
+				&.small {
+					display: none;
+				}
+			}
+		}
+	}
 	img {
 		max-width: 970px;
 		display: block;
@@ -1139,12 +1292,6 @@ a {
 				display: block;
 			}
 		}
-	}
-	@media (max-width: $desktopBreakPoint) {
-		padding: 60px 0px 0 40px;
-	}
-	@media (max-width: 425px) {
-		padding: 80px 0 0 0;
 	}
 }
 .github-star {

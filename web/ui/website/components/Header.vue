@@ -26,14 +26,21 @@
 					<li>
 						<a target="_blank" rel="noopener noreferrer" href="https://github.com/frain-dev/convoy/discussions">Community</a>
 					</li>
-					<li>
+					<li class="github">
 						<a href="https://github.com/frain-dev/convoy">
 							<img src="~/assets/images/github-logo.svg" alt="github logo" />
 						</a>
 					</li>
+					<li class="ml-auto">
+						<a href="https://dev--convoy-saas.netlify.app/login">Login</a>
+						<button>
+							Sign up for free
+							<img src="~/assets/images/arrow-right-white.svg" alt="arrow right" />
+						</button>
+					</li>
 				</ul>
 
-				<a href="https://github.com/frain-dev/convoy">
+				<a href="https://github.com/frain-dev/convoy" class="small">
 					<img src="~/assets/images/github-logo.svg" alt="github logo" />
 				</a>
 			</div>
@@ -66,6 +73,7 @@ nav {
 	position: fixed;
 	left: 50%;
 	transform: translate(-50%, 0);
+
 	@media (min-width: $desktopBreakPoint) {
 		padding: 32px 20px;
 	}
@@ -134,10 +142,6 @@ nav {
 				margin-right: 40px;
 			}
 
-			&:last-of-type {
-				display: none;
-			}
-
 			a {
 				font-weight: 500;
 				font-size: 14px;
@@ -149,16 +153,31 @@ nav {
 					width: 24px;
 				}
 			}
-
+			&.github {
+				display: none;
+			}
+			&.ml-auto {
+				button {
+					margin-top: 30px;
+				}
+			}
 			button {
 				background: #477db3;
 				border-radius: 8px;
-				padding: 9px 29px;
+				padding: 9px 20px;
 				color: #ffffff;
 				font-weight: 500;
 				font-size: 16px;
 				line-height: 28px;
-				min-width: 146px;
+				min-width: 175px;
+				display: flex;
+				align-items: center;
+				white-space: nowrap;
+				margin-left: 24px;
+				img {
+					height: 24px;
+					width: 24px;
+				}
 			}
 		}
 
@@ -173,6 +192,7 @@ nav {
 			position: initial;
 			height: initial;
 			overflow-y: unset;
+			width: 100%;
 			background: transparent;
 
 			&.show {
@@ -193,7 +213,32 @@ nav {
 						color: #ffffff;
 					}
 				}
+
+				&:last-of-type {
+					display: none;
+				}
+
+				&.github {
+					display: block;
+				}
+
+				&.ml-auto {
+					margin-left: auto;
+					display: flex;
+					align-items: center;
+					button {
+						margin-left: 24px;
+						margin-top: unset;
+					}
+				}
 			}
+		}
+	}
+
+	a.small {
+		display: block;
+		@media (min-width: $desktopBreakPoint) {
+			display: none;
 		}
 	}
 }
