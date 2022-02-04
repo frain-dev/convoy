@@ -1,3 +1,8 @@
+## 0.4.0
+
+- [Enhancement] Replace bbolt implementation with badger #417
+- [Enhancement] Add compound indexex for events, eventdeliveries and applications #418
+
 ## 0.4.0-rc
 
 - [Feature] Added in memory queue using taskq #342
