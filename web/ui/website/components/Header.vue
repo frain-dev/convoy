@@ -56,16 +56,19 @@ export default {
 $desktopBreakPoint: 880px;
 
 nav {
-	max-width: 1376px;
-	width: calc(100% - 40px);
+	width: 100%;
 	margin: auto;
-	background: #222a31;
-	border-radius: 16px;
-	padding: 12px 20px;
+	background: #302f3f;
+	box-shadow: inset 0px -3px 8px rgba(255, 255, 255, 0.07);
+	backdrop-filter: blur(36px);
+	padding: 53px 20px 21px 20px;
 	z-index: 10;
 	position: fixed;
 	left: 50%;
 	transform: translate(-50%, 0);
+	@media (min-width: $desktopBreakPoint) {
+		padding: 32px 20px;
+	}
 
 	& > div {
 		display: flex;
@@ -83,6 +86,7 @@ nav {
 		margin-left: 50px;
 
 		@media (min-width: $desktopBreakPoint) {
+			width: 22%;
 			margin-left: 0px;
 		}
 
@@ -104,7 +108,7 @@ nav {
 		transition: all 0.5s;
 		display: none;
 		position: absolute;
-		top: 75px;
+		top: 105px;
 		left: 0;
 		width: 256px;
 		text-align: left;
