@@ -9,6 +9,7 @@ import (
 	"strings"
 	"testing"
 
+	mcache "github.com/frain-dev/convoy/cache/memory"
 	"github.com/frain-dev/convoy/config"
 	"github.com/frain-dev/convoy/datastore"
 	"github.com/frain-dev/convoy/logger"
@@ -92,8 +93,9 @@ func TestApplicationHandler_GetGroup(t *testing.T) {
 			logger := logger.NewNoopLogger()
 			tracer := mocks.NewMockTracer(ctrl)
 			apiKeyRepo := mocks.NewMockAPIKeyRepository(ctrl)
+			cache := mcache.NewMemoryCache()
 
-			app = newApplicationHandler(eventRepo, eventDeliveryRepo, appRepo, groupRepo, apiKeyRepo, eventQueue, logger, tracer)
+			app = newApplicationHandler(eventRepo, eventDeliveryRepo, appRepo, groupRepo, apiKeyRepo, eventQueue, logger, tracer, cache)
 
 			// Arrange
 			url := fmt.Sprintf("/api/v1/groups/%s", tc.id)
@@ -241,8 +243,9 @@ func TestApplicationHandler_CreateGroup(t *testing.T) {
 			logger := logger.NewNoopLogger()
 			tracer := mocks.NewMockTracer(ctrl)
 			apiKeyRepo := mocks.NewMockAPIKeyRepository(ctrl)
+			cache := mcache.NewMemoryCache()
 
-			app = newApplicationHandler(eventRepo, eventDeliveryRepo, appRepo, groupRepo, apiKeyRepo, eventQueue, logger, tracer)
+			app = newApplicationHandler(eventRepo, eventDeliveryRepo, appRepo, groupRepo, apiKeyRepo, eventQueue, logger, tracer, cache)
 
 			// Arrange
 			req := httptest.NewRequest(tc.method, "/api/v1/groups", tc.body)
@@ -330,8 +333,9 @@ func TestApplicationHandler_UpdateGroup(t *testing.T) {
 			logger := logger.NewNoopLogger()
 			tracer := mocks.NewMockTracer(ctrl)
 			apiKeyRepo := mocks.NewMockAPIKeyRepository(ctrl)
+			cache := mcache.NewMemoryCache()
 
-			app = newApplicationHandler(eventRepo, eventDeliveryRepo, appRepo, groupRepo, apiKeyRepo, eventQueue, logger, tracer)
+			app = newApplicationHandler(eventRepo, eventDeliveryRepo, appRepo, groupRepo, apiKeyRepo, eventQueue, logger, tracer, cache)
 
 			// Arrange
 			url := fmt.Sprintf("/api/v1/groups/%s", tc.orgID)
@@ -429,8 +433,9 @@ func TestApplicationHandler_GetGroups(t *testing.T) {
 			logger := logger.NewNoopLogger()
 			tracer := mocks.NewMockTracer(ctrl)
 			apiKeyRepo := mocks.NewMockAPIKeyRepository(ctrl)
+			cache := mcache.NewMemoryCache()
 
-			app = newApplicationHandler(eventRepo, eventDeliveryRepo, appRepo, groupRepo, apiKeyRepo, eventQueue, logger, tracer)
+			app = newApplicationHandler(eventRepo, eventDeliveryRepo, appRepo, groupRepo, apiKeyRepo, eventQueue, logger, tracer, cache)
 
 			req := httptest.NewRequest(tc.method, "/api/v1/groups", nil)
 			req.SetBasicAuth("test", "test")
@@ -545,8 +550,9 @@ func TestApplicationHandler_DeleteGroup(t *testing.T) {
 			eventQueue := mocks.NewMockQueuer(ctrl)
 			logger := logger.NewNoopLogger()
 			tracer := mocks.NewMockTracer(ctrl)
+			cache := mcache.NewMemoryCache()
 
-			app = newApplicationHandler(eventRepo, eventDeliveryRepo, appRepo, groupRepo, apiKeyRepo, eventQueue, logger, tracer)
+			app = newApplicationHandler(eventRepo, eventDeliveryRepo, appRepo, groupRepo, apiKeyRepo, eventQueue, logger, tracer, cache)
 
 			// Arrange
 			url := fmt.Sprintf("/api/v1/groups/%s", tc.orgID)

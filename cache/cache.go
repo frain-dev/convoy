@@ -2,9 +2,10 @@ package cache
 
 import (
 	"context"
-	"errors"
 	"time"
 
+	"github.com/frain-dev/convoy/cache/memory"
+	"github.com/frain-dev/convoy/cache/redis"
 	"github.com/frain-dev/convoy/config"
 )
 
@@ -15,8 +16,8 @@ type Cache interface {
 }
 
 func NewCache(cfg config.CacheConfiguration) (Cache, error) {
-	if cfg.Type == "redis" {
-		err, ca := NewRedisCache(cfg.Redis.DSN)
+	if cfg.Type == config.RedisCacheProvider {
+		ca, err := rcache.NewRedisCache(cfg.Redis.Dsn)
 		if err != nil {
 			return nil, err
 		}
@@ -24,5 +25,6 @@ func NewCache(cfg config.CacheConfiguration) (Cache, error) {
 		return ca, nil
 	}
 
-	return nil, errors.New("Cache Type isn't supported")
+	return mcache.NewMemoryCache(), nil
+
 }

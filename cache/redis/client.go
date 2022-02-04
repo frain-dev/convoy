@@ -1,7 +1,8 @@
-package cache
+package rcache
 
 import (
 	"context"
+	"errors"
 	"time"
 
 	"github.com/go-redis/cache/v8"
@@ -12,23 +13,22 @@ type RedisCache struct {
 	cache *cache.Cache
 }
 
-func NewRedisCache(dsn string) (error, Cache) {
+func NewRedisCache(dsn string) (*RedisCache, error) {
 	opts, err := redis.ParseURL(dsn)
 
 	if err != nil {
-		return err, nil
+		return nil, err
 	}
 
 	client := redis.NewClient(opts)
 
 	c := cache.New(&cache.Options{
-		Redis:      client,
-		LocalCache: cache.NewTinyLFU(1000, time.Minute),
+		Redis: client,
 	})
 
 	r := &RedisCache{cache: c}
 
-	return nil, r
+	return r, nil
 }
 
 func (r *RedisCache) Set(ctx context.Context, key string, data interface{}, ttl time.Duration) error {
@@ -43,6 +43,10 @@ func (r *RedisCache) Set(ctx context.Context, key string, data interface{}, ttl 
 func (r *RedisCache) Get(ctx context.Context, key string, data interface{}) (error, interface{}) {
 	err := r.cache.Get(ctx, key, &data)
 
+	if errors.Is(err, cache.ErrCacheMiss) {
+		return nil, nil
+	}
+
 	if err != nil {
 		return err, nil
 	}
@@ -51,5 +55,5 @@ func (r *RedisCache) Get(ctx context.Context, key string, data interface{}) (err
 }
 
 func (r *RedisCache) Delete(ctx context.Context, key string) error {
-	return nil
+	return r.cache.Delete(ctx, key)
 }

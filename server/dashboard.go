@@ -74,6 +74,20 @@ func (a *applicationHandler) GetDashboardSummary(w http.ResponseWriter, r *http.
 
 	group := getGroupFromContext(r.Context())
 
+	qs := fmt.Sprintf("%v:%v:%v:%v", group.UID, searchParams.CreatedAtStart, searchParams.CreatedAtEnd, period)
+
+	err, data := a.cache.Get(r.Context(), qs, &models.DashboardSummary{})
+
+	if err != nil {
+		log.Error(err)
+	}
+
+	if data != nil {
+		_ = render.Render(w, r, newServerResponse("Dashboard summary fetched successfully",
+			data, http.StatusOK))
+		return
+	}
+
 	apps, err := a.appRepo.CountGroupApplications(r.Context(), group.UID)
 	if err != nil {
 		_ = render.Render(w, r, newErrorResponse("an error occurred while searching apps", http.StatusInternalServerError))
@@ -91,6 +105,12 @@ func (a *applicationHandler) GetDashboardSummary(w http.ResponseWriter, r *http.
 		EventsSent:   eventsSent,
 		Period:       period,
 		PeriodData:   &messages,
+	}
+
+	err = a.cache.Set(r.Context(), qs, dashboard, time.Hour)
+
+	if err != nil {
+		log.Error(err)
 	}
 
 	_ = render.Render(w, r, newServerResponse("Dashboard summary fetched successfully",

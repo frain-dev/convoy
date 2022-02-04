@@ -5,6 +5,7 @@ import (
 	"net/http/httptest"
 	"testing"
 
+	mcache "github.com/frain-dev/convoy/cache/memory"
 	"github.com/frain-dev/convoy/config"
 	"github.com/frain-dev/convoy/datastore"
 	"github.com/frain-dev/convoy/logger"
@@ -27,8 +28,9 @@ func Test_fetchAllConfigDetails(t *testing.T) {
 	logger := logger.NewNoopLogger()
 	tracer := mocks.NewMockTracer(ctrl)
 	apiKeyRepo := mocks.NewMockAPIKeyRepository(ctrl)
+	cache := mcache.NewMemoryCache()
 
-	app = newApplicationHandler(eventRepo, eventDeliveryRepo, appRepo, groupRepo, apiKeyRepo, eventQueue, logger, tracer)
+	app = newApplicationHandler(eventRepo, eventDeliveryRepo, appRepo, groupRepo, apiKeyRepo, eventQueue, logger, tracer, cache)
 
 	tests := []struct {
 		name       string
