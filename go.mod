@@ -2,6 +2,8 @@ module github.com/frain-dev/convoy
 
 go 1.16
 
+replace github.com/dgraph-io/ristretto v0.1.0 => github.com/frain-dev/ristretto v0.1.1
+
 require (
 	github.com/asaskevich/govalidator v0.0.0-20210307081110-f21760c49a8d
 	github.com/dchest/uniuri v0.0.0-20200228104902-7aecb25e1fe5

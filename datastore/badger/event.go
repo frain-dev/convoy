@@ -202,7 +202,11 @@ func (e *eventRepo) LoadEventsPaged(ctx context.Context, groupId string, appId s
 	var events []datastore.Event
 	var pg datastore.PaginationData
 
-	q := e.generateQuery(f).Skip(lowerBound).Limit(pageable.PerPage)
+	q := e.generateQuery(f).Skip(lowerBound).Limit(pageable.PerPage).SortBy("CreatedAt")
+	if pageable.Sort == -1 {
+		q.Reverse()
+	}
+
 	err := e.db.Find(&events, q)
 	if err != nil {
 		return nil, datastore.PaginationData{}, err

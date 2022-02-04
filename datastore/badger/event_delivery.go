@@ -93,7 +93,11 @@ func (e *eventDeliveryRepo) LoadEventDeliveriesPaged(ctx context.Context, groupI
 	var deliveries []datastore.EventDelivery
 	var pg datastore.PaginationData
 
-	q := e.generateQuery(f).Skip(lowerBound).Limit(pageable.PerPage)
+	q := e.generateQuery(f).Skip(lowerBound).Limit(pageable.PerPage).SortBy("CreatedAt")
+	if pageable.Sort == -1 {
+		q.Reverse()
+	}
+
 	err := e.db.Find(&deliveries, q)
 	if err != nil {
 		return nil, datastore.PaginationData{}, err

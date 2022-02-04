@@ -55,7 +55,12 @@ func (a *appRepo) LoadApplicationsPaged(ctx context.Context, gid, q string, page
 		groupId:    gid,
 	}
 
-	err := a.db.Find(&apps, a.generateQuery(af).Skip(lowerBound).Limit(perPage))
+	qry := a.generateQuery(af).Skip(lowerBound).Limit(perPage).SortBy("CreatedAt")
+	if pageable.Sort == -1 {
+		qry.Reverse()
+	}
+
+	err := a.db.Find(&apps, qry)
 
 	if err != nil {
 		return nil, datastore.PaginationData{}, err
