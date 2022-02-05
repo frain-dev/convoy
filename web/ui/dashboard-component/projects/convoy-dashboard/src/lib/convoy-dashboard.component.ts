@@ -13,8 +13,7 @@ import { format } from 'date-fns';
 @Component({
 	selector: 'convoy-dashboard',
 	templateUrl: './convoy-dashboard.component.html',
-	styleUrls: ['./convoy-dashboard.component.scss'],
-	changeDetection: ChangeDetectionStrategy.OnPush
+	styleUrls: ['./convoy-dashboard.component.scss']
 })
 export class ConvoyDashboardComponent implements OnInit {
 	showFilterCalendar = false;
