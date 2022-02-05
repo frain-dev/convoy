@@ -66,12 +66,17 @@ func (a *appRepo) LoadApplicationsPaged(ctx context.Context, gid, q string, page
 		return nil, datastore.PaginationData{}, err
 	}
 
-	for i, ap := range apps {
+	for i := range apps {
+		ap := &apps[i]
+		if ap.Endpoints == nil {
+			ap.Endpoints = []datastore.Endpoint{}
+		}
+
 		count, err := a.db.Count(datastore.Event{}, badgerhold.Where("AppMetadata.UID").Eq(ap.UID))
 		if err != nil {
 			return nil, datastore.PaginationData{}, err
 		}
-		apps[i].Events = int64(count)
+		ap.Events = int64(count)
 	}
 
 	total, err := a.db.Count(&datastore.Application{}, a.generateQuery(af))
