@@ -76,7 +76,7 @@ func (a *appRepo) LoadApplicationsPaged(ctx context.Context, gid, q string, page
 		if err != nil {
 			return nil, datastore.PaginationData{}, err
 		}
-		apps[i].Events = int64(count)
+		ap.Events = int64(count)
 	}
 
 	total, err := a.db.Count(&datastore.Application{}, a.generateQuery(af))
