@@ -199,7 +199,7 @@ func (e *eventRepo) LoadEventsPaged(ctx context.Context, groupId string, appId s
 	prevPage := pageable.Page - 1
 	lowerBound := pageable.PerPage * prevPage
 
-	var events []datastore.Event
+	var events []datastore.Event = make([]datastore.Event, 0)
 	var pg datastore.PaginationData
 
 	q := e.generateQuery(f).Skip(lowerBound).Limit(pageable.PerPage).SortBy("CreatedAt")

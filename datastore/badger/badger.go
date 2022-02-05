@@ -2,7 +2,6 @@ package badger
 
 import (
 	"context"
-	"encoding/json"
 	"io"
 
 	"github.com/frain-dev/convoy/util"
@@ -30,8 +29,8 @@ func New(cfg config.Configuration) (datastore.DatabaseClient, error) {
 	}
 
 	st, err := badgerhold.Open(badgerhold.Options{
-		Encoder:          json.Marshal,
-		Decoder:          json.Unmarshal,
+		Encoder:          badgerhold.DefaultEncode,
+		Decoder:          badgerhold.DefaultDecode,
 		SequenceBandwith: 100,
 		Options: badger.DefaultOptions(dsn).
 			WithZSTDCompressionLevel(0).

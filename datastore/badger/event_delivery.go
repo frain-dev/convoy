@@ -90,7 +90,7 @@ func (e *eventDeliveryRepo) LoadEventDeliveriesPaged(ctx context.Context, groupI
 	prevPage := pageable.Page - 1
 	lowerBound := pageable.PerPage * prevPage
 
-	var deliveries []datastore.EventDelivery
+	var deliveries []datastore.EventDelivery = make([]datastore.EventDelivery, 0)
 	var pg datastore.PaginationData
 
 	q := e.generateQuery(f).Skip(lowerBound).Limit(pageable.PerPage).SortBy("CreatedAt")
