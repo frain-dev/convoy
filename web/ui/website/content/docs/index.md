@@ -144,7 +144,7 @@ $ curl \
 {
     "description": "Default Endpoint",
     "url": "https://0d87-102-89-2-172.ngrok.io",
-    "events: [ "*" ]
+    "events": [ "*" ]
 }
 ```
 
