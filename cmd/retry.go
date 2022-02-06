@@ -4,6 +4,12 @@ import (
 	"context"
 	"time"
 
+	"github.com/frain-dev/convoy"
+
+	redisqueue "github.com/frain-dev/convoy/queue/redis"
+
+	"go.mongodb.org/mongo-driver/mongo"
+
 	log "github.com/sirupsen/logrus"
 
 	"go.mongodb.org/mongo-driver/bson/primitive"
@@ -14,17 +20,6 @@ import (
 )
 
 func addRetryCommand(a *app) *cobra.Command {
-	cmd := &cobra.Command{
-		Use:   "retry",
-		Short: "Get info about queue",
-	}
-
-	cmd.AddCommand(getQueueLength(a))
-	return cmd
-}
-
-//Get queue length, number of entries in the stream
-func requeeEventDeliveriedByStatus(a *app) *cobra.Command {
 	var status string
 	var timeInterval string
 
@@ -54,23 +49,69 @@ func requeeEventDeliveriedByStatus(a *app) *cobra.Command {
 				Sort:    -1,
 			}
 
-			processedDeliveries := []datastore.EventDelivery{}
+			deliveryChan := make(chan []datastore.EventDelivery, 1)
 
 			count := 0
 
 			for {
+				ctx, _ := context.WithTimeout(context.Background(), 5*time.Second)
+
 				deliveries, paginationData, err := a.eventDeliveryRepo.LoadEventDeliveriesPaged(ctx, "", "", "", []datastore.EventDeliveryStatus{s}, searchParams, pageable)
 				if err != nil {
-					log.WithError(err).Fatalf("succesfully requeued %d event deliveries, encountered error fetching page %d", count, pageable.Page)
+					// after release-0.4 is backported into main, find a way to mitigate err document not found in both database implementations
+					if err == mongo.ErrNoDocuments {
+						close(deliveryChan)
+						break
+					}
+
+					log.WithError(err).Fatalf("succesfully fetched %d event deliveries, encountered error fetching page %d", count, pageable.Page)
 				}
 
-				processedDeliveries = append(processedDeliveries, deliveries...)
+				count += len(deliveries)
 
-				count += len(processedDeliveries)
-				pageable.Page++
-				return nil
+				deliveryChan <- deliveries
+				pageable.Page = int(paginationData.Next)
 			}
 
+			q := a.eventQueue.(*redisqueue.RedisQueue)
+			go func() {
+
+				groups := map[string]*datastore.Group{}
+
+				for {
+					batch := <-deliveryChan
+
+					// the channel has been closed and there are no more deliveries coming in
+					if batch == nil {
+						return
+					}
+
+					var group *datastore.Group
+					var ok bool
+					for i := range batch {
+						delivery := &batch[i]
+						groupID := delivery.AppMetadata.GroupID
+
+						group, ok = groups[groupID]
+						if !ok {
+							ctx, _ := context.WithTimeout(context.Background(), 5*time.Second)
+							g, err := a.groupRepo.FetchGroupByID(ctx, delivery.AppMetadata.GroupID)
+							if err != nil {
+								log.WithError(err).Errorf("failed to fetch group %s", delivery.AppMetadata.GroupID)
+								continue
+							}
+							groups[groupID] = g
+						}
+
+						taskName := convoy.EventProcessor.SetPrefix(group.Name)
+						err = q.Write(ctx, taskName, delivery, 1*time.Second)
+						if err != nil {
+							log.Errorf("failed to send event delivery %s to the queue: %v", delivery.ID, err)
+						}
+					}
+				}
+			}()
+			return nil
 		},
 	}
 
