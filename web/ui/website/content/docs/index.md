@@ -90,7 +90,7 @@ $ docker run \
   -p 5005:5005 \
   --name convoy-server \
   -v `pwd`/convoy.json:/convoy.json \
-  ghcr.io/frain-dev/convoy:v0.4.1
+  ghcr.io/frain-dev/convoy:v0.4.3
 ```
 
 Now, you can head over to http://localhost:5005 to view the UI, which should look something like:
@@ -144,7 +144,7 @@ $ curl \
 {
     "description": "Default Endpoint",
     "url": "https://0d87-102-89-2-172.ngrok.io",
-    "events: [ "*" ]
+    "events": [ "*" ]
 }
 ```
 
