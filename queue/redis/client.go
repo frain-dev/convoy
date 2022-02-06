@@ -202,6 +202,32 @@ func (q *RedisQueue) CheckEventDeliveryinZSET(ctx context.Context, id string, mi
 	return false, nil
 }
 
+func (q *RedisQueue) DeleteEventDeliveryFromZSET(ctx context.Context, id string) (bool, error) {
+	bodies, err := q.ZRangebyScore(ctx, "-inf", "+inf")
+	if err != nil {
+		return false, err
+	}
+
+	var msg taskq.Message
+	for _, body := range bodies {
+		err := msg.UnmarshalBinary([]byte(body))
+		if err != nil {
+			return false, err
+		}
+
+		value := string(msg.ArgsBin[convoy.EventDeliveryIDLength:])
+		if value == id {
+			// still not sure about this key for deletion
+			zset := q.stringifyZSETWithQName()
+			intCmd := q.inner.ZRem(ctx, zset, body)
+			if err = intCmd.Err(); err != nil {
+				return false, err
+			}
+		}
+	}
+	return false, nil
+}
+
 func (q *RedisQueue) CheckEventDeliveryinPending(ctx context.Context, id string) (bool, error) {
 	pending, err := q.XPending(ctx)
 	if err != nil {
