@@ -76,7 +76,9 @@ func (a *applicationHandler) GetDashboardSummary(w http.ResponseWriter, r *http.
 
 	qs := fmt.Sprintf("%v:%v:%v:%v", group.UID, searchParams.CreatedAtStart, searchParams.CreatedAtEnd, period)
 
-	err, data := a.cache.Get(r.Context(), qs, &models.DashboardSummary{})
+	var data *models.DashboardSummary
+
+	err = a.cache.Get(r.Context(), qs, &data)
 
 	if err != nil {
 		log.Error(err)

@@ -31,18 +31,18 @@ func (m *MemoryCache) Set(ctx context.Context, key string, data interface{}, ttl
 	})
 }
 
-func (m *MemoryCache) Get(ctx context.Context, key string, data interface{}) (error, interface{}) {
+func (m *MemoryCache) Get(ctx context.Context, key string, data interface{}) error {
 	err := m.cache.Get(ctx, key, &data)
 
 	if errors.Is(err, cache.ErrCacheMiss) {
-		return nil, nil
+		return nil
 	}
 
 	if err != nil {
-		return err, nil
+		return err
 	}
 
-	return nil, data
+	return nil
 }
 
 func (m *MemoryCache) Delete(ctx context.Context, key string) error {

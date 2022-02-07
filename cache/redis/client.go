@@ -40,18 +40,18 @@ func (r *RedisCache) Set(ctx context.Context, key string, data interface{}, ttl 
 	})
 }
 
-func (r *RedisCache) Get(ctx context.Context, key string, data interface{}) (error, interface{}) {
+func (r *RedisCache) Get(ctx context.Context, key string, data interface{}) error {
 	err := r.cache.Get(ctx, key, &data)
 
 	if errors.Is(err, cache.ErrCacheMiss) {
-		return nil, nil
+		return nil
 	}
 
 	if err != nil {
-		return err, nil
+		return err
 	}
 
-	return nil, data
+	return nil
 }
 
 func (r *RedisCache) Delete(ctx context.Context, key string) error {
