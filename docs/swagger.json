@@ -58,6 +58,12 @@
                         "description": "sort order",
                         "name": "sort",
                         "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "app title",
+                        "name": "q",
+                        "in": "query"
                     }
                 ],
                 "responses": {

@@ -8,15 +8,18 @@ import (
 	"time"
 	_ "time/tzdata"
 
-	convoyRedis "github.com/frain-dev/convoy/queue/redis"
+	"github.com/frain-dev/convoy/logger"
+	memqueue "github.com/frain-dev/convoy/queue/memqueue"
+	redisqueue "github.com/frain-dev/convoy/queue/redis"
+	"github.com/frain-dev/convoy/tracer"
 	"github.com/frain-dev/convoy/worker/task"
 	"github.com/getsentry/sentry-go"
+	"github.com/go-redis/redis/v8"
 	"github.com/google/uuid"
 	prefixed "github.com/x-cray/logrus-prefixed-formatter"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 
 	"github.com/frain-dev/convoy/util"
-	"github.com/go-redis/redis/v8"
 	log "github.com/sirupsen/logrus"
 	"github.com/vmihailenco/taskq/v3"
 
@@ -106,9 +109,42 @@ func main() {
 
 			var qFn taskq.Factory
 			var rC *redis.Client
+			var lo logger.Logger
+			var tr tracer.Tracer
+			var lS queue.Storage
+			var opts queue.QueueOptions
 
 			if cfg.Queue.Type == config.RedisQueueProvider {
-				rC, qFn, err = convoyRedis.NewClient(cfg)
+				rC, qFn, err = redisqueue.NewClient(cfg)
+				if err != nil {
+					return err
+				}
+				opts = queue.QueueOptions{
+					Type:    "redis",
+					Redis:   rC,
+					Factory: qFn,
+				}
+			}
+
+			if cfg.Queue.Type == config.InMemoryQueueProvider {
+				lS, qFn, err = memqueue.NewClient(cfg)
+				if err != nil {
+					return err
+				}
+				opts = queue.QueueOptions{
+					Type:    "in-memory",
+					Storage: lS,
+					Factory: qFn,
+				}
+			}
+
+			lo, err = logger.NewLogger(cfg.Logger)
+			if err != nil {
+				return err
+			}
+
+			if cfg.Tracer.Type == config.NewRelicTracerProvider {
+				tr, err = tracer.NewTracer(cfg, lo.WithLogger())
 				if err != nil {
 					return err
 				}
@@ -125,15 +161,13 @@ func main() {
 			app.applicationRepo = db.AppRepo()
 			app.eventDeliveryRepo = db.EventDeliveryRepo()
 
-			app.eventQueue = convoyRedis.NewQueue(rC, qFn, "EventQueue")
-			app.deadLetterQueue = convoyRedis.NewQueue(rC, qFn, "DeadLetterQueue")
+			app.eventQueue = NewQueue(opts, "EventQueue")
+			app.deadLetterQueue = NewQueue(opts, "DeadLetterQueue")
+			app.logger = lo
+			app.tracer = tr
 
-			err = ensureDefaultGroup(context.Background(), cfg, app)
-			if err != nil {
-				return err
-			}
+			return ensureDefaultGroup(context.Background(), cfg, app)
 
-			return nil
 		},
 		PersistentPostRunE: func(cmd *cobra.Command, args []string) error {
 			defer func() {
@@ -167,10 +201,28 @@ func main() {
 	cmd.AddCommand(addCreateCommand(app))
 	cmd.AddCommand(addGetComamnd(app))
 	cmd.AddCommand(addServerCommand(app))
-
+	cmd.AddCommand(addWorkerCommand(app))
+	cmd.AddCommand(addQueueCommand(app))
 	if err := cmd.Execute(); err != nil {
 		log.Fatal(err)
 	}
+}
+
+func NewQueue(opts queue.QueueOptions, name string) queue.Queuer {
+	optsType := opts.Type
+	var convoyQueue queue.Queuer
+	switch optsType {
+	case "in-memory":
+		opts.Name = name
+		convoyQueue = memqueue.NewQueue(opts)
+
+	case "redis":
+		opts.Name = name
+		convoyQueue = redisqueue.NewQueue(opts)
+	default:
+		log.Errorf("Invalid queue type: %v", optsType)
+	}
+	return convoyQueue
 }
 
 func ensureDefaultGroup(ctx context.Context, cfg config.Configuration, a *app) error {
@@ -254,6 +306,8 @@ type app struct {
 	eventDeliveryRepo datastore.EventDeliveryRepository
 	eventQueue        queue.Queuer
 	deadLetterQueue   queue.Queuer
+	logger            logger.Logger
+	tracer            tracer.Tracer
 }
 
 func getCtx() (context.Context, context.CancelFunc) {
