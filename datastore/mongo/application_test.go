@@ -28,8 +28,9 @@ func Test_UpdateApplication(t *testing.T) {
 	require.NoError(t, groupRepo.CreateGroup(context.Background(), newGroup))
 
 	app := &datastore.Application{
-		Title:   "Next application name",
-		GroupID: newGroup.UID,
+		Title:          "Next application name",
+		GroupID:        newGroup.UID,
+		DocumentStatus: datastore.ActiveDocumentStatus,
 	}
 
 	require.NoError(t, appRepo.CreateApplication(context.Background(), app))

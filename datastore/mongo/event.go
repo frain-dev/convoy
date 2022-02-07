@@ -49,9 +49,7 @@ func (db *eventRepo) CreateEvent(ctx context.Context,
 func (db *eventRepo) CountGroupMessages(ctx context.Context, groupID string) (int64, error) {
 	filter := bson.M{
 		"app_metadata.group_id": groupID,
-		"document_status": bson.M{
-			"$ne": datastore.DeletedDocumentStatus,
-		},
+		"document_status":       datastore.ActiveDocumentStatus,
 	}
 
 	count, err := db.inner.CountDocuments(ctx, filter)
@@ -66,7 +64,7 @@ func (db *eventRepo) DeleteGroupEvents(ctx context.Context, groupID string) erro
 	update := bson.M{
 		"$set": bson.M{
 			"deleted_at":      primitive.NewDateTimeFromTime(time.Now()),
-			"document_status": datastore.DeletedDocumentStatus,
+			"document_status": datastore.ActiveDocumentStatus,
 		},
 	}
 
@@ -89,15 +87,13 @@ func (db *eventRepo) LoadEventIntervals(ctx context.Context, groupID string, sea
 
 	matchStage := bson.D{{Key: "$match", Value: bson.D{
 		{Key: "app_metadata.group_id", Value: groupID},
-		{Key: "document_status", Value: bson.D{
-			{Key: "$ne", Value: datastore.DeletedDocumentStatus},
-		}},
+		{Key: "document_status", Value: datastore.ActiveDocumentStatus},
+	}},
 		{Key: "created_at", Value: bson.D{
 			{Key: "$gte", Value: primitive.NewDateTimeFromTime(time.Unix(start, 0))},
 			{Key: "$lte", Value: primitive.NewDateTimeFromTime(time.Unix(end, 0))},
-		},
 		}},
-	}}
+	}
 
 	var timeComponent string
 	var format string
@@ -157,7 +153,7 @@ func (db *eventRepo) LoadEventIntervals(ctx context.Context, groupID string, sea
 func (db *eventRepo) FindEventByID(ctx context.Context, id string) (*datastore.Event, error) {
 	m := new(datastore.Event)
 
-	filter := bson.M{"uid": id, "document_status": bson.M{"$ne": datastore.DeletedDocumentStatus}}
+	filter := bson.M{"uid": id, "document_status": datastore.ActiveDocumentStatus}
 
 	err := db.inner.FindOne(ctx, filter).
 		Decode(&m)
@@ -169,19 +165,19 @@ func (db *eventRepo) FindEventByID(ctx context.Context, id string) (*datastore.E
 }
 
 func (db *eventRepo) LoadEventsPaged(ctx context.Context, groupID string, appId string, searchParams datastore.SearchParams, pageable datastore.Pageable) ([]datastore.Event, datastore.PaginationData, error) {
-	filter := bson.M{"document_status": bson.M{"$ne": datastore.DeletedDocumentStatus}, "created_at": getCreatedDateFilter(searchParams)}
+	filter := bson.M{"document_status": datastore.ActiveDocumentStatus, "created_at": getCreatedDateFilter(searchParams)}
 
 	hasAppFilter := !util.IsStringEmpty(appId)
 	hasGroupFilter := !util.IsStringEmpty(groupID)
 
 	if hasAppFilter && hasGroupFilter {
-		filter = bson.M{"app_metadata.group_id": groupID, "app_metadata.uid": appId, "document_status": bson.M{"$ne": datastore.DeletedDocumentStatus},
+		filter = bson.M{"app_metadata.group_id": groupID, "app_metadata.uid": appId, "document_status": datastore.ActiveDocumentStatus,
 			"created_at": getCreatedDateFilter(searchParams)}
 	} else if hasAppFilter {
-		filter = bson.M{"app_id": appId, "document_status": bson.M{"$ne": datastore.DeletedDocumentStatus},
+		filter = bson.M{"app_metadata.uid": appId, "document_status": datastore.ActiveDocumentStatus,
 			"created_at": getCreatedDateFilter(searchParams)}
 	} else if hasGroupFilter {
-		filter = bson.M{"app_metadata.group_id": groupID, "document_status": bson.M{"$ne": datastore.DeletedDocumentStatus},
+		filter = bson.M{"app_metadata.group_id": groupID, "document_status": datastore.ActiveDocumentStatus,
 			"created_at": getCreatedDateFilter(searchParams)}
 	}
 
