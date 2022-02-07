@@ -76,7 +76,7 @@ func Test_CreateGroup(t *testing.T) {
 				{
 					Name: "group 3",
 					UID: uuid.NewString(),
-					DocumentStatus: datastore.DeletedDocumentStatus,
+					DocumentStatus: datastore.ActiveDocumentStatus,
 				},
 
 				{

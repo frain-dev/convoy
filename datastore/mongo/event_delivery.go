@@ -45,7 +45,7 @@ func (db *eventDeliveryRepo) FindEventDeliveryByID(ctx context.Context,
 	id string) (*datastore.EventDelivery, error) {
 	e := new(datastore.EventDelivery)
 
-	filter := bson.M{"uid": id, "document_status": bson.M{"$ne": datastore.DeletedDocumentStatus}}
+	filter := bson.M{"uid": id, "document_status": datastore.ActiveDocumentStatus}
 
 	err := db.inner.FindOne(ctx, filter).Decode(&e)
 
@@ -63,9 +63,7 @@ func (db *eventDeliveryRepo) FindEventDeliveriesByIDs(ctx context.Context,
 		"uid": bson.M{
 			"$in": ids,
 		},
-		"document_status": bson.M{
-			"$ne": datastore.DeletedDocumentStatus,
-		},
+		"document_status": datastore.ActiveDocumentStatus,
 	}
 
 	deliveries := make([]datastore.EventDelivery, 0)
@@ -90,7 +88,7 @@ func (db *eventDeliveryRepo) FindEventDeliveriesByIDs(ctx context.Context,
 func (db *eventDeliveryRepo) FindEventDeliveriesByEventID(ctx context.Context,
 	eventID string) ([]datastore.EventDelivery, error) {
 
-	filter := bson.M{"event_id": eventID, "document_status": bson.M{"$ne": datastore.DeletedDocumentStatus}}
+	filter := bson.M{"event_id": eventID, "document_status": datastore.ActiveDocumentStatus}
 
 	deliveries := make([]datastore.EventDelivery, 0)
 
@@ -167,7 +165,7 @@ func (db *eventDeliveryRepo) UpdateEventDeliveryWithAttempt(ctx context.Context,
 
 func (db *eventDeliveryRepo) LoadEventDeliveriesPaged(ctx context.Context, groupID, appID, eventID string, status []datastore.EventDeliveryStatus, searchParams datastore.SearchParams, pageable datastore.Pageable) ([]datastore.EventDelivery, datastore.PaginationData, error) {
 	filter := bson.M{
-		"document_status": bson.M{"$ne": datastore.DeletedDocumentStatus},
+		"document_status": datastore.ActiveDocumentStatus,
 		"created_at":      getCreatedDateFilter(searchParams),
 	}
 
