@@ -53,14 +53,14 @@ func addRetryCommand(a *app) *cobra.Command {
 
 			count := 0
 
+			ctx := context.Background()
 			q := a.eventQueue.(*redisqueue.RedisQueue)
 			var wg sync.WaitGroup
+
 			wg.Add(1)
-			go processEventDeliveryBatches(a, deliveryChan, q, &wg)
+			go processEventDeliveryBatches(ctx, a, deliveryChan, q, &wg)
 
 			for {
-				ctx, _ := context.WithTimeout(context.Background(), 5*time.Second)
-
 				deliveries, paginationData, err := a.eventDeliveryRepo.LoadEventDeliveriesPaged(ctx, "", "", "", []datastore.EventDeliveryStatus{s}, searchParams, pageable)
 				if err != nil {
 					// after release-0.4 is backported into main, find a way to mitigate err document not found in both database implementations
@@ -88,7 +88,7 @@ func addRetryCommand(a *app) *cobra.Command {
 	return cmd
 }
 
-func processEventDeliveryBatches(a *app, deliveryChan <-chan []datastore.EventDelivery, q *redisqueue.RedisQueue, wg *sync.WaitGroup) {
+func processEventDeliveryBatches(ctx context.Context, a *app, deliveryChan <-chan []datastore.EventDelivery, q *redisqueue.RedisQueue, wg *sync.WaitGroup) {
 	defer wg.Done()
 
 	groups := map[string]*datastore.Group{}
@@ -124,7 +124,6 @@ func processEventDeliveryBatches(a *app, deliveryChan <-chan []datastore.EventDe
 
 			group, ok = groups[groupID]
 			if !ok {
-				ctx, _ := context.WithTimeout(context.Background(), 5*time.Second)
 				group, err = a.groupRepo.FetchGroupByID(ctx, delivery.AppMetadata.GroupID)
 				if err != nil {
 					log.WithError(err).Errorf("failed to fetch group %s", delivery.AppMetadata.GroupID)
