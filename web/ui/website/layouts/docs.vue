@@ -6,12 +6,14 @@
 				<span>Docs</span>
 			</div>
 
-			<nuxt-link to="/docs"><h3>QUICK START GUIDE</h3></nuxt-link>
+			<nuxt-link to="/docs/guide"><h3>QUICK START GUIDE</h3></nuxt-link>
 
 			<ul>
-				<h3>Docs</h3>
-
-				<li v-for="(page, index) in pages" :key="index" v-if="page.id !== 'welcome'">
+				<!-- <h3>Docs</h3> -->
+				<li>
+					<nuxt-link to="/docs">Home</nuxt-link>
+				</li>
+				<li v-for="(page, index) in pages" :key="index" v-if="page.id !== 'guide'">
 					<nuxt-link :to="'/docs/' + page.id">
 						<img src="~/assets/images/angle-down-icon.svg" alt="angle right" />
 						{{ page.title }}
@@ -39,7 +41,7 @@
 				</div>
 			</header>
 
-			<main class="page--container">
+			<main class="page--container" :class="{'no-padding': currentRoute == '/docs'}">
 				<Nuxt />
 			</main>
 		</div>
@@ -48,9 +50,10 @@
 
 <script>
 export default {
-	data: () => {
+	data(){
 		return {
-			pages: []
+			pages: [],
+			currentRoute: this.$route.path
 		};
 	},
 	async mounted() {
@@ -95,7 +98,7 @@ aside {
 
 	a.nuxt-link-exact-active {
 		color: #47b38d;
-		font-weight: bold;
+		// font-weight: bold;
 
 		h3 {
 			color: inherit;
@@ -166,5 +169,9 @@ header {
 	max-width: 900px;
 	width: 100%;
 	margin: auto;
+
+	&.no-padding{
+		max-width: 100%;
+	}
 }
 </style>
