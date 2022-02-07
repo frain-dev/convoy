@@ -174,7 +174,7 @@ func (db *eventRepo) LoadEventsPaged(ctx context.Context, groupID string, appId 
 		filter = bson.M{"app_metadata.group_id": groupID, "app_metadata.uid": appId, "document_status": datastore.ActiveDocumentStatus,
 			"created_at": getCreatedDateFilter(searchParams)}
 	} else if hasAppFilter {
-		filter = bson.M{"app_id": appId, "document_status": datastore.ActiveDocumentStatus,
+		filter = bson.M{"app_metadata.uid": appId, "document_status": datastore.ActiveDocumentStatus,
 			"created_at": getCreatedDateFilter(searchParams)}
 	} else if hasGroupFilter {
 		filter = bson.M{"app_metadata.group_id": groupID, "document_status": datastore.ActiveDocumentStatus,

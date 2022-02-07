@@ -102,7 +102,7 @@ func (c *Client) EventDeliveryRepo() datastore.EventDeliveryRepository {
 
 func (c *Client) ensureMongoIndices() {
 	c.ensureIndex(GroupCollection, "uid", true, nil)
-	c.ensureIndex(GroupCollection, "name", true, bson.M{"document_status": bson.M{"$eq": datastore.ActiveDocumentStatus}})
+	c.ensureIndex(GroupCollection, "name", true, bson.M{"document_status": datastore.ActiveDocumentStatus})
 	c.ensureIndex(AppCollections, "uid", true, nil)
 	c.ensureIndex(EventCollection, "uid", true, nil)
 	c.ensureIndex(EventCollection, "event_type", false, nil)

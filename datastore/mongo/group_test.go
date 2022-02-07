@@ -36,17 +36,17 @@ func Test_CreateGroup(t *testing.T) {
 	db, closeFn := getDB(t)
 	defer closeFn()
 
-	tt := []struct{
-		name string
-		groups []datastore.Group
+	tt := []struct {
+		name        string
+		groups      []datastore.Group
 		isDuplicate bool
-	} {
+	}{
 		{
 			name: "create group",
 			groups: []datastore.Group{
 				{
-					Name: "group 1",
-					UID: uuid.NewString(),
+					Name:           "group 1",
+					UID:            uuid.NewString(),
 					DocumentStatus: datastore.ActiveDocumentStatus,
 				},
 			},
@@ -56,14 +56,14 @@ func Test_CreateGroup(t *testing.T) {
 			name: "cannot create group with existing name",
 			groups: []datastore.Group{
 				{
-					Name: "group 2",
-					UID: uuid.NewString(),
+					Name:           "group 2",
+					UID:            uuid.NewString(),
 					DocumentStatus: datastore.ActiveDocumentStatus,
 				},
 
 				{
-					Name: "group 2",
-					UID: uuid.NewString(),
+					Name:           "group 2",
+					UID:            uuid.NewString(),
 					DocumentStatus: datastore.ActiveDocumentStatus,
 				},
 			},
@@ -72,16 +72,16 @@ func Test_CreateGroup(t *testing.T) {
 
 		{
 			name: "can create group with existing name that has been deleted",
-			groups: []datastore.Group {
+			groups: []datastore.Group{
 				{
-					Name: "group 3",
-					UID: uuid.NewString(),
-					DocumentStatus: datastore.ActiveDocumentStatus,
+					Name:           "group 3",
+					UID:            uuid.NewString(),
+					DocumentStatus: datastore.DeletedDocumentStatus,
 				},
 
 				{
-					Name: "group 3",
-					UID: uuid.NewString(),
+					Name:           "group 3",
+					UID:            uuid.NewString(),
 					DocumentStatus: datastore.ActiveDocumentStatus,
 				},
 			},
@@ -94,8 +94,8 @@ func Test_CreateGroup(t *testing.T) {
 
 			for i, group := range tc.groups {
 				newOrg := &datastore.Group{
-					Name: group.Name,
-					UID: group.UID,
+					Name:           group.Name,
+					UID:            group.UID,
 					DocumentStatus: group.DocumentStatus,
 				}
 

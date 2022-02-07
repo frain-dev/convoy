@@ -38,13 +38,13 @@ func (db *appRepo) CreateApplication(ctx context.Context,
 
 func (db *appRepo) LoadApplicationsPaged(ctx context.Context, groupID, q string, pageable datastore.Pageable) ([]datastore.Application, datastore.PaginationData, error) {
 
-	filter := bson.M{"document_status":  datastore.ActiveDocumentStatus}
+	filter := bson.M{"document_status": datastore.ActiveDocumentStatus}
 	if !util.IsStringEmpty(groupID) {
 		filter = bson.M{"group_id": groupID, "document_status": datastore.ActiveDocumentStatus}
 	}
 
 	if !util.IsStringEmpty(q) {
-		filter = bson.M{"group_id": groupID, "document_status":  datastore.ActiveDocumentStatus, "title": bson.M{"$regex": primitive.Regex{Pattern: q, Options: "i"}}}
+		filter = bson.M{"group_id": groupID, "document_status": datastore.ActiveDocumentStatus, "title": bson.M{"$regex": primitive.Regex{Pattern: q, Options: "i"}}}
 	}
 
 	var apps []datastore.Application
@@ -59,7 +59,7 @@ func (db *appRepo) LoadApplicationsPaged(ctx context.Context, groupID, q string,
 
 	msgCollection := db.innerDB.Collection(EventCollection)
 	for i, app := range apps {
-		filter = bson.M{"app_metadata.uid": app.UID, "document_status":  datastore.ActiveDocumentStatus}
+		filter = bson.M{"app_metadata.uid": app.UID, "document_status": datastore.ActiveDocumentStatus}
 		count, err := msgCollection.CountDocuments(ctx, filter)
 		if err != nil {
 			log.Errorf("failed to count events in %s. Reason: %s", app.UID, err)
@@ -74,10 +74,9 @@ func (db *appRepo) LoadApplicationsPaged(ctx context.Context, groupID, q string,
 func (db *appRepo) LoadApplicationsPagedByGroupId(ctx context.Context, groupID string, pageable datastore.Pageable) ([]datastore.Application, datastore.PaginationData, error) {
 
 	filter := bson.M{
-		"group_id": groupID,
+		"group_id":        groupID,
 		"document_status": datastore.ActiveDocumentStatus,
 	}
-	
 
 	var applications []datastore.Application
 	paginatedData, err := pager.New(db.client).Context(ctx).Limit(int64(pageable.PerPage)).Page(int64(pageable.Page)).Sort("created_at", -1).Filter(filter).Decode(&applications).Find()
@@ -91,7 +90,7 @@ func (db *appRepo) LoadApplicationsPagedByGroupId(ctx context.Context, groupID s
 
 	msgCollection := db.innerDB.Collection(EventCollection)
 	for i, app := range applications {
-		filter = bson.M{"app_id": app.UID, "document_status":  datastore.ActiveDocumentStatus}
+		filter = bson.M{"app_metadata.uid": app.UID, "document_status": datastore.ActiveDocumentStatus}
 		count, err := msgCollection.CountDocuments(ctx, filter)
 		if err != nil {
 			log.Errorf("failed to count events in %s. Reason: %s", app.UID, err)
@@ -105,7 +104,7 @@ func (db *appRepo) LoadApplicationsPagedByGroupId(ctx context.Context, groupID s
 
 func (db *appRepo) CountGroupApplications(ctx context.Context, groupID string) (int64, error) {
 	filter := bson.M{
-		"group_id": groupID,
+		"group_id":        groupID,
 		"document_status": datastore.ActiveDocumentStatus,
 	}
 
@@ -126,7 +125,7 @@ func (db *appRepo) SearchApplicationsByGroupId(ctx context.Context, groupId stri
 	}
 
 	filter := bson.M{
-		"group_id": groupId,
+		"group_id":        groupId,
 		"document_status": datastore.ActiveDocumentStatus,
 		"created_at": bson.M{
 			"$gte": primitive.NewDateTimeFromTime(time.Unix(start, 0)),
@@ -159,7 +158,7 @@ func (db *appRepo) SearchApplicationsByGroupId(ctx context.Context, groupId stri
 
 	msgCollection := db.innerDB.Collection(EventCollection)
 	for i, app := range apps {
-		filter = bson.M{"app_id": app.UID, "document_status":  datastore.ActiveDocumentStatus}
+		filter = bson.M{"app_metadata.uid": app.UID, "document_status": datastore.ActiveDocumentStatus}
 		count, err := msgCollection.CountDocuments(ctx, filter)
 		if err != nil {
 			log.Errorf("failed to count events in %s. Reason: %s", app.UID, err)
@@ -176,7 +175,7 @@ func (db *appRepo) FindApplicationByID(ctx context.Context,
 
 	app := new(datastore.Application)
 
-	filter := bson.M{"uid": id, "document_status":  datastore.ActiveDocumentStatus}
+	filter := bson.M{"uid": id, "document_status": datastore.ActiveDocumentStatus}
 
 	err := db.client.FindOne(ctx, filter).
 		Decode(&app)
@@ -186,7 +185,7 @@ func (db *appRepo) FindApplicationByID(ctx context.Context,
 	}
 
 	msgCollection := db.innerDB.Collection(EventCollection)
-	filter = bson.M{"app_id": app.UID, "document_status":  datastore.ActiveDocumentStatus}
+	filter = bson.M{"app_metadata.uid": app.UID, "document_status": datastore.ActiveDocumentStatus}
 	count, err := msgCollection.CountDocuments(ctx, filter)
 	if err != nil {
 		log.Errorf("failed to count events in %s. Reason: %s", app.UID, err)
@@ -221,7 +220,7 @@ func (db *appRepo) UpdateApplication(ctx context.Context,
 
 	app.UpdatedAt = primitive.NewDateTimeFromTime(time.Now())
 
-	filter := bson.M{"uid": app.UID, "document_status":  datastore.ActiveDocumentStatus}
+	filter := bson.M{"uid": app.UID, "document_status": datastore.ActiveDocumentStatus}
 
 	update := bson.D{primitive.E{Key: "$set", Value: bson.D{
 		primitive.E{Key: "endpoints", Value: app.Endpoints},
@@ -286,7 +285,7 @@ func (db *appRepo) updateMessagesInApp(ctx context.Context, app *datastore.Appli
 	var msgOperations []mongo.WriteModel
 
 	updateMessagesOperation := mongo.NewUpdateManyModel()
-	msgFilter := bson.M{"app_id": app.UID}
+	msgFilter := bson.M{"app_metadata.uid": app.UID}
 	updateMessagesOperation.SetFilter(msgFilter)
 	updateMessagesOperation.SetUpdate(update)
 	msgOperations = append(msgOperations, updateMessagesOperation)
@@ -321,7 +320,7 @@ func (db *appRepo) deleteApp(ctx context.Context, app *datastore.Application, up
 func (db *appRepo) UpdateApplicationEndpointsStatus(ctx context.Context, appId string, endpointIds []string, status datastore.EndpointStatus) error {
 	app := new(datastore.Application)
 
-	filter := bson.M{"uid": appId, "document_status":  datastore.ActiveDocumentStatus}
+	filter := bson.M{"uid": appId, "document_status": datastore.ActiveDocumentStatus}
 
 	err := db.client.FindOne(ctx, filter).
 		Decode(&app)
