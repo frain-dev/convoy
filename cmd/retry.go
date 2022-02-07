@@ -9,8 +9,6 @@ import (
 
 	redisqueue "github.com/frain-dev/convoy/queue/redis"
 
-	"go.mongodb.org/mongo-driver/mongo"
-
 	log "github.com/sirupsen/logrus"
 
 	"go.mongodb.org/mongo-driver/bson/primitive"
@@ -63,17 +61,12 @@ func addRetryCommand(a *app) *cobra.Command {
 			for {
 				deliveries, paginationData, err := a.eventDeliveryRepo.LoadEventDeliveriesPaged(ctx, "", "", "", []datastore.EventDeliveryStatus{s}, searchParams, pageable)
 				if err != nil {
-					// after release-0.4 is backported into main, find a way to mitigate err document not found in both database implementations
-					if err == mongo.ErrNoDocuments {
-						close(deliveryChan)
-						break
-					}
-
-					log.WithError(err).Fatalf("succesfully fetched %d event deliveries, encountered error fetching page %d", count, pageable.Page)
+					log.WithError(err).Errorf("successfully fetched %d event deliveries, encountered error fetching page %d", count, pageable.Page)
+					close(deliveryChan)
+					break
 				}
 
 				count += len(deliveries)
-
 				deliveryChan <- deliveries
 				pageable.Page = int(paginationData.Next)
 			}
@@ -93,6 +86,7 @@ func processEventDeliveryBatches(ctx context.Context, a *app, deliveryChan <-cha
 
 	groups := map[string]*datastore.Group{}
 
+	batchCount := 1
 	for {
 		batch := <-deliveryChan
 
@@ -106,14 +100,16 @@ func processEventDeliveryBatches(ctx context.Context, a *app, deliveryChan <-cha
 			batchIDs[i] = batch[i].UID
 		}
 
-		err := q.DeleteEventDeliveriesFromZSET(context.Background(), batchIDs)
+		err := q.DeleteEventDeliveriesFromZSET(ctx, batchIDs)
 		if err != nil {
-			log.WithError(err).Errorf("failed to delete event deliveries from zset, ids: %v", batchIDs)
+			log.WithError(err).WithField("ids", batchIDs).Error("failed to delete event deliveries from zset")
+			// put continue here? @all reviewers
 		}
 
-		err = q.DeleteEventDeliveriesFromStream(context.Background(), batchIDs)
+		err = q.DeleteEventDeliveriesFromStream(ctx, batchIDs)
 		if err != nil {
-			log.WithError(err).Errorf("failed to delete event deliveries from stream, ids: %v", batchIDs)
+			log.WithError(err).WithField("ids", batchIDs).Error("failed to delete event deliveries from stream")
+			// put continue here? @all reviewers
 		}
 
 		var group *datastore.Group
@@ -126,17 +122,20 @@ func processEventDeliveryBatches(ctx context.Context, a *app, deliveryChan <-cha
 			if !ok {
 				group, err = a.groupRepo.FetchGroupByID(ctx, delivery.AppMetadata.GroupID)
 				if err != nil {
-					log.WithError(err).Errorf("failed to fetch group %s", delivery.AppMetadata.GroupID)
+					log.WithError(err).Errorf("failed to fetch group %s for delivery %s", delivery.AppMetadata.GroupID, delivery.UID)
 					continue
 				}
 				groups[groupID] = group
 			}
 
 			taskName := convoy.EventProcessor.SetPrefix(group.Name)
-			err = q.Write(context.Background(), taskName, delivery, 1*time.Second)
+			err = q.Write(ctx, taskName, delivery, 1*time.Second)
 			if err != nil {
-				log.Errorf("failed to send event delivery %s to the queue: %v", delivery.ID, err)
+				log.WithError(err).Errorf("failed to send event delivery %s to the queue", delivery.ID)
 			}
 		}
+
+		log.WithField("ids", batchIDs).Infof("sucessfully requeued %d deliveries in batch %d", len(batch), batchCount)
+		batchCount++
 	}
 }
