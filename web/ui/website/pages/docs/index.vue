@@ -58,10 +58,10 @@ export default {
 		const pageData = await $content('docs', 'index').fetch();
 		return { pageData };
 	},
-	data() {
-		return {
-			currentRoute: this.$route.path
-		};
+	computed: {
+		currentRoute() {
+			return this.$route.path;
+		}
 	}
 };
 </script>
@@ -90,6 +90,11 @@ p.subtitle {
 	display: flex;
 	justify-content: space-between;
 	align-items: flex-end;
+	flex-wrap: wrap;
+
+	@media (max-width: 425px) {
+		padding: 25px 20px;
+	}
 	h4 {
 		font-weight: 600;
 		font-size: 18px;
