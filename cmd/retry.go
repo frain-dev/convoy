@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"sync"
 	"time"
 
 	"github.com/frain-dev/convoy"
@@ -28,7 +29,6 @@ func addRetryCommand(a *app) *cobra.Command {
 		Short: "retry event deliveries with a particular status in a timeframe",
 		RunE: func(cmd *cobra.Command, args []string) error {
 
-			ctx := context.Background()
 			d, err := time.ParseDuration(timeInterval)
 			if err != nil {
 				log.WithError(err).Fatal("failed to parse time duration")
@@ -53,6 +53,11 @@ func addRetryCommand(a *app) *cobra.Command {
 
 			count := 0
 
+			q := a.eventQueue.(*redisqueue.RedisQueue)
+			var wg sync.WaitGroup
+			wg.Add(1)
+			go processEventDeliveryBatches(a, deliveryChan, q, &wg)
+
 			for {
 				ctx, _ := context.WithTimeout(context.Background(), 5*time.Second)
 
@@ -73,44 +78,7 @@ func addRetryCommand(a *app) *cobra.Command {
 				pageable.Page = int(paginationData.Next)
 			}
 
-			q := a.eventQueue.(*redisqueue.RedisQueue)
-			go func() {
-
-				groups := map[string]*datastore.Group{}
-
-				for {
-					batch := <-deliveryChan
-
-					// the channel has been closed and there are no more deliveries coming in
-					if batch == nil {
-						return
-					}
-
-					var group *datastore.Group
-					var ok bool
-					for i := range batch {
-						delivery := &batch[i]
-						groupID := delivery.AppMetadata.GroupID
-
-						group, ok = groups[groupID]
-						if !ok {
-							ctx, _ := context.WithTimeout(context.Background(), 5*time.Second)
-							g, err := a.groupRepo.FetchGroupByID(ctx, delivery.AppMetadata.GroupID)
-							if err != nil {
-								log.WithError(err).Errorf("failed to fetch group %s", delivery.AppMetadata.GroupID)
-								continue
-							}
-							groups[groupID] = g
-						}
-
-						taskName := convoy.EventProcessor.SetPrefix(group.Name)
-						err = q.Write(ctx, taskName, delivery, 1*time.Second)
-						if err != nil {
-							log.Errorf("failed to send event delivery %s to the queue: %v", delivery.ID, err)
-						}
-					}
-				}
-			}()
+			wg.Wait()
 			return nil
 		},
 	}
@@ -118,4 +86,58 @@ func addRetryCommand(a *app) *cobra.Command {
 	cmd.Flags().StringVar(&status, "status", "", "Log time interval")
 	cmd.Flags().StringVar(&timeInterval, "time", "", " time interval")
 	return cmd
+}
+
+func processEventDeliveryBatches(a *app, deliveryChan <-chan []datastore.EventDelivery, q *redisqueue.RedisQueue, wg *sync.WaitGroup) {
+	defer wg.Done()
+
+	groups := map[string]*datastore.Group{}
+
+	for {
+		batch := <-deliveryChan
+
+		// the channel has been closed and there are no more deliveries coming in
+		if batch == nil {
+			return
+		}
+
+		batchIDs := make([]string, len(batch))
+		for i := range batch {
+			batchIDs[i] = batch[i].UID
+		}
+
+		err := q.DeleteEventDeliveriesFromZSET(context.Background(), batchIDs)
+		if err != nil {
+			log.WithError(err).Errorf("failed to delete event deliveries from zset, ids: %v", batchIDs)
+		}
+
+		err = q.DeleteEventDeliveriesFromStream(context.Background(), batchIDs)
+		if err != nil {
+			log.WithError(err).Errorf("failed to delete event deliveries from stream, ids: %v", batchIDs)
+		}
+
+		var group *datastore.Group
+		var ok bool
+		for i := range batch {
+			delivery := &batch[i]
+			groupID := delivery.AppMetadata.GroupID
+
+			group, ok = groups[groupID]
+			if !ok {
+				ctx, _ := context.WithTimeout(context.Background(), 5*time.Second)
+				group, err = a.groupRepo.FetchGroupByID(ctx, delivery.AppMetadata.GroupID)
+				if err != nil {
+					log.WithError(err).Errorf("failed to fetch group %s", delivery.AppMetadata.GroupID)
+					continue
+				}
+				groups[groupID] = group
+			}
+
+			taskName := convoy.EventProcessor.SetPrefix(group.Name)
+			err = q.Write(context.Background(), taskName, delivery, 1*time.Second)
+			if err != nil {
+				log.Errorf("failed to send event delivery %s to the queue: %v", delivery.ID, err)
+			}
+		}
+	}
 }
