@@ -73,7 +73,7 @@ func addRetryCommand(a *app) *cobra.Command {
 				}
 
 				// in the unlikely event that deliveries is nil(given the nuances of different
-				// database implementations, skip it, else a panic will in processEventDeliveryBatches
+				// database implementations), skip it, else a panic will occur in processEventDeliveryBatches
 				if deliveries == nil {
 					log.Warn("fetched a nil batch of event deliveries from database without an error occurring, dropped this batch from being sent to the batch processor")
 					continue
@@ -98,10 +98,13 @@ func addRetryCommand(a *app) *cobra.Command {
 func processEventDeliveryBatches(ctx context.Context, a *app, deliveryChan <-chan []datastore.EventDelivery, q *redisqueue.RedisQueue, wg *sync.WaitGroup) {
 	defer wg.Done()
 
+	// groups serves as a cache for already fetched groups
 	groups := map[string]*datastore.Group{}
 
 	batchCount := 1
 	for {
+		// ok will return false if the channel is closed and drained(empty), at which point
+		// we should return
 		batch, ok := <-deliveryChan
 		if !ok {
 			// the channel has been closed and there are no more deliveries coming in
@@ -114,16 +117,18 @@ func processEventDeliveryBatches(ctx context.Context, a *app, deliveryChan <-cha
 			batchIDs[i] = batch[i].UID
 		}
 
+		// remove these event deliveries from the zset
 		err := q.DeleteEventDeliveriesFromZSET(ctx, batchIDs)
 		if err != nil {
-			log.WithError(err).WithField("ids", batchIDs).Error("failed to delete event deliveries from zset")
+			log.WithError(err).WithField("ids", batchIDs).Errorf("batch %d: failed to delete event deliveries from zset", batchCount)
 			// put continue here? @all reviewers
 		}
 		log.Infof("batch %d: deleted event deliveries from zset", batchCount)
 
+		// remove these event deliveries from the stream
 		err = q.DeleteEventDeliveriesFromStream(ctx, batchIDs)
 		if err != nil {
-			log.WithError(err).WithField("ids", batchIDs).Error("failed to delete event deliveries from stream")
+			log.WithError(err).WithField("ids", batchIDs).Errorf("batch %d: failed to delete event deliveries from stream", batchCount)
 			// put continue here? @all reviewers
 		}
 		log.Infof("batch %d: deleted event deliveries from stream", batchCount)
@@ -134,10 +139,10 @@ func processEventDeliveryBatches(ctx context.Context, a *app, deliveryChan <-cha
 			groupID := delivery.AppMetadata.GroupID
 
 			group, ok = groups[groupID]
-			if !ok {
+			if !ok { // never seen this group before, so fetch and cache
 				group, err = a.groupRepo.FetchGroupByID(ctx, delivery.AppMetadata.GroupID)
 				if err != nil {
-					log.WithError(err).Errorf("failed to fetch group %s for delivery %s", delivery.AppMetadata.GroupID, delivery.UID)
+					log.WithError(err).Errorf("batch %d: failed to fetch group %s for delivery %s", batchCount, delivery.AppMetadata.GroupID, delivery.UID)
 					continue
 				}
 				groups[groupID] = group
@@ -146,7 +151,7 @@ func processEventDeliveryBatches(ctx context.Context, a *app, deliveryChan <-cha
 			taskName := convoy.EventProcessor.SetPrefix(group.Name)
 			err = q.Write(ctx, taskName, delivery, 1*time.Second)
 			if err != nil {
-				log.WithError(err).Errorf("failed to send event delivery %s to the queue", delivery.ID)
+				log.WithError(err).Errorf("batch %d: failed to send event delivery %s to the queue", batchCount, delivery.ID)
 			}
 		}
 
