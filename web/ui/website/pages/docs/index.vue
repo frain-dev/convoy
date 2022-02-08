@@ -1,20 +1,16 @@
 <template>
 	<div>
-		<nuxt-content v-if="currentRoute !== '/docs'" :document="pageData"></nuxt-content>
-		<div v-else>
+		<div>
 			<h2>Convoy as Open Source</h2>
-			<p class="subtitle">Lorem ipsum dolor sit amet, consetetur sadipscing elitr, sed diam nonumy eirmod tempor invidunt ut labore et dolore.</p>
+			<p class="subtitle">Find the guides, samples, and references you need to use Convoy to start sending out and receiving webhook events as fast as possible.</p>
 			<section class="banner">
 				<div>
-					<h4 class="title">Title goes here</h4>
-					<p>
-						Lorem ipsum dolor sit amet, consetetur sadipscing elitr, sed diam nonumy eirmod tempor invidunt ut labore et dolore.Lorem ipsum dolor sit amet, consetetur sadipscing elitr, sed diam
-						nonumy eirmod tempor invidunt ut labore et dolore.
-					</p>
-					<a class="get-started">
+					<h4 class="title">Quick Start Guide</h4>
+					<p>We've put together a short easy to follow steps to get started with deploying Convoy to your dev environment and sending out webhook events in few minutes.</p>
+					<nuxt-link to="/docs/guide" class="get-started">
 						Get started
 						<img src="~/assets/images/arrow-circle-right.svg" alt="arrow right" />
-					</a>
+					</nuxt-link>
 				</div>
 				<div class="banner-img">
 					<img src="~/assets/images/doc-banner.svg" alt="banner" />
@@ -23,28 +19,35 @@
 
 			<section class="cards">
 				<div class="cards_item green">
-					<h3>Title goes here</h3>
-					<p>Add team members to your Convoy organization so everyone has access to manage webhooks across all environments</p>
-					<button>
-						Get started
-						<img src="~/assets/images/dark-arrow-circle-right.svg" alt="arrow right" />
-					</button>
+					<h3>Overview</h3>
+					<p>A detail breakdown of Convoy, explaining some technical terms used in this documentation.</p>
+					<nuxt-link to="/docs/overview">
+						<button>
+							Read more
+							<img src="~/assets/images/dark-arrow-circle-right.svg" alt="arrow right" />
+						</button>
+					</nuxt-link>
 				</div>
 				<div class="cards_item yellow">
-					<h3>Title goes here</h3>
-					<p>Add team members to your Convoy organization so everyone has access to manage webhooks across all environments</p>
-					<button>
-						Get started
-						<img src="~/assets/images/dark-arrow-circle-right.svg" alt="arrow right" />
-					</button>
+					<h3>Configuration</h3>
+					<p>Step by step explanation on how to configure Convoy to best suite your preference and use case.</p>
+					<nuxt-link to="/docs/configuration">
+						<button>
+							Read more
+							<img src="~/assets/images/dark-arrow-circle-right.svg" alt="arrow right" />
+						</button>
+					</nuxt-link>
 				</div>
 				<div class="cards_item purple">
-					<h3>Title goes here</h3>
-					<p>Add team members to your Convoy organization so everyone has access to manage webhooks across all environments</p>
-					<button>
-						Get started
-						<img src="~/assets/images/dark-arrow-circle-right.svg" alt="arrow right" />
-					</button>
+					<h3>Deployment</h3>
+					<p>Learn how to deploy Convoy to any environment of your choice.</p>
+					<br />
+					<nuxt-link to="/docs/deployment">
+						<button>
+							Read more
+							<img src="~/assets/images/dark-arrow-circle-right.svg" alt="arrow right" />
+						</button>
+					</nuxt-link>
 				</div>
 			</section>
 		</div>
@@ -54,15 +57,6 @@
 <script>
 export default {
 	layout: 'docs',
-	async asyncData({ $content }) {
-		const pageData = await $content('docs', 'index').fetch();
-		return { pageData };
-	},
-	computed: {
-		currentRoute() {
-			return this.$route.path;
-		}
-	}
 };
 </script>
 

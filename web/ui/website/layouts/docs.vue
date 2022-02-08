@@ -9,7 +9,6 @@
 			<nuxt-link to="/docs"><h3>HOME</h3></nuxt-link>
 
 			<ul>
-				<!-- <h3>Docs</h3> -->
 				<li>
 					<nuxt-link to="/docs/guide">Quick Start Guide</nuxt-link>
 				</li>
@@ -106,8 +105,6 @@ aside {
 
 	a.nuxt-link-exact-active {
 		color: #47b38d;
-		// font-weight: bold;
-
 		h3 {
 			color: inherit;
 		}
