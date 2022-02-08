@@ -88,12 +88,11 @@ func (db *eventRepo) LoadEventIntervals(ctx context.Context, groupID string, sea
 	matchStage := bson.D{{Key: "$match", Value: bson.D{
 		{Key: "app_metadata.group_id", Value: groupID},
 		{Key: "document_status", Value: datastore.ActiveDocumentStatus},
-	}},
 		{Key: "created_at", Value: bson.D{
 			{Key: "$gte", Value: primitive.NewDateTimeFromTime(time.Unix(start, 0))},
 			{Key: "$lte", Value: primitive.NewDateTimeFromTime(time.Unix(end, 0))},
 		}},
-	}
+	}}}
 
 	var timeComponent string
 	var format string
