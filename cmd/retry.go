@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"os"
 	"sync"
 	"time"
 
@@ -25,7 +26,7 @@ func addRetryCommand(a *app) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "retry",
 		Short: "retry event deliveries with a particular status in a timeframe",
-		RunE: func(cmd *cobra.Command, args []string) error {
+		Run: func(cmd *cobra.Command, args []string) {
 
 			d, err := time.ParseDuration(timeInterval)
 			if err != nil {
@@ -52,7 +53,15 @@ func addRetryCommand(a *app) *cobra.Command {
 			count := 0
 
 			ctx := context.Background()
-			q := a.eventQueue.(*redisqueue.RedisQueue)
+			var q *redisqueue.RedisQueue
+
+			switch a.eventQueue.(type) {
+			case *redisqueue.RedisQueue:
+				q = a.eventQueue.(*redisqueue.RedisQueue)
+			default:
+				log.WithError(err).Fatalf("the retry command only works with redis queue for now")
+			}
+
 			var wg sync.WaitGroup
 
 			wg.Add(1)
@@ -72,7 +81,7 @@ func addRetryCommand(a *app) *cobra.Command {
 			}
 
 			wg.Wait()
-			return nil
+			os.Exit(0)
 		},
 	}
 
