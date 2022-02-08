@@ -72,15 +72,16 @@ func addRetryCommand(a *app) *cobra.Command {
 					break
 				}
 
-				// this prevents a nil batch of deliveries from falsely signalling that deliveryChan has been closed
-				if deliveries != nil {
-					count += len(deliveries)
-					deliveryChan <- deliveries
-					pageable.Page = int(paginationData.Next)
+				// in the unlikely event that deliveries is nil(given the nuances of different
+				// database implementations, skip it, else a panic will in processEventDeliveryBatches
+				if deliveries == nil {
+					log.Warn("fetched a nil batch of event deliveries from database without an error occurring, dropped this batch from being sent to the batch processor")
 					continue
 				}
 
-				log.Warn("fetched a nil batch of event deliveries from database without an error occurring, dropped this batch from being sent to the batch processor")
+				count += len(deliveries)
+				deliveryChan <- deliveries
+				pageable.Page = int(paginationData.Next)
 			}
 
 			log.Info("waiting for batch processor to finish")
@@ -101,10 +102,9 @@ func processEventDeliveryBatches(ctx context.Context, a *app, deliveryChan <-cha
 
 	batchCount := 1
 	for {
-		batch := <-deliveryChan
-
-		// the channel has been closed and there are no more deliveries coming in
-		if batch == nil {
+		batch, ok := <-deliveryChan
+		if !ok {
+			// the channel has been closed and there are no more deliveries coming in
 			log.Infof("batch processor exiting")
 			return
 		}
@@ -129,7 +129,6 @@ func processEventDeliveryBatches(ctx context.Context, a *app, deliveryChan <-cha
 		log.Infof("batch %d: deleted event deliveries from stream", batchCount)
 
 		var group *datastore.Group
-		var ok bool
 		for i := range batch {
 			delivery := &batch[i]
 			groupID := delivery.AppMetadata.GroupID
