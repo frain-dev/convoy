@@ -217,7 +217,6 @@ func (q *RedisQueue) DeleteEventDeliveryFromZSET(ctx context.Context, id string)
 
 		value := string(msg.ArgsBin[convoy.EventDeliveryIDLength:])
 		if value == id {
-			// still not sure about this key for deletion
 			zset := q.stringifyZSETWithQName()
 			intCmd := q.inner.ZRem(ctx, zset, body)
 			if err = intCmd.Err(); err != nil {
@@ -249,7 +248,6 @@ func (q *RedisQueue) DeleteEventDeliveriesFromZSET(ctx context.Context, ids []st
 
 	for _, id := range ids {
 		if body, ok := idMap[id]; ok {
-			// still not sure about this key for deletion
 			intCmd := q.inner.ZRem(ctx, q.stringifyZSETWithQName(), body)
 			if err = intCmd.Err(); err != nil {
 				return err
