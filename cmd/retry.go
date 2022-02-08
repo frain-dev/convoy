@@ -149,13 +149,13 @@ func processEventDeliveryBatches(ctx context.Context, a *app, deliveryChan <-cha
 			}
 
 			taskName := convoy.EventProcessor.SetPrefix(group.Name)
-			err = q.Write(ctx, taskName, delivery, 1*time.Second)
+			err = q.Write(ctx, taskName, delivery, 15*time.Second)
 			if err != nil {
 				log.WithError(err).Errorf("batch %d: failed to send event delivery %s to the queue", batchCount, delivery.ID)
 			}
 		}
 
-		log.WithField("ids", batchIDs).Infof("batch %d: sucessfully requeued %d deliveries", batchCount, len(batch))
+		log.Infof("batch %d: sucessfully requeued %d deliveries", batchCount, len(batch))
 		batchCount++
 	}
 }
