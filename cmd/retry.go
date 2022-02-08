@@ -7,15 +7,9 @@ import (
 	"time"
 
 	"github.com/frain-dev/convoy"
-
-	redisqueue "github.com/frain-dev/convoy/queue/redis"
-
-	log "github.com/sirupsen/logrus"
-
-	"go.mongodb.org/mongo-driver/bson/primitive"
-
 	"github.com/frain-dev/convoy/datastore"
-
+	redisqueue "github.com/frain-dev/convoy/queue/redis"
+	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 )
 
@@ -33,13 +27,16 @@ func addRetryCommand(a *app) *cobra.Command {
 				log.WithError(err).Fatal("failed to parse time duration")
 			}
 
+			s := datastore.EventDeliveryStatus(status)
+			if !s.IsValid() {
+				log.Fatalf("invalid event delivery status %s", s)
+			}
+
 			now := time.Now()
 			then := now.Add(-d)
-
-			s := datastore.EventDeliveryStatus(status)
 			searchParams := datastore.SearchParams{
-				CreatedAtStart: int64(primitive.NewDateTimeFromTime(then)),
-				CreatedAtEnd:   int64(primitive.NewDateTimeFromTime(now)),
+				CreatedAtStart: then.Unix(),
+				CreatedAtEnd:   now.Unix(),
 			}
 
 			pageable := datastore.Pageable{
@@ -48,8 +45,7 @@ func addRetryCommand(a *app) *cobra.Command {
 				Sort:    -1,
 			}
 
-			deliveryChan := make(chan []datastore.EventDelivery, 1)
-
+			deliveryChan := make(chan []datastore.EventDelivery, 4)
 			count := 0
 
 			ctx := context.Background()
@@ -72,20 +68,28 @@ func addRetryCommand(a *app) *cobra.Command {
 				if err != nil {
 					log.WithError(err).Errorf("successfully fetched %d event deliveries, encountered error fetching page %d", count, pageable.Page)
 					close(deliveryChan)
+					log.Info("closed delivery channel")
 					break
 				}
 
-				count += len(deliveries)
-				deliveryChan <- deliveries
-				pageable.Page = int(paginationData.Next)
+				// this prevents a nil batch of deliveries from falsely signalling that deliveryChan has been closed
+				if deliveries != nil {
+					count += len(deliveries)
+					deliveryChan <- deliveries
+					pageable.Page = int(paginationData.Next)
+					continue
+				}
+
+				log.Warn("fetched a nil batch of event deliveries from database without an error occurring, dropped this batch from being sent to the batch processor")
 			}
 
+			log.Info("waiting for batch processor to finish")
 			wg.Wait()
 			os.Exit(0)
 		},
 	}
 
-	cmd.Flags().StringVar(&status, "status", "", "Log time interval")
+	cmd.Flags().StringVar(&status, "status", "", "Status of event deliveries to requeue")
 	cmd.Flags().StringVar(&timeInterval, "time", "", " time interval")
 	return cmd
 }
@@ -101,6 +105,7 @@ func processEventDeliveryBatches(ctx context.Context, a *app, deliveryChan <-cha
 
 		// the channel has been closed and there are no more deliveries coming in
 		if batch == nil {
+			log.Infof("batch processor exiting")
 			return
 		}
 
@@ -114,12 +119,14 @@ func processEventDeliveryBatches(ctx context.Context, a *app, deliveryChan <-cha
 			log.WithError(err).WithField("ids", batchIDs).Error("failed to delete event deliveries from zset")
 			// put continue here? @all reviewers
 		}
+		log.Infof("batch %d: deleted event deliveries from zset", batchCount)
 
 		err = q.DeleteEventDeliveriesFromStream(ctx, batchIDs)
 		if err != nil {
 			log.WithError(err).WithField("ids", batchIDs).Error("failed to delete event deliveries from stream")
 			// put continue here? @all reviewers
 		}
+		log.Infof("batch %d: deleted event deliveries from stream", batchCount)
 
 		var group *datastore.Group
 		var ok bool
@@ -144,7 +151,7 @@ func processEventDeliveryBatches(ctx context.Context, a *app, deliveryChan <-cha
 			}
 		}
 
-		log.WithField("ids", batchIDs).Infof("sucessfully requeued %d deliveries in batch %d", len(batch), batchCount)
+		log.WithField("ids", batchIDs).Infof("batch %d: sucessfully requeued %d deliveries", batchCount, len(batch))
 		batchCount++
 	}
 }
