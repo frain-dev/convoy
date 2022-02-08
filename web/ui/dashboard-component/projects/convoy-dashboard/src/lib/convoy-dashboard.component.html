@@ -461,12 +461,7 @@
 										</td>
 										<td>
 											<div>
-												<button
-													[disabled]="app.events <= 0"
-													title="view events"
-													[class]="'primary has-icon icon-left'"
-													(click)="toggleActiveTab('events'); getEvents({ addToURL: true, appId: app.uid })"
-												>
+												<button [disabled]="app.events <= 0" title="view events" [class]="'primary has-icon icon-left'" (click)="loadEventsFromAppsTable(app.uid)">
 													<img src="/assets/img/view-events-icon.svg" alt="view events icon" />
 													Events
 												</button>
@@ -480,7 +475,7 @@
 								<button
 									[class]="'primary clear has-icon icon-left ' + (apps.pagination.page === apps.pagination.totalPage ? 'disabled' : '')"
 									[disabled]="apps.pagination.page === apps.pagination.totalPage || isloadingMoreApps"
-									(click)="appsPage = appsPage + 1; getApps({ type: 'apps' })"
+									(click)="appsPage = appsPage + 1; getApps()"
 								>
 									<img src="/assets/img/arrow-down-icon.svg" alt="arrow down icon" *ngIf="!isloadingMoreApps" />
 									<img src="/assets/img/rotate-icon.svg" class="loading-icon" *ngIf="isloadingMoreApps" alt="loading icon" />

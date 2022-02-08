@@ -319,6 +319,11 @@ export class ConvoyDashboardComponent implements OnInit {
 		}
 	}
 
+	async loadEventsFromAppsTable(appId: string) {
+		await this.getEvents({ addToURL: true, appId: appId, fromFilter: true });
+		this.toggleActiveTab('events');
+	}
+
 	addFilterToURL(requestDetails: { section: 'events' | 'eventDels' | 'group' | 'logTab' }) {
 		const currentURLfilters = this.route.snapshot.queryParams;
 		const queryParams: any = {};
