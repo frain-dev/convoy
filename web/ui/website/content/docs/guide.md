@@ -1,7 +1,7 @@
 ---
 title: Quick Start Guide
 description: 'Getting started with Convoy'
-id: welcome
+id: guide
 order: 1
 ---
 
