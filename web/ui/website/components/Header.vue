@@ -117,7 +117,7 @@ nav {
 		display: none;
 		position: absolute;
 		top: 105px;
-		left: 0;
+		left: 20px;
 		width: 256px;
 		text-align: left;
 		height: 0;
@@ -173,10 +173,14 @@ nav {
 				display: flex;
 				align-items: center;
 				white-space: nowrap;
-				margin-left: 24px;
+				
 				img {
 					height: 24px;
 					width: 24px;
+				}
+
+				@media(min-width:  $desktopBreakPoint){
+					margin-left: 24px;
 				}
 			}
 		}

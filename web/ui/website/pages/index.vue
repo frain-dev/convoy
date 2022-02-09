@@ -20,6 +20,17 @@
 					<img src="~/assets/images/hero-img.png" alt="hero" />
 				</div>
 			</section>
+			<section class="github-star" v-if="githubStar">
+				<span>Give us a star on GitHub</span>
+				<img src="~/assets/images/github-icon-white.svg" class="github-icon" alt="github icon" />
+				<button>
+					<img src="~/assets/images/github-star.svg" alt="github star" />
+					3490
+				</button>
+				<a @click="githubStar = false">
+					<img src="~/assets/images/close-icon.svg" alt="close" />
+				</a>
+			</section>
 			<section class="section companies">
 				<ul>
 					<li>Backed By:</li>
@@ -52,17 +63,7 @@
 				</ul>
 			</section>
 		</header>
-		<section class="github-star" v-if="githubStar">
-			<span>Give us a star on GitHub</span>
-			<img src="~/assets/images/github-icon-white.svg" class="github-icon" alt="github icon" />
-			<button>
-				<img src="~/assets/images/github-star.svg" alt="github star" />
-				3490
-			</button>
-			<a @click="githubStar = false">
-				<img src="~/assets/images/close-icon.svg" alt="close" />
-			</a>
-		</section>
+
 		<section class="section features" id="features">
 			<div class="container">
 				<ul>
@@ -181,9 +182,25 @@
 
 		<section class="section cloud">
 			<div class="container">
-				<h2>Convoy Cloud</h2>
-				<p>
+				<div class="tabs">
+					<li v-for="tab of tabs" :key="tab.id">
+						<button :class="activeTab === tab.id ? 'active' : ''" @click="switchTabs(tab.id)">
+							<span>{{ tab.label }}</span>
+						</button>
+					</li>
+				</div>
+				<h2 v-if="activeTab === 'cloud'">Convoy Cloud</h2>
+				<p v-if="activeTab === 'cloud'">
 					We built convoy core which you already love, now we've hosted on the cloud for you to simply create an account and send webhooks without the hassle of downloading, deployment and management.
+				</p>
+				<h2 v-if="activeTab === 'portal'">App Portal</h2>
+				<p v-if="activeTab === 'portal'">
+					With app portal, we're enabling you to extend the visibility our dashboard provides you to your customers. They no longer need to reach out to you to know what is going on with their events.
+				</p>
+				<h2 v-if="activeTab === 'open'">Open Core</h2>
+				<p v-if="activeTab === 'open'">
+					Convoy is a cloud native service that enables you to send webhook events to users, customers, platforms reliably, securely in a scalable manner. Our open-core is open-source first i.e
+					community driven, so you can be sure to get reliable support.
 				</p>
 				<div class="cloud-features">
 					<div class="cloud-features_item" v-for="feature of cloudFeatures" :key="feature">
@@ -226,6 +243,17 @@
 						<img src="~/assets/images/dashboard.svg" alt="dashboard" />
 					</div>
 				</div>
+			</div>
+		</section>
+
+		<section class="section start-sending">
+			<div class="container">
+				<h2>Start sending webhooks now, risk free</h2>
+				<p>Convoy provides you with fast, secure and reliable webhooks infrastructure so you can focus on building the actual tech. Save yourself some engineering time and get started today.</p>
+				<a class="primary">
+					Get started for free
+					<img src="~/assets/images/arrow-right-icon.svg" alt="arrow right" />
+				</a>
 			</div>
 		</section>
 
@@ -336,9 +364,15 @@ export default {
 			isSubmitingloadingEarlyAccessForm: false,
 			earlyAccessFormButtonText: 'Get Early Access',
 			earlyAccessEmail: '',
-			cloudFeatures: ['Create Account', 'Manage Webhooks', 'View Metrics', 'Create Endpoints', 'Create Groups'],
+			cloudFeatures: ['Create Account', 'Manage Webhooks', 'View Metrics', 'Create Endpoints', 'Create Projects'],
 			currentYear: '',
-			githubStar: true
+			githubStar: true,
+			tabs: [
+				{ label: 'Cloud UI', id: 'cloud' },
+				{ label: 'Open Source', id: 'open' },
+				{ label: 'App Portal', id: 'portal' }
+			],
+			activeTab: 'cloud'
 		};
 	},
 	async asyncData({ $content, params }) {
@@ -349,6 +383,23 @@ export default {
 		this.getCurrentYear();
 	},
 	methods: {
+		switchTabs(activeTab) {
+			console.log(activeTab);
+			switch (activeTab) {
+				case 'cloud':
+					this.activeTab = 'cloud';
+					break;
+				case 'open':
+					this.activeTab = 'open';
+					break;
+				case 'portal':
+					this.activeTab = 'portal';
+					break;
+				default:
+					break;
+			}
+			console.log(this.activeTab);
+		},
 		getCurrentYear() {
 			const currentDate = new Date();
 			this.currentYear = currentDate.getFullYear();
@@ -395,7 +446,6 @@ $desktopBreakPoint: 880px;
 header {
 	background: linear-gradient(180deg, #2c2f3e 0%, #422f41 100%);
 	padding: 0 20px 0;
-	position: relative;
 
 	.hero-section {
 		max-width: 1106px;
@@ -425,8 +475,8 @@ header {
 
 				@media (min-width: $desktopBreakPoint) {
 					font-weight: bold;
-					font-size: 48px;
-					line-height: 64px;
+					font-size: 56px;
+					line-height: 80px;
 					max-width: 600px;
 				}
 			}
@@ -437,7 +487,7 @@ header {
 
 				color: #ffffff;
 				@media (min-width: $desktopBreakPoint) {
-					font-size: 18px;
+					font-size: 20px;
 					line-height: 30px;
 				}
 			}
@@ -661,10 +711,9 @@ header {
 		}
 
 		h4 {
-			font-weight: bold;
-			font-size: 18px;
-			line-height: 22px;
-			letter-spacing: -0.5px;
+			font-weight: 600;
+			font-size: 20px;
+			line-height: 30px;
 			margin-bottom: 16px;
 		}
 
@@ -801,11 +850,8 @@ header {
 }
 .cloud {
 	margin: 20px auto;
-	margin-bottom: 150px;
+	margin-bottom: 130px;
 
-	@media (min-width: $desktopBreakPoint) {
-		margin-bottom: 300px;
-	}
 	.container {
 		background: linear-gradient(180deg, #2c2f3e 0%, #422f41 100%);
 		box-shadow: 0px 4px 8px rgba(12, 26, 75, 0.1), 0px 10px 16px rgba(20, 37, 63, 0.06);
@@ -844,6 +890,63 @@ header {
 			p {
 				font-size: 18px;
 				line-height: 32px;
+			}
+		}
+
+		@media (min-width: 1080px) {
+			p {
+				min-height: 96px;
+			}
+		}
+		@media (max-width: 425px) {
+			p {
+				min-height: 144px;
+			}
+		}
+	}
+	.tabs {
+		background: rgba(252, 252, 252, 0.16);
+		border-radius: 8.91px;
+		width: fit-content;
+		margin: 0 auto;
+		display: flex;
+		flex-flow: row;
+		margin-bottom: 55px;
+		li {
+			button {
+				border-radius: 6.93px;
+				padding: 13px 8px;
+				span {
+					font-size: 13px;
+					line-height: 16px;
+					letter-spacing: 0.02em;
+					color: #fcfcfc;
+					min-width: 86px;
+					display: inline-block;
+				}
+
+				&.active {
+					transition: 0.3s ease-in-out;
+					background: #ffffff;
+					box-shadow: 0px 3px 8px rgba(0, 0, 0, 0.12), 0px 3px 1px rgba(0, 0, 0, 0.04);
+					span {
+						font-weight: 600;
+						transition: 0.3s ease-in-out;
+						color: #000624;
+					}
+				}
+				@media (min-width: $desktopBreakPoint) {
+					span {
+						font-size: 14px;
+						line-height: 16px;
+						min-width: 132px;
+					}
+					&.active {
+						span {
+							font-weight: 600;
+						}
+					}
+				}
 			}
 		}
 	}
@@ -907,17 +1010,21 @@ header {
 		align-items: flex-end;
 		justify-content: center;
 		padding-bottom: 32px;
-		@media (max-width: 1080px) {
+		@media (max-width: 1030px) {
+			width: 88%;
+			height: 300px;
+		}
+		@media (max-width: 768px) {
+			height: 470px;
 			width: 92%;
-			height: 400px;
 		}
 		@media (min-width: 1080px) {
-			height: 250px;
+			height: 350px;
 			width: 1064px;
 		}
 		@media (max-width: 425px) {
 			width: 86%;
-			height: 200px;
+			height: 315px;
 		}
 	}
 }
@@ -1089,12 +1196,9 @@ a {
 	}
 }
 .offers {
-	margin-bottom: 400px;
+	margin-bottom: 130px;
 	@media (max-width: 1085px) {
 		padding: 20px;
-	}
-	@media (min-width: $desktopBreakPoint) {
-		margin-bottom: 500px;
 	}
 	h3 {
 		font-weight: bold;
@@ -1148,6 +1252,43 @@ a {
 					}
 				}
 			}
+		}
+	}
+}
+.start-sending {
+	margin-bottom: 430px;
+	.container {
+		background: url('~/assets/images/Base.png');
+		background-size: cover;
+		background-repeat: no-repeat;
+		background-position: center;
+		padding: 56px 20px;
+		box-shadow: 0px 4px 8px rgba(12, 26, 75, 0.1), 0px 10px 16px rgba(20, 37, 63, 0.06);
+		border-radius: 16px;
+		display: flex;
+		flex-flow: column;
+		align-items: center;
+		text-align: center;
+		@media (max-width: 768px) {
+			padding: 56px 20px;
+			margin: 20px;
+		}
+		@media (min-width: $desktopBreakPoint) {
+			padding: 56px 173px;
+		}
+		h2 {
+			color: #fff;
+			letter-spacing: 0.2px;
+			font-weight: 700;
+			font-size: 40px;
+			line-height: 60px;
+			margin-bottom: 16px;
+		}
+		p {
+			font-size: 18px;
+			line-height: 32px;
+			color: #fff;
+			margin-bottom: 40px;
 		}
 	}
 }
@@ -1238,7 +1379,7 @@ a {
 						margin-left: 16px;
 					}
 
-					@media(max-width: 320px){
+					@media (max-width: 320px) {
 						margin-top: 42px;
 					}
 				}
@@ -1295,6 +1436,8 @@ a {
 	}
 }
 .github-star {
+	position: -webkit-sticky;
+	position: sticky;
 	background: #477db3;
 	border-radius: 100px;
 	max-width: 400px;
@@ -1308,8 +1451,9 @@ a {
 	font-size: 14px;
 	line-height: 22px;
 	color: #fff;
-	position: relative;
-	top: -20px;
+	z-index: 9999;
+
+	top: 0;
 	@media (min-width: $desktopBreakPoint) {
 		font-size: 18px;
 		line-height: 30px;
@@ -1353,6 +1497,9 @@ a {
 	}
 }
 footer {
+	.container {
+		max-width: 1170px;
+	}
 	nav {
 		display: flex;
 		justify-content: space-between;
