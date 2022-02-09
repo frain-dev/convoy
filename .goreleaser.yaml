@@ -17,18 +17,14 @@ builds:
 
 # https://goreleaser.com/customization/archive/
 archives:
-  - name_template: "convoy_{{ .Version }}_{{ .Os }}_{{ .Arch }}"
-    replacements:
-      amd64: x86_64
-
-project_name: convoy
+  - name_template: "{{ .ProjectName}}_{{ .Version }}_{{ .Os }}_{{ .Arch }}"
 
 # https://goreleaser.com/customization/nfpm/
 nfpms:
-  - license: "Mozilla Public License 2.0"
+  - license: MPL-2.0
     id: packages
-    maintainer: "frain-dev"
-    homepage: "https://getconvoy.io/"
+    maintainer: frain-dev
+    homepage: https://getconvoy.io/
     description: "A Cloud native webhook service"
     file_name_template: "{{ .ProjectName }}_{{ .Version }}_{{ .Os }}_{{ .Arch }}"
     formats:
@@ -47,9 +43,9 @@ publishers:
 # https://goreleaser.com/customization/homebrew/
 brews:
   - name: convoy
-    homepage: "https://getconvoy.io/"
-    description: "A Cloud native webhook service"
-    license: "Mozilla Public License 2.0"
+    homepage: https://getconvoy.io/
+    description: A Cloud native webhook service
+    license: MPL-2.0
     skip_upload: auto
     commit_author:
       name: frain-dev
