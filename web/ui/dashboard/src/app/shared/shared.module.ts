@@ -6,11 +6,9 @@ import 'prismjs/components/prism-scss';
 import 'prismjs/components/prism-json';
 import 'prismjs/plugins/line-numbers/prism-line-numbers';
 import { SharedComponent } from './shared.component';
-import { pipes } from './pipes';
-
 @NgModule({
-	declarations: [SharedComponent, ...pipes],
+	declarations: [SharedComponent],
 	imports: [CommonModule],
-	exports: [SharedComponent, ...pipes]
+	exports: [SharedComponent]
 })
 export class SharedModule {}
