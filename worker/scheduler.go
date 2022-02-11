@@ -10,16 +10,13 @@ import (
 	"github.com/vmihailenco/taskq/v3"
 )
 
-func RegisterNewGroupTask(applicationRepo datastore.ApplicationRepository, eventDeliveryRepo datastore.EventDeliveryRepository, groupRepo datastore.GroupRepository) chan error {
-	errChan := make(chan error)
-
+func RegisterNewGroupTask(applicationRepo datastore.ApplicationRepository, eventDeliveryRepo datastore.EventDeliveryRepository, groupRepo datastore.GroupRepository) {
 	go func() {
 		for {
 			filter := &datastore.GroupFilter{}
 			groups, err := groupRepo.LoadGroups(context.Background(), filter)
 			if err != nil {
-				errChan <- err
-				return
+				log.WithError(err).Error("failed to load groups")
 			}
 			for _, g := range groups {
 				name := convoy.TaskName(g.Name)
@@ -31,5 +28,4 @@ func RegisterNewGroupTask(applicationRepo datastore.ApplicationRepository, event
 			}
 		}
 	}()
-	return errChan
 }
