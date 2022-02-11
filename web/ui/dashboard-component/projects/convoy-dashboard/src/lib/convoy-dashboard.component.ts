@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, Input, OnInit } from '@angular/core';
+import { Component, ElementRef, Input, OnInit, ViewChild } from '@angular/core';
 import Chart from 'chart.js/auto';
 import { APP } from './models/app.model';
 import { EVENT, EVENT_DELIVERY } from './models/event.model';
@@ -9,6 +9,8 @@ import { HTTP_RESPONSE } from './models/http.model';
 import { GROUP } from './models/group.model';
 import { ConvoyDashboardService } from './convoy-dashboard.service';
 import { format } from 'date-fns';
+import { fromEvent, Observable } from 'rxjs';
+import { debounceTime, distinctUntilChanged, map, startWith, switchMap } from 'rxjs/operators';
 
 @Component({
 	selector: 'convoy-dashboard',
@@ -101,6 +103,12 @@ export class ConvoyDashboardComponent implements OnInit {
 	isloadingMoreEventDeliveries = false;
 	isloadingMoreApps = false;
 	isloadingDeliveryAttempt = false;
+	appsSearchString = '';
+	eventsAppsFilter$!: Observable<APP[]>;
+	eventsDelAppsFilter$!: Observable<APP[]>;
+	@ViewChild('eventsAppsFilter', { static: true }) eventsAppsFilter!: ElementRef;
+	@ViewChild('eventDelsAppsFilter', { static: true }) eventDelsAppsFilter!: ElementRef;
+	eventDeliveriesStatusFilterActive = false;
 
 	constructor(private convyDashboardService: ConvoyDashboardService, private router: Router, private formBuilder: FormBuilder, private route: ActivatedRoute) {}
 
@@ -118,6 +126,23 @@ export class ConvoyDashboardComponent implements OnInit {
 		}
 
 		return await this.initDashboard();
+	}
+
+	ngAfterViewInit() {
+		this.eventsAppsFilter$ = fromEvent<any>(this.eventsAppsFilter.nativeElement, 'keyup').pipe(
+			map(event => event.target.value),
+			startWith(''),
+			debounceTime(500),
+			distinctUntilChanged(),
+			switchMap(search => this.getAppsForFilter(search))
+		);
+		this.eventsDelAppsFilter$ = fromEvent<any>(this.eventDelsAppsFilter.nativeElement, 'keyup').pipe(
+			map(event => event.target.value),
+			startWith(''),
+			debounceTime(500),
+			distinctUntilChanged(),
+			switchMap(search => this.getAppsForFilter(search))
+		);
 	}
 
 	async initDashboard() {
@@ -352,6 +377,7 @@ export class ConvoyDashboardComponent implements OnInit {
 
 	async eventDeliveriesRequest(requestDetails: { eventId?: string; startDate?: string; endDate?: string }): Promise<HTTP_RESPONSE> {
 		let eventDeliveryStatusFilterQuery = '';
+		this.eventDeliveryFilteredByStatus.length > 0 ? (this.eventDeliveriesStatusFilterActive = true) : (this.eventDeliveriesStatusFilterActive = false);
 		this.eventDeliveryFilteredByStatus.forEach((status: string) => (eventDeliveryStatusFilterQuery += `&status=${status}`));
 		const { startDate, endDate } = this.setDateForFilter(this.eventDeliveriesFilterDateRange.value);
 
@@ -383,8 +409,12 @@ export class ConvoyDashboardComponent implements OnInit {
 	}
 
 	updateAppFilter(appId: string, isChecked: any, activeSection: 'eventDels' | 'events') {
+		this.showOverlay = false;
+		activeSection === 'eventDels' ? (this.showEventDeliveriesAppsDropdown = !this.showEventDeliveriesAppsDropdown) : (this.showEventsAppsDropdown = !this.showEventsAppsDropdown);
 		if (isChecked.target.checked) {
 			activeSection === 'eventDels' ? (this.eventDeliveriesApp = appId) : (this.eventApp = appId);
+		} else {
+			activeSection === 'eventDels' ? (this.eventDeliveriesApp = '') : (this.eventApp = '');
 		}
 		activeSection === 'eventDels' ? this.getEventDeliveries({ addToURL: true, fromFilter: true }) : this.getEvents({ addToURL: true, fromFilter: true });
 	}
@@ -456,10 +486,7 @@ export class ConvoyDashboardComponent implements OnInit {
 		}
 	}
 
-	async getApps(requestDetails?: { search?: string; type: 'filter' | 'apps' }) {
-		if (this.apps?.pagination?.next === this.appsPage) this.isloadingMoreApps = true;
-		if (requestDetails?.type === 'apps') this.isloadingApps = true;
-
+	async appsRequest(requestDetails: { search?: string }): Promise<HTTP_RESPONSE> {
 		try {
 			const appsResponse = await this.convyDashboardService.request({
 				url: this.getAPIURL(`/apps?groupID=${this.activeGroup || ''}&sort=AESC&page=${this.appsPage || 1}&perPage=10${requestDetails?.search ? `&q=${requestDetails?.search}` : ''}`),
@@ -467,6 +494,25 @@ export class ConvoyDashboardComponent implements OnInit {
 				authType: this.apiAuthType,
 				method: 'get'
 			});
+
+			return appsResponse;
+		} catch (error: any) {
+			return error;
+		}
+	}
+
+	async getAppsForFilter(search: string): Promise<APP[]> {
+		return await (
+			await this.appsRequest({ search })
+		).data.content;
+	}
+
+	async getApps(requestDetails?: { search?: string; type: 'filter' | 'apps' }) {
+		if (this.apps?.pagination?.next === this.appsPage) this.isloadingMoreApps = true;
+		if (requestDetails?.type === 'apps') this.isloadingApps = true;
+
+		try {
+			const appsResponse = await this.appsRequest({ search: requestDetails?.search });
 
 			if (!requestDetails?.search && this.apps?.pagination?.next === this.appsPage) {
 				const content = [...this.apps.content, ...appsResponse.data.content];
@@ -660,9 +706,9 @@ export class ConvoyDashboardComponent implements OnInit {
 		return appId === this.eventDeliveriesApp;
 	}
 
-	searchApps(searchDetails: { searchInput: any; type: 'filter' | 'apps' }) {
-		const searchString: string = searchDetails.searchInput.target.value;
-		if (searchString && searchString.length > 1) {
+	searchApps(searchDetails: { searchInput?: any; type: 'filter' | 'apps' }) {
+		const searchString: string = searchDetails?.searchInput?.target?.value || this.appsSearchString;
+		if (searchString) {
 			this.getApps({ search: searchString, type: searchDetails.type });
 		} else {
 			searchDetails.type === 'filter' ? (this.filteredApps = this.apps.content) : this.getApps({ type: 'apps' });
