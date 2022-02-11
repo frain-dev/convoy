@@ -2,28 +2,31 @@
 	<div class="page">
 		<aside>
 			<div class="logo">
-				Convoy.
+				<img src="~/assets/images/logo.svg" alt="logo" />
 				<span>Docs</span>
 			</div>
 
-			<nuxt-link to="/docs"><h3>QUICK START GUIDE</h3></nuxt-link>
+			<nuxt-link to="/docs"><h3>HOME</h3></nuxt-link>
 
 			<ul>
-				<h3>Docs</h3>
+				<li>
+					<nuxt-link to="/docs/guide">Quick Start Guide</nuxt-link>
+				</li>
+				<li v-for="(page, index) in pages" :key="index">
+					<template v-if="page.id !== 'guide' && page.id !== 'index'">
+						<nuxt-link :to="'/docs/' + page.id">
+							<img src="~/assets/images/angle-down-icon.svg" alt="angle right" />
+							{{ page.title }}
+						</nuxt-link>
 
-				<li v-for="(page, index) in pages" :key="index" v-if="page.id !== 'welcome'">
-					<nuxt-link :to="'/docs/' + page.id">
-						<img src="~/assets/images/angle-down-icon.svg" alt="angle right" />
-						{{ page.title }}
-					</nuxt-link>
-
-					<ul v-if="page.toc.length > 0">
-						<li v-for="(subpage, index) in page.toc" :key="index">
-							<nuxt-link :to="{ path: '/docs/' + page.id, hash: '#' + subpage.id }">
-								{{ subpage.text }}
-							</nuxt-link>
-						</li>
-					</ul>
+						<ul v-if="page.toc.length > 0">
+							<li v-for="(subpage, index) in page.toc" :key="index">
+								<nuxt-link :to="{ path: '/docs/' + page.id, hash: '#' + subpage.id }">
+									{{ subpage.text }}
+								</nuxt-link>
+							</li>
+						</ul>
+					</template>
 				</li>
 			</ul>
 		</aside>
@@ -39,7 +42,7 @@
 				</div>
 			</header>
 
-			<main class="page--container">
+			<main class="page--container" :class="{ padding: currentRoute !== '/docs' }">
 				<Nuxt />
 			</main>
 		</div>
@@ -48,7 +51,7 @@
 
 <script>
 export default {
-	data: () => {
+	data() {
 		return {
 			pages: []
 		};
@@ -57,6 +60,11 @@ export default {
 		let pages = await this.$content('docs').only(['title', 'id', 'toc', 'order']).sortBy('order', 'asc').fetch();
 		pages = pages.sort((a, b) => a.order - b.order);
 		this.pages = pages;
+	},
+	computed: {
+		currentRoute() {
+			return this.$route.path;
+		}
 	}
 };
 </script>
@@ -78,13 +86,15 @@ aside {
 	color: #ffffff;
 
 	.logo {
-		font-weight: bold;
-		font-size: 21px;
-		line-height: 26px;
-		color: #ffffff;
+		display: flex;
+		align-items: center;
 		padding: 20px 24px;
 		border-bottom: 1px solid rgba(236, 233, 241, 0.1);
-
+		img {
+			height: 22px;
+			width: 85px;
+			margin-right: 4px;
+		}
 		span {
 			font-weight: 500;
 			font-size: 16px;
@@ -95,8 +105,6 @@ aside {
 
 	a.nuxt-link-exact-active {
 		color: #47b38d;
-		font-weight: bold;
-
 		h3 {
 			color: inherit;
 		}
@@ -163,8 +171,12 @@ header {
 
 .page--container {
 	padding: 36px 32px;
-	max-width: 900px;
+	max-width: 100%;
 	width: 100%;
 	margin: auto;
+
+	&.padding {
+		max-width: 900px;
+	}
 }
 </style>
