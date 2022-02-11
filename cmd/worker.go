@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/frain-dev/convoy/config"
 	"github.com/frain-dev/convoy/worker"
@@ -26,7 +27,12 @@ func addWorkerCommand(a *app) *cobra.Command {
 				return err
 			}
 
-			worker.RegisterNewGroupTask(a.applicationRepo, a.eventDeliveryRepo, a.groupRepo)
+			errChan := worker.RegisterNewGroupTask(a.applicationRepo, a.eventDeliveryRepo, a.groupRepo)
+			for err := range errChan {
+				if err != nil {
+					return fmt.Errorf("failed to load groups - %w", err)
+				}
+			}
 			// register workers.
 			ctx := context.Background()
 			producer := worker.NewProducer(a.eventQueue)
