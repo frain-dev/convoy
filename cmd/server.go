@@ -3,7 +3,6 @@ package main
 import (
 	"context"
 	"errors"
-	"fmt"
 	"time"
 
 	"github.com/frain-dev/convoy/auth/realm_chain"
@@ -74,12 +73,7 @@ func StartConvoyServer(a *app, cfg config.Configuration, withWorkers bool) error
 			return err
 		}
 
-		errChan := worker.RegisterNewGroupTask(a.applicationRepo, a.eventDeliveryRepo, a.groupRepo)
-		for err := range errChan {
-			if err != nil {
-				return fmt.Errorf("failed to load groups - %w", err)
-			}
-		}
+		worker.RegisterNewGroupTask(a.applicationRepo, a.eventDeliveryRepo, a.groupRepo)
 
 		log.Infof("Starting Convoy workers...")
 		// register workers.
