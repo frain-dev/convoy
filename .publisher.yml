@@ -1,8 +1,10 @@
 # This is an example .goreleaser.yml file with some sensible defaults.
 # Make sure to check the documentation at https://goreleaser.com
+
+project_name: convoy
+
 before:
   hooks:
-    # You may remove this if you don't use go modules.
     - go mod tidy
 builds:
   - env:
@@ -21,24 +23,32 @@ archives:
 
 # https://goreleaser.com/customization/nfpm/
 nfpms:
-  - license: MPL-2.0
-    id: packages
+  - id: debrpm
+    license: MPL-2.0
+    maintainer: frain-dev
+    homepage: https://getconvoy.io/
+    description: "A Cloud native webhook service"
+    file_name_template: "{{ .ProjectName }}_{{ .Version }}_{{ .Os }}_{{ .Arch }}"
+    formats:
+      - rpm
+      - deb
+
+  - id: apk
+    license: MPL-2.0
     maintainer: frain-dev
     homepage: https://getconvoy.io/
     description: "A Cloud native webhook service"
     file_name_template: "{{ .ProjectName }}_{{ .Version }}_{{ .Os }}_{{ .Arch }}"
     formats:
       - apk
-      - rpm
-      - deb
 
 # https://goreleaser.com/customization/publishers/
 publishers:
-   - name: fury.io
-     ids:
-      - packages
-     dir: "{{ dir .ArtifactPath }}" 
-     cmd: curl -F package=@{{ .ArtifactName }} https://{{ .Env.FURY_TOKEN }}@push.fury.io/convoy/
+  - name: fury.io
+    ids:
+      - debrpm
+    dir: "{{ dir .ArtifactPath }}"
+    cmd: curl -F package=@{{ .ArtifactName }} https://{{ .Env.FURY_TOKEN }}@push.fury.io/convoy/
 
 # https://goreleaser.com/customization/homebrew/
 brews:
