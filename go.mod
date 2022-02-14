@@ -13,6 +13,7 @@ require (
 	github.com/go-chi/chi/v5 v5.0.3
 	github.com/go-chi/httprate v0.5.2
 	github.com/go-chi/render v1.0.1
+	github.com/go-redis/cache/v8 v8.4.3
 	github.com/go-redis/redis/v8 v8.11.4
 	github.com/gobeam/mongo-go-pagination v0.0.7
 	github.com/golang/mock v1.6.0
@@ -41,7 +42,6 @@ require (
 	go.etcd.io/bbolt v1.3.6
 	go.mongodb.org/mongo-driver v1.7.1
 	golang.org/x/crypto v0.0.0-20211215153901-e495a2d5b3d3
-	golang.org/x/mod v0.5.0 // indirect
 	golang.org/x/sys v0.0.0-20211013075003-97ac67df715c // indirect
 	golang.org/x/text v0.3.7 // indirect
 	golang.org/x/tools v0.1.7 // indirect

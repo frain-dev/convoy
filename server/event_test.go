@@ -8,6 +8,7 @@ import (
 	"strings"
 	"testing"
 
+	mcache "github.com/frain-dev/convoy/cache/memory"
 	"github.com/frain-dev/convoy/config"
 	"github.com/frain-dev/convoy/datastore"
 	"github.com/frain-dev/convoy/logger"
@@ -33,8 +34,9 @@ func TestApplicationHandler_CreateAppEvent(t *testing.T) {
 	logger := logger.NewNoopLogger()
 	tracer := mocks.NewMockTracer(ctrl)
 	apiKeyRepo := mocks.NewMockAPIKeyRepository(ctrl)
+	cache := mcache.NewMemoryCache()
 
-	app = newApplicationHandler(eventRepo, eventDeliveryRepo, appRepo, groupRepo, apiKeyRepo, eventQueue, logger, tracer)
+	app = newApplicationHandler(eventRepo, eventDeliveryRepo, appRepo, groupRepo, apiKeyRepo, eventQueue, logger, tracer, cache)
 
 	groupId := "1234567890"
 	group := &datastore.Group{
@@ -391,8 +393,9 @@ func Test_resendEventDelivery(t *testing.T) {
 	logger := logger.NewNoopLogger()
 	tracer := mocks.NewMockTracer(ctrl)
 	apiKeyRepo := mocks.NewMockAPIKeyRepository(ctrl)
+	cache := mcache.NewMemoryCache()
 
-	app = newApplicationHandler(eventRepo, eventDeliveryRepo, appRepo, groupRepo, apiKeyRepo, eventQueue, logger, tracer)
+	app = newApplicationHandler(eventRepo, eventDeliveryRepo, appRepo, groupRepo, apiKeyRepo, eventQueue, logger, tracer, cache)
 
 	group := &datastore.Group{Name: "default-group", UID: "1234567890"}
 
@@ -703,8 +706,9 @@ func TestApplicationHandler_BatchRetryEventDelivery(t *testing.T) {
 	logger := logger.NewNoopLogger()
 	tracer := mocks.NewMockTracer(ctrl)
 	apiKeyRepo := mocks.NewMockAPIKeyRepository(ctrl)
+	cache := mcache.NewMemoryCache()
 
-	app := newApplicationHandler(eventRepo, eventDeliveryRepo, appRepo, groupRepo, apiKeyRepo, eventQueue, logger, tracer)
+	app := newApplicationHandler(eventRepo, eventDeliveryRepo, appRepo, groupRepo, apiKeyRepo, eventQueue, logger, tracer, cache)
 	group := &datastore.Group{Name: "default-group", UID: "1234567890"}
 
 	type args struct {
