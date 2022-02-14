@@ -217,6 +217,20 @@ const (
 	RetryEventStatus      EventDeliveryStatus = "Retry"
 )
 
+func (e EventDeliveryStatus) IsValid() bool {
+	switch e {
+	case ScheduledEventStatus,
+		ProcessingEventStatus,
+		DiscardedEventStatus,
+		FailureEventStatus,
+		SuccessEventStatus,
+		RetryEventStatus:
+		return true
+	default:
+		return false
+	}
+}
+
 type Metadata struct {
 	// Data to be sent to endpoint.
 	Data     json.RawMessage         `json:"data" bson:"data"`
