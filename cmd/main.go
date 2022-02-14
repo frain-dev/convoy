@@ -211,6 +211,7 @@ func main() {
 	cmd.AddCommand(addServerCommand(app))
 	cmd.AddCommand(addWorkerCommand(app))
 	cmd.AddCommand(addQueueCommand(app))
+	cmd.AddCommand(addRetryCommand(app))
 	if err := cmd.Execute(); err != nil {
 		log.Fatal(err)
 	}
