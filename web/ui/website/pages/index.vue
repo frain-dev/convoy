@@ -40,22 +40,16 @@
 				</ul>
 				<ul>
 					<li>Trusted By:</li>
-					<li>
+					<li class="trusted-companies">
 						<a target="_blank" rel="noopener noreferrer" href="https://buycoins.africa/">
 							<img src="~/assets/images/buycoins-logo.svg" style="width: 70px" alt="buycoins logo" />
 						</a>
-					</li>
-					<li>
 						<a target="_blank" rel="noopener noreferrer" href="https://termii.com/">
 							<img src="~/assets/images/termii-logo.png" style="width: 80px" alt="termii logo" />
 						</a>
-					</li>
-					<li>
 						<a target="_blank" rel="noopener noreferrer" href="https://www.getwallets.co/">
 							<img src="~/assets/images/getwallets-logo.svg" style="width: 80px" alt="getwallets logo" />
 						</a>
-					</li>
-					<li>
 						<a target="_blank" rel="noopener noreferrer" href="https://www.dojah.io/">
 							<img src="~/assets/images/dojah-logo.png" style="width: 50px" alt="dojah logo" />
 						</a>
@@ -597,6 +591,42 @@ header {
 				&:not(:last-of-type) {
 					margin-right: 50px;
 				}
+				&.trusted-companies {
+					display: flex;
+					align-items: center;
+					@media (max-width: $desktopBreakPoint) {
+						overflow-x: scroll;
+						-webkit-overflow-scrolling: touch;
+						scroll-behavior: smooth;
+						margin-right: 20px;
+						a {
+							&:not(:last-of-type) {
+								margin-right: 24px;
+							}
+						}
+					}
+					@media (max-width: 425px) {
+						max-width: 345px;
+					}
+					@media (max-width: 390px) {
+						max-width: 295px;
+					}
+					a {
+						&:not(:last-of-type) {
+							margin-right: 50px;
+						}
+					}
+					&::-webkit-scrollbar {
+						width: 1px;
+						background: transparent;
+					}
+
+					&::-webkit-scrollbar-thumb {
+						width: 1px;
+						height: 1px;
+						background: transparent;
+					}
+				}
 
 				img {
 					filter: brightness(0) invert(1);
@@ -606,8 +636,10 @@ header {
 					&.y-combinator {
 						filter: none;
 					}
-					&:hover {
-						filter: grayscale(0%);
+					&:hover,
+					&:focus {
+						cursor: pointer;
+						filter: brightness(0) invert(1);
 					}
 				}
 			}
@@ -972,6 +1004,8 @@ header {
 		display: flex;
 		@media (max-width: $desktopBreakPoint) {
 			overflow-x: scroll;
+			-webkit-overflow-scrolling: touch;
+			scroll-behavior: smooth;
 		}
 		&_item {
 			background: rgba(255, 255, 255, 0.1);
@@ -991,6 +1025,9 @@ header {
 			white-space: nowrap;
 			&:not(:last-of-type) {
 				margin-right: 20px;
+			}
+			&:hover {
+				cursor: pointer;
 			}
 			img {
 				height: 24px;
@@ -1301,7 +1338,7 @@ a {
 	&-post {
 		background: #ffffff;
 		box-shadow: 40px 44px 81px rgba(111, 118, 138, 0.08);
-		border-radius: 32px;
+		border-radius: 16px;
 		padding: 40px 16px 0 16px;
 		display: flex;
 		flex-wrap: wrap;
@@ -1438,6 +1475,7 @@ a {
 .github-star {
 	position: -webkit-sticky;
 	position: sticky;
+	top: 30px;
 	background: #477db3;
 	border-radius: 100px;
 	max-width: 400px;
@@ -1453,7 +1491,6 @@ a {
 	color: #fff;
 	z-index: 9999;
 
-	top: 0;
 	@media (min-width: $desktopBreakPoint) {
 		font-size: 18px;
 		line-height: 30px;
