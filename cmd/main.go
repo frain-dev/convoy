@@ -8,6 +8,7 @@ import (
 	"time"
 	_ "time/tzdata"
 
+	"github.com/frain-dev/convoy/cache"
 	"github.com/frain-dev/convoy/logger"
 	memqueue "github.com/frain-dev/convoy/queue/memqueue"
 	redisqueue "github.com/frain-dev/convoy/queue/redis"
@@ -113,6 +114,7 @@ func main() {
 			var tr tracer.Tracer
 			var lS queue.Storage
 			var opts queue.QueueOptions
+			var ca cache.Cache
 
 			if cfg.Queue.Type == config.RedisQueueProvider {
 				rC, qFn, err = redisqueue.NewClient(cfg)
@@ -155,6 +157,11 @@ func main() {
 				log.Warnf("signature header is blank. setting default %s", config.DefaultSignatureHeader)
 			}
 
+			ca, err = cache.NewCache(cfg.Cache)
+			if err != nil {
+				return err
+			}
+
 			app.apiKeyRepo = db.APIRepo()
 			app.groupRepo = db.GroupRepo()
 			app.eventRepo = db.EventRepo()
@@ -165,6 +172,7 @@ func main() {
 			app.deadLetterQueue = NewQueue(opts, "DeadLetterQueue")
 			app.logger = lo
 			app.tracer = tr
+			app.cache = ca
 
 			return ensureDefaultGroup(context.Background(), cfg, app)
 
@@ -203,6 +211,7 @@ func main() {
 	cmd.AddCommand(addServerCommand(app))
 	cmd.AddCommand(addWorkerCommand(app))
 	cmd.AddCommand(addQueueCommand(app))
+	cmd.AddCommand(addRetryCommand(app))
 	if err := cmd.Execute(); err != nil {
 		log.Fatal(err)
 	}
@@ -308,6 +317,7 @@ type app struct {
 	deadLetterQueue   queue.Queuer
 	logger            logger.Logger
 	tracer            tracer.Tracer
+	cache             cache.Cache
 }
 
 func getCtx() (context.Context, context.CancelFunc) {
