@@ -74,6 +74,7 @@ func StartConvoyServer(a *app, cfg config.Configuration, withWorkers bool) error
 		}
 
 		worker.RegisterNewGroupTask(a.applicationRepo, a.eventDeliveryRepo, a.groupRepo)
+
 		log.Infof("Starting Convoy workers...")
 		// register workers.
 		ctx := context.Background()
