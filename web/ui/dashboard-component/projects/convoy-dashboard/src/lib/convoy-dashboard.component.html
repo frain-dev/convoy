@@ -575,6 +575,10 @@
 								{{ eventDelsDetailsItem.app_metadata?.title }}
 							</div>
 						</li>
+						<li class="list-item-inline">
+							<div class="list-item-inline--label">Delivery Time</div>
+							<div class="list-item-inline--item color">{{ eventDelsDetailsItem?.updated_at | date: 'medium' }}</div>
+						</li>
 					</ul>
 
 					<ul class="tabs">
@@ -592,11 +596,18 @@
 						</div>
 
 						<div [class]="'dashboard--logs--details--tabs-data ' + (eventDetailsActiveTab === 'response' && !isloadingDeliveryAttempt ? 'show' : '')">
-							<h3>Header</h3>
-							<prism language="json" [code]="getCodeSnippetString('res_head')"></prism>
+							<ng-container *ngIf="!eventDeliveryAtempt?.error">
+								<h3>Header</h3>
+								<prism language="json" [code]="getCodeSnippetString('res_head')"></prism>
 
-							<h3>Body</h3>
-							<prism language="json" [code]="getCodeSnippetString('res_body')"></prism>
+								<h3>Body</h3>
+								<prism language="json" [code]="getCodeSnippetString('res_body')"></prism>
+							</ng-container>
+
+							<ng-container *ngIf="eventDeliveryAtempt?.error">
+								<h3>Error</h3>
+								<prism language="json" [code]="getCodeSnippetString('error')"></prism>
+							</ng-container>
 						</div>
 
 						<div [class]="'dashboard--logs--details--tabs-data ' + (eventDetailsActiveTab === 'request' && !isloadingDeliveryAttempt ? 'show' : '')">

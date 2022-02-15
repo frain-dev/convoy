@@ -33,6 +33,7 @@ export class ConvoyDashboardComponent implements OnInit {
 		response_data: '';
 		response_http_header: '';
 		request_http_header: '';
+		error: '';
 	};
 	showEventFilterCalendar = false;
 	eventDateFilterActive = false;
@@ -553,7 +554,7 @@ export class ConvoyDashboardComponent implements OnInit {
 		}
 	}
 
-	getCodeSnippetString(type: 'res_body' | 'event' | 'event_delivery' | 'res_head' | 'req') {
+	getCodeSnippetString(type: 'res_body' | 'event' | 'event_delivery' | 'res_head' | 'req' | 'error') {
 		if (type === 'event') {
 			if (!this.eventsDetailsItem?.data) return 'No event data was sent';
 			return JSON.stringify(this.eventsDetailsItem?.data || this.eventsDetailsItem?.metadata?.data, null, 4).replaceAll(/"([^"]+)":/g, '$1:');
@@ -569,6 +570,9 @@ export class ConvoyDashboardComponent implements OnInit {
 		} else if (type === 'req') {
 			if (!this.eventDeliveryAtempt) return 'No request header was sent';
 			return JSON.stringify(this.eventDeliveryAtempt.request_http_header, null, 4).replaceAll(/"([^"]+)":/g, '$1:');
+		} else if (type === 'error') {
+			if (this.eventDeliveryAtempt?.error) return JSON.stringify(this.eventDeliveryAtempt.error, null, 4).replaceAll(/"([^"]+)":/g, '$1:');
+			return '';
 		}
 		return '';
 	}
