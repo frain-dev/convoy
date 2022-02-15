@@ -52,6 +52,7 @@ jobs:
         with:
           name: dist-without-markdown
           path: server/ui/build
+          fetch-depth: 0
 
       - uses: actions/setup-go@v2
         name: Setup go
