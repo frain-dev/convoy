@@ -119,6 +119,27 @@
 			& > .search {
 				height: 36px;
 				margin-bottom: 0;
+				padding: 10px;
+				width: 250px;
+
+				input {
+					width: 100%;
+					appearance: none;
+				}
+			}
+
+			.enter-button {
+				opacity: 0.7;
+				padding: 3px;
+				display: flex;
+				align-items: center;
+				justify-content: center;
+				background: transparent;
+
+				img {
+					width: 17px;
+					margin: 0;
+				}
 			}
 
 			.select select,

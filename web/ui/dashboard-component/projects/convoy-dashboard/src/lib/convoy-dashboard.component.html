@@ -132,16 +132,16 @@
 							<div class="dropdown large">
 								<button class="filter--button dropdown--button" [ngClass]="{ active: !!eventApp }" (click)="showOverlay = true; showEventsAppsDropdown = !showEventsAppsDropdown">
 									<img src="/assets/img/apps-icon-grey.svg" alt="apps filter icon" />
-									<span>All Apps</span>
+									<span>Apps</span>
 									<img src="/assets/img/angle-arrow-down.svg" alt="arrow down icon" />
 								</button>
 								<div class="dropdown--list" [ngClass]="{ show: showEventsAppsDropdown }">
 									<div class="search">
 										<img src="/assets/img/search-icon.svg" alt="search icon" />
-										<input type="search" placeholder="Search apps here" (input)="searchApps({ searchInput: $event, type: 'filter' })" />
+										<input type="search" placeholder="Search apps here" #eventsAppsFilter />
 									</div>
-									<div class="dropdown--list--item" *ngFor="let app of filteredApps">
-										<input type="radio" name="app" [value]="app.uid" [id]="app.uid" [checked]="app.uid === eventApp" (change)="updateAppFilter(app.uid, $event, 'events')" />
+									<div class="dropdown--list--item" *ngFor="let app of eventsAppsFilter$ | async">
+										<input type="checkbox" name="app" [value]="app.uid" [id]="app.uid" [checked]="app.uid === eventApp" (change)="updateAppFilter(app.uid, $event, 'events')" />
 										<label [for]="app.uid">{{ app.name }}</label>
 									</div>
 									<p *ngIf="filteredApps?.length === 0">No app to display</p>
@@ -282,17 +282,24 @@
 									(click)="showOverlay = true; showEventDeliveriesAppsDropdown = !showEventDeliveriesAppsDropdown"
 								>
 									<img src="/assets/img/apps-icon-grey.svg" alt="apps filter icon" />
-									<span>All Apps</span>
+									<span>Apps</span>
 									<img src="/assets/img/angle-arrow-down.svg" alt="arrow down icon" />
 								</button>
 								<div class="dropdown--list" [ngClass]="{ show: showEventDeliveriesAppsDropdown }">
 									<div class="search">
 										<img src="/assets/img/search-icon.svg" alt="search icon" />
-										<input type="search" placeholder="Search apps here" (input)="searchApps({ searchInput: $event, type: 'filter' })" />
+										<input type="search" placeholder="Search apps here" #eventDelsAppsFilter />
 									</div>
-									<div class="dropdown--list--item" *ngFor="let app of filteredApps">
-										<input type="radio" name="app" [value]="app.uid" [id]="app.uid" [checked]="app.uid === eventDeliveriesApp" (change)="updateAppFilter(app.uid, $event, 'eventDels')" />
-										<label [for]="app.uid">{{ app.name }}</label>
+									<div class="dropdown--list--item" *ngFor="let app of eventsDelAppsFilter$ | async">
+										<input
+											type="checkbox"
+											name="app"
+											[value]="app.uid"
+											[id]="app.uid + 'eventDel'"
+											[checked]="app.uid === eventDeliveriesApp"
+											(change)="updateAppFilter(app.uid, $event, 'eventDels')"
+										/>
+										<label [for]="app.uid + 'eventDel'">{{ app.name }}</label>
 									</div>
 									<p *ngIf="filteredApps?.length === 0">No app to display</p>
 								</div>
@@ -313,7 +320,7 @@
 										(eventDeliveriesFilterDateRange.value.startDate == '' || eventDeliveriesFilterDateRange.value.endDate == '') &&
 										eventDeliveriesApp == '' &&
 										eventDeliveryFilteredByEventId == '' &&
-										eventDeliveryFilteredByStatus?.length == 0
+										!eventDeliveriesStatusFilterActive
 								}"
 							>
 								Clear Filter
@@ -420,10 +427,19 @@
 
 					<div [hidden]="activeTab !== 'apps'">
 						<div class="filter">
-							<div class="search">
+							<form class="search">
 								<img src="/assets/img/search-icon.svg" alt="search icon" />
-								<input type="search" placeholder="Search apps here" (input)="searchApps({ searchInput: $event, type: 'apps' })" />
-							</div>
+								<input
+									type="search"
+									placeholder="Search apps"
+									[(ngModel)]="appsSearchString"
+									(change)="searchApps({ searchInput: $event, type: 'apps' })"
+									[ngModelOptions]="{ standalone: true }"
+								/>
+								<button class="clear" [class]="'enter-button' + (appsSearchString.length > 0 ? ' show' : '')" (click)="searchApps({ type: 'apps' })">
+									<img src="/assets/img/enter-icon.png" alt="enter icon" />
+								</button>
+							</form>
 						</div>
 
 						<hr />
@@ -559,6 +575,10 @@
 								{{ eventDelsDetailsItem.app_metadata?.title }}
 							</div>
 						</li>
+						<li class="list-item-inline">
+							<div class="list-item-inline--label">Delivery Time</div>
+							<div class="list-item-inline--item color">{{ eventDelsDetailsItem?.updated_at | date: 'medium' }}</div>
+						</li>
 					</ul>
 
 					<ul class="tabs">
@@ -576,11 +596,18 @@
 						</div>
 
 						<div [class]="'dashboard--logs--details--tabs-data ' + (eventDetailsActiveTab === 'response' && !isloadingDeliveryAttempt ? 'show' : '')">
-							<h3>Header</h3>
-							<prism language="json" [code]="getCodeSnippetString('res_head')"></prism>
+							<ng-container *ngIf="!eventDeliveryAtempt?.error">
+								<h3>Header</h3>
+								<prism language="json" [code]="getCodeSnippetString('res_head')"></prism>
 
-							<h3>Body</h3>
-							<prism language="json" [code]="getCodeSnippetString('res_body')"></prism>
+								<h3>Body</h3>
+								<prism language="json" [code]="getCodeSnippetString('res_body')"></prism>
+							</ng-container>
+
+							<ng-container *ngIf="eventDeliveryAtempt?.error">
+								<h3>Error</h3>
+								<prism language="json" [code]="getCodeSnippetString('error')"></prism>
+							</ng-container>
 						</div>
 
 						<div [class]="'dashboard--logs--details--tabs-data ' + (eventDetailsActiveTab === 'request' && !isloadingDeliveryAttempt ? 'show' : '')">
