@@ -575,7 +575,7 @@
 								{{ eventDelsDetailsItem.app_metadata?.title }}
 							</div>
 						</li>
-						<li class="list-item-inline">
+						<li class="list-item-inline" *ngIf="eventDelsDetailsItem.status == 'Success'">
 							<div class="list-item-inline--label">Delivery Time</div>
 							<div class="list-item-inline--item color">{{ eventDelsDetailsItem?.updated_at | date: 'medium' }}</div>
 						</li>

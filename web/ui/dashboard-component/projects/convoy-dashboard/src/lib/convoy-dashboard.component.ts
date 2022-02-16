@@ -1,7 +1,7 @@
 import { Component, ElementRef, Input, OnInit, ViewChild } from '@angular/core';
 import Chart from 'chart.js/auto';
 import { APP } from './models/app.model';
-import { EVENT, EVENT_DELIVERY } from './models/event.model';
+import { EVENT, EVENT_DELIVERY, EVENT_DELIVERY_ATTEMPT } from './models/event.model';
 import { ActivatedRoute, Router } from '@angular/router';
 import { FormBuilder, FormGroup } from '@angular/forms';
 import { PAGINATION } from './models/global.model';
@@ -24,17 +24,7 @@ export class ConvoyDashboardComponent implements OnInit {
 	appsDetailsItem?: any;
 	eventsDetailsItem?: any;
 	eventDelsDetailsItem?: any;
-	eventDeliveryAtempt?: {
-		ip_address: '';
-		http_status: '';
-		api_version: '';
-		updated_at: 0;
-		deleted_at: 0;
-		response_data: '';
-		response_http_header: '';
-		request_http_header: '';
-		error: '';
-	};
+	eventDeliveryAtempt?: EVENT_DELIVERY_ATTEMPT;
 	showEventFilterCalendar = false;
 	eventDateFilterActive = false;
 	displayedEvents: {
