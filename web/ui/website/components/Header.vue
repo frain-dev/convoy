@@ -1,6 +1,6 @@
 <template>
 	<div>
-		<nav>
+		<nav :class="{ extraPadding: currentRoute === '/' && githubStar }">
 			<div>
 				<button class="menu-button" @click="showMenu = !showMenu">
 					<img v-if="!showMenu" src="~/assets/images/menu-icon.svg" alt="menu icon" width="24" />
@@ -51,10 +51,18 @@
 
 <script>
 export default {
+	props: {
+		githubStar: Boolean
+	},
 	data() {
 		return {
 			showMenu: false
 		};
+	},
+	computed: {
+		currentRoute() {
+			return this.$route.path;
+		}
 	}
 };
 </script>
@@ -74,8 +82,14 @@ nav {
 	left: 50%;
 	transform: translate(-50%, 0);
 
+	&.extraPadding {
+		padding: 63px 20px 21px 20px;
+	}
 	@media (min-width: $desktopBreakPoint) {
 		padding: 32px 20px;
+		&.extraPadding {
+			padding: 80px 20px 21px 20px;
+		}
 	}
 
 	& > div {
@@ -173,13 +187,13 @@ nav {
 				display: flex;
 				align-items: center;
 				white-space: nowrap;
-				
+
 				img {
 					height: 24px;
 					width: 24px;
 				}
 
-				@media(min-width:  $desktopBreakPoint){
+				@media (min-width: $desktopBreakPoint) {
 					margin-left: 24px;
 				}
 			}

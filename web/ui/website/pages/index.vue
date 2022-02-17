@@ -1,25 +1,6 @@
 <template>
 	<div class="page">
 		<header>
-			<Header></Header>
-
-			<section class="hero-section">
-				<div class="hero-section--cta">
-					<h1>A Cloud native Webhook Serviced</h1>
-					<p>With out-of-the-box security, reliability and scalability for your webhooks infrastructure.</p>
-					<!-- <nuxt-link to="/docs">Get Started</nuxt-link> -->
-
-					<form @submit.prevent="requestAccess()">
-						<div class="input">
-							<input type="email" id="email" placeholder="Enter your email" aria-label="Email" v-model="earlyAccessEmail" />
-						</div>
-						<button :disabled="isSubmitingloadingEarlyAccessForm">{{ isSubmitingloadingEarlyAccessForm ? '...requesting' : earlyAccessFormButtonText }}</button>
-					</form>
-				</div>
-				<div class="hero-section--img">
-					<img src="~/assets/images/hero-img.png" alt="hero" />
-				</div>
-			</section>
 			<section class="github-star" v-if="githubStar">
 				<span>Give us a star on GitHub</span>
 				<img src="~/assets/images/github-icon-white.svg" class="github-icon" alt="github icon" />
@@ -31,6 +12,20 @@
 					<img src="~/assets/images/close-icon.svg" alt="close" />
 				</a>
 			</section>
+			<Header :githubStar="githubStar"></Header>
+
+			<section class="hero-section">
+				<div class="hero-section--cta">
+					<h1>A Cloud native Webhook Serviced</h1>
+					<p>With out-of-the-box security, reliability and scalability for your webhooks infrastructure.</p>
+
+					<a target="_blank" rel="noopener noreferrer" href="https://app.getconvoy.io" class="primary">Get Started</a>
+				</div>
+				<div class="hero-section--img">
+					<img src="~/assets/images/hero-img.png" alt="hero" />
+				</div>
+			</section>
+
 			<section class="section companies">
 				<ul>
 					<li>Backed By:</li>
@@ -90,15 +85,7 @@
 						<h4>Scalable</h4>
 						<p>Independently scale Convoy as your system needs grows.</p>
 					</li>
-					<!-- <li>
-						<div class="features--dashboard-screenshot">
-							<img src="~/assets/images/dashboard-img.png" alt="dashboard image" />
-						</div>
-					</li> -->
 				</ul>
-				<!-- <div class="features--dashboard-screenshot stand-alone">
-					<img src="~/assets/images/dashboard-img.png" alt="dashboard image" />
-				</div> -->
 			</div>
 		</section>
 
@@ -215,7 +202,8 @@
 			</div>
 		</section>
 
-		<section class="section offers">
+		<!-- hidden temporarily  -->
+		<!-- <section class="section offers">
 			<div class="container">
 				<h3>What Convoy Offers</h3>
 
@@ -238,7 +226,7 @@
 					</div>
 				</div>
 			</div>
-		</section>
+		</section> -->
 
 		<section class="section start-sending">
 			<div class="container">
@@ -356,14 +344,14 @@ export default {
 	data() {
 		return {
 			isSubmitingloadingEarlyAccessForm: false,
-			earlyAccessFormButtonText: 'Get Early Access',
+			earlyAccessFormButtonText: 'Get Started',
 			earlyAccessEmail: '',
 			cloudFeatures: ['Create Account', 'Manage Webhooks', 'View Metrics', 'Create Endpoints', 'Create Projects'],
 			currentYear: '',
 			githubStar: true,
 			tabs: [
-				{ label: 'Cloud UI', id: 'cloud' },
-				{ label: 'Open Source', id: 'open' },
+				{ label: 'Convoy Cloud', id: 'cloud' },
+				{ label: 'Open Core', id: 'open' },
 				{ label: 'App Portal', id: 'portal' }
 			],
 			activeTab: 'cloud'
@@ -376,6 +364,7 @@ export default {
 	mounted() {
 		this.getCurrentYear();
 	},
+	
 	methods: {
 		switchTabs(activeTab) {
 			console.log(activeTab);
@@ -503,18 +492,8 @@ header {
 
 		button,
 		a {
-			background: #477db3;
-			padding: 9px 21px;
-			color: #ffffff;
-			font-weight: 500;
-			font-size: 14px;
-			line-height: 28px;
 			margin: 20px 0 0;
 			max-width: 200px;
-			width: 100%;
-			display: block;
-			border-radius: 5px;
-			text-align: center;
 		}
 
 		form {
@@ -738,6 +717,10 @@ header {
 			@media (max-width: 1089px) {
 				.features--dashboard-screenshot {
 					display: none;
+				}
+
+				&:first-child {
+					margin-bottom: -80px;
 				}
 			}
 		}
@@ -1473,30 +1456,32 @@ a {
 	}
 }
 .github-star {
-	position: -webkit-sticky;
-	position: sticky;
-	top: 30px;
+	position: fixed;
+	top: 0;
+	left: 0;
 	background: #477db3;
-	border-radius: 100px;
-	max-width: 400px;
-	margin: 0 auto;
+	// border-radius: 100px;
+	width: 100vw;
+	// left: 50%;
+	// transform: translateX(-50%);
 	height: 50px;
 	padding: 7px 11px;
 	display: flex;
 	align-items: center;
 	justify-content: center;
 	font-weight: 500;
-	font-size: 14px;
-	line-height: 22px;
+	font-size: 12px;
+	line-height: 20px;
 	color: #fff;
-	z-index: 9999;
+	z-index: 99;
 
 	@media (min-width: $desktopBreakPoint) {
 		font-size: 18px;
 		line-height: 30px;
 		height: 60px;
 		padding: 12px 16px;
-		max-width: 434px;
+		// max-width: 434px;
+		margin-bottom: -20px;
 	}
 	.github-icon {
 		height: 20px;
