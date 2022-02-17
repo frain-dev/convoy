@@ -1,5 +1,4 @@
 import { Component, Input, OnInit } from '@angular/core';
-import Chart from 'chart.js/auto';
 import { APP } from './models/app.model';
 import { EVENT, EVENT_DELIVERY } from './models/event.model';
 import { ActivatedRoute, Router } from '@angular/router';
@@ -16,9 +15,8 @@ import { format } from 'date-fns';
 	styleUrls: ['./convoy-app.component.scss']
 })
 export class ConvoyAppComponent implements OnInit {
-	showFilterCalendar = false;
-	tabs: ['events', 'event deliveries', 'apps'] = ['events', 'event deliveries', 'apps'];
-	activeTab: 'events' | 'apps' | 'event deliveries' = 'events';
+	tabs: ['events', 'event deliveries'] = ['events', 'event deliveries'];
+	activeTab: 'events' | 'event deliveries' = 'events';
 	detailsItem?: any;
 	eventDeliveryAtempt?: {
 		ip_address: '';
@@ -37,39 +35,18 @@ export class ConvoyAppComponent implements OnInit {
 		events: EVENT[];
 	}[] = [];
 	events!: { pagination: PAGINATION; content: EVENT[] };
-	apps!: { pagination: PAGINATION; content: APP[] };
+	appDetails!: APP;
 	eventDetailsTabs = [
 		{ id: 'data', label: 'Event' },
 		{ id: 'response', label: 'Response' },
 		{ id: 'request', label: 'Request' }
 	];
 	eventDetailsActiveTab = 'data';
-	organisationDetails!: {
-		database: { dsn: string };
-		queue: { type: string; redis: { dsn: string } };
-		server: { http: { port: number } };
-		signature: { header: string; hash: string };
-		strategy: {
-			type: 'default';
-			default: { intervalSeconds: number; retryLimit: number };
-		};
-	};
-	dashboardData = { apps: 0, events_sent: 0 };
 	eventApp: string = '';
 	eventDeliveriesApp: string = '';
 	eventsPage: number = 1;
 	eventDeliveriesPage: number = 1;
 	appsPage: number = 1;
-	dashboardFrequency: 'daily' | 'weekly' | 'monthly' | 'yearly' = 'daily';
-	statsDateRange: FormGroup = this.formBuilder.group({
-		startDate: [
-			{
-				value: new Date(new Date().setDate(new Date().getDate() - 30)),
-				disabled: true
-			}
-		],
-		endDate: [{ value: new Date(), disabled: true }]
-	});
 	eventsFilterDateRange: FormGroup = this.formBuilder.group({
 		startDate: [{ value: '', disabled: true }],
 		endDate: [{ value: '', disabled: true }]
@@ -86,8 +63,8 @@ export class ConvoyAppComponent implements OnInit {
 	groups: GROUP[] = [];
 	activeGroup!: string;
 	allEventdeliveriesChecked = false;
-	eventDeliveryStatuses = ['', 'Success', 'Failure', 'Retry', 'Scheduled', 'Processing', 'Discarded'];
-	eventDeliveryFilteredByStatus: '' | 'Success' | 'Failure' | 'Retry' | 'Scheduled' | 'Processing' | 'Discarded' = '';
+	eventDeliveryStatuses = ['Success', 'Failure', 'Retry', 'Scheduled', 'Processing', 'Discarded'];
+	eventDeliveryFilteredByStatus: string[] = [];
 	showOverlay = false;
 	showEventDeliveriesStatusDropdown = false;
 	@Input('production') isProduction: boolean = false;
@@ -101,20 +78,18 @@ export class ConvoyAppComponent implements OnInit {
 	async initDashboard() {
 		await this.getGroups();
 		this.getFiltersFromURL();
-		await Promise.all([this.getConfigDetails(), this.fetchDashboardData(), this.getEvents(), this.getApps(), this.getEventDeliveries()]);
+		await Promise.all([this.getEvents(), this.getEventDeliveries(), this.getAppDetails()]);
 
 		// get active tab from url and apply, after getting the details from above requests so that the data is available ahead
 		this.toggleActiveTab(this.route.snapshot.queryParams.activeTab ?? 'events');
 		return;
 	}
 
-	toggleActiveTab(tab: 'events' | 'apps' | 'event deliveries') {
+	toggleActiveTab(tab: 'events' | 'event deliveries') {
 		this.activeTab = tab;
 		this.addFilterToURL({ section: 'logTab' });
 
-		if (tab === 'apps' && this.apps?.content.length > 0) {
-			this.detailsItem = this.apps?.content[0];
-		} else if (tab === 'events' && this.events?.content.length > 0) {
+		if (tab === 'events' && this.events?.content.length > 0) {
 			this.eventDetailsActiveTab = 'data';
 			this.detailsItem = this.events?.content[0];
 			this.getEventDeliveriesForSidebar(this.detailsItem.uid);
@@ -124,25 +99,12 @@ export class ConvoyAppComponent implements OnInit {
 		}
 	}
 
-	async getConfigDetails() {
-		try {
-			const organisationDetailsResponse = await this.convyAppService.request({
-				url: this.getAPIURL(`/dashboard/config?groupID=${this.activeGroup || ''}`),
-				method: 'get'
-			});
-			this.organisationDetails = organisationDetailsResponse.data;
-		} catch (error) {}
-	}
-
 	getFiltersFromURL() {
 		const filters = this.route.snapshot.queryParams;
 		if (Object.keys(filters).length == 0) return;
 
 		// for events filters
-		this.eventsFilterDateRange.patchValue({
-			startDate: filters.eventsStartDate ? new Date(filters.eventsStartDate) : '',
-			endDate: filters.eventsEndDate ? new Date(filters.eventsEndDate) : ''
-		});
+		this.eventsFilterDateRange.patchValue({ startDate: filters.eventsStartDate ? new Date(filters.eventsStartDate) : '', endDate: filters.eventsEndDate ? new Date(filters.eventsEndDate) : '' });
 		this.eventApp = filters.eventsApp ?? '';
 
 		// for event deliveries filters
@@ -151,76 +113,7 @@ export class ConvoyAppComponent implements OnInit {
 			endDate: filters.eventDelsEndDate ? new Date(filters.eventDelsEndDate) : ''
 		});
 		this.eventDeliveriesApp = filters.eventDelsApp ?? '';
-		this.eventDeliveryFilteredByStatus = filters.eventDelsStatus ?? null;
-	}
-
-	async fetchDashboardData() {
-		try {
-			const { startDate, endDate } = this.setDateForFilter(this.statsDateRange.value);
-
-			const dashboardResponse = await this.convyAppService.request({
-				url: this.getAPIURL(`/dashboard/summary?groupID=${this.activeGroup || ''}&startDate=${startDate || ''}&endDate=${endDate || ''}&type=${this.dashboardFrequency}`),
-				method: 'get'
-			});
-			this.dashboardData = dashboardResponse.data;
-
-			let labelsDateFormat = '';
-			if (this.dashboardFrequency === 'daily') labelsDateFormat = 'do, MMM';
-			else if (this.dashboardFrequency === 'monthly') labelsDateFormat = 'MMM';
-			else if (this.dashboardFrequency === 'yearly') labelsDateFormat = 'yyyy';
-
-			const chartData = dashboardResponse.data.event_data;
-			const labels = [...chartData.map((label: { data: { date: any } }) => label.data.date)].map(date => {
-				return this.dashboardFrequency === 'weekly' ? date : format(new Date(date), labelsDateFormat);
-			});
-			labels.unshift('0');
-			const dataSet = [0, ...chartData.map((label: { count: any }) => label.count)];
-			const data = {
-				labels,
-				datasets: [
-					{
-						data: dataSet,
-						fill: false,
-						borderColor: '#477DB3',
-						tension: 0.5,
-						yAxisID: 'yAxis',
-						xAxisID: 'xAxis'
-					}
-				]
-			};
-
-			const options = {
-				plugins: {
-					legend: {
-						display: false
-					}
-				},
-				scales: {
-					xAxis: {
-						display: true,
-						grid: {
-							display: false
-						}
-					}
-				}
-			};
-
-			if (!Chart.getChart('dahboard_events_chart') || !Chart.getChart('dahboard_events_chart')?.canvas) {
-				new Chart('dahboard_events_chart', {
-					type: 'line',
-					data,
-					options
-				});
-			} else {
-				const currentChart = Chart.getChart('dahboard_events_chart');
-				if (currentChart) {
-					currentChart.data.labels = labels;
-					currentChart.data.datasets[0].data = dataSet;
-					currentChart.update();
-				}
-			}
-			console.log(Chart.getChart('dahboard_events_chart'));
-		} catch (error) {}
+		this.eventDeliveryFilteredByStatus = filters.eventDelsStatus ? JSON.parse(filters.eventDelsStatus) : [];
 	}
 
 	setDateForFilter(requestDetails: { startDate: Date; endDate: Date }) {
@@ -260,7 +153,7 @@ export class ConvoyAppComponent implements OnInit {
 		try {
 			const eventsResponse = await this.convyAppService.request({
 				url: this.getAPIURL(
-					`/events?groupID=${this.activeGroup || ''}&sort=AESC&page=${this.eventsPage || 1}&perPage=20&startDate=${startDate}&endDate=${endDate}&appId=${requestDetails?.appId ?? this.eventApp}`
+					`/events?groupID=${this.activeGroup || ''}&sort=AESC&page=${this.eventsPage || 1}&perPage=20&startDate=${startDate}&endDate=${endDate}&appId=${'7ea6d36a-f988-4623-abeb-2ad2dd3d2c7b'}`
 				),
 				method: 'get'
 			});
@@ -276,6 +169,19 @@ export class ConvoyAppComponent implements OnInit {
 
 			this.events = eventsResponse.data;
 			this.displayedEvents = await this.setEventsDisplayed(eventsResponse.data.content);
+		} catch (error) {
+			return error;
+		}
+	}
+
+	async getAppDetails(requestDetails?: { appId?: string }) {
+		try {
+			const appDetailsResponse = await this.convyAppService.request({
+				url: this.getAPIURL(`/apps/7ea6d36a-f988-4623-abeb-2ad2dd3d2c7b?groupID=${this.activeGroup || ''}`),
+				method: 'get'
+			});
+
+			this.appDetails = appDetailsResponse.data;
 		} catch (error) {
 			return error;
 		}
@@ -297,7 +203,7 @@ export class ConvoyAppComponent implements OnInit {
 			if (startDate) queryParams.eventDelsStartDate = startDate;
 			if (endDate) queryParams.eventDelsEndDate = endDate;
 			if (this.eventDeliveriesApp) queryParams.eventDelsApp = this.eventDeliveriesApp;
-			queryParams.eventDelsStatus = this.eventDeliveryFilteredByStatus || '';
+			queryParams.eventDelsStatus = this.eventDeliveryFilteredByStatus.length > 0 ? JSON.stringify(this.eventDeliveryFilteredByStatus) : '';
 		}
 
 		if (requestDetails.section === 'group') queryParams.group = this.activeGroup;
@@ -310,14 +216,16 @@ export class ConvoyAppComponent implements OnInit {
 	}
 
 	async eventDeliveriesRequest(requestDetails: { eventId?: string; startDate?: string; endDate?: string }): Promise<HTTP_RESPONSE> {
+		let eventDeliveryStatusFilterQuery = '';
+		this.eventDeliveryFilteredByStatus.forEach((status: string) => (eventDeliveryStatusFilterQuery += `&status=${status}`));
 		const { startDate, endDate } = this.setDateForFilter(this.eventDeliveriesFilterDateRange.value);
 
 		try {
 			const eventDeliveriesResponse = await this.convyAppService.request({
 				url: this.getAPIURL(
-					`/eventdeliveries?groupID=${this.activeGroup || ''}&eventId=${requestDetails.eventId || ''}&page=${this.eventDeliveriesPage || 1}&startDate=${startDate}&endDate=${endDate}&appId=${
-						this.eventDeliveriesApp
-					}&status=${this.eventDeliveryFilteredByStatus || ''}`
+					`/eventdeliveries?groupID=${this.activeGroup || ''}&eventId=${requestDetails.eventId || ''}&page=${
+						this.eventDeliveriesPage || 1
+					}&startDate=${startDate}&endDate=${endDate}&appId=${'7ea6d36a-f988-4623-abeb-2ad2dd3d2c7b'}&status=${eventDeliveryStatusFilterQuery || ''}`
 				),
 				method: 'get'
 			});
@@ -368,7 +276,7 @@ export class ConvoyAppComponent implements OnInit {
 	async toggleActiveGroup() {
 		await Promise.all([this.clearEventFilters('event deliveries'), this.clearEventFilters('events')]);
 		this.addFilterToURL({ section: 'group' });
-		Promise.all([this.getConfigDetails(), this.fetchDashboardData(), this.getEvents(), this.getApps(), this.getEventDeliveries()]);
+		Promise.all([this.getEvents(), this.getEventDeliveries()]);
 	}
 
 	async getGroups(requestDetails?: { addToURL?: boolean }) {
@@ -383,27 +291,6 @@ export class ConvoyAppComponent implements OnInit {
 
 			// check group existing filter in url and set active group
 			this.activeGroup = this.route.snapshot.queryParams.group ?? this.groups[0]?.uid;
-			return;
-		} catch (error) {
-			return error;
-		}
-	}
-
-	async getApps() {
-		try {
-			const appsResponse = await this.convyAppService.request({
-				url: this.getAPIURL(`/apps?groupID=${this.activeGroup || ''}&sort=AESC&page=${this.appsPage || 1}&perPage=10`),
-				method: 'get'
-			});
-
-			if (this.apps?.pagination?.next === this.appsPage) {
-				const content = [...this.apps.content, ...appsResponse.data.content];
-				const pagination = appsResponse.data.pagination;
-				this.apps = { content, pagination };
-				return;
-			}
-			this.apps = appsResponse.data;
-			if (this.activeTab === 'apps') this.detailsItem = this.apps?.content[0];
 			return;
 		} catch (error) {
 			return error;
@@ -512,12 +399,9 @@ export class ConvoyAppComponent implements OnInit {
 			case 'event deliveries':
 				this.eventDeliveriesApp = '';
 				filterItems = ['eventDelsStartDate', 'eventDelsEndDate', 'eventDelsApp', 'eventDelsStatus'];
-				this.eventDeliveriesFilterDateRange.patchValue({
-					startDate: '',
-					endDate: ''
-				});
+				this.eventDeliveriesFilterDateRange.patchValue({ startDate: '', endDate: '' });
 				this.eventDeliveryFilteredByEventId = '';
-				this.eventDeliveryFilteredByStatus = '';
+				this.eventDeliveryFilteredByStatus = [];
 				this.getEventDeliveries();
 				break;
 
@@ -578,5 +462,18 @@ export class ConvoyAppComponent implements OnInit {
 
 	getAPIURL(url: string) {
 		return `${this.isProduction ? location.origin : 'http://localhost:5005'}/ui${url}`;
+	}
+
+	checkIfEventDeliveryStatusFilterOptionIsSelected(status: string): boolean {
+		return this.eventDeliveryFilteredByStatus?.length > 0 ? this.eventDeliveryFilteredByStatus.includes(status) : false;
+	}
+
+	updateEventDevliveryStatusFilter(status: string, isChecked: any) {
+		if (isChecked.target.checked) {
+			this.eventDeliveryFilteredByStatus.push(status);
+		} else {
+			let index = this.eventDeliveryFilteredByStatus.findIndex(x => x === status);
+			this.eventDeliveryFilteredByStatus.splice(index, 1);
+		}
 	}
 }
