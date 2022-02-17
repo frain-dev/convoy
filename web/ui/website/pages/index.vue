@@ -1,18 +1,7 @@
 <template>
 	<div class="page">
 		<header>
-			<section class="github-star" v-if="githubStar">
-				<span>Give us a star on GitHub</span>
-				<img src="~/assets/images/github-icon-white.svg" class="github-icon" alt="github icon" />
-				<button>
-					<img src="~/assets/images/github-star.svg" alt="github star" />
-					3490
-				</button>
-				<a @click="githubStar = false">
-					<img src="~/assets/images/close-icon.svg" alt="close" />
-				</a>
-			</section>
-			<Header :githubStar="githubStar"></Header>
+			<Header></Header>
 
 			<section class="hero-section">
 				<div class="hero-section--cta">
@@ -348,7 +337,6 @@ export default {
 			earlyAccessEmail: '',
 			cloudFeatures: ['Create Account', 'Manage Webhooks', 'View Metrics', 'Create Endpoints', 'Create Projects'],
 			currentYear: '',
-			githubStar: true,
 			tabs: [
 				{ label: 'Convoy Cloud', id: 'cloud' },
 				{ label: 'Open Core', id: 'open' },
@@ -1455,69 +1443,7 @@ a {
 		}
 	}
 }
-.github-star {
-	position: fixed;
-	top: 0;
-	left: 0;
-	background: #477db3;
-	// border-radius: 100px;
-	width: 100vw;
-	// left: 50%;
-	// transform: translateX(-50%);
-	height: 50px;
-	padding: 7px 11px;
-	display: flex;
-	align-items: center;
-	justify-content: center;
-	font-weight: 500;
-	font-size: 12px;
-	line-height: 20px;
-	color: #fff;
-	z-index: 99;
 
-	@media (min-width: $desktopBreakPoint) {
-		font-size: 18px;
-		line-height: 30px;
-		height: 60px;
-		padding: 12px 16px;
-		// max-width: 434px;
-		margin-bottom: -20px;
-	}
-	.github-icon {
-		height: 20px;
-		width: 20px;
-		margin-left: 13px;
-	}
-
-	button {
-		background: #ffffff;
-		border: 1px solid #edeff5;
-		box-shadow: 0px 2px 8px rgba(12, 26, 75, 0.08), 0px 3px 8px -1px rgba(50, 50, 71, 0.05);
-		border-radius: 4px;
-		color: #477db3;
-		font-weight: 500;
-		font-size: 14px;
-		line-height: 20px;
-		height: 36px;
-		padding: 10px;
-		display: flex;
-		align-items: center;
-		margin-left: 13px;
-		img {
-			height: 16px;
-			width: 16px;
-			margin-right: 5px;
-		}
-	}
-	a {
-		height: 20px;
-		width: 20px;
-		margin-left: 13px;
-		&:hover {
-			cursor: pointer;
-		}
-	}
-}
 footer {
 	.container {
 		max-width: 1170px;

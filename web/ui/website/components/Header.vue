@@ -1,6 +1,18 @@
 <template>
 	<div>
-		<nav :class="{ extraPadding: currentRoute === '/' && githubStar }">
+		
+		<nav :class="{ extraPadding: githubStar }">
+			<section class="github-star" v-if="githubStar">
+			<span>Give us a star on GitHub</span>
+			<img src="~/assets/images/github-icon-white.svg" class="github-icon" alt="github icon" />
+			<button>
+				<img src="~/assets/images/github-star.svg" alt="github star" />
+				3490
+			</button>
+			<a @click="githubStar = false">
+				<img src="~/assets/images/close-icon.svg" alt="close" />
+			</a>
+		</section>
 			<div>
 				<button class="menu-button" @click="showMenu = !showMenu">
 					<img v-if="!showMenu" src="~/assets/images/menu-icon.svg" alt="menu icon" width="24" />
@@ -51,18 +63,11 @@
 
 <script>
 export default {
-	props: {
-		githubStar: Boolean
-	},
 	data() {
 		return {
+			githubStar: true,
 			showMenu: false
 		};
-	},
-	computed: {
-		currentRoute() {
-			return this.$route.path;
-		}
 	}
 };
 </script>
@@ -257,6 +262,64 @@ nav {
 		display: block;
 		@media (min-width: $desktopBreakPoint) {
 			display: none;
+		}
+	}
+	.github-star {
+		position: fixed;
+		top: 0;
+		left: 0;
+		background: #477db3;
+		width: 100vw;
+		height: 50px;
+		padding: 7px 11px;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		font-weight: 500;
+		font-size: 12px;
+		line-height: 20px;
+		color: #fff;
+		z-index: 99;
+
+		@media (min-width: $desktopBreakPoint) {
+			font-size: 18px;
+			line-height: 30px;
+			height: 60px;
+			padding: 12px 16px;
+		}
+		.github-icon {
+			height: 20px;
+			width: 20px;
+			margin-left: 13px;
+		}
+
+		button {
+			background: #ffffff;
+			border: 1px solid #edeff5;
+			box-shadow: 0px 2px 8px rgba(12, 26, 75, 0.08), 0px 3px 8px -1px rgba(50, 50, 71, 0.05);
+			border-radius: 4px;
+			color: #477db3;
+			font-weight: 500;
+			font-size: 14px;
+			line-height: 20px;
+			height: 36px;
+			padding: 10px;
+			display: flex;
+			align-items: center;
+			margin-left: 13px;
+			img {
+				height: 16px;
+				width: 16px;
+				margin-right: 5px;
+			}
+		}
+		a {
+			height: 20px;
+			width: 20px;
+			margin-left: 13px;
+			&:hover {
+				cursor: pointer;
+			}
 		}
 	}
 }
