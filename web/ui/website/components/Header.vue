@@ -1,18 +1,17 @@
 <template>
 	<div>
-		
 		<nav :class="{ extraPadding: githubStar }">
 			<section class="github-star" v-if="githubStar">
-			<span>Give us a star on GitHub</span>
-			<img src="~/assets/images/github-icon-white.svg" class="github-icon" alt="github icon" />
-			<button>
-				<img src="~/assets/images/github-star.svg" alt="github star" />
-				3490
-			</button>
-			<a @click="githubStar = false">
-				<img src="~/assets/images/close-icon.svg" alt="close" />
-			</a>
-		</section>
+				<span>Give us a star on GitHub</span>
+				<img src="~/assets/images/github-icon-white.svg" class="github-icon" alt="github icon" />
+				<button>
+					<img src="~/assets/images/github-star.svg" alt="github star" />
+					3490
+				</button>
+				<a @click="closeStar()">
+					<img src="~/assets/images/close-icon.svg" alt="close" />
+				</a>
+			</section>
 			<div>
 				<button class="menu-button" @click="showMenu = !showMenu">
 					<img v-if="!showMenu" src="~/assets/images/menu-icon.svg" alt="menu icon" width="24" />
@@ -65,9 +64,31 @@
 export default {
 	data() {
 		return {
-			githubStar: true,
+			githubStar: null,
 			showMenu: false
 		};
+	},
+	mounted() {
+		this.checkForGithubStar();
+	},
+	methods: {
+		closeStar() {
+			this.githubStar = false;
+			localStorage.setItem('githubStar', false);
+		},
+		checkForGithubStar() {
+			const starStatus = localStorage.getItem('githubStar');
+			if (starStatus != null) {
+				if (starStatus == 'true') {
+					this.githubStar = true;
+				} else {
+					this.githubStar = false;
+				}
+			} else {
+ 				localStorage.setItem('githubStar', true);
+				this.githubStar = true;
+			}
+		}
 	}
 };
 </script>
