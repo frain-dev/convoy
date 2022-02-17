@@ -45,8 +45,10 @@ func addWorkerCommand(a *app) *cobra.Command {
 
 			srv := &http.Server{
 				Handler: router,
-				Addr:    fmt.Sprintf(":%d", cfg.Server.HTTP.Port),
+				Addr:    fmt.Sprintf(":%d", cfg.Server.HTTP.WorkerPort),
 			}
+
+			log.Infof("Worker running on port %v", cfg.Server.HTTP.WorkerPort)
 
 			e := srv.ListenAndServe()
 			if e != nil {
