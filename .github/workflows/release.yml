@@ -61,7 +61,7 @@ jobs:
 
       - uses: goreleaser/goreleaser-action@v2
         name: Release & Upload
-        if: needs.analyze-tags.outputs.publish == 'false' # action coerces booleans as strings
+        if: needs.analyze-tags.outputs.publish == 'true' # action coerces booleans as strings
         with:
           version: latest
           args: -f .goreleaser.yml release --rm-dist
@@ -71,7 +71,7 @@ jobs:
 
       - uses: goreleaser/goreleaser-action@v2
         name: Release, Upload & Publish
-        if: needs.analyze-tags.outputs.publish == 'true'
+        if: needs.analyze-tags.outputs.publish == 'false'
         with:
           version: latest
           args: -f .publisher.yml release --rm-dist
