@@ -1,0 +1,65 @@
+project_name: convoy
+
+before:
+  hooks:
+    - go mod tidy
+builds:
+  - env:
+      - CGO_ENABLED=0
+    main: ./cmd
+    goos:
+      - linux
+      - darwin
+    goarch:
+      - amd64
+      - arm64
+
+# https://goreleaser.com/customization/archive/
+archives:
+  - name_template: "{{ .ProjectName}}_{{ .Version }}_{{ .Os }}_{{ .Arch }}"
+
+# https://goreleaser.com/customization/nfpm/
+nfpms:
+  - id: debrpm
+    license: MPL-2.0
+    maintainer: frain-dev
+    homepage: https://getconvoy.io/
+    description: "A Cloud native webhook service"
+    file_name_template: "{{ .ProjectName }}_{{ .Version }}_{{ .Os }}_{{ .Arch }}"
+    formats:
+      - rpm
+      - deb
+
+  - id: apk
+    license: MPL-2.0
+    maintainer: frain-dev
+    homepage: https://getconvoy.io/
+    description: "A Cloud native webhook service"
+    file_name_template: "{{ .ProjectName }}_{{ .Version }}_{{ .Os }}_{{ .Arch }}"
+    formats:
+      - apk
+
+# https://goreleaser.com/customization/publishers/
+publishers:
+  - name: fury.io
+    ids:
+      - debrpm
+    dir: "{{ dir .ArtifactPath }}"
+    cmd: curl -F package=@{{ .ArtifactName }} https://{{ .Env.FURY_TOKEN }}@push.fury.io/convoy/
+
+# https://goreleaser.com/customization/homebrew/
+brews:
+  - name: convoy
+    homepage: https://getconvoy.io/
+    description: A Cloud native webhook service
+    license: MPL-2.0
+    skip_upload: auto
+    commit_author:
+      name: frain-dev
+      email: dev@frain.dev
+    tap:
+      owner: frain-dev
+      name: homebrew-tools
+
+checksum:
+  name_template: "{{ .ProjectName}}_checksums.txt"
