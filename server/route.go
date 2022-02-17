@@ -19,6 +19,7 @@ import (
 	"github.com/frain-dev/convoy/queue"
 	"github.com/go-chi/chi/v5/middleware"
 	"github.com/go-chi/httprate"
+	"github.com/go-chi/render"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	log "github.com/sirupsen/logrus"
@@ -243,6 +244,9 @@ func buildRoutes(app *applicationHandler) http.Handler {
 	})
 
 	router.Handle("/v1/metrics", promhttp.Handler())
+	router.HandleFunc("/health", func(w http.ResponseWriter, r *http.Request) {
+		_ = render.Render(w, r, newServerResponse("Convoy", nil, http.StatusOK))
+	})
 	router.HandleFunc("/*", reactRootHandler)
 
 	return router
