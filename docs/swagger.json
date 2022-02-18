@@ -1,6 +1,5 @@
 {
     "schemes": [
-        "http",
         "https"
     ],
     "swagger": "2.0",
@@ -10,8 +9,8 @@
         "termsOfService": "https://getconvoy.io/terms",
         "contact": {
             "name": "API Support",
-            "url": "http://www.swagger.io/support",
-            "email": "engineering@getconvoy.io"
+            "url": "https://getconvoy.io/docs",
+            "email": "Info@frain.dev"
         },
         "license": {
             "name": "Mozilla Public License 2.0",
@@ -19,7 +18,7 @@
         },
         "version": "0.1.12"
     },
-    "host": "localhost:8080",
+    "host": "https://cloud.staging.getconvoy.io",
     "basePath": "/api/v1",
     "paths": {
         "/applications": {
@@ -3268,7 +3267,13 @@
                 "expires_at": {
                     "type": "integer"
                 },
+                "hash": {
+                    "type": "string"
+                },
                 "key_type": {
+                    "type": "string"
+                },
+                "mask_id": {
                     "type": "string"
                 },
                 "name": {
@@ -3276,6 +3281,9 @@
                 },
                 "role": {
                     "$ref": "#/definitions/auth.Role"
+                },
+                "salt": {
+                    "type": "string"
                 },
                 "uid": {
                     "type": "string"
