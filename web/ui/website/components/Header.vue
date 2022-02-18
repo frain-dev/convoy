@@ -85,7 +85,7 @@ export default {
 					this.githubStar = false;
 				}
 			} else {
- 				localStorage.setItem('githubStar', true);
+				localStorage.setItem('githubStar', true);
 				this.githubStar = true;
 			}
 		}
