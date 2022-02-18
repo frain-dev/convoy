@@ -390,7 +390,7 @@ definitions:
       status:
         type: boolean
     type: object
-host: https://cloud.staging.getconvoy.io
+host: cloud.staging.getconvoy.io
 info:
   contact:
     email: Info@frain.dev
