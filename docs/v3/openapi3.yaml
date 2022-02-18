@@ -17,12 +17,18 @@ components:
           type: integer
         expires_at:
           type: integer
+        hash:
+          type: string
         key_type:
+          type: string
+        mask_id:
           type: string
         name:
           type: string
         role:
           $ref: '#/components/schemas/auth.Role'
+        salt:
+          type: string
         uid:
           type: string
         updated_at:
@@ -390,9 +396,9 @@ components:
       type: apiKey
 info:
   contact:
-    email: engineering@getconvoy.io
+    email: Info@frain.dev
     name: API Support
-    url: http://www.swagger.io/support
+    url: https://getconvoy.io/docs
   description: Convoy is a fast and secure distributed webhooks service. This document
     contains datastore.s API specification.
   license:
@@ -2310,8 +2316,7 @@ paths:
       tags:
       - APIKey
 servers:
-- url: http://localhost:8080/api/v1
-- url: https://localhost:8080/api/v1
+- url: https://https:%2F%2Fcloud.staging.getconvoy.io/api/v1
 tags:
 - description: Application related APIs
   name: Application
