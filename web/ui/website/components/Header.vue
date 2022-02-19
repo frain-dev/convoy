@@ -43,11 +43,11 @@
 						</a>
 					</li>
 					<li class="ml-auto">
-						<a href="https://dev--convoy-saas.netlify.app/login">Login</a>
-						<button>
+						<a target="_blank" rel="noopener noreferrer" href="https://app.getconvoy.io/login">Login</a>
+						<a class="primary" target="_blank" rel="noopener noreferrer" href="https://app.getconvoy.io/signup">
 							Sign up for free
 							<img src="~/assets/images/arrow-right-white.svg" alt="arrow right" />
-						</button>
+						</a>
 					</li>
 				</ul>
 
@@ -201,7 +201,7 @@ nav {
 					margin-top: 30px;
 				}
 			}
-			button {
+			button, a.primary {
 				background: #477db3;
 				border-radius: 8px;
 				padding: 9px 20px;

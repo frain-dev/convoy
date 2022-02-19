@@ -184,7 +184,7 @@
 				</div>
 			</div>
 			<div class="cloud-get-started">
-				<a class="primary">
+				<a target="_blank" rel="noopener noreferrer" href="https://app.getconvoy.io" class="primary">
 					Get started for free
 					<img src="~/assets/images/arrow-right-icon.svg" alt="arrow right" />
 				</a>
@@ -221,7 +221,7 @@
 			<div class="container">
 				<h2>Start sending webhooks now, risk free</h2>
 				<p>Convoy provides you with fast, secure and reliable webhooks infrastructure so you can focus on building the actual tech. Save yourself some engineering time and get started today.</p>
-				<a class="primary">
+				<a target="_blank" rel="noopener noreferrer" href="https://app.getconvoy.io" class="primary">
 					Get started for free
 					<img src="~/assets/images/arrow-right-icon.svg" alt="arrow right" />
 				</a>
@@ -265,10 +265,10 @@
 									<p>CO-Founder Convoy</p>
 								</div>
 							</div>
-							<a class="read-more">
+							<nuxt-link to="/blog" class="read-more">
 								Read More
 								<img src="~/assets/images/angle-right-primary.svg" alt="right" />
-							</a>
+							</nuxt-link>
 						</div>
 					</div>
 					<img src="~/assets/images/Featured.svg" class="blog-img" alt="blogpost" />
@@ -1197,11 +1197,15 @@ a {
 		width: fit-content;
 		white-space: nowrap;
 		color: #fff;
+		transition: .3s ease-in-out all;
 		img {
 			margin-left: 12px;
 			height: 12px;
 			width: 12px;
 		}
+	}
+	&:hover{
+		cursor: pointer;
 	}
 }
 .offers {
