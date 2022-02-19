@@ -1,0 +1,23 @@
+.app-notification {
+  position: fixed;
+  bottom: -100px;
+  left: 50%;
+  -webkit-transform: translate(-50%, 0);
+          transform: translate(-50%, 0);
+  background: #4e4d4d;
+  padding: 20px 30px;
+  max-width: 500px;
+  border-radius: 10px;
+  color: #fff;
+  font-weight: 500;
+  font-size: 14px;
+  text-align: center;
+  -webkit-transition: all 0.5s;
+  transition: all 0.5s;
+  text-transform: capitalize;
+}
+
+.app-notification.show {
+  bottom: 50px;
+}
+/*# sourceMappingURL=notification.component.css.map */
