@@ -1,9 +1,0 @@
-{
-    "version": 3,
-    "mappings": "",
-    "sources": [
-        "../web/ui/dashboard/src/app/shared/shared.component.scss"
-    ],
-    "names": [],
-    "file": "shared.component.css"
-}

@@ -1,9 +1,0 @@
-{
-    "version": 3,
-    "mappings": "",
-    "sources": [
-        "../web/ui/dashboard/src/app/private/private.component.scss"
-    ],
-    "names": [],
-    "file": "private.component.css"
-}

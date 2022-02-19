@@ -1,9 +1,0 @@
-{
-    "version": 3,
-    "mappings": "",
-    "sources": [
-        "../web/ui/dashboard-component/projects/convoy-dashboard/src/lib/prism/prism.component.scss"
-    ],
-    "names": [],
-    "file": "prism.component.css"
-}

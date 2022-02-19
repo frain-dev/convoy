@@ -1,9 +1,0 @@
-{
-    "version": 3,
-    "mappings": "AAAA,AAAA,iBAAiB,CAAC;EACjB,QAAQ,EAAE,KAAK;EACf,MAAM,EAAE,MAAM;EACd,IAAI,EAAE,GAAG;EACT,SAAS,EAAE,kBAAkB;EAC7B,UAAU,EAAE,OAAO;EACnB,OAAO,EAAE,SAAS;EAClB,SAAS,EAAE,KAAK;EAChB,aAAa,EAAE,IAAI;EACnB,KAAK,EAAE,IAAI;EACX,WAAW,EAAE,GAAG;EAChB,SAAS,EAAE,IAAI;EACf,UAAU,EAAE,MAAM;EAClB,UAAU,EAAE,QAAQ;EACpB,cAAc,EAAE,UAAU;CAK1B;;AAnBD,AAgBC,iBAhBgB,AAgBf,KAAK,CAAC;EACN,MAAM,EAAE,IAAI;CACZ",
-    "sources": [
-        "../web/ui/dashboard/src/app/components/notification/notification.component.scss"
-    ],
-    "names": [],
-    "file": "notification.component.css"
-}
