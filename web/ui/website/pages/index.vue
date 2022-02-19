@@ -228,7 +228,8 @@
 			</div>
 		</section>
 
-		<section class="section play-ground">
+		<!-- not currently in use  -->
+		<!-- <section class="section play-ground">
 			<div class="container">
 				<h2>Convoy Play Ground</h2>
 				<p>We've deployed an instance of Convoy to the cloud so you can play with it and have a taste of how Convoy will enable your webhook service</p>
@@ -241,7 +242,7 @@
 				</div>
 			</div>
 			<div class="bg"></div>
-		</section>
+		</section> -->
 
 		<section class="section blog">
 			<div class="container">
@@ -352,7 +353,7 @@ export default {
 	mounted() {
 		this.getCurrentYear();
 	},
-	
+
 	methods: {
 		switchTabs(activeTab) {
 			console.log(activeTab);
@@ -1264,7 +1265,7 @@ a {
 	}
 }
 .start-sending {
-	margin-bottom: 430px;
+	margin-bottom: 130px;
 	.container {
 		background: url('~/assets/images/Base.png');
 		background-size: cover;
