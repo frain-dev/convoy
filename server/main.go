@@ -15,7 +15,7 @@ package server
 // @license.url https://www.mozilla.org/en-US/MPL/2.0/
 
 // @schemes https
-// @host https://cloud.staging.getconvoy.io
+// @host cloud.staging.getconvoy.io
 // @BasePath /api/v1
 
 // @securityDefinitions.apikey ApiKeyAuth

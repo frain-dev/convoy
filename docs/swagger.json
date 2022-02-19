@@ -18,7 +18,7 @@
         },
         "version": "0.1.12"
     },
-    "host": "https://cloud.staging.getconvoy.io",
+    "host": "cloud.staging.getconvoy.io",
     "basePath": "/api/v1",
     "paths": {
         "/applications": {
