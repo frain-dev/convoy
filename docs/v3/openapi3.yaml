@@ -2316,7 +2316,7 @@ paths:
       tags:
       - APIKey
 servers:
-- url: https://https:%2F%2Fcloud.staging.getconvoy.io/api/v1
+- url: https://cloud.staging.getconvoy.io/api/v1
 tags:
 - description: Application related APIs
   name: Application
