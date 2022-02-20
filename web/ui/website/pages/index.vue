@@ -356,7 +356,6 @@ export default {
 
 	methods: {
 		switchTabs(activeTab) {
-			console.log(activeTab);
 			switch (activeTab) {
 				case 'cloud':
 					this.activeTab = 'cloud';
@@ -370,7 +369,6 @@ export default {
 				default:
 					break;
 			}
-			console.log(this.activeTab);
 		},
 		getCurrentYear() {
 			const currentDate = new Date();
