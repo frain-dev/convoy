@@ -1,29 +1,20 @@
 package main
 
 import (
-	"fmt"
-	"strings"
-
-	"github.com/frain-dev/convoy"
 	"github.com/spf13/cobra"
 )
 
 func addVersionCommand() *cobra.Command {
 	cmd := &cobra.Command{
-		Use:   "version",
-		Short: "Print the version",
-		RunE: func(cmd *cobra.Command, args []string) error {
-			v := "0.1.0"
-
-			f, err := convoy.ReadVersion()
-			if err != nil {
-				fmt.Println(v)
-				return nil
-			}
-			v = strings.TrimSuffix(string(f), "\n")
-			fmt.Println(v)
-			return nil
+		Use:              "version",
+		Short:            "Print the version",
+		PersistentPreRun: func(cmd *cobra.Command, args []string) {},
+		Run: func(cmd *cobra.Command, args []string) {
+			root := cmd.Root()
+			root.SetArgs([]string{"--version"})
+			root.Execute()
 		},
+		PersistentPostRun: func(cmd *cobra.Command, args []string) {},
 	}
 
 	return cmd

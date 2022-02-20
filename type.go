@@ -32,6 +32,18 @@ func ReadVersion() ([]byte, error) {
 	return data, nil
 }
 
+func GetVersion() string {
+	v := "0.1.0"
+
+	f, err := ReadVersion()
+	if err != nil {
+		return v
+	}
+
+	v = strings.TrimSuffix(string(f), "\n")
+	return v
+}
+
 const (
 	EventProcessor      TaskName = "EventProcessor"
 	DeadLetterProcessor TaskName = "DeadLetterProcessor"
