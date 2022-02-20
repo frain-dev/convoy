@@ -36,6 +36,7 @@ $desktopBreakPoint: 880px;
 					line-height: 16px;
 					min-width: 132px;
 				}
+                
 				&.active {
 					span {
 						font-weight: 600;
@@ -59,18 +60,25 @@ $desktopBreakPoint: 880px;
 		border-radius: 0;
 		width: fit-content;
 		margin: 0;
-		display: flex;
-		flex-flow: row;
 		margin-bottom: 24px;
 		li {
+            &:not(:last-of-type){
+                margin-right: 25px;
+            }
 			button {
 				border-radius: 0;
 				padding: 0;
 				padding-bottom: 10px;
+                width: fit-content;
+                
 				span {
 					font-size: 14px;
 					line-height: 24px;
+                    text-align: left;
 					color: #000624;
+                    @media (min-width: $desktopBreakPoint) {
+                        min-width: 80px;
+                    }
 				}
 
 				&.active {
