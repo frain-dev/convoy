@@ -4,7 +4,7 @@
 		<header></header>
 		<div class="page">
 			<h2>Download Convoy</h2>
-			<p class="subtitle">Leo faucibus nulla nunc dui pulvinar non. Sit sagittis, semper mollis porta facilisis sed ut id. Ultrices sit aenean urna.</p>
+			<p class="subtitle">Download Convoy with your favorite package manager.</p>
 			<div class="tabs tabs__light">
 				<li v-for="tab of tabs" :key="tab.id">
 					<button :class="activeTab === tab.id ? 'active' : ''" @click="switchTabs(tab.id)">
@@ -156,7 +156,7 @@ header {
 	max-width: 1150px;
 	margin: auto;
 	font-family: 'Inter', sans-serif;
-	margin-top: -150px;
+	margin-top: -130px;
 }
 .download {
 	background: #f3f3f8;
