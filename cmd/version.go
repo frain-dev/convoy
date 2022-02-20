@@ -9,10 +9,15 @@ func addVersionCommand() *cobra.Command {
 		Use:              "version",
 		Short:            "Print the version",
 		PersistentPreRun: func(cmd *cobra.Command, args []string) {},
-		Run: func(cmd *cobra.Command, args []string) {
+		RunE: func(cmd *cobra.Command, args []string) error {
 			root := cmd.Root()
 			root.SetArgs([]string{"--version"})
-			root.Execute()
+			err := root.Execute()
+			if err != nil {
+				return err
+			}
+
+			return nil
 		},
 		PersistentPostRun: func(cmd *cobra.Command, args []string) {},
 	}
