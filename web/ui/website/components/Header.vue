@@ -27,6 +27,9 @@
 						<a target="_blank" rel="noopener noreferrer" href="https://github.com/frain-dev/convoy/discussions">Community</a>
 					</li>
 					<li>
+						<nuxt-link to="/download">Download</nuxt-link>
+					</li>
+					<li>
 						<a href="https://github.com/frain-dev/convoy">
 							<img src="~/assets/images/github-logo.svg" alt="github logo" />
 						</a>
