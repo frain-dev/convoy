@@ -1,29 +1,25 @@
 package main
 
 import (
-	"fmt"
-	"os"
-	"strings"
-
 	"github.com/spf13/cobra"
 )
 
 func addVersionCommand() *cobra.Command {
 	cmd := &cobra.Command{
-		Use:   "version",
-		Short: "Print the version",
+		Use:              "version",
+		Short:            "Print the version",
+		PersistentPreRun: func(cmd *cobra.Command, args []string) {},
 		RunE: func(cmd *cobra.Command, args []string) error {
-			v := "0.1.0"
-
-			f, err := os.ReadFile("VERSION")
+			root := cmd.Root()
+			root.SetArgs([]string{"--version"})
+			err := root.Execute()
 			if err != nil {
-				fmt.Println(v)
-				return nil
+				return err
 			}
-			v = strings.TrimSuffix(string(f), "\n")
-			fmt.Println(v)
+
 			return nil
 		},
+		PersistentPostRun: func(cmd *cobra.Command, args []string) {},
 	}
 
 	return cmd
