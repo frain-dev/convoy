@@ -1,16 +1,24 @@
 <template>
 	<div>
-		<div>
-			<h2>Convoy as Open Source</h2>
+		<Header></Header>
+		<header></header>
+		<div class="page">
+			<h2>Convoy Open-Core</h2>
 			<p class="subtitle">Find the guides, samples, and references you need to use Convoy to start sending out and receiving webhook events as fast as possible.</p>
 			<section class="banner">
 				<div>
 					<h4 class="title">Quick Start Guide</h4>
 					<p>We've put together a short easy to follow steps to get started with deploying Convoy to your dev environment and sending out webhook events in few minutes.</p>
-					<nuxt-link to="/docs/guide" class="get-started">
-						Get started
-						<img src="~/assets/images/arrow-circle-right.svg" alt="arrow right" />
-					</nuxt-link>
+					<div class="links">
+						<nuxt-link to="/docs/guide" class="get-started">
+							Get started
+							<img src="~/assets/images/arrow-circle-right.svg" alt="arrow right" />
+						</nuxt-link>
+						<a class="api-reference" target="_blank" href="https://convoy.readme.io/reference/introduction">
+							Api Reference
+							<img src="~/assets/images/arrow-down-right.svg" alt="arrow right" />
+						</a>
+					</div>
 				</div>
 				<div class="banner-img">
 					<img src="~/assets/images/doc-banner.svg" alt="banner" />
@@ -54,27 +62,36 @@
 	</div>
 </template>
 
-<script>
-export default {
-	layout: 'docs',
-};
-</script>
-
 <style lang="scss" scoped>
+header {
+	background: url('~/assets/images/docs-bg.svg'), no-repeat;
+	background-size: cover;
+	height: 450px;
+	width: 100%;
+}
+.page {
+	max-width: 1150px;
+	margin: auto;
+	margin-top: -270px;
+}
 h2 {
 	font-weight: bold;
 	font-size: 27px;
 	line-height: 32px;
 	letter-spacing: 0.01em;
-	color: #000624;
+	color: #ffffff;
 	margin-bottom: 8px;
+	text-align: center;
+	width: 100%;
 }
 p.subtitle {
 	font-size: 16px;
 	line-height: 24px;
-	color: #737a91;
-	max-width: 671px;
-	margin-bottom: 36px;
+	color: #ffffff;
+	text-align: center;
+	max-width: 590px;
+	margin: auto;
+	margin-bottom: 40px;
 }
 .banner {
 	background: #fcfcfc;
@@ -120,9 +137,20 @@ p.subtitle {
 		&:hover {
 			cursor: pointer;
 		}
+		&.api-reference {
+			margin-left: 30px;
+			img {
+			margin-left: 5px;
+				transform: rotate(270deg);
+			}
+		}
 	}
 	&-img {
 		max-height: 236px;
+	}
+	.links {
+		display: flex;
+		align-items: center;
 	}
 }
 .cards {
