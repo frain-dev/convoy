@@ -1,7 +1,9 @@
 <template>
 	<div>
-		<div>
-			<h2>Convoy as Open Source</h2>
+		<Header></Header>
+		<header></header>
+		<div class="page">
+			<h2>Convoy Open-Core</h2>
 			<p class="subtitle">Find the guides, samples, and references you need to use Convoy to start sending out and receiving webhook events as fast as possible.</p>
 			<section class="banner">
 				<div>
@@ -54,27 +56,36 @@
 	</div>
 </template>
 
-<script>
-export default {
-	layout: 'docs',
-};
-</script>
 
 <style lang="scss" scoped>
+header {
+	background: url('~/assets/images/docs-bg.svg'), no-repeat;
+	height: 450px;
+	width: 100%;
+}
+.page {
+	max-width: 1150px;
+	margin: auto;
+	margin-top: -270px;
+}
 h2 {
 	font-weight: bold;
 	font-size: 27px;
 	line-height: 32px;
 	letter-spacing: 0.01em;
-	color: #000624;
+	color: #ffffff;
 	margin-bottom: 8px;
+	text-align: center;
+	width: 100%;
 }
 p.subtitle {
 	font-size: 16px;
 	line-height: 24px;
-	color: #737a91;
-	max-width: 671px;
-	margin-bottom: 36px;
+	color: #ffffff;
+	text-align: center;
+	max-width: 590px;
+	margin: auto;
+	margin-bottom: 40px;
 }
 .banner {
 	background: #fcfcfc;
