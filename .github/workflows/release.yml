@@ -75,6 +75,7 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.RELEASE_TOKEN }}
           FURY_TOKEN: ${{ secrets.FURY_TOKEN }}
+          REPO_NAME: ${{ github.repository }}
 
       - uses: goreleaser/goreleaser-action@v2
         name: Release, Upload & Publish
