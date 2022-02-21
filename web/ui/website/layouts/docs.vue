@@ -11,8 +11,8 @@
 			<ul>
 				<li>
 					<a class="api-reference" target="_blank" href="https://convoy.readme.io/reference/introduction">
-						<img src="~/assets/images/arrow-down-right.svg" alt="arrow right" />
 						Api Reference
+						<img src="~/assets/images/arrow-down-right-grey.svg" alt="arrow right" />
 					</a>
 				</li>
 				<li>
@@ -163,6 +163,7 @@ aside {
 a.api-reference{
 	img{
 		transform: rotate(270deg);
+		margin-left: 5px;
 	}
 }
 .main {

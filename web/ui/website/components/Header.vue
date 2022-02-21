@@ -28,7 +28,7 @@
 
 				<ul :class="showMenu ? 'show' : ''">
 					<li>
-						<a href="#features">Features</a>
+						<a href="/#features">Features</a>
 					</li>
 					<li>
 						<nuxt-link to="/blog">Blog</nuxt-link>
