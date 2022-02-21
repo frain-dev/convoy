@@ -61,21 +61,7 @@ export default {
 </script>
 
 <style lang="scss" scoped>
-h2 {
-	font-weight: bold;
-	font-size: 27px;
-	line-height: 32px;
-	letter-spacing: 0.01em;
-	color: #000624;
-	margin-bottom: 8px;
-}
-p.subtitle {
-	font-size: 16px;
-	line-height: 24px;
-	color: #737a91;
-	max-width: 671px;
-	margin-bottom: 36px;
-}
+
 .banner {
 	background: #fcfcfc;
 	box-shadow: 0px 2px 4px rgba(12, 26, 75, 0.04), 0px 4px 20px -2px rgba(50, 50, 71, 0.08);
