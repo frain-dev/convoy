@@ -2,7 +2,7 @@
 	<div class="page">
 		<aside>
 			<div class="logo">
-				<img src="~/assets/images/logo.svg" alt="logo" />
+				<nuxt-link to="/"><img src="~/assets/images/logo.svg" alt="logo" /></nuxt-link>
 				<span>Docs</span>
 			</div>
 
