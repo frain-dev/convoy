@@ -5,10 +5,10 @@
 
 			<section class="hero-section">
 				<div class="hero-section--cta">
-					<h1>A Cloud native Webhook Serviced</h1>
+					<h1>A Cloud native Webhook Service</h1>
 					<p>With out-of-the-box security, reliability and scalability for your webhooks infrastructure.</p>
 
-					<a target="_blank" rel="noopener noreferrer" href="https://app.getconvoy.io" class="primary">Get Started</a>
+					<a target="_blank" rel="noopener noreferrer" href="https://app.getconvoy.io/signup" class="primary">Get Started</a>
 				</div>
 				<div class="hero-section--img">
 					<img src="~/assets/images/hero-img.png" alt="hero" />
@@ -184,7 +184,7 @@
 				</div>
 			</div>
 			<div class="cloud-get-started">
-				<a target="_blank" rel="noopener noreferrer" href="https://app.getconvoy.io" class="primary">
+				<a target="_blank" rel="noopener noreferrer" href="https://app.getconvoy.io/signup" class="primary">
 					Get started for free
 					<img src="~/assets/images/arrow-right-icon.svg" alt="arrow right" />
 				</a>
@@ -505,7 +505,7 @@ header {
 					display: flex;
 					align-items: center;
 					@media (max-width: $desktopBreakPoint) {
-						overflow-x: scroll;
+						overflow-x: auto;
 						-webkit-overflow-scrolling: touch;
 						scroll-behavior: smooth;
 						margin-right: 20px;
@@ -516,10 +516,13 @@ header {
 						}
 					}
 					@media (max-width: 425px) {
-						max-width: 345px;
+						max-width: 335px;
 					}
 					@media (max-width: 390px) {
 						max-width: 295px;
+					}
+					@media (max-width: 320px) {
+						max-width: 245px;
 					}
 					a {
 						&:not(:last-of-type) {

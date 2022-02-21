@@ -172,7 +172,7 @@ nav {
 
 		&.show {
 			padding-top: 20px;
-			height: 233px;
+			height: 390px;
 			overflow-y: auto;
 			display: block;
 		}
@@ -216,7 +216,7 @@ nav {
 				display: flex;
 				align-items: center;
 				white-space: nowrap;
-
+margin-top: 15px;
 				img {
 					height: 24px;
 					width: 24px;

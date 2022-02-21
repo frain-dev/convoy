@@ -148,6 +148,30 @@ export default {
 };
 </script>
 <style lang="scss" scoped>
+h2 {
+	font-weight: bold;
+	font-size: 27px;
+	line-height: 32px;
+	letter-spacing: 0.01em;
+	color: #000624;
+	color: #ffffff;
+	margin-bottom: 8px;
+	text-align: center;
+	width: 100%;
+}
+p.subtitle {
+	font-size: 16px;
+	line-height: 24px;
+	color: #737a91;
+	max-width: 671px;
+	margin-bottom: 36px;
+	color: #ffffff;
+	text-align: center;
+	max-width: 590px;
+	margin: auto;
+	margin-bottom: 40px;
+}
+
 header {
 	background: url('~/assets/images/BG.png'), no-repeat;
     background-size: cover;
