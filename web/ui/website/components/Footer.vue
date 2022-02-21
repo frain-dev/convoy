@@ -26,23 +26,21 @@
 						</li>
 					</ul>
 				</div>
-				<div>
-					<div class="join-news-letter">
+				<div class="newsletter">
+					<div>
 						<div>
-							<p>Join our newsletter</p>
+							<h5>Join our newsletter</h5>
 							<p>No spam! Just articles, events, and talks.</p>
 						</div>
-						<div>
-							<img src="~/assets/images/mailbox.gif" alt="mailbox icon" />
-						</div>
+						<img src="~/assets/images/mailbox.gif" alt="mailbox animation" />
 					</div>
-					<div class="input has-icon">
-						<img src="~/assets/images/email.svg" class="prepend-icon" alt="email" />
-						<input type="text" placeholder="Your Email" />
+					<form @submit.prevent="requestAccess()">
+						<img src="~/assets/images/mail-primary-icon.svg" alt="mail icon" />
+						<input type="email" id="email" placeholder="Your email" aria-label="Email" v-model="earlyAccessEmail" />
 						<button>
-							<img src="~/assets/images/send-email.svg" alt="send email" />
+							<img src="~/assets/images/send-primary-icon.svg" alt="send icon" />
 						</button>
-					</div>
+					</form>
 				</div>
 			</nav>
 			<p class="copyright">Copyright {{ currentYear }}, All Rights Reserved</p>
@@ -53,7 +51,9 @@
 export default {
 	data() {
 		return {
-			currentYear: ''
+			currentYear: '',
+			earlyAccessEmail: '',
+			isSubmitingloadingEarlyAccessForm: false
 		};
 	},
 	mounted() {
@@ -63,11 +63,86 @@ export default {
 		getCurrentYear() {
 			const currentDate = new Date();
 			this.currentYear = currentDate.getFullYear();
+		},
+		async requestAccess() {
+			this.isSubmitingloadingEarlyAccessForm = true;
+			try {
+				const response = await fetch('/.netlify/functions/subscribe', {
+					method: 'POST',
+					mode: 'cors',
+					cache: 'no-cache',
+					credentials: 'same-origin',
+					headers: {
+						'Content-Type': 'application/json'
+					},
+					redirect: 'follow',
+					referrerPolicy: 'no-referrer',
+					body: JSON.stringify({
+						email: this.earlyAccessEmail
+					})
+				});
+				await response.json();
+				this.earlyAccessEmail = '';
+				this.isSubmitingloadingEarlyAccessForm = false;
+			} catch (error) {
+				this.isSubmitingloadingEarlyAccessForm = false;
+			}
 		}
 	}
 };
 </script>
 <style lang="scss" scoped>
+$desktopBreakPoint: 880px;
+.newsletter {
+	display: unset;
+	width: 100%;
+	padding: 0;
+	margin-top: 41px;
+
+	@media (min-width: $desktopBreakPoint) {
+		max-width: 430px;
+	}
+
+	h5,
+	p {
+		text-align: left;
+	}
+
+	& > div {
+		display: flex;
+		justify-content: space-between;
+		margin: 0;
+		width: 100%;
+		max-width: unset;
+		align-items: center;
+
+		div {
+			order: 1;
+			max-width: unset;
+			margin: unset;
+		}
+
+		img {
+			order: 2;
+			width: 125px;
+		}
+	}
+
+	form {
+		background: #1c2126;
+		border: 1px solid #262f37;
+		box-sizing: border-box;
+		border-radius: 8px;
+		margin-top: -10px;
+	}
+input{
+	color: #fff;
+}
+	input::placeholder {
+		color: #ebf4f1;
+		opacity: 1;
+	}
+}
 footer {
 	.container {
 		max-width: 1170px;
