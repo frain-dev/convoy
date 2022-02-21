@@ -9,6 +9,8 @@ import (
 	_ "time/tzdata"
 
 	"github.com/frain-dev/convoy/cache"
+	"github.com/frain-dev/convoy/datastore/badger"
+
 	"github.com/frain-dev/convoy/logger"
 	memqueue "github.com/frain-dev/convoy/queue/memqueue"
 	redisqueue "github.com/frain-dev/convoy/queue/redis"
@@ -30,7 +32,6 @@ import (
 	"github.com/frain-dev/convoy/queue"
 	"github.com/spf13/cobra"
 
-	"github.com/frain-dev/convoy/datastore/bolt"
 	"github.com/frain-dev/convoy/datastore/mongo"
 )
 
@@ -333,8 +334,8 @@ func NewDB(cfg config.Configuration) (datastore.DatabaseClient, error) {
 			return nil, err
 		}
 		return db, nil
-	case "bolt":
-		bolt, err := bolt.New(cfg)
+	case "in-memory":
+		bolt, err := badger.New(cfg)
 		if err != nil {
 			return nil, err
 		}

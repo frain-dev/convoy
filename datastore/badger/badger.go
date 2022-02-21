@@ -1,16 +1,20 @@
-package bolt
+package badger
 
 import (
 	"context"
+	"io"
 
-	"go.etcd.io/bbolt"
+	"github.com/frain-dev/convoy/util"
 
+	"github.com/dgraph-io/badger/v3"
 	"github.com/frain-dev/convoy/config"
 	"github.com/frain-dev/convoy/datastore"
+	"github.com/sirupsen/logrus"
+	"github.com/timshannon/badgerhold/v4"
 )
 
 type Client struct {
-	db                *bbolt.DB
+	store             *badgerhold.Store
 	apiKeyRepo        datastore.APIKeyRepository
 	groupRepo         datastore.GroupRepository
 	eventRepo         datastore.EventRepository
@@ -19,33 +23,45 @@ type Client struct {
 }
 
 func New(cfg config.Configuration) (datastore.DatabaseClient, error) {
-	db, err := bbolt.Open(cfg.Database.Dsn, 0666, nil)
+	dsn := cfg.Database.Dsn
+	if util.IsStringEmpty(dsn) {
+		dsn = "./convoy_db"
+	}
+
+	st, err := badgerhold.Open(badgerhold.Options{
+		Encoder:          badgerhold.DefaultEncode,
+		Decoder:          badgerhold.DefaultDecode,
+		SequenceBandwith: 100,
+		Options: badger.DefaultOptions(dsn).
+			WithZSTDCompressionLevel(0).
+			WithCompression(0).WithLogger(&logrus.Logger{Out: io.Discard}),
+	})
 	if err != nil {
 		return nil, err
 	}
 
 	c := &Client{
-		db:                db,
-		groupRepo:         NewGroupRepo(db),
-		eventRepo:         NewEventRepo(db),
-		apiKeyRepo:        NewApiRoleRepo(db),
-		applicationRepo:   NewApplicationRepo(db),
-		eventDeliveryRepo: NewEventDeliveryRepository(db),
+		store:             st,
+		groupRepo:         NewGroupRepo(st),
+		eventRepo:         NewEventRepo(st),
+		apiKeyRepo:        NewApiRoleRepo(st),
+		applicationRepo:   NewApplicationRepo(st),
+		eventDeliveryRepo: NewEventDeliveryRepository(st),
 	}
 
 	return c, nil
 }
 
-func (c *Client) Disconnect(ctx context.Context) error {
-	return c.db.Close()
+func (c *Client) Disconnect(context.Context) error {
+	return c.store.Close()
 }
 
 func (c *Client) GetName() string {
-	return "bolt"
+	return "badger"
 }
 
 func (c *Client) Client() interface{} {
-	return c.db
+	return c.store
 }
 
 func (c *Client) GroupRepo() datastore.GroupRepository {
