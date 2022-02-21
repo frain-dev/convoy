@@ -11,8 +11,13 @@
 			<ul>
 				<li>
 					<a class="api-reference" target="_blank" href="https://convoy.readme.io/reference/introduction">
+<<<<<<< HEAD
 						Api Reference
 						<img src="~/assets/images/arrow-down-right-grey.svg" alt="arrow right" />
+=======
+						<img src="~/assets/images/arrow-down-right.svg" alt="arrow right" />
+						Api Reference
+>>>>>>> c0961d62e73f5727e5388ee68c3a16474a8d2e07
 					</a>
 				</li>
 				<li>
