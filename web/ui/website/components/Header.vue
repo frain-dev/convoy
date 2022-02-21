@@ -37,7 +37,7 @@
 						<nuxt-link to="/docs">Docs</nuxt-link>
 					</li>
 					<li>
-						<a target="_blank" rel="noopener noreferrer" href="https://github.com/frain-dev/convoy/discussions">Community</a>
+						<a target="_blank" rel="noopener noreferrer" href="https://convoy-community.slack.com/join/shared_invite/zt-xiuuoj0m-yPp~ylfYMCV9s038QL0IUQ#/shared-invite/email">Community</a>
 					</li>
 					<li>
 						<nuxt-link to="/download">Download</nuxt-link>
