@@ -398,7 +398,6 @@ header {
 			p {
 				font-size: 16px;
 				line-height: 30px;
-
 				color: #ffffff;
 				@media (min-width: $desktopBreakPoint) {
 					font-size: 20px;
@@ -423,7 +422,7 @@ header {
 
 		button,
 		a {
-			margin: 20px 0 0;
+			margin: 30px 0 0;
 			max-width: 200px;
 		}
 
@@ -1393,5 +1392,4 @@ a {
 		}
 	}
 }
-
 </style>
