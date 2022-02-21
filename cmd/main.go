@@ -55,8 +55,9 @@ func main() {
 	var db datastore.DatabaseClient
 
 	cmd := &cobra.Command{
-		Use:   "Convoy",
-		Short: "Fast & reliable webhooks service",
+		Use:     "Convoy",
+		Short:   "Fast & reliable webhooks service",
+		Version: convoy.GetVersion(),
 		PersistentPreRunE: func(cmd *cobra.Command, args []string) error {
 			cfgPath, err := cmd.Flags().GetString("config")
 			if err != nil {
