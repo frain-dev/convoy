@@ -60,6 +60,7 @@
 <style lang="scss" scoped>
 header {
 	background: url('~/assets/images/docs-bg.svg'), no-repeat;
+	background-size: cover;
 	height: 450px;
 	width: 100%;
 }
