@@ -10,6 +10,12 @@
 
 			<ul>
 				<li>
+					<a class="api-reference" target="_blank" href="https://convoy.readme.io/reference/introduction">
+						<img src="~/assets/images/arrow-down-right.svg" alt="arrow right" />
+						Api Reference
+					</a>
+				</li>
+				<li>
 					<nuxt-link to="/docs/guide">Quick Start Guide</nuxt-link>
 				</li>
 				<li v-for="(page, index) in pages" :key="index">
@@ -154,7 +160,11 @@ aside {
 		}
 	}
 }
-
+a.api-reference{
+	img{
+		transform: rotate(270deg);
+	}
+}
 .main {
 	width: 100%;
 	overflow-y: auto;

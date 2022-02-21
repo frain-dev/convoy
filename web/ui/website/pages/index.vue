@@ -366,7 +366,7 @@ header {
 		margin: auto;
 		display: flex;
 		justify-content: space-between;
-		min-height: 760px;
+		min-height: 75vh;
 		height: 100%;
 		flex-direction: column;
 		padding: 175px 0 100px;

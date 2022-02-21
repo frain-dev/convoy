@@ -82,6 +82,7 @@ export default {
 			localStorage.setItem('githubStar', false);
 		},
 		checkForGithubStar() {
+			localStorage.clear()
 			const starStatus = localStorage.getItem('githubStar');
 			if (starStatus != null) {
 				if (starStatus == 'true') {
@@ -298,7 +299,7 @@ nav {
 		left: 0;
 		background: #477db3;
 		width: 100vw;
-		height: 50px;
+		height: 40px;
 		padding: 7px 11px;
 		display: flex;
 		align-items: center;
@@ -310,10 +311,10 @@ nav {
 		z-index: 99;
 
 		@media (min-width: $desktopBreakPoint) {
-			font-size: 18px;
-			line-height: 30px;
-			height: 60px;
-			padding: 12px 16px;
+			font-size: 16px;
+			line-height: 24px;
+			height: 40px;
+			padding: 7px 16px;
 		}
 		.github-icon {
 			img {
@@ -330,9 +331,9 @@ nav {
 			border-radius: 4px;
 			color: #477db3;
 			font-weight: 500;
-			font-size: 14px;
+			font-size: 12px;
 			line-height: 20px;
-			height: 36px;
+			height: 24px;
 			padding: 10px;
 			display: flex;
 			align-items: center;
