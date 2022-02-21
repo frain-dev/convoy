@@ -7,7 +7,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/frain-dev/convoy"
+	"github.com/frain-dev/convoy/datastore"
 )
 
 func TestRateLimitByGroup(t *testing.T) {
@@ -15,7 +15,7 @@ func TestRateLimitByGroup(t *testing.T) {
 		name          string
 		requestsLimit int
 		windowLength  time.Duration
-		groupIDs        []string
+		groupIDs      []string
 		respCodes     []int
 	}
 	tests := []test{
@@ -23,21 +23,21 @@ func TestRateLimitByGroup(t *testing.T) {
 			name:          "no-block",
 			requestsLimit: 3,
 			windowLength:  2 * time.Second,
-			groupIDs:       []string {"a", "a"},
+			groupIDs:      []string{"a", "a"},
 			respCodes:     []int{200, 200},
 		},
 		{
 			name:          "block-same-group",
 			requestsLimit: 2,
 			windowLength:  5 * time.Second,
-			groupIDs:        []string {"b", "b", "b"},
+			groupIDs:      []string{"b", "b", "b"},
 			respCodes:     []int{200, 200, 429},
 		},
 		{
-			name: "no-block-different-group",
+			name:          "no-block-different-group",
 			requestsLimit: 1,
-			windowLength: 1 * time.Second,
-			groupIDs:       []string {"c", "d"},
+			windowLength:  1 * time.Second,
+			groupIDs:      []string{"c", "d"},
 			respCodes:     []int{200, 200},
 		},
 	}
@@ -49,7 +49,7 @@ func TestRateLimitByGroup(t *testing.T) {
 
 			for i, code := range tt.respCodes {
 				req := httptest.NewRequest("POST", "/", nil)
-				req = req.Clone(context.WithValue(req.Context(), groupCtx , &convoy.Group{UID: tt.groupIDs[i]}))
+				req = req.Clone(context.WithValue(req.Context(), groupCtx, &datastore.Group{UID: tt.groupIDs[i]}))
 				recorder := httptest.NewRecorder()
 				router.ServeHTTP(recorder, req)
 				if respCode := recorder.Result().StatusCode; respCode != code {
