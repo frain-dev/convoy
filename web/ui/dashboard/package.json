@@ -24,7 +24,7 @@
 		"@angular/router": "~13.0.0",
 		"angular-prism": "^0.1.20",
 		"chart.js": "^3.6.0",
-		"convoy-dashboard": "^0.5.0",
+		"convoy-dashboard": "^0.5.9",
 		"date-fns": "^2.27.0",
 		"moment": "^2.29.1",
 		"ng2-prism": "^2.3.2",
@@ -34,7 +34,7 @@
 		"zone.js": "~0.11.4"
 	},
 	"devDependencies": {
-		"@angular-devkit/build-angular": "~13.0.1",
+		"@angular-devkit/build-angular": "^13.2.1",
 		"@angular/cli": "~13.0.1",
 		"@angular/compiler-cli": "~13.0.0",
 		"@types/jasmine": "~3.8.0",

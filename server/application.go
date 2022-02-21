@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/frain-dev/convoy/cache"
 	"github.com/frain-dev/convoy/logger"
 	"github.com/google/uuid"
 	"go.mongodb.org/mongo-driver/bson/primitive"
@@ -30,6 +31,7 @@ type applicationHandler struct {
 	eventQueue        queue.Queuer
 	logger            logger.Logger
 	tracer            tracer.Tracer
+	cache             cache.Cache
 }
 
 type pagedResponse struct {
@@ -42,7 +44,7 @@ func newApplicationHandler(eventRepo datastore.EventRepository,
 	appRepo datastore.ApplicationRepository,
 	groupRepo datastore.GroupRepository,
 	apiKeyRepo datastore.APIKeyRepository,
-	eventQueue queue.Queuer, logger logger.Logger, tracer tracer.Tracer) *applicationHandler {
+	eventQueue queue.Queuer, logger logger.Logger, tracer tracer.Tracer, cache cache.Cache) *applicationHandler {
 
 	return &applicationHandler{
 		eventRepo:         eventRepo,
@@ -53,6 +55,7 @@ func newApplicationHandler(eventRepo datastore.EventRepository,
 		eventQueue:        eventQueue,
 		logger:            logger,
 		tracer:            tracer,
+		cache:             cache,
 	}
 }
 

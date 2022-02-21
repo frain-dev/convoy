@@ -9,8 +9,9 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/frain-dev/convoy/datastore"
+	mcache "github.com/frain-dev/convoy/cache/memory"
 	"github.com/frain-dev/convoy/config"
+	"github.com/frain-dev/convoy/datastore"
 	"github.com/frain-dev/convoy/logger"
 	"github.com/frain-dev/convoy/mocks"
 
@@ -32,8 +33,9 @@ func TestApplicationHandler_CreateAPIKey(t *testing.T) {
 	apiKeyRepo := mocks.NewMockAPIKeyRepository(ctrl)
 	logger := logger.NewNoopLogger()
 	tracer := mocks.NewMockTracer(ctrl)
+	cache := mcache.NewMemoryCache()
 
-	app = newApplicationHandler(eventRepo, eventDeliveryRepo, appRepo, groupRepo, apiKeyRepo, eventQueue, logger, tracer)
+	app = newApplicationHandler(eventRepo, eventDeliveryRepo, appRepo, groupRepo, apiKeyRepo, eventQueue, logger, tracer, cache)
 
 	groupId := "1234567890"
 	group := &datastore.Group{
@@ -193,9 +195,9 @@ func TestApplicationHandler_RevokeAPIKey(t *testing.T) {
 	apiKeyRepo := mocks.NewMockAPIKeyRepository(ctrl)
 	logger := logger.NewNoopLogger()
 	tracer := mocks.NewMockTracer(ctrl)
-	
+	cache := mcache.NewMemoryCache()
 
-	app := newApplicationHandler(eventRepo, eventDeliveryRepo, appRepo, groupRepo, apiKeyRepo, eventQueue, logger, tracer)
+	app := newApplicationHandler(eventRepo, eventDeliveryRepo, appRepo, groupRepo, apiKeyRepo, eventQueue, logger, tracer, cache)
 
 	tt := []struct {
 		name       string
@@ -276,8 +278,9 @@ func TestApplicationHandler_GetAPIKeyByID(t *testing.T) {
 	apiKeyRepo := mocks.NewMockAPIKeyRepository(ctrl)
 	logger := logger.NewNoopLogger()
 	tracer := mocks.NewMockTracer(ctrl)
+	cache := mcache.NewMemoryCache()
 
-	app := newApplicationHandler(eventRepo, eventDeliveryRepo, appRepo, groupRepo, apiKeyRepo, eventQueue, logger, tracer)
+	app := newApplicationHandler(eventRepo, eventDeliveryRepo, appRepo, groupRepo, apiKeyRepo, eventQueue, logger, tracer, cache)
 
 	keyID := "12345"
 	apiKey := &datastore.APIKey{UID: keyID}
@@ -364,8 +367,9 @@ func TestApplicationHandler_GetAPIKeys(t *testing.T) {
 	apiKeyRepo := mocks.NewMockAPIKeyRepository(ctrl)
 	logger := logger.NewNoopLogger()
 	tracer := mocks.NewMockTracer(ctrl)
+	cache := mcache.NewMemoryCache()
 
-	app := newApplicationHandler(eventRepo, eventDeliveryRepo, appRepo, groupRepo, apiKeyRepo, eventQueue, logger, tracer)
+	app := newApplicationHandler(eventRepo, eventDeliveryRepo, appRepo, groupRepo, apiKeyRepo, eventQueue, logger, tracer, cache)
 
 	keyID := "12345"
 	apiKey := &datastore.APIKey{UID: keyID}
@@ -392,7 +396,7 @@ func TestApplicationHandler_GetAPIKeys(t *testing.T) {
 					LoadAPIKeysPaged(gomock.Any(), gomock.Any()).
 					Times(1).
 					Return(
-						[]datastore.APIKey{*apiKey}, 
+						[]datastore.APIKey{*apiKey},
 						datastore.PaginationData{PerPage: int64(page.PerPage)}, nil)
 			},
 		},

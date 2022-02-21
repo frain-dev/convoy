@@ -35,6 +35,7 @@ type HTTPServerConfiguration struct {
 	SSLCertFile string `json:"ssl_cert_file" envconfig:"CONVOY_SSL_CERT_FILE"`
 	SSLKeyFile  string `json:"ssl_key_file" envconfig:"CONVOY_SSL_KEY_FILE"`
 	Port        uint32 `json:"port" envconfig:"PORT"`
+	WorkerPort  uint32 `json:"worker_port" envconfig:"WORKER_PORT"`
 }
 
 type QueueConfiguration struct {
@@ -81,6 +82,15 @@ type TracerConfiguration struct {
 	Type TracerProvider `json:"type"`
 }
 
+type CacheConfiguration struct {
+	Type  CacheProvider           `json:"type"`
+	Redis RedisCacheConfiguration `json:"redis"`
+}
+
+type RedisCacheConfiguration struct {
+	Dsn string `json:"dsn"`
+}
+
 type NewRelicConfiguration struct {
 	AppName                  string `json:"app_name"`
 	LicenseKey               string `json:"license_key"`
@@ -102,6 +112,7 @@ type Configuration struct {
 	Logger          LoggerConfiguration   `json:"logger"`
 	Tracer          TracerConfiguration   `json:"tracer"`
 	NewRelic        NewRelicConfiguration `json:"new_relic"`
+	Cache           CacheConfiguration    `json:"cache"`
 }
 
 const (
@@ -118,6 +129,7 @@ const (
 	DefaultSignatureHeader             SignatureHeaderProvider = "X-Convoy-Signature"
 	ConsoleLoggerProvider              LoggerProvider          = "console"
 	NewRelicTracerProvider             TracerProvider          = "new_relic"
+	RedisCacheProvider                 CacheProvider           = "redis"
 )
 
 type GroupConfig struct {
@@ -152,6 +164,7 @@ type StrategyProvider string
 type SignatureHeaderProvider string
 type LoggerProvider string
 type TracerProvider string
+type CacheProvider string
 
 func (s SignatureHeaderProvider) String() string {
 	return string(s)
