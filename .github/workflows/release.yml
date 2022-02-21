@@ -37,7 +37,7 @@ jobs:
         name: Checkout
         with:
           fetch-depth: 0
-      - uses: Dotunj/github-action-analyze-tags@v0.1.0
+      - uses: Dotunj/github-action-analyze-tags@v0.2.0
         name: Get tags
         id: gt
 
