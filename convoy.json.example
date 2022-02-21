@@ -1,7 +1,8 @@
 {
   "environment": "dev",
   "database": {
-    "dsn": "<insert-mongodb-dsn>"
+    "type": "<insert-database-type>"
+    "dsn": "<insert-database-dsn>"
   },
   "sentry": {
     "dsn": "<insert-sentry-dsn>"

@@ -28,9 +28,7 @@ func (db *groupRepo) LoadGroups(ctx context.Context, f *datastore.GroupFilter) (
 	groups := make([]*datastore.Group, 0)
 
 	opts := &options.FindOptions{Collation: &options.Collation{Locale: "en", Strength: 2}}
-	filter := bson.M{
-		"document_status": bson.M{"$ne": datastore.DeletedDocumentStatus},
-	}
+	filter := bson.M{"document_status": datastore.ActiveDocumentStatus}
 
 	if len(f.Names) > 0 {
 		filter["name"] = bson.M{"$in": f.Names}
@@ -111,7 +109,7 @@ func (db *groupRepo) DeleteGroup(ctx context.Context, uid string) error {
 	update := bson.M{
 		"$set": bson.M{
 			"deleted_at":      primitive.NewDateTimeFromTime(time.Now()),
-			"document_status": datastore.DeletedDocumentStatus,
+			"document_status": datastore.ActiveDocumentStatus,
 		},
 	}
 
@@ -128,9 +126,7 @@ func (db *groupRepo) FetchGroupsByIDs(ctx context.Context, ids []string) ([]data
 		"uid": bson.M{
 			"$in": ids,
 		},
-		"document_status": bson.M{
-			"$ne": datastore.DeletedDocumentStatus,
-		},
+		"document_status": datastore.ActiveDocumentStatus,
 	}
 
 	groups := make([]datastore.Group, 0)

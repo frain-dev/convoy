@@ -1,4 +1,7 @@
-package bolt
+//go:build integration
+// +build integration
+
+package badger
 
 import (
 	"context"
@@ -566,4 +569,104 @@ func Test_DeleteGroupApps(t *testing.T) {
 	count3, err3 := appRepo.CountGroupApplications(context.Background(), groupTwo.UID)
 	require.NoError(t, err3)
 	require.Equal(t, int64(5), count3)
+}
+
+func Test_FindApplicationEndpointById(t *testing.T) {
+	db, closeFn := getDB(t)
+	defer closeFn()
+
+	appRepo := NewApplicationRepo(db)
+
+	groupRepo := NewGroupRepo(db)
+
+	newGroup := &datastore.Group{
+		UID:  uuid.NewString(),
+		Name: "Random Group",
+	}
+
+	require.NoError(t, groupRepo.CreateGroup(context.Background(), newGroup))
+
+	endpoints := []datastore.Endpoint{
+		{
+			UID:       uuid.NewString(),
+			TargetURL: "sample-delivery-url",
+		},
+	}
+
+	app := &datastore.Application{
+		Title:     "Application 10",
+		GroupID:   newGroup.UID,
+		UID:       uuid.NewString(),
+		Endpoints: endpoints,
+	}
+
+	err := appRepo.CreateApplication(context.Background(), app)
+
+	require.NoError(t, err)
+
+	endpoint, err := appRepo.FindApplicationEndpointByID(context.Background(), app.UID, endpoints[0].UID)
+
+	require.NoError(t, err)
+
+	require.Equal(t, endpoint.UID, endpoints[0].UID)
+	require.Equal(t, endpoint.TargetURL, endpoints[0].TargetURL)
+
+	endpoint, err = appRepo.FindApplicationEndpointByID(context.Background(), app.UID, uuid.NewString())
+	require.Error(t, err)
+	require.True(t, errors.Is(err, datastore.ErrEndpointNotFound))
+
+}
+
+func Test_UpdateApplicationEndpointsStatus(t *testing.T) {
+	db, closeFn := getDB(t)
+	defer closeFn()
+
+	appRepo := NewApplicationRepo(db)
+
+	groupRepo := NewGroupRepo(db)
+
+	newGroup := &datastore.Group{
+		UID:  uuid.NewString(),
+		Name: "Random Group",
+	}
+
+	require.NoError(t, groupRepo.CreateGroup(context.Background(), newGroup))
+
+	endpoints := []datastore.Endpoint{
+		{
+			UID:       uuid.NewString(),
+			TargetURL: "sample-delivery-url-1",
+			Status:    datastore.ActiveEndpointStatus,
+		},
+
+		{
+			UID:       uuid.NewString(),
+			TargetURL: "sample-delivery-url-2",
+			Status:    datastore.ActiveEndpointStatus,
+		},
+	}
+
+	app := &datastore.Application{
+		Title:     "Application 10",
+		GroupID:   newGroup.UID,
+		UID:       uuid.NewString(),
+		Endpoints: endpoints,
+	}
+
+	err := appRepo.CreateApplication(context.Background(), app)
+	require.NoError(t, err)
+
+	endpointIds := []string{endpoints[0].UID, endpoints[1].UID}
+
+	err = appRepo.UpdateApplicationEndpointsStatus(context.Background(), app.UID, endpointIds, datastore.InactiveEndpointStatus)
+
+	require.NoError(t, err)
+
+	app, err = appRepo.FindApplicationByID(context.Background(), app.UID)
+	require.NoError(t, err)
+
+	require.Equal(t, 2, len(app.Endpoints))
+	require.Equal(t, datastore.InactiveEndpointStatus, app.Endpoints[0].Status)
+	require.Equal(t, datastore.InactiveEndpointStatus, app.Endpoints[1].Status)
+
 }

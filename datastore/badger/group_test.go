@@ -1,4 +1,7 @@
-package bolt
+//go:build integration
+// +build integration
+
+package badger
 
 import (
 	"context"
