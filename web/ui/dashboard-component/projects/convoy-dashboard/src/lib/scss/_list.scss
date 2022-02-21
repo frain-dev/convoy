@@ -50,10 +50,15 @@
 		overflow: hidden;
 		white-space: nowrap;
 		text-align: right;
-        cursor: pointer;
+		cursor: pointer;
 
 		&.color {
 			color: #477db3;
+		}
+
+		& .fint {
+			color: #737a91b2;
+			font-style: italic;
 		}
 	}
 }

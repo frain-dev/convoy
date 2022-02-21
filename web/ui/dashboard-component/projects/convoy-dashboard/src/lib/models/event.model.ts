@@ -53,3 +53,15 @@ export interface EVENT_DELIVERY {
 		uid: string;
 	};
 }
+
+export interface EVENT_DELIVERY_ATTEMPT {
+	ip_address: string;
+	http_status: string;
+	api_version: string;
+	updated_at: number;
+	deleted_at: number;
+	response_data: string;
+	response_http_header: string;
+	request_http_header: string;
+	error: string;
+}
