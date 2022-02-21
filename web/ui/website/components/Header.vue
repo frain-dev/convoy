@@ -3,10 +3,12 @@
 		<nav :class="{ extraPadding: githubStar }">
 			<section class="github-star" v-if="githubStar">
 				<span>Give us a star on GitHub</span>
-				<img src="~/assets/images/github-icon-white.svg" class="github-icon" alt="github icon" />
+				<a class="github-icon" target="_blank" rel="noopener noreferrer" href="https://github.com/frain-dev/convoy">
+					<img src="~/assets/images/github-icon-white.svg" alt="github icon" />
+				</a>
 				<button>
 					<img src="~/assets/images/github-star.svg" alt="github star" />
-					3490
+					222
 				</button>
 				<a @click="closeStar()">
 					<img src="~/assets/images/close-icon.svg" alt="close" />
@@ -204,7 +206,8 @@ nav {
 					margin-top: 30px;
 				}
 			}
-			button, a.primary {
+			button,
+			a.primary {
 				background: #477db3;
 				border-radius: 8px;
 				padding: 9px 20px;
@@ -216,13 +219,14 @@ nav {
 				display: flex;
 				align-items: center;
 				white-space: nowrap;
-margin-top: 15px;
+				margin-top: 15px;
 				img {
 					height: 24px;
 					width: 24px;
 				}
 
 				@media (min-width: $desktopBreakPoint) {
+					margin-top: unset;
 					margin-left: 24px;
 				}
 			}
@@ -312,9 +316,11 @@ margin-top: 15px;
 			padding: 12px 16px;
 		}
 		.github-icon {
-			height: 20px;
-			width: 20px;
-			margin-left: 13px;
+			img {
+				height: 20px;
+				width: 20px;
+			}
+			margin-right: 13px;
 		}
 
 		button {
