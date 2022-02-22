@@ -8,7 +8,7 @@
 				</a>
 				<button>
 					<img src="~/assets/images/github-star.svg" alt="github star" />
-					222
+					{{ githubStars }}
 				</button>
 				<a @click="closeStar()">
 					<img src="~/assets/images/close-icon.svg" alt="close" />
@@ -70,11 +70,13 @@ export default {
 	data() {
 		return {
 			githubStar: null,
-			showMenu: false
+			showMenu: false,
+			githubStars: 0
 		};
 	},
 	mounted() {
 		this.checkForGithubStar();
+		this.getGithubStars();
 	},
 	methods: {
 		closeStar() {
@@ -93,6 +95,13 @@ export default {
 				localStorage.setItem('githubStar', true);
 				this.githubStar = true;
 			}
+		},
+		async getGithubStars() {
+			try {
+				const response = await fetch('https://api.github.com/repos/frain-dev/convoy');
+				const data = await response.json();
+				this.githubStars = data.stargazers_count;
+			} catch (_error) {}
 		}
 	}
 };
