@@ -202,6 +202,61 @@ func (q *RedisQueue) CheckEventDeliveryinZSET(ctx context.Context, id string, mi
 	return false, nil
 }
 
+func (q *RedisQueue) DeleteEventDeliveryFromZSET(ctx context.Context, id string) (bool, error) {
+	bodies, err := q.ZRangebyScore(ctx, "-inf", "+inf")
+	if err != nil {
+		return false, err
+	}
+
+	var msg taskq.Message
+	for _, body := range bodies {
+		err := msg.UnmarshalBinary([]byte(body))
+		if err != nil {
+			return false, err
+		}
+
+		value := string(msg.ArgsBin[convoy.EventDeliveryIDLength:])
+		if value == id {
+			zset := q.stringifyZSETWithQName()
+			intCmd := q.inner.ZRem(ctx, zset, body)
+			if err = intCmd.Err(); err != nil {
+				return false, err
+			}
+		}
+	}
+	return false, nil
+}
+
+func (q *RedisQueue) DeleteEventDeliveriesFromZSET(ctx context.Context, ids []string) error {
+	bodies, err := q.ZRangebyScore(ctx, "-inf", "+inf")
+	if err != nil {
+		return err
+	}
+
+	idMap := map[string]string{}
+
+	var msg taskq.Message
+	for _, body := range bodies {
+		err := msg.UnmarshalBinary([]byte(body))
+		if err != nil {
+			return err
+		}
+
+		value := string(msg.ArgsBin[convoy.EventDeliveryIDLength:])
+		idMap[value] = body
+	}
+
+	for _, id := range ids {
+		if body, ok := idMap[id]; ok {
+			intCmd := q.inner.ZRem(ctx, q.stringifyZSETWithQName(), body)
+			if err = intCmd.Err(); err != nil {
+				return err
+			}
+		}
+	}
+	return nil
+}
+
 func (q *RedisQueue) CheckEventDeliveryinPending(ctx context.Context, id string) (bool, error) {
 	pending, err := q.XPending(ctx)
 	if err != nil {
@@ -260,6 +315,44 @@ func (q *RedisQueue) DeleteEvenDeliveryfromStream(ctx context.Context, id string
 		}
 	}
 	return false, nil
+}
+
+func (q *RedisQueue) DeleteEventDeliveriesFromStream(ctx context.Context, ids []string) error {
+	xmsgs, err := q.XRange(ctx, "-", "+").Result()
+	if err != nil {
+		return err
+	}
+	msgs := make([]taskq.Message, len(xmsgs))
+
+	idMap := map[string]*redis.XMessage{}
+	for i := range xmsgs {
+		xmsg := &xmsgs[i]
+		msg := &msgs[i]
+
+		err = unmarshalMessage(msg, xmsg)
+
+		if err != nil {
+			return err
+		}
+
+		value := string(msg.ArgsBin[convoy.EventDeliveryIDLength:])
+		idMap[value] = xmsg
+
+	}
+
+	for _, id := range ids {
+		if xmsg, ok := idMap[id]; ok {
+			if err := q.inner.XAck(ctx, q.stringifyStreamWithQName(), convoy.StreamGroup, xmsg.ID).Err(); err != nil {
+				return err
+			}
+
+			err = q.inner.XDel(ctx, q.stringifyStreamWithQName(), xmsg.ID).Err()
+			if err != nil {
+				return err
+			}
+		}
+	}
+	return nil
 }
 
 func (q *RedisQueue) stringifyStreamWithQName() string {

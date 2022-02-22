@@ -129,13 +129,18 @@ type GroupConfig struct {
 	DisableEndpoint bool                   `json:"disable_endpoint"`
 }
 type StrategyConfiguration struct {
-	Type    config.StrategyProvider      `json:"type" valid:"required~please provide a valid strategy type, in(default)~unsupported strategy type"`
-	Default DefaultStrategyConfiguration `json:"default"`
+	Type               config.StrategyProvider                 `json:"type" valid:"required~please provide a valid strategy type, in(default)~unsupported strategy type"`
+	Default            DefaultStrategyConfiguration            `json:"default"`
+	ExponentialBackoff ExponentialBackoffStrategyConfiguration `json:"exponentialBackoff,omitempty"`
 }
 
 type DefaultStrategyConfiguration struct {
 	IntervalSeconds uint64 `json:"intervalSeconds" valid:"required~please provide a valid interval seconds,int"`
 	RetryLimit      uint64 `json:"retryLimit" valid:"required~please provide a valid interval seconds,int"`
+}
+
+type ExponentialBackoffStrategyConfiguration struct {
+	RetryLimit uint64 `json:"retryLimit"`
 }
 
 type SignatureConfiguration struct {
@@ -216,6 +221,20 @@ const (
 	SuccessEventStatus    EventDeliveryStatus = "Success"
 	RetryEventStatus      EventDeliveryStatus = "Retry"
 )
+
+func (e EventDeliveryStatus) IsValid() bool {
+	switch e {
+	case ScheduledEventStatus,
+		ProcessingEventStatus,
+		DiscardedEventStatus,
+		FailureEventStatus,
+		SuccessEventStatus,
+		RetryEventStatus:
+		return true
+	default:
+		return false
+	}
+}
 
 type Metadata struct {
 	// Data to be sent to endpoint.

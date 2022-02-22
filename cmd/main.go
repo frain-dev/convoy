@@ -8,6 +8,9 @@ import (
 	"time"
 	_ "time/tzdata"
 
+	"github.com/frain-dev/convoy/cache"
+	"github.com/frain-dev/convoy/datastore/badger"
+
 	"github.com/frain-dev/convoy/logger"
 	memqueue "github.com/frain-dev/convoy/queue/memqueue"
 	redisqueue "github.com/frain-dev/convoy/queue/redis"
@@ -29,7 +32,6 @@ import (
 	"github.com/frain-dev/convoy/queue"
 	"github.com/spf13/cobra"
 
-	"github.com/frain-dev/convoy/datastore/bolt"
 	"github.com/frain-dev/convoy/datastore/mongo"
 )
 
@@ -54,8 +56,9 @@ func main() {
 	var db datastore.DatabaseClient
 
 	cmd := &cobra.Command{
-		Use:   "Convoy",
-		Short: "Fast & reliable webhooks service",
+		Use:     "Convoy",
+		Version: convoy.GetVersion(),
+		Short:   "Fast & reliable webhooks service",
 		PersistentPreRunE: func(cmd *cobra.Command, args []string) error {
 			cfgPath, err := cmd.Flags().GetString("config")
 			if err != nil {
@@ -113,6 +116,7 @@ func main() {
 			var tr tracer.Tracer
 			var lS queue.Storage
 			var opts queue.QueueOptions
+			var ca cache.Cache
 
 			if cfg.Queue.Type == config.RedisQueueProvider {
 				rC, qFn, err = redisqueue.NewClient(cfg)
@@ -155,6 +159,11 @@ func main() {
 				log.Warnf("signature header is blank. setting default %s", config.DefaultSignatureHeader)
 			}
 
+			ca, err = cache.NewCache(cfg.Cache)
+			if err != nil {
+				return err
+			}
+
 			app.apiKeyRepo = db.APIRepo()
 			app.groupRepo = db.GroupRepo()
 			app.eventRepo = db.EventRepo()
@@ -165,6 +174,7 @@ func main() {
 			app.deadLetterQueue = NewQueue(opts, "DeadLetterQueue")
 			app.logger = lo
 			app.tracer = tr
+			app.cache = ca
 
 			return ensureDefaultGroup(context.Background(), cfg, app)
 
@@ -203,6 +213,7 @@ func main() {
 	cmd.AddCommand(addServerCommand(app))
 	cmd.AddCommand(addWorkerCommand(app))
 	cmd.AddCommand(addQueueCommand(app))
+	cmd.AddCommand(addRetryCommand(app))
 	if err := cmd.Execute(); err != nil {
 		log.Fatal(err)
 	}
@@ -308,6 +319,7 @@ type app struct {
 	deadLetterQueue   queue.Queuer
 	logger            logger.Logger
 	tracer            tracer.Tracer
+	cache             cache.Cache
 }
 
 func getCtx() (context.Context, context.CancelFunc) {
@@ -322,8 +334,8 @@ func NewDB(cfg config.Configuration) (datastore.DatabaseClient, error) {
 			return nil, err
 		}
 		return db, nil
-	case "bolt":
-		bolt, err := bolt.New(cfg)
+	case "in-memory":
+		bolt, err := badger.New(cfg)
 		if err != nil {
 			return nil, err
 		}

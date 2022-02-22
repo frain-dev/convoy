@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/frain-dev/convoy/auth"
+	"github.com/frain-dev/convoy/cache"
 	"github.com/frain-dev/convoy/logger"
 	"github.com/frain-dev/convoy/tracer"
 
@@ -19,6 +20,7 @@ import (
 	"github.com/frain-dev/convoy/queue"
 	"github.com/go-chi/chi/v5/middleware"
 	"github.com/go-chi/httprate"
+	"github.com/go-chi/render"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	log "github.com/sirupsen/logrus"
@@ -116,7 +118,7 @@ func buildRoutes(app *applicationHandler) http.Handler {
 				eventRouter.Use(requireGroup(app.groupRepo))
 				eventRouter.Use(requirePermission(auth.RoleAdmin))
 
-				eventRouter.With(instrumentPath("/events")).Post("/", app.CreateAppEvent)
+				eventRouter.With(rateLimitByGroup(), instrumentPath("/events")).Post("/", app.CreateAppEvent)
 				eventRouter.With(pagination).Get("/", app.GetEventsPaged)
 
 				eventRouter.Route("/{eventID}", func(eventSubRouter chi.Router) {
@@ -243,6 +245,9 @@ func buildRoutes(app *applicationHandler) http.Handler {
 	})
 
 	router.Handle("/v1/metrics", promhttp.Handler())
+	router.HandleFunc("/health", func(w http.ResponseWriter, r *http.Request) {
+		_ = render.Render(w, r, newServerResponse("Convoy", nil, http.StatusOK))
+	})
 	router.HandleFunc("/*", reactRootHandler)
 
 	return router
@@ -254,9 +259,9 @@ func New(cfg config.Configuration,
 	appRepo datastore.ApplicationRepository,
 	apiKeyRepo datastore.APIKeyRepository,
 	orgRepo datastore.GroupRepository,
-	eventQueue queue.Queuer, logger logger.Logger, tracer tracer.Tracer) *http.Server {
+	eventQueue queue.Queuer, logger logger.Logger, tracer tracer.Tracer, cache cache.Cache) *http.Server {
 
-	app := newApplicationHandler(eventRepo, eventDeliveryRepo, appRepo, orgRepo, apiKeyRepo, eventQueue, logger, tracer)
+	app := newApplicationHandler(eventRepo, eventDeliveryRepo, appRepo, orgRepo, apiKeyRepo, eventQueue, logger, tracer, cache)
 
 	srv := &http.Server{
 		Handler:      buildRoutes(app),
