@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/frain-dev/convoy/auth"
 	"github.com/frain-dev/convoy/datastore"
 	"github.com/frain-dev/convoy/server/models"
 	"github.com/frain-dev/convoy/util"
@@ -177,6 +178,81 @@ func (a *applicationHandler) GetAPIKeyByID(w http.ResponseWriter, r *http.Reques
 	}
 
 	_ = render.Render(w, r, newServerResponse("api key fetched successfully", resp, http.StatusOK))
+}
+
+// UpdateAPIKey
+// @Summary update api key
+// @Description This endpoint updates an api key
+// @Tags APIKey
+// @Accept  json
+// @Produce  json
+// @Param keyID path string true "API Key id"
+// @Success 200 {object} serverResponse{data=datastore.APIKey}
+// @Failure 400,401,500 {object} serverResponse{data=Stub}
+// @Security ApiKeyAuth
+// @Router /security/keys/{keyID} [put]
+func (a *applicationHandler) UpdateAPIKey(w http.ResponseWriter, r *http.Request) {
+	var updateApiKey struct {
+		Role auth.Role `json:"role"`
+	}
+
+	err := util.ReadJSON(r, &updateApiKey)
+	if err != nil {
+		_ = render.Render(w, r, newErrorResponse(err.Error(), http.StatusBadRequest))
+		return
+	}
+
+	uid := chi.URLParam(r, "keyID")
+	if util.IsStringEmpty(uid) {
+		_ = render.Render(w, r, newErrorResponse("key id is empty", http.StatusBadRequest))
+		return
+	}
+
+	err = updateApiKey.Role.Validate("api key")
+	if err != nil {
+		log.WithError(err).Error("invalid api key role")
+		_ = render.Render(w, r, newErrorResponse("invalid api key role", http.StatusBadRequest))
+		return
+	}
+
+	groups, err := a.groupRepo.FetchGroupsByIDs(r.Context(), updateApiKey.Role.Groups)
+	if err != nil {
+		_ = render.Render(w, r, newErrorResponse("invalid group", http.StatusBadRequest))
+		return
+	}
+
+	if len(groups) != len(updateApiKey.Role.Groups) {
+		_ = render.Render(w, r, newErrorResponse("cannot find group", http.StatusBadRequest))
+		return
+	}
+
+	apiKey, err := a.apiKeyRepo.FindAPIKeyByID(r.Context(), uid)
+	if err != nil {
+		log.WithError(err).Error("failed to fetch api key")
+		_ = render.Render(w, r, newErrorResponse("failed to fetch api key", http.StatusInternalServerError))
+		return
+	}
+
+	apiKey.Role = updateApiKey.Role
+	err = a.apiKeyRepo.UpdateAPIKey(r.Context(), apiKey)
+
+	if err != nil {
+		log.WithError(err).Error("failed to update api key")
+		_ = render.Render(w, r, newErrorResponse("failed to update api key", http.StatusInternalServerError))
+		return
+	}
+
+	resp := models.APIKeyByIDResponse{
+		UID:       apiKey.UID,
+		Name:      apiKey.Name,
+		Role:      apiKey.Role,
+		Type:      apiKey.Type,
+		ExpiresAt: apiKey.ExpiresAt,
+		UpdatedAt: apiKey.UpdatedAt,
+		CreatedAt: apiKey.CreatedAt,
+	}
+
+	_ = render.Render(w, r, newServerResponse("api key updated successfully", resp, http.StatusOK))
 }
 
 // GetAPIKeys

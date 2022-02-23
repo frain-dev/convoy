@@ -41,7 +41,12 @@ func (db *apiKeyRepo) CreateAPIKey(ctx context.Context, apiKey *datastore.APIKey
 
 func (db *apiKeyRepo) UpdateAPIKey(ctx context.Context, apiKey *datastore.APIKey) error {
 	filter := bson.M{"uid": apiKey.UID}
-	_, err := db.client.UpdateOne(ctx, filter, apiKey)
+
+	update := bson.M{
+		"$set": apiKey,
+	}
+
+	_, err := db.client.UpdateOne(ctx, filter, update)
 	return err
 }
 
