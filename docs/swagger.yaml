@@ -208,6 +208,11 @@ definitions:
       uid:
         type: string
     type: object
+  datastore.ExponentialBackoffStrategyConfiguration:
+    properties:
+      retryLimit:
+        type: integer
+    type: object
   datastore.Group:
     properties:
       config:
@@ -297,6 +302,8 @@ definitions:
     properties:
       default:
         $ref: '#/definitions/datastore.DefaultStrategyConfiguration'
+      exponentialBackoff:
+        $ref: '#/definitions/datastore.ExponentialBackoffStrategyConfiguration'
       type:
         type: string
     type: object
@@ -2081,6 +2088,60 @@ paths:
       security:
       - ApiKeyAuth: []
       summary: Get api key by id
+      tags:
+      - APIKey
+    put:
+      consumes:
+      - application/json
+      description: This endpoint updates an api key
+      parameters:
+      - description: API Key id
+        in: path
+        name: keyID
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/server.serverResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/datastore.APIKey'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            allOf:
+            - $ref: '#/definitions/server.serverResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/server.Stub'
+              type: object
+        "401":
+          description: Unauthorized
+          schema:
+            allOf:
+            - $ref: '#/definitions/server.serverResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/server.Stub'
+              type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            allOf:
+            - $ref: '#/definitions/server.serverResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/server.Stub'
+              type: object
+      security:
+      - ApiKeyAuth: []
+      summary: update api key
       tags:
       - APIKey
   /security/keys/{keyID}/revoke:
