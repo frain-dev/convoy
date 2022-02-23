@@ -6,10 +6,12 @@ import (
 	"net/http"
 
 	"github.com/frain-dev/convoy/config"
+	"github.com/frain-dev/convoy/server"
 	"github.com/frain-dev/convoy/worker"
 	"github.com/frain-dev/convoy/worker/task"
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/render"
+	"github.com/prometheus/client_golang/prometheus/promhttp"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 )
@@ -37,8 +39,10 @@ func addWorkerCommand(a *app) *cobra.Command {
 			if cfg.Queue.Type != config.InMemoryQueueProvider {
 				producer.Start(ctx)
 			}
-
+			worker.RegisterWorkerMetrics(a.eventQueue, cfg)
+			server.RegisterQueueMetrics(a.eventQueue, cfg)
 			router := chi.NewRouter()
+			router.Handle("/v1/metrics", promhttp.Handler())
 			router.HandleFunc("/health", func(w http.ResponseWriter, r *http.Request) {
 				render.JSON(w, r, "Convoy")
 			})

@@ -73,3 +73,7 @@ func (q *MemQueue) Write(ctx context.Context, name convoy.TaskName, e *datastore
 func (q *MemQueue) Consumer() taskq.QueueConsumer {
 	return q.queue.Consumer()
 }
+
+func (q *MemQueue) Length() (int, error) {
+	return q.queue.Len()
+}

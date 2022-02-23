@@ -4,7 +4,6 @@ import (
 	"bufio"
 	"context"
 	"errors"
-	"log"
 	"os"
 	"strconv"
 	"time"
@@ -13,6 +12,7 @@ import (
 	redisqueue "github.com/frain-dev/convoy/queue/redis"
 	"github.com/frain-dev/convoy/util"
 	"github.com/google/uuid"
+	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 )
 
@@ -157,7 +157,7 @@ func getConsumersInfo(a *app) *cobra.Command {
 				case <-ticker.C:
 					ci, err := q.XInfoConsumers(ctx).Result()
 					if err != nil {
-						log.Printf("XInfoConsumers err: %v", err)
+						log.Errorf("XInfoConsumers err: %v", err)
 					}
 					log.Printf("Consumers Info: %+v\n\n", ci)
 				case <-ctx.Done():
@@ -170,7 +170,7 @@ func getConsumersInfo(a *app) *cobra.Command {
 	return cmd
 }
 
-//Check length of Pending
+//Check Pending info
 func getPendingInfo(a *app) *cobra.Command {
 	var timeInterval int
 	cmd := &cobra.Command{
@@ -192,7 +192,7 @@ func getPendingInfo(a *app) *cobra.Command {
 				case <-ticker.C:
 					pending, err := q.XPending(ctx)
 					if err != nil {
-						log.Printf("Error Pending: %v", err)
+						log.Errorf("Error Pending: %v", err)
 					}
 					log.Printf("Pending: %+v\n", pending)
 				case <-ctx.Done():
