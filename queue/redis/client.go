@@ -91,6 +91,10 @@ func (q *RedisQueue) Consumer() taskq.QueueConsumer {
 	return q.queue.Consumer()
 }
 
+func (q *RedisQueue) Length() (int, error) {
+	return q.queue.Len()
+}
+
 func (q *RedisQueue) ZRangebyScore(ctx context.Context, min string, max string) ([]string, error) {
 	zset := q.stringifyZSETWithQName()
 	bodies, err := q.inner.ZRangeByScore(ctx, zset, &redis.ZRangeBy{

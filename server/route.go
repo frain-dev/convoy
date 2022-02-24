@@ -13,8 +13,10 @@ import (
 	"github.com/frain-dev/convoy/cache"
 	"github.com/frain-dev/convoy/logger"
 	"github.com/frain-dev/convoy/tracer"
+	"github.com/frain-dev/convoy/worker"
 
 	"github.com/frain-dev/convoy"
+
 	"github.com/frain-dev/convoy/config"
 	"github.com/frain-dev/convoy/datastore"
 	"github.com/frain-dev/convoy/queue"
@@ -271,6 +273,8 @@ func New(cfg config.Configuration,
 		Addr:         fmt.Sprintf(":%d", cfg.Server.HTTP.Port),
 	}
 
+	RegisterQueueMetrics(eventQueue, cfg)
+	worker.RegisterWorkerMetrics(eventQueue, cfg)
 	prometheus.MustRegister(requestDuration)
 	return srv
 }
