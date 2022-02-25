@@ -23,7 +23,7 @@ Convoy includes the following features:
 
 - **Management UI**: Visibility and easy debugging are one of highly coverted features of a webhook delivery system. Convoy provides a UI to view your delivery attempt logs, filter by application, event status, date & time and perform flexible batch retries during downtimes.
 
-- **Other features(Coming soon)**: Rate Limiting, Replay Attacks prevention, Multiple Ingest sources.
+- **Other features(Coming soon)**: Application Portal; enable you embed Convoy dashboard directly into your dashboard, Rate Limiting, Replay Attacks prevention, Multiple Ingest sources.
 
 ## Installation, Getting Started
 Follow the instructions on our [quick start guide](https://getconvoy.io/docs/guide) to start publishing events with Convoy.
