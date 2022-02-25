@@ -1,3 +1,5 @@
+@import './scss/list';
+
 .app-page {
 	width: 1374px;
 	margin: 32px auto;
@@ -47,6 +49,25 @@
 
 					td:first-of-type > div {
 						padding-right: 24px;
+					}
+				}
+			}
+
+			td {
+				&.has-long-text {
+					& > div {
+						width: 150px;
+						text-overflow: ellipsis;
+						overflow: hidden;
+						white-space: nowrap;
+					}
+
+					&.longer {
+						width: 320px;
+
+						& > div {
+							width: 300px;
+						}
 					}
 				}
 			}
@@ -336,4 +357,9 @@
 			width: 15px;
 		}
 	}
+}
+
+.tag {
+	display: inline-block;
+	margin-right: 10px;
 }

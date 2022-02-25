@@ -299,47 +299,6 @@ function AppPortal() {
 	};
 
 	useEffect(() => {
-		// const getAppDetails = async () => {
-		// 	try {
-		// 		const appDetailsResponse = await this.convyAppService.request({
-		// 			url: this.getAPIURL(`/apps/7ea6d36a-f988-4623-abeb-2ad2dd3d2c7b?groupID=${this.activeGroup || ''}`),
-		// 			method: 'get'
-		// 		});
-		// 		setAppDetails(appDetailsResponse.data);
-		// 		// this.appDetails = appDetailsResponse.data;
-		// 	} catch (error) {
-		// 		return error;
-		// 	}
-		// };
-
-		// const getOrganisationDetails = async () => {
-		// 	try {
-		// 		const organisationDetailsResponse = await (
-		// 			await request({
-		// 				url: `/dashboard/config`
-		// 			})
-		// 		).data;
-		// 		setOrganisationDetails(organisationDetailsResponse.data);
-		// 	} catch (error) {
-		// 		return error;
-		// 	}
-		// };
-
-		// const fetchDashboardData = async () => {
-		// 	try {
-		// 		const { startDate, endDate } = setDateForFilter(filterDates[0]);
-		// 		const dashboardResponse = await request({
-		// 			url: `/dashboard/summary?startDate=${startDate}&endDate=${endDate}&type=${filterFrequency || 'daily'}`
-		// 		});
-		// 		setDashboardData(dashboardResponse.data.data);
-		// 	} catch (error) {
-		// 		return error;
-		// 	}
-		// };
-
-		// fetchDashboardData();
-		// getOrganisationDetails();
-		// getAppDetails();
 		getAppDetails();
 		getEvents({ page: 1 });
 		getEventDeliveries({ page: 1 });

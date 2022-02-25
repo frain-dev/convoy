@@ -68,6 +68,9 @@ export class ConvoyAppComponent implements OnInit {
 	showOverlay = false;
 	showEventDeliveriesStatusDropdown = false;
 	@Input('production') isProduction: boolean = false;
+	@Input('token') token!: string;
+	@Input('appId') appId!: string;
+	@Input('groupId') groupId!: string;
 
 	constructor(private convyAppService: ConvoyAppService, private router: Router, private formBuilder: FormBuilder, private route: ActivatedRoute) {}
 
@@ -152,9 +155,7 @@ export class ConvoyAppComponent implements OnInit {
 
 		try {
 			const eventsResponse = await this.convyAppService.request({
-				url: this.getAPIURL(
-					`/events?groupID=${this.activeGroup || ''}&sort=AESC&page=${this.eventsPage || 1}&perPage=20&startDate=${startDate}&endDate=${endDate}&appId=${'291e98cb-4e93-408f-bb5b-d422ff13d12c'}`
-				),
+				url: this.getAPIURL(`/events?groupID=${this.groupId || ''}&sort=AESC&page=${this.eventsPage || 1}&perPage=20&startDate=${startDate}&endDate=${endDate}&appId=${this.appId || ''}`),
 				method: 'get'
 			});
 			if (this.activeTab === 'events') this.detailsItem = eventsResponse.data.content[0];
@@ -177,7 +178,7 @@ export class ConvoyAppComponent implements OnInit {
 	async getAppDetails(requestDetails?: { appId?: string }) {
 		try {
 			const appDetailsResponse = await this.convyAppService.request({
-				url: this.getAPIURL(`/apps/291e98cb-4e93-408f-bb5b-d422ff13d12c?groupID=${'5c9c6db0-7606-4f9f-9965-5455980881a2' || ''}`),
+				url: this.getAPIURL(`/apps/${this.appId || ''}?groupID=${this.groupId || ''}`),
 				method: 'get'
 			});
 
@@ -223,9 +224,9 @@ export class ConvoyAppComponent implements OnInit {
 		try {
 			const eventDeliveriesResponse = await this.convyAppService.request({
 				url: this.getAPIURL(
-					`/eventdeliveries?groupID=${this.activeGroup || ''}&eventId=${requestDetails.eventId || ''}&page=${
-						this.eventDeliveriesPage || 1
-					}&startDate=${startDate}&endDate=${endDate}&appId=${'291e98cb-4e93-408f-bb5b-d422ff13d12c'}&status=${eventDeliveryStatusFilterQuery || ''}`
+					`/eventdeliveries?groupID=${this.groupId || ''}&eventId=${requestDetails.eventId || ''}&page=${this.eventDeliveriesPage || 1}&startDate=${startDate}&endDate=${endDate}&appId=${
+						this.appId || ''
+					}&status=${eventDeliveryStatusFilterQuery || ''}`
 				),
 				method: 'get'
 			});
