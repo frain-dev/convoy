@@ -80,6 +80,7 @@ export class ConvoyDashboardComponent implements OnInit {
 	showEventDeliveriesStatusDropdown = false;
 	showEventDeliveriesAppsDropdown = false;
 	showEventsAppsDropdown = false;
+	loadingAppPotalToken = false;
 	@Input('apiURL') apiURL: string = '';
 	@Input('isCloud') isCloud: boolean = false;
 	@Input('groupId') groupId: string = '';
@@ -331,6 +332,23 @@ export class ConvoyDashboardComponent implements OnInit {
 		} catch (error) {
 			this.isloadingEvents = false;
 			this.isloadingMoreEvents = false;
+			return error;
+		}
+	}
+
+	async getAppPortalToken() {
+		try {
+			const appTokenResponse = await this.convyDashboardService.request({
+				url: this.getAPIURL(`/apps/${this.appsDetailsItem.uid}/keys?groupID=${this.activeGroup || ''}`),
+				token: this.requestToken,
+				authType: this.apiAuthType,
+				method: 'post',
+				body: {}
+			});
+			window.open(`${appTokenResponse.data.url}`, '_blank');
+			this.loadingAppPotalToken = false;
+		} catch (error) {
+			this.loadingAppPotalToken = false;
 			return error;
 		}
 	}

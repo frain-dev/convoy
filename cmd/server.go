@@ -63,7 +63,7 @@ func StartConvoyServer(a *app, cfg config.Configuration, withWorkers bool) error
 		return errors.New("please provide the HTTP port in the convoy.json file")
 	}
 
-	srv := server.New(cfg, a.eventRepo, a.eventDeliveryRepo, a.applicationRepo, a.apiKeyRepo, a.groupRepo, a.eventQueue, a.logger, a.tracer)
+	srv := server.New(cfg, a.eventRepo, a.eventDeliveryRepo, a.applicationRepo, a.apiKeyRepo, a.groupRepo, a.eventQueue, a.logger, a.tracer, a.cache)
 
 	if withWorkers {
 		// register tasks.
@@ -74,6 +74,7 @@ func StartConvoyServer(a *app, cfg config.Configuration, withWorkers bool) error
 		}
 
 		worker.RegisterNewGroupTask(a.applicationRepo, a.eventDeliveryRepo, a.groupRepo)
+
 		log.Infof("Starting Convoy workers...")
 		// register workers.
 		ctx := context.Background()

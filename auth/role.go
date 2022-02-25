@@ -7,6 +7,7 @@ import "fmt"
 type Role struct {
 	Type   RoleType `json:"type"`
 	Groups []string `json:"groups"`
+	Apps   []string `json:"apps,omitempty"`
 }
 
 type RoleType string

@@ -1,3 +1,15 @@
+@import './scss/list';
+@import './scss/form';
+@import './scss/material-design-reset';
+@import './scss/table';
+
+@import './scss/reset';
+@import './scss/button';
+@import './scss/card';
+@import './scss/form';
+@import './scss/tabs';
+@import './scss/prism';
+
 .app-page {
 	width: 1374px;
 	margin: 32px auto;
@@ -10,7 +22,8 @@
 
 	&--endpoints {
 		padding: 0;
-		max-width: 850px;
+		// make section full screen, while API is still being worked on
+		// max-width: 850px;
 		width: 100%;
 
 		h3 {
@@ -46,6 +59,25 @@
 
 					td:first-of-type > div {
 						padding-right: 24px;
+					}
+				}
+			}
+
+			td {
+				&.has-long-text {
+					& > div {
+						width: 150px;
+						text-overflow: ellipsis;
+						overflow: hidden;
+						white-space: nowrap;
+					}
+
+					&.longer {
+						width: 320px;
+
+						& > div {
+							width: 300px;
+						}
 					}
 				}
 			}
@@ -333,6 +365,31 @@
 
 		img {
 			width: 15px;
+		}
+	}
+}
+
+.tag {
+	display: inline-block;
+	margin-right: 10px;
+}
+
+.dropdown--list button {
+	padding: 1px 0;
+	width: 100%;
+	font-size: 12px;
+	margin-top: 10px;
+}
+
+.dropdown {
+	&.large {
+		.dropdown--list {
+			width: 249px !important;
+		}
+
+		p {
+			text-align: center;
+			font-style: italic;
 		}
 	}
 }

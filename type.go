@@ -48,3 +48,8 @@ const (
 	EventProcessor      TaskName = "EventProcessor"
 	DeadLetterProcessor TaskName = "DeadLetterProcessor"
 )
+
+const (
+	StreamGroup           = "taskq"
+	EventDeliveryIDLength = 12
+)
