@@ -177,14 +177,16 @@ func (a *applicationHandler) CreateAppPortalAPIKey(w http.ResponseWriter, r *htt
 	baseUrl := getBaseUrlFromContext(r.Context())
 
 	if !util.IsStringEmpty(baseUrl) {
-		baseUrl = fmt.Sprintf("%s/ui/app/%s", baseUrl, key)
+		baseUrl = fmt.Sprintf("%s/ui/app/%s?groupID=%s&appId=%s", baseUrl, key, group.UID, app.UID)
 	}
 
 	resp := models.PortalAPIKeyResponse{
-		Key:  key,
-		Url:  baseUrl,
-		Role: role,
-		Type: string(apiKey.Type),
+		Key:     key,
+		Url:     baseUrl,
+		Role:    role,
+		GroupID: group.UID,
+		AppID:   app.UID,
+		Type:    string(apiKey.Type),
 	}
 
 	_ = render.Render(w, r, newServerResponse("API Key created successfully", resp, http.StatusCreated))

@@ -41,10 +41,12 @@ type APIKeyResponse struct {
 }
 
 type PortalAPIKeyResponse struct {
-	Key  string    `json:"key"`
-	Role auth.Role `json:"role"`
-	Url  string    `json:"url,omitempty"`
-	Type string    `json:"key_type"`
+	Key     string    `json:"key"`
+	Role    auth.Role `json:"role"`
+	Url     string    `json:"url,omitempty"`
+	Type    string    `json:"key_type"`
+	AppID   string    `json:"app_id,omitempty"`
+	GroupID string    `json:"group_id,omitempty"`
 }
 
 type Application struct {
