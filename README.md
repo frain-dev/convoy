@@ -16,9 +16,13 @@ Convoy is a fast & secure webhooks service. It receives event data from a HTTP A
 Convoy includes the following features: 
 
 - **Security:** Convoy signs the payload of events, so applications ensure the events have not been tampered with. You can configure your desired hash function to use as well as the name of the header E.g. `X-Stripe-Signature` to enable backward comptabile migrations from custom built systems to Convoy.
+
 - **URL per Events:** Convoy is able to receive one event and fan-out the event to multiple endpoints based on the configuration by the endpoint owner. On subscription, the endpoint owner configures what events should go to each endpoint. Overlaps are allowed.
+
 - **Retries:** Convoy current supports two retry mechanism: Constant time retries and exponential backoff. You can configure which retry mechanism works best for your application.
+
 - **Management UI**: Visibility and easy debugging are one of highly coverted features of a webhook delivery system. Convoy provides a UI to view your delivery attempt logs, filter by application, event status, date & time and perform flexible batch retries during downtimes.
+
 - **Other features(Coming soon)**: Rate Limiting, Replay Attacks prevention, Multiple Ingest sources.
 
 ## Installation, Getting Started
