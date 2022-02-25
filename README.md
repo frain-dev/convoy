@@ -26,7 +26,7 @@ Convoy includes the following features:
 - **Other features(Coming soon)**: Rate Limiting, Replay Attacks prevention, Multiple Ingest sources.
 
 ## Installation, Getting Started
-Follow the instructions on our [quick start guide](https://getconvoy.io/docs/guide) to publishing events with Convoy.
+Follow the instructions on our [quick start guide](https://getconvoy.io/docs/guide) to start publishing events with Convoy.
 
 There are several ways of installing Convoy.
 
@@ -46,7 +46,7 @@ $ docker run \
 	ghcr.io/frain-dev/convoy:v0.4.9
 ```
 
-You can download a sample configuration of [convoy.json](https://github.com/frain-dev/convoy/blob/main/convoy.json).
+You can view a sample configuration here - [convoy.json](https://github.com/frain-dev/convoy/blob/main/convoy.json.example).
 
 ### Building from source
 To build Convoy from source code, you need:
