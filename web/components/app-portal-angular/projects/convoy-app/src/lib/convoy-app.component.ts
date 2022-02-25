@@ -153,7 +153,7 @@ export class ConvoyAppComponent implements OnInit {
 		try {
 			const eventsResponse = await this.convyAppService.request({
 				url: this.getAPIURL(
-					`/events?groupID=${this.activeGroup || ''}&sort=AESC&page=${this.eventsPage || 1}&perPage=20&startDate=${startDate}&endDate=${endDate}&appId=${'7ea6d36a-f988-4623-abeb-2ad2dd3d2c7b'}`
+					`/events?groupID=${this.activeGroup || ''}&sort=AESC&page=${this.eventsPage || 1}&perPage=20&startDate=${startDate}&endDate=${endDate}&appId=${'291e98cb-4e93-408f-bb5b-d422ff13d12c'}`
 				),
 				method: 'get'
 			});
@@ -177,7 +177,7 @@ export class ConvoyAppComponent implements OnInit {
 	async getAppDetails(requestDetails?: { appId?: string }) {
 		try {
 			const appDetailsResponse = await this.convyAppService.request({
-				url: this.getAPIURL(`/apps/7ea6d36a-f988-4623-abeb-2ad2dd3d2c7b?groupID=${this.activeGroup || ''}`),
+				url: this.getAPIURL(`/apps/291e98cb-4e93-408f-bb5b-d422ff13d12c?groupID=${'5c9c6db0-7606-4f9f-9965-5455980881a2' || ''}`),
 				method: 'get'
 			});
 
@@ -225,7 +225,7 @@ export class ConvoyAppComponent implements OnInit {
 				url: this.getAPIURL(
 					`/eventdeliveries?groupID=${this.activeGroup || ''}&eventId=${requestDetails.eventId || ''}&page=${
 						this.eventDeliveriesPage || 1
-					}&startDate=${startDate}&endDate=${endDate}&appId=${'7ea6d36a-f988-4623-abeb-2ad2dd3d2c7b'}&status=${eventDeliveryStatusFilterQuery || ''}`
+					}&startDate=${startDate}&endDate=${endDate}&appId=${'291e98cb-4e93-408f-bb5b-d422ff13d12c'}&status=${eventDeliveryStatusFilterQuery || ''}`
 				),
 				method: 'get'
 			});
