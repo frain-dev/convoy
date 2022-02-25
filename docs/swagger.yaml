@@ -1929,8 +1929,7 @@ paths:
     post:
       consumes:
       - application/json
-      description: This endpoint creates an api key that will be used by the native
-        auth realm
+      description: This endpoint creates an api key that will be used by app portal
       parameters:
       - description: application ID
         in: path

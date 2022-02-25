@@ -115,7 +115,7 @@ func (a *applicationHandler) CreateAPIKey(w http.ResponseWriter, r *http.Request
 
 // CreateAppPortalAPIKey
 // @Summary Create an api key for app portal
-// @Description This endpoint creates an api key that will be used by the native auth realm
+// @Description This endpoint creates an api key that will be used by app portal
 // @Tags APIKey
 // @Accept  json
 // @Produce  json

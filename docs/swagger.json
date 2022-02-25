@@ -2808,7 +2808,7 @@
                         "ApiKeyAuth": []
                     }
                 ],
-                "description": "This endpoint creates an api key that will be used by the native auth realm",
+                "description": "This endpoint creates an api key that will be used by app portal",
                 "consumes": [
                     "application/json"
                 ],
