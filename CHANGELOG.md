@@ -1,3 +1,10 @@
+## 0.4.10
+
+- [Feature] We can now download convoy binaries from package managers #459
+- [Enhancement] Add support for embedding convoy version file #454
+- [Feature] Expose taskq queue metrics #476
+- [Feature] Added support for embedding an App portal in a 3rd pary app #463
+
 ## 0.4.0
 
 - [Enhancement] Replace bbolt implementation with badger #417
