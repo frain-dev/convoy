@@ -208,7 +208,6 @@ func buildRoutes(app *applicationHandler) http.Handler {
 				appSubRouter.Get("/", app.GetApp)
 
 				appSubRouter.Route("/keys", func(keySubRouter chi.Router) {
-					keySubRouter.Use(requirePermission(auth.RoleSuperUser))
 					keySubRouter.Use(requireGroup(app.groupRepo))
 					keySubRouter.Use(requireApp(app.appRepo))
 					keySubRouter.Use(requireBaseUrl())
