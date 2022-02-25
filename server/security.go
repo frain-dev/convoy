@@ -4,6 +4,7 @@ import (
 	"crypto/sha256"
 	"encoding/base64"
 	"encoding/json"
+	"fmt"
 	"net/http"
 	"time"
 
@@ -110,6 +111,100 @@ func (a *applicationHandler) CreateAPIKey(w http.ResponseWriter, r *http.Request
 	}
 
 	_ = render.Render(w, r, newServerResponse("API Key created successfully", resp, http.StatusCreated))
+}
+
+// CreateAppPortalAPIKey
+// @Summary Create an api key for app portal
+// @Description This endpoint creates an api key that will be used by the native auth realm
+// @Tags APIKey
+// @Accept  json
+// @Produce  json
+// @Param appID path string true "application ID"
+// @Success 201 {object} serverResponse{data=models.PortalAPIKeyResponse}
+// @Failure 400,401,500 {object} serverResponse{data=Stub}
+// @Security ApiKeyAuth
+// @Router /security/applications/{appID}/keys [post]
+func (a *applicationHandler) CreateAppPortalAPIKey(w http.ResponseWriter, r *http.Request) {
+	var newApiKey struct {
+		ExpiresAt time.Time `json:"expires_at"`
+	}
+
+	err := util.ReadJSON(r, &newApiKey)
+	if err != nil {
+		_ = render.Render(w, r, newErrorResponse(err.Error(), http.StatusBadRequest))
+		return
+	}
+
+	if newApiKey.ExpiresAt != (time.Time{}) && newApiKey.ExpiresAt.Before(time.Now()) {
+		_ = render.Render(w, r, newErrorResponse("expiry date is invalid", http.StatusBadRequest))
+		return
+	}
+
+	group := getGroupFromContext(r.Context())
+	app := getApplicationFromContext(r.Context())
+
+	if app.GroupID != group.UID {
+		_ = render.Render(w, r, newErrorResponse("app does not belong to group", http.StatusBadRequest))
+		return
+	}
+
+	role := auth.Role{
+		Type:   auth.RoleUIAdmin,
+		Groups: []string{group.UID},
+		Apps:   []string{app.UID},
+	}
+
+	maskID, key := util.GenerateAPIKey()
+	salt, err := util.GenerateSecret()
+
+	if err != nil {
+		log.WithError(err).Error("failed to generate salt")
+		_ = render.Render(w, r, newErrorResponse("something went wrong", http.StatusInternalServerError))
+		return
+	}
+
+	dk := pbkdf2.Key([]byte(key), []byte(salt), 4096, 32, sha256.New)
+	encodedKey := base64.URLEncoding.EncodeToString(dk)
+
+	apiKey := &datastore.APIKey{
+		UID:            uuid.New().String(),
+		MaskID:         maskID,
+		Name:           app.Title,
+		Type:           "app_portal",
+		Role:           role,
+		Hash:           encodedKey,
+		Salt:           salt,
+		CreatedAt:      primitive.NewDateTimeFromTime(time.Now()),
+		UpdatedAt:      primitive.NewDateTimeFromTime(time.Now()),
+		DocumentStatus: datastore.ActiveDocumentStatus,
+	}
+
+	if newApiKey.ExpiresAt != (time.Time{}) {
+		apiKey.ExpiresAt = primitive.NewDateTimeFromTime(newApiKey.ExpiresAt)
+	}
+
+	err = a.apiKeyRepo.CreateAPIKey(r.Context(), apiKey)
+	if err != nil {
+		log.WithError(err).Error("failed to create api key")
+		_ = render.Render(w, r, newErrorResponse("failed to create api key", http.StatusInternalServerError))
+		return
+	}
+
+	baseUrl := getBaseUrlFromContext(r.Context())
+
+	if util.IsStringEmpty(baseUrl) {
+		baseUrl = "<insert-base-url-in-config>"
+	}
+
+	resp := models.PortalAPIKeyResponse{
+		Key: key,
+		Url: fmt.Sprintf("%s/ui/app/%s", baseUrl, key),
+		Role: role,
+		Type: string(apiKey.Type),
+	}
+
+	_ = render.Render(w, r, newServerResponse("API Key created successfully", resp, http.StatusCreated))
+
 }
 
 // RevokeAPIKey

@@ -113,6 +113,7 @@ type Configuration struct {
 	Tracer          TracerConfiguration   `json:"tracer"`
 	NewRelic        NewRelicConfiguration `json:"new_relic"`
 	Cache           CacheConfiguration    `json:"cache"`
+	BaseUrl         string                `json:"base_url"`
 }
 
 const (
