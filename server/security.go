@@ -125,21 +125,6 @@ func (a *applicationHandler) CreateAPIKey(w http.ResponseWriter, r *http.Request
 // @Security ApiKeyAuth
 // @Router /security/applications/{appID}/keys [post]
 func (a *applicationHandler) CreateAppPortalAPIKey(w http.ResponseWriter, r *http.Request) {
-	var newApiKey struct {
-		ExpiresAt time.Time `json:"expires_at"`
-	}
-
-	err := util.ReadJSON(r, &newApiKey)
-	if err != nil {
-		_ = render.Render(w, r, newErrorResponse(err.Error(), http.StatusBadRequest))
-		return
-	}
-
-	if newApiKey.ExpiresAt != (time.Time{}) && newApiKey.ExpiresAt.Before(time.Now()) {
-		_ = render.Render(w, r, newErrorResponse("expiry date is invalid", http.StatusBadRequest))
-		return
-	}
-
 	group := getGroupFromContext(r.Context())
 	app := getApplicationFromContext(r.Context())
 
@@ -166,6 +151,8 @@ func (a *applicationHandler) CreateAppPortalAPIKey(w http.ResponseWriter, r *htt
 	dk := pbkdf2.Key([]byte(key), []byte(salt), 4096, 32, sha256.New)
 	encodedKey := base64.URLEncoding.EncodeToString(dk)
 
+	expiresAt := time.Now().Add(30 * time.Minute)
+
 	apiKey := &datastore.APIKey{
 		UID:            uuid.New().String(),
 		MaskID:         maskID,
@@ -177,10 +164,7 @@ func (a *applicationHandler) CreateAppPortalAPIKey(w http.ResponseWriter, r *htt
 		CreatedAt:      primitive.NewDateTimeFromTime(time.Now()),
 		UpdatedAt:      primitive.NewDateTimeFromTime(time.Now()),
 		DocumentStatus: datastore.ActiveDocumentStatus,
-	}
-
-	if newApiKey.ExpiresAt != (time.Time{}) {
-		apiKey.ExpiresAt = primitive.NewDateTimeFromTime(newApiKey.ExpiresAt)
+		ExpiresAt:      primitive.NewDateTimeFromTime(expiresAt),
 	}
 
 	err = a.apiKeyRepo.CreateAPIKey(r.Context(), apiKey)
@@ -192,13 +176,13 @@ func (a *applicationHandler) CreateAppPortalAPIKey(w http.ResponseWriter, r *htt
 
 	baseUrl := getBaseUrlFromContext(r.Context())
 
-	if util.IsStringEmpty(baseUrl) {
-		baseUrl = "<insert-base-url-in-config>"
+	if !util.IsStringEmpty(baseUrl) {
+		baseUrl = fmt.Sprintf("%s/ui/app/%s", baseUrl, key)
 	}
 
 	resp := models.PortalAPIKeyResponse{
-		Key: key,
-		Url: fmt.Sprintf("%s/ui/app/%s", baseUrl, key),
+		Key:  key,
+		Url:  baseUrl,
 		Role: role,
 		Type: string(apiKey.Type),
 	}

@@ -232,7 +232,6 @@ func TestApplicationHandler_CreateAppPortalAPIKey(t *testing.T) {
 		statusCode     int
 		stripTimestamp bool
 		appID          string
-		body           *strings.Reader
 		dbFn           func(app *applicationHandler)
 	}{
 		{
@@ -241,9 +240,6 @@ func TestApplicationHandler_CreateAppPortalAPIKey(t *testing.T) {
 			cfgPath:        "./testdata/Auth_Config/no-auth-convoy.json",
 			statusCode:     http.StatusCreated,
 			appID:          appID,
-			body: strings.NewReader(`{
-					"expires_at": "2029-01-02T15:04:05+01:00"
-                }`),
 			dbFn: func(app *applicationHandler) {
 				a, _ := app.apiKeyRepo.(*mocks.MockAPIKeyRepository)
 				g, _ := app.groupRepo.(*mocks.MockGroupRepository)
@@ -262,9 +258,6 @@ func TestApplicationHandler_CreateAppPortalAPIKey(t *testing.T) {
 			cfgPath:        "./testdata/Auth_Config/no-auth-convoy.json",
 			statusCode:     http.StatusBadRequest,
 			appID:          "123",
-			body: strings.NewReader(`{
-					"expires_at": "2029-01-02T15:04:05+01:00"
-                }`),
 			dbFn: func(app *applicationHandler) {
 				g, _ := app.groupRepo.(*mocks.MockGroupRepository)
 				ap, _ := app.appRepo.(*mocks.MockApplicationRepository)
@@ -280,7 +273,7 @@ func TestApplicationHandler_CreateAppPortalAPIKey(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			// Arrange
 			url := fmt.Sprintf("/api/v1/security/applications/%s/keys?groupID=%s", appID, groupId)
-			req := httptest.NewRequest(http.MethodPost, url, tc.body)
+			req := httptest.NewRequest(http.MethodPost, url, nil)
 			req.SetBasicAuth("test", "test")
 			w := httptest.NewRecorder()
 			rctx := chi.NewRouteContext()

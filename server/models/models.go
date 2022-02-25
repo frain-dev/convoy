@@ -43,7 +43,7 @@ type APIKeyResponse struct {
 type PortalAPIKeyResponse struct {
 	Key  string    `json:"key"`
 	Role auth.Role `json:"role"`
-	Url  string    `json:"url"`
+	Url  string    `json:"url,omitempty"`
 	Type string    `json:"key_type"`
 }
 
