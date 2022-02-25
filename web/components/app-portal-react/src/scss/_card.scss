@@ -1,0 +1,21 @@
+.card {
+	background: #ffffff;
+	border: 1px solid #edeff5;
+	border-radius: 8px;
+	padding: 24px;
+
+	&.has-title {
+		padding: 0;
+	}
+
+	.card--title {
+		border-bottom: 1px solid #edeff5;
+		padding: 24px 24px 16px;
+
+		h2 {
+			font-weight: bold;
+			font-size: 16px;
+			line-height: 28px;
+		}
+	}
+}

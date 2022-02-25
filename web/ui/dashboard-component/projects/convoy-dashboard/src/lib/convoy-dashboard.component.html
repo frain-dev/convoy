@@ -518,6 +518,13 @@
 							<div class="list-item-inline--label">Support Email</div>
 							<div [class]="'list-item-inline--item ' + (appsDetailsItem?.support_email ? '' : 'fint')">{{ appsDetailsItem?.support_email || '...no support email provided' }}</div>
 						</li>
+						<li class="list-item-inline">
+							<div class="list-item-inline--label">App Page</div>
+							<div class="list-item-inline--item" (click)="getAppPortalToken()">
+								Open Link
+								<img src="/assets/img/arrow-up-right.svg" alt="link out" />
+							</div>
+						</li>
 					</ul>
 
 					<h4>App Event Endpoints</h4>
