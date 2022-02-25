@@ -222,7 +222,7 @@ func TestApplicationHandler_CreateAppPortalAPIKey(t *testing.T) {
 
 	appID := "123456"
 	application := &datastore.Application{
-		UID: appID,
+		UID:     appID,
 		GroupID: groupId,
 	}
 
@@ -253,6 +253,25 @@ func TestApplicationHandler_CreateAppPortalAPIKey(t *testing.T) {
 					Times(1).Return(group, nil)
 				a.EXPECT().CreateAPIKey(gomock.Any(), gomock.Any()).Times(1).Return(nil)
 				ap.EXPECT().FindApplicationByID(gomock.Any(), gomock.Any()).Times(1).Return(application, nil)
+			},
+		},
+
+		{
+			name:           "app id does not belong to group",
+			stripTimestamp: false,
+			cfgPath:        "./testdata/Auth_Config/no-auth-convoy.json",
+			statusCode:     http.StatusBadRequest,
+			appID:          "123",
+			body: strings.NewReader(`{
+					"expires_at": "2029-01-02T15:04:05+01:00"
+                }`),
+			dbFn: func(app *applicationHandler) {
+				g, _ := app.groupRepo.(*mocks.MockGroupRepository)
+				ap, _ := app.appRepo.(*mocks.MockApplicationRepository)
+				g.EXPECT().
+					FetchGroupByID(gomock.Any(), gomock.Any()).
+					Times(1).Return(group, nil)
+				ap.EXPECT().FindApplicationByID(gomock.Any(), gomock.Any()).Times(1).Return(&datastore.Application{UID: "123", GroupID: "123"}, nil)
 			},
 		},
 	}
