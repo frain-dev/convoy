@@ -177,7 +177,7 @@ func (a *applicationHandler) CreateAppPortalAPIKey(w http.ResponseWriter, r *htt
 	baseUrl := getBaseUrlFromContext(r.Context())
 
 	if !util.IsStringEmpty(baseUrl) {
-		baseUrl = fmt.Sprintf("%s/ui/app/%s?groupID=%s&appId=%s", baseUrl, key, group.UID, app.UID)
+		baseUrl = fmt.Sprintf("%s/ui/app-portal/%s?groupID=%s&appId=%s", baseUrl, key, group.UID, app.UID)
 	}
 
 	resp := models.PortalAPIKeyResponse{
