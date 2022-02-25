@@ -40,6 +40,15 @@ type APIKeyResponse struct {
 	CreatedAt time.Time `json:"created_at"`
 }
 
+type PortalAPIKeyResponse struct {
+	Key     string    `json:"key"`
+	Role    auth.Role `json:"role"`
+	Url     string    `json:"url,omitempty"`
+	Type    string    `json:"key_type"`
+	AppID   string    `json:"app_id,omitempty"`
+	GroupID string    `json:"group_id,omitempty"`
+}
+
 type Application struct {
 	AppName      string `json:"name" bson:"name" valid:"required~please provide your appName"`
 	SupportEmail string `json:"support_email" bson:"support_email" valid:"email~please provide a valid email"`
