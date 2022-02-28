@@ -6,8 +6,9 @@ export interface APP {
 		status: string;
 		target_url: string;
 		updated_at: Date;
+		events: string[];
 	}[];
-	events: 2;
+	events: number;
 	group_id: string;
 	name: string;
 	secret: string;

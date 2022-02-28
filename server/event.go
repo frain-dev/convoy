@@ -99,6 +99,9 @@ func (a *applicationHandler) CreateAppEvent(w http.ResponseWriter, r *http.Reque
 	if string(g.Config.Strategy.Type) == string(config.DefaultStrategyProvider) {
 		intervalSeconds = g.Config.Strategy.Default.IntervalSeconds
 		retryLimit = g.Config.Strategy.Default.RetryLimit
+	} else if string(g.Config.Strategy.Type) == string(config.ExponentialBackoffStrategyProvider) {
+		intervalSeconds = 0
+		retryLimit = g.Config.Strategy.ExponentialBackoff.RetryLimit
 	} else {
 		_ = render.Render(w, r, newErrorResponse("retry strategy not defined in configuration", http.StatusInternalServerError))
 		return

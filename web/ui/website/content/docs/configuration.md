@@ -135,6 +135,7 @@ Alternatively, you can configure Convoy using the following environment variable
 -   `CONVOY_DB_DSN`
 -   `CONVOY_REDIS_DSN`
 -   `PORT`
+-   `WORKER_PORT`
 -   `CONVOY_ENV`
 -   `CONVOY_SENTRY_DSN`
 -   `CONVOY_SIGNATURE_HEADER`

@@ -7,9 +7,11 @@ builds:
   - env:
       - CGO_ENABLED=0
     main: ./cmd
+    id: cobin
     goos:
       - linux
       - darwin
+      - windows
     goarch:
       - amd64
       - arm64
@@ -60,6 +62,22 @@ brews:
     tap:
       owner: frain-dev
       name: homebrew-tools
+
+dockers: 
+- image_templates: ["ghcr.io/{{ .Env.REPO_NAME }}:{{ .Tag }}"]
+  goos: linux
+  goarch: amd64
+  dockerfile: release.Dockerfile
+  ids: 
+    - cobin
+  build_flag_templates:
+  - --platform=linux/amd64
+  - --label=org.opencontainers.image.title={{ .ProjectName }}
+  - --label=org.opencontainers.image.description=A Cloud native webhook service
+  - --label=org.opencontainers.image.url=https://github.com/{{ .Env.REPO_NAME }}
+  - --label=org.opencontainers.image.source=https://github.com/{{ .Env.REPO_NAME }}
+  - --label=org.opencontainers.image.created={{ time "2006-01-02T15:04:05Z07:00" }}
+  - --label=org.opencontainers.image.licenses=MPL-2.0
 
 checksum:
   name_template: "{{ .ProjectName}}_checksums.txt"

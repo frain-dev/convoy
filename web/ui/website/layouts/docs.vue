@@ -2,13 +2,19 @@
 	<div class="page">
 		<aside>
 			<div class="logo">
-				<img src="~/assets/images/logo.svg" alt="logo" />
+				<nuxt-link to="/"><img src="~/assets/images/logo.svg" alt="logo" /></nuxt-link>
 				<span>Docs</span>
 			</div>
 
 			<nuxt-link to="/docs"><h3>HOME</h3></nuxt-link>
 
 			<ul>
+				<li>
+					<a class="api-reference" target="_blank" href="https://convoy.readme.io/reference/introduction">
+						Api Reference
+						<img src="~/assets/images/arrow-down-right-grey.svg" alt="arrow right" />
+					</a>
+				</li>
 				<li>
 					<nuxt-link to="/docs/guide">Quick Start Guide</nuxt-link>
 				</li>
@@ -154,7 +160,12 @@ aside {
 		}
 	}
 }
-
+a.api-reference{
+	img{
+		transform: rotate(270deg);
+		margin-left: 5px;
+	}
+}
 .main {
 	width: 100%;
 	overflow-y: auto;

@@ -41,7 +41,12 @@ func (db *apiKeyRepo) CreateAPIKey(ctx context.Context, apiKey *datastore.APIKey
 
 func (db *apiKeyRepo) UpdateAPIKey(ctx context.Context, apiKey *datastore.APIKey) error {
 	filter := bson.M{"uid": apiKey.UID}
-	_, err := db.client.UpdateOne(ctx, filter, apiKey)
+
+	update := bson.M{
+		"$set": apiKey,
+	}
+
+	_, err := db.client.UpdateOne(ctx, filter, update)
 	return err
 }
 
@@ -71,7 +76,7 @@ func (db *apiKeyRepo) RevokeAPIKeys(ctx context.Context, uids []string) error {
 
 	updateAsDeleted := bson.D{primitive.E{Key: "$set", Value: bson.D{
 		primitive.E{Key: "deleted_at", Value: primitive.NewDateTimeFromTime(time.Now())},
-		primitive.E{Key: "document_status", Value: datastore.DeletedDocumentStatus},
+		primitive.E{Key: "document_status", Value: datastore.ActiveDocumentStatus},
 	}}}
 
 	_, err := db.client.UpdateMany(ctx, filter, updateAsDeleted)
@@ -88,7 +93,7 @@ func (db *apiKeyRepo) LoadAPIKeysPaged(ctx context.Context, pageable *datastore.
 	var apiKeys []datastore.APIKey
 
 	filter := bson.M{"$or": bson.A{
-		bson.M{"document_status": bson.M{"$ne": datastore.DeletedDocumentStatus}},
+		bson.M{"document_status": datastore.ActiveDocumentStatus},
 	}}
 
 	paginatedData, err := pager.
