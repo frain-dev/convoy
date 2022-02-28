@@ -37,7 +37,7 @@ jobs:
         name: Checkout
         with:
           fetch-depth: 0
-      - uses: Dotunj/github-action-analyze-tags@v0.1.0
+      - uses: Dotunj/github-action-analyze-tags@v0.2.0
         name: Get tags
         id: gt
 
@@ -54,6 +54,13 @@ jobs:
           path: server/ui/build
           fetch-depth: 0
 
+      - uses: docker/login-action@v1
+        name: Authenticate with Docker
+        with:
+          registry: ghcr.io
+          username: ${{ secrets.DOCKER_USERNAME }}
+          password: ${{ secrets.PAT }}
+
       - uses: actions/setup-go@v2
         name: Setup go
         with:
@@ -68,6 +75,7 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.RELEASE_TOKEN }}
           FURY_TOKEN: ${{ secrets.FURY_TOKEN }}
+          REPO_NAME: ${{ github.repository }}
 
       - uses: goreleaser/goreleaser-action@v2
         name: Release, Upload & Publish
@@ -78,3 +86,4 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.RELEASE_TOKEN }}
           FURY_TOKEN: ${{ secrets.FURY_TOKEN }}
+          REPO_NAME: ${{ github.repository }}

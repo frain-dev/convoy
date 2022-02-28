@@ -2,6 +2,10 @@ basePath: /api/v1
 definitions:
   auth.Role:
     properties:
+      apps:
+        items:
+          type: string
+        type: array
       groups:
         items:
           type: string
@@ -208,6 +212,11 @@ definitions:
       uid:
         type: string
     type: object
+  datastore.ExponentialBackoffStrategyConfiguration:
+    properties:
+      retryLimit:
+        type: integer
+    type: object
   datastore.Group:
     properties:
       config:
@@ -297,6 +306,8 @@ definitions:
     properties:
       default:
         $ref: '#/definitions/datastore.DefaultStrategyConfiguration'
+      exponentialBackoff:
+        $ref: '#/definitions/datastore.ExponentialBackoffStrategyConfiguration'
       type:
         type: string
     type: object
@@ -369,6 +380,17 @@ definitions:
       logo_url:
         type: string
       name:
+        type: string
+    type: object
+  models.PortalAPIKeyResponse:
+    properties:
+      key:
+        type: string
+      key_type:
+        type: string
+      role:
+        $ref: '#/definitions/auth.Role'
+      url:
         type: string
     type: object
   server.Stub:
@@ -1903,6 +1925,61 @@ paths:
       summary: Update a group
       tags:
       - Group
+  /security/applications/{appID}/keys:
+    post:
+      consumes:
+      - application/json
+      description: This endpoint creates an api key that will be used by app portal
+      parameters:
+      - description: application ID
+        in: path
+        name: appID
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            allOf:
+            - $ref: '#/definitions/server.serverResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/models.PortalAPIKeyResponse'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            allOf:
+            - $ref: '#/definitions/server.serverResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/server.Stub'
+              type: object
+        "401":
+          description: Unauthorized
+          schema:
+            allOf:
+            - $ref: '#/definitions/server.serverResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/server.Stub'
+              type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            allOf:
+            - $ref: '#/definitions/server.serverResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/server.Stub'
+              type: object
+      security:
+      - ApiKeyAuth: []
+      summary: Create an api key for app portal
+      tags:
+      - APIKey
   /security/keys:
     get:
       consumes:
@@ -2081,6 +2158,60 @@ paths:
       security:
       - ApiKeyAuth: []
       summary: Get api key by id
+      tags:
+      - APIKey
+    put:
+      consumes:
+      - application/json
+      description: This endpoint updates an api key
+      parameters:
+      - description: API Key id
+        in: path
+        name: keyID
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/server.serverResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/datastore.APIKey'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            allOf:
+            - $ref: '#/definitions/server.serverResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/server.Stub'
+              type: object
+        "401":
+          description: Unauthorized
+          schema:
+            allOf:
+            - $ref: '#/definitions/server.serverResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/server.Stub'
+              type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            allOf:
+            - $ref: '#/definitions/server.serverResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/server.Stub'
+              type: object
+      security:
+      - ApiKeyAuth: []
+      summary: update api key
       tags:
       - APIKey
   /security/keys/{keyID}/revoke:
