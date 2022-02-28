@@ -156,6 +156,7 @@ p.subtitle {
 	}
 	&-img {
 		max-height: 220px;
+		margin-bottom: -10px;
 	}
 	.links {
 		display: flex;
