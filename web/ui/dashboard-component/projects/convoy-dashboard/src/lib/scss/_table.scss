@@ -1,5 +1,5 @@
 .table {
-	margin: 24px 24px 0;
+	// margin: 24px 24px 0;
 
 	&--load-more {
 		border-top: 1px solid #eee;
@@ -25,7 +25,6 @@
 	}
 
 	.dropdown {
-		position: relative;
 
 		&.large {
 			min-width: 145px;
@@ -55,13 +54,21 @@
 					margin-right: 10px;
 				}
 			}
-
 			&.show {
 				opacity: 1;
 				height: unset;
 				max-height: 300px;
 				overflow: auto;
 			}
+		}
+
+		&__filter {
+			border-radius: 12px;
+			padding: 32px 16px;
+			position: absolute;
+			top: 110%;
+			width: 264px;
+			z-index: 9999;
 		}
 	}
 }
@@ -70,22 +77,22 @@ table {
 	width: 100%;
 	border-collapse: collapse;
 
-	th {
-		text-align: left;
-		color: var(--primary-color);
-		font-weight: 500;
-		font-size: 14px;
-		line-height: 28px;
-		padding: 9px 10px;
-	}
+	// th {
+	// 	text-align: left;
+	// 	color: var(--primary-color);
+	// 	font-weight: 500;
+	// 	font-size: 14px;
+	// 	line-height: 28px;
+	// 	padding: 9px 10px;
+	// }
 
 	tbody tr {
-		font-weight: 500;
-		font-size: 14px;
-		line-height: 28px;
-		border-radius: 8px;
-		transition: all 0.5s;
-		cursor: pointer;
+		// font-weight: 500;
+		// font-size: 14px;
+		// line-height: 28px;
+		// border-radius: 8px;
+		// transition: all 0.5s;
+		// cursor: pointer;
 
 		&.has-border {
 			border-top: 1px solid #edeff5;

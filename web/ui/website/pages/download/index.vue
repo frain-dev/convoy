@@ -28,13 +28,13 @@
 					</div>
 				</div>
 				<div v-if="activeTab == 'linux'">
-					<div class="tabs tabs__line">
+					<ul class="tabs tabs__line">
 						<li v-for="tab of linuxTabs" :key="tab.id">
 							<button :class="linuxActiveTab === tab.id ? 'active' : ''" @click="switchLinuxTabs(tab.id)">
 								<span>{{ tab.label }}</span>
 							</button>
 						</li>
-					</div>
+					</ul>
 					<div v-if="linuxActiveTab == 'ubuntu'" class="code">
 						<div>
 							<span>$</span>

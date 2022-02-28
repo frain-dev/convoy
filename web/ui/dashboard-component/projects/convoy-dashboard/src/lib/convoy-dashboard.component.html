@@ -3,7 +3,7 @@
 		<div class="dashboard--page--head">
 			<div class="filter" [ngClass]="{ 'show-calendar': showFilterCalendar }">
 				<div>Filter by:</div>
-				<button class="filter--button" (click)="statsPicker.open()">
+				<button class="button filter--button" (click)="statsPicker.open()">
 					<img src="/assets/img/calendar-icon.svg" alt="calender icon" />
 					<mat-date-range-input [formGroup]="statsDateRange" [rangePicker]="statsPicker">
 						<input matStartDate formControlName="startDate" placeholder="Start date" />
@@ -66,7 +66,7 @@
 				<convoy-loader *ngIf="isloadingConfig"></convoy-loader>
 
 				<div class="card--title">
-					<h2>Configuration</h2>
+					<h3>Configuration</h3>
 				</div>
 
 				<ul class="card--container">
@@ -103,19 +103,19 @@
 
 		<section class="card dashboard--logs">
 			<div class="dashboard--logs--tabs">
-				<div class="dashboard--logs--tabs--head tabs">
-					<div class="tabs">
-						<button *ngFor="let tab of tabs" (click)="toggleActiveTab(tab)" class="clear tab" [ngClass]="{ active: activeTab === tab }">
-							{{ tab }}
+				<div class="tabs">
+					<li *ngFor="let tab of tabs" (click)="toggleActiveTab(tab)">
+						<button [ngClass]="{ active: activeTab === tab }">
+							<span>{{ tab }}</span>
 						</button>
-					</div>
+					</li>
 				</div>
 
 				<div class="table">
 					<div [hidden]="activeTab !== 'events'">
 						<div class="filter">
 							<button
-								class="filter--button date-filter-button"
+								class="button filter--button date-filter-button"
 								(click)="eventsFilterPicker.open()"
 								[ngClass]="{ active: eventsFilterDateRange.value.startDate !== '' && eventsFilterDateRange.value.endDate !== '' }"
 								(click)="showEventFilterCalendar = !showEventFilterCalendar"
@@ -130,7 +130,7 @@
 							</button>
 
 							<div class="dropdown large">
-								<button class="filter--button dropdown--button" [ngClass]="{ active: !!eventApp }" (click)="showOverlay = true; showEventsAppsDropdown = !showEventsAppsDropdown">
+								<button class="button filter--button dropdown--button" [ngClass]="{ active: !!eventApp }" (click)="showOverlay = true; showEventsAppsDropdown = !showEventsAppsDropdown">
 									<img src="/assets/img/apps-icon-grey.svg" alt="apps filter icon" />
 									<span>Apps</span>
 									<img src="/assets/img/angle-arrow-down.svg" alt="arrow down icon" />
@@ -149,7 +149,7 @@
 							</div>
 
 							<button
-								class="filter--button primary events-filter-clear-btn"
+								class="button button__primary button__small"
 								(click)="clearEventFilters(activeTab)"
 								[disabled]="(eventsFilterDateRange.value.startDate == '' || eventsFilterDateRange.value.endDate == '') && eventApp == ''"
 								[ngClass]="{ disabled: (eventsFilterDateRange.value.startDate == '' || eventsFilterDateRange.value.endDate == '') && eventApp == '' }"
@@ -163,7 +163,7 @@
 						<div class="table--container smaller-table has-loader" *ngIf="displayedEvents.length > 0">
 							<convoy-loader *ngIf="isloadingEvents"></convoy-loader>
 
-							<table id="events-table">
+							<table id="table">
 								<thead>
 									<tr class="table--head">
 										<th scope="col">Event Type</th>
@@ -201,7 +201,7 @@
 											</td>
 											<td>
 												<div>
-													<button class="primary clear has-icon icon-right" (click)="eventDeliveryFilteredByEventId = event.uid; openDeliveriesTab()">
+													<button class="button button__clear button--has-icon icon-right" (click)="eventDeliveryFilteredByEventId = event.uid; openDeliveriesTab()">
 														Deliveries
 														<img src="../../../../assets/img/angle-arrow-right-primary.svg" alt="arrow right" />
 													</button>
@@ -214,7 +214,7 @@
 
 							<div class="table--load-more button-container center" *ngIf="events.pagination.totalPage > 1">
 								<button
-									[class]="'primary clear has-icon icon-left '"
+									[class]="'button button__primary button__clear button--has-icon icon-left '"
 									[disabled]="events.pagination.page === events.pagination.totalPage || isloadingMoreEvents"
 									(click)="eventsPage = eventsPage + 1; getEvents()"
 								>
@@ -234,7 +234,7 @@
 					<div [hidden]="activeTab !== 'event deliveries'">
 						<div class="filter">
 							<button
-								class="filter--button date-filter-button"
+								class="button filter--button date-filter-button"
 								(click)="eventDeliveriesFilterPicker.open()"
 								[ngClass]="{ active: eventDeliveriesFilterDateRange.value.startDate !== '' && eventDeliveriesFilterDateRange.value.endDate !== '' }"
 								(click)="showEventFilterCalendar = !showEventFilterCalendar"
@@ -271,7 +271,9 @@
 										<label [for]="status">{{ status || 'None' }}</label>
 									</div>
 
-									<button class="primary" (click)="showOverlay = false; showEventDeliveriesStatusDropdown = false; this.getEventDeliveries({ addToURL: true, fromFilter: true })">Apply</button>
+									<button class="button__primary" (click)="showOverlay = false; showEventDeliveriesStatusDropdown = false; this.getEventDeliveries({ addToURL: true, fromFilter: true })">
+										Apply
+									</button>
 								</div>
 							</div>
 
@@ -307,13 +309,13 @@
 
 							<div class="filter--button event-button active" *ngIf="eventDeliveryFilteredByEventId !== ''">
 								Event Filtered
-								<button class="primary clear has-icon" (click)="eventDeliveryFilteredByEventId = ''; getEventDeliveries()">
+								<button class="button__primary button__clear has-icon" (click)="eventDeliveryFilteredByEventId = ''; getEventDeliveries()">
 									<img src="../../../../assets/img/close-icon.svg" alt="close icon" />
 								</button>
 							</div>
 
 							<button
-								class="filter--button primary events-filter-clear-btn"
+								class="button button__primary button__small"
 								(click)="clearEventFilters(activeTab)"
 								[ngClass]="{
 									disabled:
@@ -330,11 +332,11 @@
 						<hr />
 
 						<div class="table--actions button-container left">
-							<button class="primary clear has-icon icon-left hover" (click)="refreshTables()">
+							<button class="button button__white button--has-icon icon-left hover" (click)="refreshTables()">
 								<img src="../../../../assets/img/refresh-icon-2.svg" alt="refresh icon" />
 								Refresh
 							</button>
-							<button class="primary clear has-icon icon-left hover" (click)="batchRetryEvent()" [disabled]="selectedEventsFromEventDeliveriesTable.length <= 0">
+							<button class="button button__white button--has-icon icon-left hover" (click)="batchRetryEvent()" [disabled]="selectedEventsFromEventDeliveriesTable.length <= 0">
 								<img src="../../../../assets/img/retry-icon.svg" alt="retry icon" />
 								Bulk Retry
 							</button>
@@ -343,7 +345,7 @@
 						<div class="table--container has-loader" *ngIf="displayedEventDeliveries.length > 0">
 							<convoy-loader *ngIf="isloadingEventDeliveries"></convoy-loader>
 
-							<table id="event-deliveries-table">
+							<table id="table">
 								<thead>
 									<tr class="table--head">
 										<th scope="col" class="checkbox">
@@ -393,7 +395,7 @@
 												<div>
 													<button
 														[disabled]="event.status === 'Success' || event.status === 'Scheduled'"
-														[class]="'primary has-icon icon-left ' + (event.status === 'Success' || event.status === 'Scheduled' ? 'disabled' : '')"
+														[class]="'button button__primary button--has-icon icon-left ' + (event.status === 'Success' || event.status === 'Scheduled' ? 'disabled' : '')"
 														(click)="retryEvent({ e: $event, index: this.index, eventDeliveryId: event.uid })"
 													>
 														<img src="/assets/img/refresh-icon.svg" alt="refresh icon" />
@@ -408,7 +410,7 @@
 
 							<div class="table--load-more button-container center" *ngIf="eventDeliveries.pagination.totalPage > 1">
 								<button
-									[class]="'primary clear has-icon icon-left'"
+									[class]="'button button__primary button__clear button--has-icon icon-left'"
 									[disabled]="eventDeliveries.pagination.page === eventDeliveries.pagination.totalPage || isloadingMoreEventDeliveries"
 									(click)="loadMoreEventDeliveries()"
 								>
@@ -436,7 +438,7 @@
 									(change)="searchApps({ searchInput: $event, type: 'apps' })"
 									[ngModelOptions]="{ standalone: true }"
 								/>
-								<button class="clear" [class]="'enter-button' + (appsSearchString.length > 0 ? ' show' : '')" (click)="searchApps({ type: 'apps' })">
+								<button class="button button__clear" [class]="'enter-button' + (appsSearchString.length > 0 ? ' show' : '')" (click)="searchApps({ type: 'apps' })">
 									<img src="/assets/img/enter-icon.png" alt="enter icon" />
 								</button>
 							</form>
@@ -447,7 +449,7 @@
 						<div class="table--container smaller-table has-loader" [hidden]="!apps || apps.content.length === 0">
 							<convoy-loader *ngIf="isloadingApps"></convoy-loader>
 
-							<table>
+							<table class="table">
 								<thead>
 									<tr class="table--head">
 										<th scope="col">Name</th>
@@ -477,7 +479,7 @@
 										</td>
 										<td>
 											<div>
-												<button [disabled]="app.events <= 0" title="view events" [class]="'primary has-icon icon-left'" (click)="loadEventsFromAppsTable(app.uid)">
+												<button [disabled]="app.events <= 0" title="view events" [class]="'button button__primary button__small button--has-icon icon-left'" (click)="loadEventsFromAppsTable(app.uid)">
 													<img src="/assets/img/view-events-icon.svg" alt="view events icon" />
 													Events
 												</button>
@@ -489,7 +491,7 @@
 
 							<div class="table--load-more button-container margin-top center" *ngIf="apps?.pagination && apps.pagination.totalPage > 1">
 								<button
-									[class]="'primary clear has-icon icon-left ' + (apps.pagination.page === apps.pagination.totalPage ? 'disabled' : '')"
+									[class]="'button button__primary button__clear button--has-icon icon-left ' + (apps.pagination.page === apps.pagination.totalPage ? 'disabled' : '')"
 									[disabled]="apps.pagination.page === apps.pagination.totalPage || isloadingMoreApps"
 									(click)="appsPage = appsPage + 1; getApps()"
 								>
@@ -583,7 +585,7 @@
 
 					<ul class="tabs">
 						<li *ngFor="let tab of eventDetailsTabs" [class]="'tab ' + (eventDetailsActiveTab === tab.id ? 'active' : '')">
-							<button class="primary outline" (click)="eventDetailsActiveTab = tab.id">{{ tab.label }}</button>
+							<button class="button button__primary outline" (click)="eventDetailsActiveTab = tab.id">{{ tab.label }}</button>
 						</li>
 					</ul>
 
