@@ -1,4 +1,3 @@
-import './style.scss';
 import React, { useEffect, useState, useCallback } from 'react';
 import ArrowDownIcon from '../assets/img/arrow-down-icon.svg';
 import CloseIcon from '../assets/img/close-icon.svg';
@@ -15,7 +14,6 @@ import { request } from '../services/https.service';
 import './style.scss';
 import 'react-date-range/dist/styles.css';
 import 'react-date-range/dist/theme/default.css';
-import { showNotification } from '../components/app-notification';
 import { getDate, getTime } from '../helpers/common.helper';
 import Prism from 'prismjs';
 import '../scss/prism.scss';
@@ -73,6 +71,18 @@ function AppPortal() {
 			key: 'selection'
 		}
 	]);
+
+	const showNotification = ({ message }) => {
+		if (!message) return;
+
+		const notificationElement = document.querySelector('.app-notification');
+		notificationElement.classList.add('show');
+		notificationElement.innerHTML = message;
+
+		setTimeout(() => {
+			document.querySelector('.app-notification').classList.remove('show');
+		}, 3000);
+	};
 
 	const setEventsDisplayed = events => {
 		const dateCreateds = events.map(event => getDate(event.created_at));
@@ -804,8 +814,10 @@ function AppPortal() {
 					</div>
 				</div>
 			</section>
+
+			<div className="app-notification"></div>
 		</div>
 	);
 }
 
-export default AppPortal;
+export { AppPortal };
