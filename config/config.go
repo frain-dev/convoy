@@ -82,6 +82,15 @@ type TracerConfiguration struct {
 	Type TracerProvider `json:"type"`
 }
 
+type CacheConfiguration struct {
+	Type  CacheProvider           `json:"type"`
+	Redis RedisCacheConfiguration `json:"redis"`
+}
+
+type RedisCacheConfiguration struct {
+	Dsn string `json:"dsn"`
+}
+
 type NewRelicConfiguration struct {
 	AppName                  string `json:"app_name"`
 	LicenseKey               string `json:"license_key"`
@@ -103,6 +112,8 @@ type Configuration struct {
 	Logger          LoggerConfiguration   `json:"logger"`
 	Tracer          TracerConfiguration   `json:"tracer"`
 	NewRelic        NewRelicConfiguration `json:"new_relic"`
+	Cache           CacheConfiguration    `json:"cache"`
+	BaseUrl         string                `json:"base_url"`
 }
 
 const (
@@ -112,12 +123,14 @@ const (
 )
 
 const (
-	RedisQueueProvider      QueueProvider           = "redis"
-	InMemoryQueueProvider   QueueProvider           = "in-memory"
-	DefaultStrategyProvider StrategyProvider        = "default"
-	DefaultSignatureHeader  SignatureHeaderProvider = "X-Convoy-Signature"
-	ConsoleLoggerProvider   LoggerProvider          = "console"
-	NewRelicTracerProvider  TracerProvider          = "new_relic"
+	RedisQueueProvider                 QueueProvider           = "redis"
+	InMemoryQueueProvider              QueueProvider           = "in-memory"
+	DefaultStrategyProvider            StrategyProvider        = "default"
+	ExponentialBackoffStrategyProvider StrategyProvider        = "exponential-backoff"
+	DefaultSignatureHeader             SignatureHeaderProvider = "X-Convoy-Signature"
+	ConsoleLoggerProvider              LoggerProvider          = "console"
+	NewRelicTracerProvider             TracerProvider          = "new_relic"
+	RedisCacheProvider                 CacheProvider           = "redis"
 )
 
 type GroupConfig struct {
@@ -127,13 +140,18 @@ type GroupConfig struct {
 }
 
 type StrategyConfiguration struct {
-	Type    StrategyProvider             `json:"type"`
-	Default DefaultStrategyConfiguration `json:"default"`
+	Type               StrategyProvider                        `json:"type"`
+	Default            DefaultStrategyConfiguration            `json:"default"`
+	ExponentialBackoff ExponentialBackoffStrategyConfiguration `json:"exponentialBackoff,omitempty"`
 }
 
 type DefaultStrategyConfiguration struct {
 	IntervalSeconds uint64 `json:"intervalSeconds" envconfig:"CONVOY_INTERVAL_SECONDS"`
 	RetryLimit      uint64 `json:"retryLimit" envconfig:"CONVOY_RETRY_LIMIT"`
+}
+
+type ExponentialBackoffStrategyConfiguration struct {
+	RetryLimit uint64 `json:"retryLimit" envconfig:"CONVOY_RETRY_LIMIT"`
 }
 
 type SignatureConfiguration struct {
@@ -147,6 +165,7 @@ type StrategyProvider string
 type SignatureHeaderProvider string
 type LoggerProvider string
 type TracerProvider string
+type CacheProvider string
 
 func (s SignatureHeaderProvider) String() string {
 	return string(s)
@@ -311,6 +330,10 @@ func ensureStrategyConfig(strategyCfg StrategyConfiguration) error {
 	case DefaultStrategyProvider:
 		if strategyCfg.Default.IntervalSeconds == 0 || strategyCfg.Default.RetryLimit == 0 {
 			return errors.New("both interval seconds and retry limit are required for default strategy configuration")
+		}
+	case ExponentialBackoffStrategyProvider:
+		if strategyCfg.ExponentialBackoff.RetryLimit == 0 {
+			return errors.New("retry limit is required for exponential backoff retry strategy configuration")
 		}
 	default:
 		return fmt.Errorf("unsupported strategy type: %s", strategyCfg.Type)

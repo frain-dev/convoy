@@ -9,8 +9,9 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/frain-dev/convoy/datastore"
+	mcache "github.com/frain-dev/convoy/cache/memory"
 	"github.com/frain-dev/convoy/config"
+	"github.com/frain-dev/convoy/datastore"
 	"github.com/frain-dev/convoy/logger"
 	"github.com/frain-dev/convoy/mocks"
 
@@ -32,8 +33,9 @@ func TestApplicationHandler_CreateAPIKey(t *testing.T) {
 	apiKeyRepo := mocks.NewMockAPIKeyRepository(ctrl)
 	logger := logger.NewNoopLogger()
 	tracer := mocks.NewMockTracer(ctrl)
+	cache := mcache.NewMemoryCache()
 
-	app = newApplicationHandler(eventRepo, eventDeliveryRepo, appRepo, groupRepo, apiKeyRepo, eventQueue, logger, tracer)
+	app = newApplicationHandler(eventRepo, eventDeliveryRepo, appRepo, groupRepo, apiKeyRepo, eventQueue, logger, tracer, cache)
 
 	groupId := "1234567890"
 	group := &datastore.Group{
@@ -181,6 +183,135 @@ func TestApplicationHandler_CreateAPIKey(t *testing.T) {
 	}
 }
 
+func TestApplicationHandler_CreateAppPortalAPIKey(t *testing.T) {
+	var app *applicationHandler
+
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	groupRepo := mocks.NewMockGroupRepository(ctrl)
+	appRepo := mocks.NewMockApplicationRepository(ctrl)
+	eventRepo := mocks.NewMockEventRepository(ctrl)
+	eventDeliveryRepo := mocks.NewMockEventDeliveryRepository(ctrl)
+	eventQueue := mocks.NewMockQueuer(ctrl)
+	apiKeyRepo := mocks.NewMockAPIKeyRepository(ctrl)
+	logger := logger.NewNoopLogger()
+	tracer := mocks.NewMockTracer(ctrl)
+	cache := mcache.NewMemoryCache()
+
+	app = newApplicationHandler(eventRepo, eventDeliveryRepo, appRepo, groupRepo, apiKeyRepo, eventQueue, logger, tracer, cache)
+
+	groupId := "1234567890"
+	group := &datastore.Group{
+		UID: groupId,
+		Config: &datastore.GroupConfig{
+			Signature: datastore.SignatureConfiguration{
+				Header: config.SignatureHeaderProvider("X-datastore.Signature"),
+				Hash:   "SHA256",
+			},
+			Strategy: datastore.StrategyConfiguration{
+				Type: config.StrategyProvider("default"),
+				Default: datastore.DefaultStrategyConfiguration{
+					IntervalSeconds: 60,
+					RetryLimit:      1,
+				},
+			},
+			DisableEndpoint: true,
+		},
+	}
+
+	appID := "123456"
+	application := &datastore.Application{
+		UID:     appID,
+		GroupID: groupId,
+	}
+
+	tt := []struct {
+		name           string
+		cfgPath        string
+		statusCode     int
+		stripTimestamp bool
+		appID          string
+		dbFn           func(app *applicationHandler)
+	}{
+		{
+			name:           "create api key",
+			stripTimestamp: true,
+			cfgPath:        "./testdata/Auth_Config/no-auth-convoy.json",
+			statusCode:     http.StatusCreated,
+			appID:          appID,
+			dbFn: func(app *applicationHandler) {
+				a, _ := app.apiKeyRepo.(*mocks.MockAPIKeyRepository)
+				g, _ := app.groupRepo.(*mocks.MockGroupRepository)
+				ap, _ := app.appRepo.(*mocks.MockApplicationRepository)
+				g.EXPECT().
+					FetchGroupByID(gomock.Any(), gomock.Any()).
+					Times(1).Return(group, nil)
+				a.EXPECT().CreateAPIKey(gomock.Any(), gomock.Any()).Times(1).Return(nil)
+				ap.EXPECT().FindApplicationByID(gomock.Any(), gomock.Any()).Times(1).Return(application, nil)
+			},
+		},
+
+		{
+			name:           "app id does not belong to group",
+			stripTimestamp: false,
+			cfgPath:        "./testdata/Auth_Config/no-auth-convoy.json",
+			statusCode:     http.StatusBadRequest,
+			appID:          "123",
+			dbFn: func(app *applicationHandler) {
+				g, _ := app.groupRepo.(*mocks.MockGroupRepository)
+				ap, _ := app.appRepo.(*mocks.MockApplicationRepository)
+				g.EXPECT().
+					FetchGroupByID(gomock.Any(), gomock.Any()).
+					Times(1).Return(group, nil)
+				ap.EXPECT().FindApplicationByID(gomock.Any(), gomock.Any()).Times(1).Return(&datastore.Application{UID: "123", GroupID: "123"}, nil)
+			},
+		},
+	}
+
+	for _, tc := range tt {
+		t.Run(tc.name, func(t *testing.T) {
+			// Arrange
+			url := fmt.Sprintf("/api/v1/security/applications/%s/keys?groupID=%s", appID, groupId)
+			req := httptest.NewRequest(http.MethodPost, url, nil)
+			req.SetBasicAuth("test", "test")
+			w := httptest.NewRecorder()
+			rctx := chi.NewRouteContext()
+			req.Header.Add("Content-Type", "application/json")
+
+			req = req.WithContext(context.WithValue(req.Context(), chi.RouteCtxKey, rctx))
+
+			// Arrange Expectations
+			if tc.dbFn != nil {
+				tc.dbFn(app)
+			}
+
+			err := config.LoadConfig(tc.cfgPath, new(config.Configuration))
+			if err != nil {
+				t.Errorf("Failed to load config file: %v", err)
+			}
+			initRealmChain(t, app.apiKeyRepo)
+
+			router := buildRoutes(app)
+
+			// Act
+			router.ServeHTTP(w, req)
+
+			// Assert
+			if w.Code != tc.statusCode {
+				t.Errorf("Want status '%d', got '%d'", tc.statusCode, w.Code)
+			}
+
+			if tc.stripTimestamp {
+				d := stripTimestamp(t, "apiKey", w.Body)
+				w.Body = d
+			}
+
+			verifyMatch(t, *w)
+		})
+	}
+}
+
 func TestApplicationHandler_RevokeAPIKey(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
@@ -193,9 +324,9 @@ func TestApplicationHandler_RevokeAPIKey(t *testing.T) {
 	apiKeyRepo := mocks.NewMockAPIKeyRepository(ctrl)
 	logger := logger.NewNoopLogger()
 	tracer := mocks.NewMockTracer(ctrl)
-	
+	cache := mcache.NewMemoryCache()
 
-	app := newApplicationHandler(eventRepo, eventDeliveryRepo, appRepo, groupRepo, apiKeyRepo, eventQueue, logger, tracer)
+	app := newApplicationHandler(eventRepo, eventDeliveryRepo, appRepo, groupRepo, apiKeyRepo, eventQueue, logger, tracer, cache)
 
 	tt := []struct {
 		name       string
@@ -276,8 +407,9 @@ func TestApplicationHandler_GetAPIKeyByID(t *testing.T) {
 	apiKeyRepo := mocks.NewMockAPIKeyRepository(ctrl)
 	logger := logger.NewNoopLogger()
 	tracer := mocks.NewMockTracer(ctrl)
+	cache := mcache.NewMemoryCache()
 
-	app := newApplicationHandler(eventRepo, eventDeliveryRepo, appRepo, groupRepo, apiKeyRepo, eventQueue, logger, tracer)
+	app := newApplicationHandler(eventRepo, eventDeliveryRepo, appRepo, groupRepo, apiKeyRepo, eventQueue, logger, tracer, cache)
 
 	keyID := "12345"
 	apiKey := &datastore.APIKey{UID: keyID}
@@ -364,8 +496,9 @@ func TestApplicationHandler_GetAPIKeys(t *testing.T) {
 	apiKeyRepo := mocks.NewMockAPIKeyRepository(ctrl)
 	logger := logger.NewNoopLogger()
 	tracer := mocks.NewMockTracer(ctrl)
+	cache := mcache.NewMemoryCache()
 
-	app := newApplicationHandler(eventRepo, eventDeliveryRepo, appRepo, groupRepo, apiKeyRepo, eventQueue, logger, tracer)
+	app := newApplicationHandler(eventRepo, eventDeliveryRepo, appRepo, groupRepo, apiKeyRepo, eventQueue, logger, tracer, cache)
 
 	keyID := "12345"
 	apiKey := &datastore.APIKey{UID: keyID}
@@ -392,7 +525,7 @@ func TestApplicationHandler_GetAPIKeys(t *testing.T) {
 					LoadAPIKeysPaged(gomock.Any(), gomock.Any()).
 					Times(1).
 					Return(
-						[]datastore.APIKey{*apiKey}, 
+						[]datastore.APIKey{*apiKey},
 						datastore.PaginationData{PerPage: int64(page.PerPage)}, nil)
 			},
 		},
@@ -445,4 +578,128 @@ func TestApplicationHandler_GetAPIKeys(t *testing.T) {
 			verifyMatch(t, *w)
 		})
 	}
+}
+
+func TestApplicationHandler_UpdateAPIKey(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	groupRepo := mocks.NewMockGroupRepository(ctrl)
+	appRepo := mocks.NewMockApplicationRepository(ctrl)
+	eventRepo := mocks.NewMockEventRepository(ctrl)
+	eventDeliveryRepo := mocks.NewMockEventDeliveryRepository(ctrl)
+	eventQueue := mocks.NewMockQueuer(ctrl)
+	apiKeyRepo := mocks.NewMockAPIKeyRepository(ctrl)
+	logger := logger.NewNoopLogger()
+	tracer := mocks.NewMockTracer(ctrl)
+	cache := mcache.NewMemoryCache()
+
+	app := newApplicationHandler(eventRepo, eventDeliveryRepo, appRepo, groupRepo, apiKeyRepo, eventQueue, logger, tracer, cache)
+
+	groupID := "1234567890"
+
+	group := &datastore.Group{
+		UID: groupID,
+		Config: &datastore.GroupConfig{
+			Signature: datastore.SignatureConfiguration{
+				Header: config.SignatureHeaderProvider("X-datastore.Signature"),
+				Hash:   "SHA256",
+			},
+			Strategy: datastore.StrategyConfiguration{
+				Type: config.StrategyProvider("default"),
+				Default: datastore.DefaultStrategyConfiguration{
+					IntervalSeconds: 60,
+					RetryLimit:      1,
+				},
+			},
+			DisableEndpoint: true,
+		},
+	}
+
+	keyID := "12345"
+	apiKey := &datastore.APIKey{UID: keyID}
+
+	tt := []struct {
+		name       string
+		cfgPath    string
+		statusCode int
+		keyID      string
+		body       *strings.Reader
+		dbFn       func(app *applicationHandler)
+	}{
+		{
+			name:       "update api key",
+			cfgPath:    "./testdata/Auth_Config/no-auth-convoy.json",
+			statusCode: http.StatusOK,
+			keyID:      keyID,
+			body: strings.NewReader(`{
+				"role": {
+					"type": "admin",
+					"groups": [
+						"sendcash-pay"
+					]
+				}
+			}`),
+			dbFn: func(app *applicationHandler) {
+				a, _ := app.apiKeyRepo.(*mocks.MockAPIKeyRepository)
+				g, _ := app.groupRepo.(*mocks.MockGroupRepository)
+				g.EXPECT().
+					FetchGroupsByIDs(gomock.Any(), gomock.Any()).
+					Times(1).Return([]datastore.Group{*group}, nil)
+				a.EXPECT().FindAPIKeyByID(gomock.Any(), gomock.Any()).Times(1).Return(apiKey, nil)
+				a.EXPECT().UpdateAPIKey(gomock.Any(), gomock.Any()).Times(1).Return(nil)
+			},
+		},
+		{
+			name:       "invalid role",
+			cfgPath:    "./testdata/Auth_Config/no-auth-convoy.json",
+			statusCode: http.StatusBadRequest,
+			keyID:      keyID,
+			body: strings.NewReader(`{
+                    "role": {
+                        "type": "invalid-role",
+                        "groups": []
+                    }
+                }`),
+			dbFn: nil,
+		},
+	}
+
+	for _, tc := range tt {
+		t.Run(tc.name, func(t *testing.T) {
+			// Arrange
+			url := fmt.Sprintf("/api/v1/security/keys/%s", tc.keyID)
+			req := httptest.NewRequest(http.MethodPut, url, tc.body)
+			req.SetBasicAuth("test", "test")
+			w := httptest.NewRecorder()
+			rctx := chi.NewRouteContext()
+			req.Header.Add("Content-Type", "application/json")
+
+			req = req.WithContext(context.WithValue(req.Context(), chi.RouteCtxKey, rctx))
+
+			// Arrange Expectations
+			if tc.dbFn != nil {
+				tc.dbFn(app)
+			}
+
+			err := config.LoadConfig(tc.cfgPath, new(config.Configuration))
+			if err != nil {
+				t.Errorf("Failed to load config file: %v", err)
+			}
+			initRealmChain(t, app.apiKeyRepo)
+
+			router := buildRoutes(app)
+
+			// Act
+			router.ServeHTTP(w, req)
+
+			// Assert
+			if w.Code != tc.statusCode {
+				t.Errorf("Want status '%d', got '%d'", tc.statusCode, w.Code)
+			}
+
+			verifyMatch(t, *w)
+		})
+	}
+
 }

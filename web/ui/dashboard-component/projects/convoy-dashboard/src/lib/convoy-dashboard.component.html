@@ -43,14 +43,14 @@
 					<li class="messages">
 						<img src="/assets/img/message-icon.svg" alt="message icon" />
 						<div class="metric">
-							<div>{{ dashboardData.events_sent }}</div>
+							<div>{{ dashboardData.events_sent | 'metric' }}</div>
 							<div>Event Sent</div>
 						</div>
 					</li>
 					<li class="apps">
 						<img src="/assets/img/apps-icon.svg" alt="apps icon" />
 						<div class="metric">
-							<div>{{ dashboardData.apps }}</div>
+							<div>{{ dashboardData.apps | 'metric' }}</div>
 							<div>Apps</div>
 						</div>
 					</li>
@@ -517,6 +517,13 @@
 						<li class="list-item-inline">
 							<div class="list-item-inline--label">Support Email</div>
 							<div [class]="'list-item-inline--item ' + (appsDetailsItem?.support_email ? '' : 'fint')">{{ appsDetailsItem?.support_email || '...no support email provided' }}</div>
+						</li>
+						<li class="list-item-inline">
+							<div class="list-item-inline--label">App Page</div>
+							<div class="list-item-inline--item" (click)="getAppPortalToken()">
+								Open Link
+								<img src="/assets/img/arrow-up-right.svg" alt="link out" />
+							</div>
 						</li>
 					</ul>
 

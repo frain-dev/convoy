@@ -16,7 +16,7 @@ func RegisterNewGroupTask(applicationRepo datastore.ApplicationRepository, event
 			filter := &datastore.GroupFilter{}
 			groups, err := groupRepo.LoadGroups(context.Background(), filter)
 			if err != nil {
-				log.Fatalf("an error occurred while fetching Groups:%v", err)
+				log.WithError(err).Error("failed to load groups")
 			}
 			for _, g := range groups {
 				name := convoy.TaskName(g.Name)

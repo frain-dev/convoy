@@ -8,10 +8,10 @@ import (
 	"net/http"
 	"net/http/httptrace"
 	"net/url"
-	"os"
 	"strings"
 	"time"
 
+	"github.com/frain-dev/convoy"
 	"github.com/frain-dev/convoy/util"
 	log "github.com/sirupsen/logrus"
 )
@@ -104,7 +104,7 @@ func updateDispatchHeaders(r *Response, res *http.Response) {
 }
 
 func defaultUserAgent() string {
-	f, err := os.ReadFile("VERSION")
+	f, err := convoy.ReadVersion()
 	if err != nil {
 		return "Convoy/v0.1.0"
 	}

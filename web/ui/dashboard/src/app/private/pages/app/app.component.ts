@@ -1,5 +1,6 @@
 import { Component, OnInit } from '@angular/core';
-import { Router } from '@angular/router';
+import { ActivatedRoute, Router } from '@angular/router';
+import { HttpService } from 'src/app/services/http/http.service';
 
 @Component({
 	selector: 'app-app',
@@ -8,14 +9,13 @@ import { Router } from '@angular/router';
 })
 export class AppComponent implements OnInit {
 	showDropdown = false;
+	appId: string = this.route.snapshot.queryParams.appId;
+	groupId: string = this.route.snapshot.queryParams.groupId;
+	token: string = this.route.snapshot.params.token;
 
-	constructor(private router: Router) {}
+	constructor(private router: Router, private route: ActivatedRoute) {}
 
-	async ngOnInit() {
-		await this.initDashboard();
-	}
-
-	async initDashboard() {}
+	ngOnInit() {}
 
 	logout() {
 		localStorage.removeItem('CONVOY_AUTH');
