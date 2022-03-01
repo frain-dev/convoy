@@ -3268,7 +3268,13 @@
                 "expires_at": {
                     "type": "integer"
                 },
+                "hash": {
+                    "type": "string"
+                },
                 "key_type": {
+                    "type": "string"
+                },
+                "mask_id": {
                     "type": "string"
                 },
                 "name": {
@@ -3276,6 +3282,9 @@
                 },
                 "role": {
                     "$ref": "#/definitions/auth.Role"
+                },
+                "salt": {
+                    "type": "string"
                 },
                 "uid": {
                     "type": "string"

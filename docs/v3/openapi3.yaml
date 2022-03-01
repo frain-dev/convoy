@@ -17,12 +17,18 @@ components:
           type: integer
         expires_at:
           type: integer
+        hash:
+          type: string
         key_type:
+          type: string
+        mask_id:
           type: string
         name:
           type: string
         role:
           $ref: '#/components/schemas/auth.Role'
+        salt:
+          type: string
         uid:
           type: string
         updated_at:
