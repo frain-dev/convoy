@@ -23,5 +23,5 @@ func NewLimiter(cfg config.LimiterConfiguration) (RateLimiter, error) {
 		return ra, nil
 	}
 
-	return nlimiter.NoopLimiter{}, nil
+	return nlimiter.NewNoopLimiter(), nil
 }

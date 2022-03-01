@@ -9,10 +9,8 @@ import (
 	"strings"
 	"testing"
 
-	mcache "github.com/frain-dev/convoy/cache/memory"
 	"github.com/frain-dev/convoy/config"
 	"github.com/frain-dev/convoy/datastore"
-	"github.com/frain-dev/convoy/logger"
 	"github.com/frain-dev/convoy/mocks"
 
 	"github.com/go-chi/chi/v5"
@@ -24,18 +22,7 @@ func TestApplicationHandler_CreateAPIKey(t *testing.T) {
 
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
-
-	groupRepo := mocks.NewMockGroupRepository(ctrl)
-	appRepo := mocks.NewMockApplicationRepository(ctrl)
-	eventRepo := mocks.NewMockEventRepository(ctrl)
-	eventDeliveryRepo := mocks.NewMockEventDeliveryRepository(ctrl)
-	eventQueue := mocks.NewMockQueuer(ctrl)
-	apiKeyRepo := mocks.NewMockAPIKeyRepository(ctrl)
-	logger := logger.NewNoopLogger()
-	tracer := mocks.NewMockTracer(ctrl)
-	cache := mcache.NewMemoryCache()
-
-	app = newApplicationHandler(eventRepo, eventDeliveryRepo, appRepo, groupRepo, apiKeyRepo, eventQueue, logger, tracer, cache, nil)
+	app = provideApplication(ctrl)
 
 	groupId := "1234567890"
 	group := &datastore.Group{
@@ -188,18 +175,7 @@ func TestApplicationHandler_CreateAppPortalAPIKey(t *testing.T) {
 
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
-
-	groupRepo := mocks.NewMockGroupRepository(ctrl)
-	appRepo := mocks.NewMockApplicationRepository(ctrl)
-	eventRepo := mocks.NewMockEventRepository(ctrl)
-	eventDeliveryRepo := mocks.NewMockEventDeliveryRepository(ctrl)
-	eventQueue := mocks.NewMockQueuer(ctrl)
-	apiKeyRepo := mocks.NewMockAPIKeyRepository(ctrl)
-	logger := logger.NewNoopLogger()
-	tracer := mocks.NewMockTracer(ctrl)
-	cache := mcache.NewMemoryCache()
-
-	app = newApplicationHandler(eventRepo, eventDeliveryRepo, appRepo, groupRepo, apiKeyRepo, eventQueue, logger, tracer, cache, nil)
+	app = provideApplication(ctrl)
 
 	groupId := "1234567890"
 	group := &datastore.Group{
@@ -315,18 +291,7 @@ func TestApplicationHandler_CreateAppPortalAPIKey(t *testing.T) {
 func TestApplicationHandler_RevokeAPIKey(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
-
-	groupRepo := mocks.NewMockGroupRepository(ctrl)
-	appRepo := mocks.NewMockApplicationRepository(ctrl)
-	eventRepo := mocks.NewMockEventRepository(ctrl)
-	eventDeliveryRepo := mocks.NewMockEventDeliveryRepository(ctrl)
-	eventQueue := mocks.NewMockQueuer(ctrl)
-	apiKeyRepo := mocks.NewMockAPIKeyRepository(ctrl)
-	logger := logger.NewNoopLogger()
-	tracer := mocks.NewMockTracer(ctrl)
-	cache := mcache.NewMemoryCache()
-
-	app := newApplicationHandler(eventRepo, eventDeliveryRepo, appRepo, groupRepo, apiKeyRepo, eventQueue, logger, tracer, cache, nil)
+	app := provideApplication(ctrl)
 
 	tt := []struct {
 		name       string
@@ -398,18 +363,7 @@ func TestApplicationHandler_RevokeAPIKey(t *testing.T) {
 func TestApplicationHandler_GetAPIKeyByID(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
-
-	groupRepo := mocks.NewMockGroupRepository(ctrl)
-	appRepo := mocks.NewMockApplicationRepository(ctrl)
-	eventRepo := mocks.NewMockEventRepository(ctrl)
-	eventDeliveryRepo := mocks.NewMockEventDeliveryRepository(ctrl)
-	eventQueue := mocks.NewMockQueuer(ctrl)
-	apiKeyRepo := mocks.NewMockAPIKeyRepository(ctrl)
-	logger := logger.NewNoopLogger()
-	tracer := mocks.NewMockTracer(ctrl)
-	cache := mcache.NewMemoryCache()
-
-	app := newApplicationHandler(eventRepo, eventDeliveryRepo, appRepo, groupRepo, apiKeyRepo, eventQueue, logger, tracer, cache, nil)
+	app := provideApplication(ctrl)
 
 	keyID := "12345"
 	apiKey := &datastore.APIKey{UID: keyID}
@@ -487,18 +441,7 @@ func TestApplicationHandler_GetAPIKeyByID(t *testing.T) {
 func TestApplicationHandler_GetAPIKeys(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
-
-	groupRepo := mocks.NewMockGroupRepository(ctrl)
-	appRepo := mocks.NewMockApplicationRepository(ctrl)
-	eventRepo := mocks.NewMockEventRepository(ctrl)
-	eventDeliveryRepo := mocks.NewMockEventDeliveryRepository(ctrl)
-	eventQueue := mocks.NewMockQueuer(ctrl)
-	apiKeyRepo := mocks.NewMockAPIKeyRepository(ctrl)
-	logger := logger.NewNoopLogger()
-	tracer := mocks.NewMockTracer(ctrl)
-	cache := mcache.NewMemoryCache()
-
-	app := newApplicationHandler(eventRepo, eventDeliveryRepo, appRepo, groupRepo, apiKeyRepo, eventQueue, logger, tracer, cache, nil)
+	app := provideApplication(ctrl)
 
 	keyID := "12345"
 	apiKey := &datastore.APIKey{UID: keyID}
@@ -583,18 +526,7 @@ func TestApplicationHandler_GetAPIKeys(t *testing.T) {
 func TestApplicationHandler_UpdateAPIKey(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
-
-	groupRepo := mocks.NewMockGroupRepository(ctrl)
-	appRepo := mocks.NewMockApplicationRepository(ctrl)
-	eventRepo := mocks.NewMockEventRepository(ctrl)
-	eventDeliveryRepo := mocks.NewMockEventDeliveryRepository(ctrl)
-	eventQueue := mocks.NewMockQueuer(ctrl)
-	apiKeyRepo := mocks.NewMockAPIKeyRepository(ctrl)
-	logger := logger.NewNoopLogger()
-	tracer := mocks.NewMockTracer(ctrl)
-	cache := mcache.NewMemoryCache()
-
-	app := newApplicationHandler(eventRepo, eventDeliveryRepo, appRepo, groupRepo, apiKeyRepo, eventQueue, logger, tracer, cache, nil)
+	app := provideApplication(ctrl)
 
 	groupID := "1234567890"
 

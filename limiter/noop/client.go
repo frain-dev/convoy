@@ -11,8 +11,8 @@ import (
 type NoopLimiter struct {
 }
 
-func NewNoopLimiter(dsn string) (*NoopLimiter, error) {
-	return &NoopLimiter{}, nil
+func NewNoopLimiter() *NoopLimiter {
+	return &NoopLimiter{}
 }
 
 func (n NoopLimiter) Allow(ctx context.Context, key string, limit int) (*redis_rate.Result, error) {
