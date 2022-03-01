@@ -3,6 +3,12 @@
 		"schemas": {
 			"auth.Role": {
 				"properties": {
+					"apps": {
+						"items": {
+							"type": "string"
+						},
+						"type": "array"
+					},
 					"groups": {
 						"items": {
 							"type": "string"
@@ -307,6 +313,14 @@
 				},
 				"type": "object"
 			},
+			"datastore.ExponentialBackoffStrategyConfiguration": {
+				"properties": {
+					"retryLimit": {
+						"type": "integer"
+					}
+				},
+				"type": "object"
+			},
 			"datastore.Group": {
 				"properties": {
 					"config": {
@@ -435,6 +449,9 @@
 					"default": {
 						"$ref": "#/components/schemas/datastore.DefaultStrategyConfiguration"
 					},
+					"exponentialBackoff": {
+						"$ref": "#/components/schemas/datastore.ExponentialBackoffStrategyConfiguration"
+					},
 					"type": {
 						"type": "string"
 					}
@@ -542,6 +559,29 @@
 						"type": "string"
 					},
 					"name": {
+						"type": "string"
+					}
+				},
+				"type": "object"
+			},
+			"models.PortalAPIKeyResponse": {
+				"properties": {
+					"app_id": {
+						"type": "string"
+					},
+					"group_id": {
+						"type": "string"
+					},
+					"key": {
+						"type": "string"
+					},
+					"key_type": {
+						"type": "string"
+					},
+					"role": {
+						"$ref": "#/components/schemas/auth.Role"
+					},
+					"url": {
 						"type": "string"
 					}
 				},
@@ -3724,6 +3764,121 @@
 				]
 			}
 		},
+		"/security/applications/{appID}/keys": {
+			"post": {
+				"description": "This endpoint creates an api key that will be used by app portal",
+				"parameters": [
+					{
+						"description": "application ID",
+						"in": "path",
+						"name": "appID",
+						"required": true,
+						"schema": {
+							"type": "string"
+						}
+					}
+				],
+				"responses": {
+					"201": {
+						"content": {
+							"application/json": {
+								"schema": {
+									"allOf": [
+										{
+											"$ref": "#/components/schemas/server.serverResponse"
+										},
+										{
+											"properties": {
+												"data": {
+													"$ref": "#/components/schemas/models.PortalAPIKeyResponse"
+												}
+											},
+											"type": "object"
+										}
+									]
+								}
+							}
+						},
+						"description": "Created"
+					},
+					"400": {
+						"content": {
+							"application/json": {
+								"schema": {
+									"allOf": [
+										{
+											"$ref": "#/components/schemas/server.serverResponse"
+										},
+										{
+											"properties": {
+												"data": {
+													"$ref": "#/components/schemas/server.Stub"
+												}
+											},
+											"type": "object"
+										}
+									]
+								}
+							}
+						},
+						"description": "Bad Request"
+					},
+					"401": {
+						"content": {
+							"application/json": {
+								"schema": {
+									"allOf": [
+										{
+											"$ref": "#/components/schemas/server.serverResponse"
+										},
+										{
+											"properties": {
+												"data": {
+													"$ref": "#/components/schemas/server.Stub"
+												}
+											},
+											"type": "object"
+										}
+									]
+								}
+							}
+						},
+						"description": "Unauthorized"
+					},
+					"500": {
+						"content": {
+							"application/json": {
+								"schema": {
+									"allOf": [
+										{
+											"$ref": "#/components/schemas/server.serverResponse"
+										},
+										{
+											"properties": {
+												"data": {
+													"$ref": "#/components/schemas/server.Stub"
+												}
+											},
+											"type": "object"
+										}
+									]
+								}
+							}
+						},
+						"description": "Internal Server Error"
+					}
+				},
+				"security": [
+					{
+						"ApiKeyAuth": []
+					}
+				],
+				"summary": "Create an api key for app portal",
+				"tags": [
+					"APIKey"
+				]
+			}
+		},
 		"/security/keys": {
 			"get": {
 				"description": "This endpoint fetches multiple api keys",
@@ -4093,6 +4248,119 @@
 					}
 				],
 				"summary": "Get api key by id",
+				"tags": [
+					"APIKey"
+				]
+			},
+			"put": {
+				"description": "This endpoint updates an api key",
+				"parameters": [
+					{
+						"description": "API Key id",
+						"in": "path",
+						"name": "keyID",
+						"required": true,
+						"schema": {
+							"type": "string"
+						}
+					}
+				],
+				"responses": {
+					"200": {
+						"content": {
+							"application/json": {
+								"schema": {
+									"allOf": [
+										{
+											"$ref": "#/components/schemas/server.serverResponse"
+										},
+										{
+											"properties": {
+												"data": {
+													"$ref": "#/components/schemas/datastore.APIKey"
+												}
+											},
+											"type": "object"
+										}
+									]
+								}
+							}
+						},
+						"description": "OK"
+					},
+					"400": {
+						"content": {
+							"application/json": {
+								"schema": {
+									"allOf": [
+										{
+											"$ref": "#/components/schemas/server.serverResponse"
+										},
+										{
+											"properties": {
+												"data": {
+													"$ref": "#/components/schemas/server.Stub"
+												}
+											},
+											"type": "object"
+										}
+									]
+								}
+							}
+						},
+						"description": "Bad Request"
+					},
+					"401": {
+						"content": {
+							"application/json": {
+								"schema": {
+									"allOf": [
+										{
+											"$ref": "#/components/schemas/server.serverResponse"
+										},
+										{
+											"properties": {
+												"data": {
+													"$ref": "#/components/schemas/server.Stub"
+												}
+											},
+											"type": "object"
+										}
+									]
+								}
+							}
+						},
+						"description": "Unauthorized"
+					},
+					"500": {
+						"content": {
+							"application/json": {
+								"schema": {
+									"allOf": [
+										{
+											"$ref": "#/components/schemas/server.serverResponse"
+										},
+										{
+											"properties": {
+												"data": {
+													"$ref": "#/components/schemas/server.Stub"
+												}
+											},
+											"type": "object"
+										}
+									]
+								}
+							}
+						},
+						"description": "Internal Server Error"
+					}
+				},
+				"security": [
+					{
+						"ApiKeyAuth": []
+					}
+				],
+				"summary": "update api key",
 				"tags": [
 					"APIKey"
 				]
