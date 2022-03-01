@@ -30,7 +30,7 @@ func Test_fetchAllConfigDetails(t *testing.T) {
 	apiKeyRepo := mocks.NewMockAPIKeyRepository(ctrl)
 	cache := mcache.NewMemoryCache()
 
-	app = newApplicationHandler(eventRepo, eventDeliveryRepo, appRepo, groupRepo, apiKeyRepo, eventQueue, logger, tracer, cache)
+	app = newApplicationHandler(eventRepo, eventDeliveryRepo, appRepo, groupRepo, apiKeyRepo, eventQueue, logger, tracer, cache, nil)
 
 	tests := []struct {
 		name       string

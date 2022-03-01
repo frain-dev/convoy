@@ -95,7 +95,7 @@ func TestApplicationHandler_GetGroup(t *testing.T) {
 			apiKeyRepo := mocks.NewMockAPIKeyRepository(ctrl)
 			cache := mcache.NewMemoryCache()
 
-			app = newApplicationHandler(eventRepo, eventDeliveryRepo, appRepo, groupRepo, apiKeyRepo, eventQueue, logger, tracer, cache)
+			app = newApplicationHandler(eventRepo, eventDeliveryRepo, appRepo, groupRepo, apiKeyRepo, eventQueue, logger, tracer, cache, nil)
 
 			// Arrange
 			url := fmt.Sprintf("/api/v1/groups/%s", tc.id)
@@ -245,7 +245,7 @@ func TestApplicationHandler_CreateGroup(t *testing.T) {
 			apiKeyRepo := mocks.NewMockAPIKeyRepository(ctrl)
 			cache := mcache.NewMemoryCache()
 
-			app = newApplicationHandler(eventRepo, eventDeliveryRepo, appRepo, groupRepo, apiKeyRepo, eventQueue, logger, tracer, cache)
+			app = newApplicationHandler(eventRepo, eventDeliveryRepo, appRepo, groupRepo, apiKeyRepo, eventQueue, logger, tracer, cache, nil)
 
 			// Arrange
 			req := httptest.NewRequest(tc.method, "/api/v1/groups", tc.body)
@@ -335,7 +335,7 @@ func TestApplicationHandler_UpdateGroup(t *testing.T) {
 			apiKeyRepo := mocks.NewMockAPIKeyRepository(ctrl)
 			cache := mcache.NewMemoryCache()
 
-			app = newApplicationHandler(eventRepo, eventDeliveryRepo, appRepo, groupRepo, apiKeyRepo, eventQueue, logger, tracer, cache)
+			app = newApplicationHandler(eventRepo, eventDeliveryRepo, appRepo, groupRepo, apiKeyRepo, eventQueue, logger, tracer, cache, nil)
 
 			// Arrange
 			url := fmt.Sprintf("/api/v1/groups/%s", tc.orgID)
@@ -435,7 +435,7 @@ func TestApplicationHandler_GetGroups(t *testing.T) {
 			apiKeyRepo := mocks.NewMockAPIKeyRepository(ctrl)
 			cache := mcache.NewMemoryCache()
 
-			app = newApplicationHandler(eventRepo, eventDeliveryRepo, appRepo, groupRepo, apiKeyRepo, eventQueue, logger, tracer, cache)
+			app = newApplicationHandler(eventRepo, eventDeliveryRepo, appRepo, groupRepo, apiKeyRepo, eventQueue, logger, tracer, cache, nil)
 
 			req := httptest.NewRequest(tc.method, "/api/v1/groups", nil)
 			req.SetBasicAuth("test", "test")
@@ -552,7 +552,7 @@ func TestApplicationHandler_DeleteGroup(t *testing.T) {
 			tracer := mocks.NewMockTracer(ctrl)
 			cache := mcache.NewMemoryCache()
 
-			app = newApplicationHandler(eventRepo, eventDeliveryRepo, appRepo, groupRepo, apiKeyRepo, eventQueue, logger, tracer, cache)
+			app = newApplicationHandler(eventRepo, eventDeliveryRepo, appRepo, groupRepo, apiKeyRepo, eventQueue, logger, tracer, cache, nil)
 
 			// Arrange
 			url := fmt.Sprintf("/api/v1/groups/%s", tc.orgID)

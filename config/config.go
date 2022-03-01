@@ -91,6 +91,15 @@ type RedisCacheConfiguration struct {
 	Dsn string `json:"dsn"`
 }
 
+type LimiterConfiguration struct {
+	Type  LimiterProvider           `json:"type"`
+	Redis RedisLimiterConfiguration `json:"redis"`
+}
+
+type RedisLimiterConfiguration struct {
+	Dsn string `json:"dsn"`
+}
+
 type NewRelicConfiguration struct {
 	AppName                  string `json:"app_name"`
 	LicenseKey               string `json:"license_key"`
@@ -113,6 +122,7 @@ type Configuration struct {
 	Tracer          TracerConfiguration   `json:"tracer"`
 	NewRelic        NewRelicConfiguration `json:"new_relic"`
 	Cache           CacheConfiguration    `json:"cache"`
+	Limiter         LimiterConfiguration  `json:"limiter"`
 	BaseUrl         string                `json:"base_url"`
 }
 
@@ -131,6 +141,7 @@ const (
 	ConsoleLoggerProvider              LoggerProvider          = "console"
 	NewRelicTracerProvider             TracerProvider          = "new_relic"
 	RedisCacheProvider                 CacheProvider           = "redis"
+	RedisLimiterProvider               LimiterProvider         = "redis"
 )
 
 type GroupConfig struct {
@@ -166,6 +177,7 @@ type SignatureHeaderProvider string
 type LoggerProvider string
 type TracerProvider string
 type CacheProvider string
+type LimiterProvider string
 
 func (s SignatureHeaderProvider) String() string {
 	return string(s)

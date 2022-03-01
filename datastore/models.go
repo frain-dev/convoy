@@ -78,6 +78,9 @@ type Application struct {
 	Title        string             `json:"name" bson:"title"`
 	SupportEmail string             `json:"support_email" bson:"support_email"`
 
+	RateLimit         int `json:"rate_limit" bson:"rate_limit"`
+	RateLimitDuration int `json:"rate_limit_duration" bson:"rate_limit_duration"`
+
 	Endpoints []Endpoint         `json:"endpoints" bson:"endpoints"`
 	CreatedAt primitive.DateTime `json:"created_at,omitempty" bson:"created_at,omitempty" swaggertype:"string"`
 	UpdatedAt primitive.DateTime `json:"updated_at,omitempty" bson:"updated_at,omitempty" swaggertype:"string"`
@@ -97,6 +100,9 @@ type Endpoint struct {
 	Status      EndpointStatus `json:"status" bson:"status"`
 	Secret      string         `json:"secret" bson:"secret"`
 
+	RateLimit         int `json:"rate_limit" bson:"rate_limit"`
+	RateLimitDuration int `json:"rate_limit_duration" bson:"rate_limit_duration"`
+
 	Events []string `json:"events" bson:"events"`
 
 	CreatedAt primitive.DateTime `json:"created_at,omitempty" bson:"created_at,omitempty" swaggertype:"string"`
@@ -115,6 +121,9 @@ type Group struct {
 	LogoURL    string             `json:"logo_url" bson:"logo_url"`
 	Config     *GroupConfig       `json:"config" bson:"config"`
 	Statistics *GroupStatistics   `json:"statistics" bson:"-"`
+
+	RateLimit         int `json:"rate_limit" bson:"rate_limit"`
+	RateLimitDuration int `json:"rate_limit_duration" bson:"rate_limit_duration"`
 
 	CreatedAt primitive.DateTime `json:"created_at,omitempty" bson:"created_at,omitempty" swaggertype:"string"`
 	UpdatedAt primitive.DateTime `json:"updated_at,omitempty" bson:"updated_at,omitempty" swaggertype:"string"`

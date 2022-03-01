@@ -35,7 +35,7 @@ func TestApplicationHandler_CreateAPIKey(t *testing.T) {
 	tracer := mocks.NewMockTracer(ctrl)
 	cache := mcache.NewMemoryCache()
 
-	app = newApplicationHandler(eventRepo, eventDeliveryRepo, appRepo, groupRepo, apiKeyRepo, eventQueue, logger, tracer, cache)
+	app = newApplicationHandler(eventRepo, eventDeliveryRepo, appRepo, groupRepo, apiKeyRepo, eventQueue, logger, tracer, cache, nil)
 
 	groupId := "1234567890"
 	group := &datastore.Group{
@@ -199,7 +199,7 @@ func TestApplicationHandler_CreateAppPortalAPIKey(t *testing.T) {
 	tracer := mocks.NewMockTracer(ctrl)
 	cache := mcache.NewMemoryCache()
 
-	app = newApplicationHandler(eventRepo, eventDeliveryRepo, appRepo, groupRepo, apiKeyRepo, eventQueue, logger, tracer, cache)
+	app = newApplicationHandler(eventRepo, eventDeliveryRepo, appRepo, groupRepo, apiKeyRepo, eventQueue, logger, tracer, cache, nil)
 
 	groupId := "1234567890"
 	group := &datastore.Group{
@@ -326,7 +326,7 @@ func TestApplicationHandler_RevokeAPIKey(t *testing.T) {
 	tracer := mocks.NewMockTracer(ctrl)
 	cache := mcache.NewMemoryCache()
 
-	app := newApplicationHandler(eventRepo, eventDeliveryRepo, appRepo, groupRepo, apiKeyRepo, eventQueue, logger, tracer, cache)
+	app := newApplicationHandler(eventRepo, eventDeliveryRepo, appRepo, groupRepo, apiKeyRepo, eventQueue, logger, tracer, cache, nil)
 
 	tt := []struct {
 		name       string
@@ -409,7 +409,7 @@ func TestApplicationHandler_GetAPIKeyByID(t *testing.T) {
 	tracer := mocks.NewMockTracer(ctrl)
 	cache := mcache.NewMemoryCache()
 
-	app := newApplicationHandler(eventRepo, eventDeliveryRepo, appRepo, groupRepo, apiKeyRepo, eventQueue, logger, tracer, cache)
+	app := newApplicationHandler(eventRepo, eventDeliveryRepo, appRepo, groupRepo, apiKeyRepo, eventQueue, logger, tracer, cache, nil)
 
 	keyID := "12345"
 	apiKey := &datastore.APIKey{UID: keyID}
@@ -498,7 +498,7 @@ func TestApplicationHandler_GetAPIKeys(t *testing.T) {
 	tracer := mocks.NewMockTracer(ctrl)
 	cache := mcache.NewMemoryCache()
 
-	app := newApplicationHandler(eventRepo, eventDeliveryRepo, appRepo, groupRepo, apiKeyRepo, eventQueue, logger, tracer, cache)
+	app := newApplicationHandler(eventRepo, eventDeliveryRepo, appRepo, groupRepo, apiKeyRepo, eventQueue, logger, tracer, cache, nil)
 
 	keyID := "12345"
 	apiKey := &datastore.APIKey{UID: keyID}
@@ -594,7 +594,7 @@ func TestApplicationHandler_UpdateAPIKey(t *testing.T) {
 	tracer := mocks.NewMockTracer(ctrl)
 	cache := mcache.NewMemoryCache()
 
-	app := newApplicationHandler(eventRepo, eventDeliveryRepo, appRepo, groupRepo, apiKeyRepo, eventQueue, logger, tracer, cache)
+	app := newApplicationHandler(eventRepo, eventDeliveryRepo, appRepo, groupRepo, apiKeyRepo, eventQueue, logger, tracer, cache, nil)
 
 	groupID := "1234567890"
 
