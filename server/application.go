@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/frain-dev/convoy/cache"
+	limiter "github.com/frain-dev/convoy/limiter"
 	"github.com/frain-dev/convoy/logger"
 	"github.com/google/uuid"
 	"go.mongodb.org/mongo-driver/bson/primitive"
@@ -32,6 +33,7 @@ type applicationHandler struct {
 	logger            logger.Logger
 	tracer            tracer.Tracer
 	cache             cache.Cache
+	limiter           limiter.RateLimiter
 }
 
 type pagedResponse struct {
@@ -44,7 +46,11 @@ func newApplicationHandler(eventRepo datastore.EventRepository,
 	appRepo datastore.ApplicationRepository,
 	groupRepo datastore.GroupRepository,
 	apiKeyRepo datastore.APIKeyRepository,
-	eventQueue queue.Queuer, logger logger.Logger, tracer tracer.Tracer, cache cache.Cache) *applicationHandler {
+	eventQueue queue.Queuer,
+	logger logger.Logger,
+	tracer tracer.Tracer,
+	cache cache.Cache,
+	limiter limiter.RateLimiter) *applicationHandler {
 
 	return &applicationHandler{
 		eventRepo:         eventRepo,
@@ -56,6 +62,7 @@ func newApplicationHandler(eventRepo datastore.EventRepository,
 		logger:            logger,
 		tracer:            tracer,
 		cache:             cache,
+		limiter:           limiter,
 	}
 }
 

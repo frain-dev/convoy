@@ -15,13 +15,12 @@ import (
 	"github.com/frain-dev/convoy/tracer"
 	"github.com/frain-dev/convoy/worker"
 
-	"github.com/frain-dev/convoy"
-
 	"github.com/frain-dev/convoy/config"
 	"github.com/frain-dev/convoy/datastore"
+	limiter "github.com/frain-dev/convoy/limiter"
 	"github.com/frain-dev/convoy/queue"
 	"github.com/go-chi/chi/v5/middleware"
-	"github.com/go-chi/httprate"
+
 	"github.com/go-chi/render"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
@@ -64,9 +63,6 @@ func buildRoutes(app *applicationHandler) http.Handler {
 	// Public API.
 	router.Route("/api", func(v1Router chi.Router) {
 
-		// rate limit all requests.
-		v1Router.Use(httprate.LimitAll(convoy.RATE_LIMIT, convoy.RATE_LIMIT_DURATION))
-
 		v1Router.Route("/v1", func(r chi.Router) {
 			r.Use(middleware.AllowContentType("application/json"))
 			r.Use(jsonResponse)
@@ -78,6 +74,7 @@ func buildRoutes(app *applicationHandler) http.Handler {
 
 				groupRouter.Route("/{groupID}", func(groupSubRouter chi.Router) {
 					groupSubRouter.Use(requireGroup(app.groupRepo))
+					groupSubRouter.Use(rateLimitByGroupID(app.limiter))
 
 					groupSubRouter.With(requirePermission(auth.RoleAdmin)).Get("/", app.GetGroup)
 					groupSubRouter.With(requirePermission(auth.RoleSuperUser)).Put("/", app.UpdateGroup)
@@ -87,6 +84,7 @@ func buildRoutes(app *applicationHandler) http.Handler {
 
 			r.Route("/applications", func(appRouter chi.Router) {
 				appRouter.Use(requireGroup(app.groupRepo))
+				appRouter.Use(rateLimitByGroupID(app.limiter))
 				appRouter.Use(requirePermission(auth.RoleAdmin))
 
 				appRouter.Route("/", func(appSubRouter chi.Router) {
@@ -118,6 +116,7 @@ func buildRoutes(app *applicationHandler) http.Handler {
 
 			r.Route("/events", func(eventRouter chi.Router) {
 				eventRouter.Use(requireGroup(app.groupRepo))
+				eventRouter.Use(rateLimitByGroupID(app.limiter))
 				eventRouter.Use(requirePermission(auth.RoleAdmin))
 
 				eventRouter.With(rateLimitByGroup(), instrumentPath("/events")).Post("/", app.CreateAppEvent)
@@ -181,6 +180,7 @@ func buildRoutes(app *applicationHandler) http.Handler {
 
 		uiRouter.Route("/dashboard", func(dashboardRouter chi.Router) {
 			dashboardRouter.Use(requireGroup(app.groupRepo))
+			dashboardRouter.Use(rateLimitByGroupID(app.limiter))
 
 			dashboardRouter.Get("/summary", app.GetDashboardSummary)
 			dashboardRouter.Get("/config", app.GetAllConfigDetails)
@@ -200,6 +200,7 @@ func buildRoutes(app *applicationHandler) http.Handler {
 
 		uiRouter.Route("/apps", func(appRouter chi.Router) {
 			appRouter.Use(requireGroup(app.groupRepo))
+			appRouter.Use(rateLimitByGroupID(app.limiter))
 			appRouter.Use(requirePermission(auth.RoleUIAdmin))
 
 			appRouter.Route("/", func(appSubRouter chi.Router) {
@@ -232,6 +233,7 @@ func buildRoutes(app *applicationHandler) http.Handler {
 
 		uiRouter.Route("/events", func(eventRouter chi.Router) {
 			eventRouter.Use(requireGroup(app.groupRepo))
+			eventRouter.Use(rateLimitByGroupID(app.limiter))
 			eventRouter.Use(requirePermission(auth.RoleUIAdmin))
 
 			eventRouter.With(pagination).Get("/", app.GetEventsPaged)
@@ -244,6 +246,7 @@ func buildRoutes(app *applicationHandler) http.Handler {
 
 		uiRouter.Route("/eventdeliveries", func(eventDeliveryRouter chi.Router) {
 			eventDeliveryRouter.Use(requireGroup(app.groupRepo))
+			eventDeliveryRouter.Use(rateLimitByGroupID(app.limiter))
 			eventDeliveryRouter.Use(requirePermission(auth.RoleUIAdmin))
 
 			eventDeliveryRouter.With(pagination).Get("/", app.GetEventDeliveriesPaged)
@@ -343,9 +346,23 @@ func New(cfg config.Configuration,
 	appRepo datastore.ApplicationRepository,
 	apiKeyRepo datastore.APIKeyRepository,
 	orgRepo datastore.GroupRepository,
-	eventQueue queue.Queuer, logger logger.Logger, tracer tracer.Tracer, cache cache.Cache) *http.Server {
+	eventQueue queue.Queuer,
+	logger logger.Logger,
+	tracer tracer.Tracer,
+	cache cache.Cache,
+	limiter limiter.RateLimiter) *http.Server {
 
-	app := newApplicationHandler(eventRepo, eventDeliveryRepo, appRepo, orgRepo, apiKeyRepo, eventQueue, logger, tracer, cache)
+	app := newApplicationHandler(
+		eventRepo,
+		eventDeliveryRepo,
+		appRepo,
+		orgRepo,
+		apiKeyRepo,
+		eventQueue,
+		logger,
+		tracer,
+		cache,
+		limiter)
 
 	srv := &http.Server{
 		Handler:      buildRoutes(app),
