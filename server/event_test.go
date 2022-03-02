@@ -8,10 +8,8 @@ import (
 	"strings"
 	"testing"
 
-	mcache "github.com/frain-dev/convoy/cache/memory"
 	"github.com/frain-dev/convoy/config"
 	"github.com/frain-dev/convoy/datastore"
-	"github.com/frain-dev/convoy/logger"
 	"github.com/frain-dev/convoy/mocks"
 
 	"github.com/go-chi/chi/v5"
@@ -25,18 +23,7 @@ func TestApplicationHandler_CreateAppEvent(t *testing.T) {
 
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
-
-	groupRepo := mocks.NewMockGroupRepository(ctrl)
-	appRepo := mocks.NewMockApplicationRepository(ctrl)
-	eventRepo := mocks.NewMockEventRepository(ctrl)
-	eventDeliveryRepo := mocks.NewMockEventDeliveryRepository(ctrl)
-	eventQueue := mocks.NewMockQueuer(ctrl)
-	logger := logger.NewNoopLogger()
-	tracer := mocks.NewMockTracer(ctrl)
-	apiKeyRepo := mocks.NewMockAPIKeyRepository(ctrl)
-	cache := mcache.NewMemoryCache()
-
-	app = newApplicationHandler(eventRepo, eventDeliveryRepo, appRepo, groupRepo, apiKeyRepo, eventQueue, logger, tracer, cache)
+	app = provideApplication(ctrl)
 
 	groupId := "1234567890"
 	group := &datastore.Group{
@@ -384,18 +371,7 @@ func Test_resendEventDelivery(t *testing.T) {
 
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
-
-	groupRepo := mocks.NewMockGroupRepository(ctrl)
-	appRepo := mocks.NewMockApplicationRepository(ctrl)
-	eventRepo := mocks.NewMockEventRepository(ctrl)
-	eventDeliveryRepo := mocks.NewMockEventDeliveryRepository(ctrl)
-	eventQueue := mocks.NewMockQueuer(ctrl)
-	logger := logger.NewNoopLogger()
-	tracer := mocks.NewMockTracer(ctrl)
-	apiKeyRepo := mocks.NewMockAPIKeyRepository(ctrl)
-	cache := mcache.NewMemoryCache()
-
-	app = newApplicationHandler(eventRepo, eventDeliveryRepo, appRepo, groupRepo, apiKeyRepo, eventQueue, logger, tracer, cache)
+	app = provideApplication(ctrl)
 
 	group := &datastore.Group{Name: "default-group", UID: "1234567890"}
 
@@ -697,18 +673,8 @@ func Test_resendEventDelivery(t *testing.T) {
 func TestApplicationHandler_BatchRetryEventDelivery(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
+	app := provideApplication(ctrl)
 
-	groupRepo := mocks.NewMockGroupRepository(ctrl)
-	appRepo := mocks.NewMockApplicationRepository(ctrl)
-	eventRepo := mocks.NewMockEventRepository(ctrl)
-	eventDeliveryRepo := mocks.NewMockEventDeliveryRepository(ctrl)
-	eventQueue := mocks.NewMockQueuer(ctrl)
-	logger := logger.NewNoopLogger()
-	tracer := mocks.NewMockTracer(ctrl)
-	apiKeyRepo := mocks.NewMockAPIKeyRepository(ctrl)
-	cache := mcache.NewMemoryCache()
-
-	app := newApplicationHandler(eventRepo, eventDeliveryRepo, appRepo, groupRepo, apiKeyRepo, eventQueue, logger, tracer, cache)
 	group := &datastore.Group{Name: "default-group", UID: "1234567890"}
 
 	type args struct {

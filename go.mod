@@ -18,6 +18,7 @@ require (
 	github.com/go-chi/render v1.0.1
 	github.com/go-redis/cache/v8 v8.4.3
 	github.com/go-redis/redis/v8 v8.11.4
+	github.com/go-redis/redis_rate/v9 v9.1.2
 	github.com/gobeam/mongo-go-pagination v0.0.7
 	github.com/golang/mock v1.6.0
 	github.com/google/uuid v1.3.0
