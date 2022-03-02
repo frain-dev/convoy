@@ -11,3 +11,10 @@ input[type='radio'] {
 		content: url('../assets/img/checkbox-icon.svg');
 	}
 }
+.filter {
+	.select {
+		&::after {
+			background: url('/assets/img/angle-arrow-down.svg');
+		}
+	}
+}

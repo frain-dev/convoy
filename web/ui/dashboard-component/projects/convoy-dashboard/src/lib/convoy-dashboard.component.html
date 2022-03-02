@@ -1,9 +1,9 @@
 <div class="dashboard">
 	<div class="dashboard--page">
 		<div class="dashboard--page--head">
-			<div class="filter" [ngClass]="{ 'show-calendar': showFilterCalendar }">
+			<div class="filter without-padding" [ngClass]="{ 'show-calendar': showFilterCalendar }">
 				<div>Filter by:</div>
-				<button class="button filter--button" (click)="statsPicker.open()">
+				<button class="button button__filter button--has-icon icon-left icon-right" (click)="statsPicker.open()">
 					<img src="/assets/img/calendar-icon.svg" alt="calender icon" />
 					<mat-date-range-input [formGroup]="statsDateRange" [rangePicker]="statsPicker">
 						<input matStartDate formControlName="startDate" placeholder="Start date" />
@@ -24,7 +24,7 @@
 			</div>
 
 			<ng-container *ngIf="!isCloud">
-				<div class="filter" [ngClass]="{ 'show-calendar': showFilterCalendar }">
+				<div class="filter without-padding" [ngClass]="{ 'show-calendar': showFilterCalendar }">
 					<div>Active Group:</div>
 					<div class="select">
 						<select [value]="activeGroup" [(ngModel)]="activeGroup" (change)="toggleActiveGroup()">
@@ -100,8 +100,8 @@
 				</ul>
 			</div>
 		</div>
-
-		<section class="card dashboard--logs">
+	
+		<section class="card has-title dashboard--logs">
 			<div class="dashboard--logs--tabs">
 				<div class="tabs">
 					<li *ngFor="let tab of tabs" (click)="toggleActiveTab(tab)">
@@ -115,7 +115,7 @@
 					<div [hidden]="activeTab !== 'events'">
 						<div class="filter">
 							<button
-								class="button filter--button date-filter-button"
+								class="button button__filter without-margin button--has-icon icon-left"
 								(click)="eventsFilterPicker.open()"
 								[ngClass]="{ active: eventsFilterDateRange.value.startDate !== '' && eventsFilterDateRange.value.endDate !== '' }"
 								(click)="showEventFilterCalendar = !showEventFilterCalendar"
@@ -129,18 +129,18 @@
 								<img src="/assets/img/angle-arrow-down.svg" alt="arrow down icon" />
 							</button>
 
-							<div class="dropdown large">
-								<button class="button filter--button dropdown--button" [ngClass]="{ active: !!eventApp }" (click)="showOverlay = true; showEventsAppsDropdown = !showEventsAppsDropdown">
+							<div class="dropdown">
+								<button class="button button__filter button--has-icon icon-right icon-left" [ngClass]="{ active: !!eventApp }" (click)="showOverlay = true; showEventsAppsDropdown = !showEventsAppsDropdown">
 									<img src="/assets/img/apps-icon-grey.svg" alt="apps filter icon" />
 									<span>Apps</span>
 									<img src="/assets/img/angle-arrow-down.svg" alt="arrow down icon" />
 								</button>
-								<div class="dropdown--list" [ngClass]="{ show: showEventsAppsDropdown }">
-									<div class="search">
+								<div class="dropdown__menu with-padding large" [ngClass]="{ show: showEventsAppsDropdown }">
+									<div class="input__search">
 										<img src="/assets/img/search-icon.svg" alt="search icon" />
 										<input type="search" placeholder="Search apps here" #eventsAppsFilter />
 									</div>
-									<div class="dropdown--list--item" *ngFor="let app of eventsAppsFilter$ | async">
+									<div class="dropdown__menu__item" *ngFor="let app of eventsAppsFilter$ | async">
 										<input type="checkbox" name="app" [value]="app.uid" [id]="app.uid" [checked]="app.uid === eventApp" (change)="updateAppFilter(app.uid, $event, 'events')" />
 										<label [for]="app.uid">{{ app.name }}</label>
 									</div>
@@ -149,7 +149,7 @@
 							</div>
 
 							<button
-								class="button button__primary button__small"
+								class="button button__primary button__small button--margin-left"
 								(click)="clearEventFilters(activeTab)"
 								[disabled]="(eventsFilterDateRange.value.startDate == '' || eventsFilterDateRange.value.endDate == '') && eventApp == ''"
 								[ngClass]="{ disabled: (eventsFilterDateRange.value.startDate == '' || eventsFilterDateRange.value.endDate == '') && eventApp == '' }"
@@ -212,7 +212,7 @@
 								</tbody>
 							</table>
 
-							<div class="table--load-more button-container center" *ngIf="events.pagination.totalPage > 1">
+							<div class="table--load-more button--container center" *ngIf="events.pagination.totalPage > 1">
 								<button
 									[class]="'button button__primary button__clear button--has-icon icon-left '"
 									[disabled]="events.pagination.page === events.pagination.totalPage || isloadingMoreEvents"
@@ -234,7 +234,7 @@
 					<div [hidden]="activeTab !== 'event deliveries'">
 						<div class="filter">
 							<button
-								class="button filter--button date-filter-button"
+								class="button button__filter without-margin button--has-icon icon-right icon-left"
 								(click)="eventDeliveriesFilterPicker.open()"
 								[ngClass]="{ active: eventDeliveriesFilterDateRange.value.startDate !== '' && eventDeliveriesFilterDateRange.value.endDate !== '' }"
 								(click)="showEventFilterCalendar = !showEventFilterCalendar"
@@ -250,7 +250,7 @@
 
 							<div class="dropdown">
 								<button
-									class="filter--button dropdown--button"
+									class="button button__filter button--has-icon icon-right icon-left"
 									[ngClass]="{ active: eventDeliveryFilteredByStatus.length > 0 }"
 									(click)="showOverlay = true; showEventDeliveriesStatusDropdown = !showEventDeliveriesStatusDropdown"
 								>
@@ -258,8 +258,8 @@
 									<span>Status</span>
 									<img src="/assets/img/angle-arrow-down.svg" alt="arrow down icon" />
 								</button>
-								<div class="dropdown--list" [ngClass]="{ show: showEventDeliveriesStatusDropdown }">
-									<div class="dropdown--list--item" *ngFor="let status of eventDeliveryStatuses">
+								<div class="dropdown__menu large with-padding" [ngClass]="{ show: showEventDeliveriesStatusDropdown }">
+									<div class="dropdown__menu__item" *ngFor="let status of eventDeliveryStatuses">
 										<input
 											type="checkbox"
 											name="status"
@@ -271,15 +271,15 @@
 										<label [for]="status">{{ status || 'None' }}</label>
 									</div>
 
-									<button class="button__primary" (click)="showOverlay = false; showEventDeliveriesStatusDropdown = false; this.getEventDeliveries({ addToURL: true, fromFilter: true })">
+									<button class="button button__small button__primary" (click)="showOverlay = false; showEventDeliveriesStatusDropdown = false; this.getEventDeliveries({ addToURL: true, fromFilter: true })">
 										Apply
 									</button>
 								</div>
 							</div>
 
-							<div class="dropdown large">
+							<div class="dropdown">
 								<button
-									class="filter--button dropdown--button"
+									class="button button__filter button--has-icon icon-right icon-left"
 									[ngClass]="{ active: !!eventDeliveriesApp }"
 									(click)="showOverlay = true; showEventDeliveriesAppsDropdown = !showEventDeliveriesAppsDropdown"
 								>
@@ -287,12 +287,12 @@
 									<span>Apps</span>
 									<img src="/assets/img/angle-arrow-down.svg" alt="arrow down icon" />
 								</button>
-								<div class="dropdown--list" [ngClass]="{ show: showEventDeliveriesAppsDropdown }">
-									<div class="search">
+								<div class="dropdown__menu large with-padding" [ngClass]="{ show: showEventDeliveriesAppsDropdown }">
+									<div class="input__search">
 										<img src="/assets/img/search-icon.svg" alt="search icon" />
 										<input type="search" placeholder="Search apps here" #eventDelsAppsFilter />
 									</div>
-									<div class="dropdown--list--item" *ngFor="let app of eventsDelAppsFilter$ | async">
+									<div class="dropdown__menu__item" *ngFor="let app of eventsDelAppsFilter$ | async">
 										<input
 											type="checkbox"
 											name="app"
@@ -315,7 +315,7 @@
 							</div>
 
 							<button
-								class="button button__primary button__small"
+								class="button button__primary button__small button--margin-left"
 								(click)="clearEventFilters(activeTab)"
 								[ngClass]="{
 									disabled:
@@ -331,12 +331,12 @@
 
 						<hr />
 
-						<div class="table--actions button-container left">
-							<button class="button button__white button--has-icon icon-left hover" (click)="refreshTables()">
+						<div class="table--actions button--container left">
+							<button class="button button__clear dark button--has-icon icon-left hover" (click)="refreshTables()">
 								<img src="../../../../assets/img/refresh-icon-2.svg" alt="refresh icon" />
 								Refresh
 							</button>
-							<button class="button button__white button--has-icon icon-left hover" (click)="batchRetryEvent()" [disabled]="selectedEventsFromEventDeliveriesTable.length <= 0">
+							<button class="button button__clear dark button--has-icon icon-left hover" (click)="batchRetryEvent()" [disabled]="selectedEventsFromEventDeliveriesTable.length <= 0">
 								<img src="../../../../assets/img/retry-icon.svg" alt="retry icon" />
 								Bulk Retry
 							</button>
@@ -408,7 +408,7 @@
 								</tbody>
 							</table>
 
-							<div class="table--load-more button-container center" *ngIf="eventDeliveries.pagination.totalPage > 1">
+							<div class="table--load-more button--container center" *ngIf="eventDeliveries.pagination.totalPage > 1">
 								<button
 									[class]="'button button__primary button__clear button--has-icon icon-left'"
 									[disabled]="eventDeliveries.pagination.page === eventDeliveries.pagination.totalPage || isloadingMoreEventDeliveries"
@@ -429,7 +429,7 @@
 
 					<div [hidden]="activeTab !== 'apps'">
 						<div class="filter">
-							<form class="search">
+							<form class="input__search filter">
 								<img src="/assets/img/search-icon.svg" alt="search icon" />
 								<input
 									type="search"
@@ -438,7 +438,7 @@
 									(change)="searchApps({ searchInput: $event, type: 'apps' })"
 									[ngModelOptions]="{ standalone: true }"
 								/>
-								<button class="button button__clear" [class]="'enter-button' + (appsSearchString.length > 0 ? ' show' : '')" (click)="searchApps({ type: 'apps' })">
+								<button [class]="'enter-button' + (appsSearchString.length > 0 ? ' show' : '')" (click)="searchApps({ type: 'apps' })">
 									<img src="/assets/img/enter-icon.png" alt="enter icon" />
 								</button>
 							</form>
@@ -489,7 +489,7 @@
 								</tbody>
 							</table>
 
-							<div class="table--load-more button-container margin-top center" *ngIf="apps?.pagination && apps.pagination.totalPage > 1">
+							<div class="table--load-more button--container margin-top center" *ngIf="apps?.pagination && apps.pagination.totalPage > 1">
 								<button
 									[class]="'button button__primary button__clear button--has-icon icon-left ' + (apps.pagination.page === apps.pagination.totalPage ? 'disabled' : '')"
 									[disabled]="apps.pagination.page === apps.pagination.totalPage || isloadingMoreApps"
@@ -522,7 +522,7 @@
 						</li>
 						<li class="list-item-inline">
 							<div class="list-item-inline--label">App Page</div>
-							<div class="list-item-inline--item" (click)="getAppPortalToken()">
+							<div class="list-item-inline--item link" (click)="getAppPortalToken()">
 								Open Link
 								<img src="/assets/img/arrow-up-right.svg" alt="link out" />
 							</div>
@@ -590,9 +590,9 @@
 						</li>
 					</ul>
 
-					<ul class="tabs">
-						<li *ngFor="let tab of eventDetailsTabs" [class]="'tab ' + (eventDetailsActiveTab === tab.id ? 'active' : '')">
-							<button class="button button__primary outline" (click)="eventDetailsActiveTab = tab.id">{{ tab.label }}</button>
+					<ul class="tabs tabs__logs">
+						<li *ngFor="let tab of eventDetailsTabs" [class]="(eventDetailsActiveTab === tab.id ? 'active' : '')">
+							<button (click)="eventDetailsActiveTab = tab.id">{{ tab.label }}</button>
 						</li>
 					</ul>
 
