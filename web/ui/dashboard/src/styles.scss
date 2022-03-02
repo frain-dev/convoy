@@ -1,6 +1,5 @@
 // Material design themeing
 @use '@angular/material' as mat;
-@import 'https://frain-dev.github.io/ui-library/scss/main.scss';
 @include mat.core();
 
 $convoy-primary-palette: (
