@@ -17,7 +17,7 @@ const routes: Routes = [
 				loadChildren: () => import('./pages/dashboard/dashboard.module').then(m => m.DashboardModule)
 			},
 			{
-				path: 'app',
+				path: 'ui/app-portal/:token',
 				loadChildren: () => import('./pages/app/app.module').then(m => m.AppModule)
 			}
 		]

@@ -38,7 +38,7 @@
 					<div v-if="linuxActiveTab == 'ubuntu'" class="code">
 						<div>
 							<span>$</span>
-							<code>echo "deb [trusted=yes] https://apt.fury.io/convoy/ /" | sudo tee -a /etc apt/sources.list.d/convoy.list</code>
+							<code>echo "deb [trusted=yes] https://apt.fury.io/convoy/ /" | sudo tee -a /etc/apt/sources.list.d/convoy.list</code>
 						</div>
 						<div>
 							<span>$</span>

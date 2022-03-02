@@ -20,7 +20,7 @@
 				</thead>
 				<tbody>
 					<tr class="has-border" *ngFor="let endpoint of appDetails?.endpoints">
-						<td>
+						<td className="has-long-text longer">
 							<div>{{ endpoint.target_url }}</div>
 						</td>
 						<td>
@@ -95,7 +95,7 @@
 							<img src="/assets/img/calendar-icon.svg" alt="calender icon" />
 							<mat-date-range-input [formGroup]="eventsFilterDateRange" [rangePicker]="eventsFilterPicker">
 								<input matStartDate formControlName="startDate" placeholder="Start date" />
-								<input matEndDate formControlName="endDate" placeholder="End date" (dateChange)="getEvents({ addToURL: true })" />
+								<input matEndDate formControlName="endDate" placeholder="End date" (dateChange)="getEvents()" />
 							</mat-date-range-input>
 							<mat-date-range-picker #eventsFilterPicker [disabled]="false"></mat-date-range-picker>
 							<img src="/assets/img/angle-arrow-down.svg" alt="arrow down icon" />
@@ -200,7 +200,7 @@
 							<img src="/assets/img/calendar-icon.svg" alt="calender icon" />
 							<mat-date-range-input [formGroup]="eventDeliveriesFilterDateRange" [rangePicker]="eventDeliveriesFilterPicker">
 								<input matStartDate formControlName="startDate" placeholder="Start date" />
-								<input matEndDate formControlName="endDate" placeholder="End date" (dateChange)="getEventDeliveries({ addToURL: true })" />
+								<input matEndDate formControlName="endDate" placeholder="End date" (dateChange)="getEventDeliveries()" />
 							</mat-date-range-input>
 							<mat-date-range-picker #eventDeliveriesFilterPicker [disabled]="false"></mat-date-range-picker>
 							<img src="/assets/img/angle-arrow-down.svg" alt="arrow down icon" />
@@ -229,7 +229,7 @@
 									<label [for]="status">{{ status }}</label>
 								</div>
 
-								<button class="primary" (click)="showOverlay = false; showEventDeliveriesStatusDropdown = false; this.getEventDeliveries({ addToURL: true })">Apply</button>
+								<button class="primary" (click)="showOverlay = false; showEventDeliveriesStatusDropdown = false; this.getEventDeliveries()">Apply</button>
 							</div>
 						</div>
 
