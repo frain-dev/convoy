@@ -69,7 +69,7 @@ func Test_RateLimitAllow(t *testing.T) {
 
 			require.Equal(t, 3, res.Limit.Rate)
 			require.Equal(t, 0, res.Remaining)
-			require.LessOrEqual(t, int(res.RetryAfter), duration/2)
+			require.LessOrEqual(t, int(res.RetryAfter), int(duration/2))
 			require.Greater(t, int(res.RetryAfter), int(time.Duration(0)))
 		})
 	}
