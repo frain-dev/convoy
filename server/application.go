@@ -415,7 +415,17 @@ func updateEndpointIfFound(endpoints *[]datastore.Endpoint, id string, e models.
 		if endpoint.UID == id && endpoint.DeletedAt == 0 {
 			endpoint.TargetURL = e.URL
 			endpoint.Description = e.Description
-			endpoint.Events = e.Events
+
+			// Events being empty means it wasn't passed at all, which automatically
+			// translates into a accept all scenario. This is quite different from
+			// an empty array which signifies a blacklist all events -- no events
+			// will be sent to such endpoints.
+			if len(e.Events) == 0 {
+				endpoint.Events = []string{"*"}
+			} else {
+				endpoint.Events = e.Events
+			}
+
 			endpoint.Status = datastore.ActiveEndpointStatus
 			endpoint.UpdatedAt = primitive.NewDateTimeFromTime(time.Now())
 			(*endpoints)[i] = endpoint
