@@ -41,6 +41,7 @@ func addWorkerCommand(a *app) *cobra.Command {
 			}
 			worker.RegisterWorkerMetrics(a.eventQueue, cfg)
 			server.RegisterQueueMetrics(a.eventQueue, cfg)
+
 			router := chi.NewRouter()
 			router.Handle("/v1/metrics", promhttp.Handler())
 			router.HandleFunc("/health", func(w http.ResponseWriter, r *http.Request) {

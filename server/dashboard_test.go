@@ -5,10 +5,8 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	mcache "github.com/frain-dev/convoy/cache/memory"
 	"github.com/frain-dev/convoy/config"
 	"github.com/frain-dev/convoy/datastore"
-	"github.com/frain-dev/convoy/logger"
 	"github.com/frain-dev/convoy/mocks"
 	"github.com/golang/mock/gomock"
 	log "github.com/sirupsen/logrus"
@@ -19,18 +17,7 @@ func Test_fetchAllConfigDetails(t *testing.T) {
 
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
-
-	groupRepo := mocks.NewMockGroupRepository(ctrl)
-	appRepo := mocks.NewMockApplicationRepository(ctrl)
-	eventRepo := mocks.NewMockEventRepository(ctrl)
-	eventDeliveryRepo := mocks.NewMockEventDeliveryRepository(ctrl)
-	eventQueue := mocks.NewMockQueuer(ctrl)
-	logger := logger.NewNoopLogger()
-	tracer := mocks.NewMockTracer(ctrl)
-	apiKeyRepo := mocks.NewMockAPIKeyRepository(ctrl)
-	cache := mcache.NewMemoryCache()
-
-	app = newApplicationHandler(eventRepo, eventDeliveryRepo, appRepo, groupRepo, apiKeyRepo, eventQueue, logger, tracer, cache)
+	app = provideApplication(ctrl)
 
 	tests := []struct {
 		name       string

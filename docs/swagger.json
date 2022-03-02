@@ -4012,6 +4012,12 @@
         "models.PortalAPIKeyResponse": {
             "type": "object",
             "properties": {
+                "app_id": {
+                    "type": "string"
+                },
+                "group_id": {
+                    "type": "string"
+                },
                 "key": {
                     "type": "string"
                 },
