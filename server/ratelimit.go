@@ -28,7 +28,7 @@ func rateLimitByGroupID(limiter limiter.RateLimiter) func(next http.Handler) htt
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			group := getGroupFromContext(r.Context())
 
-			res, err := limiter.Allow(r.Context(), group.UID, group.RateLimit+1)
+			res, err := limiter.Allow(r.Context(), group.UID, group.RateLimit, group.RateLimitDuration)
 			if err != nil {
 				log.WithError(err).Error("an error occured")
 				_ = render.Render(w, r, newErrorResponse("an error occured", http.StatusBadRequest))

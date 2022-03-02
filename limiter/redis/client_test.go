@@ -2,6 +2,7 @@ package rlimiter
 
 import (
 	"context"
+	"fmt"
 	"os"
 	"testing"
 	"time"
@@ -30,31 +31,46 @@ func flushRedis(dsn string) error {
 func Test_RateLimitAllow(t *testing.T) {
 	dsn := getDSN()
 
-	err := flushRedis(dsn)
-	require.NoError(t, err)
+	vals := []time.Duration{time.Second, time.Minute, time.Hour}
 
-	limiter, err := NewRedisLimiter(dsn)
-	require.NoError(t, err)
+	for _, duration := range vals {
+		t.Run(fmt.Sprintf(" %v", duration), func(t *testing.T) {
 
-	res, err := limiter.Allow(context.Background(), "UID", 2)
-	require.NoError(t, err)
+			err := flushRedis(dsn)
+			require.NoError(t, err)
 
-	require.Equal(t, 2, res.Limit.Rate)
-	require.Equal(t, 1, res.Remaining)
-	require.Equal(t, res.RetryAfter, time.Duration(-1))
+			limiter, err := NewRedisLimiter(dsn)
+			require.NoError(t, err)
 
-	res, err = limiter.Allow(context.Background(), "UID", 2)
-	require.NoError(t, err)
+			res, err := limiter.Allow(context.Background(), "UID", 2, int(duration))
+			require.NoError(t, err)
 
-	require.Equal(t, 2, res.Limit.Rate)
-	require.Equal(t, 0, res.Remaining)
-	require.Equal(t, res.RetryAfter, time.Duration(-1))
+			require.Equal(t, 3, res.Limit.Rate)
+			require.Equal(t, 2, res.Remaining)
+			require.Equal(t, res.RetryAfter, time.Duration(-1))
 
-	res, err = limiter.Allow(context.Background(), "UID", 2)
-	require.NoError(t, err)
+			res, err = limiter.Allow(context.Background(), "UID", 2, int(duration))
+			require.NoError(t, err)
 
-	require.Equal(t, 2, res.Limit.Rate)
-	require.Equal(t, 0, res.Remaining)
-	require.LessOrEqual(t, res.RetryAfter, time.Minute/2)
-	require.Greater(t, res.RetryAfter, time.Duration(0))
+			require.Equal(t, 3, res.Limit.Rate)
+			require.Equal(t, 1, res.Remaining)
+			require.Equal(t, res.RetryAfter, time.Duration(-1))
+
+			res, err = limiter.Allow(context.Background(), "UID", 2, int(duration))
+			require.NoError(t, err)
+
+			require.Equal(t, 3, res.Limit.Rate)
+			require.Equal(t, 0, res.Remaining)
+			require.LessOrEqual(t, int(res.ResetAfter), int(duration))
+			require.Greater(t, int(res.ResetAfter), int(time.Duration(0)))
+
+			res, err = limiter.Allow(context.Background(), "UID", 2, int(duration))
+			require.NoError(t, err)
+
+			require.Equal(t, 3, res.Limit.Rate)
+			require.Equal(t, 0, res.Remaining)
+			require.LessOrEqual(t, int(res.RetryAfter), duration/2)
+			require.Greater(t, int(res.RetryAfter), int(time.Duration(0)))
+		})
+	}
 }

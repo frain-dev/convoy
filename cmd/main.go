@@ -29,7 +29,7 @@ import (
 	"github.com/frain-dev/convoy"
 	"github.com/frain-dev/convoy/config"
 	"github.com/frain-dev/convoy/datastore"
-	limiter "github.com/frain-dev/convoy/limiter"
+	"github.com/frain-dev/convoy/limiter"
 	"github.com/frain-dev/convoy/queue"
 	"github.com/spf13/cobra"
 

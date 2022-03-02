@@ -10,7 +10,7 @@ import (
 )
 
 type RateLimiter interface {
-	Allow(ctx context.Context, key string, limit int) (*redis_rate.Result, error)
+	Allow(ctx context.Context, key string, limit, duration int) (*redis_rate.Result, error)
 }
 
 func NewLimiter(cfg config.LimiterConfiguration) (RateLimiter, error) {

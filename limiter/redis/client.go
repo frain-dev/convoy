@@ -2,6 +2,7 @@ package rlimiter
 
 import (
 	"context"
+	"time"
 
 	"github.com/go-redis/redis/v8"
 	"github.com/go-redis/redis_rate/v9"
@@ -27,10 +28,26 @@ func NewRedisLimiter(dsn string) (*RedisLimiter, error) {
 	return r, nil
 }
 
-func (r RedisLimiter) Allow(ctx context.Context, key string, limit int) (*redis_rate.Result, error) {
-	result, err := r.limiter.Allow(ctx, key, redis_rate.PerMinute(limit))
+func (r RedisLimiter) Allow(ctx context.Context, key string, limit, duration int) (*redis_rate.Result, error) {
+	var d time.Duration
+
+	if duration == int(time.Hour) {
+		d = time.Hour
+	} else if duration == int(time.Minute) {
+		d = time.Minute
+	} else {
+		d = time.Second
+	}
+
+	l := redis_rate.Limit{
+		Period: d,
+		Rate:   limit + 1,
+		Burst:  limit + 1,
+	}
+
+	result, err := r.limiter.Allow(ctx, key, l)
 	if err != nil {
-		return &redis_rate.Result{}, err
+		return nil, err
 	}
 
 	return result, nil
