@@ -31,7 +31,7 @@ func flushRedis(dsn string) error {
 func Test_RateLimitAllow(t *testing.T) {
 	dsn := getDSN()
 
-	vals := []time.Duration{time.Second, time.Minute, time.Hour}
+	vals := []time.Duration{time.Minute, time.Hour}
 
 	for _, duration := range vals {
 		t.Run(fmt.Sprintf(" %v", duration), func(t *testing.T) {
