@@ -123,7 +123,6 @@ func processEventDeliveryBatches(ctx context.Context, a *app, deliveryChan <-cha
 			log.WithError(err).WithField("ids", batchIDs).Errorf("batch %d: failed to delete event deliveries from zset", batchCount)
 			// put continue here? @all reviewers
 		}
-		//log.Infof("batch %d: deleted event deliveries from zset", batchCount)
 
 		// remove these event deliveries from the stream
 		err = q.DeleteEventDeliveriesFromStream(ctx, batchIDs)
@@ -131,7 +130,6 @@ func processEventDeliveryBatches(ctx context.Context, a *app, deliveryChan <-cha
 			log.WithError(err).WithField("ids", batchIDs).Errorf("batch %d: failed to delete event deliveries from stream", batchCount)
 			// put continue here? @all reviewers
 		}
-		//log.Infof("batch %d: deleted event deliveries from stream", batchCount)
 
 		var group *datastore.Group
 		for i := range batch {
