@@ -1,7 +1,7 @@
 /* PrismJS 1.25.0
-https://prismjs.com/download.html#themes=prism-okaidia&languages=markup+css+clike+javascript */
-code[class*='language-'],
-pre[class*='language-'] {
+https://prismjs.com/download.html#themes=prism-okaidia&langs=markup+css+clike+javascript */
+code.lang-javascript,
+pre.lang-javascript {
 	color: #737a91;
 	background: 0 0;
 	font-size: 1em;
@@ -21,18 +21,18 @@ pre[class*='language-'] {
 	-ms-hyphens: none;
 	hyphens: none;
 }
-pre[class*='language-'] {
+pre.lang-javascript {
 	padding: 1em;
 	margin: 3px 0;
 	overflow: auto;
 	border-radius: 0.3em;
 	max-height: 500px;
 }
-:not(pre) > code[class*='language-'],
-pre[class*='language-'] {
+:not(pre) > code.lang-javascript,
+pre.lang-javascript {
 	background: #fbfbfb;
 }
-:not(pre) > code[class*='language-'] {
+:not(pre) > code.lang-javascript {
 	padding: 0.1em;
 	border-radius: 0.3em;
 	white-space: normal;
@@ -68,7 +68,7 @@ pre[class*='language-'] {
 .token.string {
 	color: var(--primary-color);
 }
-.language-css .token.string,
+.lang-css .token.string,
 .style .token.string,
 .token.entity,
 .token.operator,
@@ -103,7 +103,7 @@ pre[class*='language-'] {
 /* Prism Line Plugin Style */
 pre.line-numbers {
 	position: relative;
-	padding-left: 3.8em;
+	// padding-left: 3.8em;
 	counter-reset: linenumber;
 }
 
