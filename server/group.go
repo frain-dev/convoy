@@ -13,7 +13,7 @@ import (
 	"github.com/frain-dev/convoy/util"
 	"github.com/frain-dev/convoy/worker/task"
 	"github.com/go-chi/render"
-	"github.com/google/uuid" 
+	"github.com/google/uuid"
 	log "github.com/sirupsen/logrus"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 )
@@ -129,12 +129,15 @@ func (a *applicationHandler) CreateGroup(w http.ResponseWriter, r *http.Request)
 	}
 
 	group := &datastore.Group{
-		UID:            uuid.New().String(),
-		Name:           groupName,
-		Config:         &newGroup.Config,
-		CreatedAt:      primitive.NewDateTimeFromTime(time.Now()),
-		UpdatedAt:      primitive.NewDateTimeFromTime(time.Now()),
-		DocumentStatus: datastore.ActiveDocumentStatus,
+		UID:               uuid.New().String(),
+		Name:              groupName,
+		Config:            &newGroup.Config,
+		LogoURL:           newGroup.LogoURL,
+		CreatedAt:         primitive.NewDateTimeFromTime(time.Now()),
+		UpdatedAt:         primitive.NewDateTimeFromTime(time.Now()),
+		RateLimit:         newGroup.RateLimit,
+		RateLimitDuration: newGroup.RateLimitDuration,
+		DocumentStatus:    datastore.ActiveDocumentStatus,
 	}
 
 	err = a.groupRepo.CreateGroup(r.Context(), group)
@@ -180,6 +183,10 @@ func (a *applicationHandler) UpdateGroup(w http.ResponseWriter, r *http.Request)
 	group := getGroupFromContext(r.Context())
 	group.Name = groupName
 	group.Config = &update.Config
+	if !util.IsStringEmpty(update.LogoURL) {
+		group.LogoURL = update.LogoURL
+	}
+
 	err = a.groupRepo.UpdateGroup(r.Context(), group)
 	if err != nil {
 		_ = render.Render(w, r, newErrorResponse("an error occurred while updating Group", http.StatusInternalServerError))

@@ -9,10 +9,16 @@
 				<div>
 					<h4 class="title">Quick Start Guide</h4>
 					<p>We've put together a short easy to follow steps to get started with deploying Convoy to your dev environment and sending out webhook events in few minutes.</p>
-					<nuxt-link to="/docs/guide" class="get-started">
-						Get started
-						<img src="~/assets/images/arrow-circle-right.svg" alt="arrow right" />
-					</nuxt-link>
+					<div class="links">
+						<nuxt-link to="/docs/guide" class="get-started">
+							Get started
+							<img src="~/assets/images/arrow-circle-right.svg" alt="arrow right" />
+						</nuxt-link>
+						<a class="api-reference" target="_blank" href="https://convoy.readme.io/reference/introduction">
+							Api Reference
+							<img src="~/assets/images/arrow-down-right.svg" alt="arrow right" />
+						</a>
+					</div>
 				</div>
 				<div class="banner-img">
 					<img src="~/assets/images/doc-banner.svg" alt="banner" />
@@ -56,10 +62,10 @@
 	</div>
 </template>
 
-
 <style lang="scss" scoped>
 header {
 	background: url('~/assets/images/docs-bg.svg'), no-repeat;
+	background-size: cover;
 	height: 450px;
 	width: 100%;
 }
@@ -131,9 +137,20 @@ p.subtitle {
 		&:hover {
 			cursor: pointer;
 		}
+		&.api-reference {
+			margin-left: 30px;
+			img {
+			margin-left: 5px;
+				transform: rotate(270deg);
+			}
+		}
 	}
 	&-img {
 		max-height: 236px;
+	}
+	.links {
+		display: flex;
+		align-items: center;
 	}
 }
 .cards {

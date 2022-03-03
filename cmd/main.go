@@ -9,6 +9,8 @@ import (
 	_ "time/tzdata"
 
 	"github.com/frain-dev/convoy/cache"
+	"github.com/frain-dev/convoy/datastore/badger"
+
 	"github.com/frain-dev/convoy/logger"
 	memqueue "github.com/frain-dev/convoy/queue/memqueue"
 	redisqueue "github.com/frain-dev/convoy/queue/redis"
@@ -27,10 +29,10 @@ import (
 	"github.com/frain-dev/convoy"
 	"github.com/frain-dev/convoy/config"
 	"github.com/frain-dev/convoy/datastore"
+	"github.com/frain-dev/convoy/limiter"
 	"github.com/frain-dev/convoy/queue"
 	"github.com/spf13/cobra"
 
-	"github.com/frain-dev/convoy/datastore/bolt"
 	"github.com/frain-dev/convoy/datastore/mongo"
 )
 
@@ -55,8 +57,9 @@ func main() {
 	var db datastore.DatabaseClient
 
 	cmd := &cobra.Command{
-		Use:   "Convoy",
-		Short: "Fast & reliable webhooks service",
+		Use:     "Convoy",
+		Version: convoy.GetVersion(),
+		Short:   "Fast & reliable webhooks service",
 		PersistentPreRunE: func(cmd *cobra.Command, args []string) error {
 			cfgPath, err := cmd.Flags().GetString("config")
 			if err != nil {
@@ -115,6 +118,7 @@ func main() {
 			var lS queue.Storage
 			var opts queue.QueueOptions
 			var ca cache.Cache
+			var li limiter.RateLimiter
 
 			if cfg.Queue.Type == config.RedisQueueProvider {
 				rC, qFn, err = redisqueue.NewClient(cfg)
@@ -162,6 +166,11 @@ func main() {
 				return err
 			}
 
+			li, err = limiter.NewLimiter(cfg.Limiter)
+			if err != nil {
+				return err
+			}
+
 			app.apiKeyRepo = db.APIRepo()
 			app.groupRepo = db.GroupRepo()
 			app.eventRepo = db.EventRepo()
@@ -173,6 +182,7 @@ func main() {
 			app.logger = lo
 			app.tracer = tr
 			app.cache = ca
+			app.limiter = li
 
 			return ensureDefaultGroup(context.Background(), cfg, app)
 
@@ -318,6 +328,7 @@ type app struct {
 	logger            logger.Logger
 	tracer            tracer.Tracer
 	cache             cache.Cache
+	limiter           limiter.RateLimiter
 }
 
 func getCtx() (context.Context, context.CancelFunc) {
@@ -332,8 +343,8 @@ func NewDB(cfg config.Configuration) (datastore.DatabaseClient, error) {
 			return nil, err
 		}
 		return db, nil
-	case "bolt":
-		bolt, err := bolt.New(cfg)
+	case "in-memory":
+		bolt, err := badger.New(cfg)
 		if err != nil {
 			return nil, err
 		}

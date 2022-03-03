@@ -3,6 +3,12 @@
 		"schemas": {
 			"auth.Role": {
 				"properties": {
+					"apps": {
+						"items": {
+							"type": "string"
+						},
+						"type": "array"
+					},
 					"groups": {
 						"items": {
 							"type": "string"
@@ -26,7 +32,13 @@
 					"expires_at": {
 						"type": "integer"
 					},
+					"hash": {
+						"type": "string"
+					},
 					"key_type": {
+						"type": "string"
+					},
+					"mask_id": {
 						"type": "string"
 					},
 					"name": {
@@ -34,6 +46,9 @@
 					},
 					"role": {
 						"$ref": "#/components/schemas/auth.Role"
+					},
+					"salt": {
+						"type": "string"
 					},
 					"uid": {
 						"type": "string"
@@ -298,6 +313,14 @@
 				},
 				"type": "object"
 			},
+			"datastore.ExponentialBackoffStrategyConfiguration": {
+				"properties": {
+					"retryLimit": {
+						"type": "integer"
+					}
+				},
+				"type": "object"
+			},
 			"datastore.Group": {
 				"properties": {
 					"config": {
@@ -426,6 +449,9 @@
 					"default": {
 						"$ref": "#/components/schemas/datastore.DefaultStrategyConfiguration"
 					},
+					"exponentialBackoff": {
+						"$ref": "#/components/schemas/datastore.ExponentialBackoffStrategyConfiguration"
+					},
 					"type": {
 						"type": "string"
 					}
@@ -538,6 +564,29 @@
 				},
 				"type": "object"
 			},
+			"models.PortalAPIKeyResponse": {
+				"properties": {
+					"app_id": {
+						"type": "string"
+					},
+					"group_id": {
+						"type": "string"
+					},
+					"key": {
+						"type": "string"
+					},
+					"key_type": {
+						"type": "string"
+					},
+					"role": {
+						"$ref": "#/components/schemas/auth.Role"
+					},
+					"url": {
+						"type": "string"
+					}
+				},
+				"type": "object"
+			},
 			"server.Stub": {
 				"type": "object"
 			},
@@ -578,9 +627,9 @@
 	},
 	"info": {
 		"contact": {
-			"email": "engineering@getconvoy.io",
+			"email": "Info@frain.dev",
 			"name": "API Support",
-			"url": "http://www.swagger.io/support"
+			"url": "https://getconvoy.io/docs"
 		},
 		"description": "Convoy is a fast and secure distributed webhooks service. This document contains datastore.s API specification.",
 		"license": {
@@ -3715,6 +3764,121 @@
 				]
 			}
 		},
+		"/security/applications/{appID}/keys": {
+			"post": {
+				"description": "This endpoint creates an api key that will be used by app portal",
+				"parameters": [
+					{
+						"description": "application ID",
+						"in": "path",
+						"name": "appID",
+						"required": true,
+						"schema": {
+							"type": "string"
+						}
+					}
+				],
+				"responses": {
+					"201": {
+						"content": {
+							"application/json": {
+								"schema": {
+									"allOf": [
+										{
+											"$ref": "#/components/schemas/server.serverResponse"
+										},
+										{
+											"properties": {
+												"data": {
+													"$ref": "#/components/schemas/models.PortalAPIKeyResponse"
+												}
+											},
+											"type": "object"
+										}
+									]
+								}
+							}
+						},
+						"description": "Created"
+					},
+					"400": {
+						"content": {
+							"application/json": {
+								"schema": {
+									"allOf": [
+										{
+											"$ref": "#/components/schemas/server.serverResponse"
+										},
+										{
+											"properties": {
+												"data": {
+													"$ref": "#/components/schemas/server.Stub"
+												}
+											},
+											"type": "object"
+										}
+									]
+								}
+							}
+						},
+						"description": "Bad Request"
+					},
+					"401": {
+						"content": {
+							"application/json": {
+								"schema": {
+									"allOf": [
+										{
+											"$ref": "#/components/schemas/server.serverResponse"
+										},
+										{
+											"properties": {
+												"data": {
+													"$ref": "#/components/schemas/server.Stub"
+												}
+											},
+											"type": "object"
+										}
+									]
+								}
+							}
+						},
+						"description": "Unauthorized"
+					},
+					"500": {
+						"content": {
+							"application/json": {
+								"schema": {
+									"allOf": [
+										{
+											"$ref": "#/components/schemas/server.serverResponse"
+										},
+										{
+											"properties": {
+												"data": {
+													"$ref": "#/components/schemas/server.Stub"
+												}
+											},
+											"type": "object"
+										}
+									]
+								}
+							}
+						},
+						"description": "Internal Server Error"
+					}
+				},
+				"security": [
+					{
+						"ApiKeyAuth": []
+					}
+				],
+				"summary": "Create an api key for app portal",
+				"tags": [
+					"APIKey"
+				]
+			}
+		},
 		"/security/keys": {
 			"get": {
 				"description": "This endpoint fetches multiple api keys",
@@ -4087,6 +4251,119 @@
 				"tags": [
 					"APIKey"
 				]
+			},
+			"put": {
+				"description": "This endpoint updates an api key",
+				"parameters": [
+					{
+						"description": "API Key id",
+						"in": "path",
+						"name": "keyID",
+						"required": true,
+						"schema": {
+							"type": "string"
+						}
+					}
+				],
+				"responses": {
+					"200": {
+						"content": {
+							"application/json": {
+								"schema": {
+									"allOf": [
+										{
+											"$ref": "#/components/schemas/server.serverResponse"
+										},
+										{
+											"properties": {
+												"data": {
+													"$ref": "#/components/schemas/datastore.APIKey"
+												}
+											},
+											"type": "object"
+										}
+									]
+								}
+							}
+						},
+						"description": "OK"
+					},
+					"400": {
+						"content": {
+							"application/json": {
+								"schema": {
+									"allOf": [
+										{
+											"$ref": "#/components/schemas/server.serverResponse"
+										},
+										{
+											"properties": {
+												"data": {
+													"$ref": "#/components/schemas/server.Stub"
+												}
+											},
+											"type": "object"
+										}
+									]
+								}
+							}
+						},
+						"description": "Bad Request"
+					},
+					"401": {
+						"content": {
+							"application/json": {
+								"schema": {
+									"allOf": [
+										{
+											"$ref": "#/components/schemas/server.serverResponse"
+										},
+										{
+											"properties": {
+												"data": {
+													"$ref": "#/components/schemas/server.Stub"
+												}
+											},
+											"type": "object"
+										}
+									]
+								}
+							}
+						},
+						"description": "Unauthorized"
+					},
+					"500": {
+						"content": {
+							"application/json": {
+								"schema": {
+									"allOf": [
+										{
+											"$ref": "#/components/schemas/server.serverResponse"
+										},
+										{
+											"properties": {
+												"data": {
+													"$ref": "#/components/schemas/server.Stub"
+												}
+											},
+											"type": "object"
+										}
+									]
+								}
+							}
+						},
+						"description": "Internal Server Error"
+					}
+				},
+				"security": [
+					{
+						"ApiKeyAuth": []
+					}
+				],
+				"summary": "update api key",
+				"tags": [
+					"APIKey"
+				]
 			}
 		},
 		"/security/keys/{keyID}/revoke": {
@@ -4207,10 +4484,7 @@
 	},
 	"servers": [
 		{
-			"url": "http://localhost:8080/api/v1"
-		},
-		{
-			"url": "https://localhost:8080/api/v1"
+			"url": "https://cloud.staging.getconvoy.io/api/v1"
 		}
 	],
 	"tags": [

@@ -63,7 +63,17 @@ func StartConvoyServer(a *app, cfg config.Configuration, withWorkers bool) error
 		return errors.New("please provide the HTTP port in the convoy.json file")
 	}
 
-	srv := server.New(cfg, a.eventRepo, a.eventDeliveryRepo, a.applicationRepo, a.apiKeyRepo, a.groupRepo, a.eventQueue, a.logger, a.tracer, a.cache)
+	srv := server.New(cfg,
+		a.eventRepo,
+		a.eventDeliveryRepo,
+		a.applicationRepo,
+		a.apiKeyRepo,
+		a.groupRepo,
+		a.eventQueue,
+		a.logger,
+		a.tracer,
+		a.cache,
+		a.limiter)
 
 	if withWorkers {
 		// register tasks.
@@ -93,5 +103,7 @@ func StartConvoyServer(a *app, cfg config.Configuration, withWorkers bool) error
 		log.Infof("Started server with SSL: cert_file: %s, key_file: %s", httpConfig.SSLCertFile, httpConfig.SSLKeyFile)
 		return srv.ListenAndServeTLS(httpConfig.SSLCertFile, httpConfig.SSLKeyFile)
 	}
+
+	log.Infof("Server running on port %v", cfg.Server.HTTP.Port)
 	return srv.ListenAndServe()
 }

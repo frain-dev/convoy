@@ -48,6 +48,7 @@ const (
 	pageDataCtx         contextKey = "pageData"
 	dashboardCtx        contextKey = "dashboard"
 	deliveryAttemptsCtx contextKey = "deliveryAttempts"
+	baseUrlCtx          contextKey = "baseUrl"
 )
 
 func instrumentPath(path string) func(http.Handler) http.Handler {
@@ -143,6 +144,81 @@ func requireApp(appRepo datastore.ApplicationRepository) func(next http.Handler)
 
 			r = r.WithContext(setApplicationInContext(r.Context(), app))
 			next.ServeHTTP(w, r)
+		})
+	}
+}
+
+func requireAppPortalApplication(appRepo datastore.ApplicationRepository) func(next http.Handler) http.Handler {
+	return func(next http.Handler) http.Handler {
+
+		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+
+			appID := chi.URLParam(r, "appID")
+
+			if util.IsStringEmpty(appID) {
+				appID = r.URL.Query().Get("appId")
+			}
+
+			app, err := appRepo.FindApplicationByID(r.Context(), appID)
+			if err != nil {
+
+				event := "an error occurred while retrieving app details"
+				statusCode := http.StatusBadRequest
+
+				if errors.Is(err, datastore.ErrApplicationNotFound) {
+					event = err.Error()
+					statusCode = http.StatusBadRequest
+				}
+
+				_ = render.Render(w, r, newErrorResponse(event, statusCode))
+				return
+			}
+
+			r = r.WithContext(setApplicationInContext(r.Context(), app))
+			next.ServeHTTP(w, r)
+		})
+	}
+}
+
+func requireAppPortalPermission(role auth.RoleType) func(next http.Handler) http.Handler {
+	return func(next http.Handler) http.Handler {
+		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			authUser := getAuthUserFromContext(r.Context())
+			if authUser.Role.Type.Is(auth.RoleSuperUser) {
+				// superuser has access to everything
+				next.ServeHTTP(w, r)
+				return
+			}
+
+			if !authUser.Role.Type.Is(role) {
+				_ = render.Render(w, r, newErrorResponse("unauthorized role", http.StatusUnauthorized))
+				return
+			}
+
+			group := getGroupFromContext(r.Context())
+			for _, v := range authUser.Role.Groups {
+				if group.Name == v || group.UID == v {
+
+					if len(authUser.Role.Apps) > 0 { //we're dealing with an app portal token at this point
+						app := getApplicationFromContext(r.Context())
+
+						for _, ap := range authUser.Role.Apps {
+							if app.Title == ap || app.UID == ap {
+								next.ServeHTTP(w, r)
+								return
+							}
+						}
+
+						_ = render.Render(w, r, newErrorResponse("unauthorized access", http.StatusUnauthorized))
+						return
+					}
+
+					next.ServeHTTP(w, r)
+					return
+				}
+			}
+
+			_ = render.Render(w, r, newErrorResponse("unauthorized to access group", http.StatusUnauthorized))
 		})
 	}
 }
@@ -366,6 +442,21 @@ func requireAuth() func(next http.Handler) http.Handler {
 	}
 }
 
+func requireBaseUrl() func(next http.Handler) http.Handler {
+	return func(next http.Handler) http.Handler {
+		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			cfg, err := config.Get()
+			if err != nil {
+				log.WithError(err).Error("failed to load configuration")
+				return
+			}
+
+			r = r.WithContext(setBaseUrlInContext(r.Context(), cfg.BaseUrl))
+			next.ServeHTTP(w, r)
+		})
+	}
+}
+
 func requirePermission(role auth.RoleType) func(next http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -384,6 +475,12 @@ func requirePermission(role auth.RoleType) func(next http.Handler) http.Handler 
 			group := getGroupFromContext(r.Context())
 			for _, v := range authUser.Role.Groups {
 				if group.Name == v || group.UID == v {
+
+					if len(authUser.Role.Apps) > 0 { //we're dealing with an app portal token at this point
+						_ = render.Render(w, r, newErrorResponse("unauthorized to access group", http.StatusUnauthorized))
+						return
+					}
+
 					next.ServeHTTP(w, r)
 					return
 				}
@@ -772,4 +869,12 @@ func setConfigInContext(ctx context.Context, c *ViewableConfiguration) context.C
 
 func getConfigFromContext(ctx context.Context) *ViewableConfiguration {
 	return ctx.Value(configCtx).(*ViewableConfiguration)
+}
+
+func setBaseUrlInContext(ctx context.Context, baseUrl string) context.Context {
+	return context.WithValue(ctx, baseUrlCtx, baseUrl)
+}
+
+func getBaseUrlFromContext(ctx context.Context) string {
+	return ctx.Value(baseUrlCtx).(string)
 }

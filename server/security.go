@@ -4,9 +4,11 @@ import (
 	"crypto/sha256"
 	"encoding/base64"
 	"encoding/json"
+	"fmt"
 	"net/http"
 	"time"
 
+	"github.com/frain-dev/convoy/auth"
 	"github.com/frain-dev/convoy/datastore"
 	"github.com/frain-dev/convoy/server/models"
 	"github.com/frain-dev/convoy/util"
@@ -111,6 +113,86 @@ func (a *applicationHandler) CreateAPIKey(w http.ResponseWriter, r *http.Request
 	_ = render.Render(w, r, newServerResponse("API Key created successfully", resp, http.StatusCreated))
 }
 
+// CreateAppPortalAPIKey
+// @Summary Create an api key for app portal
+// @Description This endpoint creates an api key that will be used by app portal
+// @Tags APIKey
+// @Accept  json
+// @Produce  json
+// @Param appID path string true "application ID"
+// @Success 201 {object} serverResponse{data=models.PortalAPIKeyResponse}
+// @Failure 400,401,500 {object} serverResponse{data=Stub}
+// @Security ApiKeyAuth
+// @Router /security/applications/{appID}/keys [post]
+func (a *applicationHandler) CreateAppPortalAPIKey(w http.ResponseWriter, r *http.Request) {
+	group := getGroupFromContext(r.Context())
+	app := getApplicationFromContext(r.Context())
+
+	if app.GroupID != group.UID {
+		_ = render.Render(w, r, newErrorResponse("app does not belong to group", http.StatusBadRequest))
+		return
+	}
+
+	role := auth.Role{
+		Type:   auth.RoleUIAdmin,
+		Groups: []string{group.UID},
+		Apps:   []string{app.UID},
+	}
+
+	maskID, key := util.GenerateAPIKey()
+	salt, err := util.GenerateSecret()
+
+	if err != nil {
+		log.WithError(err).Error("failed to generate salt")
+		_ = render.Render(w, r, newErrorResponse("something went wrong", http.StatusInternalServerError))
+		return
+	}
+
+	dk := pbkdf2.Key([]byte(key), []byte(salt), 4096, 32, sha256.New)
+	encodedKey := base64.URLEncoding.EncodeToString(dk)
+
+	expiresAt := time.Now().Add(30 * time.Minute)
+
+	apiKey := &datastore.APIKey{
+		UID:            uuid.New().String(),
+		MaskID:         maskID,
+		Name:           app.Title,
+		Type:           "app_portal",
+		Role:           role,
+		Hash:           encodedKey,
+		Salt:           salt,
+		CreatedAt:      primitive.NewDateTimeFromTime(time.Now()),
+		UpdatedAt:      primitive.NewDateTimeFromTime(time.Now()),
+		DocumentStatus: datastore.ActiveDocumentStatus,
+		ExpiresAt:      primitive.NewDateTimeFromTime(expiresAt),
+	}
+
+	err = a.apiKeyRepo.CreateAPIKey(r.Context(), apiKey)
+	if err != nil {
+		log.WithError(err).Error("failed to create api key")
+		_ = render.Render(w, r, newErrorResponse("failed to create api key", http.StatusInternalServerError))
+		return
+	}
+
+	baseUrl := getBaseUrlFromContext(r.Context())
+
+	if !util.IsStringEmpty(baseUrl) {
+		baseUrl = fmt.Sprintf("%s/ui/app-portal/%s?groupID=%s&appId=%s", baseUrl, key, group.UID, app.UID)
+	}
+
+	resp := models.PortalAPIKeyResponse{
+		Key:     key,
+		Url:     baseUrl,
+		Role:    role,
+		GroupID: group.UID,
+		AppID:   app.UID,
+		Type:    string(apiKey.Type),
+	}
+
+	_ = render.Render(w, r, newServerResponse("API Key created successfully", resp, http.StatusCreated))
+
+}
+
 // RevokeAPIKey
 // @Summary Revoke API Key
 // @Description This endpoint revokes an api key
@@ -177,6 +259,81 @@ func (a *applicationHandler) GetAPIKeyByID(w http.ResponseWriter, r *http.Reques
 	}
 
 	_ = render.Render(w, r, newServerResponse("api key fetched successfully", resp, http.StatusOK))
+}
+
+// UpdateAPIKey
+// @Summary update api key
+// @Description This endpoint updates an api key
+// @Tags APIKey
+// @Accept  json
+// @Produce  json
+// @Param keyID path string true "API Key id"
+// @Success 200 {object} serverResponse{data=datastore.APIKey}
+// @Failure 400,401,500 {object} serverResponse{data=Stub}
+// @Security ApiKeyAuth
+// @Router /security/keys/{keyID} [put]
+func (a *applicationHandler) UpdateAPIKey(w http.ResponseWriter, r *http.Request) {
+	var updateApiKey struct {
+		Role auth.Role `json:"role"`
+	}
+
+	err := util.ReadJSON(r, &updateApiKey)
+	if err != nil {
+		_ = render.Render(w, r, newErrorResponse(err.Error(), http.StatusBadRequest))
+		return
+	}
+
+	uid := chi.URLParam(r, "keyID")
+	if util.IsStringEmpty(uid) {
+		_ = render.Render(w, r, newErrorResponse("key id is empty", http.StatusBadRequest))
+		return
+	}
+
+	err = updateApiKey.Role.Validate("api key")
+	if err != nil {
+		log.WithError(err).Error("invalid api key role")
+		_ = render.Render(w, r, newErrorResponse("invalid api key role", http.StatusBadRequest))
+		return
+	}
+
+	groups, err := a.groupRepo.FetchGroupsByIDs(r.Context(), updateApiKey.Role.Groups)
+	if err != nil {
+		_ = render.Render(w, r, newErrorResponse("invalid group", http.StatusBadRequest))
+		return
+	}
+
+	if len(groups) != len(updateApiKey.Role.Groups) {
+		_ = render.Render(w, r, newErrorResponse("cannot find group", http.StatusBadRequest))
+		return
+	}
+
+	apiKey, err := a.apiKeyRepo.FindAPIKeyByID(r.Context(), uid)
+	if err != nil {
+		log.WithError(err).Error("failed to fetch api key")
+		_ = render.Render(w, r, newErrorResponse("failed to fetch api key", http.StatusInternalServerError))
+		return
+	}
+
+	apiKey.Role = updateApiKey.Role
+	err = a.apiKeyRepo.UpdateAPIKey(r.Context(), apiKey)
+
+	if err != nil {
+		log.WithError(err).Error("failed to update api key")
+		_ = render.Render(w, r, newErrorResponse("failed to update api key", http.StatusInternalServerError))
+		return
+	}
+
+	resp := models.APIKeyByIDResponse{
+		UID:       apiKey.UID,
+		Name:      apiKey.Name,
+		Role:      apiKey.Role,
+		Type:      apiKey.Type,
+		ExpiresAt: apiKey.ExpiresAt,
+		UpdatedAt: apiKey.UpdatedAt,
+		CreatedAt: apiKey.CreatedAt,
+	}
+
+	_ = render.Render(w, r, newServerResponse("api key updated successfully", resp, http.StatusOK))
 }
 
 // GetAPIKeys

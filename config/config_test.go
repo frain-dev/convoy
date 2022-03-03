@@ -372,6 +372,59 @@ func TestLoadConfig(t *testing.T) {
 			wantErr: false,
 		},
 		{
+			name: "should_support_exponential_backoff",
+			args: args{
+				path: "./testdata/Config/exponential-backoff-config.json",
+			},
+			wantCfg: Configuration{
+				Database: DatabaseConfiguration{
+					Dsn: "mongodb://inside-config-file",
+				},
+				Queue: QueueConfiguration{
+					Type: RedisQueueProvider,
+					Redis: RedisQueueConfiguration{
+						DSN: "redis://localhost:8379",
+					},
+				},
+				Server: ServerConfiguration{
+					HTTP: HTTPServerConfiguration{
+						Port: 80,
+					},
+				},
+				MaxResponseSize: MaxResponseSize,
+				Auth: AuthConfiguration{
+					RequireAuth: true,
+					File: FileRealmOption{
+						Basic: []BasicAuth{
+							{
+								Username: "123",
+								Password: "abc",
+								Role: auth.Role{
+									Type: "super_user",
+								},
+							},
+						},
+					},
+				},
+				GroupConfig: GroupConfig{
+					Strategy: StrategyConfiguration{
+						Type: "exponential-backoff",
+						ExponentialBackoff: ExponentialBackoffStrategyConfiguration{
+							RetryLimit: 15,
+						},
+					},
+					Signature: SignatureConfiguration{
+						Header: DefaultSignatureHeader,
+						Hash:   "SHA256",
+					},
+					DisableEndpoint: false,
+				},
+				Environment:     DevelopmentEnvironment,
+				MultipleTenants: false,
+			},
+			wantErr: false,
+		},
+		{
 			name: "should_error_for_zero_port",
 			args: args{
 				path: "./testdata/Config/no-port-convoy.json",
@@ -424,6 +477,15 @@ func TestLoadConfig(t *testing.T) {
 			wantCfg:    Configuration{},
 			wantErr:    true,
 			wantErrMsg: "both interval seconds and retry limit are required for default strategy configuration",
+		},
+		{
+			name: "should_error_for_zero_retry_limit_exponential_backoff",
+			args: args{
+				path: "./testdata/Config/zero-retry-limit-exponential.json",
+			},
+			wantCfg:    Configuration{},
+			wantErr:    true,
+			wantErrMsg: "retry limit is required for exponential backoff retry strategy configuration",
 		},
 		{
 			name: "should_error_for_unsupported_strategy_type",
