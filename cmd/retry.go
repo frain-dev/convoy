@@ -123,7 +123,7 @@ func processEventDeliveryBatches(ctx context.Context, a *app, deliveryChan <-cha
 			log.WithError(err).WithField("ids", batchIDs).Errorf("batch %d: failed to delete event deliveries from zset", batchCount)
 			// put continue here? @all reviewers
 		}
-		log.Infof("batch %d: deleted event deliveries from zset", batchCount)
+		//log.Infof("batch %d: deleted event deliveries from zset", batchCount)
 
 		// remove these event deliveries from the stream
 		err = q.DeleteEventDeliveriesFromStream(ctx, batchIDs)
@@ -131,7 +131,7 @@ func processEventDeliveryBatches(ctx context.Context, a *app, deliveryChan <-cha
 			log.WithError(err).WithField("ids", batchIDs).Errorf("batch %d: failed to delete event deliveries from stream", batchCount)
 			// put continue here? @all reviewers
 		}
-		log.Infof("batch %d: deleted event deliveries from stream", batchCount)
+		//log.Infof("batch %d: deleted event deliveries from stream", batchCount)
 
 		var group *datastore.Group
 		for i := range batch {
@@ -149,10 +149,11 @@ func processEventDeliveryBatches(ctx context.Context, a *app, deliveryChan <-cha
 			}
 
 			taskName := convoy.EventProcessor.SetPrefix(group.Name)
-			err = q.Write(ctx, taskName, delivery, 15*time.Second)
+			err = q.Write(ctx, taskName, delivery, 1*time.Second)
 			if err != nil {
 				log.WithError(err).Errorf("batch %d: failed to send event delivery %s to the queue", batchCount, delivery.ID)
 			}
+			log.Infof("sucessfully requeued delivery with id: %s", delivery.UID)
 		}
 
 		log.Infof("batch %d: sucessfully requeued %d deliveries", batchCount, len(batch))
