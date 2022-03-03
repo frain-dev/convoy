@@ -96,7 +96,7 @@ input[type='radio'] {
 	position: relative;
 
 	&::after {
-		content: url('../assets/img/checkbox-icon.svg');
+		// content: url('../assets/img/checkbox-icon.svg');
 		position: absolute;
 		top: 50%;
 		left: 50%;
@@ -161,7 +161,7 @@ input[type='radio'] {
 		&::after {
 			content: '';
 			position: absolute;
-			background: url('../assets/img/angle-arrow-down.svg');
+			// background: url('../assets/img/angle-arrow-down.svg');
 			width: 20px;
 			height: 20px;
 			background-size: contain;
