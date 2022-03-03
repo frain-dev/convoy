@@ -58,7 +58,7 @@
 				</div>
 				<div class="cards_item pink">
 					<h3>API Reference</h3>
-					<p>Lorem ipsum dolor sit amet, consectetur adipiscing elit. Vitae libero at id amet. Massa, ornare rhoncus nunc pulvinar venenatis turpis.</p>
+					<p>We've documented Convoy APIs on an easy to use platform for your reference and tests.</p>
 					<a target="_blank" href="https://convoy.readme.io/reference/introduction">
 						<button>
 							Read more
