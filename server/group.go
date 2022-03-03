@@ -129,13 +129,15 @@ func (a *applicationHandler) CreateGroup(w http.ResponseWriter, r *http.Request)
 	}
 
 	group := &datastore.Group{
-		UID:            uuid.New().String(),
-		Name:           groupName,
-		Config:         &newGroup.Config,
-		LogoURL:        newGroup.LogoURL,
-		CreatedAt:      primitive.NewDateTimeFromTime(time.Now()),
-		UpdatedAt:      primitive.NewDateTimeFromTime(time.Now()),
-		DocumentStatus: datastore.ActiveDocumentStatus,
+		UID:               uuid.New().String(),
+		Name:              groupName,
+		Config:            &newGroup.Config,
+		LogoURL:           newGroup.LogoURL,
+		CreatedAt:         primitive.NewDateTimeFromTime(time.Now()),
+		UpdatedAt:         primitive.NewDateTimeFromTime(time.Now()),
+		RateLimit:         newGroup.RateLimit,
+		RateLimitDuration: newGroup.RateLimitDuration,
+		DocumentStatus:    datastore.ActiveDocumentStatus,
 	}
 
 	err = a.groupRepo.CreateGroup(r.Context(), group)
