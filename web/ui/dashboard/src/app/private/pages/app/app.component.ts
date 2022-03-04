@@ -1,6 +1,6 @@
 import { Component, OnInit } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
-import { HttpService } from 'src/app/services/http/http.service';
+import { GeneralService } from 'src/app/services/general/general.service';
 
 @Component({
 	selector: 'app-app',
@@ -12,8 +12,9 @@ export class AppComponent implements OnInit {
 	appId: string = this.route.snapshot.queryParams.appId;
 	groupId: string = this.route.snapshot.queryParams.groupId;
 	token: string = this.route.snapshot.params.token;
+	apiURL = this.generalService.apiURL();
 
-	constructor(private router: Router, private route: ActivatedRoute) {}
+	constructor(private router: Router, private route: ActivatedRoute, private generalService: GeneralService) {}
 
 	ngOnInit() {}
 
