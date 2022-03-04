@@ -218,11 +218,11 @@
 
 							<div class="table--load-more button--container center" *ngIf="events.pagination.totalPage > 1">
 								<button
-									[class]="'button button__primary button__clear button--has-icon icon-left '"
+									[class]="'button button__primary button__clear button--has-icon icon-left margin-top__20px'"
 									[disabled]="events.pagination.page === events.pagination.totalPage || isloadingMoreEvents"
 									(click)="eventsPage = eventsPage + 1; getEvents()"
 								>
-									<img src="/assets/img/arrow-down-icon.svg" *ngIf="!isloadingMoreEvents" alt="arrow down icon" />
+									<img src="/assets/img/arrow-down-icon.svg" class="width-unset height-unset" *ngIf="!isloadingMoreEvents" alt="arrow down icon" />
 									<img src="/assets/img/rotate-icon.svg" class="loading-icon" *ngIf="isloadingMoreEvents" alt="loading icon" />
 									Load more
 								</button>
@@ -408,11 +408,11 @@
 
 							<div class="table--load-more button--container center" *ngIf="eventDeliveries.pagination.totalPage > 1">
 								<button
-									[class]="'button button__primary button__clear button--has-icon icon-left'"
+									[class]="'button button__clear button--has-icon icon-left margin-top__24px'"
 									[disabled]="eventDeliveries.pagination.page === eventDeliveries.pagination.totalPage || isloadingMoreEventDeliveries"
 									(click)="loadMoreEventDeliveries()"
 								>
-									<img src="/assets/img/arrow-down-icon.svg" *ngIf="!isloadingMoreEventDeliveries" alt="arrow down icon" />
+									<img src="/assets/img/arrow-down-icon.svg" class="width-unset height-unset" *ngIf="!isloadingMoreEventDeliveries" alt="arrow down icon" />
 									<img src="/assets/img/rotate-icon.svg" class="loading-icon" *ngIf="isloadingMoreEventDeliveries" alt="loading icon" />
 									Load more
 								</button>
@@ -489,11 +489,11 @@
 
 							<div class="table--load-more button--container margin-top center" *ngIf="apps?.pagination && apps.pagination.totalPage > 1">
 								<button
-									[class]="'button button__primary button__clear button--has-icon icon-left ' + (apps.pagination.page === apps.pagination.totalPage ? 'disabled' : '')"
+									[class]="'button button__primary button__clear button--has-icon icon-left margin-top__20px' + (apps.pagination.page === apps.pagination.totalPage ? 'disabled' : '')"
 									[disabled]="apps.pagination.page === apps.pagination.totalPage || isloadingMoreApps"
 									(click)="appsPage = appsPage + 1; getApps()"
 								>
-									<img src="/assets/img/arrow-down-icon.svg" alt="arrow down icon" *ngIf="!isloadingMoreApps" />
+									<img src="/assets/img/arrow-down-icon.svg" class="width-unset height-unset" alt="arrow down icon" *ngIf="!isloadingMoreApps" />
 									<img src="/assets/img/rotate-icon.svg" class="loading-icon" *ngIf="isloadingMoreApps" alt="loading icon" />
 									Load more
 								</button>
