@@ -337,7 +337,6 @@
 						</div>
 
 						<hr />
-						
 
 						<div class="table--container has-loader" *ngIf="displayedEventDeliveries.length > 0">
 							<convoy-loader *ngIf="isloadingEventDeliveries"></convoy-loader>
@@ -391,14 +390,13 @@
 											<td>
 												<div>
 													<button
-														[class]="'button__retry button--has-icon icon-left ' + (event.status === 'Success' || event.status === 'Scheduled' ? 'button__retry__force' : '')"
+														[disabled]="event.status !== 'Success' && event.status !== 'Failed'"
+														[class]="'button__retry button--has-icon icon-left '"
 														(click)="retryEvent({ e: $event, index: this.index, eventDeliveryId: event.uid })"
 													>
-														<img
-															[src]="event.status === 'Success' || event.status === 'Scheduled' ? '/assets/img/refresh-icon-force.svg' : '/assets/img/refresh-icon-primary.svg'"
-															alt="refresh icon"
-														/>
-														{{ event.status === 'Success' || event.status === 'Scheduled' ? 'Force Retry' : 'Retry Now' }}
+														<img src="/assets/img/refresh-icon-primary.svg" alt="refresh icon" />
+
+														{{ event.status === 'Success' ? 'Force Retry' : 'Retry' }}
 													</button>
 												</div>
 											</td>
