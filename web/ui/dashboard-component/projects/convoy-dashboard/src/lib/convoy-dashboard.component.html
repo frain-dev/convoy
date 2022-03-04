@@ -390,13 +390,14 @@
 											<td>
 												<div>
 													<button
-														[disabled]="event.status !== 'Success' && event.status !== 'Failed'"
+														[disabled]="event.status !== 'Failed'"
 														[class]="'button__retry button--has-icon icon-left '"
 														(click)="retryEvent({ e: $event, index: this.index, eventDeliveryId: event.uid })"
 													>
 														<img src="/assets/img/refresh-icon-primary.svg" alt="refresh icon" />
-
-														{{ event.status === 'Success' ? 'Force Retry' : 'Retry' }}
+														Retry
+														<!-- to be added later -->
+														<!-- {{ event.status === 'Success' ? 'Force Retry' : 'Retry' }} -->
 													</button>
 												</div>
 											</td>
