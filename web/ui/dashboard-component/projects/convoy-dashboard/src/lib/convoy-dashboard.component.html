@@ -262,7 +262,7 @@
 									<span>Status</span>
 									<img src="/assets/img/angle-arrow-down.svg" alt="arrow down icon" />
 								</button>
-								<div class="dropdown__menu large with-padding" [ngClass]="{ show: showEventDeliveriesStatusDropdown }">
+								<div class="dropdown__menu with-padding smaller" [ngClass]="{ show: showEventDeliveriesStatusDropdown }">
 									<div class="dropdown__menu__item" *ngFor="let status of eventDeliveryStatuses">
 										<label [for]="status">{{ status || 'None' }}</label>
 										<input
@@ -276,7 +276,7 @@
 									</div>
 
 									<button
-										class="button button__small button__primary"
+										class="button button__small button--full-100 button__primary margin-top"
 										(click)="showOverlay = false; showEventDeliveriesStatusDropdown = false; this.getEventDeliveries({ addToURL: true, fromFilter: true })"
 									>
 										Apply
@@ -337,17 +337,7 @@
 						</div>
 
 						<hr />
-
-						<div class="table--actions button--container left">
-							<button class="button button__clear dark button--has-icon icon-left hover" (click)="refreshTables()">
-								<img src="../../../../assets/img/refresh-icon-2.svg" alt="refresh icon" />
-								Refresh
-							</button>
-							<button class="button button__clear dark button--has-icon icon-left hover" (click)="batchRetryEvent()" [disabled]="selectedEventsFromEventDeliveriesTable.length <= 0">
-								<img src="../../../../assets/img/retry-icon.svg" alt="retry icon" />
-								Bulk Retry
-							</button>
-						</div>
+						
 
 						<div class="table--container has-loader" *ngIf="displayedEventDeliveries.length > 0">
 							<convoy-loader *ngIf="isloadingEventDeliveries"></convoy-loader>
@@ -404,8 +394,11 @@
 														[class]="'button__retry button--has-icon icon-left ' + (event.status === 'Success' || event.status === 'Scheduled' ? 'button__retry__force' : '')"
 														(click)="retryEvent({ e: $event, index: this.index, eventDeliveryId: event.uid })"
 													>
-														<img [src]="(event.status === 'Success' || event.status === 'Scheduled' ? '/assets/img/refresh-icon-force.svg' : '/assets/img/refresh-icon-primary.svg')" alt="refresh icon" />
-														{{(event.status === 'Success' || event.status === 'Scheduled' ? 'Force Retry' : 'Retry Now')}}
+														<img
+															[src]="event.status === 'Success' || event.status === 'Scheduled' ? '/assets/img/refresh-icon-force.svg' : '/assets/img/refresh-icon-primary.svg'"
+															alt="refresh icon"
+														/>
+														{{ event.status === 'Success' || event.status === 'Scheduled' ? 'Force Retry' : 'Retry Now' }}
 													</button>
 												</div>
 											</td>
@@ -485,12 +478,7 @@
 										</td>
 										<td>
 											<div>
-												<button
-													[disabled]="app.events <= 0"
-													title="view events"
-													[class]="'button__retry button--has-icon icon-left'"
-													(click)="loadEventsFromAppsTable(app.uid)"
-												>
+												<button [disabled]="app.events <= 0" title="view events" [class]="'button__retry button--has-icon icon-left'" (click)="loadEventsFromAppsTable(app.uid)">
 													<img src="/assets/img/view-events-icon.svg" alt="view events icon" />
 													Events
 												</button>
