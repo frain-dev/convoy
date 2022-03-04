@@ -11,8 +11,8 @@ import (
 	"github.com/frain-dev/convoy/config"
 	"github.com/frain-dev/convoy/datastore"
 	"github.com/frain-dev/convoy/queue"
+	"github.com/frain-dev/taskq/v3"
 	"github.com/google/uuid"
-	"github.com/vmihailenco/taskq/v3"
 )
 
 func TestWrite(t *testing.T) {

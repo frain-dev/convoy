@@ -23,8 +23,8 @@ import (
 	"go.mongodb.org/mongo-driver/bson/primitive"
 
 	"github.com/frain-dev/convoy/util"
+	"github.com/frain-dev/taskq/v3"
 	log "github.com/sirupsen/logrus"
-	"github.com/vmihailenco/taskq/v3"
 
 	"github.com/frain-dev/convoy"
 	"github.com/frain-dev/convoy/config"
