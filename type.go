@@ -55,7 +55,7 @@ const (
 )
 
 const (
-	// Maximum number of goroutines fetching messages.
+	// Maximum number of goroutines fetching messages
 	MaxNumFetcher = 100
 	// Number of messages reserved by a fetcher in the queue in one request.
 	ReservationSize = 1000
