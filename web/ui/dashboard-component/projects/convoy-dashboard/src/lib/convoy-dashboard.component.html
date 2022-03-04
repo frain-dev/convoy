@@ -390,7 +390,7 @@
 											<td>
 												<div>
 													<button
-														[disabled]="event.status !== 'Failed'"
+														[disabled]="event.status !== 'Failure'"
 														[class]="'button__retry button--has-icon icon-left '"
 														(click)="retryEvent({ e: $event, index: this.index, eventDeliveryId: event.uid })"
 													>
