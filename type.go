@@ -55,8 +55,9 @@ const (
 )
 
 const (
+	MaxNumWorkers = 1000
 	// Maximum number of goroutines fetching messages
-	MaxNumFetcher = 100
+	MaxNumFetcher = 64
 	// Number of messages reserved by a fetcher in the queue in one request.
 	ReservationSize = 1000
 	//Size of the internal buffer

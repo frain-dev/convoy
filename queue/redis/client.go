@@ -58,6 +58,7 @@ func NewQueue(opts queue.QueueOptions) queue.Queuer {
 	q := opts.Factory.RegisterQueue(&taskq.QueueOptions{
 		Name:            opts.Name,
 		Redis:           opts.Redis,
+		MaxNumWorker:    convoy.MaxNumWorkers,
 		MaxNumFetcher:   convoy.MaxNumFetcher,
 		ReservationSize: convoy.ReservationSize,
 		BufferSize:      convoy.BufferSize,
