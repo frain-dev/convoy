@@ -12,7 +12,7 @@ import (
 	convoy "github.com/frain-dev/convoy"
 	datastore "github.com/frain-dev/convoy/datastore"
 	gomock "github.com/golang/mock/gomock"
-	taskq "github.com/vmihailenco/taskq/v3"
+	taskq "github.com/frain-dev/taskq/v3"
 )
 
 // MockQueuer is a mock of Queuer interface.
