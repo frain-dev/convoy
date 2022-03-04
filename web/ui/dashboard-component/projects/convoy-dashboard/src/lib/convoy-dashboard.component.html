@@ -100,7 +100,7 @@
 				</ul>
 			</div>
 		</div>
-	
+
 		<section class="card has-title dashboard--logs">
 			<div class="dashboard--logs--tabs">
 				<div class="tabs">
@@ -130,7 +130,11 @@
 							</button>
 
 							<div class="dropdown">
-								<button class="button button__filter button--has-icon icon-right icon-left" [ngClass]="{ active: !!eventApp }" (click)="showOverlay = true; showEventsAppsDropdown = !showEventsAppsDropdown">
+								<button
+									class="button button__filter button--has-icon icon-right icon-left"
+									[ngClass]="{ active: !!eventApp }"
+									(click)="showOverlay = true; showEventsAppsDropdown = !showEventsAppsDropdown"
+								>
 									<img src="/assets/img/apps-icon-grey.svg" alt="apps filter icon" />
 									<span>Apps</span>
 									<img src="/assets/img/angle-arrow-down.svg" alt="arrow down icon" />
@@ -141,8 +145,8 @@
 										<input type="search" placeholder="Search apps here" #eventsAppsFilter />
 									</div>
 									<div class="dropdown__menu__item" *ngFor="let app of eventsAppsFilter$ | async">
-										<input type="checkbox" name="app" [value]="app.uid" [id]="app.uid" [checked]="app.uid === eventApp" (change)="updateAppFilter(app.uid, $event, 'events')" />
 										<label [for]="app.uid">{{ app.name }}</label>
+										<input type="checkbox" name="app" [value]="app.uid" [id]="app.uid" [checked]="app.uid === eventApp" (change)="updateAppFilter(app.uid, $event, 'events')" />
 									</div>
 									<p *ngIf="filteredApps?.length === 0">No app to display</p>
 								</div>
@@ -260,6 +264,7 @@
 								</button>
 								<div class="dropdown__menu large with-padding" [ngClass]="{ show: showEventDeliveriesStatusDropdown }">
 									<div class="dropdown__menu__item" *ngFor="let status of eventDeliveryStatuses">
+										<label [for]="status">{{ status || 'None' }}</label>
 										<input
 											type="checkbox"
 											name="status"
@@ -268,10 +273,12 @@
 											[checked]="checkIfEventDeliveryStatusFilterOptionIsSelected(status)"
 											(change)="updateEventDevliveryStatusFilter(status, $event)"
 										/>
-										<label [for]="status">{{ status || 'None' }}</label>
 									</div>
 
-									<button class="button button__small button__primary" (click)="showOverlay = false; showEventDeliveriesStatusDropdown = false; this.getEventDeliveries({ addToURL: true, fromFilter: true })">
+									<button
+										class="button button__small button__primary"
+										(click)="showOverlay = false; showEventDeliveriesStatusDropdown = false; this.getEventDeliveries({ addToURL: true, fromFilter: true })"
+									>
 										Apply
 									</button>
 								</div>
@@ -293,6 +300,7 @@
 										<input type="search" placeholder="Search apps here" #eventDelsAppsFilter />
 									</div>
 									<div class="dropdown__menu__item" *ngFor="let app of eventsDelAppsFilter$ | async">
+										<label [for]="app.uid + 'eventDel'">{{ app.name }}</label>
 										<input
 											type="checkbox"
 											name="app"
@@ -301,15 +309,14 @@
 											[checked]="app.uid === eventDeliveriesApp"
 											(change)="updateAppFilter(app.uid, $event, 'eventDels')"
 										/>
-										<label [for]="app.uid + 'eventDel'">{{ app.name }}</label>
 									</div>
 									<p *ngIf="filteredApps?.length === 0">No app to display</p>
 								</div>
 							</div>
 
-							<div class="filter--button event-button active" *ngIf="eventDeliveryFilteredByEventId !== ''">
+							<div class="button__filter" *ngIf="eventDeliveryFilteredByEventId !== ''">
 								Event Filtered
-								<button class="button__primary button__clear has-icon" (click)="eventDeliveryFilteredByEventId = ''; getEventDeliveries()">
+								<button class="button__clear has-icon" (click)="eventDeliveryFilteredByEventId = ''; getEventDeliveries()">
 									<img src="../../../../assets/img/close-icon.svg" alt="close icon" />
 								</button>
 							</div>
@@ -394,12 +401,11 @@
 											<td>
 												<div>
 													<button
-														[disabled]="event.status === 'Success' || event.status === 'Scheduled'"
-														[class]="'button button__primary button--has-icon icon-left ' + (event.status === 'Success' || event.status === 'Scheduled' ? 'disabled' : '')"
+														[class]="'button__retry button--has-icon icon-left ' + (event.status === 'Success' || event.status === 'Scheduled' ? 'button__retry__force' : '')"
 														(click)="retryEvent({ e: $event, index: this.index, eventDeliveryId: event.uid })"
 													>
-														<img src="/assets/img/refresh-icon.svg" alt="refresh icon" />
-														Retry
+														<img [src]="(event.status === 'Success' || event.status === 'Scheduled' ? '/assets/img/refresh-icon-force.svg' : '/assets/img/refresh-icon-primary.svg')" alt="refresh icon" />
+														{{(event.status === 'Success' || event.status === 'Scheduled' ? 'Force Retry' : 'Retry Now')}}
 													</button>
 												</div>
 											</td>
@@ -479,7 +485,12 @@
 										</td>
 										<td>
 											<div>
-												<button [disabled]="app.events <= 0" title="view events" [class]="'button button__primary button__small button--has-icon icon-left'" (click)="loadEventsFromAppsTable(app.uid)">
+												<button
+													[disabled]="app.events <= 0"
+													title="view events"
+													[class]="'button__retry button--has-icon icon-left'"
+													(click)="loadEventsFromAppsTable(app.uid)"
+												>
 													<img src="/assets/img/view-events-icon.svg" alt="view events icon" />
 													Events
 												</button>
@@ -591,7 +602,7 @@
 					</ul>
 
 					<ul class="tabs tabs__logs">
-						<li *ngFor="let tab of eventDetailsTabs" [class]="(eventDetailsActiveTab === tab.id ? 'active' : '')">
+						<li *ngFor="let tab of eventDetailsTabs" [class]="eventDetailsActiveTab === tab.id ? 'active' : ''">
 							<button (click)="eventDetailsActiveTab = tab.id">{{ tab.label }}</button>
 						</li>
 					</ul>
