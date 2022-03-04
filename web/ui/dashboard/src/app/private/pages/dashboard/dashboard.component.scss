@@ -1,0 +1,13 @@
+.filter {
+	.select {
+		&::after {
+			background: url('/assets/img/angle-arrow-down.svg');
+		}
+	}
+}
+input[type='checkbox'],
+input[type='radio'] {
+	&::after {
+		content: url('/assets/img/checkbox-icon.svg');
+	}
+}

@@ -5,8 +5,8 @@ import (
 
 	"github.com/frain-dev/convoy"
 	"github.com/frain-dev/convoy/datastore"
+	"github.com/frain-dev/taskq/v3"
 	log "github.com/sirupsen/logrus"
-	"github.com/vmihailenco/taskq/v3"
 )
 
 func CreateTask(name convoy.TaskName, group datastore.Group, handler interface{}) *taskq.Task {

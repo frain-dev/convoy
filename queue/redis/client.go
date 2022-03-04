@@ -12,9 +12,9 @@ import (
 	"github.com/frain-dev/convoy/datastore"
 	"github.com/frain-dev/convoy/queue"
 	"github.com/frain-dev/convoy/util"
+	"github.com/frain-dev/taskq/v3"
+	"github.com/frain-dev/taskq/v3/redisq"
 	"github.com/go-redis/redis/v8"
-	"github.com/vmihailenco/taskq/v3"
-	"github.com/vmihailenco/taskq/v3/redisq"
 )
 
 const count = math.MaxInt64
@@ -56,8 +56,11 @@ func NewClient(cfg config.Configuration) (*redis.Client, taskq.Factory, error) {
 func NewQueue(opts queue.QueueOptions) queue.Queuer {
 
 	q := opts.Factory.RegisterQueue(&taskq.QueueOptions{
-		Name:  opts.Name,
-		Redis: opts.Redis,
+		Name:            opts.Name,
+		Redis:           opts.Redis,
+		MaxNumFetcher:   convoy.MaxNumFetcher,
+		ReservationSize: convoy.ReservationSize,
+		BufferSize:      convoy.BufferSize,
 	})
 
 	return &RedisQueue{
