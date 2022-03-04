@@ -15,82 +15,98 @@ $ mkdir convoy && cd convoy
 
 ## 2. Copy Configuration
 
-Copy the configuration file to the directory created above.
+Copy both the compose file and the configuration file to the directory created above.
+
+```yml[docker-compose.yml]
+version: "3"
+
+services:
+    web:
+        image: ghcr.io/frain-dev/convoy:v0.2.5
+        entrypoint: ["./cmd", "server", "--config", "convoy.json"]
+        ports:
+            - 5005:5005
+        volumes:
+            - ./convoy.json:/convoy.json
+        restart: on-failure
+        depends_on:
+            - mongodb
+            - redis_server
+
+    mongodb:
+        image: mongo:latest
+        environment:
+            MONGO_INITDB_ROOT_USERNAME: root
+            MONGO_INITDB_ROOT_PASSWORD: rootpassword
+        volumes:
+            - ./data/mongo:/data/db
+        ports:
+            - "27017:27017"
+
+    redis_server:
+        image: redis:alpine
+        ports:
+            - "8379:6379"
+```
 
 ```json[convoy.json]
 {
   "environment": "development",
-  "multiple_tenants": false,
   "database": {
-    "type": "in-memory",
-    "dsn": "db.db"
+    "dsn": "mongodb://root:rootpassword@mongodb:27017/convoy?authSource=admin"
   },
   "queue": {
-    "type": "in-memory"
+    "type": "redis",
+    "redis": {
+      "dsn": "redis://redis_server:6379"
+    }
   },
   "server": {
     "http": {
-      "ssl": false,
-      "ssl_cert_file": "",
-      "ssl_key_file": "",
       "port": 5005
     }
   },
-  "group": {
-    "signature": {
-      "header": "X-Convoy-Signature",
-      "hash": "SHA512"
-    },
-    "strategy": {
-      "type": "default",
-      "default": {
-        "intervalSeconds": 20,
-        "retryLimit": 3
-      }
-    }
-  },
-  "smtp": {
-    "provider": "sendgrid",
-    "url": "smtp.sendgrid.net",
-    "port": 2525,
-    "username": "apikey",
-    "password": "<api-key-from-sendgrid>",
-    "from": "support@frain.dev"
-  },
-  "disable_endpoint": false,
   "auth": {
-    "require_auth": true,
-    "file": {
-      "basic": [
-        {
-          "username": "default",
-          "password": "default",
-          "role": {
-            "type": "super_user"
-          }
-        }
-      ],
-      "api_key": [
-        {
-          "api_key": "<insert-api-key>",
-          "role": {
-            "type": "super_user"
-          }
-        }
-      ]
+    "type": "none"
+  },
+  "signature": {
+    "header": "X-Convoy-Signature",
+    "hash": "SHA256"
+  },
+  "strategy": {
+    "type": "default",
+    "default": {
+      "intervalSeconds": 20,
+      "retryLimit": 3
     }
+  },
+  "ui": {
+    "type": "basic",
+    "basic": [
+      {
+        "username": "user1",
+        "password": "password1"
+      },
+      {
+        "username": "user2",
+        "password": "password2"
+      }
+    ],
+    "jwtKey": "U21hcnQiLCJleHAiOjE2MzE2MjMzOTAsImlhdCI6MTYzMTYyMzM5MH0.u4kHClCgj9KjdyHfebQn8_AnU0DlXeJX8zvJvpMLCkQ",
+    "jwtTokenExpirySeconds": 3600
   }
 }
+
 ```
 
-## 3. Start Container
+## 3. Start Containers
 
 ```bash[bash]
 $ docker run \
   -p 5005:5005 \
   --name convoy-server \
   -v `pwd`/convoy.json:/convoy.json \
-  ghcr.io/frain-dev/convoy:v0.4.3
+  ghcr.io/frain-dev/convoy:v0.4.9
 ```
 
 Now, you can head over to http://localhost:5005 to view the UI, which should look something like:
@@ -143,8 +159,7 @@ $ curl \
 ```json[Sample Payload]
 {
     "description": "Default Endpoint",
-    "url": "https://0d87-102-89-2-172.ngrok.io",
-    "events": [ "*" ]
+    "url": "https://0d87-102-89-2-172.ngrok.io"
 }
 ```
 
@@ -268,7 +283,7 @@ post '/' do
     secret = "eyJhbGciOiJIUzI1NiJ9"
     body = request.body.read
 
-    hook_signature = request.env['HTTP_X_CONVOY_SIGNATURE']
+    hook_signature = request.env['HTTP_X_CONVOY_PLAYGROUND_SIGNATURE']
     digest = OpenSSL::Digest::SHA512.new
     signature = OpenSSL::HMAC.hexdigest(digest, secret, body)
 

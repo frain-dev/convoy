@@ -1,14 +1,15 @@
 {
 	"name": "dashboard-component",
-	"version": "0.0.0",
+	"version": "0.5.12",
 	"scripts": {
 		"ng": "ng",
 		"start": "ng build --watch",
 		"build": "ng build",
 		"watch": "ng build --watch --configuration development",
-		"test": "ng test"
+		"test": "ng test",
+		"pub": "npm run build && cd ./dist/convoy-dashboard/ && npm publish"
 	},
-	"private": true,
+	"private": false,
 	"dependencies": {
 		"@angular/animations": "~13.1.1",
 		"@angular/cdk": "^13.1.1",

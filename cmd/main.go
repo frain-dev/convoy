@@ -23,12 +23,13 @@ import (
 	"go.mongodb.org/mongo-driver/bson/primitive"
 
 	"github.com/frain-dev/convoy/util"
+	"github.com/frain-dev/taskq/v3"
 	log "github.com/sirupsen/logrus"
-	"github.com/vmihailenco/taskq/v3"
 
 	"github.com/frain-dev/convoy"
 	"github.com/frain-dev/convoy/config"
 	"github.com/frain-dev/convoy/datastore"
+	"github.com/frain-dev/convoy/limiter"
 	"github.com/frain-dev/convoy/queue"
 	"github.com/spf13/cobra"
 
@@ -117,6 +118,7 @@ func main() {
 			var lS queue.Storage
 			var opts queue.QueueOptions
 			var ca cache.Cache
+			var li limiter.RateLimiter
 
 			if cfg.Queue.Type == config.RedisQueueProvider {
 				rC, qFn, err = redisqueue.NewClient(cfg)
@@ -164,6 +166,11 @@ func main() {
 				return err
 			}
 
+			li, err = limiter.NewLimiter(cfg.Limiter)
+			if err != nil {
+				return err
+			}
+
 			app.apiKeyRepo = db.APIRepo()
 			app.groupRepo = db.GroupRepo()
 			app.eventRepo = db.EventRepo()
@@ -175,6 +182,7 @@ func main() {
 			app.logger = lo
 			app.tracer = tr
 			app.cache = ca
+			app.limiter = li
 
 			return ensureDefaultGroup(context.Background(), cfg, app)
 
@@ -320,6 +328,7 @@ type app struct {
 	logger            logger.Logger
 	tracer            tracer.Tracer
 	cache             cache.Cache
+	limiter           limiter.RateLimiter
 }
 
 func getCtx() (context.Context, context.CancelFunc) {

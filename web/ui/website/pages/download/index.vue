@@ -28,17 +28,17 @@
 					</div>
 				</div>
 				<div v-if="activeTab == 'linux'">
-					<div class="tabs tabs__line">
+					<ul class="tabs tabs__line">
 						<li v-for="tab of linuxTabs" :key="tab.id">
 							<button :class="linuxActiveTab === tab.id ? 'active' : ''" @click="switchLinuxTabs(tab.id)">
 								<span>{{ tab.label }}</span>
 							</button>
 						</li>
-					</div>
+					</ul>
 					<div v-if="linuxActiveTab == 'ubuntu'" class="code">
 						<div>
 							<span>$</span>
-							<code>echo "deb [trusted=yes] https://apt.fury.io/convoy/ /" | sudo tee -a /etc apt/sources.list.d/convoy.list</code>
+							<code>echo "deb [trusted=yes] https://apt.fury.io/convoy/ /" | sudo tee -a /etc/apt/sources.list.d/convoy.list</code>
 						</div>
 						<div>
 							<span>$</span>
@@ -63,16 +63,6 @@
 						<div>
 							<span>$</span>
 							<code>sudo yum install convoy</code>
-						</div>
-					</div>
-					<div v-if="linuxActiveTab == 'home'" class="code">
-						<div>
-							<span>$</span>
-							<code>brew tap frain-dev/tools</code>
-						</div>
-						<div>
-							<span>$</span>
-							<code>brew install convoy</code>
 						</div>
 					</div>
 				</div>
@@ -102,12 +92,11 @@ export default {
 			tabs: [
 				{ label: 'MacOS', id: 'mac' },
 				{ label: 'Linux', id: 'linux' },
-				{ label: 'Window', id: 'window' }
+				{ label: 'Windows', id: 'window' }
 			],
 			linuxTabs: [
 				{ label: 'Ubuntu/Debian', id: 'ubuntu' },
 				{ label: 'CentOS/RHEL ', id: 'cent' },
-				{ label: 'Homebrew', id: 'home' }
 			],
 			activeTab: 'mac',
 			linuxActiveTab: 'ubuntu'

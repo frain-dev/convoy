@@ -8,7 +8,7 @@
 				</a>
 				<button>
 					<img src="~/assets/images/github-star.svg" alt="github star" />
-					222
+					{{ githubStars }}
 				</button>
 				<a @click="closeStar()">
 					<img src="~/assets/images/close-icon.svg" alt="close" />
@@ -37,7 +37,7 @@
 						<nuxt-link to="/docs">Docs</nuxt-link>
 					</li>
 					<li>
-						<a target="_blank" rel="noopener noreferrer" href="https://github.com/frain-dev/convoy/discussions">Community</a>
+						<a target="_blank" rel="noopener noreferrer" href="https://convoy-community.slack.com/join/shared_invite/zt-xiuuoj0m-yPp~ylfYMCV9s038QL0IUQ#/shared-invite/email">Community</a>
 					</li>
 					<li>
 						<nuxt-link to="/download">Download</nuxt-link>
@@ -70,11 +70,13 @@ export default {
 	data() {
 		return {
 			githubStar: null,
-			showMenu: false
+			showMenu: false,
+			githubStars: 0
 		};
 	},
 	mounted() {
 		this.checkForGithubStar();
+		this.getGithubStars();
 	},
 	methods: {
 		closeStar() {
@@ -93,6 +95,13 @@ export default {
 				localStorage.setItem('githubStar', true);
 				this.githubStar = true;
 			}
+		},
+		async getGithubStars() {
+			try {
+				const response = await fetch('https://api.github.com/repos/frain-dev/convoy');
+				const data = await response.json();
+				this.githubStars = data.stargazers_count;
+			} catch (_error) {}
 		}
 	}
 };

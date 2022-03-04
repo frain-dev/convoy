@@ -10,9 +10,12 @@ import (
 )
 
 type Group struct {
-	Name    string `json:"name" bson:"name" valid:"required~please provide a valid name"`
-	LogoURL string `json:"logo_url" bson:"logo_url" valid:"url~please provide a valid logo url,optional"`
-	Config  datastore.GroupConfig
+	Name              string `json:"name" bson:"name" valid:"required~please provide a valid name"`
+	LogoURL           string `json:"logo_url" bson:"logo_url" valid:"url~please provide a valid logo url,optional"`
+	RateLimit         int    `json:"rate_limit" bson:"rate_limit" valid:"int~please provide a valid rate limit,optional"`
+	RateLimitDuration int    `json:"rate_limit_duration" bson:"rate_limit_duration" valid:"int~please provide a valid rate limit duration,optional"`
+
+	Config datastore.GroupConfig
 }
 
 type APIKey struct {
@@ -38,6 +41,15 @@ type APIKeyResponse struct {
 	Key       string    `json:"key"`
 	UID       string    `json:"uid"`
 	CreatedAt time.Time `json:"created_at"`
+}
+
+type PortalAPIKeyResponse struct {
+	Key     string    `json:"key"`
+	Role    auth.Role `json:"role"`
+	Url     string    `json:"url,omitempty"`
+	Type    string    `json:"key_type"`
+	AppID   string    `json:"app_id,omitempty"`
+	GroupID string    `json:"group_id,omitempty"`
 }
 
 type Application struct {

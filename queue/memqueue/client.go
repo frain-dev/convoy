@@ -9,8 +9,8 @@ import (
 	"github.com/frain-dev/convoy/config"
 	"github.com/frain-dev/convoy/datastore"
 	"github.com/frain-dev/convoy/queue"
-	"github.com/vmihailenco/taskq/v3"
-	"github.com/vmihailenco/taskq/v3/memqueue"
+	"github.com/frain-dev/taskq/v3"
+	"github.com/frain-dev/taskq/v3/memqueue"
 )
 
 type MemQueue struct {
@@ -34,8 +34,11 @@ func NewClient(cfg config.Configuration) (queue.Storage, taskq.Factory, error) {
 
 func NewQueue(opts queue.QueueOptions) queue.Queuer {
 	q := opts.Factory.RegisterQueue(&taskq.QueueOptions{
-		Name:    opts.Name,
-		Storage: opts.Storage,
+		Name:            opts.Name,
+		Storage:         opts.Storage,
+		MaxNumFetcher:   convoy.MaxNumFetcher,
+		ReservationSize: convoy.ReservationSize,
+		BufferSize:      convoy.BufferSize,
 	})
 
 	return &MemQueue{
@@ -72,4 +75,8 @@ func (q *MemQueue) Write(ctx context.Context, name convoy.TaskName, e *datastore
 
 func (q *MemQueue) Consumer() taskq.QueueConsumer {
 	return q.queue.Consumer()
+}
+
+func (q *MemQueue) Length() (int, error) {
+	return q.queue.Len()
 }
