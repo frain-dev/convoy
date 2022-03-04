@@ -314,9 +314,9 @@
 								</div>
 							</div>
 
-							<div class="button__filter" *ngIf="eventDeliveryFilteredByEventId !== ''">
+							<div class="button__filter active" *ngIf="eventDeliveryFilteredByEventId !== ''">
 								Event Filtered
-								<button class="button__clear has-icon" (click)="eventDeliveryFilteredByEventId = ''; getEventDeliveries()">
+								<button class="button__clear button--has-icon" (click)="eventDeliveryFilteredByEventId = ''; getEventDeliveries()">
 									<img src="../../../../assets/img/close-icon.svg" alt="close icon" />
 								</button>
 							</div>
