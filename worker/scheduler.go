@@ -6,8 +6,8 @@ import (
 	"github.com/frain-dev/convoy"
 	"github.com/frain-dev/convoy/datastore"
 	"github.com/frain-dev/convoy/worker/task"
+	"github.com/frain-dev/taskq/v3"
 	log "github.com/sirupsen/logrus"
-	"github.com/vmihailenco/taskq/v3"
 )
 
 func RegisterNewGroupTask(applicationRepo datastore.ApplicationRepository, eventDeliveryRepo datastore.EventDeliveryRepository, groupRepo datastore.GroupRepository) {

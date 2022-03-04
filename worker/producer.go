@@ -4,8 +4,8 @@ import (
 	"context"
 
 	"github.com/frain-dev/convoy/queue"
+	"github.com/frain-dev/taskq/v3"
 	log "github.com/sirupsen/logrus"
-	"github.com/vmihailenco/taskq/v3"
 )
 
 type Producer struct {
