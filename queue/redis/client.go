@@ -175,7 +175,7 @@ func (q *RedisQueue) CheckEventDeliveryinStream(ctx context.Context, id string, 
 		xmsg := &xmsgs[i]
 		msg := &msgs[i]
 
-		err = unmarshalMessage(msg, xmsg)
+		err = q.UnmarshalMessage(msg, xmsg)
 
 		if err != nil {
 			return false, err
@@ -284,7 +284,7 @@ func (q *RedisQueue) CheckEventDeliveryinPending(ctx context.Context, id string)
 		xmsg := &pendingXmgs[i]
 		msg := &msgs[i]
 
-		err = unmarshalMessage(msg, xmsg)
+		err = q.UnmarshalMessage(msg, xmsg)
 		if err != nil {
 			return false, err
 		}
@@ -308,7 +308,7 @@ func (q *RedisQueue) DeleteEvenDeliveryfromStream(ctx context.Context, id string
 		xmsg := &xmsgs[i]
 		msg := &msgs[i]
 
-		err = unmarshalMessage(msg, xmsg)
+		err = q.UnmarshalMessage(msg, xmsg)
 
 		if err != nil {
 			return false, err
@@ -337,7 +337,7 @@ func (q *RedisQueue) DeleteEventDeliveriesFromStream(ctx context.Context, ids []
 		xmsg := &xmsgs[i]
 		msg := &msgs[i]
 
-		err = unmarshalMessage(msg, xmsg)
+		err = q.UnmarshalMessage(msg, xmsg)
 
 		if err != nil {
 			return err
@@ -370,7 +370,7 @@ func (q *RedisQueue) stringifyZSETWithQName() string {
 	return "taskq:" + "{" + q.Name + "}:zset"
 }
 
-func unmarshalMessage(msg *taskq.Message, xmsg *redis.XMessage) error {
+func (q *RedisQueue) UnmarshalMessage(msg *taskq.Message, xmsg *redis.XMessage) error {
 	body := xmsg.Values["body"].(string)
 	err := msg.UnmarshalBinary([]byte(body))
 	if err != nil {

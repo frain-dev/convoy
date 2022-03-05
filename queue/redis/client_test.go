@@ -1,6 +1,3 @@
-//go:build integration
-// +build integration
-
 package redis
 
 import (
@@ -128,7 +125,7 @@ func TestCheckEventDeliveryinStream(t *testing.T) {
 				xmsg := &xmsgs[len(xmsgs)-1]
 				msg := &msgs[len(msgs)-1]
 
-				err = unmarshalMessage(msg, xmsg)
+				err = q.UnmarshalMessage(msg, xmsg)
 
 				if err != nil {
 					return "", err
@@ -260,7 +257,7 @@ func TestCheckEventDeliveryinPending(t *testing.T) {
 				}
 
 				if len(xmsgs) == 1 {
-					err = unmarshalMessage(&msg, &xmsgs[0])
+					err = q.UnmarshalMessage(&msg, &xmsgs[0])
 					if err != nil {
 						return "", err
 					}
@@ -324,7 +321,7 @@ func TestDeleteEventDeliveryFromStream(t *testing.T) {
 				xmsg := &xmsgs[len(xmsgs)-1]
 				msg := &msgs[len(msgs)-1]
 
-				err = unmarshalMessage(msg, xmsg)
+				err = q.UnmarshalMessage(msg, xmsg)
 
 				if err != nil {
 					return "", err

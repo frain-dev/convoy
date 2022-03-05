@@ -3,14 +3,17 @@ package main
 import (
 	"bufio"
 	"context"
+	"encoding/csv"
 	"errors"
 	"os"
 	"strconv"
 	"time"
 
+	"github.com/frain-dev/convoy"
 	"github.com/frain-dev/convoy/config"
 	redisqueue "github.com/frain-dev/convoy/queue/redis"
 	"github.com/frain-dev/convoy/util"
+	"github.com/frain-dev/taskq/v3"
 	"github.com/google/uuid"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
@@ -33,6 +36,7 @@ func addQueueCommand(a *app) *cobra.Command {
 	cmd.AddCommand(checkBatchEventDeliveryinStream(a))
 	cmd.AddCommand(checkBatchEventDeliveryinZSET(a))
 	cmd.AddCommand(checkBatchEventDeliveryinPending(a))
+	cmd.AddCommand(exportStreamMessages(a))
 	return cmd
 }
 
@@ -473,5 +477,73 @@ func checkBatchEventDeliveryinPending(a *app) *cobra.Command {
 		},
 	}
 	cmd.Flags().StringVar(&file, "file", "", "path to file with batch IDs")
+	return cmd
+}
+
+//export messages on the stream.
+func exportStreamMessages(a *app) *cobra.Command {
+	var outputfile = "stream_" + uuid.NewString() + ".csv"
+	cmd := &cobra.Command{
+		Use:   "export",
+		Short: "Export messages from redis stream",
+		RunE: func(cmd *cobra.Command, args []string) error {
+			cfg, err := config.Get()
+			if err != nil {
+				return err
+			}
+			if cfg.Queue.Type != config.RedisQueueProvider {
+				log.Fatalf("Queue type error: Command is available for redis queue only.")
+			}
+
+			ctx := context.Background()
+			q := a.eventQueue.(*redisqueue.RedisQueue)
+			outputfile, err := os.Create(outputfile)
+			if err != nil {
+				log.Errorf("failed creating outputfile: %s", err)
+			}
+			defer outputfile.Close()
+
+			xmsgs, err := q.XRange(ctx, "-", "+").Result()
+			if err != nil {
+				return err
+			}
+
+			if len(xmsgs) > 0 {
+				msgs := make([]taskq.Message, len(xmsgs))
+				ids := make([]string, len(xmsgs))
+				for i := range xmsgs {
+					xmsg := &xmsgs[i]
+					msg := &msgs[i]
+
+					err = q.UnmarshalMessage(msg, xmsg)
+
+					if err != nil {
+						return err
+					}
+					value := string(msg.ArgsBin[convoy.EventDeliveryIDLength:])
+					ids[i] = value
+				}
+				deliveries, err := a.eventDeliveryRepo.FindEventDeliveriesByIDs(ctx, ids)
+				if err != nil {
+					log.Errorf("failed fetch to file: %s", err)
+				}
+				csvwriter := csv.NewWriter(outputfile)
+
+				for i := range deliveries {
+					d := &deliveries[i]
+					data := []string{d.UID, d.AppMetadata.Title, string(d.Status), d.CreatedAt.Time().String()}
+
+					err = csvwriter.Write(data)
+					if err != nil {
+						log.Errorf("failed writing to file: %s", err)
+					}
+				}
+				csvwriter.Flush()
+				outputfile.Close()
+			}
+
+			return nil
+		},
+	}
 	return cmd
 }
