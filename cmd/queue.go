@@ -13,7 +13,6 @@ import (
 	"github.com/frain-dev/convoy/config"
 	redisqueue "github.com/frain-dev/convoy/queue/redis"
 	"github.com/frain-dev/convoy/util"
-	"github.com/frain-dev/taskq/v3"
 	"github.com/google/uuid"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
@@ -503,19 +502,15 @@ func exportStreamMessages(a *app) *cobra.Command {
 			}
 			defer outputfile.Close()
 
-			xmsgs, err := q.XRange(ctx, "-", "+").Result()
+			msgs, err := q.ExportMessagesfromStream(ctx)
 			if err != nil {
 				return err
 			}
 
-			if len(xmsgs) > 0 {
-				msgs := make([]taskq.Message, len(xmsgs))
-				ids := make([]string, len(xmsgs))
-				for i := range xmsgs {
-					xmsg := &xmsgs[i]
+			if len(msgs) > 0 {
+				ids := make([]string, len(msgs))
+				for i := range msgs {
 					msg := &msgs[i]
-
-					err = q.UnmarshalMessage(msg, xmsg)
 
 					if err != nil {
 						return err
