@@ -3,11 +3,14 @@ package main
 import (
 	"bufio"
 	"context"
+	"encoding/csv"
 	"errors"
+	"fmt"
 	"os"
 	"strconv"
 	"time"
 
+	"github.com/frain-dev/convoy"
 	"github.com/frain-dev/convoy/config"
 	redisqueue "github.com/frain-dev/convoy/queue/redis"
 	"github.com/frain-dev/convoy/util"
@@ -33,6 +36,8 @@ func addQueueCommand(a *app) *cobra.Command {
 	cmd.AddCommand(checkBatchEventDeliveryinStream(a))
 	cmd.AddCommand(checkBatchEventDeliveryinZSET(a))
 	cmd.AddCommand(checkBatchEventDeliveryinPending(a))
+	cmd.AddCommand(exportStreamMessages(a))
+	cmd.AddCommand(requeueMessagesinStream(a))
 	return cmd
 }
 
@@ -473,5 +478,121 @@ func checkBatchEventDeliveryinPending(a *app) *cobra.Command {
 		},
 	}
 	cmd.Flags().StringVar(&file, "file", "", "path to file with batch IDs")
+	return cmd
+}
+
+//export messages on the stream.
+func exportStreamMessages(a *app) *cobra.Command {
+	var outputfile = "stream_" + uuid.NewString() + ".csv"
+	cmd := &cobra.Command{
+		Use:   "export",
+		Short: "Export messages from redis stream",
+		RunE: func(cmd *cobra.Command, args []string) error {
+			cfg, err := config.Get()
+			if err != nil {
+				return err
+			}
+			if cfg.Queue.Type != config.RedisQueueProvider {
+				log.Fatalf("Queue type error: Command is available for redis queue only.")
+			}
+
+			ctx := context.Background()
+			q := a.eventQueue.(*redisqueue.RedisQueue)
+			outputfile, err := os.Create(outputfile)
+			if err != nil {
+				log.Errorf("failed creating outputfile: %s", err)
+			}
+			defer outputfile.Close()
+
+			msgs, err := q.ExportMessagesfromStream(ctx)
+			if err != nil {
+				return err
+			}
+
+			if len(msgs) > 0 {
+				ids := make([]string, len(msgs))
+				for i := range msgs {
+					msg := &msgs[i]
+					value := string(msg.ArgsBin[convoy.EventDeliveryIDLength:])
+					ids[i] = value
+
+				}
+				deliveries, err := a.eventDeliveryRepo.FindEventDeliveriesByIDs(ctx, ids)
+
+				if err != nil {
+					log.Errorf("failed fetch to file: %s", err)
+				}
+				csvwriter := csv.NewWriter(outputfile)
+
+				for i := range deliveries {
+					d := &deliveries[i]
+					data := []string{d.UID, d.AppMetadata.Title, string(d.Status), d.CreatedAt.Time().String()}
+
+					err = csvwriter.Write(data)
+					if err != nil {
+						log.Errorf("failed writing to file: %s", err)
+					}
+				}
+				csvwriter.Flush()
+				outputfile.Close()
+			}
+
+			return nil
+		},
+	}
+	return cmd
+}
+
+//requeue all messages on the stream.
+func requeueMessagesinStream(a *app) *cobra.Command {
+	cmd := &cobra.Command{
+		Use:     "requeue",
+		Aliases: []string{"req"},
+		Short:   "Requeue all messages on redis stream",
+		RunE: func(cmd *cobra.Command, args []string) error {
+			cfg, err := config.Get()
+			if err != nil {
+				return err
+			}
+			if cfg.Queue.Type != config.RedisQueueProvider {
+				log.Fatalf("Queue type error: Command is available for redis queue only.")
+			}
+
+			ctx := context.Background()
+			q := a.eventQueue.(*redisqueue.RedisQueue)
+
+			msgs, err := q.ExportMessagesfromStreamXACK(ctx)
+			if err != nil {
+				return err
+			}
+
+			if len(msgs) > 0 {
+				for i := range msgs {
+					msg := &msgs[i]
+
+					value := string(msg.ArgsBin[convoy.EventDeliveryIDLength:])
+
+					d, err := a.eventDeliveryRepo.FindEventDeliveryByID(ctx, value)
+					if err != nil {
+						return err
+					}
+					group, err := a.groupRepo.FetchGroupByID(ctx, d.AppMetadata.GroupID)
+					if err != nil {
+						log.WithError(err).Errorf("count: %s failed to fetch group %s for delivery %s", fmt.Sprint(i), d.AppMetadata.GroupID, d.UID)
+						continue
+					}
+					taskName := convoy.EventProcessor.SetPrefix(group.Name)
+					err = q.Write(ctx, taskName, d, 1*time.Second)
+					if err != nil {
+						log.WithError(err).Errorf("count: %s failed to send event delivery %s to the queue", fmt.Sprint(i), d.ID)
+					}
+					log.Infof("count: %s sucessfully requeued delivery with id: %s", fmt.Sprint(i), value)
+
+				}
+			}
+
+			return nil
+		},
+	}
 	return cmd
 }
