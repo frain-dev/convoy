@@ -5,6 +5,7 @@ import (
 	"context"
 	"encoding/csv"
 	"errors"
+	"fmt"
 	"os"
 	"strconv"
 	"time"
@@ -36,6 +37,7 @@ func addQueueCommand(a *app) *cobra.Command {
 	cmd.AddCommand(checkBatchEventDeliveryinZSET(a))
 	cmd.AddCommand(checkBatchEventDeliveryinPending(a))
 	cmd.AddCommand(exportStreamMessages(a))
+	cmd.AddCommand(requeueMessagesinStream(a))
 	return cmd
 }
 
@@ -511,14 +513,12 @@ func exportStreamMessages(a *app) *cobra.Command {
 				ids := make([]string, len(msgs))
 				for i := range msgs {
 					msg := &msgs[i]
-
-					if err != nil {
-						return err
-					}
 					value := string(msg.ArgsBin[convoy.EventDeliveryIDLength:])
 					ids[i] = value
+
 				}
 				deliveries, err := a.eventDeliveryRepo.FindEventDeliveriesByIDs(ctx, ids)
+
 				if err != nil {
 					log.Errorf("failed fetch to file: %s", err)
 				}
@@ -535,6 +535,60 @@ func exportStreamMessages(a *app) *cobra.Command {
 				}
 				csvwriter.Flush()
 				outputfile.Close()
+			}
+
+			return nil
+		},
+	}
+	return cmd
+}
+
+//requeue all messages on the stream.
+func requeueMessagesinStream(a *app) *cobra.Command {
+	cmd := &cobra.Command{
+		Use:     "requeue",
+		Aliases: []string{"req"},
+		Short:   "Requeue all messages on redis stream",
+		RunE: func(cmd *cobra.Command, args []string) error {
+			cfg, err := config.Get()
+			if err != nil {
+				return err
+			}
+			if cfg.Queue.Type != config.RedisQueueProvider {
+				log.Fatalf("Queue type error: Command is available for redis queue only.")
+			}
+
+			ctx := context.Background()
+			q := a.eventQueue.(*redisqueue.RedisQueue)
+
+			msgs, err := q.ExportMessagesfromStreamXACK(ctx)
+			if err != nil {
+				return err
+			}
+
+			if len(msgs) > 0 {
+				for i := range msgs {
+					msg := &msgs[i]
+
+					value := string(msg.ArgsBin[convoy.EventDeliveryIDLength:])
+
+					d, err := a.eventDeliveryRepo.FindEventDeliveryByID(ctx, value)
+					if err != nil {
+						return err
+					}
+					group, err := a.groupRepo.FetchGroupByID(ctx, d.AppMetadata.GroupID)
+					if err != nil {
+						log.WithError(err).Errorf("count: %s failed to fetch group %s for delivery %s", fmt.Sprint(i), d.AppMetadata.GroupID, d.UID)
+						continue
+					}
+					taskName := convoy.EventProcessor.SetPrefix(group.Name)
+					err = q.Write(ctx, taskName, d, 1*time.Second)
+					if err != nil {
+						log.WithError(err).Errorf("count: %s failed to send event delivery %s to the queue", fmt.Sprint(i), d.ID)
+					}
+					log.Infof("count: %s sucessfully requeued delivery with id: %s", fmt.Sprint(i), value)
+
+				}
 			}
 
 			return nil
