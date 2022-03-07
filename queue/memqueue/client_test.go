@@ -56,9 +56,6 @@ func TestWrite(t *testing.T) {
 			if err != nil {
 				t.Fatalf("Failed to write to queue: %v", err)
 			}
-			if err != nil {
-				t.Fatalf("Failed to get queue length: %v", err)
-			}
 
 		})
 	}
