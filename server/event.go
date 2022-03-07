@@ -218,7 +218,7 @@ func (a *applicationHandler) ResendEventDelivery(w http.ResponseWriter, r *http.
 
 	eventDelivery := getEventDeliveryFromContext(r.Context())
 
-	err := a.resendEventDelivery(r.Context(), eventDelivery, false)
+	err := a.retryEventDelivery(r.Context(), eventDelivery)
 	if err != nil {
 		_ = render.Render(w, r, newErrorResponse(err.Error(), http.StatusBadRequest))
 		return
@@ -261,7 +261,7 @@ func (a *applicationHandler) BatchRetryEventDelivery(w http.ResponseWriter, r *h
 	failures := 0
 
 	for _, delivery := range deliveries {
-		err := a.resendEventDelivery(ctx, &delivery, false)
+		err := a.retryEventDelivery(ctx, &delivery)
 		if err != nil {
 			failures++
 			log.WithError(err).Error("an item in the batch retry failed")
@@ -304,7 +304,7 @@ func (a *applicationHandler) ForceResendEventDeliveries(w http.ResponseWriter, r
 	failures := 0
 
 	for _, delivery := range deliveries {
-		err := a.resendEventDelivery(ctx, &delivery, true)
+		err := a.forceResendEventDelivery(ctx, &delivery)
 		if err != nil {
 			failures++
 			log.WithError(err).Error("an item in the force resend batch failed")
@@ -314,19 +314,17 @@ func (a *applicationHandler) ForceResendEventDeliveries(w http.ResponseWriter, r
 	_ = render.Render(w, r, newServerResponse(fmt.Sprintf("%d successful, %d failed", len(deliveries)-failures, failures), nil, http.StatusOK))
 }
 
-func (a *applicationHandler) resendEventDelivery(ctx context.Context, eventDelivery *datastore.EventDelivery, forceResend bool) error {
-	if !forceResend {
-		if eventDelivery.Status == datastore.SuccessEventStatus {
-			return errors.New("event already sent")
-		}
+func (a *applicationHandler) retryEventDelivery(ctx context.Context, eventDelivery *datastore.EventDelivery) error {
+	if eventDelivery.Status == datastore.SuccessEventStatus {
+		return errors.New("event already sent")
+	}
 
-		switch eventDelivery.Status {
-		case datastore.ScheduledEventStatus,
-			datastore.ProcessingEventStatus,
-			datastore.SuccessEventStatus,
-			datastore.RetryEventStatus:
-			return errors.New("cannot resend event that did not fail previously")
-		}
+	switch eventDelivery.Status {
+	case datastore.ScheduledEventStatus,
+		datastore.ProcessingEventStatus,
+		datastore.SuccessEventStatus,
+		datastore.RetryEventStatus:
+		return errors.New("cannot resend event that did not fail previously")
 	}
 
 	e := eventDelivery.EndpointMetadata
@@ -348,20 +346,39 @@ func (a *applicationHandler) resendEventDelivery(ctx context.Context, eventDeliv
 		}
 	}
 
-	eventDelivery.Status = datastore.ScheduledEventStatus
-	err = a.eventDeliveryRepo.UpdateStatusOfEventDelivery(ctx, *eventDelivery, datastore.ScheduledEventStatus)
+	return a.requeueEventDelivery(ctx, eventDelivery)
+}
+
+func (a *applicationHandler) forceResendEventDelivery(ctx context.Context, eventDelivery *datastore.EventDelivery) error {
+	if eventDelivery.Status != datastore.SuccessEventStatus {
+		return errors.New("only successful events can be force resent")
+	}
+
+	e := eventDelivery.EndpointMetadata
+	endpoint, err := a.appRepo.FindApplicationEndpointByID(context.Background(), eventDelivery.AppMetadata.UID, e.UID)
+	if err != nil {
+		return errors.New("cannot find endpoint")
+	}
+
+	if endpoint.Status != datastore.ActiveEndpointStatus {
+		return errors.New("for resent to an inactive or pending endpoint is not allowed")
+	}
+
+	return a.requeueEventDelivery(ctx, eventDelivery)
+}
+
+func (a *applicationHandler) requeueEventDelivery(ctx context.Context, eventDelivery *datastore.EventDelivery) error {
+	err := a.eventDeliveryRepo.UpdateStatusOfEventDelivery(ctx, *eventDelivery, datastore.ScheduledEventStatus)
 	if err != nil {
 		return errors.New("an error occurred while trying to resend event")
 	}
 
 	g := getGroupFromContext(ctx)
 	taskName := convoy.EventProcessor.SetPrefix(g.Name)
-
 	err = a.eventQueue.Write(ctx, taskName, eventDelivery, 1*time.Second)
 	if err != nil {
 		log.WithError(err).Errorf("error occurred re-enqueing old event - %s", eventDelivery.UID)
 	}
-
 	return nil
 }
 
