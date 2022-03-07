@@ -228,6 +228,10 @@ components:
           type: string
         name:
           type: string
+        rate_limit:
+          type: integer
+        rate_limit_duration:
+          type: integer
         statistics:
           $ref: '#/components/schemas/datastore.GroupStatistics'
         uid:
@@ -380,6 +384,10 @@ components:
           type: string
         name:
           type: string
+        rate_limit:
+          type: integer
+        rate_limit_duration:
+          type: integer
       type: object
     models.PortalAPIKeyResponse:
       properties:

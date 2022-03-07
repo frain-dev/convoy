@@ -2,6 +2,7 @@ package server
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"net/http"
@@ -217,9 +218,9 @@ func (a *applicationHandler) ResendEventDelivery(w http.ResponseWriter, r *http.
 
 	eventDelivery := getEventDeliveryFromContext(r.Context())
 
-	endpointError := a.resendEventDelivery(r.Context(), eventDelivery, false)
-	if endpointError != nil {
-		_ = render.Render(w, r, newErrorResponse(endpointError.Error(), endpointError.StatusCode))
+	err := a.resendEventDelivery(r.Context(), eventDelivery, false)
+	if err != nil {
+		_ = render.Render(w, r, newErrorResponse(err.Error(), http.StatusBadRequest))
 		return
 	}
 
@@ -290,7 +291,7 @@ func (a *applicationHandler) ForceRetryEventDeliveries(w http.ResponseWriter, r 
 		return
 	}
 
-	var deliveries []convoy.EventDelivery
+	var deliveries []datastore.EventDelivery
 
 	deliveries, err = a.eventDeliveryRepo.FindEventDeliveriesByIDs(r.Context(), eventDeliveryIDs.IDs)
 	if err != nil {
@@ -313,41 +314,29 @@ func (a *applicationHandler) ForceRetryEventDeliveries(w http.ResponseWriter, r 
 	_ = render.Render(w, r, newServerResponse(fmt.Sprintf("%d successful, %d failed", len(deliveries)-failures, failures), nil, http.StatusOK))
 }
 
-func (a *applicationHandler) resendEventDelivery(ctx context.Context, eventDelivery *convoy.EventDelivery, forceResend bool) *EndpointError {
+func (a *applicationHandler) resendEventDelivery(ctx context.Context, eventDelivery *datastore.EventDelivery, forceResend bool) error {
 	if !forceResend {
-		if eventDelivery.Status == convoy.SuccessEventStatus {
-			return &EndpointError{
-				Err:        errors.New("event already sent"),
-				StatusCode: http.StatusBadRequest,
-			}
+		if eventDelivery.Status == datastore.SuccessEventStatus {
+			return errors.New("event already sent")
 		}
 
 		switch eventDelivery.Status {
-		case convoy.ScheduledEventStatus,
-			convoy.ProcessingEventStatus,
-			convoy.SuccessEventStatus,
-			convoy.RetryEventStatus:
-			return &EndpointError{
-				Err:        errors.New("cannot resend event that did not fail previously"),
-				StatusCode: http.StatusBadRequest,
-			}
+		case datastore.ScheduledEventStatus,
+			datastore.ProcessingEventStatus,
+			datastore.SuccessEventStatus,
+			datastore.RetryEventStatus:
+			return errors.New("cannot resend event that did not fail previously")
 		}
 	}
 
 	e := eventDelivery.EndpointMetadata
 	endpoint, err := a.appRepo.FindApplicationEndpointByID(context.Background(), eventDelivery.AppMetadata.UID, e.UID)
 	if err != nil {
-		return &EndpointError{
-			Err:        errors.New("cannot find endpoint"),
-			StatusCode: http.StatusInternalServerError,
-		}
+		return errors.New("cannot find endpoint")
 	}
 
 	if endpoint.Status == datastore.PendingEndpointStatus {
-		return &EndpointError{
-			Err:        errors.New("endpoint is being re-activated"),
-			StatusCode: http.StatusBadRequest,
-		}
+		return errors.New("endpoint is being re-activated")
 	}
 
 	if endpoint.Status == datastore.InactiveEndpointStatus {
@@ -355,20 +344,14 @@ func (a *applicationHandler) resendEventDelivery(ctx context.Context, eventDeliv
 
 		err = a.appRepo.UpdateApplicationEndpointsStatus(context.Background(), eventDelivery.AppMetadata.UID, pendingEndpoints, datastore.PendingEndpointStatus)
 		if err != nil {
-			return &EndpointError{
-				Err:        errors.New("failed to update endpoint status"),
-				StatusCode: http.StatusInternalServerError,
-			}
+			return errors.New("failed to update endpoint status")
 		}
 	}
 
 	eventDelivery.Status = datastore.ScheduledEventStatus
 	err = a.eventDeliveryRepo.UpdateStatusOfEventDelivery(ctx, *eventDelivery, datastore.ScheduledEventStatus)
 	if err != nil {
-		return &EndpointError{
-			Err:        errors.New("an error occurred while trying to resend event"),
-			StatusCode: http.StatusInternalServerError,
-		}
+		return errors.New("an error occurred while trying to resend event")
 	}
 
 	g := getGroupFromContext(ctx)

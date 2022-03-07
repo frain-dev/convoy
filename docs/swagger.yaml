@@ -229,6 +229,10 @@ definitions:
         type: string
       name:
         type: string
+      rate_limit:
+        type: integer
+      rate_limit_duration:
+        type: integer
       statistics:
         $ref: '#/definitions/datastore.GroupStatistics'
       uid:
@@ -381,6 +385,10 @@ definitions:
         type: string
       name:
         type: string
+      rate_limit:
+        type: integer
+      rate_limit_duration:
+        type: integer
     type: object
   models.PortalAPIKeyResponse:
     properties:
