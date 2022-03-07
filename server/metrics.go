@@ -4,6 +4,7 @@ import (
 	"context"
 
 	"github.com/frain-dev/convoy/config"
+	"github.com/frain-dev/convoy/datastore"
 	"github.com/frain-dev/convoy/queue"
 	memqueue "github.com/frain-dev/convoy/queue/memqueue"
 	redisqueue "github.com/frain-dev/convoy/queue/redis"
@@ -69,6 +70,81 @@ func RegisterQueueMetrics(q queue.Queuer, cfg config.Configuration) {
 		if err != nil {
 			log.Infof("Error registering pending_length: %v", err)
 		}
+	}
+}
+
+func RegisterDBMetrics(app *applicationHandler) {
+	ctx := context.Background()
+	err := prometheus.Register(prometheus.NewGaugeFunc(
+		prometheus.GaugeOpts{
+			Subsystem: "eventdelivery",
+			Name:      "scheduled",
+			Help:      "Number of eventDeliveries in the Scheduled state.",
+		},
+		func() float64 {
+			count, err := app.eventDeliveryRepo.CountDeliveriesByStatus(ctx, datastore.ScheduledEventStatus)
+			if err != nil {
+				log.Errorf("Error fetching eventdelivery status scheduled: %v", err)
+			}
+			return float64(count)
+		},
+	))
+	if err != nil {
+		log.Errorf("Error registering eventdelivery Scheduled: %v", err)
+	}
+
+	err = prometheus.Register(prometheus.NewGaugeFunc(
+		prometheus.GaugeOpts{
+			Subsystem: "eventdelivery",
+			Name:      "processing",
+			Help:      "Number of eventDeliveries in the Processing state.",
+		},
+		func() float64 {
+			count, err := app.eventDeliveryRepo.CountDeliveriesByStatus(ctx, datastore.ProcessingEventStatus)
+			if err != nil {
+				log.Errorf("Error fetching eventdelivery status Processing: %v", err)
+			}
+			return float64(count)
+		},
+	))
+	if err != nil {
+		log.Errorf("Error registering eventdelivery Processing: %v", err)
+	}
+
+	err = prometheus.Register(prometheus.NewGaugeFunc(
+		prometheus.GaugeOpts{
+			Subsystem: "eventdelivery",
+			Name:      "retry",
+			Help:      "Number of eventDeliveries in the Retry state.",
+		},
+		func() float64 {
+			count, err := app.eventDeliveryRepo.CountDeliveriesByStatus(ctx, datastore.RetryEventStatus)
+			if err != nil {
+				log.Errorf("Error fetching eventdelivery status Retry: %v", err)
+			}
+			return float64(count)
+		},
+	))
+	if err != nil {
+		log.Errorf("Error registering eventdelivery Retry: %v", err)
+	}
+
+	err = prometheus.Register(prometheus.NewGaugeFunc(
+		prometheus.GaugeOpts{
+			Subsystem: "eventdelivery",
+			Name:      "discarded",
+			Help:      "Number of eventDeliveries in the Discarded state.",
+		},
+		func() float64 {
+			count, err := app.eventDeliveryRepo.CountDeliveriesByStatus(ctx, datastore.DiscardedEventStatus)
+			if err != nil {
+				log.Errorf("Error fetching eventdelivery status Discarded: %v", err)
+			}
+			return float64(count)
+		},
+	))
+	if err != nil {
+		log.Errorf("Error registering eventdelivery Discarded: %v", err)
 	}
 }
 
