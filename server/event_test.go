@@ -333,6 +333,60 @@ func TestApplicationHandler_CreateAppEvent(t *testing.T) {
 					Return([]*datastore.Group{group}, nil)
 			},
 		},
+		{
+			name:       "valid message - matching inactive and active endpoints",
+			cfgPath:    "./testdata/Auth_Config/no-auth-convoy.json",
+			method:     http.MethodPost,
+			statusCode: http.StatusCreated,
+			body:       strings.NewReader(`{"app_id": "12345", "event_type": "test.event", "data": { "Hello": "World", "Test": "Data" }}`),
+			args: args{
+				message: message,
+			},
+			dbFn: func(app *applicationHandler) {
+				a, _ := app.appRepo.(*mocks.MockApplicationRepository)
+				a.EXPECT().
+					FindApplicationByID(gomock.Any(), gomock.Any()).Times(1).
+					Return(&datastore.Application{
+						UID:     appId,
+						GroupID: groupId,
+						Title:   "Valid application",
+						Endpoints: []datastore.Endpoint{
+							{
+								TargetURL: "http://localhost",
+								Status:    datastore.InactiveEndpointStatus,
+								Events:    []string{"test.event"},
+							},
+							{
+								TargetURL: "http://localhost",
+								Status:    datastore.ActiveEndpointStatus,
+								Events:    []string{"test.event"},
+							},
+						},
+					}, nil)
+
+				m, _ := app.eventRepo.(*mocks.MockEventRepository)
+				m.EXPECT().
+					CreateEvent(gomock.Any(), gomock.Any()).Times(1).
+					Return(nil)
+
+				ed, _ := app.eventDeliveryRepo.(*mocks.MockEventDeliveryRepository)
+
+				ed.EXPECT().
+					CreateEventDelivery(gomock.Any(), gomock.Any()).Times(2).
+					Return(nil)
+
+				q, _ := app.eventQueue.(*mocks.MockQueuer)
+				q.EXPECT().
+					Write(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Times(1).
+					Return(nil)
+
+				o, _ := app.groupRepo.(*mocks.MockGroupRepository)
+
+				o.EXPECT().
+					LoadGroups(gomock.Any(), gomock.Any()).Times(1).
+					Return([]*datastore.Group{group}, nil)
+			},
+		},
 	}
 
 	for _, tc := range tests {

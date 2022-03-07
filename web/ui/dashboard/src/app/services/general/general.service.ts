@@ -1,4 +1,5 @@
 import { Injectable } from '@angular/core';
+import { environment } from 'src/environments/environment';
 
 @Injectable({
 	providedIn: 'root'
@@ -18,5 +19,9 @@ export class GeneralService {
 		setTimeout(() => {
 			notificationElement?.classList.remove('show');
 		}, 3000);
+	}
+
+	apiURL(): string {
+		return `${environment.production ? location.origin : 'http://localhost:5005'}`;
 	}
 }

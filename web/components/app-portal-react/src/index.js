@@ -41,7 +41,7 @@ const getTime = date => {
 	return `${hour}:${minutes > 9 ? minutes : '0' + minutes}:${seconds > 9 ? seconds : '0' + seconds} ${hours > 12 ? 'AM' : 'PM'}`;
 };
 
-export const AppPortal = ({ token, groupId, appId }) => {
+export const AppPortal = ({ token, groupId, appId, apiURL }) => {
 	const [eventDeliveryEventId, setEventDeliveryEventId] = useState('');
 	const [eventDeliveryStatuses] = useState(['Success', 'Failure', 'Retry', 'Scheduled', 'Processing', 'Discarded']);
 	const [events, setEventsData] = useState({ content: [], pagination: { page: 1, totalPage: 0 } });
@@ -92,9 +92,9 @@ export const AppPortal = ({ token, groupId, appId }) => {
 		}
 	]);
 
-	const APIURL = `${location.port === '3000' ? 'http://localhost:5005' : location.origin}/ui`;
+	apiURL = apiURL + '/portal';
 	const request = _axios.create({
-		baseURL: APIURL,
+		baseURL: apiURL,
 		headers: {
 			Authorization: `Bearer ${token}`
 		}
@@ -105,7 +105,6 @@ export const AppPortal = ({ token, groupId, appId }) => {
 			return response;
 		},
 		error => {
-			if (error.response.status === 401 && error.response.config.url !== '/auth/login') logout();
 			return Promise.reject(error);
 		}
 	);
@@ -273,7 +272,7 @@ export const AppPortal = ({ token, groupId, appId }) => {
 		try {
 			const eventsResponse = await (
 				await request({
-					url: `/eventdeliveries?eventId=${eventId}&groupID=${groupId}`,
+					url: `/eventdeliveries?eventId=${eventId}&groupID=${groupId}&appId=${appId}`,
 					method: 'GET'
 				})
 			).data;
@@ -300,7 +299,7 @@ export const AppPortal = ({ token, groupId, appId }) => {
 		try {
 			const deliveryAttemptsResponse = await (
 				await request({
-					url: `/eventdeliveries/${eventId}/deliveryattempts?groupID=${groupId}`
+					url: `/eventdeliveries/${eventId}/deliveryattempts?groupID=${groupId}&appId=${appId}`
 				})
 			).data;
 			setEventDeliveryAtempt(deliveryAttemptsResponse.data[deliveryAttemptsResponse.data.length - 1]);

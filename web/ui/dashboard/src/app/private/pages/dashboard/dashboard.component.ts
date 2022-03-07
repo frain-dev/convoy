@@ -1,6 +1,6 @@
 import { Component, OnInit } from '@angular/core';
 import { Router } from '@angular/router';
-import { environment } from 'src/environments/environment';
+import { GeneralService } from 'src/app/services/general/general.service';
 
 @Component({
 	selector: 'app-dashboard',
@@ -9,8 +9,9 @@ import { environment } from 'src/environments/environment';
 })
 export class DashboardComponent implements OnInit {
 	showDropdown = false;
+	apiURL = this.generalService.apiURL();
 
-	constructor(private router: Router) {}
+	constructor(private router: Router, private generalService: GeneralService) {}
 
 	async ngOnInit() {
 		await this.initDashboard();
@@ -26,10 +27,6 @@ export class DashboardComponent implements OnInit {
 	authDetails() {
 		const authDetails = localStorage.getItem('CONVOY_AUTH');
 		return authDetails ? JSON.parse(authDetails) : false;
-	}
-
-	apiURL(): string {
-		return `${environment.production ? location.origin : 'http://localhost:5005'}/ui`;
 	}
 
 	requestToken(): string {

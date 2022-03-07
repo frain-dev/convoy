@@ -82,7 +82,7 @@
 			</div>
 
 			<div class="table">
-				<ng-container *ngIf="activeTab === 'events'">
+				<div [hidden]="activeTab !== 'events'">
 					<div class="filter">
 						<button
 							class="filter--button date-filter-button"
@@ -185,9 +185,9 @@
 						<img src="/assets/img/empty-state-img.svg" alt="empty state" />
 						<p>No event to show here</p>
 					</div>
-				</ng-container>
+				</div>
 
-				<ng-container *ngIf="activeTab === 'event deliveries'">
+				<div [hidden]="activeTab !== 'event deliveries'">
 					<div class="filter">
 						<button
 							class="filter--button date-filter-button"
@@ -363,7 +363,7 @@
 						<img src="/assets/img/empty-state-img.svg" alt="empty state" />
 						<p>No event to show here</p>
 					</div>
-				</ng-container>
+				</div>
 			</div>
 		</div>
 
