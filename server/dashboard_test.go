@@ -5,8 +5,8 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	"github.com/frain-dev/convoy"
 	"github.com/frain-dev/convoy/config"
+	"github.com/frain-dev/convoy/datastore"
 	"github.com/frain-dev/convoy/mocks"
 	"github.com/golang/mock/gomock"
 	log "github.com/sirupsen/logrus"
@@ -17,14 +17,7 @@ func Test_fetchAllConfigDetails(t *testing.T) {
 
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
-
-	groupRepo := mocks.NewMockGroupRepository(ctrl)
-	appRepo := mocks.NewMockApplicationRepository(ctrl)
-	eventRepo := mocks.NewMockEventRepository(ctrl)
-	eventDeliveryRepo := mocks.NewMockEventDeliveryRepository(ctrl)
-	eventQueue := mocks.NewMockQueuer(ctrl)
-
-	app = newApplicationHandler(eventRepo, eventDeliveryRepo, appRepo, groupRepo, eventQueue)
+	app = provideApplication(ctrl)
 
 	tests := []struct {
 		name       string
@@ -41,8 +34,8 @@ func Test_fetchAllConfigDetails(t *testing.T) {
 
 				g.EXPECT().
 					FetchGroupByID(gomock.Any(), gomock.Any()).Times(1).
-					Return(&convoy.Group{
-						Config: &config.GroupConfig{},
+					Return(&datastore.Group{
+						Config: &datastore.GroupConfig{},
 					}, nil)
 			},
 		},
@@ -53,7 +46,7 @@ func Test_fetchAllConfigDetails(t *testing.T) {
 			if err != nil {
 				t.Errorf("Failed to load config file: %v", err)
 			}
-			initRealmChain(t)
+			initRealmChain(t, app.apiKeyRepo)
 
 			if tc.dbFn != nil {
 				tc.dbFn(app)

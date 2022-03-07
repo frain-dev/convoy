@@ -1,6 +1,6 @@
 <template>
-	<div class="main">
-		<aside>
+	<div class="main blog-home">
+		<aside class="categories">
 			<ul>
 				<h3>CATEGORIES</h3>
 
@@ -9,6 +9,7 @@
 				</li>
 			</ul>
 
+			<!-- Pending when there is enough content for this -->
 			<!-- <form>
 				<img src="~/assets/images/search-icon.svg" alt="search icon" />
 				<input type="search" placeholder="Search" />
@@ -54,17 +55,20 @@
 						<div class="tag">FEATURED</div>
 						<div class="date">{{ featurePosts[0].date | date }}</div>
 					</div>
-					<h3 class="post--title">{{ featurePosts[0].title }}</h3>
+					<nuxt-link :to="'/blog/' + featurePosts[0].slug">
+						<h3 class="post--title">{{ featurePosts[0].title }}</h3>
+					</nuxt-link>
 					<p class="post--body">{{ featurePosts[0].description }}</p>
 					<div class="post--footer">
 						<div class="post--author">
-							<img src="~/assets/images/author-img.png" alt="author imge" />
+							<!-- Pending when we have icon for authors -->
+							<!-- <img src="~/assets/images/author-img.png" alt="author imge" /> -->
 							<div>
 								<h5>{{ author(featurePosts[0].author).name }}</h5>
 								<p>{{ author(featurePosts[0].author).role }} Convoy</p>
 							</div>
 						</div>
-						<nuxt-link :to="'blog/' + featurePosts[0].slug">
+						<nuxt-link :to="'/blog/' + featurePosts[0].slug">
 							Read More
 							<img src="~/assets/images/angle-right-primary.svg" alt="read more icon" />
 						</nuxt-link>
@@ -76,7 +80,7 @@
 			</div>
 
 			<div class="posts">
-				<Post v-for="(post, index) in posts" :key="index" :post="post" :authors="authors" />
+				<Post v-for="(post, index) in posts.slice(1, 3)" :key="index" :post="post" :authors="authors" />
 			</div>
 
 			<div class="newsletter card">
@@ -92,6 +96,10 @@
 					</form>
 				</div>
 				<img src="~/assets/images/mailbox.gif" alt="mailbox animation" />
+			</div>
+
+			<div class="posts">
+				<Post v-for="(post, index) in posts.slice(3)" :key="index" :post="post" :authors="authors" />
 			</div>
 		</main>
 	</div>
@@ -110,7 +118,7 @@ export default {
 	async asyncData({ $content, route }) {
 		const posts = route.query?.tag
 			? await $content('blog').only(['author', 'description', 'featureImg', 'slug', 'thumbnail', 'title', 'featurePost', 'date', 'tag']).where({ tag: route.query.tag }).fetch()
-			: await $content('blog').only(['author', 'description', 'featureImg', 'slug', 'thumbnail', 'title', 'featurePost', 'date', 'tag']).fetch();
+			: await $content('blog').only(['author', 'description', 'featureImg', 'slug', 'thumbnail', 'title', 'featurePost', 'date', 'tag']).sortBy('date', 'desc').fetch();
 		const featurePosts = posts.length > 0 ? posts.filter(post => post.featurePost === true) : [];
 		const authors = await $content('blog-authors').fetch();
 		const tags = await $content('blog-tags').fetch();
@@ -153,10 +161,9 @@ $desktopBreakPoint: 880px;
 
 .main {
 	margin: 0 auto;
-	padding-bottom: 100px;
+	padding-bottom: 0;
 	display: flex;
 	justify-content: space-between;
-	max-width: calc(1035px + 170px + 32px);
 	height: unset;
 	padding-top: 0;
 }
@@ -201,7 +208,7 @@ main {
 	max-width: 970px;
 
 	@media (min-width: $desktopBreakPoint) {
-		padding: 56px 0 0 56px;
+		padding: 56px 0 57px 56px;
 		display: flex;
 		justify-content: space-between;
 		flex-wrap: wrap;

@@ -1,16 +1,10 @@
+
 package convoy
 
 import "time"
 
 const (
 	HttpPost HttpMethod = "POST"
-)
-
-const (
-	Daily Period = iota
-	Weekly
-	Monthly
-	Yearly
 )
 
 const (

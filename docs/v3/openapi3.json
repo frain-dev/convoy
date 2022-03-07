@@ -1,46 +1,19 @@
 {
 	"components": {
 		"schemas": {
-			"config.DefaultStrategyConfiguration": {
+			"auth.Role": {
 				"properties": {
-					"intervalSeconds": {
-						"type": "integer"
+					"apps": {
+						"items": {
+							"type": "string"
+						},
+						"type": "array"
 					},
-					"retryLimit": {
-						"type": "integer"
-					}
-				},
-				"type": "object"
-			},
-			"config.GroupConfig": {
-				"properties": {
-					"disableEndpoint": {
-						"type": "boolean"
-					},
-					"signature": {
-						"$ref": "#/components/schemas/config.SignatureConfiguration"
-					},
-					"strategy": {
-						"$ref": "#/components/schemas/config.StrategyConfiguration"
-					}
-				},
-				"type": "object"
-			},
-			"config.SignatureConfiguration": {
-				"properties": {
-					"hash": {
-						"type": "string"
-					},
-					"header": {
-						"type": "string"
-					}
-				},
-				"type": "object"
-			},
-			"config.StrategyConfiguration": {
-				"properties": {
-					"default": {
-						"$ref": "#/components/schemas/config.DefaultStrategyConfiguration"
+					"groups": {
+						"items": {
+							"type": "string"
+						},
+						"type": "array"
 					},
 					"type": {
 						"type": "string"
@@ -48,7 +21,45 @@
 				},
 				"type": "object"
 			},
-			"convoy.AppMetadata": {
+			"datastore.APIKey": {
+				"properties": {
+					"created_at": {
+						"type": "integer"
+					},
+					"delted_at": {
+						"type": "integer"
+					},
+					"expires_at": {
+						"type": "integer"
+					},
+					"hash": {
+						"type": "string"
+					},
+					"key_type": {
+						"type": "string"
+					},
+					"mask_id": {
+						"type": "string"
+					},
+					"name": {
+						"type": "string"
+					},
+					"role": {
+						"$ref": "#/components/schemas/auth.Role"
+					},
+					"salt": {
+						"type": "string"
+					},
+					"uid": {
+						"type": "string"
+					},
+					"updated_at": {
+						"type": "integer"
+					}
+				},
+				"type": "object"
+			},
+			"datastore.AppMetadata": {
 				"properties": {
 					"group_id": {
 						"type": "string"
@@ -65,7 +76,7 @@
 				},
 				"type": "object"
 			},
-			"convoy.Application": {
+			"datastore.Application": {
 				"properties": {
 					"created_at": {
 						"type": "string"
@@ -75,7 +86,7 @@
 					},
 					"endpoints": {
 						"items": {
-							"$ref": "#/components/schemas/convoy.Endpoint"
+							"$ref": "#/components/schemas/datastore.Endpoint"
 						},
 						"type": "array"
 					},
@@ -100,7 +111,18 @@
 				},
 				"type": "object"
 			},
-			"convoy.DeliveryAttempt": {
+			"datastore.DefaultStrategyConfiguration": {
+				"properties": {
+					"intervalSeconds": {
+						"type": "integer"
+					},
+					"retryLimit": {
+						"type": "integer"
+					}
+				},
+				"type": "object"
+			},
+			"datastore.DeliveryAttempt": {
 				"properties": {
 					"api_version": {
 						"type": "string"
@@ -130,13 +152,13 @@
 						"type": "string"
 					},
 					"request_http_header": {
-						"$ref": "#/components/schemas/convoy.HttpHeader"
+						"$ref": "#/components/schemas/datastore.HttpHeader"
 					},
 					"response_data": {
 						"type": "string"
 					},
 					"response_http_header": {
-						"$ref": "#/components/schemas/convoy.HttpHeader"
+						"$ref": "#/components/schemas/datastore.HttpHeader"
 					},
 					"status": {
 						"type": "boolean"
@@ -153,7 +175,7 @@
 				},
 				"type": "object"
 			},
-			"convoy.Endpoint": {
+			"datastore.Endpoint": {
 				"properties": {
 					"created_at": {
 						"type": "string"
@@ -188,7 +210,7 @@
 				},
 				"type": "object"
 			},
-			"convoy.EndpointMetadata": {
+			"datastore.EndpointMetadata": {
 				"properties": {
 					"secret": {
 						"type": "string"
@@ -208,10 +230,10 @@
 				},
 				"type": "object"
 			},
-			"convoy.Event": {
+			"datastore.Event": {
 				"properties": {
 					"app_metadata": {
-						"$ref": "#/components/schemas/convoy.AppMetadata"
+						"$ref": "#/components/schemas/datastore.AppMetadata"
 					},
 					"created_at": {
 						"type": "string"
@@ -245,10 +267,10 @@
 				},
 				"type": "object"
 			},
-			"convoy.EventDelivery": {
+			"datastore.EventDelivery": {
 				"properties": {
 					"app_metadata": {
-						"$ref": "#/components/schemas/convoy.AppMetadata"
+						"$ref": "#/components/schemas/datastore.AppMetadata"
 					},
 					"created_at": {
 						"type": "string"
@@ -260,13 +282,13 @@
 						"type": "string"
 					},
 					"endpoint": {
-						"$ref": "#/components/schemas/convoy.EndpointMetadata"
+						"$ref": "#/components/schemas/datastore.EndpointMetadata"
 					},
 					"event_metadata": {
-						"$ref": "#/components/schemas/convoy.EventMetadata"
+						"$ref": "#/components/schemas/datastore.EventMetadata"
 					},
 					"metadata": {
-						"$ref": "#/components/schemas/convoy.Metadata"
+						"$ref": "#/components/schemas/datastore.Metadata"
 					},
 					"status": {
 						"type": "string"
@@ -280,7 +302,7 @@
 				},
 				"type": "object"
 			},
-			"convoy.EventMetadata": {
+			"datastore.EventMetadata": {
 				"properties": {
 					"name": {
 						"type": "string"
@@ -291,10 +313,18 @@
 				},
 				"type": "object"
 			},
-			"convoy.Group": {
+			"datastore.ExponentialBackoffStrategyConfiguration": {
+				"properties": {
+					"retryLimit": {
+						"type": "integer"
+					}
+				},
+				"type": "object"
+			},
+			"datastore.Group": {
 				"properties": {
 					"config": {
-						"$ref": "#/components/schemas/config.GroupConfig"
+						"$ref": "#/components/schemas/datastore.GroupConfig"
 					},
 					"created_at": {
 						"type": "string"
@@ -308,6 +338,9 @@
 					"name": {
 						"type": "string"
 					},
+					"statistics": {
+						"$ref": "#/components/schemas/datastore.GroupStatistics"
+					},
 					"uid": {
 						"type": "string"
 					},
@@ -317,13 +350,38 @@
 				},
 				"type": "object"
 			},
-			"convoy.HttpHeader": {
+			"datastore.GroupConfig": {
+				"properties": {
+					"disable_endpoint": {
+						"type": "boolean"
+					},
+					"signature": {
+						"$ref": "#/components/schemas/datastore.SignatureConfiguration"
+					},
+					"strategy": {
+						"$ref": "#/components/schemas/datastore.StrategyConfiguration"
+					}
+				},
+				"type": "object"
+			},
+			"datastore.GroupStatistics": {
+				"properties": {
+					"messages_sent": {
+						"type": "integer"
+					},
+					"total_apps": {
+						"type": "integer"
+					}
+				},
+				"type": "object"
+			},
+			"datastore.HttpHeader": {
 				"additionalProperties": {
 					"type": "string"
 				},
 				"type": "object"
 			},
-			"convoy.Metadata": {
+			"datastore.Metadata": {
 				"properties": {
 					"data": {
 						"description": "Data to be sent to endpoint.",
@@ -347,6 +405,97 @@
 						"type": "integer"
 					},
 					"strategy": {
+						"type": "string"
+					}
+				},
+				"type": "object"
+			},
+			"datastore.PaginationData": {
+				"properties": {
+					"next": {
+						"type": "integer"
+					},
+					"page": {
+						"type": "integer"
+					},
+					"perPage": {
+						"type": "integer"
+					},
+					"prev": {
+						"type": "integer"
+					},
+					"total": {
+						"type": "integer"
+					},
+					"totalPage": {
+						"type": "integer"
+					}
+				},
+				"type": "object"
+			},
+			"datastore.SignatureConfiguration": {
+				"properties": {
+					"hash": {
+						"type": "string"
+					},
+					"header": {
+						"type": "string"
+					}
+				},
+				"type": "object"
+			},
+			"datastore.StrategyConfiguration": {
+				"properties": {
+					"default": {
+						"$ref": "#/components/schemas/datastore.DefaultStrategyConfiguration"
+					},
+					"exponentialBackoff": {
+						"$ref": "#/components/schemas/datastore.ExponentialBackoffStrategyConfiguration"
+					},
+					"type": {
+						"type": "string"
+					}
+				},
+				"type": "object"
+			},
+			"models.APIKey": {
+				"properties": {
+					"expires_at": {
+						"type": "string"
+					},
+					"key_type": {
+						"type": "string"
+					},
+					"name": {
+						"type": "string"
+					},
+					"role": {
+						"$ref": "#/components/schemas/auth.Role"
+					}
+				},
+				"type": "object"
+			},
+			"models.APIKeyResponse": {
+				"properties": {
+					"created_at": {
+						"type": "string"
+					},
+					"expires_at": {
+						"type": "string"
+					},
+					"key": {
+						"type": "string"
+					},
+					"key_type": {
+						"type": "string"
+					},
+					"name": {
+						"type": "string"
+					},
+					"role": {
+						"$ref": "#/components/schemas/auth.Role"
+					},
+					"uid": {
 						"type": "string"
 					}
 				},
@@ -404,7 +553,7 @@
 			"models.Group": {
 				"properties": {
 					"config": {
-						"$ref": "#/components/schemas/config.GroupConfig"
+						"$ref": "#/components/schemas/datastore.GroupConfig"
 					},
 					"logo_url": {
 						"type": "string"
@@ -415,25 +564,25 @@
 				},
 				"type": "object"
 			},
-			"mongopagination.PaginationData": {
+			"models.PortalAPIKeyResponse": {
 				"properties": {
-					"next": {
-						"type": "integer"
+					"app_id": {
+						"type": "string"
 					},
-					"page": {
-						"type": "integer"
+					"group_id": {
+						"type": "string"
 					},
-					"perPage": {
-						"type": "integer"
+					"key": {
+						"type": "string"
 					},
-					"prev": {
-						"type": "integer"
+					"key_type": {
+						"type": "string"
 					},
-					"total": {
-						"type": "integer"
+					"role": {
+						"$ref": "#/components/schemas/auth.Role"
 					},
-					"totalPage": {
-						"type": "integer"
+					"url": {
+						"type": "string"
 					}
 				},
 				"type": "object"
@@ -445,7 +594,7 @@
 				"properties": {
 					"content": {},
 					"pagination": {
-						"$ref": "#/components/schemas/mongopagination.PaginationData"
+						"$ref": "#/components/schemas/datastore.PaginationData"
 					}
 				},
 				"type": "object"
@@ -478,16 +627,16 @@
 	},
 	"info": {
 		"contact": {
-			"email": "engineering@convoy.io",
+			"email": "Info@frain.dev",
 			"name": "API Support",
-			"url": "http://www.swagger.io/support"
+			"url": "https://getconvoy.io/docs"
 		},
-		"description": "Convoy is a fast and secure distributed webhooks service. This document contains Convoy's API specification.",
+		"description": "Convoy is a fast and secure distributed webhooks service. This document contains datastore.s API specification.",
 		"license": {
 			"name": "Mozilla Public License 2.0",
 			"url": "https://www.mozilla.org/en-US/MPL/2.0/"
 		},
-		"termsOfService": "https://convoy.io/terms",
+		"termsOfService": "https://getconvoy.io/terms",
 		"title": "Convoy API Specification",
 		"version": "0.1.12"
 	},
@@ -520,6 +669,14 @@
 						"schema": {
 							"type": "string"
 						}
+					},
+					{
+						"description": "app title",
+						"in": "query",
+						"name": "q",
+						"schema": {
+							"type": "string"
+						}
 					}
 				],
 				"responses": {
@@ -542,7 +699,7 @@
 															"properties": {
 																"content": {
 																	"items": {
-																		"$ref": "#/components/schemas/convoy.Application"
+																		"$ref": "#/components/schemas/datastore.Application"
 																	},
 																	"type": "array"
 																}
@@ -663,7 +820,7 @@
 										{
 											"properties": {
 												"data": {
-													"$ref": "#/components/schemas/convoy.Application"
+													"$ref": "#/components/schemas/datastore.Application"
 												}
 											},
 											"type": "object"
@@ -891,7 +1048,7 @@
 										{
 											"properties": {
 												"data": {
-													"$ref": "#/components/schemas/convoy.Application"
+													"$ref": "#/components/schemas/datastore.Application"
 												}
 											},
 											"type": "object"
@@ -1016,7 +1173,7 @@
 										{
 											"properties": {
 												"data": {
-													"$ref": "#/components/schemas/convoy.Application"
+													"$ref": "#/components/schemas/datastore.Application"
 												}
 											},
 											"type": "object"
@@ -1132,7 +1289,7 @@
 											"properties": {
 												"data": {
 													"items": {
-														"$ref": "#/components/schemas/convoy.Endpoint"
+														"$ref": "#/components/schemas/datastore.Endpoint"
 													},
 													"type": "array"
 												}
@@ -1259,7 +1416,7 @@
 										{
 											"properties": {
 												"data": {
-													"$ref": "#/components/schemas/convoy.Endpoint"
+													"$ref": "#/components/schemas/datastore.Endpoint"
 												}
 											},
 											"type": "object"
@@ -1505,7 +1662,7 @@
 										{
 											"properties": {
 												"data": {
-													"$ref": "#/components/schemas/convoy.Endpoint"
+													"$ref": "#/components/schemas/datastore.Endpoint"
 												}
 											},
 											"type": "object"
@@ -1639,7 +1796,7 @@
 										{
 											"properties": {
 												"data": {
-													"$ref": "#/components/schemas/convoy.Endpoint"
+													"$ref": "#/components/schemas/datastore.Endpoint"
 												}
 											},
 											"type": "object"
@@ -1830,7 +1987,7 @@
 																	"items": {
 																		"allOf": [
 																			{
-																				"$ref": "#/components/schemas/convoy.EventDelivery"
+																				"$ref": "#/components/schemas/datastore.EventDelivery"
 																			},
 																			{
 																				"properties": {
@@ -2226,7 +2383,7 @@
 												"data": {
 													"allOf": [
 														{
-															"$ref": "#/components/schemas/convoy.Event"
+															"$ref": "#/components/schemas/datastore.Event"
 														},
 														{
 															"properties": {
@@ -2353,7 +2510,7 @@
 												"data": {
 													"allOf": [
 														{
-															"$ref": "#/components/schemas/convoy.Event"
+															"$ref": "#/components/schemas/datastore.Event"
 														},
 														{
 															"properties": {
@@ -2535,7 +2692,7 @@
 																	"items": {
 																		"allOf": [
 																			{
-																				"$ref": "#/components/schemas/convoy.Event"
+																				"$ref": "#/components/schemas/datastore.Event"
 																			},
 																			{
 																				"properties": {
@@ -2668,7 +2825,7 @@
 												"data": {
 													"allOf": [
 														{
-															"$ref": "#/components/schemas/convoy.Event"
+															"$ref": "#/components/schemas/datastore.Event"
 														},
 														{
 															"properties": {
@@ -2795,7 +2952,7 @@
 												"data": {
 													"allOf": [
 														{
-															"$ref": "#/components/schemas/convoy.Event"
+															"$ref": "#/components/schemas/datastore.Event"
 														},
 														{
 															"properties": {
@@ -2930,7 +3087,7 @@
 											"properties": {
 												"data": {
 													"items": {
-														"$ref": "#/components/schemas/convoy.DeliveryAttempt"
+														"$ref": "#/components/schemas/datastore.DeliveryAttempt"
 													},
 													"type": "array"
 												}
@@ -3065,7 +3222,7 @@
 										{
 											"properties": {
 												"data": {
-													"$ref": "#/components/schemas/convoy.DeliveryAttempt"
+													"$ref": "#/components/schemas/datastore.DeliveryAttempt"
 												}
 											},
 											"type": "object"
@@ -3180,7 +3337,7 @@
 											"properties": {
 												"data": {
 													"items": {
-														"$ref": "#/components/schemas/convoy.Group"
+														"$ref": "#/components/schemas/datastore.Group"
 													},
 													"type": "array"
 												}
@@ -3296,7 +3453,7 @@
 										{
 											"properties": {
 												"data": {
-													"$ref": "#/components/schemas/convoy.Group"
+													"$ref": "#/components/schemas/datastore.Group"
 												}
 											},
 											"type": "object"
@@ -3386,6 +3543,119 @@
 			}
 		},
 		"/groups/{groupID}": {
+			"delete": {
+				"description": "This endpoint deletes a group using its id",
+				"parameters": [
+					{
+						"description": "Group id",
+						"in": "path",
+						"name": "groupID",
+						"required": true,
+						"schema": {
+							"type": "string"
+						}
+					}
+				],
+				"responses": {
+					"200": {
+						"content": {
+							"application/json": {
+								"schema": {
+									"allOf": [
+										{
+											"$ref": "#/components/schemas/server.serverResponse"
+										},
+										{
+											"properties": {
+												"data": {
+													"$ref": "#/components/schemas/server.Stub"
+												}
+											},
+											"type": "object"
+										}
+									]
+								}
+							}
+						},
+						"description": "OK"
+					},
+					"400": {
+						"content": {
+							"application/json": {
+								"schema": {
+									"allOf": [
+										{
+											"$ref": "#/components/schemas/server.serverResponse"
+										},
+										{
+											"properties": {
+												"data": {
+													"$ref": "#/components/schemas/server.Stub"
+												}
+											},
+											"type": "object"
+										}
+									]
+								}
+							}
+						},
+						"description": "Bad Request"
+					},
+					"401": {
+						"content": {
+							"application/json": {
+								"schema": {
+									"allOf": [
+										{
+											"$ref": "#/components/schemas/server.serverResponse"
+										},
+										{
+											"properties": {
+												"data": {
+													"$ref": "#/components/schemas/server.Stub"
+												}
+											},
+											"type": "object"
+										}
+									]
+								}
+							}
+						},
+						"description": "Unauthorized"
+					},
+					"500": {
+						"content": {
+							"application/json": {
+								"schema": {
+									"allOf": [
+										{
+											"$ref": "#/components/schemas/server.serverResponse"
+										},
+										{
+											"properties": {
+												"data": {
+													"$ref": "#/components/schemas/server.Stub"
+												}
+											},
+											"type": "object"
+										}
+									]
+								}
+							}
+						},
+						"description": "Internal Server Error"
+					}
+				},
+				"security": [
+					{
+						"ApiKeyAuth": []
+					}
+				],
+				"summary": "Delete a group",
+				"tags": [
+					"Group"
+				]
+			},
 			"get": {
 				"description": "This endpoint fetches a group by its id",
 				"parameters": [
@@ -3411,7 +3681,7 @@
 										{
 											"properties": {
 												"data": {
-													"$ref": "#/components/schemas/convoy.Group"
+													"$ref": "#/components/schemas/datastore.Group"
 												}
 											},
 											"type": "object"
@@ -3536,7 +3806,7 @@
 										{
 											"properties": {
 												"data": {
-													"$ref": "#/components/schemas/convoy.Group"
+													"$ref": "#/components/schemas/datastore.Group"
 												}
 											},
 											"type": "object"
@@ -3624,14 +3894,728 @@
 					"Group"
 				]
 			}
+		},
+		"/security/applications/{appID}/keys": {
+			"post": {
+				"description": "This endpoint creates an api key that will be used by app portal",
+				"parameters": [
+					{
+						"description": "application ID",
+						"in": "path",
+						"name": "appID",
+						"required": true,
+						"schema": {
+							"type": "string"
+						}
+					}
+				],
+				"responses": {
+					"201": {
+						"content": {
+							"application/json": {
+								"schema": {
+									"allOf": [
+										{
+											"$ref": "#/components/schemas/server.serverResponse"
+										},
+										{
+											"properties": {
+												"data": {
+													"$ref": "#/components/schemas/models.PortalAPIKeyResponse"
+												}
+											},
+											"type": "object"
+										}
+									]
+								}
+							}
+						},
+						"description": "Created"
+					},
+					"400": {
+						"content": {
+							"application/json": {
+								"schema": {
+									"allOf": [
+										{
+											"$ref": "#/components/schemas/server.serverResponse"
+										},
+										{
+											"properties": {
+												"data": {
+													"$ref": "#/components/schemas/server.Stub"
+												}
+											},
+											"type": "object"
+										}
+									]
+								}
+							}
+						},
+						"description": "Bad Request"
+					},
+					"401": {
+						"content": {
+							"application/json": {
+								"schema": {
+									"allOf": [
+										{
+											"$ref": "#/components/schemas/server.serverResponse"
+										},
+										{
+											"properties": {
+												"data": {
+													"$ref": "#/components/schemas/server.Stub"
+												}
+											},
+											"type": "object"
+										}
+									]
+								}
+							}
+						},
+						"description": "Unauthorized"
+					},
+					"500": {
+						"content": {
+							"application/json": {
+								"schema": {
+									"allOf": [
+										{
+											"$ref": "#/components/schemas/server.serverResponse"
+										},
+										{
+											"properties": {
+												"data": {
+													"$ref": "#/components/schemas/server.Stub"
+												}
+											},
+											"type": "object"
+										}
+									]
+								}
+							}
+						},
+						"description": "Internal Server Error"
+					}
+				},
+				"security": [
+					{
+						"ApiKeyAuth": []
+					}
+				],
+				"summary": "Create an api key for app portal",
+				"tags": [
+					"APIKey"
+				]
+			}
+		},
+		"/security/keys": {
+			"get": {
+				"description": "This endpoint fetches multiple api keys",
+				"parameters": [
+					{
+						"description": "results per page",
+						"in": "query",
+						"name": "perPage",
+						"schema": {
+							"type": "string"
+						}
+					},
+					{
+						"description": "page number",
+						"in": "query",
+						"name": "page",
+						"schema": {
+							"type": "string"
+						}
+					},
+					{
+						"description": "sort order",
+						"in": "query",
+						"name": "sort",
+						"schema": {
+							"type": "string"
+						}
+					}
+				],
+				"responses": {
+					"200": {
+						"content": {
+							"application/json": {
+								"schema": {
+									"allOf": [
+										{
+											"$ref": "#/components/schemas/server.serverResponse"
+										},
+										{
+											"properties": {
+												"data": {
+													"allOf": [
+														{
+															"$ref": "#/components/schemas/server.pagedResponse"
+														},
+														{
+															"properties": {
+																"content": {
+																	"items": {
+																		"$ref": "#/components/schemas/datastore.APIKey"
+																	},
+																	"type": "array"
+																}
+															},
+															"type": "object"
+														}
+													]
+												}
+											},
+											"type": "object"
+										}
+									]
+								}
+							}
+						},
+						"description": "OK"
+					},
+					"400": {
+						"content": {
+							"application/json": {
+								"schema": {
+									"allOf": [
+										{
+											"$ref": "#/components/schemas/server.serverResponse"
+										},
+										{
+											"properties": {
+												"data": {
+													"$ref": "#/components/schemas/server.Stub"
+												}
+											},
+											"type": "object"
+										}
+									]
+								}
+							}
+						},
+						"description": "Bad Request"
+					},
+					"401": {
+						"content": {
+							"application/json": {
+								"schema": {
+									"allOf": [
+										{
+											"$ref": "#/components/schemas/server.serverResponse"
+										},
+										{
+											"properties": {
+												"data": {
+													"$ref": "#/components/schemas/server.Stub"
+												}
+											},
+											"type": "object"
+										}
+									]
+								}
+							}
+						},
+						"description": "Unauthorized"
+					},
+					"500": {
+						"content": {
+							"application/json": {
+								"schema": {
+									"allOf": [
+										{
+											"$ref": "#/components/schemas/server.serverResponse"
+										},
+										{
+											"properties": {
+												"data": {
+													"$ref": "#/components/schemas/server.Stub"
+												}
+											},
+											"type": "object"
+										}
+									]
+								}
+							}
+						},
+						"description": "Internal Server Error"
+					}
+				},
+				"security": [
+					{
+						"ApiKeyAuth": []
+					}
+				],
+				"summary": "Fetch multiple api keys",
+				"tags": [
+					"APIKey"
+				]
+			},
+			"post": {
+				"description": "This endpoint creates an api key that will be used by the native auth realm",
+				"requestBody": {
+					"content": {
+						"application/json": {
+							"schema": {
+								"$ref": "#/components/schemas/models.APIKey"
+							}
+						}
+					},
+					"description": "API Key",
+					"required": true,
+					"x-originalParamName": "apiKey"
+				},
+				"responses": {
+					"200": {
+						"content": {
+							"application/json": {
+								"schema": {
+									"allOf": [
+										{
+											"$ref": "#/components/schemas/server.serverResponse"
+										},
+										{
+											"properties": {
+												"data": {
+													"$ref": "#/components/schemas/models.APIKeyResponse"
+												}
+											},
+											"type": "object"
+										}
+									]
+								}
+							}
+						},
+						"description": "OK"
+					},
+					"400": {
+						"content": {
+							"application/json": {
+								"schema": {
+									"allOf": [
+										{
+											"$ref": "#/components/schemas/server.serverResponse"
+										},
+										{
+											"properties": {
+												"data": {
+													"$ref": "#/components/schemas/server.Stub"
+												}
+											},
+											"type": "object"
+										}
+									]
+								}
+							}
+						},
+						"description": "Bad Request"
+					},
+					"401": {
+						"content": {
+							"application/json": {
+								"schema": {
+									"allOf": [
+										{
+											"$ref": "#/components/schemas/server.serverResponse"
+										},
+										{
+											"properties": {
+												"data": {
+													"$ref": "#/components/schemas/server.Stub"
+												}
+											},
+											"type": "object"
+										}
+									]
+								}
+							}
+						},
+						"description": "Unauthorized"
+					},
+					"500": {
+						"content": {
+							"application/json": {
+								"schema": {
+									"allOf": [
+										{
+											"$ref": "#/components/schemas/server.serverResponse"
+										},
+										{
+											"properties": {
+												"data": {
+													"$ref": "#/components/schemas/server.Stub"
+												}
+											},
+											"type": "object"
+										}
+									]
+								}
+							}
+						},
+						"description": "Internal Server Error"
+					}
+				},
+				"security": [
+					{
+						"ApiKeyAuth": []
+					}
+				],
+				"summary": "Create an api key",
+				"tags": [
+					"APIKey"
+				]
+			}
+		},
+		"/security/keys/{keyID}": {
+			"get": {
+				"description": "This endpoint fetches an api key by its id",
+				"parameters": [
+					{
+						"description": "API Key id",
+						"in": "path",
+						"name": "keyID",
+						"required": true,
+						"schema": {
+							"type": "string"
+						}
+					}
+				],
+				"responses": {
+					"200": {
+						"content": {
+							"application/json": {
+								"schema": {
+									"allOf": [
+										{
+											"$ref": "#/components/schemas/server.serverResponse"
+										},
+										{
+											"properties": {
+												"data": {
+													"$ref": "#/components/schemas/datastore.APIKey"
+												}
+											},
+											"type": "object"
+										}
+									]
+								}
+							}
+						},
+						"description": "OK"
+					},
+					"400": {
+						"content": {
+							"application/json": {
+								"schema": {
+									"allOf": [
+										{
+											"$ref": "#/components/schemas/server.serverResponse"
+										},
+										{
+											"properties": {
+												"data": {
+													"$ref": "#/components/schemas/server.Stub"
+												}
+											},
+											"type": "object"
+										}
+									]
+								}
+							}
+						},
+						"description": "Bad Request"
+					},
+					"401": {
+						"content": {
+							"application/json": {
+								"schema": {
+									"allOf": [
+										{
+											"$ref": "#/components/schemas/server.serverResponse"
+										},
+										{
+											"properties": {
+												"data": {
+													"$ref": "#/components/schemas/server.Stub"
+												}
+											},
+											"type": "object"
+										}
+									]
+								}
+							}
+						},
+						"description": "Unauthorized"
+					},
+					"500": {
+						"content": {
+							"application/json": {
+								"schema": {
+									"allOf": [
+										{
+											"$ref": "#/components/schemas/server.serverResponse"
+										},
+										{
+											"properties": {
+												"data": {
+													"$ref": "#/components/schemas/server.Stub"
+												}
+											},
+											"type": "object"
+										}
+									]
+								}
+							}
+						},
+						"description": "Internal Server Error"
+					}
+				},
+				"security": [
+					{
+						"ApiKeyAuth": []
+					}
+				],
+				"summary": "Get api key by id",
+				"tags": [
+					"APIKey"
+				]
+			},
+			"put": {
+				"description": "This endpoint updates an api key",
+				"parameters": [
+					{
+						"description": "API Key id",
+						"in": "path",
+						"name": "keyID",
+						"required": true,
+						"schema": {
+							"type": "string"
+						}
+					}
+				],
+				"responses": {
+					"200": {
+						"content": {
+							"application/json": {
+								"schema": {
+									"allOf": [
+										{
+											"$ref": "#/components/schemas/server.serverResponse"
+										},
+										{
+											"properties": {
+												"data": {
+													"$ref": "#/components/schemas/datastore.APIKey"
+												}
+											},
+											"type": "object"
+										}
+									]
+								}
+							}
+						},
+						"description": "OK"
+					},
+					"400": {
+						"content": {
+							"application/json": {
+								"schema": {
+									"allOf": [
+										{
+											"$ref": "#/components/schemas/server.serverResponse"
+										},
+										{
+											"properties": {
+												"data": {
+													"$ref": "#/components/schemas/server.Stub"
+												}
+											},
+											"type": "object"
+										}
+									]
+								}
+							}
+						},
+						"description": "Bad Request"
+					},
+					"401": {
+						"content": {
+							"application/json": {
+								"schema": {
+									"allOf": [
+										{
+											"$ref": "#/components/schemas/server.serverResponse"
+										},
+										{
+											"properties": {
+												"data": {
+													"$ref": "#/components/schemas/server.Stub"
+												}
+											},
+											"type": "object"
+										}
+									]
+								}
+							}
+						},
+						"description": "Unauthorized"
+					},
+					"500": {
+						"content": {
+							"application/json": {
+								"schema": {
+									"allOf": [
+										{
+											"$ref": "#/components/schemas/server.serverResponse"
+										},
+										{
+											"properties": {
+												"data": {
+													"$ref": "#/components/schemas/server.Stub"
+												}
+											},
+											"type": "object"
+										}
+									]
+								}
+							}
+						},
+						"description": "Internal Server Error"
+					}
+				},
+				"security": [
+					{
+						"ApiKeyAuth": []
+					}
+				],
+				"summary": "update api key",
+				"tags": [
+					"APIKey"
+				]
+			}
+		},
+		"/security/keys/{keyID}/revoke": {
+			"put": {
+				"description": "This endpoint revokes an api key",
+				"parameters": [
+					{
+						"description": "API Key id",
+						"in": "path",
+						"name": "keyID",
+						"required": true,
+						"schema": {
+							"type": "string"
+						}
+					}
+				],
+				"responses": {
+					"200": {
+						"content": {
+							"application/json": {
+								"schema": {
+									"allOf": [
+										{
+											"$ref": "#/components/schemas/server.serverResponse"
+										},
+										{
+											"properties": {
+												"data": {
+													"$ref": "#/components/schemas/server.Stub"
+												}
+											},
+											"type": "object"
+										}
+									]
+								}
+							}
+						},
+						"description": "OK"
+					},
+					"400": {
+						"content": {
+							"application/json": {
+								"schema": {
+									"allOf": [
+										{
+											"$ref": "#/components/schemas/server.serverResponse"
+										},
+										{
+											"properties": {
+												"data": {
+													"$ref": "#/components/schemas/server.Stub"
+												}
+											},
+											"type": "object"
+										}
+									]
+								}
+							}
+						},
+						"description": "Bad Request"
+					},
+					"401": {
+						"content": {
+							"application/json": {
+								"schema": {
+									"allOf": [
+										{
+											"$ref": "#/components/schemas/server.serverResponse"
+										},
+										{
+											"properties": {
+												"data": {
+													"$ref": "#/components/schemas/server.Stub"
+												}
+											},
+											"type": "object"
+										}
+									]
+								}
+							}
+						},
+						"description": "Unauthorized"
+					},
+					"500": {
+						"content": {
+							"application/json": {
+								"schema": {
+									"allOf": [
+										{
+											"$ref": "#/components/schemas/server.serverResponse"
+										},
+										{
+											"properties": {
+												"data": {
+													"$ref": "#/components/schemas/server.Stub"
+												}
+											},
+											"type": "object"
+										}
+									]
+								}
+							}
+						},
+						"description": "Internal Server Error"
+					}
+				},
+				"security": [
+					{
+						"ApiKeyAuth": []
+					}
+				],
+				"summary": "Revoke API Key",
+				"tags": [
+					"APIKey"
+				]
+			}
 		}
 	},
 	"servers": [
 		{
-			"url": "http://localhost:8080/api/v1"
-		},
-		{
-			"url": "https://localhost:8080/api/v1"
+			"url": "https://cloud.staging.getconvoy.io/api/v1"
 		}
 	],
 	"tags": [
@@ -3646,6 +4630,10 @@
 		{
 			"description": "Event related APIs",
 			"name": "Events"
+		},
+		{
+			"description": "API Key related APIs",
+			"name": "APIKey"
 		},
 		{
 			"description": "EventDelivery related APIs",

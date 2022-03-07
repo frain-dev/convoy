@@ -4,11 +4,12 @@ import (
 	"context"
 
 	"github.com/frain-dev/convoy"
+	"github.com/frain-dev/convoy/datastore"
+	"github.com/frain-dev/taskq/v3"
 	log "github.com/sirupsen/logrus"
-	"github.com/vmihailenco/taskq/v3"
 )
 
-func CreateTask(name convoy.TaskName, group convoy.Group, handler interface{}) *taskq.Task {
+func CreateTask(name convoy.TaskName, group datastore.Group, handler interface{}) *taskq.Task {
 
 	options := taskq.TaskOptions{
 		Name:       string(name),
@@ -19,9 +20,9 @@ func CreateTask(name convoy.TaskName, group convoy.Group, handler interface{}) *
 	return taskq.RegisterTask(&options)
 }
 
-func CreateTasks(groupRepo convoy.GroupRepository, handler interface{}) error {
+func CreateTasks(groupRepo datastore.GroupRepository, handler interface{}) error {
 	var name convoy.TaskName
-	filter := &convoy.GroupFilter{}
+	filter := &datastore.GroupFilter{}
 
 	groups, err := groupRepo.LoadGroups(context.Background(), filter)
 	if err != nil {

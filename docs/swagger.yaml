@@ -1,36 +1,44 @@
 basePath: /api/v1
 definitions:
-  config.DefaultStrategyConfiguration:
+  auth.Role:
     properties:
-      intervalSeconds:
-        type: integer
-      retryLimit:
-        type: integer
-    type: object
-  config.GroupConfig:
-    properties:
-      disableEndpoint:
-        type: boolean
-      signature:
-        $ref: '#/definitions/config.SignatureConfiguration'
-      strategy:
-        $ref: '#/definitions/config.StrategyConfiguration'
-    type: object
-  config.SignatureConfiguration:
-    properties:
-      hash:
-        type: string
-      header:
-        type: string
-    type: object
-  config.StrategyConfiguration:
-    properties:
-      default:
-        $ref: '#/definitions/config.DefaultStrategyConfiguration'
+      apps:
+        items:
+          type: string
+        type: array
+      groups:
+        items:
+          type: string
+        type: array
       type:
         type: string
     type: object
-  convoy.AppMetadata:
+  datastore.APIKey:
+    properties:
+      created_at:
+        type: integer
+      delted_at:
+        type: integer
+      expires_at:
+        type: integer
+      hash:
+        type: string
+      key_type:
+        type: string
+      mask_id:
+        type: string
+      name:
+        type: string
+      role:
+        $ref: '#/definitions/auth.Role'
+      salt:
+        type: string
+      uid:
+        type: string
+      updated_at:
+        type: integer
+    type: object
+  datastore.AppMetadata:
     properties:
       group_id:
         type: string
@@ -41,7 +49,7 @@ definitions:
       uid:
         type: string
     type: object
-  convoy.Application:
+  datastore.Application:
     properties:
       created_at:
         type: string
@@ -49,7 +57,7 @@ definitions:
         type: string
       endpoints:
         items:
-          $ref: '#/definitions/convoy.Endpoint'
+          $ref: '#/definitions/datastore.Endpoint'
         type: array
       events:
         type: integer
@@ -64,7 +72,14 @@ definitions:
       updated_at:
         type: string
     type: object
-  convoy.DeliveryAttempt:
+  datastore.DefaultStrategyConfiguration:
+    properties:
+      intervalSeconds:
+        type: integer
+      retryLimit:
+        type: integer
+    type: object
+  datastore.DeliveryAttempt:
     properties:
       api_version:
         type: string
@@ -85,11 +100,11 @@ definitions:
       msg_id:
         type: string
       request_http_header:
-        $ref: '#/definitions/convoy.HttpHeader'
+        $ref: '#/definitions/datastore.HttpHeader'
       response_data:
         type: string
       response_http_header:
-        $ref: '#/definitions/convoy.HttpHeader'
+        $ref: '#/definitions/datastore.HttpHeader'
       status:
         type: boolean
       uid:
@@ -99,7 +114,7 @@ definitions:
       url:
         type: string
     type: object
-  convoy.Endpoint:
+  datastore.Endpoint:
     properties:
       created_at:
         type: string
@@ -122,7 +137,7 @@ definitions:
       updated_at:
         type: string
     type: object
-  convoy.EndpointMetadata:
+  datastore.EndpointMetadata:
     properties:
       secret:
         type: string
@@ -135,10 +150,10 @@ definitions:
       uid:
         type: string
     type: object
-  convoy.Event:
+  datastore.Event:
     properties:
       app_metadata:
-        $ref: '#/definitions/convoy.AppMetadata'
+        $ref: '#/definitions/datastore.AppMetadata'
       created_at:
         type: string
       data:
@@ -166,10 +181,10 @@ definitions:
       updated_at:
         type: string
     type: object
-  convoy.EventDelivery:
+  datastore.EventDelivery:
     properties:
       app_metadata:
-        $ref: '#/definitions/convoy.AppMetadata'
+        $ref: '#/definitions/datastore.AppMetadata'
       created_at:
         type: string
       deleted_at:
@@ -177,12 +192,12 @@ definitions:
       description:
         type: string
       endpoint:
-        $ref: '#/definitions/convoy.EndpointMetadata'
+        $ref: '#/definitions/datastore.EndpointMetadata'
         description: Endpoint contains the destination of the event.
       event_metadata:
-        $ref: '#/definitions/convoy.EventMetadata'
+        $ref: '#/definitions/datastore.EventMetadata'
       metadata:
-        $ref: '#/definitions/convoy.Metadata'
+        $ref: '#/definitions/datastore.Metadata'
       status:
         type: string
       uid:
@@ -190,17 +205,22 @@ definitions:
       updated_at:
         type: string
     type: object
-  convoy.EventMetadata:
+  datastore.EventMetadata:
     properties:
       name:
         type: string
       uid:
         type: string
     type: object
-  convoy.Group:
+  datastore.ExponentialBackoffStrategyConfiguration:
+    properties:
+      retryLimit:
+        type: integer
+    type: object
+  datastore.Group:
     properties:
       config:
-        $ref: '#/definitions/config.GroupConfig'
+        $ref: '#/definitions/datastore.GroupConfig'
       created_at:
         type: string
       deleted_at:
@@ -209,16 +229,34 @@ definitions:
         type: string
       name:
         type: string
+      statistics:
+        $ref: '#/definitions/datastore.GroupStatistics'
       uid:
         type: string
       updated_at:
         type: string
     type: object
-  convoy.HttpHeader:
+  datastore.GroupConfig:
+    properties:
+      disable_endpoint:
+        type: boolean
+      signature:
+        $ref: '#/definitions/datastore.SignatureConfiguration'
+      strategy:
+        $ref: '#/definitions/datastore.StrategyConfiguration'
+    type: object
+  datastore.GroupStatistics:
+    properties:
+      messages_sent:
+        type: integer
+      total_apps:
+        type: integer
+    type: object
+  datastore.HttpHeader:
     additionalProperties:
       type: string
     type: object
-  convoy.Metadata:
+  datastore.Metadata:
     properties:
       data:
         description: Data to be sent to endpoint.
@@ -240,6 +278,65 @@ definitions:
       retry_limit:
         type: integer
       strategy:
+        type: string
+    type: object
+  datastore.PaginationData:
+    properties:
+      next:
+        type: integer
+      page:
+        type: integer
+      perPage:
+        type: integer
+      prev:
+        type: integer
+      total:
+        type: integer
+      totalPage:
+        type: integer
+    type: object
+  datastore.SignatureConfiguration:
+    properties:
+      hash:
+        type: string
+      header:
+        type: string
+    type: object
+  datastore.StrategyConfiguration:
+    properties:
+      default:
+        $ref: '#/definitions/datastore.DefaultStrategyConfiguration'
+      exponentialBackoff:
+        $ref: '#/definitions/datastore.ExponentialBackoffStrategyConfiguration'
+      type:
+        type: string
+    type: object
+  models.APIKey:
+    properties:
+      expires_at:
+        type: string
+      key_type:
+        type: string
+      name:
+        type: string
+      role:
+        $ref: '#/definitions/auth.Role'
+    type: object
+  models.APIKeyResponse:
+    properties:
+      created_at:
+        type: string
+      expires_at:
+        type: string
+      key:
+        type: string
+      key_type:
+        type: string
+      name:
+        type: string
+      role:
+        $ref: '#/definitions/auth.Role'
+      uid:
         type: string
     type: object
   models.Application:
@@ -279,26 +376,26 @@ definitions:
   models.Group:
     properties:
       config:
-        $ref: '#/definitions/config.GroupConfig'
+        $ref: '#/definitions/datastore.GroupConfig'
       logo_url:
         type: string
       name:
         type: string
     type: object
-  mongopagination.PaginationData:
+  models.PortalAPIKeyResponse:
     properties:
-      next:
-        type: integer
-      page:
-        type: integer
-      perPage:
-        type: integer
-      prev:
-        type: integer
-      total:
-        type: integer
-      totalPage:
-        type: integer
+      app_id:
+        type: string
+      group_id:
+        type: string
+      key:
+        type: string
+      key_type:
+        type: string
+      role:
+        $ref: '#/definitions/auth.Role'
+      url:
+        type: string
     type: object
   server.Stub:
     type: object
@@ -306,7 +403,7 @@ definitions:
     properties:
       content: {}
       pagination:
-        $ref: '#/definitions/mongopagination.PaginationData'
+        $ref: '#/definitions/datastore.PaginationData'
     type: object
   server.serverResponse:
     properties:
@@ -319,18 +416,18 @@ definitions:
       status:
         type: boolean
     type: object
-host: localhost:8080
+host: cloud.staging.getconvoy.io
 info:
   contact:
-    email: engineering@convoy.io
+    email: Info@frain.dev
     name: API Support
-    url: http://www.swagger.io/support
+    url: https://getconvoy.io/docs
   description: Convoy is a fast and secure distributed webhooks service. This document
-    contains Convoy's API specification.
+    contains datastore.s API specification.
   license:
     name: Mozilla Public License 2.0
     url: https://www.mozilla.org/en-US/MPL/2.0/
-  termsOfService: https://convoy.io/terms
+  termsOfService: https://getconvoy.io/terms
   title: Convoy API Specification
   version: 0.1.12
 paths:
@@ -352,6 +449,10 @@ paths:
         in: query
         name: sort
         type: string
+      - description: app title
+        in: query
+        name: q
+        type: string
       produces:
       - application/json
       responses:
@@ -367,7 +468,7 @@ paths:
                   - properties:
                       content:
                         items:
-                          $ref: '#/definitions/convoy.Application'
+                          $ref: '#/definitions/datastore.Application'
                         type: array
                     type: object
               type: object
@@ -424,7 +525,7 @@ paths:
             - $ref: '#/definitions/server.serverResponse'
             - properties:
                 data:
-                  $ref: '#/definitions/convoy.Application'
+                  $ref: '#/definitions/datastore.Application'
               type: object
         "400":
           description: Bad Request
@@ -533,7 +634,7 @@ paths:
             - $ref: '#/definitions/server.serverResponse'
             - properties:
                 data:
-                  $ref: '#/definitions/convoy.Application'
+                  $ref: '#/definitions/datastore.Application'
               type: object
         "400":
           description: Bad Request
@@ -593,7 +694,7 @@ paths:
             - $ref: '#/definitions/server.serverResponse'
             - properties:
                 data:
-                  $ref: '#/definitions/convoy.Application'
+                  $ref: '#/definitions/datastore.Application'
               type: object
         "400":
           description: Bad Request
@@ -649,7 +750,7 @@ paths:
             - properties:
                 data:
                   items:
-                    $ref: '#/definitions/convoy.Endpoint'
+                    $ref: '#/definitions/datastore.Endpoint'
                   type: array
               type: object
         "400":
@@ -710,7 +811,7 @@ paths:
             - $ref: '#/definitions/server.serverResponse'
             - properties:
                 data:
-                  $ref: '#/definitions/convoy.Endpoint'
+                  $ref: '#/definitions/datastore.Endpoint'
               type: object
         "400":
           description: Bad Request
@@ -829,7 +930,7 @@ paths:
             - $ref: '#/definitions/server.serverResponse'
             - properties:
                 data:
-                  $ref: '#/definitions/convoy.Endpoint'
+                  $ref: '#/definitions/datastore.Endpoint'
               type: object
         "400":
           description: Bad Request
@@ -894,7 +995,7 @@ paths:
             - $ref: '#/definitions/server.serverResponse'
             - properties:
                 data:
-                  $ref: '#/definitions/convoy.Endpoint'
+                  $ref: '#/definitions/datastore.Endpoint'
               type: object
         "400":
           description: Bad Request
@@ -988,7 +1089,7 @@ paths:
                       content:
                         items:
                           allOf:
-                          - $ref: '#/definitions/convoy.EventDelivery'
+                          - $ref: '#/definitions/datastore.EventDelivery'
                           - properties:
                               data:
                                 $ref: '#/definitions/server.Stub'
@@ -1050,7 +1151,7 @@ paths:
             - properties:
                 data:
                   allOf:
-                  - $ref: '#/definitions/convoy.Event'
+                  - $ref: '#/definitions/datastore.Event'
                   - properties:
                       data:
                         $ref: '#/definitions/server.Stub'
@@ -1110,7 +1211,7 @@ paths:
             - properties:
                 data:
                   allOf:
-                  - $ref: '#/definitions/convoy.Event'
+                  - $ref: '#/definitions/datastore.Event'
                   - properties:
                       data:
                         $ref: '#/definitions/server.Stub'
@@ -1324,7 +1425,7 @@ paths:
                       content:
                         items:
                           allOf:
-                          - $ref: '#/definitions/convoy.Event'
+                          - $ref: '#/definitions/datastore.Event'
                           - properties:
                               data:
                                 $ref: '#/definitions/server.Stub'
@@ -1386,7 +1487,7 @@ paths:
             - properties:
                 data:
                   allOf:
-                  - $ref: '#/definitions/convoy.Event'
+                  - $ref: '#/definitions/datastore.Event'
                   - properties:
                       data:
                         $ref: '#/definitions/server.Stub'
@@ -1446,7 +1547,7 @@ paths:
             - properties:
                 data:
                   allOf:
-                  - $ref: '#/definitions/convoy.Event'
+                  - $ref: '#/definitions/datastore.Event'
                   - properties:
                       data:
                         $ref: '#/definitions/server.Stub'
@@ -1511,7 +1612,7 @@ paths:
             - properties:
                 data:
                   items:
-                    $ref: '#/definitions/convoy.DeliveryAttempt'
+                    $ref: '#/definitions/datastore.DeliveryAttempt'
                   type: array
               type: object
         "400":
@@ -1577,7 +1678,7 @@ paths:
             - $ref: '#/definitions/server.serverResponse'
             - properties:
                 data:
-                  $ref: '#/definitions/convoy.DeliveryAttempt'
+                  $ref: '#/definitions/datastore.DeliveryAttempt'
               type: object
         "400":
           description: Bad Request
@@ -1632,7 +1733,7 @@ paths:
             - properties:
                 data:
                   items:
-                    $ref: '#/definitions/convoy.Group'
+                    $ref: '#/definitions/datastore.Group'
                   type: array
               type: object
         "400":
@@ -1688,7 +1789,7 @@ paths:
             - $ref: '#/definitions/server.serverResponse'
             - properties:
                 data:
-                  $ref: '#/definitions/convoy.Group'
+                  $ref: '#/definitions/datastore.Group'
               type: object
         "400":
           description: Bad Request
@@ -1723,6 +1824,60 @@ paths:
       tags:
       - Group
   /groups/{groupID}:
+    delete:
+      consumes:
+      - application/json
+      description: This endpoint deletes a group using its id
+      parameters:
+      - description: Group id
+        in: path
+        name: groupID
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/server.serverResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/server.Stub'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            allOf:
+            - $ref: '#/definitions/server.serverResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/server.Stub'
+              type: object
+        "401":
+          description: Unauthorized
+          schema:
+            allOf:
+            - $ref: '#/definitions/server.serverResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/server.Stub'
+              type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            allOf:
+            - $ref: '#/definitions/server.serverResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/server.Stub'
+              type: object
+      security:
+      - ApiKeyAuth: []
+      summary: Delete a group
+      tags:
+      - Group
     get:
       consumes:
       - application/json
@@ -1743,7 +1898,7 @@ paths:
             - $ref: '#/definitions/server.serverResponse'
             - properties:
                 data:
-                  $ref: '#/definitions/convoy.Group'
+                  $ref: '#/definitions/datastore.Group'
               type: object
         "400":
           description: Bad Request
@@ -1803,7 +1958,7 @@ paths:
             - $ref: '#/definitions/server.serverResponse'
             - properties:
                 data:
-                  $ref: '#/definitions/convoy.Group'
+                  $ref: '#/definitions/datastore.Group'
               type: object
         "400":
           description: Bad Request
@@ -1837,8 +1992,351 @@ paths:
       summary: Update a group
       tags:
       - Group
+  /security/applications/{appID}/keys:
+    post:
+      consumes:
+      - application/json
+      description: This endpoint creates an api key that will be used by app portal
+      parameters:
+      - description: application ID
+        in: path
+        name: appID
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            allOf:
+            - $ref: '#/definitions/server.serverResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/models.PortalAPIKeyResponse'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            allOf:
+            - $ref: '#/definitions/server.serverResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/server.Stub'
+              type: object
+        "401":
+          description: Unauthorized
+          schema:
+            allOf:
+            - $ref: '#/definitions/server.serverResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/server.Stub'
+              type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            allOf:
+            - $ref: '#/definitions/server.serverResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/server.Stub'
+              type: object
+      security:
+      - ApiKeyAuth: []
+      summary: Create an api key for app portal
+      tags:
+      - APIKey
+  /security/keys:
+    get:
+      consumes:
+      - application/json
+      description: This endpoint fetches multiple api keys
+      parameters:
+      - description: results per page
+        in: query
+        name: perPage
+        type: string
+      - description: page number
+        in: query
+        name: page
+        type: string
+      - description: sort order
+        in: query
+        name: sort
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/server.serverResponse'
+            - properties:
+                data:
+                  allOf:
+                  - $ref: '#/definitions/server.pagedResponse'
+                  - properties:
+                      content:
+                        items:
+                          $ref: '#/definitions/datastore.APIKey'
+                        type: array
+                    type: object
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            allOf:
+            - $ref: '#/definitions/server.serverResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/server.Stub'
+              type: object
+        "401":
+          description: Unauthorized
+          schema:
+            allOf:
+            - $ref: '#/definitions/server.serverResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/server.Stub'
+              type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            allOf:
+            - $ref: '#/definitions/server.serverResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/server.Stub'
+              type: object
+      security:
+      - ApiKeyAuth: []
+      summary: Fetch multiple api keys
+      tags:
+      - APIKey
+    post:
+      consumes:
+      - application/json
+      description: This endpoint creates an api key that will be used by the native
+        auth realm
+      parameters:
+      - description: API Key
+        in: body
+        name: apiKey
+        required: true
+        schema:
+          $ref: '#/definitions/models.APIKey'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/server.serverResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/models.APIKeyResponse'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            allOf:
+            - $ref: '#/definitions/server.serverResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/server.Stub'
+              type: object
+        "401":
+          description: Unauthorized
+          schema:
+            allOf:
+            - $ref: '#/definitions/server.serverResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/server.Stub'
+              type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            allOf:
+            - $ref: '#/definitions/server.serverResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/server.Stub'
+              type: object
+      security:
+      - ApiKeyAuth: []
+      summary: Create an api key
+      tags:
+      - APIKey
+  /security/keys/{keyID}:
+    get:
+      consumes:
+      - application/json
+      description: This endpoint fetches an api key by its id
+      parameters:
+      - description: API Key id
+        in: path
+        name: keyID
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/server.serverResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/datastore.APIKey'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            allOf:
+            - $ref: '#/definitions/server.serverResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/server.Stub'
+              type: object
+        "401":
+          description: Unauthorized
+          schema:
+            allOf:
+            - $ref: '#/definitions/server.serverResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/server.Stub'
+              type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            allOf:
+            - $ref: '#/definitions/server.serverResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/server.Stub'
+              type: object
+      security:
+      - ApiKeyAuth: []
+      summary: Get api key by id
+      tags:
+      - APIKey
+    put:
+      consumes:
+      - application/json
+      description: This endpoint updates an api key
+      parameters:
+      - description: API Key id
+        in: path
+        name: keyID
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/server.serverResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/datastore.APIKey'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            allOf:
+            - $ref: '#/definitions/server.serverResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/server.Stub'
+              type: object
+        "401":
+          description: Unauthorized
+          schema:
+            allOf:
+            - $ref: '#/definitions/server.serverResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/server.Stub'
+              type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            allOf:
+            - $ref: '#/definitions/server.serverResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/server.Stub'
+              type: object
+      security:
+      - ApiKeyAuth: []
+      summary: update api key
+      tags:
+      - APIKey
+  /security/keys/{keyID}/revoke:
+    put:
+      consumes:
+      - application/json
+      description: This endpoint revokes an api key
+      parameters:
+      - description: API Key id
+        in: path
+        name: keyID
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/server.serverResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/server.Stub'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            allOf:
+            - $ref: '#/definitions/server.serverResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/server.Stub'
+              type: object
+        "401":
+          description: Unauthorized
+          schema:
+            allOf:
+            - $ref: '#/definitions/server.serverResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/server.Stub'
+              type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            allOf:
+            - $ref: '#/definitions/server.serverResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/server.Stub'
+              type: object
+      security:
+      - ApiKeyAuth: []
+      summary: Revoke API Key
+      tags:
+      - APIKey
 schemes:
-- http
 - https
 securityDefinitions:
   ApiKeyAuth:
@@ -1853,6 +2351,8 @@ tags:
   name: Application Endpoints
 - description: Event related APIs
   name: Events
+- description: API Key related APIs
+  name: APIKey
 - description: EventDelivery related APIs
   name: EventDelivery
 - description: Delivery Attempt related APIs

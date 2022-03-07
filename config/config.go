@@ -8,17 +8,18 @@ import (
 	"strings"
 	"sync/atomic"
 
-	log "github.com/sirupsen/logrus"
-
-	"github.com/kelseyhightower/envconfig"
-
 	"github.com/frain-dev/convoy/config/algo"
+	"github.com/kelseyhightower/envconfig"
+	log "github.com/sirupsen/logrus"
 )
+
+const MaxResponseSize = 50 * 1024
 
 var cfgSingleton atomic.Value
 
 type DatabaseConfiguration struct {
-	Dsn string `json:"dsn" envconfig:"CONVOY_MONGO_DSN"`
+	Type string `json:"type" envconfig:"CONVOY_DB_TYPE"`
+	Dsn  string `json:"dsn" envconfig:"CONVOY_DB_DSN"`
 }
 
 type SentryConfiguration struct {
@@ -34,6 +35,7 @@ type HTTPServerConfiguration struct {
 	SSLCertFile string `json:"ssl_cert_file" envconfig:"CONVOY_SSL_CERT_FILE"`
 	SSLKeyFile  string `json:"ssl_key_file" envconfig:"CONVOY_SSL_KEY_FILE"`
 	Port        uint32 `json:"port" envconfig:"PORT"`
+	WorkerPort  uint32 `json:"worker_port" envconfig:"WORKER_PORT"`
 }
 
 type QueueConfiguration struct {
@@ -50,35 +52,14 @@ type FileRealmOption struct {
 	APIKey []APIKeyAuth `json:"api_key"`
 }
 
-type BasicAuth struct {
-	Username string `json:"username"`
-	Password string `json:"password"`
-	Role     Role   `json:"role"`
-}
-
-type APIKeyAuth struct {
-	APIKey string `json:"api_key"`
-	Role   Role   `json:"role"`
-}
-
 type AuthConfiguration struct {
-	RequireAuth bool            `json:"require_auth"`
-	File        FileRealmOption `json:"file"`
+	RequireAuth bool               `json:"require_auth"`
+	File        FileRealmOption    `json:"file"`
+	Native      NativeRealmOptions `json:"native"`
 }
 
-type StrategyConfiguration struct {
-	Type    StrategyProvider             `json:"type"`
-	Default DefaultStrategyConfiguration `json:"default"`
-}
-
-type DefaultStrategyConfiguration struct {
-	IntervalSeconds uint64 `json:"intervalSeconds" envconfig:"CONVOY_INTERVAL_SECONDS"`
-	RetryLimit      uint64 `json:"retryLimit" envconfig:"CONVOY_RETRY_LIMIT"`
-}
-
-type SignatureConfiguration struct {
-	Header SignatureHeaderProvider `json:"header" envconfig:"CONVOY_SIGNATURE_HEADER"`
-	Hash   string                  `json:"hash" envconfig:"CONVOY_SIGNATURE_HASH"`
+type NativeRealmOptions struct {
+	Enabled bool `json:"enabled"`
 }
 
 type SMTPConfiguration struct {
@@ -90,11 +71,40 @@ type SMTPConfiguration struct {
 	From     string `json:"from"`
 	ReplyTo  string `json:"reply-to"`
 }
+type LoggerConfiguration struct {
+	Type      LoggerProvider `json:"type"`
+	ServerLog struct {
+		Level string `json:"level"`
+	} `json:"server_log"`
+}
 
-type GroupConfig struct {
-	Strategy        StrategyConfiguration
-	Signature       SignatureConfiguration
-	DisableEndpoint bool `envconfig:"CONVOY_DISABLE_ENDPOINT"`
+type TracerConfiguration struct {
+	Type TracerProvider `json:"type"`
+}
+
+type CacheConfiguration struct {
+	Type  CacheProvider           `json:"type"`
+	Redis RedisCacheConfiguration `json:"redis"`
+}
+
+type RedisCacheConfiguration struct {
+	Dsn string `json:"dsn"`
+}
+
+type LimiterConfiguration struct {
+	Type  LimiterProvider           `json:"type"`
+	Redis RedisLimiterConfiguration `json:"redis"`
+}
+
+type RedisLimiterConfiguration struct {
+	Dsn string `json:"dsn"`
+}
+
+type NewRelicConfiguration struct {
+	AppName                  string `json:"app_name"`
+	LicenseKey               string `json:"license_key"`
+	ConfigEnabled            bool   `json:"config_enabled"`
+	DistributedTracerEnabled bool   `json:"distributed_tracer_enabled"`
 }
 
 type Configuration struct {
@@ -103,25 +113,71 @@ type Configuration struct {
 	Sentry          SentryConfiguration   `json:"sentry"`
 	Queue           QueueConfiguration    `json:"queue"`
 	Server          ServerConfiguration   `json:"server"`
+	MaxResponseSize uint64                `json:"max_response_size"`
 	GroupConfig     GroupConfig           `json:"group"`
 	SMTP            SMTPConfiguration     `json:"smtp"`
 	Environment     string                `json:"env" envconfig:"CONVOY_ENV" required:"true" default:"development"`
 	MultipleTenants bool                  `json:"multiple_tenants"`
+	Logger          LoggerConfiguration   `json:"logger"`
+	Tracer          TracerConfiguration   `json:"tracer"`
+	NewRelic        NewRelicConfiguration `json:"new_relic"`
+	Cache           CacheConfiguration    `json:"cache"`
+	Limiter         LimiterConfiguration  `json:"limiter"`
+	BaseUrl         string                `json:"base_url"`
 }
-
-type QueueProvider string
-type StrategyProvider string
-type SignatureHeaderProvider string
 
 const (
 	envPrefix string = "convoy"
 
 	DevelopmentEnvironment string = "development"
-
-	RedisQueueProvider      QueueProvider           = "redis"
-	DefaultStrategyProvider StrategyProvider        = "default"
-	DefaultSignatureHeader  SignatureHeaderProvider = "X-Convoy-Signature"
 )
+
+const (
+	RedisQueueProvider                 QueueProvider           = "redis"
+	InMemoryQueueProvider              QueueProvider           = "in-memory"
+	DefaultStrategyProvider            StrategyProvider        = "default"
+	ExponentialBackoffStrategyProvider StrategyProvider        = "exponential-backoff"
+	DefaultSignatureHeader             SignatureHeaderProvider = "X-Convoy-Signature"
+	ConsoleLoggerProvider              LoggerProvider          = "console"
+	NewRelicTracerProvider             TracerProvider          = "new_relic"
+	RedisCacheProvider                 CacheProvider           = "redis"
+	RedisLimiterProvider               LimiterProvider         = "redis"
+)
+
+type GroupConfig struct {
+	Strategy        StrategyConfiguration  `json:"strategy"`
+	Signature       SignatureConfiguration `json:"signature"`
+	DisableEndpoint bool                   `json:"disable_endpoint"`
+}
+
+type StrategyConfiguration struct {
+	Type               StrategyProvider                        `json:"type"`
+	Default            DefaultStrategyConfiguration            `json:"default"`
+	ExponentialBackoff ExponentialBackoffStrategyConfiguration `json:"exponentialBackoff,omitempty"`
+}
+
+type DefaultStrategyConfiguration struct {
+	IntervalSeconds uint64 `json:"intervalSeconds" envconfig:"CONVOY_INTERVAL_SECONDS"`
+	RetryLimit      uint64 `json:"retryLimit" envconfig:"CONVOY_RETRY_LIMIT"`
+}
+
+type ExponentialBackoffStrategyConfiguration struct {
+	RetryLimit uint64 `json:"retryLimit" envconfig:"CONVOY_RETRY_LIMIT"`
+}
+
+type SignatureConfiguration struct {
+	Header SignatureHeaderProvider `json:"header" envconfig:"CONVOY_SIGNATURE_HEADER"`
+	Hash   string                  `json:"hash" envconfig:"CONVOY_SIGNATURE_HASH"`
+}
+
+type AuthProvider string
+type QueueProvider string
+type StrategyProvider string
+type SignatureHeaderProvider string
+type LoggerProvider string
+type TracerProvider string
+type CacheProvider string
+type LimiterProvider string
 
 func (s SignatureHeaderProvider) String() string {
 	return string(s)
@@ -184,6 +240,16 @@ func LoadConfig(p string, override *Configuration) error {
 		log.Warnf("using default signature header: %s", DefaultSignatureHeader)
 	}
 
+	kb := c.MaxResponseSize * 1024 // to kilobyte
+	if kb == 0 {
+		c.MaxResponseSize = MaxResponseSize
+	} else if kb > MaxResponseSize {
+		log.Warnf("maximum response size of %dkb too large, using default value of %dkb", c.MaxResponseSize, MaxResponseSize/1024)
+		c.MaxResponseSize = MaxResponseSize
+	} else {
+		c.MaxResponseSize = kb
+	}
+
 	err = ensureStrategyConfig(c.GroupConfig.Strategy)
 	if err != nil {
 		return err
@@ -211,29 +277,25 @@ func LoadConfig(p string, override *Configuration) error {
 	return nil
 }
 
-func ensureAuthConfig(auth AuthConfiguration) error {
-	if !auth.RequireAuth {
-		return nil
-	}
-
+func ensureAuthConfig(authCfg AuthConfiguration) error {
 	var err error
-	for _, r := range auth.File.Basic {
+	for _, r := range authCfg.File.Basic {
 		if r.Username == "" || r.Password == "" {
 			return errors.New("username and password are required for basic auth config")
 		}
 
-		err = checkRole(&r.Role, "basic auth")
+		err = r.Role.Validate("basic auth")
 		if err != nil {
 			return err
 		}
 	}
 
-	for _, r := range auth.File.APIKey {
+	for _, r := range authCfg.File.APIKey {
 		if r.APIKey == "" {
 			return errors.New("api-key is required for api-key auth config")
 		}
 
-		err = checkRole(&r.Role, "api-key auth")
+		err = r.Role.Validate("api-key auth")
 		if err != nil {
 			return err
 		}
@@ -265,6 +327,10 @@ func ensureQueueConfig(queueCfg QueueConfiguration) error {
 		if queueCfg.Redis.DSN == "" {
 			return errors.New("redis queue dsn is empty")
 		}
+
+	case InMemoryQueueProvider:
+		return nil
+
 	default:
 		return fmt.Errorf("unsupported queue type: %s", queueCfg.Type)
 	}
@@ -276,6 +342,10 @@ func ensureStrategyConfig(strategyCfg StrategyConfiguration) error {
 	case DefaultStrategyProvider:
 		if strategyCfg.Default.IntervalSeconds == 0 || strategyCfg.Default.RetryLimit == 0 {
 			return errors.New("both interval seconds and retry limit are required for default strategy configuration")
+		}
+	case ExponentialBackoffStrategyProvider:
+		if strategyCfg.ExponentialBackoff.RetryLimit == 0 {
+			return errors.New("retry limit is required for exponential backoff retry strategy configuration")
 		}
 	default:
 		return fmt.Errorf("unsupported strategy type: %s", strategyCfg.Type)

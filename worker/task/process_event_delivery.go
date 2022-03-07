@@ -10,8 +10,10 @@ import (
 
 	"github.com/frain-dev/convoy"
 	"github.com/frain-dev/convoy/config"
+	"github.com/frain-dev/convoy/datastore"
 	"github.com/frain-dev/convoy/net"
 	"github.com/frain-dev/convoy/queue"
+	"github.com/frain-dev/convoy/retrystrategies"
 	"github.com/frain-dev/convoy/smtp"
 	"github.com/frain-dev/convoy/util"
 	"github.com/google/uuid"
@@ -34,7 +36,7 @@ func (e *EndpointError) Delay() time.Duration {
 	return e.delay
 }
 
-func ProcessEventDelivery(appRepo convoy.ApplicationRepository, eventDeliveryRepo convoy.EventDeliveryRepository, groupRepo convoy.GroupRepository) func(*queue.Job) error {
+func ProcessEventDelivery(appRepo datastore.ApplicationRepository, eventDeliveryRepo datastore.EventDeliveryRepository, groupRepo datastore.GroupRepository) func(*queue.Job) error {
 	return func(job *queue.Job) error {
 		Id := job.ID
 
@@ -47,18 +49,18 @@ func ProcessEventDelivery(appRepo convoy.ApplicationRepository, eventDeliveryRep
 		}
 
 		switch m.Status {
-		case convoy.ProcessingEventStatus,
-			convoy.SuccessEventStatus:
+		case datastore.ProcessingEventStatus,
+			datastore.SuccessEventStatus:
 			return nil
 		}
 
-		err = eventDeliveryRepo.UpdateStatusOfEventDelivery(context.Background(), *m, convoy.ProcessingEventStatus)
+		err = eventDeliveryRepo.UpdateStatusOfEventDelivery(context.Background(), *m, datastore.ProcessingEventStatus)
 		if err != nil {
 			log.WithError(err).Error("failed to update status of messages - ")
 			return nil
 		}
 
-		var attempt convoy.DeliveryAttempt
+		var attempt datastore.DeliveryAttempt
 		var secret = m.EndpointMetadata.Secret
 
 		cfg, err := config.Get()
@@ -71,7 +73,7 @@ func ProcessEventDelivery(appRepo convoy.ApplicationRepository, eventDeliveryRep
 		var done = true
 
 		e := m.EndpointMetadata
-		if m.Status == convoy.SuccessEventStatus {
+		if m.Status == datastore.SuccessEventStatus {
 			log.Debugf("endpoint %s already merged with message %s\n", e.TargetURL, m.UID)
 			return nil
 		}
@@ -82,7 +84,7 @@ func ProcessEventDelivery(appRepo convoy.ApplicationRepository, eventDeliveryRep
 			return &EndpointError{Err: err}
 		}
 
-		if dbEndpoint.Status == convoy.InactiveEndpointStatus {
+		if dbEndpoint.Status == datastore.InactiveEndpointStatus {
 			log.Debugf("endpoint %s is inactive, failing to send.", e.TargetURL)
 			return nil
 		}
@@ -112,7 +114,7 @@ func ProcessEventDelivery(appRepo convoy.ApplicationRepository, eventDeliveryRep
 		attemptStatus := false
 		start := time.Now()
 
-		resp, err := dispatch.SendRequest(e.TargetURL, string(convoy.HttpPost), []byte(bStr), g.Config.Signature.Header.String(), hmac)
+		resp, err := dispatch.SendRequest(e.TargetURL, string(convoy.HttpPost), []byte(bStr), g.Config.Signature.Header.String(), hmac, int64(cfg.MaxResponseSize))
 		status := "-"
 		statusCode := 0
 		if resp != nil {
@@ -129,27 +131,27 @@ func ProcessEventDelivery(appRepo convoy.ApplicationRepository, eventDeliveryRep
 			"duration": duration,
 		})
 
+		var delayDuration time.Duration = retrystrategies.NewRetryStrategyFromMetadata(*m.Metadata).NextDuration(m.Metadata.NumTrials)
 		if err == nil && statusCode >= 200 && statusCode <= 299 {
 			requestLogger.Infof("%s", m.UID)
 			log.Infof("%s sent", m.UID)
 			attemptStatus = true
 			e.Sent = true
 
-			m.Status = convoy.SuccessEventStatus
+			m.Status = datastore.SuccessEventStatus
 			m.Description = ""
 		} else {
 			requestLogger.Errorf("%s", m.UID)
 			done = false
 			e.Sent = false
 
-			m.Status = convoy.RetryEventStatus
+			m.Status = datastore.RetryEventStatus
 
-			delay := m.Metadata.IntervalSeconds
-			nextTime := time.Now().Add(time.Duration(delay) * time.Second)
+			nextTime := time.Now().Add(delayDuration)
 			m.Metadata.NextSendTime = primitive.NewDateTimeFromTime(nextTime)
 			attempts := m.Metadata.NumTrials + 1
 
-			log.Errorf("%s next retry time is %s (strategy = %s, delay = %d, attempts = %d/%d)\n", m.UID, nextTime.Format(time.ANSIC), m.Metadata.Strategy, delay, attempts, m.Metadata.RetryLimit)
+			log.Errorf("%s next retry time is %s (strategy = %s, delay = %d, attempts = %d/%d)\n", m.UID, nextTime.Format(time.ANSIC), m.Metadata.Strategy, m.Metadata.IntervalSeconds, attempts, m.Metadata.RetryLimit)
 		}
 
 		// Request failed but statusCode is 200 <= x <= 299
@@ -157,9 +159,9 @@ func ProcessEventDelivery(appRepo convoy.ApplicationRepository, eventDeliveryRep
 			log.Errorf("%s failed. Reason: %s", m.UID, err)
 		}
 
-		if done && dbEndpoint.Status == convoy.PendingEndpointStatus && g.Config.DisableEndpoint {
+		if done && dbEndpoint.Status == datastore.PendingEndpointStatus && g.Config.DisableEndpoint {
 			endpoints := []string{dbEndpoint.UID}
-			endpointStatus := convoy.ActiveEndpointStatus
+			endpointStatus := datastore.ActiveEndpointStatus
 
 			err := appRepo.UpdateApplicationEndpointsStatus(context.Background(), m.AppMetadata.UID, endpoints, endpointStatus)
 			if err != nil {
@@ -175,9 +177,9 @@ func ProcessEventDelivery(appRepo convoy.ApplicationRepository, eventDeliveryRep
 			}
 		}
 
-		if !done && dbEndpoint.Status == convoy.PendingEndpointStatus {
+		if !done && dbEndpoint.Status == datastore.PendingEndpointStatus {
 			endpoints := []string{dbEndpoint.UID}
-			endpointStatus := convoy.InactiveEndpointStatus
+			endpointStatus := datastore.InactiveEndpointStatus
 
 			err := appRepo.UpdateApplicationEndpointsStatus(context.Background(), m.AppMetadata.UID, endpoints, endpointStatus)
 			if err != nil {
@@ -191,19 +193,19 @@ func ProcessEventDelivery(appRepo convoy.ApplicationRepository, eventDeliveryRep
 
 		if m.Metadata.NumTrials >= m.Metadata.RetryLimit {
 			if done {
-				if m.Status != convoy.SuccessEventStatus {
+				if m.Status != datastore.SuccessEventStatus {
 					log.Errorln("an anomaly has occurred. retry limit exceeded, fan out is done but event status is not successful")
-					m.Status = convoy.FailureEventStatus
+					m.Status = datastore.FailureEventStatus
 				}
 			} else {
 				log.Errorf("%s retry limit exceeded ", m.UID)
 				m.Description = "Retry limit exceeded"
-				m.Status = convoy.FailureEventStatus
+				m.Status = datastore.FailureEventStatus
 			}
 
-			if g.Config.DisableEndpoint && dbEndpoint.Status != convoy.PendingEndpointStatus {
+			if g.Config.DisableEndpoint && dbEndpoint.Status != datastore.PendingEndpointStatus {
 				endpoints := []string{dbEndpoint.UID}
-				endpointStatus := convoy.InactiveEndpointStatus
+				endpointStatus := datastore.InactiveEndpointStatus
 
 				err := appRepo.UpdateApplicationEndpointsStatus(context.Background(), m.AppMetadata.UID, endpoints, endpointStatus)
 				if err != nil {
@@ -226,15 +228,14 @@ func ProcessEventDelivery(appRepo convoy.ApplicationRepository, eventDeliveryRep
 		}
 
 		if !done && m.Metadata.NumTrials < m.Metadata.RetryLimit {
-			delay := time.Duration(m.Metadata.IntervalSeconds) * time.Second
-			return &EndpointError{Err: ErrDeliveryAttemptFailed, delay: delay}
+			return &EndpointError{Err: ErrDeliveryAttemptFailed, delay: delayDuration}
 		}
 
 		return nil
 	}
 }
 
-func sendEmailNotification(m *convoy.EventDelivery, g *convoy.Group, s *smtp.SmtpClient, status convoy.EndpointStatus) error {
+func sendEmailNotification(m *datastore.EventDelivery, g *datastore.Group, s *smtp.SmtpClient, status datastore.EndpointStatus) error {
 	email := m.AppMetadata.SupportEmail
 
 	logoURL := g.LogoURL
@@ -247,12 +248,12 @@ func sendEmailNotification(m *convoy.EventDelivery, g *convoy.Group, s *smtp.Smt
 	return nil
 }
 
-func parseAttemptFromResponse(m *convoy.EventDelivery, e *convoy.EndpointMetadata, resp *net.Response, attemptStatus bool) convoy.DeliveryAttempt {
+func parseAttemptFromResponse(m *datastore.EventDelivery, e *datastore.EndpointMetadata, resp *net.Response, attemptStatus bool) datastore.DeliveryAttempt {
 
 	responseHeader := util.ConvertDefaultHeaderToCustomHeader(&resp.ResponseHeader)
 	requestHeader := util.ConvertDefaultHeaderToCustomHeader(&resp.RequestHeader)
 
-	return convoy.DeliveryAttempt{
+	return datastore.DeliveryAttempt{
 		ID:         primitive.NewObjectID(),
 		UID:        uuid.New().String(),
 		URL:        resp.URL.String(),

@@ -1,50 +1,68 @@
 package server
 
 import (
-	"encoding/json"
 	"errors"
 	"fmt"
 	"net/http"
 	"time"
 
-	mongopagination "github.com/gobeam/mongo-go-pagination"
+	"github.com/frain-dev/convoy/cache"
+	limiter "github.com/frain-dev/convoy/limiter"
+	"github.com/frain-dev/convoy/logger"
 	"github.com/google/uuid"
-	log "github.com/sirupsen/logrus"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 
-	"github.com/frain-dev/convoy"
+	"github.com/frain-dev/convoy/datastore"
 	"github.com/frain-dev/convoy/queue"
 	"github.com/frain-dev/convoy/server/models"
+	"github.com/frain-dev/convoy/tracer"
 	"github.com/frain-dev/convoy/util"
+
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/render"
+	log "github.com/sirupsen/logrus"
 )
 
 type applicationHandler struct {
-	appRepo           convoy.ApplicationRepository
-	eventRepo         convoy.EventRepository
-	eventDeliveryRepo convoy.EventDeliveryRepository
-	groupRepo         convoy.GroupRepository
+	appRepo           datastore.ApplicationRepository
+	eventRepo         datastore.EventRepository
+	eventDeliveryRepo datastore.EventDeliveryRepository
+	groupRepo         datastore.GroupRepository
+	apiKeyRepo        datastore.APIKeyRepository
 	eventQueue        queue.Queuer
+	logger            logger.Logger
+	tracer            tracer.Tracer
+	cache             cache.Cache
+	limiter           limiter.RateLimiter
 }
 
 type pagedResponse struct {
-	Content    interface{}                     `json:"content,omitempty"`
-	Pagination *mongopagination.PaginationData `json:"pagination,omitempty"`
+	Content    interface{}               `json:"content,omitempty"`
+	Pagination *datastore.PaginationData `json:"pagination,omitempty"`
 }
 
-func newApplicationHandler(eventRepo convoy.EventRepository,
-	eventDeliveryRepo convoy.EventDeliveryRepository,
-	appRepo convoy.ApplicationRepository,
-	groupRepo convoy.GroupRepository,
-	eventQueue queue.Queuer) *applicationHandler {
+func newApplicationHandler(eventRepo datastore.EventRepository,
+	eventDeliveryRepo datastore.EventDeliveryRepository,
+	appRepo datastore.ApplicationRepository,
+	groupRepo datastore.GroupRepository,
+	apiKeyRepo datastore.APIKeyRepository,
+	eventQueue queue.Queuer,
+	logger logger.Logger,
+	tracer tracer.Tracer,
+	cache cache.Cache,
+	limiter limiter.RateLimiter) *applicationHandler {
 
 	return &applicationHandler{
 		eventRepo:         eventRepo,
 		eventDeliveryRepo: eventDeliveryRepo,
+		apiKeyRepo:        apiKeyRepo,
 		appRepo:           appRepo,
 		groupRepo:         groupRepo,
 		eventQueue:        eventQueue,
+		logger:            logger,
+		tracer:            tracer,
+		cache:             cache,
+		limiter:           limiter,
 	}
 }
 
@@ -55,7 +73,7 @@ func newApplicationHandler(eventRepo convoy.EventRepository,
 // @Accept  json
 // @Produce  json
 // @Param appID path string true "application id"
-// @Success 200 {object} serverResponse{data=convoy.Application}
+// @Success 200 {object} serverResponse{data=datastore.Application}
 // @Failure 400,401,500 {object} serverResponse{data=Stub}
 // @Security ApiKeyAuth
 // @Router /applications/{appID} [get]
@@ -74,17 +92,20 @@ func (a *applicationHandler) GetApp(w http.ResponseWriter, r *http.Request) {
 // @Param perPage query string false "results per page"
 // @Param page query string false "page number"
 // @Param sort query string false "sort order"
-// @Success 200 {object} serverResponse{data=pagedResponse{content=[]convoy.Application}}
+// @Param q query string false "app title"
+// @Success 200 {object} serverResponse{data=pagedResponse{content=[]datastore.Application}}
 // @Failure 400,401,500 {object} serverResponse{data=Stub}
 // @Security ApiKeyAuth
 // @Router /applications [get]
 func (a *applicationHandler) GetApps(w http.ResponseWriter, r *http.Request) {
 	pageable := getPageableFromContext(r.Context())
 	group := getGroupFromContext(r.Context())
+	q := r.URL.Query().Get("q")
 
-	apps, paginationData, err := a.appRepo.LoadApplicationsPaged(r.Context(), group.UID, pageable)
+	apps, paginationData, err := a.appRepo.LoadApplicationsPaged(r.Context(), group.UID, q, pageable)
 	if err != nil {
-		_ = render.Render(w, r, newErrorResponse("an error occurred while fetching apps", http.StatusInternalServerError))
+		print(err.Error())
+		_ = render.Render(w, r, newErrorResponse("an error occurred while fetching apps. Error: "+err.Error(), http.StatusBadRequest))
 		return
 	}
 
@@ -99,37 +120,37 @@ func (a *applicationHandler) GetApps(w http.ResponseWriter, r *http.Request) {
 // @Accept  json
 // @Produce  json
 // @Param application body models.Application true "Application Details"
-// @Success 200 {object} serverResponse{data=convoy.Application}
+// @Success 200 {object} serverResponse{data=datastore.Application}
 // @Failure 400,401,500 {object} serverResponse{data=Stub}
 // @Security ApiKeyAuth
 // @Router /applications [post]
 func (a *applicationHandler) CreateApp(w http.ResponseWriter, r *http.Request) {
 
 	var newApp models.Application
-	err := json.NewDecoder(r.Body).Decode(&newApp)
+	err := util.ReadJSON(r, &newApp)
 	if err != nil {
-		_ = render.Render(w, r, newErrorResponse("Request is invalid", http.StatusBadRequest))
+		_ = render.Render(w, r, newErrorResponse(err.Error(), http.StatusBadRequest))
 		return
 	}
 
 	appName := newApp.AppName
-	if util.IsStringEmpty(appName) {
-		_ = render.Render(w, r, newErrorResponse("please provide your appName", http.StatusBadRequest))
+	if err = util.Validate(newApp); err != nil {
+		_ = render.Render(w, r, newErrorResponse(err.Error(), http.StatusBadRequest))
 		return
 	}
 
 	group := getGroupFromContext(r.Context())
 
 	uid := uuid.New().String()
-	app := &convoy.Application{
+	app := &datastore.Application{
 		UID:            uid,
 		GroupID:        group.UID,
 		Title:          appName,
 		SupportEmail:   newApp.SupportEmail,
 		CreatedAt:      primitive.NewDateTimeFromTime(time.Now()),
 		UpdatedAt:      primitive.NewDateTimeFromTime(time.Now()),
-		Endpoints:      []convoy.Endpoint{},
-		DocumentStatus: convoy.ActiveDocumentStatus,
+		Endpoints:      []datastore.Endpoint{},
+		DocumentStatus: datastore.ActiveDocumentStatus,
 	}
 
 	err = a.appRepo.CreateApplication(r.Context(), app)
@@ -149,20 +170,20 @@ func (a *applicationHandler) CreateApp(w http.ResponseWriter, r *http.Request) {
 // @Produce  json
 // @Param appID path string true "application id"
 // @Param application body models.Application true "Application Details"
-// @Success 200 {object} serverResponse{data=convoy.Application}
+// @Success 200 {object} serverResponse{data=datastore.Application}
 // @Failure 400,401,500 {object} serverResponse{data=Stub}
 // @Security ApiKeyAuth
 // @Router /applications/{appID} [put]
 func (a *applicationHandler) UpdateApp(w http.ResponseWriter, r *http.Request) {
 	var appUpdate models.Application
-	err := json.NewDecoder(r.Body).Decode(&appUpdate)
+	err := util.ReadJSON(r, &appUpdate)
 	if err != nil {
-		_ = render.Render(w, r, newErrorResponse("Request is invalid", http.StatusBadRequest))
+		_ = render.Render(w, r, newErrorResponse(err.Error(), http.StatusBadRequest))
 		return
 	}
 
 	appName := appUpdate.AppName
-	if util.IsStringEmpty(appName) {
+	if err = util.Validate(appUpdate); err != nil {
 		_ = render.Render(w, r, newErrorResponse("please provide your appName", http.StatusBadRequest))
 		return
 	}
@@ -176,7 +197,7 @@ func (a *applicationHandler) UpdateApp(w http.ResponseWriter, r *http.Request) {
 
 	err = a.appRepo.UpdateApplication(r.Context(), app)
 	if err != nil {
-		_ = render.Render(w, r, newErrorResponse("an error occurred while updating app", http.StatusInternalServerError))
+		_ = render.Render(w, r, newErrorResponse("an error occurred while updating app", http.StatusBadRequest))
 		return
 	}
 
@@ -214,13 +235,13 @@ func (a *applicationHandler) DeleteApp(w http.ResponseWriter, r *http.Request) {
 // @Produce  json
 // @Param appID path string true "application id"
 // @Param endpoint body models.Endpoint true "Endpoint Details"
-// @Success 200 {object} serverResponse{data=convoy.Endpoint}
+// @Success 200 {object} serverResponse{data=datastore.Endpoint}
 // @Failure 400,401,500 {object} serverResponse{data=Stub}
 // @Security ApiKeyAuth
 // @Router /applications/{appID}/endpoints [post]
 func (a *applicationHandler) CreateAppEndpoint(w http.ResponseWriter, r *http.Request) {
 	var e models.Endpoint
-	e, err := parseEndpointFromBody(r.Body)
+	e, err := parseEndpointFromBody(r)
 	if err != nil {
 		_ = render.Render(w, r, newErrorResponse(err.Error(), http.StatusBadRequest))
 		return
@@ -231,9 +252,9 @@ func (a *applicationHandler) CreateAppEndpoint(w http.ResponseWriter, r *http.Re
 	if err != nil {
 
 		msg := "an error occurred while retrieving app details"
-		statusCode := http.StatusInternalServerError
+		statusCode := http.StatusBadRequest
 
-		if errors.Is(err, convoy.ErrApplicationNotFound) {
+		if errors.Is(err, datastore.ErrApplicationNotFound) {
 			msg = err.Error()
 			statusCode = http.StatusNotFound
 		}
@@ -250,16 +271,16 @@ func (a *applicationHandler) CreateAppEndpoint(w http.ResponseWriter, r *http.Re
 		e.Events = []string{"*"}
 	}
 
-	endpoint := &convoy.Endpoint{
+	endpoint := &datastore.Endpoint{
 		UID:            uuid.New().String(),
 		TargetURL:      e.URL,
 		Description:    e.Description,
 		Events:         e.Events,
 		Secret:         e.Secret,
-		Status:         convoy.ActiveEndpointStatus,
+		Status:         datastore.ActiveEndpointStatus,
 		CreatedAt:      primitive.NewDateTimeFromTime(time.Now()),
 		UpdatedAt:      primitive.NewDateTimeFromTime(time.Now()),
-		DocumentStatus: convoy.ActiveDocumentStatus,
+		DocumentStatus: datastore.ActiveDocumentStatus,
 	}
 
 	if util.IsStringEmpty(e.Secret) {
@@ -289,7 +310,7 @@ func (a *applicationHandler) CreateAppEndpoint(w http.ResponseWriter, r *http.Re
 // @Produce  json
 // @Param appID path string true "application id"
 // @Param endpointID path string true "endpoint id"
-// @Success 200 {object} serverResponse{data=convoy.Endpoint}
+// @Success 200 {object} serverResponse{data=datastore.Endpoint}
 // @Failure 400,401,500 {object} serverResponse{data=Stub}
 // @Security ApiKeyAuth
 // @Router /applications/{appID}/endpoints/{endpointID} [get]
@@ -306,7 +327,7 @@ func (a *applicationHandler) GetAppEndpoint(w http.ResponseWriter, r *http.Reque
 // @Accept  json
 // @Produce  json
 // @Param appID path string true "application id"
-// @Success 200 {object} serverResponse{data=[]convoy.Endpoint}
+// @Success 200 {object} serverResponse{data=[]datastore.Endpoint}
 // @Failure 400,401,500 {object} serverResponse{data=Stub}
 // @Security ApiKeyAuth
 // @Router /applications/{appID}/endpoints [get]
@@ -326,13 +347,13 @@ func (a *applicationHandler) GetAppEndpoints(w http.ResponseWriter, r *http.Requ
 // @Param appID path string true "application id"
 // @Param endpointID path string true "endpoint id"
 // @Param endpoint body models.Endpoint true "Endpoint Details"
-// @Success 200 {object} serverResponse{data=convoy.Endpoint}
+// @Success 200 {object} serverResponse{data=datastore.Endpoint}
 // @Failure 400,401,500 {object} serverResponse{data=Stub}
 // @Security ApiKeyAuth
 // @Router /applications/{appID}/endpoints/{endpointID} [put]
 func (a *applicationHandler) UpdateAppEndpoint(w http.ResponseWriter, r *http.Request) {
 	var e models.Endpoint
-	e, err := parseEndpointFromBody(r.Body)
+	e, err := parseEndpointFromBody(r)
 	if err != nil {
 		_ = render.Render(w, r, newErrorResponse(err.Error(), http.StatusBadRequest))
 		return
@@ -396,17 +417,27 @@ func (a *applicationHandler) GetPaginatedApps(w http.ResponseWriter, r *http.Req
 			Pagination: getPaginationDataFromContext(r.Context())}, http.StatusOK))
 }
 
-func updateEndpointIfFound(endpoints *[]convoy.Endpoint, id string, e models.Endpoint) (*[]convoy.Endpoint, *convoy.Endpoint, error) {
+func updateEndpointIfFound(endpoints *[]datastore.Endpoint, id string, e models.Endpoint) (*[]datastore.Endpoint, *datastore.Endpoint, error) {
 	for i, endpoint := range *endpoints {
 		if endpoint.UID == id && endpoint.DeletedAt == 0 {
 			endpoint.TargetURL = e.URL
 			endpoint.Description = e.Description
-			endpoint.Events = e.Events
-			endpoint.Status = convoy.ActiveEndpointStatus
+
+			// Events being empty means it wasn't passed at all, which automatically
+			// translates into a accept all scenario. This is quite different from
+			// an empty array which signifies a blacklist all events -- no events
+			// will be sent to such endpoints.
+			if len(e.Events) == 0 {
+				endpoint.Events = []string{"*"}
+			} else {
+				endpoint.Events = e.Events
+			}
+
+			endpoint.Status = datastore.ActiveEndpointStatus
 			endpoint.UpdatedAt = primitive.NewDateTimeFromTime(time.Now())
 			(*endpoints)[i] = endpoint
 			return endpoints, &endpoint, nil
 		}
 	}
-	return endpoints, nil, convoy.ErrEndpointNotFound
+	return endpoints, nil, datastore.ErrEndpointNotFound
 }

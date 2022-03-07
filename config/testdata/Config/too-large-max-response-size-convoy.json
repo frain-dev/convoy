@@ -1,0 +1,29 @@
+{
+    "database": {
+        "dsn": "mongodb://inside-config-file"
+    },
+    "queue": {
+        "type": "redis",
+        "redis": {
+            "dsn": "redis://localhost:8379"
+        }
+    },
+    "max_response_size": 55,
+    "server": {
+        "http": {
+            "port": 80
+        }
+    },
+    "group": {
+        "strategy": {
+            "type": "default",
+            "default": {
+                "intervalSeconds": 125,
+                "retryLimit": 15
+            }
+        },
+        "signature": {
+            "hash": "SHA256"
+        }
+    }
+}

@@ -2,9 +2,8 @@ package worker
 
 import (
 	"github.com/frain-dev/convoy/queue"
-	convoy_redis "github.com/frain-dev/convoy/queue/redis"
+	"github.com/frain-dev/taskq/v3"
 	log "github.com/sirupsen/logrus"
-	"github.com/vmihailenco/taskq/v3"
 )
 
 type Cleaner struct {
@@ -13,7 +12,8 @@ type Cleaner struct {
 	quit            chan chan error
 }
 
-func NewCleaner(queue *convoy_redis.RedisQueue) *Cleaner {
+func NewCleaner(queue queue.Queuer) *Cleaner {
+
 	consumer := queue.Consumer()
 
 	return &Cleaner{

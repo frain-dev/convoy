@@ -10,7 +10,9 @@ import (
 	time "time"
 
 	convoy "github.com/frain-dev/convoy"
+	datastore "github.com/frain-dev/convoy/datastore"
 	gomock "github.com/golang/mock/gomock"
+	taskq "github.com/frain-dev/taskq/v3"
 )
 
 // MockQueuer is a mock of Queuer interface.
@@ -50,8 +52,22 @@ func (mr *MockQueuerMockRecorder) Close() *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Close", reflect.TypeOf((*MockQueuer)(nil).Close))
 }
 
+// Consumer mocks base method.
+func (m *MockQueuer) Consumer() taskq.QueueConsumer {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "Consumer")
+	ret0, _ := ret[0].(taskq.QueueConsumer)
+	return ret0
+}
+
+// Consumer indicates an expected call of Consumer.
+func (mr *MockQueuerMockRecorder) Consumer() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Consumer", reflect.TypeOf((*MockQueuer)(nil).Consumer))
+}
+
 // Write mocks base method.
-func (m *MockQueuer) Write(arg0 context.Context, arg1 convoy.TaskName, arg2 *convoy.EventDelivery, arg3 time.Duration) error {
+func (m *MockQueuer) Write(arg0 context.Context, arg1 convoy.TaskName, arg2 *datastore.EventDelivery, arg3 time.Duration) error {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "Write", arg0, arg1, arg2, arg3)
 	ret0, _ := ret[0].(error)

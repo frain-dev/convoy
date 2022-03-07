@@ -1,0 +1,83 @@
+project_name: convoy
+
+before:
+  hooks:
+    - go mod tidy
+builds:
+  - env:
+      - CGO_ENABLED=0
+    main: ./cmd
+    id: cobin
+    goos:
+      - linux
+      - darwin
+      - windows
+    goarch:
+      - amd64
+      - arm64
+
+# https://goreleaser.com/customization/archive/
+archives:
+  - name_template: "{{ .ProjectName}}_{{ .Version }}_{{ .Os }}_{{ .Arch }}"
+
+# https://goreleaser.com/customization/nfpm/
+nfpms:
+  - id: debrpm
+    license: MPL-2.0
+    maintainer: frain-dev
+    homepage: https://getconvoy.io/
+    description: "A Cloud native webhook service"
+    file_name_template: "{{ .ProjectName }}_{{ .Version }}_{{ .Os }}_{{ .Arch }}"
+    formats:
+      - rpm
+      - deb
+
+  - id: apk
+    license: MPL-2.0
+    maintainer: frain-dev
+    homepage: https://getconvoy.io/
+    description: "A Cloud native webhook service"
+    file_name_template: "{{ .ProjectName }}_{{ .Version }}_{{ .Os }}_{{ .Arch }}"
+    formats:
+      - apk
+
+# https://goreleaser.com/customization/publishers/
+publishers:
+  - name: fury.io
+    ids:
+      - debrpm
+    dir: "{{ dir .ArtifactPath }}"
+    cmd: curl -F package=@{{ .ArtifactName }} https://{{ .Env.FURY_TOKEN }}@push.fury.io/convoy/
+
+# https://goreleaser.com/customization/homebrew/
+brews:
+  - name: convoy
+    homepage: https://getconvoy.io/
+    description: A Cloud native webhook service
+    license: MPL-2.0
+    skip_upload: auto
+    commit_author:
+      name: frain-dev
+      email: dev@frain.dev
+    tap:
+      owner: frain-dev
+      name: homebrew-tools
+
+dockers:
+  - image_templates: ["ghcr.io/{{ .Env.REPO_NAME }}:{{ .Tag }}"]
+    goos: linux
+    goarch: amd64
+    dockerfile: release.Dockerfile
+    ids:
+      - cobin
+    build_flag_templates:
+      - --platform=linux/amd64
+      - --label=org.opencontainers.image.title={{ .ProjectName }}
+      - --label=org.opencontainers.image.description=A Cloud native webhook service
+      - --label=org.opencontainers.image.url=https://github.com/{{ .Env.REPO_NAME }}
+      - --label=org.opencontainers.image.source=https://github.com/{{ .Env.REPO_NAME }}
+      - --label=org.opencontainers.image.created={{ time "2006-01-02T15:04:05Z07:00" }}
+      - --label=org.opencontainers.image.licenses=MPL-2.0
+
+checksum:
+  name_template: "{{ .ProjectName}}_checksums.txt"

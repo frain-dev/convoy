@@ -1,10 +1,7 @@
-import { Component, Input, OnInit } from '@angular/core';
-// import { HttpService } from 'src/app/services/http/http.service';
+import { Component, ElementRef, Input, OnInit, ViewChild } from '@angular/core';
 import Chart from 'chart.js/auto';
-// import * as moment from 'moment';
-// import { GeneralService } from 'src/app/services/general/general.service';
 import { APP } from './models/app.model';
-import { EVENT, EVENT_DELIVERY } from './models/event.model';
+import { EVENT, EVENT_DELIVERY, EVENT_DELIVERY_ATTEMPT } from './models/event.model';
 import { ActivatedRoute, Router } from '@angular/router';
 import { FormBuilder, FormGroup } from '@angular/forms';
 import { PAGINATION } from './models/global.model';
@@ -12,6 +9,8 @@ import { HTTP_RESPONSE } from './models/http.model';
 import { GROUP } from './models/group.model';
 import { ConvoyDashboardService } from './convoy-dashboard.service';
 import { format } from 'date-fns';
+import { fromEvent, Observable } from 'rxjs';
+import { debounceTime, distinctUntilChanged, map, startWith, switchMap } from 'rxjs/operators';
 
 @Component({
 	selector: 'convoy-dashboard',
@@ -22,17 +21,10 @@ export class ConvoyDashboardComponent implements OnInit {
 	showFilterCalendar = false;
 	tabs: ['events', 'event deliveries', 'apps'] = ['events', 'event deliveries', 'apps'];
 	activeTab: 'events' | 'apps' | 'event deliveries' = 'events';
-	detailsItem?: any;
-	eventDeliveryAtempt?: {
-		ip_address: '';
-		http_status: '';
-		api_version: '';
-		updated_at: 0;
-		deleted_at: 0;
-		response_data: '';
-		response_http_header: '';
-		request_http_header: '';
-	};
+	appsDetailsItem?: any;
+	eventsDetailsItem?: any;
+	eventDelsDetailsItem?: any;
+	eventDeliveryAtempt?: EVENT_DELIVERY_ATTEMPT;
 	showEventFilterCalendar = false;
 	eventDateFilterActive = false;
 	displayedEvents: {
@@ -41,6 +33,7 @@ export class ConvoyDashboardComponent implements OnInit {
 	}[] = [];
 	events!: { pagination: PAGINATION; content: EVENT[] };
 	apps!: { pagination: PAGINATION; content: APP[] };
+	filteredApps!: APP[];
 	eventDetailsTabs = [
 		{ id: 'data', label: 'Event' },
 		{ id: 'response', label: 'Response' },
@@ -81,22 +74,73 @@ export class ConvoyDashboardComponent implements OnInit {
 	groups: GROUP[] = [];
 	activeGroup!: string;
 	allEventdeliveriesChecked = false;
-	eventDeliveryStatuses = ['', 'Success', 'Failure', 'Retry', 'Scheduled', 'Processing', 'Discarded'];
-	eventDeliveryFilteredByStatus: '' | 'Success' | 'Failure' | 'Retry' | 'Scheduled' | 'Processing' | 'Discarded' = '';
+	eventDeliveryStatuses = ['Success', 'Failure', 'Retry', 'Scheduled', 'Processing', 'Discarded'];
+	eventDeliveryFilteredByStatus: string[] = [];
 	showOverlay = false;
 	showEventDeliveriesStatusDropdown = false;
-	@Input('production') isProduction: boolean = false;
+	showEventDeliveriesAppsDropdown = false;
+	showEventsAppsDropdown = false;
+	loadingAppPotalToken = false;
+	@Input('apiURL') apiURL: string = '';
+	@Input('isCloud') isCloud: boolean = false;
+	@Input('groupId') groupId: string = '';
+	@Input('requestToken') requestToken: string = '';
+	apiAuthType: 'Basic' | 'Bearer' = 'Basic';
+	isloadingDashboardData = true;
+	isloadingConfig = true;
+	isloadingEvents = true;
+	isloadingEventDeliveries = true;
+	isloadingApps = true;
+	isloadingMoreEvents = false;
+	isloadingMoreEventDeliveries = false;
+	isloadingMoreApps = false;
+	isloadingDeliveryAttempt = false;
+	appsSearchString = '';
+	eventsAppsFilter$!: Observable<APP[]>;
+	eventsDelAppsFilter$!: Observable<APP[]>;
+	@ViewChild('eventsAppsFilter', { static: true }) eventsAppsFilter!: ElementRef;
+	@ViewChild('eventDelsAppsFilter', { static: true }) eventDelsAppsFilter!: ElementRef;
+	eventDeliveriesStatusFilterActive = false;
 
 	constructor(private convyDashboardService: ConvoyDashboardService, private router: Router, private formBuilder: FormBuilder, private route: ActivatedRoute) {}
 
 	async ngOnInit() {
-		await this.initDashboard();
+		if (!this.requestToken || this.requestToken == '') {
+			this.convyDashboardService.showNotification({ message: 'You are not logged in' });
+			return this.router.navigate(['/login']);
+		}
+
+		if (!this.apiURL) return this.convyDashboardService.showNotification({ message: 'Please provide API URL for Convoy dashboard component.' });
+		if (this.isCloud && !this.groupId) return this.convyDashboardService.showNotification({ message: 'Please provide group ID for Convoy dashboard component.' });
+		if (this.isCloud) {
+			this.activeGroup = this.groupId;
+			this.apiAuthType = 'Bearer';
+		}
+
+		return await this.initDashboard();
+	}
+
+	ngAfterViewInit() {
+		this.eventsAppsFilter$ = fromEvent<any>(this.eventsAppsFilter.nativeElement, 'keyup').pipe(
+			map(event => event.target.value),
+			startWith(''),
+			debounceTime(500),
+			distinctUntilChanged(),
+			switchMap(search => this.getAppsForFilter(search))
+		);
+		this.eventsDelAppsFilter$ = fromEvent<any>(this.eventDelsAppsFilter.nativeElement, 'keyup').pipe(
+			map(event => event.target.value),
+			startWith(''),
+			debounceTime(500),
+			distinctUntilChanged(),
+			switchMap(search => this.getAppsForFilter(search))
+		);
 	}
 
 	async initDashboard() {
 		await this.getGroups();
 		this.getFiltersFromURL();
-		await Promise.all([this.getConfigDetails(), this.fetchDashboardData(), this.getEvents(), this.getApps(), this.getEventDeliveries()]);
+		await Promise.all([this.getConfigDetails(), this.fetchDashboardData(), this.getEvents(), this.getApps({ type: 'apps' }), this.getEventDeliveries()]);
 
 		// get active tab from url and apply, after getting the details from above requests so that the data is available ahead
 		this.toggleActiveTab(this.route.snapshot.queryParams.activeTab ?? 'events');
@@ -108,25 +152,31 @@ export class ConvoyDashboardComponent implements OnInit {
 		this.addFilterToURL({ section: 'logTab' });
 
 		if (tab === 'apps' && this.apps?.content.length > 0) {
-			this.detailsItem = this.apps?.content[0];
+			if (!this.appsDetailsItem) this.appsDetailsItem = this.apps?.content[0];
 		} else if (tab === 'events' && this.events?.content.length > 0) {
-			this.eventDetailsActiveTab = 'data';
-			this.detailsItem = this.events?.content[0];
-			this.getEventDeliveriesForSidebar(this.detailsItem.uid);
+			if (!this.eventsDetailsItem) this.eventsDetailsItem = this.events?.content[0];
+			if (this.eventsDetailsItem?.uid) this.getEventDeliveriesForSidebar(this.eventsDetailsItem.uid);
 		} else if (tab === 'event deliveries' && this.eventDeliveries?.content.length > 0) {
-			this.detailsItem = this.eventDeliveries?.content[0];
-			this.getDelieveryAttempts(this.detailsItem.uid);
+			if (!this.eventDelsDetailsItem) this.eventDelsDetailsItem = this.eventDeliveries?.content[0];
+			if (this.eventDelsDetailsItem?.uid) this.getDelieveryAttempts(this.eventDelsDetailsItem.uid);
 		}
 	}
 
 	async getConfigDetails() {
+		this.isloadingConfig = true;
+
 		try {
 			const organisationDetailsResponse = await this.convyDashboardService.request({
 				url: this.getAPIURL(`/dashboard/config?groupID=${this.activeGroup || ''}`),
+				token: this.requestToken,
+				authType: this.apiAuthType,
 				method: 'get'
 			});
 			this.organisationDetails = organisationDetailsResponse.data;
-		} catch (error) {}
+			this.isloadingConfig = false;
+		} catch (error) {
+			this.isloadingConfig = false;
+		}
 	}
 
 	getFiltersFromURL() {
@@ -143,18 +193,22 @@ export class ConvoyDashboardComponent implements OnInit {
 			endDate: filters.eventDelsEndDate ? new Date(filters.eventDelsEndDate) : ''
 		});
 		this.eventDeliveriesApp = filters.eventDelsApp ?? '';
-		this.eventDeliveryFilteredByStatus = filters.eventDelsStatus ?? null;
+		this.eventDeliveryFilteredByStatus = filters.eventDelsStatus ? JSON.parse(filters.eventDelsStatus) : [];
 	}
 
 	async fetchDashboardData() {
 		try {
+			this.isloadingDashboardData = true;
 			const { startDate, endDate } = this.setDateForFilter(this.statsDateRange.value);
 
 			const dashboardResponse = await this.convyDashboardService.request({
 				url: this.getAPIURL(`/dashboard/summary?groupID=${this.activeGroup || ''}&startDate=${startDate || ''}&endDate=${endDate || ''}&type=${this.dashboardFrequency}`),
+				token: this.requestToken,
+				authType: this.apiAuthType,
 				method: 'get'
 			});
 			this.dashboardData = dashboardResponse.data;
+			this.isloadingDashboardData = false;
 
 			let labelsDateFormat = '';
 			if (this.dashboardFrequency === 'daily') labelsDateFormat = 'do, MMM';
@@ -207,14 +261,13 @@ export class ConvoyDashboardComponent implements OnInit {
 					currentChart.update();
 				}
 			}
-			console.log(Chart.getChart('dahboard_events_chart'));
 		} catch (error) {}
 	}
 
 	setDateForFilter(requestDetails: { startDate: Date; endDate: Date }) {
 		if (!requestDetails.endDate && !requestDetails.startDate) return { startDate: '', endDate: '' };
-		const startDate = requestDetails.startDate ? `${format(requestDetails.startDate, 'yyyy-M-d')}T00:00:00` : '';
-		const endDate = requestDetails.endDate ? `${format(requestDetails.endDate, 'yyyy-M-d')}T00:00:00` : '';
+		const startDate = requestDetails.startDate ? `${format(requestDetails.startDate, 'yyyy-MM-dd')}T00:00:00` : '';
+		const endDate = requestDetails.endDate ? `${format(requestDetails.endDate, 'yyyy-MM-dd')}T23:59:59` : '';
 		return { startDate, endDate };
 	}
 
@@ -239,7 +292,9 @@ export class ConvoyDashboardComponent implements OnInit {
 		return displayedEvents;
 	}
 
-	async getEvents(requestDetails?: { appId?: string; addToURL?: boolean }) {
+	async getEvents(requestDetails?: { appId?: string; addToURL?: boolean; fromFilter?: boolean }) {
+		this.events && this.events?.pagination?.next === this.eventsPage ? (this.isloadingMoreEvents = true) : (this.isloadingEvents = true);
+
 		if (requestDetails?.appId) this.eventApp = requestDetails.appId;
 		if (requestDetails?.addToURL) this.addFilterToURL({ section: 'events' });
 
@@ -250,23 +305,57 @@ export class ConvoyDashboardComponent implements OnInit {
 				url: this.getAPIURL(
 					`/events?groupID=${this.activeGroup || ''}&sort=AESC&page=${this.eventsPage || 1}&perPage=20&startDate=${startDate}&endDate=${endDate}&appId=${requestDetails?.appId ?? this.eventApp}`
 				),
+				token: this.requestToken,
+				authType: this.apiAuthType,
 				method: 'get'
 			});
-			if (this.activeTab === 'events') this.detailsItem = eventsResponse.data.content[0];
 
 			if (this.events && this.events?.pagination?.next === this.eventsPage) {
 				const content = [...this.events.content, ...eventsResponse.data.content];
 				const pagination = eventsResponse.data.pagination;
 				this.events = { content, pagination };
 				this.displayedEvents = this.setEventsDisplayed(content);
+				this.isloadingMoreEvents = false;
 				return;
 			}
 
 			this.events = eventsResponse.data;
 			this.displayedEvents = await this.setEventsDisplayed(eventsResponse.data.content);
+
+			// if this is a filter request, set the eventsDetailsItem to the first item in the list
+			if (requestDetails?.fromFilter) {
+				this.eventsDetailsItem = this.events?.content[0];
+				this.getEventDeliveriesForSidebar(this.eventsDetailsItem.uid);
+			}
+
+			this.isloadingEvents = false;
 		} catch (error) {
+			this.isloadingEvents = false;
+			this.isloadingMoreEvents = false;
 			return error;
 		}
+	}
+
+	async getAppPortalToken() {
+		try {
+			const appTokenResponse = await this.convyDashboardService.request({
+				url: this.getAPIURL(`/apps/${this.appsDetailsItem.uid}/keys?groupID=${this.activeGroup || ''}`),
+				token: this.requestToken,
+				authType: this.apiAuthType,
+				method: 'post',
+				body: {}
+			});
+			window.open(`${appTokenResponse.data.url}`, '_blank');
+			this.loadingAppPotalToken = false;
+		} catch (error) {
+			this.loadingAppPotalToken = false;
+			return error;
+		}
+	}
+
+	async loadEventsFromAppsTable(appId: string) {
+		await this.getEvents({ addToURL: true, appId: appId, fromFilter: true });
+		this.toggleActiveTab('events');
 	}
 
 	addFilterToURL(requestDetails: { section: 'events' | 'eventDels' | 'group' | 'logTab' }) {
@@ -285,7 +374,7 @@ export class ConvoyDashboardComponent implements OnInit {
 			if (startDate) queryParams.eventDelsStartDate = startDate;
 			if (endDate) queryParams.eventDelsEndDate = endDate;
 			if (this.eventDeliveriesApp) queryParams.eventDelsApp = this.eventDeliveriesApp;
-			queryParams.eventDelsStatus = this.eventDeliveryFilteredByStatus || '';
+			queryParams.eventDelsStatus = this.eventDeliveryFilteredByStatus.length > 0 ? JSON.stringify(this.eventDeliveryFilteredByStatus) : '';
 		}
 
 		if (requestDetails.section === 'group') queryParams.group = this.activeGroup;
@@ -296,6 +385,9 @@ export class ConvoyDashboardComponent implements OnInit {
 	}
 
 	async eventDeliveriesRequest(requestDetails: { eventId?: string; startDate?: string; endDate?: string }): Promise<HTTP_RESPONSE> {
+		let eventDeliveryStatusFilterQuery = '';
+		this.eventDeliveryFilteredByStatus.length > 0 ? (this.eventDeliveriesStatusFilterActive = true) : (this.eventDeliveriesStatusFilterActive = false);
+		this.eventDeliveryFilteredByStatus.forEach((status: string) => (eventDeliveryStatusFilterQuery += `&status=${status}`));
 		const { startDate, endDate } = this.setDateForFilter(this.eventDeliveriesFilterDateRange.value);
 
 		try {
@@ -303,8 +395,10 @@ export class ConvoyDashboardComponent implements OnInit {
 				url: this.getAPIURL(
 					`/eventdeliveries?groupID=${this.activeGroup || ''}&eventId=${requestDetails.eventId || ''}&page=${this.eventDeliveriesPage || 1}&startDate=${startDate}&endDate=${endDate}&appId=${
 						this.eventDeliveriesApp
-					}&status=${this.eventDeliveryFilteredByStatus || ''}`
+					}${eventDeliveryStatusFilterQuery || ''}`
 				),
+				token: this.requestToken,
+				authType: this.apiAuthType,
 				method: 'get'
 			});
 
@@ -314,26 +408,58 @@ export class ConvoyDashboardComponent implements OnInit {
 		}
 	}
 
-	async getEventDeliveries(requestDetails?: { addToURL?: boolean }) {
+	updateEventDevliveryStatusFilter(status: string, isChecked: any) {
+		if (isChecked.target.checked) {
+			this.eventDeliveryFilteredByStatus.push(status);
+		} else {
+			let index = this.eventDeliveryFilteredByStatus.findIndex(x => x === status);
+			this.eventDeliveryFilteredByStatus.splice(index, 1);
+		}
+	}
+
+	updateAppFilter(appId: string, isChecked: any, activeSection: 'eventDels' | 'events') {
+		this.showOverlay = false;
+		activeSection === 'eventDels' ? (this.showEventDeliveriesAppsDropdown = !this.showEventDeliveriesAppsDropdown) : (this.showEventsAppsDropdown = !this.showEventsAppsDropdown);
+		if (isChecked.target.checked) {
+			activeSection === 'eventDels' ? (this.eventDeliveriesApp = appId) : (this.eventApp = appId);
+		} else {
+			activeSection === 'eventDels' ? (this.eventDeliveriesApp = '') : (this.eventApp = '');
+		}
+		activeSection === 'eventDels' ? this.getEventDeliveries({ addToURL: true, fromFilter: true }) : this.getEvents({ addToURL: true, fromFilter: true });
+	}
+
+	async getEventDeliveries(requestDetails?: { addToURL?: boolean; fromFilter?: boolean }) {
+		this.eventDeliveries && this.eventDeliveries?.pagination?.next === this.eventDeliveriesPage ? (this.isloadingMoreEventDeliveries = true) : (this.isloadingEventDeliveries = true);
+
 		if (requestDetails?.addToURL) this.addFilterToURL({ section: 'eventDels' });
 		const { startDate, endDate } = this.setDateForFilter(this.eventDeliveriesFilterDateRange.value);
 
 		try {
 			const eventDeliveriesResponse = await this.eventDeliveriesRequest({ eventId: this.eventDeliveryFilteredByEventId, startDate, endDate });
-			if (this.activeTab === 'event deliveries') this.detailsItem = eventDeliveriesResponse.data.content[0];
 
 			if (this.eventDeliveries && this.eventDeliveries?.pagination?.next === this.eventDeliveriesPage) {
 				const content = [...this.eventDeliveries.content, ...eventDeliveriesResponse.data.content];
 				const pagination = eventDeliveriesResponse.data.pagination;
 				this.eventDeliveries = { content, pagination };
 				this.displayedEventDeliveries = this.setEventsDisplayed(content);
+				this.isloadingMoreEventDeliveries = false;
 				return;
 			}
 
 			this.eventDeliveries = eventDeliveriesResponse.data;
 			this.displayedEventDeliveries = this.setEventsDisplayed(eventDeliveriesResponse.data.content);
+
+			// if this is a filter request, set the eventDelsDetailsItem to the first item in the list
+			if (requestDetails?.fromFilter) {
+				this.eventDelsDetailsItem = this.eventDeliveries?.content[0];
+				this.getDelieveryAttempts(this.eventDelsDetailsItem.uid);
+			}
+
+			this.isloadingEventDeliveries = false;
 			return eventDeliveriesResponse.data.content;
 		} catch (error) {
+			this.isloadingEventDeliveries = false;
+			this.isloadingMoreEventDeliveries = false;
 			return error;
 		}
 	}
@@ -346,7 +472,7 @@ export class ConvoyDashboardComponent implements OnInit {
 	async toggleActiveGroup() {
 		await Promise.all([this.clearEventFilters('event deliveries'), this.clearEventFilters('events')]);
 		this.addFilterToURL({ section: 'group' });
-		Promise.all([this.getConfigDetails(), this.fetchDashboardData(), this.getEvents(), this.getApps(), this.getEventDeliveries()]);
+		Promise.all([this.getConfigDetails(), this.fetchDashboardData(), this.getEvents(), this.getApps({ type: 'apps' }), this.getEventDeliveries()]);
 	}
 
 	async getGroups(requestDetails?: { addToURL?: boolean }) {
@@ -355,59 +481,94 @@ export class ConvoyDashboardComponent implements OnInit {
 		try {
 			const groupsResponse = await this.convyDashboardService.request({
 				url: this.getAPIURL(`/groups`),
+				token: this.requestToken,
+				authType: this.apiAuthType,
 				method: 'get'
 			});
 			this.groups = groupsResponse.data;
 
 			// check group existing filter in url and set active group
-			this.activeGroup = this.route.snapshot.queryParams.group ?? this.groups[0]?.uid;
+			if (!this.isCloud) this.activeGroup = this.route.snapshot.queryParams.group ?? this.groups[0]?.uid;
 			return;
 		} catch (error) {
 			return error;
 		}
 	}
 
-	async getApps() {
+	async appsRequest(requestDetails: { search?: string }): Promise<HTTP_RESPONSE> {
 		try {
 			const appsResponse = await this.convyDashboardService.request({
-				url: this.getAPIURL(`/apps?groupID=${this.activeGroup || ''}&sort=AESC&page=${this.appsPage || 1}&perPage=10`),
+				url: this.getAPIURL(`/apps?groupID=${this.activeGroup || ''}&sort=AESC&page=${this.appsPage || 1}&perPage=10${requestDetails?.search ? `&q=${requestDetails?.search}` : ''}`),
+				token: this.requestToken,
+				authType: this.apiAuthType,
 				method: 'get'
 			});
 
-			if (this.apps?.pagination?.next === this.appsPage) {
+			return appsResponse;
+		} catch (error: any) {
+			return error;
+		}
+	}
+
+	async getAppsForFilter(search: string): Promise<APP[]> {
+		return await (
+			await this.appsRequest({ search })
+		).data.content;
+	}
+
+	async getApps(requestDetails?: { search?: string; type: 'filter' | 'apps' }) {
+		if (this.apps?.pagination?.next === this.appsPage) this.isloadingMoreApps = true;
+		if (requestDetails?.type === 'apps') this.isloadingApps = true;
+
+		try {
+			const appsResponse = await this.appsRequest({ search: requestDetails?.search });
+
+			if (!requestDetails?.search && this.apps?.pagination?.next === this.appsPage) {
 				const content = [...this.apps.content, ...appsResponse.data.content];
 				const pagination = appsResponse.data.pagination;
 				this.apps = { content, pagination };
+				this.isloadingMoreApps = false;
 				return;
 			}
-			this.apps = appsResponse.data;
-			if (this.activeTab === 'apps') this.detailsItem = this.apps?.content[0];
+
+			if (requestDetails?.type === 'apps') this.apps = appsResponse.data;
+			this.filteredApps = appsResponse.data.content;
+			this.isloadingApps = false;
 			return;
 		} catch (error) {
+			this.isloadingApps = false;
+			this.isloadingMoreApps = false;
 			return error;
 		}
 	}
 
 	async getDelieveryAttempts(eventDeliveryId: string) {
+		this.isloadingDeliveryAttempt = true;
+
 		try {
 			const deliveryAttemptsResponse = await this.convyDashboardService.request({
 				url: this.getAPIURL(`/eventdeliveries/${eventDeliveryId}/deliveryattempts?groupID=${this.activeGroup || ''}`),
+				token: this.requestToken,
+				authType: this.apiAuthType,
 				method: 'get'
 			});
 			this.eventDeliveryAtempt = deliveryAttemptsResponse.data[deliveryAttemptsResponse.data.length - 1];
+			this.isloadingDeliveryAttempt = false;
+
 			return;
 		} catch (error) {
+			this.isloadingDeliveryAttempt = false;
 			return error;
 		}
 	}
 
-	getCodeSnippetString(type: 'res_body' | 'event' | 'event_delivery' | 'res_head' | 'req') {
+	getCodeSnippetString(type: 'res_body' | 'event' | 'event_delivery' | 'res_head' | 'req' | 'error') {
 		if (type === 'event') {
-			if (!this.detailsItem?.data) return 'No event data was sent';
-			return JSON.stringify(this.detailsItem.data || this.detailsItem.metadata.data, null, 4).replaceAll(/"([^"]+)":/g, '$1:');
+			if (!this.eventsDetailsItem?.data) return 'No event data was sent';
+			return JSON.stringify(this.eventsDetailsItem?.data || this.eventsDetailsItem?.metadata?.data, null, 4).replaceAll(/"([^"]+)":/g, '$1:');
 		} else if (type === 'event_delivery') {
-			if (!this.detailsItem?.metadata?.data) return 'No event data was sent';
-			return JSON.stringify(this.detailsItem.metadata.data, null, 4).replaceAll(/"([^"]+)":/g, '$1:');
+			if (!this.eventDelsDetailsItem?.metadata?.data) return 'No event data was sent';
+			return JSON.stringify(this.eventDelsDetailsItem.metadata.data, null, 4).replaceAll(/"([^"]+)":/g, '$1:');
 		} else if (type === 'res_body') {
 			if (!this.eventDeliveryAtempt) return 'No response body was sent';
 			return this.eventDeliveryAtempt.response_data;
@@ -417,6 +578,9 @@ export class ConvoyDashboardComponent implements OnInit {
 		} else if (type === 'req') {
 			if (!this.eventDeliveryAtempt) return 'No request header was sent';
 			return JSON.stringify(this.eventDeliveryAtempt.request_http_header, null, 4).replaceAll(/"([^"]+)":/g, '$1:');
+		} else if (type === 'error') {
+			if (this.eventDeliveryAtempt?.error) return JSON.stringify(this.eventDeliveryAtempt.error, null, 4).replaceAll(/"([^"]+)":/g, '$1:');
+			return '';
 		}
 		return '';
 	}
@@ -432,6 +596,8 @@ export class ConvoyDashboardComponent implements OnInit {
 		try {
 			await this.convyDashboardService.request({
 				method: 'put',
+				token: this.requestToken,
+				authType: this.apiAuthType,
 				url: this.getAPIURL(`/eventdeliveries/${requestDetails.eventDeliveryId}/resend?groupID=${this.activeGroup || ''}`)
 			});
 
@@ -452,6 +618,8 @@ export class ConvoyDashboardComponent implements OnInit {
 			await this.convyDashboardService.request({
 				method: 'post',
 				url: this.getAPIURL(`/eventdeliveries/batchretry?groupID=${this.activeGroup || ''}`),
+				token: this.requestToken,
+				authType: this.apiAuthType,
 				body: { ids: this.selectedEventsFromEventDeliveriesTable }
 			});
 
@@ -464,7 +632,7 @@ export class ConvoyDashboardComponent implements OnInit {
 		}
 	}
 
-	async clearEventFilters(tableName: 'events' | 'event deliveries') {
+	async clearEventFilters(tableName: 'events' | 'event deliveries' | 'apps') {
 		const activeFilters = Object.assign({}, this.route.snapshot.queryParams);
 		let filterItems: string[] = [];
 
@@ -473,7 +641,7 @@ export class ConvoyDashboardComponent implements OnInit {
 				this.eventApp = '';
 				filterItems = ['eventsStartDate', 'eventsEndDate', 'eventsApp'];
 				this.eventsFilterDateRange.patchValue({ startDate: '', endDate: '' });
-				this.getEvents();
+				this.getEvents({ fromFilter: true });
 				break;
 
 			case 'event deliveries':
@@ -481,8 +649,8 @@ export class ConvoyDashboardComponent implements OnInit {
 				filterItems = ['eventDelsStartDate', 'eventDelsEndDate', 'eventDelsApp', 'eventDelsStatus'];
 				this.eventDeliveriesFilterDateRange.patchValue({ startDate: '', endDate: '' });
 				this.eventDeliveryFilteredByEventId = '';
-				this.eventDeliveryFilteredByStatus = '';
-				this.getEventDeliveries();
+				this.eventDeliveryFilteredByStatus = [];
+				this.getEventDeliveries({ fromFilter: true });
 				break;
 
 			default:
@@ -528,7 +696,8 @@ export class ConvoyDashboardComponent implements OnInit {
 	}
 
 	async openDeliveriesTab() {
-		await this.getEventDeliveries();
+		await this.getEventDeliveries({ addToURL: true });
+		delete this.eventDelsDetailsItem;
 		this.toggleActiveTab('event deliveries');
 	}
 
@@ -538,6 +707,23 @@ export class ConvoyDashboardComponent implements OnInit {
 	}
 
 	getAPIURL(url: string) {
-		return `${this.isProduction ? location.origin : 'http://localhost:5005'}/ui${url}`;
+		return this.apiURL + url;
+	}
+
+	checkIfEventDeliveryStatusFilterOptionIsSelected(status: string): boolean {
+		return this.eventDeliveryFilteredByStatus?.length > 0 ? this.eventDeliveryFilteredByStatus.includes(status) : false;
+	}
+
+	checkIfEventDeliveryAppFilterOptionIsSelected(appId: string): boolean {
+		return appId === this.eventDeliveriesApp;
+	}
+
+	searchApps(searchDetails: { searchInput?: any; type: 'filter' | 'apps' }) {
+		const searchString: string = searchDetails?.searchInput?.target?.value || this.appsSearchString;
+		if (searchString) {
+			this.getApps({ search: searchString, type: searchDetails.type });
+		} else {
+			searchDetails.type === 'filter' ? (this.filteredApps = this.apps.content) : this.getApps({ type: 'apps' });
+		}
 	}
 }

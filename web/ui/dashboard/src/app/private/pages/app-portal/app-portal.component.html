@@ -1,94 +1,88 @@
-<div class="dashboard--page">
-	<div class="dashboard--page--head">
-		<div class="filter" [ngClass]="{ 'show-calendar': showFilterCalendar }">
-			<div>Filter by:</div>
-			<button class="filter--button" (click)="statsPicker.open()">
-				<img src="/assets/img/calendar-icon.svg" alt="calender icon" />
-				<mat-date-range-input [formGroup]="statsDateRange" [rangePicker]="statsPicker">
-					<input matStartDate formControlName="startDate" placeholder="Start date" />
-					<input matEndDate formControlName="endDate" placeholder="End date" (dateChange)="fetchDashboardData()" />
-				</mat-date-range-input>
-				<mat-date-range-picker #statsPicker [disabled]="false"></mat-date-range-picker>
-				<img src="/assets/img/angle-arrow-down.svg" alt="arrow down icon" />
-			</button>
-
-			<div class="select">
-				<select value="daily" [(ngModel)]="dashboardFrequency" (change)="fetchDashboardData()">
-					<option value="daily">Daily</option>
-					<option value="weekly">Weekly</option>
-					<option value="monthly">Monthly</option>
-					<option value="yearly">Yearly</option>
-				</select>
-			</div>
-		</div>
-
-		<div class="filter" [ngClass]="{ 'show-calendar': showFilterCalendar }">
-			<div>Active Group:</div>
-			<div class="select">
-				<select [value]="activeGroup" [(ngModel)]="activeGroup" (change)="toggleActiveGroup()">
-					<option [value]="group.uid" *ngFor="let group of groups">{{ group.name }}</option>
-				</select>
-			</div>
-		</div>
+<div class="app-page">
+	<div class="app-page--head">
+		<h3>Endpoint and Events</h3>
+		<button class="primary">Create Endpoint</button>
 	</div>
 
-	<div class="dashboard--page--details">
-		<div class="card dashboard--page--details--chart">
-			<ul class="metrics">
-				<li class="messages">
-					<img src="/assets/img/message-icon.svg" alt="message icon" />
-					<div class="metric">
-						<div>{{ dashboardData.events_sent }}</div>
-						<div>Event Sent</div>
-					</div>
-				</li>
-				<li class="apps">
-					<img src="/assets/img/apps-icon.svg" alt="apps icon" />
-					<div class="metric">
-						<div>{{ dashboardData.apps }}</div>
-						<div>Apps</div>
-					</div>
-				</li>
-			</ul>
-
-			<div>
-				<h3>Events Sent</h3>
-				<canvas id="chart" width="400" height="200"></canvas>
-			</div>
+	<div class="app-page--details">
+		<div class="card app-page--endpoints">
+			<table>
+				<thead>
+					<tr class="table--head">
+						<th scope="col">Endpoint URL</th>
+						<th scope="col">Type</th>
+						<th scope="col">Error Rate</th>
+						<th scope="col">Status</th>
+					</tr>
+				</thead>
+				<tbody>
+					<tr class="has-border">
+						<td>
+							<div>URL goes here and will be truncated...</div>
+						</td>
+						<td>
+							<div>Type goes here</div>
+						</td>
+						<td>
+							<div>Percentage goes here</div>
+						</td>
+						<td>
+							<div><div class="tag">Active</div></div>
+						</td>
+					</tr>
+					<tr class="has-border">
+						<td>
+							<div>URL goes here and will be truncated...</div>
+						</td>
+						<td>
+							<div>Type goes here</div>
+						</td>
+						<td>
+							<div>Percentage goes here</div>
+						</td>
+						<td>
+							<div><div class="tag">Active</div></div>
+						</td>
+					</tr>
+					<tr class="has-border">
+						<td>
+							<div>URL goes here and will be truncated...</div>
+						</td>
+						<td>
+							<div>Type goes here</div>
+						</td>
+						<td>
+							<div>Percentage goes here</div>
+						</td>
+						<td>
+							<div><div class="tag">Active</div></div>
+						</td>
+					</tr>
+				</tbody>
+			</table>
 		</div>
 
-		<div class="card has-title dashboard--page--details--credentials">
+		<div class="card has-title app-page--metrics">
 			<div class="card--title">
-				<h2>Configuration</h2>
+				<h2>Metrics on events sent by endpoint</h2>
 			</div>
 
-			<ul class="card--container">
-				<li class="list-item">
-					<div class="list-item--label">
-						Request interval (Seconds)
-						<div class="list-item--item">{{ organisationDetails?.strategy?.default?.intervalSeconds }}s</div>
-					</div>
+			<ul class="card--container metrics">
+				<li>
+					<div>5k</div>
+					<p>Primary App</p>
 				</li>
-
-				<li class="list-item">
-					<div class="list-item--label">
-						Retry limit
-						<div class="list-item--item">{{ organisationDetails?.strategy?.default?.retryLimit }}</div>
-					</div>
+				<li>
+					<div>5k</div>
+					<p>Primary App</p>
 				</li>
-
-				<li class="list-item">
-					<div class="list-item--label">
-						Signature header
-						<div class="list-item--item">{{ organisationDetails?.signature?.header }}</div>
-					</div>
+				<li>
+					<div>5k</div>
+					<p>Primary App</p>
 				</li>
-
-				<li class="list-item">
-					<div class="list-item--label">
-						Signature hash
-						<div class="list-item--item">{{ organisationDetails?.signature?.hash }}</div>
-					</div>
+				<li>
+					<div>5k</div>
+					<p>Primary App</p>
 				</li>
 			</ul>
 		</div>

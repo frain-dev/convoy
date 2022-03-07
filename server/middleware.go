@@ -3,29 +3,30 @@ package server
 import (
 	"context"
 	"encoding/base64"
-	"encoding/json"
 	"errors"
 	"fmt"
-	"io"
 	"net/http"
 	"strconv"
 	"strings"
 	"time"
 
-	"github.com/frain-dev/convoy/auth/realm_chain"
+	"github.com/frain-dev/convoy/logger"
+	"github.com/frain-dev/convoy/tracer"
+	"github.com/newrelic/go-agent/v3/newrelic"
 
 	"github.com/frain-dev/convoy/auth"
 
 	"go.mongodb.org/mongo-driver/mongo"
 
 	"github.com/felixge/httpsnoop"
+	"github.com/frain-dev/convoy/auth/realm_chain"
 	"github.com/frain-dev/convoy/config"
+	"github.com/frain-dev/convoy/datastore"
 	"github.com/frain-dev/convoy/server/models"
 	"github.com/frain-dev/convoy/util"
-	pager "github.com/gobeam/mongo-go-pagination"
+
 	log "github.com/sirupsen/logrus"
 
-	"github.com/frain-dev/convoy"
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
 	"github.com/go-chi/render"
@@ -47,6 +48,7 @@ const (
 	pageDataCtx         contextKey = "pageData"
 	dashboardCtx        contextKey = "dashboard"
 	deliveryAttemptsCtx contextKey = "deliveryAttempts"
+	baseUrlCtx          contextKey = "baseUrl"
 )
 
 func instrumentPath(path string) func(http.Handler) http.Handler {
@@ -55,6 +57,30 @@ func instrumentPath(path string) func(http.Handler) http.Handler {
 			m := httpsnoop.CaptureMetrics(next, w, r)
 			requestDuration.WithLabelValues(r.Method, path,
 				strconv.Itoa(m.Code)).Observe(m.Duration.Seconds())
+		})
+	}
+}
+
+func instrumentRequests(tr tracer.Tracer) func(next http.Handler) http.Handler {
+	return func(next http.Handler) http.Handler {
+		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			cfg, err := config.Get()
+
+			if err != nil {
+				log.WithError(err).Error("failed to load configuration")
+				return
+			}
+
+			if cfg.Tracer.Type == config.NewRelicTracerProvider {
+				txn := tr.StartTransaction(r.URL.Path)
+				defer txn.End()
+
+				tr.SetWebRequestHTTP(r, txn)
+				w = tr.SetWebResponse(w, txn)
+				r = tr.RequestWithTransactionContext(r, txn)
+			}
+
+			next.ServeHTTP(w, r)
 		})
 	}
 }
@@ -94,7 +120,7 @@ func jsonResponse(next http.Handler) http.Handler {
 	})
 }
 
-func requireApp(appRepo convoy.ApplicationRepository) func(next http.Handler) http.Handler {
+func requireApp(appRepo datastore.ApplicationRepository) func(next http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -105,9 +131,9 @@ func requireApp(appRepo convoy.ApplicationRepository) func(next http.Handler) ht
 			if err != nil {
 
 				event := "an error occurred while retrieving app details"
-				statusCode := http.StatusInternalServerError
+				statusCode := http.StatusBadRequest
 
-				if errors.Is(err, convoy.ErrApplicationNotFound) {
+				if errors.Is(err, datastore.ErrApplicationNotFound) {
 					event = err.Error()
 					statusCode = http.StatusNotFound
 				}
@@ -122,8 +148,83 @@ func requireApp(appRepo convoy.ApplicationRepository) func(next http.Handler) ht
 	}
 }
 
-func filterDeletedEndpoints(endpoints []convoy.Endpoint) []convoy.Endpoint {
-	activeEndpoints := make([]convoy.Endpoint, 0)
+func requireAppPortalApplication(appRepo datastore.ApplicationRepository) func(next http.Handler) http.Handler {
+	return func(next http.Handler) http.Handler {
+
+		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+
+			appID := chi.URLParam(r, "appID")
+
+			if util.IsStringEmpty(appID) {
+				appID = r.URL.Query().Get("appId")
+			}
+
+			app, err := appRepo.FindApplicationByID(r.Context(), appID)
+			if err != nil {
+
+				event := "an error occurred while retrieving app details"
+				statusCode := http.StatusBadRequest
+
+				if errors.Is(err, datastore.ErrApplicationNotFound) {
+					event = err.Error()
+					statusCode = http.StatusBadRequest
+				}
+
+				_ = render.Render(w, r, newErrorResponse(event, statusCode))
+				return
+			}
+
+			r = r.WithContext(setApplicationInContext(r.Context(), app))
+			next.ServeHTTP(w, r)
+		})
+	}
+}
+
+func requireAppPortalPermission(role auth.RoleType) func(next http.Handler) http.Handler {
+	return func(next http.Handler) http.Handler {
+		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			authUser := getAuthUserFromContext(r.Context())
+			if authUser.Role.Type.Is(auth.RoleSuperUser) {
+				// superuser has access to everything
+				next.ServeHTTP(w, r)
+				return
+			}
+
+			if !authUser.Role.Type.Is(role) {
+				_ = render.Render(w, r, newErrorResponse("unauthorized role", http.StatusUnauthorized))
+				return
+			}
+
+			group := getGroupFromContext(r.Context())
+			for _, v := range authUser.Role.Groups {
+				if group.Name == v || group.UID == v {
+
+					if len(authUser.Role.Apps) > 0 { //we're dealing with an app portal token at this point
+						app := getApplicationFromContext(r.Context())
+
+						for _, ap := range authUser.Role.Apps {
+							if app.Title == ap || app.UID == ap {
+								next.ServeHTTP(w, r)
+								return
+							}
+						}
+
+						_ = render.Render(w, r, newErrorResponse("unauthorized access", http.StatusUnauthorized))
+						return
+					}
+
+					next.ServeHTTP(w, r)
+					return
+				}
+			}
+
+			_ = render.Render(w, r, newErrorResponse("unauthorized to access group", http.StatusUnauthorized))
+		})
+	}
+}
+
+func filterDeletedEndpoints(endpoints []datastore.Endpoint) []datastore.Endpoint {
+	activeEndpoints := make([]datastore.Endpoint, 0)
 	for _, endpoint := range endpoints {
 		if endpoint.DeletedAt == 0 {
 			activeEndpoints = append(activeEndpoints, endpoint)
@@ -132,11 +233,11 @@ func filterDeletedEndpoints(endpoints []convoy.Endpoint) []convoy.Endpoint {
 	return activeEndpoints
 }
 
-func parseEndpointFromBody(body io.ReadCloser) (models.Endpoint, error) {
+func parseEndpointFromBody(r *http.Request) (models.Endpoint, error) {
 	var e models.Endpoint
-	err := json.NewDecoder(body).Decode(&e)
+	err := util.ReadJSON(r, &e)
 	if err != nil {
-		return e, errors.New("request is invalid")
+		return e, err
 	}
 
 	description := e.Description
@@ -172,7 +273,7 @@ func requireAppEndpoint() func(next http.Handler) http.Handler {
 	}
 }
 
-func requireEvent(eventRepo convoy.EventRepository) func(next http.Handler) http.Handler {
+func requireEvent(eventRepo datastore.EventRepository) func(next http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -185,7 +286,7 @@ func requireEvent(eventRepo convoy.EventRepository) func(next http.Handler) http
 				event := "an error occurred while retrieving event details"
 				statusCode := http.StatusInternalServerError
 
-				if errors.Is(err, convoy.ErrEventNotFound) {
+				if errors.Is(err, datastore.ErrEventNotFound) {
 					event = err.Error()
 					statusCode = http.StatusNotFound
 				}
@@ -200,7 +301,7 @@ func requireEvent(eventRepo convoy.EventRepository) func(next http.Handler) http
 	}
 }
 
-func requireEventDelivery(eventRepo convoy.EventDeliveryRepository) func(next http.Handler) http.Handler {
+func requireEventDelivery(eventRepo datastore.EventDeliveryRepository) func(next http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			eventDeliveryID := chi.URLParam(r, "eventDeliveryID")
@@ -211,7 +312,7 @@ func requireEventDelivery(eventRepo convoy.EventDeliveryRepository) func(next ht
 				eventDelivery := "an error occurred while retrieving event delivery details"
 				statusCode := http.StatusInternalServerError
 
-				if errors.Is(err, convoy.ErrEventDeliveryNotFound) {
+				if errors.Is(err, datastore.ErrEventDeliveryNotFound) {
 					eventDelivery = err.Error()
 					statusCode = http.StatusNotFound
 				}
@@ -247,18 +348,18 @@ func requireDeliveryAttempt() func(next http.Handler) http.Handler {
 	}
 }
 
-func findEndpoint(endpoints *[]convoy.Endpoint, id string) (*convoy.Endpoint, error) {
+func findEndpoint(endpoints *[]datastore.Endpoint, id string) (*datastore.Endpoint, error) {
 	for _, endpoint := range *endpoints {
 		if endpoint.UID == id && endpoint.DeletedAt == 0 {
 			return &endpoint, nil
 		}
 	}
-	return nil, convoy.ErrEndpointNotFound
+	return nil, datastore.ErrEndpointNotFound
 }
 
-func getDefaultGroup(r *http.Request, groupRepo convoy.GroupRepository) (*convoy.Group, error) {
+func getDefaultGroup(r *http.Request, groupRepo datastore.GroupRepository) (*datastore.Group, error) {
 
-	groups, err := groupRepo.LoadGroups(r.Context(), &convoy.GroupFilter{Names: []string{"default-group"}})
+	groups, err := groupRepo.LoadGroups(r.Context(), &datastore.GroupFilter{Names: []string{"default-group"}})
 	if err != nil {
 		return nil, err
 	}
@@ -270,10 +371,10 @@ func getDefaultGroup(r *http.Request, groupRepo convoy.GroupRepository) (*convoy
 	return groups[0], err
 }
 
-func requireGroup(groupRepo convoy.GroupRepository) func(next http.Handler) http.Handler {
+func requireGroup(groupRepo datastore.GroupRepository) func(next http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			var group *convoy.Group
+			var group *datastore.Group
 			var err error
 
 			groupID := r.URL.Query().Get("groupID")
@@ -328,7 +429,7 @@ func requireAuth() func(next http.Handler) http.Handler {
 				return
 			}
 
-			authUser, err := rc.Authenticate(creds)
+			authUser, err := rc.Authenticate(r.Context(), creds)
 			if err != nil {
 				log.WithError(err).Error("failed to authenticate")
 				_ = render.Render(w, r, newErrorResponse("authorization failed", http.StatusUnauthorized))
@@ -336,6 +437,21 @@ func requireAuth() func(next http.Handler) http.Handler {
 			}
 
 			r = r.WithContext(setAuthUserInContext(r.Context(), authUser))
+			next.ServeHTTP(w, r)
+		})
+	}
+}
+
+func requireBaseUrl() func(next http.Handler) http.Handler {
+	return func(next http.Handler) http.Handler {
+		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			cfg, err := config.Get()
+			if err != nil {
+				log.WithError(err).Error("failed to load configuration")
+				return
+			}
+
+			r = r.WithContext(setBaseUrlInContext(r.Context(), cfg.BaseUrl))
 			next.ServeHTTP(w, r)
 		})
 	}
@@ -358,7 +474,13 @@ func requirePermission(role auth.RoleType) func(next http.Handler) http.Handler 
 
 			group := getGroupFromContext(r.Context())
 			for _, v := range authUser.Role.Groups {
-				if group.Name == v {
+				if group.Name == v || group.UID == v {
+
+					if len(authUser.Role.Apps) > 0 { //we're dealing with an app portal token at this point
+						_ = render.Render(w, r, newErrorResponse("unauthorized to access group", http.StatusUnauthorized))
+						return
+					}
+
 					next.ServeHTTP(w, r)
 					return
 				}
@@ -407,7 +529,15 @@ func getAuthFromRequest(r *http.Request) (*auth.Credential, error) {
 			Username: creds[0],
 			Password: creds[1],
 		}, nil
+	case auth.CredentialTypeAPIKey:
+		if util.IsStringEmpty(authInfo[1]) {
+			return nil, errors.New("empty api key")
+		}
 
+		return &auth.Credential{
+			Type:   auth.CredentialTypeAPIKey,
+			APIKey: authInfo[1],
+		}, nil
 	default:
 		return nil, fmt.Errorf("unknown credential type: %s", credType.String())
 	}
@@ -445,7 +575,7 @@ func pagination(next http.Handler) http.Handler {
 		if page, err = strconv.Atoi(rawPage); err != nil {
 			page = 0
 		}
-		pageable := models.Pageable{
+		pageable := datastore.Pageable{
 			Page:    page,
 			PerPage: perPage,
 			Sort:    sort,
@@ -455,7 +585,131 @@ func pagination(next http.Handler) http.Handler {
 	})
 }
 
-func fetchGroupApps(appRepo convoy.ApplicationRepository) func(next http.Handler) http.Handler {
+func logHttpRequest(log logger.Logger) func(next http.Handler) http.Handler {
+	return func(next http.Handler) http.Handler {
+		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+
+			ww := middleware.NewWrapResponseWriter(w, r.ProtoMajor)
+
+			if logger.CanLogHttpRequest(log) {
+				start := time.Now()
+
+				defer func() {
+					requestFields := requestLogFields(r)
+					responseFields := responseLogFields(ww, start)
+
+					logFields := map[string]interface{}{
+						"httpRequest":  requestFields,
+						"httpResponse": responseFields,
+					}
+
+					log.WithLogger().WithFields(logFields).Log(statusLevel(ww.Status()), requestFields["requestURL"])
+				}()
+
+			}
+			next.ServeHTTP(ww, r)
+		})
+	}
+}
+
+func requestLogFields(r *http.Request) map[string]interface{} {
+	scheme := "http"
+
+	if r.TLS != nil {
+		scheme = "https"
+	}
+
+	requestURL := fmt.Sprintf("%s://%s%s", scheme, r.Host, r.RequestURI)
+
+	requestFields := map[string]interface{}{
+		"requestURL":    requestURL,
+		"requestMethod": r.Method,
+		"requestPath":   r.URL.Path,
+		"remoteIP":      r.RemoteAddr,
+		"proto":         r.Proto,
+		"scheme":        scheme,
+	}
+
+	if reqID := middleware.GetReqID(r.Context()); reqID != "" {
+		requestFields["x-request-id"] = reqID
+	}
+
+	if len(r.Header) > 0 {
+		requestFields["header"] = headerFields(r.Header)
+	}
+
+	cfg, err := config.Get()
+	if err != nil {
+		log.WithError(err).Error("failed to load configuration")
+		return nil
+	}
+
+	if cfg.Tracer.Type == config.NewRelicTracerProvider {
+		txn := newrelic.FromContext(r.Context()).GetLinkingMetadata()
+
+		if cfg.NewRelic.DistributedTracerEnabled {
+			requestFields["traceID"] = txn.TraceID
+			requestFields["spanID"] = txn.SpanID
+		}
+
+		requestFields["entityGUID"] = txn.EntityGUID
+		requestFields["entityType"] = txn.EntityType
+	}
+
+	return requestFields
+}
+
+func responseLogFields(w middleware.WrapResponseWriter, t time.Time) map[string]interface{} {
+	responseFields := map[string]interface{}{
+		"status":  w.Status(),
+		"byes":    w.BytesWritten(),
+		"latency": time.Since(t),
+	}
+
+	if len(w.Header()) > 0 {
+		responseFields["header"] = headerFields(w.Header())
+	}
+
+	return responseFields
+}
+
+func statusLevel(status int) log.Level {
+	switch {
+	case status <= 0:
+		return log.WarnLevel
+	case status < 400:
+		return log.InfoLevel
+	case status >= 400 && status < 500:
+		return log.WarnLevel
+	case status >= 500:
+		return log.ErrorLevel
+	default:
+		return log.InfoLevel
+	}
+}
+
+func headerFields(header http.Header) map[string]string {
+	headerField := map[string]string{}
+
+	for k, v := range header {
+		k = strings.ToLower(k)
+		switch {
+		case len(v) == 0:
+			continue
+		case len(v) == 1:
+			headerField[k] = v[0]
+		default:
+			headerField[k] = fmt.Sprintf("[%s]", strings.Join(v, "], ["))
+		}
+		if k == "authorization" || k == "cookie" || k == "set-cookie" {
+			headerField[k] = "***"
+		}
+	}
+
+	return headerField
+}
+
+func fetchGroupApps(appRepo datastore.ApplicationRepository) func(next http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -485,7 +739,7 @@ func ensurePeriod(start time.Time, end time.Time) error {
 	return nil
 }
 
-func computeDashboardMessages(ctx context.Context, orgId string, eventRepo convoy.EventRepository, searchParams models.SearchParams, period convoy.Period) (uint64, []models.EventInterval, error) {
+func computeDashboardMessages(ctx context.Context, orgId string, eventRepo datastore.EventRepository, searchParams datastore.SearchParams, period datastore.Period) (uint64, []datastore.EventInterval, error) {
 
 	var messagesSent uint64
 
@@ -503,72 +757,72 @@ func computeDashboardMessages(ctx context.Context, orgId string, eventRepo convo
 }
 
 func setApplicationInContext(ctx context.Context,
-	app *convoy.Application) context.Context {
+	app *datastore.Application) context.Context {
 	return context.WithValue(ctx, appCtx, app)
 }
 
-func getApplicationFromContext(ctx context.Context) *convoy.Application {
-	return ctx.Value(appCtx).(*convoy.Application)
+func getApplicationFromContext(ctx context.Context) *datastore.Application {
+	return ctx.Value(appCtx).(*datastore.Application)
 }
 
 func setEventInContext(ctx context.Context,
-	event *convoy.Event) context.Context {
+	event *datastore.Event) context.Context {
 	return context.WithValue(ctx, eventCtx, event)
 }
 
-func getEventFromContext(ctx context.Context) *convoy.Event {
-	return ctx.Value(eventCtx).(*convoy.Event)
+func getEventFromContext(ctx context.Context) *datastore.Event {
+	return ctx.Value(eventCtx).(*datastore.Event)
 }
 
 func setEventDeliveryInContext(ctx context.Context,
-	eventDelivery *convoy.EventDelivery) context.Context {
+	eventDelivery *datastore.EventDelivery) context.Context {
 	return context.WithValue(ctx, eventDeliveryCtx, eventDelivery)
 }
 
-func getEventDeliveryFromContext(ctx context.Context) *convoy.EventDelivery {
-	return ctx.Value(eventDeliveryCtx).(*convoy.EventDelivery)
+func getEventDeliveryFromContext(ctx context.Context) *datastore.EventDelivery {
+	return ctx.Value(eventDeliveryCtx).(*datastore.EventDelivery)
 }
 
 func setApplicationsInContext(ctx context.Context,
-	apps *[]convoy.Application) context.Context {
+	apps *[]datastore.Application) context.Context {
 	return context.WithValue(ctx, appCtx, apps)
 }
 
-func getApplicationsFromContext(ctx context.Context) *[]convoy.Application {
-	return ctx.Value(appCtx).(*[]convoy.Application)
+func getApplicationsFromContext(ctx context.Context) *[]datastore.Application {
+	return ctx.Value(appCtx).(*[]datastore.Application)
 }
 
 func setApplicationEndpointInContext(ctx context.Context,
-	endpoint *convoy.Endpoint) context.Context {
+	endpoint *datastore.Endpoint) context.Context {
 	return context.WithValue(ctx, endpointCtx, endpoint)
 }
 
-func getApplicationEndpointFromContext(ctx context.Context) *convoy.Endpoint {
-	return ctx.Value(endpointCtx).(*convoy.Endpoint)
+func getApplicationEndpointFromContext(ctx context.Context) *datastore.Endpoint {
+	return ctx.Value(endpointCtx).(*datastore.Endpoint)
 }
 
-func setGroupInContext(ctx context.Context, group *convoy.Group) context.Context {
+func setGroupInContext(ctx context.Context, group *datastore.Group) context.Context {
 	return context.WithValue(ctx, groupCtx, group)
 }
 
-func getGroupFromContext(ctx context.Context) *convoy.Group {
-	return ctx.Value(groupCtx).(*convoy.Group)
+func getGroupFromContext(ctx context.Context) *datastore.Group {
+	return ctx.Value(groupCtx).(*datastore.Group)
 }
 
-func setPageableInContext(ctx context.Context, pageable models.Pageable) context.Context {
+func setPageableInContext(ctx context.Context, pageable datastore.Pageable) context.Context {
 	return context.WithValue(ctx, pageableCtx, pageable)
 }
 
-func getPageableFromContext(ctx context.Context) models.Pageable {
-	return ctx.Value(pageableCtx).(models.Pageable)
+func getPageableFromContext(ctx context.Context) datastore.Pageable {
+	return ctx.Value(pageableCtx).(datastore.Pageable)
 }
 
-func setPaginationDataInContext(ctx context.Context, p *pager.PaginationData) context.Context {
+func setPaginationDataInContext(ctx context.Context, p *datastore.PaginationData) context.Context {
 	return context.WithValue(ctx, pageDataCtx, p)
 }
 
-func getPaginationDataFromContext(ctx context.Context) *pager.PaginationData {
-	return ctx.Value(pageDataCtx).(*pager.PaginationData)
+func getPaginationDataFromContext(ctx context.Context) *datastore.PaginationData {
+	return ctx.Value(pageDataCtx).(*datastore.PaginationData)
 }
 
 func setDashboardSummaryInContext(ctx context.Context, d *models.DashboardSummary) context.Context {
@@ -580,21 +834,21 @@ func getDashboardSummaryFromContext(ctx context.Context) *models.DashboardSummar
 }
 
 func setDeliveryAttemptInContext(ctx context.Context,
-	attempt *convoy.DeliveryAttempt) context.Context {
+	attempt *datastore.DeliveryAttempt) context.Context {
 	return context.WithValue(ctx, deliveryAttemptsCtx, attempt)
 }
 
-func getDeliveryAttemptFromContext(ctx context.Context) *convoy.DeliveryAttempt {
-	return ctx.Value(deliveryAttemptsCtx).(*convoy.DeliveryAttempt)
+func getDeliveryAttemptFromContext(ctx context.Context) *datastore.DeliveryAttempt {
+	return ctx.Value(deliveryAttemptsCtx).(*datastore.DeliveryAttempt)
 }
 
 func setDeliveryAttemptsInContext(ctx context.Context,
-	attempts *[]convoy.DeliveryAttempt) context.Context {
+	attempts *[]datastore.DeliveryAttempt) context.Context {
 	return context.WithValue(ctx, deliveryAttemptsCtx, attempts)
 }
 
-func getDeliveryAttemptsFromContext(ctx context.Context) *[]convoy.DeliveryAttempt {
-	return ctx.Value(deliveryAttemptsCtx).(*[]convoy.DeliveryAttempt)
+func getDeliveryAttemptsFromContext(ctx context.Context) *[]datastore.DeliveryAttempt {
+	return ctx.Value(deliveryAttemptsCtx).(*[]datastore.DeliveryAttempt)
 }
 
 func setAuthUserInContext(ctx context.Context, a *auth.AuthenticatedUser) context.Context {
@@ -615,4 +869,12 @@ func setConfigInContext(ctx context.Context, c *ViewableConfiguration) context.C
 
 func getConfigFromContext(ctx context.Context) *ViewableConfiguration {
 	return ctx.Value(configCtx).(*ViewableConfiguration)
+}
+
+func setBaseUrlInContext(ctx context.Context, baseUrl string) context.Context {
+	return context.WithValue(ctx, baseUrlCtx, baseUrl)
+}
+
+func getBaseUrlFromContext(ctx context.Context) string {
+	return ctx.Value(baseUrlCtx).(string)
 }

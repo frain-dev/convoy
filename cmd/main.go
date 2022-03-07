@@ -2,31 +2,38 @@ package main
 
 import (
 	"context"
+	"errors"
 	"fmt"
-	"net/url"
 	"os"
-	"strings"
 	"time"
 	_ "time/tzdata"
 
-	convoyRedis "github.com/frain-dev/convoy/queue/redis"
+	"github.com/frain-dev/convoy/cache"
+	"github.com/frain-dev/convoy/datastore/badger"
+
+	"github.com/frain-dev/convoy/logger"
+	memqueue "github.com/frain-dev/convoy/queue/memqueue"
+	redisqueue "github.com/frain-dev/convoy/queue/redis"
+	"github.com/frain-dev/convoy/tracer"
 	"github.com/frain-dev/convoy/worker/task"
 	"github.com/getsentry/sentry-go"
+	"github.com/go-redis/redis/v8"
 	"github.com/google/uuid"
 	prefixed "github.com/x-cray/logrus-prefixed-formatter"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 
 	"github.com/frain-dev/convoy/util"
-	"github.com/go-redis/redis/v8"
+	"github.com/frain-dev/taskq/v3"
 	log "github.com/sirupsen/logrus"
-	"github.com/vmihailenco/taskq/v3"
 
 	"github.com/frain-dev/convoy"
 	"github.com/frain-dev/convoy/config"
 	"github.com/frain-dev/convoy/datastore"
+	"github.com/frain-dev/convoy/limiter"
 	"github.com/frain-dev/convoy/queue"
 	"github.com/spf13/cobra"
-	"go.mongodb.org/mongo-driver/mongo"
+
+	"github.com/frain-dev/convoy/datastore/mongo"
 )
 
 func main() {
@@ -47,11 +54,12 @@ func main() {
 
 	app := &app{}
 
-	var db *mongo.Client
+	var db datastore.DatabaseClient
 
 	cmd := &cobra.Command{
-		Use:   "Convoy",
-		Short: "Fast & reliable webhooks service",
+		Use:     "Convoy",
+		Version: convoy.GetVersion(),
+		Short:   "Fast & reliable webhooks service",
 		PersistentPreRunE: func(cmd *cobra.Command, args []string) error {
 			cfgPath, err := cmd.Flags().GetString("config")
 			if err != nil {
@@ -83,7 +91,7 @@ func main() {
 				return err
 			}
 
-			db, err = datastore.New(cfg)
+			db, err = NewDB(cfg)
 			if err != nil {
 				return err
 			}
@@ -105,9 +113,44 @@ func main() {
 
 			var qFn taskq.Factory
 			var rC *redis.Client
+			var lo logger.Logger
+			var tr tracer.Tracer
+			var lS queue.Storage
+			var opts queue.QueueOptions
+			var ca cache.Cache
+			var li limiter.RateLimiter
 
 			if cfg.Queue.Type == config.RedisQueueProvider {
-				rC, qFn, err = convoyRedis.NewClient(cfg)
+				rC, qFn, err = redisqueue.NewClient(cfg)
+				if err != nil {
+					return err
+				}
+				opts = queue.QueueOptions{
+					Type:    "redis",
+					Redis:   rC,
+					Factory: qFn,
+				}
+			}
+
+			if cfg.Queue.Type == config.InMemoryQueueProvider {
+				lS, qFn, err = memqueue.NewClient(cfg)
+				if err != nil {
+					return err
+				}
+				opts = queue.QueueOptions{
+					Type:    "in-memory",
+					Storage: lS,
+					Factory: qFn,
+				}
+			}
+
+			lo, err = logger.NewLogger(cfg.Logger)
+			if err != nil {
+				return err
+			}
+
+			if cfg.Tracer.Type == config.NewRelicTracerProvider {
+				tr, err = tracer.NewTracer(cfg, lo.WithLogger())
 				if err != nil {
 					return err
 				}
@@ -118,28 +161,31 @@ func main() {
 				log.Warnf("signature header is blank. setting default %s", config.DefaultSignatureHeader)
 			}
 
-			u, err := url.Parse(cfg.Database.Dsn)
+			ca, err = cache.NewCache(cfg.Cache)
 			if err != nil {
 				return err
 			}
 
-			dbName := strings.TrimPrefix(u.Path, "/")
-			conn := db.Database(dbName, nil)
-
-			app.groupRepo = datastore.NewGroupRepo(conn)
-			app.applicationRepo = datastore.NewApplicationRepo(conn)
-			app.eventRepo = datastore.NewEventRepository(conn)
-			app.eventDeliveryRepo = datastore.NewEventDeliveryRepository(conn)
-			app.eventQueue = convoyRedis.NewQueue(rC, qFn, "EventQueue")
-			app.deadLetterQueue = convoyRedis.NewQueue(rC, qFn, "DeadLetterQueue")
-
-			ensureMongoIndices(conn)
-			err = ensureDefaultGroup(context.Background(), cfg, app)
+			li, err = limiter.NewLimiter(cfg.Limiter)
 			if err != nil {
 				return err
 			}
 
-			return nil
+			app.apiKeyRepo = db.APIRepo()
+			app.groupRepo = db.GroupRepo()
+			app.eventRepo = db.EventRepo()
+			app.applicationRepo = db.AppRepo()
+			app.eventDeliveryRepo = db.EventDeliveryRepo()
+
+			app.eventQueue = NewQueue(opts, "EventQueue")
+			app.deadLetterQueue = NewQueue(opts, "DeadLetterQueue")
+			app.logger = lo
+			app.tracer = tr
+			app.cache = ca
+			app.limiter = li
+
+			return ensureDefaultGroup(context.Background(), cfg, app)
+
 		},
 		PersistentPostRunE: func(cmd *cobra.Command, args []string) error {
 			defer func() {
@@ -173,27 +219,38 @@ func main() {
 	cmd.AddCommand(addCreateCommand(app))
 	cmd.AddCommand(addGetComamnd(app))
 	cmd.AddCommand(addServerCommand(app))
-
+	cmd.AddCommand(addWorkerCommand(app))
+	cmd.AddCommand(addQueueCommand(app))
+	cmd.AddCommand(addRetryCommand(app))
 	if err := cmd.Execute(); err != nil {
 		log.Fatal(err)
 	}
 }
 
-func ensureMongoIndices(conn *mongo.Database) {
-	datastore.EnsureIndex(conn, datastore.GroupCollection, "uid", true)
-	datastore.EnsureIndex(conn, datastore.GroupCollection, "name", true)
-	datastore.EnsureIndex(conn, datastore.AppCollections, "uid", true)
-	datastore.EnsureIndex(conn, datastore.EventCollection, "uid", true)
-	datastore.EnsureIndex(conn, datastore.EventCollection, "event_type", false)
+func NewQueue(opts queue.QueueOptions, name string) queue.Queuer {
+	optsType := opts.Type
+	var convoyQueue queue.Queuer
+	switch optsType {
+	case "in-memory":
+		opts.Name = name
+		convoyQueue = memqueue.NewQueue(opts)
+
+	case "redis":
+		opts.Name = name
+		convoyQueue = redisqueue.NewQueue(opts)
+	default:
+		log.Errorf("Invalid queue type: %v", optsType)
+	}
+	return convoyQueue
 }
 
 func ensureDefaultGroup(ctx context.Context, cfg config.Configuration, a *app) error {
-	var filter *convoy.GroupFilter
-	var groups []*convoy.Group
-	var group *convoy.Group
+	var filter *datastore.GroupFilter
+	var groups []*datastore.Group
+	var group *datastore.Group
 	var err error
 
-	filter = &convoy.GroupFilter{}
+	filter = &datastore.GroupFilter{}
 	groups, err = a.groupRepo.LoadGroups(ctx, filter)
 	if err != nil {
 		return fmt.Errorf("failed to load groups - %w", err)
@@ -205,21 +262,36 @@ func ensureDefaultGroup(ctx context.Context, cfg config.Configuration, a *app) e
 	}
 
 	if len(groups) > 1 {
-		filter = &convoy.GroupFilter{Names: []string{"default-group"}}
+		filter = &datastore.GroupFilter{Names: []string{"default-group"}}
 		groups, err = a.groupRepo.LoadGroups(ctx, filter)
 		if err != nil {
 			return fmt.Errorf("failed to load groups - %w", err)
 		}
 	}
 
+	groupCfg := &datastore.GroupConfig{
+		Strategy: datastore.StrategyConfiguration{
+			Type: cfg.GroupConfig.Strategy.Type,
+			Default: datastore.DefaultStrategyConfiguration{
+				IntervalSeconds: cfg.GroupConfig.Strategy.Default.IntervalSeconds,
+				RetryLimit:      cfg.GroupConfig.Strategy.Default.RetryLimit,
+			},
+		},
+		Signature: datastore.SignatureConfiguration{
+			Header: config.SignatureHeaderProvider(cfg.GroupConfig.Signature.Header),
+			Hash:   cfg.GroupConfig.Signature.Hash,
+		},
+		DisableEndpoint: cfg.GroupConfig.DisableEndpoint,
+	}
+
 	if len(groups) == 0 {
-		defaultGroup := &convoy.Group{
+		defaultGroup := &datastore.Group{
 			UID:            uuid.New().String(),
 			Name:           "default-group",
-			Config:         &cfg.GroupConfig,
+			Config:         groupCfg,
 			CreatedAt:      primitive.NewDateTimeFromTime(time.Now()),
 			UpdatedAt:      primitive.NewDateTimeFromTime(time.Now()),
-			DocumentStatus: convoy.ActiveDocumentStatus,
+			DocumentStatus: datastore.ActiveDocumentStatus,
 		}
 
 		err = a.groupRepo.CreateGroup(ctx, defaultGroup)
@@ -232,7 +304,7 @@ func ensureDefaultGroup(ctx context.Context, cfg config.Configuration, a *app) e
 
 	group = groups[0]
 
-	group.Config = &cfg.GroupConfig
+	group.Config = groupCfg
 	err = a.groupRepo.UpdateGroup(ctx, group)
 	if err != nil {
 		log.WithError(err).Error("Default group update failed.")
@@ -246,14 +318,38 @@ func ensureDefaultGroup(ctx context.Context, cfg config.Configuration, a *app) e
 }
 
 type app struct {
-	groupRepo         convoy.GroupRepository
-	applicationRepo   convoy.ApplicationRepository
-	eventRepo         convoy.EventRepository
-	eventDeliveryRepo convoy.EventDeliveryRepository
+	apiKeyRepo        datastore.APIKeyRepository
+	groupRepo         datastore.GroupRepository
+	applicationRepo   datastore.ApplicationRepository
+	eventRepo         datastore.EventRepository
+	eventDeliveryRepo datastore.EventDeliveryRepository
 	eventQueue        queue.Queuer
 	deadLetterQueue   queue.Queuer
+	logger            logger.Logger
+	tracer            tracer.Tracer
+	cache             cache.Cache
+	limiter           limiter.RateLimiter
 }
 
 func getCtx() (context.Context, context.CancelFunc) {
 	return context.WithTimeout(context.Background(), time.Second*1)
+}
+
+func NewDB(cfg config.Configuration) (datastore.DatabaseClient, error) {
+	switch cfg.Database.Type {
+	case "mongodb":
+		db, err := mongo.New(cfg)
+		if err != nil {
+			return nil, err
+		}
+		return db, nil
+	case "in-memory":
+		bolt, err := badger.New(cfg)
+		if err != nil {
+			return nil, err
+		}
+		return bolt, nil
+	default:
+		return nil, errors.New("invalid database type")
+	}
 }
