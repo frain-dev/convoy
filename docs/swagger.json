@@ -1424,7 +1424,7 @@
                 }
             }
         },
-        "/eventdeliveries/forceretry": {
+        "/eventdeliveries/forceresend": {
             "post": {
                 "security": [
                     {

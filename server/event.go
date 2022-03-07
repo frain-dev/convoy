@@ -271,7 +271,7 @@ func (a *applicationHandler) BatchRetryEventDelivery(w http.ResponseWriter, r *h
 	_ = render.Render(w, r, newServerResponse(fmt.Sprintf("%d successful, %d failed", len(deliveries)-failures, failures), nil, http.StatusOK))
 }
 
-// ForceRetryEventDeliveries
+// ForceResendEventDeliveries
 // @Summary Force Resend app events
 // @Description This endpoint force resends multiple app events
 // @Tags EventDelivery
@@ -281,8 +281,8 @@ func (a *applicationHandler) BatchRetryEventDelivery(w http.ResponseWriter, r *h
 // @Success 200 {object} serverResponse{data=Stub}
 // @Failure 400,401,500 {object} serverResponse{data=Stub}
 // @Security ApiKeyAuth
-// @Router /eventdeliveries/forceretry [post]
-func (a *applicationHandler) ForceRetryEventDeliveries(w http.ResponseWriter, r *http.Request) {
+// @Router /eventdeliveries/forceresend [post]
+func (a *applicationHandler) ForceResendEventDeliveries(w http.ResponseWriter, r *http.Request) {
 	eventDeliveryIDs := models.IDs{}
 
 	err := json.NewDecoder(r.Body).Decode(&eventDeliveryIDs)

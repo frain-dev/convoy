@@ -2236,7 +2236,7 @@
 				]
 			}
 		},
-		"/eventdeliveries/forceretry": {
+		"/eventdeliveries/forceresend": {
 			"post": {
 				"description": "This endpoint force resends multiple app events",
 				"requestBody": {
