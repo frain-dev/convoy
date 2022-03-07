@@ -107,15 +107,7 @@ func (a *applicationHandler) CreateAppEvent(w http.ResponseWriter, r *http.Reque
 		return
 	}
 
-	eventStatus := datastore.ScheduledEventStatus
-
 	for _, v := range matchedEndpoints {
-		// TODO(daniel,subomi): what if the first endpoint is inactive, and then the second one is active?
-		// how do we reset eventStatus?
-		if v.Status != datastore.ActiveEndpointStatus {
-			eventStatus = datastore.DiscardedEventStatus
-		}
-
 		eventDelivery := &datastore.EventDelivery{
 			UID: uuid.New().String(),
 			EventMetadata: &datastore.EventMetadata{
@@ -143,7 +135,7 @@ func (a *applicationHandler) CreateAppEvent(w http.ResponseWriter, r *http.Reque
 				RetryLimit:      retryLimit,
 				NextSendTime:    primitive.NewDateTimeFromTime(time.Now()),
 			},
-			Status:           eventStatus,
+			Status:           getEventDeliveryStatus(v),
 			DeliveryAttempts: make([]datastore.DeliveryAttempt, 0),
 			DocumentStatus:   datastore.ActiveDocumentStatus,
 			CreatedAt:        primitive.NewDateTimeFromTime(time.Now()),
@@ -509,4 +501,12 @@ func matchEndpointsForDelivery(ev string, endpoints, matched []datastore.Endpoin
 	}
 
 	return matchEndpointsForDelivery(ev, endpoints[1:], matched)
+}
+
+func getEventDeliveryStatus(endpoint datastore.Endpoint) datastore.EventDeliveryStatus {
+	if endpoint.Status != datastore.ActiveEndpointStatus {
+		return datastore.DiscardedEventStatus
+	}
+
+	return datastore.ScheduledEventStatus
 }
