@@ -905,7 +905,7 @@ func TestApplicationHandler_ForceResendEventDelivery(t *testing.T) {
 				message: []datastore.EventDelivery{
 					{
 						UID:    "123",
-						Status: datastore.FailureEventStatus,
+						Status: datastore.SuccessEventStatus,
 						EventMetadata: &datastore.EventMetadata{
 							UID: "abcd",
 						},
@@ -917,7 +917,7 @@ func TestApplicationHandler_ForceResendEventDelivery(t *testing.T) {
 						},
 					},
 					{
-						UID:    "123",
+						UID:    "1234",
 						Status: datastore.SuccessEventStatus,
 						EventMetadata: &datastore.EventMetadata{
 							UID: "abcd",
@@ -931,8 +931,8 @@ func TestApplicationHandler_ForceResendEventDelivery(t *testing.T) {
 					},
 
 					{
-						UID:    "123",
-						Status: datastore.ProcessingEventStatus,
+						UID:    "12345",
+						Status: datastore.SuccessEventStatus,
 						EventMetadata: &datastore.EventMetadata{
 							UID: "abcd",
 						},
@@ -945,7 +945,7 @@ func TestApplicationHandler_ForceResendEventDelivery(t *testing.T) {
 					},
 				},
 			},
-			body: strings.NewReader(`{"ids":["1234","12345"]}`),
+			body: strings.NewReader(`{"ids":["123","1234","12345"]}`),
 			dbFn: func(ev *datastore.Event, msg []datastore.EventDelivery, app *applicationHandler) {
 				e, _ := app.eventDeliveryRepo.(*mocks.MockEventDeliveryRepository)
 				e.EXPECT().
@@ -961,14 +961,10 @@ func TestApplicationHandler_ForceResendEventDelivery(t *testing.T) {
 					FindApplicationEndpointByID(gomock.Any(), gomock.Any(), gomock.Any()).Times(3).
 					Return(
 						&datastore.Endpoint{
-							Status: datastore.InactiveEndpointStatus,
+							Status: datastore.ActiveEndpointStatus,
 						},
 						nil,
 					)
-
-				a.EXPECT().
-					UpdateApplicationEndpointsStatus(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Times(3).
-					Return(nil)
 
 				o, _ := app.groupRepo.(*mocks.MockGroupRepository)
 				o.EXPECT().
@@ -979,6 +975,285 @@ func TestApplicationHandler_ForceResendEventDelivery(t *testing.T) {
 				q.EXPECT().
 					Write(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Times(3).
 					Return(nil)
+			},
+		},
+		{
+			name:       "should_error_for_discarded_event_status",
+			cfgPath:    "./testdata/Auth_Config/no-auth-convoy.json",
+			method:     http.MethodPost,
+			statusCode: http.StatusOK,
+			args: args{
+				event: &datastore.Event{
+					UID: "1111",
+				},
+				message: []datastore.EventDelivery{
+					{
+						UID:    "123",
+						Status: datastore.SuccessEventStatus,
+						EventMetadata: &datastore.EventMetadata{
+							UID: "abcd",
+						},
+						EndpointMetadata: &datastore.EndpointMetadata{
+							UID: "1234",
+						},
+						AppMetadata: &datastore.AppMetadata{
+							UID: "123",
+						},
+					},
+					{
+						UID:    "1234",
+						Status: datastore.DiscardedEventStatus,
+						EventMetadata: &datastore.EventMetadata{
+							UID: "abcd",
+						},
+						EndpointMetadata: &datastore.EndpointMetadata{
+							UID: "1234",
+						},
+						AppMetadata: &datastore.AppMetadata{
+							UID: "123",
+						},
+					},
+
+					{
+						UID:    "12345",
+						Status: datastore.SuccessEventStatus,
+						EventMetadata: &datastore.EventMetadata{
+							UID: "abcd",
+						},
+						EndpointMetadata: &datastore.EndpointMetadata{
+							UID: "1234",
+						},
+						AppMetadata: &datastore.AppMetadata{
+							UID: "123",
+						},
+					},
+				},
+			},
+			body: strings.NewReader(`{"ids":["123","1234","12345"]}`),
+			dbFn: func(ev *datastore.Event, msg []datastore.EventDelivery, app *applicationHandler) {
+				e, _ := app.eventDeliveryRepo.(*mocks.MockEventDeliveryRepository)
+				e.EXPECT().
+					FindEventDeliveriesByIDs(gomock.Any(), gomock.Any()).Times(1).
+					Return(msg, nil)
+
+				e.EXPECT().
+					UpdateStatusOfEventDelivery(gomock.Any(), gomock.Any(), gomock.Any()).Times(2).
+					Return(nil)
+
+				a, _ := app.appRepo.(*mocks.MockApplicationRepository)
+				a.EXPECT().
+					FindApplicationEndpointByID(gomock.Any(), gomock.Any(), gomock.Any()).Times(2).
+					Return(
+						&datastore.Endpoint{
+							Status: datastore.ActiveEndpointStatus,
+						},
+						nil,
+					)
+
+				o, _ := app.groupRepo.(*mocks.MockGroupRepository)
+				o.EXPECT().
+					LoadGroups(gomock.Any(), gomock.Any()).Times(1).
+					Return([]*datastore.Group{group}, nil)
+
+				q, _ := app.eventQueue.(*mocks.MockQueuer)
+				q.EXPECT().
+					Write(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Times(2).
+					Return(nil)
+			},
+		},
+		{
+			name:       "should_error_for_endpoint_not_found",
+			cfgPath:    "./testdata/Auth_Config/no-auth-convoy.json",
+			method:     http.MethodPost,
+			statusCode: http.StatusOK,
+			args: args{
+				event: &datastore.Event{
+					UID: "1111",
+				},
+				message: []datastore.EventDelivery{
+					{
+						UID:    "123",
+						Status: datastore.SuccessEventStatus,
+						EventMetadata: &datastore.EventMetadata{
+							UID: "abcd",
+						},
+						EndpointMetadata: &datastore.EndpointMetadata{
+							UID: "1234",
+						},
+						AppMetadata: &datastore.AppMetadata{
+							UID: "123",
+						},
+					},
+					{
+						UID:    "1234",
+						Status: datastore.SuccessEventStatus,
+						EventMetadata: &datastore.EventMetadata{
+							UID: "abcd",
+						},
+						EndpointMetadata: &datastore.EndpointMetadata{
+							UID: "1234",
+						},
+						AppMetadata: &datastore.AppMetadata{
+							UID: "123",
+						},
+					},
+
+					{
+						UID:    "12345",
+						Status: datastore.SuccessEventStatus,
+						EventMetadata: &datastore.EventMetadata{
+							UID: "abcd",
+						},
+						EndpointMetadata: &datastore.EndpointMetadata{
+							UID: "1234",
+						},
+						AppMetadata: &datastore.AppMetadata{
+							UID: "123",
+						},
+					},
+				},
+			},
+			body: strings.NewReader(`{"ids":["123","1234","12345"]}`),
+			dbFn: func(ev *datastore.Event, msg []datastore.EventDelivery, app *applicationHandler) {
+				e, _ := app.eventDeliveryRepo.(*mocks.MockEventDeliveryRepository)
+				e.EXPECT().
+					FindEventDeliveriesByIDs(gomock.Any(), gomock.Any()).Times(1).
+					Return(msg, nil)
+
+				a, _ := app.appRepo.(*mocks.MockApplicationRepository)
+				a.EXPECT().
+					FindApplicationEndpointByID(gomock.Any(), gomock.Any(), gomock.Any()).Times(3).
+					Return(
+						nil,
+						errors.New("cannot find endpoint"),
+					)
+
+				o, _ := app.groupRepo.(*mocks.MockGroupRepository)
+				o.EXPECT().
+					LoadGroups(gomock.Any(), gomock.Any()).Times(1).
+					Return([]*datastore.Group{group}, nil)
+			},
+		},
+		{
+			name:       "should_error_for_inactive_endpoint",
+			cfgPath:    "./testdata/Auth_Config/no-auth-convoy.json",
+			method:     http.MethodPost,
+			statusCode: http.StatusOK,
+			args: args{
+				event: &datastore.Event{
+					UID: "1111",
+				},
+				message: []datastore.EventDelivery{
+					{
+						UID:    "1234",
+						Status: datastore.SuccessEventStatus,
+						EventMetadata: &datastore.EventMetadata{
+							UID: "abcd",
+						},
+						EndpointMetadata: &datastore.EndpointMetadata{
+							UID: "1234",
+						},
+						AppMetadata: &datastore.AppMetadata{
+							UID: "123",
+						},
+					},
+					{
+						UID:    "12345",
+						Status: datastore.SuccessEventStatus,
+						EventMetadata: &datastore.EventMetadata{
+							UID: "abcd",
+						},
+						EndpointMetadata: &datastore.EndpointMetadata{
+							UID: "1234",
+						},
+						AppMetadata: &datastore.AppMetadata{
+							UID: "123",
+						},
+					},
+				},
+			},
+			body: strings.NewReader(`{"ids":["123","1234","12345"]}`),
+			dbFn: func(ev *datastore.Event, msg []datastore.EventDelivery, app *applicationHandler) {
+				e, _ := app.eventDeliveryRepo.(*mocks.MockEventDeliveryRepository)
+				e.EXPECT().
+					FindEventDeliveriesByIDs(gomock.Any(), gomock.Any()).Times(1).
+					Return(msg, nil)
+
+				a, _ := app.appRepo.(*mocks.MockApplicationRepository)
+				a.EXPECT().
+					FindApplicationEndpointByID(gomock.Any(), gomock.Any(), gomock.Any()).Times(2).
+					Return(
+						&datastore.Endpoint{Status: datastore.InactiveEndpointStatus},
+						nil,
+					)
+
+				o, _ := app.groupRepo.(*mocks.MockGroupRepository)
+				o.EXPECT().
+					LoadGroups(gomock.Any(), gomock.Any()).Times(1).
+					Return([]*datastore.Group{group}, nil)
+			},
+		},
+		{
+			name:       "should_error_for_failed_to_update_event_delivery_status",
+			cfgPath:    "./testdata/Auth_Config/no-auth-convoy.json",
+			method:     http.MethodPost,
+			statusCode: http.StatusOK,
+			args: args{
+				event: &datastore.Event{
+					UID: "1111",
+				},
+				message: []datastore.EventDelivery{
+					{
+						UID:    "1234",
+						Status: datastore.SuccessEventStatus,
+						EventMetadata: &datastore.EventMetadata{
+							UID: "abcd",
+						},
+						EndpointMetadata: &datastore.EndpointMetadata{
+							UID: "1234",
+						},
+						AppMetadata: &datastore.AppMetadata{
+							UID: "123",
+						},
+					},
+					{
+						UID:    "12345",
+						Status: datastore.SuccessEventStatus,
+						EventMetadata: &datastore.EventMetadata{
+							UID: "abcd",
+						},
+						EndpointMetadata: &datastore.EndpointMetadata{
+							UID: "1234",
+						},
+						AppMetadata: &datastore.AppMetadata{
+							UID: "123",
+						},
+					},
+				},
+			},
+			body: strings.NewReader(`{"ids":["123","1234","12345"]}`),
+			dbFn: func(ev *datastore.Event, msg []datastore.EventDelivery, app *applicationHandler) {
+				e, _ := app.eventDeliveryRepo.(*mocks.MockEventDeliveryRepository)
+				e.EXPECT().
+					FindEventDeliveriesByIDs(gomock.Any(), gomock.Any()).Times(1).
+					Return(msg, nil)
+
+				e.EXPECT().
+					UpdateStatusOfEventDelivery(gomock.Any(), gomock.Any(), gomock.Any()).Times(2).
+					Return(errors.New("update failed"))
+
+				a, _ := app.appRepo.(*mocks.MockApplicationRepository)
+				a.EXPECT().
+					FindApplicationEndpointByID(gomock.Any(), gomock.Any(), gomock.Any()).Times(2).
+					Return(
+						&datastore.Endpoint{Status: datastore.ActiveEndpointStatus},
+						nil,
+					)
+
+				o, _ := app.groupRepo.(*mocks.MockGroupRepository)
+				o.EXPECT().
+					LoadGroups(gomock.Any(), gomock.Any()).Times(1).
+					Return([]*datastore.Group{group}, nil)
 			},
 		},
 		{
@@ -1047,7 +1322,7 @@ func TestApplicationHandler_ForceResendEventDelivery(t *testing.T) {
 			if w.Code != tc.statusCode {
 				t.Errorf("Want status '%d', got '%d'", tc.statusCode, w.Code)
 			}
-
+			fmt.Println("resp", w.Body.String())
 			verifyMatch(t, *w)
 		})
 	}

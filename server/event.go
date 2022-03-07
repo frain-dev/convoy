@@ -361,7 +361,7 @@ func (a *applicationHandler) forceResendEventDelivery(ctx context.Context, event
 	}
 
 	if endpoint.Status != datastore.ActiveEndpointStatus {
-		return errors.New("for resent to an inactive or pending endpoint is not allowed")
+		return errors.New("force resend to an inactive or pending endpoint is not allowed")
 	}
 
 	return a.requeueEventDelivery(ctx, eventDelivery)
