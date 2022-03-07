@@ -10,7 +10,7 @@ import { GeneralService } from 'src/app/services/general/general.service';
 export class AppComponent implements OnInit {
 	showDropdown = false;
 	appId: string = this.route.snapshot.queryParams.appId;
-	groupId: string = this.route.snapshot.queryParams.groupId;
+	groupId: string = this.route.snapshot.queryParams.groupID;
 	token: string = this.route.snapshot.params.token;
 	apiURL = this.generalService.apiURL();
 

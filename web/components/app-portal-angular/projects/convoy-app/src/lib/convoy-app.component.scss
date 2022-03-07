@@ -353,11 +353,13 @@
 }
 
 .table {
+	width: initial;
+
 	&--actions {
 		border-bottom: 1px solid #edeff5;
 
 		button {
-			padding: 10px;
+			padding: 10px !important;
 			color: var(--color-black);
 			margin-right: 10px;
 			font-size: 14px;
@@ -366,6 +368,10 @@
 		img {
 			width: 15px;
 		}
+	}
+
+	.filter {
+		padding: 0;
 	}
 }
 
