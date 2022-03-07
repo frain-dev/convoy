@@ -64,10 +64,10 @@ export class ConvoyAppComponent implements OnInit {
 	eventDeliveryFilteredByStatus: string[] = [];
 	showOverlay = false;
 	showEventDeliveriesStatusDropdown = false;
-	@Input('production') isProduction: boolean = false;
 	@Input('token') token!: string;
 	@Input('appId') appId!: string;
 	@Input('groupId') groupId!: string;
+	@Input('apiURL') apiURL: string = '';
 
 	constructor(private convyAppService: ConvoyAppService, private router: Router, private formBuilder: FormBuilder, private route: ActivatedRoute) {}
 
@@ -396,7 +396,8 @@ export class ConvoyAppComponent implements OnInit {
 	}
 
 	getAPIURL(url: string) {
-		return `${this.isProduction ? location.origin : 'http://localhost:5005'}/portal${url}`;
+		url = '/portal' + url;
+		return !this.apiURL || this.apiURL === '' ? location.origin + url : this.apiURL + url;
 	}
 
 	checkIfEventDeliveryStatusFilterOptionIsSelected(status: string): boolean {
