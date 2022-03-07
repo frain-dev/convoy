@@ -9,8 +9,6 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/frain-dev/convoy/logger"
-
 	"github.com/frain-dev/convoy/config"
 	"github.com/frain-dev/convoy/datastore"
 	"github.com/frain-dev/convoy/mocks"
@@ -879,14 +877,7 @@ func TestApplicationHandler_ForceResendEventDelivery(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 
-	groupRepo := mocks.NewMockGroupRepository(ctrl)
-	appRepo := mocks.NewMockApplicationRepository(ctrl)
-	eventRepo := mocks.NewMockEventRepository(ctrl)
-	apiKeyRepo := mocks.NewMockAPIKeyRepository(ctrl)
-	eventDeliveryRepo := mocks.NewMockEventDeliveryRepository(ctrl)
-	eventQueue := mocks.NewMockQueuer(ctrl)
-
-	app := newApplicationHandler(eventRepo, eventDeliveryRepo, appRepo, groupRepo, nil, eventQueue, logger.NewNoopLogger(), nil, nil, nil)
+	app := provideApplication(ctrl)
 	group := &datastore.Group{Name: "default-group", UID: "1234567890"}
 
 	type args struct {
@@ -1046,7 +1037,7 @@ func TestApplicationHandler_ForceResendEventDelivery(t *testing.T) {
 			if err != nil {
 				t.Errorf("Failed to load config file: %v", err)
 			}
-			initRealmChain(t, apiKeyRepo)
+			initRealmChain(t, app.apiKeyRepo)
 
 			router := buildRoutes(app)
 
