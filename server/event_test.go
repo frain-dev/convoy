@@ -9,6 +9,8 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/frain-dev/convoy/logger"
+
 	"github.com/frain-dev/convoy/config"
 	"github.com/frain-dev/convoy/datastore"
 	"github.com/frain-dev/convoy/mocks"
@@ -880,15 +882,16 @@ func TestApplicationHandler_ForceRetryEventDelivery(t *testing.T) {
 	groupRepo := mocks.NewMockGroupRepository(ctrl)
 	appRepo := mocks.NewMockApplicationRepository(ctrl)
 	eventRepo := mocks.NewMockEventRepository(ctrl)
+	apiKeyRepo := mocks.NewMockAPIKeyRepository(ctrl)
 	eventDeliveryRepo := mocks.NewMockEventDeliveryRepository(ctrl)
 	eventQueue := mocks.NewMockQueuer(ctrl)
 
-	app := newApplicationHandler(eventRepo, eventDeliveryRepo, appRepo, groupRepo, eventQueue)
-	group := &convoy.Group{Name: "default-group", UID: "1234567890"}
+	app := newApplicationHandler(eventRepo, eventDeliveryRepo, appRepo, groupRepo, nil, eventQueue, logger.NewNoopLogger(), nil, nil, nil)
+	group := &datastore.Group{Name: "default-group", UID: "1234567890"}
 
 	type args struct {
-		event   *convoy.Event
-		message []convoy.EventDelivery
+		event   *datastore.Event
+		message []datastore.EventDelivery
 	}
 	tests := []struct {
 		name       string
@@ -897,7 +900,7 @@ func TestApplicationHandler_ForceRetryEventDelivery(t *testing.T) {
 		statusCode int
 		args       args
 		body       *strings.Reader
-		dbFn       func(*convoy.Event, []convoy.EventDelivery, *applicationHandler)
+		dbFn       func(*datastore.Event, []datastore.EventDelivery, *applicationHandler)
 	}{
 		{
 			name:       "should_force_resend_all_successfully",
@@ -905,54 +908,54 @@ func TestApplicationHandler_ForceRetryEventDelivery(t *testing.T) {
 			method:     http.MethodPost,
 			statusCode: http.StatusOK,
 			args: args{
-				event: &convoy.Event{
+				event: &datastore.Event{
 					UID: "1111",
 				},
-				message: []convoy.EventDelivery{
+				message: []datastore.EventDelivery{
 					{
 						UID:    "123",
-						Status: convoy.FailureEventStatus,
-						EventMetadata: &convoy.EventMetadata{
+						Status: datastore.FailureEventStatus,
+						EventMetadata: &datastore.EventMetadata{
 							UID: "abcd",
 						},
-						EndpointMetadata: &convoy.EndpointMetadata{
+						EndpointMetadata: &datastore.EndpointMetadata{
 							UID: "1234",
 						},
-						AppMetadata: &convoy.AppMetadata{
+						AppMetadata: &datastore.AppMetadata{
 							UID: "123",
 						},
 					},
 					{
 						UID:    "123",
-						Status: convoy.SuccessEventStatus,
-						EventMetadata: &convoy.EventMetadata{
+						Status: datastore.SuccessEventStatus,
+						EventMetadata: &datastore.EventMetadata{
 							UID: "abcd",
 						},
-						EndpointMetadata: &convoy.EndpointMetadata{
+						EndpointMetadata: &datastore.EndpointMetadata{
 							UID: "1234",
 						},
-						AppMetadata: &convoy.AppMetadata{
+						AppMetadata: &datastore.AppMetadata{
 							UID: "123",
 						},
 					},
 
 					{
 						UID:    "123",
-						Status: convoy.ProcessingEventStatus,
-						EventMetadata: &convoy.EventMetadata{
+						Status: datastore.ProcessingEventStatus,
+						EventMetadata: &datastore.EventMetadata{
 							UID: "abcd",
 						},
-						EndpointMetadata: &convoy.EndpointMetadata{
+						EndpointMetadata: &datastore.EndpointMetadata{
 							UID: "1234",
 						},
-						AppMetadata: &convoy.AppMetadata{
+						AppMetadata: &datastore.AppMetadata{
 							UID: "123",
 						},
 					},
 				},
 			},
 			body: strings.NewReader(`{"ids":["1234","12345"]}`),
-			dbFn: func(ev *convoy.Event, msg []convoy.EventDelivery, app *applicationHandler) {
+			dbFn: func(ev *datastore.Event, msg []datastore.EventDelivery, app *applicationHandler) {
 				e, _ := app.eventDeliveryRepo.(*mocks.MockEventDeliveryRepository)
 				e.EXPECT().
 					FindEventDeliveriesByIDs(gomock.Any(), gomock.Any()).Times(1).
@@ -966,8 +969,8 @@ func TestApplicationHandler_ForceRetryEventDelivery(t *testing.T) {
 				a.EXPECT().
 					FindApplicationEndpointByID(gomock.Any(), gomock.Any(), gomock.Any()).Times(3).
 					Return(
-						&convoy.Endpoint{
-							Status: convoy.InactiveEndpointStatus,
+						&datastore.Endpoint{
+							Status: datastore.InactiveEndpointStatus,
 						},
 						nil,
 					)
@@ -979,7 +982,7 @@ func TestApplicationHandler_ForceRetryEventDelivery(t *testing.T) {
 				o, _ := app.groupRepo.(*mocks.MockGroupRepository)
 				o.EXPECT().
 					LoadGroups(gomock.Any(), gomock.Any()).Times(1).
-					Return([]*convoy.Group{group}, nil)
+					Return([]*datastore.Group{group}, nil)
 
 				q, _ := app.eventQueue.(*mocks.MockQueuer)
 				q.EXPECT().
@@ -993,13 +996,13 @@ func TestApplicationHandler_ForceRetryEventDelivery(t *testing.T) {
 			method:     http.MethodPost,
 			statusCode: http.StatusInternalServerError,
 			args: args{
-				event: &convoy.Event{
+				event: &datastore.Event{
 					UID: "1111",
 				},
-				message: []convoy.EventDelivery{},
+				message: []datastore.EventDelivery{},
 			},
 			body: strings.NewReader(`{"ids":["1234","12345"]}`),
-			dbFn: func(ev *convoy.Event, msg []convoy.EventDelivery, app *applicationHandler) {
+			dbFn: func(ev *datastore.Event, msg []datastore.EventDelivery, app *applicationHandler) {
 				e, _ := app.eventDeliveryRepo.(*mocks.MockEventDeliveryRepository)
 				e.EXPECT().
 					FindEventDeliveriesByIDs(gomock.Any(), gomock.Any()).Times(1).
@@ -1008,7 +1011,7 @@ func TestApplicationHandler_ForceRetryEventDelivery(t *testing.T) {
 				o, _ := app.groupRepo.(*mocks.MockGroupRepository)
 				o.EXPECT().
 					LoadGroups(gomock.Any(), gomock.Any()).Times(1).
-					Return([]*convoy.Group{group}, nil)
+					Return([]*datastore.Group{group}, nil)
 
 			},
 		},
@@ -1018,11 +1021,11 @@ func TestApplicationHandler_ForceRetryEventDelivery(t *testing.T) {
 			method:     http.MethodPost,
 			statusCode: http.StatusBadRequest,
 			body:       strings.NewReader(`{"ids":"12345"}`),
-			dbFn: func(ev *convoy.Event, msg []convoy.EventDelivery, app *applicationHandler) {
+			dbFn: func(ev *datastore.Event, msg []datastore.EventDelivery, app *applicationHandler) {
 				o, _ := app.groupRepo.(*mocks.MockGroupRepository)
 				o.EXPECT().
 					LoadGroups(gomock.Any(), gomock.Any()).Times(1).
-					Return([]*convoy.Group{group}, nil)
+					Return([]*datastore.Group{group}, nil)
 			},
 		},
 	}
@@ -1043,7 +1046,7 @@ func TestApplicationHandler_ForceRetryEventDelivery(t *testing.T) {
 			if err != nil {
 				t.Errorf("Failed to load config file: %v", err)
 			}
-			initRealmChain(t)
+			initRealmChain(t, apiKeyRepo)
 
 			router := buildRoutes(app)
 
