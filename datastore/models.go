@@ -282,11 +282,6 @@ type EventInterval struct {
 	Count uint64            `json:"count" bson:"count"`
 }
 
-type EventStatus struct {
-	Status string `json:"status" bson:"_id"`
-	Count  uint64 `json:"count" bson:"count"`
-}
-
 type EventMetadata struct {
 	UID       string    `json:"uid" bson:"uid"`
 	EventType EventType `json:"name" bson:"name"`
