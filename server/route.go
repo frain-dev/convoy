@@ -354,6 +354,7 @@ func New(cfg config.Configuration,
 		Addr:         fmt.Sprintf(":%d", cfg.Server.HTTP.Port),
 	}
 
+	RegisterDBMetrics(app)
 	RegisterQueueMetrics(eventQueue, cfg)
 	worker.RegisterWorkerMetrics(eventQueue, cfg)
 	prometheus.MustRegister(requestDuration)

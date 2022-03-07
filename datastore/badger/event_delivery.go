@@ -51,6 +51,15 @@ func (e *eventDeliveryRepo) FindEventDeliveriesByEventID(ctx context.Context, ev
 	return deliveries, err
 }
 
+func (e *eventDeliveryRepo) CountDeliveriesByStatus(ctx context.Context, status datastore.EventDeliveryStatus) (int64, error) {
+
+	count, err := e.db.Count(&datastore.EventDelivery{}, badgerhold.Where("Status").Eq(status))
+	if err != nil {
+		return 0, err
+	}
+	return int64(count), err
+}
+
 func (e *eventDeliveryRepo) UpdateStatusOfEventDelivery(ctx context.Context, delivery datastore.EventDelivery, status datastore.EventDeliveryStatus) error {
 	delivery.Status = status
 	delivery.UpdatedAt = primitive.NewDateTimeFromTime(time.Now())

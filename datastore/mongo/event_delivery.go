@@ -117,6 +117,19 @@ func (db *eventDeliveryRepo) FindEventDeliveriesByEventID(ctx context.Context,
 	return deliveries, nil
 }
 
+func (db *eventDeliveryRepo) CountDeliveriesByStatus(ctx context.Context,
+	status datastore.EventDeliveryStatus) (int64, error) {
+
+	filter := bson.M{"status": status, "document_status": datastore.ActiveDocumentStatus}
+
+	count, err := db.inner.CountDocuments(ctx, filter, nil)
+	if err != nil {
+		return 0, err
+	}
+
+	return count, nil
+}
+
 func (db *eventDeliveryRepo) UpdateStatusOfEventDelivery(ctx context.Context,
 	e datastore.EventDelivery, status datastore.EventDeliveryStatus) error {
 
