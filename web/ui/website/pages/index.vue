@@ -191,8 +191,8 @@
 					</div>
 				</div>
 				<div class="cloud-group-img">
-					<img src="~/assets/images/groups-img.svg" alt="group" />
-					<img src="~/assets/images/groups-img-small.svg" class="small" alt="group" />
+					<img src="~/assets/images/groups-img.png" alt="group" />
+					<img src="~/assets/images/groups-img-small.png" class="small" alt="group" />
 				</div>
 			</div>
 			<div class="cloud-get-started">
