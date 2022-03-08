@@ -40,7 +40,7 @@ func addRetryCommand(a *app) *cobra.Command {
 			}
 
 			pageable := datastore.Pageable{
-				Page:    0,
+				Page:    1,
 				PerPage: 1000,
 				Sort:    -1,
 			}
@@ -63,8 +63,14 @@ func addRetryCommand(a *app) *cobra.Command {
 			wg.Add(1)
 			go processEventDeliveryBatches(ctx, a, deliveryChan, q, &wg)
 
+			counter, err := a.eventDeliveryRepo.CountDeliveriesByStatus(ctx, s)
+			if err != nil {
+				log.WithError(err).Fatal("failed to count event deliveries")
+			}
+			log.Infof("total number of event deliveries to requeue is %d", counter)
+
 			for {
-				deliveries, paginationData, err := a.eventDeliveryRepo.LoadEventDeliveriesPaged(ctx, "", "", "", []datastore.EventDeliveryStatus{s}, searchParams, pageable)
+				deliveries, _, err := a.eventDeliveryRepo.LoadEventDeliveriesPaged(ctx, "", "", "", []datastore.EventDeliveryStatus{s}, searchParams, pageable)
 				if err != nil {
 					log.WithError(err).Errorf("successfully fetched %d event deliveries, encountered error fetching page %d", count, pageable.Page)
 					close(deliveryChan)
@@ -72,16 +78,17 @@ func addRetryCommand(a *app) *cobra.Command {
 					break
 				}
 
-				// in the unlikely event that deliveries is nil(given the nuances of different
-				// database implementations), skip it, else a panic will occur in processEventDeliveryBatches
-				if deliveries == nil {
-					log.Warn("fetched a nil batch of event deliveries from database without an error occurring, dropped this batch from being sent to the batch processor")
-					continue
+				// stop when len(deliveries) is 0
+				if len(deliveries) == 0 {
+					log.Info("no deliveries received from db, exiting")
+					close(deliveryChan)
+					log.Info("closed delivery channel")
+					break
 				}
 
 				count += len(deliveries)
 				deliveryChan <- deliveries
-				pageable.Page = int(paginationData.Next)
+				pageable.Page++
 			}
 
 			log.Info("waiting for batch processor to finish")
