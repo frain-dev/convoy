@@ -23,6 +23,31 @@ func (e *eventDeliveryRepo) CreateEventDelivery(ctx context.Context, delivery *d
 	return e.db.Upsert(delivery.UID, delivery)
 }
 
+func (db *eventDeliveryRepo) CountEventDeliveries(ctx context.Context, groupID, appID, eventID string, status []datastore.EventDeliveryStatus, searchParams datastore.SearchParams) (int64, error) {
+	f := &filter{
+		groupID:      groupID,
+		appID:        appID,
+		eventID:      eventID,
+		status:       status,
+		searchParams: searchParams,
+
+		hasAppFilter:       !util.IsStringEmpty(appID),
+		hasGroupFilter:     !util.IsStringEmpty(groupID),
+		hasEventFilter:     !util.IsStringEmpty(eventID),
+		hasStatusFilter:    len(status) > 0,
+		hasStartDateFilter: searchParams.CreatedAtStart > 0,
+		hasEndDateFilter:   searchParams.CreatedAtEnd > 0,
+	}
+
+	var count uint64
+	count, err := db.db.Count(&datastore.EventDelivery{}, db.generateQuery(f))
+	if err != nil {
+		return 0, err
+	}
+
+	return int64(count), nil
+}
+
 func (e *eventDeliveryRepo) FindEventDeliveryByID(ctx context.Context, uid string) (*datastore.EventDelivery, error) {
 	var delivery datastore.EventDelivery
 	err := e.db.Get(uid, &delivery)
