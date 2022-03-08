@@ -40,7 +40,7 @@ func addRetryCommand(a *app) *cobra.Command {
 			}
 
 			pageable := datastore.Pageable{
-				Page:    0,
+				Page:    1,
 				PerPage: 1000,
 				Sort:    -1,
 			}
@@ -72,11 +72,12 @@ func addRetryCommand(a *app) *cobra.Command {
 					break
 				}
 
-				// in the unlikely event that deliveries is nil(given the nuances of different
-				// database implementations), skip it, else a panic will occur in processEventDeliveryBatches
-				if deliveries == nil {
-					log.Warn("fetched a nil batch of event deliveries from database without an error occurring, dropped this batch from being sent to the batch processor")
-					continue
+				// stop when len(deliveries) is 0
+				if len(deliveries) == 0 {
+					log.Info("no deliveries received from db, exiting")
+					close(deliveryChan)
+					log.Info("closed delivery channel")
+					break
 				}
 
 				count += len(deliveries)
