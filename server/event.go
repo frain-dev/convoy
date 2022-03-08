@@ -368,6 +368,7 @@ func (a *applicationHandler) forceResendEventDelivery(ctx context.Context, event
 }
 
 func (a *applicationHandler) requeueEventDelivery(ctx context.Context, eventDelivery *datastore.EventDelivery) error {
+	eventDelivery.Status = datastore.ScheduledEventStatus
 	err := a.eventDeliveryRepo.UpdateStatusOfEventDelivery(ctx, *eventDelivery, datastore.ScheduledEventStatus)
 	if err != nil {
 		return errors.New("an error occurred while trying to resend event")
