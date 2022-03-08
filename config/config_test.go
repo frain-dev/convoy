@@ -53,7 +53,7 @@ func Test_EnvironmentTakesPrecedence(t *testing.T) {
 			errString := "Environment variable - %s didn't take precedence"
 			switch tc.testType {
 			case "queue":
-				if cfg.Queue.Redis.DSN != tc.envConfig {
+				if cfg.Queue.Redis.Dsn != tc.envConfig {
 					t.Errorf(errString, tc.testType)
 				}
 			case "db":
@@ -93,7 +93,7 @@ func Test_CliFlagsTakePrecedenceOverConfigFile(t *testing.T) {
 
 			switch tc.testType {
 			case "queue":
-				ov.Queue.Redis.DSN = tc.flagValue
+				ov.Queue.Redis.Dsn = tc.flagValue
 			case "db":
 				ov.Database.Dsn = tc.flagValue
 			}
@@ -110,7 +110,7 @@ func Test_CliFlagsTakePrecedenceOverConfigFile(t *testing.T) {
 			errString := "Cli Flag - %s didn't take precedence"
 			switch tc.testType {
 			case "queue":
-				if cfg.Queue.Redis.DSN != tc.flagValue {
+				if cfg.Queue.Redis.Dsn != tc.flagValue {
 					t.Errorf(errString, tc.testType)
 				}
 			case "db":
@@ -154,7 +154,7 @@ func Test_CliFlagsTakePrecedenceOverEnvironmentVariables(t *testing.T) {
 
 			switch tc.testType {
 			case "queue":
-				ov.Queue.Redis.DSN = tc.flagValue
+				ov.Queue.Redis.Dsn = tc.flagValue
 			case "db":
 				ov.Database.Dsn = tc.flagValue
 			}
@@ -171,7 +171,7 @@ func Test_CliFlagsTakePrecedenceOverEnvironmentVariables(t *testing.T) {
 			errString := "Cli Flag - %s didn't take precedence"
 			switch tc.testType {
 			case "queue":
-				if cfg.Queue.Redis.DSN != tc.flagValue {
+				if cfg.Queue.Redis.Dsn != tc.flagValue {
 					t.Errorf(errString, tc.testType)
 				}
 			case "db":
@@ -206,7 +206,7 @@ func TestLoadConfig(t *testing.T) {
 				Queue: QueueConfiguration{
 					Type: RedisQueueProvider,
 					Redis: RedisQueueConfiguration{
-						DSN: "redis://localhost:8379",
+						Dsn: "redis://localhost:8379",
 					},
 				},
 				Server: ServerConfiguration{
@@ -247,7 +247,7 @@ func TestLoadConfig(t *testing.T) {
 				Queue: QueueConfiguration{
 					Type: RedisQueueProvider,
 					Redis: RedisQueueConfiguration{
-						DSN: "redis://localhost:8379",
+						Dsn: "redis://localhost:8379",
 					},
 				},
 				Server: ServerConfiguration{
@@ -288,7 +288,7 @@ func TestLoadConfig(t *testing.T) {
 				Queue: QueueConfiguration{
 					Type: RedisQueueProvider,
 					Redis: RedisQueueConfiguration{
-						DSN: "redis://localhost:8379",
+						Dsn: "redis://localhost:8379",
 					},
 				},
 				Server: ServerConfiguration{
@@ -329,7 +329,7 @@ func TestLoadConfig(t *testing.T) {
 				Queue: QueueConfiguration{
 					Type: RedisQueueProvider,
 					Redis: RedisQueueConfiguration{
-						DSN: "redis://localhost:8379",
+						Dsn: "redis://localhost:8379",
 					},
 				},
 				Server: ServerConfiguration{
@@ -383,7 +383,7 @@ func TestLoadConfig(t *testing.T) {
 				Queue: QueueConfiguration{
 					Type: RedisQueueProvider,
 					Redis: RedisQueueConfiguration{
-						DSN: "redis://localhost:8379",
+						Dsn: "redis://localhost:8379",
 					},
 				},
 				Server: ServerConfiguration{
