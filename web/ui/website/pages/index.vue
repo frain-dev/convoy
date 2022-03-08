@@ -16,29 +16,41 @@
 			</section>
 
 			<section class="section companies">
-				<ul>
-					<li>Backed By:</li>
-					<li>
-						<img src="~/assets/images/y-combinator.svg" class="y-combinator" alt="y-combinator" />
-					</li>
-				</ul>
-				<ul>
-					<li>Trusted By:</li>
-					<li class="trusted-companies">
-						<a target="_blank" rel="noopener noreferrer" href="https://buycoins.africa/">
-							<img src="~/assets/images/buycoins-logo.svg" style="width: 70px" alt="buycoins logo" />
-						</a>
-						<a target="_blank" rel="noopener noreferrer" href="https://termii.com/">
-							<img src="~/assets/images/termii-logo.png" style="width: 80px" alt="termii logo" />
-						</a>
-						<a target="_blank" rel="noopener noreferrer" href="https://www.getwallets.co/">
-							<img src="~/assets/images/getwallets-logo.svg" style="width: 80px" alt="getwallets logo" />
-						</a>
-						<a target="_blank" rel="noopener noreferrer" href="https://www.dojah.io/">
-							<img src="~/assets/images/dojah-logo.png" style="width: 50px" alt="dojah logo" />
-						</a>
-					</li>
-				</ul>
+				<div class="backed-by">
+					<h5>Backed By:</h5>
+					<ul>
+						<li>
+							<img src="~/assets/images/y-combinator.svg" class="y-combinator" alt="y-combinator" />
+						</li>
+					</ul>
+				</div>
+
+				<div class="trusted-by">
+					<h5>Trusted By:</h5>
+
+					<ul>
+						<li>
+							<a target="_blank" rel="noopener noreferrer" href="https://buycoins.africa/">
+								<img src="~/assets/images/buycoins-logo.svg" style="width: 70px" alt="buycoins logo" />
+							</a>
+						</li>
+						<li>
+							<a target="_blank" rel="noopener noreferrer" href="https://termii.com/">
+								<img src="~/assets/images/termii-logo.png" style="width: 80px" alt="termii logo" />
+							</a>
+						</li>
+						<li>
+							<a target="_blank" rel="noopener noreferrer" href="https://www.getwallets.co/">
+								<img src="~/assets/images/getwallets-logo.svg" style="width: 80px" alt="getwallets logo" />
+							</a>
+						</li>
+						<li>
+							<a target="_blank" rel="noopener noreferrer" href="https://www.dojah.io/">
+								<img src="~/assets/images/dojah-logo.png" style="width: 50px" alt="dojah logo" />
+							</a>
+						</li>
+					</ul>
+				</div>
 			</section>
 		</header>
 
@@ -179,8 +191,8 @@
 					</div>
 				</div>
 				<div class="cloud-group-img">
-					<img src="~/assets/images/groups-img.svg" alt="group" />
-					<img src="~/assets/images/groups-img-small.svg" class="small" alt="group" />
+					<img src="~/assets/images/groups-img.png" alt="group" />
+					<img src="~/assets/images/groups-img-small.png" class="small" alt="group" />
 				</div>
 			</div>
 			<div class="cloud-get-started">
@@ -481,63 +493,74 @@ header {
 		max-width: 1150px;
 		margin: 0 auto;
 		justify-content: space-between;
-		padding: 20px 20px 25px;
+		padding: 24px;
 		background: #473749;
 		border-radius: 24px 24px 0px 0px;
 		align-items: center;
 		flex-wrap: wrap;
 
+		h5 {
+			font-size: 16px;
+			line-height: 24px;
+			color: #fcfcfc;
+		}
+
+		.backed-by {
+			margin-bottom: 23px;
+			display: flex;
+			align-items: center;
+
+			@media (min-width: $desktopBreakPoint) {
+				margin-bottom: 0;
+			}
+
+			h5 {
+				margin-right: 24px;
+			}
+
+			img {
+				width: 32px;
+			}
+		}
+
+		.trusted-by {
+			display: flex;
+
+			h5 {
+				margin-right: 19px;
+				min-width: 88px;
+			}
+
+			ul {
+				overflow: auto;
+				width: 220px;
+				padding-bottom: 5px;
+
+				@media (min-width: $desktopBreakPoint) {
+					width: initial;
+				}
+
+				&::-webkit-scrollbar {
+					width: 0px;
+					height: 1px;
+					background: transparent;
+				}
+
+				&::-webkit-scrollbar-thumb {
+					width: 1px;
+					height: 1px;
+					background: #676467;
+				}
+			}
+		}
+
 		ul {
 			display: flex;
 			align-items: center;
-			margin-bottom: 10px;
-			flex-wrap: wrap;
 
 			li {
-				font-size: 16px;
-				line-height: 24px;
-				color: #fcfcfc;
 				&:not(:last-of-type) {
-					margin-right: 50px;
-				}
-				&.trusted-companies {
-					display: flex;
-					align-items: center;
-					@media (max-width: $desktopBreakPoint) {
-						overflow-x: auto;
-						-webkit-overflow-scrolling: touch;
-						scroll-behavior: smooth;
-						margin-right: 20px;
-						a {
-							&:not(:last-of-type) {
-								margin-right: 24px;
-							}
-						}
-					}
-					@media (max-width: 425px) {
-						max-width: 335px;
-					}
-					@media (max-width: 390px) {
-						max-width: 295px;
-					}
-					@media (max-width: 320px) {
-						max-width: 245px;
-					}
-					a {
-						&:not(:last-of-type) {
-							margin-right: 50px;
-						}
-					}
-					&::-webkit-scrollbar {
-						width: 1px;
-						background: transparent;
-					}
-
-					&::-webkit-scrollbar-thumb {
-						width: 1px;
-						height: 1px;
-						background: transparent;
-					}
+					margin-right: 20px;
 				}
 
 				img {
@@ -548,10 +571,15 @@ header {
 					&.y-combinator {
 						filter: none;
 					}
+
 					&:hover,
 					&:focus {
 						cursor: pointer;
 						filter: brightness(0) invert(1);
+
+						&.y-combinator {
+							filter: none;
+						}
 					}
 				}
 			}
@@ -1152,6 +1180,7 @@ a {
 		cursor: pointer;
 	}
 }
+
 .offers {
 	margin-bottom: 130px;
 	@media (max-width: 1085px) {
@@ -1212,6 +1241,7 @@ a {
 		}
 	}
 }
+
 .start-sending {
 	margin-bottom: 130px;
 	.container {
@@ -1249,12 +1279,15 @@ a {
 		}
 	}
 }
+
 .blog {
 	background: linear-gradient(180deg, #2c2f3e 0%, #422f41 100%);
 	padding: 80px 20px;
+
 	@media (min-width: $desktopBreakPoint) {
 		padding: 80px;
 	}
+
 	&-post {
 		background: #ffffff;
 		box-shadow: 40px 44px 81px rgba(111, 118, 138, 0.08);
@@ -1264,6 +1297,7 @@ a {
 		flex-wrap: wrap;
 		max-width: 970px;
 		margin: 0 auto;
+
 		@media (min-width: $desktopBreakPoint) {
 			padding: 56px 0 0 56px;
 			flex-wrap: nowrap;
