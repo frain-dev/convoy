@@ -133,6 +133,7 @@ func buildRoutes(app *applicationHandler) http.Handler {
 				eventDeliveryRouter.Use(requirePermission(auth.RoleAdmin))
 
 				eventDeliveryRouter.With(pagination).Get("/", app.GetEventDeliveriesPaged)
+				eventDeliveryRouter.Post("/forceresend", app.ForceResendEventDeliveries)
 				eventDeliveryRouter.Post("/batchretry", app.BatchRetryEventDelivery)
 
 				eventDeliveryRouter.Route("/{eventDeliveryID}", func(eventDeliverySubRouter chi.Router) {
@@ -257,6 +258,7 @@ func buildRoutes(app *applicationHandler) http.Handler {
 			eventDeliveryRouter.Use(requirePermission(auth.RoleUIAdmin))
 
 			eventDeliveryRouter.With(pagination).Get("/", app.GetEventDeliveriesPaged)
+			eventDeliveryRouter.Post("/forceresend", app.ForceResendEventDeliveries)
 			eventDeliveryRouter.Post("/batchretry", app.BatchRetryEventDelivery)
 
 			eventDeliveryRouter.Route("/{eventDeliveryID}", func(eventDeliverySubRouter chi.Router) {
