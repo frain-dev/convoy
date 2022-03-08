@@ -557,51 +557,11 @@ header {
 		ul {
 			display: flex;
 			align-items: center;
-			// flex-wrap: wrap;
 
 			li {
 				&:not(:last-of-type) {
 					margin-right: 20px;
 				}
-				// &.trusted-companies {
-				// 	display: flex;
-				// 	align-items: center;
-				// 	@media (max-width: $desktopBreakPoint) {
-				// 		overflow-x: auto;
-				// 		-webkit-overflow-scrolling: touch;
-				// 		scroll-behavior: smooth;
-				// 		margin-right: 20px;
-				// 		a {
-				// 			&:not(:last-of-type) {
-				// 				margin-right: 24px;
-				// 			}
-				// 		}
-				// 	}
-				// 	@media (max-width: 425px) {
-				// 		max-width: 335px;
-				// 	}
-				// 	@media (max-width: 390px) {
-				// 		max-width: 295px;
-				// 	}
-				// 	@media (max-width: 320px) {
-				// 		max-width: 245px;
-				// 	}
-				// 	a {
-				// 		&:not(:last-of-type) {
-				// 			margin-right: 30px;
-				// 		}
-				// 	}
-				// 	&::-webkit-scrollbar {
-				// 		width: 1px;
-				// 		background: transparent;
-				// 	}
-
-				// 	&::-webkit-scrollbar-thumb {
-				// 		width: 1px;
-				// 		height: 1px;
-				// 		background: transparent;
-				// 	}
-				// }
 
 				img {
 					filter: brightness(0) invert(1);
