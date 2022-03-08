@@ -322,7 +322,6 @@ func (a *applicationHandler) retryEventDelivery(ctx context.Context, eventDelive
 	switch eventDelivery.Status {
 	case datastore.ScheduledEventStatus,
 		datastore.ProcessingEventStatus,
-		datastore.SuccessEventStatus,
 		datastore.RetryEventStatus:
 		return errors.New("cannot resend event that did not fail previously")
 	}

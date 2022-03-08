@@ -1,7 +1,6 @@
 package server
 
 import (
-	"context"
 	"errors"
 	"fmt"
 	"net/http"
@@ -643,8 +642,6 @@ func Test_resendEventDelivery(t *testing.T) {
 			w := httptest.NewRecorder()
 			rctx := chi.NewRouteContext()
 			rctx.URLParams.Add("appID", tc.args.message.AppMetadata.UID)
-
-			req = req.WithContext(context.WithValue(req.Context(), eventCtx, tc.args.message))
 
 			if tc.dbFn != nil {
 				tc.dbFn(tc.args.event, tc.args.message, app)
