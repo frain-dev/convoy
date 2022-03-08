@@ -203,11 +203,11 @@ export class ConvoyDashboardComponent implements OnInit {
 				token: this.requestToken,
 				authType: this.apiAuthType,
 				body: this.addNewAppForm.value,
-				method: 'post'
+				method: this.editAppMode ? 'put' : 'post'
 			});
 			if (response.status === true) {
 				const appUid = response.data.uid;
-				this.addNewEndpoint(appUid)
+				this.addNewEndpoint(appUid);
 			}
 			this.convyDashboardService.showNotification({ message: response.message });
 			console.log(response);
@@ -233,7 +233,7 @@ export class ConvoyDashboardComponent implements OnInit {
 		}
 		this.addNewEndpointForm.patchValue({
 			events: this.eventTags
-		})
+		});
 		try {
 			const response = await this.convyDashboardService.request({
 				url: this.getAPIURL(`/applications/${this.addNewEndpointForm.value.appId}/endpoints?groupID=${this.activeGroup || ''}`),
@@ -265,7 +265,7 @@ export class ConvoyDashboardComponent implements OnInit {
 				body: this.sendEventForm.value,
 				method: 'post'
 			});
-			
+
 			this.convyDashboardService.showNotification({ message: response.message });
 			console.log(response);
 			this.isSendingNewEvent = false;
@@ -273,6 +273,16 @@ export class ConvoyDashboardComponent implements OnInit {
 			this.isSendingNewEvent = false;
 		}
 	}
+
+	openUpdateAppModal(app: APP) {
+		this.showCreateAppModal = true;
+		this.editAppMode = true;
+		this.addNewAppForm.patchValue({
+			name: app.name,
+			support_email: app.support_email
+		});
+	}
+
 	// initiate dashboard
 	async initDashboard() {
 		await this.getGroups();

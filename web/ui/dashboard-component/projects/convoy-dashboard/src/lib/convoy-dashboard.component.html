@@ -544,7 +544,7 @@
 													</button>
 													<div [ngClass]="{ show: currentAppId == app.uid }" class="dropdown__menu dropdown__menu__nav small">
 														<ul>
-															<li (click)="showCreateAppModal = true; editAppMode = true">Update</li>
+															<li (click)="openUpdateAppModal(app)">Update</li>
 															<li class="danger">Delete</li>
 														</ul>
 													</div>
@@ -878,7 +878,7 @@
 	</div>
 	<div class="modal--footer modal--footer__with-shadow" *ngIf="showCreateAppModal">
 		<button class="button button__white" (click)="showCreateAppModal = false; editAppMode = false">Discard</button>
-		<button class="button button__primary" [disabled]="isCreatingNewApp" (click)="createNewApp()">{{ isCreatingNewApp ? 'Creating App..' : 'Create App' }}</button>
+		<button class="button button__primary" [disabled]="isCreatingNewApp" (click)="createNewApp()">{{ isCreatingNewApp ? 'Saving...' : 'Create App' }}</button>
 	</div>
 	<div class="modal--footer modal--footer__with-shadow" *ngIf="showAddEndpointModal">
 		<button class="button button__white" (click)="showAddEndpointModal = false">Discard</button>
