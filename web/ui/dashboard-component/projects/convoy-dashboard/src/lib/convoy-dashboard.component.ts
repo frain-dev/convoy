@@ -3,7 +3,7 @@ import Chart from 'chart.js/auto';
 import { APP } from './models/app.model';
 import { EVENT, EVENT_DELIVERY, EVENT_DELIVERY_ATTEMPT } from './models/event.model';
 import { ActivatedRoute, Router } from '@angular/router';
-import { FormBuilder, FormGroup } from '@angular/forms';
+import { FormBuilder, FormControl, FormGroup, Validators } from '@angular/forms';
 import { PAGINATION } from './models/global.model';
 import { HTTP_RESPONSE } from './models/http.model';
 import { GROUP } from './models/group.model';
@@ -66,6 +66,21 @@ export class ConvoyDashboardComponent implements OnInit {
 		startDate: [{ value: '', disabled: true }],
 		endDate: [{ value: '', disabled: true }]
 	});
+	addNewAppForm: FormGroup = this.formBuilder.group({
+		name: ['', Validators.required],
+		support_email: ['', Validators.compose([Validators.required, Validators.email])]
+	});
+	addNewEndpointForm: FormGroup = this.formBuilder.group({
+		appId: [''],
+		url: ['', Validators.required],
+		events: ['', Validators.required],
+		description: ['']
+	});
+	sendEventForm: FormGroup = this.formBuilder.group({
+		app_id: [''],
+		data: ['', Validators.required],
+		event_type: ['', Validators.required]
+	});
 	selectedEventsFromEventDeliveriesTable: string[] = [];
 	displayedEventDeliveries: { date: string; events: EVENT_DELIVERY[] }[] = [];
 	eventDeliveries!: { pagination: PAGINATION; content: EVENT_DELIVERY[] };
@@ -75,13 +90,19 @@ export class ConvoyDashboardComponent implements OnInit {
 	activeGroup!: string;
 	allEventdeliveriesChecked = false;
 	eventDeliveryStatuses = ['Success', 'Failure', 'Retry', 'Scheduled', 'Processing', 'Discarded'];
+	dateOptions = ['Last Year', 'Last Month', 'Last Week', 'Yesterday'];
 	eventDeliveryFilteredByStatus: string[] = [];
+	eventTags: string[] = [];
 	showOverlay = false;
 	showEventDeliveriesStatusDropdown = false;
 	showEventDeliveriesAppsDropdown = false;
 	showEventsAppsDropdown = false;
 	showCreateAppModal = false;
+	showAddEndpointModal = false;
+	showAddEventModal = false;
 	showBatchRetryModal = false;
+	showDateFilterDropdown = false;
+	editAppMode = false;
 	loadingAppPotalToken = false;
 	@Input('apiURL') apiURL: string = '';
 	@Input('isCloud') isCloud: boolean = false;
@@ -97,7 +118,13 @@ export class ConvoyDashboardComponent implements OnInit {
 	isloadingMoreEventDeliveries = false;
 	isloadingMoreApps = false;
 	isloadingDeliveryAttempt = false;
+	isCreatingNewApp = false;
+	isCreatingNewEndpoint = false;
+	isSendingNewEvent = false;
 	appsSearchString = '';
+	selectedEventsDateOption = '';
+	currentAppId = '';
+	tag = '';
 	eventsAppsFilter$!: Observable<APP[]>;
 	eventsDelAppsFilter$!: Observable<APP[]>;
 	@ViewChild('eventsAppsFilter', { static: true }) eventsAppsFilter!: ElementRef;
@@ -122,6 +149,7 @@ export class ConvoyDashboardComponent implements OnInit {
 		return await this.initDashboard();
 	}
 
+	// seach filters for apps on events and events delivery tab
 	ngAfterViewInit() {
 		this.eventsAppsFilter$ = fromEvent<any>(this.eventsAppsFilter.nativeElement, 'keyup').pipe(
 			map(event => event.target.value),
@@ -139,6 +167,113 @@ export class ConvoyDashboardComponent implements OnInit {
 		);
 	}
 
+	// add tag function for adding multiple events to input form, <to be reviewed>
+	addTag() {
+		const addTagInput = document.getElementById('tagInput');
+		const addTagInputValue = document.getElementById('tagInput') as HTMLInputElement;
+		addTagInput?.addEventListener('keydown', e => {
+			if (e.which === 188) {
+				if (this.eventDeliveryFilteredByStatus.includes(addTagInputValue?.value)) {
+					addTagInputValue.value = '';
+					this.eventTags = this.eventTags.filter(e => String(e).trim());
+					console.log(this.eventTags);
+				} else {
+					this.eventTags.push(addTagInputValue?.value);
+					addTagInputValue.value = '';
+					this.eventTags = this.eventTags.filter(e => String(e).trim());
+					console.log(this.eventTags);
+				}
+				e.preventDefault();
+			}
+		});
+	}
+
+	// create new application function
+	async createNewApp() {
+		if (this.addNewAppForm.invalid) {
+			(<any>Object).values(this.addNewAppForm.controls).forEach((control: FormControl) => {
+				control?.markAsTouched();
+			});
+			return;
+		}
+		this.isCreatingNewApp = true;
+		try {
+			const response = await this.convyDashboardService.request({
+				url: this.getAPIURL(`/applications/config?groupID=${this.activeGroup || ''}`),
+				token: this.requestToken,
+				authType: this.apiAuthType,
+				body: this.addNewAppForm.value,
+				method: 'post'
+			});
+			if (response.status === true) {
+				const appUid = response.data.uid;
+				this.addNewEndpoint(appUid)
+			}
+			this.convyDashboardService.showNotification({ message: response.message });
+			console.log(response);
+			this.isCreatingNewApp = false;
+		} catch {
+			this.isCreatingNewApp = false;
+		}
+	}
+
+	// add new endpoint to app
+	async addNewEndpoint(appUid?: string) {
+		if (this.addNewEndpointForm.invalid) {
+			(<any>Object).values(this.addNewEndpointForm.controls).forEach((control: FormControl) => {
+				control?.markAsTouched();
+			});
+			return;
+		}
+		this.isCreatingNewEndpoint = true;
+		if (appUid) {
+			this.addNewEndpointForm.patchValue({
+				appId: appUid
+			});
+		}
+		this.addNewEndpointForm.patchValue({
+			events: this.eventTags
+		})
+		try {
+			const response = await this.convyDashboardService.request({
+				url: this.getAPIURL(`/applications/${this.addNewEndpointForm.value.appId}/endpoints?groupID=${this.activeGroup || ''}`),
+				token: this.requestToken,
+				authType: this.apiAuthType,
+				body: this.addNewEndpointForm.value,
+				method: 'post'
+			});
+			this.convyDashboardService.showNotification({ message: response.message });
+			this.isCreatingNewEndpoint = false;
+		} catch {
+			this.isCreatingNewEndpoint = false;
+		}
+	}
+
+	async sendNewEvent() {
+		if (this.sendEventForm.invalid) {
+			(<any>Object).values(this.sendEventForm.controls).forEach((control: FormControl) => {
+				control?.markAsTouched();
+			});
+			return;
+		}
+		this.isSendingNewEvent = true;
+		try {
+			const response = await this.convyDashboardService.request({
+				url: this.getAPIURL(`/events?groupID=${this.activeGroup || ''}`),
+				token: this.requestToken,
+				authType: this.apiAuthType,
+				body: this.sendEventForm.value,
+				method: 'post'
+			});
+			
+			this.convyDashboardService.showNotification({ message: response.message });
+			console.log(response);
+			this.isSendingNewEvent = false;
+		} catch {
+			this.isSendingNewEvent = false;
+		}
+	}
+	// initiate dashboard
 	async initDashboard() {
 		await this.getGroups();
 		this.getFiltersFromURL();
@@ -181,6 +316,7 @@ export class ConvoyDashboardComponent implements OnInit {
 		}
 	}
 
+	// fetch filters from url
 	getFiltersFromURL() {
 		const filters = this.route.snapshot.queryParams;
 		if (Object.keys(filters).length == 0) return;
