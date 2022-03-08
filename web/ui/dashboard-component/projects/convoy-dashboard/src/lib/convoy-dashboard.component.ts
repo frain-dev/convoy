@@ -80,6 +80,8 @@ export class ConvoyDashboardComponent implements OnInit {
 	showEventDeliveriesStatusDropdown = false;
 	showEventDeliveriesAppsDropdown = false;
 	showEventsAppsDropdown = false;
+	showCreateAppModal = false;
+	showBatchRetryModal = false;
 	loadingAppPotalToken = false;
 	@Input('apiURL') apiURL: string = '';
 	@Input('isCloud') isCloud: boolean = false;
