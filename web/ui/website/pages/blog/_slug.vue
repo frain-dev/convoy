@@ -100,7 +100,7 @@ export default {
 			const elementToFix2 = document.querySelector('.blog-post aside > div').classList;
 			const topPercElementToFix = (checkElement.top / viewportHeight) * 100;
 			const topPercElementToCheckToRemoveFix = (elementToCheckToRemoveFix.top / viewportHeight) * 100;
-			if (topPercElementToFix < 10) {
+			if (topPercElementToFix < 12) {
 				elementToFix2.add('fix');
 				elementToFix.add('fix');
 			} else {
@@ -108,7 +108,7 @@ export default {
 				elementToFix.remove('fix');
 			}
 
-			if (topPercElementToCheckToRemoveFix < 157.89988425925927) {
+			if (topPercElementToCheckToRemoveFix < 85.89988425925927) {
 				elementToFix2.remove('fix');
 			}
 		}
@@ -223,7 +223,7 @@ aside {
 
 	& > div.fix {
 		position: fixed;
-		top: 150px;
+		top: 190px;
 	}
 
 	h3 {
@@ -396,6 +396,7 @@ main {
 			font-weight: bold;
 			line-height: 32px;
 			margin-bottom: 24px;
+			color: #16192c;
 		}
 
 		img {
