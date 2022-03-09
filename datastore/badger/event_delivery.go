@@ -2,6 +2,7 @@ package badger
 
 import (
 	"context"
+	"fmt"
 	"math"
 	"time"
 
@@ -51,9 +52,18 @@ func (e *eventDeliveryRepo) FindEventDeliveriesByEventID(ctx context.Context, ev
 	return deliveries, err
 }
 
-func (e *eventDeliveryRepo) CountDeliveriesByStatus(ctx context.Context, status datastore.EventDeliveryStatus) (int64, error) {
+func (e *eventDeliveryRepo) CountDeliveriesByStatus(ctx context.Context, status datastore.EventDeliveryStatus, searchParams datastore.SearchParams) (int64, error) {
+	f := &filter{
+		status:       []datastore.EventDeliveryStatus{status},
+		searchParams: searchParams,
 
-	count, err := e.db.Count(&datastore.EventDelivery{}, badgerhold.Where("Status").Eq(status))
+		hasStatusFilter:    len(status) > 0,
+		hasStartDateFilter: searchParams.CreatedAtStart > 0,
+		hasEndDateFilter:   searchParams.CreatedAtEnd > 0,
+	}
+
+	q := e.generateQuery(f)
+	count, err := e.db.Count(&datastore.EventDelivery{}, q)
 	if err != nil {
 		return 0, err
 	}
@@ -65,6 +75,28 @@ func (e *eventDeliveryRepo) UpdateStatusOfEventDelivery(ctx context.Context, del
 	delivery.UpdatedAt = primitive.NewDateTimeFromTime(time.Now())
 
 	return e.db.Update(delivery.UID, delivery)
+}
+
+func (e *eventDeliveryRepo) UpdateStatusOfEventDeliveries(ctx context.Context, uids []string, status datastore.EventDeliveryStatus) error {
+	s := make([]interface{}, len(uids))
+	for i, uid := range uids {
+		s[i] = uid
+	}
+
+	err := e.db.UpdateMatching(&datastore.EventDelivery{}, badgerhold.Where("UID").In(s...), func(record interface{}) error {
+		delivery, ok := record.(*datastore.EventDelivery)
+		if !ok {
+			return fmt.Errorf("record isn't the correct type!  wanted eventDelivery, got %t", record)
+		}
+
+		delivery.Status = status
+
+		return nil
+	})
+	if err != nil {
+		return err
+	}
+	return nil
 }
 
 func (e *eventDeliveryRepo) UpdateEventDeliveryWithAttempt(ctx context.Context, delivery datastore.EventDelivery, attempt datastore.DeliveryAttempt) error {

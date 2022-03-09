@@ -19,8 +19,10 @@ type EventDeliveryRepository interface {
 	FindEventDeliveryByID(context.Context, string) (*EventDelivery, error)
 	FindEventDeliveriesByIDs(context.Context, []string) ([]EventDelivery, error)
 	FindEventDeliveriesByEventID(context.Context, string) ([]EventDelivery, error)
-	CountDeliveriesByStatus(context.Context, EventDeliveryStatus) (int64, error)
+	CountDeliveriesByStatus(context.Context, EventDeliveryStatus, SearchParams) (int64, error)
 	UpdateStatusOfEventDelivery(context.Context, EventDelivery, EventDeliveryStatus) error
+	UpdateStatusOfEventDeliveries(context.Context, []string, EventDeliveryStatus) error
+
 	UpdateEventDeliveryWithAttempt(context.Context, EventDelivery, DeliveryAttempt) error
 	LoadEventDeliveriesPaged(context.Context, string, string, string, []EventDeliveryStatus, SearchParams, Pageable) ([]EventDelivery, PaginationData, error)
 }

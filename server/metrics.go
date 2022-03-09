@@ -82,7 +82,7 @@ func RegisterDBMetrics(app *applicationHandler) {
 			Help:      "Number of eventDeliveries in the Scheduled state.",
 		},
 		func() float64 {
-			count, err := app.eventDeliveryRepo.CountDeliveriesByStatus(ctx, datastore.ScheduledEventStatus)
+			count, err := app.eventDeliveryRepo.CountDeliveriesByStatus(ctx, datastore.ScheduledEventStatus, datastore.SearchParams{})
 			if err != nil {
 				log.Errorf("Error fetching eventdelivery status scheduled: %v", err)
 			}
@@ -100,7 +100,7 @@ func RegisterDBMetrics(app *applicationHandler) {
 			Help:      "Number of eventDeliveries in the Processing state.",
 		},
 		func() float64 {
-			count, err := app.eventDeliveryRepo.CountDeliveriesByStatus(ctx, datastore.ProcessingEventStatus)
+			count, err := app.eventDeliveryRepo.CountDeliveriesByStatus(ctx, datastore.ProcessingEventStatus, datastore.SearchParams{})
 			if err != nil {
 				log.Errorf("Error fetching eventdelivery status Processing: %v", err)
 			}
@@ -118,7 +118,7 @@ func RegisterDBMetrics(app *applicationHandler) {
 			Help:      "Number of eventDeliveries in the Retry state.",
 		},
 		func() float64 {
-			count, err := app.eventDeliveryRepo.CountDeliveriesByStatus(ctx, datastore.RetryEventStatus)
+			count, err := app.eventDeliveryRepo.CountDeliveriesByStatus(ctx, datastore.RetryEventStatus, datastore.SearchParams{})
 			if err != nil {
 				log.Errorf("Error fetching eventdelivery status Retry: %v", err)
 			}
@@ -136,7 +136,7 @@ func RegisterDBMetrics(app *applicationHandler) {
 			Help:      "Number of eventDeliveries in the Discarded state.",
 		},
 		func() float64 {
-			count, err := app.eventDeliveryRepo.CountDeliveriesByStatus(ctx, datastore.DiscardedEventStatus)
+			count, err := app.eventDeliveryRepo.CountDeliveriesByStatus(ctx, datastore.DiscardedEventStatus, datastore.SearchParams{})
 			if err != nil {
 				log.Errorf("Error fetching eventdelivery status Discarded: %v", err)
 			}
