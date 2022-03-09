@@ -125,7 +125,6 @@ export default {
 	},
 	async asyncData({ route }) {
 		const posts = route.query?.tag ? await getTagPosts(route.query?.tag) : await getLimitedPosts();
-		console.log('🚀 ~ file: index.vue ~ line 127 ~ asyncData ~ posts', posts);
 		const featurePosts = await getFeaturedPosts();
 		const tags = await getTags();
 		return { posts, featurePosts, tags, tag: route.query?.tag };
