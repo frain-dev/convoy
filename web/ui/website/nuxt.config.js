@@ -188,11 +188,6 @@ export default {
 			type: 'rss2'
 		},
 		{
-			path: '/blog/atom',
-			create,
-			type: 'atom1'
-		},
-		{
 			path: '/blog/json',
 			create,
 			cacheTime: 1000 * 60 * 15,
