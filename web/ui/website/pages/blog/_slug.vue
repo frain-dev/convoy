@@ -4,18 +4,17 @@
 			<nuxt-link tag="button" to="/blog" class="back-button">
 				<img src="~/assets/images/angle-left-black-icon.svg" alt="back icon" />
 			</nuxt-link>
-			<div class="tag">{{ blogPost.tag }}</div>
-			<div class="date">{{ blogPost.date | date }}</div>
+			<div class="tag">{{ blogPost.primary_tag.name }}</div>
+			<div class="date">{{ blogPost.published_at | date }}</div>
 		</div>
 
 		<h3 class="post-page--title">{{ blogPost.title }}</h3>
 
 		<div class="post-page--author">
-			<!-- Pending when we have icon for authors -->
-			<!-- <img src="~/assets/images/author-img.png" alt="author imge" /> -->
+			<img src="~/assets/images/author-img.png" alt="author imge" />
 			<div>
-				<h5>{{ author(blogPost.author).name }}</h5>
-				<p>{{ author(blogPost.author).role }} Convoy</p>
+				<h5>{{ blogPost.primary_author.name }}</h5>
+				<p>{{ blogPost.primary_author.meta_title }} Convoy</p>
 			</div>
 		</div>
 
@@ -26,13 +25,14 @@
 		<div class="post-page--content">
 			<aside>
 				<div>
-					<ul>
-						<h3>CONTENTS</h3>
+					<!-- Current CMS doesn't support this -->
+					<!-- <ul>
+						<h3>CONTENTS</h3> -->
 
-						<li v-for="(heading, index) in blogPost.toc" :key="'heading' + index">
+					<!-- <li v-for="(heading, index) in blogPost.toc" :key="'heading' + index">
 							<nuxt-link :to="{ path: '/blog/' + blogPost.slug, hash: '#' + heading.id }">{{ heading.text }}</nuxt-link>
-						</li>
-					</ul>
+						</li> -->
+					<!-- </ul> -->
 
 					<div class="social">
 						<h3>Share Via</h3>
@@ -54,7 +54,7 @@
 
 			<main>
 				<div class="post-page--body">
-					<nuxt-content :document="blogPost"></nuxt-content>
+					<div v-html="blogPost.html"></div>
 				</div>
 			</main>
 		</div>
@@ -62,29 +62,30 @@
 		<div class="more-posts">
 			<h1>More Posts</h1>
 			<div class="posts">
-				<Post v-for="(post, index) in posts" :key="index" :post="post" :authors="authors" />
+				<Post v-for="(post, index) in posts" :key="index" :post="post" />
 			</div>
 		</div>
 	</div>
 </template>
 
 <script>
+import { getPost, getTwoPosts } from '../../api/blog';
+import Prism from 'prismjs';
+
 export default {
 	layout: 'blog',
 	data: () => {
 		return {};
 	},
-	async asyncData({ $content, params }) {
-		const blogPost = await $content('blog/' + params.slug || 'index').fetch();
-		const posts = await $content('blog').only(['author', 'description', 'slug', 'thumbnail', 'title', 'date', 'tag']).sortBy('date', 'asc').limit(2).fetch();
-		const authors = await $content('blog-authors').fetch();
-		return { blogPost, authors, posts };
+	async asyncData({ params }) {
+		const blogPost = await getPost(params.slug);
+		const posts = await getTwoPosts(params.slug);
+		return { blogPost, posts };
 	},
-	mounted() {},
+	mounted() {
+		Prism.highlightAll();
+	},
 	methods: {
-		author(authorSlug) {
-			return this.authors.find(author => author.slug === authorSlug);
-		},
 		scrollIndicator() {
 			const winScroll = document.body.scrollTop || document.documentElement.scrollTop;
 			const height = document.querySelector('body').scrollHeight - document.documentElement.clientHeight;
@@ -116,12 +117,13 @@ export default {
 	head() {
 		return {
 			title: this.blogPost.title,
+			__dangerouslyDisableSanitizers: ['meta', 'script'],
 			meta: [
-				{ hid: 'description', name: 'description', content: this.blogPost.description },
+				{ hid: 'description', name: 'description', content: this.blogPost.excerpt },
 				{
 					hid: 'article:tag',
 					name: 'article:tag',
-					content: this.blogPost.tag
+					content: this.blogPost.primary_tag.name
 				},
 				{
 					hid: 'twitter:label1',
@@ -131,7 +133,7 @@ export default {
 				{
 					hid: 'twitter:data1',
 					name: 'twitter:data1',
-					content: this.author(this.blogPost.author).twitter
+					content: this.blogPost.primary_author.name
 				},
 				{
 					hid: 'twitter:label2',
@@ -149,11 +151,12 @@ export default {
 					content: this.blogPost.title
 				},
 				{ hid: 'og:title', name: 'og:title', content: this.blogPost.title },
+				{ hid: 'og:site_name', name: 'og:site_name', content: 'Convoy' },
 				{ hid: 'og:type', name: 'og:type', content: 'article' },
 				{
 					hid: 'og:description',
 					name: 'og:description',
-					content: this.blogPost.description
+					content: this.blogPost.excerpt
 				},
 				{
 					hid: 'og:url',
@@ -161,9 +164,34 @@ export default {
 					content: `https://getconvoy.io/blog/${this.blogPost.slug}`
 				},
 				{
+					hid: 'article:published_time',
+					name: 'article:published_time',
+					content: this.blogPost.published_at
+				},
+				{
+					hid: 'article:modified_time',
+					name: 'article:modified_time',
+					content: this.blogPost.updated_at
+				},
+				{
+					hid: 'article:publisher',
+					name: 'article:publisher',
+					content: 'http://twitter.com/' + this.blogPost.primary_author.twitter
+				},
+				{
 					hid: 'twitter:title',
 					name: 'twitter:title',
 					content: this.blogPost.title
+				},
+				{
+					hid: 'twitter:card',
+					name: 'twitter:card',
+					content: 'summary_large_image'
+				},
+				{
+					hid: 'twitter:url',
+					name: 'twitter:url',
+					content: `https://getconvoy.io/blog/${this.blogPost.slug}`
 				},
 				{
 					hid: 'twitter:text:title',
@@ -173,17 +201,17 @@ export default {
 				{
 					hid: 'twitter:description',
 					name: 'twitter:description',
-					content: this.blogPost.description
+					content: this.blogPost.excerpt
 				},
 				{
 					hid: 'og:image',
 					property: 'og:image',
-					content: 'https://res.cloudinary.com/frain/image/upload/c_fill,g_north,h_179,w_461,x_0,y_0/' + this.blogPost.thumbnail
+					content: this.blogPost.feature_image
 				},
 				{
 					hid: 'twitter:image',
 					property: 'twitter:image',
-					content: 'https://res.cloudinary.com/frain/image/upload/c_fill,g_north,h_179,w_461,x_0,y_0/' + this.blogPost.thumbnail
+					content: this.blogPost.feature_image
 				},
 				{
 					hid: 'twitter:url',
@@ -191,7 +219,63 @@ export default {
 					content: `https://getconvoy.io/blog/${this.postId}`
 				}
 			],
-			link: [{ rel: 'canonical', href: `https://getconvoy.io/${this.blogPost.slug}` }]
+			link: [{ rel: 'canonical', href: `https://getconvoy.io/blog/${this.blogPost.slug}` }],
+			script: [
+				{
+					innerHTML: `
+				{
+					"@context": "https://schema.org",
+					"@type": "Article",
+					"publisher": {
+						"@type": "Organization",
+						"name": "Convoy",
+						"url": "https://getconvoy.io/blog",
+						"logo": {
+							"@type": "ImageObject",
+							"url": "https://getconvoy.io/favicon.ico",
+							"width": 48,
+							"height": 48
+						}
+					},
+					"author": {
+						"@type": "Person",
+						"name": "${this.blogPost.primary_author.name}",
+						"url": "http://twitter.com/${this.blogPost.primary_author.twitter}",
+						"sameAs": []
+					},
+					"headline": "Introducing Convoy",
+					"url": "https://getconvoy.io/blog/${this.blogPost.slug}",
+					"datePublished": "${this.blogPost.published_at}",
+					"dateModified": "${this.blogPost.updated_at}",
+					"image": {
+						"@type": "ImageObject",
+						"url": "${this.blogPost.feature_image}",
+						"width": 1400,
+						"height": 1086
+					},
+					"keywords": "Convoy",
+					"description": "${this.blogPost.excerpt}"",
+					"mainEntityOfPage": {
+						"@type": "WebPage",
+						"@id": "https://getconvoy.io/"
+					}
+				}
+			`,
+					type: 'application/ld+json'
+				},
+				{
+					type: 'application/rss+xml',
+					rel: 'alternate',
+					title: 'Convoy RSS Feed',
+					href: 'https://getconvoy.io/blog/rss'
+				},
+				{
+					type: 'application/json',
+					rel: 'alternate',
+					title: 'Convoy Json Feed',
+					href: 'https://getconvoy.io/blog/json'
+				}
+			]
 		};
 	},
 	beforeDestroy() {
@@ -238,9 +322,10 @@ aside {
 	}
 
 	.social {
-		margin-top: 40px;
-		padding-top: 16px;
-		border-top: 1px dashed rgba(7, 71, 166, 0.08);
+		// move up since content list isn't available yet
+		// margin-top: 40px;
+		// padding-top: 16px;
+		// border-top: 1px dashed rgba(7, 71, 166, 0.08);
 
 		h3 {
 			font-weight: bold;
@@ -344,102 +429,6 @@ main {
 		font-size: 16px;
 		line-height: 24px;
 		color: #737a91;
-
-		ul {
-			list-style-type: disc;
-			margin-left: 20px;
-			margin-bottom: 24px;
-
-			li {
-				list-style-type: disc;
-				margin-bottom: 15px;
-			}
-		}
-
-		p {
-			font-size: 16px;
-			line-height: 24px;
-			margin-bottom: 24px;
-			color: #737a91;
-		}
-
-		h1 {
-			font-size: 26px;
-		}
-
-		h2 {
-			font-size: 24px;
-		}
-
-		h3 {
-			font-size: 20px;
-		}
-
-		h4 {
-			font-size: 18px;
-		}
-
-		h5 {
-			font-size: 16px;
-		}
-
-		h6 {
-			font-size: 14px;
-		}
-
-		h3,
-		h1,
-		h2,
-		h4,
-		h5,
-		h6 {
-			font-weight: bold;
-			line-height: 32px;
-			margin-bottom: 24px;
-			color: #16192c;
-		}
-
-		img {
-			margin: 0;
-		}
-
-		a {
-			color: #477db3;
-		}
-
-		blockquote {
-			border-radius: 16px;
-			padding: 100px 34px 64px;
-			background: url('~assets/images/blockquote-bg.svg') no-repeat #477db3;
-			background-position: top right;
-			margin: 0 0 44px;
-			position: relative;
-
-			@media (min-width: $desktopBreakPoint) {
-				padding: 100px 64px 64px;
-			}
-
-			&::after {
-				position: absolute;
-				content: url('~assets/images/quote-left.svg');
-				top: 67px;
-				left: 50%;
-				transform: translate(0, -50%);
-			}
-
-			p {
-				font-size: 18px;
-				line-height: 40px;
-				text-align: center;
-				letter-spacing: 0.09px;
-				color: #ffffff;
-
-				@media (min-width: $desktopBreakPoint) {
-					font-size: 26px;
-					line-height: 60px;
-				}
-			}
-		}
 	}
 
 	&--title {
