@@ -17,7 +17,7 @@ func addRetryCommand(a *app) *cobra.Command {
 		Run: func(cmd *cobra.Command, args []string) {
 			cfg, err := config.Get()
 			if err != nil {
-				return
+				log.Fatalf("Error getting config: %v", err)
 			}
 			if cfg.Queue.Type != config.RedisQueueProvider {
 				log.Fatalf("Queue type error: Command is available for redis queue only.")
