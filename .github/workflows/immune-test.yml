@@ -1,0 +1,66 @@
+name: Build and run all tests
+on:
+  push:
+    branches:
+      - daniel/feat/add_immune_to_ci
+
+jobs:
+  test:
+    if: ${{ !(contains(github.head_ref, 'ui/')) || !(contains(github.head_ref, 'cms/')) }}
+    strategy:
+      matrix:
+        go-version: [ 1.16.x, 1.17.x ]
+        immune-test-files: [ "immune-push-events" ]
+        os: [ ubuntu-latest, macos-latest ]
+        mongodb-version: [ "4.0", "4.2", "4.4" ]
+        redis-version: [ "6.2.6" ]
+
+    runs-on: ubuntu-latest
+    steps:
+      - name: Start MongoDB
+        uses: supercharge/mongodb-github-action@1.4.1
+        with:
+          mongodb-version: ${{ matrix.mongodb-version }}
+
+      - name: Get the version
+        id: get_version
+        run: echo ::set-output name=tag::$(echo ${GITHUB_SHA:8})
+
+      - name: Set up Go
+        uses: actions/setup-go@v2
+        with:
+          go-version: ${{ matrix.go-version }}
+
+      - name: Cache go modules
+        uses: actions/cache@v1
+        with:
+          path: ~/go/pkg/mod
+          key: ${{ runner.os }}-go-${{ hashFiles('go.sum') }}
+          restore-keys: ${{ runner.os }}-go-${{ hashFiles('go.sum') }}
+
+      - name: Check out code
+        uses: actions/checkout@v2
+
+      - name: Get and verify dependencies
+        run: go mod download && go mod verify
+
+      - name: Go vet
+        run: go vet ./...
+
+      - name: Build immune
+        run: go install github.com/frain-dev/immune@v0.1.0
+
+      - name: Build app to make sure there are zero issues
+        run: go build -o convoy ./cmd
+
+      - name: Start convoy
+        run: ./convoy server
+        env:
+          CONVOY_DB_DSN: "mongodb://localhost:27017/testdb"
+          CONVOY_REDIS_DSN: "redis://localhost:6379"
+
+      - name: Sleep to allow convoy server start
+        run: sleep 3
+
+      - name: Run immune tests
+        run: immune --config ${{ matrix.immune-test-files }}

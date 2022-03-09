@@ -1,0 +1,65 @@
+{
+    "base_url": "http://127.0.0.1:5005/api/v1",
+    "callback": {
+        "port": 80,
+        "max_wait_seconds": 20,
+        "route": "/",
+        "id_location": "data"
+    },
+    "database" : {
+        "type": "mongo",
+        "dsn": "mongodb://localhost:27017"
+    },
+    "event_target_url": "https://c25b-102-219-153-90.eu.ngrok.io",
+    "test_cases": [
+        {
+            "name": "test_convoy_can_push_event_to_app_with_one_endpoint",
+            "setup": [
+                "setup_group",
+                "setup_app",
+                "setup_endpoint"
+            ],
+            "http_method": "POST",
+            "endpoint": "/events?groupID={group_id}",
+            "callback": {
+                "enabled": true,
+                "times": 2
+            },
+            "request_body": {
+                "app_id": "{app_id}",
+                "event_type": "payment.failed",
+                "data": {
+                    "sc": "gene",
+                    "marvel": "stark"
+                }
+            },
+            "status_code": 201,
+            "response_body": true
+        },
+        {
+            "name": "test_convoy_can_push_event_to_app_with_two_endpoint",
+            "setup": [
+                "setup_group",
+                "setup_app",
+                "setup_endpoint",
+                "setup_endpoint"
+            ],
+            "http_method": "POST",
+            "endpoint": "/events?groupID={group_id}",
+            "callback": {
+                "enabled": true,
+                "times": 2
+            },
+            "request_body": {
+                "app_id": "{app_id}",
+                "event_type": "payment.failed",
+                "data": {
+                    "sc": "gene",
+                    "marvel": "stark"
+                }
+            },
+            "status_code": 201,
+            "response_body": true
+        }
+    ]
+}
