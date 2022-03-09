@@ -271,6 +271,51 @@ func (a *applicationHandler) BatchRetryEventDelivery(w http.ResponseWriter, r *h
 	_ = render.Render(w, r, newServerResponse(fmt.Sprintf("%d successful, %d failed", len(deliveries)-failures, failures), nil, http.StatusOK))
 }
 
+// CountAffectedEventDeliveries
+// @Summary Count affected eventDeliveries
+// @Description This endpoint counts app events that will be affected by a batch retry operation
+// @Tags Events
+// @Accept  json
+// @Produce  json
+// @Param appId query string false "application id"
+// @Param groupId query string false "group id"
+// @Param startDate query string false "start date"
+// @Param endDate query string false "end date"
+// @Param perPage query string false "results per page"
+// @Param page query string false "page number"
+// @Param sort query string false "sort order"
+// @Success 200 {object} serverResponse{data=Stub{num=integer}}
+// @Failure 400,401,500 {object} serverResponse{data=Stub}
+// @Security ApiKeyAuth
+// @Router /events [get]
+func (a *applicationHandler) CountAffectedEventDeliveries(w http.ResponseWriter, r *http.Request) {
+	group := getGroupFromContext(r.Context())
+	appID := r.URL.Query().Get("appId")
+	eventID := r.URL.Query().Get("eventId")
+	status := make([]datastore.EventDeliveryStatus, 0)
+
+	for _, s := range r.URL.Query()["status"] {
+		if !util.IsStringEmpty(s) {
+			status = append(status, datastore.EventDeliveryStatus(s))
+		}
+	}
+
+	searchParams, err := getSearchParams(r)
+	if err != nil {
+		_ = render.Render(w, r, newErrorResponse(err.Error(), http.StatusBadRequest))
+		return
+	}
+
+	count, err := a.eventDeliveryRepo.CountEventDeliveries(r.Context(), group.UID, appID, eventID, status, searchParams)
+	if err != nil {
+		_ = render.Render(w, r, newErrorResponse("an error occurred while fetching event deliveries", http.StatusInternalServerError))
+		log.WithError(err)
+		return
+	}
+
+	_ = render.Render(w, r, newServerResponse(fmt.Sprintf("event deliveries count succesful"), map[string]interface{}{"num": count}, http.StatusOK))
+}
+
 // ForceResendEventDeliveries
 // @Summary Force Resend app events
 // @Description This endpoint force resends multiple app events
