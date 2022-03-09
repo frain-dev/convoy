@@ -33,7 +33,6 @@ func addWorkerCommand(a *app) *cobra.Command {
 			}
 
 			worker.RegisterNewGroupTask(a.applicationRepo, a.eventDeliveryRepo, a.groupRepo)
-			worker.RequeueStaleEventDeliveries(a.applicationRepo, a.eventDeliveryRepo, a.groupRepo, a.eventQueue)
 
 			// register workers.
 			ctx := context.Background()
