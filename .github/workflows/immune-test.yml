@@ -48,13 +48,7 @@ jobs:
         run: go vet ./...
 
       - name: Pull immune
-        run: go install github.com/frain-dev/immune/cmd@0.1.0
-
-      - name: Rename the binary
-        run: mv $PATH/cmd $PATH/immune
-
-      - name: Build app to make sure there are zero issues
-        run: go build -o convoy ./cmd
+        run: go build -o immune github.com/frain-dev/immune/cmd@0.1.0
 
       - name: Start convoy
         run: go run ./cmd server &
