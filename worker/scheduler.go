@@ -42,9 +42,24 @@ func RequeueStaleEventDeliveries(applicationRepo datastore.ApplicationRepository
 		for {
 			select {
 			case <-ticker.C:
-				go RequeueEventDeliveries("Processing", "6h", eventDeliveryRepo, groupRepo, eventQueue)
-				go RequeueEventDeliveries("Scheduled", "6h", eventDeliveryRepo, groupRepo, eventQueue)
-				go RequeueEventDeliveries("Retry", "6h", eventDeliveryRepo, groupRepo, eventQueue)
+				go func() {
+					err := RequeueEventDeliveries("Processing", "6h", eventDeliveryRepo, groupRepo, eventQueue)
+					if err != nil {
+						log.Errorf("Error requeuing status processing: %v", err)
+					}
+				}()
+				go func() {
+					err := RequeueEventDeliveries("Scheduled", "6h", eventDeliveryRepo, groupRepo, eventQueue)
+					if err != nil {
+						log.Errorf("Error requeuing status Scheduled: %v", err)
+					}
+				}()
+				go func() {
+					err := RequeueEventDeliveries("Retry", "6h", eventDeliveryRepo, groupRepo, eventQueue)
+					if err != nil {
+						log.Errorf("Error requeuing status Retry: %v", err)
+					}
+				}()
 			case <-quit:
 				ticker.Stop()
 				return
