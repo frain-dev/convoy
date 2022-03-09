@@ -162,18 +162,18 @@ func (m *MockEventDeliveryRepository) EXPECT() *MockEventDeliveryRepositoryMockR
 }
 
 // CountDeliveriesByStatus mocks base method.
-func (m *MockEventDeliveryRepository) CountDeliveriesByStatus(arg0 context.Context, arg1 datastore.EventDeliveryStatus) (int64, error) {
+func (m *MockEventDeliveryRepository) CountDeliveriesByStatus(arg0 context.Context, arg1 datastore.EventDeliveryStatus, arg2 datastore.SearchParams) (int64, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "CountDeliveriesByStatus", arg0, arg1)
+	ret := m.ctrl.Call(m, "CountDeliveriesByStatus", arg0, arg1, arg2)
 	ret0, _ := ret[0].(int64)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // CountDeliveriesByStatus indicates an expected call of CountDeliveriesByStatus.
-func (mr *MockEventDeliveryRepositoryMockRecorder) CountDeliveriesByStatus(arg0, arg1 interface{}) *gomock.Call {
+func (mr *MockEventDeliveryRepositoryMockRecorder) CountDeliveriesByStatus(arg0, arg1, arg2 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CountDeliveriesByStatus", reflect.TypeOf((*MockEventDeliveryRepository)(nil).CountDeliveriesByStatus), arg0, arg1)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CountDeliveriesByStatus", reflect.TypeOf((*MockEventDeliveryRepository)(nil).CountDeliveriesByStatus), arg0, arg1, arg2)
 }
 
 // CreateEventDelivery mocks base method.
@@ -263,6 +263,20 @@ func (m *MockEventDeliveryRepository) UpdateEventDeliveryWithAttempt(arg0 contex
 func (mr *MockEventDeliveryRepositoryMockRecorder) UpdateEventDeliveryWithAttempt(arg0, arg1, arg2 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateEventDeliveryWithAttempt", reflect.TypeOf((*MockEventDeliveryRepository)(nil).UpdateEventDeliveryWithAttempt), arg0, arg1, arg2)
+}
+
+// UpdateStatusOfEventDeliveries mocks base method.
+func (m *MockEventDeliveryRepository) UpdateStatusOfEventDeliveries(arg0 context.Context, arg1 []string, arg2 datastore.EventDeliveryStatus) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "UpdateStatusOfEventDeliveries", arg0, arg1, arg2)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// UpdateStatusOfEventDeliveries indicates an expected call of UpdateStatusOfEventDeliveries.
+func (mr *MockEventDeliveryRepositoryMockRecorder) UpdateStatusOfEventDeliveries(arg0, arg1, arg2 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateStatusOfEventDeliveries", reflect.TypeOf((*MockEventDeliveryRepository)(nil).UpdateStatusOfEventDeliveries), arg0, arg1, arg2)
 }
 
 // UpdateStatusOfEventDelivery mocks base method.

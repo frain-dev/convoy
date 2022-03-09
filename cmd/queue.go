@@ -24,7 +24,7 @@ func addQueueCommand(a *app) *cobra.Command {
 		Use:   "queue",
 		Short: "Get info about queue",
 	}
-
+	cmd.AddCommand(purge(a))
 	cmd.AddCommand(getQueueLength(a))
 	cmd.AddCommand(getZSETLength(a))
 	cmd.AddCommand(getStreamInfo(a))
@@ -38,6 +38,23 @@ func addQueueCommand(a *app) *cobra.Command {
 	cmd.AddCommand(checkBatchEventDeliveryinPending(a))
 	cmd.AddCommand(exportStreamMessages(a))
 	cmd.AddCommand(requeueMessagesinStream(a))
+	return cmd
+}
+
+func purge(a *app) *cobra.Command {
+	cmd := &cobra.Command{
+		Use:   "purge",
+		Short: "purge queue",
+		RunE: func(cmd *cobra.Command, args []string) error {
+			q := a.eventQueue
+			err := q.Consumer().Queue().Purge()
+			if err != nil {
+				return err
+			}
+			log.Infof("Queue purged succesfully.")
+			return nil
+		},
+	}
 	return cmd
 }
 
