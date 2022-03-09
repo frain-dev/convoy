@@ -232,17 +232,25 @@ func (a *applicationHandler) ResendEventDelivery(w http.ResponseWriter, r *http.
 // @Security ApiKeyAuth
 // @Router /eventdeliveries/batchretry [post]
 func (a *applicationHandler) BatchRetryEventDelivery(w http.ResponseWriter, r *http.Request) {
-	eventDeliveryIDs := models.IDs{}
+	pageable := getPageableFromContext(r.Context())
+	group := getGroupFromContext(r.Context())
+	appID := r.URL.Query().Get("appId")
+	eventID := r.URL.Query().Get("eventId")
+	status := make([]datastore.EventDeliveryStatus, 0)
 
-	err := util.ReadJSON(r, &eventDeliveryIDs)
+	for _, s := range r.URL.Query()["status"] {
+		if !util.IsStringEmpty(s) {
+			status = append(status, datastore.EventDeliveryStatus(s))
+		}
+	}
+
+	searchParams, err := getSearchParams(r)
 	if err != nil {
 		_ = render.Render(w, r, newErrorResponse(err.Error(), http.StatusBadRequest))
 		return
 	}
 
-	var deliveries []datastore.EventDelivery
-
-	deliveries, err = a.eventDeliveryRepo.FindEventDeliveriesByIDs(r.Context(), eventDeliveryIDs.IDs)
+	deliveries, _, err := a.eventDeliveryRepo.LoadEventDeliveriesPaged(r.Context(), group.UID, appID, eventID, status, searchParams, pageable)
 	if err != nil {
 		log.WithError(err).Error("failed to fetch event deliveries by ids")
 		_ = render.Render(w, r, newErrorResponse("failed to fetch event deliveries", http.StatusInternalServerError))
