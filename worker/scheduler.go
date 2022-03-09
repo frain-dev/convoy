@@ -149,7 +149,7 @@ func ProcessEventDeliveryBatches(ctx context.Context, status datastore.EventDeli
 		}
 
 		if status == datastore.ProcessingEventStatus {
-			err := eventDeliveryRepo.UpdateStatusOfEventDeliveries(ctx, batchIDs, status)
+			err := eventDeliveryRepo.UpdateStatusOfEventDeliveries(ctx, batchIDs, datastore.ScheduledEventStatus)
 			if err != nil {
 				log.WithError(err).Errorf("batch %d: failed to update event deliveries status", batchCount)
 			}
