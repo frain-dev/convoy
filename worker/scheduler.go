@@ -35,39 +35,6 @@ func RegisterNewGroupTask(applicationRepo datastore.ApplicationRepository, event
 	}()
 }
 
-func RequeueStaleEventDeliveries(applicationRepo datastore.ApplicationRepository, eventDeliveryRepo datastore.EventDeliveryRepository, groupRepo datastore.GroupRepository, eventQueue queue.Queuer) {
-	go func() {
-		ticker := time.NewTicker(30 * time.Minute)
-		quit := make(chan struct{})
-		for {
-			select {
-			case <-ticker.C:
-				go func() {
-					err := RequeueEventDeliveries("Processing", "6h", eventDeliveryRepo, groupRepo, eventQueue)
-					if err != nil {
-						log.Errorf("Error requeuing status processing: %v", err)
-					}
-				}()
-				go func() {
-					err := RequeueEventDeliveries("Scheduled", "6h", eventDeliveryRepo, groupRepo, eventQueue)
-					if err != nil {
-						log.Errorf("Error requeuing status Scheduled: %v", err)
-					}
-				}()
-				go func() {
-					err := RequeueEventDeliveries("Retry", "6h", eventDeliveryRepo, groupRepo, eventQueue)
-					if err != nil {
-						log.Errorf("Error requeuing status Retry: %v", err)
-					}
-				}()
-			case <-quit:
-				ticker.Stop()
-				return
-			}
-		}
-	}()
-}
-
 func RequeueEventDeliveries(status string, timeInterval string, eventDeliveryRepo datastore.EventDeliveryRepository, groupRepo datastore.GroupRepository, eventQueue queue.Queuer) error {
 	d, err := time.ParseDuration(timeInterval)
 	if err != nil {
