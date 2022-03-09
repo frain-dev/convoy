@@ -2,6 +2,7 @@ package config
 
 import (
 	"os"
+	"strconv"
 	"testing"
 
 	"github.com/frain-dev/convoy/auth"
@@ -17,22 +18,28 @@ func Test_EnvironmentTakesPrecedence(t *testing.T) {
 		envConfig string
 	}{
 		{
-			name:      "DB DSN - Takes priority",
-			key:       "CONVOY_DB_DSN",
-			testType:  "db",
-			envConfig: "subomi",
-		},
-		{
-			name:      "Queue DSN - Takes priority",
-			key:       "CONVOY_REDIS_DSN",
-			testType:  "queue",
-			envConfig: "queue-set",
-		},
-		{
-			name:      "Signature Header - Takes priority",
+			name:      "Signature Header (string)",
 			key:       "CONVOY_SIGNATURE_HEADER",
-			testType:  "header",
+			testType:  "string",
 			envConfig: "X-Convoy-Test-Signature",
+		},
+		{
+			name:      "Port (number)",
+			key:       "PORT",
+			testType:  "number",
+			envConfig: "8080",
+		},
+		{
+			name:      "Disable Endpoint (boolean)",
+			key:       "CONVOY_DISABLE_ENDPOINT",
+			testType:  "boolean",
+			envConfig: "false",
+		},
+		{
+			name:      "Basic Auth (interface)",
+			key:       "CONVOY_BASIC_AUTH_CONFIG",
+			testType:  "interface",
+			envConfig: "[{\"username\": \"some-admin\",\"password\": \"some-password\",\"role\": {\"type\": \"super_user\",\"groups\": []}}]",
 		},
 	}
 	for _, tc := range tests {
@@ -41,29 +48,98 @@ func Test_EnvironmentTakesPrecedence(t *testing.T) {
 			os.Setenv(tc.key, tc.envConfig)
 			defer os.Unsetenv(tc.key)
 
-			// Assert.
 			configFile := "./testdata/Test_ConfigurationFromEnvironment/convoy.json"
-			err := LoadConfig(configFile, new(Configuration))
-			if err != nil {
-				t.Errorf("Failed to load config file: %v", err)
-			}
+			err := LoadConfig(configFile, &Configuration{})
+			require.NoError(t, err)
 
 			cfg, _ := Get()
 
-			errString := "Environment variable - %s didn't take precedence"
+			// Assert.
 			switch tc.testType {
-			case "queue":
-				if cfg.Queue.Redis.Dsn != tc.envConfig {
-					t.Errorf(errString, tc.testType)
-				}
-			case "db":
-				if cfg.Database.Dsn != tc.envConfig {
-					t.Errorf(errString, tc.testType)
-				}
-			case "header":
-				if string(cfg.GroupConfig.Signature.Header) != tc.envConfig {
-					t.Errorf(errString, tc.testType)
-				}
+			case "string":
+				require.Equal(t, tc.envConfig, string(cfg.GroupConfig.Signature.Header))
+			case "number":
+				port, e := strconv.ParseInt(tc.envConfig, 10, 64)
+				require.NoError(t, e)
+				require.Equal(t, port, int64(cfg.Server.HTTP.Port))
+			case "boolean":
+				disable_endpoint, e := strconv.ParseBool(tc.envConfig)
+				require.NoError(t, e)
+				require.Equal(t, disable_endpoint, cfg.GroupConfig.DisableEndpoint)
+			case "interface":
+				basicAuth := BasicAuthConfig{}
+				e := basicAuth.Decode(tc.envConfig)
+				require.NoError(t, e)
+				require.Equal(t, basicAuth, cfg.Auth.File.Basic)
+			}
+		})
+	}
+}
+
+func Test_NilEnvironmentVariablesDontOverride(t *testing.T) {
+	tests := []struct {
+		name      string
+		key       string
+		testType  string
+		envConfig string
+		expected  string
+	}{
+		{
+			name:      "Signature Header (string)",
+			key:       "CONVOY_SIGNATURE_HEADER",
+			testType:  "string",
+			envConfig: "",
+			expected:  "x-test-signature",
+		},
+		{
+			name:      "Port (number)",
+			key:       "PORT",
+			testType:  "number",
+			envConfig: "0",
+			expected:  "8080",
+		},
+		{
+			name:      "Disable Endpoint (boolean)",
+			key:       "CONVOY_DISABLE_ENDPOINT",
+			testType:  "boolean",
+			envConfig: "",
+			expected:  "true",
+		},
+		{
+			name:      "Basic Auth (interface)",
+			key:       "CONVOY_BASIC_AUTH_CONFIG",
+			testType:  "interface",
+			envConfig: "",
+			expected:  "[{\"username\": \"admin\",\"password\": \"qwerty\",\"role\": {\"type\": \"super_user\",\"groups\": []}}]",
+		},
+	}
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			// Setup.
+			configFile := "./testdata/Test_ConfigurationFromEnvironment/convoy.json"
+			err := LoadConfig(configFile, &Configuration{})
+
+			require.NoError(t, err)
+
+			cfg, _ := Get()
+
+			// Assert.
+			switch tc.testType {
+			case "string":
+				require.Equal(t, tc.expected, string(cfg.GroupConfig.Signature.Header))
+			case "number":
+				port, e := strconv.ParseInt(tc.expected, 10, 64)
+				require.NoError(t, e)
+				require.Equal(t, port, int64(cfg.Server.HTTP.Port))
+			case "boolean":
+				disable_endpoint, e := strconv.ParseBool(tc.expected)
+				require.NoError(t, e)
+				require.Equal(t, disable_endpoint, cfg.GroupConfig.DisableEndpoint)
+			case "interface":
+				basicAuth := BasicAuthConfig{}
+				e := basicAuth.Decode(tc.expected)
+				require.NoError(t, e)
+				require.Equal(t, basicAuth, cfg.Auth.File.Basic)
 			}
 		})
 	}

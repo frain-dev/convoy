@@ -128,6 +128,14 @@ func (a *applicationHandler) CreateGroup(w http.ResponseWriter, r *http.Request)
 		return
 	}
 
+	if newGroup.RateLimit == 0 {
+		newGroup.RateLimit = convoy.RATE_LIMIT
+	}
+
+	if newGroup.RateLimitDuration == 0 {
+		newGroup.RateLimitDuration = int(convoy.RATE_LIMIT_DURATION)
+	}
+
 	group := &datastore.Group{
 		UID:               uuid.New().String(),
 		Name:              groupName,
@@ -142,7 +150,7 @@ func (a *applicationHandler) CreateGroup(w http.ResponseWriter, r *http.Request)
 
 	err = a.groupRepo.CreateGroup(r.Context(), group)
 	if err != nil {
-		_ = render.Render(w, r, newErrorResponse("an error occurred while creating Group", http.StatusInternalServerError))
+		_ = render.Render(w, r, newErrorResponse(fmt.Sprintf("an error occurred while creating Group: %v", err.Error()), http.StatusBadRequest))
 		return
 	}
 

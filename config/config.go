@@ -421,6 +421,8 @@ func LoadConfig(p string, override *Configuration) error {
 		if err := json.NewDecoder(f).Decode(&c); err != nil {
 			return err
 		}
+	} else if errors.Is(err, os.ErrNotExist) {
+		log.Info("convoy config.json not detected, will look for env vars or cli args")
 	}
 
 	ec := &Configuration{}
@@ -432,7 +434,6 @@ func LoadConfig(p string, override *Configuration) error {
 	}
 
 	overrideConfigWithEnvVars(c, ec)
-
 
 	// if it's still empty, set it to development
 	if c.Environment == "" {
