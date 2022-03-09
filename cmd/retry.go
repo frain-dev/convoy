@@ -20,12 +20,12 @@ func addRetryCommand(a *app) *cobra.Command {
 				log.Fatalf("Error getting config: %v", err)
 			}
 			if cfg.Queue.Type != config.RedisQueueProvider {
-				log.Fatalf("Queue type error: Command is available for redis queue only.")
+				log.WithError(err).Fatalf("Queue type error: Command is available for redis queue only.")
 			}
 
 			err = worker.RequeueEventDeliveries(status, timeInterval, a.eventDeliveryRepo, a.groupRepo, a.eventQueue)
 			if err != nil {
-				log.Errorf("Error requeue event deliveries: %v", err)
+				log.WithError(err).Fatalf("Error requeue event deliveries.")
 			}
 		},
 	}
