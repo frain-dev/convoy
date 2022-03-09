@@ -272,7 +272,7 @@
 
 							<div class="button__filter active" *ngIf="eventDeliveryFilteredByEventId !== ''">
 								Event Filtered
-								<button class="button__clear button--has-icon" (click)="eventDeliveryFilteredByEventId = ''; getEventDeliveries()">
+								<button class="button__clear button--has-icon margin-left__8px" (click)="eventDeliveryFilteredByEventId = ''; getEventDeliveries()">
 									<img src="../../../../assets/img/close-icon.svg" alt="close icon" />
 								</button>
 							</div>
@@ -545,7 +545,7 @@
 													<div [ngClass]="{ show: currentAppId == app.uid }" class="dropdown__menu dropdown__menu__nav small">
 														<ul>
 															<li (click)="openUpdateAppModal(app)">Update</li>
-															<li class="danger">Delete</li>
+															<li (click)="showDeleteAppModal = !showDeleteAppModal; currentAppId = ''" class="danger">Delete</li>
 														</ul>
 													</div>
 												</div>
@@ -586,6 +586,10 @@
 								<div class="list-item-inline--label">Support Email</div>
 								<div [class]="'list-item-inline--item ' + (appsDetailsItem?.support_email ? '' : 'fint')">{{ appsDetailsItem?.support_email || '...no support email provided' }}</div>
 							</li>
+						</ul>
+
+						<h3>App Portal</h3>
+						<ul class="dashboard--logs--details--meta">
 							<li class="list-item-inline">
 								<div class="list-item-inline--label">App Page</div>
 								<div class="list-item-inline--item link" (click)="getAppPortalToken()">
@@ -593,14 +597,35 @@
 									<img src="/assets/img/arrow-up-right.svg" alt="link out" />
 								</div>
 							</li>
+							<li class="list-item-inline">
+								<div class="list-item-inline--label">Embed into your platform</div>
+								<div class="list-item-inline--item link" (click)="getAppPortalToken()">
+									See Documentation
+									<img src="/assets/img/arrow-up-right.svg" alt="link out" />
+								</div>
+							</li>
+							<li class="list-item-inline">
+								<div class="list-item-inline--label">Embed Iframe portal</div>
+								<div class="list-item-inline--item"></div>
+							</li>
+							<div class="code">
+								Code snippet goes here
+								<div class="flex flex__justify-end">
+									<button class="button__clear button--has-icon icon-left" (click)="copyKey('Code snippet goes here', 'secret')">
+										<img src="/assets/img/copy.svg" alt="copy" />
+										<small *ngIf="showSecretCopyText">Copied!</small>
+									</button>
+								</div>
+							</div>
 						</ul>
 
 						<div class="flex flex__align-items-center flex__justify-between">
-							<h4>App Event Endpoints</h4>
-							<button class="button__clear button--has-icon icon-left" (click)="showAddEndpointModal = !showAddEndpointModal">
-								<img src="/assets/img/add-icon.svg" alt="link out" />
-								Add Endpoints
-							</button>
+							<h3>App Event Endpoints</h3>
+							<div class="flex flex__align-items-center">
+								<button class="button__clear" (click)="showAddEndpointModal = !showAddEndpointModal">Add Endpoints</button>
+								<div class="line margin-right__16px margin-left__16px border__left"></div>
+								<button class="button__clear" (click)="setEventAppId()">Add Event</button>
+							</div>
 						</div>
 						<ul class="dashboard--logs--details--endpoints">
 							<ng-container *ngIf="appsDetailsItem?.endpoints">
@@ -613,10 +638,6 @@
 									<div class="events">
 										<div class="tag" *ngFor="let event of endpoint.events">{{ event == '*' ? 'all events' : event }}</div>
 									</div>
-									<button class="button button__white button__small button--has-icon icon-left font__12px" (click)="showAddEventModal = !showAddEventModal">
-										<img src="/assets/img/add-icon.svg" alt="link out" />
-										Add Event
-									</button>
 								</li>
 							</ng-container>
 						</ul>
@@ -735,8 +756,8 @@
 <!-- dark overlay  -->
 <div
 	class="_overlay"
-	*ngIf="showBatchRetryModal || showCreateAppModal || showAddEndpointModal || showAddEventModal"
-	(click)="showCreateAppModal = false; showBatchRetryModal = false; showAddEndpointModal = false; showAddEventModal = false"
+	*ngIf="showBatchRetryModal || showCreateAppModal || showAddEndpointModal || showAddEventModal || showDeleteAppModal"
+	(click)="showCreateAppModal = false; showBatchRetryModal = false; showAddEndpointModal = false; showAddEventModal = false; showDeleteAppModal = false"
 ></div>
 <!-- create app, add new endpoint, add event modals  -->
 <div class="modal modal__right" *ngIf="showCreateAppModal || showAddEndpointModal || showAddEventModal">
@@ -782,18 +803,17 @@
 				</div>
 			</div>
 		</form>
-		<form [formGroup]="addNewEndpointForm">
+		<form *ngIf="!editAppMode" [formGroup]="addNewEndpointForm">
 			<h3>Endpoint</h3>
 			<div class="input">
 				<input type="text" required />
 				<label for="">Enter Endpoint URL</label>
-				
 			</div>
 			<div class="input multiple">
 				<div class="input--multiple" [ngClass]="{ active: eventTags.length > 0 }">
 					<div class="tag" *ngFor="let tag of eventTags">
 						{{ tag }}
-						<a>
+						<a (click)="removeEventTag(tag)">
 							<img src="/assets/img/close-icon-black.svg" alt="close icon" />
 						</a>
 					</div>
@@ -818,6 +838,10 @@
 			<div class="input">
 				<input type="text" formControlName="description" required />
 				<label for="">Description</label>
+				<div class="input__error input__error__danger" *ngIf="addNewEndpointForm.controls.description.touched && addNewEndpointForm.controls.description.invalid">
+					<img src="assets/img/input-error-icon.svg" alt="input error icon" />
+					<span>Please provide a description</span>
+				</div>
 			</div>
 			<div class="input">
 				<input type="text" formControlName="url" required />
@@ -832,7 +856,7 @@
 				<div class="input--multiple" [ngClass]="{ active: eventTags.length > 0 }">
 					<div class="tag" *ngFor="let tag of eventTags">
 						{{ tag }}
-						<a>
+						<a (click)="removeEventTag(tag)">
 							<img src="/assets/img/close-icon-black.svg" alt="close icon" />
 						</a>
 					</div>
@@ -855,15 +879,19 @@
 				<label for="">App ID</label>
 				<div class="input__error input__error__danger" *ngIf="sendEventForm.controls.app_id.touched && sendEventForm.controls.app_id.invalid">
 					<img src="assets/img/input-error-icon.svg" alt="input error icon" />
-					<span>Endpoint URL is required</span>
+					<span>App Id is required</span>
 				</div>
 			</div>
 			<div class="input">
-				<input type="text" fomrControlName="data" required />
+				<textarea formControlName="data" required cols="5"></textarea>
 				<label for="">Data</label>
 				<div class="input__error input__error__danger" *ngIf="sendEventForm.controls.data.touched && sendEventForm.controls.data.invalid">
 					<img src="assets/img/input-error-icon.svg" alt="input error icon" />
-					<span>Endpoint URL is required</span>
+					<span>Data is required</span>
+				</div>
+				<div class="input__error input__error__secondary font__12px">
+					<img src="/assets/img/info-icon.svg" alt="close icon" />
+					Please enter your data in the format it would be returned
 				</div>
 			</div>
 			<div class="input">
@@ -878,7 +906,7 @@
 	</div>
 	<div class="modal--footer modal--footer__with-shadow" *ngIf="showCreateAppModal">
 		<button class="button button__white" (click)="showCreateAppModal = false; editAppMode = false">Discard</button>
-		<button class="button button__primary" [disabled]="isCreatingNewApp" (click)="createNewApp()">{{ isCreatingNewApp ? 'Saving...' : 'Create App' }}</button>
+		<button class="button button__primary" [disabled]="isCreatingNewApp" (click)="createNewApp()">{{ editAppMode ? 'Edit App' : 'Create App' }}</button>
 	</div>
 	<div class="modal--footer modal--footer__with-shadow" *ngIf="showAddEndpointModal">
 		<button class="button button__white" (click)="showAddEndpointModal = false">Discard</button>
@@ -887,5 +915,14 @@
 	<div class="modal--footer modal--footer__with-shadow" *ngIf="showAddEventModal">
 		<button class="button button__white" (click)="showAddEventModal = false">Discard</button>
 		<button class="button button__primary" [disabled]="isSendingNewEvent" (click)="sendNewEvent()">{{ isSendingNewEvent ? 'Adding Event..' : 'Add Event' }}</button>
+	</div>
+</div>
+<div class="modal modal__center" *ngIf="showDeleteAppModal">
+	<div class="modal--body flex flex__column flex__justify-center flex__align-items-center delete">
+		<img src="/assets/img/warning.gif" alt="warning" />
+		<p class="title">Are you sure you want to delete “{{ appsDetailsItem?.name }}”?</p>
+		<p class="subtext">This action is irrevesible</p>
+		<button class="button button__deactivate" [disabled]="isDeletingApp" (click)="deleteApp()">{{ isDeletingApp ? 'Deleting App...' : 'Yes, Delete' }}</button>
+		<button class="button__primary button__clear cancel" (click)="showDeleteAppModal = false">No, Cancel</button>
 	</div>
 </div>

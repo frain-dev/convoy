@@ -71,13 +71,12 @@ export class ConvoyDashboardComponent implements OnInit {
 		support_email: ['', Validators.compose([Validators.required, Validators.email])]
 	});
 	addNewEndpointForm: FormGroup = this.formBuilder.group({
-		appId: [''],
 		url: ['', Validators.required],
-		events: ['', Validators.required],
-		description: ['']
+		events: [''],
+		description: ['', Validators.required]
 	});
 	sendEventForm: FormGroup = this.formBuilder.group({
-		app_id: [''],
+		app_id: ['', Validators.required],
 		data: ['', Validators.required],
 		event_type: ['', Validators.required]
 	});
@@ -100,6 +99,7 @@ export class ConvoyDashboardComponent implements OnInit {
 	showCreateAppModal = false;
 	showAddEndpointModal = false;
 	showAddEventModal = false;
+	showDeleteAppModal = false;
 	showBatchRetryModal = false;
 	showDateFilterDropdown = false;
 	editAppMode = false;
@@ -121,6 +121,10 @@ export class ConvoyDashboardComponent implements OnInit {
 	isCreatingNewApp = false;
 	isCreatingNewEndpoint = false;
 	isSendingNewEvent = false;
+	isDeletingApp = false;
+	updateAppDetail = false;
+	showPublicCopyText = false;
+	showSecretCopyText = false;
 	appsSearchString = '';
 	selectedEventsDateOption = '';
 	currentAppId = '';
@@ -188,7 +192,7 @@ export class ConvoyDashboardComponent implements OnInit {
 		});
 	}
 
-	// create new application function
+	// create/edit new application function
 	async createNewApp() {
 		if (this.addNewAppForm.invalid) {
 			(<any>Object).values(this.addNewAppForm.controls).forEach((control: FormControl) => {
@@ -199,21 +203,45 @@ export class ConvoyDashboardComponent implements OnInit {
 		this.isCreatingNewApp = true;
 		try {
 			const response = await this.convyDashboardService.request({
-				url: this.getAPIURL(`/applications/config?groupID=${this.activeGroup || ''}`),
+				url: this.editAppMode ? this.getAPIURL(`/apps/${this.appsDetailsItem?.uid}?groupID=${this.activeGroup || ''}`) : this.getAPIURL(`/apps?groupID=${this.activeGroup || ''}`),
 				token: this.requestToken,
 				authType: this.apiAuthType,
 				body: this.addNewAppForm.value,
 				method: this.editAppMode ? 'put' : 'post'
 			});
-			if (response.status === true) {
+			if (!this.editAppMode) {
 				const appUid = response.data.uid;
 				this.addNewEndpoint(appUid);
+			} else {
+				this.updateAppDetail = true;
 			}
 			this.convyDashboardService.showNotification({ message: response.message });
-			console.log(response);
+			this.addNewAppForm.reset();
+			this.getApps({ type: 'apps' });
+			this.showCreateAppModal = false;
 			this.isCreatingNewApp = false;
 		} catch {
 			this.isCreatingNewApp = false;
+		}
+	}
+
+	async deleteApp() {
+		this.isDeletingApp = true;
+		try {
+			const response = await this.convyDashboardService.request({
+				url: this.getAPIURL(`/apps/${this.appsDetailsItem?.uid}?groupID=${this.activeGroup || ''}`),
+				token: this.requestToken,
+				authType: this.apiAuthType,
+				method: 'delete'
+			});
+			this.appsDetailsItem = {};
+			this.convyDashboardService.showNotification({ message: response.message });
+			this.toggleActiveTab('apps');
+			this.getApps({ type: 'apps' });
+			this.showDeleteAppModal = false;
+			this.isDeletingApp = false;
+		} catch {
+			this.isDeletingApp = false;
 		}
 	}
 
@@ -226,23 +254,25 @@ export class ConvoyDashboardComponent implements OnInit {
 			return;
 		}
 		this.isCreatingNewEndpoint = true;
-		if (appUid) {
-			this.addNewEndpointForm.patchValue({
-				appId: appUid
-			});
-		}
+
 		this.addNewEndpointForm.patchValue({
 			events: this.eventTags
 		});
 		try {
 			const response = await this.convyDashboardService.request({
-				url: this.getAPIURL(`/applications/${this.addNewEndpointForm.value.appId}/endpoints?groupID=${this.activeGroup || ''}`),
+				url: this.getAPIURL(`/apps/${appUid ? appUid : this.appsDetailsItem?.uid}/endpoints?groupID=${this.activeGroup || ''}`),
 				token: this.requestToken,
 				authType: this.apiAuthType,
 				body: this.addNewEndpointForm.value,
 				method: 'post'
 			});
 			this.convyDashboardService.showNotification({ message: response.message });
+			this.getEvents();
+			this.getApps({ type: 'apps' });
+			this.updateAppDetail = true;
+			this.addNewEndpointForm.reset();
+			this.eventTags = [];
+			this.showAddEndpointModal = false;
 			this.isCreatingNewEndpoint = false;
 		} catch {
 			this.isCreatingNewEndpoint = false;
@@ -253,6 +283,7 @@ export class ConvoyDashboardComponent implements OnInit {
 		if (this.sendEventForm.invalid) {
 			(<any>Object).values(this.sendEventForm.controls).forEach((control: FormControl) => {
 				control?.markAsTouched();
+				console.log(this.sendEventForm.controls);
 			});
 			return;
 		}
@@ -267,20 +298,49 @@ export class ConvoyDashboardComponent implements OnInit {
 			});
 
 			this.convyDashboardService.showNotification({ message: response.message });
-			console.log(response);
+			this.getEventDeliveries();
+			this.sendEventForm.reset();
+			this.showAddEventModal = false;
 			this.isSendingNewEvent = false;
 		} catch {
 			this.isSendingNewEvent = false;
 		}
 	}
 
+	removeEventTag(tag: string) {
+		this.eventTags = this.eventTags.filter(e => e !== tag);
+	}
+
 	openUpdateAppModal(app: APP) {
 		this.showCreateAppModal = true;
 		this.editAppMode = true;
+		this.currentAppId = '';
 		this.addNewAppForm.patchValue({
 			name: app.name,
 			support_email: app.support_email
 		});
+	}
+
+	setEventAppId() {
+		this.showAddEventModal = !this.showAddEventModal;
+		this.sendEventForm.patchValue({
+			app_id: this.appsDetailsItem?.uid
+		});
+	}
+
+	// copy code snippet
+	copyKey(key: string, type: 'public' | 'secret') {
+		const text = key;
+		const el = document.createElement('textarea');
+		el.value = text;
+		document.body.appendChild(el);
+		el.select();
+		document.execCommand('copy');
+		type === 'public' ? (this.showPublicCopyText = true) : (this.showSecretCopyText = true);
+		setTimeout(() => {
+			type === 'public' ? (this.showPublicCopyText = false) : (this.showSecretCopyText = false);
+		}, 3000);
+		document.body.removeChild(el);
 	}
 
 	// initiate dashboard
@@ -681,6 +741,13 @@ export class ConvoyDashboardComponent implements OnInit {
 
 			if (requestDetails?.type === 'apps') this.apps = appsResponse.data;
 			this.filteredApps = appsResponse.data.content;
+			if (this.updateAppDetail) {
+				this.apps.content.forEach(item => {
+					if (this.appsDetailsItem?.uid == item.uid) {
+						this.appsDetailsItem = item;
+					}
+				});
+			}
 			this.isloadingApps = false;
 			return;
 		} catch (error) {
