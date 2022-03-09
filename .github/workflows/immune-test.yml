@@ -48,7 +48,10 @@ jobs:
         run: go vet ./...
 
       - name: Pull immune
-        run: go build -o immune github.com/frain-dev/immune/cmd@0.1.0
+        run: git clone -b 0.1.0 https://github.com/frain-dev/immune.git
+
+      - name: Build immune
+        run: go build -o immune ./immune/cmd/
 
       - name: Start convoy
         run: go run ./cmd server &
