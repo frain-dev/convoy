@@ -130,6 +130,7 @@ export class ConvoyDashboardComponent implements OnInit {
 	selectedEventsDateOption = '';
 	currentAppId = '';
 	tag = '';
+	appPortalLink = '';
 	eventsAppsFilter$!: Observable<APP[]>;
 	eventsDelAppsFilter$!: Observable<APP[]>;
 	@ViewChild('eventsAppsFilter', { static: true }) eventsAppsFilter!: ElementRef;
@@ -198,15 +199,16 @@ export class ConvoyDashboardComponent implements OnInit {
 
 	// add tag function for adding multiple events to input form, <to be reviewed>
 	addTag(event?: any, i?: any) {
-		let eventTagControlNames = [];
-		const tagControlName = event.target.getAttribute('formcontrolname');
-		const eventTagControlName = `${tagControlName} ${i}`;
-		eventTagControlNames.push(eventTagControlName);
+		// to be reviewed 
+		// let eventTagControlNames = [];
+		// const tagControlName = event.target.getAttribute('formcontrolname');
+		// const eventTagControlName = `${tagControlName} ${i}`;
+		// eventTagControlNames.push(eventTagControlName);
 		const addTagInput = document.getElementById('tagInput');
 		const addTagInputValue = document.getElementById('tagInput') as HTMLInputElement;
 		addTagInput?.addEventListener('keydown', e => {
 			if (e.which === 188) {
-				if (this.eventDeliveryFilteredByStatus.includes(addTagInputValue?.value)) {
+				if (this.eventTags.includes(addTagInputValue?.value)) {
 					addTagInputValue.value = '';
 					this.eventTags = this.eventTags.filter(e => String(e).trim());
 				} else {
@@ -389,7 +391,10 @@ export class ConvoyDashboardComponent implements OnInit {
 		this.addFilterToURL({ section: 'logTab' });
 
 		if (tab === 'apps' && this.apps?.content.length > 0) {
-			if (!this.appsDetailsItem) this.appsDetailsItem = this.apps?.content[0];
+			if (!this.appsDetailsItem){
+				this.appsDetailsItem = this.apps?.content[0];
+				this.getAppPortalToken({redirect: false});
+			} 
 		} else if (tab === 'events' && this.events?.content.length > 0) {
 			if (!this.eventsDetailsItem) this.eventsDetailsItem = this.events?.content[0];
 			if (this.eventsDetailsItem?.uid) this.getEventDeliveriesForSidebar(this.eventsDetailsItem.uid);
@@ -574,7 +579,7 @@ export class ConvoyDashboardComponent implements OnInit {
 		}
 	}
 
-	async getAppPortalToken() {
+	async getAppPortalToken(requestDetail: {redirect: boolean}) {
 		try {
 			const appTokenResponse = await this.convyDashboardService.request({
 				url: this.getAPIURL(`/apps/${this.appsDetailsItem.uid}/keys?groupID=${this.activeGroup || ''}`),
@@ -583,7 +588,8 @@ export class ConvoyDashboardComponent implements OnInit {
 				method: 'post',
 				body: {}
 			});
-			window.open(`${appTokenResponse.data.url}`, '_blank');
+			this.appPortalLink = `<iframe src="${appTokenResponse.data.url}"></iframe>`
+			if(requestDetail.redirect) window.open(`${appTokenResponse.data.url}`, '_blank');
 			this.loadingAppPotalToken = false;
 		} catch (error) {
 			this.loadingAppPotalToken = false;
@@ -771,6 +777,7 @@ export class ConvoyDashboardComponent implements OnInit {
 
 			if (requestDetails?.type === 'apps') this.apps = appsResponse.data;
 			this.filteredApps = appsResponse.data.content;
+
 			if (this.updateAppDetail) {
 				this.apps.content.forEach(item => {
 					if (this.appsDetailsItem?.uid == item.uid) {
@@ -778,6 +785,7 @@ export class ConvoyDashboardComponent implements OnInit {
 					}
 				});
 			}
+			
 			this.isloadingApps = false;
 			return;
 		} catch (error) {
