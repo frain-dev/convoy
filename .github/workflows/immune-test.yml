@@ -60,6 +60,7 @@ jobs:
           CONVOY_STRATEGY_TYPE: "default"
           CONVOY_SIGNATURE_HASH: "SHA256"
           CONVOY_DB_TYPE: "mongodb"
+          CONVOY_SENTRY_DSN: "https://0264d31341b0465c8a9d05d6202f1298@o1164445.ingest.sentry.io/6253559"
           CONVOY_DB_DSN: "mongodb://localhost:27017/testdb"
           CONVOY_REDIS_DSN: "redis://localhost:6379"
           CONVOY_QUEUE_PROVIDER: "redis"
