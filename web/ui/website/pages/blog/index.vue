@@ -49,25 +49,26 @@
 				</ul>
 			</div>
 
-			<div class="featured card posts">
+			<div class="featured card posts" v-if="featurePosts.length > 0 && !tag">
 				<div class="post">
 					<div class="post--head">
 						<div class="tag">FEATURED</div>
-						<div class="date">{{ featurePosts[0].date | date }}</div>
+						<div class="date">{{ featurePosts[0].published_at | date }}</div>
 					</div>
 					<nuxt-link :to="'/blog/' + featurePosts[0].slug">
 						<h3 class="post--title">{{ featurePosts[0].title }}</h3>
 					</nuxt-link>
-					<p class="post--body">{{ featurePosts[0].description }}</p>
+					<p class="post--body">{{ featurePosts[0].excerpt }}...</p>
 					<div class="post--footer">
-						<div class="post--author">
-							<!-- Pending when we have icon for authors -->
-							<!-- <img src="~/assets/images/author-img.png" alt="author imge" /> -->
-							<div>
-								<h5>{{ author(featurePosts[0].author).name }}</h5>
-								<p>{{ author(featurePosts[0].author).role }} Convoy</p>
+						<a :href="featurePosts[0].primary_author.twitter ? 'http://twitter.com/' + featurePosts[0].primary_author.twitter : ''" target="_blank" class="post--author">
+							<div class="img">
+								<img :src="featurePosts[0].primary_author.profile_image" alt="author imge" />
 							</div>
-						</div>
+							<div>
+								<h5>{{ featurePosts[0].primary_author.name }}</h5>
+								<p>{{ featurePosts[0].primary_author.meta_title }} Convoy</p>
+							</div>
+						</a>
 						<nuxt-link :to="'/blog/' + featurePosts[0].slug">
 							Read More
 							<img src="~/assets/images/angle-right-primary.svg" alt="read more icon" />
@@ -75,12 +76,12 @@
 					</div>
 				</div>
 				<div class="img">
-					<img :src="'https://res.cloudinary.com/frain/image/upload/c_crop,f_auto,q_auto,w_367,h_330,x_41,y_41/' + featurePosts[0].featureImg" alt="featured post img" />
+					<img :src="featurePosts[0].feature_image" alt="featured post img" />
 				</div>
 			</div>
 
 			<div class="posts">
-				<Post v-for="(post, index) in posts.slice(1, 3)" :key="index" :post="post" :authors="authors" />
+				<Post v-for="(post, index) in posts.slice(0, 2)" :key="index" :post="post" />
 			</div>
 
 			<div class="newsletter card">
@@ -99,15 +100,22 @@
 			</div>
 
 			<div class="posts">
-				<Post v-for="(post, index) in posts.slice(3)" :key="index" :post="post" :authors="authors" />
+				<Post v-for="(post, index) in posts.slice(2)" :key="index" :post="post" />
 			</div>
 		</main>
 	</div>
 </template>
 
 <script>
+import { getFeaturedPosts, getTags, getTagPosts, getLimitedPosts } from '../../api/blog';
+
 export default {
 	layout: 'blog',
+	watch: {
+		async '$route.query'(route) {
+			this.posts = await getTagPosts(route.tag);
+		}
+	},
 	data: () => {
 		return {
 			showCategories: false,
@@ -115,14 +123,11 @@ export default {
 			isSubmitingloadingEarlyAccessForm: false
 		};
 	},
-	async asyncData({ $content, route }) {
-		const posts = route.query?.tag
-			? await $content('blog').only(['author', 'description', 'featureImg', 'slug', 'thumbnail', 'title', 'featurePost', 'date', 'tag']).where({ tag: route.query.tag }).fetch()
-			: await $content('blog').only(['author', 'description', 'featureImg', 'slug', 'thumbnail', 'title', 'featurePost', 'date', 'tag']).sortBy('date', 'desc').fetch();
-		const featurePosts = posts.length > 0 ? posts.filter(post => post.featurePost === true) : [];
-		const authors = await $content('blog-authors').fetch();
-		const tags = await $content('blog-tags').fetch();
-		return { posts, authors, featurePosts, tags };
+	async asyncData({ route }) {
+		const posts = route.query?.tag ? await getTagPosts(route.query?.tag) : await getLimitedPosts();
+		const featurePosts = await getFeaturedPosts();
+		const tags = await getTags();
+		return { posts, featurePosts, tags, tag: route.query?.tag };
 	},
 	methods: {
 		async requestAccess() {
@@ -152,6 +157,50 @@ export default {
 		author(authorSlug) {
 			return this.authors.find(author => author.slug === authorSlug);
 		}
+	},
+	head() {
+		return {
+			__dangerouslyDisableSanitizers: ['meta', 'script'],
+			script: [
+				{
+					innerHTML: `
+				{
+					"@context": "https://schema.org",
+					"@type": "WebSite",
+					"publisher": {
+						"@type": "Organization",
+						"name": "Convoy",
+						"url": "https://getconvoy.io/blog",
+						"logo": {
+							"@type": "ImageObject",
+							"url": "https://getconvoy.io/favicon.ico",
+							"width": 48,
+							"height": 48
+						}
+					},
+					"mainEntityOfPage": {
+						"@type": "WebPage",
+						"@id": "https://getconvoy.io/blog"
+					},
+					"description": "A Cloud native Webhook Service with out-of-the-box security, reliability and scalability for your webhooks infrastructure.",
+					"url": "https://getconvoy.io/blog"
+				}`,
+					type: 'application/ld+json'
+				},
+				{
+					type: 'application/rss+xml',
+					rel: 'alternate',
+					title: 'Convoy RSS Feed',
+					href: 'https://getconvoy.io/blog/rss'
+				},
+				{
+					type: 'application/json',
+					rel: 'alternate',
+					title: 'Convoy Json Feed',
+					href: 'https://getconvoy.io/blog/json'
+				}
+			]
+		};
 	}
 };
 </script>
@@ -206,21 +255,23 @@ main {
 	overflow: hidden;
 	position: relative;
 	max-width: 970px;
+	align-items: flex-end;
 
 	@media (min-width: $desktopBreakPoint) {
-		padding: 56px 0 57px 56px;
+		padding: 56px 0 0 56px;
 		display: flex;
 		justify-content: space-between;
 		flex-wrap: wrap;
 	}
 
 	& > .img {
-		margin-top: 50px;
+		margin-top: 20px;
 
 		@media (min-width: $desktopBreakPoint) {
 			width: 367px;
 			right: 0;
 			bottom: 0;
+			margin-top: 0;
 
 			img {
 				border-radius: 10px 0 0 0;
@@ -242,6 +293,7 @@ main {
 
 		@media (min-width: $desktopBreakPoint) {
 			max-width: 470px;
+			padding-bottom: 40px;
 		}
 	}
 }
