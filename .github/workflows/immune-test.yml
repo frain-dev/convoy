@@ -40,6 +40,9 @@ jobs:
           cd $(go env GOPATH)/pkg/mod/github.com/frain-dev/immune@${{ matrix.immune-version }} && \
           export GO111MODULE=on && go build -o $(go env GOPATH)/bin/immune ./cmd/*
 
+      - name: Check out code
+        uses: actions/checkout@v2
+
       - name: Start convoy
         run: |
           ls -a && \
