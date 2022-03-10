@@ -255,21 +255,23 @@ main {
 	overflow: hidden;
 	position: relative;
 	max-width: 970px;
+	align-items: flex-end;
 
 	@media (min-width: $desktopBreakPoint) {
-		padding: 56px 0 57px 56px;
+		padding: 56px 0 0 56px;
 		display: flex;
 		justify-content: space-between;
 		flex-wrap: wrap;
 	}
 
 	& > .img {
-		margin-top: 50px;
+		margin-top: 20px;
 
 		@media (min-width: $desktopBreakPoint) {
 			width: 367px;
 			right: 0;
 			bottom: 0;
+			margin-top: 0;
 
 			img {
 				border-radius: 10px 0 0 0;
@@ -291,6 +293,7 @@ main {
 
 		@media (min-width: $desktopBreakPoint) {
 			max-width: 470px;
+			padding-bottom: 40px;
 		}
 	}
 }
