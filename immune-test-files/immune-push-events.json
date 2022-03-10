@@ -1,7 +1,7 @@
 {
     "base_url": "http://127.0.0.1:5005/api/v1",
     "callback": {
-        "port": 80,
+        "port": 9098,
         "max_wait_seconds": 20,
         "route": "/",
         "id_location": "data"
