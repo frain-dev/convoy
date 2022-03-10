@@ -22,7 +22,7 @@
             "endpoint": "/events?groupID={group_id}",
             "callback": {
                 "enabled": true,
-                "times": 2
+                "times": 1
             },
             "request_body": {
                 "app_id": "{app_id}",
