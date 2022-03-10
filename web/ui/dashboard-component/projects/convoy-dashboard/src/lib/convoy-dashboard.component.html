@@ -802,34 +802,68 @@
 					We use this to send an email notifcation for when a failure happens
 				</div>
 			</div>
-		</form>
-		<form *ngIf="!editAppMode" [formGroup]="addNewEndpointForm">
-			<h3>Endpoint</h3>
-			<div class="input">
-				<input type="text" required />
-				<label for="">Enter Endpoint URL</label>
-			</div>
-			<div class="input multiple">
-				<div class="input--multiple" [ngClass]="{ active: eventTags.length > 0 }">
-					<div class="tag" *ngFor="let tag of eventTags">
-						{{ tag }}
-						<a (click)="removeEventTag(tag)">
-							<img src="/assets/img/close-icon-black.svg" alt="close icon" />
-						</a>
+			<div *ngIf="!editAppMode" formArrayName="endpoints">
+				<div *ngIf="endpoints.controls.length > 0" class="flex flex__align-items-center flex__justify-between">
+					<h3>Endpoint</h3>
+					<!-- to be reviewed -->
+					<!-- <button (click)="addEndpoint()" class="button__clear button--has-icon icon-left ">
+						<img src="/assets/img/add-icon.svg" alt="close icon" />
+						Add Endpoint
+					</button> -->
+				</div>
+				<div *ngFor="let endpoint of endpoints.controls; let i = index">
+					<div [formGroupName]="i">
+						<div class="input">
+							<input type="text" formControlName="description" required />
+							<label for="">Description</label>
+							<div class="input__error input__error__danger"  *ngIf="getSingleEndpoint(i).description.touched && getSingleEndpoint(i).description.invalid">
+								<img src="assets/img/input-error-icon.svg" alt="input error icon" />
+								<span>Please provide a description</span>
+							</div>
+						</div>
+						<div class="input">
+							<input type="text" formControlName="url" required />
+							<label for="">Enter Endpoint URL</label>
+							<div class="input__error input__error__danger"  *ngIf="getSingleEndpoint(i).url.touched && getSingleEndpoint(i).url.invalid">
+								<img src="assets/img/input-error-icon.svg" alt="input error icon" />
+								<span>Please provide a description</span>
+							</div>
+						</div>
+						<div class="input multiple">
+							<div class="input--multiple" [ngClass]="{ active: eventTags.length > 0 }">
+								<div class="tag" *ngFor="let tag of eventTags">
+									{{ tag }}
+									<a (click)="removeEventTag(tag)">
+										<img src="/assets/img/close-icon-black.svg" alt="close icon" />
+									</a>
+								</div>
+								<input type="text" id="tagInput" formControlName="tag" (input)="addTag($event, i)" required />
+							</div>
+							<label [ngClass]="{ active: eventTags.length > 0 }" for="">Add Tag</label>
+							<div class="input__error input__error__secondary font__12px">
+								<img src="/assets/img/info-icon.svg" alt="close icon" />
+								Add multiple tags by seperating them with commas
+							</div>
+							<div class="input__error input__error__danger"  *ngIf="getSingleEndpoint(i).tag.touched && getSingleEndpoint(i).tag.invalid">
+								<img src="assets/img/input-error-icon.svg" alt="input error icon" />
+								<span>Please add at least one tag</span>
+							</div>
+						</div>
+						<div class="flex flex__justify-end margin-bottom__16px">
+							<button (click)="removeEndpoint(i)" class="button__clear color__danger button--has-icon icon-left">
+								<img src="/assets/img/trash-icon.svg" alt="close icon" />
+								Remove Endpoint
+							</button>
+						</div>
 					</div>
-					<input type="text" id="tagInput" (input)="addTag()" required />
 				</div>
-				<label [ngClass]="{ active: eventTags.length > 0 }" for="">Add Tag</label>
-				<div class="input__error input__error__secondary font__12px">
-					<img src="/assets/img/info-icon.svg" alt="close icon" />
-					Tags are used to identify which endpoints will be sent to an app
-				</div>
-				<div class="flex flex__align-items-center flex__justify-between margin-top__20px">
-					<button class="button__clear button--has-icon icon-left">
+				<div class="flex flex__justify-end">
+					<button *ngIf="endpoints.controls.length == 0" (click)="addEndpoint()" class="button__clear button--has-icon icon-left margin-top__20px">
 						<img src="/assets/img/add-icon.svg" alt="close icon" />
 						Add Endpoint
 					</button>
 				</div>
+				
 			</div>
 		</form>
 	</div>

@@ -3,7 +3,7 @@ import Chart from 'chart.js/auto';
 import { APP } from './models/app.model';
 import { EVENT, EVENT_DELIVERY, EVENT_DELIVERY_ATTEMPT } from './models/event.model';
 import { ActivatedRoute, Router } from '@angular/router';
-import { FormBuilder, FormControl, FormGroup, Validators } from '@angular/forms';
+import { FormArray, FormBuilder, FormControl, FormGroup, Validators } from '@angular/forms';
 import { PAGINATION } from './models/global.model';
 import { HTTP_RESPONSE } from './models/http.model';
 import { GROUP } from './models/group.model';
@@ -68,7 +68,8 @@ export class ConvoyDashboardComponent implements OnInit {
 	});
 	addNewAppForm: FormGroup = this.formBuilder.group({
 		name: ['', Validators.required],
-		support_email: ['', Validators.compose([Validators.required, Validators.email])]
+		support_email: ['', Validators.compose([Validators.required, Validators.email])],
+		endpoints: this.formBuilder.array([])
 	});
 	addNewEndpointForm: FormGroup = this.formBuilder.group({
 		url: ['', Validators.required],
@@ -171,8 +172,36 @@ export class ConvoyDashboardComponent implements OnInit {
 		);
 	}
 
+	get endpoints(): FormArray {
+		return this.addNewAppForm.get('endpoints') as FormArray;
+	}
+
+	getSingleEndpoint(index: any) {
+		return ((this.addNewAppForm.get('endpoints') as FormArray)?.controls[index] as FormGroup)?.controls;
+	}
+	newEndpoint(): FormGroup {
+		return this.formBuilder.group({
+			url: ['', Validators.required],
+			events: [''],
+			tag: ['', Validators.required],
+			description: ['', Validators.required]
+		});
+	}
+
+	addEndpoint() {
+		this.endpoints.push(this.newEndpoint());
+	}
+
+	removeEndpoint(i: number) {
+		this.endpoints.removeAt(i);
+	}
+
 	// add tag function for adding multiple events to input form, <to be reviewed>
-	addTag() {
+	addTag(event?: any, i?: any) {
+		let eventTagControlNames = [];
+		const tagControlName = event.target.getAttribute('formcontrolname');
+		const eventTagControlName = `${tagControlName} ${i}`;
+		eventTagControlNames.push(eventTagControlName);
 		const addTagInput = document.getElementById('tagInput');
 		const addTagInputValue = document.getElementById('tagInput') as HTMLInputElement;
 		addTagInput?.addEventListener('keydown', e => {
@@ -180,12 +209,10 @@ export class ConvoyDashboardComponent implements OnInit {
 				if (this.eventDeliveryFilteredByStatus.includes(addTagInputValue?.value)) {
 					addTagInputValue.value = '';
 					this.eventTags = this.eventTags.filter(e => String(e).trim());
-					console.log(this.eventTags);
 				} else {
 					this.eventTags.push(addTagInputValue?.value);
 					addTagInputValue.value = '';
 					this.eventTags = this.eventTags.filter(e => String(e).trim());
-					console.log(this.eventTags);
 				}
 				e.preventDefault();
 			}
@@ -201,6 +228,8 @@ export class ConvoyDashboardComponent implements OnInit {
 			return;
 		}
 		this.isCreatingNewApp = true;
+		// to be reviewed
+		delete this.addNewAppForm.value.endpoints;
 		try {
 			const response = await this.convyDashboardService.request({
 				url: this.editAppMode ? this.getAPIURL(`/apps/${this.appsDetailsItem?.uid}?groupID=${this.activeGroup || ''}`) : this.getAPIURL(`/apps?groupID=${this.activeGroup || ''}`),
@@ -209,12 +238,14 @@ export class ConvoyDashboardComponent implements OnInit {
 				body: this.addNewAppForm.value,
 				method: this.editAppMode ? 'put' : 'post'
 			});
-			if (!this.editAppMode) {
-				const appUid = response.data.uid;
-				this.addNewEndpoint(appUid);
-			} else {
-				this.updateAppDetail = true;
-			}
+			// to be reviewed
+			// if (!this.editAppMode) {
+			// 	const appUid = response.data.uid;
+			// 	this.addNewEndpoint(appUid);
+			// } else {
+			//
+			// }
+			if (this.editAppMode) this.updateAppDetail = true;
 			this.convyDashboardService.showNotification({ message: response.message });
 			this.addNewAppForm.reset();
 			this.getApps({ type: 'apps' });
@@ -283,7 +314,6 @@ export class ConvoyDashboardComponent implements OnInit {
 		if (this.sendEventForm.invalid) {
 			(<any>Object).values(this.sendEventForm.controls).forEach((control: FormControl) => {
 				control?.markAsTouched();
-				console.log(this.sendEventForm.controls);
 			});
 			return;
 		}
