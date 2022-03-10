@@ -10,6 +10,7 @@ import (
 
 	"github.com/frain-dev/convoy/cache"
 	"github.com/frain-dev/convoy/datastore/badger"
+	"github.com/go-redis/redis/v8"
 
 	"github.com/frain-dev/convoy/logger"
 	memqueue "github.com/frain-dev/convoy/queue/memqueue"
@@ -17,7 +18,6 @@ import (
 	"github.com/frain-dev/convoy/tracer"
 	"github.com/frain-dev/convoy/worker/task"
 	"github.com/getsentry/sentry-go"
-	"github.com/go-redis/redis/v8"
 	"github.com/google/uuid"
 	prefixed "github.com/x-cray/logrus-prefixed-formatter"
 	"go.mongodb.org/mongo-driver/bson/primitive"
@@ -76,8 +76,7 @@ func main() {
 				return err
 			}
 
-			// override config with cli flags
-			err = config.LoadConfigFromCliFlags(cmd, &cfg)
+			err = config.OverrideConfigWithCliFlags(cmd, &cfg)
 			if err != nil {
 				return err
 			}
@@ -196,6 +195,16 @@ func main() {
 			return err
 		},
 	}
+
+	var redisDsn string
+	var dbDsn string
+	var queue string
+	var configFile string
+
+	cmd.PersistentFlags().StringVar(&configFile, "config", "./convoy.json", "Configuration file for convoy")
+	cmd.PersistentFlags().StringVar(&queue, "queue", "redis", "Queue provider (\"redis\" or \"in-memory\")")
+	cmd.PersistentFlags().StringVar(&dbDsn, "db", "", "Database dsn or path to in-memory file")
+	cmd.PersistentFlags().StringVar(&redisDsn, "redis", "", "Redis dsn")
 
 	cmd.AddCommand(addVersionCommand())
 	cmd.AddCommand(addCreateCommand(app))
@@ -319,13 +328,13 @@ func getCtx() (context.Context, context.CancelFunc) {
 
 func NewDB(cfg config.Configuration) (datastore.DatabaseClient, error) {
 	switch cfg.Database.Type {
-	case "mongodb":
+	case config.MongodbDatabaseProvider:
 		db, err := mongo.New(cfg)
 		if err != nil {
 			return nil, err
 		}
 		return db, nil
-	case "in-memory":
+	case config.InMemoryDatabaseProvider:
 		bolt, err := badger.New(cfg)
 		if err != nil {
 			return nil, err

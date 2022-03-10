@@ -19,8 +19,8 @@ const MaxResponseSize = 50 * 1024
 var cfgSingleton atomic.Value
 
 type DatabaseConfiguration struct {
-	Type string `json:"type" envconfig:"CONVOY_DB_TYPE"`
-	Dsn  string `json:"dsn" envconfig:"CONVOY_DB_DSN"`
+	Type DatabaseProvider `json:"type" envconfig:"CONVOY_DB_TYPE"`
+	Dsn  string           `json:"dsn" envconfig:"CONVOY_DB_DSN"`
 }
 
 type SentryConfiguration struct {
@@ -146,6 +146,8 @@ const (
 	NewRelicTracerProvider             TracerProvider          = "new_relic"
 	RedisCacheProvider                 CacheProvider           = "redis"
 	RedisLimiterProvider               LimiterProvider         = "redis"
+	MongodbDatabaseProvider            DatabaseProvider        = "mongodb"
+	InMemoryDatabaseProvider           DatabaseProvider        = "in-memory"
 )
 
 type GroupConfig struct {
@@ -182,6 +184,7 @@ type LoggerProvider string
 type TracerProvider string
 type CacheProvider string
 type LimiterProvider string
+type DatabaseProvider string
 
 func (s SignatureHeaderProvider) String() string {
 	return string(s)
@@ -202,6 +205,48 @@ func Get() (Configuration, error) {
 // IsStringEmpty checks if the given string s is empty or not
 func IsStringEmpty(s string) bool { return len(strings.TrimSpace(s)) == 0 }
 
+func OverrideConfigWithCliFlags(cmd *cobra.Command, cfg *Configuration) error {
+	// CONVOY_DB_DSN, CONVOY_DB_TYPE
+	dbDsn, err := cmd.Flags().GetString("db")
+	if err != nil {
+		return err
+	}
+
+	if !IsStringEmpty(dbDsn) {
+		cfg.Database.Type = InMemoryDatabaseProvider
+
+		parts := strings.Split(dbDsn, "://")
+		if len(parts) == 2 && parts[0] == string(MongodbDatabaseProvider) {
+			cfg.Database.Type = MongodbDatabaseProvider
+		}
+
+		cfg.Database.Dsn = dbDsn
+	}
+
+	// CONVOY_REDIS_DSN
+	redisDsn, err := cmd.Flags().GetString("redis")
+	if err != nil {
+		return err
+	}
+
+	// CONVOY_QUEUE_PROVIDER
+	queueDsn, err := cmd.Flags().GetString("queue")
+	if err != nil {
+		return err
+	}
+
+	if !IsStringEmpty(queueDsn) {
+		cfg.Queue.Type = QueueProvider(queueDsn)
+		if queueDsn == "redis" && !IsStringEmpty(redisDsn) {
+			cfg.Queue.Redis.Dsn = redisDsn
+		}
+	}
+
+	cfgSingleton.Store(cfg)
+
+	return nil
+}
+
 func overrideConfigWithEnvVars(c *Configuration, override *Configuration) {
 	// CONVOY_ENV
 	if !IsStringEmpty(override.Environment) {
@@ -214,7 +259,7 @@ func overrideConfigWithEnvVars(c *Configuration, override *Configuration) {
 	}
 
 	// CONVOY_DB_DSN
-	if !IsStringEmpty(override.Database.Type) {
+	if !IsStringEmpty(string(override.Database.Type)) {
 		c.Database.Type = override.Database.Type
 	}
 
@@ -562,403 +607,5 @@ func ensureStrategyConfig(strategyCfg StrategyConfiguration) error {
 	default:
 		return fmt.Errorf("unsupported strategy type: %s", strategyCfg.Type)
 	}
-	return nil
-}
-
-func LoadConfigFromCliFlags(cmd *cobra.Command, c *Configuration) error {
-	// CONVOY_ENV
-	env, err := cmd.Flags().GetString("env")
-	if err != nil {
-		return err
-	}
-
-	if !IsStringEmpty(env) {
-		c.Environment = env
-	}
-
-	// CONVOY_BASE_URL
-	baseUrl, err := cmd.Flags().GetString("base-url")
-	if err != nil {
-		return err
-	}
-
-	if !IsStringEmpty(baseUrl) {
-		c.BaseUrl = baseUrl
-	}
-
-	// CONVOY_DB_DSN, CONVOY_DB_TYPE
-	db, err := cmd.Flags().GetString("db")
-	if err != nil {
-		return err
-	}
-
-	if !IsStringEmpty(db) {
-		c.Database.Type = "in-memory"
-
-		parts := strings.Split(db, "://")
-		if len(parts) == 2 && parts[0] == "mongodb" {
-			c.Database.Type = "mongodb"
-		}
-
-		c.Database.Dsn = db
-	}
-
-	// CONVOY_SENTRY_DSN
-	sentryDsn, err := cmd.Flags().GetString("sentry")
-	if err != nil {
-		return err
-	}
-
-	if !IsStringEmpty(sentryDsn) {
-		c.Sentry.Dsn = sentryDsn
-	}
-
-	// CONVOY_MULTIPLE_TENANTS
-	isMTSet := cmd.Flags().Changed("multi-tenant")
-	if isMTSet {
-		multipleTenants, err := cmd.Flags().GetBool("multi-tenant")
-		if err != nil {
-			return err
-		}
-
-		c.MultipleTenants = multipleTenants
-	}
-
-	// CONVOY_LIMITER_PROVIDER
-	rateLimiter, err := cmd.Flags().GetString("limiter")
-	if err != nil {
-		return err
-	}
-
-	if !IsStringEmpty(rateLimiter) {
-		c.Limiter.Type = LimiterProvider(rateLimiter)
-	}
-
-	// CONVOY_CACHE_PROVIDER
-	cache, err := cmd.Flags().GetString("cache")
-	if err != nil {
-		return err
-	}
-
-	if !IsStringEmpty(cache) {
-		c.Cache.Type = CacheProvider(cache)
-	}
-
-	// CONVOY_QUEUE_PROVIDER
-	queue, err := cmd.Flags().GetString("queue")
-	if err != nil {
-		return err
-	}
-
-	if !IsStringEmpty(queue) {
-		c.Queue.Type = QueueProvider(queue)
-	}
-
-	// CONVOY_REDIS_DSN
-	redis, err := cmd.Flags().GetString("redis")
-	if err != nil {
-		return err
-	}
-
-	if !IsStringEmpty(redis) {
-		c.Queue.Redis.Dsn = redis
-	}
-
-	// CONVOY_LOGGER_LEVEL
-	logLevel, err := cmd.Flags().GetString("log-level")
-	if err != nil {
-		return err
-	}
-
-	if !IsStringEmpty(logLevel) {
-		c.Logger.ServerLog.Level = logLevel
-	}
-
-	// CONVOY_LOGGER_PROVIDER
-	logger, err := cmd.Flags().GetString("logger")
-	if err != nil {
-		return err
-	}
-
-	if !IsStringEmpty(logger) {
-		c.Logger.Type = LoggerProvider(logger)
-	}
-
-	// SSL
-	isSslSet := cmd.Flags().Changed("ssl")
-	if isSslSet {
-		ssl, err := cmd.Flags().GetBool("ssl")
-		if err != nil {
-			return err
-		}
-
-		c.Server.HTTP.SSL = ssl
-	}
-
-	// PORT
-	port, err := cmd.Flags().GetUint32("port")
-	if err != nil {
-		return err
-	}
-
-	if port != 0 {
-		c.Server.HTTP.Port = port
-	}
-
-	// WORKER_PORT
-	workerPort, err := cmd.Flags().GetUint32("worker-port")
-	if err != nil {
-		return err
-	}
-
-	if workerPort != 0 {
-		c.Server.HTTP.WorkerPort = workerPort
-	}
-
-	// CONVOY_SSL_KEY_FILE
-	sslKeyFile, err := cmd.Flags().GetString("ssl-key-file")
-	if err != nil {
-		return err
-	}
-
-	if !IsStringEmpty(sslKeyFile) {
-		c.Server.HTTP.SSLKeyFile = sslKeyFile
-	}
-
-	// CONVOY_SSL_CERT_FILE
-	sslCertFile, err := cmd.Flags().GetString("ssl-cert-file")
-	if err != nil {
-		return err
-	}
-
-	if !IsStringEmpty(sslCertFile) {
-		c.Server.HTTP.SSLCertFile = sslCertFile
-	}
-
-	// CONVOY_STRATEGY_TYPE
-	retryStrategy, err := cmd.Flags().GetString("retry-strategy")
-	if err != nil {
-		return err
-	}
-
-	if !IsStringEmpty(retryStrategy) {
-		c.GroupConfig.Strategy.Type = StrategyProvider(retryStrategy)
-	}
-
-	// CONVOY_SIGNATURE_HASH
-	signatureHash, err := cmd.Flags().GetString("signature-hash")
-	if err != nil {
-		return err
-	}
-
-	if !IsStringEmpty(signatureHash) {
-		c.GroupConfig.Signature.Hash = signatureHash
-	}
-
-	// CONVOY_SIGNATURE_HEADER
-	signatureHeader, err := cmd.Flags().GetString("signature-header")
-	if err != nil {
-		return err
-	}
-
-	if !IsStringEmpty(signatureHeader) {
-		c.GroupConfig.Signature.Header = SignatureHeaderProvider(signatureHeader)
-	}
-
-	// CONVOY_DISABLE_ENDPOINT
-	isDESet := cmd.Flags().Changed("disable-endpoint")
-	if isDESet {
-		disableEndpoint, err := cmd.Flags().GetBool("disable-endpoint")
-		if err != nil {
-			return err
-		}
-
-		c.GroupConfig.DisableEndpoint = disableEndpoint
-	}
-
-	// CONVOY_INTERVAL_SECONDS
-	retryInterval, err := cmd.Flags().GetUint64("retry-interval")
-	if err != nil {
-		return err
-	}
-
-	if retryInterval != 0 {
-		c.GroupConfig.Strategy.Default.IntervalSeconds = retryInterval
-	}
-
-	// CONVOY_RETRY_LIMIT
-	retryLimit, err := cmd.Flags().GetUint64("retry-limit")
-	if err != nil {
-		return err
-	}
-	if retryLimit != 0 {
-		c.GroupConfig.Strategy.Default.RetryLimit = retryLimit
-	}
-
-	// CONVOY_SMTP_PROVIDER
-	smtpProvider, err := cmd.Flags().GetString("smtp-provider")
-	if err != nil {
-		return err
-	}
-
-	if !IsStringEmpty(smtpProvider) {
-		c.SMTP.Provider = smtpProvider
-	}
-
-	// CONVOY_SMTP_URL
-	smtpUrl, err := cmd.Flags().GetString("smtp-url")
-	if err != nil {
-		return err
-	}
-
-	if !IsStringEmpty(smtpUrl) {
-		c.SMTP.URL = smtpUrl
-	}
-
-	// CONVOY_SMTP_USERNAME
-	smtpUsername, err := cmd.Flags().GetString("smtp-username")
-	if err != nil {
-		return err
-	}
-
-	if !IsStringEmpty(smtpUsername) {
-		c.SMTP.Username = smtpUsername
-	}
-
-	// CONVOY_SMTP_PASSWORD
-	smtpPassword, err := cmd.Flags().GetString("smtp-password")
-	if err != nil {
-		return err
-	}
-
-	if !IsStringEmpty(smtpPassword) {
-		c.SMTP.Password = smtpPassword
-	}
-
-	// CONVOY_SMTP_FROM
-	smtpFrom, err := cmd.Flags().GetString("smtp-from")
-	if err != nil {
-		return err
-	}
-
-	if !IsStringEmpty(smtpFrom) {
-		c.SMTP.From = smtpFrom
-	}
-
-	// CONVOY_SMTP_REPLY_TO
-	smtpReplyTo, err := cmd.Flags().GetString("smtp-reply-to")
-	if err != nil {
-		return err
-	}
-
-	if !IsStringEmpty(smtpReplyTo) {
-		c.SMTP.ReplyTo = smtpReplyTo
-	}
-
-	// CONVOY_SMTP_PORT
-	smtpPort, err := cmd.Flags().GetUint32("smtp-port")
-	if err != nil {
-		return err
-	}
-	if smtpPort != 0 {
-		c.SMTP.Port = smtpPort
-	}
-
-	// CONVOY_NEWRELIC_APP_NAME
-	newReplicApp, err := cmd.Flags().GetString("new-relic-app")
-	if err != nil {
-		return err
-	}
-
-	if !IsStringEmpty(newReplicApp) {
-		c.NewRelic.AppName = newReplicApp
-	}
-
-	// CONVOY_NEWRELIC_LICENSE_KEY
-	newReplicKey, err := cmd.Flags().GetString("new-relic-key")
-	if err != nil {
-		return err
-	}
-
-	if !IsStringEmpty(newReplicKey) {
-		c.NewRelic.AppName = newReplicKey
-	}
-
-	// CONVOY_NEWRELIC_CONFIG_ENABLED
-	isNRCESet := cmd.Flags().Changed("new-relic-config-enabled")
-	if isNRCESet {
-		newReplicConfigEnabled, err := cmd.Flags().GetBool("new-relic-config-enabled")
-		if err != nil {
-			return err
-		}
-
-		c.NewRelic.ConfigEnabled = newReplicConfigEnabled
-	}
-
-	// CONVOY_NEWRELIC_DISTRIBUTED_TRACER_ENABLED
-	isNRTESet := cmd.Flags().Changed("new-relic-tracer-enabled")
-	if isNRTESet {
-		newReplicTracerEnabled, err := cmd.Flags().GetBool("new-relic-tracer-enabled")
-		if err != nil {
-			return err
-		}
-
-		c.NewRelic.DistributedTracerEnabled = newReplicTracerEnabled
-	}
-
-	// CONVOY_REQUIRE_AUTH
-	isReqAuthSet := cmd.Flags().Changed("auth")
-	if isReqAuthSet {
-		requireAuth, err := cmd.Flags().GetBool("auth")
-		if err != nil {
-			return err
-		}
-
-		c.Auth.RequireAuth = requireAuth
-	}
-
-	// CONVOY_NATIVE_REALM_ENABLED
-	isNativeRealmSet := cmd.Flags().Changed("native")
-	if isNativeRealmSet {
-		nativeRealmEnabled, err := cmd.Flags().GetBool("native")
-		if err != nil {
-			return err
-		}
-
-		c.Auth.Native.Enabled = nativeRealmEnabled
-	}
-
-	// CONVOY_API_KEY_CONFIG
-	apiKeyAuthConfig, err := cmd.Flags().GetString("api-auth")
-	if err != nil {
-		return err
-	}
-
-	if !IsStringEmpty(apiKeyAuthConfig) {
-		config := APIKeyAuthConfig{}
-		err = config.Decode(apiKeyAuthConfig)
-		if err != nil {
-			return err
-		}
-
-		c.Auth.File.APIKey = config
-	}
-
-	// CONVOY_BASIC_AUTH_CONFIG
-	basicAuthConfig, err := cmd.Flags().GetString("basic-auth")
-	if err != nil {
-		return err
-	}
-
-	if !IsStringEmpty(basicAuthConfig) {
-		config := BasicAuthConfig{}
-		err = config.Decode(basicAuthConfig)
-		if err != nil {
-			return err
-		}
-
-		c.Auth.File.Basic = config
-	}
-
 	return nil
 }

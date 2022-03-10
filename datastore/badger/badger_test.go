@@ -1,3 +1,6 @@
+//go:build integration
+// +build integration
+
 package badger
 
 import (
@@ -17,7 +20,7 @@ func getDSN() string {
 func getConfig() config.Configuration {
 	return config.Configuration{
 		Database: config.DatabaseConfiguration{
-			Type: "bolt",
+			Type: config.InMemoryDatabaseProvider,
 			Dsn:  getDSN(),
 		},
 	}
