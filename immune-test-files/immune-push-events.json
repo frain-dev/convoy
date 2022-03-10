@@ -6,11 +6,11 @@
         "route": "/",
         "id_location": "data"
     },
-    "database" : {
+    "database": {
         "type": "mongo",
         "dsn": "mongodb://localhost:27017"
     },
-    "event_target_url": "https://endpoint.url",
+    "event_target_url": "http://www.endpoint.url",
     "test_cases": [
         {
             "name": "test_convoy_can_push_event_to_app_with_one_endpoint",

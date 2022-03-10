@@ -10,7 +10,7 @@ jobs:
     strategy:
       matrix:
         go-version: [ 1.16.x, 1.17.x ]
-        endpoint-url: [ "www.endpoint.url" ]
+        endpoint-url: [ "http://www.endpoint.url" ]
         immune-test-file-names: [ "immune-push-events.json" ]
         os: [ ubuntu-latest, macos-latest ]
         immune-version: [ "v0.1.2" ]
@@ -69,7 +69,7 @@ jobs:
 
       - name: Run immune tests
         env:
-          IMMUNE_EVENT_TARGET_URL: https://${{ matrix.endpoint-url }}
+          IMMUNE_EVENT_TARGET_URL: ${{ matrix.endpoint-url }}
         run: |
           cd ./immune-test-files && \
           immune run --config ./${{ matrix.immune-test-file-names }}
