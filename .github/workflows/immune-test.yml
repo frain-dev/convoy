@@ -63,10 +63,11 @@ jobs:
           CONVOY_REDIS_DSN: "redis://localhost:6379"
 
       - name: Setup ngrok
-        uses: frain-dev/ngrok-tunneling-action@0.1.5
+        uses: danvixent/ngrok-tunneling-action@v0.1.11
         with:
           timeout: 1h
           port: 80
+          os: ${{ runner.os }}
           ngrok_authtoken: ${{ secrets.NGROK_AUTH_TOKEN }}
 
       - name: Sleep to allow convoy & ngrok server start
