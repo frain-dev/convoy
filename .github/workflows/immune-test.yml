@@ -11,8 +11,6 @@ jobs:
       matrix:
         go-version: [ 1.16.x, 1.17.x ]
         endpoint-url: [ "www.endpoint.url" ]
-        queue-type: [ "redis", "in-memory" ]
-        db-type: [ "mongodb", "in-memory" ]
         immune-test-file-names: [ "immune-push-events.json" ]
         os: [ ubuntu-latest, macos-latest ]
         immune-version: [ "v0.1.2" ]
@@ -53,7 +51,7 @@ jobs:
 
       - name: Start convoy
         run: |
-          go run ./cmd server
+          go run ./cmd server &
         env:
           PORT: 5005
           CONVOY_RETRY_LIMIT: "3"
@@ -64,13 +62,14 @@ jobs:
           CONVOY_DB_TYPE: "mongodb"
           CONVOY_DB_DSN: "mongodb://localhost:27017/testdb"
           CONVOY_REDIS_DSN: "redis://localhost:6379"
-          CONVOY_QUEUE_PROVIDER: ${{ matrix.queue-type }}
+          CONVOY_QUEUE_PROVIDER: "redis"
 
       - name: Sleep to allow convoy server start
-        run: sleep 3
+        run: sleep 50
 
       - name: Run immune tests
+        env:
+          IMMUNE_EVENT_TARGET_URL: https://${{ matrix.endpoint-url }}
         run: |
           cd ./immune-test-files && \
-          export IMMUNE_EVENT_TARGET_URL=${{ matrix.endpoint-url }} && \
           immune run --config ./${{ matrix.immune-test-file-names }}
