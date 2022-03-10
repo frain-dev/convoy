@@ -1,22 +1,23 @@
 <template>
 	<div class="post">
 		<div class="post--img">
-			<img :src="'https://res.cloudinary.com/frain/image/upload/c_fill,g_north,h_179,w_461,x_0,y_0/' + post.thumbnail" alt="post image" />
+			<img :src="post.feature_image" alt="post image" />
 		</div>
 		<div class="tag clear">{{ post.tag }}</div>
 		<nuxt-link :to="'/blog/' + post.slug">
 			<h3 class="post--title small">{{ post.title }}</h3>
 		</nuxt-link>
-		<p class="post--body">{{ post.description }}</p>
+		<p class="post--body">{{ post.custom_excerpt }}</p>
 		<div class="post--footer">
-			<div class="post--author">
-				<!-- Pending when we have icon for authors -->
-				<!-- <img src="~/assets/images/author-img.png" alt="author imge" /> -->
-				<div>
-					<h5>{{ author(post.author).name }}</h5>
-					<p>{{ author(post.author).role }} Convoy</p>
+			<a :href="post.primary_author.twitter ? 'http://twitter.com/' + post.primary_author.twitter : ''" target="_blank" class="post--author">
+				<div class="img">
+					<img :src="post.primary_author.profile_image" alt="author imge" />
 				</div>
-			</div>
+				<div>
+					<h5>{{ post.primary_author.name }}</h5>
+					<p>{{ post.primary_author.meta_title }} Convoy</p>
+				</div>
+			</a>
 			<nuxt-link :to="'/blog/' + post.slug">
 				Read More
 				<img src="~/assets/images/angle-right-primary.svg" alt="read more icon" />
@@ -32,12 +33,7 @@ export default {
 			showMenu: false
 		};
 	},
-	props: ['post', 'authors'],
-	methods: {
-		author(authorSlug) {
-			return this.authors.find(author => author.slug === authorSlug);
-		}
-	}
+	props: ['post']
 };
 </script>
 
