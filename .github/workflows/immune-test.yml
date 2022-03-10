@@ -10,7 +10,7 @@ jobs:
     strategy:
       matrix:
         go-version: [ 1.16.x, 1.17.x ]
-        endpoint-url: [ "http://www.endpoint.url" ]
+        endpoint-url: [ "http://www.endpoint.url:9098" ]
         immune-test-file-names: [ "immune-push-events.json" ]
         os: [ ubuntu-latest, macos-latest ]
         immune-version: [ "v0.1.2" ]
@@ -39,7 +39,7 @@ jobs:
         run: go get github.com/frain-dev/immune@${{ matrix.immune-version }}
 
       - name: Setup custom host for endpoint
-        run: echo "127.0.0.1:9098 ${{ matrix.endpoint-url }}" | sudo tee -a /etc/hosts
+        run: echo "127.0.0.1 ${{ matrix.endpoint-url }}" | sudo tee -a /etc/hosts
 
       - name: Build immune
         run: |
