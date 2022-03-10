@@ -1,4 +1,4 @@
-name: Build and run all tests
+name: Build and immune tests
 on:
   push:
     branches:
