@@ -8,7 +8,7 @@
     },
     "database": {
         "type": "mongo",
-        "dsn": "mongodb://localhost:27017"
+        "dsn": "mongodb://localhost:27017/testdb"
     },
     "test_cases": [
         {
