@@ -66,27 +66,18 @@ func main() {
 				return err
 			}
 
-			override := new(config.Configuration)
-
-			// override config with cli flags
-			redisCliDsn, err := cmd.Flags().GetString("queue")
-			if err != nil {
-				return err
-			}
-			override.Queue.Redis.Dsn = redisCliDsn
-
-			mongoCliDsn, err := cmd.Flags().GetString("db")
-			if err != nil {
-				return err
-			}
-			override.Database.Dsn = mongoCliDsn
-
-			err = config.LoadConfig(cfgPath, override)
+			err = config.LoadConfig(cfgPath, &config.Configuration{})
 			if err != nil {
 				return err
 			}
 
 			cfg, err := config.Get()
+			if err != nil {
+				return err
+			}
+
+			// override config with cli flags
+			err = config.LoadConfigFromCliFlags(cmd, &cfg)
 			if err != nil {
 				return err
 			}
@@ -185,7 +176,6 @@ func main() {
 			app.limiter = li
 
 			return ensureDefaultGroup(context.Background(), cfg, app)
-
 		},
 		PersistentPostRunE: func(cmd *cobra.Command, args []string) error {
 			defer func() {
@@ -206,14 +196,6 @@ func main() {
 			return err
 		},
 	}
-
-	var configFile string
-	var redisDsn string
-	var mongoDsn string
-
-	cmd.PersistentFlags().StringVar(&configFile, "config", "./convoy.json", "Configuration file for convoy")
-	cmd.PersistentFlags().StringVar(&redisDsn, "queue", "", "Redis DSN")
-	cmd.PersistentFlags().StringVar(&mongoDsn, "db", "", "MongoDB DSN")
 
 	cmd.AddCommand(addVersionCommand())
 	cmd.AddCommand(addCreateCommand(app))
