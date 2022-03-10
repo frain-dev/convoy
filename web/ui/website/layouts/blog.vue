@@ -16,8 +16,7 @@ export default {
 	data: () => {
 		return {
 			showMenu: false,
-			pages: [],
-			
+			pages: []
 		};
 	},
 	async mounted() {
@@ -45,7 +44,7 @@ header {
 
 .main {
 	margin: calc(20px + 32px + 58.23px) auto 0;
-	padding: 170px 0 100px;
+	padding: 210px 0 100px;
 	width: 100%;
 	max-width: calc(1035px + 170px + 32px);
 }

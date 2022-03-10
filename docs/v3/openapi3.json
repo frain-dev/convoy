@@ -338,6 +338,12 @@
 					"name": {
 						"type": "string"
 					},
+					"rate_limit": {
+						"type": "integer"
+					},
+					"rate_limit_duration": {
+						"type": "integer"
+					},
 					"statistics": {
 						"$ref": "#/components/schemas/datastore.GroupStatistics"
 					},
@@ -560,6 +566,12 @@
 					},
 					"name": {
 						"type": "string"
+					},
+					"rate_limit": {
+						"type": "integer"
+					},
+					"rate_limit_duration": {
+						"type": "integer"
 					}
 				},
 				"type": "object"
@@ -2219,6 +2231,137 @@
 					}
 				],
 				"summary": "Batch Resend app events",
+				"tags": [
+					"EventDelivery"
+				]
+			}
+		},
+		"/eventdeliveries/forceresend": {
+			"post": {
+				"description": "This endpoint force resends multiple app events",
+				"requestBody": {
+					"content": {
+						"application/json": {
+							"schema": {
+								"allOf": [
+									{
+										"$ref": "#/components/schemas/server.Stub"
+									},
+									{
+										"properties": {
+											"ids": {
+												"items": {
+													"type": "string"
+												},
+												"type": "array"
+											}
+										},
+										"type": "object"
+									}
+								]
+							}
+						}
+					},
+					"description": "event delivery ids",
+					"required": true,
+					"x-originalParamName": "ids"
+				},
+				"responses": {
+					"200": {
+						"content": {
+							"application/json": {
+								"schema": {
+									"allOf": [
+										{
+											"$ref": "#/components/schemas/server.serverResponse"
+										},
+										{
+											"properties": {
+												"data": {
+													"$ref": "#/components/schemas/server.Stub"
+												}
+											},
+											"type": "object"
+										}
+									]
+								}
+							}
+						},
+						"description": "OK"
+					},
+					"400": {
+						"content": {
+							"application/json": {
+								"schema": {
+									"allOf": [
+										{
+											"$ref": "#/components/schemas/server.serverResponse"
+										},
+										{
+											"properties": {
+												"data": {
+													"$ref": "#/components/schemas/server.Stub"
+												}
+											},
+											"type": "object"
+										}
+									]
+								}
+							}
+						},
+						"description": "Bad Request"
+					},
+					"401": {
+						"content": {
+							"application/json": {
+								"schema": {
+									"allOf": [
+										{
+											"$ref": "#/components/schemas/server.serverResponse"
+										},
+										{
+											"properties": {
+												"data": {
+													"$ref": "#/components/schemas/server.Stub"
+												}
+											},
+											"type": "object"
+										}
+									]
+								}
+							}
+						},
+						"description": "Unauthorized"
+					},
+					"500": {
+						"content": {
+							"application/json": {
+								"schema": {
+									"allOf": [
+										{
+											"$ref": "#/components/schemas/server.serverResponse"
+										},
+										{
+											"properties": {
+												"data": {
+													"$ref": "#/components/schemas/server.Stub"
+												}
+											},
+											"type": "object"
+										}
+									]
+								}
+							}
+						},
+						"description": "Internal Server Error"
+					}
+				},
+				"security": [
+					{
+						"ApiKeyAuth": []
+					}
+				],
+				"summary": "Force Resend app events",
 				"tags": [
 					"EventDelivery"
 				]
