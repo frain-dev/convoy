@@ -73,7 +73,7 @@ func main() {
 			if err != nil {
 				return err
 			}
-			override.Queue.Redis.DSN = redisCliDsn
+			override.Queue.Redis.Dsn = redisCliDsn
 
 			mongoCliDsn, err := cmd.Flags().GetString("db")
 			if err != nil {

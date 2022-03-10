@@ -1,3 +1,42 @@
+import GhostContentAPI from '@tryghost/content-api';
+
+const api = new GhostContentAPI({
+	url: 'https://convoy.ghost.io',
+	key: 'b9904af5cf9365f3c647cf2d8b',
+	version: 'v3'
+});
+
+const create = async feed => {
+	feed.options = {
+		title: 'Convoy',
+		link: 'https://getconvoy.io/blog/rss',
+		description: 'A Cloud native Webhook Service with out-of-the-box security, reliability and scalability for your webhooks infrastructure.'
+	};
+
+	const posts = await api.posts.browse({
+		limit: 'all',
+		include: 'tags,authors',
+		order: 'published_at DESC'
+	});
+	posts.forEach(post => {
+		feed.addItem({
+			title: post.title,
+			id: post.canonical_url,
+			category: post.tags[0].name,
+			link: post.canonical_url,
+			description: post.excerpt,
+			content: post.html,
+			author: [
+				{
+					name: post.primary_author.name,
+					link: 'http://twitter.com/' + post.primary_author.twitter
+				}
+			],
+			image: post.feature_image
+		});
+	});
+};
+
 export default {
 	// Target: https://go.nuxtjs.dev/config-target
 	target: 'static',
@@ -101,7 +140,7 @@ export default {
 	css: ['@/scss/main.scss'],
 
 	// Plugins to run before rendering page: https://go.nuxtjs.dev/config-plugins
-	plugins: ['~/plugins/date.js'],
+	plugins: ['~/plugins/date.js', '~/plugins/prism.js'],
 
 	// Auto import components: https://go.nuxtjs.dev/config-components
 	components: true,
@@ -112,7 +151,8 @@ export default {
 	// Modules: https://go.nuxtjs.dev/config-modules
 	modules: [
 		// https://go.nuxtjs.dev/content
-		'@nuxt/content'
+		'@nuxt/content',
+		'@nuxtjs/feed'
 	],
 
 	// Content module configuration: https://go.nuxtjs.dev/config-content
@@ -138,7 +178,20 @@ export default {
 		lang: 'en-US'
 	},
 
-	// Build Configuration: https://go.nuxtjs.dev/config-build
 	build: {},
-	runtimeCompiler: true
+	runtimeCompiler: true,
+	feed: [
+		{
+			path: '/blog/rss',
+			create,
+			cacheTime: 1000 * 60 * 15,
+			type: 'rss2'
+		},
+		{
+			path: '/blog/json',
+			create,
+			cacheTime: 1000 * 60 * 15,
+			type: 'json1'
+		}
+	]
 };
