@@ -41,7 +41,9 @@ jobs:
           export GO111MODULE=on && go build -o $(go env GOPATH)/bin/immune ./cmd/*
 
       - name: Start convoy
-        run: export GO111MODULE=on && go run ./cmd server &
+        run: |
+          ls -a && \
+          export GO111MODULE=on && go run ./cmd server &
         env:
           CONVOY_DB_DSN: "mongodb://localhost:27017/testdb"
           CONVOY_REDIS_DSN: "redis://localhost:6379"
@@ -51,7 +53,7 @@ jobs:
 
       - name: Run immune tests
         run: |
-          cd ./immune-test-files && \
           ls -a && \
+          cd ./immune-test-files && \
           export IMMUNE_EVENT_TARGET_URL=${{ matrix.endpoint-url }} && \
           immune run --config ./${{ matrix.immune-test-file-names }}
