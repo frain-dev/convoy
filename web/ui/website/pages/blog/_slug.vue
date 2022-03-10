@@ -10,13 +10,15 @@
 
 		<h3 class="post-page--title">{{ blogPost.title }}</h3>
 
-		<div class="post-page--author">
-			<img src="~/assets/images/author-img.png" alt="author imge" />
+		<a :href="blogPost.primary_author.twitter ? 'http://twitter.com/' + blogPost.primary_author.twitter : ''" target="_blank" class="post-page--author">
+			<div class="img">
+				<img :src="blogPost.primary_author.profile_image" alt="author imge" />
+			</div>
 			<div>
 				<h5>{{ blogPost.primary_author.name }}</h5>
 				<p>{{ blogPost.primary_author.meta_title }} Convoy</p>
 			</div>
-		</div>
+		</a>
 
 		<div class="post-page--loader">
 			<div></div>
@@ -461,8 +463,20 @@ main {
 			margin-bottom: 45px;
 		}
 
-		img {
+		.img {
 			width: 40px;
+			height: 40px;
+			border-radius: 50%;
+			background: #f5f5f5;
+			margin-right: 16px;
+			overflow: hidden;
+			display: flex;
+			align-items: center;
+		}
+
+		img {
+			width: 100% !important;
+			border-radius: 50%;
 			margin-right: 12px;
 		}
 

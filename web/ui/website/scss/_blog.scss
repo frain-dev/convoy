@@ -4,7 +4,7 @@ $desktopBreakPoint: 880px;
 	ul {
 		list-style-type: disc;
 		margin-left: 20px;
-		margin-bottom: 24px;
+		margin-top: 24px;
 
 		li {
 			list-style-type: disc;
@@ -15,7 +15,7 @@ $desktopBreakPoint: 880px;
 	p {
 		font-size: 16px;
 		line-height: 34px;
-		margin-bottom: 24px;
+		margin-top: 16px;
 		color: #737a91;
 	}
 
@@ -51,7 +51,7 @@ $desktopBreakPoint: 880px;
 	h6 {
 		font-weight: bold;
 		line-height: 32px;
-		margin-bottom: 24px;
+		margin: 40px 0 0;
 		color: #16192c;
 	}
 
@@ -77,7 +77,7 @@ $desktopBreakPoint: 880px;
 		padding: 100px 34px 64px;
 		background: url('~assets/images/blockquote-bg.svg') no-repeat #477db3;
 		background-position: top right;
-		margin: 0 0 44px;
+		margin: 44px 0 44px;
 		position: relative;
 		font-size: 18px;
 		line-height: 40px;
@@ -101,7 +101,7 @@ $desktopBreakPoint: 880px;
 	}
 
 	figure {
-		margin: 0 0 24px;
+		margin: 40px 0 0;
 	}
 
 	figcaption {
