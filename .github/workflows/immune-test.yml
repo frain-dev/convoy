@@ -23,33 +23,8 @@ jobs:
         with:
           mongodb-version: ${{ matrix.mongodb-version }}
 
-      - name: Get the version
-        id: get_version
-        run: echo ::set-output name=tag::$(echo ${GITHUB_SHA:8})
-
-      - name: Set up Go
-        uses: actions/setup-go@v2
-        with:
-          go-version: ${{ matrix.go-version }}
-
-      - name: Cache go modules
-        uses: actions/cache@v1
-        with:
-          path: ~/go/pkg/mod
-          key: ${{ runner.os }}-go-${{ hashFiles('go.sum') }}
-          restore-keys: ${{ runner.os }}-go-${{ hashFiles('go.sum') }}
-
-      - name: Check out code
-        uses: actions/checkout@v2
-
-      - name: Get and verify dependencies
-        run: go mod download && go mod verify
-
-      - name: Go vet
-        run: go vet ./...
-
       - name: Pull immune
-        run: go get github.com/frain-dev/immune@${{ matrix.immune-version }}
+        run: export GO111MODULE=on && go get github.com/frain-dev/immune@${{ matrix.immune-version }}
 
       - name: Build immune
         run: |
@@ -57,16 +32,16 @@ jobs:
           mv ./immune $(go env GOPATH)/bin/immune
 
       - name: Start convoy
-        run: go run ./cmd server &
+        run: export GO111MODULE=on && go run ./cmd server &
         env:
           CONVOY_DB_DSN: "mongodb://localhost:27017/testdb"
           CONVOY_REDIS_DSN: "redis://localhost:6379"
 
       - name: Setup ngrok
-        uses: danvixent/ngrok-tunneling-action@v0.1.11
+        uses: danvixent/ngrok-tunneling-action@v0.1.16
         with:
           timeout: 1h
-          port: 80
+          port: 8000
           os: ${{ runner.os }}
           ngrok_authtoken: ${{ secrets.NGROK_AUTH_TOKEN }}
 
@@ -76,5 +51,5 @@ jobs:
       - name: Run immune tests
         run: |
           cd ./immune-test-files && \
-          export IMMUNE_EVENT_TARGET_URL=$(curl http://localhost:4040/api/tunnels | jq ".tunnels[0].public_url") \
+          export IMMUNE_EVENT_TARGET_URL=$(curl http://localhost:4040/api/tunnels | jq ".tunnels[0].public_url") && \
           immune run --config ./${{ matrix.immune-test-file-names }}
