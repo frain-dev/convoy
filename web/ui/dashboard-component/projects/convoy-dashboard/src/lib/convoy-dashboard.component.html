@@ -3,7 +3,7 @@
 		<div class="dashboard--page--head">
 			<div class="filter without-padding" [ngClass]="{ 'show-calendar': showFilterCalendar }">
 				<div>Filter by:</div>
-				<button class="button button__filter button--has-icon icon-left icon-right" (click)="statsPicker.open()">
+				<button class="button button__filter button--has-icon icon-left icon-right margin-left__20px" (click)="statsPicker.open()">
 					<img src="/assets/img/calendar-icon.svg" alt="calender icon" />
 					<mat-date-range-input [formGroup]="statsDateRange" [rangePicker]="statsPicker">
 						<input matStartDate formControlName="startDate" placeholder="Start date" />
@@ -528,9 +528,12 @@
 							</tbody>
 						</table>
 
-						<div class="table--load-more button--container margin-top center" *ngIf="apps?.pagination && apps.pagination.totalPage > 1">
+						<div class="table--load-more button--container center" *ngIf="apps?.pagination && apps.pagination.totalPage > 1">
 							<button
-								[class]="'button button__primary button__clear button--has-icon icon-left margin-top__20px' + (apps.pagination.page === apps.pagination.totalPage ? 'disabled' : '')"
+								[class]="
+									'button button__primary button__clear button--has-icon icon-left margin-top__20px margin-bottom__24px flex__justify-center' +
+									(apps.pagination.page === apps.pagination.totalPage ? 'disabled' : '')
+								"
 								[disabled]="apps.pagination.page === apps.pagination.totalPage || isloadingMoreApps"
 								(click)="appsPage = appsPage + 1; getApps()"
 							>
