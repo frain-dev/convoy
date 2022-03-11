@@ -74,7 +74,7 @@ jobs:
 
       - name: Run immune tests
         env:
-          IMMUNE_EVENT_TARGET_URL: https://endpoint.url:9098
+          IMMUNE_EVENT_TARGET_URL: https://www.endpoint.url:9098
           IMMUNE_SSL: true
           IMMUNE_SSL_KEY_FILE: echo $LOCALHOST_KEY_FILE #has been set by certgen
           IMMUNE_SSL_CERT_FILE: echo $LOCALHOST_CRT_FILE #has been set by certgen
