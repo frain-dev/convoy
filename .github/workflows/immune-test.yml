@@ -46,14 +46,13 @@ jobs:
         run: echo "127.0.0.1 www.endpoint.url" | sudo tee -a /etc/hosts
 
       - name: Pull certgen
-        uses: danvixent/certgen-action@v0.1.2
+        uses: danvixent/certgen-action@v0.1.6
         with:
+          output-folder: $(go env GOPATH)/bin
           os: ${{ runner.os }}
-          certgen-version: 0.1.2
+          certgen-version: 0.2.0
 
-      - name: Start convoy
-        run: |
-          go run ./cmd server &
+      - name: Start convoy & run immune tests
         env:
           PORT: 5005
           CONVOY_RETRY_LIMIT: "3"
@@ -66,16 +65,17 @@ jobs:
           CONVOY_DB_DSN: "mongodb://localhost:27017/testdb"
           CONVOY_REDIS_DSN: "redis://localhost:6379"
           CONVOY_QUEUE_PROVIDER: "redis"
-
-      - name: Sleep to allow convoy server start
-        run: sleep 50
-
-      - name: Run immune tests
-        env:
           IMMUNE_EVENT_TARGET_URL: https://www.endpoint.url:9098
           IMMUNE_SSL: true
-          IMMUNE_SSL_KEY_FILE: echo $LOCALHOST_KEY_FILE #has been set by certgen
-          IMMUNE_SSL_CERT_FILE: echo $LOCALHOST_CRT_FILE #has been set by certgen
         run: |
-          cd ./immune-test-files && \
+          ref=$(certgen -domains="www.endpoint.url,endpoint.url")
+          echo "$ref"
+          go run ./cmd server &
+          IFS=', ' read -ra array <<< "$ref"
+          echo "${array[0]}"
+          echo "${array[1]}"
+          export IMMUNE_SSL_CERT_FILE="${array[0]}"
+          export IMMUNE_SSL_KEY_FILE="${array[1]}"
+          sleep 60
+          cd ./immune-test-files
           immune run --config ./${{ matrix.immune-test-file-names }}
