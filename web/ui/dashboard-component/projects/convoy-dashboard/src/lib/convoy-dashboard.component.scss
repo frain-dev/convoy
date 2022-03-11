@@ -2,9 +2,7 @@
 @import './scss/material-design-reset';
 
 .metrics {
-
 	li {
-
 		&.messages {
 			background: url(/assets/img/message-icon-transparent.svg) no-repeat;
 			background-position: 210px 35px;
@@ -16,12 +14,14 @@
 		}
 	}
 }
-.button{
-	&--margin-left{
+
+.button {
+	&--margin-left {
 		margin-left: 15px;
 	}
 }
-.line{
+
+.line {
 	height: 22px;
 	width: 1px;
 }
