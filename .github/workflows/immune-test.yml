@@ -43,7 +43,7 @@ jobs:
         run: echo "127.0.0.1 www.endpoint.url" | sudo tee -a /etc/hosts
 
       - name: Pull certgen
-        uses: danvixent/certgen-action@v0.1.1
+        uses: danvixent/certgen-action@v0.1.2
         with:
           os: ${{ runner.os }}
           certgen-version: 0.1.2
