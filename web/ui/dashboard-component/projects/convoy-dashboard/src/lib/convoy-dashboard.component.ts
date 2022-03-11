@@ -11,6 +11,7 @@ import { ConvoyDashboardService } from './convoy-dashboard.service';
 import { format } from 'date-fns';
 import { fromEvent, Observable } from 'rxjs';
 import { debounceTime, distinctUntilChanged, map, startWith, switchMap } from 'rxjs/operators';
+import { DatePipe } from '@angular/common';
 
 @Component({
 	selector: 'convoy-dashboard',
@@ -26,6 +27,7 @@ export class ConvoyDashboardComponent implements OnInit {
 	eventDelsDetailsItem?: any;
 	eventDeliveryAtempt?: EVENT_DELIVERY_ATTEMPT;
 	showEventFilterCalendar = false;
+	showEventDelFilterCalendar = false;
 	eventDateFilterActive = false;
 	displayedEvents: {
 		date: string;
@@ -128,6 +130,8 @@ export class ConvoyDashboardComponent implements OnInit {
 	showSecretCopyText = false;
 	appsSearchString = '';
 	selectedEventsDateOption = '';
+	selectedEventsDelDateOption = '';
+	selectedDateOption = '';
 	currentAppId = '';
 	tag = '';
 	appPortalLink = '';
@@ -137,7 +141,7 @@ export class ConvoyDashboardComponent implements OnInit {
 	@ViewChild('eventDelsAppsFilter', { static: true }) eventDelsAppsFilter!: ElementRef;
 	eventDeliveriesStatusFilterActive = false;
 
-	constructor(private convyDashboardService: ConvoyDashboardService, private router: Router, private formBuilder: FormBuilder, private route: ActivatedRoute) {}
+	constructor(private convyDashboardService: ConvoyDashboardService, private router: Router, private formBuilder: FormBuilder, private route: ActivatedRoute, private datePipe: DatePipe) {}
 
 	async ngOnInit() {
 		if (!this.requestToken || this.requestToken == '') {
@@ -199,7 +203,7 @@ export class ConvoyDashboardComponent implements OnInit {
 
 	// add tag function for adding multiple events to input form, <to be reviewed>
 	addTag(event?: any, i?: any) {
-		// to be reviewed 
+		// to be reviewed
 		// let eventTagControlNames = [];
 		// const tagControlName = event.target.getAttribute('formcontrolname');
 		// const eventTagControlName = `${tagControlName} ${i}`;
@@ -391,10 +395,10 @@ export class ConvoyDashboardComponent implements OnInit {
 		this.addFilterToURL({ section: 'logTab' });
 
 		if (tab === 'apps' && this.apps?.content.length > 0) {
-			if (!this.appsDetailsItem){
+			if (!this.appsDetailsItem) {
 				this.appsDetailsItem = this.apps?.content[0];
-				this.getAppPortalToken({redirect: false});
-			} 
+				this.getAppPortalToken({ redirect: false });
+			}
 		} else if (tab === 'events' && this.events?.content.length > 0) {
 			if (!this.eventsDetailsItem) this.eventsDetailsItem = this.events?.content[0];
 			if (this.eventsDetailsItem?.uid) this.getEventDeliveriesForSidebar(this.eventsDetailsItem.uid);
@@ -579,7 +583,7 @@ export class ConvoyDashboardComponent implements OnInit {
 		}
 	}
 
-	async getAppPortalToken(requestDetail: {redirect: boolean}) {
+	async getAppPortalToken(requestDetail: { redirect: boolean }) {
 		try {
 			const appTokenResponse = await this.convyDashboardService.request({
 				url: this.getAPIURL(`/apps/${this.appsDetailsItem.uid}/keys?groupID=${this.activeGroup || ''}`),
@@ -588,8 +592,8 @@ export class ConvoyDashboardComponent implements OnInit {
 				method: 'post',
 				body: {}
 			});
-			this.appPortalLink = `<iframe src="${appTokenResponse.data.url}"></iframe>`
-			if(requestDetail.redirect) window.open(`${appTokenResponse.data.url}`, '_blank');
+			this.appPortalLink = `<iframe src="${appTokenResponse.data.url}"></iframe>`;
+			if (requestDetail.redirect) window.open(`${appTokenResponse.data.url}`, '_blank');
 			this.loadingAppPotalToken = false;
 		} catch (error) {
 			this.loadingAppPotalToken = false;
@@ -785,7 +789,7 @@ export class ConvoyDashboardComponent implements OnInit {
 					}
 				});
 			}
-			
+
 			this.isloadingApps = false;
 			return;
 		} catch (error) {
@@ -885,20 +889,44 @@ export class ConvoyDashboardComponent implements OnInit {
 		}
 	}
 
-	async clearEventFilters(tableName: 'events' | 'event deliveries' | 'apps') {
+	async clearEventFilters(tableName: 'events' | 'event deliveries' | 'apps', filterType?: 'eventsDate' | 'eventsDelDate' | 'eventsApp' | 'eventsDelApp' | 'eventsDelsStatus') {
 		const activeFilters = Object.assign({}, this.route.snapshot.queryParams);
 		let filterItems: string[] = [];
 
 		switch (tableName) {
 			case 'events':
 				this.eventApp = '';
-				filterItems = ['eventsStartDate', 'eventsEndDate', 'eventsApp'];
+				switch (filterType) {
+					case 'eventsApp':
+						filterItems = ['eventsApp'];
+						break;
+					case 'eventsDate':
+						filterItems = ['eventsStartDate', 'eventsEndDate'];
+						break;
+					default:
+						filterItems = ['eventsStartDate', 'eventsEndDate', 'eventsApp'];
+						break;
+				}
 				this.eventsFilterDateRange.patchValue({ startDate: '', endDate: '' });
 				this.getEvents({ fromFilter: true });
 				break;
 
 			case 'event deliveries':
 				this.eventDeliveriesApp = '';
+				switch (filterType) {
+					case 'eventsDelApp':
+						filterItems = ['eventDelsApp'];
+						break;
+					case 'eventsDelDate':
+						filterItems = ['eventDelsStartDate', 'eventDelsEndDate'];
+						break;
+					case 'eventsDelsStatus':
+						filterItems = ['eventDelsStatus'];
+						break;
+					default:
+						filterItems = ['eventDelsStartDate', 'eventDelsEndDate', 'eventDelsApp', 'eventDelsStatus'];
+						break;
+				}
 				filterItems = ['eventDelsStartDate', 'eventDelsEndDate', 'eventDelsApp', 'eventDelsStatus'];
 				this.eventDeliveriesFilterDateRange.patchValue({ startDate: '', endDate: '' });
 				this.eventDeliveryFilteredByEventId = '';
@@ -978,5 +1006,9 @@ export class ConvoyDashboardComponent implements OnInit {
 		} else {
 			searchDetails.type === 'filter' ? (this.filteredApps = this.apps.content) : this.getApps({ type: 'apps' });
 		}
+	}
+
+	formatDate(date: Date) {
+		return this.datePipe.transform(date, 'dd/MM/yyyy');
 	}
 }
