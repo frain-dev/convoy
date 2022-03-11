@@ -199,7 +199,7 @@ export class ConvoyDashboardComponent implements OnInit {
 
 	// add tag function for adding multiple events to input form, <to be reviewed>
 	addTag(event?: any, i?: any) {
-		// to be reviewed 
+		// to be reviewed
 		// let eventTagControlNames = [];
 		// const tagControlName = event.target.getAttribute('formcontrolname');
 		// const eventTagControlName = `${tagControlName} ${i}`;
@@ -391,10 +391,10 @@ export class ConvoyDashboardComponent implements OnInit {
 		this.addFilterToURL({ section: 'logTab' });
 
 		if (tab === 'apps' && this.apps?.content.length > 0) {
-			if (!this.appsDetailsItem){
+			if (!this.appsDetailsItem) {
 				this.appsDetailsItem = this.apps?.content[0];
-				this.getAppPortalToken({redirect: false});
-			} 
+				this.getAppPortalToken({ redirect: false });
+			}
 		} else if (tab === 'events' && this.events?.content.length > 0) {
 			if (!this.eventsDetailsItem) this.eventsDetailsItem = this.events?.content[0];
 			if (this.eventsDetailsItem?.uid) this.getEventDeliveriesForSidebar(this.eventsDetailsItem.uid);
@@ -579,7 +579,7 @@ export class ConvoyDashboardComponent implements OnInit {
 		}
 	}
 
-	async getAppPortalToken(requestDetail: {redirect: boolean}) {
+	async getAppPortalToken(requestDetail: { redirect: boolean }) {
 		try {
 			const appTokenResponse = await this.convyDashboardService.request({
 				url: this.getAPIURL(`/apps/${this.appsDetailsItem.uid}/keys?groupID=${this.activeGroup || ''}`),
@@ -588,8 +588,8 @@ export class ConvoyDashboardComponent implements OnInit {
 				method: 'post',
 				body: {}
 			});
-			this.appPortalLink = `<iframe src="${appTokenResponse.data.url}"></iframe>`
-			if(requestDetail.redirect) window.open(`${appTokenResponse.data.url}`, '_blank');
+			this.appPortalLink = `<iframe src="${appTokenResponse.data.url}"></iframe>`;
+			if (requestDetail.redirect) window.open(`${appTokenResponse.data.url}`, '_blank');
 			this.loadingAppPotalToken = false;
 		} catch (error) {
 			this.loadingAppPotalToken = false;
@@ -742,7 +742,7 @@ export class ConvoyDashboardComponent implements OnInit {
 	async appsRequest(requestDetails: { search?: string }): Promise<HTTP_RESPONSE> {
 		try {
 			const appsResponse = await this.convyDashboardService.request({
-				url: this.getAPIURL(`/apps?groupID=${this.activeGroup || ''}&sort=AESC&page=${this.appsPage || 1}&perPage=10${requestDetails?.search ? `&q=${requestDetails?.search}` : ''}`),
+				url: this.getAPIURL(`/apps?groupID=${this.activeGroup || ''}&sort=AESC&page=${this.appsPage || 1}&perPage=20${requestDetails?.search ? `&q=${requestDetails?.search}` : ''}`),
 				token: this.requestToken,
 				authType: this.apiAuthType,
 				method: 'get'
@@ -785,7 +785,7 @@ export class ConvoyDashboardComponent implements OnInit {
 					}
 				});
 			}
-			
+
 			this.isloadingApps = false;
 			return;
 		} catch (error) {
