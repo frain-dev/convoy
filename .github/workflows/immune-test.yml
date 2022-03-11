@@ -11,7 +11,7 @@ jobs:
       matrix:
         go-version: [ 1.16.x, 1.17.x ]
         immune-test-file-names: [ "immune-push-events.json" ]
-        immune-version: [ "v0.1.2" ]
+        immune-version: [ "0.1.4" ]
         mongodb-version: [ "4.0", "4.2", "4.4" ]
         redis-version: [ "6.2.6" ]
 
@@ -37,7 +37,10 @@ jobs:
         uses: actions/checkout@v2
 
       - name: Pull immune
-        run: go get github.com/frain-dev/immune@${{ matrix.immune-version }}
+        run: |
+          wget --output-document=./immune.tar.gz https://github.com/frain-dev/immune/releases/download/v${{ matrix.immune-version }}/immune_${{ matrix.immune-version }}_linux_amd64.tar.gz && \
+          tar -xvzf ./immune.tar.gz && \
+          mv ./immune $(go env GOPATH)/bin/immune
 
       - name: Setup custom host for endpoint
         run: echo "127.0.0.1 www.endpoint.url" | sudo tee -a /etc/hosts
@@ -47,11 +50,6 @@ jobs:
         with:
           os: ${{ runner.os }}
           certgen-version: 0.1.2
-
-      - name: Build immune
-        run: |
-          cd $(go env GOPATH)/pkg/mod/github.com/frain-dev/immune@${{ matrix.immune-version }} && \
-          go build -o $(go env GOPATH)/bin/immune ./cmd/*
 
       - name: Start convoy
         run: |
