@@ -139,7 +139,7 @@
 								</div>
 							</div>
 
-							<div class="dropdown">
+							<div class="dropdown margin-left__24px">
 								<button
 									class="button button__filter button--has-icon icon-right icon-left"
 									[ngClass]="{ active: !!eventApp }"
@@ -149,15 +149,18 @@
 									<span>Apps</span>
 									<img src="/assets/img/angle-arrow-down.svg" alt="arrow down icon" />
 								</button>
+
 								<div class="dropdown__menu with-padding large" [ngClass]="{ show: showEventsAppsDropdown }">
 									<div class="input__search">
 										<img src="/assets/img/search-icon.svg" alt="search icon" />
 										<input type="search" placeholder="Search apps here" #eventsAppsFilter />
 									</div>
+
 									<div class="dropdown__menu__item" *ngFor="let app of eventsAppsFilter$ | async">
 										<label [for]="app.uid">{{ app.name }}</label>
 										<input type="checkbox" name="app" [value]="app.uid" [id]="app.uid" [checked]="app.uid === eventApp" (change)="updateAppFilter(app.uid, $event, 'events')" />
 									</div>
+
 									<p *ngIf="filteredApps?.length === 0">No app to display</p>
 								</div>
 							</div>
@@ -171,25 +174,10 @@
 							>
 								Clear Filter
 							</button>
-							<button
-								class="button button__white button__small margin-right__20px"
-								(click)="showBatchRetryModal = !showBatchRetryModal"
-								[disabled]="(eventsFilterDateRange.value.startDate == '' || eventsFilterDateRange.value.endDate == '') && eventApp == ''"
-								[ngClass]="{ disabled: (eventsFilterDateRange.value.startDate == '' || eventsFilterDateRange.value.endDate == '') && eventApp == '' }"
-							>
-								Batch Retry
-							</button>
-							<button
-								class="button button__primary button__small"
-								(click)="getEvents({ addToURL: true, fromFilter: true })"
-								[disabled]="(eventsFilterDateRange.value.startDate == '' || eventsFilterDateRange.value.endDate == '') && eventApp == ''"
-								[ngClass]="{ disabled: (eventsFilterDateRange.value.startDate == '' || eventsFilterDateRange.value.endDate == '') && eventApp == '' }"
-							>
-								Apply Filter
-							</button>
 						</div>
 					</div>
 				</div>
+
 				<div [hidden]="activeTab !== 'event deliveries'">
 					<div class="flex flex__align-items-center flex__justify-between">
 						<div class="flex">
@@ -199,25 +187,26 @@
 								[ngClass]="{ active: eventDeliveriesFilterDateRange.value.startDate !== '' && eventDeliveriesFilterDateRange.value.endDate !== '' }"
 								(click)="showEventFilterCalendar = !showEventFilterCalendar"
 							>
-								<img src="/assets/img/calendar-icon.svg" alt="calender icon" />
+								<img class="margin-left__0px" src="/assets/img/calendar-icon.svg" alt="calender icon" />
 								<mat-date-range-input [formGroup]="eventDeliveriesFilterDateRange" [rangePicker]="eventDeliveriesFilterPicker">
 									<input matStartDate formControlName="startDate" placeholder="Start date" />
 									<input matEndDate formControlName="endDate" placeholder="End date" (dateChange)="getEventDeliveries({ addToURL: true, fromFilter: true })" />
 								</mat-date-range-input>
 								<mat-date-range-picker #eventDeliveriesFilterPicker [disabled]="false"></mat-date-range-picker>
-								<img src="/assets/img/angle-arrow-down.svg" alt="arrow down icon" />
+								<img class="margin-right__0px" src="/assets/img/angle-arrow-down.svg" alt="arrow down icon" />
 							</button>
 
-							<div class="dropdown">
+							<div class="dropdown margin-left__24px">
 								<button
 									class="button button__filter button--has-icon icon-right icon-left"
 									[ngClass]="{ active: eventDeliveryFilteredByStatus.length > 0 }"
 									(click)="showOverlay = true; showEventDeliveriesStatusDropdown = !showEventDeliveriesStatusDropdown"
 								>
-									<img src="/assets/img/status-filter-icon.svg" alt="status filter icon" />
+									<img class="margin-left__0px" src="/assets/img/status-filter-icon.svg" alt="status filter icon" />
 									<span>Status</span>
-									<img src="/assets/img/angle-arrow-down.svg" alt="arrow down icon" />
+									<img class="margin-right__0px" src="/assets/img/angle-arrow-down.svg" alt="arrow down icon" />
 								</button>
+
 								<div class="dropdown__menu with-padding smaller" [ngClass]="{ show: showEventDeliveriesStatusDropdown }">
 									<div class="dropdown__menu__item with-border" *ngFor="let status of eventDeliveryStatuses">
 										<label [for]="status">{{ status || 'None' }}</label>
@@ -232,7 +221,7 @@
 									</div>
 
 									<button
-										class="button button__small button--full-100 button__primary margin-top"
+										class="button button__small button--full-100 button__primary margin-top font__12px"
 										(click)="showOverlay = false; showEventDeliveriesStatusDropdown = false; this.getEventDeliveries({ addToURL: true, fromFilter: true })"
 									>
 										Apply
@@ -240,21 +229,23 @@
 								</div>
 							</div>
 
-							<div class="dropdown">
+							<div class="dropdown margin-left__24px">
 								<button
 									class="button button__filter button--has-icon icon-right icon-left"
 									[ngClass]="{ active: !!eventDeliveriesApp }"
 									(click)="showOverlay = true; showEventDeliveriesAppsDropdown = !showEventDeliveriesAppsDropdown"
 								>
-									<img src="/assets/img/apps-icon-grey.svg" alt="apps filter icon" />
+									<img class="margin-left__0px" src="/assets/img/apps-icon-grey.svg" alt="apps filter icon" />
 									<span>Apps</span>
-									<img src="/assets/img/angle-arrow-down.svg" alt="arrow down icon" />
+									<img class="margin-right__0px" src="/assets/img/angle-arrow-down.svg" alt="arrow down icon" />
 								</button>
+
 								<div class="dropdown__menu large with-padding" [ngClass]="{ show: showEventDeliveriesAppsDropdown }">
 									<div class="input__search">
 										<img src="/assets/img/search-icon.svg" alt="search icon" />
 										<input type="search" placeholder="Search apps here" #eventDelsAppsFilter />
 									</div>
+
 									<div class="dropdown__menu__item with-border" *ngFor="let app of eventsDelAppsFilter$ | async">
 										<label [for]="app.uid + 'eventDel'">{{ app.name }}</label>
 										<input
@@ -270,7 +261,7 @@
 								</div>
 							</div>
 
-							<div class="button__filter active" *ngIf="eventDeliveryFilteredByEventId !== ''">
+							<div class="button__filter active margin-left__24px" *ngIf="eventDeliveryFilteredByEventId !== ''">
 								Event Filtered
 								<button class="button__clear button--has-icon margin-left__8px" (click)="eventDeliveryFilteredByEventId = ''; getEventDeliveries()">
 									<img src="../../../../assets/img/close-icon.svg" alt="close icon" />
@@ -279,7 +270,23 @@
 						</div>
 						<div class="flex">
 							<button
-								class="button button__white button__small margin-right__20px"
+								class="flex__justify-center button button__filter margin-left__24px"
+								(click)="showBatchRetryModal = !showBatchRetryModal"
+								[ngClass]="{
+									disabled:
+										(eventDeliveriesFilterDateRange.value.startDate == '' || eventDeliveriesFilterDateRange.value.endDate == '') &&
+										eventDeliveriesApp == '' &&
+										eventDeliveryFilteredByEventId == '' &&
+										!eventDeliveriesStatusFilterActive
+								}"
+							>
+								Batch Retry
+							</button>
+						</div>
+
+						<div class="flex">
+							<button
+								class="button button__white button__small font__12px margin-right__20px"
 								(click)="clearEventFilters(activeTab)"
 								[ngClass]="{
 									disabled:
@@ -333,247 +340,237 @@
 					</div>
 				</div>
 			</div>
+
 			<div class="flex">
 				<div class="dashboard--logs--table">
-					<div class="table">
-						<div [hidden]="activeTab !== 'events'">
-							<div class="table--container smaller-table has-loader" *ngIf="displayedEvents.length > 0">
-								<convoy-loader *ngIf="isloadingEvents"></convoy-loader>
+					<div class="table table--container has-loader" [hidden]="activeTab !== 'events' || displayedEvents.length === 0">
+						<convoy-loader *ngIf="isloadingEvents"></convoy-loader>
 
-								<table id="table">
-									<thead>
-										<tr class="table--head">
-											<th scope="col">Event Type</th>
-											<th scope="col">App Name</th>
-											<th scope="col">Created At</th>
-											<th scope="col"></th>
-										</tr>
-									</thead>
-									<tbody>
-										<ng-container *ngFor="let eventGroup of displayedEvents; let i = index">
-											<tr class="table--date-row">
-												<td>
-													<div>{{ eventGroup.date }}</div>
-												</td>
-												<td></td>
-												<td></td>
-												<td></td>
-											</tr>
-											<tr
-												*ngFor="let event of eventGroup.events; let index = index"
-												[ngClass]="{ active: event.uid === eventsDetailsItem?.uid }"
-												[id]="'event' + index"
-												(click)="eventsDetailsItem = event; getEventDeliveriesForSidebar(event.uid)"
-											>
-												<td>
-													<div>
-														<div class="tag">{{ event.event_type }}</div>
-													</div>
-												</td>
-												<td class="has-long-text">
-													<div>{{ event.app_metadata.title }}</div>
-												</td>
-												<td>
-													<div>{{ event.created_at | date: 'mediumTime' }}</div>
-												</td>
-												<td>
-													<div>
-														<button class="button button__clear button--has-icon icon-right" (click)="eventDeliveryFilteredByEventId = event.uid; openDeliveriesTab()">
-															Deliveries
-															<img src="../../../../assets/img/angle-arrow-right-primary.svg" alt="arrow right" />
-														</button>
-													</div>
-												</td>
-											</tr>
-										</ng-container>
-									</tbody>
-								</table>
-
-								<div class="table--load-more button--container center" *ngIf="events.pagination.totalPage > 1">
-									<button
-										[class]="'button button__clear button--has-icon icon-left margin-top__20px'"
-										[disabled]="events.pagination.page === events.pagination.totalPage || isloadingMoreEvents"
-										(click)="eventsPage = eventsPage + 1; getEvents()"
+						<table id="table">
+							<thead>
+								<tr class="table--head">
+									<th scope="col">Event Type</th>
+									<th scope="col">App Name</th>
+									<th scope="col">Created At</th>
+									<th scope="col"></th>
+								</tr>
+							</thead>
+							<tbody>
+								<ng-container *ngFor="let eventGroup of displayedEvents; let i = index">
+									<tr class="table--date-row">
+										<td>
+											<div>{{ eventGroup.date }}</div>
+										</td>
+										<td></td>
+										<td></td>
+										<td></td>
+									</tr>
+									<tr
+										*ngFor="let event of eventGroup.events; let index = index"
+										[ngClass]="{ active: event.uid === eventsDetailsItem?.uid, 'last-item': index === eventGroup.events.length - 1 }"
+										[id]="'event' + index"
+										(click)="eventsDetailsItem = event; getEventDeliveriesForSidebar(event.uid)"
 									>
-										<img src="/assets/img/arrow-down-icon.svg" class="width-unset height-unset" [hidden]="isloadingMoreEvents" alt="arrow down icon" />
-										<img src="/assets/img/rotate-icon.svg" class="loading-icon" [hidden]="!isloadingMoreEvents" alt="loading icon" />
-										Load more
-									</button>
-								</div>
-							</div>
+										<td>
+											<div>
+												<div class="tag">{{ event.event_type }}</div>
+											</div>
+										</td>
+										<td class="has-long-text">
+											<div>{{ event.app_metadata.title }}</div>
+										</td>
+										<td>
+											<div>{{ event.created_at | date: 'mediumTime' }}</div>
+										</td>
+										<td>
+											<div>
+												<button class="button button__clear button--has-icon icon-right" (click)="eventDeliveryFilteredByEventId = event.uid; openDeliveriesTab()">
+													Deliveries
+													<img src="../../../../assets/img/angle-arrow-right-primary.svg" alt="arrow right" />
+												</button>
+											</div>
+										</td>
+									</tr>
+								</ng-container>
+							</tbody>
+						</table>
 
-							<div class="empty-state table--container" *ngIf="displayedEvents.length === 0">
-								<img src="/assets/img/empty-state-img.svg" alt="empty state" />
-								<p>No event to show here</p>
-							</div>
-						</div>
-
-						<div [hidden]="activeTab !== 'event deliveries'">
-							<div class="table--container has-loader" *ngIf="displayedEventDeliveries.length > 0">
-								<convoy-loader *ngIf="isloadingEventDeliveries"></convoy-loader>
-
-								<table id="table">
-									<thead>
-										<tr class="table--head">
-											<th scope="col" class="checkbox">
-												<div class="checkbox"><input type="checkbox" name="eventDeliveryTable" id="eventDeliveryTable" (change)="checkAllCheckboxes($event)" /></div>
-												Status
-											</th>
-											<th scope="col">Event Type</th>
-											<th scope="col">Attempts</th>
-											<th scope="col">Created At</th>
-											<th scope="col"></th>
-										</tr>
-									</thead>
-									<tbody>
-										<ng-container *ngFor="let eventDeliveriesGroup of displayedEventDeliveries; let i = index">
-											<tr class="table--date-row">
-												<td>
-													<div>{{ eventDeliveriesGroup.date }}</div>
-												</td>
-												<td></td>
-												<td></td>
-												<td></td>
-												<td></td>
-											</tr>
-											<tr
-												*ngFor="let event of eventDeliveriesGroup.events; let index = index"
-												[ngClass]="{ active: event.uid === eventDelsDetailsItem?.uid }"
-												[id]="'event' + index"
-												(click)="eventDelsDetailsItem = event; getDelieveryAttempts(event.uid)"
-											>
-												<td>
-													<div class="checkbox has-retry">
-														<img *ngIf="event.metadata.num_trials > event.metadata.retry_limit" src="/assets/img/retry-icon.svg" alt="retry icon" title="manually retried" />
-														<input type="checkbox" [name]="'event' + index" id="event" [value]="event.uid" (change)="checkEventDeliveryBox($event)" />
-														<div [class]="'tag tag--' + event.status">{{ event.status }}</div>
-													</div>
-												</td>
-												<td>
-													<div>{{ event.event_metadata.name }}</div>
-												</td>
-												<td>
-													<div>{{ event.metadata?.num_trials }}</div>
-												</td>
-												<td>
-													<div>{{ event.created_at | date: 'mediumTime' }}</div>
-												</td>
-												<td>
-													<div>
-														<button
-															[disabled]="event.status !== 'Failure'"
-															[class]="'button__retry button--has-icon icon-left '"
-															(click)="retryEvent({ e: $event, index: this.index, eventDeliveryId: event.uid })"
-														>
-															<img src="/assets/img/refresh-icon-primary.svg" alt="refresh icon" />
-															Retry
-															<!-- to be added later -->
-															<!-- {{ event.status === 'Success' ? 'Force Retry' : 'Retry' }} -->
-														</button>
-													</div>
-												</td>
-											</tr>
-										</ng-container>
-									</tbody>
-								</table>
-
-								<div class="table--load-more button--container center" *ngIf="eventDeliveries.pagination.totalPage > 1">
-									<button
-										[class]="'button button__clear button--has-icon icon-left margin-top__24px'"
-										[disabled]="eventDeliveries.pagination.page === eventDeliveries.pagination.totalPage || isloadingMoreEventDeliveries"
-										(click)="loadMoreEventDeliveries()"
-									>
-										<img src="/assets/img/arrow-down-icon.svg" class="width-unset height-unset" [hidden]="isloadingMoreEventDeliveries" alt="arrow down icon" />
-										<img src="/assets/img/rotate-icon.svg" class="loading-icon" [hidden]="!isloadingMoreEventDeliveries" alt="loading icon" />
-										Load more
-									</button>
-								</div>
-							</div>
-
-							<div class="empty-state table--container" *ngIf="displayedEventDeliveries.length === 0">
-								<img src="/assets/img/empty-state-img.svg" alt="empty state" />
-								<p>No event to show here</p>
-							</div>
-						</div>
-
-						<div [hidden]="activeTab !== 'apps'">
-							<div class="table--container smaller-table has-loader" [hidden]="!apps || apps.content.length === 0">
-								<convoy-loader *ngIf="isloadingApps"></convoy-loader>
-
-								<table class="table">
-									<thead>
-										<tr class="table--head">
-											<th scope="col">Name</th>
-											<th scope="col">Created</th>
-											<th scope="col">Updated</th>
-											<th scope="col">Events</th>
-											<th scope="col">Endpoints</th>
-											<th scope="col"></th>
-											<th scope="col"></th>
-										</tr>
-									</thead>
-									<tbody>
-										<tr *ngFor="let app of apps?.content" [ngClass]="{ active: app.uid === appsDetailsItem?.uid }" (click)="appsDetailsItem = app; getAppPortalToken({ redirect: false })">
-											<td class="has-long-text">
-												<div>{{ app.name }}</div>
-											</td>
-											<td>
-												<div>{{ app.created_at | date }}</div>
-											</td>
-											<td>
-												<div>{{ app.updated_at | date }}</div>
-											</td>
-											<td>
-												<div>{{ app.events }}</div>
-											</td>
-											<td>
-												<div>{{ app.endpoints.length }}</div>
-											</td>
-											<td>
-												<div>
-													<button [disabled]="app.events <= 0" title="view events" [class]="'button__retry button--has-icon icon-left'" (click)="loadEventsFromAppsTable(app.uid)">
-														<img src="/assets/img/view-events-icon.svg" alt="view events icon" />
-														Events
-													</button>
-												</div>
-											</td>
-											<td>
-												<div class="dropdown">
-													<button class="button__clear button--has-icon" (click)="currentAppId = app.uid; showOverlay = true">
-														<img src="/assets/img/more-icon-vertical.svg" alt="view events icon" />
-													</button>
-													<div [ngClass]="{ show: currentAppId == app.uid }" class="dropdown__menu dropdown__menu__nav small">
-														<ul>
-															<li (click)="openUpdateAppModal(app)">Update</li>
-															<li (click)="showDeleteAppModal = !showDeleteAppModal; currentAppId = ''" class="danger">Delete</li>
-														</ul>
-													</div>
-												</div>
-											</td>
-										</tr>
-									</tbody>
-								</table>
-
-								<div class="table--load-more button--container margin-top center" *ngIf="apps?.pagination && apps.pagination.totalPage > 1">
-									<button
-										[class]="'button button__primary button__clear button--has-icon icon-left margin-top__20px' + (apps.pagination.page === apps.pagination.totalPage ? 'disabled' : '')"
-										[disabled]="apps.pagination.page === apps.pagination.totalPage || isloadingMoreApps"
-										(click)="appsPage = appsPage + 1; getApps()"
-									>
-										<img src="/assets/img/arrow-down-icon.svg" class="width-unset height-unset" alt="arrow down icon" [hidden]="isloadingMoreApps" />
-										<img src="/assets/img/rotate-icon.svg" class="loading-icon" [hidden]="!isloadingMoreApps" alt="loading icon" />
-										Load more
-									</button>
-								</div>
-							</div>
-
-							<div class="empty-state table--container" *ngIf="apps?.content?.length === 0">
-								<img src="/assets/img/empty-state-img.svg" alt="empty state" />
-								<p>No app to show here</p>
-							</div>
+						<div class="table--load-more button--container center" *ngIf="events && events.pagination.totalPage > 1">
+							<button
+								class="button button__clear button--has-icon icon-left margin-top__20px margin-bottom__24px flex__justify-center"
+								[disabled]="events.pagination.page === events.pagination.totalPage || isloadingMoreEvents"
+								(click)="eventsPage = eventsPage + 1; getEvents()"
+							>
+								<img src="/assets/img/arrow-down-icon.svg" class="width-unset height-unset" [hidden]="isloadingMoreEvents" alt="arrow down icon" />
+								<img src="/assets/img/rotate-icon.svg" class="loading-icon" [hidden]="!isloadingMoreEvents" alt="loading icon" />
+								Load more
+							</button>
 						</div>
 					</div>
+
+					<div class="empty-state table--container" *ngIf="displayedEvents.length === 0 && activeTab === 'events'">
+						<img src="/assets/img/empty-state-img.svg" alt="empty state" />
+						<p>No event to show here</p>
+					</div>
+
+					<div class="table table--container has-loader" [hidden]="activeTab !== 'event deliveries' || displayedEventDeliveries.length === 0">
+						<convoy-loader *ngIf="isloadingEventDeliveries"></convoy-loader>
+
+						<table id="table">
+							<thead>
+								<tr class="table--head">
+									<th scope="col">Status</th>
+									<th scope="col">Event Type</th>
+									<th scope="col">Attempts</th>
+									<th scope="col">Created At</th>
+									<th scope="col"></th>
+								</tr>
+							</thead>
+							<tbody>
+								<ng-container *ngFor="let eventDeliveriesGroup of displayedEventDeliveries; let i = index">
+									<tr class="table--date-row">
+										<td>
+											<div>{{ eventDeliveriesGroup.date }}</div>
+										</td>
+										<td></td>
+										<td></td>
+										<td></td>
+										<td></td>
+									</tr>
+									<tr
+										*ngFor="let event of eventDeliveriesGroup.events; let index = index"
+										[ngClass]="{ 'last-item': index === eventDeliveriesGroup.events.length - 1, active: event.uid === eventDelsDetailsItem?.uid }"
+										[id]="'event' + index"
+										(click)="eventDelsDetailsItem = event; getDelieveryAttempts(event.uid)"
+									>
+										<td>
+											<div class="has-retry">
+												<img *ngIf="event.metadata.num_trials > event.metadata.retry_limit" src="/assets/img/retry-icon.svg" alt="retry icon" title="manually retried" />
+												<div [class]="'tag tag--' + event.status">{{ event.status }}</div>
+											</div>
+										</td>
+										<td>
+											<div>{{ event.event_metadata.name }}</div>
+										</td>
+										<td>
+											<div>{{ event.metadata?.num_trials }}</div>
+										</td>
+										<td>
+											<div>{{ event.created_at | date: 'mediumTime' }}</div>
+										</td>
+										<td>
+											<div>
+												<button
+													[disabled]="event.status !== 'Failure'"
+													[class]="'button__retry button--has-icon icon-left '"
+													(click)="retryEvent({ e: $event, index: this.index, eventDeliveryId: event.uid })"
+												>
+													<img src="/assets/img/refresh-icon-primary.svg" alt="refresh icon" />
+													Retry
+													<!-- to be added later -->
+													<!-- {{ event.status === 'Success' ? 'Force Retry' : 'Retry' }} -->
+												</button>
+											</div>
+										</td>
+									</tr>
+								</ng-container>
+							</tbody>
+						</table>
+
+						<div class="table--load-more button--container center" *ngIf="eventDeliveries && eventDeliveries.pagination.totalPage > 1">
+							<button
+								class="button button__clear button--has-icon icon-left margin-top__24px margin-bottom__24px flex__justify-center"
+								[disabled]="eventDeliveries.pagination.page === eventDeliveries.pagination.totalPage || isloadingMoreEventDeliveries"
+								(click)="loadMoreEventDeliveries()"
+							>
+								<img src="/assets/img/arrow-down-icon.svg" class="width-unset height-unset" [hidden]="isloadingMoreEventDeliveries" alt="arrow down icon" />
+								<img src="/assets/img/rotate-icon.svg" class="loading-icon" [hidden]="!isloadingMoreEventDeliveries" alt="loading icon" />
+								Load more
+							</button>
+						</div>
+					</div>
+
+					<div class="empty-state table--container" *ngIf="displayedEventDeliveries.length === 0 && activeTab === 'event deliveries'">
+						<img src="/assets/img/empty-state-img.svg" alt="empty state" />
+						<p>No event to show here ss {{ displayedEventDeliveries.length > 0 }}</p>
+					</div>
+
+					<div class="table table--container has-loader" [hidden]="activeTab !== 'apps' || !apps || apps.content.length === 0">
+						<convoy-loader *ngIf="isloadingApps"></convoy-loader>
+
+						<table class="table">
+							<thead>
+								<tr class="table--head">
+									<th scope="col">Name</th>
+									<th scope="col">Created</th>
+									<th scope="col">Updated</th>
+									<th scope="col">Events</th>
+									<th scope="col">Endpoints</th>
+									<th scope="col"></th>
+									<th scope="col"></th>
+								</tr>
+							</thead>
+							<tbody>
+								<tr *ngFor="let app of apps?.content" [ngClass]="{ active: app.uid === appsDetailsItem?.uid }" (click)="appsDetailsItem = app; getAppPortalToken({ redirect: false })">
+									<td class="has-long-text">
+										<div>{{ app.name }}</div>
+									</td>
+									<td>
+										<div>{{ app.created_at | date }}</div>
+									</td>
+									<td>
+										<div>{{ app.updated_at | date }}</div>
+									</td>
+									<td>
+										<div>{{ app.events }}</div>
+									</td>
+									<td>
+										<div>{{ app.endpoints.length }}</div>
+									</td>
+									<td>
+										<div>
+											<button [disabled]="app.events <= 0" title="view events" [class]="'button__retry button--has-icon icon-left'" (click)="loadEventsFromAppsTable(app.uid)">
+												<img src="/assets/img/view-events-icon.svg" alt="view events icon" />
+												Events
+											</button>
+										</div>
+									</td>
+									<td>
+										<div class="dropdown">
+											<button class="button__clear button--has-icon" (click)="currentAppId = app.uid; showOverlay = true">
+												<img src="/assets/img/more-icon-vertical.svg" alt="view events icon" />
+											</button>
+											<div [ngClass]="{ show: currentAppId == app.uid }" class="dropdown__menu dropdown__menu__nav small">
+												<ul>
+													<li (click)="openUpdateAppModal(app)">Update</li>
+													<li (click)="showDeleteAppModal = !showDeleteAppModal; currentAppId = ''" class="danger">Delete</li>
+												</ul>
+											</div>
+										</div>
+									</td>
+								</tr>
+							</tbody>
+						</table>
+
+						<div class="table--load-more button--container margin-top center" *ngIf="apps?.pagination && apps.pagination.totalPage > 1">
+							<button
+								[class]="'button button__primary button__clear button--has-icon icon-left margin-top__20px' + (apps.pagination.page === apps.pagination.totalPage ? 'disabled' : '')"
+								[disabled]="apps.pagination.page === apps.pagination.totalPage || isloadingMoreApps"
+								(click)="appsPage = appsPage + 1; getApps()"
+							>
+								<img src="/assets/img/arrow-down-icon.svg" class="width-unset height-unset" alt="arrow down icon" [hidden]="isloadingMoreApps" />
+								<img src="/assets/img/rotate-icon.svg" class="loading-icon" [hidden]="!isloadingMoreApps" alt="loading icon" />
+								Load more
+							</button>
+						</div>
+					</div>
+
+					<div class="empty-state table--container" *ngIf="apps?.content?.length === 0">
+						<img src="/assets/img/empty-state-img.svg" alt="empty state" />
+						<p>No app to show here</p>
+					</div>
 				</div>
+
 				<div class="dashboard--logs--details has-loader">
 					<convoy-loader
 						*ngIf="(activeTab === 'apps' && isloadingApps) || (activeTab === 'events' && isloadingEvents) || (activeTab === 'event deliveries' && isloadingEventDeliveries)"
@@ -642,7 +639,7 @@
 							</ng-container>
 						</ul>
 
-						<div class="empty-state table--container" *ngIf="appsDetailsItem?.endpoints?.length === 0">
+						<div class="empty-state smaller-table table--container" *ngIf="appsDetailsItem?.endpoints?.length === 0">
 							<img src="/assets/img/empty-state-img.svg" alt="empty state" />
 							<p>No endpoint has been added for selected app yet</p>
 						</div>
