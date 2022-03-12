@@ -9,7 +9,6 @@ import (
 
 var DefaultLevels = []log.Level{
 	log.ErrorLevel,
-	log.InfoLevel,
 	log.PanicLevel,
 	log.FatalLevel,
 	log.WarnLevel,
