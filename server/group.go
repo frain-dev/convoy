@@ -184,6 +184,7 @@ func (a *applicationHandler) UpdateGroup(w http.ResponseWriter, r *http.Request)
 
 	groupName := update.Name
 	if err = util.Validate(update); err != nil {
+		log.WithError(err).Error("failed to validate group update")
 		_ = render.Render(w, r, newErrorResponse(err.Error(), http.StatusBadRequest))
 		return
 	}
@@ -197,6 +198,7 @@ func (a *applicationHandler) UpdateGroup(w http.ResponseWriter, r *http.Request)
 
 	err = a.groupRepo.UpdateGroup(r.Context(), group)
 	if err != nil {
+		log.WithError(err).Error("failed to to update group")
 		_ = render.Render(w, r, newErrorResponse("an error occurred while updating Group", http.StatusInternalServerError))
 		return
 	}
