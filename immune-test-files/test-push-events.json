@@ -59,6 +59,25 @@
             },
             "status_code": 201,
             "response_body": true
+        },
+        {
+            "name": "test_convoy_push_event_to_app_with_no_endpoint",
+            "setup": [
+                "setup_group",
+                "setup_app"
+            ],
+            "http_method": "POST",
+            "endpoint": "/events?groupID={group_id}",
+            "request_body": {
+                "app_id": "{app_id}",
+                "event_type": "payment.failed",
+                "data": {
+                    "sc": "gene",
+                    "marvel": "stark"
+                }
+            },
+            "status_code": 400,
+            "response_body": true
         }
     ]
 }

@@ -35,6 +35,17 @@
             "response_body": true
         },
         {
+            "name": "test_convoy_delete_group",
+            "setup": [
+                "setup_group"
+            ],
+            "http_method": "DELETE",
+            "endpoint": "/groups/{group_id}",
+            "request_body": {},
+            "status_code": 200,
+            "response_body": true
+        },
+        {
             "name": "test_convoy_get_groups",
             "setup": [
                 "setup_group",

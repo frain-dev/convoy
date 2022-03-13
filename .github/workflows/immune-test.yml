@@ -10,7 +10,7 @@ jobs:
     strategy:
       matrix:
         go-version: [ 1.16.x, 1.17.x ]
-        immune-test-file-names: [ "test-push-events.json", "test-groups.json" ]
+        immune-test-file-names: [ "test-push-events.json", "test-groups.json", "test-apps.json", "test-app-endpoints.json" ]
         immune-version: [ "0.1.4" ]
         mongodb-version: [ "4.0", "4.2", "4.4" ]
         redis-version: [ "6.2.6" ]
@@ -62,7 +62,7 @@ jobs:
           CONVOY_STRATEGY_TYPE: "default"
           CONVOY_SIGNATURE_HASH: "SHA256"
           CONVOY_DB_TYPE: "mongodb"
-          CONVOY_SENTRY_DSN: "https://0264d31341b0465c8a9d05d6202f1298@o1164445.ingest.sentry.io/6253559"
+          CONVOY_SENTRY_DSN: ${{ secrets.SENTRY_DSN }}
           CONVOY_DB_DSN: "mongodb://localhost:27017/testdb"
           CONVOY_REDIS_DSN: "redis://localhost:6379"
           CONVOY_QUEUE_PROVIDER: "redis"
@@ -77,6 +77,6 @@ jobs:
           echo "${array[1]}"
           export IMMUNE_SSL_CERT_FILE="${array[0]}"
           export IMMUNE_SSL_KEY_FILE="${array[1]}"
-          sleep 60
+          sleep 70
           cd ./immune-test-files
           immune run --config ./${{ matrix.immune-test-file-names }}

@@ -13,7 +13,7 @@
                 "setup_endpoint"
             ],
             "http_method": "GET",
-            "endpoint": "/applications/{app_id}/endpoints/{endpoint_id}",
+            "endpoint": "/applications/{app_id}/endpoints/{endpoint_id}?groupID={group_id}",
             "request_body": {},
             "status_code": 200,
             "response_body": true
@@ -27,7 +27,7 @@
                 "setup_endpoint"
             ],
             "http_method": "GET",
-            "endpoint": "/applications/{app_id}/endpoints",
+            "endpoint": "/applications/{app_id}/endpoints?groupID={group_id}",
             "request_body": {},
             "status_code": 200,
             "response_body": true
@@ -40,7 +40,7 @@
                 "setup_endpoint"
             ],
             "http_method": "PUT",
-            "endpoint": "/applications/{app_id}/endpoints/{endpoint_id}",
+            "endpoint": "/applications/{app_id}/endpoints/{endpoint_id}?groupID={group_id}",
             "request_body": {
                 "url": "https://google.com",
                 "secret": "1234",
@@ -60,7 +60,7 @@
                 "setup_endpoint"
             ],
             "http_method": "DELETE",
-            "endpoint": "/applications/{app_id}/endpoints/{endpoint_id}",
+            "endpoint": "/applications/{app_id}/endpoints/{endpoint_id}?groupID={group_id}",
             "request_body": {},
             "status_code": 200,
             "response_body": true
