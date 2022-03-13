@@ -313,7 +313,7 @@ func (a *applicationHandler) CountAffectedEventDeliveries(w http.ResponseWriter,
 		return
 	}
 
-	_ = render.Render(w, r, newServerResponse(fmt.Sprintf("event deliveries count succesful"), map[string]interface{}{"num": count}, http.StatusOK))
+	_ = render.Render(w, r, newServerResponse("event deliveries count successful", map[string]interface{}{"num": count}, http.StatusOK))
 }
 
 // ForceResendEventDeliveries
