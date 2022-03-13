@@ -422,7 +422,7 @@ func (a *applicationHandler) requeueEventDelivery(ctx context.Context, eventDeli
 	taskName := convoy.EventProcessor.SetPrefix(g.Name)
 	err = a.eventQueue.Write(ctx, taskName, eventDelivery, 1*time.Second)
 	if err != nil {
-		log.WithError(err).Errorf("error occurred re-enqueing old event - %s", eventDelivery.UID)
+		return fmt.Errorf("error occurred re-enqueing old event - %s: %v", eventDelivery.UID, err)
 	}
 	return nil
 }

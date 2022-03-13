@@ -740,7 +740,7 @@ func TestApplicationHandler_BatchRetryEventDelivery(t *testing.T) {
 		statusCode int
 		args       args
 		body       *strings.Reader
-		dbFn       func(*datastore.Event, []datastore.EventDelivery, *applicationHandler)
+		dbFn       func(*http.Request, *datastore.Event, []datastore.EventDelivery, *applicationHandler)
 	}{
 		{
 			name:       "should_batch_retry_all_successfully",
@@ -768,11 +768,33 @@ func TestApplicationHandler_BatchRetryEventDelivery(t *testing.T) {
 				},
 			},
 			body: strings.NewReader(`{"ids":["1234","12345"]}`),
-			dbFn: func(ev *datastore.Event, msg []datastore.EventDelivery, app *applicationHandler) {
+			dbFn: func(r *http.Request, ev *datastore.Event, msg []datastore.EventDelivery, app *applicationHandler) {
+				ctx := r.Context()
+				ctx = setPageableInContext(ctx, datastore.Pageable{
+					Page:    0,
+					PerPage: 100,
+					Sort:    0,
+				})
+
+				ctx = setGroupInContext(ctx, group)
+				*r = *r.WithContext(ctx)
+
+				r.URL.Query().Set("appId", "12344")
+				r.URL.Query().Set("eventId", "abc")
+				r.URL.Query().Set("status", "Scheduled")
+				r.URL.Query().Set("status", "Discarded")
+
 				e, _ := app.eventDeliveryRepo.(*mocks.MockEventDeliveryRepository)
 				e.EXPECT().
-					FindEventDeliveriesByIDs(gomock.Any(), gomock.Any()).Times(1).
-					Return(msg, nil)
+					LoadEventDeliveriesPaged(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Times(1).
+					Return(msg, datastore.PaginationData{
+						Total:     5,
+						Page:      1,
+						PerPage:   10,
+						Prev:      0,
+						Next:      0,
+						TotalPage: 1,
+					}, nil)
 
 				e.EXPECT().
 					UpdateStatusOfEventDelivery(gomock.Any(), gomock.Any(), gomock.Any()).Times(1).
@@ -842,11 +864,33 @@ func TestApplicationHandler_BatchRetryEventDelivery(t *testing.T) {
 				},
 			},
 			body: strings.NewReader(`{"ids":["1234","12345"]}`),
-			dbFn: func(ev *datastore.Event, msg []datastore.EventDelivery, app *applicationHandler) {
+			dbFn: func(r *http.Request, ev *datastore.Event, msg []datastore.EventDelivery, app *applicationHandler) {
+				ctx := r.Context()
+				ctx = setPageableInContext(ctx, datastore.Pageable{
+					Page:    0,
+					PerPage: 100,
+					Sort:    0,
+				})
+
+				ctx = setGroupInContext(ctx, group)
+				*r = *r.WithContext(ctx)
+
+				r.URL.Query().Set("appId", "12344")
+				r.URL.Query().Set("eventId", "abc")
+				r.URL.Query().Set("status", "Scheduled")
+				r.URL.Query().Set("status", "Discarded")
+
 				e, _ := app.eventDeliveryRepo.(*mocks.MockEventDeliveryRepository)
 				e.EXPECT().
-					FindEventDeliveriesByIDs(gomock.Any(), gomock.Any()).Times(1).
-					Return(msg, nil)
+					LoadEventDeliveriesPaged(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Times(1).
+					Return(msg, datastore.PaginationData{
+						Total:     5,
+						Page:      1,
+						PerPage:   10,
+						Prev:      0,
+						Next:      0,
+						TotalPage: 1,
+					}, nil)
 
 				e.EXPECT().
 					UpdateStatusOfEventDelivery(gomock.Any(), gomock.Any(), gomock.Any()).Times(1).
@@ -878,12 +922,354 @@ func TestApplicationHandler_BatchRetryEventDelivery(t *testing.T) {
 			},
 		},
 		{
-			name:       "should_error_for_malformed_body",
+			name:       "should_fail_to_write_to_queue",
 			cfgPath:    "./testdata/Auth_Config/no-auth-convoy.json",
 			method:     http.MethodPost,
-			statusCode: http.StatusBadRequest,
-			body:       strings.NewReader(`{"ids":"12345"}`),
-			dbFn: func(ev *datastore.Event, msg []datastore.EventDelivery, app *applicationHandler) {
+			statusCode: http.StatusOK,
+			args: args{
+				event: &datastore.Event{
+					UID: "1111",
+				},
+				message: []datastore.EventDelivery{
+					{
+						UID:    "123",
+						Status: datastore.FailureEventStatus,
+						EventMetadata: &datastore.EventMetadata{
+							UID: "abcd",
+						},
+						EndpointMetadata: &datastore.EndpointMetadata{
+							UID: "1234",
+						},
+						AppMetadata: &datastore.AppMetadata{
+							UID: "123",
+						},
+					},
+				},
+			},
+			body: strings.NewReader(`{"ids":["1234","12345"]}`),
+			dbFn: func(r *http.Request, ev *datastore.Event, msg []datastore.EventDelivery, app *applicationHandler) {
+				ctx := r.Context()
+				ctx = setPageableInContext(ctx, datastore.Pageable{
+					Page:    0,
+					PerPage: 100,
+					Sort:    0,
+				})
+
+				ctx = setGroupInContext(ctx, group)
+				*r = *r.WithContext(ctx)
+
+				r.URL.Query().Set("appId", "12344")
+				r.URL.Query().Set("eventId", "abc")
+				r.URL.Query().Set("status", "Scheduled")
+				r.URL.Query().Set("status", "Discarded")
+
+				e, _ := app.eventDeliveryRepo.(*mocks.MockEventDeliveryRepository)
+				e.EXPECT().
+					LoadEventDeliveriesPaged(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Times(1).
+					Return(msg, datastore.PaginationData{
+						Total:     5,
+						Page:      1,
+						PerPage:   10,
+						Prev:      0,
+						Next:      0,
+						TotalPage: 1,
+					}, nil)
+
+				e.EXPECT().
+					UpdateStatusOfEventDelivery(gomock.Any(), gomock.Any(), gomock.Any()).Times(1).
+					Return(nil)
+
+				a, _ := app.appRepo.(*mocks.MockApplicationRepository)
+				a.EXPECT().
+					FindApplicationEndpointByID(gomock.Any(), gomock.Any(), gomock.Any()).Times(1).
+					Return(
+						&datastore.Endpoint{
+							Status: datastore.InactiveEndpointStatus,
+						},
+						nil,
+					)
+
+				a.EXPECT().
+					UpdateApplicationEndpointsStatus(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Times(1).
+					Return(nil)
+
+				o, _ := app.groupRepo.(*mocks.MockGroupRepository)
+				o.EXPECT().
+					LoadGroups(gomock.Any(), gomock.Any()).Times(1).
+					Return([]*datastore.Group{group}, nil)
+
+				q, _ := app.eventQueue.(*mocks.MockQueuer)
+				q.EXPECT().
+					Write(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Times(1).
+					Return(errors.New("failed to write to queue"))
+			},
+		},
+		{
+			name:       "should_fail_to_update_status_of_event_delivery",
+			cfgPath:    "./testdata/Auth_Config/no-auth-convoy.json",
+			method:     http.MethodPost,
+			statusCode: http.StatusOK,
+			args: args{
+				event: &datastore.Event{
+					UID: "1111",
+				},
+				message: []datastore.EventDelivery{
+					{
+						UID:    "123",
+						Status: datastore.FailureEventStatus,
+						EventMetadata: &datastore.EventMetadata{
+							UID: "abcd",
+						},
+						EndpointMetadata: &datastore.EndpointMetadata{
+							UID: "1234",
+						},
+						AppMetadata: &datastore.AppMetadata{
+							UID: "123",
+						},
+					},
+				},
+			},
+			body: strings.NewReader(`{"ids":["1234","12345"]}`),
+			dbFn: func(r *http.Request, ev *datastore.Event, msg []datastore.EventDelivery, app *applicationHandler) {
+				ctx := r.Context()
+				ctx = setPageableInContext(ctx, datastore.Pageable{
+					Page:    0,
+					PerPage: 100,
+					Sort:    0,
+				})
+
+				ctx = setGroupInContext(ctx, group)
+				*r = *r.WithContext(ctx)
+
+				r.URL.Query().Set("appId", "12344")
+				r.URL.Query().Set("eventId", "abc")
+				r.URL.Query().Set("status", "Scheduled")
+				r.URL.Query().Set("status", "Discarded")
+
+				e, _ := app.eventDeliveryRepo.(*mocks.MockEventDeliveryRepository)
+				e.EXPECT().
+					LoadEventDeliveriesPaged(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Times(1).
+					Return(msg, datastore.PaginationData{
+						Total:     5,
+						Page:      1,
+						PerPage:   10,
+						Prev:      0,
+						Next:      0,
+						TotalPage: 1,
+					}, nil)
+
+				e.EXPECT().
+					UpdateStatusOfEventDelivery(gomock.Any(), gomock.Any(), gomock.Any()).Times(1).
+					Return(errors.New("failed to update status of event delivery"))
+
+				a, _ := app.appRepo.(*mocks.MockApplicationRepository)
+				a.EXPECT().
+					FindApplicationEndpointByID(gomock.Any(), gomock.Any(), gomock.Any()).Times(1).
+					Return(
+						&datastore.Endpoint{
+							Status: datastore.InactiveEndpointStatus,
+						},
+						nil,
+					)
+
+				a.EXPECT().
+					UpdateApplicationEndpointsStatus(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Times(1).
+					Return(nil)
+
+				o, _ := app.groupRepo.(*mocks.MockGroupRepository)
+				o.EXPECT().
+					LoadGroups(gomock.Any(), gomock.Any()).Times(1).
+					Return([]*datastore.Group{group}, nil)
+			},
+		},
+		{
+			name:       "should_fail_to_update_app_endpoints_status",
+			cfgPath:    "./testdata/Auth_Config/no-auth-convoy.json",
+			method:     http.MethodPost,
+			statusCode: http.StatusOK,
+			args: args{
+				event: &datastore.Event{
+					UID: "1111",
+				},
+				message: []datastore.EventDelivery{
+					{
+						UID:    "123",
+						Status: datastore.FailureEventStatus,
+						EventMetadata: &datastore.EventMetadata{
+							UID: "abcd",
+						},
+						EndpointMetadata: &datastore.EndpointMetadata{
+							UID: "1234",
+						},
+						AppMetadata: &datastore.AppMetadata{
+							UID: "123",
+						},
+					},
+				},
+			},
+			body: strings.NewReader(`{"ids":["12345"]}`),
+			dbFn: func(r *http.Request, ev *datastore.Event, msg []datastore.EventDelivery, app *applicationHandler) {
+				ctx := r.Context()
+				ctx = setPageableInContext(ctx, datastore.Pageable{
+					Page:    0,
+					PerPage: 100,
+					Sort:    0,
+				})
+
+				ctx = setGroupInContext(ctx, group)
+				*r = *r.WithContext(ctx)
+
+				r.URL.Query().Set("appId", "12344")
+				r.URL.Query().Set("eventId", "abc")
+				r.URL.Query().Set("status", "Scheduled")
+				r.URL.Query().Set("status", "Discarded")
+
+				e, _ := app.eventDeliveryRepo.(*mocks.MockEventDeliveryRepository)
+				e.EXPECT().
+					LoadEventDeliveriesPaged(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Times(1).
+					Return(msg, datastore.PaginationData{
+						Total:     5,
+						Page:      1,
+						PerPage:   10,
+						Prev:      0,
+						Next:      0,
+						TotalPage: 1,
+					}, nil)
+
+				a, _ := app.appRepo.(*mocks.MockApplicationRepository)
+				a.EXPECT().
+					FindApplicationEndpointByID(gomock.Any(), gomock.Any(), gomock.Any()).Times(1).
+					Return(
+						&datastore.Endpoint{
+							Status: datastore.InactiveEndpointStatus,
+						},
+						nil,
+					)
+
+				a.EXPECT().
+					UpdateApplicationEndpointsStatus(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Times(1).
+					Return(errors.New("failed to update endpoint status"))
+
+				o, _ := app.groupRepo.(*mocks.MockGroupRepository)
+				o.EXPECT().
+					LoadGroups(gomock.Any(), gomock.Any()).Times(1).
+					Return([]*datastore.Group{group}, nil)
+			},
+		},
+		{
+			name:       "should_fail_to_find_app_endpoint",
+			cfgPath:    "./testdata/Auth_Config/no-auth-convoy.json",
+			method:     http.MethodPost,
+			statusCode: http.StatusOK,
+			args: args{
+				event: &datastore.Event{
+					UID: "1111",
+				},
+				message: []datastore.EventDelivery{
+					{
+						UID:    "123",
+						Status: datastore.FailureEventStatus,
+						EventMetadata: &datastore.EventMetadata{
+							UID: "abcd",
+						},
+						EndpointMetadata: &datastore.EndpointMetadata{
+							UID: "1234",
+						},
+						AppMetadata: &datastore.AppMetadata{
+							UID: "123",
+						},
+					},
+					{
+						UID:    "123",
+						Status: datastore.SuccessEventStatus,
+						EventMetadata: &datastore.EventMetadata{
+							UID: "abcd",
+						},
+						EndpointMetadata: &datastore.EndpointMetadata{
+							UID: "1234",
+						},
+						AppMetadata: &datastore.AppMetadata{
+							UID: "123",
+						},
+					},
+				},
+			},
+			body: strings.NewReader(`{"ids":["1234","12345"]}`),
+			dbFn: func(r *http.Request, ev *datastore.Event, msg []datastore.EventDelivery, app *applicationHandler) {
+				ctx := r.Context()
+				ctx = setPageableInContext(ctx, datastore.Pageable{
+					Page:    0,
+					PerPage: 100,
+					Sort:    0,
+				})
+
+				ctx = setGroupInContext(ctx, group)
+				*r = *r.WithContext(ctx)
+
+				r.URL.Query().Set("appId", "12344")
+				r.URL.Query().Set("eventId", "abc")
+				r.URL.Query().Set("status", "Scheduled")
+				r.URL.Query().Set("status", "Discarded")
+
+				e, _ := app.eventDeliveryRepo.(*mocks.MockEventDeliveryRepository)
+				e.EXPECT().
+					LoadEventDeliveriesPaged(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Times(1).
+					Return(msg, datastore.PaginationData{
+						Total:     5,
+						Page:      1,
+						PerPage:   10,
+						Prev:      0,
+						Next:      0,
+						TotalPage: 1,
+					}, nil)
+
+				a, _ := app.appRepo.(*mocks.MockApplicationRepository)
+				a.EXPECT().
+					FindApplicationEndpointByID(gomock.Any(), gomock.Any(), gomock.Any()).Times(1).
+					Return(
+						nil,
+						errors.New("failed to find app endpoint"),
+					)
+
+				o, _ := app.groupRepo.(*mocks.MockGroupRepository)
+				o.EXPECT().
+					LoadGroups(gomock.Any(), gomock.Any()).Times(1).
+					Return([]*datastore.Group{group}, nil)
+			},
+		},
+		{
+			name:       "should_fail_to_load_event_deliveries",
+			cfgPath:    "./testdata/Auth_Config/no-auth-convoy.json",
+			method:     http.MethodPost,
+			statusCode: http.StatusInternalServerError,
+			args: args{
+				event: &datastore.Event{
+					UID: "1111",
+				},
+				message: nil,
+			},
+			body: strings.NewReader(`{"ids":["1234","12345"]}`),
+			dbFn: func(r *http.Request, ev *datastore.Event, msg []datastore.EventDelivery, app *applicationHandler) {
+				ctx := r.Context()
+				ctx = setPageableInContext(ctx, datastore.Pageable{
+					Page:    0,
+					PerPage: 100,
+					Sort:    0,
+				})
+
+				ctx = setGroupInContext(ctx, group)
+				*r = *r.WithContext(ctx)
+
+				r.URL.Query().Set("appId", "12344")
+				r.URL.Query().Set("eventId", "abc")
+				r.URL.Query().Set("status", "Scheduled")
+				r.URL.Query().Set("status", "Discarded")
+
+				e, _ := app.eventDeliveryRepo.(*mocks.MockEventDeliveryRepository)
+				e.EXPECT().
+					LoadEventDeliveriesPaged(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Times(1).
+					Return(nil, datastore.PaginationData{}, errors.New("failed to load events"))
+
 				o, _ := app.groupRepo.(*mocks.MockGroupRepository)
 				o.EXPECT().
 					LoadGroups(gomock.Any(), gomock.Any()).Times(1).
@@ -901,7 +1287,7 @@ func TestApplicationHandler_BatchRetryEventDelivery(t *testing.T) {
 			w := httptest.NewRecorder()
 
 			if tc.dbFn != nil {
-				tc.dbFn(tc.args.event, tc.args.message, app)
+				tc.dbFn(req, tc.args.event, tc.args.message, app)
 			}
 
 			err := config.LoadConfig(tc.cfgPath, provideFakeOverride())
