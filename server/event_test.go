@@ -737,6 +737,7 @@ func TestApplicationHandler_BatchRetryEventDelivery(t *testing.T) {
 		name       string
 		cfgPath    string
 		method     string
+		urlQuery   string
 		statusCode int
 		args       args
 		body       *strings.Reader
@@ -746,6 +747,7 @@ func TestApplicationHandler_BatchRetryEventDelivery(t *testing.T) {
 			name:       "should_batch_retry_all_successfully",
 			cfgPath:    "./testdata/Auth_Config/no-auth-convoy.json",
 			method:     http.MethodPost,
+			urlQuery:   "?appId=1234&eventId=abc&status=Scheduled&status=Discarded",
 			statusCode: http.StatusOK,
 			args: args{
 				event: &datastore.Event{
@@ -778,11 +780,6 @@ func TestApplicationHandler_BatchRetryEventDelivery(t *testing.T) {
 
 				ctx = setGroupInContext(ctx, group)
 				*r = *r.WithContext(ctx)
-
-				r.URL.Query().Set("appId", "12344")
-				r.URL.Query().Set("eventId", "abc")
-				r.URL.Query().Set("status", "Scheduled")
-				r.URL.Query().Set("status", "Discarded")
 
 				e, _ := app.eventDeliveryRepo.(*mocks.MockEventDeliveryRepository)
 				e.EXPECT().
@@ -828,6 +825,7 @@ func TestApplicationHandler_BatchRetryEventDelivery(t *testing.T) {
 		{
 			name:       "should_batch_retry_one_successfully",
 			cfgPath:    "./testdata/Auth_Config/no-auth-convoy.json",
+			urlQuery:   "?appId=1234&eventId=abc&status=Scheduled&status=Discarded",
 			method:     http.MethodPost,
 			statusCode: http.StatusOK,
 			args: args{
@@ -874,11 +872,6 @@ func TestApplicationHandler_BatchRetryEventDelivery(t *testing.T) {
 
 				ctx = setGroupInContext(ctx, group)
 				*r = *r.WithContext(ctx)
-
-				r.URL.Query().Set("appId", "12344")
-				r.URL.Query().Set("eventId", "abc")
-				r.URL.Query().Set("status", "Scheduled")
-				r.URL.Query().Set("status", "Discarded")
 
 				e, _ := app.eventDeliveryRepo.(*mocks.MockEventDeliveryRepository)
 				e.EXPECT().
@@ -924,6 +917,7 @@ func TestApplicationHandler_BatchRetryEventDelivery(t *testing.T) {
 		{
 			name:       "should_fail_to_write_to_queue",
 			cfgPath:    "./testdata/Auth_Config/no-auth-convoy.json",
+			urlQuery:   "?appId=1234&eventId=abc&status=Scheduled&status=Discarded",
 			method:     http.MethodPost,
 			statusCode: http.StatusOK,
 			args: args{
@@ -957,11 +951,6 @@ func TestApplicationHandler_BatchRetryEventDelivery(t *testing.T) {
 
 				ctx = setGroupInContext(ctx, group)
 				*r = *r.WithContext(ctx)
-
-				r.URL.Query().Set("appId", "12344")
-				r.URL.Query().Set("eventId", "abc")
-				r.URL.Query().Set("status", "Scheduled")
-				r.URL.Query().Set("status", "Discarded")
 
 				e, _ := app.eventDeliveryRepo.(*mocks.MockEventDeliveryRepository)
 				e.EXPECT().
@@ -1007,6 +996,7 @@ func TestApplicationHandler_BatchRetryEventDelivery(t *testing.T) {
 		{
 			name:       "should_fail_to_update_status_of_event_delivery",
 			cfgPath:    "./testdata/Auth_Config/no-auth-convoy.json",
+			urlQuery:   "?appId=1234&eventId=abc&status=Scheduled&status=Discarded",
 			method:     http.MethodPost,
 			statusCode: http.StatusOK,
 			args: args{
@@ -1040,11 +1030,6 @@ func TestApplicationHandler_BatchRetryEventDelivery(t *testing.T) {
 
 				ctx = setGroupInContext(ctx, group)
 				*r = *r.WithContext(ctx)
-
-				r.URL.Query().Set("appId", "12344")
-				r.URL.Query().Set("eventId", "abc")
-				r.URL.Query().Set("status", "Scheduled")
-				r.URL.Query().Set("status", "Discarded")
 
 				e, _ := app.eventDeliveryRepo.(*mocks.MockEventDeliveryRepository)
 				e.EXPECT().
@@ -1085,6 +1070,7 @@ func TestApplicationHandler_BatchRetryEventDelivery(t *testing.T) {
 		{
 			name:       "should_fail_to_update_app_endpoints_status",
 			cfgPath:    "./testdata/Auth_Config/no-auth-convoy.json",
+			urlQuery:   "?appId=1234&eventId=abc&status=Scheduled&status=Discarded",
 			method:     http.MethodPost,
 			statusCode: http.StatusOK,
 			args: args{
@@ -1118,11 +1104,6 @@ func TestApplicationHandler_BatchRetryEventDelivery(t *testing.T) {
 
 				ctx = setGroupInContext(ctx, group)
 				*r = *r.WithContext(ctx)
-
-				r.URL.Query().Set("appId", "12344")
-				r.URL.Query().Set("eventId", "abc")
-				r.URL.Query().Set("status", "Scheduled")
-				r.URL.Query().Set("status", "Discarded")
 
 				e, _ := app.eventDeliveryRepo.(*mocks.MockEventDeliveryRepository)
 				e.EXPECT().
@@ -1159,6 +1140,7 @@ func TestApplicationHandler_BatchRetryEventDelivery(t *testing.T) {
 		{
 			name:       "should_fail_to_find_app_endpoint",
 			cfgPath:    "./testdata/Auth_Config/no-auth-convoy.json",
+			urlQuery:   "?appId=1234&eventId=abc&status=Scheduled&status=Discarded",
 			method:     http.MethodPost,
 			statusCode: http.StatusOK,
 			args: args{
@@ -1206,11 +1188,6 @@ func TestApplicationHandler_BatchRetryEventDelivery(t *testing.T) {
 				ctx = setGroupInContext(ctx, group)
 				*r = *r.WithContext(ctx)
 
-				r.URL.Query().Set("appId", "12344")
-				r.URL.Query().Set("eventId", "abc")
-				r.URL.Query().Set("status", "Scheduled")
-				r.URL.Query().Set("status", "Discarded")
-
 				e, _ := app.eventDeliveryRepo.(*mocks.MockEventDeliveryRepository)
 				e.EXPECT().
 					LoadEventDeliveriesPaged(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Times(1).
@@ -1240,6 +1217,7 @@ func TestApplicationHandler_BatchRetryEventDelivery(t *testing.T) {
 		{
 			name:       "should_fail_to_load_event_deliveries",
 			cfgPath:    "./testdata/Auth_Config/no-auth-convoy.json",
+			urlQuery:   "?appId=1234&eventId=abc&status=Scheduled&status=Discarded",
 			method:     http.MethodPost,
 			statusCode: http.StatusInternalServerError,
 			args: args{
@@ -1260,11 +1238,6 @@ func TestApplicationHandler_BatchRetryEventDelivery(t *testing.T) {
 				ctx = setGroupInContext(ctx, group)
 				*r = *r.WithContext(ctx)
 
-				r.URL.Query().Set("appId", "12344")
-				r.URL.Query().Set("eventId", "abc")
-				r.URL.Query().Set("status", "Scheduled")
-				r.URL.Query().Set("status", "Discarded")
-
 				e, _ := app.eventDeliveryRepo.(*mocks.MockEventDeliveryRepository)
 				e.EXPECT().
 					LoadEventDeliveriesPaged(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Times(1).
@@ -1279,7 +1252,7 @@ func TestApplicationHandler_BatchRetryEventDelivery(t *testing.T) {
 	}
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			url := "/api/v1/eventdeliveries/batchretry"
+			url := "/api/v1/eventdeliveries/batchretry" + tc.urlQuery
 			req := httptest.NewRequest(tc.method, url, tc.body)
 			req.SetBasicAuth("test", "test")
 			req.Header.Add("Content-Type", "application/json")
@@ -1321,6 +1294,7 @@ func TestApplicationHandler_CountAffectedEventDeliveries(t *testing.T) {
 		name       string
 		cfgPath    string
 		method     string
+		urlQuery   string
 		statusCode int
 		body       *strings.Reader
 		dbFn       func(*http.Request, *applicationHandler)
@@ -1328,6 +1302,7 @@ func TestApplicationHandler_CountAffectedEventDeliveries(t *testing.T) {
 		{
 			name:       "should_count_affected_event_deliveries_successfully",
 			cfgPath:    "./testdata/Auth_Config/no-auth-convoy.json",
+			urlQuery:   "?appId=1234&eventId=abc&status=Scheduled&status=Discarded",
 			method:     http.MethodGet,
 			statusCode: http.StatusOK,
 
@@ -1343,11 +1318,6 @@ func TestApplicationHandler_CountAffectedEventDeliveries(t *testing.T) {
 				ctx = setGroupInContext(ctx, group)
 				*r = *r.WithContext(ctx)
 
-				r.URL.Query().Set("appId", "12344")
-				r.URL.Query().Set("eventId", "abc")
-				r.URL.Query().Set("status", "Scheduled")
-				r.URL.Query().Set("status", "Discarded")
-
 				e, _ := app.eventDeliveryRepo.(*mocks.MockEventDeliveryRepository)
 				e.EXPECT().
 					CountEventDeliveries(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Times(1).
@@ -1362,10 +1332,10 @@ func TestApplicationHandler_CountAffectedEventDeliveries(t *testing.T) {
 		{
 			name:       "should_fail_to_count_affected_event_deliveries",
 			cfgPath:    "./testdata/Auth_Config/no-auth-convoy.json",
+			urlQuery:   "?appId=1234&eventId=abc&status=Scheduled&status=Discarded",
 			method:     http.MethodGet,
 			statusCode: http.StatusInternalServerError,
-
-			body: strings.NewReader(`{"ids":["1234","12345"]}`),
+			body:       strings.NewReader(`{"ids":["1234","12345"]}`),
 			dbFn: func(r *http.Request, app *applicationHandler) {
 				ctx := r.Context()
 				ctx = setPageableInContext(ctx, datastore.Pageable{
@@ -1376,11 +1346,6 @@ func TestApplicationHandler_CountAffectedEventDeliveries(t *testing.T) {
 
 				ctx = setGroupInContext(ctx, group)
 				*r = *r.WithContext(ctx)
-
-				r.URL.Query().Set("appId", "12344")
-				r.URL.Query().Set("eventId", "abc")
-				r.URL.Query().Set("status", "Scheduled")
-				r.URL.Query().Set("status", "Discarded")
 
 				e, _ := app.eventDeliveryRepo.(*mocks.MockEventDeliveryRepository)
 				e.EXPECT().
@@ -1396,7 +1361,7 @@ func TestApplicationHandler_CountAffectedEventDeliveries(t *testing.T) {
 	}
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			url := "/api/v1/eventdeliveries/countbatchretryevents"
+			url := "/api/v1/eventdeliveries/countbatchretryevents" + tc.urlQuery
 			req := httptest.NewRequest(tc.method, url, tc.body)
 			req.SetBasicAuth("test", "test")
 			req.Header.Add("Content-Type", "application/json")
