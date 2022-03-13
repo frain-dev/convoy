@@ -1310,6 +1310,123 @@ func TestApplicationHandler_BatchRetryEventDelivery(t *testing.T) {
 	}
 }
 
+func TestApplicationHandler_CountAffectedEventDeliveries(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+	app := provideApplication(ctrl)
+
+	group := &datastore.Group{Name: "default-group", UID: "1234567890"}
+
+	tests := []struct {
+		name       string
+		cfgPath    string
+		method     string
+		statusCode int
+		body       *strings.Reader
+		dbFn       func(*http.Request, *applicationHandler)
+	}{
+		{
+			name:       "should_count_affected_event_deliveries_successfully",
+			cfgPath:    "./testdata/Auth_Config/no-auth-convoy.json",
+			method:     http.MethodGet,
+			statusCode: http.StatusOK,
+
+			body: strings.NewReader(`{"ids":["1234","12345"]}`),
+			dbFn: func(r *http.Request, app *applicationHandler) {
+				ctx := r.Context()
+				ctx = setPageableInContext(ctx, datastore.Pageable{
+					Page:    0,
+					PerPage: 100,
+					Sort:    0,
+				})
+
+				ctx = setGroupInContext(ctx, group)
+				*r = *r.WithContext(ctx)
+
+				r.URL.Query().Set("appId", "12344")
+				r.URL.Query().Set("eventId", "abc")
+				r.URL.Query().Set("status", "Scheduled")
+				r.URL.Query().Set("status", "Discarded")
+
+				e, _ := app.eventDeliveryRepo.(*mocks.MockEventDeliveryRepository)
+				e.EXPECT().
+					CountEventDeliveries(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Times(1).
+					Return(int64(10), nil)
+
+				o, _ := app.groupRepo.(*mocks.MockGroupRepository)
+				o.EXPECT().
+					LoadGroups(gomock.Any(), gomock.Any()).Times(1).
+					Return([]*datastore.Group{group}, nil)
+			},
+		},
+		{
+			name:       "should_fail_to_count_affected_event_deliveries",
+			cfgPath:    "./testdata/Auth_Config/no-auth-convoy.json",
+			method:     http.MethodGet,
+			statusCode: http.StatusInternalServerError,
+
+			body: strings.NewReader(`{"ids":["1234","12345"]}`),
+			dbFn: func(r *http.Request, app *applicationHandler) {
+				ctx := r.Context()
+				ctx = setPageableInContext(ctx, datastore.Pageable{
+					Page:    0,
+					PerPage: 100,
+					Sort:    0,
+				})
+
+				ctx = setGroupInContext(ctx, group)
+				*r = *r.WithContext(ctx)
+
+				r.URL.Query().Set("appId", "12344")
+				r.URL.Query().Set("eventId", "abc")
+				r.URL.Query().Set("status", "Scheduled")
+				r.URL.Query().Set("status", "Discarded")
+
+				e, _ := app.eventDeliveryRepo.(*mocks.MockEventDeliveryRepository)
+				e.EXPECT().
+					CountEventDeliveries(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Times(1).
+					Return(int64(0), errors.New("failed to count deliveries"))
+
+				o, _ := app.groupRepo.(*mocks.MockGroupRepository)
+				o.EXPECT().
+					LoadGroups(gomock.Any(), gomock.Any()).Times(1).
+					Return([]*datastore.Group{group}, nil)
+			},
+		},
+	}
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			url := "/api/v1/eventdeliveries/countbatchretryevents"
+			req := httptest.NewRequest(tc.method, url, tc.body)
+			req.SetBasicAuth("test", "test")
+			req.Header.Add("Content-Type", "application/json")
+
+			w := httptest.NewRecorder()
+
+			if tc.dbFn != nil {
+				tc.dbFn(req, app)
+			}
+
+			err := config.LoadConfig(tc.cfgPath, provideFakeOverride())
+			if err != nil {
+				t.Errorf("Failed to load config file: %v", err)
+			}
+			initRealmChain(t, app.apiKeyRepo)
+
+			router := buildRoutes(app)
+
+			// Act
+			router.ServeHTTP(w, req)
+
+			if w.Code != tc.statusCode {
+				t.Errorf("Want status '%d', got '%d'", tc.statusCode, w.Code)
+			}
+
+			verifyMatch(t, *w)
+		})
+	}
+}
+
 func TestApplicationHandler_ForceResendEventDelivery(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()

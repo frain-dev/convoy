@@ -274,7 +274,7 @@ func (a *applicationHandler) BatchRetryEventDelivery(w http.ResponseWriter, r *h
 // CountAffectedEventDeliveries
 // @Summary Count affected eventDeliveries
 // @Description This endpoint counts app events that will be affected by a batch retry operation
-// @Tags Events
+// @Tags EventDelivery
 // @Accept  json
 // @Produce  json
 // @Param appId query string false "application id"
@@ -287,7 +287,7 @@ func (a *applicationHandler) BatchRetryEventDelivery(w http.ResponseWriter, r *h
 // @Success 200 {object} serverResponse{data=Stub{num=integer}}
 // @Failure 400,401,500 {object} serverResponse{data=Stub}
 // @Security ApiKeyAuth
-// @Router /events [get]
+// @Router /eventdeliveries/countbatchretryevents [get]
 func (a *applicationHandler) CountAffectedEventDeliveries(w http.ResponseWriter, r *http.Request) {
 	group := getGroupFromContext(r.Context())
 	appID := r.URL.Query().Get("appId")
@@ -309,7 +309,7 @@ func (a *applicationHandler) CountAffectedEventDeliveries(w http.ResponseWriter,
 	count, err := a.eventDeliveryRepo.CountEventDeliveries(r.Context(), group.UID, appID, eventID, status, searchParams)
 	if err != nil {
 		_ = render.Render(w, r, newErrorResponse("an error occurred while fetching event deliveries", http.StatusInternalServerError))
-		log.WithError(err)
+		log.WithError(err).Error("an error occurred while fetching event deliveries")
 		return
 	}
 
