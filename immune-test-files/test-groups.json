@@ -14,6 +14,7 @@
             "endpoint": "/groups/{group_id}",
             "request_body": {
                 "name": "unique-group",
+                "logo_url": "https://google.com",
                 "rate_limit": "payment.failed",
                 "rate_limit_duration": "10",
                 "config": {
@@ -27,8 +28,7 @@
                     "signature": {
                         "header": "X-Convoy-CI-Signature",
                         "hash": "SHA256"
-                    },
-                    "marvel": "stark"
+                    }
                 }
             },
             "status_code": 202,
