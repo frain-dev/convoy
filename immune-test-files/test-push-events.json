@@ -12,7 +12,7 @@
     },
     "test_cases": [
         {
-            "name": "test_convoy_can_push_event_to_app_with_one_endpoint",
+            "name": "test_convoy_push_event_to_app_with_one_endpoint",
             "setup": [
                 "setup_group",
                 "setup_app",
@@ -36,7 +36,7 @@
             "response_body": true
         },
         {
-            "name": "test_convoy_can_push_event_to_app_with_two_endpoint",
+            "name": "test_convoy_push_event_to_app_with_two_endpoint",
             "setup": [
                 "setup_group",
                 "setup_app",
