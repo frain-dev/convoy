@@ -7,6 +7,7 @@ import { PAGINATION } from './models/global.model';
 import { HTTP_RESPONSE } from './models/http.model';
 import { ConvoyAppService } from './convoy-app.service';
 import { format } from 'date-fns';
+import { DatePipe } from '@angular/common';
 
 @Component({
 	selector: 'convoy-app',
@@ -40,6 +41,11 @@ export class ConvoyAppComponent implements OnInit {
 		{ id: 'response', label: 'Response' },
 		{ id: 'request', label: 'Request' }
 	];
+	selectedEventsDateOption = '';
+	selectedEventsDelDateOption = '';
+	selectedEventsDelTimeOption = '';
+	selectedEventsTimeOption = '';
+	timeFilter!: any;
 	eventDetailsActiveTab = 'data';
 	eventApp: string = '';
 	eventDeliveriesApp: string = '';
@@ -60,8 +66,10 @@ export class ConvoyAppComponent implements OnInit {
 	sidebarEventDeliveries: EVENT_DELIVERY[] = [];
 	eventDeliveryFilteredByEventId = '';
 	allEventdeliveriesChecked = false;
+	dateOptions = ['Last Year', 'Last Month', 'Last Week', 'Yesterday'];
 	eventDeliveryStatuses = ['Success', 'Failure', 'Retry', 'Scheduled', 'Processing', 'Discarded'];
 	eventDeliveryFilteredByStatus: string[] = [];
+	showTimePicker = false;
 	showOverlay = false;
 	showEventDeliveriesStatusDropdown = false;
 	@Input('token') token!: string;
@@ -69,7 +77,7 @@ export class ConvoyAppComponent implements OnInit {
 	@Input('groupId') groupId!: string;
 	@Input('apiURL') apiURL: string = '';
 
-	constructor(private convyAppService: ConvoyAppService, private router: Router, private formBuilder: FormBuilder, private route: ActivatedRoute) {}
+	constructor(private convyAppService: ConvoyAppService, private router: Router, private formBuilder: FormBuilder, private route: ActivatedRoute, private datePipe: DatePipe) {}
 
 	async ngOnInit() {
 		await this.initDashboard();
@@ -98,9 +106,48 @@ export class ConvoyAppComponent implements OnInit {
 
 	setDateForFilter(requestDetails: { startDate: Date; endDate: Date }) {
 		if (!requestDetails.endDate && !requestDetails.startDate) return { startDate: '', endDate: '' };
-		const startDate = requestDetails.startDate ? `${format(requestDetails.startDate, 'yyyy-M-d')}T00:00:00` : '';
-		const endDate = requestDetails.endDate ? `${format(requestDetails.endDate, 'yyyy-M-d')}T00:00:00` : '';
+		const startDate = requestDetails.startDate ? `${format(requestDetails.startDate, 'yyyy-MM-dd')}T00:00:00` : '';
+		const endDate = requestDetails.endDate ? `${format(requestDetails.endDate, 'yyyy-MM-dd')}T00:00:00` : '';
 		return { startDate, endDate };
+	}
+
+	getSelectedDate(dateOption: string, activeTab: string) {
+		activeTab == 'events' ? (this.selectedEventsDateOption = dateOption) : (this.selectedEventsDelDateOption = dateOption);
+		const _date = new Date();
+		let startDate, endDate;
+		switch (dateOption) {
+			case 'Last Year':
+				startDate = new Date(_date.getFullYear() - 1, _date.getMonth(), _date.getDate());
+				endDate = new Date(_date.getFullYear(), _date.getMonth(), _date.getDate());
+				break;
+			case 'Last Month':
+				startDate = new Date(_date.getFullYear(), _date.getMonth() - 1, _date.getDate());
+				endDate = new Date(_date.getFullYear(), _date.getMonth(), _date.getDate());
+				break;
+			case 'Last Week':
+				startDate = new Date(_date.getFullYear(), _date.getMonth(), _date.getDate() - 7);
+				endDate = new Date(_date.getFullYear(), _date.getMonth(), _date.getDate());
+
+				break;
+			case 'Yesterday':
+				startDate = new Date(_date.getFullYear(), _date.getMonth(), _date.getDate() - 1);
+				endDate = new Date(_date.getFullYear(), _date.getMonth(), _date.getDate());
+				break;
+			default:
+				break;
+		}
+
+		if (activeTab == 'events') {
+			this.eventsFilterDateRange.patchValue({
+				startDate: startDate,
+				endDate: endDate
+			});
+		} else {
+			this.eventDeliveriesFilterDateRange.patchValue({
+				startDate: startDate,
+				endDate: endDate
+			});
+		}
 	}
 
 	getDate(date: Date) {
@@ -112,6 +159,10 @@ export class ConvoyAppComponent implements OnInit {
 		return `${day} ${months[month]}, ${year}`;
 	}
 
+	getSelectedTime(e: any, activeTab: string) {
+		const timePicked = e.target.value;
+		activeTab == 'events' ? (this.selectedEventsTimeOption = timePicked) : (this.selectedEventsDelTimeOption = timePicked);
+	}
 	setEventsDisplayed(events: { created_at: Date }[]) {
 		const dateCreateds = events.map((event: { created_at: Date }) => this.getDate(event.created_at));
 		const uniqueDateCreateds = [...new Set(dateCreateds)];
@@ -316,24 +367,36 @@ export class ConvoyAppComponent implements OnInit {
 		}
 	}
 
-	async clearEventFilters(tableName: 'events' | 'event deliveries') {
+	async clearEventFilters(tableName: 'events' | 'event deliveries', filterType?: 'eventsDelDate' | 'eventsDelsStatus') {
 		const activeFilters = Object.assign({}, this.route.snapshot.queryParams);
 		let filterItems: string[] = [];
 
 		switch (tableName) {
 			case 'events':
 				this.eventApp = '';
-				filterItems = ['eventsStartDate', 'eventsEndDate', 'eventsApp'];
+				filterItems = ['eventsStartDate', 'eventsEndDate'];
 				this.eventsFilterDateRange.patchValue({
 					startDate: '',
 					endDate: ''
 				});
+				this.selectedEventsTimeOption = '';
+				this.selectedEventsDateOption = '';
 				this.getEvents();
 				break;
 
 			case 'event deliveries':
 				this.eventDeliveriesApp = '';
-				filterItems = ['eventDelsStartDate', 'eventDelsEndDate', 'eventDelsApp', 'eventDelsStatus'];
+				switch (filterType) {
+					case 'eventsDelDate':
+						filterItems = ['eventDelsStartDate', 'eventDelsEndDate'];
+						break;
+					case 'eventsDelsStatus':
+						filterItems = ['eventDelsStatus'];
+						break;
+					default:
+						filterItems = ['eventDelsStartDate', 'eventDelsEndDate', 'eventDelsStatus'];
+						break;
+				}
 				this.eventDeliveriesFilterDateRange.patchValue({ startDate: '', endDate: '' });
 				this.eventDeliveryFilteredByEventId = '';
 				this.eventDeliveryFilteredByStatus = [];
@@ -411,5 +474,9 @@ export class ConvoyAppComponent implements OnInit {
 			let index = this.eventDeliveryFilteredByStatus.findIndex(x => x === status);
 			this.eventDeliveryFilteredByStatus.splice(index, 1);
 		}
+	}
+
+	formatDate(date: Date) {
+		return this.datePipe.transform(date, 'dd/MM/yyyy');
 	}
 }
