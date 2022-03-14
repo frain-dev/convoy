@@ -10,6 +10,7 @@ import (
 
 	"github.com/frain-dev/convoy/cache"
 	"github.com/frain-dev/convoy/datastore/badger"
+	"github.com/go-redis/redis/v8"
 
 	"github.com/frain-dev/convoy/logger"
 	memqueue "github.com/frain-dev/convoy/queue/memqueue"
@@ -17,7 +18,6 @@ import (
 	"github.com/frain-dev/convoy/tracer"
 	"github.com/frain-dev/convoy/worker/task"
 	"github.com/getsentry/sentry-go"
-	"github.com/go-redis/redis/v8"
 	"github.com/google/uuid"
 	prefixed "github.com/x-cray/logrus-prefixed-formatter"
 	"go.mongodb.org/mongo-driver/bson/primitive"
@@ -53,176 +53,10 @@ func main() {
 	}
 
 	app := &app{}
-
 	var db datastore.DatabaseClient
 
-	cmd := &cobra.Command{
-		Use:     "Convoy",
-		Version: convoy.GetVersion(),
-		Short:   "Fast & reliable webhooks service",
-		PersistentPreRunE: func(cmd *cobra.Command, args []string) error {
-			cfgPath, err := cmd.Flags().GetString("config")
-			if err != nil {
-				return err
-			}
-
-			override := new(config.Configuration)
-
-			// override config with cli flags
-			redisCliDsn, err := cmd.Flags().GetString("queue")
-			if err != nil {
-				return err
-			}
-			override.Queue.Redis.Dsn = redisCliDsn
-
-			mongoCliDsn, err := cmd.Flags().GetString("db")
-			if err != nil {
-				return err
-			}
-			override.Database.Dsn = mongoCliDsn
-
-			err = config.LoadConfig(cfgPath, override)
-			if err != nil {
-				return err
-			}
-
-			cfg, err := config.Get()
-			if err != nil {
-				return err
-			}
-
-			db, err = NewDB(cfg)
-			if err != nil {
-				return err
-			}
-
-			err = sentry.Init(sentry.ClientOptions{
-				Debug:       true,
-				Dsn:         cfg.Sentry.Dsn,
-				Environment: cfg.Environment,
-			})
-			if err != nil {
-				return err
-			}
-
-			defer sentry.Recover()              // recover any panic and report to sentry
-			defer sentry.Flush(2 * time.Second) // send any events in sentry before exiting
-
-			sentryHook := convoy.NewSentryHook(convoy.DefaultLevels)
-			log.AddHook(sentryHook)
-
-			var qFn taskq.Factory
-			var rC *redis.Client
-			var lo logger.Logger
-			var tr tracer.Tracer
-			var lS queue.Storage
-			var opts queue.QueueOptions
-			var ca cache.Cache
-			var li limiter.RateLimiter
-
-			if cfg.Queue.Type == config.RedisQueueProvider {
-				rC, qFn, err = redisqueue.NewClient(cfg)
-				if err != nil {
-					return err
-				}
-				opts = queue.QueueOptions{
-					Type:    "redis",
-					Redis:   rC,
-					Factory: qFn,
-				}
-			}
-
-			if cfg.Queue.Type == config.InMemoryQueueProvider {
-				lS, qFn, err = memqueue.NewClient(cfg)
-				if err != nil {
-					return err
-				}
-				opts = queue.QueueOptions{
-					Type:    "in-memory",
-					Storage: lS,
-					Factory: qFn,
-				}
-			}
-
-			lo, err = logger.NewLogger(cfg.Logger)
-			if err != nil {
-				return err
-			}
-
-			if cfg.Tracer.Type == config.NewRelicTracerProvider {
-				tr, err = tracer.NewTracer(cfg, lo.WithLogger())
-				if err != nil {
-					return err
-				}
-			}
-
-			if util.IsStringEmpty(string(cfg.GroupConfig.Signature.Header)) {
-				cfg.GroupConfig.Signature.Header = config.DefaultSignatureHeader
-				log.Warnf("signature header is blank. setting default %s", config.DefaultSignatureHeader)
-			}
-
-			ca, err = cache.NewCache(cfg.Cache)
-			if err != nil {
-				return err
-			}
-
-			li, err = limiter.NewLimiter(cfg.Limiter)
-			if err != nil {
-				return err
-			}
-
-			app.apiKeyRepo = db.APIRepo()
-			app.groupRepo = db.GroupRepo()
-			app.eventRepo = db.EventRepo()
-			app.applicationRepo = db.AppRepo()
-			app.eventDeliveryRepo = db.EventDeliveryRepo()
-
-			app.eventQueue = NewQueue(opts, "EventQueue")
-			app.deadLetterQueue = NewQueue(opts, "DeadLetterQueue")
-			app.logger = lo
-			app.tracer = tr
-			app.cache = ca
-			app.limiter = li
-
-			return ensureDefaultGroup(context.Background(), cfg, app)
-
-		},
-		PersistentPostRunE: func(cmd *cobra.Command, args []string) error {
-			defer func() {
-				err := app.eventQueue.Close()
-				if err != nil {
-					log.Errorln("failed to close app queue - ", err)
-				}
-
-				err = app.deadLetterQueue.Close()
-				if err != nil {
-					log.Errorln("failed to close app queue - ", err)
-				}
-			}()
-			err := db.Disconnect(context.Background())
-			if err == nil {
-				os.Exit(0)
-			}
-			return err
-		},
-	}
-
-	var configFile string
-	var redisDsn string
-	var mongoDsn string
-
-	cmd.PersistentFlags().StringVar(&configFile, "config", "./convoy.json", "Configuration file for convoy")
-	cmd.PersistentFlags().StringVar(&redisDsn, "queue", "", "Redis DSN")
-	cmd.PersistentFlags().StringVar(&mongoDsn, "db", "", "MongoDB DSN")
-
-	cmd.AddCommand(addVersionCommand())
-	cmd.AddCommand(addCreateCommand(app))
-	cmd.AddCommand(addGetComamnd(app))
-	cmd.AddCommand(addServerCommand(app))
-	cmd.AddCommand(addWorkerCommand(app))
-	cmd.AddCommand(addQueueCommand(app))
-	cmd.AddCommand(addRetryCommand(app))
-	if err := cmd.Execute(); err != nil {
+	cli := NewCli(app, db)
+	if err := cli.Execute(); err != nil {
 		log.Fatal(err)
 	}
 }
@@ -337,13 +171,13 @@ func getCtx() (context.Context, context.CancelFunc) {
 
 func NewDB(cfg config.Configuration) (datastore.DatabaseClient, error) {
 	switch cfg.Database.Type {
-	case "mongodb":
+	case config.MongodbDatabaseProvider:
 		db, err := mongo.New(cfg)
 		if err != nil {
 			return nil, err
 		}
 		return db, nil
-	case "in-memory":
+	case config.InMemoryDatabaseProvider:
 		bolt, err := badger.New(cfg)
 		if err != nil {
 			return nil, err
@@ -352,4 +186,190 @@ func NewDB(cfg config.Configuration) (datastore.DatabaseClient, error) {
 	default:
 		return nil, errors.New("invalid database type")
 	}
+}
+
+func preRun(app *app, db datastore.DatabaseClient) func(cmd *cobra.Command, args []string) error {
+	return func(cmd *cobra.Command, args []string) error {
+		cfgPath, err := cmd.Flags().GetString("config")
+		if err != nil {
+			return err
+		}
+
+		err = config.LoadConfig(cfgPath)
+		if err != nil {
+			return err
+		}
+
+		cfg, err := config.Get()
+		if err != nil {
+			return err
+		}
+
+		err = config.OverrideConfigWithCliFlags(cmd, &cfg)
+		if err != nil {
+			return err
+		}
+
+		db, err := NewDB(cfg)
+		if err != nil {
+			return err
+		}
+
+		err = sentry.Init(sentry.ClientOptions{
+			Debug:       true,
+			Dsn:         cfg.Sentry.Dsn,
+			Environment: cfg.Environment,
+		})
+		if err != nil {
+			return err
+		}
+
+		defer sentry.Recover()              // recover any panic and report to sentry
+		defer sentry.Flush(2 * time.Second) // send any events in sentry before exiting
+
+		sentryHook := convoy.NewSentryHook(convoy.DefaultLevels)
+		log.AddHook(sentryHook)
+
+		var qFn taskq.Factory
+		var rC *redis.Client
+		var lo logger.Logger
+		var tr tracer.Tracer
+		var lS queue.Storage
+		var opts queue.QueueOptions
+		var ca cache.Cache
+		var li limiter.RateLimiter
+
+		if cfg.Queue.Type == config.RedisQueueProvider {
+			rC, qFn, err = redisqueue.NewClient(cfg)
+			if err != nil {
+				return err
+			}
+			opts = queue.QueueOptions{
+				Type:    "redis",
+				Redis:   rC,
+				Factory: qFn,
+			}
+		}
+
+		if cfg.Queue.Type == config.InMemoryQueueProvider {
+			lS, qFn, err = memqueue.NewClient(cfg)
+			if err != nil {
+				return err
+			}
+			opts = queue.QueueOptions{
+				Type:    "in-memory",
+				Storage: lS,
+				Factory: qFn,
+			}
+		}
+
+		lo, err = logger.NewLogger(cfg.Logger)
+		if err != nil {
+			return err
+		}
+
+		if cfg.Tracer.Type == config.NewRelicTracerProvider {
+			tr, err = tracer.NewTracer(cfg, lo.WithLogger())
+			if err != nil {
+				return err
+			}
+		}
+
+		if util.IsStringEmpty(string(cfg.GroupConfig.Signature.Header)) {
+			cfg.GroupConfig.Signature.Header = config.DefaultSignatureHeader
+			log.Warnf("signature header is blank. setting default %s", config.DefaultSignatureHeader)
+		}
+
+		ca, err = cache.NewCache(cfg.Cache)
+		if err != nil {
+			return err
+		}
+
+		li, err = limiter.NewLimiter(cfg.Limiter)
+		if err != nil {
+			return err
+		}
+
+		app.apiKeyRepo = db.APIRepo()
+		app.groupRepo = db.GroupRepo()
+		app.eventRepo = db.EventRepo()
+		app.applicationRepo = db.AppRepo()
+		app.eventDeliveryRepo = db.EventDeliveryRepo()
+
+		app.eventQueue = NewQueue(opts, "EventQueue")
+		app.deadLetterQueue = NewQueue(opts, "DeadLetterQueue")
+		app.logger = lo
+		app.tracer = tr
+		app.cache = ca
+		app.limiter = li
+
+		return ensureDefaultGroup(context.Background(), cfg, app)
+	}
+}
+
+func postRun(app *app, db datastore.DatabaseClient) func(cmd *cobra.Command, args []string) error {
+	return func(cmd *cobra.Command, args []string) error {
+		defer func() {
+			err := app.eventQueue.Close()
+			if err != nil {
+				log.Errorln("failed to close app queue - ", err)
+			}
+
+			err = app.deadLetterQueue.Close()
+			if err != nil {
+				log.Errorln("failed to close app queue - ", err)
+			}
+		}()
+		err := db.Disconnect(context.Background())
+		if err == nil {
+			os.Exit(0)
+		}
+		return err
+	}
+}
+
+func parsePersistentArgs(app *app, cmd *cobra.Command) {
+	var redisDsn string
+	var dbDsn string
+	var queue string
+	var configFile string
+
+	cmd.PersistentFlags().StringVar(&configFile, "config", "./convoy.json", "Configuration file for convoy")
+	cmd.PersistentFlags().StringVar(&queue, "queue", "redis", "Queue provider (\"redis\" or \"in-memory\")")
+	cmd.PersistentFlags().StringVar(&dbDsn, "db", "", "Database dsn or path to in-memory file")
+	cmd.PersistentFlags().StringVar(&redisDsn, "redis", "", "Redis dsn")
+
+	cmd.AddCommand(addVersionCommand())
+	cmd.AddCommand(addCreateCommand(app))
+	cmd.AddCommand(addGetComamnd(app))
+	cmd.AddCommand(addServerCommand(app))
+	cmd.AddCommand(addWorkerCommand(app))
+	cmd.AddCommand(addQueueCommand(app))
+	cmd.AddCommand(addRetryCommand(app))
+}
+
+type ConvoyCli struct {
+	cmd *cobra.Command
+}
+
+func NewCli(app *app, db datastore.DatabaseClient) ConvoyCli {
+	cmd := &cobra.Command{
+		Use:     "Convoy",
+		Version: convoy.GetVersion(),
+		Short:   "Fast & reliable webhooks service",
+	}
+
+	cmd.PersistentPreRunE = preRun(app, db)
+	cmd.PersistentPostRunE = postRun(app, db)
+	parsePersistentArgs(app, cmd)
+
+	return ConvoyCli{cmd: cmd}
+}
+
+func (c *ConvoyCli) SetArgs(args []string) {
+	c.cmd.SetArgs(args)
+}
+
+func (c *ConvoyCli) Execute() error {
+	return c.cmd.Execute()
 }

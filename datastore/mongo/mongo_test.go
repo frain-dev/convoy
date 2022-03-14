@@ -21,7 +21,7 @@ func getConfig() config.Configuration {
 
 	return config.Configuration{
 		Database: config.DatabaseConfiguration{
-			Type: "mongo",
+			Type: config.MongodbDatabaseProvider,
 			Dsn:  getDSN(),
 		},
 	}
