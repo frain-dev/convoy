@@ -28,7 +28,7 @@
 							<li (click)="statsPicker.open()">Custom Option</li>
 							<li class="no-hover flex flex__align-items-center">
 								<button class="button button__primary button__small margin-right__14px" (click)="fetchDashboardData()">Apply</button>
-								<!-- <button class="button__clear" (click)="selectedDateOption = ''">Clear</button> -->
+								<button class="button__clear" (click)="selectedDateOption = ''">Clear</button>
 							</li>
 						</ul>
 					</div>
@@ -586,9 +586,12 @@
 							</tbody>
 						</table>
 
-						<div class="table--load-more button--container margin-top center" *ngIf="apps?.pagination && apps.pagination.totalPage > 1">
+						<div class="table--load-more button--container center" *ngIf="apps?.pagination && apps.pagination.totalPage > 1">
 							<button
-								[class]="'button button__primary button__clear button--has-icon icon-left margin-top__20px' + (apps.pagination.page === apps.pagination.totalPage ? 'disabled' : '')"
+								[class]="
+									'button button__primary button__clear button--has-icon icon-left margin-top__20px margin-bottom__24px flex__justify-center' +
+									(apps.pagination.page === apps.pagination.totalPage ? 'disabled' : '')
+								"
 								[disabled]="apps.pagination.page === apps.pagination.totalPage || isloadingMoreApps"
 								(click)="appsPage = appsPage + 1; getApps()"
 							>
