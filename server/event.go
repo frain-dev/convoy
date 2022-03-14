@@ -232,7 +232,11 @@ func (a *applicationHandler) ResendEventDelivery(w http.ResponseWriter, r *http.
 // @Security ApiKeyAuth
 // @Router /eventdeliveries/batchretry [post]
 func (a *applicationHandler) BatchRetryEventDelivery(w http.ResponseWriter, r *http.Request) {
-	pageable := getPageableFromContext(r.Context())
+	pageable := datastore.Pageable{
+		Page:    0,
+		PerPage: 0,
+		Sort:    -1,
+	}
 	group := getGroupFromContext(r.Context())
 	appID := r.URL.Query().Get("appId")
 	eventID := r.URL.Query().Get("eventId")
