@@ -3,11 +3,9 @@ package main
 import (
 	"context"
 	"errors"
-	"fmt"
 	"time"
 
 	"github.com/frain-dev/convoy/auth/realm_chain"
-	"github.com/frain-dev/convoy/config/algo"
 	"github.com/frain-dev/convoy/worker"
 	"github.com/frain-dev/convoy/worker/task"
 
@@ -57,6 +55,7 @@ func addServerCommand(a *app) *cobra.Command {
 	var retryLimit uint64
 	var workerPort uint32
 	var retryInterval uint64
+	var maxResponseSize uint64
 
 	cmd := &cobra.Command{
 		Use:     "server",
@@ -74,54 +73,8 @@ func addServerCommand(a *app) *cobra.Command {
 				return err
 			}
 
-			// if it's still empty, set it to development
-			if c.Environment == "" {
-				c.Environment = config.DevelopmentEnvironment
-			}
+			config.SetServerConfigDefaults(&c)
 
-			if c.Server.HTTP.Port == 0 {
-				return errors.New("http port cannot be zero")
-			}
-
-			err = ensureSSL(c.Server)
-			if err != nil {
-				return err
-			}
-
-			err = ensureSignature(c.GroupConfig.Signature)
-			if err != nil {
-				return err
-			}
-
-			if c.GroupConfig.Signature.Header == "" {
-				c.GroupConfig.Signature.Header = config.DefaultSignatureHeader
-				log.Warnf("using default signature header: %s", config.DefaultSignatureHeader)
-			}
-
-			kb := c.MaxResponseSize * 1024 // to kilobyte
-			if kb == 0 {
-				c.MaxResponseSize = config.MaxResponseSize
-			} else if kb > config.MaxResponseSize {
-				log.Warnf("maximum response size of %dkb too large, using default value of %dkb", c.MaxResponseSize, c.MaxResponseSize/1024)
-				c.MaxResponseSize = config.MaxResponseSize
-			} else {
-				c.MaxResponseSize = kb
-			}
-
-			err = ensureStrategyConfig(c.GroupConfig.Strategy)
-			if err != nil {
-				return err
-			}
-
-			err = ensureQueueConfig(c.Queue)
-			if err != nil {
-				return err
-			}
-
-			err = ensureAuthConfig(c.Auth)
-			if err != nil {
-				return err
-			}
 			err = StartConvoyServer(a, c, withWorkers)
 
 			if err != nil {
@@ -168,6 +121,7 @@ func addServerCommand(a *app) *cobra.Command {
 	cmd.Flags().Uint32Var(&smtpPort, "smtp-port", 0, "Server port")
 	cmd.Flags().Uint32Var(&workerPort, "worker-port", 0, "Worker port")
 	cmd.Flags().Uint64Var(&retryLimit, "retry-limit", 0, "Endpoint retry limit")
+	cmd.Flags().Uint64Var(&maxResponseSize, "max-response-size", 0, "Max response size")
 	cmd.Flags().Uint64Var(&retryInterval, "retry-interval", 0, "Endpoint retry interval")
 
 	return cmd
@@ -409,6 +363,8 @@ func loadServerConfigFromCliFlags(cmd *cobra.Command, c *config.Configuration) e
 
 	if !util.IsStringEmpty(signatureHeader) {
 		c.GroupConfig.Signature.Header = config.SignatureHeaderProvider(signatureHeader)
+	} else if util.IsStringEmpty(c.GroupConfig.Signature.Header.String()) {
+		c.GroupConfig.Signature.Header = config.DefaultSignatureHeader
 	}
 
 	// CONVOY_DISABLE_ENDPOINT
@@ -437,6 +393,7 @@ func loadServerConfigFromCliFlags(cmd *cobra.Command, c *config.Configuration) e
 	if err != nil {
 		return err
 	}
+
 	if retryLimit != 0 {
 		c.GroupConfig.Strategy.Default.RetryLimit = retryLimit
 	}
@@ -506,8 +463,21 @@ func loadServerConfigFromCliFlags(cmd *cobra.Command, c *config.Configuration) e
 	if err != nil {
 		return err
 	}
+
 	if smtpPort != 0 {
 		c.SMTP.Port = smtpPort
+	}
+
+	// CONVOY_MAX_RESPONSE_SIZE
+	maxResponseSize, err := cmd.Flags().GetUint64("max-response-size")
+	if err != nil {
+		return err
+	}
+
+	if maxResponseSize != 0 {
+		c.MaxResponseSize = maxResponseSize
+	} else {
+		c.MaxResponseSize = config.MaxResponseSize
 	}
 
 	// CONVOY_NEWRELIC_APP_NAME
@@ -606,81 +576,5 @@ func loadServerConfigFromCliFlags(cmd *cobra.Command, c *config.Configuration) e
 		c.Auth.File.Basic = config
 	}
 
-	return nil
-}
-
-func ensureAuthConfig(authCfg config.AuthConfiguration) error {
-	var err error
-	for _, r := range authCfg.File.Basic {
-		if r.Username == "" || r.Password == "" {
-			return errors.New("username and password are required for basic auth config")
-		}
-
-		err = r.Role.Validate("basic auth")
-		if err != nil {
-			return err
-		}
-	}
-
-	for _, r := range authCfg.File.APIKey {
-		if r.APIKey == "" {
-			return errors.New("api-key is required for api-key auth config")
-		}
-
-		err = r.Role.Validate("api-key auth")
-		if err != nil {
-			return err
-		}
-	}
-
-	return nil
-}
-
-func ensureSignature(signature config.SignatureConfiguration) error {
-	_, ok := algo.M[signature.Hash]
-	if !ok {
-		return fmt.Errorf("invalid hash algorithm - '%s', must be one of %s", signature.Hash, algo.Algos)
-	}
-	return nil
-}
-
-func ensureSSL(s config.ServerConfiguration) error {
-	if s.HTTP.SSL {
-		if s.HTTP.SSLCertFile == "" || s.HTTP.SSLKeyFile == "" {
-			return errors.New("both cert_file and key_file are required for ssl")
-		}
-	}
-	return nil
-}
-
-func ensureQueueConfig(queueCfg config.QueueConfiguration) error {
-	switch queueCfg.Type {
-	case config.RedisQueueProvider:
-		if queueCfg.Redis.Dsn == "" {
-			return errors.New("redis queue dsn is empty")
-		}
-
-	case config.InMemoryQueueProvider:
-		return nil
-
-	default:
-		return fmt.Errorf("unsupported queue type: %s", queueCfg.Type)
-	}
-	return nil
-}
-
-func ensureStrategyConfig(strategyCfg config.StrategyConfiguration) error {
-	switch strategyCfg.Type {
-	case config.DefaultStrategyProvider:
-		if strategyCfg.Default.IntervalSeconds == 0 || strategyCfg.Default.RetryLimit == 0 {
-			return errors.New("both interval seconds and retry limit are required for default strategy configuration")
-		}
-	case config.ExponentialBackoffStrategyProvider:
-		if strategyCfg.ExponentialBackoff.RetryLimit == 0 {
-			return errors.New("retry limit is required for exponential backoff retry strategy configuration")
-		}
-	default:
-		return fmt.Errorf("unsupported strategy type: %s", strategyCfg.Type)
-	}
 	return nil
 }

@@ -42,7 +42,7 @@ func Test_fetchAllConfigDetails(t *testing.T) {
 	}
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			err := config.LoadConfig("./testdata/Auth_Config/none-convoy.json", provideFakeOverride())
+			err := config.LoadConfig("./testdata/Auth_Config/none-convoy.json")
 			if err != nil {
 				t.Errorf("Failed to load config file: %v", err)
 			}

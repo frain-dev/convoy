@@ -195,7 +195,7 @@ func preRun(app *app, db datastore.DatabaseClient) func(cmd *cobra.Command, args
 			return err
 		}
 
-		err = config.LoadConfig(cfgPath, &config.Configuration{})
+		err = config.LoadConfig(cfgPath)
 		if err != nil {
 			return err
 		}
