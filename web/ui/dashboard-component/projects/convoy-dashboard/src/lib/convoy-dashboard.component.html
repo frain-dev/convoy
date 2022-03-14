@@ -2,37 +2,16 @@
 	<div class="dashboard--page">
 		<div class="dashboard--page--head">
 			<div class="filter without-padding" [ngClass]="{ 'show-calendar': showFilterCalendar }">
-				<div class="margin-right__10px">Filter by:</div>
-				<div class="dropdown">
-					<button class="button button__filter button--has-icon icon-left icon-right" (click)="showOverlay = true; showDateFilterDropdown = !showDateFilterDropdown">
-						<img src="/assets/img/calendar-icon.svg" alt="calender icon" />
-						<span class="color__grey">Date</span>
-						<span class="color__primary" *ngIf="selectedDateOption">: {{ selectedDateOption }}</span>
-						<mat-date-range-input [formGroup]="statsDateRange" [rangePicker]="statsPicker">
-							<input matStartDate formControlName="startDate" placeholder="Start date" />
-							<input
-								matEndDate
-								formControlName="endDate"
-								placeholder="End date"
-								(dateChange)="selectedDateOption = formatDate(statsDateRange.value.startDate) + ' - ' + formatDate(statsDateRange.value.endDate)"
-							/>
-						</mat-date-range-input>
-						<mat-date-range-picker #statsPicker [disabled]="false"></mat-date-range-picker>
-						<img src="/assets/img/angle-arrow-down.svg" alt="arrow down icon" />
-					</button>
-					<div [ngClass]="{ show: showDateFilterDropdown }" class="dropdown__menu large">
-						<ul>
-							<li *ngFor="let dateOption of dateOptions" (click)="selectedDateOption = dateOption">
-								{{ dateOption }}
-							</li>
-							<li (click)="statsPicker.open()">Custom Option</li>
-							<li class="no-hover flex flex__align-items-center">
-								<button class="button button__primary button__small margin-right__14px" (click)="fetchDashboardData()">Apply</button>
-								<!-- <button class="button__clear" (click)="selectedDateOption = ''">Clear</button> -->
-							</li>
-						</ul>
-					</div>
-				</div>
+				<div>Filter by:</div>
+				<button class="button button__filter button--has-icon icon-left icon-right margin-left__20px" (click)="statsPicker.open()">
+					<img src="/assets/img/calendar-icon.svg" alt="calender icon" />
+					<mat-date-range-input [formGroup]="statsDateRange" [rangePicker]="statsPicker">
+						<input matStartDate formControlName="startDate" placeholder="Start date" />
+						<input matEndDate formControlName="endDate" placeholder="End date" (dateChange)="fetchDashboardData()" />
+					</mat-date-range-input>
+					<mat-date-range-picker #statsPicker [disabled]="false"></mat-date-range-picker>
+					<img src="/assets/img/angle-arrow-down.svg" alt="arrow down icon" />
+				</button>
 
 				<div class="select">
 					<select value="daily" [(ngModel)]="dashboardFrequency" (change)="fetchDashboardData()">
@@ -586,9 +565,12 @@
 							</tbody>
 						</table>
 
-						<div class="table--load-more button--container margin-top center" *ngIf="apps?.pagination && apps.pagination.totalPage > 1">
+						<div class="table--load-more button--container center" *ngIf="apps?.pagination && apps.pagination.totalPage > 1">
 							<button
-								[class]="'button button__primary button__clear button--has-icon icon-left margin-top__20px' + (apps.pagination.page === apps.pagination.totalPage ? 'disabled' : '')"
+								[class]="
+									'button button__primary button__clear button--has-icon icon-left margin-top__20px margin-bottom__24px flex__justify-center' +
+									(apps.pagination.page === apps.pagination.totalPage ? 'disabled' : '')
+								"
 								[disabled]="apps.pagination.page === apps.pagination.totalPage || isloadingMoreApps"
 								(click)="appsPage = appsPage + 1; getApps()"
 							>

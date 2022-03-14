@@ -746,7 +746,7 @@ export class ConvoyDashboardComponent implements OnInit {
 	async appsRequest(requestDetails: { search?: string }): Promise<HTTP_RESPONSE> {
 		try {
 			const appsResponse = await this.convyDashboardService.request({
-				url: this.getAPIURL(`/apps?groupID=${this.activeGroup || ''}&sort=AESC&page=${this.appsPage || 1}&perPage=10${requestDetails?.search ? `&q=${requestDetails?.search}` : ''}`),
+				url: this.getAPIURL(`/apps?groupID=${this.activeGroup || ''}&sort=AESC&page=${this.appsPage || 1}&perPage=20${requestDetails?.search ? `&q=${requestDetails?.search}` : ''}`),
 				token: this.requestToken,
 				authType: this.apiAuthType,
 				method: 'get'
