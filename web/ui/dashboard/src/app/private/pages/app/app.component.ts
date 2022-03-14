@@ -9,8 +9,10 @@ import { GeneralService } from 'src/app/services/general/general.service';
 })
 export class AppComponent implements OnInit {
 	showDropdown = false;
-	appId: string = this.route.snapshot.queryParams.appId;
-	groupId: string = this.route.snapshot.queryParams.groupID;
+	appId: string = 'ed0d6b33-8201-4496-92ff-22f2993b4645';
+	// appId: string = this.route.snapshot.queryParams.appId;
+	// groupId: string = this.route.snapshot.queryParams.groupID;
+	groupId: string = '8892c19f-733a-4959-8ded-f3c3474660c7';
 	token: string = this.route.snapshot.params.token;
 	apiURL = this.generalService.apiURL();
 
