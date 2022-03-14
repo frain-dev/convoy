@@ -22,13 +22,13 @@
 					</button>
 					<div [ngClass]="{ show: showDateFilterDropdown }" class="dropdown__menu large">
 						<ul>
-							<li *ngFor="let dateOption of dateOptions" (click)="selectedDateOption = dateOption">
+							<li *ngFor="let dateOption of dateOptions" (click)="getSelectedDate(dateOption)">
 								{{ dateOption }}
 							</li>
 							<li (click)="statsPicker.open()">Custom Option</li>
 							<li class="no-hover flex flex__align-items-center">
-								<button class="button button__primary button__small margin-right__14px" (click)="fetchDashboardData()">Apply</button>
-								<button class="button__clear" (click)="selectedDateOption = ''">Clear</button>
+								<button class="button button__primary button__small margin-right__14px" (click)="fetchDashboardData(); showDateFilterDropdown = false">Apply</button>
+								<button class="button__clear" (click)="selectedDateOption = ''; showDateFilterDropdown = false">Clear</button>
 							</li>
 						</ul>
 					</div>
@@ -159,13 +159,15 @@
 								</button>
 								<div [ngClass]="{ show: showEventFilterCalendar }" class="dropdown__menu large">
 									<ul>
-										<li *ngFor="let dateOption of dateOptions" (click)="selectedEventsDateOption = dateOption">
+										<li *ngFor="let dateOption of dateOptions" (click)="getSelectedDate(dateOption, activeTab)">
 											{{ dateOption }}
 										</li>
 										<li (click)="eventsFilterPicker.open()">Custom Option</li>
 										<li class="no-hover flex flex__align-items-center">
-											<button class="button button__primary button__small margin-right__14px" (click)="getEvents({ addToURL: true, fromFilter: true })">Apply</button>
-											<button class="button__clear" (click)="selectedEventsDateOption = ''; clearEventFilters(activeTab, 'eventsDate')">Clear</button>
+											<button class="button button__primary button__small margin-right__14px" (click)="getEvents({ addToURL: true, fromFilter: true }); showEventFilterCalendar = false">
+												Apply
+											</button>
+											<button class="button__clear" (click)="selectedEventsDateOption = ''; clearEventFilters(activeTab, 'eventsDate'); showEventFilterCalendar = false">Clear</button>
 										</li>
 									</ul>
 								</div>
@@ -240,13 +242,20 @@
 								</button>
 								<div [ngClass]="{ show: showEventDelFilterCalendar }" class="dropdown__menu large">
 									<ul>
-										<li *ngFor="let dateOption of dateOptions" (click)="selectedEventsDelDateOption = dateOption">
+										<li *ngFor="let dateOption of dateOptions" (click)="getSelectedDate(dateOption, activeTab)">
 											{{ dateOption }}
 										</li>
 										<li (click)="eventDeliveriesFilterPicker.open()">Custom Option</li>
 										<li class="no-hover flex flex__align-items-center">
-											<button class="button button__primary button__small margin-right__14px" (click)="getEventDeliveries({ addToURL: true, fromFilter: true })">Apply</button>
-											<button class="button__clear" (click)="selectedEventsDelDateOption = ''; clearEventFilters(activeTab, 'eventsDelDate')">Clear</button>
+											<button
+												class="button button__primary button__small margin-right__14px"
+												(click)="getEventDeliveries({ addToURL: true, fromFilter: true }); showEventDelFilterCalendar = false"
+											>
+												Apply
+											</button>
+											<button class="button__clear" (click)="selectedEventsDelDateOption = ''; clearEventFilters(activeTab, 'eventsDelDate'); showEventDelFilterCalendar = false">
+												Clear
+											</button>
 										</li>
 									</ul>
 								</div>

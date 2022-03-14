@@ -379,6 +379,54 @@ export class ConvoyDashboardComponent implements OnInit {
 		document.body.removeChild(el);
 	}
 
+	getSelectedDate(dateOption: string, activeTab?: string) {
+		if (activeTab) {
+			activeTab == 'events' ? (this.selectedEventsDateOption = dateOption) : (this.selectedEventsDelDateOption = dateOption);
+		} else {
+			this.selectedDateOption = dateOption;
+		}
+		const _date = new Date();
+		let startDate, endDate;
+		switch (dateOption) {
+			case 'Last Year':
+				startDate = new Date(_date.getFullYear() - 1, _date.getMonth(), _date.getDate());
+				endDate = new Date(_date.getFullYear(), _date.getMonth(), _date.getDate());
+				break;
+			case 'Last Month':
+				startDate = new Date(_date.getFullYear(), _date.getMonth() - 1, _date.getDate());
+				endDate = new Date(_date.getFullYear(), _date.getMonth(), _date.getDate());
+				break;
+			case 'Last Week':
+				startDate = new Date(_date.getFullYear(), _date.getMonth(), _date.getDate() - 7);
+				endDate = new Date(_date.getFullYear(), _date.getMonth(), _date.getDate());
+
+				break;
+			case 'Yesterday':
+				startDate = new Date(_date.getFullYear(), _date.getMonth(), _date.getDate() - 1);
+				endDate = new Date(_date.getFullYear(), _date.getMonth(), _date.getDate());
+				break;
+			default:
+				break;
+		}
+
+		if (activeTab == 'events') {
+			this.eventsFilterDateRange.patchValue({
+				startDate: startDate,
+				endDate: endDate
+			});
+		} else if (activeTab == 'event deliveries') {
+			this.eventDeliveriesFilterDateRange.patchValue({
+				startDate: startDate,
+				endDate: endDate
+			});
+		} else {
+			this.statsDateRange.patchValue({
+				startDate: startDate,
+				endDate: endDate
+			});
+		}
+	}
+
 	// initiate dashboard
 	async initDashboard() {
 		await this.getGroups();
