@@ -1228,7 +1228,7 @@ func TestApplicationHandler_BatchRetryEventDelivery(t *testing.T) {
 				tc.dbFn(req, tc.args.event, tc.args.message, app)
 			}
 
-			err := config.LoadConfig(tc.cfgPath, provideFakeOverride())
+			err := config.LoadConfig(tc.cfgPath)
 			if err != nil {
 				t.Errorf("Failed to load config file: %v", err)
 			}
