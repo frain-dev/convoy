@@ -234,7 +234,7 @@ func (a *applicationHandler) ResendEventDelivery(w http.ResponseWriter, r *http.
 func (a *applicationHandler) BatchRetryEventDelivery(w http.ResponseWriter, r *http.Request) {
 	pageable := datastore.Pageable{
 		Page:    0,
-		PerPage: 0,
+		PerPage: 1000000000000, // large number so we get everything in most cases
 		Sort:    -1,
 	}
 	group := getGroupFromContext(r.Context())

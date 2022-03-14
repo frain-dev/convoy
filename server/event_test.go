@@ -772,11 +772,6 @@ func TestApplicationHandler_BatchRetryEventDelivery(t *testing.T) {
 			body: strings.NewReader(`{"ids":["1234","12345"]}`),
 			dbFn: func(r *http.Request, ev *datastore.Event, msg []datastore.EventDelivery, app *applicationHandler) {
 				ctx := r.Context()
-				ctx = setPageableInContext(ctx, datastore.Pageable{
-					Page:    0,
-					PerPage: 100,
-					Sort:    0,
-				})
 
 				ctx = setGroupInContext(ctx, group)
 				*r = *r.WithContext(ctx)
@@ -864,11 +859,6 @@ func TestApplicationHandler_BatchRetryEventDelivery(t *testing.T) {
 			body: strings.NewReader(`{"ids":["1234","12345"]}`),
 			dbFn: func(r *http.Request, ev *datastore.Event, msg []datastore.EventDelivery, app *applicationHandler) {
 				ctx := r.Context()
-				ctx = setPageableInContext(ctx, datastore.Pageable{
-					Page:    0,
-					PerPage: 100,
-					Sort:    0,
-				})
 
 				ctx = setGroupInContext(ctx, group)
 				*r = *r.WithContext(ctx)
@@ -943,11 +933,6 @@ func TestApplicationHandler_BatchRetryEventDelivery(t *testing.T) {
 			body: strings.NewReader(`{"ids":["1234","12345"]}`),
 			dbFn: func(r *http.Request, ev *datastore.Event, msg []datastore.EventDelivery, app *applicationHandler) {
 				ctx := r.Context()
-				ctx = setPageableInContext(ctx, datastore.Pageable{
-					Page:    0,
-					PerPage: 100,
-					Sort:    0,
-				})
 
 				ctx = setGroupInContext(ctx, group)
 				*r = *r.WithContext(ctx)
@@ -1022,11 +1007,6 @@ func TestApplicationHandler_BatchRetryEventDelivery(t *testing.T) {
 			body: strings.NewReader(`{"ids":["1234","12345"]}`),
 			dbFn: func(r *http.Request, ev *datastore.Event, msg []datastore.EventDelivery, app *applicationHandler) {
 				ctx := r.Context()
-				ctx = setPageableInContext(ctx, datastore.Pageable{
-					Page:    0,
-					PerPage: 100,
-					Sort:    0,
-				})
 
 				ctx = setGroupInContext(ctx, group)
 				*r = *r.WithContext(ctx)
@@ -1096,11 +1076,6 @@ func TestApplicationHandler_BatchRetryEventDelivery(t *testing.T) {
 			body: strings.NewReader(`{"ids":["12345"]}`),
 			dbFn: func(r *http.Request, ev *datastore.Event, msg []datastore.EventDelivery, app *applicationHandler) {
 				ctx := r.Context()
-				ctx = setPageableInContext(ctx, datastore.Pageable{
-					Page:    0,
-					PerPage: 100,
-					Sort:    0,
-				})
 
 				ctx = setGroupInContext(ctx, group)
 				*r = *r.WithContext(ctx)
@@ -1179,11 +1154,6 @@ func TestApplicationHandler_BatchRetryEventDelivery(t *testing.T) {
 			body: strings.NewReader(`{"ids":["1234","12345"]}`),
 			dbFn: func(r *http.Request, ev *datastore.Event, msg []datastore.EventDelivery, app *applicationHandler) {
 				ctx := r.Context()
-				ctx = setPageableInContext(ctx, datastore.Pageable{
-					Page:    0,
-					PerPage: 100,
-					Sort:    0,
-				})
 
 				ctx = setGroupInContext(ctx, group)
 				*r = *r.WithContext(ctx)
@@ -1229,11 +1199,6 @@ func TestApplicationHandler_BatchRetryEventDelivery(t *testing.T) {
 			body: strings.NewReader(`{"ids":["1234","12345"]}`),
 			dbFn: func(r *http.Request, ev *datastore.Event, msg []datastore.EventDelivery, app *applicationHandler) {
 				ctx := r.Context()
-				ctx = setPageableInContext(ctx, datastore.Pageable{
-					Page:    0,
-					PerPage: 100,
-					Sort:    0,
-				})
 
 				ctx = setGroupInContext(ctx, group)
 				*r = *r.WithContext(ctx)
@@ -1309,11 +1274,6 @@ func TestApplicationHandler_CountAffectedEventDeliveries(t *testing.T) {
 			body: strings.NewReader(`{"ids":["1234","12345"]}`),
 			dbFn: func(r *http.Request, app *applicationHandler) {
 				ctx := r.Context()
-				ctx = setPageableInContext(ctx, datastore.Pageable{
-					Page:    0,
-					PerPage: 100,
-					Sort:    0,
-				})
 
 				ctx = setGroupInContext(ctx, group)
 				*r = *r.WithContext(ctx)
@@ -1338,11 +1298,6 @@ func TestApplicationHandler_CountAffectedEventDeliveries(t *testing.T) {
 			body:       strings.NewReader(`{"ids":["1234","12345"]}`),
 			dbFn: func(r *http.Request, app *applicationHandler) {
 				ctx := r.Context()
-				ctx = setPageableInContext(ctx, datastore.Pageable{
-					Page:    0,
-					PerPage: 100,
-					Sort:    0,
-				})
 
 				ctx = setGroupInContext(ctx, group)
 				*r = *r.WithContext(ctx)

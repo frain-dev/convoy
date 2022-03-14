@@ -108,6 +108,7 @@ func (e *eventDeliveryRepo) LoadEventDeliveriesPaged(ctx context.Context, groupI
 	if pageable.Page < 1 {
 		pageable.Page = 1
 	}
+	// TODO: this doesnt make the expereince uniform, mongo treats negative limits as a "get all"
 	if pageable.PerPage < 1 {
 		pageable.PerPage = 10
 	}
