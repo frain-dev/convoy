@@ -3,12 +3,10 @@ package config
 import (
 	"encoding/json"
 	"errors"
-	"fmt"
 	"os"
 	"strings"
 	"sync/atomic"
 
-	"github.com/frain-dev/convoy/config/algo"
 	"github.com/kelseyhightower/envconfig"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
@@ -481,131 +479,6 @@ func LoadConfig(p string, override *Configuration) error {
 
 	overrideConfigWithEnvVars(c, ec)
 
-	// if it's still empty, set it to development
-	if c.Environment == "" {
-		c.Environment = DevelopmentEnvironment
-	}
-
-	if c.Server.HTTP.Port == 0 {
-		return errors.New("http port cannot be zero")
-	}
-
-	err = ensureSSL(c.Server)
-	if err != nil {
-		return err
-	}
-
-	err = ensureSignature(c.GroupConfig.Signature)
-	if err != nil {
-		return err
-	}
-
-	if c.GroupConfig.Signature.Header == "" {
-		c.GroupConfig.Signature.Header = DefaultSignatureHeader
-		log.Warnf("using default signature header: %s", DefaultSignatureHeader)
-	}
-
-	kb := c.MaxResponseSize * 1024 // to kilobyte
-	if kb == 0 {
-		c.MaxResponseSize = MaxResponseSize
-	} else if kb > MaxResponseSize {
-		log.Warnf("maximum response size of %dkb too large, using default value of %dkb", c.MaxResponseSize, MaxResponseSize/1024)
-		c.MaxResponseSize = MaxResponseSize
-	} else {
-		c.MaxResponseSize = kb
-	}
-
-	err = ensureStrategyConfig(c.GroupConfig.Strategy)
-	if err != nil {
-		return err
-	}
-
-	err = ensureQueueConfig(c.Queue)
-	if err != nil {
-		return err
-	}
-
-	err = ensureAuthConfig(c.Auth)
-	if err != nil {
-		return err
-	}
-
 	cfgSingleton.Store(c)
-	return nil
-}
-
-func ensureAuthConfig(authCfg AuthConfiguration) error {
-	var err error
-	for _, r := range authCfg.File.Basic {
-		if r.Username == "" || r.Password == "" {
-			return errors.New("username and password are required for basic auth config")
-		}
-
-		err = r.Role.Validate("basic auth")
-		if err != nil {
-			return err
-		}
-	}
-
-	for _, r := range authCfg.File.APIKey {
-		if r.APIKey == "" {
-			return errors.New("api-key is required for api-key auth config")
-		}
-
-		err = r.Role.Validate("api-key auth")
-		if err != nil {
-			return err
-		}
-	}
-
-	return nil
-}
-
-func ensureSignature(signature SignatureConfiguration) error {
-	_, ok := algo.M[signature.Hash]
-	if !ok {
-		return fmt.Errorf("invalid hash algorithm - '%s', must be one of %s", signature.Hash, algo.Algos)
-	}
-	return nil
-}
-
-func ensureSSL(s ServerConfiguration) error {
-	if s.HTTP.SSL {
-		if s.HTTP.SSLCertFile == "" || s.HTTP.SSLKeyFile == "" {
-			return errors.New("both cert_file and key_file are required for ssl")
-		}
-	}
-	return nil
-}
-
-func ensureQueueConfig(queueCfg QueueConfiguration) error {
-	switch queueCfg.Type {
-	case RedisQueueProvider:
-		if queueCfg.Redis.Dsn == "" {
-			return errors.New("redis queue dsn is empty")
-		}
-
-	case InMemoryQueueProvider:
-		return nil
-
-	default:
-		return fmt.Errorf("unsupported queue type: %s", queueCfg.Type)
-	}
-	return nil
-}
-
-func ensureStrategyConfig(strategyCfg StrategyConfiguration) error {
-	switch strategyCfg.Type {
-	case DefaultStrategyProvider:
-		if strategyCfg.Default.IntervalSeconds == 0 || strategyCfg.Default.RetryLimit == 0 {
-			return errors.New("both interval seconds and retry limit are required for default strategy configuration")
-		}
-	case ExponentialBackoffStrategyProvider:
-		if strategyCfg.ExponentialBackoff.RetryLimit == 0 {
-			return errors.New("retry limit is required for exponential backoff retry strategy configuration")
-		}
-	default:
-		return fmt.Errorf("unsupported strategy type: %s", strategyCfg.Type)
-	}
 	return nil
 }
