@@ -73,7 +73,10 @@ func addServerCommand(a *app) *cobra.Command {
 				return err
 			}
 
-			config.SetServerConfigDefaults(&c)
+			err = config.SetServerConfigDefaults(&c)
+			if err != nil {
+				return err
+			}
 
 			err = StartConvoyServer(a, c, withWorkers)
 
