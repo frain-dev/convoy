@@ -111,7 +111,11 @@
 							</button>
 							<div [ngClass]="{ show: showEventFilterCalendar }" class="dropdown__menu large">
 								<ul>
-									<li [ngClass]="{ active: selectedEventsDateOption == dateOption }" *ngFor="let dateOption of dateOptions" (click)="getSelectedDate(dateOption, activeTab); showEventFilterCalendar = false">
+									<li
+										[ngClass]="{ active: selectedEventsDateOption == dateOption }"
+										*ngFor="let dateOption of dateOptions"
+										(click)="getSelectedDate(dateOption, activeTab); showEventFilterCalendar = false"
+									>
 										From {{ dateOption }}
 									</li>
 									<li (click)="eventsFilterPicker.open(); showEventFilterCalendar = false">Custom Option</li>
@@ -182,10 +186,14 @@
 							</button>
 							<div [ngClass]="{ show: showEventFilterCalendar }" class="dropdown__menu large">
 								<ul>
-									<li [ngClass]="{ active: selectedEventsDelDateOption == dateOption }" *ngFor="let dateOption of dateOptions" (click)="getSelectedDate(dateOption, activeTab); showEventFilterCalendar = false">
+									<li
+										[ngClass]="{ active: selectedEventsDelDateOption == dateOption }"
+										*ngFor="let dateOption of dateOptions"
+										(click)="getSelectedDate(dateOption, activeTab); showEventFilterCalendar = false; showOverlay = false"
+									>
 										From {{ dateOption }}
 									</li>
-									<li (click)="eventDeliveriesFilterPicker.open(); showEventFilterCalendar = false">Custom Option</li>
+									<li (click)="eventDeliveriesFilterPicker.open(); showEventFilterCalendar = false; showOverlay = false">Custom Option</li>
 									<!-- to be reviewed  -->
 									<!-- <li class="no-hover flex flex__align-items-center">
 										<button class="button button__primary button__small margin-right__14px" (click)="getEventDeliveries(); showEventFilterCalendar = false">Apply</button>
