@@ -3,7 +3,7 @@ import Chart from 'chart.js/auto';
 import { APP } from './models/app.model';
 import { EVENT, EVENT_DELIVERY, EVENT_DELIVERY_ATTEMPT } from './models/event.model';
 import { ActivatedRoute, Router } from '@angular/router';
-import { FormBuilder, FormGroup } from '@angular/forms';
+import { FormArray, FormBuilder, FormControl, FormGroup, Validators } from '@angular/forms';
 import { PAGINATION } from './models/global.model';
 import { HTTP_RESPONSE } from './models/http.model';
 import { GROUP } from './models/group.model';
@@ -66,6 +66,21 @@ export class ConvoyDashboardComponent implements OnInit {
 		startDate: [{ value: '', disabled: true }],
 		endDate: [{ value: '', disabled: true }]
 	});
+	addNewAppForm: FormGroup = this.formBuilder.group({
+		name: ['', Validators.required],
+		support_email: ['', Validators.compose([Validators.required, Validators.email])],
+		endpoints: this.formBuilder.array([])
+	});
+	addNewEndpointForm: FormGroup = this.formBuilder.group({
+		url: ['', Validators.required],
+		events: [''],
+		description: ['', Validators.required]
+	});
+	sendEventForm: FormGroup = this.formBuilder.group({
+		app_id: ['', Validators.required],
+		data: ['', Validators.required],
+		event_type: ['', Validators.required]
+	});
 	selectedEventsFromEventDeliveriesTable: string[] = [];
 	displayedEventDeliveries: { date: string; events: EVENT_DELIVERY[] }[] = [];
 	eventDeliveries!: { pagination: PAGINATION; content: EVENT_DELIVERY[] };
@@ -75,11 +90,20 @@ export class ConvoyDashboardComponent implements OnInit {
 	activeGroup!: string;
 	allEventdeliveriesChecked = false;
 	eventDeliveryStatuses = ['Success', 'Failure', 'Retry', 'Scheduled', 'Processing', 'Discarded'];
+	dateOptions = ['Last Year', 'Last Month', 'Last Week', 'Yesterday'];
 	eventDeliveryFilteredByStatus: string[] = [];
+	eventTags: string[] = [];
 	showOverlay = false;
 	showEventDeliveriesStatusDropdown = false;
 	showEventDeliveriesAppsDropdown = false;
 	showEventsAppsDropdown = false;
+	showCreateAppModal = false;
+	showAddEndpointModal = false;
+	showAddEventModal = false;
+	showDeleteAppModal = false;
+	showBatchRetryModal = false;
+	showDateFilterDropdown = false;
+	editAppMode = false;
 	loadingAppPotalToken = false;
 	@Input('apiURL') apiURL: string = '';
 	@Input('isCloud') isCloud: boolean = false;
@@ -95,7 +119,18 @@ export class ConvoyDashboardComponent implements OnInit {
 	isloadingMoreEventDeliveries = false;
 	isloadingMoreApps = false;
 	isloadingDeliveryAttempt = false;
+	isCreatingNewApp = false;
+	isCreatingNewEndpoint = false;
+	isSendingNewEvent = false;
+	isDeletingApp = false;
+	updateAppDetail = false;
+	showPublicCopyText = false;
+	showSecretCopyText = false;
 	appsSearchString = '';
+	selectedEventsDateOption = '';
+	currentAppId = '';
+	tag = '';
+	appPortalLink = '';
 	eventsAppsFilter$!: Observable<APP[]>;
 	eventsDelAppsFilter$!: Observable<APP[]>;
 	@ViewChild('eventsAppsFilter', { static: true }) eventsAppsFilter!: ElementRef;
@@ -120,6 +155,7 @@ export class ConvoyDashboardComponent implements OnInit {
 		return await this.initDashboard();
 	}
 
+	// seach filters for apps on events and events delivery tab
 	ngAfterViewInit() {
 		this.eventsAppsFilter$ = fromEvent<any>(this.eventsAppsFilter.nativeElement, 'keyup').pipe(
 			map(event => event.target.value),
@@ -137,6 +173,209 @@ export class ConvoyDashboardComponent implements OnInit {
 		);
 	}
 
+	get endpoints(): FormArray {
+		return this.addNewAppForm.get('endpoints') as FormArray;
+	}
+
+	getSingleEndpoint(index: any) {
+		return ((this.addNewAppForm.get('endpoints') as FormArray)?.controls[index] as FormGroup)?.controls;
+	}
+	newEndpoint(): FormGroup {
+		return this.formBuilder.group({
+			url: ['', Validators.required],
+			events: [''],
+			tag: ['', Validators.required],
+			description: ['', Validators.required]
+		});
+	}
+
+	addEndpoint() {
+		this.endpoints.push(this.newEndpoint());
+	}
+
+	removeEndpoint(i: number) {
+		this.endpoints.removeAt(i);
+	}
+
+	// add tag function for adding multiple events to input form, <to be reviewed>
+	addTag(event?: any, i?: any) {
+		// to be reviewed
+		// let eventTagControlNames = [];
+		// const tagControlName = event.target.getAttribute('formcontrolname');
+		// const eventTagControlName = `${tagControlName} ${i}`;
+		// eventTagControlNames.push(eventTagControlName);
+		const addTagInput = document.getElementById('tagInput');
+		const addTagInputValue = document.getElementById('tagInput') as HTMLInputElement;
+		addTagInput?.addEventListener('keydown', e => {
+			if (e.which === 188) {
+				if (this.eventTags.includes(addTagInputValue?.value)) {
+					addTagInputValue.value = '';
+					this.eventTags = this.eventTags.filter(e => String(e).trim());
+				} else {
+					this.eventTags.push(addTagInputValue?.value);
+					addTagInputValue.value = '';
+					this.eventTags = this.eventTags.filter(e => String(e).trim());
+				}
+				e.preventDefault();
+			}
+		});
+	}
+
+	// create/edit new application function
+	async createNewApp() {
+		if (this.addNewAppForm.invalid) {
+			(<any>Object).values(this.addNewAppForm.controls).forEach((control: FormControl) => {
+				control?.markAsTouched();
+			});
+			return;
+		}
+		this.isCreatingNewApp = true;
+		// to be reviewed
+		delete this.addNewAppForm.value.endpoints;
+		try {
+			const response = await this.convyDashboardService.request({
+				url: this.editAppMode ? this.getAPIURL(`/apps/${this.appsDetailsItem?.uid}?groupID=${this.activeGroup || ''}`) : this.getAPIURL(`/apps?groupID=${this.activeGroup || ''}`),
+				token: this.requestToken,
+				authType: this.apiAuthType,
+				body: this.addNewAppForm.value,
+				method: this.editAppMode ? 'put' : 'post'
+			});
+			// to be reviewed
+			// if (!this.editAppMode) {
+			// 	const appUid = response.data.uid;
+			// 	this.addNewEndpoint(appUid);
+			// } else {
+			//
+			// }
+			if (this.editAppMode) this.updateAppDetail = true;
+			this.convyDashboardService.showNotification({ message: response.message });
+			this.addNewAppForm.reset();
+			this.getApps({ type: 'apps' });
+			this.showCreateAppModal = false;
+			this.isCreatingNewApp = false;
+		} catch {
+			this.isCreatingNewApp = false;
+		}
+	}
+
+	async deleteApp() {
+		this.isDeletingApp = true;
+		try {
+			const response = await this.convyDashboardService.request({
+				url: this.getAPIURL(`/apps/${this.appsDetailsItem?.uid}?groupID=${this.activeGroup || ''}`),
+				token: this.requestToken,
+				authType: this.apiAuthType,
+				method: 'delete'
+			});
+			this.appsDetailsItem = {};
+			this.convyDashboardService.showNotification({ message: response.message });
+			this.toggleActiveTab('apps');
+			this.getApps({ type: 'apps' });
+			this.showDeleteAppModal = false;
+			this.isDeletingApp = false;
+		} catch {
+			this.isDeletingApp = false;
+		}
+	}
+
+	// add new endpoint to app
+	async addNewEndpoint(appUid?: string) {
+		if (this.addNewEndpointForm.invalid) {
+			(<any>Object).values(this.addNewEndpointForm.controls).forEach((control: FormControl) => {
+				control?.markAsTouched();
+			});
+			return;
+		}
+		this.isCreatingNewEndpoint = true;
+
+		this.addNewEndpointForm.patchValue({
+			events: this.eventTags
+		});
+		try {
+			const response = await this.convyDashboardService.request({
+				url: this.getAPIURL(`/apps/${appUid ? appUid : this.appsDetailsItem?.uid}/endpoints?groupID=${this.activeGroup || ''}`),
+				token: this.requestToken,
+				authType: this.apiAuthType,
+				body: this.addNewEndpointForm.value,
+				method: 'post'
+			});
+			this.convyDashboardService.showNotification({ message: response.message });
+			this.getEvents();
+			this.getApps({ type: 'apps' });
+			this.updateAppDetail = true;
+			this.addNewEndpointForm.reset();
+			this.eventTags = [];
+			this.showAddEndpointModal = false;
+			this.isCreatingNewEndpoint = false;
+		} catch {
+			this.isCreatingNewEndpoint = false;
+		}
+	}
+
+	async sendNewEvent() {
+		if (this.sendEventForm.invalid) {
+			(<any>Object).values(this.sendEventForm.controls).forEach((control: FormControl) => {
+				control?.markAsTouched();
+			});
+			return;
+		}
+		this.isSendingNewEvent = true;
+		try {
+			const response = await this.convyDashboardService.request({
+				url: this.getAPIURL(`/events?groupID=${this.activeGroup || ''}`),
+				token: this.requestToken,
+				authType: this.apiAuthType,
+				body: this.sendEventForm.value,
+				method: 'post'
+			});
+
+			this.convyDashboardService.showNotification({ message: response.message });
+			this.getEventDeliveries();
+			this.sendEventForm.reset();
+			this.showAddEventModal = false;
+			this.isSendingNewEvent = false;
+		} catch {
+			this.isSendingNewEvent = false;
+		}
+	}
+
+	removeEventTag(tag: string) {
+		this.eventTags = this.eventTags.filter(e => e !== tag);
+	}
+
+	openUpdateAppModal(app: APP) {
+		this.showCreateAppModal = true;
+		this.editAppMode = true;
+		this.currentAppId = '';
+		this.addNewAppForm.patchValue({
+			name: app.name,
+			support_email: app.support_email
+		});
+	}
+
+	setEventAppId() {
+		this.showAddEventModal = !this.showAddEventModal;
+		this.sendEventForm.patchValue({
+			app_id: this.appsDetailsItem?.uid
+		});
+	}
+
+	// copy code snippet
+	copyKey(key: string, type: 'public' | 'secret') {
+		const text = key;
+		const el = document.createElement('textarea');
+		el.value = text;
+		document.body.appendChild(el);
+		el.select();
+		document.execCommand('copy');
+		type === 'public' ? (this.showPublicCopyText = true) : (this.showSecretCopyText = true);
+		setTimeout(() => {
+			type === 'public' ? (this.showPublicCopyText = false) : (this.showSecretCopyText = false);
+		}, 3000);
+		document.body.removeChild(el);
+	}
+
+	// initiate dashboard
 	async initDashboard() {
 		await this.getGroups();
 		this.getFiltersFromURL();
@@ -152,7 +391,10 @@ export class ConvoyDashboardComponent implements OnInit {
 		this.addFilterToURL({ section: 'logTab' });
 
 		if (tab === 'apps' && this.apps?.content.length > 0) {
-			if (!this.appsDetailsItem) this.appsDetailsItem = this.apps?.content[0];
+			if (!this.appsDetailsItem) {
+				this.appsDetailsItem = this.apps?.content[0];
+				this.getAppPortalToken({ redirect: false });
+			}
 		} else if (tab === 'events' && this.events?.content.length > 0) {
 			if (!this.eventsDetailsItem) this.eventsDetailsItem = this.events?.content[0];
 			if (this.eventsDetailsItem?.uid) this.getEventDeliveriesForSidebar(this.eventsDetailsItem.uid);
@@ -179,6 +421,7 @@ export class ConvoyDashboardComponent implements OnInit {
 		}
 	}
 
+	// fetch filters from url
 	getFiltersFromURL() {
 		const filters = this.route.snapshot.queryParams;
 		if (Object.keys(filters).length == 0) return;
@@ -336,7 +579,7 @@ export class ConvoyDashboardComponent implements OnInit {
 		}
 	}
 
-	async getAppPortalToken() {
+	async getAppPortalToken(requestDetail: { redirect: boolean }) {
 		try {
 			const appTokenResponse = await this.convyDashboardService.request({
 				url: this.getAPIURL(`/apps/${this.appsDetailsItem.uid}/keys?groupID=${this.activeGroup || ''}`),
@@ -345,7 +588,8 @@ export class ConvoyDashboardComponent implements OnInit {
 				method: 'post',
 				body: {}
 			});
-			window.open(`${appTokenResponse.data.url}`, '_blank');
+			this.appPortalLink = `<iframe src="${appTokenResponse.data.url}"></iframe>`;
+			if (requestDetail.redirect) window.open(`${appTokenResponse.data.url}`, '_blank');
 			this.loadingAppPotalToken = false;
 		} catch (error) {
 			this.loadingAppPotalToken = false;
@@ -498,7 +742,7 @@ export class ConvoyDashboardComponent implements OnInit {
 	async appsRequest(requestDetails: { search?: string }): Promise<HTTP_RESPONSE> {
 		try {
 			const appsResponse = await this.convyDashboardService.request({
-				url: this.getAPIURL(`/apps?groupID=${this.activeGroup || ''}&sort=AESC&page=${this.appsPage || 1}&perPage=10${requestDetails?.search ? `&q=${requestDetails?.search}` : ''}`),
+				url: this.getAPIURL(`/apps?groupID=${this.activeGroup || ''}&sort=AESC&page=${this.appsPage || 1}&perPage=20${requestDetails?.search ? `&q=${requestDetails?.search}` : ''}`),
 				token: this.requestToken,
 				authType: this.apiAuthType,
 				method: 'get'
@@ -533,6 +777,15 @@ export class ConvoyDashboardComponent implements OnInit {
 
 			if (requestDetails?.type === 'apps') this.apps = appsResponse.data;
 			this.filteredApps = appsResponse.data.content;
+
+			if (this.updateAppDetail) {
+				this.apps.content.forEach(item => {
+					if (this.appsDetailsItem?.uid == item.uid) {
+						this.appsDetailsItem = item;
+					}
+				});
+			}
+
 			this.isloadingApps = false;
 			return;
 		} catch (error) {

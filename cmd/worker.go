@@ -17,6 +17,8 @@ import (
 )
 
 func addWorkerCommand(a *app) *cobra.Command {
+	var workerPort uint32
+
 	cmd := &cobra.Command{
 		Use:   "worker",
 		Short: "Start worker instance",
@@ -25,6 +27,7 @@ func addWorkerCommand(a *app) *cobra.Command {
 			if err != nil {
 				return err
 			}
+
 			// register tasks.
 			handler := task.ProcessEventDelivery(a.applicationRepo, a.eventDeliveryRepo, a.groupRepo)
 			if err := task.CreateTasks(a.groupRepo, handler); err != nil {
@@ -50,10 +53,10 @@ func addWorkerCommand(a *app) *cobra.Command {
 
 			srv := &http.Server{
 				Handler: router,
-				Addr:    fmt.Sprintf(":%d", cfg.Server.HTTP.WorkerPort),
+				Addr:    fmt.Sprintf(":%d", workerPort),
 			}
 
-			log.Infof("Worker running on port %v", cfg.Server.HTTP.WorkerPort)
+			log.Infof("Worker running on port %v", workerPort)
 
 			e := srv.ListenAndServe()
 			if e != nil {
@@ -64,5 +67,7 @@ func addWorkerCommand(a *app) *cobra.Command {
 			return ctx.Err()
 		},
 	}
+
+	cmd.Flags().Uint32Var(&workerPort, "worker-port", 5006, "Worker port")
 	return cmd
 }

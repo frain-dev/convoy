@@ -9,15 +9,15 @@
 
 			<div>
 				<a target="_blank" href="https://getconvoy.io/docs" rel="noreferrer">Go to docs</a>
-				<button class="user" (click)="showDropdown = !showDropdown" *ngIf="authDetails()">
+				<button class="dropdown user" (click)="showDropdown = !showDropdown" *ngIf="authDetails()">
 					<div>
 						<div class="icon">O</div>
 						<div class="name">{{ authDetails().username }}</div>
 					</div>
 					<img src="/assets/img/angle-arrow-down.svg" alt="arrow down icon" />
-					<div *ngIf="showDropdown" class="dropdown organisations">
+					<div [ngClass]="{ show: showDropdown }" class="dropdown__menu dropdown__menu__nav">
 						<ul>
-							<li (click)="logout()">Logout</li>
+							<li class="danger" (click)="logout()">Logout</li>
 						</ul>
 					</div>
 				</button>

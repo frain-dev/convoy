@@ -102,7 +102,7 @@ func TestConsumer(t *testing.T) {
 }
 
 func initializeQueue(configFile string, name string, t *testing.T) queue.Queuer {
-	err := config.LoadConfig(configFile, new(config.Configuration))
+	err := config.LoadConfig(configFile)
 	if err != nil {
 		t.Fatalf("Failed to load config file: %v", err)
 	}
