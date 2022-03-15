@@ -27,10 +27,10 @@
 					</button>
 					<div [ngClass]="{ show: showDateFilterDropdown }" class="dropdown__menu large">
 						<ul>
-							<li [ngClass]="{ active: selectedDateOption == dateOption }" *ngFor="let dateOption of dateOptions" (click)="getSelectedDate(dateOption); showDateFilterDropdown = false">
+							<li [ngClass]="{ active: selectedDateOption == dateOption }" *ngFor="let dateOption of dateOptions" (click)="getSelectedDate(dateOption); showDateFilterDropdown = false; showOverlay = false;">
 								From {{ dateOption }}
 							</li>
-							<li (click)="statsPicker.open(); showDateFilterDropdown = false">Custom Option</li>
+							<li (click)="statsPicker.open(); showDateFilterDropdown = false; showOverlay = false;">Custom Option</li>
 							<!-- to be reviewed  -->
 							<!-- <li class="no-hover flex flex__align-items-center">
 								<button class="button button__primary button__small margin-right__14px" (click)="fetchDashboardData(); showDateFilterDropdown = false">Apply</button>
@@ -172,11 +172,11 @@
 										<li
 											[ngClass]="{ active: selectedEventsDateOption == dateOption }"
 											*ngFor="let dateOption of dateOptions"
-											(click)="getSelectedDate(dateOption, activeTab); showEventFilterCalendar = false"
+											(click)="getSelectedDate(dateOption, activeTab); showEventFilterCalendar = false; showOverlay = false;"
 										>
 											From {{ dateOption }}
 										</li>
-										<li (click)="eventsFilterPicker.open(); showEventFilterCalendar = false">Custom Option</li>
+										<li (click)="eventsFilterPicker.open(); showEventFilterCalendar = false; showOverlay = false;">Custom Option</li>
 										<!-- to be reviewed  -->
 										<!-- <li class="no-hover flex flex__align-items-center">
 											<button class="button button__primary button__small margin-right__14px" (click)="getEvents({ addToURL: true, fromFilter: true }); showEventFilterCalendar = false">
@@ -266,7 +266,7 @@
 										>
 											From {{ dateOption }}
 										</li>
-										<li (click)="eventDeliveriesFilterPicker.open(); showEventDelFilterCalendar = false">Custom Option</li>
+										<li (click)="eventDeliveriesFilterPicker.open(); showEventDelFilterCalendar = false; showOverlay = false;">Custom Option</li>
 										<!-- to be reviewed  -->
 										<!-- <li class="no-hover flex flex__align-items-center">
 											<button
