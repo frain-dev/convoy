@@ -1320,6 +1320,90 @@ paths:
       summary: Batch Resend app events
       tags:
       - EventDelivery
+  /eventdeliveries/countbatchretryevents:
+    get:
+      consumes:
+      - application/json
+      description: This endpoint counts app events that will be affected by a batch
+        retry operation
+      parameters:
+      - description: application id
+        in: query
+        name: appId
+        type: string
+      - description: group id
+        in: query
+        name: groupId
+        type: string
+      - description: start date
+        in: query
+        name: startDate
+        type: string
+      - description: end date
+        in: query
+        name: endDate
+        type: string
+      - description: results per page
+        in: query
+        name: perPage
+        type: string
+      - description: page number
+        in: query
+        name: page
+        type: string
+      - description: sort order
+        in: query
+        name: sort
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/server.serverResponse'
+            - properties:
+                data:
+                  allOf:
+                  - $ref: '#/definitions/server.Stub'
+                  - properties:
+                      num:
+                        type: integer
+                    type: object
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            allOf:
+            - $ref: '#/definitions/server.serverResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/server.Stub'
+              type: object
+        "401":
+          description: Unauthorized
+          schema:
+            allOf:
+            - $ref: '#/definitions/server.serverResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/server.Stub'
+              type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            allOf:
+            - $ref: '#/definitions/server.serverResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/server.Stub'
+              type: object
+      security:
+      - ApiKeyAuth: []
+      summary: Count affected eventDeliveries
+      tags:
+      - EventDelivery
   /eventdeliveries/forceresend:
     post:
       consumes:
