@@ -4,17 +4,22 @@
 			<div class="filter without-padding" [ngClass]="{ 'show-calendar': showFilterCalendar }">
 				<div class="margin-right__10px">Filter by:</div>
 				<div class="dropdown">
-					<button class="button button__filter button--has-icon icon-left icon-right" (click)="showOverlay = true; showDateFilterDropdown = !showDateFilterDropdown">
+					<button
+						[ngClass]="{ active: (statsDateRange.value.startDate !== '' && statsDateRange.value.endDate !== '') || selectedEventsDateOption }"
+						class="button button__filter button--has-icon icon-left icon-right"
+						(click)="showOverlay = true; showDateFilterDropdown = !showDateFilterDropdown"
+					>
 						<img src="/assets/img/calendar-icon.svg" alt="calender icon" />
-						<span class="color__grey">Date</span>
-						<span class="color__primary" *ngIf="selectedDateOption">: {{ selectedDateOption }}</span>
+						<!-- to be reviewed  -->
+						<!-- <span class="color__grey">Date</span>
+						<span class="color__primary" *ngIf="selectedDateOption">: {{ selectedDateOption }}</span> -->
 						<mat-date-range-input [formGroup]="statsDateRange" [rangePicker]="statsPicker">
 							<input matStartDate formControlName="startDate" placeholder="Start date" />
 							<input
 								matEndDate
 								formControlName="endDate"
 								placeholder="End date"
-								(dateChange)="selectedDateOption = formatDate(statsDateRange.value.startDate) + ' - ' + formatDate(statsDateRange.value.endDate)"
+								(dateChange)="selectedDateOption = formatDate(statsDateRange.value.startDate) + ' - ' + formatDate(statsDateRange.value.endDate); fetchDashboardData()"
 							/>
 						</mat-date-range-input>
 						<mat-date-range-picker #statsPicker [disabled]="false"></mat-date-range-picker>
@@ -23,13 +28,14 @@
 					<div [ngClass]="{ show: showDateFilterDropdown }" class="dropdown__menu large">
 						<ul>
 							<li *ngFor="let dateOption of dateOptions" (click)="getSelectedDate(dateOption)">
-								{{ dateOption }}
+								From {{ dateOption }}
 							</li>
-							<li (click)="statsPicker.open()">Custom Option</li>
-							<li class="no-hover flex flex__align-items-center">
+							<li (click)="statsPicker.open(); showDateFilterDropdown = false">Custom Option</li>
+							<!-- to be reviewed  -->
+							<!-- <li class="no-hover flex flex__align-items-center">
 								<button class="button button__primary button__small margin-right__14px" (click)="fetchDashboardData(); showDateFilterDropdown = false">Apply</button>
 								<button class="button__clear" (click)="selectedDateOption = ''; showDateFilterDropdown = false">Clear</button>
-							</li>
+							</li> -->
 						</ul>
 					</div>
 				</div>
@@ -143,15 +149,19 @@
 									(click)="showEventFilterCalendar = !showEventFilterCalendar; showOverlay = true"
 								>
 									<img src="/assets/img/calendar-icon.svg" alt="calender icon" />
-									<span class="color__grey">Date</span>
-									<span class="color__primary" *ngIf="selectedEventsDateOption">: {{ selectedEventsDateOption }}</span>
+									<!-- to be reviewed  -->
+									<!-- <span class="color__grey">Date</span>
+									<span class="color__primary" *ngIf="selectedEventsDateOption">: {{ selectedEventsDateOption }}</span> -->
 									<mat-date-range-input [formGroup]="eventsFilterDateRange" [rangePicker]="eventsFilterPicker">
 										<input matStartDate formControlName="startDate" placeholder="Start date" />
 										<input
 											matEndDate
 											formControlName="endDate"
 											placeholder="End date"
-											(dateChange)="selectedEventsDateOption = formatDate(eventsFilterDateRange.value.startDate) + ' - ' + formatDate(eventsFilterDateRange.value.endDate)"
+											(dateChange)="
+												selectedEventsDateOption = formatDate(eventsFilterDateRange.value.startDate) + ' - ' + formatDate(eventsFilterDateRange.value.endDate);
+												getEvents({ addToURL: true, fromFilter: true })
+											"
 										/>
 									</mat-date-range-input>
 									<mat-date-range-picker #eventsFilterPicker [disabled]="false"></mat-date-range-picker>
@@ -159,16 +169,15 @@
 								</button>
 								<div [ngClass]="{ show: showEventFilterCalendar }" class="dropdown__menu large">
 									<ul>
-										<li *ngFor="let dateOption of dateOptions" (click)="getSelectedDate(dateOption, activeTab)">
-											{{ dateOption }}
-										</li>
-										<li (click)="eventsFilterPicker.open()">Custom Option</li>
-										<li class="no-hover flex flex__align-items-center">
+										<li *ngFor="let dateOption of dateOptions" (click)="getSelectedDate(dateOption, activeTab)">From {{ dateOption }}</li>
+										<li (click)="eventsFilterPicker.open(); showEventFilterCalendar = false">Custom Option</li>
+										<!-- to be reviewed  -->
+										<!-- <li class="no-hover flex flex__align-items-center">
 											<button class="button button__primary button__small margin-right__14px" (click)="getEvents({ addToURL: true, fromFilter: true }); showEventFilterCalendar = false">
 												Apply
 											</button>
 											<button class="button__clear" (click)="selectedEventsDateOption = ''; clearEventFilters(activeTab, 'eventsDate'); showEventFilterCalendar = false">Clear</button>
-										</li>
+										</li> -->
 									</ul>
 								</div>
 							</div>
@@ -224,8 +233,9 @@
 									(click)="showOverlay = true; showEventDelFilterCalendar = !showEventDelFilterCalendar"
 								>
 									<img class="margin-left__0px" src="/assets/img/calendar-icon.svg" alt="calender icon" />
-									<span class="color__grey">Date</span>
-									<span class="color__primary" *ngIf="selectedEventsDelDateOption">: {{ selectedEventsDelDateOption }}</span>
+									<!-- to be reviewed  -->
+									<!-- <span class="color__grey">Date</span>
+									<span class="color__primary" *ngIf="selectedEventsDelDateOption">: {{ selectedEventsDelDateOption }}</span> -->
 									<mat-date-range-input [formGroup]="eventDeliveriesFilterDateRange" [rangePicker]="eventDeliveriesFilterPicker">
 										<input matStartDate formControlName="startDate" placeholder="Start date" />
 										<input
@@ -233,7 +243,8 @@
 											formControlName="endDate"
 											placeholder="End date"
 											(dateChange)="
-												selectedEventsDelDateOption = formatDate(eventDeliveriesFilterDateRange.value.startDate) + ' - ' + formatDate(eventDeliveriesFilterDateRange.value.endDate)
+												selectedEventsDelDateOption = formatDate(eventDeliveriesFilterDateRange.value.startDate) + ' - ' + formatDate(eventDeliveriesFilterDateRange.value.endDate);
+												getEventDeliveries({ addToURL: true, fromFilter: true })
 											"
 										/>
 									</mat-date-range-input>
@@ -242,11 +253,10 @@
 								</button>
 								<div [ngClass]="{ show: showEventDelFilterCalendar }" class="dropdown__menu large">
 									<ul>
-										<li *ngFor="let dateOption of dateOptions" (click)="getSelectedDate(dateOption, activeTab)">
-											{{ dateOption }}
-										</li>
-										<li (click)="eventDeliveriesFilterPicker.open()">Custom Option</li>
-										<li class="no-hover flex flex__align-items-center">
+										<li *ngFor="let dateOption of dateOptions" (click)="getSelectedDate(dateOption, activeTab)">From {{ dateOption }}</li>
+										<li (click)="eventDeliveriesFilterPicker.open(); showEventDelFilterCalendar = false">Custom Option</li>
+										<!-- to be reviewed  -->
+										<!-- <li class="no-hover flex flex__align-items-center">
 											<button
 												class="button button__primary button__small margin-right__14px"
 												(click)="getEventDeliveries({ addToURL: true, fromFilter: true }); showEventDelFilterCalendar = false"
@@ -256,7 +266,7 @@
 											<button class="button__clear" (click)="selectedEventsDelDateOption = ''; clearEventFilters(activeTab, 'eventsDelDate'); showEventDelFilterCalendar = false">
 												Clear
 											</button>
-										</li>
+										</li> -->
 									</ul>
 								</div>
 							</div>
@@ -1020,7 +1030,7 @@
 		<img src="/assets/img/filter.gif" alt="filter icon" class="filter-img" />
 		<div class="text-center font__20px font__weight-500 color__grey margin-bottom__8px">The filters applied will affect</div>
 		<div class="text-center font__20px font__weight-600 color__black margin-bottom__32px">{{ batchRetryCount || 0 }} event{{ batchRetryCount > 1 ? 's' : '' }}</div>
-		<button class="button button__primary" [disabled]="isRetyring" (click)="batchRetryEvent()">{{ isRetyring ? 'Retrying Events...' : 'Yes, Apply' }}</button>
+		<button class="button button__primary" [disabled]="isRetyring || batchRetryCount == 0" (click)="batchRetryEvent()">{{ isRetyring ? 'Retrying Events...' : 'Yes, Apply' }}</button>
 		<button class="button__primary button__clear margin-top__22px font__weight-600" (click)="showBatchRetryModal = false">No, Cancel</button>
 	</div>
 </div>

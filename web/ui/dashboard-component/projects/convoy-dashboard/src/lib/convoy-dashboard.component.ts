@@ -417,20 +417,54 @@ export class ConvoyDashboardComponent implements OnInit {
 			this.selectedDateOption = dateOption;
 		}
 		const _date = new Date();
-		let startDate, endDate;
+		let startDate, endDate, currentDayOfTheWeek;
 		switch (dateOption) {
 			case 'Last Year':
-				startDate = new Date(_date.getFullYear() - 1, _date.getMonth(), _date.getDate());
+				startDate = new Date(_date.getFullYear() - 1, 0, 1);
 				endDate = new Date(_date.getFullYear(), _date.getMonth(), _date.getDate());
 				break;
 			case 'Last Month':
-				startDate = new Date(_date.getFullYear(), _date.getMonth() - 1, _date.getDate());
+				startDate = new Date(_date.getFullYear(), _date.getMonth() == 0 ? 11 : _date.getMonth() - 1, 1);
 				endDate = new Date(_date.getFullYear(), _date.getMonth(), _date.getDate());
 				break;
 			case 'Last Week':
-				startDate = new Date(_date.getFullYear(), _date.getMonth(), _date.getDate() - 7);
-				endDate = new Date(_date.getFullYear(), _date.getMonth(), _date.getDate());
-
+				currentDayOfTheWeek = _date.getDay();
+				switch (currentDayOfTheWeek) {
+					case 0:
+						startDate = new Date(_date.getFullYear(), _date.getMonth(), _date.getDate() - 7);
+						endDate = new Date(_date.getFullYear(), _date.getMonth(), _date.getDate());
+						break;
+					case 1:
+						startDate = new Date(_date.getFullYear(), _date.getMonth(), _date.getDate() - 8);
+						endDate = new Date(_date.getFullYear(), _date.getMonth(), _date.getDate());
+						break;
+					case 2:
+						startDate = new Date(_date.getFullYear(), _date.getMonth(), _date.getDate() - 9);
+						endDate = new Date(_date.getFullYear(), _date.getMonth(), _date.getDate());
+						break;
+					case 3:
+						startDate = new Date(_date.getFullYear(), _date.getMonth(), _date.getDate() - 10);
+						endDate = new Date(_date.getFullYear(), _date.getMonth(), _date.getDate());
+						break;
+					case 4:
+						startDate = new Date(_date.getFullYear(), _date.getMonth(), _date.getDate() - 11);
+						endDate = new Date(_date.getFullYear(), _date.getMonth(), _date.getDate());
+						break;
+					case 4:
+						startDate = new Date(_date.getFullYear(), _date.getMonth(), _date.getDate() - 12);
+						endDate = new Date(_date.getFullYear(), _date.getMonth(), _date.getDate());
+						break;
+					case 5:
+						startDate = new Date(_date.getFullYear(), _date.getMonth(), _date.getDate() - 13);
+						endDate = new Date(_date.getFullYear(), _date.getMonth(), _date.getDate());
+						break;
+					case 6:
+						startDate = new Date(_date.getFullYear(), _date.getMonth(), _date.getDate() - 14);
+						endDate = new Date(_date.getFullYear(), _date.getMonth(), _date.getDate());
+						break;
+					default:
+						break;
+				}
 				break;
 			case 'Yesterday':
 				startDate = new Date(_date.getFullYear(), _date.getMonth(), _date.getDate() - 1);
@@ -445,16 +479,19 @@ export class ConvoyDashboardComponent implements OnInit {
 				startDate: startDate,
 				endDate: endDate
 			});
+			this.getEvents({ addToURL: true, fromFilter: true });
 		} else if (activeTab == 'event deliveries') {
 			this.eventDeliveriesFilterDateRange.patchValue({
 				startDate: startDate,
 				endDate: endDate
 			});
+			this.getEventDeliveries({ addToURL: true, fromFilter: true });
 		} else {
 			this.statsDateRange.patchValue({
 				startDate: startDate,
 				endDate: endDate
 			});
+			this.fetchDashboardData();
 		}
 	}
 
