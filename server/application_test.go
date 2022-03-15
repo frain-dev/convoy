@@ -119,10 +119,6 @@ func stripTimestamp(t *testing.T, obj string, b *bytes.Buffer) *bytes.Buffer {
 	return nil
 }
 
-func provideFakeOverride() *config.Configuration {
-	return new(config.Configuration)
-}
-
 func provideApplication(ctrl *gomock.Controller) *applicationHandler {
 	groupRepo := mocks.NewMockGroupRepository(ctrl)
 	appRepo := mocks.NewMockApplicationRepository(ctrl)
@@ -219,7 +215,7 @@ func TestApplicationHandler_GetApp(t *testing.T) {
 				tc.dbFn(app)
 			}
 
-			err := config.LoadConfig(tc.cfgPath, new(config.Configuration))
+			err := config.LoadConfig(tc.cfgPath)
 			if err != nil {
 				t.Errorf("Failed to load config file: %v", err)
 			}
@@ -306,7 +302,7 @@ func TestApplicationHandler_GetApps(t *testing.T) {
 				tc.dbFn(app)
 			}
 
-			err := config.LoadConfig(tc.cfgPath, new(config.Configuration))
+			err := config.LoadConfig(tc.cfgPath)
 			if err != nil {
 				t.Errorf("Failed to load config file: %v", err)
 			}
@@ -411,7 +407,7 @@ func TestApplicationHandler_CreateApp(t *testing.T) {
 				tc.dbFn(app)
 			}
 
-			err := config.LoadConfig(tc.cfgPath, new(config.Configuration))
+			err := config.LoadConfig(tc.cfgPath)
 			if err != nil {
 				t.Errorf("Failed to load config file: %v", err)
 			}
@@ -623,7 +619,7 @@ func TestApplicationHandler_UpdateApp(t *testing.T) {
 				tc.dbFn(app)
 			}
 
-			err := config.LoadConfig(tc.cfgPath, new(config.Configuration))
+			err := config.LoadConfig(tc.cfgPath)
 			if err != nil {
 				t.Errorf("Failed to load config file: %v", err)
 			}
@@ -712,7 +708,7 @@ func TestApplicationHandler_CreateAppEndpoint(t *testing.T) {
 				tc.dbFn(app)
 			}
 
-			err := config.LoadConfig(tc.cfgPath, new(config.Configuration))
+			err := config.LoadConfig(tc.cfgPath)
 			if err != nil {
 				t.Errorf("Failed to load config file: %v", err)
 			}
@@ -850,7 +846,7 @@ func TestApplicationHandler_UpdateAppEndpoint(t *testing.T) {
 				tc.dbFn(app)
 			}
 
-			err := config.LoadConfig(tc.cfgPath, provideFakeOverride())
+			err := config.LoadConfig(tc.cfgPath)
 			if err != nil {
 				t.Errorf("Failed to load config file: %v", err)
 			}
