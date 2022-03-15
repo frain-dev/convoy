@@ -111,7 +111,7 @@
 							</button>
 							<div [ngClass]="{ show: showEventFilterCalendar }" class="dropdown__menu large">
 								<ul>
-									<li [ngClass]="{ active: selectedEventsDateOption == dateOption }" *ngFor="let dateOption of dateOptions" (click)="getSelectedDate(dateOption, activeTab)">
+									<li [ngClass]="{ active: selectedEventsDateOption == dateOption }" *ngFor="let dateOption of dateOptions" (click)="getSelectedDate(dateOption, activeTab); showEventFilterCalendar = false">
 										From {{ dateOption }}
 									</li>
 									<li (click)="eventsFilterPicker.open(); showEventFilterCalendar = false">Custom Option</li>
@@ -182,7 +182,7 @@
 							</button>
 							<div [ngClass]="{ show: showEventFilterCalendar }" class="dropdown__menu large">
 								<ul>
-									<li [ngClass]="{ active: selectedEventsDelDateOption == dateOption }" *ngFor="let dateOption of dateOptions" (click)="getSelectedDate(dateOption, activeTab)">
+									<li [ngClass]="{ active: selectedEventsDelDateOption == dateOption }" *ngFor="let dateOption of dateOptions" (click)="getSelectedDate(dateOption, activeTab); showEventFilterCalendar = false">
 										From {{ dateOption }}
 									</li>
 									<li (click)="eventDeliveriesFilterPicker.open(); showEventFilterCalendar = false">Custom Option</li>
