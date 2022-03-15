@@ -343,6 +343,24 @@ export class ConvoyDashboardComponent implements OnInit {
 		}
 	}
 
+	async fetchRetryCount(){
+			this.showBatchRetryModal = true;
+			try {
+			const response = await this.convyDashboardService.request({
+				url: this.getAPIURL(`/eventsdeliveries/countbatchretryevents?groupID=${this.activeGroup || ''}`),
+				token: this.requestToken,
+				authType: this.apiAuthType,
+				method: 'get'
+			});
+			console.log(response)
+
+			this.convyDashboardService.showNotification({ message: response.message });
+			this.showBatchRetryModal = true;
+		} catch {
+			this.isSendingNewEvent = false;
+		}
+	}
+
 	removeEventTag(tag: string) {
 		this.eventTags = this.eventTags.filter(e => e !== tag);
 	}

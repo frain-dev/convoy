@@ -325,8 +325,8 @@
 											(change)="updateAppFilter(app.uid, $event, 'eventDels')"
 										/>
 									</div>
-									<div *ngIf="filteredApps?.length !== 0 && !!eventDeliveriesApp" class="flex flex__justify-end margin-top__10px">
-										<button class="button button__white button__small" (click)="clearEventFilters(activeTab, 'eventsDelApp'); showEventsAppsDropdown = false">Clear</button>
+									<div *ngIf="filteredApps?.length !== 0 && !!eventDeliveriesApp" class="margin-top__10px">
+										<button class="button button__white button__small" (click)="clearEventFilters(activeTab, 'eventsDelApp'); showEventDeliveriesAppsDropdown = false">Clear</button>
 									</div>
 									<p *ngIf="filteredApps?.length === 0">No app to display</p>
 								</div>
@@ -340,7 +340,7 @@
 							</div>
 							<button
 								class="flex__justify-center button button__filter margin-left__24px"
-								(click)="showBatchRetryModal = !showBatchRetryModal"
+								(click)="fetchRetryCount()"
 								[ngClass]="{
 									disabled:
 										(eventDeliveriesFilterDateRange.value.startDate == '' || eventDeliveriesFilterDateRange.value.endDate == '') &&
