@@ -147,6 +147,7 @@ func (a *applicationHandler) CreateApp(w http.ResponseWriter, r *http.Request) {
 		GroupID:        group.UID,
 		Title:          appName,
 		SupportEmail:   newApp.SupportEmail,
+		IsDisabled:     newApp.IsDisabled,
 		CreatedAt:      primitive.NewDateTimeFromTime(time.Now()),
 		UpdatedAt:      primitive.NewDateTimeFromTime(time.Now()),
 		Endpoints:      []datastore.Endpoint{},
@@ -175,7 +176,7 @@ func (a *applicationHandler) CreateApp(w http.ResponseWriter, r *http.Request) {
 // @Security ApiKeyAuth
 // @Router /applications/{appID} [put]
 func (a *applicationHandler) UpdateApp(w http.ResponseWriter, r *http.Request) {
-	var appUpdate models.Application
+	var appUpdate models.UpdateApplication
 	err := util.ReadJSON(r, &appUpdate)
 	if err != nil {
 		_ = render.Render(w, r, newErrorResponse(err.Error(), http.StatusBadRequest))
@@ -190,10 +191,16 @@ func (a *applicationHandler) UpdateApp(w http.ResponseWriter, r *http.Request) {
 
 	app := getApplicationFromContext(r.Context())
 
-	app.Title = appName
-	if !util.IsStringEmpty(appUpdate.SupportEmail) {
-		app.SupportEmail = appUpdate.SupportEmail
+	app.Title = *appName
+
+	if appUpdate.SupportEmail != nil {
+		app.SupportEmail = *appUpdate.SupportEmail
 	}
+
+	if appUpdate.IsDisabled != nil {
+		app.IsDisabled = *appUpdate.IsDisabled
+	}
+
 
 	err = a.appRepo.UpdateApplication(r.Context(), app)
 	if err != nil {
