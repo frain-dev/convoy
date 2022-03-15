@@ -1,11 +1,7 @@
 @import './scss/material-design-reset';
 @import './scss/prism';
-.button__filter {
-	.mat-date-range-input {
-		display: none !important;
-	}
-}
-input[type='time']{
+
+input[type='time'] {
 	max-width: 28px;
 }
 input[type='time']::-webkit-calendar-picker-indicator {
@@ -13,4 +9,10 @@ input[type='time']::-webkit-calendar-picker-indicator {
 	background: url('assets/img/angle-arrow-down.svg'), no-repeat;
 	background-size: 14px;
 	background-position: center;
+}
+.modal--body.delete {
+	.filter-img {
+		height: 80px;
+		width: 80px;
+	}
 }
