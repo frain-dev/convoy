@@ -125,6 +125,8 @@ export class ConvoyDashboardComponent implements OnInit {
 	isCreatingNewEndpoint = false;
 	isSendingNewEvent = false;
 	isDeletingApp = false;
+	isRetyring = false;
+	fetchingCount = false;
 	updateAppDetail = false;
 	showPublicCopyText = false;
 	showSecretCopyText = false;
@@ -135,6 +137,7 @@ export class ConvoyDashboardComponent implements OnInit {
 	currentAppId = '';
 	tag = '';
 	appPortalLink = '';
+	batchRetryCount!: any;
 	eventsAppsFilter$!: Observable<APP[]>;
 	eventsDelAppsFilter$!: Observable<APP[]>;
 	@ViewChild('eventsAppsFilter', { static: true }) eventsAppsFilter!: ElementRef;
@@ -335,6 +338,8 @@ export class ConvoyDashboardComponent implements OnInit {
 
 			this.convyDashboardService.showNotification({ message: response.message });
 			this.getEventDeliveries();
+			this.getEvents();
+			this.toggleActiveTab('event deliveries');
 			this.sendEventForm.reset();
 			this.showAddEventModal = false;
 			this.isSendingNewEvent = false;
@@ -343,21 +348,29 @@ export class ConvoyDashboardComponent implements OnInit {
 		}
 	}
 
-	async fetchRetryCount(){
-			this.showBatchRetryModal = true;
-			try {
+	async fetchRetryCount() {
+		let eventDeliveryStatusFilterQuery = '';
+		this.eventDeliveryFilteredByStatus.length > 0 ? (this.eventDeliveriesStatusFilterActive = true) : (this.eventDeliveriesStatusFilterActive = false);
+		this.eventDeliveryFilteredByStatus.forEach((status: string) => (eventDeliveryStatusFilterQuery += `&status=${status}`));
+		const { startDate, endDate } = this.setDateForFilter(this.eventDeliveriesFilterDateRange.value);
+		this.fetchingCount = true;
+		try {
 			const response = await this.convyDashboardService.request({
-				url: this.getAPIURL(`/eventsdeliveries/countbatchretryevents?groupID=${this.activeGroup || ''}`),
+				url: this.getAPIURL(
+					`/eventdeliveries/countbatchretryevents?groupID=${this.activeGroup || ''}&eventId=${this.eventDeliveryFilteredByEventId || ''}&page=${
+						this.eventDeliveriesPage || 1
+					}&startDate=${startDate}&endDate=${endDate}&appId=${this.eventDeliveriesApp}${eventDeliveryStatusFilterQuery || ''}`
+				),
 				token: this.requestToken,
 				authType: this.apiAuthType,
 				method: 'get'
 			});
-			console.log(response)
-
-			this.convyDashboardService.showNotification({ message: response.message });
+			this.batchRetryCount = response.data.num;
+			this.fetchingCount = false;
 			this.showBatchRetryModal = true;
-		} catch {
-			this.isSendingNewEvent = false;
+		} catch (error: any) {
+			this.fetchingCount = false;
+			this.convyDashboardService.showNotification({ message: error.error.message });
 		}
 	}
 
@@ -937,19 +950,30 @@ export class ConvoyDashboardComponent implements OnInit {
 	}
 
 	async batchRetryEvent() {
+		let eventDeliveryStatusFilterQuery = '';
+		this.eventDeliveryFilteredByStatus.length > 0 ? (this.eventDeliveriesStatusFilterActive = true) : (this.eventDeliveriesStatusFilterActive = false);
+		this.eventDeliveryFilteredByStatus.forEach((status: string) => (eventDeliveryStatusFilterQuery += `&status=${status}`));
+		const { startDate, endDate } = this.setDateForFilter(this.eventDeliveriesFilterDateRange.value);
+		this.isRetyring = true;
 		try {
-			await this.convyDashboardService.request({
+			const response = await this.convyDashboardService.request({
 				method: 'post',
-				url: this.getAPIURL(`/eventdeliveries/batchretry?groupID=${this.activeGroup || ''}`),
+				url: this.getAPIURL(
+					`/eventdeliveries/batchretry?groupID=${this.activeGroup || ''}&eventId=${this.eventDeliveryFilteredByEventId || ''}&page=${
+						this.eventDeliveriesPage || 1
+					}&startDate=${startDate}&endDate=${endDate}&appId=${this.eventDeliveriesApp}${eventDeliveryStatusFilterQuery || ''}`
+				),
 				token: this.requestToken,
 				authType: this.apiAuthType,
-				body: { ids: this.selectedEventsFromEventDeliveriesTable }
+				body: null
 			});
 
-			this.convyDashboardService.showNotification({ message: 'Batch Retry Request Sent' });
+			this.convyDashboardService.showNotification({ message: response.message });
 			this.getEventDeliveries();
-			this.selectedEventsFromEventDeliveriesTable = [];
+			this.showBatchRetryModal = false;
+			this.isRetyring = false;
 		} catch (error: any) {
+			this.isRetyring = false;
 			this.convyDashboardService.showNotification({ message: error.error.message });
 			return error;
 		}
@@ -1076,5 +1100,10 @@ export class ConvoyDashboardComponent implements OnInit {
 
 	formatDate(date: Date) {
 		return this.datePipe.transform(date, 'dd/MM/yyyy');
+	}
+	// check if string contains special character
+	containsSpecialCharacters(str: string) {
+		const specialChars = /[`!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?~]/;
+		return specialChars.test(str);
 	}
 }

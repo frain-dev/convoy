@@ -292,7 +292,7 @@
 										>
 											Apply
 										</button>
-										<button class="button__clear" (click)="clearEventFilters(activeTab, 'eventsDelsStatus'); showEventDeliveriesStatusDropdown = false">Clear</button>
+										<button class="button__clear" (click)="clearEventFilters(activeTab, 'eventsDelsStatus'); showEventDeliveriesStatusDropdown = false; showOverlay = false">Clear</button>
 									</div>
 								</div>
 							</div>
@@ -326,7 +326,9 @@
 										/>
 									</div>
 									<div *ngIf="filteredApps?.length !== 0 && !!eventDeliveriesApp" class="margin-top__10px">
-										<button class="button button__white button__small" (click)="clearEventFilters(activeTab, 'eventsDelApp'); showEventDeliveriesAppsDropdown = false">Clear</button>
+										<button class="button button__white button__small" (click)="clearEventFilters(activeTab, 'eventsDelApp'); showEventDeliveriesAppsDropdown = false; showOverlay = false">
+											Clear
+										</button>
 									</div>
 									<p *ngIf="filteredApps?.length === 0">No app to display</p>
 								</div>
@@ -343,10 +345,11 @@
 								(click)="fetchRetryCount()"
 								[ngClass]="{
 									disabled:
-										(eventDeliveriesFilterDateRange.value.startDate == '' || eventDeliveriesFilterDateRange.value.endDate == '') &&
-										eventDeliveriesApp == '' &&
-										eventDeliveryFilteredByEventId == '' &&
-										!eventDeliveriesStatusFilterActive
+										((eventDeliveriesFilterDateRange.value.startDate == '' || eventDeliveriesFilterDateRange.value.endDate == '') &&
+											eventDeliveriesApp == '' &&
+											eventDeliveryFilteredByEventId == '' &&
+											!eventDeliveriesStatusFilterActive) ||
+										fetchingCount
 								}"
 							>
 								Batch Retry
@@ -1014,16 +1017,10 @@
 <!-- to be reviewed as weelll -->
 <div class="modal modal__center" *ngIf="showBatchRetryModal">
 	<div class="modal--body flex flex__column flex__justify-center flex__align-items-center delete">
-		<img src="/assets/img/warning.gif" alt="warning" />
-		<p class="title">
-			The filters applied will affect
-			<span class="font__weight-600">345</span>
-			events
-		</p>
-		<p class="subtext">This action is irrevesible</p>
-		<!-- pending when api is available  -->
-		<!-- <button class="button button__primary" [disabled]="isRetyring">{{ isRetyring ? 'Retrying Events...' : 'Yes, Retry' }}</button> -->
-		<button class="button button__primary">Yes, Retry</button>
-		<button class="button__primary button__clear margin-top__12px" (click)="showBatchRetryModal = false">No, Cancel</button>
+		<img src="/assets/img/filter.gif" alt="filter icon" class="filter-img" />
+		<div class="text-center font__20px font__weight-500 color__grey margin-bottom__8px">The filters applied will affect</div>
+		<div class="text-center font__20px font__weight-600 color__black margin-bottom__32px">{{ batchRetryCount || 0 }} event{{ batchRetryCount > 1 ? 's' : '' }}</div>
+		<button class="button button__primary" [disabled]="isRetyring" (click)="batchRetryEvent()">{{ isRetyring ? 'Retrying Events...' : 'Yes, Apply' }}</button>
+		<button class="button__primary button__clear margin-top__22px font__weight-600" (click)="showBatchRetryModal = false">No, Cancel</button>
 	</div>
 </div>
