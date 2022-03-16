@@ -69,6 +69,11 @@ func (a *applicationHandler) CreateAppEvent(w http.ResponseWriter, r *http.Reque
 		return
 	}
 
+	if app.IsDisabled {
+		_ = render.Render(w, r, newServerResponse("app is disabled, no events were sent", nil, http.StatusOK))
+		return
+	}
+
 	matchedEndpoints := matchEndpointsForDelivery(eventType, app.Endpoints, nil)
 
 	event := &datastore.Event{

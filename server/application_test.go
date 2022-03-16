@@ -587,6 +587,68 @@ func TestApplicationHandler_UpdateApp(t *testing.T) {
 					Return([]*datastore.Group{group}, nil)
 			},
 		},
+
+		{
+			name: "valid request - disable application",
+			cfgPath: "/testdata/Auth_Config/no-auth-convoy.json",
+			method: http.MethodPut,
+			statusCode: http.StatusAccepted,
+			appId: appId,
+			body: strings.NewReader(`{"name": "ABC", "is_disabled": true }`),
+			dbFn: func(app *applicationHandler) {
+				a, _ := app.appRepo.(*mocks.MockApplicationRepository)
+				a.EXPECT().
+					UpdateApplication(gomock.Any(), gomock.Any()).Times(1).
+					Return(nil)
+
+				a.EXPECT().
+					FindApplicationByID(gomock.Any(), gomock.Any()).Times(1).
+					Return(&datastore.Application{
+						UID:       appId,
+						GroupID:   groupID,
+						Title:     "Valid application update",
+						Endpoints: []datastore.Endpoint{},
+						IsDisabled: false,
+					}, nil)
+
+				o, _ := app.groupRepo.(*mocks.MockGroupRepository)
+
+				o.EXPECT().
+					LoadGroups(gomock.Any(), gomock.Any()).Times(1).
+					Return([]*datastore.Group{group}, nil)
+			},
+		},
+
+		{
+			name: "valid request - enable disabled application",
+			cfgPath: "/testdata/Auth_Config/no-auth-convoy.json",
+			method: http.MethodPut,
+			statusCode: http.StatusAccepted,
+			appId: appId,
+			body: strings.NewReader(`{"name": "ABC", "is_disabled": false }`),
+			dbFn: func(app *applicationHandler) {
+				a, _ := app.appRepo.(*mocks.MockApplicationRepository)
+				a.EXPECT().
+					UpdateApplication(gomock.Any(), gomock.Any()).Times(1).
+					Return(nil)
+
+				a.EXPECT().
+					FindApplicationByID(gomock.Any(), gomock.Any()).Times(1).
+					Return(&datastore.Application{
+						UID:       appId,
+						GroupID:   groupID,
+						Title:     "Valid application update",
+						Endpoints: []datastore.Endpoint{},
+						IsDisabled: true,
+					}, nil)
+
+				o, _ := app.groupRepo.(*mocks.MockGroupRepository)
+
+				o.EXPECT().
+					LoadGroups(gomock.Any(), gomock.Any()).Times(1).
+					Return([]*datastore.Group{group}, nil)
+			},
+		},
 	}
 
 	for _, tc := range tt {
