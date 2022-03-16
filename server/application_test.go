@@ -741,7 +741,7 @@ func TestApplicationHandler_CreateAppEndpoint(t *testing.T) {
 					Return(nil)
 
 				a.EXPECT().
-					FindApplicationByID(gomock.Any(), gomock.Any()).Times(2).
+					FindApplicationByID(gomock.Any(), gomock.Any()).Times(1).
 					Return(&datastore.Application{
 						UID:       appId,
 						GroupID:   groupID,

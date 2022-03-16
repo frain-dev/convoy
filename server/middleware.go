@@ -149,7 +149,7 @@ func requireApp(appRepo datastore.ApplicationRepository) func(next http.Handler)
 	}
 }
 
-func requireAppId() func(next http.Handler) http.Handler {
+func requireAppID() func(next http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
