@@ -1,4 +1,4 @@
-import { CommonModule } from '@angular/common';
+import { CommonModule, DatePipe } from '@angular/common';
 import { NgModule } from '@angular/core';
 import { FormsModule, ReactiveFormsModule } from '@angular/forms';
 import { ConvoyAppComponent } from './convoy-app.component';
@@ -17,5 +17,6 @@ import { MatNativeDateModule } from '@angular/material/core';
         MatNativeDateModule,
     ],
     exports: [ConvoyAppComponent],
+    providers: [DatePipe]
 })
 export class ConvoyAppModule {}

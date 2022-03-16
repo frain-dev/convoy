@@ -2,6 +2,7 @@
 FROM node:14 as node-env
 WORKDIR /app
 COPY ./web/ui/dashboard .
+RUN git config --global url."https://".insteadOf git://
 RUN npm install
 RUN npm run build
 

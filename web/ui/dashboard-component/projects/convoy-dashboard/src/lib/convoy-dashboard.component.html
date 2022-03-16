@@ -117,25 +117,35 @@
 						<div class="flex">
 							<div class="dropdown">
 								<button
-									class="button button__filter without-margin button--has-icon icon-left"
-									[ngClass]="{ active: eventsFilterDateRange.value.startDate !== '' && eventsFilterDateRange.value.endDate !== '' }"
-									(click)="showDateFilterDropdown = !showDateFilterDropdown; showOverlay = true"
+									class="button button__filter without-margin button--has-icon icon-left icon-right"
+									[ngClass]="{ active: (eventsFilterDateRange.value.startDate !== '' && eventsFilterDateRange.value.endDate !== '') || selectedEventsDateOption }"
+									(click)="showEventFilterCalendar = !showEventFilterCalendar; showOverlay = true"
 								>
 									<img src="/assets/img/calendar-icon.svg" alt="calender icon" />
+									<span class="color__grey">Date</span>
+									<span class="color__primary" *ngIf="selectedEventsDateOption">: {{ selectedEventsDateOption }}</span>
 									<mat-date-range-input [formGroup]="eventsFilterDateRange" [rangePicker]="eventsFilterPicker">
 										<input matStartDate formControlName="startDate" placeholder="Start date" />
-										<input matEndDate formControlName="endDate" placeholder="End date" (dateChange)="getEvents({ addToURL: true, fromFilter: true })" />
+										<input
+											matEndDate
+											formControlName="endDate"
+											placeholder="End date"
+											(dateChange)="selectedEventsDateOption = formatDate(eventsFilterDateRange.value.startDate) + ' - ' + formatDate(eventsFilterDateRange.value.endDate)"
+										/>
 									</mat-date-range-input>
 									<mat-date-range-picker #eventsFilterPicker [disabled]="false"></mat-date-range-picker>
 									<img src="/assets/img/angle-arrow-down.svg" alt="arrow down icon" />
 								</button>
-
-								<div [ngClass]="{ show: showDateFilterDropdown }" class="dropdown__menu">
+								<div [ngClass]="{ show: showEventFilterCalendar }" class="dropdown__menu large">
 									<ul>
 										<li *ngFor="let dateOption of dateOptions" (click)="selectedEventsDateOption = dateOption">
 											{{ dateOption }}
 										</li>
-										<li (click)="eventsFilterPicker.open(); showEventFilterCalendar = !showEventFilterCalendar">Custom Option</li>
+										<li (click)="eventsFilterPicker.open()">Custom Option</li>
+										<li class="no-hover flex flex__align-items-center">
+											<button class="button button__primary button__small margin-right__14px" (click)="getEvents({ addToURL: true, fromFilter: true })">Apply</button>
+											<button class="button__clear" (click)="selectedEventsDateOption = ''; clearEventFilters(activeTab, 'eventsDate')">Clear</button>
+										</li>
 									</ul>
 								</div>
 							</div>
@@ -161,20 +171,21 @@
 										<label [for]="app.uid">{{ app.name }}</label>
 										<input type="checkbox" name="app" [value]="app.uid" [id]="app.uid" [checked]="app.uid === eventApp" (change)="updateAppFilter(app.uid, $event, 'events')" />
 									</div>
-
+									<div *ngIf="filteredApps?.length !== 0 && !!eventApp" class="flex flex__justify-end margin-top__10px">
+										<button class="button button__white button__small" (click)="clearEventFilters(activeTab, 'eventsApp'); showEventsAppsDropdown = false">Clear</button>
+									</div>
 									<p *ngIf="filteredApps?.length === 0">No app to display</p>
 								</div>
 							</div>
 						</div>
-
 						<div class="flex">
 							<button
 								class="button button__white button__small margin-right__20px"
-								(click)="clearEventFilters(activeTab)"
+								(click)="clearEventFilters(activeTab); selectedEventsDateOption = ''"
 								[disabled]="(eventsFilterDateRange.value.startDate == '' || eventsFilterDateRange.value.endDate == '') && eventApp == ''"
 								[ngClass]="{ disabled: (eventsFilterDateRange.value.startDate == '' || eventsFilterDateRange.value.endDate == '') && eventApp == '' }"
 							>
-								Clear Filter
+								Clear All
 							</button>
 						</div>
 					</div>
@@ -183,20 +194,42 @@
 				<div [hidden]="activeTab !== 'event deliveries'">
 					<div class="flex flex__align-items-center flex__justify-between">
 						<div class="flex">
-							<button
-								class="button button__filter without-margin button--has-icon icon-right icon-left"
-								(click)="eventDeliveriesFilterPicker.open()"
-								[ngClass]="{ active: eventDeliveriesFilterDateRange.value.startDate !== '' && eventDeliveriesFilterDateRange.value.endDate !== '' }"
-								(click)="showEventFilterCalendar = !showEventFilterCalendar"
-							>
-								<img class="margin-left__0px" src="/assets/img/calendar-icon.svg" alt="calender icon" />
-								<mat-date-range-input [formGroup]="eventDeliveriesFilterDateRange" [rangePicker]="eventDeliveriesFilterPicker">
-									<input matStartDate formControlName="startDate" placeholder="Start date" />
-									<input matEndDate formControlName="endDate" placeholder="End date" (dateChange)="getEventDeliveries({ addToURL: true, fromFilter: true })" />
-								</mat-date-range-input>
-								<mat-date-range-picker #eventDeliveriesFilterPicker [disabled]="false"></mat-date-range-picker>
-								<img class="margin-right__0px" src="/assets/img/angle-arrow-down.svg" alt="arrow down icon" />
-							</button>
+							<div class="dropdown">
+								<button
+									class="button button__filter without-margin button--has-icon icon-right icon-left"
+									[ngClass]="{ active: (eventDeliveriesFilterDateRange.value.startDate !== '' && eventDeliveriesFilterDateRange.value.endDate !== '') || selectedEventsDelDateOption }"
+									(click)="showOverlay = true; showEventDelFilterCalendar = !showEventDelFilterCalendar"
+								>
+									<img class="margin-left__0px" src="/assets/img/calendar-icon.svg" alt="calender icon" />
+									<span class="color__grey">Date</span>
+									<span class="color__primary" *ngIf="selectedEventsDelDateOption">: {{ selectedEventsDelDateOption }}</span>
+									<mat-date-range-input [formGroup]="eventDeliveriesFilterDateRange" [rangePicker]="eventDeliveriesFilterPicker">
+										<input matStartDate formControlName="startDate" placeholder="Start date" />
+										<input
+											matEndDate
+											formControlName="endDate"
+											placeholder="End date"
+											(dateChange)="
+												selectedEventsDelDateOption = formatDate(eventDeliveriesFilterDateRange.value.startDate) + ' - ' + formatDate(eventDeliveriesFilterDateRange.value.endDate)
+											"
+										/>
+									</mat-date-range-input>
+									<mat-date-range-picker #eventDeliveriesFilterPicker [disabled]="false"></mat-date-range-picker>
+									<img class="margin-right__0px" src="/assets/img/angle-arrow-down.svg" alt="arrow down icon" />
+								</button>
+								<div [ngClass]="{ show: showEventDelFilterCalendar }" class="dropdown__menu large">
+									<ul>
+										<li *ngFor="let dateOption of dateOptions" (click)="selectedEventsDelDateOption = dateOption">
+											{{ dateOption }}
+										</li>
+										<li (click)="eventDeliveriesFilterPicker.open()">Custom Option</li>
+										<li class="no-hover flex flex__align-items-center">
+											<button class="button button__primary button__small margin-right__14px" (click)="getEventDeliveries({ addToURL: true, fromFilter: true })">Apply</button>
+											<button class="button__clear" (click)="selectedEventsDelDateOption = ''; clearEventFilters(activeTab, 'eventsDelDate')">Clear</button>
+										</li>
+									</ul>
+								</div>
+							</div>
 
 							<div class="dropdown margin-left__24px">
 								<button
@@ -209,7 +242,7 @@
 									<img class="margin-right__0px" src="/assets/img/angle-arrow-down.svg" alt="arrow down icon" />
 								</button>
 
-								<div class="dropdown__menu with-padding smaller" [ngClass]="{ show: showEventDeliveriesStatusDropdown }">
+								<div class="dropdown__menu with-padding small" [ngClass]="{ show: showEventDeliveriesStatusDropdown }">
 									<div class="dropdown__menu__item with-border" *ngFor="let status of eventDeliveryStatuses">
 										<label [for]="status">{{ status || 'None' }}</label>
 										<input
@@ -222,12 +255,15 @@
 										/>
 									</div>
 
-									<button
-										class="button button__small button--full-100 button__primary margin-top font__12px"
-										(click)="showOverlay = false; showEventDeliveriesStatusDropdown = false; this.getEventDeliveries({ addToURL: true, fromFilter: true })"
-									>
-										Apply
-									</button>
+									<div class="flex flex__align-items-center margin-top__10px">
+										<button
+											class="button button__small button__primary font__12px margin-right__10px"
+											(click)="showOverlay = false; showEventDeliveriesStatusDropdown = false; this.getEventDeliveries({ addToURL: true, fromFilter: true })"
+										>
+											Apply
+										</button>
+										<button class="button__clear" (click)="clearEventFilters(activeTab, 'eventsDelsStatus'); showEventDeliveriesStatusDropdown = false">Clear</button>
+									</div>
 								</div>
 							</div>
 
@@ -259,6 +295,9 @@
 											(change)="updateAppFilter(app.uid, $event, 'eventDels')"
 										/>
 									</div>
+									<div *ngIf="filteredApps?.length !== 0 && !!eventDeliveriesApp" class="flex flex__justify-end margin-top__10px">
+										<button class="button button__white button__small" (click)="clearEventFilters(activeTab, 'eventsDelApp'); showEventsAppsDropdown = false">Clear</button>
+									</div>
 									<p *ngIf="filteredApps?.length === 0">No app to display</p>
 								</div>
 							</div>
@@ -269,7 +308,6 @@
 									<img src="../../../../assets/img/close-icon.svg" alt="close icon" />
 								</button>
 							</div>
-
 							<button
 								class="flex__justify-center button button__filter margin-left__24px"
 								(click)="showBatchRetryModal = !showBatchRetryModal"
@@ -288,7 +326,7 @@
 						<div class="flex">
 							<button
 								class="button button__white button__small font__12px margin-right__20px"
-								(click)="clearEventFilters(activeTab)"
+								(click)="clearEventFilters(activeTab); selectedEventsDelDateOption = ''"
 								[ngClass]="{
 									disabled:
 										(eventDeliveriesFilterDateRange.value.startDate == '' || eventDeliveriesFilterDateRange.value.endDate == '') &&
@@ -297,12 +335,11 @@
 										!eventDeliveriesStatusFilterActive
 								}"
 							>
-								Clear Filter
+								Clear All
 							</button>
 						</div>
 					</div>
 				</div>
-
 				<div [hidden]="activeTab !== 'apps'">
 					<div class="flex flex__align-items-center flex__justify-between">
 						<form class="input__search filter">
@@ -727,7 +764,7 @@
 <div
 	class="overlay"
 	*ngIf="showOverlay"
-	(click)="currentAppId = ''; showOverlay = false; showEventDeliveriesStatusDropdown = false; showEventDeliveriesAppsDropdown = false; showEventsAppsDropdown = false; showDateFilterDropdown = false"
+	(click)="currentAppId = ''; showOverlay = false; showEventDeliveriesStatusDropdown = false; showEventDeliveriesAppsDropdown = false; showEventsAppsDropdown = false; showDateFilterDropdown = false; showEventDelFilterCalendar = false;"
 ></div>
 <!-- dark overlay  -->
 <div
