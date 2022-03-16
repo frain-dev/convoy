@@ -5,6 +5,7 @@ import RefreshIcon from 'assets/img/refresh-icon.svg';
 // import RefreshIcon2 from 'assets/img/refresh-icon-2.svg';
 import CalendarIcon from 'assets/img/calendar-icon.svg';
 import AngleArrowDownIcon from 'assets/img/angle-arrow-down.svg';
+import RotateIcon from 'assets/img/rotate-icon.svg';
 import StatusFilterIcon from 'assets/img/status-filter-icon.svg';
 import AngleArrowRightIcon from 'assets/img/angle-arrow-right-primary.svg';
 import RetryIcon from 'assets/img/retry-icon.svg';
@@ -356,17 +357,19 @@ export const AppPortal = ({ token, groupId, appId, apiURL }) => {
 	}, [getEvents, getAppDetails, getEventDeliveries]);
 
 	return (
-		<div className={styles['app-page']}>
-			<div className={styles['app-page--head']}>
-				<h3>Endpoint</h3>
+		<div className={styles['dashboard--page']}>
+			<div className={styles['dashboard--page--head']}>
+				<h3 className={styles['margin-bottom__10px']}>Endpoint</h3>
 			</div>
 
 			<div className={styles['app-page--details']}>
-				<div className={`${styles['card']} ${styles['app-page--endpoints']}`}>
-					<table>
+				<div className={`${styles['card']} ${styles['has-title']} ${styles['dashboard-page--endpoints']}`}>
+					<table className={`${styles.table} ${styles['table__no-style']}`}>
 						<thead>
 							<tr className={styles['table--head']}>
-								<th scope="col">Endpoint URL</th>
+								<th className={styles['has-long-text']} scope="col">
+									Endpoint URL
+								</th>
 								<th scope="col">Created At</th>
 								<th scope="col">Updated At</th>
 								<th scope="col">Endpoint Events</th>
@@ -386,10 +389,10 @@ export const AppPortal = ({ token, groupId, appId, apiURL }) => {
 										<div>{getDate(endpoint.updated_at)}</div>
 									</td>
 									<td>
-										<div>
+										<div className={`${styles.flex} ${styles['flex__wrap']}`}>
 											{endpoint.events.map((event, idx) => (
 												<div className={styles.tag} key={idx}>
-													{event}
+													{event == '*' ? 'all events' : event}
 												</div>
 											))}
 										</div>
@@ -406,62 +409,147 @@ export const AppPortal = ({ token, groupId, appId, apiURL }) => {
 				</div>
 			</div>
 
-			<section className={`${styles['card']} ${styles['dashboard--logs']}`}>
+			<section className={`${styles['card']} ${styles['dashboard--logs']} ${styles['has-title']}`}>
 				<div className={styles['dashboard--logs--tabs']}>
-					<div className={`${styles['dashboard--logs--tabs--head']} ${styles.tabs}`}>
-						<div className={styles.tabs}>
-							{tabs.map((tab, index) => (
-								<button onClick={() => toggleActiveTab(tab)} key={index} className={`${styles.clear} ${styles.tab} ${activeTab === tab ? styles.active : ''}`}>
+					<div className={styles.tabs}>
+						{tabs.map((tab, index) => (
+							<li key={index}>
+								<button onClick={() => toggleActiveTab(tab)} className={`${activeTab === tab ? styles.active : ''}`}>
 									{tab}
 								</button>
-							))}
-						</div>
+							</li>
+						))}
+					</div>
+				</div>
 
-						{activeTab === 'events' && <div className="filter"></div>}
+				<div className={styles['dashboard--logs--filter']}>
+					<div className={activeTab === 'events' ? '' : styles.hidden}>
+						<div className={`${styles.flex} ${styles['flex__align-items-center']} ${styles['flex__justify-between']}`}>
+							<button className={`${styles['filter--button']} ${eventDateFilterActive ? styles.active : ''}`} onClick={() => toggleShowEventFilterCalendar(!showEventFilterCalendar)}>
+								<img src={CalendarIcon} alt="calender icon" />
+								<div>Date</div>
+								<img src={AngleArrowDownIcon} alt="arrow down icon" />
+							</button>
+							{showEventFilterCalendar && (
+								<div className={styles['date-filter--container']}>
+									<DateRange onChange={item => setEventFilterDates([item.selection])} editableDateInputs={true} moveRangeOnFirstSelection={false} ranges={eventFilterDates} />
+									<div className={styles['button-container']}>
+										<button
+											className={styles['primary']}
+											onClick={() => {
+												getEvents({ dates: eventFilterDates });
+												toggleEventDateFilterActive(true);
+											}}>
+											Apply
+										</button>
+										<button
+											className={`${styles['primary']} ${styles['outline']}`}
+											onClick={() => {
+												getEvents({ page: 1 });
+												toggleEventDateFilterActive(false);
+											}}>
+											Clear
+										</button>
+									</div>
+								</div>
+							)}
+
+							<button
+								className={`${styles['filter--button']} ${styles['primary']} ${styles['events-filter-clear-btn']} ${!eventDateFilterActive ? styles.disabled : ''}`}
+								onClick={() => clearEventsFilters()}>
+								Clear Filter
+							</button>
+						</div>
 					</div>
 
-					<div className={styles['table']}>
-						<div className={displayedEvents.length > 0 && activeTab && activeTab === 'events' ? '' : styles.hidden}>
-							<div className={styles['filter']}>
-								<button className={`${styles['filter--button']} ${eventDateFilterActive ? styles.active : ''}`} onClick={() => toggleShowEventFilterCalendar(!showEventFilterCalendar)}>
-									<img src={CalendarIcon} alt="calender icon" />
-									<div>Date</div>
+					<div className={activeTab === 'event deliveries' ? '' : styles.hidden}>
+						<div className={`${styles.flex} ${styles['flex__align-items-center']} ${styles['flex__justify-between']}`}>
+							<button className={`${styles['filter--button']} ${eventDelDateFilterActive ? styles.active : ''}}`} onClick={() => toggleEventDelFilterCalendar(!showEventDelFilterCalendar)}>
+								<img src={CalendarIcon} alt="calender icon" />
+								<div>Date</div>
+								<img src={AngleArrowDownIcon} alt="arrow down icon" />
+							</button>
+							{showEventDelFilterCalendar && (
+								<div className={styles['date-filter--container']}>
+									<DateRange onChange={item => setEventDelFilterDates([item.selection])} editableDateInputs={true} moveRangeOnFirstSelection={false} ranges={eventDelFilterDates} />
+									<div className={styles['button-container']}>
+										<button
+											className={styles['primary']}
+											onClick={() => {
+												getEventDeliveries({ dates: eventFilterDates });
+												toggleEventDelDateFilterActive(true);
+											}}>
+											Apply
+										</button>
+										<button
+											className={`${styles['primary']} ${styles['outline']}`}
+											onClick={() => {
+												clearEventDeliveriesDateFilter();
+												toggleEventDelDateFilterActive(false);
+											}}>
+											Clear
+										</button>
+									</div>
+								</div>
+							)}
+
+							<div className={styles['dropdown']}>
+								<button
+									className={`${styles['button']} ${styles['button__filter']} ${styles['button--has-icon']} ${styles['icon-right']} ${styles['icon-left']} ${styles['margin-left__24px']} ${
+										eventDelStatusFilterActive ? styles.active : ''
+									}`}
+									onClick={() => toggleShowEventDeliveriesStatusDropdown(!showEventDeliveriesStatusDropdown)}>
+									<img src={StatusFilterIcon} alt="status filter icon" />
+									<span>Status</span>
 									<img src={AngleArrowDownIcon} alt="arrow down icon" />
 								</button>
-								{showEventFilterCalendar && (
-									<div className={styles['date-filter--container']}>
-										<DateRange onChange={item => setEventFilterDates([item.selection])} editableDateInputs={true} moveRangeOnFirstSelection={false} ranges={eventFilterDates} />
-										<div className={styles['button-container']}>
-											<button
-												className={styles['primary']}
-												onClick={() => {
-													getEvents({ dates: eventFilterDates });
-													toggleEventDateFilterActive(true);
-												}}>
-												Apply
-											</button>
-											<button
-												className={`${styles['primary']} ${styles['outline']}`}
-												onClick={() => {
-													getEvents({ page: 1 });
-													toggleEventDateFilterActive(false);
-												}}>
-												Clear
-											</button>
+								<div className={`${styles['dropdown__menu']} ${styles['with-padding']} ${styles.small} ${showEventDeliveriesStatusDropdown ? styles.show : ''}`}>
+									{eventDeliveryStatuses.map((status, index) => (
+										<div className={`${styles['dropdown__menu__item']} ${styles['with-border']}`} key={'status' + index}>
+											<label htmlFor={status}>{status}</label>
+											<input type="checkbox" name={status} value={status} id={status} onChange={e => updateEventDevliveryStatusFilter({ status, input: e })} />
 										</div>
+									))}
+									<div className={`${styles['flex']} ${styles['flex__align-items-center']} ${styles['margin-top__12px']}`}>
+										<button className={`${styles['button']} ${styles['button__primary']} ${styles['button__small']}`}>Apply</button>
+										<button
+											className={`${styles['button__clear']} ${styles['margin-left__14px']}`}
+											onClick={() => getEventDeliveries({ page: 1, eventDelFilterStatusList: eventDelFilterStatus })}>
+											Apply
+										</button>
 									</div>
-								)}
-
-								<button
-									className={`${styles['filter--button']} ${styles['primary']} ${styles['events-filter-clear-btn']} ${!eventDateFilterActive ? styles.disabled : ''}`}
-									onClick={() => clearEventsFilters()}>
-									Clear Filter
-								</button>
+								</div>
 							</div>
 
-							<hr />
+							{eventDeliveryEventId && (
+								<div className={`${styles['button__filter']} ${styles['margin-left__24px']} ${styles.active}`}>
+									Event Filtered
+									<button
+										className={`${styles['button__clear']} ${styles['button--has-icon']}  ${styles['margin-left__8px']}`}
+										onClick={() => {
+											setEventDeliveryEventId('');
+											getEventDeliveries({ page: 1 });
+										}}>
+										<img src={CloseIcon} alt="close icon" />
+									</button>
+								</div>
+							)}
 
-							<div className={`${styles['table--container']} ${styles['smaller-table']}`}>
+							<button
+								className={`${styles['button']} ${styles['button__white']} ${styles['button__small']} ${styles['margin-right__20px']} ${
+									!eventDelDateFilterActive && eventDeliveryEventId === '' && !eventDelStatusFilterActive ? styles.disabled : ''
+								}`}
+								onClick={() => clearEventDeliveriesFilters()}>
+								Clear Filter
+							</button>
+						</div>
+					</div>
+				</div>
+
+				<div className={styles['flex']}>
+					<div className={styles['dashboard--logs--table']}>
+						<div className={`${styles['table']} ${styles['table--container']} ${styles['has-loader']} ${displayedEvents.length > 0 && activeTab && activeTab === 'events' ? '' : styles.hidden}`}>
+							<div className={displayedEvents.length > 0 && activeTab && activeTab === 'events' ? '' : styles.hidden}>
 								<table id="events-table">
 									<thead>
 										<tr className={styles['table--head']}>
@@ -503,7 +591,7 @@ export const AppPortal = ({ token, groupId, appId, apiURL }) => {
 															Prism.highlightAll();
 															console.log(Prism);
 														}}
-														className={event.uid === eventDetailsItem?.uid ? styles['active'] : ''}
+														className={`${event.uid === eventDetailsItem?.uid ? styles.active : ''} ${index === eventGroup.events.length - 1 ? styles['last-item'] : ''}`}
 														id={'event' + index}>
 														<td>
 															<div>
@@ -520,7 +608,7 @@ export const AppPortal = ({ token, groupId, appId, apiURL }) => {
 														<td>
 															<div>
 																<button
-																	className={`${styles['primary']} ${styles['clear']} ${styles['has-icon']} ${styles['icon-right']}`}
+																	className={`${styles['button']} ${styles['button__clear']} ${styles['button--has-icon']} ${styles['icon-right']}`}
 																	onClick={e => {
 																		e.stopPropagation();
 																		setEventDeliveryEventId(event.uid);
@@ -540,14 +628,15 @@ export const AppPortal = ({ token, groupId, appId, apiURL }) => {
 								</table>
 
 								{events.pagination.totalPage > 1 && (
-									<div className={`${styles['table--load-more']} ${styles['button-container']} ${styles['margin-top']} ${styles.center}`}>
+									<div className={`${styles['table--load-more']} ${styles['button--container']} ${styles.center}`}>
 										<button
-											className={`${styles['primary']} ${styles['clear']} ${styles['has-icon']} ${styles['icon-left']} ${
-												events.pagination.page === events.pagination.totalPage ? styles.disable_action : ''
-											}`}
+											className={`${styles['button']} ${styles['button__clear']} ${styles['button--has-icon']} ${styles['icon-left']}${styles['margin-top__20px']} ${
+												styles['margin-bottom__24px']
+											} ${styles['flex__justify-center']} ${events.pagination.page === events.pagination.totalPage ? styles.disable_action : ''}`}
 											disabled={events.pagination.page === events.pagination.totalPage}
 											onClick={() => getEvents({ page: events.pagination.page + 1, eventsData: events, dates: eventDateFilterActive ? eventFilterDates : null })}>
-											<img src={ArrowDownIcon} alt="arrow down icon" />
+											{events.pagination.totalPage > 1 && <img src={ArrowDownIcon} className={`${styles['width-unset']} ${styles['height-unset']}`} alt="arrow down icon" />}
+											{events.pagination.totalPage > 1 && <img src={RotateIcon} class={styles['loading-icon']} alt="loading icon" />}
 											Load more
 										</button>
 									</div>
@@ -556,82 +645,6 @@ export const AppPortal = ({ token, groupId, appId, apiURL }) => {
 						</div>
 
 						<div className={displayedEventDeliveries.length > 0 && activeTab && activeTab === 'event deliveries' ? '' : styles.hidden}>
-							<div className={styles['filter']}>
-								<button className={`${styles['filter--button']} ${eventDelDateFilterActive ? styles.active : ''}}`} onClick={() => toggleEventDelFilterCalendar(!showEventDelFilterCalendar)}>
-									<img src={CalendarIcon} alt="calender icon" />
-									<div>Date</div>
-									<img src={AngleArrowDownIcon} alt="arrow down icon" />
-								</button>
-								{showEventDelFilterCalendar && (
-									<div className={styles['date-filter--container']}>
-										<DateRange onChange={item => setEventDelFilterDates([item.selection])} editableDateInputs={true} moveRangeOnFirstSelection={false} ranges={eventDelFilterDates} />
-										<div className={styles['button-container']}>
-											<button
-												className={styles['primary']}
-												onClick={() => {
-													getEventDeliveries({ dates: eventFilterDates });
-													toggleEventDelDateFilterActive(true);
-												}}>
-												Apply
-											</button>
-											<button
-												className={`${styles['primary']} ${styles['outline']}`}
-												onClick={() => {
-													clearEventDeliveriesDateFilter();
-													toggleEventDelDateFilterActive(false);
-												}}>
-												Clear
-											</button>
-										</div>
-									</div>
-								)}
-
-								<div className={styles['dropdown']}>
-									<button
-										className={`${styles['filter--button']} ${styles['dropdown--button']} ${eventDelStatusFilterActive ? styles.active : ''}`}
-										onClick={() => toggleShowEventDeliveriesStatusDropdown(!showEventDeliveriesStatusDropdown)}>
-										<img src={StatusFilterIcon} alt="status filter icon" />
-										<span>Status</span>
-										<img src={AngleArrowDownIcon} alt="arrow down icon" />
-									</button>
-									<div className={`${styles['dropdown--list']} + ${showEventDeliveriesStatusDropdown ? styles.show : ''}`}>
-										{eventDeliveryStatuses.map((status, index) => (
-											<div className={styles['dropdown--list--item']} key={'status' + index}>
-												<input type="checkbox" name={status} value={status} id={status} onChange={e => updateEventDevliveryStatusFilter({ status, input: e })} />
-												<label htmlFor={status}>{status}</label>
-											</div>
-										))}
-										<button className={styles['primary']} onClick={() => getEventDeliveries({ page: 1, eventDelFilterStatusList: eventDelFilterStatus })}>
-											Apply
-										</button>
-									</div>
-								</div>
-
-								{eventDeliveryEventId && (
-									<div className={`${styles['filter--button']} ${styles['event-button']} ${styles.active}`}>
-										Event Filtered
-										<button
-											className={`${styles.primary} ${styles.clear}  ${styles['has-icon']}`}
-											onClick={() => {
-												setEventDeliveryEventId('');
-												getEventDeliveries({ page: 1 });
-											}}>
-											<img src={CloseIcon} alt="close icon" />
-										</button>
-									</div>
-								)}
-
-								<button
-									className={`${styles['filter--button']} ${styles['primary']} ${styles['events-filter-clear-btn']} ${
-										!eventDelDateFilterActive && eventDeliveryEventId === '' && !eventDelStatusFilterActive ? styles.disabled : ''
-									}`}
-									onClick={() => clearEventDeliveriesFilters()}>
-									Clear Filter
-								</button>
-							</div>
-
-							<hr />
-
 							<div className={`${styles['table--container']}`}>
 								<table id="events-deliveries-table">
 									<thead>
