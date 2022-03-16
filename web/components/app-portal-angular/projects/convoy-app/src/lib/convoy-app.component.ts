@@ -73,6 +73,8 @@ export class ConvoyAppComponent implements OnInit {
 	showOverlay = false;
 	showEventDeliveriesStatusDropdown = false;
 	isRetyring = false;
+	isloadingMoreEvents = false;
+	isloadingEvents = false;
 	showBatchRetryModal = false;
 	fetchingCount = false;
 	@Input('token') token!: string;
@@ -100,6 +102,7 @@ export class ConvoyAppComponent implements OnInit {
 		if (tab === 'events' && this.events?.content.length > 0) {
 			this.eventDetailsActiveTab = 'data';
 			this.detailsItem = this.events?.content[0];
+			this.getEvents();
 			this.getEventDeliveriesForSidebar(this.detailsItem.uid);
 		} else if (tab === 'event deliveries' && this.eventDeliveries?.content.length > 0) {
 			this.detailsItem = this.eventDeliveries?.content[0];
@@ -110,7 +113,7 @@ export class ConvoyAppComponent implements OnInit {
 	setDateForFilter(requestDetails: { startDate: Date; endDate: Date }) {
 		if (!requestDetails.endDate && !requestDetails.startDate) return { startDate: '', endDate: '' };
 		const startDate = requestDetails.startDate ? `${format(requestDetails.startDate, 'yyyy-MM-dd')}T00:00:00` : '';
-		const endDate = requestDetails.endDate ? `${format(requestDetails.endDate, 'yyyy-MM-dd')}T00:00:00` : '';
+		const endDate = requestDetails.endDate ? `${format(requestDetails.endDate, 'yyyy-MM-dd')}T23:59:59` : '';
 		return { startDate, endDate };
 	}
 
@@ -215,6 +218,7 @@ export class ConvoyAppComponent implements OnInit {
 	}
 
 	async getEvents(requestDetails?: { appId?: string }) {
+		this.events?.pagination?.next === this.eventsPage ? (this.isloadingMoreEvents = true) : (this.isloadingEvents = true);
 		if (requestDetails?.appId) this.eventApp = requestDetails.appId;
 
 		const { startDate, endDate } = this.setDateForFilter(this.eventsFilterDateRange.value);
@@ -232,12 +236,16 @@ export class ConvoyAppComponent implements OnInit {
 				const pagination = eventsResponse.data.pagination;
 				this.events = { content, pagination };
 				this.displayedEvents = this.setEventsDisplayed(content);
+				this.isloadingMoreEvents = false;
 				return;
 			}
 
 			this.events = eventsResponse.data;
 			this.displayedEvents = await this.setEventsDisplayed(eventsResponse.data.content);
+			this.isloadingEvents = false;
 		} catch (error) {
+			this.isloadingEvents = false;
+			this.isloadingMoreEvents = false;
 			return error;
 		}
 	}
