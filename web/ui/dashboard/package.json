@@ -24,7 +24,7 @@
 		"@angular/router": "~13.0.0",
 		"angular-prism": "^0.1.20",
 		"chart.js": "^3.6.0",
-		"convoy-app": "file:../../components/app-portal-angular/dist/convoy-app",
+		"convoy-app": "0.0.3",
 		"convoy-dashboard": "^0.5.16",
 		"convoy-ui": "0.0.2",
 		"date-fns": "^2.27.0",
