@@ -8,8 +8,10 @@ import (
 	"crypto/sha512"
 	"encoding/hex"
 	"errors"
+	"fmt"
 	"hash"
 	"strings"
+	"time"
 
 	"github.com/dchest/uniuri"
 
@@ -17,12 +19,12 @@ import (
 	"golang.org/x/crypto/sha3"
 )
 
-const (
-	prefix    string = "CO"
-	seperator string = "."
+var (
+	prefix    []string = []string{"CO", "t=", "data="}
+	seperator []string = []string{".", ","}
 )
 
-func ComputeJSONHmac(hash, data, secret string, order bool) (string, error) {
+func ComputeJSONHmac(hash, data, secret string, order bool, timestamp bool) (string, error) {
 
 	if order {
 		d, err := JsonReMarshalString(data)
@@ -30,6 +32,16 @@ func ComputeJSONHmac(hash, data, secret string, order bool) (string, error) {
 			return "", err
 		}
 		data = d
+	}
+
+	if timestamp {
+		var d strings.Builder
+		d.WriteString(prefix[1])
+		d.WriteString(fmt.Sprint(time.Now().Unix()))
+		d.WriteString(seperator[1])
+		d.WriteString(prefix[2])
+		d.WriteString(data)
+		data = d.String()
 	}
 
 	fn, err := getHashFunction(hash)
@@ -84,10 +96,10 @@ func GenerateAPIKey() (string, string) {
 
 	var api_key strings.Builder
 
-	api_key.WriteString(prefix)
-	api_key.WriteString(seperator)
+	api_key.WriteString(prefix[0])
+	api_key.WriteString(seperator[0])
 	api_key.WriteString(mask)
-	api_key.WriteString(seperator)
+	api_key.WriteString(seperator[0])
 	api_key.WriteString(key)
 
 	return mask, api_key.String()

@@ -105,7 +105,7 @@ func ProcessEventDelivery(appRepo datastore.ApplicationRepository, eventDelivery
 			return &EndpointError{Err: err}
 		}
 
-		hmac, err := util.ComputeJSONHmac(g.Config.Signature.Hash, bStr, secret, false)
+		hmac, err := util.ComputeJSONHmac(g.Config.Signature.Hash, bStr, secret, false, true)
 		if err != nil {
 			log.Errorf("error occurred while generating hmac signature - %+v\n", err)
 			return &EndpointError{Err: err}
