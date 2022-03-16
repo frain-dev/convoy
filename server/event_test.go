@@ -387,6 +387,34 @@ func TestApplicationHandler_CreateAppEvent(t *testing.T) {
 					Return([]*datastore.Group{group}, nil)
 			},
 		},
+		{
+			name:       "valid message - disabled application",
+			cfgPath:    "./testdata/Auth_Config/no-auth-convoy.json",
+			method:     http.MethodPost,
+			statusCode: http.StatusBadRequest,
+			body:       strings.NewReader(`{"app_id": "12345", "event_type": "test",  "data": {}}`),
+			args: args{
+				message: message,
+			},
+			dbFn: func(app *applicationHandler) {
+				a, _ := app.appRepo.(*mocks.MockApplicationRepository)
+				a.EXPECT().
+					FindApplicationByID(gomock.Any(), gomock.Any()).Times(1).
+					Return(&datastore.Application{
+						UID:       appId,
+						GroupID:   groupId,
+						Title:     "Valid application",
+						IsDisabled: true,
+						Endpoints: []datastore.Endpoint{},
+					}, nil)
+
+				o, _ := app.groupRepo.(*mocks.MockGroupRepository)
+
+				o.EXPECT().
+					LoadGroups(gomock.Any(), gomock.Any()).Times(1).
+					Return([]*datastore.Group{group}, nil)
+			},
+		},
 	}
 
 	for _, tc := range tests {

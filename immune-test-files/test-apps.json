@@ -1,0 +1,64 @@
+{
+    "base_url": "http://127.0.0.1:5005/api/v1",
+    "database": {
+        "type": "mongo",
+        "dsn": "mongodb://localhost:27017/testdb"
+    },
+    "test_cases": [
+        {
+            "name": "test_convoy_get_apps",
+            "setup": [
+                "setup_group",
+                "setup_app",
+                "setup_app"
+            ],
+            "http_method": "GET",
+            "endpoint": "/applications?perPage=10&page=1&sort=asc&q=app&groupID={group_id}",
+            "request_body": {},
+            "status_code": 200,
+            "response_body": true
+        },
+        {
+            "name": "test_convoy_get_app",
+            "setup": [
+                "setup_group",
+                "setup_app"
+            ],
+            "http_method": "GET",
+            "endpoint": "/applications/{app_id}?groupID={group_id}",
+            "request_body": {},
+            "status_code": 200,
+            "response_body": true
+        },
+        {
+            "name": "test_convoy_update_app",
+            "setup": [
+                "setup_group",
+                "setup_app"
+            ],
+            "http_method": "PUT",
+            "endpoint": "/applications/{app_id}?groupID={group_id}",
+            "request_body": {
+                "name": "retro-app",
+                "support_email": "ci@gmail.com"
+            },
+            "status_code": 202,
+            "response_body": true
+        },
+        {
+            "name": "test_convoy_delete_app",
+            "setup": [
+                "setup_group",
+                "setup_app"
+            ],
+            "http_method": "DELETE",
+            "endpoint": "/applications/{app_id}?groupID={group_id}",
+            "request_body": {
+                "name": "retro-app",
+                "support_email": "ci@gmail.com"
+            },
+            "status_code": 200,
+            "response_body": true
+        }
+    ]
+}
