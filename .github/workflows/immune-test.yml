@@ -2,7 +2,8 @@ name: Build and run immune tests
 on:
   push:
     branches:
-      - daniel/feat/add_immune_to_ci
+      - main
+  pull_request:
 
 jobs:
   test:
