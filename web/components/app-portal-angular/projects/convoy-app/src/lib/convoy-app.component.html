@@ -285,184 +285,183 @@
 
 		<div class="flex">
 			<div class="dashboard--logs--table">
-				<div class="table">
-					<div [hidden]="activeTab !== 'events'">
-						<div class="table--container smaller-table" *ngIf="displayedEvents.length > 0">
-							<table id="events-table">
-								<thead>
-									<tr class="table--head">
-										<th scope="col">Event Type</th>
-										<th scope="col">App Name</th>
-										<th scope="col">Created At</th>
-										<th scope="col"></th>
-									</tr>
-								</thead>
-								<tbody>
-									<ng-container *ngFor="let eventGroup of displayedEvents; let i = index">
-										<tr class="table--date-row">
-											<td>
-												<div>{{ eventGroup.date }}</div>
-											</td>
-											<td></td>
-											<td></td>
-											<td></td>
-										</tr>
-										<tr
-											*ngFor="let event of eventGroup.events; let index = index"
-											[ngClass]="{
-												active: event.uid === detailsItem?.uid
-											}"
-											[id]="'event' + index"
-											(click)="detailsItem = event; getEventDeliveriesForSidebar(event.uid)"
-										>
-											<td>
-												<div>
-													<div class="tag">
-														{{ event.event_type }}
-													</div>
-												</div>
-											</td>
-											<td class="has-long-text">
-												<div>
-													{{ event.app_metadata.title }}
-												</div>
-											</td>
-											<td>
-												<div>
-													{{ event.created_at | date: 'mediumTime' }}
-												</div>
-											</td>
-											<td>
-												<div>
-													<button class="button button__clear button--has-icon icon-right" (click)="eventDeliveryFilteredByEventId = event.uid; openDeliveriesTab()">
-														Deliveries
-														<img src="../../../../assets/img/angle-arrow-right-primary.svg" alt="arrow right" />
-													</button>
-												</div>
-											</td>
-										</tr>
-									</ng-container>
-								</tbody>
-							</table>
-
-							<div class="table--load-more button-container center" *ngIf="events.pagination.totalPage > 1">
-								<button
-									[class]="'button button__clear button--has-icon icon-left margin-top__20px margin-bottom__24px flex__justify-center '"
-									[disabled]="events.pagination.page === events.pagination.totalPage"
-									(click)="eventsPage = eventsPage + 1; getEvents()"
+				<div class="table table--container" [hidden]="activeTab !== 'events' || displayedEvents.length === 0">
+					<table id="events-table">
+						<thead>
+							<tr class="table--head">
+								<th scope="col">Event Type</th>
+								<th scope="col">App Name</th>
+								<th scope="col">Created At</th>
+								<th scope="col"></th>
+							</tr>
+						</thead>
+						<tbody>
+							<ng-container *ngFor="let eventGroup of displayedEvents; let i = index">
+								<tr class="table--date-row">
+									<td>
+										<div>{{ eventGroup.date }}</div>
+									</td>
+									<td></td>
+									<td></td>
+									<td></td>
+								</tr>
+								<tr
+									*ngFor="let event of eventGroup.events; let index = index"
+									[ngClass]="{
+										active: event.uid === detailsItem?.uid
+									}"
+									[id]="'event' + index"
+									(click)="detailsItem = event; getEventDeliveriesForSidebar(event.uid)"
 								>
-									<img src="/assets/img/arrow-down-icon.svg" alt="arrow down icon" />
-									Load more
-								</button>
-							</div>
-						</div>
-
-						<div class="empty-state table--container" *ngIf="displayedEvents.length === 0">
-							<img src="/assets/img/empty-state-img.svg" alt="empty state" />
-							<p>No event to show here</p>
-						</div>
+									<td>
+										<div>
+											<div class="tag">
+												{{ event.event_type }}
+											</div>
+										</div>
+									</td>
+									<td class="has-long-text">
+										<div>
+											{{ event.app_metadata.title }}
+										</div>
+									</td>
+									<td>
+										<div>
+											{{ event.created_at | date: 'mediumTime' }}
+										</div>
+									</td>
+									<td>
+										<div>
+											<button class="button button__clear button--has-icon icon-right" (click)="eventDeliveryFilteredByEventId = event.uid; openDeliveriesTab()">
+												Deliveries
+												<img src="../../../../assets/img/angle-arrow-right-primary.svg" alt="arrow right" />
+											</button>
+										</div>
+									</td>
+								</tr>
+							</ng-container>
+						</tbody>
+					</table>
+					<div class="table--load-more button--container center" *ngIf="events.pagination.totalPage > 1">
+						<button
+							class="button button__clear button--has-icon icon-left margin-top__20px margin-bottom__24px flex__justify-center"
+							[disabled]="events.pagination.page === events.pagination.totalPage"
+							(click)="eventsPage = eventsPage + 1; getEvents()"
+						>
+							<img src="/assets/img/arrow-down-icon.svg" class="width-unset height-unset" [hidden]="isloadingMoreEvents" alt="arrow down icon" />
+							<img src="/assets/img/rotate-icon.svg" class="loading-icon" [hidden]="!isloadingMoreEvents" alt="loading icon" />
+							Load more
+						</button>
 					</div>
 
-					<div [hidden]="activeTab !== 'event deliveries'">
-						<div class="table--container" *ngIf="displayedEventDeliveries.length > 0">
-							<table id="event-deliveries-table">
-								<thead>
-									<tr class="table--head">
-										<th scope="col" class="checkbox">
+			
+				</div>
+
+				<div class="empty-state table--container" *ngIf="displayedEvents.length === 0 && activeTab === 'events'">
+					<img src="/assets/img/empty-state-img.svg" alt="empty state" />
+					<p>No event to show here</p>
+				</div>
+				<div class="table table--container" [hidden]="activeTab !== 'event deliveries' || displayedEventDeliveries.length === 0">
+					<table id="event-deliveries-table">
+						<thead>
+							<tr class="table--head">
+								<th scope="col" class="checkbox">
+									<!-- to be reviwed  -->
+									<!-- <div class="checkbox">
+										<input type="checkbox" name="eventDeliveryTable" id="eventDeliveryTable" (change)="checkAllCheckboxes($event)" />
+									</div> -->
+									Status
+								</th>
+								<th scope="col">Event Type</th>
+								<th scope="col">Attempts</th>
+								<th scope="col">Created At</th>
+								<th scope="col"></th>
+							</tr>
+						</thead>
+						<tbody>
+							<ng-container *ngFor="let eventDeliveriesGroup of displayedEventDeliveries; let i = index">
+								<tr class="table--date-row">
+									<td>
+										<div>
+											{{ eventDeliveriesGroup.date }}
+										</div>
+									</td>
+									<td></td>
+									<td></td>
+									<td></td>
+									<td></td>
+								</tr>
+								<tr
+									*ngFor="let event of eventDeliveriesGroup.events; let index = index"
+									[ngClass]="{
+										active: event.uid === detailsItem?.uid
+									}"
+									[id]="'event' + index"
+									(click)="detailsItem = event; getDelieveryAttempts(event.uid)"
+								>
+									<td>
+										<div class="has-retry">
+											<img *ngIf="event.metadata.num_trials > event.metadata.retry_limit" src="/assets/img/retry-icon.svg" alt="retry icon" title="manually retried" />
 											<!-- to be reviwed  -->
-											<!-- <div class="checkbox">
-												<input type="checkbox" name="eventDeliveryTable" id="eventDeliveryTable" (change)="checkAllCheckboxes($event)" />
-											</div> -->
-											Status
-										</th>
-										<th scope="col">Event Type</th>
-										<th scope="col">Attempts</th>
-										<th scope="col">Created At</th>
-										<th scope="col"></th>
-									</tr>
-								</thead>
-								<tbody>
-									<ng-container *ngFor="let eventDeliveriesGroup of displayedEventDeliveries; let i = index">
-										<tr class="table--date-row">
-											<td>
-												<div>
-													{{ eventDeliveriesGroup.date }}
-												</div>
-											</td>
-											<td></td>
-											<td></td>
-											<td></td>
-											<td></td>
-										</tr>
-										<tr
-											*ngFor="let event of eventDeliveriesGroup.events; let index = index"
-											[ngClass]="{
-												active: event.uid === detailsItem?.uid
-											}"
-											[id]="'event' + index"
-											(click)="detailsItem = event; getDelieveryAttempts(event.uid)"
-										>
-											<td>
-												<div class="has-retry">
-													<img *ngIf="event.metadata.num_trials > event.metadata.retry_limit" src="/assets/img/retry-icon.svg" alt="retry icon" title="manually retried" />
-													<!-- to be reviwed  -->
-													<!-- <input type="checkbox" [name]="'event' + index" id="event" [value]="event.uid" (change)="checkEventDeliveryBox($event)" /> -->
-													<div [class]="'tag tag--' + event.status">
-														{{ event.status }}
-													</div>
-												</div>
-											</td>
-											<td>
-												<div>
-													{{ event.event_metadata.name }}
-												</div>
-											</td>
-											<td>
-												<div>
-													{{ event.metadata?.num_trials }}
-												</div>
-											</td>
-											<td>
-												<div>
-													{{ event.created_at | date: 'mediumTime' }}
-												</div>
-											</td>
-											<td>
-												<div>
-													<button
-														[disabled]="event.status === 'Success' || event.status === 'Scheduled'"
-														[class]="'button__retry button--has-icon icon-left ' + (event.status === 'Success' || event.status === 'Scheduled' ? 'disabled' : '')"
-														(click)="
-															retryEvent({
-																e: $event,
-																index: this.index,
-																eventDeliveryId: event.uid
-															})
-														"
-													>
-														<img src="/assets/img/refresh-icon-primary.svg" alt="refresh icon" />
-														Retry
-													</button>
-												</div>
-											</td>
-										</tr>
-									</ng-container>
-								</tbody>
-							</table>
-
-							<div class="table--load-more button-container center" *ngIf="eventDeliveries.pagination.totalPage > 1">
-								<button [class]="'primary clear has-icon icon-left'" [disabled]="eventDeliveries.pagination.page === eventDeliveries.pagination.totalPage" (click)="loadMoreEventDeliveries()">
-									<img src="/assets/img/arrow-down-icon.svg" alt="arrow down icon" />
-									Load more
-								</button>
-							</div>
-						</div>
-
-						<div class="empty-state table--container" *ngIf="displayedEventDeliveries.length === 0">
-							<img src="/assets/img/empty-state-img.svg" alt="empty state" />
-							<p>No event to show here</p>
-						</div>
+											<!-- <input type="checkbox" [name]="'event' + index" id="event" [value]="event.uid" (change)="checkEventDeliveryBox($event)" /> -->
+											<div [class]="'tag tag--' + event.status">
+												{{ event.status }}
+											</div>
+										</div>
+									</td>
+									<td>
+										<div>
+											{{ event.event_metadata.name }}
+										</div>
+									</td>
+									<td>
+										<div>
+											{{ event.metadata?.num_trials }}
+										</div>
+									</td>
+									<td>
+										<div>
+											{{ event.created_at | date: 'mediumTime' }}
+										</div>
+									</td>
+									<td>
+										<div>
+											<button
+												[disabled]="event.status === 'Success' || event.status === 'Scheduled'"
+												[class]="'button__retry button--has-icon icon-left ' + (event.status === 'Success' || event.status === 'Scheduled' ? 'disabled' : '')"
+												(click)="
+													retryEvent({
+														e: $event,
+														index: this.index,
+														eventDeliveryId: event.uid
+													})
+												"
+											>
+												<img src="/assets/img/refresh-icon-primary.svg" alt="refresh icon" />
+												Retry
+											</button>
+										</div>
+									</td>
+								</tr>
+							</ng-container>
+						</tbody>
+					</table>
+					<div class="table--load-more button--container center" *ngIf="eventDeliveries.pagination.totalPage > 1">
+						<button
+							class="button button__clear button--has-icon icon-left margin-top__20px margin-bottom__24px flex__justify-center"
+							[disabled]="eventDeliveries.pagination.page === eventDeliveries.pagination.totalPage"
+							(click)="loadMoreEventDeliveries()"
+						>
+							<img src="/assets/img/arrow-down-icon.svg" class="width-unset height-unset" alt="arrow down icon" />
+							Load more
+						</button>
 					</div>
+					
+				</div>
+
+				<div class="empty-state table--container" *ngIf="activeTab === 'event deliveries' && displayedEventDeliveries.length === 0">
+					<img src="/assets/img/empty-state-img.svg" alt="empty state" />
+					<p>No event to show here</p>
 				</div>
 			</div>
 			<div class="dashboard--logs--details">

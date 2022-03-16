@@ -16,17 +16,18 @@
 	}
 }
 
-.button {
-	&--margin-left {
-		margin-left: 15px;
-	}
-}
-.button__filter {
-	.mat-date-range-input {
-		display: none !important;
-	}
-}
 .line {
 	height: 22px;
 	width: 1px;
+}
+.table td {
+	& > div {
+		text-transform: none !important;
+	}
+}
+.modal--body.delete {
+	img.filter-img {
+		height: 80px;
+		width: 80px;
+	}
 }

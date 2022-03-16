@@ -16,3 +16,16 @@ input[type='time']::-webkit-calendar-picker-indicator {
 		width: 80px;
 	}
 }
+input[type='checkbox'],
+input[type='radio'] {
+	&::after {
+		content: url('assets/img/checkbox-icon.svg');
+	}
+}
+.filter {
+	.select {
+		&::after {
+			background: url('assets/img/angle-down.svg');
+		}
+	}
+}

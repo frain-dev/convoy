@@ -9,7 +9,7 @@
 		"test": "ng test",
 		"pub": "npm run build && cd ./dist/convoy-app/ && npm publish"
 	},
-	"private": true,
+	"private": false,
 	"dependencies": {
 		"@angular/animations": "~13.1.1",
 		"@angular/cdk": "^13.1.1",
