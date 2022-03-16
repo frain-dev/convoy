@@ -49,6 +49,7 @@ const (
 	dashboardCtx        contextKey = "dashboard"
 	deliveryAttemptsCtx contextKey = "deliveryAttempts"
 	baseUrlCtx          contextKey = "baseUrl"
+	appIdCtx            contextKey = "appId"
 )
 
 func instrumentPath(path string) func(http.Handler) http.Handler {
@@ -148,6 +149,22 @@ func requireApp(appRepo datastore.ApplicationRepository) func(next http.Handler)
 	}
 }
 
+func requireAppId() func(next http.Handler) http.Handler {
+	return func(next http.Handler) http.Handler {
+
+		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			authUser := getAuthUserFromContext(r.Context())
+
+			if len(authUser.Role.Apps) > 0 {
+				appID := authUser.Role.Apps[0]
+				r = r.WithContext(setAppIDInContext(r.Context(), appID))
+			}
+
+			next.ServeHTTP(w, r)
+		})
+	}
+}
+
 func requireAppPortalApplication(appRepo datastore.ApplicationRepository) func(next http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 
@@ -157,6 +174,10 @@ func requireAppPortalApplication(appRepo datastore.ApplicationRepository) func(n
 
 			if util.IsStringEmpty(appID) {
 				appID = r.URL.Query().Get("appId")
+			}
+
+			if util.IsStringEmpty(appID) {
+				appID = getAppIDFromContext(r.Context())
 			}
 
 			app, err := appRepo.FindApplicationByID(r.Context(), appID)
@@ -877,4 +898,18 @@ func setBaseUrlInContext(ctx context.Context, baseUrl string) context.Context {
 
 func getBaseUrlFromContext(ctx context.Context) string {
 	return ctx.Value(baseUrlCtx).(string)
+}
+
+func setAppIDInContext(ctx context.Context, appId string) context.Context {
+	return context.WithValue(ctx, appIdCtx, appId)
+}
+
+func getAppIDFromContext(ctx context.Context) string {
+	var appID string
+
+	if appID, ok := ctx.Value(appIdCtx).(string); ok {
+		return appID
+	}
+
+	return appID
 }

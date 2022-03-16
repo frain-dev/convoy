@@ -285,12 +285,12 @@ func buildRoutes(app *applicationHandler) http.Handler {
 		portalRouter.Use(setupCORS)
 		portalRouter.Use(requireAuth())
 		portalRouter.Use(requireGroup(app.groupRepo))
+		portalRouter.Use(requireAppId())
 
 		portalRouter.Route("/apps", func(appRouter chi.Router) {
 			appRouter.Route("/{appID}", func(appSubRouter chi.Router) {
 				appSubRouter.Use(requireAppPortalApplication(app.appRepo))
 				appSubRouter.Use(requireAppPortalPermission(auth.RoleUIAdmin))
-
 				appSubRouter.Get("/", app.GetApp)
 
 				appSubRouter.Route("/endpoints", func(endpointAppSubRouter chi.Router) {
