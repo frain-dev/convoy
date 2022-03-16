@@ -96,6 +96,9 @@
 					"group_id": {
 						"type": "string"
 					},
+					"is_disabled": {
+						"type": "boolean"
+					},
 					"name": {
 						"type": "string"
 					},
@@ -509,6 +512,9 @@
 			},
 			"models.Application": {
 				"properties": {
+					"is_disabled": {
+						"type": "boolean"
+					},
 					"name": {
 						"type": "string"
 					},

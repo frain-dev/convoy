@@ -6,6 +6,8 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/frain-dev/convoy/services"
+
 	"github.com/frain-dev/convoy/cache"
 	limiter "github.com/frain-dev/convoy/limiter"
 	"github.com/frain-dev/convoy/logger"
@@ -24,6 +26,7 @@ import (
 )
 
 type applicationHandler struct {
+	eventService      *services.EventService
 	appRepo           datastore.ApplicationRepository
 	eventRepo         datastore.EventRepository
 	eventDeliveryRepo datastore.EventDeliveryRepository
@@ -200,7 +203,6 @@ func (a *applicationHandler) UpdateApp(w http.ResponseWriter, r *http.Request) {
 	if appUpdate.IsDisabled != nil {
 		app.IsDisabled = *appUpdate.IsDisabled
 	}
-
 
 	err = a.appRepo.UpdateApplication(r.Context(), app)
 	if err != nil {

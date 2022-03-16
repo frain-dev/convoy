@@ -138,7 +138,6 @@ func (e *EventService) CreateAppEvent(ctx context.Context, newMessage *models.Ev
 				log.Errorf("Error occurred sending new event to the queue %s", err)
 			}
 		}
-
 	}
 
 	return event, nil
