@@ -29,7 +29,7 @@ func newErrorResponse(msg string, statusCode int) serverResponse {
 	}
 }
 
-func newErrResponse(err interface{}, statusCode int) serverResponse {
+func newServiceErrResponse(err interface{}, statusCode int) serverResponse {
 	msg := ""
 
 	switch v := err.(type) {

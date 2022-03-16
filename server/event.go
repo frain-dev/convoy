@@ -1,14 +1,12 @@
 package server
 
 import (
-	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
 	"net/http"
 	"time"
 
-	"github.com/frain-dev/convoy"
 	"github.com/frain-dev/convoy/datastore"
 	"github.com/frain-dev/convoy/server/models"
 	"github.com/frain-dev/convoy/util"
@@ -39,7 +37,7 @@ func (a *applicationHandler) CreateAppEvent(w http.ResponseWriter, r *http.Reque
 
 	event, err := a.eventService.CreateAppEvent(r.Context(), &newMessage, g)
 	if err != nil {
-		_ = render.Render(w, r, newErrResponse(err, http.StatusBadRequest))
+		_ = render.Render(w, r, newServiceErrResponse(err, http.StatusBadRequest))
 		return
 	}
 
@@ -95,8 +93,9 @@ func (a *applicationHandler) ResendEventDelivery(w http.ResponseWriter, r *http.
 
 	eventDelivery := getEventDeliveryFromContext(r.Context())
 
-	err := a.retryEventDelivery(r.Context(), eventDelivery)
+	err := a.eventService.RetryEventDelivery(r.Context(), eventDelivery, getGroupFromContext(r.Context()))
 	if err != nil {
+		log.WithError(err).Error("failed to resend event delivery")
 		_ = render.Render(w, r, newErrorResponse(err.Error(), http.StatusBadRequest))
 		return
 	}
@@ -117,14 +116,6 @@ func (a *applicationHandler) ResendEventDelivery(w http.ResponseWriter, r *http.
 // @Security ApiKeyAuth
 // @Router /eventdeliveries/batchretry [post]
 func (a *applicationHandler) BatchRetryEventDelivery(w http.ResponseWriter, r *http.Request) {
-	pageable := datastore.Pageable{
-		Page:    0,
-		PerPage: 1000000000000, // large number so we get everything in most cases
-		Sort:    -1,
-	}
-	group := getGroupFromContext(r.Context())
-	appID := r.URL.Query().Get("appId")
-	eventID := r.URL.Query().Get("eventId")
 	status := make([]datastore.EventDeliveryStatus, 0)
 
 	for _, s := range r.URL.Query()["status"] {
@@ -139,25 +130,27 @@ func (a *applicationHandler) BatchRetryEventDelivery(w http.ResponseWriter, r *h
 		return
 	}
 
-	deliveries, _, err := a.eventDeliveryRepo.LoadEventDeliveriesPaged(r.Context(), group.UID, appID, eventID, status, searchParams, pageable)
+	f := &datastore.Filter{
+		Group:   getGroupFromContext(r.Context()),
+		AppID:   r.URL.Query().Get("appId"),
+		EventID: r.URL.Query().Get("eventId"),
+		Status:  status,
+		Pageable: datastore.Pageable{
+			Page:    0,
+			PerPage: 1000000000000, // large number so we get everything in most cases
+			Sort:    -1,
+		},
+		SearchParams: searchParams,
+	}
+
+	successes, failures, err := a.eventService.BatchRetryEventDelivery(r.Context(), f)
 	if err != nil {
 		log.WithError(err).Error("failed to fetch event deliveries by ids")
 		_ = render.Render(w, r, newErrorResponse("failed to fetch event deliveries", http.StatusInternalServerError))
 		return
 	}
 
-	ctx := r.Context()
-	failures := 0
-
-	for _, delivery := range deliveries {
-		err := a.retryEventDelivery(ctx, &delivery)
-		if err != nil {
-			failures++
-			log.WithError(err).Error("an item in the batch retry failed")
-		}
-	}
-
-	_ = render.Render(w, r, newServerResponse(fmt.Sprintf("%d successful, %d failed", len(deliveries)-failures, failures), nil, http.StatusOK))
+	_ = render.Render(w, r, newServerResponse(fmt.Sprintf("%d successful, %d failed", successes, failures), nil, http.StatusOK))
 }
 
 // CountAffectedEventDeliveries
@@ -195,10 +188,9 @@ func (a *applicationHandler) CountAffectedEventDeliveries(w http.ResponseWriter,
 		return
 	}
 
-	count, err := a.eventDeliveryRepo.CountEventDeliveries(r.Context(), group.UID, appID, eventID, status, searchParams)
+	count, err := a.eventService.CountAffectedEventDeliveries(r.Context(), group, appID, eventID, status, searchParams)
 	if err != nil {
-		_ = render.Render(w, r, newErrorResponse("an error occurred while fetching event deliveries", http.StatusInternalServerError))
-		log.WithError(err).Error("an error occurred while fetching event deliveries")
+		_ = render.Render(w, r, newServiceErrResponse(err, http.StatusInternalServerError))
 		return
 	}
 
@@ -225,95 +217,13 @@ func (a *applicationHandler) ForceResendEventDeliveries(w http.ResponseWriter, r
 		return
 	}
 
-	var deliveries []datastore.EventDelivery
-
-	deliveries, err = a.eventDeliveryRepo.FindEventDeliveriesByIDs(r.Context(), eventDeliveryIDs.IDs)
+	successes, failures, err := a.eventService.ForceResendEventDeliveries(r.Context(), eventDeliveryIDs.IDs, getGroupFromContext(r.Context()))
 	if err != nil {
-		log.WithError(err).Error("failed to fetch event deliveries by ids")
-		_ = render.Render(w, r, newErrorResponse("failed to fetch event deliveries", http.StatusInternalServerError))
+		_ = render.Render(w, r, newServiceErrResponse(err, http.StatusBadRequest))
 		return
 	}
 
-	ctx := r.Context()
-	failures := 0
-
-	for _, delivery := range deliveries {
-		err := a.forceResendEventDelivery(ctx, &delivery)
-		if err != nil {
-			failures++
-			log.WithError(err).Error("an item in the force resend batch failed")
-		}
-	}
-
-	_ = render.Render(w, r, newServerResponse(fmt.Sprintf("%d successful, %d failed", len(deliveries)-failures, failures), nil, http.StatusOK))
-}
-
-func (a *applicationHandler) retryEventDelivery(ctx context.Context, eventDelivery *datastore.EventDelivery) error {
-	if eventDelivery.Status == datastore.SuccessEventStatus {
-		return errors.New("event already sent")
-	}
-
-	switch eventDelivery.Status {
-	case datastore.ScheduledEventStatus,
-		datastore.ProcessingEventStatus,
-		datastore.RetryEventStatus:
-		return errors.New("cannot resend event that did not fail previously")
-	}
-
-	e := eventDelivery.EndpointMetadata
-	endpoint, err := a.appRepo.FindApplicationEndpointByID(context.Background(), eventDelivery.AppMetadata.UID, e.UID)
-	if err != nil {
-		return errors.New("cannot find endpoint")
-	}
-
-	if endpoint.Status == datastore.PendingEndpointStatus {
-		return errors.New("endpoint is being re-activated")
-	}
-
-	if endpoint.Status == datastore.InactiveEndpointStatus {
-		pendingEndpoints := []string{e.UID}
-
-		err = a.appRepo.UpdateApplicationEndpointsStatus(context.Background(), eventDelivery.AppMetadata.UID, pendingEndpoints, datastore.PendingEndpointStatus)
-		if err != nil {
-			return errors.New("failed to update endpoint status")
-		}
-	}
-
-	return a.requeueEventDelivery(ctx, eventDelivery)
-}
-
-func (a *applicationHandler) forceResendEventDelivery(ctx context.Context, eventDelivery *datastore.EventDelivery) error {
-	if eventDelivery.Status != datastore.SuccessEventStatus {
-		return errors.New("only successful events can be force resent")
-	}
-
-	e := eventDelivery.EndpointMetadata
-	endpoint, err := a.appRepo.FindApplicationEndpointByID(context.Background(), eventDelivery.AppMetadata.UID, e.UID)
-	if err != nil {
-		return errors.New("cannot find endpoint")
-	}
-
-	if endpoint.Status != datastore.ActiveEndpointStatus {
-		return errors.New("force resend to an inactive or pending endpoint is not allowed")
-	}
-
-	return a.requeueEventDelivery(ctx, eventDelivery)
-}
-
-func (a *applicationHandler) requeueEventDelivery(ctx context.Context, eventDelivery *datastore.EventDelivery) error {
-	eventDelivery.Status = datastore.ScheduledEventStatus
-	err := a.eventDeliveryRepo.UpdateStatusOfEventDelivery(ctx, *eventDelivery, datastore.ScheduledEventStatus)
-	if err != nil {
-		return errors.New("an error occurred while trying to resend event")
-	}
-
-	g := getGroupFromContext(ctx)
-	taskName := convoy.EventProcessor.SetPrefix(g.Name)
-	err = a.eventQueue.Write(ctx, taskName, eventDelivery, 1*time.Second)
-	if err != nil {
-		return fmt.Errorf("error occurred re-enqueing old event - %s: %v", eventDelivery.UID, err)
-	}
-	return nil
+	_ = render.Render(w, r, newServerResponse(fmt.Sprintf("%d successful, %d failed", successes, failures), nil, http.StatusOK))
 }
 
 // GetEventsPaged
@@ -334,21 +244,22 @@ func (a *applicationHandler) requeueEventDelivery(ctx context.Context, eventDeli
 // @Security ApiKeyAuth
 // @Router /events [get]
 func (a *applicationHandler) GetEventsPaged(w http.ResponseWriter, r *http.Request) {
-
-	pageable := getPageableFromContext(r.Context())
-	group := getGroupFromContext(r.Context())
-	appID := r.URL.Query().Get("appId")
-
 	searchParams, err := getSearchParams(r)
 	if err != nil {
 		_ = render.Render(w, r, newErrorResponse(err.Error(), http.StatusBadRequest))
 		return
 	}
 
-	m, paginationData, err := a.eventRepo.LoadEventsPaged(r.Context(), group.UID, appID, searchParams, pageable)
+	f := &datastore.Filter{
+		Group:        getGroupFromContext(r.Context()),
+		AppID:        r.URL.Query().Get("appId"),
+		Pageable:     getPageableFromContext(r.Context()),
+		SearchParams: searchParams,
+	}
+
+	m, paginationData, err := a.eventService.GetEventsPaged(r.Context(), f)
 	if err != nil {
 		_ = render.Render(w, r, newErrorResponse("an error occurred while fetching app events", http.StatusInternalServerError))
-		log.Errorln("error while fetching events - ", err)
 		return
 	}
 
@@ -376,13 +287,7 @@ func (a *applicationHandler) GetEventsPaged(w http.ResponseWriter, r *http.Reque
 // @Security ApiKeyAuth
 // @Router /eventdeliveries [get]
 func (a *applicationHandler) GetEventDeliveriesPaged(w http.ResponseWriter, r *http.Request) {
-
-	pageable := getPageableFromContext(r.Context())
-	group := getGroupFromContext(r.Context())
-	appID := r.URL.Query().Get("appId")
-	eventID := r.URL.Query().Get("eventId")
 	status := make([]datastore.EventDeliveryStatus, 0)
-
 	for _, s := range r.URL.Query()["status"] {
 		if !util.IsStringEmpty(s) {
 			status = append(status, datastore.EventDeliveryStatus(s))
@@ -395,10 +300,18 @@ func (a *applicationHandler) GetEventDeliveriesPaged(w http.ResponseWriter, r *h
 		return
 	}
 
-	ed, paginationData, err := a.eventDeliveryRepo.LoadEventDeliveriesPaged(r.Context(), group.UID, appID, eventID, status, searchParams, pageable)
+	f := &datastore.Filter{
+		Group:        getGroupFromContext(r.Context()),
+		AppID:        r.URL.Query().Get("appId"),
+		EventID:      r.URL.Query().Get("eventId"),
+		Status:       status,
+		Pageable:     getPageableFromContext(r.Context()),
+		SearchParams: searchParams,
+	}
+
+	ed, paginationData, err := a.eventService.GetEventDeliveriesPaged(r.Context(), f)
 	if err != nil {
 		_ = render.Render(w, r, newErrorResponse("an error occurred while fetching event deliveries", http.StatusInternalServerError))
-		log.WithError(err)
 		return
 	}
 

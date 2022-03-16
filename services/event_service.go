@@ -3,6 +3,7 @@ package services
 import (
 	"context"
 	"errors"
+	"fmt"
 	"net/http"
 	"time"
 
@@ -22,6 +23,10 @@ type EventService struct {
 	eventRepo         datastore.EventRepository
 	eventDeliveryRepo datastore.EventDeliveryRepository
 	eventQueue        queue.Queuer
+}
+
+func NewEventService(appRepo datastore.ApplicationRepository, eventRepo datastore.EventRepository, eventDeliveryRepo datastore.EventDeliveryRepository, eventQueue queue.Queuer) *EventService {
+	return &EventService{appRepo: appRepo, eventRepo: eventRepo, eventDeliveryRepo: eventDeliveryRepo, eventQueue: eventQueue}
 }
 
 func (e *EventService) CreateAppEvent(ctx context.Context, newMessage *models.Event, g *datastore.Group) (*datastore.Event, error) {
@@ -141,6 +146,186 @@ func (e *EventService) CreateAppEvent(ctx context.Context, newMessage *models.Ev
 	}
 
 	return event, nil
+}
+
+func (e *EventService) GetAppEvent(ctx context.Context, id string) (*datastore.Event, error) {
+	event, err := e.eventRepo.FindEventByID(ctx, id)
+	if err != nil {
+		log.WithError(err).Error("failed to find event by id")
+		return nil, NewServiceError(http.StatusBadRequest, errors.New("failed to find event by id"))
+	}
+
+	return event, nil
+}
+
+func (e *EventService) GetEventDelivery(ctx context.Context, id string) (*datastore.EventDelivery, error) {
+	eventDelivery, err := e.eventDeliveryRepo.FindEventDeliveryByID(ctx, id)
+	if err != nil {
+		log.WithError(err).Error("failed to find event elivery by id")
+		return nil, NewServiceError(http.StatusBadRequest, errors.New("failed to find event by id"))
+	}
+
+	return eventDelivery, nil
+}
+
+func (e *EventService) ResendEventDelivery(ctx context.Context, id string, g *datastore.Group) error {
+	eventDelivery, err := e.eventDeliveryRepo.FindEventDeliveryByID(ctx, id)
+	if err != nil {
+		msg := "an error occurred while retrieving event delivery details"
+		statusCode := http.StatusInternalServerError
+
+		if errors.Is(err, datastore.ErrEventDeliveryNotFound) {
+			msg = err.Error()
+			statusCode = http.StatusNotFound
+		}
+
+		return NewServiceError(statusCode, errors.New(msg))
+	}
+
+	err = e.RetryEventDelivery(ctx, eventDelivery, g)
+	if err != nil {
+		return NewServiceError(http.StatusBadRequest, err)
+	}
+
+	return nil
+}
+
+func (e *EventService) BatchRetryEventDelivery(ctx context.Context, filter *datastore.Filter) (int, int, error) {
+	deliveries, _, err := e.eventDeliveryRepo.LoadEventDeliveriesPaged(ctx, filter.Group.UID, filter.AppID, filter.EventID, filter.Status, filter.SearchParams, filter.Pageable)
+	if err != nil {
+		log.WithError(err).Error("failed to fetch event deliveries by ids")
+		return 0, 0, NewServiceError(http.StatusInternalServerError, errors.New("failed to fetch event deliveries"))
+	}
+
+	failures := 0
+	for _, delivery := range deliveries {
+		err := e.RetryEventDelivery(ctx, &delivery, filter.Group)
+		if err != nil {
+			failures++
+			log.WithError(err).Error("an item in the batch retry failed")
+		}
+	}
+
+	successes := len(deliveries) - failures
+	return successes, failures, nil
+}
+
+func (e *EventService) CountAffectedEventDeliveries(ctx context.Context, group *datastore.Group, appID string, eventID string, status []datastore.EventDeliveryStatus, searchParams datastore.SearchParams) (int64, error) {
+	count, err := e.eventDeliveryRepo.CountEventDeliveries(ctx, group.UID, appID, eventID, status, searchParams)
+	if err != nil {
+		log.WithError(err).Error("an error occurred while fetching event deliveries")
+		return 0, NewServiceError(http.StatusInternalServerError, errors.New("an error occurred while fetching event deliveries"))
+	}
+
+	return count, nil
+}
+
+func (e *EventService) ForceResendEventDeliveries(ctx context.Context, ids []string, g *datastore.Group) (int, int, error) {
+	var deliveries []datastore.EventDelivery
+	deliveries, err := e.eventDeliveryRepo.FindEventDeliveriesByIDs(ctx, ids)
+	if err != nil {
+		log.WithError(err).Error("failed to fetch event deliveries by ids")
+		return 0, 0, NewServiceError(http.StatusInternalServerError, errors.New("failed to fetch event deliveries"))
+	}
+
+	failures := 0
+	for _, delivery := range deliveries {
+		err := e.forceResendEventDelivery(ctx, &delivery, g)
+		if err != nil {
+			failures++
+			log.WithError(err).Error("an item in the force resend batch failed")
+		}
+	}
+
+	successes := len(deliveries) - failures
+	return successes, failures, nil
+}
+
+func (e *EventService) GetEventsPaged(ctx context.Context, filter *datastore.Filter) ([]datastore.Event, datastore.PaginationData, error) {
+	m, paginationData, err := e.eventRepo.LoadEventsPaged(ctx, filter.Group.UID, filter.AppID, filter.SearchParams, filter.Pageable)
+	if err != nil {
+		log.WithError(err).Error("failed to fetch events")
+		return nil, datastore.PaginationData{}, NewServiceError(http.StatusInternalServerError, errors.New("an error occurred while fetching app events"))
+	}
+
+	return m, paginationData, nil
+}
+
+func (e *EventService) GetEventDeliveriesPaged(ctx context.Context, filter *datastore.Filter) ([]datastore.EventDelivery, datastore.PaginationData, error) {
+	ed, paginationData, err := e.eventDeliveryRepo.LoadEventDeliveriesPaged(ctx, filter.Group.UID, filter.AppID, filter.EventID, filter.Status, filter.SearchParams, filter.Pageable)
+	if err != nil {
+		log.WithError(err).Error("failed to fetch event deliveries")
+		return nil, datastore.PaginationData{}, NewServiceError(http.StatusInternalServerError, errors.New("an error occurred while fetching event deliveries"))
+	}
+
+	return ed, paginationData, nil
+}
+
+func (a *EventService) RetryEventDelivery(ctx context.Context, eventDelivery *datastore.EventDelivery, g *datastore.Group) error {
+	if eventDelivery.Status == datastore.SuccessEventStatus {
+		return errors.New("event already sent")
+	}
+
+	switch eventDelivery.Status {
+	case datastore.ScheduledEventStatus,
+		datastore.ProcessingEventStatus,
+		datastore.RetryEventStatus:
+		return errors.New("cannot resend event that did not fail previously")
+	}
+
+	e := eventDelivery.EndpointMetadata
+	endpoint, err := a.appRepo.FindApplicationEndpointByID(context.Background(), eventDelivery.AppMetadata.UID, e.UID)
+	if err != nil {
+		return errors.New("cannot find endpoint")
+	}
+
+	if endpoint.Status == datastore.PendingEndpointStatus {
+		return errors.New("endpoint is being re-activated")
+	}
+
+	if endpoint.Status == datastore.InactiveEndpointStatus {
+		pendingEndpoints := []string{e.UID}
+
+		err = a.appRepo.UpdateApplicationEndpointsStatus(context.Background(), eventDelivery.AppMetadata.UID, pendingEndpoints, datastore.PendingEndpointStatus)
+		if err != nil {
+			return errors.New("failed to update endpoint status")
+		}
+	}
+
+	return a.requeueEventDelivery(ctx, eventDelivery, g)
+}
+
+func (a *EventService) forceResendEventDelivery(ctx context.Context, eventDelivery *datastore.EventDelivery, g *datastore.Group) error {
+	if eventDelivery.Status != datastore.SuccessEventStatus {
+		return errors.New("only successful events can be force resent")
+	}
+
+	e := eventDelivery.EndpointMetadata
+	endpoint, err := a.appRepo.FindApplicationEndpointByID(context.Background(), eventDelivery.AppMetadata.UID, e.UID)
+	if err != nil {
+		return errors.New("cannot find endpoint")
+	}
+
+	if endpoint.Status != datastore.ActiveEndpointStatus {
+		return errors.New("force resend to an inactive or pending endpoint is not allowed")
+	}
+
+	return a.requeueEventDelivery(ctx, eventDelivery, g)
+}
+
+func (a *EventService) requeueEventDelivery(ctx context.Context, eventDelivery *datastore.EventDelivery, g *datastore.Group) error {
+	eventDelivery.Status = datastore.ScheduledEventStatus
+	err := a.eventDeliveryRepo.UpdateStatusOfEventDelivery(ctx, *eventDelivery, datastore.ScheduledEventStatus)
+	if err != nil {
+		return errors.New("an error occurred while trying to resend event")
+	}
+
+	taskName := convoy.EventProcessor.SetPrefix(g.Name)
+	err = a.eventQueue.Write(ctx, taskName, eventDelivery, 1*time.Second)
+	if err != nil {
+		return fmt.Errorf("error occurred re-enqueing old event - %s: %v", eventDelivery.UID, err)
+	}
+	return nil
 }
 
 func getEventDeliveryStatus(endpoint datastore.Endpoint) datastore.EventDeliveryStatus {
