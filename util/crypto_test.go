@@ -84,6 +84,16 @@ func Test_computeJSONHmac(t *testing.T) {
 			want:    "8c5e234215cc4bd48e806fee4db00cc3ff0f7e5dab1383fdc77363286c6c5909",
 			wantErr: false,
 		},
+		{
+			name: "test timestamp data - same signature",
+			args: args{
+				secret: "my-long-secret",
+				data:   "1647445058",
+				order:  false,
+			},
+			want:    "e9157602697fb18eaa538b8c4e8e10719ded19d12b4b825905173f6a3bf9eb55",
+			wantErr: false,
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {

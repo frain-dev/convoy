@@ -26,11 +26,11 @@ func NewDispatcher() *Dispatcher {
 	}
 }
 
-func (d *Dispatcher) SendRequest(endpoint, method string, jsonData json.RawMessage, signatureHeader string, hmac string, maxResponseSize int64) (*Response, error) {
+func (d *Dispatcher) SendRequest(endpoint, method string, jsonData json.RawMessage, signatureHeader string, hmacSignature string, hmacTimestamp string, maxResponseSize int64) (*Response, error) {
 	r := &Response{}
 
-	if util.IsStringEmpty(signatureHeader) || util.IsStringEmpty(hmac) {
-		err := errors.New("signature header and hmac are required")
+	if util.IsStringEmpty(signatureHeader) || util.IsStringEmpty(hmacSignature) || util.IsStringEmpty(hmacTimestamp) {
+		err := errors.New("signature header, hmac signature and hmac timestamp are required")
 		log.WithError(err).Error("Dispatcher invalid arguments")
 		r.Error = err.Error()
 		return r, err
@@ -42,9 +42,10 @@ func (d *Dispatcher) SendRequest(endpoint, method string, jsonData json.RawMessa
 		return r, err
 	}
 
-	req.Header.Set(signatureHeader, hmac)
+	req.Header.Set(signatureHeader, hmacSignature)
 	req.Header.Add("Content-Type", "application/json")
 	req.Header.Add("User-Agent", defaultUserAgent())
+	req.Header.Set("Convoy-Timestamp", hmacTimestamp)
 
 	r.RequestHeader = req.Header
 	r.URL = req.URL
