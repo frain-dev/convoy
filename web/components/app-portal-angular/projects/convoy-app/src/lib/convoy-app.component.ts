@@ -7,6 +7,7 @@ import { PAGINATION } from './models/global.model';
 import { HTTP_RESPONSE } from './models/http.model';
 import { ConvoyAppService } from './convoy-app.service';
 import { format } from 'date-fns';
+import { DatePipe } from '@angular/common';
 
 @Component({
 	selector: 'convoy-app',
@@ -40,9 +41,13 @@ export class ConvoyAppComponent implements OnInit {
 		{ id: 'response', label: 'Response' },
 		{ id: 'request', label: 'Request' }
 	];
+	selectedEventsDateOption = '';
+	selectedEventsDelDateOption = '';
+	selectedEventsDelTimeOption = '';
+	selectedEventsTimeOption = '';
+	timeFilter!: any;
 	eventDetailsActiveTab = 'data';
 	eventApp: string = '';
-	eventDeliveriesApp: string = '';
 	eventsPage: number = 1;
 	eventDeliveriesPage: number = 1;
 	appsPage: number = 1;
@@ -59,17 +64,23 @@ export class ConvoyAppComponent implements OnInit {
 	eventDeliveries!: { pagination: PAGINATION; content: EVENT_DELIVERY[] };
 	sidebarEventDeliveries: EVENT_DELIVERY[] = [];
 	eventDeliveryFilteredByEventId = '';
+	batchRetryCount!: any;
 	allEventdeliveriesChecked = false;
+	dateOptions = ['Last Year', 'Last Month', 'Last Week', 'Yesterday'];
 	eventDeliveryStatuses = ['Success', 'Failure', 'Retry', 'Scheduled', 'Processing', 'Discarded'];
 	eventDeliveryFilteredByStatus: string[] = [];
+	showTimePicker = false;
 	showOverlay = false;
 	showEventDeliveriesStatusDropdown = false;
+	isRetyring = false;
+	showBatchRetryModal = false;
+	fetchingCount = false;
 	@Input('token') token!: string;
 	@Input('appId') appId!: string;
 	@Input('groupId') groupId!: string;
 	@Input('apiURL') apiURL: string = '';
 
-	constructor(private convyAppService: ConvoyAppService, private router: Router, private formBuilder: FormBuilder, private route: ActivatedRoute) {}
+	constructor(private convyAppService: ConvoyAppService, private router: Router, private formBuilder: FormBuilder, private route: ActivatedRoute, private datePipe: DatePipe) {}
 
 	async ngOnInit() {
 		await this.initDashboard();
@@ -98,9 +109,84 @@ export class ConvoyAppComponent implements OnInit {
 
 	setDateForFilter(requestDetails: { startDate: Date; endDate: Date }) {
 		if (!requestDetails.endDate && !requestDetails.startDate) return { startDate: '', endDate: '' };
-		const startDate = requestDetails.startDate ? `${format(requestDetails.startDate, 'yyyy-M-d')}T00:00:00` : '';
-		const endDate = requestDetails.endDate ? `${format(requestDetails.endDate, 'yyyy-M-d')}T00:00:00` : '';
+		const startDate = requestDetails.startDate ? `${format(requestDetails.startDate, 'yyyy-MM-dd')}T00:00:00` : '';
+		const endDate = requestDetails.endDate ? `${format(requestDetails.endDate, 'yyyy-MM-dd')}T00:00:00` : '';
 		return { startDate, endDate };
+	}
+
+	getSelectedDate(dateOption: string, activeTab: string) {
+		activeTab == 'events' ? (this.selectedEventsDateOption = dateOption) : (this.selectedEventsDelDateOption = dateOption);
+		const _date = new Date();
+		let startDate, endDate, currentDayOfTheWeek;
+		switch (dateOption) {
+			case 'Last Year':
+				startDate = new Date(_date.getFullYear() - 1, 0, 1);
+				endDate = new Date(_date.getFullYear(), _date.getMonth(), _date.getDate());
+				break;
+			case 'Last Month':
+				startDate = new Date(_date.getFullYear(), _date.getMonth() == 0 ? 11 : _date.getMonth() - 1, 1);
+				endDate = new Date(_date.getFullYear(), _date.getMonth(), _date.getDate());
+				break;
+			case 'Last Week':
+				currentDayOfTheWeek = _date.getDay();
+				switch (currentDayOfTheWeek) {
+					case 0:
+						startDate = new Date(_date.getFullYear(), _date.getMonth(), _date.getDate() - 7);
+						endDate = new Date(_date.getFullYear(), _date.getMonth(), _date.getDate());
+						break;
+					case 1:
+						startDate = new Date(_date.getFullYear(), _date.getMonth(), _date.getDate() - 8);
+						endDate = new Date(_date.getFullYear(), _date.getMonth(), _date.getDate());
+						break;
+					case 2:
+						startDate = new Date(_date.getFullYear(), _date.getMonth(), _date.getDate() - 9);
+						endDate = new Date(_date.getFullYear(), _date.getMonth(), _date.getDate());
+						break;
+					case 3:
+						startDate = new Date(_date.getFullYear(), _date.getMonth(), _date.getDate() - 10);
+						endDate = new Date(_date.getFullYear(), _date.getMonth(), _date.getDate());
+						break;
+					case 4:
+						startDate = new Date(_date.getFullYear(), _date.getMonth(), _date.getDate() - 11);
+						endDate = new Date(_date.getFullYear(), _date.getMonth(), _date.getDate());
+						break;
+					case 4:
+						startDate = new Date(_date.getFullYear(), _date.getMonth(), _date.getDate() - 12);
+						endDate = new Date(_date.getFullYear(), _date.getMonth(), _date.getDate());
+						break;
+					case 5:
+						startDate = new Date(_date.getFullYear(), _date.getMonth(), _date.getDate() - 13);
+						endDate = new Date(_date.getFullYear(), _date.getMonth(), _date.getDate());
+						break;
+					case 6:
+						startDate = new Date(_date.getFullYear(), _date.getMonth(), _date.getDate() - 14);
+						endDate = new Date(_date.getFullYear(), _date.getMonth(), _date.getDate());
+						break;
+					default:
+						break;
+				}
+				break;
+			case 'Yesterday':
+				startDate = new Date(_date.getFullYear(), _date.getMonth(), _date.getDate() - 1);
+				endDate = new Date(_date.getFullYear(), _date.getMonth(), _date.getDate());
+				break;
+			default:
+				break;
+		}
+
+		if (activeTab == 'events') {
+			this.eventsFilterDateRange.patchValue({
+				startDate: startDate,
+				endDate: endDate
+			});
+		} else {
+			this.eventDeliveriesFilterDateRange.patchValue({
+				startDate: startDate,
+				endDate: endDate
+			});
+		}
+
+		activeTab == 'events' ? this.getEvents() : this.getEventDeliveries();
 	}
 
 	getDate(date: Date) {
@@ -112,6 +198,10 @@ export class ConvoyAppComponent implements OnInit {
 		return `${day} ${months[month]}, ${year}`;
 	}
 
+	getSelectedTime(e: any, activeTab: string) {
+		const timePicked = e.target.value;
+		activeTab == 'events' ? (this.selectedEventsTimeOption = timePicked) : (this.selectedEventsDelTimeOption = timePicked);
+	}
 	setEventsDisplayed(events: { created_at: Date }[]) {
 		const dateCreateds = events.map((event: { created_at: Date }) => this.getDate(event.created_at));
 		const uniqueDateCreateds = [...new Set(dateCreateds)];
@@ -295,45 +385,90 @@ export class ConvoyAppComponent implements OnInit {
 	}
 
 	async batchRetryEvent() {
+		let eventDeliveryStatusFilterQuery = '';
+		let eventDeliveriesStatusFilterActive = false;
+		this.eventDeliveryFilteredByStatus.length > 0 ? (eventDeliveriesStatusFilterActive = true) : (eventDeliveriesStatusFilterActive = false);
+		this.eventDeliveryFilteredByStatus.forEach((status: string) => (eventDeliveryStatusFilterQuery += `&status=${status}`));
+		const { startDate, endDate } = this.setDateForFilter(this.eventDeliveriesFilterDateRange.value);
+		this.isRetyring = true;
 		try {
-			await this.convyAppService.request({
+			const response = await this.convyAppService.request({
 				method: 'post',
-				url: this.getAPIURL(`/eventdeliveries/batchretry?groupID=${this.groupId || ''}&appId=${this.appId || ''}`),
-				body: { ids: this.selectedEventsFromEventDeliveriesTable },
-				token: this.token
+				url: this.getAPIURL(
+					`/eventdeliveries/batchretry?groupID=${this.groupId || ''}&eventId=${this.eventDeliveryFilteredByEventId || ''}&page=${
+						this.eventDeliveriesPage || 1
+					}&startDate=${startDate}&endDate=${endDate}&appId=${this.appId}${eventDeliveryStatusFilterQuery || ''}`
+				),
+				token: this.token,
+				body: null
 			});
 
-			this.convyAppService.showNotification({
-				message: 'Batch Retry Request Sent'
-			});
+			this.convyAppService.showNotification({ message: response.message });
 			this.getEventDeliveries();
-			this.selectedEventsFromEventDeliveriesTable = [];
+			this.showBatchRetryModal = false;
+			this.isRetyring = false;
 		} catch (error: any) {
-			this.convyAppService.showNotification({
-				message: error.error.message
-			});
+			this.isRetyring = false;
+			this.convyAppService.showNotification({ message: error.error.message });
 			return error;
 		}
 	}
 
-	async clearEventFilters(tableName: 'events' | 'event deliveries') {
+	async fetchRetryCount() {
+		let eventDeliveryStatusFilterQuery = '';
+		let eventDeliveriesStatusFilterActive = false;
+		this.eventDeliveryFilteredByStatus.length > 0 ? (eventDeliveriesStatusFilterActive = true) : (eventDeliveriesStatusFilterActive = false);
+		this.eventDeliveryFilteredByStatus.forEach((status: string) => (eventDeliveryStatusFilterQuery += `&status=${status}`));
+		const { startDate, endDate } = this.setDateForFilter(this.eventDeliveriesFilterDateRange.value);
+		this.fetchingCount = true;
+		try {
+			const response = await this.convyAppService.request({
+				url: this.getAPIURL(
+					`/eventdeliveries/countbatchretryevents?groupID=${this.groupId || ''}&eventId=${this.eventDeliveryFilteredByEventId || ''}&page=${
+						this.eventDeliveriesPage || 1
+					}&startDate=${startDate}&endDate=${endDate}&appId=${this.appId}${eventDeliveryStatusFilterQuery || ''}`
+				),
+				token: this.token,
+				method: 'get'
+			});
+			this.batchRetryCount = response.data.num;
+			this.fetchingCount = false;
+			this.showBatchRetryModal = true;
+		} catch (error: any) {
+			this.fetchingCount = false;
+			this.convyAppService.showNotification({ message: error.error.message });
+		}
+	}
+
+	async clearEventFilters(tableName: 'events' | 'event deliveries', filterType?: 'eventsDelDate' | 'eventsDelsStatus') {
 		const activeFilters = Object.assign({}, this.route.snapshot.queryParams);
 		let filterItems: string[] = [];
 
 		switch (tableName) {
 			case 'events':
 				this.eventApp = '';
-				filterItems = ['eventsStartDate', 'eventsEndDate', 'eventsApp'];
+				filterItems = ['eventsStartDate', 'eventsEndDate'];
 				this.eventsFilterDateRange.patchValue({
 					startDate: '',
 					endDate: ''
 				});
+				this.selectedEventsTimeOption = '';
+				this.selectedEventsDateOption = '';
 				this.getEvents();
 				break;
 
 			case 'event deliveries':
-				this.eventDeliveriesApp = '';
-				filterItems = ['eventDelsStartDate', 'eventDelsEndDate', 'eventDelsApp', 'eventDelsStatus'];
+				switch (filterType) {
+					case 'eventsDelDate':
+						filterItems = ['eventDelsStartDate', 'eventDelsEndDate'];
+						break;
+					case 'eventsDelsStatus':
+						filterItems = ['eventDelsStatus'];
+						break;
+					default:
+						filterItems = ['eventDelsStartDate', 'eventDelsEndDate', 'eventDelsStatus'];
+						break;
+				}
 				this.eventDeliveriesFilterDateRange.patchValue({ startDate: '', endDate: '' });
 				this.eventDeliveryFilteredByEventId = '';
 				this.eventDeliveryFilteredByStatus = [];
@@ -411,5 +546,9 @@ export class ConvoyAppComponent implements OnInit {
 			let index = this.eventDeliveryFilteredByStatus.findIndex(x => x === status);
 			this.eventDeliveryFilteredByStatus.splice(index, 1);
 		}
+	}
+
+	formatDate(date: Date) {
+		return this.datePipe.transform(date, 'dd/MM/yyyy');
 	}
 }
