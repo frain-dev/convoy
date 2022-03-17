@@ -228,6 +228,31 @@
 				</div>
 			</div>
 		</section> -->
+		<section class="section sdk-app">
+			<div class="container">
+				<div class="sdk-app__cards">
+					<div class="sdk-app__cards__item sdk">
+						<h1>Convoy SDK</h1>
+						<p>We went a step further to make it easier to integrate convoy through SDK. Follow the link below to get started with you favourite language.</p>
+						<a target="_blank" rel="noopener noreferrer" href="https://app.getconvoy.io/signup" class="primary">
+							Get started
+							<img src="~/assets/images/arrow-right-icon.svg" alt="arrow right" />
+						</a>
+					</div>
+					<div class="sdk-app__cards__item app">
+						<h1>App Portal</h1>
+						<p>
+							With app portal, we're enabling you to extend the visibility our dashboard provides you to your customers. They no longer need to reach out to you to know what is going on with their
+							events.
+						</p>
+						<a target="_blank" rel="noopener noreferrer" href="https://app.getconvoy.io/signup" class="primary">
+							Get started
+							<img src="~/assets/images/arrow-right-icon.svg" alt="arrow right" />
+						</a>
+					</div>
+				</div>
+			</div>
+		</section>
 
 		<section class="section start-sending">
 			<div class="container">
@@ -1422,6 +1447,48 @@ a {
 			display: none;
 			&.small {
 				display: block;
+			}
+		}
+	}
+}
+.sdk-app {
+	background: linear-gradient(180deg, #2c2f3e 0%, #422f41 100%);
+	min-height: 350px;
+	margin-bottom: 130px;
+	&__cards {
+		display: grid;
+		grid-template-columns: repeat(auto-fit, minmax(505px, 1fr));
+		gap: 40px;
+		&__item {
+			width: 100%;
+			box-shadow: 0px 2px 4px rgba(12, 26, 75, 0.04), 0px 4px 20px -2px rgba(50, 50, 71, 0.08);
+			border-radius: 8px;
+			padding: 32px;
+			background-size: contain;
+			&.app {
+				background: url('~/assets/images/app-portal.svg') #fcfcfc no-repeat;
+				background-position: bottom right;
+			}
+			&.sdk {
+				background: url('~/assets/images/sdk.svg') #fcfcfc no-repeat;
+				background-position: bottom right;
+			}
+			h1 {
+				font-weight: 700;
+				font-size: 28px;
+				line-height: 40px;
+				color: #000624;
+				margin-bottom: 16px;
+			}
+			p {
+				font-weight: 400;
+				font-size: 16px;
+				line-height: 24px;
+				color: #7987a3;
+				margin-bottom: 32px;
+			}
+			a{
+				margin-bottom: 17px;
 			}
 		}
 	}
