@@ -33,7 +33,7 @@ func newServiceErrResponse(err interface{}, statusCode int) serverResponse {
 	msg := ""
 
 	switch v := err.(type) {
-	case services.ServiceError:
+	case *services.ServiceError:
 		msg = v.Error()
 		statusCode = v.ErrCode()
 	case string:
