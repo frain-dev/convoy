@@ -50,6 +50,7 @@ const (
 	deliveryAttemptsCtx contextKey = "deliveryAttempts"
 	baseUrlCtx          contextKey = "baseUrl"
 	appIdCtx            contextKey = "appId"
+	groupIdCtx          contextKey = "groupId"
 )
 
 func instrumentPath(path string) func(http.Handler) http.Handler {
@@ -392,20 +393,40 @@ func getDefaultGroup(r *http.Request, groupRepo datastore.GroupRepository) (*dat
 	return groups[0], err
 }
 
+func requireGroupID() func(next http.Handler) http.Handler {
+	return func(next http.Handler) http.Handler {
+
+		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			authUser := getAuthUserFromContext(r.Context())
+
+			if len(authUser.Role.Groups) > 0 && authUser.Credential.Type == auth.CredentialTypeAPIKey {
+				groupID := authUser.Role.Groups[0]
+				r = r.WithContext(setGroupIDInContext(r.Context(), groupID))
+			}
+
+			next.ServeHTTP(w, r)
+		})
+	}
+}
+
 func requireGroup(groupRepo datastore.GroupRepository) func(next http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			var group *datastore.Group
 			var err error
+			var groupID string
 
-			groupID := r.URL.Query().Get("groupID")
-			if groupID != "" {
-				group, err = groupRepo.FetchGroupByID(r.Context(), groupID)
-				if err != nil {
-					_ = render.Render(w, r, newErrorResponse("failed to fetch group by id", http.StatusInternalServerError))
-					return
-				}
-			} else if groupID = chi.URLParam(r, "groupID"); groupID != "" {
+			groupID = r.URL.Query().Get("groupID")
+
+			if util.IsStringEmpty(groupID) {
+				groupID = chi.URLParam(r, "groupID")
+			}
+
+			if util.IsStringEmpty(groupID) {
+				groupID = getGroupIDFromContext(r.Context())
+			}
+
+			if !util.IsStringEmpty(groupID) {
 				group, err = groupRepo.FetchGroupByID(r.Context(), groupID)
 				if err != nil {
 					_ = render.Render(w, r, newErrorResponse("failed to fetch group by id", http.StatusInternalServerError))
@@ -912,4 +933,18 @@ func getAppIDFromContext(ctx context.Context) string {
 	}
 
 	return appID
+}
+
+func setGroupIDInContext(ctx context.Context, groupId string) context.Context {
+	return context.WithValue(ctx, groupIdCtx, groupId)
+}
+
+func getGroupIDFromContext(ctx context.Context) string {
+	var groupID string
+
+	if groupID, ok := ctx.Value(groupIdCtx).(string); ok {
+		return groupID
+	}
+
+	return groupID
 }
