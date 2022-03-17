@@ -1,7 +1,6 @@
 package server
 
 import (
-	"errors"
 	"fmt"
 	"net/http"
 	"time"
@@ -254,21 +253,7 @@ func (a *applicationHandler) CreateAppEndpoint(w http.ResponseWriter, r *http.Re
 		return
 	}
 
-	appID := chi.URLParam(r, "appID")
-	app, err := a.appRepo.FindApplicationByID(r.Context(), appID)
-	if err != nil {
-
-		msg := "an error occurred while retrieving app details"
-		statusCode := http.StatusBadRequest
-
-		if errors.Is(err, datastore.ErrApplicationNotFound) {
-			msg = err.Error()
-			statusCode = http.StatusNotFound
-		}
-
-		_ = render.Render(w, r, newErrorResponse(msg, statusCode))
-		return
-	}
+	app := getApplicationFromContext(r.Context())
 
 	// Events being nil means it wasn't passed at all, which automatically
 	// translates into a accept all scenario. This is quite different from

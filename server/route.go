@@ -285,24 +285,23 @@ func buildRoutes(app *applicationHandler) http.Handler {
 		portalRouter.Use(setupCORS)
 		portalRouter.Use(requireAuth())
 		portalRouter.Use(requireGroup(app.groupRepo))
+		portalRouter.Use(requireAppID())
 
 		portalRouter.Route("/apps", func(appRouter chi.Router) {
-			appRouter.Route("/{appID}", func(appSubRouter chi.Router) {
-				appSubRouter.Use(requireAppPortalApplication(app.appRepo))
-				appSubRouter.Use(requireAppPortalPermission(auth.RoleUIAdmin))
+			appRouter.Use(requireAppPortalApplication(app.appRepo))
+			appRouter.Use(requireAppPortalPermission(auth.RoleUIAdmin))
 
-				appSubRouter.Get("/", app.GetApp)
+			appRouter.Get("/", app.GetApp)
 
-				appSubRouter.Route("/endpoints", func(endpointAppSubRouter chi.Router) {
-					endpointAppSubRouter.Get("/", app.GetAppEndpoints)
-					endpointAppSubRouter.Post("/", app.CreateAppEndpoint)
+			appRouter.Route("/endpoints", func(endpointAppSubRouter chi.Router) {
+				endpointAppSubRouter.Get("/", app.GetAppEndpoints)
+				endpointAppSubRouter.Post("/", app.CreateAppEndpoint)
 
-					endpointAppSubRouter.Route("/{endpointID}", func(e chi.Router) {
-						e.Use(requireAppEndpoint())
+				endpointAppSubRouter.Route("/{endpointID}", func(e chi.Router) {
+					e.Use(requireAppEndpoint())
 
-						e.Get("/", app.GetAppEndpoint)
-						e.Put("/", app.UpdateAppEndpoint)
-					})
+					e.Get("/", app.GetAppEndpoint)
+					e.Put("/", app.UpdateAppEndpoint)
 				})
 			})
 		})
