@@ -93,10 +93,9 @@ func (a *applicationHandler) ResendEventDelivery(w http.ResponseWriter, r *http.
 
 	eventDelivery := getEventDeliveryFromContext(r.Context())
 
-	err := a.eventService.RetryEventDelivery(r.Context(), eventDelivery, getGroupFromContext(r.Context()))
+	err := a.eventService.ResendEventDelivery(r.Context(), eventDelivery, getGroupFromContext(r.Context()))
 	if err != nil {
-		log.WithError(err).Error("failed to resend event delivery")
-		_ = render.Render(w, r, newErrorResponse(err.Error(), http.StatusBadRequest))
+		_ = render.Render(w, r, newServiceErrResponse(err, http.StatusBadRequest))
 		return
 	}
 
@@ -145,8 +144,7 @@ func (a *applicationHandler) BatchRetryEventDelivery(w http.ResponseWriter, r *h
 
 	successes, failures, err := a.eventService.BatchRetryEventDelivery(r.Context(), f)
 	if err != nil {
-		log.WithError(err).Error("failed to fetch event deliveries by ids")
-		_ = render.Render(w, r, newErrorResponse("failed to fetch event deliveries", http.StatusInternalServerError))
+		_ = render.Render(w, r, newServiceErrResponse(err, http.StatusInternalServerError))
 		return
 	}
 

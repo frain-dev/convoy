@@ -168,28 +168,6 @@ func (e *EventService) GetEventDelivery(ctx context.Context, id string) (*datast
 	return eventDelivery, nil
 }
 
-func (e *EventService) ResendEventDelivery(ctx context.Context, id string, g *datastore.Group) error {
-	eventDelivery, err := e.eventDeliveryRepo.FindEventDeliveryByID(ctx, id)
-	if err != nil {
-		msg := "an error occurred while retrieving event delivery details"
-		statusCode := http.StatusInternalServerError
-
-		if errors.Is(err, datastore.ErrEventDeliveryNotFound) {
-			msg = err.Error()
-			statusCode = http.StatusNotFound
-		}
-
-		return NewServiceError(statusCode, errors.New(msg))
-	}
-
-	err = e.RetryEventDelivery(ctx, eventDelivery, g)
-	if err != nil {
-		return NewServiceError(http.StatusBadRequest, err)
-	}
-
-	return nil
-}
-
 func (e *EventService) BatchRetryEventDelivery(ctx context.Context, filter *datastore.Filter) (int, int, error) {
 	deliveries, _, err := e.eventDeliveryRepo.LoadEventDeliveriesPaged(ctx, filter.Group.UID, filter.AppID, filter.EventID, filter.Status, filter.SearchParams, filter.Pageable)
 	if err != nil {
@@ -259,6 +237,16 @@ func (e *EventService) GetEventDeliveriesPaged(ctx context.Context, filter *data
 	}
 
 	return ed, paginationData, nil
+}
+
+func (e *EventService) ResendEventDelivery(ctx context.Context, eventDelivery *datastore.EventDelivery, g *datastore.Group) error {
+	err := e.RetryEventDelivery(ctx, eventDelivery, g)
+	if err != nil {
+		log.WithError(err).Error("failed to resend event delivery")
+		return NewServiceError(http.StatusBadRequest, err)
+	}
+
+	return nil
 }
 
 func (a *EventService) RetryEventDelivery(ctx context.Context, eventDelivery *datastore.EventDelivery, g *datastore.Group) error {
