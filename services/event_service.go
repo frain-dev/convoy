@@ -30,9 +30,6 @@ func NewEventService(appRepo datastore.ApplicationRepository, eventRepo datastor
 }
 
 func (e *EventService) CreateAppEvent(ctx context.Context, newMessage *models.Event, g *datastore.Group) (*datastore.Event, error) {
-	eventType := newMessage.EventType
-	d := newMessage.Data
-
 	if err := util.Validate(newMessage); err != nil {
 		return nil, NewServiceError(http.StatusBadRequest, err)
 	}
@@ -48,8 +45,7 @@ func (e *EventService) CreateAppEvent(ctx context.Context, newMessage *models.Ev
 			statusCode = http.StatusNotFound
 		}
 
-		log.Debugln("error while fetching app - ", err)
-
+		log.WithError(err).Error("failed to fetch app")
 		return nil, NewServiceError(statusCode, errors.New(msg))
 	}
 
@@ -61,13 +57,13 @@ func (e *EventService) CreateAppEvent(ctx context.Context, newMessage *models.Ev
 		return nil, NewServiceError(http.StatusBadRequest, errors.New("app is disabled, no events were sent"))
 	}
 
-	matchedEndpoints := matchEndpointsForDelivery(eventType, app.Endpoints, nil)
+	matchedEndpoints := matchEndpointsForDelivery(newMessage.EventType, app.Endpoints, nil)
 
 	event := &datastore.Event{
 		UID:              uuid.New().String(),
-		EventType:        datastore.EventType(eventType),
+		EventType:        datastore.EventType(newMessage.EventType),
 		MatchedEndpoints: len(matchedEndpoints),
-		Data:             d,
+		Data:             newMessage.Data,
 		CreatedAt:        primitive.NewDateTimeFromTime(time.Now()),
 		UpdatedAt:        primitive.NewDateTimeFromTime(time.Now()),
 		AppMetadata: &datastore.AppMetadata{
@@ -249,7 +245,7 @@ func (e *EventService) ResendEventDelivery(ctx context.Context, eventDelivery *d
 	return nil
 }
 
-func (a *EventService) RetryEventDelivery(ctx context.Context, eventDelivery *datastore.EventDelivery, g *datastore.Group) error {
+func (e *EventService) RetryEventDelivery(ctx context.Context, eventDelivery *datastore.EventDelivery, g *datastore.Group) error {
 	if eventDelivery.Status == datastore.SuccessEventStatus {
 		return errors.New("event already sent")
 	}
@@ -261,8 +257,8 @@ func (a *EventService) RetryEventDelivery(ctx context.Context, eventDelivery *da
 		return errors.New("cannot resend event that did not fail previously")
 	}
 
-	e := eventDelivery.EndpointMetadata
-	endpoint, err := a.appRepo.FindApplicationEndpointByID(context.Background(), eventDelivery.AppMetadata.UID, e.UID)
+	em := eventDelivery.EndpointMetadata
+	endpoint, err := e.appRepo.FindApplicationEndpointByID(context.Background(), eventDelivery.AppMetadata.UID, em.UID)
 	if err != nil {
 		return errors.New("cannot find endpoint")
 	}
@@ -272,24 +268,24 @@ func (a *EventService) RetryEventDelivery(ctx context.Context, eventDelivery *da
 	}
 
 	if endpoint.Status == datastore.InactiveEndpointStatus {
-		pendingEndpoints := []string{e.UID}
+		pendingEndpoints := []string{em.UID}
 
-		err = a.appRepo.UpdateApplicationEndpointsStatus(context.Background(), eventDelivery.AppMetadata.UID, pendingEndpoints, datastore.PendingEndpointStatus)
+		err = e.appRepo.UpdateApplicationEndpointsStatus(context.Background(), eventDelivery.AppMetadata.UID, pendingEndpoints, datastore.PendingEndpointStatus)
 		if err != nil {
 			return errors.New("failed to update endpoint status")
 		}
 	}
 
-	return a.requeueEventDelivery(ctx, eventDelivery, g)
+	return e.requeueEventDelivery(ctx, eventDelivery, g)
 }
 
-func (a *EventService) forceResendEventDelivery(ctx context.Context, eventDelivery *datastore.EventDelivery, g *datastore.Group) error {
+func (e *EventService) forceResendEventDelivery(ctx context.Context, eventDelivery *datastore.EventDelivery, g *datastore.Group) error {
 	if eventDelivery.Status != datastore.SuccessEventStatus {
 		return errors.New("only successful events can be force resent")
 	}
 
-	e := eventDelivery.EndpointMetadata
-	endpoint, err := a.appRepo.FindApplicationEndpointByID(context.Background(), eventDelivery.AppMetadata.UID, e.UID)
+	em := eventDelivery.EndpointMetadata
+	endpoint, err := e.appRepo.FindApplicationEndpointByID(context.Background(), eventDelivery.AppMetadata.UID, em.UID)
 	if err != nil {
 		return errors.New("cannot find endpoint")
 	}
@@ -298,18 +294,18 @@ func (a *EventService) forceResendEventDelivery(ctx context.Context, eventDelive
 		return errors.New("force resend to an inactive or pending endpoint is not allowed")
 	}
 
-	return a.requeueEventDelivery(ctx, eventDelivery, g)
+	return e.requeueEventDelivery(ctx, eventDelivery, g)
 }
 
-func (a *EventService) requeueEventDelivery(ctx context.Context, eventDelivery *datastore.EventDelivery, g *datastore.Group) error {
+func (e *EventService) requeueEventDelivery(ctx context.Context, eventDelivery *datastore.EventDelivery, g *datastore.Group) error {
 	eventDelivery.Status = datastore.ScheduledEventStatus
-	err := a.eventDeliveryRepo.UpdateStatusOfEventDelivery(ctx, *eventDelivery, datastore.ScheduledEventStatus)
+	err := e.eventDeliveryRepo.UpdateStatusOfEventDelivery(ctx, *eventDelivery, datastore.ScheduledEventStatus)
 	if err != nil {
 		return errors.New("an error occurred while trying to resend event")
 	}
 
 	taskName := convoy.EventProcessor.SetPrefix(g.Name)
-	err = a.eventQueue.Write(ctx, taskName, eventDelivery, 1*time.Second)
+	err = e.eventQueue.Write(ctx, taskName, eventDelivery, 1*time.Second)
 	if err != nil {
 		return fmt.Errorf("error occurred re-enqueing old event - %s: %v", eventDelivery.UID, err)
 	}
