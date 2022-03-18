@@ -14,6 +14,10 @@
 							Get started
 							<img src="~/assets/images/arrow-circle-right.svg" alt="arrow right" />
 						</nuxt-link>
+						<a target="_blank" href="https://convoy.readme.io/reference/introduction" class="api-reference">
+							Api Reference
+							<img src="~/assets/images/arrow-down-right-grey.svg" alt="arrow right" />
+						</a>
 					</div>
 				</div>
 				<div class="banner-img">
@@ -57,25 +61,28 @@
 				</div>
 				<div class="cards_item pink">
 					<h3>SDK</h3>
-					<p>We went a step further to make it easier to integrate convoy through SDK. Follow the link below to get started with you favourite language.</p>
-					<a target="_blank" href="https://convoy.readme.io/reference/introduction">
+					<p>We went a step further to make it easier to integrate convoy through SDK.</p>
+					<nuxt-link to="/docs/sdk">
 						<button>
 							Read more
 							<img src="~/assets/images/dark-arrow-circle-right.svg" alt="arrow right" />
 						</button>
-					</a>
+					</nuxt-link>
 				</div>
 				<div class="cards_item blue">
 					<h3>App Portal</h3>
-					<p>Lorem ipsum dolor sit amet, consectetur adipiscing elit. Vitae libero at id amet. Massa, ornare rhoncus nunc pulvinar venenatis turpis.</p>
-					<a target="_blank" href="https://convoy.readme.io/reference/introduction">
+					<p>
+						With app portal, we're enabling you to extend the visibility our dashboard provides you to your customers.
+					</p>
+					<nuxt-link to="/docs/app-portal">
 						<button>
 							Read more
 							<img src="~/assets/images/dark-arrow-circle-right.svg" alt="arrow right" />
 						</button>
-					</a>
+					</nuxt-link>
 				</div>
-				<div class="cards_item pink">
+
+				<!-- <div class="cards_item pink">
 					<h3>API Reference</h3>
 					<p>We've documented Convoy APIs on an easy to use platform for your reference and tests.</p>
 					<a target="_blank" href="https://convoy.readme.io/reference/introduction">
@@ -84,7 +91,7 @@
 							<img src="~/assets/images/dark-arrow-circle-right.svg" alt="arrow right" />
 						</button>
 					</a>
-				</div>
+				</div> -->
 			</section>
 		</div>
 	</div>
@@ -170,6 +177,7 @@ p.subtitle {
 			img {
 				margin-left: 5px;
 				transform: rotate(270deg);
+				filter: opacity(0.5) drop-shadow(0 0 0 #477db3);
 			}
 		}
 	}
@@ -217,7 +225,7 @@ p.subtitle {
 			}
 		}
 		p {
-			font-weight: 500;
+			font-weight: 400;
 			font-size: 14px;
 			line-height: 24px;
 			letter-spacing: 0.004em;

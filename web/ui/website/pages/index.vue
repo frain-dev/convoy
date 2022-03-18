@@ -1453,25 +1453,39 @@ a {
 }
 .sdk-app {
 	background: linear-gradient(180deg, #2c2f3e 0%, #422f41 100%);
-	min-height: 350px;
+	max-height: 681px;
+	height: 100%;
 	margin-bottom: 130px;
+	position: relative;
+	padding-left: 20px;
+	padding-right: 20px;
+	@media (min-width: $desktopBreakPoint) {
+		max-height: 350px;
+		min-height: 350px;
+	}
 	&__cards {
 		display: grid;
-		grid-template-columns: repeat(auto-fit, minmax(505px, 1fr));
+		grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
 		gap: 40px;
+		position: relative;
+		top: -70px;
+		@media (min-width: $desktopBreakPoint) {
+			grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+		}
 		&__item {
 			width: 100%;
 			box-shadow: 0px 2px 4px rgba(12, 26, 75, 0.04), 0px 4px 20px -2px rgba(50, 50, 71, 0.08);
 			border-radius: 8px;
 			padding: 32px;
-			background-size: contain;
 			&.app {
 				background: url('~/assets/images/app-portal.svg') #fcfcfc no-repeat;
 				background-position: bottom right;
+				background-size: 30%;
 			}
 			&.sdk {
 				background: url('~/assets/images/sdk.svg') #fcfcfc no-repeat;
 				background-position: bottom right;
+				background-size: 30%;
 			}
 			h1 {
 				font-weight: 700;
@@ -1487,7 +1501,7 @@ a {
 				color: #7987a3;
 				margin-bottom: 32px;
 			}
-			a{
+			a {
 				margin-bottom: 17px;
 			}
 		}
