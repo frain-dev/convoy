@@ -57,33 +57,48 @@ $desktopBreakPoint: 880px;
 	&__line {
 		background: none;
 		border-radius: 0;
-		width: fit-content;
+		width: 100%;
 		margin: 0;
 		margin-bottom: 24px;
+		border-bottom: 1px solid #EDEFF5;
 		li {
-            &:not(:last-of-type){
-                margin-right: 25px;
-            }
+			&:not(:last-of-type) {
+				margin-right: 25px;
+			}
 			button {
 				border-radius: 0;
 				padding: 0;
 				padding-bottom: 10px;
-                
+
 				span {
 					font-size: 14px;
 					line-height: 24px;
-                    text-align: left;
+					text-align: left;
 					color: #000624;
-                    @media (min-width: $desktopBreakPoint) {
-                        min-width: 80px;
-                    }
+					@media (min-width: $desktopBreakPoint) {
+						min-width: 80px;
+					}
+				}
+
+				&.has-icon {
+					display: flex;
+					align-items: center;
+
+					img {
+						height: 16px;
+						width: 16px;
+						margin: unset;
+						border-radius: unset;
+						border: unset;
+						margin-right: 16px;
+					}
 				}
 
 				&.active {
 					transition: 0.3s ease-in-out;
 					background: none;
 					box-shadow: none;
-                    position: relative;
+					position: relative;
 					span {
 						font-weight: 600;
 						transition: 0.3s ease-in-out;
@@ -102,6 +117,13 @@ $desktopBreakPoint: 880px;
 					}
 				}
 			}
+		}
+	}
+}
+.margin {
+	&-top {
+		&__32px {
+			margin-top: 32px;
 		}
 	}
 }

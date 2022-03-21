@@ -19,13 +19,13 @@
 					<nuxt-link to="/docs/guide">Quick Start Guide</nuxt-link>
 				</li>
 				<li v-for="(page, index) in pages" :key="index">
-					<template v-if="page.id !== 'guide' && page.id !== 'index'">
+					<template v-if="page.id !== 'guide' && page.id !== 'index' && page.id !== 'convoy.js' && page.id !== 'convoy-python' && page.id !== 'convoy-php'">
 						<nuxt-link :to="'/docs/' + page.id">
 							<img src="~/assets/images/angle-down-icon.svg" alt="angle right" />
 							{{ page.title }}
 						</nuxt-link>
 
-						<ul v-if="page.toc.length > 0">
+						<ul v-if="page.toc.length > 0" class="" :class="{ show: currentPage == page.id }">
 							<li v-for="(subpage, index) in page.toc" :key="index">
 								<nuxt-link :to="{ path: '/docs/' + page.id, hash: '#' + subpage.id }">
 									{{ subpage.text }}
@@ -33,6 +33,12 @@
 							</li>
 						</ul>
 					</template>
+				</li>
+				<li>
+					<nuxt-link to="/docs/sdk">
+						<img src="~/assets/images/angle-down-icon.svg" alt="angle right" />
+						SDK
+					</nuxt-link>
 				</li>
 			</ul>
 		</aside>
@@ -90,7 +96,8 @@ aside {
 	width: 100%;
 	background: #16192c;
 	color: #ffffff;
-
+	height: 100vh;
+	overflow-y: scroll;
 	.logo {
 		display: flex;
 		align-items: center;
@@ -107,6 +114,9 @@ aside {
 			line-height: 20px;
 			color: #47b38d;
 		}
+	}
+	a {
+		color: #fff;
 	}
 
 	a.nuxt-link-exact-active {
@@ -160,10 +170,11 @@ aside {
 		}
 	}
 }
-a.api-reference{
-	img{
+a.api-reference {
+	img {
 		transform: rotate(270deg);
 		margin-left: 5px;
+		filter: brightness(0) invert(1);
 	}
 }
 .main {
