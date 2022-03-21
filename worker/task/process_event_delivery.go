@@ -106,21 +106,22 @@ func ProcessEventDelivery(appRepo datastore.ApplicationRepository, eventDelivery
 			return &EndpointError{Err: err}
 		}
 
-		hmacSignature, err := util.ComputeJSONHmac(g.Config.Signature.Hash, bStr, secret, false)
+		timestamp := fmt.Sprint(time.Now().Unix())
+		var signedPayload strings.Builder
+		signedPayload.WriteString(timestamp)
+		signedPayload.WriteString(",")
+		signedPayload.WriteString(bStr)
+
+		hmac, err := util.ComputeJSONHmac(g.Config.Signature.Hash, signedPayload.String(), secret, false)
 		if err != nil {
-			log.Errorf("error occurred while generating hmac signature - %+v\n", err)
-			return &EndpointError{Err: err}
-		}
-		hmacTimestamp, err := util.ComputeJSONHmac(g.Config.Signature.Hash, fmt.Sprint(time.Now().Unix()), secret, false)
-		if err != nil {
-			log.Errorf("error occurred while generating hmac timestamp - %+v\n", err)
+			log.Errorf("error occurred while generating hmac - %+v\n", err)
 			return &EndpointError{Err: err}
 		}
 
 		attemptStatus := false
 		start := time.Now()
 
-		resp, err := dispatch.SendRequest(e.TargetURL, string(convoy.HttpPost), []byte(bStr), g.Config.Signature.Header.String(), hmacSignature, hmacTimestamp, int64(cfg.MaxResponseSize))
+		resp, err := dispatch.SendRequest(e.TargetURL, string(convoy.HttpPost), []byte(bStr), g.Config.Signature.Header.String(), hmac, timestamp, int64(cfg.MaxResponseSize))
 		status := "-"
 		statusCode := 0
 		if resp != nil {
