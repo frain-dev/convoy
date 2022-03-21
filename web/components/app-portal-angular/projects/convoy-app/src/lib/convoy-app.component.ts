@@ -2,7 +2,7 @@ import { Component, Input, OnInit } from '@angular/core';
 import { APP } from './models/app.model';
 import { EVENT, EVENT_DELIVERY } from './models/event.model';
 import { ActivatedRoute, Router } from '@angular/router';
-import { FormBuilder, FormGroup } from '@angular/forms';
+import { FormBuilder, FormControl, FormGroup, Validators } from '@angular/forms';
 import { PAGINATION } from './models/global.model';
 import { HTTP_RESPONSE } from './models/http.model';
 import { ConvoyAppService } from './convoy-app.service';
@@ -15,6 +15,12 @@ import { DatePipe } from '@angular/common';
 	styleUrls: ['./convoy-app.component.scss']
 })
 export class ConvoyAppComponent implements OnInit {
+	addNewEndpointForm: FormGroup = this.formBuilder.group({
+		url: ['', Validators.required],
+		events: [''],
+		description: ['', Validators.required]
+	});
+	eventTags: string[] = [];
 	tabs: ['events', 'event deliveries'] = ['events', 'event deliveries'];
 	activeTab: 'events' | 'event deliveries' = 'events';
 	detailsItem?: any;
@@ -77,6 +83,8 @@ export class ConvoyAppComponent implements OnInit {
 	isloadingEvents = false;
 	showBatchRetryModal = false;
 	fetchingCount = false;
+	showAddEndpointModal = false;
+	isCreatingNewEndpoint = false;
 	@Input('token') token!: string;
 	@Input('apiURL') apiURL: string = '';
 
@@ -247,7 +255,7 @@ export class ConvoyAppComponent implements OnInit {
 		}
 	}
 
-	async getAppDetails(requestDetails?: { appId?: string }) {
+	async getAppDetails() {
 		try {
 			const appDetailsResponse = await this.convyAppService.request({
 				url: this.getAPIURL(`/apps`),
@@ -305,6 +313,40 @@ export class ConvoyAppComponent implements OnInit {
 			return eventDeliveriesResponse.data.content;
 		} catch (error) {
 			return error;
+		}
+	}
+
+	// add new endpoint to app
+	async addNewEndpoint(appUid?: string) {
+		if (this.addNewEndpointForm.invalid) {
+			(<any>Object).values(this.addNewEndpointForm.controls).forEach((control: FormControl) => {
+				control?.markAsTouched();
+			});
+			return;
+		}
+		this.isCreatingNewEndpoint = true;
+
+		this.addNewEndpointForm.patchValue({
+			events: this.eventTags
+		});
+		try {
+			const response = await this.convyAppService.request({
+				url: this.getAPIURL(
+					`/apps/endpoints`
+				),
+				method: 'post',
+				body: this.addNewEndpointForm.value,
+				token: this.token
+			});
+			this.convyAppService.showNotification({ message: response.message });
+			this.getAppDetails();
+			this.getEvents();
+			this.addNewEndpointForm.reset();
+			this.eventTags = [];
+			this.showAddEndpointModal = false;
+			this.isCreatingNewEndpoint = false;
+		} catch {
+			this.isCreatingNewEndpoint = false;
 		}
 	}
 
@@ -398,9 +440,9 @@ export class ConvoyAppComponent implements OnInit {
 			const response = await this.convyAppService.request({
 				method: 'post',
 				url: this.getAPIURL(
-					`/eventdeliveries/batchretry?eventId=${this.eventDeliveryFilteredByEventId || ''}&page=${
-						this.eventDeliveriesPage || 1
-					}&startDate=${startDate}&endDate=${endDate}${eventDeliveryStatusFilterQuery || ''}`
+					`/eventdeliveries/batchretry?eventId=${this.eventDeliveryFilteredByEventId || ''}&page=${this.eventDeliveriesPage || 1}&startDate=${startDate}&endDate=${endDate}${
+						eventDeliveryStatusFilterQuery || ''
+					}`
 				),
 				token: this.token,
 				body: null
@@ -427,9 +469,9 @@ export class ConvoyAppComponent implements OnInit {
 		try {
 			const response = await this.convyAppService.request({
 				url: this.getAPIURL(
-					`/eventdeliveries/countbatchretryevents?eventId=${this.eventDeliveryFilteredByEventId || ''}&page=${
-						this.eventDeliveriesPage || 1
-					}&startDate=${startDate}&endDate=${endDate}${eventDeliveryStatusFilterQuery || ''}`
+					`/eventdeliveries/countbatchretryevents?eventId=${this.eventDeliveryFilteredByEventId || ''}&page=${this.eventDeliveriesPage || 1}&startDate=${startDate}&endDate=${endDate}${
+						eventDeliveryStatusFilterQuery || ''
+					}`
 				),
 				token: this.token,
 				method: 'get'
@@ -531,6 +573,30 @@ export class ConvoyAppComponent implements OnInit {
 	async refreshTables() {
 		await this.initDashboard();
 		this.toggleActiveTab('event deliveries');
+	}
+
+	
+
+	addTag() {
+		const addTagInput = document.getElementById('tagInput');
+		const addTagInputValue = document.getElementById('tagInput') as HTMLInputElement;
+		addTagInput?.addEventListener('keydown', e => {
+			if (e.which === 188) {
+				if (this.eventTags.includes(addTagInputValue?.value)) {
+					addTagInputValue.value = '';
+					this.eventTags = this.eventTags.filter(e => String(e).trim());
+				} else {
+					this.eventTags.push(addTagInputValue?.value);
+					addTagInputValue.value = '';
+					this.eventTags = this.eventTags.filter(e => String(e).trim());
+				}
+				e.preventDefault();
+			}
+		});
+	}
+
+	removeEventTag(tag: string) {
+		this.eventTags = this.eventTags.filter(e => e !== tag);
 	}
 
 	getAPIURL(url: string) {
