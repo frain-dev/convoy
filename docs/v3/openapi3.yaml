@@ -63,6 +63,8 @@ components:
           type: integer
         group_id:
           type: string
+        is_disabled:
+          type: boolean
         name:
           type: string
         support_email:
@@ -344,6 +346,8 @@ components:
       type: object
     models.Application:
       properties:
+        is_disabled:
+          type: boolean
         name:
           type: string
         support_email:
