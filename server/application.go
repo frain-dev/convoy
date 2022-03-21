@@ -5,6 +5,8 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/frain-dev/convoy/services"
+
 	"github.com/frain-dev/convoy/cache"
 	limiter "github.com/frain-dev/convoy/limiter"
 	"github.com/frain-dev/convoy/logger"
@@ -23,6 +25,7 @@ import (
 )
 
 type applicationHandler struct {
+	eventService      *services.EventService
 	appRepo           datastore.ApplicationRepository
 	eventRepo         datastore.EventRepository
 	eventDeliveryRepo datastore.EventDeliveryRepository
@@ -40,7 +43,8 @@ type pagedResponse struct {
 	Pagination *datastore.PaginationData `json:"pagination,omitempty"`
 }
 
-func newApplicationHandler(eventRepo datastore.EventRepository,
+func newApplicationHandler(
+	eventRepo datastore.EventRepository,
 	eventDeliveryRepo datastore.EventDeliveryRepository,
 	appRepo datastore.ApplicationRepository,
 	groupRepo datastore.GroupRepository,
@@ -51,7 +55,10 @@ func newApplicationHandler(eventRepo datastore.EventRepository,
 	cache cache.Cache,
 	limiter limiter.RateLimiter) *applicationHandler {
 
+	es := services.NewEventService(appRepo, eventRepo, eventDeliveryRepo, eventQueue)
+
 	return &applicationHandler{
+		eventService:      es,
 		eventRepo:         eventRepo,
 		eventDeliveryRepo: eventDeliveryRepo,
 		apiKeyRepo:        apiKeyRepo,
@@ -199,7 +206,6 @@ func (a *applicationHandler) UpdateApp(w http.ResponseWriter, r *http.Request) {
 	if appUpdate.IsDisabled != nil {
 		app.IsDisabled = *appUpdate.IsDisabled
 	}
-
 
 	err = a.appRepo.UpdateApplication(r.Context(), app)
 	if err != nil {

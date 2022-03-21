@@ -78,8 +78,6 @@ export class ConvoyAppComponent implements OnInit {
 	showBatchRetryModal = false;
 	fetchingCount = false;
 	@Input('token') token!: string;
-	@Input('appId') appId!: string;
-	@Input('groupId') groupId!: string;
 	@Input('apiURL') apiURL: string = '';
 
 	constructor(private convyAppService: ConvoyAppService, private router: Router, private formBuilder: FormBuilder, private route: ActivatedRoute, private datePipe: DatePipe) {}
@@ -102,7 +100,6 @@ export class ConvoyAppComponent implements OnInit {
 		if (tab === 'events' && this.events?.content.length > 0) {
 			this.eventDetailsActiveTab = 'data';
 			this.detailsItem = this.events?.content[0];
-			this.getEvents();
 			this.getEventDeliveriesForSidebar(this.detailsItem.uid);
 		} else if (tab === 'event deliveries' && this.eventDeliveries?.content.length > 0) {
 			this.detailsItem = this.eventDeliveries?.content[0];
@@ -225,7 +222,7 @@ export class ConvoyAppComponent implements OnInit {
 
 		try {
 			const eventsResponse = await this.convyAppService.request({
-				url: this.getAPIURL(`/events?groupID=${this.groupId || ''}&sort=AESC&page=${this.eventsPage || 1}&perPage=20&startDate=${startDate}&endDate=${endDate}&appId=${this.appId || ''}`),
+				url: this.getAPIURL(`/events?sort=AESC&page=${this.eventsPage || 1}&startDate=${startDate}&endDate=${endDate}`),
 				method: 'get',
 				token: this.token
 			});
@@ -253,7 +250,7 @@ export class ConvoyAppComponent implements OnInit {
 	async getAppDetails(requestDetails?: { appId?: string }) {
 		try {
 			const appDetailsResponse = await this.convyAppService.request({
-				url: this.getAPIURL(`/apps/${this.appId || ''}?groupID=${this.groupId || ''}`),
+				url: this.getAPIURL(`/apps`),
 				method: 'get',
 				token: this.token
 			});
@@ -272,9 +269,7 @@ export class ConvoyAppComponent implements OnInit {
 		try {
 			const eventDeliveriesResponse = await this.convyAppService.request({
 				url: this.getAPIURL(
-					`/eventdeliveries?groupID=${this.groupId || ''}&eventId=${requestDetails.eventId || ''}&page=${this.eventDeliveriesPage || 1}&startDate=${startDate}&endDate=${endDate}&appId=${
-						this.appId || ''
-					}&status=${eventDeliveryStatusFilterQuery || ''}`
+					`/eventdeliveries?eventId=${requestDetails.eventId || ''}&page=${this.eventDeliveriesPage || 1}&startDate=${startDate}&endDate=${endDate}&status=${eventDeliveryStatusFilterQuery || ''}`
 				),
 				method: 'get',
 				token: this.token
@@ -330,7 +325,7 @@ export class ConvoyAppComponent implements OnInit {
 	async getDelieveryAttempts(eventDeliveryId: string) {
 		try {
 			const deliveryAttemptsResponse = await this.convyAppService.request({
-				url: this.getAPIURL(`/eventdeliveries/${eventDeliveryId}/deliveryattempts?groupID=${this.groupId || ''}&appId=${this.appId || ''}`),
+				url: this.getAPIURL(`/eventdeliveries/${eventDeliveryId}/deliveryattempts`),
 				method: 'get',
 				token: this.token
 			});
@@ -372,7 +367,7 @@ export class ConvoyAppComponent implements OnInit {
 		try {
 			await this.convyAppService.request({
 				method: 'put',
-				url: this.getAPIURL(`/eventdeliveries/${requestDetails.eventDeliveryId}/resend?groupID=${this.groupId || ''}&appId=${this.appId || ''}`),
+				url: this.getAPIURL(`/eventdeliveries/${requestDetails.eventDeliveryId}/resend`),
 				token: this.token
 			});
 
@@ -403,9 +398,9 @@ export class ConvoyAppComponent implements OnInit {
 			const response = await this.convyAppService.request({
 				method: 'post',
 				url: this.getAPIURL(
-					`/eventdeliveries/batchretry?groupID=${this.groupId || ''}&eventId=${this.eventDeliveryFilteredByEventId || ''}&page=${
+					`/eventdeliveries/batchretry?eventId=${this.eventDeliveryFilteredByEventId || ''}&page=${
 						this.eventDeliveriesPage || 1
-					}&startDate=${startDate}&endDate=${endDate}&appId=${this.appId}${eventDeliveryStatusFilterQuery || ''}`
+					}&startDate=${startDate}&endDate=${endDate}${eventDeliveryStatusFilterQuery || ''}`
 				),
 				token: this.token,
 				body: null
@@ -432,9 +427,9 @@ export class ConvoyAppComponent implements OnInit {
 		try {
 			const response = await this.convyAppService.request({
 				url: this.getAPIURL(
-					`/eventdeliveries/countbatchretryevents?groupID=${this.groupId || ''}&eventId=${this.eventDeliveryFilteredByEventId || ''}&page=${
+					`/eventdeliveries/countbatchretryevents?eventId=${this.eventDeliveryFilteredByEventId || ''}&page=${
 						this.eventDeliveriesPage || 1
-					}&startDate=${startDate}&endDate=${endDate}&appId=${this.appId}${eventDeliveryStatusFilterQuery || ''}`
+					}&startDate=${startDate}&endDate=${endDate}${eventDeliveryStatusFilterQuery || ''}`
 				),
 				token: this.token,
 				method: 'get'
