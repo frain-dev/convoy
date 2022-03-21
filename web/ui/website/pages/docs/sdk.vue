@@ -36,7 +36,7 @@ export default {
 		};
 	},
 	mounted() {
-		this.fetchPageData('convoyjs#installation');
+		this.fetchPageData('convoyjs');
 	},
 	methods: {
 		async fetchPageData(param) {
