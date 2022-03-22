@@ -1487,7 +1487,7 @@ a {
 				background-size: 30%;
 			}
 			&.sdk {
-				background: url('~/assets/images/sdk.svg') #fcfcfc no-repeat;
+				background: url('~/assets/images/sdk.png') #fcfcfc no-repeat;
 				background-position: bottom right;
 				background-size: 30%;
 			}
