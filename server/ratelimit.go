@@ -8,14 +8,11 @@ import (
 
 	"github.com/frain-dev/convoy"
 	limiter "github.com/frain-dev/convoy/limiter"
+	"github.com/frain-dev/convoy/util"
 	"github.com/go-chi/httprate"
 	"github.com/go-chi/render"
 	log "github.com/sirupsen/logrus"
 )
-
-func rateLimitByGroup() func(next http.Handler) http.Handler {
-	return rateLimitByGroupWithParams(convoy.RATE_LIMIT, convoy.RATE_LIMIT_DURATION)
-}
 
 func rateLimitByGroupWithParams(requestLimit int, windowLength time.Duration) func(next http.Handler) http.Handler {
 	return httprate.Limit(requestLimit, windowLength, httprate.WithKeyFuncs(func(req *http.Request) (string, error) {
@@ -28,10 +25,26 @@ func rateLimitByGroupID(limiter limiter.RateLimiter) func(next http.Handler) htt
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			group := getGroupFromContext(r.Context())
 
-			res, err := limiter.Allow(r.Context(), group.UID, group.RateLimit, group.RateLimitDuration)
+			var rateLimitDuration time.Duration
+			var err error
+			if util.IsStringEmpty(group.RateLimitDuration) {
+				rateLimitDuration, err = time.ParseDuration(convoy.RATE_LIMIT_DURATION)
+				if err != nil {
+					_ = render.Render(w, r, newErrorResponse("an error occured parsing rate limit duration", http.StatusBadRequest))
+					return
+				}
+			}
+
+			var rateLimit int
+			if group.RateLimit == 0 {
+				rateLimit = convoy.RATE_LIMIT
+			}
+
+			res, err := limiter.Allow(r.Context(), group.UID, rateLimit, int(rateLimitDuration))
 			if err != nil {
-				log.WithError(err).Error("an error occured")
-				_ = render.Render(w, r, newErrorResponse("an error occured", http.StatusBadRequest))
+				message := "an error occured while getting rate limit"
+				log.WithError(err).Error(message)
+				_ = render.Render(w, r, newErrorResponse(message, http.StatusBadRequest))
 				return
 			}
 

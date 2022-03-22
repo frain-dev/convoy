@@ -401,11 +401,11 @@ func TestApplicationHandler_CreateAppEvent(t *testing.T) {
 				a.EXPECT().
 					FindApplicationByID(gomock.Any(), gomock.Any()).Times(1).
 					Return(&datastore.Application{
-						UID:       appId,
-						GroupID:   groupId,
-						Title:     "Valid application",
+						UID:        appId,
+						GroupID:    groupId,
+						Title:      "Valid application",
 						IsDisabled: true,
-						Endpoints: []datastore.Endpoint{},
+						Endpoints:  []datastore.Endpoint{},
 					}, nil)
 
 				o, _ := app.groupRepo.(*mocks.MockGroupRepository)
@@ -441,6 +441,7 @@ func TestApplicationHandler_CreateAppEvent(t *testing.T) {
 
 			if w.Code != tc.statusCode {
 				log.Error(tc.args.message, w.Body)
+				// fmt.Printf("%v\n", w.Result().Body)
 				t.Errorf("Want status '%d', got '%d'", tc.statusCode, w.Code)
 			}
 		})
