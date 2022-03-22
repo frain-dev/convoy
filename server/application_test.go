@@ -423,7 +423,6 @@ func TestApplicationHandler_CreateApp(t *testing.T) {
 				t.Errorf("Want status '%d', got '%d'", tc.statusCode, w.Code)
 			}
 
-			fmt.Printf("bodyyy: '%s'\n", w.Body.String())
 			d := stripTimestamp(t, "application", w.Body)
 
 			w.Body = d

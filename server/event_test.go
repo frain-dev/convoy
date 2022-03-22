@@ -441,7 +441,6 @@ func TestApplicationHandler_CreateAppEvent(t *testing.T) {
 
 			if w.Code != tc.statusCode {
 				log.Error(tc.args.message, w.Body)
-				// fmt.Printf("%v\n", w.Result().Body)
 				t.Errorf("Want status '%d', got '%d'", tc.statusCode, w.Code)
 			}
 		})
