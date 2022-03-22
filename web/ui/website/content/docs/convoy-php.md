@@ -1,10 +1,9 @@
 ---
 title: Convoy-PHP SDK
-description: 'Convoy-PHP SDK Configuration'
+description: "Convoy-PHP SDK Configuration"
 id: convoy-php
 order: 8
 ---
-
 
 #### Installation
 
@@ -16,16 +15,75 @@ To get started quickly,
 composer require frain/convoy symfony/http-client nyholm/psr7
 ```
 
-#### Usage
+### Setup Client
+
+Next, import the `convoy` module and setup with your auth credentials.
 
 ```php
 use Convoy\Convoy;
 
+$convoy = new Convoy(["api_key" => "your_api_key"]);
+```
 
-$config = [
-    'api_key' => 'your_api_key',
-    'uri' => 'https://self-hosted-convoy' //This is optional and will default to https://cloud.getconvoy.io/api/v1
+The SDK also supports authenticating via Basic Auth by defining your username and password.
+
+```php
+$convoy = new Convoy(["username" => "default", "password" => "default"]);
+```
+
+In the event you're using a self hosted convoy instance, you can define the url as part of what is passed into convoy's constructor.
+
+```php
+$convoy = new Convoy([
+    "api_key" => "your_api_key",
+    "uri" => "self-hosted-instance"
+]);
+```
+
+### Creating an Application
+
+An application represents a user's application trying to receive webhooks. Once you create an application, you'll receive a `uid` from the response that you should save and supply in subsequent API calls to perform other requests such as creating an event.
+
+```php
+$appData = ["name" => "my_app", "support_email" => "support@myapp.com"];
+
+$response = $convoy->applications()->create($appData);
+
+$appId = $response['data']['uid'];
+```
+
+### Add Application Endpoint
+
+After creating an application, you'll need to add an endpoint to the application you just created. An endpoint represents a target URL to receive events.
+
+```php
+$endpointData = [
+    "url" => "https://0d87-102-89-2-172.ngrok.io",
+    "description" => "Default Endpoint",
+    "secret" => "endpoint-secret",
+    "events" => ["*"]
+]
+
+$response = $convoy->endpoints()->create($appId, $endpointData);
+```
+
+### Sending an Event
+
+To send an event, you'll need the `uid` from the application we created earlier.
+
+```php
+$eventData = [
+    "app_id" => $appId,
+    "event_type" => "payment.success",
+    "data" => [
+        "event" => "payment.success",
+        "data" => [
+            "status" => "Completed",
+            "description" => "Transaction Successful",
+            "userID" => "test_user_id808"
+        ]
+    ]
 ];
 
-$convoy = new Convoy($config);
+$response = $convoy->events()->create($eventData);
 ```
