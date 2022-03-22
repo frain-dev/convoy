@@ -1482,7 +1482,7 @@ a {
 			border-radius: 8px;
 			padding: 32px;
 			&.app {
-				background: url('~/assets/images/app-portal.svg') #fcfcfc no-repeat;
+				background: url('~/assets/images/app-portal.png') #fcfcfc no-repeat;
 				background-position: bottom right;
 				background-size: 30%;
 			}
