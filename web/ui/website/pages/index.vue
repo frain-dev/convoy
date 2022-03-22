@@ -234,10 +234,12 @@
 					<div class="sdk-app__cards__item sdk">
 						<h1>Convoy SDK</h1>
 						<p>We went a step further to make it easier to integrate convoy through SDK. Follow the link below to get started with you favourite language.</p>
-						<a target="_blank" rel="noopener noreferrer" href="https://app.getconvoy.io/signup" class="primary">
-							Get started
-							<img src="~/assets/images/arrow-right-icon.svg" alt="arrow right" />
-						</a>
+						<nuxt-link to="/docs/sdk">
+							<button class="primary">
+								Get started
+								<img src="~/assets/images/arrow-right-icon.svg" alt="arrow right" />
+							</button>
+						</nuxt-link>
 					</div>
 					<div class="sdk-app__cards__item app">
 						<h1>App Portal</h1>
@@ -245,10 +247,12 @@
 							With app portal, we're enabling you to extend the visibility our dashboard provides you to your customers. They no longer need to reach out to you to know what is going on with their
 							events.
 						</p>
-						<a target="_blank" rel="noopener noreferrer" href="https://app.getconvoy.io/signup" class="primary">
-							Get started
-							<img src="~/assets/images/arrow-right-icon.svg" alt="arrow right" />
-						</a>
+						<nuxt-link to="/docs/app-portal">
+							<button class="primary">
+								Get started
+								<img src="~/assets/images/arrow-right-icon.svg" alt="arrow right" />
+							</button>
+						</nuxt-link>
 					</div>
 				</div>
 			</div>
