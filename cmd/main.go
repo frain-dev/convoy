@@ -146,7 +146,7 @@ func ensureDefaultGroup(ctx context.Context, cfg config.Configuration, a *app) e
 	}
 
 	taskName := convoy.EventProcessor.SetPrefix(group.Name)
-	task.CreateTask(taskName, *group, task.ProcessEventDelivery(a.applicationRepo, a.eventDeliveryRepo, a.groupRepo))
+	task.CreateTask(taskName, *group, task.ProcessEventDelivery(a.applicationRepo, a.eventDeliveryRepo, a.groupRepo, a.limiter))
 
 	return nil
 }
