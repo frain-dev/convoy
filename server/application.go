@@ -58,9 +58,10 @@ func newApplicationHandler(
 	limiter limiter.RateLimiter) *applicationHandler {
 
 	es := services.NewEventService(appRepo, eventRepo, eventDeliveryRepo, eventQueue)
-
+	gs := services.NewGroupService(appRepo, groupRepo, eventRepo, eventDeliveryRepo, limiter)
 	return &applicationHandler{
 		eventService:      es,
+		groupService:      gs,
 		eventRepo:         eventRepo,
 		eventDeliveryRepo: eventDeliveryRepo,
 		apiKeyRepo:        apiKeyRepo,

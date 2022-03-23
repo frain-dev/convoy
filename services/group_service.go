@@ -26,6 +26,10 @@ type GroupService struct {
 	limiter           limiter.RateLimiter
 }
 
+func NewGroupService(appRepo datastore.ApplicationRepository, groupRepo datastore.GroupRepository, eventRepo datastore.EventRepository, eventDeliveryRepo datastore.EventDeliveryRepository, limiter limiter.RateLimiter) *GroupService {
+	return &GroupService{appRepo: appRepo, groupRepo: groupRepo, eventRepo: eventRepo, eventDeliveryRepo: eventDeliveryRepo, limiter: limiter}
+}
+
 func (gs *GroupService) CreateGroup(ctx context.Context, newGroup *models.Group) (*datastore.Group, error) {
 	groupName := newGroup.Name
 	err := util.Validate(newGroup)
