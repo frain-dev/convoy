@@ -134,7 +134,7 @@ func (e *EventService) CreateAppEvent(ctx context.Context, newMessage *models.Ev
 		taskName := convoy.EventProcessor.SetPrefix(g.Name)
 
 		if eventDelivery.Status != datastore.DiscardedEventStatus {
-			err = e.eventQueue.Write(ctx, taskName, eventDelivery, 1*time.Second)
+			err = e.eventQueue.Write(context.Background(), taskName, eventDelivery, 1*time.Second)
 			if err != nil {
 				log.Errorf("Error occurred sending new event to the queue %s", err)
 			}
@@ -305,7 +305,7 @@ func (e *EventService) requeueEventDelivery(ctx context.Context, eventDelivery *
 	}
 
 	taskName := convoy.EventProcessor.SetPrefix(g.Name)
-	err = e.eventQueue.Write(ctx, taskName, eventDelivery, 1*time.Second)
+	err = e.eventQueue.Write(context.Background(), taskName, eventDelivery, 1*time.Second)
 	if err != nil {
 		return fmt.Errorf("error occurred re-enqueing old event - %s: %v", eventDelivery.UID, err)
 	}
