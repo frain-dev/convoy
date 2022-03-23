@@ -86,6 +86,7 @@ func ProcessEventDelivery(appRepo datastore.ApplicationRepository, eventDelivery
 
 		dbEndpoint, err := appRepo.FindApplicationEndpointByID(context.Background(), m.AppMetadata.UID, e.UID)
 		if err != nil {
+			log.WithError(err).Errorf("could not retrieve endpoint %s", e.UID)
 			delayDuration = retrystrategies.NewRetryStrategyFromMetadata(*m.Metadata).NextDuration(m.Metadata.NumTrials)
 			return &EndpointError{Err: err, delay: delayDuration}
 		}
