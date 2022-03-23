@@ -120,12 +120,14 @@ func ensureDefaultGroup(ctx context.Context, cfg config.Configuration, a *app) e
 
 	if len(groups) == 0 {
 		defaultGroup := &datastore.Group{
-			UID:            uuid.New().String(),
-			Name:           "default-group",
-			Config:         groupCfg,
-			CreatedAt:      primitive.NewDateTimeFromTime(time.Now()),
-			UpdatedAt:      primitive.NewDateTimeFromTime(time.Now()),
-			DocumentStatus: datastore.ActiveDocumentStatus,
+			UID:               uuid.New().String(),
+			Name:              "default-group",
+			Config:            groupCfg,
+			RateLimit:         convoy.RATE_LIMIT,
+			RateLimitDuration: convoy.RATE_LIMIT_DURATION,
+			CreatedAt:         primitive.NewDateTimeFromTime(time.Now()),
+			UpdatedAt:         primitive.NewDateTimeFromTime(time.Now()),
+			DocumentStatus:    datastore.ActiveDocumentStatus,
 		}
 
 		err = a.groupRepo.CreateGroup(ctx, defaultGroup)
@@ -146,7 +148,7 @@ func ensureDefaultGroup(ctx context.Context, cfg config.Configuration, a *app) e
 	}
 
 	taskName := convoy.EventProcessor.SetPrefix(group.Name)
-	task.CreateTask(taskName, *group, task.ProcessEventDelivery(a.applicationRepo, a.eventDeliveryRepo, a.groupRepo))
+	task.CreateTask(taskName, *group, task.ProcessEventDelivery(a.applicationRepo, a.eventDeliveryRepo, a.groupRepo, a.limiter))
 
 	return nil
 }

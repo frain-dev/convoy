@@ -132,8 +132,8 @@ func (a *applicationHandler) CreateGroup(w http.ResponseWriter, r *http.Request)
 		newGroup.RateLimit = convoy.RATE_LIMIT
 	}
 
-	if newGroup.RateLimitDuration == 0 {
-		newGroup.RateLimitDuration = int(convoy.RATE_LIMIT_DURATION)
+	if util.IsStringEmpty(newGroup.RateLimitDuration) {
+		newGroup.RateLimitDuration = convoy.RATE_LIMIT_DURATION
 	}
 
 	group := &datastore.Group{
@@ -156,7 +156,7 @@ func (a *applicationHandler) CreateGroup(w http.ResponseWriter, r *http.Request)
 
 	// register task.
 	taskName := convoy.EventProcessor.SetPrefix(groupName)
-	task.CreateTask(taskName, *group, task.ProcessEventDelivery(a.appRepo, a.eventDeliveryRepo, a.groupRepo))
+	task.CreateTask(taskName, *group, task.ProcessEventDelivery(a.appRepo, a.eventDeliveryRepo, a.groupRepo, a.limiter))
 
 	_ = render.Render(w, r, newServerResponse("Group created successfully", group, http.StatusCreated))
 }

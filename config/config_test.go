@@ -1,7 +1,6 @@
 package config
 
 import (
-	"fmt"
 	"os"
 	"strconv"
 	"testing"
@@ -540,7 +539,6 @@ func TestLoadConfig(t *testing.T) {
 			}
 			require.Nil(t, err)
 
-			fmt.Printf("%+v\n", cfg)
 			require.Nil(t, err)
 
 			require.Equal(t, tt.wantCfg, cfg)

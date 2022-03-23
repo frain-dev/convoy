@@ -16,7 +16,7 @@
                 "name": "unique-group",
                 "logo_url": "https://google.com",
                 "rate_limit": 100,
-                "rate_limit_duration": 1,
+                "rate_limit_duration": "1h",
                 "config": {
                     "strategy": {
                         "type": "default",
