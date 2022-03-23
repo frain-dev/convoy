@@ -59,7 +59,7 @@ Copy the configuration file to the directory created above.
   },
   "disable_endpoint": false,
   "auth": {
-    "require_auth": false,
+    "require_auth": false
   }
 }
 ```
