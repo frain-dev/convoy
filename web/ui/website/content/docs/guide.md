@@ -59,26 +59,7 @@ Copy the configuration file to the directory created above.
   },
   "disable_endpoint": false,
   "auth": {
-    "require_auth": true,
-    "file": {
-      "basic": [
-        {
-          "username": "default",
-          "password": "default",
-          "role": {
-            "type": "super_user"
-          }
-        }
-      ],
-      "api_key": [
-        {
-          "api_key": "<insert-api-key>",
-          "role": {
-            "type": "super_user"
-          }
-        }
-      ]
-    }
+    "require_auth": false,
   }
 }
 ```
