@@ -66,8 +66,8 @@ func (r *RedisLimiter) ShouldAllow(ctx context.Context, key string, limit, durat
 
 	l := redis_rate.Limit{
 		Period: d,
-		Rate:   1,
-		Burst:  1,
+		Rate:   limit + 1,
+		Burst:  limit + 1,
 	}
 
 	result, err := r.limiter.AllowN(ctx, key, l, 0)

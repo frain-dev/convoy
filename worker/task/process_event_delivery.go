@@ -63,11 +63,19 @@ func ProcessEventDelivery(appRepo datastore.ApplicationRepository, eventDelivery
 				log.WithError(err).Errorf("failed to parse endpoint duration")
 				return nil
 			}
+		} else {
+			rateLimitDuration, err = time.ParseDuration(m.EndpointMetadata.RateLimitDuration)
+			if err != nil {
+				log.WithError(err).Errorf("failed to parse endpoint duration")
+				return nil
+			}
 		}
 
 		var rateLimit int
 		if m.EndpointMetadata.RateLimit == 0 {
 			rateLimit = convoy.RATE_LIMIT
+		} else {
+			rateLimit = m.EndpointMetadata.RateLimit
 		}
 
 		res, err := rateLimiter.ShouldAllow(context.Background(), m.EndpointMetadata.TargetURL, rateLimit, int(rateLimitDuration))

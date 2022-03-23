@@ -33,11 +33,19 @@ func rateLimitByGroupID(limiter limiter.RateLimiter) func(next http.Handler) htt
 					_ = render.Render(w, r, newErrorResponse("an error occured parsing rate limit duration", http.StatusBadRequest))
 					return
 				}
+			} else {
+				rateLimitDuration, err = time.ParseDuration(group.RateLimitDuration)
+				if err != nil {
+					_ = render.Render(w, r, newErrorResponse("an error occured parsing rate limit duration", http.StatusBadRequest))
+					return
+				}
 			}
 
 			var rateLimit int
 			if group.RateLimit == 0 {
 				rateLimit = convoy.RATE_LIMIT
+			} else {
+				rateLimit = group.RateLimit
 			}
 
 			res, err := limiter.Allow(r.Context(), group.UID, rateLimit, int(rateLimitDuration))
