@@ -1,21 +1,15 @@
 package server
 
 import (
-	"context"
-	"fmt"
 	"net/http"
-	"time"
 
-	"github.com/frain-dev/convoy"
+	"github.com/go-chi/chi/v5"
+
 	"github.com/frain-dev/convoy/auth"
 	"github.com/frain-dev/convoy/datastore"
 	"github.com/frain-dev/convoy/server/models"
 	"github.com/frain-dev/convoy/util"
-	"github.com/frain-dev/convoy/worker/task"
 	"github.com/go-chi/render"
-	"github.com/google/uuid"
-	log "github.com/sirupsen/logrus"
-	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
 // GetGroup
@@ -33,33 +27,14 @@ func (a *applicationHandler) GetGroup(w http.ResponseWriter, r *http.Request) {
 
 	group := getGroupFromContext(r.Context())
 
-	err := a.fillGroupStatistics(r.Context(), group)
+	err := a.groupService.FillGroupStatistics(r.Context(), group)
 	if err != nil {
-		_ = render.Render(w, r, newErrorResponse("failed to fetch group statistics", http.StatusInternalServerError))
+		_ = render.Render(w, r, newServiceErrResponse(err, http.StatusInternalServerError))
 		return
 	}
 
 	_ = render.Render(w, r, newServerResponse("Group fetched successfully",
 		group, http.StatusOK))
-}
-
-func (a *applicationHandler) fillGroupStatistics(ctx context.Context, group *datastore.Group) error {
-	appCount, err := a.appRepo.CountGroupApplications(ctx, group.UID)
-	if err != nil {
-		return fmt.Errorf("failed to count group messages: %v", err)
-	}
-
-	msgCount, err := a.eventRepo.CountGroupMessages(ctx, group.UID)
-	if err != nil {
-		return fmt.Errorf("failed to count group messages: %v", err)
-	}
-
-	group.Statistics = &datastore.GroupStatistics{
-		MessagesSent: msgCount,
-		TotalApps:    appCount,
-	}
-
-	return nil
 }
 
 // DeleteGroup
@@ -76,25 +51,9 @@ func (a *applicationHandler) fillGroupStatistics(ctx context.Context, group *dat
 func (a *applicationHandler) DeleteGroup(w http.ResponseWriter, r *http.Request) {
 	group := getGroupFromContext(r.Context())
 
-	err := a.groupRepo.DeleteGroup(r.Context(), group.UID)
+	err := a.groupService.DeleteGroup(r.Context(), group.UID)
 	if err != nil {
-		log.WithError(err).Error("failed to delete group")
-		_ = render.Render(w, r, newErrorResponse("failed to delete group", http.StatusInternalServerError))
-		return
-	}
-
-	// TODO(daniel,subomi): is returning http error necessary for these? since the group itself has been deleted
-	err = a.appRepo.DeleteGroupApps(r.Context(), group.UID)
-	if err != nil {
-		log.WithError(err).Error("failed to delete group apps")
-		_ = render.Render(w, r, newErrorResponse("failed to delete group apps", http.StatusInternalServerError))
-		return
-	}
-
-	err = a.eventRepo.DeleteGroupEvents(r.Context(), group.UID)
-	if err != nil {
-		log.WithError(err).Error("failed to delete group events")
-		_ = render.Render(w, r, newErrorResponse("failed to delete group events", http.StatusInternalServerError))
+		_ = render.Render(w, r, newServiceErrResponse(err, http.StatusInternalServerError))
 		return
 	}
 
@@ -122,41 +81,11 @@ func (a *applicationHandler) CreateGroup(w http.ResponseWriter, r *http.Request)
 		return
 	}
 
-	groupName := newGroup.Name
-	if err = util.Validate(newGroup); err != nil {
-		_ = render.Render(w, r, newErrorResponse(err.Error(), http.StatusBadRequest))
-		return
-	}
-
-	if newGroup.RateLimit == 0 {
-		newGroup.RateLimit = convoy.RATE_LIMIT
-	}
-
-	if util.IsStringEmpty(newGroup.RateLimitDuration) {
-		newGroup.RateLimitDuration = convoy.RATE_LIMIT_DURATION
-	}
-
-	group := &datastore.Group{
-		UID:               uuid.New().String(),
-		Name:              groupName,
-		Config:            &newGroup.Config,
-		LogoURL:           newGroup.LogoURL,
-		CreatedAt:         primitive.NewDateTimeFromTime(time.Now()),
-		UpdatedAt:         primitive.NewDateTimeFromTime(time.Now()),
-		RateLimit:         newGroup.RateLimit,
-		RateLimitDuration: newGroup.RateLimitDuration,
-		DocumentStatus:    datastore.ActiveDocumentStatus,
-	}
-
-	err = a.groupRepo.CreateGroup(r.Context(), group)
+	group, err := a.groupService.CreateGroup(r.Context(), &newGroup)
 	if err != nil {
-		_ = render.Render(w, r, newErrorResponse(fmt.Sprintf("an error occurred while creating Group: %v", err.Error()), http.StatusBadRequest))
+		_ = render.Render(w, r, newServiceErrResponse(err, http.StatusBadRequest))
 		return
 	}
-
-	// register task.
-	taskName := convoy.EventProcessor.SetPrefix(groupName)
-	task.CreateTask(taskName, *group, task.ProcessEventDelivery(a.appRepo, a.eventDeliveryRepo, a.groupRepo, a.limiter))
 
 	_ = render.Render(w, r, newServerResponse("Group created successfully", group, http.StatusCreated))
 }
@@ -174,7 +103,6 @@ func (a *applicationHandler) CreateGroup(w http.ResponseWriter, r *http.Request)
 // @Security ApiKeyAuth
 // @Router /groups/{groupID} [put]
 func (a *applicationHandler) UpdateGroup(w http.ResponseWriter, r *http.Request) {
-
 	var update models.Group
 	err := util.ReadJSON(r, &update)
 	if err != nil {
@@ -182,24 +110,9 @@ func (a *applicationHandler) UpdateGroup(w http.ResponseWriter, r *http.Request)
 		return
 	}
 
-	groupName := update.Name
-	if err = util.Validate(update); err != nil {
-		log.WithError(err).Error("failed to validate group update")
-		_ = render.Render(w, r, newErrorResponse(err.Error(), http.StatusBadRequest))
-		return
-	}
-
-	group := getGroupFromContext(r.Context())
-	group.Name = groupName
-	group.Config = &update.Config
-	if !util.IsStringEmpty(update.LogoURL) {
-		group.LogoURL = update.LogoURL
-	}
-
-	err = a.groupRepo.UpdateGroup(r.Context(), group)
+	group, err := a.groupService.UpdateGroup(r.Context(), chi.URLParam(r, "groupID"), &update)
 	if err != nil {
-		log.WithError(err).Error("failed to to update group")
-		_ = render.Render(w, r, newErrorResponse("an error occurred while updating Group", http.StatusInternalServerError))
+		_ = render.Render(w, r, newServiceErrResponse(err, http.StatusBadRequest))
 		return
 	}
 
@@ -242,17 +155,10 @@ func (a *applicationHandler) GetGroups(w http.ResponseWriter, r *http.Request) {
 		filter = &datastore.GroupFilter{Names: userGroups}
 	}
 
-	groups, err := a.groupRepo.LoadGroups(r.Context(), filter)
+	groups, err := a.groupService.GetGroups(r.Context(), filter)
 	if err != nil {
-		_ = render.Render(w, r, newErrorResponse("an error occurred while fetching Groups", http.StatusInternalServerError))
+		_ = render.Render(w, r, newServiceErrResponse(err, http.StatusBadRequest))
 		return
-	}
-
-	for _, group := range groups {
-		err = a.fillGroupStatistics(r.Context(), group)
-		if err != nil {
-			log.WithError(err).Errorf("failed to fill statistics of group %s", group.UID)
-		}
 	}
 
 	_ = render.Render(w, r, newServerResponse("Groups fetched successfully", groups, http.StatusOK))
