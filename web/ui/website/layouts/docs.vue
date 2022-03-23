@@ -19,7 +19,7 @@
 					<nuxt-link to="/docs/guide">Quick Start Guide</nuxt-link>
 				</li>
 				<li v-for="(page, index) in pages" :key="index">
-					<template v-if="page.id !== 'guide' && page.id !== 'index' && page.id !== 'convoy.js' && page.id !== 'convoy-python' && page.id !== 'convoy-php'">
+					<template v-if="page.id !== 'guide' && page.id !== 'index'">
 						<nuxt-link :to="'/docs/' + page.id">
 							<img src="~/assets/images/angle-down-icon.svg" alt="angle right" />
 							{{ page.title }}
@@ -33,12 +33,6 @@
 							</li>
 						</ul>
 					</template>
-				</li>
-				<li>
-					<nuxt-link to="/docs/sdk">
-						<img src="~/assets/images/angle-down-icon.svg" alt="angle right" />
-						SDK
-					</nuxt-link>
 				</li>
 			</ul>
 		</aside>

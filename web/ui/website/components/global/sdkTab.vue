@@ -1,12 +1,5 @@
 <template>
-	<div class="nuxt-content">
-		<h1>SDK</h1>
-		<p>
-			This is the Convoy SDK. This SDK contains methods for easily interacting with Convoy's API. Below are examples to get you started in Javascript, PHP, or Python. For additional examples, please see
-			our official documentation at (
-			<a href="https://convoy.readme.io/reference" target="_blank">https://convoy.readme.io/reference</a>
-			)
-		</p>
+	<div>
 		<div class="tabs tabs__line margin-top__32px">
 			<li v-for="tab of tabs" :key="tab.id">
 				<button class="has-icon" :class="activeTab === tab.id ? 'active' : ''" @click="switchTabs(tab.id)">
@@ -36,18 +29,18 @@ export default {
 		};
 	},
 	mounted() {
-		this.fetchPageData('convoyjs');
+		this.fetchPageData('convoy-js');
 	},
 	methods: {
 		async fetchPageData(param) {
-			const pageData = await this.$content('docs/' + param).fetch();
+			const pageData = await this.$content('docs/sdks/' + param).fetch();
 			this.pageData = pageData;
 		},
 		switchTabs(activeTab) {
 			switch (activeTab) {
 				case 'javascript':
 					this.activeTab = 'javascript';
-					this.fetchPageData('convoyjs');
+					this.fetchPageData('convoy-js');
 					break;
 				case 'python':
 					this.activeTab = 'python';

@@ -2,18 +2,17 @@
 title: Convoy-Python SDK
 description: 'Convoy-Python SDK Configuration'
 id: convoy-python
-order: 7
 ---
 
 
-#### Installation
+### Installation
 Install convoy-python with
 
 ```bash
 pip install convoy-python
 ```
 
-#### Setup Client
+### Setup Client
 Next, import the `convoy` module and setup with your auth credentials.
 
 ```python

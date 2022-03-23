@@ -2,10 +2,9 @@
 title: Convoy-PHP SDK
 description: "Convoy-PHP SDK Configuration"
 id: convoy-php
-order: 8
 ---
 
-#### Installation
+### Installation
 
 To install the package, you will need to be using Composer in your project.
 

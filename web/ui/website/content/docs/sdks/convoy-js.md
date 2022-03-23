@@ -2,7 +2,6 @@
 title: Convoy.js SDK
 description: "Convoy.js SDK Configuration"
 id: convoy.js
-order: 6
 ---
 
 ### Installation
@@ -13,7 +12,7 @@ Install convoy.js with
 $ npm install convoy.js
 ```
 
-#### Setup Client
+### Setup Client
 
 Next, require the `convoy` module and setup with your auth credentials.
 
