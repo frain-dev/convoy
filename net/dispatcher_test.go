@@ -3,9 +3,11 @@ package net
 import (
 	"bytes"
 	"encoding/json"
+	"fmt"
 	"math/rand"
 	"net/http"
 	"testing"
+	"time"
 
 	"github.com/jarcoal/httpmock"
 
@@ -23,12 +25,14 @@ func TestDispatcher_SendRequest(t *testing.T) {
 	buf := make([]byte, config.MaxResponseSize*2)
 
 	_, _ = rand.Read(buf)
+	timestamp := fmt.Sprint(time.Now().Unix())
 
 	type args struct {
 		endpoint        string
 		method          string
 		jsonData        json.RawMessage
 		signatureHeader string
+		convoyTimestamp string
 		hmac            string
 	}
 	tests := []struct {
@@ -45,6 +49,7 @@ func TestDispatcher_SendRequest(t *testing.T) {
 				method:          http.MethodPost,
 				jsonData:        bytes.NewBufferString("testing").Bytes(),
 				signatureHeader: config.DefaultSignatureHeader.String(),
+				convoyTimestamp: timestamp,
 				hmac:            "12345",
 			},
 			want: &Response{
@@ -56,6 +61,7 @@ func TestDispatcher_SendRequest(t *testing.T) {
 					"Content-Type":                         []string{"application/json"},
 					"User-Agent":                           []string{defaultUserAgent()},
 					config.DefaultSignatureHeader.String(): []string{"12345"}, // should equal hmac field above
+					"Convoy-Timestamp":                     []string{timestamp},
 				},
 				ResponseHeader: nil,
 				Body:           successBody,
@@ -81,6 +87,7 @@ func TestDispatcher_SendRequest(t *testing.T) {
 				method:          http.MethodPost,
 				jsonData:        bytes.NewBufferString("testing").Bytes(),
 				signatureHeader: config.DefaultSignatureHeader.String(),
+				convoyTimestamp: timestamp,
 				hmac:            "12345",
 			},
 			want: &Response{
@@ -92,7 +99,7 @@ func TestDispatcher_SendRequest(t *testing.T) {
 					"Content-Type":                         []string{"application/json"},
 					"User-Agent":                           []string{defaultUserAgent()},
 					config.DefaultSignatureHeader.String(): []string{"12345"}, // should equal hmac field above
-				},
+					"Convoy-Timestamp":                     []string{timestamp}},
 				ResponseHeader: nil,
 				Body:           buf[:config.MaxResponseSize],
 				IP:             "",
@@ -118,6 +125,7 @@ func TestDispatcher_SendRequest(t *testing.T) {
 				jsonData:        bytes.NewBufferString("bossman").Bytes(),
 				signatureHeader: config.DefaultSignatureHeader.String(),
 				hmac:            "12345",
+				convoyTimestamp: timestamp,
 			},
 			want: &Response{
 				Status:     "",
@@ -127,6 +135,7 @@ func TestDispatcher_SendRequest(t *testing.T) {
 					"Content-Type":                         []string{"application/json"},
 					"User-Agent":                           []string{defaultUserAgent()},
 					config.DefaultSignatureHeader.String(): []string{"12345"}, // should equal hmac field above
+					"Convoy-Timestamp":                     []string{timestamp},
 				},
 				ResponseHeader: nil,
 				Body:           nil,
@@ -136,13 +145,14 @@ func TestDispatcher_SendRequest(t *testing.T) {
 			wantErr: true,
 		},
 		{
-			name: "should_error_for_empty_hmac",
+			name: "should_error_for_empty_signaturehmac",
 			args: args{
 				endpoint:        "http://localhost:3234",
 				method:          http.MethodPost,
 				jsonData:        bytes.NewBufferString("bossman").Bytes(),
 				signatureHeader: config.DefaultSignatureHeader.String(),
 				hmac:            "",
+				convoyTimestamp: timestamp,
 			},
 			want: &Response{
 				Status:         "",
@@ -152,7 +162,29 @@ func TestDispatcher_SendRequest(t *testing.T) {
 				ResponseHeader: nil,
 				Body:           nil,
 				IP:             "",
-				Error:          "signature header and hmac are required",
+				Error:          "signature header, hmac and timestamp are required",
+			},
+			wantErr: true,
+		},
+		{
+			name: "should_error_for_empty_timestamphmac",
+			args: args{
+				endpoint:        "http://localhost:3234",
+				method:          http.MethodPost,
+				jsonData:        bytes.NewBufferString("bossman").Bytes(),
+				signatureHeader: config.DefaultSignatureHeader.String(),
+				hmac:            "css",
+				convoyTimestamp: "",
+			},
+			want: &Response{
+				Status:         "",
+				StatusCode:     0,
+				Method:         "",
+				RequestHeader:  nil,
+				ResponseHeader: nil,
+				Body:           nil,
+				IP:             "",
+				Error:          "signature header, hmac and timestamp are required",
 			},
 			wantErr: true,
 		},
@@ -164,6 +196,7 @@ func TestDispatcher_SendRequest(t *testing.T) {
 				jsonData:        bytes.NewBufferString("bossman").Bytes(),
 				signatureHeader: "",
 				hmac:            "css",
+				convoyTimestamp: timestamp,
 			},
 			want: &Response{
 				Status:         "",
@@ -173,7 +206,7 @@ func TestDispatcher_SendRequest(t *testing.T) {
 				ResponseHeader: nil,
 				Body:           nil,
 				IP:             "",
-				Error:          "signature header and hmac are required",
+				Error:          "signature header, hmac and timestamp are required",
 			},
 			wantErr: true,
 		},
@@ -188,7 +221,7 @@ func TestDispatcher_SendRequest(t *testing.T) {
 				defer deferFn()
 			}
 
-			got, err := d.SendRequest(tt.args.endpoint, tt.args.method, tt.args.jsonData, tt.args.signatureHeader, tt.args.hmac, config.MaxResponseSize)
+			got, err := d.SendRequest(tt.args.endpoint, tt.args.method, tt.args.jsonData, tt.args.signatureHeader, tt.args.hmac, tt.args.convoyTimestamp, config.MaxResponseSize)
 			if tt.wantErr {
 				require.NotNil(t, err)
 				require.Contains(t, err.Error(), tt.want.Error)
@@ -200,7 +233,6 @@ func TestDispatcher_SendRequest(t *testing.T) {
 			require.Equal(t, tt.want.Method, got.Method)
 			require.Equal(t, tt.want.IP, got.IP)
 			require.Equal(t, tt.want.Body, got.Body)
-
 			require.Equal(t, tt.want.RequestHeader, got.RequestHeader)
 		})
 	}

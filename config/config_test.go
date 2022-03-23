@@ -49,7 +49,7 @@ func Test_EnvironmentTakesPrecedence(t *testing.T) {
 			defer os.Unsetenv(tc.key)
 
 			configFile := "./testdata/Test_ConfigurationFromEnvironment/convoy.json"
-			err := LoadConfig(configFile, &Configuration{})
+			err := LoadConfig(configFile)
 			require.NoError(t, err)
 
 			cfg, _ := Get()
@@ -117,7 +117,7 @@ func Test_NilEnvironmentVariablesDontOverride(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			// Setup.
 			configFile := "./testdata/Test_ConfigurationFromEnvironment/convoy.json"
-			err := LoadConfig(configFile, &Configuration{})
+			err := LoadConfig(configFile)
 
 			require.NoError(t, err)
 
@@ -140,120 +140,6 @@ func Test_NilEnvironmentVariablesDontOverride(t *testing.T) {
 				e := basicAuth.Decode(tc.expected)
 				require.NoError(t, e)
 				require.Equal(t, basicAuth, cfg.Auth.File.Basic)
-			}
-		})
-	}
-}
-
-func Test_CliFlagsTakePrecedenceOverConfigFile(t *testing.T) {
-	tests := []struct {
-		name      string
-		testType  string
-		flagValue string
-	}{
-		{
-			name:      "DB DSN - Takes priority",
-			testType:  "db",
-			flagValue: "mongo://some-link",
-		},
-		{
-			name:      "Queue DSN - Takes priority",
-			testType:  "queue",
-			flagValue: "redis://some-link",
-		},
-	}
-	for _, tc := range tests {
-		t.Run(tc.name, func(t *testing.T) {
-			// Setup.
-			ov := new(Configuration)
-
-			switch tc.testType {
-			case "queue":
-				ov.Queue.Redis.Dsn = tc.flagValue
-			case "db":
-				ov.Database.Dsn = tc.flagValue
-			}
-
-			// Assert.
-			configFile := "./testdata/Config/valid-convoy.json"
-			err := LoadConfig(configFile, ov)
-			if err != nil {
-				t.Errorf("Failed to load config file: %v", err)
-			}
-
-			cfg, _ := Get()
-
-			errString := "Cli Flag - %s didn't take precedence"
-			switch tc.testType {
-			case "queue":
-				if cfg.Queue.Redis.Dsn != tc.flagValue {
-					t.Errorf(errString, tc.testType)
-				}
-			case "db":
-				if cfg.Database.Dsn != tc.flagValue {
-					t.Errorf(errString, tc.testType)
-				}
-			}
-		})
-	}
-}
-
-func Test_CliFlagsTakePrecedenceOverEnvironmentVariables(t *testing.T) {
-	tests := []struct {
-		name      string
-		testType  string
-		flagValue string
-		key       string
-		envConfig string
-	}{
-		{
-			name:      "DB DSN - Takes priority",
-			testType:  "db",
-			flagValue: "mongo://some-link",
-			key:       "CONVOY_DB_DSN",
-			envConfig: "subomi",
-		},
-		{
-			name:      "Queue DSN - Takes priority",
-			testType:  "queue",
-			flagValue: "redis://some-link",
-			key:       "CONVOY_REDIS_DSN",
-			envConfig: "queue-set",
-		},
-	}
-	for _, tc := range tests {
-		t.Run(tc.name, func(t *testing.T) {
-			// Setup.
-			os.Setenv(tc.key, tc.envConfig)
-			defer os.Unsetenv(tc.key)
-			ov := new(Configuration)
-
-			switch tc.testType {
-			case "queue":
-				ov.Queue.Redis.Dsn = tc.flagValue
-			case "db":
-				ov.Database.Dsn = tc.flagValue
-			}
-
-			// Assert.
-			configFile := "./testdata/Config/valid-convoy.json"
-			err := LoadConfig(configFile, ov)
-			if err != nil {
-				t.Errorf("Failed to load config file: %v", err)
-			}
-
-			cfg, _ := Get()
-
-			errString := "Cli Flag - %s didn't take precedence"
-			switch tc.testType {
-			case "queue":
-				if cfg.Queue.Redis.Dsn != tc.flagValue {
-					t.Errorf(errString, tc.testType)
-				}
-			case "db":
-				if cfg.Database.Dsn != tc.flagValue {
-					t.Errorf(errString, tc.testType)
-				}
 			}
 		})
 	}
@@ -639,7 +525,13 @@ func TestLoadConfig(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			err := LoadConfig(tt.args.path, new(Configuration))
+			err := LoadConfig(tt.args.path)
+			require.NoError(t, err)
+
+			cfg, err := Get()
+			require.NoError(t, err)
+
+			err = SetServerConfigDefaults(&cfg)
 			if tt.wantErr {
 				require.NotNil(t, err)
 				require.Equal(t, tt.wantErrMsg, err.Error())
@@ -647,7 +539,6 @@ func TestLoadConfig(t *testing.T) {
 			}
 			require.Nil(t, err)
 
-			cfg, err := Get()
 			require.Nil(t, err)
 
 			require.Equal(t, tt.wantCfg, cfg)

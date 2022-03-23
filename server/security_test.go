@@ -142,7 +142,7 @@ func TestApplicationHandler_CreateAPIKey(t *testing.T) {
 				tc.dbFn(app)
 			}
 
-			err := config.LoadConfig(tc.cfgPath, new(config.Configuration))
+			err := config.LoadConfig(tc.cfgPath)
 			if err != nil {
 				t.Errorf("Failed to load config file: %v", err)
 			}
@@ -262,7 +262,7 @@ func TestApplicationHandler_CreateAppPortalAPIKey(t *testing.T) {
 				tc.dbFn(app)
 			}
 
-			err := config.LoadConfig(tc.cfgPath, new(config.Configuration))
+			err := config.LoadConfig(tc.cfgPath)
 			if err != nil {
 				t.Errorf("Failed to load config file: %v", err)
 			}
@@ -339,7 +339,7 @@ func TestApplicationHandler_RevokeAPIKey(t *testing.T) {
 				tc.dbFn(app)
 			}
 
-			err := config.LoadConfig(tc.cfgPath, new(config.Configuration))
+			err := config.LoadConfig(tc.cfgPath)
 			if err != nil {
 				t.Errorf("Failed to load config file: %v", err)
 			}
@@ -417,7 +417,7 @@ func TestApplicationHandler_GetAPIKeyByID(t *testing.T) {
 				tc.dbFn(app)
 			}
 
-			err := config.LoadConfig(tc.cfgPath, new(config.Configuration))
+			err := config.LoadConfig(tc.cfgPath)
 			if err != nil {
 				t.Errorf("Failed to load config file: %v", err)
 			}
@@ -502,7 +502,7 @@ func TestApplicationHandler_GetAPIKeys(t *testing.T) {
 				tc.dbFn(app)
 			}
 
-			err := config.LoadConfig(tc.cfgPath, new(config.Configuration))
+			err := config.LoadConfig(tc.cfgPath)
 			if err != nil {
 				t.Errorf("Failed to load config file: %v", err)
 			}
@@ -614,7 +614,7 @@ func TestApplicationHandler_UpdateAPIKey(t *testing.T) {
 				tc.dbFn(app)
 			}
 
-			err := config.LoadConfig(tc.cfgPath, new(config.Configuration))
+			err := config.LoadConfig(tc.cfgPath)
 			if err != nil {
 				t.Errorf("Failed to load config file: %v", err)
 			}

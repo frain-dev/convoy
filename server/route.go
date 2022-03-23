@@ -83,6 +83,7 @@ func buildRoutes(app *applicationHandler) http.Handler {
 			})
 
 			r.Route("/applications", func(appRouter chi.Router) {
+				appRouter.Use(requireGroupID())
 				appRouter.Use(requireGroup(app.groupRepo))
 				appRouter.Use(rateLimitByGroupID(app.limiter))
 				appRouter.Use(requirePermission(auth.RoleAdmin))
@@ -115,11 +116,12 @@ func buildRoutes(app *applicationHandler) http.Handler {
 			})
 
 			r.Route("/events", func(eventRouter chi.Router) {
+				eventRouter.Use(requireGroupID())
 				eventRouter.Use(requireGroup(app.groupRepo))
 				eventRouter.Use(rateLimitByGroupID(app.limiter))
 				eventRouter.Use(requirePermission(auth.RoleAdmin))
 
-				eventRouter.With(rateLimitByGroup(), instrumentPath("/events")).Post("/", app.CreateAppEvent)
+				eventRouter.With(instrumentPath("/events")).Post("/", app.CreateAppEvent)
 				eventRouter.With(pagination).Get("/", app.GetEventsPaged)
 
 				eventRouter.Route("/{eventID}", func(eventSubRouter chi.Router) {
@@ -129,12 +131,14 @@ func buildRoutes(app *applicationHandler) http.Handler {
 			})
 
 			r.Route("/eventdeliveries", func(eventDeliveryRouter chi.Router) {
+				eventDeliveryRouter.Use(requireGroupID())
 				eventDeliveryRouter.Use(requireGroup(app.groupRepo))
 				eventDeliveryRouter.Use(requirePermission(auth.RoleAdmin))
 
 				eventDeliveryRouter.With(pagination).Get("/", app.GetEventDeliveriesPaged)
 				eventDeliveryRouter.Post("/forceresend", app.ForceResendEventDeliveries)
 				eventDeliveryRouter.Post("/batchretry", app.BatchRetryEventDelivery)
+				eventDeliveryRouter.Get("/countbatchretryevents", app.CountAffectedEventDeliveries)
 
 				eventDeliveryRouter.Route("/{eventDeliveryID}", func(eventDeliverySubRouter chi.Router) {
 					eventDeliverySubRouter.Use(requireEventDelivery(app.eventDeliveryRepo))
@@ -164,6 +168,7 @@ func buildRoutes(app *applicationHandler) http.Handler {
 
 				securityRouter.Route("/applications/{appID}/keys", func(securitySubRouter chi.Router) {
 					securitySubRouter.Use(requirePermission(auth.RoleAdmin))
+					securitySubRouter.Use(requireGroupID())
 					securitySubRouter.Use(requireGroup(app.groupRepo))
 					securitySubRouter.Use(requireApp(app.appRepo))
 					securitySubRouter.Use(requireBaseUrl())
@@ -260,6 +265,7 @@ func buildRoutes(app *applicationHandler) http.Handler {
 			eventDeliveryRouter.With(pagination).Get("/", app.GetEventDeliveriesPaged)
 			eventDeliveryRouter.Post("/forceresend", app.ForceResendEventDeliveries)
 			eventDeliveryRouter.Post("/batchretry", app.BatchRetryEventDelivery)
+			eventDeliveryRouter.Get("/countbatchretryevents", app.CountAffectedEventDeliveries)
 
 			eventDeliveryRouter.Route("/{eventDeliveryID}", func(eventDeliverySubRouter chi.Router) {
 				eventDeliverySubRouter.Use(requireEventDelivery(app.eventDeliveryRepo))
@@ -282,25 +288,25 @@ func buildRoutes(app *applicationHandler) http.Handler {
 		portalRouter.Use(jsonResponse)
 		portalRouter.Use(setupCORS)
 		portalRouter.Use(requireAuth())
+		portalRouter.Use(requireGroupID())
 		portalRouter.Use(requireGroup(app.groupRepo))
+		portalRouter.Use(requireAppID())
 
 		portalRouter.Route("/apps", func(appRouter chi.Router) {
-			appRouter.Route("/{appID}", func(appSubRouter chi.Router) {
-				appSubRouter.Use(requireAppPortalApplication(app.appRepo))
-				appSubRouter.Use(requireAppPortalPermission(auth.RoleUIAdmin))
+			appRouter.Use(requireAppPortalApplication(app.appRepo))
+			appRouter.Use(requireAppPortalPermission(auth.RoleUIAdmin))
 
-				appSubRouter.Get("/", app.GetApp)
+			appRouter.Get("/", app.GetApp)
 
-				appSubRouter.Route("/endpoints", func(endpointAppSubRouter chi.Router) {
-					endpointAppSubRouter.Get("/", app.GetAppEndpoints)
-					endpointAppSubRouter.Post("/", app.CreateAppEndpoint)
+			appRouter.Route("/endpoints", func(endpointAppSubRouter chi.Router) {
+				endpointAppSubRouter.Get("/", app.GetAppEndpoints)
+				endpointAppSubRouter.Post("/", app.CreateAppEndpoint)
 
-					endpointAppSubRouter.Route("/{endpointID}", func(e chi.Router) {
-						e.Use(requireAppEndpoint())
+				endpointAppSubRouter.Route("/{endpointID}", func(e chi.Router) {
+					e.Use(requireAppEndpoint())
 
-						e.Get("/", app.GetAppEndpoint)
-						e.Put("/", app.UpdateAppEndpoint)
-					})
+					e.Get("/", app.GetAppEndpoint)
+					e.Put("/", app.UpdateAppEndpoint)
 				})
 			})
 		})
@@ -323,6 +329,7 @@ func buildRoutes(app *applicationHandler) http.Handler {
 
 			eventDeliveryRouter.With(pagination).Get("/", app.GetEventDeliveriesPaged)
 			eventDeliveryRouter.Post("/batchretry", app.BatchRetryEventDelivery)
+			eventDeliveryRouter.Get("/countbatchretryevents", app.CountAffectedEventDeliveries)
 
 			eventDeliveryRouter.Route("/{eventDeliveryID}", func(eventDeliverySubRouter chi.Router) {
 				eventDeliverySubRouter.Use(requireEventDelivery(app.eventDeliveryRepo))

@@ -119,10 +119,6 @@ func stripTimestamp(t *testing.T, obj string, b *bytes.Buffer) *bytes.Buffer {
 	return nil
 }
 
-func provideFakeOverride() *config.Configuration {
-	return new(config.Configuration)
-}
-
 func provideApplication(ctrl *gomock.Controller) *applicationHandler {
 	groupRepo := mocks.NewMockGroupRepository(ctrl)
 	appRepo := mocks.NewMockApplicationRepository(ctrl)
@@ -219,7 +215,7 @@ func TestApplicationHandler_GetApp(t *testing.T) {
 				tc.dbFn(app)
 			}
 
-			err := config.LoadConfig(tc.cfgPath, new(config.Configuration))
+			err := config.LoadConfig(tc.cfgPath)
 			if err != nil {
 				t.Errorf("Failed to load config file: %v", err)
 			}
@@ -306,7 +302,7 @@ func TestApplicationHandler_GetApps(t *testing.T) {
 				tc.dbFn(app)
 			}
 
-			err := config.LoadConfig(tc.cfgPath, new(config.Configuration))
+			err := config.LoadConfig(tc.cfgPath)
 			if err != nil {
 				t.Errorf("Failed to load config file: %v", err)
 			}
@@ -411,7 +407,7 @@ func TestApplicationHandler_CreateApp(t *testing.T) {
 				tc.dbFn(app)
 			}
 
-			err := config.LoadConfig(tc.cfgPath, new(config.Configuration))
+			err := config.LoadConfig(tc.cfgPath)
 			if err != nil {
 				t.Errorf("Failed to load config file: %v", err)
 			}
@@ -427,7 +423,6 @@ func TestApplicationHandler_CreateApp(t *testing.T) {
 				t.Errorf("Want status '%d', got '%d'", tc.statusCode, w.Code)
 			}
 
-			fmt.Printf("bodyyy: '%s'\n", w.Body.String())
 			d := stripTimestamp(t, "application", w.Body)
 
 			w.Body = d
@@ -591,6 +586,68 @@ func TestApplicationHandler_UpdateApp(t *testing.T) {
 					Return([]*datastore.Group{group}, nil)
 			},
 		},
+
+		{
+			name:       "valid request - disable application",
+			cfgPath:    "/testdata/Auth_Config/no-auth-convoy.json",
+			method:     http.MethodPut,
+			statusCode: http.StatusAccepted,
+			appId:      appId,
+			body:       strings.NewReader(`{"name": "ABC", "is_disabled": true }`),
+			dbFn: func(app *applicationHandler) {
+				a, _ := app.appRepo.(*mocks.MockApplicationRepository)
+				a.EXPECT().
+					UpdateApplication(gomock.Any(), gomock.Any()).Times(1).
+					Return(nil)
+
+				a.EXPECT().
+					FindApplicationByID(gomock.Any(), gomock.Any()).Times(1).
+					Return(&datastore.Application{
+						UID:        appId,
+						GroupID:    groupID,
+						Title:      "Valid application update",
+						Endpoints:  []datastore.Endpoint{},
+						IsDisabled: false,
+					}, nil)
+
+				o, _ := app.groupRepo.(*mocks.MockGroupRepository)
+
+				o.EXPECT().
+					LoadGroups(gomock.Any(), gomock.Any()).Times(1).
+					Return([]*datastore.Group{group}, nil)
+			},
+		},
+
+		{
+			name:       "valid request - enable disabled application",
+			cfgPath:    "/testdata/Auth_Config/no-auth-convoy.json",
+			method:     http.MethodPut,
+			statusCode: http.StatusAccepted,
+			appId:      appId,
+			body:       strings.NewReader(`{"name": "ABC", "is_disabled": false }`),
+			dbFn: func(app *applicationHandler) {
+				a, _ := app.appRepo.(*mocks.MockApplicationRepository)
+				a.EXPECT().
+					UpdateApplication(gomock.Any(), gomock.Any()).Times(1).
+					Return(nil)
+
+				a.EXPECT().
+					FindApplicationByID(gomock.Any(), gomock.Any()).Times(1).
+					Return(&datastore.Application{
+						UID:        appId,
+						GroupID:    groupID,
+						Title:      "Valid application update",
+						Endpoints:  []datastore.Endpoint{},
+						IsDisabled: true,
+					}, nil)
+
+				o, _ := app.groupRepo.(*mocks.MockGroupRepository)
+
+				o.EXPECT().
+					LoadGroups(gomock.Any(), gomock.Any()).Times(1).
+					Return([]*datastore.Group{group}, nil)
+			},
+		},
 	}
 
 	for _, tc := range tt {
@@ -623,7 +680,7 @@ func TestApplicationHandler_UpdateApp(t *testing.T) {
 				tc.dbFn(app)
 			}
 
-			err := config.LoadConfig(tc.cfgPath, new(config.Configuration))
+			err := config.LoadConfig(tc.cfgPath)
 			if err != nil {
 				t.Errorf("Failed to load config file: %v", err)
 			}
@@ -683,7 +740,7 @@ func TestApplicationHandler_CreateAppEndpoint(t *testing.T) {
 					Return(nil)
 
 				a.EXPECT().
-					FindApplicationByID(gomock.Any(), gomock.Any()).Times(2).
+					FindApplicationByID(gomock.Any(), gomock.Any()).Times(1).
 					Return(&datastore.Application{
 						UID:       appId,
 						GroupID:   groupID,
@@ -712,7 +769,7 @@ func TestApplicationHandler_CreateAppEndpoint(t *testing.T) {
 				tc.dbFn(app)
 			}
 
-			err := config.LoadConfig(tc.cfgPath, new(config.Configuration))
+			err := config.LoadConfig(tc.cfgPath)
 			if err != nil {
 				t.Errorf("Failed to load config file: %v", err)
 			}
@@ -850,7 +907,7 @@ func TestApplicationHandler_UpdateAppEndpoint(t *testing.T) {
 				tc.dbFn(app)
 			}
 
-			err := config.LoadConfig(tc.cfgPath, provideFakeOverride())
+			err := config.LoadConfig(tc.cfgPath)
 			if err != nil {
 				t.Errorf("Failed to load config file: %v", err)
 			}

@@ -11,15 +11,19 @@ import (
 	"github.com/frain-dev/convoy/config/algo"
 	"github.com/kelseyhightower/envconfig"
 	log "github.com/sirupsen/logrus"
+	"github.com/spf13/cobra"
 )
 
-const MaxResponseSize = 50 * 1024
+const (
+	MaxResponseSizeKb = 50                       // in kilobytes
+	MaxResponseSize   = MaxResponseSizeKb * 1024 // in bytes
+)
 
 var cfgSingleton atomic.Value
 
 type DatabaseConfiguration struct {
-	Type string `json:"type" envconfig:"CONVOY_DB_TYPE"`
-	Dsn  string `json:"dsn" envconfig:"CONVOY_DB_DSN"`
+	Type DatabaseProvider `json:"type" envconfig:"CONVOY_DB_TYPE"`
+	Dsn  string           `json:"dsn" envconfig:"CONVOY_DB_DSN"`
 }
 
 type SentryConfiguration struct {
@@ -116,7 +120,7 @@ type Configuration struct {
 	Sentry          SentryConfiguration   `json:"sentry"`
 	Queue           QueueConfiguration    `json:"queue"`
 	Server          ServerConfiguration   `json:"server"`
-	MaxResponseSize uint64                `json:"max_response_size"`
+	MaxResponseSize uint64                `json:"max_response_size" envconfig:"CONVOY_MAX_RESPONSE_SIZE"`
 	GroupConfig     GroupConfig           `json:"group"`
 	SMTP            SMTPConfiguration     `json:"smtp"`
 	Environment     string                `json:"env" envconfig:"CONVOY_ENV" required:"true" default:"development"`
@@ -145,6 +149,8 @@ const (
 	NewRelicTracerProvider             TracerProvider          = "new_relic"
 	RedisCacheProvider                 CacheProvider           = "redis"
 	RedisLimiterProvider               LimiterProvider         = "redis"
+	MongodbDatabaseProvider            DatabaseProvider        = "mongodb"
+	InMemoryDatabaseProvider           DatabaseProvider        = "in-memory"
 )
 
 type GroupConfig struct {
@@ -181,6 +187,7 @@ type LoggerProvider string
 type TracerProvider string
 type CacheProvider string
 type LimiterProvider string
+type DatabaseProvider string
 
 func (s SignatureHeaderProvider) String() string {
 	return string(s)
@@ -201,6 +208,48 @@ func Get() (Configuration, error) {
 // IsStringEmpty checks if the given string s is empty or not
 func IsStringEmpty(s string) bool { return len(strings.TrimSpace(s)) == 0 }
 
+func OverrideConfigWithCliFlags(cmd *cobra.Command, cfg *Configuration) error {
+	// CONVOY_DB_DSN, CONVOY_DB_TYPE
+	dbDsn, err := cmd.Flags().GetString("db")
+	if err != nil {
+		return err
+	}
+
+	if !IsStringEmpty(dbDsn) {
+		cfg.Database.Type = InMemoryDatabaseProvider
+
+		parts := strings.Split(dbDsn, "://")
+		if len(parts) == 2 && parts[0] == string(MongodbDatabaseProvider) {
+			cfg.Database.Type = MongodbDatabaseProvider
+		}
+
+		cfg.Database.Dsn = dbDsn
+	}
+
+	// CONVOY_REDIS_DSN
+	redisDsn, err := cmd.Flags().GetString("redis")
+	if err != nil {
+		return err
+	}
+
+	// CONVOY_QUEUE_PROVIDER
+	queueDsn, err := cmd.Flags().GetString("queue")
+	if err != nil {
+		return err
+	}
+
+	if !IsStringEmpty(queueDsn) {
+		cfg.Queue.Type = QueueProvider(queueDsn)
+		if queueDsn == "redis" && !IsStringEmpty(redisDsn) {
+			cfg.Queue.Redis.Dsn = redisDsn
+		}
+	}
+
+	cfgSingleton.Store(cfg)
+
+	return nil
+}
+
 func overrideConfigWithEnvVars(c *Configuration, override *Configuration) {
 	// CONVOY_ENV
 	if !IsStringEmpty(override.Environment) {
@@ -213,7 +262,7 @@ func overrideConfigWithEnvVars(c *Configuration, override *Configuration) {
 	}
 
 	// CONVOY_DB_DSN
-	if !IsStringEmpty(override.Database.Type) {
+	if !IsStringEmpty(string(override.Database.Type)) {
 		c.Database.Type = override.Database.Type
 	}
 
@@ -357,6 +406,11 @@ func overrideConfigWithEnvVars(c *Configuration, override *Configuration) {
 		c.SMTP.Port = override.SMTP.Port
 	}
 
+	// CONVOY_MAX_RESPONSE_SIZE
+	if override.MaxResponseSize != 0 {
+		c.MaxResponseSize = override.MaxResponseSize
+	}
+
 	// CONVOY_NEWRELIC_APP_NAME
 	if !IsStringEmpty(override.NewRelic.AppName) {
 		c.NewRelic.AppName = override.NewRelic.AppName
@@ -379,7 +433,7 @@ func overrideConfigWithEnvVars(c *Configuration, override *Configuration) {
 
 	// boolean values are weird; we have to check if they are actually set
 
-	if _, ok := os.LookupEnv("CONVOY_MUTIPLE_TENANTS"); ok {
+	if _, ok := os.LookupEnv("CONVOY_MULTIPLE_TENANTS"); ok {
 		c.MultipleTenants = override.MultipleTenants
 	}
 
@@ -406,7 +460,7 @@ func overrideConfigWithEnvVars(c *Configuration, override *Configuration) {
 
 // LoadConfig is used to load the configuration from either the json config file
 // or the environment variables.
-func LoadConfig(p string, override *Configuration) error {
+func LoadConfig(p string) error {
 	c := &Configuration{}
 
 	if _, err := os.Stat(p); err == nil {
@@ -435,6 +489,11 @@ func LoadConfig(p string, override *Configuration) error {
 
 	overrideConfigWithEnvVars(c, ec)
 
+	cfgSingleton.Store(c)
+	return nil
+}
+
+func SetServerConfigDefaults(c *Configuration) error {
 	// if it's still empty, set it to development
 	if c.Environment == "" {
 		c.Environment = DevelopmentEnvironment
@@ -444,7 +503,7 @@ func LoadConfig(p string, override *Configuration) error {
 		return errors.New("http port cannot be zero")
 	}
 
-	err = ensureSSL(c.Server)
+	err := ensureSSL(c.Server)
 	if err != nil {
 		return err
 	}
@@ -463,7 +522,7 @@ func LoadConfig(p string, override *Configuration) error {
 	if kb == 0 {
 		c.MaxResponseSize = MaxResponseSize
 	} else if kb > MaxResponseSize {
-		log.Warnf("maximum response size of %dkb too large, using default value of %dkb", c.MaxResponseSize, MaxResponseSize/1024)
+		log.Warnf("maximum response size of %dkb too large, using default value of %dkb", c.MaxResponseSize, c.MaxResponseSize/1024)
 		c.MaxResponseSize = MaxResponseSize
 	} else {
 		c.MaxResponseSize = kb
@@ -482,14 +541,6 @@ func LoadConfig(p string, override *Configuration) error {
 	err = ensureAuthConfig(c.Auth)
 	if err != nil {
 		return err
-	}
-
-	if len(strings.TrimSpace(override.Queue.Redis.Dsn)) > 0 {
-		c.Queue.Redis.Dsn = override.Queue.Redis.Dsn
-	}
-
-	if len(strings.TrimSpace(override.Database.Dsn)) > 0 {
-		c.Database.Dsn = override.Database.Dsn
 	}
 
 	cfgSingleton.Store(c)

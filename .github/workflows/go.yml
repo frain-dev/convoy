@@ -59,6 +59,6 @@ jobs:
       - name: Run integration tests
         run: go test -tags integration -v ./...
         env:
-          TEST_BOLT_DSN: "../../test.db"
+          TEST_BADGER_DSN: "../../test.db"
           TEST_MONGO_DSN: "mongodb://localhost:27017/testdb"
           TEST_REDIS_DSN: "redis://localhost:6379"

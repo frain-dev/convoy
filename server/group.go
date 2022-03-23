@@ -132,8 +132,8 @@ func (a *applicationHandler) CreateGroup(w http.ResponseWriter, r *http.Request)
 		newGroup.RateLimit = convoy.RATE_LIMIT
 	}
 
-	if newGroup.RateLimitDuration == 0 {
-		newGroup.RateLimitDuration = int(convoy.RATE_LIMIT_DURATION)
+	if util.IsStringEmpty(newGroup.RateLimitDuration) {
+		newGroup.RateLimitDuration = convoy.RATE_LIMIT_DURATION
 	}
 
 	group := &datastore.Group{
@@ -156,7 +156,7 @@ func (a *applicationHandler) CreateGroup(w http.ResponseWriter, r *http.Request)
 
 	// register task.
 	taskName := convoy.EventProcessor.SetPrefix(groupName)
-	task.CreateTask(taskName, *group, task.ProcessEventDelivery(a.appRepo, a.eventDeliveryRepo, a.groupRepo))
+	task.CreateTask(taskName, *group, task.ProcessEventDelivery(a.appRepo, a.eventDeliveryRepo, a.groupRepo, a.limiter))
 
 	_ = render.Render(w, r, newServerResponse("Group created successfully", group, http.StatusCreated))
 }
@@ -184,6 +184,7 @@ func (a *applicationHandler) UpdateGroup(w http.ResponseWriter, r *http.Request)
 
 	groupName := update.Name
 	if err = util.Validate(update); err != nil {
+		log.WithError(err).Error("failed to validate group update")
 		_ = render.Render(w, r, newErrorResponse(err.Error(), http.StatusBadRequest))
 		return
 	}
@@ -197,6 +198,7 @@ func (a *applicationHandler) UpdateGroup(w http.ResponseWriter, r *http.Request)
 
 	err = a.groupRepo.UpdateGroup(r.Context(), group)
 	if err != nil {
+		log.WithError(err).Error("failed to to update group")
 		_ = render.Render(w, r, newErrorResponse("an error occurred while updating Group", http.StatusInternalServerError))
 		return
 	}

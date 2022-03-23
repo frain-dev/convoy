@@ -9,7 +9,7 @@
 		"test": "ng test",
 		"pub": "npm run build && cd ./dist/convoy-app/ && npm publish"
 	},
-	"private": true,
+	"private": false,
 	"dependencies": {
 		"@angular/animations": "~13.1.1",
 		"@angular/cdk": "^13.1.1",
@@ -22,6 +22,7 @@
 		"@angular/platform-browser-dynamic": "~13.1.1",
 		"@angular/router": "~13.1.1",
 		"chart.js": "^3.6.0",
+		"convoy-ui": "^0.0.2",
 		"date-fns": "^2.27.0",
 		"prismjs": "^1.25.0",
 		"rxjs": "~6.6.0",

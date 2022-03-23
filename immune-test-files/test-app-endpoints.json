@@ -1,0 +1,69 @@
+{
+    "base_url": "http://127.0.0.1:5005/api/v1",
+    "database": {
+        "type": "mongo",
+        "dsn": "mongodb://localhost:27017/testdb"
+    },
+    "test_cases": [
+        {
+            "name": "test_convoy_get_app_endpoint",
+            "setup": [
+                "setup_group",
+                "setup_app",
+                "setup_endpoint"
+            ],
+            "http_method": "GET",
+            "endpoint": "/applications/{app_id}/endpoints/{endpoint_id}?groupID={group_id}",
+            "request_body": {},
+            "status_code": 200,
+            "response_body": true
+        },
+        {
+            "name": "test_convoy_get_app_endpoints",
+            "setup": [
+                "setup_group",
+                "setup_app",
+                "setup_endpoint",
+                "setup_endpoint"
+            ],
+            "http_method": "GET",
+            "endpoint": "/applications/{app_id}/endpoints?groupID={group_id}",
+            "request_body": {},
+            "status_code": 200,
+            "response_body": true
+        },
+        {
+            "name": "test_convoy_update_app_endpoint",
+            "setup": [
+                "setup_group",
+                "setup_app",
+                "setup_endpoint"
+            ],
+            "http_method": "PUT",
+            "endpoint": "/applications/{app_id}/endpoints/{endpoint_id}?groupID={group_id}",
+            "request_body": {
+                "url": "https://google.com",
+                "secret": "1234",
+                "description": "test",
+                "events": [
+                    "*"
+                ]
+            },
+            "status_code": 202,
+            "response_body": true
+        },
+        {
+            "name": "test_convoy_delete_app_endpoint",
+            "setup": [
+                "setup_group",
+                "setup_app",
+                "setup_endpoint"
+            ],
+            "http_method": "DELETE",
+            "endpoint": "/applications/{app_id}/endpoints/{endpoint_id}?groupID={group_id}",
+            "request_body": {},
+            "status_code": 200,
+            "response_body": true
+        }
+    ]
+}
