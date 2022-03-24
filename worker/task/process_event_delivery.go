@@ -60,13 +60,13 @@ func ProcessEventDelivery(appRepo datastore.ApplicationRepository, eventDelivery
 		if util.IsStringEmpty(m.EndpointMetadata.RateLimitDuration) {
 			rateLimitDuration, err = time.ParseDuration(convoy.RATE_LIMIT_DURATION)
 			if err != nil {
-				log.WithError(err).Errorf("failed to parse endpoint duration")
+				log.WithError(err).Errorf("failed to parse endpoint rate limit")
 				return nil
 			}
 		} else {
 			rateLimitDuration, err = time.ParseDuration(m.EndpointMetadata.RateLimitDuration)
 			if err != nil {
-				log.WithError(err).Errorf("failed to parse endpoint duration")
+				log.WithError(err).Errorf("failed to parse endpoint rate limit")
 				return nil
 			}
 		}
@@ -110,7 +110,22 @@ func ProcessEventDelivery(appRepo datastore.ApplicationRepository, eventDelivery
 			return &EndpointError{Err: err}
 		}
 
-		dispatch := net.NewDispatcher()
+		var httpDuration time.Duration
+		if util.IsStringEmpty(m.EndpointMetadata.HttpTimeout) {
+			httpDuration, err = time.ParseDuration(convoy.HTTP_TIMEOUT)
+			if err != nil {
+				log.WithError(err).Errorf("failed to parse endpoint duration")
+				return nil
+			}
+		} else {
+			httpDuration, err = time.ParseDuration(m.EndpointMetadata.HttpTimeout)
+			if err != nil {
+				log.WithError(err).Errorf("failed to parse endpoint duration")
+				return nil
+			}
+		}
+
+		dispatch := net.NewDispatcher(httpDuration)
 
 		var done = true
 
