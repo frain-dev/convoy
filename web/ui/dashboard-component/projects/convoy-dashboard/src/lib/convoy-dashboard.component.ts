@@ -406,7 +406,6 @@ export class ConvoyDashboardComponent implements OnInit {
 		});
 		this.editAppMode = true;
 		this.createNewApp();
-		console.log(this.addNewAppForm.value);
 	}
 
 	setEventAppId() {
@@ -918,7 +917,6 @@ export class ConvoyDashboardComponent implements OnInit {
 
 			if (requestDetails?.type === 'apps') this.apps = appsResponse.data;
 			this.filteredApps = appsResponse.data.content;
-			console.log(appsResponse.data);
 			if (this.updateAppDetail) {
 				this.apps.content.forEach(item => {
 					if (this.appsDetailsItem?.uid == item.uid) {
