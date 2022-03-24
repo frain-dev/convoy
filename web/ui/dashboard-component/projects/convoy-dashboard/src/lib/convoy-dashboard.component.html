@@ -702,19 +702,29 @@
 						<ul class="dashboard--logs--details--endpoints">
 							<ng-container *ngIf="appsDetailsItem?.endpoints">
 								<li *ngFor="let endpoint of appsDetailsItem.endpoints">
-									<div class="flex">
-										<h5>{{ endpoint.description }}</h5>
-										<button class="margin-left__16px button__clear color-primary button--has-icon icon-right small-icon" (click)="showEndpointSecret = !showEndpointSecret; endpointSecretKey = endpoint.secret">
-											View Secret
-											<img src="/assets/img/arrow-up-right.svg" alt="link out" />
-										</button>
+									<div>
+										<div class="flex">
+											<h5>{{ endpoint.description }}</h5>
+											<button class="margin-left__16px button__clear color-primary button--has-icon icon-right small-icon" (click)="showEndpointSecret = !showEndpointSecret; endpointSecretKey = endpoint.secret">
+												View Secret
+												<img src="/assets/img/arrow-up-right.svg" alt="link out" />
+											</button>
+										</div>
+										<p>
+											<img src="/assets/img/link-icon.svg" alt="link icon" />
+											{{ endpoint.target_url }}
+										</p>
+										<div class="events">
+											<div class="tag" *ngFor="let event of endpoint.events">{{ event == '*' ? 'all events' : event }}</div>
+										</div>
 									</div>
-									<p>
-										<img src="/assets/img/link-icon.svg" alt="link icon" />
-										{{ endpoint.target_url }}
-									</p>
-									<div class="events">
-										<div class="tag" *ngFor="let event of endpoint.events">{{ event == '*' ? 'all events' : event }}</div>
+									<div class="dashboard--logs--details--endpoints--inactive" *ngIf="endpoint.status == 'inactive'">
+										<div class="icon">
+											<img src="/assets/img/link-icon.svg" alt="lock icon">
+										</div>
+										<p class="color__dark font__16px font__weight-600">Endpoint Disabled</p>
+										<!-- pending till this is figured out by backend  -->
+										<!-- <a class="color__primary font__14px font__weight-500 margin-bottom__10px">Click here to learn how to enable this endpoint</a> -->
 									</div>
 								</li>
 							</ng-container>
