@@ -130,6 +130,7 @@ export class ConvoyDashboardComponent implements OnInit {
 	updateAppDetail = false;
 	showPublicCopyText = false;
 	showSecretCopyText = false;
+	showEndpointSecret = false;
 	appsSearchString = '';
 	selectedEventsDateOption = '';
 	selectedEventsDelDateOption = '';
@@ -137,6 +138,7 @@ export class ConvoyDashboardComponent implements OnInit {
 	currentAppId = '';
 	tag = '';
 	appPortalLink = '';
+	endpointSecretKey = '';
 	batchRetryCount!: any;
 	eventsAppsFilter$!: Observable<APP[]>;
 	eventsDelAppsFilter$!: Observable<APP[]>;
@@ -897,7 +899,7 @@ export class ConvoyDashboardComponent implements OnInit {
 
 			if (requestDetails?.type === 'apps') this.apps = appsResponse.data;
 			this.filteredApps = appsResponse.data.content;
-
+console.log(appsResponse.data)
 			if (this.updateAppDetail) {
 				this.apps.content.forEach(item => {
 					if (this.appsDetailsItem?.uid == item.uid) {

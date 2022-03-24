@@ -27,10 +27,14 @@
 					</button>
 					<div [ngClass]="{ show: showDateFilterDropdown }" class="dropdown__menu large">
 						<ul>
-							<li [ngClass]="{ active: selectedDateOption == dateOption }" *ngFor="let dateOption of dateOptions" (click)="getSelectedDate(dateOption); showDateFilterDropdown = false; showOverlay = false;">
+							<li
+								[ngClass]="{ active: selectedDateOption == dateOption }"
+								*ngFor="let dateOption of dateOptions"
+								(click)="getSelectedDate(dateOption); showDateFilterDropdown = false; showOverlay = false"
+							>
 								From {{ dateOption }}
 							</li>
-							<li (click)="statsPicker.open(); showDateFilterDropdown = false; showOverlay = false;">Custom Option</li>
+							<li (click)="statsPicker.open(); showDateFilterDropdown = false; showOverlay = false">Custom Option</li>
 							<!-- to be reviewed  -->
 							<!-- <li class="no-hover flex flex__align-items-center">
 								<button class="button button__primary button__small margin-right__14px" (click)="fetchDashboardData(); showDateFilterDropdown = false">Apply</button>
@@ -172,11 +176,11 @@
 										<li
 											[ngClass]="{ active: selectedEventsDateOption == dateOption }"
 											*ngFor="let dateOption of dateOptions"
-											(click)="getSelectedDate(dateOption, activeTab); showEventFilterCalendar = false; showOverlay = false;"
+											(click)="getSelectedDate(dateOption, activeTab); showEventFilterCalendar = false; showOverlay = false"
 										>
 											From {{ dateOption }}
 										</li>
-										<li (click)="eventsFilterPicker.open(); showEventFilterCalendar = false; showOverlay = false;">Custom Option</li>
+										<li (click)="eventsFilterPicker.open(); showEventFilterCalendar = false; showOverlay = false">Custom Option</li>
 										<!-- to be reviewed  -->
 										<!-- <li class="no-hover flex flex__align-items-center">
 											<button class="button button__primary button__small margin-right__14px" (click)="getEvents({ addToURL: true, fromFilter: true }); showEventFilterCalendar = false">
@@ -266,7 +270,7 @@
 										>
 											From {{ dateOption }}
 										</li>
-										<li (click)="eventDeliveriesFilterPicker.open(); showEventDelFilterCalendar = false; showOverlay = false;">Custom Option</li>
+										<li (click)="eventDeliveriesFilterPicker.open(); showEventDelFilterCalendar = false; showOverlay = false">Custom Option</li>
 										<!-- to be reviewed  -->
 										<!-- <li class="no-hover flex flex__align-items-center">
 											<button
@@ -636,7 +640,7 @@
 						</div>
 					</div>
 
-					<div class="empty-state table--container" *ngIf="apps?.content?.length === 0">
+					<div class="empty-state table--container" *ngIf="apps?.content?.length === 0 && activeTab === 'apps'">
 						<img src="/assets/img/empty-state-img.svg" alt="empty state" />
 						<p>No app to show here</p>
 					</div>
@@ -698,7 +702,13 @@
 						<ul class="dashboard--logs--details--endpoints">
 							<ng-container *ngIf="appsDetailsItem?.endpoints">
 								<li *ngFor="let endpoint of appsDetailsItem.endpoints">
-									<h5>{{ endpoint.description }}</h5>
+									<div class="flex">
+										<h5>{{ endpoint.description }}</h5>
+										<button class="margin-left__16px button__clear color-primary button--has-icon icon-right small-icon" (click)="showEndpointSecret = !showEndpointSecret; endpointSecretKey = endpoint.secret">
+											View Secret
+											<img src="/assets/img/arrow-up-right.svg" alt="link out" />
+										</button>
+									</div>
 									<p>
 										<img src="/assets/img/link-icon.svg" alt="link icon" />
 										{{ endpoint.target_url }}
@@ -827,36 +837,25 @@
 		showEventsAppsDropdown = false;
 		showDateFilterDropdown = false;
 		showEventDelFilterCalendar = false;
-		showEventFilterCalendar = false
+		showEventFilterCalendar = false;
+		showEndpointSecret = false
 	"
 ></div>
 <!-- dark overlay  -->
 <div
 	class="_overlay"
-	*ngIf="showBatchRetryModal || showCreateAppModal || showAddEndpointModal || showAddEventModal || showDeleteAppModal"
-	(click)="showCreateAppModal = false; showBatchRetryModal = false; showAddEndpointModal = false; showAddEventModal = false; showDeleteAppModal = false"
+	*ngIf="showBatchRetryModal || showCreateAppModal || showAddEndpointModal || showAddEventModal || showDeleteAppModal || showEndpointSecret"
+	(click)="showCreateAppModal = false; showBatchRetryModal = false; showAddEndpointModal = false; showAddEventModal = false; showDeleteAppModal = false; showEndpointSecret = false"
 ></div>
 <!-- create app, add new endpoint, add event modals  -->
-<div class="modal modal__right" *ngIf="showCreateAppModal || showAddEndpointModal || showAddEventModal">
+<div class="modal modal__right" *ngIf="showCreateAppModal || showAddEndpointModal || showAddEventModal || showEndpointSecret">
+	<!-- create app modal  -->
 	<div class="modal--head" *ngIf="showCreateAppModal">
 		<h2>{{ editAppMode ? 'Edit App' : 'Create App' }}</h2>
 		<a (click)="showCreateAppModal = false; editAppMode = false">
 			<img src="/assets/img/modal-close-icon.svg" alt="close icon" />
 		</a>
 	</div>
-	<div class="modal--head" *ngIf="showAddEndpointModal">
-		<h2>Add Endpoint</h2>
-		<a (click)="showAddEndpointModal = false">
-			<img src="/assets/img/modal-close-icon.svg" alt="close icon" />
-		</a>
-	</div>
-	<div class="modal--head" *ngIf="showAddEventModal">
-		<h2>Add Event</h2>
-		<a (click)="showAddEventModal = false">
-			<img src="/assets/img/modal-close-icon.svg" alt="close icon" />
-		</a>
-	</div>
-
 	<div class="modal--body" *ngIf="showCreateAppModal">
 		<form [formGroup]="addNewAppForm">
 			<div class="input">
@@ -943,6 +942,18 @@
 			</div>
 		</form>
 	</div>
+	<div class="modal--footer modal--footer__with-shadow" *ngIf="showCreateAppModal">
+		<button class="button button__white" (click)="showCreateAppModal = false; editAppMode = false">Discard</button>
+		<button class="button button__primary" [disabled]="isCreatingNewApp" (click)="createNewApp()">{{ editAppMode ? 'Edit App' : 'Create App' }}</button>
+	</div>
+
+	<!-- add endpoint modal  -->
+	<div class="modal--head" *ngIf="showAddEndpointModal">
+		<h2>Add Endpoint</h2>
+		<a (click)="showAddEndpointModal = false">
+			<img src="/assets/img/modal-close-icon.svg" alt="close icon" />
+		</a>
+	</div>
 	<div class="modal--body" *ngIf="showAddEndpointModal">
 		<form [formGroup]="addNewEndpointForm">
 			<div class="input">
@@ -980,6 +991,18 @@
 			</div>
 		</form>
 	</div>
+	<div class="modal--footer modal--footer__with-shadow" *ngIf="showAddEndpointModal">
+		<button class="button button__white" (click)="showAddEndpointModal = false">Discard</button>
+		<button class="button button__primary" [disabled]="isCreatingNewEndpoint" (click)="addNewEndpoint()">{{ isCreatingNewEndpoint ? 'Adding Endpoint..' : 'Add Endpoint' }}</button>
+	</div>
+
+	<!-- add event modal  -->
+	<div class="modal--head" *ngIf="showAddEventModal">
+		<h2>Add Event</h2>
+		<a (click)="showAddEventModal = false">
+			<img src="/assets/img/modal-close-icon.svg" alt="close icon" />
+		</a>
+	</div>
 	<div class="modal--body" *ngIf="showAddEventModal">
 		<form [formGroup]="sendEventForm">
 			<div class="input">
@@ -1014,19 +1037,30 @@
 			</div>
 		</form>
 	</div>
-	<div class="modal--footer modal--footer__with-shadow" *ngIf="showCreateAppModal">
-		<button class="button button__white" (click)="showCreateAppModal = false; editAppMode = false">Discard</button>
-		<button class="button button__primary" [disabled]="isCreatingNewApp" (click)="createNewApp()">{{ editAppMode ? 'Edit App' : 'Create App' }}</button>
-	</div>
-	<div class="modal--footer modal--footer__with-shadow" *ngIf="showAddEndpointModal">
-		<button class="button button__white" (click)="showAddEndpointModal = false">Discard</button>
-		<button class="button button__primary" [disabled]="isCreatingNewEndpoint" (click)="addNewEndpoint()">{{ isCreatingNewEndpoint ? 'Adding Endpoint..' : 'Add Endpoint' }}</button>
-	</div>
 	<div class="modal--footer modal--footer__with-shadow" *ngIf="showAddEventModal">
 		<button class="button button__white" (click)="showAddEventModal = false">Discard</button>
 		<button class="button button__primary" [disabled]="isSendingNewEvent" (click)="sendNewEvent()">{{ isSendingNewEvent ? 'Adding Event..' : 'Add Event' }}</button>
 	</div>
+
+	<!-- endpoint secret modal  -->
+	<div class="modal--head" *ngIf="showEndpointSecret">
+		<h2>Endpoint Secret</h2>
+		<a (click)="showEndpointSecret = false">
+			<img src="/assets/img/modal-close-icon.svg" alt="close icon" />
+		</a>
+	</div>
+	<div class="modal--body" *ngIf="showEndpointSecret">
+		<div class="key">
+			<span>{{endpointSecretKey}}</span>
+			<button (click)="copyKey(endpointSecretKey, 'secret')">
+				<img src="/assets/img/copy.svg" alt="copy" />
+				<small *ngIf="showSecretCopyText">Copied!</small>
+			</button>
+		</div>
+	</div>
 </div>
+
+<!-- delete app modal  -->
 <div class="modal modal__center" *ngIf="showDeleteAppModal">
 	<div class="modal--body flex flex__column flex__justify-center flex__align-items-center delete">
 		<img src="/assets/img/warning.gif" alt="warning" />
@@ -1036,7 +1070,7 @@
 		<button class="button__primary button__clear cancel" (click)="showDeleteAppModal = false">No, Cancel</button>
 	</div>
 </div>
-<!-- to be reviewed as weelll -->
+<!-- batch retry modal  -->
 <div class="modal modal__center" *ngIf="showBatchRetryModal">
 	<div class="modal--body flex flex__column flex__justify-center flex__align-items-center delete">
 		<img src="/assets/img/filter.gif" alt="filter icon" class="filter-img" />
