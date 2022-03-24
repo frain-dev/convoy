@@ -31,7 +31,7 @@ func newErrorResponse(msg string, statusCode int) serverResponse {
 
 func newServiceErrResponse(err error) serverResponse {
 	msg := ""
-	statusCode := 0
+	statusCode := http.StatusBadRequest
 	switch v := err.(type) {
 	case *services.ServiceError:
 		msg = v.Error()
