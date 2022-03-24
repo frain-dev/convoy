@@ -221,7 +221,7 @@ func OverrideConfigWithCliFlags(cmd *cobra.Command, cfg *Configuration) error {
 		parts := strings.Split(dbDsn, "://")
 		if len(parts) == 2 {
 			// parts[0] must be either "mongodb" or "mongodb+srv"
-			if parts[0] != string(MongodbDatabaseProvider) || parts[0] != string(MongodbDatabaseProvider)+"+srv" {
+			if parts[0] == string(MongodbDatabaseProvider) || parts[0] == string(MongodbDatabaseProvider)+"+srv" {
 				cfg.Database.Type = MongodbDatabaseProvider
 			}
 		}
