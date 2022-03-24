@@ -70,18 +70,12 @@ func (gs *GroupService) CreateGroup(ctx context.Context, newGroup *models.Group)
 	return group, nil
 }
 
-func (gs *GroupService) UpdateGroup(ctx context.Context, id string, update *models.Group) (*datastore.Group, error) {
+func (gs *GroupService) UpdateGroup(ctx context.Context, group *datastore.Group, update *models.Group) (*datastore.Group, error) {
 	groupName := update.Name
 	err := util.Validate(update)
 	if err != nil {
 		log.WithError(err).Error("failed to validate group update")
 		return nil, NewServiceError(http.StatusBadRequest, err)
-	}
-
-	group, err := gs.groupRepo.FetchGroupByID(ctx, id)
-	if err != nil {
-		log.WithError(err).Error("failed to fetch group by id")
-		return nil, NewServiceError(http.StatusInternalServerError, errors.New("failed to fetch group by id"))
 	}
 
 	group.Name = groupName

@@ -3,8 +3,6 @@ package server
 import (
 	"net/http"
 
-	"github.com/go-chi/chi/v5"
-
 	"github.com/frain-dev/convoy/auth"
 	"github.com/frain-dev/convoy/datastore"
 	"github.com/frain-dev/convoy/server/models"
@@ -110,7 +108,8 @@ func (a *applicationHandler) UpdateGroup(w http.ResponseWriter, r *http.Request)
 		return
 	}
 
-	group, err := a.groupService.UpdateGroup(r.Context(), chi.URLParam(r, "groupID"), &update)
+	g := getGroupFromContext(r.Context())
+	group, err := a.groupService.UpdateGroup(r.Context(), g, &update)
 	if err != nil {
 		_ = render.Render(w, r, newServiceErrResponse(err, http.StatusBadRequest))
 		return
