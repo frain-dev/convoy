@@ -7,15 +7,14 @@ import (
 	"time"
 
 	"github.com/frain-dev/convoy"
+	"github.com/frain-dev/convoy/datastore"
 	"github.com/frain-dev/convoy/limiter"
+	"github.com/frain-dev/convoy/server/models"
 	"github.com/frain-dev/convoy/util"
 	"github.com/frain-dev/convoy/worker/task"
 	"github.com/google/uuid"
-	"go.mongodb.org/mongo-driver/bson/primitive"
-
-	"github.com/frain-dev/convoy/datastore"
-	"github.com/frain-dev/convoy/server/models"
 	log "github.com/sirupsen/logrus"
+	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
 type GroupService struct {
@@ -87,7 +86,7 @@ func (gs *GroupService) UpdateGroup(ctx context.Context, group *datastore.Group,
 	err = gs.groupRepo.UpdateGroup(ctx, group)
 	if err != nil {
 		log.WithError(err).Error("failed to to update group")
-		return nil, NewServiceError(http.StatusInternalServerError, errors.New("an error occurred while updating Group"))
+		return nil, NewServiceError(http.StatusBadRequest, errors.New("an error occurred while updating Group"))
 	}
 
 	return group, nil
@@ -97,7 +96,7 @@ func (gs *GroupService) GetGroups(ctx context.Context, filter *datastore.GroupFi
 	groups, err := gs.groupRepo.LoadGroups(ctx, filter)
 	if err != nil {
 		log.WithError(err).Error("failed to load groups")
-		return nil, NewServiceError(http.StatusInternalServerError, errors.New("an error occurred while fetching Groups"))
+		return nil, NewServiceError(http.StatusBadRequest, errors.New("an error occurred while fetching Groups"))
 	}
 
 	for _, group := range groups {
@@ -113,13 +112,13 @@ func (gs *GroupService) FillGroupStatistics(ctx context.Context, g *datastore.Gr
 	appCount, err := gs.appRepo.CountGroupApplications(ctx, g.UID)
 	if err != nil {
 		log.WithError(err).Error("failed to count group applications")
-		return NewServiceError(http.StatusInternalServerError, errors.New("failed to count group statistics"))
+		return NewServiceError(http.StatusBadRequest, errors.New("failed to count group statistics"))
 	}
 
 	msgCount, err := gs.eventRepo.CountGroupMessages(ctx, g.UID)
 	if err != nil {
 		log.WithError(err).Error("failed to count group messages")
-		return NewServiceError(http.StatusInternalServerError, errors.New("failed to count group statistics"))
+		return NewServiceError(http.StatusBadRequest, errors.New("failed to count group statistics"))
 	}
 
 	g.Statistics = &datastore.GroupStatistics{
@@ -133,20 +132,20 @@ func (gs *GroupService) DeleteGroup(ctx context.Context, id string) error {
 	err := gs.groupRepo.DeleteGroup(ctx, id)
 	if err != nil {
 		log.WithError(err).Error("failed to delete group")
-		return NewServiceError(http.StatusInternalServerError, errors.New("failed to delete group"))
+		return NewServiceError(http.StatusBadRequest, errors.New("failed to delete group"))
 	}
 
 	// TODO(daniel,subomi): is returning http error necessary for these? since the group itself has been deleted
 	err = gs.appRepo.DeleteGroupApps(ctx, id)
 	if err != nil {
 		log.WithError(err).Error("failed to delete group apps")
-		return NewServiceError(http.StatusInternalServerError, errors.New("failed to delete group apps"))
+		return NewServiceError(http.StatusBadRequest, errors.New("failed to delete group apps"))
 	}
 
 	err = gs.eventRepo.DeleteGroupEvents(ctx, id)
 	if err != nil {
 		log.WithError(err).Error("failed to delete group events")
-		return NewServiceError(http.StatusInternalServerError, errors.New("failed to delete group events"))
+		return NewServiceError(http.StatusBadRequest, errors.New("failed to delete group events"))
 	}
 
 	return nil
