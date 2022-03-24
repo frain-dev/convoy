@@ -44,13 +44,11 @@ func ProcessEventDelivery(appRepo datastore.ApplicationRepository, eventDelivery
 		// Load message from DB and switch state to prevent concurrent processing.
 		m, err := eventDeliveryRepo.FindEventDeliveryByID(context.Background(), Id)
 
-		var delayDuration time.Duration
-
 		if err != nil {
 			log.WithError(err).Errorf("Failed to load event - %s", Id)
-			delayDuration = retrystrategies.NewRetryStrategyFromMetadata(*m.Metadata).NextDuration(m.Metadata.NumTrials)
-			return &EndpointError{Err: err, delay: delayDuration}
+			return &EndpointError{Err: err}
 		}
+		var delayDuration time.Duration = retrystrategies.NewRetryStrategyFromMetadata(*m.Metadata).NextDuration(m.Metadata.NumTrials)
 
 		switch m.Status {
 		case datastore.ProcessingEventStatus,
@@ -61,7 +59,6 @@ func ProcessEventDelivery(appRepo datastore.ApplicationRepository, eventDelivery
 		err = eventDeliveryRepo.UpdateStatusOfEventDelivery(context.Background(), *m, datastore.ProcessingEventStatus)
 		if err != nil {
 			log.WithError(err).Error("failed to update status of messages - ")
-			delayDuration = retrystrategies.NewRetryStrategyFromMetadata(*m.Metadata).NextDuration(m.Metadata.NumTrials)
 			return &EndpointError{Err: err, delay: delayDuration}
 		}
 
@@ -70,7 +67,6 @@ func ProcessEventDelivery(appRepo datastore.ApplicationRepository, eventDelivery
 
 		cfg, err := config.Get()
 		if err != nil {
-			delayDuration = retrystrategies.NewRetryStrategyFromMetadata(*m.Metadata).NextDuration(m.Metadata.NumTrials)
 			return &EndpointError{Err: err, delay: delayDuration}
 		}
 
@@ -87,7 +83,6 @@ func ProcessEventDelivery(appRepo datastore.ApplicationRepository, eventDelivery
 		dbEndpoint, err := appRepo.FindApplicationEndpointByID(context.Background(), m.AppMetadata.UID, e.UID)
 		if err != nil {
 			log.WithError(err).Errorf("could not retrieve endpoint %s", e.UID)
-			delayDuration = retrystrategies.NewRetryStrategyFromMetadata(*m.Metadata).NextDuration(m.Metadata.NumTrials)
 			return &EndpointError{Err: err, delay: delayDuration}
 		}
 
@@ -101,7 +96,6 @@ func ProcessEventDelivery(appRepo datastore.ApplicationRepository, eventDelivery
 		encoder.SetEscapeHTML(false)
 		if err := encoder.Encode(m.Metadata.Data); err != nil {
 			log.WithError(err).Error("Failed to encode data")
-			delayDuration = retrystrategies.NewRetryStrategyFromMetadata(*m.Metadata).NextDuration(m.Metadata.NumTrials)
 			return &EndpointError{Err: err, delay: delayDuration}
 		}
 
@@ -110,7 +104,6 @@ func ProcessEventDelivery(appRepo datastore.ApplicationRepository, eventDelivery
 		g, err := groupRepo.FetchGroupByID(context.Background(), m.AppMetadata.GroupID)
 		if err != nil {
 			log.WithError(err).Error("could not find error")
-			delayDuration = retrystrategies.NewRetryStrategyFromMetadata(*m.Metadata).NextDuration(m.Metadata.NumTrials)
 			return &EndpointError{Err: err, delay: delayDuration}
 		}
 
@@ -123,7 +116,6 @@ func ProcessEventDelivery(appRepo datastore.ApplicationRepository, eventDelivery
 		hmac, err := util.ComputeJSONHmac(g.Config.Signature.Hash, signedPayload.String(), secret, false)
 		if err != nil {
 			log.Errorf("error occurred while generating hmac - %+v\n", err)
-			delayDuration = retrystrategies.NewRetryStrategyFromMetadata(*m.Metadata).NextDuration(m.Metadata.NumTrials)
 			return &EndpointError{Err: err, delay: delayDuration}
 		}
 
@@ -147,7 +139,6 @@ func ProcessEventDelivery(appRepo datastore.ApplicationRepository, eventDelivery
 			"duration": duration,
 		})
 
-		delayDuration = retrystrategies.NewRetryStrategyFromMetadata(*m.Metadata).NextDuration(m.Metadata.NumTrials)
 		if err == nil && statusCode >= 200 && statusCode <= 299 {
 			requestLogger.Infof("%s", m.UID)
 			log.Infof("%s sent", m.UID)
