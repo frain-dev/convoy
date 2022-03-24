@@ -157,7 +157,7 @@ func (a *applicationHandler) CreateAppEvent(w http.ResponseWriter, r *http.Reque
 		taskName := convoy.EventProcessor.SetPrefix(g.Name)
 
 		if eventDelivery.Status != datastore.DiscardedEventStatus {
-			err = a.eventQueue.Write(r.Context(), taskName, eventDelivery, 1*time.Second)
+			err = a.eventQueue.Write(context.Background(), taskName, eventDelivery, 1*time.Second)
 			if err != nil {
 				log.Errorf("Error occurred sending new event to the queue %s", err)
 			}
@@ -330,7 +330,7 @@ func (a *applicationHandler) resendEventDelivery(ctx context.Context, eventDeliv
 	g := getGroupFromContext(ctx)
 	taskName := convoy.EventProcessor.SetPrefix(g.Name)
 
-	err = a.eventQueue.Write(ctx, taskName, eventDelivery, 1*time.Second)
+	err = a.eventQueue.Write(context.Background(), taskName, eventDelivery, 1*time.Second)
 	if err != nil {
 		log.WithError(err).Errorf("error occurred re-enqueing old event - %s", eventDelivery.UID)
 	}
