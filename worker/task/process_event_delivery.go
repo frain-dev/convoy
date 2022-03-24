@@ -22,6 +22,7 @@ import (
 )
 
 var ErrDeliveryAttemptFailed = errors.New("Error sending event")
+var defaultDelay time.Duration = 30
 
 type EndpointError struct {
 	delay time.Duration
@@ -45,7 +46,7 @@ func ProcessEventDelivery(appRepo datastore.ApplicationRepository, eventDelivery
 
 		if err != nil {
 			log.WithError(err).Errorf("Failed to load event - %s", Id)
-			return &EndpointError{Err: err}
+			return &EndpointError{Err: err, delay: defaultDelay}
 		}
 		var delayDuration time.Duration = retrystrategies.NewRetryStrategyFromMetadata(*m.Metadata).NextDuration(m.Metadata.NumTrials)
 
