@@ -3910,6 +3910,9 @@
                         "type": "string"
                     }
                 },
+                "http_timeout": {
+                    "type": "string"
+                },
                 "rate_limit": {
                     "type": "integer"
                 },
@@ -3936,6 +3939,9 @@
         "datastore.EndpointMetadata": {
             "type": "object",
             "properties": {
+                "http_timeout": {
+                    "type": "string"
+                },
                 "rate_limit": {
                     "type": "integer"
                 },
@@ -4262,6 +4268,9 @@
                     "items": {
                         "type": "string"
                     }
+                },
+                "http_timeout": {
+                    "type": "string"
                 },
                 "rate_limit": {
                     "type": "integer"

@@ -94,12 +94,14 @@ type MessageResponse struct {
 }
 
 type Endpoint struct {
-	URL               string   `json:"url" bson:"url"`
-	Secret            string   `json:"secret" bson:"secret"`
-	Description       string   `json:"description" bson:"description"`
-	Events            []string `json:"events" bson:"events"`
-	RateLimit         int      `json:"rate_limit" bson:"rate_limit"`
-	RateLimitDuration string   `json:"rate_limit_duration" bson:"rate_limit_duration"`
+	URL         string   `json:"url" bson:"url"`
+	Secret      string   `json:"secret" bson:"secret"`
+	Description string   `json:"description" bson:"description"`
+	Events      []string `json:"events" bson:"events"`
+
+	HttpTimeout       string `json:"http_timeout" bson:"http_timeout"`
+	RateLimit         int    `json:"rate_limit" bson:"rate_limit"`
+	RateLimitDuration string `json:"rate_limit_duration" bson:"rate_limit_duration"`
 }
 
 type DashboardSummary struct {

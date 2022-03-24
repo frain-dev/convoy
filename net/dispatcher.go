@@ -20,9 +20,9 @@ type Dispatcher struct {
 	client *http.Client
 }
 
-func NewDispatcher() *Dispatcher {
+func NewDispatcher(timeout time.Duration) *Dispatcher {
 	return &Dispatcher{
-		client: &http.Client{Timeout: 10 * time.Second},
+		client: &http.Client{Timeout: timeout},
 	}
 }
 
