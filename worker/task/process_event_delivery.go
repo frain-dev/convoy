@@ -12,6 +12,7 @@ import (
 	"github.com/frain-dev/convoy"
 	"github.com/frain-dev/convoy/config"
 	"github.com/frain-dev/convoy/datastore"
+	"github.com/frain-dev/convoy/limiter"
 	"github.com/frain-dev/convoy/net"
 	"github.com/frain-dev/convoy/queue"
 	"github.com/frain-dev/convoy/retrystrategies"
@@ -37,7 +38,7 @@ func (e *EndpointError) Delay() time.Duration {
 	return e.delay
 }
 
-func ProcessEventDelivery(appRepo datastore.ApplicationRepository, eventDeliveryRepo datastore.EventDeliveryRepository, groupRepo datastore.GroupRepository) func(*queue.Job) error {
+func ProcessEventDelivery(appRepo datastore.ApplicationRepository, eventDeliveryRepo datastore.EventDeliveryRepository, groupRepo datastore.GroupRepository, rateLimiter limiter.RateLimiter) func(*queue.Job) error {
 	return func(job *queue.Job) error {
 		Id := job.ID
 
@@ -52,6 +53,46 @@ func ProcessEventDelivery(appRepo datastore.ApplicationRepository, eventDelivery
 		switch m.Status {
 		case datastore.ProcessingEventStatus,
 			datastore.SuccessEventStatus:
+			return nil
+		}
+
+		var rateLimitDuration time.Duration
+		if util.IsStringEmpty(m.EndpointMetadata.RateLimitDuration) {
+			rateLimitDuration, err = time.ParseDuration(convoy.RATE_LIMIT_DURATION)
+			if err != nil {
+				log.WithError(err).Errorf("failed to parse endpoint duration")
+				return nil
+			}
+		} else {
+			rateLimitDuration, err = time.ParseDuration(m.EndpointMetadata.RateLimitDuration)
+			if err != nil {
+				log.WithError(err).Errorf("failed to parse endpoint duration")
+				return nil
+			}
+		}
+
+		var rateLimit int
+		if m.EndpointMetadata.RateLimit == 0 {
+			rateLimit = convoy.RATE_LIMIT
+		} else {
+			rateLimit = m.EndpointMetadata.RateLimit
+		}
+
+		res, err := rateLimiter.ShouldAllow(context.Background(), m.EndpointMetadata.TargetURL, rateLimit, int(rateLimitDuration))
+		if err != nil {
+			return nil
+		}
+
+		if res.Remaining <= 0 {
+			err := fmt.Errorf("too many events to %s, limit of %v would be reached", m.EndpointMetadata.TargetURL, res.Limit)
+			log.WithError(err)
+
+			var delayDuration time.Duration = retrystrategies.NewRetryStrategyFromMetadata(*m.Metadata).NextDuration(m.Metadata.NumTrials)
+			return &EndpointError{Err: err, delay: delayDuration}
+		}
+
+		_, err = rateLimiter.Allow(context.Background(), m.EndpointMetadata.TargetURL, rateLimit, int(rateLimitDuration))
+		if err != nil {
 			return nil
 		}
 

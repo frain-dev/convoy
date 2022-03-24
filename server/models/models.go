@@ -13,7 +13,7 @@ type Group struct {
 	Name              string `json:"name" bson:"name" valid:"required~please provide a valid name"`
 	LogoURL           string `json:"logo_url" bson:"logo_url" valid:"url~please provide a valid logo url,optional"`
 	RateLimit         int    `json:"rate_limit" bson:"rate_limit" valid:"int~please provide a valid rate limit,optional"`
-	RateLimitDuration int    `json:"rate_limit_duration" bson:"rate_limit_duration" valid:"int~please provide a valid rate limit duration,optional"`
+	RateLimitDuration string `json:"rate_limit_duration" bson:"rate_limit_duration" valid:"alphanum~please provide a valid rate limit duration,optional"`
 
 	Config datastore.GroupConfig
 }
@@ -94,10 +94,12 @@ type MessageResponse struct {
 }
 
 type Endpoint struct {
-	URL         string   `json:"url" bson:"url"`
-	Secret      string   `json:"secret" bson:"secret"`
-	Description string   `json:"description" bson:"description"`
-	Events      []string `json:"events" bson:"events"`
+	URL               string   `json:"url" bson:"url"`
+	Secret            string   `json:"secret" bson:"secret"`
+	Description       string   `json:"description" bson:"description"`
+	Events            []string `json:"events" bson:"events"`
+	RateLimit         int      `json:"rate_limit" bson:"rate_limit"`
+	RateLimitDuration string   `json:"rate_limit_duration" bson:"rate_limit_duration"`
 }
 
 type DashboardSummary struct {

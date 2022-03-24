@@ -109,7 +109,7 @@ func (a *applicationHandler) GetDashboardSummary(w http.ResponseWriter, r *http.
 		PeriodData:   &messages,
 	}
 
-	err = a.cache.Set(r.Context(), qs, dashboard, time.Hour)
+	err = a.cache.Set(r.Context(), qs, dashboard, time.Minute)
 
 	if err != nil {
 		log.Error(err)

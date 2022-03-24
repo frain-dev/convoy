@@ -423,7 +423,6 @@ func TestApplicationHandler_CreateApp(t *testing.T) {
 				t.Errorf("Want status '%d', got '%d'", tc.statusCode, w.Code)
 			}
 
-			fmt.Printf("bodyyy: '%s'\n", w.Body.String())
 			d := stripTimestamp(t, "application", w.Body)
 
 			w.Body = d
@@ -589,12 +588,12 @@ func TestApplicationHandler_UpdateApp(t *testing.T) {
 		},
 
 		{
-			name: "valid request - disable application",
-			cfgPath: "/testdata/Auth_Config/no-auth-convoy.json",
-			method: http.MethodPut,
+			name:       "valid request - disable application",
+			cfgPath:    "/testdata/Auth_Config/no-auth-convoy.json",
+			method:     http.MethodPut,
 			statusCode: http.StatusAccepted,
-			appId: appId,
-			body: strings.NewReader(`{"name": "ABC", "is_disabled": true }`),
+			appId:      appId,
+			body:       strings.NewReader(`{"name": "ABC", "is_disabled": true }`),
 			dbFn: func(app *applicationHandler) {
 				a, _ := app.appRepo.(*mocks.MockApplicationRepository)
 				a.EXPECT().
@@ -604,10 +603,10 @@ func TestApplicationHandler_UpdateApp(t *testing.T) {
 				a.EXPECT().
 					FindApplicationByID(gomock.Any(), gomock.Any()).Times(1).
 					Return(&datastore.Application{
-						UID:       appId,
-						GroupID:   groupID,
-						Title:     "Valid application update",
-						Endpoints: []datastore.Endpoint{},
+						UID:        appId,
+						GroupID:    groupID,
+						Title:      "Valid application update",
+						Endpoints:  []datastore.Endpoint{},
 						IsDisabled: false,
 					}, nil)
 
@@ -620,12 +619,12 @@ func TestApplicationHandler_UpdateApp(t *testing.T) {
 		},
 
 		{
-			name: "valid request - enable disabled application",
-			cfgPath: "/testdata/Auth_Config/no-auth-convoy.json",
-			method: http.MethodPut,
+			name:       "valid request - enable disabled application",
+			cfgPath:    "/testdata/Auth_Config/no-auth-convoy.json",
+			method:     http.MethodPut,
 			statusCode: http.StatusAccepted,
-			appId: appId,
-			body: strings.NewReader(`{"name": "ABC", "is_disabled": false }`),
+			appId:      appId,
+			body:       strings.NewReader(`{"name": "ABC", "is_disabled": false }`),
 			dbFn: func(app *applicationHandler) {
 				a, _ := app.appRepo.(*mocks.MockApplicationRepository)
 				a.EXPECT().
@@ -635,10 +634,10 @@ func TestApplicationHandler_UpdateApp(t *testing.T) {
 				a.EXPECT().
 					FindApplicationByID(gomock.Any(), gomock.Any()).Times(1).
 					Return(&datastore.Application{
-						UID:       appId,
-						GroupID:   groupID,
-						Title:     "Valid application update",
-						Endpoints: []datastore.Endpoint{},
+						UID:        appId,
+						GroupID:    groupID,
+						Title:      "Valid application update",
+						Endpoints:  []datastore.Endpoint{},
 						IsDisabled: true,
 					}, nil)
 

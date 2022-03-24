@@ -92,11 +92,13 @@ type Application struct {
 type EndpointStatus string
 
 type Endpoint struct {
-	UID         string         `json:"uid" bson:"uid"`
-	TargetURL   string         `json:"target_url" bson:"target_url"`
-	Description string         `json:"description" bson:"description"`
-	Status      EndpointStatus `json:"status" bson:"status"`
-	Secret      string         `json:"secret" bson:"secret"`
+	UID               string         `json:"uid" bson:"uid"`
+	TargetURL         string         `json:"target_url" bson:"target_url"`
+	Description       string         `json:"description" bson:"description"`
+	Status            EndpointStatus `json:"status" bson:"status"`
+	Secret            string         `json:"secret" bson:"secret"`
+	RateLimit         int            `json:"rate_limit" bson:"rate_limit"`
+	RateLimitDuration string         `json:"rate_limit_duration" bson:"rate_limit_duration"`
 
 	Events []string `json:"events" bson:"events"`
 
@@ -117,8 +119,8 @@ type Group struct {
 	Config     *GroupConfig       `json:"config" bson:"config"`
 	Statistics *GroupStatistics   `json:"statistics" bson:"-"`
 
-	RateLimit         int `json:"rate_limit" bson:"rate_limit"`
-	RateLimitDuration int `json:"rate_limit_duration" bson:"rate_limit_duration"`
+	RateLimit         int    `json:"rate_limit" bson:"rate_limit"`
+	RateLimitDuration string `json:"rate_limit_duration" bson:"rate_limit_duration"`
 
 	CreatedAt primitive.DateTime `json:"created_at,omitempty" bson:"created_at,omitempty" swaggertype:"string"`
 	UpdatedAt primitive.DateTime `json:"updated_at,omitempty" bson:"updated_at,omitempty" swaggertype:"string"`
@@ -268,10 +270,12 @@ func (em Metadata) Value() (driver.Value, error) {
 }
 
 type EndpointMetadata struct {
-	UID       string         `json:"uid" bson:"uid"`
-	TargetURL string         `json:"target_url" bson:"target_url"`
-	Status    EndpointStatus `json:"status" bson:"status"`
-	Secret    string         `json:"secret" bson:"secret"`
+	UID               string         `json:"uid" bson:"uid"`
+	TargetURL         string         `json:"target_url" bson:"target_url"`
+	Status            EndpointStatus `json:"status" bson:"status"`
+	Secret            string         `json:"secret" bson:"secret"`
+	RateLimit         int            `json:"rate_limit" bson:"rate_limit"`
+	RateLimitDuration string         `json:"rate_limit_duration" bson:"rate_limit_duration"`
 
 	Sent bool `json:"sent" bson:"sent"`
 }

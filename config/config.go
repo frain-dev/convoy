@@ -14,7 +14,10 @@ import (
 	"github.com/spf13/cobra"
 )
 
-const MaxResponseSize = 50 * 1024
+const (
+	MaxResponseSizeKb = 50                       // in kilobytes
+	MaxResponseSize   = MaxResponseSizeKb * 1024 // in bytes
+)
 
 var cfgSingleton atomic.Value
 
@@ -540,6 +543,7 @@ func SetServerConfigDefaults(c *Configuration) error {
 		return err
 	}
 
+	cfgSingleton.Store(c)
 	return nil
 }
 

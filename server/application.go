@@ -5,6 +5,7 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/frain-dev/convoy"
 	"github.com/frain-dev/convoy/services"
 
 	"github.com/frain-dev/convoy/cache"
@@ -162,7 +163,7 @@ func (a *applicationHandler) CreateApp(w http.ResponseWriter, r *http.Request) {
 
 	err = a.appRepo.CreateApplication(r.Context(), app)
 	if err != nil {
-		_ = render.Render(w, r, newErrorResponse("an error occurred while creating app", http.StatusInternalServerError))
+		_ = render.Render(w, r, newErrorResponse("an error occurred while creating app", http.StatusBadRequest))
 		return
 	}
 
@@ -232,7 +233,7 @@ func (a *applicationHandler) DeleteApp(w http.ResponseWriter, r *http.Request) {
 	err := a.appRepo.DeleteApplication(r.Context(), app)
 	if err != nil {
 		log.Errorln("failed to delete app - ", err)
-		_ = render.Render(w, r, newErrorResponse("an error occurred while deleting app", http.StatusInternalServerError))
+		_ = render.Render(w, r, newErrorResponse("an error occurred while deleting app", http.StatusBadRequest))
 		return
 	}
 
@@ -269,22 +270,38 @@ func (a *applicationHandler) CreateAppEndpoint(w http.ResponseWriter, r *http.Re
 		e.Events = []string{"*"}
 	}
 
+	if e.RateLimit == 0 {
+		e.RateLimit = convoy.RATE_LIMIT
+	}
+
+	if util.IsStringEmpty(e.RateLimitDuration) {
+		e.RateLimitDuration = convoy.RATE_LIMIT_DURATION
+	}
+
+	duration, err := time.ParseDuration(e.RateLimitDuration)
+	if err != nil {
+		_ = render.Render(w, r, newErrorResponse(fmt.Sprintf("an error occured parsing the rate limit duration...%v", err.Error()), http.StatusBadRequest))
+		return
+	}
+
 	endpoint := &datastore.Endpoint{
-		UID:            uuid.New().String(),
-		TargetURL:      e.URL,
-		Description:    e.Description,
-		Events:         e.Events,
-		Secret:         e.Secret,
-		Status:         datastore.ActiveEndpointStatus,
-		CreatedAt:      primitive.NewDateTimeFromTime(time.Now()),
-		UpdatedAt:      primitive.NewDateTimeFromTime(time.Now()),
-		DocumentStatus: datastore.ActiveDocumentStatus,
+		UID:               uuid.New().String(),
+		TargetURL:         e.URL,
+		Description:       e.Description,
+		Events:            e.Events,
+		Secret:            e.Secret,
+		Status:            datastore.ActiveEndpointStatus,
+		RateLimit:         e.RateLimit,
+		RateLimitDuration: duration.String(),
+		CreatedAt:         primitive.NewDateTimeFromTime(time.Now()),
+		UpdatedAt:         primitive.NewDateTimeFromTime(time.Now()),
+		DocumentStatus:    datastore.ActiveDocumentStatus,
 	}
 
 	if util.IsStringEmpty(e.Secret) {
 		endpoint.Secret, err = util.GenerateSecret()
 		if err != nil {
-			_ = render.Render(w, r, newErrorResponse(fmt.Sprintf("could not generate secret...%v", err.Error()), http.StatusInternalServerError))
+			_ = render.Render(w, r, newErrorResponse(fmt.Sprintf("could not generate secret...%v", err.Error()), http.StatusBadRequest))
 			return
 		}
 	}
@@ -293,7 +310,7 @@ func (a *applicationHandler) CreateAppEndpoint(w http.ResponseWriter, r *http.Re
 
 	err = a.appRepo.UpdateApplication(r.Context(), app)
 	if err != nil {
-		_ = render.Render(w, r, newErrorResponse("an error occurred while adding app endpoint", http.StatusInternalServerError))
+		_ = render.Render(w, r, newErrorResponse("an error occurred while adding app endpoint", http.StatusBadRequest))
 		return
 	}
 
@@ -369,7 +386,7 @@ func (a *applicationHandler) UpdateAppEndpoint(w http.ResponseWriter, r *http.Re
 	app.Endpoints = *endpoints
 	err = a.appRepo.UpdateApplication(r.Context(), app)
 	if err != nil {
-		_ = render.Render(w, r, newErrorResponse("an error occurred while updating app endpoints", http.StatusInternalServerError))
+		_ = render.Render(w, r, newErrorResponse("an error occurred while updating app endpoints", http.StatusBadRequest))
 		return
 	}
 
@@ -401,7 +418,7 @@ func (a *applicationHandler) DeleteAppEndpoint(w http.ResponseWriter, r *http.Re
 
 	err := a.appRepo.UpdateApplication(r.Context(), app)
 	if err != nil {
-		_ = render.Render(w, r, newErrorResponse("an error occurred while deleting app endpoint", http.StatusInternalServerError))
+		_ = render.Render(w, r, newErrorResponse("an error occurred while deleting app endpoint", http.StatusBadRequest))
 		return
 	}
 
@@ -430,6 +447,22 @@ func updateEndpointIfFound(endpoints *[]datastore.Endpoint, id string, e models.
 			} else {
 				endpoint.Events = e.Events
 			}
+
+			if e.RateLimit == 0 {
+				e.RateLimit = convoy.RATE_LIMIT
+			}
+
+			if util.IsStringEmpty(e.RateLimitDuration) {
+				e.RateLimitDuration = convoy.RATE_LIMIT_DURATION
+			}
+
+			duration, err := time.ParseDuration(e.RateLimitDuration)
+			if err != nil {
+				return nil, nil, err
+			}
+
+			endpoint.RateLimit = e.RateLimit
+			endpoint.RateLimitDuration = duration.String()
 
 			endpoint.Status = datastore.ActiveEndpointStatus
 			endpoint.UpdatedAt = primitive.NewDateTimeFromTime(time.Now())
