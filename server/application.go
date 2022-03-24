@@ -453,26 +453,22 @@ func updateEndpointIfFound(endpoints *[]datastore.Endpoint, id string, e models.
 				endpoint.Events = e.Events
 			}
 
-			if endpoint.RateLimit == 0 {
-				e.RateLimit = convoy.RATE_LIMIT
+			if e.RateLimit != 0 {
+				endpoint.RateLimit = e.RateLimit
 			}
 
-			if util.IsStringEmpty(endpoint.RateLimitDuration) {
-				e.RateLimitDuration = convoy.RATE_LIMIT_DURATION
+			if !util.IsStringEmpty(e.RateLimitDuration) {
+				duration, err := time.ParseDuration(e.RateLimitDuration)
+				if err != nil {
+					return nil, nil, err
+				}
+
+				endpoint.RateLimitDuration = duration.String()
 			}
 
-			duration, err := time.ParseDuration(e.RateLimitDuration)
-			if err != nil {
-				return nil, nil, err
+			if !util.IsStringEmpty(e.HttpTimeout) {
+				endpoint.HttpTimeout = e.HttpTimeout
 			}
-
-			if util.IsStringEmpty(endpoint.HttpTimeout) {
-				e.HttpTimeout = convoy.HTTP_TIMEOUT
-			}
-			
-			endpoint.RateLimit = e.RateLimit
-			endpoint.HttpTimeout = e.HttpTimeout
-			endpoint.RateLimitDuration = duration.String()
 
 			endpoint.Status = datastore.ActiveEndpointStatus
 			endpoint.UpdatedAt = primitive.NewDateTimeFromTime(time.Now())
