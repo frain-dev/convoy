@@ -236,7 +236,7 @@ func (a *applicationHandler) CreateAppEndpoint(w http.ResponseWriter, r *http.Re
 
 	app := getApplicationFromContext(r.Context())
 
-	endpoint, err := a.appService.CreateAppEndpoint(r.Context(), e, app)
+  endpoint, err := a.appService.CreateAppEndpoint(r.Context(), e, app)
 	if err != nil {
 		_ = render.Render(w, r, newServiceErrResponse(err))
 		return
