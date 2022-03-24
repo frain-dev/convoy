@@ -718,9 +718,9 @@
 											<div class="tag" *ngFor="let event of endpoint.events">{{ event == '*' ? 'all events' : event }}</div>
 										</div>
 									</div>
-									<div class="dashboard--logs--details--endpoints--inactive" *ngIf="endpoint.status == 'inactive'">
+									<div class="dashboard--logs--details--endpoints--inactive" *ngIf="endpoint.status !== 'inactive'">
 										<div class="icon">
-											<img src="/assets/img/link-icon.svg" alt="lock icon">
+											<img src="/assets/img/lock.svg" alt="lock icon">
 										</div>
 										<p class="color__dark font__16px font__weight-600">Endpoint Disabled</p>
 										<!-- pending till this is figured out by backend  -->
