@@ -27,7 +27,7 @@ func (a *applicationHandler) GetGroup(w http.ResponseWriter, r *http.Request) {
 
 	err := a.groupService.FillGroupStatistics(r.Context(), group)
 	if err != nil {
-		_ = render.Render(w, r, newServiceErrResponse(err, http.StatusInternalServerError))
+		_ = render.Render(w, r, newServiceErrResponse(err))
 		return
 	}
 
@@ -51,7 +51,7 @@ func (a *applicationHandler) DeleteGroup(w http.ResponseWriter, r *http.Request)
 
 	err := a.groupService.DeleteGroup(r.Context(), group.UID)
 	if err != nil {
-		_ = render.Render(w, r, newServiceErrResponse(err, http.StatusInternalServerError))
+		_ = render.Render(w, r, newServiceErrResponse(err))
 		return
 	}
 
@@ -81,7 +81,7 @@ func (a *applicationHandler) CreateGroup(w http.ResponseWriter, r *http.Request)
 
 	group, err := a.groupService.CreateGroup(r.Context(), &newGroup)
 	if err != nil {
-		_ = render.Render(w, r, newServiceErrResponse(err, http.StatusBadRequest))
+		_ = render.Render(w, r, newServiceErrResponse(err))
 		return
 	}
 
@@ -111,7 +111,7 @@ func (a *applicationHandler) UpdateGroup(w http.ResponseWriter, r *http.Request)
 	g := getGroupFromContext(r.Context())
 	group, err := a.groupService.UpdateGroup(r.Context(), g, &update)
 	if err != nil {
-		_ = render.Render(w, r, newServiceErrResponse(err, http.StatusBadRequest))
+		_ = render.Render(w, r, newServiceErrResponse(err))
 		return
 	}
 
@@ -156,7 +156,7 @@ func (a *applicationHandler) GetGroups(w http.ResponseWriter, r *http.Request) {
 
 	groups, err := a.groupService.GetGroups(r.Context(), filter)
 	if err != nil {
-		_ = render.Render(w, r, newServiceErrResponse(err, http.StatusBadRequest))
+		_ = render.Render(w, r, newServiceErrResponse(err))
 		return
 	}
 

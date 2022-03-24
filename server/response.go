@@ -29,15 +29,13 @@ func newErrorResponse(msg string, statusCode int) serverResponse {
 	}
 }
 
-func newServiceErrResponse(err interface{}, statusCode int) serverResponse {
+func newServiceErrResponse(err error) serverResponse {
 	msg := ""
-
+	statusCode := 0
 	switch v := err.(type) {
 	case *services.ServiceError:
 		msg = v.Error()
 		statusCode = v.ErrCode()
-	case string:
-		msg = v
 	case error:
 		msg = v.Error()
 	}
