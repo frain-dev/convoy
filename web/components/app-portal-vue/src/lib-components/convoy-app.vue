@@ -7,11 +7,12 @@ import 'prismjs/plugins/line-numbers/prism-line-numbers';
 import DatePicker from 'vue-datepicker-next';
 import 'vue-datepicker-next/index.css';
 import { format } from 'date-fns';
+import LoaderComponent from './loader-component.vue';
 
 export default /*#__PURE__*/ defineComponent({
 	name: 'ConvoyApp', // vue component name
 	props: ['token'],
-	components: { DatePicker },
+	components: { DatePicker, LoaderComponent },
 	data() {
 		return {
 			appDetails: {},
@@ -42,7 +43,8 @@ export default /*#__PURE__*/ defineComponent({
 			eventDeliveriesDateFilter: [],
 			eventsDateFilter: [],
 			showEventDelsStatusDropdown: false,
-			allEventDeliveryStatus: ['Success', 'Failure', 'Retry', 'Scheduled', 'Processing', 'Discarded']
+			allEventDeliveryStatus: ['Success', 'Failure', 'Retry', 'Scheduled', 'Processing', 'Discarded'],
+			loadingAppDetails: false
 		};
 	},
 	computed: {
@@ -131,6 +133,7 @@ export default /*#__PURE__*/ defineComponent({
 			});
 		},
 		async getAppDetails() {
+			this.loadingAppDetails = true;
 			try {
 				const appDetailsResponse = await this.request({
 					url: `/apps`,
@@ -138,7 +141,9 @@ export default /*#__PURE__*/ defineComponent({
 				});
 
 				this.appDetails = appDetailsResponse.data;
+				this.loadingAppDetails = false;
 			} catch (error) {
+				this.loadingAppDetails = false;
 				return error;
 			}
 		},
@@ -163,25 +168,19 @@ export default /*#__PURE__*/ defineComponent({
 					url: `/events?sort=AESC&page=${this.eventsPage || 1}&perPage=20&startDate=${startDate}&endDate=${endDate}`,
 					method: 'get'
 				});
-				// if (this.activeTab === 'events') this.eventDetailsItem = eventsResponse.data.content[0];
 
 				if (this.events && this.events?.pagination?.next === this.eventsPage) {
 					const content = [...this.events.content, ...eventsResponse.data.content];
 					const pagination = eventsResponse.data.pagination;
-					// this.events = { content, pagination };
 					this.displayedEvents = { content, pagination };
 					this.isloadingMoreEvents = false;
 					return;
 				}
 
-				// this.events = eventsResponse.data;
 				this.displayedEvents = eventsResponse.data;
 
-				// if this is a filter request, set the eventsDetailsItem to the first item in the list
-				// if (requestDetails?.fromFilter) {
 				this._eventsDetailsItem = this.events?.content[0];
 				this.getEventDeliveriesForSidebar(this.eventsDetailsItem.uid);
-				// }
 
 				this.isloadingEvents = false;
 			} catch (error) {
@@ -194,7 +193,6 @@ export default /*#__PURE__*/ defineComponent({
 			let eventDeliveryStatusFilterQuery = '';
 			this.eventDeliveryFilteredByStatus.length > 0 ? (this.eventDeliveriesStatusFilterActive = true) : (this.eventDeliveriesStatusFilterActive = false);
 			this.eventDeliveryFilteredByStatus.forEach(status => (eventDeliveryStatusFilterQuery += `&status=${status}`));
-			// const { startDate, endDate } = this.setDateForFilter();
 
 			try {
 				const eventDeliveriesResponse = await this.request({
@@ -209,10 +207,9 @@ export default /*#__PURE__*/ defineComponent({
 				return error;
 			}
 		},
-		async getEventDeliveries(requestDetails) {
+		async getEventDeliveries() {
 			this.eventDeliveries && this.eventDeliveries?.pagination?.next === this.eventDeliveriesPage ? (this.isloadingMoreEventDeliveries = true) : (this.isloadingEventDeliveries = true);
 			const { startDate, endDate } = this.setDateForFilter({ startDate: this.eventDeliveriesDateFilter[0], endDate: this.eventDeliveriesDateFilter[1] });
-			this.isloadingEventDeliveries = true;
 
 			try {
 				const eventDeliveriesResponse = await this.eventDeliveriesRequest({
@@ -231,15 +228,14 @@ export default /*#__PURE__*/ defineComponent({
 
 				this.displayedEventDeliveries = eventDeliveriesResponse.data;
 
-				// if this is a filter request, set the eventDelsDetailsItem to the first item in the list
-				// if (requestDetails?.fromFilter) {
 				this.eventDelsDetailsItem = this.eventDeliveries?.content[0];
 				this.getDelieveryAttempts(this.eventDelsDetailsItem.uid);
-				// }
 
 				this.isloadingEventDeliveries = false;
 				return eventDeliveriesResponse.data.content;
 			} catch (error) {
+				this.isloadingEventDeliveries = false;
+				this.isloadingMoreEventDeliveries = false;
 				return error;
 			}
 		},
@@ -250,7 +246,7 @@ export default /*#__PURE__*/ defineComponent({
 			Prism.highlightAll();
 		},
 		async getDelieveryAttempts(eventDeliveryId) {
-			this.isloadingDeliveryAttempt = true;
+			this.isloadingDeliveryAttempts = true;
 
 			try {
 				const deliveryAttemptsResponse = await this.request({
@@ -258,7 +254,7 @@ export default /*#__PURE__*/ defineComponent({
 					method: 'get'
 				});
 				this.eventDeliveryAtempt = deliveryAttemptsResponse.data[deliveryAttemptsResponse.data.length - 1];
-				this.isloadingDeliveryAttempt = false;
+				this.isloadingDeliveryAttempts = false;
 
 				setTimeout(() => {
 					Prism.highlightAll();
@@ -266,7 +262,7 @@ export default /*#__PURE__*/ defineComponent({
 
 				return;
 			} catch (error) {
-				this.isloadingDeliveryAttempt = false;
+				this.isloadingDeliveryAttempts = false;
 				return error;
 			}
 		},
@@ -285,6 +281,37 @@ export default /*#__PURE__*/ defineComponent({
 		},
 		checkIfEventDeliveryStatusFilterOptionIsSelected(status) {
 			return this.eventDeliveryFilteredByStatus?.length > 0 ? this.eventDeliveryFilteredByStatus.includes(status) : false;
+		},
+		async retryEvent(requestDetails) {
+			requestDetails.e.stopPropagation();
+			const retryButton = document.querySelector(`#event${requestDetails.index} button`);
+			if (retryButton) {
+				retryButton.classList.add(['spin', 'disabled']);
+				retryButton.disabled = true;
+			}
+
+			try {
+				await this.request({
+					method: 'put',
+					url: `/eventdeliveries/${requestDetails.eventDeliveryId}/resend`
+				});
+
+				// pending when I add the notification component
+				// this.convyAppService.showNotification({
+				// 	message: 'Retry Request Sent'
+				// });
+				retryButton.classList.remove(['spin', 'disabled']);
+				retryButton.disabled = false;
+				this.getEventDeliveries();
+			} catch (error) {
+				// pending when I add the notification component
+				// this.convyAppService.showNotification({
+				// 	message: error.error.message
+				// });
+				retryButton.classList.remove(['spin', 'disabled']);
+				retryButton.disabled = false;
+				return error;
+			}
 		}
 	}
 });
@@ -293,11 +320,13 @@ export default /*#__PURE__*/ defineComponent({
 <template>
 	<div class="dashboard--page">
 		<div class="dashboard--page--head">
-			<h3 class="margin-bottom__10px">Endpoint</h3>
+			<h3 class="margin-bottom__10px">Endpoints</h3>
 		</div>
 
 		<div class="dashboard-page--details">
-			<div class="card has-title dashboard-page--endpoints">
+			<div class="card has-title dashboard-page--endpoints has-loader">
+				<LoaderComponent v-if="loadingAppDetails" />
+
 				<table class="table table__no-style">
 					<thead>
 						<tr class="table--head">
@@ -333,6 +362,8 @@ export default /*#__PURE__*/ defineComponent({
 						</tr>
 					</tbody>
 				</table>
+
+				<p class="empty-table" v-if="appDetails && appDetails?.endpoints > 0">No endpoint has been add for this app yet</p>
 			</div>
 		</div>
 
@@ -466,7 +497,9 @@ export default /*#__PURE__*/ defineComponent({
 
 			<div class="flex">
 				<div class="dashboard--logs--table">
-					<div class="table table--container" v-show="activeTab === 'events' && displayedEvents.length > 0">
+					<div class="table table--container has-loader" v-show="activeTab === 'events' && displayedEvents.length > 0">
+						<LoaderComponent v-if="isloadingEvents" />
+
 						<table id="events-table">
 							<thead>
 								<tr class="table--head">
@@ -548,12 +581,14 @@ export default /*#__PURE__*/ defineComponent({
 						</div>
 					</div>
 
-					<div class="empty-state table--container" v-show="activeTab === 'events' && events?.content?.length === 0">
+					<div class="empty-state table--container" v-show="(activeTab === 'events' && !events) || events?.content?.length === 0">
 						<img v-bind:src="require('../assets/img/empty-state-img.svg')" alt="empty state" />
 						<p>No event to show here</p>
 					</div>
 
-					<div class="table table--container" v-show="activeTab === 'event deliveries' && displayedEventDeliveries.length > 0">
+					<div class="table table--container has-loader" v-show="activeTab === 'event deliveries' && displayedEventDeliveries.length > 0">
+						<LoaderComponent v-if="isloadingEventDeliveries" />
+
 						<table id="event-deliveries-table">
 							<thead>
 								<tr class="table--head">
@@ -617,7 +652,17 @@ export default /*#__PURE__*/ defineComponent({
 										</td>
 										<td>
 											<div>
-												<button class="button__retry button--has-icon icon-left ' + (event.status === 'Success' || event.status === 'Scheduled' ? 'disabled' : ''">
+												<button
+													class="button__retry button--has-icon icon-left"
+													@click="
+														retryEvent({
+															e: $event,
+															index,
+															eventDeliveryId: event.uid
+														})
+													"
+													:disabled="event.status !== 'Failure'"
+												>
 													<img v-bind:src="require('../assets/img/refresh-icon-primary.svg')" alt="refresh icon" />
 													Retry
 												</button>
@@ -643,8 +688,9 @@ export default /*#__PURE__*/ defineComponent({
 							</button>
 						</div>
 					</div>
+					{{ eventDeliveries?.content.length }}
 
-					<div class="empty-state table--container" v-show="activeTab === 'event deliveries' && eventDeliveries?.content?.length === 0">
+					<div class="empty-state table--container" v-show="(activeTab === 'event deliveries' && !eventDeliveries) || eventDeliveries?.content?.length === 0">
 						<img v-bind:src="require('../assets/img/empty-state-img.svg')" alt="empty state" />
 						<p>No event to show here</p>
 					</div>
@@ -652,6 +698,8 @@ export default /*#__PURE__*/ defineComponent({
 
 				<div class="dashboard--logs--details has-loader">
 					<template v-if="activeTab === 'event deliveries'">
+						<LoaderComponent v-if="isloadingEventDeliveries || isloadingDeliveryAttempts" />
+
 						<h3>Details</h3>
 						<ul class="dashboard--logs--details--meta">
 							<li class="list-item-inline">
@@ -695,16 +743,16 @@ export default /*#__PURE__*/ defineComponent({
 						</ul>
 
 						<div class="dashboard--logs--details--req-res has-loader">
-							<!-- <convoy-loader *ngIf="(eventDetailsActiveTab === 'response' || eventDetailsActiveTab === 'request') && isloadingDeliveryAttempt"></convoy-loader> -->
+							<!-- <convoy-loader *ngIf="(eventDetailsActiveTab === 'response' || eventDetailsActiveTab === 'request') && isloadingDeliveryAttempts"></convoy-loader> -->
 
 							<div :class="'dashboard--logs--details--tabs-data ' + (eventDetailsActiveTab === 'data' ? 'show' : '')">
 								<h3>Event</h3>
 								<pre
 									class="line-numbers lang-javascript"
-								><code class="language-javascript">{{eventDelsDetailsItem?.metadata?.data ? JSON.stringify(eventDelsDetailsItem?.metadata.data, null, 4)?.replaceAll(/"([^"]+)":/g, '$1:') : ''}}</code></pre>
+								><code class="language-javascript">{{eventDelsDetailsItem?.metadata?.data ? JSON.stringify(eventDelsDetailsItem?.metadata.data, null, 4)?.replaceAll(/"([^"]+)":/g, '$1:') : 'No event sent'}}</code></pre>
 							</div>
 
-							<div :class="'dashboard--logs--details--tabs-data ' + (eventDetailsActiveTab === 'response' && !isloadingDeliveryAttempt ? 'show' : '')">
+							<div :class="'dashboard--logs--details--tabs-data ' + (eventDetailsActiveTab === 'response' && !isloadingDeliveryAttempts ? 'show' : '')">
 								<template v-if="!eventDeliveryAtempt?.error">
 									<h3>Header</h3>
 									<pre
@@ -725,7 +773,7 @@ export default /*#__PURE__*/ defineComponent({
 								</template>
 							</div>
 
-							<div :class="'dashboard--logs--details--tabs-data ' + (eventDetailsActiveTab === 'request' && !isloadingDeliveryAttempt ? 'show' : '')">
+							<div :class="'dashboard--logs--details--tabs-data ' + (eventDetailsActiveTab === 'request' && !isloadingDeliveryAttempts ? 'show' : '')">
 								<h3>Header</h3>
 								<pre class="line-numbers lang-javascript"><code class="language-javascript">{{eventDeliveryAtempt?.request_http_header
                                     ? JSON.stringify(eventDeliveryAtempt.request_http_header, null, 4)?.replaceAll(/"([^"]+)":/g, '$1:')
@@ -735,13 +783,15 @@ export default /*#__PURE__*/ defineComponent({
 					</template>
 
 					<template v-if="activeTab === 'events'">
+						<LoaderComponent v-if="isloadingEvents || isloadingEventDeliveries" />
+
 						<h3>Details</h3>
 						<div class="dashboard--logs--details--req-res">
 							<div class="dashboard--logs--details--tabs-data show">
 								<h3>Event</h3>
 								<pre
 									class="line-numbers lang-javascript"
-								><code class="language-javascript">{{eventsDetailsItem?.data ? JSON.stringify(eventsDetailsItem.data, null, 4)?.trim().replaceAll(/"([^"]+)":/g, '$1:') : ''}}</code></pre>
+								><code class="language-javascript">{{eventsDetailsItem?.data ? JSON.stringify(eventsDetailsItem.data, null, 4)?.trim().replaceAll(/"([^"]+)":/g, '$1:') : 'No event to display'}}</code></pre>
 							</div>
 						</div>
 
@@ -752,6 +802,9 @@ export default /*#__PURE__*/ defineComponent({
 								<div class="url">
 									{{ delivery.endpoint.target_url }}
 								</div>
+							</li>
+							<li v-if="sidebarEventDeliveries.length === 0">
+								<p>No event delivery sent for this event</p>
 							</li>
 						</ul>
 					</template>
@@ -793,5 +846,13 @@ export default /*#__PURE__*/ defineComponent({
 
 .mx-datepicker svg {
 	width: 13px;
+}
+
+.empty-table {
+	text-align: center;
+	height: 50px;
+	margin-top: 25px;
+	font-style: italic;
+	font-size: 12px;
 }
 </style>
