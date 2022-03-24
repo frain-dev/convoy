@@ -11,7 +11,7 @@ import LoaderComponent from './loader-component.vue';
 
 export default /*#__PURE__*/ defineComponent({
 	name: 'ConvoyApp', // vue component name
-	props: ['token'],
+	props: ['token', 'apiURL'],
 	components: { DatePicker, LoaderComponent },
 	data() {
 		return {
@@ -117,7 +117,7 @@ export default /*#__PURE__*/ defineComponent({
 		request({ url, method, body }) {
 			return new Promise(async (resolve, reject) => {
 				try {
-					const response = await fetch('http://localhost:5005/portal' + url, {
+					const response = await fetch(this.apiURL + '/portal' + url, {
 						method,
 						body,
 						headers: {
