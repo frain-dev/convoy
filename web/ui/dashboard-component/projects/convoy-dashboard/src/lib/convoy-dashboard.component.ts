@@ -71,6 +71,7 @@ export class ConvoyDashboardComponent implements OnInit {
 	addNewAppForm: FormGroup = this.formBuilder.group({
 		name: ['', Validators.required],
 		support_email: ['', Validators.compose([Validators.required, Validators.email])],
+		is_disabled: [''],
 		endpoints: this.formBuilder.array([])
 	});
 	addNewEndpointForm: FormGroup = this.formBuilder.group({
@@ -262,6 +263,7 @@ export class ConvoyDashboardComponent implements OnInit {
 			this.getApps({ type: 'apps' });
 			this.showCreateAppModal = false;
 			this.isCreatingNewApp = false;
+			this.editAppMode = false;
 		} catch {
 			this.isCreatingNewApp = false;
 		}
@@ -388,6 +390,23 @@ export class ConvoyDashboardComponent implements OnInit {
 			name: app.name,
 			support_email: app.support_email
 		});
+	}
+
+	editAppStatus(app: APP) {
+		let isDisabled;
+		if (app.is_disabled) {
+			isDisabled = false;
+		} else {
+			isDisabled = true;
+		}
+		this.addNewAppForm.patchValue({
+			name: app.name,
+			support_email: app.support_email,
+			is_disabled: isDisabled
+		});
+		this.editAppMode = true;
+		this.createNewApp();
+		console.log(this.addNewAppForm.value);
 	}
 
 	setEventAppId() {
@@ -899,7 +918,7 @@ export class ConvoyDashboardComponent implements OnInit {
 
 			if (requestDetails?.type === 'apps') this.apps = appsResponse.data;
 			this.filteredApps = appsResponse.data.content;
-console.log(appsResponse.data)
+			console.log(appsResponse.data);
 			if (this.updateAppDetail) {
 				this.apps.content.forEach(item => {
 					if (this.appsDetailsItem?.uid == item.uid) {

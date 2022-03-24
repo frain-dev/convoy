@@ -646,13 +646,20 @@
 					</div>
 				</div>
 
-				<div class="dashboard--logs--details has-loader">
+				<div class="dashboard--logs--details has-loader" [ngClass]="{disabled: appsDetailsItem?.is_disabled}">
 					<convoy-loader
 						*ngIf="(activeTab === 'apps' && isloadingApps) || (activeTab === 'events' && isloadingEvents) || (activeTab === 'event deliveries' && isloadingEventDeliveries)"
 					></convoy-loader>
 
 					<ng-container *ngIf="activeTab === 'apps' && appsDetailsItem">
-						<h3>Details</h3>
+						<div class="flex flex__justify-between flex__align-items-center">
+							<h3 class="text__capitalize">{{appsDetailsItem?.name}}</h3>
+							<label class="toggle">
+								<span class="toggle-label">{{appsDetailsItem?.is_disabled ? 'Disabled' : 'Enabled'}}</span>
+								<input class="toggle-checkbox" type="checkbox" (change)="editAppStatus(appsDetailsItem)" [checked]="!appsDetailsItem?.is_disabled">
+								<div class="toggle-switch"></div>
+							</label>
+						</div>
 						<ul class="dashboard--logs--details--meta">
 							<li class="list-item-inline">
 								<div class="list-item-inline--label">Support Email</div>
@@ -718,7 +725,7 @@
 											<div class="tag" *ngFor="let event of endpoint.events">{{ event == '*' ? 'all events' : event }}</div>
 										</div>
 									</div>
-									<div class="dashboard--logs--details--endpoints--inactive" *ngIf="endpoint.status !== 'inactive'">
+									<div class="dashboard--logs--details--endpoints--inactive" *ngIf="endpoint.status == 'inactive'">
 										<div class="icon">
 											<img src="/assets/img/lock.svg" alt="lock icon">
 										</div>
