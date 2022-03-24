@@ -3910,6 +3910,12 @@
                         "type": "string"
                     }
                 },
+                "rate_limit": {
+                    "type": "integer"
+                },
+                "rate_limit_duration": {
+                    "type": "string"
+                },
                 "secret": {
                     "type": "string"
                 },
@@ -3930,6 +3936,12 @@
         "datastore.EndpointMetadata": {
             "type": "object",
             "properties": {
+                "rate_limit": {
+                    "type": "integer"
+                },
+                "rate_limit_duration": {
+                    "type": "string"
+                },
                 "secret": {
                     "type": "string"
                 },
@@ -4061,7 +4073,7 @@
                     "type": "integer"
                 },
                 "rate_limit_duration": {
-                    "type": "integer"
+                    "type": "string"
                 },
                 "statistics": {
                     "$ref": "#/definitions/datastore.GroupStatistics"
@@ -4251,6 +4263,12 @@
                         "type": "string"
                     }
                 },
+                "rate_limit": {
+                    "type": "integer"
+                },
+                "rate_limit_duration": {
+                    "type": "string"
+                },
                 "secret": {
                     "type": "string"
                 },
@@ -4293,7 +4311,7 @@
                     "type": "integer"
                 },
                 "rate_limit_duration": {
-                    "type": "integer"
+                    "type": "string"
                 }
             }
         },

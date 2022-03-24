@@ -195,6 +195,12 @@
 						},
 						"type": "array"
 					},
+					"rate_limit": {
+						"type": "integer"
+					},
+					"rate_limit_duration": {
+						"type": "string"
+					},
 					"secret": {
 						"type": "string"
 					},
@@ -215,6 +221,12 @@
 			},
 			"datastore.EndpointMetadata": {
 				"properties": {
+					"rate_limit": {
+						"type": "integer"
+					},
+					"rate_limit_duration": {
+						"type": "string"
+					},
 					"secret": {
 						"type": "string"
 					},
@@ -345,7 +357,7 @@
 						"type": "integer"
 					},
 					"rate_limit_duration": {
-						"type": "integer"
+						"type": "string"
 					},
 					"statistics": {
 						"$ref": "#/components/schemas/datastore.GroupStatistics"
@@ -535,6 +547,12 @@
 						},
 						"type": "array"
 					},
+					"rate_limit": {
+						"type": "integer"
+					},
+					"rate_limit_duration": {
+						"type": "string"
+					},
 					"secret": {
 						"type": "string"
 					},
@@ -577,7 +595,7 @@
 						"type": "integer"
 					},
 					"rate_limit_duration": {
-						"type": "integer"
+						"type": "string"
 					}
 				},
 				"type": "object"

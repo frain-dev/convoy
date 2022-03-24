@@ -128,6 +128,10 @@ components:
           items:
             type: string
           type: array
+        rate_limit:
+          type: integer
+        rate_limit_duration:
+          type: string
         secret:
           type: string
         status:
@@ -141,6 +145,10 @@ components:
       type: object
     datastore.EndpointMetadata:
       properties:
+        rate_limit:
+          type: integer
+        rate_limit_duration:
+          type: string
         secret:
           type: string
         sent:
@@ -233,7 +241,7 @@ components:
         rate_limit:
           type: integer
         rate_limit_duration:
-          type: integer
+          type: string
         statistics:
           $ref: '#/components/schemas/datastore.GroupStatistics'
         uid:
@@ -361,6 +369,10 @@ components:
           items:
             type: string
           type: array
+        rate_limit:
+          type: integer
+        rate_limit_duration:
+          type: string
         secret:
           type: string
         url:
@@ -391,7 +403,7 @@ components:
         rate_limit:
           type: integer
         rate_limit_duration:
-          type: integer
+          type: string
       type: object
     models.PortalAPIKeyResponse:
       properties:
