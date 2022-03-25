@@ -94,6 +94,7 @@ export class ConvoyDashboardComponent implements OnInit {
 	allEventdeliveriesChecked = false;
 	eventDeliveryStatuses = ['Success', 'Failure', 'Retry', 'Scheduled', 'Processing', 'Discarded'];
 	dateOptions = ['Last Year', 'Last Month', 'Last Week', 'Yesterday'];
+	appStatuses = ['All', 'Enabled', 'Disabled'];
 	eventDeliveryFilteredByStatus: string[] = [];
 	eventTags: string[] = [];
 	showOverlay = false;
@@ -140,6 +141,7 @@ export class ConvoyDashboardComponent implements OnInit {
 	tag = '';
 	appPortalLink = '';
 	endpointSecretKey = '';
+	selectedAppStatus = 'All';
 	batchRetryCount!: any;
 	eventsAppsFilter$!: Observable<APP[]>;
 	eventsDelAppsFilter$!: Observable<APP[]>;
@@ -900,6 +902,10 @@ export class ConvoyDashboardComponent implements OnInit {
 		).data.content;
 	}
 
+	filterAppByStatus(status: string) {
+		this.selectedAppStatus = status;
+	}
+
 	async getApps(requestDetails?: { search?: string; type: 'filter' | 'apps' }) {
 		if (this.apps?.pagination?.next === this.appsPage) this.isloadingMoreApps = true;
 		if (requestDetails?.type === 'apps') this.isloadingApps = true;
@@ -1005,7 +1011,7 @@ export class ConvoyDashboardComponent implements OnInit {
 		}
 	}
 
-	// force retry successful events 
+	// force retry successful events
 	async forceRetryEvent(requestDetails: { e: any; index: number; eventDeliveryId: string }) {
 		requestDetails.e.stopPropagation();
 		const retryButton: any = document.querySelector(`#event${requestDetails.index} button`);
@@ -1110,6 +1116,10 @@ export class ConvoyDashboardComponent implements OnInit {
 				this.eventDeliveryFilteredByEventId = '';
 				this.eventDeliveryFilteredByStatus = [];
 				this.getEventDeliveries({ fromFilter: true });
+				break;
+			case 'apps':
+				this.selectedAppStatus = 'All';
+				this.getApps({ type: 'apps' });
 				break;
 
 			default:
