@@ -228,6 +228,35 @@
 				</div>
 			</div>
 		</section> -->
+		<section class="section sdk-app">
+			<div class="container">
+				<div class="sdk-app__cards">
+					<div class="sdk-app__cards__item sdk">
+						<h1>Convoy SDK</h1>
+						<p>We went a step further to make it easier to integrate convoy through SDK. Follow the link below to get started with you favourite language.</p>
+						<nuxt-link to="/docs/sdk">
+							<button class="primary">
+								Get started
+								<img src="~/assets/images/arrow-right-icon.svg" alt="arrow right" />
+							</button>
+						</nuxt-link>
+					</div>
+					<div class="sdk-app__cards__item app">
+						<h1>App Portal</h1>
+						<p>
+							With app portal, we're enabling you to extend the visibility our dashboard provides you to your customers. They no longer need to reach out to you to know what is going on with their
+							events.
+						</p>
+						<nuxt-link to="/docs/app-portal">
+							<button class="primary">
+								Get started
+								<img src="~/assets/images/arrow-right-icon.svg" alt="arrow right" />
+							</button>
+						</nuxt-link>
+					</div>
+				</div>
+			</div>
+		</section>
 
 		<section class="section start-sending">
 			<div class="container">
@@ -1422,6 +1451,62 @@ a {
 			display: none;
 			&.small {
 				display: block;
+			}
+		}
+	}
+}
+.sdk-app {
+	background: linear-gradient(180deg, #2c2f3e 0%, #422f41 100%);
+	max-height: 681px;
+	height: 100%;
+	margin-bottom: 130px;
+	position: relative;
+	padding-left: 20px;
+	padding-right: 20px;
+	@media (min-width: $desktopBreakPoint) {
+		max-height: 350px;
+		min-height: 350px;
+	}
+	&__cards {
+		display: grid;
+		grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+		gap: 40px;
+		position: relative;
+		top: -70px;
+		@media (min-width: $desktopBreakPoint) {
+			grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+		}
+		&__item {
+			width: 100%;
+			box-shadow: 0px 2px 4px rgba(12, 26, 75, 0.04), 0px 4px 20px -2px rgba(50, 50, 71, 0.08);
+			border-radius: 8px;
+			padding: 32px;
+			&.app {
+				background: url('~/assets/images/app-portal.png') #fcfcfc no-repeat;
+				background-position: bottom right;
+				background-size: 30%;
+			}
+			&.sdk {
+				background: url('~/assets/images/sdk.png') #fcfcfc no-repeat;
+				background-position: bottom right;
+				background-size: 30%;
+			}
+			h1 {
+				font-weight: 700;
+				font-size: 28px;
+				line-height: 40px;
+				color: #000624;
+				margin-bottom: 16px;
+			}
+			p {
+				font-weight: 400;
+				font-size: 16px;
+				line-height: 24px;
+				color: #7987a3;
+				margin-bottom: 32px;
+			}
+			a {
+				margin-bottom: 17px;
 			}
 		}
 	}

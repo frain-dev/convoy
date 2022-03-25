@@ -25,7 +25,7 @@
 							{{ page.title }}
 						</nuxt-link>
 
-						<ul v-if="page.toc.length > 0">
+						<ul v-if="page.toc.length > 0" class="" :class="{ show: currentPage == page.id }">
 							<li v-for="(subpage, index) in page.toc" :key="index">
 								<nuxt-link :to="{ path: '/docs/' + page.id, hash: '#' + subpage.id }">
 									{{ subpage.text }}
@@ -90,7 +90,8 @@ aside {
 	width: 100%;
 	background: #16192c;
 	color: #ffffff;
-
+	height: 100vh;
+	overflow-y: scroll;
 	.logo {
 		display: flex;
 		align-items: center;
@@ -107,6 +108,9 @@ aside {
 			line-height: 20px;
 			color: #47b38d;
 		}
+	}
+	a {
+		color: #fff;
 	}
 
 	a.nuxt-link-exact-active {
@@ -160,10 +164,11 @@ aside {
 		}
 	}
 }
-a.api-reference{
-	img{
+a.api-reference {
+	img {
 		transform: rotate(270deg);
 		margin-left: 5px;
+		filter: brightness(0) invert(1);
 	}
 }
 .main {
