@@ -24,6 +24,10 @@ type SecurityService struct {
 	apiKeyRepo datastore.APIKeyRepository
 }
 
+func NewSecurityService(groupRepo datastore.GroupRepository, apiKeyRepo datastore.APIKeyRepository) *SecurityService {
+	return &SecurityService{groupRepo: groupRepo, apiKeyRepo: apiKeyRepo}
+}
+
 func (ss *SecurityService) CreateAPIKey(ctx context.Context, newApiKey *models.APIKey) (*datastore.APIKey, string, error) {
 	if newApiKey.ExpiresAt != (time.Time{}) && newApiKey.ExpiresAt.Before(time.Now()) {
 		return nil, "", NewServiceError(http.StatusBadRequest, errors.New("expiry date is invalid"))
