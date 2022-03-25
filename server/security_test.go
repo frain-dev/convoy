@@ -313,7 +313,7 @@ func TestApplicationHandler_RevokeAPIKey(t *testing.T) {
 		{
 			name:       "should error for revoke api key",
 			cfgPath:    "./testdata/Auth_Config/no-auth-convoy.json",
-			statusCode: http.StatusInternalServerError,
+			statusCode: http.StatusBadRequest,
 			keyID:      "123",
 			dbFn: func(app *applicationHandler) {
 				a, _ := app.apiKeyRepo.(*mocks.MockAPIKeyRepository)
@@ -391,7 +391,7 @@ func TestApplicationHandler_GetAPIKeyByID(t *testing.T) {
 			name:           "should_fail_to_find_api_key",
 			stripTimestamp: false,
 			cfgPath:        "./testdata/Auth_Config/no-auth-convoy.json",
-			statusCode:     http.StatusInternalServerError,
+			statusCode:     http.StatusBadRequest,
 			keyID:          keyID,
 			dbFn: func(app *applicationHandler) {
 				a, _ := app.apiKeyRepo.(*mocks.MockAPIKeyRepository)
@@ -475,7 +475,7 @@ func TestApplicationHandler_GetAPIKeys(t *testing.T) {
 		{
 			name:       "should_fail_to_load_api_keys",
 			cfgPath:    "./testdata/Auth_Config/no-auth-convoy.json",
-			statusCode: http.StatusInternalServerError,
+			statusCode: http.StatusBadRequest,
 			dbFn: func(app *applicationHandler) {
 				a, _ := app.apiKeyRepo.(*mocks.MockAPIKeyRepository)
 				a.EXPECT().
