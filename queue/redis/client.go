@@ -58,6 +58,7 @@ func NewQueue(opts queue.QueueOptions) queue.Queuer {
 	q := opts.Factory.RegisterQueue(&taskq.QueueOptions{
 		Name:            opts.Name,
 		Redis:           opts.Redis,
+		MaxNumWorker:    convoy.MaxNumWorkers,
 		MaxNumFetcher:   convoy.MaxNumFetcher,
 		ReservationSize: convoy.ReservationSize,
 		BufferSize:      convoy.BufferSize,
@@ -360,6 +361,54 @@ func (q *RedisQueue) DeleteEventDeliveriesFromStream(ctx context.Context, ids []
 		}
 	}
 	return nil
+}
+
+func (q *RedisQueue) ExportMessagesfromStream(ctx context.Context) ([]taskq.Message, error) {
+	xmsgs, err := q.XRange(ctx, "-", "+").Result()
+	if err != nil {
+		return nil, err
+	}
+
+	msgs := make([]taskq.Message, len(xmsgs))
+	for i := range xmsgs {
+		xmsg := &xmsgs[i]
+		msg := &msgs[i]
+
+		err = unmarshalMessage(msg, xmsg)
+
+		if err != nil {
+			return nil, err
+		}
+	}
+	return msgs, nil
+}
+
+func (q *RedisQueue) ExportMessagesfromStreamXACK(ctx context.Context) ([]taskq.Message, error) {
+	xmsgs, err := q.XRange(ctx, "-", "+").Result()
+	if err != nil {
+		return nil, err
+	}
+
+	msgs := make([]taskq.Message, len(xmsgs))
+	for i := range xmsgs {
+		xmsg := &xmsgs[i]
+		msg := &msgs[i]
+
+		err = unmarshalMessage(msg, xmsg)
+
+		if err != nil {
+			return nil, err
+		}
+		if err := q.inner.XAck(ctx, q.stringifyStreamWithQName(), convoy.StreamGroup, xmsg.ID).Err(); err != nil {
+			return nil, err
+		}
+
+		err = q.inner.XDel(ctx, q.stringifyStreamWithQName(), xmsg.ID).Err()
+		if err != nil {
+			return nil, err
+		}
+	}
+	return msgs, nil
 }
 
 func (q *RedisQueue) stringifyStreamWithQName() string {
