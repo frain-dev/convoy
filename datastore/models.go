@@ -98,6 +98,10 @@ type Endpoint struct {
 	Status      EndpointStatus `json:"status" bson:"status"`
 	Secret      string         `json:"secret" bson:"secret"`
 
+	HttpTimeout       string `json:"http_timeout" bson:"http_timeout"`
+	RateLimit         int    `json:"rate_limit" bson:"rate_limit"`
+	RateLimitDuration string `json:"rate_limit_duration" bson:"rate_limit_duration"`
+
 	Events []string `json:"events" bson:"events"`
 
 	CreatedAt primitive.DateTime `json:"created_at,omitempty" bson:"created_at,omitempty" swaggertype:"string"`
@@ -110,15 +114,14 @@ type Endpoint struct {
 var ErrGroupNotFound = errors.New("group not found")
 
 type Group struct {
-	ID         primitive.ObjectID `json:"-" bson:"_id"`
-	UID        string             `json:"uid" bson:"uid"`
-	Name       string             `json:"name" bson:"name"`
-	LogoURL    string             `json:"logo_url" bson:"logo_url"`
-	Config     *GroupConfig       `json:"config" bson:"config"`
-	Statistics *GroupStatistics   `json:"statistics" bson:"-"`
-
-	RateLimit         int `json:"rate_limit" bson:"rate_limit"`
-	RateLimitDuration int `json:"rate_limit_duration" bson:"rate_limit_duration"`
+	ID                primitive.ObjectID `json:"-" bson:"_id"`
+	UID               string             `json:"uid" bson:"uid"`
+	Name              string             `json:"name" bson:"name"`
+	LogoURL           string             `json:"logo_url" bson:"logo_url"`
+	Config            *GroupConfig       `json:"config" bson:"config"`
+	Statistics        *GroupStatistics   `json:"statistics" bson:"-"`
+	RateLimit         int                `json:"rate_limit" bson:"rate_limit"`
+	RateLimitDuration string             `json:"rate_limit_duration" bson:"rate_limit_duration"`
 
 	CreatedAt primitive.DateTime `json:"created_at,omitempty" bson:"created_at,omitempty" swaggertype:"string"`
 	UpdatedAt primitive.DateTime `json:"updated_at,omitempty" bson:"updated_at,omitempty" swaggertype:"string"`
@@ -268,10 +271,13 @@ func (em Metadata) Value() (driver.Value, error) {
 }
 
 type EndpointMetadata struct {
-	UID       string         `json:"uid" bson:"uid"`
-	TargetURL string         `json:"target_url" bson:"target_url"`
-	Status    EndpointStatus `json:"status" bson:"status"`
-	Secret    string         `json:"secret" bson:"secret"`
+	UID               string         `json:"uid" bson:"uid"`
+	TargetURL         string         `json:"target_url" bson:"target_url"`
+	Status            EndpointStatus `json:"status" bson:"status"`
+	Secret            string         `json:"secret" bson:"secret"`
+	HttpTimeout       string         `json:"http_timeout" bson:"http_timeout"`
+	RateLimit         int            `json:"rate_limit" bson:"rate_limit"`
+	RateLimitDuration string         `json:"rate_limit_duration" bson:"rate_limit_duration"`
 
 	Sent bool `json:"sent" bson:"sent"`
 }

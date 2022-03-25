@@ -14,7 +14,10 @@ import (
 	"github.com/spf13/cobra"
 )
 
-const MaxResponseSize = 50 * 1024
+const (
+	MaxResponseSizeKb = 50                       // in kilobytes
+	MaxResponseSize   = MaxResponseSizeKb * 1024 // in bytes
+)
 
 var cfgSingleton atomic.Value
 
@@ -216,8 +219,11 @@ func OverrideConfigWithCliFlags(cmd *cobra.Command, cfg *Configuration) error {
 		cfg.Database.Type = InMemoryDatabaseProvider
 
 		parts := strings.Split(dbDsn, "://")
-		if len(parts) == 2 && parts[0] == string(MongodbDatabaseProvider) {
-			cfg.Database.Type = MongodbDatabaseProvider
+		if len(parts) == 2 {
+			// parts[0] must be either "mongodb" or "mongodb+srv"
+			if parts[0] == string(MongodbDatabaseProvider) || parts[0] == string(MongodbDatabaseProvider)+"+srv" {
+				cfg.Database.Type = MongodbDatabaseProvider
+			}
 		}
 
 		cfg.Database.Dsn = dbDsn
@@ -540,6 +546,7 @@ func SetServerConfigDefaults(c *Configuration) error {
 		return err
 	}
 
+	cfgSingleton.Store(c)
 	return nil
 }
 
