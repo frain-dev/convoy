@@ -2,7 +2,7 @@
 	<div class="dashboard--page--head margin-bottom__20px">
 		<h3 class="margin-bottom__10px">Endpoint</h3>
 
-		<button class="button button__primary button__small" (click)="showAddEndpointModal = !showAddEndpointModal">Create Endpoint</button>
+		<button class="button button__primary button__small" [disabled]="appDetails?.is_disabled" (click)="showAddEndpointModal = !showAddEndpointModal">Create Endpoint</button>
 	</div>
 
 	<div class="dashboard-page--details">
@@ -341,7 +341,7 @@
 							</ng-container>
 						</tbody>
 					</table>
-					<div class="table--load-more button--container center" *ngIf="events.pagination.totalPage > 1">
+					<div class="table--load-more button--container center" *ngIf="events && events.pagination.totalPage > 1">
 						<button
 							class="button button__clear button--has-icon icon-left margin-top__20px margin-bottom__24px flex__justify-center"
 							[disabled]="events.pagination.page === events.pagination.totalPage"
@@ -443,7 +443,7 @@
 							</ng-container>
 						</tbody>
 					</table>
-					<div class="table--load-more button--container center" *ngIf="eventDeliveries.pagination.totalPage > 1">
+					<div class="table--load-more button--container center" *ngIf="eventDeliveries && eventDeliveries.pagination.totalPage > 1">
 						<button
 							class="button button__clear button--has-icon icon-left margin-top__20px margin-bottom__24px flex__justify-center"
 							[disabled]="eventDeliveries.pagination.page === eventDeliveries.pagination.totalPage"
