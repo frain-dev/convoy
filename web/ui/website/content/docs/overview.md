@@ -41,6 +41,14 @@ Secrets are used to sign the payload when sending events to an endpoint. Creatin
 
 Convoy supports the following hash functions - `MD5`, `SHA1`, `SHA224`, `SHA256`, `SHA384`, `SHA512`, `SHA3_224`, `SHA3_256`, `SHA3_384`, `SHA3_512`, `SHA512_224`, `SHA512_256`. Most implementations, however, use - `SHA256` & `SHA512`.
 
+### Replay Attacks
+A replay attack occurs when an attacker intercepts a valid network payload with the intent of fraudulently re-transmitting the payload. Convoy supports replay attack prevention by including a timestamp in the request header under the key `Convoy-Timestamp`. This timestamp is also included in the signature-header and is signed together with the request body using the endpoint secret. Therefore, an attacker cannot change the timestamp without invalidating the signature. Take the following steps to verify your signature and prevent replay attacks;
+
+1. Extract the timestamp and the signed signature-header from the request header, extract the request body.
+2. Prepare a string by concatenating the timestamp followed by a `,` and the request body.
+3. Generate a signature of the concatenated string using the endpoint secret and your hashing algorithm (e.g `SHA256`)
+4. Compare the newly generated signature with the value in the signature-header, if the signatures match, check the time interval between the timestamp and the current time. In your system, set a tolerance on this time interval to prevent replay attacks.
+
 ## Release
 
 We adopt a time-based release schedule. Convoy releases a new update every 25th of each month. This is a similar pattern adopted by some open-core companies we like i.e. [Gitlab](https://about.gitlab.com/releases/).

@@ -31,3 +31,13 @@
 		width: 80px;
 	}
 }
+.toggle {
+	&-switch {
+		.toggle-checkbox:checked + & {
+			&:before {
+				background: url('/assets/img/checkmark.svg') #ffffff no-repeat;
+				background-position: center;
+			}
+		}
+	}
+}

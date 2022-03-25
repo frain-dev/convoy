@@ -12,6 +12,7 @@ export interface APP {
 	name: string;
 	secret: string;
 	support_email: string;
+	is_disabled: boolean;
 	created_at: Date;
 	uid: string;
 	updated_at: Date;
