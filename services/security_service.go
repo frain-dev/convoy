@@ -24,6 +24,10 @@ type SecurityService struct {
 	apiKeyRepo datastore.APIKeyRepository
 }
 
+func NewSecurityService(groupRepo datastore.GroupRepository, apiKeyRepo datastore.APIKeyRepository) *SecurityService {
+	return &SecurityService{groupRepo: groupRepo, apiKeyRepo: apiKeyRepo}
+}
+
 func (ss *SecurityService) CreateAPIKey(ctx context.Context, newApiKey *models.APIKey) (*datastore.APIKey, string, error) {
 	if newApiKey.ExpiresAt != (time.Time{}) && newApiKey.ExpiresAt.Before(time.Now()) {
 		return nil, "", NewServiceError(http.StatusBadRequest, errors.New("expiry date is invalid"))
@@ -153,7 +157,7 @@ func (ss *SecurityService) GetAPIKeyByID(ctx context.Context, uid string) (*data
 	apiKey, err := ss.apiKeyRepo.FindAPIKeyByID(ctx, uid)
 	if err != nil {
 		log.WithError(err).Error("failed to fetch api key")
-		return nil, NewServiceError(http.StatusBadRequest, errors.New("failed to revoke api key"))
+		return nil, NewServiceError(http.StatusBadRequest, errors.New("failed to fetch api key"))
 	}
 
 	return apiKey, nil
