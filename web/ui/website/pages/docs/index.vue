@@ -24,10 +24,6 @@
 					<img src="~/assets/images/doc-banner.svg" alt="banner" />
 				</div>
 			</div>
-			<!-- <section class="cards cards__banner">
-				
-			</section> -->
-
 			<section class="cards">
 				<div class="cards_item green">
 					<h3>Overview</h3>
@@ -81,17 +77,6 @@
 						</button>
 					</nuxt-link>
 				</div>
-
-				<!-- <div class="cards_item pink">
-					<h3>API Reference</h3>
-					<p>We've documented Convoy APIs on an easy to use platform for your reference and tests.</p>
-					<a target="_blank" href="https://convoy.readme.io/reference/introduction">
-						<button>
-							Read more
-							<img src="~/assets/images/dark-arrow-circle-right.svg" alt="arrow right" />
-						</button>
-					</a>
-				</div> -->
 			</section>
 		</div>
 	</div>
