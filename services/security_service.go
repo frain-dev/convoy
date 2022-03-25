@@ -157,7 +157,7 @@ func (ss *SecurityService) GetAPIKeyByID(ctx context.Context, uid string) (*data
 	apiKey, err := ss.apiKeyRepo.FindAPIKeyByID(ctx, uid)
 	if err != nil {
 		log.WithError(err).Error("failed to fetch api key")
-		return nil, NewServiceError(http.StatusBadRequest, errors.New("failed to revoke api key"))
+		return nil, NewServiceError(http.StatusBadRequest, errors.New("failed to fetch api key"))
 	}
 
 	return apiKey, nil
