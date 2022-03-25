@@ -730,7 +730,7 @@ export class ConvoyDashboardComponent implements OnInit {
 				method: 'post',
 				body: {}
 			});
-			this.appPortalLink = `<iframe src="${appTokenResponse.data.url}"></iframe>`;
+			this.appPortalLink = `<iframe style="width: 100%; height: 100vh; border: none;" src="${appTokenResponse.data.url}"></iframe>`;
 			if (requestDetail.redirect) window.open(`${appTokenResponse.data.url}`, '_blank');
 			this.loadingAppPotalToken = false;
 		} catch (error) {
