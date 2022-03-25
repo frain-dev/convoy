@@ -37,7 +37,7 @@ func (a *applicationHandler) CreateAppEvent(w http.ResponseWriter, r *http.Reque
 
 	event, err := a.eventService.CreateAppEvent(r.Context(), &newMessage, g)
 	if err != nil {
-		_ = render.Render(w, r, newServiceErrResponse(err, http.StatusBadRequest))
+		_ = render.Render(w, r, newServiceErrResponse(err))
 		return
 	}
 
@@ -95,7 +95,7 @@ func (a *applicationHandler) ResendEventDelivery(w http.ResponseWriter, r *http.
 
 	err := a.eventService.ResendEventDelivery(r.Context(), eventDelivery, getGroupFromContext(r.Context()))
 	if err != nil {
-		_ = render.Render(w, r, newServiceErrResponse(err, http.StatusBadRequest))
+		_ = render.Render(w, r, newServiceErrResponse(err))
 		return
 	}
 
@@ -144,7 +144,7 @@ func (a *applicationHandler) BatchRetryEventDelivery(w http.ResponseWriter, r *h
 
 	successes, failures, err := a.eventService.BatchRetryEventDelivery(r.Context(), f)
 	if err != nil {
-		_ = render.Render(w, r, newServiceErrResponse(err, http.StatusInternalServerError))
+		_ = render.Render(w, r, newServiceErrResponse(err))
 		return
 	}
 
@@ -188,7 +188,7 @@ func (a *applicationHandler) CountAffectedEventDeliveries(w http.ResponseWriter,
 
 	count, err := a.eventService.CountAffectedEventDeliveries(r.Context(), group, appID, eventID, status, searchParams)
 	if err != nil {
-		_ = render.Render(w, r, newServiceErrResponse(err, http.StatusInternalServerError))
+		_ = render.Render(w, r, newServiceErrResponse(err))
 		return
 	}
 
@@ -217,7 +217,7 @@ func (a *applicationHandler) ForceResendEventDeliveries(w http.ResponseWriter, r
 
 	successes, failures, err := a.eventService.ForceResendEventDeliveries(r.Context(), eventDeliveryIDs.IDs, getGroupFromContext(r.Context()))
 	if err != nil {
-		_ = render.Render(w, r, newServiceErrResponse(err, http.StatusBadRequest))
+		_ = render.Render(w, r, newServiceErrResponse(err))
 		return
 	}
 

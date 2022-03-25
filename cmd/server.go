@@ -162,13 +162,13 @@ func StartConvoyServer(a *app, cfg config.Configuration, withWorkers bool) error
 
 	if withWorkers {
 		// register tasks.
-		handler := task.ProcessEventDelivery(a.applicationRepo, a.eventDeliveryRepo, a.groupRepo)
+		handler := task.ProcessEventDelivery(a.applicationRepo, a.eventDeliveryRepo, a.groupRepo, a.limiter)
 		if err := task.CreateTasks(a.groupRepo, handler); err != nil {
 			log.WithError(err).Error("failed to register tasks")
 			return err
 		}
 
-		worker.RegisterNewGroupTask(a.applicationRepo, a.eventDeliveryRepo, a.groupRepo)
+		worker.RegisterNewGroupTask(a.applicationRepo, a.eventDeliveryRepo, a.groupRepo, a.limiter)
 
 		log.Infof("Starting Convoy workers...")
 		// register workers.
@@ -480,7 +480,7 @@ func loadServerConfigFromCliFlags(cmd *cobra.Command, c *config.Configuration) e
 	if maxResponseSize != 0 {
 		c.MaxResponseSize = maxResponseSize
 	} else {
-		c.MaxResponseSize = config.MaxResponseSize
+		c.MaxResponseSize = config.MaxResponseSizeKb
 	}
 
 	// CONVOY_NEWRELIC_APP_NAME

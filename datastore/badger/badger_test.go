@@ -1,5 +1,3 @@
-//go:build integration
-// +build integration
 
 package badger
 
@@ -14,7 +12,7 @@ import (
 )
 
 func getDSN() string {
-	return os.Getenv("TEST_BOLT_DSN")
+	return os.Getenv("TEST_BADGER_DSN")
 }
 
 func getConfig() config.Configuration {

@@ -12,6 +12,7 @@ import (
 	"github.com/frain-dev/convoy"
 	"github.com/frain-dev/convoy/config"
 	"github.com/frain-dev/convoy/datastore"
+	"github.com/frain-dev/convoy/limiter"
 	"github.com/frain-dev/convoy/net"
 	"github.com/frain-dev/convoy/queue"
 	"github.com/frain-dev/convoy/retrystrategies"
@@ -23,6 +24,7 @@ import (
 )
 
 var ErrDeliveryAttemptFailed = errors.New("Error sending event")
+var defaultDelay time.Duration = 30
 
 type EndpointError struct {
 	delay time.Duration
@@ -37,7 +39,7 @@ func (e *EndpointError) Delay() time.Duration {
 	return e.delay
 }
 
-func ProcessEventDelivery(appRepo datastore.ApplicationRepository, eventDeliveryRepo datastore.EventDeliveryRepository, groupRepo datastore.GroupRepository) func(*queue.Job) error {
+func ProcessEventDelivery(appRepo datastore.ApplicationRepository, eventDeliveryRepo datastore.EventDeliveryRepository, groupRepo datastore.GroupRepository, rateLimiter limiter.RateLimiter) func(*queue.Job) error {
 	return func(job *queue.Job) error {
 		Id := job.ID
 
@@ -46,8 +48,9 @@ func ProcessEventDelivery(appRepo datastore.ApplicationRepository, eventDelivery
 
 		if err != nil {
 			log.WithError(err).Errorf("Failed to load event - %s", Id)
-			return nil
+			return &EndpointError{Err: err, delay: defaultDelay}
 		}
+		var delayDuration time.Duration = retrystrategies.NewRetryStrategyFromMetadata(*m.Metadata).NextDuration(m.Metadata.NumTrials)
 
 		switch m.Status {
 		case datastore.ProcessingEventStatus,
@@ -55,10 +58,50 @@ func ProcessEventDelivery(appRepo datastore.ApplicationRepository, eventDelivery
 			return nil
 		}
 
+		var rateLimitDuration time.Duration
+		if util.IsStringEmpty(m.EndpointMetadata.RateLimitDuration) {
+			rateLimitDuration, err = time.ParseDuration(convoy.RATE_LIMIT_DURATION)
+			if err != nil {
+				log.WithError(err).Errorf("failed to parse endpoint rate limit")
+				return nil
+			}
+		} else {
+			rateLimitDuration, err = time.ParseDuration(m.EndpointMetadata.RateLimitDuration)
+			if err != nil {
+				log.WithError(err).Errorf("failed to parse endpoint rate limit")
+				return nil
+			}
+		}
+
+		var rateLimit int
+		if m.EndpointMetadata.RateLimit == 0 {
+			rateLimit = convoy.RATE_LIMIT
+		} else {
+			rateLimit = m.EndpointMetadata.RateLimit
+		}
+
+		res, err := rateLimiter.ShouldAllow(context.Background(), m.EndpointMetadata.TargetURL, rateLimit, int(rateLimitDuration))
+		if err != nil {
+			return nil
+		}
+
+		if res.Remaining <= 0 {
+			err := fmt.Errorf("too many events to %s, limit of %v would be reached", m.EndpointMetadata.TargetURL, res.Limit)
+			log.WithError(err)
+
+			var delayDuration time.Duration = retrystrategies.NewRetryStrategyFromMetadata(*m.Metadata).NextDuration(m.Metadata.NumTrials)
+			return &EndpointError{Err: err, delay: delayDuration}
+		}
+
+		_, err = rateLimiter.Allow(context.Background(), m.EndpointMetadata.TargetURL, rateLimit, int(rateLimitDuration))
+		if err != nil {
+			return nil
+		}
+
 		err = eventDeliveryRepo.UpdateStatusOfEventDelivery(context.Background(), *m, datastore.ProcessingEventStatus)
 		if err != nil {
 			log.WithError(err).Error("failed to update status of messages - ")
-			return nil
+			return &EndpointError{Err: err, delay: delayDuration}
 		}
 
 		var attempt datastore.DeliveryAttempt
@@ -66,10 +109,25 @@ func ProcessEventDelivery(appRepo datastore.ApplicationRepository, eventDelivery
 
 		cfg, err := config.Get()
 		if err != nil {
-			return &EndpointError{Err: err}
+			return &EndpointError{Err: err, delay: delayDuration}
 		}
 
-		dispatch := net.NewDispatcher()
+		var httpDuration time.Duration
+		if util.IsStringEmpty(m.EndpointMetadata.HttpTimeout) {
+			httpDuration, err = time.ParseDuration(convoy.HTTP_TIMEOUT)
+			if err != nil {
+				log.WithError(err).Errorf("failed to parse endpoint duration")
+				return nil
+			}
+		} else {
+			httpDuration, err = time.ParseDuration(m.EndpointMetadata.HttpTimeout)
+			if err != nil {
+				log.WithError(err).Errorf("failed to parse endpoint duration")
+				return nil
+			}
+		}
+
+		dispatch := net.NewDispatcher(httpDuration)
 
 		var done = true
 
@@ -82,7 +140,7 @@ func ProcessEventDelivery(appRepo datastore.ApplicationRepository, eventDelivery
 		dbEndpoint, err := appRepo.FindApplicationEndpointByID(context.Background(), m.AppMetadata.UID, e.UID)
 		if err != nil {
 			log.WithError(err).Errorf("could not retrieve endpoint %s", e.UID)
-			return &EndpointError{Err: err}
+			return &EndpointError{Err: err, delay: delayDuration}
 		}
 
 		if dbEndpoint.Status == datastore.InactiveEndpointStatus {
@@ -95,7 +153,7 @@ func ProcessEventDelivery(appRepo datastore.ApplicationRepository, eventDelivery
 		encoder.SetEscapeHTML(false)
 		if err := encoder.Encode(m.Metadata.Data); err != nil {
 			log.WithError(err).Error("Failed to encode data")
-			return &EndpointError{Err: err}
+			return &EndpointError{Err: err, delay: delayDuration}
 		}
 
 		bStr := strings.TrimSuffix(buff.String(), "\n")
@@ -103,7 +161,7 @@ func ProcessEventDelivery(appRepo datastore.ApplicationRepository, eventDelivery
 		g, err := groupRepo.FetchGroupByID(context.Background(), m.AppMetadata.GroupID)
 		if err != nil {
 			log.WithError(err).Error("could not find error")
-			return &EndpointError{Err: err}
+			return &EndpointError{Err: err, delay: delayDuration}
 		}
 
 		timestamp := fmt.Sprint(time.Now().Unix())
@@ -115,7 +173,7 @@ func ProcessEventDelivery(appRepo datastore.ApplicationRepository, eventDelivery
 		hmac, err := util.ComputeJSONHmac(g.Config.Signature.Hash, signedPayload.String(), secret, false)
 		if err != nil {
 			log.Errorf("error occurred while generating hmac - %+v\n", err)
-			return &EndpointError{Err: err}
+			return &EndpointError{Err: err, delay: delayDuration}
 		}
 
 		attemptStatus := false
@@ -138,7 +196,6 @@ func ProcessEventDelivery(appRepo datastore.ApplicationRepository, eventDelivery
 			"duration": duration,
 		})
 
-		var delayDuration time.Duration = retrystrategies.NewRetryStrategyFromMetadata(*m.Metadata).NextDuration(m.Metadata.NumTrials)
 		if err == nil && statusCode >= 200 && statusCode <= 299 {
 			requestLogger.Infof("%s", m.UID)
 			log.Infof("%s sent", m.UID)
