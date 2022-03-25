@@ -281,6 +281,10 @@ func (a *applicationHandler) CreateAppEndpoint(w http.ResponseWriter, r *http.Re
 		e.RateLimitDuration = convoy.RATE_LIMIT_DURATION
 	}
 
+	if util.IsStringEmpty(e.HttpTimeout) {
+		e.HttpTimeout = convoy.HTTP_TIMEOUT
+	}
+
 	duration, err := time.ParseDuration(e.RateLimitDuration)
 	if err != nil {
 		_ = render.Render(w, r, newErrorResponse(fmt.Sprintf("an error occured parsing the rate limit duration...%v", err.Error()), http.StatusBadRequest))
@@ -294,6 +298,7 @@ func (a *applicationHandler) CreateAppEndpoint(w http.ResponseWriter, r *http.Re
 		Events:            e.Events,
 		Secret:            e.Secret,
 		Status:            datastore.ActiveEndpointStatus,
+		HttpTimeout:       e.HttpTimeout,
 		RateLimit:         e.RateLimit,
 		RateLimitDuration: duration.String(),
 		CreatedAt:         primitive.NewDateTimeFromTime(time.Now()),
@@ -451,21 +456,22 @@ func updateEndpointIfFound(endpoints *[]datastore.Endpoint, id string, e models.
 				endpoint.Events = e.Events
 			}
 
-			if e.RateLimit == 0 {
-				e.RateLimit = convoy.RATE_LIMIT
+			if e.RateLimit != 0 {
+				endpoint.RateLimit = e.RateLimit
 			}
 
-			if util.IsStringEmpty(e.RateLimitDuration) {
-				e.RateLimitDuration = convoy.RATE_LIMIT_DURATION
+			if !util.IsStringEmpty(e.RateLimitDuration) {
+				duration, err := time.ParseDuration(e.RateLimitDuration)
+				if err != nil {
+					return nil, nil, err
+				}
+
+				endpoint.RateLimitDuration = duration.String()
 			}
 
-			duration, err := time.ParseDuration(e.RateLimitDuration)
-			if err != nil {
-				return nil, nil, err
+			if !util.IsStringEmpty(e.HttpTimeout) {
+				endpoint.HttpTimeout = e.HttpTimeout
 			}
-
-			endpoint.RateLimit = e.RateLimit
-			endpoint.RateLimitDuration = duration.String()
 
 			endpoint.Status = datastore.ActiveEndpointStatus
 			endpoint.UpdatedAt = primitive.NewDateTimeFromTime(time.Now())
