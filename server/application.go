@@ -28,6 +28,7 @@ import (
 type applicationHandler struct {
 	eventService      *services.EventService
 	groupService      *services.GroupService
+	securityService   *services.SecurityService
 	appRepo           datastore.ApplicationRepository
 	eventRepo         datastore.EventRepository
 	eventDeliveryRepo datastore.EventDeliveryRepository
