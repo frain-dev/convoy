@@ -176,19 +176,11 @@ func (a *applicationHandler) UpdateApp(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	appName := appUpdate.AppName
-	if err = util.Validate(appUpdate); err != nil {
-		_ = render.Render(w, r, newErrorResponse("please provide your appName", http.StatusBadRequest))
-		return
-	}
-
 	app := getApplicationFromContext(r.Context())
-
-	app.Title = *appName
 
 	err = a.appService.UpdateApplication(r.Context(), &appUpdate, app)
 	if err != nil {
-		_ = render.Render(w, r, newErrorResponse("an error occurred while updating app", http.StatusBadRequest))
+		_ = render.Render(w, r, newServiceErrResponse(err))
 		return
 	}
 
@@ -240,7 +232,7 @@ func (a *applicationHandler) CreateAppEndpoint(w http.ResponseWriter, r *http.Re
 
 	app := getApplicationFromContext(r.Context())
 
-  endpoint, err := a.appService.CreateAppEndpoint(r.Context(), e, app)
+	endpoint, err := a.appService.CreateAppEndpoint(r.Context(), e, app)
 	if err != nil {
 		_ = render.Render(w, r, newServiceErrResponse(err))
 		return
