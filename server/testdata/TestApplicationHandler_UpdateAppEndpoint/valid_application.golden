@@ -1,1 +1,1 @@
-{"uid":"","target_url":"https://google.com","description":"Correct endpoint","status":"active","secret":"","http_timeout":"30s","rate_limit":5000,"rate_limit_duration":"1m0s","events":["*"]}
+{"uid":"","target_url":"https://google.com","description":"Correct endpoint","status":"active","secret":"","http_timeout":"","rate_limit":0,"rate_limit_duration":"","events":["*"]}

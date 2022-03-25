@@ -60,9 +60,12 @@ func newApplicationHandler(
 
 	es := services.NewEventService(appRepo, eventRepo, eventDeliveryRepo, eventQueue)
 	gs := services.NewGroupService(appRepo, groupRepo, eventRepo, eventDeliveryRepo, limiter)
+	ss := services.NewSecurityService(groupRepo, apiKeyRepo)
+
 	return &applicationHandler{
 		eventService:      es,
 		groupService:      gs,
+		securityService:   ss,
 		eventRepo:         eventRepo,
 		eventDeliveryRepo: eventDeliveryRepo,
 		apiKeyRepo:        apiKeyRepo,
