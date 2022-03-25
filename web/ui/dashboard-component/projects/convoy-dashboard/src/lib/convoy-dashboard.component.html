@@ -533,14 +533,17 @@
 										<td>
 											<div>
 												<button
-													[disabled]="event.status !== 'Failure'"
+													[disabled]="event.status !== 'Failure' && event.status !== 'Success'"
 													[class]="'button__retry button--has-icon icon-left '"
-													(click)="retryEvent({ e: $event, index: this.index, eventDeliveryId: event.uid })"
+													(click)="
+														event.status === 'Success'
+															? forceRetryEvent({ e: $event, index: this.index, eventDeliveryId: event.uid })
+															: retryEvent({ e: $event, index: this.index, eventDeliveryId: event.uid })
+													"
 												>
 													<img src="/assets/img/refresh-icon-primary.svg" alt="refresh icon" />
-													Retry
-													<!-- to be added later -->
-													<!-- {{ event.status === 'Success' ? 'Force Retry' : 'Retry' }} -->
+													
+													{{ event.status === 'Success' ? 'Force Retry' : 'Retry' }}
 												</button>
 											</div>
 										</td>
@@ -646,17 +649,17 @@
 					</div>
 				</div>
 
-				<div class="dashboard--logs--details has-loader" [ngClass]="{disabled: appsDetailsItem?.is_disabled}">
+				<div class="dashboard--logs--details has-loader" [ngClass]="{ disabled: appsDetailsItem?.is_disabled }">
 					<convoy-loader
 						*ngIf="(activeTab === 'apps' && isloadingApps) || (activeTab === 'events' && isloadingEvents) || (activeTab === 'event deliveries' && isloadingEventDeliveries)"
 					></convoy-loader>
 
 					<ng-container *ngIf="activeTab === 'apps' && appsDetailsItem">
 						<div class="flex flex__justify-between flex__align-items-center">
-							<h3 class="text__capitalize">{{appsDetailsItem?.name}}</h3>
+							<h3 class="text__capitalize">{{ appsDetailsItem?.name }}</h3>
 							<label class="toggle">
-								<span class="toggle-label">{{appsDetailsItem?.is_disabled ? 'Disabled' : 'Enabled'}}</span>
-								<input class="toggle-checkbox" type="checkbox" (change)="editAppStatus(appsDetailsItem)" [checked]="!appsDetailsItem?.is_disabled">
+								<span class="toggle-label">{{ appsDetailsItem?.is_disabled ? 'Disabled' : 'Enabled' }}</span>
+								<input class="toggle-checkbox" type="checkbox" (change)="editAppStatus(appsDetailsItem)" [checked]="!appsDetailsItem?.is_disabled" />
 								<div class="toggle-switch"></div>
 							</label>
 						</div>
@@ -712,7 +715,10 @@
 									<div>
 										<div class="flex">
 											<h5>{{ endpoint.description }}</h5>
-											<button class="margin-left__16px button__clear color-primary button--has-icon icon-right small-icon" (click)="showEndpointSecret = !showEndpointSecret; endpointSecretKey = endpoint.secret">
+											<button
+												class="margin-left__16px button__clear color-primary button--has-icon icon-right small-icon"
+												(click)="showEndpointSecret = !showEndpointSecret; endpointSecretKey = endpoint.secret"
+											>
 												View Secret
 												<img src="/assets/img/arrow-up-right.svg" alt="link out" />
 											</button>
@@ -727,7 +733,7 @@
 									</div>
 									<div class="dashboard--logs--details--endpoints--inactive" *ngIf="endpoint.status == 'inactive'">
 										<div class="icon">
-											<img src="/assets/img/lock.svg" alt="lock icon">
+											<img src="/assets/img/lock.svg" alt="lock icon" />
 										</div>
 										<p class="color__dark font__16px font__weight-600">Endpoint Disabled</p>
 										<!-- pending till this is figured out by backend  -->
@@ -1068,7 +1074,7 @@
 	</div>
 	<div class="modal--body" *ngIf="showEndpointSecret">
 		<div class="key">
-			<span>{{endpointSecretKey}}</span>
+			<span>{{ endpointSecretKey }}</span>
 			<button (click)="copyKey(endpointSecretKey, 'secret')">
 				<img src="/assets/img/copy.svg" alt="copy" />
 				<small *ngIf="showSecretCopyText">Copied!</small>

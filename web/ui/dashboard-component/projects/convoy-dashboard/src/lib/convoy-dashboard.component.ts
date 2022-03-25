@@ -1005,6 +1005,38 @@ export class ConvoyDashboardComponent implements OnInit {
 		}
 	}
 
+	// force retry successful events 
+	async forceRetryEvent(requestDetails: { e: any; index: number; eventDeliveryId: string }) {
+		requestDetails.e.stopPropagation();
+		const retryButton: any = document.querySelector(`#event${requestDetails.index} button`);
+		if (retryButton) {
+			retryButton.classList.add(['spin', 'disabled']);
+			retryButton.disabled = true;
+		}
+		const payload = {
+			ids: [requestDetails.eventDeliveryId]
+		};
+		try {
+			await this.convyDashboardService.request({
+				method: 'post',
+				token: this.requestToken,
+				authType: this.apiAuthType,
+				body: payload,
+				url: this.getAPIURL(`/eventdeliveries/forceresend`)
+			});
+
+			this.convyDashboardService.showNotification({ message: 'Force Retry Request Sent' });
+			retryButton.classList.remove(['spin', 'disabled']);
+			retryButton.disabled = false;
+			this.getEventDeliveries();
+		} catch (error: any) {
+			this.convyDashboardService.showNotification({ message: error.error.message });
+			retryButton.classList.remove(['spin', 'disabled']);
+			retryButton.disabled = false;
+			return error;
+		}
+	}
+
 	async batchRetryEvent() {
 		let eventDeliveryStatusFilterQuery = '';
 		this.eventDeliveryFilteredByStatus.length > 0 ? (this.eventDeliveriesStatusFilterActive = true) : (this.eventDeliveriesStatusFilterActive = false);
