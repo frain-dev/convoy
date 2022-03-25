@@ -19,6 +19,7 @@ require (
 	github.com/go-chi/render v1.0.1
 	github.com/go-redis/cache/v8 v8.4.3
 	github.com/go-redis/redis/v8 v8.11.4
+	github.com/go-redis/redis_rate/v9 v9.1.2
 	github.com/gobeam/mongo-go-pagination v0.0.7
 	github.com/golang/mock v1.6.0
 	github.com/google/uuid v1.3.0
@@ -41,6 +42,7 @@ require (
 	github.com/swaggo/swag v1.7.3
 	github.com/timshannon/badgerhold/v4 v4.0.2
 	github.com/x-cray/logrus-prefixed-formatter v0.5.2
+	github.com/xdg-go/pbkdf2 v1.0.0
 	github.com/youmark/pkcs8 v0.0.0-20201027041543-1326539a0a0a // indirect
 	go.mongodb.org/mongo-driver v1.7.1
 	golang.org/x/crypto v0.0.0-20211215153901-e495a2d5b3d3

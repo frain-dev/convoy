@@ -203,6 +203,35 @@ func (db *eventDeliveryRepo) UpdateEventDeliveryWithAttempt(ctx context.Context,
 }
 
 func (db *eventDeliveryRepo) LoadEventDeliveriesPaged(ctx context.Context, groupID, appID, eventID string, status []datastore.EventDeliveryStatus, searchParams datastore.SearchParams, pageable datastore.Pageable) ([]datastore.EventDelivery, datastore.PaginationData, error) {
+	filter := getFilter(groupID, appID, eventID, status, searchParams)
+
+	var eventDeliveries []datastore.EventDelivery
+	paginatedData, err := pager.New(db.inner).Context(ctx).Limit(int64(pageable.PerPage)).Page(int64(pageable.Page)).Sort("created_at", pageable.Sort).Filter(filter).Decode(&eventDeliveries).Find()
+	if err != nil {
+		return eventDeliveries, datastore.PaginationData{}, err
+	}
+
+	if eventDeliveries == nil {
+		eventDeliveries = make([]datastore.EventDelivery, 0)
+	}
+
+	return eventDeliveries, datastore.PaginationData(paginatedData.Pagination), nil
+}
+
+func (db *eventDeliveryRepo) CountEventDeliveries(ctx context.Context, groupID, appID, eventID string, status []datastore.EventDeliveryStatus, searchParams datastore.SearchParams) (int64, error) {
+	filter := getFilter(groupID, appID, eventID, status, searchParams)
+
+	var count int64
+	count, err := db.inner.CountDocuments(ctx, filter)
+	if err != nil {
+		return 0, err
+	}
+
+	return count, nil
+}
+
+func getFilter(groupID string, appID string, eventID string, status []datastore.EventDeliveryStatus, searchParams datastore.SearchParams) bson.M {
+
 	filter := bson.M{
 		"document_status": datastore.ActiveDocumentStatus,
 		"created_at":      getCreatedDateFilter(searchParams),
@@ -229,15 +258,5 @@ func (db *eventDeliveryRepo) LoadEventDeliveriesPaged(ctx context.Context, group
 		filter["status"] = bson.M{"$in": status}
 	}
 
-	var eventDeliveries []datastore.EventDelivery
-	paginatedData, err := pager.New(db.inner).Context(ctx).Limit(int64(pageable.PerPage)).Page(int64(pageable.Page)).Sort("created_at", pageable.Sort).Filter(filter).Decode(&eventDeliveries).Find()
-	if err != nil {
-		return eventDeliveries, datastore.PaginationData{}, err
-	}
-
-	if eventDeliveries == nil {
-		eventDeliveries = make([]datastore.EventDelivery, 0)
-	}
-
-	return eventDeliveries, datastore.PaginationData(paginatedData.Pagination), nil
+	return filter
 }

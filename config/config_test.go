@@ -2,6 +2,7 @@ package config
 
 import (
 	"os"
+	"strconv"
 	"testing"
 
 	"github.com/frain-dev/convoy/auth"
@@ -17,23 +18,29 @@ func Test_EnvironmentTakesPrecedence(t *testing.T) {
 		envConfig string
 	}{
 		{
-			name:      "DB DSN - Takes priority",
-			key:       "CONVOY_DB_DSN",
-			testType:  "db",
-			envConfig: "subomi",
-		},
-		{
-			name:      "Queue DSN - Takes priority",
-			key:       "CONVOY_REDIS_DSN",
-			testType:  "queue",
-			envConfig: "queue-set",
-		},
-		{
-			name:      "Signature Header - Takes priority",
+			name:      "Signature Header (string)",
 			key:       "CONVOY_SIGNATURE_HEADER",
-			testType:  "header",
+			testType:  "string",
 			envConfig: "X-Convoy-Test-Signature",
 		},
+		{
+			name:      "Port (number)",
+			key:       "PORT",
+			testType:  "number",
+			envConfig: "8080",
+		},
+		{
+			name:      "Disable Endpoint (boolean)",
+			key:       "CONVOY_DISABLE_ENDPOINT",
+			testType:  "boolean",
+			envConfig: "false",
+		},
+		{
+			name:      "Basic Auth (interface)",
+			key:       "CONVOY_BASIC_AUTH_CONFIG",
+			testType:  "interface",
+			envConfig: "[{\"username\": \"some-admin\",\"password\": \"some-password\",\"role\": {\"type\": \"super_user\",\"groups\": []}}]",
+		},
 	}
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
@@ -41,143 +48,98 @@ func Test_EnvironmentTakesPrecedence(t *testing.T) {
 			os.Setenv(tc.key, tc.envConfig)
 			defer os.Unsetenv(tc.key)
 
-			// Assert.
 			configFile := "./testdata/Test_ConfigurationFromEnvironment/convoy.json"
-			err := LoadConfig(configFile, new(Configuration))
-			if err != nil {
-				t.Errorf("Failed to load config file: %v", err)
-			}
+			err := LoadConfig(configFile)
+			require.NoError(t, err)
 
 			cfg, _ := Get()
-
-			errString := "Environment variable - %s didn't take precedence"
-			switch tc.testType {
-			case "queue":
-				if cfg.Queue.Redis.DSN != tc.envConfig {
-					t.Errorf(errString, tc.testType)
-				}
-			case "db":
-				if cfg.Database.Dsn != tc.envConfig {
-					t.Errorf(errString, tc.testType)
-				}
-			case "header":
-				if string(cfg.GroupConfig.Signature.Header) != tc.envConfig {
-					t.Errorf(errString, tc.testType)
-				}
-			}
-		})
-	}
-}
-
-func Test_CliFlagsTakePrecedenceOverConfigFile(t *testing.T) {
-	tests := []struct {
-		name      string
-		testType  string
-		flagValue string
-	}{
-		{
-			name:      "DB DSN - Takes priority",
-			testType:  "db",
-			flagValue: "mongo://some-link",
-		},
-		{
-			name:      "Queue DSN - Takes priority",
-			testType:  "queue",
-			flagValue: "redis://some-link",
-		},
-	}
-	for _, tc := range tests {
-		t.Run(tc.name, func(t *testing.T) {
-			// Setup.
-			ov := new(Configuration)
-
-			switch tc.testType {
-			case "queue":
-				ov.Queue.Redis.DSN = tc.flagValue
-			case "db":
-				ov.Database.Dsn = tc.flagValue
-			}
 
 			// Assert.
-			configFile := "./testdata/Config/valid-convoy.json"
-			err := LoadConfig(configFile, ov)
-			if err != nil {
-				t.Errorf("Failed to load config file: %v", err)
-			}
-
-			cfg, _ := Get()
-
-			errString := "Cli Flag - %s didn't take precedence"
 			switch tc.testType {
-			case "queue":
-				if cfg.Queue.Redis.DSN != tc.flagValue {
-					t.Errorf(errString, tc.testType)
-				}
-			case "db":
-				if cfg.Database.Dsn != tc.flagValue {
-					t.Errorf(errString, tc.testType)
-				}
+			case "string":
+				require.Equal(t, tc.envConfig, string(cfg.GroupConfig.Signature.Header))
+			case "number":
+				port, e := strconv.ParseInt(tc.envConfig, 10, 64)
+				require.NoError(t, e)
+				require.Equal(t, port, int64(cfg.Server.HTTP.Port))
+			case "boolean":
+				disable_endpoint, e := strconv.ParseBool(tc.envConfig)
+				require.NoError(t, e)
+				require.Equal(t, disable_endpoint, cfg.GroupConfig.DisableEndpoint)
+			case "interface":
+				basicAuth := BasicAuthConfig{}
+				e := basicAuth.Decode(tc.envConfig)
+				require.NoError(t, e)
+				require.Equal(t, basicAuth, cfg.Auth.File.Basic)
 			}
 		})
 	}
 }
 
-func Test_CliFlagsTakePrecedenceOverEnvironmentVariables(t *testing.T) {
+func Test_NilEnvironmentVariablesDontOverride(t *testing.T) {
 	tests := []struct {
 		name      string
-		testType  string
-		flagValue string
 		key       string
+		testType  string
 		envConfig string
+		expected  string
 	}{
 		{
-			name:      "DB DSN - Takes priority",
-			testType:  "db",
-			flagValue: "mongo://some-link",
-			key:       "CONVOY_DB_DSN",
-			envConfig: "subomi",
+			name:      "Signature Header (string)",
+			key:       "CONVOY_SIGNATURE_HEADER",
+			testType:  "string",
+			envConfig: "",
+			expected:  "x-test-signature",
 		},
 		{
-			name:      "Queue DSN - Takes priority",
-			testType:  "queue",
-			flagValue: "redis://some-link",
-			key:       "CONVOY_REDIS_DSN",
-			envConfig: "queue-set",
+			name:      "Port (number)",
+			key:       "PORT",
+			testType:  "number",
+			envConfig: "0",
+			expected:  "8080",
+		},
+		{
+			name:      "Disable Endpoint (boolean)",
+			key:       "CONVOY_DISABLE_ENDPOINT",
+			testType:  "boolean",
+			envConfig: "",
+			expected:  "true",
+		},
+		{
+			name:      "Basic Auth (interface)",
+			key:       "CONVOY_BASIC_AUTH_CONFIG",
+			testType:  "interface",
+			envConfig: "",
+			expected:  "[{\"username\": \"admin\",\"password\": \"qwerty\",\"role\": {\"type\": \"super_user\",\"groups\": []}}]",
 		},
 	}
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
 			// Setup.
-			os.Setenv(tc.key, tc.envConfig)
-			defer os.Unsetenv(tc.key)
-			ov := new(Configuration)
+			configFile := "./testdata/Test_ConfigurationFromEnvironment/convoy.json"
+			err := LoadConfig(configFile)
 
-			switch tc.testType {
-			case "queue":
-				ov.Queue.Redis.DSN = tc.flagValue
-			case "db":
-				ov.Database.Dsn = tc.flagValue
-			}
-
-			// Assert.
-			configFile := "./testdata/Config/valid-convoy.json"
-			err := LoadConfig(configFile, ov)
-			if err != nil {
-				t.Errorf("Failed to load config file: %v", err)
-			}
+			require.NoError(t, err)
 
 			cfg, _ := Get()
 
-			errString := "Cli Flag - %s didn't take precedence"
+			// Assert.
 			switch tc.testType {
-			case "queue":
-				if cfg.Queue.Redis.DSN != tc.flagValue {
-					t.Errorf(errString, tc.testType)
-				}
-			case "db":
-				if cfg.Database.Dsn != tc.flagValue {
-					t.Errorf(errString, tc.testType)
-				}
+			case "string":
+				require.Equal(t, tc.expected, string(cfg.GroupConfig.Signature.Header))
+			case "number":
+				port, e := strconv.ParseInt(tc.expected, 10, 64)
+				require.NoError(t, e)
+				require.Equal(t, port, int64(cfg.Server.HTTP.Port))
+			case "boolean":
+				disable_endpoint, e := strconv.ParseBool(tc.expected)
+				require.NoError(t, e)
+				require.Equal(t, disable_endpoint, cfg.GroupConfig.DisableEndpoint)
+			case "interface":
+				basicAuth := BasicAuthConfig{}
+				e := basicAuth.Decode(tc.expected)
+				require.NoError(t, e)
+				require.Equal(t, basicAuth, cfg.Auth.File.Basic)
 			}
 		})
 	}
@@ -206,7 +168,7 @@ func TestLoadConfig(t *testing.T) {
 				Queue: QueueConfiguration{
 					Type: RedisQueueProvider,
 					Redis: RedisQueueConfiguration{
-						DSN: "redis://localhost:8379",
+						Dsn: "redis://localhost:8379",
 					},
 				},
 				Server: ServerConfiguration{
@@ -247,7 +209,7 @@ func TestLoadConfig(t *testing.T) {
 				Queue: QueueConfiguration{
 					Type: RedisQueueProvider,
 					Redis: RedisQueueConfiguration{
-						DSN: "redis://localhost:8379",
+						Dsn: "redis://localhost:8379",
 					},
 				},
 				Server: ServerConfiguration{
@@ -288,7 +250,7 @@ func TestLoadConfig(t *testing.T) {
 				Queue: QueueConfiguration{
 					Type: RedisQueueProvider,
 					Redis: RedisQueueConfiguration{
-						DSN: "redis://localhost:8379",
+						Dsn: "redis://localhost:8379",
 					},
 				},
 				Server: ServerConfiguration{
@@ -329,7 +291,7 @@ func TestLoadConfig(t *testing.T) {
 				Queue: QueueConfiguration{
 					Type: RedisQueueProvider,
 					Redis: RedisQueueConfiguration{
-						DSN: "redis://localhost:8379",
+						Dsn: "redis://localhost:8379",
 					},
 				},
 				Server: ServerConfiguration{
@@ -383,7 +345,7 @@ func TestLoadConfig(t *testing.T) {
 				Queue: QueueConfiguration{
 					Type: RedisQueueProvider,
 					Redis: RedisQueueConfiguration{
-						DSN: "redis://localhost:8379",
+						Dsn: "redis://localhost:8379",
 					},
 				},
 				Server: ServerConfiguration{
@@ -563,7 +525,13 @@ func TestLoadConfig(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			err := LoadConfig(tt.args.path, new(Configuration))
+			err := LoadConfig(tt.args.path)
+			require.NoError(t, err)
+
+			cfg, err := Get()
+			require.NoError(t, err)
+
+			err = SetServerConfigDefaults(&cfg)
 			if tt.wantErr {
 				require.NotNil(t, err)
 				require.Equal(t, tt.wantErrMsg, err.Error())
@@ -571,7 +539,6 @@ func TestLoadConfig(t *testing.T) {
 			}
 			require.Nil(t, err)
 
-			cfg, err := Get()
 			require.Nil(t, err)
 
 			require.Equal(t, tt.wantCfg, cfg)

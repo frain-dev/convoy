@@ -1,6 +1,10 @@
 {
 	"name": "convoy-dashboard",
+<<<<<<< HEAD
 	"version": "0.5.10",
+=======
+	"version": "0.5.17",
+>>>>>>> main
 	"description": "Convoy Dashboard UI",
 	"repository": {
 		"type": "git",

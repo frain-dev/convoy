@@ -31,6 +31,6 @@ func addRetryCommand(a *app) *cobra.Command {
 	}
 
 	cmd.Flags().StringVar(&status, "status", "", "Status of event deliveries to requeue")
-	cmd.Flags().StringVar(&timeInterval, "time", "", " time interval")
+	cmd.Flags().StringVar(&timeInterval, "time", "", "Time interval")
 	return cmd
 }

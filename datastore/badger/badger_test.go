@@ -1,3 +1,4 @@
+
 package badger
 
 import (
@@ -11,13 +12,13 @@ import (
 )
 
 func getDSN() string {
-	return os.Getenv("TEST_BOLT_DSN")
+	return os.Getenv("TEST_BADGER_DSN")
 }
 
 func getConfig() config.Configuration {
 	return config.Configuration{
 		Database: config.DatabaseConfiguration{
-			Type: "bolt",
+			Type: config.InMemoryDatabaseProvider,
 			Dsn:  getDSN(),
 		},
 	}

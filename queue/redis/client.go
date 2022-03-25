@@ -31,7 +31,7 @@ func NewClient(cfg config.Configuration) (*redis.Client, taskq.Factory, error) {
 		return nil, nil, errors.New("please select the redis driver in your config")
 	}
 
-	dsn := cfg.Queue.Redis.DSN
+	dsn := cfg.Queue.Redis.Dsn
 	if util.IsStringEmpty(dsn) {
 		return nil, nil, errors.New("please provide the Redis DSN")
 	}

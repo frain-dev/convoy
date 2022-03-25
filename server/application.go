@@ -1,12 +1,15 @@
 package server
 
 import (
-	"errors"
 	"fmt"
 	"net/http"
 	"time"
 
+	"github.com/frain-dev/convoy"
+	"github.com/frain-dev/convoy/services"
+
 	"github.com/frain-dev/convoy/cache"
+	limiter "github.com/frain-dev/convoy/limiter"
 	"github.com/frain-dev/convoy/logger"
 	"github.com/google/uuid"
 	"go.mongodb.org/mongo-driver/bson/primitive"
@@ -23,6 +26,9 @@ import (
 )
 
 type applicationHandler struct {
+	eventService      *services.EventService
+	groupService      *services.GroupService
+	securityService   *services.SecurityService
 	appRepo           datastore.ApplicationRepository
 	eventRepo         datastore.EventRepository
 	eventDeliveryRepo datastore.EventDeliveryRepository
@@ -32,6 +38,7 @@ type applicationHandler struct {
 	logger            logger.Logger
 	tracer            tracer.Tracer
 	cache             cache.Cache
+	limiter           limiter.RateLimiter
 }
 
 type pagedResponse struct {
@@ -39,14 +46,26 @@ type pagedResponse struct {
 	Pagination *datastore.PaginationData `json:"pagination,omitempty"`
 }
 
-func newApplicationHandler(eventRepo datastore.EventRepository,
+func newApplicationHandler(
+	eventRepo datastore.EventRepository,
 	eventDeliveryRepo datastore.EventDeliveryRepository,
 	appRepo datastore.ApplicationRepository,
 	groupRepo datastore.GroupRepository,
 	apiKeyRepo datastore.APIKeyRepository,
-	eventQueue queue.Queuer, logger logger.Logger, tracer tracer.Tracer, cache cache.Cache) *applicationHandler {
+	eventQueue queue.Queuer,
+	logger logger.Logger,
+	tracer tracer.Tracer,
+	cache cache.Cache,
+	limiter limiter.RateLimiter) *applicationHandler {
+
+	es := services.NewEventService(appRepo, eventRepo, eventDeliveryRepo, eventQueue)
+	gs := services.NewGroupService(appRepo, groupRepo, eventRepo, eventDeliveryRepo, limiter)
+	ss := services.NewSecurityService(groupRepo, apiKeyRepo)
 
 	return &applicationHandler{
+		eventService:      es,
+		groupService:      gs,
+		securityService:   ss,
 		eventRepo:         eventRepo,
 		eventDeliveryRepo: eventDeliveryRepo,
 		apiKeyRepo:        apiKeyRepo,
@@ -56,6 +75,7 @@ func newApplicationHandler(eventRepo datastore.EventRepository,
 		logger:            logger,
 		tracer:            tracer,
 		cache:             cache,
+		limiter:           limiter,
 	}
 }
 
@@ -140,6 +160,7 @@ func (a *applicationHandler) CreateApp(w http.ResponseWriter, r *http.Request) {
 		GroupID:        group.UID,
 		Title:          appName,
 		SupportEmail:   newApp.SupportEmail,
+		IsDisabled:     newApp.IsDisabled,
 		CreatedAt:      primitive.NewDateTimeFromTime(time.Now()),
 		UpdatedAt:      primitive.NewDateTimeFromTime(time.Now()),
 		Endpoints:      []datastore.Endpoint{},
@@ -148,7 +169,7 @@ func (a *applicationHandler) CreateApp(w http.ResponseWriter, r *http.Request) {
 
 	err = a.appRepo.CreateApplication(r.Context(), app)
 	if err != nil {
-		_ = render.Render(w, r, newErrorResponse("an error occurred while creating app", http.StatusInternalServerError))
+		_ = render.Render(w, r, newErrorResponse("an error occurred while creating app", http.StatusBadRequest))
 		return
 	}
 
@@ -168,7 +189,7 @@ func (a *applicationHandler) CreateApp(w http.ResponseWriter, r *http.Request) {
 // @Security ApiKeyAuth
 // @Router /applications/{appID} [put]
 func (a *applicationHandler) UpdateApp(w http.ResponseWriter, r *http.Request) {
-	var appUpdate models.Application
+	var appUpdate models.UpdateApplication
 	err := util.ReadJSON(r, &appUpdate)
 	if err != nil {
 		_ = render.Render(w, r, newErrorResponse(err.Error(), http.StatusBadRequest))
@@ -183,9 +204,14 @@ func (a *applicationHandler) UpdateApp(w http.ResponseWriter, r *http.Request) {
 
 	app := getApplicationFromContext(r.Context())
 
-	app.Title = appName
-	if !util.IsStringEmpty(appUpdate.SupportEmail) {
-		app.SupportEmail = appUpdate.SupportEmail
+	app.Title = *appName
+
+	if appUpdate.SupportEmail != nil {
+		app.SupportEmail = *appUpdate.SupportEmail
+	}
+
+	if appUpdate.IsDisabled != nil {
+		app.IsDisabled = *appUpdate.IsDisabled
 	}
 
 	err = a.appRepo.UpdateApplication(r.Context(), app)
@@ -213,7 +239,7 @@ func (a *applicationHandler) DeleteApp(w http.ResponseWriter, r *http.Request) {
 	err := a.appRepo.DeleteApplication(r.Context(), app)
 	if err != nil {
 		log.Errorln("failed to delete app - ", err)
-		_ = render.Render(w, r, newErrorResponse("an error occurred while deleting app", http.StatusInternalServerError))
+		_ = render.Render(w, r, newErrorResponse("an error occurred while deleting app", http.StatusBadRequest))
 		return
 	}
 
@@ -240,21 +266,7 @@ func (a *applicationHandler) CreateAppEndpoint(w http.ResponseWriter, r *http.Re
 		return
 	}
 
-	appID := chi.URLParam(r, "appID")
-	app, err := a.appRepo.FindApplicationByID(r.Context(), appID)
-	if err != nil {
-
-		msg := "an error occurred while retrieving app details"
-		statusCode := http.StatusBadRequest
-
-		if errors.Is(err, datastore.ErrApplicationNotFound) {
-			msg = err.Error()
-			statusCode = http.StatusNotFound
-		}
-
-		_ = render.Render(w, r, newErrorResponse(msg, statusCode))
-		return
-	}
+	app := getApplicationFromContext(r.Context())
 
 	// Events being nil means it wasn't passed at all, which automatically
 	// translates into a accept all scenario. This is quite different from
@@ -264,22 +276,43 @@ func (a *applicationHandler) CreateAppEndpoint(w http.ResponseWriter, r *http.Re
 		e.Events = []string{"*"}
 	}
 
+	if e.RateLimit == 0 {
+		e.RateLimit = convoy.RATE_LIMIT
+	}
+
+	if util.IsStringEmpty(e.RateLimitDuration) {
+		e.RateLimitDuration = convoy.RATE_LIMIT_DURATION
+	}
+
+	if util.IsStringEmpty(e.HttpTimeout) {
+		e.HttpTimeout = convoy.HTTP_TIMEOUT
+	}
+
+	duration, err := time.ParseDuration(e.RateLimitDuration)
+	if err != nil {
+		_ = render.Render(w, r, newErrorResponse(fmt.Sprintf("an error occured parsing the rate limit duration...%v", err.Error()), http.StatusBadRequest))
+		return
+	}
+
 	endpoint := &datastore.Endpoint{
-		UID:            uuid.New().String(),
-		TargetURL:      e.URL,
-		Description:    e.Description,
-		Events:         e.Events,
-		Secret:         e.Secret,
-		Status:         datastore.ActiveEndpointStatus,
-		CreatedAt:      primitive.NewDateTimeFromTime(time.Now()),
-		UpdatedAt:      primitive.NewDateTimeFromTime(time.Now()),
-		DocumentStatus: datastore.ActiveDocumentStatus,
+		UID:               uuid.New().String(),
+		TargetURL:         e.URL,
+		Description:       e.Description,
+		Events:            e.Events,
+		Secret:            e.Secret,
+		Status:            datastore.ActiveEndpointStatus,
+		HttpTimeout:       e.HttpTimeout,
+		RateLimit:         e.RateLimit,
+		RateLimitDuration: duration.String(),
+		CreatedAt:         primitive.NewDateTimeFromTime(time.Now()),
+		UpdatedAt:         primitive.NewDateTimeFromTime(time.Now()),
+		DocumentStatus:    datastore.ActiveDocumentStatus,
 	}
 
 	if util.IsStringEmpty(e.Secret) {
 		endpoint.Secret, err = util.GenerateSecret()
 		if err != nil {
-			_ = render.Render(w, r, newErrorResponse(fmt.Sprintf("could not generate secret...%v", err.Error()), http.StatusInternalServerError))
+			_ = render.Render(w, r, newErrorResponse(fmt.Sprintf("could not generate secret...%v", err.Error()), http.StatusBadRequest))
 			return
 		}
 	}
@@ -288,7 +321,7 @@ func (a *applicationHandler) CreateAppEndpoint(w http.ResponseWriter, r *http.Re
 
 	err = a.appRepo.UpdateApplication(r.Context(), app)
 	if err != nil {
-		_ = render.Render(w, r, newErrorResponse("an error occurred while adding app endpoint", http.StatusInternalServerError))
+		_ = render.Render(w, r, newErrorResponse("an error occurred while adding app endpoint", http.StatusBadRequest))
 		return
 	}
 
@@ -364,7 +397,7 @@ func (a *applicationHandler) UpdateAppEndpoint(w http.ResponseWriter, r *http.Re
 	app.Endpoints = *endpoints
 	err = a.appRepo.UpdateApplication(r.Context(), app)
 	if err != nil {
-		_ = render.Render(w, r, newErrorResponse("an error occurred while updating app endpoints", http.StatusInternalServerError))
+		_ = render.Render(w, r, newErrorResponse("an error occurred while updating app endpoints", http.StatusBadRequest))
 		return
 	}
 
@@ -396,7 +429,7 @@ func (a *applicationHandler) DeleteAppEndpoint(w http.ResponseWriter, r *http.Re
 
 	err := a.appRepo.UpdateApplication(r.Context(), app)
 	if err != nil {
-		_ = render.Render(w, r, newErrorResponse("an error occurred while deleting app endpoint", http.StatusInternalServerError))
+		_ = render.Render(w, r, newErrorResponse("an error occurred while deleting app endpoint", http.StatusBadRequest))
 		return
 	}
 
@@ -424,6 +457,23 @@ func updateEndpointIfFound(endpoints *[]datastore.Endpoint, id string, e models.
 				endpoint.Events = []string{"*"}
 			} else {
 				endpoint.Events = e.Events
+			}
+
+			if e.RateLimit != 0 {
+				endpoint.RateLimit = e.RateLimit
+			}
+
+			if !util.IsStringEmpty(e.RateLimitDuration) {
+				duration, err := time.ParseDuration(e.RateLimitDuration)
+				if err != nil {
+					return nil, nil, err
+				}
+
+				endpoint.RateLimitDuration = duration.String()
+			}
+
+			if !util.IsStringEmpty(e.HttpTimeout) {
+				endpoint.HttpTimeout = e.HttpTimeout
 			}
 
 			endpoint.Status = datastore.ActiveEndpointStatus

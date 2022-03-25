@@ -49,6 +49,8 @@ const (
 	dashboardCtx        contextKey = "dashboard"
 	deliveryAttemptsCtx contextKey = "deliveryAttempts"
 	baseUrlCtx          contextKey = "baseUrl"
+	appIdCtx            contextKey = "appId"
+	groupIdCtx          contextKey = "groupId"
 )
 
 func instrumentPath(path string) func(http.Handler) http.Handler {
@@ -148,6 +150,22 @@ func requireApp(appRepo datastore.ApplicationRepository) func(next http.Handler)
 	}
 }
 
+func requireAppID() func(next http.Handler) http.Handler {
+	return func(next http.Handler) http.Handler {
+
+		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			authUser := getAuthUserFromContext(r.Context())
+
+			if len(authUser.Role.Apps) > 0 {
+				appID := authUser.Role.Apps[0]
+				r = r.WithContext(setAppIDInContext(r.Context(), appID))
+			}
+
+			next.ServeHTTP(w, r)
+		})
+	}
+}
+
 func requireAppPortalApplication(appRepo datastore.ApplicationRepository) func(next http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 
@@ -157,6 +175,10 @@ func requireAppPortalApplication(appRepo datastore.ApplicationRepository) func(n
 
 			if util.IsStringEmpty(appID) {
 				appID = r.URL.Query().Get("appId")
+			}
+
+			if util.IsStringEmpty(appID) {
+				appID = getAppIDFromContext(r.Context())
 			}
 
 			app, err := appRepo.FindApplicationByID(r.Context(), appID)
@@ -371,20 +393,40 @@ func getDefaultGroup(r *http.Request, groupRepo datastore.GroupRepository) (*dat
 	return groups[0], err
 }
 
+func requireGroupID() func(next http.Handler) http.Handler {
+	return func(next http.Handler) http.Handler {
+
+		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			authUser := getAuthUserFromContext(r.Context())
+
+			if len(authUser.Role.Groups) > 0 && authUser.Credential.Type == auth.CredentialTypeAPIKey {
+				groupID := authUser.Role.Groups[0]
+				r = r.WithContext(setGroupIDInContext(r.Context(), groupID))
+			}
+
+			next.ServeHTTP(w, r)
+		})
+	}
+}
+
 func requireGroup(groupRepo datastore.GroupRepository) func(next http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			var group *datastore.Group
 			var err error
+			var groupID string
 
-			groupID := r.URL.Query().Get("groupID")
-			if groupID != "" {
-				group, err = groupRepo.FetchGroupByID(r.Context(), groupID)
-				if err != nil {
-					_ = render.Render(w, r, newErrorResponse("failed to fetch group by id", http.StatusInternalServerError))
-					return
-				}
-			} else if groupID = chi.URLParam(r, "groupID"); groupID != "" {
+			groupID = r.URL.Query().Get("groupID")
+
+			if util.IsStringEmpty(groupID) {
+				groupID = chi.URLParam(r, "groupID")
+			}
+
+			if util.IsStringEmpty(groupID) {
+				groupID = getGroupIDFromContext(r.Context())
+			}
+
+			if !util.IsStringEmpty(groupID) {
 				group, err = groupRepo.FetchGroupByID(r.Context(), groupID)
 				if err != nil {
 					_ = render.Render(w, r, newErrorResponse("failed to fetch group by id", http.StatusInternalServerError))
@@ -877,4 +919,32 @@ func setBaseUrlInContext(ctx context.Context, baseUrl string) context.Context {
 
 func getBaseUrlFromContext(ctx context.Context) string {
 	return ctx.Value(baseUrlCtx).(string)
+}
+
+func setAppIDInContext(ctx context.Context, appId string) context.Context {
+	return context.WithValue(ctx, appIdCtx, appId)
+}
+
+func getAppIDFromContext(ctx context.Context) string {
+	var appID string
+
+	if appID, ok := ctx.Value(appIdCtx).(string); ok {
+		return appID
+	}
+
+	return appID
+}
+
+func setGroupIDInContext(ctx context.Context, groupId string) context.Context {
+	return context.WithValue(ctx, groupIdCtx, groupId)
+}
+
+func getGroupIDFromContext(ctx context.Context) string {
+	var groupID string
+
+	if groupID, ok := ctx.Value(groupIdCtx).(string); ok {
+		return groupID
+	}
+
+	return groupID
 }

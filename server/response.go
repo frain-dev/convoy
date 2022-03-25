@@ -4,6 +4,8 @@ import (
 	"encoding/json"
 	"net/http"
 
+	"github.com/frain-dev/convoy/services"
+
 	"github.com/go-chi/render"
 	log "github.com/sirupsen/logrus"
 )
@@ -18,6 +20,26 @@ func (res Response) Render(w http.ResponseWriter, r *http.Request) error {
 }
 
 func newErrorResponse(msg string, statusCode int) serverResponse {
+	return serverResponse{
+		Status:  false,
+		Message: msg,
+		Response: Response{
+			StatusCode: statusCode,
+		},
+	}
+}
+
+func newServiceErrResponse(err error) serverResponse {
+	msg := ""
+	statusCode := http.StatusBadRequest
+	switch v := err.(type) {
+	case *services.ServiceError:
+		msg = v.Error()
+		statusCode = v.ErrCode()
+	case error:
+		msg = v.Error()
+	}
+
 	return serverResponse{
 		Status:  false,
 		Message: msg,

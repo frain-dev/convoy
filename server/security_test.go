@@ -9,10 +9,8 @@ import (
 	"strings"
 	"testing"
 
-	mcache "github.com/frain-dev/convoy/cache/memory"
 	"github.com/frain-dev/convoy/config"
 	"github.com/frain-dev/convoy/datastore"
-	"github.com/frain-dev/convoy/logger"
 	"github.com/frain-dev/convoy/mocks"
 
 	"github.com/go-chi/chi/v5"
@@ -24,18 +22,7 @@ func TestApplicationHandler_CreateAPIKey(t *testing.T) {
 
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
-
-	groupRepo := mocks.NewMockGroupRepository(ctrl)
-	appRepo := mocks.NewMockApplicationRepository(ctrl)
-	eventRepo := mocks.NewMockEventRepository(ctrl)
-	eventDeliveryRepo := mocks.NewMockEventDeliveryRepository(ctrl)
-	eventQueue := mocks.NewMockQueuer(ctrl)
-	apiKeyRepo := mocks.NewMockAPIKeyRepository(ctrl)
-	logger := logger.NewNoopLogger()
-	tracer := mocks.NewMockTracer(ctrl)
-	cache := mcache.NewMemoryCache()
-
-	app = newApplicationHandler(eventRepo, eventDeliveryRepo, appRepo, groupRepo, apiKeyRepo, eventQueue, logger, tracer, cache)
+	app = provideApplication(ctrl)
 
 	groupId := "1234567890"
 	group := &datastore.Group{
@@ -155,7 +142,7 @@ func TestApplicationHandler_CreateAPIKey(t *testing.T) {
 				tc.dbFn(app)
 			}
 
-			err := config.LoadConfig(tc.cfgPath, new(config.Configuration))
+			err := config.LoadConfig(tc.cfgPath)
 			if err != nil {
 				t.Errorf("Failed to load config file: %v", err)
 			}
@@ -188,18 +175,7 @@ func TestApplicationHandler_CreateAppPortalAPIKey(t *testing.T) {
 
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
-
-	groupRepo := mocks.NewMockGroupRepository(ctrl)
-	appRepo := mocks.NewMockApplicationRepository(ctrl)
-	eventRepo := mocks.NewMockEventRepository(ctrl)
-	eventDeliveryRepo := mocks.NewMockEventDeliveryRepository(ctrl)
-	eventQueue := mocks.NewMockQueuer(ctrl)
-	apiKeyRepo := mocks.NewMockAPIKeyRepository(ctrl)
-	logger := logger.NewNoopLogger()
-	tracer := mocks.NewMockTracer(ctrl)
-	cache := mcache.NewMemoryCache()
-
-	app = newApplicationHandler(eventRepo, eventDeliveryRepo, appRepo, groupRepo, apiKeyRepo, eventQueue, logger, tracer, cache)
+	app = provideApplication(ctrl)
 
 	groupId := "1234567890"
 	group := &datastore.Group{
@@ -286,7 +262,7 @@ func TestApplicationHandler_CreateAppPortalAPIKey(t *testing.T) {
 				tc.dbFn(app)
 			}
 
-			err := config.LoadConfig(tc.cfgPath, new(config.Configuration))
+			err := config.LoadConfig(tc.cfgPath)
 			if err != nil {
 				t.Errorf("Failed to load config file: %v", err)
 			}
@@ -315,18 +291,7 @@ func TestApplicationHandler_CreateAppPortalAPIKey(t *testing.T) {
 func TestApplicationHandler_RevokeAPIKey(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
-
-	groupRepo := mocks.NewMockGroupRepository(ctrl)
-	appRepo := mocks.NewMockApplicationRepository(ctrl)
-	eventRepo := mocks.NewMockEventRepository(ctrl)
-	eventDeliveryRepo := mocks.NewMockEventDeliveryRepository(ctrl)
-	eventQueue := mocks.NewMockQueuer(ctrl)
-	apiKeyRepo := mocks.NewMockAPIKeyRepository(ctrl)
-	logger := logger.NewNoopLogger()
-	tracer := mocks.NewMockTracer(ctrl)
-	cache := mcache.NewMemoryCache()
-
-	app := newApplicationHandler(eventRepo, eventDeliveryRepo, appRepo, groupRepo, apiKeyRepo, eventQueue, logger, tracer, cache)
+	app := provideApplication(ctrl)
 
 	tt := []struct {
 		name       string
@@ -348,7 +313,7 @@ func TestApplicationHandler_RevokeAPIKey(t *testing.T) {
 		{
 			name:       "should error for revoke api key",
 			cfgPath:    "./testdata/Auth_Config/no-auth-convoy.json",
-			statusCode: http.StatusInternalServerError,
+			statusCode: http.StatusBadRequest,
 			keyID:      "123",
 			dbFn: func(app *applicationHandler) {
 				a, _ := app.apiKeyRepo.(*mocks.MockAPIKeyRepository)
@@ -374,7 +339,7 @@ func TestApplicationHandler_RevokeAPIKey(t *testing.T) {
 				tc.dbFn(app)
 			}
 
-			err := config.LoadConfig(tc.cfgPath, new(config.Configuration))
+			err := config.LoadConfig(tc.cfgPath)
 			if err != nil {
 				t.Errorf("Failed to load config file: %v", err)
 			}
@@ -398,18 +363,7 @@ func TestApplicationHandler_RevokeAPIKey(t *testing.T) {
 func TestApplicationHandler_GetAPIKeyByID(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
-
-	groupRepo := mocks.NewMockGroupRepository(ctrl)
-	appRepo := mocks.NewMockApplicationRepository(ctrl)
-	eventRepo := mocks.NewMockEventRepository(ctrl)
-	eventDeliveryRepo := mocks.NewMockEventDeliveryRepository(ctrl)
-	eventQueue := mocks.NewMockQueuer(ctrl)
-	apiKeyRepo := mocks.NewMockAPIKeyRepository(ctrl)
-	logger := logger.NewNoopLogger()
-	tracer := mocks.NewMockTracer(ctrl)
-	cache := mcache.NewMemoryCache()
-
-	app := newApplicationHandler(eventRepo, eventDeliveryRepo, appRepo, groupRepo, apiKeyRepo, eventQueue, logger, tracer, cache)
+	app := provideApplication(ctrl)
 
 	keyID := "12345"
 	apiKey := &datastore.APIKey{UID: keyID}
@@ -437,7 +391,7 @@ func TestApplicationHandler_GetAPIKeyByID(t *testing.T) {
 			name:           "should_fail_to_find_api_key",
 			stripTimestamp: false,
 			cfgPath:        "./testdata/Auth_Config/no-auth-convoy.json",
-			statusCode:     http.StatusInternalServerError,
+			statusCode:     http.StatusBadRequest,
 			keyID:          keyID,
 			dbFn: func(app *applicationHandler) {
 				a, _ := app.apiKeyRepo.(*mocks.MockAPIKeyRepository)
@@ -463,7 +417,7 @@ func TestApplicationHandler_GetAPIKeyByID(t *testing.T) {
 				tc.dbFn(app)
 			}
 
-			err := config.LoadConfig(tc.cfgPath, new(config.Configuration))
+			err := config.LoadConfig(tc.cfgPath)
 			if err != nil {
 				t.Errorf("Failed to load config file: %v", err)
 			}
@@ -487,18 +441,7 @@ func TestApplicationHandler_GetAPIKeyByID(t *testing.T) {
 func TestApplicationHandler_GetAPIKeys(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
-
-	groupRepo := mocks.NewMockGroupRepository(ctrl)
-	appRepo := mocks.NewMockApplicationRepository(ctrl)
-	eventRepo := mocks.NewMockEventRepository(ctrl)
-	eventDeliveryRepo := mocks.NewMockEventDeliveryRepository(ctrl)
-	eventQueue := mocks.NewMockQueuer(ctrl)
-	apiKeyRepo := mocks.NewMockAPIKeyRepository(ctrl)
-	logger := logger.NewNoopLogger()
-	tracer := mocks.NewMockTracer(ctrl)
-	cache := mcache.NewMemoryCache()
-
-	app := newApplicationHandler(eventRepo, eventDeliveryRepo, appRepo, groupRepo, apiKeyRepo, eventQueue, logger, tracer, cache)
+	app := provideApplication(ctrl)
 
 	keyID := "12345"
 	apiKey := &datastore.APIKey{UID: keyID}
@@ -532,7 +475,7 @@ func TestApplicationHandler_GetAPIKeys(t *testing.T) {
 		{
 			name:       "should_fail_to_load_api_keys",
 			cfgPath:    "./testdata/Auth_Config/no-auth-convoy.json",
-			statusCode: http.StatusInternalServerError,
+			statusCode: http.StatusBadRequest,
 			dbFn: func(app *applicationHandler) {
 				a, _ := app.apiKeyRepo.(*mocks.MockAPIKeyRepository)
 				a.EXPECT().
@@ -559,7 +502,7 @@ func TestApplicationHandler_GetAPIKeys(t *testing.T) {
 				tc.dbFn(app)
 			}
 
-			err := config.LoadConfig(tc.cfgPath, new(config.Configuration))
+			err := config.LoadConfig(tc.cfgPath)
 			if err != nil {
 				t.Errorf("Failed to load config file: %v", err)
 			}
@@ -583,18 +526,7 @@ func TestApplicationHandler_GetAPIKeys(t *testing.T) {
 func TestApplicationHandler_UpdateAPIKey(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
-
-	groupRepo := mocks.NewMockGroupRepository(ctrl)
-	appRepo := mocks.NewMockApplicationRepository(ctrl)
-	eventRepo := mocks.NewMockEventRepository(ctrl)
-	eventDeliveryRepo := mocks.NewMockEventDeliveryRepository(ctrl)
-	eventQueue := mocks.NewMockQueuer(ctrl)
-	apiKeyRepo := mocks.NewMockAPIKeyRepository(ctrl)
-	logger := logger.NewNoopLogger()
-	tracer := mocks.NewMockTracer(ctrl)
-	cache := mcache.NewMemoryCache()
-
-	app := newApplicationHandler(eventRepo, eventDeliveryRepo, appRepo, groupRepo, apiKeyRepo, eventQueue, logger, tracer, cache)
+	app := provideApplication(ctrl)
 
 	groupID := "1234567890"
 
@@ -682,7 +614,7 @@ func TestApplicationHandler_UpdateAPIKey(t *testing.T) {
 				tc.dbFn(app)
 			}
 
-			err := config.LoadConfig(tc.cfgPath, new(config.Configuration))
+			err := config.LoadConfig(tc.cfgPath)
 			if err != nil {
 				t.Errorf("Failed to load config file: %v", err)
 			}

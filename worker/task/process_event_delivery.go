@@ -5,12 +5,14 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"strings"
 	"time"
 
 	"github.com/frain-dev/convoy"
 	"github.com/frain-dev/convoy/config"
 	"github.com/frain-dev/convoy/datastore"
+	"github.com/frain-dev/convoy/limiter"
 	"github.com/frain-dev/convoy/net"
 	"github.com/frain-dev/convoy/queue"
 	"github.com/frain-dev/convoy/retrystrategies"
@@ -37,7 +39,7 @@ func (e *EndpointError) Delay() time.Duration {
 	return e.delay
 }
 
-func ProcessEventDelivery(appRepo datastore.ApplicationRepository, eventDeliveryRepo datastore.EventDeliveryRepository, groupRepo datastore.GroupRepository) func(*queue.Job) error {
+func ProcessEventDelivery(appRepo datastore.ApplicationRepository, eventDeliveryRepo datastore.EventDeliveryRepository, groupRepo datastore.GroupRepository, rateLimiter limiter.RateLimiter) func(*queue.Job) error {
 	return func(job *queue.Job) error {
 		Id := job.ID
 
@@ -56,6 +58,46 @@ func ProcessEventDelivery(appRepo datastore.ApplicationRepository, eventDelivery
 			return nil
 		}
 
+		var rateLimitDuration time.Duration
+		if util.IsStringEmpty(m.EndpointMetadata.RateLimitDuration) {
+			rateLimitDuration, err = time.ParseDuration(convoy.RATE_LIMIT_DURATION)
+			if err != nil {
+				log.WithError(err).Errorf("failed to parse endpoint rate limit")
+				return nil
+			}
+		} else {
+			rateLimitDuration, err = time.ParseDuration(m.EndpointMetadata.RateLimitDuration)
+			if err != nil {
+				log.WithError(err).Errorf("failed to parse endpoint rate limit")
+				return nil
+			}
+		}
+
+		var rateLimit int
+		if m.EndpointMetadata.RateLimit == 0 {
+			rateLimit = convoy.RATE_LIMIT
+		} else {
+			rateLimit = m.EndpointMetadata.RateLimit
+		}
+
+		res, err := rateLimiter.ShouldAllow(context.Background(), m.EndpointMetadata.TargetURL, rateLimit, int(rateLimitDuration))
+		if err != nil {
+			return nil
+		}
+
+		if res.Remaining <= 0 {
+			err := fmt.Errorf("too many events to %s, limit of %v would be reached", m.EndpointMetadata.TargetURL, res.Limit)
+			log.WithError(err)
+
+			var delayDuration time.Duration = retrystrategies.NewRetryStrategyFromMetadata(*m.Metadata).NextDuration(m.Metadata.NumTrials)
+			return &EndpointError{Err: err, delay: delayDuration}
+		}
+
+		_, err = rateLimiter.Allow(context.Background(), m.EndpointMetadata.TargetURL, rateLimit, int(rateLimitDuration))
+		if err != nil {
+			return nil
+		}
+
 		err = eventDeliveryRepo.UpdateStatusOfEventDelivery(context.Background(), *m, datastore.ProcessingEventStatus)
 		if err != nil {
 			log.WithError(err).Error("failed to update status of messages - ")
@@ -70,7 +112,22 @@ func ProcessEventDelivery(appRepo datastore.ApplicationRepository, eventDelivery
 			return &EndpointError{Err: err, delay: delayDuration}
 		}
 
-		dispatch := net.NewDispatcher()
+		var httpDuration time.Duration
+		if util.IsStringEmpty(m.EndpointMetadata.HttpTimeout) {
+			httpDuration, err = time.ParseDuration(convoy.HTTP_TIMEOUT)
+			if err != nil {
+				log.WithError(err).Errorf("failed to parse endpoint duration")
+				return nil
+			}
+		} else {
+			httpDuration, err = time.ParseDuration(m.EndpointMetadata.HttpTimeout)
+			if err != nil {
+				log.WithError(err).Errorf("failed to parse endpoint duration")
+				return nil
+			}
+		}
+
+		dispatch := net.NewDispatcher(httpDuration)
 
 		var done = true
 
@@ -107,7 +164,13 @@ func ProcessEventDelivery(appRepo datastore.ApplicationRepository, eventDelivery
 			return &EndpointError{Err: err, delay: delayDuration}
 		}
 
-		hmac, err := util.ComputeJSONHmac(g.Config.Signature.Hash, bStr, secret, false)
+		timestamp := fmt.Sprint(time.Now().Unix())
+		var signedPayload strings.Builder
+		signedPayload.WriteString(timestamp)
+		signedPayload.WriteString(",")
+		signedPayload.WriteString(bStr)
+
+		hmac, err := util.ComputeJSONHmac(g.Config.Signature.Hash, signedPayload.String(), secret, false)
 		if err != nil {
 			log.Errorf("error occurred while generating hmac - %+v\n", err)
 			return &EndpointError{Err: err, delay: delayDuration}
@@ -116,7 +179,7 @@ func ProcessEventDelivery(appRepo datastore.ApplicationRepository, eventDelivery
 		attemptStatus := false
 		start := time.Now()
 
-		resp, err := dispatch.SendRequest(e.TargetURL, string(convoy.HttpPost), []byte(bStr), g.Config.Signature.Header.String(), hmac, int64(cfg.MaxResponseSize))
+		resp, err := dispatch.SendRequest(e.TargetURL, string(convoy.HttpPost), []byte(bStr), g.Config.Signature.Header.String(), hmac, timestamp, int64(cfg.MaxResponseSize))
 		status := "-"
 		statusCode := 0
 		if resp != nil {

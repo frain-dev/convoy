@@ -11,15 +11,19 @@ import (
 	"github.com/frain-dev/convoy/config/algo"
 	"github.com/kelseyhightower/envconfig"
 	log "github.com/sirupsen/logrus"
+	"github.com/spf13/cobra"
 )
 
-const MaxResponseSize = 50 * 1024
+const (
+	MaxResponseSizeKb = 50                       // in kilobytes
+	MaxResponseSize   = MaxResponseSizeKb * 1024 // in bytes
+)
 
 var cfgSingleton atomic.Value
 
 type DatabaseConfiguration struct {
-	Type string `json:"type" envconfig:"CONVOY_DB_TYPE"`
-	Dsn  string `json:"dsn" envconfig:"CONVOY_DB_DSN"`
+	Type DatabaseProvider `json:"type" envconfig:"CONVOY_DB_TYPE"`
+	Dsn  string           `json:"dsn" envconfig:"CONVOY_DB_DSN"`
 }
 
 type SentryConfiguration struct {
@@ -44,58 +48,70 @@ type QueueConfiguration struct {
 }
 
 type RedisQueueConfiguration struct {
-	DSN string `json:"dsn" envconfig:"CONVOY_REDIS_DSN"`
+	Dsn string `json:"dsn" envconfig:"CONVOY_REDIS_DSN"`
 }
 
 type FileRealmOption struct {
-	Basic  []BasicAuth  `json:"basic" bson:"basic"`
-	APIKey []APIKeyAuth `json:"api_key"`
+	Basic  BasicAuthConfig  `json:"basic" bson:"basic" envconfig:"CONVOY_BASIC_AUTH_CONFIG"`
+	APIKey APIKeyAuthConfig `json:"api_key" envconfig:"CONVOY_API_KEY_CONFIG"`
 }
 
 type AuthConfiguration struct {
-	RequireAuth bool               `json:"require_auth"`
+	RequireAuth bool               `json:"require_auth" envconfig:"CONVOY_REQUIRE_AUTH"`
 	File        FileRealmOption    `json:"file"`
 	Native      NativeRealmOptions `json:"native"`
 }
 
 type NativeRealmOptions struct {
-	Enabled bool `json:"enabled"`
+	Enabled bool `json:"enabled" envconfig:"CONVOY_NATIVE_REALM_ENABLED"`
 }
 
 type SMTPConfiguration struct {
-	Provider string `json:"provider"`
-	URL      string `json:"url"`
-	Port     uint32 `json:"port"`
-	Username string `json:"username"`
-	Password string `json:"password"`
-	From     string `json:"from"`
-	ReplyTo  string `json:"reply-to"`
+	Provider string `json:"provider" envconfig:"CONVOY_SMTP_PROVIDER"`
+	URL      string `json:"url" envconfig:"CONVOY_SMTP_URL"`
+	Port     uint32 `json:"port" envconfig:"CONVOY_SMTP_PORT"`
+	Username string `json:"username" envconfig:"CONVOY_SMTP_USERNAME"`
+	Password string `json:"password" envconfig:"CONVOY_SMTP_PASSWORD"`
+	From     string `json:"from" envconfig:"CONVOY_SMTP_FROM"`
+	ReplyTo  string `json:"reply-to" envconfig:"CONVOY_SMTP_REPLY_TO"`
 }
+
+type ServerLogger struct {
+	Level string `json:"level" envconfig:"CONVOY_LOGGER_LEVEL"`
+}
+
 type LoggerConfiguration struct {
-	Type      LoggerProvider `json:"type"`
-	ServerLog struct {
-		Level string `json:"level"`
-	} `json:"server_log"`
+	Type      LoggerProvider `json:"type" envconfig:"CONVOY_LOGGER_PROVIDER"`
+	ServerLog ServerLogger   `json:"server_log"`
 }
 
 type TracerConfiguration struct {
-	Type TracerProvider `json:"type"`
+	Type TracerProvider `json:"type" envconfig:"CONVOY_TRACER_PROVIDER"`
 }
 
 type CacheConfiguration struct {
-	Type  CacheProvider           `json:"type"`
+	Type  CacheProvider           `json:"type"  envconfig:"CONVOY_CACHE_PROVIDER"`
 	Redis RedisCacheConfiguration `json:"redis"`
 }
 
 type RedisCacheConfiguration struct {
-	Dsn string `json:"dsn"`
+	Dsn string `json:"dsn" envconfig:"CONVOY_REDIS_DSN"`
+}
+
+type LimiterConfiguration struct {
+	Type  LimiterProvider           `json:"type" envconfig:"CONVOY_LIMITER_TYPE"`
+	Redis RedisLimiterConfiguration `json:"redis"`
+}
+
+type RedisLimiterConfiguration struct {
+	Dsn string `json:"dsn" envconfig:"CONVOY_REDIS_DSN"`
 }
 
 type NewRelicConfiguration struct {
-	AppName                  string `json:"app_name"`
-	LicenseKey               string `json:"license_key"`
-	ConfigEnabled            bool   `json:"config_enabled"`
-	DistributedTracerEnabled bool   `json:"distributed_tracer_enabled"`
+	AppName                  string `json:"app_name" envconfig:"CONVOY_NEWRELIC_APP_NAME"`
+	LicenseKey               string `json:"license_key" envconfig:"CONVOY_NEWRELIC_LICENSE_KEY"`
+	ConfigEnabled            bool   `json:"config_enabled" envconfig:"CONVOY_NEWRELIC_CONFIG_ENABLED"`
+	DistributedTracerEnabled bool   `json:"distributed_tracer_enabled" envconfig:"CONVOY_NEWRELIC_DISTRIBUTED_TRACER_ENABLED"`
 }
 
 type Configuration struct {
@@ -104,7 +120,7 @@ type Configuration struct {
 	Sentry          SentryConfiguration   `json:"sentry"`
 	Queue           QueueConfiguration    `json:"queue"`
 	Server          ServerConfiguration   `json:"server"`
-	MaxResponseSize uint64                `json:"max_response_size"`
+	MaxResponseSize uint64                `json:"max_response_size" envconfig:"CONVOY_MAX_RESPONSE_SIZE"`
 	GroupConfig     GroupConfig           `json:"group"`
 	SMTP            SMTPConfiguration     `json:"smtp"`
 	Environment     string                `json:"env" envconfig:"CONVOY_ENV" required:"true" default:"development"`
@@ -113,7 +129,8 @@ type Configuration struct {
 	Tracer          TracerConfiguration   `json:"tracer"`
 	NewRelic        NewRelicConfiguration `json:"new_relic"`
 	Cache           CacheConfiguration    `json:"cache"`
-	BaseUrl         string                `json:"base_url"`
+	Limiter         LimiterConfiguration  `json:"limiter"`
+	BaseUrl         string                `json:"base_url" envconfig:"CONVOY_BASE_URL"`
 }
 
 const (
@@ -131,16 +148,19 @@ const (
 	ConsoleLoggerProvider              LoggerProvider          = "console"
 	NewRelicTracerProvider             TracerProvider          = "new_relic"
 	RedisCacheProvider                 CacheProvider           = "redis"
+	RedisLimiterProvider               LimiterProvider         = "redis"
+	MongodbDatabaseProvider            DatabaseProvider        = "mongodb"
+	InMemoryDatabaseProvider           DatabaseProvider        = "in-memory"
 )
 
 type GroupConfig struct {
 	Strategy        StrategyConfiguration  `json:"strategy"`
 	Signature       SignatureConfiguration `json:"signature"`
-	DisableEndpoint bool                   `json:"disable_endpoint"`
+	DisableEndpoint bool                   `json:"disable_endpoint" envconfig:"CONVOY_DISABLE_ENDPOINT"`
 }
 
 type StrategyConfiguration struct {
-	Type               StrategyProvider                        `json:"type"`
+	Type               StrategyProvider                        `json:"type" envconfig:"CONVOY_STRATEGY_TYPE"`
 	Default            DefaultStrategyConfiguration            `json:"default"`
 	ExponentialBackoff ExponentialBackoffStrategyConfiguration `json:"exponentialBackoff,omitempty"`
 }
@@ -166,6 +186,8 @@ type SignatureHeaderProvider string
 type LoggerProvider string
 type TracerProvider string
 type CacheProvider string
+type LimiterProvider string
+type DatabaseProvider string
 
 func (s SignatureHeaderProvider) String() string {
 	return string(s)
@@ -183,27 +205,298 @@ func Get() (Configuration, error) {
 	return *c, nil
 }
 
+// IsStringEmpty checks if the given string s is empty or not
+func IsStringEmpty(s string) bool { return len(strings.TrimSpace(s)) == 0 }
+
+func OverrideConfigWithCliFlags(cmd *cobra.Command, cfg *Configuration) error {
+	// CONVOY_DB_DSN, CONVOY_DB_TYPE
+	dbDsn, err := cmd.Flags().GetString("db")
+	if err != nil {
+		return err
+	}
+
+	if !IsStringEmpty(dbDsn) {
+		cfg.Database.Type = InMemoryDatabaseProvider
+
+		parts := strings.Split(dbDsn, "://")
+		if len(parts) == 2 {
+			// parts[0] must be either "mongodb" or "mongodb+srv"
+			if parts[0] == string(MongodbDatabaseProvider) || parts[0] == string(MongodbDatabaseProvider)+"+srv" {
+				cfg.Database.Type = MongodbDatabaseProvider
+			}
+		}
+
+		cfg.Database.Dsn = dbDsn
+	}
+
+	// CONVOY_REDIS_DSN
+	redisDsn, err := cmd.Flags().GetString("redis")
+	if err != nil {
+		return err
+	}
+
+	// CONVOY_QUEUE_PROVIDER
+	queueDsn, err := cmd.Flags().GetString("queue")
+	if err != nil {
+		return err
+	}
+
+	if !IsStringEmpty(queueDsn) {
+		cfg.Queue.Type = QueueProvider(queueDsn)
+		if queueDsn == "redis" && !IsStringEmpty(redisDsn) {
+			cfg.Queue.Redis.Dsn = redisDsn
+		}
+	}
+
+	cfgSingleton.Store(cfg)
+
+	return nil
+}
+
+func overrideConfigWithEnvVars(c *Configuration, override *Configuration) {
+	// CONVOY_ENV
+	if !IsStringEmpty(override.Environment) {
+		c.Environment = override.Environment
+	}
+
+	// CONVOY_BASE_URL
+	if !IsStringEmpty(override.BaseUrl) {
+		c.BaseUrl = override.BaseUrl
+	}
+
+	// CONVOY_DB_DSN
+	if !IsStringEmpty(string(override.Database.Type)) {
+		c.Database.Type = override.Database.Type
+	}
+
+	// CONVOY_DB_DSN
+	if !IsStringEmpty(override.Database.Dsn) {
+		c.Database.Dsn = override.Database.Dsn
+	}
+
+	// CONVOY_LIMITER_TYPE
+	if !IsStringEmpty(override.Sentry.Dsn) {
+		c.Sentry.Dsn = override.Sentry.Dsn
+	}
+
+	// CONVOY_LIMITER_TYPE
+	if !IsStringEmpty(string(override.Limiter.Type)) {
+		c.Limiter.Type = override.Limiter.Type
+	}
+
+	// CONVOY_REDIS_DSN
+	if !IsStringEmpty(override.Limiter.Redis.Dsn) {
+		c.Limiter.Redis.Dsn = override.Limiter.Redis.Dsn
+	}
+
+	// CONVOY_CACHE_PROVIDER
+	if !IsStringEmpty(string(override.Cache.Type)) {
+		c.Cache.Type = override.Cache.Type
+	}
+
+	// CONVOY_REDIS_DSN
+	if !IsStringEmpty(override.Cache.Redis.Dsn) {
+		c.Cache.Redis.Dsn = override.Cache.Redis.Dsn
+	}
+
+	// CONVOY_QUEUE_PROVIDER
+	if !IsStringEmpty(string(override.Queue.Type)) {
+		c.Queue.Type = override.Queue.Type
+	}
+
+	// CONVOY_REDIS_DSN
+	if !IsStringEmpty(override.Queue.Redis.Dsn) {
+		c.Queue.Redis.Dsn = override.Queue.Redis.Dsn
+	}
+
+	// CONVOY_REDIS_DSN
+	if !IsStringEmpty(override.Queue.Redis.Dsn) {
+		c.Queue.Redis.Dsn = override.Queue.Redis.Dsn
+	}
+
+	// CONVOY_LOGGER_PROVIDER
+	if !IsStringEmpty(string(override.Logger.Type)) {
+		c.Logger.Type = override.Logger.Type
+	}
+
+	// CONVOY_LOGGER_LEVEL
+	if !IsStringEmpty(override.Logger.ServerLog.Level) {
+		c.Logger.ServerLog.Level = override.Logger.ServerLog.Level
+	}
+
+	// PORT
+	if override.Server.HTTP.Port != 0 {
+		c.Server.HTTP.Port = override.Server.HTTP.Port
+	}
+
+	// WORKER_PORT
+	if override.Server.HTTP.WorkerPort != 0 {
+		c.Server.HTTP.WorkerPort = override.Server.HTTP.WorkerPort
+	}
+
+	// CONVOY_SSL_CERT_FILE
+	if !IsStringEmpty(override.Server.HTTP.SSLCertFile) {
+		c.Server.HTTP.SSLCertFile = override.Server.HTTP.SSLCertFile
+	}
+
+	// CONVOY_SSL_KEY_FILE
+	if !IsStringEmpty(override.Server.HTTP.SSLKeyFile) {
+		c.Server.HTTP.SSLKeyFile = override.Server.HTTP.SSLKeyFile
+	}
+
+	// CONVOY_STRATEGY_TYPE
+	if !IsStringEmpty(string(override.GroupConfig.Strategy.Type)) {
+		c.GroupConfig.Strategy.Type = override.GroupConfig.Strategy.Type
+	}
+
+	// CONVOY_SIGNATURE_HASH
+	if !IsStringEmpty(override.GroupConfig.Signature.Hash) {
+		c.GroupConfig.Signature.Hash = override.GroupConfig.Signature.Hash
+	}
+
+	// CONVOY_SIGNATURE_HEADER
+	if !IsStringEmpty(string(override.GroupConfig.Signature.Header)) {
+		c.GroupConfig.Signature.Header = override.GroupConfig.Signature.Header
+	}
+
+	// CONVOY_INTERVAL_SECONDS
+	if override.GroupConfig.Strategy.Default.IntervalSeconds != 0 {
+		c.GroupConfig.Strategy.Default.IntervalSeconds = override.GroupConfig.Strategy.Default.IntervalSeconds
+	}
+
+	// CONVOY_RETRY_LIMIT
+	if override.GroupConfig.Strategy.Default.RetryLimit != 0 {
+		c.GroupConfig.Strategy.Default.RetryLimit = override.GroupConfig.Strategy.Default.RetryLimit
+	}
+
+	// CONVOY_RETRY_LIMIT
+	if override.GroupConfig.Strategy.ExponentialBackoff.RetryLimit != 0 {
+		c.GroupConfig.Strategy.ExponentialBackoff.RetryLimit = override.GroupConfig.Strategy.ExponentialBackoff.RetryLimit
+	}
+
+	// CONVOY_SMTP_PROVIDER
+	if !IsStringEmpty(override.SMTP.Provider) {
+		c.SMTP.Provider = override.SMTP.Provider
+	}
+
+	// CONVOY_SMTP_FROM
+	if !IsStringEmpty(override.SMTP.From) {
+		c.SMTP.From = override.SMTP.From
+	}
+
+	// CONVOY_SMTP_PASSWORD
+	if !IsStringEmpty(override.SMTP.Password) {
+		c.SMTP.Password = override.SMTP.Password
+	}
+
+	// CONVOY_SMTP_REPLY_TO
+	if !IsStringEmpty(override.SMTP.ReplyTo) {
+		c.SMTP.ReplyTo = override.SMTP.ReplyTo
+	}
+
+	// CONVOY_SMTP_USERNAME
+	if !IsStringEmpty(override.SMTP.URL) {
+		c.SMTP.URL = override.SMTP.URL
+	}
+
+	// CONVOY_SMTP_USERNAME
+	if !IsStringEmpty(override.SMTP.Username) {
+		c.SMTP.Username = override.SMTP.Username
+	}
+
+	// CONVOY_SMTP_PORT
+	if override.SMTP.Port != 0 {
+		c.SMTP.Port = override.SMTP.Port
+	}
+
+	// CONVOY_MAX_RESPONSE_SIZE
+	if override.MaxResponseSize != 0 {
+		c.MaxResponseSize = override.MaxResponseSize
+	}
+
+	// CONVOY_NEWRELIC_APP_NAME
+	if !IsStringEmpty(override.NewRelic.AppName) {
+		c.NewRelic.AppName = override.NewRelic.AppName
+	}
+
+	// CONVOY_NEWRELIC_LICENSE_KEY
+	if !IsStringEmpty(override.NewRelic.LicenseKey) {
+		c.NewRelic.LicenseKey = override.NewRelic.LicenseKey
+	}
+
+	// CONVOY_API_KEY_CONFIG
+	if override.Auth.File.APIKey != nil {
+		c.Auth.File.APIKey = override.Auth.File.APIKey
+	}
+
+	// CONVOY_BASIC_AUTH_CONFIG
+	if override.Auth.File.Basic != nil {
+		c.Auth.File.Basic = override.Auth.File.Basic
+	}
+
+	// boolean values are weird; we have to check if they are actually set
+
+	if _, ok := os.LookupEnv("CONVOY_MULTIPLE_TENANTS"); ok {
+		c.MultipleTenants = override.MultipleTenants
+	}
+
+	if _, ok := os.LookupEnv("SSL"); ok {
+		c.Server.HTTP.SSL = override.Server.HTTP.SSL
+	}
+
+	if _, ok := os.LookupEnv("CONVOY_DISABLE_ENDPOINT"); ok {
+		c.GroupConfig.DisableEndpoint = override.GroupConfig.DisableEndpoint
+	}
+
+	if _, ok := os.LookupEnv("CONVOY_NEWRELIC_CONFIG_ENABLED"); ok {
+		c.NewRelic.ConfigEnabled = override.NewRelic.ConfigEnabled
+	}
+
+	if _, ok := os.LookupEnv("CONVOY_REQUIRE_AUTH"); ok {
+		c.Auth.RequireAuth = override.Auth.RequireAuth
+	}
+
+	if _, ok := os.LookupEnv("CONVOY_NATIVE_REALM_ENABLED"); ok {
+		c.Auth.Native.Enabled = override.Auth.Native.Enabled
+	}
+}
+
 // LoadConfig is used to load the configuration from either the json config file
 // or the environment variables.
-func LoadConfig(p string, override *Configuration) error {
-	f, err := os.Open(p)
+func LoadConfig(p string) error {
+	c := &Configuration{}
+
+	if _, err := os.Stat(p); err == nil {
+		f, err := os.Open(p)
+		if err != nil {
+			return err
+		}
+
+		defer f.Close()
+
+		// load config from config.json
+		if err := json.NewDecoder(f).Decode(&c); err != nil {
+			return err
+		}
+	} else if errors.Is(err, os.ErrNotExist) {
+		log.Info("convoy config.json not detected, will look for env vars or cli args")
+	}
+
+	ec := &Configuration{}
+
+	// load config from environment variables
+	err := envconfig.Process(envPrefix, ec)
 	if err != nil {
 		return err
 	}
 
-	defer f.Close()
+	overrideConfigWithEnvVars(c, ec)
 
-	c := new(Configuration)
+	cfgSingleton.Store(c)
+	return nil
+}
 
-	if err := json.NewDecoder(f).Decode(&c); err != nil {
-		return err
-	}
-
-	err = envconfig.Process(envPrefix, c)
-	if err != nil {
-		return err
-	}
-
+func SetServerConfigDefaults(c *Configuration) error {
 	// if it's still empty, set it to development
 	if c.Environment == "" {
 		c.Environment = DevelopmentEnvironment
@@ -213,7 +506,7 @@ func LoadConfig(p string, override *Configuration) error {
 		return errors.New("http port cannot be zero")
 	}
 
-	err = ensureSSL(c.Server)
+	err := ensureSSL(c.Server)
 	if err != nil {
 		return err
 	}
@@ -232,7 +525,7 @@ func LoadConfig(p string, override *Configuration) error {
 	if kb == 0 {
 		c.MaxResponseSize = MaxResponseSize
 	} else if kb > MaxResponseSize {
-		log.Warnf("maximum response size of %dkb too large, using default value of %dkb", c.MaxResponseSize, MaxResponseSize/1024)
+		log.Warnf("maximum response size of %dkb too large, using default value of %dkb", c.MaxResponseSize, c.MaxResponseSize/1024)
 		c.MaxResponseSize = MaxResponseSize
 	} else {
 		c.MaxResponseSize = kb
@@ -251,14 +544,6 @@ func LoadConfig(p string, override *Configuration) error {
 	err = ensureAuthConfig(c.Auth)
 	if err != nil {
 		return err
-	}
-
-	if len(strings.TrimSpace(override.Queue.Redis.DSN)) > 0 {
-		c.Queue.Redis.DSN = override.Queue.Redis.DSN
-	}
-
-	if len(strings.TrimSpace(override.Database.Dsn)) > 0 {
-		c.Database.Dsn = override.Database.Dsn
 	}
 
 	cfgSingleton.Store(c)
@@ -312,7 +597,7 @@ func ensureSSL(s ServerConfiguration) error {
 func ensureQueueConfig(queueCfg QueueConfiguration) error {
 	switch queueCfg.Type {
 	case RedisQueueProvider:
-		if queueCfg.Redis.DSN == "" {
+		if queueCfg.Redis.Dsn == "" {
 			return errors.New("redis queue dsn is empty")
 		}
 

@@ -63,6 +63,8 @@ components:
           type: integer
         group_id:
           type: string
+        is_disabled:
+          type: boolean
         name:
           type: string
         support_email:
@@ -126,6 +128,12 @@ components:
           items:
             type: string
           type: array
+        http_timeout:
+          type: string
+        rate_limit:
+          type: integer
+        rate_limit_duration:
+          type: string
         secret:
           type: string
         status:
@@ -139,6 +147,12 @@ components:
       type: object
     datastore.EndpointMetadata:
       properties:
+        http_timeout:
+          type: string
+        rate_limit:
+          type: integer
+        rate_limit_duration:
+          type: string
         secret:
           type: string
         sent:
@@ -227,6 +241,10 @@ components:
         logo_url:
           type: string
         name:
+          type: string
+        rate_limit:
+          type: integer
+        rate_limit_duration:
           type: string
         statistics:
           $ref: '#/components/schemas/datastore.GroupStatistics'
@@ -340,6 +358,8 @@ components:
       type: object
     models.Application:
       properties:
+        is_disabled:
+          type: boolean
         name:
           type: string
         support_email:
@@ -353,6 +373,12 @@ components:
           items:
             type: string
           type: array
+        http_timeout:
+          type: string
+        rate_limit:
+          type: integer
+        rate_limit_duration:
+          type: string
         secret:
           type: string
         url:
@@ -379,6 +405,10 @@ components:
         logo_url:
           type: string
         name:
+          type: string
+        rate_limit:
+          type: integer
+        rate_limit_duration:
           type: string
       type: object
     models.PortalAPIKeyResponse:
@@ -1404,6 +1434,169 @@ paths:
       security:
       - ApiKeyAuth: []
       summary: Batch Resend app events
+      tags:
+      - EventDelivery
+  /eventdeliveries/countbatchretryevents:
+    get:
+      description: This endpoint counts app events that will be affected by a batch
+        retry operation
+      parameters:
+      - description: application id
+        in: query
+        name: appId
+        schema:
+          type: string
+      - description: group id
+        in: query
+        name: groupId
+        schema:
+          type: string
+      - description: start date
+        in: query
+        name: startDate
+        schema:
+          type: string
+      - description: end date
+        in: query
+        name: endDate
+        schema:
+          type: string
+      - description: results per page
+        in: query
+        name: perPage
+        schema:
+          type: string
+      - description: page number
+        in: query
+        name: page
+        schema:
+          type: string
+      - description: sort order
+        in: query
+        name: sort
+        schema:
+          type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                allOf:
+                - $ref: '#/components/schemas/server.serverResponse'
+                - properties:
+                    data:
+                      allOf:
+                      - $ref: '#/components/schemas/server.Stub'
+                      - properties:
+                          num:
+                            type: integer
+                        type: object
+                  type: object
+          description: OK
+        "400":
+          content:
+            application/json:
+              schema:
+                allOf:
+                - $ref: '#/components/schemas/server.serverResponse'
+                - properties:
+                    data:
+                      $ref: '#/components/schemas/server.Stub'
+                  type: object
+          description: Bad Request
+        "401":
+          content:
+            application/json:
+              schema:
+                allOf:
+                - $ref: '#/components/schemas/server.serverResponse'
+                - properties:
+                    data:
+                      $ref: '#/components/schemas/server.Stub'
+                  type: object
+          description: Unauthorized
+        "500":
+          content:
+            application/json:
+              schema:
+                allOf:
+                - $ref: '#/components/schemas/server.serverResponse'
+                - properties:
+                    data:
+                      $ref: '#/components/schemas/server.Stub'
+                  type: object
+          description: Internal Server Error
+      security:
+      - ApiKeyAuth: []
+      summary: Count affected eventDeliveries
+      tags:
+      - EventDelivery
+  /eventdeliveries/forceresend:
+    post:
+      description: This endpoint force resends multiple app events
+      requestBody:
+        content:
+          application/json:
+            schema:
+              allOf:
+              - $ref: '#/components/schemas/server.Stub'
+              - properties:
+                  ids:
+                    items:
+                      type: string
+                    type: array
+                type: object
+        description: event delivery ids
+        required: true
+        x-originalParamName: ids
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                allOf:
+                - $ref: '#/components/schemas/server.serverResponse'
+                - properties:
+                    data:
+                      $ref: '#/components/schemas/server.Stub'
+                  type: object
+          description: OK
+        "400":
+          content:
+            application/json:
+              schema:
+                allOf:
+                - $ref: '#/components/schemas/server.serverResponse'
+                - properties:
+                    data:
+                      $ref: '#/components/schemas/server.Stub'
+                  type: object
+          description: Bad Request
+        "401":
+          content:
+            application/json:
+              schema:
+                allOf:
+                - $ref: '#/components/schemas/server.serverResponse'
+                - properties:
+                    data:
+                      $ref: '#/components/schemas/server.Stub'
+                  type: object
+          description: Unauthorized
+        "500":
+          content:
+            application/json:
+              schema:
+                allOf:
+                - $ref: '#/components/schemas/server.serverResponse'
+                - properties:
+                    data:
+                      $ref: '#/components/schemas/server.Stub'
+                  type: object
+          description: Internal Server Error
+      security:
+      - ApiKeyAuth: []
+      summary: Force Resend app events
       tags:
       - EventDelivery
   /events:

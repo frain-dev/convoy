@@ -63,6 +63,8 @@ definitions:
         type: integer
       group_id:
         type: string
+      is_disabled:
+        type: boolean
       name:
         type: string
       support_email:
@@ -126,6 +128,12 @@ definitions:
         items:
           type: string
         type: array
+      http_timeout:
+        type: string
+      rate_limit:
+        type: integer
+      rate_limit_duration:
+        type: string
       secret:
         type: string
       status:
@@ -139,6 +147,12 @@ definitions:
     type: object
   datastore.EndpointMetadata:
     properties:
+      http_timeout:
+        type: string
+      rate_limit:
+        type: integer
+      rate_limit_duration:
+        type: string
       secret:
         type: string
       sent:
@@ -228,6 +242,10 @@ definitions:
       logo_url:
         type: string
       name:
+        type: string
+      rate_limit:
+        type: integer
+      rate_limit_duration:
         type: string
       statistics:
         $ref: '#/definitions/datastore.GroupStatistics'
@@ -341,6 +359,8 @@ definitions:
     type: object
   models.Application:
     properties:
+      is_disabled:
+        type: boolean
       name:
         type: string
       support_email:
@@ -354,6 +374,12 @@ definitions:
         items:
           type: string
         type: array
+      http_timeout:
+        type: string
+      rate_limit:
+        type: integer
+      rate_limit_duration:
+        type: string
       secret:
         type: string
       url:
@@ -380,6 +406,10 @@ definitions:
       logo_url:
         type: string
       name:
+        type: string
+      rate_limit:
+        type: integer
+      rate_limit_duration:
         type: string
     type: object
   models.PortalAPIKeyResponse:
@@ -1310,6 +1340,153 @@ paths:
       security:
       - ApiKeyAuth: []
       summary: Batch Resend app events
+      tags:
+      - EventDelivery
+  /eventdeliveries/countbatchretryevents:
+    get:
+      consumes:
+      - application/json
+      description: This endpoint counts app events that will be affected by a batch
+        retry operation
+      parameters:
+      - description: application id
+        in: query
+        name: appId
+        type: string
+      - description: group id
+        in: query
+        name: groupId
+        type: string
+      - description: start date
+        in: query
+        name: startDate
+        type: string
+      - description: end date
+        in: query
+        name: endDate
+        type: string
+      - description: results per page
+        in: query
+        name: perPage
+        type: string
+      - description: page number
+        in: query
+        name: page
+        type: string
+      - description: sort order
+        in: query
+        name: sort
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/server.serverResponse'
+            - properties:
+                data:
+                  allOf:
+                  - $ref: '#/definitions/server.Stub'
+                  - properties:
+                      num:
+                        type: integer
+                    type: object
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            allOf:
+            - $ref: '#/definitions/server.serverResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/server.Stub'
+              type: object
+        "401":
+          description: Unauthorized
+          schema:
+            allOf:
+            - $ref: '#/definitions/server.serverResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/server.Stub'
+              type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            allOf:
+            - $ref: '#/definitions/server.serverResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/server.Stub'
+              type: object
+      security:
+      - ApiKeyAuth: []
+      summary: Count affected eventDeliveries
+      tags:
+      - EventDelivery
+  /eventdeliveries/forceresend:
+    post:
+      consumes:
+      - application/json
+      description: This endpoint force resends multiple app events
+      parameters:
+      - description: event delivery ids
+        in: body
+        name: ids
+        required: true
+        schema:
+          allOf:
+          - $ref: '#/definitions/server.Stub'
+          - properties:
+              ids:
+                items:
+                  type: string
+                type: array
+            type: object
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/server.serverResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/server.Stub'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            allOf:
+            - $ref: '#/definitions/server.serverResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/server.Stub'
+              type: object
+        "401":
+          description: Unauthorized
+          schema:
+            allOf:
+            - $ref: '#/definitions/server.serverResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/server.Stub'
+              type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            allOf:
+            - $ref: '#/definitions/server.serverResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/server.Stub'
+              type: object
+      security:
+      - ApiKeyAuth: []
+      summary: Force Resend app events
       tags:
       - EventDelivery
   /events:

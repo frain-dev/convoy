@@ -10,9 +10,12 @@ import (
 )
 
 type Group struct {
-	Name    string `json:"name" bson:"name" valid:"required~please provide a valid name"`
-	LogoURL string `json:"logo_url" bson:"logo_url" valid:"url~please provide a valid logo url,optional"`
-	Config  datastore.GroupConfig
+	Name              string `json:"name" bson:"name" valid:"required~please provide a valid name"`
+	LogoURL           string `json:"logo_url" bson:"logo_url" valid:"url~please provide a valid logo url,optional"`
+	RateLimit         int    `json:"rate_limit" bson:"rate_limit" valid:"int~please provide a valid rate limit,optional"`
+	RateLimitDuration string `json:"rate_limit_duration" bson:"rate_limit_duration" valid:"alphanum~please provide a valid rate limit duration,optional"`
+
+	Config datastore.GroupConfig
 }
 
 type APIKey struct {
@@ -52,6 +55,13 @@ type PortalAPIKeyResponse struct {
 type Application struct {
 	AppName      string `json:"name" bson:"name" valid:"required~please provide your appName"`
 	SupportEmail string `json:"support_email" bson:"support_email" valid:"email~please provide a valid email"`
+	IsDisabled   bool   `json:"is_disabled"`
+}
+
+type UpdateApplication struct {
+	AppName      *string `json:"name" bson:"name" valid:"required~please provide your appName"`
+	SupportEmail *string `json:"support_email" bson:"support_email" valid:"email~please provide a valid email"`
+	IsDisabled   *bool   `json:"is_disabled"`
 }
 
 type Event struct {
@@ -88,6 +98,10 @@ type Endpoint struct {
 	Secret      string   `json:"secret" bson:"secret"`
 	Description string   `json:"description" bson:"description"`
 	Events      []string `json:"events" bson:"events"`
+
+	HttpTimeout       string `json:"http_timeout" bson:"http_timeout"`
+	RateLimit         int    `json:"rate_limit" bson:"rate_limit"`
+	RateLimitDuration string `json:"rate_limit_duration" bson:"rate_limit_duration"`
 }
 
 type DashboardSummary struct {

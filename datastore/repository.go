@@ -24,6 +24,7 @@ type EventDeliveryRepository interface {
 	UpdateStatusOfEventDeliveries(context.Context, []string, EventDeliveryStatus) error
 
 	UpdateEventDeliveryWithAttempt(context.Context, EventDelivery, DeliveryAttempt) error
+	CountEventDeliveries(context.Context, string, string, string, []EventDeliveryStatus, SearchParams) (int64, error)
 	LoadEventDeliveriesPaged(context.Context, string, string, string, []EventDeliveryStatus, SearchParams, Pageable) ([]EventDelivery, PaginationData, error)
 }
 

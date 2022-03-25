@@ -1,0 +1,61 @@
+{
+    "base_url": "http://127.0.0.1:5005/api/v1",
+    "database": {
+        "type": "mongo",
+        "dsn": "mongodb://localhost:27017/testdb"
+    },
+    "test_cases": [
+        {
+            "name": "test_convoy_update_group",
+            "setup": [
+                "setup_group"
+            ],
+            "http_method": "PUT",
+            "endpoint": "/groups/{group_id}",
+            "request_body": {
+                "name": "unique-group",
+                "logo_url": "https://google.com",
+                "rate_limit": 100,
+                "rate_limit_duration": "1h",
+                "config": {
+                    "strategy": {
+                        "type": "default",
+                        "default": {
+                            "intervalSeconds": 10,
+                            "retryLimit": 3
+                        }
+                    },
+                    "signature": {
+                        "header": "X-Convoy-CI-Signature",
+                        "hash": "SHA256"
+                    }
+                }
+            },
+            "status_code": 202,
+            "response_body": true
+        },
+        {
+            "name": "test_convoy_delete_group",
+            "setup": [
+                "setup_group"
+            ],
+            "http_method": "DELETE",
+            "endpoint": "/groups/{group_id}",
+            "request_body": {},
+            "status_code": 200,
+            "response_body": true
+        },
+        {
+            "name": "test_convoy_get_groups",
+            "setup": [
+                "setup_group",
+                "setup_group"
+            ],
+            "http_method": "GET",
+            "endpoint": "/groups",
+            "request_body": {},
+            "status_code": 200,
+            "response_body": true
+        }
+    ]
+}
