@@ -17,6 +17,7 @@ else
   # regenerate docs
   swag init --generatedTime --parseDependency --parseInternal -d server/ server/*
   go run v3gen/main.go
+  go vet ./...
   git add docs/ # add all files under the generated doc folder to git
 fi
 
