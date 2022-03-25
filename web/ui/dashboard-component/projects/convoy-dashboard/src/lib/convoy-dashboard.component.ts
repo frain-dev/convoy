@@ -71,6 +71,7 @@ export class ConvoyDashboardComponent implements OnInit {
 	addNewAppForm: FormGroup = this.formBuilder.group({
 		name: ['', Validators.required],
 		support_email: ['', Validators.compose([Validators.required, Validators.email])],
+		is_disabled: [''],
 		endpoints: this.formBuilder.array([])
 	});
 	addNewEndpointForm: FormGroup = this.formBuilder.group({
@@ -93,6 +94,7 @@ export class ConvoyDashboardComponent implements OnInit {
 	allEventdeliveriesChecked = false;
 	eventDeliveryStatuses = ['Success', 'Failure', 'Retry', 'Scheduled', 'Processing', 'Discarded'];
 	dateOptions = ['Last Year', 'Last Month', 'Last Week', 'Yesterday'];
+	appStatuses = ['All', 'Enabled', 'Disabled'];
 	eventDeliveryFilteredByStatus: string[] = [];
 	eventTags: string[] = [];
 	showOverlay = false;
@@ -130,6 +132,7 @@ export class ConvoyDashboardComponent implements OnInit {
 	updateAppDetail = false;
 	showPublicCopyText = false;
 	showSecretCopyText = false;
+	showEndpointSecret = false;
 	appsSearchString = '';
 	selectedEventsDateOption = '';
 	selectedEventsDelDateOption = '';
@@ -137,6 +140,8 @@ export class ConvoyDashboardComponent implements OnInit {
 	currentAppId = '';
 	tag = '';
 	appPortalLink = '';
+	endpointSecretKey = '';
+	selectedAppStatus = 'All';
 	batchRetryCount!: any;
 	eventsAppsFilter$!: Observable<APP[]>;
 	eventsDelAppsFilter$!: Observable<APP[]>;
@@ -260,6 +265,7 @@ export class ConvoyDashboardComponent implements OnInit {
 			this.getApps({ type: 'apps' });
 			this.showCreateAppModal = false;
 			this.isCreatingNewApp = false;
+			this.editAppMode = false;
 		} catch {
 			this.isCreatingNewApp = false;
 		}
@@ -386,6 +392,22 @@ export class ConvoyDashboardComponent implements OnInit {
 			name: app.name,
 			support_email: app.support_email
 		});
+	}
+
+	editAppStatus(app: APP) {
+		let isDisabled;
+		if (app.is_disabled) {
+			isDisabled = false;
+		} else {
+			isDisabled = true;
+		}
+		this.addNewAppForm.patchValue({
+			name: app.name,
+			support_email: app.support_email,
+			is_disabled: isDisabled
+		});
+		this.editAppMode = true;
+		this.createNewApp();
 	}
 
 	setEventAppId() {
@@ -708,7 +730,7 @@ export class ConvoyDashboardComponent implements OnInit {
 				method: 'post',
 				body: {}
 			});
-			this.appPortalLink = `<iframe src="${appTokenResponse.data.url}"></iframe>`;
+			this.appPortalLink = `<iframe style="width: 100%; height: 100vh; border: none;" src="${appTokenResponse.data.url}"></iframe>`;
 			if (requestDetail.redirect) window.open(`${appTokenResponse.data.url}`, '_blank');
 			this.loadingAppPotalToken = false;
 		} catch (error) {
@@ -880,6 +902,10 @@ export class ConvoyDashboardComponent implements OnInit {
 		).data.content;
 	}
 
+	filterAppByStatus(status: string) {
+		this.selectedAppStatus = status;
+	}
+
 	async getApps(requestDetails?: { search?: string; type: 'filter' | 'apps' }) {
 		if (this.apps?.pagination?.next === this.appsPage) this.isloadingMoreApps = true;
 		if (requestDetails?.type === 'apps') this.isloadingApps = true;
@@ -897,7 +923,6 @@ export class ConvoyDashboardComponent implements OnInit {
 
 			if (requestDetails?.type === 'apps') this.apps = appsResponse.data;
 			this.filteredApps = appsResponse.data.content;
-
 			if (this.updateAppDetail) {
 				this.apps.content.forEach(item => {
 					if (this.appsDetailsItem?.uid == item.uid) {
@@ -986,6 +1011,38 @@ export class ConvoyDashboardComponent implements OnInit {
 		}
 	}
 
+	// force retry successful events
+	async forceRetryEvent(requestDetails: { e: any; index: number; eventDeliveryId: string }) {
+		requestDetails.e.stopPropagation();
+		const retryButton: any = document.querySelector(`#event${requestDetails.index} button`);
+		if (retryButton) {
+			retryButton.classList.add(['spin', 'disabled']);
+			retryButton.disabled = true;
+		}
+		const payload = {
+			ids: [requestDetails.eventDeliveryId]
+		};
+		try {
+			await this.convyDashboardService.request({
+				method: 'post',
+				token: this.requestToken,
+				authType: this.apiAuthType,
+				body: payload,
+				url: this.getAPIURL(`/eventdeliveries/forceresend`)
+			});
+
+			this.convyDashboardService.showNotification({ message: 'Force Retry Request Sent' });
+			retryButton.classList.remove(['spin', 'disabled']);
+			retryButton.disabled = false;
+			this.getEventDeliveries();
+		} catch (error: any) {
+			this.convyDashboardService.showNotification({ message: error.error.message });
+			retryButton.classList.remove(['spin', 'disabled']);
+			retryButton.disabled = false;
+			return error;
+		}
+	}
+
 	async batchRetryEvent() {
 		let eventDeliveryStatusFilterQuery = '';
 		this.eventDeliveryFilteredByStatus.length > 0 ? (this.eventDeliveriesStatusFilterActive = true) : (this.eventDeliveriesStatusFilterActive = false);
@@ -1059,6 +1116,10 @@ export class ConvoyDashboardComponent implements OnInit {
 				this.eventDeliveryFilteredByEventId = '';
 				this.eventDeliveryFilteredByStatus = [];
 				this.getEventDeliveries({ fromFilter: true });
+				break;
+			case 'apps':
+				this.selectedAppStatus = 'All';
+				this.getApps({ type: 'apps' });
 				break;
 
 			default:
