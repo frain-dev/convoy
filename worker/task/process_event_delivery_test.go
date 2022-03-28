@@ -752,7 +752,7 @@ func TestProcessEventDelivery(t *testing.T) {
 				tc.dbFn(appRepo, groupRepo, msgRepo, rateLimiter, ns)
 			}
 
-			processFn := ProcessEventDelivery(appRepo, msgRepo, groupRepo, rateLimiter, ns)
+			processFn := ProcessEventDelivery(appRepo, msgRepo, groupRepo, rateLimiter)
 
 			job := queue.Job{
 				ID: tc.msg.UID,

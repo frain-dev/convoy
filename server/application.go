@@ -3,8 +3,6 @@ package server
 import (
 	"net/http"
 
-	"github.com/frain-dev/convoy/notification"
-
 	"github.com/frain-dev/convoy/services"
 
 	"github.com/frain-dev/convoy/cache"
@@ -23,21 +21,20 @@ import (
 )
 
 type applicationHandler struct {
-	appService         *services.AppService
-	eventService       *services.EventService
-	groupService       *services.GroupService
-	securityService    *services.SecurityService
-	appRepo            datastore.ApplicationRepository
-	eventRepo          datastore.EventRepository
-	notificationSender notification.Sender
-	eventDeliveryRepo  datastore.EventDeliveryRepository
-	groupRepo          datastore.GroupRepository
-	apiKeyRepo         datastore.APIKeyRepository
-	eventQueue         queue.Queuer
-	logger             logger.Logger
-	tracer             tracer.Tracer
-	cache              cache.Cache
-	limiter            limiter.RateLimiter
+	appService        *services.AppService
+	eventService      *services.EventService
+	groupService      *services.GroupService
+	securityService   *services.SecurityService
+	appRepo           datastore.ApplicationRepository
+	eventRepo         datastore.EventRepository
+	eventDeliveryRepo datastore.EventDeliveryRepository
+	groupRepo         datastore.GroupRepository
+	apiKeyRepo        datastore.APIKeyRepository
+	eventQueue        queue.Queuer
+	logger            logger.Logger
+	tracer            tracer.Tracer
+	cache             cache.Cache
+	limiter           limiter.RateLimiter
 }
 
 type pagedResponse struct {
@@ -48,7 +45,6 @@ type pagedResponse struct {
 func newApplicationHandler(
 	eventRepo datastore.EventRepository,
 	eventDeliveryRepo datastore.EventDeliveryRepository,
-	notificationSender notification.Sender,
 	appRepo datastore.ApplicationRepository,
 	groupRepo datastore.GroupRepository,
 	apiKeyRepo datastore.APIKeyRepository,
@@ -58,26 +54,25 @@ func newApplicationHandler(
 	cache cache.Cache,
 	limiter limiter.RateLimiter) *applicationHandler {
 	as := services.NewAppService(appRepo, eventRepo, eventDeliveryRepo, eventQueue)
-	es := services.NewEventService(appRepo, eventRepo, eventDeliveryRepo, eventQueue, notificationSender)
-	gs := services.NewGroupService(appRepo, groupRepo, eventRepo, eventDeliveryRepo, limiter, notificationSender)
+	es := services.NewEventService(appRepo, eventRepo, eventDeliveryRepo, eventQueue)
+	gs := services.NewGroupService(appRepo, groupRepo, eventRepo, eventDeliveryRepo, limiter)
 	ss := services.NewSecurityService(groupRepo, apiKeyRepo)
 
 	return &applicationHandler{
-		appService:         as,
-		eventService:       es,
-		groupService:       gs,
-		securityService:    ss,
-		notificationSender: notificationSender,
-		eventRepo:          eventRepo,
-		eventDeliveryRepo:  eventDeliveryRepo,
-		apiKeyRepo:         apiKeyRepo,
-		appRepo:            appRepo,
-		groupRepo:          groupRepo,
-		eventQueue:         eventQueue,
-		logger:             logger,
-		tracer:             tracer,
-		cache:              cache,
-		limiter:            limiter,
+		appService:        as,
+		eventService:      es,
+		groupService:      gs,
+		securityService:   ss,
+		eventRepo:         eventRepo,
+		eventDeliveryRepo: eventDeliveryRepo,
+		apiKeyRepo:        apiKeyRepo,
+		appRepo:           appRepo,
+		groupRepo:         groupRepo,
+		eventQueue:        eventQueue,
+		logger:            logger,
+		tracer:            tracer,
+		cache:             cache,
+		limiter:           limiter,
 	}
 }
 

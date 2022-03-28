@@ -72,12 +72,13 @@ const (
 )
 
 type Application struct {
-	ID           primitive.ObjectID `json:"-" bson:"_id"`
-	UID          string             `json:"uid" bson:"uid"`
-	GroupID      string             `json:"group_id" bson:"group_id"`
-	Title        string             `json:"name" bson:"title"`
-	SupportEmail string             `json:"support_email" bson:"support_email"`
-	IsDisabled   bool               `json:"is_disabled" bson:"is_disabled"`
+	ID                   primitive.ObjectID    `json:"-" bson:"_id"`
+	UID                  string                `json:"uid" bson:"uid"`
+	GroupID              string                `json:"group_id" bson:"group_id"`
+	Title                string                `json:"name" bson:"title"`
+	SupportEmail         string                `json:"support_email" bson:"support_email"`
+	NotificationChannels []NotificationChannel `json:"notification_channels"`
+	IsDisabled           bool                  `json:"is_disabled" bson:"is_disabled"`
 
 	Endpoints []Endpoint         `json:"endpoints" bson:"endpoints"`
 	CreatedAt primitive.DateTime `json:"created_at,omitempty" bson:"created_at,omitempty" swaggertype:"string"`
@@ -87,6 +88,19 @@ type Application struct {
 	Events int64 `json:"events" bson:"-"`
 
 	DocumentStatus DocumentStatus `json:"-" bson:"document_status"`
+}
+
+type NotificationChannelType string
+
+const (
+	SlackNotificationChannelType NotificationChannelType = "slack"
+	EmailNotificationChannelType NotificationChannelType = "email"
+)
+
+type NotificationChannel struct {
+	Type            NotificationChannelType `json:"type"`
+	Email           string                  `json:"email" bson:"email"`
+	SlackWebhookURL string                  `json:"slack_webhook_url" bson:"slack_webhook_url"`
 }
 
 type EndpointStatus string

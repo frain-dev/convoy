@@ -9,6 +9,8 @@ import (
 	"strings"
 	"time"
 
+	"github.com/frain-dev/convoy/notification/slack"
+
 	"github.com/frain-dev/convoy/notification"
 
 	"github.com/frain-dev/convoy"
@@ -41,7 +43,7 @@ func (e *EndpointError) Delay() time.Duration {
 	return e.delay
 }
 
-func ProcessEventDelivery(appRepo datastore.ApplicationRepository, eventDeliveryRepo datastore.EventDeliveryRepository, groupRepo datastore.GroupRepository, rateLimiter limiter.RateLimiter, notificationSender notification.Sender) func(*queue.Job) error {
+func ProcessEventDelivery(appRepo datastore.ApplicationRepository, eventDeliveryRepo datastore.EventDeliveryRepository, groupRepo datastore.GroupRepository, rateLimiter limiter.RateLimiter) func(*queue.Job) error {
 	return func(job *queue.Job) error {
 		Id := job.ID
 
@@ -233,14 +235,6 @@ func ProcessEventDelivery(appRepo datastore.ApplicationRepository, eventDelivery
 			if err != nil {
 				log.WithError(err).Error("Failed to reactivate endpoint after successful retry")
 			}
-
-			s, err := smtp.New(&cfg.SMTP)
-			if err == nil {
-				err = sendEmailNotification(m, g, s, endpointStatus)
-				if err != nil {
-					log.WithError(err).Error("Failed to send notification email")
-				}
-			}
 		}
 
 		if !done && dbEndpoint.Status == datastore.PendingEndpointStatus {
@@ -262,32 +256,25 @@ func ProcessEventDelivery(appRepo datastore.ApplicationRepository, eventDelivery
 				if m.Status != datastore.SuccessEventStatus {
 					log.Errorln("an anomaly has occurred. retry limit exceeded, fan out is done but event status is not successful")
 					m.Status = datastore.FailureEventStatus
-					sendFailureNotification(context.Background(), notificationSender, m)
 				}
 			} else {
 				log.Errorf("%s retry limit exceeded ", m.UID)
 				m.Description = "Retry limit exceeded"
 				m.Status = datastore.FailureEventStatus
-				sendFailureNotification(context.Background(), notificationSender, m)
 			}
 
+			endpointStatus := dbEndpoint.Status
 			if g.Config.DisableEndpoint && dbEndpoint.Status != datastore.PendingEndpointStatus {
 				endpoints := []string{dbEndpoint.UID}
-				endpointStatus := datastore.InactiveEndpointStatus
+				endpointStatus = datastore.InactiveEndpointStatus
 
 				err := appRepo.UpdateApplicationEndpointsStatus(context.Background(), m.AppMetadata.UID, endpoints, endpointStatus)
 				if err != nil {
 					log.WithError(err).Error("Failed to reactivate endpoint after successful retry")
 				}
-
-				s, err := smtp.New(&cfg.SMTP)
-				if err == nil {
-					err = sendEmailNotification(m, g, s, endpointStatus)
-					if err != nil {
-						log.WithError(err).Error("Failed to send notification email")
-					}
-				}
 			}
+
+			sendFailureNotification(context.Background(), appRepo, m, g, &cfg.SMTP, endpointStatus)
 		}
 
 		err = eventDeliveryRepo.UpdateEventDeliveryWithAttempt(context.Background(), *m, attempt)
@@ -303,26 +290,38 @@ func ProcessEventDelivery(appRepo datastore.ApplicationRepository, eventDelivery
 	}
 }
 
-func sendEmailNotification(m *datastore.EventDelivery, g *datastore.Group, s *smtp.SmtpClient, status datastore.EndpointStatus) error {
-	email := m.AppMetadata.SupportEmail
-
-	logoURL := g.LogoURL
-
-	err := s.SendEmailNotification(email, logoURL, m.EndpointMetadata.TargetURL, status)
+func sendFailureNotification(ctx context.Context, appRepo datastore.ApplicationRepository, eventDelivery *datastore.EventDelivery, g *datastore.Group, smtpCfg *config.SMTPConfiguration, status datastore.EndpointStatus) {
+	app, err := appRepo.FindApplicationByID(ctx, eventDelivery.AppMetadata.UID)
 	if err != nil {
-		return err
+		log.WithError(err).Error("failed to fetch application")
+		return
 	}
 
-	return nil
-}
+	for _, channel := range app.NotificationChannels {
+		switch channel.Type {
+		case convoy.SlackNotificationProvider:
+			n := &notification.Notification{
+				Text: fmt.Sprintf("failed to send event delivery (%s) after retry limit was hit", eventDelivery.UID),
+			}
 
-func sendFailureNotification(ctx context.Context, ns notification.Sender, eventDelivery *datastore.EventDelivery) {
-	n := &notification.Notification{
-		Text: fmt.Sprintf("failed to send event delivery (%s) after retry limit was hit", eventDelivery.UID),
-	}
-	err := ns.SendNotification(ctx, n)
-	if err != nil {
-		log.WithError(err).Error("failed to send notification for event delivery failure")
+			err = slack.NewSlack(channel.SlackWebhookURL).SendNotification(ctx, n)
+			if err != nil {
+				log.WithError(err).Error("failed to send notification for event delivery failure")
+			}
+		case convoy.EmailNotificationProvider:
+			s, err := smtp.New(smtpCfg)
+			if err != nil {
+				log.WithError(err).Error("failed to initialize smtp client")
+				return
+			}
+
+			err = s.SendEmailNotification(channel.Email, g.LogoURL, eventDelivery.EndpointMetadata.TargetURL, status)
+			if err != nil {
+				log.WithError(err).Error("failed to send email notification for event delivery failure")
+			}
+		default:
+			log.Errorf("unknown notification channel type: %s", channel.Type)
+		}
 	}
 }
 

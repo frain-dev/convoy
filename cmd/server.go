@@ -158,7 +158,6 @@ func StartConvoyServer(a *app, cfg config.Configuration, withWorkers bool) error
 		a.applicationRepo,
 		a.apiKeyRepo,
 		a.groupRepo,
-		a.notificationSender,
 		a.eventQueue,
 		a.logger,
 		a.tracer,
@@ -167,13 +166,13 @@ func StartConvoyServer(a *app, cfg config.Configuration, withWorkers bool) error
 
 	if withWorkers {
 		// register tasks.
-		handler := task.ProcessEventDelivery(a.applicationRepo, a.eventDeliveryRepo, a.groupRepo, a.limiter, a.notificationSender)
+		handler := task.ProcessEventDelivery(a.applicationRepo, a.eventDeliveryRepo, a.groupRepo, a.limiter)
 		if err := task.CreateTasks(a.groupRepo, handler); err != nil {
 			log.WithError(err).Error("failed to register tasks")
 			return err
 		}
 
-		worker.RegisterNewGroupTask(a.applicationRepo, a.eventDeliveryRepo, a.groupRepo, a.limiter, a.notificationSender)
+		worker.RegisterNewGroupTask(a.applicationRepo, a.eventDeliveryRepo, a.groupRepo, a.limiter)
 
 		log.Infof("Starting Convoy workers...")
 		// register workers.
@@ -256,25 +255,6 @@ func loadServerConfigFromCliFlags(cmd *cobra.Command, c *config.Configuration) e
 		c.Limiter.Type = config.LimiterProvider(rateLimiter)
 		if rateLimiter == "redis" && !util.IsStringEmpty(redis) {
 			c.Limiter.Redis.Dsn = redis
-		}
-	}
-
-	// CONVOY_SLACK_WEBHOOK_URL
-	slackWebhookURL, err := cmd.Flags().GetString("slack-webhook-url")
-	if err != nil {
-		return err
-	}
-
-	// CONVOY_NOTIFICATION_PROVIDER
-	notificationProvider, err := cmd.Flags().GetString("notification-provider")
-	if err != nil {
-		return err
-	}
-
-	if !util.IsStringEmpty(notificationProvider) {
-		c.Notification.Type = config.NotificationProvider(notificationProvider)
-		if notificationProvider == "slack" && !util.IsStringEmpty(slackWebhookURL) {
-			c.Notification.Slack.WebhookURL = slackWebhookURL
 		}
 	}
 

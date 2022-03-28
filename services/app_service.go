@@ -33,9 +33,13 @@ func (a *AppService) CreateApp(ctx context.Context, newApp *models.Application, 
 		return nil, NewServiceError(http.StatusBadRequest, err)
 	}
 
-	uid := uuid.New().String()
+	err := validateNotificationChannels(newApp)
+	if err != nil {
+		return nil, err
+	}
+
 	app := &datastore.Application{
-		UID:            uid,
+		UID:            uuid.New().String(),
 		GroupID:        g.UID,
 		Title:          appName,
 		SupportEmail:   newApp.SupportEmail,
@@ -46,7 +50,27 @@ func (a *AppService) CreateApp(ctx context.Context, newApp *models.Application, 
 		DocumentStatus: datastore.ActiveDocumentStatus,
 	}
 
-	err := a.appRepo.CreateApplication(ctx, app)
+	for _, channel := range newApp.NotificationChannels {
+		if channel == convoy.SlackNotificationProvider {
+			app.NotificationChannels = append(app.NotificationChannels, datastore.NotificationChannel{
+				Type:            convoy.SlackNotificationProvider,
+				SlackWebhookURL: newApp.SlackWebhookURL,
+			})
+		}
+
+		if channel == convoy.EmailNotificationProvider {
+			app.NotificationChannels = append(app.NotificationChannels, datastore.NotificationChannel{
+				Type:  convoy.EmailNotificationProvider,
+				Email: newApp.SupportEmail,
+			})
+		}
+	}
+
+	err = a.appRepo.CreateApplication(ctx, app)
+	if err != nil {
+		log.WithError(err).Error("failed to create application")
+		return nil, NewServiceError(http.StatusBadRequest, errors.New("failed to create application"))
+	}
 
 	return app, err
 }
@@ -76,6 +100,25 @@ func (a *AppService) UpdateApplication(ctx context.Context, appUpdate *models.Up
 
 	if appUpdate.IsDisabled != nil {
 		app.IsDisabled = *appUpdate.IsDisabled
+	}
+
+	if len(appUpdate.NotificationChannels) > 0 {
+		newApp := &models.Application{
+			NotificationChannels: appUpdate.NotificationChannels,
+		}
+
+		if appUpdate.SlackWebhookURL != nil {
+			newApp.SlackWebhookURL = *appUpdate.SlackWebhookURL
+		}
+
+		if appUpdate.SupportEmail != nil {
+			newApp.SupportEmail = *appUpdate.SupportEmail
+		}
+
+		err := validateNotificationChannels(newApp)
+		if err != nil {
+			return err
+		}
 	}
 
 	err := a.appRepo.UpdateApplication(ctx, app)
@@ -174,6 +217,25 @@ func (a *AppService) DeleteAppEndpoint(ctx context.Context, e *datastore.Endpoin
 	if err != nil {
 		return NewServiceError(http.StatusBadRequest, errors.New("an error occurred while deleting app endpoint"))
 	}
+	return nil
+}
+
+func validateNotificationChannels(newApp *models.Application) error {
+	for _, channel := range newApp.NotificationChannels {
+		switch channel {
+		case convoy.SlackNotificationProvider:
+			if util.IsStringEmpty(newApp.SlackWebhookURL) {
+				return NewServiceError(http.StatusBadRequest, errors.New("slack webhook url is required for slack notification channel"))
+			}
+		case convoy.EmailNotificationProvider:
+			if util.IsStringEmpty(newApp.SupportEmail) {
+				return NewServiceError(http.StatusBadRequest, errors.New("support email is required for email notification channel"))
+			}
+		default:
+			return NewServiceError(http.StatusBadRequest, fmt.Errorf("unknown notification channel: %s", channel))
+		}
+	}
+
 	return nil
 }
 

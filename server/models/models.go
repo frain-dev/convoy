@@ -53,15 +53,19 @@ type PortalAPIKeyResponse struct {
 }
 
 type Application struct {
-	AppName      string `json:"name" bson:"name" valid:"required~please provide your appName"`
-	SupportEmail string `json:"support_email" bson:"support_email" valid:"email~please provide a valid email"`
-	IsDisabled   bool   `json:"is_disabled"`
+	AppName              string   `json:"name" bson:"name" valid:"required~please provide your appName"`
+	SupportEmail         string   `json:"support_email" bson:"support_email" valid:"email~please provide a valid email"`
+	IsDisabled           bool     `json:"is_disabled"`
+	SlackWebhookURL      string   `json:"slack_webhook_url" bson:"slack_webhook_url"`
+	NotificationChannels []string `json:"notification_channels" valid:"range(1|2)~please provide valid notification channels"`
 }
 
 type UpdateApplication struct {
-	AppName      *string `json:"name" bson:"name" valid:"required~please provide your appName"`
-	SupportEmail *string `json:"support_email" bson:"support_email" valid:"email~please provide a valid email"`
-	IsDisabled   *bool   `json:"is_disabled"`
+	AppName              *string  `json:"name" bson:"name" valid:"required~please provide your appName"`
+	SupportEmail         *string  `json:"support_email" bson:"support_email" valid:"email~please provide a valid email"`
+	IsDisabled           *bool    `json:"is_disabled"`
+	SlackWebhookURL      *string  `json:"slack_webhook_url" bson:"slack_webhook_url"`
+	NotificationChannels []string `json:"notification_channels"`
 }
 
 type Event struct {

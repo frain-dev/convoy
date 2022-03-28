@@ -7,7 +7,6 @@ import (
 	"time"
 
 	"github.com/frain-dev/convoy"
-	"github.com/frain-dev/convoy/config"
 	"github.com/frain-dev/convoy/notification"
 	"github.com/slack-go/slack"
 )
@@ -17,8 +16,8 @@ type Slack struct {
 	convoyAgent string
 }
 
-func NewSlack(cfg *config.Configuration) notification.Sender {
-	s := &Slack{webhookURL: cfg.Notification.Slack.WebhookURL}
+func NewSlack(webhookURL string) notification.Sender {
+	s := &Slack{webhookURL: webhookURL}
 	s.convoyAgent = "Convoy/" + convoy.GetVersion()
 	return s
 }

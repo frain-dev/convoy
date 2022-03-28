@@ -8,11 +8,6 @@ import (
 	"time"
 	_ "time/tzdata"
 
-	"github.com/frain-dev/convoy/notification/noop"
-	"github.com/frain-dev/convoy/notification/slack"
-
-	"github.com/frain-dev/convoy/notification"
-
 	"github.com/frain-dev/convoy/cache"
 	"github.com/frain-dev/convoy/datastore/badger"
 	"github.com/go-redis/redis/v8"
@@ -153,24 +148,23 @@ func ensureDefaultGroup(ctx context.Context, cfg config.Configuration, a *app) e
 	}
 
 	taskName := convoy.EventProcessor.SetPrefix(group.Name)
-	task.CreateTask(taskName, *group, task.ProcessEventDelivery(a.applicationRepo, a.eventDeliveryRepo, a.groupRepo, a.limiter, a.notificationSender))
+	task.CreateTask(taskName, *group, task.ProcessEventDelivery(a.applicationRepo, a.eventDeliveryRepo, a.groupRepo, a.limiter))
 
 	return nil
 }
 
 type app struct {
-	apiKeyRepo         datastore.APIKeyRepository
-	groupRepo          datastore.GroupRepository
-	applicationRepo    datastore.ApplicationRepository
-	eventRepo          datastore.EventRepository
-	eventDeliveryRepo  datastore.EventDeliveryRepository
-	notificationSender notification.Sender
-	eventQueue         queue.Queuer
-	deadLetterQueue    queue.Queuer
-	logger             logger.Logger
-	tracer             tracer.Tracer
-	cache              cache.Cache
-	limiter            limiter.RateLimiter
+	apiKeyRepo        datastore.APIKeyRepository
+	groupRepo         datastore.GroupRepository
+	applicationRepo   datastore.ApplicationRepository
+	eventRepo         datastore.EventRepository
+	eventDeliveryRepo datastore.EventDeliveryRepository
+	eventQueue        queue.Queuer
+	deadLetterQueue   queue.Queuer
+	logger            logger.Logger
+	tracer            tracer.Tracer
+	cache             cache.Cache
+	limiter           limiter.RateLimiter
 }
 
 func getCtx() (context.Context, context.CancelFunc) {
@@ -286,13 +280,6 @@ func preRun(app *app, db datastore.DatabaseClient) func(cmd *cobra.Command, args
 		if util.IsStringEmpty(string(cfg.GroupConfig.Signature.Header)) {
 			cfg.GroupConfig.Signature.Header = config.DefaultSignatureHeader
 			log.Warnf("signature header is blank. setting default %s", config.DefaultSignatureHeader)
-		}
-
-		switch cfg.Notification.Type {
-		case config.SlackNotificationProvider:
-			app.notificationSender = slack.NewSlack(&cfg)
-		default:
-			app.notificationSender = noop.NewNoopNotificationSender()
 		}
 
 		ca, err = cache.NewCache(cfg.Cache)

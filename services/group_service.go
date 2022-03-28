@@ -6,8 +6,6 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/frain-dev/convoy/notification"
-
 	"github.com/frain-dev/convoy"
 	"github.com/frain-dev/convoy/datastore"
 	"github.com/frain-dev/convoy/limiter"
@@ -20,22 +18,20 @@ import (
 )
 
 type GroupService struct {
-	appRepo            datastore.ApplicationRepository
-	groupRepo          datastore.GroupRepository
-	eventRepo          datastore.EventRepository
-	eventDeliveryRepo  datastore.EventDeliveryRepository
-	limiter            limiter.RateLimiter
-	notificationSender notification.Sender
+	appRepo           datastore.ApplicationRepository
+	groupRepo         datastore.GroupRepository
+	eventRepo         datastore.EventRepository
+	eventDeliveryRepo datastore.EventDeliveryRepository
+	limiter           limiter.RateLimiter
 }
 
-func NewGroupService(appRepo datastore.ApplicationRepository, groupRepo datastore.GroupRepository, eventRepo datastore.EventRepository, eventDeliveryRepo datastore.EventDeliveryRepository, limiter limiter.RateLimiter, notificationSender notification.Sender) *GroupService {
+func NewGroupService(appRepo datastore.ApplicationRepository, groupRepo datastore.GroupRepository, eventRepo datastore.EventRepository, eventDeliveryRepo datastore.EventDeliveryRepository, limiter limiter.RateLimiter) *GroupService {
 	return &GroupService{
-		appRepo:            appRepo,
-		groupRepo:          groupRepo,
-		eventRepo:          eventRepo,
-		eventDeliveryRepo:  eventDeliveryRepo,
-		limiter:            limiter,
-		notificationSender: notificationSender,
+		appRepo:           appRepo,
+		groupRepo:         groupRepo,
+		eventRepo:         eventRepo,
+		eventDeliveryRepo: eventDeliveryRepo,
+		limiter:           limiter,
 	}
 }
 
@@ -74,7 +70,7 @@ func (gs *GroupService) CreateGroup(ctx context.Context, newGroup *models.Group)
 
 	// register task.
 	taskName := convoy.EventProcessor.SetPrefix(groupName)
-	task.CreateTask(taskName, *group, task.ProcessEventDelivery(gs.appRepo, gs.eventDeliveryRepo, gs.groupRepo, gs.limiter, gs.notificationSender))
+	task.CreateTask(taskName, *group, task.ProcessEventDelivery(gs.appRepo, gs.eventDeliveryRepo, gs.groupRepo, gs.limiter))
 
 	return group, nil
 }

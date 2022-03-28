@@ -114,33 +114,23 @@ type NewRelicConfiguration struct {
 	DistributedTracerEnabled bool   `json:"distributed_tracer_enabled" envconfig:"CONVOY_NEWRELIC_DISTRIBUTED_TRACER_ENABLED"`
 }
 
-type SlackNotificationConfiguration struct {
-	WebhookURL string `json:"webhook_url"  envconfig:"CONVOY_SLACK_WEBHOOK_URL"`
-}
-
-type NotificationConfiguration struct {
-	Type  NotificationProvider           `json:"type" envconfig:"CONVOY_NOTIFICATION_PROVIDER"`
-	Slack SlackNotificationConfiguration `json:"slack"`
-}
-
 type Configuration struct {
-	Auth            AuthConfiguration         `json:"auth,omitempty"`
-	Database        DatabaseConfiguration     `json:"database"`
-	Sentry          SentryConfiguration       `json:"sentry"`
-	Queue           QueueConfiguration        `json:"queue"`
-	Server          ServerConfiguration       `json:"server"`
-	MaxResponseSize uint64                    `json:"max_response_size" envconfig:"CONVOY_MAX_RESPONSE_SIZE"`
-	GroupConfig     GroupConfig               `json:"group"`
-	SMTP            SMTPConfiguration         `json:"smtp"`
-	Environment     string                    `json:"env" envconfig:"CONVOY_ENV" required:"true" default:"development"`
-	MultipleTenants bool                      `json:"multiple_tenants"`
-	Logger          LoggerConfiguration       `json:"logger"`
-	Tracer          TracerConfiguration       `json:"tracer"`
-	NewRelic        NewRelicConfiguration     `json:"new_relic"`
-	Cache           CacheConfiguration        `json:"cache"`
-	Limiter         LimiterConfiguration      `json:"limiter"`
-	Notification    NotificationConfiguration `json:"notification"`
-	BaseUrl         string                    `json:"base_url" envconfig:"CONVOY_BASE_URL"`
+	Auth            AuthConfiguration     `json:"auth,omitempty"`
+	Database        DatabaseConfiguration `json:"database"`
+	Sentry          SentryConfiguration   `json:"sentry"`
+	Queue           QueueConfiguration    `json:"queue"`
+	Server          ServerConfiguration   `json:"server"`
+	MaxResponseSize uint64                `json:"max_response_size" envconfig:"CONVOY_MAX_RESPONSE_SIZE"`
+	GroupConfig     GroupConfig           `json:"group"`
+	SMTP            SMTPConfiguration     `json:"smtp"`
+	Environment     string                `json:"env" envconfig:"CONVOY_ENV" required:"true" default:"development"`
+	MultipleTenants bool                  `json:"multiple_tenants"`
+	Logger          LoggerConfiguration   `json:"logger"`
+	Tracer          TracerConfiguration   `json:"tracer"`
+	NewRelic        NewRelicConfiguration `json:"new_relic"`
+	Cache           CacheConfiguration    `json:"cache"`
+	Limiter         LimiterConfiguration  `json:"limiter"`
+	BaseUrl         string                `json:"base_url" envconfig:"CONVOY_BASE_URL"`
 }
 
 const (
@@ -161,7 +151,6 @@ const (
 	RedisLimiterProvider               LimiterProvider         = "redis"
 	MongodbDatabaseProvider            DatabaseProvider        = "mongodb"
 	InMemoryDatabaseProvider           DatabaseProvider        = "in-memory"
-	SlackNotificationProvider          NotificationProvider    = "slack"
 )
 
 type GroupConfig struct {
@@ -284,14 +273,6 @@ func overrideConfigWithEnvVars(c *Configuration, override *Configuration) {
 	// CONVOY_DB_DSN
 	if !IsStringEmpty(override.Database.Dsn) {
 		c.Database.Dsn = override.Database.Dsn
-	}
-
-	if !IsStringEmpty(string(override.Notification.Type)) {
-		c.Notification.Type = override.Notification.Type
-	}
-
-	if !IsStringEmpty(override.Notification.Slack.WebhookURL) {
-		c.Notification.Slack.WebhookURL = override.Notification.Slack.WebhookURL
 	}
 
 	// CONVOY_LIMITER_TYPE
