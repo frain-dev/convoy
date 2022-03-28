@@ -9,6 +9,8 @@ import (
 	"strings"
 	"time"
 
+	"github.com/frain-dev/convoy/notification"
+
 	"github.com/frain-dev/convoy"
 	"github.com/frain-dev/convoy/config"
 	"github.com/frain-dev/convoy/datastore"
@@ -39,7 +41,7 @@ func (e *EndpointError) Delay() time.Duration {
 	return e.delay
 }
 
-func ProcessEventDelivery(appRepo datastore.ApplicationRepository, eventDeliveryRepo datastore.EventDeliveryRepository, groupRepo datastore.GroupRepository, rateLimiter limiter.RateLimiter) func(*queue.Job) error {
+func ProcessEventDelivery(appRepo datastore.ApplicationRepository, eventDeliveryRepo datastore.EventDeliveryRepository, groupRepo datastore.GroupRepository, rateLimiter limiter.RateLimiter, notificationSender notification.Sender) func(*queue.Job) error {
 	return func(job *queue.Job) error {
 		Id := job.ID
 
@@ -260,11 +262,13 @@ func ProcessEventDelivery(appRepo datastore.ApplicationRepository, eventDelivery
 				if m.Status != datastore.SuccessEventStatus {
 					log.Errorln("an anomaly has occurred. retry limit exceeded, fan out is done but event status is not successful")
 					m.Status = datastore.FailureEventStatus
+					sendFailureNotification(context.Background(), notificationSender, m)
 				}
 			} else {
 				log.Errorf("%s retry limit exceeded ", m.UID)
 				m.Description = "Retry limit exceeded"
 				m.Status = datastore.FailureEventStatus
+				sendFailureNotification(context.Background(), notificationSender, m)
 			}
 
 			if g.Config.DisableEndpoint && dbEndpoint.Status != datastore.PendingEndpointStatus {
@@ -310,6 +314,16 @@ func sendEmailNotification(m *datastore.EventDelivery, g *datastore.Group, s *sm
 	}
 
 	return nil
+}
+
+func sendFailureNotification(ctx context.Context, ns notification.Sender, eventDelivery *datastore.EventDelivery) {
+	n := &notification.Notification{
+		Text: fmt.Sprintf("failed to send event delivery (%s) after retry limit was hit", eventDelivery.UID),
+	}
+	err := ns.SendNotification(ctx, n)
+	if err != nil {
+		log.WithError(err).Error("failed to send notification for event delivery failure")
+	}
 }
 
 func parseAttemptFromResponse(m *datastore.EventDelivery, e *datastore.EndpointMetadata, resp *net.Response, attemptStatus bool) datastore.DeliveryAttempt {

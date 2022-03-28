@@ -7,6 +7,8 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/frain-dev/convoy/notification"
+
 	"github.com/frain-dev/convoy"
 	"github.com/frain-dev/convoy/config"
 	"github.com/frain-dev/convoy/datastore"
@@ -19,14 +21,21 @@ import (
 )
 
 type EventService struct {
-	appRepo           datastore.ApplicationRepository
-	eventRepo         datastore.EventRepository
-	eventDeliveryRepo datastore.EventDeliveryRepository
-	eventQueue        queue.Queuer
+	appRepo            datastore.ApplicationRepository
+	notificationSender notification.Sender
+	eventRepo          datastore.EventRepository
+	eventDeliveryRepo  datastore.EventDeliveryRepository
+	eventQueue         queue.Queuer
 }
 
-func NewEventService(appRepo datastore.ApplicationRepository, eventRepo datastore.EventRepository, eventDeliveryRepo datastore.EventDeliveryRepository, eventQueue queue.Queuer) *EventService {
-	return &EventService{appRepo: appRepo, eventRepo: eventRepo, eventDeliveryRepo: eventDeliveryRepo, eventQueue: eventQueue}
+func NewEventService(appRepo datastore.ApplicationRepository, eventRepo datastore.EventRepository, eventDeliveryRepo datastore.EventDeliveryRepository, eventQueue queue.Queuer, notificationSender notification.Sender) *EventService {
+	return &EventService{
+		appRepo:            appRepo,
+		eventRepo:          eventRepo,
+		eventDeliveryRepo:  eventDeliveryRepo,
+		eventQueue:         eventQueue,
+		notificationSender: notificationSender,
+	}
 }
 
 func (e *EventService) CreateAppEvent(ctx context.Context, newMessage *models.Event, g *datastore.Group) (*datastore.Event, error) {
@@ -140,6 +149,10 @@ func (e *EventService) CreateAppEvent(ctx context.Context, newMessage *models.Ev
 			err = e.eventQueue.Write(context.Background(), taskName, eventDelivery, 1*time.Second)
 			if err != nil {
 				log.Errorf("Error occurred sending new event to the queue %s", err)
+				err = e.notificationSender.SendNotification(context.Background(), &notification.Notification{Text: fmt.Sprintf("failed to queue event delivery (%s), error: %v", eventDelivery.UID, err)})
+				if err != nil {
+					log.WithError(err).Error("failed to send notification for failed event delivery queuing")
+				}
 			}
 		}
 	}

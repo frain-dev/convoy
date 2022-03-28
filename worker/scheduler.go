@@ -6,6 +6,8 @@ import (
 	"sync"
 	"time"
 
+	"github.com/frain-dev/convoy/notification"
+
 	"github.com/frain-dev/convoy"
 	"github.com/frain-dev/convoy/datastore"
 	"github.com/frain-dev/convoy/limiter"
@@ -16,7 +18,7 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
-func RegisterNewGroupTask(applicationRepo datastore.ApplicationRepository, eventDeliveryRepo datastore.EventDeliveryRepository, groupRepo datastore.GroupRepository, rateLimiter limiter.RateLimiter) {
+func RegisterNewGroupTask(applicationRepo datastore.ApplicationRepository, eventDeliveryRepo datastore.EventDeliveryRepository, groupRepo datastore.GroupRepository, rateLimiter limiter.RateLimiter, ns notification.Sender) {
 	go func() {
 		for {
 			filter := &datastore.GroupFilter{}
@@ -27,7 +29,7 @@ func RegisterNewGroupTask(applicationRepo datastore.ApplicationRepository, event
 			for _, g := range groups {
 				name := convoy.TaskName(g.Name)
 				if t := taskq.Tasks.Get(string(name)); t == nil {
-					handler := task.ProcessEventDelivery(applicationRepo, eventDeliveryRepo, groupRepo, rateLimiter)
+					handler := task.ProcessEventDelivery(applicationRepo, eventDeliveryRepo, groupRepo, rateLimiter, ns)
 					log.Infof("Registering task handler for %s", g.Name)
 					task.CreateTask(name, *g, handler)
 				}

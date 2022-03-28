@@ -9,6 +9,8 @@ import (
 	"strings"
 	"time"
 
+	"github.com/frain-dev/convoy/notification"
+
 	"github.com/frain-dev/convoy/auth"
 	"github.com/frain-dev/convoy/cache"
 	"github.com/frain-dev/convoy/logger"
@@ -362,6 +364,7 @@ func New(cfg config.Configuration,
 	appRepo datastore.ApplicationRepository,
 	apiKeyRepo datastore.APIKeyRepository,
 	orgRepo datastore.GroupRepository,
+	notificationSender notification.Sender,
 	eventQueue queue.Queuer,
 	logger logger.Logger,
 	tracer tracer.Tracer,
@@ -371,6 +374,7 @@ func New(cfg config.Configuration,
 	app := newApplicationHandler(
 		eventRepo,
 		eventDeliveryRepo,
+		notificationSender,
 		appRepo,
 		orgRepo,
 		apiKeyRepo,

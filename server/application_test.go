@@ -11,6 +11,8 @@ import (
 	"testing"
 	"time"
 
+	noopNotification "github.com/frain-dev/convoy/notification/noop"
+
 	"github.com/frain-dev/convoy/auth/realm_chain"
 	mcache "github.com/frain-dev/convoy/cache/memory"
 	nooplimiter "github.com/frain-dev/convoy/limiter/noop"
@@ -130,7 +132,8 @@ func provideApplication(ctrl *gomock.Controller) *applicationHandler {
 	apiKeyRepo := mocks.NewMockAPIKeyRepository(ctrl)
 	cache := mcache.NewMemoryCache()
 	limiter := nooplimiter.NewNoopLimiter()
-	return newApplicationHandler(eventRepo, eventDeliveryRepo, appRepo, groupRepo, apiKeyRepo, eventQueue, logger, tracer, cache, limiter)
+	ns := noopNotification.NewNoopNotificationSender()
+	return newApplicationHandler(eventRepo, eventDeliveryRepo, ns, appRepo, groupRepo, apiKeyRepo, eventQueue, logger, tracer, cache, limiter)
 }
 
 func TestApplicationHandler_GetApp(t *testing.T) {
