@@ -9,10 +9,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/frain-dev/convoy/notification/slack"
-
-	"github.com/frain-dev/convoy/notification"
-
 	"github.com/frain-dev/convoy"
 	"github.com/frain-dev/convoy/config"
 	"github.com/frain-dev/convoy/datastore"
@@ -20,7 +16,6 @@ import (
 	"github.com/frain-dev/convoy/net"
 	"github.com/frain-dev/convoy/queue"
 	"github.com/frain-dev/convoy/retrystrategies"
-	"github.com/frain-dev/convoy/smtp"
 	"github.com/frain-dev/convoy/util"
 	"github.com/google/uuid"
 	log "github.com/sirupsen/logrus"
@@ -298,30 +293,7 @@ func sendFailureNotification(ctx context.Context, appRepo datastore.ApplicationR
 	}
 
 	for _, channel := range app.NotificationChannels {
-		switch channel.Type {
-		case convoy.SlackNotificationProvider:
-			n := &notification.Notification{
-				Text: fmt.Sprintf("failed to send event delivery (%s) after retry limit was hit", eventDelivery.UID),
-			}
-
-			err = slack.NewSlack(channel.SlackWebhookURL).SendNotification(ctx, n)
-			if err != nil {
-				log.WithError(err).Error("failed to send notification for event delivery failure")
-			}
-		case convoy.EmailNotificationProvider:
-			s, err := smtp.New(smtpCfg)
-			if err != nil {
-				log.WithError(err).Error("failed to initialize smtp client")
-				return
-			}
-
-			err = s.SendEmailNotification(channel.Email, g.LogoURL, eventDelivery.EndpointMetadata.TargetURL, status)
-			if err != nil {
-				log.WithError(err).Error("failed to send email notification for event delivery failure")
-			}
-		default:
-			log.Errorf("unknown notification channel type: %s", channel.Type)
-		}
+		channel.SendNotification(ctx, g, eventDelivery, status, smtpCfg)
 	}
 }
 

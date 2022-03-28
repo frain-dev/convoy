@@ -16,7 +16,7 @@ type Slack struct {
 	convoyAgent string
 }
 
-func NewSlack(webhookURL string) notification.Sender {
+func NewSlackNotificationSender(webhookURL string) notification.Sender {
 	s := &Slack{webhookURL: webhookURL}
 	s.convoyAgent = "Convoy/" + convoy.GetVersion()
 	return s

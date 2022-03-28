@@ -22,7 +22,7 @@ func TestProcessEventDelivery(t *testing.T) {
 		cfgPath       string
 		expectedError error
 		msg           *datastore.EventDelivery
-		dbFn          func(*mocks.MockApplicationRepository, *mocks.MockGroupRepository, *mocks.MockEventDeliveryRepository, *mocks.MockRateLimiter, *mocks.MockSender)
+		dbFn          func(*mocks.MockApplicationRepository, *mocks.MockGroupRepository, *mocks.MockEventDeliveryRepository, *mocks.MockRateLimiter)
 		nFn           func() func()
 	}{
 		{
@@ -32,7 +32,7 @@ func TestProcessEventDelivery(t *testing.T) {
 			msg: &datastore.EventDelivery{
 				UID: "",
 			},
-			dbFn: func(a *mocks.MockApplicationRepository, o *mocks.MockGroupRepository, m *mocks.MockEventDeliveryRepository, r *mocks.MockRateLimiter, ns *mocks.MockSender) {
+			dbFn: func(a *mocks.MockApplicationRepository, o *mocks.MockGroupRepository, m *mocks.MockEventDeliveryRepository, r *mocks.MockRateLimiter) {
 				m.EXPECT().
 					FindEventDeliveryByID(gomock.Any(), gomock.Any()).
 					Return(&datastore.EventDelivery{
@@ -53,7 +53,7 @@ func TestProcessEventDelivery(t *testing.T) {
 			msg: &datastore.EventDelivery{
 				UID: "",
 			},
-			dbFn: func(a *mocks.MockApplicationRepository, o *mocks.MockGroupRepository, m *mocks.MockEventDeliveryRepository, r *mocks.MockRateLimiter, ns *mocks.MockSender) {
+			dbFn: func(a *mocks.MockApplicationRepository, o *mocks.MockGroupRepository, m *mocks.MockEventDeliveryRepository, r *mocks.MockRateLimiter) {
 				m.EXPECT().
 					FindEventDeliveryByID(gomock.Any(), gomock.Any()).
 					Return(&datastore.EventDelivery{
@@ -101,7 +101,7 @@ func TestProcessEventDelivery(t *testing.T) {
 			msg: &datastore.EventDelivery{
 				UID: "",
 			},
-			dbFn: func(a *mocks.MockApplicationRepository, o *mocks.MockGroupRepository, m *mocks.MockEventDeliveryRepository, r *mocks.MockRateLimiter, ns *mocks.MockSender) {
+			dbFn: func(a *mocks.MockApplicationRepository, o *mocks.MockGroupRepository, m *mocks.MockEventDeliveryRepository, r *mocks.MockRateLimiter) {
 				m.EXPECT().
 					FindEventDeliveryByID(gomock.Any(), gomock.Any()).
 					Return(&datastore.EventDelivery{
@@ -186,7 +186,7 @@ func TestProcessEventDelivery(t *testing.T) {
 			msg: &datastore.EventDelivery{
 				UID: "",
 			},
-			dbFn: func(a *mocks.MockApplicationRepository, o *mocks.MockGroupRepository, m *mocks.MockEventDeliveryRepository, r *mocks.MockRateLimiter, ns *mocks.MockSender) {
+			dbFn: func(a *mocks.MockApplicationRepository, o *mocks.MockGroupRepository, m *mocks.MockEventDeliveryRepository, r *mocks.MockRateLimiter) {
 				m.EXPECT().
 					FindEventDeliveryByID(gomock.Any(), gomock.Any()).
 					Return(&datastore.EventDelivery{
@@ -206,6 +206,8 @@ func TestProcessEventDelivery(t *testing.T) {
 						},
 						Status: datastore.ScheduledEventStatus,
 					}, nil).Times(1)
+
+				a.EXPECT().FindApplicationByID(gomock.Any(), gomock.Any()).Return(&datastore.Application{}, nil)
 
 				r.EXPECT().ShouldAllow(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(&redis_rate.Result{
 					Limit:     redis_rate.PerMinute(10),
@@ -271,7 +273,7 @@ func TestProcessEventDelivery(t *testing.T) {
 			msg: &datastore.EventDelivery{
 				UID: "",
 			},
-			dbFn: func(a *mocks.MockApplicationRepository, o *mocks.MockGroupRepository, m *mocks.MockEventDeliveryRepository, r *mocks.MockRateLimiter, ns *mocks.MockSender) {
+			dbFn: func(a *mocks.MockApplicationRepository, o *mocks.MockGroupRepository, m *mocks.MockEventDeliveryRepository, r *mocks.MockRateLimiter) {
 				m.EXPECT().
 					FindEventDeliveryByID(gomock.Any(), gomock.Any()).
 					Return(&datastore.EventDelivery{
@@ -293,6 +295,8 @@ func TestProcessEventDelivery(t *testing.T) {
 						},
 						Status: datastore.ScheduledEventStatus,
 					}, nil).Times(1)
+
+				a.EXPECT().FindApplicationByID(gomock.Any(), gomock.Any()).Return(&datastore.Application{}, nil)
 
 				r.EXPECT().ShouldAllow(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(&redis_rate.Result{
 					Limit:     redis_rate.PerMinute(10),
@@ -362,7 +366,7 @@ func TestProcessEventDelivery(t *testing.T) {
 			msg: &datastore.EventDelivery{
 				UID: "",
 			},
-			dbFn: func(a *mocks.MockApplicationRepository, o *mocks.MockGroupRepository, m *mocks.MockEventDeliveryRepository, r *mocks.MockRateLimiter, ns *mocks.MockSender) {
+			dbFn: func(a *mocks.MockApplicationRepository, o *mocks.MockGroupRepository, m *mocks.MockEventDeliveryRepository, r *mocks.MockRateLimiter) {
 				m.EXPECT().
 					FindEventDeliveryByID(gomock.Any(), gomock.Any()).
 					Return(&datastore.EventDelivery{
@@ -383,6 +387,8 @@ func TestProcessEventDelivery(t *testing.T) {
 						Status: datastore.ScheduledEventStatus,
 					}, nil).Times(1)
 
+				a.EXPECT().FindApplicationByID(gomock.Any(), gomock.Any()).Return(&datastore.Application{}, nil)
+
 				r.EXPECT().ShouldAllow(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(&redis_rate.Result{
 					Limit:     redis_rate.PerMinute(10),
 					Allowed:   10,
@@ -395,7 +401,6 @@ func TestProcessEventDelivery(t *testing.T) {
 					Remaining: 10,
 				}, nil).Times(1)
 
-				ns.EXPECT().SendNotification(gomock.Any(), gomock.Any()).Times(1).Return(nil)
 				o.EXPECT().
 					FetchGroupByID(gomock.Any(), gomock.Any()).
 					Return(&datastore.Group{
@@ -449,7 +454,7 @@ func TestProcessEventDelivery(t *testing.T) {
 			msg: &datastore.EventDelivery{
 				UID: "",
 			},
-			dbFn: func(a *mocks.MockApplicationRepository, o *mocks.MockGroupRepository, m *mocks.MockEventDeliveryRepository, r *mocks.MockRateLimiter, ns *mocks.MockSender) {
+			dbFn: func(a *mocks.MockApplicationRepository, o *mocks.MockGroupRepository, m *mocks.MockEventDeliveryRepository, r *mocks.MockRateLimiter) {
 				m.EXPECT().
 					FindEventDeliveryByID(gomock.Any(), gomock.Any()).
 					Return(&datastore.EventDelivery{
@@ -472,13 +477,13 @@ func TestProcessEventDelivery(t *testing.T) {
 						Status: datastore.ScheduledEventStatus,
 					}, nil).Times(1)
 
+				a.EXPECT().FindApplicationByID(gomock.Any(), gomock.Any()).Return(&datastore.Application{}, nil)
+
 				r.EXPECT().ShouldAllow(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(&redis_rate.Result{
 					Limit:     redis_rate.PerMinute(10),
 					Allowed:   10,
 					Remaining: 10,
 				}, nil).Times(1)
-
-				ns.EXPECT().SendNotification(gomock.Any(), gomock.Any()).Times(1).Return(nil)
 
 				r.EXPECT().Allow(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(&redis_rate.Result{
 					Limit:     redis_rate.PerMinute(10),
@@ -543,7 +548,7 @@ func TestProcessEventDelivery(t *testing.T) {
 			msg: &datastore.EventDelivery{
 				UID: "",
 			},
-			dbFn: func(a *mocks.MockApplicationRepository, o *mocks.MockGroupRepository, m *mocks.MockEventDeliveryRepository, r *mocks.MockRateLimiter, ns *mocks.MockSender) {
+			dbFn: func(a *mocks.MockApplicationRepository, o *mocks.MockGroupRepository, m *mocks.MockEventDeliveryRepository, r *mocks.MockRateLimiter) {
 				m.EXPECT().
 					FindEventDeliveryByID(gomock.Any(), gomock.Any()).
 					Return(&datastore.EventDelivery{
@@ -575,6 +580,8 @@ func TestProcessEventDelivery(t *testing.T) {
 					Allowed:   10,
 					Remaining: 10,
 				}, nil).Times(1)
+
+				a.EXPECT().FindApplicationByID(gomock.Any(), gomock.Any()).Return(&datastore.Application{}, nil)
 
 				o.EXPECT().
 					FetchGroupByID(gomock.Any(), gomock.Any()).
@@ -629,7 +636,7 @@ func TestProcessEventDelivery(t *testing.T) {
 			msg: &datastore.EventDelivery{
 				UID: "",
 			},
-			dbFn: func(a *mocks.MockApplicationRepository, o *mocks.MockGroupRepository, m *mocks.MockEventDeliveryRepository, r *mocks.MockRateLimiter, ns *mocks.MockSender) {
+			dbFn: func(a *mocks.MockApplicationRepository, o *mocks.MockGroupRepository, m *mocks.MockEventDeliveryRepository, r *mocks.MockRateLimiter) {
 				m.EXPECT().
 					FindEventDeliveryByID(gomock.Any(), gomock.Any()).
 					Return(&datastore.EventDelivery{
@@ -651,6 +658,8 @@ func TestProcessEventDelivery(t *testing.T) {
 							UID:       "1234567890",
 						},
 					}, nil).Times(1)
+
+				a.EXPECT().FindApplicationByID(gomock.Any(), gomock.Any()).Return(&datastore.Application{}, nil)
 
 				r.EXPECT().ShouldAllow(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(&redis_rate.Result{
 					Limit:     redis_rate.PerMinute(10),
@@ -726,7 +735,6 @@ func TestProcessEventDelivery(t *testing.T) {
 			msgRepo := mocks.NewMockEventDeliveryRepository(ctrl)
 			apiKeyRepo := mocks.NewMockAPIKeyRepository(ctrl)
 			rateLimiter := mocks.NewMockRateLimiter(ctrl)
-			ns := mocks.NewMockSender(ctrl)
 
 			err := config.LoadConfig(tc.cfgPath)
 			if err != nil {
@@ -749,7 +757,7 @@ func TestProcessEventDelivery(t *testing.T) {
 			}
 
 			if tc.dbFn != nil {
-				tc.dbFn(appRepo, groupRepo, msgRepo, rateLimiter, ns)
+				tc.dbFn(appRepo, groupRepo, msgRepo, rateLimiter)
 			}
 
 			processFn := ProcessEventDelivery(appRepo, msgRepo, groupRepo, rateLimiter)

@@ -5,10 +5,9 @@ import (
 	_ "embed"
 	"fmt"
 	"html/template"
+	"strings"
 
 	"github.com/frain-dev/convoy/config"
-	"github.com/frain-dev/convoy/datastore"
-	"github.com/frain-dev/convoy/util"
 	log "github.com/sirupsen/logrus"
 	"gopkg.in/gomail.v2"
 )
@@ -30,7 +29,7 @@ func New(cfg *config.SMTPConfiguration) (*SmtpClient, error) {
 	var err error
 
 	errMsg := "Missing SMTP Config - %s"
-	if util.IsStringEmpty(cfg.URL) {
+	if IsStringEmpty(cfg.URL) {
 		err = fmt.Errorf(errMsg, "URL")
 		log.WithError(err).Error()
 	}
@@ -40,17 +39,17 @@ func New(cfg *config.SMTPConfiguration) (*SmtpClient, error) {
 		log.WithError(err).Error()
 	}
 
-	if util.IsStringEmpty(cfg.Username) {
+	if IsStringEmpty(cfg.Username) {
 		err = fmt.Errorf(errMsg, "username")
 		log.WithError(err).Error()
 	}
 
-	if util.IsStringEmpty(cfg.Password) {
+	if IsStringEmpty(cfg.Password) {
 		err = fmt.Errorf(errMsg, "password")
 		log.WithError(err).Error()
 	}
 
-	if util.IsStringEmpty(cfg.From) {
+	if IsStringEmpty(cfg.From) {
 		err = fmt.Errorf(errMsg, "from")
 		log.WithError(err).Error()
 	}
@@ -65,7 +64,7 @@ func New(cfg *config.SMTPConfiguration) (*SmtpClient, error) {
 	}, err
 }
 
-func (s *SmtpClient) SendEmailNotification(email, logoURL, targetURL string, status datastore.EndpointStatus) error {
+func (s *SmtpClient) SendEmailNotification(email, logoURL, targetURL string, status string) error {
 	// Compose Message
 	m := s.setHeaders(email)
 
@@ -77,7 +76,7 @@ func (s *SmtpClient) SendEmailNotification(email, logoURL, targetURL string, sta
 	err := templ.Execute(&body, struct {
 		URL     string
 		LogoURL string
-		Status  datastore.EndpointStatus
+		Status  string
 	}{
 		URL:     targetURL,
 		LogoURL: logoURL,
@@ -105,7 +104,7 @@ func (s *SmtpClient) setHeaders(email string) *gomail.Message {
 	m.SetHeader("From", fmt.Sprintf("Convoy Status <%s>", s.from))
 	m.SetHeader("To", email)
 
-	if !util.IsStringEmpty(s.replyTo) {
+	if !IsStringEmpty(s.replyTo) {
 		m.SetHeader("Reply-To", s.replyTo)
 	}
 
@@ -113,3 +112,6 @@ func (s *SmtpClient) setHeaders(email string) *gomail.Message {
 
 	return m
 }
+
+// IsStringEmpty checks if the given string s is empty or not
+func IsStringEmpty(s string) bool { return len(strings.TrimSpace(s)) == 0 }

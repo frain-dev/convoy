@@ -3,7 +3,11 @@ package notification
 import "context"
 
 type Notification struct {
-	Text string
+	Text           string
+	Email          string
+	LogoURL        string
+	TargetURL      string
+	EndpointStatus string
 }
 
 type Sender interface {

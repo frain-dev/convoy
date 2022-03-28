@@ -2,12 +2,18 @@ package datastore
 
 import (
 	"bytes"
+	"context"
 	"database/sql/driver"
 	"encoding/json"
 	"errors"
+	"fmt"
 
 	"github.com/frain-dev/convoy/auth"
 	"github.com/frain-dev/convoy/config"
+	"github.com/frain-dev/convoy/notification"
+	"github.com/frain-dev/convoy/notification/email"
+	"github.com/frain-dev/convoy/notification/slack"
+	log "github.com/sirupsen/logrus"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
@@ -77,7 +83,7 @@ type Application struct {
 	GroupID              string                `json:"group_id" bson:"group_id"`
 	Title                string                `json:"name" bson:"title"`
 	SupportEmail         string                `json:"support_email" bson:"support_email"`
-	NotificationChannels []NotificationChannel `json:"notification_channels"`
+	NotificationChannels []NotificationChannel `json:"notification_channels,omitempty" bson:"notification_channels"`
 	IsDisabled           bool                  `json:"is_disabled" bson:"is_disabled"`
 
 	Endpoints []Endpoint         `json:"endpoints" bson:"endpoints"`
@@ -101,6 +107,40 @@ type NotificationChannel struct {
 	Type            NotificationChannelType `json:"type"`
 	Email           string                  `json:"email" bson:"email"`
 	SlackWebhookURL string                  `json:"slack_webhook_url" bson:"slack_webhook_url"`
+}
+
+func (nc *NotificationChannel) SendNotification(ctx context.Context, g *Group, eventDelivery *EventDelivery, status EndpointStatus, smtpCfg *config.SMTPConfiguration) {
+	switch nc.Type {
+	case SlackNotificationChannelType:
+		n := &notification.Notification{
+			Text: fmt.Sprintf("failed to send event delivery (%s) after retry limit was hit", eventDelivery.UID),
+		}
+
+		err := slack.NewSlackNotificationSender(nc.SlackWebhookURL).SendNotification(ctx, n)
+		if err != nil {
+			log.WithError(err).Error("failed to send notification for event delivery failure")
+		}
+	case EmailNotificationChannelType:
+		em, err := email.NewEmailNotificationSender(smtpCfg)
+		if err != nil {
+			log.WithError(err).Error("failed to get new email notification sender")
+			return
+		}
+
+		n := &notification.Notification{
+			Email:          nc.Email,
+			LogoURL:        g.LogoURL,
+			TargetURL:      eventDelivery.EndpointMetadata.TargetURL,
+			EndpointStatus: string(status),
+		}
+
+		err = em.SendNotification(ctx, n)
+		if err != nil {
+			log.WithError(err).Error("failed to send email notification for event delivery failure")
+		}
+	default:
+		log.Errorf("unknown notification channel type: %s", nc.Type)
+	}
 }
 
 type EndpointStatus string
