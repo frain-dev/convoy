@@ -28,6 +28,11 @@
     "config_enabled": true,
     "distributed_tracer_enabled": true
   },
+  "notification": {
+    "slack": {
+      "webhook_url": "<insert-your-webhook-url>"
+    }
+  },
   "server": {
     "http": {
       "ssl": false,
