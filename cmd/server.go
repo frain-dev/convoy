@@ -23,8 +23,6 @@ func addServerCommand(a *app) *cobra.Command {
 	var sentry string
 	var limiter string
 	var cache string
-	var notificationProvider string
-	var slackWebhookURL string
 	var logger string
 	var logLevel string
 	var sslKeyFile string
@@ -97,8 +95,6 @@ func addServerCommand(a *app) *cobra.Command {
 	cmd.Flags().StringVar(&env, "env", "development", "Convoy environment")
 	cmd.Flags().StringVar(&baseUrl, "base-url", "", "Base Url - Used for the app portal")
 	cmd.Flags().StringVar(&cache, "cache", "redis", `Cache Provider ("redis" or "in-memory")`)
-	cmd.Flags().StringVar(&notificationProvider, "notification-provider", "", `Notification Provider ("slack")`)
-	cmd.Flags().StringVar(&slackWebhookURL, "slack-webhook-url", "", `Slack Notification Webhook URL`)
 	cmd.Flags().StringVar(&limiter, "limiter", "redis", `Rate limiter provider ("redis" or "in-memory")`)
 	cmd.Flags().StringVar(&sentry, "sentry", "", "Sentry DSN")
 	cmd.Flags().StringVar(&sslCertFile, "ssl-cert-file", "", "SSL certificate file")
