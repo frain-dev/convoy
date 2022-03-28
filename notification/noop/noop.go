@@ -6,10 +6,7 @@ import (
 	"github.com/frain-dev/convoy/notification"
 )
 
-type Noop struct {
-	webhookURL  string
-	convoyAgent string
-}
+type Noop struct{}
 
 func NewNoopNotificationSender() notification.Sender {
 	return Noop{}
