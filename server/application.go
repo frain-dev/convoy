@@ -1,18 +1,13 @@
 package server
 
 import (
-	"fmt"
 	"net/http"
-	"time"
 
-	"github.com/frain-dev/convoy"
 	"github.com/frain-dev/convoy/services"
 
 	"github.com/frain-dev/convoy/cache"
 	limiter "github.com/frain-dev/convoy/limiter"
 	"github.com/frain-dev/convoy/logger"
-	"github.com/google/uuid"
-	"go.mongodb.org/mongo-driver/bson/primitive"
 
 	"github.com/frain-dev/convoy/datastore"
 	"github.com/frain-dev/convoy/queue"
@@ -26,7 +21,10 @@ import (
 )
 
 type applicationHandler struct {
+	appService        *services.AppService
 	eventService      *services.EventService
+	groupService      *services.GroupService
+	securityService   *services.SecurityService
 	appRepo           datastore.ApplicationRepository
 	eventRepo         datastore.EventRepository
 	eventDeliveryRepo datastore.EventDeliveryRepository
@@ -55,11 +53,16 @@ func newApplicationHandler(
 	tracer tracer.Tracer,
 	cache cache.Cache,
 	limiter limiter.RateLimiter) *applicationHandler {
-
+	as := services.NewAppService(appRepo, eventRepo, eventDeliveryRepo, eventQueue)
 	es := services.NewEventService(appRepo, eventRepo, eventDeliveryRepo, eventQueue)
+	gs := services.NewGroupService(appRepo, groupRepo, eventRepo, eventDeliveryRepo, limiter)
+	ss := services.NewSecurityService(groupRepo, apiKeyRepo)
 
 	return &applicationHandler{
+		appService:        as,
 		eventService:      es,
+		groupService:      gs,
+		securityService:   ss,
 		eventRepo:         eventRepo,
 		eventDeliveryRepo: eventDeliveryRepo,
 		apiKeyRepo:        apiKeyRepo,
@@ -141,29 +144,12 @@ func (a *applicationHandler) CreateApp(w http.ResponseWriter, r *http.Request) {
 	}
 
 	appName := newApp.AppName
-	if err = util.Validate(newApp); err != nil {
-		_ = render.Render(w, r, newErrorResponse(err.Error(), http.StatusBadRequest))
-		return
-	}
 
 	group := getGroupFromContext(r.Context())
 
-	uid := uuid.New().String()
-	app := &datastore.Application{
-		UID:            uid,
-		GroupID:        group.UID,
-		Title:          appName,
-		SupportEmail:   newApp.SupportEmail,
-		IsDisabled:     newApp.IsDisabled,
-		CreatedAt:      primitive.NewDateTimeFromTime(time.Now()),
-		UpdatedAt:      primitive.NewDateTimeFromTime(time.Now()),
-		Endpoints:      []datastore.Endpoint{},
-		DocumentStatus: datastore.ActiveDocumentStatus,
-	}
-
-	err = a.appRepo.CreateApplication(r.Context(), app)
+	app, err := a.appService.CreateApp(r.Context(), &newApp, appName, group)
 	if err != nil {
-		_ = render.Render(w, r, newErrorResponse("an error occurred while creating app", http.StatusBadRequest))
+		_ = render.Render(w, r, newServiceErrResponse(err))
 		return
 	}
 
@@ -190,27 +176,11 @@ func (a *applicationHandler) UpdateApp(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	appName := appUpdate.AppName
-	if err = util.Validate(appUpdate); err != nil {
-		_ = render.Render(w, r, newErrorResponse("please provide your appName", http.StatusBadRequest))
-		return
-	}
-
 	app := getApplicationFromContext(r.Context())
 
-	app.Title = *appName
-
-	if appUpdate.SupportEmail != nil {
-		app.SupportEmail = *appUpdate.SupportEmail
-	}
-
-	if appUpdate.IsDisabled != nil {
-		app.IsDisabled = *appUpdate.IsDisabled
-	}
-
-	err = a.appRepo.UpdateApplication(r.Context(), app)
+	err = a.appService.UpdateApplication(r.Context(), &appUpdate, app)
 	if err != nil {
-		_ = render.Render(w, r, newErrorResponse("an error occurred while updating app", http.StatusBadRequest))
+		_ = render.Render(w, r, newServiceErrResponse(err))
 		return
 	}
 
@@ -230,10 +200,10 @@ func (a *applicationHandler) UpdateApp(w http.ResponseWriter, r *http.Request) {
 // @Router /applications/{appID} [delete]
 func (a *applicationHandler) DeleteApp(w http.ResponseWriter, r *http.Request) {
 	app := getApplicationFromContext(r.Context())
-	err := a.appRepo.DeleteApplication(r.Context(), app)
+	err := a.appService.DeleteApplication(r.Context(), app)
 	if err != nil {
 		log.Errorln("failed to delete app - ", err)
-		_ = render.Render(w, r, newErrorResponse("an error occurred while deleting app", http.StatusBadRequest))
+		_ = render.Render(w, r, newServiceErrResponse(err))
 		return
 	}
 
@@ -262,55 +232,9 @@ func (a *applicationHandler) CreateAppEndpoint(w http.ResponseWriter, r *http.Re
 
 	app := getApplicationFromContext(r.Context())
 
-	// Events being nil means it wasn't passed at all, which automatically
-	// translates into a accept all scenario. This is quite different from
-	// an empty array which signifies a blacklist all events -- no events
-	// will be sent to such endpoints.
-	if e.Events == nil {
-		e.Events = []string{"*"}
-	}
-
-	if e.RateLimit == 0 {
-		e.RateLimit = convoy.RATE_LIMIT
-	}
-
-	if util.IsStringEmpty(e.RateLimitDuration) {
-		e.RateLimitDuration = convoy.RATE_LIMIT_DURATION
-	}
-
-	duration, err := time.ParseDuration(e.RateLimitDuration)
+	endpoint, err := a.appService.CreateAppEndpoint(r.Context(), e, app)
 	if err != nil {
-		_ = render.Render(w, r, newErrorResponse(fmt.Sprintf("an error occured parsing the rate limit duration...%v", err.Error()), http.StatusBadRequest))
-		return
-	}
-
-	endpoint := &datastore.Endpoint{
-		UID:               uuid.New().String(),
-		TargetURL:         e.URL,
-		Description:       e.Description,
-		Events:            e.Events,
-		Secret:            e.Secret,
-		Status:            datastore.ActiveEndpointStatus,
-		RateLimit:         e.RateLimit,
-		RateLimitDuration: duration.String(),
-		CreatedAt:         primitive.NewDateTimeFromTime(time.Now()),
-		UpdatedAt:         primitive.NewDateTimeFromTime(time.Now()),
-		DocumentStatus:    datastore.ActiveDocumentStatus,
-	}
-
-	if util.IsStringEmpty(e.Secret) {
-		endpoint.Secret, err = util.GenerateSecret()
-		if err != nil {
-			_ = render.Render(w, r, newErrorResponse(fmt.Sprintf("could not generate secret...%v", err.Error()), http.StatusBadRequest))
-			return
-		}
-	}
-
-	app.Endpoints = append(app.Endpoints, *endpoint)
-
-	err = a.appRepo.UpdateApplication(r.Context(), app)
-	if err != nil {
-		_ = render.Render(w, r, newErrorResponse("an error occurred while adding app endpoint", http.StatusBadRequest))
+		_ = render.Render(w, r, newServiceErrResponse(err))
 		return
 	}
 
@@ -377,16 +301,9 @@ func (a *applicationHandler) UpdateAppEndpoint(w http.ResponseWriter, r *http.Re
 	app := getApplicationFromContext(r.Context())
 	endPointId := chi.URLParam(r, "endpointID")
 
-	endpoints, endpoint, err := updateEndpointIfFound(&app.Endpoints, endPointId, e)
+	endpoint, err := a.appService.UpdateAppEndpoint(r.Context(), e, endPointId, app)
 	if err != nil {
-		_ = render.Render(w, r, newErrorResponse(err.Error(), http.StatusBadRequest))
-		return
-	}
-
-	app.Endpoints = *endpoints
-	err = a.appRepo.UpdateApplication(r.Context(), app)
-	if err != nil {
-		_ = render.Render(w, r, newErrorResponse("an error occurred while updating app endpoints", http.StatusBadRequest))
+		_ = render.Render(w, r, newServiceErrResponse(err))
 		return
 	}
 
@@ -409,16 +326,9 @@ func (a *applicationHandler) DeleteAppEndpoint(w http.ResponseWriter, r *http.Re
 	app := getApplicationFromContext(r.Context())
 	e := getApplicationEndpointFromContext(r.Context())
 
-	for i, endpoint := range app.Endpoints {
-		if endpoint.UID == e.UID && endpoint.DeletedAt == 0 {
-			app.Endpoints = append(app.Endpoints[:i], app.Endpoints[i+1:]...)
-			break
-		}
-	}
-
-	err := a.appRepo.UpdateApplication(r.Context(), app)
+	err := a.appService.DeleteAppEndpoint(r.Context(), e, app)
 	if err != nil {
-		_ = render.Render(w, r, newErrorResponse("an error occurred while deleting app endpoint", http.StatusBadRequest))
+		_ = render.Render(w, r, newServiceErrResponse(err))
 		return
 	}
 
@@ -430,45 +340,4 @@ func (a *applicationHandler) GetPaginatedApps(w http.ResponseWriter, r *http.Req
 	_ = render.Render(w, r, newServerResponse("Apps fetched successfully",
 		pagedResponse{Content: *getApplicationsFromContext(r.Context()),
 			Pagination: getPaginationDataFromContext(r.Context())}, http.StatusOK))
-}
-
-func updateEndpointIfFound(endpoints *[]datastore.Endpoint, id string, e models.Endpoint) (*[]datastore.Endpoint, *datastore.Endpoint, error) {
-	for i, endpoint := range *endpoints {
-		if endpoint.UID == id && endpoint.DeletedAt == 0 {
-			endpoint.TargetURL = e.URL
-			endpoint.Description = e.Description
-
-			// Events being empty means it wasn't passed at all, which automatically
-			// translates into a accept all scenario. This is quite different from
-			// an empty array which signifies a blacklist all events -- no events
-			// will be sent to such endpoints.
-			if len(e.Events) == 0 {
-				endpoint.Events = []string{"*"}
-			} else {
-				endpoint.Events = e.Events
-			}
-
-			if e.RateLimit == 0 {
-				e.RateLimit = convoy.RATE_LIMIT
-			}
-
-			if util.IsStringEmpty(e.RateLimitDuration) {
-				e.RateLimitDuration = convoy.RATE_LIMIT_DURATION
-			}
-
-			duration, err := time.ParseDuration(e.RateLimitDuration)
-			if err != nil {
-				return nil, nil, err
-			}
-
-			endpoint.RateLimit = e.RateLimit
-			endpoint.RateLimitDuration = duration.String()
-
-			endpoint.Status = datastore.ActiveEndpointStatus
-			endpoint.UpdatedAt = primitive.NewDateTimeFromTime(time.Now())
-			(*endpoints)[i] = endpoint
-			return endpoints, &endpoint, nil
-		}
-	}
-	return endpoints, nil, datastore.ErrEndpointNotFound
 }

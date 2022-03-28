@@ -9,7 +9,7 @@ require (
 	github.com/dchest/uniuri v0.0.0-20200228104902-7aecb25e1fe5
 	github.com/dgraph-io/badger/v3 v3.2103.1
 	github.com/felixge/httpsnoop v1.0.2
-	github.com/frain-dev/taskq/v3 v3.2.10
+	github.com/frain-dev/taskq/v3 v3.2.11
 	github.com/fsnotify/fsnotify v1.5.1 // indirect
 	github.com/getkin/kin-openapi v0.78.0
 	github.com/getsentry/sentry-go v0.11.0
@@ -42,6 +42,7 @@ require (
 	github.com/swaggo/swag v1.7.3
 	github.com/timshannon/badgerhold/v4 v4.0.2
 	github.com/x-cray/logrus-prefixed-formatter v0.5.2
+	github.com/xdg-go/pbkdf2 v1.0.0
 	github.com/youmark/pkcs8 v0.0.0-20201027041543-1326539a0a0a // indirect
 	go.mongodb.org/mongo-driver v1.7.1
 	golang.org/x/crypto v0.0.0-20211215153901-e495a2d5b3d3

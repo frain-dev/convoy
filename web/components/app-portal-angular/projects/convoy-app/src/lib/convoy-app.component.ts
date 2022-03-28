@@ -381,19 +381,19 @@ export class ConvoyAppComponent implements OnInit {
 	getCodeSnippetString(type: 'res_body' | 'event' | 'event_delivery' | 'res_head' | 'req') {
 		if (type === 'event') {
 			if (!this.detailsItem?.data) return 'No event data was sent';
-			return JSON.stringify(this.detailsItem.data || this.detailsItem.metadata.data, null, 4).replaceAll(/"([^"]+)":/g, '$1:');
+			return JSON.stringify(this.detailsItem.data || this.detailsItem.metadata.data, null, 4)?.replaceAll(/"([^"]+)":/g, '$1:');
 		} else if (type === 'event_delivery') {
 			if (!this.detailsItem?.metadata?.data) return 'No event data was sent';
-			return JSON.stringify(this.detailsItem.metadata.data, null, 4).replaceAll(/"([^"]+)":/g, '$1:');
+			return JSON.stringify(this.detailsItem.metadata.data, null, 4)?.replaceAll(/"([^"]+)":/g, '$1:');
 		} else if (type === 'res_body') {
 			if (!this.eventDeliveryAtempt) return 'No response body was sent';
 			return this.eventDeliveryAtempt.response_data;
 		} else if (type === 'res_head') {
 			if (!this.eventDeliveryAtempt) return 'No response header was sent';
-			return JSON.stringify(this.eventDeliveryAtempt.response_http_header, null, 4).replaceAll(/"([^"]+)":/g, '$1:');
+			return JSON.stringify(this.eventDeliveryAtempt.response_http_header, null, 4)?.replaceAll(/"([^"]+)":/g, '$1:');
 		} else if (type === 'req') {
 			if (!this.eventDeliveryAtempt) return 'No request header was sent';
-			return JSON.stringify(this.eventDeliveryAtempt.request_http_header, null, 4).replaceAll(/"([^"]+)":/g, '$1:');
+			return JSON.stringify(this.eventDeliveryAtempt.request_http_header, null, 4)?.replaceAll(/"([^"]+)":/g, '$1:');
 		}
 		return '';
 	}

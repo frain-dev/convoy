@@ -128,6 +128,12 @@ definitions:
         items:
           type: string
         type: array
+      http_timeout:
+        type: string
+      rate_limit:
+        type: integer
+      rate_limit_duration:
+        type: string
       secret:
         type: string
       status:
@@ -141,6 +147,12 @@ definitions:
     type: object
   datastore.EndpointMetadata:
     properties:
+      http_timeout:
+        type: string
+      rate_limit:
+        type: integer
+      rate_limit_duration:
+        type: string
       secret:
         type: string
       sent:
@@ -234,7 +246,7 @@ definitions:
       rate_limit:
         type: integer
       rate_limit_duration:
-        type: integer
+        type: string
       statistics:
         $ref: '#/definitions/datastore.GroupStatistics'
       uid:
@@ -362,6 +374,12 @@ definitions:
         items:
           type: string
         type: array
+      http_timeout:
+        type: string
+      rate_limit:
+        type: integer
+      rate_limit_duration:
+        type: string
       secret:
         type: string
       url:
@@ -392,7 +410,7 @@ definitions:
       rate_limit:
         type: integer
       rate_limit_duration:
-        type: integer
+        type: string
     type: object
   models.PortalAPIKeyResponse:
     properties:

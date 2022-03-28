@@ -470,7 +470,7 @@ func TestApplicationHandler_DeleteGroup(t *testing.T) {
 			name:       "failed group delete",
 			cfgPath:    "./testdata/Auth_Config/no-auth-convoy.json",
 			method:     http.MethodDelete,
-			statusCode: http.StatusInternalServerError,
+			statusCode: http.StatusBadRequest,
 			orgID:      realOrgID,
 			body:       bodyReader,
 			dbFn: func(app *applicationHandler) {

@@ -27,5 +27,6 @@ hookstack
 **/.angular/cache
 
 # Convoy specific
+convoy
 convoy.json
 docker-compose.yml

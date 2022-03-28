@@ -107,6 +107,7 @@ func (e *EventService) CreateAppEvent(ctx context.Context, newMessage *models.Ev
 				Sent:              false,
 				RateLimit:         v.RateLimit,
 				RateLimitDuration: v.RateLimitDuration,
+				HttpTimeout:       v.HttpTimeout,
 			},
 			AppMetadata: &datastore.AppMetadata{
 				UID:          app.UID,
