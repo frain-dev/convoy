@@ -51,16 +51,16 @@ func (a *AppService) CreateApp(ctx context.Context, newApp *models.Application, 
 	}
 
 	for _, channel := range newApp.NotificationChannels {
-		if channel == convoy.SlackNotificationProvider {
+		if channel == datastore.SlackNotificationChannelType.String() {
 			app.NotificationChannels = append(app.NotificationChannels, datastore.NotificationChannel{
-				Type:            convoy.SlackNotificationProvider,
+				Type:            datastore.SlackNotificationChannelType,
 				SlackWebhookURL: newApp.SlackWebhookURL,
 			})
 		}
 
-		if channel == convoy.EmailNotificationProvider {
+		if channel == datastore.EmailNotificationChannelType.String() {
 			app.NotificationChannels = append(app.NotificationChannels, datastore.NotificationChannel{
-				Type:  convoy.EmailNotificationProvider,
+				Type:  datastore.EmailNotificationChannelType,
 				Email: newApp.SupportEmail,
 			})
 		}
@@ -223,11 +223,11 @@ func (a *AppService) DeleteAppEndpoint(ctx context.Context, e *datastore.Endpoin
 func validateNotificationChannels(newApp *models.Application) error {
 	for _, channel := range newApp.NotificationChannels {
 		switch channel {
-		case convoy.SlackNotificationProvider:
+		case datastore.SlackNotificationChannelType.String():
 			if util.IsStringEmpty(newApp.SlackWebhookURL) {
 				return NewServiceError(http.StatusBadRequest, errors.New("slack webhook url is required for slack notification channel"))
 			}
-		case convoy.EmailNotificationProvider:
+		case datastore.EmailNotificationChannelType.String():
 			if util.IsStringEmpty(newApp.SupportEmail) {
 				return NewServiceError(http.StatusBadRequest, errors.New("support email is required for email notification channel"))
 			}

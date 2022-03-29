@@ -103,6 +103,10 @@ const (
 	EmailNotificationChannelType NotificationChannelType = "email"
 )
 
+func (n NotificationChannelType) String() string {
+	return string(n)
+}
+
 type NotificationChannel struct {
 	Type            NotificationChannelType `json:"type"`
 	Email           string                  `json:"email" bson:"email"`
