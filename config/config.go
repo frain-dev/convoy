@@ -182,7 +182,6 @@ type SignatureConfiguration struct {
 type AuthProvider string
 type QueueProvider string
 type StrategyProvider string
-type NotificationProvider string
 type SignatureHeaderProvider string
 type LoggerProvider string
 type TracerProvider string
