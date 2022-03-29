@@ -71,6 +71,7 @@ export class ConvoyDashboardComponent implements OnInit {
 	addNewAppForm: FormGroup = this.formBuilder.group({
 		name: ['', Validators.required],
 		support_email: ['', Validators.compose([Validators.required, Validators.email])],
+		is_disabled: [''],
 		endpoints: this.formBuilder.array([])
 	});
 	addNewEndpointForm: FormGroup = this.formBuilder.group({
@@ -93,6 +94,7 @@ export class ConvoyDashboardComponent implements OnInit {
 	allEventdeliveriesChecked = false;
 	eventDeliveryStatuses = ['Success', 'Failure', 'Retry', 'Scheduled', 'Processing', 'Discarded'];
 	dateOptions = ['Last Year', 'Last Month', 'Last Week', 'Yesterday'];
+	appStatuses = ['All', 'Enabled', 'Disabled'];
 	eventDeliveryFilteredByStatus: string[] = [];
 	eventTags: string[] = [];
 	showOverlay = false;
@@ -130,6 +132,7 @@ export class ConvoyDashboardComponent implements OnInit {
 	updateAppDetail = false;
 	showPublicCopyText = false;
 	showSecretCopyText = false;
+	showEndpointSecret = false;
 	appsSearchString = '';
 	selectedEventsDateOption = '';
 	selectedEventsDelDateOption = '';
@@ -137,6 +140,8 @@ export class ConvoyDashboardComponent implements OnInit {
 	currentAppId = '';
 	tag = '';
 	appPortalLink = '';
+	endpointSecretKey = '';
+	selectedAppStatus = 'All';
 	batchRetryCount!: any;
 	eventsAppsFilter$!: Observable<APP[]>;
 	eventsDelAppsFilter$!: Observable<APP[]>;
@@ -241,7 +246,7 @@ export class ConvoyDashboardComponent implements OnInit {
 		delete this.addNewAppForm.value.endpoints;
 		try {
 			const response = await this.convyDashboardService.request({
-				url: this.editAppMode ? this.getAPIURL(`/apps/${this.appsDetailsItem?.uid}?groupID=${this.activeGroup || ''}`) : this.getAPIURL(`/apps?groupID=${this.activeGroup || ''}`),
+				url: this.editAppMode ? this.getAPIURL(`/apps/${this.appsDetailsItem?.uid}`) : this.getAPIURL(`/apps`),
 				token: this.requestToken,
 				authType: this.apiAuthType,
 				body: this.addNewAppForm.value,
@@ -260,6 +265,7 @@ export class ConvoyDashboardComponent implements OnInit {
 			this.getApps({ type: 'apps' });
 			this.showCreateAppModal = false;
 			this.isCreatingNewApp = false;
+			this.editAppMode = false;
 		} catch {
 			this.isCreatingNewApp = false;
 		}
@@ -269,7 +275,7 @@ export class ConvoyDashboardComponent implements OnInit {
 		this.isDeletingApp = true;
 		try {
 			const response = await this.convyDashboardService.request({
-				url: this.getAPIURL(`/apps/${this.appsDetailsItem?.uid}?groupID=${this.activeGroup || ''}`),
+				url: this.getAPIURL(`/apps/${this.appsDetailsItem?.uid}`),
 				token: this.requestToken,
 				authType: this.apiAuthType,
 				method: 'delete'
@@ -300,7 +306,7 @@ export class ConvoyDashboardComponent implements OnInit {
 		});
 		try {
 			const response = await this.convyDashboardService.request({
-				url: this.getAPIURL(`/apps/${appUid ? appUid : this.appsDetailsItem?.uid}/endpoints?groupID=${this.activeGroup || ''}`),
+				url: this.getAPIURL(`/apps/${appUid ? appUid : this.appsDetailsItem?.uid}/endpoints`),
 				token: this.requestToken,
 				authType: this.apiAuthType,
 				body: this.addNewEndpointForm.value,
@@ -329,7 +335,7 @@ export class ConvoyDashboardComponent implements OnInit {
 		this.isSendingNewEvent = true;
 		try {
 			const response = await this.convyDashboardService.request({
-				url: this.getAPIURL(`/events?groupID=${this.activeGroup || ''}`),
+				url: this.getAPIURL(`/events`),
 				token: this.requestToken,
 				authType: this.apiAuthType,
 				body: this.sendEventForm.value,
@@ -357,7 +363,7 @@ export class ConvoyDashboardComponent implements OnInit {
 		try {
 			const response = await this.convyDashboardService.request({
 				url: this.getAPIURL(
-					`/eventdeliveries/countbatchretryevents?groupID=${this.activeGroup || ''}&eventId=${this.eventDeliveryFilteredByEventId || ''}&page=${
+					`/eventdeliveries/countbatchretryevents?eventId=${this.eventDeliveryFilteredByEventId || ''}&page=${
 						this.eventDeliveriesPage || 1
 					}&startDate=${startDate}&endDate=${endDate}&appId=${this.eventDeliveriesApp}${eventDeliveryStatusFilterQuery || ''}`
 				),
@@ -386,6 +392,22 @@ export class ConvoyDashboardComponent implements OnInit {
 			name: app.name,
 			support_email: app.support_email
 		});
+	}
+
+	editAppStatus(app: APP) {
+		let isDisabled;
+		if (app.is_disabled) {
+			isDisabled = false;
+		} else {
+			isDisabled = true;
+		}
+		this.addNewAppForm.patchValue({
+			name: app.name,
+			support_email: app.support_email,
+			is_disabled: isDisabled
+		});
+		this.editAppMode = true;
+		this.createNewApp();
 	}
 
 	setEventAppId() {
@@ -529,7 +551,7 @@ export class ConvoyDashboardComponent implements OnInit {
 
 		try {
 			const organisationDetailsResponse = await this.convyDashboardService.request({
-				url: this.getAPIURL(`/dashboard/config?groupID=${this.activeGroup || ''}`),
+				url: this.getAPIURL(`/dashboard/config`),
 				token: this.requestToken,
 				authType: this.apiAuthType,
 				method: 'get'
@@ -565,7 +587,7 @@ export class ConvoyDashboardComponent implements OnInit {
 			const { startDate, endDate } = this.setDateForFilter(this.statsDateRange.value);
 
 			const dashboardResponse = await this.convyDashboardService.request({
-				url: this.getAPIURL(`/dashboard/summary?groupID=${this.activeGroup || ''}&startDate=${startDate || ''}&endDate=${endDate || ''}&type=${this.dashboardFrequency}`),
+				url: this.getAPIURL(`/dashboard/summary?startDate=${startDate || ''}&endDate=${endDate || ''}&type=${this.dashboardFrequency}`),
 				token: this.requestToken,
 				authType: this.apiAuthType,
 				method: 'get'
@@ -666,7 +688,7 @@ export class ConvoyDashboardComponent implements OnInit {
 		try {
 			const eventsResponse = await this.convyDashboardService.request({
 				url: this.getAPIURL(
-					`/events?groupID=${this.activeGroup || ''}&sort=AESC&page=${this.eventsPage || 1}&perPage=20&startDate=${startDate}&endDate=${endDate}&appId=${requestDetails?.appId ?? this.eventApp}`
+					`/events?sort=AESC&page=${this.eventsPage || 1}&perPage=20&startDate=${startDate}&endDate=${endDate}&appId=${requestDetails?.appId ?? this.eventApp}`
 				),
 				token: this.requestToken,
 				authType: this.apiAuthType,
@@ -702,13 +724,13 @@ export class ConvoyDashboardComponent implements OnInit {
 	async getAppPortalToken(requestDetail: { redirect: boolean }) {
 		try {
 			const appTokenResponse = await this.convyDashboardService.request({
-				url: this.getAPIURL(`/apps/${this.appsDetailsItem.uid}/keys?groupID=${this.activeGroup || ''}`),
+				url: this.getAPIURL(`/apps/${this.appsDetailsItem.uid}/keys`),
 				token: this.requestToken,
 				authType: this.apiAuthType,
 				method: 'post',
 				body: {}
 			});
-			this.appPortalLink = `<iframe src="${appTokenResponse.data.url}"></iframe>`;
+			this.appPortalLink = `<iframe style="width: 100%; height: 100vh; border: none;" src="${appTokenResponse.data.url}"></iframe>`;
 			if (requestDetail.redirect) window.open(`${appTokenResponse.data.url}`, '_blank');
 			this.loadingAppPotalToken = false;
 		} catch (error) {
@@ -757,7 +779,7 @@ export class ConvoyDashboardComponent implements OnInit {
 		try {
 			const eventDeliveriesResponse = await this.convyDashboardService.request({
 				url: this.getAPIURL(
-					`/eventdeliveries?groupID=${this.activeGroup || ''}&eventId=${requestDetails.eventId || ''}&page=${this.eventDeliveriesPage || 1}&startDate=${startDate}&endDate=${endDate}&appId=${
+					`/eventdeliveries?eventId=${requestDetails.eventId || ''}&page=${this.eventDeliveriesPage || 1}&startDate=${startDate}&endDate=${endDate}&appId=${
 						this.eventDeliveriesApp
 					}${eventDeliveryStatusFilterQuery || ''}`
 				),
@@ -862,7 +884,7 @@ export class ConvoyDashboardComponent implements OnInit {
 	async appsRequest(requestDetails: { search?: string }): Promise<HTTP_RESPONSE> {
 		try {
 			const appsResponse = await this.convyDashboardService.request({
-				url: this.getAPIURL(`/apps?groupID=${this.activeGroup || ''}&sort=AESC&page=${this.appsPage || 1}&perPage=20${requestDetails?.search ? `&q=${requestDetails?.search}` : ''}`),
+				url: this.getAPIURL(`/apps?sort=AESC&page=${this.appsPage || 1}&perPage=20${requestDetails?.search ? `&q=${requestDetails?.search}` : ''}`),
 				token: this.requestToken,
 				authType: this.apiAuthType,
 				method: 'get'
@@ -878,6 +900,10 @@ export class ConvoyDashboardComponent implements OnInit {
 		return await (
 			await this.appsRequest({ search })
 		).data.content;
+	}
+
+	filterAppByStatus(status: string) {
+		this.selectedAppStatus = status;
 	}
 
 	async getApps(requestDetails?: { search?: string; type: 'filter' | 'apps' }) {
@@ -897,7 +923,6 @@ export class ConvoyDashboardComponent implements OnInit {
 
 			if (requestDetails?.type === 'apps') this.apps = appsResponse.data;
 			this.filteredApps = appsResponse.data.content;
-
 			if (this.updateAppDetail) {
 				this.apps.content.forEach(item => {
 					if (this.appsDetailsItem?.uid == item.uid) {
@@ -917,15 +942,15 @@ export class ConvoyDashboardComponent implements OnInit {
 
 	async getDelieveryAttempts(eventDeliveryId: string) {
 		this.isloadingDeliveryAttempt = true;
-
 		try {
 			const deliveryAttemptsResponse = await this.convyDashboardService.request({
-				url: this.getAPIURL(`/eventdeliveries/${eventDeliveryId}/deliveryattempts?groupID=${this.activeGroup || ''}`),
+				url: this.getAPIURL(`/eventdeliveries/${eventDeliveryId}/deliveryattempts`),
 				token: this.requestToken,
 				authType: this.apiAuthType,
 				method: 'get'
 			});
 			this.eventDeliveryAtempt = deliveryAttemptsResponse.data[deliveryAttemptsResponse.data.length - 1];
+
 			this.isloadingDeliveryAttempt = false;
 
 			return;
@@ -971,10 +996,42 @@ export class ConvoyDashboardComponent implements OnInit {
 				method: 'put',
 				token: this.requestToken,
 				authType: this.apiAuthType,
-				url: this.getAPIURL(`/eventdeliveries/${requestDetails.eventDeliveryId}/resend?groupID=${this.activeGroup || ''}`)
+				url: this.getAPIURL(`/eventdeliveries/${requestDetails.eventDeliveryId}/resend`)
 			});
 
 			this.convyDashboardService.showNotification({ message: 'Retry Request Sent' });
+			retryButton.classList.remove(['spin', 'disabled']);
+			retryButton.disabled = false;
+			this.getEventDeliveries();
+		} catch (error: any) {
+			this.convyDashboardService.showNotification({ message: error.error.message });
+			retryButton.classList.remove(['spin', 'disabled']);
+			retryButton.disabled = false;
+			return error;
+		}
+	}
+
+	// force retry successful events
+	async forceRetryEvent(requestDetails: { e: any; index: number; eventDeliveryId: string }) {
+		requestDetails.e.stopPropagation();
+		const retryButton: any = document.querySelector(`#event${requestDetails.index} button`);
+		if (retryButton) {
+			retryButton.classList.add(['spin', 'disabled']);
+			retryButton.disabled = true;
+		}
+		const payload = {
+			ids: [requestDetails.eventDeliveryId]
+		};
+		try {
+			await this.convyDashboardService.request({
+				method: 'post',
+				token: this.requestToken,
+				authType: this.apiAuthType,
+				body: payload,
+				url: this.getAPIURL(`/eventdeliveries/forceresend`)
+			});
+
+			this.convyDashboardService.showNotification({ message: 'Force Retry Request Sent' });
 			retryButton.classList.remove(['spin', 'disabled']);
 			retryButton.disabled = false;
 			this.getEventDeliveries();
@@ -996,7 +1053,7 @@ export class ConvoyDashboardComponent implements OnInit {
 			const response = await this.convyDashboardService.request({
 				method: 'post',
 				url: this.getAPIURL(
-					`/eventdeliveries/batchretry?groupID=${this.activeGroup || ''}&eventId=${this.eventDeliveryFilteredByEventId || ''}&page=${
+					`/eventdeliveries/batchretry?eventId=${this.eventDeliveryFilteredByEventId || ''}&page=${
 						this.eventDeliveriesPage || 1
 					}&startDate=${startDate}&endDate=${endDate}&appId=${this.eventDeliveriesApp}${eventDeliveryStatusFilterQuery || ''}`
 				),
@@ -1059,6 +1116,10 @@ export class ConvoyDashboardComponent implements OnInit {
 				this.eventDeliveryFilteredByEventId = '';
 				this.eventDeliveryFilteredByStatus = [];
 				this.getEventDeliveries({ fromFilter: true });
+				break;
+			case 'apps':
+				this.selectedAppStatus = 'All';
+				this.getApps({ type: 'apps' });
 				break;
 
 			default:

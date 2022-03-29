@@ -5,26 +5,29 @@
 		<div class="page">
 			<h2>Convoy Open-Core</h2>
 			<p class="subtitle">Find the guides, samples, and references you need to use Convoy to start sending out and receiving webhook events as fast as possible.</p>
-			<section class="cards cards__banner">
-				<div class="banner">
-					<div>
-						<h4 class="title">Quick Start Guide</h4>
-						<p>We've put together a short easy to follow steps to get started with deploying Convoy to your dev environment and sending out webhook events in few minutes.</p>
-						<div class="links">
-							<nuxt-link to="/docs/guide" class="get-started">
-								Get started
-								<img src="~/assets/images/arrow-circle-right.svg" alt="arrow right" />
-							</nuxt-link>
-						</div>
-					</div>
-					<div class="banner-img">
-						<img src="~/assets/images/doc-banner.svg" alt="banner" />
+			<div class="banner">
+				<div>
+					<h4 class="title">Quick Start Guide</h4>
+					<p>We've put together a short easy to follow steps to get started with deploying Convoy to your dev environment and sending out webhook events in few minutes.</p>
+					<div class="links">
+						<nuxt-link to="/docs/guide" class="get-started">
+							Get started
+							<img src="~/assets/images/arrow-circle-right.svg" alt="arrow right" />
+						</nuxt-link>
+						<a target="_blank" href="https://convoy.readme.io/reference/introduction" class="api-reference">
+							Api Reference
+							<img src="~/assets/images/arrow-down-right-grey.svg" alt="arrow right" />
+						</a>
 					</div>
 				</div>
+				<div class="banner-img">
+					<img src="~/assets/images/doc-banner.svg" alt="banner" />
+				</div>
+			</div>
+			<section class="cards">
 				<div class="cards_item green">
 					<h3>Overview</h3>
 					<p>A detail breakdown of Convoy, explaining some technical terms used in this documentation.</p>
-					<br />
 					<nuxt-link to="/docs/overview">
 						<button>
 							Read more
@@ -32,9 +35,6 @@
 						</button>
 					</nuxt-link>
 				</div>
-			</section>
-
-			<section class="cards">
 				<div class="cards_item yellow">
 					<h3>Configuration</h3>
 					<p>Step by step explanation on how to configure Convoy to best suite your preference and use case.</p>
@@ -48,7 +48,6 @@
 				<div class="cards_item purple">
 					<h3>Deployment</h3>
 					<p>Learn how to deploy Convoy to any environment of your choice.</p>
-					<br />
 					<nuxt-link to="/docs/deployment">
 						<button>
 							Read more
@@ -57,14 +56,26 @@
 					</nuxt-link>
 				</div>
 				<div class="cards_item pink">
-					<h3>API Reference</h3>
-					<p>We've documented Convoy APIs on an easy to use platform for your reference and tests.</p>
-					<a target="_blank" href="https://convoy.readme.io/reference/introduction">
+					<h3>SDK</h3>
+					<p>We went a step further to make it easier to integrate convoy through SDK.</p>
+					<nuxt-link to="/docs/sdk">
 						<button>
 							Read more
 							<img src="~/assets/images/dark-arrow-circle-right.svg" alt="arrow right" />
 						</button>
-					</a>
+					</nuxt-link>
+				</div>
+				<div class="cards_item blue">
+					<h3>App Portal</h3>
+					<p>
+						With app portal, we're enabling you to extend the visibility our dashboard provides you to your customers.
+					</p>
+					<nuxt-link to="/docs/app-portal">
+						<button>
+							Read more
+							<img src="~/assets/images/dark-arrow-circle-right.svg" alt="arrow right" />
+						</button>
+					</nuxt-link>
 				</div>
 			</section>
 		</div>
@@ -126,7 +137,7 @@ p.subtitle {
 		font-size: 14px;
 		line-height: 22px;
 		color: #737a91;
-		max-width: 273px;
+		max-width: 489px;
 		margin-bottom: 16px;
 	}
 	a {
@@ -151,12 +162,14 @@ p.subtitle {
 			img {
 				margin-left: 5px;
 				transform: rotate(270deg);
+				filter: opacity(0.5) drop-shadow(0 0 0 #477db3);
 			}
 		}
 	}
 	&-img {
-		max-height: 220px;
-		margin-bottom: -10px;
+		max-width: 385px;
+		margin-bottom: -18px;
+		border-bottom-left-radius: 8px;
 	}
 	.links {
 		display: flex;
@@ -167,7 +180,7 @@ p.subtitle {
 	display: grid;
 	grid-template-columns: repeat(auto-fit, minmax(333px, 1fr));
 	gap: 25px;
-	margin-top: 56px;
+	margin-top: 24px;
 	margin-bottom: 56px;
 	&__banner {
 		grid-template-columns: 2fr 1fr;
@@ -197,13 +210,14 @@ p.subtitle {
 			}
 		}
 		p {
-			font-weight: 500;
+			font-weight: 400;
 			font-size: 14px;
 			line-height: 24px;
 			letter-spacing: 0.004em;
 			color: #7987a3;
 			max-width: 293px;
 			margin-bottom: 24px;
+			min-height: 72px;
 		}
 		&.green {
 			background: #e7fbf4;
@@ -222,6 +236,12 @@ p.subtitle {
 			background: rgba(90, 83, 179, 0.1);
 			button {
 				background: #e0dfed;
+			}
+		}
+		&.blue {
+			background: #d1efff;
+			button {
+				background: #c1e1f2;
 			}
 		}
 		&.pink {

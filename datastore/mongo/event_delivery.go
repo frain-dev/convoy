@@ -117,6 +117,23 @@ func (db *eventDeliveryRepo) FindEventDeliveriesByEventID(ctx context.Context,
 	return deliveries, nil
 }
 
+func (db *eventDeliveryRepo) CountDeliveriesByStatus(ctx context.Context,
+	status datastore.EventDeliveryStatus, searchParams datastore.SearchParams) (int64, error) {
+
+	filter := bson.M{
+		"status":          status,
+		"document_status": datastore.ActiveDocumentStatus,
+		"created_at":      getCreatedDateFilter(searchParams),
+	}
+
+	count, err := db.inner.CountDocuments(ctx, filter, nil)
+	if err != nil {
+		return 0, err
+	}
+
+	return count, nil
+}
+
 func (db *eventDeliveryRepo) UpdateStatusOfEventDelivery(ctx context.Context,
 	e datastore.EventDelivery, status datastore.EventDeliveryStatus) error {
 
@@ -135,6 +152,28 @@ func (db *eventDeliveryRepo) UpdateStatusOfEventDelivery(ctx context.Context,
 		return err
 	}
 
+	return nil
+}
+
+func (db *eventDeliveryRepo) UpdateStatusOfEventDeliveries(ctx context.Context, ids []string, status datastore.EventDeliveryStatus) error {
+
+	filter := bson.M{
+		"uid": bson.M{
+			"$in": ids,
+		},
+		"document_status": datastore.ActiveDocumentStatus,
+	}
+
+	update := bson.M{
+		"$set": bson.M{
+			"status":     status,
+			"updated_at": primitive.NewDateTimeFromTime(time.Now()),
+		},
+	}
+	_, err := db.inner.UpdateMany(ctx, filter, update)
+	if err != nil {
+		return err
+	}
 	return nil
 }
 

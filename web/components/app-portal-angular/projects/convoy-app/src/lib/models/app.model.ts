@@ -10,6 +10,7 @@ export interface APP {
 	}[];
 	events: number;
 	group_id: string;
+	is_disabled: boolean;
 	name: string;
 	secret: string;
 	support_email: string;
