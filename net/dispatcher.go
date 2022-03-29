@@ -22,7 +22,7 @@ type Dispatcher struct {
 
 func NewDispatcher() *Dispatcher {
 	return &Dispatcher{
-		client: &http.Client{Timeout: 10 * time.Second},
+		client: &http.Client{Timeout: 60 * time.Second},
 	}
 }
 
