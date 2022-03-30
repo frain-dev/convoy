@@ -3,6 +3,7 @@
 		<div class="dashboard--page--head">
 			<div class="filter without-padding" [ngClass]="{ 'show-calendar': showFilterCalendar }">
 				<div class="margin-right__10px">Filter by:</div>
+
 				<div class="dropdown">
 					<button
 						[ngClass]="{ active: (statsDateRange.value.startDate !== '' && statsDateRange.value.endDate !== '') || selectedEventsDateOption }"
@@ -25,6 +26,7 @@
 						<mat-date-range-picker #statsPicker [disabled]="false"></mat-date-range-picker>
 						<img src="/assets/img/angle-arrow-down.svg" alt="arrow down icon" />
 					</button>
+
 					<div [ngClass]="{ show: showDateFilterDropdown }" class="dropdown__menu large">
 						<ul>
 							<li
@@ -58,7 +60,7 @@
 				<div class="filter without-padding" [ngClass]="{ 'show-calendar': showFilterCalendar }">
 					<div>Active Group:</div>
 					<div class="select">
-						<select [value]="activeGroup" [(ngModel)]="activeGroup" (change)="toggleActiveGroup()">
+						<select [value]="activeGroup" id="groups-dropdown" [(ngModel)]="activeGroup" (change)="toggleActiveGroup()">
 							<option [value]="group.uid" *ngFor="let group of groups">{{ group.name }}</option>
 						</select>
 					</div>

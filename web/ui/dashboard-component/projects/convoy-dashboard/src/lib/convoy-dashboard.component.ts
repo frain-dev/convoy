@@ -169,14 +169,14 @@ export class ConvoyDashboardComponent implements OnInit {
 
 	// seach filters for apps on events and events delivery tab
 	ngAfterViewInit() {
-		this.eventsAppsFilter$ = fromEvent<any>(this.eventsAppsFilter.nativeElement, 'keyup').pipe(
+		this.eventsAppsFilter$ = fromEvent<any>(this.eventsAppsFilter?.nativeElement, 'keyup').pipe(
 			map(event => event.target.value),
 			startWith(''),
 			debounceTime(500),
 			distinctUntilChanged(),
 			switchMap(search => this.getAppsForFilter(search))
 		);
-		this.eventsDelAppsFilter$ = fromEvent<any>(this.eventDelsAppsFilter.nativeElement, 'keyup').pipe(
+		this.eventsDelAppsFilter$ = fromEvent<any>(this.eventDelsAppsFilter?.nativeElement, 'keyup').pipe(
 			map(event => event.target.value),
 			startWith(''),
 			debounceTime(500),
@@ -363,9 +363,9 @@ export class ConvoyDashboardComponent implements OnInit {
 		try {
 			const response = await this.convyDashboardService.request({
 				url: this.getAPIURL(
-					`/eventdeliveries/countbatchretryevents?eventId=${this.eventDeliveryFilteredByEventId || ''}&page=${
-						this.eventDeliveriesPage || 1
-					}&startDate=${startDate}&endDate=${endDate}&appId=${this.eventDeliveriesApp}${eventDeliveryStatusFilterQuery || ''}`
+					`/eventdeliveries/countbatchretryevents?eventId=${this.eventDeliveryFilteredByEventId || ''}&page=${this.eventDeliveriesPage || 1}&startDate=${startDate}&endDate=${endDate}&appId=${
+						this.eventDeliveriesApp
+					}${eventDeliveryStatusFilterQuery || ''}`
 				),
 				token: this.requestToken,
 				authType: this.apiAuthType,
@@ -520,7 +520,7 @@ export class ConvoyDashboardComponent implements OnInit {
 	// initiate dashboard
 	async initDashboard() {
 		await this.getGroups();
-		this.getFiltersFromURL();
+		// this.getFiltersFromURL();
 		await Promise.all([this.getConfigDetails(), this.fetchDashboardData(), this.getEvents(), this.getApps({ type: 'apps' }), this.getEventDeliveries()]);
 
 		// get active tab from url and apply, after getting the details from above requests so that the data is available ahead
@@ -687,9 +687,7 @@ export class ConvoyDashboardComponent implements OnInit {
 
 		try {
 			const eventsResponse = await this.convyDashboardService.request({
-				url: this.getAPIURL(
-					`/events?sort=AESC&page=${this.eventsPage || 1}&perPage=20&startDate=${startDate}&endDate=${endDate}&appId=${requestDetails?.appId ?? this.eventApp}`
-				),
+				url: this.getAPIURL(`/events?sort=AESC&page=${this.eventsPage || 1}&perPage=20&startDate=${startDate}&endDate=${endDate}&appId=${requestDetails?.appId ?? this.eventApp}`),
 				token: this.requestToken,
 				authType: this.apiAuthType,
 				method: 'get'
@@ -730,7 +728,7 @@ export class ConvoyDashboardComponent implements OnInit {
 				method: 'post',
 				body: {}
 			});
-			this.appPortalLink = `<iframe style="width: 100%; height: 100vh; border: none;" src="${appTokenResponse.data.url}"></iframe>`;
+			this.appPortalLink = `<iframe src="${appTokenResponse.data.url}"></iframe>`;
 			if (requestDetail.redirect) window.open(`${appTokenResponse.data.url}`, '_blank');
 			this.loadingAppPotalToken = false;
 		} catch (error) {
@@ -779,9 +777,9 @@ export class ConvoyDashboardComponent implements OnInit {
 		try {
 			const eventDeliveriesResponse = await this.convyDashboardService.request({
 				url: this.getAPIURL(
-					`/eventdeliveries?eventId=${requestDetails.eventId || ''}&page=${this.eventDeliveriesPage || 1}&startDate=${startDate}&endDate=${endDate}&appId=${
-						this.eventDeliveriesApp
-					}${eventDeliveryStatusFilterQuery || ''}`
+					`/eventdeliveries?eventId=${requestDetails.eventId || ''}&page=${this.eventDeliveriesPage || 1}&startDate=${startDate}&endDate=${endDate}&appId=${this.eventDeliveriesApp}${
+						eventDeliveryStatusFilterQuery || ''
+					}`
 				),
 				token: this.requestToken,
 				authType: this.apiAuthType,
@@ -861,7 +859,7 @@ export class ConvoyDashboardComponent implements OnInit {
 		Promise.all([this.getConfigDetails(), this.fetchDashboardData(), this.getEvents(), this.getApps({ type: 'apps' }), this.getEventDeliveries()]);
 	}
 
-	async getGroups(requestDetails?: { addToURL?: boolean }) {
+	async getGroups(requestDetails?: { addToURL?: boolean }): Promise<HTTP_RESPONSE> {
 		if (requestDetails?.addToURL) this.addFilterToURL({ section: 'group' });
 
 		try {
@@ -874,9 +872,9 @@ export class ConvoyDashboardComponent implements OnInit {
 			this.groups = groupsResponse.data;
 
 			// check group existing filter in url and set active group
-			if (!this.isCloud) this.activeGroup = this.route.snapshot.queryParams.group ?? this.groups[0]?.uid;
-			return;
-		} catch (error) {
+			if (!this.isCloud) this.activeGroup = this.route.snapshot.queryParams?.group ?? this.groups[0]?.uid;
+			return groupsResponse;
+		} catch (error: any) {
 			return error;
 		}
 	}
@@ -1053,9 +1051,9 @@ export class ConvoyDashboardComponent implements OnInit {
 			const response = await this.convyDashboardService.request({
 				method: 'post',
 				url: this.getAPIURL(
-					`/eventdeliveries/batchretry?eventId=${this.eventDeliveryFilteredByEventId || ''}&page=${
-						this.eventDeliveriesPage || 1
-					}&startDate=${startDate}&endDate=${endDate}&appId=${this.eventDeliveriesApp}${eventDeliveryStatusFilterQuery || ''}`
+					`/eventdeliveries/batchretry?eventId=${this.eventDeliveryFilteredByEventId || ''}&page=${this.eventDeliveriesPage || 1}&startDate=${startDate}&endDate=${endDate}&appId=${
+						this.eventDeliveriesApp
+					}${eventDeliveryStatusFilterQuery || ''}`
 				),
 				token: this.requestToken,
 				authType: this.apiAuthType,

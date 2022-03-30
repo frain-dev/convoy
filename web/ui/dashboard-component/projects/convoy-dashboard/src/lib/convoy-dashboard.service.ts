@@ -1,13 +1,12 @@
 import { Injectable } from '@angular/core';
 import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { HTTP_RESPONSE } from './models/http.model';
-import { Router } from '@angular/router';
 
 @Injectable({
 	providedIn: 'root'
 })
 export class ConvoyDashboardService {
-	constructor(private httpClient: HttpClient, private router: Router) {}
+	constructor(private httpClient: HttpClient) {}
 
 	request(requestDetails: { url: string; body?: any; method: 'get' | 'post' | 'delete' | 'put'; token: string; authType: 'Bearer' | 'Basic' }): Promise<HTTP_RESPONSE> {
 		return new Promise(async (resolve, reject) => {

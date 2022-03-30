@@ -1,5 +1,5 @@
 import { Component, OnInit } from '@angular/core';
-import { Router } from '@angular/router';
+// import { Router } from '@angular/router';
 import { GeneralService } from 'src/app/services/general/general.service';
 
 @Component({
@@ -11,7 +11,7 @@ export class DashboardComponent implements OnInit {
 	showDropdown = false;
 	apiURL = this.generalService.apiURL();
 
-	constructor(private router: Router, private generalService: GeneralService) {}
+	constructor(private generalService: GeneralService) {}
 
 	async ngOnInit() {
 		await this.initDashboard();
@@ -21,7 +21,7 @@ export class DashboardComponent implements OnInit {
 
 	logout() {
 		localStorage.removeItem('CONVOY_AUTH');
-		this.router.navigateByUrl('/login');
+		// this.router.navigateByUrl('/login');
 	}
 
 	authDetails() {
