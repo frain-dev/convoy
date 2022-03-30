@@ -45,6 +45,7 @@ func addServerCommand(a *app) *cobra.Command {
 	var withWorkers bool
 	var requireAuth bool
 	var disableEndpoint bool
+	var replayAttacks bool
 	var multipleTenants bool
 	var nativeRealmEnabled bool
 	var newReplicTracerEnabled bool
@@ -116,6 +117,7 @@ func addServerCommand(a *app) *cobra.Command {
 	cmd.Flags().BoolVarP(&withWorkers, "with-workers", "w", true, "Should run workers")
 	cmd.Flags().BoolVar(&nativeRealmEnabled, "native", false, "Enable native-realm authentication")
 	cmd.Flags().BoolVar(&disableEndpoint, "disable-endpoint", false, "Disable all application endpoints")
+	cmd.Flags().BoolVar(&replayAttacks, "replay-attacks", false, "Enable feature to prevent replay attacks")
 	cmd.Flags().BoolVar(&newReplicConfigEnabled, "new-relic-config-enabled", false, "Enable new-relic config")
 	cmd.Flags().BoolVar(&multipleTenants, "multi-tenant", false, "Start convoy in single- or multi-tenant mode")
 	cmd.Flags().BoolVar(&newReplicTracerEnabled, "new-relic-tracer-enabled", false, "Enable new-relic distributed tracer")
@@ -379,6 +381,17 @@ func loadServerConfigFromCliFlags(cmd *cobra.Command, c *config.Configuration) e
 		}
 
 		c.GroupConfig.DisableEndpoint = disableEndpoint
+	}
+
+	// CONVOY_REPLAY_ATTACKS
+	isReplayAttacksSet := cmd.Flags().Changed("replay-attacks")
+	if isReplayAttacksSet {
+		replayAttacks, err := cmd.Flags().GetBool("replay-attacks")
+		if err != nil {
+			return err
+		}
+
+		c.GroupConfig.ReplayAttacks = replayAttacks
 	}
 
 	// CONVOY_INTERVAL_SECONDS
