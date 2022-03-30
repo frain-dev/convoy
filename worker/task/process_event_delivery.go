@@ -9,6 +9,10 @@ import (
 	"strings"
 	"time"
 
+	"github.com/frain-dev/convoy/notification"
+	"github.com/frain-dev/convoy/notification/email"
+	"github.com/frain-dev/convoy/notification/slack"
+
 	"github.com/frain-dev/convoy"
 	"github.com/frain-dev/convoy/config"
 	"github.com/frain-dev/convoy/datastore"
@@ -230,6 +234,8 @@ func ProcessEventDelivery(appRepo datastore.ApplicationRepository, eventDelivery
 			if err != nil {
 				log.WithError(err).Error("Failed to reactivate endpoint after successful retry")
 			}
+
+			sendEndpointReactivationNotification(context.Background(), appRepo, m, g, &cfg.SMTP, dbEndpoint)
 		}
 
 		if !done && dbEndpoint.Status == datastore.PendingEndpointStatus {
@@ -266,10 +272,12 @@ func ProcessEventDelivery(appRepo datastore.ApplicationRepository, eventDelivery
 				err := appRepo.UpdateApplicationEndpointsStatus(context.Background(), m.AppMetadata.UID, endpoints, endpointStatus)
 				if err != nil {
 					log.WithError(err).Error("Failed to reactivate endpoint after successful retry")
+				} else {
+					dbEndpoint.Status = endpointStatus // update it here, since it has updated in db too
 				}
 			}
 
-			sendFailureNotification(context.Background(), appRepo, m, g, &cfg.SMTP, endpointStatus)
+			sendFailureNotification(context.Background(), appRepo, m, g, &cfg.SMTP, dbEndpoint)
 		}
 
 		err = eventDeliveryRepo.UpdateEventDeliveryWithAttempt(context.Background(), *m, attempt)
@@ -285,15 +293,64 @@ func ProcessEventDelivery(appRepo datastore.ApplicationRepository, eventDelivery
 	}
 }
 
-func sendFailureNotification(ctx context.Context, appRepo datastore.ApplicationRepository, eventDelivery *datastore.EventDelivery, g *datastore.Group, smtpCfg *config.SMTPConfiguration, status datastore.EndpointStatus) {
+func sendEndpointReactivationNotification(ctx context.Context, appRepo datastore.ApplicationRepository, eventDelivery *datastore.EventDelivery, g *datastore.Group, smtpCfg *config.SMTPConfiguration, endpoint *datastore.Endpoint) {
 	app, err := appRepo.FindApplicationByID(ctx, eventDelivery.AppMetadata.UID)
 	if err != nil {
 		log.WithError(err).Error("failed to fetch application")
 		return
 	}
 
-	for _, channel := range app.NotificationChannels {
-		channel.SendNotification(ctx, g, eventDelivery, status, smtpCfg)
+	n := &notification.Notification{
+		Text:           fmt.Sprintf("endpoint url (%s) which was formerly dectivated has now been reactivated limit was hit, endpoint status is now %s", endpoint.TargetURL, endpoint.Status),
+		LogoURL:        g.LogoURL,
+		TargetURL:      endpoint.TargetURL,
+		EndpointStatus: string(endpoint.Status),
+	}
+
+	for i := range app.NotificationChannels {
+		SendNotification(ctx, &app.NotificationChannels[i], n, smtpCfg)
+	}
+}
+
+func sendFailureNotification(ctx context.Context, appRepo datastore.ApplicationRepository, eventDelivery *datastore.EventDelivery, g *datastore.Group, smtpCfg *config.SMTPConfiguration, endpoint *datastore.Endpoint) {
+	app, err := appRepo.FindApplicationByID(ctx, eventDelivery.AppMetadata.UID)
+	if err != nil {
+		log.WithError(err).Error("failed to fetch application")
+		return
+	}
+
+	n := &notification.Notification{
+		Text:           fmt.Sprintf("failed to send event delivery (%s) to endpoint url (%s) after retry limit was hit, endpoint status is now %s", eventDelivery.UID, endpoint.TargetURL, endpoint.Status),
+		LogoURL:        g.LogoURL,
+		TargetURL:      eventDelivery.EndpointMetadata.TargetURL,
+		EndpointStatus: string(endpoint.Status),
+	}
+
+	for i := range app.NotificationChannels {
+		SendNotification(ctx, &app.NotificationChannels[i], n, smtpCfg)
+	}
+}
+
+func SendNotification(ctx context.Context, nc *datastore.NotificationChannel, n *notification.Notification, smtpCfg *config.SMTPConfiguration) {
+	switch nc.Type {
+	case datastore.SlackNotificationChannelType:
+		err := slack.NewSlackNotificationSender(nc.SlackWebhookURL).SendNotification(ctx, n)
+		if err != nil {
+			log.WithError(err).Error("failed to send notification for event delivery failure")
+		}
+	case datastore.EmailNotificationChannelType:
+		em, err := email.NewEmailNotificationSender(smtpCfg)
+		if err != nil {
+			log.WithError(err).Error("failed to get new email notification sender")
+			return
+		}
+
+		err = em.SendNotification(ctx, n)
+		if err != nil {
+			log.WithError(err).Error("failed to send email notification for event delivery failure")
+		}
+	default:
+		log.Errorf("unknown notification channel type: %s", nc.Type)
 	}
 }
 
