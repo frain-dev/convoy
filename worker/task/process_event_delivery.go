@@ -235,7 +235,7 @@ func ProcessEventDelivery(appRepo datastore.ApplicationRepository, eventDelivery
 				log.WithError(err).Error("Failed to reactivate endpoint after successful retry")
 			}
 
-			sendEndpointReactivationNotification(context.Background(), appRepo, m, g, &cfg.SMTP, dbEndpoint)
+			sendEndpointReactivationNotification(context.Background(), appRepo, m, g, &cfg.SMTP, endpointStatus)
 		}
 
 		if !done && dbEndpoint.Status == datastore.PendingEndpointStatus {
@@ -272,12 +272,10 @@ func ProcessEventDelivery(appRepo datastore.ApplicationRepository, eventDelivery
 				err := appRepo.UpdateApplicationEndpointsStatus(context.Background(), m.AppMetadata.UID, endpoints, endpointStatus)
 				if err != nil {
 					log.WithError(err).Error("Failed to reactivate endpoint after successful retry")
-				} else {
-					dbEndpoint.Status = endpointStatus // update it here, since it has updated in db too
 				}
 			}
 
-			sendFailureNotification(context.Background(), appRepo, m, g, &cfg.SMTP, dbEndpoint)
+			sendFailureNotification(context.Background(), appRepo, m, g, &cfg.SMTP, endpointStatus)
 		}
 
 		err = eventDeliveryRepo.UpdateEventDeliveryWithAttempt(context.Background(), *m, attempt)
@@ -293,7 +291,7 @@ func ProcessEventDelivery(appRepo datastore.ApplicationRepository, eventDelivery
 	}
 }
 
-func sendEndpointReactivationNotification(ctx context.Context, appRepo datastore.ApplicationRepository, eventDelivery *datastore.EventDelivery, g *datastore.Group, smtpCfg *config.SMTPConfiguration, endpoint *datastore.Endpoint) {
+func sendEndpointReactivationNotification(ctx context.Context, appRepo datastore.ApplicationRepository, eventDelivery *datastore.EventDelivery, g *datastore.Group, smtpCfg *config.SMTPConfiguration, status datastore.EndpointStatus) {
 	app, err := appRepo.FindApplicationByID(ctx, eventDelivery.AppMetadata.UID)
 	if err != nil {
 		log.WithError(err).Error("failed to fetch application")
@@ -301,10 +299,10 @@ func sendEndpointReactivationNotification(ctx context.Context, appRepo datastore
 	}
 
 	n := &notification.Notification{
-		Text:           fmt.Sprintf("endpoint url (%s) which was formerly dectivated has now been reactivated limit was hit, endpoint status is now %s", endpoint.TargetURL, endpoint.Status),
+		Text:           fmt.Sprintf("endpoint url (%s) which was formerly dectivated has now been reactivated, endpoint status is now %s", eventDelivery.EndpointMetadata.TargetURL, status),
 		LogoURL:        g.LogoURL,
-		TargetURL:      endpoint.TargetURL,
-		EndpointStatus: string(endpoint.Status),
+		TargetURL:      eventDelivery.EndpointMetadata.TargetURL,
+		EndpointStatus: string(status),
 	}
 
 	for i := range app.NotificationChannels {
@@ -312,7 +310,7 @@ func sendEndpointReactivationNotification(ctx context.Context, appRepo datastore
 	}
 }
 
-func sendFailureNotification(ctx context.Context, appRepo datastore.ApplicationRepository, eventDelivery *datastore.EventDelivery, g *datastore.Group, smtpCfg *config.SMTPConfiguration, endpoint *datastore.Endpoint) {
+func sendFailureNotification(ctx context.Context, appRepo datastore.ApplicationRepository, eventDelivery *datastore.EventDelivery, g *datastore.Group, smtpCfg *config.SMTPConfiguration, status datastore.EndpointStatus) {
 	app, err := appRepo.FindApplicationByID(ctx, eventDelivery.AppMetadata.UID)
 	if err != nil {
 		log.WithError(err).Error("failed to fetch application")
@@ -320,10 +318,10 @@ func sendFailureNotification(ctx context.Context, appRepo datastore.ApplicationR
 	}
 
 	n := &notification.Notification{
-		Text:           fmt.Sprintf("failed to send event delivery (%s) to endpoint url (%s) after retry limit was hit, endpoint status is now %s", eventDelivery.UID, endpoint.TargetURL, endpoint.Status),
+		Text:           fmt.Sprintf("failed to send event delivery (%s) to endpoint url (%s) after retry limit was hit, endpoint status is now %s", eventDelivery.UID, eventDelivery.EndpointMetadata.TargetURL, status),
 		LogoURL:        g.LogoURL,
 		TargetURL:      eventDelivery.EndpointMetadata.TargetURL,
-		EndpointStatus: string(endpoint.Status),
+		EndpointStatus: string(status),
 	}
 
 	for i := range app.NotificationChannels {
