@@ -36,6 +36,12 @@ func Test_EnvironmentTakesPrecedence(t *testing.T) {
 			envConfig: "false",
 		},
 		{
+			name:      "Enable Replay Attacks Feature (boolean)",
+			key:       "CONVOY_REPLAY_ATTACKS",
+			testType:  "boolean",
+			envConfig: "false",
+		},
+		{
 			name:      "Basic Auth (interface)",
 			key:       "CONVOY_BASIC_AUTH_CONFIG",
 			testType:  "interface",
@@ -63,9 +69,17 @@ func Test_EnvironmentTakesPrecedence(t *testing.T) {
 				require.NoError(t, e)
 				require.Equal(t, port, int64(cfg.Server.HTTP.Port))
 			case "boolean":
-				disable_endpoint, e := strconv.ParseBool(tc.envConfig)
-				require.NoError(t, e)
-				require.Equal(t, disable_endpoint, cfg.GroupConfig.DisableEndpoint)
+				switch tc.key {
+				case "CONVOY_DISABLE_ENDPOINT":
+					disable_endpoint, e := strconv.ParseBool(tc.envConfig)
+					require.NoError(t, e)
+					require.Equal(t, disable_endpoint, cfg.GroupConfig.DisableEndpoint)
+
+				case "CONVOY_REPLAY_ATTACKS":
+					replay_attacks, e := strconv.ParseBool(tc.envConfig)
+					require.NoError(t, e)
+					require.Equal(t, replay_attacks, cfg.GroupConfig.ReplayAttacks)
+				}
 			case "interface":
 				basicAuth := BasicAuthConfig{}
 				e := basicAuth.Decode(tc.envConfig)
@@ -106,6 +120,13 @@ func Test_NilEnvironmentVariablesDontOverride(t *testing.T) {
 			expected:  "true",
 		},
 		{
+			name:      "Enable Replay Attacks Feature (boolean)",
+			key:       "CONVOY_REPLAY_ATTACKS",
+			testType:  "boolean",
+			envConfig: "",
+			expected:  "true",
+		},
+		{
 			name:      "Basic Auth (interface)",
 			key:       "CONVOY_BASIC_AUTH_CONFIG",
 			testType:  "interface",
@@ -132,9 +153,16 @@ func Test_NilEnvironmentVariablesDontOverride(t *testing.T) {
 				require.NoError(t, e)
 				require.Equal(t, port, int64(cfg.Server.HTTP.Port))
 			case "boolean":
-				disable_endpoint, e := strconv.ParseBool(tc.expected)
-				require.NoError(t, e)
-				require.Equal(t, disable_endpoint, cfg.GroupConfig.DisableEndpoint)
+				switch tc.key {
+				case "CONVOY_DISABLE_ENDPOINT":
+					disable_endpoint, e := strconv.ParseBool(tc.expected)
+					require.NoError(t, e)
+					require.Equal(t, disable_endpoint, cfg.GroupConfig.DisableEndpoint)
+				case "CONVOY_REPLAY_ATTACKS":
+					replay_attacks, e := strconv.ParseBool(tc.expected)
+					require.NoError(t, e)
+					require.Equal(t, replay_attacks, cfg.GroupConfig.ReplayAttacks)
+				}
 			case "interface":
 				basicAuth := BasicAuthConfig{}
 				e := basicAuth.Decode(tc.expected)

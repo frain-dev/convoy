@@ -25,7 +25,8 @@
       "hash": "SHA256",
       "header": "x-test-signature"
     },
-    "disable_endpoint": true
+    "disable_endpoint": true,
+    "replay_attacks": true
   },
   "auth": {
     "require_auth": true,

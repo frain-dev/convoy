@@ -157,6 +157,7 @@ type GroupConfig struct {
 	Strategy        StrategyConfiguration  `json:"strategy"`
 	Signature       SignatureConfiguration `json:"signature"`
 	DisableEndpoint bool                   `json:"disable_endpoint" envconfig:"CONVOY_DISABLE_ENDPOINT"`
+	ReplayAttacks   bool                   `json:"replay_attacks" envconfig:"CONVOY_REPLAY_ATTACKS"`
 }
 
 type StrategyConfiguration struct {
@@ -446,6 +447,10 @@ func overrideConfigWithEnvVars(c *Configuration, override *Configuration) {
 
 	if _, ok := os.LookupEnv("CONVOY_DISABLE_ENDPOINT"); ok {
 		c.GroupConfig.DisableEndpoint = override.GroupConfig.DisableEndpoint
+	}
+
+	if _, ok := os.LookupEnv("CONVOY_REPLAY_ATTACKS"); ok {
+		c.GroupConfig.ReplayAttacks = override.GroupConfig.ReplayAttacks
 	}
 
 	if _, ok := os.LookupEnv("CONVOY_NEWRELIC_CONFIG_ENABLED"); ok {
