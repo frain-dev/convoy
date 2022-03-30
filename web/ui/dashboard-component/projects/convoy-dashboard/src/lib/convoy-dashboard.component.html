@@ -662,7 +662,7 @@
 									<td>
 										<div class="dropdown">
 											<button class="button__clear button--has-icon" (click)="currentAppId = app.uid; showOverlay = true">
-												<img src="/assets/img/more-icon-vertical.svg" alt="view events icon" />
+												<img src="/assets/img/more-icon-vertical.svg" alt="more icon" />
 											</button>
 											<div [ngClass]="{ show: currentAppId == app.uid }" class="dropdown__menu dropdown__menu__nav small">
 												<ul>
@@ -928,7 +928,7 @@
 	<!-- create app modal  -->
 	<div class="modal--head" *ngIf="showCreateAppModal">
 		<h2>{{ editAppMode ? 'Edit App' : 'Create App' }}</h2>
-		<a (click)="showCreateAppModal = false; editAppMode = false">
+		<a (click)="showCreateAppModal = false; editAppMode = false; addNewAppForm.reset()">
 			<img src="/assets/img/modal-close-icon.svg" alt="close icon" />
 		</a>
 	</div>
@@ -1019,7 +1019,7 @@
 		</form>
 	</div>
 	<div class="modal--footer modal--footer__with-shadow" *ngIf="showCreateAppModal">
-		<button class="button button__white" (click)="showCreateAppModal = false; editAppMode = false">Discard</button>
+		<button class="button button__white" (click)="showCreateAppModal = false; editAppMode = false; addNewAppForm.reset()">Discard</button>
 		<button class="button button__primary" [disabled]="isCreatingNewApp" (click)="createNewApp()">{{ editAppMode ? 'Edit App' : 'Create App' }}</button>
 	</div>
 
@@ -1153,6 +1153,6 @@
 		<div class="text-center font__20px font__weight-500 color__grey margin-bottom__8px">The filters applied will affect</div>
 		<div class="text-center font__20px font__weight-600 color__black margin-bottom__32px">{{ batchRetryCount || 0 }} event{{ batchRetryCount > 1 ? 's' : '' }}</div>
 		<button class="button button__primary" [disabled]="isRetyring || batchRetryCount == 0" (click)="batchRetryEvent()">{{ isRetyring ? 'Retrying Events...' : 'Yes, Apply' }}</button>
-		<button class="button__primary button__clear margin-top__22px font__weight-600" (click)="showBatchRetryModal = false">No, Cancel</button>
+		<button class="button__primary button__clear margin-top__28px font__weight-600" (click)="showBatchRetryModal = false">No, Cancel</button>
 	</div>
 </div>

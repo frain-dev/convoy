@@ -116,6 +116,7 @@ func ensureDefaultGroup(ctx context.Context, cfg config.Configuration, a *app) e
 			Hash:   cfg.GroupConfig.Signature.Hash,
 		},
 		DisableEndpoint: cfg.GroupConfig.DisableEndpoint,
+		ReplayAttacks:   cfg.GroupConfig.ReplayAttacks,
 	}
 
 	if len(groups) == 0 {

@@ -20,6 +20,7 @@ import { ChangeDetectionStrategy, Component, Input, OnInit } from '@angular/core
 				justify-content: center;
 				align-items: center;
 				background: #fff;
+				height: 100%;
 				border-radius: 8px;
 				z-index: 1;
 			}
