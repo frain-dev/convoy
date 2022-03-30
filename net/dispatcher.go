@@ -12,6 +12,7 @@ import (
 	"time"
 
 	"github.com/frain-dev/convoy"
+	"github.com/frain-dev/convoy/datastore"
 	"github.com/frain-dev/convoy/util"
 	log "github.com/sirupsen/logrus"
 )
@@ -26,11 +27,11 @@ func NewDispatcher(timeout time.Duration) *Dispatcher {
 	}
 }
 
-func (d *Dispatcher) SendRequest(endpoint, method string, jsonData json.RawMessage, signatureHeader string, hmac string, timestamp string, maxResponseSize int64) (*Response, error) {
+func (d *Dispatcher) SendRequest(endpoint, method string, jsonData json.RawMessage, g *datastore.Group, hmac string, timestamp string, maxResponseSize int64) (*Response, error) {
 	r := &Response{}
-
-	if util.IsStringEmpty(signatureHeader) || util.IsStringEmpty(hmac) || util.IsStringEmpty(timestamp) {
-		err := errors.New("signature header, hmac and timestamp are required")
+	signatureHeader := g.Config.Signature.Header.String()
+	if util.IsStringEmpty(signatureHeader) || util.IsStringEmpty(hmac) {
+		err := errors.New("signature header and hmac are required")
 		log.WithError(err).Error("Dispatcher invalid arguments")
 		r.Error = err.Error()
 		return r, err
@@ -45,7 +46,15 @@ func (d *Dispatcher) SendRequest(endpoint, method string, jsonData json.RawMessa
 	req.Header.Set(signatureHeader, hmac)
 	req.Header.Add("Content-Type", "application/json")
 	req.Header.Add("User-Agent", defaultUserAgent())
-	req.Header.Set("Convoy-Timestamp", timestamp)
+	if g.Config.ReplayAttacks {
+		if util.IsStringEmpty(timestamp) {
+			err := errors.New("timestamp is required")
+			log.WithError(err).Error("Dispatcher invalid arguments")
+			r.Error = err.Error()
+			return r, err
+		}
+		req.Header.Set("Convoy-Timestamp", timestamp)
+	}
 
 	r.RequestHeader = req.Header
 	r.URL = req.URL

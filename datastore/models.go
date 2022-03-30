@@ -134,6 +134,7 @@ type GroupConfig struct {
 	Strategy        StrategyConfiguration  `json:"strategy"`
 	Signature       SignatureConfiguration `json:"signature"`
 	DisableEndpoint bool                   `json:"disable_endpoint"`
+	ReplayAttacks   bool                   `json:"replay_attacks"`
 }
 type StrategyConfiguration struct {
 	Type               config.StrategyProvider                 `json:"type" valid:"required~please provide a valid strategy type, in(default)~unsupported strategy type"`
@@ -151,6 +152,11 @@ type ExponentialBackoffStrategyConfiguration struct {
 }
 
 type SignatureConfiguration struct {
+	Header config.SignatureHeaderProvider `json:"header" valid:"required~please provide a valid signature header"`
+	Hash   string                         `json:"hash" valid:"required~please provide a valid hash,supported_hash~unsupported hash type"`
+}
+
+type SignatureValues struct {
 	Header config.SignatureHeaderProvider `json:"header" valid:"required~please provide a valid signature header"`
 	Hash   string                         `json:"hash" valid:"required~please provide a valid hash,supported_hash~unsupported hash type"`
 }
