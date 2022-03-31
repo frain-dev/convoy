@@ -5,9 +5,9 @@ import (
 	_ "embed"
 	"fmt"
 	"html/template"
-	"strings"
 
 	"github.com/frain-dev/convoy/config"
+	"github.com/frain-dev/convoy/util"
 	log "github.com/sirupsen/logrus"
 	"gopkg.in/gomail.v2"
 )
@@ -29,7 +29,7 @@ func New(cfg *config.SMTPConfiguration) (*SmtpClient, error) {
 	var err error
 
 	errMsg := "Missing SMTP Config - %s"
-	if IsStringEmpty(cfg.URL) {
+	if util.IsStringEmpty(cfg.URL) {
 		err = fmt.Errorf(errMsg, "URL")
 		log.WithError(err).Error()
 	}
@@ -39,17 +39,17 @@ func New(cfg *config.SMTPConfiguration) (*SmtpClient, error) {
 		log.WithError(err).Error()
 	}
 
-	if IsStringEmpty(cfg.Username) {
+	if util.IsStringEmpty(cfg.Username) {
 		err = fmt.Errorf(errMsg, "username")
 		log.WithError(err).Error()
 	}
 
-	if IsStringEmpty(cfg.Password) {
+	if util.IsStringEmpty(cfg.Password) {
 		err = fmt.Errorf(errMsg, "password")
 		log.WithError(err).Error()
 	}
 
-	if IsStringEmpty(cfg.From) {
+	if util.IsStringEmpty(cfg.From) {
 		err = fmt.Errorf(errMsg, "from")
 		log.WithError(err).Error()
 	}
@@ -104,7 +104,7 @@ func (s *SmtpClient) setHeaders(email string) *gomail.Message {
 	m.SetHeader("From", fmt.Sprintf("Convoy Status <%s>", s.from))
 	m.SetHeader("To", email)
 
-	if !IsStringEmpty(s.replyTo) {
+	if !util.IsStringEmpty(s.replyTo) {
 		m.SetHeader("Reply-To", s.replyTo)
 	}
 
@@ -112,6 +112,3 @@ func (s *SmtpClient) setHeaders(email string) *gomail.Message {
 
 	return m
 }
-
-// IsStringEmpty checks if the given string s is empty or not
-func IsStringEmpty(s string) bool { return len(strings.TrimSpace(s)) == 0 }
