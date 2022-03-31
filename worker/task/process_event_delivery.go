@@ -39,6 +39,11 @@ func (e *EndpointError) Delay() time.Duration {
 	return e.delay
 }
 
+type SignatureValues struct {
+	HMAC      string
+	Timestamp string
+}
+
 func ProcessEventDelivery(appRepo datastore.ApplicationRepository, eventDeliveryRepo datastore.EventDeliveryRepository, groupRepo datastore.GroupRepository, rateLimiter limiter.RateLimiter) func(*queue.Job) error {
 	return func(job *queue.Job) error {
 		Id := job.ID
@@ -163,11 +168,13 @@ func ProcessEventDelivery(appRepo datastore.ApplicationRepository, eventDelivery
 			log.WithError(err).Error("could not find error")
 			return &EndpointError{Err: err, delay: delayDuration}
 		}
-
-		timestamp := fmt.Sprint(time.Now().Unix())
 		var signedPayload strings.Builder
-		signedPayload.WriteString(timestamp)
-		signedPayload.WriteString(",")
+		var timestamp string
+		if g.Config.ReplayAttacks {
+			timestamp = fmt.Sprint(time.Now().Unix())
+			signedPayload.WriteString(timestamp)
+			signedPayload.WriteString(",")
+		}
 		signedPayload.WriteString(bStr)
 
 		hmac, err := util.ComputeJSONHmac(g.Config.Signature.Hash, signedPayload.String(), secret, false)
@@ -179,7 +186,7 @@ func ProcessEventDelivery(appRepo datastore.ApplicationRepository, eventDelivery
 		attemptStatus := false
 		start := time.Now()
 
-		resp, err := dispatch.SendRequest(e.TargetURL, string(convoy.HttpPost), []byte(bStr), g.Config.Signature.Header.String(), hmac, timestamp, int64(cfg.MaxResponseSize))
+		resp, err := dispatch.SendRequest(e.TargetURL, string(convoy.HttpPost), []byte(bStr), g, hmac, timestamp, int64(cfg.MaxResponseSize))
 		status := "-"
 		statusCode := 0
 		if resp != nil {
