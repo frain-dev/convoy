@@ -77,7 +77,7 @@ type Application struct {
 	GroupID         string             `json:"group_id" bson:"group_id"`
 	Title           string             `json:"name" bson:"title"`
 	SupportEmail    string             `json:"support_email" bson:"support_email"`
-	SlackWebhookURL string             `json:"slack_webhook_url" bson:"slack_webhook_url"`
+	SlackWebhookURL string             `json:"slack_webhook_url,omitempty" bson:"slack_webhook_url"`
 	IsDisabled      bool               `json:"is_disabled" bson:"is_disabled"`
 
 	Endpoints []Endpoint         `json:"endpoints" bson:"endpoints"`
