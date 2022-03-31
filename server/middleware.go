@@ -416,7 +416,7 @@ func requireGroup(groupRepo datastore.GroupRepository) func(next http.Handler) h
 			var err error
 			var groupID string
 
-			groupID = r.URL.Query().Get("groupID")
+			groupID = r.URL.Query().Get("groupId")
 
 			if util.IsStringEmpty(groupID) {
 				groupID = chi.URLParam(r, "groupID")

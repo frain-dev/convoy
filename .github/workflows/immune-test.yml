@@ -10,11 +10,17 @@ jobs:
     if: ${{ !(contains(github.head_ref, 'ui/')) || !(contains(github.head_ref, 'cms/')) }}
     strategy:
       matrix:
-        go-version: [ 1.16.x, 1.17.x ]
-        immune-test-file-names: [ "test-push-events.json", "test-groups.json", "test-apps.json", "test-app-endpoints.json" ]
-        immune-version: [ "0.1.4" ]
-        mongodb-version: [ "4.0", "4.2", "4.4" ]
-        redis-version: [ "6.2.6" ]
+        go-version: [1.16.x, 1.17.x]
+        immune-test-file-names:
+          [
+            "test-push-events.json",
+            "test-groups.json",
+            "test-apps.json",
+            "test-app-endpoints.json",
+          ]
+        immune-version: ["0.2.1"]
+        mongodb-version: ["4.0", "4.2", "4.4"]
+        redis-version: ["6.2.6"]
 
     runs-on: ubuntu-latest
     steps:

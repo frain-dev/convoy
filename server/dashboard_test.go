@@ -52,7 +52,7 @@ func Test_fetchAllConfigDetails(t *testing.T) {
 				tc.dbFn(app)
 			}
 
-			req := httptest.NewRequest(tc.method, "/ui/dashboard/config?groupID=12345", nil)
+			req := httptest.NewRequest(tc.method, "/ui/dashboard/config?groupId=12345", nil)
 			responseRecorder := httptest.NewRecorder()
 
 			requireGroup(app.groupRepo)(http.HandlerFunc(app.GetAllConfigDetails)).
