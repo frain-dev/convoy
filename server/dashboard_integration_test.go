@@ -227,6 +227,49 @@ func TestGetDashboardSummary(t *testing.T) {
 				Type:      "daily",
 			},
 		},
+		{
+			name:       "should_error_for_empty_startDate",
+			method:     http.MethodGet,
+			statusCode: http.StatusBadRequest,
+			urlQuery: urlQuery{
+				groupID: group.UID,
+				endDate: "2022-12-27T00:00:00",
+				Type:    "daily",
+			},
+		},
+		{
+			name:       "should_error_for_invalid_startDate",
+			method:     http.MethodGet,
+			statusCode: http.StatusBadRequest,
+			urlQuery: urlQuery{
+				groupID:   group.UID,
+				startDate: "2021-01-01",
+				endDate:   "2022-12-27T00:00:00",
+				Type:      "daily",
+			},
+		},
+		{
+			name:       "should_error_for_invalid_type",
+			method:     http.MethodGet,
+			statusCode: http.StatusBadRequest,
+			urlQuery: urlQuery{
+				groupID:   group.UID,
+				startDate: "2021-01-01T00:00:00",
+				endDate:   "2022-12-27T00:00:00",
+				Type:      "abc",
+			},
+		},
+		{
+			name:       "should_error_for_startDate_greater_than_endDate",
+			method:     http.MethodGet,
+			statusCode: http.StatusBadRequest,
+			urlQuery: urlQuery{
+				groupID:   group.UID,
+				startDate: "2021-01-01T00:00:00",
+				endDate:   "2020-12-27T00:00:00",
+				Type:      "daily",
+			},
+		},
 	}
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
