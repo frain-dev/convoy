@@ -116,6 +116,7 @@ func ensureDefaultGroup(ctx context.Context, cfg config.Configuration, a *app) e
 			Hash:   cfg.GroupConfig.Signature.Hash,
 		},
 		DisableEndpoint: cfg.GroupConfig.DisableEndpoint,
+		ReplayAttacks:   cfg.GroupConfig.ReplayAttacks,
 	}
 
 	if len(groups) == 0 {
@@ -337,7 +338,7 @@ func parsePersistentArgs(app *app, cmd *cobra.Command) {
 	var configFile string
 
 	cmd.PersistentFlags().StringVar(&configFile, "config", "./convoy.json", "Configuration file for convoy")
-	cmd.PersistentFlags().StringVar(&queue, "queue", "redis", "Queue provider (\"redis\" or \"in-memory\")")
+	cmd.PersistentFlags().StringVar(&queue, "queue", "", "Queue provider (\"redis\" or \"in-memory\")")
 	cmd.PersistentFlags().StringVar(&dbDsn, "db", "", "Database dsn or path to in-memory file")
 	cmd.PersistentFlags().StringVar(&redisDsn, "redis", "", "Redis dsn")
 

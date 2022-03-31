@@ -388,6 +388,9 @@
 					"disable_endpoint": {
 						"type": "boolean"
 					},
+					"replay_attacks": {
+						"type": "boolean"
+					},
 					"signature": {
 						"$ref": "#/components/schemas/datastore.SignatureConfiguration"
 					},

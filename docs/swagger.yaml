@@ -262,6 +262,8 @@ definitions:
     properties:
       disable_endpoint:
         type: boolean
+      replay_attacks:
+        type: boolean
       signature:
         $ref: '#/definitions/datastore.SignatureConfiguration'
       strategy:
