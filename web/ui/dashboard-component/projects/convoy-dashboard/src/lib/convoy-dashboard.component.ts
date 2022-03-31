@@ -246,7 +246,7 @@ export class ConvoyDashboardComponent implements OnInit {
 		delete this.addNewAppForm.value.endpoints;
 		try {
 			const response = await this.convyDashboardService.request({
-				url: this.editAppMode ? this.getAPIURL(`/apps/${this.appsDetailsItem?.uid}?groupID=${this.activeGroup || ''}`) : this.getAPIURL(`/apps?groupID=${this.activeGroup || ''}`),
+				url: this.editAppMode ? this.getAPIURL(`/apps/${this.appsDetailsItem?.uid}?groupId=${this.activeGroup || ''}`) : this.getAPIURL(`/apps?groupId=${this.activeGroup || ''}`),
 				token: this.requestToken,
 				authType: this.apiAuthType,
 				body: this.addNewAppForm.value,
@@ -275,7 +275,7 @@ export class ConvoyDashboardComponent implements OnInit {
 		this.isDeletingApp = true;
 		try {
 			const response = await this.convyDashboardService.request({
-				url: this.getAPIURL(`/apps/${this.appsDetailsItem?.uid}?groupID=${this.activeGroup || ''}`),
+				url: this.getAPIURL(`/apps/${this.appsDetailsItem?.uid}?groupId=${this.activeGroup || ''}`),
 				token: this.requestToken,
 				authType: this.apiAuthType,
 				method: 'delete'
@@ -306,7 +306,7 @@ export class ConvoyDashboardComponent implements OnInit {
 		});
 		try {
 			const response = await this.convyDashboardService.request({
-				url: this.getAPIURL(`/apps/${appUid ? appUid : this.appsDetailsItem?.uid}/endpoints?groupID=${this.activeGroup || ''}`),
+				url: this.getAPIURL(`/apps/${appUid ? appUid : this.appsDetailsItem?.uid}/endpoints?groupId=${this.activeGroup || ''}`),
 				token: this.requestToken,
 				authType: this.apiAuthType,
 				body: this.addNewEndpointForm.value,
@@ -335,7 +335,7 @@ export class ConvoyDashboardComponent implements OnInit {
 		this.isSendingNewEvent = true;
 		try {
 			const response = await this.convyDashboardService.request({
-				url: this.getAPIURL(`/events?groupID=${this.activeGroup || ''}`),
+				url: this.getAPIURL(`/events?groupId=${this.activeGroup || ''}`),
 				token: this.requestToken,
 				authType: this.apiAuthType,
 				body: this.sendEventForm.value,
@@ -363,7 +363,7 @@ export class ConvoyDashboardComponent implements OnInit {
 		try {
 			const response = await this.convyDashboardService.request({
 				url: this.getAPIURL(
-					`/eventdeliveries/countbatchretryevents?groupID=${this.activeGroup || ''}&eventId=${this.eventDeliveryFilteredByEventId || ''}&page=${
+					`/eventdeliveries/countbatchretryevents?groupId=${this.activeGroup || ''}&eventId=${this.eventDeliveryFilteredByEventId || ''}&page=${
 						this.eventDeliveriesPage || 1
 					}&startDate=${startDate}&endDate=${endDate}&appId=${this.eventDeliveriesApp}${eventDeliveryStatusFilterQuery || ''}`
 				),
@@ -552,7 +552,7 @@ export class ConvoyDashboardComponent implements OnInit {
 
 		try {
 			const organisationDetailsResponse = await this.convyDashboardService.request({
-				url: this.getAPIURL(`/dashboard/config?groupID=${this.activeGroup || ''}`),
+				url: this.getAPIURL(`/dashboard/config?groupId=${this.activeGroup || ''}`),
 				token: this.requestToken,
 				authType: this.apiAuthType,
 				method: 'get'
@@ -588,7 +588,7 @@ export class ConvoyDashboardComponent implements OnInit {
 			const { startDate, endDate } = this.setDateForFilter(this.statsDateRange.value);
 
 			const dashboardResponse = await this.convyDashboardService.request({
-				url: this.getAPIURL(`/dashboard/summary?groupID=${this.activeGroup || ''}&startDate=${startDate || ''}&endDate=${endDate || ''}&type=${this.dashboardFrequency}`),
+				url: this.getAPIURL(`/dashboard/summary?groupId=${this.activeGroup || ''}&startDate=${startDate || ''}&endDate=${endDate || ''}&type=${this.dashboardFrequency}`),
 				token: this.requestToken,
 				authType: this.apiAuthType,
 				method: 'get'
@@ -689,7 +689,7 @@ export class ConvoyDashboardComponent implements OnInit {
 		try {
 			const eventsResponse = await this.convyDashboardService.request({
 				url: this.getAPIURL(
-					`/events?groupID=${this.activeGroup || ''}&sort=AESC&page=${this.eventsPage || 1}&perPage=20&startDate=${startDate}&endDate=${endDate}&appId=${requestDetails?.appId ?? this.eventApp}`
+					`/events?groupId=${this.activeGroup || ''}&sort=AESC&page=${this.eventsPage || 1}&perPage=20&startDate=${startDate}&endDate=${endDate}&appId=${requestDetails?.appId ?? this.eventApp}`
 				),
 				token: this.requestToken,
 				authType: this.apiAuthType,
@@ -725,7 +725,7 @@ export class ConvoyDashboardComponent implements OnInit {
 	async getAppPortalToken(requestDetail: { redirect: boolean }) {
 		try {
 			const appTokenResponse = await this.convyDashboardService.request({
-				url: this.getAPIURL(`/apps/${this.appsDetailsItem.uid}/keys?groupID=${this.activeGroup || ''}`),
+				url: this.getAPIURL(`/apps/${this.appsDetailsItem.uid}/keys?groupId=${this.activeGroup || ''}`),
 				token: this.requestToken,
 				authType: this.apiAuthType,
 				method: 'post',
@@ -780,7 +780,7 @@ export class ConvoyDashboardComponent implements OnInit {
 		try {
 			const eventDeliveriesResponse = await this.convyDashboardService.request({
 				url: this.getAPIURL(
-					`/eventdeliveries?groupID=${this.activeGroup || ''}&eventId=${requestDetails.eventId || ''}&page=${this.eventDeliveriesPage || 1}&startDate=${startDate}&endDate=${endDate}&appId=${
+					`/eventdeliveries?groupId=${this.activeGroup || ''}&eventId=${requestDetails.eventId || ''}&page=${this.eventDeliveriesPage || 1}&startDate=${startDate}&endDate=${endDate}&appId=${
 						this.eventDeliveriesApp
 					}${eventDeliveryStatusFilterQuery || ''}`
 				),
@@ -885,7 +885,7 @@ export class ConvoyDashboardComponent implements OnInit {
 	async appsRequest(requestDetails: { search?: string }): Promise<HTTP_RESPONSE> {
 		try {
 			const appsResponse = await this.convyDashboardService.request({
-				url: this.getAPIURL(`/apps?groupID=${this.activeGroup || ''}&sort=AESC&page=${this.appsPage || 1}&perPage=20${requestDetails?.search ? `&q=${requestDetails?.search}` : ''}`),
+				url: this.getAPIURL(`/apps?groupId=${this.activeGroup || ''}&sort=AESC&page=${this.appsPage || 1}&perPage=20${requestDetails?.search ? `&q=${requestDetails?.search}` : ''}`),
 				token: this.requestToken,
 				authType: this.apiAuthType,
 				method: 'get'
@@ -945,7 +945,7 @@ export class ConvoyDashboardComponent implements OnInit {
 		this.isloadingDeliveryAttempt = true;
 		try {
 			const deliveryAttemptsResponse = await this.convyDashboardService.request({
-				url: this.getAPIURL(`/eventdeliveries/${eventDeliveryId}/deliveryattempts?groupID=${this.activeGroup || ''}`),
+				url: this.getAPIURL(`/eventdeliveries/${eventDeliveryId}/deliveryattempts?groupId=${this.activeGroup || ''}`),
 				token: this.requestToken,
 				authType: this.apiAuthType,
 				method: 'get'
@@ -997,7 +997,7 @@ export class ConvoyDashboardComponent implements OnInit {
 				method: 'put',
 				token: this.requestToken,
 				authType: this.apiAuthType,
-				url: this.getAPIURL(`/eventdeliveries/${requestDetails.eventDeliveryId}/resend?groupID=${this.activeGroup || ''}`)
+				url: this.getAPIURL(`/eventdeliveries/${requestDetails.eventDeliveryId}/resend?groupId=${this.activeGroup || ''}`)
 			});
 
 			this.convyDashboardService.showNotification({ message: 'Retry Request Sent' });
@@ -1029,7 +1029,7 @@ export class ConvoyDashboardComponent implements OnInit {
 				token: this.requestToken,
 				authType: this.apiAuthType,
 				body: payload,
-				url: this.getAPIURL(`/eventdeliveries/forceresend?groupID=${this.activeGroup || ''}`)
+				url: this.getAPIURL(`/eventdeliveries/forceresend?groupId=${this.activeGroup || ''}`)
 			});
 
 			this.convyDashboardService.showNotification({ message: 'Force Retry Request Sent' });
@@ -1054,7 +1054,7 @@ export class ConvoyDashboardComponent implements OnInit {
 			const response = await this.convyDashboardService.request({
 				method: 'post',
 				url: this.getAPIURL(
-					`/eventdeliveries/batchretry?groupID=${this.activeGroup || ''}&eventId=${this.eventDeliveryFilteredByEventId || ''}&page=${
+					`/eventdeliveries/batchretry?groupId=${this.activeGroup || ''}&eventId=${this.eventDeliveryFilteredByEventId || ''}&page=${
 						this.eventDeliveriesPage || 1
 					}&startDate=${startDate}&endDate=${endDate}&appId=${this.eventDeliveriesApp}${eventDeliveryStatusFilterQuery || ''}`
 				),
