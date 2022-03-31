@@ -39,7 +39,7 @@ func TestGetDashboardSummary(t *testing.T) {
 	app.groupRepo = mongoStore.NewGroupRepo(db)
 
 	group := &datastore.Group{
-		UID:               "123",
+		UID:               uuid.New().String(),
 		Name:              "test-group",
 		RateLimit:         3000,
 		RateLimitDuration: "1m",
@@ -279,7 +279,7 @@ func TestGetDashboardSummary(t *testing.T) {
 			}
 			initRealmChain(t, app.apiKeyRepo)
 
-			req := httptest.NewRequest(tc.method, fmt.Sprintf("/ui/dashboard/summary?startDate=%s&endDate=%s&type=%s&groupID=%s", tc.urlQuery.startDate, tc.urlQuery.endDate, tc.urlQuery.Type, tc.urlQuery.groupID), nil)
+			req := httptest.NewRequest(tc.method, fmt.Sprintf("/ui/dashboard/summary?startDate=%s&endDate=%s&type=%s&groupId=%s", tc.urlQuery.startDate, tc.urlQuery.endDate, tc.urlQuery.Type, tc.urlQuery.groupID), nil)
 			w := httptest.NewRecorder()
 
 			router := buildRoutes(app)
