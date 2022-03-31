@@ -13,7 +13,7 @@
                 "setup_app"
             ],
             "http_method": "GET",
-            "endpoint": "/applications?perPage=10&page=1&sort=asc&q=app&groupID={group_id}",
+            "endpoint": "/applications?perPage=10&page=1&sort=asc&q=app&groupId={group_id}",
             "request_body": {},
             "status_code": 200,
             "response_body": true
@@ -25,7 +25,7 @@
                 "setup_app"
             ],
             "http_method": "GET",
-            "endpoint": "/applications/{app_id}?groupID={group_id}",
+            "endpoint": "/applications/{app_id}?groupId={group_id}",
             "request_body": {},
             "status_code": 200,
             "response_body": true
@@ -37,7 +37,7 @@
                 "setup_app"
             ],
             "http_method": "PUT",
-            "endpoint": "/applications/{app_id}?groupID={group_id}",
+            "endpoint": "/applications/{app_id}?groupId={group_id}",
             "request_body": {
                 "name": "retro-app",
                 "support_email": "ci@gmail.com"
@@ -52,7 +52,7 @@
                 "setup_app"
             ],
             "http_method": "DELETE",
-            "endpoint": "/applications/{app_id}?groupID={group_id}",
+            "endpoint": "/applications/{app_id}?groupId={group_id}",
             "request_body": {
                 "name": "retro-app",
                 "support_email": "ci@gmail.com"
