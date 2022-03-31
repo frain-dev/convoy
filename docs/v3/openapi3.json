@@ -102,11 +102,8 @@
 					"name": {
 						"type": "string"
 					},
-					"notification_channels": {
-						"items": {
-							"$ref": "#/components/schemas/datastore.NotificationChannel"
-						},
-						"type": "array"
+					"slack_webhook_url": {
+						"type": "string"
 					},
 					"support_email": {
 						"type": "string"
@@ -446,20 +443,6 @@
 				},
 				"type": "object"
 			},
-			"datastore.NotificationChannel": {
-				"properties": {
-					"email": {
-						"type": "string"
-					},
-					"slack_webhook_url": {
-						"type": "string"
-					},
-					"type": {
-						"type": "string"
-					}
-				},
-				"type": "object"
-			},
 			"datastore.PaginationData": {
 				"properties": {
 					"next": {
@@ -558,12 +541,6 @@
 					},
 					"name": {
 						"type": "string"
-					},
-					"notification_channels": {
-						"items": {
-							"type": "string"
-						},
-						"type": "array"
 					},
 					"slack_webhook_url": {
 						"type": "string"
