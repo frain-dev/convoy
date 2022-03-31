@@ -127,7 +127,7 @@ func requireApp(appRepo datastore.ApplicationRepository) func(next http.Handler)
 
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 
-			appID := chi.URLParam(r, "appId")
+			appID := chi.URLParam(r, "appID")
 
 			app, err := appRepo.FindApplicationByID(r.Context(), appID)
 			if err != nil {
@@ -171,7 +171,7 @@ func requireAppPortalApplication(appRepo datastore.ApplicationRepository) func(n
 
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 
-			appID := chi.URLParam(r, "appId")
+			appID := chi.URLParam(r, "appID")
 
 			if util.IsStringEmpty(appID) {
 				appID = r.URL.Query().Get("appId")
