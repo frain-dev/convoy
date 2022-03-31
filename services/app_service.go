@@ -34,15 +34,16 @@ func (a *AppService) CreateApp(ctx context.Context, newApp *models.Application, 
 	}
 
 	app := &datastore.Application{
-		UID:            uuid.New().String(),
-		GroupID:        g.UID,
-		Title:          appName,
-		SupportEmail:   newApp.SupportEmail,
-		IsDisabled:     newApp.IsDisabled,
-		CreatedAt:      primitive.NewDateTimeFromTime(time.Now()),
-		UpdatedAt:      primitive.NewDateTimeFromTime(time.Now()),
-		Endpoints:      []datastore.Endpoint{},
-		DocumentStatus: datastore.ActiveDocumentStatus,
+		UID:             uuid.New().String(),
+		GroupID:         g.UID,
+		Title:           appName,
+		SupportEmail:    newApp.SupportEmail,
+		SlackWebhookURL: newApp.SlackWebhookURL,
+		IsDisabled:      newApp.IsDisabled,
+		CreatedAt:       primitive.NewDateTimeFromTime(time.Now()),
+		UpdatedAt:       primitive.NewDateTimeFromTime(time.Now()),
+		Endpoints:       []datastore.Endpoint{},
+		DocumentStatus:  datastore.ActiveDocumentStatus,
 	}
 
 	err := a.appRepo.CreateApplication(ctx, app)
