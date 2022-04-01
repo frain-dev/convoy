@@ -4,6 +4,7 @@ import (
 	"context"
 
 	"github.com/frain-dev/convoy/queue"
+	taskqotel "github.com/frain-dev/convoy/worker/otel"
 	"github.com/frain-dev/taskq/v3"
 	log "github.com/sirupsen/logrus"
 )
@@ -16,6 +17,7 @@ type Producer struct {
 
 func NewProducer(queue queue.Queuer) *Producer {
 	consumer := queue.Consumer()
+	consumer.AddHook(&taskqotel.OpenTelemetryHook{})
 
 	return &Producer{
 		scheduleQueue: queue,

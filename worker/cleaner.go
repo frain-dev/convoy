@@ -2,6 +2,7 @@ package worker
 
 import (
 	"github.com/frain-dev/convoy/queue"
+	taskqotel "github.com/frain-dev/convoy/worker/otel"
 	"github.com/frain-dev/taskq/v3"
 	log "github.com/sirupsen/logrus"
 )
@@ -15,6 +16,7 @@ type Cleaner struct {
 func NewCleaner(queue queue.Queuer) *Cleaner {
 
 	consumer := queue.Consumer()
+	consumer.AddHook(&taskqotel.OpenTelemetryHook{})
 
 	return &Cleaner{
 		deadLetterQueue: queue,

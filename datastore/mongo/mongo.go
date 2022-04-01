@@ -13,6 +13,7 @@ import (
 	"github.com/frain-dev/convoy/datastore"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
+	"go.opentelemetry.io/contrib/instrumentation/go.mongodb.org/mongo-driver/mongo/otelmongo"
 )
 
 const (
@@ -33,8 +34,11 @@ type Client struct {
 func New(cfg config.Configuration) (datastore.DatabaseClient, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
+	opts := options.Client()
+	opts.Monitor = otelmongo.NewMonitor()
+	opts.ApplyURI(cfg.Database.Dsn)
 
-	client, err := mongo.Connect(ctx, options.Client().ApplyURI(cfg.Database.Dsn))
+	client, err := mongo.Connect(ctx, opts)
 	if err != nil {
 		return nil, err
 	}
