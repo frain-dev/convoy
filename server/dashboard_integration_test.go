@@ -111,8 +111,8 @@ func TestGetDashboardSummary(t *testing.T) {
 				GroupID:      group.UID,
 				SupportEmail: application.SupportEmail,
 			},
-			CreatedAt:      primitive.NewDateTimeFromTime(time.Now()),
-			UpdatedAt:      primitive.NewDateTimeFromTime(time.Now()),
+			CreatedAt:      primitive.NewDateTimeFromTime(time.Date(2022, time.March, 20, 1, 1, 1, 0, time.UTC)),
+			UpdatedAt:      primitive.NewDateTimeFromTime(time.Date(2022, time.March, 20, 1, 1, 1, 0, time.UTC)),
 			DocumentStatus: datastore.ActiveDocumentStatus,
 		},
 		{
@@ -127,8 +127,8 @@ func TestGetDashboardSummary(t *testing.T) {
 				GroupID:      group.UID,
 				SupportEmail: application.SupportEmail,
 			},
-			CreatedAt:      primitive.NewDateTimeFromTime(time.Now()),
-			UpdatedAt:      primitive.NewDateTimeFromTime(time.Now()),
+			CreatedAt:      primitive.NewDateTimeFromTime(time.Date(2022, time.March, 20, 1, 1, 1, 0, time.UTC)),
+			UpdatedAt:      primitive.NewDateTimeFromTime(time.Date(2022, time.March, 20, 1, 1, 1, 0, time.UTC)),
 			DocumentStatus: datastore.ActiveDocumentStatus,
 		},
 		{
@@ -143,8 +143,8 @@ func TestGetDashboardSummary(t *testing.T) {
 				GroupID:      group.UID,
 				SupportEmail: application.SupportEmail,
 			},
-			CreatedAt:      primitive.NewDateTimeFromTime(time.Now()),
-			UpdatedAt:      primitive.NewDateTimeFromTime(time.Now()),
+			CreatedAt:      primitive.NewDateTimeFromTime(time.Date(2022, time.March, 20, 1, 1, 1, 0, time.UTC)),
+			UpdatedAt:      primitive.NewDateTimeFromTime(time.Date(2022, time.March, 20, 1, 1, 1, 0, time.UTC)),
 			DocumentStatus: datastore.ActiveDocumentStatus,
 		},
 		{
@@ -159,8 +159,8 @@ func TestGetDashboardSummary(t *testing.T) {
 				GroupID:      group.UID,
 				SupportEmail: application.SupportEmail,
 			},
-			CreatedAt:      primitive.NewDateTimeFromTime(time.Now()),
-			UpdatedAt:      primitive.NewDateTimeFromTime(time.Now()),
+			CreatedAt:      primitive.NewDateTimeFromTime(time.Date(2022, time.March, 20, 1, 1, 1, 0, time.UTC)),
+			UpdatedAt:      primitive.NewDateTimeFromTime(time.Date(2022, time.March, 20, 1, 1, 1, 0, time.UTC)),
 			DocumentStatus: datastore.ActiveDocumentStatus,
 		},
 	}

@@ -1,1 +1,1 @@
-{"status":false,"message":"startDate cannot be greater than endDate"}
+{"status":false,"message":"invalid period 'daily': startDate cannot be greater than endDate"}
