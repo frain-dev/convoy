@@ -23,16 +23,16 @@ export class ConvoyDashboardComponent implements OnInit {
 	tabs: ['events', 'event deliveries', 'apps'] = ['events', 'event deliveries', 'apps'];
 	activeTab: 'events' | 'apps' | 'event deliveries' = 'events';
 	appsDetailsItem?: any;
-	eventsDetailsItem?: any;
+	eventsDetailsItem!: any;
 	eventDelsDetailsItem?: any;
-	eventDeliveryAtempt?: EVENT_DELIVERY_ATTEMPT;
+	eventDeliveryAtempt!: EVENT_DELIVERY_ATTEMPT;
 	showEventFilterCalendar = false;
 	showEventDelFilterCalendar = false;
 	eventDateFilterActive = false;
-	displayedEvents: {
+	displayedEvents!: {
 		date: string;
 		events: EVENT[];
-	}[] = [];
+	}[];
 	events!: { pagination: PAGINATION; content: EVENT[] };
 	apps!: { pagination: PAGINATION; content: APP[] };
 	filteredApps!: APP[];
@@ -87,7 +87,7 @@ export class ConvoyDashboardComponent implements OnInit {
 	selectedEventsFromEventDeliveriesTable: string[] = [];
 	displayedEventDeliveries: { date: string; events: EVENT_DELIVERY[] }[] = [];
 	eventDeliveries!: { pagination: PAGINATION; content: EVENT_DELIVERY[] };
-	sidebarEventDeliveries: EVENT_DELIVERY[] = [];
+	sidebarEventDeliveries!: EVENT_DELIVERY[];
 	eventDeliveryFilteredByEventId = '';
 	groups: GROUP[] = [];
 	activeGroup!: string;
@@ -139,7 +139,7 @@ export class ConvoyDashboardComponent implements OnInit {
 	selectedDateOption = '';
 	currentAppId = '';
 	tag = '';
-	appPortalLink = '';
+	appPortalLink!: string;
 	endpointSecretKey = '';
 	selectedAppStatus = 'All';
 	batchRetryCount!: any;
@@ -192,6 +192,7 @@ export class ConvoyDashboardComponent implements OnInit {
 	getSingleEndpoint(index: any) {
 		return ((this.addNewAppForm.get('endpoints') as FormArray)?.controls[index] as FormGroup)?.controls;
 	}
+
 	newEndpoint(): FormGroup {
 		return this.formBuilder.group({
 			url: ['', Validators.required],
@@ -525,29 +526,32 @@ export class ConvoyDashboardComponent implements OnInit {
 		await Promise.all([this.getConfigDetails(), this.fetchDashboardData(), this.getEvents(), this.getApps({ type: 'apps' }), this.getEventDeliveries()]);
 
 		// get active tab from url and apply, after getting the details from above requests so that the data is available ahead
-		this.toggleActiveTab(this.route.snapshot.queryParams.activeTab ?? 'events');
+		this.toggleActiveTab(this.route.snapshot.queryParams?.activeTab ?? 'events');
 		return;
 	}
 
-	toggleActiveTab(tab: 'events' | 'apps' | 'event deliveries') {
+	async toggleActiveTab(tab: 'events' | 'apps' | 'event deliveries') {
 		this.activeTab = tab;
 		this.addFilterToURL({ section: 'logTab' });
 
 		if (tab === 'apps' && this.apps?.content.length > 0) {
 			if (!this.appsDetailsItem) {
 				this.appsDetailsItem = this.apps?.content[0];
-				this.getAppPortalToken({ redirect: false });
+				await this.getAppPortalToken({ redirect: false });
 			}
+			return;
 		} else if (tab === 'events' && this.events?.content.length > 0) {
 			if (!this.eventsDetailsItem) this.eventsDetailsItem = this.events?.content[0];
-			if (this.eventsDetailsItem?.uid) this.getEventDeliveriesForSidebar(this.eventsDetailsItem.uid);
+			if (this.eventsDetailsItem?.uid) await this.getEventDeliveriesForSidebar(this.eventsDetailsItem.uid);
+			return;
 		} else if (tab === 'event deliveries' && this.eventDeliveries?.content.length > 0) {
 			if (!this.eventDelsDetailsItem) this.eventDelsDetailsItem = this.eventDeliveries?.content[0];
-			if (this.eventDelsDetailsItem?.uid) this.getDelieveryAttempts(this.eventDelsDetailsItem.uid);
+			if (this.eventDelsDetailsItem?.uid) await this.getDelieveryAttempts(this.eventDelsDetailsItem.uid);
+			return;
 		}
 	}
 
-	async getConfigDetails() {
+	async getConfigDetails(): Promise<HTTP_RESPONSE> {
 		this.isloadingConfig = true;
 
 		try {
@@ -559,8 +563,11 @@ export class ConvoyDashboardComponent implements OnInit {
 			});
 			this.organisationDetails = organisationDetailsResponse.data;
 			this.isloadingConfig = false;
-		} catch (error) {
+
+			return organisationDetailsResponse;
+		} catch (error: any) {
 			this.isloadingConfig = false;
+			return error;
 		}
 	}
 
@@ -582,7 +589,7 @@ export class ConvoyDashboardComponent implements OnInit {
 		this.eventDeliveryFilteredByStatus = filters.eventDelsStatus ? JSON.parse(filters.eventDelsStatus) : [];
 	}
 
-	async fetchDashboardData() {
+	async fetchDashboardData(): Promise<HTTP_RESPONSE> {
 		try {
 			this.isloadingDashboardData = true;
 			const { startDate, endDate } = this.setDateForFilter(this.statsDateRange.value);
@@ -595,59 +602,67 @@ export class ConvoyDashboardComponent implements OnInit {
 			});
 			this.dashboardData = dashboardResponse.data;
 			this.isloadingDashboardData = false;
+			this.initChart(dashboardResponse);
 
-			let labelsDateFormat = '';
-			if (this.dashboardFrequency === 'daily') labelsDateFormat = 'do, MMM';
-			else if (this.dashboardFrequency === 'monthly') labelsDateFormat = 'MMM';
-			else if (this.dashboardFrequency === 'yearly') labelsDateFormat = 'yyyy';
+			return dashboardResponse;
+		} catch (error: any) {
+			this.isloadingDashboardData = false;
+			return error;
+		}
+	}
 
-			const chartData = dashboardResponse.data.event_data;
-			const labels = [...chartData.map((label: { data: { date: any } }) => label.data.date)].map(date => {
-				return this.dashboardFrequency === 'weekly' ? date : format(new Date(date), labelsDateFormat);
-			});
-			labels.unshift('0');
-			const dataSet = [0, ...chartData.map((label: { count: any }) => label.count)];
-			const data = {
-				labels,
-				datasets: [
-					{
-						data: dataSet,
-						fill: false,
-						borderColor: '#477DB3',
-						tension: 0.5,
-						yAxisID: 'yAxis',
-						xAxisID: 'xAxis'
-					}
-				]
-			};
+	initChart(dashboardResponse: HTTP_RESPONSE) {
+		let labelsDateFormat = '';
+		if (this.dashboardFrequency === 'daily') labelsDateFormat = 'do, MMM';
+		else if (this.dashboardFrequency === 'monthly') labelsDateFormat = 'MMM';
+		else if (this.dashboardFrequency === 'yearly') labelsDateFormat = 'yyyy';
 
-			const options = {
-				plugins: {
-					legend: {
+		const chartData = dashboardResponse.data.event_data;
+		const labels = [...chartData.map((label: { data: { date: any } }) => label.data.date)].map(date => {
+			return this.dashboardFrequency === 'weekly' ? date : format(new Date(date), labelsDateFormat);
+		});
+		labels.unshift('0');
+		const dataSet = [0, ...chartData.map((label: { count: any }) => label.count)];
+		const data = {
+			labels,
+			datasets: [
+				{
+					data: dataSet,
+					fill: false,
+					borderColor: '#477DB3',
+					tension: 0.5,
+					yAxisID: 'yAxis',
+					xAxisID: 'xAxis'
+				}
+			]
+		};
+
+		const options = {
+			plugins: {
+				legend: {
+					display: false
+				}
+			},
+			scales: {
+				xAxis: {
+					display: true,
+					grid: {
 						display: false
 					}
-				},
-				scales: {
-					xAxis: {
-						display: true,
-						grid: {
-							display: false
-						}
-					}
-				}
-			};
-
-			if (!Chart.getChart('dahboard_events_chart') || !Chart.getChart('dahboard_events_chart')?.canvas) {
-				new Chart('dahboard_events_chart', { type: 'line', data, options });
-			} else {
-				const currentChart = Chart.getChart('dahboard_events_chart');
-				if (currentChart) {
-					currentChart.data.labels = labels;
-					currentChart.data.datasets[0].data = dataSet;
-					currentChart.update();
 				}
 			}
-		} catch (error) {}
+		};
+
+		if (!Chart.getChart('dahboard_events_chart') || !Chart.getChart('dahboard_events_chart')?.canvas) {
+			new Chart('dahboard_events_chart', { type: 'line', data, options });
+		} else {
+			const currentChart = Chart.getChart('dahboard_events_chart');
+			if (currentChart) {
+				currentChart.data.labels = labels;
+				currentChart.data.datasets[0].data = dataSet;
+				currentChart.update();
+			}
+		}
 	}
 
 	setDateForFilter(requestDetails: { startDate: Date; endDate: Date }) {
@@ -678,7 +693,7 @@ export class ConvoyDashboardComponent implements OnInit {
 		return displayedEvents;
 	}
 
-	async getEvents(requestDetails?: { appId?: string; addToURL?: boolean; fromFilter?: boolean }) {
+	async getEvents(requestDetails?: { appId?: string; addToURL?: boolean; fromFilter?: boolean }): Promise<HTTP_RESPONSE> {
 		this.events && this.events?.pagination?.next === this.eventsPage ? (this.isloadingMoreEvents = true) : (this.isloadingEvents = true);
 
 		if (requestDetails?.appId) this.eventApp = requestDetails.appId;
@@ -702,7 +717,7 @@ export class ConvoyDashboardComponent implements OnInit {
 				this.events = { content, pagination };
 				this.displayedEvents = this.setEventsDisplayed(content);
 				this.isloadingMoreEvents = false;
-				return;
+				return eventsResponse;
 			}
 
 			this.events = eventsResponse.data;
@@ -715,7 +730,8 @@ export class ConvoyDashboardComponent implements OnInit {
 			}
 
 			this.isloadingEvents = false;
-		} catch (error) {
+			return eventsResponse;
+		} catch (error: any) {
 			this.isloadingEvents = false;
 			this.isloadingMoreEvents = false;
 			return error;
@@ -723,6 +739,8 @@ export class ConvoyDashboardComponent implements OnInit {
 	}
 
 	async getAppPortalToken(requestDetail: { redirect: boolean }) {
+		this.loadingAppPotalToken = true;
+
 		try {
 			const appTokenResponse = await this.convyDashboardService.request({
 				url: this.getAPIURL(`/apps/${this.appsDetailsItem.uid}/keys?groupID=${this.activeGroup || ''}`),
@@ -815,7 +833,7 @@ export class ConvoyDashboardComponent implements OnInit {
 		activeSection === 'eventDels' ? this.getEventDeliveries({ addToURL: true, fromFilter: true }) : this.getEvents({ addToURL: true, fromFilter: true });
 	}
 
-	async getEventDeliveries(requestDetails?: { addToURL?: boolean; fromFilter?: boolean }) {
+	async getEventDeliveries(requestDetails?: { addToURL?: boolean; fromFilter?: boolean }): Promise<HTTP_RESPONSE> {
 		this.eventDeliveries && this.eventDeliveries?.pagination?.next === this.eventDeliveriesPage ? (this.isloadingMoreEventDeliveries = true) : (this.isloadingEventDeliveries = true);
 
 		if (requestDetails?.addToURL) this.addFilterToURL({ section: 'eventDels' });
@@ -830,7 +848,7 @@ export class ConvoyDashboardComponent implements OnInit {
 				this.eventDeliveries = { content, pagination };
 				this.displayedEventDeliveries = this.setEventsDisplayed(content);
 				this.isloadingMoreEventDeliveries = false;
-				return;
+				return eventDeliveriesResponse;
 			}
 
 			this.eventDeliveries = eventDeliveriesResponse.data;
@@ -843,8 +861,8 @@ export class ConvoyDashboardComponent implements OnInit {
 			}
 
 			this.isloadingEventDeliveries = false;
-			return eventDeliveriesResponse.data.content;
-		} catch (error) {
+			return eventDeliveriesResponse;
+		} catch (error: any) {
 			this.isloadingEventDeliveries = false;
 			this.isloadingMoreEventDeliveries = false;
 			return error;
@@ -907,7 +925,7 @@ export class ConvoyDashboardComponent implements OnInit {
 		this.selectedAppStatus = status;
 	}
 
-	async getApps(requestDetails?: { search?: string; type: 'filter' | 'apps' }) {
+	async getApps(requestDetails?: { search?: string; type: 'filter' | 'apps' }): Promise<HTTP_RESPONSE> {
 		if (this.apps?.pagination?.next === this.appsPage) this.isloadingMoreApps = true;
 		if (requestDetails?.type === 'apps') this.isloadingApps = true;
 
@@ -919,22 +937,17 @@ export class ConvoyDashboardComponent implements OnInit {
 				const pagination = appsResponse.data.pagination;
 				this.apps = { content, pagination };
 				this.isloadingMoreApps = false;
-				return;
+				return appsResponse;
 			}
 
 			if (requestDetails?.type === 'apps') this.apps = appsResponse.data;
-			this.filteredApps = appsResponse.data.content;
-			if (this.updateAppDetail) {
-				this.apps.content.forEach(item => {
-					if (this.appsDetailsItem?.uid == item.uid) {
-						this.appsDetailsItem = item;
-					}
-				});
-			}
+			if (!this.filteredApps) this.filteredApps = appsResponse.data.content;
+
+			if (this.updateAppDetail) this.appsDetailsItem = this.apps.content.find(item => this.appsDetailsItem?.uid == item.uid);
 
 			this.isloadingApps = false;
-			return;
-		} catch (error) {
+			return appsResponse;
+		} catch (error: any) {
 			this.isloadingApps = false;
 			this.isloadingMoreApps = false;
 			return error;
@@ -1200,6 +1213,7 @@ export class ConvoyDashboardComponent implements OnInit {
 	formatDate(date: Date) {
 		return this.datePipe.transform(date, 'dd/MM/yyyy');
 	}
+
 	// check if string contains special character
 	containsSpecialCharacters(str: string) {
 		const specialChars = /[`!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?~]/;

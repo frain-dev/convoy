@@ -102,7 +102,7 @@
 					<h3>Configuration</h3>
 				</div>
 
-				<ul class="card--container">
+				<ul class="card--container" id="group-config">
 					<li class="list-item">
 						<div class="list-item--label">
 							Request interval (Seconds)
@@ -458,7 +458,7 @@
 
 			<div class="flex">
 				<div class="dashboard--logs--table">
-					<div class="table table--container has-loader" [hidden]="activeTab !== 'events' || displayedEvents.length === 0">
+					<div class="table table--container has-loader" id="events-table-container" [hidden]="activeTab !== 'events' || displayedEvents?.length === 0">
 						<convoy-loader *ngIf="isloadingEvents"></convoy-loader>
 
 						<table id="table">
@@ -483,7 +483,7 @@
 									<tr
 										*ngFor="let event of eventGroup.events; let index = index"
 										[ngClass]="{ active: event.uid === eventsDetailsItem?.uid, 'last-item': index === eventGroup.events.length - 1 }"
-										[id]="'event' + index"
+										[id]="'event' + i"
 										(click)="eventsDetailsItem = event; getEventDeliveriesForSidebar(event.uid)"
 									>
 										<td>
@@ -523,12 +523,12 @@
 						</div>
 					</div>
 
-					<div class="empty-state table--container" *ngIf="displayedEvents.length === 0 && activeTab === 'events'">
+					<div class="empty-state table--container" *ngIf="displayedEvents?.length === 0 && activeTab === 'events'">
 						<img src="/assets/img/empty-state-img.svg" alt="empty state" />
 						<p>No event to show here</p>
 					</div>
 
-					<div class="table table--container has-loader" [hidden]="activeTab !== 'event deliveries' || displayedEventDeliveries.length === 0">
+					<div class="table table--container has-loader" id="event-deliveries-table-container" [hidden]="activeTab !== 'event deliveries' || displayedEventDeliveries.length === 0">
 						<convoy-loader *ngIf="isloadingEventDeliveries"></convoy-loader>
 
 						<table id="table">
@@ -555,7 +555,7 @@
 									<tr
 										*ngFor="let event of eventDeliveriesGroup.events; let index = index"
 										[ngClass]="{ 'last-item': index === eventDeliveriesGroup.events.length - 1, active: event.uid === eventDelsDetailsItem?.uid }"
-										[id]="'event' + index"
+										[id]="'eventDel' + i"
 										(click)="eventDelsDetailsItem = event; getDelieveryAttempts(event.uid)"
 									>
 										<td>
@@ -613,10 +613,10 @@
 						<p>No event to show here</p>
 					</div>
 
-					<div class="table table--container has-loader" [hidden]="activeTab !== 'apps' || !apps || apps.content.length === 0">
+					<div class="table table--container has-loader" id="apps-table-container" [hidden]="activeTab !== 'apps' || !apps || apps.content.length === 0">
 						<convoy-loader *ngIf="isloadingApps"></convoy-loader>
 
-						<table class="table">
+						<table id="table">
 							<thead>
 								<tr class="table--head">
 									<th scope="col">Status</th>
