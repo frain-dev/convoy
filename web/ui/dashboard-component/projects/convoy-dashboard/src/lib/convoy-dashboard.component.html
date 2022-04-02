@@ -70,7 +70,7 @@
 
 		<div class="dashboard--page--details">
 			<div class="card has-title dashboard--page--details--chart has-loader">
-				<convoy-loader *ngIf="isloadingDashboardData"></convoy-loader>
+				<convoy-loader id="dashboard_summary_loader" *ngIf="isloadingDashboardData"></convoy-loader>
 
 				<ul class="metrics">
 					<li class="messages">
@@ -96,7 +96,7 @@
 			</div>
 
 			<div class="card has-title dashboard--page--details--credentials has-loader">
-				<convoy-loader *ngIf="isloadingConfig"></convoy-loader>
+				<convoy-loader id="group_config_loader" *ngIf="isloadingConfig"></convoy-loader>
 
 				<div class="card--title">
 					<h3>Configuration</h3>
@@ -144,6 +144,7 @@
 					</li>
 				</div>
 			</div>
+
 			<div class="dashboard--logs--filter">
 				<div [hidden]="activeTab !== 'events'">
 					<div class="flex flex__align-items-center flex__justify-between">
@@ -459,7 +460,7 @@
 			<div class="flex">
 				<div class="dashboard--logs--table">
 					<div class="table table--container has-loader" id="events-table-container" [hidden]="activeTab !== 'events' || displayedEvents?.length === 0">
-						<convoy-loader *ngIf="isloadingEvents"></convoy-loader>
+						<convoy-loader id="events_loader_loader" *ngIf="isloadingEvents"></convoy-loader>
 
 						<table id="table">
 							<thead>
@@ -523,13 +524,13 @@
 						</div>
 					</div>
 
-					<div class="empty-state table--container" *ngIf="displayedEvents?.length === 0 && activeTab === 'events'">
+					<div class="empty-state table--container" id="events-empty-state" *ngIf="displayedEvents?.length === 0 && activeTab === 'events'">
 						<img src="/assets/img/empty-state-img.svg" alt="empty state" />
 						<p>No event to show here</p>
 					</div>
 
 					<div class="table table--container has-loader" id="event-deliveries-table-container" [hidden]="activeTab !== 'event deliveries' || displayedEventDeliveries.length === 0">
-						<convoy-loader *ngIf="isloadingEventDeliveries"></convoy-loader>
+						<convoy-loader id="event_deliveries_loader" *ngIf="isloadingEventDeliveries"></convoy-loader>
 
 						<table id="table">
 							<thead>
@@ -608,13 +609,13 @@
 						</div>
 					</div>
 
-					<div class="empty-state table--container" *ngIf="displayedEventDeliveries.length === 0 && activeTab === 'event deliveries'">
+					<div class="empty-state table--container" id="event-deliveries-empty-state" *ngIf="displayedEventDeliveries.length === 0 && activeTab === 'event deliveries'">
 						<img src="/assets/img/empty-state-img.svg" alt="empty state" />
 						<p>No event to show here</p>
 					</div>
 
-					<div class="table table--container has-loader" id="apps-table-container" [hidden]="activeTab !== 'apps' || !apps || apps.content.length === 0">
-						<convoy-loader *ngIf="isloadingApps"></convoy-loader>
+					<div class="table table--container has-loader" id="apps-table-container" [hidden]="activeTab !== 'apps' || apps.content.length === 0">
+						<convoy-loader id="apps_loader" *ngIf="isloadingApps"></convoy-loader>
 
 						<table id="table">
 							<thead>
@@ -692,7 +693,7 @@
 						</div>
 					</div>
 
-					<div class="empty-state table--container" *ngIf="apps?.content?.length === 0 && activeTab === 'apps'">
+					<div class="empty-state table--container" id="apps-empty-state" *ngIf="apps?.content?.length === 0 && activeTab === 'apps'">
 						<img src="/assets/img/empty-state-img.svg" alt="empty state" />
 						<p>No app to show here</p>
 					</div>
@@ -700,6 +701,7 @@
 
 				<div class="dashboard--logs--details has-loader">
 					<convoy-loader
+						id="details_section_loader"
 						*ngIf="(activeTab === 'apps' && isloadingApps) || (activeTab === 'events' && isloadingEvents) || (activeTab === 'event deliveries' && isloadingEventDeliveries)"
 					></convoy-loader>
 
@@ -848,14 +850,14 @@
 						</ul>
 
 						<div class="dashboard--logs--details--req-res has-loader">
-							<convoy-loader *ngIf="(eventDetailsActiveTab === 'response' || eventDetailsActiveTab === 'request') && isloadingDeliveryAttempt"></convoy-loader>
+							<convoy-loader id="delivery_attempts_loader" *ngIf="(eventDetailsActiveTab === 'response' || eventDetailsActiveTab === 'request') && isloadingDeliveryAttempts"></convoy-loader>
 
 							<div [class]="'dashboard--logs--details--tabs-data ' + (eventDetailsActiveTab === 'data' ? 'show' : '')">
 								<h3>Event</h3>
 								<prism language="json" [code]="getCodeSnippetString('event_delivery')"></prism>
 							</div>
 
-							<div [class]="'dashboard--logs--details--tabs-data ' + (eventDetailsActiveTab === 'response' && !isloadingDeliveryAttempt ? 'show' : '')">
+							<div [class]="'dashboard--logs--details--tabs-data ' + (eventDetailsActiveTab === 'response' && !isloadingDeliveryAttempts ? 'show' : '')">
 								<ng-container *ngIf="!eventDeliveryAtempt?.error">
 									<h3>Header</h3>
 									<prism language="json" [code]="getCodeSnippetString('res_head')"></prism>
@@ -870,7 +872,7 @@
 								</ng-container>
 							</div>
 
-							<div [class]="'dashboard--logs--details--tabs-data ' + (eventDetailsActiveTab === 'request' && !isloadingDeliveryAttempt ? 'show' : '')">
+							<div [class]="'dashboard--logs--details--tabs-data ' + (eventDetailsActiveTab === 'request' && !isloadingDeliveryAttempts ? 'show' : '')">
 								<h3>Header</h3>
 								<prism language="json" [code]="getCodeSnippetString('req')"></prism>
 							</div>

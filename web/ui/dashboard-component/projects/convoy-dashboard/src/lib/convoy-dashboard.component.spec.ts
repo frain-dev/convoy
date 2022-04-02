@@ -55,6 +55,16 @@ describe('ConvoyDashboardComponent', () => {
 		const groups: HTTP_RESPONSE = require('./mock/groups.json');
 		spyOn(convoyDashboardService, 'getGroups').and.returnValue(Promise.resolve(groups));
 		component.getGroups();
+
+		// confirm loaders are visible
+		const dashboardSummaryLoader: HTMLElement = fixture.debugElement.nativeElement.querySelector('#dashboard_summary_loader');
+		const groupConfigLoader: HTMLElement = fixture.debugElement.nativeElement.querySelector('#group_config_loader');
+		const eventsTableLoader: HTMLElement = fixture.debugElement.nativeElement.querySelector('#events_loader_loader');
+		const eventDeliveriesLoader: HTMLElement = fixture.debugElement.nativeElement.querySelector('#event_deliveries_loader');
+		const appsLoader: HTMLElement = fixture.debugElement.nativeElement.querySelector('#apps_loader');
+		const detailsSectionLoader: HTMLElement = fixture.debugElement.nativeElement.querySelector('#details_section_loader');
+		expect(dashboardSummaryLoader && groupConfigLoader && eventsTableLoader && eventDeliveriesLoader && appsLoader && detailsSectionLoader).toBeTruthy();
+
 		tick();
 		fixture.detectChanges();
 
@@ -68,15 +78,19 @@ describe('ConvoyDashboardComponent', () => {
 		expect(groupDropdown.children.length).toBeGreaterThanOrEqual(1);
 	}));
 
-	it('can get group config and render', fakeAsync(async () => {
+	it('can get group config and render', fakeAsync(() => {
 		const groupConfig: HTTP_RESPONSE = require('./mock/config.json');
 		spyOn(convoyDashboardService, 'getConfigDetails').and.returnValue(Promise.resolve(groupConfig));
-		const response = await component.getConfigDetails();
+		component.getConfigDetails();
+
+		const groupConfigLoader: HTMLElement = fixture.debugElement.nativeElement.querySelector('#group_config_loader');
+		expect(groupConfigLoader).toBeTruthy();
+
 		tick();
 		fixture.detectChanges();
 
-		expect(response.status).toBe(true);
-		expect(Object.keys(response.data)).toEqual(['strategy', 'signature']);
+		const groupConfigLoader2: HTMLElement = fixture.debugElement.nativeElement.querySelector('#group_config_loader');
+		expect(groupConfigLoader2).toBeFalsy();
 
 		const groupConfigContainer: HTMLElement = fixture.debugElement.nativeElement.querySelector('#group-config');
 		expect(groupConfigContainer).toBeTruthy();
@@ -128,16 +142,36 @@ describe('ConvoyDashboardComponent', () => {
 		expect(component.sidebarEventDeliveries).toBeTruthy();
 
 		// UI implementation
-		if (component.displayedEvents.length > 0) {
-			const eventsTableContainer: HTMLElement = fixture.debugElement.nativeElement.querySelector('#events-table-container');
-			expect(eventsTableContainer).toBeTruthy();
-			expect(eventsTableContainer.querySelector('#table')).toBeTruthy();
-			expect(eventsTableContainer.querySelectorAll('#table thead th').length).toEqual(4);
-			expect(component.displayedEvents.length === eventsTableContainer.querySelectorAll('#table tbody .table--date-row').length).toBeTrue();
-			component.displayedEvents.forEach((event, index) => {
-				expect(event.events.length === eventsTableContainer.querySelectorAll('#table tbody tr#event' + index).length).toBeTrue();
-			});
-		}
+		const eventsEmptyStateContainer: HTMLElement = fixture.debugElement.nativeElement.querySelector('#events-empty-state');
+		expect(eventsEmptyStateContainer).toBeFalsy();
+
+		const eventsTableContainer: HTMLElement = fixture.debugElement.nativeElement.querySelector('#events-table-container');
+		expect(eventsTableContainer).toBeTruthy();
+		expect(eventsTableContainer.querySelector('#table')).toBeTruthy();
+		expect(eventsTableContainer.querySelectorAll('#table thead th').length).toEqual(4);
+		expect(component.displayedEvents.length === eventsTableContainer.querySelectorAll('#table tbody .table--date-row').length).toBeTrue();
+		component.displayedEvents.forEach((event, index) => {
+			expect(event.events.length === eventsTableContainer.querySelectorAll('#table tbody tr#event' + index).length).toBeTrue();
+		});
+	}));
+
+	it('can handle empty events and render empty state', fakeAsync(() => {
+		const emptyResponse: HTTP_RESPONSE = require('./mock/empty_response.json');
+		spyOn(convoyDashboardService, 'getEvents').and.returnValue(Promise.resolve(emptyResponse));
+		component.getEvents();
+		component.toggleActiveTab('events');
+		tick();
+		fixture.detectChanges();
+
+		// API response
+		expect(component.events.content.length).toEqual(0);
+		expect(component.displayedEvents.length).toEqual(0);
+		expect(component.eventsDetailsItem).toBeFalsy();
+		expect(component.sidebarEventDeliveries).toBeFalsy();
+
+		// UI implementation
+		const eventsEmptyStateContainer: HTMLElement = fixture.debugElement.nativeElement.querySelector('#events-empty-state');
+		expect(eventsEmptyStateContainer).toBeTruthy();
 	}));
 
 	it('can get apps and render', fakeAsync(async () => {
@@ -159,13 +193,35 @@ describe('ConvoyDashboardComponent', () => {
 		expect(component.filteredApps).toBeTruthy();
 
 		// UI implementation
-		if (component.apps.content.length > 0) {
-			const appsTableContainer: HTMLElement = fixture.debugElement.nativeElement.querySelector('#apps-table-container');
-			expect(appsTableContainer).toBeTruthy();
-			expect(appsTableContainer.querySelector('#table')).toBeTruthy();
-			expect(appsTableContainer.querySelectorAll('#table thead th').length).toEqual(8);
-			expect(component.apps.content.length === appsTableContainer.querySelectorAll('#table tbody tr').length).toBeTrue();
-		}
+		const appsTableContainer: HTMLElement = fixture.debugElement.nativeElement.querySelector('#apps-table-container');
+		expect(appsTableContainer.hasAttribute('hidden')).toBeFalse();
+		expect(appsTableContainer.querySelector('#table')).toBeTruthy();
+		expect(appsTableContainer.querySelectorAll('#table thead th').length).toEqual(8);
+		expect(component.apps.content.length === appsTableContainer.querySelectorAll('#table tbody tr').length).toBeTrue();
+		const appsEmptyStateContainer: HTMLElement = fixture.debugElement.nativeElement.querySelector('#apps-empty-state');
+		expect(appsEmptyStateContainer).toBeFalsy();
+	}));
+
+	it('can handle empty apps and render empty state', fakeAsync(async () => {
+		const emptyResponse: HTTP_RESPONSE = require('./mock/empty_response.json');
+		spyOn(convoyDashboardService, 'getApps').and.returnValue(Promise.resolve(emptyResponse));
+		const response = await component.getApps({ type: 'apps' });
+		await component.toggleActiveTab('apps');
+		tick();
+		fixture.detectChanges();
+
+		// API response
+		expect(response.status).toBe(true);
+		expect(component.apps.content.length).toEqual(0);
+		expect(component.appsDetailsItem).toBeFalsy();
+		expect(component.appPortalLink).toBeFalsy();
+		expect(component.filteredApps.length).toEqual(0);
+
+		// UI implementation
+		const appsEmptyStateContainer: HTMLElement = fixture.debugElement.nativeElement.querySelector('#apps-empty-state');
+		expect(appsEmptyStateContainer).toBeTruthy();
+		const appsTableContainer: HTMLElement = fixture.debugElement.nativeElement.querySelector('#apps-table-container');
+		expect(appsTableContainer.hasAttribute('hidden')).toBeTrue();
 	}));
 
 	it('can get event deliveries and render', fakeAsync(async () => {
@@ -180,21 +236,42 @@ describe('ConvoyDashboardComponent', () => {
 
 		// API response
 		expect(response.status).toBe(true);
-		expect(typeof response.data.content).toEqual('object');
-		expect(component.eventDeliveries).toBeTruthy();
-		expect(component.displayedEventDeliveries).toBeTruthy();
+		expect(response.data.content.length).toBeGreaterThanOrEqual(1);
+		expect(component.eventDeliveries.content.length).toBeGreaterThanOrEqual(1);
+		expect(component.displayedEventDeliveries.length).toBeGreaterThanOrEqual(1);
 		expect(component.eventDeliveryAtempt).toBeTruthy();
 
 		// UI implementation
-		if (component.displayedEventDeliveries.length > 0) {
-			const eventDeliveryTableContainer: HTMLElement = fixture.debugElement.nativeElement.querySelector('#event-deliveries-table-container');
-			expect(eventDeliveryTableContainer).toBeTruthy();
-			expect(eventDeliveryTableContainer.querySelector('#table')).toBeTruthy();
-			expect(eventDeliveryTableContainer.querySelectorAll('#table thead th').length).toEqual(5);
-			expect(component.displayedEventDeliveries.length === eventDeliveryTableContainer.querySelectorAll('#table tbody .table--date-row').length).toBeTrue();
-			component.displayedEventDeliveries.forEach((event, index) => {
-				expect(event.events.length === eventDeliveryTableContainer.querySelectorAll('#table tbody tr#eventDel' + index).length).toBeTrue();
-			});
-		}
+		const eventDeliveryTableContainer: HTMLElement = fixture.debugElement.nativeElement.querySelector('#event-deliveries-table-container');
+		expect(eventDeliveryTableContainer.hasAttribute('hidden')).toBeFalsy();
+		expect(eventDeliveryTableContainer.querySelector('#table')).toBeTruthy();
+		expect(eventDeliveryTableContainer.querySelectorAll('#table thead th').length).toEqual(5);
+		expect(component.displayedEventDeliveries.length === eventDeliveryTableContainer.querySelectorAll('#table tbody .table--date-row').length).toBeTrue();
+		component.displayedEventDeliveries.forEach((event, index) => {
+			expect(event.events.length === eventDeliveryTableContainer.querySelectorAll('#table tbody tr#eventDel' + index).length).toBeTrue();
+		});
+		const eventDeliveryEmptyContainer: HTMLElement = fixture.debugElement.nativeElement.querySelector('#event-deliveries-empty-state');
+		expect(eventDeliveryEmptyContainer).toBeFalsy();
+	}));
+
+	it('can handle empty event deliveries and render empty state', fakeAsync(async () => {
+		const emptyResponse: HTTP_RESPONSE = require('./mock/empty_response.json');
+		spyOn(convoyDashboardService, 'getEventDeliveries').and.returnValue(Promise.resolve(emptyResponse));
+		const response = await component.getEventDeliveries();
+		await component.toggleActiveTab('event deliveries');
+		tick();
+		fixture.detectChanges();
+
+		// API response
+		expect(component.eventDeliveries.content.length).toEqual(0);
+		expect(component.displayedEventDeliveries.length).toEqual(0);
+		expect(component.eventDeliveryAtempt).toBeFalsy();
+		expect(component.displayedEventDeliveries.length).toEqual(0);
+
+		// UI implementation
+		const eventDeliveryTableContainer: HTMLElement = fixture.debugElement.nativeElement.querySelector('#event-deliveries-table-container');
+		expect(eventDeliveryTableContainer.hasAttribute('hidden')).toBeTruthy();
+		const eventDeliveryEmptyContainer: HTMLElement = fixture.debugElement.nativeElement.querySelector('#event-deliveries-empty-state');
+		expect(eventDeliveryEmptyContainer).toBeTruthy();
 	}));
 });

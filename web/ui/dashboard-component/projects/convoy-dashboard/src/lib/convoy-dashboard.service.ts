@@ -49,6 +49,7 @@ export class ConvoyDashboardService {
 					method: 'get'
 				});
 
+				this.activeGroupId = groupsResponse.data[0].uid;
 				return resolve(groupsResponse);
 			} catch (error: any) {
 				return reject(error);

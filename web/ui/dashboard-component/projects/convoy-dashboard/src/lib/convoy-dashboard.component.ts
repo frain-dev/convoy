@@ -122,7 +122,7 @@ export class ConvoyDashboardComponent implements OnInit {
 	isloadingMoreEvents = false;
 	isloadingMoreEventDeliveries = false;
 	isloadingMoreApps = false;
-	isloadingDeliveryAttempt = false;
+	isloadingDeliveryAttempts = true;
 	isCreatingNewApp = false;
 	isCreatingNewEndpoint = false;
 	isSendingNewEvent = false;
@@ -894,15 +894,15 @@ export class ConvoyDashboardComponent implements OnInit {
 	}
 
 	async getDelieveryAttempts(eventDeliveryId: string) {
-		this.isloadingDeliveryAttempt = true;
+		this.isloadingDeliveryAttempts = true;
 		try {
 			const deliveryAttemptsResponse = await this.convyDashboardService.getEventDeliveryAttempts({ eventDeliveryId });
 			this.eventDeliveryAtempt = deliveryAttemptsResponse.data[deliveryAttemptsResponse.data.length - 1];
-			this.isloadingDeliveryAttempt = false;
+			this.isloadingDeliveryAttempts = false;
 
 			return;
 		} catch (error) {
-			this.isloadingDeliveryAttempt = false;
+			this.isloadingDeliveryAttempts = false;
 			return error;
 		}
 	}
