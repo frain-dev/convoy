@@ -113,7 +113,7 @@ func (a *AppService) CreateAppEndpoint(ctx context.Context, e models.Endpoint, a
 
 	duration, err := time.ParseDuration(e.RateLimitDuration)
 	if err != nil {
-		return nil, NewServiceError(http.StatusBadRequest, fmt.Errorf((fmt.Sprintf("an error occured parsing the rate limit duration...%v", err.Error()))))
+		return nil, NewServiceError(http.StatusBadRequest, fmt.Errorf("an error occurred parsing the rate limit duration: %v", err))
 	}
 
 	endpoint := &datastore.Endpoint{
@@ -172,6 +172,7 @@ func (a *AppService) DeleteAppEndpoint(ctx context.Context, e *datastore.Endpoin
 
 	err := a.appRepo.UpdateApplication(ctx, app)
 	if err != nil {
+		log.WithError(err).Error("failed to delete app endpoint")
 		return NewServiceError(http.StatusBadRequest, errors.New("an error occurred while deleting app endpoint"))
 	}
 	return nil
