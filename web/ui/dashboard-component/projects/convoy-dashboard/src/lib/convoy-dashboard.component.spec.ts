@@ -1,7 +1,7 @@
 import { CommonModule, DatePipe } from '@angular/common';
 import { HttpClient, HttpClientModule } from '@angular/common/http';
 import { ElementRef } from '@angular/core';
-import { ComponentFixture, TestBed } from '@angular/core/testing';
+import { ComponentFixture, fakeAsync, TestBed, tick } from '@angular/core/testing';
 import { FormBuilder, FormsModule, ReactiveFormsModule } from '@angular/forms';
 import { MatNativeDateModule } from '@angular/material/core';
 import { MatDatepickerModule } from '@angular/material/datepicker';
@@ -15,11 +15,12 @@ import { PrismModule } from './prism/prism.module';
 import { MetricPipe } from './shared/pipes';
 import { SharedModule } from './shared/shared.module';
 import Chart from 'chart.js/auto';
+import { HTTP_RESPONSE } from './models/http.model';
 
 describe('ConvoyDashboardComponent', () => {
 	let component: ConvoyDashboardComponent;
 	let fixture: ComponentFixture<ConvoyDashboardComponent>;
-	let activeG;
+	let convoyDashboardService: ConvoyDashboardService;
 
 	const fakeActivatedRoute = {
 		snapshot: { data: {} }
@@ -29,13 +30,14 @@ describe('ConvoyDashboardComponent', () => {
 		await TestBed.configureTestingModule({
 			imports: [HttpClientModule, SharedModule, RouterTestingModule, CommonModule, MatDatepickerModule, MatNativeDateModule, FormsModule, ReactiveFormsModule],
 			declarations: [ConvoyDashboardComponent, ConvoyLoaderComponent],
-			providers: [HttpClient, FormBuilder, DatePipe, { provide: ActivatedRoute, useValue: fakeActivatedRoute }]
+			providers: [HttpClient, FormBuilder, DatePipe, { provide: ActivatedRoute, useValue: fakeActivatedRoute }, ConvoyDashboardService]
 		}).compileComponents();
 	});
 
 	beforeEach(() => {
 		fixture = TestBed.createComponent(ConvoyDashboardComponent);
 		component = fixture.componentInstance;
+		convoyDashboardService = TestBed.get(ConvoyDashboardService);
 
 		component.requestToken = 'ZGVmYXVsdDpkZWZhdWx0';
 		component.isCloud = false;
@@ -49,24 +51,28 @@ describe('ConvoyDashboardComponent', () => {
 		expect(component).toBeTruthy();
 	});
 
-	it('can get groups and render', async () => {
-		const response = await component.getGroups();
+	it('can get groups and render', fakeAsync(() => {
+		const groups: HTTP_RESPONSE = require('./mock/groups.json');
+		spyOn(convoyDashboardService, 'getGroups').and.returnValue(Promise.resolve(groups));
+		component.getGroups();
+		tick();
 		fixture.detectChanges();
 
 		// API response
-		expect(response.status).toBe(true);
-		expect(response.data.length).toBeGreaterThanOrEqual(1);
 		expect(component.groups.length).toBeGreaterThanOrEqual(1);
-		expect(component.activeGroup).toBeTruthy();
+		expect(convoyDashboardService.activeGroupId).toBeTruthy();
 
 		// UI implementation
 		const groupDropdown: HTMLElement = fixture.debugElement.nativeElement.querySelector('#groups-dropdown');
 		expect(groupDropdown).toBeTruthy();
 		expect(groupDropdown.children.length).toBeGreaterThanOrEqual(1);
-	});
+	}));
 
-	it('can get group credentials and render', async () => {
+	it('can get group config and render', fakeAsync(async () => {
+		const groupConfig: HTTP_RESPONSE = require('./mock/config.json');
+		spyOn(convoyDashboardService, 'getConfigDetails').and.returnValue(Promise.resolve(groupConfig));
 		const response = await component.getConfigDetails();
+		tick();
 		fixture.detectChanges();
 
 		expect(response.status).toBe(true);
@@ -79,10 +85,13 @@ describe('ConvoyDashboardComponent', () => {
 			expect(element.textContent).toBeTruthy();
 		});
 		expect(configUiItems.length).toEqual(4);
-	});
+	}));
 
-	it('can get dashboard data and render', async () => {
+	it('can get dashboard data and render', fakeAsync(async () => {
+		const dashboardSummary: HTTP_RESPONSE = require('./mock/dashboard_summary.json');
+		spyOn(convoyDashboardService, 'dashboardSummary').and.returnValue(Promise.resolve(dashboardSummary));
 		const response = await component.fetchDashboardData();
+		tick();
 		fixture.detectChanges();
 
 		// API response
@@ -98,11 +107,16 @@ describe('ConvoyDashboardComponent', () => {
 
 		// Chart implementation
 		expect(Chart.getChart('dahboard_events_chart') || Chart.getChart('dahboard_events_chart')?.canvas).toBeTruthy();
-	});
+	}));
 
-	it('can get events and render', async () => {
+	it('can get events and render', fakeAsync(async () => {
+		const events: HTTP_RESPONSE = require('./mock/events.json');
+		const eventDeliveries: HTTP_RESPONSE = require('./mock/event_deliveries_few.json');
+		spyOn(convoyDashboardService, 'getEvents').and.returnValue(Promise.resolve(events));
+		spyOn(convoyDashboardService, 'getEventDeliveries').and.returnValue(Promise.resolve(eventDeliveries));
 		const response = await component.getEvents();
 		await component.toggleActiveTab('events');
+		tick();
 		fixture.detectChanges();
 
 		// API response
@@ -124,11 +138,16 @@ describe('ConvoyDashboardComponent', () => {
 				expect(event.events.length === eventsTableContainer.querySelectorAll('#table tbody tr#event' + index).length).toBeTrue();
 			});
 		}
-	});
+	}));
 
-	it('can get apps and render', async () => {
+	it('can get apps and render', fakeAsync(async () => {
+		const apps: HTTP_RESPONSE = require('./mock/apps.json');
+		const appPortalKey: HTTP_RESPONSE = require('./mock/app_portal_key.json');
+		spyOn(convoyDashboardService, 'getApps').and.returnValue(Promise.resolve(apps));
+		spyOn(convoyDashboardService, 'getAppPortalToken').and.returnValue(Promise.resolve(appPortalKey));
 		const response = await component.getApps({ type: 'apps' });
 		await component.toggleActiveTab('apps');
+		tick();
 		fixture.detectChanges();
 
 		// API response
@@ -147,11 +166,16 @@ describe('ConvoyDashboardComponent', () => {
 			expect(appsTableContainer.querySelectorAll('#table thead th').length).toEqual(8);
 			expect(component.apps.content.length === appsTableContainer.querySelectorAll('#table tbody tr').length).toBeTrue();
 		}
-	});
+	}));
 
-	it('can get event deliveries and render', async () => {
+	it('can get event deliveries and render', fakeAsync(async () => {
+		const eventDeliveries: HTTP_RESPONSE = require('./mock/event_deliveries.json');
+		const eventDeliveryAttempt: HTTP_RESPONSE = require('./mock/delivery_attempts.json');
+		spyOn(convoyDashboardService, 'getEventDeliveries').and.returnValue(Promise.resolve(eventDeliveries));
+		spyOn(convoyDashboardService, 'getEventDeliveryAttempts').and.returnValue(Promise.resolve(eventDeliveryAttempt));
 		const response = await component.getEventDeliveries();
 		await component.toggleActiveTab('event deliveries');
+		tick();
 		fixture.detectChanges();
 
 		// API response
@@ -172,5 +196,5 @@ describe('ConvoyDashboardComponent', () => {
 				expect(event.events.length === eventDeliveryTableContainer.querySelectorAll('#table tbody tr#eventDel' + index).length).toBeTrue();
 			});
 		}
-	});
+	}));
 });

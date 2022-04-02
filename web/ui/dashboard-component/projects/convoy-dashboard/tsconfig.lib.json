@@ -7,7 +7,7 @@
 		"declaration": true,
 		"declarationMap": true,
 		"inlineSources": true,
-		"types": [],
+		"types": ["node"],
 		"lib": ["dom", "es2021"],
 		"allowSyntheticDefaultImports": true,
 		"esModuleInterop": true

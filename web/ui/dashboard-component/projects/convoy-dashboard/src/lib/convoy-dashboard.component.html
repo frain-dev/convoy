@@ -60,7 +60,7 @@
 				<div class="filter without-padding" [ngClass]="{ 'show-calendar': showFilterCalendar }">
 					<div>Active Group:</div>
 					<div class="select">
-						<select [value]="activeGroup" id="groups-dropdown" [(ngModel)]="activeGroup" (change)="toggleActiveGroup()">
+						<select [value]="convyDashboardService.activeGroupId" id="groups-dropdown" [(ngModel)]="convyDashboardService.activeGroupId" (change)="toggleActiveGroup()">
 							<option [value]="group.uid" *ngFor="let group of groups">{{ group.name }}</option>
 						</select>
 					</div>
