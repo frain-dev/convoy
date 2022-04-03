@@ -7,6 +7,7 @@
 		"build": "ng build",
 		"watch": "ng build --watch --configuration development",
 		"test": "ng test",
+		"test:prod": "ng test --browsers=ChromeHeadless --watch=false --code-coverage",
 		"pub": "npm run build && cd ./dist/convoy-dashboard/ && npm publish"
 	},
 	"dependencies": {
