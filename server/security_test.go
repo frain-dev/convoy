@@ -248,7 +248,7 @@ func TestApplicationHandler_CreateAppPortalAPIKey(t *testing.T) {
 	for _, tc := range tt {
 		t.Run(tc.name, func(t *testing.T) {
 			// Arrange
-			url := fmt.Sprintf("/api/v1/security/applications/%s/keys?groupID=%s", appID, groupId)
+			url := fmt.Sprintf("/api/v1/security/applications/%s/keys?groupId=%s", appID, groupId)
 			req := httptest.NewRequest(http.MethodPost, url, nil)
 			req.SetBasicAuth("test", "test")
 			w := httptest.NewRecorder()
