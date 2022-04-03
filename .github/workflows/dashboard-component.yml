@@ -28,9 +28,9 @@ jobs:
                   restore-keys: |
                       ${{ runner.OS }}-node-
                       ${{ runner.OS }}-
-            - name: Enter project directory
-              run: cd ./web/ui/dashboard-component
             - name: Install dependencies
               run: npm install
+              working-directory: ./web/ui/dashboard-component
             - name: Run tests
               run: npm run test:prod
+              working-directory: ./web/ui/dashboard-component
