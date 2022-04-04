@@ -151,6 +151,9 @@ func TestApplicationHandler_CreateAppEvent(t *testing.T) {
 				message: message,
 			},
 			dbFn: func(app *applicationHandler) {
+				c, _ := app.cache.(*mocks.MockCache)
+				c.EXPECT().Get(gomock.Any(), gomock.Any(), gomock.Any()).Times(1)
+
 				a, _ := app.appRepo.(*mocks.MockApplicationRepository)
 				a.EXPECT().
 					FindApplicationByID(gomock.Any(), gomock.Any()).Times(1).
@@ -161,6 +164,7 @@ func TestApplicationHandler_CreateAppEvent(t *testing.T) {
 						Endpoints: []datastore.Endpoint{},
 					}, nil)
 
+				c.EXPECT().Set(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Times(1)
 				o, _ := app.groupRepo.(*mocks.MockGroupRepository)
 
 				o.EXPECT().
@@ -178,6 +182,9 @@ func TestApplicationHandler_CreateAppEvent(t *testing.T) {
 				message: message,
 			},
 			dbFn: func(app *applicationHandler) {
+				c, _ := app.cache.(*mocks.MockCache)
+				c.EXPECT().Get(gomock.Any(), gomock.Any(), gomock.Any()).Times(1)
+
 				a, _ := app.appRepo.(*mocks.MockApplicationRepository)
 				a.EXPECT().
 					FindApplicationByID(gomock.Any(), gomock.Any()).Times(1).
@@ -192,6 +199,7 @@ func TestApplicationHandler_CreateAppEvent(t *testing.T) {
 							},
 						},
 					}, nil)
+				c.EXPECT().Set(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Times(1)
 
 				e, _ := app.eventRepo.(*mocks.MockEventRepository)
 				e.EXPECT().
@@ -215,6 +223,9 @@ func TestApplicationHandler_CreateAppEvent(t *testing.T) {
 				message: message,
 			},
 			dbFn: func(app *applicationHandler) {
+				c, _ := app.cache.(*mocks.MockCache)
+				c.EXPECT().Get(gomock.Any(), gomock.Any(), gomock.Any()).Times(1)
+
 				a, _ := app.appRepo.(*mocks.MockApplicationRepository)
 				a.EXPECT().
 					FindApplicationByID(gomock.Any(), gomock.Any()).Times(1).
@@ -229,6 +240,8 @@ func TestApplicationHandler_CreateAppEvent(t *testing.T) {
 							},
 						},
 					}, nil)
+
+				c.EXPECT().Set(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Times(1)
 
 				m, _ := app.eventRepo.(*mocks.MockEventRepository)
 				m.EXPECT().
@@ -252,6 +265,9 @@ func TestApplicationHandler_CreateAppEvent(t *testing.T) {
 				message: message,
 			},
 			dbFn: func(app *applicationHandler) {
+				c, _ := app.cache.(*mocks.MockCache)
+				c.EXPECT().Get(gomock.Any(), gomock.Any(), gomock.Any()).Times(1)
+
 				a, _ := app.appRepo.(*mocks.MockApplicationRepository)
 				a.EXPECT().
 					FindApplicationByID(gomock.Any(), gomock.Any()).Times(1).
@@ -267,6 +283,7 @@ func TestApplicationHandler_CreateAppEvent(t *testing.T) {
 							},
 						},
 					}, nil)
+				c.EXPECT().Set(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Times(1)
 
 				m, _ := app.eventRepo.(*mocks.MockEventRepository)
 				m.EXPECT().
@@ -300,6 +317,9 @@ func TestApplicationHandler_CreateAppEvent(t *testing.T) {
 				message: message,
 			},
 			dbFn: func(app *applicationHandler) {
+				c, _ := app.cache.(*mocks.MockCache)
+				c.EXPECT().Get(gomock.Any(), gomock.Any(), gomock.Any()).Times(1)
+
 				a, _ := app.appRepo.(*mocks.MockApplicationRepository)
 				a.EXPECT().
 					FindApplicationByID(gomock.Any(), gomock.Any()).Times(1).
@@ -315,6 +335,7 @@ func TestApplicationHandler_CreateAppEvent(t *testing.T) {
 							},
 						},
 					}, nil)
+				c.EXPECT().Set(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Times(1)
 
 				m, _ := app.eventRepo.(*mocks.MockEventRepository)
 				m.EXPECT().
@@ -343,6 +364,9 @@ func TestApplicationHandler_CreateAppEvent(t *testing.T) {
 				message: message,
 			},
 			dbFn: func(app *applicationHandler) {
+				c, _ := app.cache.(*mocks.MockCache)
+				c.EXPECT().Get(gomock.Any(), gomock.Any(), gomock.Any()).Times(1)
+
 				a, _ := app.appRepo.(*mocks.MockApplicationRepository)
 				a.EXPECT().
 					FindApplicationByID(gomock.Any(), gomock.Any()).Times(1).
@@ -363,6 +387,7 @@ func TestApplicationHandler_CreateAppEvent(t *testing.T) {
 							},
 						},
 					}, nil)
+				c.EXPECT().Set(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Times(1)
 
 				m, _ := app.eventRepo.(*mocks.MockEventRepository)
 				m.EXPECT().
@@ -397,6 +422,9 @@ func TestApplicationHandler_CreateAppEvent(t *testing.T) {
 				message: message,
 			},
 			dbFn: func(app *applicationHandler) {
+				c, _ := app.cache.(*mocks.MockCache)
+				c.EXPECT().Get(gomock.Any(), gomock.Any(), gomock.Any()).Times(1)
+
 				a, _ := app.appRepo.(*mocks.MockApplicationRepository)
 				a.EXPECT().
 					FindApplicationByID(gomock.Any(), gomock.Any()).Times(1).
@@ -407,6 +435,7 @@ func TestApplicationHandler_CreateAppEvent(t *testing.T) {
 						IsDisabled: true,
 						Endpoints:  []datastore.Endpoint{},
 					}, nil)
+				c.EXPECT().Set(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Times(1)
 
 				o, _ := app.groupRepo.(*mocks.MockGroupRepository)
 

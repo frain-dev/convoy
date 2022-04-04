@@ -12,7 +12,6 @@ import (
 	"time"
 
 	"github.com/frain-dev/convoy/auth/realm_chain"
-	mcache "github.com/frain-dev/convoy/cache/memory"
 	nooplimiter "github.com/frain-dev/convoy/limiter/noop"
 	"github.com/frain-dev/convoy/logger"
 
@@ -128,7 +127,7 @@ func provideApplication(ctrl *gomock.Controller) *applicationHandler {
 	logger := logger.NewNoopLogger()
 	tracer := mocks.NewMockTracer(ctrl)
 	apiKeyRepo := mocks.NewMockAPIKeyRepository(ctrl)
-	cache := mcache.NewMemoryCache()
+	cache := mocks.NewMockCache(ctrl)
 	limiter := nooplimiter.NewNoopLimiter()
 	return newApplicationHandler(eventRepo, eventDeliveryRepo, appRepo, groupRepo, apiKeyRepo, eventQueue, logger, tracer, cache, limiter)
 }
@@ -958,6 +957,7 @@ func Test_applicationHandler_GetDashboardSummary(t *testing.T) {
 			method:     http.MethodGet,
 			statusCode: http.StatusOK,
 			dbFn: func(app *applicationHandler) {
+				app.cache.(*mocks.MockCache).EXPECT().Get(gomock.Any(), gomock.Any(), gomock.Any())
 				app.appRepo.(*mocks.MockApplicationRepository).EXPECT().
 					CountGroupApplications(gomock.Any(), gomock.Any()).Times(1).
 					Return(int64(5), nil)
@@ -972,6 +972,7 @@ func Test_applicationHandler_GetDashboardSummary(t *testing.T) {
 							Count: 10,
 						},
 					}, nil)
+				app.cache.(*mocks.MockCache).EXPECT().Set(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any())
 
 			},
 		},
