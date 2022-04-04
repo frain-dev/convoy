@@ -238,7 +238,10 @@ func ProcessEventDelivery(appRepo datastore.ApplicationRepository, eventDelivery
 				log.WithError(err).Error("Failed to reactivate endpoint after successful retry")
 			}
 
-			sendNotification(context.Background(), appRepo, m, g, &cfg.SMTP, endpointStatus, false)
+			err = sendNotification(context.Background(), appRepo, m, g, &cfg.SMTP, endpointStatus, false)
+			if err != nil {
+				log.WithError(err).Error("failed to send notification")
+			}
 		}
 
 		if !done && dbEndpoint.Status == datastore.PendingEndpointStatus {
@@ -278,7 +281,10 @@ func ProcessEventDelivery(appRepo datastore.ApplicationRepository, eventDelivery
 				}
 			}
 
-			sendNotification(context.Background(), appRepo, m, g, &cfg.SMTP, endpointStatus, true)
+			err = sendNotification(context.Background(), appRepo, m, g, &cfg.SMTP, endpointStatus, true)
+			if err != nil {
+				log.WithError(err).Error("failed to send notification")
+			}
 		}
 
 		err = eventDeliveryRepo.UpdateEventDeliveryWithAttempt(context.Background(), *m, attempt)

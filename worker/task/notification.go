@@ -11,7 +11,6 @@ import (
 	"github.com/frain-dev/convoy/notification"
 	"github.com/frain-dev/convoy/notification/email"
 	"github.com/frain-dev/convoy/notification/slack"
-	log "github.com/sirupsen/logrus"
 )
 
 func sendNotification(
@@ -22,11 +21,10 @@ func sendNotification(
 	smtpCfg *config.SMTPConfiguration,
 	status datastore.EndpointStatus,
 	failure bool,
-) {
+) error {
 	app, err := appRepo.FindApplicationByID(ctx, eventDelivery.AppMetadata.UID)
 	if err != nil {
-		log.WithError(err).Error("failed to fetch application")
-		return
+		return fmt.Errorf("failed to fetch application: %v", err)
 	}
 
 	n := &notification.Notification{
@@ -44,16 +42,18 @@ func sendNotification(
 	if !util.IsStringEmpty(app.SupportEmail) {
 		err = sendEmailNotification(ctx, n, smtpCfg)
 		if err != nil {
-			log.WithError(err).Error("failed to send slack notification")
+			return fmt.Errorf("failed to send slack notification: %v", err)
 		}
 	}
 
 	if !util.IsStringEmpty(app.SlackWebhookURL) {
 		err = sendSlackNotification(ctx, app.SlackWebhookURL, n)
 		if err != nil {
-			log.WithError(err).Error("failed to send email notification")
+			return fmt.Errorf("failed to send email notification: %v", err)
 		}
 	}
+
+	return nil
 }
 
 func sendEmailNotification(ctx context.Context, n *notification.Notification, smtpCfg *config.SMTPConfiguration) error {
