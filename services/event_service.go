@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/frain-dev/convoy"
+	"github.com/frain-dev/convoy/cache"
 	"github.com/frain-dev/convoy/config"
 	"github.com/frain-dev/convoy/datastore"
 	"github.com/frain-dev/convoy/queue"
@@ -23,15 +24,11 @@ type EventService struct {
 	eventRepo         datastore.EventRepository
 	eventDeliveryRepo datastore.EventDeliveryRepository
 	eventQueue        queue.Queuer
+	cache             cache.Cache
 }
 
-func NewEventService(appRepo datastore.ApplicationRepository, eventRepo datastore.EventRepository, eventDeliveryRepo datastore.EventDeliveryRepository, eventQueue queue.Queuer) *EventService {
-	return &EventService{
-		appRepo:           appRepo,
-		eventRepo:         eventRepo,
-		eventDeliveryRepo: eventDeliveryRepo,
-		eventQueue:        eventQueue,
-	}
+func NewEventService(appRepo datastore.ApplicationRepository, eventRepo datastore.EventRepository, eventDeliveryRepo datastore.EventDeliveryRepository, eventQueue queue.Queuer, cache cache.Cache) *EventService {
+	return &EventService{appRepo: appRepo, eventRepo: eventRepo, eventDeliveryRepo: eventDeliveryRepo, eventQueue: eventQueue, cache: cache}
 }
 
 func (e *EventService) CreateAppEvent(ctx context.Context, newMessage *models.Event, g *datastore.Group) (*datastore.Event, error) {
@@ -39,19 +36,35 @@ func (e *EventService) CreateAppEvent(ctx context.Context, newMessage *models.Ev
 		return nil, NewServiceError(http.StatusBadRequest, err)
 	}
 
-	app, err := e.appRepo.FindApplicationByID(ctx, newMessage.AppID)
+	var app *datastore.Application
+
+	// fetch from cache
+	err := e.cache.Get(ctx, newMessage.AppID, &app)
 	if err != nil {
+		return nil, err
+	}
 
-		msg := "an error occurred while retrieving app details"
-		statusCode := http.StatusInternalServerError
+	// cache miss, load from db
+	if app == nil {
+		app, err = e.appRepo.FindApplicationByID(ctx, newMessage.AppID)
+		if err != nil {
 
-		if errors.Is(err, datastore.ErrApplicationNotFound) {
-			msg = err.Error()
-			statusCode = http.StatusNotFound
+			msg := "an error occurred while retrieving app details"
+			statusCode := http.StatusInternalServerError
+
+			if errors.Is(err, datastore.ErrApplicationNotFound) {
+				msg = err.Error()
+				statusCode = http.StatusNotFound
+			}
+
+			log.WithError(err).Error("failed to fetch app")
+			return nil, NewServiceError(statusCode, errors.New(msg))
 		}
 
-		log.WithError(err).Error("failed to fetch app")
-		return nil, NewServiceError(statusCode, errors.New(msg))
+		err = e.cache.Set(ctx, newMessage.AppID, &app, time.Minute)
+		if err != nil {
+			return nil, err
+		}
 	}
 
 	if len(app.Endpoints) == 0 {
