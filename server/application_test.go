@@ -331,7 +331,7 @@ func TestApplicationHandler_CreateApp(t *testing.T) {
 		UID: groupID,
 	}
 
-	bodyReader := strings.NewReader(`{ "group_id": "` + groupID + `", "name": "ABC_DEF_TEST", "secret": "12345" }`)
+	bodyReader := strings.NewReader(`{ "group_id": "` + groupID + `", "name": "ABC_DEF_TEST", "secret": "12345" ,"slack_webhook_url":"https://google.com"}`)
 
 	tt := []struct {
 		name       string

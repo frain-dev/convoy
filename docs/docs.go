@@ -3830,6 +3830,9 @@ var doc = `{
                 "name": {
                     "type": "string"
                 },
+                "slack_webhook_url": {
+                    "type": "string"
+                },
                 "support_email": {
                     "type": "string"
                 },
@@ -4266,6 +4269,9 @@ var doc = `{
                     "type": "boolean"
                 },
                 "name": {
+                    "type": "string"
+                },
+                "slack_webhook_url": {
                     "type": "string"
                 },
                 "support_email": {
