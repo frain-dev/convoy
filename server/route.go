@@ -328,6 +328,7 @@ func buildRoutes(app *applicationHandler) http.Handler {
 			eventDeliveryRouter.Use(requireAppPortalPermission(auth.RoleUIAdmin))
 
 			eventDeliveryRouter.With(pagination).Get("/", app.GetEventDeliveriesPaged)
+			eventDeliveryRouter.Post("/forceresend", app.ForceResendEventDeliveries)
 			eventDeliveryRouter.Post("/batchretry", app.BatchRetryEventDelivery)
 			eventDeliveryRouter.Get("/countbatchretryevents", app.CountAffectedEventDeliveries)
 
