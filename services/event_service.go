@@ -24,11 +24,13 @@ type EventService struct {
 	eventRepo         datastore.EventRepository
 	eventDeliveryRepo datastore.EventDeliveryRepository
 	eventQueue        queue.Queuer
+	createEventQueue  queue.Queuer
 	cache             cache.Cache
 }
 
-func NewEventService(appRepo datastore.ApplicationRepository, eventRepo datastore.EventRepository, eventDeliveryRepo datastore.EventDeliveryRepository, eventQueue queue.Queuer, cache cache.Cache) *EventService {
-	return &EventService{appRepo: appRepo, eventRepo: eventRepo, eventDeliveryRepo: eventDeliveryRepo, eventQueue: eventQueue, cache: cache}
+func NewEventService(appRepo datastore.ApplicationRepository, eventRepo datastore.EventRepository, eventDeliveryRepo datastore.EventDeliveryRepository,
+	eventQueue queue.Queuer, createEventQueue queue.Queuer, cache cache.Cache) *EventService {
+	return &EventService{appRepo: appRepo, eventRepo: eventRepo, eventDeliveryRepo: eventDeliveryRepo, eventQueue: eventQueue, createEventQueue: createEventQueue, cache: cache}
 }
 
 func (e *EventService) CreateAppEvent(ctx context.Context, newMessage *models.Event, g *datastore.Group) (*datastore.Event, error) {
@@ -60,7 +62,7 @@ func (e *EventService) CreateAppEvent(ctx context.Context, newMessage *models.Ev
 			log.WithError(err).Error("failed to fetch app")
 			return nil, NewServiceError(statusCode, errors.New(msg))
 		}
-
+		log.Info("Cache miss")
 		err = e.cache.Set(ctx, newMessage.AppID, &app, time.Minute)
 		if err != nil {
 			return nil, err
@@ -93,10 +95,14 @@ func (e *EventService) CreateAppEvent(ctx context.Context, newMessage *models.Ev
 		DocumentStatus: datastore.ActiveDocumentStatus,
 	}
 
-	err = e.eventRepo.CreateEvent(ctx, event)
+	taskName := convoy.EventProcessor.SetPrefix(g.Name)
+
+	err = e.createEventQueue.WriteEvent(context.Background(), taskName, event, 1*time.Second)
 	if err != nil {
-		return nil, NewServiceError(http.StatusInternalServerError, errors.New("an error occurred while creating event"))
+		log.Errorf("Error occurred sending new event to the queue %s", err)
 	}
+
+	return nil, nil
 
 	var intervalSeconds uint64
 	var retryLimit uint64
@@ -154,8 +160,13 @@ func (e *EventService) CreateAppEvent(ctx context.Context, newMessage *models.Ev
 
 		taskName := convoy.EventProcessor.SetPrefix(g.Name)
 
+		err = e.eventRepo.CreateEvent(ctx, event)
+		if err != nil {
+			return nil, NewServiceError(http.StatusInternalServerError, errors.New("an error occurred while creating event"))
+		}
+
 		if eventDelivery.Status != datastore.DiscardedEventStatus {
-			err = e.eventQueue.Write(context.Background(), taskName, eventDelivery, 1*time.Second)
+			err = e.eventQueue.WriteEventDelivery(context.Background(), taskName, eventDelivery, 1*time.Second)
 			if err != nil {
 				log.Errorf("Error occurred sending new event to the queue %s", err)
 			}
@@ -326,7 +337,7 @@ func (e *EventService) requeueEventDelivery(ctx context.Context, eventDelivery *
 	}
 
 	taskName := convoy.EventProcessor.SetPrefix(g.Name)
-	err = e.eventQueue.Write(context.Background(), taskName, eventDelivery, 1*time.Second)
+	err = e.eventQueue.WriteEventDelivery(context.Background(), taskName, eventDelivery, 1*time.Second)
 	if err != nil {
 		return fmt.Errorf("error occurred re-enqueing old event - %s: %v", eventDelivery.UID, err)
 	}

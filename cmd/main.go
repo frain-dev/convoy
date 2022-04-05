@@ -162,6 +162,7 @@ type app struct {
 	eventDeliveryRepo datastore.EventDeliveryRepository
 	eventQueue        queue.Queuer
 	deadLetterQueue   queue.Queuer
+	createEventQueue  queue.Queuer
 	logger            logger.Logger
 	tracer            tracer.Tracer
 	cache             cache.Cache
@@ -300,7 +301,9 @@ func preRun(app *app, db datastore.DatabaseClient) func(cmd *cobra.Command, args
 		app.eventDeliveryRepo = db.EventDeliveryRepo()
 
 		app.eventQueue = NewQueue(opts, "EventQueue")
+		app.createEventQueue = NewQueue(opts, "CreateEventQueue")
 		app.deadLetterQueue = NewQueue(opts, "DeadLetterQueue")
+
 		app.logger = lo
 		app.tracer = tr
 		app.cache = ca

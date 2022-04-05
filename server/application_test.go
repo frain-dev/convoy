@@ -124,12 +124,13 @@ func provideApplication(ctrl *gomock.Controller) *applicationHandler {
 	eventRepo := mocks.NewMockEventRepository(ctrl)
 	eventDeliveryRepo := mocks.NewMockEventDeliveryRepository(ctrl)
 	eventQueue := mocks.NewMockQueuer(ctrl)
+	createEventQueue := mocks.NewMockQueuer(ctrl)
 	logger := logger.NewNoopLogger()
 	tracer := mocks.NewMockTracer(ctrl)
 	apiKeyRepo := mocks.NewMockAPIKeyRepository(ctrl)
 	cache := mocks.NewMockCache(ctrl)
 	limiter := nooplimiter.NewNoopLimiter()
-	return newApplicationHandler(eventRepo, eventDeliveryRepo, appRepo, groupRepo, apiKeyRepo, eventQueue, logger, tracer, cache, limiter)
+	return newApplicationHandler(eventRepo, eventDeliveryRepo, appRepo, groupRepo, apiKeyRepo, eventQueue, createEventQueue, logger, tracer, cache, limiter)
 }
 
 func TestApplicationHandler_GetApp(t *testing.T) {
