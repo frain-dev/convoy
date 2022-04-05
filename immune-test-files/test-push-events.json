@@ -19,7 +19,7 @@
                 "setup_endpoint"
             ],
             "http_method": "POST",
-            "endpoint": "/events?groupID={group_id}",
+            "endpoint": "/events?groupId={group_id}",
             "callback": {
                 "enabled": true,
                 "times": 1
@@ -44,7 +44,7 @@
                 "setup_endpoint"
             ],
             "http_method": "POST",
-            "endpoint": "/events?groupID={group_id}",
+            "endpoint": "/events?groupId={group_id}",
             "callback": {
                 "enabled": true,
                 "times": 2
@@ -67,7 +67,7 @@
                 "setup_app"
             ],
             "http_method": "POST",
-            "endpoint": "/events?groupID={group_id}",
+            "endpoint": "/events?groupId={group_id}",
             "request_body": {
                 "app_id": "{app_id}",
                 "event_type": "payment.failed",

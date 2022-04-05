@@ -102,6 +102,9 @@
 					"name": {
 						"type": "string"
 					},
+					"slack_webhook_url": {
+						"type": "string"
+					},
 					"support_email": {
 						"type": "string"
 					},
@@ -382,6 +385,9 @@
 					"disable_endpoint": {
 						"type": "boolean"
 					},
+					"replay_attacks": {
+						"type": "boolean"
+					},
 					"signature": {
 						"$ref": "#/components/schemas/datastore.SignatureConfiguration"
 					},
@@ -534,6 +540,9 @@
 						"type": "boolean"
 					},
 					"name": {
+						"type": "string"
+					},
+					"slack_webhook_url": {
 						"type": "string"
 					},
 					"support_email": {

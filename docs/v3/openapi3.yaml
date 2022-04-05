@@ -67,6 +67,8 @@ components:
           type: boolean
         name:
           type: string
+        slack_webhook_url:
+          type: string
         support_email:
           type: string
         uid:
@@ -257,6 +259,8 @@ components:
       properties:
         disable_endpoint:
           type: boolean
+        replay_attacks:
+          type: boolean
         signature:
           $ref: '#/components/schemas/datastore.SignatureConfiguration'
         strategy:
@@ -361,6 +365,8 @@ components:
         is_disabled:
           type: boolean
         name:
+          type: string
+        slack_webhook_url:
           type: string
         support_email:
           type: string

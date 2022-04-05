@@ -33,22 +33,26 @@ func (a *AppService) CreateApp(ctx context.Context, newApp *models.Application, 
 		return nil, NewServiceError(http.StatusBadRequest, err)
 	}
 
-	uid := uuid.New().String()
 	app := &datastore.Application{
-		UID:            uid,
-		GroupID:        g.UID,
-		Title:          appName,
-		SupportEmail:   newApp.SupportEmail,
-		IsDisabled:     newApp.IsDisabled,
-		CreatedAt:      primitive.NewDateTimeFromTime(time.Now()),
-		UpdatedAt:      primitive.NewDateTimeFromTime(time.Now()),
-		Endpoints:      []datastore.Endpoint{},
-		DocumentStatus: datastore.ActiveDocumentStatus,
+		UID:             uuid.New().String(),
+		GroupID:         g.UID,
+		Title:           appName,
+		SupportEmail:    newApp.SupportEmail,
+		SlackWebhookURL: newApp.SlackWebhookURL,
+		IsDisabled:      newApp.IsDisabled,
+		CreatedAt:       primitive.NewDateTimeFromTime(time.Now()),
+		UpdatedAt:       primitive.NewDateTimeFromTime(time.Now()),
+		Endpoints:       []datastore.Endpoint{},
+		DocumentStatus:  datastore.ActiveDocumentStatus,
 	}
 
 	err := a.appRepo.CreateApplication(ctx, app)
+	if err != nil {
+		log.WithError(err).Error("failed to create application")
+		return nil, NewServiceError(http.StatusBadRequest, errors.New("failed to create application"))
+	}
 
-	return app, err
+	return app, nil
 }
 
 func (a *AppService) LoadApplicationsPaged(ctx context.Context, uid string, q string, pageable datastore.Pageable) ([]datastore.Application, datastore.PaginationData, error) {
@@ -76,6 +80,14 @@ func (a *AppService) UpdateApplication(ctx context.Context, appUpdate *models.Up
 
 	if appUpdate.IsDisabled != nil {
 		app.IsDisabled = *appUpdate.IsDisabled
+	}
+
+	if appUpdate.SlackWebhookURL != nil {
+		app.SlackWebhookURL = *appUpdate.SlackWebhookURL
+	}
+
+	if appUpdate.SupportEmail != nil {
+		app.SupportEmail = *appUpdate.SupportEmail
 	}
 
 	err := a.appRepo.UpdateApplication(ctx, app)
@@ -113,7 +125,7 @@ func (a *AppService) CreateAppEndpoint(ctx context.Context, e models.Endpoint, a
 
 	duration, err := time.ParseDuration(e.RateLimitDuration)
 	if err != nil {
-		return nil, NewServiceError(http.StatusBadRequest, fmt.Errorf((fmt.Sprintf("an error occured parsing the rate limit duration...%v", err.Error()))))
+		return nil, NewServiceError(http.StatusBadRequest, fmt.Errorf("an error occurred parsing the rate limit duration: %v", err))
 	}
 
 	endpoint := &datastore.Endpoint{
@@ -172,6 +184,7 @@ func (a *AppService) DeleteAppEndpoint(ctx context.Context, e *datastore.Endpoin
 
 	err := a.appRepo.UpdateApplication(ctx, app)
 	if err != nil {
+		log.WithError(err).Error("failed to delete app endpoint")
 		return NewServiceError(http.StatusBadRequest, errors.New("an error occurred while deleting app endpoint"))
 	}
 	return nil

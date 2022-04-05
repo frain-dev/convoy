@@ -26,7 +26,12 @@ type EventService struct {
 }
 
 func NewEventService(appRepo datastore.ApplicationRepository, eventRepo datastore.EventRepository, eventDeliveryRepo datastore.EventDeliveryRepository, eventQueue queue.Queuer) *EventService {
-	return &EventService{appRepo: appRepo, eventRepo: eventRepo, eventDeliveryRepo: eventDeliveryRepo, eventQueue: eventQueue}
+	return &EventService{
+		appRepo:           appRepo,
+		eventRepo:         eventRepo,
+		eventDeliveryRepo: eventDeliveryRepo,
+		eventQueue:        eventQueue,
+	}
 }
 
 func (e *EventService) CreateAppEvent(ctx context.Context, newMessage *models.Event, g *datastore.Group) (*datastore.Event, error) {

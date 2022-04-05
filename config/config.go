@@ -265,7 +265,7 @@ func overrideConfigWithEnvVars(c *Configuration, override *Configuration) {
 		c.BaseUrl = override.BaseUrl
 	}
 
-	// CONVOY_DB_DSN
+	// CONVOY_DB_TYPE
 	if !IsStringEmpty(string(override.Database.Type)) {
 		c.Database.Type = override.Database.Type
 	}

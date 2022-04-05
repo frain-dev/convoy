@@ -69,6 +69,8 @@ func TestProcessEventDelivery(t *testing.T) {
 						},
 					}, nil).Times(1)
 
+				//ns.EXPECT()
+
 				r.EXPECT().ShouldAllow(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(&redis_rate.Result{
 					Limit:     redis_rate.PerMinute(10),
 					Allowed:   10,
@@ -205,6 +207,8 @@ func TestProcessEventDelivery(t *testing.T) {
 						Status: datastore.ScheduledEventStatus,
 					}, nil).Times(1)
 
+				a.EXPECT().FindApplicationByID(gomock.Any(), gomock.Any()).Return(&datastore.Application{}, nil)
+
 				r.EXPECT().ShouldAllow(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(&redis_rate.Result{
 					Limit:     redis_rate.PerMinute(10),
 					Allowed:   10,
@@ -291,6 +295,8 @@ func TestProcessEventDelivery(t *testing.T) {
 						},
 						Status: datastore.ScheduledEventStatus,
 					}, nil).Times(1)
+
+				a.EXPECT().FindApplicationByID(gomock.Any(), gomock.Any()).Return(&datastore.Application{}, nil)
 
 				r.EXPECT().ShouldAllow(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(&redis_rate.Result{
 					Limit:     redis_rate.PerMinute(10),
@@ -381,6 +387,8 @@ func TestProcessEventDelivery(t *testing.T) {
 						Status: datastore.ScheduledEventStatus,
 					}, nil).Times(1)
 
+				a.EXPECT().FindApplicationByID(gomock.Any(), gomock.Any()).Return(&datastore.Application{}, nil)
+
 				r.EXPECT().ShouldAllow(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(&redis_rate.Result{
 					Limit:     redis_rate.PerMinute(10),
 					Allowed:   10,
@@ -468,6 +476,8 @@ func TestProcessEventDelivery(t *testing.T) {
 						},
 						Status: datastore.ScheduledEventStatus,
 					}, nil).Times(1)
+
+				a.EXPECT().FindApplicationByID(gomock.Any(), gomock.Any()).Return(&datastore.Application{}, nil)
 
 				r.EXPECT().ShouldAllow(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(&redis_rate.Result{
 					Limit:     redis_rate.PerMinute(10),
@@ -571,6 +581,8 @@ func TestProcessEventDelivery(t *testing.T) {
 					Remaining: 10,
 				}, nil).Times(1)
 
+				a.EXPECT().FindApplicationByID(gomock.Any(), gomock.Any()).Return(&datastore.Application{}, nil)
+
 				o.EXPECT().
 					FetchGroupByID(gomock.Any(), gomock.Any()).
 					Return(&datastore.Group{
@@ -646,6 +658,8 @@ func TestProcessEventDelivery(t *testing.T) {
 							UID:       "1234567890",
 						},
 					}, nil).Times(1)
+
+				a.EXPECT().FindApplicationByID(gomock.Any(), gomock.Any()).Times(2).Return(&datastore.Application{}, nil)
 
 				r.EXPECT().ShouldAllow(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(&redis_rate.Result{
 					Limit:     redis_rate.PerMinute(10),

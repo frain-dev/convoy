@@ -62,6 +62,7 @@ brews:
     tap:
       owner: frain-dev
       name: homebrew-tools
+    url_template: https://brew.packages.getconvoy.io/releases/{{.Tag }}/{{ .ArtifactName }}
 
 dockers:
   - image_templates: ["ghcr.io/{{ .Env.REPO_NAME }}:{{ .Tag }}"]
