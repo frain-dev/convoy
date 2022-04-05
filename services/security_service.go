@@ -130,7 +130,7 @@ func (ss *SecurityService) CreateAppPortalAPIKey(ctx context.Context, group *dat
 	}
 
 	if !util.IsStringEmpty(*baseUrl) {
-		*baseUrl = fmt.Sprintf("%s/ui/app-portal/%s?groupID=%s&appId=%s", *baseUrl, key, group.UID, app.UID)
+		*baseUrl = fmt.Sprintf("%s/app-portal/%s?groupID=%s&appId=%s", *baseUrl, key, group.UID, app.UID)
 	}
 
 	return apiKey, key, nil

@@ -16,7 +16,6 @@ import (
 	"github.com/frain-dev/convoy/net"
 	"github.com/frain-dev/convoy/queue"
 	"github.com/frain-dev/convoy/retrystrategies"
-	"github.com/frain-dev/convoy/smtp"
 	"github.com/frain-dev/convoy/util"
 	"github.com/google/uuid"
 	log "github.com/sirupsen/logrus"
@@ -239,12 +238,9 @@ func ProcessEventDelivery(appRepo datastore.ApplicationRepository, eventDelivery
 				log.WithError(err).Error("Failed to reactivate endpoint after successful retry")
 			}
 
-			s, err := smtp.New(&cfg.SMTP)
-			if err == nil {
-				err = sendEmailNotification(m, g, s, endpointStatus)
-				if err != nil {
-					log.WithError(err).Error("Failed to send notification email")
-				}
+			err = sendNotification(context.Background(), appRepo, m, g, &cfg.SMTP, endpointStatus, false)
+			if err != nil {
+				log.WithError(err).Error("failed to send notification")
 			}
 		}
 
@@ -274,22 +270,20 @@ func ProcessEventDelivery(appRepo datastore.ApplicationRepository, eventDelivery
 				m.Status = datastore.FailureEventStatus
 			}
 
+			endpointStatus := dbEndpoint.Status
 			if g.Config.DisableEndpoint && dbEndpoint.Status != datastore.PendingEndpointStatus {
 				endpoints := []string{dbEndpoint.UID}
-				endpointStatus := datastore.InactiveEndpointStatus
+				endpointStatus = datastore.InactiveEndpointStatus
 
 				err := appRepo.UpdateApplicationEndpointsStatus(context.Background(), m.AppMetadata.UID, endpoints, endpointStatus)
 				if err != nil {
 					log.WithError(err).Error("Failed to reactivate endpoint after successful retry")
 				}
+			}
 
-				s, err := smtp.New(&cfg.SMTP)
-				if err == nil {
-					err = sendEmailNotification(m, g, s, endpointStatus)
-					if err != nil {
-						log.WithError(err).Error("Failed to send notification email")
-					}
-				}
+			err = sendNotification(context.Background(), appRepo, m, g, &cfg.SMTP, endpointStatus, true)
+			if err != nil {
+				log.WithError(err).Error("failed to send notification")
 			}
 		}
 
@@ -305,20 +299,6 @@ func ProcessEventDelivery(appRepo datastore.ApplicationRepository, eventDelivery
 		return nil
 	}
 }
-
-func sendEmailNotification(m *datastore.EventDelivery, g *datastore.Group, s *smtp.SmtpClient, status datastore.EndpointStatus) error {
-	email := m.AppMetadata.SupportEmail
-
-	logoURL := g.LogoURL
-
-	err := s.SendEmailNotification(email, logoURL, m.EndpointMetadata.TargetURL, status)
-	if err != nil {
-		return err
-	}
-
-	return nil
-}
-
 func parseAttemptFromResponse(m *datastore.EventDelivery, e *datastore.EndpointMetadata, resp *net.Response, attemptStatus bool) datastore.DeliveryAttempt {
 
 	responseHeader := util.ConvertDefaultHeaderToCustomHeader(&resp.ResponseHeader)

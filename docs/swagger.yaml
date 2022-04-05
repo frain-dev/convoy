@@ -67,6 +67,8 @@ definitions:
         type: boolean
       name:
         type: string
+      slack_webhook_url:
+        type: string
       support_email:
         type: string
       uid:
@@ -364,6 +366,8 @@ definitions:
       is_disabled:
         type: boolean
       name:
+        type: string
+      slack_webhook_url:
         type: string
       support_email:
         type: string
