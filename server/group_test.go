@@ -398,7 +398,7 @@ func TestApplicationHandler_UpdateGroup(t *testing.T) {
 			method:     http.MethodPut,
 			statusCode: http.StatusBadRequest,
 			orgID:      realOrgID,
-			body:       bodyReader,
+			body:       strings.NewReader(`{"name": "ABC_DEF_TEST_UPDATE", "config": {"strategy": {"type": "default", "default": {"intervalSeconds": 10, "retryLimit": 3 }}, "signature": { "header": "X-Company-Signature", "hash": "SHA1" }}}`),
 			dbFn: func(app *applicationHandler) {
 				g, _ := app.groupRepo.(*mocks.MockGroupRepository)
 				g.EXPECT().
