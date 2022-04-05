@@ -355,7 +355,7 @@ export const ConvoyApp = ({ token, groupId, appId, apiURL }) => {
 		try {
 			const appDetailsResponse = await (
 				await request({
-					url: `/apps/${appId}/?groupID=${groupId}`
+					url: `/apps`
 				})
 			).data;
 			setAppDetails(appDetailsResponse.data);
