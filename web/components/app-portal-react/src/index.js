@@ -42,7 +42,7 @@ const getTime = date => {
 	return `${hour}:${minutes > 9 ? minutes : '0' + minutes}:${seconds > 9 ? seconds : '0' + seconds} ${hours > 12 ? 'AM' : 'PM'}`;
 };
 
-export const ConvoyApp = ({ token, groupId, appId, apiURL }) => {
+export const ConvoyApp = ({ token, appId, apiURL }) => {
 	const [eventDeliveryEventId, setEventDeliveryEventId] = useState('');
 	const [eventsToRetry, setEventsToRetry] = useState('');
 	const [isRetryingBatchEvents, toggleBatchRetryLoadStatus] = useState('');
@@ -213,7 +213,7 @@ export const ConvoyApp = ({ token, groupId, appId, apiURL }) => {
 		try {
 			const batchRetryResponse = await (
 				await request({
-					url: `/eventdeliveries/countbatchretryevents?startDate=${startDate}&endDate=${endDate}&appId=${appId}&groupID=${groupId}&eventId=${eventDeliveryEventId || ''}${
+					url: `/eventdeliveries/countbatchretryevents?startDate=${startDate}&endDate=${endDate}&eventId=${eventDeliveryEventId || ''}${
 						eventDeliveryStatusFilterString || ''
 					}`,
 					method: 'GET',
@@ -241,7 +241,7 @@ export const ConvoyApp = ({ token, groupId, appId, apiURL }) => {
 		try {
 			await (
 				await request({
-					url: `/eventdeliveries/batchretry?startDate=${startDate}&endDate=${endDate}&appId=${appId}&groupID=${groupId}&eventId=${eventDeliveryEventId || ''}${eventDeliveryStatusFilterString || ''}`,
+					url: `/eventdeliveries/batchretry?startDate=${startDate}&endDate=${endDate}&eventId=${eventDeliveryEventId || ''}${eventDeliveryStatusFilterString || ''}`,
 					method: 'POST',
 					data: null
 				})
@@ -271,7 +271,7 @@ export const ConvoyApp = ({ token, groupId, appId, apiURL }) => {
 		try {
 			const eventsResponse = await (
 				await request({
-					url: `/events?sort=AESC&page=${page || 1}&perPage=20&startDate=${startDate}&endDate=${endDate}&appId=${appId}&groupID=${groupId}`,
+					url: `/events?sort=AESC&page=${page || 1}&perPage=20&startDate=${startDate}&endDate=${endDate}&appId=${appId}`,
 					method: 'GET'
 				})
 			).data;
@@ -311,7 +311,7 @@ export const ConvoyApp = ({ token, groupId, appId, apiURL }) => {
 		try {
 			const eventsResponse = await (
 				await request({
-					url: `/eventdeliveries?sort=AESC&page=${page || 1}&perPage=20&startDate=${startDate}&endDate=${endDate}&appId=${appId}&groupID=${groupId}&eventId=${eventId || eventDeliveryEventId || ''}${
+					url: `/eventdeliveries?sort=AESC&page=${page || 1}&perPage=20&startDate=${startDate}&endDate=${endDate}&appId=${appId}&eventId=${eventId || eventDeliveryEventId || ''}${
 						eventDeliveryStatusFilterString || ''
 					}`,
 					method: 'GET'
@@ -341,7 +341,7 @@ export const ConvoyApp = ({ token, groupId, appId, apiURL }) => {
 		try {
 			const eventsResponse = await (
 				await request({
-					url: `/eventdeliveries?eventId=${eventId}&groupID=${groupId}&appId=${appId}`,
+					url: `/eventdeliveries?eventId=${eventId}&appId=${appId}`,
 					method: 'GET'
 				})
 			).data;
@@ -368,7 +368,7 @@ export const ConvoyApp = ({ token, groupId, appId, apiURL }) => {
 		try {
 			const deliveryAttemptsResponse = await (
 				await request({
-					url: `/eventdeliveries/${eventId}/deliveryattempts?groupID=${groupId}&appId=${appId}`
+					url: `/eventdeliveries/${eventId}/deliveryattempts?appId=${appId}`
 				})
 			).data;
 			setEventDeliveryAtempt(deliveryAttemptsResponse.data[deliveryAttemptsResponse.data.length - 1]);
@@ -388,7 +388,7 @@ export const ConvoyApp = ({ token, groupId, appId, apiURL }) => {
 			await (
 				await request({
 					method: 'PUT',
-					url: `/eventdeliveries/${eventId}/resend?groupID=${groupId}`
+					url: `/eventdeliveries/${eventId}/resend`
 				})
 			).data;
 			showNotification({ message: 'Retry Request Sent' });
