@@ -7,7 +7,7 @@
 
 	<div class="dashboard-page--details">
 		<div class="card has-title dashboard-page--endpoints">
-			<table class="table table__no-style">
+			<table class="table table__no-style" *ngIf="appDetails?.endpoints?.length !== 0">
 				<thead>
 					<tr class="table--head">
 						<th class="has-long-text" scope="col">Endpoint URL</th>
@@ -41,6 +41,10 @@
 					</tr>
 				</tbody>
 			</table>
+			<div class="empty-state" *ngIf="appDetails?.endpoints?.length === 0">
+				<img src="/assets/img/empty-state-img.svg" alt="empty state" />
+				<p>No endpoints to show here</p>
+			</div>
 		</div>
 
 		<!-- Pending when API is available -->

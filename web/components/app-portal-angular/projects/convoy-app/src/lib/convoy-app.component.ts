@@ -86,6 +86,7 @@ export class ConvoyAppComponent implements OnInit {
 	showAddEndpointModal = false;
 	isCreatingNewEndpoint = false;
 	@Input('token') token!: string;
+	@Input('appId') appId!: string;
 	@Input('apiURL') apiURL: string = '';
 
 	constructor(private convyAppService: ConvoyAppService, private router: Router, private formBuilder: FormBuilder, private route: ActivatedRoute, private datePipe: DatePipe) {}
@@ -230,7 +231,7 @@ export class ConvoyAppComponent implements OnInit {
 
 		try {
 			const eventsResponse = await this.convyAppService.request({
-				url: this.getAPIURL(`/events?sort=AESC&page=${this.eventsPage || 1}&startDate=${startDate}&endDate=${endDate}`),
+				url: this.getAPIURL(`/events?appId=${this.appId || ''}&sort=AESC&page=${this.eventsPage || 1}&startDate=${startDate}&endDate=${endDate}`),
 				method: 'get',
 				token: this.token
 			});
@@ -277,7 +278,7 @@ export class ConvoyAppComponent implements OnInit {
 		try {
 			const eventDeliveriesResponse = await this.convyAppService.request({
 				url: this.getAPIURL(
-					`/eventdeliveries?eventId=${requestDetails.eventId || ''}&page=${this.eventDeliveriesPage || 1}&startDate=${startDate}&endDate=${endDate}&status=${eventDeliveryStatusFilterQuery || ''}`
+					`/eventdeliveries?appId=${this.appId || ''}&eventId=${requestDetails.eventId || ''}&page=${this.eventDeliveriesPage || 1}&startDate=${startDate}&endDate=${endDate}&status=${eventDeliveryStatusFilterQuery || ''}`
 				),
 				method: 'get',
 				token: this.token
