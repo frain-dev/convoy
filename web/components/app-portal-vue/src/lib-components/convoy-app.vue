@@ -425,7 +425,7 @@ export default /*#__PURE__*/ defineComponent({
 								:class="{ active: eventDeliveryFilteredByStatus.length > 0 }"
 								@click="showEventDelsStatusDropdown = !showEventDelsStatusDropdown"
 							>
-								<SvgComponent :width="'16'" :height="'14'" :id="'status-icon'" />
+								<SvgComponent :width="'16'" :height="'14'" :id="'status-icon'" :styles="'margin-top__4px'" />
 								<span>Status</span>
 								<SvgComponent :width="'12'" :height="'8'" :id="'angle-arrow-down'" />
 							</button>
@@ -661,7 +661,7 @@ export default /*#__PURE__*/ defineComponent({
 													"
 													:disabled="event.status !== 'Failure'"
 												>
-													<SvgComponent :width="'14'" :height="'14'" :id="'retry-icon'" :styles="'margin-right__10px'" />
+													<SvgComponent :width="'14'" :height="'14'" :id="'retry-icon'" :styles="'margin-right__10px margin-top__4px'" />
 													Retry
 												</button>
 											</div>
