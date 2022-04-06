@@ -95,7 +95,7 @@ export class ConvoyAppComponent implements OnInit {
 	}
 
 	async initDashboard() {
-		await Promise.all([this.getEvents(), this.getEventDeliveries(), this.getAppDetails()]);
+		this.getAppDetails()
 
 		// get active tab from url and apply, after getting the details from above requests so that the data is available ahead
 		this.toggleActiveTab(this.route.snapshot.queryParams.activeTab ?? 'events');
@@ -230,7 +230,7 @@ export class ConvoyAppComponent implements OnInit {
 
 		try {
 			const eventsResponse = await this.convyAppService.request({
-				url: this.getAPIURL(`/events?sort=AESC&page=${this.eventsPage || 1}&startDate=${startDate}&endDate=${endDate}`),
+				url: this.getAPIURL(`/events?appId=${this.appDetails?.uid || ''}&sort=AESC&page=${this.eventsPage || 1}&startDate=${startDate}&endDate=${endDate}`),
 				method: 'get',
 				token: this.token
 			});
@@ -264,6 +264,8 @@ export class ConvoyAppComponent implements OnInit {
 			});
 
 			this.appDetails = appDetailsResponse.data;
+			this.getEvents() 
+			this.getEventDeliveries()
 		} catch (error) {
 			return error;
 		}
@@ -277,7 +279,7 @@ export class ConvoyAppComponent implements OnInit {
 		try {
 			const eventDeliveriesResponse = await this.convyAppService.request({
 				url: this.getAPIURL(
-					`/eventdeliveries?eventId=${requestDetails.eventId || ''}&page=${this.eventDeliveriesPage || 1}&startDate=${startDate}&endDate=${endDate}&status=${eventDeliveryStatusFilterQuery || ''}`
+					`/eventdeliveries?appId=${this.appDetails?.uid || ''}&eventId=${requestDetails.eventId || ''}&page=${this.eventDeliveriesPage || 1}&startDate=${startDate}&endDate=${endDate}&status=${eventDeliveryStatusFilterQuery || ''}`
 				),
 				method: 'get',
 				token: this.token
