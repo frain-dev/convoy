@@ -42,7 +42,7 @@ const getTime = date => {
 	return `${hour}:${minutes > 9 ? minutes : '0' + minutes}:${seconds > 9 ? seconds : '0' + seconds} ${hours > 12 ? 'AM' : 'PM'}`;
 };
 
-export const ConvoyApp = ({ token, appId, apiURL }) => {
+export const ConvoyApp = ({ token, apiURL }) => {
 	const [eventDeliveryEventId, setEventDeliveryEventId] = useState('');
 	const [eventsToRetry, setEventsToRetry] = useState('');
 	const [isRetryingBatchEvents, toggleBatchRetryLoadStatus] = useState('');
@@ -162,7 +162,7 @@ export const ConvoyApp = ({ token, appId, apiURL }) => {
 		return { startDate, endDate };
 	};
 
-	const clearEventDeliveriesDateFilter = () => {
+	const clearEventDeliveriesDateFilter = ({ appUid }) => {
 		setEventDelFilterDates([
 			{
 				startDate: new Date(),
@@ -171,10 +171,10 @@ export const ConvoyApp = ({ token, appId, apiURL }) => {
 			}
 		]);
 		toggleEventDelDateFilterActive(false);
-		getEventDeliveries({ page: 1 });
+		getEventDeliveries({ page: 1, appUid: appUid });
 	};
 
-	const clearEventDeliveriesFilters = () => {
+	const clearEventDeliveriesFilters = ({ appUid }) => {
 		setEventDelFilterDates([
 			{
 				startDate: new Date(),
@@ -186,7 +186,7 @@ export const ConvoyApp = ({ token, appId, apiURL }) => {
 		document.querySelectorAll('.dropdown--list--item input[type=checkbox]').forEach(el => (el.checked = false));
 		setEventDelFilterStatus([]);
 		toggleEventDelDateFilterActive(false);
-		getEventDeliveries({ page: 1, eventDelFilterStatusList: [] });
+		getEventDeliveries({ page: 1, eventDelFilterStatusList: [], appUid: appUid });
 	};
 
 	const clearEventsFilters = () => {
@@ -213,9 +213,7 @@ export const ConvoyApp = ({ token, appId, apiURL }) => {
 		try {
 			const batchRetryResponse = await (
 				await request({
-					url: `/eventdeliveries/countbatchretryevents?startDate=${startDate}&endDate=${endDate}&eventId=${eventDeliveryEventId || ''}${
-						eventDeliveryStatusFilterString || ''
-					}`,
+					url: `/eventdeliveries/countbatchretryevents?startDate=${startDate}&endDate=${endDate}&eventId=${eventDeliveryEventId || ''}${eventDeliveryStatusFilterString || ''}`,
 					method: 'GET',
 					data: null
 				})
@@ -229,7 +227,7 @@ export const ConvoyApp = ({ token, appId, apiURL }) => {
 		}
 	};
 
-	const batchRetryEvents = async ({ dates, eventDelFilterStatusList = [] }) => {
+	const batchRetryEvents = async ({ dates, eventDelFilterStatusList = [], appUid }) => {
 		let eventDeliveryStatusFilterString = '';
 		eventDelFilterStatusList.forEach(status => (eventDeliveryStatusFilterString += `&status=${status}`));
 		toggleBatchRetryLoadStatus(true);
@@ -247,7 +245,7 @@ export const ConvoyApp = ({ token, appId, apiURL }) => {
 				})
 			).data;
 
-			getEventDeliveries({ page: 1 });
+			getEventDeliveries({ page: 1, appUid: appUid });
 			toggleBatchRetryLoadStatus(false);
 			toggleBatchRetryModal(false);
 			showNotification({ message: 'Batch retry successful' });
@@ -259,8 +257,9 @@ export const ConvoyApp = ({ token, appId, apiURL }) => {
 		}
 	};
 
-	const getEvents = useCallback(async ({ page, eventsData, dates }) => {
+	const getEvents = useCallback(async ({ page, eventsData, dates, appUid }) => {
 		toggleShowEventFilterCalendar(false);
+		console.log(appDetails);
 		if (eventsData && eventsData?.pagination?.next === page) toggleIsloadingMoreEvents(true);
 
 		if (!dates) dates = [{ startDate: null, endDate: null }];
@@ -271,7 +270,7 @@ export const ConvoyApp = ({ token, appId, apiURL }) => {
 		try {
 			const eventsResponse = await (
 				await request({
-					url: `/events?sort=AESC&page=${page || 1}&perPage=20&startDate=${startDate}&endDate=${endDate}&appId=${appId}`,
+					url: `/events?sort=AESC&page=${page || 1}&perPage=20&startDate=${startDate}&endDate=${endDate}&appId=${appUid}`,
 					method: 'GET'
 				})
 			).data;
@@ -288,14 +287,14 @@ export const ConvoyApp = ({ token, appId, apiURL }) => {
 			setEventsData(eventsResponse.data);
 			setEventsDisplayed(eventsResponse.data.content);
 			setEventDetailsItem(eventsResponse.data.content[0]);
-			eventDeliveriesForSidebar({ eventId: eventsResponse.data.content[0].uid });
+			eventDeliveriesForSidebar({ eventId: eventsResponse.data.content[0].uid, appUid: appUid });
 			Prism.highlightAll();
 		} catch (error) {
 			return error;
 		}
 	}, []);
 
-	const getEventDeliveries = useCallback(async ({ page, eventsData, dates, eventId, eventDelFilterStatusList = [] }) => {
+	const getEventDeliveries = useCallback(async ({ page, eventsData, dates, eventId, eventDelFilterStatusList = [], appUid }) => {
 		if (eventsData && eventsData?.pagination?.next === page) toggleIsloadingMoreEventDels(true);
 		let eventDeliveryStatusFilterString = '';
 		toggleEventDelFilterCalendar(false);
@@ -311,7 +310,7 @@ export const ConvoyApp = ({ token, appId, apiURL }) => {
 		try {
 			const eventsResponse = await (
 				await request({
-					url: `/eventdeliveries?sort=AESC&page=${page || 1}&perPage=20&startDate=${startDate}&endDate=${endDate}&appId=${appId}&eventId=${eventId || eventDeliveryEventId || ''}${
+					url: `/eventdeliveries?sort=AESC&page=${page || 1}&perPage=20&startDate=${startDate}&endDate=${endDate}&appId=${appUid}&eventId=${eventId || eventDeliveryEventId || ''}${
 						eventDeliveryStatusFilterString || ''
 					}`,
 					method: 'GET'
@@ -330,18 +329,18 @@ export const ConvoyApp = ({ token, appId, apiURL }) => {
 			setEventDeliveriesData(eventsResponse.data);
 			setEventDeliveriesDisplayed(eventsResponse.data.content);
 			setEventDelDetailsItem(eventsResponse.data.content[0]);
-			getDelieveryAttempts(eventsResponse.data.content[0].uid);
+			getDelieveryAttempts({ eventId: eventsResponse.data.content[0].uid, appUid: appUid });
 			Prism.highlightAll();
 		} catch (error) {
 			return error;
 		}
 	}, []);
 
-	const eventDeliveriesForSidebar = useCallback(async ({ eventId }) => {
+	const eventDeliveriesForSidebar = useCallback(async ({ eventId, appUid }) => {
 		try {
 			const eventsResponse = await (
 				await request({
-					url: `/eventdeliveries?eventId=${eventId}&appId=${appId}`,
+					url: `/eventdeliveries?eventId=${eventId}&appId=${appUid}`,
 					method: 'GET'
 				})
 			).data;
@@ -359,16 +358,19 @@ export const ConvoyApp = ({ token, appId, apiURL }) => {
 				})
 			).data;
 			setAppDetails(appDetailsResponse.data);
+			const appUid = appDetailsResponse.data.uid;
+			getEvents({ page: 1, appUid: appUid });
+			getEventDeliveries({ page: 1, appUid: appUid });
 		} catch (error) {
 			return error;
 		}
 	}, []);
 
-	const getDelieveryAttempts = async eventId => {
+	const getDelieveryAttempts = async ({ eventId, appUid }) => {
 		try {
 			const deliveryAttemptsResponse = await (
 				await request({
-					url: `/eventdeliveries/${eventId}/deliveryattempts?appId=${appId}`
+					url: `/eventdeliveries/${eventId}/deliveryattempts?appId=${appUid}`
 				})
 			).data;
 			setEventDeliveryAtempt(deliveryAttemptsResponse.data[deliveryAttemptsResponse.data.length - 1]);
@@ -378,7 +380,7 @@ export const ConvoyApp = ({ token, appId, apiURL }) => {
 		}
 	};
 
-	const retryEvent = async ({ eventId, e, index }) => {
+	const retryEvent = async ({ eventId, e, index, appUid }) => {
 		e.stopPropagation();
 		const retryButton = document.querySelector(`#eventDel${index} button`);
 		retryButton.classList.add(['spin', 'disable_action']);
@@ -394,7 +396,7 @@ export const ConvoyApp = ({ token, appId, apiURL }) => {
 			showNotification({ message: 'Retry Request Sent' });
 			retryButton.classList.remove(['spin', 'disable_action']);
 			retryButton.disabled = false;
-			getEvents({ page: events.pagination.page });
+			getEvents({ page: events.pagination.page, appUid: appUid });
 		} catch (error) {
 			showNotification({ message: error.response.data.message });
 			retryButton.classList.remove(['spin', 'disable_action']);
@@ -420,60 +422,67 @@ export const ConvoyApp = ({ token, appId, apiURL }) => {
 
 	useEffect(() => {
 		getAppDetails();
-		getEvents({ page: 1 });
-		getEventDeliveries({ page: 1 });
-	}, [getEvents, getAppDetails, getEventDeliveries]);
+	}, [getAppDetails]);
 
 	return (
 		<div className={styles['dashboard--page']}>
 			<div className={styles['dashboard--page--head']}>
-				<h3 className={styles['margin-bottom__10px']}>Endpoint</h3>
+				<h3 className={styles['margin-bottom__10px']}>Endpoints</h3>
 			</div>
 
 			<div className={styles['app-page--details']}>
 				<div className={`${styles['card']} ${styles['has-title']} ${styles['dashboard-page--endpoints']}`}>
-					<table className={`${styles.table} ${styles['table__no-style']}`}>
-						<thead>
-							<tr className={styles['table--head']}>
-								<th className={styles['has-long-text']} scope="col">
-									Endpoint URL
-								</th>
-								<th scope="col">Created At</th>
-								<th scope="col">Updated At</th>
-								<th scope="col">Endpoint Events</th>
-								<th scope="col">Status</th>
-							</tr>
-						</thead>
-						<tbody>
-							{appDetails?.endpoints.map((endpoint, index) => (
-								<tr className={styles['has-border']} key={index}>
-									<td className={`${styles['has-long-text']} ${styles['longer']}`}>
-										<div title={endpoint.target_url}>{endpoint.target_url}</div>
-									</td>
-									<td>
-										<div>{getDate(endpoint.created_at)}</div>
-									</td>
-									<td>
-										<div>{getDate(endpoint.updated_at)}</div>
-									</td>
-									<td>
-										<div className={`${styles.flex} ${styles['flex__wrap']}`}>
-											{endpoint.events.map((event, idx) => (
-												<div className={styles.tag} key={idx}>
-													{event == '*' ? 'all events' : event}
-												</div>
-											))}
-										</div>
-									</td>
-									<td>
-										<div>
-											<div className={`${styles.tag} ${styles['tag-- ']} ${endpoint.status === 'active' ? styles['tag--Success'] : styles['tag--Retry']}`}>{endpoint.status}</div>
-										</div>
-									</td>
+					{appDetails?.endpoints?.length !== 0 && (
+						<table className={`${styles.table} ${styles['table__no-style']}`}>
+							<thead>
+								<tr className={styles['table--head']}>
+									<th className={styles['has-long-text']} scope="col">
+										Endpoint URL
+									</th>
+									<th scope="col">Created At</th>
+									<th scope="col">Updated At</th>
+									<th scope="col">Endpoint Events</th>
+									<th scope="col">Status</th>
 								</tr>
-							))}
-						</tbody>
-					</table>
+							</thead>
+							<tbody>
+								{appDetails?.endpoints.map((endpoint, index) => (
+									<tr className={styles['has-border']} key={index}>
+										<td className={`${styles['has-long-text']} ${styles['longer']}`}>
+											<div title={endpoint.target_url}>{endpoint.target_url}</div>
+										</td>
+										<td>
+											<div>{getDate(endpoint.created_at)}</div>
+										</td>
+										<td>
+											<div>{getDate(endpoint.updated_at)}</div>
+										</td>
+										<td>
+											<div className={`${styles.flex} ${styles['flex__wrap']}`}>
+												{endpoint.events.map((event, idx) => (
+													<div className={styles.tag} key={idx}>
+														{event == '*' ? 'all events' : event}
+													</div>
+												))}
+											</div>
+										</td>
+										<td>
+											<div>
+												<div className={`${styles.tag} ${styles['tag-- ']} ${endpoint.status === 'active' ? styles['tag--Success'] : styles['tag--Retry']}`}>{endpoint.status}</div>
+											</div>
+										</td>
+									</tr>
+								))}
+							</tbody>
+						</table>
+					)}
+
+					{appDetails?.endpoints?.length === 0 && (
+						<div className={`${styles['empty-state']} ${styles['table--container']} ${styles['smaller-table']}`}>
+							<img src={EmptyStateImage} alt="empty state" />
+							<p>No endpoints to show</p>
+						</div>
+					)}
 				</div>
 			</div>
 
@@ -511,7 +520,7 @@ export const ConvoyApp = ({ token, appId, apiURL }) => {
 											<button
 												className={`${styles['button']} ${styles['button__small']} ${styles['button__primary']} ${styles['font__12px']} ${styles['margin-right__10px']}`}
 												onClick={() => {
-													getEvents({ dates: eventFilterDates });
+													getEvents({ dates: eventFilterDates, appUid: appDetails?.uid });
 													toggleEventDateFilterActive(true);
 												}}>
 												Apply
@@ -519,7 +528,7 @@ export const ConvoyApp = ({ token, appId, apiURL }) => {
 											<button
 												className={`${styles['button__clear']}`}
 												onClick={() => {
-													getEvents({ page: 1 });
+													getEvents({ page: 1, appUid: appDetails?.uid });
 													toggleEventDateFilterActive(false);
 												}}>
 												Clear
@@ -551,7 +560,7 @@ export const ConvoyApp = ({ token, appId, apiURL }) => {
 												<button
 													className={`${styles['button']} ${styles['button__small']} ${styles['button__primary']} ${styles['font__12px']} ${styles['margin-right__10px']}`}
 													onClick={() => {
-														getEventDeliveries({ dates: eventFilterDates });
+														getEventDeliveries({ dates: eventFilterDates, appUid: appDetails?.uid });
 														toggleEventDelDateFilterActive(true);
 													}}>
 													Apply
@@ -559,7 +568,7 @@ export const ConvoyApp = ({ token, appId, apiURL }) => {
 												<button
 													className={`${styles['button__clear']}`}
 													onClick={() => {
-														clearEventDeliveriesDateFilter();
+														clearEventDeliveriesDateFilter({ appUid: appDetails?.uid });
 														toggleEventDelDateFilterActive(false);
 													}}>
 													Clear
@@ -589,10 +598,10 @@ export const ConvoyApp = ({ token, appId, apiURL }) => {
 										<div className={`${styles['flex']} ${styles['flex__align-items-center']} ${styles['margin-top__12px']}`}>
 											<button
 												className={`${styles['button']} ${styles['button__primary']} ${styles['button__small']}`}
-												onClick={() => getEventDeliveries({ page: 1, eventDelFilterStatusList: eventDelFilterStatus })}>
+												onClick={() => getEventDeliveries({ page: 1, eventDelFilterStatusList: eventDelFilterStatus, appUid: appDetails?.uid })}>
 												Apply
 											</button>
-											<button className={`${styles['button__clear']} ${styles['margin-left__14px']}`} onClick={() => getEventDeliveries({ page: 1 })}>
+											<button className={`${styles['button__clear']} ${styles['margin-left__14px']}`} onClick={() => getEventDeliveries({ page: 1, appUid: appDetails?.uid })}>
 												Clear
 											</button>
 										</div>
@@ -606,7 +615,7 @@ export const ConvoyApp = ({ token, appId, apiURL }) => {
 											className={`${styles['button__clear']} ${styles['button--has-icon']}  ${styles['margin-left__8px']}`}
 											onClick={() => {
 												setEventDeliveryEventId('');
-												getEventDeliveries({ page: 1 });
+												getEventDeliveries({ page: 1, appUid: appDetails?.uid });
 											}}>
 											<img src={CloseIcon} alt="close icon" />
 										</button>
@@ -625,7 +634,7 @@ export const ConvoyApp = ({ token, appId, apiURL }) => {
 								className={`${styles['button']} ${styles['button__white']} ${styles['button__small']} ${styles['font__12px']} ${styles['margin-right__20px']} ${
 									!eventDelDateFilterActive && eventDeliveryEventId === '' && !eventDelStatusFilterActive ? styles.disabled : ''
 								}`}
-								onClick={() => clearEventDeliveriesFilters()}>
+								onClick={() => clearEventDeliveriesFilters({ appUid: appDetails?.uid })}>
 								Clear Filter
 							</button>
 						</div>
@@ -671,7 +680,7 @@ export const ConvoyApp = ({ token, appId, apiURL }) => {
 												<tr
 													key={'events' + index}
 													onClick={() => {
-														eventDeliveriesForSidebar({ eventId: event.uid });
+														eventDeliveriesForSidebar({ eventId: event.uid, appUid: appDetails?.uid });
 														setEventDetailsItem(event);
 														Prism.highlightAll();
 														console.log(Prism);
@@ -697,7 +706,7 @@ export const ConvoyApp = ({ token, appId, apiURL }) => {
 																onClick={e => {
 																	e.stopPropagation();
 																	setEventDeliveryEventId(event.uid);
-																	getEventDeliveries({ page: 1, eventId: event.uid });
+																	getEventDeliveries({ page: 1, eventId: event.uid, appUid: appDetails?.uid });
 																	toggleActiveTab('event deliveries');
 																}}>
 																Deliveries
@@ -719,7 +728,7 @@ export const ConvoyApp = ({ token, appId, apiURL }) => {
 											styles['margin-bottom__24px']
 										} ${styles['flex__justify-center']} ${events.pagination.page === events.pagination.totalPage ? styles.disable_action : ''}`}
 										disabled={events.pagination.page === events.pagination.totalPage}
-										onClick={() => getEvents({ page: events.pagination.page + 1, eventsData: events, dates: eventDateFilterActive ? eventFilterDates : null })}>
+										onClick={() => getEvents({ page: events.pagination.page + 1, eventsData: events, dates: eventDateFilterActive ? eventFilterDates : null, appUid: appDetails?.uid })}>
 										{!isloadingMoreEvents && <img src={ArrowDownIcon} className={`${styles['width-unset']} ${styles['height-unset']}`} alt="arrow down icon" />}
 										{isloadingMoreEvents && <img src={RotateIcon} className={styles['loading-icon']} alt="loading icon" />}
 										Load more
@@ -762,7 +771,7 @@ export const ConvoyApp = ({ token, appId, apiURL }) => {
 													onClick={() => {
 														Prism.highlightAll();
 														setEventDelDetailsItem(event);
-														getDelieveryAttempts(event.uid);
+														getDelieveryAttempts({ eventId: event.uid, appUid: appDetails?.uid });
 													}}>
 													<td>
 														<div className={`${styles['has-retry']}`}>
@@ -784,7 +793,7 @@ export const ConvoyApp = ({ token, appId, apiURL }) => {
 															<button
 																className={`${styles['button__retry']} ${styles['button--has-icon']} ${styles['icon-left']}`}
 																disabled={event.status !== 'Failure'}
-																onClick={e => retryEvent({ eventId: event.uid, e, index })}>
+																onClick={e => retryEvent({ eventId: event.uid, e, index, appUid: appDetails?.uid })}>
 																<img src={RefreshIcon} alt="refresh icon" />
 																Retry
 															</button>
@@ -809,7 +818,8 @@ export const ConvoyApp = ({ token, appId, apiURL }) => {
 												page: eventDeliveries.pagination.page + 1,
 												eventsData: eventDeliveries,
 												dates: eventDelDateFilterActive ? eventDelFilterDates : null,
-												eventDelFilterStatusList: eventDelStatusFilterActive ? eventDelFilterStatus : null
+												eventDelFilterStatusList: eventDelStatusFilterActive ? eventDelFilterStatus : null,
+												appUid: appDetails?.uid
 											})
 										}>
 										{!isloadingMoreEventDels && <img src={ArrowDownIcon} className={`${styles['width-unset']} ${styles['height-unset']}`} alt="arrow down icon" />}
@@ -970,7 +980,7 @@ export const ConvoyApp = ({ token, appId, apiURL }) => {
 							<button
 								className={`${styles.button} ${styles.button__primary}`}
 								disabled={isRetryingBatchEvents || eventsToRetry == 0}
-								onClick={() => batchRetryEvents({ dates: eventDelDateFilterActive ? eventFilterDates : null, eventDelFilterStatusList: eventDelFilterStatus })}>
+								onClick={() => batchRetryEvents({ dates: eventDelDateFilterActive ? eventFilterDates : null, eventDelFilterStatusList: eventDelFilterStatus, appUid: appDetails?.uid })}>
 								{isRetryingBatchEvents ? 'Retrying Events...' : 'Yes, Retry Events'}
 							</button>
 							<button className={`${styles.button__primary} ${styles.button__clear} ${styles['margin-top__22px']} ${styles['font__weight-600']}`} onClick={() => toggleBatchRetryModal(false)}>

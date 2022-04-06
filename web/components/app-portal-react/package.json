@@ -23,12 +23,12 @@
 		"deploy": "gh-pages -d example/build"
 	},
 	"peerDependencies": {
-		"react": "^16.0.0",
 		"axios": "^0.26.0",
 		"date-fns": "^2.28.0",
 		"moment": "^2.29.1",
 		"node-sass": "^7.0.1",
 		"prismjs": "^1.27.0",
+		"react": "^16.0.0",
 		"react-date-range": "^1.4.0"
 	},
 	"devDependencies": {
@@ -45,7 +45,7 @@
 	},
 	"dependencies": {
 		"axios": "^0.26.0",
-		"convoy-ui": "0.0.2",
+		"convoy-ui": "^0.0.2",
 		"date-fns": "^2.28.0",
 		"moment": "^2.29.1",
 		"node-sass": "^7.0.1",
