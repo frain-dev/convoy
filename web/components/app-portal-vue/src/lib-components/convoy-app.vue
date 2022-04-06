@@ -8,11 +8,12 @@ import DatePicker from 'vue-datepicker-next';
 import 'vue-datepicker-next/index.css';
 import { format } from 'date-fns';
 import LoaderComponent from './loader-component.vue';
+import SvgComponent from './svg-component.vue';
 
 export default /*#__PURE__*/ defineComponent({
 	name: 'ConvoyApp', // vue component name
 	props: ['token', 'apiURL'],
-	components: { DatePicker, LoaderComponent },
+	components: { DatePicker, LoaderComponent, SvgComponent },
 	data() {
 		return {
 			appDetails: {},
@@ -84,7 +85,7 @@ export default /*#__PURE__*/ defineComponent({
 		}
 	},
 	mounted() {
-		Promise.all([this.getAppDetails(), this.getEventDeliveries(), this.getEvents()]).then(() => {
+		Promise.all([this.getAppDetails()]).then(() => {
 			window.Prism = window.Prism || {};
 			window.Prism.manual = true;
 			Prism.highlightAll();
@@ -141,6 +142,8 @@ export default /*#__PURE__*/ defineComponent({
 				});
 
 				this.appDetails = appDetailsResponse.data;
+				this.getEventDeliveries();
+				this.getEvents();
 				this.loadingAppDetails = false;
 			} catch (error) {
 				this.loadingAppDetails = false;
@@ -165,7 +168,7 @@ export default /*#__PURE__*/ defineComponent({
 
 			try {
 				const eventsResponse = await this.request({
-					url: `/events?sort=AESC&page=${this.eventsPage || 1}&perPage=20&startDate=${startDate}&endDate=${endDate}`,
+					url: `/events?appId=${this.appDetails.uid || ''}&sort=AESC&page=${this.eventsPage || 1}&perPage=20&startDate=${startDate}&endDate=${endDate}`,
 					method: 'get'
 				});
 
@@ -196,9 +199,9 @@ export default /*#__PURE__*/ defineComponent({
 
 			try {
 				const eventDeliveriesResponse = await this.request({
-					url: `/eventdeliveries?eventId=${requestDetails.eventId || ''}&page=${this.eventDeliveriesPage || 1}&startDate=${requestDetails.startDate}&endDate=${requestDetails.endDate}${
-						eventDeliveryStatusFilterQuery || ''
-					}`,
+					url: `/eventdeliveries?appId=${this.appDetails.uid || ''}&eventId=${requestDetails.eventId || ''}&page=${this.eventDeliveriesPage || 1}&startDate=${requestDetails.startDate}&endDate=${
+						requestDetails.endDate
+					}${eventDeliveryStatusFilterQuery || ''}`,
 					method: 'get'
 				});
 
@@ -418,13 +421,13 @@ export default /*#__PURE__*/ defineComponent({
 
 						<div class="dropdown">
 							<button
-								class="button button__filter button--has-icon icon-right icon-left margin-left__24px"
+								class="button button__filter margin-left__24px"
 								:class="{ active: eventDeliveryFilteredByStatus.length > 0 }"
 								@click="showEventDelsStatusDropdown = !showEventDelsStatusDropdown"
 							>
-								<img v-bind:src="require('../assets/img/status-filter-icon.svg')" alt="status filter icon" />
+								<SvgComponent :width="'16'" :height="'14'" :id="'status-icon'" />
 								<span>Status</span>
-								<img v-bind:src="require('../assets/img/angle-arrow-down.svg')" alt="arrow down icon" />
+								<SvgComponent :width="'12'" :height="'8'" :id="'angle-arrow-down'" />
 							</button>
 
 							<div class="dropdown__menu with-padding small" :class="{ show: showEventDelsStatusDropdown }">
@@ -473,7 +476,7 @@ export default /*#__PURE__*/ defineComponent({
 									getEventDeliveries();
 								"
 							>
-								<img v-bind:src="require('../assets/img/close-icon.svg')" alt="close icon" />
+								<SvgComponent :width="'16'" :height="'13'" :id="'close-icon'" />
 							</button>
 						</div>
 
@@ -556,7 +559,7 @@ export default /*#__PURE__*/ defineComponent({
 													"
 												>
 													Deliveries
-													<img v-bind:src="require('../assets/img/angle-arrow-right-primary.svg')" alt="arrow right" />
+													<SvgComponent :width="'12'" :height="'8'" :id="'angle-arrow-right'" :styles="'margin-left__14px'" />
 												</button>
 											</div>
 										</td>
@@ -565,7 +568,7 @@ export default /*#__PURE__*/ defineComponent({
 							</tbody>
 						</table>
 
-						<div class="table--load-more button--container center">
+						<div class="table--load-more button--container center" v-if="events && events.pagination.totalPage > 1">
 							<button
 								class="button button__clear button--has-icon icon-left margin-top__20px margin-bottom__24px flex__justify-center"
 								@click="
@@ -574,15 +577,15 @@ export default /*#__PURE__*/ defineComponent({
 								"
 								:disabled="events?.pagination?.page === events?.pagination?.totalPage || isloadingMoreEvents"
 							>
-								<img v-show="!isloadingMoreEvents" v-bind:src="require('../assets/img/arrow-down-icon.svg')" class="width-unset height-unset" alt="arrow down icon" />
-								<img v-show="isloadingMoreEvents" v-bind:src="require('../assets/img/rotate-icon.svg')" class="loading-icon" alt="loading icon" />
+								<SvgComponent v-show="!isloadingMoreEvents" :width="'24'" :height="'18'" :id="'angle-arrow-down-big'" />
+								<SvgComponent v-show="isloadingMoreEvents" :width="'25'" :height="'24'" :id="'rotate-icon'" :styles="'margin-right__8px'" />
 								Load more
 							</button>
 						</div>
 					</div>
 
 					<div class="empty-state table--container" v-show="(activeTab === 'events' && !events) || events?.content?.length === 0">
-						<img v-bind:src="require('../assets/img/empty-state-img.svg')" alt="empty state" />
+						<SvgComponent :width="'130'" :height="'110'" :id="'empty-state'" />
 						<p>No event to show here</p>
 					</div>
 
@@ -624,12 +627,7 @@ export default /*#__PURE__*/ defineComponent({
 									>
 										<td>
 											<div class="has-retry">
-												<img
-													v-show="event.metadata.num_trials > event.metadata.retry_limit"
-													v-bind:src="require('../assets/img/retry-icon.svg')"
-													alt="retry icon"
-													title="manually retried"
-												/>
+												<SvgComponent v-show="event.metadata.num_trials > event.metadata.retry_limit" :width="'14'" :height="'14'" :id="'retry-icon'" />
 												<div :class="'tag tag--' + event.status">
 													{{ event.status }}
 												</div>
@@ -663,7 +661,7 @@ export default /*#__PURE__*/ defineComponent({
 													"
 													:disabled="event.status !== 'Failure'"
 												>
-													<img v-bind:src="require('../assets/img/refresh-icon-primary.svg')" alt="refresh icon" />
+													<SvgComponent :width="'14'" :height="'14'" :id="'retry-icon'" :styles="'margin-right__10px'" />
 													Retry
 												</button>
 											</div>
@@ -673,7 +671,7 @@ export default /*#__PURE__*/ defineComponent({
 							</tbody>
 						</table>
 
-						<div class="table--load-more button--container center">
+						<div class="table--load-more button--container center" v-if="eventDeliveries && eventDeliveries.pagination.totalPage > 1">
 							<button
 								class="button button__clear button--has-icon icon-left margin-top__20px margin-bottom__24px flex__justify-center"
 								@click="
@@ -682,16 +680,15 @@ export default /*#__PURE__*/ defineComponent({
 								"
 								:disabled="eventDeliveries?.pagination?.page === eventDeliveries?.pagination?.totalPage || isloadingMoreEventDeliveries"
 							>
-								<img v-show="!isloadingMoreEventDeliveries" v-bind:src="require('../assets/img/arrow-down-icon.svg')" class="width-unset height-unset" alt="arrow down icon" />
-								<img v-show="isloadingMoreEventDeliveries" v-bind:src="require('../assets/img/rotate-icon.svg')" class="loading-icon" alt="loading icon" />
+								<SvgComponent v-show="!isloadingMoreEventDeliveries" :width="'24'" :height="'18'" :id="'angle-arrow-down-big'" />
+								<SvgComponent v-show="isloadingMoreEventDeliveries" :width="'25'" :height="'24'" :id="'rotate-icon'" :styles="'margin-right__8px'" />
 								Load more
 							</button>
 						</div>
 					</div>
-					{{ eventDeliveries?.content.length }}
 
 					<div class="empty-state table--container" v-show="(activeTab === 'event deliveries' && !eventDeliveries) || eventDeliveries?.content?.length === 0">
-						<img v-bind:src="require('../assets/img/empty-state-img.svg')" alt="empty state" />
+						<SvgComponent :width="'130'" :height="'110'" :id="'empty-state'" />
 						<p>No event to show here</p>
 					</div>
 				</div>
