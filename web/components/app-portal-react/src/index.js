@@ -259,7 +259,6 @@ export const ConvoyApp = ({ token, apiURL }) => {
 
 	const getEvents = useCallback(async ({ page, eventsData, dates, appUid }) => {
 		toggleShowEventFilterCalendar(false);
-		console.log(appDetails);
 		if (eventsData && eventsData?.pagination?.next === page) toggleIsloadingMoreEvents(true);
 
 		if (!dates) dates = [{ startDate: null, endDate: null }];
