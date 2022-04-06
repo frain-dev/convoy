@@ -244,9 +244,9 @@ export class ConvoyAppComponent implements OnInit {
 				this.isloadingMoreEvents = false;
 				return;
 			}
-
 			this.events = eventsResponse.data;
 			this.displayedEvents = await this.setEventsDisplayed(eventsResponse.data.content);
+			this.getEventDeliveriesForSidebar(eventsResponse.data.content[0].uid);
 			this.isloadingEvents = false;
 		} catch (error) {
 			this.isloadingEvents = false;
