@@ -95,7 +95,7 @@ export class ConvoyAppComponent implements OnInit {
 	}
 
 	async initDashboard() {
-		Promise.all([await this.getAppDetails(), this.getEvents(), this.getEventDeliveries()]);
+		await Promise.all([await this.getAppDetails(), this.getEvents(), this.getEventDeliveries()]);
 	
 		// get active tab from url and apply, after getting the details from above requests so that the data is available ahead
 		this.toggleActiveTab(this.route.snapshot.queryParams.activeTab ?? 'events');
