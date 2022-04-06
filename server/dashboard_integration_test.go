@@ -294,31 +294,3 @@ func TestGetDashboardSummary(t *testing.T) {
 		})
 	}
 }
-
-func getDSN() string {
-	return os.Getenv("TEST_MONGO_DSN")
-}
-
-func getConfig() config.Configuration {
-
-	return config.Configuration{
-		Database: config.DatabaseConfiguration{
-			Type: config.MongodbDatabaseProvider,
-			Dsn:  getDSN(),
-		},
-	}
-}
-
-func getDB(t *testing.T) (*mongo.Database, func()) {
-
-	db, err := mongoStore.New(getConfig())
-	require.NoError(t, err)
-
-	err = os.Setenv("TZ", "") // Use UTC by default :)
-	require.NoError(t, err)
-
-	return db.Client().(*mongo.Database), func() {
-		require.NoError(t, db.Client().(*mongo.Database).Drop(context.Background()))
-		require.NoError(t, db.Disconnect(context.Background()))
-	}
-}
