@@ -4,7 +4,8 @@ import (
 	"context"
 
 	"github.com/frain-dev/convoy/queue"
-	taskqotel "github.com/frain-dev/convoy/worker/otel"
+	"github.com/frain-dev/convoy/tracer"
+	"github.com/frain-dev/convoy/worker/otel"
 	"github.com/frain-dev/taskq/v3"
 	log "github.com/sirupsen/logrus"
 )
@@ -17,7 +18,6 @@ type Producer struct {
 
 func NewProducer(queue queue.Queuer) *Producer {
 	consumer := queue.Consumer()
-	consumer.AddHook(&taskqotel.OpenTelemetryHook{})
 
 	return &Producer{
 		scheduleQueue: queue,
@@ -32,6 +32,11 @@ func (p *Producer) Start(ctx context.Context) {
 			log.Fatal(err)
 		}
 	}()
+}
+
+func (p *Producer) Otel(tr tracer.Tracer) {
+	otelHook := otel.NewOtelHook(tr)
+	p.consumer.AddHook(otelHook)
 }
 
 func (p *Producer) Close() error {

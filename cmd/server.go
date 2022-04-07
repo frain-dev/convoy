@@ -178,6 +178,7 @@ func StartConvoyServer(a *app, cfg config.Configuration, withWorkers bool) error
 		producer := worker.NewProducer(a.eventQueue)
 
 		if cfg.Queue.Type != config.InMemoryQueueProvider {
+			producer.Otel(a.tracer)
 			producer.Start(ctx)
 		}
 

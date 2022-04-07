@@ -40,6 +40,7 @@ func addWorkerCommand(a *app) *cobra.Command {
 			ctx := context.Background()
 			producer := worker.NewProducer(a.eventQueue)
 			if cfg.Queue.Type != config.InMemoryQueueProvider {
+				producer.Otel(a.tracer)
 				producer.Start(ctx)
 			}
 			worker.RegisterWorkerMetrics(a.eventQueue, cfg)

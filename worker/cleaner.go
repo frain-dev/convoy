@@ -2,7 +2,8 @@ package worker
 
 import (
 	"github.com/frain-dev/convoy/queue"
-	taskqotel "github.com/frain-dev/convoy/worker/otel"
+	"github.com/frain-dev/convoy/tracer"
+	"github.com/frain-dev/convoy/worker/otel"
 	"github.com/frain-dev/taskq/v3"
 	log "github.com/sirupsen/logrus"
 )
@@ -16,7 +17,6 @@ type Cleaner struct {
 func NewCleaner(queue queue.Queuer) *Cleaner {
 
 	consumer := queue.Consumer()
-	consumer.AddHook(&taskqotel.OpenTelemetryHook{})
 
 	return &Cleaner{
 		deadLetterQueue: queue,
@@ -28,6 +28,11 @@ func (c *Cleaner) Start() {
 	go func() {
 		log.Debugln("Running cleanup tasks")
 	}()
+}
+
+func (p *Cleaner) Otel(tr tracer.Tracer) {
+	otelHook := otel.NewOtelHook(tr)
+	p.consumer.AddHook(otelHook)
 }
 
 func (p *Cleaner) Close() error {

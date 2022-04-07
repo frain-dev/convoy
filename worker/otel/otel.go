@@ -1,34 +1,33 @@
 package otel
 
 import (
-	"go.opentelemetry.io/otel"
-	"go.opentelemetry.io/otel/codes"
-	"go.opentelemetry.io/otel/trace"
+	"context"
 
+	"github.com/frain-dev/convoy/tracer"
 	"github.com/frain-dev/taskq/v3"
 )
 
-var tracer = otel.Tracer("github.com/frain-dev/taskq")
-
-type OpenTelemetryHook struct{}
+type OpenTelemetryHook struct {
+	tr tracer.Tracer
+}
 
 var _ taskq.ConsumerHook = (*OpenTelemetryHook)(nil)
 
-func (h OpenTelemetryHook) BeforeProcessMessage(evt *taskq.ProcessMessageEvent) error {
-	evt.Message.Ctx, _ = tracer.Start(evt.Message.Ctx, evt.Message.TaskName)
+func NewOtelHook(tr tracer.Tracer) taskq.ConsumerHook {
+	otelHook := &OpenTelemetryHook{tr: tr}
+	return otelHook
+}
+
+func (h *OpenTelemetryHook) BeforeProcessMessage(evt *taskq.ProcessMessageEvent) error {
+
+	txn := h.tr.StartTransaction("taskq_Event")
+	defer txn.End()
+	ctx := h.tr.NewContext(context.Background(), txn)
+
+	evt.Message.Ctx = ctx
 	return nil
 }
 
-func (h OpenTelemetryHook) AfterProcessMessage(evt *taskq.ProcessMessageEvent) error {
-	ctx := evt.Message.Ctx
-
-	span := trace.SpanFromContext(ctx)
-	defer span.End()
-
-	if err := evt.Message.Err; err != nil {
-		span.SetStatus(codes.Error, err.Error())
-		span.RecordError(err)
-	}
-
+func (h *OpenTelemetryHook) AfterProcessMessage(evt *taskq.ProcessMessageEvent) error {
 	return nil
 }
