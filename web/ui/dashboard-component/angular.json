@@ -32,7 +32,8 @@
 					"options": {
 						"main": "projects/convoy-dashboard/src/test.ts",
 						"tsConfig": "projects/convoy-dashboard/tsconfig.spec.json",
-						"karmaConfig": "projects/convoy-dashboard/karma.conf.js"
+						"karmaConfig": "projects/convoy-dashboard/karma.conf.js",
+						"codeCoverage": true
 					}
 				}
 			}

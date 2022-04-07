@@ -14,7 +14,7 @@ export class PrismComponent implements AfterViewInit, OnChanges {
 	constructor() {}
 
 	ngAfterViewInit() {
-		Prism.highlightElement(this.codeEle.nativeElement);
+		Prism.highlightElement(this.codeEle?.nativeElement);
 	}
 
 	ngOnChanges(): void {
