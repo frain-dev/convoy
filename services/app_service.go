@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
+	"strings"
 	"time"
 
 	"github.com/frain-dev/convoy"
@@ -56,7 +57,7 @@ func (a *AppService) CreateApp(ctx context.Context, newApp *models.Application, 
 }
 
 func (a *AppService) LoadApplicationsPaged(ctx context.Context, uid string, q string, pageable datastore.Pageable) ([]datastore.Application, datastore.PaginationData, error) {
-	apps, paginationData, err := a.appRepo.LoadApplicationsPaged(ctx, uid, q, pageable)
+	apps, paginationData, err := a.appRepo.LoadApplicationsPaged(ctx, uid, strings.TrimSpace(q), pageable)
 	if err != nil {
 		log.WithError(err).Error("failed to fetch apps")
 		return nil, datastore.PaginationData{}, NewServiceError(http.StatusInternalServerError, errors.New("an error occurred while fetching apps"))
