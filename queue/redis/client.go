@@ -93,7 +93,8 @@ func (q *RedisQueue) WriteEventDelivery(ctx context.Context, name convoy.TaskNam
 
 func (q *RedisQueue) WriteEvent(ctx context.Context, name convoy.TaskName, e *datastore.Event, delay time.Duration) error {
 	job := &queue.Job{
-		ID: e.UID,
+		ID:    e.UID,
+		Event: e,
 	}
 
 	m := &taskq.Message{

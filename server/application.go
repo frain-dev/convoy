@@ -54,7 +54,7 @@ func newApplicationHandler(
 	tracer tracer.Tracer,
 	cache cache.Cache,
 	limiter limiter.RateLimiter) *applicationHandler {
-	as := services.NewAppService(appRepo, eventRepo, eventDeliveryRepo, eventQueue)
+	as := services.NewAppService(appRepo, eventRepo, eventDeliveryRepo, eventQueue, cache)
 	es := services.NewEventService(appRepo, eventRepo, eventDeliveryRepo, eventQueue, createEventQueue, cache)
 	gs := services.NewGroupService(appRepo, groupRepo, eventRepo, eventDeliveryRepo, limiter)
 	ss := services.NewSecurityService(groupRepo, apiKeyRepo)

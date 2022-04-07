@@ -11,7 +11,6 @@ import (
 	"github.com/frain-dev/convoy/limiter"
 	"github.com/frain-dev/convoy/server/models"
 	"github.com/frain-dev/convoy/util"
-	"github.com/frain-dev/convoy/worker/task"
 	"github.com/google/uuid"
 	log "github.com/sirupsen/logrus"
 	"go.mongodb.org/mongo-driver/bson/primitive"
@@ -67,10 +66,6 @@ func (gs *GroupService) CreateGroup(ctx context.Context, newGroup *models.Group)
 		log.WithError(err).Error("failed to create group")
 		return nil, NewServiceError(http.StatusBadRequest, errors.New("failed to create group"))
 	}
-
-	// register task.
-	taskName := convoy.EventProcessor.SetPrefix(groupName)
-	task.CreateTask(taskName, *group, task.ProcessEventDelivery(gs.appRepo, gs.eventDeliveryRepo, gs.groupRepo, gs.limiter))
 
 	return group, nil
 }

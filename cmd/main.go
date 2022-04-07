@@ -16,7 +16,6 @@ import (
 	memqueue "github.com/frain-dev/convoy/queue/memqueue"
 	redisqueue "github.com/frain-dev/convoy/queue/redis"
 	"github.com/frain-dev/convoy/tracer"
-	"github.com/frain-dev/convoy/worker/task"
 	"github.com/getsentry/sentry-go"
 	"github.com/google/uuid"
 	prefixed "github.com/x-cray/logrus-prefixed-formatter"
@@ -147,9 +146,6 @@ func ensureDefaultGroup(ctx context.Context, cfg config.Configuration, a *app) e
 		log.WithError(err).Error("Default group update failed.")
 		return err
 	}
-
-	taskName := convoy.EventProcessor.SetPrefix(group.Name)
-	task.CreateTask(taskName, *group, task.ProcessEventDelivery(a.applicationRepo, a.eventDeliveryRepo, a.groupRepo, a.limiter))
 
 	return nil
 }

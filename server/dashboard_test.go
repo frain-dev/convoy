@@ -55,7 +55,7 @@ func Test_fetchAllConfigDetails(t *testing.T) {
 			req := httptest.NewRequest(tc.method, "/ui/dashboard/config?groupId=12345", nil)
 			responseRecorder := httptest.NewRecorder()
 
-			requireGroup(app.groupRepo)(http.HandlerFunc(app.GetAllConfigDetails)).
+			requireGroup(app.groupRepo, app.cache)(http.HandlerFunc(app.GetAllConfigDetails)).
 				ServeHTTP(responseRecorder, req)
 
 			if responseRecorder.Code != tc.statusCode {
