@@ -90,7 +90,6 @@ export class ConvoyDashboardComponent implements OnInit {
 	sidebarEventDeliveries!: EVENT_DELIVERY[];
 	eventDeliveryFilteredByEventId = '';
 	groups: GROUP[] = [];
-	// activeGroup!: string;
 	allEventdeliveriesChecked = false;
 	eventDeliveryStatuses = ['Success', 'Failure', 'Retry', 'Scheduled', 'Processing', 'Discarded'];
 	dateOptions = ['Last Year', 'Last Month', 'Last Week', 'Yesterday'];
@@ -499,7 +498,7 @@ export class ConvoyDashboardComponent implements OnInit {
 	// initiate dashboard
 	async initDashboard() {
 		await this.getGroups();
-		// this.getFiltersFromURL();
+		this.getFiltersFromURL();
 		await Promise.all([this.getConfigDetails(), this.fetchDashboardData(), this.getEvents(), this.getApps({ type: 'apps' }), this.getEventDeliveries()]);
 
 		// get active tab from url and apply, after getting the details from above requests so that the data is available ahead
