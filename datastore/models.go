@@ -72,12 +72,13 @@ const (
 )
 
 type Application struct {
-	ID           primitive.ObjectID `json:"-" bson:"_id"`
-	UID          string             `json:"uid" bson:"uid"`
-	GroupID      string             `json:"group_id" bson:"group_id"`
-	Title        string             `json:"name" bson:"title"`
-	SupportEmail string             `json:"support_email" bson:"support_email"`
-	IsDisabled   bool               `json:"is_disabled" bson:"is_disabled"`
+	ID              primitive.ObjectID `json:"-" bson:"_id"`
+	UID             string             `json:"uid" bson:"uid"`
+	GroupID         string             `json:"group_id" bson:"group_id"`
+	Title           string             `json:"name" bson:"title"`
+	SupportEmail    string             `json:"support_email" bson:"support_email"`
+	SlackWebhookURL string             `json:"slack_webhook_url,omitempty" bson:"slack_webhook_url"`
+	IsDisabled      bool               `json:"is_disabled" bson:"is_disabled"`
 
 	Endpoints []Endpoint         `json:"endpoints" bson:"endpoints"`
 	CreatedAt primitive.DateTime `json:"created_at,omitempty" bson:"created_at,omitempty" swaggertype:"string"`

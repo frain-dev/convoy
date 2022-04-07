@@ -67,6 +67,8 @@ components:
           type: boolean
         name:
           type: string
+        slack_webhook_url:
+          type: string
         support_email:
           type: string
         uid:
@@ -363,6 +365,8 @@ components:
         is_disabled:
           type: boolean
         name:
+          type: string
+        slack_webhook_url:
           type: string
         support_email:
           type: string

@@ -7,7 +7,6 @@ import (
 	"html/template"
 
 	"github.com/frain-dev/convoy/config"
-	"github.com/frain-dev/convoy/datastore"
 	"github.com/frain-dev/convoy/util"
 	log "github.com/sirupsen/logrus"
 	"gopkg.in/gomail.v2"
@@ -65,7 +64,7 @@ func New(cfg *config.SMTPConfiguration) (*SmtpClient, error) {
 	}, err
 }
 
-func (s *SmtpClient) SendEmailNotification(email, logoURL, targetURL string, status datastore.EndpointStatus) error {
+func (s *SmtpClient) SendEmailNotification(email, logoURL, targetURL string, status string) error {
 	// Compose Message
 	m := s.setHeaders(email)
 
@@ -77,7 +76,7 @@ func (s *SmtpClient) SendEmailNotification(email, logoURL, targetURL string, sta
 	err := templ.Execute(&body, struct {
 		URL     string
 		LogoURL string
-		Status  datastore.EndpointStatus
+		Status  string
 	}{
 		URL:     targetURL,
 		LogoURL: logoURL,

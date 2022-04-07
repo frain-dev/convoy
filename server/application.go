@@ -114,7 +114,7 @@ func (a *applicationHandler) GetApps(w http.ResponseWriter, r *http.Request) {
 
 	apps, paginationData, err := a.appRepo.LoadApplicationsPaged(r.Context(), group.UID, q, pageable)
 	if err != nil {
-		print(err.Error())
+		log.WithError(err).Error("failed to load apps")
 		_ = render.Render(w, r, newErrorResponse("an error occurred while fetching apps. Error: "+err.Error(), http.StatusBadRequest))
 		return
 	}
