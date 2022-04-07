@@ -1,6 +1,6 @@
 {
 	"name": "convoy-app-vue",
-	"version": "0.0.2",
+	"version": "0.0.3",
 	"description": "Convoy app reusable component for vue",
 	"repository": "Frain-Dev/convoy",
 	"main": "dist/convoy-app-vue.ssr.js",
