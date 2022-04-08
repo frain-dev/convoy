@@ -143,11 +143,8 @@ func (a *applicationHandler) CreateApp(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	appName := newApp.AppName
-
 	group := getGroupFromContext(r.Context())
-
-	app, err := a.appService.CreateApp(r.Context(), &newApp, appName, group)
+	app, err := a.appService.CreateApp(r.Context(), &newApp, group)
 	if err != nil {
 		_ = render.Render(w, r, newServiceErrResponse(err))
 		return
