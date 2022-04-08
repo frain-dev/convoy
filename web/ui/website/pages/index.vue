@@ -1456,23 +1456,23 @@ a {
 	}
 }
 .sdk-app {
-	background: linear-gradient(180deg, #2c2f3e 0%, #422f41 100%);
+	background: #e9edf7;
 	max-height: 681px;
 	height: 100%;
-	margin-bottom: 130px;
+	margin-bottom: 190px;
 	position: relative;
 	padding-left: 20px;
 	padding-right: 20px;
 	@media (min-width: $desktopBreakPoint) {
-		max-height: 350px;
-		min-height: 350px;
+		max-height: 300px;
+		min-height: 300px;
 	}
 	&__cards {
 		display: grid;
 		grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
 		gap: 40px;
 		position: relative;
-		top: -70px;
+		bottom: -80px;
 		@media (min-width: $desktopBreakPoint) {
 			grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
 		}
@@ -1480,7 +1480,9 @@ a {
 			width: 100%;
 			box-shadow: 0px 2px 4px rgba(12, 26, 75, 0.04), 0px 4px 20px -2px rgba(50, 50, 71, 0.08);
 			border-radius: 8px;
-			padding: 32px;
+			padding: 24px;
+			padding-bottom: 33px;
+
 			&.app {
 				background: url('~/assets/images/app-portal.png') #fcfcfc no-repeat;
 				background-position: bottom right;
@@ -1507,6 +1509,16 @@ a {
 			}
 			a {
 				margin-bottom: 17px;
+			}
+			@media (min-width: $desktopBreakPoint) {
+				padding: 32px;
+				padding-bottom: 49px;
+				&.app {
+					background-size: 25%;
+				}
+				&.sdk {
+					background-size: 25%;
+				}
 			}
 		}
 	}
