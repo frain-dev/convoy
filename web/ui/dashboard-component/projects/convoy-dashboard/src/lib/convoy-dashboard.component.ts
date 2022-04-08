@@ -35,6 +35,7 @@ export class ConvoyDashboardComponent implements OnInit {
 	}[];
 	events!: { pagination: PAGINATION; content: EVENT[] };
 	apps!: { pagination: PAGINATION; content: APP[] };
+	displayedApps: { date: string; events: APP[] }[] = [];
 	filteredApps!: APP[];
 	eventDetailsTabs = [
 		{ id: 'data', label: 'Event' },
@@ -70,7 +71,7 @@ export class ConvoyDashboardComponent implements OnInit {
 	});
 	addNewAppForm: FormGroup = this.formBuilder.group({
 		name: ['', Validators.required],
-		support_email: ['', Validators.email],
+		support_email: [''],
 		is_disabled: [false],
 		endpoints: this.formBuilder.array([])
 	});
@@ -874,15 +875,20 @@ export class ConvoyDashboardComponent implements OnInit {
 				const content = [...this.apps.content, ...appsResponse.data.content];
 				const pagination = appsResponse.data.pagination;
 				this.apps = { content, pagination };
+				this.displayedApps = this.setEventsDisplayed(this.apps.content)
 				this.isloadingMoreApps = false;
 				return appsResponse;
 			}
 
-			if (requestDetails?.type === 'apps') this.apps = appsResponse.data;
+			if (requestDetails?.type === 'apps'){
+				this.apps = appsResponse.data;
+				this.displayedApps = this.setEventsDisplayed(this.apps.content)
+			} 
 			if (!this.filteredApps) this.filteredApps = appsResponse.data.content;
 
 			if (this.updateAppDetail) this.appsDetailsItem = this.apps.content.find(item => this.appsDetailsItem?.uid == item.uid);
 
+			console.log(this.displayedApps)
 			this.isloadingApps = false;
 			return appsResponse;
 		} catch (error: any) {

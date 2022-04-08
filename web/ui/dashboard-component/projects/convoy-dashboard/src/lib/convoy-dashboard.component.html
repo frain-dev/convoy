@@ -77,14 +77,14 @@
 						<img src="/assets/img/message-icon.svg" alt="message icon" />
 						<div class="metric">
 							<div>{{ dashboardData.events_sent | metric }}</div>
-							<div>Event Sent</div>
+							<div class="color__grey">Event Sent</div>
 						</div>
 					</li>
 					<li class="apps">
 						<img src="/assets/img/apps-icon.svg" alt="apps icon" />
 						<div class="metric">
 							<div>{{ dashboardData.apps | metric }}</div>
-							<div>Apps</div>
+							<div class="color__grey">Apps</div>
 						</div>
 					</li>
 				</ul>
@@ -103,32 +103,24 @@
 				</div>
 
 				<ul class="card--container" id="group-config">
-					<li class="list-item">
-						<div class="list-item--label">
-							Request interval (Seconds)
-							<div class="list-item--item">{{ organisationDetails?.strategy?.default?.intervalSeconds }}s</div>
-						</div>
+					<li class="list-item-inline">
+						<div class="list-item-inline--label">Request interval (Seconds)</div>
+						<div class="list-item-inline--item">{{ organisationDetails?.strategy?.default?.intervalSeconds }}s</div>
 					</li>
 
-					<li class="list-item">
-						<div class="list-item--label">
-							Retry limit
-							<div class="list-item--item">{{ organisationDetails?.strategy?.default?.retryLimit }}</div>
-						</div>
+					<li class="list-item-inline border__top">
+						<div class="list-item-inline--label padding-top__16px">Retry limit</div>
+						<div class="list-item-inline--item padding-top__16px">{{ organisationDetails?.strategy?.default?.retryLimit }}</div>
 					</li>
 
-					<li class="list-item">
-						<div class="list-item--label">
-							Signature header
-							<div class="list-item--item">{{ organisationDetails?.signature?.header }}</div>
-						</div>
+					<li class="list-item-inline border__top">
+						<div class="list-item-inline--label padding-top__16px">Signature header</div>
+						<div class="list-item-inline--item padding-top__16px">{{ organisationDetails?.signature?.header }}</div>
 					</li>
 
-					<li class="list-item">
-						<div class="list-item--label">
-							Signature hash
-							<div class="list-item--item">{{ organisationDetails?.signature?.hash }}</div>
-						</div>
+					<li class="list-item-inline border__top">
+						<div class="list-item-inline--label padding-top__16px">Signature hash</div>
+						<div class="list-item-inline--item padding-top__16px">{{ organisationDetails?.signature?.hash }}</div>
 					</li>
 				</ul>
 			</div>
@@ -155,10 +147,10 @@
 									[ngClass]="{ active: (eventsFilterDateRange.value.startDate !== '' && eventsFilterDateRange.value.endDate !== '') || selectedEventsDateOption }"
 									(click)="showEventFilterCalendar = !showEventFilterCalendar; showOverlay = true"
 								>
-									<img src="/assets/img/calendar-icon.svg" alt="calender icon" />
+									<img class="margin-left__0px" src="/assets/img/calendar-icon.svg" alt="calender icon" />
+									<span *ngIf="eventsFilterDateRange.value.startDate !== '' && eventsFilterDateRange.value.endDate !== ''" class="color__grey margin-right__4px">Date:</span>
 									<!-- to be reviewed  -->
-									<!-- <span class="color__grey">Date</span>
-                                    <span class="color__primary" *ngIf="selectedEventsDateOption">: {{ selectedEventsDateOption }}</span> -->
+									<!-- <span class="color__primary" *ngIf="selectedEventsDateOption">: {{ selectedEventsDateOption }}</span> -->
 									<mat-date-range-input [formGroup]="eventsFilterDateRange" [rangePicker]="eventsFilterPicker">
 										<input matStartDate formControlName="startDate" placeholder="Date" />
 										<input
@@ -171,7 +163,7 @@
 										/>
 									</mat-date-range-input>
 									<mat-date-range-picker #eventsFilterPicker [disabled]="false"></mat-date-range-picker>
-									<img src="/assets/img/angle-arrow-down.svg" alt="arrow down icon" />
+									<img class="margin-right__0px" src="/assets/img/angle-arrow-down.svg" alt="arrow down icon" />
 								</button>
 								<div [ngClass]="{ show: showEventFilterCalendar }" class="dropdown__menu large">
 									<ul>
@@ -245,9 +237,9 @@
 									(click)="showOverlay = true; showEventDelFilterCalendar = !showEventDelFilterCalendar"
 								>
 									<img class="margin-left__0px" src="/assets/img/calendar-icon.svg" alt="calender icon" />
+									<span *ngIf="eventDeliveriesFilterDateRange.value.startDate !== '' && eventDeliveriesFilterDateRange.value.endDate !== ''" class="color__grey margin-right__4px">Date:</span>
 									<!-- to be reviewed  -->
-									<!-- <span class="color__grey">Date</span>
-                                    <span class="color__primary" *ngIf="selectedEventsDelDateOption">: {{ selectedEventsDelDateOption }}</span> -->
+									<!-- <span class="color__primary" *ngIf="selectedEventsDelDateOption">: {{ selectedEventsDelDateOption }}</span> -->
 									<mat-date-range-input [formGroup]="eventDeliveriesFilterDateRange" [rangePicker]="eventDeliveriesFilterPicker">
 										<input matStartDate formControlName="startDate" placeholder="Date" />
 										<input
@@ -368,7 +360,7 @@
 								</button>
 							</div>
 							<button
-								class="flex__justify-center button button__filter margin-left__24px"
+								class="button button__filter margin-left__24px flex__justify-center"
 								(click)="fetchRetryCount()"
 								[ngClass]="{
 									disabled:
@@ -620,7 +612,7 @@
 								<tr class="table--head">
 									<th scope="col">Status</th>
 									<th scope="col">Name</th>
-									<th scope="col">Created</th>
+									<th scope="col">Time Created</th>
 									<th scope="col">Updated</th>
 									<th scope="col">Events</th>
 									<th scope="col">Endpoints</th>
@@ -629,49 +621,60 @@
 								</tr>
 							</thead>
 							<tbody>
-								<tr *ngFor="let app of apps?.content" [ngClass]="{ active: app.uid === appsDetailsItem?.uid }" (click)="appsDetailsItem = app; getAppPortalToken({ redirect: false })">
-									<td>
-										<div class="has-retry">
-											<div [class]="app.is_disabled ? 'tag no-margin' : 'tag tag--Success no-margin'">{{ app.is_disabled ? 'Disabled' : 'Enabled' }}</div>
-										</div>
-									</td>
-									<td class="has-long-text">
-										<div>{{ app.name }}</div>
-									</td>
-									<td>
-										<div>{{ app.created_at | date }}</div>
-									</td>
-									<td>
-										<div>{{ app.updated_at | date }}</div>
-									</td>
-									<td>
-										<div>{{ app.events }}</div>
-									</td>
-									<td>
-										<div>{{ app.endpoints.length }}</div>
-									</td>
-									<td>
-										<div>
-											<button [disabled]="app.events <= 0" title="view events" [class]="'button__retry button--has-icon icon-left'" (click)="loadEventsFromAppsTable(app.uid)">
-												<img src="/assets/img/view-events-icon.svg" alt="view events icon" />
-												Events
-											</button>
-										</div>
-									</td>
-									<td>
-										<div class="dropdown">
-											<button class="button__clear button--has-icon" (click)="currentAppId = app.uid; showOverlay = true">
-												<img src="/assets/img/more-icon-vertical.svg" alt="more icon" />
-											</button>
-											<div [ngClass]="{ show: currentAppId == app.uid }" class="dropdown__menu dropdown__menu__nav small">
-												<ul>
-													<li (click)="openUpdateAppModal(app)">Update</li>
-													<li (click)="showDeleteAppModal = !showDeleteAppModal; currentAppId = ''" class="danger">Delete</li>
-												</ul>
+								<ng-container *ngFor="let apps of displayedApps; let i = index">
+									<tr class="table--date-row">
+										<td>
+											<div>{{ apps.date }}</div>
+										</td>
+										<td></td>
+										<td></td>
+										<td></td>
+										<td></td>
+									</tr>
+									<tr *ngFor="let app of apps?.events" [ngClass]="{ active: app.uid === appsDetailsItem?.uid }" (click)="appsDetailsItem = app; getAppPortalToken({ redirect: false })">
+										<td>
+											<div class="has-retry">
+												<div [class]="app.is_disabled ? 'tag no-margin' : 'tag tag--Success no-margin'">{{ app.is_disabled ? 'Disabled' : 'Enabled' }}</div>
 											</div>
-										</div>
-									</td>
-								</tr>
+										</td>
+										<td class="has-long-text">
+											<div>{{ app.name }}</div>
+										</td>
+										<td>
+											<div>{{ app.created_at | date: 'hh:mm:ss a' }}</div>
+										</td>
+										<td>
+											<div>{{ app.updated_at | date }}</div>
+										</td>
+										<td>
+											<div>{{ app.events }}</div>
+										</td>
+										<td>
+											<div>{{ app.endpoints.length }}</div>
+										</td>
+										<td>
+											<div>
+												<button [disabled]="app.events <= 0" title="view events" [class]="'button__retry button--has-icon icon-left'" (click)="loadEventsFromAppsTable(app.uid)">
+													<img src="/assets/img/view-events-icon.svg" alt="view events icon" />
+													Events
+												</button>
+											</div>
+										</td>
+										<td>
+											<div class="dropdown">
+												<button class="button__clear button--has-icon" (click)="currentAppId = app.uid; showOverlay = true">
+													<img src="/assets/img/more-icon-vertical.svg" alt="more icon" />
+												</button>
+												<div [ngClass]="{ show: currentAppId == app.uid }" class="dropdown__menu dropdown__menu__nav small">
+													<ul>
+														<li (click)="openUpdateAppModal(app)">Update</li>
+														<li (click)="showDeleteAppModal = !showDeleteAppModal; currentAppId = ''" class="danger">Delete</li>
+													</ul>
+												</div>
+											</div>
+										</td>
+									</tr>
+								</ng-container>
 							</tbody>
 						</table>
 
@@ -946,10 +949,11 @@
 			<div class="input">
 				<input type="text" formControlName="support_email" required />
 				<label class="input__label" for="">Support Email</label>
-				<div class="input__error input__error__danger" *ngIf="addNewAppForm.controls.support_email.touched && addNewAppForm.controls.support_email.invalid">
+				<!-- pendign  -->
+				<!-- <div class="input__error input__error__danger" *ngIf="addNewAppForm.controls.support_email.touched && addNewAppForm.controls.support_email.invalid">
 					<img src="assets/img/input-error-icon.svg" alt="input error icon" />
-					<span>Please enter a valid</span>
-				</div>
+					<span>Please enter a valid email</span>
+				</div> -->
 				<div class="input__error input__error__secondary font__12px">
 					<img src="/assets/img/info-icon.svg" alt="close icon" />
 					We use this to send an email notifcation for when a failure happens
