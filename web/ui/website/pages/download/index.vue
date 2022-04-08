@@ -38,7 +38,7 @@
 					<div v-if="linuxActiveTab == 'ubuntu'" class="code">
 						<div>
 							<span>$</span>
-							<code>echo "deb [trusted=yes] https://apt.fury.io/convoy/ /" | sudo tee -a /etc/apt/sources.list.d/convoy.list</code>
+							<code>echo "deb [trusted=yes] https://apt.packages.getconvoy.io/ /" | sudo tee -a /etc/apt/sources.list.d/convoy.list</code>
 						</div>
 						<div>
 							<span>$</span>
@@ -55,7 +55,7 @@
 							<div class="code--flex-code">
 								<code>echo '[convoy]</code>
 								<code>name=Convoy</code>
-								<code>baseurl=https://yum.fury.io/convoy/</code>
+								<code>baseurl=https://yum.packages.getconvoy.io/</code>
 								<code>enabled=1</code>
 								<code>gpgcheck=0' | sudo tee -a /etc/yum.repos.d/convoy.repo</code>
 							</div>

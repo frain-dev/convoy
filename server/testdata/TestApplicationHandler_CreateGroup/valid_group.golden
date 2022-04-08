@@ -1,1 +1,1 @@
-{"status":true,"message":"Group created successfully","data":{"uid":"09ac42b2-e5de-479b-9a01-52e658060e13","name":"ABC_DEF_TEST_UPDATE","created_at":"2021-10-05T16:07:44.649+01:00","updated_at":"2021-10-05T16:07:44.649+01:00"}}
+{"uid":"","name":"ABC_DEF_TEST_UPDATE","logo_url":"","config":{"strategy":{"type":"default","default":{"intervalSeconds":10,"retryLimit":3},"exponentialBackoff":{"retryLimit":0}},"signature":{"header":"X-Company-Signature","hash":"SHA1"},"disable_endpoint":false,"replay_attacks":false},"statistics":null,"rate_limit":5000,"rate_limit_duration":"1m"}

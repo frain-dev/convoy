@@ -79,6 +79,23 @@ func stripTimestamp(t *testing.T, obj string, b *bytes.Buffer) *bytes.Buffer {
 		}
 
 		return bytes.NewBuffer(jsonData)
+	case "group":
+		var g datastore.Group
+		err := json.Unmarshal(res.Data, &g)
+		if err != nil {
+			t.Errorf("could not stripTimestamp: %s", err)
+			t.FailNow()
+		}
+
+		g.UID = ""
+		g.CreatedAt, g.UpdatedAt, g.DeletedAt = 0, 0, 0
+
+		jsonData, err := json.Marshal(g)
+		if err != nil {
+			t.Error(err)
+		}
+
+		return bytes.NewBuffer(jsonData)
 	case "endpoint":
 		var e datastore.Endpoint
 		err := json.Unmarshal(res.Data, &e)
