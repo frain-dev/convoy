@@ -160,11 +160,10 @@
 									<!-- <span class="color__grey">Date</span>
                                     <span class="color__primary" *ngIf="selectedEventsDateOption">: {{ selectedEventsDateOption }}</span> -->
 									<mat-date-range-input [formGroup]="eventsFilterDateRange" [rangePicker]="eventsFilterPicker">
-										<input matStartDate formControlName="startDate" placeholder="Start date" />
+										<input matStartDate formControlName="startDate" placeholder="Date" />
 										<input
 											matEndDate
 											formControlName="endDate"
-											placeholder="End date"
 											(dateChange)="
 												selectedEventsDateOption = formatDate(eventsFilterDateRange.value.startDate) + ' - ' + formatDate(eventsFilterDateRange.value.endDate);
 												getEvents({ addToURL: true, fromFilter: true })
@@ -197,13 +196,13 @@
 
 							<div class="dropdown margin-left__24px">
 								<button
-									class="button button__filter button--has-icon icon-right icon-left"
+									class="button button__filter button--has-icon icon-left"
 									[ngClass]="{ active: !!eventApp }"
 									(click)="showOverlay = true; showEventsAppsDropdown = !showEventsAppsDropdown"
 								>
 									<img src="/assets/img/apps-icon-grey.svg" alt="apps filter icon" />
-									<span>Apps</span>
-									<img src="/assets/img/angle-arrow-down.svg" alt="arrow down icon" />
+									<span>All Apps</span>
+									<img class="margin-left__30px" src="/assets/img/angle-arrow-down.svg" alt="arrow down icon" />
 								</button>
 
 								<div class="dropdown__menu with-padding large" [ngClass]="{ show: showEventsAppsDropdown }">
@@ -230,7 +229,7 @@
 								[disabled]="(eventsFilterDateRange.value.startDate == '' || eventsFilterDateRange.value.endDate == '') && eventApp == ''"
 								[ngClass]="{ disabled: (eventsFilterDateRange.value.startDate == '' || eventsFilterDateRange.value.endDate == '') && eventApp == '' }"
 							>
-								Clear All
+								Clear Filter
 							</button>
 						</div>
 					</div>
@@ -250,11 +249,10 @@
 									<!-- <span class="color__grey">Date</span>
                                     <span class="color__primary" *ngIf="selectedEventsDelDateOption">: {{ selectedEventsDelDateOption }}</span> -->
 									<mat-date-range-input [formGroup]="eventDeliveriesFilterDateRange" [rangePicker]="eventDeliveriesFilterPicker">
-										<input matStartDate formControlName="startDate" placeholder="Start date" />
+										<input matStartDate formControlName="startDate" placeholder="Date" />
 										<input
 											matEndDate
 											formControlName="endDate"
-											placeholder="End date"
 											(dateChange)="
 												selectedEventsDelDateOption = formatDate(eventDeliveriesFilterDateRange.value.startDate) + ' - ' + formatDate(eventDeliveriesFilterDateRange.value.endDate);
 												getEventDeliveries({ addToURL: true, fromFilter: true })
@@ -292,13 +290,13 @@
 
 							<div class="dropdown margin-left__24px">
 								<button
-									class="button button__filter button--has-icon icon-right icon-left"
+									class="button button__filter button--has-icon icon-left"
 									[ngClass]="{ active: eventDeliveryFilteredByStatus.length > 0 }"
 									(click)="showOverlay = true; showEventDeliveriesStatusDropdown = !showEventDeliveriesStatusDropdown"
 								>
 									<img class="margin-left__0px" src="/assets/img/status-filter-icon.svg" alt="status filter icon" />
 									<span>Status</span>
-									<img class="margin-right__0px" src="/assets/img/angle-arrow-down.svg" alt="arrow down icon" />
+									<img class="margin-left__30px margin-right__0px" src="/assets/img/angle-arrow-down.svg" alt="arrow down icon" />
 								</button>
 
 								<div class="dropdown__menu with-padding small" [ngClass]="{ show: showEventDeliveriesStatusDropdown }">
@@ -328,13 +326,13 @@
 
 							<div class="dropdown margin-left__24px">
 								<button
-									class="button button__filter button--has-icon icon-right icon-left"
+									class="button button__filter button--has-icon icon-left"
 									[ngClass]="{ active: !!eventDeliveriesApp }"
 									(click)="showOverlay = true; showEventDeliveriesAppsDropdown = !showEventDeliveriesAppsDropdown"
 								>
 									<img class="margin-left__0px" src="/assets/img/apps-icon-grey.svg" alt="apps filter icon" />
-									<span>Apps</span>
-									<img class="margin-right__0px" src="/assets/img/angle-arrow-down.svg" alt="arrow down icon" />
+									<span>All Apps</span>
+									<img class="margin-left__30px margin-right__0px" src="/assets/img/angle-arrow-down.svg" alt="arrow down icon" />
 								</button>
 
 								<div class="dropdown__menu large with-padding" [ngClass]="{ show: showEventDeliveriesAppsDropdown }">
@@ -397,7 +395,7 @@
 										!eventDeliveriesStatusFilterActive
 								}"
 							>
-								Clear All
+								Clear Filter
 							</button>
 						</div>
 					</div>
@@ -706,7 +704,7 @@
 					></convoy-loader>
 
 					<ng-container *ngIf="activeTab === 'apps' && appsDetailsItem">
-						<div class="flex flex__justify-between flex__align-items-center">
+						<div class="dashboard--logs--details--meta flex flex__justify-between flex__align-items-center">
 							<h3 class="text__capitalize">{{ appsDetailsItem?.name }}</h3>
 
 							<!-- app enable/disable toggle  -->
@@ -717,12 +715,6 @@
 							</label>
 						</div>
 
-						<ul class="dashboard--logs--details--meta">
-							<li class="list-item-inline">
-								<div class="list-item-inline--label">Support Email</div>
-								<div [class]="'list-item-inline--item ' + (appsDetailsItem?.support_email ? '' : 'fint')">{{ appsDetailsItem?.support_email || '...no support email provided' }}</div>
-							</li>
-						</ul>
 						<div [ngClass]="{ disabled: appsDetailsItem?.is_disabled }">
 							<h3>App Portal</h3>
 							<ul class="dashboard--logs--details--meta">
@@ -801,6 +793,13 @@
 								<img src="/assets/img/empty-state-img.svg" alt="empty state" />
 								<p>No endpoint has been added for selected app yet</p>
 							</div>
+							<h3>More Details</h3>
+							<ul class="dashboard--logs--details--meta">
+								<li class="list-item-inline">
+									<div class="list-item-inline--label">Support Email</div>
+									<div [class]="'list-item-inline--item ' + (appsDetailsItem?.support_email ? '' : 'fint')">{{ appsDetailsItem?.support_email || '...no support email provided' }}</div>
+								</li>
+							</ul>
 						</div>
 					</ng-container>
 
@@ -949,7 +948,7 @@
 				<label class="input__label" for="">Support Email</label>
 				<div class="input__error input__error__danger" *ngIf="addNewAppForm.controls.support_email.touched && addNewAppForm.controls.support_email.invalid">
 					<img src="assets/img/input-error-icon.svg" alt="input error icon" />
-					<span>Support email is required</span>
+					<span>Please enter a valid</span>
 				</div>
 				<div class="input__error input__error__secondary font__12px">
 					<img src="/assets/img/info-icon.svg" alt="close icon" />
@@ -1021,8 +1020,8 @@
 		</form>
 	</div>
 	<div class="modal--footer modal--footer__with-shadow" *ngIf="showCreateAppModal">
-		<button class="button button__white" (click)="showCreateAppModal = false; editAppMode = false; addNewAppForm.reset()">Discard</button>
-		<button class="button button__primary" [disabled]="isCreatingNewApp" (click)="createNewApp()">{{ editAppMode ? 'Edit App' : 'Create App' }}</button>
+		<button class="button button__white button--large" (click)="showCreateAppModal = false; editAppMode = false; addNewAppForm.reset()">Discard</button>
+		<button class="button button__primary button--full-100 margin-left__24px" [disabled]="isCreatingNewApp" (click)="createNewApp()">{{ editAppMode ? 'Edit App' : 'Create App' }}</button>
 	</div>
 
 	<!-- add endpoint modal  -->
@@ -1070,8 +1069,8 @@
 		</form>
 	</div>
 	<div class="modal--footer modal--footer__with-shadow" *ngIf="showAddEndpointModal">
-		<button class="button button__white" (click)="showAddEndpointModal = false">Discard</button>
-		<button class="button button__primary" [disabled]="isCreatingNewEndpoint" (click)="addNewEndpoint()">{{ isCreatingNewEndpoint ? 'Adding Endpoint..' : 'Add Endpoint' }}</button>
+		<button class="button button__white margin-right__24px" (click)="showAddEndpointModal = false">Discard</button>
+		<button class="button button__primary button--full-100" [disabled]="isCreatingNewEndpoint" (click)="addNewEndpoint()">{{ isCreatingNewEndpoint ? 'Adding Endpoint..' : 'Add Endpoint' }}</button>
 	</div>
 
 	<!-- add event modal  -->
@@ -1116,8 +1115,8 @@
 		</form>
 	</div>
 	<div class="modal--footer modal--footer__with-shadow" *ngIf="showAddEventModal">
-		<button class="button button__white" (click)="showAddEventModal = false">Discard</button>
-		<button class="button button__primary" [disabled]="isSendingNewEvent" (click)="sendNewEvent()">{{ isSendingNewEvent ? 'Adding Event..' : 'Add Event' }}</button>
+		<button class="button button__white margin-right__24px" (click)="showAddEventModal = false">Discard</button>
+		<button class="button button__primary button--full-100" [disabled]="isSendingNewEvent" (click)="sendNewEvent()">{{ isSendingNewEvent ? 'Adding Event..' : 'Add Event' }}</button>
 	</div>
 
 	<!-- endpoint secret modal  -->
@@ -1144,7 +1143,7 @@
 		<img src="/assets/img/warning.gif" alt="warning" />
 		<p class="title">Are you sure you want to delete “{{ appsDetailsItem?.name }}”?</p>
 		<p class="subtext">This action is irrevesible</p>
-		<button class="button button__deactivate" [disabled]="isDeletingApp" (click)="deleteApp()">{{ isDeletingApp ? 'Deleting App...' : 'Yes, Delete' }}</button>
+		<button class="button button__deactivate margin-bottom__40px" [disabled]="isDeletingApp" (click)="deleteApp()">{{ isDeletingApp ? 'Deleting App...' : 'Yes, Delete' }}</button>
 		<button class="button__primary button__clear cancel" (click)="showDeleteAppModal = false">No, Cancel</button>
 	</div>
 </div>

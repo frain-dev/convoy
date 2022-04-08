@@ -70,7 +70,7 @@ export class ConvoyDashboardComponent implements OnInit {
 	});
 	addNewAppForm: FormGroup = this.formBuilder.group({
 		name: ['', Validators.required],
-		support_email: ['', Validators.compose([Validators.required, Validators.email])],
+		support_email: ['', Validators.email],
 		is_disabled: [false],
 		endpoints: this.formBuilder.array([])
 	});
