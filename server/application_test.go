@@ -162,9 +162,13 @@ func TestApplicationHandler_GetApp(t *testing.T) {
 			id:         "12345",
 			dbFn: func(app *applicationHandler) {
 				a, _ := app.appRepo.(*mocks.MockApplicationRepository)
+				c, _ := app.cache.(*mocks.MockCache)
+
+				c.EXPECT().Get(gomock.Any(), gomock.Any(), gomock.Any()).Times(3).Return(nil)
 				a.EXPECT().
 					FindApplicationByID(gomock.Any(), gomock.Any()).Times(1).
 					Return(nil, datastore.ErrApplicationNotFound)
+				c.EXPECT().Set(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Times(1).Return(nil)
 
 				o, _ := app.groupRepo.(*mocks.MockGroupRepository)
 
@@ -181,6 +185,9 @@ func TestApplicationHandler_GetApp(t *testing.T) {
 			id:         validID,
 			dbFn: func(app *applicationHandler) {
 				a, _ := app.appRepo.(*mocks.MockApplicationRepository)
+				c, _ := app.cache.(*mocks.MockCache)
+
+				c.EXPECT().Get(gomock.Any(), gomock.Any(), gomock.Any()).Times(1).Return(nil)
 				a.EXPECT().
 					FindApplicationByID(gomock.Any(), gomock.Any()).Times(1).
 					Return(&datastore.Application{
@@ -189,6 +196,7 @@ func TestApplicationHandler_GetApp(t *testing.T) {
 						Title:     "Valid application",
 						Endpoints: []datastore.Endpoint{},
 					}, nil)
+				c.EXPECT().Set(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Times(2)
 
 				o, _ := app.groupRepo.(*mocks.MockGroupRepository)
 				o.EXPECT().
@@ -265,6 +273,10 @@ func TestApplicationHandler_GetApps(t *testing.T) {
 			statusCode: http.StatusOK,
 			dbFn: func(app *applicationHandler) {
 				a, _ := app.appRepo.(*mocks.MockApplicationRepository)
+				c, _ := app.cache.(*mocks.MockCache)
+
+				c.EXPECT().Get(gomock.Any(), gomock.Any(), gomock.Any()).Times(1).Return(nil)
+				c.EXPECT().Set(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Times(1).Return(nil)
 				a.EXPECT().
 					LoadApplicationsPaged(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Times(1).
 					Return([]datastore.Application{
@@ -349,6 +361,11 @@ func TestApplicationHandler_CreateApp(t *testing.T) {
 			body:       strings.NewReader(``),
 			dbFn: func(app *applicationHandler) {
 				o, _ := app.groupRepo.(*mocks.MockGroupRepository)
+				c, _ := app.cache.(*mocks.MockCache)
+
+				c.EXPECT().Get(gomock.Any(), gomock.Any(), gomock.Any()).Times(1).Return(nil)
+				c.EXPECT().Set(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Times(1).Return(nil)
+
 				o.EXPECT().
 					LoadGroups(gomock.Any(), gomock.Any()).Times(1).
 					Return([]*datastore.Group{group}, nil)
@@ -362,6 +379,11 @@ func TestApplicationHandler_CreateApp(t *testing.T) {
 			body:       strings.NewReader(`{}`),
 			dbFn: func(app *applicationHandler) {
 				o, _ := app.groupRepo.(*mocks.MockGroupRepository)
+				c, _ := app.cache.(*mocks.MockCache)
+
+				c.EXPECT().Get(gomock.Any(), gomock.Any(), gomock.Any()).Times(1).Return(nil)
+				c.EXPECT().Set(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Times(1).Return(nil)
+
 				o.EXPECT().
 					LoadGroups(gomock.Any(), gomock.Any()).Times(1).
 					Return([]*datastore.Group{group}, nil)
@@ -375,9 +397,15 @@ func TestApplicationHandler_CreateApp(t *testing.T) {
 			body:       bodyReader,
 			dbFn: func(app *applicationHandler) {
 				a, _ := app.appRepo.(*mocks.MockApplicationRepository)
+				c, _ := app.cache.(*mocks.MockCache)
+
+				c.EXPECT().Get(gomock.Any(), gomock.Any(), gomock.Any()).Times(1).Return(nil)
+				c.EXPECT().Set(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Times(1).Return(nil)
+
 				a.EXPECT().
 					CreateApplication(gomock.Any(), gomock.Any()).Times(1).
 					Return(nil)
+				c.EXPECT().Set(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Times(1).Return(nil)
 
 				o, _ := app.groupRepo.(*mocks.MockGroupRepository)
 
@@ -458,6 +486,11 @@ func TestApplicationHandler_UpdateApp(t *testing.T) {
 			body:       strings.NewReader(``),
 			dbFn: func(app *applicationHandler) {
 				a, _ := app.appRepo.(*mocks.MockApplicationRepository)
+				c, _ := app.cache.(*mocks.MockCache)
+
+				c.EXPECT().Get(gomock.Any(), gomock.Any(), gomock.Any()).Times(2).Return(nil)
+				c.EXPECT().Set(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Times(2).Return(nil)
+
 				a.EXPECT().
 					FindApplicationByID(gomock.Any(), gomock.Any()).Times(1).
 					Return(&datastore.Application{
@@ -483,6 +516,11 @@ func TestApplicationHandler_UpdateApp(t *testing.T) {
 			body:       strings.NewReader(`{}`),
 			dbFn: func(app *applicationHandler) {
 				a, _ := app.appRepo.(*mocks.MockApplicationRepository)
+				c, _ := app.cache.(*mocks.MockCache)
+
+				c.EXPECT().Get(gomock.Any(), gomock.Any(), gomock.Any()).Times(2).Return(nil)
+				c.EXPECT().Set(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Times(2).Return(nil)
+
 				a.EXPECT().
 					FindApplicationByID(gomock.Any(), gomock.Any()).Times(1).
 					Return(&datastore.Application{
@@ -508,6 +546,11 @@ func TestApplicationHandler_UpdateApp(t *testing.T) {
 			body:       strings.NewReader(`{ "name": "ABC", "secret": "xyz" }`),
 			dbFn: func(app *applicationHandler) {
 				a, _ := app.appRepo.(*mocks.MockApplicationRepository)
+				c, _ := app.cache.(*mocks.MockCache)
+
+				c.EXPECT().Get(gomock.Any(), gomock.Any(), gomock.Any()).Times(2).Return(nil)
+				c.EXPECT().Set(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Times(3).Return(nil)
+
 				a.EXPECT().
 					FindApplicationByID(gomock.Any(), gomock.Any()).Times(1).
 					Return(&datastore.Application{
@@ -537,6 +580,11 @@ func TestApplicationHandler_UpdateApp(t *testing.T) {
 			body:       strings.NewReader(`{ "name": "ABC", "support_email": "engineering@frain.dev" }`),
 			dbFn: func(app *applicationHandler) {
 				a, _ := app.appRepo.(*mocks.MockApplicationRepository)
+				c, _ := app.cache.(*mocks.MockCache)
+
+				c.EXPECT().Get(gomock.Any(), gomock.Any(), gomock.Any()).Times(2).Return(nil)
+				c.EXPECT().Set(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Times(3).Return(nil)
+
 				a.EXPECT().
 					UpdateApplication(gomock.Any(), gomock.Any()).Times(1).
 					Return(nil)
@@ -566,6 +614,11 @@ func TestApplicationHandler_UpdateApp(t *testing.T) {
 			body:       bodyReader,
 			dbFn: func(app *applicationHandler) {
 				a, _ := app.appRepo.(*mocks.MockApplicationRepository)
+				c, _ := app.cache.(*mocks.MockCache)
+
+				c.EXPECT().Get(gomock.Any(), gomock.Any(), gomock.Any()).Times(2).Return(nil)
+				c.EXPECT().Set(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Times(3).Return(nil)
+
 				a.EXPECT().
 					UpdateApplication(gomock.Any(), gomock.Any()).Times(1).
 					Return(nil)
@@ -586,7 +639,6 @@ func TestApplicationHandler_UpdateApp(t *testing.T) {
 					Return([]*datastore.Group{group}, nil)
 			},
 		},
-
 		{
 			name:       "valid request - disable application",
 			cfgPath:    "/testdata/Auth_Config/no-auth-convoy.json",
@@ -596,6 +648,11 @@ func TestApplicationHandler_UpdateApp(t *testing.T) {
 			body:       strings.NewReader(`{"name": "ABC", "is_disabled": true }`),
 			dbFn: func(app *applicationHandler) {
 				a, _ := app.appRepo.(*mocks.MockApplicationRepository)
+				c, _ := app.cache.(*mocks.MockCache)
+
+				c.EXPECT().Get(gomock.Any(), gomock.Any(), gomock.Any()).Times(2).Return(nil)
+				c.EXPECT().Set(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Times(3).Return(nil)
+
 				a.EXPECT().
 					UpdateApplication(gomock.Any(), gomock.Any()).Times(1).
 					Return(nil)
@@ -617,7 +674,6 @@ func TestApplicationHandler_UpdateApp(t *testing.T) {
 					Return([]*datastore.Group{group}, nil)
 			},
 		},
-
 		{
 			name:       "valid request - enable disabled application",
 			cfgPath:    "/testdata/Auth_Config/no-auth-convoy.json",
@@ -627,6 +683,11 @@ func TestApplicationHandler_UpdateApp(t *testing.T) {
 			body:       strings.NewReader(`{"name": "ABC", "is_disabled": false }`),
 			dbFn: func(app *applicationHandler) {
 				a, _ := app.appRepo.(*mocks.MockApplicationRepository)
+				c, _ := app.cache.(*mocks.MockCache)
+
+				c.EXPECT().Get(gomock.Any(), gomock.Any(), gomock.Any()).Times(2).Return(nil)
+				c.EXPECT().Set(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Times(3).Return(nil)
+
 				a.EXPECT().
 					UpdateApplication(gomock.Any(), gomock.Any()).Times(1).
 					Return(nil)
@@ -735,6 +796,11 @@ func TestApplicationHandler_CreateAppEndpoint(t *testing.T) {
 			body:       bodyReader,
 			dbFn: func(app *applicationHandler) {
 				a, _ := app.appRepo.(*mocks.MockApplicationRepository)
+				c, _ := app.cache.(*mocks.MockCache)
+
+				c.EXPECT().Get(gomock.Any(), gomock.Any(), gomock.Any()).Times(2).Return(nil)
+				c.EXPECT().Set(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Times(3).Return(nil)
+
 				a.EXPECT().
 					UpdateApplication(gomock.Any(), gomock.Any()).Times(1).
 					Return(nil)
@@ -816,6 +882,11 @@ func TestApplicationHandler_UpdateAppEndpoint(t *testing.T) {
 			endpointId: endpointId,
 			body:       strings.NewReader(``),
 			dbFn: func(app *applicationHandler) {
+				c, _ := app.cache.(*mocks.MockCache)
+
+				c.EXPECT().Get(gomock.Any(), gomock.Any(), gomock.Any()).Times(2).Return(nil)
+				c.EXPECT().Set(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Times(2).Return(nil)
+
 				a, _ := app.appRepo.(*mocks.MockApplicationRepository)
 				a.EXPECT().
 					UpdateApplication(gomock.Any(), gomock.Any()).Times(0).
@@ -846,6 +917,11 @@ func TestApplicationHandler_UpdateAppEndpoint(t *testing.T) {
 			endpointId: endpointId,
 			body:       strings.NewReader(`{"url": "https://google.com", "description": "Correct endpoint"}`),
 			dbFn: func(app *applicationHandler) {
+				c, _ := app.cache.(*mocks.MockCache)
+
+				c.EXPECT().Get(gomock.Any(), gomock.Any(), gomock.Any()).Times(2).Return(nil)
+				c.EXPECT().Set(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Times(3).Return(nil)
+
 				a, _ := app.appRepo.(*mocks.MockApplicationRepository)
 				a.EXPECT().
 					UpdateApplication(gomock.Any(), gomock.Any()).Times(1).

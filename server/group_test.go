@@ -37,11 +37,13 @@ func TestApplicationHandler_GetGroup(t *testing.T) {
 			name:       "group not found",
 			cfgPath:    "./testdata/Auth_Config/no-auth-convoy.json",
 			method:     http.MethodGet,
-			statusCode: http.StatusInternalServerError,
+			statusCode: http.StatusNotFound,
 			id:         fakeOrgID,
 			dbFn: func(app *applicationHandler) {
 				o, _ := app.groupRepo.(*mocks.MockGroupRepository)
+				c, _ := app.cache.(*mocks.MockCache)
 
+				c.EXPECT().Get(gomock.Any(), gomock.Any(), gomock.Any()).Return(nil)
 				o.EXPECT().
 					FetchGroupByID(gomock.Any(), gomock.Any()).Times(1).
 					Return(nil, datastore.ErrGroupNotFound)
@@ -55,13 +57,16 @@ func TestApplicationHandler_GetGroup(t *testing.T) {
 			id:         realOrgID,
 			dbFn: func(app *applicationHandler) {
 				o, _ := app.groupRepo.(*mocks.MockGroupRepository)
+				c, _ := app.cache.(*mocks.MockCache)
 
+				c.EXPECT().Get(gomock.Any(), gomock.Any(), gomock.Any()).Return(nil)
 				o.EXPECT().
 					FetchGroupByID(gomock.Any(), gomock.Any()).Times(1).
 					Return(&datastore.Group{
 						UID:  realOrgID,
 						Name: "sendcash-pay",
 					}, nil)
+				c.EXPECT().Set(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Times(1)
 
 				a, _ := app.appRepo.(*mocks.MockApplicationRepository)
 				a.EXPECT().
@@ -280,6 +285,9 @@ func TestApplicationHandler_UpdateGroup(t *testing.T) {
 			body:       bodyReader,
 			dbFn: func(app *applicationHandler) {
 				g, _ := app.groupRepo.(*mocks.MockGroupRepository)
+				c, _ := app.cache.(*mocks.MockCache)
+
+				c.EXPECT().Get(gomock.Any(), gomock.Any(), gomock.Any()).Return(nil)
 				g.EXPECT().
 					UpdateGroup(gomock.Any(), gomock.Any()).Times(1).
 					Return(nil)
@@ -290,6 +298,7 @@ func TestApplicationHandler_UpdateGroup(t *testing.T) {
 						UID:  realOrgID,
 						Name: "sendcash-pay",
 					}, nil)
+				c.EXPECT().Set(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Times(1)
 			},
 		},
 	}
@@ -445,12 +454,16 @@ func TestApplicationHandler_DeleteGroup(t *testing.T) {
 			body:       bodyReader,
 			dbFn: func(app *applicationHandler) {
 				g, _ := app.groupRepo.(*mocks.MockGroupRepository)
+				c, _ := app.cache.(*mocks.MockCache)
+
+				c.EXPECT().Get(gomock.Any(), gomock.Any(), gomock.Any()).Return(nil)
 				g.EXPECT().
 					FetchGroupByID(gomock.Any(), gomock.Any()).Times(1).
 					Return(&datastore.Group{
 						UID:  realOrgID,
 						Name: "sendcash-pay",
 					}, nil)
+				c.EXPECT().Set(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Times(1)
 
 				g.EXPECT().
 					DeleteGroup(gomock.Any(), gomock.Any()).Times(1).
@@ -475,12 +488,16 @@ func TestApplicationHandler_DeleteGroup(t *testing.T) {
 			body:       bodyReader,
 			dbFn: func(app *applicationHandler) {
 				g, _ := app.groupRepo.(*mocks.MockGroupRepository)
+				c, _ := app.cache.(*mocks.MockCache)
+
+				c.EXPECT().Get(gomock.Any(), gomock.Any(), gomock.Any()).Return(nil)
 				g.EXPECT().
 					FetchGroupByID(gomock.Any(), gomock.Any()).Times(1).
 					Return(&datastore.Group{
 						UID:  realOrgID,
 						Name: "sendcash-pay",
 					}, nil)
+				c.EXPECT().Set(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Times(1)
 
 				g.EXPECT().
 					DeleteGroup(gomock.Any(), gomock.Any()).Times(1).
