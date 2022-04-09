@@ -2,8 +2,6 @@ package worker
 
 import (
 	"github.com/frain-dev/convoy/queue"
-	"github.com/frain-dev/convoy/tracer"
-	"github.com/frain-dev/convoy/worker/otel"
 	"github.com/frain-dev/taskq/v3"
 	log "github.com/sirupsen/logrus"
 )
@@ -28,11 +26,6 @@ func (c *Cleaner) Start() {
 	go func() {
 		log.Debugln("Running cleanup tasks")
 	}()
-}
-
-func (p *Cleaner) Otel(tr tracer.Tracer) {
-	otelHook := otel.NewOtelHook(tr)
-	p.consumer.AddHook(otelHook)
 }
 
 func (p *Cleaner) Close() error {

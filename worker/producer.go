@@ -4,8 +4,6 @@ import (
 	"context"
 
 	"github.com/frain-dev/convoy/queue"
-	"github.com/frain-dev/convoy/tracer"
-	"github.com/frain-dev/convoy/worker/otel"
 	"github.com/frain-dev/taskq/v3"
 	log "github.com/sirupsen/logrus"
 )
@@ -32,11 +30,6 @@ func (p *Producer) Start(ctx context.Context) {
 			log.Fatal(err)
 		}
 	}()
-}
-
-func (p *Producer) Otel(tr tracer.Tracer) {
-	otelHook := otel.NewOtelHook(tr)
-	p.consumer.AddHook(otelHook)
 }
 
 func (p *Producer) Close() error {
