@@ -41,6 +41,7 @@ func (ss *SecurityService) CreateAPIKey(ctx context.Context, newApiKey *models.A
 
 	groups, err := ss.groupRepo.FetchGroupsByIDs(ctx, newApiKey.Role.Groups)
 	if err != nil {
+		log.WithError(err).Error("failed to fetch groups by ids")
 		return nil, "", NewServiceError(http.StatusBadRequest, errors.New("invalid group"))
 	}
 
