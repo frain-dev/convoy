@@ -29,7 +29,7 @@ func NewAppService(appRepo datastore.ApplicationRepository, eventRepo datastore.
 	return &AppService{appRepo: appRepo, eventRepo: eventRepo, eventDeliveryRepo: eventDeliveryRepo, eventQueue: eventQueue}
 }
 
-func (a *AppService) CreateApp(ctx context.Context, newApp *models.Application, appName string, g *datastore.Group) (*datastore.Application, error) {
+func (a *AppService) CreateApp(ctx context.Context, newApp *models.Application, g *datastore.Group) (*datastore.Application, error) {
 	if err := util.Validate(newApp); err != nil {
 		return nil, NewServiceError(http.StatusBadRequest, err)
 	}
@@ -37,7 +37,7 @@ func (a *AppService) CreateApp(ctx context.Context, newApp *models.Application, 
 	app := &datastore.Application{
 		UID:             uuid.New().String(),
 		GroupID:         g.UID,
-		Title:           appName,
+		Title:           newApp.AppName,
 		SupportEmail:    newApp.SupportEmail,
 		SlackWebhookURL: newApp.SlackWebhookURL,
 		IsDisabled:      newApp.IsDisabled,
@@ -67,11 +67,9 @@ func (a *AppService) LoadApplicationsPaged(ctx context.Context, uid string, q st
 }
 
 func (a *AppService) UpdateApplication(ctx context.Context, appUpdate *models.UpdateApplication, app *datastore.Application) error {
-
 	appName := appUpdate.AppName
 	if err := util.Validate(appUpdate); err != nil {
-		return NewServiceError(http.StatusBadRequest, errors.New("please provide your appName"))
-
+		return NewServiceError(http.StatusBadRequest, err)
 	}
 
 	app.Title = *appName
@@ -93,6 +91,7 @@ func (a *AppService) UpdateApplication(ctx context.Context, appUpdate *models.Up
 
 	err := a.appRepo.UpdateApplication(ctx, app)
 	if err != nil {
+		log.WithError(err).Error("failed to update application")
 		return NewServiceError(http.StatusBadRequest, errors.New("an error occurred while updating app"))
 	}
 	return nil
@@ -154,6 +153,7 @@ func (a *AppService) CreateAppEndpoint(ctx context.Context, e models.Endpoint, a
 
 	err = a.appRepo.UpdateApplication(ctx, app)
 	if err != nil {
+		log.WithError(err).Error("failed to update application")
 		return nil, NewServiceError(http.StatusBadRequest, fmt.Errorf("an error occurred while adding app endpoint"))
 	}
 	return endpoint, nil
@@ -201,6 +201,7 @@ func updateEndpointIfFound(endpoints *[]datastore.Endpoint, id string, e models.
 			// translates into a accept all scenario. This is quite different from
 			// an empty array which signifies a blacklist all events -- no events
 			// will be sent to such endpoints.
+			// TODO(daniel): this should be e.Events == nil
 			if len(e.Events) == 0 {
 				endpoint.Events = []string{"*"}
 			} else {
