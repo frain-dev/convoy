@@ -228,6 +228,90 @@ func TestAppService_LoadApplicationsPaged(t *testing.T) {
 			wantErr:    true,
 			wantErrObj: NewServiceError(http.StatusInternalServerError, errors.New("an error occurred while fetching apps")),
 		},
+		{
+			name: "should_load_apps_trims-whitespaces-from-query",
+			args: args{
+				ctx: ctx,
+				uid: "uid",
+				q:   " falsetto ",
+				pageable: datastore.Pageable{
+					Page:    1,
+					PerPage: 10,
+					Sort:    1,
+				},
+			},
+			wantApps: []datastore.Application{
+				{UID: "123"},
+				{UID: "abc"},
+			},
+			wantPaginationData: datastore.PaginationData{
+				Total:     2,
+				Page:      1,
+				PerPage:   10,
+				Prev:      0,
+				Next:      2,
+				TotalPage: 3,
+			},
+			dbFn: func(app *AppService) {
+				a, _ := app.appRepo.(*mocks.MockApplicationRepository)
+				a.EXPECT().
+					LoadApplicationsPaged(gomock.Any(), gomock.Any(), "falsetto", gomock.Any()).Times(1).
+					Return([]datastore.Application{
+						{UID: "123"},
+						{UID: "abc"},
+					}, datastore.PaginationData{
+						Total:     2,
+						Page:      1,
+						PerPage:   10,
+						Prev:      0,
+						Next:      2,
+						TotalPage: 3,
+					}, nil)
+			},
+			wantErr: false,
+		},
+		{
+			name: "should_load_apps_trims-whitespaces-from-query-retains-case",
+			args: args{
+				ctx: ctx,
+				uid: "uid",
+				q:   "   FalSetto  ",
+				pageable: datastore.Pageable{
+					Page:    1,
+					PerPage: 10,
+					Sort:    1,
+				},
+			},
+			wantApps: []datastore.Application{
+				{UID: "123"},
+				{UID: "abc"},
+			},
+			wantPaginationData: datastore.PaginationData{
+				Total:     2,
+				Page:      1,
+				PerPage:   10,
+				Prev:      0,
+				Next:      2,
+				TotalPage: 3,
+			},
+			dbFn: func(app *AppService) {
+				a, _ := app.appRepo.(*mocks.MockApplicationRepository)
+				a.EXPECT().
+					LoadApplicationsPaged(gomock.Any(), gomock.Any(), "FalSetto", gomock.Any()).Times(1).
+					Return([]datastore.Application{
+						{UID: "123"},
+						{UID: "abc"},
+					}, datastore.PaginationData{
+						Total:     2,
+						Page:      1,
+						PerPage:   10,
+						Prev:      0,
+						Next:      2,
+						TotalPage: 3,
+					}, nil)
+			},
+			wantErr: false,
+		},
 	}
 
 	for _, tt := range tests {
