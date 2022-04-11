@@ -271,10 +271,10 @@ export class ConvoyDashboardComponent implements OnInit {
 		this.isDeletingApp = true;
 		try {
 			const response = await this.convyDashboardService.deleteApp({ appId: this.appsDetailsItem?.uid });
-			this.appsDetailsItem = {};
+			// this.appsDetailsItem = {};
 			this.convyDashboardService.showNotification({ message: response.message });
-			this.toggleActiveTab('apps');
 			this.getApps({ type: 'apps' });
+			this.toggleActiveTab('apps');
 			this.showDeleteAppModal = false;
 			this.isDeletingApp = false;
 		} catch {

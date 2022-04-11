@@ -135,9 +135,11 @@
 						</button>
 					</li>
 					<div class="color__grey font__14px font__weight-500 font--nowrap margin-left--auto padding-right__14px">
-						<span [hidden]="activeTab !== 'events'">1 - {{ events.pagination.total < 20 ? events.pagination.total : eventsPage * 20 }} of {{ events?.pagination?.total }}</span>
-						<span [hidden]="activeTab !== 'event deliveries'">1 - {{eventDeliveries.pagination.total < 20 ? eventDeliveries.pagination.total:eventDeliveriesPage * 20}} of {{ eventDeliveries?.pagination?.total }}</span>
-						<span [hidden]="activeTab !== 'apps'">1 - {{ apps.pagination.total < 20 ? apps.pagination.total : appsPage * 20 }} of {{ apps?.pagination?.total }}</span>
+						<span [hidden]="activeTab !== 'events'">1 - {{ events && events.pagination.total < 20 ? events.pagination.total : eventsPage * 20 }} of {{ events?.pagination?.total }}</span>
+						<span [hidden]="activeTab !== 'event deliveries'">
+							1 - {{ eventDeliveries && eventDeliveries.pagination.total < 20 ? eventDeliveries.pagination.total : eventDeliveriesPage * 20 }} of {{ eventDeliveries?.pagination?.total }}
+						</span>
+						<span [hidden]="activeTab !== 'apps'">1 - {{ apps && apps.pagination.total < 20 ? apps.pagination.total : appsPage * 20 }} of {{ apps?.pagination?.total }}</span>
 					</div>
 				</div>
 			</div>
@@ -946,15 +948,15 @@
 	<div class="modal--body" *ngIf="showCreateAppModal">
 		<form [formGroup]="addNewAppForm">
 			<div class="input">
-				<input type="text" formControlName="name" [ngClass]="{ danger: addNewAppForm.controls.name.touched && addNewAppForm.controls.name.invalid }" />
+				<input type="text" formControlName="name" [ngClass]="{ danger: addNewAppForm.controls.name.touched && addNewAppForm.controls.name.invalid, editMode: editAppMode }" />
 				<label for="">Enter App Name</label>
 				<div class="input__error input__error__danger" *ngIf="addNewAppForm.controls.name.touched && addNewAppForm.controls.name.invalid">
 					<img src="assets/img/input-error-icon.svg" alt="input error icon" />
 					<span>App name is required</span>
 				</div>
 			</div>
-			<div class="input non-required">
-				<input type="text" formControlName="support_email" />
+			<div class="input">
+				<input type="text" formControlName="support_email" [ngClass]="{editMode: editAppMode}" />
 				<label class="input__label" for="">Support Email</label>
 				<!-- pendign  -->
 				<!-- <div class="input__error input__error__danger" *ngIf="addNewAppForm.controls.support_email.touched && addNewAppForm.controls.support_email.invalid">
@@ -1151,11 +1153,11 @@
 <!-- delete app modal  -->
 <div class="modal modal__center" *ngIf="showDeleteAppModal">
 	<div class="modal--body flex flex__column flex__justify-center flex__align-items-center delete">
-		<img src="/assets/img/warning.gif" alt="warning" />
-		<p class="title">Are you sure you want to delete “{{ appsDetailsItem?.name }}”?</p>
-		<p class="subtext">This action is irrevesible</p>
-		<button class="button button__deactivate margin-bottom__40px" [disabled]="isDeletingApp" (click)="deleteApp()">{{ isDeletingApp ? 'Deleting App...' : 'Yes, Delete' }}</button>
-		<button class="button__primary button__clear cancel" (click)="showDeleteAppModal = false">No, Cancel</button>
+		<img src="/assets/img/warning.gif" class="img" alt="warning" />
+		<p class="font__16px font__weight-600 color__black margin-bottom__8px">Are you sure you want to delete “{{ appsDetailsItem?.name }}”?</p>
+		<p class="font__14px font__weight-500 color__grey margin-bottom__12px">This action is irrevesible</p>
+		<button class="button button__deactivate margin-bottom__24px" [disabled]="isDeletingApp" (click)="deleteApp()">{{ isDeletingApp ? 'Deleting App...' : 'Yes, Delete' }}</button>
+		<button class="button__primary button__clear font__weight-600 cancel" (click)="showDeleteAppModal = false">No, Cancel</button>
 	</div>
 </div>
 <!-- batch retry modal  -->
