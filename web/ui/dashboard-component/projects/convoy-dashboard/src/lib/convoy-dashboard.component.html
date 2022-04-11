@@ -640,7 +640,12 @@
 										<td></td>
 										<td></td>
 									</tr>
-									<tr *ngFor="let app of apps?.events" [ngClass]="{ active: app.uid === appsDetailsItem?.uid }" (click)="appsDetailsItem = app; getAppPortalToken({ redirect: false })">
+									<tr
+										*ngFor="let app of apps?.events; let index = index"
+										[id]="'app' + i"
+										[ngClass]="{ active: app.uid === appsDetailsItem?.uid }"
+										(click)="appsDetailsItem = app; getAppPortalToken({ redirect: false })"
+									>
 										<td>
 											<div class="has-retry">
 												<div [class]="app.is_disabled ? 'tag no-margin' : 'tag tag--Success no-margin'">{{ app.is_disabled ? 'Disabled' : 'Enabled' }}</div>
@@ -956,7 +961,7 @@
 				</div>
 			</div>
 			<div class="input">
-				<input type="text" formControlName="support_email" [ngClass]="{editMode: editAppMode}" />
+				<input type="text" formControlName="support_email" [ngClass]="{ editMode: editAppMode }" />
 				<label class="input__label" for="">Support Email</label>
 				<!-- pendign  -->
 				<!-- <div class="input__error input__error__danger" *ngIf="addNewAppForm.controls.support_email.touched && addNewAppForm.controls.support_email.invalid">
