@@ -24,7 +24,7 @@ App portal to be usable in three different ways:
 As explained above, the iframe code snippet was made available as the easiest to present app portal to your customers. The token embedded into the iframe code expires, so you can use this [API](https://convoy.readme.io/reference/post_security-applications-appid-keys) to generate a new token whenever your user enters the page with the iframe. Simply replace the `key` gotten from the API response with `{token}` in the example below.
 
 ```html[iframe snippet]
-<iframe style="width: 100%; height: 100vh; border: none;" src="http://localhost:4200/ui/app-portal/{ token }&appId=291e98cb-4e93-408f-bb5b-d422ff13d12c"></iframe>
+<iframe style="width: 100%; height: 100vh; border: none;" src="{ apiURL }/app-portal/{ token }&appId=291e98cb-4e93-408f-bb5b-d422ff13d12c"></iframe>
 ```
 
 ## App Portal Web Components
@@ -34,8 +34,27 @@ As explained above, the iframe code snippet was made available as the easiest to
 You can get started with using App Portal in your Angular application by following the three simple steps below:
 
 1. Run `npm i convoy-app` in your existing Angular application to install the package
-2. Import `ConvoyAppModule` into your application module as shown below
-3. Add `ConvoyApp` to your HTML page
+2. Run `ng add @angular/material` in your existing Angular application to install angular material
+3. In your `package.json`, add these under your dependencies:
+
+```javascript[package.json]
+  "dependencies": {
+    "convoy-ui": "^0.0.2",
+    "date-fns": "^2.27.0",
+    "prismjs": "^1.25.0",
+    "chart.js": "^3.6.0",
+  }
+```
+
+4. Run `npm install`
+5. Add `convoy-ui` to your styles:
+
+```css[styles.scss]
+@import '../node_modules/convoy-ui/scss/main.scss';
+```
+
+6. Import `ConvoyAppModule` into your application module as shown below
+7. Add `ConvoyApp` to your HTML page
 
 ```javascript[app.module.ts]
 import { ConvoyAppModule } from 'convoy-app';
@@ -77,17 +96,3 @@ import 'convoy-app-react/dist/index.css';
 ...
 ```
 
-### Vue
-
-Adding App Portal to your Vue application can be done in two steps:
-
-1. Run `npm i convoy-app-vue` in your existing React application to install the package
-2. Add `ConvoyApp` to your desired page
-
-```javascript[page.vue]
-...
-
-<convoy-app :token="token" :apiURL="apiURL" />
-
-...
-```
