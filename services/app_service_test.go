@@ -625,11 +625,9 @@ func stripVariableFields(t *testing.T, obj string, v interface{}) {
 		e.UID = ""
 		e.CreatedAt, e.UpdatedAt, e.DeletedAt = 0, 0, 0
 	case "apiKey":
-		e := v.(*datastore.APIKey)
-
-		e.UID = ""
-		e.CreatedAt = 0
-		e.ExpiresAt = 0
+		a := v.(*datastore.APIKey)
+		a.UID, a.MaskID, a.Salt, a.Hash = "", "", "", ""
+		a.CreatedAt, a.UpdatedAt = 0, 0
 	default:
 		t.Errorf("invalid data body - %v of type %T", obj, obj)
 		t.FailNow()
