@@ -128,12 +128,17 @@
 
 		<section class="card has-title dashboard--logs">
 			<div class="dashboard--logs--tabs">
-				<div class="tabs">
+				<div class="tabs flex__align-items-center">
 					<li *ngFor="let tab of tabs" (click)="toggleActiveTab(tab)">
 						<button [ngClass]="{ active: activeTab === tab }">
 							<span>{{ tab }}</span>
 						</button>
 					</li>
+					<div class="color__grey font__14px font__weight-500 font--nowrap margin-left--auto padding-right__14px">
+						<span [hidden]="activeTab !== 'events'">1 - {{ events.pagination.total < 20 ? events.pagination.total : eventsPage * 20 }} of {{ events?.pagination?.total }}</span>
+						<span [hidden]="activeTab !== 'event deliveries'">1 - {{eventDeliveries.pagination.total < 20 ? eventDeliveries.pagination.total:eventDeliveriesPage * 20}} of {{ eventDeliveries?.pagination?.total }}</span>
+						<span [hidden]="activeTab !== 'apps'">1 - {{ apps.pagination.total < 20 ? apps.pagination.total : appsPage * 20 }} of {{ apps?.pagination?.total }}</span>
+					</div>
 				</div>
 			</div>
 
@@ -148,11 +153,12 @@
 									(click)="showEventFilterCalendar = !showEventFilterCalendar; showOverlay = true"
 								>
 									<img class="margin-left__0px" src="/assets/img/calendar-icon.svg" alt="calender icon" />
-									<span *ngIf="eventsFilterDateRange.value.startDate !== '' && eventsFilterDateRange.value.endDate !== ''" class="color__grey margin-right__4px">Date:</span>
+									<span class="color__grey margin-right__4px">Date:</span>
+									<span class="color__primary" *ngIf="eventsFilterDateRange.value.startDate === '' && eventsFilterDateRange.value.endDate === ''">All Time</span>
 									<!-- to be reviewed  -->
 									<!-- <span class="color__primary" *ngIf="selectedEventsDateOption">: {{ selectedEventsDateOption }}</span> -->
 									<mat-date-range-input [formGroup]="eventsFilterDateRange" [rangePicker]="eventsFilterPicker">
-										<input matStartDate formControlName="startDate" placeholder="Date" />
+										<input matStartDate formControlName="startDate" />
 										<input
 											matEndDate
 											formControlName="endDate"
@@ -237,11 +243,12 @@
 									(click)="showOverlay = true; showEventDelFilterCalendar = !showEventDelFilterCalendar"
 								>
 									<img class="margin-left__0px" src="/assets/img/calendar-icon.svg" alt="calender icon" />
-									<span *ngIf="eventDeliveriesFilterDateRange.value.startDate !== '' && eventDeliveriesFilterDateRange.value.endDate !== ''" class="color__grey margin-right__4px">Date:</span>
+									<span class="color__grey margin-right__4px">Date:</span>
+									<span class="color__primary" *ngIf="eventDeliveriesFilterDateRange.value.startDate === '' && eventDeliveriesFilterDateRange.value.endDate === ''">All Time</span>
 									<!-- to be reviewed  -->
 									<!-- <span class="color__primary" *ngIf="selectedEventsDelDateOption">: {{ selectedEventsDelDateOption }}</span> -->
 									<mat-date-range-input [formGroup]="eventDeliveriesFilterDateRange" [rangePicker]="eventDeliveriesFilterPicker">
-										<input matStartDate formControlName="startDate" placeholder="Date" />
+										<input matStartDate formControlName="startDate" />
 										<input
 											matEndDate
 											formControlName="endDate"
@@ -939,15 +946,15 @@
 	<div class="modal--body" *ngIf="showCreateAppModal">
 		<form [formGroup]="addNewAppForm">
 			<div class="input">
-				<input type="text" formControlName="name" required />
+				<input type="text" formControlName="name" [ngClass]="{ danger: addNewAppForm.controls.name.touched && addNewAppForm.controls.name.invalid }" />
 				<label for="">Enter App Name</label>
 				<div class="input__error input__error__danger" *ngIf="addNewAppForm.controls.name.touched && addNewAppForm.controls.name.invalid">
 					<img src="assets/img/input-error-icon.svg" alt="input error icon" />
 					<span>App name is required</span>
 				</div>
 			</div>
-			<div class="input">
-				<input type="text" formControlName="support_email" required />
+			<div class="input non-required">
+				<input type="text" formControlName="support_email" />
 				<label class="input__label" for="">Support Email</label>
 				<!-- pendign  -->
 				<!-- <div class="input__error input__error__danger" *ngIf="addNewAppForm.controls.support_email.touched && addNewAppForm.controls.support_email.invalid">

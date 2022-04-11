@@ -244,6 +244,7 @@ export class ConvoyDashboardComponent implements OnInit {
 			(<any>Object).values(this.addNewAppForm.controls).forEach((control: FormControl) => {
 				control?.markAsTouched();
 			});
+			console.log(this.addNewAppForm.controls)
 			return;
 		}
 		this.isCreatingNewApp = true;
@@ -888,7 +889,6 @@ export class ConvoyDashboardComponent implements OnInit {
 
 			if (this.updateAppDetail) this.appsDetailsItem = this.apps.content.find(item => this.appsDetailsItem?.uid == item.uid);
 
-			console.log(this.displayedApps)
 			this.isloadingApps = false;
 			return appsResponse;
 		} catch (error: any) {
