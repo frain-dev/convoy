@@ -76,14 +76,13 @@ func (gs *GroupService) CreateGroup(ctx context.Context, newGroup *models.Group)
 }
 
 func (gs *GroupService) UpdateGroup(ctx context.Context, group *datastore.Group, update *models.Group) (*datastore.Group, error) {
-	groupName := update.Name
 	err := util.Validate(update)
 	if err != nil {
 		log.WithError(err).Error("failed to validate group update")
 		return nil, NewServiceError(http.StatusBadRequest, err)
 	}
 
-	group.Name = groupName
+	group.Name = update.Name
 	group.Config = &update.Config
 	if !util.IsStringEmpty(update.LogoURL) {
 		group.LogoURL = update.LogoURL
