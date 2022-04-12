@@ -135,11 +135,11 @@
 						</button>
 					</li>
 					<div class="color__grey font__14px font__weight-500 font--nowrap margin-left--auto padding-right__14px">
-						<span [hidden]="activeTab !== 'events'">1 - {{ events && events.pagination.total < 20 ? events.pagination.total : eventsPage * 20 }} of {{ events?.pagination?.total }}</span>
+						<span [hidden]="activeTab !== 'events'">{{events && events.pagination.total > 0 ? 1 : 0}} - {{ events && events.pagination.total < 20 ? events.pagination.total : eventsPage * 20 }} of {{ events?.pagination?.total }}</span>
 						<span [hidden]="activeTab !== 'event deliveries'">
-							1 - {{ eventDeliveries && eventDeliveries.pagination.total < 20 ? eventDeliveries.pagination.total : eventDeliveriesPage * 20 }} of {{ eventDeliveries?.pagination?.total }}
+							{{eventDeliveries && eventDeliveries.pagination.total > 0 ? 1 : 0}} - {{ eventDeliveries && eventDeliveries.pagination.total < 20 ? eventDeliveries.pagination.total : eventDeliveriesPage * 20 }} of {{ eventDeliveries?.pagination?.total }}
 						</span>
-						<span [hidden]="activeTab !== 'apps'">1 - {{ apps && apps.pagination.total < 20 ? apps.pagination.total : appsPage * 20 }} of {{ apps?.pagination?.total }}</span>
+						<span [hidden]="activeTab !== 'apps'">{{apps && apps.pagination.total > 0 ? 1 : 0}} - {{ apps && apps.pagination.total < 20 ? apps.pagination.total : appsPage * 20 }} of {{ apps?.pagination?.total }}</span>
 					</div>
 				</div>
 			</div>
@@ -869,27 +869,27 @@
 							<convoy-loader id="delivery_attempts_loader" *ngIf="(eventDetailsActiveTab === 'response' || eventDetailsActiveTab === 'request') && isloadingDeliveryAttempts"></convoy-loader>
 
 							<div [class]="'dashboard--logs--details--tabs-data ' + (eventDetailsActiveTab === 'data' ? 'show' : '')">
-								<h3>Event</h3>
+								<h4>Event</h4>
 								<prism language="json" [code]="getCodeSnippetString('event_delivery')"></prism>
 							</div>
 
 							<div [class]="'dashboard--logs--details--tabs-data ' + (eventDetailsActiveTab === 'response' && !isloadingDeliveryAttempts ? 'show' : '')">
 								<ng-container *ngIf="!eventDeliveryAtempt?.error">
-									<h3>Header</h3>
+									<h4>Header</h4>
 									<prism language="json" [code]="getCodeSnippetString('res_head')"></prism>
 
-									<h3>Body</h3>
+									<h4>Body</h4>
 									<prism language="json" [code]="getCodeSnippetString('res_body')"></prism>
 								</ng-container>
 
 								<ng-container *ngIf="eventDeliveryAtempt?.error">
-									<h3>Error</h3>
+									<h4>Error</h4>
 									<prism language="json" [code]="getCodeSnippetString('error')"></prism>
 								</ng-container>
 							</div>
 
 							<div [class]="'dashboard--logs--details--tabs-data ' + (eventDetailsActiveTab === 'request' && !isloadingDeliveryAttempts ? 'show' : '')">
-								<h3>Header</h3>
+								<h4>Header</h4>
 								<prism language="json" [code]="getCodeSnippetString('req')"></prism>
 							</div>
 						</div>
@@ -899,7 +899,7 @@
 						<h3>Details</h3>
 						<div class="dashboard--logs--details--req-res">
 							<div class="dashboard--logs--details--tabs-data show">
-								<h3>Event</h3>
+								<h4>Event</h4>
 								<prism language="json" [code]="getCodeSnippetString('event')"></prism>
 							</div>
 						</div>
