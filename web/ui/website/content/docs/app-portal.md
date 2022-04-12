@@ -13,7 +13,7 @@ We extended the visibility we provide you on the Convoy dashboard to your users 
 
 App portal to be usable in three different ways:
 
-1. **As a web component**: enabling you to install it into your existing customer application (that's ease). App portal is currently available for the three of the most popular Angular, React and Vue.
+1. **As a web component**: enabling you to install it into your existing customer application (that's ease). App portal is currently available for two of the most popular Javascript frameworks, Angular and React.
 2. **Through a link**: you can just open in a new tab and share with a customer quickly. Note: the token expires, i.e the link will be usable for a limited period of time.
 3. **Through an iframe**: you can embed into a vanilla HTML/Javascript application, copy the iframe code from the dashboard and past in to code.
 
@@ -29,9 +29,27 @@ As explained above, the iframe code snippet was made available as the easiest to
 
 ## App Portal Web Components
 
+### React
+
+Adding App Portal to your React application can be done in two steps:
+
+1. Run `npm i convoy-app-react` in your existing React application to install the package
+2. Add `ConvoyApp` to your desired page
+
+```javascript[app.js]
+import { ConvoyApp } from 'convoy-app-react';
+import 'convoy-app-react/dist/index.css';
+
+...
+
+<ConvoyApp token={'token'} apiURL={'apiURL'} />
+
+...
+```
+
 ### Angular
 
-You can get started with using App Portal in your Angular application by following the three simple steps below:
+You can get started with using App Portal in your Angular application by following these simple steps below:
 
 1. Run `npm i convoy-app` in your existing Angular application to install the package
 2. Run `ng add @angular/material` in your existing Angular application to install angular material
@@ -78,21 +96,5 @@ import { ConvoyAppModule } from 'convoy-app';
 ...
 ```
 
-### React
 
-Adding App Portal to your React application can be done in two steps:
-
-1. Run `npm i convoy-app-react` in your existing React application to install the package
-2. Add `ConvoyApp` to your desired page
-
-```javascript[app.js]
-import { ConvoyApp } from 'convoy-app-react';
-import 'convoy-app-react/dist/index.css';
-
-...
-
-<ConvoyApp token={'token'} apiURL={'apiURL'} />
-
-...
-```
 
