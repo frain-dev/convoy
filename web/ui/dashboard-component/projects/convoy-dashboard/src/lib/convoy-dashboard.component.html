@@ -481,8 +481,8 @@
 										<td></td>
 									</tr>
 									<tr
-										*ngFor="let event of eventGroup.events; let index = index"
-										[ngClass]="{ active: event.uid === eventsDetailsItem?.uid, 'last-item': index === eventGroup.events.length - 1 }"
+										*ngFor="let event of eventGroup.content; let index = index"
+										[ngClass]="{ active: event.uid === eventsDetailsItem?.uid, 'last-item': index === eventGroup.content.length - 1 }"
 										[id]="'event' + i"
 										(click)="eventsDetailsItem = event; getEventDeliveriesForSidebar(event.uid)"
 									>
@@ -553,8 +553,8 @@
 										<td></td>
 									</tr>
 									<tr
-										*ngFor="let event of eventDeliveriesGroup.events; let index = index"
-										[ngClass]="{ 'last-item': index === eventDeliveriesGroup.events.length - 1, active: event.uid === eventDelsDetailsItem?.uid }"
+										*ngFor="let event of eventDeliveriesGroup.content; let index = index"
+										[ngClass]="{ 'last-item': index === eventDeliveriesGroup.content.length - 1, active: event.uid === eventDelsDetailsItem?.uid }"
 										[id]="'eventDel' + i"
 										(click)="eventDelsDetailsItem = event; getDelieveryAttempts(event.uid)"
 									>
@@ -613,7 +613,7 @@
 						<p>No event to show here</p>
 					</div>
 
-					<div class="table table--container has-loader" id="apps-table-container" [hidden]="activeTab !== 'apps' || apps.content.length === 0">
+					<div class="table table--container has-loader" id="apps-table-container" [hidden]="activeTab !== 'apps' || displayedApps.length === 0">
 						<convoy-loader id="apps_loader" *ngIf="isloadingApps"></convoy-loader>
 
 						<table id="table">
@@ -641,7 +641,7 @@
 										<td></td>
 									</tr>
 									<tr
-										*ngFor="let app of apps?.events; let index = index"
+										*ngFor="let app of apps?.content; let index = index"
 										[id]="'app' + i"
 										[ngClass]="{ active: app.uid === appsDetailsItem?.uid }"
 										(click)="appsDetailsItem = app; getAppPortalToken({ redirect: false })"
