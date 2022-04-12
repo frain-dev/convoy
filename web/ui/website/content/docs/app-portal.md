@@ -21,7 +21,7 @@ App portal to be usable in three different ways:
 
 ## App Portal Iframe
 
-As explained above, the iframe code snippet was made available as the easiest to present app portal to your customers. The token embedded into the iframe code expires, so you can use this [API](https://convoy.readme.io/reference/post_security-applications-appid-keys) to generate a new token whenever your user enters the page with the iframe. Simply replace the `key` gotten from the API response with `{token}` and also replace `{appId}` with your applications ID in the example below.
+As explained above, the iframe url snippet was made available as the easiest to present app portal to your customers. The token embedded into the iframe code expires, so you can use this [API](https://convoy.readme.io/reference/post_security-applications-appid-keys) to generate a new token whenever your user enters the page with the iframe. Replace the `key` gotten from the API response with `{token}`, replace `apiURL` with your Convoy instance and also replace `{appId}` with your applications ID in the example below.
 
 ```html[iframe snippet]
 <iframe style="width: 100%; height: 100vh; border: none;" src="{ apiURL }/app-portal/{ token }&appId={ appId }"></iframe>
