@@ -1,17 +1,16 @@
 <div class="auth-page">
+	<img src="/assets/img/logo.svg" alt="convoy logo" class="margin-bottom__28px" />
 	<section class="auth-page--container">
-		<img src="/assets/img/logo.svg" alt="convoy logo" />
-
 		<form [formGroup]="loginForm" (ngSubmit)="login()">
 			<div class="input">
-				<input type="text" id="username" name="username" autocomplete="username" formControlName="username" />
+				<input type="text" id="username" name="username" autocomplete="username" formControlName="username" required />
 				<label for="username">Username</label>
 			</div>
 
 			<div class="input">
-				<label htmlFor="password">Password</label>
 				<div class="input--password">
-					<input [type]="showLoginPassword ? 'text' : 'password'" id="password" name="password" autocomplete="current-password" formControlName="password" />
+					<input [type]="showLoginPassword ? 'text' : 'password'" id="password" name="password" autocomplete="current-password" formControlName="password" required />
+					<label htmlFor="password">Password</label>
 					<button class="input--password__view-toggle" type="button" (click)="showLoginPassword = !showLoginPassword">
 						<img
 							[src]="!showLoginPassword ? '/assets/img/password-invisible-icon.svg' : '/assets/img/password-visible-icon.svg'"

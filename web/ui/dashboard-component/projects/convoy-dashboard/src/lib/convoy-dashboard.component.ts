@@ -31,10 +31,11 @@ export class ConvoyDashboardComponent implements OnInit {
 	eventDateFilterActive = false;
 	displayedEvents!: {
 		date: string;
-		events: EVENT[];
+		content: EVENT[];
 	}[];
 	events!: { pagination: PAGINATION; content: EVENT[] };
 	apps!: { pagination: PAGINATION; content: APP[] };
+	displayedApps: { date: string; content: APP[] }[] = [];
 	filteredApps!: APP[];
 	eventDetailsTabs = [
 		{ id: 'data', label: 'Event' },
@@ -70,7 +71,7 @@ export class ConvoyDashboardComponent implements OnInit {
 	});
 	addNewAppForm: FormGroup = this.formBuilder.group({
 		name: ['', Validators.required],
-		support_email: ['', Validators.compose([Validators.required, Validators.email])],
+		support_email: [''],
 		is_disabled: [false],
 		endpoints: this.formBuilder.array([])
 	});
@@ -85,7 +86,7 @@ export class ConvoyDashboardComponent implements OnInit {
 		event_type: ['', Validators.required]
 	});
 	selectedEventsFromEventDeliveriesTable: string[] = [];
-	displayedEventDeliveries: { date: string; events: EVENT_DELIVERY[] }[] = [];
+	displayedEventDeliveries: { date: string; content: EVENT_DELIVERY[] }[] = [];
 	eventDeliveries!: { pagination: PAGINATION; content: EVENT_DELIVERY[] };
 	sidebarEventDeliveries!: EVENT_DELIVERY[];
 	eventDeliveryFilteredByEventId = '';
@@ -243,6 +244,7 @@ export class ConvoyDashboardComponent implements OnInit {
 			(<any>Object).values(this.addNewAppForm.controls).forEach((control: FormControl) => {
 				control?.markAsTouched();
 			});
+			console.log(this.addNewAppForm.controls)
 			return;
 		}
 		this.isCreatingNewApp = true;
@@ -269,10 +271,10 @@ export class ConvoyDashboardComponent implements OnInit {
 		this.isDeletingApp = true;
 		try {
 			const response = await this.convyDashboardService.deleteApp({ appId: this.appsDetailsItem?.uid });
-			this.appsDetailsItem = {};
+			// this.appsDetailsItem = {};
 			this.convyDashboardService.showNotification({ message: response.message });
-			this.toggleActiveTab('apps');
 			this.getApps({ type: 'apps' });
+			this.toggleActiveTab('apps');
 			this.showDeleteAppModal = false;
 			this.isDeletingApp = false;
 		} catch {
@@ -647,16 +649,16 @@ export class ConvoyDashboardComponent implements OnInit {
 		return `${day} ${months[month]}, ${year}`;
 	}
 
-	setEventsDisplayed(events: { created_at: Date }[]) {
-		const dateCreateds = events.map((event: { created_at: Date }) => this.getDate(event.created_at));
+	setContentDisplayed(content: { created_at: Date }[]) {
+		const dateCreateds = content.map((item: { created_at: Date }) => this.getDate(item.created_at));
 		const uniqueDateCreateds = [...new Set(dateCreateds)];
-		const displayedEvents: any = [];
-		uniqueDateCreateds.forEach(eventDate => {
-			const filteredEventDate = events.filter((event: { created_at: Date }) => this.getDate(event.created_at) === eventDate);
-			const eventsItem = { date: eventDate, events: filteredEventDate };
-			displayedEvents.push(eventsItem);
+		const displayedItems: any = [];
+		uniqueDateCreateds.forEach(itemDate => {
+			const filteredItemDate = content.filter((item: { created_at: Date }) => this.getDate(item.created_at) === itemDate);
+			const contents = { date: itemDate, content: filteredItemDate };
+			displayedItems.push(contents);
 		});
-		return displayedEvents;
+		return displayedItems;
 	}
 
 	async getEvents(requestDetails?: { appId?: string; addToURL?: boolean; fromFilter?: boolean }): Promise<HTTP_RESPONSE> {
@@ -674,13 +676,13 @@ export class ConvoyDashboardComponent implements OnInit {
 				const content = [...this.events.content, ...eventsResponse.data.content];
 				const pagination = eventsResponse.data.pagination;
 				this.events = { content, pagination };
-				this.displayedEvents = this.setEventsDisplayed(content);
+				this.displayedEvents = this.setContentDisplayed(content);
 				this.isloadingMoreEvents = false;
 				return eventsResponse;
 			}
 
 			this.events = eventsResponse.data;
-			this.displayedEvents = await this.setEventsDisplayed(eventsResponse.data.content);
+			this.displayedEvents = await this.setContentDisplayed(eventsResponse.data.content);
 
 			// if this is a filter request, set the eventsDetailsItem to the first item in the list
 			if (requestDetails?.fromFilter) {
@@ -796,13 +798,13 @@ export class ConvoyDashboardComponent implements OnInit {
 				const content = [...this.eventDeliveries.content, ...eventDeliveriesResponse.data.content];
 				const pagination = eventDeliveriesResponse.data.pagination;
 				this.eventDeliveries = { content, pagination };
-				this.displayedEventDeliveries = this.setEventsDisplayed(content);
+				this.displayedEventDeliveries = this.setContentDisplayed(content);
 				this.isloadingMoreEventDeliveries = false;
 				return eventDeliveriesResponse;
 			}
 
 			this.eventDeliveries = eventDeliveriesResponse.data;
-			this.displayedEventDeliveries = this.setEventsDisplayed(eventDeliveriesResponse.data.content);
+			this.displayedEventDeliveries = this.setContentDisplayed(eventDeliveriesResponse.data.content);
 
 			// if this is a filter request, set the eventDelsDetailsItem to the first item in the list
 			if (requestDetails?.fromFilter) {
@@ -874,11 +876,15 @@ export class ConvoyDashboardComponent implements OnInit {
 				const content = [...this.apps.content, ...appsResponse.data.content];
 				const pagination = appsResponse.data.pagination;
 				this.apps = { content, pagination };
+				this.displayedApps = this.setContentDisplayed(this.apps.content)
 				this.isloadingMoreApps = false;
 				return appsResponse;
 			}
 
-			if (requestDetails?.type === 'apps') this.apps = appsResponse.data;
+			if (requestDetails?.type === 'apps'){
+				this.apps = appsResponse.data;
+				this.displayedApps = this.setContentDisplayed(this.apps.content)
+			} 
 			if (!this.filteredApps) this.filteredApps = appsResponse.data.content;
 
 			if (this.updateAppDetail) this.appsDetailsItem = this.apps.content.find(item => this.appsDetailsItem?.uid == item.uid);
