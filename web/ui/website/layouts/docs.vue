@@ -19,20 +19,20 @@
 					<nuxt-link to="/docs/guide">Quick Start Guide</nuxt-link>
 				</li>
 				<li v-for="(page, index) in pages" :key="index">
-					<template v-if="page.id !== 'guide' && page.id !== 'index'">
+					<div v-show="page.id !== 'guide' && page.id !== 'index'">
 						<nuxt-link :to="'/docs/' + page.id">
 							<img src="~/assets/images/angle-down-icon.svg" alt="angle right" />
 							{{ page.title }}
 						</nuxt-link>
 
-						<ul v-if="page.toc.length > 0" class="" :class="{ show: currentPage == page.id }">
+						<ul v-show="page.toc.length > 0" class="" :class="{ show: currentPage == page.id }">
 							<li v-for="(subpage, index) in page.toc" :key="index">
 								<nuxt-link :to="{ path: '/docs/' + page.id, hash: '#' + subpage.id }">
 									{{ subpage.text }}
 								</nuxt-link>
 							</li>
 						</ul>
-					</template>
+					</div>
 				</li>
 			</ul>
 		</aside>
