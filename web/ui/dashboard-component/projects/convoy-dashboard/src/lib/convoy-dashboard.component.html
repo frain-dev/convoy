@@ -135,15 +135,15 @@
 					</li>
 					<div class="color__grey font__14px font__weight-500 font--nowrap margin-left--auto padding-right__14px">
 						<span [hidden]="activeTab !== 'events'">
-							{{ events && events.pagination.total > 0 ? 1 : 0 }} - {{ events && events.pagination.total < 20 ? events.pagination.total : events.content.length }} of
+							{{ events && events.pagination.total > 0 ? 1 : 0 }} - {{ events && events.pagination.total < 20 ? events.pagination.total : events?.content?.length }} of
 							{{ events?.pagination?.total }}
 						</span>
 						<span [hidden]="activeTab !== 'event deliveries'">
 							{{ eventDeliveries && eventDeliveries.pagination.total > 0 ? 1 : 0 }} -
-							{{ eventDeliveries && eventDeliveries.pagination.total < 20 ? eventDeliveries.pagination.total : eventDeliveries.content.length }} of {{ eventDeliveries?.pagination?.total }}
+							{{ eventDeliveries && eventDeliveries.pagination.total < 20 ? eventDeliveries.pagination.total : eventDeliveries?.content?.length }} of {{ eventDeliveries?.pagination?.total }}
 						</span>
 						<span [hidden]="activeTab !== 'apps'">
-							{{ apps && apps.pagination.total > 0 ? 1 : 0 }} - {{ apps && apps.pagination.total < 20 ? apps.pagination.total : apps.content.length }} of {{ apps?.pagination?.total }}
+							{{ apps && apps.pagination.total > 0 ? 1 : 0 }} - {{ apps && apps.pagination.total < 20 ? apps.pagination.total : apps?.content?.length }} of {{ apps?.pagination?.total }}
 						</span>
 					</div>
 				</div>
