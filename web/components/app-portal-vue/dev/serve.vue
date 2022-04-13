@@ -13,6 +13,6 @@ export default defineComponent({
 
 <template>
 	<div id="app">
-		<convoy-app token="CO.UvCLgr14E0zaNryL.i1zUDL5tCaDUiK1I6QA7AiKDdbzGfrEmCFkppdDJzAJZgVB57O7GmgbX3H3yhqZe" apiURL="http://localhost:5005" />
+		<convoy-app token="CO.be5zR6Wgt9PmLt0p.z6loCYaL86jz4xVuRlDzYN2BForQQUV7CQktnvpsmSz2ZTEI1X8HUzOEpMkudpIW" apiURL="http://localhost:5005" />
 	</div>
 </template>
