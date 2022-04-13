@@ -135,14 +135,15 @@
 					</li>
 					<div class="color__grey font__14px font__weight-500 font--nowrap margin-left--auto padding-right__14px">
 						<span [hidden]="activeTab !== 'events'">
-							{{ events && events.pagination.total > 0 ? 1 : 0 }} - {{ events && events.pagination.total < 20 ? events.pagination.total : eventsPage * 20 }} of {{ events?.pagination?.total }}
+							{{ events && events.pagination.total > 0 ? 1 : 0 }} - {{ events && events.pagination.total < 20 ? events.pagination.total : events.content.length }} of
+							{{ events?.pagination?.total }}
 						</span>
 						<span [hidden]="activeTab !== 'event deliveries'">
 							{{ eventDeliveries && eventDeliveries.pagination.total > 0 ? 1 : 0 }} -
-							{{ eventDeliveries && eventDeliveries.pagination.total < 20 ? eventDeliveries.pagination.total : eventDeliveriesPage * 20 }} of {{ eventDeliveries?.pagination?.total }}
+							{{ eventDeliveries && eventDeliveries.pagination.total < 20 ? eventDeliveries.pagination.total : eventDeliveries.content.length }} of {{ eventDeliveries?.pagination?.total }}
 						</span>
 						<span [hidden]="activeTab !== 'apps'">
-							{{ apps && apps.pagination.total > 0 ? 1 : 0 }} - {{ apps && apps.pagination.total < 20 ? apps.pagination.total : appsPage * 20 }} of {{ apps?.pagination?.total }}
+							{{ apps && apps.pagination.total > 0 ? 1 : 0 }} - {{ apps && apps.pagination.total < 20 ? apps.pagination.total : apps.content.length }} of {{ apps?.pagination?.total }}
 						</span>
 					</div>
 				</div>
@@ -710,7 +711,7 @@
 						</div>
 					</div>
 
-					<div class="empty-state table--container" id="apps-empty-state" *ngIf="apps?.content?.length === 0 && activeTab === 'apps'">
+					<div class="empty-state table--container" id="apps-empty-state" *ngIf="displayedApps?.length === 0 && activeTab === 'apps'">
 						<img src="/assets/img/empty-state-img.svg" alt="empty state" />
 						<p>No app to show here</p>
 					</div>
@@ -1054,7 +1055,7 @@
 	<div class="modal--body" *ngIf="showAddEndpointModal">
 		<form [formGroup]="addNewEndpointForm">
 			<div class="input">
-				<input type="text" formControlName="description" required />
+				<input type="text" formControlName="description" [ngClass]="{ danger: addNewEndpointForm.controls.description.touched && addNewEndpointForm.controls.description.invalid }" required />
 				<label for="">Description</label>
 				<div class="input__error input__error__danger" *ngIf="addNewEndpointForm.controls.description.touched && addNewEndpointForm.controls.description.invalid">
 					<img src="assets/img/input-error-icon.svg" alt="input error icon" />
@@ -1062,7 +1063,7 @@
 				</div>
 			</div>
 			<div class="input">
-				<input type="text" formControlName="url" required />
+				<input type="text" formControlName="url" [ngClass]="{ danger: addNewEndpointForm.controls.url.touched && addNewEndpointForm.controls.url.invalid }" required />
 				<label for="">Enter URL</label>
 				<div class="input__error input__error__danger" *ngIf="addNewEndpointForm.controls.url.touched && addNewEndpointForm.controls.url.invalid">
 					<img src="assets/img/input-error-icon.svg" alt="input error icon" />
@@ -1103,7 +1104,7 @@
 	<div class="modal--body" *ngIf="showAddEventModal">
 		<form [formGroup]="sendEventForm">
 			<div class="input">
-				<select formControlName="app_id" required>
+				<select class="editMode" formControlName="app_id">
 					<option *ngFor="let app of apps?.content" [value]="app.uid">{{ app.name }}</option>
 				</select>
 				<label for="">App ID</label>
@@ -1113,7 +1114,7 @@
 				</div>
 			</div>
 			<div class="input">
-				<textarea formControlName="data" required cols="5"></textarea>
+				<textarea formControlName="data" required cols="5" [ngClass]="{ danger: sendEventForm.controls.data.touched && sendEventForm.controls.data.invalid }"></textarea>
 				<label for="">Data</label>
 				<div class="input__error input__error__danger" *ngIf="sendEventForm.controls.data.touched && sendEventForm.controls.data.invalid">
 					<img src="assets/img/input-error-icon.svg" alt="input error icon" />
@@ -1125,7 +1126,7 @@
 				</div>
 			</div>
 			<div class="input">
-				<input type="text" formControlName="event_type" required />
+				<input type="text" formControlName="event_type" [ngClass]="{ danger: sendEventForm.controls.event_type.touched && sendEventForm.controls.event_type.invalid }" required />
 				<label for="">Event Type</label>
 				<div class="input__error input__error__danger" *ngIf="sendEventForm.controls.event_type.touched && sendEventForm.controls.event_type.invalid">
 					<img src="assets/img/input-error-icon.svg" alt="input error icon" />
