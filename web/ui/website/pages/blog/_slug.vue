@@ -8,10 +8,7 @@
 					<span class="breadcrumb--divider">|</span>
 					<span class="breadcrumb__tag">{{ blogPost.primary_tag.name }}</span>
 				</div>
-				<!-- <nuxt-link tag="button" to="/blog" class="back-button">
-					<img src="~/assets/images/angle-left-black-icon.svg" alt="back icon" />
-				</nuxt-link> -->
-				<!-- <div class="tag">{{ blogPost.primary_tag.name }}</div> -->
+				
 				<div class="date">
 					{{ blogPost.reading_time }} min read
 					<span><img src="~/assets/images/ellipse.svg" alt="ellipse" /></span>
@@ -52,40 +49,8 @@
 				</ul>
 			</div>
 
-			<!-- <div class="post-page--loader">
-				<div></div>
-			</div> -->
-
 			<div class="post-page--content">
-				<!-- <aside>
-					<div>
-						Current CMS doesn't support this
-						<ul>
-							<h3>CONTENTS</h3>
-
-							<li v-for="(heading, index) in blogPost.toc" :key="'heading' + index">
-								<nuxt-link :to="{ path: '/blog/' + blogPost.slug, hash: '#' + heading.id }">{{ heading.text }}</nuxt-link>
-							</li>
-						</ul>
-
-						<div class="social">
-							<h3>Share Via</h3>
-
-							<ul class="socials">
-								<li>
-									<a
-										rel="noopener noreferrer"
-										:href="'https://twitter.com/intent/tweet/?text=' + blogPost.title + '%20from%20@fraindev&url=https://getconvoy.io/blog/' + blogPost.slug + '&via=frainDev'"
-										target="_blank"
-									>
-										<img src="~/assets/images/twitter-grey-icon.svg" alt="twitter logo" />
-									</a>
-								</li>
-							</ul>
-						</div>
-					</div>
-				</aside> -->
-
+				
 				<main>
 					<div class="post-page--body">
 						<div v-html="blogPost.html"></div>
@@ -437,12 +402,7 @@ main {
 			}
 		}
 
-		// .tag {
-		// 	font-weight: bold;
-		// 	font-size: 15px;
-		// 	line-height: 140%;
-		// 	text-transform: uppercase;
-		// }
+		
 
 		.date {
 			font-weight: 500;

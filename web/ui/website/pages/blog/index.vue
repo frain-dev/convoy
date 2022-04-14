@@ -294,7 +294,6 @@ main {
 
 		@media (min-width: $desktopBreakPoint) {
 			max-width: 470px;
-			// padding-bottom: 40px;
 		}
 	}
 }
