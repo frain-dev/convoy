@@ -426,6 +426,82 @@ func TestGroupService_GetGroups(t *testing.T) {
 			wantErr: false,
 		},
 		{
+			name: "should_get_groups_trims-whitespaces-from-query",
+			args: args{
+				ctx:    ctx,
+				filter: &datastore.GroupFilter{Names: []string{" default_group "}},
+			},
+			dbFn: func(gs *GroupService) {
+				g, _ := gs.groupRepo.(*mocks.MockGroupRepository)
+				g.EXPECT().LoadGroups(gomock.Any(), &datastore.GroupFilter{Names: []string{"default_group"}}).
+					Times(1).Return([]*datastore.Group{
+					{UID: "123"},
+					{UID: "abc"},
+				}, nil)
+
+				a, _ := gs.appRepo.(*mocks.MockApplicationRepository)
+				a.EXPECT().CountGroupApplications(gomock.Any(), gomock.Any()).Times(2).Return(int64(1), nil)
+
+				e, _ := gs.eventRepo.(*mocks.MockEventRepository)
+				e.EXPECT().CountGroupMessages(gomock.Any(), gomock.Any()).Times(2).Return(int64(1), nil)
+			},
+			wantGroups: []*datastore.Group{
+				{
+					UID: "123",
+					Statistics: &datastore.GroupStatistics{
+						MessagesSent: 1,
+						TotalApps:    1,
+					},
+				},
+				{
+					UID: "abc",
+					Statistics: &datastore.GroupStatistics{
+						MessagesSent: 1,
+						TotalApps:    1,
+					},
+				},
+			},
+			wantErr: false,
+		},
+		{
+			name: "should_get_groups_trims-whitespaces-from-query-retains-case",
+			args: args{
+				ctx:    ctx,
+				filter: &datastore.GroupFilter{Names: []string{"  deFault_Group"}},
+			},
+			dbFn: func(gs *GroupService) {
+				g, _ := gs.groupRepo.(*mocks.MockGroupRepository)
+				g.EXPECT().LoadGroups(gomock.Any(), &datastore.GroupFilter{Names: []string{"deFault_Group"}}).
+					Times(1).Return([]*datastore.Group{
+					{UID: "123"},
+					{UID: "abc"},
+				}, nil)
+
+				a, _ := gs.appRepo.(*mocks.MockApplicationRepository)
+				a.EXPECT().CountGroupApplications(gomock.Any(), gomock.Any()).Times(2).Return(int64(1), nil)
+
+				e, _ := gs.eventRepo.(*mocks.MockEventRepository)
+				e.EXPECT().CountGroupMessages(gomock.Any(), gomock.Any()).Times(2).Return(int64(1), nil)
+			},
+			wantGroups: []*datastore.Group{
+				{
+					UID: "123",
+					Statistics: &datastore.GroupStatistics{
+						MessagesSent: 1,
+						TotalApps:    1,
+					},
+				},
+				{
+					UID: "abc",
+					Statistics: &datastore.GroupStatistics{
+						MessagesSent: 1,
+						TotalApps:    1,
+					},
+				},
+			},
+			wantErr: false,
+		},
+		{
 			name: "should_fail_to_get_groups",
 			args: args{
 				ctx:    ctx,
