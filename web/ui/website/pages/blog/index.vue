@@ -250,8 +250,8 @@ main {
 }
 
 .featured {
-	margin-top: 48px;
-	padding: 49px 11px 0;
+	margin-top: 32px;
+	padding: 32px 11px 0;
 	overflow: hidden;
 	position: relative;
 	max-width: 970px;
@@ -265,8 +265,6 @@ main {
 	}
 
 	& > .img {
-		margin-top: 20px;
-
 		@media (min-width: $desktopBreakPoint) {
 			width: 380px;
 			right: 0;

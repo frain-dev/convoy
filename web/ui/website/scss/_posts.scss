@@ -4,7 +4,9 @@
 	gap: 62px 48px;
 	max-width: 970px;
 	margin-top: 48px;
-
+	&.featured {
+		gap: 0 0;
+	}
 	.post {
 		width: 100%;
 		background: #ffffff;
@@ -70,10 +72,13 @@
 		&--footer {
 			margin: 18px 15px 26px;
 			display: flex;
+			flex-flow: column;
 			flex-wrap: wrap;
 			justify-content: space-between;
-			align-items: center;
-
+			@media (min-width: $desktopBreakPoint) {
+				align-items: center;
+				flex-flow: row;
+			}
 			&.single-feature {
 				margin: 27px 0 26px;
 			}
@@ -85,7 +90,6 @@
 				font-size: 14px;
 				line-height: 22px;
 				font-size: 12px;
-
 				img {
 					width: 20px;
 				}
@@ -95,7 +99,7 @@
 		&--author {
 			display: flex;
 			align-items: flex-start;
-
+			margin-bottom: 40px;
 			.img {
 				width: 40px;
 				height: 40px;
@@ -144,9 +148,5 @@
 				width: 100%;
 			}
 		}
-	}
-
-	&.featured {
-		gap: 30px 30px;
 	}
 }

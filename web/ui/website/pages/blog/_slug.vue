@@ -8,7 +8,7 @@
 					<span class="breadcrumb--divider">|</span>
 					<span class="breadcrumb__tag">{{ blogPost.primary_tag.name }}</span>
 				</div>
-				
+
 				<div class="date">
 					{{ blogPost.reading_time }} min read
 					<span><img src="~/assets/images/ellipse.svg" alt="ellipse" /></span>
@@ -28,29 +28,30 @@
 						<p>{{ blogPost.primary_author.meta_title }} Convoy</p>
 					</div>
 				</a>
-				<ul class="socials">
-					<li>
-						<a target="_blank" rel="noopener noreferrer" href="https://join.slack.com/t/convoy-community/shared_invite/zt-xiuuoj0m-yPp~ylfYMCV9s038QL0IUQ">
-							<img src="~/assets/images/slack-grey-icon.svg" alt="slack logo" />
-						</a>
-					</li>
-					<li>
-						<a target="_blank" rel="noopener noreferrer" href="https://github.com/frain-dev/convoy"><img src="~/assets/images/github-grey-icon.svg" alt="mail logo" /></a>
-					</li>
-					<li>
-						<a
-							rel="noopener noreferrer"
-							:href="'https://twitter.com/intent/tweet/?text=' + blogPost.title + '%20from%20@fraindev&url=https://getconvoy.io/blog/' + blogPost.slug + '&via=frainDev'"
-							target="_blank"
-						>
-							<img src="~/assets/images/twitter-grey-icon.svg" alt="twitter logo" />
-						</a>
-					</li>
-				</ul>
+				<div>
+					<p>Share to:</p>
+					<ul class="socials">
+						<li>
+							<a
+								rel="noopener noreferrer"
+								:href="'https://twitter.com/intent/tweet/?text=' + blogPost.title + '%20from%20@fraindev&url=https://getconvoy.io/blog/' + blogPost.slug + '&via=frainDev'"
+								target="_blank"
+							>
+								<img src="~/assets/images/twitter-grey-icon.svg" alt="twitter logo" />
+							</a>
+						</li>
+
+						<li>
+							<a rel="noopener noreferrer" :href="'https://www.linkedin.com/sharing/share-offsite/?mini=true&url=https://getconvoy.io/blog/' + blogPost.slug + ''" target="_blank">
+								<img src="~/assets/images/linkedin-grey-icon.svg" alt="linkedin logo" />
+							</a>
+						</li>
+
+					</ul>
+				</div>
 			</div>
 
 			<div class="post-page--content">
-				
 				<main>
 					<div class="post-page--body">
 						<div v-html="blogPost.html"></div>
@@ -301,8 +302,13 @@ $desktopBreakPoint: 880px;
 	padding: 0;
 }
 .blog-post {
-	width: 780px;
+	max-width: 780px;
+	width: 100%;
 	margin: 0 auto;
+	padding: 0 20px;
+	@media (min-width: $desktopBreakPoint) {
+		padding: 0;
+	}
 }
 
 aside {
@@ -380,10 +386,14 @@ main {
 
 	&--head {
 		display: flex;
-		align-items: center;
 		width: 100%;
-		justify-content: space-between;
+		flex-flow: column;
 
+		@media (min-width: $desktopBreakPoint) {
+			flex-flow: row;
+			align-items: center;
+			justify-content: space-between;
+		}
 		button {
 			padding: 0;
 			font-weight: 500;
@@ -402,18 +412,20 @@ main {
 			}
 		}
 
-		
-
 		.date {
 			font-weight: 500;
 			font-size: 14px;
 			line-height: 24px;
 			color: #000624;
 			display: flex;
+			margin-top: 16px;
 			img {
 				width: 4px;
 				height: 4px;
 				margin: 0 7px 2px 7px;
+			}
+			@media (min-width: $desktopBreakPoint) {
+				margin-top: unset;
 			}
 		}
 	}
@@ -470,7 +482,7 @@ main {
 
 	&--author {
 		display: flex;
-		align-items: center;
+		align-items: flex-end;
 		justify-content: space-between;
 		margin-bottom: 56px;
 
@@ -511,6 +523,7 @@ main {
 			font-size: 14px;
 			line-height: 22px;
 			color: #31323d;
+			margin-bottom: 7px;
 		}
 	}
 
