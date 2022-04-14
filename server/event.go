@@ -169,11 +169,7 @@ func (a *applicationHandler) BatchRetryEventDelivery(w http.ResponseWriter, r *h
 // @Security ApiKeyAuth
 // @Router /eventdeliveries/countbatchretryevents [get]
 func (a *applicationHandler) CountAffectedEventDeliveries(w http.ResponseWriter, r *http.Request) {
-	group := getGroupFromContext(r.Context())
-	appID := r.URL.Query().Get("appId")
-	eventID := r.URL.Query().Get("eventId")
 	status := make([]datastore.EventDeliveryStatus, 0)
-
 	for _, s := range r.URL.Query()["status"] {
 		if !util.IsStringEmpty(s) {
 			status = append(status, datastore.EventDeliveryStatus(s))
@@ -186,7 +182,15 @@ func (a *applicationHandler) CountAffectedEventDeliveries(w http.ResponseWriter,
 		return
 	}
 
-	count, err := a.eventService.CountAffectedEventDeliveries(r.Context(), group, appID, eventID, status, searchParams)
+	f := &datastore.Filter{
+		Group:        getGroupFromContext(r.Context()),
+		AppID:        r.URL.Query().Get("appId"),
+		EventID:      r.URL.Query().Get("eventId"),
+		Status:       status,
+		SearchParams: searchParams,
+	}
+
+	count, err := a.eventService.CountAffectedEventDeliveries(r.Context(), f)
 	if err != nil {
 		_ = render.Render(w, r, newServiceErrResponse(err))
 		return
