@@ -5,7 +5,7 @@
 		</div>
 		<div class="tag clear">{{ post.tag }}</div>
 		<nuxt-link :to="'/blog/' + post.slug">
-			<h3 class="post--title small">{{ post.title }}</h3>
+			<h3 class="post--title">{{ post.title }}</h3>
 		</nuxt-link>
 		<p class="post--body">{{ post.custom_excerpt }}</p>
 		<div class="post--footer">

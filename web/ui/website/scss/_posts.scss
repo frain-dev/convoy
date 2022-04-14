@@ -7,6 +7,10 @@
 
 	.post {
 		width: 100%;
+		background: #ffffff;
+		box-shadow: 40px 44px 81px rgba(111, 118, 138, 0.08);
+		border-radius: 8px;
+		padding: 10px;
 
 		.tag {
 			padding: 3px 16px;
@@ -38,34 +42,41 @@
 		}
 
 		&--body {
-			font-size: 16px;
-			line-height: 24px;
-			color: #737a91;
+			font-weight: 400;
+			font-size: 14px;
+			line-height: 22px;
+			color: #31323d;
+			margin: 0 15px 16px;
+			&.single-feature {
+				margin: 0 0 16px;
+			}
 		}
 
 		&--title {
-			font-weight: bold;
-			line-height: 42px;
 			color: #16192c;
-			margin: 16px 0 14px;
+			margin: 0 15px 16px;
+			font-weight: 700;
 			font-size: 24px;
+			line-height: 32px;
 
-			@media (min-width: $desktopBreakPoint) {
-				font-size: 32px;
+			&.single-feature {
+				margin: 0 0 16px;
 			}
-
 			&.small {
 				font-size: 21px;
 			}
 		}
 
 		&--footer {
-			margin-top: 29px;
+			margin: 18px 15px 26px;
 			display: flex;
 			flex-wrap: wrap;
 			justify-content: space-between;
-			align-items: flex-end;
+			align-items: center;
 
+			&.single-feature {
+				margin: 27px 0 26px;
+			}
 			a {
 				display: flex;
 				align-items: center;
@@ -117,20 +128,25 @@
 		}
 
 		&--img {
-			margin-bottom: 28px;
+			border-radius: 4px;
+			margin-bottom: 21px;
 			width: 100%;
-			border-radius: 8px 8px 0px 0px;
 			overflow: hidden;
-			border: 1px solid #edf2f7;
+			// border: 1px solid #edf2f7;
 			box-sizing: border-box;
 			backdrop-filter: blur(3.4767px);
-			border-radius: 6.95339px 6.95339px 0px 0px;
-			height: 200px;
-
+			height: 171px;
+			@media (min-width: $desktopBreakPoint) {
+				margin-bottom: 41px;
+			}
 			img {
-				border-radius: 8px 8px 0px 0px;
+				border-radius: 4px;
 				width: 100%;
 			}
 		}
+	}
+
+	&.featured {
+		gap: 30px 30px;
 	}
 }

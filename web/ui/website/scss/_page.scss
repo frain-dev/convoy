@@ -51,8 +51,7 @@ footer {
 	li {
 		width: 42px;
 		height: 42px;
-		background: rgba(255, 255, 255, 0.1);
-		padding: 11px;
+		background: rgb(49, 50, 61, 0.1);
 		display: flex;
 		align-items: center;
 		justify-content: center;
@@ -62,6 +61,7 @@ footer {
 			margin-right: 16px;
 		}
 	}
+	
 }
 
 .newsletter {

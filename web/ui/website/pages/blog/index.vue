@@ -56,10 +56,10 @@
 						<div class="date">{{ featurePosts[0].published_at | date }}</div>
 					</div>
 					<nuxt-link :to="'/blog/' + featurePosts[0].slug">
-						<h3 class="post--title">{{ featurePosts[0].title }}</h3>
+						<h3 class="post--title single-feature">{{ featurePosts[0].title }}</h3>
 					</nuxt-link>
-					<p class="post--body">{{ featurePosts[0].excerpt }}...</p>
-					<div class="post--footer">
+					<p class="post--body single-feature">{{ featurePosts[0].excerpt }}...</p>
+					<div class="post--footer single-feature">
 						<a :href="featurePosts[0].primary_author.twitter ? 'http://twitter.com/' + featurePosts[0].primary_author.twitter : ''" target="_blank" class="post--author">
 							<div class="img">
 								<img :src="featurePosts[0].primary_author.profile_image" alt="author imge" />
@@ -268,7 +268,7 @@ main {
 		margin-top: 20px;
 
 		@media (min-width: $desktopBreakPoint) {
-			width: 367px;
+			width: 380px;
 			right: 0;
 			bottom: 0;
 			margin-top: 0;
@@ -290,10 +290,11 @@ main {
 	.post {
 		max-width: unset;
 		width: 100%;
+		box-shadow: unset;
 
 		@media (min-width: $desktopBreakPoint) {
 			max-width: 470px;
-			padding-bottom: 40px;
+			// padding-bottom: 40px;
 		}
 	}
 }
