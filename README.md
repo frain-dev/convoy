@@ -56,7 +56,7 @@ To build Convoy from source code, you need:
 
 ```bash
 git clone https://github.com/frain-dev/convoy.git && cd convoy
-go build -o convoy ./convoy
+go build -o convoy ./cmd
 ```
 
 ## Contributing
