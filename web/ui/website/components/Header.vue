@@ -128,7 +128,7 @@ nav {
 	@media (min-width: $desktopBreakPoint) {
 		padding: 32px 20px;
 		&.extraPadding {
-			padding: 80px 20px 21px 20px;
+			padding: 52px 20px 12px 20px;
 		}
 	}
 
