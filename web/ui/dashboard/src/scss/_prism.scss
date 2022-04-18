@@ -29,7 +29,7 @@ pre[class*='language-'] {
 
 :not(pre) > code[class*='language-'],
 pre[class*='language-'] {
-	background: #fbfbfb;
+	background: rgb(220, 220, 220, 0.1);
 }
 
 :not(pre) > code[class*='language-'] {

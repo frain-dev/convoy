@@ -94,7 +94,7 @@ describe('ConvoyDashboardComponent', () => {
 
 		const groupConfigContainer: HTMLElement = fixture.debugElement.nativeElement.querySelector('#group-config');
 		expect(groupConfigContainer).toBeTruthy();
-		const configUiItems = groupConfigContainer.querySelectorAll('.list-item--item');
+		const configUiItems = groupConfigContainer.querySelectorAll('.list-item-inline--item');
 		configUiItems.forEach(element => {
 			expect(element.textContent).toBeTruthy();
 		});
@@ -151,7 +151,7 @@ describe('ConvoyDashboardComponent', () => {
 		expect(eventsTableContainer.querySelectorAll('#table thead th').length).toEqual(4);
 		expect(component.displayedEvents.length === eventsTableContainer.querySelectorAll('#table tbody .table--date-row').length).toBeTrue();
 		component.displayedEvents.forEach((event, index) => {
-			expect(event.events.length === eventsTableContainer.querySelectorAll('#table tbody tr#event' + index).length).toBeTrue();
+			expect(event.content.length === eventsTableContainer.querySelectorAll('#table tbody tr#event' + index).length).toBeTrue();
 		});
 	}));
 
@@ -188,6 +188,7 @@ describe('ConvoyDashboardComponent', () => {
 		expect(response.status).toBe(true);
 		expect(typeof response.data.content).toEqual('object');
 		expect(component.apps).toBeTruthy();
+		expect(component.displayedApps).toBeTruthy();
 		expect(component.appsDetailsItem).toBeTruthy();
 		expect(component.appPortalLink).toBeTruthy();
 		expect(component.filteredApps).toBeTruthy();
@@ -197,7 +198,11 @@ describe('ConvoyDashboardComponent', () => {
 		expect(appsTableContainer.hasAttribute('hidden')).toBeFalse();
 		expect(appsTableContainer.querySelector('#table')).toBeTruthy();
 		expect(appsTableContainer.querySelectorAll('#table thead th').length).toEqual(8);
-		expect(component.apps.content.length === appsTableContainer.querySelectorAll('#table tbody tr').length).toBeTrue();
+		// expect(component.apps.content.length === appsTableContainer.querySelectorAll('#table tbody tr').length).toBeTrue();
+		expect(component.displayedApps.length === appsTableContainer.querySelectorAll('#table tbody .table--date-row').length).toBeTrue();
+		component.displayedApps.forEach((app, index) => {
+			expect(app.content.length === appsTableContainer.querySelectorAll('#table tbody tr#app' + index).length).toBeTrue();
+		});
 		const appsEmptyStateContainer: HTMLElement = fixture.debugElement.nativeElement.querySelector('#apps-empty-state');
 		expect(appsEmptyStateContainer).toBeFalsy();
 	}));
@@ -248,7 +253,7 @@ describe('ConvoyDashboardComponent', () => {
 		expect(eventDeliveryTableContainer.querySelectorAll('#table thead th').length).toEqual(5);
 		expect(component.displayedEventDeliveries.length === eventDeliveryTableContainer.querySelectorAll('#table tbody .table--date-row').length).toBeTrue();
 		component.displayedEventDeliveries.forEach((event, index) => {
-			expect(event.events.length === eventDeliveryTableContainer.querySelectorAll('#table tbody tr#eventDel' + index).length).toBeTrue();
+			expect(event.content.length === eventDeliveryTableContainer.querySelectorAll('#table tbody tr#eventDel' + index).length).toBeTrue();
 		});
 		const eventDeliveryEmptyContainer: HTMLElement = fixture.debugElement.nativeElement.querySelector('#event-deliveries-empty-state');
 		expect(eventDeliveryEmptyContainer).toBeFalsy();

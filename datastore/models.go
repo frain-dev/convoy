@@ -5,6 +5,7 @@ import (
 	"database/sql/driver"
 	"encoding/json"
 	"errors"
+	"strings"
 
 	"github.com/frain-dev/convoy/auth"
 	"github.com/frain-dev/convoy/config"
@@ -169,6 +170,16 @@ type GroupStatistics struct {
 
 type GroupFilter struct {
 	Names []string `json:"name" bson:"name"`
+}
+
+func (g *GroupFilter) WithNamesTrimmed() *GroupFilter {
+	f := GroupFilter{[]string{}}
+
+	for _, s := range g.Names {
+		f.Names = append(f.Names, strings.TrimSpace(s))
+	}
+
+	return &f
 }
 
 func (o *Group) IsDeleted() bool { return o.DeletedAt > 0 }

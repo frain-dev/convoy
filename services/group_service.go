@@ -76,14 +76,13 @@ func (gs *GroupService) CreateGroup(ctx context.Context, newGroup *models.Group)
 }
 
 func (gs *GroupService) UpdateGroup(ctx context.Context, group *datastore.Group, update *models.Group) (*datastore.Group, error) {
-	groupName := update.Name
 	err := util.Validate(update)
 	if err != nil {
 		log.WithError(err).Error("failed to validate group update")
 		return nil, NewServiceError(http.StatusBadRequest, err)
 	}
 
-	group.Name = groupName
+	group.Name = update.Name
 	group.Config = &update.Config
 	if !util.IsStringEmpty(update.LogoURL) {
 		group.LogoURL = update.LogoURL
@@ -99,7 +98,7 @@ func (gs *GroupService) UpdateGroup(ctx context.Context, group *datastore.Group,
 }
 
 func (gs *GroupService) GetGroups(ctx context.Context, filter *datastore.GroupFilter) ([]*datastore.Group, error) {
-	groups, err := gs.groupRepo.LoadGroups(ctx, filter)
+	groups, err := gs.groupRepo.LoadGroups(ctx, filter.WithNamesTrimmed())
 	if err != nil {
 		log.WithError(err).Error("failed to load groups")
 		return nil, NewServiceError(http.StatusBadRequest, errors.New("an error occurred while fetching Groups"))
