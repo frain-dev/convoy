@@ -33,7 +33,6 @@ $desktopBreakPoint: 880px;
 .page.blog {
 	flex-wrap: wrap;
 	height: 100vh;
-	font-family: 'Inter', sans-serif !important;
 }
 
 header {

@@ -4,14 +4,19 @@ $desktopBreakPoint: 880px;
 	ul {
 		list-style-type: disc;
 		margin-left: 20px;
-		margin-top: 24px;
+		margin-top: 14px;
 
 		li {
 			list-style-type: disc;
 			margin-bottom: 15px;
 		}
 	}
+
 	ol {
+		list-style-type: initial;
+		margin-left: 20px;
+		margin-top: 14px;
+
 		li {
 			font-weight: 400;
 			font-size: 16px;
@@ -20,7 +25,8 @@ $desktopBreakPoint: 880px;
 		}
 	}
 
-	p, .kg-callout-text {
+	p,
+	.kg-callout-text {
 		font-weight: 400;
 		font-size: 16px;
 		line-height: 24px;
@@ -86,6 +92,7 @@ $desktopBreakPoint: 880px;
 
 	a {
 		color: #477db3;
+		text-decoration: underline;
 		font-weight: inherit;
 	}
 
@@ -118,15 +125,15 @@ $desktopBreakPoint: 880px;
 	}
 
 	figure {
-		margin: 0 0 30px 0;
+		margin: 40px 0 30px 0;
 	}
 
 	figcaption {
 		font-weight: 400;
-		font-size: 14px;
+		font-size: 13px;
 		line-height: 22px;
 		text-align: center;
-		color: #31323d;
+		color: #979797;
 		margin-bottom: 24px;
 	}
 	code {
@@ -138,6 +145,18 @@ $desktopBreakPoint: 880px;
 		font-family: 'Menlo Regular';
 		font-size: 12px;
 		color: rgba(22, 25, 44, 0.4);
+	}
+}
+
+.kg-callout-card {
+	display: flex;
+	padding: 30px;
+	background: #eee;
+	margin: 50px 0;
+
+	.kg-callout-text {
+		margin: 0;
+		margin-left: 30px;
 	}
 }
 

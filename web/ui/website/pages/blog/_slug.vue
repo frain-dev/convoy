@@ -46,7 +46,6 @@
 								<img src="~/assets/images/linkedin-grey-icon.svg" alt="linkedin logo" />
 							</a>
 						</li>
-
 					</ul>
 				</div>
 			</div>
@@ -85,35 +84,6 @@ export default {
 	},
 	mounted() {
 		Prism.highlightAll();
-	},
-	methods: {
-		scrollIndicator() {
-			const winScroll = document.body.scrollTop || document.documentElement.scrollTop;
-			const height = document.querySelector('body').scrollHeight - document.documentElement.clientHeight;
-			const scrolled = (winScroll / height) * 100;
-			const scrollIndicator = document.querySelector('.post-page--loader div');
-			if (scrollIndicator) scrollIndicator.style.width = scrolled * 1.5 + '%';
-		},
-		shouldFixOnPage() {
-			const viewportHeight = window.screen.height;
-			const checkElement = document.querySelector('.post-page--body').getBoundingClientRect();
-			const elementToCheckToRemoveFix = document.querySelector('.newsletter').getBoundingClientRect();
-			const elementToFix = document.querySelector('.post-page--loader').classList;
-			const elementToFix2 = document.querySelector('.blog-post aside > div').classList;
-			const topPercElementToFix = (checkElement.top / viewportHeight) * 100;
-			const topPercElementToCheckToRemoveFix = (elementToCheckToRemoveFix.top / viewportHeight) * 100;
-			if (topPercElementToFix < 12) {
-				elementToFix2.add('fix');
-				elementToFix.add('fix');
-			} else {
-				elementToFix2.remove('fix');
-				elementToFix.remove('fix');
-			}
-
-			if (topPercElementToCheckToRemoveFix < 85.89988425925927) {
-				elementToFix2.remove('fix');
-			}
-		}
 	},
 	head() {
 		return {
@@ -278,18 +248,6 @@ export default {
 				}
 			]
 		};
-	},
-	beforeDestroy() {
-		document.querySelector('body').removeEventListener('scroll', () => {
-			this.scrollIndicator;
-			this.shouldFixOnPage();
-		});
-	},
-	beforeMount() {
-		document.querySelector('body').addEventListener('scroll', () => {
-			this.scrollIndicator();
-			if (document.querySelector('.blog-post')) this.shouldFixOnPage();
-		});
 	}
 };
 </script>
@@ -472,7 +430,7 @@ main {
 			font-weight: 700;
 			font-size: 48px;
 			line-height: 58px;
-			margin: 31px 0 43px 0;
+			margin: 31px 0 25px 0;
 		}
 
 		&.small {
@@ -525,17 +483,24 @@ main {
 			color: #31323d;
 			margin-bottom: 7px;
 		}
-	}
 
-	// &--content {
-	// 	display: flex;
-	// }
+		.socials {
+			li {
+				width: 32px;
+				height: 32px;
+			}
+		}
+	}
 }
 
 .more-posts {
 	padding: 0 20px;
 	max-width: 970px;
-	margin: 100px auto 0;
+	margin: 80px auto 0;
+
+	@media (min-width: $desktopBreakPoint) {
+		margin-top: 130px;
+	}
 
 	h1 {
 		font-weight: bold;

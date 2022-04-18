@@ -1,17 +1,16 @@
 <template>
 	<div>
-		<nav :class="{ extraPadding: githubStar }">
-			<section class="github-star" v-if="githubStar">
+		<nav class="extraPadding">
+			<section class="github-star">
 				<span>Give us a star on GitHub</span>
 				<a class="github-icon" target="_blank" rel="noopener noreferrer" href="https://github.com/frain-dev/convoy">
 					<img src="~/assets/images/github-icon-white.svg" alt="github icon" />
 				</a>
-				<button>
-					<img src="~/assets/images/github-star.svg" alt="github star" />
-					{{ githubStars }}
-				</button>
-				<a @click="closeStar()">
-					<img src="~/assets/images/close-icon.svg" alt="close" />
+				<a target="_blank" rel="noopener noreferrer" href="https://github.com/frain-dev/convoy">
+					<button>
+						<img src="~/assets/images/github-star.svg" alt="github star" />
+						{{ githubStars }}
+					</button>
 				</a>
 			</section>
 			<div>
@@ -69,33 +68,14 @@
 export default {
 	data() {
 		return {
-			githubStar: null,
 			showMenu: false,
 			githubStars: 0
 		};
 	},
 	mounted() {
-		this.checkForGithubStar();
 		this.getGithubStars();
 	},
 	methods: {
-		closeStar() {
-			this.githubStar = false;
-			localStorage.setItem('githubStar', false);
-		},
-		checkForGithubStar() {
-			const starStatus = localStorage.getItem('githubStar');
-			if (starStatus != null) {
-				if (starStatus == 'true') {
-					this.githubStar = true;
-				} else {
-					this.githubStar = false;
-				}
-			} else {
-				localStorage.setItem('githubStar', true);
-				this.githubStar = true;
-			}
-		},
 		async getGithubStars() {
 			try {
 				const response = await fetch('https://api.github.com/repos/frain-dev/convoy');
@@ -297,10 +277,12 @@ nav {
 
 	a.small {
 		display: block;
+
 		@media (min-width: $desktopBreakPoint) {
 			display: none;
 		}
 	}
+
 	.github-star {
 		position: fixed;
 		top: 0;
@@ -319,15 +301,24 @@ nav {
 		z-index: 99;
 
 		@media (min-width: $desktopBreakPoint) {
-			font-size: 16px;
+			font-size: 14px;
 			line-height: 24px;
 		}
+
 		.github-icon {
-			img {
-				height: 20px;
-				width: 20px;
-			}
+			height: 20px;
+			width: 20px;
+			margin-left: 13px;
 			margin-right: 13px;
+
+			&:hover {
+				cursor: pointer;
+			}
+
+			img {
+				height: 18px;
+				width: 18px;
+			}
 		}
 
 		button {
@@ -343,20 +334,16 @@ nav {
 			padding: 10px;
 			display: flex;
 			align-items: center;
-			margin-left: 13px;
+			margin-left: 10px;
+
 			img {
 				height: 16px;
 				width: 16px;
 				margin-right: 5px;
 			}
 		}
+
 		a {
-			height: 20px;
-			width: 20px;
-			margin-left: 13px;
-			&:hover {
-				cursor: pointer;
-			}
 		}
 	}
 }

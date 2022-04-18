@@ -172,7 +172,6 @@ header {
 .page {
 	max-width: 1150px;
 	margin: auto;
-	font-family: 'Inter', sans-serif;
 	margin-top: -130px;
 	margin-bottom: 88px;
 }
@@ -198,9 +197,7 @@ header {
 		border-radius: 4px;
 		padding: 24px;
 		width: 100%;
-		font-family: 'Inter', sans-serif;
 		color: #ffffff;
-		display: flex;
 		flex-flow: column nowrap;
 		font-size: 13px;
 		line-height: 20px;
@@ -223,7 +220,7 @@ header {
 		justify-content: flex-end;
 		margin-top: 27px;
 
-		&--links{
+		&--links {
 			display: flex;
 			align-items: center;
 		}
