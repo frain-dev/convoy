@@ -1,64 +1,62 @@
 <template>
-	<div class="main blog-post">
-		<div class="post-page--head">
-			<nuxt-link tag="button" to="/blog" class="back-button">
-				<img src="~/assets/images/angle-left-black-icon.svg" alt="back icon" />
-			</nuxt-link>
-			<div class="tag">{{ blogPost.primary_tag.name }}</div>
-			<div class="date">{{ blogPost.published_at | date }}</div>
-		</div>
+	<div class="main">
+		<div class="blog-post">
+			<div class="post-page--head">
+				<div class="breadcrumb">
+					<nuxt-link tag="button" to="/blog">Blog</nuxt-link>
 
-		<h3 class="post-page--title">{{ blogPost.title }}</h3>
+					<span class="breadcrumb--divider">|</span>
+					<span class="breadcrumb__tag">{{ blogPost.primary_tag.name }}</span>
+				</div>
 
-		<a :href="blogPost.primary_author.twitter ? 'http://twitter.com/' + blogPost.primary_author.twitter : ''" target="_blank" class="post-page--author">
-			<div class="img">
-				<img :src="blogPost.primary_author.profile_image" alt="author imge" />
+				<div class="date">
+					{{ blogPost.reading_time }} min read
+					<span><img src="~/assets/images/ellipse.svg" alt="ellipse" /></span>
+					{{ blogPost.published_at | date }}
+				</div>
 			</div>
-			<div>
-				<h5>{{ blogPost.primary_author.name }}</h5>
-				<p>{{ blogPost.primary_author.meta_title }} Convoy</p>
-			</div>
-		</a>
 
-		<div class="post-page--loader">
-			<div></div>
-		</div>
+			<h3 class="post-page--title">{{ blogPost.title }}</h3>
 
-		<div class="post-page--content">
-			<aside>
-				<div>
-					<!-- Current CMS doesn't support this -->
-					<!-- <ul>
-						<h3>CONTENTS</h3> -->
-
-					<!-- <li v-for="(heading, index) in blogPost.toc" :key="'heading' + index">
-							<nuxt-link :to="{ path: '/blog/' + blogPost.slug, hash: '#' + heading.id }">{{ heading.text }}</nuxt-link>
-						</li> -->
-					<!-- </ul> -->
-
-					<div class="social">
-						<h3>Share Via</h3>
-
-						<ul class="socials">
-							<li>
-								<a
-									rel="noopener noreferrer"
-									:href="'https://twitter.com/intent/tweet/?text=' + blogPost.title + '%20from%20@fraindev&url=https://getconvoy.io/blog/' + blogPost.slug + '&via=frainDev'"
-									target="_blank"
-								>
-									<img src="~/assets/images/twitter-grey-icon.svg" alt="twitter logo" />
-								</a>
-							</li>
-						</ul>
+			<div class="post-page--author">
+				<a :href="blogPost.primary_author.twitter ? 'http://twitter.com/' + blogPost.primary_author.twitter : ''" target="_blank" class="author">
+					<div class="img">
+						<img :src="blogPost.primary_author.profile_image" alt="author imge" />
 					</div>
-				</div>
-			</aside>
+					<div>
+						<h5>{{ blogPost.primary_author.name }}</h5>
+						<p>{{ blogPost.primary_author.meta_title }} Convoy</p>
+					</div>
+				</a>
+				<div>
+					<p>Share to:</p>
+					<ul class="socials">
+						<li>
+							<a
+								rel="noopener noreferrer"
+								:href="'https://twitter.com/intent/tweet/?text=' + blogPost.title + '%20from%20@fraindev&url=https://getconvoy.io/blog/' + blogPost.slug + '&via=frainDev'"
+								target="_blank"
+							>
+								<img src="~/assets/images/twitter-grey-icon.svg" alt="twitter logo" />
+							</a>
+						</li>
 
-			<main>
-				<div class="post-page--body">
-					<div v-html="blogPost.html"></div>
+						<li>
+							<a rel="noopener noreferrer" :href="'https://www.linkedin.com/sharing/share-offsite/?mini=true&url=https://getconvoy.io/blog/' + blogPost.slug + ''" target="_blank">
+								<img src="~/assets/images/linkedin-grey-icon.svg" alt="linkedin logo" />
+							</a>
+						</li>
+					</ul>
 				</div>
-			</main>
+			</div>
+
+			<div class="post-page--content">
+				<main>
+					<div class="post-page--body">
+						<div v-html="blogPost.html"></div>
+					</div>
+				</main>
+			</div>
 		</div>
 
 		<div class="more-posts">
@@ -86,35 +84,6 @@ export default {
 	},
 	mounted() {
 		Prism.highlightAll();
-	},
-	methods: {
-		scrollIndicator() {
-			const winScroll = document.body.scrollTop || document.documentElement.scrollTop;
-			const height = document.querySelector('body').scrollHeight - document.documentElement.clientHeight;
-			const scrolled = (winScroll / height) * 100;
-			const scrollIndicator = document.querySelector('.post-page--loader div');
-			if (scrollIndicator) scrollIndicator.style.width = scrolled * 1.5 + '%';
-		},
-		shouldFixOnPage() {
-			const viewportHeight = window.screen.height;
-			const checkElement = document.querySelector('.post-page--body').getBoundingClientRect();
-			const elementToCheckToRemoveFix = document.querySelector('.newsletter').getBoundingClientRect();
-			const elementToFix = document.querySelector('.post-page--loader').classList;
-			const elementToFix2 = document.querySelector('.blog-post aside > div').classList;
-			const topPercElementToFix = (checkElement.top / viewportHeight) * 100;
-			const topPercElementToCheckToRemoveFix = (elementToCheckToRemoveFix.top / viewportHeight) * 100;
-			if (topPercElementToFix < 12) {
-				elementToFix2.add('fix');
-				elementToFix.add('fix');
-			} else {
-				elementToFix2.remove('fix');
-				elementToFix.remove('fix');
-			}
-
-			if (topPercElementToCheckToRemoveFix < 85.89988425925927) {
-				elementToFix2.remove('fix');
-			}
-		}
 	},
 	head() {
 		return {
@@ -279,18 +248,6 @@ export default {
 				}
 			]
 		};
-	},
-	beforeDestroy() {
-		document.querySelector('body').removeEventListener('scroll', () => {
-			this.scrollIndicator;
-			this.shouldFixOnPage();
-		});
-	},
-	beforeMount() {
-		document.querySelector('body').addEventListener('scroll', () => {
-			this.scrollIndicator();
-			if (document.querySelector('.blog-post')) this.shouldFixOnPage();
-		});
 	}
 };
 </script>
@@ -301,6 +258,15 @@ $desktopBreakPoint: 880px;
 .main {
 	margin: 0 auto;
 	padding: 0;
+}
+.blog-post {
+	max-width: 780px;
+	width: 100%;
+	margin: 0 auto;
+	padding: 0 20px;
+	@media (min-width: $desktopBreakPoint) {
+		padding: 0;
+	}
 }
 
 aside {
@@ -339,9 +305,8 @@ aside {
 }
 
 main {
-	max-width: 750px;
+	max-width: 780px;
 	width: 100%;
-	padding: 0 20px;
 
 	h1 {
 		font-weight: bold;
@@ -379,27 +344,47 @@ main {
 
 	&--head {
 		display: flex;
-		align-items: center;
-		max-width: 320px;
 		width: 100%;
-		justify-content: space-between;
-		padding: 0 20px;
+		flex-flow: column;
 
+		@media (min-width: $desktopBreakPoint) {
+			flex-flow: row;
+			align-items: center;
+			justify-content: space-between;
+		}
 		button {
 			padding: 0;
+			font-weight: 500;
 		}
-
-		.tag {
-			font-weight: bold;
-			font-size: 15px;
-			line-height: 140%;
-			text-transform: uppercase;
+		.breadcrumb {
+			font-weight: 500;
+			font-size: 14px;
+			line-height: 22px;
+			color: #31323d;
+			&__tag {
+				color: #477db3;
+			}
+			&--divider {
+				margin-left: 16px;
+				margin-right: 16px;
+			}
 		}
 
 		.date {
 			font-weight: 500;
 			font-size: 14px;
 			line-height: 24px;
+			color: #000624;
+			display: flex;
+			margin-top: 16px;
+			img {
+				width: 4px;
+				height: 4px;
+				margin: 0 7px 2px 7px;
+			}
+			@media (min-width: $desktopBreakPoint) {
+				margin-top: unset;
+			}
 		}
 	}
 
@@ -428,23 +413,24 @@ main {
 	}
 
 	&--body {
+		font-weight: 400;
 		font-size: 16px;
 		line-height: 24px;
-		color: #737a91;
+		color: #31323d;
 	}
 
 	&--title {
-		font-weight: bold;
-		line-height: 42px;
-		color: #16192c;
+		font-weight: 700;
 		font-size: 24px;
-		padding: 0 20px;
-		margin: 60px 0 40px;
+		line-height: 32px;
+		color: #000624;
+		margin: 16px 0 40px 0;
 
 		@media (min-width: $desktopBreakPoint) {
+			font-weight: 700;
 			font-size: 48px;
-			margin: 35px 0 24px 55px;
 			line-height: 58px;
+			margin: 31px 0 25px 0;
 		}
 
 		&.small {
@@ -454,15 +440,23 @@ main {
 
 	&--author {
 		display: flex;
-		align-items: flex-start;
-		padding: 0 20px;
+		align-items: flex-end;
+		justify-content: space-between;
 		margin-bottom: 56px;
 
 		@media (min-width: $desktopBreakPoint) {
-			margin-left: 55px;
 			margin-bottom: 45px;
 		}
 
+		.author {
+			display: flex;
+			align-items: flex-start;
+			img {
+				width: 100% !important;
+				border-radius: 50%;
+				margin-right: 12px;
+			}
+		}
 		.img {
 			width: 40px;
 			height: 40px;
@@ -474,35 +468,39 @@ main {
 			align-items: center;
 		}
 
-		img {
-			width: 100% !important;
-			border-radius: 50%;
-			margin-right: 12px;
-		}
-
 		h5 {
-			font-weight: 500;
-			font-size: 16px;
-			line-height: 20px;
+			font-weight: 600;
+			font-size: 14px;
+			line-height: 22px;
+			color: #477db3;
 			margin-bottom: 3px;
 		}
 
 		p {
-			font-size: 12px;
-			line-height: 20px;
+			font-weight: 400;
+			font-size: 14px;
+			line-height: 22px;
 			color: #31323d;
+			margin-bottom: 7px;
 		}
-	}
 
-	&--content {
-		display: flex;
+		.socials {
+			li {
+				width: 32px;
+				height: 32px;
+			}
+		}
 	}
 }
 
 .more-posts {
 	padding: 0 20px;
 	max-width: 970px;
-	margin: 100px auto 0;
+	margin: 80px auto 0;
+
+	@media (min-width: $desktopBreakPoint) {
+		margin-top: 130px;
+	}
 
 	h1 {
 		font-weight: bold;
