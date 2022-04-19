@@ -410,7 +410,7 @@ header {
 		min-height: 75vh;
 		height: 100%;
 		flex-direction: column;
-		padding: 175px 0 100px;
+		padding: 155px 0 75px;
 
 		@media (min-width: $desktopBreakPoint) {
 			flex-direction: row;
