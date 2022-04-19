@@ -56,6 +56,10 @@ func TestApplicationHandler_GetGroup(t *testing.T) {
 			statusCode: http.StatusBadRequest,
 			id:         fakeOrgID,
 			dbFn: func(app *applicationHandler) {
+				c, _ := app.cache.(*mocks.MockCache)
+				c.EXPECT().Get(gomock.Any(), gomock.Any(), gomock.Any())
+				c.EXPECT().Set(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any())
+
 				o, _ := app.groupRepo.(*mocks.MockGroupRepository)
 
 				o.EXPECT().
@@ -78,6 +82,10 @@ func TestApplicationHandler_GetGroup(t *testing.T) {
 			statusCode: http.StatusBadRequest,
 			id:         fakeOrgID,
 			dbFn: func(app *applicationHandler) {
+				c, _ := app.cache.(*mocks.MockCache)
+				c.EXPECT().Get(gomock.Any(), gomock.Any(), gomock.Any())
+				c.EXPECT().Set(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any())
+
 				o, _ := app.groupRepo.(*mocks.MockGroupRepository)
 
 				o.EXPECT().
@@ -352,8 +360,9 @@ func TestApplicationHandler_UpdateGroup(t *testing.T) {
 			dbFn: func(app *applicationHandler) {
 				g, _ := app.groupRepo.(*mocks.MockGroupRepository)
 				c, _ := app.cache.(*mocks.MockCache)
+				c.EXPECT().Get(gomock.Any(), gomock.Any(), gomock.Any())
+				c.EXPECT().Set(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any())
 
-				c.EXPECT().Get(gomock.Any(), gomock.Any(), gomock.Any()).Return(nil)
 				g.EXPECT().
 					UpdateGroup(gomock.Any(), gomock.Any()).Times(1).
 					Return(nil)
@@ -364,7 +373,6 @@ func TestApplicationHandler_UpdateGroup(t *testing.T) {
 						UID:  realOrgID,
 						Name: "sendcash-pay",
 					}, nil)
-				c.EXPECT().Set(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Times(1)
 			},
 		},
 		{
@@ -375,6 +383,10 @@ func TestApplicationHandler_UpdateGroup(t *testing.T) {
 			orgID:      realOrgID,
 			body:       strings.NewReader(``),
 			dbFn: func(app *applicationHandler) {
+				c, _ := app.cache.(*mocks.MockCache)
+				c.EXPECT().Get(gomock.Any(), gomock.Any(), gomock.Any())
+				c.EXPECT().Set(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any())
+
 				g, _ := app.groupRepo.(*mocks.MockGroupRepository)
 				g.EXPECT().
 					FetchGroupByID(gomock.Any(), gomock.Any()).Times(1).
@@ -392,6 +404,10 @@ func TestApplicationHandler_UpdateGroup(t *testing.T) {
 			orgID:      realOrgID,
 			body:       strings.NewReader(`{"config": {"strategy": {"type": "default", "default": {"intervalSeconds": 10, "retryLimit": 3 }}, "signature": { "header": "X-Company-Signature", "hash": "SHA1" }}}`),
 			dbFn: func(app *applicationHandler) {
+				c, _ := app.cache.(*mocks.MockCache)
+				c.EXPECT().Get(gomock.Any(), gomock.Any(), gomock.Any())
+				c.EXPECT().Set(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any())
+
 				g, _ := app.groupRepo.(*mocks.MockGroupRepository)
 				g.EXPECT().
 					FetchGroupByID(gomock.Any(), gomock.Any()).Times(1).
@@ -409,6 +425,10 @@ func TestApplicationHandler_UpdateGroup(t *testing.T) {
 			orgID:      realOrgID,
 			body:       strings.NewReader(`{"name": "ABC_DEF_TEST_UPDATE", "config": {"strategy": {"type": "default", "default": {"intervalSeconds": 10, "retryLimit": 3 }}, "signature": { "header": "X-Company-Signature", "hash": "SHA1" }}}`),
 			dbFn: func(app *applicationHandler) {
+				c, _ := app.cache.(*mocks.MockCache)
+				c.EXPECT().Get(gomock.Any(), gomock.Any(), gomock.Any())
+				c.EXPECT().Set(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any())
+
 				g, _ := app.groupRepo.(*mocks.MockGroupRepository)
 				g.EXPECT().
 					UpdateGroup(gomock.Any(), gomock.Any()).Times(1).
@@ -678,6 +698,10 @@ func TestApplicationHandler_DeleteGroup(t *testing.T) {
 			orgID:      realOrgID,
 			body:       bodyReader,
 			dbFn: func(app *applicationHandler) {
+				c, _ := app.cache.(*mocks.MockCache)
+				c.EXPECT().Get(gomock.Any(), gomock.Any(), gomock.Any())
+				c.EXPECT().Set(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any())
+
 				g, _ := app.groupRepo.(*mocks.MockGroupRepository)
 				g.EXPECT().
 					FetchGroupByID(gomock.Any(), gomock.Any()).Times(1).
@@ -703,6 +727,10 @@ func TestApplicationHandler_DeleteGroup(t *testing.T) {
 			orgID:      realOrgID,
 			body:       bodyReader,
 			dbFn: func(app *applicationHandler) {
+				c, _ := app.cache.(*mocks.MockCache)
+				c.EXPECT().Get(gomock.Any(), gomock.Any(), gomock.Any())
+				c.EXPECT().Set(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any())
+				
 				g, _ := app.groupRepo.(*mocks.MockGroupRepository)
 				g.EXPECT().
 					FetchGroupByID(gomock.Any(), gomock.Any()).Times(1).
