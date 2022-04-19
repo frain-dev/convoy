@@ -78,6 +78,8 @@ func (db *groupRepo) UpdateGroup(ctx context.Context, o *datastore.Group) error 
 		primitive.E{Key: "logo_url", Value: o.LogoURL},
 		primitive.E{Key: "updated_at", Value: o.UpdatedAt},
 		primitive.E{Key: "config", Value: o.Config},
+		primitive.E{Key: "rate_limit", Value: o.RateLimit},
+		primitive.E{Key: "rate_limit_duration", Value: o.RateLimitDuration},
 	}}}
 
 	_, err := db.inner.UpdateOne(ctx, filter, update)
