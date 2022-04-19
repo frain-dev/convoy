@@ -11,7 +11,7 @@ export default {
 
 <template>
 	<div :class="'loader ' + (isTransparent ? 'transparent' : '')">
-		<img v-bind:src="require('../assets/img/loader.gif')" alt="loader" />
+		<img src="https://res.cloudinary.com/frain/image/upload/v1649343844/loader_q1svx1.gif" alt="loader" />
 	</div>
 </template>
 

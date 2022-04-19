@@ -7,10 +7,11 @@ import { CommonModule, DatePipe } from '@angular/common';
 import { PrismModule } from './prism/prism.module';
 import { ConvoyLoaderComponent } from './loader-component/loader.component';
 import { SharedModule } from './shared/shared.module';
+import { RouterModule } from '@angular/router';
 
 @NgModule({
 	declarations: [ConvoyDashboardComponent, ConvoyLoaderComponent],
-	imports: [CommonModule, MatDatepickerModule, MatNativeDateModule, FormsModule, ReactiveFormsModule, PrismModule, SharedModule],
+	imports: [CommonModule, MatDatepickerModule, MatNativeDateModule, FormsModule, ReactiveFormsModule, PrismModule, SharedModule, RouterModule],
 	exports: [ConvoyDashboardComponent],
 	providers: [DatePipe]
 })

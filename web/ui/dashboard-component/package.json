@@ -7,6 +7,7 @@
 		"build": "ng build",
 		"watch": "ng build --watch --configuration development",
 		"test": "ng test",
+		"test:prod": "ng test --browsers=ChromeHeadless --watch=false --code-coverage",
 		"pub": "npm run build && cd ./dist/convoy-dashboard/ && npm publish"
 	},
 	"dependencies": {
@@ -21,7 +22,6 @@
 		"@angular/platform-browser-dynamic": "~13.1.1",
 		"@angular/router": "~13.1.1",
 		"chart.js": "^3.6.0",
-		"convoy-ui": "0.0.1",
 		"date-fns": "^2.27.0",
 		"moment": "^2.29.1",
 		"prismjs": "^1.25.0",
@@ -34,7 +34,7 @@
 		"@angular/cli": "~13.1.2",
 		"@angular/compiler-cli": "~13.1.1",
 		"@types/jasmine": "~3.8.0",
-		"@types/node": "^12.11.1",
+		"@types/node": "^12.20.47",
 		"@types/prismjs": "^1.26.0",
 		"jasmine-core": "~3.8.0",
 		"karma": "~6.3.0",

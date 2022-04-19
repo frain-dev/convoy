@@ -7,8 +7,11 @@
 				</a>
 			</div>
 
-			<div>
-				<a target="_blank" href="https://getconvoy.io/docs" rel="noreferrer">Go to docs</a>
+			<div class="dashboard--header--acounts">
+				<a class="button--has-icon icon-left " target="_blank" href="https://getconvoy.io/docs" rel="noreferrer">
+					<img src="/assets/img/doc-icon-primary.svg" alt="doc icon" />
+					<span class="font__weight-400">Go to docs</span>
+				</a>
 				<button class="dropdown user" (click)="showDropdown = !showDropdown" *ngIf="authDetails()">
 					<div>
 						<div class="icon">O</div>

@@ -117,7 +117,7 @@ func (a *applicationHandler) GetApps(w http.ResponseWriter, r *http.Request) {
 
 	apps, paginationData, err := a.appRepo.LoadApplicationsPaged(r.Context(), group.UID, q, pageable)
 	if err != nil {
-		print(err.Error())
+		log.WithError(err).Error("failed to load apps")
 		_ = render.Render(w, r, newErrorResponse("an error occurred while fetching apps. Error: "+err.Error(), http.StatusBadRequest))
 		return
 	}
@@ -146,11 +146,8 @@ func (a *applicationHandler) CreateApp(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	appName := newApp.AppName
-
 	group := getGroupFromContext(r.Context())
-
-	app, err := a.appService.CreateApp(r.Context(), &newApp, appName, group)
+	app, err := a.appService.CreateApp(r.Context(), &newApp, group)
 	if err != nil {
 		_ = render.Render(w, r, newServiceErrResponse(err))
 		return

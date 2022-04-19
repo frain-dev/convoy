@@ -43,6 +43,12 @@ footer {
 			text-align: right;
 		}
 	}
+
+	.socials {
+		li {
+			background: rgb(255 255 255 / 10%);
+		}
+	}
 }
 
 .socials {
@@ -51,8 +57,7 @@ footer {
 	li {
 		width: 42px;
 		height: 42px;
-		background: rgba(255, 255, 255, 0.1);
-		padding: 11px;
+		background: rgb(49, 50, 61, 0.1);
 		display: flex;
 		align-items: center;
 		justify-content: center;
@@ -68,13 +73,13 @@ footer {
 	display: flex;
 	max-width: 970px;
 	padding: 32px 24px;
-	margin-top: 74px;
+	margin-top: 40px;
 	flex-direction: column;
 	align-items: center;
 
 	@media (min-width: $desktopBreakPoint) {
 		padding: 32px 70px;
-		margin-top: 95px;
+		margin-top: 48px;
 		flex-direction: row;
 		justify-content: space-around;
 	}

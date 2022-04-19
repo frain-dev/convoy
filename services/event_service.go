@@ -117,8 +117,8 @@ func (e *EventService) GetAppEvent(ctx context.Context, id string) (*datastore.E
 func (e *EventService) GetEventDelivery(ctx context.Context, id string) (*datastore.EventDelivery, error) {
 	eventDelivery, err := e.eventDeliveryRepo.FindEventDeliveryByID(ctx, id)
 	if err != nil {
-		log.WithError(err).Error("failed to find event elivery by id")
-		return nil, NewServiceError(http.StatusBadRequest, errors.New("failed to find event by id"))
+		log.WithError(err).Error("failed to find event delivery by id")
+		return nil, NewServiceError(http.StatusBadRequest, errors.New("failed to find event delivery by id"))
 	}
 
 	return eventDelivery, nil
@@ -144,8 +144,8 @@ func (e *EventService) BatchRetryEventDelivery(ctx context.Context, filter *data
 	return successes, failures, nil
 }
 
-func (e *EventService) CountAffectedEventDeliveries(ctx context.Context, group *datastore.Group, appID string, eventID string, status []datastore.EventDeliveryStatus, searchParams datastore.SearchParams) (int64, error) {
-	count, err := e.eventDeliveryRepo.CountEventDeliveries(ctx, group.UID, appID, eventID, status, searchParams)
+func (e *EventService) CountAffectedEventDeliveries(ctx context.Context, filter *datastore.Filter) (int64, error) {
+	count, err := e.eventDeliveryRepo.CountEventDeliveries(ctx, filter.Group.UID, filter.AppID, filter.EventID, filter.Status, filter.SearchParams)
 	if err != nil {
 		log.WithError(err).Error("an error occurred while fetching event deliveries")
 		return 0, NewServiceError(http.StatusInternalServerError, errors.New("an error occurred while fetching event deliveries"))
@@ -179,7 +179,7 @@ func (e *EventService) GetEventsPaged(ctx context.Context, filter *datastore.Fil
 	m, paginationData, err := e.eventRepo.LoadEventsPaged(ctx, filter.Group.UID, filter.AppID, filter.SearchParams, filter.Pageable)
 	if err != nil {
 		log.WithError(err).Error("failed to fetch events")
-		return nil, datastore.PaginationData{}, NewServiceError(http.StatusInternalServerError, errors.New("an error occurred while fetching app events"))
+		return nil, datastore.PaginationData{}, NewServiceError(http.StatusInternalServerError, errors.New("an error occurred while fetching events"))
 	}
 
 	return m, paginationData, nil
@@ -206,11 +206,9 @@ func (e *EventService) ResendEventDelivery(ctx context.Context, eventDelivery *d
 }
 
 func (e *EventService) RetryEventDelivery(ctx context.Context, eventDelivery *datastore.EventDelivery, g *datastore.Group) error {
-	if eventDelivery.Status == datastore.SuccessEventStatus {
-		return errors.New("event already sent")
-	}
-
 	switch eventDelivery.Status {
+	case datastore.SuccessEventStatus:
+		return errors.New("event already sent")
 	case datastore.ScheduledEventStatus,
 		datastore.ProcessingEventStatus,
 		datastore.RetryEventStatus:
@@ -220,6 +218,7 @@ func (e *EventService) RetryEventDelivery(ctx context.Context, eventDelivery *da
 	em := eventDelivery.EndpointMetadata
 	endpoint, err := e.appRepo.FindApplicationEndpointByID(context.Background(), eventDelivery.AppMetadata.UID, em.UID)
 	if err != nil {
+		log.WithError(err).Error("failed to find endpoint")
 		return errors.New("cannot find endpoint")
 	}
 

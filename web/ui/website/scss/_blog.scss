@@ -4,7 +4,7 @@ $desktopBreakPoint: 880px;
 	ul {
 		list-style-type: disc;
 		margin-left: 20px;
-		margin-top: 24px;
+		margin-top: 14px;
 
 		li {
 			list-style-type: disc;
@@ -12,11 +12,26 @@ $desktopBreakPoint: 880px;
 		}
 	}
 
-	p {
+	ol {
+		list-style-type: initial;
+		margin-left: 20px;
+		margin-top: 14px;
+
+		li {
+			font-weight: 400;
+			font-size: 16px;
+			line-height: 24px;
+			color: #31323d;
+		}
+	}
+
+	p,
+	.kg-callout-text {
+		font-weight: 400;
 		font-size: 16px;
-		line-height: 34px;
-		margin-top: 16px;
-		color: #737a91;
+		line-height: 24px;
+		color: #31323d;
+		margin: 16px 0 32px 0;
 	}
 
 	h1 {
@@ -24,11 +39,19 @@ $desktopBreakPoint: 880px;
 	}
 
 	h2 {
-		font-size: 24px;
+		font-weight: 700;
+		font-size: 36px;
+		line-height: 48px;
+		letter-spacing: 0.2px;
+		color: #000624;
 	}
 
 	h3 {
-		font-size: 20px;
+		font-weight: 700;
+		font-size: 24px;
+		line-height: 32px;
+		letter-spacing: 0.2px;
+		color: #000624;
 	}
 
 	h4 {
@@ -69,6 +92,7 @@ $desktopBreakPoint: 880px;
 
 	a {
 		color: #477db3;
+		text-decoration: underline;
 		font-weight: inherit;
 	}
 
@@ -101,14 +125,38 @@ $desktopBreakPoint: 880px;
 	}
 
 	figure {
-		margin: 40px 0 0;
+		margin: 40px 0 30px 0;
 	}
 
 	figcaption {
-		font-size: 12px;
-		line-height: 24px;
-		color: #737a91;
+		font-weight: 400;
+		font-size: 13px;
+		line-height: 22px;
+		text-align: center;
+		color: #979797;
 		margin-bottom: 24px;
+	}
+	code {
+		background: #f3f3f8;
+		border-radius: 4px;
+		padding: 0 3px;
+		margin: 0 1px;
+		border: 1px solid rgba(0, 0, 0, 0.05);
+		font-family: 'Menlo Regular';
+		font-size: 12px;
+		color: rgba(22, 25, 44, 0.4);
+	}
+}
+
+.kg-callout-card {
+	display: flex;
+	padding: 30px;
+	background: #eee;
+	margin: 50px 0;
+
+	.kg-callout-text {
+		margin: 0;
+		margin-left: 30px;
 	}
 }
 

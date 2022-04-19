@@ -4,12 +4,15 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"net/http"
 	"net/http/httptest"
 	"strings"
 	"testing"
 	"time"
+
+	"go.mongodb.org/mongo-driver/bson/primitive"
 
 	"github.com/frain-dev/convoy/auth/realm_chain"
 	nooplimiter "github.com/frain-dev/convoy/limiter/noop"
@@ -46,7 +49,7 @@ func initRealmChain(t *testing.T, apiKeyRepo datastore.APIKeyRepository) {
 
 func stripTimestamp(t *testing.T, obj string, b *bytes.Buffer) *bytes.Buffer {
 	var res serverResponse
-
+	buf := b.Bytes()
 	err := json.NewDecoder(b).Decode(&res)
 	if err != nil {
 		t.Errorf("could not stripTimestamp: %s", err)
@@ -54,7 +57,7 @@ func stripTimestamp(t *testing.T, obj string, b *bytes.Buffer) *bytes.Buffer {
 	}
 
 	if res.Data == nil {
-		return bytes.NewBuffer([]byte(``))
+		return bytes.NewBuffer(buf)
 	}
 
 	switch obj {
@@ -70,6 +73,23 @@ func stripTimestamp(t *testing.T, obj string, b *bytes.Buffer) *bytes.Buffer {
 		a.CreatedAt, a.UpdatedAt, a.DeletedAt = 0, 0, 0
 
 		jsonData, err := json.Marshal(a)
+		if err != nil {
+			t.Error(err)
+		}
+
+		return bytes.NewBuffer(jsonData)
+	case "group":
+		var g datastore.Group
+		err := json.Unmarshal(res.Data, &g)
+		if err != nil {
+			t.Errorf("could not stripTimestamp: %s", err)
+			t.FailNow()
+		}
+
+		g.UID = ""
+		g.CreatedAt, g.UpdatedAt, g.DeletedAt = 0, 0, 0
+
+		jsonData, err := json.Marshal(g)
 		if err != nil {
 			t.Error(err)
 		}
@@ -287,6 +307,23 @@ func TestApplicationHandler_GetApps(t *testing.T) {
 							Endpoints: []datastore.Endpoint{},
 						},
 					}, datastore.PaginationData{}, nil)
+
+				o, _ := app.groupRepo.(*mocks.MockGroupRepository)
+				o.EXPECT().
+					LoadGroups(gomock.Any(), gomock.Any()).Times(1).
+					Return([]*datastore.Group{group}, nil)
+			},
+		},
+		{
+			name:       "should_fail_to_fetch_applications",
+			cfgPath:    "./testdata/Auth_Config/no-auth-convoy.json",
+			method:     http.MethodGet,
+			statusCode: http.StatusBadRequest,
+			dbFn: func(app *applicationHandler) {
+				a, _ := app.appRepo.(*mocks.MockApplicationRepository)
+				a.EXPECT().
+					LoadApplicationsPaged(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Times(1).
+					Return(nil, datastore.PaginationData{}, errors.New("failed to load"))
 
 				o, _ := app.groupRepo.(*mocks.MockGroupRepository)
 				o.EXPECT().
@@ -763,6 +800,123 @@ func TestApplicationHandler_UpdateApp(t *testing.T) {
 
 }
 
+func Test_applicationHandler_DeleteApp(t *testing.T) {
+
+	groupID := "1234567890"
+	group := &datastore.Group{UID: groupID}
+
+	appId := "12345"
+
+	tt := []struct {
+		name       string
+		cfgPath    string
+		statusCode int
+		appId      string
+		dbFn       func(app *applicationHandler)
+	}{
+		{
+			name:       "should_delete_app",
+			cfgPath:    "./testdata/Auth_Config/no-auth-convoy.json",
+			statusCode: http.StatusOK,
+			appId:      appId,
+			dbFn: func(app *applicationHandler) {
+				a, _ := app.appRepo.(*mocks.MockApplicationRepository)
+				obj := &datastore.Application{
+					UID:       appId,
+					GroupID:   groupID,
+					Title:     "Valid application delete",
+					Endpoints: []datastore.Endpoint{},
+				}
+
+				a.EXPECT().
+					DeleteApplication(gomock.Any(), obj).Times(1).
+					Return(nil)
+
+				a.EXPECT().
+					FindApplicationByID(gomock.Any(), gomock.Any()).Times(1).
+					Return(obj, nil)
+
+				o, _ := app.groupRepo.(*mocks.MockGroupRepository)
+
+				o.EXPECT().
+					LoadGroups(gomock.Any(), gomock.Any()).Times(1).
+					Return([]*datastore.Group{group}, nil)
+			},
+		},
+		{
+			name:       "should_fail_to_delete_app",
+			cfgPath:    "./testdata/Auth_Config/no-auth-convoy.json",
+			statusCode: http.StatusBadRequest,
+			appId:      appId,
+			dbFn: func(app *applicationHandler) {
+				a, _ := app.appRepo.(*mocks.MockApplicationRepository)
+
+				obj := &datastore.Application{
+					UID:       appId,
+					GroupID:   groupID,
+					Title:     "Valid application update",
+					Endpoints: []datastore.Endpoint{},
+				}
+
+				a.EXPECT().
+					DeleteApplication(gomock.Any(), obj).Times(1).
+					Return(errors.New("failed to delete app endpoint"))
+
+				a.EXPECT().
+					FindApplicationByID(gomock.Any(), gomock.Any()).Times(1).
+					Return(obj, nil)
+
+				o, _ := app.groupRepo.(*mocks.MockGroupRepository)
+
+				o.EXPECT().
+					LoadGroups(gomock.Any(), gomock.Any()).Times(1).
+					Return([]*datastore.Group{group}, nil)
+			},
+		},
+	}
+
+	for _, tc := range tt {
+		t.Run(tc.name, func(t *testing.T) {
+			// Arrange
+			var app *applicationHandler
+
+			ctrl := gomock.NewController(t)
+			defer ctrl.Finish()
+			app = provideApplication(ctrl)
+
+			url := fmt.Sprintf("/api/v1/applications/%s", tc.appId)
+			req := httptest.NewRequest(http.MethodDelete, url, &bytes.Buffer{})
+			req.Header.Add("Content-Type", "application/json")
+
+			w := httptest.NewRecorder()
+
+			// Arrange Expectations
+			if tc.dbFn != nil {
+				tc.dbFn(app)
+			}
+
+			err := config.LoadConfig(tc.cfgPath)
+			if err != nil {
+				t.Errorf("Failed to load config file: %v", err)
+			}
+
+			initRealmChain(t, app.apiKeyRepo)
+
+			router := buildRoutes(app)
+
+			// Act
+			router.ServeHTTP(w, req)
+
+			if w.Code != tc.statusCode {
+				t.Errorf("Want status '%d', got '%d'", tc.statusCode, w.Code)
+			}
+
+			verifyMatch(t, *w)
+		})
+	}
+
+}
+
 func TestApplicationHandler_CreateAppEndpoint(t *testing.T) {
 
 	var app *applicationHandler
@@ -773,8 +927,6 @@ func TestApplicationHandler_CreateAppEndpoint(t *testing.T) {
 
 	groupID := "1234567890"
 	group := &datastore.Group{UID: groupID}
-
-	bodyReader := strings.NewReader(`{"url": "https://google.com", "description": "Test"}`)
 
 	appId := "123456789"
 
@@ -793,7 +945,7 @@ func TestApplicationHandler_CreateAppEndpoint(t *testing.T) {
 			method:     http.MethodPost,
 			statusCode: http.StatusCreated,
 			appId:      appId,
-			body:       bodyReader,
+			body:       strings.NewReader(`{"url": "https://google.com", "description": "Test","rate_limit":300,"rate_limit_duration":"1h","secret":"abc"}`),
 			dbFn: func(app *applicationHandler) {
 				a, _ := app.appRepo.(*mocks.MockApplicationRepository)
 				c, _ := app.cache.(*mocks.MockCache)
@@ -805,6 +957,31 @@ func TestApplicationHandler_CreateAppEndpoint(t *testing.T) {
 					UpdateApplication(gomock.Any(), gomock.Any()).Times(1).
 					Return(nil)
 
+				a.EXPECT().
+					FindApplicationByID(gomock.Any(), gomock.Any()).Times(1).
+					Return(&datastore.Application{
+						UID:       appId,
+						GroupID:   groupID,
+						Title:     "Valid application endpoint",
+						Endpoints: []datastore.Endpoint{},
+					}, nil)
+
+				o, _ := app.groupRepo.(*mocks.MockGroupRepository)
+
+				o.EXPECT().
+					LoadGroups(gomock.Any(), gomock.Any()).Times(1).
+					Return([]*datastore.Group{group}, nil)
+			},
+		},
+		{
+			name:       "should_error_for_invalid_rate_limit_duration",
+			cfgPath:    "./testdata/Auth_Config/no-auth-convoy.json",
+			method:     http.MethodPost,
+			statusCode: http.StatusBadRequest,
+			appId:      appId,
+			body:       strings.NewReader(`{"url": "https://google.com", "description": "Test","rate_limit":300,"rate_limit_duration":"1"}`),
+			dbFn: func(app *applicationHandler) {
+				a, _ := app.appRepo.(*mocks.MockApplicationRepository)
 				a.EXPECT().
 					FindApplicationByID(gomock.Any(), gomock.Any()).Times(1).
 					Return(&datastore.Application{
@@ -850,6 +1027,9 @@ func TestApplicationHandler_CreateAppEndpoint(t *testing.T) {
 			if w.Code != tc.statusCode {
 				t.Errorf("Want status '%d', got '%d'", tc.statusCode, w.Code)
 			}
+
+			w.Body = stripTimestamp(t, "endpoint", w.Body)
+			verifyMatch(t, *w)
 		})
 	}
 
@@ -898,7 +1078,7 @@ func TestApplicationHandler_UpdateAppEndpoint(t *testing.T) {
 						UID:       appId,
 						GroupID:   groupID,
 						Title:     "invalid application update",
-						Endpoints: []datastore.Endpoint{},
+						Endpoints: []datastore.Endpoint{{UID: endpointId}},
 					}, nil)
 
 				o, _ := app.groupRepo.(*mocks.MockGroupRepository)
@@ -915,7 +1095,7 @@ func TestApplicationHandler_UpdateAppEndpoint(t *testing.T) {
 			statusCode: http.StatusAccepted,
 			appId:      appId,
 			endpointId: endpointId,
-			body:       strings.NewReader(`{"url": "https://google.com", "description": "Correct endpoint"}`),
+			body:       strings.NewReader(`{"url": "https://google.com", "description": "Correct endpoint","events":["payment.created"],"rate_limit_duration":"1h","http_timeout":"10s","rate_limit":3000}`),
 			dbFn: func(app *applicationHandler) {
 				c, _ := app.cache.(*mocks.MockCache)
 
@@ -927,6 +1107,71 @@ func TestApplicationHandler_UpdateAppEndpoint(t *testing.T) {
 					UpdateApplication(gomock.Any(), gomock.Any()).Times(1).
 					Return(nil)
 
+				a.EXPECT().
+					FindApplicationByID(gomock.Any(), gomock.Any()).Times(1).
+					Return(&datastore.Application{
+						UID:     appId,
+						GroupID: groupID,
+						Title:   "Valid application update",
+						Endpoints: []datastore.Endpoint{
+							{
+								UID:         endpointId,
+								TargetURL:   "http://",
+								Description: "desc",
+							},
+						},
+					}, nil)
+
+				o, _ := app.groupRepo.(*mocks.MockGroupRepository)
+
+				o.EXPECT().
+					LoadGroups(gomock.Any(), gomock.Any()).Times(1).
+					Return([]*datastore.Group{group}, nil)
+			},
+		},
+		{
+			name:       "should_error_for_endpoint_not_found",
+			cfgPath:    "./testdata/Auth_Config/no-auth-convoy.json",
+			method:     http.MethodPut,
+			statusCode: http.StatusBadRequest,
+			appId:      appId,
+			endpointId: endpointId,
+			body:       strings.NewReader(`{"url": "https://google.com", "description": "Correct endpoint","events":["payment.created"],"rate_limit_duration":"1h","http_timeout":"10s","rate_limit":3000}`),
+			dbFn: func(app *applicationHandler) {
+				a, _ := app.appRepo.(*mocks.MockApplicationRepository)
+
+				a.EXPECT().
+					FindApplicationByID(gomock.Any(), gomock.Any()).Times(1).
+					Return(&datastore.Application{
+						UID:     appId,
+						GroupID: groupID,
+						Title:   "Valid application update",
+						Endpoints: []datastore.Endpoint{
+							{
+								UID:         "123",
+								TargetURL:   "http://",
+								Description: "desc",
+							},
+						},
+					}, nil)
+
+				o, _ := app.groupRepo.(*mocks.MockGroupRepository)
+
+				o.EXPECT().
+					LoadGroups(gomock.Any(), gomock.Any()).Times(1).
+					Return([]*datastore.Group{group}, nil)
+			},
+		},
+		{
+			name:       "should_error_for_invalid_rate_limit_duration",
+			cfgPath:    "./testdata/Auth_Config/no-auth-convoy.json",
+			method:     http.MethodPut,
+			statusCode: http.StatusBadRequest,
+			appId:      appId,
+			endpointId: endpointId,
+			body:       strings.NewReader(`{"url": "https://google.com", "description": "Correct endpoint", "rate_limit_duration":"1"}`),
+			dbFn: func(app *applicationHandler) {
+				a, _ := app.appRepo.(*mocks.MockApplicationRepository)
 				a.EXPECT().
 					FindApplicationByID(gomock.Any(), gomock.Any()).Times(1).
 					Return(&datastore.Application{
@@ -966,17 +1211,6 @@ func TestApplicationHandler_UpdateAppEndpoint(t *testing.T) {
 			req.Header.Add("Content-Type", "application/json")
 
 			w := httptest.NewRecorder()
-			rctx := chi.NewRouteContext()
-			rctx.URLParams.Add("appID", tc.appId)
-			rctx.URLParams.Add("endpointID", tc.endpointId)
-
-			req = req.WithContext(context.WithValue(req.Context(), chi.RouteCtxKey, rctx))
-			req = req.WithContext(context.WithValue(req.Context(), appCtx, &datastore.Application{
-				UID:       appId,
-				GroupID:   groupID,
-				Title:     "Valid application update",
-				Endpoints: []datastore.Endpoint{},
-			}))
 
 			// Arrange Expectations
 			if tc.dbFn != nil {
@@ -1008,6 +1242,197 @@ func TestApplicationHandler_UpdateAppEndpoint(t *testing.T) {
 
 }
 
+func TestApplicationHandler_GetAppEndpoint(t *testing.T) {
+	groupID := "1234567890"
+	group := &datastore.Group{UID: groupID}
+
+	tt := []struct {
+		name       string
+		cfgPath    string
+		appID      string
+		endpointID string
+		statusCode int
+		id         string
+		dbFn       func(app *applicationHandler)
+	}{
+		{
+			name:       "should_get_application_endpoint",
+			cfgPath:    "./testdata/Auth_Config/no-auth-convoy.json",
+			statusCode: http.StatusOK,
+			appID:      "a-123",
+			endpointID: "def",
+			dbFn: func(app *applicationHandler) {
+				app.cache.(*mocks.MockCache).EXPECT().Get(gomock.Any(), gomock.Any(), gomock.Any())
+				a, _ := app.appRepo.(*mocks.MockApplicationRepository)
+
+				a.EXPECT().
+					FindApplicationByID(gomock.Any(), gomock.Any()).Times(1).
+					Return(&datastore.Application{
+						UID:     "a-123",
+						GroupID: groupID,
+						Title:   "Valid application update",
+						Endpoints: []datastore.Endpoint{
+							{
+								UID:         "abc",
+								TargetURL:   "http://amazon.com",
+								Description: "desc",
+							},
+							{
+								UID:         "def",
+								TargetURL:   "http://google.com",
+								Description: "desc",
+							},
+							{
+								UID:         "123",
+								TargetURL:   "http://",
+								Description: "deleted endpoint",
+								DeletedAt:   primitive.NewDateTimeFromTime(time.Now()),
+							},
+						},
+					}, nil)
+
+				o, _ := app.groupRepo.(*mocks.MockGroupRepository)
+
+				o.EXPECT().
+					LoadGroups(gomock.Any(), gomock.Any()).Times(1).
+					Return([]*datastore.Group{group}, nil)
+			},
+		},
+	}
+
+	for _, tc := range tt {
+		t.Run(tc.name, func(t *testing.T) {
+
+			ctrl := gomock.NewController(t)
+			defer ctrl.Finish()
+			app := provideApplication(ctrl)
+
+			url := fmt.Sprintf("/api/v1/applications/%s/endpoints", tc.appID)
+			req := httptest.NewRequest(http.MethodGet, url, &bytes.Buffer{})
+			req.Header.Add("Content-Type", "application/json")
+
+			w := httptest.NewRecorder()
+
+			// Arrange Expectations
+			if tc.dbFn != nil {
+				tc.dbFn(app)
+			}
+
+			err := config.LoadConfig(tc.cfgPath)
+			if err != nil {
+				t.Errorf("Failed to load config file: %v", err)
+			}
+
+			initRealmChain(t, app.apiKeyRepo)
+
+			router := buildRoutes(app)
+
+			// Act
+			router.ServeHTTP(w, req)
+
+			if w.Code != tc.statusCode {
+				t.Errorf("Want status '%d', got '%d'", tc.statusCode, w.Code)
+			}
+
+			verifyMatch(t, *w)
+		})
+	}
+}
+
+func TestApplicationHandler_GetAppEndpoints(t *testing.T) {
+	groupID := "1234567890"
+	group := &datastore.Group{UID: groupID}
+
+	tt := []struct {
+		name       string
+		cfgPath    string
+		appID      string
+		statusCode int
+		id         string
+		dbFn       func(app *applicationHandler)
+	}{
+		{
+			name:       "should_get_application_endpoints",
+			cfgPath:    "./testdata/Auth_Config/no-auth-convoy.json",
+			statusCode: http.StatusOK,
+			appID:      "a-123",
+			dbFn: func(app *applicationHandler) {
+				a, _ := app.appRepo.(*mocks.MockApplicationRepository)
+
+				a.EXPECT().
+					FindApplicationByID(gomock.Any(), gomock.Any()).Times(1).
+					Return(&datastore.Application{
+						UID:     "a-123",
+						GroupID: groupID,
+						Title:   "Valid application update",
+						Endpoints: []datastore.Endpoint{
+							{
+								UID:         "abc",
+								TargetURL:   "http://amazon.com",
+								Description: "desc",
+							},
+							{
+								UID:         "abc",
+								TargetURL:   "http://google.com",
+								Description: "desc",
+							},
+							{
+								UID:         "abc",
+								TargetURL:   "http://",
+								Description: "deleted endpoint",
+								DeletedAt:   primitive.NewDateTimeFromTime(time.Now()),
+							},
+						},
+					}, nil)
+
+				o, _ := app.groupRepo.(*mocks.MockGroupRepository)
+
+				o.EXPECT().
+					LoadGroups(gomock.Any(), gomock.Any()).Times(1).
+					Return([]*datastore.Group{group}, nil)
+			},
+		},
+	}
+
+	for _, tc := range tt {
+		t.Run(tc.name, func(t *testing.T) {
+
+			ctrl := gomock.NewController(t)
+			defer ctrl.Finish()
+			app := provideApplication(ctrl)
+
+			url := fmt.Sprintf("/api/v1/applications/%s/endpoints", tc.appID)
+			req := httptest.NewRequest(http.MethodGet, url, &bytes.Buffer{})
+			req.Header.Add("Content-Type", "application/json")
+
+			w := httptest.NewRecorder()
+
+			// Arrange Expectations
+			if tc.dbFn != nil {
+				tc.dbFn(app)
+			}
+
+			err := config.LoadConfig(tc.cfgPath)
+			if err != nil {
+				t.Errorf("Failed to load config file: %v", err)
+			}
+
+			initRealmChain(t, app.apiKeyRepo)
+
+			router := buildRoutes(app)
+
+			// Act
+			router.ServeHTTP(w, req)
+
+			if w.Code != tc.statusCode {
+				t.Errorf("Want status '%d', got '%d'", tc.statusCode, w.Code)
+			}
+			fmt.Println("gg", w.Body.String())
+			verifyMatch(t, *w)
+		})
+	}
+}
+
 func Test_applicationHandler_GetDashboardSummary(t *testing.T) {
 
 	var app *applicationHandler
@@ -1034,7 +1459,6 @@ func Test_applicationHandler_GetDashboardSummary(t *testing.T) {
 			method:     http.MethodGet,
 			statusCode: http.StatusOK,
 			dbFn: func(app *applicationHandler) {
-				app.cache.(*mocks.MockCache).EXPECT().Get(gomock.Any(), gomock.Any(), gomock.Any())
 				app.appRepo.(*mocks.MockApplicationRepository).EXPECT().
 					CountGroupApplications(gomock.Any(), gomock.Any()).Times(1).
 					Return(int64(5), nil)
@@ -1050,7 +1474,6 @@ func Test_applicationHandler_GetDashboardSummary(t *testing.T) {
 						},
 					}, nil)
 				app.cache.(*mocks.MockCache).EXPECT().Set(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any())
-
 			},
 		},
 	}
@@ -1077,6 +1500,166 @@ func Test_applicationHandler_GetDashboardSummary(t *testing.T) {
 			if responseRecorder.Code != tc.statusCode {
 				t.Errorf("Want status '%d', got '%d'", tc.statusCode, responseRecorder.Code)
 			}
+		})
+	}
+
+}
+
+func Test_applicationHandler_DeleteAppEndpoint(t *testing.T) {
+
+	groupID := "1234567890"
+	group := &datastore.Group{UID: groupID}
+
+	appId := "12345"
+	endpointId := "9999900000-8888"
+
+	tt := []struct {
+		name       string
+		cfgPath    string
+		statusCode int
+		appId      string
+		endpointId string
+		dbFn       func(app *applicationHandler)
+	}{
+		{
+			name:       "should_delete_app_endpoint",
+			cfgPath:    "./testdata/Auth_Config/no-auth-convoy.json",
+			statusCode: http.StatusOK,
+			appId:      appId,
+			endpointId: endpointId,
+			dbFn: func(app *applicationHandler) {
+				a, _ := app.appRepo.(*mocks.MockApplicationRepository)
+				a.EXPECT().
+					UpdateApplication(gomock.Any(), gomock.Any()).Times(1).
+					Return(nil)
+
+				a.EXPECT().
+					FindApplicationByID(gomock.Any(), gomock.Any()).Times(1).
+					Return(&datastore.Application{
+						UID:     appId,
+						GroupID: groupID,
+						Title:   "Valid application update",
+						Endpoints: []datastore.Endpoint{
+							{
+								UID:         endpointId,
+								TargetURL:   "http://",
+								Description: "desc",
+							},
+						},
+					}, nil)
+
+				o, _ := app.groupRepo.(*mocks.MockGroupRepository)
+
+				o.EXPECT().
+					LoadGroups(gomock.Any(), gomock.Any()).Times(1).
+					Return([]*datastore.Group{group}, nil)
+			},
+		},
+		{
+			name:       "should_fail_to_delete_app_endpoint",
+			cfgPath:    "./testdata/Auth_Config/no-auth-convoy.json",
+			statusCode: http.StatusBadRequest,
+			appId:      appId,
+			endpointId: endpointId,
+			dbFn: func(app *applicationHandler) {
+				a, _ := app.appRepo.(*mocks.MockApplicationRepository)
+				a.EXPECT().
+					UpdateApplication(gomock.Any(), gomock.Any()).Times(1).
+					Return(errors.New("failed to delete app endpoint"))
+
+				a.EXPECT().
+					FindApplicationByID(gomock.Any(), gomock.Any()).Times(1).
+					Return(&datastore.Application{
+						UID:     appId,
+						GroupID: groupID,
+						Title:   "Valid application update",
+						Endpoints: []datastore.Endpoint{
+							{
+								UID:         endpointId,
+								TargetURL:   "http://",
+								Description: "desc",
+							},
+						},
+					}, nil)
+
+				o, _ := app.groupRepo.(*mocks.MockGroupRepository)
+
+				o.EXPECT().
+					LoadGroups(gomock.Any(), gomock.Any()).Times(1).
+					Return([]*datastore.Group{group}, nil)
+			},
+		},
+		{
+			name:       "should_error_for_endpoint_not_found",
+			cfgPath:    "./testdata/Auth_Config/no-auth-convoy.json",
+			statusCode: http.StatusBadRequest,
+			appId:      appId,
+			endpointId: endpointId,
+			dbFn: func(app *applicationHandler) {
+				a, _ := app.appRepo.(*mocks.MockApplicationRepository)
+
+				a.EXPECT().
+					FindApplicationByID(gomock.Any(), gomock.Any()).Times(1).
+					Return(&datastore.Application{
+						UID:     appId,
+						GroupID: groupID,
+						Title:   "Valid application update",
+						Endpoints: []datastore.Endpoint{
+							{
+								UID:         "123",
+								TargetURL:   "http://",
+								Description: "desc",
+							},
+						},
+					}, nil)
+
+				o, _ := app.groupRepo.(*mocks.MockGroupRepository)
+
+				o.EXPECT().
+					LoadGroups(gomock.Any(), gomock.Any()).Times(1).
+					Return([]*datastore.Group{group}, nil)
+			},
+		},
+	}
+
+	for _, tc := range tt {
+		t.Run(tc.name, func(t *testing.T) {
+			// Arrange
+			var app *applicationHandler
+
+			ctrl := gomock.NewController(t)
+			defer ctrl.Finish()
+			app = provideApplication(ctrl)
+
+			url := fmt.Sprintf("/api/v1/applications/%s/endpoints/%s", tc.appId, tc.endpointId)
+			req := httptest.NewRequest(http.MethodDelete, url, &bytes.Buffer{})
+			req.SetBasicAuth("test", "test")
+			req.Header.Add("Content-Type", "application/json")
+
+			w := httptest.NewRecorder()
+
+			// Arrange Expectations
+			if tc.dbFn != nil {
+				tc.dbFn(app)
+			}
+
+			err := config.LoadConfig(tc.cfgPath)
+			if err != nil {
+				t.Errorf("Failed to load config file: %v", err)
+			}
+
+			initRealmChain(t, app.apiKeyRepo)
+
+			router := buildRoutes(app)
+
+			// Act
+			router.ServeHTTP(w, req)
+
+			if w.Code != tc.statusCode {
+				t.Errorf("Want status '%d', got '%d'", tc.statusCode, w.Code)
+			}
+
+			verifyMatch(t, *w)
 		})
 	}
 
