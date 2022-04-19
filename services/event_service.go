@@ -34,6 +34,10 @@ func NewEventService(appRepo datastore.ApplicationRepository, eventRepo datastor
 }
 
 func (e *EventService) CreateAppEvent(ctx context.Context, newMessage *models.Event, g *datastore.Group) (*datastore.Event, error) {
+	if g == nil {
+		return nil, NewServiceError(http.StatusBadRequest, errors.New("an error occurred while creating event - invalid group"))
+	}
+
 	if err := util.Validate(newMessage); err != nil {
 		return nil, NewServiceError(http.StatusBadRequest, err)
 	}
@@ -92,7 +96,7 @@ func (e *EventService) CreateAppEvent(ctx context.Context, newMessage *models.Ev
 	}
 
 	if g.Config.Strategy.Type != config.DefaultStrategyProvider && g.Config.Strategy.Type != config.ExponentialBackoffStrategyProvider {
-		return nil, NewServiceError(http.StatusInternalServerError, errors.New("retry strategy not defined in configuration"))
+		return nil, NewServiceError(http.StatusBadRequest, errors.New("retry strategy not defined in configuration"))
 	}
 
 	taskName := convoy.CreateEventProcessor.SetPrefix(g.Name)

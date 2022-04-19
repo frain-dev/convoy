@@ -727,6 +727,7 @@ func stripVariableFields(t *testing.T, obj string, v interface{}) {
 	case "event":
 		e := v.(*datastore.Event)
 		e.UID = ""
+		e.MatchedEndpoints = 0
 		e.CreatedAt, e.UpdatedAt, e.DeletedAt = 0, 0, 0
 	case "apiKey":
 		a := v.(*datastore.APIKey)
