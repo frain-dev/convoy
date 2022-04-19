@@ -320,6 +320,10 @@ func TestApplicationHandler_GetApps(t *testing.T) {
 			method:     http.MethodGet,
 			statusCode: http.StatusBadRequest,
 			dbFn: func(app *applicationHandler) {
+				c, _ := app.cache.(*mocks.MockCache)
+				c.EXPECT().Get(gomock.Any(), gomock.Any(), gomock.Any())
+				c.EXPECT().Set(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any())
+
 				a, _ := app.appRepo.(*mocks.MockApplicationRepository)
 				a.EXPECT().
 					LoadApplicationsPaged(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Times(1).
@@ -820,6 +824,11 @@ func Test_applicationHandler_DeleteApp(t *testing.T) {
 			statusCode: http.StatusOK,
 			appId:      appId,
 			dbFn: func(app *applicationHandler) {
+				c, _ := app.cache.(*mocks.MockCache)
+				c.EXPECT().Get(gomock.Any(), gomock.Any(), gomock.Any()).Times(2)
+				c.EXPECT().Set(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Times(2)
+				c.EXPECT().Delete(gomock.Any(), gomock.Any())
+
 				a, _ := app.appRepo.(*mocks.MockApplicationRepository)
 				obj := &datastore.Application{
 					UID:       appId,
@@ -849,6 +858,10 @@ func Test_applicationHandler_DeleteApp(t *testing.T) {
 			statusCode: http.StatusBadRequest,
 			appId:      appId,
 			dbFn: func(app *applicationHandler) {
+				c, _ := app.cache.(*mocks.MockCache)
+				c.EXPECT().Get(gomock.Any(), gomock.Any(), gomock.Any()).Times(2)
+				c.EXPECT().Set(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Times(2)
+
 				a, _ := app.appRepo.(*mocks.MockApplicationRepository)
 
 				obj := &datastore.Application{
@@ -981,6 +994,10 @@ func TestApplicationHandler_CreateAppEndpoint(t *testing.T) {
 			appId:      appId,
 			body:       strings.NewReader(`{"url": "https://google.com", "description": "Test","rate_limit":300,"rate_limit_duration":"1"}`),
 			dbFn: func(app *applicationHandler) {
+				c, _ := app.cache.(*mocks.MockCache)
+				c.EXPECT().Get(gomock.Any(), gomock.Any(), gomock.Any()).Times(2)
+				c.EXPECT().Set(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Times(2)
+
 				a, _ := app.appRepo.(*mocks.MockApplicationRepository)
 				a.EXPECT().
 					FindApplicationByID(gomock.Any(), gomock.Any()).Times(1).
@@ -1138,6 +1155,10 @@ func TestApplicationHandler_UpdateAppEndpoint(t *testing.T) {
 			endpointId: endpointId,
 			body:       strings.NewReader(`{"url": "https://google.com", "description": "Correct endpoint","events":["payment.created"],"rate_limit_duration":"1h","http_timeout":"10s","rate_limit":3000}`),
 			dbFn: func(app *applicationHandler) {
+				c, _ := app.cache.(*mocks.MockCache)
+				c.EXPECT().Get(gomock.Any(), gomock.Any(), gomock.Any()).Times(2)
+				c.EXPECT().Set(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Times(2)
+
 				a, _ := app.appRepo.(*mocks.MockApplicationRepository)
 
 				a.EXPECT().
@@ -1171,6 +1192,10 @@ func TestApplicationHandler_UpdateAppEndpoint(t *testing.T) {
 			endpointId: endpointId,
 			body:       strings.NewReader(`{"url": "https://google.com", "description": "Correct endpoint", "rate_limit_duration":"1"}`),
 			dbFn: func(app *applicationHandler) {
+				c, _ := app.cache.(*mocks.MockCache)
+				c.EXPECT().Get(gomock.Any(), gomock.Any(), gomock.Any()).Times(2)
+				c.EXPECT().Set(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Times(2)
+
 				a, _ := app.appRepo.(*mocks.MockApplicationRepository)
 				a.EXPECT().
 					FindApplicationByID(gomock.Any(), gomock.Any()).Times(1).
@@ -1262,7 +1287,10 @@ func TestApplicationHandler_GetAppEndpoint(t *testing.T) {
 			appID:      "a-123",
 			endpointID: "def",
 			dbFn: func(app *applicationHandler) {
-				app.cache.(*mocks.MockCache).EXPECT().Get(gomock.Any(), gomock.Any(), gomock.Any())
+				c, _ := app.cache.(*mocks.MockCache)
+				c.EXPECT().Get(gomock.Any(), gomock.Any(), gomock.Any()).Times(2)
+				c.EXPECT().Set(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Times(2)
+
 				a, _ := app.appRepo.(*mocks.MockApplicationRepository)
 
 				a.EXPECT().
@@ -1357,6 +1385,10 @@ func TestApplicationHandler_GetAppEndpoints(t *testing.T) {
 			statusCode: http.StatusOK,
 			appID:      "a-123",
 			dbFn: func(app *applicationHandler) {
+				c, _ := app.cache.(*mocks.MockCache)
+				c.EXPECT().Get(gomock.Any(), gomock.Any(), gomock.Any()).Times(2)
+				c.EXPECT().Set(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Times(2)
+
 				a, _ := app.appRepo.(*mocks.MockApplicationRepository)
 
 				a.EXPECT().
@@ -1459,6 +1491,9 @@ func Test_applicationHandler_GetDashboardSummary(t *testing.T) {
 			method:     http.MethodGet,
 			statusCode: http.StatusOK,
 			dbFn: func(app *applicationHandler) {
+				c, _ := app.cache.(*mocks.MockCache)
+				c.EXPECT().Get(gomock.Any(), gomock.Any(), gomock.Any())
+
 				app.appRepo.(*mocks.MockApplicationRepository).EXPECT().
 					CountGroupApplications(gomock.Any(), gomock.Any()).Times(1).
 					Return(int64(5), nil)
@@ -1528,6 +1563,10 @@ func Test_applicationHandler_DeleteAppEndpoint(t *testing.T) {
 			appId:      appId,
 			endpointId: endpointId,
 			dbFn: func(app *applicationHandler) {
+				c, _ := app.cache.(*mocks.MockCache)
+				c.EXPECT().Get(gomock.Any(), gomock.Any(), gomock.Any()).Times(2)
+				c.EXPECT().Set(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Times(3)
+
 				a, _ := app.appRepo.(*mocks.MockApplicationRepository)
 				a.EXPECT().
 					UpdateApplication(gomock.Any(), gomock.Any()).Times(1).
@@ -1562,6 +1601,10 @@ func Test_applicationHandler_DeleteAppEndpoint(t *testing.T) {
 			appId:      appId,
 			endpointId: endpointId,
 			dbFn: func(app *applicationHandler) {
+				c, _ := app.cache.(*mocks.MockCache)
+				c.EXPECT().Get(gomock.Any(), gomock.Any(), gomock.Any()).Times(2)
+				c.EXPECT().Set(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Times(2)
+
 				a, _ := app.appRepo.(*mocks.MockApplicationRepository)
 				a.EXPECT().
 					UpdateApplication(gomock.Any(), gomock.Any()).Times(1).
@@ -1596,6 +1639,10 @@ func Test_applicationHandler_DeleteAppEndpoint(t *testing.T) {
 			appId:      appId,
 			endpointId: endpointId,
 			dbFn: func(app *applicationHandler) {
+				c, _ := app.cache.(*mocks.MockCache)
+				c.EXPECT().Get(gomock.Any(), gomock.Any(), gomock.Any()).Times(2)
+				c.EXPECT().Set(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Times(2)
+
 				a, _ := app.appRepo.(*mocks.MockApplicationRepository)
 
 				a.EXPECT().
