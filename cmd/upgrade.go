@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"fmt"
 	"os"
 
 	"github.com/frain-dev/convoy/config"
@@ -18,9 +19,17 @@ func addUpgradeCommand(a *app) *cobra.Command {
 		Use:   "upgrade",
 		Short: "Convoy Upgrader",
 		Run: func(cmd *cobra.Command, args []string) {
-			if oldVersion == "v0.4" && newVersion == "v0.5" {
-				updateVersion4ToVersion5()
+			switch oldVersion {
+			case "v0.4":
+				if newVersion == "v0.5" {
+					updateVersion4ToVersion5()
+				}
+				log.Error(fmt.Sprintf("%s is not a valid new version for v0.4", newVersion))
+			default:
+				log.Error(fmt.Sprintf("%s is not a valid old version", oldVersion))
 			}
+
+			os.Exit(0)
 		},
 	}
 
