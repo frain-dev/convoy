@@ -220,9 +220,12 @@ func TestApplicationHandler_CreateAppPortalAPIKey(t *testing.T) {
 				a, _ := app.apiKeyRepo.(*mocks.MockAPIKeyRepository)
 				g, _ := app.groupRepo.(*mocks.MockGroupRepository)
 				ap, _ := app.appRepo.(*mocks.MockApplicationRepository)
+				c, _ := app.cache.(*mocks.MockCache)
+				c.EXPECT().Get(gomock.Any(), gomock.Any(), gomock.Any()).Times(2)
 				g.EXPECT().
 					FetchGroupByID(gomock.Any(), gomock.Any()).
 					Times(1).Return(group, nil)
+				c.EXPECT().Set(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Times(2)
 				a.EXPECT().CreateAPIKey(gomock.Any(), gomock.Any()).Times(1).Return(nil)
 				ap.EXPECT().FindApplicationByID(gomock.Any(), gomock.Any()).Times(1).Return(application, nil)
 			},
@@ -237,9 +240,12 @@ func TestApplicationHandler_CreateAppPortalAPIKey(t *testing.T) {
 			dbFn: func(app *applicationHandler) {
 				g, _ := app.groupRepo.(*mocks.MockGroupRepository)
 				ap, _ := app.appRepo.(*mocks.MockApplicationRepository)
+				c, _ := app.cache.(*mocks.MockCache)
+				c.EXPECT().Get(gomock.Any(), gomock.Any(), gomock.Any()).Times(2)
 				g.EXPECT().
 					FetchGroupByID(gomock.Any(), gomock.Any()).
 					Times(1).Return(group, nil)
+				c.EXPECT().Set(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Times(2)
 				ap.EXPECT().FindApplicationByID(gomock.Any(), gomock.Any()).Times(1).Return(&datastore.Application{UID: "123", GroupID: "123"}, nil)
 			},
 		},

@@ -599,7 +599,7 @@ func requeueMessagesinStream(a *app) *cobra.Command {
 						continue
 					}
 					taskName := convoy.EventProcessor.SetPrefix(group.Name)
-					err = q.Write(ctx, taskName, d, 1*time.Second)
+					err = q.WriteEventDelivery(ctx, taskName, d, 1*time.Second)
 					if err != nil {
 						log.WithError(err).Errorf("count: %s failed to send event delivery %s to the queue", fmt.Sprint(i), d.ID)
 					}

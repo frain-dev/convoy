@@ -13,13 +13,15 @@ import (
 
 type Queuer interface {
 	io.Closer
-	Write(context.Context, convoy.TaskName, *datastore.EventDelivery, time.Duration) error
+	WriteEventDelivery(context.Context, convoy.TaskName, *datastore.EventDelivery, time.Duration) error
+	WriteEvent(context.Context, convoy.TaskName, *datastore.Event, time.Duration) error
 	Consumer() taskq.QueueConsumer
 }
 
 type Job struct {
-	Err error  `json:"err"`
-	ID  string `json:"id"`
+	Err   error            `json:"err"`
+	ID    string           `json:"id"`
+	Event *datastore.Event `json:"event"`
 }
 
 type QueueOptions struct {
