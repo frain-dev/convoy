@@ -20,13 +20,13 @@ func ProcessEventCreated(appRepo datastore.ApplicationRepository, eventRepo data
 		event := job.Event
 		ctx := context.Background()
 
+		var group *datastore.Group
 		var app *datastore.Application
-		appCacheKey := convoy.ApplicationsCacheKey.Get(event.AppMetadata.UID).String()
 
-		// fetch from cache
+		appCacheKey := convoy.ApplicationsCacheKey.Get(event.AppMetadata.UID).String()
 		err := cache.Get(ctx, appCacheKey, &app)
 		if err != nil {
-			return &EndpointError{Err: errors.New("cache error"), delay: time.Minute}
+			return &EndpointError{Err: errors.New("cache error"), delay: 10 * time.Second}
 		}
 
 		// cache miss, load from db
@@ -41,18 +41,31 @@ func ProcessEventCreated(appRepo datastore.ApplicationRepository, eventRepo data
 				}
 
 				log.WithError(err).Error("failed to fetch app")
-				return errors.New(msg)
+				return &EndpointError{Err: errors.New(msg), delay: 10 * time.Second}
 			}
 
-			err = cache.Set(ctx, appCacheKey, app, time.Minute)
+			err = cache.Set(ctx, appCacheKey, app, 10*time.Minute)
 			if err != nil {
-				return err
+				return &EndpointError{Err: err, delay: 10 * time.Second}
 			}
 		}
 
-		g, err := groupRepo.FetchGroupByID(ctx, event.AppMetadata.GroupID)
+		groupCacheKey := convoy.GroupsCacheKey.Get(event.AppMetadata.GroupID).String()
+		err = cache.Get(ctx, groupCacheKey, &group)
 		if err != nil {
-			return &EndpointError{Err: err, delay: time.Minute}
+			return &EndpointError{Err: err, delay: 10 * time.Second}
+		}
+
+		if group == nil {
+			group, err = groupRepo.FetchGroupByID(ctx, event.AppMetadata.GroupID)
+			if err != nil {
+				return &EndpointError{Err: err, delay: 10 * time.Second}
+			}
+		}
+
+		err = cache.Set(ctx, groupCacheKey, &group, 5*time.Minute)
+		if err != nil {
+			return &EndpointError{Err: err, delay: 10 * time.Second}
 		}
 
 		matchedEndpoints := matchEndpointsForDelivery(event.EventType, app.Endpoints, nil)
@@ -64,12 +77,12 @@ func ProcessEventCreated(appRepo datastore.ApplicationRepository, eventRepo data
 
 		var intervalSeconds uint64
 		var retryLimit uint64
-		if string(g.Config.Strategy.Type) == string(config.DefaultStrategyProvider) {
-			intervalSeconds = g.Config.Strategy.Default.IntervalSeconds
-			retryLimit = g.Config.Strategy.Default.RetryLimit
-		} else if string(g.Config.Strategy.Type) == string(config.ExponentialBackoffStrategyProvider) {
+		if string(group.Config.Strategy.Type) == string(config.DefaultStrategyProvider) {
+			intervalSeconds = group.Config.Strategy.Default.IntervalSeconds
+			retryLimit = group.Config.Strategy.Default.RetryLimit
+		} else if string(group.Config.Strategy.Type) == string(config.ExponentialBackoffStrategyProvider) {
 			intervalSeconds = 0
-			retryLimit = g.Config.Strategy.ExponentialBackoff.RetryLimit
+			retryLimit = group.Config.Strategy.ExponentialBackoff.RetryLimit
 		} else {
 			return nil
 		}
@@ -99,7 +112,7 @@ func ProcessEventCreated(appRepo datastore.ApplicationRepository, eventRepo data
 				},
 				Metadata: &datastore.Metadata{
 					Data:            event.Data,
-					Strategy:        g.Config.Strategy.Type,
+					Strategy:        group.Config.Strategy.Type,
 					NumTrials:       0,
 					IntervalSeconds: intervalSeconds,
 					RetryLimit:      retryLimit,
@@ -117,7 +130,7 @@ func ProcessEventCreated(appRepo datastore.ApplicationRepository, eventRepo data
 				log.WithError(err).Error("error occurred creating event delivery")
 			}
 
-			taskName := convoy.EventProcessor.SetPrefix(g.Name)
+			taskName := convoy.EventProcessor.SetPrefix(group.Name)
 			if eventDelivery.Status != datastore.DiscardedEventStatus {
 				err = eventQueue.WriteEventDelivery(ctx, taskName, eventDelivery, 1*time.Second)
 				if err != nil {

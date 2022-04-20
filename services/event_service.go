@@ -66,7 +66,7 @@ func (e *EventService) CreateAppEvent(ctx context.Context, newMessage *models.Ev
 			return nil, NewServiceError(statusCode, errors.New(msg))
 		}
 
-		err = e.cache.Set(ctx, appCacheKey, &app, time.Minute)
+		err = e.cache.Set(ctx, appCacheKey, &app, time.Minute*5)
 		if err != nil {
 			return nil, err
 		}

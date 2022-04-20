@@ -56,7 +56,7 @@ func (a *AppService) CreateApp(ctx context.Context, newApp *models.Application, 
 	}
 
 	appCacheKey := convoy.ApplicationsCacheKey.Get(app.UID).String()
-	err = a.cache.Set(ctx, appCacheKey, &app, time.Minute)
+	err = a.cache.Set(ctx, appCacheKey, &app, time.Minute*5)
 	if err != nil {
 		return nil, NewServiceError(http.StatusBadRequest, errors.New("failed to create application cache"))
 	}
@@ -104,7 +104,7 @@ func (a *AppService) UpdateApplication(ctx context.Context, appUpdate *models.Up
 	}
 
 	appCacheKey := convoy.ApplicationsCacheKey.Get(app.UID).String()
-	err = a.cache.Set(ctx, appCacheKey, &app, time.Minute)
+	err = a.cache.Set(ctx, appCacheKey, &app, time.Minute*5)
 	if err != nil {
 		return NewServiceError(http.StatusBadRequest, errors.New("failed to update application cache"))
 	}
@@ -180,7 +180,7 @@ func (a *AppService) CreateAppEndpoint(ctx context.Context, e models.Endpoint, a
 	}
 
 	appCacheKey := convoy.ApplicationsCacheKey.Get(app.UID).String()
-	err = a.cache.Set(ctx, appCacheKey, &app, time.Minute)
+	err = a.cache.Set(ctx, appCacheKey, &app, time.Minute*5)
 	if err != nil {
 		return nil, NewServiceError(http.StatusBadRequest, errors.New("failed to update application cache"))
 	}
@@ -202,7 +202,7 @@ func (a *AppService) UpdateAppEndpoint(ctx context.Context, e models.Endpoint, e
 	}
 
 	appCacheKey := convoy.ApplicationsCacheKey.Get(app.UID).String()
-	err = a.cache.Set(ctx, appCacheKey, &app, time.Minute)
+	err = a.cache.Set(ctx, appCacheKey, &app, time.Minute*5)
 	if err != nil {
 		return endpoint, NewServiceError(http.StatusBadRequest, errors.New("failed to update application cache"))
 	}
@@ -226,7 +226,7 @@ func (a *AppService) DeleteAppEndpoint(ctx context.Context, e *datastore.Endpoin
 	}
 
 	appCacheKey := convoy.ApplicationsCacheKey.Get(app.UID).String()
-	err = a.cache.Set(ctx, appCacheKey, &app, time.Minute)
+	err = a.cache.Set(ctx, appCacheKey, &app, time.Minute*5)
 	if err != nil {
 		return NewServiceError(http.StatusBadRequest, errors.New("failed to update application cache"))
 	}

@@ -154,7 +154,7 @@ func requireApp(appRepo datastore.ApplicationRepository, cache cache.Cache) func
 					return
 				}
 
-				err = cache.Set(r.Context(), appCacheKey, &app, time.Minute)
+				err = cache.Set(r.Context(), appCacheKey, &app, time.Minute*5)
 				if err != nil {
 					_ = render.Render(w, r, newErrorResponse(err.Error(), statusCode))
 					return
@@ -458,7 +458,7 @@ func requireGroup(groupRepo datastore.GroupRepository, cache cache.Cache) func(n
 						return
 					}
 
-					err = cache.Set(r.Context(), groupCacheKey, &group, time.Minute)
+					err = cache.Set(r.Context(), groupCacheKey, &group, time.Minute*5)
 					if err != nil {
 						_ = render.Render(w, r, newErrorResponse(err.Error(), http.StatusBadRequest))
 						return
@@ -488,7 +488,7 @@ func requireGroup(groupRepo datastore.GroupRepository, cache cache.Cache) func(n
 						return
 					}
 
-					err = cache.Set(r.Context(), groupCacheKey, &group, time.Minute)
+					err = cache.Set(r.Context(), groupCacheKey, &group, time.Minute*5)
 					if err != nil {
 						_ = render.Render(w, r, newErrorResponse(err.Error(), http.StatusBadRequest))
 						return
