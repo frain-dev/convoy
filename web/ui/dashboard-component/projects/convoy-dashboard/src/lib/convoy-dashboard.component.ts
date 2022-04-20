@@ -166,6 +166,7 @@ export class ConvoyDashboardComponent implements OnInit {
 		if (this.isCloud) {
 			this.convyDashboardService.activeGroupId = this.groupId;
 			this.apiAuthType = 'Bearer';
+			this.convyDashboardService.authType = this.apiAuthType;
 		}
 
 		return await this.initDashboard();
@@ -244,7 +245,6 @@ export class ConvoyDashboardComponent implements OnInit {
 			(<any>Object).values(this.addNewAppForm.controls).forEach((control: FormControl) => {
 				control?.markAsTouched();
 			});
-			console.log(this.addNewAppForm.controls)
 			return;
 		}
 		this.isCreatingNewApp = true;
@@ -876,15 +876,15 @@ export class ConvoyDashboardComponent implements OnInit {
 				const content = [...this.apps.content, ...appsResponse.data.content];
 				const pagination = appsResponse.data.pagination;
 				this.apps = { content, pagination };
-				this.displayedApps = this.setContentDisplayed(this.apps.content)
+				this.displayedApps = this.setContentDisplayed(this.apps.content);
 				this.isloadingMoreApps = false;
 				return appsResponse;
 			}
 
-			if (requestDetails?.type === 'apps'){
+			if (requestDetails?.type === 'apps') {
 				this.apps = appsResponse.data;
-				this.displayedApps = this.setContentDisplayed(this.apps.content)
-			} 
+				this.displayedApps = this.setContentDisplayed(this.apps.content);
+			}
 			if (!this.filteredApps) this.filteredApps = appsResponse.data.content;
 
 			if (this.updateAppDetail) this.appsDetailsItem = this.apps.content.find(item => this.appsDetailsItem?.uid == item.uid);
