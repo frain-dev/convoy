@@ -7,7 +7,7 @@ import { HTTP_RESPONSE } from './models/http.model';
 })
 export class ConvoyDashboardService {
 	token: string = '';
-	authType: 'Bearer' | 'Basic' = 'Basic';
+	authType!: 'Bearer' | 'Basic';
 	url: string = '';
 	activeGroupId: string = '';
 
@@ -61,7 +61,7 @@ export class ConvoyDashboardService {
 		return new Promise(async (resolve, reject) => {
 			try {
 				const response = await this.request({
-					url: `/events?groupID=${this.activeGroupId}&sort=AESC&page=${requestDetails.pageNo}&perPage=20&startDate=${requestDetails.startDate}&endDate=${requestDetails.endDate}&appId=${requestDetails.appId}`,
+					url: `/events?groupId=${this.activeGroupId}&sort=AESC&page=${requestDetails.pageNo}&perPage=20&startDate=${requestDetails.startDate}&endDate=${requestDetails.endDate}&appId=${requestDetails.appId}`,
 					method: 'get'
 				});
 
@@ -76,7 +76,7 @@ export class ConvoyDashboardService {
 		return new Promise(async (resolve, reject) => {
 			try {
 				const response = await this.request({
-					url: `/eventdeliveries?groupID=${this.activeGroupId}&eventId=${requestDetails.eventId}&page=${requestDetails.pageNo}&startDate=${requestDetails.startDate}&endDate=${requestDetails.endDate}&appId=${requestDetails.appId}${requestDetails.statusQuery}`,
+					url: `/eventdeliveries?groupId=${this.activeGroupId}&eventId=${requestDetails.eventId}&page=${requestDetails.pageNo}&startDate=${requestDetails.startDate}&endDate=${requestDetails.endDate}&appId=${requestDetails.appId}${requestDetails.statusQuery}`,
 					method: 'get'
 				});
 
@@ -91,7 +91,7 @@ export class ConvoyDashboardService {
 		return new Promise(async (resolve, reject) => {
 			try {
 				const response = await this.request({
-					url: `/eventdeliveries/${requestDetails.eventDeliveryId}/deliveryattempts?groupID=${this.activeGroupId}`,
+					url: `/eventdeliveries/${requestDetails.eventDeliveryId}/deliveryattempts?groupId=${this.activeGroupId}`,
 					method: 'get'
 				});
 
@@ -106,7 +106,7 @@ export class ConvoyDashboardService {
 		return new Promise(async (resolve, reject) => {
 			try {
 				const response = await this.request({
-					url: `/apps?groupID=${this.activeGroupId}&sort=AESC&page=${requestDetails.pageNo}&perPage=20${requestDetails?.searchString ? `&q=${requestDetails?.searchString}` : ''}`,
+					url: `/apps?groupId=${this.activeGroupId}&sort=AESC&page=${requestDetails.pageNo}&perPage=20${requestDetails?.searchString ? `&q=${requestDetails?.searchString}` : ''}`,
 					method: 'get'
 				});
 
@@ -121,7 +121,7 @@ export class ConvoyDashboardService {
 		return new Promise(async (resolve, reject) => {
 			try {
 				const response = await this.request({
-					url: `/eventdeliveries/${requestDetails.eventId}/resend?groupID=${this.activeGroupId}`,
+					url: `/eventdeliveries/${requestDetails.eventId}/resend?groupId=${this.activeGroupId}`,
 					method: 'put'
 				});
 
@@ -136,7 +136,7 @@ export class ConvoyDashboardService {
 		return new Promise(async (resolve, reject) => {
 			try {
 				const response = await this.request({
-					url: `/eventdeliveries/forceresend?groupID=${this.activeGroupId}`,
+					url: `/eventdeliveries/forceresend?groupId=${this.activeGroupId}`,
 					method: 'post',
 					body: requestDetails.body
 				});
@@ -152,7 +152,7 @@ export class ConvoyDashboardService {
 		return new Promise(async (resolve, reject) => {
 			try {
 				const response = await this.request({
-					url: `/eventdeliveries/batchretry?groupID=${this.activeGroupId}&eventId=${requestDetails.eventId || ''}&page=${requestDetails.pageNo}&startDate=${requestDetails.startDate}&endDate=${
+					url: `/eventdeliveries/batchretry?groupId=${this.activeGroupId}&eventId=${requestDetails.eventId || ''}&page=${requestDetails.pageNo}&startDate=${requestDetails.startDate}&endDate=${
 						requestDetails.endDate
 					}&appId=${requestDetails.appId}${requestDetails.statusQuery || ''}`,
 					method: 'post',
@@ -170,7 +170,7 @@ export class ConvoyDashboardService {
 		return new Promise(async (resolve, reject) => {
 			try {
 				const response = await this.request({
-					url: `/apps/${requestDetails.appId}?groupID=${this.activeGroupId}`,
+					url: `/apps/${requestDetails.appId}?groupId=${this.activeGroupId}`,
 					method: 'put',
 					body: requestDetails.body
 				});
@@ -186,7 +186,7 @@ export class ConvoyDashboardService {
 		return new Promise(async (resolve, reject) => {
 			try {
 				const response = await this.request({
-					url: `/apps?groupID=${this.activeGroupId}`,
+					url: `/apps?groupId=${this.activeGroupId}`,
 					method: 'post',
 					body: requestDetails.body
 				});
@@ -202,7 +202,7 @@ export class ConvoyDashboardService {
 		return new Promise(async (resolve, reject) => {
 			try {
 				const response = await this.request({
-					url: `/apps/${requestDetails.appId}?groupID=${this.activeGroupId}`,
+					url: `/apps/${requestDetails.appId}?groupId=${this.activeGroupId}`,
 					method: 'delete'
 				});
 
@@ -217,7 +217,7 @@ export class ConvoyDashboardService {
 		return new Promise(async (resolve, reject) => {
 			try {
 				const response = await this.request({
-					url: `/apps/${requestDetails.appId}/endpoints?groupID=${this.activeGroupId}`,
+					url: `/apps/${requestDetails.appId}/endpoints?groupId=${this.activeGroupId}`,
 					body: requestDetails.body,
 					method: 'post'
 				});
@@ -233,7 +233,7 @@ export class ConvoyDashboardService {
 		return new Promise(async (resolve, reject) => {
 			try {
 				const response = await this.request({
-					url: `/events?groupID=${this.activeGroupId}`,
+					url: `/events?groupId=${this.activeGroupId}`,
 					body: requestDetails.body,
 					method: 'post'
 				});
@@ -249,7 +249,7 @@ export class ConvoyDashboardService {
 		return new Promise(async (resolve, reject) => {
 			try {
 				const response = await this.request({
-					url: `/eventdeliveries/countbatchretryevents?groupID=${this.activeGroupId}&eventId=${requestDetails.eventId}&page=${requestDetails.pageNo}&startDate=${requestDetails.startDate}&endDate=${
+					url: `/eventdeliveries/countbatchretryevents?groupId=${this.activeGroupId}&eventId=${requestDetails.eventId}&page=${requestDetails.pageNo}&startDate=${requestDetails.startDate}&endDate=${
 						requestDetails.endDate
 					}&appId=${requestDetails.appId}${requestDetails.statusQuery || ''}`,
 					method: 'get'
@@ -266,7 +266,7 @@ export class ConvoyDashboardService {
 		return new Promise(async (resolve, reject) => {
 			try {
 				const response = await this.request({
-					url: `/dashboard/config?groupID=${this.activeGroupId}`,
+					url: `/dashboard/config?groupId=${this.activeGroupId}`,
 					method: 'get'
 				});
 
@@ -281,7 +281,7 @@ export class ConvoyDashboardService {
 		return new Promise(async (resolve, reject) => {
 			try {
 				const response = await this.request({
-					url: `/dashboard/summary?groupID=${this.activeGroupId}&startDate=${requestDetails.startDate}&endDate=${requestDetails.endDate}&type=${requestDetails.frequency}`,
+					url: `/dashboard/summary?groupId=${this.activeGroupId}&startDate=${requestDetails.startDate}&endDate=${requestDetails.endDate}&type=${requestDetails.frequency}`,
 					method: 'get'
 				});
 
@@ -296,7 +296,7 @@ export class ConvoyDashboardService {
 		return new Promise(async (resolve, reject) => {
 			try {
 				const response = await this.request({
-					url: `/apps/${requestDetails.appId}/keys?groupID=${this.activeGroupId}`,
+					url: `/apps/${requestDetails.appId}/keys?groupId=${this.activeGroupId}`,
 					method: 'post',
 					body: {}
 				});

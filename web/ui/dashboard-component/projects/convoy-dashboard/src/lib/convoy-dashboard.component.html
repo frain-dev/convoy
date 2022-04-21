@@ -95,13 +95,39 @@
 			</div>
 
 			<div class="card has-title dashboard--page--details--credentials has-loader">
-				<convoy-loader id="group_config_loader" *ngIf="isloadingConfig"></convoy-loader>
-
 				<div class="card--title">
 					<h3>Configuration</h3>
 				</div>
 
-				<ul class="card--container" id="group-config">
+				<ul class="card--container" id="group_config_loader" *ngIf="isloadingConfig">
+					<li class="list-item-inline">
+						<div class="list-item-inline--label"><div class="skeleton-loader data"></div></div>
+						<div class="list-item-inline--item">
+							<div class="skeleton-loader small"></div>
+						</div>
+					</li>
+
+					<li class="list-item-inline border__top">
+						<div class="list-item-inline--label padding-top__16px"><div class="skeleton-loader small"></div></div>
+						<div class="list-item-inline--item padding-top__16px"><div class="skeleton-loader small"></div></div>
+					</li>
+
+					<li class="list-item-inline border__top">
+						<div class="list-item-inline--label padding-top__16px"><div class="skeleton-loader text"></div></div>
+						<div class="list-item-inline--item padding-top__16px">
+							<div class="flex flex__column flex__justify-end flex__align-items-end">
+								<div class="skeleton-loader data"></div>
+								<div class="skeleton-loader small margin-top__8px"></div>
+							</div>
+						</div>
+					</li>
+
+					<li class="list-item-inline border__top">
+						<div class="list-item-inline--label padding-top__16px"><div class="skeleton-loader text"></div></div>
+						<div class="list-item-inline--item padding-top__16px"><div class="skeleton-loader small"></div></div>
+					</li>
+				</ul>
+				<ul class="card--container" id="group-config" *ngIf="!isloadingConfig">
 					<li class="list-item-inline">
 						<div class="list-item-inline--label">Request interval (Seconds)</div>
 						<div class="list-item-inline--item">{{ organisationDetails?.strategy?.default?.intervalSeconds }}s</div>
@@ -462,15 +488,12 @@
 			<div class="flex">
 				<div class="dashboard--logs--table">
 					<div class="table table--container has-loader" id="events-table-container" [hidden]="activeTab !== 'events' || displayedEvents?.length === 0">
-						<convoy-loader id="events_loader_loader" *ngIf="isloadingEvents"></convoy-loader>
+						<convoy-table-loader id="events_loader_loader" [tableHead]="eventsTableHead" *ngIf="isloadingEvents"></convoy-table-loader>
 
-						<table id="table">
+						<table id="table" *ngIf="!isloadingEvents">
 							<thead>
 								<tr class="table--head">
-									<th scope="col">Event Type</th>
-									<th scope="col">App Name</th>
-									<th scope="col">Created At</th>
-									<th scope="col"></th>
+									<th *ngFor="let head of eventsTableHead" scope="col">{{ head }}</th>
 								</tr>
 							</thead>
 							<tbody>
@@ -532,16 +555,12 @@
 					</div>
 
 					<div class="table table--container has-loader" id="event-deliveries-table-container" [hidden]="activeTab !== 'event deliveries' || displayedEventDeliveries.length === 0">
-						<convoy-loader id="event_deliveries_loader" *ngIf="isloadingEventDeliveries"></convoy-loader>
+						<convoy-table-loader id="event_deliveries_loader" [tableHead]="eventDelTableHead" *ngIf="isloadingEventDeliveries"></convoy-table-loader>
 
-						<table id="table">
+						<table id="table" *ngIf="!isloadingEventDeliveries">
 							<thead>
 								<tr class="table--head">
-									<th scope="col">Status</th>
-									<th scope="col">Event Type</th>
-									<th scope="col">Attempts</th>
-									<th scope="col">Created At</th>
-									<th scope="col"></th>
+									<th *ngFor="let head of eventDelTableHead" scope="col">{{ head }}</th>
 								</tr>
 							</thead>
 							<tbody>
@@ -617,17 +636,12 @@
 					</div>
 
 					<div class="table table--container has-loader" id="apps-table-container" [hidden]="activeTab !== 'apps' || displayedApps.length === 0">
-						<convoy-loader id="apps_loader" *ngIf="isloadingApps"></convoy-loader>
+						<convoy-table-loader id="apps_loader" [tableHead]="appsTableHead" *ngIf="isloadingApps"></convoy-table-loader>
 
-						<table id="table">
+						<table id="table" *ngIf="!isloadingApps">
 							<thead>
 								<tr class="table--head">
-									<th scope="col">Status</th>
-									<th scope="col">Name</th>
-									<th scope="col">Time Created</th>
-									<th scope="col">Updated</th>
-									<th scope="col">Events</th>
-									<th scope="col">Endpoints</th>
+									<th *ngFor="let head of appsTableHead" scope="col">{{ head }}</th>
 									<th scope="col"></th>
 									<th scope="col"></th>
 								</tr>

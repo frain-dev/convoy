@@ -19,6 +19,9 @@ import { DatePipe } from '@angular/common';
 	styleUrls: ['./convoy-dashboard.component.scss']
 })
 export class ConvoyDashboardComponent implements OnInit {
+	eventsTableHead: string[] = ['Event Type', 'App Name', 'Created At', ''];
+	eventDelTableHead: string[] = ['Status', 'Event Type', 'Attempts', 'Created At', ''];
+	appsTableHead: string[] = ['Status', 'Name', 'Time Created', 'Updated', 'Events', 'Endpoints'];
 	showFilterCalendar = false;
 	tabs: ['events', 'event deliveries', 'apps'] = ['events', 'event deliveries', 'apps'];
 	activeTab: 'events' | 'apps' | 'event deliveries' = 'events';
@@ -166,6 +169,7 @@ export class ConvoyDashboardComponent implements OnInit {
 		if (this.isCloud) {
 			this.convyDashboardService.activeGroupId = this.groupId;
 			this.apiAuthType = 'Bearer';
+			this.convyDashboardService.authType = this.apiAuthType;
 		}
 
 		return await this.initDashboard();
@@ -244,7 +248,6 @@ export class ConvoyDashboardComponent implements OnInit {
 			(<any>Object).values(this.addNewAppForm.controls).forEach((control: FormControl) => {
 				control?.markAsTouched();
 			});
-			console.log(this.addNewAppForm.controls)
 			return;
 		}
 		this.isCreatingNewApp = true;
@@ -663,8 +666,8 @@ export class ConvoyDashboardComponent implements OnInit {
 
 	async getEvents(requestDetails?: { appId?: string; addToURL?: boolean; fromFilter?: boolean }): Promise<HTTP_RESPONSE> {
 		this.events && this.events?.pagination?.next === this.eventsPage ? (this.isloadingMoreEvents = true) : (this.isloadingEvents = true);
-
-		if (requestDetails?.appId) this.eventApp = requestDetails.appId;
+//  hhe
+		if (requestDetails?.appId) this.eventApp = requestDetails.appId; 
 		if (requestDetails?.addToURL) this.addFilterToURL({ section: 'events' });
 
 		const { startDate, endDate } = this.setDateForFilter(this.eventsFilterDateRange.value);
@@ -776,12 +779,14 @@ export class ConvoyDashboardComponent implements OnInit {
 
 	updateAppFilter(appId: string, isChecked: any, activeSection: 'eventDels' | 'events') {
 		this.showOverlay = false;
+
 		activeSection === 'eventDels' ? (this.showEventDeliveriesAppsDropdown = !this.showEventDeliveriesAppsDropdown) : (this.showEventsAppsDropdown = !this.showEventsAppsDropdown);
 		if (isChecked.target.checked) {
 			activeSection === 'eventDels' ? (this.eventDeliveriesApp = appId) : (this.eventApp = appId);
 		} else {
 			activeSection === 'eventDels' ? (this.eventDeliveriesApp = '') : (this.eventApp = '');
 		}
+		
 		activeSection === 'eventDels' ? this.getEventDeliveries({ addToURL: true, fromFilter: true }) : this.getEvents({ addToURL: true, fromFilter: true });
 	}
 
@@ -876,15 +881,15 @@ export class ConvoyDashboardComponent implements OnInit {
 				const content = [...this.apps.content, ...appsResponse.data.content];
 				const pagination = appsResponse.data.pagination;
 				this.apps = { content, pagination };
-				this.displayedApps = this.setContentDisplayed(this.apps.content)
+				this.displayedApps = this.setContentDisplayed(this.apps.content);
 				this.isloadingMoreApps = false;
 				return appsResponse;
 			}
 
-			if (requestDetails?.type === 'apps'){
+			if (requestDetails?.type === 'apps') {
 				this.apps = appsResponse.data;
-				this.displayedApps = this.setContentDisplayed(this.apps.content)
-			} 
+				this.displayedApps = this.setContentDisplayed(this.apps.content);
+			}
 			if (!this.filteredApps) this.filteredApps = appsResponse.data.content;
 
 			if (this.updateAppDetail) this.appsDetailsItem = this.apps.content.find(item => this.appsDetailsItem?.uid == item.uid);

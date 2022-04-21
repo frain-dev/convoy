@@ -8,9 +8,10 @@ import { PrismModule } from './prism/prism.module';
 import { ConvoyLoaderComponent } from './loader-component/loader.component';
 import { SharedModule } from './shared/shared.module';
 import { RouterModule } from '@angular/router';
+import { ConvoyTableLoaderComponent } from './loader-component/table-loader.component';
 
 @NgModule({
-	declarations: [ConvoyDashboardComponent, ConvoyLoaderComponent],
+	declarations: [ConvoyDashboardComponent, ConvoyLoaderComponent, ConvoyTableLoaderComponent],
 	imports: [CommonModule, MatDatepickerModule, MatNativeDateModule, FormsModule, ReactiveFormsModule, PrismModule, SharedModule, RouterModule],
 	exports: [ConvoyDashboardComponent],
 	providers: [DatePipe]
