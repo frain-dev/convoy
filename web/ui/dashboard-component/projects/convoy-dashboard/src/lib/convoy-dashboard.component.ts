@@ -666,7 +666,6 @@ export class ConvoyDashboardComponent implements OnInit {
 
 	async getEvents(requestDetails?: { appId?: string; addToURL?: boolean; fromFilter?: boolean }): Promise<HTTP_RESPONSE> {
 		this.events && this.events?.pagination?.next === this.eventsPage ? (this.isloadingMoreEvents = true) : (this.isloadingEvents = true);
-//  hhe
 		if (requestDetails?.appId) this.eventApp = requestDetails.appId; 
 		if (requestDetails?.addToURL) this.addFilterToURL({ section: 'events' });
 
