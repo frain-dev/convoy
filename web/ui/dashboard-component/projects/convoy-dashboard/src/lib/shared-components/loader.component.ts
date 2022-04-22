@@ -5,7 +5,7 @@ import { ChangeDetectionStrategy, Component, Input, OnInit } from '@angular/core
 	changeDetection: ChangeDetectionStrategy.OnPush,
 	template: `
 		<div [class]="'loader ' + (isTransparent ? 'transparent' : '')">
-			<img src="/assets/img/loader.gif" alt="loader" />
+			<img src="/assets/img/page-loader.gif" alt="loader" />
 		</div>
 	`,
 	styles: [

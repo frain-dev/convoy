@@ -489,6 +489,11 @@ paths:
         in: query
         name: q
         type: string
+      - description: group id
+        in: query
+        name: groupId
+        required: true
+        type: string
       produces:
       - application/json
       responses:
@@ -545,6 +550,11 @@ paths:
       - application/json
       description: This endpoint creates an application
       parameters:
+      - description: group id
+        in: query
+        name: groupId
+        required: true
+        type: string
       - description: Application Details
         in: body
         name: application
@@ -601,6 +611,11 @@ paths:
       - application/json
       description: This endpoint deletes an app
       parameters:
+      - description: group id
+        in: query
+        name: groupId
+        required: true
+        type: string
       - description: application id
         in: path
         name: appID
@@ -655,6 +670,11 @@ paths:
       - application/json
       description: This endpoint fetches an application by it's id
       parameters:
+      - description: group id
+        in: query
+        name: groupId
+        required: true
+        type: string
       - description: application id
         in: path
         name: appID
@@ -709,6 +729,11 @@ paths:
       - application/json
       description: This endpoint updates an application
       parameters:
+      - description: group id
+        in: query
+        name: groupId
+        required: true
+        type: string
       - description: application id
         in: path
         name: appID
@@ -770,6 +795,11 @@ paths:
       - application/json
       description: This endpoint fetches an application's endpoints
       parameters:
+      - description: group id
+        in: query
+        name: groupId
+        required: true
+        type: string
       - description: application id
         in: path
         name: appID
@@ -826,6 +856,11 @@ paths:
       - application/json
       description: This endpoint creates an application endpoint
       parameters:
+      - description: group id
+        in: query
+        name: groupId
+        required: true
+        type: string
       - description: application id
         in: path
         name: appID
@@ -887,6 +922,11 @@ paths:
       - application/json
       description: This endpoint deletes an application endpoint
       parameters:
+      - description: group id
+        in: query
+        name: groupId
+        required: true
+        type: string
       - description: application id
         in: path
         name: appID
@@ -946,6 +986,11 @@ paths:
       - application/json
       description: This endpoint fetches an application endpoint
       parameters:
+      - description: group id
+        in: query
+        name: groupId
+        required: true
+        type: string
       - description: application id
         in: path
         name: appID
@@ -1005,6 +1050,11 @@ paths:
       - application/json
       description: This endpoint updates an application endpoint
       parameters:
+      - description: group id
+        in: query
+        name: groupId
+        required: true
+        type: string
       - description: application id
         in: path
         name: appID
@@ -1078,6 +1128,7 @@ paths:
       - description: group id
         in: query
         name: groupId
+        required: true
         type: string
       - description: event id
         in: query
@@ -1171,6 +1222,11 @@ paths:
       - application/json
       description: This endpoint fetches an event delivery.
       parameters:
+      - description: group id
+        in: query
+        name: groupId
+        required: true
+        type: string
       - description: event delivery id
         in: path
         name: eventDeliveryID
@@ -1231,6 +1287,11 @@ paths:
       - application/json
       description: This endpoint resends an app event
       parameters:
+      - description: group id
+        in: query
+        name: groupId
+        required: true
+        type: string
       - description: event delivery id
         in: path
         name: eventDeliveryID
@@ -1291,6 +1352,11 @@ paths:
       - application/json
       description: This endpoint resends multiple app events
       parameters:
+      - description: group id
+        in: query
+        name: groupId
+        required: true
+        type: string
       - description: event delivery ids
         in: body
         name: ids
@@ -1359,9 +1425,10 @@ paths:
         in: query
         name: appId
         type: string
-      - description: group id
+      - description: group Id
         in: query
         name: groupId
+        required: true
         type: string
       - description: start date
         in: query
@@ -1438,6 +1505,11 @@ paths:
       - application/json
       description: This endpoint force resends multiple app events
       parameters:
+      - description: group Id
+        in: query
+        name: groupId
+        required: true
+        type: string
       - description: event delivery ids
         in: body
         name: ids
@@ -1508,6 +1580,7 @@ paths:
       - description: group id
         in: query
         name: groupId
+        required: true
         type: string
       - description: start date
         in: query
@@ -1590,6 +1663,11 @@ paths:
       - application/json
       description: This endpoint creates an app event
       parameters:
+      - description: group id
+        in: query
+        name: groupId
+        required: true
+        type: string
       - description: Event Details
         in: body
         name: event
@@ -1651,6 +1729,11 @@ paths:
       - application/json
       description: This endpoint fetches an app event
       parameters:
+      - description: group id
+        in: query
+        name: groupId
+        required: true
+        type: string
       - description: event id
         in: path
         name: eventID
@@ -1949,7 +2032,7 @@ paths:
       - application/json
       description: This endpoint deletes a group using its id
       parameters:
-      - description: Group id
+      - description: group id
         in: path
         name: groupID
         required: true
@@ -2003,7 +2086,7 @@ paths:
       - application/json
       description: This endpoint fetches a group by its id
       parameters:
-      - description: Group id
+      - description: group id
         in: path
         name: groupID
         required: true

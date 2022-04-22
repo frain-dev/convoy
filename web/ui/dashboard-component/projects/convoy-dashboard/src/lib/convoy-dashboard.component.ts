@@ -19,6 +19,9 @@ import { DatePipe } from '@angular/common';
 	styleUrls: ['./convoy-dashboard.component.scss']
 })
 export class ConvoyDashboardComponent implements OnInit {
+	eventsTableHead: string[] = ['Event Type', 'App Name', 'Created At', ''];
+	eventDelTableHead: string[] = ['Status', 'Event Type', 'Attempts', 'Created At', ''];
+	appsTableHead: string[] = ['Status', 'Name', 'Time Created', 'Updated', 'Events', 'Endpoints'];
 	showFilterCalendar = false;
 	tabs: ['events', 'event deliveries', 'apps'] = ['events', 'event deliveries', 'apps'];
 	activeTab: 'events' | 'apps' | 'event deliveries' = 'events';
@@ -157,12 +160,12 @@ export class ConvoyDashboardComponent implements OnInit {
 		this.convyDashboardService.token = this.requestToken;
 
 		if (!this.requestToken || this.requestToken == '') {
-			this.convyDashboardService.showNotification({ message: 'You are not logged in' });
+			this.convyDashboardService.showNotification({ message: 'You are not logged in', style: 'warning' });
 			return this.router.navigate(['/login']);
 		}
 
-		if (!this.apiURL) return this.convyDashboardService.showNotification({ message: 'Please provide API URL for Convoy dashboard component.' });
-		if (this.isCloud && !this.groupId) return this.convyDashboardService.showNotification({ message: 'Please provide group ID for Convoy dashboard component.' });
+		if (!this.apiURL) return this.convyDashboardService.showNotification({ message: 'Please provide API URL for Convoy dashboard component.', style: 'warning' });
+		if (this.isCloud && !this.groupId) return this.convyDashboardService.showNotification({ message: 'Please provide group ID for Convoy dashboard component.', style: 'warning' });
 		if (this.isCloud) {
 			this.convyDashboardService.activeGroupId = this.groupId;
 			this.apiAuthType = 'Bearer';
@@ -247,23 +250,27 @@ export class ConvoyDashboardComponent implements OnInit {
 			});
 			return;
 		}
+
 		this.isCreatingNewApp = true;
 		// to be reviewed
 		delete this.addNewAppForm.value.endpoints;
+
 		try {
 			const response = this.editAppMode
 				? await this.convyDashboardService.updateApp({ appId: this.appsDetailsItem?.uid, body: this.addNewAppForm.value })
 				: await this.convyDashboardService.createApp({ body: this.addNewAppForm.value });
 
 			if (this.editAppMode) this.updateAppDetail = true;
-			this.convyDashboardService.showNotification({ message: response.message });
+			this.convyDashboardService.showNotification({ message: response.message, style: 'success' });
 			this.addNewAppForm.reset();
 			this.getApps({ type: 'apps' });
 			this.showCreateAppModal = false;
 			this.isCreatingNewApp = false;
 			this.editAppMode = false;
-		} catch {
+			return;
+		} catch (error) {
 			this.isCreatingNewApp = false;
+			return;
 		}
 	}
 
@@ -272,7 +279,7 @@ export class ConvoyDashboardComponent implements OnInit {
 		try {
 			const response = await this.convyDashboardService.deleteApp({ appId: this.appsDetailsItem?.uid });
 			// this.appsDetailsItem = {};
-			this.convyDashboardService.showNotification({ message: response.message });
+			this.convyDashboardService.showNotification({ message: response.message, style: 'success' });
 			this.getApps({ type: 'apps' });
 			this.toggleActiveTab('apps');
 			this.showDeleteAppModal = false;
@@ -298,16 +305,17 @@ export class ConvoyDashboardComponent implements OnInit {
 
 		try {
 			const response = await this.convyDashboardService.addNewEndpoint({ appId: appUid ? appUid : this.appsDetailsItem?.uid, body: this.addNewEndpointForm.value });
-			this.convyDashboardService.showNotification({ message: response.message });
-			this.getEvents();
+			this.convyDashboardService.showNotification({ message: response.message, style: 'success' });
 			this.getApps({ type: 'apps' });
 			this.updateAppDetail = true;
 			this.addNewEndpointForm.reset();
 			this.eventTags = [];
 			this.showAddEndpointModal = false;
 			this.isCreatingNewEndpoint = false;
+			return;
 		} catch {
 			this.isCreatingNewEndpoint = false;
+			return;
 		}
 	}
 
@@ -322,7 +330,7 @@ export class ConvoyDashboardComponent implements OnInit {
 		try {
 			const response = await this.convyDashboardService.sendEvent({ body: this.sendEventForm.value });
 
-			this.convyDashboardService.showNotification({ message: response.message });
+			this.convyDashboardService.showNotification({ message: response.message, style: 'success' });
 			this.getEventDeliveries();
 			this.getEvents();
 			this.toggleActiveTab('event deliveries');
@@ -355,7 +363,7 @@ export class ConvoyDashboardComponent implements OnInit {
 			this.showBatchRetryModal = true;
 		} catch (error: any) {
 			this.fetchingCount = false;
-			this.convyDashboardService.showNotification({ message: error.error.message });
+			this.convyDashboardService.showNotification({ message: error.error.message, style: 'error' });
 		}
 	}
 
@@ -663,7 +671,6 @@ export class ConvoyDashboardComponent implements OnInit {
 
 	async getEvents(requestDetails?: { appId?: string; addToURL?: boolean; fromFilter?: boolean }): Promise<HTTP_RESPONSE> {
 		this.events && this.events?.pagination?.next === this.eventsPage ? (this.isloadingMoreEvents = true) : (this.isloadingEvents = true);
-
 		if (requestDetails?.appId) this.eventApp = requestDetails.appId;
 		if (requestDetails?.addToURL) this.addFilterToURL({ section: 'events' });
 
@@ -776,12 +783,14 @@ export class ConvoyDashboardComponent implements OnInit {
 
 	updateAppFilter(appId: string, isChecked: any, activeSection: 'eventDels' | 'events') {
 		this.showOverlay = false;
+
 		activeSection === 'eventDels' ? (this.showEventDeliveriesAppsDropdown = !this.showEventDeliveriesAppsDropdown) : (this.showEventsAppsDropdown = !this.showEventsAppsDropdown);
 		if (isChecked.target.checked) {
 			activeSection === 'eventDels' ? (this.eventDeliveriesApp = appId) : (this.eventApp = appId);
 		} else {
 			activeSection === 'eventDels' ? (this.eventDeliveriesApp = '') : (this.eventApp = '');
 		}
+
 		activeSection === 'eventDels' ? this.getEventDeliveries({ addToURL: true, fromFilter: true }) : this.getEvents({ addToURL: true, fromFilter: true });
 	}
 
@@ -946,14 +955,16 @@ export class ConvoyDashboardComponent implements OnInit {
 		try {
 			await this.convyDashboardService.retryEvent({ eventId: requestDetails.eventDeliveryId });
 
-			this.convyDashboardService.showNotification({ message: 'Retry Request Sent' });
+			this.convyDashboardService.showNotification({ message: 'Retry Request Sent', style: 'success' });
 			retryButton.classList.remove(['spin', 'disabled']);
 			retryButton.disabled = false;
 			this.getEventDeliveries();
 		} catch (error: any) {
-			this.convyDashboardService.showNotification({ message: error.error.message });
-			retryButton.classList.remove(['spin', 'disabled']);
-			retryButton.disabled = false;
+			this.convyDashboardService.showNotification({ message: `${error?.error?.message ? error?.error?.message : 'An error occured'}`, style: 'error' });
+			if (retryButton) {
+				retryButton.classList.remove(['spin', 'disabled']);
+				retryButton.disabled = false;
+			}
 			return error;
 		}
 	}
@@ -972,14 +983,16 @@ export class ConvoyDashboardComponent implements OnInit {
 		try {
 			await this.convyDashboardService.forceRetryEvent({ body: payload });
 
-			this.convyDashboardService.showNotification({ message: 'Force Retry Request Sent' });
+			this.convyDashboardService.showNotification({ message: 'Force Retry Request Sent', style: 'success' });
 			retryButton.classList.remove(['spin', 'disabled']);
 			retryButton.disabled = false;
 			this.getEventDeliveries();
 		} catch (error: any) {
-			this.convyDashboardService.showNotification({ message: error.error.message });
-			retryButton.classList.remove(['spin', 'disabled']);
-			retryButton.disabled = false;
+			this.convyDashboardService.showNotification({ message: `${error?.error?.message ? error?.error?.message : 'An error occured'}`, style: 'error' });
+			if (retryButton) {
+				retryButton.classList.remove(['spin', 'disabled']);
+				retryButton.disabled = false;
+			}
 			return error;
 		}
 	}
@@ -1000,13 +1013,13 @@ export class ConvoyDashboardComponent implements OnInit {
 				statusQuery: eventDeliveryStatusFilterQuery || ''
 			});
 
-			this.convyDashboardService.showNotification({ message: response.message });
+			this.convyDashboardService.showNotification({ message: response.message, style: 'success' });
 			this.getEventDeliveries();
 			this.showBatchRetryModal = false;
 			this.isRetyring = false;
 		} catch (error: any) {
 			this.isRetyring = false;
-			this.convyDashboardService.showNotification({ message: error.error.message });
+			this.convyDashboardService.showNotification({ message: error?.error?.message, style: 'error' });
 			return error;
 		}
 	}
