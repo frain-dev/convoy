@@ -76,9 +76,25 @@ func (q *RedisQueue) Close() error {
 	return q.inner.Close()
 }
 
-func (q *RedisQueue) Write(ctx context.Context, name convoy.TaskName, e *datastore.EventDelivery, delay time.Duration) error {
+func (q *RedisQueue) WriteEventDelivery(ctx context.Context, name convoy.TaskName, e *datastore.EventDelivery, delay time.Duration) error {
 	job := &queue.Job{
 		ID: e.UID,
+	}
+
+	m := &taskq.Message{
+		Ctx:      ctx,
+		TaskName: string(name),
+		Args:     []interface{}{job},
+		Delay:    delay,
+	}
+
+	return q.queue.Add(m)
+}
+
+func (q *RedisQueue) WriteEvent(ctx context.Context, name convoy.TaskName, e *datastore.Event, delay time.Duration) error {
+	job := &queue.Job{
+		ID:    e.UID,
+		Event: e,
 	}
 
 	m := &taskq.Message{

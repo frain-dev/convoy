@@ -31,12 +31,16 @@ func Test_fetchAllConfigDetails(t *testing.T) {
 			statusCode: http.StatusOK,
 			dbFn: func(app *applicationHandler) {
 				g, _ := app.groupRepo.(*mocks.MockGroupRepository)
+				c, _ := app.cache.(*mocks.MockCache)
+
+				c.EXPECT().Get(gomock.Any(), gomock.Any(), gomock.Any()).Times(1).Return(nil)
 
 				g.EXPECT().
 					FetchGroupByID(gomock.Any(), gomock.Any()).Times(1).
 					Return(&datastore.Group{
 						Config: &datastore.GroupConfig{},
 					}, nil)
+				c.EXPECT().Set(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Times(1).Return(nil)
 			},
 		},
 	}
@@ -55,7 +59,7 @@ func Test_fetchAllConfigDetails(t *testing.T) {
 			req := httptest.NewRequest(tc.method, "/ui/dashboard/config?groupId=12345", nil)
 			responseRecorder := httptest.NewRecorder()
 
-			requireGroup(app.groupRepo)(http.HandlerFunc(app.GetAllConfigDetails)).
+			requireGroup(app.groupRepo, app.cache)(http.HandlerFunc(app.GetAllConfigDetails)).
 				ServeHTTP(responseRecorder, req)
 
 			if responseRecorder.Code != tc.statusCode {

@@ -18,7 +18,8 @@ func provideAppService(ctrl *gomock.Controller) *AppService {
 	eventRepo := mocks.NewMockEventRepository(ctrl)
 	eventDeliveryRepo := mocks.NewMockEventDeliveryRepository(ctrl)
 	eventQueue := mocks.NewMockQueuer(ctrl)
-	return NewAppService(appRepo, eventRepo, eventDeliveryRepo, eventQueue)
+	cache := mocks.NewMockCache(ctrl)
+	return NewAppService(appRepo, eventRepo, eventDeliveryRepo, eventQueue, cache)
 }
 
 func boolPtr(b bool) *bool {
@@ -80,6 +81,9 @@ func TestApplicationHandler_CreateApp(t *testing.T) {
 				a.EXPECT().
 					CreateApplication(gomock.Any(), gomock.Any()).Times(1).
 					Return(nil)
+
+				c, _ := app.cache.(*mocks.MockCache)
+				c.EXPECT().Set(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any())
 			},
 			wantApp: &datastore.Application{
 				GroupID:         groupID,
@@ -381,6 +385,9 @@ func TestAppService_UpdateApplication(t *testing.T) {
 			dbFn: func(app *AppService) {
 				a, _ := app.appRepo.(*mocks.MockApplicationRepository)
 				a.EXPECT().UpdateApplication(gomock.Any(), gomock.Any()).Times(1).Return(nil)
+
+				c, _ := app.cache.(*mocks.MockCache)
+				c.EXPECT().Set(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any())
 			},
 			wantErr: false,
 		},
@@ -477,6 +484,9 @@ func TestAppService_DeleteApplication(t *testing.T) {
 			dbFn: func(app *AppService) {
 				a, _ := app.appRepo.(*mocks.MockApplicationRepository)
 				a.EXPECT().DeleteApplication(gomock.Any(), &datastore.Application{UID: "12345"}).Times(1).Return(nil)
+
+				c, _ := app.cache.(*mocks.MockCache)
+				c.EXPECT().Delete(gomock.Any(), gomock.Any())
 			},
 			wantErr:    false,
 			wantErrObj: nil,
@@ -546,6 +556,9 @@ func TestAppService_CreateAppEndpoint(t *testing.T) {
 			dbFn: func(app *AppService) {
 				a, _ := app.appRepo.(*mocks.MockApplicationRepository)
 				a.EXPECT().UpdateApplication(gomock.Any(), gomock.Any()).Times(1).Return(nil)
+
+				c, _ := app.cache.(*mocks.MockCache)
+				c.EXPECT().Set(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any())
 			},
 			wantApp: &datastore.Application{
 				UID: "abc",
@@ -590,6 +603,9 @@ func TestAppService_CreateAppEndpoint(t *testing.T) {
 			dbFn: func(app *AppService) {
 				a, _ := app.appRepo.(*mocks.MockApplicationRepository)
 				a.EXPECT().UpdateApplication(gomock.Any(), gomock.Any()).Times(1).Return(nil)
+
+				c, _ := app.cache.(*mocks.MockCache)
+				c.EXPECT().Set(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any())
 			},
 			wantApp: &datastore.Application{
 				UID: "abc",
@@ -711,6 +727,7 @@ func stripVariableFields(t *testing.T, obj string, v interface{}) {
 	case "event":
 		e := v.(*datastore.Event)
 		e.UID = ""
+		e.MatchedEndpoints = 0
 		e.CreatedAt, e.UpdatedAt, e.DeletedAt = 0, 0, 0
 	case "apiKey":
 		a := v.(*datastore.APIKey)
@@ -797,6 +814,9 @@ func TestAppService_UpdateAppEndpoint(t *testing.T) {
 				a, _ := as.appRepo.(*mocks.MockApplicationRepository)
 				a.EXPECT().UpdateApplication(gomock.Any(), gomock.Any()).
 					Times(1).Return(nil)
+
+				c, _ := as.cache.(*mocks.MockCache)
+				c.EXPECT().Set(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any())
 			},
 			wantErr: false,
 		},
@@ -971,6 +991,9 @@ func TestAppService_DeleteAppEndpoint(t *testing.T) {
 			dbFn: func(as *AppService) {
 				appRepo := as.appRepo.(*mocks.MockApplicationRepository)
 				appRepo.EXPECT().UpdateApplication(gomock.Any(), gomock.Any()).Times(1).Return(nil)
+
+				c, _ := as.cache.(*mocks.MockCache)
+				c.EXPECT().Set(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any())
 			},
 			wantErr: false,
 		},

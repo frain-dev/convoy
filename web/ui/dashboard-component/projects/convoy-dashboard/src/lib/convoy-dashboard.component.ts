@@ -166,6 +166,7 @@ export class ConvoyDashboardComponent implements OnInit {
 		if (this.isCloud) {
 			this.convyDashboardService.activeGroupId = this.groupId;
 			this.apiAuthType = 'Bearer';
+			this.convyDashboardService.authType = this.apiAuthType;
 		}
 
 		return await this.initDashboard();

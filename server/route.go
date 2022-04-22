@@ -73,7 +73,7 @@ func buildRoutes(app *applicationHandler) http.Handler {
 				groupRouter.With(requirePermission(auth.RoleSuperUser)).Post("/", app.CreateGroup)
 
 				groupRouter.Route("/{groupID}", func(groupSubRouter chi.Router) {
-					groupSubRouter.Use(requireGroup(app.groupRepo))
+					groupSubRouter.Use(requireGroup(app.groupRepo, app.cache))
 					groupSubRouter.Use(rateLimitByGroupID(app.limiter))
 
 					groupSubRouter.With(requirePermission(auth.RoleAdmin)).Get("/", app.GetGroup)
@@ -84,7 +84,7 @@ func buildRoutes(app *applicationHandler) http.Handler {
 
 			r.Route("/applications", func(appRouter chi.Router) {
 				appRouter.Use(requireGroupID())
-				appRouter.Use(requireGroup(app.groupRepo))
+				appRouter.Use(requireGroup(app.groupRepo, app.cache))
 				appRouter.Use(rateLimitByGroupID(app.limiter))
 				appRouter.Use(requirePermission(auth.RoleAdmin))
 
@@ -94,7 +94,7 @@ func buildRoutes(app *applicationHandler) http.Handler {
 				})
 
 				appRouter.Route("/{appID}", func(appSubRouter chi.Router) {
-					appSubRouter.Use(requireApp(app.appRepo))
+					appSubRouter.Use(requireApp(app.appRepo, app.cache))
 
 					appSubRouter.Get("/", app.GetApp)
 					appSubRouter.Put("/", app.UpdateApp)
@@ -117,7 +117,7 @@ func buildRoutes(app *applicationHandler) http.Handler {
 
 			r.Route("/events", func(eventRouter chi.Router) {
 				eventRouter.Use(requireGroupID())
-				eventRouter.Use(requireGroup(app.groupRepo))
+				eventRouter.Use(requireGroup(app.groupRepo, app.cache))
 				eventRouter.Use(rateLimitByGroupID(app.limiter))
 				eventRouter.Use(requirePermission(auth.RoleAdmin))
 
@@ -132,7 +132,7 @@ func buildRoutes(app *applicationHandler) http.Handler {
 
 			r.Route("/eventdeliveries", func(eventDeliveryRouter chi.Router) {
 				eventDeliveryRouter.Use(requireGroupID())
-				eventDeliveryRouter.Use(requireGroup(app.groupRepo))
+				eventDeliveryRouter.Use(requireGroup(app.groupRepo, app.cache))
 				eventDeliveryRouter.Use(requirePermission(auth.RoleAdmin))
 
 				eventDeliveryRouter.With(pagination).Get("/", app.GetEventDeliveriesPaged)
@@ -169,8 +169,8 @@ func buildRoutes(app *applicationHandler) http.Handler {
 				securityRouter.Route("/applications/{appID}/keys", func(securitySubRouter chi.Router) {
 					securitySubRouter.Use(requirePermission(auth.RoleAdmin))
 					securitySubRouter.Use(requireGroupID())
-					securitySubRouter.Use(requireGroup(app.groupRepo))
-					securitySubRouter.Use(requireApp(app.appRepo))
+					securitySubRouter.Use(requireGroup(app.groupRepo, app.cache))
+					securitySubRouter.Use(requireApp(app.appRepo, app.cache))
 					securitySubRouter.Use(requireBaseUrl())
 					securitySubRouter.Post("/", app.CreateAppPortalAPIKey)
 				})
@@ -185,7 +185,7 @@ func buildRoutes(app *applicationHandler) http.Handler {
 		uiRouter.Use(requireAuth())
 
 		uiRouter.Route("/dashboard", func(dashboardRouter chi.Router) {
-			dashboardRouter.Use(requireGroup(app.groupRepo))
+			dashboardRouter.Use(requireGroup(app.groupRepo, app.cache))
 			dashboardRouter.Use(rateLimitByGroupID(app.limiter))
 
 			dashboardRouter.Get("/summary", app.GetDashboardSummary)
@@ -205,7 +205,7 @@ func buildRoutes(app *applicationHandler) http.Handler {
 		})
 
 		uiRouter.Route("/apps", func(appRouter chi.Router) {
-			appRouter.Use(requireGroup(app.groupRepo))
+			appRouter.Use(requireGroup(app.groupRepo, app.cache))
 			appRouter.Use(rateLimitByGroupID(app.limiter))
 			appRouter.Use(requirePermission(auth.RoleUIAdmin))
 
@@ -215,14 +215,14 @@ func buildRoutes(app *applicationHandler) http.Handler {
 			})
 
 			appRouter.Route("/{appID}", func(appSubRouter chi.Router) {
-				appSubRouter.Use(requireApp(app.appRepo))
+				appSubRouter.Use(requireApp(app.appRepo, app.cache))
 				appSubRouter.Get("/", app.GetApp)
 				appSubRouter.Put("/", app.UpdateApp)
 				appSubRouter.Delete("/", app.DeleteApp)
 
 				appSubRouter.Route("/keys", func(keySubRouter chi.Router) {
-					keySubRouter.Use(requireGroup(app.groupRepo))
-					keySubRouter.Use(requireApp(app.appRepo))
+					keySubRouter.Use(requireGroup(app.groupRepo, app.cache))
+					keySubRouter.Use(requireApp(app.appRepo, app.cache))
 					keySubRouter.Use(requireBaseUrl())
 
 					keySubRouter.Post("/", app.CreateAppPortalAPIKey)
@@ -244,7 +244,7 @@ func buildRoutes(app *applicationHandler) http.Handler {
 		})
 
 		uiRouter.Route("/events", func(eventRouter chi.Router) {
-			eventRouter.Use(requireGroup(app.groupRepo))
+			eventRouter.Use(requireGroup(app.groupRepo, app.cache))
 			eventRouter.Use(rateLimitByGroupID(app.limiter))
 			eventRouter.Use(requirePermission(auth.RoleUIAdmin))
 
@@ -258,7 +258,7 @@ func buildRoutes(app *applicationHandler) http.Handler {
 		})
 
 		uiRouter.Route("/eventdeliveries", func(eventDeliveryRouter chi.Router) {
-			eventDeliveryRouter.Use(requireGroup(app.groupRepo))
+			eventDeliveryRouter.Use(requireGroup(app.groupRepo, app.cache))
 			eventDeliveryRouter.Use(rateLimitByGroupID(app.limiter))
 			eventDeliveryRouter.Use(requirePermission(auth.RoleUIAdmin))
 
@@ -289,7 +289,7 @@ func buildRoutes(app *applicationHandler) http.Handler {
 		portalRouter.Use(setupCORS)
 		portalRouter.Use(requireAuth())
 		portalRouter.Use(requireGroupID())
-		portalRouter.Use(requireGroup(app.groupRepo))
+		portalRouter.Use(requireGroup(app.groupRepo, app.cache))
 		portalRouter.Use(requireAppID())
 
 		portalRouter.Route("/apps", func(appRouter chi.Router) {
@@ -364,6 +364,7 @@ func New(cfg config.Configuration,
 	apiKeyRepo datastore.APIKeyRepository,
 	orgRepo datastore.GroupRepository,
 	eventQueue queue.Queuer,
+	createEventQueue queue.Queuer,
 	logger logger.Logger,
 	tracer tracer.Tracer,
 	cache cache.Cache,
@@ -376,6 +377,7 @@ func New(cfg config.Configuration,
 		orgRepo,
 		apiKeyRepo,
 		eventQueue,
+		createEventQueue,
 		logger,
 		tracer,
 		cache,
@@ -383,8 +385,8 @@ func New(cfg config.Configuration,
 
 	srv := &http.Server{
 		Handler:      buildRoutes(app),
-		ReadTimeout:  time.Second * 10,
-		WriteTimeout: time.Second * 10,
+		ReadTimeout:  time.Second * 30,
+		WriteTimeout: time.Second * 30,
 		Addr:         fmt.Sprintf(":%d", cfg.Server.HTTP.Port),
 	}
 
