@@ -1,3 +1,4 @@
+<convoy-notification></convoy-notification>
 <div class="dashboard">
 	<div class="dashboard--page">
 		<div class="dashboard--page--head">
@@ -430,6 +431,7 @@
 						</div>
 					</div>
 				</div>
+
 				<div [hidden]="activeTab !== 'apps'">
 					<div class="flex flex__align-items-center flex__justify-between">
 						<div class="flex flex__align-items-center">
@@ -480,7 +482,7 @@
 								</div>
 							</div> -->
 						</div>
-						<button class="button button__primary button__small" (click)="showCreateAppModal = !showCreateAppModal">Create App</button>
+						<button class="button button__primary button__small" id="create-app-modal-button" (click)="showCreateAppModal = !showCreateAppModal">Create App</button>
 					</div>
 				</div>
 			</div>
@@ -789,6 +791,7 @@
 									<button class="button__clear" [disabled]="appsDetailsItem?.endpoints.length == 0" (click)="setEventAppId()">Add Event</button>
 								</div>
 							</div>
+
 							<ul class="dashboard--logs--details--endpoints">
 								<ng-container *ngIf="appsDetailsItem?.endpoints">
 									<li *ngFor="let endpoint of appsDetailsItem.endpoints">
@@ -967,29 +970,27 @@
 			<img src="/assets/img/modal-close-icon.svg" alt="close icon" />
 		</a>
 	</div>
+
 	<div class="modal--body" *ngIf="showCreateAppModal">
-		<form [formGroup]="addNewAppForm">
+		<form [formGroup]="addNewAppForm" id="create-app-form">
 			<div class="input">
-				<input type="text" formControlName="name" [ngClass]="{ danger: addNewAppForm.controls.name.touched && addNewAppForm.controls.name.invalid, editMode: editAppMode }" />
-				<label for="">Enter App Name</label>
+				<input id="app-name" type="text" formControlName="name" [ngClass]="{ danger: addNewAppForm.controls.name.touched && addNewAppForm.controls.name.invalid, editMode: editAppMode }" />
+				<label for="app-name">Enter App Name</label>
 				<div class="input__error input__error__danger" *ngIf="addNewAppForm.controls.name.touched && addNewAppForm.controls.name.invalid">
 					<img src="assets/img/input-error-icon.svg" alt="input error icon" />
 					<span>App name is required</span>
 				</div>
 			</div>
+
 			<div class="input">
-				<input type="text" formControlName="support_email" [ngClass]="{ editMode: editAppMode }" />
-				<label class="input__label" for="">Support Email</label>
-				<!-- pendign  -->
-				<!-- <div class="input__error input__error__danger" *ngIf="addNewAppForm.controls.support_email.touched && addNewAppForm.controls.support_email.invalid">
-					<img src="assets/img/input-error-icon.svg" alt="input error icon" />
-					<span>Please enter a valid email</span>
-				</div> -->
+				<input type="text" id="app-email" formControlName="support_email" [ngClass]="{ editMode: editAppMode }" />
+				<label class="input__label" for="app-email">Support Email</label>
 				<div class="input__error input__error__secondary font__12px">
-					<img src="/assets/img/info-icon.svg" alt="close icon" />
+					<img src="/assets/img/small-info-icon.svg" alt="close icon" />
 					We use this to send an email notifcation for when a failure happens
 				</div>
 			</div>
+
 			<div *ngIf="!editAppMode" formArrayName="endpoints">
 				<div *ngIf="endpoints.controls.length > 0" class="flex flex__align-items-center flex__justify-between">
 					<h3>Endpoint</h3>
@@ -998,6 +999,7 @@
 						Add Endpoint
 					</button>
 				</div>
+
 				<div *ngFor="let endpoint of endpoints.controls; let i = index">
 					<div [formGroupName]="i">
 						<div class="input">
@@ -1008,6 +1010,7 @@
 								<span>Please provide a description</span>
 							</div>
 						</div>
+
 						<div class="input">
 							<input type="text" formControlName="url" required />
 							<label for="">Enter Endpoint URL</label>
@@ -1016,6 +1019,7 @@
 								<span>Please provide a description</span>
 							</div>
 						</div>
+
 						<div class="input multiple">
 							<div class="input--multiple" [ngClass]="{ active: eventTags.length > 0 }">
 								<div class="tag" *ngFor="let tag of eventTags">
@@ -1026,16 +1030,19 @@
 								</div>
 								<input type="text" id="tagInput" formControlName="tag" (input)="addTag($event, i)" required />
 							</div>
+
 							<label [ngClass]="{ active: eventTags.length > 0 }" for="">Add Tag</label>
 							<div class="input__error input__error__secondary font__12px">
-								<img src="/assets/img/info-icon.svg" alt="close icon" />
+								<img src="/assets/img/small-info-icon.svg" alt="close icon" />
 								Add multiple tags by seperating them with commas
 							</div>
+
 							<div class="input__error input__error__danger" *ngIf="getSingleEndpoint(i).tag.touched && getSingleEndpoint(i).tag.invalid">
 								<img src="assets/img/input-error-icon.svg" alt="input error icon" />
 								<span>Please add at least one tag</span>
 							</div>
 						</div>
+
 						<div class="flex flex__justify-end margin-bottom__16px">
 							<button (click)="removeEndpoint(i)" class="button__clear color__danger button--has-icon icon-left">
 								<img src="/assets/img/trash-icon.svg" alt="close icon" />
@@ -1054,10 +1061,14 @@
 			</div>
 		</form>
 	</div>
+
 	<div class="modal--footer modal--footer__with-shadow" *ngIf="showCreateAppModal">
 		<button class="button button__white button--large" (click)="showCreateAppModal = false; editAppMode = false; addNewAppForm.reset()">Discard</button>
-		<button class="button button__primary button--full-100 margin-left__24px" [disabled]="isCreatingNewApp" (click)="createNewApp()">{{ editAppMode ? 'Edit App' : 'Create App' }}</button>
+		<button id="create-app-button" class="button button__primary button--full-100 margin-left__24px" [disabled]="isCreatingNewApp" (click)="createNewApp()">
+			{{ editAppMode ? 'Edit App' : 'Create App' }}
+		</button>
 	</div>
+
 
 	<!-- add endpoint modal  -->
 	<div class="modal--head" *ngIf="showAddEndpointModal">
@@ -1066,6 +1077,7 @@
 			<img src="/assets/img/modal-close-icon.svg" alt="close icon" />
 		</a>
 	</div>
+
 	<div class="modal--body" *ngIf="showAddEndpointModal">
 		<form [formGroup]="addNewEndpointForm">
 			<div class="input">
@@ -1076,6 +1088,7 @@
 					<span>Please provide a description</span>
 				</div>
 			</div>
+
 			<div class="input">
 				<input type="text" formControlName="url" [ngClass]="{ danger: addNewEndpointForm.controls.url.touched && addNewEndpointForm.controls.url.invalid }" required />
 				<label for="">Enter URL</label>
@@ -1095,18 +1108,21 @@
 					</div>
 					<input type="text" id="tagInput" (input)="addTag()" required />
 				</div>
+
 				<label [ngClass]="{ active: eventTags.length > 0 }" for="">Events</label>
 				<div class="input__error input__error__secondary font__12px">
-					<img src="/assets/img/info-icon.svg" alt="close icon" />
+					<img src="/assets/img/small-info-icon.svg" alt="close icon" />
 					Add multiple events by seperating them with commas
 				</div>
 			</div>
 		</form>
 	</div>
+
 	<div class="modal--footer modal--footer__with-shadow" *ngIf="showAddEndpointModal">
 		<button class="button button__white margin-right__24px" (click)="showAddEndpointModal = false">Discard</button>
 		<button class="button button__primary button--full-100" [disabled]="isCreatingNewEndpoint" (click)="addNewEndpoint()">{{ isCreatingNewEndpoint ? 'Adding Endpoint..' : 'Add Endpoint' }}</button>
 	</div>
+
 
 	<!-- add event modal  -->
 	<div class="modal--head" *ngIf="showAddEventModal">
@@ -1115,6 +1131,7 @@
 			<img src="/assets/img/modal-close-icon.svg" alt="close icon" />
 		</a>
 	</div>
+
 	<div class="modal--body" *ngIf="showAddEventModal">
 		<form [formGroup]="sendEventForm">
 			<div class="input">
@@ -1135,7 +1152,7 @@
 					<span>Data is required</span>
 				</div>
 				<div class="input__error input__error__secondary font__12px">
-					<img src="/assets/img/info-icon.svg" alt="close icon" />
+					<img src="/assets/img/small-info-icon.svg" alt="close icon" />
 					Please enter your data in the format it would be returned
 				</div>
 			</div>
@@ -1153,6 +1170,7 @@
 		<button class="button button__white margin-right__24px" (click)="showAddEventModal = false">Discard</button>
 		<button class="button button__primary button--full-100" [disabled]="isSendingNewEvent" (click)="sendNewEvent()">{{ isSendingNewEvent ? 'Adding Event..' : 'Add Event' }}</button>
 	</div>
+
 
 	<!-- endpoint secret modal  -->
 	<div class="modal--head" *ngIf="showEndpointSecret">
@@ -1182,6 +1200,8 @@
 		<button class="button__primary button__clear font__weight-600 cancel" (click)="showDeleteAppModal = false">No, Cancel</button>
 	</div>
 </div>
+
+
 <!-- batch retry modal  -->
 <div class="modal modal__center" *ngIf="showBatchRetryModal">
 	<div class="modal--body flex flex__column flex__justify-center flex__align-items-center delete">
