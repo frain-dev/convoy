@@ -247,9 +247,11 @@ export class ConvoyDashboardComponent implements OnInit {
 			});
 			return;
 		}
+
 		this.isCreatingNewApp = true;
 		// to be reviewed
 		delete this.addNewAppForm.value.endpoints;
+
 		try {
 			const response = this.editAppMode
 				? await this.convyDashboardService.updateApp({ appId: this.appsDetailsItem?.uid, body: this.addNewAppForm.value })
@@ -262,8 +264,10 @@ export class ConvoyDashboardComponent implements OnInit {
 			this.showCreateAppModal = false;
 			this.isCreatingNewApp = false;
 			this.editAppMode = false;
-		} catch {
+			return;
+		} catch (error) {
 			this.isCreatingNewApp = false;
+			return;
 		}
 	}
 
@@ -299,15 +303,16 @@ export class ConvoyDashboardComponent implements OnInit {
 		try {
 			const response = await this.convyDashboardService.addNewEndpoint({ appId: appUid ? appUid : this.appsDetailsItem?.uid, body: this.addNewEndpointForm.value });
 			this.convyDashboardService.showNotification({ message: response.message });
-			this.getEvents();
 			this.getApps({ type: 'apps' });
 			this.updateAppDetail = true;
 			this.addNewEndpointForm.reset();
 			this.eventTags = [];
 			this.showAddEndpointModal = false;
 			this.isCreatingNewEndpoint = false;
+			return;
 		} catch {
 			this.isCreatingNewEndpoint = false;
+			return;
 		}
 	}
 

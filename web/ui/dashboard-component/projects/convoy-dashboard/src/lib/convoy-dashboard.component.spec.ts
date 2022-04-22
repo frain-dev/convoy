@@ -1,7 +1,7 @@
 import { CommonModule, DatePipe } from '@angular/common';
 import { HttpClient, HttpClientModule } from '@angular/common/http';
 import { ElementRef } from '@angular/core';
-import { ComponentFixture, fakeAsync, TestBed, tick } from '@angular/core/testing';
+import { ComponentFixture, fakeAsync, flush, TestBed, tick } from '@angular/core/testing';
 import { FormBuilder, FormsModule, ReactiveFormsModule } from '@angular/forms';
 import { MatNativeDateModule } from '@angular/material/core';
 import { MatDatepickerModule } from '@angular/material/datepicker';
@@ -278,5 +278,76 @@ describe('ConvoyDashboardComponent', () => {
 		expect(eventDeliveryTableContainer.hasAttribute('hidden')).toBeTruthy();
 		const eventDeliveryEmptyContainer: HTMLElement = fixture.debugElement.nativeElement.querySelector('#event-deliveries-empty-state');
 		expect(eventDeliveryEmptyContainer).toBeTruthy();
+	}));
+
+	it('can create app', fakeAsync(async () => {
+		const apps: HTTP_RESPONSE = require('./mock/apps.json');
+		const appPortalKey: HTTP_RESPONSE = require('./mock/app_portal_key.json');
+		const createAppResponse: HTTP_RESPONSE = require('./mock/create_app.json');
+		spyOn(convoyDashboardService, 'getApps').and.returnValue(Promise.resolve(apps));
+		spyOn(convoyDashboardService, 'getAppPortalToken').and.returnValue(Promise.resolve(appPortalKey));
+		spyOn(convoyDashboardService, 'createApp').and.returnValue(Promise.resolve(createAppResponse));
+		await component.toggleActiveTab('apps');
+
+		const createAppModalButton = fixture.debugElement.nativeElement.querySelector('#create-app-modal-button');
+		expect(createAppModalButton).toBeTruthy();
+		createAppModalButton.click();
+		fixture.detectChanges();
+		expect(fixture.debugElement.nativeElement.querySelector('#create-app-form')).toBeTruthy();
+		expect(fixture.debugElement.nativeElement.querySelector('#create-app-button')).toBeTruthy();
+
+		component.addNewAppForm.patchValue({ name: 'test-app', support_email: 'test@yopmail.com' });
+		fixture.detectChanges();
+
+		component.createNewApp();
+		tick();
+		fixture.detectChanges();
+		flush();
+
+		expect(fixture.debugElement.nativeElement.querySelector('#create-app-form')).toBeFalsy();
+		expect(fixture.debugElement.nativeElement.querySelector('#create-app-button')).toBeFalsy();
+	}));
+
+	it('add endpoint to app', fakeAsync(async () => {
+		const apps: HTTP_RESPONSE = require('./mock/apps.json');
+		const appPortalKey: HTTP_RESPONSE = require('./mock/app_portal_key.json');
+		const addEndpointResponse: HTTP_RESPONSE = require('./mock/add_endpoint.json');
+		spyOn(convoyDashboardService, 'getApps').and.returnValue(Promise.resolve(apps));
+		spyOn(convoyDashboardService, 'getAppPortalToken').and.returnValue(Promise.resolve(appPortalKey));
+		spyOn(convoyDashboardService, 'addNewEndpoint').and.returnValue(Promise.resolve(addEndpointResponse));
+		await component.toggleActiveTab('apps');
+
+		component.addNewEndpointForm.patchValue({ url: 'https://webhook.site/989bdf00-6fa8-4d1f-9980-95b1e0912b94', description: 'test' });
+		component.eventTags = ['test', 'test2'];
+		fixture.detectChanges();
+
+		component.addNewEndpoint();
+		tick();
+		fixture.detectChanges();
+		flush();
+
+		expect(component.showAddEndpointModal).toBeFalse();
+		expect(component.isCreatingNewEndpoint).toBeFalse();
+	}));
+
+	it('send event', fakeAsync(async () => {
+		const apps: HTTP_RESPONSE = require('./mock/apps.json');
+		const appPortalKey: HTTP_RESPONSE = require('./mock/app_portal_key.json');
+		const createEventResponse: HTTP_RESPONSE = require('./mock/create_event.json');
+		spyOn(convoyDashboardService, 'getApps').and.returnValue(Promise.resolve(apps));
+		spyOn(convoyDashboardService, 'getAppPortalToken').and.returnValue(Promise.resolve(appPortalKey));
+		spyOn(convoyDashboardService, 'sendEvent').and.returnValue(Promise.resolve(createEventResponse));
+		await component.toggleActiveTab('apps');
+
+		component.sendEventForm.patchValue({ app_id: 'https', description: "{ test: 'test' }", event_type: ['test'] });
+		fixture.detectChanges();
+
+		component.sendNewEvent();
+		tick();
+		fixture.detectChanges();
+		flush();
+
+		expect(component.showAddEventModal).toBeFalse();
+		expect(component.isSendingNewEvent).toBeFalse();
 	}));
 });

@@ -342,9 +342,6 @@ nav {
 				margin-right: 5px;
 			}
 		}
-
-		a {
-		}
 	}
 }
 
