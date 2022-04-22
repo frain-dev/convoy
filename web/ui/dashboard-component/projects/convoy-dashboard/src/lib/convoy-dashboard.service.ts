@@ -1,6 +1,7 @@
 import { Injectable } from '@angular/core';
 import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { HTTP_RESPONSE } from './models/http.model';
+import { BehaviorSubject } from 'rxjs';
 
 @Injectable({
 	providedIn: 'root'
@@ -10,6 +11,8 @@ export class ConvoyDashboardService {
 	authType!: 'Bearer' | 'Basic';
 	url: string = '';
 	activeGroupId: string = '';
+
+	alertStatus: BehaviorSubject<{ message: string; style: string; show: boolean }> = new BehaviorSubject<{ message: string; style: string; show: boolean }>({ message: 'testing', style: 'info', show: false });
 
 	constructor(private httpClient: HttpClient) {}
 
@@ -27,18 +30,15 @@ export class ConvoyDashboardService {
 		});
 	}
 
-	showNotification(details: { message: string }) {
-		if (!details.message) return;
-
-		const notificationElement = document.querySelector('.app-notification');
-		if (notificationElement) {
-			notificationElement.classList.add('show');
-			notificationElement.innerHTML = details.message;
-		}
-
+	showNotification(details: { message: string; style: string }) {
+		this.alertStatus.next({ message: details.message, style: details.style, show: true });
 		setTimeout(() => {
-			notificationElement?.classList.remove('show');
-		}, 3000);
+			this.dismissNotification();
+		}, 4000);
+	}
+
+	dismissNotification() {
+		this.alertStatus.next({ message: '', style: '', show: false });
 	}
 
 	async getGroups(): Promise<HTTP_RESPONSE> {

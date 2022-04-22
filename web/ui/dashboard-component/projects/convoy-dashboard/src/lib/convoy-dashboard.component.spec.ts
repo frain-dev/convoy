@@ -10,12 +10,14 @@ import { RouterTestingModule } from '@angular/router/testing';
 
 import { ConvoyDashboardComponent } from './convoy-dashboard.component';
 import { ConvoyDashboardService } from './convoy-dashboard.service';
-import { ConvoyLoaderComponent } from './loader-component/loader.component';
+import { ConvoyLoaderComponent } from './shared-components/loader.component';
+import { ConvoyTableLoaderComponent } from './shared-components/table-loader.component';
 import { PrismModule } from './prism/prism.module';
 import { MetricPipe } from './shared/pipes';
 import { SharedModule } from './shared/shared.module';
 import Chart from 'chart.js/auto';
 import { HTTP_RESPONSE } from './models/http.model';
+import { ConvoyNotificationComponent } from './shared-components/notification.component';
 
 describe('ConvoyDashboardComponent', () => {
 	let component: ConvoyDashboardComponent;
@@ -29,7 +31,7 @@ describe('ConvoyDashboardComponent', () => {
 	beforeEach(async () => {
 		await TestBed.configureTestingModule({
 			imports: [HttpClientModule, SharedModule, RouterTestingModule, CommonModule, MatDatepickerModule, MatNativeDateModule, FormsModule, ReactiveFormsModule],
-			declarations: [ConvoyDashboardComponent, ConvoyLoaderComponent],
+			declarations: [ConvoyDashboardComponent, ConvoyLoaderComponent, ConvoyTableLoaderComponent, ConvoyNotificationComponent],
 			providers: [HttpClient, FormBuilder, DatePipe, { provide: ActivatedRoute, useValue: fakeActivatedRoute }, ConvoyDashboardService]
 		}).compileComponents();
 	});
