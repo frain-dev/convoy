@@ -348,7 +348,7 @@ export class ConvoyAppComponent implements OnInit {
 				body: this.addNewEndpointForm.value,
 				token: this.token
 			});
-			this.convyAppService.showNotification({ message: response.message });
+			this.convyAppService.showNotification({ message: response.message, style: 'info' });
 			this.getAppDetails();
 			this.getEvents();
 			this.addNewEndpointForm.reset();
@@ -424,14 +424,14 @@ export class ConvoyAppComponent implements OnInit {
 			});
 
 			this.convyAppService.showNotification({
-				message: 'Retry Request Sent'
+				message: 'Retry Request Sent', style: 'info'
 			});
 			retryButton.classList.remove(['spin', 'disabled']);
 			retryButton.disabled = false;
 			this.getEventDeliveries();
 		} catch (error: any) {
 			this.convyAppService.showNotification({
-				message: error.error.message
+				message: error.error.message, style: 'error'
 			});
 			retryButton.classList.remove(['spin', 'disabled']);
 			retryButton.disabled = false;
@@ -458,13 +458,13 @@ export class ConvoyAppComponent implements OnInit {
 				body: null
 			});
 
-			this.convyAppService.showNotification({ message: response.message });
+			this.convyAppService.showNotification({ message: response.message, style: 'info' });
 			this.getEventDeliveries();
 			this.showBatchRetryModal = false;
 			this.isRetyring = false;
 		} catch (error: any) {
 			this.isRetyring = false;
-			this.convyAppService.showNotification({ message: error.error.message });
+			this.convyAppService.showNotification({ message: error.error.message, style: 'error' });
 			return error;
 		}
 	}
@@ -491,7 +491,7 @@ export class ConvoyAppComponent implements OnInit {
 			this.showBatchRetryModal = true;
 		} catch (error: any) {
 			this.fetchingCount = false;
-			this.convyAppService.showNotification({ message: error.error.message });
+			this.convyAppService.showNotification({ message: error.error.message, style: 'error' });
 		}
 	}
 

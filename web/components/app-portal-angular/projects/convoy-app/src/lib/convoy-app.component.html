@@ -1,3 +1,4 @@
+<convoy-notification></convoy-notification>
 <div class="dashboard--page">
 	<div class="dashboard--page--head margin-bottom__20px">
 		<h3 class="margin-bottom__10px">Endpoints</h3>
@@ -353,7 +354,7 @@
 					<table id="event-deliveries-table" *ngIf="!loadingEventDeliveries">
 						<thead>
 							<tr class="table--head">
-								<th scope="col" *ngFor="let head of eventDelTableHead">{{head}}</th>
+								<th scope="col" *ngFor="let head of eventDelTableHead">{{ head }}</th>
 							</tr>
 						</thead>
 						<tbody>
@@ -583,7 +584,7 @@
 				</div>
 				<label [ngClass]="{ active: eventTags.length > 0 }" for="">Events</label>
 				<div class="input__error input__error__secondary font__12px">
-					<svg-component [height]="15" [width]="15" [styles]="'margin-right__8px'" [id]="'info-icon'"></svg-component>
+					<svg-component [height]="15" [width]="15" [styles]="'margin-right__8px'" [id]="'small-info-icon'"></svg-component>
 					<span class="margin-bottom__4px">Add multiple events by seperating them with commas</span>
 				</div>
 			</div>
