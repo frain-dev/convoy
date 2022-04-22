@@ -63,6 +63,13 @@
                         "description": "app title",
                         "name": "q",
                         "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "group id",
+                        "name": "groupId",
+                        "in": "query",
+                        "required": true
                     }
                 ],
                 "responses": {
@@ -174,6 +181,13 @@
                 "summary": "Create an application",
                 "parameters": [
                     {
+                        "type": "string",
+                        "description": "group id",
+                        "name": "groupId",
+                        "in": "query",
+                        "required": true
+                    },
+                    {
                         "description": "Application Details",
                         "name": "application",
                         "in": "body",
@@ -280,6 +294,13 @@
                 "parameters": [
                     {
                         "type": "string",
+                        "description": "group id",
+                        "name": "groupId",
+                        "in": "query",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
                         "description": "application id",
                         "name": "appID",
                         "in": "path",
@@ -379,6 +400,13 @@
                 ],
                 "summary": "Update an application",
                 "parameters": [
+                    {
+                        "type": "string",
+                        "description": "group id",
+                        "name": "groupId",
+                        "in": "query",
+                        "required": true
+                    },
                     {
                         "type": "string",
                         "description": "application id",
@@ -491,6 +519,13 @@
                 "parameters": [
                     {
                         "type": "string",
+                        "description": "group id",
+                        "name": "groupId",
+                        "in": "query",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
                         "description": "application id",
                         "name": "appID",
                         "in": "path",
@@ -592,6 +627,13 @@
                 ],
                 "summary": "Get application endpoints",
                 "parameters": [
+                    {
+                        "type": "string",
+                        "description": "group id",
+                        "name": "groupId",
+                        "in": "query",
+                        "required": true
+                    },
                     {
                         "type": "string",
                         "description": "application id",
@@ -696,6 +738,13 @@
                 ],
                 "summary": "Create an application endpoint",
                 "parameters": [
+                    {
+                        "type": "string",
+                        "description": "group id",
+                        "name": "groupId",
+                        "in": "query",
+                        "required": true
+                    },
                     {
                         "type": "string",
                         "description": "application id",
@@ -810,6 +859,13 @@
                 "parameters": [
                     {
                         "type": "string",
+                        "description": "group id",
+                        "name": "groupId",
+                        "in": "query",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
                         "description": "application id",
                         "name": "appID",
                         "in": "path",
@@ -916,6 +972,13 @@
                 ],
                 "summary": "Update an application endpoint",
                 "parameters": [
+                    {
+                        "type": "string",
+                        "description": "group id",
+                        "name": "groupId",
+                        "in": "query",
+                        "required": true
+                    },
                     {
                         "type": "string",
                         "description": "application id",
@@ -1033,6 +1096,13 @@
                 ],
                 "summary": "Delete application endpoint",
                 "parameters": [
+                    {
+                        "type": "string",
+                        "description": "group id",
+                        "name": "groupId",
+                        "in": "query",
+                        "required": true
+                    },
                     {
                         "type": "string",
                         "description": "application id",
@@ -1153,7 +1223,8 @@
                         "type": "string",
                         "description": "group id",
                         "name": "groupId",
-                        "in": "query"
+                        "in": "query",
+                        "required": true
                     },
                     {
                         "type": "string",
@@ -1324,6 +1395,13 @@
                 "summary": "Batch Resend app events",
                 "parameters": [
                     {
+                        "type": "string",
+                        "description": "group id",
+                        "name": "groupId",
+                        "in": "query",
+                        "required": true
+                    },
+                    {
                         "description": "event delivery ids",
                         "name": "ids",
                         "in": "body",
@@ -1451,9 +1529,10 @@
                     },
                     {
                         "type": "string",
-                        "description": "group id",
+                        "description": "group Id",
                         "name": "groupId",
-                        "in": "query"
+                        "in": "query",
+                        "required": true
                     },
                     {
                         "type": "string",
@@ -1594,6 +1673,13 @@
                 "summary": "Force Resend app events",
                 "parameters": [
                     {
+                        "type": "string",
+                        "description": "group Id",
+                        "name": "groupId",
+                        "in": "query",
+                        "required": true
+                    },
+                    {
                         "description": "event delivery ids",
                         "name": "ids",
                         "in": "body",
@@ -1715,6 +1801,13 @@
                 "parameters": [
                     {
                         "type": "string",
+                        "description": "group id",
+                        "name": "groupId",
+                        "in": "query",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
                         "description": "event delivery id",
                         "name": "eventDeliveryID",
                         "in": "path",
@@ -1828,6 +1921,13 @@
                 ],
                 "summary": "Resend an app event",
                 "parameters": [
+                    {
+                        "type": "string",
+                        "description": "group id",
+                        "name": "groupId",
+                        "in": "query",
+                        "required": true
+                    },
                     {
                         "type": "string",
                         "description": "event delivery id",
@@ -1953,7 +2053,8 @@
                         "type": "string",
                         "description": "group id",
                         "name": "groupId",
-                        "in": "query"
+                        "in": "query",
+                        "required": true
                     },
                     {
                         "type": "string",
@@ -2107,6 +2208,13 @@
                 "summary": "Create app event",
                 "parameters": [
                     {
+                        "type": "string",
+                        "description": "group id",
+                        "name": "groupId",
+                        "in": "query",
+                        "required": true
+                    },
+                    {
                         "description": "Event Details",
                         "name": "event",
                         "in": "body",
@@ -2223,6 +2331,13 @@
                 ],
                 "summary": "Get app event",
                 "parameters": [
+                    {
+                        "type": "string",
+                        "description": "group id",
+                        "name": "groupId",
+                        "in": "query",
+                        "required": true
+                    },
                     {
                         "type": "string",
                         "description": "event id",
@@ -2778,7 +2893,7 @@
                 "parameters": [
                     {
                         "type": "string",
-                        "description": "Group id",
+                        "description": "group id",
                         "name": "groupID",
                         "in": "path",
                         "required": true
@@ -2989,7 +3104,7 @@
                 "parameters": [
                     {
                         "type": "string",
-                        "description": "Group id",
+                        "description": "group id",
                         "name": "groupID",
                         "in": "path",
                         "required": true
