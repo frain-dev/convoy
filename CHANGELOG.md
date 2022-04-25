@@ -1,3 +1,17 @@
+## v0.5.0
+
+- [Feature] Convoy can now be configured with only environment variables and/or cli flags #511 #520
+- [Feature] Add rate limit to api and ui endpoints using the group id #486
+- [Feature] Add configuration option to set rate limits on application endpoints
+- [Feature] Add configuration option to set endpoint timeout duration #550
+- [Feature] Add support for disabling an application #527
+- [Enhancement] Removes the need for always passing the groupID as a query string while authenticating with an API Key. #535
+- [Bugfix] Add the correct event delivery status for matched endpoints #503
+- [Feature] Convoy now supports replay attack prevention by providing a timestamp in the signature header #528 #537
+- [Feature] Convoy now uses filters for batch retrying event deliveries.
+- [Feature] Convoy can now force resend successful event deliveries.
+- [Enhancement] Introduced a service layer into the code architecure #532 #547 #555 #552
+
 ## 0.4.10
 
 - [Feature] We can now download convoy binaries from package managers #459
