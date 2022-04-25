@@ -54,7 +54,27 @@ func (q *MemQueue) Close() error {
 	return q.inner.Close()
 }
 
-func (q *MemQueue) Write(ctx context.Context, name convoy.TaskName, e *datastore.EventDelivery, delay time.Duration) error {
+func (q *MemQueue) WriteEventDelivery(ctx context.Context, name convoy.TaskName, e *datastore.EventDelivery, delay time.Duration) error {
+	job := &queue.Job{
+		ID: e.UID,
+	}
+
+	m := &taskq.Message{
+		Ctx:      ctx,
+		TaskName: string(name),
+		Args:     []interface{}{job},
+		Delay:    delay,
+	}
+
+	err := q.queue.Add(m)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (q *MemQueue) WriteEvent(ctx context.Context, name convoy.TaskName, e *datastore.Event, delay time.Duration) error {
 	job := &queue.Job{
 		ID: e.UID,
 	}

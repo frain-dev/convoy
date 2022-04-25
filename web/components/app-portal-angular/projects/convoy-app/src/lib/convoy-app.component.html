@@ -1,20 +1,18 @@
+<convoy-notification></convoy-notification>
 <div class="dashboard--page">
 	<div class="dashboard--page--head margin-bottom__20px">
-		<h3 class="margin-bottom__10px">Endpoint</h3>
+		<h3 class="margin-bottom__10px">Endpoints</h3>
 
 		<button class="button button__primary button__small" [disabled]="appDetails?.is_disabled" (click)="showAddEndpointModal = !showAddEndpointModal">Create Endpoint</button>
 	</div>
 
 	<div class="dashboard-page--details">
 		<div class="card has-title dashboard-page--endpoints">
-			<table class="table table__no-style">
+			<convoy-table-loader id="endpoints_loader" [tableStyle]="'table__no-style'" [tableHead]="endpointTableHead" *ngIf="loadingAppDetails"></convoy-table-loader>
+			<table class="table table__no-style" *ngIf="!loadingAppDetails && appDetails?.endpoints?.length !== 0">
 				<thead>
 					<tr class="table--head">
-						<th class="has-long-text" scope="col">Endpoint URL</th>
-						<th scope="col">Created At</th>
-						<th scope="col">Updated At</th>
-						<th scope="col">Endpoint Events</th>
-						<th scope="col">Status</th>
+						<th *ngFor="let head of endpointTableHead; let i = index" [ngClass]="{ 'has-long-text': i === 0 }">{{ head }}</th>
 					</tr>
 				</thead>
 				<tbody>
@@ -41,6 +39,10 @@
 					</tr>
 				</tbody>
 			</table>
+			<div class="empty-state" *ngIf="appDetails?.endpoints?.length === 0">
+				<svg-component [height]="110" [width]="130" [id]="'empty-state'"></svg-component>
+				<p>No endpoints to show here</p>
+			</div>
 		</div>
 
 		<!-- Pending when API is available -->
@@ -92,21 +94,20 @@
 								}"
 								(click)="showEventFilterCalendar = !showEventFilterCalendar; showOverlay = true"
 							>
-								<img src="assets/img/calendar-icon.svg" alt="calender icon" />
-								<!-- to be reviewed  -->
-								<!-- <span class="color__grey">Date</span>
-								<span class="color__primary" *ngIf="selectedEventsDateOption">: {{ selectedEventsDateOption }}</span> -->
+								<svg-component [height]="16" [width]="20" [styles]="'margin-right__8px margin-top__6px'" [id]="'calendar'"></svg-component>
+
+								<span class="color__grey margin-right__4px">Date:</span>
+								<span class="color__primary font--nowrap" *ngIf="eventsFilterDateRange.value.startDate === '' && eventsFilterDateRange.value.endDate === ''">All Time</span>
 								<mat-date-range-input [formGroup]="eventsFilterDateRange" [rangePicker]="eventsFilterPicker">
-									<input matStartDate formControlName="startDate" placeholder="Start date" />
+									<input matStartDate formControlName="startDate" />
 									<input
 										matEndDate
 										formControlName="endDate"
-										placeholder="End date"
 										(dateChange)="selectedEventsDateOption = formatDate(eventsFilterDateRange.value.startDate) + ' - ' + formatDate(eventsFilterDateRange.value.endDate); getEvents()"
 									/>
 								</mat-date-range-input>
 								<mat-date-range-picker #eventsFilterPicker [disabled]="false"></mat-date-range-picker>
-								<img src="assets/img/angle-arrow-down.svg" alt="arrow down icon" />
+								<svg-component [height]="5" [width]="12" [styles]="'margin-bottom__2px'" [id]="'angle-arrow-down'"></svg-component>
 							</button>
 							<div [ngClass]="{ show: showEventFilterCalendar }" class="dropdown__menu large">
 								<ul>
@@ -118,11 +119,6 @@
 										From {{ dateOption }}
 									</li>
 									<li (click)="eventsFilterPicker.open(); showEventFilterCalendar = false; showOverlay = false">Custom Option</li>
-									<!-- to be reviewed  -->
-									<!-- <li class="no-hover flex flex__align-items-center">
-										<button class="button button__primary button__small margin-right__14px" (click)="getEvents(); showEventFilterCalendar = false">Apply</button>
-										<button class="button__clear" (click)="selectedEventsDateOption = ''; clearEventFilters(activeTab); showEventFilterCalendar = false">Clear</button>
-									</li> -->
 								</ul>
 							</div>
 						</div>
@@ -164,16 +160,15 @@
 								}"
 								(click)="showEventFilterCalendar = !showEventFilterCalendar; showOverlay = true"
 							>
-								<img src="assets/img/calendar-icon.svg" alt="calender icon" />
-								<!-- to be reviewed  -->
-								<!-- <span class="color__grey">Date</span>
-								<span class="color__primary" *ngIf="selectedEventsDelDateOption">: {{ selectedEventsDelDateOption }}</span> -->
+								<svg-component [height]="16" [width]="20" [styles]="'margin-right__8px margin-top__6px'" [id]="'calendar'"></svg-component>
+
+								<span class="color__grey margin-right__4px">Date:</span>
+								<span class="color__primary" *ngIf="eventDeliveriesFilterDateRange.value.startDate === '' && eventDeliveriesFilterDateRange.value.endDate === ''">All Time</span>
 								<mat-date-range-input [formGroup]="eventDeliveriesFilterDateRange" [rangePicker]="eventDeliveriesFilterPicker">
-									<input matStartDate formControlName="startDate" placeholder="Start date" />
+									<input matStartDate formControlName="startDate" />
 									<input
 										matEndDate
 										formControlName="endDate"
-										placeholder="End date"
 										(dateChange)="
 											selectedEventsDelDateOption = formatDate(eventDeliveriesFilterDateRange.value.startDate) + ' - ' + formatDate(eventDeliveriesFilterDateRange.value.endDate);
 											getEventDeliveries()
@@ -181,7 +176,7 @@
 									/>
 								</mat-date-range-input>
 								<mat-date-range-picker #eventDeliveriesFilterPicker [disabled]="false"></mat-date-range-picker>
-								<img src="assets/img/angle-arrow-down.svg" alt="arrow down icon" />
+								<svg-component [height]="5" [width]="12" [styles]="'margin-bottom__2px'" [id]="'angle-arrow-down'"></svg-component>
 							</button>
 							<div [ngClass]="{ show: showEventFilterCalendar }" class="dropdown__menu large">
 								<ul>
@@ -193,11 +188,6 @@
 										From {{ dateOption }}
 									</li>
 									<li (click)="eventDeliveriesFilterPicker.open(); showEventFilterCalendar = false; showOverlay = false">Custom Option</li>
-									<!-- to be reviewed  -->
-									<!-- <li class="no-hover flex flex__align-items-center">
-										<button class="button button__primary button__small margin-right__14px" (click)="getEventDeliveries(); showEventFilterCalendar = false">Apply</button>
-										<button class="button__clear" (click)="selectedEventsDelDateOption = ''; clearEventFilters(activeTab, 'eventsDelDate'); showEventFilterCalendar = false">Clear</button>
-									</li> -->
 								</ul>
 							</div>
 						</div>
@@ -220,9 +210,11 @@
 								[ngClass]="{ active: eventDeliveryFilteredByStatus.length > 0 }"
 								(click)="showOverlay = true; showEventDeliveriesStatusDropdown = !showEventDeliveriesStatusDropdown"
 							>
-								<img src="assets/img/status-filter-icon.svg" alt="status filter icon" />
+								<svg-component [height]="16" [width]="16" [styles]="'margin-right__4px margin-top__8px'" [id]="'status-icon'"></svg-component>
+
 								<span>Status</span>
-								<img src="assets/img/angle-arrow-down.svg" alt="arrow down icon" />
+
+								<svg-component [height]="5" [width]="12" [styles]="'margin-bottom__2px margin-left__30px'" [id]="'angle-arrow-down'"></svg-component>
 							</button>
 							<div class="dropdown__menu with-padding small" [ngClass]="{ show: showEventDeliveriesStatusDropdown }">
 								<div class="dropdown__menu__item with-border" *ngFor="let status of eventDeliveryStatuses">
@@ -259,10 +251,10 @@
 						>
 							Batch Retry
 						</button>
-						<div class="button__filter active margin-left__24px" *ngIf="eventDeliveryFilteredByEventId !== ''">
-							Event Filtered
+						<div class="button__filter margin-left__24px" *ngIf="eventDeliveryFilteredByEventId !== ''">
+							<span class="color__primary">Event Filtered</span>
 							<button class="button__clear button--has-icon margin-left__8px" (click)="eventDeliveryFilteredByEventId = ''; getEventDeliveries()">
-								<img src="assets/img/close-icon.svg" alt="close icon" />
+								<svg-component [height]="16" [width]="16" [styles]="'margin-top__8px'" [id]="'close-icon'"></svg-component>
 							</button>
 						</div>
 					</div>
@@ -285,13 +277,11 @@
 		<div class="flex">
 			<div class="dashboard--logs--table">
 				<div class="table table--container" [hidden]="activeTab !== 'events' || displayedEvents.length === 0">
-					<table id="events-table">
+					<convoy-table-loader id="events_loader" [tableHead]="eventsTableHead" *ngIf="isloadingEvents"></convoy-table-loader>
+					<table id="events-table" *ngIf="!isloadingEvents">
 						<thead>
 							<tr class="table--head">
-								<th scope="col">Event Type</th>
-								<th scope="col">App Name</th>
-								<th scope="col">Created At</th>
-								<th scope="col"></th>
+								<th scope="col" *ngFor="let head of eventsTableHead">{{ head }}</th>
 							</tr>
 						</thead>
 						<tbody>
@@ -331,9 +321,9 @@
 									</td>
 									<td>
 										<div>
-											<button class="button button__clear button--has-icon icon-right" (click)="eventDeliveryFilteredByEventId = event.uid; openDeliveriesTab()">
+											<button class="button button__clear button--has-icon" (click)="eventDeliveryFilteredByEventId = event.uid; openDeliveriesTab()">
 												Deliveries
-												<img src="../../../../assets/img/angle-arrow-right-primary.svg" alt="arrow right" />
+												<svg-component [height]="8" [width]="12" [styles]="'margin-left__14px margin-top__7px'" [id]="'angle-arrow-right'"></svg-component>
 											</button>
 										</div>
 									</td>
@@ -347,32 +337,24 @@
 							[disabled]="events.pagination.page === events.pagination.totalPage"
 							(click)="eventsPage = eventsPage + 1; getEvents()"
 						>
-							<img src="/assets/img/arrow-down-icon.svg" class="width-unset height-unset" [hidden]="isloadingMoreEvents" alt="arrow down icon" />
-							<img src="/assets/img/rotate-icon.svg" class="loading-icon" [hidden]="!isloadingMoreEvents" alt="loading icon" />
+							<svg-component [height]="24" [width]="24" [styles]="'margin-top__6px'" [id]="'angle-arrow-down-big'" [hidden]="isloadingMoreEvents"></svg-component>
+							<svg-component [height]="25" [width]="25" [styles]="'margin-right__8px margin-top__6px'" [id]="'rotate-icon'" [hidden]="!isloadingMoreEvents"></svg-component>
 							Load more
 						</button>
 					</div>
 				</div>
 
 				<div class="empty-state table--container" *ngIf="displayedEvents.length === 0 && activeTab === 'events'">
-					<img src="/assets/img/empty-state-img.svg" alt="empty state" />
+					<svg-component [height]="110" [width]="130" [id]="'empty-state'"></svg-component>
+
 					<p>No event to show here</p>
 				</div>
 				<div class="table table--container" [hidden]="activeTab !== 'event deliveries' || displayedEventDeliveries.length === 0">
-					<table id="event-deliveries-table">
+					<convoy-table-loader id="event_deliveries_loader" [tableHead]="eventDelTableHead" *ngIf="loadingEventDeliveries"></convoy-table-loader>
+					<table id="event-deliveries-table" *ngIf="!loadingEventDeliveries">
 						<thead>
 							<tr class="table--head">
-								<th scope="col" class="checkbox">
-									<!-- to be reviwed  -->
-									<!-- <div class="checkbox">
-										<input type="checkbox" name="eventDeliveryTable" id="eventDeliveryTable" (change)="checkAllCheckboxes($event)" />
-									</div> -->
-									Status
-								</th>
-								<th scope="col">Event Type</th>
-								<th scope="col">Attempts</th>
-								<th scope="col">Created At</th>
-								<th scope="col"></th>
+								<th scope="col" *ngFor="let head of eventDelTableHead">{{ head }}</th>
 							</tr>
 						</thead>
 						<tbody>
@@ -398,10 +380,14 @@
 								>
 									<td>
 										<div class="has-retry">
-											<img *ngIf="event.metadata.num_trials > event.metadata.retry_limit" src="/assets/img/retry-icon.svg" alt="retry icon" title="manually retried" />
-											<!-- to be reviwed  -->
-											<!-- <input type="checkbox" [name]="'event' + index" id="event" [value]="event.uid" (change)="checkEventDeliveryBox($event)" /> -->
-											<div [class]="'tag tag--' + event.status">
+											<svg-component
+												[height]="14"
+												[width]="14"
+												[styles]="'margin-top__6px margin-right__6px'"
+												[id]="'manually-retry-icon'"
+												*ngIf="event.metadata.num_trials > event.metadata.retry_limit"
+											></svg-component>
+											<div [ngClass]="{ 'margin-left--unset': event.metadata.num_trials > event.metadata.retry_limit }" [class]="'tag tag--' + event.status">
 												{{ event.status }}
 											</div>
 										</div>
@@ -434,7 +420,7 @@
 													})
 												"
 											>
-												<img src="/assets/img/refresh-icon-primary.svg" alt="refresh icon" />
+												<svg-component [height]="18" [width]="24" [styles]="'margin-top__2px'" [id]="'retry-icon'" style="margin-bottom: -4px"></svg-component>
 												Retry
 											</button>
 										</div>
@@ -449,14 +435,15 @@
 							[disabled]="eventDeliveries.pagination.page === eventDeliveries.pagination.totalPage"
 							(click)="loadMoreEventDeliveries()"
 						>
-							<img src="/assets/img/arrow-down-icon.svg" class="width-unset height-unset" alt="arrow down icon" />
+							<svg-component [height]="24" [width]="24" [styles]="'margin-top__7px'" [id]="'angle-arrow-down-big'"></svg-component>
 							Load more
 						</button>
 					</div>
 				</div>
 
 				<div class="empty-state table--container" *ngIf="activeTab === 'event deliveries' && displayedEventDeliveries.length === 0">
-					<img src="/assets/img/empty-state-img.svg" alt="empty state" />
+					<svg-component [height]="110" [width]="130" [id]="'empty-state'"></svg-component>
+
 					<p>No event to show here</p>
 				</div>
 			</div>
@@ -511,20 +498,20 @@
 
 					<div class="dashboard--logs--details--req-res" *ngIf="activeTab === 'events' || activeTab === 'event deliveries'">
 						<div [class]="'dashboard--logs--details--tabs-data ' + (eventDetailsActiveTab === 'data' ? 'show' : '')">
-							<h3>Event</h3>
+							<h4>Event</h4>
 							<prism language="json" [code]="getCodeSnippetString(activeTab === 'events' ? 'event' : 'event_delivery')"></prism>
 						</div>
 
 						<div [class]="'dashboard--logs--details--tabs-data ' + (eventDetailsActiveTab === 'response' ? 'show' : '')">
-							<h3>Header</h3>
+							<h4>Header</h4>
 							<prism language="json" [code]="getCodeSnippetString('res_head')"></prism>
 
-							<h3>Body</h3>
+							<h4>Body</h4>
 							<prism language="json" [code]="getCodeSnippetString('res_body')"></prism>
 						</div>
 
 						<div [class]="'dashboard--logs--details--tabs-data ' + (eventDetailsActiveTab === 'request' ? 'show' : '')">
-							<h3>Header</h3>
+							<h4>Header</h4>
 							<prism language="json" [code]="getCodeSnippetString('req')"></prism>
 						</div>
 					</div>
@@ -549,10 +536,10 @@
 </div>
 
 <div class="overlay" *ngIf="showOverlay" (click)="showOverlay = false; showEventDeliveriesStatusDropdown = false; showEventFilterCalendar = false"></div>
-<div class="_overlay" *ngIf="showBatchRetryModal || showAddEndpointModal" (click)="showBatchRetryModal = false; showAddEndpointModal = false;"></div>
+<div class="_overlay" *ngIf="showBatchRetryModal || showAddEndpointModal" (click)="showBatchRetryModal = false; showAddEndpointModal = false"></div>
 <div class="modal modal__center" *ngIf="showBatchRetryModal">
 	<div class="modal--body flex flex__column flex__justify-center flex__align-items-center delete">
-		<img src="assets/img/filter.gif" alt="filter icon" class="filter-img" />
+		<img src="https://res.cloudinary.com/frain/image/upload/v1649094629/filter_wl2scm.gif" alt="filter icon" class="filter-img" />
 		<div class="text-center font__20px font__weight-500 color__grey margin-bottom__8px">The filters applied will affect</div>
 		<div class="text-center font__20px font__weight-600 color__black margin-bottom__32px">{{ batchRetryCount || 0 }} event{{ batchRetryCount > 1 ? 's' : '' }}</div>
 		<button class="button button__primary" [disabled]="isRetyring || batchRetryCount == 0" (click)="batchRetryEvent()">{{ isRetyring ? 'Retrying Events...' : 'Yes, Apply' }}</button>
@@ -563,25 +550,25 @@
 	<div class="modal--head">
 		<h2>Add Endpoint</h2>
 		<a (click)="showAddEndpointModal = false">
-			<img src="/assets/img/modal-close-icon.svg" alt="close icon" />
+			<svg-component [height]="32" [width]="32" [styles]="'margin-top__4px'" [id]="'modal-close-icon'"></svg-component>
 		</a>
 	</div>
 	<div class="modal--body">
 		<form [formGroup]="addNewEndpointForm">
 			<div class="input">
-				<input type="text" formControlName="description" required />
+				<input type="text" formControlName="description" [ngClass]="{ danger: addNewEndpointForm.controls.description.touched && addNewEndpointForm.controls.description.invalid }" required />
 				<label for="">Description</label>
 				<div class="input__error input__error__danger" *ngIf="addNewEndpointForm.controls.description.touched && addNewEndpointForm.controls.description.invalid">
-					<img src="assets/img/input-error-icon.svg" alt="input error icon" />
-					<span>Please provide a description</span>
+					<svg-component [height]="17" [width]="17" [styles]="'margin-right__8px'" [id]="'input-error-icon'"></svg-component>
+					<span class="margin-bottom__4px">Please provide a description</span>
 				</div>
 			</div>
 			<div class="input">
-				<input type="text" formControlName="url" required />
+				<input type="text" formControlName="url" [ngClass]="{ danger: addNewEndpointForm.controls.url.touched && addNewEndpointForm.controls.url.invalid }" required />
 				<label for="">Enter URL</label>
 				<div class="input__error input__error__danger" *ngIf="addNewEndpointForm.controls.url.touched && addNewEndpointForm.controls.url.invalid">
-					<img src="assets/img/input-error-icon.svg" alt="input error icon" />
-					<span>Endpoint URL is required</span>
+					<svg-component [height]="17" [width]="17" [styles]="'margin-right__8px'" [id]="'input-error-icon'"></svg-component>
+					<span class="margin-bottom__4px">Endpoint URL is required</span>
 				</div>
 			</div>
 
@@ -590,21 +577,21 @@
 					<div class="tag" *ngFor="let tag of eventTags">
 						{{ tag }}
 						<a (click)="removeEventTag(tag)">
-							<img src="/assets/img/close-icon-black.svg" alt="close icon" />
+							<svg-component [height]="12" [width]="12" [styles]="''" [id]="'close-icon-black'"></svg-component>
 						</a>
 					</div>
 					<input type="text" id="tagInput" (input)="addTag()" required />
 				</div>
 				<label [ngClass]="{ active: eventTags.length > 0 }" for="">Events</label>
 				<div class="input__error input__error__secondary font__12px">
-					<img src="/assets/img/info-icon.svg" alt="close icon" />
-					Add multiple events by seperating them with commas
+					<svg-component [height]="15" [width]="15" [styles]="'margin-right__8px'" [id]="'small-info-icon'"></svg-component>
+					<span class="margin-bottom__4px">Add multiple events by seperating them with commas</span>
 				</div>
 			</div>
 		</form>
 	</div>
 	<div class="modal--footer modal--footer__with-shadow">
-		<button class="button button__white" (click)="showAddEndpointModal = false">Discard</button>
-		<button class="button button__primary" [disabled]="isCreatingNewEndpoint" (click)="addNewEndpoint()">{{ isCreatingNewEndpoint ? 'Adding Endpoint..' : 'Add Endpoint' }}</button>
+		<button class="button button__white margin-right__16px" (click)="showAddEndpointModal = false">Discard</button>
+		<button class="button button__primary button--full-100" [disabled]="isCreatingNewEndpoint" (click)="addNewEndpoint()">{{ isCreatingNewEndpoint ? 'Adding Endpoint..' : 'Add Endpoint' }}</button>
 	</div>
 </div>

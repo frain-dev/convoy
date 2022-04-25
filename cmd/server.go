@@ -5,6 +5,7 @@ import (
 	"errors"
 	"time"
 
+	"github.com/frain-dev/convoy"
 	"github.com/frain-dev/convoy/auth/realm_chain"
 	"github.com/frain-dev/convoy/worker"
 	"github.com/frain-dev/convoy/worker/task"
@@ -45,6 +46,7 @@ func addServerCommand(a *app) *cobra.Command {
 	var withWorkers bool
 	var requireAuth bool
 	var disableEndpoint bool
+	var replayAttacks bool
 	var multipleTenants bool
 	var nativeRealmEnabled bool
 	var newReplicTracerEnabled bool
@@ -116,6 +118,7 @@ func addServerCommand(a *app) *cobra.Command {
 	cmd.Flags().BoolVarP(&withWorkers, "with-workers", "w", true, "Should run workers")
 	cmd.Flags().BoolVar(&nativeRealmEnabled, "native", false, "Enable native-realm authentication")
 	cmd.Flags().BoolVar(&disableEndpoint, "disable-endpoint", false, "Disable all application endpoints")
+	cmd.Flags().BoolVar(&replayAttacks, "replay-attacks", false, "Enable feature to prevent replay attacks")
 	cmd.Flags().BoolVar(&newReplicConfigEnabled, "new-relic-config-enabled", false, "Enable new-relic config")
 	cmd.Flags().BoolVar(&multipleTenants, "multi-tenant", false, "Start convoy in single- or multi-tenant mode")
 	cmd.Flags().BoolVar(&newReplicTracerEnabled, "new-relic-tracer-enabled", false, "Enable new-relic distributed tracer")
@@ -155,6 +158,7 @@ func StartConvoyServer(a *app, cfg config.Configuration, withWorkers bool) error
 		a.apiKeyRepo,
 		a.groupRepo,
 		a.eventQueue,
+		a.createEventQueue,
 		a.logger,
 		a.tracer,
 		a.cache,
@@ -163,22 +167,33 @@ func StartConvoyServer(a *app, cfg config.Configuration, withWorkers bool) error
 	if withWorkers {
 		// register tasks.
 		handler := task.ProcessEventDelivery(a.applicationRepo, a.eventDeliveryRepo, a.groupRepo, a.limiter)
-		if err := task.CreateTasks(a.groupRepo, handler); err != nil {
+		if err := task.CreateTasks(a.groupRepo, convoy.EventProcessor, handler); err != nil {
 			log.WithError(err).Error("failed to register tasks")
 			return err
 		}
 
-		worker.RegisterNewGroupTask(a.applicationRepo, a.eventDeliveryRepo, a.groupRepo, a.limiter)
+		// register tasks.
+		eventCreatedhandler := task.ProcessEventCreated(a.applicationRepo, a.eventRepo, a.groupRepo, a.eventDeliveryRepo, a.cache, a.createEventQueue)
+		if err := task.CreateTasks(a.groupRepo, convoy.CreateEventProcessor, eventCreatedhandler); err != nil {
+			log.WithError(err).Error("failed to register tasks")
+			return err
+		}
+
+		worker.RegisterNewGroupTask(a.applicationRepo, a.eventDeliveryRepo, a.groupRepo, a.limiter, a.eventRepo, a.cache, a.eventQueue)
 
 		log.Infof("Starting Convoy workers...")
+
 		// register workers.
 		ctx := context.Background()
 		producer := worker.NewProducer(a.eventQueue)
-
 		if cfg.Queue.Type != config.InMemoryQueueProvider {
 			producer.Start(ctx)
 		}
 
+		eventCreationProducer := worker.NewProducer(a.createEventQueue)
+		if cfg.Queue.Type != config.InMemoryQueueProvider {
+			eventCreationProducer.Start(ctx)
+		}
 	}
 
 	log.Infof("Started convoy server in %s", time.Since(start))
@@ -379,6 +394,17 @@ func loadServerConfigFromCliFlags(cmd *cobra.Command, c *config.Configuration) e
 		}
 
 		c.GroupConfig.DisableEndpoint = disableEndpoint
+	}
+
+	// CONVOY_REPLAY_ATTACKS
+	isReplayAttacksSet := cmd.Flags().Changed("replay-attacks")
+	if isReplayAttacksSet {
+		replayAttacks, err := cmd.Flags().GetBool("replay-attacks")
+		if err != nil {
+			return err
+		}
+
+		c.GroupConfig.ReplayAttacks = replayAttacks
 	}
 
 	// CONVOY_INTERVAL_SECONDS

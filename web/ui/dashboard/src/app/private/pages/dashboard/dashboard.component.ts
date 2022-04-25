@@ -11,7 +11,7 @@ export class DashboardComponent implements OnInit {
 	showDropdown = false;
 	apiURL = this.generalService.apiURL();
 
-	constructor(private router: Router, private generalService: GeneralService) {}
+	constructor(private generalService: GeneralService, private router: Router) {}
 
 	async ngOnInit() {
 		await this.initDashboard();

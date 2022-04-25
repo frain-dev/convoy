@@ -38,7 +38,7 @@
 					<div v-if="linuxActiveTab == 'ubuntu'" class="code">
 						<div>
 							<span>$</span>
-							<code>echo "deb [trusted=yes] https://apt.fury.io/convoy/ /" | sudo tee -a /etc/apt/sources.list.d/convoy.list</code>
+							<code>echo "deb [trusted=yes] https://apt.packages.getconvoy.io/ /" | sudo tee -a /etc/apt/sources.list.d/convoy.list</code>
 						</div>
 						<div>
 							<span>$</span>
@@ -55,7 +55,7 @@
 							<div class="code--flex-code">
 								<code>echo '[convoy]</code>
 								<code>name=Convoy</code>
-								<code>baseurl=https://yum.fury.io/convoy/</code>
+								<code>baseurl=https://yum.packages.getconvoy.io/</code>
 								<code>enabled=1</code>
 								<code>gpgcheck=0' | sudo tee -a /etc/yum.repos.d/convoy.repo</code>
 							</div>
@@ -73,7 +73,10 @@
 					</nuxt-link>
 				</div>
 				<div class="download--view-more flex-between" v-if="activeTab == 'window'">
-					<a target="_blank" rel="noopener noreferrer" href="https://github.com/frain-dev/convoy/releases" class="underlined">Click here to download the windows app</a>
+					<div class="download--view-more--links">
+						<a target="_blank" rel="noopener noreferrer" href="https://brew.packages.getconvoy.io/releases/v0.5.2/convoy_0.5.2_windows_amd64.tar.gz" class="underlined" download="">Amd64</a>
+						<a target="_blank" rel="noopener noreferrer" href="https://brew.packages.getconvoy.io/releases/v0.5.2/convoy_0.5.2_windows_arm64.tar.gz" class="underlined" download>Arm64</a>
+					</div>
 					<nuxt-link to="/docs">
 						View our Docs to learn more
 						<img src="~/assets/images/angle-right-primary.svg" alt="right" />
@@ -82,7 +85,6 @@
 			</section>
 		</div>
 		<Footer></Footer>
-
 	</div>
 </template>
 <script>
@@ -96,7 +98,7 @@ export default {
 			],
 			linuxTabs: [
 				{ label: 'Ubuntu/Debian', id: 'ubuntu' },
-				{ label: 'CentOS/RHEL ', id: 'cent' },
+				{ label: 'CentOS/RHEL ', id: 'cent' }
 			],
 			activeTab: 'mac',
 			linuxActiveTab: 'ubuntu'
@@ -163,16 +165,15 @@ p.subtitle {
 
 header {
 	background: url('~/assets/images/BG.png'), no-repeat;
-    background-size: cover;
-	height: 400px;
+	background-size: cover;
+	height: 350px;
 	width: 100%;
 }
 .page {
 	max-width: 1150px;
 	margin: auto;
-	font-family: 'Inter', sans-serif;
 	margin-top: -130px;
-    margin-bottom: 88px;
+	margin-bottom: 88px;
 }
 .download {
 	background: #f3f3f8;
@@ -196,9 +197,7 @@ header {
 		border-radius: 4px;
 		padding: 24px;
 		width: 100%;
-		font-family: 'Inter', sans-serif;
 		color: #ffffff;
-		display: flex;
 		flex-flow: column nowrap;
 		font-size: 13px;
 		line-height: 20px;
@@ -221,6 +220,11 @@ header {
 		justify-content: flex-end;
 		margin-top: 27px;
 
+		&--links {
+			display: flex;
+			align-items: center;
+		}
+
 		&.flex-between {
 			justify-content: space-between;
 		}
@@ -238,6 +242,9 @@ header {
 				margin-left: 8px;
 			}
 
+			&:not(:last-of-type) {
+				margin-right: 32px;
+			}
 			&.underlined {
 				text-decoration: underline;
 			}

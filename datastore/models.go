@@ -5,6 +5,7 @@ import (
 	"database/sql/driver"
 	"encoding/json"
 	"errors"
+	"strings"
 
 	"github.com/frain-dev/convoy/auth"
 	"github.com/frain-dev/convoy/config"
@@ -72,12 +73,13 @@ const (
 )
 
 type Application struct {
-	ID           primitive.ObjectID `json:"-" bson:"_id"`
-	UID          string             `json:"uid" bson:"uid"`
-	GroupID      string             `json:"group_id" bson:"group_id"`
-	Title        string             `json:"name" bson:"title"`
-	SupportEmail string             `json:"support_email" bson:"support_email"`
-	IsDisabled   bool               `json:"is_disabled" bson:"is_disabled"`
+	ID              primitive.ObjectID `json:"-" bson:"_id"`
+	UID             string             `json:"uid" bson:"uid"`
+	GroupID         string             `json:"group_id" bson:"group_id"`
+	Title           string             `json:"name" bson:"title"`
+	SupportEmail    string             `json:"support_email" bson:"support_email"`
+	SlackWebhookURL string             `json:"slack_webhook_url,omitempty" bson:"slack_webhook_url"`
+	IsDisabled      bool               `json:"is_disabled" bson:"is_disabled"`
 
 	Endpoints []Endpoint         `json:"endpoints" bson:"endpoints"`
 	CreatedAt primitive.DateTime `json:"created_at,omitempty" bson:"created_at,omitempty" swaggertype:"string"`
@@ -134,6 +136,7 @@ type GroupConfig struct {
 	Strategy        StrategyConfiguration  `json:"strategy"`
 	Signature       SignatureConfiguration `json:"signature"`
 	DisableEndpoint bool                   `json:"disable_endpoint"`
+	ReplayAttacks   bool                   `json:"replay_attacks"`
 }
 type StrategyConfiguration struct {
 	Type               config.StrategyProvider                 `json:"type" valid:"required~please provide a valid strategy type, in(default)~unsupported strategy type"`
@@ -155,6 +158,11 @@ type SignatureConfiguration struct {
 	Hash   string                         `json:"hash" valid:"required~please provide a valid hash,supported_hash~unsupported hash type"`
 }
 
+type SignatureValues struct {
+	Header config.SignatureHeaderProvider `json:"header" valid:"required~please provide a valid signature header"`
+	Hash   string                         `json:"hash" valid:"required~please provide a valid hash,supported_hash~unsupported hash type"`
+}
+
 type GroupStatistics struct {
 	MessagesSent int64 `json:"messages_sent"`
 	TotalApps    int64 `json:"total_apps"`
@@ -162,6 +170,16 @@ type GroupStatistics struct {
 
 type GroupFilter struct {
 	Names []string `json:"name" bson:"name"`
+}
+
+func (g *GroupFilter) WithNamesTrimmed() *GroupFilter {
+	f := GroupFilter{[]string{}}
+
+	for _, s := range g.Names {
+		f.Names = append(f.Names, strings.TrimSpace(s))
+	}
+
+	return &f
 }
 
 func (o *Group) IsDeleted() bool { return o.DeletedAt > 0 }

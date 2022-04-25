@@ -16,7 +16,7 @@ import (
 // @Tags Group
 // @Accept  json
 // @Produce  json
-// @Param groupID path string true "Group id"
+// @Param groupID path string true "group id"
 // @Success 200 {object} serverResponse{data=datastore.Group}
 // @Failure 400,401,500 {object} serverResponse{data=Stub}
 // @Security ApiKeyAuth
@@ -41,7 +41,7 @@ func (a *applicationHandler) GetGroup(w http.ResponseWriter, r *http.Request) {
 // @Tags Group
 // @Accept  json
 // @Produce  json
-// @Param groupID path string true "Group id"
+// @Param groupID path string true "group id"
 // @Success 200 {object} serverResponse{data=Stub}
 // @Failure 400,401,500 {object} serverResponse{data=Stub}
 // @Security ApiKeyAuth

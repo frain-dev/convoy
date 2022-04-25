@@ -41,6 +41,7 @@ func (ss *SecurityService) CreateAPIKey(ctx context.Context, newApiKey *models.A
 
 	groups, err := ss.groupRepo.FetchGroupsByIDs(ctx, newApiKey.Role.Groups)
 	if err != nil {
+		log.WithError(err).Error("failed to fetch groups by ids")
 		return nil, "", NewServiceError(http.StatusBadRequest, errors.New("invalid group"))
 	}
 
@@ -130,7 +131,7 @@ func (ss *SecurityService) CreateAppPortalAPIKey(ctx context.Context, group *dat
 	}
 
 	if !util.IsStringEmpty(*baseUrl) {
-		*baseUrl = fmt.Sprintf("%s/ui/app-portal/%s?groupID=%s&appId=%s", *baseUrl, key, group.UID, app.UID)
+		*baseUrl = fmt.Sprintf("%s/app-portal/%s?groupID=%s&appId=%s", *baseUrl, key, group.UID, app.UID)
 	}
 
 	return apiKey, key, nil

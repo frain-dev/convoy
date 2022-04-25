@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/frain-dev/convoy"
+	"github.com/frain-dev/convoy/cache"
 	"github.com/frain-dev/convoy/datastore"
 	"github.com/frain-dev/convoy/limiter"
 	"github.com/frain-dev/convoy/queue"
@@ -16,7 +17,7 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
-func RegisterNewGroupTask(applicationRepo datastore.ApplicationRepository, eventDeliveryRepo datastore.EventDeliveryRepository, groupRepo datastore.GroupRepository, rateLimiter limiter.RateLimiter) {
+func RegisterNewGroupTask(applicationRepo datastore.ApplicationRepository, eventDeliveryRepo datastore.EventDeliveryRepository, groupRepo datastore.GroupRepository, rateLimiter limiter.RateLimiter, eventRepo datastore.EventRepository, cache cache.Cache, eventQueue queue.Queuer) {
 	go func() {
 		for {
 			filter := &datastore.GroupFilter{}
@@ -25,11 +26,19 @@ func RegisterNewGroupTask(applicationRepo datastore.ApplicationRepository, event
 				log.WithError(err).Error("failed to load groups")
 			}
 			for _, g := range groups {
-				name := convoy.TaskName(g.Name)
-				if t := taskq.Tasks.Get(string(name)); t == nil {
-					handler := task.ProcessEventDelivery(applicationRepo, eventDeliveryRepo, groupRepo, rateLimiter)
-					log.Infof("Registering task handler for %s", g.Name)
-					task.CreateTask(name, *g, handler)
+				pEvtDelTask := convoy.EventProcessor.SetPrefix(g.Name)
+				pEvtCrtTask := convoy.CreateEventProcessor.SetPrefix(g.Name)
+
+				if t := taskq.Tasks.Get(string(pEvtCrtTask)); t == nil {
+					if s := taskq.Tasks.Get(string(pEvtDelTask)); s == nil {
+						handler := task.ProcessEventDelivery(applicationRepo, eventDeliveryRepo, groupRepo, rateLimiter)
+						log.Infof("Registering event delivery task handler for %s", g.Name)
+						task.CreateTask(pEvtDelTask, *g, handler)
+
+						eventCreatedhandler := task.ProcessEventCreated(applicationRepo, eventRepo, groupRepo, eventDeliveryRepo, cache, eventQueue)
+						log.Infof("Registering event creation task handler for %s", g.Name)
+						task.CreateTask(pEvtCrtTask, *g, eventCreatedhandler)
+					}
 				}
 			}
 		}
@@ -166,7 +175,7 @@ func ProcessEventDeliveryBatches(ctx context.Context, status datastore.EventDeli
 			}
 
 			taskName := convoy.EventProcessor.SetPrefix(group.Name)
-			err = q.Write(ctx, taskName, delivery, 1*time.Second)
+			err = q.WriteEventDelivery(ctx, taskName, delivery, 1*time.Second)
 			if err != nil {
 				log.WithError(err).Errorf("batch %d: failed to send event delivery %s to the queue", batchCount, delivery.ID)
 			}
