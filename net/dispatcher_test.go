@@ -9,6 +9,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/frain-dev/convoy/datastore"
 	"github.com/jarcoal/httpmock"
 
 	"github.com/frain-dev/convoy/config"
@@ -23,15 +24,14 @@ func TestDispatcher_SendRequest(t *testing.T) {
 	client := http.DefaultClient
 
 	buf := make([]byte, config.MaxResponseSize*2)
-
+	configSignature := config.SignatureHeaderProvider(config.DefaultSignatureHeader.String())
 	_, _ = rand.Read(buf)
 	timestamp := fmt.Sprint(time.Now().Unix())
-
 	type args struct {
 		endpoint        string
 		method          string
 		jsonData        json.RawMessage
-		signatureHeader string
+		group           *datastore.Group
 		convoyTimestamp string
 		hmac            string
 	}
@@ -45,11 +45,19 @@ func TestDispatcher_SendRequest(t *testing.T) {
 		{
 			name: "should_send_message",
 			args: args{
-				endpoint:        "https://google.com",
-				method:          http.MethodPost,
-				jsonData:        bytes.NewBufferString("testing").Bytes(),
-				signatureHeader: config.DefaultSignatureHeader.String(),
-				convoyTimestamp: timestamp,
+				endpoint: "https://google.com",
+				method:   http.MethodPost,
+				jsonData: bytes.NewBufferString("testing").Bytes(),
+				group: &datastore.Group{
+					UID: "12345",
+					Config: &datastore.GroupConfig{
+						Signature: datastore.SignatureConfiguration{
+							Header: configSignature,
+						},
+						ReplayAttacks: false,
+					},
+				},
+				convoyTimestamp: "",
 				hmac:            "12345",
 			},
 			want: &Response{
@@ -61,7 +69,6 @@ func TestDispatcher_SendRequest(t *testing.T) {
 					"Content-Type":                         []string{"application/json"},
 					"User-Agent":                           []string{defaultUserAgent()},
 					config.DefaultSignatureHeader.String(): []string{"12345"}, // should equal hmac field above
-					"Convoy-Timestamp":                     []string{timestamp},
 				},
 				ResponseHeader: nil,
 				Body:           successBody,
@@ -83,11 +90,19 @@ func TestDispatcher_SendRequest(t *testing.T) {
 		{
 			name: "should_cut_down_oversized_response_body",
 			args: args{
-				endpoint:        "https://google.com",
-				method:          http.MethodPost,
-				jsonData:        bytes.NewBufferString("testing").Bytes(),
-				signatureHeader: config.DefaultSignatureHeader.String(),
-				convoyTimestamp: timestamp,
+				endpoint: "https://google.com",
+				method:   http.MethodPost,
+				jsonData: bytes.NewBufferString("testing").Bytes(),
+				group: &datastore.Group{
+					UID: "12345",
+					Config: &datastore.GroupConfig{
+						Signature: datastore.SignatureConfiguration{
+							Header: configSignature,
+						},
+						ReplayAttacks: false,
+					},
+				},
+				convoyTimestamp: "",
 				hmac:            "12345",
 			},
 			want: &Response{
@@ -99,7 +114,7 @@ func TestDispatcher_SendRequest(t *testing.T) {
 					"Content-Type":                         []string{"application/json"},
 					"User-Agent":                           []string{defaultUserAgent()},
 					config.DefaultSignatureHeader.String(): []string{"12345"}, // should equal hmac field above
-					"Convoy-Timestamp":                     []string{timestamp}},
+				},
 				ResponseHeader: nil,
 				Body:           buf[:config.MaxResponseSize],
 				IP:             "",
@@ -120,12 +135,20 @@ func TestDispatcher_SendRequest(t *testing.T) {
 		{
 			name: "should_refuse_connection",
 			args: args{
-				endpoint:        "http://localhost:3234",
-				method:          http.MethodPost,
-				jsonData:        bytes.NewBufferString("bossman").Bytes(),
-				signatureHeader: config.DefaultSignatureHeader.String(),
+				endpoint: "http://localhost:3234",
+				method:   http.MethodPost,
+				jsonData: bytes.NewBufferString("bossman").Bytes(),
+				group: &datastore.Group{
+					UID: "12345",
+					Config: &datastore.GroupConfig{
+						Signature: datastore.SignatureConfiguration{
+							Header: configSignature,
+						},
+						ReplayAttacks: false,
+					},
+				},
 				hmac:            "12345",
-				convoyTimestamp: timestamp,
+				convoyTimestamp: "",
 			},
 			want: &Response{
 				Status:     "",
@@ -135,7 +158,6 @@ func TestDispatcher_SendRequest(t *testing.T) {
 					"Content-Type":                         []string{"application/json"},
 					"User-Agent":                           []string{defaultUserAgent()},
 					config.DefaultSignatureHeader.String(): []string{"12345"}, // should equal hmac field above
-					"Convoy-Timestamp":                     []string{timestamp},
 				},
 				ResponseHeader: nil,
 				Body:           nil,
@@ -145,12 +167,20 @@ func TestDispatcher_SendRequest(t *testing.T) {
 			wantErr: true,
 		},
 		{
-			name: "should_error_for_empty_signaturehmac",
+			name: "should_error_for_empty_signature_hmac",
 			args: args{
-				endpoint:        "http://localhost:3234",
-				method:          http.MethodPost,
-				jsonData:        bytes.NewBufferString("bossman").Bytes(),
-				signatureHeader: config.DefaultSignatureHeader.String(),
+				endpoint: "http://localhost:3234",
+				method:   http.MethodPost,
+				jsonData: bytes.NewBufferString("bossman").Bytes(),
+				group: &datastore.Group{
+					UID: "12345",
+					Config: &datastore.GroupConfig{
+						Signature: datastore.SignatureConfiguration{
+							Header: configSignature,
+						},
+						ReplayAttacks: false,
+					},
+				},
 				hmac:            "",
 				convoyTimestamp: timestamp,
 			},
@@ -162,17 +192,25 @@ func TestDispatcher_SendRequest(t *testing.T) {
 				ResponseHeader: nil,
 				Body:           nil,
 				IP:             "",
-				Error:          "signature header, hmac and timestamp are required",
+				Error:          "signature header and hmac are required",
 			},
 			wantErr: true,
 		},
 		{
-			name: "should_error_for_empty_timestamphmac",
+			name: "should_error_for_empty_timestamp_with_replayattacks",
 			args: args{
-				endpoint:        "http://localhost:3234",
-				method:          http.MethodPost,
-				jsonData:        bytes.NewBufferString("bossman").Bytes(),
-				signatureHeader: config.DefaultSignatureHeader.String(),
+				endpoint: "http://localhost:3234",
+				method:   http.MethodPost,
+				jsonData: bytes.NewBufferString("bossman").Bytes(),
+				group: &datastore.Group{
+					UID: "12345",
+					Config: &datastore.GroupConfig{
+						Signature: datastore.SignatureConfiguration{
+							Header: configSignature,
+						},
+						ReplayAttacks: true,
+					},
+				},
 				hmac:            "css",
 				convoyTimestamp: "",
 			},
@@ -184,19 +222,27 @@ func TestDispatcher_SendRequest(t *testing.T) {
 				ResponseHeader: nil,
 				Body:           nil,
 				IP:             "",
-				Error:          "signature header, hmac and timestamp are required",
+				Error:          "timestamp is required",
 			},
 			wantErr: true,
 		},
 		{
 			name: "should_error_for_empty_signature_header",
 			args: args{
-				endpoint:        "http://localhost:3234",
-				method:          http.MethodPost,
-				jsonData:        bytes.NewBufferString("bossman").Bytes(),
-				signatureHeader: "",
+				endpoint: "http://localhost:3234",
+				method:   http.MethodPost,
+				jsonData: bytes.NewBufferString("bossman").Bytes(),
+				group: &datastore.Group{
+					UID: "12345",
+					Config: &datastore.GroupConfig{
+						Signature: datastore.SignatureConfiguration{
+							Header: config.SignatureHeaderProvider(""),
+						},
+						ReplayAttacks: false,
+					},
+				},
 				hmac:            "css",
-				convoyTimestamp: timestamp,
+				convoyTimestamp: "",
 			},
 			want: &Response{
 				Status:         "",
@@ -206,7 +252,7 @@ func TestDispatcher_SendRequest(t *testing.T) {
 				ResponseHeader: nil,
 				Body:           nil,
 				IP:             "",
-				Error:          "signature header, hmac and timestamp are required",
+				Error:          "signature header and hmac are required",
 			},
 			wantErr: true,
 		},
@@ -221,7 +267,7 @@ func TestDispatcher_SendRequest(t *testing.T) {
 				defer deferFn()
 			}
 
-			got, err := d.SendRequest(tt.args.endpoint, tt.args.method, tt.args.jsonData, tt.args.signatureHeader, tt.args.hmac, tt.args.convoyTimestamp, config.MaxResponseSize)
+			got, err := d.SendRequest(tt.args.endpoint, tt.args.method, tt.args.jsonData, tt.args.group, tt.args.hmac, tt.args.convoyTimestamp, config.MaxResponseSize)
 			if tt.wantErr {
 				require.NotNil(t, err)
 				require.Contains(t, err.Error(), tt.want.Error)

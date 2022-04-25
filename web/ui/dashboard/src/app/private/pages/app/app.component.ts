@@ -11,7 +11,7 @@ export class AppComponent implements OnInit {
 	showDropdown = false;
 	token: string = this.route.snapshot.params.token;
 	apiURL = this.generalService.apiURL();
-
+	appId: string = this.route.snapshot.queryParams.appId
 	constructor(private router: Router, private route: ActivatedRoute, private generalService: GeneralService) {}
 
 	ngOnInit() {}

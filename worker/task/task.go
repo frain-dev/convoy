@@ -20,7 +20,7 @@ func CreateTask(name convoy.TaskName, group datastore.Group, handler interface{}
 	return taskq.RegisterTask(&options)
 }
 
-func CreateTasks(groupRepo datastore.GroupRepository, handler interface{}) error {
+func CreateTasks(groupRepo datastore.GroupRepository, taskname convoy.TaskName, handler interface{}) error {
 	var name convoy.TaskName
 	filter := &datastore.GroupFilter{}
 
@@ -31,7 +31,7 @@ func CreateTasks(groupRepo datastore.GroupRepository, handler interface{}) error
 	}
 
 	for _, g := range groups {
-		name = convoy.EventProcessor.SetPrefix(g.Name)
+		name = taskname.SetPrefix(g.Name)
 
 		if t := taskq.Tasks.Get(string(name)); t == nil {
 			log.Infof("Registering task handler for %s", g.Name)

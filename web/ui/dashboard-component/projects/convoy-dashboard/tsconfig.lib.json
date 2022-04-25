@@ -7,10 +7,11 @@
 		"declaration": true,
 		"declarationMap": true,
 		"inlineSources": true,
-		"types": [],
+		"types": ["node"],
 		"lib": ["dom", "es2021"],
 		"allowSyntheticDefaultImports": true,
 		"esModuleInterop": true
 	},
-	"exclude": ["src/test.ts", "**/*.spec.ts"]
+	"exclude": ["src/test.ts", "**/*.spec.ts"],
+	"emitDecoratorMetadata": true
 }

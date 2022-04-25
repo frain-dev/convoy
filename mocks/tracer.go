@@ -5,6 +5,7 @@
 package mocks
 
 import (
+	context "context"
 	http "net/http"
 	reflect "reflect"
 
@@ -33,6 +34,20 @@ func NewMockTracer(ctrl *gomock.Controller) *MockTracer {
 // EXPECT returns an object that allows the caller to indicate expected use.
 func (m *MockTracer) EXPECT() *MockTracerMockRecorder {
 	return m.recorder
+}
+
+// NewContext mocks base method.
+func (m *MockTracer) NewContext(ctx context.Context, txn *newrelic.Transaction) context.Context {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "NewContext", ctx, txn)
+	ret0, _ := ret[0].(context.Context)
+	return ret0
+}
+
+// NewContext indicates an expected call of NewContext.
+func (mr *MockTracerMockRecorder) NewContext(ctx, txn interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "NewContext", reflect.TypeOf((*MockTracer)(nil).NewContext), ctx, txn)
 }
 
 // RequestWithTransactionContext mocks base method.

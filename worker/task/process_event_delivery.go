@@ -16,7 +16,6 @@ import (
 	"github.com/frain-dev/convoy/net"
 	"github.com/frain-dev/convoy/queue"
 	"github.com/frain-dev/convoy/retrystrategies"
-	"github.com/frain-dev/convoy/smtp"
 	"github.com/frain-dev/convoy/util"
 	"github.com/google/uuid"
 	log "github.com/sirupsen/logrus"
@@ -37,6 +36,11 @@ func (e *EndpointError) Error() string {
 
 func (e *EndpointError) Delay() time.Duration {
 	return e.delay
+}
+
+type SignatureValues struct {
+	HMAC      string
+	Timestamp string
 }
 
 func ProcessEventDelivery(appRepo datastore.ApplicationRepository, eventDeliveryRepo datastore.EventDeliveryRepository, groupRepo datastore.GroupRepository, rateLimiter limiter.RateLimiter) func(*queue.Job) error {
@@ -163,11 +167,13 @@ func ProcessEventDelivery(appRepo datastore.ApplicationRepository, eventDelivery
 			log.WithError(err).Error("could not find error")
 			return &EndpointError{Err: err, delay: delayDuration}
 		}
-
-		timestamp := fmt.Sprint(time.Now().Unix())
 		var signedPayload strings.Builder
-		signedPayload.WriteString(timestamp)
-		signedPayload.WriteString(",")
+		var timestamp string
+		if g.Config.ReplayAttacks {
+			timestamp = fmt.Sprint(time.Now().Unix())
+			signedPayload.WriteString(timestamp)
+			signedPayload.WriteString(",")
+		}
 		signedPayload.WriteString(bStr)
 
 		hmac, err := util.ComputeJSONHmac(g.Config.Signature.Hash, signedPayload.String(), secret, false)
@@ -179,7 +185,7 @@ func ProcessEventDelivery(appRepo datastore.ApplicationRepository, eventDelivery
 		attemptStatus := false
 		start := time.Now()
 
-		resp, err := dispatch.SendRequest(e.TargetURL, string(convoy.HttpPost), []byte(bStr), g.Config.Signature.Header.String(), hmac, timestamp, int64(cfg.MaxResponseSize))
+		resp, err := dispatch.SendRequest(e.TargetURL, string(convoy.HttpPost), []byte(bStr), g, hmac, timestamp, int64(cfg.MaxResponseSize))
 		status := "-"
 		statusCode := 0
 		if resp != nil {
@@ -232,12 +238,9 @@ func ProcessEventDelivery(appRepo datastore.ApplicationRepository, eventDelivery
 				log.WithError(err).Error("Failed to reactivate endpoint after successful retry")
 			}
 
-			s, err := smtp.New(&cfg.SMTP)
-			if err == nil {
-				err = sendEmailNotification(m, g, s, endpointStatus)
-				if err != nil {
-					log.WithError(err).Error("Failed to send notification email")
-				}
+			err = sendNotification(context.Background(), appRepo, m, g, &cfg.SMTP, endpointStatus, false)
+			if err != nil {
+				log.WithError(err).Error("failed to send notification")
 			}
 		}
 
@@ -267,22 +270,20 @@ func ProcessEventDelivery(appRepo datastore.ApplicationRepository, eventDelivery
 				m.Status = datastore.FailureEventStatus
 			}
 
+			endpointStatus := dbEndpoint.Status
 			if g.Config.DisableEndpoint && dbEndpoint.Status != datastore.PendingEndpointStatus {
 				endpoints := []string{dbEndpoint.UID}
-				endpointStatus := datastore.InactiveEndpointStatus
+				endpointStatus = datastore.InactiveEndpointStatus
 
 				err := appRepo.UpdateApplicationEndpointsStatus(context.Background(), m.AppMetadata.UID, endpoints, endpointStatus)
 				if err != nil {
 					log.WithError(err).Error("Failed to reactivate endpoint after successful retry")
 				}
+			}
 
-				s, err := smtp.New(&cfg.SMTP)
-				if err == nil {
-					err = sendEmailNotification(m, g, s, endpointStatus)
-					if err != nil {
-						log.WithError(err).Error("Failed to send notification email")
-					}
-				}
+			err = sendNotification(context.Background(), appRepo, m, g, &cfg.SMTP, endpointStatus, true)
+			if err != nil {
+				log.WithError(err).Error("failed to send notification")
 			}
 		}
 
@@ -298,20 +299,6 @@ func ProcessEventDelivery(appRepo datastore.ApplicationRepository, eventDelivery
 		return nil
 	}
 }
-
-func sendEmailNotification(m *datastore.EventDelivery, g *datastore.Group, s *smtp.SmtpClient, status datastore.EndpointStatus) error {
-	email := m.AppMetadata.SupportEmail
-
-	logoURL := g.LogoURL
-
-	err := s.SendEmailNotification(email, logoURL, m.EndpointMetadata.TargetURL, status)
-	if err != nil {
-		return err
-	}
-
-	return nil
-}
-
 func parseAttemptFromResponse(m *datastore.EventDelivery, e *datastore.EndpointMetadata, resp *net.Response, attemptStatus bool) datastore.DeliveryAttempt {
 
 	responseHeader := util.ConvertDefaultHeaderToCustomHeader(&resp.ResponseHeader)

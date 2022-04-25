@@ -5,9 +5,11 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
+	"strings"
 	"time"
 
 	"github.com/frain-dev/convoy"
+	"github.com/frain-dev/convoy/cache"
 	"github.com/frain-dev/convoy/datastore"
 	"github.com/frain-dev/convoy/queue"
 	"github.com/frain-dev/convoy/server/models"
@@ -22,37 +24,48 @@ type AppService struct {
 	eventRepo         datastore.EventRepository
 	eventDeliveryRepo datastore.EventDeliveryRepository
 	eventQueue        queue.Queuer
+	cache             cache.Cache
 }
 
-func NewAppService(appRepo datastore.ApplicationRepository, eventRepo datastore.EventRepository, eventDeliveryRepo datastore.EventDeliveryRepository, eventQueue queue.Queuer) *AppService {
-	return &AppService{appRepo: appRepo, eventRepo: eventRepo, eventDeliveryRepo: eventDeliveryRepo, eventQueue: eventQueue}
+func NewAppService(appRepo datastore.ApplicationRepository, eventRepo datastore.EventRepository, eventDeliveryRepo datastore.EventDeliveryRepository, eventQueue queue.Queuer, cache cache.Cache) *AppService {
+	return &AppService{appRepo: appRepo, eventRepo: eventRepo, eventDeliveryRepo: eventDeliveryRepo, eventQueue: eventQueue, cache: cache}
 }
 
-func (a *AppService) CreateApp(ctx context.Context, newApp *models.Application, appName string, g *datastore.Group) (*datastore.Application, error) {
+func (a *AppService) CreateApp(ctx context.Context, newApp *models.Application, g *datastore.Group) (*datastore.Application, error) {
 	if err := util.Validate(newApp); err != nil {
 		return nil, NewServiceError(http.StatusBadRequest, err)
 	}
 
-	uid := uuid.New().String()
 	app := &datastore.Application{
-		UID:            uid,
-		GroupID:        g.UID,
-		Title:          appName,
-		SupportEmail:   newApp.SupportEmail,
-		IsDisabled:     newApp.IsDisabled,
-		CreatedAt:      primitive.NewDateTimeFromTime(time.Now()),
-		UpdatedAt:      primitive.NewDateTimeFromTime(time.Now()),
-		Endpoints:      []datastore.Endpoint{},
-		DocumentStatus: datastore.ActiveDocumentStatus,
+		UID:             uuid.New().String(),
+		GroupID:         g.UID,
+		Title:           newApp.AppName,
+		SupportEmail:    newApp.SupportEmail,
+		SlackWebhookURL: newApp.SlackWebhookURL,
+		IsDisabled:      newApp.IsDisabled,
+		CreatedAt:       primitive.NewDateTimeFromTime(time.Now()),
+		UpdatedAt:       primitive.NewDateTimeFromTime(time.Now()),
+		Endpoints:       []datastore.Endpoint{},
+		DocumentStatus:  datastore.ActiveDocumentStatus,
 	}
 
 	err := a.appRepo.CreateApplication(ctx, app)
+	if err != nil {
+		log.WithError(err).Error("failed to create application")
+		return nil, NewServiceError(http.StatusBadRequest, errors.New("failed to create application"))
+	}
 
-	return app, err
+	appCacheKey := convoy.ApplicationsCacheKey.Get(app.UID).String()
+	err = a.cache.Set(ctx, appCacheKey, &app, time.Minute*5)
+	if err != nil {
+		return nil, NewServiceError(http.StatusBadRequest, errors.New("failed to create application cache"))
+	}
+
+	return app, nil
 }
 
 func (a *AppService) LoadApplicationsPaged(ctx context.Context, uid string, q string, pageable datastore.Pageable) ([]datastore.Application, datastore.PaginationData, error) {
-	apps, paginationData, err := a.appRepo.LoadApplicationsPaged(ctx, uid, q, pageable)
+	apps, paginationData, err := a.appRepo.LoadApplicationsPaged(ctx, uid, strings.TrimSpace(q), pageable)
 	if err != nil {
 		log.WithError(err).Error("failed to fetch apps")
 		return nil, datastore.PaginationData{}, NewServiceError(http.StatusInternalServerError, errors.New("an error occurred while fetching apps"))
@@ -62,11 +75,9 @@ func (a *AppService) LoadApplicationsPaged(ctx context.Context, uid string, q st
 }
 
 func (a *AppService) UpdateApplication(ctx context.Context, appUpdate *models.UpdateApplication, app *datastore.Application) error {
-
 	appName := appUpdate.AppName
 	if err := util.Validate(appUpdate); err != nil {
-		return NewServiceError(http.StatusBadRequest, errors.New("please provide your appName"))
-
+		return NewServiceError(http.StatusBadRequest, err)
 	}
 
 	app.Title = *appName
@@ -78,10 +89,26 @@ func (a *AppService) UpdateApplication(ctx context.Context, appUpdate *models.Up
 		app.IsDisabled = *appUpdate.IsDisabled
 	}
 
+	if appUpdate.SlackWebhookURL != nil {
+		app.SlackWebhookURL = *appUpdate.SlackWebhookURL
+	}
+
+	if appUpdate.SupportEmail != nil {
+		app.SupportEmail = *appUpdate.SupportEmail
+	}
+
 	err := a.appRepo.UpdateApplication(ctx, app)
 	if err != nil {
+		log.WithError(err).Error("failed to update application")
 		return NewServiceError(http.StatusBadRequest, errors.New("an error occurred while updating app"))
 	}
+
+	appCacheKey := convoy.ApplicationsCacheKey.Get(app.UID).String()
+	err = a.cache.Set(ctx, appCacheKey, &app, time.Minute*5)
+	if err != nil {
+		return NewServiceError(http.StatusBadRequest, errors.New("failed to update application cache"))
+	}
+
 	return nil
 }
 
@@ -91,6 +118,13 @@ func (a *AppService) DeleteApplication(ctx context.Context, app *datastore.Appli
 		log.Errorln("failed to delete app - ", err)
 		return NewServiceError(http.StatusBadRequest, errors.New("an error occurred while deleting app"))
 	}
+
+	appCacheKey := convoy.ApplicationsCacheKey.Get(app.UID).String()
+	err = a.cache.Delete(ctx, appCacheKey)
+	if err != nil {
+		return NewServiceError(http.StatusBadRequest, errors.New("failed to delete application cache"))
+	}
+
 	return nil
 }
 
@@ -113,7 +147,7 @@ func (a *AppService) CreateAppEndpoint(ctx context.Context, e models.Endpoint, a
 
 	duration, err := time.ParseDuration(e.RateLimitDuration)
 	if err != nil {
-		return nil, NewServiceError(http.StatusBadRequest, fmt.Errorf((fmt.Sprintf("an error occured parsing the rate limit duration...%v", err.Error()))))
+		return nil, NewServiceError(http.StatusBadRequest, fmt.Errorf("an error occurred parsing the rate limit duration: %v", err))
 	}
 
 	endpoint := &datastore.Endpoint{
@@ -141,8 +175,16 @@ func (a *AppService) CreateAppEndpoint(ctx context.Context, e models.Endpoint, a
 
 	err = a.appRepo.UpdateApplication(ctx, app)
 	if err != nil {
+		log.WithError(err).Error("failed to update application")
 		return nil, NewServiceError(http.StatusBadRequest, fmt.Errorf("an error occurred while adding app endpoint"))
 	}
+
+	appCacheKey := convoy.ApplicationsCacheKey.Get(app.UID).String()
+	err = a.cache.Set(ctx, appCacheKey, &app, time.Minute*5)
+	if err != nil {
+		return nil, NewServiceError(http.StatusBadRequest, errors.New("failed to update application cache"))
+	}
+
 	return endpoint, nil
 }
 
@@ -158,6 +200,13 @@ func (a *AppService) UpdateAppEndpoint(ctx context.Context, e models.Endpoint, e
 	if err != nil {
 		return endpoint, NewServiceError(http.StatusBadRequest, errors.New("an error occurred while updating app endpoints"))
 	}
+
+	appCacheKey := convoy.ApplicationsCacheKey.Get(app.UID).String()
+	err = a.cache.Set(ctx, appCacheKey, &app, time.Minute*5)
+	if err != nil {
+		return endpoint, NewServiceError(http.StatusBadRequest, errors.New("failed to update application cache"))
+	}
+
 	return endpoint, nil
 }
 
@@ -172,8 +221,16 @@ func (a *AppService) DeleteAppEndpoint(ctx context.Context, e *datastore.Endpoin
 
 	err := a.appRepo.UpdateApplication(ctx, app)
 	if err != nil {
+		log.WithError(err).Error("failed to delete app endpoint")
 		return NewServiceError(http.StatusBadRequest, errors.New("an error occurred while deleting app endpoint"))
 	}
+
+	appCacheKey := convoy.ApplicationsCacheKey.Get(app.UID).String()
+	err = a.cache.Set(ctx, appCacheKey, &app, time.Minute*5)
+	if err != nil {
+		return NewServiceError(http.StatusBadRequest, errors.New("failed to update application cache"))
+	}
+
 	return nil
 }
 
@@ -187,6 +244,7 @@ func updateEndpointIfFound(endpoints *[]datastore.Endpoint, id string, e models.
 			// translates into a accept all scenario. This is quite different from
 			// an empty array which signifies a blacklist all events -- no events
 			// will be sent to such endpoints.
+			// TODO(daniel): this should be e.Events == nil
 			if len(e.Events) == 0 {
 				endpoint.Events = []string{"*"}
 			} else {

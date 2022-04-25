@@ -31,6 +31,7 @@ type applicationHandler struct {
 	groupRepo         datastore.GroupRepository
 	apiKeyRepo        datastore.APIKeyRepository
 	eventQueue        queue.Queuer
+	createEventQueue  queue.Queuer
 	logger            logger.Logger
 	tracer            tracer.Tracer
 	cache             cache.Cache
@@ -49,12 +50,13 @@ func newApplicationHandler(
 	groupRepo datastore.GroupRepository,
 	apiKeyRepo datastore.APIKeyRepository,
 	eventQueue queue.Queuer,
+	createEventQueue queue.Queuer,
 	logger logger.Logger,
 	tracer tracer.Tracer,
 	cache cache.Cache,
 	limiter limiter.RateLimiter) *applicationHandler {
-	as := services.NewAppService(appRepo, eventRepo, eventDeliveryRepo, eventQueue)
-	es := services.NewEventService(appRepo, eventRepo, eventDeliveryRepo, eventQueue)
+	as := services.NewAppService(appRepo, eventRepo, eventDeliveryRepo, eventQueue, cache)
+	es := services.NewEventService(appRepo, eventRepo, eventDeliveryRepo, eventQueue, createEventQueue, cache)
 	gs := services.NewGroupService(appRepo, groupRepo, eventRepo, eventDeliveryRepo, limiter)
 	ss := services.NewSecurityService(groupRepo, apiKeyRepo)
 
@@ -69,6 +71,7 @@ func newApplicationHandler(
 		appRepo:           appRepo,
 		groupRepo:         groupRepo,
 		eventQueue:        eventQueue,
+		createEventQueue:  createEventQueue,
 		logger:            logger,
 		tracer:            tracer,
 		cache:             cache,
@@ -82,6 +85,7 @@ func newApplicationHandler(
 // @Tags Application
 // @Accept  json
 // @Produce  json
+// @Param groupId query string true "group id"
 // @Param appID path string true "application id"
 // @Success 200 {object} serverResponse{data=datastore.Application}
 // @Failure 400,401,500 {object} serverResponse{data=Stub}
@@ -103,6 +107,7 @@ func (a *applicationHandler) GetApp(w http.ResponseWriter, r *http.Request) {
 // @Param page query string false "page number"
 // @Param sort query string false "sort order"
 // @Param q query string false "app title"
+// @Param groupId query string true "group id"
 // @Success 200 {object} serverResponse{data=pagedResponse{content=[]datastore.Application}}
 // @Failure 400,401,500 {object} serverResponse{data=Stub}
 // @Security ApiKeyAuth
@@ -114,7 +119,7 @@ func (a *applicationHandler) GetApps(w http.ResponseWriter, r *http.Request) {
 
 	apps, paginationData, err := a.appRepo.LoadApplicationsPaged(r.Context(), group.UID, q, pageable)
 	if err != nil {
-		print(err.Error())
+		log.WithError(err).Error("failed to load apps")
 		_ = render.Render(w, r, newErrorResponse("an error occurred while fetching apps. Error: "+err.Error(), http.StatusBadRequest))
 		return
 	}
@@ -129,6 +134,7 @@ func (a *applicationHandler) GetApps(w http.ResponseWriter, r *http.Request) {
 // @Tags Application
 // @Accept  json
 // @Produce  json
+// @Param groupId query string true "group id"
 // @Param application body models.Application true "Application Details"
 // @Success 200 {object} serverResponse{data=datastore.Application}
 // @Failure 400,401,500 {object} serverResponse{data=Stub}
@@ -143,11 +149,8 @@ func (a *applicationHandler) CreateApp(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	appName := newApp.AppName
-
 	group := getGroupFromContext(r.Context())
-
-	app, err := a.appService.CreateApp(r.Context(), &newApp, appName, group)
+	app, err := a.appService.CreateApp(r.Context(), &newApp, group)
 	if err != nil {
 		_ = render.Render(w, r, newServiceErrResponse(err))
 		return
@@ -162,6 +165,7 @@ func (a *applicationHandler) CreateApp(w http.ResponseWriter, r *http.Request) {
 // @Tags Application
 // @Accept  json
 // @Produce  json
+// @Param groupId query string true "group id"
 // @Param appID path string true "application id"
 // @Param application body models.Application true "Application Details"
 // @Success 200 {object} serverResponse{data=datastore.Application}
@@ -193,6 +197,7 @@ func (a *applicationHandler) UpdateApp(w http.ResponseWriter, r *http.Request) {
 // @Tags Application
 // @Accept  json
 // @Produce  json
+// @Param groupId query string true "group id"
 // @Param appID path string true "application id"
 // @Success 200 {object} serverResponse{data=Stub}
 // @Failure 400,401,500 {object} serverResponse{data=Stub}
@@ -216,6 +221,7 @@ func (a *applicationHandler) DeleteApp(w http.ResponseWriter, r *http.Request) {
 // @Tags Application Endpoints
 // @Accept  json
 // @Produce  json
+// @Param groupId query string true "group id"
 // @Param appID path string true "application id"
 // @Param endpoint body models.Endpoint true "Endpoint Details"
 // @Success 200 {object} serverResponse{data=datastore.Endpoint}
@@ -247,6 +253,7 @@ func (a *applicationHandler) CreateAppEndpoint(w http.ResponseWriter, r *http.Re
 // @Tags Application Endpoints
 // @Accept  json
 // @Produce  json
+// @Param groupId query string true "group id"
 // @Param appID path string true "application id"
 // @Param endpointID path string true "endpoint id"
 // @Success 200 {object} serverResponse{data=datastore.Endpoint}
@@ -265,6 +272,7 @@ func (a *applicationHandler) GetAppEndpoint(w http.ResponseWriter, r *http.Reque
 // @Tags Application Endpoints
 // @Accept  json
 // @Produce  json
+// @Param groupId query string true "group id"
 // @Param appID path string true "application id"
 // @Success 200 {object} serverResponse{data=[]datastore.Endpoint}
 // @Failure 400,401,500 {object} serverResponse{data=Stub}
@@ -283,6 +291,7 @@ func (a *applicationHandler) GetAppEndpoints(w http.ResponseWriter, r *http.Requ
 // @Tags Application Endpoints
 // @Accept  json
 // @Produce  json
+// @Param groupId query string true "group id"
 // @Param appID path string true "application id"
 // @Param endpointID path string true "endpoint id"
 // @Param endpoint body models.Endpoint true "Endpoint Details"
@@ -316,6 +325,7 @@ func (a *applicationHandler) UpdateAppEndpoint(w http.ResponseWriter, r *http.Re
 // @Tags Application Endpoints
 // @Accept  json
 // @Produce  json
+// @Param groupId query string true "group id"
 // @Param appID path string true "application id"
 // @Param endpointID path string true "endpoint id"
 // @Success 200 {object} serverResponse{data=Stub}

@@ -1,7 +1,7 @@
 {
   "environment": "dev",
   "database": {
-    "type": "<insert-database-type>"
+    "type": "<insert-database-type>",
     "dsn": "<insert-database-dsn>"
   },
   "sentry": {

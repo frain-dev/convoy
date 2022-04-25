@@ -102,6 +102,9 @@
 					"name": {
 						"type": "string"
 					},
+					"slack_webhook_url": {
+						"type": "string"
+					},
 					"support_email": {
 						"type": "string"
 					},
@@ -382,6 +385,9 @@
 					"disable_endpoint": {
 						"type": "boolean"
 					},
+					"replay_attacks": {
+						"type": "boolean"
+					},
 					"signature": {
 						"$ref": "#/components/schemas/datastore.SignatureConfiguration"
 					},
@@ -534,6 +540,9 @@
 						"type": "boolean"
 					},
 					"name": {
+						"type": "string"
+					},
+					"slack_webhook_url": {
 						"type": "string"
 					},
 					"support_email": {
@@ -722,6 +731,15 @@
 						"schema": {
 							"type": "string"
 						}
+					},
+					{
+						"description": "group id",
+						"in": "query",
+						"name": "groupId",
+						"required": true,
+						"schema": {
+							"type": "string"
+						}
 					}
 				],
 				"responses": {
@@ -841,6 +859,17 @@
 			},
 			"post": {
 				"description": "This endpoint creates an application",
+				"parameters": [
+					{
+						"description": "group id",
+						"in": "query",
+						"name": "groupId",
+						"required": true,
+						"schema": {
+							"type": "string"
+						}
+					}
+				],
 				"requestBody": {
 					"content": {
 						"application/json": {
@@ -959,6 +988,15 @@
 				"description": "This endpoint deletes an app",
 				"parameters": [
 					{
+						"description": "group id",
+						"in": "query",
+						"name": "groupId",
+						"required": true,
+						"schema": {
+							"type": "string"
+						}
+					},
+					{
 						"description": "application id",
 						"in": "path",
 						"name": "appID",
@@ -1072,6 +1110,15 @@
 				"description": "This endpoint fetches an application by it's id",
 				"parameters": [
 					{
+						"description": "group id",
+						"in": "query",
+						"name": "groupId",
+						"required": true,
+						"schema": {
+							"type": "string"
+						}
+					},
+					{
 						"description": "application id",
 						"in": "path",
 						"name": "appID",
@@ -1184,6 +1231,15 @@
 			"put": {
 				"description": "This endpoint updates an application",
 				"parameters": [
+					{
+						"description": "group id",
+						"in": "query",
+						"name": "groupId",
+						"required": true,
+						"schema": {
+							"type": "string"
+						}
+					},
 					{
 						"description": "application id",
 						"in": "path",
@@ -1312,6 +1368,15 @@
 				"description": "This endpoint fetches an application's endpoints",
 				"parameters": [
 					{
+						"description": "group id",
+						"in": "query",
+						"name": "groupId",
+						"required": true,
+						"schema": {
+							"type": "string"
+						}
+					},
+					{
 						"description": "application id",
 						"in": "path",
 						"name": "appID",
@@ -1427,6 +1492,15 @@
 			"post": {
 				"description": "This endpoint creates an application endpoint",
 				"parameters": [
+					{
+						"description": "group id",
+						"in": "query",
+						"name": "groupId",
+						"required": true,
+						"schema": {
+							"type": "string"
+						}
+					},
 					{
 						"description": "application id",
 						"in": "path",
@@ -1555,6 +1629,15 @@
 				"description": "This endpoint deletes an application endpoint",
 				"parameters": [
 					{
+						"description": "group id",
+						"in": "query",
+						"name": "groupId",
+						"required": true,
+						"schema": {
+							"type": "string"
+						}
+					},
+					{
 						"description": "application id",
 						"in": "path",
 						"name": "appID",
@@ -1677,6 +1760,15 @@
 				"description": "This endpoint fetches an application endpoint",
 				"parameters": [
 					{
+						"description": "group id",
+						"in": "query",
+						"name": "groupId",
+						"required": true,
+						"schema": {
+							"type": "string"
+						}
+					},
+					{
 						"description": "application id",
 						"in": "path",
 						"name": "appID",
@@ -1798,6 +1890,15 @@
 			"put": {
 				"description": "This endpoint updates an application endpoint",
 				"parameters": [
+					{
+						"description": "group id",
+						"in": "query",
+						"name": "groupId",
+						"required": true,
+						"schema": {
+							"type": "string"
+						}
+					},
 					{
 						"description": "application id",
 						"in": "path",
@@ -1946,6 +2047,7 @@
 						"description": "group id",
 						"in": "query",
 						"name": "groupId",
+						"required": true,
 						"schema": {
 							"type": "string"
 						}
@@ -2141,6 +2243,17 @@
 		"/eventdeliveries/batchretry": {
 			"post": {
 				"description": "This endpoint resends multiple app events",
+				"parameters": [
+					{
+						"description": "group id",
+						"in": "query",
+						"name": "groupId",
+						"required": true,
+						"schema": {
+							"type": "string"
+						}
+					}
+				],
 				"requestBody": {
 					"content": {
 						"application/json": {
@@ -2282,9 +2395,10 @@
 						}
 					},
 					{
-						"description": "group id",
+						"description": "group Id",
 						"in": "query",
 						"name": "groupId",
+						"required": true,
 						"schema": {
 							"type": "string"
 						}
@@ -2446,6 +2560,17 @@
 		"/eventdeliveries/forceresend": {
 			"post": {
 				"description": "This endpoint force resends multiple app events",
+				"parameters": [
+					{
+						"description": "group Id",
+						"in": "query",
+						"name": "groupId",
+						"required": true,
+						"schema": {
+							"type": "string"
+						}
+					}
+				],
 				"requestBody": {
 					"content": {
 						"application/json": {
@@ -2579,6 +2704,15 @@
 				"description": "This endpoint fetches an event delivery.",
 				"parameters": [
 					{
+						"description": "group id",
+						"in": "query",
+						"name": "groupId",
+						"required": true,
+						"schema": {
+							"type": "string"
+						}
+					},
+					{
 						"description": "event delivery id",
 						"in": "path",
 						"name": "eventDeliveryID",
@@ -2705,6 +2839,15 @@
 			"put": {
 				"description": "This endpoint resends an app event",
 				"parameters": [
+					{
+						"description": "group id",
+						"in": "query",
+						"name": "groupId",
+						"required": true,
+						"schema": {
+							"type": "string"
+						}
+					},
 					{
 						"description": "event delivery id",
 						"in": "path",
@@ -2844,6 +2987,7 @@
 						"description": "group id",
 						"in": "query",
 						"name": "groupId",
+						"required": true,
 						"schema": {
 							"type": "string"
 						}
@@ -3018,6 +3162,17 @@
 			},
 			"post": {
 				"description": "This endpoint creates an app event",
+				"parameters": [
+					{
+						"description": "group id",
+						"in": "query",
+						"name": "groupId",
+						"required": true,
+						"schema": {
+							"type": "string"
+						}
+					}
+				],
 				"requestBody": {
 					"content": {
 						"application/json": {
@@ -3147,6 +3302,15 @@
 			"get": {
 				"description": "This endpoint fetches an app event",
 				"parameters": [
+					{
+						"description": "group id",
+						"in": "query",
+						"name": "groupId",
+						"required": true,
+						"schema": {
+							"type": "string"
+						}
+					},
 					{
 						"description": "event id",
 						"in": "path",
@@ -3766,7 +3930,7 @@
 				"description": "This endpoint deletes a group using its id",
 				"parameters": [
 					{
-						"description": "Group id",
+						"description": "group id",
 						"in": "path",
 						"name": "groupID",
 						"required": true,
@@ -3879,7 +4043,7 @@
 				"description": "This endpoint fetches a group by its id",
 				"parameters": [
 					{
-						"description": "Group id",
+						"description": "group id",
 						"in": "path",
 						"name": "groupID",
 						"required": true,
