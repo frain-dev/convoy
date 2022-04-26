@@ -20,6 +20,7 @@ import (
 // @Tags Events
 // @Accept  json
 // @Produce  json
+// @Param groupId query string true "group id"
 // @Param event body models.Event true "Event Details"
 // @Success 200 {object} serverResponse{data=datastore.Event{data=Stub}}
 // @Failure 400,401,500 {object} serverResponse{data=Stub}
@@ -50,6 +51,7 @@ func (a *applicationHandler) CreateAppEvent(w http.ResponseWriter, r *http.Reque
 // @Tags Events
 // @Accept  json
 // @Produce  json
+// @Param groupId query string true "group id"
 // @Param eventID path string true "event id"
 // @Success 200 {object} serverResponse{data=datastore.Event{data=Stub}}
 // @Failure 400,401,500 {object} serverResponse{data=Stub}
@@ -67,6 +69,7 @@ func (a *applicationHandler) GetAppEvent(w http.ResponseWriter, r *http.Request)
 // @Tags EventDelivery
 // @Accept json
 // @Produce json
+// @Param groupId query string true "group id"
 // @Param eventDeliveryID path string true "event delivery id"
 // @Success 200 {object} serverResponse{data=datastore.Event{data=Stub}}
 // @Failure 400,401,500 {object} serverResponse{data=Stub}
@@ -84,6 +87,7 @@ func (a *applicationHandler) GetEventDelivery(w http.ResponseWriter, r *http.Req
 // @Tags EventDelivery
 // @Accept  json
 // @Produce  json
+// @Param groupId query string true "group id"
 // @Param eventDeliveryID path string true "event delivery id"
 // @Success 200 {object} serverResponse{data=datastore.Event{data=Stub}}
 // @Failure 400,401,500 {object} serverResponse{data=Stub}
@@ -109,6 +113,7 @@ func (a *applicationHandler) ResendEventDelivery(w http.ResponseWriter, r *http.
 // @Tags EventDelivery
 // @Accept json
 // @Produce json
+// @Param groupId query string true "group id"
 // @Param delivery ids body Stub{ids=[]string} true "event delivery ids"
 // @Success 200 {object} serverResponse{data=Stub}
 // @Failure 400,401,500 {object} serverResponse{data=Stub}
@@ -158,7 +163,7 @@ func (a *applicationHandler) BatchRetryEventDelivery(w http.ResponseWriter, r *h
 // @Accept  json
 // @Produce  json
 // @Param appId query string false "application id"
-// @Param groupId query string false "group id"
+// @Param groupId query string true "group Id"
 // @Param startDate query string false "start date"
 // @Param endDate query string false "end date"
 // @Param perPage query string false "results per page"
@@ -169,11 +174,7 @@ func (a *applicationHandler) BatchRetryEventDelivery(w http.ResponseWriter, r *h
 // @Security ApiKeyAuth
 // @Router /eventdeliveries/countbatchretryevents [get]
 func (a *applicationHandler) CountAffectedEventDeliveries(w http.ResponseWriter, r *http.Request) {
-	group := getGroupFromContext(r.Context())
-	appID := r.URL.Query().Get("appId")
-	eventID := r.URL.Query().Get("eventId")
 	status := make([]datastore.EventDeliveryStatus, 0)
-
 	for _, s := range r.URL.Query()["status"] {
 		if !util.IsStringEmpty(s) {
 			status = append(status, datastore.EventDeliveryStatus(s))
@@ -186,7 +187,15 @@ func (a *applicationHandler) CountAffectedEventDeliveries(w http.ResponseWriter,
 		return
 	}
 
-	count, err := a.eventService.CountAffectedEventDeliveries(r.Context(), group, appID, eventID, status, searchParams)
+	f := &datastore.Filter{
+		Group:        getGroupFromContext(r.Context()),
+		AppID:        r.URL.Query().Get("appId"),
+		EventID:      r.URL.Query().Get("eventId"),
+		Status:       status,
+		SearchParams: searchParams,
+	}
+
+	count, err := a.eventService.CountAffectedEventDeliveries(r.Context(), f)
 	if err != nil {
 		_ = render.Render(w, r, newServiceErrResponse(err))
 		return
@@ -201,6 +210,7 @@ func (a *applicationHandler) CountAffectedEventDeliveries(w http.ResponseWriter,
 // @Tags EventDelivery
 // @Accept json
 // @Produce json
+// @Param groupId query string true "group Id"
 // @Param delivery ids body Stub{ids=[]string} true "event delivery ids"
 // @Success 200 {object} serverResponse{data=Stub}
 // @Failure 400,401,500 {object} serverResponse{data=Stub}
@@ -231,7 +241,7 @@ func (a *applicationHandler) ForceResendEventDeliveries(w http.ResponseWriter, r
 // @Accept  json
 // @Produce  json
 // @Param appId query string false "application id"
-// @Param groupId query string false "group id"
+// @Param groupId query string true "group id"
 // @Param startDate query string false "start date"
 // @Param endDate query string false "end date"
 // @Param perPage query string false "results per page"
@@ -272,7 +282,7 @@ func (a *applicationHandler) GetEventsPaged(w http.ResponseWriter, r *http.Reque
 // @Accept json
 // @Produce json
 // @Param appId query string false "application id"
-// @Param groupId query string false "group id"
+// @Param groupId query string true "group id"
 // @Param eventId query string false "event id"
 // @Param startDate query string false "start date"
 // @Param endDate query string false "end date"

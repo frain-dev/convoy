@@ -8,7 +8,6 @@ import (
 	"github.com/frain-dev/convoy/config"
 	"github.com/frain-dev/convoy/server"
 	"github.com/frain-dev/convoy/worker"
-	"github.com/frain-dev/convoy/worker/task"
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/render"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
@@ -28,20 +27,20 @@ func addWorkerCommand(a *app) *cobra.Command {
 				return err
 			}
 
-			// register tasks.
-			handler := task.ProcessEventDelivery(a.applicationRepo, a.eventDeliveryRepo, a.groupRepo, a.limiter)
-			if err := task.CreateTasks(a.groupRepo, handler); err != nil {
-				log.WithError(err).Error("failed to register tasks")
-				return err
-			}
-
-			worker.RegisterNewGroupTask(a.applicationRepo, a.eventDeliveryRepo, a.groupRepo, a.limiter)
+			worker.RegisterNewGroupTask(a.applicationRepo, a.eventDeliveryRepo, a.groupRepo, a.limiter, a.eventRepo, a.cache, a.eventQueue)
 			// register workers.
 			ctx := context.Background()
+			eventCreationProducer := worker.NewProducer(a.createEventQueue)
+			if cfg.Queue.Type != config.InMemoryQueueProvider {
+				eventCreationProducer.Start(ctx)
+			}
+
 			producer := worker.NewProducer(a.eventQueue)
 			if cfg.Queue.Type != config.InMemoryQueueProvider {
 				producer.Start(ctx)
+
 			}
+
 			worker.RegisterWorkerMetrics(a.eventQueue, cfg)
 			server.RegisterQueueMetrics(a.eventQueue, cfg)
 

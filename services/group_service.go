@@ -11,7 +11,6 @@ import (
 	"github.com/frain-dev/convoy/limiter"
 	"github.com/frain-dev/convoy/server/models"
 	"github.com/frain-dev/convoy/util"
-	"github.com/frain-dev/convoy/worker/task"
 	"github.com/google/uuid"
 	log "github.com/sirupsen/logrus"
 	"go.mongodb.org/mongo-driver/bson/primitive"
@@ -68,22 +67,17 @@ func (gs *GroupService) CreateGroup(ctx context.Context, newGroup *models.Group)
 		return nil, NewServiceError(http.StatusBadRequest, errors.New("failed to create group"))
 	}
 
-	// register task.
-	taskName := convoy.EventProcessor.SetPrefix(groupName)
-	task.CreateTask(taskName, *group, task.ProcessEventDelivery(gs.appRepo, gs.eventDeliveryRepo, gs.groupRepo, gs.limiter))
-
 	return group, nil
 }
 
 func (gs *GroupService) UpdateGroup(ctx context.Context, group *datastore.Group, update *models.Group) (*datastore.Group, error) {
-	groupName := update.Name
 	err := util.Validate(update)
 	if err != nil {
 		log.WithError(err).Error("failed to validate group update")
 		return nil, NewServiceError(http.StatusBadRequest, err)
 	}
 
-	group.Name = groupName
+	group.Name = update.Name
 	group.Config = &update.Config
 	if !util.IsStringEmpty(update.LogoURL) {
 		group.LogoURL = update.LogoURL
@@ -99,7 +93,7 @@ func (gs *GroupService) UpdateGroup(ctx context.Context, group *datastore.Group,
 }
 
 func (gs *GroupService) GetGroups(ctx context.Context, filter *datastore.GroupFilter) ([]*datastore.Group, error) {
-	groups, err := gs.groupRepo.LoadGroups(ctx, filter)
+	groups, err := gs.groupRepo.LoadGroups(ctx, filter.WithNamesTrimmed())
 	if err != nil {
 		log.WithError(err).Error("failed to load groups")
 		return nil, NewServiceError(http.StatusBadRequest, errors.New("an error occurred while fetching Groups"))

@@ -1,8 +1,10 @@
+<convoy-notification></convoy-notification>
 <div class="dashboard">
 	<div class="dashboard--page">
 		<div class="dashboard--page--head">
 			<div class="filter without-padding" [ngClass]="{ 'show-calendar': showFilterCalendar }">
 				<div class="margin-right__10px">Filter by:</div>
+
 				<div class="dropdown">
 					<button
 						[ngClass]="{ active: (statsDateRange.value.startDate !== '' && statsDateRange.value.endDate !== '') || selectedEventsDateOption }"
@@ -10,9 +12,8 @@
 						(click)="showOverlay = true; showDateFilterDropdown = !showDateFilterDropdown"
 					>
 						<img src="/assets/img/calendar-icon.svg" alt="calender icon" />
-						<!-- to be reviewed  -->
-						<!-- <span class="color__grey">Date</span>
-                        <span class="color__primary" *ngIf="selectedDateOption">: {{ selectedDateOption }}</span> -->
+						<span class="color__grey margin-right__4px">Date:</span>
+						<span class="color__primary" *ngIf="statsDateRange.value.startDate === '' && statsDateRange.value.endDate === ''">All Time</span>
 						<mat-date-range-input [formGroup]="statsDateRange" [rangePicker]="statsPicker">
 							<input matStartDate formControlName="startDate" placeholder="Start date" />
 							<input
@@ -25,6 +26,7 @@
 						<mat-date-range-picker #statsPicker [disabled]="false"></mat-date-range-picker>
 						<img src="/assets/img/angle-arrow-down.svg" alt="arrow down icon" />
 					</button>
+
 					<div [ngClass]="{ show: showDateFilterDropdown }" class="dropdown__menu large">
 						<ul>
 							<li
@@ -58,7 +60,7 @@
 				<div class="filter without-padding" [ngClass]="{ 'show-calendar': showFilterCalendar }">
 					<div>Active Group:</div>
 					<div class="select">
-						<select [value]="activeGroup" [(ngModel)]="activeGroup" (change)="toggleActiveGroup()">
+						<select [value]="convyDashboardService.activeGroupId" id="groups-dropdown" [(ngModel)]="convyDashboardService.activeGroupId" (change)="toggleActiveGroup()">
 							<option [value]="group.uid" *ngFor="let group of groups">{{ group.name }}</option>
 						</select>
 					</div>
@@ -68,21 +70,21 @@
 
 		<div class="dashboard--page--details">
 			<div class="card has-title dashboard--page--details--chart has-loader">
-				<convoy-loader *ngIf="isloadingDashboardData"></convoy-loader>
+				<convoy-loader id="dashboard_summary_loader" *ngIf="isloadingDashboardData"></convoy-loader>
 
 				<ul class="metrics">
 					<li class="messages">
 						<img src="/assets/img/message-icon.svg" alt="message icon" />
 						<div class="metric">
 							<div>{{ dashboardData.events_sent | metric }}</div>
-							<div>Event Sent</div>
+							<div class="color__grey">Event Sent</div>
 						</div>
 					</li>
 					<li class="apps">
 						<img src="/assets/img/apps-icon.svg" alt="apps icon" />
 						<div class="metric">
 							<div>{{ dashboardData.apps | metric }}</div>
-							<div>Apps</div>
+							<div class="color__grey">Apps</div>
 						</div>
 					</li>
 				</ul>
@@ -94,39 +96,57 @@
 			</div>
 
 			<div class="card has-title dashboard--page--details--credentials has-loader">
-				<convoy-loader *ngIf="isloadingConfig"></convoy-loader>
-
 				<div class="card--title">
 					<h3>Configuration</h3>
 				</div>
 
-				<ul class="card--container">
-					<li class="list-item">
-						<div class="list-item--label">
-							Request interval (Seconds)
-							<div class="list-item--item">{{ organisationDetails?.strategy?.default?.intervalSeconds }}s</div>
+				<ul class="card--container" id="group_config_loader" *ngIf="isloadingConfig">
+					<li class="list-item-inline">
+						<div class="list-item-inline--label"><div class="skeleton-loader data"></div></div>
+						<div class="list-item-inline--item">
+							<div class="skeleton-loader small"></div>
 						</div>
 					</li>
 
-					<li class="list-item">
-						<div class="list-item--label">
-							Retry limit
-							<div class="list-item--item">{{ organisationDetails?.strategy?.default?.retryLimit }}</div>
+					<li class="list-item-inline border__top">
+						<div class="list-item-inline--label padding-top__16px"><div class="skeleton-loader small"></div></div>
+						<div class="list-item-inline--item padding-top__16px"><div class="skeleton-loader small"></div></div>
+					</li>
+
+					<li class="list-item-inline border__top">
+						<div class="list-item-inline--label padding-top__16px"><div class="skeleton-loader text"></div></div>
+						<div class="list-item-inline--item padding-top__16px">
+							<div class="flex flex__column flex__justify-end flex__align-items-end">
+								<div class="skeleton-loader data"></div>
+								<div class="skeleton-loader small margin-top__8px"></div>
+							</div>
 						</div>
 					</li>
 
-					<li class="list-item">
-						<div class="list-item--label">
-							Signature header
-							<div class="list-item--item">{{ organisationDetails?.signature?.header }}</div>
-						</div>
+					<li class="list-item-inline border__top">
+						<div class="list-item-inline--label padding-top__16px"><div class="skeleton-loader text"></div></div>
+						<div class="list-item-inline--item padding-top__16px"><div class="skeleton-loader small"></div></div>
+					</li>
+				</ul>
+				<ul class="card--container" id="group-config" *ngIf="!isloadingConfig">
+					<li class="list-item-inline">
+						<div class="list-item-inline--label">Request interval (Seconds)</div>
+						<div class="list-item-inline--item">{{ organisationDetails?.strategy?.default?.intervalSeconds }}s</div>
 					</li>
 
-					<li class="list-item">
-						<div class="list-item--label">
-							Signature hash
-							<div class="list-item--item">{{ organisationDetails?.signature?.hash }}</div>
-						</div>
+					<li class="list-item-inline border__top">
+						<div class="list-item-inline--label padding-top__16px">Retry limit</div>
+						<div class="list-item-inline--item padding-top__16px">{{ organisationDetails?.strategy?.default?.retryLimit }}</div>
+					</li>
+
+					<li class="list-item-inline border__top">
+						<div class="list-item-inline--label padding-top__16px">Signature header</div>
+						<div class="list-item-inline--item padding-top__16px">{{ organisationDetails?.signature?.header }}</div>
+					</li>
+
+					<li class="list-item-inline border__top">
+						<div class="list-item-inline--label padding-top__16px">Signature hash</div>
+						<div class="list-item-inline--item padding-top__16px">{{ organisationDetails?.signature?.hash }}</div>
 					</li>
 				</ul>
 			</div>
@@ -134,14 +154,28 @@
 
 		<section class="card has-title dashboard--logs">
 			<div class="dashboard--logs--tabs">
-				<div class="tabs">
+				<div class="tabs flex__align-items-center">
 					<li *ngFor="let tab of tabs" (click)="toggleActiveTab(tab)">
 						<button [ngClass]="{ active: activeTab === tab }">
 							<span>{{ tab }}</span>
 						</button>
 					</li>
+					<div class="color__grey font__14px font__weight-500 font--nowrap margin-left--auto padding-right__14px">
+						<span [hidden]="activeTab !== 'events'">
+							{{ events && events.pagination.total > 0 ? 1 : 0 }} - {{ events && events.pagination.total < 20 ? events.pagination.total : events?.content?.length }} of
+							{{ events?.pagination?.total }}
+						</span>
+						<span [hidden]="activeTab !== 'event deliveries'">
+							{{ eventDeliveries && eventDeliveries.pagination.total > 0 ? 1 : 0 }} -
+							{{ eventDeliveries && eventDeliveries.pagination.total < 20 ? eventDeliveries.pagination.total : eventDeliveries?.content?.length }} of {{ eventDeliveries?.pagination?.total }}
+						</span>
+						<span [hidden]="activeTab !== 'apps'">
+							{{ apps && apps.pagination.total > 0 ? 1 : 0 }} - {{ apps && apps.pagination.total < 20 ? apps.pagination.total : apps?.content?.length }} of {{ apps?.pagination?.total }}
+						</span>
+					</div>
 				</div>
 			</div>
+
 			<div class="dashboard--logs--filter">
 				<div [hidden]="activeTab !== 'events'">
 					<div class="flex flex__align-items-center flex__justify-between">
@@ -152,16 +186,14 @@
 									[ngClass]="{ active: (eventsFilterDateRange.value.startDate !== '' && eventsFilterDateRange.value.endDate !== '') || selectedEventsDateOption }"
 									(click)="showEventFilterCalendar = !showEventFilterCalendar; showOverlay = true"
 								>
-									<img src="/assets/img/calendar-icon.svg" alt="calender icon" />
-									<!-- to be reviewed  -->
-									<!-- <span class="color__grey">Date</span>
-                                    <span class="color__primary" *ngIf="selectedEventsDateOption">: {{ selectedEventsDateOption }}</span> -->
+									<img class="margin-left__0px" src="/assets/img/calendar-icon.svg" alt="calender icon" />
+									<span class="color__grey margin-right__4px">Date:</span>
+									<span class="color__primary" *ngIf="eventsFilterDateRange.value.startDate === '' && eventsFilterDateRange.value.endDate === ''">All Time</span>
 									<mat-date-range-input [formGroup]="eventsFilterDateRange" [rangePicker]="eventsFilterPicker">
-										<input matStartDate formControlName="startDate" placeholder="Start date" />
+										<input matStartDate formControlName="startDate" />
 										<input
 											matEndDate
 											formControlName="endDate"
-											placeholder="End date"
 											(dateChange)="
 												selectedEventsDateOption = formatDate(eventsFilterDateRange.value.startDate) + ' - ' + formatDate(eventsFilterDateRange.value.endDate);
 												getEvents({ addToURL: true, fromFilter: true })
@@ -169,7 +201,7 @@
 										/>
 									</mat-date-range-input>
 									<mat-date-range-picker #eventsFilterPicker [disabled]="false"></mat-date-range-picker>
-									<img src="/assets/img/angle-arrow-down.svg" alt="arrow down icon" />
+									<img class="margin-right__0px" src="/assets/img/angle-arrow-down.svg" alt="arrow down icon" />
 								</button>
 								<div [ngClass]="{ show: showEventFilterCalendar }" class="dropdown__menu large">
 									<ul>
@@ -194,13 +226,13 @@
 
 							<div class="dropdown margin-left__24px">
 								<button
-									class="button button__filter button--has-icon icon-right icon-left"
+									class="button button__filter button--has-icon icon-left"
 									[ngClass]="{ active: !!eventApp }"
 									(click)="showOverlay = true; showEventsAppsDropdown = !showEventsAppsDropdown"
 								>
 									<img src="/assets/img/apps-icon-grey.svg" alt="apps filter icon" />
-									<span>Apps</span>
-									<img src="/assets/img/angle-arrow-down.svg" alt="arrow down icon" />
+									<span>All Apps</span>
+									<img class="margin-left__30px" src="/assets/img/angle-arrow-down.svg" alt="arrow down icon" />
 								</button>
 
 								<div class="dropdown__menu with-padding large" [ngClass]="{ show: showEventsAppsDropdown }">
@@ -227,7 +259,7 @@
 								[disabled]="(eventsFilterDateRange.value.startDate == '' || eventsFilterDateRange.value.endDate == '') && eventApp == ''"
 								[ngClass]="{ disabled: (eventsFilterDateRange.value.startDate == '' || eventsFilterDateRange.value.endDate == '') && eventApp == '' }"
 							>
-								Clear All
+								Clear Filter
 							</button>
 						</div>
 					</div>
@@ -243,15 +275,15 @@
 									(click)="showOverlay = true; showEventDelFilterCalendar = !showEventDelFilterCalendar"
 								>
 									<img class="margin-left__0px" src="/assets/img/calendar-icon.svg" alt="calender icon" />
+									<span class="color__grey margin-right__4px">Date:</span>
+									<span class="color__primary" *ngIf="eventDeliveriesFilterDateRange.value.startDate === '' && eventDeliveriesFilterDateRange.value.endDate === ''">All Time</span>
 									<!-- to be reviewed  -->
-									<!-- <span class="color__grey">Date</span>
-                                    <span class="color__primary" *ngIf="selectedEventsDelDateOption">: {{ selectedEventsDelDateOption }}</span> -->
+									<!-- <span class="color__primary" *ngIf="selectedEventsDelDateOption">: {{ selectedEventsDelDateOption }}</span> -->
 									<mat-date-range-input [formGroup]="eventDeliveriesFilterDateRange" [rangePicker]="eventDeliveriesFilterPicker">
-										<input matStartDate formControlName="startDate" placeholder="Start date" />
+										<input matStartDate formControlName="startDate" />
 										<input
 											matEndDate
 											formControlName="endDate"
-											placeholder="End date"
 											(dateChange)="
 												selectedEventsDelDateOption = formatDate(eventDeliveriesFilterDateRange.value.startDate) + ' - ' + formatDate(eventDeliveriesFilterDateRange.value.endDate);
 												getEventDeliveries({ addToURL: true, fromFilter: true })
@@ -289,13 +321,13 @@
 
 							<div class="dropdown margin-left__24px">
 								<button
-									class="button button__filter button--has-icon icon-right icon-left"
+									class="button button__filter button--has-icon icon-left"
 									[ngClass]="{ active: eventDeliveryFilteredByStatus.length > 0 }"
 									(click)="showOverlay = true; showEventDeliveriesStatusDropdown = !showEventDeliveriesStatusDropdown"
 								>
 									<img class="margin-left__0px" src="/assets/img/status-filter-icon.svg" alt="status filter icon" />
 									<span>Status</span>
-									<img class="margin-right__0px" src="/assets/img/angle-arrow-down.svg" alt="arrow down icon" />
+									<img class="margin-left__30px margin-right__0px" src="/assets/img/angle-arrow-down.svg" alt="arrow down icon" />
 								</button>
 
 								<div class="dropdown__menu with-padding small" [ngClass]="{ show: showEventDeliveriesStatusDropdown }">
@@ -325,13 +357,13 @@
 
 							<div class="dropdown margin-left__24px">
 								<button
-									class="button button__filter button--has-icon icon-right icon-left"
+									class="button button__filter button--has-icon icon-left"
 									[ngClass]="{ active: !!eventDeliveriesApp }"
 									(click)="showOverlay = true; showEventDeliveriesAppsDropdown = !showEventDeliveriesAppsDropdown"
 								>
 									<img class="margin-left__0px" src="/assets/img/apps-icon-grey.svg" alt="apps filter icon" />
-									<span>Apps</span>
-									<img class="margin-right__0px" src="/assets/img/angle-arrow-down.svg" alt="arrow down icon" />
+									<span>All Apps</span>
+									<img class="margin-left__30px margin-right__0px" src="/assets/img/angle-arrow-down.svg" alt="arrow down icon" />
 								</button>
 
 								<div class="dropdown__menu large with-padding" [ngClass]="{ show: showEventDeliveriesAppsDropdown }">
@@ -367,7 +399,7 @@
 								</button>
 							</div>
 							<button
-								class="flex__justify-center button button__filter margin-left__24px"
+								class="button button__filter margin-left__24px flex__justify-center"
 								(click)="fetchRetryCount()"
 								[ngClass]="{
 									disabled:
@@ -394,11 +426,12 @@
 										!eventDeliveriesStatusFilterActive
 								}"
 							>
-								Clear All
+								Clear Filter
 							</button>
 						</div>
 					</div>
 				</div>
+
 				<div [hidden]="activeTab !== 'apps'">
 					<div class="flex flex__align-items-center flex__justify-between">
 						<div class="flex flex__align-items-center">
@@ -449,23 +482,20 @@
 								</div>
 							</div> -->
 						</div>
-						<button class="button button__primary button__small" (click)="showCreateAppModal = !showCreateAppModal">Create App</button>
+						<button class="button button__primary button__small" id="create-app-modal-button" (click)="showCreateAppModal = !showCreateAppModal">Create App</button>
 					</div>
 				</div>
 			</div>
 
 			<div class="flex">
 				<div class="dashboard--logs--table">
-					<div class="table table--container has-loader" [hidden]="activeTab !== 'events' || displayedEvents.length === 0">
-						<convoy-loader *ngIf="isloadingEvents"></convoy-loader>
+					<div class="table table--container has-loader" id="events-table-container" [hidden]="activeTab !== 'events' || displayedEvents?.length === 0">
+						<convoy-table-loader id="events_loader_loader" [tableHead]="eventsTableHead" *ngIf="isloadingEvents"></convoy-table-loader>
 
-						<table id="table">
+						<table id="table" *ngIf="!isloadingEvents">
 							<thead>
 								<tr class="table--head">
-									<th scope="col">Event Type</th>
-									<th scope="col">App Name</th>
-									<th scope="col">Created At</th>
-									<th scope="col"></th>
+									<th *ngFor="let head of eventsTableHead" scope="col">{{ head }}</th>
 								</tr>
 							</thead>
 							<tbody>
@@ -479,9 +509,9 @@
 										<td></td>
 									</tr>
 									<tr
-										*ngFor="let event of eventGroup.events; let index = index"
-										[ngClass]="{ active: event.uid === eventsDetailsItem?.uid, 'last-item': index === eventGroup.events.length - 1 }"
-										[id]="'event' + index"
+										*ngFor="let event of eventGroup.content; let index = index"
+										[ngClass]="{ active: event.uid === eventsDetailsItem?.uid, 'last-item': index === eventGroup.content.length - 1 }"
+										[id]="'event' + i"
 										(click)="eventsDetailsItem = event; getEventDeliveriesForSidebar(event.uid)"
 									>
 										<td>
@@ -521,22 +551,18 @@
 						</div>
 					</div>
 
-					<div class="empty-state table--container" *ngIf="displayedEvents.length === 0 && activeTab === 'events'">
+					<div class="empty-state table--container" id="events-empty-state" *ngIf="displayedEvents?.length === 0 && activeTab === 'events'">
 						<img src="/assets/img/empty-state-img.svg" alt="empty state" />
 						<p>No event to show here</p>
 					</div>
 
-					<div class="table table--container has-loader" [hidden]="activeTab !== 'event deliveries' || displayedEventDeliveries.length === 0">
-						<convoy-loader *ngIf="isloadingEventDeliveries"></convoy-loader>
+					<div class="table table--container has-loader" id="event-deliveries-table-container" [hidden]="activeTab !== 'event deliveries' || displayedEventDeliveries.length === 0">
+						<convoy-table-loader id="event_deliveries_loader" [tableHead]="eventDelTableHead" *ngIf="isloadingEventDeliveries"></convoy-table-loader>
 
-						<table id="table">
+						<table id="table" *ngIf="!isloadingEventDeliveries">
 							<thead>
 								<tr class="table--head">
-									<th scope="col">Status</th>
-									<th scope="col">Event Type</th>
-									<th scope="col">Attempts</th>
-									<th scope="col">Created At</th>
-									<th scope="col"></th>
+									<th *ngFor="let head of eventDelTableHead" scope="col">{{ head }}</th>
 								</tr>
 							</thead>
 							<tbody>
@@ -551,9 +577,9 @@
 										<td></td>
 									</tr>
 									<tr
-										*ngFor="let event of eventDeliveriesGroup.events; let index = index"
-										[ngClass]="{ 'last-item': index === eventDeliveriesGroup.events.length - 1, active: event.uid === eventDelsDetailsItem?.uid }"
-										[id]="'event' + index"
+										*ngFor="let event of eventDeliveriesGroup.content; let index = index"
+										[ngClass]="{ 'last-item': index === eventDeliveriesGroup.content.length - 1, active: event.uid === eventDelsDetailsItem?.uid }"
+										[id]="'eventDel' + i"
 										(click)="eventDelsDetailsItem = event; getDelieveryAttempts(event.uid)"
 									>
 										<td>
@@ -606,71 +632,82 @@
 						</div>
 					</div>
 
-					<div class="empty-state table--container" *ngIf="displayedEventDeliveries.length === 0 && activeTab === 'event deliveries'">
+					<div class="empty-state table--container" id="event-deliveries-empty-state" *ngIf="displayedEventDeliveries.length === 0 && activeTab === 'event deliveries'">
 						<img src="/assets/img/empty-state-img.svg" alt="empty state" />
 						<p>No event to show here</p>
 					</div>
 
-					<div class="table table--container has-loader" [hidden]="activeTab !== 'apps' || !apps || apps.content.length === 0">
-						<convoy-loader *ngIf="isloadingApps"></convoy-loader>
+					<div class="table table--container has-loader" id="apps-table-container" [hidden]="activeTab !== 'apps' || displayedApps.length === 0">
+						<convoy-table-loader id="apps_loader" [tableHead]="appsTableHead" *ngIf="isloadingApps"></convoy-table-loader>
 
-						<table class="table">
+						<table id="table" *ngIf="!isloadingApps">
 							<thead>
 								<tr class="table--head">
-									<th scope="col">Status</th>
-									<th scope="col">Name</th>
-									<th scope="col">Created</th>
-									<th scope="col">Updated</th>
-									<th scope="col">Events</th>
-									<th scope="col">Endpoints</th>
+									<th *ngFor="let head of appsTableHead" scope="col">{{ head }}</th>
 									<th scope="col"></th>
 									<th scope="col"></th>
 								</tr>
 							</thead>
 							<tbody>
-								<tr *ngFor="let app of apps?.content" [ngClass]="{ active: app.uid === appsDetailsItem?.uid }" (click)="appsDetailsItem = app; getAppPortalToken({ redirect: false })">
-									<td>
-										<div class="has-retry">
-											<div [class]="app.is_disabled ? 'tag no-margin' : 'tag tag--Success no-margin'">{{ app.is_disabled ? 'Disabled' : 'Enabled' }}</div>
-										</div>
-									</td>
-									<td class="has-long-text">
-										<div>{{ app.name }}</div>
-									</td>
-									<td>
-										<div>{{ app.created_at | date }}</div>
-									</td>
-									<td>
-										<div>{{ app.updated_at | date }}</div>
-									</td>
-									<td>
-										<div>{{ app.events }}</div>
-									</td>
-									<td>
-										<div>{{ app.endpoints.length }}</div>
-									</td>
-									<td>
-										<div>
-											<button [disabled]="app.events <= 0" title="view events" [class]="'button__retry button--has-icon icon-left'" (click)="loadEventsFromAppsTable(app.uid)">
-												<img src="/assets/img/view-events-icon.svg" alt="view events icon" />
-												Events
-											</button>
-										</div>
-									</td>
-									<td>
-										<div class="dropdown">
-											<button class="button__clear button--has-icon" (click)="currentAppId = app.uid; showOverlay = true">
-												<img src="/assets/img/more-icon-vertical.svg" alt="more icon" />
-											</button>
-											<div [ngClass]="{ show: currentAppId == app.uid }" class="dropdown__menu dropdown__menu__nav small">
-												<ul>
-													<li (click)="openUpdateAppModal(app)">Update</li>
-													<li (click)="showDeleteAppModal = !showDeleteAppModal; currentAppId = ''" class="danger">Delete</li>
-												</ul>
+								<ng-container *ngFor="let apps of displayedApps; let i = index">
+									<tr class="table--date-row">
+										<td>
+											<div>{{ apps.date }}</div>
+										</td>
+										<td></td>
+										<td></td>
+										<td></td>
+										<td></td>
+									</tr>
+									<tr
+										*ngFor="let app of apps?.content; let index = index"
+										[id]="'app' + i"
+										[ngClass]="{ active: app.uid === appsDetailsItem?.uid }"
+										(click)="appsDetailsItem = app; getAppPortalToken({ redirect: false })"
+									>
+										<td>
+											<div class="has-retry">
+												<div [class]="app.is_disabled ? 'tag no-margin' : 'tag tag--Success no-margin'">{{ app.is_disabled ? 'Disabled' : 'Enabled' }}</div>
 											</div>
-										</div>
-									</td>
-								</tr>
+										</td>
+										<td class="has-long-text">
+											<div>{{ app.name }}</div>
+										</td>
+										<td>
+											<div>{{ app.created_at | date: 'hh:mm:ss a' }}</div>
+										</td>
+										<td>
+											<div>{{ app.updated_at | date }}</div>
+										</td>
+										<td>
+											<div>{{ app.events }}</div>
+										</td>
+										<td>
+											<div>{{ app.endpoints.length }}</div>
+										</td>
+										<td>
+											<div>
+												<button [disabled]="app.events <= 0" title="view events" [class]="'button__retry button--has-icon icon-left'" (click)="loadEventsFromAppsTable(app.uid)">
+													<img src="/assets/img/view-events-icon.svg" alt="view events icon" />
+													Events
+												</button>
+											</div>
+										</td>
+										<td>
+											<div class="dropdown">
+												<button class="button__clear button--has-icon" (click)="currentAppId = app.uid; showOverlay = true">
+													<img src="/assets/img/more-icon-vertical.svg" alt="more icon" />
+												</button>
+												<div [ngClass]="{ show: currentAppId == app.uid }" class="dropdown__menu dropdown__menu__nav small">
+													<ul>
+														<li (click)="openUpdateAppModal(app)">Update</li>
+														<li (click)="showDeleteAppModal = !showDeleteAppModal; currentAppId = ''" class="danger">Delete</li>
+													</ul>
+												</div>
+											</div>
+										</td>
+									</tr>
+								</ng-container>
 							</tbody>
 						</table>
 
@@ -690,7 +727,7 @@
 						</div>
 					</div>
 
-					<div class="empty-state table--container" *ngIf="apps?.content?.length === 0 && activeTab === 'apps'">
+					<div class="empty-state table--container" id="apps-empty-state" *ngIf="displayedApps?.length === 0 && activeTab === 'apps'">
 						<img src="/assets/img/empty-state-img.svg" alt="empty state" />
 						<p>No app to show here</p>
 					</div>
@@ -698,11 +735,12 @@
 
 				<div class="dashboard--logs--details has-loader">
 					<convoy-loader
+						id="details_section_loader"
 						*ngIf="(activeTab === 'apps' && isloadingApps) || (activeTab === 'events' && isloadingEvents) || (activeTab === 'event deliveries' && isloadingEventDeliveries)"
 					></convoy-loader>
 
 					<ng-container *ngIf="activeTab === 'apps' && appsDetailsItem">
-						<div class="flex flex__justify-between flex__align-items-center">
+						<div class="dashboard--logs--details--meta flex flex__justify-between flex__align-items-center">
 							<h3 class="text__capitalize">{{ appsDetailsItem?.name }}</h3>
 
 							<!-- app enable/disable toggle  -->
@@ -713,12 +751,6 @@
 							</label>
 						</div>
 
-						<ul class="dashboard--logs--details--meta">
-							<li class="list-item-inline">
-								<div class="list-item-inline--label">Support Email</div>
-								<div [class]="'list-item-inline--item ' + (appsDetailsItem?.support_email ? '' : 'fint')">{{ appsDetailsItem?.support_email || '...no support email provided' }}</div>
-							</li>
-						</ul>
 						<div [ngClass]="{ disabled: appsDetailsItem?.is_disabled }">
 							<h3>App Portal</h3>
 							<ul class="dashboard--logs--details--meta">
@@ -759,6 +791,7 @@
 									<button class="button__clear" [disabled]="appsDetailsItem?.endpoints.length == 0" (click)="setEventAppId()">Add Event</button>
 								</div>
 							</div>
+
 							<ul class="dashboard--logs--details--endpoints">
 								<ng-container *ngIf="appsDetailsItem?.endpoints">
 									<li *ngFor="let endpoint of appsDetailsItem.endpoints">
@@ -797,6 +830,13 @@
 								<img src="/assets/img/empty-state-img.svg" alt="empty state" />
 								<p>No endpoint has been added for selected app yet</p>
 							</div>
+							<h3>More Details</h3>
+							<ul class="dashboard--logs--details--meta">
+								<li class="list-item-inline">
+									<div class="list-item-inline--label">Support Email</div>
+									<div [class]="'list-item-inline--item ' + (appsDetailsItem?.support_email ? '' : 'fint')">{{ appsDetailsItem?.support_email || '...no support email provided' }}</div>
+								</li>
+							</ul>
 						</div>
 					</ng-container>
 
@@ -846,30 +886,30 @@
 						</ul>
 
 						<div class="dashboard--logs--details--req-res has-loader">
-							<convoy-loader *ngIf="(eventDetailsActiveTab === 'response' || eventDetailsActiveTab === 'request') && isloadingDeliveryAttempt"></convoy-loader>
+							<convoy-loader id="delivery_attempts_loader" *ngIf="(eventDetailsActiveTab === 'response' || eventDetailsActiveTab === 'request') && isloadingDeliveryAttempts"></convoy-loader>
 
 							<div [class]="'dashboard--logs--details--tabs-data ' + (eventDetailsActiveTab === 'data' ? 'show' : '')">
-								<h3>Event</h3>
+								<h4>Event</h4>
 								<prism language="json" [code]="getCodeSnippetString('event_delivery')"></prism>
 							</div>
 
-							<div [class]="'dashboard--logs--details--tabs-data ' + (eventDetailsActiveTab === 'response' && !isloadingDeliveryAttempt ? 'show' : '')">
+							<div [class]="'dashboard--logs--details--tabs-data ' + (eventDetailsActiveTab === 'response' && !isloadingDeliveryAttempts ? 'show' : '')">
 								<ng-container *ngIf="!eventDeliveryAtempt?.error">
-									<h3>Header</h3>
+									<h4>Header</h4>
 									<prism language="json" [code]="getCodeSnippetString('res_head')"></prism>
 
-									<h3>Body</h3>
+									<h4>Body</h4>
 									<prism language="json" [code]="getCodeSnippetString('res_body')"></prism>
 								</ng-container>
 
 								<ng-container *ngIf="eventDeliveryAtempt?.error">
-									<h3>Error</h3>
+									<h4>Error</h4>
 									<prism language="json" [code]="getCodeSnippetString('error')"></prism>
 								</ng-container>
 							</div>
 
-							<div [class]="'dashboard--logs--details--tabs-data ' + (eventDetailsActiveTab === 'request' && !isloadingDeliveryAttempt ? 'show' : '')">
-								<h3>Header</h3>
+							<div [class]="'dashboard--logs--details--tabs-data ' + (eventDetailsActiveTab === 'request' && !isloadingDeliveryAttempts ? 'show' : '')">
+								<h4>Header</h4>
 								<prism language="json" [code]="getCodeSnippetString('req')"></prism>
 							</div>
 						</div>
@@ -879,7 +919,7 @@
 						<h3>Details</h3>
 						<div class="dashboard--logs--details--req-res">
 							<div class="dashboard--logs--details--tabs-data show">
-								<h3>Event</h3>
+								<h4>Event</h4>
 								<prism language="json" [code]="getCodeSnippetString('event')"></prism>
 							</div>
 						</div>
@@ -930,28 +970,27 @@
 			<img src="/assets/img/modal-close-icon.svg" alt="close icon" />
 		</a>
 	</div>
+
 	<div class="modal--body" *ngIf="showCreateAppModal">
-		<form [formGroup]="addNewAppForm">
+		<form [formGroup]="addNewAppForm" id="create-app-form">
 			<div class="input">
-				<input type="text" formControlName="name" required />
-				<label for="">Enter App Name</label>
+				<input id="app-name" type="text" formControlName="name" [ngClass]="{ danger: addNewAppForm.controls.name.touched && addNewAppForm.controls.name.invalid, editMode: editAppMode }" />
+				<label for="app-name">Enter App Name</label>
 				<div class="input__error input__error__danger" *ngIf="addNewAppForm.controls.name.touched && addNewAppForm.controls.name.invalid">
 					<img src="assets/img/input-error-icon.svg" alt="input error icon" />
 					<span>App name is required</span>
 				</div>
 			</div>
+
 			<div class="input">
-				<input type="text" formControlName="support_email" required />
-				<label class="input__label" for="">Support Email</label>
-				<div class="input__error input__error__danger" *ngIf="addNewAppForm.controls.support_email.touched && addNewAppForm.controls.support_email.invalid">
-					<img src="assets/img/input-error-icon.svg" alt="input error icon" />
-					<span>Support email is required</span>
-				</div>
+				<input type="text" id="app-email" formControlName="support_email" [ngClass]="{ editMode: editAppMode }" />
+				<label class="input__label" for="app-email">Support Email</label>
 				<div class="input__error input__error__secondary font__12px">
-					<img src="/assets/img/info-icon.svg" alt="close icon" />
+					<img src="/assets/img/small-info-icon.svg" alt="close icon" />
 					We use this to send an email notifcation for when a failure happens
 				</div>
 			</div>
+
 			<div *ngIf="!editAppMode" formArrayName="endpoints">
 				<div *ngIf="endpoints.controls.length > 0" class="flex flex__align-items-center flex__justify-between">
 					<h3>Endpoint</h3>
@@ -960,6 +999,7 @@
 						Add Endpoint
 					</button>
 				</div>
+
 				<div *ngFor="let endpoint of endpoints.controls; let i = index">
 					<div [formGroupName]="i">
 						<div class="input">
@@ -970,6 +1010,7 @@
 								<span>Please provide a description</span>
 							</div>
 						</div>
+
 						<div class="input">
 							<input type="text" formControlName="url" required />
 							<label for="">Enter Endpoint URL</label>
@@ -978,6 +1019,7 @@
 								<span>Please provide a description</span>
 							</div>
 						</div>
+
 						<div class="input multiple">
 							<div class="input--multiple" [ngClass]="{ active: eventTags.length > 0 }">
 								<div class="tag" *ngFor="let tag of eventTags">
@@ -988,16 +1030,19 @@
 								</div>
 								<input type="text" id="tagInput" formControlName="tag" (input)="addTag($event, i)" required />
 							</div>
+
 							<label [ngClass]="{ active: eventTags.length > 0 }" for="">Add Tag</label>
 							<div class="input__error input__error__secondary font__12px">
-								<img src="/assets/img/info-icon.svg" alt="close icon" />
+								<img src="/assets/img/small-info-icon.svg" alt="close icon" />
 								Add multiple tags by seperating them with commas
 							</div>
+
 							<div class="input__error input__error__danger" *ngIf="getSingleEndpoint(i).tag.touched && getSingleEndpoint(i).tag.invalid">
 								<img src="assets/img/input-error-icon.svg" alt="input error icon" />
 								<span>Please add at least one tag</span>
 							</div>
 						</div>
+
 						<div class="flex flex__justify-end margin-bottom__16px">
 							<button (click)="removeEndpoint(i)" class="button__clear color__danger button--has-icon icon-left">
 								<img src="/assets/img/trash-icon.svg" alt="close icon" />
@@ -1016,10 +1061,14 @@
 			</div>
 		</form>
 	</div>
+
 	<div class="modal--footer modal--footer__with-shadow" *ngIf="showCreateAppModal">
-		<button class="button button__white" (click)="showCreateAppModal = false; editAppMode = false; addNewAppForm.reset()">Discard</button>
-		<button class="button button__primary" [disabled]="isCreatingNewApp" (click)="createNewApp()">{{ editAppMode ? 'Edit App' : 'Create App' }}</button>
+		<button class="button button__white button--large" (click)="showCreateAppModal = false; editAppMode = false; addNewAppForm.reset()">Discard</button>
+		<button id="create-app-button" class="button button__primary button--full-100 margin-left__24px" [disabled]="isCreatingNewApp" (click)="createNewApp()">
+			{{ editAppMode ? 'Edit App' : 'Create App' }}
+		</button>
 	</div>
+
 
 	<!-- add endpoint modal  -->
 	<div class="modal--head" *ngIf="showAddEndpointModal">
@@ -1028,18 +1077,20 @@
 			<img src="/assets/img/modal-close-icon.svg" alt="close icon" />
 		</a>
 	</div>
+
 	<div class="modal--body" *ngIf="showAddEndpointModal">
 		<form [formGroup]="addNewEndpointForm">
 			<div class="input">
-				<input type="text" formControlName="description" required />
+				<input type="text" formControlName="description" [ngClass]="{ danger: addNewEndpointForm.controls.description.touched && addNewEndpointForm.controls.description.invalid }" required />
 				<label for="">Description</label>
 				<div class="input__error input__error__danger" *ngIf="addNewEndpointForm.controls.description.touched && addNewEndpointForm.controls.description.invalid">
 					<img src="assets/img/input-error-icon.svg" alt="input error icon" />
 					<span>Please provide a description</span>
 				</div>
 			</div>
+
 			<div class="input">
-				<input type="text" formControlName="url" required />
+				<input type="text" formControlName="url" [ngClass]="{ danger: addNewEndpointForm.controls.url.touched && addNewEndpointForm.controls.url.invalid }" required />
 				<label for="">Enter URL</label>
 				<div class="input__error input__error__danger" *ngIf="addNewEndpointForm.controls.url.touched && addNewEndpointForm.controls.url.invalid">
 					<img src="assets/img/input-error-icon.svg" alt="input error icon" />
@@ -1057,18 +1108,21 @@
 					</div>
 					<input type="text" id="tagInput" (input)="addTag()" required />
 				</div>
+
 				<label [ngClass]="{ active: eventTags.length > 0 }" for="">Events</label>
 				<div class="input__error input__error__secondary font__12px">
-					<img src="/assets/img/info-icon.svg" alt="close icon" />
+					<img src="/assets/img/small-info-icon.svg" alt="close icon" />
 					Add multiple events by seperating them with commas
 				</div>
 			</div>
 		</form>
 	</div>
+
 	<div class="modal--footer modal--footer__with-shadow" *ngIf="showAddEndpointModal">
-		<button class="button button__white" (click)="showAddEndpointModal = false">Discard</button>
-		<button class="button button__primary" [disabled]="isCreatingNewEndpoint" (click)="addNewEndpoint()">{{ isCreatingNewEndpoint ? 'Adding Endpoint..' : 'Add Endpoint' }}</button>
+		<button class="button button__white margin-right__24px" (click)="showAddEndpointModal = false">Discard</button>
+		<button class="button button__primary button--full-100" [disabled]="isCreatingNewEndpoint" (click)="addNewEndpoint()">{{ isCreatingNewEndpoint ? 'Adding Endpoint..' : 'Add Endpoint' }}</button>
 	</div>
+
 
 	<!-- add event modal  -->
 	<div class="modal--head" *ngIf="showAddEventModal">
@@ -1077,10 +1131,11 @@
 			<img src="/assets/img/modal-close-icon.svg" alt="close icon" />
 		</a>
 	</div>
+
 	<div class="modal--body" *ngIf="showAddEventModal">
 		<form [formGroup]="sendEventForm">
 			<div class="input">
-				<select formControlName="app_id" required>
+				<select class="editMode" formControlName="app_id">
 					<option *ngFor="let app of apps?.content" [value]="app.uid">{{ app.name }}</option>
 				</select>
 				<label for="">App ID</label>
@@ -1090,19 +1145,19 @@
 				</div>
 			</div>
 			<div class="input">
-				<textarea formControlName="data" required cols="5"></textarea>
+				<textarea formControlName="data" required cols="5" [ngClass]="{ danger: sendEventForm.controls.data.touched && sendEventForm.controls.data.invalid }"></textarea>
 				<label for="">Data</label>
 				<div class="input__error input__error__danger" *ngIf="sendEventForm.controls.data.touched && sendEventForm.controls.data.invalid">
 					<img src="assets/img/input-error-icon.svg" alt="input error icon" />
 					<span>Data is required</span>
 				</div>
 				<div class="input__error input__error__secondary font__12px">
-					<img src="/assets/img/info-icon.svg" alt="close icon" />
+					<img src="/assets/img/small-info-icon.svg" alt="close icon" />
 					Please enter your data in the format it would be returned
 				</div>
 			</div>
 			<div class="input">
-				<input type="text" formControlName="event_type" required />
+				<input type="text" formControlName="event_type" [ngClass]="{ danger: sendEventForm.controls.event_type.touched && sendEventForm.controls.event_type.invalid }" required />
 				<label for="">Event Type</label>
 				<div class="input__error input__error__danger" *ngIf="sendEventForm.controls.event_type.touched && sendEventForm.controls.event_type.invalid">
 					<img src="assets/img/input-error-icon.svg" alt="input error icon" />
@@ -1112,9 +1167,10 @@
 		</form>
 	</div>
 	<div class="modal--footer modal--footer__with-shadow" *ngIf="showAddEventModal">
-		<button class="button button__white" (click)="showAddEventModal = false">Discard</button>
-		<button class="button button__primary" [disabled]="isSendingNewEvent" (click)="sendNewEvent()">{{ isSendingNewEvent ? 'Adding Event..' : 'Add Event' }}</button>
+		<button class="button button__white margin-right__24px" (click)="showAddEventModal = false">Discard</button>
+		<button class="button button__primary button--full-100" [disabled]="isSendingNewEvent" (click)="sendNewEvent()">{{ isSendingNewEvent ? 'Adding Event..' : 'Add Event' }}</button>
 	</div>
+
 
 	<!-- endpoint secret modal  -->
 	<div class="modal--head" *ngIf="showEndpointSecret">
@@ -1137,13 +1193,15 @@
 <!-- delete app modal  -->
 <div class="modal modal__center" *ngIf="showDeleteAppModal">
 	<div class="modal--body flex flex__column flex__justify-center flex__align-items-center delete">
-		<img src="/assets/img/warning.gif" alt="warning" />
-		<p class="title">Are you sure you want to delete “{{ appsDetailsItem?.name }}”?</p>
-		<p class="subtext">This action is irrevesible</p>
-		<button class="button button__deactivate" [disabled]="isDeletingApp" (click)="deleteApp()">{{ isDeletingApp ? 'Deleting App...' : 'Yes, Delete' }}</button>
-		<button class="button__primary button__clear cancel" (click)="showDeleteAppModal = false">No, Cancel</button>
+		<img src="/assets/img/warning.gif" class="img" alt="warning" />
+		<p class="font__16px font__weight-600 color__black margin-bottom__8px">Are you sure you want to delete “{{ appsDetailsItem?.name }}”?</p>
+		<p class="font__14px font__weight-500 color__grey margin-bottom__12px">This action is irrevesible</p>
+		<button class="button button__deactivate margin-bottom__24px" [disabled]="isDeletingApp" (click)="deleteApp()">{{ isDeletingApp ? 'Deleting App...' : 'Yes, Delete' }}</button>
+		<button class="button__primary button__clear font__weight-600 cancel" (click)="showDeleteAppModal = false">No, Cancel</button>
 	</div>
 </div>
+
+
 <!-- batch retry modal  -->
 <div class="modal modal__center" *ngIf="showBatchRetryModal">
 	<div class="modal--body flex flex__column flex__justify-center flex__align-items-center delete">

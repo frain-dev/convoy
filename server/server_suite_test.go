@@ -1,9 +1,9 @@
 package server
 
 import (
-	"bytes"
 	"encoding/json"
-	"net/http/httptest"
+	"io/ioutil"
+	"net/http"
 	"os"
 	"testing"
 
@@ -19,7 +19,6 @@ import (
 	"github.com/frain-dev/convoy/tracer"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
-	"github.com/sebdah/goldie/v2"
 )
 
 func TestServer(t *testing.T) {
@@ -60,7 +59,7 @@ func getDB() datastore.DatabaseClient {
 	return db.(*mongoStore.Client)
 }
 
-func getQueueOptions() (queue.QueueOptions, error) {
+func getQueueOptions(name string) (queue.QueueOptions, error) {
 	var opts queue.QueueOptions
 	rC, qFn, err := redisqueue.NewClient(getConfig())
 	if err != nil {
@@ -68,7 +67,7 @@ func getQueueOptions() (queue.QueueOptions, error) {
 	}
 	opts = queue.QueueOptions{
 		Type:    "redis",
-		Name:    "EventQueue",
+		Name:    name,
 		Redis:   rC,
 		Factory: qFn,
 	}
@@ -78,10 +77,11 @@ func getQueueOptions() (queue.QueueOptions, error) {
 
 func buildApplication() *applicationHandler {
 	var tracer tracer.Tracer
-	var qOpts queue.QueueOptions
+	var qOpts, cOpts queue.QueueOptions
 
 	db := getDB()
-	qOpts, _ = getQueueOptions()
+	qOpts, _ = getQueueOptions("EventQueue")
+	cOpts, _ = getQueueOptions("CreateEventQueue")
 
 	groupRepo := db.GroupRepo()
 	appRepo := db.AppRepo()
@@ -89,6 +89,7 @@ func buildApplication() *applicationHandler {
 	eventDeliveryRepo := db.EventDeliveryRepo()
 	apiKeyRepo := db.APIRepo()
 	eventQueue := redisqueue.NewQueue(qOpts)
+	createEventQueue := redisqueue.NewQueue(cOpts)
 	logger := logger.NewNoopLogger()
 	cache := mcache.NewMemoryCache()
 	limiter := nooplimiter.NewNoopLimiter()
@@ -96,17 +97,9 @@ func buildApplication() *applicationHandler {
 
 	return newApplicationHandler(
 		eventRepo, eventDeliveryRepo, appRepo,
-		groupRepo, apiKeyRepo, eventQueue, logger,
-		tracer, cache, limiter,
+		groupRepo, apiKeyRepo, eventQueue, createEventQueue,
+		logger, tracer, cache, limiter,
 	)
-}
-
-func verifyMatch(t *testing.T, w httptest.ResponseRecorder) {
-	g := goldie.New(
-		t,
-		goldie.WithDiffEngine(goldie.ColoredDiff),
-	)
-	g.Assert(t, t.Name(), w.Body.Bytes())
 }
 
 func initRealmChain(t *testing.T, apiKeyRepo datastore.APIKeyRepository) {
@@ -121,93 +114,20 @@ func initRealmChain(t *testing.T, apiKeyRepo datastore.APIKeyRepository) {
 	}
 }
 
-func stripTimestamp(t *testing.T, obj string, b *bytes.Buffer) *bytes.Buffer {
-	var res serverResponse
-	buf := b.Bytes()
-	err := json.NewDecoder(b).Decode(&res)
+func parseResponse(t *testing.T, r *http.Response, object interface{}) {
+	body, err := ioutil.ReadAll(r.Body)
 	if err != nil {
-		t.Errorf("could not stripTimestamp: %s", err)
-		t.FailNow()
+		t.Fatalf("err: %s", err)
 	}
 
-	if res.Data == nil {
-		return bytes.NewBuffer(buf)
+	var sR serverResponse
+	err = json.Unmarshal(body, &sR)
+	if err != nil {
+		t.Fatalf("err: %s", err)
 	}
 
-	switch obj {
-	case "application":
-		var a datastore.Application
-		err := json.Unmarshal(res.Data, &a)
-		if err != nil {
-			t.Errorf("could not stripTimestamp: %s", err)
-			t.FailNow()
-		}
-
-		a.UID = ""
-		a.CreatedAt, a.UpdatedAt, a.DeletedAt = 0, 0, 0
-
-		jsonData, err := json.Marshal(a)
-		if err != nil {
-			t.Error(err)
-		}
-
-		return bytes.NewBuffer(jsonData)
-	case "group":
-		var g datastore.Group
-		err := json.Unmarshal(res.Data, &g)
-		if err != nil {
-			t.Errorf("could not stripTimestamp: %s", err)
-			t.FailNow()
-		}
-
-		g.UID = ""
-		g.CreatedAt, g.UpdatedAt, g.DeletedAt = 0, 0, 0
-
-		jsonData, err := json.Marshal(g)
-		if err != nil {
-			t.Error(err)
-		}
-
-		return bytes.NewBuffer(jsonData)
-	case "endpoint":
-		var e datastore.Endpoint
-		err := json.Unmarshal(res.Data, &e)
-		if err != nil {
-			t.Errorf("could not stripTimestamp: %s", err)
-			t.FailNow()
-		}
-
-		e.UID = ""
-		e.CreatedAt, e.UpdatedAt, e.DeletedAt = 0, 0, 0
-
-		jsonData, err := json.Marshal(e)
-		if err != nil {
-			t.Error(err)
-		}
-
-		return bytes.NewBuffer(jsonData)
-	case "apiKey":
-		var e datastore.APIKey
-		err := json.Unmarshal(res.Data, &e)
-		if err != nil {
-			t.Errorf("could not stripTimestamp: %s", err)
-			t.FailNow()
-		}
-
-		e.UID = ""
-		e.CreatedAt = 0
-		e.ExpiresAt = 0
-
-		jsonData, err := json.Marshal(e)
-		if err != nil {
-			t.Error(err)
-		}
-
-		return bytes.NewBuffer(jsonData)
-	default:
-		t.Errorf("invalid data body - %v of type %T", obj, obj)
-		t.FailNow()
+	err = json.Unmarshal(sR.Data, object)
+	if err != nil {
+		t.Fatalf("err: %s", err)
 	}
-
-	return nil
 }

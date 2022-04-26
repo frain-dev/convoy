@@ -1,51 +1,41 @@
 {
-  "multiple_tenants": false,
-  "queue": {
-    "type": "redis",
-    "redis": {
-      "dsn": "abc"
-    }
-  },
-  "auth": {
-    "require_auth": true,
-    "file": {
-      "basic": [
-        {
-          "username": "test",
-          "password": "test",
-          "role": {
-            "type": "admin",
-            "groups": ["sendcash-pay"]
-          }
+    "multiple_tenants": false,
+    "queue": {
+        "type": "redis",
+        "redis": {
+            "dsn": "abc"
         }
-      ],
-      "api_key": [
-        {
-          "api_key": "avcbajbwrohw@##Q39uekvsmbvxc.fdjhd",
-          "role": {
-            "type": "ui_admin",
-            "groups": ["sendcash-pay"]
-          }
-        }
-      ]
-    }
-  },
-  "server": {
-    "http": {
-      "port": 80
-    }
-  },
-  "group": {
-    "strategy": {
-      "type": "default",
-      "default": {
-        "intervalSeconds": 125,
-        "retryLimit": 15
-      }
     },
-    "signature": {
-      "header": "X-Company-Event-WebHook-Signature",
-      "hash": "SHA256"
+    "auth": {
+        "require_auth": true,
+        "file": {
+            "basic": [
+                {
+                    "username": "test",
+                    "password": "test",
+                    "role": {
+                        "type": "super_user"
+                    }
+                }
+            ]
+        }
+    },
+    "server": {
+        "http": {
+            "port": 80
+        }
+    },
+    "group": {
+        "strategy": {
+            "type": "default",
+            "default": {
+                "intervalSeconds": 125,
+                "retryLimit": 15
+            }
+        },
+        "signature": {
+            "header": "X-Company-Event-WebHook-Signature",
+            "hash": "SHA256"
+        }
     }
-  }
 }

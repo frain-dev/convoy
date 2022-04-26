@@ -10,6 +10,8 @@ import (
 	"strings"
 	"time"
 
+	"github.com/frain-dev/convoy"
+	"github.com/frain-dev/convoy/cache"
 	"github.com/frain-dev/convoy/logger"
 	"github.com/frain-dev/convoy/tracer"
 	"github.com/newrelic/go-agent/v3/newrelic"
@@ -122,26 +124,41 @@ func jsonResponse(next http.Handler) http.Handler {
 	})
 }
 
-func requireApp(appRepo datastore.ApplicationRepository) func(next http.Handler) http.Handler {
+func requireApp(appRepo datastore.ApplicationRepository, cache cache.Cache) func(next http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 
 			appID := chi.URLParam(r, "appID")
 
-			app, err := appRepo.FindApplicationByID(r.Context(), appID)
+			var app *datastore.Application
+			appCacheKey := convoy.ApplicationsCacheKey.Get(appID).String()
+
+			event := "an error occurred while retrieving app details"
+			statusCode := http.StatusBadRequest
+
+			err := cache.Get(r.Context(), appCacheKey, &app)
 			if err != nil {
+				_ = render.Render(w, r, newErrorResponse(err.Error(), statusCode))
+				return
+			}
 
-				event := "an error occurred while retrieving app details"
-				statusCode := http.StatusBadRequest
-
-				if errors.Is(err, datastore.ErrApplicationNotFound) {
-					event = err.Error()
-					statusCode = http.StatusNotFound
+			if app == nil {
+				app, err = appRepo.FindApplicationByID(r.Context(), appID)
+				if err != nil {
+					if errors.Is(err, datastore.ErrApplicationNotFound) {
+						event = err.Error()
+						statusCode = http.StatusNotFound
+					}
+					_ = render.Render(w, r, newErrorResponse(event, statusCode))
+					return
 				}
 
-				_ = render.Render(w, r, newErrorResponse(event, statusCode))
-				return
+				err = cache.Set(r.Context(), appCacheKey, &app, time.Minute*5)
+				if err != nil {
+					_ = render.Render(w, r, newErrorResponse(err.Error(), statusCode))
+					return
+				}
 			}
 
 			r = r.WithContext(setApplicationInContext(r.Context(), app))
@@ -387,7 +404,6 @@ func getDefaultGroup(r *http.Request, groupRepo datastore.GroupRepository) (*dat
 	}
 
 	if !(len(groups) > 0) {
-		fmt.Println("WOW")
 		return nil, errors.New("no default group, please your config")
 	}
 
@@ -410,7 +426,7 @@ func requireGroupID() func(next http.Handler) http.Handler {
 	}
 }
 
-func requireGroup(groupRepo datastore.GroupRepository) func(next http.Handler) http.Handler {
+func requireGroup(groupRepo datastore.GroupRepository, cache cache.Cache) func(next http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			var group *datastore.Group
@@ -418,6 +434,10 @@ func requireGroup(groupRepo datastore.GroupRepository) func(next http.Handler) h
 			var groupID string
 
 			groupID = r.URL.Query().Get("groupId")
+
+			if util.IsStringEmpty(groupID) {
+				groupID = r.URL.Query().Get("groupID")
+			}
 
 			if util.IsStringEmpty(groupID) {
 				groupID = chi.URLParam(r, "groupID")
@@ -428,27 +448,58 @@ func requireGroup(groupRepo datastore.GroupRepository) func(next http.Handler) h
 			}
 
 			if !util.IsStringEmpty(groupID) {
-				group, err = groupRepo.FetchGroupByID(r.Context(), groupID)
+				groupCacheKey := convoy.GroupsCacheKey.Get(groupID).String()
+				err = cache.Get(r.Context(), groupCacheKey, &group)
 				if err != nil {
-					_ = render.Render(w, r, newErrorResponse("failed to fetch group by id", http.StatusInternalServerError))
+					_ = render.Render(w, r, newErrorResponse(err.Error(), http.StatusBadRequest))
 					return
 				}
-			} else {
-				group, err = getDefaultGroup(r, groupRepo)
-				if err != nil {
-					event := "an error occurred while loading default group"
-					statusCode := http.StatusInternalServerError
 
-					// TODO(daniel,subomi): this should be impossible, because we call ensureDefaultGroup on app startup, find a better way to report this?
-					if errors.Is(err, mongo.ErrNoDocuments) {
-						event = err.Error()
-						statusCode = http.StatusNotFound
+				if group == nil {
+					group, err = groupRepo.FetchGroupByID(r.Context(), groupID)
+					if err != nil {
+						_ = render.Render(w, r, newErrorResponse("failed to fetch group by id", http.StatusNotFound))
+						return
 					}
 
-					_ = render.Render(w, r, newErrorResponse(event, statusCode))
+					err = cache.Set(r.Context(), groupCacheKey, &group, time.Minute*5)
+					if err != nil {
+						_ = render.Render(w, r, newErrorResponse(err.Error(), http.StatusBadRequest))
+						return
+					}
+				}
+			} else {
+				groupCacheKey := convoy.GroupsCacheKey.Get("default-group").String()
+				err = cache.Get(r.Context(), groupCacheKey, &group)
+				if err != nil {
+					_ = render.Render(w, r, newErrorResponse(err.Error(), http.StatusNotFound))
 					return
 				}
+
+				if group == nil {
+					group, err = getDefaultGroup(r, groupRepo)
+					if err != nil {
+						event := "an error occurred while loading default group"
+						statusCode := http.StatusBadRequest
+
+						// TODO(daniel,subomi): this should be impossible, because we call ensureDefaultGroup on app startup, find a better way to report this?
+						if errors.Is(err, mongo.ErrNoDocuments) {
+							event = err.Error()
+							statusCode = http.StatusNotFound
+						}
+
+						_ = render.Render(w, r, newErrorResponse(event, statusCode))
+						return
+					}
+
+					err = cache.Set(r.Context(), groupCacheKey, &group, time.Minute*5)
+					if err != nil {
+						_ = render.Render(w, r, newErrorResponse(err.Error(), http.StatusBadRequest))
+						return
+					}
+				}
 			}
+
 			r = r.WithContext(setGroupInContext(r.Context(), group))
 			next.ServeHTTP(w, r)
 		})

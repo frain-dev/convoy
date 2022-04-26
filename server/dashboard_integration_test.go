@@ -15,6 +15,7 @@ import (
 
 	"github.com/google/uuid"
 
+	mcache "github.com/frain-dev/convoy/cache/memory"
 	"github.com/frain-dev/convoy/config"
 	"github.com/frain-dev/convoy/datastore"
 	mongoStore "github.com/frain-dev/convoy/datastore/mongo"
@@ -37,6 +38,7 @@ func TestGetDashboardSummary(t *testing.T) {
 	app.appRepo = mongoStore.NewApplicationRepo(db)
 	app.eventRepo = mongoStore.NewEventRepository(db)
 	app.groupRepo = mongoStore.NewGroupRepo(db)
+	app.cache = mcache.NewMemoryCache()
 
 	group := &datastore.Group{
 		UID:               uuid.New().String(),

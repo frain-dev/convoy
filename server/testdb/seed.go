@@ -2,23 +2,30 @@ package testdb
 
 import (
 	"context"
+	"fmt"
 	"time"
 
 	"github.com/frain-dev/convoy"
 	"github.com/frain-dev/convoy/config"
 	"github.com/frain-dev/convoy/datastore"
 	mongoStore "github.com/frain-dev/convoy/datastore/mongo"
+	"github.com/frain-dev/convoy/util"
 	"github.com/google/uuid"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
 )
 
 // SeedApplication is create random application for integration tests.
-func SeedApplication(db datastore.DatabaseClient, g *datastore.Group) (*datastore.Application, error) {
+func SeedApplication(db datastore.DatabaseClient, g *datastore.Group, uid string, disabled bool) (*datastore.Application, error) {
+	if util.IsStringEmpty(uid) {
+		uid = uuid.New().String()
+	}
+
 	app := &datastore.Application{
-		UID:            uuid.New().String(),
+		UID:            uid,
 		Title:          "Test Application",
 		GroupID:        g.UID,
+		IsDisabled:     disabled,
 		DocumentStatus: datastore.ActiveDocumentStatus,
 	}
 
@@ -32,14 +39,38 @@ func SeedApplication(db datastore.DatabaseClient, g *datastore.Group) (*datastor
 	return app, nil
 }
 
-func SeedEndpoint(db datastore.DatabaseClient, app *datastore.Application) (*datastore.Application, error) {
-	endpoint := &datastore.Endpoint{
-		UID:            uuid.New().String(),
-		Status:         datastore.ActiveEndpointStatus,
-		DocumentStatus: datastore.ActiveDocumentStatus,
-	}
+func SeedMultipleApplications(db datastore.DatabaseClient, g *datastore.Group, count int) error {
+	for i := 0; i < count; i++ {
+		uid := uuid.New().String()
+		app := &datastore.Application{
+			UID:            uid,
+			Title:          fmt.Sprintf("Test-%s", uid),
+			GroupID:        g.UID,
+			IsDisabled:     false,
+			DocumentStatus: datastore.ActiveDocumentStatus,
+		}
 
-	app.Endpoints = append(app.Endpoints, *endpoint)
+		// Seed Data.
+		appRepo := db.AppRepo()
+		err := appRepo.CreateApplication(context.TODO(), app)
+		if err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func SeedEndpoint(db datastore.DatabaseClient, app *datastore.Application, count int) (*datastore.Application, error) {
+	for i := 0; i < count; i++ {
+		endpoint := &datastore.Endpoint{
+			UID:            uuid.New().String(),
+			Events:         []string{"*"},
+			Status:         datastore.ActiveEndpointStatus,
+			DocumentStatus: datastore.ActiveDocumentStatus,
+		}
+
+		app.Endpoints = append(app.Endpoints, *endpoint)
+	}
 
 	// Seed Data.
 	appRepo := db.AppRepo()
@@ -56,6 +87,15 @@ func PurgeDB(db datastore.DatabaseClient) {
 	client := db.Client().(*mongo.Database)
 	appCollection := client.Collection(mongoStore.AppCollections, nil)
 	appCollection.Drop(context.TODO())
+
+	groupCollection := client.Collection(mongoStore.GroupCollection, nil)
+	groupCollection.Drop(context.TODO())
+
+	eventCollection := client.Collection(mongoStore.EventCollection, nil)
+	eventCollection.Drop(context.TODO())
+
+	eventDeliveryCollection := client.Collection(mongoStore.EventDeliveryCollection, nil)
+	eventDeliveryCollection.Drop(context.TODO())
 }
 
 // seed default group

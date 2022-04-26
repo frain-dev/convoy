@@ -16,7 +16,6 @@ import (
 	memqueue "github.com/frain-dev/convoy/queue/memqueue"
 	redisqueue "github.com/frain-dev/convoy/queue/redis"
 	"github.com/frain-dev/convoy/tracer"
-	"github.com/frain-dev/convoy/worker/task"
 	"github.com/getsentry/sentry-go"
 	"github.com/google/uuid"
 	prefixed "github.com/x-cray/logrus-prefixed-formatter"
@@ -148,9 +147,6 @@ func ensureDefaultGroup(ctx context.Context, cfg config.Configuration, a *app) e
 		return err
 	}
 
-	taskName := convoy.EventProcessor.SetPrefix(group.Name)
-	task.CreateTask(taskName, *group, task.ProcessEventDelivery(a.applicationRepo, a.eventDeliveryRepo, a.groupRepo, a.limiter))
-
 	return nil
 }
 
@@ -162,6 +158,7 @@ type app struct {
 	eventDeliveryRepo datastore.EventDeliveryRepository
 	eventQueue        queue.Queuer
 	deadLetterQueue   queue.Queuer
+	createEventQueue  queue.Queuer
 	logger            logger.Logger
 	tracer            tracer.Tracer
 	cache             cache.Cache
@@ -300,7 +297,9 @@ func preRun(app *app, db datastore.DatabaseClient) func(cmd *cobra.Command, args
 		app.eventDeliveryRepo = db.EventDeliveryRepo()
 
 		app.eventQueue = NewQueue(opts, "EventQueue")
+		app.createEventQueue = NewQueue(opts, "CreateEventQueue")
 		app.deadLetterQueue = NewQueue(opts, "DeadLetterQueue")
+
 		app.logger = lo
 		app.tracer = tr
 		app.cache = ca
@@ -350,6 +349,7 @@ func parsePersistentArgs(app *app, cmd *cobra.Command) {
 	cmd.AddCommand(addQueueCommand(app))
 	cmd.AddCommand(addRetryCommand(app))
 	cmd.AddCommand(addSchedulerCommand(app))
+	cmd.AddCommand(addUpgradeCommand(app))
 }
 
 type ConvoyCli struct {

@@ -81,7 +81,6 @@ func TestRequirePermission_Basic(t *testing.T) {
 				t.Errorf("Want status '%d', got '%d'", tc.statusCode, recorder.Code)
 			}
 
-			verifyMatch(t, *recorder)
 		})
 	}
 }
@@ -149,7 +148,6 @@ func TestRequirePermission_Noop(t *testing.T) {
 				t.Errorf("Want status '%d', got '%d'", tc.statusCode, recorder.Code)
 			}
 
-			verifyMatch(t, *recorder)
 		})
 	}
 }

@@ -52,7 +52,7 @@ func TestWrite(t *testing.T) {
 			taskName := convoy.TaskName(uuid.NewString())
 			configFile := tc.configFile
 			eventQueue := initializeQueue(configFile, tc.queueName, t)
-			err := eventQueue.Write(context.TODO(), taskName, eventDelivery, 0)
+			err := eventQueue.WriteEventDelivery(context.TODO(), taskName, eventDelivery, 0)
 			if err != nil {
 				t.Fatalf("Failed to write to queue: %v", err)
 			}
