@@ -387,6 +387,7 @@ func getDefaultGroup(r *http.Request, groupRepo datastore.GroupRepository) (*dat
 	}
 
 	if !(len(groups) > 0) {
+		fmt.Println("WOW")
 		return nil, errors.New("no default group, please your config")
 	}
 

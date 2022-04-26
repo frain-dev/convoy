@@ -20,7 +20,6 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	"github.com/sebdah/goldie/v2"
-	"go.mongodb.org/mongo-driver/mongo"
 )
 
 func TestServer(t *testing.T) {
@@ -52,13 +51,13 @@ func getConfig() config.Configuration {
 	}
 }
 
-func getDB() *mongo.Database {
+func getDB() datastore.DatabaseClient {
 
 	db, _ := mongoStore.New(getConfig())
 
 	_ = os.Setenv("TZ", "") // Use UTC by default :)
 
-	return db.Client().(*mongo.Database)
+	return db.(*mongoStore.Client)
 }
 
 func getQueueOptions() (queue.QueueOptions, error) {
@@ -79,17 +78,16 @@ func getQueueOptions() (queue.QueueOptions, error) {
 
 func buildApplication() *applicationHandler {
 	var tracer tracer.Tracer
-	var db *mongo.Database
 	var qOpts queue.QueueOptions
 
-	db = getDB()
+	db := getDB()
 	qOpts, _ = getQueueOptions()
 
-	groupRepo := mongoStore.NewGroupRepo(db)
-	appRepo := mongoStore.NewApplicationRepo(db)
-	eventRepo := mongoStore.NewEventRepository(db)
-	eventDeliveryRepo := mongoStore.NewEventDeliveryRepository(db)
-	apiKeyRepo := mongoStore.NewApiKeyRepo(db)
+	groupRepo := db.GroupRepo()
+	appRepo := db.AppRepo()
+	eventRepo := db.EventRepo()
+	eventDeliveryRepo := db.EventDeliveryRepo()
+	apiKeyRepo := db.APIRepo()
 	eventQueue := redisqueue.NewQueue(qOpts)
 	logger := logger.NewNoopLogger()
 	cache := mcache.NewMemoryCache()
