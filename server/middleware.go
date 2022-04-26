@@ -436,6 +436,10 @@ func requireGroup(groupRepo datastore.GroupRepository, cache cache.Cache) func(n
 			groupID = r.URL.Query().Get("groupId")
 
 			if util.IsStringEmpty(groupID) {
+				groupID = r.URL.Query().Get("groupID")
+			}
+
+			if util.IsStringEmpty(groupID) {
 				groupID = chi.URLParam(r, "groupID")
 			}
 
