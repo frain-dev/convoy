@@ -64,8 +64,6 @@
 						</ul>
 					</div>
 				</div>
-
-				
 			</div>
 
 			<ng-container *ngIf="!isCloud">
@@ -77,7 +75,7 @@
 							<img src="/assets/img/angle-arrow-down.svg" alt="arrow down icon" />
 						</button>
 						<div class="dropdown__menu dropdown__menu__push-left" [ngClass]="{ show: showFilterCalendar }">
-							<ul>
+							<ul id="groups-dropdown">
 								<li
 									[ngClass]="{ active: convyDashboardService.activeGroupId == group.uid }"
 									*ngFor="let group of groups"
@@ -89,7 +87,6 @@
 						</div>
 					</div>
 				</div>
-				
 			</ng-container>
 		</div>
 
@@ -979,7 +976,7 @@
 		showEventFilterCalendar = false;
 		showEndpointSecret = false;
 		showFilterDropdown = false;
-		showFilterCalendar = false;
+		showFilterCalendar = false
 	"
 ></div>
 <!-- dark overlay  -->
