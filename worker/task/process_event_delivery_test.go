@@ -22,7 +22,7 @@ func TestProcessEventDelivery(t *testing.T) {
 		cfgPath       string
 		expectedError error
 		msg           *datastore.EventDelivery
-		dbFn          func(*mocks.MockApplicationRepository, *mocks.MockGroupRepository, *mocks.MockEventDeliveryRepository, *mocks.MockRateLimiter)
+		dbFn          func(*mocks.MockApplicationRepository, *mocks.MockGroupRepository, *mocks.MockEventDeliveryRepository, *mocks.MockRateLimiter, *mocks.MockTracer)
 		nFn           func() func()
 	}{
 		{
@@ -32,7 +32,8 @@ func TestProcessEventDelivery(t *testing.T) {
 			msg: &datastore.EventDelivery{
 				UID: "",
 			},
-			dbFn: func(a *mocks.MockApplicationRepository, o *mocks.MockGroupRepository, m *mocks.MockEventDeliveryRepository, r *mocks.MockRateLimiter) {
+			dbFn: func(a *mocks.MockApplicationRepository, o *mocks.MockGroupRepository, m *mocks.MockEventDeliveryRepository, r *mocks.MockRateLimiter, t *mocks.MockTracer) {
+				t.EXPECT().StartTransaction(gomock.Any()).Times(1)
 				m.EXPECT().
 					FindEventDeliveryByID(gomock.Any(), gomock.Any()).
 					Return(&datastore.EventDelivery{
@@ -53,7 +54,8 @@ func TestProcessEventDelivery(t *testing.T) {
 			msg: &datastore.EventDelivery{
 				UID: "",
 			},
-			dbFn: func(a *mocks.MockApplicationRepository, o *mocks.MockGroupRepository, m *mocks.MockEventDeliveryRepository, r *mocks.MockRateLimiter) {
+			dbFn: func(a *mocks.MockApplicationRepository, o *mocks.MockGroupRepository, m *mocks.MockEventDeliveryRepository, r *mocks.MockRateLimiter, t *mocks.MockTracer) {
+				t.EXPECT().StartTransaction(gomock.Any()).Times(1)
 				m.EXPECT().
 					FindEventDeliveryByID(gomock.Any(), gomock.Any()).
 					Return(&datastore.EventDelivery{
@@ -101,7 +103,8 @@ func TestProcessEventDelivery(t *testing.T) {
 			msg: &datastore.EventDelivery{
 				UID: "",
 			},
-			dbFn: func(a *mocks.MockApplicationRepository, o *mocks.MockGroupRepository, m *mocks.MockEventDeliveryRepository, r *mocks.MockRateLimiter) {
+			dbFn: func(a *mocks.MockApplicationRepository, o *mocks.MockGroupRepository, m *mocks.MockEventDeliveryRepository, r *mocks.MockRateLimiter, t *mocks.MockTracer) {
+				t.EXPECT().StartTransaction(gomock.Any()).Times(1)
 				m.EXPECT().
 					FindEventDeliveryByID(gomock.Any(), gomock.Any()).
 					Return(&datastore.EventDelivery{
@@ -186,7 +189,8 @@ func TestProcessEventDelivery(t *testing.T) {
 			msg: &datastore.EventDelivery{
 				UID: "",
 			},
-			dbFn: func(a *mocks.MockApplicationRepository, o *mocks.MockGroupRepository, m *mocks.MockEventDeliveryRepository, r *mocks.MockRateLimiter) {
+			dbFn: func(a *mocks.MockApplicationRepository, o *mocks.MockGroupRepository, m *mocks.MockEventDeliveryRepository, r *mocks.MockRateLimiter, t *mocks.MockTracer) {
+				t.EXPECT().StartTransaction(gomock.Any()).Times(1)
 				m.EXPECT().
 					FindEventDeliveryByID(gomock.Any(), gomock.Any()).
 					Return(&datastore.EventDelivery{
@@ -273,7 +277,8 @@ func TestProcessEventDelivery(t *testing.T) {
 			msg: &datastore.EventDelivery{
 				UID: "",
 			},
-			dbFn: func(a *mocks.MockApplicationRepository, o *mocks.MockGroupRepository, m *mocks.MockEventDeliveryRepository, r *mocks.MockRateLimiter) {
+			dbFn: func(a *mocks.MockApplicationRepository, o *mocks.MockGroupRepository, m *mocks.MockEventDeliveryRepository, r *mocks.MockRateLimiter, t *mocks.MockTracer) {
+				t.EXPECT().StartTransaction(gomock.Any()).Times(1)
 				m.EXPECT().
 					FindEventDeliveryByID(gomock.Any(), gomock.Any()).
 					Return(&datastore.EventDelivery{
@@ -366,7 +371,8 @@ func TestProcessEventDelivery(t *testing.T) {
 			msg: &datastore.EventDelivery{
 				UID: "",
 			},
-			dbFn: func(a *mocks.MockApplicationRepository, o *mocks.MockGroupRepository, m *mocks.MockEventDeliveryRepository, r *mocks.MockRateLimiter) {
+			dbFn: func(a *mocks.MockApplicationRepository, o *mocks.MockGroupRepository, m *mocks.MockEventDeliveryRepository, r *mocks.MockRateLimiter, t *mocks.MockTracer) {
+				t.EXPECT().StartTransaction(gomock.Any()).Times(1)
 				m.EXPECT().
 					FindEventDeliveryByID(gomock.Any(), gomock.Any()).
 					Return(&datastore.EventDelivery{
@@ -454,7 +460,8 @@ func TestProcessEventDelivery(t *testing.T) {
 			msg: &datastore.EventDelivery{
 				UID: "",
 			},
-			dbFn: func(a *mocks.MockApplicationRepository, o *mocks.MockGroupRepository, m *mocks.MockEventDeliveryRepository, r *mocks.MockRateLimiter) {
+			dbFn: func(a *mocks.MockApplicationRepository, o *mocks.MockGroupRepository, m *mocks.MockEventDeliveryRepository, r *mocks.MockRateLimiter, t *mocks.MockTracer) {
+				t.EXPECT().StartTransaction(gomock.Any()).Times(1)
 				m.EXPECT().
 					FindEventDeliveryByID(gomock.Any(), gomock.Any()).
 					Return(&datastore.EventDelivery{
@@ -548,7 +555,8 @@ func TestProcessEventDelivery(t *testing.T) {
 			msg: &datastore.EventDelivery{
 				UID: "",
 			},
-			dbFn: func(a *mocks.MockApplicationRepository, o *mocks.MockGroupRepository, m *mocks.MockEventDeliveryRepository, r *mocks.MockRateLimiter) {
+			dbFn: func(a *mocks.MockApplicationRepository, o *mocks.MockGroupRepository, m *mocks.MockEventDeliveryRepository, r *mocks.MockRateLimiter, t *mocks.MockTracer) {
+				t.EXPECT().StartTransaction(gomock.Any()).Times(1)
 				m.EXPECT().
 					FindEventDeliveryByID(gomock.Any(), gomock.Any()).
 					Return(&datastore.EventDelivery{
@@ -636,7 +644,8 @@ func TestProcessEventDelivery(t *testing.T) {
 			msg: &datastore.EventDelivery{
 				UID: "",
 			},
-			dbFn: func(a *mocks.MockApplicationRepository, o *mocks.MockGroupRepository, m *mocks.MockEventDeliveryRepository, r *mocks.MockRateLimiter) {
+			dbFn: func(a *mocks.MockApplicationRepository, o *mocks.MockGroupRepository, m *mocks.MockEventDeliveryRepository, r *mocks.MockRateLimiter, t *mocks.MockTracer) {
+				t.EXPECT().StartTransaction(gomock.Any()).Times(1)
 				m.EXPECT().
 					FindEventDeliveryByID(gomock.Any(), gomock.Any()).
 					Return(&datastore.EventDelivery{
@@ -758,7 +767,7 @@ func TestProcessEventDelivery(t *testing.T) {
 			}
 
 			if tc.dbFn != nil {
-				tc.dbFn(appRepo, groupRepo, msgRepo, rateLimiter)
+				tc.dbFn(appRepo, groupRepo, msgRepo, rateLimiter, tracer)
 			}
 
 			processFn := ProcessEventDelivery(appRepo, msgRepo, groupRepo, rateLimiter, tracer)
