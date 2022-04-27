@@ -27,7 +27,7 @@ func addWorkerCommand(a *app) *cobra.Command {
 				return err
 			}
 
-			worker.RegisterNewGroupTask(a.applicationRepo, a.eventDeliveryRepo, a.groupRepo, a.limiter, a.eventRepo, a.cache, a.eventQueue)
+			worker.RegisterNewGroupTask(a.applicationRepo, a.eventDeliveryRepo, a.groupRepo, a.limiter, a.eventRepo, a.cache, a.eventQueue, a.tracer)
 			// register workers.
 			ctx := context.Background()
 			eventCreationProducer := worker.NewProducer(a.createEventQueue)

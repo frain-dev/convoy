@@ -735,6 +735,7 @@ func TestProcessEventDelivery(t *testing.T) {
 			msgRepo := mocks.NewMockEventDeliveryRepository(ctrl)
 			apiKeyRepo := mocks.NewMockAPIKeyRepository(ctrl)
 			rateLimiter := mocks.NewMockRateLimiter(ctrl)
+			tracer := mocks.NewMockTracer(ctrl)
 
 			err := config.LoadConfig(tc.cfgPath)
 			if err != nil {
@@ -760,7 +761,7 @@ func TestProcessEventDelivery(t *testing.T) {
 				tc.dbFn(appRepo, groupRepo, msgRepo, rateLimiter)
 			}
 
-			processFn := ProcessEventDelivery(appRepo, msgRepo, groupRepo, rateLimiter)
+			processFn := ProcessEventDelivery(appRepo, msgRepo, groupRepo, rateLimiter, tracer)
 
 			job := queue.Job{
 				ID: tc.msg.UID,

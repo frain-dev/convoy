@@ -16,6 +16,7 @@ import (
 	"github.com/frain-dev/convoy/net"
 	"github.com/frain-dev/convoy/queue"
 	"github.com/frain-dev/convoy/retrystrategies"
+	"github.com/frain-dev/convoy/tracer"
 	"github.com/frain-dev/convoy/util"
 	"github.com/google/uuid"
 	log "github.com/sirupsen/logrus"
@@ -43,8 +44,10 @@ type SignatureValues struct {
 	Timestamp string
 }
 
-func ProcessEventDelivery(appRepo datastore.ApplicationRepository, eventDeliveryRepo datastore.EventDeliveryRepository, groupRepo datastore.GroupRepository, rateLimiter limiter.RateLimiter) func(*queue.Job) error {
+func ProcessEventDelivery(appRepo datastore.ApplicationRepository, eventDeliveryRepo datastore.EventDeliveryRepository, groupRepo datastore.GroupRepository, rateLimiter limiter.RateLimiter, tracer tracer.Tracer) func(*queue.Job) error {
 	return func(job *queue.Job) error {
+		txn := tracer.StartTransaction("ProcessEventDelivery")
+		defer txn.End()
 		Id := job.ID
 
 		// Load message from DB and switch state to prevent concurrent processing.
