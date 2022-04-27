@@ -57,7 +57,7 @@
 								class="text__capitalize"
 								[ngClass]="{ active: dashboardFrequency == filterOption }"
 								*ngFor="let filterOption of filterOptions"
-								(click)="dashboardFrequency = filterOption; fetchDashboardData()"
+								(click)="dashboardFrequency = filterOption; fetchDashboardData(); showFilterDropdown = false"
 							>
 								{{ filterOption }}
 							</li>
@@ -79,7 +79,7 @@
 								<li
 									[ngClass]="{ active: convyDashboardService.activeGroupId == group.uid }"
 									*ngFor="let group of groups"
-									(click)="(convyDashboardService.activeGroupId == group.uid); toggleActiveGroup()"
+									(click)="(convyDashboardService.activeGroupId == group.uid); toggleActiveGroup(); showFilterCalendar = false"
 								>
 									{{ group.name }}
 								</li>
