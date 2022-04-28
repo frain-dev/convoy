@@ -27,7 +27,7 @@
 						<img src="/assets/img/angle-arrow-down.svg" alt="arrow down icon" />
 					</button>
 
-					<div [ngClass]="{ show: showDateFilterDropdown }" class="dropdown__menu large">
+					<div [ngClass]="{ show: showDateFilterDropdown }" class="dropdown__menu">
 						<ul>
 							<li
 								[ngClass]="{ active: selectedDateOption == dateOption }"
@@ -45,24 +45,46 @@
 						</ul>
 					</div>
 				</div>
-
-				<div class="select">
-					<select value="daily" [(ngModel)]="dashboardFrequency" (change)="fetchDashboardData()">
-						<option value="daily">Daily</option>
-						<option value="weekly">Weekly</option>
-						<option value="monthly">Monthly</option>
-						<option value="yearly">Yearly</option>
-					</select>
+				<div class="dropdown">
+					<button class="button button__filter button--has-icon icon-right margin-left__16px" (click)="showFilterDropdown = !showFilterDropdown; showOverlay = true">
+						<span class="color__grey margin-right__4px">Filter By:</span>
+						<span class="color__primary text__capitalize">{{ dashboardFrequency }}</span>
+						<img src="/assets/img/angle-arrow-down.svg" alt="arrow down icon" />
+					</button>
+					<div class="dropdown__menu dropdown__menu__push-left" [ngClass]="{ show: showFilterDropdown }">
+						<ul>
+							<li
+								class="text__capitalize"
+								[ngClass]="{ active: dashboardFrequency == filterOption }"
+								*ngFor="let filterOption of filterOptions"
+								(click)="dashboardFrequency = filterOption; fetchDashboardData(); showFilterDropdown = false; showOverlay = false"
+							>
+								{{ filterOption }}
+							</li>
+						</ul>
+					</div>
 				</div>
 			</div>
 
 			<ng-container *ngIf="!isCloud">
-				<div class="filter without-padding" [ngClass]="{ 'show-calendar': showFilterCalendar }">
+				<div class="flex flex__align-items-center">
 					<div>Active Group:</div>
-					<div class="select">
-						<select [value]="convyDashboardService.activeGroupId" id="groups-dropdown" [(ngModel)]="convyDashboardService.activeGroupId" (change)="toggleActiveGroup()">
-							<option [value]="group.uid" *ngFor="let group of groups">{{ group.name }}</option>
-						</select>
+					<div class="dropdown">
+						<button class="button button__filter button--has-icon icon-right margin-left__16px" (click)="showFilterCalendar = !showFilterCalendar; showOverlay = true">
+							<span class="color__primary">{{ selectedGroupName() }}</span>
+							<img src="/assets/img/angle-arrow-down.svg" alt="arrow down icon" />
+						</button>
+						<div class="dropdown__menu dropdown__menu__push-left" [ngClass]="{ show: showFilterCalendar }">
+							<ul id="groups-dropdown">
+								<li
+									[ngClass]="{ active: convyDashboardService.activeGroupId == group.uid }"
+									*ngFor="let group of groups"
+									(click)="(convyDashboardService.activeGroupId == group.uid); toggleActiveGroup(); showFilterCalendar = false; showOverlay = false"
+								>
+									{{ group.name }}
+								</li>
+							</ul>
+						</div>
 					</div>
 				</div>
 			</ng-container>
@@ -203,7 +225,7 @@
 									<mat-date-range-picker #eventsFilterPicker [disabled]="false"></mat-date-range-picker>
 									<img class="margin-right__0px" src="/assets/img/angle-arrow-down.svg" alt="arrow down icon" />
 								</button>
-								<div [ngClass]="{ show: showEventFilterCalendar }" class="dropdown__menu large">
+								<div [ngClass]="{ show: showEventFilterCalendar }" class="dropdown__menu">
 									<ul>
 										<li
 											[ngClass]="{ active: selectedEventsDateOption == dateOption }"
@@ -293,7 +315,7 @@
 									<mat-date-range-picker #eventDeliveriesFilterPicker [disabled]="false"></mat-date-range-picker>
 									<img class="margin-right__0px" src="/assets/img/angle-arrow-down.svg" alt="arrow down icon" />
 								</button>
-								<div [ngClass]="{ show: showEventDelFilterCalendar }" class="dropdown__menu large">
+								<div [ngClass]="{ show: showEventDelFilterCalendar }" class="dropdown__menu">
 									<ul>
 										<li
 											[ngClass]="{ active: selectedEventsDelDateOption == dateOption }"
@@ -952,7 +974,9 @@
 		showDateFilterDropdown = false;
 		showEventDelFilterCalendar = false;
 		showEventFilterCalendar = false;
-		showEndpointSecret = false
+		showEndpointSecret = false;
+		showFilterDropdown = false;
+		showFilterCalendar = false
 	"
 ></div>
 <!-- dark overlay  -->
@@ -1069,7 +1093,6 @@
 		</button>
 	</div>
 
-
 	<!-- add endpoint modal  -->
 	<div class="modal--head" *ngIf="showAddEndpointModal">
 		<h2>Add Endpoint</h2>
@@ -1123,7 +1146,6 @@
 		<button class="button button__primary button--full-100" [disabled]="isCreatingNewEndpoint" (click)="addNewEndpoint()">{{ isCreatingNewEndpoint ? 'Adding Endpoint..' : 'Add Endpoint' }}</button>
 	</div>
 
-
 	<!-- add event modal  -->
 	<div class="modal--head" *ngIf="showAddEventModal">
 		<h2>Add Event</h2>
@@ -1171,7 +1193,6 @@
 		<button class="button button__primary button--full-100" [disabled]="isSendingNewEvent" (click)="sendNewEvent()">{{ isSendingNewEvent ? 'Adding Event..' : 'Add Event' }}</button>
 	</div>
 
-
 	<!-- endpoint secret modal  -->
 	<div class="modal--head" *ngIf="showEndpointSecret">
 		<h2>Endpoint Secret</h2>
@@ -1200,7 +1221,6 @@
 		<button class="button__primary button__clear font__weight-600 cancel" (click)="showDeleteAppModal = false">No, Cancel</button>
 	</div>
 </div>
-
 
 <!-- batch retry modal  -->
 <div class="modal modal__center" *ngIf="showBatchRetryModal">

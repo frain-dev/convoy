@@ -25,6 +25,7 @@ export class ConvoyDashboardComponent implements OnInit {
 	showFilterCalendar = false;
 	tabs: ['events', 'event deliveries', 'apps'] = ['events', 'event deliveries', 'apps'];
 	activeTab: 'events' | 'apps' | 'event deliveries' = 'events';
+	filterOptions: ['daily', 'weekly', 'monthly', 'yearly'] = ['daily', 'weekly', 'monthly', 'yearly'];
 	appsDetailsItem?: any;
 	eventsDetailsItem!: any;
 	eventDelsDetailsItem?: any;
@@ -32,6 +33,7 @@ export class ConvoyDashboardComponent implements OnInit {
 	showEventFilterCalendar = false;
 	showEventDelFilterCalendar = false;
 	eventDateFilterActive = false;
+	showFilterDropdown = false;
 	displayedEvents!: {
 		date: string;
 		content: EVENT[];
@@ -1155,5 +1157,9 @@ export class ConvoyDashboardComponent implements OnInit {
 	containsSpecialCharacters(str: string) {
 		const specialChars = /[`!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?~]/;
 		return specialChars.test(str);
+	}
+
+	selectedGroupName() {
+		return this.groups.find(item => item.uid === this.convyDashboardService.activeGroupId)?.name;
 	}
 }

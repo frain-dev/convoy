@@ -26,7 +26,7 @@ import { ChangeDetectionStrategy, Component, Input, OnInit } from '@angular/core
 			}
 
 			.loader img {
-				width: 25%;
+				width: 20%;
 			}
 
 			.loader.transparent {
