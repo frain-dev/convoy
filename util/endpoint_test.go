@@ -19,15 +19,17 @@ func TestCleanEndpoint(t *testing.T) {
 		{"https://localhost", true},
 		{"https://LocaLhOsT", true},
 		{"https://127.0.0.1", true},
+		{"https://GOOGLE.COM", false},
 	}
 
 	for _, v := range tt {
-		_, err := CleanEndpoint(v.url)
+		url, err := CleanEndpoint(v.url)
 		if v.hasError {
 			require.Error(t, err)
 			continue
 		}
 
 		require.NoError(t, err)
+		require.Equal(t, v.url, url)
 	}
 }
