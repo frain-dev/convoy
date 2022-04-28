@@ -12,12 +12,13 @@ import (
 	"github.com/frain-dev/convoy/limiter"
 	"github.com/frain-dev/convoy/queue"
 	redisqueue "github.com/frain-dev/convoy/queue/redis"
+	"github.com/frain-dev/convoy/tracer"
 	"github.com/frain-dev/convoy/worker/task"
 	"github.com/frain-dev/taskq/v3"
 	log "github.com/sirupsen/logrus"
 )
 
-func RegisterNewGroupTask(applicationRepo datastore.ApplicationRepository, eventDeliveryRepo datastore.EventDeliveryRepository, groupRepo datastore.GroupRepository, rateLimiter limiter.RateLimiter, eventRepo datastore.EventRepository, cache cache.Cache, eventQueue queue.Queuer) {
+func RegisterNewGroupTask(applicationRepo datastore.ApplicationRepository, eventDeliveryRepo datastore.EventDeliveryRepository, groupRepo datastore.GroupRepository, rateLimiter limiter.RateLimiter, eventRepo datastore.EventRepository, cache cache.Cache, eventQueue queue.Queuer, tracer tracer.Tracer) {
 	go func() {
 		for {
 			filter := &datastore.GroupFilter{}
@@ -31,7 +32,7 @@ func RegisterNewGroupTask(applicationRepo datastore.ApplicationRepository, event
 
 				if t := taskq.Tasks.Get(string(pEvtCrtTask)); t == nil {
 					if s := taskq.Tasks.Get(string(pEvtDelTask)); s == nil {
-						handler := task.ProcessEventDelivery(applicationRepo, eventDeliveryRepo, groupRepo, rateLimiter)
+						handler := task.ProcessEventDelivery(applicationRepo, eventDeliveryRepo, groupRepo, rateLimiter, tracer)
 						log.Infof("Registering event delivery task handler for %s", g.Name)
 						task.CreateTask(pEvtDelTask, *g, handler)
 
