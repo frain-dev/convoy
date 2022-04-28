@@ -76,7 +76,8 @@ func (q *MemQueue) WriteEventDelivery(ctx context.Context, name convoy.TaskName,
 
 func (q *MemQueue) WriteEvent(ctx context.Context, name convoy.TaskName, e *datastore.Event, delay time.Duration) error {
 	job := &queue.Job{
-		ID: e.UID,
+		ID:    e.UID,
+		Event: e,
 	}
 
 	m := &taskq.Message{
