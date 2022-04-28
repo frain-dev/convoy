@@ -56,5 +56,5 @@ func CleanEndpoint(s string) (string, error) {
 		return "", errors.New("cannot use localhost or 127.0.0.1")
 	}
 
-	return strings.ToLower(u.String()), nil
+	return u.String(), nil
 }
