@@ -19,6 +19,7 @@ import (
 	"github.com/frain-dev/convoy/tracer"
 	"github.com/frain-dev/convoy/util"
 	"github.com/google/uuid"
+	"github.com/newrelic/go-agent/v3/newrelic"
 	log "github.com/sirupsen/logrus"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 )
@@ -46,8 +47,12 @@ type SignatureValues struct {
 
 func ProcessEventDelivery(appRepo datastore.ApplicationRepository, eventDeliveryRepo datastore.EventDeliveryRepository, groupRepo datastore.GroupRepository, rateLimiter limiter.RateLimiter, tracer tracer.Tracer) func(*queue.Job) error {
 	return func(job *queue.Job) error {
-		txn := tracer.StartTransaction("ProcessEventDelivery")
+		var txn *newrelic.Transaction
+		if tracer != nil {
+			txn = tracer.StartTransaction("ProcessEventDelivery")
+		}
 		defer txn.End()
+
 		Id := job.ID
 
 		// Load message from DB and switch state to prevent concurrent processing.
