@@ -50,8 +50,8 @@ func ProcessEventDelivery(appRepo datastore.ApplicationRepository, eventDelivery
 		var txn *newrelic.Transaction
 		if tracer != nil {
 			txn = tracer.StartTransaction("ProcessEventDelivery")
+			defer txn.End()
 		}
-		defer txn.End()
 
 		Id := job.ID
 
