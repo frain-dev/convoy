@@ -74,6 +74,10 @@ jobs:
           CONVOY_REDIS_DSN: "redis://localhost:6379"
           CONVOY_QUEUE_PROVIDER: "redis"
           IMMUNE_EVENT_TARGET_URL: https://www.endpoint.url:9098
+          CONVOY_NEWRELIC_APP_NAME: "convoy"
+          CONVOY_NEWRELIC_LICENSE_KEY: "5db1332e7566e37ab0979b5bed086d77FFFFNRAL"
+          CONVOY_NEWRELIC_CONFIG_ENABLED: true
+          CONVOY_NEWRELIC_DISTRIBUTED_TRACER_ENABLED: true
           IMMUNE_SSL: true
         run: |
           ref=$(certgen -domains="www.endpoint.url,endpoint.url")
