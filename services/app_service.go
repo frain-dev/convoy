@@ -36,16 +36,13 @@ func (a *AppService) CreateApp(ctx context.Context, newApp *models.Application, 
 		return nil, NewServiceError(http.StatusBadRequest, err)
 	}
 
-	apps, _, err := a.LoadApplicationsPaged(ctx, "", newApp.AppName, datastore.Pageable{
-		Page:    1,
-		PerPage: 100,
-		Sort:    1,
-	})
+	count, err := a.appRepo.IsAppTitleUnique(ctx, newApp.AppName)
 	if err != nil {
-		return nil, err
+		log.WithError(err).Error("failed to check if application name is unique")
+		return nil, NewServiceError(http.StatusBadRequest, errors.New("failed to check if application name is unique"))
 	}
 
-	if len(apps) > 0 {
+	if count > 0 {
 		return nil, NewServiceError(http.StatusBadRequest, fmt.Errorf("an app with the the name %s already exists", newApp.AppName))
 	}
 
