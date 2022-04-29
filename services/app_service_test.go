@@ -29,7 +29,7 @@ func stringPtr(s string) *string {
 	return &s
 }
 
-func TestApplicationHandler_CreateApp(t *testing.T) {
+func TestAppService_CreateApp(t *testing.T) {
 	groupID := "1234567890"
 	group := &datastore.Group{UID: groupID}
 
@@ -41,12 +41,13 @@ func TestApplicationHandler_CreateApp(t *testing.T) {
 
 	ctx := context.Background()
 	tt := []struct {
-		name       string
-		args       args
-		wantErr    bool
-		wantErrObj *ServiceError
-		wantApp    *datastore.Application
-		dbFn       func(app *AppService)
+		name        string
+		args        args
+		wantErr     bool
+		wantErrMsg  string
+		wantErrCode int
+		wantApp     *datastore.Application
+		dbFn        func(app *AppService)
 	}{
 		{
 			name: "should_error_for_empty_name",
@@ -60,9 +61,10 @@ func TestApplicationHandler_CreateApp(t *testing.T) {
 				},
 				g: group,
 			},
-			wantErr:    true,
-			wantErrObj: NewServiceError(http.StatusBadRequest, errors.New("name:please provide your appName")),
-			dbFn:       func(app *AppService) {},
+			wantErr:     true,
+			wantErrCode: http.StatusBadRequest,
+			wantErrMsg:  "name:please provide your appName",
+			dbFn:        func(app *AppService) {},
 		},
 		{
 			name: "should_create_application",
@@ -81,6 +83,9 @@ func TestApplicationHandler_CreateApp(t *testing.T) {
 				a.EXPECT().
 					CreateApplication(gomock.Any(), gomock.Any()).Times(1).
 					Return(nil)
+
+				a.EXPECT().IsAppTitleUnique(gomock.Any(), "test_app").Times(1).
+					Return(int64(0), nil)
 
 				c, _ := app.cache.(*mocks.MockCache)
 				c.EXPECT().Set(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any())
@@ -113,9 +118,55 @@ func TestApplicationHandler_CreateApp(t *testing.T) {
 				a.EXPECT().
 					CreateApplication(gomock.Any(), gomock.Any()).Times(1).
 					Return(errors.New("failed"))
+
+				a.EXPECT().IsAppTitleUnique(gomock.Any(), "test_app").Times(1).
+					Return(int64(0), nil)
 			},
-			wantErr:    true,
-			wantErrObj: NewServiceError(http.StatusBadRequest, errors.New("failed to create application")),
+			wantErr:     true,
+			wantErrCode: http.StatusBadRequest,
+			wantErrMsg:  "failed to create application",
+		},
+		{
+			name: "should_fail_to_check_if_app_name_is_unique",
+			args: args{
+				ctx: ctx,
+				newApp: &models.Application{
+					AppName:         "test_app",
+					SupportEmail:    "app@test.com",
+					IsDisabled:      false,
+					SlackWebhookURL: "https://google.com",
+				},
+				g: group,
+			},
+			dbFn: func(app *AppService) {
+				a, _ := app.appRepo.(*mocks.MockApplicationRepository)
+				a.EXPECT().IsAppTitleUnique(gomock.Any(), "test_app").Times(1).
+					Return(int64(0), errors.New("failed"))
+			},
+			wantErr:     true,
+			wantErrCode: http.StatusBadRequest,
+			wantErrMsg:  "failed to check if application name is unique",
+		},
+		{
+			name: "should_error_for_app_name_not_unique",
+			args: args{
+				ctx: ctx,
+				newApp: &models.Application{
+					AppName:         "test_app",
+					SupportEmail:    "app@test.com",
+					IsDisabled:      false,
+					SlackWebhookURL: "https://google.com",
+				},
+				g: group,
+			},
+			dbFn: func(app *AppService) {
+				a, _ := app.appRepo.(*mocks.MockApplicationRepository)
+				a.EXPECT().IsAppTitleUnique(gomock.Any(), "test_app").Times(1).
+					Return(int64(1), nil)
+			},
+			wantErr:     true,
+			wantErrCode: http.StatusBadRequest,
+			wantErrMsg:  "an app with the the name test_app already exists",
 		},
 	}
 
@@ -133,7 +184,8 @@ func TestApplicationHandler_CreateApp(t *testing.T) {
 			app, err := as.CreateApp(tc.args.ctx, tc.args.newApp, group)
 			if tc.wantErr {
 				require.NotNil(t, err)
-				require.Equal(t, tc.wantErrObj, err)
+				require.Equal(t, tc.wantErrCode, err.(*ServiceError).ErrCode())
+				require.Equal(t, tc.wantErrMsg, err.(*ServiceError).Error())
 				return
 			}
 
