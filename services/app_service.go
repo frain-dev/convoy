@@ -268,6 +268,10 @@ func updateEndpointIfFound(endpoints *[]datastore.Endpoint, id string, e models.
 				endpoint.HttpTimeout = e.HttpTimeout
 			}
 
+			if !util.IsStringEmpty(e.Secret) {
+				endpoint.Secret = e.Secret
+			}
+
 			endpoint.Status = datastore.ActiveEndpointStatus
 			endpoint.UpdatedAt = primitive.NewDateTimeFromTime(time.Now())
 			(*endpoints)[i] = endpoint
