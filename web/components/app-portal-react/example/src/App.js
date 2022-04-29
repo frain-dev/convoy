@@ -7,7 +7,7 @@ const App = () => {
 	return (
 		<div>
 			<ConvoyApp
-				token={'CO.d3Y6OIbYnIZvTifX.HaLXVbRDzQrFODNUzD96GQRURI7i6PQXquYWshrlGXcNj8hjgJweSaoOpiNHr4V7'}
+				token={'CO.km296UEHbaAQF9X7.18x2VjWNbL8EXyKIBrxZq6XPmyc1zT266CUK7553Or4XnCNM9zjpgErAcxHwSqGg'}
 				apiURL={'http://localhost:5005'}
 			/>
 		</div>
