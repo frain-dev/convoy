@@ -71,6 +71,10 @@ func (db *appRepo) LoadApplicationsPaged(ctx context.Context, groupID, q string,
 	return apps, datastore.PaginationData(paginatedData.Pagination), nil
 }
 
+func (db *appRepo) IsAppTitleUnique(ctx context.Context, name string) (int64, error) {
+	return db.client.CountDocuments(ctx, bson.M{"title": name})
+}
+
 func (db *appRepo) LoadApplicationsPagedByGroupId(ctx context.Context, groupID string, pageable datastore.Pageable) ([]datastore.Application, datastore.PaginationData, error) {
 
 	filter := bson.M{
