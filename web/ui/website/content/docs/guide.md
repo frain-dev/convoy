@@ -23,16 +23,13 @@ Copy the configuration file to the directory created above.
   "multiple_tenants": false,
   "database": {
     "type": "in-memory",
-    "dsn": "db.db"
+    "dsn": "./db"
   },
   "queue": {
     "type": "in-memory"
   },
   "server": {
     "http": {
-      "ssl": false,
-      "ssl_cert_file": "",
-      "ssl_key_file": "",
       "port": 5005
     }
   },
@@ -49,14 +46,6 @@ Copy the configuration file to the directory created above.
       }
     }
   },
-  "smtp": {
-    "provider": "sendgrid",
-    "url": "smtp.sendgrid.net",
-    "port": 2525,
-    "username": "apikey",
-    "password": "<api-key-from-sendgrid>",
-    "from": "support@frain.dev"
-  },
   "disable_endpoint": false,
   "auth": {
     "require_auth": false
@@ -71,10 +60,10 @@ $ docker run \
   -p 5005:5005 \
   --name convoy-server \
   -v `pwd`/convoy.json:/convoy.json \
-  packages.getconvoy.io/frain-dev/convoy:v0.4.9
+  packages.getconvoy.io/frain-dev/convoy:v0.5.4
 ```
 
-Now, you can head over to http://localhost:5005 to view the UI, which should look something like:
+Now, you can head over to [http://localhost:5005](http://localhost:5005) to view the UI, which should look something like:
 ![convoy image](../../docs-assets/convoy-ui.png)
 
 You can check the [config page](./docs/configuration) for full details on configuration.
