@@ -404,6 +404,34 @@ export const ConvoyApp = ({ token, apiURL }) => {
 		}
 	};
 
+	const forceRetryEvent = async ({ eventId, e, index, appUid }) => {
+		e.stopPropagation();
+		const retryButton = document.querySelector(`#eventDel${index} button`);
+		retryButton.classList.add(['spin', 'disable_action']);
+		retryButton.disabled = true;
+		const payload = {
+			ids: [eventId]
+		};
+		try {
+			await (
+				await request({
+					method: 'POST',
+					url: `/eventdeliveries/forceresend`,
+					body: payload
+				})
+			).data;
+			showNotification({ message: 'Force Retry Request Sent' });
+			retryButton.classList.remove(['spin', 'disable_action']);
+			retryButton.disabled = false;
+			getEvents({ page: events.pagination.page, appUid: appUid });
+		} catch (error) {
+			showNotification({ message: error.response.data.message });
+			retryButton.classList.remove(['spin', 'disable_action']);
+			retryButton.disabled = false;
+			return error;
+		}
+	};
+
 	const updateEventDevliveryStatusFilter = ({ status, input }) => {
 		if (input.target.checked) {
 			eventDelFilterStatus.push(status);
@@ -790,11 +818,17 @@ export const ConvoyApp = ({ token, apiURL }) => {
 													<td>
 														<div>
 															<button
-																className={`${styles['button__retry']} ${styles['button--has-icon']} ${styles['icon-left']}`}
+																className={event.status !== 'Success' ? `${styles['button__retry']} ${styles['button--has-icon']} ${styles['icon-left']}` : styles.hidden}
 																disabled={event.status !== 'Failure'}
 																onClick={e => retryEvent({ eventId: event.uid, e, index, appUid: appDetails?.uid })}>
 																<img src={RefreshIcon} alt="refresh icon" />
 																Retry
+															</button>
+															<button
+																className={event.status === 'Success' ? `${styles['button__retry']} ${styles['button--has-icon']} ${styles['icon-left']}` : styles.hidden}
+																onClick={e => forceRetryEvent({ eventId: event.uid, e, index, appUid: appDetails?.uid })}>
+																<img src={RefreshIcon} alt="refresh icon" />
+																Force Retry
 															</button>
 														</div>
 													</td>

@@ -15,7 +15,7 @@ import { DatePipe } from '@angular/common';
 	styleUrls: ['./convoy-app.component.scss']
 })
 export class ConvoyAppComponent implements OnInit {
-	endpointTableHead: string[] = ['Endpoint URL', 'Created At', 'Updated At', 'Ebdpoint Events', 'Status'];
+	endpointTableHead: string[] = ['Endpoint URL', 'Created At', 'Updated At', 'Endpoint Events', 'Status'];
 	eventsTableHead: string[] = ['Event Type', 'App Name', 'Created At', ''];
 	eventDelTableHead: string[] = ['Status', 'Event Type', 'Attempts', 'Created At', ''];
 	addNewEndpointForm: FormGroup = this.formBuilder.group({
@@ -96,6 +96,8 @@ export class ConvoyAppComponent implements OnInit {
 	constructor(private convyAppService: ConvoyAppService, private router: Router, private formBuilder: FormBuilder, private route: ActivatedRoute, private datePipe: DatePipe) {}
 
 	async ngOnInit() {
+		this.convyAppService.apiURL = this.apiURL;
+		this.convyAppService.token = this.token;
 		await this.initDashboard();
 	}
 
@@ -232,13 +234,9 @@ export class ConvoyAppComponent implements OnInit {
 		if (requestDetails?.appId) this.eventApp = requestDetails.appId;
 
 		const { startDate, endDate } = this.setDateForFilter(this.eventsFilterDateRange.value);
-
 		try {
-			const eventsResponse = await this.convyAppService.request({
-				url: this.getAPIURL(`/events?appId=${this.appDetails?.uid || ''}&sort=AESC&page=${this.eventsPage || 1}&startDate=${startDate}&endDate=${endDate}`),
-				method: 'get',
-				token: this.token
-			});
+			const eventsResponse = await this.convyAppService.getEvents({ appId: this.appDetails?.uid || '', pageNo: this.eventsPage || 1, startDate, endDate });
+			
 			if (this.activeTab === 'events') this.detailsItem = eventsResponse.data.content[0];
 
 			if (this.events && this.events?.pagination?.next === this.eventsPage) {
@@ -263,12 +261,8 @@ export class ConvoyAppComponent implements OnInit {
 	async getAppDetails() {
 		this.loadingAppDetails = true;
 		try {
-			const appDetailsResponse = await this.convyAppService.request({
-				url: this.getAPIURL(`/apps`),
-				method: 'get',
-				token: this.token
-			});
-
+			const appDetailsResponse = await this.convyAppService.getAppDetails();
+			
 			this.loadingAppDetails = false;
 			this.appDetails = appDetailsResponse.data;
 		} catch (error) {
@@ -283,16 +277,15 @@ export class ConvoyAppComponent implements OnInit {
 		const { startDate, endDate } = this.setDateForFilter(this.eventDeliveriesFilterDateRange.value);
 
 		try {
-			const eventDeliveriesResponse = await this.convyAppService.request({
-				url: this.getAPIURL(
-					`/eventdeliveries?appId=${this.appDetails?.uid || ''}&eventId=${requestDetails.eventId || ''}&page=${this.eventDeliveriesPage || 1}&startDate=${startDate}&endDate=${endDate}&status=${
-						eventDeliveryStatusFilterQuery || ''
-					}`
-				),
-				method: 'get',
-				token: this.token
+			const eventDeliveriesResponse = await this.convyAppService.getEventDeliveries({
+				appId: this.appDetails?.uid || '',
+				eventId: requestDetails.eventId || '',
+				pageNo: this.eventDeliveriesPage || 1,
+				startDate,
+				endDate,
+				statusQuery: eventDeliveryStatusFilterQuery || ''
 			});
-
+			
 			return eventDeliveriesResponse;
 		} catch (error: any) {
 			return error;
@@ -342,13 +335,9 @@ export class ConvoyAppComponent implements OnInit {
 			events: this.eventTags
 		});
 		try {
-			const response = await this.convyAppService.request({
-				url: this.getAPIURL(`/apps/endpoints`),
-				method: 'post',
-				body: this.addNewEndpointForm.value,
-				token: this.token
-			});
-			this.convyAppService.showNotification({ message: response.message, style: 'info' });
+			const response = await this.convyAppService.addNewEndpoint({ body: this.addNewEndpointForm.value });
+			
+			this.convyAppService.showNotification({ message: response.message, style: 'success' });
 			this.getAppDetails();
 			this.getEvents();
 			this.addNewEndpointForm.reset();
@@ -376,11 +365,8 @@ export class ConvoyAppComponent implements OnInit {
 
 	async getDelieveryAttempts(eventDeliveryId: string) {
 		try {
-			const deliveryAttemptsResponse = await this.convyAppService.request({
-				url: this.getAPIURL(`/eventdeliveries/${eventDeliveryId}/deliveryattempts`),
-				method: 'get',
-				token: this.token
-			});
+			const deliveryAttemptsResponse = await this.convyAppService.getDeliveryAttempts({ eventDeliveryId: eventDeliveryId });
+			
 			this.eventDeliveryAtempt = deliveryAttemptsResponse.data[deliveryAttemptsResponse.data.length - 1];
 			return;
 		} catch (error) {
@@ -417,24 +403,50 @@ export class ConvoyAppComponent implements OnInit {
 		}
 
 		try {
-			await this.convyAppService.request({
-				method: 'put',
-				url: this.getAPIURL(`/eventdeliveries/${requestDetails.eventDeliveryId}/resend`),
-				token: this.token
-			});
-
+			await this.convyAppService.retryEvent({eventDeliveryId: requestDetails.eventDeliveryId})
+			
 			this.convyAppService.showNotification({
-				message: 'Retry Request Sent', style: 'info'
+				message: 'Retry Request Sent',
+				style: 'success'
 			});
 			retryButton.classList.remove(['spin', 'disabled']);
 			retryButton.disabled = false;
 			this.getEventDeliveries();
 		} catch (error: any) {
 			this.convyAppService.showNotification({
-				message: error.error.message, style: 'error'
+				message: error.error.message,
+				style: 'error'
 			});
 			retryButton.classList.remove(['spin', 'disabled']);
 			retryButton.disabled = false;
+			return error;
+		}
+	}
+
+	// force retry successful events
+	async forceRetryEvent(requestDetails: { e: any; index: number; eventDeliveryId: string }) {
+		requestDetails.e.stopPropagation();
+		const retryButton: any = document.querySelector(`#event${requestDetails.index} button`);
+		if (retryButton) {
+			retryButton.classList.add(['spin', 'disabled']);
+			retryButton.disabled = true;
+		}
+		const payload = {
+			ids: [requestDetails.eventDeliveryId]
+		};
+		try {
+			await this.convyAppService.forceRetryEvent({ body: payload });
+
+			this.convyAppService.showNotification({ message: 'Force Retry Request Sent', style: 'success' });
+			retryButton.classList.remove(['spin', 'disabled']);
+			retryButton.disabled = false;
+			this.getEventDeliveries();
+		} catch (error: any) {
+			this.convyAppService.showNotification({ message: `${error?.error?.message ? error?.error?.message : 'An error occured'}`, style: 'error' });
+			if (retryButton) {
+				retryButton.classList.remove(['spin', 'disabled']);
+				retryButton.disabled = false;
+			}
 			return error;
 		}
 	}
@@ -447,18 +459,15 @@ export class ConvoyAppComponent implements OnInit {
 		const { startDate, endDate } = this.setDateForFilter(this.eventDeliveriesFilterDateRange.value);
 		this.isRetyring = true;
 		try {
-			const response = await this.convyAppService.request({
-				method: 'post',
-				url: this.getAPIURL(
-					`/eventdeliveries/batchretry?eventId=${this.eventDeliveryFilteredByEventId || ''}&page=${this.eventDeliveriesPage || 1}&startDate=${startDate}&endDate=${endDate}${
-						eventDeliveryStatusFilterQuery || ''
-					}`
-				),
-				token: this.token,
-				body: null
+			const response = await this.convyAppService.batchRetryEvent({
+				eventId: this.eventDeliveryFilteredByEventId || '',
+				pageNo: this.eventDeliveriesPage || 1,
+				startDate,
+				endDate,
+				statusQuery: eventDeliveryStatusFilterQuery || ''
 			});
-
-			this.convyAppService.showNotification({ message: response.message, style: 'info' });
+			
+			this.convyAppService.showNotification({ message: response.message, style: 'success' });
 			this.getEventDeliveries();
 			this.showBatchRetryModal = false;
 			this.isRetyring = false;
@@ -477,15 +486,14 @@ export class ConvoyAppComponent implements OnInit {
 		const { startDate, endDate } = this.setDateForFilter(this.eventDeliveriesFilterDateRange.value);
 		this.fetchingCount = true;
 		try {
-			const response = await this.convyAppService.request({
-				url: this.getAPIURL(
-					`/eventdeliveries/countbatchretryevents?eventId=${this.eventDeliveryFilteredByEventId || ''}&page=${this.eventDeliveriesPage || 1}&startDate=${startDate}&endDate=${endDate}${
-						eventDeliveryStatusFilterQuery || ''
-					}`
-				),
-				token: this.token,
-				method: 'get'
+			const response = await this.convyAppService.fetchRetryCount({
+				eventId: this.eventDeliveryFilteredByEventId || '',
+				pageNo: this.eventDeliveriesPage || 1,
+				startDate,
+				endDate,
+				statusQuery: eventDeliveryStatusFilterQuery || ''
 			});
+			
 			this.batchRetryCount = response.data.num;
 			this.fetchingCount = false;
 			this.showBatchRetryModal = true;
@@ -516,17 +524,21 @@ export class ConvoyAppComponent implements OnInit {
 				switch (filterType) {
 					case 'eventsDelDate':
 						filterItems = ['eventDelsStartDate', 'eventDelsEndDate'];
+						this.eventDeliveriesFilterDateRange.patchValue({ startDate: '', endDate: '' });
+						this.selectedEventsDelDateOption = '';
 						break;
 					case 'eventsDelsStatus':
 						filterItems = ['eventDelsStatus'];
+						this.eventDeliveryFilteredByStatus = [];
 						break;
 					default:
 						filterItems = ['eventDelsStartDate', 'eventDelsEndDate', 'eventDelsStatus'];
+						this.eventDeliveriesFilterDateRange.patchValue({ startDate: '', endDate: '' });
+						this.selectedEventsDelDateOption = '';
+						this.eventDeliveryFilteredByStatus = [];
 						break;
 				}
-				this.eventDeliveriesFilterDateRange.patchValue({ startDate: '', endDate: '' });
 				this.eventDeliveryFilteredByEventId = '';
-				this.eventDeliveryFilteredByStatus = [];
 				this.getEventDeliveries();
 				break;
 
@@ -607,10 +619,6 @@ export class ConvoyAppComponent implements OnInit {
 		this.eventTags = this.eventTags.filter(e => e !== tag);
 	}
 
-	getAPIURL(url: string) {
-		url = '/portal' + url;
-		return !this.apiURL || this.apiURL === '' ? location.origin + url : this.apiURL + url;
-	}
 
 	checkIfEventDeliveryStatusFilterOptionIsSelected(status: string): boolean {
 		return this.eventDeliveryFilteredByStatus?.length > 0 ? this.eventDeliveryFilteredByStatus.includes(status) : false;
