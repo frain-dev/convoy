@@ -267,6 +267,37 @@ func Test_CreateApplication(t *testing.T) {
 	require.NoError(t, appRepo.CreateApplication(context.Background(), app))
 }
 
+func Test_IsAppTitleUnique(t *testing.T) {
+	db, closeFn := getDB(t)
+	defer closeFn()
+
+	groupRepo := NewGroupRepo(db)
+	appRepo := NewApplicationRepo(db)
+
+	newOrg := &datastore.Group{
+		Name: "Group 1",
+		UID:  uuid.NewString(),
+	}
+
+	require.NoError(t, groupRepo.CreateGroup(context.Background(), newOrg))
+
+	app := &datastore.Application{
+		Title:   "Application_1",
+		GroupID: newOrg.UID,
+		UID:     uuid.NewString(),
+	}
+
+	require.NoError(t, appRepo.CreateApplication(context.Background(), app))
+
+	count, err := appRepo.IsAppTitleUnique(context.Background(), app.Title)
+	require.NoError(t, err)
+	require.Equal(t, int64(1), count)
+
+	count, err = appRepo.IsAppTitleUnique(context.Background(), "123")
+	require.NoError(t, err)
+	require.Equal(t, int64(0), count)
+}
+
 func Test_UpdateApplication(t *testing.T) {
 	db, closeFn := getDB(t)
 	defer closeFn()

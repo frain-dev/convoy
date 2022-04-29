@@ -96,7 +96,7 @@ func (a *appRepo) LoadApplicationsPaged(ctx context.Context, gid, q string, page
 }
 
 func (a *appRepo) IsAppTitleUnique(ctx context.Context, name string) (int64, error) {
-	count, err := a.db.Count(&datastore.Application{}, badgerhold.Where("Name").Eq(name))
+	count, err := a.db.Count(&datastore.Application{}, badgerhold.Where("Title").Eq(name))
 	return int64(count), err
 }
 

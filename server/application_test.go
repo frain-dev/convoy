@@ -446,10 +446,58 @@ func TestApplicationHandler_CreateApp(t *testing.T) {
 				a.EXPECT().
 					CreateApplication(gomock.Any(), gomock.Any()).Times(1).
 					Return(nil)
+
+				a.EXPECT().IsAppTitleUnique(gomock.Any(), "ABC_DEF_TEST").Times(1).
+					Return(int64(0), nil)
+
 				c.EXPECT().Set(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Times(1).Return(nil)
 
 				o, _ := app.groupRepo.(*mocks.MockGroupRepository)
 
+				o.EXPECT().
+					LoadGroups(gomock.Any(), gomock.Any()).Times(1).
+					Return([]*datastore.Group{group}, nil)
+			},
+		},
+		{
+			name:       "should_fail_to_check_if_application_name_is_unique",
+			cfgPath:    "./testdata/Auth_Config/no-auth-convoy.json",
+			method:     http.MethodPost,
+			statusCode: http.StatusBadRequest,
+			body:       strings.NewReader(`{ "group_id": "` + groupID + `", "name": "ABC_DEF_TEST", "secret": "12345" ,"slack_webhook_url":"https://google.com"}`),
+			dbFn: func(app *applicationHandler) {
+				a, _ := app.appRepo.(*mocks.MockApplicationRepository)
+				c, _ := app.cache.(*mocks.MockCache)
+
+				c.EXPECT().Get(gomock.Any(), gomock.Any(), gomock.Any()).Times(1).Return(nil)
+				c.EXPECT().Set(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Times(1).Return(nil)
+
+				a.EXPECT().IsAppTitleUnique(gomock.Any(), "ABC_DEF_TEST").Times(1).
+					Return(int64(0), errors.New("failed"))
+
+				o, _ := app.groupRepo.(*mocks.MockGroupRepository)
+				o.EXPECT().
+					LoadGroups(gomock.Any(), gomock.Any()).Times(1).
+					Return([]*datastore.Group{group}, nil)
+			},
+		},
+		{
+			name:       "should_fail_for_application_name_not_unique",
+			cfgPath:    "./testdata/Auth_Config/no-auth-convoy.json",
+			method:     http.MethodPost,
+			statusCode: http.StatusBadRequest,
+			body:       strings.NewReader(`{ "group_id": "` + groupID + `", "name": "ABC_DEF_TEST", "secret": "12345" ,"slack_webhook_url":"https://google.com"}`),
+			dbFn: func(app *applicationHandler) {
+				a, _ := app.appRepo.(*mocks.MockApplicationRepository)
+				c, _ := app.cache.(*mocks.MockCache)
+
+				c.EXPECT().Get(gomock.Any(), gomock.Any(), gomock.Any()).Times(1).Return(nil)
+				c.EXPECT().Set(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Times(1).Return(nil)
+
+				a.EXPECT().IsAppTitleUnique(gomock.Any(), "ABC_DEF_TEST").Times(1).
+					Return(int64(1), nil)
+
+				o, _ := app.groupRepo.(*mocks.MockGroupRepository)
 				o.EXPECT().
 					LoadGroups(gomock.Any(), gomock.Any()).Times(1).
 					Return([]*datastore.Group{group}, nil)
