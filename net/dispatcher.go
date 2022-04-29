@@ -45,6 +45,7 @@ func (d *Dispatcher) SendRequest(endpoint, method string, jsonData json.RawMessa
 
 	req.Header.Set(signatureHeader, hmac)
 	req.Header.Add("Content-Type", "application/json")
+	req.Header.Add("Accept", "application/json")
 	req.Header.Add("User-Agent", defaultUserAgent())
 	if g.Config.ReplayAttacks {
 		if util.IsStringEmpty(timestamp) {
