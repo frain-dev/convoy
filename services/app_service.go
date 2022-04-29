@@ -36,6 +36,19 @@ func (a *AppService) CreateApp(ctx context.Context, newApp *models.Application, 
 		return nil, NewServiceError(http.StatusBadRequest, err)
 	}
 
+	apps, _, err := a.LoadApplicationsPaged(ctx, "", newApp.AppName, datastore.Pageable{
+		Page:    1,
+		PerPage: 100,
+		Sort:    1,
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	if len(apps) > 0 {
+		return nil, NewServiceError(http.StatusBadRequest, fmt.Errorf("an app with the the name %s already exists", newApp.AppName))
+	}
+
 	app := &datastore.Application{
 		UID:             uuid.New().String(),
 		GroupID:         g.UID,
@@ -49,7 +62,7 @@ func (a *AppService) CreateApp(ctx context.Context, newApp *models.Application, 
 		DocumentStatus:  datastore.ActiveDocumentStatus,
 	}
 
-	err := a.appRepo.CreateApplication(ctx, app)
+	err = a.appRepo.CreateApplication(ctx, app)
 	if err != nil {
 		log.WithError(err).Error("failed to create application")
 		return nil, NewServiceError(http.StatusBadRequest, errors.New("failed to create application"))
