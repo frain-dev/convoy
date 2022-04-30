@@ -8,7 +8,7 @@ import (
 	"testing"
 
 	"github.com/frain-dev/convoy/auth/realm_chain"
-	mcache "github.com/frain-dev/convoy/cache/memory"
+	ncache "github.com/frain-dev/convoy/cache/noop"
 	"github.com/frain-dev/convoy/config"
 	"github.com/frain-dev/convoy/datastore"
 	mongoStore "github.com/frain-dev/convoy/datastore/mongo"
@@ -17,14 +17,7 @@ import (
 	"github.com/frain-dev/convoy/queue"
 	redisqueue "github.com/frain-dev/convoy/queue/redis"
 	"github.com/frain-dev/convoy/tracer"
-	. "github.com/onsi/ginkgo/v2"
-	. "github.com/onsi/gomega"
 )
-
-func TestServer(t *testing.T) {
-	RegisterFailHandler(Fail)
-	RunSpecs(t, "Server Suite")
-}
 
 // TEST HELPERS.
 func getMongoDSN() string {
@@ -91,7 +84,7 @@ func buildApplication() *applicationHandler {
 	eventQueue := redisqueue.NewQueue(qOpts)
 	createEventQueue := redisqueue.NewQueue(cOpts)
 	logger := logger.NewNoopLogger()
-	cache := mcache.NewMemoryCache()
+	cache := ncache.NewNoopCache()
 	limiter := nooplimiter.NewNoopLimiter()
 	tracer = nil
 

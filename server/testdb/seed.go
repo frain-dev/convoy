@@ -60,7 +60,27 @@ func SeedMultipleApplications(db datastore.DatabaseClient, g *datastore.Group, c
 	return nil
 }
 
-func SeedEndpoint(db datastore.DatabaseClient, app *datastore.Application, count int) (*datastore.Application, error) {
+func SeedEndpoint(db datastore.DatabaseClient, app *datastore.Application) (*datastore.Application, error) {
+	endpoint := &datastore.Endpoint{
+		UID:            uuid.New().String(),
+		Events:         []string{"*"},
+		Status:         datastore.ActiveEndpointStatus,
+		DocumentStatus: datastore.ActiveDocumentStatus,
+	}
+
+	app.Endpoints = append(app.Endpoints, *endpoint)
+
+	// Seed Data.
+	appRepo := db.AppRepo()
+	err := appRepo.UpdateApplication(context.TODO(), app)
+	if err != nil {
+		return &datastore.Application{}, err
+	}
+
+	return app, nil
+}
+
+func SeedMultipleEndpoints(db datastore.DatabaseClient, app *datastore.Application, count int) (*datastore.Application, error) {
 	for i := 0; i < count; i++ {
 		endpoint := &datastore.Endpoint{
 			UID:            uuid.New().String(),
@@ -80,22 +100,6 @@ func SeedEndpoint(db datastore.DatabaseClient, app *datastore.Application, count
 	}
 
 	return app, nil
-}
-
-// PurgeDB
-func PurgeDB(db datastore.DatabaseClient) {
-	client := db.Client().(*mongo.Database)
-	appCollection := client.Collection(mongoStore.AppCollections, nil)
-	appCollection.Drop(context.TODO())
-
-	groupCollection := client.Collection(mongoStore.GroupCollection, nil)
-	groupCollection.Drop(context.TODO())
-
-	eventCollection := client.Collection(mongoStore.EventCollection, nil)
-	eventCollection.Drop(context.TODO())
-
-	eventDeliveryCollection := client.Collection(mongoStore.EventDeliveryCollection, nil)
-	eventDeliveryCollection.Drop(context.TODO())
 }
 
 // seed default group
@@ -133,4 +137,21 @@ func SeedDefaultGroup(db datastore.DatabaseClient) (*datastore.Group, error) {
 	}
 
 	return defaultGroup, nil
+}
+
+// PurgeDB is run after every test run and it's used to truncate the DB to have
+// a clean slate in the next run.
+func PurgeDB(db datastore.DatabaseClient) {
+	client := db.Client().(*mongo.Database)
+	appCollection := client.Collection(mongoStore.AppCollections, nil)
+	appCollection.Drop(context.TODO())
+
+	groupCollection := client.Collection(mongoStore.GroupCollection, nil)
+	groupCollection.Drop(context.TODO())
+
+	eventCollection := client.Collection(mongoStore.EventCollection, nil)
+	eventCollection.Drop(context.TODO())
+
+	eventDeliveryCollection := client.Collection(mongoStore.EventDeliveryCollection, nil)
+	eventDeliveryCollection.Drop(context.TODO())
 }

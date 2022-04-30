@@ -1,184 +1,50 @@
+//go:build integration
+// +build integration
+
 package server
 
 import (
-	"context"
-	"encoding/json"
-	"fmt"
-	"io/ioutil"
 	"net/http"
-	"net/http/httptest"
-	"strings"
+	"testing"
 
 	"github.com/frain-dev/convoy/config"
 	"github.com/frain-dev/convoy/datastore"
 	"github.com/frain-dev/convoy/server/testdb"
-	. "github.com/onsi/ginkgo/v2"
-	. "github.com/onsi/gomega"
+	"github.com/stretchr/testify/require"
+	"github.com/stretchr/testify/suite"
 )
 
-var _ = Describe("Events API", func() {
-	var db datastore.DatabaseClient
-	var router http.Handler
-	var convoyApp *applicationHandler
+type EventIntegrationTestSuite struct {
+	suite.Suite
+	DB           datastore.DatabaseClient
+	Router       http.Handler
+	ConvoyApp    *applicationHandler
+	DefaultGroup *datastore.Group
+}
 
-	url := "/api/v1/events"
+func (s *EventIntegrationTestSuite) SetupSuite() {
+	s.DB = getDB()
+	s.ConvoyApp = buildApplication()
+	s.Router = buildRoutes(s.ConvoyApp)
+}
 
-	// Load Configuration before each test.
-	BeforeEach(func() {
-		convoyApp = buildApplication()
-		router = buildRoutes(convoyApp)
+func (s *EventIntegrationTestSuite) SetupTest() {
+	testdb.PurgeDB(s.DB)
 
-		err := config.LoadConfig("testdata/Auth_Config/full-convoy.json")
-		Expect(err).ShouldNot(HaveOccurred())
+	// Setup Default Group.
+	s.DefaultGroup, _ = testdb.SeedDefaultGroup(s.DB)
 
-		db = getDB()
-		testdb.PurgeDB(db)
-	})
+	// Setup Config.
+	err := config.LoadConfig("./testdata/Auth_Config/full-convoy.json")
+	require.NoError(s.T(), err)
 
-	AfterEach(func() {
-		// purgeDB
-		//db = getDB()
-		//testdb.PurgeDB(db)
-	})
+	initRealmChain(s.T(), s.DB.APIRepo())
+}
 
-	Context("With application", func() {
-		Context("With no endpoint", func() {})
-		Context("With a single endpoint", func() {
-			var app *datastore.Application
-			var group *datastore.Group
+func (s *EventIntegrationTestSuite) TearDownTest() {
+	testdb.PurgeDB(s.DB)
+}
 
-			BeforeEach(func() {
-				// Arrange - Data
-				group, _ = testdb.SeedDefaultGroup(db)
-				app, _ = testdb.SeedApplication(db, group, "", false)
-				_, _ = testdb.SeedEndpoint(db, app, 1)
-			})
-
-			It("Creates an event", func() {
-				// Act.
-				plainBody := fmt.Sprintf(`
-					{
-						"app_id": "%s",
-						"event_type": "payment.created",
-						"data": {
-							"event": "payment.created",
-							"data": {}
-						}
-					}
-				`, app.UID)
-
-				body := strings.NewReader(plainBody)
-				w := httptest.NewRecorder()
-				req := httptest.NewRequest(http.MethodPost, url, body)
-				req.SetBasicAuth("test", "test")
-				req.Header.Add("Content-Type", "application/json")
-
-				router.ServeHTTP(w, req)
-				resp := w.Result()
-
-				// Assert.
-				// TODO(subomi): Verify payload.
-				Expect(resp).To(HaveHTTPStatus(http.StatusCreated))
-
-				By("Should create one endpoint")
-			})
-		})
-
-		Context("With multiple endpoints", func() {
-			var app *datastore.Application
-			var group *datastore.Group
-
-			BeforeEach(func() {
-				// Arrange - Data.
-				group, _ = testdb.SeedDefaultGroup(db)
-				app, _ = testdb.SeedApplication(db, group, "", false)
-				_, _ = testdb.SeedEndpoint(db, app, 2)
-			})
-
-			It("Creates an event", func() {
-				// Act.
-				plainBody := fmt.Sprintf(`
-					{
-						"app_id": "%s",
-						"event_type": "payment.created",
-						"data": {
-							"event": "payment.created",
-							"data": {}
-						}
-					}
-				`, app.UID)
-
-				body := strings.NewReader(plainBody)
-				w := httptest.NewRecorder()
-				req := httptest.NewRequest(http.MethodPost, url, body)
-				req.SetBasicAuth("test", "test")
-				req.Header.Add("Content-Type", "application/json")
-
-				router.ServeHTTP(w, req)
-				resp := w.Result()
-
-				// Assert
-				Expect(resp).To(HaveHTTPStatus(http.StatusOK))
-
-				By("Should create two event deliveries")
-				respBody, err := ioutil.ReadAll(resp.Body)
-				Expect(err).ShouldNot(HaveOccurred())
-
-				var sR serverResponse
-				err = json.Unmarshal(respBody, &sR)
-
-				var event datastore.Event
-				err = json.Unmarshal(sR.Data, &event)
-				Expect(err).ShouldNot(HaveOccurred())
-
-				eventDeliveryRepo := db.EventDeliveryRepo()
-				results, err := eventDeliveryRepo.FindEventDeliveriesByEventID(context.Background(), event.UID)
-				fmt.Fprintf(GinkgoWriter, "%+v", results)
-				Expect(err).ShouldNot(HaveOccurred())
-				Expect(len(results)).Should(Equal(2))
-			})
-		})
-	})
-
-	Context("With a disabled application", func() {
-		var app *datastore.Application
-		var group *datastore.Group
-
-		BeforeEach(func() {
-			// Arrange - Data
-			group, _ = testdb.SeedDefaultGroup(db)
-			app, _ = testdb.SeedApplication(db, group, "", true)
-			_, _ = testdb.SeedEndpoint(db, app, 1)
-		})
-
-		It("Creates an event", func() {
-			// Act.
-			plainBody := fmt.Sprintf(`
-				{
-					"app_id": "%s",
-					"event_type": "payment.created",
-					"data": {
-						"event": "payment.created",
-						"data": {}
-					}
-				}
-			`, app.UID)
-
-			body := strings.NewReader(plainBody)
-			w := httptest.NewRecorder()
-			req := httptest.NewRequest(http.MethodPost, url, body)
-			req.SetBasicAuth("test", "test")
-			req.Header.Add("Content-Type", "application/json")
-
-			router.ServeHTTP(w, req)
-			resp := w.Result()
-
-			// Assert
-			Expect(resp).To(HaveHTTPStatus(http.StatusCreated))
-		})
-		It("Should nor create an event delivery", func() {})
-	})
-
-	Context("With bad application", func() {
-	})
-})
+func TestEventIntegrationSuiteTest(t *testing.T) {
+	suite.Run(t, new(EventIntegrationTestSuite))
+}
