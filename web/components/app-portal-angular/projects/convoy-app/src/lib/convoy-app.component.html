@@ -109,7 +109,7 @@
 								<mat-date-range-picker #eventsFilterPicker [disabled]="false"></mat-date-range-picker>
 								<svg-component [height]="5" [width]="12" [styles]="'margin-bottom__2px'" [id]="'angle-arrow-down'"></svg-component>
 							</button>
-							<div [ngClass]="{ show: showEventFilterCalendar }" class="dropdown__menu large">
+							<div [ngClass]="{ show: showEventFilterCalendar }" class="dropdown__menu">
 								<ul>
 									<li
 										[ngClass]="{ active: selectedEventsDateOption == dateOption }"
@@ -178,7 +178,7 @@
 								<mat-date-range-picker #eventDeliveriesFilterPicker [disabled]="false"></mat-date-range-picker>
 								<svg-component [height]="5" [width]="12" [styles]="'margin-bottom__2px'" [id]="'angle-arrow-down'"></svg-component>
 							</button>
-							<div [ngClass]="{ show: showEventFilterCalendar }" class="dropdown__menu large">
+							<div [ngClass]="{ show: showEventFilterCalendar }" class="dropdown__menu">
 								<ul>
 									<li
 										[ngClass]="{ active: selectedEventsDelDateOption == dateOption }"
@@ -410,18 +410,16 @@
 									<td>
 										<div>
 											<button
-												[disabled]="event.status === 'Success' || event.status === 'Scheduled'"
-												[class]="'button__retry button--has-icon icon-left ' + (event.status === 'Success' || event.status === 'Scheduled' ? 'disabled' : '')"
+												[disabled]="event.status !== 'Failure' && event.status !== 'Success'"
+												[class]="'button__retry button--has-icon icon-left'"
 												(click)="
-													retryEvent({
-														e: $event,
-														index: this.index,
-														eventDeliveryId: event.uid
-													})
+													event.status === 'Success'
+														? forceRetryEvent({ e: $event, index: this.index, eventDeliveryId: event.uid })
+														: retryEvent({ e: $event, index: this.index, eventDeliveryId: event.uid })
 												"
 											>
 												<svg-component [height]="18" [width]="24" [styles]="'margin-top__2px'" [id]="'retry-icon'" style="margin-bottom: -4px"></svg-component>
-												Retry
+												{{ event.status === 'Success' ? 'Force Retry' : 'Retry' }}
 											</button>
 										</div>
 									</td>
