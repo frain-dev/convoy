@@ -762,6 +762,7 @@ func TestAppService_UpdateAppEndpoint(t *testing.T) {
 			args: args{
 				ctx: ctx,
 				e: models.Endpoint{
+					Secret:            "newly-generated-secret",
 					Events:            []string{"payment.created", "payment.success"},
 					URL:               "https://fb.com",
 					RateLimit:         10000,
@@ -779,6 +780,7 @@ func TestAppService_UpdateAppEndpoint(t *testing.T) {
 						{
 							UID:       "endpoint2",
 							TargetURL: "https://netflix.com",
+							Secret:    "old-assigned-secret",
 						},
 					},
 				},
@@ -789,11 +791,13 @@ func TestAppService_UpdateAppEndpoint(t *testing.T) {
 					{
 						UID:       "endpoint1",
 						TargetURL: "https://google.com",
+						Secret:    "",
 					},
 					{
 						UID:               "endpoint2",
 						Events:            []string{"payment.created", "payment.success"},
 						TargetURL:         "https://fb.com",
+						Secret:            "newly-generated-secret",
 						RateLimit:         10000,
 						RateLimitDuration: "1m0s",
 						Status:            datastore.ActiveEndpointStatus,
@@ -802,6 +806,7 @@ func TestAppService_UpdateAppEndpoint(t *testing.T) {
 				},
 			},
 			wantEndpoint: &datastore.Endpoint{
+				Secret:            "newly-generated-secret",
 				UID:               "endpoint2",
 				Events:            []string{"payment.created", "payment.success"},
 				TargetURL:         "https://fb.com",
