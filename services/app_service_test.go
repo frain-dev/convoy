@@ -84,8 +84,8 @@ func TestAppService_CreateApp(t *testing.T) {
 					CreateApplication(gomock.Any(), gomock.Any()).Times(1).
 					Return(nil)
 
-				a.EXPECT().IsAppTitleUnique(gomock.Any(), "test_app").Times(1).
-					Return(int64(0), nil)
+				a.EXPECT().IsAppTitleUnique(gomock.Any(), "test_app", group.UID).Times(1).
+					Return(true, nil)
 
 				c, _ := app.cache.(*mocks.MockCache)
 				c.EXPECT().Set(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any())
@@ -119,8 +119,8 @@ func TestAppService_CreateApp(t *testing.T) {
 					CreateApplication(gomock.Any(), gomock.Any()).Times(1).
 					Return(errors.New("failed"))
 
-				a.EXPECT().IsAppTitleUnique(gomock.Any(), "test_app").Times(1).
-					Return(int64(0), nil)
+				a.EXPECT().IsAppTitleUnique(gomock.Any(), "test_app", group.UID).Times(1).
+					Return(true, nil)
 			},
 			wantErr:     true,
 			wantErrCode: http.StatusBadRequest,
@@ -140,8 +140,8 @@ func TestAppService_CreateApp(t *testing.T) {
 			},
 			dbFn: func(app *AppService) {
 				a, _ := app.appRepo.(*mocks.MockApplicationRepository)
-				a.EXPECT().IsAppTitleUnique(gomock.Any(), "test_app").Times(1).
-					Return(int64(0), errors.New("failed"))
+				a.EXPECT().IsAppTitleUnique(gomock.Any(), "test_app", group.UID).Times(1).
+					Return(false, errors.New("failed"))
 			},
 			wantErr:     true,
 			wantErrCode: http.StatusBadRequest,
@@ -161,8 +161,8 @@ func TestAppService_CreateApp(t *testing.T) {
 			},
 			dbFn: func(app *AppService) {
 				a, _ := app.appRepo.(*mocks.MockApplicationRepository)
-				a.EXPECT().IsAppTitleUnique(gomock.Any(), "test_app").Times(1).
-					Return(int64(1), nil)
+				a.EXPECT().IsAppTitleUnique(gomock.Any(), "test_app", group.UID).Times(1).
+					Return(false, nil)
 			},
 			wantErr:     true,
 			wantErrCode: http.StatusBadRequest,

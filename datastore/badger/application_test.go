@@ -289,13 +289,13 @@ func Test_IsAppTitleUnique(t *testing.T) {
 
 	require.NoError(t, appRepo.CreateApplication(context.Background(), app))
 
-	count, err := appRepo.IsAppTitleUnique(context.Background(), app.Title)
+	unique, err := appRepo.IsAppTitleUnique(context.Background(), app.Title, newOrg.UID)
 	require.NoError(t, err)
-	require.Equal(t, int64(1), count)
+	require.Equal(t, false, unique)
 
-	count, err = appRepo.IsAppTitleUnique(context.Background(), "123")
+	unique, err = appRepo.IsAppTitleUnique(context.Background(), "123", newOrg.UID)
 	require.NoError(t, err)
-	require.Equal(t, int64(0), count)
+	require.Equal(t, true, unique)
 }
 
 func Test_UpdateApplication(t *testing.T) {

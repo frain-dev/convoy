@@ -95,9 +95,19 @@ func (a *appRepo) LoadApplicationsPaged(ctx context.Context, gid, q string, page
 	return apps, data, err
 }
 
-func (a *appRepo) IsAppTitleUnique(ctx context.Context, name string) (int64, error) {
-	count, err := a.db.Count(&datastore.Application{}, badgerhold.Where("Title").Eq(name))
-	return int64(count), err
+func (a *appRepo) IsAppTitleUnique(ctx context.Context, name string, groupID string) (bool, error) {
+	count, err := a.db.Count(
+		&datastore.Application{},
+		badgerhold.Where("Title").Eq(name).
+			And("GroupID").Eq(groupID).
+			And("DocumentStatus").Eq(datastore.ActiveDocumentStatus),
+	)
+
+	if err != nil {
+		return false, err
+	}
+
+	return count == 0, err
 }
 
 func (a *appRepo) LoadApplicationsPagedByGroupId(ctx context.Context, gid string, pageable datastore.Pageable) ([]datastore.Application, datastore.PaginationData, error) {

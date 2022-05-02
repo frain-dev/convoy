@@ -641,18 +641,18 @@ func (mr *MockApplicationRepositoryMockRecorder) FindApplicationEndpointByID(arg
 }
 
 // IsAppTitleUnique mocks base method.
-func (m *MockApplicationRepository) IsAppTitleUnique(ctx context.Context, name string) (int64, error) {
+func (m *MockApplicationRepository) IsAppTitleUnique(arg0 context.Context, arg1, arg2 string) (bool, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "IsAppTitleUnique", ctx, name)
-	ret0, _ := ret[0].(int64)
+	ret := m.ctrl.Call(m, "IsAppTitleUnique", arg0, arg1, arg2)
+	ret0, _ := ret[0].(bool)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // IsAppTitleUnique indicates an expected call of IsAppTitleUnique.
-func (mr *MockApplicationRepositoryMockRecorder) IsAppTitleUnique(ctx, name interface{}) *gomock.Call {
+func (mr *MockApplicationRepositoryMockRecorder) IsAppTitleUnique(arg0, arg1, arg2 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "IsAppTitleUnique", reflect.TypeOf((*MockApplicationRepository)(nil).IsAppTitleUnique), ctx, name)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "IsAppTitleUnique", reflect.TypeOf((*MockApplicationRepository)(nil).IsAppTitleUnique), arg0, arg1, arg2)
 }
 
 // LoadApplicationsPaged mocks base method.

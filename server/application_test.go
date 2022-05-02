@@ -447,8 +447,8 @@ func TestApplicationHandler_CreateApp(t *testing.T) {
 					CreateApplication(gomock.Any(), gomock.Any()).Times(1).
 					Return(nil)
 
-				a.EXPECT().IsAppTitleUnique(gomock.Any(), "ABC_DEF_TEST").Times(1).
-					Return(int64(0), nil)
+				a.EXPECT().IsAppTitleUnique(gomock.Any(), "ABC_DEF_TEST", group.UID).Times(1).
+					Return(true, nil)
 
 				c.EXPECT().Set(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Times(1).Return(nil)
 
@@ -472,8 +472,8 @@ func TestApplicationHandler_CreateApp(t *testing.T) {
 				c.EXPECT().Get(gomock.Any(), gomock.Any(), gomock.Any()).Times(1).Return(nil)
 				c.EXPECT().Set(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Times(1).Return(nil)
 
-				a.EXPECT().IsAppTitleUnique(gomock.Any(), "ABC_DEF_TEST").Times(1).
-					Return(int64(0), errors.New("failed"))
+				a.EXPECT().IsAppTitleUnique(gomock.Any(), "ABC_DEF_TEST", group.UID).Times(1).
+					Return(true, errors.New("failed"))
 
 				o, _ := app.groupRepo.(*mocks.MockGroupRepository)
 				o.EXPECT().
@@ -494,8 +494,8 @@ func TestApplicationHandler_CreateApp(t *testing.T) {
 				c.EXPECT().Get(gomock.Any(), gomock.Any(), gomock.Any()).Times(1).Return(nil)
 				c.EXPECT().Set(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Times(1).Return(nil)
 
-				a.EXPECT().IsAppTitleUnique(gomock.Any(), "ABC_DEF_TEST").Times(1).
-					Return(int64(1), nil)
+				a.EXPECT().IsAppTitleUnique(gomock.Any(), "ABC_DEF_TEST", group.UID).Times(1).
+					Return(false, nil)
 
 				o, _ := app.groupRepo.(*mocks.MockGroupRepository)
 				o.EXPECT().

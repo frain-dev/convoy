@@ -36,13 +36,13 @@ func (a *AppService) CreateApp(ctx context.Context, newApp *models.Application, 
 		return nil, NewServiceError(http.StatusBadRequest, err)
 	}
 
-	count, err := a.appRepo.IsAppTitleUnique(ctx, newApp.AppName)
+	unique, err := a.appRepo.IsAppTitleUnique(ctx, newApp.AppName, g.UID)
 	if err != nil {
 		log.WithError(err).Error("failed to check if application name is unique")
 		return nil, NewServiceError(http.StatusBadRequest, errors.New("failed to check if application name is unique"))
 	}
 
-	if count > 0 {
+	if !unique {
 		return nil, NewServiceError(http.StatusBadRequest, fmt.Errorf("an app with the the name %s already exists", newApp.AppName))
 	}
 

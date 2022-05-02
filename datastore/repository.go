@@ -49,7 +49,7 @@ type GroupRepository interface {
 type ApplicationRepository interface {
 	CreateApplication(context.Context, *Application) error
 	LoadApplicationsPaged(context.Context, string, string, Pageable) ([]Application, PaginationData, error)
-	IsAppTitleUnique(ctx context.Context, name string) (int64, error)
+	IsAppTitleUnique(context.Context, string, string) (bool, error)
 	FindApplicationByID(context.Context, string) (*Application, error)
 	UpdateApplication(context.Context, *Application) error
 	DeleteApplication(context.Context, *Application) error
