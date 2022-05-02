@@ -85,9 +85,10 @@ func Test_IsAppTitleUnique(t *testing.T) {
 	require.NoError(t, groupRepo.CreateGroup(context.Background(), newOrg))
 
 	app := &datastore.Application{
-		Title:   "Application_1",
-		GroupID: newOrg.UID,
-		UID:     uuid.NewString(),
+		Title:          "Application_1",
+		GroupID:        newOrg.UID,
+		UID:            uuid.NewString(),
+		DocumentStatus: datastore.ActiveDocumentStatus,
 	}
 
 	require.NoError(t, appRepo.CreateApplication(context.Background(), app))
