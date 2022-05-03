@@ -8,6 +8,8 @@ import (
 	"errors"
 	"testing"
 
+	"go.mongodb.org/mongo-driver/mongo"
+
 	"github.com/frain-dev/convoy/datastore"
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/require"
@@ -62,12 +64,25 @@ func Test_CreateApplication(t *testing.T) {
 	require.NoError(t, groupRepo.CreateGroup(context.Background(), newOrg))
 
 	app := &datastore.Application{
-		Title:   "Next application name",
-		GroupID: newOrg.UID,
-		UID:     uuid.NewString(),
+		Title:          "Next application name",
+		GroupID:        newOrg.UID,
+		UID:            uuid.NewString(),
+		DocumentStatus: datastore.ActiveDocumentStatus,
 	}
 
 	require.NoError(t, appRepo.CreateApplication(context.Background(), app))
+
+	app2 := &datastore.Application{
+		Title:          "Next application name",
+		GroupID:        newOrg.UID,
+		UID:            uuid.NewString(),
+		DocumentStatus: datastore.ActiveDocumentStatus,
+	}
+
+	err := appRepo.CreateApplication(context.Background(), app2)
+	require.Error(t, err)
+	require.True(t, true, mongo.IsDuplicateKeyError(err))
+	require.Contains(t, err.Error(), "title")
 }
 
 func Test_IsAppTitleUnique(t *testing.T) {
