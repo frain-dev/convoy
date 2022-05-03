@@ -469,7 +469,7 @@ func TestApplicationHandler_CreateApp(t *testing.T) {
 				c.EXPECT().Get(gomock.Any(), gomock.Any(), gomock.Any()).Times(1).Return(nil)
 				c.EXPECT().Set(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Times(1).Return(nil)
 
-				a.EXPECT().UpdateApplication(gomock.Any(), gomock.Any()).Times(1).Return(datastore.ErrDuplicateAppName)
+				a.EXPECT().CreateApplication(gomock.Any(), gomock.Any()).Times(1).Return(datastore.ErrDuplicateAppName)
 				o, _ := app.groupRepo.(*mocks.MockGroupRepository)
 				o.EXPECT().
 					LoadGroups(gomock.Any(), gomock.Any()).Times(1).
@@ -701,20 +701,19 @@ func TestApplicationHandler_UpdateApp(t *testing.T) {
 					Return([]*datastore.Group{group}, nil)
 			},
 		},
-
 		{
 			name:       "should_error_for_duplicate_app_name",
 			cfgPath:    "./testdata/Auth_Config/no-auth-convoy.json",
 			method:     http.MethodPut,
-			statusCode: http.StatusAccepted,
+			statusCode: http.StatusBadRequest,
 			appId:      appId,
-			body:       bodyReader,
+			body:       strings.NewReader(`{"name": "ABC_DEF_TEST_UPDATE"}`),
 			dbFn: func(app *applicationHandler) {
 				a, _ := app.appRepo.(*mocks.MockApplicationRepository)
 				c, _ := app.cache.(*mocks.MockCache)
 
 				c.EXPECT().Get(gomock.Any(), gomock.Any(), gomock.Any()).Times(2).Return(nil)
-				c.EXPECT().Set(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Times(3).Return(nil)
+				c.EXPECT().Set(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Times(2).Return(nil)
 
 				a.EXPECT().
 					UpdateApplication(gomock.Any(), gomock.Any()).Times(1).

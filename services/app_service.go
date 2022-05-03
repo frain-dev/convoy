@@ -53,7 +53,7 @@ func (a *AppService) CreateApp(ctx context.Context, newApp *models.Application, 
 	if err != nil {
 		msg := "failed to create application"
 		if err == datastore.ErrDuplicateAppName {
-			msg = fmt.Sprintf("%v:%s", datastore.ErrDuplicateAppName, app.Title)
+			msg = fmt.Sprintf("%v: %s", datastore.ErrDuplicateAppName, app.Title)
 		}
 		log.WithError(err).Error(msg)
 		return nil, NewServiceError(http.StatusBadRequest, errors.New(msg))

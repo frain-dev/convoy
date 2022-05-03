@@ -484,12 +484,12 @@ func TestAppService_UpdateApplication(t *testing.T) {
 			dbFn: func(app *AppService) {
 				a, _ := app.appRepo.(*mocks.MockApplicationRepository)
 				a.EXPECT().
-					CreateApplication(gomock.Any(), gomock.Any()).Times(1).
+					UpdateApplication(gomock.Any(), gomock.Any()).Times(1).
 					Return(datastore.ErrDuplicateAppName)
 			},
 			wantErr:     true,
 			wantErrCode: http.StatusBadRequest,
-			wantErrMsg:  "an application with this name exists: test_app",
+			wantErrMsg:  "an application with this name exists: app_testing",
 		},
 	}
 	for _, tt := range tests {
