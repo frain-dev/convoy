@@ -23,7 +23,7 @@ func NewApplicationRepo(db *badgerhold.Store) datastore.ApplicationRepository {
 }
 
 func (a *appRepo) CreateApplication(ctx context.Context, app *datastore.Application) error {
-	unique, err := a.isAppTitleUnique(ctx, app.Title, app.GroupID)
+	unique, err := a.isAppTitleUnique(ctx, app)
 	if err != nil {
 		return fmt.Errorf("failed to check if application name is unique: %v", err)
 	}
@@ -36,7 +36,7 @@ func (a *appRepo) CreateApplication(ctx context.Context, app *datastore.Applicat
 }
 
 func (a *appRepo) UpdateApplication(ctx context.Context, app *datastore.Application) error {
-	unique, err := a.isAppTitleUnique(ctx, app.Title, app.GroupID)
+	unique, err := a.isAppTitleUnique(ctx, app)
 	if err != nil {
 		return fmt.Errorf("failed to check if application name is unique: %v", err)
 	}
@@ -113,11 +113,12 @@ func (a *appRepo) LoadApplicationsPaged(ctx context.Context, gid, q string, page
 	return apps, data, err
 }
 
-func (a *appRepo) isAppTitleUnique(ctx context.Context, name string, groupID string) (bool, error) {
+func (a *appRepo) isAppTitleUnique(ctx context.Context, app *datastore.Application) (bool, error) {
 	count, err := a.db.Count(
 		&datastore.Application{},
-		badgerhold.Where("Title").Eq(name).
-			And("GroupID").Eq(groupID).
+		badgerhold.Where("Title").Eq(app.Title).
+			And("UID").Ne(app.UID).
+			And("GroupID").Eq(app.GroupID).
 			And("DocumentStatus").Eq(datastore.ActiveDocumentStatus),
 	)
 

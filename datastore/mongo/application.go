@@ -29,7 +29,7 @@ func NewApplicationRepo(db *mongo.Database) datastore.ApplicationRepository {
 }
 
 func (db *appRepo) CreateApplication(ctx context.Context, app *datastore.Application) error {
-	unique, err := db.isAppTitleUnique(ctx, app.Title, app.GroupID)
+	unique, err := db.isAppTitleUnique(ctx, app)
 	if err != nil {
 		return fmt.Errorf("failed to check if application name is unique: %v", err)
 	}
@@ -78,10 +78,11 @@ func (db *appRepo) LoadApplicationsPaged(ctx context.Context, groupID, q string,
 	return apps, datastore.PaginationData(paginatedData.Pagination), nil
 }
 
-func (db *appRepo) isAppTitleUnique(ctx context.Context, name, groupID string) (bool, error) {
+func (db *appRepo) isAppTitleUnique(ctx context.Context, app *datastore.Application) (bool, error) {
 	f := bson.M{
-		"title":           name,
-		"group_id":        groupID,
+		"uid":             bson.M{"$ne": app.UID},
+		"title":           app.Title,
+		"group_id":        app.GroupID,
 		"document_status": datastore.ActiveDocumentStatus,
 	}
 
@@ -238,7 +239,7 @@ func findEndpoint(endpoints *[]datastore.Endpoint, id string) (*datastore.Endpoi
 }
 
 func (db *appRepo) UpdateApplication(ctx context.Context, app *datastore.Application) error {
-	unique, err := db.isAppTitleUnique(ctx, app.Title, app.GroupID)
+	unique, err := db.isAppTitleUnique(ctx, app)
 	if err != nil {
 		return fmt.Errorf("failed to check if application name is unique: %v", err)
 	}
