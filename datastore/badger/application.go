@@ -23,10 +23,28 @@ func NewApplicationRepo(db *badgerhold.Store) datastore.ApplicationRepository {
 }
 
 func (a *appRepo) CreateApplication(ctx context.Context, app *datastore.Application) error {
+	unique, err := a.isAppTitleUnique(ctx, app.Title, app.GroupID)
+	if err != nil {
+		return fmt.Errorf("failed to check if application name is unique: %v", err)
+	}
+
+	if !unique {
+		return datastore.ErrDuplicateAppName
+	}
+
 	return a.db.Upsert(app.UID, app)
 }
 
 func (a *appRepo) UpdateApplication(ctx context.Context, app *datastore.Application) error {
+	unique, err := a.isAppTitleUnique(ctx, app.Title, app.GroupID)
+	if err != nil {
+		return fmt.Errorf("failed to check if application name is unique: %v", err)
+	}
+
+	if !unique {
+		return datastore.ErrDuplicateAppName
+	}
+
 	return a.db.Update(app.UID, app)
 }
 
@@ -95,7 +113,7 @@ func (a *appRepo) LoadApplicationsPaged(ctx context.Context, gid, q string, page
 	return apps, data, err
 }
 
-func (a *appRepo) IsAppTitleUnique(ctx context.Context, name string, groupID string) (bool, error) {
+func (a *appRepo) isAppTitleUnique(ctx context.Context, name string, groupID string) (bool, error) {
 	count, err := a.db.Count(
 		&datastore.Application{},
 		badgerhold.Where("Title").Eq(name).

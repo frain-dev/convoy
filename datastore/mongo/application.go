@@ -3,6 +3,7 @@ package mongo
 import (
 	"context"
 	"errors"
+	"fmt"
 	"time"
 
 	"github.com/frain-dev/convoy/datastore"
@@ -27,12 +28,18 @@ func NewApplicationRepo(db *mongo.Database) datastore.ApplicationRepository {
 	}
 }
 
-func (db *appRepo) CreateApplication(ctx context.Context,
-	app *datastore.Application) error {
+func (db *appRepo) CreateApplication(ctx context.Context, app *datastore.Application) error {
+	unique, err := db.isAppTitleUnique(ctx, app.Title, app.GroupID)
+	if err != nil {
+		return fmt.Errorf("failed to check if application name is unique: %v", err)
+	}
+
+	if !unique {
+		return datastore.ErrDuplicateAppName
+	}
 
 	app.ID = primitive.NewObjectID()
-
-	_, err := db.client.InsertOne(ctx, app)
+	_, err = db.client.InsertOne(ctx, app)
 	return err
 }
 
@@ -71,7 +78,7 @@ func (db *appRepo) LoadApplicationsPaged(ctx context.Context, groupID, q string,
 	return apps, datastore.PaginationData(paginatedData.Pagination), nil
 }
 
-func (db *appRepo) IsAppTitleUnique(ctx context.Context, name, groupID string) (bool, error) {
+func (db *appRepo) isAppTitleUnique(ctx context.Context, name, groupID string) (bool, error) {
 	f := bson.M{
 		"title":           name,
 		"group_id":        groupID,
@@ -230,8 +237,15 @@ func findEndpoint(endpoints *[]datastore.Endpoint, id string) (*datastore.Endpoi
 	return nil, datastore.ErrEndpointNotFound
 }
 
-func (db *appRepo) UpdateApplication(ctx context.Context,
-	app *datastore.Application) error {
+func (db *appRepo) UpdateApplication(ctx context.Context, app *datastore.Application) error {
+	unique, err := db.isAppTitleUnique(ctx, app.Title, app.GroupID)
+	if err != nil {
+		return fmt.Errorf("failed to check if application name is unique: %v", err)
+	}
+
+	if !unique {
+		return datastore.ErrDuplicateAppName
+	}
 
 	app.UpdatedAt = primitive.NewDateTimeFromTime(time.Now())
 
@@ -245,7 +259,7 @@ func (db *appRepo) UpdateApplication(ctx context.Context,
 		primitive.E{Key: "is_disabled", Value: app.IsDisabled},
 	}}}
 
-	_, err := db.client.UpdateOne(ctx, filter, update)
+	_, err = db.client.UpdateOne(ctx, filter, update)
 	return err
 }
 
