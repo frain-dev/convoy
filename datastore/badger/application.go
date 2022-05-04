@@ -23,26 +23,26 @@ func NewApplicationRepo(db *badgerhold.Store) datastore.ApplicationRepository {
 }
 
 func (a *appRepo) CreateApplication(ctx context.Context, app *datastore.Application) error {
-	unique, err := a.isAppTitleUnique(ctx, app)
+	err := a.assertUniqueAppTitle(ctx, app)
 	if err != nil {
-		return fmt.Errorf("failed to check if application name is unique: %v", err)
-	}
+		if errors.Is(err, datastore.ErrDuplicateAppName) {
+			return err
+		}
 
-	if !unique {
-		return datastore.ErrDuplicateAppName
+		return fmt.Errorf("failed to check if application name is unique: %v", err)
 	}
 
 	return a.db.Upsert(app.UID, app)
 }
 
 func (a *appRepo) UpdateApplication(ctx context.Context, app *datastore.Application) error {
-	unique, err := a.isAppTitleUnique(ctx, app)
+	err := a.assertUniqueAppTitle(ctx, app)
 	if err != nil {
-		return fmt.Errorf("failed to check if application name is unique: %v", err)
-	}
+		if errors.Is(err, datastore.ErrDuplicateAppName) {
+			return err
+		}
 
-	if !unique {
-		return datastore.ErrDuplicateAppName
+		return fmt.Errorf("failed to check if application name is unique: %v", err)
 	}
 
 	return a.db.Update(app.UID, app)
@@ -113,7 +113,7 @@ func (a *appRepo) LoadApplicationsPaged(ctx context.Context, gid, q string, page
 	return apps, data, err
 }
 
-func (a *appRepo) isAppTitleUnique(ctx context.Context, app *datastore.Application) (bool, error) {
+func (a *appRepo) assertUniqueAppTitle(ctx context.Context, app *datastore.Application) error {
 	count, err := a.db.Count(
 		&datastore.Application{},
 		badgerhold.Where("Title").Eq(app.Title).
@@ -123,10 +123,14 @@ func (a *appRepo) isAppTitleUnique(ctx context.Context, app *datastore.Applicati
 	)
 
 	if err != nil {
-		return false, err
+		return err
 	}
 
-	return count == 0, err
+	if count != 0 {
+		return datastore.ErrDuplicateAppName
+	}
+
+	return nil
 }
 
 func (a *appRepo) LoadApplicationsPagedByGroupId(ctx context.Context, gid string, pageable datastore.Pageable) ([]datastore.Application, datastore.PaginationData, error) {

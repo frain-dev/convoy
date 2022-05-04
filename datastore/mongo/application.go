@@ -29,13 +29,13 @@ func NewApplicationRepo(db *mongo.Database) datastore.ApplicationRepository {
 }
 
 func (db *appRepo) CreateApplication(ctx context.Context, app *datastore.Application) error {
-	unique, err := db.isAppTitleUnique(ctx, app)
+	err := db.assertUniqueAppTitle(ctx, app)
 	if err != nil {
-		return fmt.Errorf("failed to check if application name is unique: %v", err)
-	}
+		if errors.Is(err, datastore.ErrDuplicateAppName) {
+			return err
+		}
 
-	if !unique {
-		return datastore.ErrDuplicateAppName
+		return fmt.Errorf("failed to check if application name is unique: %v", err)
 	}
 
 	app.ID = primitive.NewObjectID()
@@ -78,7 +78,7 @@ func (db *appRepo) LoadApplicationsPaged(ctx context.Context, groupID, q string,
 	return apps, datastore.PaginationData(paginatedData.Pagination), nil
 }
 
-func (db *appRepo) isAppTitleUnique(ctx context.Context, app *datastore.Application) (bool, error) {
+func (db *appRepo) assertUniqueAppTitle(ctx context.Context, app *datastore.Application) error {
 	f := bson.M{
 		"uid":             bson.M{"$ne": app.UID},
 		"title":           app.Title,
@@ -88,10 +88,14 @@ func (db *appRepo) isAppTitleUnique(ctx context.Context, app *datastore.Applicat
 
 	count, err := db.client.CountDocuments(ctx, f)
 	if err != nil {
-		return false, err
+		return err
 	}
 
-	return count == 0, err
+	if count != 0 {
+		return datastore.ErrDuplicateAppName
+	}
+
+	return nil
 }
 
 func (db *appRepo) LoadApplicationsPagedByGroupId(ctx context.Context, groupID string, pageable datastore.Pageable) ([]datastore.Application, datastore.PaginationData, error) {
@@ -239,13 +243,13 @@ func findEndpoint(endpoints *[]datastore.Endpoint, id string) (*datastore.Endpoi
 }
 
 func (db *appRepo) UpdateApplication(ctx context.Context, app *datastore.Application) error {
-	unique, err := db.isAppTitleUnique(ctx, app)
+	err := db.assertUniqueAppTitle(ctx, app)
 	if err != nil {
-		return fmt.Errorf("failed to check if application name is unique: %v", err)
-	}
+		if errors.Is(err, datastore.ErrDuplicateAppName) {
+			return err
+		}
 
-	if !unique {
-		return datastore.ErrDuplicateAppName
+		return fmt.Errorf("failed to check if application name is unique: %v", err)
 	}
 
 	app.UpdatedAt = primitive.NewDateTimeFromTime(time.Now())
