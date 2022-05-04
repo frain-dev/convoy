@@ -45,6 +45,16 @@ func Test_UpdateApplication(t *testing.T) {
 	require.NoError(t, err)
 
 	require.Equal(t, newTitle, newApp.Title)
+
+	app2 := &datastore.Application{
+		Title:          newTitle,
+		GroupID:        newGroup.UID,
+		UID:            uuid.NewString(),
+		DocumentStatus: datastore.ActiveDocumentStatus,
+	}
+
+	err = appRepo.CreateApplication(context.Background(), app2)
+	require.Equal(t, datastore.ErrDuplicateAppName, err)
 }
 
 func Test_CreateApplication(t *testing.T) {
@@ -62,12 +72,23 @@ func Test_CreateApplication(t *testing.T) {
 	require.NoError(t, groupRepo.CreateGroup(context.Background(), newOrg))
 
 	app := &datastore.Application{
-		Title:   "Next application name",
-		GroupID: newOrg.UID,
-		UID:     uuid.NewString(),
+		Title:          "Next application name",
+		GroupID:        newOrg.UID,
+		UID:            uuid.NewString(),
+		DocumentStatus: datastore.ActiveDocumentStatus,
 	}
 
 	require.NoError(t, appRepo.CreateApplication(context.Background(), app))
+
+	app2 := &datastore.Application{
+		Title:          "Next application name",
+		GroupID:        newOrg.UID,
+		UID:            uuid.NewString(),
+		DocumentStatus: datastore.ActiveDocumentStatus,
+	}
+
+	err := appRepo.CreateApplication(context.Background(), app2)
+	require.Equal(t, datastore.ErrDuplicateAppName, err)
 }
 
 func Test_LoadApplicationsPaged(t *testing.T) {

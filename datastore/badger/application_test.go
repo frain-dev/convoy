@@ -252,19 +252,31 @@ func Test_CreateApplication(t *testing.T) {
 	appRepo := NewApplicationRepo(db)
 
 	newOrg := &datastore.Group{
-		Name: "Group 1",
-		UID:  uuid.NewString(),
+		Name:           "Group 1",
+		UID:            uuid.NewString(),
+		DocumentStatus: datastore.ActiveDocumentStatus,
 	}
 
 	require.NoError(t, groupRepo.CreateGroup(context.Background(), newOrg))
 
 	app := &datastore.Application{
-		Title:   "Application 1",
-		GroupID: newOrg.UID,
-		UID:     uuid.NewString(),
+		Title:          "Application 1",
+		GroupID:        newOrg.UID,
+		UID:            uuid.NewString(),
+		DocumentStatus: datastore.ActiveDocumentStatus,
 	}
 
 	require.NoError(t, appRepo.CreateApplication(context.Background(), app))
+
+	app2 := &datastore.Application{
+		Title:          "Application 1",
+		GroupID:        newOrg.UID,
+		UID:            uuid.NewString(),
+		DocumentStatus: datastore.ActiveDocumentStatus,
+	}
+
+	err := appRepo.CreateApplication(context.Background(), app2)
+	require.Equal(t, datastore.ErrDuplicateAppName, err)
 }
 
 func Test_UpdateApplication(t *testing.T) {
@@ -275,16 +287,18 @@ func Test_UpdateApplication(t *testing.T) {
 	appRepo := NewApplicationRepo(db)
 
 	newGroup := &datastore.Group{
-		Name: "Random new group",
-		UID:  uuid.NewString(),
+		Name:           "Random new group",
+		UID:            uuid.NewString(),
+		DocumentStatus: datastore.ActiveDocumentStatus,
 	}
 
 	require.NoError(t, groupRepo.CreateGroup(context.Background(), newGroup))
 
 	app := &datastore.Application{
-		UID:     uuid.NewString(),
-		Title:   "Next application name",
-		GroupID: newGroup.UID,
+		UID:            uuid.NewString(),
+		Title:          "Next application name",
+		GroupID:        newGroup.UID,
+		DocumentStatus: datastore.ActiveDocumentStatus,
 	}
 
 	require.NoError(t, appRepo.CreateApplication(context.Background(), app))
@@ -299,6 +313,16 @@ func Test_UpdateApplication(t *testing.T) {
 	require.NoError(t, err)
 
 	require.Equal(t, newTitle, newApp.Title)
+
+	app2 := &datastore.Application{
+		Title:          newTitle,
+		GroupID:        newGroup.UID,
+		UID:            uuid.NewString(),
+		DocumentStatus: datastore.ActiveDocumentStatus,
+	}
+
+	err = appRepo.CreateApplication(context.Background(), app2)
+	require.Equal(t, datastore.ErrDuplicateAppName, err)
 }
 
 func Test_FindApplicationByID(t *testing.T) {

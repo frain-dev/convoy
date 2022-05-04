@@ -360,7 +360,8 @@ type EventDelivery struct {
 }
 
 var (
-	ErrAPIKeyNotFound = errors.New("api key not found")
+	ErrAPIKeyNotFound   = errors.New("api key not found")
+	ErrDuplicateAppName = errors.New("an application with this name exists")
 )
 
 type KeyType string

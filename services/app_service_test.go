@@ -29,7 +29,7 @@ func stringPtr(s string) *string {
 	return &s
 }
 
-func TestApplicationHandler_CreateApp(t *testing.T) {
+func TestAppService_CreateApp(t *testing.T) {
 	groupID := "1234567890"
 	group := &datastore.Group{UID: groupID}
 
@@ -41,12 +41,13 @@ func TestApplicationHandler_CreateApp(t *testing.T) {
 
 	ctx := context.Background()
 	tt := []struct {
-		name       string
-		args       args
-		wantErr    bool
-		wantErrObj *ServiceError
-		wantApp    *datastore.Application
-		dbFn       func(app *AppService)
+		name        string
+		args        args
+		wantErr     bool
+		wantErrMsg  string
+		wantErrCode int
+		wantApp     *datastore.Application
+		dbFn        func(app *AppService)
 	}{
 		{
 			name: "should_error_for_empty_name",
@@ -60,9 +61,10 @@ func TestApplicationHandler_CreateApp(t *testing.T) {
 				},
 				g: group,
 			},
-			wantErr:    true,
-			wantErrObj: NewServiceError(http.StatusBadRequest, errors.New("name:please provide your appName")),
-			dbFn:       func(app *AppService) {},
+			wantErr:     true,
+			wantErrCode: http.StatusBadRequest,
+			wantErrMsg:  "name:please provide your appName",
+			dbFn:        func(app *AppService) {},
 		},
 		{
 			name: "should_create_application",
@@ -114,8 +116,31 @@ func TestApplicationHandler_CreateApp(t *testing.T) {
 					CreateApplication(gomock.Any(), gomock.Any()).Times(1).
 					Return(errors.New("failed"))
 			},
-			wantErr:    true,
-			wantErrObj: NewServiceError(http.StatusBadRequest, errors.New("failed to create application")),
+			wantErr:     true,
+			wantErrCode: http.StatusBadRequest,
+			wantErrMsg:  "failed to create application",
+		},
+		{
+			name: "should_error_for_app_name_not_unique",
+			args: args{
+				ctx: ctx,
+				newApp: &models.Application{
+					AppName:         "test_app",
+					SupportEmail:    "app@test.com",
+					IsDisabled:      false,
+					SlackWebhookURL: "https://google.com",
+				},
+				g: group,
+			},
+			dbFn: func(app *AppService) {
+				a, _ := app.appRepo.(*mocks.MockApplicationRepository)
+				a.EXPECT().
+					CreateApplication(gomock.Any(), gomock.Any()).Times(1).
+					Return(datastore.ErrDuplicateAppName)
+			},
+			wantErr:     true,
+			wantErrCode: http.StatusBadRequest,
+			wantErrMsg:  "an application with this name exists: test_app",
 		},
 	}
 
@@ -133,7 +158,8 @@ func TestApplicationHandler_CreateApp(t *testing.T) {
 			app, err := as.CreateApp(tc.args.ctx, tc.args.newApp, group)
 			if tc.wantErr {
 				require.NotNil(t, err)
-				require.Equal(t, tc.wantErrObj, err)
+				require.Equal(t, tc.wantErrCode, err.(*ServiceError).ErrCode())
+				require.Equal(t, tc.wantErrMsg, err.(*ServiceError).Error())
 				return
 			}
 
@@ -352,12 +378,13 @@ func TestAppService_UpdateApplication(t *testing.T) {
 		app       *datastore.Application
 	}
 	tests := []struct {
-		name       string
-		args       args
-		wantApp    *datastore.Application
-		dbFn       func(app *AppService)
-		wantErr    bool
-		wantErrObj error
+		name        string
+		args        args
+		wantApp     *datastore.Application
+		dbFn        func(app *AppService)
+		wantErr     bool
+		wantErrMsg  string
+		wantErrCode int
 	}{
 		{
 			name: "should_update_app",
@@ -407,8 +434,9 @@ func TestAppService_UpdateApplication(t *testing.T) {
 					SlackWebhookURL: "https://google.com",
 				},
 			},
-			wantErrObj: NewServiceError(http.StatusBadRequest, errors.New("name:please provide your appName")),
-			wantErr:    true,
+			wantErr:     true,
+			wantErrCode: http.StatusBadRequest,
+			wantErrMsg:  "name:please provide your appName",
 		},
 		{
 			name: "should_fail_to_update_app",
@@ -431,8 +459,37 @@ func TestAppService_UpdateApplication(t *testing.T) {
 				a, _ := app.appRepo.(*mocks.MockApplicationRepository)
 				a.EXPECT().UpdateApplication(gomock.Any(), gomock.Any()).Times(1).Return(errors.New("failed"))
 			},
-			wantErr:    true,
-			wantErrObj: NewServiceError(http.StatusBadRequest, errors.New("an error occurred while updating app")),
+			wantErr:     true,
+			wantErrCode: http.StatusBadRequest,
+			wantErrMsg:  "an error occurred while updating app",
+		},
+
+		{
+			name: "should_error_for_app_name_not_unique",
+			args: args{
+				ctx: ctx,
+				appUpdate: &models.UpdateApplication{
+					AppName:         stringPtr("app_testing"),
+					SupportEmail:    stringPtr("ab@test.com"),
+					IsDisabled:      boolPtr(false),
+					SlackWebhookURL: stringPtr("https://netflix.com"),
+				},
+				app: &datastore.Application{
+					Title:           "test_app",
+					SupportEmail:    "123@test.com",
+					IsDisabled:      true,
+					SlackWebhookURL: "https://google.com",
+				},
+			},
+			dbFn: func(app *AppService) {
+				a, _ := app.appRepo.(*mocks.MockApplicationRepository)
+				a.EXPECT().
+					UpdateApplication(gomock.Any(), gomock.Any()).Times(1).
+					Return(datastore.ErrDuplicateAppName)
+			},
+			wantErr:     true,
+			wantErrCode: http.StatusBadRequest,
+			wantErrMsg:  "an application with this name exists: app_testing",
 		},
 	}
 	for _, tt := range tests {
@@ -449,7 +506,8 @@ func TestAppService_UpdateApplication(t *testing.T) {
 			err := as.UpdateApplication(tt.args.ctx, tt.args.appUpdate, tt.args.app)
 			if tt.wantErr {
 				require.NotNil(t, err)
-				require.Equal(t, tt.wantErrObj, err)
+				require.Equal(t, tt.wantErrCode, err.(*ServiceError).ErrCode())
+				require.Equal(t, tt.wantErrMsg, err.(*ServiceError).Error())
 				return
 			}
 
