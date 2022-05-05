@@ -162,7 +162,8 @@ func StartConvoyServer(a *app, cfg config.Configuration, withWorkers bool) error
 		a.logger,
 		a.tracer,
 		a.cache,
-		a.limiter)
+		a.limiter,
+		a.searcher)
 
 	if withWorkers {
 		// register tasks.
