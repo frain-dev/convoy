@@ -49,7 +49,7 @@ func (s *EventIntegrationTestSuite) TearDownTest() {
 
 func (s *EventIntegrationTestSuite) Test_CreateAppEvent_Valid_Event() {
 	appID := uuid.NewString()
-	expectedStatusCode := http.StatusOK
+	expectedStatusCode := http.StatusCreated
 
 	// Just Before.
 	app, _ := testdb.SeedApplication(s.DB, s.DefaultGroup, appID, false)
