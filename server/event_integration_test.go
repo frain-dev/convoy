@@ -4,6 +4,7 @@
 package server
 
 import (
+	"fmt"
 	"github.com/google/uuid"
 	"net/http"
 	"testing"
@@ -112,6 +113,43 @@ func (s *EventIntegrationTestSuite) Test_CreateAppEvent_App_is_disabled() {
 	}
 
 	req, w := newRequestAndResponder(http.MethodPost, "/api/v1/events", serialize(s.T(), body))
+	// Act.
+	s.Router.ServeHTTP(w, req)
+
+	// Assert.
+	require.Equal(s.T(), expectedStatusCode, w.Code)
+}
+
+func (s *EventIntegrationTestSuite) Test_GetAppEvent_Valid_Event() {
+	eventID := uuid.NewString()
+	expectedStatusCode := http.StatusOK
+
+	// Just Before.
+	app, _ := testdb.SeedApplication(s.DB, s.DefaultGroup, uuid.NewString(), false)
+	event, _ := testdb.SeedEvent(s.DB, app, eventID, "*", []byte(`{}`))
+
+	url := fmt.Sprintf("/api/v1/events/%s", eventID)
+	req, w := newRequestAndResponder(http.MethodGet, url, serialize(s.T(), nil))
+
+	// Act.
+	s.Router.ServeHTTP(w, req)
+
+	// Assert.
+	require.Equal(s.T(), expectedStatusCode, w.Code)
+
+	// Deep Assert.
+	var respEvent datastore.Event
+	parseResponse(s.T(), w.Result(), &respEvent)
+	require.Equal(s.T(), event.UID, respEvent)
+}
+
+func (s *EventIntegrationTestSuite) Test_GetAppEvent_Event_not_found() {
+	eventID := uuid.NewString()
+	expectedStatusCode := http.StatusNotFound
+
+	url := fmt.Sprintf("/api/v1/events/%s", eventID)
+	req, w := newRequestAndResponder(http.MethodGet, url, serialize(s.T(), nil))
+
 	// Act.
 	s.Router.ServeHTTP(w, req)
 

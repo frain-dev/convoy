@@ -8,7 +8,6 @@ import (
 	"github.com/frain-dev/convoy"
 	"github.com/frain-dev/convoy/config"
 	"github.com/frain-dev/convoy/datastore"
-	mongoStore "github.com/frain-dev/convoy/datastore/mongo"
 	"github.com/frain-dev/convoy/util"
 	"github.com/google/uuid"
 	"go.mongodb.org/mongo-driver/bson/primitive"
@@ -139,19 +138,39 @@ func SeedDefaultGroup(db datastore.DatabaseClient) (*datastore.Group, error) {
 	return defaultGroup, nil
 }
 
+// SeedApplication is create random application for integration tests.
+func SeedEvent(db datastore.DatabaseClient, app *datastore.Application, uid, eventType string, data []byte) (*datastore.Event, error) {
+	if util.IsStringEmpty(uid) {
+		uid = uuid.New().String()
+	}
+
+	ev := &datastore.Event{
+		UID:       uid,
+		EventType: datastore.EventType(eventType),
+		Data:      data,
+		AppMetadata: &datastore.AppMetadata{
+			UID:          app.UID,
+			Title:        app.Title,
+			GroupID:      app.GroupID,
+			SupportEmail: app.SupportEmail,
+		},
+		CreatedAt:      primitive.NewDateTimeFromTime(time.Now()),
+		UpdatedAt:      primitive.NewDateTimeFromTime(time.Now()),
+		DocumentStatus: datastore.ActiveDocumentStatus,
+	}
+
+	// Seed Data.
+	err := db.EventRepo().CreateEvent(context.TODO(), ev)
+	if err != nil {
+		return &datastore.Event{}, err
+	}
+
+	return ev, nil
+}
+
 // PurgeDB is run after every test run and it's used to truncate the DB to have
 // a clean slate in the next run.
 func PurgeDB(db datastore.DatabaseClient) {
 	client := db.Client().(*mongo.Database)
-	appCollection := client.Collection(mongoStore.AppCollections, nil)
-	appCollection.Drop(context.TODO())
-
-	groupCollection := client.Collection(mongoStore.GroupCollection, nil)
-	groupCollection.Drop(context.TODO())
-
-	eventCollection := client.Collection(mongoStore.EventCollection, nil)
-	eventCollection.Drop(context.TODO())
-
-	eventDeliveryCollection := client.Collection(mongoStore.EventDeliveryCollection, nil)
-	eventDeliveryCollection.Drop(context.TODO())
+	client.Drop(context.TODO())
 }
