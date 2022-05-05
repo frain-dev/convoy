@@ -202,7 +202,21 @@
 				<div [hidden]="activeTab !== 'events'">
 					<div class="flex flex__align-items-center flex__justify-between">
 						<div class="flex">
-							<div class="dropdown">
+							<form class="input__search margin-bottom__0px events-search">
+								<img src="/assets/img/search-icon.svg" alt="search icon" />
+								<input
+									type="search"
+									placeholder="Search events"
+									[(ngModel)]="eventsSearchString"
+									(change)="searchEvents({ searchInput: $event, type: 'events' })"
+									[ngModelOptions]="{ standalone: true }"
+								/>
+								<button [class]="'enter-button' + (eventsSearchString.length > 0 ? ' show' : '')" (click)="searchEvents({ type: 'events' })">
+									<img src="/assets/img/enter-icon.png" alt="enter icon" />
+								</button>
+							</form>
+
+							<div class="dropdown margin-left__24px">
 								<button
 									class="button button__filter without-margin button--has-icon icon-left icon-right"
 									[ngClass]="{ active: (eventsFilterDateRange.value.startDate !== '' && eventsFilterDateRange.value.endDate !== '') || selectedEventsDateOption }"
@@ -225,6 +239,7 @@
 									<mat-date-range-picker #eventsFilterPicker [disabled]="false"></mat-date-range-picker>
 									<img class="margin-right__0px" src="/assets/img/angle-arrow-down.svg" alt="arrow down icon" />
 								</button>
+
 								<div [ngClass]="{ show: showEventFilterCalendar }" class="dropdown__menu">
 									<ul>
 										<li
@@ -274,16 +289,15 @@
 								</div>
 							</div>
 						</div>
-						<div class="flex">
-							<button
-								class="button button__white button__small margin-right__20px"
-								(click)="clearEventFilters(activeTab); selectedEventsDateOption = ''"
-								[disabled]="(eventsFilterDateRange.value.startDate == '' || eventsFilterDateRange.value.endDate == '') && eventApp == ''"
-								[ngClass]="{ disabled: (eventsFilterDateRange.value.startDate == '' || eventsFilterDateRange.value.endDate == '') && eventApp == '' }"
-							>
-								Clear Filter
-							</button>
-						</div>
+
+						<button
+							class="button button__white button__small margin-right__20px"
+							(click)="clearEventFilters(activeTab); selectedEventsDateOption = ''"
+							[disabled]="(eventsFilterDateRange.value.startDate == '' || eventsFilterDateRange.value.endDate == '') && eventApp == ''"
+							[ngClass]="{ disabled: (eventsFilterDateRange.value.startDate == '' || eventsFilterDateRange.value.endDate == '') && eventApp == '' }"
+						>
+							Clear Filter
+						</button>
 					</div>
 				</div>
 
