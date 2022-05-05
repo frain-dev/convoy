@@ -4,7 +4,6 @@
 package server
 
 import (
-	"context"
 	"github.com/google/uuid"
 	"net/http"
 	"testing"
@@ -72,14 +71,52 @@ func (s *EventIntegrationTestSuite) Test_CreateAppEvent_Valid_Event() {
 	var event datastore.Event
 	parseResponse(s.T(), w.Result(), &event)
 
-	eventRepo := s.DB.EventRepo()
-	dbEvent, err := eventRepo.FindEventByID(context.Background(), event.UID)
-	require.NoError(s.T(), err)
-	require.NotEmpty(s.T(), dbEvent.UID)
-	require.Equal(s.T(), dbEvent.AppMetadata.UID, appID)
-	require.Equal(s.T(), dbEvent.EventType, body["event_type"])
-	require.Equal(s.T(), dbEvent.MatchedEndpoints, 2)
-	require.Equal(s.T(), string(dbEvent.Data), body["data"])
+	require.Equal(s.T(), event.AppMetadata.UID, appID)
+	require.Equal(s.T(), 0, event.MatchedEndpoints)
+	require.Equal(s.T(), string(event.EventType), body["event_type"])
+}
+
+func (s *EventIntegrationTestSuite) Test_CreateAppEvent_App_has_no_endpoint() {
+	appID := uuid.NewString()
+	expectedStatusCode := http.StatusBadRequest
+
+	// Just Before.
+	_, _ = testdb.SeedApplication(s.DB, s.DefaultGroup, appID, false)
+
+	body := M{
+		"app_id":     appID,
+		"event_type": "*",
+		"data":       `{"level":"test"}`,
+	}
+
+	req, w := newRequestAndResponder(http.MethodPost, "/api/v1/events", serialize(s.T(), body))
+	// Act.
+	s.Router.ServeHTTP(w, req)
+
+	// Assert.
+	require.Equal(s.T(), expectedStatusCode, w.Code)
+}
+
+func (s *EventIntegrationTestSuite) Test_CreateAppEvent_App_is_disabled() {
+	appID := uuid.NewString()
+	expectedStatusCode := http.StatusBadRequest
+
+	// Just Before.
+	app, _ := testdb.SeedApplication(s.DB, s.DefaultGroup, appID, true)
+	_, _ = testdb.SeedMultipleEndpoints(s.DB, app, []string{"*"}, 2)
+
+	body := M{
+		"app_id":     appID,
+		"event_type": "*",
+		"data":       `{"level":"test"}`,
+	}
+
+	req, w := newRequestAndResponder(http.MethodPost, "/api/v1/events", serialize(s.T(), body))
+	// Act.
+	s.Router.ServeHTTP(w, req)
+
+	// Assert.
+	require.Equal(s.T(), expectedStatusCode, w.Code)
 }
 
 func TestEventIntegrationSuiteTest(t *testing.T) {
