@@ -73,7 +73,7 @@ func (s *EventIntegrationTestSuite) Test_CreateAppEvent_Valid_Event() {
 	parseResponse(s.T(), w.Result(), &event)
 
 	eventRepo := s.DB.EventRepo()
-	dbEvent, err := eventRepo.FindEventByID(context.Background(), app.UID)
+	dbEvent, err := eventRepo.FindEventByID(context.Background(), event.UID)
 	require.NoError(s.T(), err)
 	require.NotEmpty(s.T(), dbEvent.UID)
 	require.Equal(s.T(), dbEvent.AppMetadata.UID, appID)
