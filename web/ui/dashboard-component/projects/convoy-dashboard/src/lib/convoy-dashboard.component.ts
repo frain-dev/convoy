@@ -138,12 +138,14 @@ export class ConvoyDashboardComponent implements OnInit {
 	showPublicCopyText = false;
 	showSecretCopyText = false;
 	showEndpointSecret = false;
+	renderDashboard = true;
 	appsSearchString = '';
 	selectedEventsDateOption = '';
 	selectedEventsDelDateOption = '';
 	selectedDateOption = '';
 	currentAppId = '';
 	tag = '';
+	eventDeliveryIndex!: number;
 	appPortalLink!: string;
 	endpointSecretKey = '';
 	selectedAppStatus = 'All';
