@@ -139,6 +139,7 @@ export class ConvoyDashboardComponent implements OnInit {
 	showSecretCopyText = false;
 	showEndpointSecret = false;
 	appsSearchString = '';
+	eventsSearchString = '';
 	selectedEventsDateOption = '';
 	selectedEventsDelDateOption = '';
 	selectedDateOption = '';
@@ -1146,6 +1147,15 @@ export class ConvoyDashboardComponent implements OnInit {
 			this.getApps({ search: searchString, type: searchDetails.type });
 		} else {
 			searchDetails.type === 'filter' ? (this.filteredApps = this.apps.content) : this.getApps({ type: 'apps' });
+		}
+	}
+
+	searchEvents(searchDetails: { searchInput?: any; type: 'filter' | 'events' }) {
+		const searchString: string = searchDetails?.searchInput?.target?.value || this.appsSearchString;
+		if (searchString) {
+			// search method
+		} else {
+			// get all events
 		}
 	}
 
