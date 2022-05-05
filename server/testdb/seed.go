@@ -60,10 +60,10 @@ func SeedMultipleApplications(db datastore.DatabaseClient, g *datastore.Group, c
 	return nil
 }
 
-func SeedEndpoint(db datastore.DatabaseClient, app *datastore.Application) (*datastore.Application, error) {
+func SeedEndpoint(db datastore.DatabaseClient, app *datastore.Application, events []string) (*datastore.Application, error) {
 	endpoint := &datastore.Endpoint{
 		UID:            uuid.New().String(),
-		Events:         []string{"*"},
+		Events:         events,
 		Status:         datastore.ActiveEndpointStatus,
 		DocumentStatus: datastore.ActiveDocumentStatus,
 	}
@@ -80,11 +80,11 @@ func SeedEndpoint(db datastore.DatabaseClient, app *datastore.Application) (*dat
 	return app, nil
 }
 
-func SeedMultipleEndpoints(db datastore.DatabaseClient, app *datastore.Application, count int) (*datastore.Application, error) {
+func SeedMultipleEndpoints(db datastore.DatabaseClient, app *datastore.Application, events []string, count int) (*datastore.Application, error) {
 	for i := 0; i < count; i++ {
 		endpoint := &datastore.Endpoint{
 			UID:            uuid.New().String(),
-			Events:         []string{"*"},
+			Events:         events,
 			Status:         datastore.ActiveEndpointStatus,
 			DocumentStatus: datastore.ActiveDocumentStatus,
 		}

@@ -1,9 +1,13 @@
 package server
 
 import (
+	"bytes"
 	"encoding/json"
+	"github.com/stretchr/testify/require"
+	"io"
 	"io/ioutil"
 	"net/http"
+	"net/http/httptest"
 	"os"
 	"testing"
 
@@ -124,3 +128,19 @@ func parseResponse(t *testing.T, r *http.Response, object interface{}) {
 		t.Fatalf("err: %s", err)
 	}
 }
+
+func newRequestAndResponder(method string, url string, body io.Reader) (*http.Request, *httptest.ResponseRecorder) {
+	req := httptest.NewRequest(method, url, body)
+	req.SetBasicAuth("test", "test")
+	req.Header.Add("Content-Type", "application/json")
+
+	return req, httptest.NewRecorder()
+}
+
+func serialize(t *testing.T, obj interface{}) io.Reader {
+	r, err := json.Marshal(obj)
+	require.NoError(t, err)
+	return bytes.NewBuffer(r)
+}
+
+type M map[string]interface{}

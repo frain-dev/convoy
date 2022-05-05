@@ -4,6 +4,8 @@
 package server
 
 import (
+	"context"
+	"github.com/google/uuid"
 	"net/http"
 	"testing"
 
@@ -43,6 +45,41 @@ func (s *EventIntegrationTestSuite) SetupTest() {
 
 func (s *EventIntegrationTestSuite) TearDownTest() {
 	testdb.PurgeDB(s.DB)
+}
+
+func (s *EventIntegrationTestSuite) Test_CreateAppEvent_Valid_Event() {
+	appID := uuid.NewString()
+	expectedStatusCode := http.StatusOK
+
+	// Just Before.
+	app, _ := testdb.SeedApplication(s.DB, s.DefaultGroup, appID, false)
+	_, _ = testdb.SeedMultipleEndpoints(s.DB, app, []string{"*"}, 2)
+
+	body := M{
+		"app_id":     appID,
+		"event_type": "*",
+		"data":       `{"level":"test"}`,
+	}
+
+	req, w := newRequestAndResponder(http.MethodPost, "/api/v1/events", serialize(s.T(), body))
+	// Act.
+	s.Router.ServeHTTP(w, req)
+
+	// Assert.
+	require.Equal(s.T(), expectedStatusCode, w.Code)
+
+	// Deep Assert.
+	var event datastore.Event
+	parseResponse(s.T(), w.Result(), &event)
+
+	eventRepo := s.DB.EventRepo()
+	dbEvent, err := eventRepo.FindEventByID(context.Background(), app.UID)
+	require.NoError(s.T(), err)
+	require.NotEmpty(s.T(), dbEvent.UID)
+	require.Equal(s.T(), dbEvent.AppMetadata.UID, appID)
+	require.Equal(s.T(), dbEvent.EventType, body["event_type"])
+	require.Equal(s.T(), dbEvent.MatchedEndpoints, 2)
+	require.Equal(s.T(), string(dbEvent.Data), body["data"])
 }
 
 func TestEventIntegrationSuiteTest(t *testing.T) {
