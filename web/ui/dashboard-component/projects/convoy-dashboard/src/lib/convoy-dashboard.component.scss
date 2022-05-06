@@ -51,3 +51,34 @@ input[type='search']::-webkit-search-results-button,
 input[type='search']::-webkit-search-results-decoration {
 	display: none;
 }
+
+.group-dropdown {
+	width: 250px;
+
+	span {
+		white-space: nowrap;
+		text-overflow: ellipsis;
+		overflow: hidden;
+	}
+}
+
+.group-dropdown-menu {
+	width: 300px;
+	right: 0;
+	left: unset;
+	height: 0;
+
+	li {
+		white-space: nowrap;
+		text-overflow: ellipsis;
+		overflow: hidden;
+	}
+
+	&.show {
+		height: 400px;
+	}
+}
+
+.dropdown__menu ul li {
+	padding: 10px 15px;
+}

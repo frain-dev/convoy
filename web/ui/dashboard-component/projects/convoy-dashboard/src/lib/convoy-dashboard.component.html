@@ -45,12 +45,14 @@
 						</ul>
 					</div>
 				</div>
+
 				<div class="dropdown">
 					<button class="button button__filter button--has-icon icon-right margin-left__16px" (click)="showFilterDropdown = !showFilterDropdown; showOverlay = true">
 						<span class="color__grey margin-right__4px">Filter By:</span>
 						<span class="color__primary text__capitalize">{{ dashboardFrequency }}</span>
 						<img src="/assets/img/angle-arrow-down.svg" alt="arrow down icon" />
 					</button>
+
 					<div class="dropdown__menu dropdown__menu__push-left" [ngClass]="{ show: showFilterDropdown }">
 						<ul>
 							<li
@@ -70,16 +72,19 @@
 				<div class="flex flex__align-items-center">
 					<div>Active Group:</div>
 					<div class="dropdown">
-						<button class="button button__filter button--has-icon icon-right margin-left__16px" (click)="showFilterCalendar = !showFilterCalendar; showOverlay = true">
+						<button
+							class="button button__filter button--has-icon icon-right margin-left__16px flex flex__align-items-center flex__justify-between group-dropdown"
+							(click)="showFilterCalendar = !showFilterCalendar; showOverlay = true"
+						>
 							<span class="color__primary">{{ selectedGroupName() }}</span>
 							<img src="/assets/img/angle-arrow-down.svg" alt="arrow down icon" />
 						</button>
-						<div class="dropdown__menu dropdown__menu__push-left" [ngClass]="{ show: showFilterCalendar }">
+						<div class="dropdown__menu dropdown__menu__push-left group-dropdown-menu" [ngClass]="{ show: showFilterCalendar }">
 							<ul id="groups-dropdown">
 								<li
 									[ngClass]="{ active: convyDashboardService.activeGroupId == group.uid }"
 									*ngFor="let group of groups"
-									(click)="(convyDashboardService.activeGroupId == group.uid); toggleActiveGroup(); showFilterCalendar = false; showOverlay = false"
+									(click)="convyDashboardService.activeGroupId = group.uid; toggleActiveGroup(); showFilterCalendar = false; showOverlay = false"
 								>
 									{{ group.name }}
 								</li>
