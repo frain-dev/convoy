@@ -27,7 +27,7 @@ As explained above, the iframe url snippet was made available as the easiest to 
 <iframe style="width: 100%; height: 100vh; border: none;" src="{ apiURL }/app-portal/{ token }&appId={ appId }"></iframe>
 ```
 
-## App Portal Web Components
+#### App Portal Web Components
 
 ### React
 
