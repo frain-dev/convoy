@@ -138,7 +138,7 @@ func SeedDefaultGroup(db datastore.DatabaseClient) (*datastore.Group, error) {
 	return defaultGroup, nil
 }
 
-// SeedApplication is create random application for integration tests.
+// SeedEvent creates a random event for integration tests.
 func SeedEvent(db datastore.DatabaseClient, app *datastore.Application, uid, eventType string, data []byte) (*datastore.Event, error) {
 	if util.IsStringEmpty(uid) {
 		uid = uuid.New().String()
@@ -162,10 +162,53 @@ func SeedEvent(db datastore.DatabaseClient, app *datastore.Application, uid, eve
 	// Seed Data.
 	err := db.EventRepo().CreateEvent(context.TODO(), ev)
 	if err != nil {
-		return &datastore.Event{}, err
+		return nil, err
 	}
 
 	return ev, nil
+}
+
+// SeedEventDelivery creates a random event delivery for integration tests.
+func SeedEventDelivery(db datastore.DatabaseClient, app *datastore.Application, event *datastore.Event, endpoint *datastore.Endpoint, uid string, status datastore.EventDeliveryStatus) (*datastore.EventDelivery, error) {
+	if util.IsStringEmpty(uid) {
+		uid = uuid.New().String()
+	}
+
+	eventDelivery := &datastore.EventDelivery{
+		UID: uid,
+		EventMetadata: &datastore.EventMetadata{
+			UID:       event.UID,
+			EventType: event.EventType,
+		},
+		EndpointMetadata: &datastore.EndpointMetadata{
+			UID:               endpoint.UID,
+			TargetURL:         endpoint.TargetURL,
+			Status:            endpoint.Status,
+			Secret:            endpoint.Secret,
+			HttpTimeout:       endpoint.HttpTimeout,
+			RateLimit:         endpoint.RateLimit,
+			RateLimitDuration: endpoint.RateLimitDuration,
+			Sent:              false,
+		},
+		Status: status,
+		AppMetadata: &datastore.AppMetadata{
+			UID:          app.UID,
+			Title:        app.Title,
+			GroupID:      app.GroupID,
+			SupportEmail: app.SupportEmail,
+		},
+		CreatedAt:      primitive.NewDateTimeFromTime(time.Now()),
+		UpdatedAt:      primitive.NewDateTimeFromTime(time.Now()),
+		DocumentStatus: datastore.ActiveDocumentStatus,
+	}
+
+	// Seed Data.
+	err := db.EventDeliveryRepo().CreateEventDelivery(context.TODO(), eventDelivery)
+	if err != nil {
+		return nil, err
+	}
+
+	return eventDelivery, nil
 }
 
 // PurgeDB is run after every test run and it's used to truncate the DB to have
