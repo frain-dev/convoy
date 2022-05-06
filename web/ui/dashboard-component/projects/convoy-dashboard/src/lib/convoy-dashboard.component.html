@@ -188,16 +188,17 @@
 						</button>
 					</li>
 					<div class="color__grey font__14px font__weight-500 font--nowrap margin-left--auto padding-right__14px">
-						<span [hidden]="activeTab !== 'events'">
+						<span *ngIf="events" [hidden]="activeTab !== 'events'">
 							{{ events && events.pagination.total > 0 ? 1 : 0 }} - {{ events && events.pagination.total < 20 ? events.pagination.total : events?.content?.length }} of
-							{{ events?.pagination?.total }}
+							{{ events.pagination.total | metric }}
 						</span>
-						<span [hidden]="activeTab !== 'event deliveries'">
+						<span *ngIf="eventDeliveries" [hidden]="activeTab !== 'event deliveries'">
 							{{ eventDeliveries && eventDeliveries.pagination.total > 0 ? 1 : 0 }} -
-							{{ eventDeliveries && eventDeliveries.pagination.total < 20 ? eventDeliveries.pagination.total : eventDeliveries?.content?.length }} of {{ eventDeliveries?.pagination?.total }}
+							{{ eventDeliveries && eventDeliveries.pagination.total < 20 ? eventDeliveries.pagination.total : eventDeliveries?.content?.length }} of
+							{{ eventDeliveries.pagination.total | metric }}
 						</span>
-						<span [hidden]="activeTab !== 'apps'">
-							{{ apps && apps.pagination.total > 0 ? 1 : 0 }} - {{ apps && apps.pagination.total < 20 ? apps.pagination.total : apps?.content?.length }} of {{ apps?.pagination?.total }}
+						<span *ngIf="apps" [hidden]="activeTab !== 'apps'">
+							{{ apps && apps.pagination.total > 0 ? 1 : 0 }} - {{ apps && apps.pagination.total < 20 ? apps.pagination.total : apps?.content?.length }} of {{ apps.pagination.total | metric }}
 						</span>
 					</div>
 				</div>
@@ -515,10 +516,9 @@
 			</div>
 
 			<div class="flex">
-				<div class="dashboard--logs--table">
+				<div class="dashboard--logs--table has-loader">
+					<convoy-table-loader id="events_loader_loader" [tableHead]="eventsTableHead" *ngIf="isloadingEvents && activeTab === 'events'"></convoy-table-loader>
 					<div class="table table--container has-loader" id="events-table-container" [hidden]="activeTab !== 'events' || displayedEvents?.length === 0">
-						<convoy-table-loader id="events_loader_loader" [tableHead]="eventsTableHead" *ngIf="isloadingEvents"></convoy-table-loader>
-
 						<table id="table" *ngIf="!isloadingEvents">
 							<thead>
 								<tr class="table--head">
@@ -583,9 +583,8 @@
 						<p>No event to show here</p>
 					</div>
 
+					<convoy-table-loader id="event_deliveries_loader" [tableHead]="eventDelTableHead" *ngIf="isloadingEventDeliveries && activeTab === 'event deliveries'"></convoy-table-loader>
 					<div class="table table--container has-loader" id="event-deliveries-table-container" [hidden]="activeTab !== 'event deliveries' || displayedEventDeliveries.length === 0">
-						<convoy-table-loader id="event_deliveries_loader" [tableHead]="eventDelTableHead" *ngIf="isloadingEventDeliveries"></convoy-table-loader>
-
 						<table id="table" *ngIf="!isloadingEventDeliveries">
 							<thead>
 								<tr class="table--head">
@@ -664,9 +663,8 @@
 						<p>No event to show here</p>
 					</div>
 
+					<convoy-table-loader id="apps_loader" [tableHead]="appsTableHead" *ngIf="isloadingApps && activeTab === 'apps'"></convoy-table-loader>
 					<div class="table table--container has-loader" id="apps-table-container" [hidden]="activeTab !== 'apps' || displayedApps.length === 0">
-						<convoy-table-loader id="apps_loader" [tableHead]="appsTableHead" *ngIf="isloadingApps"></convoy-table-loader>
-
 						<table id="table" *ngIf="!isloadingApps">
 							<thead>
 								<tr class="table--head">

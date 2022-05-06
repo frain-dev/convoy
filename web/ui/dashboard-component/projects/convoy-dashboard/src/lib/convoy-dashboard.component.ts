@@ -511,6 +511,7 @@ export class ConvoyDashboardComponent implements OnInit {
 	async initDashboard() {
 		await this.getGroups();
 		this.getFiltersFromURL();
+		this.activeTab = this.route.snapshot.queryParams?.activeTab ?? 'events';
 		await Promise.all([this.getConfigDetails(), this.fetchDashboardData(), this.getEvents(), this.getApps({ type: 'apps' }), this.getEventDeliveries()]);
 
 		// get active tab from url and apply, after getting the details from above requests so that the data is available ahead
@@ -845,10 +846,12 @@ export class ConvoyDashboardComponent implements OnInit {
 	}
 
 	async toggleActiveGroup() {
-		// this.convyDashboardService.activeGroupId = this.activeGroup;
 		await Promise.all([this.clearEventFilters('event deliveries'), this.clearEventFilters('events')]);
 		this.addFilterToURL({ section: 'group' });
-		Promise.all([this.getConfigDetails(), this.fetchDashboardData(), this.getEvents(), this.getApps({ type: 'apps' }), this.getEventDeliveries()]);
+		this.eventsDetailsItem = null;
+		this.eventDelsDetailsItem = null;
+		this.appsDetailsItem = null;
+		await Promise.all([this.getConfigDetails(), this.fetchDashboardData(), this.getEvents(), this.getApps({ type: 'apps' }), this.getEventDeliveries()]);
 	}
 
 	async getGroups(requestDetails?: { addToURL?: boolean }): Promise<HTTP_RESPONSE> {
@@ -895,7 +898,10 @@ export class ConvoyDashboardComponent implements OnInit {
 			if (requestDetails?.type === 'apps') {
 				this.apps = appsResponse.data;
 				this.displayedApps = this.setContentDisplayed(this.apps.content);
+				this.appsDetailsItem = this.apps?.content[0];
+				this.getAppPortalToken({ redirect: false });
 			}
+
 			if (!this.filteredApps) this.filteredApps = appsResponse.data.content;
 
 			if (this.updateAppDetail) this.appsDetailsItem = this.apps.content.find(item => this.appsDetailsItem?.uid == item.uid);
