@@ -565,7 +565,7 @@
 							</tbody>
 						</table>
 
-						<div class="table--load-more button--container center" *ngIf="events && events.pagination.totalPage > 1">
+						<div class="table--load-more button--container center" *ngIf="events && events.pagination.totalPage > 1 && !isloadingEvents">
 							<button
 								class="button button__clear button--has-icon icon-left margin-top__20px margin-bottom__24px flex__justify-center"
 								[disabled]="events.pagination.page === events.pagination.totalPage || isloadingMoreEvents"
@@ -645,7 +645,7 @@
 							</tbody>
 						</table>
 
-						<div class="table--load-more button--container center" *ngIf="eventDeliveries && eventDeliveries.pagination.totalPage > 1">
+						<div class="table--load-more button--container center" *ngIf="eventDeliveries && eventDeliveries.pagination.totalPage > 1 && !isloadingEventDeliveries">
 							<button
 								class="button button__clear button--has-icon icon-left margin-top__24px margin-bottom__24px flex__justify-center"
 								[disabled]="eventDeliveries.pagination.page === eventDeliveries.pagination.totalPage || isloadingMoreEventDeliveries"
@@ -736,7 +736,7 @@
 							</tbody>
 						</table>
 
-						<div class="table--load-more button--container center" *ngIf="apps?.pagination && apps.pagination.totalPage > 1">
+						<div class="table--load-more button--container center" *ngIf="apps?.pagination && apps.pagination.totalPage > 1 && !isloadingApps">
 							<button
 								[class]="
 									'button button__primary button__clear button--has-icon icon-left margin-top__20px margin-bottom__24px flex__justify-center' +
