@@ -247,6 +247,8 @@ func buildRoutes(app *applicationHandler) http.Handler {
 			eventRouter.Use(rateLimitByGroupID(app.limiter))
 			eventRouter.Use(requirePermission(auth.RoleUIAdmin))
 
+			eventRouter.With(pagination).Get("/search", app.SearchAppEvents)
+
 			eventRouter.Post("/", app.CreateAppEvent)
 			eventRouter.With(pagination).Get("/", app.GetEventsPaged)
 
