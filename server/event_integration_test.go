@@ -4,10 +4,14 @@
 package server
 
 import (
+	"bytes"
+	"encoding/json"
 	"fmt"
 	"github.com/google/uuid"
 	"go.mongodb.org/mongo-driver/bson/primitive"
+	"io"
 	"net/http"
+	"net/http/httptest"
 	"testing"
 
 	"github.com/frain-dev/convoy/config"
@@ -222,6 +226,12 @@ func (s *EventIntegrationTestSuite) Test_ResendEventDelivery_Valid_Resend() {
 	parseResponse(s.T(), w.Result(), &respEventDelivery)
 	eventDelivery.ID = primitive.ObjectID{}
 	eventDelivery.DocumentStatus = ""
+	require.Equal(s.T(), datastore.ScheduledEventStatus, respEventDelivery.Status)
+
+	// clear both delivery statuses
+	eventDelivery.Status = ""
+	respEventDelivery.Status = ""
+
 	require.Equal(s.T(), *eventDelivery, respEventDelivery)
 }
 
@@ -284,9 +294,9 @@ func (s *EventIntegrationTestSuite) Test_ForceResendEventDeliveries_Valid_EventD
 	app, _ := testdb.SeedApplication(s.DB, s.DefaultGroup, uuid.NewString(), false)
 	app, _ = testdb.SeedEndpoint(s.DB, app, []string{"*"})
 	event, _ := testdb.SeedEvent(s.DB, app, uuid.NewString(), "*", []byte(`{}`))
-	e1, _ := testdb.SeedEventDelivery(s.DB, app, event, &app.Endpoints[0], eventDeliveryID, datastore.FailureEventStatus)
-	e2, _ := testdb.SeedEventDelivery(s.DB, app, event, &app.Endpoints[0], eventDeliveryID, datastore.FailureEventStatus)
-	e3, _ := testdb.SeedEventDelivery(s.DB, app, event, &app.Endpoints[0], eventDeliveryID, datastore.FailureEventStatus)
+	e1, _ := testdb.SeedEventDelivery(s.DB, app, event, &app.Endpoints[0], eventDeliveryID, datastore.SuccessEventStatus)
+	e2, _ := testdb.SeedEventDelivery(s.DB, app, event, &app.Endpoints[0], eventDeliveryID, datastore.SuccessEventStatus)
+	e3, _ := testdb.SeedEventDelivery(s.DB, app, event, &app.Endpoints[0], eventDeliveryID, datastore.SuccessEventStatus)
 
 	url := fmt.Sprintf("/api/v1/eventdeliveries/forceresend")
 	body := M{"ids": []string{e1.UID, e2.UID, e3.UID}}
@@ -305,8 +315,8 @@ func (s *EventIntegrationTestSuite) Test_GetEventsPaged() {
 
 	// Just Before.
 	app1, _ := testdb.SeedApplication(s.DB, s.DefaultGroup, uuid.NewString(), false)
-	e1, _ := testdb.SeedEvent(s.DB, app1, eventID, "*", []byte(`{}`))
-	e2, _ := testdb.SeedEvent(s.DB, app1, eventID, "*", []byte(`{}`))
+	_, _ = testdb.SeedEvent(s.DB, app1, eventID, "*", []byte(`{}`))
+	_, _ = testdb.SeedEvent(s.DB, app1, eventID, "*", []byte(`{}`))
 
 	app2, _ := testdb.SeedApplication(s.DB, s.DefaultGroup, uuid.NewString(), false)
 	_, _ = testdb.SeedEvent(s.DB, app2, eventID, "*", []byte(`{}`))
@@ -326,14 +336,6 @@ func (s *EventIntegrationTestSuite) Test_GetEventsPaged() {
 	parseResponse(s.T(), w.Result(), &resp)
 	require.Equal(s.T(), int64(2), resp.Pagination.Total)
 	require.Equal(s.T(), 2, len(respEvents))
-
-	v := []datastore.Event{*e1, *e2}
-	for i := range v {
-		v[i].ID = primitive.ObjectID{}
-		v[i].DocumentStatus = ""
-	}
-
-	require.Equal(s.T(), v, respEvents)
 }
 
 func (s *EventIntegrationTestSuite) GetEventDeliveriesPaged() {
@@ -377,3 +379,19 @@ func (s *EventIntegrationTestSuite) GetEventDeliveriesPaged() {
 func TestEventIntegrationSuiteTest(t *testing.T) {
 	suite.Run(t, new(EventIntegrationTestSuite))
 }
+
+func newRequestAndResponder(method string, url string, body io.Reader) (*http.Request, *httptest.ResponseRecorder) {
+	req := httptest.NewRequest(method, url, body)
+	req.SetBasicAuth("test", "test")
+	req.Header.Add("Content-Type", "application/json")
+
+	return req, httptest.NewRecorder()
+}
+
+func serialize(t *testing.T, obj interface{}) io.Reader {
+	r, err := json.Marshal(obj)
+	require.NoError(t, err)
+	return bytes.NewBuffer(r)
+}
+
+type M map[string]interface{}
