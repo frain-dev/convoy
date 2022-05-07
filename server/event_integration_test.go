@@ -299,28 +299,6 @@ func (s *EventIntegrationTestSuite) Test_ForceResendEventDeliveries_Valid_EventD
 	require.Equal(s.T(), expectedStatusCode, w.Code)
 }
 
-func (s *EventIntegrationTestSuite) Test_ForceResendEventDeliveries_EventDeliveries_not_found() {
-	eventDeliveryID := uuid.NewString()
-	expectedStatusCode := http.StatusInternalServerError
-
-	// Just Before.
-	app, _ := testdb.SeedApplication(s.DB, s.DefaultGroup, uuid.NewString(), false)
-	app, _ = testdb.SeedEndpoint(s.DB, app, []string{"*"})
-	event, _ := testdb.SeedEvent(s.DB, app, uuid.NewString(), "*", []byte(`{}`))
-	_, _ = testdb.SeedEventDelivery(s.DB, app, event, &app.Endpoints[0], eventDeliveryID, datastore.FailureEventStatus)
-	_, _ = testdb.SeedEventDelivery(s.DB, app, event, &app.Endpoints[0], eventDeliveryID, datastore.FailureEventStatus)
-
-	url := fmt.Sprintf("/api/v1/eventdeliveries/forceresend")
-	body := M{"ids": []string{"abc"}}
-	req, w := newRequestAndResponder(http.MethodPost, url, serialize(s.T(), body))
-
-	// Act.
-	s.Router.ServeHTTP(w, req)
-
-	// Assert.
-	require.Equal(s.T(), expectedStatusCode, w.Code)
-}
-
 func (s *EventIntegrationTestSuite) Test_GetEventsPaged() {
 	eventID := uuid.NewString()
 	expectedStatusCode := http.StatusOK
@@ -344,16 +322,18 @@ func (s *EventIntegrationTestSuite) Test_GetEventsPaged() {
 
 	// Deep Assert.
 	var respEvents []datastore.Event
-	resp := parsePagedResponse(s.T(), w.Result(), &respEvents)
-	require.Equal(s.T(), 2, resp.Pagination.Total)
+	resp := pagedResponse{Content: &respEvents}
+	parseResponse(s.T(), w.Result(), &resp)
+	require.Equal(s.T(), int64(2), resp.Pagination.Total)
 	require.Equal(s.T(), 2, len(respEvents))
 
-	for i := range respEvents {
-		respEvents[i].ID = primitive.ObjectID{}
-		respEvents[i].DocumentStatus = ""
+	v := []datastore.Event{*e1, *e2}
+	for i := range v {
+		v[i].ID = primitive.ObjectID{}
+		v[i].DocumentStatus = ""
 	}
 
-	require.Equal(s.T(), []datastore.Event{*e1, *e2}, respEvents)
+	require.Equal(s.T(), v, respEvents)
 }
 
 func (s *EventIntegrationTestSuite) GetEventDeliveriesPaged() {
@@ -368,7 +348,7 @@ func (s *EventIntegrationTestSuite) GetEventDeliveriesPaged() {
 
 	app2, _ := testdb.SeedApplication(s.DB, s.DefaultGroup, uuid.NewString(), false)
 	event2, _ := testdb.SeedEvent(s.DB, app2, uuid.NewString(), "*", []byte(`{}`))
-	_, _ = testdb.SeedEventDelivery(s.DB, app1, event2, &app2.Endpoints[0], eventDeliveryID, datastore.FailureEventStatus)
+	_, _ = testdb.SeedEventDelivery(s.DB, app2, event2, &app2.Endpoints[0], eventDeliveryID, datastore.FailureEventStatus)
 
 	url := fmt.Sprintf("/api/v1/eventdeliveries?appId=%s", app1.UID)
 	req, w := newRequestAndResponder(http.MethodGet, url, serialize(s.T(), nil))
@@ -381,15 +361,17 @@ func (s *EventIntegrationTestSuite) GetEventDeliveriesPaged() {
 
 	// Deep Assert.
 	var respEvents []datastore.EventDelivery
-	resp := parsePagedResponse(s.T(), w.Result(), &respEvents)
+	resp := pagedResponse{Content: &respEvents}
+	parseResponse(s.T(), w.Result(), &respEvents)
 	require.Equal(s.T(), 2, resp.Pagination.Total)
 
-	for i := range respEvents {
-		respEvents[i].ID = primitive.ObjectID{}
-		respEvents[i].DocumentStatus = ""
+	v := []datastore.EventDelivery{*d1, *d2}
+	for i := range v {
+		v[i].ID = primitive.ObjectID{}
+		v[i].DocumentStatus = ""
 	}
 
-	require.Equal(s.T(), []datastore.EventDelivery{*d1, *d2}, respEvents)
+	require.Equal(s.T(), v, respEvents)
 }
 
 func TestEventIntegrationSuiteTest(t *testing.T) {

@@ -129,20 +129,6 @@ func parseResponse(t *testing.T, r *http.Response, object interface{}) {
 	}
 }
 
-func parsePagedResponse(t *testing.T, r *http.Response, obj interface{}) *pagedResponse {
-	body, err := ioutil.ReadAll(r.Body)
-	if err != nil {
-		t.Fatalf("err: %s", err)
-	}
-
-	sR := pagedResponse{Content: obj}
-	err = json.Unmarshal(body, &sR)
-	if err != nil {
-		t.Fatalf("err: %s", err)
-	}
-	return &sR
-}
-
 func newRequestAndResponder(method string, url string, body io.Reader) (*http.Request, *httptest.ResponseRecorder) {
 	req := httptest.NewRequest(method, url, body)
 	req.SetBasicAuth("test", "test")
