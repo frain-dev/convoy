@@ -33,6 +33,7 @@ func (t *Typesense) Search(groupId, query string, pageable datastore.Pageable) (
 	events := make([]string, 0)
 	data := datastore.PaginationData{}
 	filter := fmt.Sprintf("app_metadata.group_id:=%s", groupId)
+	sortBy := "created_at:desc"
 
 	queryBuilder := new(strings.Builder)
 
@@ -56,6 +57,7 @@ func (t *Typesense) Search(groupId, query string, pageable datastore.Pageable) (
 		Page:     &pageable.Page,
 		PerPage:  &pageable.PerPage,
 		Q:        query,
+		SortBy:   &sortBy,
 	}
 	result, err := t.client.Collection("events").Documents().Search(params)
 	if err != nil {
@@ -66,12 +68,17 @@ func (t *Typesense) Search(groupId, query string, pageable datastore.Pageable) (
 		events = append(events, (*hit.Document)["uid"].(string))
 	}
 
-	data.Next = int64(*result.Page + 1)
-	data.Prev = int64(*result.Page - 1)
-	data.Page = int64(*result.Page)
+	data.Next = int64(pageable.Page + 1)
+	data.Prev = int64(pageable.Page - 1)
+	data.Page = int64(pageable.Page)
 	data.Total = int64(*result.OutOf)
-	data.TotalPage = int64(*result.OutOf / *result.Found)
-	data.PerPage = int64(result.RequestParams.PerPage)
+	data.PerPage = int64(pageable.PerPage)
+
+	if *result.Found > 0 {
+		data.TotalPage = int64(*result.Found / pageable.PerPage)
+	} else {
+		data.TotalPage = 0
+	}
 
 	return events, data, nil
 }

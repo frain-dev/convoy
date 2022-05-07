@@ -63,3 +63,27 @@
 		visibility: visible;
 	}
 }
+
+input[type='search']::-webkit-search-decoration,
+input[type='search']::-webkit-search-cancel-button,
+input[type='search']::-webkit-search-results-button,
+input[type='search']::-webkit-search-results-decoration {
+	display: none;
+}
+
+.group-dropdown {
+	width: 300px;
+	right: 0;
+	left: unset;
+	height: 0;
+
+	li {
+		white-space: nowrap;
+		text-overflow: ellipsis;
+		overflow: hidden;
+	}
+
+	&.show {
+		height: 400px;
+	}
+}
