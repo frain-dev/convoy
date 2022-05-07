@@ -3,6 +3,7 @@ package testdb
 import (
 	"context"
 	"fmt"
+	log "github.com/sirupsen/logrus"
 	"time"
 
 	"github.com/frain-dev/convoy"
@@ -215,5 +216,8 @@ func SeedEventDelivery(db datastore.DatabaseClient, app *datastore.Application, 
 // a clean slate in the next run.
 func PurgeDB(db datastore.DatabaseClient) {
 	client := db.Client().(*mongo.Database)
-	client.Drop(context.TODO())
+	err := client.Drop(context.TODO())
+	if err != nil {
+		log.WithError(err).Fatal("failed to truncate db")
+	}
 }
