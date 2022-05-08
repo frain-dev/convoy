@@ -3,12 +3,12 @@ package testdb
 import (
 	"context"
 	"fmt"
+	"github.com/frain-dev/convoy/auth"
 	"time"
 
 	"github.com/frain-dev/convoy"
 	"github.com/frain-dev/convoy/config"
 	"github.com/frain-dev/convoy/datastore"
-	mongoStore "github.com/frain-dev/convoy/datastore/mongo"
 	"github.com/frain-dev/convoy/util"
 	"github.com/google/uuid"
 	"go.mongodb.org/mongo-driver/bson/primitive"
@@ -139,19 +139,40 @@ func SeedDefaultGroup(db datastore.DatabaseClient) (*datastore.Group, error) {
 	return defaultGroup, nil
 }
 
+// SeedAPIKey creates random api key for integration tests.
+func SeedAPIKey(db datastore.DatabaseClient, g *datastore.Group, uid, name, keyType string) (*datastore.APIKey, error) {
+	if util.IsStringEmpty(uid) {
+		uid = uuid.New().String()
+	}
+
+	apiKey := &datastore.APIKey{
+		UID:    uuid.New().String(),
+		MaskID: fmt.Sprintf("mask-%s", uuid.NewString()),
+		Name:   name,
+		Type:   datastore.KeyType(keyType),
+		Role: auth.Role{
+			Type:   auth.RoleUIAdmin,
+			Groups: []string{g.UID},
+			Apps:   nil,
+		},
+		Hash:           fmt.Sprintf("hash-%s", uuid.NewString()),
+		Salt:           fmt.Sprintf("salt-%s", uuid.NewString()),
+		CreatedAt:      primitive.NewDateTimeFromTime(time.Now()),
+		UpdatedAt:      primitive.NewDateTimeFromTime(time.Now()),
+		DocumentStatus: datastore.ActiveDocumentStatus,
+	}
+
+	err := db.APIRepo().CreateAPIKey(context.Background(), apiKey)
+	if err != nil {
+		return nil, err
+	}
+
+	return apiKey, nil
+}
+
 // PurgeDB is run after every test run and it's used to truncate the DB to have
 // a clean slate in the next run.
 func PurgeDB(db datastore.DatabaseClient) {
 	client := db.Client().(*mongo.Database)
-	appCollection := client.Collection(mongoStore.AppCollections, nil)
-	appCollection.Drop(context.TODO())
-
-	groupCollection := client.Collection(mongoStore.GroupCollection, nil)
-	groupCollection.Drop(context.TODO())
-
-	eventCollection := client.Collection(mongoStore.EventCollection, nil)
-	eventCollection.Drop(context.TODO())
-
-	eventDeliveryCollection := client.Collection(mongoStore.EventDeliveryCollection, nil)
-	eventDeliveryCollection.Drop(context.TODO())
+	client.Drop(context.TODO())
 }

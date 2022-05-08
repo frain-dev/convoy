@@ -110,7 +110,7 @@ func (s *SecurityIntegrationTestSuite) Test_CreateAppPortalAPIKey() {
 		ExpiresAt: time.Now().Add(time.Hour),
 	}
 
-	url := fmt.Sprintf("security/applications/%s/keys", app.UID)
+	url := fmt.Sprintf("/api/v1/security/applications/%s/keys", app.UID)
 
 	req, w := newRequestAndResponder(http.MethodPost, url, serialize(s.T(), body))
 
@@ -125,11 +125,152 @@ func (s *SecurityIntegrationTestSuite) Test_CreateAppPortalAPIKey() {
 	parseResponse(s.T(), w.Result(), &apiKeyResponse)
 	require.NotEmpty(s.T(), apiKeyResponse.Key)
 	require.NotEmpty(s.T(), apiKeyResponse.Key)
-	require.Equal(s.T(), apiKeyResponse.Url, fmt.Sprintf("https://app.convo.io/app-portal/%s?groupID=%s&appId=%s", apiKeyResponse.Key, s.DefaultGroup.UID, app.UID))
-	require.Equal(s.T(), body.Role, apiKeyResponse.Role)
+	require.Equal(s.T(), apiKeyResponse.Url, fmt.Sprintf("https://app.convoy.io/app-portal/%s?groupID=%s&appId=%s", apiKeyResponse.Key, s.DefaultGroup.UID, app.UID))
+	require.Equal(s.T(), body.Role.Groups, apiKeyResponse.Role.Groups)
+	require.Equal(s.T(), []string{app.UID}, apiKeyResponse.Role.Apps)
+	require.Equal(s.T(), body.Role.Type, apiKeyResponse.Role.Type)
 	require.Equal(s.T(), apiKeyResponse.Type, "app_portal")
 	require.Equal(s.T(), apiKeyResponse.GroupID, s.DefaultGroup.UID)
 	require.Equal(s.T(), apiKeyResponse.AppID, app.UID)
+}
+
+func (s *SecurityIntegrationTestSuite) Test_RevokeAPIKey() {
+	expectedStatusCode := http.StatusOK
+
+	// Just Before.
+	apiKey, _ := testdb.SeedAPIKey(s.DB, s.DefaultGroup, uuid.NewString(), "test", "api")
+
+	url := fmt.Sprintf("/api/v1/security/keys/%s/revoke", apiKey.UID)
+
+	req, w := newRequestAndResponder(http.MethodPut, url, nil)
+
+	// Act.
+	s.Router.ServeHTTP(w, req)
+
+	// Assert.
+	require.Equal(s.T(), expectedStatusCode, w.Code)
+
+	// Deep assert
+	a, err := s.DB.APIRepo().FindAPIKeyByID(context.Background(), apiKey.UID)
+	require.NoError(s.T(), err)
+	require.Equal(s.T(), datastore.DeletedDocumentStatus, a.DocumentStatus)
+	require.True(s.T(), a.DeletedAt > 0)
+}
+
+func (s *SecurityIntegrationTestSuite) Test_GetAPIKeyByID() {
+	expectedStatusCode := http.StatusOK
+
+	// Just Before.
+	apiKey, _ := testdb.SeedAPIKey(s.DB, s.DefaultGroup, uuid.NewString(), "test", "api")
+
+	url := fmt.Sprintf("/api/v1/security/keys/%s", apiKey.UID)
+	req, w := newRequestAndResponder(http.MethodGet, url, nil)
+
+	// Act.
+	s.Router.ServeHTTP(w, req)
+
+	// Assert.
+	require.Equal(s.T(), expectedStatusCode, w.Code)
+
+	// Deep Assert.
+	var apiKeyResponse models.APIKeyByIDResponse
+	parseResponse(s.T(), w.Result(), &apiKeyResponse)
+	require.Equal(s.T(), apiKeyResponse.Type, apiKey.Type)
+	require.Equal(s.T(), apiKeyResponse.Role, apiKey.Role)
+	require.Equal(s.T(), apiKeyResponse.UID, apiKey.UID)
+	require.Equal(s.T(), apiKeyResponse.ExpiresAt, apiKey.ExpiresAt)
+	require.Equal(s.T(), apiKeyResponse.CreatedAt, apiKey.CreatedAt)
+	require.Equal(s.T(), apiKeyResponse.UpdatedAt, apiKey.UpdatedAt)
+}
+
+func (s *SecurityIntegrationTestSuite) Test_GetAPIKeyByID_APIKey_not_found() {
+	expectedStatusCode := http.StatusBadRequest
+
+	url := fmt.Sprintf("/api/v1/security/keys/%s", uuid.NewString())
+	req, w := newRequestAndResponder(http.MethodGet, url, nil)
+
+	// Act.
+	s.Router.ServeHTTP(w, req)
+
+	// Assert.
+	require.Equal(s.T(), expectedStatusCode, w.Code)
+}
+
+func (s *SecurityIntegrationTestSuite) Test_UpdateAPIKey() {
+	expectedStatusCode := http.StatusOK
+
+	// Just Before.
+	apiKey, _ := testdb.SeedAPIKey(s.DB, s.DefaultGroup, uuid.NewString(), "test", "api")
+
+	body := map[string]auth.Role{
+		"role": {
+			Type:   auth.RoleAPI,
+			Groups: []string{s.DefaultGroup.UID},
+		},
+	}
+
+	url := fmt.Sprintf("/api/v1/security/keys/%s", apiKey.UID)
+	req, w := newRequestAndResponder(http.MethodPut, url, serialize(s.T(), body))
+
+	// Act.
+	s.Router.ServeHTTP(w, req)
+
+	// Assert.
+	require.Equal(s.T(), expectedStatusCode, w.Code)
+
+	// Deep Assert.
+
+	a, err := s.DB.APIRepo().FindAPIKeyByID(context.Background(), apiKey.UID)
+	require.NoError(s.T(), err)
+	require.Equal(s.T(), a.Role, body["role"])
+}
+
+func (s *SecurityIntegrationTestSuite) Test_UpdateAPIKey_APIKey_not_found() {
+	expectedStatusCode := http.StatusBadRequest
+
+	body := map[string]auth.Role{
+		"role": {
+			Type:   auth.RoleAPI,
+			Groups: []string{s.DefaultGroup.UID},
+		},
+	}
+
+	url := fmt.Sprintf("/api/v1/security/keys/%s", uuid.NewString())
+
+	req, w := newRequestAndResponder(http.MethodPut, url, serialize(s.T(), body))
+
+	// Act.
+	s.Router.ServeHTTP(w, req)
+
+	// Assert.
+	require.Equal(s.T(), expectedStatusCode, w.Code)
+}
+
+func (s *SecurityIntegrationTestSuite) Test_GetAPIKeys() {
+	expectedStatusCode := http.StatusOK
+
+	// Just Before.
+	_, _ = testdb.SeedAPIKey(s.DB, s.DefaultGroup, uuid.NewString(), "test", "api")
+	_, _ = testdb.SeedAPIKey(s.DB, s.DefaultGroup, uuid.NewString(), "test", "api")
+	_, _ = testdb.SeedAPIKey(s.DB, s.DefaultGroup, uuid.NewString(), "test", "api")
+
+	body := &auth.Role{
+		Type:   auth.RoleAPI,
+		Groups: []string{uuid.NewString()},
+	}
+
+	req, w := newRequestAndResponder(http.MethodGet, "/api/v1/security/keys", serialize(s.T(), body))
+
+	// Act.
+	s.Router.ServeHTTP(w, req)
+
+	// Assert.
+	require.Equal(s.T(), expectedStatusCode, w.Code)
+
+	var apiKeyResponse []models.APIKeyByIDResponse
+	pagedResp := &pagedResponse{Content: &apiKeyResponse}
+	parseResponse(s.T(), w.Result(), pagedResp)
+	require.Equal(s.T(), 3, len(apiKeyResponse))
 }
 
 func newRequestAndResponder(method string, url string, body io.Reader) (*http.Request, *httptest.ResponseRecorder) {
