@@ -144,14 +144,14 @@ func SeedDefaultGroup(db datastore.DatabaseClient) (*datastore.Group, error) {
 func PurgeDB(db datastore.DatabaseClient) {
 	client := db.Client().(*mongo.Database)
 	appCollection := client.Collection(mongoStore.AppCollections, nil)
-	appCollection.Drop(context.TODO())
+	_ = appCollection.Drop(context.TODO())
 
 	groupCollection := client.Collection(mongoStore.GroupCollection, nil)
-	groupCollection.Drop(context.TODO())
+	_ = groupCollection.Drop(context.TODO())
 
 	eventCollection := client.Collection(mongoStore.EventCollection, nil)
-	eventCollection.Drop(context.TODO())
+	_ = eventCollection.Drop(context.TODO())
 
 	eventDeliveryCollection := client.Collection(mongoStore.EventDeliveryCollection, nil)
-	eventDeliveryCollection.Drop(context.TODO())
+	_ = eventDeliveryCollection.Drop(context.TODO())
 }
