@@ -2,14 +2,14 @@
 title: Deployment
 description: 'Techniques to deploy convoy to the various cloud platforms'
 id: deployment
-order: 4
+order: 3
 ---
 
 # Deploying Convoy
 
 Convoy is distributed as binaries and docker images, which means you can run it in any VM environment or to any platform containers can be deployed to.
 
-### Deploying to Heroku
+#### Deploying to Heroku
 
 This section contains information on how to deploy Convoy to Heroku.
 
