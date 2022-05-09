@@ -6,7 +6,6 @@ package server
 import (
 	"fmt"
 	"github.com/google/uuid"
-	"go.mongodb.org/mongo-driver/bson/primitive"
 	"io"
 	"net/http"
 	"net/http/httptest"
@@ -60,7 +59,7 @@ func (s *EventIntegrationTestSuite) Test_CreateAppEvent_Valid_Event() {
 	_, _ = testdb.SeedMultipleEndpoints(s.DB, app, []string{"*"}, 2)
 
 	bodyStr := `{"app_id":"%s", "event_type":"*", "data":{"level":"test"}}`
-	body := serialize(s.T(), bodyStr, appID)
+	body := serialize(bodyStr, appID)
 
 	req := createRequest(http.MethodPost, "/api/v1/events", body)
 	w := httptest.NewRecorder()
@@ -86,7 +85,7 @@ func (s *EventIntegrationTestSuite) Test_CreateAppEvent_App_has_no_endpoint() {
 	_, _ = testdb.SeedApplication(s.DB, s.DefaultGroup, appID, false)
 
 	bodyStr := `{"app_id":"%s", "event_type":"*", "data":{"level":"test"}}`
-	body := serialize(s.T(), bodyStr, appID)
+	body := serialize(bodyStr, appID)
 
 	req := createRequest(http.MethodPost, "/api/v1/events", body)
 	w := httptest.NewRecorder()
@@ -106,7 +105,7 @@ func (s *EventIntegrationTestSuite) Test_CreateAppEvent_App_is_disabled() {
 	_, _ = testdb.SeedMultipleEndpoints(s.DB, app, []string{"*"}, 2)
 
 	bodyStr := `{"app_id":"%s", "event_type":"*", "data":{"level":"test"}}`
-	body := serialize(s.T(), bodyStr, appID)
+	body := serialize(bodyStr, appID)
 
 	req := createRequest(http.MethodPost, "/api/v1/events", body)
 	w := httptest.NewRecorder()
@@ -138,9 +137,7 @@ func (s *EventIntegrationTestSuite) Test_GetAppEvent_Valid_Event() {
 	// Deep Assert.
 	var respEvent datastore.Event
 	parseResponse(s.T(), w.Result(), &respEvent)
-	event.DocumentStatus = ""
-	event.ID = primitive.ObjectID{}
-	require.Equal(s.T(), *event, respEvent)
+	require.Equal(s.T(), event.UID, respEvent.UID)
 }
 
 func (s *EventIntegrationTestSuite) Test_GetAppEvent_Event_not_found() {
@@ -179,9 +176,7 @@ func (s *EventIntegrationTestSuite) Test_GetEventDelivery_Valid_EventDelivery() 
 	// Deep Assert.
 	var respEventDelivery datastore.EventDelivery
 	parseResponse(s.T(), w.Result(), &respEventDelivery)
-	eventDelivery.DocumentStatus = ""
-	eventDelivery.ID = primitive.ObjectID{}
-	require.Equal(s.T(), *eventDelivery, respEventDelivery)
+	require.Equal(s.T(), eventDelivery.UID, respEventDelivery.UID)
 }
 
 func (s *EventIntegrationTestSuite) Test_GetEventDelivery_Event_not_found() {
@@ -221,15 +216,8 @@ func (s *EventIntegrationTestSuite) Test_ResendEventDelivery_Valid_Resend() {
 	// Deep Assert.
 	var respEventDelivery datastore.EventDelivery
 	parseResponse(s.T(), w.Result(), &respEventDelivery)
-	eventDelivery.ID = primitive.ObjectID{}
-	eventDelivery.DocumentStatus = ""
 	require.Equal(s.T(), datastore.ScheduledEventStatus, respEventDelivery.Status)
-
-	// clear both delivery statuses
-	eventDelivery.Status = ""
-	respEventDelivery.Status = ""
-
-	require.Equal(s.T(), *eventDelivery, respEventDelivery)
+	require.Equal(s.T(), eventDelivery.UID, respEventDelivery.UID)
 }
 
 func (s *EventIntegrationTestSuite) Test_BatchRetryEventDelivery_Valid_EventDeliveries() {
@@ -300,7 +288,7 @@ func (s *EventIntegrationTestSuite) Test_ForceResendEventDeliveries_Valid_EventD
 	url := fmt.Sprintf("/api/v1/eventdeliveries/forceresend")
 
 	bodyStr := `{"ids":%s}`
-	body := serialize(s.T(), bodyStr, []string{e1.UID, e2.UID, e3.UID})
+	body := serialize(bodyStr, []string{e1.UID, e2.UID, e3.UID})
 
 	req := createRequest(http.MethodPost, url, body)
 	w := httptest.NewRecorder()
@@ -318,8 +306,8 @@ func (s *EventIntegrationTestSuite) Test_GetEventsPaged() {
 
 	// Just Before.
 	app1, _ := testdb.SeedApplication(s.DB, s.DefaultGroup, uuid.NewString(), false)
-	_, _ = testdb.SeedEvent(s.DB, app1, eventID, "*", []byte(`{}`))
-	_, _ = testdb.SeedEvent(s.DB, app1, eventID, "*", []byte(`{}`))
+	e1, _ := testdb.SeedEvent(s.DB, app1, eventID, "*", []byte(`{}`))
+	e2, _ := testdb.SeedEvent(s.DB, app1, eventID, "*", []byte(`{}`))
 
 	app2, _ := testdb.SeedApplication(s.DB, s.DefaultGroup, uuid.NewString(), false)
 	_, _ = testdb.SeedEvent(s.DB, app2, eventID, "*", []byte(`{}`))
@@ -340,6 +328,11 @@ func (s *EventIntegrationTestSuite) Test_GetEventsPaged() {
 	parseResponse(s.T(), w.Result(), &resp)
 	require.Equal(s.T(), int64(2), resp.Pagination.Total)
 	require.Equal(s.T(), 2, len(respEvents))
+
+	v := []*datastore.Event{e1, e2}
+	for i, delivery := range v {
+		require.Equal(s.T(), respEvents[i].UID, delivery.UID)
+	}
 }
 
 func (s *EventIntegrationTestSuite) GetEventDeliveriesPaged() {
@@ -372,13 +365,10 @@ func (s *EventIntegrationTestSuite) GetEventDeliveriesPaged() {
 	parseResponse(s.T(), w.Result(), &respEvents)
 	require.Equal(s.T(), 2, resp.Pagination.Total)
 
-	v := []datastore.EventDelivery{*d1, *d2}
-	for i := range v {
-		v[i].ID = primitive.ObjectID{}
-		v[i].DocumentStatus = ""
+	v := []*datastore.EventDelivery{d1, d2}
+	for i, delivery := range v {
+		require.Equal(s.T(), respEvents[i].UID, delivery.UID)
 	}
-
-	require.Equal(s.T(), v, respEvents)
 }
 
 func TestEventIntegrationSuiteTest(t *testing.T) {
@@ -393,9 +383,7 @@ func createRequest(method string, url string, body io.Reader) *http.Request {
 	return req
 }
 
-func serialize(t *testing.T, r string, args ...interface{}) io.Reader {
+func serialize(r string, args ...interface{}) io.Reader {
 	v := fmt.Sprintf(r, args...)
 	return strings.NewReader(v)
 }
-
-type M map[string]interface{}
