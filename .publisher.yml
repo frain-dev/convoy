@@ -16,13 +16,28 @@ builds:
       - amd64
       - arm64
 
+  - id: lib
+    skip: true
+
 # https://goreleaser.com/customization/archive/
 archives:
   - name_template: "{{ .ProjectName}}_{{ .Version }}_{{ .Os }}_{{ .Arch }}"
+    id: cobin-archive
+    builds: 
+      - cobin
 
 # https://goreleaser.com/customization/nfpm/
 nfpms:
-  - id: debrpm
+  - id: deb
+    license: MPL-2.0
+    maintainer: frain-dev
+    homepage: https://getconvoy.io/
+    description: "A Cloud native webhook service"
+    file_name_template: "{{ .ProjectName }}_{{ .Version }}_{{ .Os }}_{{ .Arch }}"
+    formats:
+      - deb
+
+  - id: rpm
     license: MPL-2.0
     maintainer: frain-dev
     homepage: https://getconvoy.io/
@@ -30,24 +45,32 @@ nfpms:
     file_name_template: "{{ .ProjectName }}_{{ .Version }}_{{ .Os }}_{{ .Arch }}"
     formats:
       - rpm
-      - deb
-
-  - id: apk
-    license: MPL-2.0
-    maintainer: frain-dev
-    homepage: https://getconvoy.io/
-    description: "A Cloud native webhook service"
-    file_name_template: "{{ .ProjectName }}_{{ .Version }}_{{ .Os }}_{{ .Arch }}"
-    formats:
-      - apk
 
 # https://goreleaser.com/customization/publishers/
 publishers:
-  - name: fury.io
+  - name: cloudsmith-raw
     ids:
-      - debrpm
+      - cobin-archive
     dir: "{{ dir .ArtifactPath }}"
-    cmd: curl -F package=@{{ .ArtifactName }} https://{{ .Env.FURY_TOKEN }}@push.fury.io/convoy/
+    cmd: cloudsmith push raw --version={{ .Version }} convoy/convoy {{ .ArtifactName }}
+    env: 
+     - CLOUDSMITH_API_KEY={{ .Env.CLOUDSMITH_API_KEY }}
+
+  - name: cloudsmith-deb
+    ids: 
+     - deb
+    dir: "{{ dir .ArtifactPath }}"
+    cmd: cloudsmith push deb convoy/convoy/any-distro/any-version {{ .ArtifactName }}
+    env: 
+     - CLOUDSMITH_API_KEY={{ .Env.CLOUDSMITH_API_KEY }}
+
+  - name: cloudsmith-rpm
+    ids: 
+     - rpm
+    dir: "{{ dir .ArtifactPath }}"
+    cmd: cloudsmith push rpm convoy/convoy/any-distro/any-version {{ .ArtifactName }}
+    env: 
+     - CLOUDSMITH_API_KEY={{ .Env.CLOUDSMITH_API_KEY }}
 
 # https://goreleaser.com/customization/homebrew/
 brews:
@@ -62,10 +85,10 @@ brews:
     tap:
       owner: frain-dev
       name: homebrew-tools
-    url_template: https://brew.packages.getconvoy.io/releases/{{.Tag }}/{{ .ArtifactName }}
+    url_template: https://dl.cloudsmith.io/public/convoy/convoy/raw/versions/{{.Version}}/{{ .ArtifactName }}
 
 dockers:
-  - image_templates: ["ghcr.io/{{ .Env.REPO_NAME }}:{{ .Tag }}"]
+  - image_templates: ["docker.cloudsmith.io/convoy/convoy/{{ .Env.REPO_NAME }}:{{ .Tag }}"]
     goos: linux
     goarch: amd64
     dockerfile: release.Dockerfile
@@ -82,3 +105,7 @@ dockers:
 
 checksum:
   name_template: "{{ .ProjectName}}_checksums.txt"
+
+release:
+  ids:
+    - lib
