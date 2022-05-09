@@ -24,7 +24,7 @@
 							/>
 						</mat-date-range-input>
 						<mat-date-range-picker #statsPicker [disabled]="false"></mat-date-range-picker>
-						<img src="/assets/img/angle-arrow-down.svg" alt="arrow down icon" />
+						<img src="/assets/img/angle-arrow-down.svg" class="margin-right__0px" alt="arrow down icon" />
 					</button>
 
 					<div [ngClass]="{ show: showDateFilterDropdown }" class="dropdown__menu">
@@ -76,12 +76,13 @@
 							class="button button__filter button--has-icon icon-right margin-left__16px flex flex__align-items-center flex__justify-between group-dropdown"
 							(click)="showFilterCalendar = !showFilterCalendar; showOverlay = true"
 						>
-							<span class="color__primary">{{ selectedGroupName() }}</span>
+							<span class="color__primary has-ellipsis">{{ selectedGroupName() }}</span>
 							<img src="/assets/img/angle-arrow-down.svg" alt="arrow down icon" />
 						</button>
 						<div class="dropdown__menu dropdown__menu__push-left group-dropdown-menu" [ngClass]="{ show: showFilterCalendar }">
 							<ul id="groups-dropdown">
 								<li
+									class="has-ellipsis"
 									[ngClass]="{ active: convyDashboardService.activeGroupId == group.uid }"
 									*ngFor="let group of groups"
 									(click)="convyDashboardService.activeGroupId = group.uid; toggleActiveGroup(); showFilterCalendar = false; showOverlay = false"
@@ -155,6 +156,7 @@
 						<div class="list-item-inline--item padding-top__16px"><div class="skeleton-loader small"></div></div>
 					</li>
 				</ul>
+
 				<ul class="card--container" id="group-config" *ngIf="!isloadingConfig">
 					<li class="list-item-inline">
 						<div class="list-item-inline--label">Request interval (Seconds)</div>
@@ -260,7 +262,7 @@
 								>
 									<img src="/assets/img/apps-icon-grey.svg" alt="apps filter icon" />
 									<span>All Apps</span>
-									<img class="margin-left__30px" src="/assets/img/angle-arrow-down.svg" alt="arrow down icon" />
+									<img class="margin-left__30px margin-right__0px" src="/assets/img/angle-arrow-down.svg" alt="arrow down icon" />
 								</button>
 
 								<div class="dropdown__menu with-padding large" [ngClass]="{ show: showEventsAppsDropdown }">
@@ -269,13 +271,15 @@
 										<input type="search" placeholder="Search apps here" #eventsAppsFilter />
 									</div>
 
-									<div class="dropdown__menu__item" *ngFor="let app of eventsAppsFilter$ | async">
+									<li class="dropdown__menu__item border__bottom" *ngFor="let app of eventsAppsFilter$ | async">
 										<label [for]="app.uid">{{ app.name }}</label>
 										<input type="checkbox" name="app" [value]="app.uid" [id]="app.uid" [checked]="app.uid === eventApp" (change)="updateAppFilter(app.uid, $event, 'events')" />
+									</li>
+
+									<div *ngIf="filteredApps?.length !== 0 && !!eventApp" class="margin-top__10px">
+										<button class="button button__clear button__small" (click)="clearEventFilters(activeTab, 'eventsApp'); showEventsAppsDropdown = false">Clear</button>
 									</div>
-									<div *ngIf="filteredApps?.length !== 0 && !!eventApp" class="flex flex__justify-end margin-top__10px">
-										<button class="button button__white button__small" (click)="clearEventFilters(activeTab, 'eventsApp'); showEventsAppsDropdown = false">Clear</button>
-									</div>
+
 									<p *ngIf="filteredApps?.length === 0">No app to display</p>
 								</div>
 							</div>
@@ -321,6 +325,7 @@
 									<mat-date-range-picker #eventDeliveriesFilterPicker [disabled]="false"></mat-date-range-picker>
 									<img class="margin-right__0px" src="/assets/img/angle-arrow-down.svg" alt="arrow down icon" />
 								</button>
+
 								<div [ngClass]="{ show: showEventDelFilterCalendar }" class="dropdown__menu">
 									<ul>
 										<li
@@ -412,7 +417,7 @@
 										/>
 									</div>
 									<div *ngIf="filteredApps?.length !== 0 && !!eventDeliveriesApp" class="margin-top__10px">
-										<button class="button button__white button__small" (click)="clearEventFilters(activeTab, 'eventsDelApp'); showEventDeliveriesAppsDropdown = false; showOverlay = false">
+										<button class="button button__clear button__small" (click)="clearEventFilters(activeTab, 'eventsDelApp'); showEventDeliveriesAppsDropdown = false; showOverlay = false">
 											Clear
 										</button>
 									</div>
@@ -426,6 +431,7 @@
 									<img src="../../../../assets/img/close-icon.svg" alt="close icon" />
 								</button>
 							</div>
+
 							<button
 								class="button button__filter margin-left__24px flex__justify-center"
 								(click)="fetchRetryCount()"
@@ -444,7 +450,7 @@
 
 						<div class="flex">
 							<button
-								class="button button__white button__small font__12px margin-right__20px"
+								class="button button__white button__small font__12px margin-right__20px text--bold"
 								(click)="clearEventFilters(activeTab); selectedEventsDelDateOption = ''"
 								[ngClass]="{
 									disabled:
@@ -615,7 +621,9 @@
 											</div>
 										</td>
 										<td>
-											<div>{{ event.event_metadata.name }}</div>
+											<div>
+												<div class="tag tag--Neutral">{{ event.event_metadata.name }}</div>
+											</div>
 										</td>
 										<td>
 											<div>{{ event.metadata?.num_trials }}</div>

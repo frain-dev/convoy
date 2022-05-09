@@ -19,8 +19,8 @@ import { DatePipe } from '@angular/common';
 	styleUrls: ['./convoy-dashboard.component.scss']
 })
 export class ConvoyDashboardComponent implements OnInit {
-	eventsTableHead: string[] = ['Event Type', 'App Name', 'Created At', ''];
-	eventDelTableHead: string[] = ['Status', 'Event Type', 'Attempts', 'Created At', ''];
+	eventsTableHead: string[] = ['Event Type', 'App Name', 'Time Created', ''];
+	eventDelTableHead: string[] = ['Status', 'Event Type', 'Attempts', 'Time Created', ''];
 	appsTableHead: string[] = ['Status', 'Name', 'Time Created', 'Updated', 'Events', 'Endpoints'];
 	showFilterCalendar = false;
 	tabs: ['events', 'event deliveries', 'apps'] = ['events', 'event deliveries', 'apps'];
