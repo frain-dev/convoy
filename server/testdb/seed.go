@@ -219,5 +219,5 @@ func PurgeDB(db datastore.DatabaseClient) {
 	err := client.Drop(context.TODO())
 	if err != nil {
 		log.WithError(err).Fatal("failed to truncate db")
-	}
+  }
 }
