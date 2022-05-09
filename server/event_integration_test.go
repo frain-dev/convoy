@@ -287,8 +287,8 @@ func (s *EventIntegrationTestSuite) Test_ForceResendEventDeliveries_Valid_EventD
 
 	url := fmt.Sprintf("/api/v1/eventdeliveries/forceresend")
 
-	bodyStr := `{"ids":%s}`
-	body := serialize(bodyStr, []string{e1.UID, e2.UID, e3.UID})
+	bodyStr := `{"ids":["%s", "%s", "%s"]}`
+	body := serialize(bodyStr, e1.UID, e2.UID, e3.UID)
 
 	req := createRequest(http.MethodPost, url, body)
 	w := httptest.NewRecorder()
@@ -385,5 +385,6 @@ func createRequest(method string, url string, body io.Reader) *http.Request {
 
 func serialize(r string, args ...interface{}) io.Reader {
 	v := fmt.Sprintf(r, args...)
+	fmt.Println("ff", v)
 	return strings.NewReader(v)
 }
