@@ -66,7 +66,8 @@ func (s *EventIntegrationTestSuite) Test_CreateAppEvent_Valid_Event() {
 		"data":       `{"level":"test"}`,
 	}
 
-	req, w := newRequestAndResponder(http.MethodPost, "/api/v1/events", serialize(s.T(), body))
+	req := createRequest(http.MethodPost, "/api/v1/events", serialize(s.T(), body))
+	w := httptest.NewRecorder()
 	// Act.
 	s.Router.ServeHTTP(w, req)
 
@@ -95,7 +96,8 @@ func (s *EventIntegrationTestSuite) Test_CreateAppEvent_App_has_no_endpoint() {
 		"data":       `{"level":"test"}`,
 	}
 
-	req, w := newRequestAndResponder(http.MethodPost, "/api/v1/events", serialize(s.T(), body))
+	req := createRequest(http.MethodPost, "/api/v1/events", serialize(s.T(), body))
+	w := httptest.NewRecorder()
 	// Act.
 	s.Router.ServeHTTP(w, req)
 
@@ -117,7 +119,8 @@ func (s *EventIntegrationTestSuite) Test_CreateAppEvent_App_is_disabled() {
 		"data":       `{"level":"test"}`,
 	}
 
-	req, w := newRequestAndResponder(http.MethodPost, "/api/v1/events", serialize(s.T(), body))
+	req := createRequest(http.MethodPost, "/api/v1/events", serialize(s.T(), body))
+	w := httptest.NewRecorder()
 	// Act.
 	s.Router.ServeHTTP(w, req)
 
@@ -134,7 +137,8 @@ func (s *EventIntegrationTestSuite) Test_GetAppEvent_Valid_Event() {
 	event, _ := testdb.SeedEvent(s.DB, app, eventID, "*", []byte(`{}`))
 
 	url := fmt.Sprintf("/api/v1/events/%s", eventID)
-	req, w := newRequestAndResponder(http.MethodGet, url, serialize(s.T(), nil))
+	req := createRequest(http.MethodGet, url, serialize(s.T(), nil))
+	w := httptest.NewRecorder()
 
 	// Act.
 	s.Router.ServeHTTP(w, req)
@@ -155,7 +159,8 @@ func (s *EventIntegrationTestSuite) Test_GetAppEvent_Event_not_found() {
 	expectedStatusCode := http.StatusNotFound
 
 	url := fmt.Sprintf("/api/v1/events/%s", eventID)
-	req, w := newRequestAndResponder(http.MethodGet, url, serialize(s.T(), nil))
+	req := createRequest(http.MethodGet, url, serialize(s.T(), nil))
+	w := httptest.NewRecorder()
 
 	// Act.
 	s.Router.ServeHTTP(w, req)
@@ -173,7 +178,8 @@ func (s *EventIntegrationTestSuite) Test_GetEventDelivery_Valid_EventDelivery() 
 	eventDelivery, _ := testdb.SeedEventDelivery(s.DB, app, &datastore.Event{}, &datastore.Endpoint{}, eventDeliveryID, datastore.SuccessEventStatus)
 
 	url := fmt.Sprintf("/api/v1/eventdeliveries/%s", eventDeliveryID)
-	req, w := newRequestAndResponder(http.MethodGet, url, serialize(s.T(), nil))
+	req := createRequest(http.MethodGet, url, serialize(s.T(), nil))
+	w := httptest.NewRecorder()
 
 	// Act.
 	s.Router.ServeHTTP(w, req)
@@ -194,7 +200,8 @@ func (s *EventIntegrationTestSuite) Test_GetEventDelivery_Event_not_found() {
 	expectedStatusCode := http.StatusNotFound
 
 	url := fmt.Sprintf("/api/v1/eventdeliveries/%s", eventDeliveryID)
-	req, w := newRequestAndResponder(http.MethodGet, url, serialize(s.T(), nil))
+	req := createRequest(http.MethodGet, url, serialize(s.T(), nil))
+	w := httptest.NewRecorder()
 
 	// Act.
 	s.Router.ServeHTTP(w, req)
@@ -213,7 +220,8 @@ func (s *EventIntegrationTestSuite) Test_ResendEventDelivery_Valid_Resend() {
 	eventDelivery, _ := testdb.SeedEventDelivery(s.DB, app, &datastore.Event{}, &app.Endpoints[0], eventDeliveryID, datastore.FailureEventStatus)
 
 	url := fmt.Sprintf("/api/v1/eventdeliveries/%s/resend", eventDeliveryID)
-	req, w := newRequestAndResponder(http.MethodPut, url, serialize(s.T(), nil))
+	req := createRequest(http.MethodPut, url, serialize(s.T(), nil))
+	w := httptest.NewRecorder()
 
 	// Act.
 	s.Router.ServeHTTP(w, req)
@@ -248,7 +256,8 @@ func (s *EventIntegrationTestSuite) Test_BatchRetryEventDelivery_Valid_EventDeli
 	_, _ = testdb.SeedEventDelivery(s.DB, app, event, &app.Endpoints[0], eventDeliveryID, datastore.FailureEventStatus)
 
 	url := fmt.Sprintf("/api/v1/eventdeliveries/batchretry?appId=%s&eventId=%s&status=%s", app.UID, event.UID, datastore.FailureEventStatus)
-	req, w := newRequestAndResponder(http.MethodPost, url, serialize(s.T(), nil))
+	req := createRequest(http.MethodPost, url, serialize(s.T(), nil))
+	w := httptest.NewRecorder()
 
 	// Act.
 	s.Router.ServeHTTP(w, req)
@@ -270,7 +279,8 @@ func (s *EventIntegrationTestSuite) Test_CountAffectedEventDeliveries_Valid_Filt
 	_, _ = testdb.SeedEventDelivery(s.DB, app, event, &app.Endpoints[0], eventDeliveryID, datastore.FailureEventStatus)
 
 	url := fmt.Sprintf("/api/v1/eventdeliveries/countbatchretryevents?appId=%s&eventId=%s&status=%s", app.UID, event.UID, datastore.FailureEventStatus)
-	req, w := newRequestAndResponder(http.MethodGet, url, serialize(s.T(), nil))
+	req := createRequest(http.MethodGet, url, serialize(s.T(), nil))
+	w := httptest.NewRecorder()
 
 	// Act.
 	s.Router.ServeHTTP(w, req)
@@ -300,7 +310,8 @@ func (s *EventIntegrationTestSuite) Test_ForceResendEventDeliveries_Valid_EventD
 
 	url := fmt.Sprintf("/api/v1/eventdeliveries/forceresend")
 	body := M{"ids": []string{e1.UID, e2.UID, e3.UID}}
-	req, w := newRequestAndResponder(http.MethodPost, url, serialize(s.T(), body))
+	req := createRequest(http.MethodPost, url, serialize(s.T(), body))
+	w := httptest.NewRecorder()
 
 	// Act.
 	s.Router.ServeHTTP(w, req)
@@ -322,7 +333,8 @@ func (s *EventIntegrationTestSuite) Test_GetEventsPaged() {
 	_, _ = testdb.SeedEvent(s.DB, app2, eventID, "*", []byte(`{}`))
 
 	url := fmt.Sprintf("/api/v1/events?appId=%s", app1.UID)
-	req, w := newRequestAndResponder(http.MethodGet, url, serialize(s.T(), nil))
+	req := createRequest(http.MethodGet, url, serialize(s.T(), nil))
+	w := httptest.NewRecorder()
 
 	// Act.
 	s.Router.ServeHTTP(w, req)
@@ -353,7 +365,8 @@ func (s *EventIntegrationTestSuite) GetEventDeliveriesPaged() {
 	_, _ = testdb.SeedEventDelivery(s.DB, app2, event2, &app2.Endpoints[0], eventDeliveryID, datastore.FailureEventStatus)
 
 	url := fmt.Sprintf("/api/v1/eventdeliveries?appId=%s", app1.UID)
-	req, w := newRequestAndResponder(http.MethodGet, url, serialize(s.T(), nil))
+	req := createRequest(http.MethodGet, url, serialize(s.T(), nil))
+	w := httptest.NewRecorder()
 
 	// Act.
 	s.Router.ServeHTTP(w, req)
@@ -380,12 +393,12 @@ func TestEventIntegrationSuiteTest(t *testing.T) {
 	suite.Run(t, new(EventIntegrationTestSuite))
 }
 
-func newRequestAndResponder(method string, url string, body io.Reader) (*http.Request, *httptest.ResponseRecorder) {
+func createRequest(method string, url string, body io.Reader) *http.Request {
 	req := httptest.NewRequest(method, url, body)
 	req.SetBasicAuth("test", "test")
 	req.Header.Add("Content-Type", "application/json")
 
-	return req, httptest.NewRecorder()
+	return req
 }
 
 func serialize(t *testing.T, obj interface{}) io.Reader {
