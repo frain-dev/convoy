@@ -1,0 +1,289 @@
+//go:build integration
+// +build integration
+
+package server
+
+import (
+	"context"
+	"encoding/json"
+	"fmt"
+	"github.com/frain-dev/convoy"
+	"github.com/google/uuid"
+	"go.mongodb.org/mongo-driver/bson/primitive"
+	"log"
+	"net/http"
+	"net/http/httptest"
+	"testing"
+	"time"
+
+	"github.com/frain-dev/convoy/config"
+	"github.com/frain-dev/convoy/datastore"
+	"github.com/frain-dev/convoy/server/testdb"
+	"github.com/stretchr/testify/require"
+	"github.com/stretchr/testify/suite"
+)
+
+type GroupIntegrationTestSuite struct {
+	suite.Suite
+	DB           datastore.DatabaseClient
+	Router       http.Handler
+	ConvoyApp    *applicationHandler
+	DefaultGroup *datastore.Group
+}
+
+func (s *GroupIntegrationTestSuite) SetupSuite() {
+	defaultGroup := &datastore.Group{
+		UID:  uuid.New().String(),
+		Name: "default-group",
+		Config: &datastore.GroupConfig{
+			Strategy: datastore.StrategyConfiguration{
+				Type: config.DefaultStrategyProvider,
+				Default: datastore.DefaultStrategyConfiguration{
+					IntervalSeconds: 10,
+					RetryLimit:      2,
+				},
+			},
+			Signature: datastore.SignatureConfiguration{
+				Header: config.DefaultSignatureHeader,
+				Hash:   "SHA512",
+			},
+			DisableEndpoint: false,
+			ReplayAttacks:   false,
+		},
+		RateLimit:         convoy.RATE_LIMIT,
+		RateLimitDuration: convoy.RATE_LIMIT_DURATION,
+		CreatedAt:         primitive.NewDateTimeFromTime(time.Now()),
+		UpdatedAt:         primitive.NewDateTimeFromTime(time.Now()),
+		DocumentStatus:    datastore.ActiveDocumentStatus,
+	}
+	v, _ := json.Marshal(defaultGroup)
+	log.Fatal(string(v))
+	s.DB = getDB()
+	s.ConvoyApp = buildApplication()
+	s.Router = buildRoutes(s.ConvoyApp)
+}
+
+func (s *GroupIntegrationTestSuite) SetupTest() {
+	testdb.PurgeDB(s.DB)
+
+	// Setup Default Group.
+	s.DefaultGroup, _ = testdb.SeedDefaultGroup(s.DB)
+
+	// Setup Config.
+	err := config.LoadConfig("./testdata/Auth_Config/full-convoy.json")
+	require.NoError(s.T(), err)
+
+	initRealmChain(s.T(), s.DB.APIRepo())
+}
+
+func (s *GroupIntegrationTestSuite) TestGetGroup() {
+	groupID := uuid.NewString()
+	expectedStatusCode := http.StatusOK
+
+	// Just Before.
+	group, err := testdb.SeedGroup(s.DB, groupID, "", nil)
+	require.NoError(s.T(), err)
+	app, _ := testdb.SeedApplication(s.DB, group, uuid.NewString(), false)
+	_, _ = testdb.SeedEndpoint(s.DB, app, []string{"*"})
+	_, _ = testdb.SeedEvent(s.DB, app, uuid.NewString(), "*", []byte("{}"))
+
+	url := fmt.Sprintf("/api/v1/groups/%s", group.UID)
+	req := createRequest(http.MethodGet, url, nil)
+	w := httptest.NewRecorder()
+
+	// Act.
+	s.Router.ServeHTTP(w, req)
+
+	// Assert.
+	require.Equal(s.T(), expectedStatusCode, w.Code)
+
+	var respGroup datastore.Group
+	parseResponse(s.T(), w.Result(), &respGroup)
+	require.Equal(s.T(), group.UID, respGroup.UID)
+	require.Equal(s.T(), datastore.GroupStatistics{
+		MessagesSent: 1,
+		TotalApps:    1,
+	}, *respGroup.Statistics)
+}
+
+func (s *GroupIntegrationTestSuite) TestGetGroup_Group_not_found() {
+	expectedStatusCode := http.StatusNotFound
+
+	url := fmt.Sprintf("/api/v1/groups/%s", uuid.NewString())
+	req := createRequest(http.MethodGet, url, nil)
+	w := httptest.NewRecorder()
+
+	// Act.
+	s.Router.ServeHTTP(w, req)
+
+	// Assert.
+	require.Equal(s.T(), expectedStatusCode, w.Code)
+}
+
+func (s *GroupIntegrationTestSuite) TestDeleteGroup() {
+	groupID := uuid.NewString()
+	expectedStatusCode := http.StatusOK
+
+	// Just Before.
+	group, err := testdb.SeedGroup(s.DB, groupID, "", nil)
+	require.NoError(s.T(), err)
+
+	url := fmt.Sprintf("/api/v1/groups/%s", group.UID)
+	req := createRequest(http.MethodDelete, url, nil)
+	w := httptest.NewRecorder()
+
+	// Act.
+	s.Router.ServeHTTP(w, req)
+
+	// Assert.
+	require.Equal(s.T(), expectedStatusCode, w.Code)
+	g, err := s.DB.GroupRepo().FetchGroupByID(context.Background(), group.UID)
+	require.NoError(s.T(), err)
+
+	require.Equal(s.T(), g.DocumentStatus, datastore.DeletedDocumentStatus)
+	require.True(s.T(), g.DeletedAt > 0)
+}
+
+func (s *GroupIntegrationTestSuite) TestDeleteGroup_Group_not_found() {
+	expectedStatusCode := http.StatusNotFound
+
+	url := fmt.Sprintf("/api/v1/groups/%s", uuid.NewString())
+	req := createRequest(http.MethodDelete, url, nil)
+	w := httptest.NewRecorder()
+
+	// Act.
+	s.Router.ServeHTTP(w, req)
+
+	// Assert.
+	require.Equal(s.T(), expectedStatusCode, w.Code)
+}
+
+func (s *GroupIntegrationTestSuite) TestCreateGroup() {
+	expectedStatusCode := http.StatusOK
+
+	bodyStr := `{
+    "name": "test-group",
+    "logo_url": "",
+    "config": {
+        "strategy": {
+            "type": "default",
+            "default": {
+                "intervalSeconds": 10,
+                "retryLimit": 2
+            },
+            "exponentialBackoff": {
+                "retryLimit": 0
+            }
+        },
+        "signature": {
+            "header": "X-Convoy-Signature",
+            "hash": "SHA512"
+        },
+        "disable_endpoint": false,
+        "replay_attacks": false
+    },
+    "rate_limit": 5000,
+    "rate_limit_duration": "1m"
+}`
+
+	body := serialize(bodyStr)
+	req := createRequest(http.MethodPost, "/api/v1/groups", body)
+	w := httptest.NewRecorder()
+
+	// Act.
+	s.Router.ServeHTTP(w, req)
+
+	// Assert.
+	require.Equal(s.T(), expectedStatusCode, w.Code)
+
+	var respGroup datastore.Group
+	parseResponse(s.T(), w.Result(), &respGroup)
+	require.NotEmpty(s.T(), respGroup.UID)
+	require.Equal(s.T(), 5000, respGroup.RateLimit)
+	require.Equal(s.T(), "1m0s", respGroup.RateLimitDuration)
+	require.Equal(s.T(), "test-group", respGroup.Name)
+}
+
+func (s *GroupIntegrationTestSuite) TestUpdateGroup() {
+	groupID := uuid.NewString()
+	expectedStatusCode := http.StatusOK
+
+	// Just Before.
+	group, err := testdb.SeedGroup(s.DB, groupID, "test-group", nil)
+	require.NoError(s.T(), err)
+
+	url := fmt.Sprintf("/api/v1/groups/%s", group.UID)
+
+	bodyStr := `{"name": "group_1"}`
+	req := createRequest(http.MethodPut, url, serialize(bodyStr))
+	w := httptest.NewRecorder()
+
+	// Act.
+	s.Router.ServeHTTP(w, req)
+
+	// Assert.
+	require.Equal(s.T(), expectedStatusCode, w.Code)
+	g, err := s.DB.GroupRepo().FetchGroupByID(context.Background(), group.UID)
+	require.NoError(s.T(), err)
+	require.Equal(s.T(), "group_1", g.Name)
+}
+
+func (s *GroupIntegrationTestSuite) TestGetGroups() {
+	expectedStatusCode := http.StatusOK
+
+	// Just Before.
+	group1, _ := testdb.SeedGroup(s.DB, uuid.NewString(), "test-group-1", nil)
+	group2, _ := testdb.SeedGroup(s.DB, uuid.NewString(), "test-group-2", nil)
+	group3, _ := testdb.SeedGroup(s.DB, uuid.NewString(), "test-group-3", nil)
+
+	req := createRequest(http.MethodGet, "/api/v1/groups", nil)
+	w := httptest.NewRecorder()
+
+	// Act.
+	s.Router.ServeHTTP(w, req)
+
+	// Assert.
+	require.Equal(s.T(), expectedStatusCode, w.Code)
+
+	var groups []*datastore.Group
+	parseResponse(s.T(), w.Result(), &groups)
+	require.Equal(s.T(), 3, len(groups))
+
+	v := []*datastore.Group{group1, group2, group3}
+	for i, group := range groups {
+		require.Equal(s.T(), v[i].UID, group.UID)
+	}
+}
+
+func (s *GroupIntegrationTestSuite) TestGetGroups_Filter_by_name() {
+	expectedStatusCode := http.StatusOK
+
+	// Just Before.
+	group1, _ := testdb.SeedGroup(s.DB, uuid.NewString(), "test-group-1", nil)
+	_, _ = testdb.SeedGroup(s.DB, uuid.NewString(), "test-group-2", nil)
+	_, _ = testdb.SeedGroup(s.DB, uuid.NewString(), "test-group-3", nil)
+
+	url := fmt.Sprintf("/api/v1/groups?name=%s", group1.Name)
+	req := createRequest(http.MethodGet, url, nil)
+	w := httptest.NewRecorder()
+
+	// Act.
+	s.Router.ServeHTTP(w, req)
+
+	// Assert.
+	require.Equal(s.T(), expectedStatusCode, w.Code)
+
+	var groups []*datastore.Group
+	parseResponse(s.T(), w.Result(), &groups)
+	require.Equal(s.T(), 1, len(groups))
+
+	require.Equal(s.T(), group1.UID, groups[0].UID)
+}
+
+func (s *GroupIntegrationTestSuite) TearDownTest() {
+	testdb.PurgeDB(s.DB)
+}
+
+func TestGroupIntegrationTestSuiteTest(t *testing.T) {
+	suite.Run(t, new(GroupIntegrationTestSuite))
+}
