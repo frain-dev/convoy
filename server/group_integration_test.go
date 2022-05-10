@@ -5,22 +5,16 @@ package server
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
-	"github.com/frain-dev/convoy"
-	"github.com/google/uuid"
-	"go.mongodb.org/mongo-driver/bson/primitive"
-	"log"
-	"net/http"
-	"net/http/httptest"
-	"testing"
-	"time"
-
 	"github.com/frain-dev/convoy/config"
 	"github.com/frain-dev/convoy/datastore"
 	"github.com/frain-dev/convoy/server/testdb"
+	"github.com/google/uuid"
 	"github.com/stretchr/testify/require"
 	"github.com/stretchr/testify/suite"
+	"net/http"
+	"net/http/httptest"
+	"testing"
 )
 
 type GroupIntegrationTestSuite struct {
@@ -32,32 +26,6 @@ type GroupIntegrationTestSuite struct {
 }
 
 func (s *GroupIntegrationTestSuite) SetupSuite() {
-	defaultGroup := &datastore.Group{
-		UID:  uuid.New().String(),
-		Name: "default-group",
-		Config: &datastore.GroupConfig{
-			Strategy: datastore.StrategyConfiguration{
-				Type: config.DefaultStrategyProvider,
-				Default: datastore.DefaultStrategyConfiguration{
-					IntervalSeconds: 10,
-					RetryLimit:      2,
-				},
-			},
-			Signature: datastore.SignatureConfiguration{
-				Header: config.DefaultSignatureHeader,
-				Hash:   "SHA512",
-			},
-			DisableEndpoint: false,
-			ReplayAttacks:   false,
-		},
-		RateLimit:         convoy.RATE_LIMIT,
-		RateLimitDuration: convoy.RATE_LIMIT_DURATION,
-		CreatedAt:         primitive.NewDateTimeFromTime(time.Now()),
-		UpdatedAt:         primitive.NewDateTimeFromTime(time.Now()),
-		DocumentStatus:    datastore.ActiveDocumentStatus,
-	}
-	v, _ := json.Marshal(defaultGroup)
-	log.Fatal(string(v))
 	s.DB = getDB()
 	s.ConvoyApp = buildApplication()
 	s.Router = buildRoutes(s.ConvoyApp)
