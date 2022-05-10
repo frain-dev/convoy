@@ -51,7 +51,7 @@ func (s *SecurityIntegrationTestSuite) Test_CreateAPIKey() {
 	expectedStatusCode := http.StatusCreated
 
 	// Arrange Request.
-	bodyStr := `{"name":"default_api_key","role":{"type":"ui_admin","groups":["%s"]},"key_type":"api_key","expires_at":"%s"}"`
+	bodyStr := `{"name":"default_api_key","role":{"type":"ui_admin","groups":["%s"]},"key_type":"api_key","expires_at":"%s"}`
 	body := serialize(bodyStr, s.DefaultGroup.UID, time.Now().Add(time.Hour))
 
 	req := createRequest(http.MethodPost, "/api/v1/security/keys", body)

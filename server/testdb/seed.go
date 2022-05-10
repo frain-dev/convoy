@@ -147,7 +147,7 @@ func SeedAPIKey(db datastore.DatabaseClient, g *datastore.Group, uid, name, keyT
 	}
 
 	apiKey := &datastore.APIKey{
-		UID:    uuid.New().String(),
+		UID:    uid,
 		MaskID: fmt.Sprintf("mask-%s", uuid.NewString()),
 		Name:   name,
 		Type:   datastore.KeyType(keyType),
