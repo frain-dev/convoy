@@ -7,13 +7,13 @@ order: 1
 
 # Quick start guide
 
-## 1. Create Directory
+## Create Directory
 
 ```bash[bash]
 $ mkdir convoy && cd convoy
 ```
 
-## 2. Copy Configuration
+## Copy Configuration
 
 Copy the configuration file to the directory created above.
 
@@ -53,7 +53,7 @@ Copy the configuration file to the directory created above.
 }
 ```
 
-## 3. Start Container
+## Start Container
 
 ```bash[bash]
 $ docker run \
@@ -68,11 +68,11 @@ Now, you can head over to [http://localhost:5005](http://localhost:5005) to view
 
 You can check the [config page](./docs/configuration) for full details on configuration.
 
-## 4. Send Webhooks
+## Send Webhooks
 
 Now, let's send webhooks. We maintain an openapi spec in the repository, you can download it [here](https://raw.githubusercontent.com/frain-dev/convoy/main/docs/v3/openapi3.json) and import to Insomnia or Postman to get started.
 
-### 4.1 Create Application
+### Create Application
 
 ```json[Sample Payload]
 {
@@ -108,7 +108,7 @@ $ curl \
 }
 ```
 
-### 4.2 Add Endpoint
+### Add Endpoint
 
 ```json[Sample Payload]
 {
@@ -141,7 +141,7 @@ $ curl \
 }
 ```
 
-### 4.3 Send Event
+### Send Event
 
 ```json[Sample Payload]
 {
@@ -226,7 +226,7 @@ $ curl \
 }
 ```
 
-## 5. Receive Webhooks
+## Receive Webhooks
 
 Let's write a basic ruby app to receive events.
 
