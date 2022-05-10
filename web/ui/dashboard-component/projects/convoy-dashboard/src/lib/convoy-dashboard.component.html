@@ -542,7 +542,7 @@
 											</div>
 										</td>
 										<td class="has-long-text">
-											<div>{{ event.app_metadata.title }}</div>
+											<div class="underline color__primary" (click)="openAppsTabAndDetails(event.app_metadata.title)">{{ event.app_metadata.title }}</div>
 										</td>
 										<td>
 											<div>{{ event.created_at | date: 'mediumTime' }}</div>
@@ -891,8 +891,8 @@
 							</li>
 							<li class="list-item-inline">
 								<div class="list-item-inline--label">App Name</div>
-								<div class="list-item-inline--item color">
-									{{ eventDelsDetailsItem.app_metadata?.title }}
+								<div class="list-item-inline--item color underline" (click)="openAppsTabAndDetails(eventDelsDetailsItem.app_metadata.title)">
+									{{ eventDelsDetailsItem.app_metadata.title }}
 								</div>
 							</li>
 							<li class="list-item-inline" *ngIf="eventDelsDetailsItem.status == 'Success'">

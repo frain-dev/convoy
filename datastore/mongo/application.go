@@ -3,6 +3,7 @@ package mongo
 import (
 	"context"
 	"errors"
+	"fmt"
 	"time"
 
 	"github.com/frain-dev/convoy/datastore"
@@ -27,12 +28,18 @@ func NewApplicationRepo(db *mongo.Database) datastore.ApplicationRepository {
 	}
 }
 
-func (db *appRepo) CreateApplication(ctx context.Context,
-	app *datastore.Application) error {
+func (db *appRepo) CreateApplication(ctx context.Context, app *datastore.Application) error {
+	err := db.assertUniqueAppTitle(ctx, app)
+	if err != nil {
+		if errors.Is(err, datastore.ErrDuplicateAppName) {
+			return err
+		}
+
+		return fmt.Errorf("failed to check if application name is unique: %v", err)
+	}
 
 	app.ID = primitive.NewObjectID()
-
-	_, err := db.client.InsertOne(ctx, app)
+	_, err = db.client.InsertOne(ctx, app)
 	return err
 }
 
@@ -69,6 +76,26 @@ func (db *appRepo) LoadApplicationsPaged(ctx context.Context, groupID, q string,
 	}
 
 	return apps, datastore.PaginationData(paginatedData.Pagination), nil
+}
+
+func (db *appRepo) assertUniqueAppTitle(ctx context.Context, app *datastore.Application) error {
+	f := bson.M{
+		"uid":             bson.M{"$ne": app.UID},
+		"title":           app.Title,
+		"group_id":        app.GroupID,
+		"document_status": datastore.ActiveDocumentStatus,
+	}
+
+	count, err := db.client.CountDocuments(ctx, f)
+	if err != nil {
+		return err
+	}
+
+	if count != 0 {
+		return datastore.ErrDuplicateAppName
+	}
+
+	return nil
 }
 
 func (db *appRepo) LoadApplicationsPagedByGroupId(ctx context.Context, groupID string, pageable datastore.Pageable) ([]datastore.Application, datastore.PaginationData, error) {
@@ -215,8 +242,15 @@ func findEndpoint(endpoints *[]datastore.Endpoint, id string) (*datastore.Endpoi
 	return nil, datastore.ErrEndpointNotFound
 }
 
-func (db *appRepo) UpdateApplication(ctx context.Context,
-	app *datastore.Application) error {
+func (db *appRepo) UpdateApplication(ctx context.Context, app *datastore.Application) error {
+	err := db.assertUniqueAppTitle(ctx, app)
+	if err != nil {
+		if errors.Is(err, datastore.ErrDuplicateAppName) {
+			return err
+		}
+
+		return fmt.Errorf("failed to check if application name is unique: %v", err)
+	}
 
 	app.UpdatedAt = primitive.NewDateTimeFromTime(time.Now())
 
@@ -230,7 +264,7 @@ func (db *appRepo) UpdateApplication(ctx context.Context,
 		primitive.E{Key: "is_disabled", Value: app.IsDisabled},
 	}}}
 
-	_, err := db.client.UpdateOne(ctx, filter, update)
+	_, err = db.client.UpdateOne(ctx, filter, update)
 	return err
 }
 

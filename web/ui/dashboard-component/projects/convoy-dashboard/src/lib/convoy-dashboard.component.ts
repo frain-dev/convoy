@@ -1125,6 +1125,12 @@ export class ConvoyDashboardComponent implements OnInit {
 		this.toggleActiveTab('event deliveries');
 	}
 
+	async openAppsTabAndDetails(appName: string) {
+		this.appsSearchString = appName;
+		this.toggleActiveTab('apps');
+		this.searchApps({ type: 'apps' });
+	}
+
 	async refreshTables() {
 		await this.initDashboard();
 		this.toggleActiveTab('event deliveries');
