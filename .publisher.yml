@@ -32,7 +32,7 @@ nfpms:
     license: MPL-2.0
     maintainer: frain-dev
     homepage: https://getconvoy.io/
-    description: "A Cloud native webhook service"
+    description: "A fast & secure open source webhooks service"
     file_name_template: "{{ .ProjectName }}_{{ .Version }}_{{ .Os }}_{{ .Arch }}"
     formats:
       - deb
@@ -41,7 +41,7 @@ nfpms:
     license: MPL-2.0
     maintainer: frain-dev
     homepage: https://getconvoy.io/
-    description: "A Cloud native webhook service"
+    description: "A fast & secure open source webhooks service"
     file_name_template: "{{ .ProjectName }}_{{ .Version }}_{{ .Os }}_{{ .Arch }}"
     formats:
       - rpm
@@ -76,7 +76,7 @@ publishers:
 brews:
   - name: convoy
     homepage: https://getconvoy.io/
-    description: A Cloud native webhook service
+    description: A fast & secure open source webhooks service
     license: MPL-2.0
     skip_upload: auto
     commit_author:
@@ -97,7 +97,7 @@ dockers:
     build_flag_templates:
       - --platform=linux/amd64
       - --label=org.opencontainers.image.title={{ .ProjectName }}
-      - --label=org.opencontainers.image.description=A Cloud native webhook service
+      - --label=org.opencontainers.image.description=A fast & secure open source webhooks service
       - --label=org.opencontainers.image.url=https://github.com/{{ .Env.REPO_NAME }}
       - --label=org.opencontainers.image.source=https://github.com/{{ .Env.REPO_NAME }}
       - --label=org.opencontainers.image.created={{ time "2006-01-02T15:04:05Z07:00" }}
