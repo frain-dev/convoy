@@ -432,6 +432,21 @@ func overrideConfigWithEnvVars(c *Configuration, override *Configuration) {
 		c.NewRelic.AppName = override.NewRelic.AppName
 	}
 
+	// CONVOY_SEARCH_TYPE
+	if !IsStringEmpty(string(override.Search.Type)) {
+		c.Search.Type = override.Search.Type
+	}
+
+	// CONVOY_TYPESENSE_HOST
+	if !IsStringEmpty(override.Search.Typesense.Host) {
+		c.Search.Typesense.Host = override.Search.Typesense.Host
+	}
+
+	// CONVOY_TYPESENSE_API_KEY
+	if !IsStringEmpty(override.Search.Typesense.ApiKey) {
+		c.Search.Typesense.ApiKey = override.Search.Typesense.ApiKey
+	}
+
 	// CONVOY_NEWRELIC_LICENSE_KEY
 	if !IsStringEmpty(override.NewRelic.LicenseKey) {
 		c.NewRelic.LicenseKey = override.NewRelic.LicenseKey
