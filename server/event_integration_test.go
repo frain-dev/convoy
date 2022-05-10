@@ -385,6 +385,5 @@ func createRequest(method string, url string, body io.Reader) *http.Request {
 
 func serialize(r string, args ...interface{}) io.Reader {
 	v := fmt.Sprintf(r, args...)
-	fmt.Println("ff", v)
 	return strings.NewReader(v)
 }
