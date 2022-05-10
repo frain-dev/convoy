@@ -52,7 +52,7 @@ func (s *SecurityIntegrationTestSuite) Test_CreateAPIKey() {
 
 	// Arrange Request.
 	bodyStr := `{"name":"default_api_key","role":{"type":"ui_admin","groups":["%s"]},"key_type":"api_key","expires_at":"%s"}`
-	body := serialize(bodyStr, s.DefaultGroup.UID, time.Now().Add(time.Hour))
+	body := serialize(bodyStr, s.DefaultGroup.UID, time.Now().Add(time.Hour).Format(time.RFC3339))
 
 	req := createRequest(http.MethodPost, "/api/v1/security/keys", body)
 	w := httptest.NewRecorder()
