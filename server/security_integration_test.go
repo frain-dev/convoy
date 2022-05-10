@@ -4,23 +4,18 @@
 package server
 
 import (
-	"bytes"
 	"context"
-	"encoding/json"
 	"fmt"
 	"net/http"
 	"net/http/httptest"
-	"strings"
 	"testing"
 	"time"
 
-	"github.com/frain-dev/convoy/auth"
 	"github.com/frain-dev/convoy/config"
 	"github.com/frain-dev/convoy/datastore"
 	"github.com/frain-dev/convoy/server/models"
 	"github.com/frain-dev/convoy/server/testdb"
 	"github.com/google/uuid"
-	log "github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/require"
 	"github.com/stretchr/testify/suite"
 )
@@ -34,15 +29,6 @@ type SecurityIntegrationTestSuite struct {
 }
 
 func (s *SecurityIntegrationTestSuite) SetupSuite() {
-	body := map[string]auth.Role{
-		"role": {
-			Type:   auth.RoleAPI,
-			Groups: []string{"s.DefaultGroup.UID"},
-		},
-	}
-
-	vv, _ := json.Marshal(body)
-	log.Fatal(strings.Replace(bytes.NewBuffer(vv).String(), "\\", "", -1))
 	s.DB = getDB()
 	s.ConvoyApp = buildApplication()
 	s.Router = buildRoutes(s.ConvoyApp)
