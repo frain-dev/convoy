@@ -9,7 +9,7 @@ order: 3
 
 Convoy is distributed as binaries and docker images, which means you can run it in any VM environment or to any platform containers can be deployed to.
 
-#### Deploying to Heroku
+## Deploying to Heroku
 
 This section contains information on how to deploy Convoy to Heroku.
 
@@ -22,7 +22,7 @@ This section contains information on how to deploy Convoy to Heroku.
 
 Then you can follow these steps:
 
-1. ### Pull Docker Image
+1. Pull Docker Image
 
 ```bash
 $ docker pull ghcr.io/frain-dev/convoy:v0.5.2
@@ -34,7 +34,7 @@ $ docker pull ghcr.io/frain-dev/convoy:v0.5.2
 $ heroku login
 ``` 
 
-3. ### Login to Heroku Container Registry
+3. Login to Heroku Container Registry
 
 ```bash
 $ heroku container:login
@@ -46,20 +46,20 @@ $ heroku auth:token | sudo docker login --username=_ \
 		--password-stdin registry.heroku.com
 ```
 
-4. ### Push Convoy Image
+4. Push Convoy Image
 
 ```bash
 $ docker tag ghcr.io/frain-dev/convoy:v0.5.2 registry.heroku.com/<heroku-app-name>/<process-type>
 $ docker push registry.heroku.com/<heroku-app-name>/<process-type>
 ```
 
-5. ### Create a new release
+5. Create a new release
 
 ```bash
 $ heroku container:release web --app <heroku-app-name>
 ```
 
-# Deploying to Digital Ocean (or a VM)
+## Deploying to Digital Ocean (or a VM)
 
 This section contains information on how to run and deploy Convoy to a Digital Ocean VM as a systemd service
 
@@ -102,23 +102,23 @@ $ systemctl enable convoy.service
 $ systemctl start convoy.service
 ```
 
-4. Reload the deamon
+5. Reload the deamon
 
 ```bash
 $ systemctl daemon-reload
 ```
 
-5. Create a folder in /etc
+6. Create a folder in /etc
 ```bash
 $ mkdir /etc/convoy
 ```
 
-6. Move your config file the folder
+7. Move your config file the folder
 ```bash
 $ mv convoy.json /etc/convoy/convoy.json
 ```
 
-7. Reload the service
+8. Reload the service
 ```bash
 $ systemctl resatrt convoy.service
 ```

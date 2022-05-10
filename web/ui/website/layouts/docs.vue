@@ -6,15 +6,15 @@
 				<span>Docs</span>
 			</div>
 
+			<div class="input">
+				<select name="" id="" required>
+					<option v-for="version in versions" :key="version" :value="version">{{ version }}</option>
+				</select>
+				<label for="version">Version</label>
+			</div>
 			<nuxt-link to="/docs"><h3>HOME</h3></nuxt-link>
 
 			<ul>
-				<li>
-					<a class="api-reference" target="_blank" href="https://convoy.readme.io/reference/introduction">
-						Api Reference
-						<img src="~/assets/images/arrow-down-right-grey.svg" alt="arrow right" />
-					</a>
-				</li>
 				<li>
 					<nuxt-link to="/docs/guide">Quick Start Guide</nuxt-link>
 				</li>
@@ -25,13 +25,13 @@
 							{{ page.title }}
 						</nuxt-link>
 
-						<ul v-show="page.toc.length > 0" class="" :class="{ show: currentPage == page.id }">
+						<!-- <ul v-show="page.toc.length > 0" class="" :class="{ show: currentPage == page.id }">
 							<li v-for="(subpage, index) in page.toc" :key="index">
 								<nuxt-link :to="{ path: '/docs/' + page.id, hash: '#' + subpage.id }">
 									{{ subpage.text }}
 								</nuxt-link>
 							</li>
-						</ul>
+						</ul> -->
 					</div>
 				</li>
 			</ul>
@@ -50,6 +50,21 @@
 
 			<main class="page--container" :class="{ padding: currentRoute !== '/docs' }">
 				<Nuxt />
+				<div class="sidemenu">
+					<h4 v-show="!stringContains(currentRoute, 'sdk') && !stringContains(currentRoute, 'release') && !stringContains(currentRoute, 'api')">ON THIS PAGE</h4>
+					<ul>
+						<li v-for="(page, index) in pages" :key="index">
+							<ul v-show="page.toc.length > 0 && stringContains(currentRoute, page.id)">
+								<li class="sub-menu" v-for="(subpage, index) in page.toc" :key="index" @click="currentSubPage = subpage.id">
+									<img src="~/assets/images/arrow-right.svg" alt="angle right" :class="{ show: currentSubPage === subpage.id }" />
+									<nuxt-link :to="{ path: '/docs/' + page.id, hash: '#' + subpage.id }">
+										{{ subpage.text }}
+									</nuxt-link>
+								</li>
+							</ul>
+						</li>
+					</ul>
+				</div>
 			</main>
 		</div>
 	</div>
@@ -59,23 +74,32 @@
 export default {
 	data() {
 		return {
-			pages: []
+			pages: [],
+			currentPage: '',
+			currentSubPage: '',
+			versions: ['Latest v0.5.x']
 		};
+	},
+	computed: {
+		currentRoute() {
+			return this.$route.path;
+		}
 	},
 	async mounted() {
 		let pages = await this.$content('docs').only(['title', 'id', 'toc', 'order']).sortBy('order', 'asc').fetch();
 		pages = pages.sort((a, b) => a.order - b.order);
 		this.pages = pages;
 	},
-	computed: {
-		currentRoute() {
-			return this.$route.path;
+	methods: {
+		stringContains(text, word) {
+			return text.includes(word);
 		}
 	}
 };
 </script>
 
 <style lang="scss" scoped>
+$desktopBreakPoint: 880px;
 body,
 html {
 	padding: 0;
@@ -175,6 +199,13 @@ a.api-reference {
 	width: 100%;
 	overflow-y: auto;
 	padding-bottom: 100px;
+	header {
+		position: fixed;
+		width: 100%;
+		@media (min-width: $desktopBreakPoint) {
+			width: calc(100% - 270px);
+		}
+	}
 }
 
 header {
@@ -186,13 +217,59 @@ header {
 }
 
 .page--container {
-	padding: 36px 32px;
+	padding: 36px 20px;
 	max-width: 100%;
 	width: 100%;
 	margin: auto;
 
-	&.padding {
-		max-width: 900px;
+	@media (min-width: $desktopBreakPoint) {
+		display: flex;
+		padding: 36px 48px;
+	}
+	.nuxt-content {
+		width: 100%;
+		margin-top: 70px;
+		@media (min-width: $desktopBreakPoint) {
+			width: calc(100% - 270px);
+			max-width: 760px;
+		}
+	}
+}
+.sidemenu {
+	min-width: 250px;
+	margin-top: 30px;
+	@media (min-width: $desktopBreakPoint) {
+		margin-top: unset;
+		position: fixed;
+		right: 60px;
+		top: 150px;
+	}
+	h4 {
+		font-weight: 400;
+		font-size: 12px;
+		line-height: 27px;
+		color: #31323d;
+		padding-left: 10px;
+		margin-bottom: 8px;
+	}
+	li {
+		&.sub-menu {
+			font-weight: 500;
+			font-size: 14px;
+			line-height: 22px;
+			color: #31323d;
+			padding: 8px 0;
+			border-bottom: 1px solid #edeff5;
+
+			img {
+				visibility: hidden;
+				height: 8px;
+				width: 8px;
+				&.show {
+					visibility: unset;
+				}
+			}
+		}
 	}
 }
 </style>
