@@ -14,7 +14,7 @@ You can configure Convoy by using one of or a combination of the methods below:
 
 The order of preference when all the are used is `cli flags` > `environment variables` > `config json file`. Values set in the cli flags will override the same config value set with either env vars of in the config file.
 
-## Creating a config json file
+#### Creating a config json file
 An example configuration is shown below:
 
 ```json[Sample Config]

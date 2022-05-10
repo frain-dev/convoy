@@ -45,6 +45,7 @@ Secrets are used to sign the payload when sending events to an endpoint. If you 
 
 ## Hash Functions
 
+
 We have found out that most implementations use - `SHA256` & `SHA512`. However, convoy also supports the following hash functions:
 - `MD5`
 - `SHA1` 
@@ -58,6 +59,7 @@ We have found out that most implementations use - `SHA256` & `SHA512`. However, 
 - `SHA3_512`
 - `SHA512_224`
 - `SHA512_256` 
+
 
 ## Replay Attacks
 
@@ -77,6 +79,7 @@ We adopt a time-based release schedule.  A new release is created on the 25th of
 While you are guaranteed you'll be able to receive events as fast as possible using convoy, your customers might not be able to handle events coming to their systems at the same rate which might cause a disruption of service on their end.  You can control the number events you want to send to an application's endpoint by setting a rate limit and a rate limit duration on each endpoint. The default is `5000` in `1m` i.e. 5,000 requests per minute.
 
 ## Retry Schedule
+
 
 When an application's endpoint is experiencing temporary disruption of service, events sent to them might fail requiring you to retry them. Convoy allow you to set the number of attempts to a particular endpoint and how to initiate the retry. Convoy supports two retry strategies
 - `default`: retries are done in linear time. It's best to set a reasonable number of attempts if the duration is short.
