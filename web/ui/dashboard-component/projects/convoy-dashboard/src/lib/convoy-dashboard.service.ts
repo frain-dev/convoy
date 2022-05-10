@@ -307,4 +307,19 @@ export class ConvoyDashboardService {
 			}
 		});
 	}
+
+	async searchEvents(requestDetails: { query: string; pageNo: number }): Promise<HTTP_RESPONSE> {
+		return new Promise(async (resolve, reject) => {
+			try {
+				const response = await this.request({
+					url: `/events/search?groupId=${this.activeGroupId}&query=${requestDetails.query}&page=${requestDetails.pageNo}`,
+					method: 'get'
+				});
+
+				return resolve(response);
+			} catch (error: any) {
+				return reject(error);
+			}
+		});
+	}
 }

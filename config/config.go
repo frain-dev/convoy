@@ -114,6 +114,16 @@ type NewRelicConfiguration struct {
 	DistributedTracerEnabled bool   `json:"distributed_tracer_enabled" envconfig:"CONVOY_NEWRELIC_DISTRIBUTED_TRACER_ENABLED"`
 }
 
+type SearchConfiguration struct {
+	Type      SearchProvider         `json:"type" envconfig:"CONVOY_SEARCH_TYPE"`
+	Typesense TypesenseConfiguration `json:"typesense"`
+}
+
+type TypesenseConfiguration struct {
+	Host   string `json:"host" envconfig:"CONVOY_TYPESENSE_HOST"`
+	ApiKey string `json:"api_key" envconfig:"CONVOY_TYPESENSE_API_KEY"`
+}
+
 type Configuration struct {
 	Auth            AuthConfiguration     `json:"auth,omitempty"`
 	Database        DatabaseConfiguration `json:"database"`
@@ -131,6 +141,7 @@ type Configuration struct {
 	Cache           CacheConfiguration    `json:"cache"`
 	Limiter         LimiterConfiguration  `json:"limiter"`
 	BaseUrl         string                `json:"base_url" envconfig:"CONVOY_BASE_URL"`
+	Search          SearchConfiguration   `json:"search"`
 }
 
 const (
@@ -189,6 +200,7 @@ type TracerProvider string
 type CacheProvider string
 type LimiterProvider string
 type DatabaseProvider string
+type SearchProvider string
 
 func (s SignatureHeaderProvider) String() string {
 	return string(s)

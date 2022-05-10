@@ -163,6 +163,24 @@ func (db *eventRepo) FindEventByID(ctx context.Context, id string) (*datastore.E
 	return m, err
 }
 
+func (db *eventRepo) FindEventsByIDs(ctx context.Context, ids []string) ([]datastore.Event, error) {
+	m := make([]datastore.Event, 0)
+
+	filter := bson.M{"uid": bson.M{"$in": ids}, "document_status": datastore.ActiveDocumentStatus}
+
+	cursor, err := db.inner.Find(ctx, filter)
+	if err != nil {
+		return nil, err
+	}
+
+	err = cursor.All(ctx, &m)
+	if err != nil {
+		return nil, err
+	}
+
+	return m, err
+}
+
 func (db *eventRepo) LoadEventsPaged(ctx context.Context, groupID string, appId string, searchParams datastore.SearchParams, pageable datastore.Pageable) ([]datastore.Event, datastore.PaginationData, error) {
 	filter := bson.M{"document_status": datastore.ActiveDocumentStatus, "created_at": getCreatedDateFilter(searchParams)}
 

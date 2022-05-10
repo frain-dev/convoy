@@ -10,6 +10,7 @@ import (
 	"github.com/frain-dev/convoy"
 	"github.com/frain-dev/convoy/datastore"
 	"github.com/frain-dev/convoy/mocks"
+	noopsearcher "github.com/frain-dev/convoy/searcher/noop"
 	"github.com/frain-dev/convoy/server/models"
 	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/require"
@@ -22,7 +23,8 @@ func provideEventService(ctrl *gomock.Controller) *EventService {
 	eventQueue := mocks.NewMockQueuer(ctrl)
 	creatEventQueue := mocks.NewMockQueuer(ctrl)
 	cache := mocks.NewMockCache(ctrl)
-	return NewEventService(appRepo, eventRepo, eventDeliveryRepo, eventQueue, creatEventQueue, cache)
+	searcher := noopsearcher.NewNoopSearcher()
+	return NewEventService(appRepo, eventRepo, eventDeliveryRepo, eventQueue, creatEventQueue, cache, searcher)
 }
 
 func TestEventService_CreateAppEvent(t *testing.T) {

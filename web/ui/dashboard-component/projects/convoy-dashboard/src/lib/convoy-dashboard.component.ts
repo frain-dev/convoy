@@ -139,6 +139,7 @@ export class ConvoyDashboardComponent implements OnInit {
 	showSecretCopyText = false;
 	showEndpointSecret = false;
 	appsSearchString = '';
+	eventsSearchString = '';
 	selectedEventsDateOption = '';
 	selectedEventsDelDateOption = '';
 	selectedDateOption = '';
@@ -510,8 +511,8 @@ export class ConvoyDashboardComponent implements OnInit {
 	// initiate dashboard
 	async initDashboard() {
 		await this.getGroups();
+		await Promise.all([this.getConfigDetails(), this.fetchDashboardData(), this.getApps({ type: 'apps' }), this.getEventDeliveries()]);
 		this.getFiltersFromURL();
-		await Promise.all([this.getConfigDetails(), this.fetchDashboardData(), this.getEvents(), this.getApps({ type: 'apps' }), this.getEventDeliveries()]);
 
 		// get active tab from url and apply, after getting the details from above requests so that the data is available ahead
 		this.toggleActiveTab(this.route.snapshot.queryParams?.activeTab ?? 'events');
@@ -562,6 +563,8 @@ export class ConvoyDashboardComponent implements OnInit {
 		// for events filters
 		this.eventsFilterDateRange.patchValue({ startDate: filters.eventsStartDate ? new Date(filters.eventsStartDate) : '', endDate: filters.eventsEndDate ? new Date(filters.eventsEndDate) : '' });
 		this.eventApp = filters.eventsApp ?? '';
+		this.eventsSearchString = filters.eventsSearch ?? '';
+		this.eventsSearchString ? this.searchEvents() : this.getEvents({ fromFilter: true });
 
 		// for event deliveries filters
 		this.eventDeliveriesFilterDateRange.patchValue({
@@ -736,6 +739,7 @@ export class ConvoyDashboardComponent implements OnInit {
 			if (startDate) queryParams.eventsStartDate = startDate;
 			if (endDate) queryParams.eventsEndDate = endDate;
 			if (this.eventApp) queryParams.eventsApp = this.eventApp;
+			if (this.eventsSearchString) queryParams.eventsSearch = this.eventsSearchString;
 		}
 
 		if (requestDetails.section === 'eventDels') {
@@ -845,9 +849,11 @@ export class ConvoyDashboardComponent implements OnInit {
 	}
 
 	async toggleActiveGroup() {
-		// this.convyDashboardService.activeGroupId = this.activeGroup;
 		await Promise.all([this.clearEventFilters('event deliveries'), this.clearEventFilters('events')]);
 		this.addFilterToURL({ section: 'group' });
+		this.eventsDetailsItem = null;
+		this.eventDelsDetailsItem = null;
+		this.appsDetailsItem = null;
 		Promise.all([this.getConfigDetails(), this.fetchDashboardData(), this.getEvents(), this.getApps({ type: 'apps' }), this.getEventDeliveries()]);
 	}
 
@@ -1026,13 +1032,16 @@ export class ConvoyDashboardComponent implements OnInit {
 		}
 	}
 
-	async clearEventFilters(tableName: 'events' | 'event deliveries' | 'apps', filterType?: 'eventsDate' | 'eventsDelDate' | 'eventsApp' | 'eventsDelApp' | 'eventsDelsStatus') {
+	async clearEventFilters(tableName: 'events' | 'event deliveries' | 'apps', filterType?: 'eventsDate' | 'eventsDelDate' | 'eventsApp' | 'eventsDelApp' | 'eventsDelsStatus' | 'eventsSearch') {
 		const activeFilters = Object.assign({}, this.route.snapshot.queryParams);
 		let filterItems: string[] = [];
 
 		switch (tableName) {
 			case 'events':
 				this.eventApp = '';
+				this.eventsFilterDateRange.patchValue({ startDate: '', endDate: '' });
+				this.eventsSearchString = '';
+
 				switch (filterType) {
 					case 'eventsApp':
 						filterItems = ['eventsApp'];
@@ -1040,11 +1049,14 @@ export class ConvoyDashboardComponent implements OnInit {
 					case 'eventsDate':
 						filterItems = ['eventsStartDate', 'eventsEndDate'];
 						break;
+					case 'eventsSearch':
+						filterItems = ['eventsSearch'];
+						break;
 					default:
-						filterItems = ['eventsStartDate', 'eventsEndDate', 'eventsApp'];
+						filterItems = ['eventsStartDate', 'eventsEndDate', 'eventsApp', 'eventsSearch'];
 						break;
 				}
-				this.eventsFilterDateRange.patchValue({ startDate: '', endDate: '' });
+
 				this.getEvents({ fromFilter: true });
 				break;
 
@@ -1152,6 +1164,52 @@ export class ConvoyDashboardComponent implements OnInit {
 			this.getApps({ search: searchString, type: searchDetails.type });
 		} else {
 			searchDetails.type === 'filter' ? (this.filteredApps = this.apps.content) : this.getApps({ type: 'apps' });
+		}
+	}
+
+	searchEvents() {
+		if (this.eventsSearchString) {
+			this.addFilterToURL({ section: 'events' });
+			this.getSearchEvents();
+		} else {
+			this.getEvents({ addToURL: true, fromFilter: true });
+		}
+	}
+
+	async getSearchEvents() {
+		if (this.eventsPage === 1) {
+			this.events = { content: [], pagination: { page: 0, next: 0, perPage: 0, prev: 0, total: 0, totalPage: 0 } };
+			this.displayedEvents = [];
+		}
+		this.events && this.events?.pagination?.next === this.eventsPage ? (this.isloadingMoreEvents = true) : (this.isloadingEvents = true);
+
+		try {
+			const eventsResponse = await this.convyDashboardService.searchEvents({ query: this.eventsSearchString, pageNo: this.eventsPage });
+
+			if (this.events && this.events?.pagination?.next === this.eventsPage) {
+				const content = [...this.events.content, ...eventsResponse.data.content];
+				const pagination = eventsResponse.data.pagination;
+				this.events = { content, pagination };
+				this.displayedEvents = this.setContentDisplayed(content);
+				this.isloadingMoreEvents = false;
+				return eventsResponse;
+			}
+
+			this.events = eventsResponse.data;
+			this.displayedEvents = await this.setContentDisplayed(eventsResponse.data.content);
+
+			// if this is the first page of the search pagination, set the eventsDetailsItem to the first item in the list
+			if ((this.eventsPage = 1)) {
+				this.eventsDetailsItem = this.events?.content[0];
+				this.getEventDeliveriesForSidebar(this.eventsDetailsItem.uid);
+			}
+
+			this.isloadingEvents = false;
+			return eventsResponse;
+		} catch (error: any) {
+			this.isloadingEvents = false;
+			this.isloadingMoreEvents = false;
+			return error;
 		}
 	}
 

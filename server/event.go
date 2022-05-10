@@ -45,6 +45,38 @@ func (a *applicationHandler) CreateAppEvent(w http.ResponseWriter, r *http.Reque
 	_ = render.Render(w, r, newServerResponse("App event created successfully", event, http.StatusCreated))
 }
 
+// SearchAppEvents
+// @Summary Search app events
+// @Description This endpoint searches through events
+// @Tags Events
+// @Accept  json
+// @Produce  json
+// @Param groupId query string true "group id"
+// @Param query query string true "search query"
+// @Success 200 {object} serverResponse{data=pagedResponse{content=[]datastore.EventDelivery{data=Stub}}}
+// @Failure 400,401,500 {object} serverResponse{data=Stub}
+// @Security ApiKeyAuth
+// @Router /events/search [get]
+func (a *applicationHandler) SearchAppEvents(w http.ResponseWriter, r *http.Request) {
+	g := getGroupFromContext(r.Context())
+	query := r.URL.Query().Get("query")
+
+	pageable := getPageableFromContext(r.Context())
+
+	if pageable.Page == 0 {
+		pageable.Page = 1
+	}
+
+	events, paginationData, err := a.eventService.Search(r.Context(), g.UID, query, pageable)
+	if err != nil {
+		_ = render.Render(w, r, newErrorResponse(err.Error(), http.StatusBadRequest))
+		return
+	}
+
+	_ = render.Render(w, r, newServerResponse("Events fetched successfully",
+		pagedResponse{Content: &events, Pagination: &paginationData}, http.StatusOK))
+}
+
 // GetAppEvent
 // @Summary Get app event
 // @Description This endpoint fetches an app event
