@@ -4,11 +4,13 @@
 package server
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"fmt"
 	"net/http"
 	"net/http/httptest"
+	"strings"
 	"testing"
 	"time"
 
@@ -32,20 +34,15 @@ type SecurityIntegrationTestSuite struct {
 }
 
 func (s *SecurityIntegrationTestSuite) SetupSuite() {
-
-	// Arrange Request.
-	body := &models.APIKey{
-		Name: "default_api_key",
-		Role: auth.Role{
-			Type:   auth.RoleUIAdmin,
+	body := map[string]auth.Role{
+		"role": {
+			Type:   auth.RoleAPI,
 			Groups: []string{"s.DefaultGroup.UID"},
 		},
-		Type:      "api_key",
-		ExpiresAt: time.Now().Add(time.Hour),
 	}
 
 	vv, _ := json.Marshal(body)
-	log.Fatal(string(vv))
+	log.Fatal(strings.Replace(bytes.NewBuffer(vv).String(), "\\", "", -1))
 	s.DB = getDB()
 	s.ConvoyApp = buildApplication()
 	s.Router = buildRoutes(s.ConvoyApp)
@@ -164,12 +161,7 @@ func (s *SecurityIntegrationTestSuite) Test_GetAPIKeyByID() {
 	// Deep Assert.
 	var apiKeyResponse models.APIKeyByIDResponse
 	parseResponse(s.T(), w.Result(), &apiKeyResponse)
-	require.Equal(s.T(), apiKeyResponse.Type, apiKey.Type)
-	require.Equal(s.T(), apiKeyResponse.Role, apiKey.Role)
 	require.Equal(s.T(), apiKeyResponse.UID, apiKey.UID)
-	require.Equal(s.T(), apiKeyResponse.ExpiresAt, apiKey.ExpiresAt)
-	require.Equal(s.T(), apiKeyResponse.CreatedAt, apiKey.CreatedAt)
-	require.Equal(s.T(), apiKeyResponse.UpdatedAt, apiKey.UpdatedAt)
 }
 
 func (s *SecurityIntegrationTestSuite) Test_GetAPIKeyByID_APIKey_not_found() {
@@ -192,15 +184,11 @@ func (s *SecurityIntegrationTestSuite) Test_UpdateAPIKey() {
 	// Just Before.
 	apiKey, _ := testdb.SeedAPIKey(s.DB, s.DefaultGroup, uuid.NewString(), "test", "api")
 
-	body := map[string]auth.Role{
-		"role": {
-			Type:   auth.RoleAPI,
-			Groups: []string{s.DefaultGroup.UID},
-		},
-	}
+	bodyStr := `{"role":{"type":"api","groups":["%s"]}}`
+	body := serialize(bodyStr, s.DefaultGroup.UID)
 
 	url := fmt.Sprintf("/api/v1/security/keys/%s", apiKey.UID)
-	req := createRequest(http.MethodPut, url, serialize("body"))
+	req := createRequest(http.MethodPut, url, body)
 	w := httptest.NewRecorder()
 
 	// Act.
@@ -210,25 +198,24 @@ func (s *SecurityIntegrationTestSuite) Test_UpdateAPIKey() {
 	require.Equal(s.T(), expectedStatusCode, w.Code)
 
 	// Deep Assert.
-
 	a, err := s.DB.APIRepo().FindAPIKeyByID(context.Background(), apiKey.UID)
 	require.NoError(s.T(), err)
-	require.Equal(s.T(), a.Role, body["role"])
+
+	var apiKeyResponse models.APIKeyByIDResponse
+	parseResponse(s.T(), w.Result(), &apiKeyResponse)
+	require.Equal(s.T(), a.Role, apiKeyResponse.Role)
+	require.Equal(s.T(), apiKeyResponse.UID, apiKey.UID)
 }
 
 func (s *SecurityIntegrationTestSuite) Test_UpdateAPIKey_APIKey_not_found() {
 	expectedStatusCode := http.StatusBadRequest
 
-	//body := map[string]auth.Role{
-	//	"role": {
-	//		Type:   auth.RoleAPI,
-	//		Groups: []string{s.DefaultGroup.UID},
-	//	},
-	//}
+	bodyStr := `{"role":{"type":"api","groups":["%s"]}}`
+	body := serialize(bodyStr, s.DefaultGroup.UID)
 
 	url := fmt.Sprintf("/api/v1/security/keys/%s", uuid.NewString())
 
-	req := createRequest(http.MethodPut, url, serialize("body"))
+	req := createRequest(http.MethodPut, url, body)
 	w := httptest.NewRecorder()
 
 	// Act.
@@ -246,12 +233,10 @@ func (s *SecurityIntegrationTestSuite) Test_GetAPIKeys() {
 	_, _ = testdb.SeedAPIKey(s.DB, s.DefaultGroup, uuid.NewString(), "test", "api")
 	_, _ = testdb.SeedAPIKey(s.DB, s.DefaultGroup, uuid.NewString(), "test", "api")
 
-	//body := &auth.Role{
-	//	Type:   auth.RoleAPI,
-	//	Groups: []string{uuid.NewString()},
-	//}
+	bodyStr := `{"role":{"type":"api","groups":["%s"]}}`
+	body := serialize(bodyStr, uuid.NewString())
 
-	req := createRequest(http.MethodGet, "/api/v1/security/keys", serialize("body"))
+	req := createRequest(http.MethodGet, "/api/v1/security/keys", body)
 	w := httptest.NewRecorder()
 
 	// Act.
