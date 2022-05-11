@@ -150,7 +150,7 @@ func (s *SecurityIntegrationTestSuite) Test_GetAPIKeyByID() {
 	require.Equal(s.T(), apiKeyResponse.UID, apiKey.UID)
 }
 
-func (s *SecurityIntegrationTestSuite) Test_GetAPIKeyByID_APIKey_not_found() {
+func (s *SecurityIntegrationTestSuite) Test_GetAPIKeyByID_APIKeyNotFound() {
 	expectedStatusCode := http.StatusBadRequest
 
 	url := fmt.Sprintf("/api/v1/security/keys/%s", uuid.NewString())
@@ -193,7 +193,7 @@ func (s *SecurityIntegrationTestSuite) Test_UpdateAPIKey() {
 	require.Equal(s.T(), apiKeyResponse.UID, apiKey.UID)
 }
 
-func (s *SecurityIntegrationTestSuite) Test_UpdateAPIKey_APIKey_not_found() {
+func (s *SecurityIntegrationTestSuite) Test_UpdateAPIKey_APIKeyNotFound() {
 	expectedStatusCode := http.StatusBadRequest
 
 	bodyStr := `{"role":{"type":"api","groups":["%s"]}}`
