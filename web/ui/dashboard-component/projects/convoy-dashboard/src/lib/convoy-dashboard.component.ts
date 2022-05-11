@@ -1,7 +1,7 @@
 import { Component, ElementRef, Input, OnInit, ViewChild } from '@angular/core';
 import Chart from 'chart.js/auto';
 import { APP } from './models/app.model';
-import { EVENT, EVENT_DELIVERY, EVENT_DELIVERY_ATTEMPT } from './models/event.model';
+import { EVENT, EVENT_DELIVERY, EVENT_DELIVERY_ATTEMPT, EVENT_TIME } from './models/event.model';
 import { ActivatedRoute, Router } from '@angular/router';
 import { FormArray, FormBuilder, FormControl, FormGroup, Validators } from '@angular/forms';
 import { PAGINATION } from './models/global.model';
@@ -12,6 +12,7 @@ import { format } from 'date-fns';
 import { fromEvent, Observable } from 'rxjs';
 import { debounceTime, distinctUntilChanged, map, startWith, switchMap } from 'rxjs/operators';
 import { DatePipe } from '@angular/common';
+import { TimeFilterComponent } from './shared-components/time-filter.component';
 
 @Component({
 	selector: 'convoy-dashboard',
@@ -153,6 +154,10 @@ export class ConvoyDashboardComponent implements OnInit {
 	@ViewChild('eventsAppsFilter', { static: true }) eventsAppsFilter!: ElementRef;
 	@ViewChild('eventDelsAppsFilter', { static: true }) eventDelsAppsFilter!: ElementRef;
 	eventDeliveriesStatusFilterActive = false;
+	eventsTimeFilterData: { startTime: string; endTime: string } = { startTime: 'T00:00:00', endTime: 'T23:59:59' };
+	eventDelsTimeFilterData: { startTime: string; endTime: string } = { startTime: 'T00:00:00', endTime: 'T23:59:59' };
+	@ViewChild('eventsTimeFilter', { static: true }) eventsTimerFilter!: TimeFilterComponent;
+	@ViewChild('eventDeliveryTimerFilter', { static: true }) eventDeliveryTimerFilter!: TimeFilterComponent;
 
 	constructor(public convyDashboardService: ConvoyDashboardService, private router: Router, private formBuilder: FormBuilder, private route: ActivatedRoute, private datePipe: DatePipe) {}
 
@@ -555,6 +560,35 @@ export class ConvoyDashboardComponent implements OnInit {
 		}
 	}
 
+	setTimeFilterData(dates: EVENT_TIME): { startTime: string; endTime: string } {
+		const response = { startTime: '', endTime: '' };
+		if (dates.startDate) {
+			const hour = new Date(dates.startDate).getHours();
+			const minute = new Date(dates.startDate).getMinutes();
+
+			dates.type === 'events' ? (this.eventsTimerFilter.filterStartHour = hour) : (this.eventDeliveryTimerFilter.filterStartHour = hour);
+			dates.type === 'events' ? (this.eventsTimerFilter.filterStartMinute = minute) : (this.eventDeliveryTimerFilter.filterStartMinute = minute);
+
+			response.startTime = `T${hour}:${minute}:00`;
+		} else {
+			response.startTime = 'T00:00:00';
+		}
+
+		if (dates.endDate) {
+			const hour = new Date(dates.endDate).getHours();
+			const minute = new Date(dates.endDate).getMinutes();
+
+			dates.type === 'events' ? (this.eventsTimerFilter.filterEndHour = hour) : (this.eventDeliveryTimerFilter.filterEndHour = hour);
+			dates.type === 'events' ? (this.eventsTimerFilter.filterEndMinute = minute) : (this.eventDeliveryTimerFilter.filterEndMinute = minute);
+
+			response.endTime = `T${hour}:${minute}:59`;
+		} else {
+			response.endTime = 'T23:59:59';
+		}
+
+		return response;
+	}
+
 	// fetch filters from url
 	getFiltersFromURL() {
 		const filters = this.route.snapshot.queryParams;
@@ -563,6 +597,8 @@ export class ConvoyDashboardComponent implements OnInit {
 		// for events filters
 		this.eventsFilterDateRange.patchValue({ startDate: filters.eventsStartDate ? new Date(filters.eventsStartDate) : '', endDate: filters.eventsEndDate ? new Date(filters.eventsEndDate) : '' });
 		this.eventApp = filters.eventsApp ?? '';
+		const eventsTimeFilter = this.setTimeFilterData({ startDate: filters?.eventsStartDate, endDate: filters?.eventsEndDate, type: 'events' });
+		this.eventsTimeFilterData = { ...eventsTimeFilter };
 
 		// for event deliveries filters
 		this.eventDeliveriesFilterDateRange.patchValue({
@@ -571,6 +607,8 @@ export class ConvoyDashboardComponent implements OnInit {
 		});
 		this.eventDeliveriesApp = filters.eventDelsApp ?? '';
 		this.eventDeliveryFilteredByStatus = filters.eventDelsStatus ? JSON.parse(filters.eventDelsStatus) : [];
+		const eventDeliveriesTimeFilter = this.setTimeFilterData({ startDate: filters?.eventDelsStartDate, endDate: filters?.eventDelsEndDate, type: 'eventDeliveries' });
+		this.eventsTimeFilterData = { ...eventDeliveriesTimeFilter };
 	}
 
 	async fetchDashboardData(): Promise<HTTP_RESPONSE> {
@@ -644,10 +682,10 @@ export class ConvoyDashboardComponent implements OnInit {
 		}
 	}
 
-	setDateForFilter(requestDetails: { startDate: Date; endDate: Date }) {
+	setDateForFilter(requestDetails: { startDate: Date; endDate: Date; startTime?: string; endTime?: string }) {
 		if (!requestDetails.endDate && !requestDetails.startDate) return { startDate: '', endDate: '' };
-		const startDate = requestDetails.startDate ? `${format(requestDetails.startDate, 'yyyy-MM-dd')}T00:00:00` : '';
-		const endDate = requestDetails.endDate ? `${format(requestDetails.endDate, 'yyyy-MM-dd')}T23:59:59` : '';
+		const startDate = requestDetails.startDate ? `${format(requestDetails.startDate, 'yyyy-MM-dd')}${requestDetails?.startTime || 'T00:00:00'}` : '';
+		const endDate = requestDetails.endDate ? `${format(requestDetails.endDate, 'yyyy-MM-dd')}${requestDetails?.endTime || 'T23:59:59'}` : '';
 		return { startDate, endDate };
 	}
 
@@ -677,7 +715,7 @@ export class ConvoyDashboardComponent implements OnInit {
 		if (requestDetails?.appId) this.eventApp = requestDetails.appId;
 		if (requestDetails?.addToURL) this.addFilterToURL({ section: 'events' });
 
-		const { startDate, endDate } = this.setDateForFilter(this.eventsFilterDateRange.value);
+		const { startDate, endDate } = this.setDateForFilter({ ...this.eventsFilterDateRange.value, ...this.eventsTimeFilterData });
 
 		try {
 			const eventsResponse = await this.convyDashboardService.getEvents({ pageNo: this.eventsPage || 1, startDate, endDate, appId: requestDetails?.appId ?? this.eventApp });
@@ -733,14 +771,14 @@ export class ConvoyDashboardComponent implements OnInit {
 		const queryParams: any = {};
 
 		if (requestDetails.section === 'events') {
-			const { startDate, endDate } = this.setDateForFilter(this.eventsFilterDateRange.value);
+			const { startDate, endDate } = this.setDateForFilter({ ...this.eventsFilterDateRange.value, ...this.eventsTimeFilterData });
 			if (startDate) queryParams.eventsStartDate = startDate;
 			if (endDate) queryParams.eventsEndDate = endDate;
 			if (this.eventApp) queryParams.eventsApp = this.eventApp;
 		}
 
 		if (requestDetails.section === 'eventDels') {
-			const { startDate, endDate } = this.setDateForFilter(this.eventDeliveriesFilterDateRange.value);
+			const { startDate, endDate } = this.setDateForFilter({ ...this.eventDeliveriesFilterDateRange.value, ...this.eventDelsTimeFilterData });
 			if (startDate) queryParams.eventDelsStartDate = startDate;
 			if (endDate) queryParams.eventDelsEndDate = endDate;
 			if (this.eventDeliveriesApp) queryParams.eventDelsApp = this.eventDeliveriesApp;
@@ -758,14 +796,13 @@ export class ConvoyDashboardComponent implements OnInit {
 		let eventDeliveryStatusFilterQuery = '';
 		this.eventDeliveryFilteredByStatus.length > 0 ? (this.eventDeliveriesStatusFilterActive = true) : (this.eventDeliveriesStatusFilterActive = false);
 		this.eventDeliveryFilteredByStatus.forEach((status: string) => (eventDeliveryStatusFilterQuery += `&status=${status}`));
-		const { startDate, endDate } = this.setDateForFilter(this.eventDeliveriesFilterDateRange.value);
 
 		try {
 			const eventDeliveriesResponse = await this.convyDashboardService.getEventDeliveries({
 				eventId: requestDetails.eventId || '',
 				pageNo: this.eventDeliveriesPage || 1,
-				startDate: startDate,
-				endDate: endDate,
+				startDate: requestDetails.startDate,
+				endDate: requestDetails.endDate,
 				appId: this.eventDeliveriesApp,
 				statusQuery: eventDeliveryStatusFilterQuery || ''
 			});
@@ -801,7 +838,7 @@ export class ConvoyDashboardComponent implements OnInit {
 		this.eventDeliveries && this.eventDeliveries?.pagination?.next === this.eventDeliveriesPage ? (this.isloadingMoreEventDeliveries = true) : (this.isloadingEventDeliveries = true);
 
 		if (requestDetails?.addToURL) this.addFilterToURL({ section: 'eventDels' });
-		const { startDate, endDate } = this.setDateForFilter(this.eventDeliveriesFilterDateRange.value);
+		const { startDate, endDate } = this.setDateForFilter({ ...this.eventDeliveriesFilterDateRange.value, ...this.eventDelsTimeFilterData });
 
 		try {
 			const eventDeliveriesResponse = await this.eventDeliveriesRequest({ eventId: this.eventDeliveryFilteredByEventId, startDate, endDate });
@@ -1051,6 +1088,8 @@ export class ConvoyDashboardComponent implements OnInit {
 						break;
 				}
 				this.eventsFilterDateRange.patchValue({ startDate: '', endDate: '' });
+				this.eventsTimeFilterData = { startTime: 'T00:00:00', endTime: 'T23:59:59' };
+				this.eventsTimerFilter.clearFilter();
 				this.getEvents({ fromFilter: true });
 				break;
 
@@ -1074,6 +1113,8 @@ export class ConvoyDashboardComponent implements OnInit {
 				this.eventDeliveriesFilterDateRange.patchValue({ startDate: '', endDate: '' });
 				this.eventDeliveryFilteredByEventId = '';
 				this.eventDeliveryFilteredByStatus = [];
+				this.eventDelsTimeFilterData = { startTime: 'T00:00:00', endTime: 'T23:59:59' };
+				this.eventsTimerFilter.clearFilter();
 				this.getEventDeliveries({ fromFilter: true });
 				break;
 			case 'apps':
