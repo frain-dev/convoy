@@ -1,7 +1,7 @@
 import { Component, ElementRef, Input, OnInit, ViewChild } from '@angular/core';
 import Chart from 'chart.js/auto';
 import { APP } from './models/app.model';
-import { EVENT, EVENT_DELIVERY, EVENT_DELIVERY_ATTEMPT } from './models/event.model';
+import { EVENT, EVENT_DELIVERY, EVENT_DELIVERY_ATTEMPT, EVENT_TIME } from './models/event.model';
 import { ActivatedRoute, Router } from '@angular/router';
 import { FormArray, FormBuilder, FormControl, FormGroup, Validators } from '@angular/forms';
 import { PAGINATION } from './models/global.model';
@@ -560,7 +560,7 @@ export class ConvoyDashboardComponent implements OnInit {
 		}
 	}
 
-	setTimeFilterData(dates: { startDate: string; endDate: string; type: 'events' | 'eventDelivery' }): { startTime: string; endTime: string } {
+	setTimeFilterData(dates: EVENT_TIME): { startTime: string; endTime: string } {
 		const response = { startTime: '', endTime: '' };
 		if (dates.startDate) {
 			const hour = new Date(dates.startDate).getHours();
@@ -607,7 +607,7 @@ export class ConvoyDashboardComponent implements OnInit {
 		});
 		this.eventDeliveriesApp = filters.eventDelsApp ?? '';
 		this.eventDeliveryFilteredByStatus = filters.eventDelsStatus ? JSON.parse(filters.eventDelsStatus) : [];
-		const eventDeliveriesTimeFilter = this.setTimeFilterData({ startDate: filters?.eventDelsStartDate, endDate: filters?.eventDelsEndDate, type: 'eventDelivery' });
+		const eventDeliveriesTimeFilter = this.setTimeFilterData({ startDate: filters?.eventDelsStartDate, endDate: filters?.eventDelsEndDate, type: 'eventDeliveries' });
 		this.eventsTimeFilterData = { ...eventDeliveriesTimeFilter };
 	}
 
