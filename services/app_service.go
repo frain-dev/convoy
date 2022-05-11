@@ -51,8 +51,12 @@ func (a *AppService) CreateApp(ctx context.Context, newApp *models.Application, 
 
 	err := a.appRepo.CreateApplication(ctx, app)
 	if err != nil {
-		log.WithError(err).Error("failed to create application")
-		return nil, NewServiceError(http.StatusBadRequest, errors.New("failed to create application"))
+		msg := "failed to create application"
+		if err == datastore.ErrDuplicateAppName {
+			msg = fmt.Sprintf("%v: %s", datastore.ErrDuplicateAppName, app.Title)
+		}
+		log.WithError(err).Error(msg)
+		return nil, NewServiceError(http.StatusBadRequest, errors.New(msg))
 	}
 
 	appCacheKey := convoy.ApplicationsCacheKey.Get(app.UID).String()
@@ -99,8 +103,12 @@ func (a *AppService) UpdateApplication(ctx context.Context, appUpdate *models.Up
 
 	err := a.appRepo.UpdateApplication(ctx, app)
 	if err != nil {
-		log.WithError(err).Error("failed to update application")
-		return NewServiceError(http.StatusBadRequest, errors.New("an error occurred while updating app"))
+		msg := "an error occurred while updating app"
+		if err == datastore.ErrDuplicateAppName {
+			msg = fmt.Sprintf("%v: %s", datastore.ErrDuplicateAppName, app.Title)
+		}
+		log.WithError(err).Error(msg)
+		return NewServiceError(http.StatusBadRequest, errors.New(msg))
 	}
 
 	appCacheKey := convoy.ApplicationsCacheKey.Get(app.UID).String()
@@ -266,6 +274,10 @@ func updateEndpointIfFound(endpoints *[]datastore.Endpoint, id string, e models.
 
 			if !util.IsStringEmpty(e.HttpTimeout) {
 				endpoint.HttpTimeout = e.HttpTimeout
+			}
+
+			if !util.IsStringEmpty(e.Secret) {
+				endpoint.Secret = e.Secret
 			}
 
 			endpoint.Status = datastore.ActiveEndpointStatus
