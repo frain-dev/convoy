@@ -55,7 +55,7 @@ func (s *EventIntegrationTestSuite) Test_CreateAppEvent_Valid_Event() {
 	expectedStatusCode := http.StatusCreated
 
 	// Just Before.
-	app, _ := testdb.SeedApplication(s.DB, s.DefaultGroup, appID, false)
+	app, _ := testdb.SeedApplication(s.DB, s.DefaultGroup, appID, "", false)
 	_, _ = testdb.SeedMultipleEndpoints(s.DB, app, []string{"*"}, 2)
 
 	bodyStr := `{"app_id":"%s", "event_type":"*", "data":{"level":"test"}}`
@@ -82,7 +82,7 @@ func (s *EventIntegrationTestSuite) Test_CreateAppEvent_App_has_no_endpoint() {
 	expectedStatusCode := http.StatusBadRequest
 
 	// Just Before.
-	_, _ = testdb.SeedApplication(s.DB, s.DefaultGroup, appID, false)
+	_, _ = testdb.SeedApplication(s.DB, s.DefaultGroup, appID, "", false)
 
 	bodyStr := `{"app_id":"%s", "event_type":"*", "data":{"level":"test"}}`
 	body := serialize(bodyStr, appID)
@@ -101,7 +101,7 @@ func (s *EventIntegrationTestSuite) Test_CreateAppEvent_App_is_disabled() {
 	expectedStatusCode := http.StatusBadRequest
 
 	// Just Before.
-	app, _ := testdb.SeedApplication(s.DB, s.DefaultGroup, appID, true)
+	app, _ := testdb.SeedApplication(s.DB, s.DefaultGroup, appID, "", true)
 	_, _ = testdb.SeedMultipleEndpoints(s.DB, app, []string{"*"}, 2)
 
 	bodyStr := `{"app_id":"%s", "event_type":"*", "data":{"level":"test"}}`
@@ -121,7 +121,7 @@ func (s *EventIntegrationTestSuite) Test_GetAppEvent_Valid_Event() {
 	expectedStatusCode := http.StatusOK
 
 	// Just Before.
-	app, _ := testdb.SeedApplication(s.DB, s.DefaultGroup, uuid.NewString(), false)
+	app, _ := testdb.SeedApplication(s.DB, s.DefaultGroup, uuid.NewString(), "", false)
 	event, _ := testdb.SeedEvent(s.DB, app, eventID, "*", []byte(`{}`))
 
 	url := fmt.Sprintf("/api/v1/events/%s", eventID)
@@ -160,7 +160,7 @@ func (s *EventIntegrationTestSuite) Test_GetEventDelivery_Valid_EventDelivery() 
 	expectedStatusCode := http.StatusOK
 
 	// Just Before.
-	app, _ := testdb.SeedApplication(s.DB, s.DefaultGroup, uuid.NewString(), false)
+	app, _ := testdb.SeedApplication(s.DB, s.DefaultGroup, uuid.NewString(), "", false)
 	eventDelivery, _ := testdb.SeedEventDelivery(s.DB, app, &datastore.Event{}, &datastore.Endpoint{}, eventDeliveryID, datastore.SuccessEventStatus)
 
 	url := fmt.Sprintf("/api/v1/eventdeliveries/%s", eventDeliveryID)
@@ -199,8 +199,8 @@ func (s *EventIntegrationTestSuite) Test_ResendEventDelivery_Valid_Resend() {
 	expectedStatusCode := http.StatusOK
 
 	// Just Before.
-	app, _ := testdb.SeedApplication(s.DB, s.DefaultGroup, uuid.NewString(), false)
-	app, _ = testdb.SeedEndpoint(s.DB, app, []string{"*"})
+	app, _ := testdb.SeedApplication(s.DB, s.DefaultGroup, uuid.NewString(), "", false)
+	_, _ = testdb.SeedEndpoint(s.DB, app, []string{"*"})
 	eventDelivery, _ := testdb.SeedEventDelivery(s.DB, app, &datastore.Event{}, &app.Endpoints[0], eventDeliveryID, datastore.FailureEventStatus)
 
 	url := fmt.Sprintf("/api/v1/eventdeliveries/%s/resend", eventDeliveryID)
@@ -225,8 +225,8 @@ func (s *EventIntegrationTestSuite) Test_BatchRetryEventDelivery_Valid_EventDeli
 	expectedStatusCode := http.StatusOK
 
 	// Just Before.
-	app, _ := testdb.SeedApplication(s.DB, s.DefaultGroup, uuid.NewString(), false)
-	app, _ = testdb.SeedEndpoint(s.DB, app, []string{"*"})
+	app, _ := testdb.SeedApplication(s.DB, s.DefaultGroup, uuid.NewString(), "", false)
+	_, _ = testdb.SeedEndpoint(s.DB, app, []string{"*"})
 	event, _ := testdb.SeedEvent(s.DB, app, uuid.NewString(), "*", []byte(`{}`))
 	_, _ = testdb.SeedEventDelivery(s.DB, app, event, &app.Endpoints[0], eventDeliveryID, datastore.FailureEventStatus)
 	_, _ = testdb.SeedEventDelivery(s.DB, app, event, &app.Endpoints[0], eventDeliveryID, datastore.FailureEventStatus)
@@ -248,8 +248,8 @@ func (s *EventIntegrationTestSuite) Test_CountAffectedEventDeliveries_Valid_Filt
 	expectedStatusCode := http.StatusOK
 
 	// Just Before.
-	app, _ := testdb.SeedApplication(s.DB, s.DefaultGroup, uuid.NewString(), false)
-	app, _ = testdb.SeedEndpoint(s.DB, app, []string{"*"})
+	app, _ := testdb.SeedApplication(s.DB, s.DefaultGroup, uuid.NewString(), "", false)
+	_, _ = testdb.SeedEndpoint(s.DB, app, []string{"*"})
 	event, _ := testdb.SeedEvent(s.DB, app, uuid.NewString(), "*", []byte(`{}`))
 	_, _ = testdb.SeedEventDelivery(s.DB, app, event, &app.Endpoints[0], eventDeliveryID, datastore.FailureEventStatus)
 	_, _ = testdb.SeedEventDelivery(s.DB, app, event, &app.Endpoints[0], eventDeliveryID, datastore.FailureEventStatus)
@@ -278,8 +278,8 @@ func (s *EventIntegrationTestSuite) Test_ForceResendEventDeliveries_Valid_EventD
 	expectedStatusCode := http.StatusOK
 
 	// Just Before.
-	app, _ := testdb.SeedApplication(s.DB, s.DefaultGroup, uuid.NewString(), false)
-	app, _ = testdb.SeedEndpoint(s.DB, app, []string{"*"})
+	app, _ := testdb.SeedApplication(s.DB, s.DefaultGroup, uuid.NewString(), "", false)
+	_, _ = testdb.SeedEndpoint(s.DB, app, []string{"*"})
 	event, _ := testdb.SeedEvent(s.DB, app, uuid.NewString(), "*", []byte(`{}`))
 	e1, _ := testdb.SeedEventDelivery(s.DB, app, event, &app.Endpoints[0], eventDeliveryID, datastore.SuccessEventStatus)
 	e2, _ := testdb.SeedEventDelivery(s.DB, app, event, &app.Endpoints[0], eventDeliveryID, datastore.SuccessEventStatus)
@@ -305,11 +305,11 @@ func (s *EventIntegrationTestSuite) Test_GetEventsPaged() {
 	expectedStatusCode := http.StatusOK
 
 	// Just Before.
-	app1, _ := testdb.SeedApplication(s.DB, s.DefaultGroup, uuid.NewString(), false)
+	app1, _ := testdb.SeedApplication(s.DB, s.DefaultGroup, uuid.NewString(), "", false)
 	e1, _ := testdb.SeedEvent(s.DB, app1, eventID, "*", []byte(`{}`))
 	e2, _ := testdb.SeedEvent(s.DB, app1, eventID, "*", []byte(`{}`))
 
-	app2, _ := testdb.SeedApplication(s.DB, s.DefaultGroup, uuid.NewString(), false)
+	app2, _ := testdb.SeedApplication(s.DB, s.DefaultGroup, uuid.NewString(), "", false)
 	_, _ = testdb.SeedEvent(s.DB, app2, eventID, "*", []byte(`{}`))
 
 	url := fmt.Sprintf("/api/v1/events?appId=%s", app1.UID)
@@ -340,12 +340,12 @@ func (s *EventIntegrationTestSuite) GetEventDeliveriesPaged() {
 	expectedStatusCode := http.StatusOK
 
 	// Just Before.
-	app1, _ := testdb.SeedApplication(s.DB, s.DefaultGroup, uuid.NewString(), false)
+	app1, _ := testdb.SeedApplication(s.DB, s.DefaultGroup, uuid.NewString(), "", false)
 	event1, _ := testdb.SeedEvent(s.DB, app1, uuid.NewString(), "*", []byte(`{}`))
 	d1, _ := testdb.SeedEventDelivery(s.DB, app1, event1, &app1.Endpoints[0], eventDeliveryID, datastore.FailureEventStatus)
 	d2, _ := testdb.SeedEventDelivery(s.DB, app1, event1, &app1.Endpoints[0], eventDeliveryID, datastore.FailureEventStatus)
 
-	app2, _ := testdb.SeedApplication(s.DB, s.DefaultGroup, uuid.NewString(), false)
+	app2, _ := testdb.SeedApplication(s.DB, s.DefaultGroup, uuid.NewString(), "", false)
 	event2, _ := testdb.SeedEvent(s.DB, app2, uuid.NewString(), "*", []byte(`{}`))
 	_, _ = testdb.SeedEventDelivery(s.DB, app2, event2, &app2.Endpoints[0], eventDeliveryID, datastore.FailureEventStatus)
 

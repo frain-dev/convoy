@@ -384,7 +384,7 @@ func (s *ApplicationIntegrationTestSuite) Test_UpdateAppEndpoint() {
 
 	// Just Before.
 	app, _ := testdb.SeedApplication(s.DB, s.DefaultGroup, appID, "", false)
-	endpoint, _ := testdb.SeedEndpoint(s.DB, app)
+	endpoint, _ := testdb.SeedEndpoint(s.DB, app, []string{"*"})
 
 	// Arrange Request
 	url := fmt.Sprintf("/api/v1/applications/%s/endpoints/%s", appID, endpoint.UID)
