@@ -158,6 +158,9 @@ export class ConvoyDashboardComponent implements OnInit {
 	eventDelsTimeFilterData: { startTime: string; endTime: string } = { startTime: 'T00:00:00', endTime: 'T23:59:59' };
 	@ViewChild('eventsTimeFilter', { static: true }) eventsTimerFilter!: TimeFilterComponent;
 	@ViewChild('eventDeliveryTimerFilter', { static: true }) eventDeliveryTimerFilter!: TimeFilterComponent;
+	showProjectsModal = !!this.convyDashboardService.activeGroupId;
+	isLoadingProjects = false;
+	groupsLoaderIndex: number[] = [0, 1, 2, 3];
 
 	constructor(public convyDashboardService: ConvoyDashboardService, private router: Router, private formBuilder: FormBuilder, private route: ActivatedRoute, private datePipe: DatePipe) {}
 
@@ -892,6 +895,7 @@ export class ConvoyDashboardComponent implements OnInit {
 	}
 
 	async getGroups(requestDetails?: { addToURL?: boolean }): Promise<HTTP_RESPONSE> {
+		this.isLoadingProjects = true;
 		if (requestDetails?.addToURL) this.addFilterToURL({ section: 'group' });
 
 		try {
@@ -900,8 +904,10 @@ export class ConvoyDashboardComponent implements OnInit {
 
 			// check group existing filter in url and set active group
 			if (!this.isCloud) this.convyDashboardService.activeGroupId = this.route.snapshot.queryParams?.group ?? this.groups[0]?.uid;
+			this.isLoadingProjects = false;
 			return groupsResponse;
 		} catch (error: any) {
+			this.isLoadingProjects = false;
 			return error;
 		}
 	}
