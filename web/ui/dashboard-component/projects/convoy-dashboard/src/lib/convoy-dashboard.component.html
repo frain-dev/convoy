@@ -1232,9 +1232,9 @@
 	</div>
 </div>
 
-<!-- delete app modal  -->
-<div class="modal modal__center projects-modal" *ngIf="showProjectsModal">
-	<div class="modal--body">
+<!-- projects modal  -->
+<div class="modal modal__center projects-modal width-unset-max" *ngIf="showProjectsModal">
+	<div class="modal--body padding-all__40px">
 		<h3 class="margin-bottom__8px">Select a project</h3>
 		<p class="margin-bottom__32px color__grey font__14px">All your project's summary at a glance</p>
 		<button class="close rounded__6px padding-all__10px border--none flex" *ngIf="convyDashboardService.activeGroupId" (click)="showProjectsModal = false">

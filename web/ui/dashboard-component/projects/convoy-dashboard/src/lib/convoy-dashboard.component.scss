@@ -49,31 +49,14 @@
 }
 
 .group-dropdown {
-	max-width: 250px;
-	width: fit-content;
-}
-
-.group-dropdown-menu {
-	width: 100%;
-	right: 0;
-	left: unset;
-
-	&.show {
-		max-height: 400px;
-		height: fit-content;
-	}
+	width: 200px;
 }
 
 .projects-modal {
 	width: 1100px;
-	max-width: unset;
 
 	.grid__col-3--smaller {
 		grid-template-columns: repeat(auto-fill, 315px);
-	}
-
-	.modal--body {
-		padding: 40px;
 	}
 
 	.close {
