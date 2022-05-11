@@ -20,3 +20,4 @@ This section summarizes the changes in our open API specs in each release. These
 [API spec v0.5.1](https://github.com/frain-dev/convoy/blob/v0.5.1/docs/v3/openapi3.json)
 
 [API spec v0.5.0](https://github.com/frain-dev/convoy/blob/v0.5.0/docs/v3/openapi3.json)
+
