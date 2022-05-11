@@ -51,7 +51,7 @@ func (s *GroupIntegrationTestSuite) TestGetGroup() {
 	// Just Before.
 	group, err := testdb.SeedGroup(s.DB, groupID, "", nil)
 	require.NoError(s.T(), err)
-	app, _ := testdb.SeedApplication(s.DB, group, uuid.NewString(), false)
+	app, _ := testdb.SeedApplication(s.DB, group, uuid.NewString(), "test-app", false)
 	_, _ = testdb.SeedEndpoint(s.DB, app, []string{"*"})
 	_, _ = testdb.SeedEvent(s.DB, app, uuid.NewString(), "*", []byte("{}"))
 
@@ -108,7 +108,7 @@ func (s *GroupIntegrationTestSuite) TestDeleteGroup() {
 	g, err := s.DB.GroupRepo().FetchGroupByID(context.Background(), group.UID)
 	require.NoError(s.T(), err)
 
-	require.Equal(s.T(), g.DocumentStatus, datastore.DeletedDocumentStatus)
+	require.Equal(s.T(), datastore.DeletedDocumentStatus, g.DocumentStatus)
 	require.True(s.T(), g.DeletedAt > 0)
 }
 
@@ -127,7 +127,7 @@ func (s *GroupIntegrationTestSuite) TestDeleteGroup_Group_not_found() {
 }
 
 func (s *GroupIntegrationTestSuite) TestCreateGroup() {
-	expectedStatusCode := http.StatusOK
+	expectedStatusCode := http.StatusCreated
 
 	bodyStr := `{
     "name": "test-group",
@@ -168,13 +168,13 @@ func (s *GroupIntegrationTestSuite) TestCreateGroup() {
 	parseResponse(s.T(), w.Result(), &respGroup)
 	require.NotEmpty(s.T(), respGroup.UID)
 	require.Equal(s.T(), 5000, respGroup.RateLimit)
-	require.Equal(s.T(), "1m0s", respGroup.RateLimitDuration)
+	require.Equal(s.T(), "1m", respGroup.RateLimitDuration)
 	require.Equal(s.T(), "test-group", respGroup.Name)
 }
 
 func (s *GroupIntegrationTestSuite) TestUpdateGroup() {
 	groupID := uuid.NewString()
-	expectedStatusCode := http.StatusOK
+	expectedStatusCode := http.StatusAccepted
 
 	// Just Before.
 	group, err := testdb.SeedGroup(s.DB, groupID, "test-group", nil)
@@ -182,7 +182,27 @@ func (s *GroupIntegrationTestSuite) TestUpdateGroup() {
 
 	url := fmt.Sprintf("/api/v1/groups/%s", group.UID)
 
-	bodyStr := `{"name": "group_1"}`
+	bodyStr := `{
+    "name": "group_1",
+    "config": {
+        "strategy": {
+            "type": "default",
+            "default": {
+                "intervalSeconds": 10,
+                "retryLimit": 2
+            },
+            "exponentialBackoff": {
+                "retryLimit": 0
+            }
+        },
+        "signature": {
+            "header": "X-Convoy-Signature",
+            "hash": "SHA512"
+        },
+        "disable_endpoint": false,
+        "replay_attacks": false
+    }
+}`
 	req := createRequest(http.MethodPut, url, serialize(bodyStr))
 	w := httptest.NewRecorder()
 
@@ -215,24 +235,25 @@ func (s *GroupIntegrationTestSuite) TestGetGroups() {
 
 	var groups []*datastore.Group
 	parseResponse(s.T(), w.Result(), &groups)
-	require.Equal(s.T(), 3, len(groups))
+	require.Equal(s.T(), 4, len(groups))
 
-	v := []*datastore.Group{group1, group2, group3}
+	v := []*datastore.Group{s.DefaultGroup, group1, group2, group3}
 	for i, group := range groups {
 		require.Equal(s.T(), v[i].UID, group.UID)
 	}
 }
 
-func (s *GroupIntegrationTestSuite) TestGetGroups_Filter_by_name() {
+func (s *GroupIntegrationTestSuite) TestGetGroups_FilterByName() {
 	expectedStatusCode := http.StatusOK
 
 	// Just Before.
-	group1, _ := testdb.SeedGroup(s.DB, uuid.NewString(), "test-group-1", nil)
+	group1, _ := testdb.SeedGroup(s.DB, uuid.NewString(), "abcdef", nil)
 	_, _ = testdb.SeedGroup(s.DB, uuid.NewString(), "test-group-2", nil)
 	_, _ = testdb.SeedGroup(s.DB, uuid.NewString(), "test-group-3", nil)
 
 	url := fmt.Sprintf("/api/v1/groups?name=%s", group1.Name)
 	req := createRequest(http.MethodGet, url, nil)
+	req.SetBasicAuth("test-group-filter", "test-group-filter") // override previous auth in createRequest
 	w := httptest.NewRecorder()
 
 	// Act.
@@ -241,7 +262,7 @@ func (s *GroupIntegrationTestSuite) TestGetGroups_Filter_by_name() {
 	// Assert.
 	require.Equal(s.T(), expectedStatusCode, w.Code)
 
-	var groups []*datastore.Group
+	var groups []datastore.Group
 	parseResponse(s.T(), w.Result(), &groups)
 	require.Equal(s.T(), 1, len(groups))
 
