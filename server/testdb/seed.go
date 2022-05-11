@@ -3,7 +3,6 @@ package testdb
 import (
 	"context"
 	"fmt"
-	log "github.com/sirupsen/logrus"
 	"time"
 
 	"github.com/frain-dev/convoy"
@@ -11,19 +10,24 @@ import (
 	"github.com/frain-dev/convoy/datastore"
 	"github.com/frain-dev/convoy/util"
 	"github.com/google/uuid"
+	log "github.com/sirupsen/logrus"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
 )
 
 // SeedApplication is create random application for integration tests.
-func SeedApplication(db datastore.DatabaseClient, g *datastore.Group, uid string, disabled bool) (*datastore.Application, error) {
+func SeedApplication(db datastore.DatabaseClient, g *datastore.Group, uid, title string, disabled bool) (*datastore.Application, error) {
 	if util.IsStringEmpty(uid) {
 		uid = uuid.New().String()
 	}
 
+	if util.IsStringEmpty(title) {
+		title = fmt.Sprintf("TestApp-%s", uid)
+	}
+
 	app := &datastore.Application{
 		UID:            uid,
-		Title:          "Test Application",
+		Title:          title,
 		GroupID:        g.UID,
 		IsDisabled:     disabled,
 		DocumentStatus: datastore.ActiveDocumentStatus,
@@ -60,7 +64,7 @@ func SeedMultipleApplications(db datastore.DatabaseClient, g *datastore.Group, c
 	return nil
 }
 
-func SeedEndpoint(db datastore.DatabaseClient, app *datastore.Application, events []string) (*datastore.Application, error) {
+func SeedEndpoint(db datastore.DatabaseClient, app *datastore.Application, events []string) (*datastore.Endpoint, error) {
 	endpoint := &datastore.Endpoint{
 		UID:            uuid.New().String(),
 		Events:         events,
@@ -74,13 +78,13 @@ func SeedEndpoint(db datastore.DatabaseClient, app *datastore.Application, event
 	appRepo := db.AppRepo()
 	err := appRepo.UpdateApplication(context.TODO(), app)
 	if err != nil {
-		return &datastore.Application{}, err
+		return &datastore.Endpoint{}, err
 	}
 
-	return app, nil
+	return endpoint, nil
 }
 
-func SeedMultipleEndpoints(db datastore.DatabaseClient, app *datastore.Application, events []string, count int) (*datastore.Application, error) {
+func SeedMultipleEndpoints(db datastore.DatabaseClient, app *datastore.Application, events []string, count int) ([]datastore.Endpoint, error) {
 	for i := 0; i < count; i++ {
 		endpoint := &datastore.Endpoint{
 			UID:            uuid.New().String(),
@@ -96,10 +100,10 @@ func SeedMultipleEndpoints(db datastore.DatabaseClient, app *datastore.Applicati
 	appRepo := db.AppRepo()
 	err := appRepo.UpdateApplication(context.TODO(), app)
 	if err != nil {
-		return &datastore.Application{}, err
+		return nil, err
 	}
 
-	return app, nil
+	return app.Endpoints, nil
 }
 
 // seed default group
@@ -219,5 +223,5 @@ func PurgeDB(db datastore.DatabaseClient) {
 	err := client.Drop(context.TODO())
 	if err != nil {
 		log.WithError(err).Fatal("failed to truncate db")
-  }
+	}
 }
