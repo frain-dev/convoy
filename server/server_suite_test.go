@@ -1,14 +1,13 @@
-//go:build integration
-// +build integration
-
 package server
 
 import (
 	"encoding/json"
 	"io/ioutil"
+	"math/rand"
 	"net/http"
 	"os"
 	"testing"
+	"time"
 
 	"github.com/frain-dev/convoy/auth/realm_chain"
 	ncache "github.com/frain-dev/convoy/cache/noop"
@@ -126,4 +125,9 @@ func parseResponse(t *testing.T, r *http.Response, object interface{}) {
 	if err != nil {
 		t.Fatalf("err: %s", err)
 	}
+}
+
+func randBool() bool {
+	rand.Seed(time.Now().UnixNano())
+	return rand.Intn(2) == 1
 }
