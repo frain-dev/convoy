@@ -451,7 +451,6 @@ func (s *ApplicationIntegrationTestSuite) Test_GetAppEndpoints() {
 	var dbEndpoints []datastore.Endpoint
 	parseResponse(s.T(), w.Result(), &dbEndpoints)
 
-	fmt.Printf("ENDPOINTS: %v", dbEndpoints)
 	require.Len(s.T(), dbEndpoints, len(endpoints))
 }
 
