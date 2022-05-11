@@ -20,7 +20,7 @@ import { DatePipe } from '@angular/common';
 })
 export class ConvoyDashboardComponent implements OnInit {
 	eventsTableHead: string[] = ['Event Type', 'App Name', 'Created At', ''];
-	eventDelTableHead: string[] = ['Status', 'Event Type', 'Attempts', 'Created At', ''];
+	eventDelTableHead: string[] = ['Status', 'Event Type', 'Attempts', 'Created At', '', ''];
 	appsTableHead: string[] = ['Status', 'Name', 'Time Created', 'Updated', 'Events', 'Endpoints'];
 	showFilterCalendar = false;
 	tabs: ['events', 'event deliveries', 'apps'] = ['events', 'event deliveries', 'apps'];
@@ -1169,5 +1169,23 @@ export class ConvoyDashboardComponent implements OnInit {
 
 	selectedGroupName() {
 		return this.groups.find(item => item.uid === this.convyDashboardService.activeGroupId)?.name;
+	}
+
+	viewEndpointSecretKey(secretKey: string) {
+		this.showEndpointSecret = !this.showEndpointSecret;
+		this.endpointSecretKey = secretKey;
+	}
+
+	toggleDashboard() {
+		const currentURLfilters = this.route.snapshot.queryParams;
+		console.log(currentURLfilters)
+		let queryParams: any = {};
+		if (this.renderDashboard) {
+			this.renderDashboard = false;
+		} else {
+			this.renderDashboard = true;
+			queryParams = {renderDashboard: true}
+			this.router.navigate([], { queryParams: Object.assign({}, currentURLfilters, queryParams) });
+		}
 	}
 }
