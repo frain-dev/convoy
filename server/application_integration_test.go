@@ -358,7 +358,7 @@ func (s *ApplicationIntegrationTestSuite) Test_UpdateAppEndpoint() {
 	endpointURL := f.Internet().URL()
 	secret := f.Lorem().Text(25)
 	rand.Seed(time.Now().UnixNano())
-	num := rand.Intn(10)
+	num := rand.Intn(10) + 1
 	eventTypes, _ := json.Marshal(f.Lorem().Words(num))
 	expectedStatusCode := http.StatusAccepted
 
