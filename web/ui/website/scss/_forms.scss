@@ -16,13 +16,22 @@
 		transition: all 0.3s;
 
 		&:focus {
-			border: none;
+			border: 1px solid rgba(115, 122, 145, 0.46);
 			outline: none;
 			padding: 20px 16px 10px 15px;
 		}
 		&:valid {
 			padding: 20px 16px 10px 15px;
 		}
+	}
+
+	select {
+		-webkit-appearance: none;
+		-moz-appearance: none;
+		appearance: none;
+		background: transparent url(../assets/images/angle-down-icon.svg) no-repeat;
+		background-position-x: 94%;
+		background-position-y: 18px;
 	}
 
 	label {
@@ -41,7 +50,7 @@
 	input:-internal-autofill-selected + label {
 		font-weight: 500;
 		font-size: 10px;
-		margin-left: 19px;
+		margin-left: 16px;
 		top: 6px;
 	}
 
