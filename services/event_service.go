@@ -120,9 +120,9 @@ func (e *EventService) GetAppEvent(ctx context.Context, id string) (*datastore.E
 	return event, nil
 }
 
-func (e *EventService) Search(ctx context.Context, groupId, query string, pageable datastore.Pageable) ([]datastore.Event, datastore.PaginationData, error) {
+func (e *EventService) Search(ctx context.Context, filter *datastore.Filter) ([]datastore.Event, datastore.PaginationData, error) {
 	var events []datastore.Event
-	ids, paginationData, err := e.searcher.Search(groupId, query, pageable)
+	ids, paginationData, err := e.searcher.Search(filter)
 	if err != nil {
 		return events, paginationData, err
 	}

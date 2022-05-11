@@ -1,6 +1,7 @@
 package datastore
 
 type Filter struct {
+	Query        string
 	Group        *Group
 	AppID        string
 	EventID      string

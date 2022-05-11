@@ -8,7 +8,7 @@ import (
 )
 
 type Searcher interface {
-	Search(groupId, query string, pageable datastore.Pageable) ([]string, datastore.PaginationData, error)
+	Search(filter *datastore.Filter) ([]string, datastore.PaginationData, error)
 }
 
 func NewSearchClient(searchConfig config.SearchConfiguration) (Searcher, error) {

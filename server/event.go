@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/frain-dev/convoy/config"
 	"github.com/frain-dev/convoy/datastore"
 	"github.com/frain-dev/convoy/server/models"
 	"github.com/frain-dev/convoy/util"
@@ -43,38 +44,6 @@ func (a *applicationHandler) CreateAppEvent(w http.ResponseWriter, r *http.Reque
 	}
 
 	_ = render.Render(w, r, newServerResponse("App event created successfully", event, http.StatusCreated))
-}
-
-// SearchAppEvents
-// @Summary Search app events
-// @Description This endpoint searches through events
-// @Tags Events
-// @Accept  json
-// @Produce  json
-// @Param groupId query string true "group id"
-// @Param query query string true "search query"
-// @Success 200 {object} serverResponse{data=pagedResponse{content=[]datastore.EventDelivery{data=Stub}}}
-// @Failure 400,401,500 {object} serverResponse{data=Stub}
-// @Security ApiKeyAuth
-// @Router /events/search [get]
-func (a *applicationHandler) SearchAppEvents(w http.ResponseWriter, r *http.Request) {
-	g := getGroupFromContext(r.Context())
-	query := r.URL.Query().Get("query")
-
-	pageable := getPageableFromContext(r.Context())
-
-	if pageable.Page == 0 {
-		pageable.Page = 1
-	}
-
-	events, paginationData, err := a.eventService.Search(r.Context(), g.UID, query, pageable)
-	if err != nil {
-		_ = render.Render(w, r, newErrorResponse(err.Error(), http.StatusBadRequest))
-		return
-	}
-
-	_ = render.Render(w, r, newServerResponse("Events fetched successfully",
-		pagedResponse{Content: &events, Pagination: &paginationData}, http.StatusOK))
 }
 
 // GetAppEvent
@@ -284,17 +253,45 @@ func (a *applicationHandler) ForceResendEventDeliveries(w http.ResponseWriter, r
 // @Security ApiKeyAuth
 // @Router /events [get]
 func (a *applicationHandler) GetEventsPaged(w http.ResponseWriter, r *http.Request) {
+	config, err := config.Get()
+	if err != nil {
+		_ = render.Render(w, r, newErrorResponse(err.Error(), http.StatusBadRequest))
+		return
+	}
+
 	searchParams, err := getSearchParams(r)
 	if err != nil {
 		_ = render.Render(w, r, newErrorResponse(err.Error(), http.StatusBadRequest))
 		return
 	}
 
+	pageable := getPageableFromContext(r.Context())
+	group := getGroupFromContext(r.Context())
+	query := r.URL.Query().Get("query")
+	app := r.URL.Query().Get("appId")
+
+	// if pageable.Page == 0 {
+	// 	pageable.Page = 1
+	// }
+
 	f := &datastore.Filter{
-		Group:        getGroupFromContext(r.Context()),
-		AppID:        r.URL.Query().Get("appId"),
-		Pageable:     getPageableFromContext(r.Context()),
+		Query:        query,
+		Group:        group,
+		AppID:        app,
+		Pageable:     pageable,
 		SearchParams: searchParams,
+	}
+
+	if config.Search.Type == "typesense" {
+		m, paginationData, err := a.eventService.Search(r.Context(), f)
+		if err != nil {
+			_ = render.Render(w, r, newErrorResponse(err.Error(), http.StatusBadRequest))
+			return
+		}
+		_ = render.Render(w, r, newServerResponse("App events fetched successfully",
+			pagedResponse{Content: &m, Pagination: &paginationData}, http.StatusOK))
+
+		return
 	}
 
 	m, paginationData, err := a.eventService.GetEventsPaged(r.Context(), f)
