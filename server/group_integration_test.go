@@ -74,7 +74,7 @@ func (s *GroupIntegrationTestSuite) TestGetGroup() {
 	}, *respGroup.Statistics)
 }
 
-func (s *GroupIntegrationTestSuite) TestGetGroup_Group_not_found() {
+func (s *GroupIntegrationTestSuite) TestGetGroup_GroupNotFound() {
 	expectedStatusCode := http.StatusNotFound
 
 	url := fmt.Sprintf("/api/v1/groups/%s", uuid.NewString())
@@ -112,7 +112,7 @@ func (s *GroupIntegrationTestSuite) TestDeleteGroup() {
 	require.True(s.T(), g.DeletedAt > 0)
 }
 
-func (s *GroupIntegrationTestSuite) TestDeleteGroup_Group_not_found() {
+func (s *GroupIntegrationTestSuite) TestDeleteGroup_GroupNotFound() {
 	expectedStatusCode := http.StatusNotFound
 
 	url := fmt.Sprintf("/api/v1/groups/%s", uuid.NewString())
