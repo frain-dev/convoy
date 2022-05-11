@@ -71,27 +71,10 @@
 			<ng-container *ngIf="!isCloud">
 				<div class="flex flex__align-items-center">
 					<div>Active Group:</div>
-					<div class="dropdown">
-						<button
-							class="button button__filter button--has-icon icon-right margin-left__16px flex flex__align-items-center flex__justify-between group-dropdown"
-							(click)="showFilterCalendar = !showFilterCalendar; showOverlay = true"
-						>
-							<span class="color__primary has-ellipsis">{{ selectedGroupName() }}</span>
-							<img src="/assets/img/angle-arrow-down.svg" alt="arrow down icon" />
-						</button>
-						<div class="dropdown__menu dropdown__menu__push-left group-dropdown-menu" [ngClass]="{ show: showFilterCalendar }">
-							<ul id="groups-dropdown">
-								<li
-									class="has-ellipsis"
-									[ngClass]="{ active: convyDashboardService.activeGroupId == group.uid }"
-									*ngFor="let group of groups"
-									(click)="convyDashboardService.activeGroupId = group.uid; toggleActiveGroup(); showFilterCalendar = false; showOverlay = false"
-								>
-									{{ group.name }}
-								</li>
-							</ul>
-						</div>
-					</div>
+					<button class="button button__filter button--has-icon icon-right margin-left__16px flex flex__align-items-center flex__justify-between group-dropdown" (click)="showProjectsModal = true">
+						<span class="color__primary has-ellipsis">{{ selectedGroupName() }}</span>
+						<img src="/assets/img/angle-arrow-down.svg" alt="arrow down icon" />
+					</button>
 				</div>
 			</ng-container>
 		</div>
@@ -993,12 +976,14 @@
 		showFilterCalendar = false
 	"
 ></div>
+
 <!-- dark overlay  -->
 <div
 	class="_overlay"
-	*ngIf="showBatchRetryModal || showCreateAppModal || showAddEndpointModal || showAddEventModal || showDeleteAppModal || showEndpointSecret"
-	(click)="showCreateAppModal = false; showBatchRetryModal = false; showAddEndpointModal = false; showAddEventModal = false; showDeleteAppModal = false; showEndpointSecret = false"
+	*ngIf="showBatchRetryModal || showCreateAppModal || showAddEndpointModal || showAddEventModal || showDeleteAppModal || showEndpointSecret || showProjectsModal"
+	(click)="showCreateAppModal = false; showBatchRetryModal = false; showAddEndpointModal = false; showAddEventModal = false; showDeleteAppModal = false; showEndpointSecret = false; showProjectsModal = false"
 ></div>
+
 <!-- create app, add new endpoint, add event modals  -->
 <div class="modal modal__right" *ngIf="showCreateAppModal || showAddEndpointModal || showAddEventModal || showEndpointSecret">
 	<!-- create app modal  -->
@@ -1244,5 +1229,88 @@
 		<div class="text-center font__20px font__weight-600 color__black margin-bottom__32px">{{ batchRetryCount || 0 }} event{{ batchRetryCount > 1 ? 's' : '' }}</div>
 		<button class="button button__primary" [disabled]="isRetyring || batchRetryCount == 0" (click)="batchRetryEvent()">{{ isRetyring ? 'Retrying Events...' : 'Yes, Apply' }}</button>
 		<button class="button__primary button__clear margin-top__28px font__weight-600" (click)="showBatchRetryModal = false">No, Cancel</button>
+	</div>
+</div>
+
+<!-- projects modal  -->
+<div class="modal modal__center projects-modal width-unset-max" *ngIf="showProjectsModal">
+	<div class="modal--body padding-all__40px">
+		<h3 class="margin-bottom__8px">Select a project</h3>
+		<p class="margin-bottom__32px color__grey font__14px">All your project's summary at a glance</p>
+		<button class="close rounded__6px padding-all__10px border--none flex" *ngIf="convyDashboardService.activeGroupId" (click)="showProjectsModal = false">
+			<img src="/assets/img/close-icon-grey.svg" alt="close icon" />
+		</button>
+
+		<ul class="grid grid__col-3--smaller" *ngIf="isLoadingProjects">
+			<li *ngFor="let index of groupsLoaderIndex">
+				<div class="card rounded__8px border__all bg__white">
+					<div class="padding-x__24px padding-top__24px padding-bottom__14px border__bottom">
+						<div class="skeleton-loader header"></div>
+					</div>
+					<div class="flex flex__align-items-center border__bottom">
+						<div class="border__right padding-y__8px width__50 padding-x__24px">
+							<div class="skeleton-loader text"></div>
+						</div>
+						<div class="flex flex__align-items-center flex__justify-between width__50 padding-y__8px padding-x__24px">
+							<div>
+								<div class="skeleton-loader small"></div>
+							</div>
+							<div><div class="skeleton-loader small"></div></div>
+						</div>
+					</div>
+					<div class="pointer-cursor padding-all__16px overflow--hidden">
+						<div class="skeleton-loader img"></div>
+					</div>
+				</div>
+			</li>
+		</ul>
+
+		<ul class="grid grid__col-3--smaller" *ngIf="!isLoadingProjects">
+			<li *ngFor="let group of groups" (click)="convyDashboardService.activeGroupId = group.uid; toggleActiveGroup(); showProjectsModal = false">
+				<div class="card rounded__8px border__all bg__white">
+					<div class="padding-x__24px padding-top__24px padding-bottom__14px border__bottom">
+						<h4 class="pointer-cursor">{{ group.name }}</h4>
+					</div>
+
+					<div class="flex flex__align-items-center flex__justify-between border__bottom">
+						<div class="font__12px font__weight-500 color__grey width__50 border__right padding-y__8px padding-x__12px">
+							<span class="color__black margin-right__8px">{{ group?.statistics?.messages_sent }}</span>
+							Events Sent
+						</div>
+
+						<div class="flex flex__align-items-center flex__justify-between width__50 padding-y__8px padding-x__12px">
+							<div class="font__12px font__weight-500 color__grey">
+								<span class="color__black margin-right__8px">{{ group?.statistics?.total_apps }}</span>
+								Apps
+							</div>
+
+							<!-- Pending when API is ready -->
+							<!-- <div class="dropdown">
+								<button class="button__clear" (click)="group.showDropdown = !group.showDropdown">
+									<img src="/assets/img/more-horizontal.svg" alt="more" />
+								</button>
+
+								<div class="dropdown__menu dropdown__menu__nav large" [ngClass]="{ show: group.showDropdown }">
+									<ul>
+										<li>
+											<p>View Project</p>
+										</li>
+										<li>
+											<p>Project settings</p>
+										</li>
+										<li class="danger">
+											<p>Delete Project</p>
+										</li>
+									</ul>
+								</div>
+							</div> -->
+						</div>
+					</div>
+					<div class="pointer-cursor padding-top__16px overflow--hidden">
+						<img src="/assets/img/chart-icon.svg" alt="graph icon" />
+					</div>
+				</div>
+			</li>
+		</ul>
 	</div>
 </div>
