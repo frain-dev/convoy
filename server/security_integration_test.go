@@ -78,7 +78,7 @@ func (s *SecurityIntegrationTestSuite) Test_CreateAppPortalAPIKey() {
 	expectedStatusCode := http.StatusCreated
 
 	// Just Before.
-	app, _ := testdb.SeedApplication(s.DB, s.DefaultGroup, uuid.NewString(), true)
+	app, _ := testdb.SeedApplication(s.DB, s.DefaultGroup, uuid.NewString(), "test-app", true)
 
 	// Arrange Request.
 	bodyStr := `{"name":"default_api_key","role":{"type":"ui_admin","groups":["%s"]},"key_type":"api_key","expires_at":"%s"}"`
