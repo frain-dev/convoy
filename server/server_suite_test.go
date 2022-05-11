@@ -2,10 +2,14 @@ package server
 
 import (
 	"encoding/json"
+	"fmt"
+	"io"
 	"io/ioutil"
 	"math/rand"
 	"net/http"
+	"net/http/httptest"
 	"os"
+	"strings"
 	"testing"
 	"time"
 
@@ -130,4 +134,18 @@ func parseResponse(t *testing.T, r *http.Response, object interface{}) {
 func randBool() bool {
 	rand.Seed(time.Now().UnixNano())
 	return rand.Intn(2) == 1
+}
+
+func createRequest(method string, url string, body io.Reader) *http.Request {
+	req := httptest.NewRequest(method, url, body)
+	req.SetBasicAuth("test", "test")
+	req.Header.Add("Content-Type", "application/json")
+
+	return req
+}
+
+func serialize(r string, args ...interface{}) io.Reader {
+	v := fmt.Sprintf(r, args...)
+	fmt.Println("ff", v)
+	return strings.NewReader(v)
 }

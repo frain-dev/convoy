@@ -6,10 +6,8 @@ package server
 import (
 	"fmt"
 	"github.com/google/uuid"
-	"io"
 	"net/http"
 	"net/http/httptest"
-	"strings"
 	"testing"
 
 	"github.com/frain-dev/convoy/config"
@@ -373,18 +371,4 @@ func (s *EventIntegrationTestSuite) GetEventDeliveriesPaged() {
 
 func TestEventIntegrationSuiteTest(t *testing.T) {
 	suite.Run(t, new(EventIntegrationTestSuite))
-}
-
-func createRequest(method string, url string, body io.Reader) *http.Request {
-	req := httptest.NewRequest(method, url, body)
-	req.SetBasicAuth("test", "test")
-	req.Header.Add("Content-Type", "application/json")
-
-	return req
-}
-
-func serialize(r string, args ...interface{}) io.Reader {
-	v := fmt.Sprintf(r, args...)
-	fmt.Println("ff", v)
-	return strings.NewReader(v)
 }

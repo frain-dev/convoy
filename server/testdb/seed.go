@@ -84,7 +84,7 @@ func SeedEndpoint(db datastore.DatabaseClient, app *datastore.Application, event
 	return endpoint, nil
 }
 
-func SeedMultipleEndpoints(db datastore.DatabaseClient, app *datastore.Application, events []string, count int) (*datastore.Application, error) {
+func SeedMultipleEndpoints(db datastore.DatabaseClient, app *datastore.Application, events []string, count int) ([]datastore.Endpoint, error) {
 	for i := 0; i < count; i++ {
 		endpoint := &datastore.Endpoint{
 			UID:            uuid.New().String(),
@@ -100,10 +100,10 @@ func SeedMultipleEndpoints(db datastore.DatabaseClient, app *datastore.Applicati
 	appRepo := db.AppRepo()
 	err := appRepo.UpdateApplication(context.TODO(), app)
 	if err != nil {
-		return &datastore.Application{}, err
+		return nil, err
 	}
 
-	return app, nil
+	return app.Endpoints, nil
 }
 
 // seed default group
