@@ -7,4 +7,17 @@ order: 2
 
 # API
 
-We has a managed version of our open-source core which represents the mapping of our open-source APIs, details of this can be found [here](https://convoy.readme.io/reference/introduction).
+This section summarizes the changes in our open API specs in each release. These are the open API specs for v0.5.x.
+
+[API spec v0.5.5](https://github.com/frain-dev/convoy/blob/v0.5.5/docs/v3/openapi3.json)
+
+[API spec v0.5.4](https://github.com/frain-dev/convoy/blob/v0.5.4/docs/v3/openapi3.json)
+
+[API spec v0.5.3](https://github.com/frain-dev/convoy/blob/v0.5.3/docs/v3/openapi3.json)
+
+[API spec v0.5.2](https://github.com/frain-dev/convoy/blob/v0.5.2/docs/v3/openapi3.json)
+
+[API spec v0.5.1](https://github.com/frain-dev/convoy/blob/v0.5.1/docs/v3/openapi3.json)
+
+[API spec v0.5.0](https://github.com/frain-dev/convoy/blob/v0.5.0/docs/v3/openapi3.json)
+

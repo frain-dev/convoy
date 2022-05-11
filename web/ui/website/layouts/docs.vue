@@ -230,8 +230,7 @@ header {
 		width: 100%;
 		margin-top: 70px;
 		@media (min-width: $desktopBreakPoint) {
-			width: calc(100% - 270px);
-			max-width: 760px;
+			width: calc(100% - 300px);
 		}
 	}
 }
@@ -242,13 +241,13 @@ header {
 		margin-top: unset;
 		position: fixed;
 		right: 60px;
-		top: 150px;
+		top: 110px;
 	}
 	h4 {
-		font-weight: 400;
-		font-size: 12px;
-		line-height: 27px;
-		color: #31323d;
+		font-weight: 600;
+		font-size: 14px;
+		line-height: 22px;
+		color: #000624;
 		padding-left: 10px;
 		margin-bottom: 8px;
 	}
@@ -257,7 +256,7 @@ header {
 			font-weight: 500;
 			font-size: 14px;
 			line-height: 22px;
-			color: #31323d;
+			color: #737a91;
 			padding: 8px 0;
 			border-bottom: 1px solid #edeff5;
 
