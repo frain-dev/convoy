@@ -24,34 +24,37 @@ import { ChangeDetectionStrategy, Component, Input, Output, EventEmitter, OnInit
 				</div>
 			</div>
 		</div>
-		<div class="page page__small padding-top__28px margin-bottom__20px" *ngIf="activeTab === 'apps' && appsDetailsItem">
+
+		<!-- app details  -->
+		<div class="page page__small padding-top__28px margin-bottom__20px" *ngIf="activeTab === 'apps' && appsDetailsItem" [ngClass]="{ disabled: appsDetailsItem?.is_disabled }">
 			<div class="flex flex__justify-between flex__align-items-center margin-bottom__24px">
 				<h3>Overview</h3>
 				<button class="button button__white button__small" (click)="loadEventsFromAppsTable(appsDetailsItem.uid); closeOverview()">View Event</button>
 			</div>
 			<div class="flex flex__align-items-center flex__justify-between margin-bottom__32px">
 				<div>
-					<p class="color__grey font__12px font__weight-400">Date Created</p>
+					<p class="color__grey font__12px font__weight-400">DATE CREATED</p>
 					<p class="color__black font__14px font__weight-500">{{ appsDetailsItem?.created_at | date: 'mediumDate' }}</p>
 				</div>
 				<div>
-					<p class="color__grey font__12px font__weight-400">Support Email</p>
+					<p class="color__grey font__12px font__weight-400">SUPPORT EMAIL</p>
 					<p class="color__black font__14px font__weight-500">{{ appsDetailsItem?.support_email || '...no support email provided' }}</p>
 				</div>
 				<div>
-					<p class="color__grey font__12px font__weight-400">Updated</p>
+					<p class="color__grey font__12px font__weight-400">UPDATED</p>
 					<p class="color__black font__14px font__weight-500">{{ appsDetailsItem?.updated_at | date: 'mediumDate' }}</p>
 				</div>
 				<div>
-					<p class="color__grey font__12px font__weight-400">Events</p>
+					<p class="color__grey font__12px font__weight-400">EVENTS</p>
 					<p class="color__black font__14px font__weight-500">{{ appsDetailsItem?.events }}</p>
 				</div>
 				<div>
-					<p class="color__grey font__12px font__weight-400">Endpoints</p>
+					<p class="color__grey font__12px font__weight-400">ENDPOINTS</p>
 					<p class="color__black font__14px font__weight-500">{{ appsDetailsItem?.endpoints.length }}</p>
 				</div>
 			</div>
-			<div>
+			<!-- pending when backend is ready  -->
+			<!-- <div>
 				<p class="flex flex__align-items-center font__14px font__weight-500 margin-bottom__8px">
 					Enable Notification
 					<img src="/assets/img/primary-info-icon.svg" class="margin-left__10px" alt="info icon" />
@@ -60,7 +63,8 @@ import { ChangeDetectionStrategy, Component, Input, Output, EventEmitter, OnInit
 					<input class="toggle-checkbox" type="checkbox" (change)="editAppStatus(appsDetailsItem)" [checked]="!appsDetailsItem?.is_disabled" />
 					<div class="toggle-switch"></div>
 				</label>
-			</div>
+			</div> -->
+
 			<div class="flex flex__justify-between border__top margin-top__22px">
 				<div class="border__right width__50 padding-right__32px padding-top__32px">
 					<div class="flex flex__align-items-center flex__justify-between">
@@ -71,23 +75,23 @@ import { ChangeDetectionStrategy, Component, Input, Output, EventEmitter, OnInit
 							<button class="button__clear" [disabled]="appsDetailsItem?.endpoints.length == 0" (click)="setEventAppId()">Add Event</button>
 						</div>
 					</div>
-					<ul class="dashboard--logs--details--endpoints">
+					<ul class="margin-top__16px">
 						<ng-container *ngIf="appsDetailsItem?.endpoints">
-							<li *ngFor="let endpoint of appsDetailsItem.endpoints">
+							<li class="dashboard--logs--details--endpoints bg__grey-fade padding-all__16px rounded__8px margin-bottom__24px" *ngFor="let endpoint of appsDetailsItem.endpoints">
 								<div>
 									<div class="flex">
-										<h5>{{ endpoint.description }}</h5>
-										<button class="margin-left__16px button__clear color-primary button--has-icon icon-right small-icon" (click)="viewEndpointSecretKey(endpoint.secret)">
+										<h5 class="color__black font__14px font__weight-400">{{ endpoint.description }}</h5>
+										<button class="margin-left__16px button__clear color__primary button--has-icon icon-right small-icon" (click)="viewEndpointSecretKey(endpoint.secret)">
 											View Secret
 											<img src="/assets/img/arrow-up-right.svg" alt="link out" />
 										</button>
 									</div>
-									<p>
-										<img src="/assets/img/link-icon.svg" alt="link icon" />
+									<p class="flex flex__align-items-center font__14px color__black font__weight-300 margin-top__16px">
+										<img src="/assets/img/link-icon.svg" alt="link icon" class="margin-right__8px" />
 										{{ endpoint.target_url }}
 									</p>
-									<div class="events">
-										<div class="tag" *ngFor="let event of endpoint.events">{{ event == '*' ? 'all events' : event }}</div>
+									<div class="flex margin-top__16px">
+										<div class="tag tag__events" *ngFor="let event of endpoint.events">{{ event == '*' ? 'all events' : event }}</div>
 									</div>
 								</div>
 								<div class="dashboard--logs--details--endpoints--inactive" *ngIf="endpoint.status == 'inactive'">
@@ -95,7 +99,7 @@ import { ChangeDetectionStrategy, Component, Input, Output, EventEmitter, OnInit
 										<img src="/assets/img/lock.svg" alt="lock icon" />
 									</div>
 									<p class="color__dark font__16px font__weight-600">Endpoint Disabled</p>
-									<!-- pending till this is figured out by backend  -->
+									<!-- pending till this is figured out by backend -->
 									<!-- <a class="color__primary font__14px font__weight-500 margin-bottom__10px">Click here to learn how to enable this endpoint</a> -->
 								</div>
 							</li>
@@ -107,7 +111,7 @@ import { ChangeDetectionStrategy, Component, Input, Output, EventEmitter, OnInit
 					</div>
 				</div>
 				<div class="width__50 padding-left__32px padding-top__32px">
-					<div [ngClass]="{ disabled: appsDetailsItem?.is_disabled }">
+					<div>
 						<h3>App Portal</h3>
 						<ul class="dashboard--logs--details--meta">
 							<li class="list-item-inline">
@@ -142,6 +146,8 @@ import { ChangeDetectionStrategy, Component, Input, Output, EventEmitter, OnInit
 				</div>
 			</div>
 		</div>
+
+		<!-- event delivery details  -->
 		<div class="page page__small padding-top__28px margin-bottom__20px" *ngIf="activeTab === 'event deliveries' && eventDelsDetailsItem">
 			<div class="flex flex__justify-between flex__align-items-center margin-bottom__24px">
 				<h3>Overview</h3>
@@ -159,7 +165,7 @@ import { ChangeDetectionStrategy, Component, Input, Output, EventEmitter, OnInit
 					{{ eventDelsDetailsItem.status === 'Success' ? 'Force Retry' : 'Retry' }}
 				</button>
 			</div>
-			<div class="flex flex__justify-between margin-bottom__24px">
+			<div class="grid grid__col-5 margin-bottom__24px">
 				<div>
 					<p class="color__grey font__12px font__weight-400">EVENT TYPE</p>
 					<p class="color__black font__14px font__weight-500">{{ eventDelsDetailsItem?.created_at | date: 'mediumDate' }}</p>
@@ -183,7 +189,7 @@ import { ChangeDetectionStrategy, Component, Input, Output, EventEmitter, OnInit
 					<p class="color__black font__14px font__weight-500">{{ eventDelsDetailsItem?.updated_at | date: 'medium' }}</p>
 				</div>
 			</div>
-			<div class="flex flex__justify-between margin-bottom__32px" [ngClass]="{ width__83: eventDelsDetailsItem.status !== 'Success', width__63: eventDelsDetailsItem.status === 'Success' }">
+			<div class="grid grid__col-5 margin-bottom__32px">
 				<div>
 					<p class="color__grey font__12px font__weight-400">HTTP STATUS</p>
 					<p class="color__black font__14px font__weight-500">{{ eventDeliveryAtempt?.http_status || '-' }}</p>
@@ -196,6 +202,8 @@ import { ChangeDetectionStrategy, Component, Input, Output, EventEmitter, OnInit
 					<p class="color__grey font__12px font__weight-400">ENDPOINT</p>
 					<p class="color__primary font__14px font__weight-500 long-text long-text__200px" [title]="eventDelsDetailsItem.endpoint?.target_url">{{ eventDelsDetailsItem.endpoint?.target_url }}</p>
 				</div>
+				<div></div>
+				<div *ngIf="eventDelsDetailsItem.status === 'Success'"></div>
 			</div>
 			<div class="grid border__top grid__col-2">
 				<div class="border__right padding-top__40px padding-right__32px padding-bottom__40px width__100">
@@ -210,16 +218,16 @@ import { ChangeDetectionStrategy, Component, Input, Output, EventEmitter, OnInit
 			<div class="grid border__top grid__col-2">
 				<ng-container *ngIf="eventDeliveryAtempt?.error">
 					<div class="padding-top__40px padding-right__32px padding-bottom__40px width__100">
-                        <h3 class="margin-bottom__16px color__black">>Error</h3>
-                        <prism language="json" [code]="getCodeSnippetString('error')"></prism>
-                    </div>
+						<h3 class="margin-bottom__16px color__black">>Error</h3>
+						<prism language="json" [code]="getCodeSnippetString('error')"></prism>
+					</div>
 				</ng-container>
 				<ng-container *ngIf="!eventDeliveryAtempt?.error">
-                    <div class="padding-top__40px padding-right__32px padding-bottom__40px width__100">
-                        <h3 class="margin-bottom__16px color__black">Response Body</h3>
-                        <prism language="json" [code]="getCodeSnippetString('res_body')"></prism>
-                    </div>
-                </ng-container>
+					<div class="padding-top__40px padding-right__32px padding-bottom__40px width__100">
+						<h3 class="margin-bottom__16px color__black">Response Body</h3>
+						<prism language="json" [code]="getCodeSnippetString('res_body')"></prism>
+					</div>
+				</ng-container>
 				<div class="padding-top__40px padding-left__32px padding-bottom__40px width__100">
 					<h3 class="margin-bottom__16px color__black">Request Header</h3>
 					<prism language="json" [code]="getCodeSnippetString('req')"></prism>
@@ -227,13 +235,7 @@ import { ChangeDetectionStrategy, Component, Input, Output, EventEmitter, OnInit
 			</div>
 		</div>
 	`,
-	styles: [
-		`
-			pre.line-numbers {
-				max-width: 395px !important;
-			}
-		`
-	]
+	styleUrls: ['../convoy-dashboard.component.scss']
 })
 export class ConvoyOverviewComponent implements OnInit {
 	constructor() {}
