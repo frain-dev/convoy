@@ -206,29 +206,29 @@ import { ChangeDetectionStrategy, Component, Input, Output, EventEmitter, OnInit
 				<div *ngIf="eventDelsDetailsItem.status === 'Success'"></div>
 			</div>
 			<div class="grid border__top grid__col-2">
-				<div class="border__right padding-top__40px padding-right__32px padding-bottom__40px width__100">
+				<div class="eventDelivery border__right padding-top__40px padding-right__32px padding-bottom__40px width__100">
 					<h3 class="margin-bottom__16px color__black">Events</h3>
 					<prism language="json" [code]="getCodeSnippetString('event_delivery')"></prism>
 				</div>
-				<div class="padding-left__32px padding-top__40px padding-bottom__40px width__100">
+				<div class="eventDelivery padding-left__32px padding-top__40px padding-bottom__40px width__100">
 					<h3 class="margin-bottom__16px color__black">Response Header</h3>
 					<prism language="json" [code]="getCodeSnippetString('res_head')"></prism>
 				</div>
 			</div>
 			<div class="grid border__top grid__col-2">
 				<ng-container *ngIf="eventDeliveryAtempt?.error">
-					<div class="padding-top__40px padding-right__32px padding-bottom__40px width__100">
-						<h3 class="margin-bottom__16px color__black">>Error</h3>
+					<div class="eventDelivery padding-top__40px padding-right__32px padding-bottom__40px width__100">
+						<h3 class="margin-bottom__16px color__black">Error</h3>
 						<prism language="json" [code]="getCodeSnippetString('error')"></prism>
 					</div>
 				</ng-container>
 				<ng-container *ngIf="!eventDeliveryAtempt?.error">
-					<div class="padding-top__40px padding-right__32px padding-bottom__40px width__100">
+					<div class="eventDelivery padding-top__40px padding-right__32px padding-bottom__40px width__100">
 						<h3 class="margin-bottom__16px color__black">Response Body</h3>
 						<prism language="json" [code]="getCodeSnippetString('res_body')"></prism>
 					</div>
 				</ng-container>
-				<div class="padding-top__40px padding-left__32px padding-bottom__40px width__100">
+				<div class="eventDelivery padding-top__40px padding-left__32px padding-bottom__40px width__100">
 					<h3 class="margin-bottom__16px color__black">Request Header</h3>
 					<prism language="json" [code]="getCodeSnippetString('req')"></prism>
 				</div>

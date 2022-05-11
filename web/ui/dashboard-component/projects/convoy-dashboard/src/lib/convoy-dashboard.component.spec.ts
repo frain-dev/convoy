@@ -252,7 +252,7 @@ describe('ConvoyDashboardComponent', () => {
 		const eventDeliveryTableContainer: HTMLElement = fixture.debugElement.nativeElement.querySelector('#event-deliveries-table-container');
 		expect(eventDeliveryTableContainer.hasAttribute('hidden')).toBeFalsy();
 		expect(eventDeliveryTableContainer.querySelector('#table')).toBeTruthy();
-		expect(eventDeliveryTableContainer.querySelectorAll('#table thead th').length).toEqual(5);
+		expect(eventDeliveryTableContainer.querySelectorAll('#table thead th').length).toEqual(6);
 		expect(component.displayedEventDeliveries.length === eventDeliveryTableContainer.querySelectorAll('#table tbody .table--date-row').length).toBeTrue();
 		component.displayedEventDeliveries.forEach((event, index) => {
 			expect(event.content.length === eventDeliveryTableContainer.querySelectorAll('#table tbody tr#eventDel' + index).length).toBeTrue();
