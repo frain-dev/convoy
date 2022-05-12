@@ -16,7 +16,6 @@ import (
 
 	"github.com/frain-dev/convoy/config"
 	"github.com/frain-dev/convoy/datastore"
-	"github.com/golang/mock/gomock"
 	"github.com/google/uuid"
 	"github.com/sebdah/goldie/v2"
 	log "github.com/sirupsen/logrus"
@@ -55,10 +54,7 @@ func (s *DashboardIntegrationTestSuite) TearDownTest() {
 	testdb.PurgeDB(s.DB)
 }
 
-func (s *DashboardIntegrationTestSuite) TestGetDashboardSummary(t *testing.T) {
-	ctrl := gomock.NewController(t)
-	defer ctrl.Finish()
-
+func (s *DashboardIntegrationTestSuite) TestGetDashboardSummary() {
 	group := &datastore.Group{
 		UID:               uuid.New().String(),
 		Name:              "test-group",
@@ -71,7 +67,7 @@ func (s *DashboardIntegrationTestSuite) TestGetDashboardSummary(t *testing.T) {
 
 	ctx := context.Background()
 	err := s.DB.GroupRepo().CreateGroup(ctx, group)
-	require.NoError(t, err)
+	require.NoError(s.T(), err)
 
 	application := &datastore.Application{
 		UID:            "abc",
@@ -85,7 +81,7 @@ func (s *DashboardIntegrationTestSuite) TestGetDashboardSummary(t *testing.T) {
 	}
 
 	err = s.DB.AppRepo().CreateApplication(ctx, application)
-	require.NoError(t, err)
+	require.NoError(s.T(), err)
 
 	events := []datastore.Event{
 		{
@@ -188,7 +184,7 @@ func (s *DashboardIntegrationTestSuite) TestGetDashboardSummary(t *testing.T) {
 
 	for i := range events {
 		err = s.DB.EventRepo().CreateEvent(ctx, &events[i])
-		require.NoError(t, err)
+		require.NoError(s.T(), err)
 	}
 
 	type urlQuery struct {
@@ -293,7 +289,7 @@ func (s *DashboardIntegrationTestSuite) TestGetDashboardSummary(t *testing.T) {
 		},
 	}
 	for _, tc := range tests {
-		t.Run(tc.name, func(t *testing.T) {
+		s.T().Run(tc.name, func(t *testing.T) {
 			err := config.LoadConfig("./testdata/Auth_Config/none-convoy.json")
 			if err != nil {
 				t.Errorf("Failed to load config file: %v", err)
