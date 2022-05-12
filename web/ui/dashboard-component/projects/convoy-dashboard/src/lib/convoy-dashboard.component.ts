@@ -20,7 +20,7 @@ import { DatePipe } from '@angular/common';
 })
 export class ConvoyDashboardComponent implements OnInit {
 	eventsTableHead: string[] = ['Event Type', 'App Name', 'Created At', ''];
-	eventDelTableHead: string[] = ['Status', 'Event Type', 'Attempts', 'Created At', ''];
+	eventDelTableHead: string[] = ['Status', 'Event Type', 'Attempts', 'Created At', '', ''];
 	appsTableHead: string[] = ['Status', 'Name', 'Time Created', 'Updated', 'Events', 'Endpoints'];
 	showFilterCalendar = false;
 	tabs: ['events', 'event deliveries', 'apps'] = ['events', 'event deliveries', 'apps'];
@@ -138,12 +138,14 @@ export class ConvoyDashboardComponent implements OnInit {
 	showPublicCopyText = false;
 	showSecretCopyText = false;
 	showEndpointSecret = false;
+	renderDashboard = true;
 	appsSearchString = '';
 	selectedEventsDateOption = '';
 	selectedEventsDelDateOption = '';
 	selectedDateOption = '';
 	currentAppId = '';
 	tag = '';
+	eventDeliveryIndex!: number;
 	appPortalLink!: string;
 	endpointSecretKey = '';
 	selectedAppStatus = 'All';
@@ -337,6 +339,7 @@ export class ConvoyDashboardComponent implements OnInit {
 			this.getEvents();
 			this.toggleActiveTab('event deliveries');
 			this.sendEventForm.reset();
+			this.toggleDashboard();
 			this.showAddEventModal = false;
 			this.isSendingNewEvent = false;
 		} catch {
@@ -558,7 +561,6 @@ export class ConvoyDashboardComponent implements OnInit {
 	getFiltersFromURL() {
 		const filters = this.route.snapshot.queryParams;
 		if (Object.keys(filters).length == 0) return;
-
 		// for events filters
 		this.eventsFilterDateRange.patchValue({ startDate: filters.eventsStartDate ? new Date(filters.eventsStartDate) : '', endDate: filters.eventsEndDate ? new Date(filters.eventsEndDate) : '' });
 		this.eventApp = filters.eventsApp ?? '';
@@ -568,6 +570,10 @@ export class ConvoyDashboardComponent implements OnInit {
 			startDate: filters.eventDelsStartDate ? new Date(filters.eventDelsStartDate) : '',
 			endDate: filters.eventDelsEndDate ? new Date(filters.eventDelsEndDate) : ''
 		});
+
+		// for viewing app/event delivery details
+		filters.renderDashboard === 'true' ? (this.renderDashboard = true) : (this.renderDashboard = false);
+
 		this.eventDeliveriesApp = filters.eventDelsApp ?? '';
 		this.eventDeliveryFilteredByStatus = filters.eventDelsStatus ? JSON.parse(filters.eventDelsStatus) : [];
 	}
@@ -1167,5 +1173,23 @@ export class ConvoyDashboardComponent implements OnInit {
 
 	selectedGroupName() {
 		return this.groups.find(item => item.uid === this.convyDashboardService.activeGroupId)?.name;
+	}
+
+	viewEndpointSecretKey(secretKey: string) {
+		this.showEndpointSecret = !this.showEndpointSecret;
+		this.endpointSecretKey = secretKey;
+	}
+
+	toggleDashboard() {
+		const currentURLfilters = this.route.snapshot.queryParams;
+		let queryParams: any = {};
+		if (this.renderDashboard) {
+			this.renderDashboard = false;
+			queryParams = { renderDashboard: false };
+		} else {
+			this.renderDashboard = true;
+			queryParams = { renderDashboard: true };
+		}
+		this.router.navigate([], { queryParams: Object.assign({}, currentURLfilters, queryParams) });
 	}
 }
