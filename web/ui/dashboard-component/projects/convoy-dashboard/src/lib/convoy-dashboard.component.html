@@ -800,7 +800,7 @@
 					<img src="/assets/img/arrow-left-primary.svg" alt="arrow back" />
 				</button>
 				<p class="margin-bottom__0px font__16px color__black font__weight-500 margin-left__18px text__capitalize">
-					{{ activeTab === 'apps' ? appsDetailsItem.name : eventDelsDetailsItem?.app_metadata?.title }}
+					{{ activeTab === 'apps' ? appsDetailsItem?.name : eventDelsDetailsItem?.app_metadata?.title }}
 				</p>
 			</div>
 			<div *ngIf="activeTab === 'apps' && appsDetailsItem">

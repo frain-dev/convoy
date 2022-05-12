@@ -1183,7 +1183,6 @@ export class ConvoyDashboardComponent implements OnInit {
 
 	toggleDashboard() {
 		const currentURLfilters = this.route.snapshot.queryParams;
-		console.log(currentURLfilters);
 		let queryParams: any = {};
 		if (this.renderDashboard) {
 			this.renderDashboard = false;
