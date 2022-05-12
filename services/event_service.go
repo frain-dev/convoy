@@ -76,10 +76,6 @@ func (e *EventService) CreateAppEvent(ctx context.Context, newMessage *models.Ev
 		return nil, NewServiceError(http.StatusBadRequest, errors.New("app has no configured endpoints"))
 	}
 
-	if app.IsDisabled {
-		return nil, NewServiceError(http.StatusBadRequest, errors.New("app is disabled, no events were sent"))
-	}
-
 	event := &datastore.Event{
 		UID:       uuid.New().String(),
 		EventType: datastore.EventType(newMessage.EventType),
