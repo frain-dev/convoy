@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/frain-dev/convoy"
+	"github.com/frain-dev/convoy/auth"
 	"github.com/frain-dev/convoy/config"
 	"github.com/frain-dev/convoy/datastore"
 	"github.com/frain-dev/convoy/util"
@@ -141,6 +142,37 @@ func SeedDefaultGroup(db datastore.DatabaseClient) (*datastore.Group, error) {
 	}
 
 	return defaultGroup, nil
+}
+
+// SeedAPIKey creates random api key for integration tests.
+func SeedAPIKey(db datastore.DatabaseClient, g *datastore.Group, uid, name, keyType string) (*datastore.APIKey, error) {
+	if util.IsStringEmpty(uid) {
+		uid = uuid.New().String()
+	}
+
+	apiKey := &datastore.APIKey{
+		UID:    uid,
+		MaskID: fmt.Sprintf("mask-%s", uuid.NewString()),
+		Name:   name,
+		Type:   datastore.KeyType(keyType),
+		Role: auth.Role{
+			Type:   auth.RoleUIAdmin,
+			Groups: []string{g.UID},
+			Apps:   nil,
+		},
+		Hash:           fmt.Sprintf("hash-%s", uuid.NewString()),
+		Salt:           fmt.Sprintf("salt-%s", uuid.NewString()),
+		CreatedAt:      primitive.NewDateTimeFromTime(time.Now()),
+		UpdatedAt:      primitive.NewDateTimeFromTime(time.Now()),
+		DocumentStatus: datastore.ActiveDocumentStatus,
+	}
+
+	err := db.APIRepo().CreateAPIKey(context.Background(), apiKey)
+	if err != nil {
+		return nil, err
+	}
+
+	return apiKey, nil
 }
 
 // seed default group
