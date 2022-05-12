@@ -175,6 +175,29 @@ func SeedAPIKey(db datastore.DatabaseClient, g *datastore.Group, uid, name, keyT
 	return apiKey, nil
 }
 
+// seed default group
+func SeedGroup(db datastore.DatabaseClient, uid, name string, cfg *datastore.GroupConfig) (*datastore.Group, error) {
+	g := &datastore.Group{
+		UID:               uid,
+		Name:              name,
+		Config:            cfg,
+		RateLimit:         convoy.RATE_LIMIT,
+		RateLimitDuration: convoy.RATE_LIMIT_DURATION,
+		CreatedAt:         primitive.NewDateTimeFromTime(time.Now()),
+		UpdatedAt:         primitive.NewDateTimeFromTime(time.Now()),
+		DocumentStatus:    datastore.ActiveDocumentStatus,
+	}
+
+	// Seed Data.
+	groupRepo := db.GroupRepo()
+	err := groupRepo.CreateGroup(context.TODO(), g)
+	if err != nil {
+		return &datastore.Group{}, err
+	}
+
+	return g, nil
+}
+
 // SeedEvent creates a random event for integration tests.
 func SeedEvent(db datastore.DatabaseClient, app *datastore.Application, uid, eventType string, data []byte) (*datastore.Event, error) {
 	if util.IsStringEmpty(uid) {

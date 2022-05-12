@@ -16,6 +16,16 @@
                     "role": {
                         "type": "super_user"
                     }
+                },
+                {
+                    "username": "test-group-filter",
+                    "password": "test-group-filter",
+                    "role": {
+                        "groups": [
+                            "abcdef"
+                        ],
+                        "type": "super_user"
+                    }
                 }
             ]
         }
