@@ -541,15 +541,17 @@
 												<div class="tag tag--Neutral">{{ event.event_type }}</div>
 											</div>
 										</td>
-										<td class="has-long-text">
-											<div class="underline color__primary" (click)="openAppsTabAndDetails(event.app_metadata.title)">{{ event.app_metadata.title }}</div>
+										<td>
+											<div class="long-text long-text__150px">
+												<span class="underline color__primary" (click)="openAppsTabAndDetails(event.app_metadata.title)">{{ event.app_metadata.title }}</span>
+											</div>
 										</td>
 										<td>
 											<div>{{ event.created_at | date: 'mediumTime' }}</div>
 										</td>
 										<td>
 											<div>
-												<button class="button button__clear button--has-icon icon-right" (click)="eventDeliveryFilteredByEventId = event.uid; openDeliveriesTab()">
+												<button class="button__clear button--has-icon icon-right" (click)="eventDeliveryFilteredByEventId = event.uid; openDeliveriesTab()">
 													Deliveries
 													<img src="../../../../assets/img/angle-arrow-right-primary.svg" alt="arrow right" />
 												</button>
@@ -603,7 +605,7 @@
 										*ngFor="let event of eventDeliveriesGroup.content; let index = index"
 										[ngClass]="{ 'last-item': index === eventDeliveriesGroup.content.length - 1, active: event.uid === eventDelsDetailsItem?.uid }"
 										[id]="'eventDel' + i"
-										
+										(click)="eventDelsDetailsItem = event; getDelieveryAttempts(event.uid); eventDeliveryIndex = index; toggleDashboard()"
 									>
 										<td>
 											<div class="has-retry">
@@ -640,7 +642,6 @@
 										<td class="width__5">
 											<div>
 												<button class="button__clear button--has-icon icon-right" (click)="eventDelsDetailsItem = event; getDelieveryAttempts(event.uid); eventDeliveryIndex = index; toggleDashboard()">
-													View
 													<img src="../../../../assets/img/angle-arrow-right-primary.svg" alt="arrow right" />
 												</button>
 											</div>
@@ -694,6 +695,7 @@
 										*ngFor="let app of apps?.content; let index = index"
 										[id]="'app' + i"
 										[ngClass]="{ active: app.uid === appsDetailsItem?.uid }"
+										(click)="appsDetailsItem = app; getAppPortalToken({ redirect: false }); toggleDashboard()"
 									>
 										<td>
 											<div class="has-retry">
@@ -717,7 +719,7 @@
 										</td>
 										<td>
 											<div>
-												<button [disabled]="app.events <= 0" title="view events" [class]="'button__retry button--has-icon icon-left'" (click)="loadEventsFromAppsTable(app.uid)">
+												<button [disabled]="app.events <= 0" title="view events" [class]="'button__retry button--has-icon icon-left'" (click)="loadEventsFromAppsTable(app.uid); renderDashboard = false">
 													<img src="/assets/img/view-events-icon.svg" alt="view events icon" />
 													Events
 												</button>
@@ -725,12 +727,11 @@
 										</td>
 										<td>
 											<div class="dropdown">
-												<button class="button__clear button--has-icon" (click)="currentAppId = app.uid; showOverlay = true">
+												<button class="button__clear button--has-icon" (click)="currentAppId = app.uid; showOverlay = true; renderDashboard = false">
 													<img src="/assets/img/more-icon-vertical.svg" alt="more icon" />
 												</button>
-												<div [ngClass]="{ show: currentAppId == app.uid }" class="dropdown__menu dropdown__menu__nav small">
+												<div [ngClass]="{ show: currentAppId == app.uid }" class="dropdown__menu dropdown__menu__nav small z-index--3">
 													<ul>
-														<li (click)="appsDetailsItem = app; getAppPortalToken({ redirect: false }); toggleDashboard()">View Details</li>
 														<li (click)="openUpdateAppModal(app)">Update</li>
 														<li (click)="showDeleteAppModal = !showDeleteAppModal; currentAppId = ''" class="danger">Delete</li>
 													</ul>
@@ -776,11 +777,11 @@
 							</div>
 						</div>
 
-						<h4>Deliveries Overview</h4>
-						<ul class="dashboard--logs--details--endpoints inline">
-							<li *ngFor="let delivery of sidebarEventDeliveries">
-								<div [class]="'tag tag--' + delivery.status">{{ delivery.status }}</div>
-								<div class="url" [title]="delivery.endpoint.target_url">
+						<h4 *ngIf="sidebarEventDeliveries && sidebarEventDeliveries.length > 0">Deliveries Overview</h4>
+						<ul *ngIf="sidebarEventDeliveries && sidebarEventDeliveries.length > 0">
+							<li class="flex flex__align-items-start margin-top__16px" *ngFor="let delivery of sidebarEventDeliveries">
+								<div [class]="'margin-top__4px tag tag--' + delivery.status">{{ delivery.status }}</div>
+								<div class="font__14px font__weight-400 color__black margin-left__16px" [title]="delivery.endpoint.target_url">
 									{{ delivery.endpoint.target_url }}
 								</div>
 							</li>
@@ -799,7 +800,7 @@
 				<button class="button__back flex flex__align-items-center flex__justify-center" (click)="toggleDashboard()">
 					<img src="/assets/img/arrow-left-primary.svg" alt="arrow back" />
 				</button>
-				<p class="margin-bottom__0px font__16px color__black font__weight-500 margin-left__18px text__capitalize">
+				<p class="margin-bottom__0px font__16px color__black font__weight-600 margin-left__18px text__capitalize">
 					{{ activeTab === 'apps' ? appsDetailsItem?.name : eventDelsDetailsItem?.app_metadata?.title }}
 				</p>
 			</div>

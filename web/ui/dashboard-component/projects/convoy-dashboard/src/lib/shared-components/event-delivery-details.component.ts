@@ -23,39 +23,39 @@ import { ChangeDetectionStrategy, Component, Input, Output, EventEmitter, OnInit
 			</div>
 			<div class="grid grid__col-5 margin-bottom__24px">
 				<div>
-					<p class="color__grey font__12px font__weight-400">EVENT TYPE</p>
-					<p class="color__black font__14px font__weight-500">{{ eventDelsDetailsItem?.created_at | date: 'mediumDate' }}</p>
+					<p class="color__grey font__12px font__weight-300">EVENT TYPE</p>
+					<p class="color__black font__14px font__weight-500">{{ eventDelsDetailsItem?.event_metadata?.name }}</p>
 				</div>
 
 				<div>
-					<p class="color__grey font__12px font__weight-400">ATTEMPTS</p>
+					<p class="color__grey font__12px font__weight-300">ATTEMPTS</p>
 					<p class="color__black font__14px font__weight-500">{{ eventDelsDetailsItem?.metadata?.num_trials }}</p>
 				</div>
 
 				<div>
-					<p class="color__grey font__12px font__weight-400">STATUS</p>
+					<p class="color__grey font__12px font__weight-300">STATUS</p>
 					<div [class]="'tag tag--' + eventDelsDetailsItem.status">{{ eventDelsDetailsItem.status }}</div>
 				</div>
 				<div>
-					<p class="color__grey font__12px font__weight-400">IP ADDRESS</p>
+					<p class="color__grey font__12px font__weight-300">IP ADDRESS</p>
 					<p class="color__black font__14px font__weight-500">{{ eventDeliveryAtempt?.ip_address || '-' }}</p>
 				</div>
 				<div *ngIf="eventDelsDetailsItem.status == 'Success'">
-					<p class="color__grey font__12px font__weight-400">TIME</p>
+					<p class="color__grey font__12px font__weight-300">TIME</p>
 					<p class="color__black font__14px font__weight-500">{{ eventDelsDetailsItem?.updated_at | date: 'medium' }}</p>
 				</div>
 			</div>
 			<div class="grid grid__col-5 margin-bottom__32px">
 				<div>
-					<p class="color__grey font__12px font__weight-400">HTTP STATUS</p>
+					<p class="color__grey font__12px font__weight-300">HTTP STATUS</p>
 					<p class="color__black font__14px font__weight-500">{{ eventDeliveryAtempt?.http_status || '-' }}</p>
 				</div>
 				<div>
-					<p class="color__grey font__12px font__weight-400">API VERSION</p>
+					<p class="color__grey font__12px font__weight-300">API VERSION</p>
 					<p class="color__black font__14px font__weight-500">{{ eventDeliveryAtempt?.api_version || '-' }}</p>
 				</div>
 				<div>
-					<p class="color__grey font__12px font__weight-400">ENDPOINT</p>
+					<p class="color__grey font__12px font__weight-300">ENDPOINT</p>
 					<p class="color__primary font__14px font__weight-500 long-text long-text__200px" [title]="eventDelsDetailsItem.endpoint?.target_url">{{ eventDelsDetailsItem.endpoint?.target_url }}</p>
 				</div>
 				<div></div>
@@ -63,7 +63,7 @@ import { ChangeDetectionStrategy, Component, Input, Output, EventEmitter, OnInit
 			</div>
 			<div class="grid border__top grid__col-2">
 				<div class="eventDelivery border__right padding-top__40px padding-right__32px padding-bottom__40px width__100">
-					<h3 class="margin-bottom__16px color__black">Events</h3>
+					<h3 class="margin-bottom__16px color__black">Event Payload</h3>
 					<prism language="json" [code]="getCodeSnippetString('event_delivery')"></prism>
 				</div>
 				<div class="eventDelivery padding-left__32px padding-top__40px padding-bottom__40px width__100">
@@ -128,7 +128,7 @@ export class EventDeliveryDetailsComponent implements OnInit {
 			if (!this.eventDelsDetailsItem?.metadata?.data) return 'No event data was sent';
 			return JSON.stringify(this.eventDelsDetailsItem.metadata.data, null, 4).replaceAll(/"([^"]+)":/g, '$1:');
 		} else if (type === 'res_body') {
-			if (!this.eventDeliveryAtempt) return 'No response body was sent';
+			if (!this.eventDeliveryAtempt || !this.eventDeliveryAtempt.response_data) return 'No response body was sent';
 			return this.eventDeliveryAtempt.response_data;
 		} else if (type === 'res_head') {
 			if (!this.eventDeliveryAtempt) return 'No response header was sent';

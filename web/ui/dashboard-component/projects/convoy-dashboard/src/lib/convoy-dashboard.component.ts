@@ -561,7 +561,6 @@ export class ConvoyDashboardComponent implements OnInit {
 	getFiltersFromURL() {
 		const filters = this.route.snapshot.queryParams;
 		if (Object.keys(filters).length == 0) return;
-		console.log(filters);
 		// for events filters
 		this.eventsFilterDateRange.patchValue({ startDate: filters.eventsStartDate ? new Date(filters.eventsStartDate) : '', endDate: filters.eventsEndDate ? new Date(filters.eventsEndDate) : '' });
 		this.eventApp = filters.eventsApp ?? '';

@@ -11,23 +11,23 @@ import { ChangeDetectionStrategy, Component, Input, Output, EventEmitter, OnInit
 			</div>
 			<div class="flex flex__align-items-center flex__justify-between margin-bottom__32px">
 				<div>
-					<p class="color__grey font__12px font__weight-400">DATE CREATED</p>
+					<p class="color__grey font__12px font__weight-300">DATE CREATED</p>
 					<p class="color__black font__14px font__weight-500">{{ appsDetailsItem?.created_at | date: 'mediumDate' }}</p>
 				</div>
 				<div>
-					<p class="color__grey font__12px font__weight-400">SUPPORT EMAIL</p>
+					<p class="color__grey font__12px font__weight-300">SUPPORT EMAIL</p>
 					<p class="color__black font__14px font__weight-500">{{ appsDetailsItem?.support_email || '...no support email provided' }}</p>
 				</div>
 				<div>
-					<p class="color__grey font__12px font__weight-400">UPDATED</p>
+					<p class="color__grey font__12px font__weight-300">UPDATED</p>
 					<p class="color__black font__14px font__weight-500">{{ appsDetailsItem?.updated_at | date: 'mediumDate' }}</p>
 				</div>
 				<div>
-					<p class="color__grey font__12px font__weight-400">EVENTS</p>
+					<p class="color__grey font__12px font__weight-300">EVENTS</p>
 					<p class="color__black font__14px font__weight-500">{{ appsDetailsItem?.events }}</p>
 				</div>
 				<div>
-					<p class="color__grey font__12px font__weight-400">ENDPOINTS</p>
+					<p class="color__grey font__12px font__weight-300">ENDPOINTS</p>
 					<p class="color__black font__14px font__weight-500">{{ appsDetailsItem?.endpoints.length }}</p>
 				</div>
 			</div>
@@ -48,20 +48,20 @@ import { ChangeDetectionStrategy, Component, Input, Output, EventEmitter, OnInit
 					<div class="flex flex__align-items-center flex__justify-between">
 						<h3>App Event Endpoints</h3>
 						<div class="flex flex__align-items-center">
-							<button class="button__clear" (click)="addEndpointModal()">Add Endpoints</button>
+							<button class="button__clear font__12px" (click)="addEndpointModal()">Add Endpoints</button>
 							<div class="line margin-right__16px margin-left__16px border__left"></div>
-							<button class="button__clear" [disabled]="appsDetailsItem?.endpoints.length == 0" (click)="setEventAppId()">Add Event</button>
+							<button class="button__clear font__12px" [disabled]="appsDetailsItem?.endpoints.length == 0" (click)="setEventAppId()">Send Event</button>
 						</div>
 					</div>
-					<ul class="margin-top__16px">
+					<ul class="margin-top__20px">
 						<ng-container *ngIf="appsDetailsItem?.endpoints">
 							<li class="dashboard--logs--details--endpoints bg__grey-fade padding-all__16px rounded__8px margin-bottom__24px" *ngFor="let endpoint of appsDetailsItem.endpoints">
 								<div>
-									<div class="flex">
+									<div class="flex flex__align-items-center">
 										<h5 class="color__black font__14px font__weight-400">{{ endpoint.description }}</h5>
-										<button class="margin-left__16px button__clear color__primary button--has-icon icon-right small-icon" (click)="viewEndpointSecretKey(endpoint.secret)">
+										<button class="margin-left__16px margin-top__2px button__clear font__12px color__primary button--has-icon icon-right smaller-icon" (click)="viewEndpointSecretKey(endpoint.secret)">
 											View Secret
-											<img src="/assets/img/arrow-up-right.svg" alt="link out" />
+											<img src="/assets/img/arrow-up-right.svg" alt="link out" class="margin-left__6px" />
 										</button>
 									</div>
 									<p class="flex flex__align-items-center font__14px color__black font__weight-300 margin-top__16px">
@@ -91,7 +91,7 @@ import { ChangeDetectionStrategy, Component, Input, Output, EventEmitter, OnInit
 				<div class="width__50 padding-left__32px padding-top__32px">
 					<div>
 						<h3>App Portal</h3>
-						<ul class="dashboard--logs--details--meta">
+						<ul class="dashboard--logs--details--meta margin-top__10px">
 							<li class="list-item-inline">
 								<div class="list-item-inline--label">App Page</div>
 								<div class="list-item-inline--item link" (click)="getAppPortalToken({ redirect: true })">
