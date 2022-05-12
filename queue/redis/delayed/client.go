@@ -9,113 +9,101 @@ import (
 
 	"github.com/frain-dev/convoy"
 	"github.com/frain-dev/convoy/config"
-	"github.com/frain-dev/convoy/datastore"
 	"github.com/frain-dev/convoy/queue"
 	"github.com/frain-dev/convoy/util"
-	"github.com/frain-dev/taskq/v3"
-	"github.com/frain-dev/taskq/v3/redisq"
+	"github.com/frain-dev/disq"
+	redisBroker "github.com/frain-dev/disq/brokers/redis"
 	"github.com/go-redis/redis/v8"
 )
 
 const count = math.MaxInt64
 
-type RedisQueue struct {
+type DelayedQueue struct {
 	Name      string
-	queue     *redisq.Queue
+	queue     *redisBroker.Stream
 	inner     *redis.Client
 	closeChan chan struct{}
 }
 
-func NewClient(cfg config.Configuration) (*redis.Client, taskq.Factory, error) {
+func NewClient(cfg config.Configuration) (*redis.Client, error) {
 	if cfg.Queue.Type != config.RedisQueueProvider {
-		return nil, nil, errors.New("please select the redis driver in your config")
+		return nil, errors.New("please select the redis driver in your config")
 	}
 
 	dsn := cfg.Queue.Redis.Dsn
 	if util.IsStringEmpty(dsn) {
-		return nil, nil, errors.New("please provide the Redis DSN")
+		return nil, errors.New("please provide the Redis DSN")
 	}
 
 	opts, err := redis.ParseURL(dsn)
 	if err != nil {
-		return nil, nil, err
+		return nil, err
 	}
 
 	c := redis.NewClient(opts)
 	if err := c.
 		Ping(context.Background()).
 		Err(); err != nil {
-		return nil, nil, err
+		return nil, err
 	}
 
-	qFn := redisq.NewFactory()
-
-	return c, qFn, nil
+	return c, nil
 }
 
 func NewQueue(opts queue.QueueOptions) queue.Queuer {
-
-	q := opts.Factory.RegisterQueue(&taskq.QueueOptions{
+	cfg := &redisBroker.RedisConfig{
 		Name:            opts.Name,
 		Redis:           opts.Redis,
-		MaxNumWorker:    convoy.MaxNumWorkers,
-		MaxNumFetcher:   convoy.MaxNumFetcher,
 		ReservationSize: convoy.ReservationSize,
 		BufferSize:      convoy.BufferSize,
-	})
+	}
+	q := redisBroker.NewStream(cfg)
 
-	return &RedisQueue{
+	return &DelayedQueue{
 		Name:  opts.Name,
 		inner: opts.Redis,
-		queue: q.(*redisq.Queue),
+		queue: q.(*redisBroker.Stream),
 	}
 }
 
-func (q *RedisQueue) Close() error {
+func (q *DelayedQueue) Stop() error {
 	q.closeChan <- struct{}{}
-	return q.inner.Close()
+	err := q.inner.Close()
+	if err != nil {
+		return err
+	}
+	err = q.queue.Stop()
+	if err != nil {
+		return err
+	}
+	return nil
 }
 
-func (q *RedisQueue) WriteEventDelivery(ctx context.Context, name convoy.TaskName, e *datastore.EventDelivery, delay time.Duration) error {
-	job := &queue.Job{
-		ID: e.UID,
-	}
-
-	m := &taskq.Message{
+func (q *DelayedQueue) Publish(ctx context.Context, name convoy.TaskName, job *queue.Job, delay time.Duration) error {
+	m := &disq.Message{
 		Ctx:      ctx,
 		TaskName: string(name),
 		Args:     []interface{}{job},
 		Delay:    delay,
 	}
 
-	return q.queue.Add(m)
+	return q.queue.Publish(m)
 }
 
-func (q *RedisQueue) WriteEvent(ctx context.Context, name convoy.TaskName, e *datastore.Event, delay time.Duration) error {
-	job := &queue.Job{
-		ID:    e.UID,
-		Event: e,
-	}
-
-	m := &taskq.Message{
-		Ctx:      ctx,
-		TaskName: string(name),
-		Args:     []interface{}{job},
-		Delay:    delay,
-	}
-
-	return q.queue.Add(m)
+func (q *DelayedQueue) Consume(ctx context.Context) error {
+	q.queue.Consume(ctx)
+	return nil
 }
 
-func (q *RedisQueue) Consumer() taskq.QueueConsumer {
-	return q.queue.Consumer()
-}
-
-func (q *RedisQueue) Length() (int, error) {
+func (q *DelayedQueue) Length() (int, error) {
 	return q.queue.Len()
 }
 
-func (q *RedisQueue) ZRangebyScore(ctx context.Context, min string, max string) ([]string, error) {
+func (q *DelayedQueue) Broker() disq.Broker {
+	return q.queue
+}
+
+func (q *DelayedQueue) ZRangebyScore(ctx context.Context, min string, max string) ([]string, error) {
 	zset := q.stringifyZSETWithQName()
 	bodies, err := q.inner.ZRangeByScore(ctx, zset, &redis.ZRangeBy{
 		Min: min,
@@ -127,7 +115,7 @@ func (q *RedisQueue) ZRangebyScore(ctx context.Context, min string, max string) 
 	return bodies, nil
 }
 
-func (q *RedisQueue) XPendingExt(ctx context.Context, start string, end string) ([]redis.XPendingExt, error) {
+func (q *DelayedQueue) XPendingExt(ctx context.Context, start string, end string) ([]redis.XPendingExt, error) {
 	stream := q.stringifyStreamWithQName()
 	pending, err := q.inner.XPendingExt(ctx, &redis.XPendingExtArgs{
 		Stream: stream,
@@ -145,19 +133,19 @@ func (q *RedisQueue) XPendingExt(ctx context.Context, start string, end string) 
 	return pending, nil
 }
 
-func (q *RedisQueue) XRange(ctx context.Context, start string, end string) *redis.XMessageSliceCmd {
+func (q *DelayedQueue) XRange(ctx context.Context, start string, end string) *redis.XMessageSliceCmd {
 	stream := q.stringifyStreamWithQName()
 	xrange := q.inner.XRange(ctx, stream, start, end)
 	return xrange
 }
 
-func (q *RedisQueue) XRangeN(ctx context.Context, start string, end string, count int64) *redis.XMessageSliceCmd {
+func (q *DelayedQueue) XRangeN(ctx context.Context, start string, end string, count int64) *redis.XMessageSliceCmd {
 	stream := q.stringifyStreamWithQName()
 	xrange := q.inner.XRangeN(ctx, stream, start, end, count)
 	return xrange
 }
 
-func (q *RedisQueue) XPending(ctx context.Context) (*redis.XPending, error) {
+func (q *DelayedQueue) XPending(ctx context.Context) (*redis.XPending, error) {
 	stream := q.stringifyStreamWithQName()
 	pending, err := q.inner.XPending(ctx, stream, convoy.StreamGroup).Result()
 	if err != nil {
@@ -168,25 +156,25 @@ func (q *RedisQueue) XPending(ctx context.Context) (*redis.XPending, error) {
 	return pending, err
 }
 
-func (q *RedisQueue) XInfoConsumers(ctx context.Context) *redis.XInfoConsumersCmd {
+func (q *DelayedQueue) XInfoConsumers(ctx context.Context) *redis.XInfoConsumersCmd {
 	stream := q.stringifyStreamWithQName()
 	consumersInfo := q.inner.XInfoConsumers(ctx, stream, convoy.StreamGroup)
 	return consumersInfo
 }
 
-func (q *RedisQueue) XInfoStream(ctx context.Context) *redis.XInfoStreamCmd {
+func (q *DelayedQueue) XInfoStream(ctx context.Context) *redis.XInfoStreamCmd {
 	stream := q.stringifyStreamWithQName()
 	infoStream := q.inner.XInfoStream(ctx, stream)
 	return infoStream
 }
 
-func (q *RedisQueue) CheckEventDeliveryinStream(ctx context.Context, id string, start string, end string) (bool, error) {
+func (q *DelayedQueue) CheckEventDeliveryinStream(ctx context.Context, id string, start string, end string) (bool, error) {
 	xmsgs, err := q.XRange(ctx, start, end).Result()
 	if err != nil {
 		return false, err
 	}
 
-	msgs := make([]taskq.Message, len(xmsgs))
+	msgs := make([]disq.Message, len(xmsgs))
 	for i := range xmsgs {
 		xmsg := &xmsgs[i]
 		msg := &msgs[i]
@@ -205,12 +193,12 @@ func (q *RedisQueue) CheckEventDeliveryinStream(ctx context.Context, id string, 
 	return false, nil
 }
 
-func (q *RedisQueue) CheckEventDeliveryinZSET(ctx context.Context, id string, min string, max string) (bool, error) {
+func (q *DelayedQueue) CheckEventDeliveryinZSET(ctx context.Context, id string, min string, max string) (bool, error) {
 	bodies, err := q.ZRangebyScore(ctx, min, max)
 	if err != nil {
 		return false, err
 	}
-	var msg taskq.Message
+	var msg disq.Message
 	for _, body := range bodies {
 		err := msg.UnmarshalBinary([]byte(body))
 
@@ -226,13 +214,13 @@ func (q *RedisQueue) CheckEventDeliveryinZSET(ctx context.Context, id string, mi
 	return false, nil
 }
 
-func (q *RedisQueue) DeleteEventDeliveryFromZSET(ctx context.Context, id string) (bool, error) {
+func (q *DelayedQueue) DeleteEventDeliveryFromZSET(ctx context.Context, id string) (bool, error) {
 	bodies, err := q.ZRangebyScore(ctx, "-inf", "+inf")
 	if err != nil {
 		return false, err
 	}
 
-	var msg taskq.Message
+	var msg disq.Message
 	for _, body := range bodies {
 		err := msg.UnmarshalBinary([]byte(body))
 		if err != nil {
@@ -251,7 +239,7 @@ func (q *RedisQueue) DeleteEventDeliveryFromZSET(ctx context.Context, id string)
 	return false, nil
 }
 
-func (q *RedisQueue) DeleteEventDeliveriesFromZSET(ctx context.Context, ids []string) error {
+func (q *DelayedQueue) DeleteEventDeliveriesFromZSET(ctx context.Context, ids []string) error {
 	bodies, err := q.ZRangebyScore(ctx, "-inf", "+inf")
 	if err != nil {
 		return err
@@ -259,7 +247,7 @@ func (q *RedisQueue) DeleteEventDeliveriesFromZSET(ctx context.Context, ids []st
 
 	idMap := map[string]string{}
 
-	var msg taskq.Message
+	var msg disq.Message
 	for _, body := range bodies {
 		err := msg.UnmarshalBinary([]byte(body))
 		if err != nil {
@@ -281,7 +269,7 @@ func (q *RedisQueue) DeleteEventDeliveriesFromZSET(ctx context.Context, ids []st
 	return nil
 }
 
-func (q *RedisQueue) CheckEventDeliveryinPending(ctx context.Context, id string) (bool, error) {
+func (q *DelayedQueue) CheckEventDeliveryinPending(ctx context.Context, id string) (bool, error) {
 	pending, err := q.XPending(ctx)
 	if err != nil {
 		return false, err
@@ -294,7 +282,7 @@ func (q *RedisQueue) CheckEventDeliveryinPending(ctx context.Context, id string)
 		return false, err
 	}
 
-	msgs := make([]taskq.Message, len(pendingXmgs))
+	msgs := make([]disq.Message, len(pendingXmgs))
 
 	for i := range pendingXmgs {
 		xmsg := &pendingXmgs[i]
@@ -314,12 +302,12 @@ func (q *RedisQueue) CheckEventDeliveryinPending(ctx context.Context, id string)
 	return false, nil
 }
 
-func (q *RedisQueue) DeleteEvenDeliveryfromStream(ctx context.Context, id string) (bool, error) {
+func (q *DelayedQueue) DeleteEvenDeliveryfromStream(ctx context.Context, id string) (bool, error) {
 	xmsgs, err := q.XRange(ctx, "-", "+").Result()
 	if err != nil {
 		return false, err
 	}
-	msgs := make([]taskq.Message, len(xmsgs))
+	msgs := make([]disq.Message, len(xmsgs))
 	for i := range xmsgs {
 		xmsg := &xmsgs[i]
 		msg := &msgs[i]
@@ -341,12 +329,12 @@ func (q *RedisQueue) DeleteEvenDeliveryfromStream(ctx context.Context, id string
 	return false, nil
 }
 
-func (q *RedisQueue) DeleteEventDeliveriesFromStream(ctx context.Context, ids []string) error {
+func (q *DelayedQueue) DeleteEventDeliveriesFromStream(ctx context.Context, ids []string) error {
 	xmsgs, err := q.XRange(ctx, "-", "+").Result()
 	if err != nil {
 		return err
 	}
-	msgs := make([]taskq.Message, len(xmsgs))
+	msgs := make([]disq.Message, len(xmsgs))
 
 	idMap := map[string]*redis.XMessage{}
 	for i := range xmsgs {
@@ -379,13 +367,13 @@ func (q *RedisQueue) DeleteEventDeliveriesFromStream(ctx context.Context, ids []
 	return nil
 }
 
-func (q *RedisQueue) ExportMessagesfromStream(ctx context.Context) ([]taskq.Message, error) {
+func (q *DelayedQueue) ExportMessagesfromStream(ctx context.Context) ([]disq.Message, error) {
 	xmsgs, err := q.XRange(ctx, "-", "+").Result()
 	if err != nil {
 		return nil, err
 	}
 
-	msgs := make([]taskq.Message, len(xmsgs))
+	msgs := make([]disq.Message, len(xmsgs))
 	for i := range xmsgs {
 		xmsg := &xmsgs[i]
 		msg := &msgs[i]
@@ -399,13 +387,13 @@ func (q *RedisQueue) ExportMessagesfromStream(ctx context.Context) ([]taskq.Mess
 	return msgs, nil
 }
 
-func (q *RedisQueue) ExportMessagesfromStreamXACK(ctx context.Context) ([]taskq.Message, error) {
+func (q *DelayedQueue) ExportMessagesfromStreamXACK(ctx context.Context) ([]disq.Message, error) {
 	xmsgs, err := q.XRange(ctx, "-", "+").Result()
 	if err != nil {
 		return nil, err
 	}
 
-	msgs := make([]taskq.Message, len(xmsgs))
+	msgs := make([]disq.Message, len(xmsgs))
 	for i := range xmsgs {
 		xmsg := &xmsgs[i]
 		msg := &msgs[i]
@@ -427,14 +415,14 @@ func (q *RedisQueue) ExportMessagesfromStreamXACK(ctx context.Context) ([]taskq.
 	return msgs, nil
 }
 
-func (q *RedisQueue) stringifyStreamWithQName() string {
-	return "taskq:" + "{" + q.Name + "}:stream"
+func (q *DelayedQueue) stringifyStreamWithQName() string {
+	return "disq:" + "{" + q.Name + "}:stream"
 }
-func (q *RedisQueue) stringifyZSETWithQName() string {
-	return "taskq:" + "{" + q.Name + "}:zset"
+func (q *DelayedQueue) stringifyZSETWithQName() string {
+	return "disq:" + "{" + q.Name + "}:zset"
 }
 
-func unmarshalMessage(msg *taskq.Message, xmsg *redis.XMessage) error {
+func unmarshalMessage(msg *disq.Message, xmsg *redis.XMessage) error {
 	body := xmsg.Values["body"].(string)
 	err := msg.UnmarshalBinary([]byte(body))
 	if err != nil {

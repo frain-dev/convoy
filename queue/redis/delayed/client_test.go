@@ -10,12 +10,12 @@ import (
 	"github.com/frain-dev/convoy/config"
 	"github.com/frain-dev/convoy/datastore"
 	"github.com/frain-dev/convoy/queue"
-	"github.com/frain-dev/taskq/v3"
+	"github.com/frain-dev/disq"
 	"github.com/go-redis/redis/v8"
 	"github.com/google/uuid"
 )
 
-func TestWrite(t *testing.T) {
+func TestPublish(t *testing.T) {
 	t.Skip()
 	tests := []struct {
 		name            string
@@ -28,10 +28,10 @@ func TestWrite(t *testing.T) {
 		queueLen        int
 	}{
 		{
-			name:            "Write a single event to queue",
+			name:            "publish a single event to queue",
 			queueName:       uuid.NewString(),
 			appID:           uuid.NewString(),
-			configFile:      "../testdata/convoy_redis.json",
+			configFile:      "../../testdata/convoy_redis.json",
 			eventID:         uuid.NewString(),
 			eventDeliveryID: uuid.NewString(),
 		},
@@ -49,10 +49,15 @@ func TestWrite(t *testing.T) {
 					UID: tc.appID,
 				},
 			}
+			job := &queue.Job{
+				ID:            eventDelivery.UID,
+				EventDelivery: eventDelivery,
+			}
+
 			taskName := convoy.TaskName(uuid.NewString())
 			configFile := tc.configFile
 			eventQueue := initializeQueue(configFile, tc.queueName, t)
-			err := eventQueue.WriteEventDelivery(context.TODO(), taskName, eventDelivery, 0)
+			err := eventQueue.Publish(context.TODO(), taskName, job, 0)
 			if err != nil {
 				t.Fatalf("Failed to write to queue: %v", err)
 			}
@@ -61,7 +66,7 @@ func TestWrite(t *testing.T) {
 
 }
 
-func TestConsumer(t *testing.T) {
+func TestConsume(t *testing.T) {
 	tests := []struct {
 		name       string
 		configFile string
@@ -70,7 +75,7 @@ func TestConsumer(t *testing.T) {
 		{
 			name:       "Start consumer",
 			queueName:  uuid.NewString(),
-			configFile: "../testdata/convoy_redis.json",
+			configFile: "../../testdata/convoy_redis.json",
 		},
 	}
 
@@ -79,7 +84,8 @@ func TestConsumer(t *testing.T) {
 			configFile := tc.configFile
 
 			eventQueue := initializeQueue(configFile, tc.queueName, t)
-			err := eventQueue.Consumer().Start(context.TODO())
+			ctx := context.Background()
+			err := eventQueue.Consume(ctx)
 			if err != nil {
 				t.Fatalf("Failed to start consumer: %v", err)
 			}
@@ -94,16 +100,16 @@ func TestCheckEventDeliveryinStream(t *testing.T) {
 		configFile string
 		start      string
 		end        string
-		tFN        func(context.Context, *RedisQueue, string, string) (string, error)
+		tFN        func(context.Context, *DelayedQueue, string, string) (string, error)
 		expected   bool
 	}{
 		{
 			name:       "Single EventDelivery in Stream",
 			queueName:  "EventQueue",
-			configFile: "../testdata/convoy_redis.json",
+			configFile: "../../testdata/convoy_redis.json",
 			start:      "-",
 			end:        "+",
-			tFN: func(ctx context.Context, q *RedisQueue, start string, end string) (string, error) {
+			tFN: func(ctx context.Context, q *DelayedQueue, start string, end string) (string, error) {
 				xmsgs, err := q.XRange(ctx, start, end).Result()
 				if err != nil {
 					return "", err
@@ -111,7 +117,7 @@ func TestCheckEventDeliveryinStream(t *testing.T) {
 				if len(xmsgs) <= 0 {
 					return "", nil
 				}
-				msgs := make([]taskq.Message, len(xmsgs))
+				msgs := make([]disq.Message, len(xmsgs))
 				xmsg := &xmsgs[len(xmsgs)-1]
 				msg := &msgs[len(msgs)-1]
 
@@ -131,7 +137,7 @@ func TestCheckEventDeliveryinStream(t *testing.T) {
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
 			configFile := tc.configFile
-			eventQueue := initializeQueue(configFile, tc.queueName, t).(*RedisQueue)
+			eventQueue := initializeQueue(configFile, tc.queueName, t).(*DelayedQueue)
 			id, err := tc.tFN(context.Background(), eventQueue, tc.start, tc.end)
 			if err != nil {
 				t.Fatalf("Error: %v", err)
@@ -157,16 +163,16 @@ func TestCheckEventDeliveryinZSET(t *testing.T) {
 		configFile string
 		min        string
 		max        string
-		tFN        func(context.Context, *RedisQueue, string, string) (string, error)
+		tFN        func(context.Context, *DelayedQueue, string, string) (string, error)
 		expected   bool
 	}{
 		{
 			name:       "Single EventDelivery in ZSET",
 			queueName:  "EventQueue",
-			configFile: "../testdata/convoy_redis.json",
+			configFile: "../../testdata/convoy_redis.json",
 			min:        "-inf",
 			max:        "+inf",
-			tFN: func(ctx context.Context, q *RedisQueue, min string, max string) (string, error) {
+			tFN: func(ctx context.Context, q *DelayedQueue, min string, max string) (string, error) {
 				bodies, err := q.ZRangebyScore(ctx, min, max)
 
 				if err != nil {
@@ -176,7 +182,7 @@ func TestCheckEventDeliveryinZSET(t *testing.T) {
 					return "", nil
 				}
 				body := bodies[len(bodies)-1]
-				var msg taskq.Message
+				var msg disq.Message
 				err = msg.UnmarshalBinary([]byte(body))
 
 				if err != nil {
@@ -194,7 +200,7 @@ func TestCheckEventDeliveryinZSET(t *testing.T) {
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
 			configFile := tc.configFile
-			eventQueue := initializeQueue(configFile, tc.queueName, t).(*RedisQueue)
+			eventQueue := initializeQueue(configFile, tc.queueName, t).(*DelayedQueue)
 			id, err := tc.tFN(context.Background(), eventQueue, tc.min, tc.max)
 			if err != nil {
 				t.Fatalf("Error: %v", err)
@@ -218,14 +224,14 @@ func TestCheckEventDeliveryinPending(t *testing.T) {
 		name       string
 		queueName  string
 		configFile string
-		tFN        func(context.Context, *RedisQueue) (string, error)
+		tFN        func(context.Context, *DelayedQueue) (string, error)
 		expected   bool
 	}{
 		{
 			name:       "Single EventDelivery in Pending",
 			queueName:  "EventQueue",
-			configFile: "../testdata/convoy_redis.json",
-			tFN: func(ctx context.Context, q *RedisQueue) (string, error) {
+			configFile: "../../testdata/convoy_redis.json",
+			tFN: func(ctx context.Context, q *DelayedQueue) (string, error) {
 				pending, err := q.XPending(ctx)
 				if err != nil {
 					if strings.HasPrefix(err.Error(), "NOGROUP") {
@@ -236,7 +242,7 @@ func TestCheckEventDeliveryinPending(t *testing.T) {
 				if pending.Count <= 0 {
 					return "", nil
 				}
-				var msg taskq.Message
+				var msg disq.Message
 				xmsgInfoID := pending.Higher
 				id := xmsgInfoID
 
@@ -264,7 +270,7 @@ func TestCheckEventDeliveryinPending(t *testing.T) {
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
 			configFile := tc.configFile
-			eventQueue := initializeQueue(configFile, tc.queueName, t).(*RedisQueue)
+			eventQueue := initializeQueue(configFile, tc.queueName, t).(*DelayedQueue)
 			id, err := tc.tFN(context.Background(), eventQueue)
 			if err != nil {
 				t.Fatalf("Error: %v", err)
@@ -290,16 +296,16 @@ func TestDeleteEventDeliveryFromStream(t *testing.T) {
 		configFile string
 		start      string
 		end        string
-		tFN        func(context.Context, *RedisQueue, string, string) (string, error)
+		tFN        func(context.Context, *DelayedQueue, string, string) (string, error)
 		expected   bool
 	}{
 		{
 			name:       "Delete Single EventDelivery from Stream",
 			queueName:  "EventQueue",
-			configFile: "../testdata/convoy_redis.json",
+			configFile: "../../testdata/convoy_redis.json",
 			start:      "-",
 			end:        "+",
-			tFN: func(ctx context.Context, q *RedisQueue, start string, end string) (string, error) {
+			tFN: func(ctx context.Context, q *DelayedQueue, start string, end string) (string, error) {
 				xmsgs, err := q.XRange(ctx, start, end).Result()
 				if err != nil {
 					return "", err
@@ -307,7 +313,7 @@ func TestDeleteEventDeliveryFromStream(t *testing.T) {
 				if len(xmsgs) <= 0 {
 					return "", nil
 				}
-				msgs := make([]taskq.Message, len(xmsgs))
+				msgs := make([]disq.Message, len(xmsgs))
 				xmsg := &xmsgs[len(xmsgs)-1]
 				msg := &msgs[len(msgs)-1]
 
@@ -327,7 +333,7 @@ func TestDeleteEventDeliveryFromStream(t *testing.T) {
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
 			configFile := tc.configFile
-			eventQueue := initializeQueue(configFile, tc.queueName, t).(*RedisQueue)
+			eventQueue := initializeQueue(configFile, tc.queueName, t).(*DelayedQueue)
 			id, err := tc.tFN(context.Background(), eventQueue, tc.start, tc.end)
 			if err != nil {
 				t.Fatalf("Error: %v", err)
@@ -363,19 +369,17 @@ func initializeQueue(configFile string, name string, t *testing.T) queue.Queuer 
 
 	}
 
-	var qFn taskq.Factory
 	var rC *redis.Client
 	var opts queue.QueueOptions
 
-	rC, qFn, err = NewClient(cfg)
+	rC, err = NewClient(cfg)
 	if err != nil {
 		t.Fatalf("Failed to load new client: %v", err)
 	}
 	opts = queue.QueueOptions{
-		Name:    name,
-		Type:    "redis",
-		Redis:   rC,
-		Factory: qFn,
+		Name:  name,
+		Type:  "redis",
+		Redis: rC,
 	}
 
 	eventQueue := NewQueue(opts)

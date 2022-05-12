@@ -194,7 +194,7 @@ func TestApplicationHandler_CreateAppEvent(t *testing.T) {
 				c.EXPECT().Get(gomock.Any(), gomock.Any(), gomock.Any()).Times(2).Return(nil)
 				c.EXPECT().Set(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Times(2).Return(nil)
 
-				q.EXPECT().WriteEvent(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Times(1).Return(nil)
+				q.EXPECT().Publish(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Times(1).Return(nil)
 
 				a.EXPECT().
 					FindApplicationByID(gomock.Any(), gomock.Any()).Times(1).
@@ -234,7 +234,7 @@ func TestApplicationHandler_CreateAppEvent(t *testing.T) {
 				c.EXPECT().Get(gomock.Any(), gomock.Any(), gomock.Any()).Times(2).Return(nil)
 				c.EXPECT().Set(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Times(2).Return(nil)
 
-				q.EXPECT().WriteEvent(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Times(1).Return(nil)
+				q.EXPECT().Publish(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Times(1).Return(nil)
 
 				a, _ := app.appRepo.(*mocks.MockApplicationRepository)
 				a.EXPECT().
@@ -276,7 +276,7 @@ func TestApplicationHandler_CreateAppEvent(t *testing.T) {
 				c.EXPECT().Get(gomock.Any(), gomock.Any(), gomock.Any()).Times(2).Return(nil)
 				c.EXPECT().Set(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Times(2).Return(nil)
 
-				q.EXPECT().WriteEvent(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Times(1).Return(nil)
+				q.EXPECT().Publish(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Times(1).Return(nil)
 
 				a, _ := app.appRepo.(*mocks.MockApplicationRepository)
 				a.EXPECT().
@@ -318,7 +318,7 @@ func TestApplicationHandler_CreateAppEvent(t *testing.T) {
 				c.EXPECT().Get(gomock.Any(), gomock.Any(), gomock.Any()).Times(2).Return(nil)
 				c.EXPECT().Set(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Times(2).Return(nil)
 
-				q.EXPECT().WriteEvent(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Times(1).Return(nil)
+				q.EXPECT().Publish(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Times(1).Return(nil)
 
 				a, _ := app.appRepo.(*mocks.MockApplicationRepository)
 				a.EXPECT().
@@ -358,7 +358,7 @@ func TestApplicationHandler_CreateAppEvent(t *testing.T) {
 
 				c.EXPECT().Get(gomock.Any(), gomock.Any(), gomock.Any()).Times(2).Return(nil)
 
-				q.EXPECT().WriteEvent(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Times(1).Return(nil)
+				q.EXPECT().Publish(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Times(1).Return(nil)
 
 				a, _ := app.appRepo.(*mocks.MockApplicationRepository)
 				a.EXPECT().
@@ -668,7 +668,7 @@ func Test_resendEventDelivery(t *testing.T) {
 
 				q, _ := app.eventQueue.(*mocks.MockQueuer)
 				q.EXPECT().
-					WriteEventDelivery(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Times(1).
+					Publish(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Times(1).
 					Return(nil)
 
 				o, _ := app.groupRepo.(*mocks.MockGroupRepository)
@@ -731,7 +731,7 @@ func Test_resendEventDelivery(t *testing.T) {
 
 				q, _ := app.eventQueue.(*mocks.MockQueuer)
 				q.EXPECT().
-					WriteEventDelivery(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Times(1).
+					Publish(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Times(1).
 					Return(nil)
 				o, _ := app.groupRepo.(*mocks.MockGroupRepository)
 
@@ -873,7 +873,7 @@ func TestApplicationHandler_BatchRetryEventDelivery(t *testing.T) {
 
 				q, _ := app.eventQueue.(*mocks.MockQueuer)
 				q.EXPECT().
-					WriteEventDelivery(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Times(1).
+					Publish(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Times(1).
 					Return(nil)
 			},
 		},
@@ -965,7 +965,7 @@ func TestApplicationHandler_BatchRetryEventDelivery(t *testing.T) {
 
 				q, _ := app.eventQueue.(*mocks.MockQueuer)
 				q.EXPECT().
-					WriteEventDelivery(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Times(1).
+					Publish(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Times(1).
 					Return(nil)
 			},
 		},
@@ -1044,7 +1044,7 @@ func TestApplicationHandler_BatchRetryEventDelivery(t *testing.T) {
 
 				q, _ := app.eventQueue.(*mocks.MockQueuer)
 				q.EXPECT().
-					WriteEventDelivery(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Times(1).
+					Publish(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Times(1).
 					Return(errors.New("failed to write to queue"))
 			},
 		},
@@ -1552,7 +1552,7 @@ func TestApplicationHandler_ForceResendEventDelivery(t *testing.T) {
 
 				q, _ := app.eventQueue.(*mocks.MockQueuer)
 				q.EXPECT().
-					WriteEventDelivery(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Times(3).
+					Publish(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Times(3).
 					Return(nil)
 			},
 		},
@@ -1641,7 +1641,7 @@ func TestApplicationHandler_ForceResendEventDelivery(t *testing.T) {
 
 				q, _ := app.eventQueue.(*mocks.MockQueuer)
 				q.EXPECT().
-					WriteEventDelivery(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Times(2).
+					Publish(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Times(2).
 					Return(nil)
 			},
 		},

@@ -8,7 +8,7 @@ import (
 	"github.com/frain-dev/convoy/datastore"
 	"github.com/frain-dev/convoy/queue"
 	memqueue "github.com/frain-dev/convoy/queue/memqueue"
-	redisqueue "github.com/frain-dev/convoy/queue/redis"
+	redisqueue "github.com/frain-dev/convoy/queue/redis/delayed"
 	"github.com/prometheus/client_golang/prometheus"
 	log "github.com/sirupsen/logrus"
 )
@@ -43,7 +43,7 @@ func RegisterQueueMetrics(q queue.Queuer, cfg config.Configuration) {
 				Help:      "Number of events in the ZSET.",
 			},
 			func() float64 {
-				bodies, err := q.(*redisqueue.RedisQueue).ZRangebyScore(context.Background(), "-inf", "+inf")
+				bodies, err := q.(*redisqueue.DelayedQueue).ZRangebyScore(context.Background(), "-inf", "+inf")
 				if err != nil {
 					log.Errorf("Error ZSET Length: %v", err)
 				}
@@ -61,7 +61,7 @@ func RegisterQueueMetrics(q queue.Queuer, cfg config.Configuration) {
 				Help:      "Number of events in pending.",
 			},
 			func() float64 {
-				pending, err := q.(*redisqueue.RedisQueue).XPending(context.Background())
+				pending, err := q.(*redisqueue.DelayedQueue).XPending(context.Background())
 				if err != nil {
 					log.Errorf("Error fetching Pending info: %v", err)
 				}
@@ -148,11 +148,61 @@ func RegisterDBMetrics(app *applicationHandler) {
 		log.Errorf("Error registering eventdelivery Discarded: %v", err)
 	}
 }
+func RegisterConsumerMetrics(q queue.Queuer, cfg config.Configuration) {
 
+	if !q.Broker().Status() {
+		return
+	}
+
+	err := prometheus.Register(prometheus.NewGaugeFunc(
+		prometheus.GaugeOpts{
+			Subsystem: "consumer",
+			Name:      "processed",
+			Help:      "Number of events processed.",
+		},
+		func() float64 {
+			stats := q.Broker().Stats()
+			return float64(stats.Processed)
+		},
+	))
+	if err != nil {
+		log.Errorf("Error registering processed: %v", err)
+	}
+
+	err = prometheus.Register(prometheus.NewGaugeFunc(
+		prometheus.GaugeOpts{
+			Subsystem: "consumer",
+			Name:      "fails",
+			Help:      "Number of fails.",
+		},
+		func() float64 {
+			stats := q.Broker().Stats()
+			return float64(stats.Fails)
+		},
+	))
+	if err != nil {
+		log.Errorf("Error registering fails: %v", err)
+	}
+
+	err = prometheus.Register(prometheus.NewGaugeFunc(
+		prometheus.GaugeOpts{
+			Subsystem: "consumer",
+			Name:      "retries",
+			Help:      "Number of retries.",
+		},
+		func() float64 {
+			stats := q.Broker().Stats()
+			return float64(stats.Retries)
+		},
+	))
+	if err != nil {
+		log.Errorf("Error registering retries: %v", err)
+	}
+}
 func queueLength(q queue.Queuer, cfg config.Configuration) (int, error) {
 	switch cfg.Queue.Type {
 	case config.RedisQueueProvider:
-		n, err := q.(*redisqueue.RedisQueue).Length()
+		n, err := q.(*redisqueue.DelayedQueue).Length()
 		if err != nil {
 			log.Infof("Error getting queue length: %v", err)
 		}

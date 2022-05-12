@@ -12,8 +12,10 @@ import (
 
 	"github.com/frain-dev/convoy"
 	"github.com/frain-dev/convoy/config"
-	redisqueue "github.com/frain-dev/convoy/queue/redis"
+	"github.com/frain-dev/convoy/queue"
+	redisqueue "github.com/frain-dev/convoy/queue/redis/delayed"
 	"github.com/frain-dev/convoy/util"
+	disqRedis "github.com/frain-dev/disq/brokers/redis"
 	"github.com/google/uuid"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
@@ -47,7 +49,7 @@ func purge(a *app) *cobra.Command {
 		Short: "purge queue",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			q := a.eventQueue
-			err := q.Consumer().Queue().Purge()
+			err := q.Broker().(*disqRedis.Stream).Purge()
 			if err != nil {
 				return err
 			}
@@ -72,7 +74,7 @@ func getQueueLength(a *app) *cobra.Command {
 			for {
 				select {
 				case <-ticker.C:
-					length, err := q.Consumer().Queue().Len()
+					length, err := q.Broker().Len()
 					if err != nil {
 						log.Printf("Error getting queue length: %v", err)
 					}
@@ -101,7 +103,7 @@ func getZSETLength(a *app) *cobra.Command {
 			if cfg.Queue.Type != config.RedisQueueProvider {
 				log.Fatalf("Queue type error: Command is available for redis queue only.")
 			}
-			q := a.eventQueue.(*redisqueue.RedisQueue)
+			q := a.eventQueue.(*redisqueue.DelayedQueue)
 			ctx := context.Background()
 			ticker := time.NewTicker(time.Duration(timeInterval) * time.Millisecond)
 			for {
@@ -137,7 +139,7 @@ func getStreamInfo(a *app) *cobra.Command {
 				log.Fatalf("Queue type error: Command is available for redis queue only.")
 			}
 			ctx := context.Background()
-			q := a.eventQueue.(*redisqueue.RedisQueue)
+			q := a.eventQueue.(*redisqueue.DelayedQueue)
 			ticker := time.NewTicker(time.Duration(timeInterval) * time.Millisecond)
 			for {
 				select {
@@ -171,7 +173,7 @@ func getConsumersInfo(a *app) *cobra.Command {
 			if cfg.Queue.Type != config.RedisQueueProvider {
 				log.Fatalf("Queue type error: Command is available for redis queue only.")
 			}
-			q := a.eventQueue.(*redisqueue.RedisQueue)
+			q := a.eventQueue.(*redisqueue.DelayedQueue)
 			ctx := context.Background()
 			ticker := time.NewTicker(time.Duration(timeInterval) * time.Millisecond)
 			for {
@@ -206,7 +208,7 @@ func getPendingInfo(a *app) *cobra.Command {
 			if cfg.Queue.Type != config.RedisQueueProvider {
 				log.Fatalf("Queue type error: Command is available for redis queue only.")
 			}
-			q := a.eventQueue.(*redisqueue.RedisQueue)
+			q := a.eventQueue.(*redisqueue.DelayedQueue)
 			ctx := context.Background()
 			ticker := time.NewTicker(time.Duration(timeInterval) * time.Millisecond)
 			for {
@@ -245,7 +247,7 @@ func checkEventDeliveryinStream(a *app) *cobra.Command {
 				return errors.New("please provide an eventDelivery ID")
 			}
 			ctx := context.Background()
-			q := a.eventQueue.(*redisqueue.RedisQueue)
+			q := a.eventQueue.(*redisqueue.DelayedQueue)
 
 			onQueue, err := q.CheckEventDeliveryinStream(ctx, id, "-", "+")
 			if err != nil {
@@ -283,7 +285,7 @@ func checkBatchEventDeliveryinStream(a *app) *cobra.Command {
 				return errors.New("please provide a file name")
 			}
 			ctx := context.Background()
-			q := a.eventQueue.(*redisqueue.RedisQueue)
+			q := a.eventQueue.(*redisqueue.DelayedQueue)
 			file, err := os.Open(file)
 			if err != nil {
 				log.Fatal(err)
@@ -336,7 +338,7 @@ func checkEventDeliveryinZSET(a *app) *cobra.Command {
 				return errors.New("please provide an eventDelivery ID")
 			}
 			ctx := context.Background()
-			q := a.eventQueue.(*redisqueue.RedisQueue)
+			q := a.eventQueue.(*redisqueue.DelayedQueue)
 
 			inZSET, err := q.CheckEventDeliveryinZSET(ctx, id, "-inf", "+inf")
 			if err != nil {
@@ -374,7 +376,7 @@ func checkBatchEventDeliveryinZSET(a *app) *cobra.Command {
 				return errors.New("please provide file containing IDs")
 			}
 			ctx := context.Background()
-			q := a.eventQueue.(*redisqueue.RedisQueue)
+			q := a.eventQueue.(*redisqueue.DelayedQueue)
 			file, err := os.Open(file)
 			if err != nil {
 				log.Fatal(err)
@@ -427,7 +429,7 @@ func checkEventDeliveryinPending(a *app) *cobra.Command {
 				return errors.New("please provide an eventDelivery Id")
 			}
 			ctx := context.Background()
-			q := a.eventQueue.(*redisqueue.RedisQueue)
+			q := a.eventQueue.(*redisqueue.DelayedQueue)
 			inPending, err := q.CheckEventDeliveryinPending(ctx, id)
 			if err != nil {
 				log.Printf("Error fetching Pending: %v", err)
@@ -463,7 +465,7 @@ func checkBatchEventDeliveryinPending(a *app) *cobra.Command {
 				return errors.New("please provide file containing batch Ids")
 			}
 			ctx := context.Background()
-			q := a.eventQueue.(*redisqueue.RedisQueue)
+			q := a.eventQueue.(*redisqueue.DelayedQueue)
 			file, err := os.Open(file)
 			if err != nil {
 				log.Fatal(err)
@@ -514,7 +516,7 @@ func exportStreamMessages(a *app) *cobra.Command {
 			}
 
 			ctx := context.Background()
-			q := a.eventQueue.(*redisqueue.RedisQueue)
+			q := a.eventQueue.(*redisqueue.DelayedQueue)
 			outputfile, err := os.Create(outputfile)
 			if err != nil {
 				log.Errorf("failed creating outputfile: %s", err)
@@ -576,7 +578,7 @@ func requeueMessagesinStream(a *app) *cobra.Command {
 			}
 
 			ctx := context.Background()
-			q := a.eventQueue.(*redisqueue.RedisQueue)
+			q := a.eventQueue.(*redisqueue.DelayedQueue)
 
 			msgs, err := q.ExportMessagesfromStreamXACK(ctx)
 			if err != nil {
@@ -599,7 +601,11 @@ func requeueMessagesinStream(a *app) *cobra.Command {
 						continue
 					}
 					taskName := convoy.EventProcessor.SetPrefix(group.Name)
-					err = q.WriteEventDelivery(ctx, taskName, d, 1*time.Second)
+					job := &queue.Job{
+						ID:            d.UID,
+						EventDelivery: d,
+					}
+					err = q.Publish(ctx, taskName, job, 1*time.Second)
 					if err != nil {
 						log.WithError(err).Errorf("count: %s failed to send event delivery %s to the queue", fmt.Sprint(i), d.ID)
 					}

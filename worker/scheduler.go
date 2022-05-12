@@ -11,9 +11,9 @@ import (
 	"github.com/frain-dev/convoy/datastore"
 	"github.com/frain-dev/convoy/limiter"
 	"github.com/frain-dev/convoy/queue"
-	redisqueue "github.com/frain-dev/convoy/queue/redis"
+	redisqueue "github.com/frain-dev/convoy/queue/redis/delayed"
 	"github.com/frain-dev/convoy/worker/task"
-	"github.com/frain-dev/taskq/v3"
+	"github.com/frain-dev/disq"
 	log "github.com/sirupsen/logrus"
 )
 
@@ -29,8 +29,10 @@ func RegisterNewGroupTask(applicationRepo datastore.ApplicationRepository, event
 				pEvtDelTask := convoy.EventProcessor.SetPrefix(g.Name)
 				pEvtCrtTask := convoy.CreateEventProcessor.SetPrefix(g.Name)
 
-				if t := taskq.Tasks.Get(string(pEvtCrtTask)); t == nil {
-					if s := taskq.Tasks.Get(string(pEvtDelTask)); s == nil {
+				t, _ := disq.Tasks.LoadTask(string(pEvtCrtTask))
+				if t == nil {
+					s, _ := disq.Tasks.LoadTask(string(pEvtDelTask))
+					if s == nil {
 						handler := task.ProcessEventDelivery(applicationRepo, eventDeliveryRepo, groupRepo, rateLimiter)
 						log.Infof("Registering event delivery task handler for %s", g.Name)
 						task.CreateTask(pEvtDelTask, *g, handler)
@@ -74,8 +76,8 @@ func RequeueEventDeliveries(status string, timeInterval string, eventDeliveryRep
 	count := 0
 
 	ctx := context.Background()
-	var q *redisqueue.RedisQueue
-	q, ok := eventQueue.(*redisqueue.RedisQueue)
+	var q *redisqueue.DelayedQueue
+	q, ok := eventQueue.(*redisqueue.DelayedQueue)
 	if !ok {
 		return fmt.Errorf("invalid queue type for requeing event deliveries: %T", eventQueue)
 	}
@@ -118,7 +120,7 @@ func RequeueEventDeliveries(status string, timeInterval string, eventDeliveryRep
 	return nil
 }
 
-func ProcessEventDeliveryBatches(ctx context.Context, status datastore.EventDeliveryStatus, eventDeliveryRepo datastore.EventDeliveryRepository, groupRepo datastore.GroupRepository, deliveryChan <-chan []datastore.EventDelivery, q *redisqueue.RedisQueue, wg *sync.WaitGroup) {
+func ProcessEventDeliveryBatches(ctx context.Context, status datastore.EventDeliveryStatus, eventDeliveryRepo datastore.EventDeliveryRepository, groupRepo datastore.GroupRepository, deliveryChan <-chan []datastore.EventDelivery, q *redisqueue.DelayedQueue, wg *sync.WaitGroup) {
 	defer wg.Done()
 
 	// groups serves as a cache for already fetched groups
@@ -175,7 +177,11 @@ func ProcessEventDeliveryBatches(ctx context.Context, status datastore.EventDeli
 			}
 
 			taskName := convoy.EventProcessor.SetPrefix(group.Name)
-			err = q.WriteEventDelivery(ctx, taskName, delivery, 1*time.Second)
+			job := &queue.Job{
+				ID:            delivery.UID,
+				EventDelivery: delivery,
+			}
+			err = q.Publish(ctx, taskName, job, 1*time.Second)
 			if err != nil {
 				log.WithError(err).Errorf("batch %d: failed to send event delivery %s to the queue", batchCount, delivery.ID)
 			}

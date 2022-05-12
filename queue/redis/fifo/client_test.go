@@ -1,16 +1,20 @@
-package memqueue
+package redis
 
 import (
 	"context"
+	"log"
 	"testing"
 
 	"github.com/frain-dev/convoy"
+	"github.com/frain-dev/convoy/config"
 	"github.com/frain-dev/convoy/datastore"
 	"github.com/frain-dev/convoy/queue"
+	"github.com/go-redis/redis/v8"
 	"github.com/google/uuid"
 )
 
-func TestWrite(t *testing.T) {
+func TestPublish(t *testing.T) {
+	t.Skip()
 	tests := []struct {
 		name            string
 		queueName       string
@@ -25,10 +29,9 @@ func TestWrite(t *testing.T) {
 			name:            "Write a single event to queue",
 			queueName:       uuid.NewString(),
 			appID:           uuid.NewString(),
-			configFile:      "../testdata/convoy_memqueue.json",
+			configFile:      "../../testdata/convoy_redis.json",
 			eventID:         uuid.NewString(),
 			eventDeliveryID: uuid.NewString(),
-			queueLen:        1,
 		},
 	}
 
@@ -55,32 +58,30 @@ func TestWrite(t *testing.T) {
 			if err != nil {
 				t.Fatalf("Failed to write to queue: %v", err)
 			}
-
 		})
 	}
 
 }
 
-func TestConsumer(t *testing.T) {
+func TestConsume(t *testing.T) {
 	tests := []struct {
 		name       string
-		queueName  string
 		configFile string
-		err        string
+		queueName  string
 	}{
 		{
-			name:       "Consumer already started",
+			name:       "Start consumer",
 			queueName:  uuid.NewString(),
-			configFile: "../testdata/convoy_memqueue.json",
+			configFile: "../../testdata/convoy_redis.json",
 		},
 	}
 
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
 			configFile := tc.configFile
-			ctx := context.Background()
+
 			eventQueue := initializeQueue(configFile, tc.queueName, t)
-			err := eventQueue.Consume(ctx)
+			err := eventQueue.Consume(context.TODO())
 			if err != nil {
 				t.Fatalf("Failed to start consumer: %v", err)
 			}
@@ -89,9 +90,29 @@ func TestConsumer(t *testing.T) {
 }
 
 func initializeQueue(configFile string, name string, t *testing.T) queue.Queuer {
-	opts := queue.QueueOptions{
-		Name: name,
-		Type: "in-memory",
+	err := config.LoadConfig(configFile)
+	if err != nil {
+		t.Fatalf("Failed to load config file: %v", err)
+	}
+	cfg, err := config.Get()
+	if err != nil {
+		t.Fatalf("Failed to get config: %v", err)
+
+	}
+
+	log.Println(cfg.Queue.Type)
+
+	var rC *redis.Client
+	var opts queue.QueueOptions
+
+	rC, err = NewClient(cfg)
+	if err != nil {
+		t.Fatalf("Failed to load new client: %v", err)
+	}
+	opts = queue.QueueOptions{
+		Name:  name,
+		Type:  "redis",
+		Redis: rC,
 	}
 
 	eventQueue := NewQueue(opts)
