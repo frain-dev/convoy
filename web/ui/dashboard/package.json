@@ -26,7 +26,7 @@
 		"chart.js": "^3.6.0",
 		"convoy-app": "^0.0.15",
 		"convoy-dashboard": "file:../dashboard-component/dist/convoy-dashboard",
-		"convoy-ui": "^0.0.10",
+		"convoy-ui": "0.0.11",
 		"date-fns": "^2.27.0",
 		"moment": "^2.29.1",
 		"ng2-prism": "^2.3.2",
