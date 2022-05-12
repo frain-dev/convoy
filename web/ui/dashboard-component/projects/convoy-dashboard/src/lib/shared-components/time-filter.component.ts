@@ -81,7 +81,7 @@ import { Component, EventEmitter, OnInit, Output } from '@angular/core';
 				</div>
 			</div>
 		</div>
-		<div class="_overlay" *ngIf="showDropdown" (click)="showDropdown = false"></div>
+		<div class="overlay" *ngIf="showDropdown" (click)="showDropdown = false"></div>
 	`,
 	styles: [
 		`
@@ -100,10 +100,6 @@ import { Component, EventEmitter, OnInit, Output } from '@angular/core';
 
 			.can-scroll::-webkit-scrollbar-track {
 				background: #f3f3f3;
-			}
-
-			._overlay {
-				background: transparent;
 			}
 		`
 	]
