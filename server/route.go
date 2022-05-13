@@ -191,11 +191,13 @@ func buildRoutes(app *applicationHandler) http.Handler {
 		uiRouter.Route("/groups", func(groupRouter chi.Router) {
 
 			groupRouter.Route("/", func(orgSubRouter chi.Router) {
+				groupRouter.With(requirePermission(auth.RoleSuperUser)).Post("/", app.CreateGroup)
 				groupRouter.Get("/", app.GetGroups)
 			})
 
 			groupRouter.Route("/{groupID}", func(groupSubRouter chi.Router) {
 				groupSubRouter.With(requirePermission(auth.RoleUIAdmin)).Get("/", app.GetGroup)
+				groupSubRouter.With(requirePermission(auth.RoleSuperUser)).Put("/", app.UpdateGroup)
 				groupSubRouter.With(requirePermission(auth.RoleSuperUser)).Delete("/", app.DeleteGroup)
 			})
 		})
