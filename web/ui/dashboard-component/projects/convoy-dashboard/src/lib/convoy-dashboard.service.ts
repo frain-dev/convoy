@@ -57,11 +57,11 @@ export class ConvoyDashboardService {
 		});
 	}
 
-	async getEvents(requestDetails: { pageNo: number; startDate: string; endDate: string; appId: string }): Promise<HTTP_RESPONSE> {
+	async getEvents(requestDetails: { pageNo: number; startDate: string; endDate: string; appId: string; query?: string }): Promise<HTTP_RESPONSE> {
 		return new Promise(async (resolve, reject) => {
 			try {
 				const response = await this.request({
-					url: `/events?groupId=${this.activeGroupId}&sort=AESC&page=${requestDetails.pageNo}&perPage=20&startDate=${requestDetails.startDate}&endDate=${requestDetails.endDate}&appId=${requestDetails.appId}`,
+					url: `/events?groupId=${this.activeGroupId}&sort=AESC&page=${requestDetails.pageNo}&perPage=20&startDate=${requestDetails.startDate}&endDate=${requestDetails.endDate}&appId=${requestDetails.appId}&query=${requestDetails?.query}`,
 					method: 'get'
 				});
 
@@ -299,21 +299,6 @@ export class ConvoyDashboardService {
 					url: `/apps/${requestDetails.appId}/keys?groupId=${this.activeGroupId}`,
 					method: 'post',
 					body: {}
-				});
-
-				return resolve(response);
-			} catch (error: any) {
-				return reject(error);
-			}
-		});
-	}
-
-	async searchEvents(requestDetails: { query: string; pageNo: number }): Promise<HTTP_RESPONSE> {
-		return new Promise(async (resolve, reject) => {
-			try {
-				const response = await this.request({
-					url: `/events/search?groupId=${this.activeGroupId}&query=${requestDetails.query}&page=${requestDetails.pageNo}`,
-					method: 'get'
 				});
 
 				return resolve(response);

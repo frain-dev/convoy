@@ -84,20 +84,3 @@
 		right: 24px;
 	}
 }
-
-.group-dropdown {
-	width: 300px;
-	right: 0;
-	left: unset;
-	height: 0;
-
-	li {
-		white-space: nowrap;
-		text-overflow: ellipsis;
-		overflow: hidden;
-	}
-
-	&.show {
-		height: 400px;
-	}
-}
