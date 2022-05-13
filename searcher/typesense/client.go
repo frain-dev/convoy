@@ -1,15 +1,19 @@
 package typesense
 
 import (
+	"encoding/json"
 	"fmt"
 	"strings"
 	"time"
 
+	"github.com/frain-dev/convoy"
 	"github.com/frain-dev/convoy/config"
 	"github.com/frain-dev/convoy/datastore"
 	"github.com/frain-dev/convoy/util"
+	"github.com/jeremywohl/flatten"
 	"github.com/typesense/typesense-go/typesense"
 	"github.com/typesense/typesense-go/typesense/api"
+	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
 type Typesense struct {
@@ -94,4 +98,43 @@ func (t *Typesense) Search(f *datastore.Filter) ([]string, datastore.PaginationD
 	}
 
 	return events, data, nil
+}
+
+func (t *Typesense) Index(collection string, document convoy.GenericMap) error {
+	// convert data field to map
+	strData := document["data"].(primitive.Binary).Data
+	var data *convoy.GenericMap
+	err := json.Unmarshal(strData, &data)
+	if err != nil {
+		return err
+	}
+
+	document["data"] = data
+	document["id"] = document["_id"]
+	document["updated_at"] = document["updated_at"].(primitive.DateTime).Time().UnixMilli()
+	document["created_at"] = document["created_at"].(primitive.DateTime).Time().UnixMilli()
+
+	jsonDoc, err := json.Marshal(document)
+	if err != nil {
+		return err
+	}
+
+	flattened, err := flatten.FlattenString(string(jsonDoc), "", flatten.DotStyle)
+	if err != nil {
+		return err
+	}
+
+	var doc *convoy.GenericMap
+	err = json.Unmarshal([]byte(flattened), &doc)
+	if err != nil {
+		return err
+	}
+
+	// import to typesense
+	_, err = t.client.Collection(collection).Documents().Upsert(doc)
+	if err != nil {
+		return err
+	}
+
+	return nil
 }

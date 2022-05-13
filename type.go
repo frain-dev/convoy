@@ -11,6 +11,8 @@ type TaskName string
 
 type CacheKey string
 
+type GenericMap map[string]interface{}
+
 //go:embed VERSION
 var f embed.FS
 

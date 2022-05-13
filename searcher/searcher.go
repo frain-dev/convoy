@@ -1,6 +1,7 @@
 package searcher
 
 import (
+	"github.com/frain-dev/convoy"
 	"github.com/frain-dev/convoy/config"
 	"github.com/frain-dev/convoy/datastore"
 	noopsearcher "github.com/frain-dev/convoy/searcher/noop"
@@ -9,6 +10,7 @@ import (
 
 type Searcher interface {
 	Search(filter *datastore.Filter) ([]string, datastore.PaginationData, error)
+	Index(collection string, document convoy.GenericMap) error
 }
 
 func NewSearchClient(searchConfig config.SearchConfiguration) (Searcher, error) {
