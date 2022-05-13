@@ -176,6 +176,79 @@ func TestEventService_CreateAppEvent(t *testing.T) {
 				DocumentStatus: datastore.ActiveDocumentStatus,
 			},
 		},
+
+		{
+			name: "should_create_event_for_disabled_app",
+			dbFn: func(es *EventService) {
+				c, _ := es.cache.(*mocks.MockCache)
+				c.EXPECT().Get(gomock.Any(), gomock.Any(), gomock.Any())
+				c.EXPECT().Set(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any())
+
+				a, _ := es.appRepo.(*mocks.MockApplicationRepository)
+				a.EXPECT().FindApplicationByID(gomock.Any(), "123").
+					Times(1).Return(&datastore.Application{
+					Title: "test_app",
+					Endpoints: []datastore.Endpoint{
+						{
+							UID:    "ref",
+							Events: []string{"*"},
+							Status: datastore.ActiveEndpointStatus,
+						},
+						{
+							UID:    "abcd",
+							Events: []string{"payment.created"},
+							Status: datastore.ActiveEndpointStatus,
+						},
+					},
+					UID:          "123",
+					GroupID:      "abc",
+					IsDisabled:   true,
+					SupportEmail: "test_app@gmail.com",
+				}, nil)
+
+				eq, _ := es.createEventQueue.(*mocks.MockQueuer)
+				eq.EXPECT().WriteEvent(gomock.Any(), convoy.TaskName("test_group-CreateEventProcessor"), gomock.Any(), gomock.Any()).
+					Times(1).Return(nil)
+			},
+			args: args{
+				ctx: ctx,
+				newMessage: &models.Event{
+					AppID:     "123",
+					EventType: "payment.created",
+					Data:      bytes.NewBufferString(`{"name":"convoy"}`).Bytes(),
+				},
+				g: &datastore.Group{
+					UID:  "abc",
+					Name: "test_group",
+					Config: &datastore.GroupConfig{
+						Strategy: datastore.StrategyConfiguration{
+							Type: "default",
+							Default: datastore.DefaultStrategyConfiguration{
+								IntervalSeconds: 10,
+								RetryLimit:      3,
+							},
+							ExponentialBackoff: datastore.ExponentialBackoffStrategyConfiguration{},
+						},
+						Signature:       datastore.SignatureConfiguration{},
+						DisableEndpoint: false,
+						ReplayAttacks:   false,
+					},
+				},
+			},
+			wantEvent: &datastore.Event{
+				EventType:        datastore.EventType("payment.created"),
+				MatchedEndpoints: 0,
+				Data:             bytes.NewBufferString(`{"name":"convoy"}`).Bytes(),
+				AppMetadata: &datastore.AppMetadata{
+					Title:        "test_app",
+					UID:          "123",
+					GroupID:      "abc",
+					SupportEmail: "test_app@gmail.com",
+				},
+				DocumentStatus: datastore.ActiveDocumentStatus,
+			},
+		},
+
 		{
 			name: "should_error_for_invalid_strategy_config",
 			dbFn: func(es *EventService) {
@@ -287,48 +360,6 @@ func TestEventService_CreateAppEvent(t *testing.T) {
 			wantErr:     true,
 			wantErrCode: http.StatusBadRequest,
 			wantErrMsg:  "app has no configured endpoints",
-		},
-		{
-			name: "should_error_app_is_disabled",
-			dbFn: func(es *EventService) {
-				c, _ := es.cache.(*mocks.MockCache)
-				c.EXPECT().Get(gomock.Any(), gomock.Any(), gomock.Any())
-				c.EXPECT().Set(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any())
-
-				a, _ := es.appRepo.(*mocks.MockApplicationRepository)
-				a.EXPECT().FindApplicationByID(gomock.Any(), "123").
-					Times(1).Return(&datastore.Application{
-					Title: "test_app",
-					Endpoints: []datastore.Endpoint{
-						{
-							UID:    "ref",
-							Events: []string{"*"},
-							Status: datastore.ActiveEndpointStatus,
-						},
-						{
-							UID:    "abcd",
-							Events: []string{"payment.created"},
-							Status: datastore.ActiveEndpointStatus,
-						},
-					},
-					UID:          "123",
-					GroupID:      "abc",
-					IsDisabled:   true,
-					SupportEmail: "test_app@gmail.com",
-				}, nil)
-			},
-			args: args{
-				ctx: ctx,
-				newMessage: &models.Event{
-					AppID:     "123",
-					EventType: "payment.created",
-					Data:      bytes.NewBufferString(`{"name":"convoy"}`).Bytes(),
-				},
-				g: &datastore.Group{},
-			},
-			wantErr:     true,
-			wantErrCode: http.StatusBadRequest,
-			wantErrMsg:  "app is disabled, no events were sent",
 		},
 
 		{
