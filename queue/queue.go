@@ -18,10 +18,9 @@ type Queuer interface {
 }
 
 type Job struct {
-	Err           error                    `json:"err"`
-	ID            string                   `json:"id"`
-	Event         *datastore.Event         `json:"event"`
-	EventDelivery *datastore.EventDelivery `json:"event_delivery"`
+	Err   error            `json:"err"`
+	ID    string           `json:"id"`
+	Event *datastore.Event `json:"event"`
 }
 
 type QueueOptions struct {

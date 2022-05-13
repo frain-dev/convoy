@@ -10,7 +10,7 @@ require (
 	github.com/dgraph-io/badger/v3 v3.2103.1
 	github.com/dgryski/go-farm v0.0.0-20200201041132-a6ae2369ad13 // indirect
 	github.com/felixge/httpsnoop v1.0.2
-	github.com/frain-dev/disq v0.1.1
+	github.com/frain-dev/disq v0.1.5
 	github.com/fsnotify/fsnotify v1.5.1 // indirect
 	github.com/getkin/kin-openapi v0.78.0
 	github.com/getsentry/sentry-go v0.11.0
@@ -28,7 +28,7 @@ require (
 	github.com/hashicorp/golang-lru v0.5.4
 	github.com/jarcoal/httpmock v1.0.8
 	github.com/kelseyhightower/envconfig v1.4.0
-	github.com/klauspost/compress v1.14.3 // indirect
+	github.com/klauspost/compress v1.15.4 // indirect
 	github.com/mattn/go-colorable v0.1.11 // indirect
 	github.com/mgutz/ansi v0.0.0-20200706080929-d51e80ef957d // indirect
 	github.com/newrelic/go-agent/v3 v3.15.2

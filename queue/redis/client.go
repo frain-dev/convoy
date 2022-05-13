@@ -18,7 +18,7 @@ import (
 
 const count = math.MaxInt64
 
-type DelayedQueue struct {
+type RedisQueue struct {
 	Name      string
 	queue     *redisBroker.Stream
 	inner     *redis.Client
@@ -59,14 +59,14 @@ func NewQueue(opts queue.QueueOptions) queue.Queuer {
 	}
 	q := redisBroker.NewStream(cfg)
 
-	return &DelayedQueue{
+	return &RedisQueue{
 		Name:  opts.Name,
 		inner: opts.Redis,
 		queue: q.(*redisBroker.Stream),
 	}
 }
 
-func (q *DelayedQueue) Stop() error {
+func (q *RedisQueue) Stop() error {
 	q.closeChan <- struct{}{}
 	err := q.inner.Close()
 	if err != nil {
@@ -79,7 +79,7 @@ func (q *DelayedQueue) Stop() error {
 	return nil
 }
 
-func (q *DelayedQueue) Publish(ctx context.Context, name convoy.TaskName, job *queue.Job, delay time.Duration) error {
+func (q *RedisQueue) Publish(ctx context.Context, name convoy.TaskName, job *queue.Job, delay time.Duration) error {
 	m := &disq.Message{
 		Ctx:      ctx,
 		TaskName: string(name),
@@ -90,20 +90,20 @@ func (q *DelayedQueue) Publish(ctx context.Context, name convoy.TaskName, job *q
 	return q.queue.Publish(m)
 }
 
-func (q *DelayedQueue) Consume(ctx context.Context) error {
+func (q *RedisQueue) Consume(ctx context.Context) error {
 	q.queue.Consume(ctx)
 	return nil
 }
 
-func (q *DelayedQueue) Length() (int, error) {
+func (q *RedisQueue) Length() (int, error) {
 	return q.queue.Len()
 }
 
-func (q *DelayedQueue) Broker() disq.Broker {
+func (q *RedisQueue) Broker() disq.Broker {
 	return q.queue
 }
 
-func (q *DelayedQueue) ZRangebyScore(ctx context.Context, min string, max string) ([]string, error) {
+func (q *RedisQueue) ZRangebyScore(ctx context.Context, min string, max string) ([]string, error) {
 	zset := q.stringifyZSETWithQName()
 	bodies, err := q.inner.ZRangeByScore(ctx, zset, &redis.ZRangeBy{
 		Min: min,
@@ -115,7 +115,7 @@ func (q *DelayedQueue) ZRangebyScore(ctx context.Context, min string, max string
 	return bodies, nil
 }
 
-func (q *DelayedQueue) XPendingExt(ctx context.Context, start string, end string) ([]redis.XPendingExt, error) {
+func (q *RedisQueue) XPendingExt(ctx context.Context, start string, end string) ([]redis.XPendingExt, error) {
 	stream := q.stringifyStreamWithQName()
 	pending, err := q.inner.XPendingExt(ctx, &redis.XPendingExtArgs{
 		Stream: stream,
@@ -133,19 +133,19 @@ func (q *DelayedQueue) XPendingExt(ctx context.Context, start string, end string
 	return pending, nil
 }
 
-func (q *DelayedQueue) XRange(ctx context.Context, start string, end string) *redis.XMessageSliceCmd {
+func (q *RedisQueue) XRange(ctx context.Context, start string, end string) *redis.XMessageSliceCmd {
 	stream := q.stringifyStreamWithQName()
 	xrange := q.inner.XRange(ctx, stream, start, end)
 	return xrange
 }
 
-func (q *DelayedQueue) XRangeN(ctx context.Context, start string, end string, count int64) *redis.XMessageSliceCmd {
+func (q *RedisQueue) XRangeN(ctx context.Context, start string, end string, count int64) *redis.XMessageSliceCmd {
 	stream := q.stringifyStreamWithQName()
 	xrange := q.inner.XRangeN(ctx, stream, start, end, count)
 	return xrange
 }
 
-func (q *DelayedQueue) XPending(ctx context.Context) (*redis.XPending, error) {
+func (q *RedisQueue) XPending(ctx context.Context) (*redis.XPending, error) {
 	stream := q.stringifyStreamWithQName()
 	pending, err := q.inner.XPending(ctx, stream, convoy.StreamGroup).Result()
 	if err != nil {
@@ -156,19 +156,19 @@ func (q *DelayedQueue) XPending(ctx context.Context) (*redis.XPending, error) {
 	return pending, err
 }
 
-func (q *DelayedQueue) XInfoConsumers(ctx context.Context) *redis.XInfoConsumersCmd {
+func (q *RedisQueue) XInfoConsumers(ctx context.Context) *redis.XInfoConsumersCmd {
 	stream := q.stringifyStreamWithQName()
 	consumersInfo := q.inner.XInfoConsumers(ctx, stream, convoy.StreamGroup)
 	return consumersInfo
 }
 
-func (q *DelayedQueue) XInfoStream(ctx context.Context) *redis.XInfoStreamCmd {
+func (q *RedisQueue) XInfoStream(ctx context.Context) *redis.XInfoStreamCmd {
 	stream := q.stringifyStreamWithQName()
 	infoStream := q.inner.XInfoStream(ctx, stream)
 	return infoStream
 }
 
-func (q *DelayedQueue) CheckEventDeliveryinStream(ctx context.Context, id string, start string, end string) (bool, error) {
+func (q *RedisQueue) CheckEventDeliveryinStream(ctx context.Context, id string, start string, end string) (bool, error) {
 	xmsgs, err := q.XRange(ctx, start, end).Result()
 	if err != nil {
 		return false, err
@@ -193,7 +193,7 @@ func (q *DelayedQueue) CheckEventDeliveryinStream(ctx context.Context, id string
 	return false, nil
 }
 
-func (q *DelayedQueue) CheckEventDeliveryinZSET(ctx context.Context, id string, min string, max string) (bool, error) {
+func (q *RedisQueue) CheckEventDeliveryinZSET(ctx context.Context, id string, min string, max string) (bool, error) {
 	bodies, err := q.ZRangebyScore(ctx, min, max)
 	if err != nil {
 		return false, err
@@ -214,7 +214,7 @@ func (q *DelayedQueue) CheckEventDeliveryinZSET(ctx context.Context, id string, 
 	return false, nil
 }
 
-func (q *DelayedQueue) DeleteEventDeliveryFromZSET(ctx context.Context, id string) (bool, error) {
+func (q *RedisQueue) DeleteEventDeliveryFromZSET(ctx context.Context, id string) (bool, error) {
 	bodies, err := q.ZRangebyScore(ctx, "-inf", "+inf")
 	if err != nil {
 		return false, err
@@ -239,7 +239,7 @@ func (q *DelayedQueue) DeleteEventDeliveryFromZSET(ctx context.Context, id strin
 	return false, nil
 }
 
-func (q *DelayedQueue) DeleteEventDeliveriesFromZSET(ctx context.Context, ids []string) error {
+func (q *RedisQueue) DeleteEventDeliveriesFromZSET(ctx context.Context, ids []string) error {
 	bodies, err := q.ZRangebyScore(ctx, "-inf", "+inf")
 	if err != nil {
 		return err
@@ -269,7 +269,7 @@ func (q *DelayedQueue) DeleteEventDeliveriesFromZSET(ctx context.Context, ids []
 	return nil
 }
 
-func (q *DelayedQueue) CheckEventDeliveryinPending(ctx context.Context, id string) (bool, error) {
+func (q *RedisQueue) CheckEventDeliveryinPending(ctx context.Context, id string) (bool, error) {
 	pending, err := q.XPending(ctx)
 	if err != nil {
 		return false, err
@@ -302,7 +302,7 @@ func (q *DelayedQueue) CheckEventDeliveryinPending(ctx context.Context, id strin
 	return false, nil
 }
 
-func (q *DelayedQueue) DeleteEvenDeliveryfromStream(ctx context.Context, id string) (bool, error) {
+func (q *RedisQueue) DeleteEvenDeliveryfromStream(ctx context.Context, id string) (bool, error) {
 	xmsgs, err := q.XRange(ctx, "-", "+").Result()
 	if err != nil {
 		return false, err
@@ -329,7 +329,7 @@ func (q *DelayedQueue) DeleteEvenDeliveryfromStream(ctx context.Context, id stri
 	return false, nil
 }
 
-func (q *DelayedQueue) DeleteEventDeliveriesFromStream(ctx context.Context, ids []string) error {
+func (q *RedisQueue) DeleteEventDeliveriesFromStream(ctx context.Context, ids []string) error {
 	xmsgs, err := q.XRange(ctx, "-", "+").Result()
 	if err != nil {
 		return err
@@ -367,7 +367,7 @@ func (q *DelayedQueue) DeleteEventDeliveriesFromStream(ctx context.Context, ids 
 	return nil
 }
 
-func (q *DelayedQueue) ExportMessagesfromStream(ctx context.Context) ([]disq.Message, error) {
+func (q *RedisQueue) ExportMessagesfromStream(ctx context.Context) ([]disq.Message, error) {
 	xmsgs, err := q.XRange(ctx, "-", "+").Result()
 	if err != nil {
 		return nil, err
@@ -387,7 +387,7 @@ func (q *DelayedQueue) ExportMessagesfromStream(ctx context.Context) ([]disq.Mes
 	return msgs, nil
 }
 
-func (q *DelayedQueue) ExportMessagesfromStreamXACK(ctx context.Context) ([]disq.Message, error) {
+func (q *RedisQueue) ExportMessagesfromStreamXACK(ctx context.Context) ([]disq.Message, error) {
 	xmsgs, err := q.XRange(ctx, "-", "+").Result()
 	if err != nil {
 		return nil, err
@@ -415,10 +415,10 @@ func (q *DelayedQueue) ExportMessagesfromStreamXACK(ctx context.Context) ([]disq
 	return msgs, nil
 }
 
-func (q *DelayedQueue) stringifyStreamWithQName() string {
+func (q *RedisQueue) stringifyStreamWithQName() string {
 	return "disq:" + "{" + q.Name + "}:stream"
 }
-func (q *DelayedQueue) stringifyZSETWithQName() string {
+func (q *RedisQueue) stringifyZSETWithQName() string {
 	return "disq:" + "{" + q.Name + "}:zset"
 }
 

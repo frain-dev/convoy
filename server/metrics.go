@@ -8,7 +8,7 @@ import (
 	"github.com/frain-dev/convoy/datastore"
 	"github.com/frain-dev/convoy/queue"
 	memqueue "github.com/frain-dev/convoy/queue/memqueue"
-	redisqueue "github.com/frain-dev/convoy/queue/redis/delayed"
+	redisqueue "github.com/frain-dev/convoy/queue/redis"
 	"github.com/prometheus/client_golang/prometheus"
 	log "github.com/sirupsen/logrus"
 )
@@ -43,7 +43,7 @@ func RegisterQueueMetrics(q queue.Queuer, cfg config.Configuration) {
 				Help:      "Number of events in the ZSET.",
 			},
 			func() float64 {
-				bodies, err := q.(*redisqueue.DelayedQueue).ZRangebyScore(context.Background(), "-inf", "+inf")
+				bodies, err := q.(*redisqueue.RedisQueue).ZRangebyScore(context.Background(), "-inf", "+inf")
 				if err != nil {
 					log.Errorf("Error ZSET Length: %v", err)
 				}
@@ -61,7 +61,7 @@ func RegisterQueueMetrics(q queue.Queuer, cfg config.Configuration) {
 				Help:      "Number of events in pending.",
 			},
 			func() float64 {
-				pending, err := q.(*redisqueue.DelayedQueue).XPending(context.Background())
+				pending, err := q.(*redisqueue.RedisQueue).XPending(context.Background())
 				if err != nil {
 					log.Errorf("Error fetching Pending info: %v", err)
 				}
@@ -202,7 +202,7 @@ func RegisterConsumerMetrics(q queue.Queuer, cfg config.Configuration) {
 func queueLength(q queue.Queuer, cfg config.Configuration) (int, error) {
 	switch cfg.Queue.Type {
 	case config.RedisQueueProvider:
-		n, err := q.(*redisqueue.DelayedQueue).Length()
+		n, err := q.(*redisqueue.RedisQueue).Length()
 		if err != nil {
 			log.Infof("Error getting queue length: %v", err)
 		}

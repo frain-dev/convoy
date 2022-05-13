@@ -11,7 +11,7 @@ import (
 	"github.com/frain-dev/convoy/datastore"
 	"github.com/frain-dev/convoy/limiter"
 	"github.com/frain-dev/convoy/queue"
-	redisqueue "github.com/frain-dev/convoy/queue/redis/delayed"
+	redisqueue "github.com/frain-dev/convoy/queue/redis"
 	"github.com/frain-dev/convoy/worker/task"
 	"github.com/frain-dev/disq"
 	log "github.com/sirupsen/logrus"
@@ -76,8 +76,8 @@ func RequeueEventDeliveries(status string, timeInterval string, eventDeliveryRep
 	count := 0
 
 	ctx := context.Background()
-	var q *redisqueue.DelayedQueue
-	q, ok := eventQueue.(*redisqueue.DelayedQueue)
+	var q *redisqueue.RedisQueue
+	q, ok := eventQueue.(*redisqueue.RedisQueue)
 	if !ok {
 		return fmt.Errorf("invalid queue type for requeing event deliveries: %T", eventQueue)
 	}
@@ -120,7 +120,7 @@ func RequeueEventDeliveries(status string, timeInterval string, eventDeliveryRep
 	return nil
 }
 
-func ProcessEventDeliveryBatches(ctx context.Context, status datastore.EventDeliveryStatus, eventDeliveryRepo datastore.EventDeliveryRepository, groupRepo datastore.GroupRepository, deliveryChan <-chan []datastore.EventDelivery, q *redisqueue.DelayedQueue, wg *sync.WaitGroup) {
+func ProcessEventDeliveryBatches(ctx context.Context, status datastore.EventDeliveryStatus, eventDeliveryRepo datastore.EventDeliveryRepository, groupRepo datastore.GroupRepository, deliveryChan <-chan []datastore.EventDelivery, q *redisqueue.RedisQueue, wg *sync.WaitGroup) {
 	defer wg.Done()
 
 	// groups serves as a cache for already fetched groups
@@ -178,8 +178,7 @@ func ProcessEventDeliveryBatches(ctx context.Context, status datastore.EventDeli
 
 			taskName := convoy.EventProcessor.SetPrefix(group.Name)
 			job := &queue.Job{
-				ID:            delivery.UID,
-				EventDelivery: delivery,
+				ID: delivery.UID,
 			}
 			err = q.Publish(ctx, taskName, job, 1*time.Second)
 			if err != nil {

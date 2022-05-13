@@ -133,8 +133,7 @@ func ProcessEventCreated(appRepo datastore.ApplicationRepository, eventRepo data
 			taskName := convoy.EventProcessor.SetPrefix(group.Name)
 			if eventDelivery.Status != datastore.DiscardedEventStatus {
 				job := &queue.Job{
-					ID:            eventDelivery.UID,
-					EventDelivery: eventDelivery,
+					ID: eventDelivery.UID,
 				}
 				err = eventQueue.Publish(ctx, taskName, job, 1*time.Second)
 				if err != nil {

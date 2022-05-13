@@ -94,7 +94,6 @@ func (e *EventService) CreateAppEvent(ctx context.Context, newMessage *models.Ev
 		},
 		DocumentStatus: datastore.ActiveDocumentStatus,
 	}
-
 	if g.Config.Strategy.Type != config.DefaultStrategyProvider && g.Config.Strategy.Type != config.ExponentialBackoffStrategyProvider {
 		return nil, NewServiceError(http.StatusBadRequest, errors.New("retry strategy not defined in configuration"))
 	}
@@ -273,8 +272,7 @@ func (e *EventService) requeueEventDelivery(ctx context.Context, eventDelivery *
 
 	taskName := convoy.EventProcessor.SetPrefix(g.Name)
 	job := &queue.Job{
-		ID:            eventDelivery.UID,
-		EventDelivery: eventDelivery,
+		ID: eventDelivery.UID,
 	}
 	err = e.eventQueue.Publish(context.Background(), taskName, job, 1*time.Second)
 	if err != nil {

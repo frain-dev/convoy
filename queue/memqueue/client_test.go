@@ -45,8 +45,7 @@ func TestWrite(t *testing.T) {
 				},
 			}
 			job := &queue.Job{
-				ID:            eventDelivery.UID,
-				EventDelivery: eventDelivery,
+				ID: eventDelivery.UID,
 			}
 			taskName := convoy.TaskName(uuid.NewString())
 			configFile := tc.configFile

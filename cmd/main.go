@@ -14,7 +14,7 @@ import (
 
 	"github.com/frain-dev/convoy/logger"
 	memqueue "github.com/frain-dev/convoy/queue/memqueue"
-	redisqueue "github.com/frain-dev/convoy/queue/redis/delayed"
+	redisqueue "github.com/frain-dev/convoy/queue/redis"
 	"github.com/frain-dev/convoy/tracer"
 	"github.com/getsentry/sentry-go"
 	"github.com/google/uuid"

@@ -31,7 +31,7 @@ func TestPublish(t *testing.T) {
 			name:            "publish a single event to queue",
 			queueName:       uuid.NewString(),
 			appID:           uuid.NewString(),
-			configFile:      "../../testdata/convoy_redis.json",
+			configFile:      "../testdata/convoy_redis.json",
 			eventID:         uuid.NewString(),
 			eventDeliveryID: uuid.NewString(),
 		},
@@ -50,8 +50,7 @@ func TestPublish(t *testing.T) {
 				},
 			}
 			job := &queue.Job{
-				ID:            eventDelivery.UID,
-				EventDelivery: eventDelivery,
+				ID: eventDelivery.UID,
 			}
 
 			taskName := convoy.TaskName(uuid.NewString())
@@ -75,7 +74,7 @@ func TestConsume(t *testing.T) {
 		{
 			name:       "Start consumer",
 			queueName:  uuid.NewString(),
-			configFile: "../../testdata/convoy_redis.json",
+			configFile: "../testdata/convoy_redis.json",
 		},
 	}
 
@@ -100,16 +99,16 @@ func TestCheckEventDeliveryinStream(t *testing.T) {
 		configFile string
 		start      string
 		end        string
-		tFN        func(context.Context, *DelayedQueue, string, string) (string, error)
+		tFN        func(context.Context, *RedisQueue, string, string) (string, error)
 		expected   bool
 	}{
 		{
 			name:       "Single EventDelivery in Stream",
 			queueName:  "EventQueue",
-			configFile: "../../testdata/convoy_redis.json",
+			configFile: "../testdata/convoy_redis.json",
 			start:      "-",
 			end:        "+",
-			tFN: func(ctx context.Context, q *DelayedQueue, start string, end string) (string, error) {
+			tFN: func(ctx context.Context, q *RedisQueue, start string, end string) (string, error) {
 				xmsgs, err := q.XRange(ctx, start, end).Result()
 				if err != nil {
 					return "", err
@@ -137,7 +136,7 @@ func TestCheckEventDeliveryinStream(t *testing.T) {
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
 			configFile := tc.configFile
-			eventQueue := initializeQueue(configFile, tc.queueName, t).(*DelayedQueue)
+			eventQueue := initializeQueue(configFile, tc.queueName, t).(*RedisQueue)
 			id, err := tc.tFN(context.Background(), eventQueue, tc.start, tc.end)
 			if err != nil {
 				t.Fatalf("Error: %v", err)
@@ -163,16 +162,16 @@ func TestCheckEventDeliveryinZSET(t *testing.T) {
 		configFile string
 		min        string
 		max        string
-		tFN        func(context.Context, *DelayedQueue, string, string) (string, error)
+		tFN        func(context.Context, *RedisQueue, string, string) (string, error)
 		expected   bool
 	}{
 		{
 			name:       "Single EventDelivery in ZSET",
 			queueName:  "EventQueue",
-			configFile: "../../testdata/convoy_redis.json",
+			configFile: "../testdata/convoy_redis.json",
 			min:        "-inf",
 			max:        "+inf",
-			tFN: func(ctx context.Context, q *DelayedQueue, min string, max string) (string, error) {
+			tFN: func(ctx context.Context, q *RedisQueue, min string, max string) (string, error) {
 				bodies, err := q.ZRangebyScore(ctx, min, max)
 
 				if err != nil {
@@ -200,7 +199,7 @@ func TestCheckEventDeliveryinZSET(t *testing.T) {
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
 			configFile := tc.configFile
-			eventQueue := initializeQueue(configFile, tc.queueName, t).(*DelayedQueue)
+			eventQueue := initializeQueue(configFile, tc.queueName, t).(*RedisQueue)
 			id, err := tc.tFN(context.Background(), eventQueue, tc.min, tc.max)
 			if err != nil {
 				t.Fatalf("Error: %v", err)
@@ -224,14 +223,14 @@ func TestCheckEventDeliveryinPending(t *testing.T) {
 		name       string
 		queueName  string
 		configFile string
-		tFN        func(context.Context, *DelayedQueue) (string, error)
+		tFN        func(context.Context, *RedisQueue) (string, error)
 		expected   bool
 	}{
 		{
 			name:       "Single EventDelivery in Pending",
 			queueName:  "EventQueue",
-			configFile: "../../testdata/convoy_redis.json",
-			tFN: func(ctx context.Context, q *DelayedQueue) (string, error) {
+			configFile: "../testdata/convoy_redis.json",
+			tFN: func(ctx context.Context, q *RedisQueue) (string, error) {
 				pending, err := q.XPending(ctx)
 				if err != nil {
 					if strings.HasPrefix(err.Error(), "NOGROUP") {
@@ -270,7 +269,7 @@ func TestCheckEventDeliveryinPending(t *testing.T) {
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
 			configFile := tc.configFile
-			eventQueue := initializeQueue(configFile, tc.queueName, t).(*DelayedQueue)
+			eventQueue := initializeQueue(configFile, tc.queueName, t).(*RedisQueue)
 			id, err := tc.tFN(context.Background(), eventQueue)
 			if err != nil {
 				t.Fatalf("Error: %v", err)
@@ -296,16 +295,16 @@ func TestDeleteEventDeliveryFromStream(t *testing.T) {
 		configFile string
 		start      string
 		end        string
-		tFN        func(context.Context, *DelayedQueue, string, string) (string, error)
+		tFN        func(context.Context, *RedisQueue, string, string) (string, error)
 		expected   bool
 	}{
 		{
 			name:       "Delete Single EventDelivery from Stream",
 			queueName:  "EventQueue",
-			configFile: "../../testdata/convoy_redis.json",
+			configFile: "../testdata/convoy_redis.json",
 			start:      "-",
 			end:        "+",
-			tFN: func(ctx context.Context, q *DelayedQueue, start string, end string) (string, error) {
+			tFN: func(ctx context.Context, q *RedisQueue, start string, end string) (string, error) {
 				xmsgs, err := q.XRange(ctx, start, end).Result()
 				if err != nil {
 					return "", err
@@ -333,7 +332,7 @@ func TestDeleteEventDeliveryFromStream(t *testing.T) {
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
 			configFile := tc.configFile
-			eventQueue := initializeQueue(configFile, tc.queueName, t).(*DelayedQueue)
+			eventQueue := initializeQueue(configFile, tc.queueName, t).(*RedisQueue)
 			id, err := tc.tFN(context.Background(), eventQueue, tc.start, tc.end)
 			if err != nil {
 				t.Fatalf("Error: %v", err)
