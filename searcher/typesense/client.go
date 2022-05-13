@@ -111,8 +111,8 @@ func (t *Typesense) Index(collection string, document convoy.GenericMap) error {
 
 	document["data"] = data
 	document["id"] = document["_id"]
-	document["updated_at"] = document["updated_at"].(primitive.DateTime).Time().UnixMilli()
-	document["created_at"] = document["created_at"].(primitive.DateTime).Time().UnixMilli()
+	document["updated_at"] = document["updated_at"].(primitive.DateTime).Time().Unix() * 1000
+	document["created_at"] = document["created_at"].(primitive.DateTime).Time().Unix() * 1000
 
 	jsonDoc, err := json.Marshal(document)
 	if err != nil {
