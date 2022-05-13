@@ -728,7 +728,7 @@ func requestLogFields(r *http.Request) map[string]interface{} {
 	if cfg.Tracer.Type == config.NewRelicTracerProvider {
 		txn := newrelic.FromContext(r.Context()).GetLinkingMetadata()
 
-		if cfg.NewRelic.DistributedTracerEnabled {
+		if cfg.Tracer.NewRelic.DistributedTracerEnabled {
 			requestFields["traceID"] = txn.TraceID
 			requestFields["spanID"] = txn.SpanID
 		}

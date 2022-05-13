@@ -25,7 +25,7 @@ func NewTracer(cfg config.Configuration, logger *logrus.Logger) (Tracer, error) 
 
 	switch cfg.Tracer.Type {
 	case config.NewRelicTracerProvider:
-		tr, err := NewNRClient(cfg.NewRelic, logger)
+		tr, err := NewNRClient(cfg.Tracer.NewRelic, logger)
 
 		if err != nil {
 			return nil, err

@@ -21,12 +21,12 @@
   },
   "tracer": {
     "type": "new_relic"
-  },
-  "new_relic": {
+    "new_relic": {
     "license_key": "<insert-new-relic-license-key>",
     "app_name": "convoy",
     "config_enabled": true,
     "distributed_tracer_enabled": true
+    }
   },
   "server": {
     "http": {
