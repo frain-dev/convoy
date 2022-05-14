@@ -392,15 +392,18 @@ func TestApplicationHandler_CreateAppEvent(t *testing.T) {
 			name:       "valid message - disabled application",
 			cfgPath:    "./testdata/Auth_Config/no-auth-convoy.json",
 			method:     http.MethodPost,
-			statusCode: http.StatusBadRequest,
+			statusCode: http.StatusCreated,
 			body:       strings.NewReader(`{"app_id": "12345", "event_type": "test",  "data": {}}`),
 			args: args{
 				message: message,
 			},
 			dbFn: func(app *applicationHandler) {
 				c, _ := app.cache.(*mocks.MockCache)
+				q, _ := app.createEventQueue.(*mocks.MockQueuer)
 
 				c.EXPECT().Get(gomock.Any(), gomock.Any(), gomock.Any()).Times(2).Return(nil)
+
+				q.EXPECT().WriteEvent(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Times(1).Return(nil)
 
 				a, _ := app.appRepo.(*mocks.MockApplicationRepository)
 				a.EXPECT().
@@ -410,7 +413,13 @@ func TestApplicationHandler_CreateAppEvent(t *testing.T) {
 						GroupID:    groupId,
 						Title:      "Valid application",
 						IsDisabled: true,
-						Endpoints:  []datastore.Endpoint{},
+						Endpoints:  []datastore.Endpoint{
+							{
+								TargetURL: "http://localhost",
+								Status:    datastore.ActiveEndpointStatus,
+								Events:    []string{"test.event"},
+							},
+						},
 					}, nil)
 
 				o, _ := app.groupRepo.(*mocks.MockGroupRepository)
