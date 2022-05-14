@@ -1170,26 +1170,25 @@
 								Apps
 							</div>
 
-							<!-- Pending when API is ready -->
-							<!-- <div class="dropdown">
+							<div class="dropdown">
 								<button class="button__clear" (click)="group.showDropdown = !group.showDropdown">
 									<img src="/assets/img/more-horizontal.svg" alt="more" />
 								</button>
 
 								<div class="dropdown__menu dropdown__menu__nav large" [ngClass]="{ show: group.showDropdown }">
 									<ul>
-										<li>
+										<!-- <li>
 											<p>View Project</p>
-										</li>
-										<li>
+										</li> -->
+										<li (click)="showCreateProjectModal = !showCreateProjectModal">
 											<p>Project settings</p>
 										</li>
-										<li class="danger">
+										<!-- <li class="danger">
 											<p>Delete Project</p>
-										</li>
+										</li> -->
 									</ul>
 								</div>
-							</div> -->
+							</div>
 						</div>
 					</div>
 					<div class="pointer-cursor padding-top__16px overflow--hidden">
@@ -1198,5 +1197,91 @@
 				</div>
 			</li>
 		</ul>
+	</div>
+</div>
+
+<!-- create project modal -->
+<div class="modal modal__right" *ngIf="showCreateProjectModal">
+	<div class="modal--head" *ngIf="!showProjectApiKey">
+		<h1>{{ editProjectMode ? 'Edit Project' : 'Create Project' }}</h1>
+		<button class="modal--close button__clear" (click)="closeCreateProjectModal()">
+			<img src="/assets/img/modal-close-icon.svg" alt="close icon" />
+		</button>
+	</div>
+
+	<div class="modal--body" *ngIf="!showProjectApiKey">
+		<form [formGroup]="createProjectForm" (ngSubmit)="createProject()">
+			<div class="input">
+				<input type="text" id="group-name" formControlName="name" [ngClass]="{ danger: createProjectForm.controls.name.touched && createProjectForm.controls.name.invalid, editMode: editAppMode }" required />
+				<label for="group-name">Project Name</label>
+				<div class="input__error input__error__danger" *ngIf="createProjectForm.controls.name.touched && createProjectForm.controls.name.invalid">
+					<img src="assets/img/input-error-icon.svg" alt="input error icon" />
+					<span>Name is required</span>
+				</div>
+			</div>
+
+			<h3>Retry Strategy</h3>
+			<div formGroupName="strategy">
+				<div class="input">
+					<input type="number" id="interval" formControlName="interval_seconds" (keypress)="onlyNumber($event)" [ngClass]="{ editMode: editProjectMode }" required />
+					<label for="interval">Interval seconds</label>
+				</div>
+
+				<div class="input">
+					<input type="number" id="retry-limit" formControlName="limit" (keypress)="onlyNumber($event)" [ngClass]="{ editMode: editProjectMode }" required />
+					<label for="retry-limit">Retry Limit</label>
+				</div>
+			</div>
+
+			<h3>Signature</h3>
+			<div formGroupName="signature">
+				<div class="input">
+					<input type="text" id="signatur-header" formControlName="header" [ngClass]="{ editMode: editProjectMode }" required />
+					<label for="signatur-header">Header</label>
+				</div>
+
+				<div class="input">
+					<select name="hash" id="hash" formControlName="hash" [ngClass]="{ editMode: editProjectMode }" required>
+						<option value="{{ hash }}" *ngFor="let hash of hashes">{{ hash }}</option>
+					</select>
+					<label for="hash">Hash</label>
+				</div>
+			</div>
+			<h3>Disable Endpoint</h3>
+			<div class="input radio margin-top__18px">
+				<button class="button__clear flex flex__align-items-center" type="button" (click)="disableEndpoint = !disableEndpoint; updateProject()" [class]="{ active: disableEndpoint }">
+					<img [src]="!disableEndpoint ? '/assets/img/circle.svg' : '/assets/img/check-circle.svg'" [alt]="!disableEndpoint ? 'no' : 'yes'" />
+					Yes
+				</button>
+				<button class="button__clear flex flex__align-items-center" type="button" (click)="disableEndpoint = !disableEndpoint; updateProject()" [class]="{ active: !disableEndpoint }">
+					<img [src]="disableEndpoint ? '/assets/img/circle.svg' : '/assets/img/check-circle.svg'" [alt]="disableEndpoint ? 'no' : 'yes'" />
+					No
+				</button>
+			</div>
+		</form>
+	</div>
+	<div class="modal--body delete no-padding flex flex__column flex__align-items-center" *ngIf="showProjectApiKey">
+		<img src="/assets/img/success.gif" class="img" alt="success" />
+		<h2 class="font__weight-600 color__black margin-top__16px">Project Created Successfully</h2>
+		<p class="font__14px color__grey font-weight-400 text--center margin-bottom__16px margin-top__8px">Your API Key has also been created. Please copy this key and save it somewhere safe.</p>
+		<p class="font__14px color__danger margin-bottom__40px text--center">For security reasons, we cannot show it to you again</p>
+		<div class="key margin-bottom__32px">
+			<span>{{ projectApiKey }}</span>
+			<button (click)="copyKey(projectApiKey, 'secret')">
+				<img src="/assets/img/copy.svg" alt="copy" />
+				<small *ngIf="showSecretCopyText">Copied!</small>
+			</button>
+		</div>
+		<button class="button button__primary" (click)="closeCreateProjectModal(true)">Done</button>
+	</div>
+
+	<div class="modal--footer" *ngIf="!showProjectApiKey">
+		<button class="button button__white margin-right__16px" (click)="closeCreateProjectModal()">Discard</button>
+		<button class="button button__primary button--align-self button--has-icon icon-center" *ngIf="editProjectMode" [disabled]="creatingProject" (click)="createProject()">
+			{{ creatingProject ? 'Saving Changes...' : 'Save Changes' }}
+		</button>
+		<button class="button button__primary button--align-self button--has-icon icon-center" *ngIf="!editProjectMode" [disabled]="creatingProject" (click)="createProject()">
+			{{ creatingProject ? 'Creating Project...' : 'Create Project' }}
+		</button>
 	</div>
 </div>

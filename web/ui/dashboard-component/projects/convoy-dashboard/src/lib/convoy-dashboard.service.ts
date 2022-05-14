@@ -307,4 +307,57 @@ export class ConvoyDashboardService {
 			}
 		});
 	}
+
+	async createProject(
+		requestDetails: { name: string; retry: { interval_seconds: string; limit: string }; signature: { header: string; hash: string; disable_endpoint: boolean } },
+		requestOptions: { orgId: string }
+	): Promise<HTTP_RESPONSE> {
+		try {
+			const response = await this.request({
+				url: `/groups`,
+				body: requestDetails,
+				method: 'post'
+			});
+
+			return response;
+		} catch (error: any) {
+			return error;
+		}
+	}
+
+	async getHashes(): Promise<HTTP_RESPONSE> {
+		try {
+			const response = await this.request({
+				url: `/groups/hashes`,
+				method: 'get'
+			});
+
+			return response;
+		} catch (error: any) {
+			return error;
+		}
+	}
+
+	async editProject(
+		requestDetails: { name: string; retry: { interval_seconds: string; limit: string }; signature: { header: string; hash: string; disable_endpoint: boolean } },
+		requestOptions: { orgId: string; groupId: string }
+	): Promise<HTTP_RESPONSE> {
+		try {
+			const response = await this.request({
+				url: `/groups/${requestOptions.groupId}`,
+				body: requestDetails,
+				method: 'put'
+			});
+			return response;
+		} catch (error: any) {
+			return error;
+		}
+	}
+
+	onlyNumber(event: KeyboardEvent): boolean {
+		const NUMBERS = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9];
+		const ASCII_CODE = Number(event.key);
+		if (NUMBERS.includes(ASCII_CODE)) return true;
+		return false;
+	}
 }

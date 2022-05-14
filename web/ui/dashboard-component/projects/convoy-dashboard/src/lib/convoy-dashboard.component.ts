@@ -115,6 +115,14 @@ export class ConvoyDashboardComponent implements OnInit {
 	showDateFilterDropdown = false;
 	editAppMode = false;
 	loadingAppPotalToken = false;
+	showCreateProjectModal = false;
+	editProjectMode = false;
+	showProjectApiKey = false;
+	creatingProject = false;
+	disableEndpoint = false;
+	projectApiKey!: string;
+	selectedProject: any;
+	hashes: string[] = ['MD5', 'SHA1', 'SHA224', 'SHA256', 'SHA384', 'SHA512', 'SHA3_224', 'SHA3_256', 'SHA3_384', 'SHA3_512', 'SHA512_224', 'SHA512_256'];
 	@Input('apiURL') apiURL: string = '';
 	@Input('isCloud') isCloud: boolean = false;
 	@Input('groupId') groupId: string = '';
@@ -163,6 +171,18 @@ export class ConvoyDashboardComponent implements OnInit {
 	showProjectsModal = !!this.convyDashboardService.activeGroupId;
 	isLoadingProjects = false;
 	groupsLoaderIndex: number[] = [0, 1, 2, 3];
+	createProjectForm: FormGroup = this.formBuilder.group({
+		name: ['', Validators.required],
+		strategy: this.formBuilder.group({
+			interval_seconds: ['', Validators.required],
+			limit: ['', Validators.required]
+		}),
+		signature: this.formBuilder.group({
+			header: ['', Validators.required],
+			hash: ['', Validators.required]
+		}),
+		disable_endpoint: [false, Validators.required]
+	});
 
 	constructor(public convyDashboardService: ConvoyDashboardService, private router: Router, private formBuilder: FormBuilder, private route: ActivatedRoute, private datePipe: DatePipe) {}
 
@@ -254,6 +274,65 @@ export class ConvoyDashboardComponent implements OnInit {
 		});
 	}
 
+	closeCreateProjectModal(fetchProjects?: boolean) {
+		this.showCreateProjectModal = false;
+		this.editProjectMode = false;
+		if (fetchProjects) this.getGroups();
+	}
+
+	// create new project
+	async createProject() {
+		if (this.createProjectForm.invalid) {
+			(<any>Object).values(this.createProjectForm.controls).forEach((control: FormControl) => {
+				control?.markAsTouched();
+			});
+			return;
+		}
+		const orgId = localStorage.getItem('orgId');
+		this.creatingProject = true;
+		const requestOptions = {
+			orgId: `org_id=${orgId}`,
+			groupId: this.selectedProject?.id
+		};
+		try {
+			let response;
+			if (this.editProjectMode) {
+				response = await this.convyDashboardService.editProject(this.createProjectForm.value, requestOptions);
+			} else {
+				response = await this.convyDashboardService.createProject(this.createProjectForm.value, requestOptions);
+				this.projectApiKey = response.data.key;
+				this.showProjectApiKey = true;
+			}
+			this.creatingProject = false;
+		} catch (error) {
+			this.creatingProject = false;
+		}
+	}
+
+	// update create project form
+	updateProject() {
+		this.createProjectForm.patchValue({
+			name: this.selectedProject?.name,
+			strategy: {
+				interval_seconds: this.selectedProject?.config?.strategy?.default?.intervalSeconds,
+				limit: this.selectedProject?.config?.strategy?.default?.retryLimit
+			},
+			signature: {
+				header: this.selectedProject?.config?.signature?.header,
+				hash: this.selectedProject?.config?.signature?.hash
+			}
+		});
+		this.disableEndpoint = this.selectedProject?.config?.disable_endpoint;
+	}
+	// get hashes
+	async getHashes() {
+		try {
+			const response = await this.convyDashboardService.getHashes();
+			this.hashes = response.data.hashes;
+		} catch {
+			this.convyDashboardService.showNotification({ style: 'error', message: 'Unable to retrieve hashes' });
+		}
+	}
 	// create/edit new application function
 	async createNewApp() {
 		if (this.addNewAppForm.invalid) {
@@ -1244,5 +1323,9 @@ export class ConvoyDashboardComponent implements OnInit {
 			queryParams = { renderDashboard: true };
 		}
 		this.router.navigate([], { queryParams: Object.assign({}, currentURLfilters, queryParams) });
+	}
+
+	onlyNumber(event: KeyboardEvent): boolean {
+		return this.convyDashboardService.onlyNumber(event);
 	}
 }
