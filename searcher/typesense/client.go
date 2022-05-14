@@ -34,7 +34,7 @@ func NewTypesenseClient(searchConfig config.SearchConfiguration) (*Typesense, er
 	return &Typesense{client: client}, err
 }
 
-func (t *Typesense) Search(f *datastore.Filter) ([]string, datastore.PaginationData, error) {
+func (t *Typesense) Search(collection string, f *datastore.Filter) ([]string, datastore.PaginationData, error) {
 	events := make([]string, 0)
 	data := datastore.PaginationData{}
 	queryByBuilder := new(strings.Builder)
@@ -47,9 +47,10 @@ func (t *Typesense) Search(f *datastore.Filter) ([]string, datastore.PaginationD
 		filterByBuilder.WriteString(fmt.Sprintf(" && app_metadata.uid:=%s", f.Group.UID))
 	}
 
+	// CreatedAtEnd and CreatedAtStart are in epoch seconds, but the search records are indexed in milliseconds
 	filterByBuilder.WriteString(fmt.Sprintf(" && created_at:[%d..%d]", f.SearchParams.CreatedAtStart*1000, f.SearchParams.CreatedAtEnd*1000))
 
-	col, err := t.client.Collection("events").Retrieve()
+	col, err := t.client.Collection(collection).Retrieve()
 	if err != nil {
 		return events, data, err
 	}
@@ -76,7 +77,7 @@ func (t *Typesense) Search(f *datastore.Filter) ([]string, datastore.PaginationD
 		PerPage:  &f.Pageable.PerPage,
 	}
 
-	result, err := t.client.Collection("events").Documents().Search(params)
+	result, err := t.client.Collection(collection).Documents().Search(params)
 	if err != nil {
 		return events, data, err
 	}
@@ -128,6 +129,32 @@ func (t *Typesense) Index(collection string, document convoy.GenericMap) error {
 	err = json.Unmarshal([]byte(flattened), &doc)
 	if err != nil {
 		return err
+	}
+
+	var col *api.CollectionResponse
+	collections, err := t.client.Collections().Retrieve()
+	if err != nil {
+		return err
+	}
+
+	for _, c := range collections {
+		if c.Name == collection {
+			col = c
+		}
+	}
+
+	if col == nil {
+		schema := &api.CollectionSchema{
+			Name: collection,
+			Fields: []api.Field{
+				{Name: ".*", Type: "auto"},
+			},
+		}
+
+		_, err = t.client.Collections().Create(schema)
+		if err != nil {
+			return err
+		}
 	}
 
 	// import to typesense

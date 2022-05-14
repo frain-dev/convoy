@@ -12,7 +12,7 @@ func NewNoopSearcher() *NoopSearcher {
 	return &NoopSearcher{}
 }
 
-func (n *NoopSearcher) Search(filter *datastore.Filter) ([]string, datastore.PaginationData, error) {
+func (n *NoopSearcher) Search(collection string, filter *datastore.Filter) ([]string, datastore.PaginationData, error) {
 	return make([]string, 0), datastore.PaginationData{}, nil
 }
 

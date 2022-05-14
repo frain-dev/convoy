@@ -282,7 +282,7 @@ func (a *applicationHandler) GetEventsPaged(w http.ResponseWriter, r *http.Reque
 		SearchParams: searchParams,
 	}
 
-	if config.Search.Type == "typesense" {
+	if config.Search.Type == "typesense" && !util.IsStringEmpty(query) {
 		m, paginationData, err := a.eventService.Search(r.Context(), f)
 		if err != nil {
 			_ = render.Render(w, r, newErrorResponse(err.Error(), http.StatusBadRequest))

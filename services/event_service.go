@@ -122,7 +122,7 @@ func (e *EventService) GetAppEvent(ctx context.Context, id string) (*datastore.E
 
 func (e *EventService) Search(ctx context.Context, filter *datastore.Filter) ([]datastore.Event, datastore.PaginationData, error) {
 	var events []datastore.Event
-	ids, paginationData, err := e.searcher.Search(filter)
+	ids, paginationData, err := e.searcher.Search("events", filter)
 	if err != nil {
 		return events, paginationData, err
 	}
