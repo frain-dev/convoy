@@ -65,3 +65,14 @@ export interface EVENT_DELIVERY_ATTEMPT {
 	request_http_header: string;
 	error: string;
 }
+
+export interface EVENT_TYPE {
+	type: 'events' | 'eventDeliveries';
+}
+
+export interface TIME_DATA {
+	startDate: string;
+	endDate: string;
+}
+
+export interface EVENT_TIME extends EVENT_TYPE, TIME_DATA {}
