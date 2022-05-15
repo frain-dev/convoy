@@ -33,7 +33,7 @@
 				</div>
 				<div class="cards__item">
 					<h4>Convoy Cloud</h4>
-					<p>This section helps you understand how to integrate Convoy Cloud.</p>
+					<p>This section helps you understand how to integrate Convoy Cloud. This requires a Cloud account.</p>
 					<div class="cards__item__links">
 						<a href="https://convoy.readme.io/reference/introduction" target="_blank" class="with-margin">
 							<img src="~/assets/images/blue-arrow.svg" alt="arrow right" />
