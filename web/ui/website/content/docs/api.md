@@ -7,7 +7,7 @@ order: 2
 
 # API
 
-This section summarizes the changes in our open API specs in each release. These are the open API specs for v0.5.x.
+This section summarizes the changes to our Open API specs in each release. These are the open API specs for v0.5.x.
 
 [API spec v0.5.5](https://github.com/frain-dev/convoy/blob/v0.5.5/docs/v3/openapi3.json)
 

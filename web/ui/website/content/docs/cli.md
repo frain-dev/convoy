@@ -383,15 +383,7 @@ Global Flags:
 
 The `queue` command is used to debug the queue for a running cluster. 
 
-#### Sub Commands
-
-`batchcheckpending`
-
-`batchcheckstream`
-
-`batchcheckzset`
-
-# Scheduler
+## Scheduler
 
 Command: `convoy scheduler`
 
