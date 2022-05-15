@@ -11,7 +11,7 @@
 				</div>
 				<div class="cards__item">
 					<h4>Convoy Core</h4>
-					<p>A detail breakdown of Convoy, explaining some technical terms used in this documentation.</p>
+					<p>This section is for those that want to self-host Convoy. This includes Configuring and deploying an instance.</p>
 					<div class="cards__item__links">
 						<nuxt-link to="/docs/guide" class="with-margin">
 							<img src="~/assets/images/blue-arrow.svg" alt="arrow right" />
@@ -33,7 +33,7 @@
 				</div>
 				<div class="cards__item">
 					<h4>Convoy Cloud</h4>
-					<p>A detail breakdown of Convoy, explaining some technical terms used in this documentation.</p>
+					<p>This section helps you understand how to integrate Convoy Cloud.</p>
 					<div class="cards__item__links">
 						<a href="https://convoy.readme.io/reference/introduction" target="_blank" class="with-margin">
 							<img src="~/assets/images/blue-arrow.svg" alt="arrow right" />
