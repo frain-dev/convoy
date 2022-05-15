@@ -96,7 +96,7 @@ func (s *EventIntegrationTestSuite) Test_CreateAppEvent_App_has_no_endpoint() {
 
 func (s *EventIntegrationTestSuite) Test_CreateAppEvent_App_is_disabled() {
 	appID := uuid.NewString()
-	expectedStatusCode := http.StatusBadRequest
+	expectedStatusCode := http.StatusCreated
 
 	// Just Before.
 	app, _ := testdb.SeedApplication(s.DB, s.DefaultGroup, appID, "", true)
