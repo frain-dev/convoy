@@ -155,7 +155,6 @@ func (e *EventService) CountAffectedEventDeliveries(ctx context.Context, filter 
 }
 
 func (e *EventService) ForceResendEventDeliveries(ctx context.Context, ids []string, g *datastore.Group) (int, int, error) {
-	var deliveries []datastore.EventDelivery
 	deliveries, err := e.eventDeliveryRepo.FindEventDeliveriesByIDs(ctx, ids)
 	if err != nil {
 		log.WithError(err).Error("failed to fetch event deliveries by ids")

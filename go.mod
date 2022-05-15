@@ -26,6 +26,7 @@ require (
 	github.com/google/uuid v1.3.0
 	github.com/hashicorp/golang-lru v0.5.4
 	github.com/jarcoal/httpmock v1.0.8
+	github.com/jaswdr/faker v1.10.2
 	github.com/kelseyhightower/envconfig v1.4.0
 	github.com/mattn/go-colorable v0.1.11 // indirect
 	github.com/mgutz/ansi v0.0.0-20200706080929-d51e80ef957d // indirect
@@ -33,11 +34,11 @@ require (
 	github.com/newrelic/go-agent/v3/integrations/nrlogrus v1.0.1
 	github.com/newrelic/go-agent/v3/integrations/nrmongo v1.0.2
 	github.com/olekukonko/tablewriter v0.0.5
+	github.com/onsi/gomega v1.19.0 // indirect
 	github.com/pkg/errors v0.9.1
 	github.com/prometheus/client_golang v1.7.1
 	github.com/prometheus/procfs v0.6.0 // indirect
 	github.com/sebdah/goldie/v2 v2.5.3
-	github.com/sergi/go-diff v1.2.0 // indirect
 	github.com/sirupsen/logrus v1.8.1
 	github.com/slack-go/slack v0.10.2
 	github.com/spf13/cobra v1.2.1
@@ -49,7 +50,6 @@ require (
 	github.com/youmark/pkcs8 v0.0.0-20201027041543-1326539a0a0a // indirect
 	go.mongodb.org/mongo-driver v1.8.4
 	golang.org/x/crypto v0.0.0-20211215153901-e495a2d5b3d3
-	golang.org/x/text v0.3.7 // indirect
 	golang.org/x/tools v0.1.7 // indirect
 	gopkg.in/alexcesaro/quotedprintable.v3 v3.0.0-20150716171945-2caba252f4dc // indirect
 	gopkg.in/gomail.v2 v2.0.0-20160411212932-81ebce5c23df
