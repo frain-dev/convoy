@@ -118,7 +118,7 @@ func ProcessEventCreated(appRepo datastore.ApplicationRepository, eventRepo data
 					RetryLimit:      retryLimit,
 					NextSendTime:    primitive.NewDateTimeFromTime(time.Now()),
 				},
-				Status:           getEventDeliveryStatus(v),
+				Status:           getEventDeliveryStatus(v, app),
 				DeliveryAttempts: []datastore.DeliveryAttempt{},
 				DocumentStatus:   datastore.ActiveDocumentStatus,
 				CreatedAt:        primitive.NewDateTimeFromTime(time.Now()),
@@ -146,8 +146,8 @@ func ProcessEventCreated(appRepo datastore.ApplicationRepository, eventRepo data
 	}
 }
 
-func getEventDeliveryStatus(endpoint datastore.Endpoint) datastore.EventDeliveryStatus {
-	if endpoint.Status != datastore.ActiveEndpointStatus {
+func getEventDeliveryStatus(endpoint datastore.Endpoint, app *datastore.Application) datastore.EventDeliveryStatus {
+	if app.IsDisabled || endpoint.Status != datastore.ActiveEndpointStatus {
 		return datastore.DiscardedEventStatus
 	}
 

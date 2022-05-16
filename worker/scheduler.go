@@ -26,8 +26,8 @@ func RegisterNewGroupTask(applicationRepo datastore.ApplicationRepository, event
 				log.WithError(err).Error("failed to load groups")
 			}
 			for _, g := range groups {
-				pEvtDelTask := convoy.EventProcessor.SetPrefix(g.Name)
-				pEvtCrtTask := convoy.CreateEventProcessor.SetPrefix(g.Name)
+				pEvtDelTask := convoy.EventProcessor.SetPrefix(g.Name)       // process event delivery task
+				pEvtCrtTask := convoy.CreateEventProcessor.SetPrefix(g.Name) // process event create task
 
 				t, _ := disq.Tasks.LoadTask(string(pEvtCrtTask))
 				if t == nil {

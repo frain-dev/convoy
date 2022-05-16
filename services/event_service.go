@@ -76,10 +76,6 @@ func (e *EventService) CreateAppEvent(ctx context.Context, newMessage *models.Ev
 		return nil, NewServiceError(http.StatusBadRequest, errors.New("app has no configured endpoints"))
 	}
 
-	if app.IsDisabled {
-		return nil, NewServiceError(http.StatusBadRequest, errors.New("app is disabled, no events were sent"))
-	}
-
 	event := &datastore.Event{
 		UID:       uuid.New().String(),
 		EventType: datastore.EventType(newMessage.EventType),
@@ -162,7 +158,6 @@ func (e *EventService) CountAffectedEventDeliveries(ctx context.Context, filter 
 }
 
 func (e *EventService) ForceResendEventDeliveries(ctx context.Context, ids []string, g *datastore.Group) (int, int, error) {
-	var deliveries []datastore.EventDelivery
 	deliveries, err := e.eventDeliveryRepo.FindEventDeliveriesByIDs(ctx, ids)
 	if err != nil {
 		log.WithError(err).Error("failed to fetch event deliveries by ids")

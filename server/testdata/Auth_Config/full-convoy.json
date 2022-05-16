@@ -1,4 +1,5 @@
 {
+    "multiple_tenants": false,
     "queue": {
         "type": "redis",
         "redis": {
@@ -13,21 +14,17 @@
                     "username": "test",
                     "password": "test",
                     "role": {
-                        "type": "admin",
-                        "groups": [
-                            "sendcash-pay"
-                        ]
+                        "type": "super_user"
                     }
-                }
-            ],
-            "api_key": [
+                },
                 {
-                    "api_key": "avcbajbwrohw@##Q39uekvsmbvxc.fdjhd",
+                    "username": "test-group-filter",
+                    "password": "test-group-filter",
                     "role": {
-                        "type": "ui_admin",
                         "groups": [
-                            "sendcash-pay"
-                        ]
+                            "abcdef"
+                        ],
+                        "type": "super_user"
                     }
                 }
             ]

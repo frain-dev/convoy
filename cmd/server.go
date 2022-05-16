@@ -509,7 +509,7 @@ func loadServerConfigFromCliFlags(cmd *cobra.Command, c *config.Configuration) e
 	}
 
 	if !util.IsStringEmpty(newReplicApp) {
-		c.NewRelic.AppName = newReplicApp
+		c.Tracer.NewRelic.AppName = newReplicApp
 	}
 
 	// CONVOY_NEWRELIC_LICENSE_KEY
@@ -519,7 +519,7 @@ func loadServerConfigFromCliFlags(cmd *cobra.Command, c *config.Configuration) e
 	}
 
 	if !util.IsStringEmpty(newReplicKey) {
-		c.NewRelic.AppName = newReplicKey
+		c.Tracer.NewRelic.AppName = newReplicKey
 	}
 
 	// CONVOY_NEWRELIC_CONFIG_ENABLED
@@ -530,7 +530,7 @@ func loadServerConfigFromCliFlags(cmd *cobra.Command, c *config.Configuration) e
 			return err
 		}
 
-		c.NewRelic.ConfigEnabled = newReplicConfigEnabled
+		c.Tracer.NewRelic.ConfigEnabled = newReplicConfigEnabled
 	}
 
 	// CONVOY_NEWRELIC_DISTRIBUTED_TRACER_ENABLED
@@ -541,7 +541,7 @@ func loadServerConfigFromCliFlags(cmd *cobra.Command, c *config.Configuration) e
 			return err
 		}
 
-		c.NewRelic.DistributedTracerEnabled = newReplicTracerEnabled
+		c.Tracer.NewRelic.DistributedTracerEnabled = newReplicTracerEnabled
 	}
 
 	// CONVOY_REQUIRE_AUTH

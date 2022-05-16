@@ -273,7 +273,7 @@ func (db *appRepo) DeleteGroupApps(ctx context.Context, groupID string) error {
 	update := bson.M{
 		"$set": bson.M{
 			"deleted_at":      primitive.NewDateTimeFromTime(time.Now()),
-			"document_status": datastore.ActiveDocumentStatus,
+			"document_status": datastore.DeletedDocumentStatus,
 		},
 	}
 
@@ -290,7 +290,7 @@ func (db *appRepo) DeleteApplication(ctx context.Context,
 
 	updateAsDeleted := bson.D{primitive.E{Key: "$set", Value: bson.D{
 		primitive.E{Key: "deleted_at", Value: primitive.NewDateTimeFromTime(time.Now())},
-		primitive.E{Key: "document_status", Value: datastore.ActiveDocumentStatus},
+		primitive.E{Key: "document_status", Value: datastore.DeletedDocumentStatus},
 	}}}
 
 	err := db.updateMessagesInApp(ctx, app, updateAsDeleted)
