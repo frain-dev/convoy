@@ -25,6 +25,7 @@ import (
 	"github.com/frain-dev/convoy/logger"
 	"github.com/frain-dev/convoy/queue"
 	redisqueue "github.com/frain-dev/convoy/queue/redis"
+	noopsearcher "github.com/frain-dev/convoy/searcher/noop"
 	"github.com/frain-dev/convoy/tracer"
 )
 
@@ -95,12 +96,13 @@ func buildApplication() *applicationHandler {
 	logger := logger.NewNoopLogger()
 	cache := ncache.NewNoopCache()
 	limiter := nooplimiter.NewNoopLimiter()
+	searcher := noopsearcher.NewNoopSearcher()
 	tracer = nil
 
 	return newApplicationHandler(
 		eventRepo, eventDeliveryRepo, appRepo,
 		groupRepo, apiKeyRepo, eventQueue, createEventQueue,
-		logger, tracer, cache, limiter,
+		logger, tracer, cache, limiter, searcher,
 	)
 }
 
