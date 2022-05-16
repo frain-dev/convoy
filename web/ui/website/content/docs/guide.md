@@ -7,13 +7,13 @@ order: 1
 
 # Quick start guide
 
-## 1. Create Directory
+## Create Directory
 
 ```bash[bash]
 $ mkdir convoy && cd convoy
 ```
 
-## 2. Copy Configuration
+## Copy Configuration
 
 Copy the configuration file to the directory created above.
 
@@ -23,16 +23,13 @@ Copy the configuration file to the directory created above.
   "multiple_tenants": false,
   "database": {
     "type": "in-memory",
-    "dsn": "db.db"
+    "dsn": "./db"
   },
   "queue": {
     "type": "in-memory"
   },
   "server": {
     "http": {
-      "ssl": false,
-      "ssl_cert_file": "",
-      "ssl_key_file": "",
       "port": 5005
     }
   },
@@ -49,14 +46,6 @@ Copy the configuration file to the directory created above.
       }
     }
   },
-  "smtp": {
-    "provider": "sendgrid",
-    "url": "smtp.sendgrid.net",
-    "port": 2525,
-    "username": "apikey",
-    "password": "<api-key-from-sendgrid>",
-    "from": "support@frain.dev"
-  },
   "disable_endpoint": false,
   "auth": {
     "require_auth": false
@@ -64,26 +53,26 @@ Copy the configuration file to the directory created above.
 }
 ```
 
-## 3. Start Container
+## Start Container
 
 ```bash[bash]
 $ docker run \
   -p 5005:5005 \
   --name convoy-server \
   -v `pwd`/convoy.json:/convoy.json \
-  packages.getconvoy.io/frain-dev/convoy:v0.4.9
+  packages.getconvoy.io/frain-dev/convoy:v0.5.4
 ```
 
-Now, you can head over to http://localhost:5005 to view the UI, which should look something like:
+Now, you can head over to [http://localhost:5005](http://localhost:5005) to view the UI, which should look something like:
 ![convoy image](../../docs-assets/convoy-ui.png)
 
 You can check the [config page](./docs/configuration) for full details on configuration.
 
-## 4. Send Webhooks
+## Send Webhooks
 
 Now, let's send webhooks. We maintain an openapi spec in the repository, you can download it [here](https://raw.githubusercontent.com/frain-dev/convoy/main/docs/v3/openapi3.json) and import to Insomnia or Postman to get started.
 
-### 4.1 Create Application
+### Create Application
 
 ```json[Sample Payload]
 {
@@ -119,7 +108,7 @@ $ curl \
 }
 ```
 
-### 4.2 Add Endpoint
+### Add Endpoint
 
 ```json[Sample Payload]
 {
@@ -152,7 +141,7 @@ $ curl \
 }
 ```
 
-### 4.3 Send Event
+### Send Event
 
 ```json[Sample Payload]
 {
@@ -237,7 +226,7 @@ $ curl \
 }
 ```
 
-## 5. Receive Webhooks
+## Receive Webhooks
 
 Let's write a basic ruby app to receive events.
 

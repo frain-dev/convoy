@@ -26,6 +26,7 @@ require (
 	github.com/google/uuid v1.3.0
 	github.com/hashicorp/golang-lru v0.5.4
 	github.com/jarcoal/httpmock v1.0.8
+	github.com/jaswdr/faker v1.10.2
 	github.com/jeremywohl/flatten v1.0.1
 	github.com/kelseyhightower/envconfig v1.4.0
 	github.com/mattn/go-colorable v0.1.11 // indirect
@@ -34,10 +35,10 @@ require (
 	github.com/newrelic/go-agent/v3/integrations/nrlogrus v1.0.1
 	github.com/newrelic/go-agent/v3/integrations/nrmongo v1.0.2
 	github.com/olekukonko/tablewriter v0.0.5
+	github.com/onsi/gomega v1.19.0 // indirect
 	github.com/pkg/errors v0.9.1
 	github.com/prometheus/client_golang v1.7.1
 	github.com/sebdah/goldie/v2 v2.5.3
-	github.com/sergi/go-diff v1.2.0 // indirect
 	github.com/sirupsen/logrus v1.8.1
 	github.com/slack-go/slack v0.10.2
 	github.com/spf13/cobra v1.2.1

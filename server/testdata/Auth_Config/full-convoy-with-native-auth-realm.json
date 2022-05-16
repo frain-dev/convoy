@@ -6,24 +6,18 @@
             "dsn": "abc"
         }
     },
+    "base_url": "https://app.convoy.io",
     "auth": {
         "require_auth": true,
+        "native": {
+            "enabled": true
+        },
         "file": {
             "basic": [
                 {
                     "username": "test",
                     "password": "test",
                     "role": {
-                        "type": "super_user"
-                    }
-                },
-                {
-                    "username": "test-group-filter",
-                    "password": "test-group-filter",
-                    "role": {
-                        "groups": [
-                            "abcdef"
-                        ],
                         "type": "super_user"
                     }
                 }
