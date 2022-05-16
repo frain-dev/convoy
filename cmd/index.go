@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 
+	"github.com/frain-dev/convoy"
 	"github.com/frain-dev/convoy/config"
 	m "github.com/frain-dev/convoy/datastore/mongo"
 	"github.com/spf13/cobra"
@@ -13,11 +14,15 @@ func addIndexCommand(a *app) *cobra.Command {
 
 	cmd := &cobra.Command{
 		Use:   "index",
-		Short: "Start indexer",
+		Short: "Starts events search indexer",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			cfg, err := config.Get()
 			if err != nil {
 				return err
+			}
+
+			if cfg.Database.Type != "mongodb" {
+				return convoy.ErrUnsupportedDatebase
 			}
 
 			client, err := m.New(cfg)
@@ -38,14 +43,14 @@ func addIndexCommand(a *app) *cobra.Command {
 			for {
 				ok := cs.Next(ctx)
 				if ok {
-					var document *map[string]interface{}
+					var document *convoy.GenericMap
 					err := cs.Decode(&document)
 					if err != nil {
 						return err
 					}
 
 					if (*document)["operationType"].(string) == "insert" {
-						doc := (*document)["fullDocument"].(map[string]interface{})
+						doc := (*document)["fullDocument"].(convoy.GenericMap)
 						err := a.searcher.Index("events", doc)
 						if err != nil {
 							return err

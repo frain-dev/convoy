@@ -17,7 +17,6 @@ import (
 	"github.com/frain-dev/convoy/auth/realm_chain"
 	nooplimiter "github.com/frain-dev/convoy/limiter/noop"
 	"github.com/frain-dev/convoy/logger"
-	noopsearcher "github.com/frain-dev/convoy/searcher/noop"
 
 	"github.com/frain-dev/convoy/config"
 	"github.com/frain-dev/convoy/datastore"
@@ -151,7 +150,7 @@ func provideApplication(ctrl *gomock.Controller) *applicationHandler {
 	apiKeyRepo := mocks.NewMockAPIKeyRepository(ctrl)
 	cache := mocks.NewMockCache(ctrl)
 	limiter := nooplimiter.NewNoopLimiter()
-	searcher := noopsearcher.NewNoopSearcher()
+	searcher := mocks.NewMockSearcher(ctrl)
 	return newApplicationHandler(eventRepo, eventDeliveryRepo, appRepo, groupRepo, apiKeyRepo, eventQueue, createEventQueue, logger, tracer, cache, limiter, searcher)
 }
 

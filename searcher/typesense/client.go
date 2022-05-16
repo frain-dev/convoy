@@ -20,10 +20,10 @@ type Typesense struct {
 	client *typesense.Client
 }
 
-func NewTypesenseClient(searchConfig config.SearchConfiguration) (*Typesense, error) {
+func NewTypesenseClient(c config.Configuration) (*Typesense, error) {
 	client := typesense.NewClient(
-		typesense.WithServer(searchConfig.Typesense.Host),
-		typesense.WithAPIKey(searchConfig.Typesense.ApiKey),
+		typesense.WithServer(c.Search.Typesense.Host),
+		typesense.WithAPIKey(c.Search.Typesense.ApiKey),
 	)
 
 	_, err := client.Health(5 * time.Second)

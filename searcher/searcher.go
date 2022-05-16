@@ -13,9 +13,13 @@ type Searcher interface {
 	Index(collection string, document convoy.GenericMap) error
 }
 
-func NewSearchClient(searchConfig config.SearchConfiguration) (Searcher, error) {
-	if searchConfig.Type == config.SearchProvider("typesense") {
-		client, err := typesense.NewTypesenseClient(searchConfig)
+func NewSearchClient(c config.Configuration) (Searcher, error) {
+	if c.Search.Type == config.SearchProvider("typesense") {
+		if c.Database.Type != "mongodb" {
+			return nil, convoy.ErrUnsupportedDatebase
+		}
+
+		client, err := typesense.NewTypesenseClient(c)
 		return client, err
 	}
 

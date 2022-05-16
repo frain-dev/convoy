@@ -2,6 +2,7 @@ package convoy
 
 import (
 	"embed"
+	"fmt"
 	"strings"
 )
 
@@ -85,3 +86,5 @@ const (
 	//Size of the internal buffer
 	BufferSize = 100000
 )
+
+var ErrUnsupportedDatebase = fmt.Errorf("unsupported database for search detected, remove search configuration or use a supported database (mongodb)")

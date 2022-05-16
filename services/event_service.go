@@ -124,12 +124,14 @@ func (e *EventService) Search(ctx context.Context, filter *datastore.Filter) ([]
 	var events []datastore.Event
 	ids, paginationData, err := e.searcher.Search("events", filter)
 	if err != nil {
-		return events, paginationData, err
+		log.WithError(err).Error("failed to fetch events from search backend")
+		return nil, datastore.PaginationData{}, NewServiceError(http.StatusBadRequest, err)
 	}
 
 	events, err = e.eventRepo.FindEventsByIDs(ctx, ids)
 	if err != nil {
-		return events, paginationData, err
+		log.WithError(err).Error("failed to fetch events from event ids")
+		return nil, datastore.PaginationData{}, NewServiceError(http.StatusBadRequest, err)
 	}
 
 	return events, paginationData, err

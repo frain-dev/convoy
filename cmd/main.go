@@ -291,7 +291,7 @@ func preRun(app *app, db datastore.DatabaseClient) func(cmd *cobra.Command, args
 			return err
 		}
 
-		se, err := searcher.NewSearchClient(cfg.Search)
+		se, err := searcher.NewSearchClient(cfg)
 		if err != nil {
 			return err
 		}
