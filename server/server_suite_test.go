@@ -63,15 +63,14 @@ func getDB() datastore.DatabaseClient {
 
 func getQueueOptions(name string) (queue.QueueOptions, error) {
 	var opts queue.QueueOptions
-	rC, qFn, err := redisqueue.NewClient(getConfig())
+	rC, err := redisqueue.NewClient(getConfig())
 	if err != nil {
 		return opts, err
 	}
 	opts = queue.QueueOptions{
-		Type:    "redis",
-		Name:    name,
-		Redis:   rC,
-		Factory: qFn,
+		Type:  "redis",
+		Name:  name,
+		Redis: rC,
 	}
 
 	return opts, nil
