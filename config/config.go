@@ -86,7 +86,8 @@ type LoggerConfiguration struct {
 }
 
 type TracerConfiguration struct {
-	Type TracerProvider `json:"type" envconfig:"CONVOY_TRACER_PROVIDER"`
+	Type     TracerProvider        `json:"type" envconfig:"CONVOY_TRACER_PROVIDER"`
+	NewRelic NewRelicConfiguration `json:"new_relic"`
 }
 
 type CacheConfiguration struct {
@@ -137,7 +138,6 @@ type Configuration struct {
 	MultipleTenants bool                  `json:"multiple_tenants"`
 	Logger          LoggerConfiguration   `json:"logger"`
 	Tracer          TracerConfiguration   `json:"tracer"`
-	NewRelic        NewRelicConfiguration `json:"new_relic"`
 	Cache           CacheConfiguration    `json:"cache"`
 	Limiter         LimiterConfiguration  `json:"limiter"`
 	BaseUrl         string                `json:"base_url" envconfig:"CONVOY_BASE_URL"`
@@ -428,8 +428,8 @@ func overrideConfigWithEnvVars(c *Configuration, override *Configuration) {
 	}
 
 	// CONVOY_NEWRELIC_APP_NAME
-	if !IsStringEmpty(override.NewRelic.AppName) {
-		c.NewRelic.AppName = override.NewRelic.AppName
+	if !IsStringEmpty(override.Tracer.NewRelic.AppName) {
+		c.Tracer.NewRelic.AppName = override.Tracer.NewRelic.AppName
 	}
 
 	// CONVOY_SEARCH_TYPE
@@ -448,8 +448,8 @@ func overrideConfigWithEnvVars(c *Configuration, override *Configuration) {
 	}
 
 	// CONVOY_NEWRELIC_LICENSE_KEY
-	if !IsStringEmpty(override.NewRelic.LicenseKey) {
-		c.NewRelic.LicenseKey = override.NewRelic.LicenseKey
+	if !IsStringEmpty(override.Tracer.NewRelic.LicenseKey) {
+		c.Tracer.NewRelic.LicenseKey = override.Tracer.NewRelic.LicenseKey
 	}
 
 	// CONVOY_API_KEY_CONFIG
@@ -481,7 +481,7 @@ func overrideConfigWithEnvVars(c *Configuration, override *Configuration) {
 	}
 
 	if _, ok := os.LookupEnv("CONVOY_NEWRELIC_CONFIG_ENABLED"); ok {
-		c.NewRelic.ConfigEnabled = override.NewRelic.ConfigEnabled
+		c.Tracer.NewRelic.ConfigEnabled = override.Tracer.NewRelic.ConfigEnabled
 	}
 
 	if _, ok := os.LookupEnv("CONVOY_REQUIRE_AUTH"); ok {

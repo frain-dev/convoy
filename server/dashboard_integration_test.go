@@ -7,39 +7,54 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"github.com/frain-dev/convoy/server/testdb"
+	"github.com/stretchr/testify/suite"
 	"net/http"
 	"net/http/httptest"
-	"os"
 	"testing"
 	"time"
 
-	"github.com/google/uuid"
-
-	mcache "github.com/frain-dev/convoy/cache/memory"
 	"github.com/frain-dev/convoy/config"
 	"github.com/frain-dev/convoy/datastore"
-	mongoStore "github.com/frain-dev/convoy/datastore/mongo"
-	"github.com/golang/mock/gomock"
+	"github.com/google/uuid"
+	"github.com/sebdah/goldie/v2"
 	log "github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/require"
 	"go.mongodb.org/mongo-driver/bson/primitive"
-	"go.mongodb.org/mongo-driver/mongo"
 )
 
-func TestGetDashboardSummary(t *testing.T) {
-	ctrl := gomock.NewController(t)
-	defer ctrl.Finish()
-	app := provideApplication(ctrl)
+type DashboardIntegrationTestSuite struct {
+	suite.Suite
+	DB           datastore.DatabaseClient
+	Router       http.Handler
+	ConvoyApp    *applicationHandler
+	DefaultGroup *datastore.Group
+}
 
-	db, closeFn := getDB(t)
-	defer closeFn()
+func (s *DashboardIntegrationTestSuite) SetupSuite() {
+	s.DB = getDB()
+	s.ConvoyApp = buildApplication()
+	s.Router = buildRoutes(s.ConvoyApp)
+}
 
-	app.groupRepo = mongoStore.NewGroupRepo(db)
-	app.appRepo = mongoStore.NewApplicationRepo(db)
-	app.eventRepo = mongoStore.NewEventRepository(db)
-	app.groupRepo = mongoStore.NewGroupRepo(db)
-	app.cache = mcache.NewMemoryCache()
+func (s *DashboardIntegrationTestSuite) SetupTest() {
+	testdb.PurgeDB(s.DB)
 
+	// Setup Default Group.
+	s.DefaultGroup, _ = testdb.SeedDefaultGroup(s.DB)
+
+	// Setup Config.
+	err := config.LoadConfig("./testdata/Auth_Config/full-convoy.json")
+	require.NoError(s.T(), err)
+
+	initRealmChain(s.T(), s.DB.APIRepo())
+}
+
+func (s *DashboardIntegrationTestSuite) TearDownTest() {
+	testdb.PurgeDB(s.DB)
+}
+
+func (s *DashboardIntegrationTestSuite) TestGetDashboardSummary() {
 	group := &datastore.Group{
 		UID:               uuid.New().String(),
 		Name:              "test-group",
@@ -51,8 +66,8 @@ func TestGetDashboardSummary(t *testing.T) {
 	}
 
 	ctx := context.Background()
-	err := app.groupRepo.CreateGroup(ctx, group)
-	require.NoError(t, err)
+	err := s.DB.GroupRepo().CreateGroup(ctx, group)
+	require.NoError(s.T(), err)
 
 	application := &datastore.Application{
 		UID:            "abc",
@@ -65,8 +80,8 @@ func TestGetDashboardSummary(t *testing.T) {
 		DocumentStatus: datastore.ActiveDocumentStatus,
 	}
 
-	err = app.appRepo.CreateApplication(ctx, application)
-	require.NoError(t, err)
+	err = s.DB.AppRepo().CreateApplication(ctx, application)
+	require.NoError(s.T(), err)
 
 	events := []datastore.Event{
 		{
@@ -168,8 +183,8 @@ func TestGetDashboardSummary(t *testing.T) {
 	}
 
 	for i := range events {
-		err = app.eventRepo.CreateEvent(ctx, &events[i])
-		require.NoError(t, err)
+		err = s.DB.EventRepo().CreateEvent(ctx, &events[i])
+		require.NoError(s.T(), err)
 	}
 
 	type urlQuery struct {
@@ -274,18 +289,17 @@ func TestGetDashboardSummary(t *testing.T) {
 		},
 	}
 	for _, tc := range tests {
-		t.Run(tc.name, func(t *testing.T) {
+		s.T().Run(tc.name, func(t *testing.T) {
 			err := config.LoadConfig("./testdata/Auth_Config/none-convoy.json")
 			if err != nil {
 				t.Errorf("Failed to load config file: %v", err)
 			}
-			initRealmChain(t, app.apiKeyRepo)
+			initRealmChain(t, s.DB.APIRepo())
 
 			req := httptest.NewRequest(tc.method, fmt.Sprintf("/ui/dashboard/summary?startDate=%s&endDate=%s&type=%s&groupId=%s", tc.urlQuery.startDate, tc.urlQuery.endDate, tc.urlQuery.Type, tc.urlQuery.groupID), nil)
 			w := httptest.NewRecorder()
 
-			router := buildRoutes(app)
-			router.ServeHTTP(w, req)
+			s.Router.ServeHTTP(w, req)
 
 			if w.Code != tc.statusCode {
 				log.Error(tc.name, w.Body)
@@ -297,30 +311,14 @@ func TestGetDashboardSummary(t *testing.T) {
 	}
 }
 
-func getDSN() string {
-	return os.Getenv("TEST_MONGO_DSN")
+func TestDashboardIntegrationTestSuiteTest(t *testing.T) {
+	suite.Run(t, new(DashboardIntegrationTestSuite))
 }
 
-func getConfig() config.Configuration {
-
-	return config.Configuration{
-		Database: config.DatabaseConfiguration{
-			Type: config.MongodbDatabaseProvider,
-			Dsn:  getDSN(),
-		},
-	}
-}
-
-func getDB(t *testing.T) (*mongo.Database, func()) {
-
-	db, err := mongoStore.New(getConfig())
-	require.NoError(t, err)
-
-	err = os.Setenv("TZ", "") // Use UTC by default :)
-	require.NoError(t, err)
-
-	return db.Client().(*mongo.Database), func() {
-		require.NoError(t, db.Client().(*mongo.Database).Drop(context.Background()))
-		require.NoError(t, db.Disconnect(context.Background()))
-	}
+func verifyMatch(t *testing.T, w httptest.ResponseRecorder) {
+	g := goldie.New(
+		t,
+		goldie.WithDiffEngine(goldie.ColoredDiff),
+	)
+	g.Assert(t, t.Name(), w.Body.Bytes())
 }

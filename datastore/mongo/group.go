@@ -111,7 +111,7 @@ func (db *groupRepo) DeleteGroup(ctx context.Context, uid string) error {
 	update := bson.M{
 		"$set": bson.M{
 			"deleted_at":      primitive.NewDateTimeFromTime(time.Now()),
-			"document_status": datastore.ActiveDocumentStatus,
+			"document_status": datastore.DeletedDocumentStatus,
 		},
 	}
 
