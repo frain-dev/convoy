@@ -128,7 +128,7 @@ func (c *Client) ensureIndex(collectionName string, field string, unique bool, p
 	}
 
 	mod := mongo.IndexModel{
-		Keys:    bson.M{field: 1}, // index in ascending order or -1 for descending order
+		Keys:    bson.E{Key: field, Value: 1}, // index in ascending order or -1 for descending order
 		Options: createIndexOpts,
 	}
 
