@@ -73,14 +73,11 @@ const (
 )
 
 const (
-	StreamGroup           = "taskq"
+	StreamGroup           = "disq:"
 	EventDeliveryIDLength = 12
 )
 
 const (
-	MaxNumWorkers = 1000
-	// Maximum number of goroutines fetching messages
-	MaxNumFetcher = 10
 	// Number of messages reserved by a fetcher in the queue in one request.
 	ReservationSize = 1000
 	//Size of the internal buffer

@@ -92,13 +92,16 @@ func (e *EventService) CreateAppEvent(ctx context.Context, newMessage *models.Ev
 		},
 		DocumentStatus: datastore.ActiveDocumentStatus,
 	}
-
 	if g.Config.Strategy.Type != config.DefaultStrategyProvider && g.Config.Strategy.Type != config.ExponentialBackoffStrategyProvider {
 		return nil, NewServiceError(http.StatusBadRequest, errors.New("retry strategy not defined in configuration"))
 	}
 
 	taskName := convoy.CreateEventProcessor.SetPrefix(g.Name)
-	err = e.createEventQueue.WriteEvent(context.Background(), taskName, event, 1*time.Second)
+	job := &queue.Job{
+		ID:    event.UID,
+		Event: event,
+	}
+	err = e.createEventQueue.Publish(context.Background(), taskName, job, 0)
 	if err != nil {
 		log.Errorf("Error occurred sending new event to the queue %s", err)
 	}
@@ -282,7 +285,10 @@ func (e *EventService) requeueEventDelivery(ctx context.Context, eventDelivery *
 	}
 
 	taskName := convoy.EventProcessor.SetPrefix(g.Name)
-	err = e.eventQueue.WriteEventDelivery(context.Background(), taskName, eventDelivery, 1*time.Second)
+	job := &queue.Job{
+		ID: eventDelivery.UID,
+	}
+	err = e.eventQueue.Publish(context.Background(), taskName, job, 1*time.Second)
 	if err != nil {
 		return fmt.Errorf("error occurred re-enqueing old event - %s: %v", eventDelivery.UID, err)
 	}

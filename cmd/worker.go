@@ -6,6 +6,7 @@ import (
 	"net/http"
 
 	"github.com/frain-dev/convoy/config"
+	"github.com/frain-dev/convoy/queue"
 	"github.com/frain-dev/convoy/server"
 	"github.com/frain-dev/convoy/worker"
 	"github.com/go-chi/chi/v5"
@@ -28,20 +29,12 @@ func addWorkerCommand(a *app) *cobra.Command {
 			}
 
 			worker.RegisterNewGroupTask(a.applicationRepo, a.eventDeliveryRepo, a.groupRepo, a.limiter, a.eventRepo, a.cache, a.eventQueue)
-			// register workers.
+			// register worker.
 			ctx := context.Background()
-			eventCreationProducer := worker.NewProducer(a.createEventQueue)
-			if cfg.Queue.Type != config.InMemoryQueueProvider {
-				eventCreationProducer.Start(ctx)
-			}
+			producer := worker.NewProducer([]queue.Queuer{a.eventQueue, a.createEventQueue})
+			producer.Start(ctx)
 
-			producer := worker.NewProducer(a.eventQueue)
-			if cfg.Queue.Type != config.InMemoryQueueProvider {
-				producer.Start(ctx)
-
-			}
-
-			worker.RegisterWorkerMetrics(a.eventQueue, cfg)
+			server.RegisterConsumerMetrics(a.eventQueue, cfg)
 			server.RegisterQueueMetrics(a.eventQueue, cfg)
 
 			router := chi.NewRouter()

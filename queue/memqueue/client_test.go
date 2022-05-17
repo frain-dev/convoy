@@ -1,6 +1,3 @@
-//go:build integration
-// +build integration
-
 package memqueue
 
 import (
@@ -8,10 +5,8 @@ import (
 	"testing"
 
 	"github.com/frain-dev/convoy"
-	"github.com/frain-dev/convoy/config"
 	"github.com/frain-dev/convoy/datastore"
 	"github.com/frain-dev/convoy/queue"
-	"github.com/frain-dev/taskq/v3"
 	"github.com/google/uuid"
 )
 
@@ -49,10 +44,13 @@ func TestWrite(t *testing.T) {
 					UID: tc.appID,
 				},
 			}
+			job := &queue.Job{
+				ID: eventDelivery.UID,
+			}
 			taskName := convoy.TaskName(uuid.NewString())
 			configFile := tc.configFile
 			eventQueue := initializeQueue(configFile, tc.queueName, t)
-			err := eventQueue.WriteEventDelivery(context.TODO(), taskName, eventDelivery, 0)
+			err := eventQueue.Publish(context.TODO(), taskName, job, 0)
 			if err != nil {
 				t.Fatalf("Failed to write to queue: %v", err)
 			}
@@ -73,49 +71,26 @@ func TestConsumer(t *testing.T) {
 			name:       "Consumer already started",
 			queueName:  uuid.NewString(),
 			configFile: "../testdata/convoy_memqueue.json",
-			err:        "taskq: Consumer is already started",
 		},
 	}
 
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
 			configFile := tc.configFile
-
+			ctx := context.Background()
 			eventQueue := initializeQueue(configFile, tc.queueName, t)
-			err := eventQueue.Consumer().Start(context.TODO())
+			err := eventQueue.Consume(ctx)
 			if err != nil {
-				if err.Error() != tc.err {
-					t.Fatalf("Expected: %v, got: %s", tc.err, err)
-				}
+				t.Fatalf("Failed to start consumer: %v", err)
 			}
 		})
 	}
 }
 
 func initializeQueue(configFile string, name string, t *testing.T) queue.Queuer {
-	err := config.LoadConfig(configFile)
-	if err != nil {
-		t.Fatalf("Failed to load config file: %v", err)
-	}
-	cfg, err := config.Get()
-	if err != nil {
-		t.Fatalf("Failed to get config: %v", err)
-
-	}
-
-	var qFn taskq.Factory
-	var lS queue.Storage
-	var opts queue.QueueOptions
-
-	lS, qFn, err = NewClient(cfg)
-	if err != nil {
-		t.Fatalf("Failed to load new client: %v", err)
-	}
-	opts = queue.QueueOptions{
-		Name:    name,
-		Type:    "in-memory",
-		Storage: lS,
-		Factory: qFn,
+	opts := queue.QueueOptions{
+		Name: name,
+		Type: "in-memory",
 	}
 
 	eventQueue := NewQueue(opts)

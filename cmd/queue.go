@@ -12,8 +12,10 @@ import (
 
 	"github.com/frain-dev/convoy"
 	"github.com/frain-dev/convoy/config"
+	"github.com/frain-dev/convoy/queue"
 	redisqueue "github.com/frain-dev/convoy/queue/redis"
 	"github.com/frain-dev/convoy/util"
+	disqRedis "github.com/frain-dev/disq/brokers/redis"
 	"github.com/google/uuid"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
@@ -47,7 +49,7 @@ func purge(a *app) *cobra.Command {
 		Short: "purge queue",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			q := a.eventQueue
-			err := q.Consumer().Queue().Purge()
+			err := q.Broker().(*disqRedis.Stream).Purge()
 			if err != nil {
 				return err
 			}
@@ -72,7 +74,7 @@ func getQueueLength(a *app) *cobra.Command {
 			for {
 				select {
 				case <-ticker.C:
-					length, err := q.Consumer().Queue().Len()
+					length, err := q.Broker().Len()
 					if err != nil {
 						log.Printf("Error getting queue length: %v", err)
 					}
@@ -599,7 +601,10 @@ func requeueMessagesinStream(a *app) *cobra.Command {
 						continue
 					}
 					taskName := convoy.EventProcessor.SetPrefix(group.Name)
-					err = q.WriteEventDelivery(ctx, taskName, d, 1*time.Second)
+					job := &queue.Job{
+						ID: d.UID,
+					}
+					err = q.Publish(ctx, taskName, job, 1*time.Second)
 					if err != nil {
 						log.WithError(err).Errorf("count: %s failed to send event delivery %s to the queue", fmt.Sprint(i), d.ID)
 					}
