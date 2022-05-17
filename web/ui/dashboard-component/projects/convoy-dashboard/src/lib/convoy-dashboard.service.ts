@@ -308,10 +308,7 @@ export class ConvoyDashboardService {
 		});
 	}
 
-	async createProject(
-		requestDetails: { name: string; retry: { interval_seconds: string; limit: string }; signature: { header: string; hash: string; disable_endpoint: boolean } },
-		requestOptions: { orgId: string }
-	): Promise<HTTP_RESPONSE> {
+	async createProject(requestDetails: any): Promise<HTTP_RESPONSE> {
 		try {
 			const response = await this.request({
 				url: `/groups`,
@@ -339,8 +336,13 @@ export class ConvoyDashboardService {
 	}
 
 	async editProject(
-		requestDetails: { name: string; retry: { interval_seconds: string; limit: string }; signature: { header: string; hash: string; disable_endpoint: boolean } },
-		requestOptions: { orgId: string; groupId: string }
+		requestDetails: {
+			name: string;
+			config: { strategy: { type: string; default: { interval_seconds: string; limit: string } }; signature: { header: string; hash: string }; disable_endpoint: boolean };
+			rate_limit: string;
+			rate_limit_duration: string;
+		},
+		requestOptions: { groupId: string }
 	): Promise<HTTP_RESPONSE> {
 		try {
 			const response = await this.request({

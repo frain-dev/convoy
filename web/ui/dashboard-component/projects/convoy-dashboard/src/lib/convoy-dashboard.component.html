@@ -70,7 +70,7 @@
 
 			<ng-container *ngIf="!isCloud">
 				<div class="flex flex__align-items-center">
-					<div>Active Group:</div>
+					<div>Active Project:</div>
 					<button class="button button__filter button--has-icon icon-right margin-left__16px flex flex__align-items-center flex__justify-between group-dropdown" (click)="showProjectsModal = true">
 						<span class="color__primary has-ellipsis">{{ selectedGroupName() }}</span>
 						<img src="/assets/img/angle-arrow-down.svg" alt="arrow down icon" />
@@ -572,9 +572,13 @@
 						</div>
 					</div>
 
-					<div class="empty-state table--container" id="events-empty-state" *ngIf="displayedEvents?.length === 0 && activeTab === 'events'">
-						<img src="/assets/img/empty-state-img.svg" alt="empty state" />
-						<p>No event to show here</p>
+					<div
+						class="flex flex__column flex__justify-center flex__align-items-center table--container"
+						id="events-empty-state"
+						*ngIf="displayedEvents?.length === 0 && activeTab === 'events'"
+					>
+						<img src="/assets/img/empty-state.svg" alt="empty state" class="empty-state-img" />
+						<p class="font__14px font__weight-600 margin-top__0px color__black width__20 text--center">No event to show here</p>
 					</div>
 
 					<convoy-table-loader id="event_deliveries_loader" [tableHead]="eventDelTableHead" *ngIf="isloadingEventDeliveries && activeTab === 'event deliveries'"></convoy-table-loader>
@@ -665,9 +669,13 @@
 						</div>
 					</div>
 
-					<div class="empty-state table--container" id="event-deliveries-empty-state" *ngIf="displayedEventDeliveries.length === 0 && activeTab === 'event deliveries'">
-						<img src="/assets/img/empty-state-img.svg" alt="empty state" />
-						<p>No event to show here</p>
+					<div
+						class="flex flex__column flex__justify-center flex__align-items-center table--container"
+						id="event-deliveries-empty-state"
+						*ngIf="displayedEventDeliveries.length === 0 && activeTab === 'event deliveries'"
+					>
+						<img src="/assets/img/empty-state.svg" alt="empty state" class="empty-state-img" />
+						<p class="font__14px font__weight-600 margin-top__0px color__black width__20 text--center">No event to show here</p>
 					</div>
 
 					<convoy-table-loader id="apps_loader" [tableHead]="appsTableHead" *ngIf="isloadingApps && activeTab === 'apps'"></convoy-table-loader>
@@ -764,9 +772,9 @@
 						</div>
 					</div>
 
-					<div class="empty-state table--container" id="apps-empty-state" *ngIf="displayedApps?.length === 0 && activeTab === 'apps'">
-						<img src="/assets/img/empty-state-img.svg" alt="empty state" />
-						<p>No app to show here</p>
+					<div class="flex flex__column flex__justify-center flex__align-items-center table--container" id="apps-empty-state" *ngIf="displayedApps?.length === 0 && activeTab === 'apps'">
+						<img src="/assets/img/empty-state.svg" alt="empty state" class="empty-state-img" />
+						<p class="font__14px margin-top__0px font__weight-600 width__20 text--center color__black">No app has been created for your project yet.</p>
 					</div>
 				</div>
 
@@ -850,6 +858,7 @@
 	*ngIf="showOverlay"
 	(click)="
 		currentAppId = '';
+		currentProjectId = '';
 		showOverlay = false;
 		showEventDeliveriesStatusDropdown = false;
 		showEventDeliveriesAppsDropdown = false;
@@ -866,8 +875,17 @@
 <!-- dark overlay  -->
 <div
 	class="_overlay"
-	*ngIf="showBatchRetryModal || showCreateAppModal || showAddEndpointModal || showAddEventModal || showDeleteAppModal || showEndpointSecret || showProjectsModal"
-	(click)="showCreateAppModal = false; showBatchRetryModal = false; showAddEndpointModal = false; showAddEventModal = false; showDeleteAppModal = false; showEndpointSecret = false; showProjectsModal = false"
+	*ngIf="showBatchRetryModal || showCreateAppModal || showAddEndpointModal || showAddEventModal || showDeleteAppModal || showEndpointSecret || showProjectsModal || showCreateProjectModal"
+	(click)="
+		showCreateAppModal = false;
+		showBatchRetryModal = false;
+		showAddEndpointModal = false;
+		showAddEventModal = false;
+		showDeleteAppModal = false;
+		showEndpointSecret = false;
+		showProjectsModal = false;
+		showCreateProjectModal = false
+	"
 ></div>
 
 <!-- create app, add new endpoint, add event modals  -->
@@ -1121,12 +1139,19 @@
 <!-- projects modal  -->
 <div class="modal modal__center projects-modal width-unset-max" *ngIf="showProjectsModal">
 	<div class="modal--body padding-all__40px">
-		<h3 class="margin-bottom__8px">Select a project</h3>
-		<p class="margin-bottom__32px color__grey font__14px">All your project's summary at a glance</p>
-		<button class="close rounded__6px padding-all__10px border--none flex" *ngIf="convyDashboardService.activeGroupId" (click)="showProjectsModal = false">
-			<img src="/assets/img/close-icon-grey.svg" alt="close icon" />
-		</button>
+		<!-- <div class="flex flex__justify-end">
+			<button class="close rounded__6px padding-all__10px border--none flex" *ngIf="convyDashboardService.activeGroupId" (click)="showProjectsModal = false">
+				<img src="/assets/img/close-icon-grey.svg" alt="close icon" />
+			</button>
+		</div> -->
 
+		<div class="flex flex__align-items-center flex__justify-between margin-bottom__32px">
+			<div>
+				<h3 class="margin-bottom__8px">Select a project</h3>
+				<p class="color__grey font__14px">All your project's summary at a glance</p>
+			</div>
+			<button class="button button__primary button__small" (click)="showCreateProjectModal = !showCreateProjectModal; showProjectsModal = false">Create Project</button>
+		</div>
 		<ul class="grid grid__col-3--smaller" *ngIf="isLoadingProjects">
 			<li *ngFor="let index of groupsLoaderIndex">
 				<div class="card rounded__8px border__all bg__white">
@@ -1152,9 +1177,12 @@
 		</ul>
 
 		<ul class="grid grid__col-3--smaller" *ngIf="!isLoadingProjects">
-			<li *ngFor="let group of groups" (click)="convyDashboardService.activeGroupId = group.uid; toggleActiveGroup(); showProjectsModal = false">
+			<li *ngFor="let group of groups">
 				<div class="card rounded__8px border__all bg__white">
-					<div class="padding-x__24px padding-top__24px padding-bottom__14px border__bottom">
+					<div
+						class="padding-x__12px padding-top__24px padding-bottom__14px border__bottom pointer-cursor"
+						(click)="convyDashboardService.activeGroupId = group.uid; toggleActiveGroup(); showProjectsModal = false"
+					>
 						<h4 class="pointer-cursor">{{ group.name }}</h4>
 					</div>
 
@@ -1171,17 +1199,17 @@
 							</div>
 
 							<div class="dropdown">
-								<button class="button__clear" (click)="group.showDropdown = !group.showDropdown">
+								<button class="button__clear" (click)="currentProjectId = group.uid; showOverlay = true">
 									<img src="/assets/img/more-horizontal.svg" alt="more" />
 								</button>
 
-								<div class="dropdown__menu dropdown__menu__nav large" [ngClass]="{ show: group.showDropdown }">
+								<div class="dropdown__menu dropdown__menu__nav small" [ngClass]="{ show: currentProjectId == group.uid }">
 									<ul>
-										<!-- <li>
+										<li (click)="convyDashboardService.activeGroupId = group.uid; toggleActiveGroup(); showProjectsModal = false">
 											<p>View Project</p>
-										</li> -->
-										<li (click)="showCreateProjectModal = !showCreateProjectModal">
-											<p>Project settings</p>
+										</li>
+										<li (click)="showCreateProjectModal = !showCreateProjectModal; showProjectsModal = false; editProjectMode = true; selectedProject = group; updateProject()">
+											<p>Edit Project</p>
 										</li>
 										<!-- <li class="danger">
 											<p>Delete Project</p>
@@ -1191,7 +1219,7 @@
 							</div>
 						</div>
 					</div>
-					<div class="pointer-cursor padding-top__16px overflow--hidden">
+					<div class="pointer-cursor padding-top__16px overflow--hidden" (click)="convyDashboardService.activeGroupId = group.uid; toggleActiveGroup(); showProjectsModal = false">
 						<img src="/assets/img/chart-icon.svg" alt="graph icon" />
 					</div>
 				</div>
@@ -1202,17 +1230,23 @@
 
 <!-- create project modal -->
 <div class="modal modal__right" *ngIf="showCreateProjectModal">
-	<div class="modal--head" *ngIf="!showProjectApiKey">
+	<div class="modal--head">
 		<h1>{{ editProjectMode ? 'Edit Project' : 'Create Project' }}</h1>
 		<button class="modal--close button__clear" (click)="closeCreateProjectModal()">
 			<img src="/assets/img/modal-close-icon.svg" alt="close icon" />
 		</button>
 	</div>
 
-	<div class="modal--body" *ngIf="!showProjectApiKey">
+	<div class="modal--body">
 		<form [formGroup]="createProjectForm" (ngSubmit)="createProject()">
 			<div class="input">
-				<input type="text" id="group-name" formControlName="name" [ngClass]="{ danger: createProjectForm.controls.name.touched && createProjectForm.controls.name.invalid, editMode: editAppMode }" required />
+				<input
+					type="text"
+					id="group-name"
+					formControlName="name"
+					[ngClass]="{ danger: createProjectForm.controls.name.touched && createProjectForm.controls.name.invalid, editMode: editProjectMode }"
+					required
+				/>
 				<label for="group-name">Project Name</label>
 				<div class="input__error input__error__danger" *ngIf="createProjectForm.controls.name.touched && createProjectForm.controls.name.invalid">
 					<img src="assets/img/input-error-icon.svg" alt="input error icon" />
@@ -1220,62 +1254,59 @@
 				</div>
 			</div>
 
-			<h3>Retry Strategy</h3>
-			<div formGroupName="strategy">
+			<div>
+				<h3>Retry Strategy</h3>
+				<div formGroupName="strategy">
+					<div class="input">
+						<input type="number" id="interval" formControlName="intervalSeconds" (keypress)="onlyNumber($event)" [ngClass]="{ editMode: editProjectMode }" required />
+						<label for="interval">Interval seconds</label>
+					</div>
+
+					<div class="input">
+						<input type="number" id="retry-limit" formControlName="retryLimit" (keypress)="onlyNumber($event)" [ngClass]="{ editMode: editProjectMode }" required />
+						<label for="retry-limit">Retry Limit</label>
+					</div>
+				</div>
+
+				<h3>Signature</h3>
+				<div formGroupName="signature">
+					<div class="input">
+						<input type="text" id="signatur-header" formControlName="header" [ngClass]="{ editMode: editProjectMode }" required />
+						<label for="signatur-header">Header</label>
+					</div>
+
+					<div class="input">
+						<select name="hash" id="hash" formControlName="hash" [ngClass]="{ editMode: editProjectMode }" required>
+							<option value="{{ hash }}" *ngFor="let hash of hashes">{{ hash }}</option>
+						</select>
+						<label for="hash">Hash</label>
+					</div>
+				</div>
 				<div class="input">
-					<input type="number" id="interval" formControlName="interval_seconds" (keypress)="onlyNumber($event)" [ngClass]="{ editMode: editProjectMode }" required />
-					<label for="interval">Interval seconds</label>
+					<input type="number" id="rate_limit" formControlName="rate_limit" (keypress)="onlyNumber($event)" [ngClass]="{ editMode: editProjectMode }" required />
+					<label for="rate_limit">Rate Limit</label>
 				</div>
 
 				<div class="input">
-					<input type="number" id="retry-limit" formControlName="limit" (keypress)="onlyNumber($event)" [ngClass]="{ editMode: editProjectMode }" required />
-					<label for="retry-limit">Retry Limit</label>
-				</div>
-			</div>
-
-			<h3>Signature</h3>
-			<div formGroupName="signature">
-				<div class="input">
-					<input type="text" id="signatur-header" formControlName="header" [ngClass]="{ editMode: editProjectMode }" required />
-					<label for="signatur-header">Header</label>
-				</div>
-
-				<div class="input">
-					<select name="hash" id="hash" formControlName="hash" [ngClass]="{ editMode: editProjectMode }" required>
-						<option value="{{ hash }}" *ngFor="let hash of hashes">{{ hash }}</option>
-					</select>
-					<label for="hash">Hash</label>
+					<input type="text" id="rate-limit-duration" formControlName="rate_limit_duration" [ngClass]="{ editMode: editProjectMode }" required />
+					<label for="rate-limit-duration">Rate Limit Duration</label>
 				</div>
 			</div>
 			<h3>Disable Endpoint</h3>
 			<div class="input radio margin-top__18px">
-				<button class="button__clear flex flex__align-items-center" type="button" (click)="disableEndpoint = !disableEndpoint; updateProject()" [class]="{ active: disableEndpoint }">
+				<button class="button__clear flex flex__align-items-center" type="button" (click)="disableEndpoint = !disableEndpoint; updateProjectForm()" [class]="{ active: disableEndpoint }">
 					<img [src]="!disableEndpoint ? '/assets/img/circle.svg' : '/assets/img/check-circle.svg'" [alt]="!disableEndpoint ? 'no' : 'yes'" />
 					Yes
 				</button>
-				<button class="button__clear flex flex__align-items-center" type="button" (click)="disableEndpoint = !disableEndpoint; updateProject()" [class]="{ active: !disableEndpoint }">
+				<button class="button__clear flex flex__align-items-center" type="button" (click)="disableEndpoint = !disableEndpoint; updateProjectForm()" [class]="{ active: !disableEndpoint }">
 					<img [src]="disableEndpoint ? '/assets/img/circle.svg' : '/assets/img/check-circle.svg'" [alt]="disableEndpoint ? 'no' : 'yes'" />
 					No
 				</button>
 			</div>
 		</form>
 	</div>
-	<div class="modal--body delete no-padding flex flex__column flex__align-items-center" *ngIf="showProjectApiKey">
-		<img src="/assets/img/success.gif" class="img" alt="success" />
-		<h2 class="font__weight-600 color__black margin-top__16px">Project Created Successfully</h2>
-		<p class="font__14px color__grey font-weight-400 text--center margin-bottom__16px margin-top__8px">Your API Key has also been created. Please copy this key and save it somewhere safe.</p>
-		<p class="font__14px color__danger margin-bottom__40px text--center">For security reasons, we cannot show it to you again</p>
-		<div class="key margin-bottom__32px">
-			<span>{{ projectApiKey }}</span>
-			<button (click)="copyKey(projectApiKey, 'secret')">
-				<img src="/assets/img/copy.svg" alt="copy" />
-				<small *ngIf="showSecretCopyText">Copied!</small>
-			</button>
-		</div>
-		<button class="button button__primary" (click)="closeCreateProjectModal(true)">Done</button>
-	</div>
 
-	<div class="modal--footer" *ngIf="!showProjectApiKey">
+	<div class="modal--footer">
 		<button class="button button__white margin-right__16px" (click)="closeCreateProjectModal()">Discard</button>
 		<button class="button button__primary button--align-self button--has-icon icon-center" *ngIf="editProjectMode" [disabled]="creatingProject" (click)="createProject()">
 			{{ creatingProject ? 'Saving Changes...' : 'Save Changes' }}

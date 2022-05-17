@@ -117,11 +117,10 @@ export class ConvoyDashboardComponent implements OnInit {
 	loadingAppPotalToken = false;
 	showCreateProjectModal = false;
 	editProjectMode = false;
-	showProjectApiKey = false;
 	creatingProject = false;
 	disableEndpoint = false;
-	projectApiKey!: string;
 	selectedProject: any;
+	currentProjectId!: string;
 	hashes: string[] = ['MD5', 'SHA1', 'SHA224', 'SHA256', 'SHA384', 'SHA512', 'SHA3_224', 'SHA3_256', 'SHA3_384', 'SHA3_512', 'SHA512_224', 'SHA512_256'];
 	@Input('apiURL') apiURL: string = '';
 	@Input('isCloud') isCloud: boolean = false;
@@ -173,15 +172,17 @@ export class ConvoyDashboardComponent implements OnInit {
 	groupsLoaderIndex: number[] = [0, 1, 2, 3];
 	createProjectForm: FormGroup = this.formBuilder.group({
 		name: ['', Validators.required],
-		strategy: this.formBuilder.group({
-			interval_seconds: ['', Validators.required],
-			limit: ['', Validators.required]
-		}),
+		disable_endpoint: [false, Validators.required],
 		signature: this.formBuilder.group({
 			header: ['', Validators.required],
 			hash: ['', Validators.required]
 		}),
-		disable_endpoint: [false, Validators.required]
+		strategy: this.formBuilder.group({
+			intervalSeconds: ['', Validators.required],
+			retryLimit: ['', Validators.required]
+		}),
+		rate_limit: [''],
+		rate_limit_duration: ['']
 	});
 
 	constructor(public convyDashboardService: ConvoyDashboardService, private router: Router, private formBuilder: FormBuilder, private route: ActivatedRoute, private datePipe: DatePipe) {}
@@ -224,6 +225,10 @@ export class ConvoyDashboardComponent implements OnInit {
 			switchMap(search => this.getAppsForFilter(search))
 		);
 	}
+
+	// signatureForm(){
+	// 	return thi
+	// }
 
 	get endpoints(): FormArray {
 		return this.addNewAppForm.get('endpoints') as FormArray;
@@ -277,7 +282,14 @@ export class ConvoyDashboardComponent implements OnInit {
 	closeCreateProjectModal(fetchProjects?: boolean) {
 		this.showCreateProjectModal = false;
 		this.editProjectMode = false;
+		this.createProjectForm.reset();
 		if (fetchProjects) this.getGroups();
+	}
+
+	updateProjectForm() {
+		this.createProjectForm.patchValue({
+			disable_endpoint: this.disableEndpoint
+		});
 	}
 
 	// create new project
@@ -288,24 +300,47 @@ export class ConvoyDashboardComponent implements OnInit {
 			});
 			return;
 		}
-		const orgId = localStorage.getItem('orgId');
+
+		const payload = {
+			name: this.createProjectForm.value.name || '',
+			config: {
+				disable_endpoint: this.createProjectForm.value.disable_endpoint,
+				signature: this.createProjectForm.value.signature,
+				strategy: {
+					type: 'default',
+					default: this.createProjectForm.value.strategy
+				}
+			},
+			rate_limit: this.createProjectForm.value.rate_limit,
+			rate_limit_duration: this.createProjectForm.value.rate_limit_duration
+		};
 		this.creatingProject = true;
 		const requestOptions = {
-			orgId: `org_id=${orgId}`,
-			groupId: this.selectedProject?.id
+			groupId: this.selectedProject?.uid
 		};
 		try {
 			let response;
 			if (this.editProjectMode) {
-				response = await this.convyDashboardService.editProject(this.createProjectForm.value, requestOptions);
+				response = await this.convyDashboardService.editProject(payload, requestOptions);
 			} else {
-				response = await this.convyDashboardService.createProject(this.createProjectForm.value, requestOptions);
-				this.projectApiKey = response.data.key;
-				this.showProjectApiKey = true;
+				response = await this.convyDashboardService.createProject(payload);
 			}
+			if (response.status == true) {
+				this.editProjectMode
+					? this.convyDashboardService.showNotification({ message: 'Project updated successfully!', style: 'success' })
+					: this.convyDashboardService.showNotification({ message: 'Project created successfully!', style: 'success' });
+				this.getGroups();
+				this.showProjectsModal = true;
+				this.showCreateProjectModal = false;
+				this.createProjectForm.reset();
+			} else {
+				this.convyDashboardService.showNotification({ message: response.message, style: 'error' });
+			}
+
 			this.creatingProject = false;
-		} catch (error) {
+		} catch (error: any) {
 			this.creatingProject = false;
+			this.convyDashboardService.showNotification({ message: error.error.message, style: 'error' });
 		}
 	}
 
@@ -314,13 +349,15 @@ export class ConvoyDashboardComponent implements OnInit {
 		this.createProjectForm.patchValue({
 			name: this.selectedProject?.name,
 			strategy: {
-				interval_seconds: this.selectedProject?.config?.strategy?.default?.intervalSeconds,
-				limit: this.selectedProject?.config?.strategy?.default?.retryLimit
+				intervalSeconds: this.selectedProject?.config?.strategy?.default?.intervalSeconds,
+				retryLimit: this.selectedProject?.config?.strategy?.default?.retryLimit
 			},
 			signature: {
 				header: this.selectedProject?.config?.signature?.header,
 				hash: this.selectedProject?.config?.signature?.hash
-			}
+			},
+			rate_limit: this.selectedProject?.rate_limit,
+			rate_limit_duration: this.selectedProject?.rate_limit_duration
 		});
 		this.disableEndpoint = this.selectedProject?.config?.disable_endpoint;
 	}
