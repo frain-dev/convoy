@@ -12,7 +12,7 @@ require (
 	github.com/felixge/httpsnoop v1.0.2
 	github.com/frain-dev/disq v0.1.5
 	github.com/fsnotify/fsnotify v1.5.1 // indirect
-	github.com/getkin/kin-openapi v0.78.0
+	github.com/getkin/kin-openapi v0.80.0
 	github.com/getsentry/sentry-go v0.11.0
 	github.com/ghodss/yaml v1.0.0
 	github.com/go-chi/chi/v5 v5.0.3
@@ -27,6 +27,7 @@ require (
 	github.com/google/uuid v1.3.0
 	github.com/jarcoal/httpmock v1.0.8
 	github.com/jaswdr/faker v1.10.2
+	github.com/jeremywohl/flatten v1.0.1
 	github.com/kelseyhightower/envconfig v1.4.0
 	github.com/klauspost/compress v1.15.4 // indirect
 	github.com/mattn/go-colorable v0.1.11 // indirect
@@ -38,7 +39,6 @@ require (
 	github.com/onsi/gomega v1.19.0 // indirect
 	github.com/pkg/errors v0.9.1
 	github.com/prometheus/client_golang v1.7.1
-	github.com/prometheus/procfs v0.6.0 // indirect
 	github.com/sebdah/goldie/v2 v2.5.3
 	github.com/sirupsen/logrus v1.8.1
 	github.com/slack-go/slack v0.10.2
@@ -46,6 +46,7 @@ require (
 	github.com/stretchr/testify v1.7.1
 	github.com/swaggo/swag v1.7.3
 	github.com/timshannon/badgerhold/v4 v4.0.2
+	github.com/typesense/typesense-go v0.4.0
 	github.com/x-cray/logrus-prefixed-formatter v0.5.2
 	github.com/xdg-go/pbkdf2 v1.0.0
 	github.com/youmark/pkcs8 v0.0.0-20201027041543-1326539a0a0a // indirect

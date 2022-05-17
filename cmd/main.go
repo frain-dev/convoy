@@ -10,6 +10,7 @@ import (
 
 	"github.com/frain-dev/convoy/cache"
 	"github.com/frain-dev/convoy/datastore/badger"
+	"github.com/frain-dev/convoy/searcher"
 	"github.com/go-redis/redis/v8"
 
 	"github.com/frain-dev/convoy/logger"
@@ -161,6 +162,7 @@ type app struct {
 	tracer            tracer.Tracer
 	cache             cache.Cache
 	limiter           limiter.RateLimiter
+	searcher          searcher.Searcher
 }
 
 func getCtx() (context.Context, context.CancelFunc) {
@@ -229,7 +231,6 @@ func preRun(app *app, db datastore.DatabaseClient) func(cmd *cobra.Command, args
 		log.AddHook(sentryHook)
 
 		var rC *redis.Client
-		var lo logger.Logger
 		var tr tracer.Tracer
 		var opts queue.QueueOptions
 		var ca cache.Cache
@@ -252,7 +253,7 @@ func preRun(app *app, db datastore.DatabaseClient) func(cmd *cobra.Command, args
 			}
 		}
 
-		lo, err = logger.NewLogger(cfg.Logger)
+		lo, err := logger.NewLogger(cfg.Logger)
 		if err != nil {
 			return err
 		}
@@ -279,6 +280,11 @@ func preRun(app *app, db datastore.DatabaseClient) func(cmd *cobra.Command, args
 			return err
 		}
 
+		se, err := searcher.NewSearchClient(cfg)
+		if err != nil {
+			return err
+		}
+
 		app.apiKeyRepo = db.APIRepo()
 		app.groupRepo = db.GroupRepo()
 		app.eventRepo = db.EventRepo()
@@ -292,6 +298,7 @@ func preRun(app *app, db datastore.DatabaseClient) func(cmd *cobra.Command, args
 		app.tracer = tr
 		app.cache = ca
 		app.limiter = li
+		app.searcher = se
 
 		return ensureDefaultGroup(context.Background(), cfg, app)
 	}
@@ -333,6 +340,7 @@ func parsePersistentArgs(app *app, cmd *cobra.Command) {
 	cmd.AddCommand(addRetryCommand(app))
 	cmd.AddCommand(addSchedulerCommand(app))
 	cmd.AddCommand(addUpgradeCommand(app))
+	cmd.AddCommand(addIndexCommand(app))
 }
 
 type ConvoyCli struct {

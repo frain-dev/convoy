@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/frain-dev/convoy/config"
 	"github.com/frain-dev/convoy/datastore"
 	"github.com/frain-dev/convoy/server/models"
 	"github.com/frain-dev/convoy/util"
@@ -252,17 +253,45 @@ func (a *applicationHandler) ForceResendEventDeliveries(w http.ResponseWriter, r
 // @Security ApiKeyAuth
 // @Router /events [get]
 func (a *applicationHandler) GetEventsPaged(w http.ResponseWriter, r *http.Request) {
+	config, err := config.Get()
+	if err != nil {
+		_ = render.Render(w, r, newErrorResponse(err.Error(), http.StatusBadRequest))
+		return
+	}
+
 	searchParams, err := getSearchParams(r)
 	if err != nil {
 		_ = render.Render(w, r, newErrorResponse(err.Error(), http.StatusBadRequest))
 		return
 	}
 
+	pageable := getPageableFromContext(r.Context())
+	group := getGroupFromContext(r.Context())
+	query := r.URL.Query().Get("query")
+	app := r.URL.Query().Get("appId")
+
+	// if pageable.Page == 0 {
+	// 	pageable.Page = 1
+	// }
+
 	f := &datastore.Filter{
-		Group:        getGroupFromContext(r.Context()),
-		AppID:        r.URL.Query().Get("appId"),
-		Pageable:     getPageableFromContext(r.Context()),
+		Query:        query,
+		Group:        group,
+		AppID:        app,
+		Pageable:     pageable,
 		SearchParams: searchParams,
+	}
+
+	if config.Search.Type == "typesense" && !util.IsStringEmpty(query) {
+		m, paginationData, err := a.eventService.Search(r.Context(), f)
+		if err != nil {
+			_ = render.Render(w, r, newErrorResponse(err.Error(), http.StatusBadRequest))
+			return
+		}
+		_ = render.Render(w, r, newServerResponse("App events fetched successfully",
+			pagedResponse{Content: &m, Pagination: &paginationData}, http.StatusOK))
+
+		return
 	}
 
 	m, paginationData, err := a.eventService.GetEventsPaged(r.Context(), f)

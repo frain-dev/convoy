@@ -389,6 +389,21 @@ func (mr *MockEventRepositoryMockRecorder) FindEventByID(ctx, id interface{}) *g
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "FindEventByID", reflect.TypeOf((*MockEventRepository)(nil).FindEventByID), ctx, id)
 }
 
+// FindEventsByIDs mocks base method.
+func (m *MockEventRepository) FindEventsByIDs(arg0 context.Context, arg1 []string) ([]datastore.Event, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "FindEventsByIDs", arg0, arg1)
+	ret0, _ := ret[0].([]datastore.Event)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// FindEventsByIDs indicates an expected call of FindEventsByIDs.
+func (mr *MockEventRepositoryMockRecorder) FindEventsByIDs(arg0, arg1 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "FindEventsByIDs", reflect.TypeOf((*MockEventRepository)(nil).FindEventsByIDs), arg0, arg1)
+}
+
 // LoadEventIntervals mocks base method.
 func (m *MockEventRepository) LoadEventIntervals(arg0 context.Context, arg1 string, arg2 datastore.SearchParams, arg3 datastore.Period, arg4 int) ([]datastore.EventInterval, error) {
 	m.ctrl.T.Helper()

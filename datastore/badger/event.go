@@ -50,6 +50,14 @@ func (e *eventRepo) FindEventByID(ctx context.Context, eid string) (*datastore.E
 	return &event, err
 }
 
+func (e *eventRepo) FindEventsByIDs(ctx context.Context, ids []string) ([]datastore.Event, error) {
+	var events []datastore.Event
+
+	err := e.db.Find(&events, badgerhold.Where("UID").In(badgerhold.Slice(ids)...))
+
+	return events, err
+}
+
 func (e *eventRepo) LoadEventIntervals(ctx context.Context, groupID string, searchParams datastore.SearchParams, period datastore.Period, interval int) ([]datastore.EventInterval, error) {
 	eventsIntervals := make([]datastore.EventInterval, 0)
 	eventsIntervalsMap := make(map[string]int)

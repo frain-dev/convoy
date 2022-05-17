@@ -12,6 +12,7 @@ import (
 	"github.com/frain-dev/convoy/auth"
 	"github.com/frain-dev/convoy/cache"
 	"github.com/frain-dev/convoy/logger"
+	"github.com/frain-dev/convoy/searcher"
 	"github.com/frain-dev/convoy/tracer"
 
 	"github.com/frain-dev/convoy/config"
@@ -364,7 +365,7 @@ func New(cfg config.Configuration,
 	logger logger.Logger,
 	tracer tracer.Tracer,
 	cache cache.Cache,
-	limiter limiter.RateLimiter) *http.Server {
+	limiter limiter.RateLimiter, searcher searcher.Searcher) *http.Server {
 
 	app := newApplicationHandler(
 		eventRepo,
@@ -377,7 +378,8 @@ func New(cfg config.Configuration,
 		logger,
 		tracer,
 		cache,
-		limiter)
+		limiter,
+		searcher)
 
 	srv := &http.Server{
 		Handler:      buildRoutes(app),
