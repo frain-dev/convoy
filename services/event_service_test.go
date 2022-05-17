@@ -22,7 +22,8 @@ func provideEventService(ctrl *gomock.Controller) *EventService {
 	eventQueue := mocks.NewMockQueuer(ctrl)
 	creatEventQueue := mocks.NewMockQueuer(ctrl)
 	cache := mocks.NewMockCache(ctrl)
-	return NewEventService(appRepo, eventRepo, eventDeliveryRepo, eventQueue, creatEventQueue, cache)
+	searcher := mocks.NewMockSearcher(ctrl)
+	return NewEventService(appRepo, eventRepo, eventDeliveryRepo, eventQueue, creatEventQueue, cache, searcher)
 }
 
 func TestEventService_CreateAppEvent(t *testing.T) {
@@ -1096,6 +1097,122 @@ func TestEventService_GetEventsPaged(t *testing.T) {
 			}
 
 			events, paginationData, err := es.GetEventsPaged(tc.args.ctx, tc.args.filter)
+			if tc.wantErr {
+				require.NotNil(t, err)
+				require.Equal(t, tc.wantErrCode, err.(*ServiceError).ErrCode())
+				require.Equal(t, tc.wantErrMsg, err.(*ServiceError).Error())
+				return
+			}
+
+			require.Nil(t, err)
+			require.Equal(t, tc.wantEvents, events)
+			require.Equal(t, tc.wantPaginationData, paginationData)
+		})
+	}
+}
+
+func TestEventService_SearchEvents(t *testing.T) {
+	ctx := context.Background()
+	type args struct {
+		ctx    context.Context
+		filter *datastore.Filter
+	}
+	tests := []struct {
+		name               string
+		args               args
+		dbFn               func(es *EventService)
+		wantEvents         []datastore.Event
+		wantPaginationData datastore.PaginationData
+		wantErr            bool
+		wantErrCode        int
+		wantErrMsg         string
+	}{
+		{
+			name: "should_get_event_paged",
+			args: args{
+				ctx: ctx,
+				filter: &datastore.Filter{
+					Group: &datastore.Group{UID: "123"},
+					AppID: "abc",
+					Pageable: datastore.Pageable{
+						Page:    1,
+						PerPage: 1,
+						Sort:    1,
+					},
+					SearchParams: datastore.SearchParams{
+						CreatedAtStart: 13323,
+						CreatedAtEnd:   1213,
+					},
+				},
+			},
+			dbFn: func(es *EventService) {
+				se, _ := es.searcher.(*mocks.MockSearcher)
+				se.EXPECT().Search(gomock.Any(), gomock.Any()).
+					Times(1).
+					Return([]string{"1234"}, datastore.PaginationData{
+						Total:     1,
+						Page:      1,
+						PerPage:   2,
+						Prev:      1,
+						Next:      3,
+						TotalPage: 2,
+					}, nil)
+
+				ed, _ := es.eventRepo.(*mocks.MockEventRepository)
+				ed.EXPECT().FindEventsByIDs(gomock.Any(), gomock.Any()).
+					Times(1).
+					Return([]datastore.Event{{UID: "1234"}}, nil)
+
+			},
+			wantEvents: []datastore.Event{
+				{UID: "1234"},
+			},
+			wantPaginationData: datastore.PaginationData{
+				Total:     1,
+				Page:      1,
+				PerPage:   2,
+				Prev:      1,
+				Next:      3,
+				TotalPage: 2,
+			},
+		},
+		{
+			name: "should_fail_to_get_events_paged",
+			args: args{
+				ctx: ctx,
+				filter: &datastore.Filter{
+					Group:   &datastore.Group{UID: "123"},
+					AppID:   "abc",
+					EventID: "ref",
+					Status:  []datastore.EventDeliveryStatus{datastore.SuccessEventStatus, datastore.ScheduledEventStatus},
+					SearchParams: datastore.SearchParams{
+						CreatedAtStart: 13323,
+						CreatedAtEnd:   1213,
+					},
+				},
+			},
+			dbFn: func(es *EventService) {
+				ed, _ := es.searcher.(*mocks.MockSearcher)
+				ed.EXPECT().
+					Search(gomock.Any(), gomock.Any()).
+					Times(1).Return(nil, datastore.PaginationData{}, errors.New("failed"))
+			},
+			wantErr:     true,
+			wantErrCode: http.StatusBadRequest,
+			wantErrMsg:  "failed",
+		},
+	}
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			ctrl := gomock.NewController(t)
+			defer ctrl.Finish()
+			es := provideEventService(ctrl)
+
+			if tc.dbFn != nil {
+				tc.dbFn(es)
+			}
+
+			events, paginationData, err := es.Search(tc.args.ctx, tc.args.filter)
 			if tc.wantErr {
 				require.NotNil(t, err)
 				require.Equal(t, tc.wantErrCode, err.(*ServiceError).ErrCode())

@@ -148,6 +148,7 @@ export class ConvoyDashboardComponent implements OnInit {
 	showEndpointSecret = false;
 	renderDashboard = true;
 	appsSearchString = '';
+	eventsSearchString = '';
 	selectedEventsDateOption = '';
 	selectedEventsDelDateOption = '';
 	selectedDateOption = '';
@@ -639,7 +640,7 @@ export class ConvoyDashboardComponent implements OnInit {
 		await this.getGroups();
 		this.getFiltersFromURL();
 		this.activeTab = this.route.snapshot.queryParams?.activeTab ?? 'events';
-		await Promise.all([this.getConfigDetails(), this.fetchDashboardData(), this.getEvents(), this.getApps({ type: 'apps' }), this.getEventDeliveries()]);
+		await Promise.all([this.getConfigDetails(), this.fetchDashboardData(), this.getEvents({ fromFilter: true }), this.getApps({ type: 'apps' }), this.getEventDeliveries()]);
 
 		// get active tab from url and apply, after getting the details from above requests so that the data is available ahead
 		this.toggleActiveTab(this.route.snapshot.queryParams?.activeTab ?? 'events');
@@ -715,9 +716,11 @@ export class ConvoyDashboardComponent implements OnInit {
 	getFiltersFromURL() {
 		const filters = this.route.snapshot.queryParams;
 		if (Object.keys(filters).length == 0) return;
+
 		// for events filters
 		this.eventsFilterDateRange.patchValue({ startDate: filters.eventsStartDate ? new Date(filters.eventsStartDate) : '', endDate: filters.eventsEndDate ? new Date(filters.eventsEndDate) : '' });
 		this.eventApp = filters.eventsApp ?? '';
+		this.eventsSearchString = filters.eventsSearch ?? '';
 		const eventsTimeFilter = this.setTimeFilterData({ startDate: filters?.eventsStartDate, endDate: filters?.eventsEndDate, type: 'events' });
 		this.eventsTimeFilterData = { ...eventsTimeFilter };
 
@@ -840,10 +843,18 @@ export class ConvoyDashboardComponent implements OnInit {
 		if (requestDetails?.appId) this.eventApp = requestDetails.appId;
 		if (requestDetails?.addToURL) this.addFilterToURL({ section: 'events' });
 
+		if (this.eventsSearchString && this.eventsPage === 1) this.displayedEvents = [];
+
 		const { startDate, endDate } = this.setDateForFilter({ ...this.eventsFilterDateRange.value, ...this.eventsTimeFilterData });
 
 		try {
-			const eventsResponse = await this.convyDashboardService.getEvents({ pageNo: this.eventsPage || 1, startDate, endDate, appId: requestDetails?.appId ?? this.eventApp });
+			const eventsResponse = await this.convyDashboardService.getEvents({
+				pageNo: this.eventsPage || 1,
+				startDate,
+				endDate,
+				appId: requestDetails?.appId ?? this.eventApp,
+				query: this.eventsSearchString || ''
+			});
 
 			if (this.events && this.events?.pagination?.next === this.eventsPage) {
 				const content = [...this.events.content, ...eventsResponse.data.content];
@@ -900,6 +911,7 @@ export class ConvoyDashboardComponent implements OnInit {
 			if (startDate) queryParams.eventsStartDate = startDate;
 			if (endDate) queryParams.eventsEndDate = endDate;
 			if (this.eventApp) queryParams.eventsApp = this.eventApp;
+			if (this.eventsSearchString) queryParams.eventsSearch = this.eventsSearchString;
 		}
 
 		if (requestDetails.section === 'eventDels') {
@@ -1197,13 +1209,16 @@ export class ConvoyDashboardComponent implements OnInit {
 		}
 	}
 
-	async clearEventFilters(tableName: 'events' | 'event deliveries' | 'apps', filterType?: 'eventsDate' | 'eventsDelDate' | 'eventsApp' | 'eventsDelApp' | 'eventsDelsStatus') {
+	async clearEventFilters(tableName: 'events' | 'event deliveries' | 'apps', filterType?: 'eventsDate' | 'eventsDelDate' | 'eventsApp' | 'eventsDelApp' | 'eventsDelsStatus' | 'eventsSearch') {
 		const activeFilters = Object.assign({}, this.route.snapshot.queryParams);
 		let filterItems: string[] = [];
 
 		switch (tableName) {
 			case 'events':
 				this.eventApp = '';
+				this.eventsFilterDateRange.patchValue({ startDate: '', endDate: '' });
+				this.eventsSearchString = '';
+
 				switch (filterType) {
 					case 'eventsApp':
 						filterItems = ['eventsApp'];
@@ -1211,8 +1226,11 @@ export class ConvoyDashboardComponent implements OnInit {
 					case 'eventsDate':
 						filterItems = ['eventsStartDate', 'eventsEndDate'];
 						break;
+					case 'eventsSearch':
+						filterItems = ['eventsSearch'];
+						break;
 					default:
-						filterItems = ['eventsStartDate', 'eventsEndDate', 'eventsApp'];
+						filterItems = ['eventsStartDate', 'eventsEndDate', 'eventsApp', 'eventsSearch'];
 						break;
 				}
 				this.eventsFilterDateRange.patchValue({ startDate: '', endDate: '' });

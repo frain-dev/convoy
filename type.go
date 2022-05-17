@@ -2,6 +2,7 @@ package convoy
 
 import (
 	"embed"
+	"fmt"
 	"strings"
 )
 
@@ -10,6 +11,8 @@ type HttpMethod string
 type TaskName string
 
 type CacheKey string
+
+type GenericMap map[string]interface{}
 
 //go:embed VERSION
 var f embed.FS
@@ -83,3 +86,5 @@ const (
 	//Size of the internal buffer
 	BufferSize = 100000
 )
+
+var ErrUnsupportedDatebase = fmt.Errorf("unsupported database for search detected, remove search configuration or use a supported database (mongodb)")

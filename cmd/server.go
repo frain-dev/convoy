@@ -25,6 +25,7 @@ func addServerCommand(a *app) *cobra.Command {
 	var limiter string
 	var cache string
 	var logger string
+	var searcher string
 	var logLevel string
 	var sslKeyFile string
 	var sslCertFile string
@@ -39,6 +40,8 @@ func addServerCommand(a *app) *cobra.Command {
 	var smtpFrom string
 	var newReplicApp string
 	var newReplicKey string
+	var typesenseApiKey string
+	var typesenseHost string
 	var apiKeyAuthConfig string
 	var basicAuthConfig string
 
@@ -112,6 +115,9 @@ func addServerCommand(a *app) *cobra.Command {
 	cmd.Flags().StringVar(&smtpReplyTo, "smtp-reply-to", "", "Email address to reply to")
 	cmd.Flags().StringVar(&newReplicApp, "new-relic-app", "", "NewRelic application name")
 	cmd.Flags().StringVar(&newReplicKey, "new-relic-key", "", "NewRelic application license key")
+	cmd.Flags().StringVar(&searcher, "searcher", "", "Searcher")
+	cmd.Flags().StringVar(&typesenseHost, "typesense-host", "", "Typesense Host")
+	cmd.Flags().StringVar(&typesenseApiKey, "typesense-api-key", "", "Typesense Api Key")
 
 	cmd.Flags().BoolVar(&ssl, "ssl", false, "Configure SSL")
 	cmd.Flags().BoolVar(&requireAuth, "auth", false, "Require authentication")
@@ -162,7 +168,8 @@ func StartConvoyServer(a *app, cfg config.Configuration, withWorkers bool) error
 		a.logger,
 		a.tracer,
 		a.cache,
-		a.limiter)
+		a.limiter,
+		a.searcher)
 
 	if withWorkers {
 		// register tasks.
@@ -527,6 +534,36 @@ func loadServerConfigFromCliFlags(cmd *cobra.Command, c *config.Configuration) e
 
 	if !util.IsStringEmpty(newReplicKey) {
 		c.Tracer.NewRelic.AppName = newReplicKey
+	}
+
+	// CONVOY_SEARCH_TYPE
+	searcher, err := cmd.Flags().GetString("searcher")
+	if err != nil {
+		return err
+	}
+
+	if !util.IsStringEmpty(searcher) {
+		c.Search.Type = config.SearchProvider(searcher)
+	}
+
+	// CONVOY_TYPESENSE_HOST
+	typesenseHost, err := cmd.Flags().GetString("typesense-host")
+	if err != nil {
+		return err
+	}
+
+	if !util.IsStringEmpty(typesenseHost) {
+		c.Search.Typesense.Host = typesenseHost
+	}
+
+	// CONVOY_TYPESENSE_API_KEY
+	typesenseApiKey, err := cmd.Flags().GetString("typesense-api-key")
+	if err != nil {
+		return err
+	}
+
+	if !util.IsStringEmpty(typesenseApiKey) {
+		c.Search.Typesense.ApiKey = typesenseApiKey
 	}
 
 	// CONVOY_NEWRELIC_CONFIG_ENABLED

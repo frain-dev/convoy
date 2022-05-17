@@ -3,6 +3,7 @@ package server
 import (
 	"net/http"
 
+	"github.com/frain-dev/convoy/searcher"
 	"github.com/frain-dev/convoy/services"
 
 	"github.com/frain-dev/convoy/cache"
@@ -54,9 +55,9 @@ func newApplicationHandler(
 	logger logger.Logger,
 	tracer tracer.Tracer,
 	cache cache.Cache,
-	limiter limiter.RateLimiter) *applicationHandler {
+	limiter limiter.RateLimiter, searcher searcher.Searcher) *applicationHandler {
 	as := services.NewAppService(appRepo, eventRepo, eventDeliveryRepo, eventQueue, cache)
-	es := services.NewEventService(appRepo, eventRepo, eventDeliveryRepo, eventQueue, createEventQueue, cache)
+	es := services.NewEventService(appRepo, eventRepo, eventDeliveryRepo, eventQueue, createEventQueue, cache, searcher)
 	gs := services.NewGroupService(appRepo, groupRepo, eventRepo, eventDeliveryRepo, limiter)
 	ss := services.NewSecurityService(groupRepo, apiKeyRepo)
 

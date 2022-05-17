@@ -174,16 +174,20 @@
 					</li>
 					<div class="color__grey font__14px font__weight-500 font--nowrap margin-left--auto padding-right__14px">
 						<span *ngIf="events" [hidden]="activeTab !== 'events'">
-							{{ events && events.pagination.total > 0 ? 1 : 0 }} - {{ events && events.pagination.total < 20 ? events.pagination.total : events?.content?.length }} of
+							{{ events && events.pagination.total > 0 ? 1 : 0 }} - {{ events && events.pagination.total < 20 ? events.pagination.total : events?.content?.length }}
+							<strong>of</strong>
 							{{ events.pagination.total | metric }}
 						</span>
 						<span *ngIf="eventDeliveries" [hidden]="activeTab !== 'event deliveries'">
 							{{ eventDeliveries && eventDeliveries.pagination.total > 0 ? 1 : 0 }} -
-							{{ eventDeliveries && eventDeliveries.pagination.total < 20 ? eventDeliveries.pagination.total : eventDeliveries?.content?.length }} of
+							{{ eventDeliveries && eventDeliveries.pagination.total < 20 ? eventDeliveries.pagination.total : eventDeliveries?.content?.length }}
+							<strong>of</strong>
 							{{ eventDeliveries.pagination.total | metric }}
 						</span>
 						<span *ngIf="apps" [hidden]="activeTab !== 'apps'">
-							{{ apps && apps.pagination.total > 0 ? 1 : 0 }} - {{ apps && apps.pagination.total < 20 ? apps.pagination.total : apps?.content?.length }} of {{ apps.pagination.total | metric }}
+							{{ apps && apps.pagination.total > 0 ? 1 : 0 }} - {{ apps && apps.pagination.total < 20 ? apps.pagination.total : apps?.content?.length }}
+							<strong>of</strong>
+							{{ apps.pagination.total | metric }}
 						</span>
 					</div>
 				</div>
@@ -193,7 +197,21 @@
 				<div [hidden]="activeTab !== 'events'">
 					<div class="flex flex__align-items-center flex__justify-between">
 						<div class="flex">
-							<div class="dropdown">
+							<form class="input__search margin-bottom__0px events-search">
+								<img src="/assets/img/search-icon.svg" alt="search icon" />
+								<input
+									type="search"
+									placeholder="Search events"
+									[(ngModel)]="eventsSearchString"
+									(change)="eventsPage = 1; getEvents({ addToURL: true, fromFilter: true })"
+									[ngModelOptions]="{ standalone: true }"
+								/>
+								<button [class]="'enter-button' + (eventsSearchString.length > 0 ? ' show' : '')" (click)="eventsPage = 1; getEvents({ addToURL: true, fromFilter: true })">
+									<img src="/assets/img/enter-icon.png" alt="enter icon" />
+								</button>
+							</form>
+
+							<div class="dropdown margin-left__24px">
 								<button
 									class="button button__filter without-margin button--has-icon icon-left icon-right"
 									[ngClass]="{ active: (eventsFilterDateRange.value.startDate !== '' && eventsFilterDateRange.value.endDate !== '') || selectedEventsDateOption }"
@@ -241,8 +259,8 @@
 									(click)="showOverlay = true; showEventsAppsDropdown = !showEventsAppsDropdown"
 								>
 									<img src="/assets/img/apps-icon-grey.svg" alt="apps filter icon" />
-									<span class="font__weight-500">All Apps</span>
-									<img class="margin-left__16px margin-right__0px" src="/assets/img/angle-arrow-down.svg" alt="arrow down icon" />
+									<span>All Apps</span>
+									<img class="margin-left__30px margin-right__0px" src="/assets/img/angle-arrow-down.svg" alt="arrow down icon" />
 								</button>
 
 								<div class="dropdown__menu with-padding large" [ngClass]="{ show: showEventsAppsDropdown }">
@@ -271,6 +289,7 @@
 							[disabled]="
 								(eventsFilterDateRange.value.startDate == '' || eventsFilterDateRange.value.endDate == '') &&
 								eventApp == '' &&
+								eventsSearchString.length == 0 &&
 								eventsTimeFilterData.startTime == 'T00:00:00' &&
 								eventsTimeFilterData.endTime == 'T23:59:59'
 							"

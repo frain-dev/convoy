@@ -4,8 +4,8 @@ import (
 	"context"
 	"time"
 
-	"github.com/frain-dev/convoy/cache/memory"
-	"github.com/frain-dev/convoy/cache/redis"
+	mcache "github.com/frain-dev/convoy/cache/memory"
+	rcache "github.com/frain-dev/convoy/cache/redis"
 	"github.com/frain-dev/convoy/config"
 )
 
@@ -26,5 +26,4 @@ func NewCache(cfg config.CacheConfiguration) (Cache, error) {
 	}
 
 	return mcache.NewMemoryCache(), nil
-
 }
