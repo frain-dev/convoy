@@ -196,6 +196,9 @@ func buildRoutes(app *applicationHandler) http.Handler {
 			})
 
 			groupRouter.Route("/{groupID}", func(groupSubRouter chi.Router) {
+				groupSubRouter.Use(requireGroup(app.groupRepo, app.cache))
+				groupSubRouter.Use(rateLimitByGroupID(app.limiter))
+
 				groupSubRouter.With(requirePermission(auth.RoleUIAdmin)).Get("/", app.GetGroup)
 				groupSubRouter.With(requirePermission(auth.RoleSuperUser)).Put("/", app.UpdateGroup)
 				groupSubRouter.With(requirePermission(auth.RoleSuperUser)).Delete("/", app.DeleteGroup)
