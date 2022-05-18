@@ -327,13 +327,16 @@ export class ConvoyDashboardComponent implements OnInit {
 				response = await this.convyDashboardService.createProject(payload);
 			}
 			if (response.status == true) {
-				this.editProjectMode
-					? this.convyDashboardService.showNotification({ message: 'Project updated successfully!', style: 'success' })
-					: this.convyDashboardService.showNotification({ message: 'Project created successfully!', style: 'success' });
+				this.convyDashboardService.showNotification({ message: `Project ${this.editProjectMode ? 'updated' : 'created'} successfully!`, style: 'success' });
 				this.getGroups();
 				this.showProjectsModal = true;
 				this.showCreateProjectModal = false;
+				this.editProjectMode = false;
+				this.currentProjectId = '';
 				this.createProjectForm.reset();
+				this.createProjectForm.patchValue({
+					disable_endpoint: this.disableEndpoint
+				});
 			} else {
 				this.convyDashboardService.showNotification({ message: response.message, style: 'error' });
 			}
@@ -345,7 +348,7 @@ export class ConvoyDashboardComponent implements OnInit {
 		}
 	}
 
-	// update create project form
+	// updating project form
 	updateProject() {
 		this.createProjectForm.patchValue({
 			name: this.selectedProject?.name,
@@ -358,10 +361,12 @@ export class ConvoyDashboardComponent implements OnInit {
 				hash: this.selectedProject?.config?.signature?.hash
 			},
 			rate_limit: this.selectedProject?.rate_limit,
-			rate_limit_duration: this.selectedProject?.rate_limit_duration
+			rate_limit_duration: this.selectedProject?.rate_limit_duration,
+			disable_endpoint: this.selectedProject?.config?.disable_endpoint
 		});
 		this.disableEndpoint = this.selectedProject?.config?.disable_endpoint;
 	}
+
 	// get hashes
 	async getHashes() {
 		try {
@@ -371,6 +376,7 @@ export class ConvoyDashboardComponent implements OnInit {
 			this.convyDashboardService.showNotification({ style: 'error', message: 'Unable to retrieve hashes' });
 		}
 	}
+	
 	// create/edit new application function
 	async createNewApp() {
 		if (this.addNewAppForm.invalid) {
