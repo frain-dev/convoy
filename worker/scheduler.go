@@ -13,7 +13,7 @@ import (
 	"github.com/frain-dev/convoy/queue"
 	redisqueue "github.com/frain-dev/convoy/queue/redis"
 	"github.com/frain-dev/convoy/worker/task"
-	"github.com/frain-dev/taskq/v3"
+	"github.com/frain-dev/disq"
 	log "github.com/sirupsen/logrus"
 )
 
@@ -29,8 +29,10 @@ func RegisterNewGroupTask(applicationRepo datastore.ApplicationRepository, event
 				pEvtDelTask := convoy.EventProcessor.SetPrefix(g.Name)       // process event delivery task
 				pEvtCrtTask := convoy.CreateEventProcessor.SetPrefix(g.Name) // process event create task
 
-				if t := taskq.Tasks.Get(string(pEvtCrtTask)); t == nil {
-					if s := taskq.Tasks.Get(string(pEvtDelTask)); s == nil {
+				t, _ := disq.Tasks.LoadTask(string(pEvtCrtTask))
+				if t == nil {
+					s, _ := disq.Tasks.LoadTask(string(pEvtDelTask))
+					if s == nil {
 						handler := task.ProcessEventDelivery(applicationRepo, eventDeliveryRepo, groupRepo, rateLimiter)
 						log.Infof("Registering event delivery task handler for %s", g.Name)
 						task.CreateTask(pEvtDelTask, *g, handler)
@@ -175,7 +177,10 @@ func ProcessEventDeliveryBatches(ctx context.Context, status datastore.EventDeli
 			}
 
 			taskName := convoy.EventProcessor.SetPrefix(group.Name)
-			err = q.WriteEventDelivery(ctx, taskName, delivery, 1*time.Second)
+			job := &queue.Job{
+				ID: delivery.UID,
+			}
+			err = q.Publish(ctx, taskName, job, 1*time.Second)
 			if err != nil {
 				log.WithError(err).Errorf("batch %d: failed to send event delivery %s to the queue", batchCount, delivery.ID)
 			}

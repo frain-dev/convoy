@@ -148,7 +148,57 @@ func RegisterDBMetrics(app *applicationHandler) {
 		log.Errorf("Error registering eventdelivery Discarded: %v", err)
 	}
 }
+func RegisterConsumerMetrics(q queue.Queuer, cfg config.Configuration) {
 
+	if !q.Broker().Status() {
+		return
+	}
+
+	err := prometheus.Register(prometheus.NewGaugeFunc(
+		prometheus.GaugeOpts{
+			Subsystem: "consumer",
+			Name:      "processed",
+			Help:      "Number of events processed.",
+		},
+		func() float64 {
+			stats := q.Broker().Stats()
+			return float64(stats.Processed)
+		},
+	))
+	if err != nil {
+		log.Errorf("Error registering processed: %v", err)
+	}
+
+	err = prometheus.Register(prometheus.NewGaugeFunc(
+		prometheus.GaugeOpts{
+			Subsystem: "consumer",
+			Name:      "fails",
+			Help:      "Number of fails.",
+		},
+		func() float64 {
+			stats := q.Broker().Stats()
+			return float64(stats.Fails)
+		},
+	))
+	if err != nil {
+		log.Errorf("Error registering fails: %v", err)
+	}
+
+	err = prometheus.Register(prometheus.NewGaugeFunc(
+		prometheus.GaugeOpts{
+			Subsystem: "consumer",
+			Name:      "retries",
+			Help:      "Number of retries.",
+		},
+		func() float64 {
+			stats := q.Broker().Stats()
+			return float64(stats.Retries)
+		},
+	))
+	if err != nil {
+		log.Errorf("Error registering retries: %v", err)
+	}
+}
 func queueLength(q queue.Queuer, cfg config.Configuration) (int, error) {
 	switch cfg.Queue.Type {
 	case config.RedisQueueProvider:

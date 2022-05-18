@@ -10,12 +10,12 @@ import (
 	"github.com/frain-dev/convoy/config"
 	"github.com/frain-dev/convoy/datastore"
 	"github.com/frain-dev/convoy/queue"
-	"github.com/frain-dev/taskq/v3"
+	"github.com/frain-dev/disq"
 	"github.com/go-redis/redis/v8"
 	"github.com/google/uuid"
 )
 
-func TestWrite(t *testing.T) {
+func TestPublish(t *testing.T) {
 	t.Skip()
 	tests := []struct {
 		name            string
@@ -28,7 +28,7 @@ func TestWrite(t *testing.T) {
 		queueLen        int
 	}{
 		{
-			name:            "Write a single event to queue",
+			name:            "publish a single event to queue",
 			queueName:       uuid.NewString(),
 			appID:           uuid.NewString(),
 			configFile:      "../testdata/convoy_redis.json",
@@ -49,10 +49,14 @@ func TestWrite(t *testing.T) {
 					UID: tc.appID,
 				},
 			}
+			job := &queue.Job{
+				ID: eventDelivery.UID,
+			}
+
 			taskName := convoy.TaskName(uuid.NewString())
 			configFile := tc.configFile
 			eventQueue := initializeQueue(configFile, tc.queueName, t)
-			err := eventQueue.WriteEventDelivery(context.TODO(), taskName, eventDelivery, 0)
+			err := eventQueue.Publish(context.TODO(), taskName, job, 0)
 			if err != nil {
 				t.Fatalf("Failed to write to queue: %v", err)
 			}
@@ -61,7 +65,7 @@ func TestWrite(t *testing.T) {
 
 }
 
-func TestConsumer(t *testing.T) {
+func TestConsume(t *testing.T) {
 	tests := []struct {
 		name       string
 		configFile string
@@ -79,7 +83,8 @@ func TestConsumer(t *testing.T) {
 			configFile := tc.configFile
 
 			eventQueue := initializeQueue(configFile, tc.queueName, t)
-			err := eventQueue.Consumer().Start(context.TODO())
+			ctx := context.Background()
+			err := eventQueue.Consume(ctx)
 			if err != nil {
 				t.Fatalf("Failed to start consumer: %v", err)
 			}
@@ -111,7 +116,7 @@ func TestCheckEventDeliveryinStream(t *testing.T) {
 				if len(xmsgs) <= 0 {
 					return "", nil
 				}
-				msgs := make([]taskq.Message, len(xmsgs))
+				msgs := make([]disq.Message, len(xmsgs))
 				xmsg := &xmsgs[len(xmsgs)-1]
 				msg := &msgs[len(msgs)-1]
 
@@ -176,7 +181,7 @@ func TestCheckEventDeliveryinZSET(t *testing.T) {
 					return "", nil
 				}
 				body := bodies[len(bodies)-1]
-				var msg taskq.Message
+				var msg disq.Message
 				err = msg.UnmarshalBinary([]byte(body))
 
 				if err != nil {
@@ -236,7 +241,7 @@ func TestCheckEventDeliveryinPending(t *testing.T) {
 				if pending.Count <= 0 {
 					return "", nil
 				}
-				var msg taskq.Message
+				var msg disq.Message
 				xmsgInfoID := pending.Higher
 				id := xmsgInfoID
 
@@ -307,7 +312,7 @@ func TestDeleteEventDeliveryFromStream(t *testing.T) {
 				if len(xmsgs) <= 0 {
 					return "", nil
 				}
-				msgs := make([]taskq.Message, len(xmsgs))
+				msgs := make([]disq.Message, len(xmsgs))
 				xmsg := &xmsgs[len(xmsgs)-1]
 				msg := &msgs[len(msgs)-1]
 
@@ -363,19 +368,17 @@ func initializeQueue(configFile string, name string, t *testing.T) queue.Queuer 
 
 	}
 
-	var qFn taskq.Factory
 	var rC *redis.Client
 	var opts queue.QueueOptions
 
-	rC, qFn, err = NewClient(cfg)
+	rC, err = NewClient(cfg)
 	if err != nil {
 		t.Fatalf("Failed to load new client: %v", err)
 	}
 	opts = queue.QueueOptions{
-		Name:    name,
-		Type:    "redis",
-		Redis:   rC,
-		Factory: qFn,
+		Name:  name,
+		Type:  "redis",
+		Redis: rC,
 	}
 
 	eventQueue := NewQueue(opts)

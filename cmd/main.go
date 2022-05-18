@@ -23,7 +23,6 @@ import (
 	"go.mongodb.org/mongo-driver/bson/primitive"
 
 	"github.com/frain-dev/convoy/util"
-	"github.com/frain-dev/taskq/v3"
 	log "github.com/sirupsen/logrus"
 
 	"github.com/frain-dev/convoy"
@@ -158,7 +157,6 @@ type app struct {
 	eventRepo         datastore.EventRepository
 	eventDeliveryRepo datastore.EventDeliveryRepository
 	eventQueue        queue.Queuer
-	deadLetterQueue   queue.Queuer
 	createEventQueue  queue.Queuer
 	logger            logger.Logger
 	tracer            tracer.Tracer
@@ -232,35 +230,26 @@ func preRun(app *app, db datastore.DatabaseClient) func(cmd *cobra.Command, args
 		sentryHook := convoy.NewSentryHook(convoy.DefaultLevels)
 		log.AddHook(sentryHook)
 
-		var qFn taskq.Factory
 		var rC *redis.Client
 		var tr tracer.Tracer
-		var lS queue.Storage
 		var opts queue.QueueOptions
 		var ca cache.Cache
 		var li limiter.RateLimiter
 
 		if cfg.Queue.Type == config.RedisQueueProvider {
-			rC, qFn, err = redisqueue.NewClient(cfg)
+			rC, err = redisqueue.NewClient(cfg)
 			if err != nil {
 				return err
 			}
 			opts = queue.QueueOptions{
-				Type:    "redis",
-				Redis:   rC,
-				Factory: qFn,
+				Type:  "redis",
+				Redis: rC,
 			}
 		}
 
 		if cfg.Queue.Type == config.InMemoryQueueProvider {
-			lS, qFn, err = memqueue.NewClient(cfg)
-			if err != nil {
-				return err
-			}
 			opts = queue.QueueOptions{
-				Type:    "in-memory",
-				Storage: lS,
-				Factory: qFn,
+				Type: "in-memory",
 			}
 		}
 
@@ -304,7 +293,6 @@ func preRun(app *app, db datastore.DatabaseClient) func(cmd *cobra.Command, args
 
 		app.eventQueue = NewQueue(opts, "EventQueue")
 		app.createEventQueue = NewQueue(opts, "CreateEventQueue")
-		app.deadLetterQueue = NewQueue(opts, "DeadLetterQueue")
 
 		app.logger = lo
 		app.tracer = tr
@@ -319,12 +307,7 @@ func preRun(app *app, db datastore.DatabaseClient) func(cmd *cobra.Command, args
 func postRun(app *app, db datastore.DatabaseClient) func(cmd *cobra.Command, args []string) error {
 	return func(cmd *cobra.Command, args []string) error {
 		defer func() {
-			err := app.eventQueue.Close()
-			if err != nil {
-				log.Errorln("failed to close app queue - ", err)
-			}
-
-			err = app.deadLetterQueue.Close()
+			err := app.eventQueue.Stop()
 			if err != nil {
 				log.Errorln("failed to close app queue - ", err)
 			}
