@@ -57,7 +57,7 @@ func (a *applicationHandler) CreateAppEvent(w http.ResponseWriter, r *http.Reque
 // @Success 200 {object} serverResponse{data=datastore.Event{data=Stub}}
 // @Failure 400,401,500 {object} serverResponse{data=Stub}
 // @Security ApiKeyAuth
-// @Router /events/{eventID} [put]
+// @Router /events/{eventID}/replay [put]
 func (a *applicationHandler) ReplayAppEvent(w http.ResponseWriter, r *http.Request) {
 	g := getGroupFromContext(r.Context())
 	event := getEventFromContext(r.Context())
