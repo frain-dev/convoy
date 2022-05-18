@@ -513,6 +513,7 @@ func TestEventService_ReplayAppEvent(t *testing.T) {
 				eq.EXPECT().Publish(gomock.Any(), convoy.TaskName("test_group-CreateEventProcessor"), gomock.Any(), gomock.Any()).
 					Times(1).Return(nil)
 			},
+			wantErr: false,
 		},
 		{
 			name: "should_fail_to_replay_app_event",
