@@ -138,6 +138,25 @@ func (s *EventIntegrationTestSuite) Test_GetAppEvent_Valid_Event() {
 	require.Equal(s.T(), event.UID, respEvent.UID)
 }
 
+func (s *EventIntegrationTestSuite) Test_ReplayAppEvent_Valid_Event() {
+	eventID := uuid.NewString()
+	expectedStatusCode := http.StatusOK
+
+	// Just Before.
+	app, _ := testdb.SeedApplication(s.DB, s.DefaultGroup, uuid.NewString(), "", false)
+	_, _ = testdb.SeedEvent(s.DB, app, eventID, "*", []byte(`{}`))
+
+	url := fmt.Sprintf("/api/v1/events/%s", eventID)
+	req := createRequest(http.MethodPut, url, nil)
+	w := httptest.NewRecorder()
+
+	// Act.
+	s.Router.ServeHTTP(w, req)
+
+	// Assert.
+	require.Equal(s.T(), expectedStatusCode, w.Code)
+}
+
 func (s *EventIntegrationTestSuite) Test_GetAppEvent_Event_not_found() {
 	eventID := uuid.NewString()
 	expectedStatusCode := http.StatusNotFound
