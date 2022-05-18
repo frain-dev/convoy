@@ -116,6 +116,7 @@ func ProcessEventCreated(appRepo datastore.ApplicationRepository, eventRepo data
 					NumTrials:       0,
 					IntervalSeconds: intervalSeconds,
 					RetryLimit:      retryLimit,
+					BackoffTimes:    group.Config.Strategy.ExponentialBackoff.BackoffTimes,
 					NextSendTime:    primitive.NewDateTimeFromTime(time.Now()),
 				},
 				Status:           getEventDeliveryStatus(v, app),

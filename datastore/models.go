@@ -150,7 +150,8 @@ type DefaultStrategyConfiguration struct {
 }
 
 type ExponentialBackoffStrategyConfiguration struct {
-	RetryLimit uint64 `json:"retryLimit"`
+	RetryLimit   uint64   `json:"retryLimit"`
+	BackoffTimes []uint64 `json:"backoff_times"`
 }
 
 type SignatureConfiguration struct {
@@ -274,6 +275,8 @@ type Metadata struct {
 	NumTrials uint64 `json:"num_trials" bson:"num_trials"`
 
 	IntervalSeconds uint64 `json:"interval_seconds" bson:"interval_seconds"`
+
+	BackoffTimes []uint64 `json:"backoff_times"`
 
 	RetryLimit uint64 `json:"retry_limit" bson:"retry_limit"`
 }

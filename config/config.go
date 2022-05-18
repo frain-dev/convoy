@@ -7,6 +7,7 @@ import (
 	"os"
 	"strings"
 	"sync/atomic"
+	"time"
 
 	"github.com/frain-dev/convoy/config/algo"
 	"github.com/kelseyhightower/envconfig"
@@ -183,7 +184,8 @@ type DefaultStrategyConfiguration struct {
 }
 
 type ExponentialBackoffStrategyConfiguration struct {
-	RetryLimit uint64 `json:"retryLimit" envconfig:"CONVOY_RETRY_LIMIT"`
+	RetryLimit   uint64   `json:"retryLimit" envconfig:"CONVOY_RETRY_LIMIT"`
+	BackoffTimes []uint64 `json:"backoff_times" envconfig:"CONVOY_BACKOFF_TIMES"`
 }
 
 type SignatureConfiguration struct {
@@ -528,6 +530,16 @@ func LoadConfig(p string) error {
 	return nil
 }
 
+var defaultBackOffTimes = []uint64{
+	uint64(10 * time.Second), // 10 seconds
+	uint64(30 * time.Second), // 30 seconds
+	uint64(time.Minute),      // 1 minute
+	uint64(3 * time.Minute),  // 3 minutes
+	uint64(5 * time.Minute),  // 5 minutes
+	uint64(10 * time.Minute), // 10 minutes
+	uint64(15 * time.Minute), // 15 minutes
+}
+
 func SetServerConfigDefaults(c *Configuration) error {
 	// if it's still empty, set it to development
 	if c.Environment == "" {
@@ -566,6 +578,15 @@ func SetServerConfigDefaults(c *Configuration) error {
 	err = ensureStrategyConfig(c.GroupConfig.Strategy)
 	if err != nil {
 		return err
+	}
+
+	if len(c.GroupConfig.Strategy.ExponentialBackoff.BackoffTimes) == 0 {
+		c.GroupConfig.Strategy.ExponentialBackoff.BackoffTimes = defaultBackOffTimes
+	} else {
+		// convert backoff times to their time.Duration equivalent
+		for i, t := range c.GroupConfig.Strategy.ExponentialBackoff.BackoffTimes {
+			c.GroupConfig.Strategy.ExponentialBackoff.BackoffTimes[i] = t * uint64(time.Second)
+		}
 	}
 
 	err = ensureQueueConfig(c.Queue)
