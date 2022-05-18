@@ -4,6 +4,7 @@ import (
 	"os"
 	"strconv"
 	"testing"
+	"time"
 
 	"github.com/frain-dev/convoy/auth"
 
@@ -212,6 +213,15 @@ func TestLoadConfig(t *testing.T) {
 							IntervalSeconds: 125,
 							RetryLimit:      15,
 						},
+						ExponentialBackoff: ExponentialBackoffStrategyConfiguration{
+							RetryLimit: 3,
+							BackoffTimes: []uint64{
+								uint64(10 * time.Second),
+								uint64(30 * time.Second),
+								uint64(60 * time.Second),
+								uint64(180 * time.Second),
+							},
+						},
 					},
 					Signature: SignatureConfiguration{
 						Header: DefaultSignatureHeader,
@@ -253,6 +263,15 @@ func TestLoadConfig(t *testing.T) {
 							IntervalSeconds: 125,
 							RetryLimit:      15,
 						},
+						ExponentialBackoff: ExponentialBackoffStrategyConfiguration{
+							RetryLimit: 3,
+							BackoffTimes: []uint64{
+								uint64(10 * time.Second),
+								uint64(30 * time.Second),
+								uint64(60 * time.Second),
+								uint64(180 * time.Second),
+							},
+						},
 					},
 					Signature: SignatureConfiguration{
 						Header: DefaultSignatureHeader,
@@ -293,6 +312,15 @@ func TestLoadConfig(t *testing.T) {
 						Default: DefaultStrategyConfiguration{
 							IntervalSeconds: 125,
 							RetryLimit:      15,
+						},
+						ExponentialBackoff: ExponentialBackoffStrategyConfiguration{
+							RetryLimit: 3,
+							BackoffTimes: []uint64{
+								uint64(10 * time.Second),
+								uint64(30 * time.Second),
+								uint64(60 * time.Second),
+								uint64(180 * time.Second),
+							},
 						},
 					},
 					Signature: SignatureConfiguration{
@@ -349,6 +377,15 @@ func TestLoadConfig(t *testing.T) {
 							IntervalSeconds: 125,
 							RetryLimit:      15,
 						},
+						ExponentialBackoff: ExponentialBackoffStrategyConfiguration{
+							RetryLimit: 3,
+							BackoffTimes: []uint64{
+								uint64(10 * time.Second),
+								uint64(30 * time.Second),
+								uint64(60 * time.Second),
+								uint64(180 * time.Second),
+							},
+						},
 					},
 					Signature: SignatureConfiguration{
 						Header: DefaultSignatureHeader,
@@ -400,7 +437,13 @@ func TestLoadConfig(t *testing.T) {
 					Strategy: StrategyConfiguration{
 						Type: "exponential-backoff",
 						ExponentialBackoff: ExponentialBackoffStrategyConfiguration{
-							RetryLimit: 15,
+							RetryLimit: 3,
+							BackoffTimes: []uint64{
+								uint64(10 * time.Second),
+								uint64(30 * time.Second),
+								uint64(60 * time.Second),
+								uint64(180 * time.Second),
+							},
 						},
 					},
 					Signature: SignatureConfiguration{

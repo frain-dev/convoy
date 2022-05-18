@@ -276,7 +276,7 @@ type Metadata struct {
 
 	IntervalSeconds uint64 `json:"interval_seconds" bson:"interval_seconds"`
 
-	BackoffTimes []uint64 `json:"backoff_times"`
+	BackoffTimes []uint64 `json:"backoff_times" bson:"backoff_times"`
 
 	RetryLimit uint64 `json:"retry_limit" bson:"retry_limit"`
 }

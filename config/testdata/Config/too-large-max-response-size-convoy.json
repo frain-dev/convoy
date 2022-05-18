@@ -20,6 +20,15 @@
             "default": {
                 "intervalSeconds": 125,
                 "retryLimit": 15
+            },
+            "exponentialBackoff": {
+                "retryLimit": 3,
+                "backoff_times": [
+                    10,
+                    30,
+                    60,
+                    180
+                ]
             }
         },
         "signature": {

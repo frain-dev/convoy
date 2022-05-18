@@ -75,7 +75,7 @@
       "default": {
         "intervalSeconds": 20,
         "retryLimit": 3
-      }
+      },
       "exponentialBackoff": {
         "retryLimit": 3,
         "backoff_times": [ 10, 30, 60, 180 ]
