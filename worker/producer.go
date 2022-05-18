@@ -4,36 +4,36 @@ import (
 	"context"
 
 	"github.com/frain-dev/convoy/queue"
-	"github.com/frain-dev/taskq/v3"
+	"github.com/frain-dev/disq"
 	log "github.com/sirupsen/logrus"
 )
 
 type Producer struct {
-	scheduleQueue queue.Queuer
-	consumer      *taskq.Consumer
-	quit          chan chan error
+	Queues []queue.Queuer
+	worker *disq.Worker
 }
 
-func NewProducer(queue queue.Queuer) *Producer {
-	consumer := queue.Consumer()
-
+func NewProducer(queues []queue.Queuer) *Producer {
+	brokers := make([]disq.Broker, len(queues))
+	for i, q := range queues {
+		brokers[i] = q.Broker()
+	}
+	w := disq.NewWorker(brokers)
 	return &Producer{
-		scheduleQueue: queue,
-		consumer:      consumer.(*taskq.Consumer),
+		Queues: queues,
+		worker: w,
 	}
 }
 
 func (p *Producer) Start(ctx context.Context) {
 	go func() {
-		err := p.consumer.Start(ctx)
+		err := p.worker.Start(ctx)
 		if err != nil {
 			log.Fatal(err)
 		}
 	}()
 }
 
-func (p *Producer) Close() error {
-	ch := make(chan error)
-	p.quit <- ch
-	return <-ch
+func (p *Producer) Stop() error {
+	return p.worker.Stop()
 }

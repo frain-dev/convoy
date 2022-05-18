@@ -7,6 +7,7 @@ import (
 
 	"github.com/frain-dev/convoy"
 	"github.com/frain-dev/convoy/auth/realm_chain"
+	"github.com/frain-dev/convoy/queue"
 	"github.com/frain-dev/convoy/worker"
 	"github.com/frain-dev/convoy/worker/task"
 
@@ -180,7 +181,7 @@ func StartConvoyServer(a *app, cfg config.Configuration, withWorkers bool) error
 		}
 
 		// register tasks.
-		eventCreatedhandler := task.ProcessEventCreated(a.applicationRepo, a.eventRepo, a.groupRepo, a.eventDeliveryRepo, a.cache, a.createEventQueue)
+		eventCreatedhandler := task.ProcessEventCreated(a.applicationRepo, a.eventRepo, a.groupRepo, a.eventDeliveryRepo, a.cache, a.eventQueue)
 		if err := task.CreateTasks(a.groupRepo, convoy.CreateEventProcessor, eventCreatedhandler); err != nil {
 			log.WithError(err).Error("failed to register tasks")
 			return err
@@ -189,18 +190,10 @@ func StartConvoyServer(a *app, cfg config.Configuration, withWorkers bool) error
 		worker.RegisterNewGroupTask(a.applicationRepo, a.eventDeliveryRepo, a.groupRepo, a.limiter, a.eventRepo, a.cache, a.eventQueue)
 
 		log.Infof("Starting Convoy workers...")
-
-		// register workers.
+		// register worker.
 		ctx := context.Background()
-		producer := worker.NewProducer(a.eventQueue)
-		if cfg.Queue.Type != config.InMemoryQueueProvider {
-			producer.Start(ctx)
-		}
-
-		eventCreationProducer := worker.NewProducer(a.createEventQueue)
-		if cfg.Queue.Type != config.InMemoryQueueProvider {
-			eventCreationProducer.Start(ctx)
-		}
+		producer := worker.NewProducer([]queue.Queuer{a.createEventQueue, a.eventQueue})
+		producer.Start(ctx)
 	}
 
 	log.Infof("Started convoy server in %s", time.Since(start))

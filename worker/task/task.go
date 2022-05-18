@@ -5,19 +5,22 @@ import (
 
 	"github.com/frain-dev/convoy"
 	"github.com/frain-dev/convoy/datastore"
-	"github.com/frain-dev/taskq/v3"
+	"github.com/frain-dev/disq"
 	log "github.com/sirupsen/logrus"
 )
 
-func CreateTask(name convoy.TaskName, group datastore.Group, handler interface{}) *taskq.Task {
+func CreateTask(name convoy.TaskName, group datastore.Group, handler interface{}) (*disq.Task, error) {
 
-	options := taskq.TaskOptions{
+	options := disq.TaskOptions{
 		Name:       string(name),
 		RetryLimit: int(group.Config.Strategy.Default.RetryLimit),
 		Handler:    handler,
 	}
-
-	return taskq.RegisterTask(&options)
+	task, err := disq.RegisterTask(&options)
+	if err != nil {
+		return nil, err
+	}
+	return task, nil
 }
 
 func CreateTasks(groupRepo datastore.GroupRepository, taskname convoy.TaskName, handler interface{}) error {
@@ -32,12 +35,11 @@ func CreateTasks(groupRepo datastore.GroupRepository, taskname convoy.TaskName, 
 
 	for _, g := range groups {
 		name = taskname.SetPrefix(g.Name)
-
-		if t := taskq.Tasks.Get(string(name)); t == nil {
+		t, _ := disq.Tasks.LoadTask(string(name))
+		if t == nil {
 			log.Infof("Registering task handler for %s", g.Name)
 			CreateTask(name, *g, handler)
 		}
 	}
-
 	return nil
 }

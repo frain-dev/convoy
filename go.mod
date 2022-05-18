@@ -8,8 +8,9 @@ require (
 	github.com/asaskevich/govalidator v0.0.0-20210307081110-f21760c49a8d
 	github.com/dchest/uniuri v0.0.0-20200228104902-7aecb25e1fe5
 	github.com/dgraph-io/badger/v3 v3.2103.1
+	github.com/dgryski/go-farm v0.0.0-20200201041132-a6ae2369ad13 // indirect
 	github.com/felixge/httpsnoop v1.0.2
-	github.com/frain-dev/taskq/v3 v3.2.11
+	github.com/frain-dev/disq v0.1.5
 	github.com/fsnotify/fsnotify v1.5.1 // indirect
 	github.com/getkin/kin-openapi v0.80.0
 	github.com/getsentry/sentry-go v0.11.0
@@ -24,11 +25,11 @@ require (
 	github.com/golang/mock v1.6.0
 	github.com/google/go-cmp v0.5.7 // indirect
 	github.com/google/uuid v1.3.0
-	github.com/hashicorp/golang-lru v0.5.4
 	github.com/jarcoal/httpmock v1.0.8
 	github.com/jaswdr/faker v1.10.2
 	github.com/jeremywohl/flatten v1.0.1
 	github.com/kelseyhightower/envconfig v1.4.0
+	github.com/klauspost/compress v1.15.4 // indirect
 	github.com/mattn/go-colorable v0.1.11 // indirect
 	github.com/mgutz/ansi v0.0.0-20200706080929-d51e80ef957d // indirect
 	github.com/newrelic/go-agent/v3 v3.15.2
