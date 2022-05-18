@@ -227,10 +227,6 @@ export class ConvoyDashboardComponent implements OnInit {
 		);
 	}
 
-	// signatureForm(){
-	// 	return thi
-	// }
-
 	get endpoints(): FormArray {
 		return this.addNewAppForm.get('endpoints') as FormArray;
 	}
@@ -376,7 +372,7 @@ export class ConvoyDashboardComponent implements OnInit {
 			this.convyDashboardService.showNotification({ style: 'error', message: 'Unable to retrieve hashes' });
 		}
 	}
-	
+
 	// create/edit new application function
 	async createNewApp() {
 		if (this.addNewAppForm.invalid) {
