@@ -36,7 +36,7 @@ func SeedApplication(db datastore.DatabaseClient, g *datastore.Group, uid, title
 
 	// Seed Data.
 	appRepo := db.AppRepo()
-	err := appRepo.CreateApplication(context.TODO(), app)
+	err := appRepo.CreateApplication(context.TODO(), app, app.GroupID)
 	if err != nil {
 		return &datastore.Application{}, err
 	}
@@ -57,7 +57,7 @@ func SeedMultipleApplications(db datastore.DatabaseClient, g *datastore.Group, c
 
 		// Seed Data.
 		appRepo := db.AppRepo()
-		err := appRepo.CreateApplication(context.TODO(), app)
+		err := appRepo.CreateApplication(context.TODO(), app, app.GroupID)
 		if err != nil {
 			return err
 		}
@@ -77,7 +77,7 @@ func SeedEndpoint(db datastore.DatabaseClient, app *datastore.Application, event
 
 	// Seed Data.
 	appRepo := db.AppRepo()
-	err := appRepo.UpdateApplication(context.TODO(), app)
+	err := appRepo.UpdateApplication(context.TODO(), app, app.GroupID)
 	if err != nil {
 		return &datastore.Endpoint{}, err
 	}
@@ -99,7 +99,7 @@ func SeedMultipleEndpoints(db datastore.DatabaseClient, app *datastore.Applicati
 
 	// Seed Data.
 	appRepo := db.AppRepo()
-	err := appRepo.UpdateApplication(context.TODO(), app)
+	err := appRepo.UpdateApplication(context.TODO(), app, app.GroupID)
 	if err != nil {
 		return nil, err
 	}

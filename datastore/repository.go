@@ -48,10 +48,10 @@ type GroupRepository interface {
 }
 
 type ApplicationRepository interface {
-	CreateApplication(context.Context, *Application) error
+	CreateApplication(context.Context, *Application, string) error
 	LoadApplicationsPaged(context.Context, string, string, Pageable) ([]Application, PaginationData, error)
 	FindApplicationByID(context.Context, string) (*Application, error)
-	UpdateApplication(context.Context, *Application) error
+	UpdateApplication(context.Context, *Application, string) error
 	DeleteApplication(context.Context, *Application) error
 	CountGroupApplications(ctx context.Context, groupID string) (int64, error)
 	DeleteGroupApps(context.Context, string) error
