@@ -48,21 +48,21 @@ func Test_RateLimitAllow(t *testing.T) {
 			res, err := limiter.Allow(context.Background(), "UID", 2, int(duration))
 			require.NoError(t, err)
 
-			require.Equal(t, 3, res.Limit.Rate)
+			require.Equal(t, 2, res.Limit.Rate)
 			require.Equal(t, 2, res.Remaining)
 			require.Equal(t, res.RetryAfter, time.Duration(-1))
 
 			res, err = limiter.Allow(context.Background(), "UID", 2, int(duration))
 			require.NoError(t, err)
 
-			require.Equal(t, 3, res.Limit.Rate)
+			require.Equal(t, 2, res.Limit.Rate)
 			require.Equal(t, 1, res.Remaining)
 			require.Equal(t, res.RetryAfter, time.Duration(-1))
 
 			res, err = limiter.Allow(context.Background(), "UID", 2, int(duration))
 			require.NoError(t, err)
 
-			require.Equal(t, 3, res.Limit.Rate)
+			require.Equal(t, 2, res.Limit.Rate)
 			require.Equal(t, 0, res.Remaining)
 			require.LessOrEqual(t, int(res.ResetAfter), int(duration))
 			require.Greater(t, int(res.ResetAfter), int(time.Duration(0)))
@@ -70,7 +70,7 @@ func Test_RateLimitAllow(t *testing.T) {
 			res, err = limiter.Allow(context.Background(), "UID", 2, int(duration))
 			require.NoError(t, err)
 
-			require.Equal(t, 3, res.Limit.Rate)
+			require.Equal(t, 2, res.Limit.Rate)
 			require.Equal(t, 0, res.Remaining)
 			require.LessOrEqual(t, int(res.RetryAfter), int(duration/2))
 			require.Greater(t, int(res.RetryAfter), int(time.Duration(0)))
