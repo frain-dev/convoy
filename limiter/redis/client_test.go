@@ -49,14 +49,14 @@ func Test_RateLimitAllow(t *testing.T) {
 			require.NoError(t, err)
 
 			require.Equal(t, 2, res.Limit.Rate)
-			require.Equal(t, 2, res.Remaining)
+			require.Equal(t, 1, res.Remaining)
 			require.Equal(t, res.RetryAfter, time.Duration(-1))
 
 			res, err = limiter.Allow(context.Background(), "UID", 2, int(duration))
 			require.NoError(t, err)
 
 			require.Equal(t, 2, res.Limit.Rate)
-			require.Equal(t, 1, res.Remaining)
+			require.Equal(t, 0, res.Remaining)
 			require.Equal(t, res.RetryAfter, time.Duration(-1))
 
 			res, err = limiter.Allow(context.Background(), "UID", 2, int(duration))
