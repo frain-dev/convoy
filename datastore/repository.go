@@ -45,6 +45,7 @@ type GroupRepository interface {
 	DeleteGroup(ctx context.Context, uid string) error
 	FetchGroupByID(context.Context, string) (*Group, error)
 	FetchGroupsByIDs(context.Context, []string) ([]Group, error)
+	FillGroupsStatistics(ctx context.Context, groups []*Group) error
 }
 
 type ApplicationRepository interface {
