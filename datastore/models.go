@@ -65,7 +65,7 @@ type SourceType string
 
 type VerifierType string
 
-type EncoderType string
+type EncodingType string
 
 const (
 	HTTPSource     SourceType = "http"
@@ -81,8 +81,8 @@ const (
 )
 
 const (
-	Base64Encoder EncoderType = "base64"
-	HexEncoder    EncoderType = "hex"
+	Base64Encoding EncodingType = "base64"
+	HexEncoding    EncodingType = "hex"
 )
 
 var (
@@ -433,10 +433,10 @@ type VerifierConfig struct {
 }
 
 type HMac struct {
-	Header  string      `json:"header,omitempty" bson:"header"`
-	Hash    string      `json:"hash,omitempty" bson:"hash" valid:"supported_hash,optional"`
-	Secret  string      `json:"secret,omitempty" bson:"secret"`
-	Encoder EncoderType `json:"encoder,omitempty" bson:"encoder" valid:"supported_encoder~please provide a valid encoder type,optional"`
+	Header   string       `json:"header,omitempty" bson:"header"`
+	Hash     string       `json:"hash,omitempty" bson:"hash" valid:"supported_hash,optional"`
+	Secret   string       `json:"secret,omitempty" bson:"secret"`
+	Encoding EncodingType `json:"encoding,omitempty" bson:"encoding" valid:"supported_encoding~please provide a valid encoding type,optional"`
 }
 
 type BasicAuth struct {

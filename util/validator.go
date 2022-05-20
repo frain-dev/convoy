@@ -65,10 +65,10 @@ func init() {
 		return true
 	})
 
-	govalidator.TagMap["supported_encoder"] = govalidator.Validator(func(encoder string) bool {
+	govalidator.TagMap["supported_encoding"] = govalidator.Validator(func(encoder string) bool {
 		encoders := map[string]bool{
-			string(datastore.Base64Encoder): true,
-			string(datastore.HexEncoder):    true,
+			string(datastore.Base64Encoding): true,
+			string(datastore.HexEncoding):    true,
 		}
 
 		if _, ok := encoders[encoder]; !ok {
