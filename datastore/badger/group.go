@@ -6,6 +6,7 @@ import (
 	_ "fmt"
 
 	"github.com/frain-dev/convoy/datastore"
+	log "github.com/sirupsen/logrus"
 	"github.com/timshannon/badgerhold/v4"
 )
 
@@ -58,5 +59,24 @@ func (g *groupRepo) DeleteGroup(ctx context.Context, gid string) error {
 }
 
 func (g *groupRepo) FillGroupsStatistics(ctx context.Context, groups []*datastore.Group) error {
-	panic("implement me")
+	for _, group := range groups {
+		appCount, err := NewApplicationRepo(g.db).CountGroupApplications(ctx, group.UID)
+		if err != nil {
+			log.WithError(err).Error("failed to count group applications")
+			return errors.New("failed to count group messages")
+		}
+
+		msgCount, err := NewEventRepo(g.db).CountGroupMessages(ctx, group.UID)
+		if err != nil {
+			log.WithError(err).Error("failed to count group events")
+			return errors.New("failed to count group messages")
+		}
+
+		group.Statistics = &datastore.GroupStatistics{
+			MessagesSent: msgCount,
+			TotalApps:    appCount,
+		}
+	}
+
+	return nil
 }
