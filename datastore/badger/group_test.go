@@ -173,13 +173,13 @@ func Test_FillGroupsStatistics(t *testing.T) {
 	err = groupRepo.FillGroupsStatistics(context.Background(), groups)
 	require.NoError(t, err)
 
-	require.Equal(t, group1.Statistics, datastore.GroupStatistics{
+	require.Equal(t, *group1.Statistics, datastore.GroupStatistics{
 		GroupID:      "",
 		MessagesSent: 1,
 		TotalApps:    1,
 	})
 
-	require.Equal(t, group2.Statistics, datastore.GroupStatistics{
+	require.Equal(t, *group2.Statistics, datastore.GroupStatistics{
 		GroupID:      "",
 		MessagesSent: 0,
 		TotalApps:    1,
