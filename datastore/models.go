@@ -65,6 +65,8 @@ type SourceType string
 
 type VerifierType string
 
+type EncoderType string
+
 const (
 	HTTPSource     SourceType = "http"
 	RestApiSource  SourceType = "rest_api"
@@ -76,6 +78,11 @@ const (
 	HMacVerifier      VerifierType = "hmac"
 	BasicAuthVerifier VerifierType = "basic_auth"
 	APIKeyVerifier    VerifierType = "api_key"
+)
+
+const (
+	Base64Encoder EncoderType = "base64"
+	HexEncoder    EncoderType = "hex"
 )
 
 var (
@@ -426,9 +433,10 @@ type VerifierConfig struct {
 }
 
 type HMac struct {
-	Header string `json:"header,omitempty" bson:"header"`
-	Hash   string `json:"hash,omitempty" bson:"hash" valid:"supported_hash,optional"`
-	Secret string `json:"secret,omitempty" bson:"secret"`
+	Header  string      `json:"header,omitempty" bson:"header"`
+	Hash    string      `json:"hash,omitempty" bson:"hash" valid:"supported_hash,optional"`
+	Secret  string      `json:"secret,omitempty" bson:"secret"`
+	Encoder EncoderType `json:"encoder,omitempty" bson:"encoder" valid:"supported_encoder~please provide a valid encoder type,optional"`
 }
 
 type BasicAuth struct {

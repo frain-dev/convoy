@@ -52,13 +52,26 @@ func init() {
 	})
 
 	govalidator.TagMap["supported_verifier"] = govalidator.Validator(func(verifier string) bool {
-		sources := map[string]bool{
-			string(datastore.HMacVerifier):     true,
-			string(datastore.BasicAuthVerifier):  true,
-			string(datastore.APIKeyVerifier):   true,
+		verifiers := map[string]bool{
+			string(datastore.HMacVerifier):      true,
+			string(datastore.BasicAuthVerifier): true,
+			string(datastore.APIKeyVerifier):    true,
 		}
 
-		if _, ok := sources[verifier]; !ok {
+		if _, ok := verifiers[verifier]; !ok {
+			return false
+		}
+
+		return true
+	})
+
+	govalidator.TagMap["supported_encoder"] = govalidator.Validator(func(encoder string) bool {
+		encoders := map[string]bool{
+			string(datastore.Base64Encoder): true,
+			string(datastore.HexEncoder):    true,
+		}
+
+		if _, ok := encoders[encoder]; !ok {
 			return false
 		}
 
