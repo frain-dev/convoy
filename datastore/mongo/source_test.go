@@ -200,7 +200,7 @@ func Test_LoadSourcesPaged(t *testing.T) {
 				require.NoError(t, sourceRepo.CreateSource(context.Background(), source))
 			}
 
-			_, pageable, err := sourceRepo.LoadSourcesPaged(context.Background(), groupId, tc.pageData)
+			_, pageable, err := sourceRepo.LoadSourcesPaged(context.Background(), groupId, &datastore.SourceFilter{}, tc.pageData)
 
 			require.NoError(t, err)
 
