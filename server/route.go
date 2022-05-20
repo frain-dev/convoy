@@ -171,6 +171,18 @@ func buildRoutes(app *applicationHandler) http.Handler {
 					securitySubRouter.Post("/", app.CreateAppPortalAPIKey)
 				})
 			})
+
+			r.Route("/sources", func(sourceRouter chi.Router) {
+				sourceRouter.Use(requireGroup(app.groupRepo, app.cache))
+				sourceRouter.Use(requirePermission(auth.RoleAdmin))
+				sourceRouter.Use(requireBaseUrl())
+
+				sourceRouter.Post("/", app.CreateSource)
+				sourceRouter.Get("/{sourceID}", app.GetSourceByID)
+				sourceRouter.With(pagination).Get("/", app.LoadSourcesPaged)
+				sourceRouter.Put("/{sourceID}", app.UpdateSource)
+				sourceRouter.Delete("/{sourceID}", app.DeleteSource)
+			})
 		})
 	})
 
@@ -360,6 +372,7 @@ func New(cfg config.Configuration,
 	appRepo datastore.ApplicationRepository,
 	apiKeyRepo datastore.APIKeyRepository,
 	orgRepo datastore.GroupRepository,
+	sourceRepo datastore.SourceRepository,
 	eventQueue queue.Queuer,
 	createEventQueue queue.Queuer,
 	logger logger.Logger,
@@ -373,6 +386,7 @@ func New(cfg config.Configuration,
 		appRepo,
 		orgRepo,
 		apiKeyRepo,
+		sourceRepo,
 		eventQueue,
 		createEventQueue,
 		logger,

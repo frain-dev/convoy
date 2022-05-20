@@ -14,4 +14,5 @@ type DatabaseClient interface {
 	EventRepo() EventRepository
 	AppRepo() ApplicationRepository
 	EventDeliveryRepo() EventDeliveryRepository
+	SourceRepo() SourceRepository
 }

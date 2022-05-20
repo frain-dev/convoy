@@ -61,9 +61,27 @@ const (
 	DeletedDocumentStatus  DocumentStatus = "Deleted"
 )
 
+type SourceType string
+
+type VerifierType string
+
+const (
+	HTTPSource     SourceType = "http"
+	RestApiSource  SourceType = "rest_api"
+	PubSubSource   SourceType = "pub_sub"
+	DBChangeStream SourceType = "db_change_stream"
+)
+
+const (
+	HMacVerifier      VerifierType = "hmac"
+	BasicAuthVerifier VerifierType = "basic_auth"
+	APIKeyVerifier    VerifierType = "api_key"
+)
+
 var (
 	ErrApplicationNotFound = errors.New("application not found")
 	ErrEndpointNotFound    = errors.New("endpoint not found")
+	ErrSourceNotFound      = errors.New("source not found")
 )
 
 const (
@@ -381,4 +399,44 @@ type APIKey struct {
 	DeletedAt primitive.DateTime `json:"delted_at,omitempty" bson:"deleted_at"`
 
 	DocumentStatus DocumentStatus `json:"-" bson:"document_status"`
+}
+
+type Source struct {
+	ID         primitive.ObjectID `json:"-" bson:"_id"`
+	UID        string             `json:"uid" bson:"uid"`
+	GroupID    string             `json:"group_id" bson:"group_id"`
+	MaskID     string             `json:"mask_id" bson:"mask_id"`
+	Name       string             `json:"name" bson:"name"`
+	Type       SourceType         `json:"type" bson:"type"`
+	IsDisabled bool               `json:"is_disabled" bson:"is_disabled"`
+	Verifier   *VerifierConfig    `json:"verifier" bson:"verifier"`
+
+	CreatedAt primitive.DateTime `json:"created_at,omitempty" bson:"created_at"`
+	UpdatedAt primitive.DateTime `json:"updated_at,omitempty" bson:"updated_at"`
+	DeletedAt primitive.DateTime `json:"deleted_at,omitempty" bson:"deleted_at"`
+
+	DocumentStatus DocumentStatus `json:"-" bson:"document_status"`
+}
+
+type VerifierConfig struct {
+	Type      VerifierType `json:"type" bson:"type"`
+	HMac      HMac         `json:"hmac" bson:"hmac"`
+	BasicAuth BasicAuth    `json:"basic_auth" bson:"basic_auth"`
+	ApiKey    ApiKey       `json:"api_key" bson:"api_key"`
+}
+
+type HMac struct {
+	Header string `json:"header" bson:"header"`
+	Hash   string `json:"hash" bson:"hash"`
+	Secret string `json:"secret" bson:"secret"`
+}
+
+type BasicAuth struct {
+	UserName string `json:"username" bson:"username"`
+	Password string `json:"password" bson:"password"`
+}
+
+type ApiKey struct {
+	APIKey       string `json:"key" bson:"key"`
+	APIKeyHeader string `json:"header" bson:"header"`
 }
