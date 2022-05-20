@@ -17,9 +17,10 @@ import (
 )
 
 const (
-	GroupCollection = "groups"
-	AppCollections  = "applications"
-	EventCollection = "events"
+	SubscriptionCollection = "subscriptions"
+	AppCollections         = "applications"
+	GroupCollection        = "groups"
+	EventCollection        = "events"
 )
 
 type Client struct {
@@ -28,6 +29,7 @@ type Client struct {
 	groupRepo         datastore.GroupRepository
 	eventRepo         datastore.EventRepository
 	applicationRepo   datastore.ApplicationRepository
+	subscriptionRepo  datastore.SubscriptionRepository
 	eventDeliveryRepo datastore.EventDeliveryRepository
 }
 
@@ -63,6 +65,7 @@ func New(cfg config.Configuration) (datastore.DatabaseClient, error) {
 		db:                conn,
 		apiKeyRepo:        NewApiKeyRepo(conn),
 		groupRepo:         NewGroupRepo(conn),
+		subscriptionRepo:  NewSubscriptionRepo(conn),
 		applicationRepo:   NewApplicationRepo(conn),
 		eventRepo:         NewEventRepository(conn),
 		eventDeliveryRepo: NewEventDeliveryRepository(conn),
@@ -103,6 +106,10 @@ func (c *Client) EventRepo() datastore.EventRepository {
 
 func (c *Client) EventDeliveryRepo() datastore.EventDeliveryRepository {
 	return c.eventDeliveryRepo
+}
+
+func (c *Client) SubRepo() datastore.SubscriptionRepository {
+	return c.subscriptionRepo
 }
 
 func (c *Client) ensureMongoIndices() {

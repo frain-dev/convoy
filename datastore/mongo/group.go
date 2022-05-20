@@ -68,7 +68,6 @@ func (db *groupRepo) CreateGroup(ctx context.Context, o *datastore.Group) error 
 }
 
 func (db *groupRepo) UpdateGroup(ctx context.Context, o *datastore.Group) error {
-
 	o.UpdatedAt = primitive.NewDateTimeFromTime(time.Now())
 
 	filter := bson.D{primitive.E{Key: "uid", Value: o.UID}}

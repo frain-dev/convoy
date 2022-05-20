@@ -156,6 +156,7 @@ type app struct {
 	applicationRepo   datastore.ApplicationRepository
 	eventRepo         datastore.EventRepository
 	eventDeliveryRepo datastore.EventDeliveryRepository
+	subRepo           datastore.SubscriptionRepository
 	eventQueue        queue.Queuer
 	createEventQueue  queue.Queuer
 	logger            logger.Logger
@@ -285,6 +286,7 @@ func preRun(app *app, db datastore.DatabaseClient) func(cmd *cobra.Command, args
 			return err
 		}
 
+		app.subRepo = db.SubRepo()
 		app.apiKeyRepo = db.APIRepo()
 		app.groupRepo = db.GroupRepo()
 		app.eventRepo = db.EventRepo()

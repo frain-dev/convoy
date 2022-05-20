@@ -22,6 +22,7 @@ import (
 )
 
 type applicationHandler struct {
+	subService        *services.SubcriptionService
 	appService        *services.AppService
 	eventService      *services.EventService
 	groupService      *services.GroupService
@@ -29,6 +30,7 @@ type applicationHandler struct {
 	appRepo           datastore.ApplicationRepository
 	eventRepo         datastore.EventRepository
 	eventDeliveryRepo datastore.EventDeliveryRepository
+	subRepo           datastore.SubscriptionRepository
 	groupRepo         datastore.GroupRepository
 	apiKeyRepo        datastore.APIKeyRepository
 	eventQueue        queue.Queuer
@@ -50,33 +52,42 @@ func newApplicationHandler(
 	appRepo datastore.ApplicationRepository,
 	groupRepo datastore.GroupRepository,
 	apiKeyRepo datastore.APIKeyRepository,
+	subRepo datastore.SubscriptionRepository,
 	eventQueue queue.Queuer,
 	createEventQueue queue.Queuer,
 	logger logger.Logger,
 	tracer tracer.Tracer,
 	cache cache.Cache,
-	limiter limiter.RateLimiter, searcher searcher.Searcher) *applicationHandler {
-	as := services.NewAppService(appRepo, eventRepo, eventDeliveryRepo, eventQueue, cache)
+	limiter limiter.RateLimiter,
+	searcher searcher.Searcher,
+) *applicationHandler {
+
 	es := services.NewEventService(appRepo, eventRepo, eventDeliveryRepo, eventQueue, createEventQueue, cache, searcher)
 	gs := services.NewGroupService(appRepo, groupRepo, eventRepo, eventDeliveryRepo, limiter)
+	as := services.NewAppService(appRepo, eventRepo, eventDeliveryRepo, eventQueue, cache)
 	ss := services.NewSecurityService(groupRepo, apiKeyRepo)
+	rs := services.NewSubscriptionService(subRepo)
 
 	return &applicationHandler{
-		appService:        as,
-		eventService:      es,
-		groupService:      gs,
-		securityService:   ss,
-		eventRepo:         eventRepo,
+		appService:      as,
+		eventService:    es,
+		groupService:    gs,
+		securityService: ss,
+		subService:      rs,
+
 		eventDeliveryRepo: eventDeliveryRepo,
 		apiKeyRepo:        apiKeyRepo,
-		appRepo:           appRepo,
+		eventRepo:         eventRepo,
 		groupRepo:         groupRepo,
-		eventQueue:        eventQueue,
-		createEventQueue:  createEventQueue,
-		logger:            logger,
-		tracer:            tracer,
-		cache:             cache,
-		limiter:           limiter,
+		appRepo:           appRepo,
+		subRepo:           subRepo,
+
+		createEventQueue: createEventQueue,
+		eventQueue:       eventQueue,
+		limiter:          limiter,
+		logger:           logger,
+		tracer:           tracer,
+		cache:            cache,
 	}
 }
 

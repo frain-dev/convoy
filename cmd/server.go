@@ -158,19 +158,22 @@ func StartConvoyServer(a *app, cfg config.Configuration, withWorkers bool) error
 		return errors.New("please provide the HTTP port in the convoy.json file")
 	}
 
-	srv := server.New(cfg,
+	srv := server.New(
+		cfg,
 		a.eventRepo,
 		a.eventDeliveryRepo,
 		a.applicationRepo,
 		a.apiKeyRepo,
 		a.groupRepo,
+		a.subRepo,
 		a.eventQueue,
 		a.createEventQueue,
 		a.logger,
 		a.tracer,
 		a.cache,
 		a.limiter,
-		a.searcher)
+		a.searcher,
+	)
 
 	if withWorkers {
 		// register tasks.

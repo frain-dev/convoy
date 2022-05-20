@@ -61,11 +61,6 @@ const (
 	DeletedDocumentStatus  DocumentStatus = "Deleted"
 )
 
-var (
-	ErrApplicationNotFound = errors.New("application not found")
-	ErrEndpointNotFound    = errors.New("endpoint not found")
-)
-
 const (
 	ActiveEndpointStatus   EndpointStatus = "active"
 	InactiveEndpointStatus EndpointStatus = "inactive"
@@ -113,8 +108,6 @@ type Endpoint struct {
 	DocumentStatus DocumentStatus `json:"-" bson:"document_status"`
 }
 
-var ErrGroupNotFound = errors.New("group not found")
-
 type Group struct {
 	ID                primitive.ObjectID `json:"-" bson:"_id"`
 	UID               string             `json:"uid" bson:"uid"`
@@ -135,9 +128,10 @@ type Group struct {
 type GroupConfig struct {
 	Strategy        StrategyConfiguration  `json:"strategy"`
 	Signature       SignatureConfiguration `json:"signature"`
-	DisableEndpoint bool                   `json:"disable_endpoint"`
-	ReplayAttacks   bool                   `json:"replay_attacks"`
+	DisableEndpoint bool                   `json:"disable_endpoint" bson:"disable_endpoint"`
+	ReplayAttacks   bool                   `json:"replay_attacks" bson:"replay_attacks"`
 }
+
 type StrategyConfiguration struct {
 	Type               config.StrategyProvider                 `json:"type" valid:"required~please provide a valid strategy type, in(default)~unsupported strategy type"`
 	Default            DefaultStrategyConfiguration            `json:"default"`
@@ -145,12 +139,12 @@ type StrategyConfiguration struct {
 }
 
 type DefaultStrategyConfiguration struct {
-	IntervalSeconds uint64 `json:"intervalSeconds" valid:"required~please provide a valid interval seconds,int"`
-	RetryLimit      uint64 `json:"retryLimit" valid:"required~please provide a valid interval seconds,int"`
+	IntervalSeconds uint64 `json:"interval_seconds" bson:"interval_seconds" valid:"required~please provide a valid interval seconds,int"`
+	RetryLimit      uint64 `json:"retry_limit" bson:"retry_limit" valid:"required~please provide a valid interval seconds,int"`
 }
 
 type ExponentialBackoffStrategyConfiguration struct {
-	RetryLimit uint64 `json:"retryLimit"`
+	RetryLimit uint64 `json:"retry_limit" bson:"retry_limit"`
 }
 
 type SignatureConfiguration struct {
@@ -187,7 +181,16 @@ func (o *Group) IsDeleted() bool { return o.DeletedAt > 0 }
 func (o *Group) IsOwner(a *Application) bool { return o.UID == a.GroupID }
 
 var (
-	ErrEventNotFound = errors.New("event not found")
+	ErrEventNotFound                 = errors.New("event not found")
+	ErrGroupNotFound                 = errors.New("group not found")
+	ErrAPIKeyNotFound                = errors.New("api key not found")
+	ErrEndpointNotFound              = errors.New("endpoint not found")
+	ErrApplicationNotFound           = errors.New("application not found")
+	ErrSubscriptionNotFound          = errors.New("subscription not found")
+	ErrEventDeliveryNotFound         = errors.New("event delivery not found")
+	ErrEventDeliveryAttemptNotFound  = errors.New("event delivery attempt not found")
+	ErrDuplicateAppName              = errors.New("an application with this name exists")
+	ErrNotAuthorisedToAccessDocument = errors.New("your credentials cannot access or modify this resource")
 )
 
 type AppMetadata struct {
@@ -231,11 +234,6 @@ type Event struct {
 
 type EventDeliveryStatus string
 type HttpHeader map[string]string
-
-var (
-	ErrEventDeliveryNotFound        = errors.New("event not found")
-	ErrEventDeliveryAttemptNotFound = errors.New("delivery attempt not found")
-)
 
 const (
 	// ScheduledEventStatus : when  a Event has been scheduled for delivery
@@ -359,11 +357,6 @@ type EventDelivery struct {
 	DocumentStatus DocumentStatus `json:"-" bson:"document_status"`
 }
 
-var (
-	ErrAPIKeyNotFound   = errors.New("api key not found")
-	ErrDuplicateAppName = errors.New("an application with this name exists")
-)
-
 type KeyType string
 
 type APIKey struct {
@@ -381,4 +374,40 @@ type APIKey struct {
 	DeletedAt primitive.DateTime `json:"delted_at,omitempty" bson:"deleted_at"`
 
 	DocumentStatus DocumentStatus `json:"-" bson:"document_status"`
+}
+
+type Subscription struct {
+	ID         primitive.ObjectID `json:"-" bson:"_id"`
+	UID        string             `json:"uid" bson:"uid"`
+	Name       string             `json:"name" bson:"name"`
+	Type       string             `json:"type" bson:"type"`
+	GroupID    string             `json:"group_id" bson:"group_id"`
+	SourceID   string             `json:"source_id" bson:"source_id"`
+	EndpointID string             `json:"endpoint_id" bson:"endpoint_id"`
+
+	// subscription config
+	AlertConfig  AlertConfiguration  `json:"alert_config" bson:"alert_config"`
+	RetryConfig  RetryConfiguration  `json:"retry_config" bson:"retry_config"`
+	FilterConfig FilterConfiguration `json:"filter_config" bson:"filter_config"`
+
+	CreatedAt primitive.DateTime `json:"created_at,omitempty" bson:"created_at"`
+	UpdatedAt primitive.DateTime `json:"updated_at,omitempty" bson:"updated_at"`
+	DeletedAt primitive.DateTime `json:"delted_at,omitempty" bson:"deleted_at"`
+
+	DocumentStatus DocumentStatus `json:"-" bson:"document_status"`
+}
+
+type RetryConfiguration struct {
+	Type               config.StrategyProvider                 `json:"type" valid:"required~please provide a valid strategy type, in(default)~unsupported strategy type"`
+	Linear             DefaultStrategyConfiguration            `json:"linear" bson:"linear"`
+	ExponentialBackoff ExponentialBackoffStrategyConfiguration `json:"exponential_backoff,omitempty" bson:"exponential_backoff"`
+}
+
+type AlertConfiguration struct {
+	Count int    `json:"count" bson:"count"`
+	Time  string `json:"time" bson:"time"`
+}
+
+type FilterConfiguration struct {
+	Events []string `json:"events" bson:"events"`
 }

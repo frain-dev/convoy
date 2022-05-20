@@ -171,6 +171,20 @@ func buildRoutes(app *applicationHandler) http.Handler {
 					securitySubRouter.Post("/", app.CreateAppPortalAPIKey)
 				})
 			})
+
+			r.Route("/subscriptions", func(eventRouter chi.Router) {
+				eventRouter.Use(requireGroup(app.groupRepo, app.cache))
+				eventRouter.Use(rateLimitByGroupID(app.limiter))
+				eventRouter.Use(requirePermission(auth.RoleAdmin))
+
+				eventRouter.With(pagination).Get("/", app.GetSubscriptions)
+				eventRouter.Post("/", app.CreateSubscription)
+
+				eventRouter.Route("/{subscriptionID}", func(eventSubRouter chi.Router) {
+					eventSubRouter.Use(requireSubscription(app.subRepo))
+					eventSubRouter.Delete("/", app.DeleteSubscription)
+				})
+			})
 		})
 	})
 
@@ -360,12 +374,15 @@ func New(cfg config.Configuration,
 	appRepo datastore.ApplicationRepository,
 	apiKeyRepo datastore.APIKeyRepository,
 	orgRepo datastore.GroupRepository,
+	subRepo datastore.SubscriptionRepository,
 	eventQueue queue.Queuer,
 	createEventQueue queue.Queuer,
 	logger logger.Logger,
 	tracer tracer.Tracer,
 	cache cache.Cache,
-	limiter limiter.RateLimiter, searcher searcher.Searcher) *http.Server {
+	limiter limiter.RateLimiter,
+	searcher searcher.Searcher,
+) *http.Server {
 
 	app := newApplicationHandler(
 		eventRepo,
@@ -373,13 +390,15 @@ func New(cfg config.Configuration,
 		appRepo,
 		orgRepo,
 		apiKeyRepo,
+		subRepo,
 		eventQueue,
 		createEventQueue,
 		logger,
 		tracer,
 		cache,
 		limiter,
-		searcher)
+		searcher,
+	)
 
 	srv := &http.Server{
 		Handler:      buildRoutes(app),
