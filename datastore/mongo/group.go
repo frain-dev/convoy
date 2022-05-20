@@ -114,7 +114,11 @@ func (db *groupRepo) FillGroupsStatistics(ctx context.Context, groups []*datasto
 		ids = append(ids, group.UID)
 	}
 	matchStage := bson.D{
-		{Key: "uid", Value: bson.E{Key: "$in", Value: ids}},
+		{Key: "$match",
+			Value: bson.D{
+				{Key: "uid", Value: bson.E{Key: "$in", Value: ids}},
+			},
+		},
 	}
 	lookupStage1 := bson.D{
 		{Key: "$lookup", Value: bson.D{
