@@ -151,7 +151,7 @@ func Test_FillGroupsStatistics(t *testing.T) {
 
 	app2 := &datastore.Application{
 		UID:     uuid.NewString(),
-		GroupID: group1.UID,
+		GroupID: group2.UID,
 	}
 
 	appRepo := NewApplicationRepo(db)
@@ -179,7 +179,7 @@ func Test_FillGroupsStatistics(t *testing.T) {
 		TotalApps:    1,
 	})
 
-	require.Equal(t, group1.Statistics, datastore.GroupStatistics{
+	require.Equal(t, group2.Statistics, datastore.GroupStatistics{
 		GroupID:      "",
 		MessagesSent: 0,
 		TotalApps:    1,
