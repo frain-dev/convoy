@@ -56,3 +56,7 @@ func (g *groupRepo) FetchGroupsByIDs(ctx context.Context, ids []string) ([]datas
 func (g *groupRepo) DeleteGroup(ctx context.Context, gid string) error {
 	return g.db.DeleteMatching(&datastore.Group{}, badgerhold.Where("UID").Eq(gid))
 }
+
+func (g *groupRepo) FillGroupsStatistics(ctx context.Context, groups []*datastore.Group) error {
+	panic("implement me")
+}

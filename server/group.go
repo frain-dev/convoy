@@ -24,7 +24,7 @@ import (
 func (a *applicationHandler) GetGroup(w http.ResponseWriter, r *http.Request) {
 
 	group := getGroupFromContext(r.Context())
-	err := a.groupService.FillGroupStatistics(r.Context(), []*datastore.Group{group})
+	err := a.groupService.FillGroupsStatistics(r.Context(), []*datastore.Group{group})
 	if err != nil {
 		_ = render.Render(w, r, newServiceErrResponse(err))
 		return

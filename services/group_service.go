@@ -99,7 +99,7 @@ func (gs *GroupService) GetGroups(ctx context.Context, filter *datastore.GroupFi
 		return nil, NewServiceError(http.StatusBadRequest, errors.New("an error occurred while fetching Groups"))
 	}
 
-	err = gs.FillGroupStatistics(ctx, groups)
+	err = gs.FillGroupsStatistics(ctx, groups)
 	if err != nil {
 		log.WithError(err).Error("failed to fill statistics of group ")
 	}
@@ -107,7 +107,7 @@ func (gs *GroupService) GetGroups(ctx context.Context, filter *datastore.GroupFi
 	return groups, nil
 }
 
-func (gs *GroupService) FillGroupStatistics(ctx context.Context, groups []*datastore.Group) error {
+func (gs *GroupService) FillGroupsStatistics(ctx context.Context, groups []*datastore.Group) error {
 	err := gs.groupRepo.FillGroupsStatistics(ctx, groups)
 	if err != nil {
 		log.WithError(err).Error("failed to count group applications")
