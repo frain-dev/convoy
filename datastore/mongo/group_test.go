@@ -185,13 +185,13 @@ func Test_FillGroupsStatistics(t *testing.T) {
 	require.NoError(t, err)
 
 	require.Equal(t, *group1.Statistics, datastore.GroupStatistics{
-		GroupID:      "",
+		GroupID:      group1.UID,
 		MessagesSent: 1,
 		TotalApps:    1,
 	})
 
 	require.Equal(t, *group2.Statistics, datastore.GroupStatistics{
-		GroupID:      "",
+		GroupID:      group2.UID,
 		MessagesSent: 0,
 		TotalApps:    1,
 	})
