@@ -86,7 +86,7 @@ type Source struct {
 	Type       datastore.SourceType `json:"type" valid:"required~please provide a type,supported_source~unsupported source type"`
 	IsDisabled bool                 `json:"is_disabled"`
 
-	Verifier datastore.VerifierConfig
+	Verifier datastore.VerifierConfig `json:"verifier"`
 }
 
 type UpdateSource struct {

@@ -419,24 +419,24 @@ type Source struct {
 }
 
 type VerifierConfig struct {
-	Type      VerifierType `json:"type" bson:"type"`
+	Type      VerifierType `json:"type,omitempty" bson:"type" valid:"supported_verifier~please provide a valid verifier type,optional"`
 	HMac      HMac         `json:"hmac" bson:"hmac"`
 	BasicAuth BasicAuth    `json:"basic_auth" bson:"basic_auth"`
 	ApiKey    ApiKey       `json:"api_key" bson:"api_key"`
 }
 
 type HMac struct {
-	Header string `json:"header" bson:"header"`
-	Hash   string `json:"hash" bson:"hash"`
-	Secret string `json:"secret" bson:"secret"`
+	Header string `json:"header,omitempty" bson:"header"`
+	Hash   string `json:"hash,omitempty" bson:"hash" valid:"supported_hash,optional"`
+	Secret string `json:"secret,omitempty" bson:"secret"`
 }
 
 type BasicAuth struct {
-	UserName string `json:"username" bson:"username"`
-	Password string `json:"password" bson:"password"`
+	UserName string `json:"username,omitempty" bson:"username"`
+	Password string `json:"password,omitempty" bson:"password"`
 }
 
 type ApiKey struct {
-	APIKey       string `json:"key" bson:"key"`
-	APIKeyHeader string `json:"header" bson:"header"`
+	APIKey       string `json:"key,omitempty" bson:"key"`
+	APIKeyHeader string `json:"header,omitempty" bson:"header"`
 }
