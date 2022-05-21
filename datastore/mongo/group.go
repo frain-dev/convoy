@@ -145,8 +145,8 @@ func (db *groupRepo) FillGroupsStatistics(ctx context.Context, groups []*datasto
 			Key: "$project",
 			Value: bson.D{
 				{Key: "group_id", Value: "$uid"},
-				{Key: "total_apps", Value: bson.M{"$size": "$group_apps"}},
-				{Key: "messages_sent", Value: bson.M{"$size": "$group_events"}},
+				{Key: "total_apps", Value: bson.D{{Key: "$size", Value: "$group_apps"}}},
+				{Key: "messages_sent", Value: bson.D{{Key: "$size", Value: "$group_events"}}},
 			}},
 	}
 
