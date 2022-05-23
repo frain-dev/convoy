@@ -328,6 +328,18 @@ func compoundIndices() map[string][]mongo.IndexModel {
 				Options: options.Index().SetUnique(true),
 			},
 		},
+
+		SubscriptionCollection: {
+			{
+				Keys: bson.D{
+					{Key: "group_id", Value: 1},
+					{Key: "source_id", Value: 1},
+					{Key: "endpoint_id", Value: 1},
+					{Key: "document_status", Value: 1},
+				},
+				Options: options.Index().SetUnique(true),
+			},
+		},
 	}
 
 	return compoundIndices
