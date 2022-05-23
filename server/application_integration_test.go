@@ -364,7 +364,7 @@ func (s *ApplicationIntegrationTestSuite) Test_UpdateAppEndpoint() {
 
 	// Just Before.
 	app, _ := testdb.SeedApplication(s.DB, s.DefaultGroup, appID, "", false)
-	endpoint, _ := testdb.SeedEndpoint(s.DB, app, []string{"*"})
+	endpoint, _ := testdb.SeedEndpoint(s.DB, app, s.DefaultGroup.UID, []string{"*"})
 
 	// Arrange Request
 	url := fmt.Sprintf("/api/v1/applications/%s/endpoints/%s", appID, endpoint.UID)
@@ -402,7 +402,7 @@ func (s *ApplicationIntegrationTestSuite) Test_GetAppEndpoint() {
 
 	// Just Before.
 	app, _ := testdb.SeedApplication(s.DB, s.DefaultGroup, appID, "", false)
-	endpoint, _ := testdb.SeedEndpoint(s.DB, app, []string{"*"})
+	endpoint, _ := testdb.SeedEndpoint(s.DB, app, s.DefaultGroup.UID, []string{"*"})
 
 	// Arrange Request
 	url := fmt.Sprintf("/api/v1/applications/%s/endpoints/%s", appID, endpoint.UID)
@@ -434,7 +434,7 @@ func (s *ApplicationIntegrationTestSuite) Test_GetAppEndpoints() {
 
 	// Just Before.
 	app, _ := testdb.SeedApplication(s.DB, s.DefaultGroup, appID, "", false)
-	endpoints, _ := testdb.SeedMultipleEndpoints(s.DB, app, []string{"*"}, num)
+	endpoints, _ := testdb.SeedMultipleEndpoints(s.DB, app, s.DefaultGroup.UID, []string{"*"}, num)
 
 	// Arrange Request
 	url := fmt.Sprintf("/api/v1/applications/%s/endpoints", appID)
@@ -460,7 +460,7 @@ func (s *ApplicationIntegrationTestSuite) Test_DeleteAppEndpoint() {
 
 	// Just Before.
 	app, _ := testdb.SeedApplication(s.DB, s.DefaultGroup, appID, "", false)
-	endpoint, _ := testdb.SeedEndpoint(s.DB, app, []string{"*"})
+	endpoint, _ := testdb.SeedEndpoint(s.DB, app, s.DefaultGroup.UID, []string{"*"})
 
 	// Arrange Request.
 	url := fmt.Sprintf("/api/v1/applications/%s/endpoints/%s", appID, endpoint.UID)
