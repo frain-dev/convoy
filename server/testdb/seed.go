@@ -271,6 +271,37 @@ func SeedEventDelivery(db datastore.DatabaseClient, app *datastore.Application, 
 	return eventDelivery, nil
 }
 
+func SeedSource(db datastore.DatabaseClient, g *datastore.Group, uid string) (*datastore.Source, error) {
+	if util.IsStringEmpty(uid) {
+		uid = uuid.New().String()
+	}
+
+	source := &datastore.Source{
+		UID:    uid,
+		GroupID: g.UID,
+		MaskID: uuid.NewString(),
+		Name:   "Convoy-Prod",
+		Type:   datastore.HTTPSource,
+		Verifier: &datastore.VerifierConfig{
+			Type: datastore.HMacVerifier,
+			HMac: datastore.HMac{
+				Header: "X-Convoy-Header",
+				Hash:   "SHA512",
+				Secret: "Convoy-Secret",
+			},
+		},
+		DocumentStatus: datastore.ActiveDocumentStatus,
+	}
+
+	//Seed Data
+	err := db.SourceRepo().CreateSource(context.TODO(), source)
+	if err != nil {
+		return nil, err
+	}
+
+	return source, nil
+}
+
 // PurgeDB is run after every test run and it's used to truncate the DB to have
 // a clean slate in the next run.
 func PurgeDB(db datastore.DatabaseClient) {

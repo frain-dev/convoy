@@ -52,6 +52,21 @@ type PortalAPIKeyResponse struct {
 	GroupID string    `json:"group_id,omitempty"`
 }
 
+type SourceResponse struct {
+	UID        string                    `json:"uid"`
+	MaskID     string                    `json:"mask_id"`
+	GroupID    string                    `json:"group_id"`
+	Name       string                    `json:"name"`
+	Type       datastore.SourceType      `json:"type"`
+	URL        string                    `json:"url"`
+	IsDisabled bool                      `json:"is_disabled"`
+	Verifier   *datastore.VerifierConfig `json:"verifier"`
+
+	CreatedAt primitive.DateTime `json:"created_at,omitempty"`
+	UpdatedAt primitive.DateTime `json:"updated_at,omitempty"`
+	DeletedAt primitive.DateTime `json:"deleted_at,omitempty"`
+}
+
 type Application struct {
 	AppName         string `json:"name" bson:"name" valid:"required~please provide your appName"`
 	SupportEmail    string `json:"support_email" bson:"support_email" valid:"email~please provide a valid email"`
@@ -64,6 +79,22 @@ type UpdateApplication struct {
 	SupportEmail    *string `json:"support_email" bson:"support_email" valid:"email~please provide a valid email"`
 	IsDisabled      *bool   `json:"is_disabled"`
 	SlackWebhookURL *string `json:"slack_webhook_url" bson:"slack_webhook_url"`
+}
+
+type Source struct {
+	Name       string               `json:"name" valid:"required~please provide a source name"`
+	Type       datastore.SourceType `json:"type" valid:"required~please provide a type,supported_source~unsupported source type"`
+	IsDisabled bool                 `json:"is_disabled"`
+
+	Verifier datastore.VerifierConfig `json:"verifier"`
+}
+
+type UpdateSource struct {
+	Name       *string              `json:"name" valid:"required~please provide a source name"`
+	Type       datastore.SourceType `json:"type" valid:"required~please provide a type,supported_source~unsupported source type"`
+	IsDisabled *bool                `json:"is_disabled"`
+
+	Verifier datastore.VerifierConfig `json:"verifier"`
 }
 
 type Event struct {

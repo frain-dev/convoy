@@ -68,3 +68,12 @@ type SubscriptionRepository interface {
 	DeleteSubscription(context.Context, string, *Subscription) error
 	FindSubscriptionByID(context.Context, string, string) (*Subscription, error)
 }
+
+type SourceRepository interface {
+	CreateSource(context.Context, *Source) error
+	UpdateSource(ctx context.Context, groupID string, source *Source) error
+	FindSourceByID(ctx context.Context, groupID string, id string) (*Source, error)
+	FindSourceByMaskID(ctx context.Context, groupID string, maskID string) (*Source, error)
+	DeleteSourceByID(ctx context.Context, groupID string, id string) error
+	LoadSourcesPaged(ctx context.Context, groupID string, filter *SourceFilter, pageable Pageable) ([]Source, PaginationData, error)
+}

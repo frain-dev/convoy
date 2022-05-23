@@ -27,12 +27,14 @@ type applicationHandler struct {
 	eventService      *services.EventService
 	groupService      *services.GroupService
 	securityService   *services.SecurityService
+	sourceService     *services.SourceService
 	appRepo           datastore.ApplicationRepository
 	eventRepo         datastore.EventRepository
 	eventDeliveryRepo datastore.EventDeliveryRepository
 	subRepo           datastore.SubscriptionRepository
 	groupRepo         datastore.GroupRepository
 	apiKeyRepo        datastore.APIKeyRepository
+	sourceRepo        datastore.SourceRepository
 	eventQueue        queue.Queuer
 	createEventQueue  queue.Queuer
 	logger            logger.Logger
@@ -53,6 +55,7 @@ func newApplicationHandler(
 	groupRepo datastore.GroupRepository,
 	apiKeyRepo datastore.APIKeyRepository,
 	subRepo datastore.SubscriptionRepository,
+	sourceRepo datastore.SourceRepository,
 	eventQueue queue.Queuer,
 	createEventQueue queue.Queuer,
 	logger logger.Logger,
@@ -67,17 +70,18 @@ func newApplicationHandler(
 	as := services.NewAppService(appRepo, eventRepo, eventDeliveryRepo, eventQueue, cache)
 	ss := services.NewSecurityService(groupRepo, apiKeyRepo)
 	rs := services.NewSubscriptionService(subRepo)
+	sos := services.NewSourceService(sourceRepo)
 
 	return &applicationHandler{
-		appService:      as,
-		eventService:    es,
-		groupService:    gs,
-		securityService: ss,
-		subService:      rs,
-
+		appService:        as,
+		eventService:      es,
+		groupService:      gs,
+		securityService:   ss,
+		subService:        rs,
+		sourceService:     sos,
+		eventRepo:         eventRepo,
 		eventDeliveryRepo: eventDeliveryRepo,
 		apiKeyRepo:        apiKeyRepo,
-		eventRepo:         eventRepo,
 		groupRepo:         groupRepo,
 		appRepo:           appRepo,
 		subRepo:           subRepo,
@@ -88,6 +92,7 @@ func newApplicationHandler(
 		logger:           logger,
 		tracer:           tracer,
 		cache:            cache,
+		sourceRepo:       sourceRepo,
 	}
 }
 
