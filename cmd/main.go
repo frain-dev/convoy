@@ -105,7 +105,7 @@ func ensureDefaultGroup(ctx context.Context, cfg config.Configuration, a *app) e
 	groupCfg := &datastore.GroupConfig{
 		Strategy: datastore.StrategyConfiguration{
 			Type: cfg.GroupConfig.Strategy.Type,
-			Default: datastore.DefaultStrategyConfiguration{
+			Default: datastore.LinearStrategyConfiguration{
 				IntervalSeconds: cfg.GroupConfig.Strategy.Default.IntervalSeconds,
 				RetryLimit:      cfg.GroupConfig.Strategy.Default.RetryLimit,
 			},

@@ -172,18 +172,15 @@ func buildRoutes(app *applicationHandler) http.Handler {
 				})
 			})
 
-			r.Route("/subscriptions", func(eventRouter chi.Router) {
-				eventRouter.Use(requireGroup(app.groupRepo, app.cache))
-				eventRouter.Use(rateLimitByGroupID(app.limiter))
-				eventRouter.Use(requirePermission(auth.RoleAdmin))
+			r.Route("/subscriptions", func(subsriptionRouter chi.Router) {
+				subsriptionRouter.Use(requireGroup(app.groupRepo, app.cache))
+				subsriptionRouter.Use(rateLimitByGroupID(app.limiter))
+				subsriptionRouter.Use(requirePermission(auth.RoleAdmin))
 
-				eventRouter.With(pagination).Get("/", app.GetSubscriptions)
-				eventRouter.Post("/", app.CreateSubscription)
-
-				eventRouter.Route("/{subscriptionID}", func(eventSubRouter chi.Router) {
-					eventSubRouter.Use(requireSubscription(app.subRepo))
-					eventSubRouter.Delete("/", app.DeleteSubscription)
-				})
+				subsriptionRouter.Put("/{subscriptionID}", app.UpdateSubscription)
+				subsriptionRouter.With(pagination).Get("/", app.GetSubscriptions)
+				subsriptionRouter.Post("/", app.CreateSubscription)
+				subsriptionRouter.Delete("/", app.DeleteSubscription)
 			})
 
 			r.Route("/sources", func(sourceRouter chi.Router) {

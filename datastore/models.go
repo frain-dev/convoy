@@ -67,6 +67,13 @@ type VerifierType string
 
 type EncodingType string
 
+type RetryStrategyType string
+
+const (
+	Linear      RetryStrategyType = "linear"
+	Exponential RetryStrategyType = "exponential"
+)
+
 const (
 	HTTPSource     SourceType = "http"
 	RestApiSource  SourceType = "rest_api"
@@ -157,18 +164,19 @@ type GroupConfig struct {
 }
 
 type StrategyConfiguration struct {
-	Type               config.StrategyProvider                 `json:"type" valid:"required~please provide a valid strategy type, in(default)~unsupported strategy type"`
-	Default            DefaultStrategyConfiguration            `json:"default"`
-	ExponentialBackoff ExponentialBackoffStrategyConfiguration `json:"exponentialBackoff,omitempty"`
+	Type        config.StrategyProvider          `json:"type" valid:"required~please provide a valid strategy type"`
+	Default     LinearStrategyConfiguration      `json:"linear"`
+	Exponential ExponentialStrategyConfiguration `json:"exponential,omitempty"`
 }
 
-type DefaultStrategyConfiguration struct {
-	IntervalSeconds uint64 `json:"interval_seconds" bson:"interval_seconds" valid:"required~please provide a valid interval seconds,int"`
-	RetryLimit      uint64 `json:"retry_limit" bson:"retry_limit" valid:"required~please provide a valid interval seconds,int"`
+type LinearStrategyConfiguration struct {
+	IntervalSeconds uint64 `json:"interval_seconds" bson:"interval_seconds,omitempty" valid:"int~please provide a valid interval seconds"`
+	RetryLimit      uint64 `json:"retry_limit" bson:"retry_limit,omitempty" valid:"int~please provide a valid interval seconds"`
 }
 
-type ExponentialBackoffStrategyConfiguration struct {
-	RetryLimit uint64 `json:"retry_limit" bson:"retry_limit"`
+type ExponentialStrategyConfiguration struct {
+	RetryLimit   uint64   `json:"retry_limit" bson:"retry_limit,omitempty" envconfig:"CONVOY_RETRY_LIMIT"`
+	BackoffTimes []uint64 `json:"backoff_times" bson:"backoff_times,omitempty" envconfig:"CONVOY_BACKOFF_TIMES"`
 }
 
 type SignatureConfiguration struct {
@@ -411,9 +419,9 @@ type Subscription struct {
 	EndpointID string             `json:"endpoint_id" bson:"endpoint_id"`
 
 	// subscription config
-	AlertConfig  AlertConfiguration  `json:"alert_config" bson:"alert_config"`
-	RetryConfig  RetryConfiguration  `json:"retry_config" bson:"retry_config"`
-	FilterConfig FilterConfiguration `json:"filter_config" bson:"filter_config"`
+	AlertConfig  AlertConfiguration  `json:"alert_config,omitempty" bson:"alert_config,omitempty"`
+	RetryConfig  RetryConfiguration  `json:"retry_config,omitempty" bson:"retry_config,omitempty"`
+	FilterConfig FilterConfiguration `json:"filter_config,omitempty" bson:"filter_config,omitempty"`
 
 	CreatedAt primitive.DateTime `json:"created_at,omitempty" bson:"created_at"`
 	UpdatedAt primitive.DateTime `json:"updated_at,omitempty" bson:"updated_at"`
@@ -440,18 +448,18 @@ type Source struct {
 }
 
 type RetryConfiguration struct {
-	Type               config.StrategyProvider                 `json:"type" valid:"required~please provide a valid strategy type, in(default)~unsupported strategy type"`
-	Linear             DefaultStrategyConfiguration            `json:"linear" bson:"linear"`
-	ExponentialBackoff ExponentialBackoffStrategyConfiguration `json:"exponential_backoff,omitempty" bson:"exponential_backoff"`
+	Type        config.StrategyProvider          `json:"type,omitempty" valid:"supported_retry_strategy~please provide a valid retry strategy type"`
+	Linear      LinearStrategyConfiguration      `json:"linear,omitempty" bson:"linear,omitempty"`
+	Exponential ExponentialStrategyConfiguration `json:"exponential,omitempty" bson:"exponential,omitempty"`
 }
 
 type AlertConfiguration struct {
-	Count int    `json:"count" bson:"count"`
-	Time  string `json:"time" bson:"time"`
+	Count int    `json:"count" bson:"count,omitempty"`
+	Time  string `json:"time" bson:"time,omitempty"`
 }
 
 type FilterConfiguration struct {
-	Events []string `json:"events" bson:"events"`
+	Events []string `json:"events" bson:"events,omitempty"`
 }
 
 type VerifierConfig struct {

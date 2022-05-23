@@ -24,7 +24,7 @@ func createSubscription() *datastore.Subscription {
 		},
 		RetryConfig: datastore.RetryConfiguration{
 			Type: "linear",
-			Linear: datastore.DefaultStrategyConfiguration{
+			Linear: datastore.LinearStrategyConfiguration{
 				IntervalSeconds: 10,
 				RetryLimit:      10,
 			},

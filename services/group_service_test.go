@@ -53,7 +53,7 @@ func TestGroupService_CreateGroup(t *testing.T) {
 						},
 						Strategy: datastore.StrategyConfiguration{
 							Type: "default",
-							Default: datastore.DefaultStrategyConfiguration{
+							Default: datastore.LinearStrategyConfiguration{
 								IntervalSeconds: 20,
 								RetryLimit:      4,
 							},
@@ -80,7 +80,7 @@ func TestGroupService_CreateGroup(t *testing.T) {
 					},
 					Strategy: datastore.StrategyConfiguration{
 						Type: "default",
-						Default: datastore.DefaultStrategyConfiguration{
+						Default: datastore.LinearStrategyConfiguration{
 							IntervalSeconds: 20,
 							RetryLimit:      4,
 						},
@@ -106,7 +106,7 @@ func TestGroupService_CreateGroup(t *testing.T) {
 						},
 						Strategy: datastore.StrategyConfiguration{
 							Type: "default",
-							Default: datastore.DefaultStrategyConfiguration{
+							Default: datastore.LinearStrategyConfiguration{
 								IntervalSeconds: 20,
 								RetryLimit:      4,
 							},
@@ -133,7 +133,7 @@ func TestGroupService_CreateGroup(t *testing.T) {
 					},
 					Strategy: datastore.StrategyConfiguration{
 						Type: "default",
-						Default: datastore.DefaultStrategyConfiguration{
+						Default: datastore.LinearStrategyConfiguration{
 							IntervalSeconds: 20,
 							RetryLimit:      4,
 						},
@@ -159,7 +159,7 @@ func TestGroupService_CreateGroup(t *testing.T) {
 						},
 						Strategy: datastore.StrategyConfiguration{
 							Type: "default",
-							Default: datastore.DefaultStrategyConfiguration{
+							Default: datastore.LinearStrategyConfiguration{
 								IntervalSeconds: 20,
 								RetryLimit:      4,
 							},
@@ -243,7 +243,7 @@ func TestGroupService_UpdateGroup(t *testing.T) {
 						},
 						Strategy: datastore.StrategyConfiguration{
 							Type: "default",
-							Default: datastore.DefaultStrategyConfiguration{
+							Default: datastore.LinearStrategyConfiguration{
 								IntervalSeconds: 20,
 								RetryLimit:      4,
 							},
@@ -264,7 +264,7 @@ func TestGroupService_UpdateGroup(t *testing.T) {
 					},
 					Strategy: datastore.StrategyConfiguration{
 						Type: "default",
-						Default: datastore.DefaultStrategyConfiguration{
+						Default: datastore.LinearStrategyConfiguration{
 							IntervalSeconds: 20,
 							RetryLimit:      4,
 						},
@@ -293,7 +293,7 @@ func TestGroupService_UpdateGroup(t *testing.T) {
 						},
 						Strategy: datastore.StrategyConfiguration{
 							Type: "default",
-							Default: datastore.DefaultStrategyConfiguration{
+							Default: datastore.LinearStrategyConfiguration{
 								IntervalSeconds: 20,
 								RetryLimit:      4,
 							},
@@ -322,7 +322,7 @@ func TestGroupService_UpdateGroup(t *testing.T) {
 						},
 						Strategy: datastore.StrategyConfiguration{
 							Type: "default",
-							Default: datastore.DefaultStrategyConfiguration{
+							Default: datastore.LinearStrategyConfiguration{
 								IntervalSeconds: 20,
 								RetryLimit:      4,
 							},

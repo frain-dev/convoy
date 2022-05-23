@@ -87,11 +87,11 @@ func TestEventService_CreateAppEvent(t *testing.T) {
 					Config: &datastore.GroupConfig{
 						Strategy: datastore.StrategyConfiguration{
 							Type: "default",
-							Default: datastore.DefaultStrategyConfiguration{
+							Default: datastore.LinearStrategyConfiguration{
 								IntervalSeconds: 10,
 								RetryLimit:      3,
 							},
-							ExponentialBackoff: datastore.ExponentialBackoffStrategyConfiguration{},
+							Exponential: datastore.ExponentialStrategyConfiguration{},
 						},
 						Signature:       datastore.SignatureConfiguration{},
 						DisableEndpoint: false,
@@ -157,7 +157,7 @@ func TestEventService_CreateAppEvent(t *testing.T) {
 					Config: &datastore.GroupConfig{
 						Strategy: datastore.StrategyConfiguration{
 							Type: "exponential-backoff",
-							ExponentialBackoff: datastore.ExponentialBackoffStrategyConfiguration{
+							Exponential: datastore.ExponentialStrategyConfiguration{
 								RetryLimit: 4,
 							},
 						},
@@ -224,11 +224,11 @@ func TestEventService_CreateAppEvent(t *testing.T) {
 					Config: &datastore.GroupConfig{
 						Strategy: datastore.StrategyConfiguration{
 							Type: "default",
-							Default: datastore.DefaultStrategyConfiguration{
+							Default: datastore.LinearStrategyConfiguration{
 								IntervalSeconds: 10,
 								RetryLimit:      3,
 							},
-							ExponentialBackoff: datastore.ExponentialBackoffStrategyConfiguration{},
+							Exponential: datastore.ExponentialStrategyConfiguration{},
 						},
 						Signature:       datastore.SignatureConfiguration{},
 						DisableEndpoint: false,

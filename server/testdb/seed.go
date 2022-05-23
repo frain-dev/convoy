@@ -115,7 +115,7 @@ func SeedDefaultGroup(db datastore.DatabaseClient) (*datastore.Group, error) {
 		Config: &datastore.GroupConfig{
 			Strategy: datastore.StrategyConfiguration{
 				Type: config.DefaultStrategyProvider,
-				Default: datastore.DefaultStrategyConfiguration{
+				Default: datastore.LinearStrategyConfiguration{
 					IntervalSeconds: 10,
 					RetryLimit:      2,
 				},
@@ -277,11 +277,11 @@ func SeedSource(db datastore.DatabaseClient, g *datastore.Group, uid string) (*d
 	}
 
 	source := &datastore.Source{
-		UID:    uid,
+		UID:     uid,
 		GroupID: g.UID,
-		MaskID: uuid.NewString(),
-		Name:   "Convoy-Prod",
-		Type:   datastore.HTTPSource,
+		MaskID:  uuid.NewString(),
+		Name:    "Convoy-Prod",
+		Type:    datastore.HTTPSource,
 		Verifier: &datastore.VerifierConfig{
 			Type: datastore.HMacVerifier,
 			HMac: datastore.HMac{

@@ -137,7 +137,7 @@ func (a *applicationHandler) DeleteSubscription(w http.ResponseWriter, r *http.R
 // @Security ApiKeyAuth
 // @Router /subscriptions/{subscriptionID} [put]
 func (a *applicationHandler) UpdateSubscription(w http.ResponseWriter, r *http.Request) {
-	var update models.Subscription
+	var update models.UpdateSubscription
 	err := util.ReadJSON(r, &update)
 	if err != nil {
 		_ = render.Render(w, r, newErrorResponse(err.Error(), http.StatusBadRequest))
@@ -145,13 +145,17 @@ func (a *applicationHandler) UpdateSubscription(w http.ResponseWriter, r *http.R
 	}
 
 	g := getGroupFromContext(r.Context())
-	s := getSubscriptionFromContext(r.Context())
-
-	sub, err := a.subService.UpdateSubscription(r.Context(), g.UID, s, &update)
+	subscription, err := a.subService.FindSubscriptionByID(r.Context(), g.UID, chi.URLParam(r, "subscriptionID"))
 	if err != nil {
 		_ = render.Render(w, r, newServiceErrResponse(err))
 		return
 	}
 
-	_ = render.Render(w, r, newServerResponse("Group updated successfully", sub, http.StatusAccepted))
+	sub, err := a.subService.UpdateSubscription(r.Context(), g.UID, subscription, &update)
+	if err != nil {
+		_ = render.Render(w, r, newServiceErrResponse(err))
+		return
+	}
+
+	_ = render.Render(w, r, newServerResponse("Subscription updated successfully", sub, http.StatusAccepted))
 }

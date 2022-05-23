@@ -83,7 +83,7 @@ func ProcessEventCreated(appRepo datastore.ApplicationRepository, eventRepo data
 			retryLimit = group.Config.Strategy.Default.RetryLimit
 		} else if string(group.Config.Strategy.Type) == string(config.ExponentialBackoffStrategyProvider) {
 			intervalSeconds = 0
-			retryLimit = group.Config.Strategy.ExponentialBackoff.RetryLimit
+			retryLimit = group.Config.Strategy.Exponential.RetryLimit
 		} else {
 			return nil
 		}

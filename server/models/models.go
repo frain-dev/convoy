@@ -155,7 +155,17 @@ type Subscription struct {
 	SourceID   string `json:"source_id" bson:"source_id"`
 	EndpointID string `json:"endpoint_id" bson:"endpoint_id" valid:"required~please provide a valid endpoint id"`
 
-	AlertConfig  datastore.AlertConfiguration  `json:"alert_config" bson:"alert_config"`
-	RetryConfig  datastore.RetryConfiguration  `json:"retry_config" bson:"retry_config"`
-	FilterConfig datastore.FilterConfiguration `json:"filter_config" bson:"filter_config"`
+	AlertConfig  datastore.AlertConfiguration  `json:"alert_config,omitempty" bson:"alert_config,omitempty"`
+	RetryConfig  datastore.RetryConfiguration  `json:"retry_config,omitempty" bson:"retry_config,omitempty"`
+	FilterConfig datastore.FilterConfiguration `json:"filter_config,omitempty" bson:"filter_config,omitempty"`
+}
+
+type UpdateSubscription struct {
+	Name       string `json:"name,omitempty"`
+	SourceID   string `json:"source_id,omitempty"`
+	EndpointID string `json:"endpoint_id,omitempty"`
+
+	AlertConfig  datastore.AlertConfiguration  `json:"alert_config,omitempty"`
+	RetryConfig  datastore.RetryConfiguration  `json:"retry_config,omitempty"`
+	FilterConfig datastore.FilterConfiguration `json:"filter_config,omitempty"`
 }

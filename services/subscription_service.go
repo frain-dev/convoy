@@ -3,6 +3,7 @@ package services
 import (
 	"context"
 	"errors"
+	"fmt"
 	"net/http"
 	"time"
 
@@ -63,13 +64,57 @@ func (s *SubcriptionService) CreateSubscription(ctx context.Context, groupID str
 	return subscription, nil
 }
 
-func (s *SubcriptionService) UpdateSubscription(ctx context.Context, groupId string, subscription *datastore.Subscription, update *models.Subscription) (*datastore.Subscription, error) {
+func (s *SubcriptionService) UpdateSubscription(ctx context.Context, groupId string, subscription *datastore.Subscription, update *models.UpdateSubscription) (*datastore.Subscription, error) {
 	if err := util.Validate(update); err != nil {
 		log.WithError(err).Error(ErrValidateSubscriptionError.Error())
 		return nil, NewServiceError(http.StatusBadRequest, err)
 	}
 
-	subscription.Name = update.Name
+	fmt.Printf("\n%+v \n\n %+v\n\n", update, subscription)
+
+	if !util.IsStringEmpty(update.Name) {
+		subscription.Name = update.Name
+	}
+
+	if !util.IsStringEmpty(update.SourceID) {
+		subscription.SourceID = update.SourceID
+	}
+
+	if !util.IsStringEmpty(update.EndpointID) {
+		subscription.EndpointID = update.EndpointID
+	}
+
+	if update.AlertConfig.Count > 0 {
+		subscription.AlertConfig.Count = update.AlertConfig.Count
+	}
+
+	if !util.IsStringEmpty(update.AlertConfig.Time) {
+		subscription.AlertConfig.Time = update.AlertConfig.Time
+	}
+
+	if !util.IsStringEmpty(string(update.RetryConfig.Type)) {
+		subscription.RetryConfig.Type = update.RetryConfig.Type
+	}
+
+	if len(update.RetryConfig.Exponential.BackoffTimes) > 0 {
+		subscription.RetryConfig.Exponential.BackoffTimes = update.RetryConfig.Exponential.BackoffTimes
+	}
+
+	if update.RetryConfig.Exponential.RetryLimit > 0 {
+		subscription.RetryConfig.Exponential.RetryLimit = update.RetryConfig.Exponential.RetryLimit
+	}
+
+	if update.RetryConfig.Linear.IntervalSeconds > 0 {
+		subscription.RetryConfig.Linear.IntervalSeconds = update.RetryConfig.Linear.IntervalSeconds
+	}
+
+	if update.RetryConfig.Linear.RetryLimit > 0 {
+		subscription.RetryConfig.Linear.RetryLimit = update.RetryConfig.Linear.RetryLimit
+	}
+
+	if len(update.FilterConfig.Events) > 0 {
+		subscription.FilterConfig.Events = update.FilterConfig.Events
+	}
 
 	err := s.subRepo.UpdateSubscription(ctx, groupId, subscription)
 	if err != nil {

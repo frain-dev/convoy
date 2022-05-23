@@ -146,7 +146,7 @@ func TestProcessEventDelivery(t *testing.T) {
 							},
 							Strategy: datastore.StrategyConfiguration{
 								Type: config.StrategyProvider("default"),
-								Default: datastore.DefaultStrategyConfiguration{
+								Default: datastore.LinearStrategyConfiguration{
 									IntervalSeconds: 60,
 									RetryLimit:      1,
 								},
@@ -233,7 +233,7 @@ func TestProcessEventDelivery(t *testing.T) {
 							},
 							Strategy: datastore.StrategyConfiguration{
 								Type: config.StrategyProvider("default"),
-								Default: datastore.DefaultStrategyConfiguration{
+								Default: datastore.LinearStrategyConfiguration{
 									IntervalSeconds: 60,
 									RetryLimit:      1,
 								},
@@ -332,7 +332,7 @@ func TestProcessEventDelivery(t *testing.T) {
 							},
 							Strategy: datastore.StrategyConfiguration{
 								Type: config.StrategyProvider("default"),
-								Default: datastore.DefaultStrategyConfiguration{
+								Default: datastore.LinearStrategyConfiguration{
 									IntervalSeconds: 60,
 									RetryLimit:      1,
 								},
@@ -413,7 +413,7 @@ func TestProcessEventDelivery(t *testing.T) {
 							},
 							Strategy: datastore.StrategyConfiguration{
 								Type: config.StrategyProvider("default"),
-								Default: datastore.DefaultStrategyConfiguration{
+								Default: datastore.LinearStrategyConfiguration{
 									IntervalSeconds: 60,
 									RetryLimit:      1,
 								},
@@ -514,7 +514,7 @@ func TestProcessEventDelivery(t *testing.T) {
 							},
 							Strategy: datastore.StrategyConfiguration{
 								Type: config.StrategyProvider("default"),
-								Default: datastore.DefaultStrategyConfiguration{
+								Default: datastore.LinearStrategyConfiguration{
 									IntervalSeconds: 60,
 									RetryLimit:      1,
 								},
@@ -595,7 +595,7 @@ func TestProcessEventDelivery(t *testing.T) {
 							},
 							Strategy: datastore.StrategyConfiguration{
 								Type: config.StrategyProvider("default"),
-								Default: datastore.DefaultStrategyConfiguration{
+								Default: datastore.LinearStrategyConfiguration{
 									IntervalSeconds: 60,
 									RetryLimit:      1,
 								},
@@ -696,7 +696,7 @@ func TestProcessEventDelivery(t *testing.T) {
 							},
 							Strategy: datastore.StrategyConfiguration{
 								Type: config.StrategyProvider("default"),
-								Default: datastore.DefaultStrategyConfiguration{
+								Default: datastore.LinearStrategyConfiguration{
 									IntervalSeconds: 60,
 									RetryLimit:      1,
 								},
