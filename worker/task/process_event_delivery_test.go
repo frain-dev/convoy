@@ -6,6 +6,7 @@ import (
 
 	"github.com/frain-dev/convoy/auth/realm_chain"
 	"github.com/frain-dev/convoy/datastore"
+	"github.com/frain-dev/disq"
 	"github.com/go-redis/redis_rate/v9"
 
 	"github.com/frain-dev/convoy/config"
@@ -97,7 +98,7 @@ func TestProcessEventDelivery(t *testing.T) {
 		{
 			name:          "Endpoint does not respond with 2xx",
 			cfgPath:       "./testdata/Config/basic-convoy.json",
-			expectedError: &EndpointError{Err: ErrDeliveryAttemptFailed, delay: 20 * time.Second},
+			expectedError: &disq.Error{Err: ErrDeliveryAttemptFailed, Delay: 20 * time.Second},
 			msg: &datastore.EventDelivery{
 				UID: "",
 			},
