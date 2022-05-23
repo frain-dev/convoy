@@ -4837,6 +4837,9 @@
         "datastore.HMac": {
             "type": "object",
             "properties": {
+                "encoding": {
+                    "type": "string"
+                },
                 "hash": {
                     "type": "string"
                 },

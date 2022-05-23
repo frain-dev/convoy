@@ -80,7 +80,7 @@ func (s *DashboardIntegrationTestSuite) TestGetDashboardSummary() {
 		DocumentStatus: datastore.ActiveDocumentStatus,
 	}
 
-	err = s.DB.AppRepo().CreateApplication(ctx, application)
+	err = s.DB.AppRepo().CreateApplication(ctx, application, application.GroupID)
 	require.NoError(s.T(), err)
 
 	events := []datastore.Event{

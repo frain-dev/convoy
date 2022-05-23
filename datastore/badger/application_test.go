@@ -207,7 +207,7 @@ func Test_LoadApplicationsPaged(t *testing.T) {
 						GroupID: g.UID,
 						UID:     uuid.NewString(),
 					}
-					require.NoError(t, appRepo.CreateApplication(context.Background(), a))
+					require.NoError(t, appRepo.CreateApplication(context.Background(), a, a.GroupID))
 				}
 			}
 
@@ -217,14 +217,14 @@ func Test_LoadApplicationsPaged(t *testing.T) {
 				GroupID: tc.gid,
 				UID:     uuid.NewString(),
 			}
-			require.NoError(t, appRepo.CreateApplication(context.Background(), a))
+			require.NoError(t, appRepo.CreateApplication(context.Background(), a, a.GroupID))
 
 			b := &datastore.Application{
 				Title:   "Villan",
 				GroupID: tc.gid,
 				UID:     uuid.NewString(),
 			}
-			require.NoError(t, appRepo.CreateApplication(context.Background(), b))
+			require.NoError(t, appRepo.CreateApplication(context.Background(), b, b.GroupID))
 
 			apps, data, err := appRepo.LoadApplicationsPaged(context.Background(), tc.gid, tc.q, tc.pageData)
 
@@ -266,7 +266,7 @@ func Test_CreateApplication(t *testing.T) {
 		DocumentStatus: datastore.ActiveDocumentStatus,
 	}
 
-	require.NoError(t, appRepo.CreateApplication(context.Background(), app))
+	require.NoError(t, appRepo.CreateApplication(context.Background(), app, app.GroupID))
 
 	app2 := &datastore.Application{
 		Title:          "Application 1",
@@ -275,7 +275,7 @@ func Test_CreateApplication(t *testing.T) {
 		DocumentStatus: datastore.ActiveDocumentStatus,
 	}
 
-	err := appRepo.CreateApplication(context.Background(), app2)
+	err := appRepo.CreateApplication(context.Background(), app2, app2.GroupID)
 	require.Equal(t, datastore.ErrDuplicateAppName, err)
 }
 
@@ -301,13 +301,13 @@ func Test_UpdateApplication(t *testing.T) {
 		DocumentStatus: datastore.ActiveDocumentStatus,
 	}
 
-	require.NoError(t, appRepo.CreateApplication(context.Background(), app))
+	require.NoError(t, appRepo.CreateApplication(context.Background(), app, app.GroupID))
 
 	newTitle := "Newer name"
 
 	app.Title = newTitle
 
-	require.NoError(t, appRepo.UpdateApplication(context.Background(), app))
+	require.NoError(t, appRepo.UpdateApplication(context.Background(), app, app.GroupID))
 
 	newApp, err := appRepo.FindApplicationByID(context.Background(), app.UID)
 	require.NoError(t, err)
@@ -321,7 +321,7 @@ func Test_UpdateApplication(t *testing.T) {
 		DocumentStatus: datastore.ActiveDocumentStatus,
 	}
 
-	err = appRepo.CreateApplication(context.Background(), app2)
+	err = appRepo.CreateApplication(context.Background(), app2, app2.GroupID)
 	require.Equal(t, datastore.ErrDuplicateAppName, err)
 }
 
@@ -351,7 +351,7 @@ func Test_FindApplicationByID(t *testing.T) {
 
 	require.True(t, errors.Is(err, datastore.ErrApplicationNotFound))
 
-	require.NoError(t, appRepo.CreateApplication(context.Background(), app))
+	require.NoError(t, appRepo.CreateApplication(context.Background(), app, app.GroupID))
 
 	_, e := appRepo.FindApplicationByID(context.Background(), app.UID)
 	require.NoError(t, e)
@@ -497,7 +497,7 @@ func Test_SearchApplicationsByGroupId(t *testing.T) {
 						UID:       uuid.NewString(),
 						CreatedAt: primitive.NewDateTimeFromTime(times[i]),
 					}
-					require.NoError(t, appRepo.CreateApplication(context.Background(), a))
+					require.NoError(t, appRepo.CreateApplication(context.Background(), a, a.GroupID))
 				}
 			}
 
@@ -529,7 +529,7 @@ func Test_DeleteApplication(t *testing.T) {
 		UID:     uuid.NewString(),
 	}
 
-	require.NoError(t, appRepo.CreateApplication(context.Background(), app))
+	require.NoError(t, appRepo.CreateApplication(context.Background(), app, app.GroupID))
 
 	_, e := appRepo.FindApplicationByID(context.Background(), app.UID)
 	require.NoError(t, e)
@@ -568,7 +568,7 @@ func Test_DeleteGroupApps(t *testing.T) {
 			GroupID: groupOne.UID,
 			UID:     uuid.NewString(),
 		}
-		require.NoError(t, appRepo.CreateApplication(context.Background(), a))
+		require.NoError(t, appRepo.CreateApplication(context.Background(), a, a.GroupID))
 	}
 
 	for i := 0; i < 5; i++ {
@@ -577,7 +577,7 @@ func Test_DeleteGroupApps(t *testing.T) {
 			GroupID: groupTwo.UID,
 			UID:     uuid.NewString(),
 		}
-		require.NoError(t, appRepo.CreateApplication(context.Background(), a))
+		require.NoError(t, appRepo.CreateApplication(context.Background(), a, a.GroupID))
 	}
 
 	count, err := appRepo.CountGroupApplications(context.Background(), groupOne.UID)
@@ -624,7 +624,7 @@ func Test_FindApplicationEndpointById(t *testing.T) {
 		Endpoints: endpoints,
 	}
 
-	err := appRepo.CreateApplication(context.Background(), app)
+	err := appRepo.CreateApplication(context.Background(), app, app.GroupID)
 
 	require.NoError(t, err)
 
@@ -677,7 +677,7 @@ func Test_UpdateApplicationEndpointsStatus(t *testing.T) {
 		Endpoints: endpoints,
 	}
 
-	err := appRepo.CreateApplication(context.Background(), app)
+	err := appRepo.CreateApplication(context.Background(), app, app.GroupID)
 	require.NoError(t, err)
 
 	endpointIds := []string{endpoints[0].UID, endpoints[1].UID}

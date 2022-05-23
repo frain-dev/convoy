@@ -52,7 +52,7 @@ func Test_FindEventByID(t *testing.T) {
 
 	app.Endpoints = append(app.Endpoints, endpoint)
 
-	require.NoError(t, appRepo.CreateApplication(context.Background(), app))
+	require.NoError(t, appRepo.CreateApplication(context.Background(), app, app.GroupID))
 
 	event := &datastore.Event{
 		UID:              "eid-1",
@@ -194,7 +194,7 @@ func Test_CountGroupMessages(t *testing.T) {
 
 				app.GroupID = group.UID
 				app.Endpoints = append(app.Endpoints, tc.endpoints...)
-				require.NoError(t, appRepo.CreateApplication(context.Background(), app))
+				require.NoError(t, appRepo.CreateApplication(context.Background(), app, app.GroupID))
 
 				for i := 0; i < group.EventCount; i++ {
 					event := &datastore.Event{
@@ -378,7 +378,7 @@ func Test_LoadEventIntervals(t *testing.T) {
 			require.NoError(t, groupRepo.CreateGroup(context.Background(),
 				&datastore.Group{UID: tc.group.UID, Name: tc.group.Name}))
 
-			require.NoError(t, appRepo.CreateApplication(context.Background(), app))
+			require.NoError(t, appRepo.CreateApplication(context.Background(), app, app.GroupID))
 
 			for _, tt := range tc.times {
 				createdAt, err := time.Parse(timeFormat, tt)
@@ -569,7 +569,7 @@ func Test_LoadEventsPaged(t *testing.T) {
 				Name: tc.group.Name,
 			}))
 
-			require.NoError(t, appRepo.CreateApplication(context.Background(), app))
+			require.NoError(t, appRepo.CreateApplication(context.Background(), app, app.GroupID))
 
 			for _, tt := range tc.times {
 				createdAt, err := time.Parse(timeFormat, tt)

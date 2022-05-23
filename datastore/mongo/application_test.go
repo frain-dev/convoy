@@ -33,13 +33,13 @@ func Test_UpdateApplication(t *testing.T) {
 		DocumentStatus: datastore.ActiveDocumentStatus,
 	}
 
-	require.NoError(t, appRepo.CreateApplication(context.Background(), app))
+	require.NoError(t, appRepo.CreateApplication(context.Background(), app, app.GroupID))
 
 	newTitle := "Newer name"
 
 	app.Title = newTitle
 
-	require.NoError(t, appRepo.UpdateApplication(context.Background(), app))
+	require.NoError(t, appRepo.UpdateApplication(context.Background(), app, app.GroupID))
 
 	newApp, err := appRepo.FindApplicationByID(context.Background(), app.UID)
 	require.NoError(t, err)
@@ -53,7 +53,7 @@ func Test_UpdateApplication(t *testing.T) {
 		DocumentStatus: datastore.ActiveDocumentStatus,
 	}
 
-	err = appRepo.CreateApplication(context.Background(), app2)
+	err = appRepo.CreateApplication(context.Background(), app2, app2.GroupID)
 	require.Equal(t, datastore.ErrDuplicateAppName, err)
 }
 
@@ -78,7 +78,7 @@ func Test_CreateApplication(t *testing.T) {
 		DocumentStatus: datastore.ActiveDocumentStatus,
 	}
 
-	require.NoError(t, appRepo.CreateApplication(context.Background(), app))
+	require.NoError(t, appRepo.CreateApplication(context.Background(), app, app.GroupID))
 
 	app2 := &datastore.Application{
 		Title:          "Next application name",
@@ -87,7 +87,7 @@ func Test_CreateApplication(t *testing.T) {
 		DocumentStatus: datastore.ActiveDocumentStatus,
 	}
 
-	err := appRepo.CreateApplication(context.Background(), app2)
+	err := appRepo.CreateApplication(context.Background(), app2, app2.GroupID)
 	require.Equal(t, datastore.ErrDuplicateAppName, err)
 }
 
@@ -131,5 +131,5 @@ func Test_FindApplicationByID(t *testing.T) {
 		UID:     uuid.NewString(),
 	}
 
-	require.NoError(t, appRepo.CreateApplication(context.Background(), app))
+	require.NoError(t, appRepo.CreateApplication(context.Background(), app, app.GroupID))
 }
