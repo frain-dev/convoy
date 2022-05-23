@@ -10,7 +10,7 @@ require (
 	github.com/dgraph-io/badger/v3 v3.2103.1
 	github.com/dgryski/go-farm v0.0.0-20200201041132-a6ae2369ad13 // indirect
 	github.com/felixge/httpsnoop v1.0.2
-	github.com/frain-dev/disq v0.1.5
+	github.com/frain-dev/disq v0.1.7
 	github.com/fsnotify/fsnotify v1.5.1 // indirect
 	github.com/getkin/kin-openapi v0.80.0
 	github.com/getsentry/sentry-go v0.11.0

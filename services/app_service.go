@@ -49,7 +49,7 @@ func (a *AppService) CreateApp(ctx context.Context, newApp *models.Application, 
 		DocumentStatus:  datastore.ActiveDocumentStatus,
 	}
 
-	err := a.appRepo.CreateApplication(ctx, app)
+	err := a.appRepo.CreateApplication(ctx, app, app.GroupID)
 	if err != nil {
 		msg := "failed to create application"
 		if err == datastore.ErrDuplicateAppName {
@@ -101,7 +101,7 @@ func (a *AppService) UpdateApplication(ctx context.Context, appUpdate *models.Up
 		app.SupportEmail = *appUpdate.SupportEmail
 	}
 
-	err := a.appRepo.UpdateApplication(ctx, app)
+	err := a.appRepo.UpdateApplication(ctx, app, app.GroupID)
 	if err != nil {
 		msg := "an error occurred while updating app"
 		if err == datastore.ErrDuplicateAppName {
@@ -181,7 +181,7 @@ func (a *AppService) CreateAppEndpoint(ctx context.Context, e models.Endpoint, a
 
 	app.Endpoints = append(app.Endpoints, *endpoint)
 
-	err = a.appRepo.UpdateApplication(ctx, app)
+	err = a.appRepo.UpdateApplication(ctx, app, app.GroupID)
 	if err != nil {
 		log.WithError(err).Error("failed to update application")
 		return nil, NewServiceError(http.StatusBadRequest, fmt.Errorf("an error occurred while adding app endpoint"))
@@ -204,7 +204,7 @@ func (a *AppService) UpdateAppEndpoint(ctx context.Context, e models.Endpoint, e
 	}
 
 	app.Endpoints = *endpoints
-	err = a.appRepo.UpdateApplication(ctx, app)
+	err = a.appRepo.UpdateApplication(ctx, app, app.GroupID)
 	if err != nil {
 		return endpoint, NewServiceError(http.StatusBadRequest, errors.New("an error occurred while updating app endpoints"))
 	}
@@ -227,7 +227,7 @@ func (a *AppService) DeleteAppEndpoint(ctx context.Context, e *datastore.Endpoin
 		}
 	}
 
-	err := a.appRepo.UpdateApplication(ctx, app)
+	err := a.appRepo.UpdateApplication(ctx, app, app.GroupID)
 	if err != nil {
 		log.WithError(err).Error("failed to delete app endpoint")
 		return NewServiceError(http.StatusBadRequest, errors.New("an error occurred while deleting app endpoint"))

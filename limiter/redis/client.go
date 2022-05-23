@@ -41,8 +41,8 @@ func (r *RedisLimiter) Allow(ctx context.Context, key string, limit, duration in
 
 	l := redis_rate.Limit{
 		Period: d,
-		Rate:   limit + 1,
-		Burst:  limit + 1,
+		Rate:   limit,
+		Burst:  limit,
 	}
 
 	result, err := r.limiter.Allow(ctx, key, l)
@@ -66,8 +66,8 @@ func (r *RedisLimiter) ShouldAllow(ctx context.Context, key string, limit, durat
 
 	l := redis_rate.Limit{
 		Period: d,
-		Rate:   limit + 1,
-		Burst:  limit + 1,
+		Rate:   limit,
+		Burst:  limit,
 	}
 
 	result, err := r.limiter.AllowN(ctx, key, l, 0)
