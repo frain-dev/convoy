@@ -290,6 +290,8 @@ definitions:
     type: object
   datastore.HMac:
     properties:
+      encoding:
+        type: string
       hash:
         type: string
       header:
