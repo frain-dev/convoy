@@ -112,6 +112,7 @@ func (c *Client) ensureMongoIndices() {
 	c.ensureIndex(EventCollection, "uid", true, nil)
 	c.ensureIndex(EventCollection, "event_type", false, nil)
 	c.ensureIndex(EventCollection, "app_metadata.uid", false, nil)
+	c.ensureIndex(EventCollection, "app_metadata.group_id", false, nil)
 	c.ensureIndex(AppCollections, "group_id", false, nil)
 	c.ensureIndex(EventDeliveryCollection, "status", false, nil)
 	c.ensureCompoundIndex(AppCollections)
