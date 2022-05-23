@@ -1,0 +1,35 @@
+.tool-tip {
+	bottom: 35px;
+	width: 192px;
+	right: -16px;
+	opacity: 0;
+	pointer-events: none;
+
+	&.right {
+		right: -162px;
+
+		&::after {
+			right: 155px;
+		}
+	}
+
+	&::after {
+		content: '';
+		position: absolute;
+		bottom: -30px;
+		right: 10px;
+		border-top: 15px solid var(--primary-color);
+		border-left: 15px solid transparent;
+		border-bottom: 15px solid transparent;
+		border-right: 15px solid transparent;
+	}
+
+	&--button:hover,
+	&--button:focus-within,
+	&--button:focus {
+		.tool-tip {
+			opacity: 1;
+			pointer-events: all;
+		}
+	}
+}
