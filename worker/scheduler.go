@@ -35,11 +35,17 @@ func RegisterNewGroupTask(applicationRepo datastore.ApplicationRepository, event
 					if s == nil {
 						handler := task.ProcessEventDelivery(applicationRepo, eventDeliveryRepo, groupRepo, rateLimiter)
 						log.Infof("Registering event delivery task handler for %s", g.Name)
-						task.CreateTask(pEvtDelTask, *g, handler)
+						_, err := task.CreateTask(pEvtDelTask, *g, handler)
+						if err != nil {
+							log.WithError(err).Error(fmt.Sprintf("failed register event delivery task for group %v", g.Name))
+						}
 
 						eventCreatedhandler := task.ProcessEventCreated(applicationRepo, eventRepo, groupRepo, eventDeliveryRepo, cache, eventQueue)
 						log.Infof("Registering event creation task handler for %s", g.Name)
-						task.CreateTask(pEvtCrtTask, *g, eventCreatedhandler)
+						_, err = task.CreateTask(pEvtCrtTask, *g, eventCreatedhandler)
+						if err != nil {
+							log.WithError(err).Error(fmt.Sprintf("failed register event creation create task for group %v", g.Name))
+						}
 					}
 				}
 			}

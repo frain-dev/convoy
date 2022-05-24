@@ -69,7 +69,7 @@ func ProcessEventCreated(appRepo datastore.ApplicationRepository, eventRepo data
 			return &disq.Error{Err: err, Delay: 10 * time.Second}
 		}
 
-		matchedEndpoints := matchEndpointsForDelivery(event.EventType, app.Endpoints, nil)
+		matchedEndpoints := []datastore.Endpoint{} //matchEndpointsForDelivery(event.EventType, app.Endpoints, nil)
 		event.MatchedEndpoints = len(matchedEndpoints)
 		err = eventRepo.CreateEvent(ctx, event)
 		if err != nil {
@@ -155,22 +155,22 @@ func getEventDeliveryStatus(endpoint datastore.Endpoint, app *datastore.Applicat
 	return datastore.ScheduledEventStatus
 }
 
-func matchEndpointsForDelivery(ev datastore.EventType, endpoints, matched []datastore.Endpoint) []datastore.Endpoint {
-	if len(endpoints) == 0 {
-		return matched
-	}
+// func matchEndpointsForDelivery(ev datastore.EventType, endpoints, matched []datastore.Endpoint) []datastore.Endpoint {
+// 	if len(endpoints) == 0 {
+// 		return matched
+// 	}
 
-	if matched == nil {
-		matched = make([]datastore.Endpoint, 0)
-	}
+// 	if matched == nil {
+// 		matched = make([]datastore.Endpoint, 0)
+// 	}
 
-	e := endpoints[0]
-	for _, v := range e.Events {
-		if v == string(ev) || v == "*" {
-			matched = append(matched, e)
-			break
-		}
-	}
+// 	e := endpoints[0]
+// 	for _, v := range e.Events {
+// 		if v == string(ev) || v == "*" {
+// 			matched = append(matched, e)
+// 			break
+// 		}
+// 	}
 
-	return matchEndpointsForDelivery(ev, endpoints[1:], matched)
-}
+// 	return matchEndpointsForDelivery(ev, endpoints[1:], matched)
+// }

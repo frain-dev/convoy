@@ -37,14 +37,12 @@ import (
 type contextKey string
 
 const (
-	groupCtx         contextKey = "group"
-	appCtx           contextKey = "app"
-	endpointCtx      contextKey = "endpoint"
-	eventCtx         contextKey = "event"
-	subscriptionCtx  contextKey = "subscription"
-	eventDeliveryCtx contextKey = "eventDelivery"
-	configCtx        contextKey = "configCtx"
-	//authConfigCtx       contextKey = "authConfig"
+	groupCtx            contextKey = "group"
+	appCtx              contextKey = "app"
+	endpointCtx         contextKey = "endpoint"
+	eventCtx            contextKey = "event"
+	eventDeliveryCtx    contextKey = "eventDelivery"
+	configCtx           contextKey = "configCtx"
 	authLoginCtx        contextKey = "authLogin"
 	authUserCtx         contextKey = "authUser"
 	pageableCtx         contextKey = "pageable"
@@ -335,33 +333,6 @@ func requireEvent(eventRepo datastore.EventRepository) func(next http.Handler) h
 			}
 
 			r = r.WithContext(setEventInContext(r.Context(), event))
-			next.ServeHTTP(w, r)
-		})
-	}
-}
-
-func requireSubscription(subRepo datastore.SubscriptionRepository) func(next http.Handler) http.Handler {
-	return func(next http.Handler) http.Handler {
-		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			group := getGroupFromContext(r.Context())
-			subscriptionId := chi.URLParam(r, "subscriptionID")
-
-			subscription, err := subRepo.FindSubscriptionByID(r.Context(), group.UID, subscriptionId)
-			if err != nil {
-
-				subscription := "an error occurred while retrieving subscription details"
-				statusCode := http.StatusBadRequest
-
-				if errors.Is(err, datastore.ErrEventNotFound) {
-					subscription = err.Error()
-					statusCode = http.StatusNotFound
-				}
-
-				_ = render.Render(w, r, newErrorResponse(subscription, statusCode))
-				return
-			}
-
-			r = r.WithContext(setSubscriptionInContext(r.Context(), subscription))
 			next.ServeHTTP(w, r)
 		})
 	}
@@ -881,14 +852,6 @@ func setEventInContext(ctx context.Context,
 
 func getEventFromContext(ctx context.Context) *datastore.Event {
 	return ctx.Value(eventCtx).(*datastore.Event)
-}
-
-func setSubscriptionInContext(ctx context.Context, subscription *datastore.Subscription) context.Context {
-	return context.WithValue(ctx, subscriptionCtx, subscription)
-}
-
-func getSubscriptionFromContext(ctx context.Context) *datastore.Subscription {
-	return ctx.Value(subscriptionCtx).(*datastore.Subscription)
 }
 
 func setEventDeliveryInContext(ctx context.Context,

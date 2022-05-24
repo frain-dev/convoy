@@ -1,3 +1,6 @@
+//go:build integration
+// +build integration
+
 package mongo
 
 import (
@@ -32,47 +35,8 @@ func createSubscription() *datastore.Subscription {
 		FilterConfig: datastore.FilterConfiguration{
 			Events: []string{"some.event"},
 		},
+		DocumentStatus: datastore.ActiveDocumentStatus,
 	}
-}
-
-func Test_CreateSubscription(t *testing.T) {
-	db, closeFn := getDB(t)
-	defer closeFn()
-
-	subRepo := NewSubscriptionRepo(db)
-	newSub := createSubscription()
-
-	require.NoError(t, subRepo.CreateSubscription(context.Background(), newSub.GroupID, newSub))
-
-	sub, err := subRepo.FindSubscriptionByID(context.Background(), newSub.GroupID, newSub.UID)
-	require.NoError(t, err)
-
-	require.Equal(t, sub.UID, newSub.UID)
-	require.Equal(t, sub.SourceID, newSub.SourceID)
-	require.Equal(t, sub.EndpointID, newSub.EndpointID)
-}
-
-func Test_FindSubscriptionByID(t *testing.T) {
-	db, closeFn := getDB(t)
-	defer closeFn()
-
-	subRepo := NewSubscriptionRepo(db)
-	newSub := createSubscription()
-
-	// Fetch sub again
-	_, err := subRepo.FindSubscriptionByID(context.Background(), newSub.GroupID, newSub.UID)
-	require.Error(t, err)
-	require.EqualError(t, err, datastore.ErrSubscriptionNotFound.Error())
-
-	require.NoError(t, subRepo.CreateSubscription(context.Background(), newSub.GroupID, newSub))
-
-	// Fetch sub again
-	sub, err := subRepo.FindSubscriptionByID(context.Background(), newSub.GroupID, newSub.UID)
-	require.NoError(t, err)
-
-	require.Equal(t, sub.UID, newSub.UID)
-	require.Equal(t, sub.SourceID, newSub.SourceID)
-	require.Equal(t, sub.EndpointID, newSub.EndpointID)
 }
 
 func Test_LoadSubscriptionsPaged(t *testing.T) {
@@ -182,4 +146,44 @@ func Test_DeleteSubscription(t *testing.T) {
 	_, err = subRepo.FindSubscriptionByID(context.Background(), newSub.GroupID, newSub.UID)
 	require.Error(t, err)
 	require.EqualError(t, err, datastore.ErrSubscriptionNotFound.Error())
+}
+
+func Test_CreateSubscription(t *testing.T) {
+	db, closeFn := getDB(t)
+	defer closeFn()
+
+	subRepo := NewSubscriptionRepo(db)
+	newSub := createSubscription()
+
+	require.NoError(t, subRepo.CreateSubscription(context.Background(), newSub.GroupID, newSub))
+
+	sub, err := subRepo.FindSubscriptionByID(context.Background(), newSub.GroupID, newSub.UID)
+	require.NoError(t, err)
+
+	require.Equal(t, sub.UID, newSub.UID)
+	require.Equal(t, sub.SourceID, newSub.SourceID)
+	require.Equal(t, sub.EndpointID, newSub.EndpointID)
+}
+
+func Test_FindSubscriptionByID(t *testing.T) {
+	db, closeFn := getDB(t)
+	defer closeFn()
+
+	subRepo := NewSubscriptionRepo(db)
+	newSub := createSubscription()
+
+	// Fetch sub again
+	_, err := subRepo.FindSubscriptionByID(context.Background(), newSub.GroupID, newSub.UID)
+	require.Error(t, err)
+	require.EqualError(t, err, datastore.ErrSubscriptionNotFound.Error())
+
+	require.NoError(t, subRepo.CreateSubscription(context.Background(), newSub.GroupID, newSub))
+
+	// Fetch sub again
+	sub, err := subRepo.FindSubscriptionByID(context.Background(), newSub.GroupID, newSub.UID)
+	require.NoError(t, err)
+
+	require.Equal(t, sub.UID, newSub.UID)
+	require.Equal(t, sub.SourceID, newSub.SourceID)
+	require.Equal(t, sub.EndpointID, newSub.EndpointID)
 }

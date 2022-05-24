@@ -177,10 +177,11 @@ func buildRoutes(app *applicationHandler) http.Handler {
 				subsriptionRouter.Use(rateLimitByGroupID(app.limiter))
 				subsriptionRouter.Use(requirePermission(auth.RoleAdmin))
 
-				subsriptionRouter.Put("/{subscriptionID}", app.UpdateSubscription)
-				subsriptionRouter.With(pagination).Get("/", app.GetSubscriptions)
 				subsriptionRouter.Post("/", app.CreateSubscription)
+				subsriptionRouter.With(pagination).Get("/", app.GetSubscriptions)
 				subsriptionRouter.Delete("/", app.DeleteSubscription)
+				subsriptionRouter.Get("/{subscriptionID}", app.GetSubscription)
+				subsriptionRouter.Put("/{subscriptionID}", app.UpdateSubscription)
 			})
 
 			r.Route("/sources", func(sourceRouter chi.Router) {

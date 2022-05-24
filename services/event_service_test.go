@@ -58,12 +58,10 @@ func TestEventService_CreateAppEvent(t *testing.T) {
 					Endpoints: []datastore.Endpoint{
 						{
 							UID:    "ref",
-							Events: []string{"*"},
 							Status: datastore.ActiveEndpointStatus,
 						},
 						{
 							UID:    "abcd",
-							Events: []string{"payment.created"},
 							Status: datastore.ActiveEndpointStatus,
 						},
 					},
@@ -128,12 +126,10 @@ func TestEventService_CreateAppEvent(t *testing.T) {
 					Endpoints: []datastore.Endpoint{
 						{
 							UID:    "ref",
-							Events: []string{"*"},
 							Status: datastore.ActiveEndpointStatus,
 						},
 						{
 							UID:    "abcd",
-							Events: []string{"payment.created"},
 							Status: datastore.ActiveEndpointStatus,
 						},
 					},
@@ -192,12 +188,10 @@ func TestEventService_CreateAppEvent(t *testing.T) {
 					Endpoints: []datastore.Endpoint{
 						{
 							UID:    "ref",
-							Events: []string{"*"},
 							Status: datastore.ActiveEndpointStatus,
 						},
 						{
 							UID:    "abcd",
-							Events: []string{"payment.created"},
 							Status: datastore.ActiveEndpointStatus,
 						},
 					},
@@ -266,12 +260,10 @@ func TestEventService_CreateAppEvent(t *testing.T) {
 					Endpoints: []datastore.Endpoint{
 						{
 							UID:    "ref",
-							Events: []string{"*"},
 							Status: datastore.ActiveEndpointStatus,
 						},
 						{
 							UID:    "abcd",
-							Events: []string{"payment.created"},
 							Status: datastore.ActiveEndpointStatus,
 						},
 					},

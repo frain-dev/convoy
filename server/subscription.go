@@ -111,9 +111,14 @@ func (a *applicationHandler) CreateSubscription(w http.ResponseWriter, r *http.R
 // @Router /subscriptions/{subscriptionID} [delete]
 func (a *applicationHandler) DeleteSubscription(w http.ResponseWriter, r *http.Request) {
 	group := getGroupFromContext(r.Context())
-	sub := getSubscriptionFromContext(r.Context())
 
-	err := a.subService.DeleteSubscription(r.Context(), group.UID, sub)
+	sub, err := a.subService.FindSubscriptionByID(r.Context(), group.UID, chi.URLParam(r, "subscriptionID"))
+	if err != nil {
+		_ = render.Render(w, r, newServiceErrResponse(err))
+		return
+	}
+
+	err = a.subService.DeleteSubscription(r.Context(), group.UID, sub)
 	if err != nil {
 		log.Errorln("failed to delete subscription - ", err)
 		_ = render.Render(w, r, newServiceErrResponse(err))
