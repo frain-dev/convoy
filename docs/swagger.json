@@ -4542,17 +4542,6 @@
                 }
             }
         },
-        "datastore.DefaultStrategyConfiguration": {
-            "type": "object",
-            "properties": {
-                "intervalSeconds": {
-                    "type": "integer"
-                },
-                "retryLimit": {
-                    "type": "integer"
-                }
-            }
-        },
         "datastore.DeliveryAttempt": {
             "type": "object",
             "properties": {
@@ -4763,14 +4752,6 @@
                 }
             }
         },
-        "datastore.ExponentialBackoffStrategyConfiguration": {
-            "type": "object",
-            "properties": {
-                "retryLimit": {
-                    "type": "integer"
-                }
-            }
-        },
         "datastore.Group": {
             "type": "object",
             "properties": {
@@ -4790,6 +4771,7 @@
                     "type": "string"
                 },
                 "rate_limit": {
+                    "description": "TODO(subomi): refactor this into the Instance API.",
                     "type": "integer"
                 },
                 "rate_limit_duration": {
@@ -4797,6 +4779,9 @@
                 },
                 "statistics": {
                     "$ref": "#/definitions/datastore.GroupStatistics"
+                },
+                "type": {
+                    "type": "string"
                 },
                 "uid": {
                     "type": "string"
@@ -4811,6 +4796,9 @@
             "properties": {
                 "disable_endpoint": {
                     "type": "boolean"
+                },
+                "ratelimit": {
+                    "$ref": "#/definitions/datastore.RateLimitConfiguration"
                 },
                 "replay_attacks": {
                     "type": "boolean"
@@ -4909,6 +4897,17 @@
                 }
             }
         },
+        "datastore.RateLimitConfiguration": {
+            "type": "object",
+            "properties": {
+                "count": {
+                    "type": "integer"
+                },
+                "duration": {
+                    "type": "string"
+                }
+            }
+        },
         "datastore.SignatureConfiguration": {
             "type": "object",
             "properties": {
@@ -4923,11 +4922,11 @@
         "datastore.StrategyConfiguration": {
             "type": "object",
             "properties": {
-                "default": {
-                    "$ref": "#/definitions/datastore.DefaultStrategyConfiguration"
+                "duration": {
+                    "type": "integer"
                 },
-                "exponentialBackoff": {
-                    "$ref": "#/definitions/datastore.ExponentialBackoffStrategyConfiguration"
+                "retry_count": {
+                    "type": "integer"
                 },
                 "type": {
                     "type": "string"
@@ -5074,6 +5073,9 @@
                     "type": "integer"
                 },
                 "rate_limit_duration": {
+                    "type": "string"
+                },
+                "type": {
                     "type": "string"
                 }
             }

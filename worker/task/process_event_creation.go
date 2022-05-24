@@ -7,7 +7,6 @@ import (
 
 	"github.com/frain-dev/convoy"
 	"github.com/frain-dev/convoy/cache"
-	"github.com/frain-dev/convoy/config"
 	"github.com/frain-dev/convoy/datastore"
 	"github.com/frain-dev/convoy/queue"
 	"github.com/frain-dev/disq"
@@ -76,17 +75,8 @@ func ProcessEventCreated(appRepo datastore.ApplicationRepository, eventRepo data
 			return &disq.Error{Err: err, Delay: 10 * time.Second}
 		}
 
-		var intervalSeconds uint64
-		var retryLimit uint64
-		if string(group.Config.Strategy.Type) == string(config.DefaultStrategyProvider) {
-			intervalSeconds = group.Config.Strategy.Default.IntervalSeconds
-			retryLimit = group.Config.Strategy.Default.RetryLimit
-		} else if string(group.Config.Strategy.Type) == string(config.ExponentialBackoffStrategyProvider) {
-			intervalSeconds = 0
-			retryLimit = group.Config.Strategy.ExponentialBackoff.RetryLimit
-		} else {
-			return nil
-		}
+		intervalSeconds := group.Config.Strategy.Duration
+		retryLimit := group.Config.Strategy.RetryCount
 
 		for _, v := range matchedEndpoints {
 			eventDelivery := &datastore.EventDelivery{
