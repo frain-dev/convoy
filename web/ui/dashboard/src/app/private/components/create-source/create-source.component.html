@@ -1,11 +1,11 @@
-<form class="padding-bottom__40px">
+<form class="padding-bottom__40px" [formGroup]="sourceForm" (ngSubmit)="createSource()">
 	<section class="card padding-all__24px">
 		<h3 class="margin-bottom__12px font__weight-600 font__18px">Source name</h3>
 
 		<div class="input">
 			<label for="source-name">Source name</label>
-			<input type="text" id="source-name" />
-			<div class="input__error input__error__danger">
+			<input type="text" id="source-name" placeholder="Enter source name" formControlName="name" />
+			<div class="input__error input__error__danger" *ngIf="sourceForm.controls['name'].touched && sourceForm.controls['name'].invalid">
 				<img src="assets/img/input-error-icon.svg" alt="input error icon" />
 				<span>Enter new source name</span>
 			</div>
@@ -14,61 +14,16 @@
 		<h2 class="margin-bottom__16px">Select source type</h2>
 
 		<div class="source-types grid grid__col-2 grid--gap__24px">
-			<div class="source-type checkbox-option">
-				<input type="radio" id="http" name="source-type" />
-				<label for="http" class="border__all padding-all__16px rounded__4px position__relative display__block animate">
+			<div class="source-type checkbox-option" *ngFor="let sourceType of sourceTypes">
+				<input type="radio" [id]="sourceType.value" formControlName="type" [value]="sourceType.value" [checked]="sourceForm.value.type === sourceType.value" />
+				<label [for]="sourceType.value" class="border__all padding-all__16px rounded__4px position__relative display__block animate">
 					<div class="flex flex__align-items-center flex__justify-between position__relative">
 						<div class="flex flex__align-items-center">
 							<div class="checkbox rounded__50px margin-bottom__0px border__all width__16px height__16px animate"></div>
-							<p class="font__14px font__weight-600 margin-left__8px">Ingestion HTTP</p>
+							<p class="font__14px font__weight-600 margin-left__8px">{{ sourceType.viewValue }}</p>
 						</div>
 
-						<app-tooltip>This is a tip to help you accomplish a task.</app-tooltip>
-					</div>
-					<p class="color__grey font__12px font__weight-400 margin-top__8px">Etiam diam mi, egestas tortor nulla quis</p>
-				</label>
-			</div>
-
-			<div class="source-type checkbox-option">
-				<input type="radio" id="rest" name="source-type" />
-				<label for="rest" class="border__all padding-all__16px rounded__4px position__relative display__block animate">
-					<div class="flex flex__align-items-center flex__justify-between position__relative">
-						<div class="flex flex__align-items-center">
-							<div class="checkbox rounded__50px margin-bottom__0px border__all width__16px height__16px animate"></div>
-							<p class="font__14px font__weight-600 margin-left__8px">REST API</p>
-						</div>
-
-						<app-tooltip>This is a tip to help you accomplish a task.</app-tooltip>
-					</div>
-					<p class="color__grey font__12px font__weight-400 margin-top__8px">Etiam diam mi, egestas tortor nulla quis</p>
-				</label>
-			</div>
-
-			<div class="source-type checkbox-option">
-				<input type="radio" id="pubsub" name="source-type" />
-				<label for="pubsub" class="border__all padding-all__16px rounded__4px position__relative display__block animate">
-					<div class="flex flex__align-items-center flex__justify-between position__relative">
-						<div class="flex flex__align-items-center">
-							<div class="checkbox rounded__50px margin-bottom__0px border__all width__16px height__16px animate"></div>
-							<p class="font__14px font__weight-600 margin-left__8px">Pub/Sub</p>
-						</div>
-
-						<app-tooltip>This is a tip to help you accomplish a task.</app-tooltip>
-					</div>
-					<p class="color__grey font__12px font__weight-400 margin-top__8px">Etiam diam mi, egestas tortor nulla quis</p>
-				</label>
-			</div>
-
-			<div class="source-type checkbox-option">
-				<input type="radio" id="database" name="source-type" />
-				<label for="database" class="border__all padding-all__16px rounded__4px position__relative display__block animate">
-					<div class="flex flex__align-items-center flex__justify-between position__relative">
-						<div class="flex flex__align-items-center">
-							<div class="checkbox rounded__50px margin-bottom__0px border__all width__16px height__16px animate"></div>
-							<p class="font__14px font__weight-600 margin-left__8px">Database Change Stream</p>
-						</div>
-
-						<app-tooltip>This is a tip to help you accomplish a task.</app-tooltip>
+						<app-tooltip>{{ sourceType.description }}</app-tooltip>
 					</div>
 					<p class="color__grey font__12px font__weight-400 margin-top__8px">Etiam diam mi, egestas tortor nulla quis</p>
 				</label>
@@ -76,177 +31,153 @@
 		</div>
 	</section>
 
-	<section class="card padding-all__24px margin-top__24px">
-		<h2>Select Ingester HTTP type</h2>
-		<div class="ingester-types grid grid__col-2 grid--gap__24px margin-top__16px">
-			<div class="ingester-type checkbox-option">
-				<input type="radio" id="HMAC" name="ingester-type" />
-				<label for="HMAC" class="border__all padding-all__16px rounded__4px position__relative display__block animate">
-					<div class="flex flex__align-items-center flex__justify-between position__relative">
-						<div class="flex flex__align-items-center">
-							<div class="checkbox rounded__50px margin-bottom__0px border__all width__16px height__16px animate"></div>
-							<p class="font__14px font__weight-600 margin-left__8px">HMAC</p>
+	<div formGroupName="verifier">
+		<section class="card padding-all__24px margin-top__24px" *ngIf="sourceForm.value.type === 'http'">
+			<h2>Select Ingester HTTP type</h2>
+			<div class="ingester-types grid grid__col-2 grid--gap__24px margin-top__16px">
+				<div class="ingester-type checkbox-option" *ngFor="let httpType of httpTypes">
+					<input type="radio" [id]="httpType.value" [value]="httpType.value" formControlName="type" />
+					<label [for]="httpType.value" class="border__all padding-all__16px rounded__4px position__relative display__block animate">
+						<div class="flex flex__align-items-center flex__justify-between position__relative">
+							<div class="flex flex__align-items-center">
+								<div class="checkbox rounded__50px margin-bottom__0px border__all width__16px height__16px animate"></div>
+								<p class="font__14px font__weight-600 margin-left__8px">{{ httpType.viewValue }}</p>
+							</div>
+
+							<app-tooltip>This is a tip to help you accomplish a task.</app-tooltip>
 						</div>
-
-						<app-tooltip>This is a tip to help you accomplish a task.</app-tooltip>
-					</div>
-				</label>
+					</label>
+				</div>
 			</div>
+		</section>
 
-			<div class="ingester-type checkbox-option">
-				<input type="radio" id="basic_auth" name="ingester-type" />
-				<label for="basic_auth" class="border__all padding-all__16px rounded__4px position__relative display__block animate">
-					<div class="flex flex__align-items-center flex__justify-between position__relative">
-						<div class="flex flex__align-items-center">
-							<div class="checkbox rounded__50px margin-bottom__0px border__all width__16px height__16px animate"></div>
-							<p class="font__14px font__weight-600 margin-left__8px">Basic Auth</p>
+		<section class="card padding-all__24px margin-top__24px" *ngIf="sourceForm.value.verifier.type === 'api_key'" formGroupName="api_key">
+			<h2 class="margin-bottom__12px">Configure API Key</h2>
+
+			<div class="grid grid__col-2 grid--gap__24px">
+				<div class="input margin-bottom__0px">
+					<label for="key-header" class="position__relative flex flex__justify-between flex__align-items-center">
+						<div class="flex flex__justify-between flex__align-items-center">
+							API Key Header
+							<app-tooltip size="small" position="right" class="margin-left__4px">This is a tip to help you accomplish a task.</app-tooltip>
 						</div>
-
-						<app-tooltip>This is a tip to help you accomplish a task.</app-tooltip>
+						<span class="bg__grey__light rounded__4px padding-x__4px font__10px font__weight-400">required</span>
+					</label>
+					<input type="text" id="key-header" placeholder="Header goes here" formControlName="header" />
+					<div class="input__error input__error__danger" *ngIf="sourceForm.get('verifier.api_key.header')?.touched && sourceForm.get('verifier.api_key.header')?.invalid">
+						<img src="assets/img/input-error-icon.svg" alt="input error icon" />
+						<span>Enter api key header</span>
 					</div>
-				</label>
-			</div>
+				</div>
 
-			<div class="ingester-type checkbox-option">
-				<input type="radio" id="api_key" name="ingester-type" />
-				<label for="api_key" class="border__all padding-all__16px rounded__4px position__relative display__block animate">
-					<div class="flex flex__align-items-center flex__justify-between position__relative">
-						<div class="flex flex__align-items-center">
-							<div class="checkbox rounded__50px margin-bottom__0px border__all width__16px height__16px animate"></div>
-							<p class="font__14px font__weight-600 margin-left__8px">API Key</p>
-						</div>
-
-						<app-tooltip>This is a tip to help you accomplish a task.</app-tooltip>
+				<div class="input margin-bottom__0px">
+					<label for="key-header" class="position__relative">
+						API Key
+						<span class="bg__grey__light rounded__4px padding-x__4px position__absolute position--right__0px font__10px">required</span>
+					</label>
+					<input type="text" id="key-header" placeholder="Key goes here" formControlName="key" />
+					<div class="input__error input__error__danger" *ngIf="sourceForm.get('verifier.api_key.key')?.touched && sourceForm.get('verifier.api_key.key')?.invalid">
+						<img src="assets/img/input-error-icon.svg" alt="input error icon" />
+						<span>Enter api key</span>
 					</div>
-				</label>
+				</div>
 			</div>
-		</div>
-	</section>
+		</section>
 
-	<section class="card padding-all__24px margin-top__24px">
-		<h2 class="margin-bottom__12px">Configure API Key</h2>
+		<section class="card padding-all__24px margin-top__24px" *ngIf="sourceForm.value.verifier.type === 'hmac'" formGroupName="hmac">
+			<h2 class="margin-bottom__12px">Configure HMAC</h2>
 
-		<div class="grid grid__col-2 grid--gap__24px">
-			<div class="input margin-bottom__0px">
-				<label for="key-header" class="position__relative flex flex__justify-between flex__align-items-center">
-					<div class="flex flex__justify-between flex__align-items-center">
-						API Key Header
-						<app-tooltip size="small" position="right" class="margin-left__4px">This is a tip to help you accomplish a task.</app-tooltip>
+			<div class="grid grid__col-2 grid--gap__24px">
+				<div class="input margin-bottom__0px">
+					<label for="encoding" class="position__relative">
+						Encoding
+						<span class="bg__grey__light rounded__4px padding-x__4px position__absolute position--right__0px font__10px font__weight-400">required</span>
+					</label>
+					<select id="encoding" formControlName="encoding">
+						<option [value]="encoding" *ngFor="let encoding of encodings">{{ encoding }}</option>
+					</select>
+					<div class="input__error input__error__danger" *ngIf="sourceForm.get('verifier.hmac.encoding')?.touched && sourceForm.get('verifier.hmac.encoding')?.invalid">
+						<img src="assets/img/input-error-icon.svg" alt="input error icon" />
+						<span>Select encoding type</span>
 					</div>
-					<span class="bg__grey__light rounded__4px padding-x__4px font__10px font__weight-400">required</span>
-				</label>
-				<input type="text" id="key-header" placeholder="Header goes here" />
-				<div class="input__error input__error__danger">
-					<img src="assets/img/input-error-icon.svg" alt="input error icon" />
-					<span>Enter api key header</span>
+				</div>
+
+				<div class="input margin-bottom__0px">
+					<label for="algorithm" class="position__relative">
+						Hash Algorithm
+						<span class="bg__grey__light rounded__4px padding-x__4px position__absolute position--right__0px font__10px font__weight-400">required</span>
+					</label>
+					<select id="algorithm" formControlName="hash">
+						<option [value]="hash" *ngFor="let hash of hashAlgorithms">{{ hash }}</option>
+					</select>
+					<div class="input__error input__error__danger" *ngIf="sourceForm.get('verifier.hmac.hash')?.touched && sourceForm.get('verifier.hmac.hash')?.invalid">
+						<img src="assets/img/input-error-icon.svg" alt="input error icon" />
+						<span>Select algorithm type</span>
+					</div>
+				</div>
+
+				<div class="input margin-bottom__0px">
+					<label for="header-key" class="position__relative">
+						Signature header key
+						<span class="bg__grey__light rounded__4px padding-x__4px position__absolute position--right__0px font__10px font__weight-400">required</span>
+					</label>
+					<input type="text" id="header-key" placeholder="X-Convoy-Signature" formControlName="header" />
+					<div class="input__error input__error__danger" *ngIf="sourceForm.get('verifier.hmac.header')?.touched && sourceForm.get('verifier.hmac.header')?.invalid">
+						<img src="assets/img/input-error-icon.svg" alt="input error icon" />
+						<span>Enter header key</span>
+					</div>
+				</div>
+
+				<div class="input margin-bottom__0px">
+					<label for="signing-secret">
+						Webhook signing secret
+						<span class="bg__grey__light rounded__4px padding-x__4px position__absolute position--right__0px font__10px">required</span>
+					</label>
+					<input type="text" id="signing-secret" placeholder="Secret goes here" formControlName="secret" />
+					<div class="input__error input__error__danger" *ngIf="sourceForm.get('verifier.hmac.secret')?.touched && sourceForm.get('verifier.hmac.secret')?.invalid">
+						<img src="assets/img/input-error-icon.svg" alt="input error icon" />
+						<span>Enter webhook signing secret</span>
+					</div>
 				</div>
 			</div>
+		</section>
 
-			<div class="input margin-bottom__0px">
-				<label for="key-header" class="position__relative">
-					API Key
-					<span class="bg__grey__light rounded__4px padding-x__4px position__absolute position--right__0px font__10px">required</span>
-				</label>
-				<input type="text" id="key-header" placeholder="Key goes here" />
-				<div class="input__error input__error__danger">
-					<img src="assets/img/input-error-icon.svg" alt="input error icon" />
-					<span>Enter api key</span>
+		<section class="card padding-all__24px margin-top__24px" *ngIf="sourceForm.value.verifier.type === 'basic_auth'" formGroupName="basic_auth">
+			<h2 class="margin-bottom__12px">Configure Basic Auth</h2>
+
+			<div class="grid grid__col-2 grid--gap__24px">
+				<div class="input margin-bottom__0px">
+					<label for="header-key" class="position__relative">
+						Username
+						<span class="bg__grey__light rounded__4px padding-x__4px position__absolute position--right__0px font__10px font__weight-400">required</span>
+					</label>
+					<input type="text" id="header-key" placeholder="Name goes here" formControlName="username" />
+					<div class="input__error input__error__danger" *ngIf="sourceForm.get('verifier.basic_auth.username')?.touched && sourceForm.get('verifier.basic_auth.username')?.invalid">
+						<img src="assets/img/input-error-icon.svg" alt="input error icon" />
+						<span>Enter basic auth username</span>
+					</div>
+				</div>
+
+				<div class="input margin-bottom__0px">
+					<label for="signing-secret">
+						Password
+						<span class="bg__grey__light rounded__4px padding-x__4px position__absolute position--right__0px font__10px">required</span>
+					</label>
+					<input type="text" id="signing-secret" placeholder="*******" formControlName="password" />
+					<div class="input__error input__error__danger" *ngIf="sourceForm.get('verifier.basic_auth.password')?.touched && sourceForm.get('verifier.basic_auth.password')?.invalid">
+						<img src="assets/img/input-error-icon.svg" alt="input error icon" />
+						<span>Enter basic auth password</span>
+					</div>
 				</div>
 			</div>
-		</div>
-	</section>
+		</section>
+	</div>
 
-	<section class="card padding-all__24px margin-top__24px">
-		<h2 class="margin-bottom__12px">Configure HMAC</h2>
+	<div class="button-container flex flex__justify-end margin-top__32px">
+		<button class="button button__white padding-y__12px padding-x__28px rounded__8px margin-right__16px" type="button">Cancel</button>
 
-		<div class="grid grid__col-2 grid--gap__24px">
-			<div class="input margin-bottom__0px">
-				<label for="encoding" class="position__relative">
-					Encoding
-					<span class="bg__grey__light rounded__4px padding-x__4px position__absolute position--right__0px font__10px font__weight-400">required</span>
-				</label>
-				<select name="encoding" id="encoding">
-					<option value="Hex" selected>Hex</option>
-				</select>
-				<div class="input__error input__error__danger">
-					<img src="assets/img/input-error-icon.svg" alt="input error icon" />
-					<span>Select encoding type</span>
-				</div>
-			</div>
-
-			<div class="input margin-bottom__0px">
-				<label for="header-key" class="position__relative">
-					Algorithm
-					<span class="bg__grey__light rounded__4px padding-x__4px position__absolute position--right__0px font__10px font__weight-400">required</span>
-				</label>
-				<select name="encoding" id="encoding">
-					<option value="SHA512" selected>SHA512</option>
-				</select>
-				<div class="input__error input__error__danger">
-					<img src="assets/img/input-error-icon.svg" alt="input error icon" />
-					<span>Select algorithm type</span>
-				</div>
-			</div>
-
-			<div class="input margin-bottom__0px">
-				<label for="header-key" class="position__relative">
-					Signature header key
-					<span class="bg__grey__light rounded__4px padding-x__4px position__absolute position--right__0px font__10px font__weight-400">required</span>
-				</label>
-				<input type="text" id="header-key" placeholder="X-Convoy-Signature" />
-				<div class="input__error input__error__danger">
-					<img src="assets/img/input-error-icon.svg" alt="input error icon" />
-					<span>Enter header key</span>
-				</div>
-			</div>
-
-			<div class="input margin-bottom__0px">
-				<label for="signing-secret">
-					Webhook signing secret
-					<span class="bg__grey__light rounded__4px padding-x__4px position__absolute position--right__0px font__10px">required</span>
-				</label>
-				<input type="text" id="signing-secret" placeholder="Secret goes here" />
-				<div class="input__error input__error__danger">
-					<img src="assets/img/input-error-icon.svg" alt="input error icon" />
-					<span>Enter webhook signing secret</span>
-				</div>
-			</div>
-		</div>
-	</section>
-
-	<section class="card padding-all__24px margin-top__24px">
-		<h2 class="margin-bottom__12px">Configure Basic Auth</h2>
-
-		<div class="grid grid__col-2 grid--gap__24px">
-			<div class="input margin-bottom__0px">
-				<label for="header-key" class="position__relative">
-					Username
-					<span class="bg__grey__light rounded__4px padding-x__4px position__absolute position--right__0px font__10px font__weight-400">required</span>
-				</label>
-				<input type="text" id="header-key" placeholder="Name goes here" />
-				<div class="input__error input__error__danger">
-					<img src="assets/img/input-error-icon.svg" alt="input error icon" />
-					<span>Enter basic auth username</span>
-				</div>
-			</div>
-
-			<div class="input margin-bottom__0px">
-				<label for="signing-secret">
-					Password
-					<span class="bg__grey__light rounded__4px padding-x__4px position__absolute position--right__0px font__10px">required</span>
-				</label>
-				<input type="text" id="signing-secret" placeholder="*******" />
-				<div class="input__error input__error__danger">
-					<img src="assets/img/input-error-icon.svg" alt="input error icon" />
-					<span>Enter basic auth password</span>
-				</div>
-			</div>
-		</div>
-	</section>
-
-	<div class="button-container flex flex__justify-center">
-		<button class="button button__primary button--has-icon padding-y__12px rounded__8px margin-top__32px">
-			Save and proceed
+		<button class="button button__primary button--has-icon padding-y__12px rounded__8px">
+			Create Source
 			<svg width="24" height="24" class="margin-left__8px" fill="#FCFCFC">
 				<use xlink:href="#arrow-right-icon"></use>
 			</svg>

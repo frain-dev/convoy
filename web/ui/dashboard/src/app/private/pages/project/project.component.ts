@@ -1,4 +1,6 @@
 import { Component, OnInit } from '@angular/core';
+import { ActivatedRoute } from '@angular/router';
+import { ProjectService } from './project.service';
 
 @Component({
 	selector: 'app-project',
@@ -30,7 +32,9 @@ export class ProjectComponent implements OnInit {
 	];
 	shouldShowFullSideBar = true;
 
-	constructor() {}
+	constructor(private route: ActivatedRoute, private projectService: ProjectService) {
+		this.projectService.activeProject = this.route.snapshot.params.id;
+	}
 
 	ngOnInit(): void {}
 }

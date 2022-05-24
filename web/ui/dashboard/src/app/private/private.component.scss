@@ -1,0 +1,9 @@
+nav {
+	margin-left: 151px;
+
+	.active {
+		background: var(--primary-color-500);
+		color: var(--primary-color);
+		font-weight: 500;
+	}
+}
