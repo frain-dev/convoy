@@ -15,5 +15,5 @@ ui_install:
  	 npm run build
 
 integration_tests:
-	go test -tags integration ./...
+	go test -tags integration -p 1 ./...
 
