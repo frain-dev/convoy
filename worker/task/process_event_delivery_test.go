@@ -145,11 +145,9 @@ func TestProcessEventDelivery(t *testing.T) {
 								Hash:   "SHA256",
 							},
 							Strategy: datastore.StrategyConfiguration{
-								Type: config.StrategyProvider("default"),
-								Default: datastore.DefaultStrategyConfiguration{
-									IntervalSeconds: 60,
-									RetryLimit:      1,
-								},
+								Type:       datastore.LinearStrategyProvider,
+								Duration:   60,
+								RetryCount: 1,
 							},
 							DisableEndpoint: true,
 						},
@@ -232,11 +230,9 @@ func TestProcessEventDelivery(t *testing.T) {
 								Hash:   "SHA256",
 							},
 							Strategy: datastore.StrategyConfiguration{
-								Type: config.StrategyProvider("default"),
-								Default: datastore.DefaultStrategyConfiguration{
-									IntervalSeconds: 60,
-									RetryLimit:      1,
-								},
+								Type:       datastore.LinearStrategyProvider,
+								Duration:   60,
+								RetryCount: 1,
 							},
 							DisableEndpoint: false,
 						},
@@ -331,11 +327,9 @@ func TestProcessEventDelivery(t *testing.T) {
 								Hash:   "SHA256",
 							},
 							Strategy: datastore.StrategyConfiguration{
-								Type: config.StrategyProvider("default"),
-								Default: datastore.DefaultStrategyConfiguration{
-									IntervalSeconds: 60,
-									RetryLimit:      1,
-								},
+								Type:       datastore.LinearStrategyProvider,
+								Duration:   60,
+								RetryCount: 1,
 							},
 							DisableEndpoint: true,
 						},
@@ -412,11 +406,9 @@ func TestProcessEventDelivery(t *testing.T) {
 								Hash:   "SHA256",
 							},
 							Strategy: datastore.StrategyConfiguration{
-								Type: config.StrategyProvider("default"),
-								Default: datastore.DefaultStrategyConfiguration{
-									IntervalSeconds: 60,
-									RetryLimit:      1,
-								},
+								Type:       datastore.StrategyProvider("default"),
+								Duration:   60,
+								RetryCount: 1,
 							},
 							DisableEndpoint: false,
 						},
@@ -513,11 +505,9 @@ func TestProcessEventDelivery(t *testing.T) {
 								Hash:   "SHA256",
 							},
 							Strategy: datastore.StrategyConfiguration{
-								Type: config.StrategyProvider("default"),
-								Default: datastore.DefaultStrategyConfiguration{
-									IntervalSeconds: 60,
-									RetryLimit:      1,
-								},
+								Type:       datastore.LinearStrategyProvider,
+								Duration:   60,
+								RetryCount: 1,
 							},
 							DisableEndpoint: true,
 						},
@@ -594,11 +584,9 @@ func TestProcessEventDelivery(t *testing.T) {
 								Hash:   "SHA256",
 							},
 							Strategy: datastore.StrategyConfiguration{
-								Type: config.StrategyProvider("default"),
-								Default: datastore.DefaultStrategyConfiguration{
-									IntervalSeconds: 60,
-									RetryLimit:      1,
-								},
+								Type:       datastore.LinearStrategyProvider,
+								Duration:   60,
+								RetryCount: 1,
 							},
 							DisableEndpoint: false,
 						},
@@ -695,11 +683,9 @@ func TestProcessEventDelivery(t *testing.T) {
 								Hash:   "SHA256",
 							},
 							Strategy: datastore.StrategyConfiguration{
-								Type: config.StrategyProvider("default"),
-								Default: datastore.DefaultStrategyConfiguration{
-									IntervalSeconds: 60,
-									RetryLimit:      1,
-								},
+								Type:       datastore.LinearStrategyProvider,
+								Duration:   60,
+								RetryCount: 1,
 							},
 							DisableEndpoint: true,
 						},

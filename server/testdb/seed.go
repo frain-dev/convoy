@@ -178,6 +178,7 @@ func SeedGroup(db datastore.DatabaseClient, uid, name string, cfg *datastore.Gro
 	g := &datastore.Group{
 		UID:               uid,
 		Name:              name,
+		Type:              datastore.OutgoingGroup,
 		Config:            cfg,
 		RateLimit:         convoy.RATE_LIMIT,
 		RateLimitDuration: convoy.RATE_LIMIT_DURATION,
