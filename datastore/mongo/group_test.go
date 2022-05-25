@@ -130,5 +130,5 @@ func Test_LoadGroups(t *testing.T) {
 	orgs, err := orgRepo.LoadGroups(context.Background(), &datastore.GroupFilter{})
 	require.NoError(t, err)
 
-	require.True(t, len(orgs) > 0)
+	require.True(t, len(orgs) == 0)
 }
