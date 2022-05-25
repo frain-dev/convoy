@@ -3,10 +3,10 @@ package mongo
 import (
 	"context"
 	"errors"
-	pager "github.com/gobeam/mongo-go-pagination"
 	"time"
 
 	"github.com/frain-dev/convoy/datastore"
+	pager "github.com/gobeam/mongo-go-pagination"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
@@ -72,7 +72,7 @@ func (db *orgRepo) DeleteOrganisation(ctx context.Context, uid string) error {
 func (db *orgRepo) FetchOrganisationByID(ctx context.Context, id string) (*datastore.Organisation, error) {
 	org := new(datastore.Organisation)
 
-	err := db.inner.FindOne(ctx, bson.M{"uid": org.UID}).Decode(&org)
+	err := db.inner.FindOne(ctx, bson.M{"uid": id}).Decode(&org)
 	if errors.Is(err, mongo.ErrNoDocuments) {
 		err = datastore.ErrOrgNotFound
 	}
