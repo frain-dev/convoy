@@ -236,25 +236,25 @@ func (e *EventService) RetryEventDelivery(ctx context.Context, eventDelivery *da
 		return errors.New("cannot resend event that did not fail previously")
 	}
 
-	em := eventDelivery.EndpointMetadata
-	endpoint, err := e.appRepo.FindApplicationEndpointByID(context.Background(), eventDelivery.AppMetadata.UID, em.UID)
-	if err != nil {
-		log.WithError(err).Error("failed to find endpoint")
-		return errors.New("cannot find endpoint")
-	}
+	// em := eventDelivery.EndpointMetadata
+	// endpoint, err := e.appRepo.FindApplicationEndpointByID(context.Background(), eventDelivery.AppMetadata.UID, em.UID)
+	// if err != nil {
+	// 	log.WithError(err).Error("failed to find endpoint")
+	// 	return errors.New("cannot find endpoint")
+	// }
 
-	if endpoint.Status == datastore.PendingEndpointStatus {
-		return errors.New("endpoint is being re-activated")
-	}
+	// if endpoint.Status == datastore.PendingEndpointStatus {
+	// 	return errors.New("endpoint is being re-activated")
+	// }
 
-	if endpoint.Status == datastore.InactiveEndpointStatus {
-		pendingEndpoints := []string{em.UID}
+	// if endpoint.Status == datastore.InactiveEndpointStatus {
+	// 	pendingEndpoints := []string{em.UID}
 
-		err = e.appRepo.UpdateApplicationEndpointsStatus(context.Background(), eventDelivery.AppMetadata.UID, pendingEndpoints, datastore.PendingEndpointStatus)
-		if err != nil {
-			return errors.New("failed to update endpoint status")
-		}
-	}
+	// 	err = e.appRepo.UpdateApplicationEndpointsStatus(context.Background(), eventDelivery.AppMetadata.UID, pendingEndpoints, datastore.PendingEndpointStatus)
+	// 	if err != nil {
+	// 		return errors.New("failed to update endpoint status")
+	// 	}
+	// }
 
 	return e.requeueEventDelivery(ctx, eventDelivery, g)
 }
@@ -264,15 +264,15 @@ func (e *EventService) forceResendEventDelivery(ctx context.Context, eventDelive
 		return errors.New("only successful events can be force resent")
 	}
 
-	em := eventDelivery.EndpointMetadata
-	endpoint, err := e.appRepo.FindApplicationEndpointByID(context.Background(), eventDelivery.AppMetadata.UID, em.UID)
-	if err != nil {
-		return errors.New("cannot find endpoint")
-	}
+	// em := eventDelivery.EndpointMetadata
+	// endpoint, err := e.appRepo.FindApplicationEndpointByID(context.Background(), eventDelivery.AppMetadata.UID, em.UID)
+	// if err != nil {
+	// 	return errors.New("cannot find endpoint")
+	// }
 
-	if endpoint.Status != datastore.ActiveEndpointStatus {
-		return errors.New("force resend to an inactive or pending endpoint is not allowed")
-	}
+	// if endpoint.Status != datastore.ActiveEndpointStatus {
+	// 	return errors.New("force resend to an inactive or pending endpoint is not allowed")
+	// }
 
 	return e.requeueEventDelivery(ctx, eventDelivery, g)
 }

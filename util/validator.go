@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"strings"
+	"time"
 
 	"github.com/asaskevich/govalidator"
 	"github.com/frain-dev/convoy/config/algo"
@@ -89,5 +90,11 @@ func init() {
 		}
 
 		return true
+	})
+
+	govalidator.TagMap["duration"] = govalidator.Validator(func(duration string) bool {
+		_, err := time.ParseDuration(duration)
+
+		return err == nil
 	})
 }

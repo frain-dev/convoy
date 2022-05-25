@@ -3,7 +3,6 @@ package services
 import (
 	"context"
 	"errors"
-	"fmt"
 	"net/http"
 	"time"
 
@@ -43,6 +42,7 @@ func (s *SubcriptionService) CreateSubscription(ctx context.Context, groupID str
 		UID:        uuid.New().String(),
 		Name:       newSubscription.Name,
 		Type:       newSubscription.Type,
+		AppID:      newSubscription.AppID,
 		SourceID:   newSubscription.SourceID,
 		EndpointID: newSubscription.EndpointID,
 
@@ -50,8 +50,10 @@ func (s *SubcriptionService) CreateSubscription(ctx context.Context, groupID str
 		AlertConfig:  newSubscription.AlertConfig,
 		FilterConfig: newSubscription.FilterConfig,
 
-		CreatedAt:      primitive.NewDateTimeFromTime(time.Now()),
-		UpdatedAt:      primitive.NewDateTimeFromTime(time.Now()),
+		CreatedAt: primitive.NewDateTimeFromTime(time.Now()),
+		UpdatedAt: primitive.NewDateTimeFromTime(time.Now()),
+
+		Status:         datastore.ActiveEndpointStatus,
 		DocumentStatus: datastore.ActiveDocumentStatus,
 	}
 
@@ -70,8 +72,6 @@ func (s *SubcriptionService) UpdateSubscription(ctx context.Context, groupId str
 		return nil, NewServiceError(http.StatusBadRequest, err)
 	}
 
-	fmt.Printf("\n%+v \n\n %+v\n\n", update, subscription)
-
 	if !util.IsStringEmpty(update.Name) {
 		subscription.Name = update.Name
 	}
@@ -88,32 +88,24 @@ func (s *SubcriptionService) UpdateSubscription(ctx context.Context, groupId str
 		subscription.AlertConfig.Count = update.AlertConfig.Count
 	}
 
-	if !util.IsStringEmpty(update.AlertConfig.Time) {
-		subscription.AlertConfig.Time = update.AlertConfig.Time
+	if !util.IsStringEmpty(update.AlertConfig.Threshold) {
+		subscription.AlertConfig.Threshold = update.AlertConfig.Threshold
 	}
 
 	if !util.IsStringEmpty(string(update.RetryConfig.Type)) {
 		subscription.RetryConfig.Type = update.RetryConfig.Type
 	}
 
-	if len(update.RetryConfig.Exponential.BackoffTimes) > 0 {
-		subscription.RetryConfig.Exponential.BackoffTimes = update.RetryConfig.Exponential.BackoffTimes
+	if !util.IsStringEmpty(update.RetryConfig.Duration) {
+		subscription.RetryConfig.Duration = update.RetryConfig.Duration
 	}
 
-	if update.RetryConfig.Exponential.RetryLimit > 0 {
-		subscription.RetryConfig.Exponential.RetryLimit = update.RetryConfig.Exponential.RetryLimit
+	if update.RetryConfig.RetryCount > 0 {
+		subscription.RetryConfig.RetryCount = update.RetryConfig.RetryCount
 	}
 
-	if update.RetryConfig.Linear.IntervalSeconds > 0 {
-		subscription.RetryConfig.Linear.IntervalSeconds = update.RetryConfig.Linear.IntervalSeconds
-	}
-
-	if update.RetryConfig.Linear.RetryLimit > 0 {
-		subscription.RetryConfig.Linear.RetryLimit = update.RetryConfig.Linear.RetryLimit
-	}
-
-	if len(update.FilterConfig.Events) > 0 {
-		subscription.FilterConfig.Events = update.FilterConfig.Events
+	if len(update.FilterConfig.EventTypes) > 0 {
+		subscription.FilterConfig.EventTypes = update.FilterConfig.EventTypes
 	}
 
 	err := s.subRepo.UpdateSubscription(ctx, groupId, subscription)

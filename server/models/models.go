@@ -152,20 +152,22 @@ type WebhookRequest struct {
 type Subscription struct {
 	Name       string `json:"name" bson:"name" valid:"required~please provide a valid subscription name"`
 	Type       string `json:"type" bson:"type" valid:"required~please provide a valid subscription type"`
-	SourceID   string `json:"source_id" bson:"source_id"`
+	AppID      string `json:"app_id" bson:"app_id" valid:"required~please provide a valid app id"`
+	SourceID   string `json:"source_id" bson:"source_id" valid:"required~please provide a valid source id"`
 	EndpointID string `json:"endpoint_id" bson:"endpoint_id" valid:"required~please provide a valid endpoint id"`
 
-	AlertConfig  datastore.AlertConfiguration  `json:"alert_config,omitempty" bson:"alert_config,omitempty"`
-	RetryConfig  datastore.RetryConfiguration  `json:"retry_config,omitempty" bson:"retry_config,omitempty"`
-	FilterConfig datastore.FilterConfiguration `json:"filter_config,omitempty" bson:"filter_config,omitempty"`
+	AlertConfig  *datastore.AlertConfiguration  `json:"alert_config,omitempty" bson:"alert_config,omitempty"`
+	RetryConfig  *datastore.RetryConfiguration  `json:"retry_config,omitempty" bson:"retry_config,omitempty"`
+	FilterConfig *datastore.FilterConfiguration `json:"filter_config,omitempty" bson:"filter_config,omitempty"`
 }
 
 type UpdateSubscription struct {
 	Name       string `json:"name,omitempty"`
+	AppID      string `json:"app_id,omitempty"`
 	SourceID   string `json:"source_id,omitempty"`
 	EndpointID string `json:"endpoint_id,omitempty"`
 
-	AlertConfig  datastore.AlertConfiguration  `json:"alert_config,omitempty"`
-	RetryConfig  datastore.RetryConfiguration  `json:"retry_config,omitempty"`
-	FilterConfig datastore.FilterConfiguration `json:"filter_config,omitempty"`
+	AlertConfig  *datastore.AlertConfiguration  `json:"alert_config,omitempty"`
+	RetryConfig  *datastore.RetryConfiguration  `json:"retry_config,omitempty"`
+	FilterConfig *datastore.FilterConfiguration `json:"filter_config,omitempty"`
 }

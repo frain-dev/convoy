@@ -98,7 +98,7 @@ func ProcessEventCreated(appRepo datastore.ApplicationRepository, eventRepo data
 				EndpointMetadata: &datastore.EndpointMetadata{
 					UID:               v.UID,
 					TargetURL:         v.TargetURL,
-					Status:            v.Status,
+					// Status:            v.Status,
 					Secret:            v.Secret,
 					Sent:              false,
 					RateLimit:         v.RateLimit,
@@ -148,9 +148,9 @@ func ProcessEventCreated(appRepo datastore.ApplicationRepository, eventRepo data
 }
 
 func getEventDeliveryStatus(endpoint datastore.Endpoint, app *datastore.Application) datastore.EventDeliveryStatus {
-	if app.IsDisabled || endpoint.Status != datastore.ActiveEndpointStatus {
-		return datastore.DiscardedEventStatus
-	}
+	// if app.IsDisabled || endpoint.Status != datastore.ActiveEndpointStatus {
+	// 	return datastore.DiscardedEventStatus
+	// }
 
 	return datastore.ScheduledEventStatus
 }

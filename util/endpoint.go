@@ -8,11 +8,11 @@ import (
 	"github.com/frain-dev/convoy/datastore"
 )
 
-func ParseMetadataFromActiveEndpoints(endpoints []datastore.Endpoint) []datastore.EndpointMetadata {
-	return parseMetadataFromEndpoints(endpoints, func(e datastore.Endpoint) bool {
-		return e.Status == datastore.ActiveEndpointStatus
-	})
-}
+// func ParseMetadataFromActiveEndpoints(endpoints []datastore.Endpoint) []datastore.EndpointMetadata {
+// 	return parseMetadataFromEndpoints(endpoints, func(e datastore.Endpoint) bool {
+// 		return e.Status == datastore.ActiveEndpointStatus
+// 	})
+// }
 
 func GetMetadataFromEndpoints(endpoints []datastore.Endpoint) []datastore.EndpointMetadata {
 	return parseMetadataFromEndpoints(endpoints, func(e datastore.Endpoint) bool {

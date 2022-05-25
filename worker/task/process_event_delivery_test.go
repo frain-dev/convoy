@@ -91,7 +91,7 @@ func TestProcessEventDelivery(t *testing.T) {
 				a.EXPECT().
 					FindApplicationEndpointByID(gomock.Any(), gomock.Any(), gomock.Any()).
 					Return(&datastore.Endpoint{
-						Status: datastore.InactiveEndpointStatus,
+						// Status: datastore.InactiveEndpointStatus,
 					}, nil).Times(1)
 			},
 		},
@@ -162,7 +162,7 @@ func TestProcessEventDelivery(t *testing.T) {
 				a.EXPECT().
 					FindApplicationEndpointByID(gomock.Any(), gomock.Any(), gomock.Any()).
 					Return(&datastore.Endpoint{
-						Status: datastore.ActiveEndpointStatus,
+						// Status: datastore.ActiveEndpointStatus,
 					}, nil).Times(1)
 
 				m.EXPECT().
@@ -249,7 +249,7 @@ func TestProcessEventDelivery(t *testing.T) {
 				a.EXPECT().
 					FindApplicationEndpointByID(gomock.Any(), gomock.Any(), gomock.Any()).
 					Return(&datastore.Endpoint{
-						Status: datastore.ActiveEndpointStatus,
+						// Status: datastore.ActiveEndpointStatus,
 					}, nil).Times(1)
 
 				m.EXPECT().
@@ -318,7 +318,7 @@ func TestProcessEventDelivery(t *testing.T) {
 				a.EXPECT().
 					FindApplicationEndpointByID(gomock.Any(), gomock.Any(), gomock.Any()).
 					Return(&datastore.Endpoint{
-						Status: datastore.ActiveEndpointStatus,
+						// Status: datastore.ActiveEndpointStatus,
 					}, nil).Times(1)
 
 				o.EXPECT().
@@ -429,8 +429,8 @@ func TestProcessEventDelivery(t *testing.T) {
 				a.EXPECT().
 					FindApplicationEndpointByID(gomock.Any(), gomock.Any(), gomock.Any()).
 					Return(&datastore.Endpoint{
-						UID:    "1234567890",
-						Status: datastore.ActiveEndpointStatus,
+						UID: "1234567890",
+						// Status: datastore.ActiveEndpointStatus,
 					}, nil).Times(1)
 
 				m.EXPECT().
@@ -499,8 +499,8 @@ func TestProcessEventDelivery(t *testing.T) {
 				a.EXPECT().
 					FindApplicationEndpointByID(gomock.Any(), gomock.Any(), gomock.Any()).
 					Return(&datastore.Endpoint{
-						UID:    "1234567890",
-						Status: datastore.ActiveEndpointStatus,
+						UID: "1234567890",
+						// Status: datastore.ActiveEndpointStatus,
 					}, nil).Times(1)
 
 				o.EXPECT().
@@ -611,8 +611,8 @@ func TestProcessEventDelivery(t *testing.T) {
 				a.EXPECT().
 					FindApplicationEndpointByID(gomock.Any(), gomock.Any(), gomock.Any()).
 					Return(&datastore.Endpoint{
-						UID:    "1234567890",
-						Status: datastore.ActiveEndpointStatus,
+						UID: "1234567890",
+						// Status: datastore.ActiveEndpointStatus,
 					}, nil).Times(1)
 
 				m.EXPECT().
@@ -681,8 +681,8 @@ func TestProcessEventDelivery(t *testing.T) {
 				a.EXPECT().
 					FindApplicationEndpointByID(gomock.Any(), gomock.Any(), gomock.Any()).
 					Return(&datastore.Endpoint{
-						UID:    "1234567890",
-						Status: datastore.PendingEndpointStatus,
+						UID: "1234567890",
+						// Status: datastore.PendingEndpointStatus,
 					}, nil).Times(1)
 
 				o.EXPECT().

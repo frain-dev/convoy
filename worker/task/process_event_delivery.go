@@ -129,16 +129,16 @@ func ProcessEventDelivery(appRepo datastore.ApplicationRepository, eventDelivery
 			return nil
 		}
 
-		dbEndpoint, err := appRepo.FindApplicationEndpointByID(context.Background(), m.AppMetadata.UID, e.UID)
-		if err != nil {
-			log.WithError(err).Errorf("could not retrieve endpoint %s", e.UID)
-			return &disq.Error{Err: err, Delay: delayDuration}
-		}
+		// dbEndpoint, err := appRepo.FindApplicationEndpointByID(context.Background(), m.AppMetadata.UID, e.UID)
+		// if err != nil {
+		// 	log.WithError(err).Errorf("could not retrieve endpoint %s", e.UID)
+		// 	return &disq.Error{Err: err, Delay: delayDuration}
+		// }
 
-		if dbEndpoint.Status == datastore.InactiveEndpointStatus {
-			log.Debugf("endpoint %s is inactive, failing to send.", e.TargetURL)
-			return nil
-		}
+		// if dbEndpoint.Status == datastore.InactiveEndpointStatus {
+		// 	log.Debugf("endpoint %s is inactive, failing to send.", e.TargetURL)
+		// 	return nil
+		// }
 
 		buff := bytes.NewBuffer([]byte{})
 		encoder := json.NewEncoder(buff)
@@ -217,30 +217,30 @@ func ProcessEventDelivery(appRepo datastore.ApplicationRepository, eventDelivery
 			log.Errorf("%s failed. Reason: %s", m.UID, err)
 		}
 
-		if done && dbEndpoint.Status == datastore.PendingEndpointStatus && g.Config.DisableEndpoint {
-			endpoints := []string{dbEndpoint.UID}
-			endpointStatus := datastore.ActiveEndpointStatus
+		// if done && dbEndpoint.Status == datastore.PendingEndpointStatus && g.Config.DisableEndpoint {
+		// 	endpoints := []string{dbEndpoint.UID}
+		// 	endpointStatus := datastore.ActiveEndpointStatus
 
-			err := appRepo.UpdateApplicationEndpointsStatus(context.Background(), m.AppMetadata.UID, endpoints, endpointStatus)
-			if err != nil {
-				log.WithError(err).Error("Failed to reactivate endpoint after successful retry")
-			}
+		// 	err := appRepo.UpdateApplicationEndpointsStatus(context.Background(), m.AppMetadata.UID, endpoints, endpointStatus)
+		// 	if err != nil {
+		// 		log.WithError(err).Error("Failed to reactivate endpoint after successful retry")
+		// 	}
 
-			err = sendNotification(context.Background(), appRepo, m, g, &cfg.SMTP, endpointStatus, false)
-			if err != nil {
-				log.WithError(err).Error("failed to send notification")
-			}
-		}
+		// 	err = sendNotification(context.Background(), appRepo, m, g, &cfg.SMTP, endpointStatus, false)
+		// 	if err != nil {
+		// 		log.WithError(err).Error("failed to send notification")
+		// 	}
+		// }
 
-		if !done && dbEndpoint.Status == datastore.PendingEndpointStatus {
-			endpoints := []string{dbEndpoint.UID}
-			endpointStatus := datastore.InactiveEndpointStatus
+		// if !done && dbEndpoint.Status == datastore.PendingEndpointStatus {
+		// 	endpoints := []string{dbEndpoint.UID}
+		// 	endpointStatus := datastore.InactiveEndpointStatus
 
-			err := appRepo.UpdateApplicationEndpointsStatus(context.Background(), m.AppMetadata.UID, endpoints, endpointStatus)
-			if err != nil {
-				log.WithError(err).Error("Failed to reactivate endpoint after successful retry")
-			}
-		}
+		// 	err := appRepo.UpdateApplicationEndpointsStatus(context.Background(), m.AppMetadata.UID, endpoints, endpointStatus)
+		// 	if err != nil {
+		// 		log.WithError(err).Error("Failed to reactivate endpoint after successful retry")
+		// 	}
+		// }
 
 		attempt = parseAttemptFromResponse(m, e, resp, attemptStatus)
 
@@ -258,21 +258,21 @@ func ProcessEventDelivery(appRepo datastore.ApplicationRepository, eventDelivery
 				m.Status = datastore.FailureEventStatus
 			}
 
-			endpointStatus := dbEndpoint.Status
-			if g.Config.DisableEndpoint && dbEndpoint.Status != datastore.PendingEndpointStatus {
-				endpoints := []string{dbEndpoint.UID}
-				endpointStatus = datastore.InactiveEndpointStatus
+			// endpointStatus := dbEndpoint.Status
+			// if g.Config.DisableEndpoint && dbEndpoint.Status != datastore.PendingEndpointStatus {
+			// 	endpoints := []string{dbEndpoint.UID}
+			// 	endpointStatus = datastore.InactiveEndpointStatus
 
-				err := appRepo.UpdateApplicationEndpointsStatus(context.Background(), m.AppMetadata.UID, endpoints, endpointStatus)
-				if err != nil {
-					log.WithError(err).Error("Failed to reactivate endpoint after successful retry")
-				}
-			}
+			// 	err := appRepo.UpdateApplicationEndpointsStatus(context.Background(), m.AppMetadata.UID, endpoints, endpointStatus)
+			// 	if err != nil {
+			// 		log.WithError(err).Error("Failed to reactivate endpoint after successful retry")
+			// 	}
+			// }
 
-			err = sendNotification(context.Background(), appRepo, m, g, &cfg.SMTP, endpointStatus, true)
-			if err != nil {
-				log.WithError(err).Error("failed to send notification")
-			}
+			// err = sendNotification(context.Background(), appRepo, m, g, &cfg.SMTP, endpointStatus, true)
+			// if err != nil {
+			// 	log.WithError(err).Error("failed to send notification")
+			// }
 		}
 
 		err = eventDeliveryRepo.UpdateEventDeliveryWithAttempt(context.Background(), *m, attempt)

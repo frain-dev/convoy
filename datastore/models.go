@@ -120,11 +120,10 @@ type Application struct {
 type EndpointStatus string
 
 type Endpoint struct {
-	UID         string         `json:"uid" bson:"uid"`
-	TargetURL   string         `json:"target_url" bson:"target_url"`
-	Description string         `json:"description" bson:"description"`
-	Status      EndpointStatus `json:"status" bson:"status"`
-	Secret      string         `json:"secret" bson:"secret"`
+	UID         string `json:"uid" bson:"uid"`
+	TargetURL   string `json:"target_url" bson:"target_url"`
+	Description string `json:"description" bson:"description"`
+	Secret      string `json:"secret" bson:"secret"`
 
 	HttpTimeout       string `json:"http_timeout" bson:"http_timeout"`
 	RateLimit         int    `json:"rate_limit" bson:"rate_limit"`
@@ -168,18 +167,18 @@ type StrategyConfiguration struct {
 }
 
 type LinearStrategyConfiguration struct {
-	IntervalSeconds uint64 `json:"interval_seconds" bson:"interval_seconds,omitempty" valid:"int~please provide a valid interval seconds"`
-	RetryLimit      uint64 `json:"retry_limit" bson:"retry_limit,omitempty" valid:"int~please provide a valid interval seconds"`
+	IntervalSeconds uint64 `json:"interval_seconds,omitempty" bson:"interval_seconds,omitempty" valid:"int~please provide a valid interval seconds"`
+	RetryLimit      uint64 `json:"retry_limit,omitempty" bson:"retry_limit,omitempty" valid:"int~please provide a valid interval seconds"`
 }
 
 type ExponentialStrategyConfiguration struct {
-	RetryLimit   uint64   `json:"retry_limit" bson:"retry_limit,omitempty" envconfig:"CONVOY_RETRY_LIMIT"`
-	BackoffTimes []uint64 `json:"backoff_times" bson:"backoff_times,omitempty" envconfig:"CONVOY_BACKOFF_TIMES"`
+	RetryLimit   uint64   `json:"retry_limit,omitempty" bson:"retry_limit,omitempty" envconfig:"CONVOY_RETRY_LIMIT"`
+	BackoffTimes []uint64 `json:"backoff_times,omitempty" bson:"backoff_times,omitempty" envconfig:"CONVOY_BACKOFF_TIMES"`
 }
 
 type SignatureConfiguration struct {
-	Header config.SignatureHeaderProvider `json:"header" valid:"required~please provide a valid signature header"`
-	Hash   string                         `json:"hash" valid:"required~please provide a valid hash,supported_hash~unsupported hash type"`
+	Header config.SignatureHeaderProvider `json:"header,omitempty" valid:"required~please provide a valid signature header"`
+	Hash   string                         `json:"hash,omitempty" valid:"required~please provide a valid hash,supported_hash~unsupported hash type"`
 }
 
 type SignatureValues struct {
@@ -402,7 +401,7 @@ type APIKey struct {
 	ExpiresAt primitive.DateTime `json:"expires_at,omitempty" bson:"expires_at,omitempty"`
 	CreatedAt primitive.DateTime `json:"created_at,omitempty" bson:"created_at"`
 	UpdatedAt primitive.DateTime `json:"updated_at,omitempty" bson:"updated_at"`
-	DeletedAt primitive.DateTime `json:"delted_at,omitempty" bson:"deleted_at"`
+	DeletedAt primitive.DateTime `json:"deleted_at,omitempty" bson:"deleted_at"`
 
 	DocumentStatus DocumentStatus `json:"-" bson:"document_status"`
 }
@@ -412,18 +411,23 @@ type Subscription struct {
 	UID        string             `json:"uid" bson:"uid"`
 	Name       string             `json:"name" bson:"name"`
 	Type       string             `json:"type" bson:"type"`
-	GroupID    string             `json:"group_id" bson:"group_id"`
-	SourceID   string             `json:"source_id" bson:"source_id"`
-	EndpointID string             `json:"endpoint_id" bson:"endpoint_id"`
+	Status     EndpointStatus     `json:"status" bson:"status"`
+	AppID      string             `json:"-" bson:"app_id"`
+	GroupID    string             `json:"-" bson:"group_id"`
+	SourceID   string             `json:"-" bson:"source_id"`
+	EndpointID string             `json:"-" bson:"endpoint_id"`
+
+	Source   *Source   `json:"source"`
+	Endpoint *Endpoint `json:"endpoint"`
 
 	// subscription config
-	AlertConfig  AlertConfiguration  `json:"alert_config,omitempty" bson:"alert_config,omitempty"`
-	RetryConfig  RetryConfiguration  `json:"retry_config,omitempty" bson:"retry_config,omitempty"`
-	FilterConfig FilterConfiguration `json:"filter_config,omitempty" bson:"filter_config,omitempty"`
+	AlertConfig  *AlertConfiguration  `json:"alert_config,omitempty" bson:"alert_config,omitempty"`
+	RetryConfig  *RetryConfiguration  `json:"retry_config,omitempty" bson:"retry_config,omitempty"`
+	FilterConfig *FilterConfiguration `json:"filter_config,omitempty" bson:"filter_config,omitempty"`
 
 	CreatedAt primitive.DateTime `json:"created_at,omitempty" bson:"created_at"`
 	UpdatedAt primitive.DateTime `json:"updated_at,omitempty" bson:"updated_at"`
-	DeletedAt primitive.DateTime `json:"delted_at,omitempty" bson:"deleted_at"`
+	DeletedAt primitive.DateTime `json:"deleted_at,omitempty" bson:"deleted_at"`
 
 	DocumentStatus DocumentStatus `json:"-" bson:"document_status"`
 }
@@ -446,18 +450,18 @@ type Source struct {
 }
 
 type RetryConfiguration struct {
-	Type        config.StrategyProvider          `json:"type,omitempty" valid:"supported_retry_strategy~please provide a valid retry strategy type"`
-	Linear      LinearStrategyConfiguration      `json:"linear,omitempty" bson:"linear,omitempty"`
-	Exponential ExponentialStrategyConfiguration `json:"exponential,omitempty" bson:"exponential,omitempty"`
+	Type       config.StrategyProvider `json:"type,omitempty" bson:"type,omitempty" valid:"supported_retry_strategy~please provide a valid retry strategy type"`
+	Duration   string                  `json:"duration,omitempty" bson:"duration,omitempty" valid:"duration~please provide a valid time duration"`
+	RetryCount int                     `json:"retry_count" bson:"retry_count" valid:"int~please provide a valid retry count"`
 }
 
 type AlertConfiguration struct {
-	Count int    `json:"count" bson:"count,omitempty"`
-	Time  string `json:"time" bson:"time,omitempty"`
+	Count     int    `json:"count" bson:"count,omitempty"`
+	Threshold string `json:"threshold" bson:"threshold,omitempty" valid:"duration~please provide a valid time duration"`
 }
 
 type FilterConfiguration struct {
-	Events []string `json:"events" bson:"events,omitempty"`
+	EventTypes []string `json:"event_types" bson:"event_types,omitempty"`
 }
 
 type VerifierConfig struct {

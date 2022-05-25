@@ -206,11 +206,11 @@ func (a *appRepo) UpdateApplicationEndpointsStatus(ctx context.Context, aid stri
 		return datastore.ErrApplicationNotFound
 	}
 
-	for i := 0; i < len(application.Endpoints); i++ {
-		if _, ok := endpointMap[application.Endpoints[i].UID]; ok {
-			application.Endpoints[i].Status = status
-		}
-	}
+	// for i := 0; i < len(application.Endpoints); i++ {
+	// 	if _, ok := endpointMap[application.Endpoints[i].UID]; ok {
+	// 		application.Endpoints[i].Status = status
+	// 	}
+	// }
 
 	err = a.UpdateApplication(ctx, application)
 

@@ -50,16 +50,14 @@ func (s *subscriptionRepo) UpdateSubscription(ctx context.Context, groupId strin
 		primitive.E{Key: "source_id", Value: subscription.SourceID},
 		primitive.E{Key: "endpoint_id", Value: subscription.EndpointID},
 
-		primitive.E{Key: "filter_config.events", Value: subscription.FilterConfig.Events},
+		primitive.E{Key: "filter_config.event_types", Value: subscription.FilterConfig.EventTypes},
 
 		primitive.E{Key: "alert_config.count", Value: subscription.AlertConfig.Count},
-		primitive.E{Key: "alert_config.time", Value: subscription.AlertConfig.Time},
+		primitive.E{Key: "alert_config.threshold", Value: subscription.AlertConfig.Threshold},
 
 		primitive.E{Key: "retry_config.type", Value: string(subscription.RetryConfig.Type)},
-		primitive.E{Key: "retry_config.linear.retry_limit", Value: subscription.RetryConfig.Linear.RetryLimit},
-		primitive.E{Key: "retry_config.linear.interval_seconds", Value: subscription.RetryConfig.Linear.IntervalSeconds},
-		primitive.E{Key: "retry_config.exponential.retry_limit", Value: subscription.RetryConfig.Exponential.RetryLimit},
-		primitive.E{Key: "retry_config.exponential.backoff_times", Value: subscription.RetryConfig.Exponential.BackoffTimes},
+		primitive.E{Key: "retry_config.duration", Value: subscription.RetryConfig.Duration},
+		primitive.E{Key: "retry_config.retry_count", Value: subscription.RetryConfig.RetryCount},
 	}}}
 
 	_, err := s.client.UpdateOne(ctx, filter, update)

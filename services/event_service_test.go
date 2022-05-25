@@ -57,12 +57,10 @@ func TestEventService_CreateAppEvent(t *testing.T) {
 					GroupID: "abc",
 					Endpoints: []datastore.Endpoint{
 						{
-							UID:    "ref",
-							Status: datastore.ActiveEndpointStatus,
+							UID: "ref",
 						},
 						{
-							UID:    "abcd",
-							Status: datastore.ActiveEndpointStatus,
+							UID: "abcd",
 						},
 					},
 					SupportEmail: "test_app@gmail.com",
@@ -125,12 +123,10 @@ func TestEventService_CreateAppEvent(t *testing.T) {
 					GroupID: "abc",
 					Endpoints: []datastore.Endpoint{
 						{
-							UID:    "ref",
-							Status: datastore.ActiveEndpointStatus,
+							UID: "ref",
 						},
 						{
-							UID:    "abcd",
-							Status: datastore.ActiveEndpointStatus,
+							UID: "abcd",
 						},
 					},
 					SupportEmail: "test_app@gmail.com",
@@ -187,12 +183,10 @@ func TestEventService_CreateAppEvent(t *testing.T) {
 					Title: "test_app",
 					Endpoints: []datastore.Endpoint{
 						{
-							UID:    "ref",
-							Status: datastore.ActiveEndpointStatus,
+							UID: "ref",
 						},
 						{
-							UID:    "abcd",
-							Status: datastore.ActiveEndpointStatus,
+							UID: "abcd",
 						},
 					},
 					UID:          "123",
@@ -259,12 +253,10 @@ func TestEventService_CreateAppEvent(t *testing.T) {
 					GroupID: "abc",
 					Endpoints: []datastore.Endpoint{
 						{
-							UID:    "ref",
-							Status: datastore.ActiveEndpointStatus,
+							UID: "ref",
 						},
 						{
-							UID:    "abcd",
-							Status: datastore.ActiveEndpointStatus,
+							UID: "abcd",
 						},
 					},
 					SupportEmail: "test_app@gmail.com",
@@ -625,7 +617,7 @@ func TestEventService_BatchRetryEventDelivery(t *testing.T) {
 
 				a, _ := es.appRepo.(*mocks.MockApplicationRepository)
 				a.EXPECT().FindApplicationEndpointByID(gomock.Any(), "abc", "cv").
-					Times(2).Return(&datastore.Endpoint{UID: "gbe", Status: datastore.ActiveEndpointStatus}, nil)
+					Times(2).Return(&datastore.Endpoint{UID: "gbe"}, nil)
 
 				ed.EXPECT().UpdateStatusOfEventDelivery(gomock.Any(), gomock.Any(), gomock.Any()).
 					Times(2).Return(nil)
@@ -699,7 +691,7 @@ func TestEventService_BatchRetryEventDelivery(t *testing.T) {
 
 				a, _ := es.appRepo.(*mocks.MockApplicationRepository)
 				a.EXPECT().FindApplicationEndpointByID(gomock.Any(), "abc", "cv").
-					Times(1).Return(&datastore.Endpoint{UID: "gbe", Status: datastore.ActiveEndpointStatus}, nil)
+					Times(1).Return(&datastore.Endpoint{UID: "gbe"}, nil)
 
 				a.EXPECT().FindApplicationEndpointByID(gomock.Any(), "abc", "cv").
 					Times(1).Return(nil, errors.New("failed"))
@@ -895,7 +887,7 @@ func TestEventService_ForceResendEventDeliveries(t *testing.T) {
 
 				a, _ := es.appRepo.(*mocks.MockApplicationRepository)
 				a.EXPECT().FindApplicationEndpointByID(gomock.Any(), "abc", "cv").
-					Times(2).Return(&datastore.Endpoint{UID: "gbe", Status: datastore.ActiveEndpointStatus}, nil)
+					Times(2).Return(&datastore.Endpoint{UID: "gbe"}, nil)
 
 				ed.EXPECT().UpdateStatusOfEventDelivery(gomock.Any(), gomock.Any(), gomock.Any()).
 					Times(2).Return(nil)
@@ -943,7 +935,7 @@ func TestEventService_ForceResendEventDeliveries(t *testing.T) {
 
 				a, _ := es.appRepo.(*mocks.MockApplicationRepository)
 				a.EXPECT().FindApplicationEndpointByID(gomock.Any(), "abc", "cv").
-					Times(1).Return(&datastore.Endpoint{UID: "gbe", Status: datastore.ActiveEndpointStatus}, nil)
+					Times(1).Return(&datastore.Endpoint{UID: "gbe"}, nil)
 
 				ed.EXPECT().UpdateStatusOfEventDelivery(gomock.Any(), gomock.Any(), gomock.Any()).
 					Times(1).Return(nil)
@@ -1364,7 +1356,7 @@ func TestEventService_ResendEventDelivery(t *testing.T) {
 			dbFn: func(es *EventService) {
 				a, _ := es.appRepo.(*mocks.MockApplicationRepository)
 				a.EXPECT().FindApplicationEndpointByID(gomock.Any(), "ref", "345").
-					Times(1).Return(&datastore.Endpoint{UID: "gbe", Status: datastore.ActiveEndpointStatus}, nil)
+					Times(1).Return(&datastore.Endpoint{UID: "gbe"}, nil)
 
 				ed, _ := es.eventDeliveryRepo.(*mocks.MockEventDeliveryRepository)
 				ed.EXPECT().UpdateStatusOfEventDelivery(gomock.Any(), gomock.Any(), datastore.ScheduledEventStatus)
@@ -1380,8 +1372,7 @@ func TestEventService_ResendEventDelivery(t *testing.T) {
 					Status:      datastore.FailureEventStatus,
 					AppMetadata: &datastore.AppMetadata{UID: "ref"},
 					EndpointMetadata: &datastore.EndpointMetadata{
-						UID:    "345",
-						Status: datastore.ActiveEndpointStatus,
+						UID: "345",
 					},
 				},
 				g: &datastore.Group{UID: "abc"},
@@ -1396,8 +1387,7 @@ func TestEventService_ResendEventDelivery(t *testing.T) {
 					Status:      datastore.SuccessEventStatus,
 					AppMetadata: &datastore.AppMetadata{UID: "ref"},
 					EndpointMetadata: &datastore.EndpointMetadata{
-						UID:    "345",
-						Status: datastore.ActiveEndpointStatus,
+						UID: "345",
 					},
 				},
 				g: &datastore.Group{UID: "abc"},
@@ -1447,7 +1437,7 @@ func TestEventService_RetryEventDelivery(t *testing.T) {
 			dbFn: func(es *EventService) {
 				a, _ := es.appRepo.(*mocks.MockApplicationRepository)
 				a.EXPECT().FindApplicationEndpointByID(gomock.Any(), "ref", "345").
-					Times(1).Return(&datastore.Endpoint{UID: "gbe", Status: datastore.ActiveEndpointStatus}, nil)
+					Times(1).Return(&datastore.Endpoint{UID: "gbe"}, nil)
 
 				ed, _ := es.eventDeliveryRepo.(*mocks.MockEventDeliveryRepository)
 				ed.EXPECT().UpdateStatusOfEventDelivery(gomock.Any(), gomock.Any(), datastore.ScheduledEventStatus)
@@ -1463,8 +1453,7 @@ func TestEventService_RetryEventDelivery(t *testing.T) {
 					Status:      datastore.FailureEventStatus,
 					AppMetadata: &datastore.AppMetadata{UID: "ref"},
 					EndpointMetadata: &datastore.EndpointMetadata{
-						UID:    "345",
-						Status: datastore.ActiveEndpointStatus,
+						UID: "345",
 					},
 				},
 				g: &datastore.Group{UID: "abc"},
@@ -1479,8 +1468,7 @@ func TestEventService_RetryEventDelivery(t *testing.T) {
 					Status:      datastore.SuccessEventStatus,
 					AppMetadata: &datastore.AppMetadata{UID: "ref"},
 					EndpointMetadata: &datastore.EndpointMetadata{
-						UID:    "345",
-						Status: datastore.ActiveEndpointStatus,
+						UID: "345",
 					},
 				},
 				g: &datastore.Group{UID: "abc"},
@@ -1497,8 +1485,7 @@ func TestEventService_RetryEventDelivery(t *testing.T) {
 					Status:      datastore.RetryEventStatus,
 					AppMetadata: &datastore.AppMetadata{UID: "ref"},
 					EndpointMetadata: &datastore.EndpointMetadata{
-						UID:    "345",
-						Status: datastore.ActiveEndpointStatus,
+						UID: "345",
 					},
 				},
 				g: &datastore.Group{UID: "abc"},
@@ -1515,8 +1502,7 @@ func TestEventService_RetryEventDelivery(t *testing.T) {
 					Status:      datastore.ProcessingEventStatus,
 					AppMetadata: &datastore.AppMetadata{UID: "ref"},
 					EndpointMetadata: &datastore.EndpointMetadata{
-						UID:    "345",
-						Status: datastore.ActiveEndpointStatus,
+						UID: "345",
 					},
 				},
 				g: &datastore.Group{UID: "abc"},
@@ -1533,8 +1519,7 @@ func TestEventService_RetryEventDelivery(t *testing.T) {
 					Status:      datastore.ScheduledEventStatus,
 					AppMetadata: &datastore.AppMetadata{UID: "ref"},
 					EndpointMetadata: &datastore.EndpointMetadata{
-						UID:    "345",
-						Status: datastore.ActiveEndpointStatus,
+						UID: "345",
 					},
 				},
 				g: &datastore.Group{UID: "abc"},
@@ -1556,8 +1541,7 @@ func TestEventService_RetryEventDelivery(t *testing.T) {
 					Status:      datastore.FailureEventStatus,
 					AppMetadata: &datastore.AppMetadata{UID: "ref"},
 					EndpointMetadata: &datastore.EndpointMetadata{
-						UID:    "345",
-						Status: datastore.ActiveEndpointStatus,
+						UID: "345",
 					},
 				},
 				g: &datastore.Group{UID: "abc"},
@@ -1570,7 +1554,7 @@ func TestEventService_RetryEventDelivery(t *testing.T) {
 			dbFn: func(es *EventService) {
 				a, _ := es.appRepo.(*mocks.MockApplicationRepository)
 				a.EXPECT().FindApplicationEndpointByID(gomock.Any(), "ref", "345").
-					Times(1).Return(&datastore.Endpoint{UID: "gbe", Status: datastore.PendingEndpointStatus}, nil)
+					Times(1).Return(&datastore.Endpoint{UID: "gbe"}, nil)
 			},
 			args: args{
 				ctx: ctx,
@@ -1579,8 +1563,7 @@ func TestEventService_RetryEventDelivery(t *testing.T) {
 					Status:      datastore.FailureEventStatus,
 					AppMetadata: &datastore.AppMetadata{UID: "ref"},
 					EndpointMetadata: &datastore.EndpointMetadata{
-						UID:    "345",
-						Status: datastore.ActiveEndpointStatus,
+						UID: "345",
 					},
 				},
 				g: &datastore.Group{UID: "abc"},
@@ -1593,7 +1576,7 @@ func TestEventService_RetryEventDelivery(t *testing.T) {
 			dbFn: func(es *EventService) {
 				a, _ := es.appRepo.(*mocks.MockApplicationRepository)
 				a.EXPECT().FindApplicationEndpointByID(gomock.Any(), "ref", "345").
-					Times(1).Return(&datastore.Endpoint{UID: "gbe", Status: datastore.InactiveEndpointStatus}, nil)
+					Times(1).Return(&datastore.Endpoint{UID: "gbe"}, nil)
 
 				a.EXPECT().UpdateApplicationEndpointsStatus(gomock.Any(), "ref", []string{"345"}, datastore.PendingEndpointStatus).
 					Times(1).Return(nil)
@@ -1612,8 +1595,7 @@ func TestEventService_RetryEventDelivery(t *testing.T) {
 					Status:      datastore.FailureEventStatus,
 					AppMetadata: &datastore.AppMetadata{UID: "ref"},
 					EndpointMetadata: &datastore.EndpointMetadata{
-						UID:    "345",
-						Status: datastore.ActiveEndpointStatus,
+						UID: "345",
 					},
 				},
 				g: &datastore.Group{UID: "abc"},
@@ -1624,7 +1606,7 @@ func TestEventService_RetryEventDelivery(t *testing.T) {
 			dbFn: func(es *EventService) {
 				a, _ := es.appRepo.(*mocks.MockApplicationRepository)
 				a.EXPECT().FindApplicationEndpointByID(gomock.Any(), "ref", "345").
-					Times(1).Return(&datastore.Endpoint{UID: "gbe", Status: datastore.InactiveEndpointStatus}, nil)
+					Times(1).Return(&datastore.Endpoint{UID: "gbe"}, nil)
 
 				a.EXPECT().UpdateApplicationEndpointsStatus(gomock.Any(), "ref", []string{"345"}, datastore.PendingEndpointStatus).
 					Times(1).Return(errors.New("failed"))
@@ -1636,8 +1618,7 @@ func TestEventService_RetryEventDelivery(t *testing.T) {
 					Status:      datastore.FailureEventStatus,
 					AppMetadata: &datastore.AppMetadata{UID: "ref"},
 					EndpointMetadata: &datastore.EndpointMetadata{
-						UID:    "345",
-						Status: datastore.ActiveEndpointStatus,
+						UID: "345",
 					},
 				},
 				g: &datastore.Group{UID: "abc"},
@@ -1687,7 +1668,7 @@ func TestEventService_forceResendEventDelivery(t *testing.T) {
 			dbFn: func(es *EventService) {
 				a, _ := es.appRepo.(*mocks.MockApplicationRepository)
 				a.EXPECT().FindApplicationEndpointByID(gomock.Any(), "ref", "abc").
-					Times(1).Return(&datastore.Endpoint{UID: "gbe", Status: datastore.ActiveEndpointStatus}, nil)
+					Times(1).Return(&datastore.Endpoint{UID: "gbe"}, nil)
 
 				ed, _ := es.eventDeliveryRepo.(*mocks.MockEventDeliveryRepository)
 				ed.EXPECT().UpdateStatusOfEventDelivery(gomock.Any(), gomock.Any(), datastore.ScheduledEventStatus).
@@ -1704,8 +1685,7 @@ func TestEventService_forceResendEventDelivery(t *testing.T) {
 					Status:      datastore.SuccessEventStatus,
 					AppMetadata: &datastore.AppMetadata{UID: "ref"},
 					EndpointMetadata: &datastore.EndpointMetadata{
-						UID:    "abc",
-						Status: datastore.ActiveEndpointStatus,
+						UID: "abc",
 					},
 				},
 				g: &datastore.Group{Name: "test_group"},
@@ -1725,8 +1705,7 @@ func TestEventService_forceResendEventDelivery(t *testing.T) {
 					Status:      datastore.SuccessEventStatus,
 					AppMetadata: &datastore.AppMetadata{UID: "ref"},
 					EndpointMetadata: &datastore.EndpointMetadata{
-						UID:    "abc",
-						Status: datastore.ActiveEndpointStatus,
+						UID: "abc",
 					},
 				},
 				g: &datastore.Group{Name: "test_group"},
@@ -1739,7 +1718,7 @@ func TestEventService_forceResendEventDelivery(t *testing.T) {
 			dbFn: func(es *EventService) {
 				a, _ := es.appRepo.(*mocks.MockApplicationRepository)
 				a.EXPECT().FindApplicationEndpointByID(gomock.Any(), "ref", "abc").
-					Times(1).Return(&datastore.Endpoint{UID: "gbe", Status: datastore.InactiveEndpointStatus}, nil)
+					Times(1).Return(&datastore.Endpoint{UID: "gbe"}, nil)
 			},
 			args: args{
 				ctx: ctx,
@@ -1748,8 +1727,7 @@ func TestEventService_forceResendEventDelivery(t *testing.T) {
 					Status:      datastore.SuccessEventStatus,
 					AppMetadata: &datastore.AppMetadata{UID: "ref"},
 					EndpointMetadata: &datastore.EndpointMetadata{
-						UID:    "abc",
-						Status: datastore.ActiveEndpointStatus,
+						UID: "abc",
 					},
 				},
 				g: &datastore.Group{Name: "test_group"},

@@ -68,7 +68,6 @@ func SeedMultipleApplications(db datastore.DatabaseClient, g *datastore.Group, c
 func SeedEndpoint(db datastore.DatabaseClient, app *datastore.Application, events []string) (*datastore.Endpoint, error) {
 	endpoint := &datastore.Endpoint{
 		UID:            uuid.New().String(),
-		Status:         datastore.ActiveEndpointStatus,
 		DocumentStatus: datastore.ActiveDocumentStatus,
 	}
 
@@ -88,7 +87,6 @@ func SeedMultipleEndpoints(db datastore.DatabaseClient, app *datastore.Applicati
 	for i := 0; i < count; i++ {
 		endpoint := &datastore.Endpoint{
 			UID:            uuid.New().String(),
-			Status:         datastore.ActiveEndpointStatus,
 			DocumentStatus: datastore.ActiveDocumentStatus,
 		}
 
@@ -241,7 +239,6 @@ func SeedEventDelivery(db datastore.DatabaseClient, app *datastore.Application, 
 		EndpointMetadata: &datastore.EndpointMetadata{
 			UID:               endpoint.UID,
 			TargetURL:         endpoint.TargetURL,
-			Status:            endpoint.Status,
 			Secret:            endpoint.Secret,
 			HttpTimeout:       endpoint.HttpTimeout,
 			RateLimit:         endpoint.RateLimit,

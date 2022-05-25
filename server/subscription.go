@@ -63,6 +63,23 @@ func (a *applicationHandler) GetSubscription(w http.ResponseWriter, r *http.Requ
 		return
 	}
 
+	source, err := a.sourceRepo.FindSourceByID(r.Context(), group.UID, subscription.SourceID)
+	if err != nil {
+		log.WithError(err).Error("failed to load subscriptions")
+		_ = render.Render(w, r, newErrorResponse("an error occurred while fetching subscriptions. Error: "+err.Error(), http.StatusBadRequest))
+		return
+	}
+
+	endpoint, err := a.appRepo.FindApplicationEndpointByID(r.Context(), subscription.AppID, subscription.EndpointID)
+	if err != nil {
+		log.WithError(err).Error("failed to load subscriptions")
+		_ = render.Render(w, r, newErrorResponse("an error occurred while fetching subscriptions. Error: "+err.Error(), http.StatusBadRequest))
+		return
+	}
+
+	subscription.Source = source
+	subscription.Endpoint = endpoint
+
 	_ = render.Render(w, r, newServerResponse("Subscription fetched successfully", subscription, http.StatusOK))
 }
 
