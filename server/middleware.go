@@ -39,6 +39,7 @@ type contextKey string
 const (
 	groupCtx         contextKey = "group"
 	appCtx           contextKey = "app"
+	orgCtx           contextKey = "organisation"
 	endpointCtx      contextKey = "endpoint"
 	eventCtx         contextKey = "event"
 	eventDeliveryCtx contextKey = "eventDelivery"
@@ -334,6 +335,25 @@ func requireEvent(eventRepo datastore.EventRepository) func(next http.Handler) h
 			}
 
 			r = r.WithContext(setEventInContext(r.Context(), event))
+			next.ServeHTTP(w, r)
+		})
+	}
+}
+
+func requireOrganisation(orgRepo datastore.OrganisationRepository) func(next http.Handler) http.Handler {
+	return func(next http.Handler) http.Handler {
+
+		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+
+			eventId := chi.URLParam(r, "orgID")
+
+			org, err := orgRepo.FetchOrganisationByID(r.Context(), eventId)
+			if err != nil {
+				_ = render.Render(w, r, newErrorResponse("failed to fetch organisation", http.StatusBadRequest))
+				return
+			}
+
+			r = r.WithContext(setOrganisationInContext(r.Context(), org))
 			next.ServeHTTP(w, r)
 		})
 	}
@@ -844,6 +864,15 @@ func setApplicationInContext(ctx context.Context,
 
 func getApplicationFromContext(ctx context.Context) *datastore.Application {
 	return ctx.Value(appCtx).(*datastore.Application)
+}
+
+func setOrganisationInContext(ctx context.Context,
+	org *datastore.Organisation) context.Context {
+	return context.WithValue(ctx, orgCtx, org)
+}
+
+func getOrganisationFromContext(ctx context.Context) *datastore.Organisation {
+	return ctx.Value(orgCtx).(*datastore.Organisation)
 }
 
 func setEventInContext(ctx context.Context,

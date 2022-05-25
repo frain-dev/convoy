@@ -32,6 +32,7 @@ type Client struct {
 	applicationRepo   datastore.ApplicationRepository
 	eventDeliveryRepo datastore.EventDeliveryRepository
 	sourceRepo        datastore.SourceRepository
+	orgRepo           datastore.OrganisationRepository
 }
 
 func New(cfg config.Configuration) (datastore.DatabaseClient, error) {
@@ -70,6 +71,7 @@ func New(cfg config.Configuration) (datastore.DatabaseClient, error) {
 		eventRepo:         NewEventRepository(conn),
 		eventDeliveryRepo: NewEventDeliveryRepository(conn),
 		sourceRepo:        NewSourceRepo(conn),
+		orgRepo:           NewOrgRepo(conn),
 	}
 
 	c.ensureMongoIndices()
@@ -111,6 +113,10 @@ func (c *Client) EventDeliveryRepo() datastore.EventDeliveryRepository {
 
 func (c *Client) SourceRepo() datastore.SourceRepository {
 	return c.sourceRepo
+}
+
+func (c *Client) OrganisationRepo() datastore.OrganisationRepository {
+	return c.orgRepo
 }
 
 func (c *Client) ensureMongoIndices() {

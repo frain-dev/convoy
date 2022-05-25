@@ -328,6 +328,21 @@ components:
         strategy:
           type: string
       type: object
+    datastore.Organisation:
+      properties:
+        created_at:
+          type: string
+        deleted_at:
+          type: string
+        name:
+          type: string
+        owner_id:
+          type: string
+        uid:
+          type: string
+        updated_at:
+          type: string
+      type: object
     datastore.PaginationData:
       properties:
         next:
@@ -453,6 +468,11 @@ components:
         rate_limit:
           type: integer
         rate_limit_duration:
+          type: string
+      type: object
+    models.Organisation:
+      properties:
+        name:
           type: string
       type: object
     models.PortalAPIKeyResponse:
@@ -2460,6 +2480,245 @@ paths:
       summary: Update a group
       tags:
       - Group
+  /organisations:
+    get:
+      description: This endpoint fetches multiple organisations
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                allOf:
+                - $ref: '#/components/schemas/server.serverResponse'
+                - properties:
+                    data:
+                      allOf:
+                      - $ref: '#/components/schemas/server.pagedResponse'
+                      - properties:
+                          content:
+                            items:
+                              $ref: '#/components/schemas/datastore.Organisation'
+                            type: array
+                        type: object
+                  type: object
+          description: OK
+        "400":
+          content:
+            application/json:
+              schema:
+                allOf:
+                - $ref: '#/components/schemas/server.serverResponse'
+                - properties:
+                    data:
+                      $ref: '#/components/schemas/server.Stub'
+                  type: object
+          description: Bad Request
+        "401":
+          content:
+            application/json:
+              schema:
+                allOf:
+                - $ref: '#/components/schemas/server.serverResponse'
+                - properties:
+                    data:
+                      $ref: '#/components/schemas/server.Stub'
+                  type: object
+          description: Unauthorized
+        "500":
+          content:
+            application/json:
+              schema:
+                allOf:
+                - $ref: '#/components/schemas/server.serverResponse'
+                - properties:
+                    data:
+                      $ref: '#/components/schemas/server.Stub'
+                  type: object
+          description: Internal Server Error
+      security:
+      - ApiKeyAuth: []
+      summary: Get organisations
+      tags:
+      - Organisation
+    post:
+      description: This endpoint creates an organisation
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/models.Organisation'
+        description: Organisation Details
+        required: true
+        x-originalParamName: application
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                allOf:
+                - $ref: '#/components/schemas/server.serverResponse'
+                - properties:
+                    data:
+                      $ref: '#/components/schemas/datastore.Organisation'
+                  type: object
+          description: OK
+        "400":
+          content:
+            application/json:
+              schema:
+                allOf:
+                - $ref: '#/components/schemas/server.serverResponse'
+                - properties:
+                    data:
+                      $ref: '#/components/schemas/server.Stub'
+                  type: object
+          description: Bad Request
+        "401":
+          content:
+            application/json:
+              schema:
+                allOf:
+                - $ref: '#/components/schemas/server.serverResponse'
+                - properties:
+                    data:
+                      $ref: '#/components/schemas/server.Stub'
+                  type: object
+          description: Unauthorized
+        "500":
+          content:
+            application/json:
+              schema:
+                allOf:
+                - $ref: '#/components/schemas/server.serverResponse'
+                - properties:
+                    data:
+                      $ref: '#/components/schemas/server.Stub'
+                  type: object
+          description: Internal Server Error
+      security:
+      - ApiKeyAuth: []
+      summary: Create an organisation
+      tags:
+      - Application
+  /organisations/{orgID}:
+    get:
+      description: This endpoint fetches an organisation by its id
+      parameters:
+      - description: organisation id
+        in: path
+        name: orgID
+        required: true
+        schema:
+          type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                allOf:
+                - $ref: '#/components/schemas/server.serverResponse'
+                - properties:
+                    data:
+                      $ref: '#/components/schemas/datastore.Organisation'
+                  type: object
+          description: OK
+        "400":
+          content:
+            application/json:
+              schema:
+                allOf:
+                - $ref: '#/components/schemas/server.serverResponse'
+                - properties:
+                    data:
+                      $ref: '#/components/schemas/server.Stub'
+                  type: object
+          description: Bad Request
+        "401":
+          content:
+            application/json:
+              schema:
+                allOf:
+                - $ref: '#/components/schemas/server.serverResponse'
+                - properties:
+                    data:
+                      $ref: '#/components/schemas/server.Stub'
+                  type: object
+          description: Unauthorized
+        "500":
+          content:
+            application/json:
+              schema:
+                allOf:
+                - $ref: '#/components/schemas/server.serverResponse'
+                - properties:
+                    data:
+                      $ref: '#/components/schemas/server.Stub'
+                  type: object
+          description: Internal Server Error
+      security:
+      - ApiKeyAuth: []
+      summary: Get an organisation
+      tags:
+      - Organisation
+    put:
+      description: This endpoint deletes an organisation
+      parameters:
+      - description: organisation id
+        in: path
+        name: orgID
+        required: true
+        schema:
+          type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                allOf:
+                - $ref: '#/components/schemas/server.serverResponse'
+                - properties:
+                    data:
+                      $ref: '#/components/schemas/server.Stub'
+                  type: object
+          description: OK
+        "400":
+          content:
+            application/json:
+              schema:
+                allOf:
+                - $ref: '#/components/schemas/server.serverResponse'
+                - properties:
+                    data:
+                      $ref: '#/components/schemas/server.Stub'
+                  type: object
+          description: Bad Request
+        "401":
+          content:
+            application/json:
+              schema:
+                allOf:
+                - $ref: '#/components/schemas/server.serverResponse'
+                - properties:
+                    data:
+                      $ref: '#/components/schemas/server.Stub'
+                  type: object
+          description: Unauthorized
+        "500":
+          content:
+            application/json:
+              schema:
+                allOf:
+                - $ref: '#/components/schemas/server.serverResponse'
+                - properties:
+                    data:
+                      $ref: '#/components/schemas/server.Stub'
+                  type: object
+          description: Internal Server Error
+      security:
+      - ApiKeyAuth: []
+      summary: Delete organisation
+      tags:
+      - Organisation
   /security/applications/{appID}/keys:
     post:
       description: This endpoint creates an api key that will be used by app portal

@@ -14,11 +14,11 @@ import (
 )
 
 type OrganisationService struct {
-	appRepo           datastore.ApplicationRepository
-	orgRepo           datastore.OrganisationRepository
-	groupRepo         datastore.GroupRepository
-	eventRepo         datastore.EventRepository
-	eventDeliveryRepo datastore.EventDeliveryRepository
+	orgRepo datastore.OrganisationRepository
+}
+
+func NewOrganisationService(orgRepo datastore.OrganisationRepository) *OrganisationService {
+	return &OrganisationService{orgRepo: orgRepo}
 }
 
 func (os *OrganisationService) CreateOrganisation(ctx context.Context, newOrg *models.Organisation) (*datastore.Organisation, error) {
@@ -60,6 +60,25 @@ func (os *OrganisationService) UpdateOrganisation(ctx context.Context, org *data
 	}
 
 	return org, nil
+}
+
+func (os *OrganisationService) FindOrganisationByID(ctx context.Context, id string) (*datastore.Organisation, error) {
+	org, err := os.orgRepo.FetchOrganisationByID(ctx, id)
+	if err != nil {
+		log.WithError(err).Error("failed to find organisation by id")
+		return nil, NewServiceError(http.StatusBadRequest, errors.New("failed to delete organisation"))
+	}
+	return org, err
+}
+
+func (os *OrganisationService) LoadOrganisationsPaged(ctx context.Context, pageable datastore.Pageable) ([]datastore.Organisation, datastore.PaginationData, error) {
+	orgs, paginationData, err := os.orgRepo.LoadOrganisationsPaged(ctx, pageable)
+	if err != nil {
+		log.WithError(err).Error("failed to fetch organisations")
+		return nil, datastore.PaginationData{}, NewServiceError(http.StatusBadRequest, errors.New("an error occurred while fetching organisations"))
+	}
+
+	return orgs, paginationData, nil
 }
 
 func (os *OrganisationService) DeleteOrganisation(ctx context.Context, id string) error {
