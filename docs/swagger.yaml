@@ -90,13 +90,6 @@ definitions:
       username:
         type: string
     type: object
-  datastore.DefaultStrategyConfiguration:
-    properties:
-      intervalSeconds:
-        type: integer
-      retryLimit:
-        type: integer
-    type: object
   datastore.DeliveryAttempt:
     properties:
       api_version:
@@ -242,11 +235,6 @@ definitions:
       uid:
         type: string
     type: object
-  datastore.ExponentialBackoffStrategyConfiguration:
-    properties:
-      retryLimit:
-        type: integer
-    type: object
   datastore.Group:
     properties:
       config:
@@ -262,11 +250,14 @@ definitions:
       organisation_id:
         type: string
       rate_limit:
+        description: 'TODO(subomi): refactor this into the Instance API.'
         type: integer
       rate_limit_duration:
         type: string
       statistics:
         $ref: '#/definitions/datastore.GroupStatistics'
+      type:
+        type: string
       uid:
         type: string
       updated_at:
@@ -276,6 +267,8 @@ definitions:
     properties:
       disable_endpoint:
         type: boolean
+      ratelimit:
+        $ref: '#/definitions/datastore.RateLimitConfiguration'
       replay_attacks:
         type: boolean
       signature:
@@ -359,6 +352,13 @@ definitions:
       totalPage:
         type: integer
     type: object
+  datastore.RateLimitConfiguration:
+    properties:
+      count:
+        type: integer
+      duration:
+        type: string
+    type: object
   datastore.SignatureConfiguration:
     properties:
       hash:
@@ -368,10 +368,10 @@ definitions:
     type: object
   datastore.StrategyConfiguration:
     properties:
-      default:
-        $ref: '#/definitions/datastore.DefaultStrategyConfiguration'
-      exponentialBackoff:
-        $ref: '#/definitions/datastore.ExponentialBackoffStrategyConfiguration'
+      duration:
+        type: integer
+      retry_count:
+        type: integer
       type:
         type: string
     type: object
@@ -469,6 +469,8 @@ definitions:
       rate_limit:
         type: integer
       rate_limit_duration:
+        type: string
+      type:
         type: string
     type: object
   models.Organisation:
