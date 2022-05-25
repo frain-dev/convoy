@@ -11,6 +11,10 @@ type subscriptionRepo struct {
 	client *badgerhold.Store
 }
 
+func (*subscriptionRepo) FindSubscriptionByEventType(context.Context, string, string, datastore.EventType) ([]datastore.Subscription, error) {
+	return nil, nil
+}
+
 func NewSubscriptionRepo(db *badgerhold.Store) datastore.SubscriptionRepository {
 	return &subscriptionRepo{
 		client: db,

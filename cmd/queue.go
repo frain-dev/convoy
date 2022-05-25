@@ -541,11 +541,17 @@ func exportStreamMessages(a *app) *cobra.Command {
 				if err != nil {
 					log.Errorf("failed fetch to file: %s", err)
 				}
+
 				csvwriter := csv.NewWriter(outputfile)
 
 				for i := range deliveries {
 					d := &deliveries[i]
-					data := []string{d.UID, d.AppMetadata.Title, string(d.Status), d.CreatedAt.Time().String()}
+					app, err := a.applicationRepo.FindApplicationByID(ctx, d.AppID)
+					if err != nil {
+						log.Errorf("failed fetch to file: %s", err)
+					}
+
+					data := []string{d.UID, app.Title, string(d.Status), d.CreatedAt.Time().String()}
 
 					err = csvwriter.Write(data)
 					if err != nil {
@@ -595,9 +601,10 @@ func requeueMessagesinStream(a *app) *cobra.Command {
 					if err != nil {
 						return err
 					}
-					group, err := a.groupRepo.FetchGroupByID(ctx, d.AppMetadata.GroupID)
+
+					group, err := a.groupRepo.FetchGroupByID(ctx, d.GroupID)
 					if err != nil {
-						log.WithError(err).Errorf("count: %s failed to fetch group %s for delivery %s", fmt.Sprint(i), d.AppMetadata.GroupID, d.UID)
+						log.WithError(err).Errorf("count: %s failed to fetch group %s for delivery %s", fmt.Sprint(i), d.GroupID, d.UID)
 						continue
 					}
 					taskName := convoy.EventProcessor.SetPrefix(group.Name)

@@ -597,18 +597,10 @@ func TestEventService_BatchRetryEventDelivery(t *testing.T) {
 						[]datastore.EventDelivery{
 							{
 								UID: "ref",
-								AppMetadata: &datastore.AppMetadata{
-									UID: "abc",
-								},
-								EndpointMetadata: &datastore.EndpointMetadata{UID: "cv"},
 							},
 							{
-								UID: "oop",
-								AppMetadata: &datastore.AppMetadata{
-									UID: "abc",
-								},
-								EndpointMetadata: &datastore.EndpointMetadata{UID: "cv"},
-								Status:           datastore.FailureEventStatus,
+								UID:    "oop",
+								Status: datastore.FailureEventStatus,
 							},
 						},
 						datastore.PaginationData{},
@@ -671,18 +663,10 @@ func TestEventService_BatchRetryEventDelivery(t *testing.T) {
 						[]datastore.EventDelivery{
 							{
 								UID: "ref",
-								AppMetadata: &datastore.AppMetadata{
-									UID: "abc",
-								},
-								EndpointMetadata: &datastore.EndpointMetadata{UID: "cv"},
 							},
 							{
-								UID: "oop",
-								AppMetadata: &datastore.AppMetadata{
-									UID: "abc",
-								},
-								EndpointMetadata: &datastore.EndpointMetadata{UID: "cv"},
-								Status:           datastore.FailureEventStatus,
+								UID:    "oop",
+								Status: datastore.FailureEventStatus,
 							},
 						},
 						datastore.PaginationData{},
@@ -867,19 +851,12 @@ func TestEventService_ForceResendEventDeliveries(t *testing.T) {
 						[]datastore.EventDelivery{
 							{
 								UID: "ref",
-								AppMetadata: &datastore.AppMetadata{
-									UID: "abc",
-								},
-								EndpointMetadata: &datastore.EndpointMetadata{UID: "cv"},
-								Status:           datastore.SuccessEventStatus,
+
+								Status: datastore.SuccessEventStatus,
 							},
 							{
-								UID: "oop",
-								AppMetadata: &datastore.AppMetadata{
-									UID: "abc",
-								},
-								EndpointMetadata: &datastore.EndpointMetadata{UID: "cv"},
-								Status:           datastore.SuccessEventStatus,
+								UID:    "oop",
+								Status: datastore.SuccessEventStatus,
 							},
 						},
 						nil,
@@ -914,20 +891,12 @@ func TestEventService_ForceResendEventDeliveries(t *testing.T) {
 					Return(
 						[]datastore.EventDelivery{
 							{
-								UID: "ref",
-								AppMetadata: &datastore.AppMetadata{
-									UID: "abc",
-								},
-								EndpointMetadata: &datastore.EndpointMetadata{UID: "cv"},
-								Status:           datastore.SuccessEventStatus,
+								UID:    "ref",
+								Status: datastore.SuccessEventStatus,
 							},
 							{
-								UID: "oop",
-								AppMetadata: &datastore.AppMetadata{
-									UID: "abc",
-								},
-								EndpointMetadata: &datastore.EndpointMetadata{UID: "cv"},
-								Status:           datastore.FailureEventStatus,
+								UID:    "oop",
+								Status: datastore.FailureEventStatus,
 							},
 						},
 						nil,
@@ -1368,12 +1337,8 @@ func TestEventService_ResendEventDelivery(t *testing.T) {
 			args: args{
 				ctx: ctx,
 				eventDelivery: &datastore.EventDelivery{
-					UID:         "123",
-					Status:      datastore.FailureEventStatus,
-					AppMetadata: &datastore.AppMetadata{UID: "ref"},
-					EndpointMetadata: &datastore.EndpointMetadata{
-						UID: "345",
-					},
+					UID:    "123",
+					Status: datastore.FailureEventStatus,
 				},
 				g: &datastore.Group{UID: "abc"},
 			},
@@ -1383,12 +1348,8 @@ func TestEventService_ResendEventDelivery(t *testing.T) {
 			args: args{
 				ctx: ctx,
 				eventDelivery: &datastore.EventDelivery{
-					UID:         "123",
-					Status:      datastore.SuccessEventStatus,
-					AppMetadata: &datastore.AppMetadata{UID: "ref"},
-					EndpointMetadata: &datastore.EndpointMetadata{
-						UID: "345",
-					},
+					UID:    "123",
+					Status: datastore.SuccessEventStatus,
 				},
 				g: &datastore.Group{UID: "abc"},
 			},
@@ -1449,12 +1410,8 @@ func TestEventService_RetryEventDelivery(t *testing.T) {
 			args: args{
 				ctx: ctx,
 				eventDelivery: &datastore.EventDelivery{
-					UID:         "123",
-					Status:      datastore.FailureEventStatus,
-					AppMetadata: &datastore.AppMetadata{UID: "ref"},
-					EndpointMetadata: &datastore.EndpointMetadata{
-						UID: "345",
-					},
+					UID:    "123",
+					Status: datastore.FailureEventStatus,
 				},
 				g: &datastore.Group{UID: "abc"},
 			},
@@ -1464,12 +1421,8 @@ func TestEventService_RetryEventDelivery(t *testing.T) {
 			args: args{
 				ctx: ctx,
 				eventDelivery: &datastore.EventDelivery{
-					UID:         "123",
-					Status:      datastore.SuccessEventStatus,
-					AppMetadata: &datastore.AppMetadata{UID: "ref"},
-					EndpointMetadata: &datastore.EndpointMetadata{
-						UID: "345",
-					},
+					UID:    "123",
+					Status: datastore.SuccessEventStatus,
 				},
 				g: &datastore.Group{UID: "abc"},
 			},
@@ -1481,12 +1434,8 @@ func TestEventService_RetryEventDelivery(t *testing.T) {
 			args: args{
 				ctx: ctx,
 				eventDelivery: &datastore.EventDelivery{
-					UID:         "123",
-					Status:      datastore.RetryEventStatus,
-					AppMetadata: &datastore.AppMetadata{UID: "ref"},
-					EndpointMetadata: &datastore.EndpointMetadata{
-						UID: "345",
-					},
+					UID:    "123",
+					Status: datastore.RetryEventStatus,
 				},
 				g: &datastore.Group{UID: "abc"},
 			},
@@ -1498,12 +1447,8 @@ func TestEventService_RetryEventDelivery(t *testing.T) {
 			args: args{
 				ctx: ctx,
 				eventDelivery: &datastore.EventDelivery{
-					UID:         "123",
-					Status:      datastore.ProcessingEventStatus,
-					AppMetadata: &datastore.AppMetadata{UID: "ref"},
-					EndpointMetadata: &datastore.EndpointMetadata{
-						UID: "345",
-					},
+					UID:    "123",
+					Status: datastore.ProcessingEventStatus,
 				},
 				g: &datastore.Group{UID: "abc"},
 			},
@@ -1515,12 +1460,8 @@ func TestEventService_RetryEventDelivery(t *testing.T) {
 			args: args{
 				ctx: ctx,
 				eventDelivery: &datastore.EventDelivery{
-					UID:         "123",
-					Status:      datastore.ScheduledEventStatus,
-					AppMetadata: &datastore.AppMetadata{UID: "ref"},
-					EndpointMetadata: &datastore.EndpointMetadata{
-						UID: "345",
-					},
+					UID:    "123",
+					Status: datastore.ScheduledEventStatus,
 				},
 				g: &datastore.Group{UID: "abc"},
 			},
@@ -1537,12 +1478,8 @@ func TestEventService_RetryEventDelivery(t *testing.T) {
 			args: args{
 				ctx: ctx,
 				eventDelivery: &datastore.EventDelivery{
-					UID:         "123",
-					Status:      datastore.FailureEventStatus,
-					AppMetadata: &datastore.AppMetadata{UID: "ref"},
-					EndpointMetadata: &datastore.EndpointMetadata{
-						UID: "345",
-					},
+					UID:    "123",
+					Status: datastore.FailureEventStatus,
 				},
 				g: &datastore.Group{UID: "abc"},
 			},
@@ -1559,12 +1496,8 @@ func TestEventService_RetryEventDelivery(t *testing.T) {
 			args: args{
 				ctx: ctx,
 				eventDelivery: &datastore.EventDelivery{
-					UID:         "123",
-					Status:      datastore.FailureEventStatus,
-					AppMetadata: &datastore.AppMetadata{UID: "ref"},
-					EndpointMetadata: &datastore.EndpointMetadata{
-						UID: "345",
-					},
+					UID:    "123",
+					Status: datastore.FailureEventStatus,
 				},
 				g: &datastore.Group{UID: "abc"},
 			},
@@ -1591,12 +1524,8 @@ func TestEventService_RetryEventDelivery(t *testing.T) {
 			args: args{
 				ctx: ctx,
 				eventDelivery: &datastore.EventDelivery{
-					UID:         "123",
-					Status:      datastore.FailureEventStatus,
-					AppMetadata: &datastore.AppMetadata{UID: "ref"},
-					EndpointMetadata: &datastore.EndpointMetadata{
-						UID: "345",
-					},
+					UID:    "123",
+					Status: datastore.FailureEventStatus,
 				},
 				g: &datastore.Group{UID: "abc"},
 			},
@@ -1614,12 +1543,8 @@ func TestEventService_RetryEventDelivery(t *testing.T) {
 			args: args{
 				ctx: ctx,
 				eventDelivery: &datastore.EventDelivery{
-					UID:         "123",
-					Status:      datastore.FailureEventStatus,
-					AppMetadata: &datastore.AppMetadata{UID: "ref"},
-					EndpointMetadata: &datastore.EndpointMetadata{
-						UID: "345",
-					},
+					UID:    "123",
+					Status: datastore.FailureEventStatus,
 				},
 				g: &datastore.Group{UID: "abc"},
 			},
@@ -1681,12 +1606,8 @@ func TestEventService_forceResendEventDelivery(t *testing.T) {
 			args: args{
 				ctx: ctx,
 				eventDelivery: &datastore.EventDelivery{
-					UID:         "123",
-					Status:      datastore.SuccessEventStatus,
-					AppMetadata: &datastore.AppMetadata{UID: "ref"},
-					EndpointMetadata: &datastore.EndpointMetadata{
-						UID: "abc",
-					},
+					UID:    "123",
+					Status: datastore.SuccessEventStatus,
 				},
 				g: &datastore.Group{Name: "test_group"},
 			},
@@ -1701,12 +1622,8 @@ func TestEventService_forceResendEventDelivery(t *testing.T) {
 			args: args{
 				ctx: ctx,
 				eventDelivery: &datastore.EventDelivery{
-					UID:         "123",
-					Status:      datastore.SuccessEventStatus,
-					AppMetadata: &datastore.AppMetadata{UID: "ref"},
-					EndpointMetadata: &datastore.EndpointMetadata{
-						UID: "abc",
-					},
+					UID:    "123",
+					Status: datastore.SuccessEventStatus,
 				},
 				g: &datastore.Group{Name: "test_group"},
 			},
@@ -1723,12 +1640,8 @@ func TestEventService_forceResendEventDelivery(t *testing.T) {
 			args: args{
 				ctx: ctx,
 				eventDelivery: &datastore.EventDelivery{
-					UID:         "123",
-					Status:      datastore.SuccessEventStatus,
-					AppMetadata: &datastore.AppMetadata{UID: "ref"},
-					EndpointMetadata: &datastore.EndpointMetadata{
-						UID: "abc",
-					},
+					UID:    "123",
+					Status: datastore.SuccessEventStatus,
 				},
 				g: &datastore.Group{Name: "test_group"},
 			},

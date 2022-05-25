@@ -9,7 +9,6 @@ import (
 
 	"github.com/frain-dev/convoy"
 	"github.com/frain-dev/convoy/cache"
-	"github.com/frain-dev/convoy/config"
 	"github.com/frain-dev/convoy/datastore"
 	"github.com/frain-dev/convoy/queue"
 	"github.com/frain-dev/convoy/searcher"
@@ -91,9 +90,6 @@ func (e *EventService) CreateAppEvent(ctx context.Context, newMessage *models.Ev
 			SupportEmail: app.SupportEmail,
 		},
 		DocumentStatus: datastore.ActiveDocumentStatus,
-	}
-	if g.Config.Strategy.Type != config.DefaultStrategyProvider && g.Config.Strategy.Type != config.ExponentialBackoffStrategyProvider {
-		return nil, NewServiceError(http.StatusBadRequest, errors.New("retry strategy not defined in configuration"))
 	}
 
 	taskName := convoy.CreateEventProcessor.SetPrefix(g.Name)

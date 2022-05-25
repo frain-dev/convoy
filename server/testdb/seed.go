@@ -231,27 +231,11 @@ func SeedEventDelivery(db datastore.DatabaseClient, app *datastore.Application, 
 	}
 
 	eventDelivery := &datastore.EventDelivery{
-		UID: uid,
-		EventMetadata: &datastore.EventMetadata{
-			UID:       event.UID,
-			EventType: event.EventType,
-		},
-		EndpointMetadata: &datastore.EndpointMetadata{
-			UID:               endpoint.UID,
-			TargetURL:         endpoint.TargetURL,
-			Secret:            endpoint.Secret,
-			HttpTimeout:       endpoint.HttpTimeout,
-			RateLimit:         endpoint.RateLimit,
-			RateLimitDuration: endpoint.RateLimitDuration,
-			Sent:              false,
-		},
-		Status: status,
-		AppMetadata: &datastore.AppMetadata{
-			UID:          app.UID,
-			Title:        app.Title,
-			GroupID:      app.GroupID,
-			SupportEmail: app.SupportEmail,
-		},
+		UID:            uid,
+		EventID:        event.UID,
+		EndpointID:     endpoint.UID,
+		Status:         status,
+		AppID:          app.UID,
 		CreatedAt:      primitive.NewDateTimeFromTime(time.Now()),
 		UpdatedAt:      primitive.NewDateTimeFromTime(time.Now()),
 		DocumentStatus: datastore.ActiveDocumentStatus,

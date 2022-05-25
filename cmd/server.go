@@ -178,20 +178,20 @@ func StartConvoyServer(a *app, cfg config.Configuration, withWorkers bool) error
 
 	if withWorkers {
 		// register tasks.
-		handler := task.ProcessEventDelivery(a.applicationRepo, a.eventDeliveryRepo, a.groupRepo, a.limiter)
+		handler := task.ProcessEventDelivery(a.applicationRepo, a.eventDeliveryRepo, a.groupRepo, a.limiter, a.subRepo)
 		if err := task.CreateTasks(a.groupRepo, convoy.EventProcessor, handler); err != nil {
 			log.WithError(err).Error("failed to register tasks")
 			return err
 		}
 
 		// register tasks.
-		eventCreatedhandler := task.ProcessEventCreated(a.applicationRepo, a.eventRepo, a.groupRepo, a.eventDeliveryRepo, a.cache, a.eventQueue)
+		eventCreatedhandler := task.ProcessEventCreation(a.applicationRepo, a.eventRepo, a.groupRepo, a.eventDeliveryRepo, a.cache, a.eventQueue, a.subRepo)
 		if err := task.CreateTasks(a.groupRepo, convoy.CreateEventProcessor, eventCreatedhandler); err != nil {
 			log.WithError(err).Error("failed to register tasks")
 			return err
 		}
 
-		worker.RegisterNewGroupTask(a.applicationRepo, a.eventDeliveryRepo, a.groupRepo, a.limiter, a.eventRepo, a.cache, a.eventQueue)
+		worker.RegisterNewGroupTask(a.applicationRepo, a.eventDeliveryRepo, a.groupRepo, a.limiter, a.eventRepo, a.cache, a.eventQueue, a.subRepo)
 
 		log.Infof("Starting Convoy workers...")
 		// register worker.

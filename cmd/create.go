@@ -282,12 +282,6 @@ func createMessageCommand(a *app) *cobra.Command {
 				return errors.New("app has no configured endpoints")
 			}
 
-			// activeEndpoints := util.ParseMetadataFromActiveEndpoints(appData.Endpoints)
-			// if len(activeEndpoints) == 0 {
-			// 	return errors.New("app has no enabled endpoints")
-			// }
-
-			log.Println("Event ", string(d))
 			msg := &datastore.Event{
 				UID: uuid.New().String(),
 				AppMetadata: &datastore.AppMetadata{

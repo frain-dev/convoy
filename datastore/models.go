@@ -162,6 +162,8 @@ type GroupConfig struct {
 
 type StrategyConfiguration struct {
 	Type        config.StrategyProvider          `json:"type" valid:"required~please provide a valid strategy type"`
+	Duration    uint64                           `json:"duration" valid:"required~please provide a valid duration in seconds,int"`
+	RetryCount  uint64                           `json:"retry_count" valid:"required~please provide a valid retry count,int"`
 	Default     LinearStrategyConfiguration      `json:"linear"`
 	Exponential ExponentialStrategyConfiguration `json:"exponential,omitempty"`
 }
@@ -236,7 +238,7 @@ type AppMetadata struct {
 // Makes it easy to filter by a list of events
 type EventType string
 
-//Event defines a payload to be sent to an application
+// Event defines a payload to be sent to an application
 type Event struct {
 	ID               primitive.ObjectID `json:"-" bson:"_id"`
 	UID              string             `json:"uid" bson:"uid"`
@@ -316,17 +318,17 @@ func (em Metadata) Value() (driver.Value, error) {
 	return driver.Value(b.String()), nil
 }
 
-type EndpointMetadata struct {
-	UID               string         `json:"uid" bson:"uid"`
-	TargetURL         string         `json:"target_url" bson:"target_url"`
-	Status            EndpointStatus `json:"status" bson:"status"`
-	Secret            string         `json:"secret" bson:"secret"`
-	HttpTimeout       string         `json:"http_timeout" bson:"http_timeout"`
-	RateLimit         int            `json:"rate_limit" bson:"rate_limit"`
-	RateLimitDuration string         `json:"rate_limit_duration" bson:"rate_limit_duration"`
+// type EndpointMetadata struct {
+// 	UID               string         `json:"uid" bson:"uid"`
+// 	TargetURL         string         `json:"target_url" bson:"target_url"`
+// 	Status            EndpointStatus `json:"status" bson:"status"`
+// 	Secret            string         `json:"secret" bson:"secret"`
+// 	HttpTimeout       string         `json:"http_timeout" bson:"http_timeout"`
+// 	RateLimit         int            `json:"rate_limit" bson:"rate_limit"`
+// 	RateLimitDuration string         `json:"rate_limit_duration" bson:"rate_limit_duration"`
 
-	Sent bool `json:"sent" bson:"sent"`
-}
+// 	Sent bool `json:"sent" bson:"sent"`
+// }
 
 type EventIntervalData struct {
 	Interval int64  `json:"index" bson:"index"`
@@ -338,10 +340,10 @@ type EventInterval struct {
 	Count uint64            `json:"count" bson:"count"`
 }
 
-type EventMetadata struct {
-	UID       string    `json:"uid" bson:"uid"`
-	EventType EventType `json:"name" bson:"name"`
-}
+// type EventMetadata struct {
+// 	UID       string    `json:"uid" bson:"uid"`
+// 	EventType EventType `json:"name" bson:"name"`
+// }
 
 type DeliveryAttempt struct {
 	ID         primitive.ObjectID `json:"-" bson:"_id"`
@@ -367,18 +369,18 @@ type DeliveryAttempt struct {
 
 //Event defines a payload to be sent to an application
 type EventDelivery struct {
-	ID            primitive.ObjectID `json:"-" bson:"_id"`
-	UID           string             `json:"uid" bson:"uid"`
-	EventMetadata *EventMetadata     `json:"event_metadata" bson:"event_metadata"`
+	ID             primitive.ObjectID `json:"-" bson:"_id"`
+	UID            string             `json:"uid" bson:"uid"`
+	AppID          string             `json:"app_id" bson:"app_id"`
+	GroupID        string             `json:"group_id" bson:"group_id"`
+	EventID        string             `json:"event_id" bson:"event_id"`
+	EndpointID     string             `json:"endpoint_id" bson:"endpoint_id"`
+	SubscriptionID string             `json:"subscription_id" bson:"subscription_id"`
 
-	// Endpoint contains the destination of the event.
-	EndpointMetadata *EndpointMetadata `json:"endpoint" bson:"endpoint"`
-
-	AppMetadata      *AppMetadata        `json:"app_metadata,omitempty" bson:"app_metadata"`
+	DeliveryAttempts []DeliveryAttempt   `json:"-" bson:"attempts"`
+	Status           EventDeliveryStatus `json:"status" bson:"status"`
 	Metadata         *Metadata           `json:"metadata" bson:"metadata"`
 	Description      string              `json:"description,omitempty" bson:"description"`
-	Status           EventDeliveryStatus `json:"status" bson:"status"`
-	DeliveryAttempts []DeliveryAttempt   `json:"-" bson:"attempts"`
 
 	CreatedAt primitive.DateTime `json:"created_at,omitempty" bson:"created_at,omitempty" swaggertype:"string"`
 	UpdatedAt primitive.DateTime `json:"updated_at,omitempty" bson:"updated_at,omitempty" swaggertype:"string"`
