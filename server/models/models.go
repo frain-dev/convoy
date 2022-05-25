@@ -18,6 +18,10 @@ type Group struct {
 	Config datastore.GroupConfig
 }
 
+type Organisation struct {
+	Name string `json:"name" bson:"name" valid:"required~please provide a valid name"`
+}
+
 type APIKey struct {
 	Name      string            `json:"name"`
 	Role      auth.Role         `json:"role"`

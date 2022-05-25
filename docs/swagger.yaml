@@ -16,11 +16,11 @@ definitions:
   datastore.APIKey:
     properties:
       created_at:
-        type: integer
+        type: string
       delted_at:
-        type: integer
+        type: string
       expires_at:
-        type: integer
+        type: string
       hash:
         type: string
       key_type:
@@ -36,7 +36,7 @@ definitions:
       uid:
         type: string
       updated_at:
-        type: integer
+        type: string
     type: object
   datastore.ApiKey:
     properties:
@@ -258,6 +258,8 @@ definitions:
       logo_url:
         type: string
       name:
+        type: string
+      organisation_id:
         type: string
       rate_limit:
         type: integer

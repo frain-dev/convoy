@@ -4428,13 +4428,13 @@
             "type": "object",
             "properties": {
                 "created_at": {
-                    "type": "integer"
+                    "type": "string"
                 },
                 "delted_at": {
-                    "type": "integer"
+                    "type": "string"
                 },
                 "expires_at": {
-                    "type": "integer"
+                    "type": "string"
                 },
                 "hash": {
                     "type": "string"
@@ -4458,7 +4458,7 @@
                     "type": "string"
                 },
                 "updated_at": {
-                    "type": "integer"
+                    "type": "string"
                 }
             }
         },
@@ -4787,6 +4787,9 @@
                     "type": "string"
                 },
                 "name": {
+                    "type": "string"
+                },
+                "organisation_id": {
                     "type": "string"
                 },
                 "rate_limit": {

@@ -17,10 +17,11 @@ import (
 )
 
 const (
-	GroupCollection  = "groups"
-	AppCollections   = "applications"
-	EventCollection  = "events"
-	SourceCollection = "sources"
+	GroupCollection        = "groups"
+	OrganisationCollection = "organisations"
+	AppCollections         = "applications"
+	EventCollection        = "events"
+	SourceCollection       = "sources"
 )
 
 type Client struct {

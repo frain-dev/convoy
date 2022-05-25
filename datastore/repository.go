@@ -47,6 +47,14 @@ type GroupRepository interface {
 	FetchGroupsByIDs(context.Context, []string) ([]Group, error)
 }
 
+type OrganisationRepository interface {
+	LoadOrganisationsPaged(context.Context, Pageable) ([]Organisation, PaginationData, error)
+	CreateOrganisation(context.Context, *Organisation) error
+	UpdateOrganisation(context.Context, *Organisation) error
+	DeleteOrganisation(ctx context.Context, uid string) error
+	FetchOrganisationByID(context.Context, string) (*Organisation, error)
+}
+
 type ApplicationRepository interface {
 	CreateApplication(context.Context, *Application, string) error
 	LoadApplicationsPaged(context.Context, string, string, Pageable) ([]Application, PaginationData, error)
