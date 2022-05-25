@@ -61,9 +61,34 @@ const (
 	DeletedDocumentStatus  DocumentStatus = "Deleted"
 )
 
+type SourceType string
+
+type VerifierType string
+
+type EncodingType string
+
+const (
+	HTTPSource     SourceType = "http"
+	RestApiSource  SourceType = "rest_api"
+	PubSubSource   SourceType = "pub_sub"
+	DBChangeStream SourceType = "db_change_stream"
+)
+
+const (
+	HMacVerifier      VerifierType = "hmac"
+	BasicAuthVerifier VerifierType = "basic_auth"
+	APIKeyVerifier    VerifierType = "api_key"
+)
+
+const (
+	Base64Encoding EncodingType = "base64"
+	HexEncoding    EncodingType = "hex"
+)
+
 var (
 	ErrApplicationNotFound = errors.New("application not found")
 	ErrEndpointNotFound    = errors.New("endpoint not found")
+	ErrSourceNotFound      = errors.New("source not found")
 )
 
 const (
@@ -382,4 +407,45 @@ type APIKey struct {
 	DeletedAt primitive.DateTime `json:"delted_at,omitempty" bson:"deleted_at"`
 
 	DocumentStatus DocumentStatus `json:"-" bson:"document_status"`
+}
+
+type Source struct {
+	ID         primitive.ObjectID `json:"-" bson:"_id"`
+	UID        string             `json:"uid" bson:"uid"`
+	GroupID    string             `json:"group_id" bson:"group_id"`
+	MaskID     string             `json:"mask_id" bson:"mask_id"`
+	Name       string             `json:"name" bson:"name"`
+	Type       SourceType         `json:"type" bson:"type"`
+	IsDisabled bool               `json:"is_disabled" bson:"is_disabled"`
+	Verifier   *VerifierConfig    `json:"verifier" bson:"verifier"`
+
+	CreatedAt primitive.DateTime `json:"created_at,omitempty" bson:"created_at"`
+	UpdatedAt primitive.DateTime `json:"updated_at,omitempty" bson:"updated_at"`
+	DeletedAt primitive.DateTime `json:"deleted_at,omitempty" bson:"deleted_at"`
+
+	DocumentStatus DocumentStatus `json:"-" bson:"document_status"`
+}
+
+type VerifierConfig struct {
+	Type      VerifierType `json:"type,omitempty" bson:"type" valid:"supported_verifier~please provide a valid verifier type,optional"`
+	HMac      HMac         `json:"hmac" bson:"hmac"`
+	BasicAuth BasicAuth    `json:"basic_auth" bson:"basic_auth"`
+	ApiKey    ApiKey       `json:"api_key" bson:"api_key"`
+}
+
+type HMac struct {
+	Header   string       `json:"header,omitempty" bson:"header"`
+	Hash     string       `json:"hash,omitempty" bson:"hash" valid:"supported_hash,optional"`
+	Secret   string       `json:"secret,omitempty" bson:"secret"`
+	Encoding EncodingType `json:"encoding,omitempty" bson:"encoding" valid:"supported_encoding~please provide a valid encoding type,optional"`
+}
+
+type BasicAuth struct {
+	UserName string `json:"username,omitempty" bson:"username"`
+	Password string `json:"password,omitempty" bson:"password"`
+}
+
+type ApiKey struct {
+	APIKey       string `json:"key,omitempty" bson:"key"`
+	APIKeyHeader string `json:"header,omitempty" bson:"header"`
 }

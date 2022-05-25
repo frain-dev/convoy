@@ -52,8 +52,8 @@ func (s *GroupIntegrationTestSuite) TestGetGroup() {
 	group, err := testdb.SeedGroup(s.DB, groupID, "", nil)
 	require.NoError(s.T(), err)
 	app, _ := testdb.SeedApplication(s.DB, group, uuid.NewString(), "test-app", false)
-	_, _ = testdb.SeedEndpoint(s.DB, app, []string{"*"})
-	_, _ = testdb.SeedEvent(s.DB, app, uuid.NewString(), "*", []byte("{}"))
+	_, _ = testdb.SeedEndpoint(s.DB, app, group.UID, []string{"*"})
+	_, _ = testdb.SeedEvent(s.DB, app, group.UID, uuid.NewString(), "*", []byte("{}"))
 
 	url := fmt.Sprintf("/api/v1/groups/%s", group.UID)
 	req := createRequest(http.MethodGet, url, nil)

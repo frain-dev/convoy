@@ -9,3 +9,7 @@ type Filter struct {
 	Status       []EventDeliveryStatus
 	SearchParams SearchParams
 }
+
+type SourceFilter struct {
+	Type string
+}

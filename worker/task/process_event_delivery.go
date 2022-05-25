@@ -17,26 +17,14 @@ import (
 	"github.com/frain-dev/convoy/queue"
 	"github.com/frain-dev/convoy/retrystrategies"
 	"github.com/frain-dev/convoy/util"
+	"github.com/frain-dev/disq"
 	"github.com/google/uuid"
 	log "github.com/sirupsen/logrus"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
-var ErrDeliveryAttemptFailed = errors.New("Error sending event")
+var ErrDeliveryAttemptFailed = errors.New("error sending event")
 var defaultDelay time.Duration = 30
-
-type EndpointError struct {
-	delay time.Duration
-	Err   error
-}
-
-func (e *EndpointError) Error() string {
-	return e.Err.Error()
-}
-
-func (e *EndpointError) Delay() time.Duration {
-	return e.delay
-}
 
 type SignatureValues struct {
 	HMAC      string
@@ -52,7 +40,7 @@ func ProcessEventDelivery(appRepo datastore.ApplicationRepository, eventDelivery
 
 		if err != nil {
 			log.WithError(err).Errorf("Failed to load event - %s", Id)
-			return &EndpointError{Err: err, delay: defaultDelay}
+			return &disq.Error{Err: err, Delay: defaultDelay}
 		}
 		var delayDuration time.Duration = retrystrategies.NewRetryStrategyFromMetadata(*m.Metadata).NextDuration(m.Metadata.NumTrials)
 
@@ -91,10 +79,10 @@ func ProcessEventDelivery(appRepo datastore.ApplicationRepository, eventDelivery
 
 		if res.Remaining <= 0 {
 			err := fmt.Errorf("too many events to %s, limit of %v would be reached", m.EndpointMetadata.TargetURL, res.Limit)
-			log.WithError(err)
+			log.WithError(errors.New("rate limit error")).Error(err.Error())
 
 			var delayDuration time.Duration = retrystrategies.NewRetryStrategyFromMetadata(*m.Metadata).NextDuration(m.Metadata.NumTrials)
-			return &EndpointError{Err: err, delay: delayDuration}
+			return &disq.Error{Err: err, Delay: delayDuration, RateLimit: true}
 		}
 
 		_, err = rateLimiter.Allow(context.Background(), m.EndpointMetadata.TargetURL, rateLimit, int(rateLimitDuration))
@@ -105,7 +93,7 @@ func ProcessEventDelivery(appRepo datastore.ApplicationRepository, eventDelivery
 		err = eventDeliveryRepo.UpdateStatusOfEventDelivery(context.Background(), *m, datastore.ProcessingEventStatus)
 		if err != nil {
 			log.WithError(err).Error("failed to update status of messages - ")
-			return &EndpointError{Err: err, delay: delayDuration}
+			return &disq.Error{Err: err, Delay: delayDuration}
 		}
 
 		var attempt datastore.DeliveryAttempt
@@ -113,7 +101,7 @@ func ProcessEventDelivery(appRepo datastore.ApplicationRepository, eventDelivery
 
 		cfg, err := config.Get()
 		if err != nil {
-			return &EndpointError{Err: err, delay: delayDuration}
+			return &disq.Error{Err: err, Delay: delayDuration}
 		}
 
 		var httpDuration time.Duration
@@ -144,7 +132,7 @@ func ProcessEventDelivery(appRepo datastore.ApplicationRepository, eventDelivery
 		dbEndpoint, err := appRepo.FindApplicationEndpointByID(context.Background(), m.AppMetadata.UID, e.UID)
 		if err != nil {
 			log.WithError(err).Errorf("could not retrieve endpoint %s", e.UID)
-			return &EndpointError{Err: err, delay: delayDuration}
+			return &disq.Error{Err: err, Delay: delayDuration}
 		}
 
 		if dbEndpoint.Status == datastore.InactiveEndpointStatus {
@@ -157,7 +145,7 @@ func ProcessEventDelivery(appRepo datastore.ApplicationRepository, eventDelivery
 		encoder.SetEscapeHTML(false)
 		if err := encoder.Encode(m.Metadata.Data); err != nil {
 			log.WithError(err).Error("Failed to encode data")
-			return &EndpointError{Err: err, delay: delayDuration}
+			return &disq.Error{Err: err, Delay: delayDuration}
 		}
 
 		bStr := strings.TrimSuffix(buff.String(), "\n")
@@ -165,7 +153,7 @@ func ProcessEventDelivery(appRepo datastore.ApplicationRepository, eventDelivery
 		g, err := groupRepo.FetchGroupByID(context.Background(), m.AppMetadata.GroupID)
 		if err != nil {
 			log.WithError(err).Error("could not find error")
-			return &EndpointError{Err: err, delay: delayDuration}
+			return &disq.Error{Err: err, Delay: delayDuration}
 		}
 		var signedPayload strings.Builder
 		var timestamp string
@@ -179,7 +167,7 @@ func ProcessEventDelivery(appRepo datastore.ApplicationRepository, eventDelivery
 		hmac, err := util.ComputeJSONHmac(g.Config.Signature.Hash, signedPayload.String(), secret, false)
 		if err != nil {
 			log.Errorf("error occurred while generating hmac - %+v\n", err)
-			return &EndpointError{Err: err, delay: delayDuration}
+			return &disq.Error{Err: err, Delay: delayDuration}
 		}
 
 		attemptStatus := false
@@ -293,7 +281,7 @@ func ProcessEventDelivery(appRepo datastore.ApplicationRepository, eventDelivery
 		}
 
 		if !done && m.Metadata.NumTrials < m.Metadata.RetryLimit {
-			return &EndpointError{Err: ErrDeliveryAttemptFailed, delay: delayDuration}
+			return &disq.Error{Err: ErrDeliveryAttemptFailed, Delay: delayDuration}
 		}
 
 		return nil
