@@ -36,9 +36,26 @@ func NewGroupService(appRepo datastore.ApplicationRepository, groupRepo datastor
 
 func (gs *GroupService) CreateGroup(ctx context.Context, newGroup *models.Group) (*datastore.Group, error) {
 	groupName := newGroup.Name
-	err := util.Validate(newGroup)
-	if err != nil {
-		return nil, NewServiceError(http.StatusBadRequest, err)
+
+	// Validate Signature
+	if newGroup.Type == datastore.OutgoingGroup {
+		if newGroup.Config.Signature == (datastore.SignatureConfiguration{}) {
+			return nil, NewServiceError(http.StatusBadRequest, errors.New("Outgoing groups require signature"))
+		}
+	} else if newGroup.Type == datastore.IncomingGroup {
+		if newGroup.Config.Signature == (datastore.SignatureConfiguration{}) {
+			newGroup.Config.Signature = datastore.DefaultIncomingSignatureConfig
+		}
+	}
+
+	// Apply Defaults
+	c := &newGroup.Config
+	if c.Strategy == (datastore.StrategyConfiguration{}) {
+		c.Strategy = datastore.DefaultStrategyConfig
+	}
+
+	if c.RateLimit == (datastore.RateLimitConfiguration{}) {
+		c.RateLimit = datastore.DefaultRateLimitConfig
 	}
 
 	if newGroup.RateLimit == 0 {
@@ -49,9 +66,15 @@ func (gs *GroupService) CreateGroup(ctx context.Context, newGroup *models.Group)
 		newGroup.RateLimitDuration = convoy.RATE_LIMIT_DURATION
 	}
 
+	err := util.Validate(newGroup)
+	if err != nil {
+		return nil, NewServiceError(http.StatusBadRequest, err)
+	}
+
 	group := &datastore.Group{
 		UID:               uuid.New().String(),
 		Name:              groupName,
+		Type:              newGroup.Type,
 		Config:            &newGroup.Config,
 		LogoURL:           newGroup.LogoURL,
 		CreatedAt:         primitive.NewDateTimeFromTime(time.Now()),
@@ -99,32 +122,21 @@ func (gs *GroupService) GetGroups(ctx context.Context, filter *datastore.GroupFi
 		return nil, NewServiceError(http.StatusBadRequest, errors.New("an error occurred while fetching Groups"))
 	}
 
-	for _, group := range groups {
-		err = gs.FillGroupStatistics(ctx, group)
-		if err != nil {
-			log.WithError(err).Errorf("failed to fill statistics of group %s", group.UID)
-		}
+	err = gs.FillGroupsStatistics(ctx, groups)
+	if err != nil {
+		log.WithError(err).Error("failed to fill statistics of group ")
 	}
+
 	return groups, nil
 }
 
-func (gs *GroupService) FillGroupStatistics(ctx context.Context, g *datastore.Group) error {
-	appCount, err := gs.appRepo.CountGroupApplications(ctx, g.UID)
+func (gs *GroupService) FillGroupsStatistics(ctx context.Context, groups []*datastore.Group) error {
+	err := gs.groupRepo.FillGroupsStatistics(ctx, groups)
 	if err != nil {
 		log.WithError(err).Error("failed to count group applications")
 		return NewServiceError(http.StatusBadRequest, errors.New("failed to count group statistics"))
 	}
 
-	msgCount, err := gs.eventRepo.CountGroupMessages(ctx, g.UID)
-	if err != nil {
-		log.WithError(err).Error("failed to count group messages")
-		return NewServiceError(http.StatusBadRequest, errors.New("failed to count group statistics"))
-	}
-
-	g.Statistics = &datastore.GroupStatistics{
-		MessagesSent: msgCount,
-		TotalApps:    appCount,
-	}
 	return nil
 }
 

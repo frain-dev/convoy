@@ -139,17 +139,6 @@
 				},
 				"type": "object"
 			},
-			"datastore.DefaultStrategyConfiguration": {
-				"properties": {
-					"intervalSeconds": {
-						"type": "integer"
-					},
-					"retryLimit": {
-						"type": "integer"
-					}
-				},
-				"type": "object"
-			},
 			"datastore.DeliveryAttempt": {
 				"properties": {
 					"api_version": {
@@ -359,14 +348,6 @@
 				},
 				"type": "object"
 			},
-			"datastore.ExponentialBackoffStrategyConfiguration": {
-				"properties": {
-					"retryLimit": {
-						"type": "integer"
-					}
-				},
-				"type": "object"
-			},
 			"datastore.Group": {
 				"properties": {
 					"config": {
@@ -388,6 +369,7 @@
 						"type": "string"
 					},
 					"rate_limit": {
+						"description": "TODO(subomi): refactor this into the Instance API.",
 						"type": "integer"
 					},
 					"rate_limit_duration": {
@@ -395,6 +377,9 @@
 					},
 					"statistics": {
 						"$ref": "#/components/schemas/datastore.GroupStatistics"
+					},
+					"type": {
+						"type": "string"
 					},
 					"uid": {
 						"type": "string"
@@ -409,6 +394,9 @@
 				"properties": {
 					"disable_endpoint": {
 						"type": "boolean"
+					},
+					"ratelimit": {
+						"$ref": "#/components/schemas/datastore.RateLimitConfiguration"
 					},
 					"replay_attacks": {
 						"type": "boolean"
@@ -531,6 +519,17 @@
 				},
 				"type": "object"
 			},
+			"datastore.RateLimitConfiguration": {
+				"properties": {
+					"count": {
+						"type": "integer"
+					},
+					"duration": {
+						"type": "string"
+					}
+				},
+				"type": "object"
+			},
 			"datastore.SignatureConfiguration": {
 				"properties": {
 					"hash": {
@@ -544,11 +543,11 @@
 			},
 			"datastore.StrategyConfiguration": {
 				"properties": {
-					"default": {
-						"$ref": "#/components/schemas/datastore.DefaultStrategyConfiguration"
+					"duration": {
+						"type": "integer"
 					},
-					"exponentialBackoff": {
-						"$ref": "#/components/schemas/datastore.ExponentialBackoffStrategyConfiguration"
+					"retry_count": {
+						"type": "integer"
 					},
 					"type": {
 						"type": "string"
@@ -695,6 +694,9 @@
 						"type": "integer"
 					},
 					"rate_limit_duration": {
+						"type": "string"
+					},
+					"type": {
 						"type": "string"
 					}
 				},
