@@ -107,7 +107,7 @@ var (
 		RetryCount: 10,
 	}
 
-	DefaultIncomingSignatureConfig = SignatureConfiguration{
+	DefaultSignatureConfig = SignatureConfiguration{
 		Header: "X-Convoy-Signature",
 		Hash:   "SHA256",
 	}
