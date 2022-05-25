@@ -184,7 +184,7 @@ func (s *GroupIntegrationTestSuite) TestUpdateGroup() {
     "config": {
         "strategy": {
             "type": "exponential",
-            "Duration": 10,
+            "duration": 10,
             "retry_count": 2
         },
         "signature": {

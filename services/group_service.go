@@ -122,32 +122,21 @@ func (gs *GroupService) GetGroups(ctx context.Context, filter *datastore.GroupFi
 		return nil, NewServiceError(http.StatusBadRequest, errors.New("an error occurred while fetching Groups"))
 	}
 
-	for _, group := range groups {
-		err = gs.FillGroupStatistics(ctx, group)
-		if err != nil {
-			log.WithError(err).Errorf("failed to fill statistics of group %s", group.UID)
-		}
+	err = gs.FillGroupsStatistics(ctx, groups)
+	if err != nil {
+		log.WithError(err).Error("failed to fill statistics of group ")
 	}
+
 	return groups, nil
 }
 
-func (gs *GroupService) FillGroupStatistics(ctx context.Context, g *datastore.Group) error {
-	appCount, err := gs.appRepo.CountGroupApplications(ctx, g.UID)
+func (gs *GroupService) FillGroupsStatistics(ctx context.Context, groups []*datastore.Group) error {
+	err := gs.groupRepo.FillGroupsStatistics(ctx, groups)
 	if err != nil {
 		log.WithError(err).Error("failed to count group applications")
 		return NewServiceError(http.StatusBadRequest, errors.New("failed to count group statistics"))
 	}
 
-	msgCount, err := gs.eventRepo.CountGroupMessages(ctx, g.UID)
-	if err != nil {
-		log.WithError(err).Error("failed to count group messages")
-		return NewServiceError(http.StatusBadRequest, errors.New("failed to count group statistics"))
-	}
-
-	g.Statistics = &datastore.GroupStatistics{
-		MessagesSent: msgCount,
-		TotalApps:    appCount,
-	}
 	return nil
 }
 

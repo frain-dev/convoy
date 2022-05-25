@@ -527,11 +527,18 @@ func TestGroupService_GetGroups(t *testing.T) {
 					{UID: "abc"},
 				}, nil)
 
-				a, _ := gs.appRepo.(*mocks.MockApplicationRepository)
-				a.EXPECT().CountGroupApplications(gomock.Any(), gomock.Any()).Times(2).Return(int64(1), nil)
+				g.EXPECT().FillGroupsStatistics(gomock.Any(), gomock.Any()).Times(1).DoAndReturn(func(ctx context.Context, groups []*datastore.Group) error {
+					groups[0].Statistics = &datastore.GroupStatistics{
+						MessagesSent: 1,
+						TotalApps:    1,
+					}
 
-				e, _ := gs.eventRepo.(*mocks.MockEventRepository)
-				e.EXPECT().CountGroupMessages(gomock.Any(), gomock.Any()).Times(2).Return(int64(1), nil)
+					groups[1].Statistics = &datastore.GroupStatistics{
+						MessagesSent: 1,
+						TotalApps:    1,
+					}
+					return nil
+				})
 			},
 			wantGroups: []*datastore.Group{
 				{
@@ -565,11 +572,18 @@ func TestGroupService_GetGroups(t *testing.T) {
 					{UID: "abc"},
 				}, nil)
 
-				a, _ := gs.appRepo.(*mocks.MockApplicationRepository)
-				a.EXPECT().CountGroupApplications(gomock.Any(), gomock.Any()).Times(2).Return(int64(1), nil)
+				g.EXPECT().FillGroupsStatistics(gomock.Any(), gomock.Any()).Times(1).DoAndReturn(func(ctx context.Context, groups []*datastore.Group) error {
+					groups[0].Statistics = &datastore.GroupStatistics{
+						MessagesSent: 1,
+						TotalApps:    1,
+					}
 
-				e, _ := gs.eventRepo.(*mocks.MockEventRepository)
-				e.EXPECT().CountGroupMessages(gomock.Any(), gomock.Any()).Times(2).Return(int64(1), nil)
+					groups[1].Statistics = &datastore.GroupStatistics{
+						MessagesSent: 1,
+						TotalApps:    1,
+					}
+					return nil
+				})
 			},
 			wantGroups: []*datastore.Group{
 				{
@@ -603,11 +617,18 @@ func TestGroupService_GetGroups(t *testing.T) {
 					{UID: "abc"},
 				}, nil)
 
-				a, _ := gs.appRepo.(*mocks.MockApplicationRepository)
-				a.EXPECT().CountGroupApplications(gomock.Any(), gomock.Any()).Times(2).Return(int64(1), nil)
+				g.EXPECT().FillGroupsStatistics(gomock.Any(), gomock.Any()).Times(1).DoAndReturn(func(ctx context.Context, groups []*datastore.Group) error {
+					groups[0].Statistics = &datastore.GroupStatistics{
+						MessagesSent: 1,
+						TotalApps:    1,
+					}
 
-				e, _ := gs.eventRepo.(*mocks.MockEventRepository)
-				e.EXPECT().CountGroupMessages(gomock.Any(), gomock.Any()).Times(2).Return(int64(1), nil)
+					groups[1].Statistics = &datastore.GroupStatistics{
+						MessagesSent: 1,
+						TotalApps:    1,
+					}
+					return nil
+				})
 			},
 			wantGroups: []*datastore.Group{
 				{
@@ -669,7 +690,7 @@ func TestGroupService_GetGroups(t *testing.T) {
 	}
 }
 
-func TestGroupService_FillGroupStatistics(t *testing.T) {
+func TestGroupService_FillGroupsStatistics(t *testing.T) {
 	ctx := context.Background()
 
 	type args struct {
@@ -692,11 +713,14 @@ func TestGroupService_FillGroupStatistics(t *testing.T) {
 				g:   &datastore.Group{UID: "1234"},
 			},
 			dbFn: func(gs *GroupService) {
-				a, _ := gs.appRepo.(*mocks.MockApplicationRepository)
-				a.EXPECT().CountGroupApplications(gomock.Any(), "1234").Times(1).Return(int64(1), nil)
-
-				e, _ := gs.eventRepo.(*mocks.MockEventRepository)
-				e.EXPECT().CountGroupMessages(gomock.Any(), "1234").Times(1).Return(int64(1), nil)
+				g, _ := gs.groupRepo.(*mocks.MockGroupRepository)
+				g.EXPECT().FillGroupsStatistics(gomock.Any(), gomock.Any()).Times(1).DoAndReturn(func(ctx context.Context, groups []*datastore.Group) error {
+					groups[0].Statistics = &datastore.GroupStatistics{
+						MessagesSent: 1,
+						TotalApps:    1,
+					}
+					return nil
+				})
 			},
 			wantGroup: &datastore.Group{
 				UID: "1234",
@@ -708,33 +732,14 @@ func TestGroupService_FillGroupStatistics(t *testing.T) {
 			wantErr: false,
 		},
 		{
-			name: "should_fail_to_count_group_messages",
+			name: "should_fail_to_fill_group_statistics",
 			args: args{
 				ctx: ctx,
 				g:   &datastore.Group{UID: "1234"},
 			},
 			dbFn: func(gs *GroupService) {
-				a, _ := gs.appRepo.(*mocks.MockApplicationRepository)
-				a.EXPECT().CountGroupApplications(gomock.Any(), "1234").Times(1).Return(int64(1), nil)
-
-				e, _ := gs.eventRepo.(*mocks.MockEventRepository)
-				e.EXPECT().CountGroupMessages(gomock.Any(), "1234").
-					Times(1).Return(int64(1), errors.New("failed"))
-			},
-			wantErr:     true,
-			wantErrCode: http.StatusBadRequest,
-			wantErrMsg:  "failed to count group statistics",
-		},
-		{
-			name: "should_fail_to_count_group_apps",
-			args: args{
-				ctx: ctx,
-				g:   &datastore.Group{UID: "1234"},
-			},
-			dbFn: func(gs *GroupService) {
-				a, _ := gs.appRepo.(*mocks.MockApplicationRepository)
-				a.EXPECT().CountGroupApplications(gomock.Any(), "1234").
-					Times(1).Return(int64(1), errors.New("failed"))
+				g, _ := gs.groupRepo.(*mocks.MockGroupRepository)
+				g.EXPECT().FillGroupsStatistics(gomock.Any(), gomock.Any()).Times(1).Return(errors.New("failed"))
 			},
 			wantErr:     true,
 			wantErrCode: http.StatusBadRequest,
@@ -752,7 +757,7 @@ func TestGroupService_FillGroupStatistics(t *testing.T) {
 				tc.dbFn(gs)
 			}
 
-			err := gs.FillGroupStatistics(tc.args.ctx, tc.args.g)
+			err := gs.FillGroupsStatistics(tc.args.ctx, []*datastore.Group{tc.args.g})
 			if tc.wantErr {
 				require.NotNil(t, err)
 				require.Equal(t, tc.wantErrCode, err.(*ServiceError).ErrCode())

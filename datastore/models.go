@@ -223,8 +223,9 @@ type SignatureValues struct {
 }
 
 type GroupStatistics struct {
-	MessagesSent int64 `json:"messages_sent"`
-	TotalApps    int64 `json:"total_apps"`
+	GroupID      string `json:"-" bson:"group_id"`
+	MessagesSent int64  `json:"messages_sent" bson:"messages_sent"`
+	TotalApps    int64  `json:"total_apps" bson:"total_apps"`
 }
 
 type GroupFilter struct {
