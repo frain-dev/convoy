@@ -155,10 +155,10 @@ func Test_FillGroupsStatistics(t *testing.T) {
 	}
 
 	appRepo := NewApplicationRepo(db)
-	err = appRepo.CreateApplication(context.Background(), app1)
+	err = appRepo.CreateApplication(context.Background(), app1, group1.UID)
 	require.NoError(t, err)
 
-	err = appRepo.CreateApplication(context.Background(), app2)
+	err = appRepo.CreateApplication(context.Background(), app2, group2.UID)
 	require.NoError(t, err)
 
 	event := &datastore.Event{
