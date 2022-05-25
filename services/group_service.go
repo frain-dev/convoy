@@ -37,19 +37,12 @@ func NewGroupService(appRepo datastore.ApplicationRepository, groupRepo datastor
 func (gs *GroupService) CreateGroup(ctx context.Context, newGroup *models.Group) (*datastore.Group, error) {
 	groupName := newGroup.Name
 
-	// Validate Signature
-	if newGroup.Type == datastore.OutgoingGroup {
-		if newGroup.Config.Signature == (datastore.SignatureConfiguration{}) {
-			return nil, NewServiceError(http.StatusBadRequest, errors.New("Outgoing groups require signature"))
-		}
-	} else if newGroup.Type == datastore.IncomingGroup {
-		if newGroup.Config.Signature == (datastore.SignatureConfiguration{}) {
-			newGroup.Config.Signature = datastore.DefaultIncomingSignatureConfig
-		}
-	}
-
 	// Apply Defaults
 	c := &newGroup.Config
+	if c.Signature == (datastore.SignatureConfiguration{}) {
+		c.Signature = datastore.DefaultSignatureConfig
+	}
+
 	if c.Strategy == (datastore.StrategyConfiguration{}) {
 		c.Strategy = datastore.DefaultStrategyConfig
 	}
