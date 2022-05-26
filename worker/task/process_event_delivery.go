@@ -60,6 +60,8 @@ func ProcessEventDelivery(
 
 		subscription, err := subRepo.FindSubscriptionByID(context.Background(), ed.GroupID, ed.SubscriptionID)
 		if err != nil {
+			println(err)
+			fmt.Printf("\nErr: %+v\nEd: %+v\n\n", err, ed)
 			return &disq.Error{Err: err, Delay: 10 * time.Second}
 		}
 

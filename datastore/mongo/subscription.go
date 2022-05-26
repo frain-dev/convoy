@@ -121,14 +121,17 @@ func (s *subscriptionRepo) FindSubscriptionByID(ctx context.Context, groupId str
 
 func (s *subscriptionRepo) FindSubscriptionByEventType(ctx context.Context, groupId string, appId string, eventType datastore.EventType) ([]datastore.Subscription, error) {
 	var subscription []datastore.Subscription
-	filter := bson.M{"group_id": groupId, "app_id": appId, "filter_config.event_types": bson.M{"$in": string(eventType)}, "document_status": datastore.ActiveDocumentStatus}
-	
+	filter := bson.M{"group_id": groupId, "app_id": appId, "filter_config.event_types": string(eventType), "document_status": datastore.ActiveDocumentStatus}
+
 	c, err := s.client.Find(ctx, filter)
-	if err != nil && errors.Is(err, mongo.ErrNoDocuments) {
-		return []datastore.Subscription{}, datastore.ErrSubscriptionNotFound
+	if err != nil {
+		return nil, err
 	}
 
 	err = c.All(ctx, &subscription)
+	if err != nil {
+		return nil, err
+	}
 
-	return subscription, err
+	return subscription, nil
 }

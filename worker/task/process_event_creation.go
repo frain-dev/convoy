@@ -108,13 +108,14 @@ func ProcessEventCreation(
 			}
 
 			eventDelivery := &datastore.EventDelivery{
-				UID:              uuid.New().String(),
-				AppID:            app.UID,
-				Metadata:         metadata,
-				GroupID:          group.UID,
-				EventID:          event.UID,
-				EndpointID:       s.EndpointID,
-				
+				UID:            uuid.New().String(),
+				SubscriptionID: s.UID,
+				AppID:          app.UID,
+				Metadata:       metadata,
+				GroupID:        group.UID,
+				EventID:        event.UID,
+				EndpointID:     s.EndpointID,
+
 				Status:           getEventDeliveryStatus(s, app),
 				DeliveryAttempts: []datastore.DeliveryAttempt{},
 				DocumentStatus:   datastore.ActiveDocumentStatus,

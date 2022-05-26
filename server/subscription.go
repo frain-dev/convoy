@@ -111,7 +111,7 @@ func (a *applicationHandler) CreateSubscription(w http.ResponseWriter, r *http.R
 		return
 	}
 
-	_ = render.Render(w, r, newServerResponse("Subscriptions fetched successfully", subscription, http.StatusCreated))
+	_ = render.Render(w, r, newServerResponse("Subscriptions created successfully", subscription, http.StatusCreated))
 }
 
 // DeleteSubscription

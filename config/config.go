@@ -563,10 +563,10 @@ func SetServerConfigDefaults(c *Configuration) error {
 		c.MaxResponseSize = kb
 	}
 
-	err = ensureStrategyConfig(c.GroupConfig.Strategy)
-	if err != nil {
-		return err
-	}
+	// err = ensureStrategyConfig(c.GroupConfig.Strategy)
+	// if err != nil {
+	// 	return err
+	// }
 
 	err = ensureQueueConfig(c.Queue)
 	if err != nil {
