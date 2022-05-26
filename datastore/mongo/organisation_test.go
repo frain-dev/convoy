@@ -6,12 +6,13 @@ package mongo
 import (
 	"context"
 	"fmt"
+	"testing"
+	"time"
+
 	"github.com/frain-dev/convoy/datastore"
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/require"
 	"go.mongodb.org/mongo-driver/bson/primitive"
-	"testing"
-	"time"
 )
 
 func TestLoadOrganisationsPaged(t *testing.T) {
@@ -131,5 +132,5 @@ func TestDeleteOrganisation(t *testing.T) {
 	require.NoError(t, err)
 
 	require.True(t, organisation.DeletedAt > 0)
-	require.Equal(t, datastore.DeletedDocumentStatus, org.DocumentStatus)
+	require.Equal(t, datastore.DeletedDocumentStatus, organisation.DocumentStatus)
 }
