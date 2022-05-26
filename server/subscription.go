@@ -97,14 +97,16 @@ func (a *applicationHandler) GetSubscription(w http.ResponseWriter, r *http.Requ
 func (a *applicationHandler) CreateSubscription(w http.ResponseWriter, r *http.Request) {
 	group := getGroupFromContext(r.Context())
 
-	var newSubscription models.Subscription
-	err := util.ReadJSON(r, &newSubscription)
+	var s models.Subscription
+	err := util.ReadJSON(r, &s)
 	if err != nil {
 		_ = render.Render(w, r, newErrorResponse(err.Error(), http.StatusBadRequest))
 		return
 	}
 
-	subscription, err := a.subService.CreateSubscription(r.Context(), group.UID, &newSubscription)
+	s.Type = string(group.Type)
+
+	subscription, err := a.subService.CreateSubscription(r.Context(), group.UID, &s)
 	if err != nil {
 		log.WithError(err).Error("failed to create subscription")
 		_ = render.Render(w, r, newErrorResponse("an error occurred while creating subscription. Error: "+err.Error(), http.StatusBadRequest))
