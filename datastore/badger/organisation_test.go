@@ -126,9 +126,6 @@ func TestDeleteOrganisation(t *testing.T) {
 	err = orgRepo.DeleteOrganisation(context.Background(), org.UID)
 	require.NoError(t, err)
 
-	organisation, err := orgRepo.FetchOrganisationByID(context.Background(), org.UID)
-	require.NoError(t, err)
-
-	require.True(t, organisation.DeletedAt > 0)
-	require.Equal(t, datastore.DeletedDocumentStatus, org.DocumentStatus)
+	_, err = orgRepo.FetchOrganisationByID(context.Background(), org.UID)
+	require.Equal(t, datastore.ErrOrgNotFound, err)
 }
