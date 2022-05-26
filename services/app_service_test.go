@@ -81,7 +81,7 @@ func TestAppService_CreateApp(t *testing.T) {
 			dbFn: func(app *AppService) {
 				a, _ := app.appRepo.(*mocks.MockApplicationRepository)
 				a.EXPECT().
-					CreateApplication(gomock.Any(), gomock.Any()).Times(1).
+					CreateApplication(gomock.Any(), gomock.Any(), gomock.Any()).Times(1).
 					Return(nil)
 
 				c, _ := app.cache.(*mocks.MockCache)
@@ -113,7 +113,7 @@ func TestAppService_CreateApp(t *testing.T) {
 			dbFn: func(app *AppService) {
 				a, _ := app.appRepo.(*mocks.MockApplicationRepository)
 				a.EXPECT().
-					CreateApplication(gomock.Any(), gomock.Any()).Times(1).
+					CreateApplication(gomock.Any(), gomock.Any(), gomock.Any()).Times(1).
 					Return(errors.New("failed"))
 			},
 			wantErr:     true,
@@ -135,7 +135,7 @@ func TestAppService_CreateApp(t *testing.T) {
 			dbFn: func(app *AppService) {
 				a, _ := app.appRepo.(*mocks.MockApplicationRepository)
 				a.EXPECT().
-					CreateApplication(gomock.Any(), gomock.Any()).Times(1).
+					CreateApplication(gomock.Any(), gomock.Any(), gomock.Any()).Times(1).
 					Return(datastore.ErrDuplicateAppName)
 			},
 			wantErr:     true,
@@ -411,7 +411,7 @@ func TestAppService_UpdateApplication(t *testing.T) {
 			},
 			dbFn: func(app *AppService) {
 				a, _ := app.appRepo.(*mocks.MockApplicationRepository)
-				a.EXPECT().UpdateApplication(gomock.Any(), gomock.Any()).Times(1).Return(nil)
+				a.EXPECT().UpdateApplication(gomock.Any(), gomock.Any(), gomock.Any()).Times(1).Return(nil)
 
 				c, _ := app.cache.(*mocks.MockCache)
 				c.EXPECT().Set(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any())
@@ -457,7 +457,7 @@ func TestAppService_UpdateApplication(t *testing.T) {
 			},
 			dbFn: func(app *AppService) {
 				a, _ := app.appRepo.(*mocks.MockApplicationRepository)
-				a.EXPECT().UpdateApplication(gomock.Any(), gomock.Any()).Times(1).Return(errors.New("failed"))
+				a.EXPECT().UpdateApplication(gomock.Any(), gomock.Any(), gomock.Any()).Times(1).Return(errors.New("failed"))
 			},
 			wantErr:     true,
 			wantErrCode: http.StatusBadRequest,
@@ -484,7 +484,7 @@ func TestAppService_UpdateApplication(t *testing.T) {
 			dbFn: func(app *AppService) {
 				a, _ := app.appRepo.(*mocks.MockApplicationRepository)
 				a.EXPECT().
-					UpdateApplication(gomock.Any(), gomock.Any()).Times(1).
+					UpdateApplication(gomock.Any(), gomock.Any(), gomock.Any()).Times(1).
 					Return(datastore.ErrDuplicateAppName)
 			},
 			wantErr:     true,
@@ -613,7 +613,7 @@ func TestAppService_CreateAppEndpoint(t *testing.T) {
 			},
 			dbFn: func(app *AppService) {
 				a, _ := app.appRepo.(*mocks.MockApplicationRepository)
-				a.EXPECT().UpdateApplication(gomock.Any(), gomock.Any()).Times(1).Return(nil)
+				a.EXPECT().UpdateApplication(gomock.Any(), gomock.Any(), gomock.Any()).Times(1).Return(nil)
 
 				c, _ := app.cache.(*mocks.MockCache)
 				c.EXPECT().Set(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any())
@@ -625,11 +625,9 @@ func TestAppService_CreateAppEndpoint(t *testing.T) {
 						Secret:            "1234",
 						TargetURL:         "https://google.com",
 						Description:       "test_endpoint",
-						Status:            datastore.ActiveEndpointStatus,
 						RateLimit:         5000,
 						RateLimitDuration: "1m0s",
 						DocumentStatus:    datastore.ActiveDocumentStatus,
-						Events:            []string{"payment.created"},
 					},
 				},
 			},
@@ -637,11 +635,9 @@ func TestAppService_CreateAppEndpoint(t *testing.T) {
 				Secret:            "1234",
 				TargetURL:         "https://google.com",
 				Description:       "test_endpoint",
-				Status:            datastore.ActiveEndpointStatus,
 				RateLimit:         5000,
 				RateLimitDuration: "1m0s",
 				DocumentStatus:    datastore.ActiveDocumentStatus,
-				Events:            []string{"payment.created"},
 			},
 			wantErr: false,
 		},
@@ -660,7 +656,7 @@ func TestAppService_CreateAppEndpoint(t *testing.T) {
 			},
 			dbFn: func(app *AppService) {
 				a, _ := app.appRepo.(*mocks.MockApplicationRepository)
-				a.EXPECT().UpdateApplication(gomock.Any(), gomock.Any()).Times(1).Return(nil)
+				a.EXPECT().UpdateApplication(gomock.Any(), gomock.Any(), gomock.Any()).Times(1).Return(nil)
 
 				c, _ := app.cache.(*mocks.MockCache)
 				c.EXPECT().Set(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any())
@@ -672,11 +668,9 @@ func TestAppService_CreateAppEndpoint(t *testing.T) {
 						Secret:            "1234",
 						TargetURL:         "https://google.com",
 						Description:       "test_endpoint",
-						Status:            datastore.ActiveEndpointStatus,
 						RateLimit:         100,
 						RateLimitDuration: "1m0s",
 						DocumentStatus:    datastore.ActiveDocumentStatus,
-						Events:            []string{"*"},
 					},
 				},
 			},
@@ -684,11 +678,9 @@ func TestAppService_CreateAppEndpoint(t *testing.T) {
 				Secret:            "1234",
 				TargetURL:         "https://google.com",
 				Description:       "test_endpoint",
-				Status:            datastore.ActiveEndpointStatus,
 				RateLimit:         100,
 				RateLimitDuration: "1m0s",
 				DocumentStatus:    datastore.ActiveDocumentStatus,
-				Events:            []string{"*"},
 			},
 			wantErr: false,
 		},
@@ -724,7 +716,7 @@ func TestAppService_CreateAppEndpoint(t *testing.T) {
 			},
 			dbFn: func(app *AppService) {
 				a, _ := app.appRepo.(*mocks.MockApplicationRepository)
-				a.EXPECT().UpdateApplication(gomock.Any(), gomock.Any()).Times(1).Return(errors.New("failed"))
+				a.EXPECT().UpdateApplication(gomock.Any(), gomock.Any(), gomock.Any()).Times(1).Return(errors.New("failed"))
 			},
 			wantErr:     true,
 			wantErrCode: http.StatusBadRequest,
@@ -853,12 +845,10 @@ func TestAppService_UpdateAppEndpoint(t *testing.T) {
 					},
 					{
 						UID:               "endpoint2",
-						Events:            []string{"payment.created", "payment.success"},
 						TargetURL:         "https://fb.com",
 						Secret:            "newly-generated-secret",
 						RateLimit:         10000,
 						RateLimitDuration: "1m0s",
-						Status:            datastore.ActiveEndpointStatus,
 						HttpTimeout:       "20s",
 					},
 				},
@@ -866,16 +856,14 @@ func TestAppService_UpdateAppEndpoint(t *testing.T) {
 			wantEndpoint: &datastore.Endpoint{
 				Secret:            "newly-generated-secret",
 				UID:               "endpoint2",
-				Events:            []string{"payment.created", "payment.success"},
 				TargetURL:         "https://fb.com",
 				RateLimit:         10000,
-				Status:            datastore.ActiveEndpointStatus,
 				RateLimitDuration: "1m0s",
 				HttpTimeout:       "20s",
 			},
 			dbFn: func(as *AppService) {
 				a, _ := as.appRepo.(*mocks.MockApplicationRepository)
-				a.EXPECT().UpdateApplication(gomock.Any(), gomock.Any()).
+				a.EXPECT().UpdateApplication(gomock.Any(), gomock.Any(), gomock.Any()).
 					Times(1).Return(nil)
 
 				c, _ := as.cache.(*mocks.MockCache)
@@ -931,7 +919,7 @@ func TestAppService_UpdateAppEndpoint(t *testing.T) {
 			},
 			dbFn: func(as *AppService) {
 				a, _ := as.appRepo.(*mocks.MockApplicationRepository)
-				a.EXPECT().UpdateApplication(gomock.Any(), gomock.Any()).
+				a.EXPECT().UpdateApplication(gomock.Any(), gomock.Any(), gomock.Any()).
 					Times(1).Return(errors.New("failed"))
 			},
 			wantErr:     true,
@@ -1053,7 +1041,7 @@ func TestAppService_DeleteAppEndpoint(t *testing.T) {
 			},
 			dbFn: func(as *AppService) {
 				appRepo := as.appRepo.(*mocks.MockApplicationRepository)
-				appRepo.EXPECT().UpdateApplication(gomock.Any(), gomock.Any()).Times(1).Return(nil)
+				appRepo.EXPECT().UpdateApplication(gomock.Any(), gomock.Any(), gomock.Any()).Times(1).Return(nil)
 
 				c, _ := as.cache.(*mocks.MockCache)
 				c.EXPECT().Set(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any())
@@ -1085,7 +1073,7 @@ func TestAppService_DeleteAppEndpoint(t *testing.T) {
 			},
 			dbFn: func(as *AppService) {
 				appRepo := as.appRepo.(*mocks.MockApplicationRepository)
-				appRepo.EXPECT().UpdateApplication(gomock.Any(), gomock.Any()).Times(1).Return(errors.New("failed"))
+				appRepo.EXPECT().UpdateApplication(gomock.Any(), gomock.Any(), gomock.Any()).Times(1).Return(errors.New("failed"))
 			},
 			wantErr:     true,
 			wantErrCode: http.StatusBadRequest,

@@ -22,8 +22,8 @@ func NewApplicationRepo(db *badgerhold.Store) datastore.ApplicationRepository {
 	return &appRepo{db: db}
 }
 
-func (a *appRepo) CreateApplication(ctx context.Context, app *datastore.Application) error {
-	err := a.assertUniqueAppTitle(ctx, app)
+func (a *appRepo) CreateApplication(ctx context.Context, app *datastore.Application, groupID string) error {
+	err := a.assertUniqueAppTitle(ctx, app, groupID)
 	if err != nil {
 		if errors.Is(err, datastore.ErrDuplicateAppName) {
 			return err
@@ -35,8 +35,8 @@ func (a *appRepo) CreateApplication(ctx context.Context, app *datastore.Applicat
 	return a.db.Upsert(app.UID, app)
 }
 
-func (a *appRepo) UpdateApplication(ctx context.Context, app *datastore.Application) error {
-	err := a.assertUniqueAppTitle(ctx, app)
+func (a *appRepo) UpdateApplication(ctx context.Context, app *datastore.Application, groupID string) error {
+	err := a.assertUniqueAppTitle(ctx, app, groupID)
 	if err != nil {
 		if errors.Is(err, datastore.ErrDuplicateAppName) {
 			return err
@@ -113,12 +113,12 @@ func (a *appRepo) LoadApplicationsPaged(ctx context.Context, gid, q string, page
 	return apps, data, err
 }
 
-func (a *appRepo) assertUniqueAppTitle(ctx context.Context, app *datastore.Application) error {
+func (a *appRepo) assertUniqueAppTitle(ctx context.Context, app *datastore.Application, groupID string) error {
 	count, err := a.db.Count(
 		&datastore.Application{},
 		badgerhold.Where("Title").Eq(app.Title).
 			And("UID").Ne(app.UID).
-			And("GroupID").Eq(app.GroupID).
+			And("GroupID").Eq(groupID).
 			And("DocumentStatus").Eq(datastore.ActiveDocumentStatus),
 	)
 
@@ -206,13 +206,13 @@ func (a *appRepo) UpdateApplicationEndpointsStatus(ctx context.Context, aid stri
 		return datastore.ErrApplicationNotFound
 	}
 
-	for i := 0; i < len(application.Endpoints); i++ {
-		if _, ok := endpointMap[application.Endpoints[i].UID]; ok {
-			application.Endpoints[i].Status = status
-		}
-	}
+	// for i := 0; i < len(application.Endpoints); i++ {
+	// 	if _, ok := endpointMap[application.Endpoints[i].UID]; ok {
+	// 		application.Endpoints[i].Status = status
+	// 	}
+	// }
 
-	err = a.UpdateApplication(ctx, application)
+	err = a.UpdateApplication(ctx, application, application.GroupID)
 
 	return err
 }

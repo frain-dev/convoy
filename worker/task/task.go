@@ -2,6 +2,7 @@ package task
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/frain-dev/convoy"
 	"github.com/frain-dev/convoy/datastore"
@@ -13,7 +14,7 @@ func CreateTask(name convoy.TaskName, group datastore.Group, handler interface{}
 
 	options := disq.TaskOptions{
 		Name:       string(name),
-		RetryLimit: int(group.Config.Strategy.Default.RetryLimit),
+		RetryLimit: int(group.Config.Strategy.RetryCount),
 		Handler:    handler,
 	}
 	task, err := disq.RegisterTask(&options)
@@ -38,7 +39,10 @@ func CreateTasks(groupRepo datastore.GroupRepository, taskname convoy.TaskName, 
 		t, _ := disq.Tasks.LoadTask(string(name))
 		if t == nil {
 			log.Infof("Registering task handler for %s", g.Name)
-			CreateTask(name, *g, handler)
+			_, err := CreateTask(name, *g, handler)
+			if err != nil {
+				log.WithError(err).Error(fmt.Sprintf("failed register event delivery task for group %v", g.Name))
+			}
 		}
 	}
 	return nil

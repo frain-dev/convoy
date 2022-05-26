@@ -17,9 +17,11 @@ import (
 )
 
 const (
-	GroupCollection = "groups"
-	AppCollections  = "applications"
-	EventCollection = "events"
+	SubscriptionCollection = "subscriptions"
+	AppCollections         = "applications"
+	GroupCollection        = "groups"
+	EventCollection        = "events"
+	SourceCollection       = "sources"
 )
 
 type Client struct {
@@ -28,7 +30,9 @@ type Client struct {
 	groupRepo         datastore.GroupRepository
 	eventRepo         datastore.EventRepository
 	applicationRepo   datastore.ApplicationRepository
+	subscriptionRepo  datastore.SubscriptionRepository
 	eventDeliveryRepo datastore.EventDeliveryRepository
+	sourceRepo        datastore.SourceRepository
 }
 
 func New(cfg config.Configuration) (datastore.DatabaseClient, error) {
@@ -63,9 +67,11 @@ func New(cfg config.Configuration) (datastore.DatabaseClient, error) {
 		db:                conn,
 		apiKeyRepo:        NewApiKeyRepo(conn),
 		groupRepo:         NewGroupRepo(conn),
+		subscriptionRepo:  NewSubscriptionRepo(conn),
 		applicationRepo:   NewApplicationRepo(conn),
 		eventRepo:         NewEventRepository(conn),
 		eventDeliveryRepo: NewEventDeliveryRepository(conn),
+		sourceRepo:        NewSourceRepo(conn),
 	}
 
 	c.ensureMongoIndices()
@@ -105,6 +111,14 @@ func (c *Client) EventDeliveryRepo() datastore.EventDeliveryRepository {
 	return c.eventDeliveryRepo
 }
 
+func (c *Client) SubRepo() datastore.SubscriptionRepository {
+	return c.subscriptionRepo
+}
+
+func (c *Client) SourceRepo() datastore.SourceRepository {
+	return c.sourceRepo
+}
+
 func (c *Client) ensureMongoIndices() {
 	c.ensureIndex(GroupCollection, "uid", true, nil)
 	c.ensureIndex(GroupCollection, "name", true, bson.M{"document_status": datastore.ActiveDocumentStatus})
@@ -112,8 +126,10 @@ func (c *Client) ensureMongoIndices() {
 	c.ensureIndex(EventCollection, "uid", true, nil)
 	c.ensureIndex(EventCollection, "event_type", false, nil)
 	c.ensureIndex(EventCollection, "app_metadata.uid", false, nil)
+	c.ensureIndex(EventCollection, "app_metadata.group_id", false, nil)
 	c.ensureIndex(AppCollections, "group_id", false, nil)
 	c.ensureIndex(EventDeliveryCollection, "status", false, nil)
+	c.ensureIndex(SourceCollection, "mask_id", true, nil)
 	c.ensureCompoundIndex(AppCollections)
 	c.ensureCompoundIndex(EventCollection)
 	c.ensureCompoundIndex(EventDeliveryCollection)
@@ -317,6 +333,18 @@ func compoundIndices() map[string][]mongo.IndexModel {
 					{Key: "group_id", Value: 1},
 					{Key: "document_status", Value: 1},
 					{Key: "title", Value: 1},
+				},
+				Options: options.Index().SetUnique(true),
+			},
+		},
+
+		SubscriptionCollection: {
+			{
+				Keys: bson.D{
+					{Key: "group_id", Value: 1},
+					{Key: "source_id", Value: 1},
+					{Key: "endpoint_id", Value: 1},
+					{Key: "document_status", Value: 1},
 				},
 				Options: options.Index().SetUnique(true),
 			},

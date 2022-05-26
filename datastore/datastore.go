@@ -13,5 +13,7 @@ type DatabaseClient interface {
 	GroupRepo() GroupRepository
 	EventRepo() EventRepository
 	AppRepo() ApplicationRepository
+	SubRepo() SubscriptionRepository
 	EventDeliveryRepo() EventDeliveryRepository
+	SourceRepo() SourceRepository
 }

@@ -35,14 +35,10 @@ func TestWrite(t *testing.T) {
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
 			eventDelivery := &datastore.EventDelivery{
-				UID: tc.eventDeliveryID,
-				EventMetadata: &datastore.EventMetadata{
-					UID: tc.eventID,
-				},
-				Status: datastore.SuccessEventStatus,
-				AppMetadata: &datastore.AppMetadata{
-					UID: tc.appID,
-				},
+				UID:     tc.eventDeliveryID,
+				EventID: tc.eventID,
+				AppID:   tc.appID,
+				Status:  datastore.SuccessEventStatus,
 			}
 			job := &queue.Job{
 				ID: eventDelivery.UID,

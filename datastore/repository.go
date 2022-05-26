@@ -45,13 +45,14 @@ type GroupRepository interface {
 	DeleteGroup(ctx context.Context, uid string) error
 	FetchGroupByID(context.Context, string) (*Group, error)
 	FetchGroupsByIDs(context.Context, []string) ([]Group, error)
+	FillGroupsStatistics(ctx context.Context, groups []*Group) error
 }
 
 type ApplicationRepository interface {
-	CreateApplication(context.Context, *Application) error
+	CreateApplication(context.Context, *Application, string) error
 	LoadApplicationsPaged(context.Context, string, string, Pageable) ([]Application, PaginationData, error)
 	FindApplicationByID(context.Context, string) (*Application, error)
-	UpdateApplication(context.Context, *Application) error
+	UpdateApplication(context.Context, *Application, string) error
 	DeleteApplication(context.Context, *Application) error
 	CountGroupApplications(ctx context.Context, groupID string) (int64, error)
 	DeleteGroupApps(context.Context, string) error
@@ -59,4 +60,22 @@ type ApplicationRepository interface {
 	SearchApplicationsByGroupId(context.Context, string, SearchParams) ([]Application, error)
 	FindApplicationEndpointByID(context.Context, string, string) (*Endpoint, error)
 	UpdateApplicationEndpointsStatus(context.Context, string, []string, EndpointStatus) error
+}
+
+type SubscriptionRepository interface {
+	CreateSubscription(context.Context, string, *Subscription) error
+	UpdateSubscription(context.Context, string, *Subscription) error
+	LoadSubscriptionsPaged(context.Context, string, Pageable) ([]Subscription, PaginationData, error)
+	DeleteSubscription(context.Context, string, *Subscription) error
+	FindSubscriptionByID(context.Context, string, string) (*Subscription, error)
+	FindSubscriptionByEventType(context.Context, string, string, EventType) ([]Subscription, error)
+}
+
+type SourceRepository interface {
+	CreateSource(context.Context, *Source) error
+	UpdateSource(ctx context.Context, groupID string, source *Source) error
+	FindSourceByID(ctx context.Context, groupID string, id string) (*Source, error)
+	FindSourceByMaskID(ctx context.Context, groupID string, maskID string) (*Source, error)
+	DeleteSourceByID(ctx context.Context, groupID string, id string) error
+	LoadSourcesPaged(ctx context.Context, groupID string, filter *SourceFilter, pageable Pageable) ([]Source, PaginationData, error)
 }

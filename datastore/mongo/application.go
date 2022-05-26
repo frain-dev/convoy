@@ -28,8 +28,8 @@ func NewApplicationRepo(db *mongo.Database) datastore.ApplicationRepository {
 	}
 }
 
-func (db *appRepo) CreateApplication(ctx context.Context, app *datastore.Application) error {
-	err := db.assertUniqueAppTitle(ctx, app)
+func (db *appRepo) CreateApplication(ctx context.Context, app *datastore.Application, groupID string) error {
+	err := db.assertUniqueAppTitle(ctx, app, groupID)
 	if err != nil {
 		if errors.Is(err, datastore.ErrDuplicateAppName) {
 			return err
@@ -78,11 +78,11 @@ func (db *appRepo) LoadApplicationsPaged(ctx context.Context, groupID, q string,
 	return apps, datastore.PaginationData(paginatedData.Pagination), nil
 }
 
-func (db *appRepo) assertUniqueAppTitle(ctx context.Context, app *datastore.Application) error {
+func (db *appRepo) assertUniqueAppTitle(ctx context.Context, app *datastore.Application, groupID string) error {
 	f := bson.M{
 		"uid":             bson.M{"$ne": app.UID},
 		"title":           app.Title,
-		"group_id":        app.GroupID,
+		"group_id":        groupID,
 		"document_status": datastore.ActiveDocumentStatus,
 	}
 
@@ -242,8 +242,8 @@ func findEndpoint(endpoints *[]datastore.Endpoint, id string) (*datastore.Endpoi
 	return nil, datastore.ErrEndpointNotFound
 }
 
-func (db *appRepo) UpdateApplication(ctx context.Context, app *datastore.Application) error {
-	err := db.assertUniqueAppTitle(ctx, app)
+func (db *appRepo) UpdateApplication(ctx context.Context, app *datastore.Application, groupID string) error {
+	err := db.assertUniqueAppTitle(ctx, app, groupID)
 	if err != nil {
 		if errors.Is(err, datastore.ErrDuplicateAppName) {
 			return err
@@ -364,12 +364,12 @@ func (db *appRepo) UpdateApplicationEndpointsStatus(ctx context.Context, appId s
 		return err
 	}
 
-	m := parseMapOfUIDs(endpointIds)
-	for i := 0; i < len(app.Endpoints); i++ {
-		if _, ok := m[app.Endpoints[i].UID]; ok {
-			app.Endpoints[i].Status = status
-		}
-	}
+	// m := parseMapOfUIDs(endpointIds)
+	// for i := 0; i < len(app.Endpoints); i++ {
+	// 	if _, ok := m[app.Endpoints[i].UID]; ok {
+	// 		app.Endpoints[i].Status = status
+	// 	}
+	// }
 
 	update := bson.D{primitive.E{Key: "$set", Value: bson.D{
 		primitive.E{Key: "endpoints", Value: app.Endpoints},
@@ -380,10 +380,10 @@ func (db *appRepo) UpdateApplicationEndpointsStatus(ctx context.Context, appId s
 	return err
 }
 
-func parseMapOfUIDs(ids []string) map[string]bool {
-	elementMap := make(map[string]bool)
-	for i := 0; i < len(ids); i++ {
-		elementMap[ids[i]] = true
-	}
-	return elementMap
-}
+// func parseMapOfUIDs(ids []string) map[string]bool {
+// 	elementMap := make(map[string]bool)
+// 	for i := 0; i < len(ids); i++ {
+// 		elementMap[ids[i]] = true
+// 	}
+// 	return elementMap
+// }

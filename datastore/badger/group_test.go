@@ -121,3 +121,67 @@ func Test_DeleteGroup(t *testing.T) {
 
 	require.Equal(t, len(orgs), 1)
 }
+
+func Test_FillGroupsStatistics(t *testing.T) {
+	db, closeFn := getDB(t)
+	defer closeFn()
+
+	groupRepo := NewGroupRepo(db)
+
+	group1 := &datastore.Group{
+		Name: "group1",
+		UID:  uuid.NewString(),
+	}
+
+	group2 := &datastore.Group{
+		Name: "group2",
+		UID:  uuid.NewString(),
+	}
+
+	err := groupRepo.CreateGroup(context.Background(), group1)
+	require.NoError(t, err)
+
+	err = groupRepo.CreateGroup(context.Background(), group2)
+	require.NoError(t, err)
+
+	app1 := &datastore.Application{
+		UID:     uuid.NewString(),
+		GroupID: group1.UID,
+	}
+
+	app2 := &datastore.Application{
+		UID:     uuid.NewString(),
+		GroupID: group2.UID,
+	}
+
+	appRepo := NewApplicationRepo(db)
+	err = appRepo.CreateApplication(context.Background(), app1, group1.UID)
+	require.NoError(t, err)
+
+	err = appRepo.CreateApplication(context.Background(), app2, group2.UID)
+	require.NoError(t, err)
+
+	event := &datastore.Event{
+		UID:         uuid.NewString(),
+		AppMetadata: &datastore.AppMetadata{UID: app1.UID, GroupID: app1.GroupID},
+	}
+
+	err = NewEventRepo(db).CreateEvent(context.Background(), event)
+	require.NoError(t, err)
+
+	groups := []*datastore.Group{group1, group2}
+	err = groupRepo.FillGroupsStatistics(context.Background(), groups)
+	require.NoError(t, err)
+
+	require.Equal(t, *group1.Statistics, datastore.GroupStatistics{
+		GroupID:      "",
+		MessagesSent: 1,
+		TotalApps:    1,
+	})
+
+	require.Equal(t, *group2.Statistics, datastore.GroupStatistics{
+		GroupID:      "",
+		MessagesSent: 0,
+		TotalApps:    1,
+	})
+}

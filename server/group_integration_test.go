@@ -52,8 +52,8 @@ func (s *GroupIntegrationTestSuite) TestGetGroup() {
 	group, err := testdb.SeedGroup(s.DB, groupID, "", nil)
 	require.NoError(s.T(), err)
 	app, _ := testdb.SeedApplication(s.DB, group, uuid.NewString(), "test-app", false)
-	_, _ = testdb.SeedEndpoint(s.DB, app, []string{"*"})
-	_, _ = testdb.SeedEvent(s.DB, app, uuid.NewString(), "*", []byte("{}"))
+	_, _ = testdb.SeedEndpoint(s.DB, app, group.UID, []string{"*"})
+	_, _ = testdb.SeedEvent(s.DB, app, group.UID, uuid.NewString(), "*", []byte("{}"))
 
 	url := fmt.Sprintf("/api/v1/groups/%s", group.UID)
 	req := createRequest(http.MethodGet, url, nil)
@@ -131,17 +131,13 @@ func (s *GroupIntegrationTestSuite) TestCreateGroup() {
 
 	bodyStr := `{
     "name": "test-group",
+	"type": "outgoing",
     "logo_url": "",
     "config": {
         "strategy": {
-            "type": "default",
-            "default": {
-                "intervalSeconds": 10,
-                "retryLimit": 2
-            },
-            "exponentialBackoff": {
-                "retryLimit": 0
-            }
+            "type": "linear",
+            "duration": 10,
+            "retry_count": 2
         },
         "signature": {
             "header": "X-Convoy-Signature",
@@ -184,16 +180,12 @@ func (s *GroupIntegrationTestSuite) TestUpdateGroup() {
 
 	bodyStr := `{
     "name": "group_1",
+	"type": "outgoing",
     "config": {
         "strategy": {
-            "type": "default",
-            "default": {
-                "intervalSeconds": 10,
-                "retryLimit": 2
-            },
-            "exponentialBackoff": {
-                "retryLimit": 0
-            }
+            "type": "exponential",
+            "duration": 10,
+            "retry_count": 2
         },
         "signature": {
             "header": "X-Convoy-Signature",

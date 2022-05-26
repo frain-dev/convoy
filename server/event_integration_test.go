@@ -54,7 +54,7 @@ func (s *EventIntegrationTestSuite) Test_CreateAppEvent_Valid_Event() {
 
 	// Just Before.
 	app, _ := testdb.SeedApplication(s.DB, s.DefaultGroup, appID, "", false)
-	_, _ = testdb.SeedMultipleEndpoints(s.DB, app, []string{"*"}, 2)
+	_, _ = testdb.SeedMultipleEndpoints(s.DB, app, s.DefaultGroup.UID, []string{"*"}, 2)
 
 	bodyStr := `{"app_id":"%s", "event_type":"*", "data":{"level":"test"}}`
 	body := serialize(bodyStr, appID)
@@ -100,7 +100,7 @@ func (s *EventIntegrationTestSuite) Test_CreateAppEvent_App_is_disabled() {
 
 	// Just Before.
 	app, _ := testdb.SeedApplication(s.DB, s.DefaultGroup, appID, "", true)
-	_, _ = testdb.SeedMultipleEndpoints(s.DB, app, []string{"*"}, 2)
+	_, _ = testdb.SeedMultipleEndpoints(s.DB, app, s.DefaultGroup.UID, []string{"*"}, 2)
 
 	bodyStr := `{"app_id":"%s", "event_type":"*", "data":{"level":"test"}}`
 	body := serialize(bodyStr, appID)
@@ -120,7 +120,7 @@ func (s *EventIntegrationTestSuite) Test_GetAppEvent_Valid_Event() {
 
 	// Just Before.
 	app, _ := testdb.SeedApplication(s.DB, s.DefaultGroup, uuid.NewString(), "", false)
-	event, _ := testdb.SeedEvent(s.DB, app, eventID, "*", []byte(`{}`))
+	event, _ := testdb.SeedEvent(s.DB, app, s.DefaultGroup.UID, eventID, "*", []byte(`{}`))
 
 	url := fmt.Sprintf("/api/v1/events/%s", eventID)
 	req := createRequest(http.MethodGet, url, nil)
@@ -159,7 +159,7 @@ func (s *EventIntegrationTestSuite) Test_GetEventDelivery_Valid_EventDelivery() 
 
 	// Just Before.
 	app, _ := testdb.SeedApplication(s.DB, s.DefaultGroup, uuid.NewString(), "", false)
-	eventDelivery, _ := testdb.SeedEventDelivery(s.DB, app, &datastore.Event{}, &datastore.Endpoint{}, eventDeliveryID, datastore.SuccessEventStatus)
+	eventDelivery, _ := testdb.SeedEventDelivery(s.DB, app, &datastore.Event{}, &datastore.Endpoint{}, s.DefaultGroup.UID, eventDeliveryID, datastore.SuccessEventStatus)
 
 	url := fmt.Sprintf("/api/v1/eventdeliveries/%s", eventDeliveryID)
 	req := createRequest(http.MethodGet, url, nil)
@@ -198,8 +198,8 @@ func (s *EventIntegrationTestSuite) Test_ResendEventDelivery_Valid_Resend() {
 
 	// Just Before.
 	app, _ := testdb.SeedApplication(s.DB, s.DefaultGroup, uuid.NewString(), "", false)
-	_, _ = testdb.SeedEndpoint(s.DB, app, []string{"*"})
-	eventDelivery, _ := testdb.SeedEventDelivery(s.DB, app, &datastore.Event{}, &app.Endpoints[0], eventDeliveryID, datastore.FailureEventStatus)
+	_, _ = testdb.SeedEndpoint(s.DB, app, s.DefaultGroup.UID, []string{"*"})
+	eventDelivery, _ := testdb.SeedEventDelivery(s.DB, app, &datastore.Event{}, &app.Endpoints[0], s.DefaultGroup.UID, eventDeliveryID, datastore.FailureEventStatus)
 
 	url := fmt.Sprintf("/api/v1/eventdeliveries/%s/resend", eventDeliveryID)
 	req := createRequest(http.MethodPut, url, nil)
@@ -224,11 +224,11 @@ func (s *EventIntegrationTestSuite) Test_BatchRetryEventDelivery_Valid_EventDeli
 
 	// Just Before.
 	app, _ := testdb.SeedApplication(s.DB, s.DefaultGroup, uuid.NewString(), "", false)
-	_, _ = testdb.SeedEndpoint(s.DB, app, []string{"*"})
-	event, _ := testdb.SeedEvent(s.DB, app, uuid.NewString(), "*", []byte(`{}`))
-	_, _ = testdb.SeedEventDelivery(s.DB, app, event, &app.Endpoints[0], eventDeliveryID, datastore.FailureEventStatus)
-	_, _ = testdb.SeedEventDelivery(s.DB, app, event, &app.Endpoints[0], eventDeliveryID, datastore.FailureEventStatus)
-	_, _ = testdb.SeedEventDelivery(s.DB, app, event, &app.Endpoints[0], eventDeliveryID, datastore.FailureEventStatus)
+	_, _ = testdb.SeedEndpoint(s.DB, app, s.DefaultGroup.UID, []string{"*"})
+	event, _ := testdb.SeedEvent(s.DB, app, s.DefaultGroup.UID, uuid.NewString(), "*", []byte(`{}`))
+	_, _ = testdb.SeedEventDelivery(s.DB, app, event, &app.Endpoints[0], s.DefaultGroup.UID, eventDeliveryID, datastore.FailureEventStatus)
+	_, _ = testdb.SeedEventDelivery(s.DB, app, event, &app.Endpoints[0], s.DefaultGroup.UID, eventDeliveryID, datastore.FailureEventStatus)
+	_, _ = testdb.SeedEventDelivery(s.DB, app, event, &app.Endpoints[0], s.DefaultGroup.UID, eventDeliveryID, datastore.FailureEventStatus)
 
 	url := fmt.Sprintf("/api/v1/eventdeliveries/batchretry?appId=%s&eventId=%s&status=%s", app.UID, event.UID, datastore.FailureEventStatus)
 	req := createRequest(http.MethodPost, url, nil)
@@ -247,11 +247,11 @@ func (s *EventIntegrationTestSuite) Test_CountAffectedEventDeliveries_Valid_Filt
 
 	// Just Before.
 	app, _ := testdb.SeedApplication(s.DB, s.DefaultGroup, uuid.NewString(), "", false)
-	_, _ = testdb.SeedEndpoint(s.DB, app, []string{"*"})
-	event, _ := testdb.SeedEvent(s.DB, app, uuid.NewString(), "*", []byte(`{}`))
-	_, _ = testdb.SeedEventDelivery(s.DB, app, event, &app.Endpoints[0], eventDeliveryID, datastore.FailureEventStatus)
-	_, _ = testdb.SeedEventDelivery(s.DB, app, event, &app.Endpoints[0], eventDeliveryID, datastore.FailureEventStatus)
-	_, _ = testdb.SeedEventDelivery(s.DB, app, event, &app.Endpoints[0], eventDeliveryID, datastore.FailureEventStatus)
+	_, _ = testdb.SeedEndpoint(s.DB, app, s.DefaultGroup.UID, []string{"*"})
+	event, _ := testdb.SeedEvent(s.DB, app, s.DefaultGroup.UID, uuid.NewString(), "*", []byte(`{}`))
+	_, _ = testdb.SeedEventDelivery(s.DB, app, event, &app.Endpoints[0], s.DefaultGroup.UID, eventDeliveryID, datastore.FailureEventStatus)
+	_, _ = testdb.SeedEventDelivery(s.DB, app, event, &app.Endpoints[0], s.DefaultGroup.UID, eventDeliveryID, datastore.FailureEventStatus)
+	_, _ = testdb.SeedEventDelivery(s.DB, app, event, &app.Endpoints[0], s.DefaultGroup.UID, eventDeliveryID, datastore.FailureEventStatus)
 
 	url := fmt.Sprintf("/api/v1/eventdeliveries/countbatchretryevents?appId=%s&eventId=%s&status=%s", app.UID, event.UID, datastore.FailureEventStatus)
 	req := createRequest(http.MethodGet, url, nil)
@@ -277,11 +277,11 @@ func (s *EventIntegrationTestSuite) Test_ForceResendEventDeliveries_Valid_EventD
 
 	// Just Before.
 	app, _ := testdb.SeedApplication(s.DB, s.DefaultGroup, uuid.NewString(), "", false)
-	_, _ = testdb.SeedEndpoint(s.DB, app, []string{"*"})
-	event, _ := testdb.SeedEvent(s.DB, app, uuid.NewString(), "*", []byte(`{}`))
-	e1, _ := testdb.SeedEventDelivery(s.DB, app, event, &app.Endpoints[0], eventDeliveryID, datastore.SuccessEventStatus)
-	e2, _ := testdb.SeedEventDelivery(s.DB, app, event, &app.Endpoints[0], eventDeliveryID, datastore.SuccessEventStatus)
-	e3, _ := testdb.SeedEventDelivery(s.DB, app, event, &app.Endpoints[0], eventDeliveryID, datastore.SuccessEventStatus)
+	_, _ = testdb.SeedEndpoint(s.DB, app, s.DefaultGroup.UID, []string{"*"})
+	event, _ := testdb.SeedEvent(s.DB, app, s.DefaultGroup.UID, uuid.NewString(), "*", []byte(`{}`))
+	e1, _ := testdb.SeedEventDelivery(s.DB, app, event, &app.Endpoints[0], s.DefaultGroup.UID, eventDeliveryID, datastore.SuccessEventStatus)
+	e2, _ := testdb.SeedEventDelivery(s.DB, app, event, &app.Endpoints[0], s.DefaultGroup.UID, eventDeliveryID, datastore.SuccessEventStatus)
+	e3, _ := testdb.SeedEventDelivery(s.DB, app, event, &app.Endpoints[0], s.DefaultGroup.UID, eventDeliveryID, datastore.SuccessEventStatus)
 
 	url := fmt.Sprintf("/api/v1/eventdeliveries/forceresend")
 
@@ -304,11 +304,11 @@ func (s *EventIntegrationTestSuite) Test_GetEventsPaged() {
 
 	// Just Before.
 	app1, _ := testdb.SeedApplication(s.DB, s.DefaultGroup, uuid.NewString(), "", false)
-	e1, _ := testdb.SeedEvent(s.DB, app1, eventID, "*", []byte(`{}`))
-	e2, _ := testdb.SeedEvent(s.DB, app1, eventID, "*", []byte(`{}`))
+	e1, _ := testdb.SeedEvent(s.DB, app1, s.DefaultGroup.UID, eventID, "*", []byte(`{}`))
+	e2, _ := testdb.SeedEvent(s.DB, app1, s.DefaultGroup.UID, eventID, "*", []byte(`{}`))
 
 	app2, _ := testdb.SeedApplication(s.DB, s.DefaultGroup, uuid.NewString(), "", false)
-	_, _ = testdb.SeedEvent(s.DB, app2, eventID, "*", []byte(`{}`))
+	_, _ = testdb.SeedEvent(s.DB, app2, s.DefaultGroup.UID, eventID, "*", []byte(`{}`))
 
 	url := fmt.Sprintf("/api/v1/events?appId=%s", app1.UID)
 	req := createRequest(http.MethodGet, url, nil)
@@ -339,13 +339,13 @@ func (s *EventIntegrationTestSuite) GetEventDeliveriesPaged() {
 
 	// Just Before.
 	app1, _ := testdb.SeedApplication(s.DB, s.DefaultGroup, uuid.NewString(), "", false)
-	event1, _ := testdb.SeedEvent(s.DB, app1, uuid.NewString(), "*", []byte(`{}`))
-	d1, _ := testdb.SeedEventDelivery(s.DB, app1, event1, &app1.Endpoints[0], eventDeliveryID, datastore.FailureEventStatus)
-	d2, _ := testdb.SeedEventDelivery(s.DB, app1, event1, &app1.Endpoints[0], eventDeliveryID, datastore.FailureEventStatus)
+	event1, _ := testdb.SeedEvent(s.DB, app1, s.DefaultGroup.UID, uuid.NewString(), "*", []byte(`{}`))
+	d1, _ := testdb.SeedEventDelivery(s.DB, app1, event1, &app1.Endpoints[0], s.DefaultGroup.UID, eventDeliveryID, datastore.FailureEventStatus)
+	d2, _ := testdb.SeedEventDelivery(s.DB, app1, event1, &app1.Endpoints[0], s.DefaultGroup.UID, eventDeliveryID, datastore.FailureEventStatus)
 
 	app2, _ := testdb.SeedApplication(s.DB, s.DefaultGroup, uuid.NewString(), "", false)
-	event2, _ := testdb.SeedEvent(s.DB, app2, uuid.NewString(), "*", []byte(`{}`))
-	_, _ = testdb.SeedEventDelivery(s.DB, app2, event2, &app2.Endpoints[0], eventDeliveryID, datastore.FailureEventStatus)
+	event2, _ := testdb.SeedEvent(s.DB, app2, s.DefaultGroup.UID, uuid.NewString(), "*", []byte(`{}`))
+	_, _ = testdb.SeedEventDelivery(s.DB, app2, event2, &app2.Endpoints[0], s.DefaultGroup.UID, eventDeliveryID, datastore.FailureEventStatus)
 
 	url := fmt.Sprintf("/api/v1/eventdeliveries?appId=%s", app1.UID)
 	req := createRequest(http.MethodGet, url, nil)
