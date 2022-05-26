@@ -14,7 +14,7 @@ func CreateTask(name convoy.TaskName, group datastore.Group, handler interface{}
 
 	options := disq.TaskOptions{
 		Name:       string(name),
-		RetryLimit: int(group.Config.Strategy.Default.RetryLimit),
+		RetryLimit: int(group.Config.Strategy.RetryCount),
 		Handler:    handler,
 	}
 	task, err := disq.RegisterTask(&options)

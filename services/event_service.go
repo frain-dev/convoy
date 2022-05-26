@@ -91,6 +91,9 @@ func (e *EventService) CreateAppEvent(ctx context.Context, newMessage *models.Ev
 		},
 		DocumentStatus: datastore.ActiveDocumentStatus,
 	}
+	if g.Config.Strategy.Type != datastore.LinearStrategyProvider && g.Config.Strategy.Type != datastore.ExponentialStrategyProvider {
+		return nil, NewServiceError(http.StatusBadRequest, errors.New("retry strategy not defined in configuration"))
+	}
 
 	taskName := convoy.CreateEventProcessor.SetPrefix(g.Name)
 	job := &queue.Job{

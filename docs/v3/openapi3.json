@@ -26,7 +26,7 @@
 					"created_at": {
 						"type": "integer"
 					},
-					"delted_at": {
+					"deleted_at": {
 						"type": "integer"
 					},
 					"expires_at": {
@@ -55,6 +55,17 @@
 					},
 					"updated_at": {
 						"type": "integer"
+					}
+				},
+				"type": "object"
+			},
+			"datastore.AlertConfiguration": {
+				"properties": {
+					"count": {
+						"type": "integer"
+					},
+					"threshold": {
+						"type": "string"
 					}
 				},
 				"type": "object"
@@ -139,17 +150,6 @@
 				},
 				"type": "object"
 			},
-			"datastore.DefaultStrategyConfiguration": {
-				"properties": {
-					"intervalSeconds": {
-						"type": "integer"
-					},
-					"retryLimit": {
-						"type": "integer"
-					}
-				},
-				"type": "object"
-			},
 			"datastore.DeliveryAttempt": {
 				"properties": {
 					"api_version": {
@@ -214,12 +214,6 @@
 					"description": {
 						"type": "string"
 					},
-					"events": {
-						"items": {
-							"type": "string"
-						},
-						"type": "array"
-					},
 					"http_timeout": {
 						"type": "string"
 					},
@@ -230,9 +224,6 @@
 						"type": "string"
 					},
 					"secret": {
-						"type": "string"
-					},
-					"status": {
 						"type": "string"
 					},
 					"target_url": {
@@ -242,35 +233,6 @@
 						"type": "string"
 					},
 					"updated_at": {
-						"type": "string"
-					}
-				},
-				"type": "object"
-			},
-			"datastore.EndpointMetadata": {
-				"properties": {
-					"http_timeout": {
-						"type": "string"
-					},
-					"rate_limit": {
-						"type": "integer"
-					},
-					"rate_limit_duration": {
-						"type": "string"
-					},
-					"secret": {
-						"type": "string"
-					},
-					"sent": {
-						"type": "boolean"
-					},
-					"status": {
-						"type": "string"
-					},
-					"target_url": {
-						"type": "string"
-					},
-					"uid": {
 						"type": "string"
 					}
 				},
@@ -315,8 +277,8 @@
 			},
 			"datastore.EventDelivery": {
 				"properties": {
-					"app_metadata": {
-						"$ref": "#/components/schemas/datastore.AppMetadata"
+					"app_id": {
+						"type": "string"
 					},
 					"created_at": {
 						"type": "string"
@@ -327,16 +289,22 @@
 					"description": {
 						"type": "string"
 					},
-					"endpoint": {
-						"$ref": "#/components/schemas/datastore.EndpointMetadata"
+					"endpoint_id": {
+						"type": "string"
 					},
-					"event_metadata": {
-						"$ref": "#/components/schemas/datastore.EventMetadata"
+					"event_id": {
+						"type": "string"
+					},
+					"group_id": {
+						"type": "string"
 					},
 					"metadata": {
 						"$ref": "#/components/schemas/datastore.Metadata"
 					},
 					"status": {
+						"type": "string"
+					},
+					"subscription_id": {
 						"type": "string"
 					},
 					"uid": {
@@ -348,21 +316,13 @@
 				},
 				"type": "object"
 			},
-			"datastore.EventMetadata": {
+			"datastore.FilterConfiguration": {
 				"properties": {
-					"name": {
-						"type": "string"
-					},
-					"uid": {
-						"type": "string"
-					}
-				},
-				"type": "object"
-			},
-			"datastore.ExponentialBackoffStrategyConfiguration": {
-				"properties": {
-					"retryLimit": {
-						"type": "integer"
+					"event_types": {
+						"items": {
+							"type": "string"
+						},
+						"type": "array"
 					}
 				},
 				"type": "object"
@@ -385,6 +345,7 @@
 						"type": "string"
 					},
 					"rate_limit": {
+						"description": "TODO(subomi): refactor this into the Instance API.",
 						"type": "integer"
 					},
 					"rate_limit_duration": {
@@ -392,6 +353,9 @@
 					},
 					"statistics": {
 						"$ref": "#/components/schemas/datastore.GroupStatistics"
+					},
+					"type": {
+						"type": "string"
 					},
 					"uid": {
 						"type": "string"
@@ -406,6 +370,9 @@
 				"properties": {
 					"disable_endpoint": {
 						"type": "boolean"
+					},
+					"ratelimit": {
+						"$ref": "#/components/schemas/datastore.RateLimitConfiguration"
 					},
 					"replay_attacks": {
 						"type": "boolean"
@@ -432,6 +399,9 @@
 			},
 			"datastore.HMac": {
 				"properties": {
+					"encoding": {
+						"type": "string"
+					},
 					"hash": {
 						"type": "string"
 					},
@@ -502,6 +472,31 @@
 				},
 				"type": "object"
 			},
+			"datastore.RateLimitConfiguration": {
+				"properties": {
+					"count": {
+						"type": "integer"
+					},
+					"duration": {
+						"type": "string"
+					}
+				},
+				"type": "object"
+			},
+			"datastore.RetryConfiguration": {
+				"properties": {
+					"duration": {
+						"type": "string"
+					},
+					"retry_count": {
+						"type": "integer"
+					},
+					"type": {
+						"type": "string"
+					}
+				},
+				"type": "object"
+			},
 			"datastore.SignatureConfiguration": {
 				"properties": {
 					"hash": {
@@ -513,16 +508,92 @@
 				},
 				"type": "object"
 			},
-			"datastore.StrategyConfiguration": {
+			"datastore.Source": {
 				"properties": {
-					"default": {
-						"$ref": "#/components/schemas/datastore.DefaultStrategyConfiguration"
+					"created_at": {
+						"type": "integer"
 					},
-					"exponentialBackoff": {
-						"$ref": "#/components/schemas/datastore.ExponentialBackoffStrategyConfiguration"
+					"deleted_at": {
+						"type": "integer"
+					},
+					"group_id": {
+						"type": "string"
+					},
+					"is_disabled": {
+						"type": "boolean"
+					},
+					"mask_id": {
+						"type": "string"
+					},
+					"name": {
+						"type": "string"
 					},
 					"type": {
 						"type": "string"
+					},
+					"uid": {
+						"type": "string"
+					},
+					"updated_at": {
+						"type": "integer"
+					},
+					"verifier": {
+						"$ref": "#/components/schemas/datastore.VerifierConfig"
+					}
+				},
+				"type": "object"
+			},
+			"datastore.StrategyConfiguration": {
+				"properties": {
+					"duration": {
+						"type": "integer"
+					},
+					"retry_count": {
+						"type": "integer"
+					},
+					"type": {
+						"type": "string"
+					}
+				},
+				"type": "object"
+			},
+			"datastore.Subscription": {
+				"properties": {
+					"alert_config": {
+						"$ref": "#/components/schemas/datastore.AlertConfiguration"
+					},
+					"created_at": {
+						"type": "integer"
+					},
+					"deleted_at": {
+						"type": "integer"
+					},
+					"endpoint": {
+						"$ref": "#/components/schemas/datastore.Endpoint"
+					},
+					"filter_config": {
+						"$ref": "#/components/schemas/datastore.FilterConfiguration"
+					},
+					"name": {
+						"type": "string"
+					},
+					"retry_config": {
+						"$ref": "#/components/schemas/datastore.RetryConfiguration"
+					},
+					"source": {
+						"$ref": "#/components/schemas/datastore.Source"
+					},
+					"status": {
+						"type": "string"
+					},
+					"type": {
+						"type": "string"
+					},
+					"uid": {
+						"type": "string"
+					},
+					"updated_at": {
+						"type": "integer"
 					}
 				},
 				"type": "object"
@@ -667,6 +738,9 @@
 					},
 					"rate_limit_duration": {
 						"type": "string"
+					},
+					"type": {
+						"type": "string"
 					}
 				},
 				"type": "object"
@@ -745,6 +819,35 @@
 					},
 					"verifier": {
 						"$ref": "#/components/schemas/datastore.VerifierConfig"
+					}
+				},
+				"type": "object"
+			},
+			"models.Subscription": {
+				"properties": {
+					"alert_config": {
+						"$ref": "#/components/schemas/datastore.AlertConfiguration"
+					},
+					"app_id": {
+						"type": "string"
+					},
+					"endpoint_id": {
+						"type": "string"
+					},
+					"filter_config": {
+						"$ref": "#/components/schemas/datastore.FilterConfiguration"
+					},
+					"name": {
+						"type": "string"
+					},
+					"retry_config": {
+						"$ref": "#/components/schemas/datastore.RetryConfiguration"
+					},
+					"source_id": {
+						"type": "string"
+					},
+					"type": {
+						"type": "string"
 					}
 				},
 				"type": "object"
@@ -5750,6 +5853,676 @@
 				"summary": "Update a source",
 				"tags": [
 					"Source"
+				]
+			}
+		},
+		"/subscriptions": {
+			"get": {
+				"description": "This endpoint fetches all the subscriptions",
+				"parameters": [
+					{
+						"description": "results per page",
+						"in": "query",
+						"name": "perPage",
+						"schema": {
+							"type": "string"
+						}
+					},
+					{
+						"description": "page number",
+						"in": "query",
+						"name": "page",
+						"schema": {
+							"type": "string"
+						}
+					},
+					{
+						"description": "sort order",
+						"in": "query",
+						"name": "sort",
+						"schema": {
+							"type": "string"
+						}
+					},
+					{
+						"description": "subscription title",
+						"in": "query",
+						"name": "q",
+						"schema": {
+							"type": "string"
+						}
+					},
+					{
+						"description": "group id",
+						"in": "query",
+						"name": "groupId",
+						"required": true,
+						"schema": {
+							"type": "string"
+						}
+					}
+				],
+				"responses": {
+					"200": {
+						"content": {
+							"application/json": {
+								"schema": {
+									"allOf": [
+										{
+											"$ref": "#/components/schemas/server.serverResponse"
+										},
+										{
+											"properties": {
+												"data": {
+													"allOf": [
+														{
+															"$ref": "#/components/schemas/server.pagedResponse"
+														},
+														{
+															"properties": {
+																"content": {
+																	"items": {
+																		"$ref": "#/components/schemas/datastore.Subscription"
+																	},
+																	"type": "array"
+																}
+															},
+															"type": "object"
+														}
+													]
+												}
+											},
+											"type": "object"
+										}
+									]
+								}
+							}
+						},
+						"description": "OK"
+					},
+					"400": {
+						"content": {
+							"application/json": {
+								"schema": {
+									"allOf": [
+										{
+											"$ref": "#/components/schemas/server.serverResponse"
+										},
+										{
+											"properties": {
+												"data": {
+													"$ref": "#/components/schemas/server.Stub"
+												}
+											},
+											"type": "object"
+										}
+									]
+								}
+							}
+						},
+						"description": "Bad Request"
+					},
+					"401": {
+						"content": {
+							"application/json": {
+								"schema": {
+									"allOf": [
+										{
+											"$ref": "#/components/schemas/server.serverResponse"
+										},
+										{
+											"properties": {
+												"data": {
+													"$ref": "#/components/schemas/server.Stub"
+												}
+											},
+											"type": "object"
+										}
+									]
+								}
+							}
+						},
+						"description": "Unauthorized"
+					},
+					"500": {
+						"content": {
+							"application/json": {
+								"schema": {
+									"allOf": [
+										{
+											"$ref": "#/components/schemas/server.serverResponse"
+										},
+										{
+											"properties": {
+												"data": {
+													"$ref": "#/components/schemas/server.Stub"
+												}
+											},
+											"type": "object"
+										}
+									]
+								}
+							}
+						},
+						"description": "Internal Server Error"
+					}
+				},
+				"security": [
+					{
+						"ApiKeyAuth": []
+					}
+				],
+				"summary": "Get all subscriptions",
+				"tags": [
+					"Subscriptions"
+				]
+			},
+			"post": {
+				"description": "This endpoint creates a subscriptions",
+				"parameters": [
+					{
+						"description": "group id",
+						"in": "query",
+						"name": "groupId",
+						"required": true,
+						"schema": {
+							"type": "string"
+						}
+					}
+				],
+				"responses": {
+					"200": {
+						"content": {
+							"application/json": {
+								"schema": {
+									"allOf": [
+										{
+											"$ref": "#/components/schemas/server.serverResponse"
+										},
+										{
+											"properties": {
+												"data": {
+													"allOf": [
+														{
+															"$ref": "#/components/schemas/server.pagedResponse"
+														},
+														{
+															"properties": {
+																"content": {
+																	"items": {
+																		"$ref": "#/components/schemas/datastore.Subscription"
+																	},
+																	"type": "array"
+																}
+															},
+															"type": "object"
+														}
+													]
+												}
+											},
+											"type": "object"
+										}
+									]
+								}
+							}
+						},
+						"description": "OK"
+					},
+					"400": {
+						"content": {
+							"application/json": {
+								"schema": {
+									"allOf": [
+										{
+											"$ref": "#/components/schemas/server.serverResponse"
+										},
+										{
+											"properties": {
+												"data": {
+													"$ref": "#/components/schemas/server.Stub"
+												}
+											},
+											"type": "object"
+										}
+									]
+								}
+							}
+						},
+						"description": "Bad Request"
+					},
+					"401": {
+						"content": {
+							"application/json": {
+								"schema": {
+									"allOf": [
+										{
+											"$ref": "#/components/schemas/server.serverResponse"
+										},
+										{
+											"properties": {
+												"data": {
+													"$ref": "#/components/schemas/server.Stub"
+												}
+											},
+											"type": "object"
+										}
+									]
+								}
+							}
+						},
+						"description": "Unauthorized"
+					},
+					"500": {
+						"content": {
+							"application/json": {
+								"schema": {
+									"allOf": [
+										{
+											"$ref": "#/components/schemas/server.serverResponse"
+										},
+										{
+											"properties": {
+												"data": {
+													"$ref": "#/components/schemas/server.Stub"
+												}
+											},
+											"type": "object"
+										}
+									]
+								}
+							}
+						},
+						"description": "Internal Server Error"
+					}
+				},
+				"security": [
+					{
+						"ApiKeyAuth": []
+					}
+				],
+				"summary": "Creates a subscription",
+				"tags": [
+					"Subscriptions"
+				]
+			}
+		},
+		"/subscriptions/{subscriptionID}": {
+			"delete": {
+				"description": "This endpoint deletes a subscription",
+				"parameters": [
+					{
+						"description": "group id",
+						"in": "query",
+						"name": "groupId",
+						"required": true,
+						"schema": {
+							"type": "string"
+						}
+					},
+					{
+						"description": "subscription id",
+						"in": "path",
+						"name": "subscriptionID",
+						"required": true,
+						"schema": {
+							"type": "string"
+						}
+					}
+				],
+				"responses": {
+					"200": {
+						"content": {
+							"application/json": {
+								"schema": {
+									"allOf": [
+										{
+											"$ref": "#/components/schemas/server.serverResponse"
+										},
+										{
+											"properties": {
+												"data": {
+													"$ref": "#/components/schemas/server.Stub"
+												}
+											},
+											"type": "object"
+										}
+									]
+								}
+							}
+						},
+						"description": "OK"
+					},
+					"400": {
+						"content": {
+							"application/json": {
+								"schema": {
+									"allOf": [
+										{
+											"$ref": "#/components/schemas/server.serverResponse"
+										},
+										{
+											"properties": {
+												"data": {
+													"$ref": "#/components/schemas/server.Stub"
+												}
+											},
+											"type": "object"
+										}
+									]
+								}
+							}
+						},
+						"description": "Bad Request"
+					},
+					"401": {
+						"content": {
+							"application/json": {
+								"schema": {
+									"allOf": [
+										{
+											"$ref": "#/components/schemas/server.serverResponse"
+										},
+										{
+											"properties": {
+												"data": {
+													"$ref": "#/components/schemas/server.Stub"
+												}
+											},
+											"type": "object"
+										}
+									]
+								}
+							}
+						},
+						"description": "Unauthorized"
+					},
+					"500": {
+						"content": {
+							"application/json": {
+								"schema": {
+									"allOf": [
+										{
+											"$ref": "#/components/schemas/server.serverResponse"
+										},
+										{
+											"properties": {
+												"data": {
+													"$ref": "#/components/schemas/server.Stub"
+												}
+											},
+											"type": "object"
+										}
+									]
+								}
+							}
+						},
+						"description": "Internal Server Error"
+					}
+				},
+				"security": [
+					{
+						"ApiKeyAuth": []
+					}
+				],
+				"summary": "Delete subscription",
+				"tags": [
+					"Application"
+				]
+			},
+			"get": {
+				"description": "This endpoint fetches an Subscription by it's id",
+				"parameters": [
+					{
+						"description": "group id",
+						"in": "query",
+						"name": "groupId",
+						"required": true,
+						"schema": {
+							"type": "string"
+						}
+					},
+					{
+						"description": "application id",
+						"in": "path",
+						"name": "subscriptionID",
+						"required": true,
+						"schema": {
+							"type": "string"
+						}
+					}
+				],
+				"responses": {
+					"200": {
+						"content": {
+							"application/json": {
+								"schema": {
+									"allOf": [
+										{
+											"$ref": "#/components/schemas/server.serverResponse"
+										},
+										{
+											"properties": {
+												"data": {
+													"$ref": "#/components/schemas/datastore.Subscription"
+												}
+											},
+											"type": "object"
+										}
+									]
+								}
+							}
+						},
+						"description": "OK"
+					},
+					"400": {
+						"content": {
+							"application/json": {
+								"schema": {
+									"allOf": [
+										{
+											"$ref": "#/components/schemas/server.serverResponse"
+										},
+										{
+											"properties": {
+												"data": {
+													"$ref": "#/components/schemas/server.Stub"
+												}
+											},
+											"type": "object"
+										}
+									]
+								}
+							}
+						},
+						"description": "Bad Request"
+					},
+					"401": {
+						"content": {
+							"application/json": {
+								"schema": {
+									"allOf": [
+										{
+											"$ref": "#/components/schemas/server.serverResponse"
+										},
+										{
+											"properties": {
+												"data": {
+													"$ref": "#/components/schemas/server.Stub"
+												}
+											},
+											"type": "object"
+										}
+									]
+								}
+							}
+						},
+						"description": "Unauthorized"
+					},
+					"500": {
+						"content": {
+							"application/json": {
+								"schema": {
+									"allOf": [
+										{
+											"$ref": "#/components/schemas/server.serverResponse"
+										},
+										{
+											"properties": {
+												"data": {
+													"$ref": "#/components/schemas/server.Stub"
+												}
+											},
+											"type": "object"
+										}
+									]
+								}
+							}
+						},
+						"description": "Internal Server Error"
+					}
+				},
+				"security": [
+					{
+						"ApiKeyAuth": []
+					}
+				],
+				"summary": "Gets a subscription",
+				"tags": [
+					"Subscription"
+				]
+			},
+			"put": {
+				"description": "This endpoint updates a subscription",
+				"parameters": [
+					{
+						"description": "group id",
+						"in": "path",
+						"name": "groupId",
+						"required": true,
+						"schema": {
+							"type": "string"
+						}
+					},
+					{
+						"description": "subscription id",
+						"in": "path",
+						"name": "subscriptionID",
+						"required": true,
+						"schema": {
+							"type": "string"
+						}
+					}
+				],
+				"requestBody": {
+					"content": {
+						"application/json": {
+							"schema": {
+								"$ref": "#/components/schemas/models.Subscription"
+							}
+						}
+					},
+					"description": "Subscription Details",
+					"required": true,
+					"x-originalParamName": "subscription"
+				},
+				"responses": {
+					"200": {
+						"content": {
+							"application/json": {
+								"schema": {
+									"allOf": [
+										{
+											"$ref": "#/components/schemas/server.serverResponse"
+										},
+										{
+											"properties": {
+												"data": {
+													"$ref": "#/components/schemas/datastore.Subscription"
+												}
+											},
+											"type": "object"
+										}
+									]
+								}
+							}
+						},
+						"description": "OK"
+					},
+					"400": {
+						"content": {
+							"application/json": {
+								"schema": {
+									"allOf": [
+										{
+											"$ref": "#/components/schemas/server.serverResponse"
+										},
+										{
+											"properties": {
+												"data": {
+													"$ref": "#/components/schemas/server.Stub"
+												}
+											},
+											"type": "object"
+										}
+									]
+								}
+							}
+						},
+						"description": "Bad Request"
+					},
+					"401": {
+						"content": {
+							"application/json": {
+								"schema": {
+									"allOf": [
+										{
+											"$ref": "#/components/schemas/server.serverResponse"
+										},
+										{
+											"properties": {
+												"data": {
+													"$ref": "#/components/schemas/server.Stub"
+												}
+											},
+											"type": "object"
+										}
+									]
+								}
+							}
+						},
+						"description": "Unauthorized"
+					},
+					"500": {
+						"content": {
+							"application/json": {
+								"schema": {
+									"allOf": [
+										{
+											"$ref": "#/components/schemas/server.serverResponse"
+										},
+										{
+											"properties": {
+												"data": {
+													"$ref": "#/components/schemas/server.Stub"
+												}
+											},
+											"type": "object"
+										}
+									]
+								}
+							}
+						},
+						"description": "Internal Server Error"
+					}
+				},
+				"security": [
+					{
+						"ApiKeyAuth": []
+					}
+				],
+				"summary": "Update a subscription",
+				"tags": [
+					"Subscription"
 				]
 			}
 		}

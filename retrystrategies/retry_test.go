@@ -9,7 +9,7 @@ import (
 
 func TestRetry_CreatesExponential(t *testing.T) {
 	m := datastore.Metadata{
-		Strategy:        "exponential-backoff",
+		Strategy:        "exponential",
 		RetryLimit:      20,
 		IntervalSeconds: 5,
 	}
@@ -18,9 +18,9 @@ func TestRetry_CreatesExponential(t *testing.T) {
 	assert.True(t, isExponential)
 }
 
-func TestRetry_CreatesDefault(t *testing.T) {
+func TestRetry_CreatesLinear(t *testing.T) {
 	m := datastore.Metadata{
-		Strategy:        "default",
+		Strategy:        "linear",
 		RetryLimit:      20,
 		IntervalSeconds: 5,
 	}

@@ -1,3 +1,17 @@
+## v0.6.0-rc
+
+-   [Enhancement] Optimize group statistics query #677
+-   [Enhancement] pause retry count for rate limit errors #676
+-   [Enhancement] Add groupID arg to application datastore methods
+-   [Feature] Add Typesense search backend #652
+-   [Enhancement] Added integration tests #647 #655 #656 #661 #643 #638
+-   [Feature] Add support for storing events for disabled apps #663
+-   [Enhancement] Integrate disq as a replacement for taskq #667
+-   [Enhancement] Fix mongodb index model type #671
+-   [Bugfix] Update endpoints secret #640
+-   [Bugfix] Prevent duplicate app names #635
+-   [Feature] Force retry on App portal #633
+
 ## v0.5.3
 
 -   [Feature] Add update scripts for migrating from v0.4 to v0.5 #611

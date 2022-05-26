@@ -61,18 +61,15 @@ const (
 	DeletedDocumentStatus  DocumentStatus = "Deleted"
 )
 
+type StrategyProvider string
+
+type GroupType string
+
 type SourceType string
 
 type VerifierType string
 
 type EncodingType string
-
-type RetryStrategyType string
-
-const (
-	Linear      RetryStrategyType = "linear"
-	Exponential RetryStrategyType = "exponential"
-)
 
 const (
 	HTTPSource     SourceType = "http"
@@ -90,6 +87,35 @@ const (
 const (
 	Base64Encoding EncodingType = "base64"
 	HexEncoding    EncodingType = "hex"
+)
+
+const (
+	OutgoingGroup GroupType = "outgoing"
+	IncomingGroup GroupType = "incoming"
+)
+
+const (
+	DefaultStrategyProvider     = LinearStrategyProvider
+	LinearStrategyProvider      = "linear"
+	ExponentialStrategyProvider = "exponential"
+)
+
+var (
+	DefaultStrategyConfig = StrategyConfiguration{
+		Type:       "linear",
+		Duration:   100,
+		RetryCount: 10,
+	}
+
+	DefaultSignatureConfig = SignatureConfiguration{
+		Header: "X-Convoy-Signature",
+		Hash:   "SHA256",
+	}
+
+	DefaultRateLimitConfig = RateLimitConfiguration{
+		Count:    1000,
+		Duration: "1m",
+	}
 )
 
 const (
@@ -137,14 +163,17 @@ type Endpoint struct {
 }
 
 type Group struct {
-	ID                primitive.ObjectID `json:"-" bson:"_id"`
-	UID               string             `json:"uid" bson:"uid"`
-	Name              string             `json:"name" bson:"name"`
-	LogoURL           string             `json:"logo_url" bson:"logo_url"`
-	Config            *GroupConfig       `json:"config" bson:"config"`
-	Statistics        *GroupStatistics   `json:"statistics" bson:"-"`
-	RateLimit         int                `json:"rate_limit" bson:"rate_limit"`
-	RateLimitDuration string             `json:"rate_limit_duration" bson:"rate_limit_duration"`
+	ID         primitive.ObjectID `json:"-" bson:"_id"`
+	UID        string             `json:"uid" bson:"uid"`
+	Name       string             `json:"name" bson:"name"`
+	LogoURL    string             `json:"logo_url" bson:"logo_url"`
+	Type       GroupType          `json:"type" bson:"type"`
+	Config     *GroupConfig       `json:"config" bson:"config"`
+	Statistics *GroupStatistics   `json:"statistics" bson:"-"`
+
+	// TODO(subomi): refactor this into the Instance API.
+	RateLimit         int    `json:"rate_limit" bson:"rate_limit"`
+	RateLimitDuration string `json:"rate_limit_duration" bson:"rate_limit_duration"`
 
 	CreatedAt primitive.DateTime `json:"created_at,omitempty" bson:"created_at,omitempty" swaggertype:"string"`
 	UpdatedAt primitive.DateTime `json:"updated_at,omitempty" bson:"updated_at,omitempty" swaggertype:"string"`
@@ -154,28 +183,22 @@ type Group struct {
 }
 
 type GroupConfig struct {
+	RateLimit       RateLimitConfiguration `json:"ratelimit"`
 	Strategy        StrategyConfiguration  `json:"strategy"`
 	Signature       SignatureConfiguration `json:"signature"`
 	DisableEndpoint bool                   `json:"disable_endpoint" bson:"disable_endpoint"`
 	ReplayAttacks   bool                   `json:"replay_attacks" bson:"replay_attacks"`
 }
 
+type RateLimitConfiguration struct {
+	Count    int    `json:"count" bson:"count"`
+	Duration string `json:"duration" bson:"duration"`
+}
+
 type StrategyConfiguration struct {
-	Type        config.StrategyProvider          `json:"type" valid:"required~please provide a valid strategy type"`
-	Duration    uint64                           `json:"duration" valid:"required~please provide a valid duration in seconds,int"`
-	RetryCount  uint64                           `json:"retry_count" valid:"required~please provide a valid retry count,int"`
-	Default     LinearStrategyConfiguration      `json:"linear"`
-	Exponential ExponentialStrategyConfiguration `json:"exponential,omitempty"`
-}
-
-type LinearStrategyConfiguration struct {
-	IntervalSeconds uint64 `json:"interval_seconds,omitempty" bson:"interval_seconds,omitempty" valid:"int~please provide a valid interval seconds"`
-	RetryLimit      uint64 `json:"retry_limit,omitempty" bson:"retry_limit,omitempty" valid:"int~please provide a valid interval seconds"`
-}
-
-type ExponentialStrategyConfiguration struct {
-	RetryLimit   uint64   `json:"retry_limit,omitempty" bson:"retry_limit,omitempty" envconfig:"CONVOY_RETRY_LIMIT"`
-	BackoffTimes []uint64 `json:"backoff_times,omitempty" bson:"backoff_times,omitempty" envconfig:"CONVOY_BACKOFF_TIMES"`
+	Type       StrategyProvider `json:"type" valid:"required~please provide a valid strategy type, in(linear|exponential)~unsupported strategy type"`
+	Duration   uint64           `json:"duration" valid:"required~please provide a valid duration in seconds,int"`
+	RetryCount uint64           `json:"retry_count" valid:"required~please provide a valid retry count,int"`
 }
 
 type SignatureConfiguration struct {
@@ -189,8 +212,9 @@ type SignatureValues struct {
 }
 
 type GroupStatistics struct {
-	MessagesSent int64 `json:"messages_sent"`
-	TotalApps    int64 `json:"total_apps"`
+	GroupID      string `json:"-" bson:"group_id"`
+	MessagesSent int64  `json:"messages_sent" bson:"messages_sent"`
+	TotalApps    int64  `json:"total_apps" bson:"total_apps"`
 }
 
 type GroupFilter struct {
@@ -293,8 +317,8 @@ func (e EventDeliveryStatus) IsValid() bool {
 
 type Metadata struct {
 	// Data to be sent to endpoint.
-	Data     json.RawMessage         `json:"data" bson:"data"`
-	Strategy config.StrategyProvider `json:"strategy" bson:"strategy"`
+	Data     json.RawMessage  `json:"data" bson:"data"`
+	Strategy StrategyProvider `json:"strategy" bson:"strategy"`
 	// NextSendTime denotes the next time a Event will be published in
 	// case it failed the first time
 	NextSendTime primitive.DateTime `json:"next_send_time" bson:"next_send_time"`

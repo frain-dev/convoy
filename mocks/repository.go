@@ -516,6 +516,20 @@ func (mr *MockGroupRepositoryMockRecorder) FetchGroupsByIDs(arg0, arg1 interface
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "FetchGroupsByIDs", reflect.TypeOf((*MockGroupRepository)(nil).FetchGroupsByIDs), arg0, arg1)
 }
 
+// FillGroupsStatistics mocks base method.
+func (m *MockGroupRepository) FillGroupsStatistics(ctx context.Context, groups []*datastore.Group) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "FillGroupsStatistics", ctx, groups)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// FillGroupsStatistics indicates an expected call of FillGroupsStatistics.
+func (mr *MockGroupRepositoryMockRecorder) FillGroupsStatistics(ctx, groups interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "FillGroupsStatistics", reflect.TypeOf((*MockGroupRepository)(nil).FillGroupsStatistics), ctx, groups)
+}
+
 // LoadGroups mocks base method.
 func (m *MockGroupRepository) LoadGroups(arg0 context.Context, arg1 *datastore.GroupFilter) ([]*datastore.Group, error) {
 	m.ctrl.T.Helper()
@@ -584,17 +598,17 @@ func (mr *MockApplicationRepositoryMockRecorder) CountGroupApplications(ctx, gro
 }
 
 // CreateApplication mocks base method.
-func (m *MockApplicationRepository) CreateApplication(arg0 context.Context, arg1 *datastore.Application) error {
+func (m *MockApplicationRepository) CreateApplication(arg0 context.Context, arg1 *datastore.Application, arg2 string) error {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "CreateApplication", arg0, arg1)
+	ret := m.ctrl.Call(m, "CreateApplication", arg0, arg1, arg2)
 	ret0, _ := ret[0].(error)
 	return ret0
 }
 
 // CreateApplication indicates an expected call of CreateApplication.
-func (mr *MockApplicationRepositoryMockRecorder) CreateApplication(arg0, arg1 interface{}) *gomock.Call {
+func (mr *MockApplicationRepositoryMockRecorder) CreateApplication(arg0, arg1, arg2 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateApplication", reflect.TypeOf((*MockApplicationRepository)(nil).CreateApplication), arg0, arg1)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateApplication", reflect.TypeOf((*MockApplicationRepository)(nil).CreateApplication), arg0, arg1, arg2)
 }
 
 // DeleteApplication mocks base method.
@@ -703,17 +717,17 @@ func (mr *MockApplicationRepositoryMockRecorder) SearchApplicationsByGroupId(arg
 }
 
 // UpdateApplication mocks base method.
-func (m *MockApplicationRepository) UpdateApplication(arg0 context.Context, arg1 *datastore.Application) error {
+func (m *MockApplicationRepository) UpdateApplication(arg0 context.Context, arg1 *datastore.Application, arg2 string) error {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "UpdateApplication", arg0, arg1)
+	ret := m.ctrl.Call(m, "UpdateApplication", arg0, arg1, arg2)
 	ret0, _ := ret[0].(error)
 	return ret0
 }
 
 // UpdateApplication indicates an expected call of UpdateApplication.
-func (mr *MockApplicationRepositoryMockRecorder) UpdateApplication(arg0, arg1 interface{}) *gomock.Call {
+func (mr *MockApplicationRepositoryMockRecorder) UpdateApplication(arg0, arg1, arg2 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateApplication", reflect.TypeOf((*MockApplicationRepository)(nil).UpdateApplication), arg0, arg1)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateApplication", reflect.TypeOf((*MockApplicationRepository)(nil).UpdateApplication), arg0, arg1, arg2)
 }
 
 // UpdateApplicationEndpointsStatus mocks base method.

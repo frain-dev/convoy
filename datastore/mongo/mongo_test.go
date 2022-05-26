@@ -32,7 +32,10 @@ func getDB(t *testing.T) (*mongo.Database, func()) {
 	db, err := New(getConfig())
 	require.NoError(t, err)
 
-	return db.Client().(*mongo.Database), func() {
+	client := db.Client().(*mongo.Database)
+
+	return client, func() {
+		require.NoError(t, client.Drop(context.TODO()))
 		require.NoError(t, db.Disconnect(context.Background()))
 	}
 }

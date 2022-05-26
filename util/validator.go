@@ -81,8 +81,8 @@ func init() {
 
 	govalidator.TagMap["supported_retry_strategy"] = govalidator.Validator(func(encoder string) bool {
 		encoders := map[string]bool{
-			string(datastore.Linear):      true,
-			string(datastore.Exponential): true,
+			string(datastore.LinearStrategyProvider):      true,
+			string(datastore.ExponentialStrategyProvider): true,
 		}
 
 		if _, ok := encoders[encoder]; !ok {
