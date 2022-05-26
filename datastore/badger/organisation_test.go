@@ -41,8 +41,6 @@ func TestLoadOrganisationsPaged(t *testing.T) {
 
 	require.NoError(t, err)
 	require.Equal(t, 2, len(organisations))
-	require.Equal(t, "org3", organisations[0].Name)
-	require.Equal(t, "org2", organisations[1].Name)
 }
 
 func TestCreateOrganisation(t *testing.T) {

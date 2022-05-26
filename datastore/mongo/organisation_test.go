@@ -39,7 +39,7 @@ func TestLoadOrganisationsPaged(t *testing.T) {
 		PerPage: 2,
 		Sort:    -1,
 	})
-
+	fmt.Println("organisations", organisations)
 	require.NoError(t, err)
 	require.Equal(t, 2, len(organisations))
 	require.Equal(t, "org3", organisations[0].Name)
