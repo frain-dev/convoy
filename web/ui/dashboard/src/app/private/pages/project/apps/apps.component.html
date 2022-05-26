@@ -1,0 +1,132 @@
+<div class="flex flex__align-items-center flex__justify-between margin-bottom__24px">
+	<div class="flex flex__align-items-center">
+		<form class="input__search filter margin-bottom__0px bg__white">
+			<img src="/assets/img/search-icon.svg" alt="search icon" />
+			<input type="search" placeholder="Search apps" [(ngModel)]="appsSearchString" (change)="searchApps({ searchInput: $event, type: 'apps' })" [ngModelOptions]="{ standalone: true }" />
+			<button [class]="'enter-button' + (appsSearchString.length > 0 ? ' show' : '')" (click)="searchApps({ type: 'apps' })">
+				<img src="/assets/img/enter-icon.png" alt="enter icon" />
+			</button>
+		</form>
+
+		<div class="dropdown margin-left__24px">
+			<button
+				class="button button__filter button--has-icon icon-right icon-left"
+				[ngClass]="{ active: selectedAppStatus !== 'All' }"
+				(click)="showOverlay = true; showAppStatusDropdown = !showAppStatusDropdown"
+			>
+				<img class="margin-left__0px" src="/assets/img/status-filter-icon.svg" alt="status filter icon" />
+				<span>Status</span>
+				<span class="color__grey">:</span>
+				<span class="color__primary font__14px font__weight-500 margin-left__8px" *ngIf="selectedAppStatus">{{ selectedAppStatus }}</span>
+				<img class="margin-right__0px" src="/assets/img/angle-arrow-down.svg" alt="arrow down icon" />
+			</button>
+
+			<div class="dropdown__menu with-padding small" [ngClass]="{ show: showAppStatusDropdown }">
+				<div class="dropdown__menu__item with-border" *ngFor="let status of appStatuses">
+					<label [for]="status">{{ status || 'None' }}</label>
+					<input type="checkbox" name="status" [value]="status" [id]="status" [checked]="selectedAppStatus == status" (change)="filterAppByStatus(status)" />
+				</div>
+
+				<div class="flex flex__align-items-center margin-top__10px">
+					<button class="button__clear" (click)="showAppStatusDropdown = false; showOverlay = false">Clear</button>
+				</div>
+			</div>
+		</div>
+	</div>
+	<button class="button button__primary button__small" id="create-app-modal-button" (click)="showCreateAppModal = !showCreateAppModal">Create An App</button>
+</div>
+
+<div class="card">
+	<div class="table" id="apps-table-container">
+		<div class="table--container">
+			<table id="table">
+				<thead>
+					<tr class="table--head">
+						<th *ngFor="let head of appsTableHead" scope="col">{{ head }}</th>
+						<th scope="col"></th>
+						<th scope="col"></th>
+					</tr>
+				</thead>
+
+				<tbody>
+					<ng-container (click)="viewAppDetails()">
+						<tr class="table--date-row">
+							<td>
+								<div>17 Jan, 2022</div>
+							</td>
+							<td></td>
+							<td></td>
+							<td></td>
+							<td></td>
+							<td></td>
+							<td></td>
+							<td></td>
+						</tr>
+						<tr>
+							<td>
+								<div class="has-retry">
+									<div [class]="'tag tag--Success no-margin'">Enabled</div>
+								</div>
+							</td>
+							<td class="has-long-text">
+								<div>Name goes here</div>
+							</td>
+							<td>
+								<div>10:45:11AM</div>
+							</td>
+							<td>
+								<div>Jan 19, 2022</div>
+							</td>
+							<td>
+								<div>0</div>
+							</td>
+							<td>
+								<div>1</div>
+							</td>
+							<td>
+								<div>
+									<button title="view events" [class]="'button__retry button--has-icon icon-left'" (click)="showAppDetails = false">
+										<img src="/assets/img/view-events-icon.svg" alt="view events icon" />
+										View Events
+									</button>
+								</div>
+							</td>
+							<td>
+								<div class="dropdown">
+									<button class="button__clear button--has-icon" (click)="currentAppId = 'dddss'; showOverlay = true; showAppDetails = false">
+										<img src="/assets/img/more-icon-vertical.svg" alt="more icon" />
+									</button>
+									<div [ngClass]="{ show: currentAppId }" class="dropdown__menu dropdown__menu__nav small z-index--3">
+										<ul>
+											<li>Update</li>
+											<li (click)="showDeleteAppModal = !showDeleteAppModal; currentAppId = ''" class="danger">Delete</li>
+										</ul>
+									</div>
+								</div>
+							</td>
+						</tr>
+					</ng-container>
+				</tbody>
+			</table>
+		</div>
+	</div>
+</div>
+
+<div class="overlay" *ngIf="showOverlay" (click)="currentAppId = ''; showOverlay = false"></div>
+
+<!-- dark overlay  -->
+<div class="_overlay" *ngIf="showCreateAppModal || showDeleteAppModal" (click)="showCreateAppModal = false; showDeleteAppModal = false"></div>
+<!-- delete app modal  -->
+<div class="modal modal__center" *ngIf="showDeleteAppModal">
+	<div class="modal--body flex flex__column flex__justify-center flex__align-items-center delete">
+		<img src="/assets/img/warning.gif" class="img" alt="warning" />
+		<p class="font__16px font__weight-600 color__black margin-bottom__8px">Are you sure you want to delete “{{ appsDetailsItem?.name }}”?</p>
+		<p class="font__14px font__weight-500 color__grey margin-bottom__12px">This action is irrevesible</p>
+		<button class="button button__deactivate margin-bottom__24px" [disabled]="isDeletingApp" (click)="deleteApp()">{{ isDeletingApp ? 'Deleting App...' : 'Yes, Delete' }}</button>
+		<button class="button__primary button__clear font__weight-600 cancel" (click)="showDeleteAppModal = false">No, Cancel</button>
+	</div>
+</div>
+
+<div class="modal modal__right large" *ngIf="showCreateAppModal">
+	<app-create-app [editAppMode]="editAppMode" (discardCreateApp)="showCreateAppModal = false"></app-create-app>
+</div>

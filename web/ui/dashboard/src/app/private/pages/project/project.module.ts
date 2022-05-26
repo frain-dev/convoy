@@ -24,7 +24,11 @@ const routes: Routes = [
 			{
 				path: 'sources/new',
 				loadChildren: () => import('./sources/sources.module').then(m => m.SourcesModule)
-			}
+			},
+			{
+				path: 'apps',
+				loadChildren: () => import('./apps/apps.module').then(m => m.AppsModule)
+			},
 		]
 	}
 ];

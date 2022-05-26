@@ -1,1 +1,49 @@
-<p>events works!</p>
+<div class="card">
+	<ul class="metrics">
+		<li class="messages flex flex__align-items-center padding-x__30px padding-y__16px border__right">
+			<img src="/assets/img/message-icon.svg" class="margin-right__30px" alt="message icon" />
+			<div class="metric">
+				<div class="font__16px font__weight-500">{{ '11' }}</div>
+				<div class="color__grey font__14px font__weight-400">Events Sent</div>
+			</div>
+		</li>
+		<li class="apps flex flex__align-items-center padding-x__30px padding-y__16px">
+			<img src="/assets/img/apps-icon.svg" class="margin-right__30px" alt="apps icon" />
+			<div class="metric">
+				<div class="font__16px font__weight-500">{{ '22' }}</div>
+				<div class="color__grey font__14px font__weight-400">Apps</div>
+			</div>
+		</li>
+	</ul>
+
+	<div class="border__top">
+		<canvas id="dahboard_events_chart" width="400" height="200"></canvas>
+	</div>
+</div>
+
+<section class="card margin-top__24px">
+	<div class="flex flex__align-items-center flex__justify-center">
+		<div class="tabs flex__align-items-center">
+			<li *ngFor="let tab of tabs" (click)="toggleActiveTab(tab)">
+				<button [ngClass]="{ active: activeTab === tab }">
+					<span>{{ tab }}</span>
+				</button>
+			</li>
+			<div class="color__grey font__14px font__weight-500 font--nowrap margin-left--auto padding-right__14px">
+				<span>
+					1 - 20
+					<strong>of</strong>
+					50
+				</span>
+			</div>
+		</div>
+	</div>
+
+    <div [hidden]="activeTab !== 'events'">
+        <app-event></app-event>
+    </div>
+    <div [hidden]="activeTab !== 'event deliveries'">
+        <app-event-deliveries></app-event-deliveries>
+    </div>
+    
+</section>

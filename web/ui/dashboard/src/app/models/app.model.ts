@@ -7,11 +7,12 @@ export interface APP {
 		target_url: string;
 		updated_at: Date;
 	}[];
-	events: 2;
+	events: number;
 	group_id: string;
 	name: string;
 	secret: string;
 	support_email: string;
+	is_disabled: boolean;
 	created_at: Date;
 	uid: string;
 	updated_at: Date;
