@@ -1,0 +1,203 @@
+<div class="main--head width__100 flex flex__justify-between flex__align-items-center margin-bottom__24px">
+	<h1 class="font__18px">Sources</h1>
+
+	<a routerLink="./new" class="button button__primary padding-y__8px padding-x__28px">Create a source</a>
+</div>
+
+<div class="card">
+	<div class="table has-loader flex flex__align-items-start" id="events-table-container">
+		<div class="table--container" [ngClass]="{ smaller: sourceID }">
+			<table id="table">
+				<thead>
+					<tr class="table--head">
+						<th *ngFor="let head of eventsTableHead" scope="col">{{ head }}</th>
+					</tr>
+				</thead>
+
+				<tbody>
+					<tr class="border__bottom" [routerLink]="['./']" [queryParams]="{ id: 'ddd' }" (click)="sourceID = 'ddd'">
+						<td>
+							<div>Name goes here</div>
+						</td>
+						<td>
+							<div>Ingester HTTP</div>
+						</td>
+						<td>
+							<div>https://stackoverflow.com/questions</div>
+						</td>
+						<td>
+							<div>May 12, 2022</div>
+						</td>
+						<td>
+							<div class="flex flex__align-items-center">
+								<button class="button button__clear">
+									<img src="/assets/img/angle-arrow-right-primary.svg" alt="arrow right" />
+								</button>
+							</div>
+						</td>
+					</tr>
+				</tbody>
+			</table>
+		</div>
+
+		<div class="table--sidebar height__100" [ngClass]="{ show: sourceID }">
+			<div class="modal--head--left flex flex__align-items-center flex__justify-between">
+				<h2 class="padding-top__24px padding-bottom__16px font__16px font__weight-700">Source name goes here</h2>
+				<a [routerLink]="['./']" [queryParams]="{}" class="width__32px height__32px flex flex__align-items-center flex__justify-center rounded__6px button__clear" tabindex="0">
+					<img src="/assets/img/modal-close-icon.svg" alt="close icon" />
+				</a>
+			</div>
+
+			<ul>
+				<li class="list-item list-item__inline padding-right__24px">
+					<div class="width__50 font__14px font__weight-500">Source type</div>
+					<div class="width__50 font__14px font__weight-500 color__grey text--right">Ingester HTTP</div>
+				</li>
+				<li class="list-item list-item__inline padding-right__24px">
+					<div class="width__50 font__14px font__weight-500">Ingester Type</div>
+					<div class="width__50 font__14px font__weight-500 color__grey text--right">Ingester HTTP</div>
+				</li>
+				<li class="list-item list-item__inline padding-right__24px">
+					<div class="width__50 font__14px font__weight-500">HMAC</div>
+					<div class="width__50 font__14px font__weight-500 color__grey text--right">Ingester HTTP</div>
+				</li>
+				<li class="list-item list-item__inline padding-right__24px">
+					<div class="width__50 font__14px font__weight-500">Encoding</div>
+					<div class="width__50 font__14px font__weight-500 color__grey text--right">Hex</div>
+				</li>
+				<li class="list-item list-item__inline padding-right__24px">
+					<div class="width__50 font__14px font__weight-500">Algorithm</div>
+					<div class="width__50 font__14px font__weight-500 color__grey text--right">SHA512</div>
+				</li>
+				<li class="list-item list-item__inline padding-right__24px">
+					<div class="width__50 font__14px font__weight-500">Signature header key</div>
+					<div class="width__50 font__14px font__weight-500 color__grey text--right">Key goes here</div>
+				</li>
+				<li class="list-item list-item__inline padding-right__24px">
+					<div class="width__50 font__14px font__weight-500">Signning secret</div>
+					<div class="width__50 font__14px font__weight-500 color__grey text--right">Signing secret goes here</div>
+				</li>
+			</ul>
+
+			<div class="button--container margin-top__40px margin-right__24px">
+				<button class="button button__danger button__white button--has-icon icon-right padding-x__12px padding-y__8px color__danger font__12px">
+					Delete source
+					<svg width="18" height="18" class="margin-left__8px">
+						<use xlink:href="#delete-icon"></use>
+					</svg>
+				</button>
+				<button class="button button__primary button--has-icon icon-right padding-x__24px padding-y__8px font__12px margin-left__24px">
+					Edit source
+					<svg width="18" height="18" class="margin-left__8px">
+						<use xlink:href="#edit-icon"></use>
+					</svg>
+				</button>
+			</div>
+		</div>
+	</div>
+</div>
+
+<div class="button-container flex flex__align-items-center margin-top__16px" *ngIf="!sourceID">
+	<button class="button button__white button__primary button__outline button--has-icon icon-left padding-y__4px padding-right__16px padding-left__4px">
+		<svg width="24" height="24" class="margin-right__8px">
+			<use xlink:href="#arrow-left-icon"></use>
+		</svg>
+		Previous
+	</button>
+	<button class="button button__white button__primary button__outline button--has-icon icon-left padding-y__4px padding-left__16px padding-right__4px margin-left__16px">
+		Next
+		<svg width="24" height="24" class="margin-left__8px" fill="var(--primary-color)">
+			<use xlink:href="#arrow-right-icon"></use>
+		</svg>
+	</button>
+</div>
+
+<!-- <ul>
+    <li class="list-item list-item__inline padding-right__24px">
+        <div class="width__50 font__14px font__weight-500">Source type</div>
+        <div class="width__50 font__14px font__weight-500 color__grey">Ingester HTTP</div>
+    </li>
+    <li class="list-item list-item__inline padding-right__24px">
+        <div class="width__50 font__14px font__weight-500">Ingester Type</div>
+        <div class="width__50 font__14px font__weight-500 color__grey">Basic Auth</div>
+    </li>
+    <li class="list-item list-item__inline padding-right__24px">
+        <div class="width__50 font__14px font__weight-500">Username</div>
+        <div class="width__50 font__14px font__weight-500 color__grey">Username goes here</div>
+    </li>
+    <li class="list-item list-item__inline padding-right__24px">
+        <div class="width__50 font__14px font__weight-500">Password</div>
+        <div class="width__50 font__14px font__weight-500 color__grey">*******</div>
+    </li>
+</ul>
+
+<div class="button--container margin-top__40px margin-right__24px">
+    <button class="button button__danger button__white button--has-icon icon-right padding-x__12px padding-y__8px color__danger font__12px">
+        Delete source
+        <svg width="18" height="18" class="margin-left__8px">
+            <use xlink:href="#delete-icon"></use>
+        </svg>
+    </button>
+    <button class="button button__primary button--has-icon icon-right padding-x__24px padding-y__8px font__12px margin-left__24px">
+        Edit source
+        <svg width="18" height="18" class="margin-left__8px">
+            <use xlink:href="#edit-icon"></use>
+        </svg>
+    </button>
+</div>
+
+<ul>
+    <li class="list-item list-item__inline padding-right__24px">
+        <div class="width__50 font__14px font__weight-500">Source type</div>
+        <div class="width__50 font__14px font__weight-500 color__grey">Ingester HTTP</div>
+    </li>
+    <li class="list-item list-item__inline padding-right__24px">
+        <div class="width__50 font__14px font__weight-500">Ingester Type</div>
+        <div class="width__50 font__14px font__weight-500 color__grey">API Key</div>
+    </li>
+    <li class="list-item list-item__inline padding-right__24px">
+        <div class="width__50 font__14px font__weight-500">API Key Header</div>
+        <div class="width__50 font__14px font__weight-500 color__grey">Header goes here</div>
+    </li>
+    <li class="list-item list-item__inline padding-right__24px">
+        <div class="width__50 font__14px font__weight-500">API Key</div>
+        <div class="width__50 font__14px font__weight-500 color__grey">******</div>
+    </li>
+</ul>
+
+<div class="button--container margin-top__40px margin-right__24px">
+    <button class="button button__danger button__white button--has-icon icon-right padding-x__12px padding-y__8px color__danger font__12px">
+        Delete source
+        <svg width="18" height="18" class="margin-left__8px">
+            <use xlink:href="#delete-icon"></use>
+        </svg>
+    </button>
+    <button class="button button__primary button--has-icon icon-right padding-x__24px padding-y__8px font__12px margin-left__24px">
+        Edit source
+        <svg width="18" height="18" class="margin-left__8px">
+            <use xlink:href="#edit-icon"></use>
+        </svg>
+    </button>
+</div> -->
+
+<div class="modal modal__full" *ngIf="shouldShowCreateSourceModal">
+	<div class="modal--head">
+		<div class="flex flex__align-items-center flex__justify-between width__100">
+			<div class="modal--head--left flex flex__align-items-center">
+				<a routerLink="/projects/1/sources" class="margin-right__16px width__32px height__32px flex flex__align-items-center flex__justify-center rounded__6px button__clear" tabindex="0">
+					<img src="/assets/img/modal-close-icon.svg" alt="close icon" />
+				</a>
+				<h2 class="font__16px font__weight-600">Create source</h2>
+			</div>
+
+			<a class="button--has-icon icon-left" target="_blank" href="https://getconvoy.io/docs" rel="noreferrer">
+				<img src="/assets/img/doc-icon-primary.svg" alt="doc icon" />
+				<span class="font__weight-500 font__14px color__primary">Go to docs</span>
+			</a>
+		</div>
+	</div>
+
+	<div class="modal--body padding-all__0px">
+		<app-create-source></app-create-source>
+	</div>
+</div>

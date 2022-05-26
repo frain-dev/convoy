@@ -1,0 +1,33 @@
+.page {
+	max-width: calc(834px + 48px);
+	width: 100%;
+}
+
+.setup-step--step {
+	.line {
+		height: 4px;
+		width: 175px;
+		background: var(--color-primary-500);
+	}
+
+	&.next {
+		.checkbox {
+			border-color: var(--primary-color-300);
+			border-width: 5px;
+		}
+
+		.line {
+			background: var(--primary-color-300);
+		}
+	}
+
+	&.active {
+		.line {
+			background: var(--primary-color);
+		}
+
+		.checkbox {
+			background: var(--primary-color);
+		}
+	}
+}
