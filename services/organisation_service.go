@@ -56,7 +56,7 @@ func (os *OrganisationService) UpdateOrganisation(ctx context.Context, org *data
 	err = os.orgRepo.UpdateOrganisation(ctx, org)
 	if err != nil {
 		log.WithError(err).Error("failed to to update organisation")
-		return nil, NewServiceError(http.StatusBadRequest, errors.New("an error occurred while updating organisation"))
+		return nil, NewServiceError(http.StatusBadRequest, errors.New("failed to update organisation"))
 	}
 
 	return org, nil
@@ -66,7 +66,7 @@ func (os *OrganisationService) FindOrganisationByID(ctx context.Context, id stri
 	org, err := os.orgRepo.FetchOrganisationByID(ctx, id)
 	if err != nil {
 		log.WithError(err).Error("failed to find organisation by id")
-		return nil, NewServiceError(http.StatusBadRequest, errors.New("failed to delete organisation"))
+		return nil, NewServiceError(http.StatusBadRequest, errors.New("failed to find organisation by id"))
 	}
 	return org, err
 }
