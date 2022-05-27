@@ -91,7 +91,6 @@ func (s *SourceService) FindSourceByMaskID(ctx context.Context, g *datastore.Gro
 			return nil, NewServiceError(http.StatusNotFound, err)
 		}
 
-		return nil, NewServiceError(http.StatusBadRequest, errors.New("error retrieving source"))
 	}
 
 	return source, nil

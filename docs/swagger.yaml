@@ -181,6 +181,8 @@ definitions:
           This is optional
           If not provided, we will generate one for you
         type: string
+      source_id:
+        type: string
       uid:
         type: string
       updated_at:

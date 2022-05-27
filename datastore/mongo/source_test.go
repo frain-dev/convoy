@@ -59,14 +59,14 @@ func Test_FindSourceByMaskID(t *testing.T) {
 	sourceRepo := NewSourceRepo(db)
 	source := generateSource(t)
 
-	_, err := sourceRepo.FindSourceByMaskID(context.Background(), source.GroupID, source.MaskID)
+	_, err := sourceRepo.FindSourceByMaskID(context.Background(), source.MaskID)
 
 	require.Error(t, err)
 	require.True(t, errors.Is(err, datastore.ErrSourceNotFound))
 
 	require.NoError(t, sourceRepo.CreateSource(context.Background(), source))
 
-	newSource, err := sourceRepo.FindSourceByMaskID(context.Background(), source.GroupID, source.MaskID)
+	newSource, err := sourceRepo.FindSourceByMaskID(context.Background(), source.MaskID)
 	require.NoError(t, err)
 
 	require.Equal(t, source.MaskID, newSource.MaskID)

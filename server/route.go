@@ -60,6 +60,12 @@ func buildRoutes(app *applicationHandler) http.Handler {
 	router.Use(instrumentRequests(app.tracer))
 	router.Use(logHttpRequest(app.logger))
 
+	// Ingestion API
+	router.Route("/ingest", func(ingestRouter chi.Router) {
+
+		ingestRouter.Post("/{maskID}", app.IngestEvent)
+	})
+
 	// Public API.
 	router.Route("/api", func(v1Router chi.Router) {
 

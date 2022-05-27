@@ -269,6 +269,8 @@ type Event struct {
 	EventType        EventType          `json:"event_type" bson:"event_type"`
 	MatchedEndpoints int                `json:"matched_endpoints" bson:"matched_enpoints"`
 
+	SourceID string `json:"source_id" bson:"source_id"`
+
 	// ProviderID is a custom ID that can be used to reconcile this Event
 	// with your internal systems.
 	// This is optional
