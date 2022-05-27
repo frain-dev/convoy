@@ -3,18 +3,11 @@ package verifier
 import (
 	"encoding/hex"
 	"net/http"
-	"os"
 	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/require"
 )
-
-func TestMain(m *testing.M) {
-	// initialize environment variables
-	os.Setenv("GOOGLE_APPLICATION_CREDENTIALS", "1")
-	os.Exit(m.Run())
-}
 
 func Test_HmacVerifier_VerifyRequest(t *testing.T) {
 	tests := map[string]struct {
