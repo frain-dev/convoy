@@ -6,7 +6,6 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/frain-dev/convoy"
 	"github.com/frain-dev/convoy/auth/realm/jwt"
 	"github.com/frain-dev/convoy/cache"
 	"github.com/frain-dev/convoy/config"
@@ -62,8 +61,6 @@ func (u *UserService) LoginUser(ctx context.Context, data *models.LoginUser) (*d
 }
 
 func (u *UserService) RefreshToken(ctx context.Context, data *models.Token) (*jwt.Token, error) {
-	var exists *string
-
 	if err := util.Validate(data); err != nil {
 		return nil, NewServiceError(http.StatusBadRequest, err)
 	}
@@ -81,7 +78,7 @@ func (u *UserService) RefreshToken(ctx context.Context, data *models.Token) (*jw
 			gracePeriod := expiry.Add(time.Minute * 5)
 			currentTime := time.Now()
 
-			// We allow a window period from the moment the access token has 
+			// We allow a window period from the moment the access token has
 			// expired
 			if currentTime.After(gracePeriod) {
 				return nil, NewServiceError(http.StatusUnauthorized, err)
@@ -89,20 +86,6 @@ func (u *UserService) RefreshToken(ctx context.Context, data *models.Token) (*jw
 		} else {
 			return nil, NewServiceError(http.StatusUnauthorized, err)
 		}
-	}
-
-	// The key stored in the cache is the base64 encoding of the token
-	key := convoy.TokenCacheKey.Get(jw.EncodeToken(data.RefreshToken)).String()
-
-	err = u.cache.Get(ctx, key, &exists)
-	if err != nil {
-		return nil, err
-	}
-
-	// If the encoded token exists in the cache, we can safely conclude the
-	// refresh token has already been used and has been blacklisted.
-	if exists != nil {
-		return nil, NewServiceError(http.StatusUnauthorized, errors.New("invalid refresh token"))
 	}
 
 	verified, err := jw.ValidateRefreshToken(data.RefreshToken)
@@ -122,15 +105,32 @@ func (u *UserService) RefreshToken(ctx context.Context, data *models.Token) (*jw
 		return nil, NewServiceError(http.StatusInternalServerError, err)
 	}
 
-	// Calculate the remaining valid time for the refresh token
-	ttl := time.Until(time.Unix(verified.Expiry, 0))
-	err = u.cache.Set(ctx, key, &user.UID, ttl)
+	err = jw.BlacklistToken(verified, data.RefreshToken)
 	if err != nil {
-		return nil, NewServiceError(http.StatusBadRequest, errors.New("failed to create token cache"))
+		return nil, NewServiceError(http.StatusBadRequest, errors.New("failed to blacklist token"))
 	}
 
 	return &token, nil
 
+}
+
+func (u *UserService) LogoutUser(token string) error {
+	jwt, err := u.token()
+	if err != nil {
+		return NewServiceError(http.StatusInternalServerError, err)
+	}
+
+	verified, err := jwt.ValidateAccessToken(token)
+	if err != nil {
+		return NewServiceError(http.StatusInternalServerError, err)
+	}
+
+	err = jwt.BlacklistToken(verified, token)
+	if err != nil {
+		return NewServiceError(http.StatusBadRequest, errors.New("failed to blacklist token"))
+	}
+
+	return nil
 }
 
 func (u *UserService) token() (*jwt.Jwt, error) {
@@ -143,7 +143,7 @@ func (u *UserService) token() (*jwt.Jwt, error) {
 		return &jwt.Jwt{}, err
 	}
 
-	u.jwt = jwt.NewJwt(&config.Auth.Native.Jwt)
+	u.jwt = jwt.NewJwt(&config.Auth.Native.Jwt, u.cache)
 
 	return u.jwt, nil
 }

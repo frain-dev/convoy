@@ -11,6 +11,7 @@ import (
 	"github.com/frain-dev/convoy/auth/realm/jwt"
 	"github.com/frain-dev/convoy/auth/realm/native"
 	"github.com/frain-dev/convoy/auth/realm/noop"
+	"github.com/frain-dev/convoy/cache"
 	"github.com/frain-dev/convoy/config"
 	"github.com/frain-dev/convoy/datastore"
 	log "github.com/sirupsen/logrus"
@@ -40,7 +41,7 @@ func Get() (*RealmChain, error) {
 	return rc, nil
 }
 
-func Init(authConfig *config.AuthConfiguration, apiKeyRepo datastore.APIKeyRepository, userRepo datastore.UserRepository) error {
+func Init(authConfig *config.AuthConfiguration, apiKeyRepo datastore.APIKeyRepository, userRepo datastore.UserRepository, cache cache.Cache) error {
 	rc := newRealmChain()
 
 	// validate authentication realms
@@ -62,7 +63,7 @@ func Init(authConfig *config.AuthConfiguration, apiKeyRepo datastore.APIKeyRepos
 				return errors.New("failed to register file realm in realm chain")
 			}
 
-			jr := jwt.NewJwtRealm(userRepo, &authConfig.Native.Jwt)
+			jr := jwt.NewJwtRealm(userRepo, &authConfig.Native.Jwt, cache)
 			err = rc.RegisterRealm(jr)
 			if err != nil {
 				return errors.New("failed to register jwt realm in realm chain")

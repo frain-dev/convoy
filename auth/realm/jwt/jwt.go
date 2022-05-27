@@ -1,11 +1,14 @@
 package jwt
 
 import (
+	"context"
 	"encoding/base64"
 	"errors"
 	"fmt"
 	"time"
 
+	"github.com/frain-dev/convoy"
+	"github.com/frain-dev/convoy/cache"
 	"github.com/frain-dev/convoy/config"
 	"github.com/frain-dev/convoy/datastore"
 	"github.com/frain-dev/convoy/util"
@@ -30,7 +33,7 @@ type VerifiedToken struct {
 const (
 	JwtDefaultSecret        string = "convoy-jwt"
 	JwtDefaultRefreshSecret string = "convoy-refresh-jwt"
-	JwtDefaultExpiry        int    = 2
+	JwtDefaultExpiry        int    = 1800
 	JwtDefaultRefreshExpiry int    = 86400
 )
 
@@ -39,15 +42,17 @@ type Jwt struct {
 	Expiry        int
 	RefreshSecret string
 	RefreshExpiry int
+	cache         cache.Cache
 }
 
-func NewJwt(opts *config.JwtRealmOptions) *Jwt {
+func NewJwt(opts *config.JwtRealmOptions, cache cache.Cache) *Jwt {
 
 	j := &Jwt{
 		Secret:        opts.Secret,
 		Expiry:        opts.Expiry,
 		RefreshSecret: opts.RefreshSecret,
 		RefreshExpiry: opts.RefreshExpiry,
+		cache:         cache,
 	}
 
 	if util.IsStringEmpty(j.Secret) {
@@ -102,6 +107,39 @@ func (j *Jwt) ValidateRefreshToken(refreshToken string) (*VerifiedToken, error) 
 	return j.validateToken(refreshToken, j.RefreshSecret)
 }
 
+// A token is considered blacklisted if the base64 encoding
+// of the token exists as a key within the cache
+func (j *Jwt) isBlackListedToken(token string) (bool, error) {
+	var exists *string
+
+	key := convoy.TokenCacheKey.Get(j.EncodeToken(token)).String()
+	err := j.cache.Get(context.Background(), key, &exists)
+
+	if err != nil {
+		return false, err
+	}
+
+	if exists == nil {
+		return false, nil
+	}
+
+	return true, nil
+
+}
+
+func (j *Jwt) BlacklistToken(verified *VerifiedToken, token string) error {
+	// Calculate the remaining valid time for the token
+	ttl := time.Until(time.Unix(verified.Expiry, 0))
+	key := convoy.TokenCacheKey.Get(j.EncodeToken(token)).String()
+	err := j.cache.Set(context.Background(), key, &verified.UserID, ttl)
+
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
 func (j *Jwt) EncodeToken(token string) string {
 	return base64.StdEncoding.EncodeToString([]byte(token))
 }
@@ -118,6 +156,16 @@ func (j *Jwt) generateRefreshToken(user *datastore.User) (string, error) {
 func (j *Jwt) validateToken(accessToken, secret string) (*VerifiedToken, error) {
 	var userId string
 	var expiry float64
+
+	isBlacklisted, err := j.isBlackListedToken(accessToken)
+	if err != nil {
+		return nil, err
+	}
+
+	if isBlacklisted {
+		return nil, ErrInvalidToken
+	}
+
 	token, err := jwt.Parse(accessToken, func(token *jwt.Token) (interface{}, error) {
 		_, ok := token.Method.(*jwt.SigningMethodHMAC)
 		if !ok {
@@ -127,21 +175,26 @@ func (j *Jwt) validateToken(accessToken, secret string) (*VerifiedToken, error) 
 		return []byte(secret), nil
 	})
 
-	payload, ok := token.Claims.(jwt.MapClaims)
+	if err != nil {
+		v, ok := err.(*jwt.ValidationError)
+		if ok && v.Errors == jwt.ValidationErrorExpired {
+			if payload, ok := token.Claims.(jwt.MapClaims); ok {
+				expiry = payload["exp"].(float64)
+			}
 
+			return &VerifiedToken{Expiry: int64(expiry)}, ErrTokenExpired
+		}
+
+		return nil, err
+	}
+
+	payload, ok := token.Claims.(jwt.MapClaims)
 	if ok && token.Valid {
 		userId = payload["sub"].(string)
 		expiry = payload["exp"].(float64)
 
 		v := &VerifiedToken{UserID: userId, Expiry: int64(expiry)}
 		return v, nil
-	}
-
-	v, _ := err.(*jwt.ValidationError)
-	if ok && v.Errors == jwt.ValidationErrorExpired {
-		expiry = payload["exp"].(float64)
-
-		return &VerifiedToken{Expiry: int64(expiry)}, ErrTokenExpired
 	}
 
 	return nil, err

@@ -5,6 +5,7 @@ import (
 	"fmt"
 
 	"github.com/frain-dev/convoy/auth"
+	"github.com/frain-dev/convoy/cache"
 	"github.com/frain-dev/convoy/config"
 	"github.com/frain-dev/convoy/datastore"
 )
@@ -14,8 +15,8 @@ type JwtRealm struct {
 	jwt      *Jwt
 }
 
-func NewJwtRealm(userRepo datastore.UserRepository, opts *config.JwtRealmOptions) *JwtRealm {
-	return &JwtRealm{userRepo: userRepo, jwt: NewJwt(opts)}
+func NewJwtRealm(userRepo datastore.UserRepository, opts *config.JwtRealmOptions, cache cache.Cache) *JwtRealm {
+	return &JwtRealm{userRepo: userRepo, jwt: NewJwt(opts, cache)}
 }
 
 func (j *JwtRealm) Authenticate(ctx context.Context, cred *auth.Credential) (*auth.AuthenticatedUser, error) {

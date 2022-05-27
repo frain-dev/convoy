@@ -51,3 +51,19 @@ func (a *applicationHandler) RefreshToken(w http.ResponseWriter, r *http.Request
 
 	_ = render.Render(w, r, newServerResponse("Token refresh successful", token, http.StatusOK))
 }
+
+func (a *applicationHandler) LogoutUser(w http.ResponseWriter, r *http.Request) {
+	auth, err := getAuthFromRequest(r)
+	if err != nil {
+		_ = render.Render(w, r, newErrorResponse(err.Error(), http.StatusUnauthorized))
+		return
+	}
+
+	err = a.userService.LogoutUser(auth.Token)
+	if err != nil {
+		_ = render.Render(w, r, newServiceErrResponse(err))
+		return
+	}
+
+	_ = render.Render(w, r, newServerResponse("Logout successful", nil, http.StatusOK))
+}

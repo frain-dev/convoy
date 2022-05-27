@@ -149,7 +149,7 @@ func StartConvoyServer(a *app, cfg config.Configuration, withWorkers bool) error
 		log.Warnf("signature header is blank. setting default %s", config.DefaultSignatureHeader)
 	}
 
-	err := realm_chain.Init(&cfg.Auth, a.apiKeyRepo, a.userRepo)
+	err := realm_chain.Init(&cfg.Auth, a.apiKeyRepo, a.userRepo, a.cache)
 	if err != nil {
 		log.WithError(err).Fatal("failed to initialize realm chain")
 	}
