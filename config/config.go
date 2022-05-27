@@ -16,6 +16,7 @@ import (
 const (
 	MaxResponseSizeKb = 50                       // in kilobytes
 	MaxResponseSize   = MaxResponseSizeKb * 1024 // in bytes
+	MaxRequestSize    = MaxResponseSize
 )
 
 var cfgSingleton atomic.Value
