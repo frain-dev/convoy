@@ -270,6 +270,34 @@ func SeedEventDelivery(db datastore.DatabaseClient, app *datastore.Application, 
 	return eventDelivery, nil
 }
 
+// SeedOrganisation is create random Organisation for integration tests.
+func SeedOrganisation(db datastore.DatabaseClient, uid, ownerID, name string) (*datastore.Organisation, error) {
+	if util.IsStringEmpty(uid) {
+		uid = uuid.New().String()
+	}
+
+	if util.IsStringEmpty(name) {
+		name = fmt.Sprintf("TestOrg-%s", uid)
+	}
+
+	org := &datastore.Organisation{
+		UID:            uid,
+		OwnerID:        ownerID,
+		Name:           name,
+		DocumentStatus: datastore.ActiveDocumentStatus,
+		CreatedAt:      primitive.NewDateTimeFromTime(time.Now()),
+		UpdatedAt:      primitive.NewDateTimeFromTime(time.Now()),
+	}
+
+	// Seed Data.
+	err := db.OrganisationRepo().CreateOrganisation(context.TODO(), org)
+	if err != nil {
+		return &datastore.Organisation{}, err
+	}
+
+	return org, nil
+}
+
 func SeedSource(db datastore.DatabaseClient, g *datastore.Group, uid string) (*datastore.Source, error) {
 	if util.IsStringEmpty(uid) {
 		uid = uuid.New().String()

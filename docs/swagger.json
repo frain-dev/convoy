@@ -5186,9 +5186,6 @@
                 "name": {
                     "type": "string"
                 },
-                "organisation_id": {
-                    "type": "string"
-                },
                 "rate_limit": {
                     "description": "TODO(subomi): refactor this into the Instance API.",
                     "type": "integer"

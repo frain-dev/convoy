@@ -25,7 +25,7 @@ func (a *applicationHandler) GetOrganisation(w http.ResponseWriter, r *http.Requ
 		getOrganisationFromContext(r.Context()), http.StatusOK))
 }
 
-// GetOrganisations
+// GetOrganisationsPaged
 // @Summary Get organisations
 // @Description This endpoint fetches multiple organisations
 // @Tags Organisation
@@ -35,7 +35,7 @@ func (a *applicationHandler) GetOrganisation(w http.ResponseWriter, r *http.Requ
 // @Failure 400,401,500 {object} serverResponse{data=Stub}
 // @Security ApiKeyAuth
 // @Router /organisations [get]
-func (a *applicationHandler) GetOrganisations(w http.ResponseWriter, r *http.Request) {
+func (a *applicationHandler) GetOrganisationsPaged(w http.ResponseWriter, r *http.Request) {
 	pageable := getPageableFromContext(r.Context())
 
 	organisations, paginationData, err := a.organisationService.LoadOrganisationsPaged(r.Context(), pageable)

@@ -172,6 +172,19 @@ func buildRoutes(app *applicationHandler) http.Handler {
 				})
 			})
 
+			r.Route("/organisations", func(orgRouter chi.Router) {
+				orgRouter.Use(requirePermission(auth.RoleAdmin))
+
+				orgRouter.Post("/", app.CreateOrganisation)
+				orgRouter.With(pagination).Get("/", app.GetOrganisationsPaged)
+
+				orgRouter.Route("/{orgID}", func(r chi.Router) {
+					orgRouter.Get("/", app.GetOrganisation)
+					orgRouter.Put("/", app.UpdateOrganisation)
+					orgRouter.Delete("/", app.DeleteOrganisation)
+				})
+			})
+
 			r.Route("/sources", func(sourceRouter chi.Router) {
 				sourceRouter.Use(requireGroup(app.groupRepo, app.cache))
 				sourceRouter.Use(requirePermission(auth.RoleAdmin))
