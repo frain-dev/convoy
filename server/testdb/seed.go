@@ -200,15 +200,11 @@ func SeedEvent(db datastore.DatabaseClient, app *datastore.Application, groupID 
 	}
 
 	ev := &datastore.Event{
-		UID:       uid,
-		EventType: datastore.EventType(eventType),
-		Data:      data,
-		AppMetadata: &datastore.AppMetadata{
-			UID:          app.UID,
-			Title:        app.Title,
-			GroupID:      groupID,
-			SupportEmail: app.SupportEmail,
-		},
+		UID:            uid,
+		EventType:      datastore.EventType(eventType),
+		Data:           data,
+		AppID:          app.UID,
+		GroupID:        groupID,
 		CreatedAt:      primitive.NewDateTimeFromTime(time.Now()),
 		UpdatedAt:      primitive.NewDateTimeFromTime(time.Now()),
 		DocumentStatus: datastore.ActiveDocumentStatus,

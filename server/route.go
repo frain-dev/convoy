@@ -9,6 +9,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/frain-dev/convoy"
 	"github.com/frain-dev/convoy/auth"
 	"github.com/frain-dev/convoy/cache"
 	"github.com/frain-dev/convoy/logger"
@@ -392,7 +393,7 @@ func buildRoutes(app *applicationHandler) http.Handler {
 
 	router.Handle("/v1/metrics", promhttp.Handler())
 	router.HandleFunc("/health", func(w http.ResponseWriter, r *http.Request) {
-		_ = render.Render(w, r, newServerResponse("Convoy", nil, http.StatusOK))
+		_ = render.Render(w, r, newServerResponse(fmt.Sprintf("Convoy %v", convoy.GetVersion()), nil, http.StatusOK))
 	})
 	router.HandleFunc("/*", reactRootHandler)
 

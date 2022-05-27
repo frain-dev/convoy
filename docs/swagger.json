@@ -5077,23 +5077,6 @@
                 }
             }
         },
-        "datastore.AppMetadata": {
-            "type": "object",
-            "properties": {
-                "group_id": {
-                    "type": "string"
-                },
-                "support_email": {
-                    "type": "string"
-                },
-                "title": {
-                    "type": "string"
-                },
-                "uid": {
-                    "type": "string"
-                }
-            }
-        },
         "datastore.Application": {
             "type": "object",
             "properties": {
@@ -5237,8 +5220,8 @@
         "datastore.Event": {
             "type": "object",
             "properties": {
-                "app_metadata": {
-                    "$ref": "#/definitions/datastore.AppMetadata"
+                "app_id": {
+                    "type": "string"
                 },
                 "created_at": {
                     "type": "string"
@@ -5254,6 +5237,9 @@
                     "type": "string"
                 },
                 "event_type": {
+                    "type": "string"
+                },
+                "group_id": {
                     "type": "string"
                 },
                 "matched_endpoints": {

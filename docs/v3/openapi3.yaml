@@ -52,17 +52,6 @@ components:
         key:
           type: string
       type: object
-    datastore.AppMetadata:
-      properties:
-        group_id:
-          type: string
-        support_email:
-          type: string
-        title:
-          type: string
-        uid:
-          type: string
-      type: object
     datastore.Application:
       properties:
         created_at:
@@ -157,8 +146,8 @@ components:
       type: object
     datastore.Event:
       properties:
-        app_metadata:
-          $ref: '#/components/schemas/datastore.AppMetadata'
+        app_id:
+          type: string
         created_at:
           type: string
         data:
@@ -171,6 +160,8 @@ components:
         deleted_at:
           type: string
         event_type:
+          type: string
+        group_id:
           type: string
         matched_endpoints:
           type: integer

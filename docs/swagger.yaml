@@ -52,17 +52,6 @@ definitions:
       key:
         type: string
     type: object
-  datastore.AppMetadata:
-    properties:
-      group_id:
-        type: string
-      support_email:
-        type: string
-      title:
-        type: string
-      uid:
-        type: string
-    type: object
   datastore.Application:
     properties:
       created_at:
@@ -157,8 +146,8 @@ definitions:
     type: object
   datastore.Event:
     properties:
-      app_metadata:
-        $ref: '#/definitions/datastore.AppMetadata'
+      app_id:
+        type: string
       created_at:
         type: string
       data:
@@ -171,6 +160,8 @@ definitions:
       deleted_at:
         type: string
       event_type:
+        type: string
+      group_id:
         type: string
       matched_endpoints:
         type: integer

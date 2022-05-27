@@ -269,19 +269,18 @@ type Event struct {
 	EventType        EventType          `json:"event_type" bson:"event_type"`
 	MatchedEndpoints int                `json:"matched_endpoints" bson:"matched_enpoints"`
 
-	SourceID string `json:"source_id" bson:"source_id"`
-
 	// ProviderID is a custom ID that can be used to reconcile this Event
 	// with your internal systems.
 	// This is optional
 	// If not provided, we will generate one for you
 	ProviderID string `json:"provider_id" bson:"provider_id"`
+	SourceID   string `json:"source_id" bson:"source_id"`
+	GroupID    string `json:"group_id" bson:"group_id"`
+	AppID      string `json:"app_id" bson:"app_id"`
 
 	// Data is an arbitrary JSON value that gets sent as the body of the
 	// webhook to the endpoints
 	Data json.RawMessage `json:"data" bson:"data"`
-
-	AppMetadata *AppMetadata `json:"app_metadata,omitempty" bson:"app_metadata"`
 
 	CreatedAt primitive.DateTime `json:"created_at,omitempty" bson:"created_at,omitempty" swaggertype:"string"`
 	UpdatedAt primitive.DateTime `json:"updated_at,omitempty" bson:"updated_at,omitempty" swaggertype:"string"`

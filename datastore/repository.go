@@ -69,6 +69,7 @@ type SubscriptionRepository interface {
 	DeleteSubscription(context.Context, string, *Subscription) error
 	FindSubscriptionByID(context.Context, string, string) (*Subscription, error)
 	FindSubscriptionByEventType(context.Context, string, string, EventType) ([]Subscription, error)
+	FindSubscriptionBySourceIDs(context.Context, string, string) ([]Subscription, error)
 }
 
 type SourceRepository interface {

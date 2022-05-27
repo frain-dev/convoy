@@ -283,10 +283,9 @@ func createMessageCommand(a *app) *cobra.Command {
 			}
 
 			msg := &datastore.Event{
-				UID: uuid.New().String(),
-				AppMetadata: &datastore.AppMetadata{
-					UID: appData.UID,
-				},
+				UID:       uuid.New().String(),
+				AppID:     appData.UID,
+				GroupID:   appData.GroupID,
 				EventType: datastore.EventType(eventType),
 				Data:      d,
 

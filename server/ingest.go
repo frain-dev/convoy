@@ -85,6 +85,7 @@ func (a *applicationHandler) IngestEvent(w http.ResponseWriter, r *http.Request)
 		UID:            uuid.New().String(),
 		EventType:      datastore.EventType(maskID),
 		SourceID:       source.UID,
+		GroupID:        source.GroupID,
 		Data:           payload,
 		CreatedAt:      primitive.NewDateTimeFromTime(time.Now()),
 		UpdatedAt:      primitive.NewDateTimeFromTime(time.Now()),

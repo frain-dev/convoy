@@ -135,3 +135,20 @@ func (s *subscriptionRepo) FindSubscriptionByEventType(ctx context.Context, grou
 
 	return subscription, nil
 }
+
+func (s *subscriptionRepo) FindSubscriptionBySourceIDs(ctx context.Context, groupId string, sourceId string) ([]datastore.Subscription, error) {
+	var subscription []datastore.Subscription
+	filter := bson.M{"group_id": groupId, "source_id": sourceId, "document_status": datastore.ActiveDocumentStatus}
+
+	c, err := s.client.Find(ctx, filter)
+	if err != nil {
+		return nil, err
+	}
+
+	err = c.All(ctx, &subscription)
+	if err != nil {
+		return nil, err
+	}
+
+	return subscription, nil
+}

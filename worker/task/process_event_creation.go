@@ -29,56 +29,57 @@ func ProcessEventCreation(
 		ctx := context.Background()
 
 		var group *datastore.Group
-		var app *datastore.Application
-
-		appCacheKey := convoy.ApplicationsCacheKey.Get(event.AppMetadata.UID).String()
-		err := cache.Get(ctx, appCacheKey, &app)
-		if err != nil {
-			return &disq.Error{Err: errors.New("cache error"), Delay: 10 * time.Second}
-		}
-
-		// cache miss, load from db
-		if app == nil {
-			app, err = appRepo.FindApplicationByID(ctx, event.AppMetadata.UID)
-			if err != nil {
-
-				msg := "an error occurred while retrieving app details"
-
-				if errors.Is(err, datastore.ErrApplicationNotFound) {
-					msg = err.Error()
-				}
-
-				log.WithError(err).Error("failed to fetch app")
-				return &disq.Error{Err: errors.New(msg), Delay: 10 * time.Second}
-			}
-
-			err = cache.Set(ctx, appCacheKey, app, 10*time.Minute)
-			if err != nil {
-				return &disq.Error{Err: err, Delay: 10 * time.Second}
-			}
-		}
-
-		groupCacheKey := convoy.GroupsCacheKey.Get(event.AppMetadata.GroupID).String()
-		err = cache.Get(ctx, groupCacheKey, &group)
+		groupCacheKey := convoy.GroupsCacheKey.Get(event.GroupID).String()
+		err := cache.Get(ctx, groupCacheKey, &group)
 		if err != nil {
 			return &disq.Error{Err: err, Delay: 10 * time.Second}
 		}
 
 		if group == nil {
-			group, err = groupRepo.FetchGroupByID(ctx, event.AppMetadata.GroupID)
+			group, err = groupRepo.FetchGroupByID(ctx, event.GroupID)
+			if err != nil {
+				return &disq.Error{Err: err, Delay: 10 * time.Second}
+			}
+
+			err = cache.Set(ctx, groupCacheKey, group, 10*time.Minute)
 			if err != nil {
 				return &disq.Error{Err: err, Delay: 10 * time.Second}
 			}
 		}
 
-		err = cache.Set(ctx, groupCacheKey, &group, 5*time.Minute)
-		if err != nil {
-			return &disq.Error{Err: err, Delay: 10 * time.Second}
-		}
+		var subscriptions []datastore.Subscription
 
-		subscriptions, err := subRepo.FindSubscriptionByEventType(ctx, group.UID, app.UID, event.EventType)
-		if err != nil {
-			return &disq.Error{Err: errors.New("error fetching subscriptions for event type"), Delay: 10 * time.Second}
+		if group.Type == datastore.OutgoingGroup {
+			var app *datastore.Application
+
+			appCacheKey := convoy.ApplicationsCacheKey.Get(event.AppID).String()
+			err = cache.Get(ctx, appCacheKey, &app)
+			if err != nil {
+				return &disq.Error{Err: errors.New("cache error"), Delay: 10 * time.Second}
+			}
+
+			// cache miss, load from db
+			if app == nil {
+				app, err = appRepo.FindApplicationByID(ctx, event.AppID)
+				if err != nil {
+					return &disq.Error{Err: err, Delay: 10 * time.Second}
+				}
+
+				err = cache.Set(ctx, appCacheKey, app, 10*time.Minute)
+				if err != nil {
+					return &disq.Error{Err: err, Delay: 10 * time.Second}
+				}
+			}
+
+			subscriptions, err = subRepo.FindSubscriptionByEventType(ctx, group.UID, app.UID, event.EventType)
+			if err != nil {
+				return &disq.Error{Err: errors.New("error fetching subscriptions for event type"), Delay: 10 * time.Second}
+			}
+		} else if group.Type == datastore.IncomingGroup {
+			subscriptions, err = subRepo.FindSubscriptionBySourceIDs(ctx, group.UID, event.SourceID)
+			if err != nil {
+				return &disq.Error{Err: errors.New("error fetching subscriptions for this source"), Delay: 10 * time.Second}
+			}
 		}
 
 		event.MatchedEndpoints = len(subscriptions)
@@ -91,6 +92,11 @@ func ProcessEventCreation(
 		retryLimit := group.Config.Strategy.RetryCount
 
 		for _, s := range subscriptions {
+			app, err := appRepo.FindApplicationByID(ctx, s.AppID)
+			if err != nil {
+				return &disq.Error{Err: err, Delay: 10 * time.Second}
+			}
+
 			endpoint, err := appRepo.FindApplicationEndpointByID(ctx, app.UID, s.EndpointID)
 			if err != nil {
 				return &disq.Error{Err: err, Delay: 10 * time.Second}
@@ -133,6 +139,7 @@ func ProcessEventCreation(
 				job := &queue.Job{
 					ID: eventDelivery.UID,
 				}
+
 				err = eventQueue.Publish(ctx, taskName, job, 1*time.Second)
 				if err != nil {
 					log.Errorf("Error occurred sending new event to the queue %s", err)

@@ -96,13 +96,9 @@ func TestEventService_CreateAppEvent(t *testing.T) {
 				EventType:        datastore.EventType("payment.created"),
 				MatchedEndpoints: 0,
 				Data:             bytes.NewBufferString(`{"name":"convoy"}`).Bytes(),
-				AppMetadata: &datastore.AppMetadata{
-					Title:        "test_app",
-					UID:          "123",
-					GroupID:      "abc",
-					SupportEmail: "test_app@gmail.com",
-				},
-				DocumentStatus: datastore.ActiveDocumentStatus,
+				AppID:            "123",
+				GroupID:          "abc",
+				DocumentStatus:   datastore.ActiveDocumentStatus,
 			},
 		},
 		{
@@ -156,13 +152,9 @@ func TestEventService_CreateAppEvent(t *testing.T) {
 				EventType:        datastore.EventType("payment.created"),
 				MatchedEndpoints: 0,
 				Data:             bytes.NewBufferString(`{"name":"convoy"}`).Bytes(),
-				AppMetadata: &datastore.AppMetadata{
-					Title:        "test_app",
-					UID:          "123",
-					GroupID:      "abc",
-					SupportEmail: "test_app@gmail.com",
-				},
-				DocumentStatus: datastore.ActiveDocumentStatus,
+				AppID:            "123",
+				GroupID:          "abc",
+				DocumentStatus:   datastore.ActiveDocumentStatus,
 			},
 		},
 
@@ -221,13 +213,9 @@ func TestEventService_CreateAppEvent(t *testing.T) {
 				EventType:        datastore.EventType("payment.created"),
 				MatchedEndpoints: 0,
 				Data:             bytes.NewBufferString(`{"name":"convoy"}`).Bytes(),
-				AppMetadata: &datastore.AppMetadata{
-					Title:        "test_app",
-					UID:          "123",
-					GroupID:      "abc",
-					SupportEmail: "test_app@gmail.com",
-				},
-				DocumentStatus: datastore.ActiveDocumentStatus,
+				AppID:            "123",
+				GroupID:          "abc",
+				DocumentStatus:   datastore.ActiveDocumentStatus,
 			},
 		},
 
@@ -385,10 +373,10 @@ func TestEventService_CreateAppEvent(t *testing.T) {
 
 			stripVariableFields(t, "event", event)
 
-			m1 := tc.wantEvent.AppMetadata
-			m2 := event.AppMetadata
+			m1 := tc.wantEvent.AppID
+			m2 := event.AppID
 
-			tc.wantEvent.AppMetadata, event.AppMetadata = nil, nil
+			tc.wantEvent.AppID, event.AppID = "", ""
 			require.Equal(t, tc.wantEvent, event)
 			require.Equal(t, m1, m2)
 		})

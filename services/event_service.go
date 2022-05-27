@@ -78,17 +78,13 @@ func (e *EventService) CreateAppEvent(ctx context.Context, newMessage *models.Ev
 	}
 
 	event := &datastore.Event{
-		UID:       uuid.New().String(),
-		EventType: datastore.EventType(newMessage.EventType),
-		Data:      newMessage.Data,
-		CreatedAt: primitive.NewDateTimeFromTime(time.Now()),
-		UpdatedAt: primitive.NewDateTimeFromTime(time.Now()),
-		AppMetadata: &datastore.AppMetadata{
-			Title:        app.Title,
-			UID:          app.UID,
-			GroupID:      app.GroupID,
-			SupportEmail: app.SupportEmail,
-		},
+		UID:            uuid.New().String(),
+		EventType:      datastore.EventType(newMessage.EventType),
+		Data:           newMessage.Data,
+		CreatedAt:      primitive.NewDateTimeFromTime(time.Now()),
+		UpdatedAt:      primitive.NewDateTimeFromTime(time.Now()),
+		AppID:          app.UID,
+		GroupID:        app.GroupID,
 		DocumentStatus: datastore.ActiveDocumentStatus,
 	}
 	if g.Config.Strategy.Type != datastore.LinearStrategyProvider && g.Config.Strategy.Type != datastore.ExponentialStrategyProvider {

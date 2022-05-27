@@ -825,6 +825,21 @@ func (mr *MockSubscriptionRepositoryMockRecorder) FindSubscriptionByID(arg0, arg
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "FindSubscriptionByID", reflect.TypeOf((*MockSubscriptionRepository)(nil).FindSubscriptionByID), arg0, arg1, arg2)
 }
 
+// FindSubscriptionBySourceIDs mocks base method.
+func (m *MockSubscriptionRepository) FindSubscriptionBySourceIDs(arg0 context.Context, arg1, arg2 string) ([]datastore.Subscription, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "FindSubscriptionBySourceIDs", arg0, arg1, arg2)
+	ret0, _ := ret[0].([]datastore.Subscription)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// FindSubscriptionBySourceIDs indicates an expected call of FindSubscriptionBySourceIDs.
+func (mr *MockSubscriptionRepositoryMockRecorder) FindSubscriptionBySourceIDs(arg0, arg1, arg2 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "FindSubscriptionBySourceIDs", reflect.TypeOf((*MockSubscriptionRepository)(nil).FindSubscriptionBySourceIDs), arg0, arg1, arg2)
+}
+
 // LoadSubscriptionsPaged mocks base method.
 func (m *MockSubscriptionRepository) LoadSubscriptionsPaged(arg0 context.Context, arg1 string, arg2 datastore.Pageable) ([]datastore.Subscription, datastore.PaginationData, error) {
 	m.ctrl.T.Helper()
@@ -922,18 +937,18 @@ func (mr *MockSourceRepositoryMockRecorder) FindSourceByID(ctx, groupID, id inte
 }
 
 // FindSourceByMaskID mocks base method.
-func (m *MockSourceRepository) FindSourceByMaskID(ctx context.Context, groupID, maskID string) (*datastore.Source, error) {
+func (m *MockSourceRepository) FindSourceByMaskID(ctx context.Context, maskID string) (*datastore.Source, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "FindSourceByMaskID", ctx, groupID, maskID)
+	ret := m.ctrl.Call(m, "FindSourceByMaskID", ctx, maskID)
 	ret0, _ := ret[0].(*datastore.Source)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // FindSourceByMaskID indicates an expected call of FindSourceByMaskID.
-func (mr *MockSourceRepositoryMockRecorder) FindSourceByMaskID(ctx, groupID, maskID interface{}) *gomock.Call {
+func (mr *MockSourceRepositoryMockRecorder) FindSourceByMaskID(ctx, maskID interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "FindSourceByMaskID", reflect.TypeOf((*MockSourceRepository)(nil).FindSourceByMaskID), ctx, groupID, maskID)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "FindSourceByMaskID", reflect.TypeOf((*MockSourceRepository)(nil).FindSourceByMaskID), ctx, maskID)
 }
 
 // LoadSourcesPaged mocks base method.
