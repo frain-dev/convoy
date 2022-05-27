@@ -18,8 +18,8 @@ import (
 )
 
 const (
-	prefix    string = "CO"
-	seperator string = "."
+	Prefix    string = "CO"
+	Seperator string = "."
 )
 
 func ComputeJSONHmac(hash, data, secret string, order bool) (string, error) {
@@ -84,10 +84,10 @@ func GenerateAPIKey() (string, string) {
 
 	var api_key strings.Builder
 
-	api_key.WriteString(prefix)
-	api_key.WriteString(seperator)
+	api_key.WriteString(Prefix)
+	api_key.WriteString(Seperator)
 	api_key.WriteString(mask)
-	api_key.WriteString(seperator)
+	api_key.WriteString(Seperator)
 	api_key.WriteString(key)
 
 	return mask, api_key.String()

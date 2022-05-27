@@ -63,6 +63,11 @@ func buildRoutes(app *applicationHandler) http.Handler {
 	// Public API.
 	router.Route("/api", func(v1Router chi.Router) {
 
+		v1Router.Route("/auth", func(authRouter chi.Router) {
+			authRouter.Post("/login", app.LoginUser)
+			authRouter.Post("/token/refresh", app.RefreshToken)
+		})
+
 		v1Router.Route("/v1", func(r chi.Router) {
 			r.Use(middleware.AllowContentType("application/json"))
 			r.Use(jsonResponse)
@@ -388,6 +393,7 @@ func New(cfg config.Configuration,
 	apiKeyRepo datastore.APIKeyRepository,
 	orgRepo datastore.GroupRepository,
 	sourceRepo datastore.SourceRepository,
+	userRepo datastore.UserRepository,
 	eventQueue queue.Queuer,
 	createEventQueue queue.Queuer,
 	logger logger.Logger,
@@ -402,6 +408,7 @@ func New(cfg config.Configuration,
 		orgRepo,
 		apiKeyRepo,
 		sourceRepo,
+		userRepo,
 		eventQueue,
 		createEventQueue,
 		logger,

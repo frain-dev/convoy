@@ -611,14 +611,24 @@ func getAuthFromRequest(r *http.Request) (*auth.Credential, error) {
 			Password: creds[1],
 		}, nil
 	case auth.CredentialTypeAPIKey:
-		if util.IsStringEmpty(authInfo[1]) {
-			return nil, errors.New("empty api key")
+		authToken := authInfo[1]
+
+		if util.IsStringEmpty(authToken) {
+			return nil, errors.New("empty api key or token")
+		}
+
+		prefix := fmt.Sprintf("%s%s", util.Prefix, util.Seperator)
+		if strings.HasPrefix(authToken, prefix) {
+			return &auth.Credential{
+				Type:   auth.CredentialTypeAPIKey,
+				APIKey: authToken,
+			}, nil
 		}
 
 		return &auth.Credential{
-			Type:   auth.CredentialTypeAPIKey,
-			APIKey: authInfo[1],
-		}, nil
+			Type:  auth.CredentialTypeJWT,
+			Token: authToken}, nil
+
 	default:
 		return nil, fmt.Errorf("unknown credential type: %s", credType.String())
 	}

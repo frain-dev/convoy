@@ -8,6 +8,7 @@ import (
 	"time"
 	_ "time/tzdata"
 
+	"github.com/frain-dev/convoy/auth"
 	"github.com/frain-dev/convoy/cache"
 	"github.com/frain-dev/convoy/datastore/badger"
 	"github.com/frain-dev/convoy/searcher"
@@ -150,6 +151,44 @@ func ensureDefaultGroup(ctx context.Context, cfg config.Configuration, a *app) e
 	return nil
 }
 
+func ensureDefaultUser(ctx context.Context, a *app) error {
+	pageable := datastore.Pageable{}
+
+	users, _, err := a.userRepo.LoadUsersPaged(ctx, pageable)
+
+	if err != nil {
+		return fmt.Errorf("failed to load users - %w", err)
+	}
+
+	if len(users) > 0 {
+		return nil
+	}
+
+	p := datastore.Password{Plaintext: "default"}
+	p.GenerateHash()
+
+	defaultUser := &datastore.User{
+		UID:            uuid.NewString(),
+		FirstName:      "default",
+		LastName:       "default",
+		Email:          "superuser@default.com",
+		Password:       string(p.Hash),
+		Role:           auth.Role{Type: auth.RoleSuperUser},
+		CreatedAt:      primitive.NewDateTimeFromTime(time.Now()),
+		UpdatedAt:      primitive.NewDateTimeFromTime(time.Now()),
+		DocumentStatus: datastore.ActiveDocumentStatus,
+	}
+
+	err = a.userRepo.CreateUser(ctx, defaultUser)
+	if err != nil {
+		return fmt.Errorf("failed to create user - %w", err)
+	}
+
+	log.Infof("Created Superuser with username: %s and password: %s", defaultUser.Email, p.Plaintext)
+
+	return nil
+}
+
 type app struct {
 	apiKeyRepo        datastore.APIKeyRepository
 	groupRepo         datastore.GroupRepository
@@ -157,6 +196,7 @@ type app struct {
 	eventRepo         datastore.EventRepository
 	eventDeliveryRepo datastore.EventDeliveryRepository
 	sourceRepo        datastore.SourceRepository
+	userRepo          datastore.UserRepository
 	eventQueue        queue.Queuer
 	createEventQueue  queue.Queuer
 	logger            logger.Logger
@@ -292,6 +332,7 @@ func preRun(app *app, db datastore.DatabaseClient) func(cmd *cobra.Command, args
 		app.applicationRepo = db.AppRepo()
 		app.eventDeliveryRepo = db.EventDeliveryRepo()
 		app.sourceRepo = db.SourceRepo()
+		app.userRepo = db.UserRepo()
 
 		app.eventQueue = NewQueue(opts, "EventQueue")
 		app.createEventQueue = NewQueue(opts, "CreateEventQueue")
@@ -301,6 +342,11 @@ func preRun(app *app, db datastore.DatabaseClient) func(cmd *cobra.Command, args
 		app.cache = ca
 		app.limiter = li
 		app.searcher = se
+
+		err = ensureDefaultUser(context.Background(), app)
+		if err != nil {
+			return err
+		}
 
 		return ensureDefaultGroup(context.Background(), cfg, app)
 	}

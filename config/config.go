@@ -63,7 +63,15 @@ type AuthConfiguration struct {
 }
 
 type NativeRealmOptions struct {
-	Enabled bool `json:"enabled" envconfig:"CONVOY_NATIVE_REALM_ENABLED"`
+	Enabled bool            `json:"enabled" envconfig:"CONVOY_NATIVE_REALM_ENABLED"`
+	Jwt     JwtRealmOptions `json:"jwt"`
+}
+
+type JwtRealmOptions struct {
+	Secret        string `json:"secret"`
+	Expiry        int    `json:"expiry"`
+	RefreshSecret string `json:"refresh_secret"`
+	RefreshExpiry int    `json:"refresh_expiry"`
 }
 
 type SMTPConfiguration struct {
