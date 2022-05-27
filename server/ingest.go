@@ -10,6 +10,7 @@ import (
 	"github.com/frain-dev/convoy/datastore"
 	"github.com/frain-dev/convoy/pkg/verifier"
 	"github.com/frain-dev/convoy/queue"
+	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/render"
 	"github.com/google/uuid"
 	log "github.com/sirupsen/logrus"
@@ -18,7 +19,7 @@ import (
 
 func (a *applicationHandler) IngestEvent(w http.ResponseWriter, r *http.Request) {
 	// 1. Retrieve mask ID
-	maskID := r.URL.Query().Get("maskID")
+	maskID := chi.URLParam(r, "maskID")
 
 	// 2. Retrieve source using mask ID.
 	source, err := a.sourceRepo.FindSourceByMaskID(r.Context(), maskID)
@@ -27,7 +28,13 @@ func (a *applicationHandler) IngestEvent(w http.ResponseWriter, r *http.Request)
 		return
 	}
 
+	if source.Type != datastore.HTTPSource {
+		_ = render.Render(w, r, newErrorResponse("Source type needs to be HTTP",
+			http.StatusBadRequest))
+	}
+
 	// 3. Select verifier based of source config.
+	// TODO(subomi): Can verifier be nil?
 	var v verifier.Verifier
 	verifierConfig := source.Verifier
 
