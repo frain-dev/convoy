@@ -162,9 +162,7 @@ func (a *AppService) CreateAppEndpoint(ctx context.Context, e models.Endpoint, a
 		UID:               uuid.New().String(),
 		TargetURL:         e.URL,
 		Description:       e.Description,
-		Events:            e.Events,
 		Secret:            e.Secret,
-		Status:            datastore.ActiveEndpointStatus,
 		RateLimit:         e.RateLimit,
 		RateLimitDuration: duration.String(),
 		CreatedAt:         primitive.NewDateTimeFromTime(time.Now()),
@@ -248,17 +246,6 @@ func updateEndpointIfFound(endpoints *[]datastore.Endpoint, id string, e models.
 			endpoint.TargetURL = e.URL
 			endpoint.Description = e.Description
 
-			// Events being empty means it wasn't passed at all, which automatically
-			// translates into a accept all scenario. This is quite different from
-			// an empty array which signifies a blacklist all events -- no events
-			// will be sent to such endpoints.
-			// TODO(daniel): this should be e.Events == nil
-			if len(e.Events) == 0 {
-				endpoint.Events = []string{"*"}
-			} else {
-				endpoint.Events = e.Events
-			}
-
 			if e.RateLimit != 0 {
 				endpoint.RateLimit = e.RateLimit
 			}
@@ -280,7 +267,6 @@ func updateEndpointIfFound(endpoints *[]datastore.Endpoint, id string, e models.
 				endpoint.Secret = e.Secret
 			}
 
-			endpoint.Status = datastore.ActiveEndpointStatus
 			endpoint.UpdatedAt = primitive.NewDateTimeFromTime(time.Now())
 			(*endpoints)[i] = endpoint
 			return endpoints, &endpoint, nil

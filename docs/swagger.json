@@ -4401,6 +4401,599 @@
                     }
                 }
             }
+        },
+        "/subscriptions": {
+            "get": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "This endpoint fetches all the subscriptions",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Subscriptions"
+                ],
+                "summary": "Get all subscriptions",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "results per page",
+                        "name": "perPage",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "page number",
+                        "name": "page",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "sort order",
+                        "name": "sort",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "subscription title",
+                        "name": "q",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "group id",
+                        "name": "groupId",
+                        "in": "query",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/server.serverResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "allOf": [
+                                                {
+                                                    "$ref": "#/definitions/server.pagedResponse"
+                                                },
+                                                {
+                                                    "type": "object",
+                                                    "properties": {
+                                                        "content": {
+                                                            "type": "array",
+                                                            "items": {
+                                                                "$ref": "#/definitions/datastore.Subscription"
+                                                            }
+                                                        }
+                                                    }
+                                                }
+                                            ]
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/server.serverResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/server.Stub"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/server.serverResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/server.Stub"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/server.serverResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/server.Stub"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    }
+                }
+            },
+            "post": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "This endpoint creates a subscriptions",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Subscriptions"
+                ],
+                "summary": "Creates a subscription",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "group id",
+                        "name": "groupId",
+                        "in": "query",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/server.serverResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "allOf": [
+                                                {
+                                                    "$ref": "#/definitions/server.pagedResponse"
+                                                },
+                                                {
+                                                    "type": "object",
+                                                    "properties": {
+                                                        "content": {
+                                                            "type": "array",
+                                                            "items": {
+                                                                "$ref": "#/definitions/datastore.Subscription"
+                                                            }
+                                                        }
+                                                    }
+                                                }
+                                            ]
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/server.serverResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/server.Stub"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/server.serverResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/server.Stub"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/server.serverResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/server.Stub"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    }
+                }
+            }
+        },
+        "/subscriptions/{subscriptionID}": {
+            "get": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "This endpoint fetches an Subscription by it's id",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Subscription"
+                ],
+                "summary": "Gets a subscription",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "group id",
+                        "name": "groupId",
+                        "in": "query",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "application id",
+                        "name": "subscriptionID",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/server.serverResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/datastore.Subscription"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/server.serverResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/server.Stub"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/server.serverResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/server.Stub"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/server.serverResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/server.Stub"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    }
+                }
+            },
+            "put": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "This endpoint updates a subscription",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Subscription"
+                ],
+                "summary": "Update a subscription",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "group id",
+                        "name": "groupId",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "subscription id",
+                        "name": "subscriptionID",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Subscription Details",
+                        "name": "subscription",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/models.Subscription"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/server.serverResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/datastore.Subscription"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/server.serverResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/server.Stub"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/server.serverResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/server.Stub"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/server.serverResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/server.Stub"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    }
+                }
+            },
+            "delete": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "This endpoint deletes a subscription",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Application"
+                ],
+                "summary": "Delete subscription",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "group id",
+                        "name": "groupId",
+                        "in": "query",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "subscription id",
+                        "name": "subscriptionID",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/server.serverResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/server.Stub"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/server.serverResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/server.Stub"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/server.serverResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/server.Stub"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/server.serverResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/server.Stub"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    }
+                }
+            }
         }
     },
     "definitions": {
@@ -4430,7 +5023,7 @@
                 "created_at": {
                     "type": "integer"
                 },
-                "delted_at": {
+                "deleted_at": {
                     "type": "integer"
                 },
                 "expires_at": {
@@ -4459,6 +5052,17 @@
                 },
                 "updated_at": {
                     "type": "integer"
+                }
+            }
+        },
+        "datastore.AlertConfiguration": {
+            "type": "object",
+            "properties": {
+                "count": {
+                    "type": "integer"
+                },
+                "threshold": {
+                    "type": "string"
                 }
             }
         },
@@ -4542,17 +5146,6 @@
                 }
             }
         },
-        "datastore.DefaultStrategyConfiguration": {
-            "type": "object",
-            "properties": {
-                "intervalSeconds": {
-                    "type": "integer"
-                },
-                "retryLimit": {
-                    "type": "integer"
-                }
-            }
-        },
         "datastore.DeliveryAttempt": {
             "type": "object",
             "properties": {
@@ -4618,12 +5211,6 @@
                 "description": {
                     "type": "string"
                 },
-                "events": {
-                    "type": "array",
-                    "items": {
-                        "type": "string"
-                    }
-                },
                 "http_timeout": {
                     "type": "string"
                 },
@@ -4634,9 +5221,6 @@
                     "type": "string"
                 },
                 "secret": {
-                    "type": "string"
-                },
-                "status": {
                     "type": "string"
                 },
                 "target_url": {
@@ -4646,35 +5230,6 @@
                     "type": "string"
                 },
                 "updated_at": {
-                    "type": "string"
-                }
-            }
-        },
-        "datastore.EndpointMetadata": {
-            "type": "object",
-            "properties": {
-                "http_timeout": {
-                    "type": "string"
-                },
-                "rate_limit": {
-                    "type": "integer"
-                },
-                "rate_limit_duration": {
-                    "type": "string"
-                },
-                "secret": {
-                    "type": "string"
-                },
-                "sent": {
-                    "type": "boolean"
-                },
-                "status": {
-                    "type": "string"
-                },
-                "target_url": {
-                    "type": "string"
-                },
-                "uid": {
                     "type": "string"
                 }
             }
@@ -4719,8 +5274,8 @@
         "datastore.EventDelivery": {
             "type": "object",
             "properties": {
-                "app_metadata": {
-                    "$ref": "#/definitions/datastore.AppMetadata"
+                "app_id": {
+                    "type": "string"
                 },
                 "created_at": {
                     "type": "string"
@@ -4731,17 +5286,22 @@
                 "description": {
                     "type": "string"
                 },
-                "endpoint": {
-                    "description": "Endpoint contains the destination of the event.",
-                    "$ref": "#/definitions/datastore.EndpointMetadata"
+                "endpoint_id": {
+                    "type": "string"
                 },
-                "event_metadata": {
-                    "$ref": "#/definitions/datastore.EventMetadata"
+                "event_id": {
+                    "type": "string"
+                },
+                "group_id": {
+                    "type": "string"
                 },
                 "metadata": {
                     "$ref": "#/definitions/datastore.Metadata"
                 },
                 "status": {
+                    "type": "string"
+                },
+                "subscription_id": {
                     "type": "string"
                 },
                 "uid": {
@@ -4752,22 +5312,14 @@
                 }
             }
         },
-        "datastore.EventMetadata": {
+        "datastore.FilterConfiguration": {
             "type": "object",
             "properties": {
-                "name": {
-                    "type": "string"
-                },
-                "uid": {
-                    "type": "string"
-                }
-            }
-        },
-        "datastore.ExponentialBackoffStrategyConfiguration": {
-            "type": "object",
-            "properties": {
-                "retryLimit": {
-                    "type": "integer"
+                "event_types": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
                 }
             }
         },
@@ -4790,6 +5342,7 @@
                     "type": "string"
                 },
                 "rate_limit": {
+                    "description": "TODO(subomi): refactor this into the Instance API.",
                     "type": "integer"
                 },
                 "rate_limit_duration": {
@@ -4797,6 +5350,9 @@
                 },
                 "statistics": {
                     "$ref": "#/definitions/datastore.GroupStatistics"
+                },
+                "type": {
+                    "type": "string"
                 },
                 "uid": {
                     "type": "string"
@@ -4811,6 +5367,9 @@
             "properties": {
                 "disable_endpoint": {
                     "type": "boolean"
+                },
+                "ratelimit": {
+                    "$ref": "#/definitions/datastore.RateLimitConfiguration"
                 },
                 "replay_attacks": {
                     "type": "boolean"
@@ -4909,6 +5468,31 @@
                 }
             }
         },
+        "datastore.RateLimitConfiguration": {
+            "type": "object",
+            "properties": {
+                "count": {
+                    "type": "integer"
+                },
+                "duration": {
+                    "type": "string"
+                }
+            }
+        },
+        "datastore.RetryConfiguration": {
+            "type": "object",
+            "properties": {
+                "duration": {
+                    "type": "string"
+                },
+                "retry_count": {
+                    "type": "integer"
+                },
+                "type": {
+                    "type": "string"
+                }
+            }
+        },
         "datastore.SignatureConfiguration": {
             "type": "object",
             "properties": {
@@ -4920,17 +5504,94 @@
                 }
             }
         },
-        "datastore.StrategyConfiguration": {
+        "datastore.Source": {
             "type": "object",
             "properties": {
-                "default": {
-                    "$ref": "#/definitions/datastore.DefaultStrategyConfiguration"
+                "created_at": {
+                    "type": "integer"
                 },
-                "exponentialBackoff": {
-                    "$ref": "#/definitions/datastore.ExponentialBackoffStrategyConfiguration"
+                "deleted_at": {
+                    "type": "integer"
+                },
+                "group_id": {
+                    "type": "string"
+                },
+                "is_disabled": {
+                    "type": "boolean"
+                },
+                "mask_id": {
+                    "type": "string"
+                },
+                "name": {
+                    "type": "string"
                 },
                 "type": {
                     "type": "string"
+                },
+                "uid": {
+                    "type": "string"
+                },
+                "updated_at": {
+                    "type": "integer"
+                },
+                "verifier": {
+                    "$ref": "#/definitions/datastore.VerifierConfig"
+                }
+            }
+        },
+        "datastore.StrategyConfiguration": {
+            "type": "object",
+            "properties": {
+                "duration": {
+                    "type": "integer"
+                },
+                "retry_count": {
+                    "type": "integer"
+                },
+                "type": {
+                    "type": "string"
+                }
+            }
+        },
+        "datastore.Subscription": {
+            "type": "object",
+            "properties": {
+                "alert_config": {
+                    "description": "subscription config",
+                    "$ref": "#/definitions/datastore.AlertConfiguration"
+                },
+                "created_at": {
+                    "type": "integer"
+                },
+                "deleted_at": {
+                    "type": "integer"
+                },
+                "endpoint": {
+                    "$ref": "#/definitions/datastore.Endpoint"
+                },
+                "filter_config": {
+                    "$ref": "#/definitions/datastore.FilterConfiguration"
+                },
+                "name": {
+                    "type": "string"
+                },
+                "retry_config": {
+                    "$ref": "#/definitions/datastore.RetryConfiguration"
+                },
+                "source": {
+                    "$ref": "#/definitions/datastore.Source"
+                },
+                "status": {
+                    "type": "string"
+                },
+                "type": {
+                    "type": "string"
+                },
+                "uid": {
+                    "type": "string"
+                },
+                "updated_at": {
+                    "type": "integer"
                 }
             }
         },
@@ -5075,6 +5736,9 @@
                 },
                 "rate_limit_duration": {
                     "type": "string"
+                },
+                "type": {
+                    "type": "string"
                 }
             }
         },
@@ -5153,6 +5817,35 @@
                 },
                 "verifier": {
                     "$ref": "#/definitions/datastore.VerifierConfig"
+                }
+            }
+        },
+        "models.Subscription": {
+            "type": "object",
+            "properties": {
+                "alert_config": {
+                    "$ref": "#/definitions/datastore.AlertConfiguration"
+                },
+                "app_id": {
+                    "type": "string"
+                },
+                "endpoint_id": {
+                    "type": "string"
+                },
+                "filter_config": {
+                    "$ref": "#/definitions/datastore.FilterConfiguration"
+                },
+                "name": {
+                    "type": "string"
+                },
+                "retry_config": {
+                    "$ref": "#/definitions/datastore.RetryConfiguration"
+                },
+                "source_id": {
+                    "type": "string"
+                },
+                "type": {
+                    "type": "string"
                 }
             }
         },

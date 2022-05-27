@@ -144,11 +144,6 @@ func StartConvoyServer(a *app, cfg config.Configuration, withWorkers bool) error
 	start := time.Now()
 	log.Info("Starting Convoy server...")
 
-	if util.IsStringEmpty(string(cfg.GroupConfig.Signature.Header)) {
-		cfg.GroupConfig.Signature.Header = config.DefaultSignatureHeader
-		log.Warnf("signature header is blank. setting default %s", config.DefaultSignatureHeader)
-	}
-
 	err := realm_chain.Init(&cfg.Auth, a.apiKeyRepo)
 	if err != nil {
 		log.WithError(err).Fatal("failed to initialize realm chain")
@@ -158,12 +153,14 @@ func StartConvoyServer(a *app, cfg config.Configuration, withWorkers bool) error
 		return errors.New("please provide the HTTP port in the convoy.json file")
 	}
 
-	srv := server.New(cfg,
+	srv := server.New(
+		cfg,
 		a.eventRepo,
 		a.eventDeliveryRepo,
 		a.applicationRepo,
 		a.apiKeyRepo,
 		a.groupRepo,
+		a.subRepo,
 		a.sourceRepo,
 		a.eventQueue,
 		a.createEventQueue,
@@ -171,24 +168,25 @@ func StartConvoyServer(a *app, cfg config.Configuration, withWorkers bool) error
 		a.tracer,
 		a.cache,
 		a.limiter,
-		a.searcher)
+		a.searcher,
+	)
 
 	if withWorkers {
 		// register tasks.
-		handler := task.ProcessEventDelivery(a.applicationRepo, a.eventDeliveryRepo, a.groupRepo, a.limiter)
+		handler := task.ProcessEventDelivery(a.applicationRepo, a.eventDeliveryRepo, a.groupRepo, a.limiter, a.subRepo)
 		if err := task.CreateTasks(a.groupRepo, convoy.EventProcessor, handler); err != nil {
 			log.WithError(err).Error("failed to register tasks")
 			return err
 		}
 
 		// register tasks.
-		eventCreatedhandler := task.ProcessEventCreated(a.applicationRepo, a.eventRepo, a.groupRepo, a.eventDeliveryRepo, a.cache, a.eventQueue)
+		eventCreatedhandler := task.ProcessEventCreation(a.applicationRepo, a.eventRepo, a.groupRepo, a.eventDeliveryRepo, a.cache, a.eventQueue, a.subRepo)
 		if err := task.CreateTasks(a.groupRepo, convoy.CreateEventProcessor, eventCreatedhandler); err != nil {
 			log.WithError(err).Error("failed to register tasks")
 			return err
 		}
 
-		worker.RegisterNewGroupTask(a.applicationRepo, a.eventDeliveryRepo, a.groupRepo, a.limiter, a.eventRepo, a.cache, a.eventQueue)
+		worker.RegisterNewGroupTask(a.applicationRepo, a.eventDeliveryRepo, a.groupRepo, a.limiter, a.eventRepo, a.cache, a.eventQueue, a.subRepo)
 
 		log.Infof("Starting Convoy workers...")
 		// register worker.
@@ -352,80 +350,6 @@ func loadServerConfigFromCliFlags(cmd *cobra.Command, c *config.Configuration) e
 
 	if !util.IsStringEmpty(sslCertFile) {
 		c.Server.HTTP.SSLCertFile = sslCertFile
-	}
-
-	// CONVOY_STRATEGY_TYPE
-	retryStrategy, err := cmd.Flags().GetString("retry-strategy")
-	if err != nil {
-		return err
-	}
-
-	if !util.IsStringEmpty(retryStrategy) {
-		c.GroupConfig.Strategy.Type = config.StrategyProvider(retryStrategy)
-	}
-
-	// CONVOY_SIGNATURE_HASH
-	signatureHash, err := cmd.Flags().GetString("signature-hash")
-	if err != nil {
-		return err
-	}
-
-	if !util.IsStringEmpty(signatureHash) {
-		c.GroupConfig.Signature.Hash = signatureHash
-	}
-
-	// CONVOY_SIGNATURE_HEADER
-	signatureHeader, err := cmd.Flags().GetString("signature-header")
-	if err != nil {
-		return err
-	}
-
-	if !util.IsStringEmpty(signatureHeader) {
-		c.GroupConfig.Signature.Header = config.SignatureHeaderProvider(signatureHeader)
-	} else if util.IsStringEmpty(c.GroupConfig.Signature.Header.String()) {
-		c.GroupConfig.Signature.Header = config.DefaultSignatureHeader
-	}
-
-	// CONVOY_DISABLE_ENDPOINT
-	isDisableEndpointSet := cmd.Flags().Changed("disable-endpoint")
-	if isDisableEndpointSet {
-		disableEndpoint, err := cmd.Flags().GetBool("disable-endpoint")
-		if err != nil {
-			return err
-		}
-
-		c.GroupConfig.DisableEndpoint = disableEndpoint
-	}
-
-	// CONVOY_REPLAY_ATTACKS
-	isReplayAttacksSet := cmd.Flags().Changed("replay-attacks")
-	if isReplayAttacksSet {
-		replayAttacks, err := cmd.Flags().GetBool("replay-attacks")
-		if err != nil {
-			return err
-		}
-
-		c.GroupConfig.ReplayAttacks = replayAttacks
-	}
-
-	// CONVOY_INTERVAL_SECONDS
-	retryInterval, err := cmd.Flags().GetUint64("retry-interval")
-	if err != nil {
-		return err
-	}
-
-	if retryInterval != 0 {
-		c.GroupConfig.Strategy.Default.IntervalSeconds = retryInterval
-	}
-
-	// CONVOY_RETRY_LIMIT
-	retryLimit, err := cmd.Flags().GetUint64("retry-limit")
-	if err != nil {
-		return err
-	}
-
-	if retryLimit != 0 {
-		c.GroupConfig.Strategy.Default.RetryLimit = retryLimit
 	}
 
 	// CONVOY_SMTP_PROVIDER

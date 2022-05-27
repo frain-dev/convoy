@@ -364,12 +364,12 @@ func (db *appRepo) UpdateApplicationEndpointsStatus(ctx context.Context, appId s
 		return err
 	}
 
-	m := parseMapOfUIDs(endpointIds)
-	for i := 0; i < len(app.Endpoints); i++ {
-		if _, ok := m[app.Endpoints[i].UID]; ok {
-			app.Endpoints[i].Status = status
-		}
-	}
+	// m := parseMapOfUIDs(endpointIds)
+	// for i := 0; i < len(app.Endpoints); i++ {
+	// 	if _, ok := m[app.Endpoints[i].UID]; ok {
+	// 		app.Endpoints[i].Status = status
+	// 	}
+	// }
 
 	update := bson.D{primitive.E{Key: "$set", Value: bson.D{
 		primitive.E{Key: "endpoints", Value: app.Endpoints},
@@ -380,10 +380,10 @@ func (db *appRepo) UpdateApplicationEndpointsStatus(ctx context.Context, appId s
 	return err
 }
 
-func parseMapOfUIDs(ids []string) map[string]bool {
-	elementMap := make(map[string]bool)
-	for i := 0; i < len(ids); i++ {
-		elementMap[ids[i]] = true
-	}
-	return elementMap
-}
+// func parseMapOfUIDs(ids []string) map[string]bool {
+// 	elementMap := make(map[string]bool)
+// 	for i := 0; i < len(ids); i++ {
+// 		elementMap[ids[i]] = true
+// 	}
+// 	return elementMap
+// }

@@ -3,6 +3,7 @@ package mongo
 import (
 	"context"
 	"errors"
+	log "github.com/sirupsen/logrus"
 	"time"
 
 	"github.com/frain-dev/convoy/datastore"
@@ -68,7 +69,6 @@ func (db *groupRepo) CreateGroup(ctx context.Context, o *datastore.Group) error 
 }
 
 func (db *groupRepo) UpdateGroup(ctx context.Context, o *datastore.Group) error {
-
 	o.UpdatedAt = primitive.NewDateTimeFromTime(time.Now())
 
 	filter := bson.D{primitive.E{Key: "uid", Value: o.UID}}
@@ -105,6 +105,72 @@ func (db *groupRepo) FetchGroupByID(ctx context.Context,
 	}
 
 	return org, err
+}
+
+func (db *groupRepo) FillGroupsStatistics(ctx context.Context, groups []*datastore.Group) error {
+	ids := make([]string, 0, len(groups))
+	for _, group := range groups {
+		ids = append(ids, group.UID)
+	}
+
+	matchStage := bson.D{
+		{Key: "$match",
+			Value: bson.D{
+				{Key: "uid", Value: bson.M{"$in": ids}},
+			},
+		},
+	}
+
+	lookupStage1 := bson.D{
+		{Key: "$lookup", Value: bson.D{
+			{Key: "from", Value: AppCollections},
+			{Key: "localField", Value: "uid"},
+			{Key: "foreignField", Value: "group_id"},
+			{Key: "as", Value: "group_apps"},
+		}},
+	}
+
+	lookupStage2 := bson.D{
+		{Key: "$lookup", Value: bson.D{
+			{Key: "from", Value: EventCollection},
+			{Key: "localField", Value: "uid"},
+			{Key: "foreignField", Value: "app_metadata.group_id"},
+			{Key: "as", Value: "group_events"},
+		}},
+	}
+
+	projectStage := bson.D{
+		{
+			Key: "$project",
+			Value: bson.D{
+				{Key: "group_id", Value: "$uid"},
+				{Key: "total_apps", Value: bson.D{{Key: "$size", Value: "$group_apps"}}},
+				{Key: "messages_sent", Value: bson.D{{Key: "$size", Value: "$group_events"}}},
+			}},
+	}
+
+	data, err := db.inner.Aggregate(ctx, mongo.Pipeline{matchStage, lookupStage1, lookupStage2, projectStage})
+	if err != nil {
+		log.WithError(err).Error("failed to run group statistics aggregation")
+		return err
+	}
+
+	var stats []datastore.GroupStatistics
+	if err = data.All(ctx, &stats); err != nil {
+		log.WithError(err).Error("failed to marshal group statistics")
+		return err
+	}
+
+	statsMap := map[string]*datastore.GroupStatistics{}
+	for i, s := range stats {
+		statsMap[s.GroupID] = &stats[i]
+	}
+
+	for i := range groups {
+		groups[i].Statistics = statsMap[groups[i].UID]
+	}
+
+	return nil
 }
 
 func (db *groupRepo) DeleteGroup(ctx context.Context, uid string) error {

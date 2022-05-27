@@ -45,6 +45,7 @@ type GroupRepository interface {
 	DeleteGroup(ctx context.Context, uid string) error
 	FetchGroupByID(context.Context, string) (*Group, error)
 	FetchGroupsByIDs(context.Context, []string) ([]Group, error)
+	FillGroupsStatistics(ctx context.Context, groups []*Group) error
 }
 
 type ApplicationRepository interface {
@@ -59,6 +60,15 @@ type ApplicationRepository interface {
 	SearchApplicationsByGroupId(context.Context, string, SearchParams) ([]Application, error)
 	FindApplicationEndpointByID(context.Context, string, string) (*Endpoint, error)
 	UpdateApplicationEndpointsStatus(context.Context, string, []string, EndpointStatus) error
+}
+
+type SubscriptionRepository interface {
+	CreateSubscription(context.Context, string, *Subscription) error
+	UpdateSubscription(context.Context, string, *Subscription) error
+	LoadSubscriptionsPaged(context.Context, string, Pageable) ([]Subscription, PaginationData, error)
+	DeleteSubscription(context.Context, string, *Subscription) error
+	FindSubscriptionByID(context.Context, string, string) (*Subscription, error)
+	FindSubscriptionByEventType(context.Context, string, string, EventType) ([]Subscription, error)
 }
 
 type SourceRepository interface {

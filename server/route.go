@@ -172,6 +172,18 @@ func buildRoutes(app *applicationHandler) http.Handler {
 				})
 			})
 
+			r.Route("/subscriptions", func(subsriptionRouter chi.Router) {
+				subsriptionRouter.Use(requireGroup(app.groupRepo, app.cache))
+				subsriptionRouter.Use(rateLimitByGroupID(app.limiter))
+				subsriptionRouter.Use(requirePermission(auth.RoleAdmin))
+
+				subsriptionRouter.Post("/", app.CreateSubscription)
+				subsriptionRouter.With(pagination).Get("/", app.GetSubscriptions)
+				subsriptionRouter.Delete("/", app.DeleteSubscription)
+				subsriptionRouter.Get("/{subscriptionID}", app.GetSubscription)
+				subsriptionRouter.Put("/{subscriptionID}", app.UpdateSubscription)
+			})
+
 			r.Route("/sources", func(sourceRouter chi.Router) {
 				sourceRouter.Use(requireGroup(app.groupRepo, app.cache))
 				sourceRouter.Use(requirePermission(auth.RoleAdmin))
@@ -387,13 +399,16 @@ func New(cfg config.Configuration,
 	appRepo datastore.ApplicationRepository,
 	apiKeyRepo datastore.APIKeyRepository,
 	orgRepo datastore.GroupRepository,
+	subRepo datastore.SubscriptionRepository,
 	sourceRepo datastore.SourceRepository,
 	eventQueue queue.Queuer,
 	createEventQueue queue.Queuer,
 	logger logger.Logger,
 	tracer tracer.Tracer,
 	cache cache.Cache,
-	limiter limiter.RateLimiter, searcher searcher.Searcher) *http.Server {
+	limiter limiter.RateLimiter,
+	searcher searcher.Searcher,
+) *http.Server {
 
 	app := newApplicationHandler(
 		eventRepo,
@@ -401,6 +416,7 @@ func New(cfg config.Configuration,
 		appRepo,
 		orgRepo,
 		apiKeyRepo,
+		subRepo,
 		sourceRepo,
 		eventQueue,
 		createEventQueue,
@@ -408,7 +424,8 @@ func New(cfg config.Configuration,
 		tracer,
 		cache,
 		limiter,
-		searcher)
+		searcher,
+	)
 
 	srv := &http.Server{
 		Handler:      buildRoutes(app),

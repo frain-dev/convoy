@@ -7,7 +7,6 @@ import (
 
 	"github.com/frain-dev/convoy"
 	"github.com/frain-dev/convoy/cache"
-	"github.com/frain-dev/convoy/config"
 	"github.com/frain-dev/convoy/datastore"
 	"github.com/frain-dev/convoy/queue"
 	"github.com/frain-dev/disq"
@@ -16,7 +15,15 @@ import (
 	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
-func ProcessEventCreated(appRepo datastore.ApplicationRepository, eventRepo datastore.EventRepository, groupRepo datastore.GroupRepository, eventDeliveryRepo datastore.EventDeliveryRepository, cache cache.Cache, eventQueue queue.Queuer) func(job *queue.Job) error {
+func ProcessEventCreation(
+	appRepo datastore.ApplicationRepository,
+	eventRepo datastore.EventRepository,
+	groupRepo datastore.GroupRepository,
+	eventDeliveryRepo datastore.EventDeliveryRepository,
+	cache cache.Cache,
+	eventQueue queue.Queuer,
+	subRepo datastore.SubscriptionRepository,
+) func(job *queue.Job) error {
 	return func(job *queue.Job) error {
 		event := job.Event
 		ctx := context.Background()
@@ -69,57 +76,47 @@ func ProcessEventCreated(appRepo datastore.ApplicationRepository, eventRepo data
 			return &disq.Error{Err: err, Delay: 10 * time.Second}
 		}
 
-		matchedEndpoints := matchEndpointsForDelivery(event.EventType, app.Endpoints, nil)
-		event.MatchedEndpoints = len(matchedEndpoints)
+		subscriptions, err := subRepo.FindSubscriptionByEventType(ctx, group.UID, app.UID, event.EventType)
+		if err != nil {
+			return &disq.Error{Err: errors.New("error fetching subscriptions for event type"), Delay: 10 * time.Second}
+		}
+
+		event.MatchedEndpoints = len(subscriptions)
 		err = eventRepo.CreateEvent(ctx, event)
 		if err != nil {
 			return &disq.Error{Err: err, Delay: 10 * time.Second}
 		}
 
-		var intervalSeconds uint64
-		var retryLimit uint64
-		if string(group.Config.Strategy.Type) == string(config.DefaultStrategyProvider) {
-			intervalSeconds = group.Config.Strategy.Default.IntervalSeconds
-			retryLimit = group.Config.Strategy.Default.RetryLimit
-		} else if string(group.Config.Strategy.Type) == string(config.ExponentialBackoffStrategyProvider) {
-			intervalSeconds = 0
-			retryLimit = group.Config.Strategy.ExponentialBackoff.RetryLimit
-		} else {
-			return nil
-		}
+		intervalSeconds := group.Config.Strategy.Duration
+		retryLimit := group.Config.Strategy.RetryCount
 
-		for _, v := range matchedEndpoints {
+		for _, s := range subscriptions {
+			endpoint, err := appRepo.FindApplicationEndpointByID(ctx, app.UID, s.EndpointID)
+			if err != nil {
+				return &disq.Error{Err: err, Delay: 10 * time.Second}
+			}
+
+			s.Endpoint = endpoint
+
+			metadata := &datastore.Metadata{
+				NumTrials:       0,
+				RetryLimit:      retryLimit,
+				Data:            event.Data,
+				IntervalSeconds: intervalSeconds,
+				Strategy:        group.Config.Strategy.Type,
+				NextSendTime:    primitive.NewDateTimeFromTime(time.Now()),
+			}
+
 			eventDelivery := &datastore.EventDelivery{
-				UID: uuid.New().String(),
-				EventMetadata: &datastore.EventMetadata{
-					UID:       event.UID,
-					EventType: event.EventType,
-				},
-				EndpointMetadata: &datastore.EndpointMetadata{
-					UID:               v.UID,
-					TargetURL:         v.TargetURL,
-					Status:            v.Status,
-					Secret:            v.Secret,
-					Sent:              false,
-					RateLimit:         v.RateLimit,
-					RateLimitDuration: v.RateLimitDuration,
-					HttpTimeout:       v.HttpTimeout,
-				},
-				AppMetadata: &datastore.AppMetadata{
-					UID:          app.UID,
-					Title:        app.Title,
-					GroupID:      app.GroupID,
-					SupportEmail: app.SupportEmail,
-				},
-				Metadata: &datastore.Metadata{
-					Data:            event.Data,
-					Strategy:        group.Config.Strategy.Type,
-					NumTrials:       0,
-					IntervalSeconds: intervalSeconds,
-					RetryLimit:      retryLimit,
-					NextSendTime:    primitive.NewDateTimeFromTime(time.Now()),
-				},
-				Status:           getEventDeliveryStatus(v, app),
+				UID:            uuid.New().String(),
+				SubscriptionID: s.UID,
+				AppID:          app.UID,
+				Metadata:       metadata,
+				GroupID:        group.UID,
+				EventID:        event.UID,
+				EndpointID:     s.EndpointID,
+
+				Status:           getEventDeliveryStatus(s, app),
 				DeliveryAttempts: []datastore.DeliveryAttempt{},
 				DocumentStatus:   datastore.ActiveDocumentStatus,
 				CreatedAt:        primitive.NewDateTimeFromTime(time.Now()),
@@ -147,30 +144,10 @@ func ProcessEventCreated(appRepo datastore.ApplicationRepository, eventRepo data
 	}
 }
 
-func getEventDeliveryStatus(endpoint datastore.Endpoint, app *datastore.Application) datastore.EventDeliveryStatus {
-	if app.IsDisabled || endpoint.Status != datastore.ActiveEndpointStatus {
+func getEventDeliveryStatus(subscription datastore.Subscription, app *datastore.Application) datastore.EventDeliveryStatus {
+	if app.IsDisabled || subscription.Status != datastore.ActiveEndpointStatus {
 		return datastore.DiscardedEventStatus
 	}
 
 	return datastore.ScheduledEventStatus
-}
-
-func matchEndpointsForDelivery(ev datastore.EventType, endpoints, matched []datastore.Endpoint) []datastore.Endpoint {
-	if len(endpoints) == 0 {
-		return matched
-	}
-
-	if matched == nil {
-		matched = make([]datastore.Endpoint, 0)
-	}
-
-	e := endpoints[0]
-	for _, v := range e.Events {
-		if v == string(ev) || v == "*" {
-			matched = append(matched, e)
-			break
-		}
-	}
-
-	return matchEndpointsForDelivery(ev, endpoints[1:], matched)
 }

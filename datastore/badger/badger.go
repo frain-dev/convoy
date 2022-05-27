@@ -18,6 +18,7 @@ type Client struct {
 	apiKeyRepo        datastore.APIKeyRepository
 	groupRepo         datastore.GroupRepository
 	eventRepo         datastore.EventRepository
+	subRepo           datastore.SubscriptionRepository
 	applicationRepo   datastore.ApplicationRepository
 	eventDeliveryRepo datastore.EventDeliveryRepository
 	sourceRepo        datastore.SourceRepository
@@ -37,6 +38,7 @@ func New(cfg config.Configuration) (datastore.DatabaseClient, error) {
 			WithZSTDCompressionLevel(0).
 			WithCompression(0).WithLogger(&logrus.Logger{Out: io.Discard}),
 	})
+
 	if err != nil {
 		return nil, err
 	}
@@ -47,6 +49,7 @@ func New(cfg config.Configuration) (datastore.DatabaseClient, error) {
 		eventRepo:         NewEventRepo(st),
 		apiKeyRepo:        NewApiRoleRepo(st),
 		applicationRepo:   NewApplicationRepo(st),
+		subRepo:           NewSubscriptionRepo(st),
 		eventDeliveryRepo: NewEventDeliveryRepository(st),
 		sourceRepo:        NewSourceRepo(st),
 	}
@@ -84,6 +87,10 @@ func (c *Client) EventDeliveryRepo() datastore.EventDeliveryRepository {
 
 func (c *Client) APIRepo() datastore.APIKeyRepository {
 	return c.apiKeyRepo
+}
+
+func (c *Client) SubRepo() datastore.SubscriptionRepository {
+	return c.subRepo
 }
 
 func (c *Client) SourceRepo() datastore.SourceRepository {

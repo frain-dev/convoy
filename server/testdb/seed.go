@@ -68,8 +68,6 @@ func SeedMultipleApplications(db datastore.DatabaseClient, g *datastore.Group, c
 func SeedEndpoint(db datastore.DatabaseClient, app *datastore.Application, groupID string, events []string) (*datastore.Endpoint, error) {
 	endpoint := &datastore.Endpoint{
 		UID:            uuid.New().String(),
-		Events:         events,
-		Status:         datastore.ActiveEndpointStatus,
 		DocumentStatus: datastore.ActiveDocumentStatus,
 	}
 
@@ -89,8 +87,6 @@ func SeedMultipleEndpoints(db datastore.DatabaseClient, app *datastore.Applicati
 	for i := 0; i < count; i++ {
 		endpoint := &datastore.Endpoint{
 			UID:            uuid.New().String(),
-			Events:         events,
-			Status:         datastore.ActiveEndpointStatus,
 			DocumentStatus: datastore.ActiveDocumentStatus,
 		}
 
@@ -114,11 +110,9 @@ func SeedDefaultGroup(db datastore.DatabaseClient) (*datastore.Group, error) {
 		Name: "default-group",
 		Config: &datastore.GroupConfig{
 			Strategy: datastore.StrategyConfiguration{
-				Type: config.DefaultStrategyProvider,
-				Default: datastore.DefaultStrategyConfiguration{
-					IntervalSeconds: 10,
-					RetryLimit:      2,
-				},
+				Type:       datastore.DefaultStrategyProvider,
+				Duration:   10,
+				RetryCount: 2,
 			},
 			Signature: datastore.SignatureConfiguration{
 				Header: config.DefaultSignatureHeader,
@@ -180,6 +174,7 @@ func SeedGroup(db datastore.DatabaseClient, uid, name string, cfg *datastore.Gro
 	g := &datastore.Group{
 		UID:               uid,
 		Name:              name,
+		Type:              datastore.OutgoingGroup,
 		Config:            cfg,
 		RateLimit:         convoy.RATE_LIMIT,
 		RateLimitDuration: convoy.RATE_LIMIT_DURATION,
@@ -235,28 +230,11 @@ func SeedEventDelivery(db datastore.DatabaseClient, app *datastore.Application, 
 	}
 
 	eventDelivery := &datastore.EventDelivery{
-		UID: uid,
-		EventMetadata: &datastore.EventMetadata{
-			UID:       event.UID,
-			EventType: event.EventType,
-		},
-		EndpointMetadata: &datastore.EndpointMetadata{
-			UID:               endpoint.UID,
-			TargetURL:         endpoint.TargetURL,
-			Status:            endpoint.Status,
-			Secret:            endpoint.Secret,
-			HttpTimeout:       endpoint.HttpTimeout,
-			RateLimit:         endpoint.RateLimit,
-			RateLimitDuration: endpoint.RateLimitDuration,
-			Sent:              false,
-		},
-		Status: status,
-		AppMetadata: &datastore.AppMetadata{
-			UID:          app.UID,
-			Title:        app.Title,
-			GroupID:      groupID,
-			SupportEmail: app.SupportEmail,
-		},
+		UID:            uid,
+		EventID:        event.UID,
+		EndpointID:     endpoint.UID,
+		Status:         status,
+		AppID:          app.UID,
 		CreatedAt:      primitive.NewDateTimeFromTime(time.Now()),
 		UpdatedAt:      primitive.NewDateTimeFromTime(time.Now()),
 		DocumentStatus: datastore.ActiveDocumentStatus,
@@ -277,11 +255,11 @@ func SeedSource(db datastore.DatabaseClient, g *datastore.Group, uid string) (*d
 	}
 
 	source := &datastore.Source{
-		UID:    uid,
+		UID:     uid,
 		GroupID: g.UID,
-		MaskID: uuid.NewString(),
-		Name:   "Convoy-Prod",
-		Type:   datastore.HTTPSource,
+		MaskID:  uuid.NewString(),
+		Name:    "Convoy-Prod",
+		Type:    datastore.HTTPSource,
 		Verifier: &datastore.VerifierConfig{
 			Type: datastore.HMacVerifier,
 			HMac: datastore.HMac{

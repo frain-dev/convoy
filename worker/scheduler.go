@@ -17,7 +17,7 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
-func RegisterNewGroupTask(applicationRepo datastore.ApplicationRepository, eventDeliveryRepo datastore.EventDeliveryRepository, groupRepo datastore.GroupRepository, rateLimiter limiter.RateLimiter, eventRepo datastore.EventRepository, cache cache.Cache, eventQueue queue.Queuer) {
+func RegisterNewGroupTask(applicationRepo datastore.ApplicationRepository, eventDeliveryRepo datastore.EventDeliveryRepository, groupRepo datastore.GroupRepository, rateLimiter limiter.RateLimiter, eventRepo datastore.EventRepository, cache cache.Cache, eventQueue queue.Queuer, subRepo datastore.SubscriptionRepository) {
 	go func() {
 		for {
 			filter := &datastore.GroupFilter{}
@@ -27,19 +27,25 @@ func RegisterNewGroupTask(applicationRepo datastore.ApplicationRepository, event
 			}
 			for _, g := range groups {
 				pEvtDelTask := convoy.EventProcessor.SetPrefix(g.Name)       // process event delivery task
-				pEvtCrtTask := convoy.CreateEventProcessor.SetPrefix(g.Name) // process event create task
+				pEvtCrtTask := convoy.CreateEventProcessor.SetPrefix(g.Name) // process event creation task
 
 				t, _ := disq.Tasks.LoadTask(string(pEvtCrtTask))
 				if t == nil {
 					s, _ := disq.Tasks.LoadTask(string(pEvtDelTask))
 					if s == nil {
-						handler := task.ProcessEventDelivery(applicationRepo, eventDeliveryRepo, groupRepo, rateLimiter)
+						handler := task.ProcessEventDelivery(applicationRepo, eventDeliveryRepo, groupRepo, rateLimiter, subRepo)
 						log.Infof("Registering event delivery task handler for %s", g.Name)
-						task.CreateTask(pEvtDelTask, *g, handler)
+						_, err := task.CreateTask(pEvtDelTask, *g, handler)
+						if err != nil {
+							log.WithError(err).Error(fmt.Sprintf("failed register event delivery task for group %v", g.Name))
+						}
 
-						eventCreatedhandler := task.ProcessEventCreated(applicationRepo, eventRepo, groupRepo, eventDeliveryRepo, cache, eventQueue)
+						eventCreatedhandler := task.ProcessEventCreation(applicationRepo, eventRepo, groupRepo, eventDeliveryRepo, cache, eventQueue, subRepo)
 						log.Infof("Registering event creation task handler for %s", g.Name)
-						task.CreateTask(pEvtCrtTask, *g, eventCreatedhandler)
+						_, err = task.CreateTask(pEvtCrtTask, *g, eventCreatedhandler)
+						if err != nil {
+							log.WithError(err).Error(fmt.Sprintf("failed register event creation create task for group %v", g.Name))
+						}
 					}
 				}
 			}
@@ -164,13 +170,13 @@ func ProcessEventDeliveryBatches(ctx context.Context, status datastore.EventDeli
 		var group *datastore.Group
 		for i := range batch {
 			delivery := &batch[i]
-			groupID := delivery.AppMetadata.GroupID
+			groupID := delivery.GroupID
 
 			group, ok = groups[groupID]
 			if !ok { // never seen this group before, so fetch and cache
-				group, err = groupRepo.FetchGroupByID(ctx, delivery.AppMetadata.GroupID)
+				group, err = groupRepo.FetchGroupByID(ctx, delivery.GroupID)
 				if err != nil {
-					log.WithError(err).Errorf("batch %d: failed to fetch group %s for delivery %s", batchCount, delivery.AppMetadata.GroupID, delivery.UID)
+					log.WithError(err).Errorf("batch %d: failed to fetch group %s for delivery %s", batchCount, delivery.GroupID, delivery.UID)
 					continue
 				}
 				groups[groupID] = group
