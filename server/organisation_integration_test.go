@@ -197,7 +197,7 @@ func (s *OrganisationIntegrationTestSuite) Test_GetOrganisations() {
 	parseResponse(s.T(), w.Result(), &pagedResp)
 
 	require.Equal(s.T(), 2, len(organisations))
-	require.Equal(s.T(), 5, pagedResp.Pagination.Total)
+	require.Equal(s.T(), int64(5), pagedResp.Pagination.Total)
 }
 
 func (s *OrganisationIntegrationTestSuite) Test_DeleteOrganisation() {
