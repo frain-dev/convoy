@@ -345,10 +345,11 @@ func requireOrganisation(orgRepo datastore.OrganisationRepository) func(next htt
 
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 
-			eventId := chi.URLParam(r, "orgID")
+			orgID := chi.URLParam(r, "orgID")
 
-			org, err := orgRepo.FetchOrganisationByID(r.Context(), eventId)
+			org, err := orgRepo.FetchOrganisationByID(r.Context(), orgID)
 			if err != nil {
+				log.WithError(err).Error("failed to fetch organisation")
 				_ = render.Render(w, r, newErrorResponse("failed to fetch organisation", http.StatusBadRequest))
 				return
 			}

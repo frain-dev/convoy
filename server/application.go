@@ -28,6 +28,7 @@ type applicationHandler struct {
 	securityService     *services.SecurityService
 	sourceService       *services.SourceService
 	organisationService *services.OrganisationService
+	orgRepo             datastore.OrganisationRepository
 	appRepo             datastore.ApplicationRepository
 	eventRepo           datastore.EventRepository
 	eventDeliveryRepo   datastore.EventDeliveryRepository
@@ -75,6 +76,7 @@ func newApplicationHandler(
 		securityService:     ss,
 		organisationService: os,
 		sourceService:       sos,
+		orgRepo:             orgRepo,
 		eventRepo:           eventRepo,
 		eventDeliveryRepo:   eventDeliveryRepo,
 		apiKeyRepo:          apiKeyRepo,

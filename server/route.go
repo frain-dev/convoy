@@ -178,10 +178,12 @@ func buildRoutes(app *applicationHandler) http.Handler {
 				orgRouter.Post("/", app.CreateOrganisation)
 				orgRouter.With(pagination).Get("/", app.GetOrganisationsPaged)
 
-				orgRouter.Route("/{orgID}", func(r chi.Router) {
-					orgRouter.Get("/", app.GetOrganisation)
-					orgRouter.Put("/", app.UpdateOrganisation)
-					orgRouter.Delete("/", app.DeleteOrganisation)
+				orgRouter.Route("/{orgID}", func(orgSubRouter chi.Router) {
+					orgSubRouter.Use(requireOrganisation(app.orgRepo))
+
+					orgSubRouter.Get("/", app.GetOrganisation)
+					orgSubRouter.Put("/", app.UpdateOrganisation)
+					orgSubRouter.Delete("/", app.DeleteOrganisation)
 				})
 			})
 
