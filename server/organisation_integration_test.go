@@ -73,6 +73,42 @@ func (s *OrganisationIntegrationTestSuite) Test_CreateOrganisation() {
 	require.Equal(s.T(), "new_org", org.Name)
 }
 
+func (s *OrganisationIntegrationTestSuite) Test_CreateOrganisation_EmptyOrganisationName() {
+	expectedStatusCode := http.StatusBadRequest
+
+	body := strings.NewReader(`{"name":""}`)
+	// Arrange.
+	url := "/api/v1/organisations"
+	req := createRequest(http.MethodPost, url, body)
+	w := httptest.NewRecorder()
+
+	// Act.
+	s.Router.ServeHTTP(w, req)
+
+	// Assert.
+	require.Equal(s.T(), expectedStatusCode, w.Code)
+}
+
+func (s *OrganisationIntegrationTestSuite) Test_UpdateOrganisation_EmptyOrganisationName() {
+	expectedStatusCode := http.StatusBadRequest
+
+	uid := uuid.NewString()
+	_, err := testdb.SeedOrganisation(s.DB, uid, "", "new_org")
+	require.NoError(s.T(), err)
+
+	body := strings.NewReader(`{"name":""}`)
+	// Arrange.
+	url := fmt.Sprintf("/api/v1/organisations/%s", uid)
+	req := createRequest(http.MethodPut, url, body)
+	w := httptest.NewRecorder()
+
+	// Act.
+	s.Router.ServeHTTP(w, req)
+
+	// Assert.
+	require.Equal(s.T(), expectedStatusCode, w.Code)
+}
+
 func (s *OrganisationIntegrationTestSuite) Test_UpdateOrganisation() {
 	expectedStatusCode := http.StatusAccepted
 
@@ -99,7 +135,7 @@ func (s *OrganisationIntegrationTestSuite) Test_UpdateOrganisation() {
 }
 
 func (s *OrganisationIntegrationTestSuite) Test_GetOrganisation() {
-	expectedStatusCode := http.StatusAccepted
+	expectedStatusCode := http.StatusOK
 
 	uid := uuid.NewString()
 	_, err := testdb.SeedOrganisation(s.DB, uid, "", "new_org")
@@ -127,7 +163,7 @@ func (s *OrganisationIntegrationTestSuite) Test_GetOrganisation() {
 }
 
 func (s *OrganisationIntegrationTestSuite) Test_GetOrganisations() {
-	expectedStatusCode := http.StatusAccepted
+	expectedStatusCode := http.StatusOK
 
 	_, err := testdb.SeedOrganisation(s.DB, uuid.NewString(), "", "")
 	require.NoError(s.T(), err)
@@ -165,7 +201,7 @@ func (s *OrganisationIntegrationTestSuite) Test_GetOrganisations() {
 }
 
 func (s *OrganisationIntegrationTestSuite) Test_DeleteOrganisation() {
-	expectedStatusCode := http.StatusAccepted
+	expectedStatusCode := http.StatusOK
 
 	uid := uuid.NewString()
 	_, err := testdb.SeedOrganisation(s.DB, uid, "", "new_org")
