@@ -32,7 +32,7 @@ func (u *UserService) LoginUser(ctx context.Context, data *models.LoginUser) (*d
 	user, err := u.userRepo.FindUserByEmail(ctx, data.Username)
 	if err != nil {
 		if err == datastore.ErrUserNotFound {
-			return nil, nil, NewServiceError(http.StatusUnauthorized, err)
+			return nil, nil, NewServiceError(http.StatusUnauthorized, errors.New("invalid username or password"))
 		}
 	}
 
