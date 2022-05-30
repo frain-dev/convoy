@@ -20,15 +20,8 @@ type UserService struct {
 	jwt      *jwt.Jwt
 }
 
-func NewUserService(userRepo datastore.UserRepository, cache cache.Cache) (*UserService, error) {
-	config, err := config.Get()
-
-	if err != nil {
-		return &UserService{}, err
-	}
-
-	jwt := jwt.NewJwt(&config.Auth.Native.Jwt, cache)
-	return &UserService{userRepo: userRepo, cache: cache, jwt: jwt}, nil
+func NewUserService(userRepo datastore.UserRepository, cache cache.Cache) *UserService {
+	return &UserService{userRepo: userRepo, cache: cache}
 }
 
 func (u *UserService) LoginUser(ctx context.Context, data *models.LoginUser) (*datastore.User, *jwt.Token, error) {
@@ -55,7 +48,12 @@ func (u *UserService) LoginUser(ctx context.Context, data *models.LoginUser) (*d
 		return nil, nil, NewServiceError(http.StatusUnauthorized, errors.New("invalid username or password"))
 	}
 
-	token, err := u.jwt.GenerateToken(user)
+	jwt, err := u.token()
+	if err != nil {
+		return nil, nil, NewServiceError(http.StatusInternalServerError, err)
+	}
+
+	token, err := jwt.GenerateToken(user)
 	if err != nil {
 		return nil, nil, NewServiceError(http.StatusInternalServerError, err)
 	}
@@ -69,7 +67,11 @@ func (u *UserService) RefreshToken(ctx context.Context, data *models.Token) (*jw
 		return nil, NewServiceError(http.StatusBadRequest, err)
 	}
 
-	isValid, err := u.jwt.ValidateAccessToken(data.AccessToken)
+	jw, err := u.token()
+	if err != nil {
+		return nil, NewServiceError(http.StatusInternalServerError, err)
+	}
+	isValid, err := jw.ValidateAccessToken(data.AccessToken)
 	if err != nil {
 
 		if errors.Is(err, jwt.ErrTokenExpired) {
@@ -87,7 +89,7 @@ func (u *UserService) RefreshToken(ctx context.Context, data *models.Token) (*jw
 		}
 	}
 
-	verified, err := u.jwt.ValidateRefreshToken(data.RefreshToken)
+	verified, err := jw.ValidateRefreshToken(data.RefreshToken)
 	if err != nil {
 		return nil, NewServiceError(http.StatusUnauthorized, err)
 	}
@@ -97,14 +99,16 @@ func (u *UserService) RefreshToken(ctx context.Context, data *models.Token) (*jw
 		if err == datastore.ErrUserNotFound {
 			return nil, NewServiceError(http.StatusUnauthorized, err)
 		}
+
+		return nil, NewServiceError(http.StatusUnauthorized, err)
 	}
 
-	token, err := u.jwt.GenerateToken(user)
+	token, err := jw.GenerateToken(user)
 	if err != nil {
 		return nil, NewServiceError(http.StatusInternalServerError, err)
 	}
 
-	err = u.jwt.BlacklistToken(verified, data.RefreshToken)
+	err = jw.BlacklistToken(verified, data.RefreshToken)
 	if err != nil {
 		return nil, NewServiceError(http.StatusBadRequest, errors.New("failed to blacklist token"))
 	}
@@ -114,15 +118,34 @@ func (u *UserService) RefreshToken(ctx context.Context, data *models.Token) (*jw
 }
 
 func (u *UserService) LogoutUser(token string) error {
-	verified, err := u.jwt.ValidateAccessToken(token)
+	jw, err := u.token()
+	if err != nil {
+		return NewServiceError(http.StatusInternalServerError, err)
+	}
+
+	verified, err := jw.ValidateAccessToken(token)
 	if err != nil {
 		return NewServiceError(http.StatusUnauthorized, err)
 	}
 
-	err = u.jwt.BlacklistToken(verified, token)
+	err = jw.BlacklistToken(verified, token)
 	if err != nil {
 		return NewServiceError(http.StatusBadRequest, errors.New("failed to blacklist token"))
 	}
 
 	return nil
+}
+
+func (u *UserService) token() (*jwt.Jwt, error) {
+	if u.jwt != nil {
+		return u.jwt, nil
+	}
+
+	config, err := config.Get()
+	if err != nil {
+		return &jwt.Jwt{}, err
+	}
+
+	u.jwt = jwt.NewJwt(&config.Auth.Native.Jwt, u.cache)
+	return u.jwt, nil
 }

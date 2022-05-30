@@ -21,9 +21,7 @@ func provideUserService(ctrl *gomock.Controller, t *testing.T) *UserService {
 	err := config.LoadConfig("./testdata/Auth_Config/full-convoy.json")
 	require.Nil(t, err)
 
-	userService, err := NewUserService(userRepo, cache)
-
-	require.Nil(t, err)
+	userService := NewUserService(userRepo, cache)
 	return userService
 }
 
@@ -246,7 +244,10 @@ func TestUserService_RefreshToken(t *testing.T) {
 			}
 
 			if tc.wantToken.generate {
-				token, err := u.jwt.GenerateToken(tc.args.user)
+				jwt, err := u.token()
+				require.Nil(t, err)
+
+				token, err := jwt.GenerateToken(tc.args.user)
 				require.Nil(t, err)
 
 				if tc.wantToken.accessToken {
@@ -341,7 +342,10 @@ func TestUserService_LogoutUser(t *testing.T) {
 			}
 
 			if tc.wantToken.generate {
-				token, err := u.jwt.GenerateToken(tc.args.user)
+				jwt, err := u.token()
+				require.Nil(t, err)
+
+				token, err := jwt.GenerateToken(tc.args.user)
 				require.Nil(t, err)
 
 				if tc.wantToken.accessToken {
