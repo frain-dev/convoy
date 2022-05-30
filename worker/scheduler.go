@@ -34,7 +34,7 @@ func (s *Scheduler) Start() {
 func (s *Scheduler) AddTask(name string, secs int, task interface{}) {
 	_, err := s.inner.Every(secs).Seconds().Do(task)
 	if err != nil {
-		log.WithError(err).Errorf("Failed to add %s scheduler task", name)
+		log.WithError(err).Fatalf("Failed to add %s scheduler task", name)
 	}
 }
 

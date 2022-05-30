@@ -3,7 +3,6 @@ package main
 import (
 	"github.com/frain-dev/convoy/config"
 	"github.com/frain-dev/convoy/worker"
-	"github.com/frain-dev/convoy/worker/task"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 )
@@ -26,10 +25,11 @@ func addSchedulerCommand(a *app) *cobra.Command {
 			s := worker.NewScheduler(&a.eventQueue)
 
 			// Register tasks.
-			s.AddTask("retry events", 30, func() {
-				task.RetryEventDeliveries(nil, "", a.eventDeliveryRepo, a.groupRepo, a.eventQueue)
-			})
+			// s.AddTask("retry events", 30, func() {
+			// 	  task.RetryEventDeliveries(nil, "", a.eventDeliveryRepo, a.groupRepo, a.eventQueue)
+			// })
 
+			// Start Processing
 			s.Start()
 		},
 	}
