@@ -7,9 +7,9 @@ import (
 
 	"github.com/frain-dev/convoy"
 	"github.com/frain-dev/convoy/cache"
-	"github.com/frain-dev/convoy/config"
 	"github.com/frain-dev/convoy/datastore"
 	"github.com/frain-dev/convoy/queue"
+	"github.com/frain-dev/disq"
 	"github.com/google/uuid"
 	log "github.com/sirupsen/logrus"
 	"go.mongodb.org/mongo-driver/bson/primitive"
@@ -26,7 +26,7 @@ func ProcessEventCreated(appRepo datastore.ApplicationRepository, eventRepo data
 		appCacheKey := convoy.ApplicationsCacheKey.Get(event.AppMetadata.UID).String()
 		err := cache.Get(ctx, appCacheKey, &app)
 		if err != nil {
-			return &EndpointError{Err: errors.New("cache error"), delay: 10 * time.Second}
+			return &disq.Error{Err: errors.New("cache error"), Delay: 10 * time.Second}
 		}
 
 		// cache miss, load from db
@@ -41,51 +41,42 @@ func ProcessEventCreated(appRepo datastore.ApplicationRepository, eventRepo data
 				}
 
 				log.WithError(err).Error("failed to fetch app")
-				return &EndpointError{Err: errors.New(msg), delay: 10 * time.Second}
+				return &disq.Error{Err: errors.New(msg), Delay: 10 * time.Second}
 			}
 
 			err = cache.Set(ctx, appCacheKey, app, 10*time.Minute)
 			if err != nil {
-				return &EndpointError{Err: err, delay: 10 * time.Second}
+				return &disq.Error{Err: err, Delay: 10 * time.Second}
 			}
 		}
 
 		groupCacheKey := convoy.GroupsCacheKey.Get(event.AppMetadata.GroupID).String()
 		err = cache.Get(ctx, groupCacheKey, &group)
 		if err != nil {
-			return &EndpointError{Err: err, delay: 10 * time.Second}
+			return &disq.Error{Err: err, Delay: 10 * time.Second}
 		}
 
 		if group == nil {
 			group, err = groupRepo.FetchGroupByID(ctx, event.AppMetadata.GroupID)
 			if err != nil {
-				return &EndpointError{Err: err, delay: 10 * time.Second}
+				return &disq.Error{Err: err, Delay: 10 * time.Second}
 			}
 		}
 
 		err = cache.Set(ctx, groupCacheKey, &group, 5*time.Minute)
 		if err != nil {
-			return &EndpointError{Err: err, delay: 10 * time.Second}
+			return &disq.Error{Err: err, Delay: 10 * time.Second}
 		}
 
 		matchedEndpoints := matchEndpointsForDelivery(event.EventType, app.Endpoints, nil)
 		event.MatchedEndpoints = len(matchedEndpoints)
 		err = eventRepo.CreateEvent(ctx, event)
 		if err != nil {
-			return &EndpointError{Err: err, delay: 10 * time.Second}
+			return &disq.Error{Err: err, Delay: 10 * time.Second}
 		}
 
-		var intervalSeconds uint64
-		var retryLimit uint64
-		if string(group.Config.Strategy.Type) == string(config.DefaultStrategyProvider) {
-			intervalSeconds = group.Config.Strategy.Default.IntervalSeconds
-			retryLimit = group.Config.Strategy.Default.RetryLimit
-		} else if string(group.Config.Strategy.Type) == string(config.ExponentialBackoffStrategyProvider) {
-			intervalSeconds = 0
-			retryLimit = group.Config.Strategy.ExponentialBackoff.RetryLimit
-		} else {
-			return nil
-		}
+		intervalSeconds := group.Config.Strategy.Duration
+		retryLimit := group.Config.Strategy.RetryCount
 
 		for _, v := range matchedEndpoints {
 			eventDelivery := &datastore.EventDelivery{

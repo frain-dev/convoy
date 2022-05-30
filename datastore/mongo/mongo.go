@@ -17,9 +17,10 @@ import (
 )
 
 const (
-	GroupCollection = "groups"
-	AppCollections  = "applications"
-	EventCollection = "events"
+	GroupCollection  = "groups"
+	AppCollections   = "applications"
+	EventCollection  = "events"
+	SourceCollection = "sources"
 )
 
 type Client struct {
@@ -29,6 +30,7 @@ type Client struct {
 	eventRepo         datastore.EventRepository
 	applicationRepo   datastore.ApplicationRepository
 	eventDeliveryRepo datastore.EventDeliveryRepository
+	sourceRepo        datastore.SourceRepository
 }
 
 func New(cfg config.Configuration) (datastore.DatabaseClient, error) {
@@ -66,6 +68,7 @@ func New(cfg config.Configuration) (datastore.DatabaseClient, error) {
 		applicationRepo:   NewApplicationRepo(conn),
 		eventRepo:         NewEventRepository(conn),
 		eventDeliveryRepo: NewEventDeliveryRepository(conn),
+		sourceRepo:        NewSourceRepo(conn),
 	}
 
 	c.ensureMongoIndices()
@@ -105,6 +108,10 @@ func (c *Client) EventDeliveryRepo() datastore.EventDeliveryRepository {
 	return c.eventDeliveryRepo
 }
 
+func (c *Client) SourceRepo() datastore.SourceRepository {
+	return c.sourceRepo
+}
+
 func (c *Client) ensureMongoIndices() {
 	c.ensureIndex(GroupCollection, "uid", true, nil)
 	c.ensureIndex(GroupCollection, "name", true, bson.M{"document_status": datastore.ActiveDocumentStatus})
@@ -112,8 +119,10 @@ func (c *Client) ensureMongoIndices() {
 	c.ensureIndex(EventCollection, "uid", true, nil)
 	c.ensureIndex(EventCollection, "event_type", false, nil)
 	c.ensureIndex(EventCollection, "app_metadata.uid", false, nil)
+	c.ensureIndex(EventCollection, "app_metadata.group_id", false, nil)
 	c.ensureIndex(AppCollections, "group_id", false, nil)
 	c.ensureIndex(EventDeliveryCollection, "status", false, nil)
+	c.ensureIndex(SourceCollection, "mask_id", true, nil)
 	c.ensureCompoundIndex(AppCollections)
 	c.ensureCompoundIndex(EventCollection)
 	c.ensureCompoundIndex(EventDeliveryCollection)
@@ -128,7 +137,7 @@ func (c *Client) ensureIndex(collectionName string, field string, unique bool, p
 	}
 
 	mod := mongo.IndexModel{
-		Keys:    bson.M{field: 1}, // index in ascending order or -1 for descending order
+		Keys:    bson.D{{Key: field, Value: 1}}, // index in ascending order or -1 for descending order
 		Options: createIndexOpts,
 	}
 

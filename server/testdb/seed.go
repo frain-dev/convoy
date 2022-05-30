@@ -36,7 +36,7 @@ func SeedApplication(db datastore.DatabaseClient, g *datastore.Group, uid, title
 
 	// Seed Data.
 	appRepo := db.AppRepo()
-	err := appRepo.CreateApplication(context.TODO(), app)
+	err := appRepo.CreateApplication(context.TODO(), app, g.UID)
 	if err != nil {
 		return &datastore.Application{}, err
 	}
@@ -57,7 +57,7 @@ func SeedMultipleApplications(db datastore.DatabaseClient, g *datastore.Group, c
 
 		// Seed Data.
 		appRepo := db.AppRepo()
-		err := appRepo.CreateApplication(context.TODO(), app)
+		err := appRepo.CreateApplication(context.TODO(), app, app.GroupID)
 		if err != nil {
 			return err
 		}
@@ -65,7 +65,7 @@ func SeedMultipleApplications(db datastore.DatabaseClient, g *datastore.Group, c
 	return nil
 }
 
-func SeedEndpoint(db datastore.DatabaseClient, app *datastore.Application, events []string) (*datastore.Endpoint, error) {
+func SeedEndpoint(db datastore.DatabaseClient, app *datastore.Application, groupID string, events []string) (*datastore.Endpoint, error) {
 	endpoint := &datastore.Endpoint{
 		UID:            uuid.New().String(),
 		Events:         events,
@@ -77,7 +77,7 @@ func SeedEndpoint(db datastore.DatabaseClient, app *datastore.Application, event
 
 	// Seed Data.
 	appRepo := db.AppRepo()
-	err := appRepo.UpdateApplication(context.TODO(), app)
+	err := appRepo.UpdateApplication(context.TODO(), app, groupID)
 	if err != nil {
 		return &datastore.Endpoint{}, err
 	}
@@ -85,7 +85,7 @@ func SeedEndpoint(db datastore.DatabaseClient, app *datastore.Application, event
 	return endpoint, nil
 }
 
-func SeedMultipleEndpoints(db datastore.DatabaseClient, app *datastore.Application, events []string, count int) ([]datastore.Endpoint, error) {
+func SeedMultipleEndpoints(db datastore.DatabaseClient, app *datastore.Application, groupID string, events []string, count int) ([]datastore.Endpoint, error) {
 	for i := 0; i < count; i++ {
 		endpoint := &datastore.Endpoint{
 			UID:            uuid.New().String(),
@@ -99,7 +99,7 @@ func SeedMultipleEndpoints(db datastore.DatabaseClient, app *datastore.Applicati
 
 	// Seed Data.
 	appRepo := db.AppRepo()
-	err := appRepo.UpdateApplication(context.TODO(), app)
+	err := appRepo.UpdateApplication(context.TODO(), app, groupID)
 	if err != nil {
 		return nil, err
 	}
@@ -114,11 +114,9 @@ func SeedDefaultGroup(db datastore.DatabaseClient) (*datastore.Group, error) {
 		Name: "default-group",
 		Config: &datastore.GroupConfig{
 			Strategy: datastore.StrategyConfiguration{
-				Type: config.DefaultStrategyProvider,
-				Default: datastore.DefaultStrategyConfiguration{
-					IntervalSeconds: 10,
-					RetryLimit:      2,
-				},
+				Type:       datastore.DefaultStrategyProvider,
+				Duration:   10,
+				RetryCount: 2,
 			},
 			Signature: datastore.SignatureConfiguration{
 				Header: config.DefaultSignatureHeader,
@@ -180,6 +178,7 @@ func SeedGroup(db datastore.DatabaseClient, uid, name string, cfg *datastore.Gro
 	g := &datastore.Group{
 		UID:               uid,
 		Name:              name,
+		Type:              datastore.OutgoingGroup,
 		Config:            cfg,
 		RateLimit:         convoy.RATE_LIMIT,
 		RateLimitDuration: convoy.RATE_LIMIT_DURATION,
@@ -199,7 +198,7 @@ func SeedGroup(db datastore.DatabaseClient, uid, name string, cfg *datastore.Gro
 }
 
 // SeedEvent creates a random event for integration tests.
-func SeedEvent(db datastore.DatabaseClient, app *datastore.Application, uid, eventType string, data []byte) (*datastore.Event, error) {
+func SeedEvent(db datastore.DatabaseClient, app *datastore.Application, groupID string, uid, eventType string, data []byte) (*datastore.Event, error) {
 	if util.IsStringEmpty(uid) {
 		uid = uuid.New().String()
 	}
@@ -211,7 +210,7 @@ func SeedEvent(db datastore.DatabaseClient, app *datastore.Application, uid, eve
 		AppMetadata: &datastore.AppMetadata{
 			UID:          app.UID,
 			Title:        app.Title,
-			GroupID:      app.GroupID,
+			GroupID:      groupID,
 			SupportEmail: app.SupportEmail,
 		},
 		CreatedAt:      primitive.NewDateTimeFromTime(time.Now()),
@@ -229,7 +228,7 @@ func SeedEvent(db datastore.DatabaseClient, app *datastore.Application, uid, eve
 }
 
 // SeedEventDelivery creates a random event delivery for integration tests.
-func SeedEventDelivery(db datastore.DatabaseClient, app *datastore.Application, event *datastore.Event, endpoint *datastore.Endpoint, uid string, status datastore.EventDeliveryStatus) (*datastore.EventDelivery, error) {
+func SeedEventDelivery(db datastore.DatabaseClient, app *datastore.Application, event *datastore.Event, endpoint *datastore.Endpoint, groupID string, uid string, status datastore.EventDeliveryStatus) (*datastore.EventDelivery, error) {
 	if util.IsStringEmpty(uid) {
 		uid = uuid.New().String()
 	}
@@ -254,7 +253,7 @@ func SeedEventDelivery(db datastore.DatabaseClient, app *datastore.Application, 
 		AppMetadata: &datastore.AppMetadata{
 			UID:          app.UID,
 			Title:        app.Title,
-			GroupID:      app.GroupID,
+			GroupID:      groupID,
 			SupportEmail: app.SupportEmail,
 		},
 		CreatedAt:      primitive.NewDateTimeFromTime(time.Now()),
@@ -269,6 +268,37 @@ func SeedEventDelivery(db datastore.DatabaseClient, app *datastore.Application, 
 	}
 
 	return eventDelivery, nil
+}
+
+func SeedSource(db datastore.DatabaseClient, g *datastore.Group, uid string) (*datastore.Source, error) {
+	if util.IsStringEmpty(uid) {
+		uid = uuid.New().String()
+	}
+
+	source := &datastore.Source{
+		UID:     uid,
+		GroupID: g.UID,
+		MaskID:  uuid.NewString(),
+		Name:    "Convoy-Prod",
+		Type:    datastore.HTTPSource,
+		Verifier: &datastore.VerifierConfig{
+			Type: datastore.HMacVerifier,
+			HMac: datastore.HMac{
+				Header: "X-Convoy-Header",
+				Hash:   "SHA512",
+				Secret: "Convoy-Secret",
+			},
+		},
+		DocumentStatus: datastore.ActiveDocumentStatus,
+	}
+
+	//Seed Data
+	err := db.SourceRepo().CreateSource(context.TODO(), source)
+	if err != nil {
+		return nil, err
+	}
+
+	return source, nil
 }
 
 // PurgeDB is run after every test run and it's used to truncate the DB to have

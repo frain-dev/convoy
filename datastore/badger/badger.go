@@ -20,6 +20,7 @@ type Client struct {
 	eventRepo         datastore.EventRepository
 	applicationRepo   datastore.ApplicationRepository
 	eventDeliveryRepo datastore.EventDeliveryRepository
+	sourceRepo        datastore.SourceRepository
 }
 
 func New(cfg config.Configuration) (datastore.DatabaseClient, error) {
@@ -47,6 +48,7 @@ func New(cfg config.Configuration) (datastore.DatabaseClient, error) {
 		apiKeyRepo:        NewApiRoleRepo(st),
 		applicationRepo:   NewApplicationRepo(st),
 		eventDeliveryRepo: NewEventDeliveryRepository(st),
+		sourceRepo:        NewSourceRepo(st),
 	}
 
 	return c, nil
@@ -82,4 +84,8 @@ func (c *Client) EventDeliveryRepo() datastore.EventDeliveryRepository {
 
 func (c *Client) APIRepo() datastore.APIKeyRepository {
 	return c.apiKeyRepo
+}
+
+func (c *Client) SourceRepo() datastore.SourceRepository {
+	return c.sourceRepo
 }

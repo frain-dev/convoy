@@ -3,7 +3,6 @@ package retrystrategies
 import (
 	"time"
 
-	"github.com/frain-dev/convoy/config"
 	"github.com/frain-dev/convoy/datastore"
 )
 
@@ -13,7 +12,7 @@ type RetryStrategy interface {
 }
 
 func NewRetryStrategyFromMetadata(m datastore.Metadata) RetryStrategy {
-	if string(m.Strategy) == string(config.ExponentialBackoffStrategyProvider) {
+	if string(m.Strategy) == string(datastore.ExponentialStrategyProvider) {
 		// 10 seconds to 15 mins
 		return NewExponential([]uint{
 			10000,  // 10 seconds

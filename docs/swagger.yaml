@@ -38,6 +38,13 @@ definitions:
       updated_at:
         type: integer
     type: object
+  datastore.ApiKey:
+    properties:
+      header:
+        type: string
+      key:
+        type: string
+    type: object
   datastore.AppMetadata:
     properties:
       group_id:
@@ -76,12 +83,12 @@ definitions:
       updated_at:
         type: string
     type: object
-  datastore.DefaultStrategyConfiguration:
+  datastore.BasicAuth:
     properties:
-      intervalSeconds:
-        type: integer
-      retryLimit:
-        type: integer
+      password:
+        type: string
+      username:
+        type: string
     type: object
   datastore.DeliveryAttempt:
     properties:
@@ -228,11 +235,6 @@ definitions:
       uid:
         type: string
     type: object
-  datastore.ExponentialBackoffStrategyConfiguration:
-    properties:
-      retryLimit:
-        type: integer
-    type: object
   datastore.Group:
     properties:
       config:
@@ -246,11 +248,14 @@ definitions:
       name:
         type: string
       rate_limit:
+        description: 'TODO(subomi): refactor this into the Instance API.'
         type: integer
       rate_limit_duration:
         type: string
       statistics:
         $ref: '#/definitions/datastore.GroupStatistics'
+      type:
+        type: string
       uid:
         type: string
       updated_at:
@@ -260,6 +265,8 @@ definitions:
     properties:
       disable_endpoint:
         type: boolean
+      ratelimit:
+        $ref: '#/definitions/datastore.RateLimitConfiguration'
       replay_attacks:
         type: boolean
       signature:
@@ -273,6 +280,17 @@ definitions:
         type: integer
       total_apps:
         type: integer
+    type: object
+  datastore.HMac:
+    properties:
+      encoding:
+        type: string
+      hash:
+        type: string
+      header:
+        type: string
+      secret:
+        type: string
     type: object
   datastore.HttpHeader:
     additionalProperties:
@@ -317,6 +335,13 @@ definitions:
       totalPage:
         type: integer
     type: object
+  datastore.RateLimitConfiguration:
+    properties:
+      count:
+        type: integer
+      duration:
+        type: string
+    type: object
   datastore.SignatureConfiguration:
     properties:
       hash:
@@ -326,10 +351,21 @@ definitions:
     type: object
   datastore.StrategyConfiguration:
     properties:
-      default:
-        $ref: '#/definitions/datastore.DefaultStrategyConfiguration'
-      exponentialBackoff:
-        $ref: '#/definitions/datastore.ExponentialBackoffStrategyConfiguration'
+      duration:
+        type: integer
+      retry_count:
+        type: integer
+      type:
+        type: string
+    type: object
+  datastore.VerifierConfig:
+    properties:
+      api_key:
+        $ref: '#/definitions/datastore.ApiKey'
+      basic_auth:
+        $ref: '#/definitions/datastore.BasicAuth'
+      hmac:
+        $ref: '#/definitions/datastore.HMac'
       type:
         type: string
     type: object
@@ -417,6 +453,8 @@ definitions:
         type: integer
       rate_limit_duration:
         type: string
+      type:
+        type: string
     type: object
   models.PortalAPIKeyResponse:
     properties:
@@ -432,6 +470,42 @@ definitions:
         $ref: '#/definitions/auth.Role'
       url:
         type: string
+    type: object
+  models.Source:
+    properties:
+      is_disabled:
+        type: boolean
+      name:
+        type: string
+      type:
+        type: string
+      verifier:
+        $ref: '#/definitions/datastore.VerifierConfig'
+    type: object
+  models.SourceResponse:
+    properties:
+      created_at:
+        type: integer
+      deleted_at:
+        type: integer
+      group_id:
+        type: string
+      is_disabled:
+        type: boolean
+      mask_id:
+        type: string
+      name:
+        type: string
+      type:
+        type: string
+      uid:
+        type: string
+      updated_at:
+        type: integer
+      url:
+        type: string
+      verifier:
+        $ref: '#/definitions/datastore.VerifierConfig'
     type: object
   server.Stub:
     type: object
@@ -2604,6 +2678,319 @@ paths:
       summary: Revoke API Key
       tags:
       - APIKey
+  /sources:
+    get:
+      consumes:
+      - application/json
+      description: This endpoint fetches multiple sources
+      parameters:
+      - description: results per page
+        in: query
+        name: perPage
+        type: string
+      - description: page number
+        in: query
+        name: page
+        type: string
+      - description: sort order
+        in: query
+        name: sort
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/server.serverResponse'
+            - properties:
+                data:
+                  allOf:
+                  - $ref: '#/definitions/server.pagedResponse'
+                  - properties:
+                      content:
+                        items:
+                          $ref: '#/definitions/models.SourceResponse'
+                        type: array
+                    type: object
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            allOf:
+            - $ref: '#/definitions/server.serverResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/server.Stub'
+              type: object
+        "401":
+          description: Unauthorized
+          schema:
+            allOf:
+            - $ref: '#/definitions/server.serverResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/server.Stub'
+              type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            allOf:
+            - $ref: '#/definitions/server.serverResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/server.Stub'
+              type: object
+      security:
+      - ApiKeyAuth: []
+      summary: Fetch multiple sources
+      tags:
+      - Source
+    post:
+      consumes:
+      - application/json
+      description: This endpoint creates a source
+      parameters:
+      - description: group id
+        in: query
+        name: groupId
+        required: true
+        type: string
+      - description: Source Details
+        in: body
+        name: source
+        required: true
+        schema:
+          $ref: '#/definitions/models.Source'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/server.serverResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/models.SourceResponse'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            allOf:
+            - $ref: '#/definitions/server.serverResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/server.Stub'
+              type: object
+        "401":
+          description: Unauthorized
+          schema:
+            allOf:
+            - $ref: '#/definitions/server.serverResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/server.Stub'
+              type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            allOf:
+            - $ref: '#/definitions/server.serverResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/server.Stub'
+              type: object
+      security:
+      - ApiKeyAuth: []
+      summary: Create a source
+      tags:
+      - Source
+  /sources/{sourceID}:
+    delete:
+      consumes:
+      - application/json
+      description: This endpoint deletes a source
+      parameters:
+      - description: group id
+        in: query
+        name: groupId
+        required: true
+        type: string
+      - description: source id
+        in: path
+        name: sourceID
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/server.serverResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/server.Stub'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            allOf:
+            - $ref: '#/definitions/server.serverResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/server.Stub'
+              type: object
+        "401":
+          description: Unauthorized
+          schema:
+            allOf:
+            - $ref: '#/definitions/server.serverResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/server.Stub'
+              type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            allOf:
+            - $ref: '#/definitions/server.serverResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/server.Stub'
+              type: object
+      security:
+      - ApiKeyAuth: []
+      summary: Delete source
+      tags:
+      - Source
+    get:
+      consumes:
+      - application/json
+      description: This endpoint fetches a source by its id
+      parameters:
+      - description: group id
+        in: query
+        name: groupId
+        required: true
+        type: string
+      - description: source id
+        in: path
+        name: sourceID
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/server.serverResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/models.SourceResponse'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            allOf:
+            - $ref: '#/definitions/server.serverResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/server.Stub'
+              type: object
+        "401":
+          description: Unauthorized
+          schema:
+            allOf:
+            - $ref: '#/definitions/server.serverResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/server.Stub'
+              type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            allOf:
+            - $ref: '#/definitions/server.serverResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/server.Stub'
+              type: object
+      security:
+      - ApiKeyAuth: []
+      summary: Get a source
+      tags:
+      - Source
+    put:
+      consumes:
+      - application/json
+      description: This endpoint updates a source
+      parameters:
+      - description: group id
+        in: query
+        name: groupId
+        required: true
+        type: string
+      - description: source id
+        in: path
+        name: sourceID
+        required: true
+        type: string
+      - description: Source Details
+        in: body
+        name: source
+        required: true
+        schema:
+          $ref: '#/definitions/models.Source'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/server.serverResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/models.SourceResponse'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            allOf:
+            - $ref: '#/definitions/server.serverResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/server.Stub'
+              type: object
+        "401":
+          description: Unauthorized
+          schema:
+            allOf:
+            - $ref: '#/definitions/server.serverResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/server.Stub'
+              type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            allOf:
+            - $ref: '#/definitions/server.serverResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/server.Stub'
+              type: object
+      security:
+      - ApiKeyAuth: []
+      summary: Update a source
+      tags:
+      - Source
 schemes:
 - https
 securityDefinitions:
