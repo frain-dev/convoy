@@ -181,7 +181,7 @@ func StartConvoyServer(a *app, cfg config.Configuration, withWorkers bool) error
 			return err
 		}
 
-		worker.RegisterNewGroupQueueAndTask(a.applicationRepo, a.eventDeliveryRepo, a.groupRepo, a.limiter, a.eventRepo, a.cache, a.queue)
+		worker.RegisterNewGroupQueueandTask(a.applicationRepo, a.eventDeliveryRepo, a.groupRepo, a.limiter, a.eventRepo, a.cache, a.queue)
 
 		log.Infof("Starting Convoy workers...")
 		// register worker.

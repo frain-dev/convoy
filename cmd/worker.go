@@ -26,7 +26,7 @@ func addWorkerCommand(a *app) *cobra.Command {
 			if err != nil {
 				return err
 			}
-			worker.RegisterNewGroupQueueAndTask(a.applicationRepo, a.eventDeliveryRepo, a.groupRepo, a.limiter, a.eventRepo, a.cache, a.queue)
+			worker.RegisterNewGroupQueueandTask(a.applicationRepo, a.eventDeliveryRepo, a.groupRepo, a.limiter, a.eventRepo, a.cache, a.queue)
 			// register worker.
 			ctx := context.Background()
 			err = a.queue.StartAll(ctx)

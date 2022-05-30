@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"log"
 	"sync"
 
 	"github.com/frain-dev/convoy"
@@ -13,7 +14,6 @@ import (
 	"github.com/frain-dev/disq"
 	redisBroker "github.com/frain-dev/disq/brokers/redis"
 	"github.com/go-redis/redis/v8"
-	log "github.com/sirupsen/logrus"
 )
 
 type RedisQueuer struct {

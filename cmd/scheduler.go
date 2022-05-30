@@ -1,9 +1,6 @@
 package main
 
 import (
-	"context"
-	"time"
-
 	"github.com/frain-dev/convoy/config"
 	"github.com/frain-dev/convoy/worker"
 	log "github.com/sirupsen/logrus"
@@ -26,40 +23,16 @@ func addSchedulerCommand(a *app) *cobra.Command {
 			if cfg.Queue.Type != config.RedisQueueProvider {
 				log.WithError(err).Fatalf("Queue type error: Command is available for redis queue only.")
 			}
-			d, err := time.ParseDuration(timer)
-			if err != nil {
-				log.WithError(err).Fatalf("failed to parse time duration")
-			}
 
-			ticker := time.NewTicker(d)
-			ctx := context.Background()
+			s := worker.NewScheduler(&a.queue)
 
-			for {
-				select {
-				case <-ticker.C:
-					go func() {
-						err := worker.RequeueEventDeliveries("Processing", timeInterval, a.eventDeliveryRepo, a.groupRepo, queueName, a.queue)
-						if err != nil {
-							log.WithError(err).Errorf("Error requeuing status processing: %v", err)
-						}
-					}()
-					go func() {
-						err := worker.RequeueEventDeliveries("Scheduled", timeInterval, a.eventDeliveryRepo, a.groupRepo, queueName, a.queue)
-						if err != nil {
-							log.WithError(err).Errorf("Error requeuing status Scheduled: %v", err)
-						}
-					}()
-					go func() {
-						err := worker.RequeueEventDeliveries("Retry", timeInterval, a.eventDeliveryRepo, a.groupRepo, queueName, a.queue)
-						if err != nil {
-							log.WithError(err).Errorf("Error requeuing status Retry: %v", err)
-						}
-					}()
-				case <-ctx.Done():
-					ticker.Stop()
-					return
-				}
-			}
+			// Register tasks.
+			// s.AddTask("retry events", 30, func() {
+			// 	  task.RetryEventDeliveries(nil, "", a.eventDeliveryRepo, a.groupRepo, a.eventQueue)
+			// })
+
+			// Start Processing
+			s.Start()
 		},
 	}
 

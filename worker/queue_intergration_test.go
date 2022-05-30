@@ -1,4 +1,7 @@
-package redis
+//go:build integration
+// +build integration
+
+package worker
 
 import (
 	"context"
@@ -19,6 +22,8 @@ import (
 	nooplimiter "github.com/frain-dev/convoy/limiter/noop"
 	"github.com/frain-dev/convoy/logger"
 	"github.com/frain-dev/convoy/queue"
+	redisqueue "github.com/frain-dev/convoy/queue/redis"
+
 	"github.com/frain-dev/convoy/searcher"
 	noopsearcher "github.com/frain-dev/convoy/searcher/noop"
 	"github.com/frain-dev/convoy/server/testdb"
@@ -59,10 +64,10 @@ func (p *ProducerIntegrationTestSuite) SetupTest() {
 	p.Event, _ = testdb.SeedEvent(p.DB, app, p.DefaultGroup.UID, uuid.NewString(), "*", []byte(`{}`))
 	p.EventDelivery, _ = seedEventDelivery(p.DB, app, &datastore.Event{}, &datastore.Endpoint{}, p.DefaultGroup.UID, uuid.NewString(), datastore.SuccessEventStatus)
 
-	p.RedisClient, _ = NewClient(getConfig())
+	p.RedisClient, _ = redisqueue.NewClient(getConfig())
 	a := p.ConvoyApp
 	p.QueuerName = uuid.NewString()
-	p.Queuer = NewQueuer(queue.QueueOptions{
+	p.Queuer = redisqueue.NewQueuer(queue.QueueOptions{
 		Name:  p.QueuerName,
 		Redis: p.RedisClient,
 	})
@@ -89,7 +94,7 @@ func (s *ProducerIntegrationTestSuite) TearDownTest() {
 
 func (p *ProducerIntegrationTestSuite) Test_StartAll() {
 	taskName := convoy.EventProcessor.SetPrefix(p.DefaultGroup.Name)
-	redisQueuer := NewQueuer(queue.QueueOptions{
+	redisQueuer := redisqueue.NewQueuer(queue.QueueOptions{
 		Name:  uuid.NewString(),
 		Redis: p.RedisClient,
 	})
@@ -130,7 +135,7 @@ func (p *ProducerIntegrationTestSuite) Test_StartAll() {
 func (p *ProducerIntegrationTestSuite) Test_StartOne() {
 	taskName := convoy.EventProcessor.SetPrefix(p.DefaultGroup.Name)
 
-	redisQueuer := NewQueuer(queue.QueueOptions{
+	redisQueuer := redisqueue.NewQueuer(queue.QueueOptions{
 		Name:  uuid.NewString(),
 		Redis: p.RedisClient,
 	})
@@ -198,7 +203,7 @@ func (p *ProducerIntegrationTestSuite) Test_SendEvent() {
 func (p *ProducerIntegrationTestSuite) Test_StopAll() {
 	taskName := convoy.EventProcessor.SetPrefix(p.DefaultGroup.Name)
 
-	redisQueuer := NewQueuer(queue.QueueOptions{
+	redisQueuer := redisqueue.NewQueuer(queue.QueueOptions{
 		Name:  uuid.NewString(),
 		Redis: p.RedisClient,
 	})
@@ -230,9 +235,9 @@ func (p *ProducerIntegrationTestSuite) Test_StopAll() {
 	time.Sleep(time.Duration(1) * time.Second)
 	_ = redisQueuer.StopAll()
 
-	l1, _ := redisQueuer.(*RedisQueuer).Load(q1)
-	l2, _ := redisQueuer.(*RedisQueuer).Load(q2)
-	l3, _ := redisQueuer.(*RedisQueuer).Load(q3)
+	l1, _ := redisQueuer.(*redisqueue.RedisQueuer).Load(q1)
+	l2, _ := redisQueuer.(*redisqueue.RedisQueuer).Load(q2)
+	l3, _ := redisQueuer.(*redisqueue.RedisQueuer).Load(q3)
 
 	require.Equal(p.T(), []bool{false, false, false}, []bool{l1.Status(), l2.Status(), l3.Status()})
 }
@@ -240,7 +245,7 @@ func (p *ProducerIntegrationTestSuite) Test_StopAll() {
 func (p *ProducerIntegrationTestSuite) Test_StopOne() {
 	taskName := convoy.EventProcessor.SetPrefix(p.DefaultGroup.Name)
 
-	redisQueuer := NewQueuer(queue.QueueOptions{
+	redisQueuer := redisqueue.NewQueuer(queue.QueueOptions{
 		Name:  uuid.NewString(),
 		Redis: p.RedisClient,
 	})
@@ -272,16 +277,16 @@ func (p *ProducerIntegrationTestSuite) Test_StopOne() {
 	time.Sleep(time.Duration(1) * time.Second)
 	_ = redisQueuer.StopOne(q2)
 
-	l1, _ := redisQueuer.(*RedisQueuer).Load(q1)
-	l2, _ := redisQueuer.(*RedisQueuer).Load(q2)
-	l3, _ := redisQueuer.(*RedisQueuer).Load(q3)
+	l1, _ := redisQueuer.(*redisqueue.RedisQueuer).Load(q1)
+	l2, _ := redisQueuer.(*redisqueue.RedisQueuer).Load(q2)
+	l3, _ := redisQueuer.(*redisqueue.RedisQueuer).Load(q3)
 
 	require.Equal(p.T(), []bool{true, false, true}, []bool{l1.Status(), l2.Status(), l3.Status()})
 }
 
 func (p *ProducerIntegrationTestSuite) Test_New_Queue_That_Exists() {
 
-	redisQueuer := NewQueuer(queue.QueueOptions{
+	redisQueuer := redisqueue.NewQueuer(queue.QueueOptions{
 		Name:  uuid.NewString(),
 		Redis: p.RedisClient,
 	})
@@ -305,7 +310,7 @@ func (p *ProducerIntegrationTestSuite) Test_New_Queue_That_Exists() {
 
 func (p *ProducerIntegrationTestSuite) Test_UpdateOne_That_Exists() {
 
-	redisQueuer := NewQueuer(queue.QueueOptions{
+	redisQueuer := redisqueue.NewQueuer(queue.QueueOptions{
 		Name:  uuid.NewString(),
 		Redis: p.RedisClient,
 	})
@@ -330,13 +335,13 @@ func (p *ProducerIntegrationTestSuite) Test_UpdateOne_That_Exists() {
 	})
 	require.NoError(p.T(), err)
 
-	b1, _ := redisQueuer.(*RedisQueuer).Load(q1)
+	b1, _ := redisQueuer.(*redisqueue.RedisQueuer).Load(q1)
 	require.Equal(p.T(), 50, int(b1.Config().(*disqredis.RedisConfig).Concurency))
 }
 
 func (p *ProducerIntegrationTestSuite) Test_UpdateOne_New() {
 
-	redisQueuer := NewQueuer(queue.QueueOptions{
+	redisQueuer := redisqueue.NewQueuer(queue.QueueOptions{
 		Name:  uuid.NewString(),
 		Redis: p.RedisClient,
 	})
@@ -357,14 +362,14 @@ func (p *ProducerIntegrationTestSuite) Test_UpdateOne_New() {
 		Concurrency: 50,
 	})
 
-	b1, _ := redisQueuer.(*RedisQueuer).Load(q2)
+	b1, _ := redisQueuer.(*redisqueue.RedisQueuer).Load(q2)
 
 	require.Equal(p.T(), 50, int(b1.Config().(*disqredis.RedisConfig).Concurency))
 }
 
 func (p *ProducerIntegrationTestSuite) Test_Delete() {
 
-	redisQueuer := NewQueuer(queue.QueueOptions{
+	redisQueuer := redisqueue.NewQueuer(queue.QueueOptions{
 		Name:  uuid.NewString(),
 		Redis: p.RedisClient,
 	})
@@ -392,7 +397,7 @@ func (p *ProducerIntegrationTestSuite) Test_Delete() {
 
 func (p *ProducerIntegrationTestSuite) Test_Stats() {
 	taskName := convoy.EventProcessor.SetPrefix(p.DefaultGroup.Name)
-	redisQueuer := NewQueuer(queue.QueueOptions{
+	redisQueuer := redisqueue.NewQueuer(queue.QueueOptions{
 		Name:  uuid.NewString(),
 		Redis: p.RedisClient,
 	})
@@ -434,7 +439,7 @@ func (p *ProducerIntegrationTestSuite) Test_Stats() {
 func (p *ProducerIntegrationTestSuite) Test_Write_Name_Doesnt_Exist() {
 	taskName := convoy.EventProcessor.SetPrefix(p.DefaultGroup.Name)
 	defaultQueue := uuid.NewString()
-	redisQueuer := NewQueuer(queue.QueueOptions{
+	redisQueuer := redisqueue.NewQueuer(queue.QueueOptions{
 		Name:  defaultQueue,
 		Redis: p.RedisClient,
 	})
