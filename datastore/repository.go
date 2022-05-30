@@ -52,7 +52,7 @@ type OrganisationRepository interface {
 	LoadOrganisationsPaged(context.Context, Pageable) ([]Organisation, PaginationData, error)
 	CreateOrganisation(context.Context, *Organisation) error
 	UpdateOrganisation(context.Context, *Organisation) error
-	DeleteOrganisation(ctx context.Context, uid string) error
+	DeleteOrganisation(context.Context, string) error
 	FetchOrganisationByID(context.Context, string) (*Organisation, error)
 }
 

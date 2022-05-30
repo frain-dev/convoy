@@ -172,21 +172,6 @@ func buildRoutes(app *applicationHandler) http.Handler {
 				})
 			})
 
-			r.Route("/organisations", func(orgRouter chi.Router) {
-				orgRouter.Use(requirePermission(auth.RoleAdmin))
-
-				orgRouter.Post("/", app.CreateOrganisation)
-				orgRouter.With(pagination).Get("/", app.GetOrganisationsPaged)
-
-				orgRouter.Route("/{orgID}", func(orgSubRouter chi.Router) {
-					orgSubRouter.Use(requireOrganisation(app.orgRepo))
-
-					orgSubRouter.Get("/", app.GetOrganisation)
-					orgSubRouter.Put("/", app.UpdateOrganisation)
-					orgSubRouter.Delete("/", app.DeleteOrganisation)
-				})
-			})
-
 			r.Route("/sources", func(sourceRouter chi.Router) {
 				sourceRouter.Use(requireGroup(app.groupRepo, app.cache))
 				sourceRouter.Use(requirePermission(auth.RoleAdmin))
@@ -229,6 +214,21 @@ func buildRoutes(app *applicationHandler) http.Handler {
 				groupSubRouter.With(requirePermission(auth.RoleUIAdmin)).Get("/", app.GetGroup)
 				groupSubRouter.With(requirePermission(auth.RoleSuperUser)).Put("/", app.UpdateGroup)
 				groupSubRouter.With(requirePermission(auth.RoleSuperUser)).Delete("/", app.DeleteGroup)
+			})
+		})
+
+		uiRouter.Route("/organisations", func(orgRouter chi.Router) {
+			orgRouter.Use(requirePermission(auth.RoleAdmin))
+
+			orgRouter.Post("/", app.CreateOrganisation)
+			orgRouter.With(pagination).Get("/", app.GetOrganisationsPaged)
+
+			orgRouter.Route("/{orgID}", func(orgSubRouter chi.Router) {
+				orgSubRouter.Use(requireOrganisation(app.orgRepo))
+
+				orgSubRouter.Get("/", app.GetOrganisation)
+				orgSubRouter.Put("/", app.UpdateOrganisation)
+				orgSubRouter.Delete("/", app.DeleteOrganisation)
 			})
 		})
 

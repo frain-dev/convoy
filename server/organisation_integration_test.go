@@ -54,7 +54,7 @@ func (s *OrganisationIntegrationTestSuite) Test_CreateOrganisation() {
 
 	body := strings.NewReader(`{"name":"new_org"}`)
 	// Arrange.
-	url := "/api/v1/organisations"
+	url := "/api/v1/ui/organisations"
 	req := createRequest(http.MethodPost, url, body)
 	w := httptest.NewRecorder()
 
@@ -78,7 +78,7 @@ func (s *OrganisationIntegrationTestSuite) Test_CreateOrganisation_EmptyOrganisa
 
 	body := strings.NewReader(`{"name":""}`)
 	// Arrange.
-	url := "/api/v1/organisations"
+	url := "/api/v1/ui/organisations"
 	req := createRequest(http.MethodPost, url, body)
 	w := httptest.NewRecorder()
 
@@ -98,7 +98,7 @@ func (s *OrganisationIntegrationTestSuite) Test_UpdateOrganisation_EmptyOrganisa
 
 	body := strings.NewReader(`{"name":""}`)
 	// Arrange.
-	url := fmt.Sprintf("/api/v1/organisations/%s", uid)
+	url := fmt.Sprintf("/api/v1/ui/organisations/%s", uid)
 	req := createRequest(http.MethodPut, url, body)
 	w := httptest.NewRecorder()
 
@@ -119,7 +119,7 @@ func (s *OrganisationIntegrationTestSuite) Test_UpdateOrganisation() {
 	body := strings.NewReader(`{"name":"update_org"}`)
 
 	// Arrange.
-	url := fmt.Sprintf("/api/v1/organisations/%s", uid)
+	url := fmt.Sprintf("/api/v1/ui/organisations/%s", uid)
 	req := createRequest(http.MethodPut, url, body)
 	w := httptest.NewRecorder()
 
@@ -142,7 +142,7 @@ func (s *OrganisationIntegrationTestSuite) Test_GetOrganisation() {
 	require.NoError(s.T(), err)
 
 	// Arrange.
-	url := fmt.Sprintf("/api/v1/organisations/%s", uid)
+	url := fmt.Sprintf("/api/v1/ui/organisations/%s", uid)
 	req := createRequest(http.MethodGet, url, nil)
 	w := httptest.NewRecorder()
 
@@ -165,23 +165,11 @@ func (s *OrganisationIntegrationTestSuite) Test_GetOrganisation() {
 func (s *OrganisationIntegrationTestSuite) Test_GetOrganisations() {
 	expectedStatusCode := http.StatusOK
 
-	_, err := testdb.SeedOrganisation(s.DB, uuid.NewString(), "", "")
-	require.NoError(s.T(), err)
-
-	_, err = testdb.SeedOrganisation(s.DB, uuid.NewString(), "", "")
-	require.NoError(s.T(), err)
-
-	_, err = testdb.SeedOrganisation(s.DB, uuid.NewString(), "", "")
-	require.NoError(s.T(), err)
-
-	_, err = testdb.SeedOrganisation(s.DB, uuid.NewString(), "", "")
-	require.NoError(s.T(), err)
-
-	_, err = testdb.SeedOrganisation(s.DB, uuid.NewString(), "", "")
+	_, err := testdb.SeedMultipleOrganisations(s.DB, "", 5)
 	require.NoError(s.T(), err)
 
 	// Arrange.
-	url := "/api/v1/organisations?page=2&perPage=2"
+	url := "/api/v1/ui/organisations?page=2&perPage=2"
 	req := createRequest(http.MethodGet, url, nil)
 	w := httptest.NewRecorder()
 
@@ -208,7 +196,7 @@ func (s *OrganisationIntegrationTestSuite) Test_DeleteOrganisation() {
 	require.NoError(s.T(), err)
 
 	// Arrange.
-	url := fmt.Sprintf("/api/v1/organisations/%s", uid)
+	url := fmt.Sprintf("/api/v1/ui/organisations/%s", uid)
 	req := createRequest(http.MethodDelete, url, nil)
 	w := httptest.NewRecorder()
 

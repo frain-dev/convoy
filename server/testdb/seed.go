@@ -298,6 +298,33 @@ func SeedOrganisation(db datastore.DatabaseClient, uid, ownerID, name string) (*
 	return org, nil
 }
 
+// SeedMultipleOrganisations is creates random Organisations for integration tests.
+func SeedMultipleOrganisations(db datastore.DatabaseClient, ownerID string, num int) ([]*datastore.Organisation, error) {
+	orgs := []*datastore.Organisation{}
+
+	for i := 0; i < num; i++ {
+		uid := uuid.New().String()
+
+		org := &datastore.Organisation{
+			UID:            uid,
+			OwnerID:        ownerID,
+			Name:           fmt.Sprintf("TestOrg-%s", uid),
+			DocumentStatus: datastore.ActiveDocumentStatus,
+			CreatedAt:      primitive.NewDateTimeFromTime(time.Now()),
+			UpdatedAt:      primitive.NewDateTimeFromTime(time.Now()),
+		}
+		orgs = append(orgs, org)
+
+		// Seed Data.
+		err := db.OrganisationRepo().CreateOrganisation(context.TODO(), org)
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	return orgs, nil
+}
+
 func SeedSource(db datastore.DatabaseClient, g *datastore.Group, uid string) (*datastore.Source, error) {
 	if util.IsStringEmpty(uid) {
 		uid = uuid.New().String()
