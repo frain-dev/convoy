@@ -10,6 +10,8 @@ type HttpMethod string
 
 type TaskName string
 
+type QueueName string
+
 type CacheKey string
 
 type GenericMap map[string]interface{}
@@ -70,6 +72,11 @@ const (
 	CreateEventProcessor TaskName = "CreateEventProcessor"
 	ApplicationsCacheKey CacheKey = "applications"
 	GroupsCacheKey       CacheKey = "groups"
+)
+
+const (
+	EventQueue       QueueName = "EventQueue"
+	CreateEventQueue QueueName = "CreateEventQueue"
 )
 
 const (

@@ -3,6 +3,7 @@ package server
 import (
 	"net/http"
 
+	"github.com/frain-dev/convoy/queue"
 	"github.com/frain-dev/convoy/searcher"
 	"github.com/frain-dev/convoy/services"
 
@@ -11,7 +12,6 @@ import (
 	"github.com/frain-dev/convoy/logger"
 
 	"github.com/frain-dev/convoy/datastore"
-	"github.com/frain-dev/convoy/queue"
 	"github.com/frain-dev/convoy/server/models"
 	"github.com/frain-dev/convoy/tracer"
 	"github.com/frain-dev/convoy/util"
@@ -33,8 +33,7 @@ type applicationHandler struct {
 	groupRepo         datastore.GroupRepository
 	apiKeyRepo        datastore.APIKeyRepository
 	sourceRepo        datastore.SourceRepository
-	eventQueue        queue.Queuer
-	createEventQueue  queue.Queuer
+	queue             queue.Queuer
 	logger            logger.Logger
 	tracer            tracer.Tracer
 	cache             cache.Cache
@@ -53,15 +52,14 @@ func newApplicationHandler(
 	groupRepo datastore.GroupRepository,
 	apiKeyRepo datastore.APIKeyRepository,
 	sourceRepo datastore.SourceRepository,
-	eventQueue queue.Queuer,
-	createEventQueue queue.Queuer,
+	queue queue.Queuer,
 	logger logger.Logger,
 	tracer tracer.Tracer,
 	cache cache.Cache,
 	limiter limiter.RateLimiter, searcher searcher.Searcher) *applicationHandler {
-	as := services.NewAppService(appRepo, eventRepo, eventDeliveryRepo, eventQueue, cache)
-	es := services.NewEventService(appRepo, eventRepo, eventDeliveryRepo, eventQueue, createEventQueue, cache, searcher)
-	gs := services.NewGroupService(appRepo, groupRepo, eventRepo, eventDeliveryRepo, limiter)
+	as := services.NewAppService(appRepo, eventRepo, eventDeliveryRepo, cache)
+	es := services.NewEventService(appRepo, eventRepo, eventDeliveryRepo, queue, cache, searcher)
+	gs := services.NewGroupService(appRepo, groupRepo, eventRepo, eventDeliveryRepo, queue, limiter)
 	ss := services.NewSecurityService(groupRepo, apiKeyRepo)
 	sos := services.NewSourceService(sourceRepo)
 
@@ -77,8 +75,7 @@ func newApplicationHandler(
 		appRepo:           appRepo,
 		groupRepo:         groupRepo,
 		sourceRepo:        sourceRepo,
-		eventQueue:        eventQueue,
-		createEventQueue:  createEventQueue,
+		queue:             queue,
 		logger:            logger,
 		tracer:            tracer,
 		cache:             cache,

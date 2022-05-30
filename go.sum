@@ -355,8 +355,8 @@ github.com/fatih/structs v1.1.0/go.mod h1:9NiDSp5zOcgEDl+j00MP/WkGVPOlPRLejGD8Ga
 github.com/felixge/httpsnoop v1.0.2 h1:+nS9g82KMXccJ/wp0zyRW9ZBHFETmMGtkk+2CTTrW4o=
 github.com/felixge/httpsnoop v1.0.2/go.mod h1:m8KPJKqk1gH5J9DgRY2ASl2lWCfGKXixSwevea8zH2U=
 github.com/form3tech-oss/jwt-go v3.2.2+incompatible/go.mod h1:pbq4aXjuKjdthFRnoDwaVPLA+WlJuPGy+QneDUgJi2k=
-github.com/frain-dev/disq v0.1.7 h1:888hxVGwaeWxZskjlRVnFxeTj2FwxoC1aw+InsR+pzo=
-github.com/frain-dev/disq v0.1.7/go.mod h1:whS0xU9LDOyoIup1jyFvlxgCRgX7VWuf4erdcEN7wNg=
+github.com/frain-dev/disq v0.1.8 h1:KC+pT+VpKtYzPk56wKNB/bGe1MJoSQIJ14mhuvrXkdk=
+github.com/frain-dev/disq v0.1.8/go.mod h1:OXexSM14pc3NBjqZG4fKoFtZ9SlyGEBxb3C95RDcpPE=
 github.com/frain-dev/ristretto v0.1.1 h1:aI9nq9RKEue1A+KarcKDc6cam7kgAvixpio3nnNz4F4=
 github.com/frain-dev/ristretto v0.1.1/go.mod h1:fux0lOrBhrVCJd3lcTHsIJhq1T2rokOu6v9Vcb3Q9ug=
 github.com/franela/goblin v0.0.0-20200105215937-c9ffbefa60db/go.mod h1:7dvUGVsVBjqR7JHJk0brhHOZYGmfBYOrK0ZhYMEtBr4=

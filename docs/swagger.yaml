@@ -263,8 +263,12 @@ definitions:
     type: object
   datastore.GroupConfig:
     properties:
+      dedicated_queue:
+        type: boolean
       disable_endpoint:
         type: boolean
+      queue:
+        $ref: '#/definitions/datastore.QueueConfiguration'
       ratelimit:
         $ref: '#/definitions/datastore.RateLimitConfiguration'
       replay_attacks:
@@ -334,6 +338,13 @@ definitions:
         type: integer
       totalPage:
         type: integer
+    type: object
+  datastore.QueueConfiguration:
+    properties:
+      concurrency:
+        type: integer
+      type:
+        type: string
     type: object
   datastore.RateLimitConfiguration:
     properties:

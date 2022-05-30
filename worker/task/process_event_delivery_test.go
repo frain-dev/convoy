@@ -1,6 +1,7 @@
 package task
 
 import (
+	"encoding/json"
 	"testing"
 	"time"
 
@@ -748,9 +749,10 @@ func TestProcessEventDelivery(t *testing.T) {
 			}
 
 			processFn := ProcessEventDelivery(appRepo, msgRepo, groupRepo, rateLimiter)
+			payload := json.RawMessage(tc.msg.UID)
 
 			job := queue.Job{
-				ID: tc.msg.UID,
+				Payload: payload,
 			}
 
 			err = processFn(&job)

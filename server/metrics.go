@@ -4,11 +4,12 @@ import (
 	"context"
 	"time"
 
+	"github.com/frain-dev/convoy"
 	"github.com/frain-dev/convoy/config"
 	"github.com/frain-dev/convoy/datastore"
 	"github.com/frain-dev/convoy/queue"
-	memqueue "github.com/frain-dev/convoy/queue/memqueue"
 	redisqueue "github.com/frain-dev/convoy/queue/redis"
+	disqRedis "github.com/frain-dev/disq/brokers/redis"
 	"github.com/prometheus/client_golang/prometheus"
 	log "github.com/sirupsen/logrus"
 )
@@ -27,7 +28,7 @@ func RegisterQueueMetrics(q queue.Queuer, cfg config.Configuration) {
 			Help:      "Number of events in the queue.",
 		},
 		func() float64 {
-			length, _ := queueLength(q, cfg)
+			length, _ := q.Length(string(convoy.EventQueue))
 			return float64(length)
 		},
 	))
@@ -43,7 +44,8 @@ func RegisterQueueMetrics(q queue.Queuer, cfg config.Configuration) {
 				Help:      "Number of events in the ZSET.",
 			},
 			func() float64 {
-				bodies, err := q.(*redisqueue.RedisQueue).ZRangebyScore(context.Background(), "-inf", "+inf")
+				queue, _ := q.(*redisqueue.RedisQueuer).Load(string(convoy.EventQueue))
+				bodies, err := queue.(*disqRedis.Stream).ZRangebyScore(context.Background(), "-inf", "+inf")
 				if err != nil {
 					log.Errorf("Error ZSET Length: %v", err)
 				}
@@ -61,7 +63,8 @@ func RegisterQueueMetrics(q queue.Queuer, cfg config.Configuration) {
 				Help:      "Number of events in pending.",
 			},
 			func() float64 {
-				pending, err := q.(*redisqueue.RedisQueue).XPending(context.Background())
+				queue, _ := q.(*redisqueue.RedisQueuer).Load(string(convoy.EventQueue))
+				pending, err := queue.(*disqRedis.Stream).XPending(context.Background())
 				if err != nil {
 					log.Errorf("Error fetching Pending info: %v", err)
 				}
@@ -150,10 +153,6 @@ func RegisterDBMetrics(app *applicationHandler) {
 }
 func RegisterConsumerMetrics(q queue.Queuer, cfg config.Configuration) {
 
-	if !q.Broker().Status() {
-		return
-	}
-
 	err := prometheus.Register(prometheus.NewGaugeFunc(
 		prometheus.GaugeOpts{
 			Subsystem: "consumer",
@@ -161,7 +160,7 @@ func RegisterConsumerMetrics(q queue.Queuer, cfg config.Configuration) {
 			Help:      "Number of events processed.",
 		},
 		func() float64 {
-			stats := q.Broker().Stats()
+			stats, _ := q.Stats(string(convoy.EventQueue))
 			return float64(stats.Processed)
 		},
 	))
@@ -176,7 +175,7 @@ func RegisterConsumerMetrics(q queue.Queuer, cfg config.Configuration) {
 			Help:      "Number of fails.",
 		},
 		func() float64 {
-			stats := q.Broker().Stats()
+			stats, _ := q.Stats(string(convoy.EventQueue))
 			return float64(stats.Fails)
 		},
 	))
@@ -191,29 +190,11 @@ func RegisterConsumerMetrics(q queue.Queuer, cfg config.Configuration) {
 			Help:      "Number of retries.",
 		},
 		func() float64 {
-			stats := q.Broker().Stats()
+			stats, _ := q.Stats(string(convoy.EventQueue))
 			return float64(stats.Retries)
 		},
 	))
 	if err != nil {
 		log.Errorf("Error registering retries: %v", err)
-	}
-}
-func queueLength(q queue.Queuer, cfg config.Configuration) (int, error) {
-	switch cfg.Queue.Type {
-	case config.RedisQueueProvider:
-		n, err := q.(*redisqueue.RedisQueue).Length()
-		if err != nil {
-			log.Infof("Error getting queue length: %v", err)
-		}
-		return n, err
-	case config.InMemoryQueueProvider:
-		n, err := q.(*memqueue.MemQueue).Length()
-		if err != nil {
-			log.Infof("Error getting queue length: %v", err)
-		}
-		return n, err
-	default:
-		return 0, nil
 	}
 }

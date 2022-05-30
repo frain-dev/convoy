@@ -7,7 +7,6 @@ import (
 
 	"github.com/frain-dev/convoy"
 	"github.com/frain-dev/convoy/auth/realm_chain"
-	"github.com/frain-dev/convoy/queue"
 	"github.com/frain-dev/convoy/worker"
 	"github.com/frain-dev/convoy/worker/task"
 
@@ -160,8 +159,7 @@ func StartConvoyServer(a *app, cfg config.Configuration, withWorkers bool) error
 		a.apiKeyRepo,
 		a.groupRepo,
 		a.sourceRepo,
-		a.eventQueue,
-		a.createEventQueue,
+		a.queue,
 		a.logger,
 		a.tracer,
 		a.cache,
@@ -177,19 +175,18 @@ func StartConvoyServer(a *app, cfg config.Configuration, withWorkers bool) error
 		}
 
 		// register tasks.
-		eventCreatedhandler := task.ProcessEventCreated(a.applicationRepo, a.eventRepo, a.groupRepo, a.eventDeliveryRepo, a.cache, a.eventQueue)
+		eventCreatedhandler := task.ProcessEventCreated(a.applicationRepo, a.eventRepo, a.groupRepo, a.eventDeliveryRepo, a.cache, a.queue)
 		if err := task.CreateTasks(a.groupRepo, convoy.CreateEventProcessor, eventCreatedhandler); err != nil {
 			log.WithError(err).Error("failed to register tasks")
 			return err
 		}
 
-		worker.RegisterNewGroupTask(a.applicationRepo, a.eventDeliveryRepo, a.groupRepo, a.limiter, a.eventRepo, a.cache, a.eventQueue)
+		worker.RegisterNewGroupQueueAndTask(a.applicationRepo, a.eventDeliveryRepo, a.groupRepo, a.limiter, a.eventRepo, a.cache, a.queue)
 
 		log.Infof("Starting Convoy workers...")
 		// register worker.
 		ctx := context.Background()
-		producer := worker.NewProducer([]queue.Queuer{a.createEventQueue, a.eventQueue})
-		producer.Start(ctx)
+		a.queue.StartAll(ctx)
 	}
 
 	log.Infof("Started convoy server in %s", time.Since(start))

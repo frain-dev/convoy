@@ -7,11 +7,8 @@ package mocks
 import (
 	context "context"
 	reflect "reflect"
-	time "time"
 
-	convoy "github.com/frain-dev/convoy"
 	queue "github.com/frain-dev/convoy/queue"
-	disq "github.com/frain-dev/disq"
 	gomock "github.com/golang/mock/gomock"
 )
 
@@ -38,58 +35,158 @@ func (m *MockQueuer) EXPECT() *MockQueuerMockRecorder {
 	return m.recorder
 }
 
-// Broker mocks base method.
-func (m *MockQueuer) Broker() disq.Broker {
+// Contains mocks base method.
+func (m *MockQueuer) Contains(arg0 string) bool {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "Broker")
-	ret0, _ := ret[0].(disq.Broker)
+	ret := m.ctrl.Call(m, "Contains", arg0)
+	ret0, _ := ret[0].(bool)
 	return ret0
 }
 
-// Broker indicates an expected call of Broker.
-func (mr *MockQueuerMockRecorder) Broker() *gomock.Call {
+// Contains indicates an expected call of Contains.
+func (mr *MockQueuerMockRecorder) Contains(arg0 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Broker", reflect.TypeOf((*MockQueuer)(nil).Broker))
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Contains", reflect.TypeOf((*MockQueuer)(nil).Contains), arg0)
 }
 
-// Consume mocks base method.
-func (m *MockQueuer) Consume(arg0 context.Context) error {
+// Delete mocks base method.
+func (m *MockQueuer) Delete(arg0 string) error {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "Consume", arg0)
+	ret := m.ctrl.Call(m, "Delete", arg0)
 	ret0, _ := ret[0].(error)
 	return ret0
 }
 
-// Consume indicates an expected call of Consume.
-func (mr *MockQueuerMockRecorder) Consume(arg0 interface{}) *gomock.Call {
+// Delete indicates an expected call of Delete.
+func (mr *MockQueuerMockRecorder) Delete(arg0 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Consume", reflect.TypeOf((*MockQueuer)(nil).Consume), arg0)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Delete", reflect.TypeOf((*MockQueuer)(nil).Delete), arg0)
 }
 
-// Publish mocks base method.
-func (m *MockQueuer) Publish(arg0 context.Context, arg1 convoy.TaskName, arg2 *queue.Job, arg3 time.Duration) error {
+// Length mocks base method.
+func (m *MockQueuer) Length(arg0 string) (int, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "Publish", arg0, arg1, arg2, arg3)
+	ret := m.ctrl.Call(m, "Length", arg0)
+	ret0, _ := ret[0].(int)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// Length indicates an expected call of Length.
+func (mr *MockQueuerMockRecorder) Length(arg0 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Length", reflect.TypeOf((*MockQueuer)(nil).Length), arg0)
+}
+
+// NewQueue mocks base method.
+func (m *MockQueuer) NewQueue(opts queue.QueueOptions) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "NewQueue", opts)
 	ret0, _ := ret[0].(error)
 	return ret0
 }
 
-// Publish indicates an expected call of Publish.
-func (mr *MockQueuerMockRecorder) Publish(arg0, arg1, arg2, arg3 interface{}) *gomock.Call {
+// NewQueue indicates an expected call of NewQueue.
+func (mr *MockQueuerMockRecorder) NewQueue(opts interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Publish", reflect.TypeOf((*MockQueuer)(nil).Publish), arg0, arg1, arg2, arg3)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "NewQueue", reflect.TypeOf((*MockQueuer)(nil).NewQueue), opts)
 }
 
-// Stop mocks base method.
-func (m *MockQueuer) Stop() error {
+// StartAll mocks base method.
+func (m *MockQueuer) StartAll(arg0 context.Context) error {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "Stop")
+	ret := m.ctrl.Call(m, "StartAll", arg0)
 	ret0, _ := ret[0].(error)
 	return ret0
 }
 
-// Stop indicates an expected call of Stop.
-func (mr *MockQueuerMockRecorder) Stop() *gomock.Call {
+// StartAll indicates an expected call of StartAll.
+func (mr *MockQueuerMockRecorder) StartAll(arg0 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Stop", reflect.TypeOf((*MockQueuer)(nil).Stop))
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "StartAll", reflect.TypeOf((*MockQueuer)(nil).StartAll), arg0)
+}
+
+// StartOne mocks base method.
+func (m *MockQueuer) StartOne(arg0 context.Context, arg1 string) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "StartOne", arg0, arg1)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// StartOne indicates an expected call of StartOne.
+func (mr *MockQueuerMockRecorder) StartOne(arg0, arg1 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "StartOne", reflect.TypeOf((*MockQueuer)(nil).StartOne), arg0, arg1)
+}
+
+// Stats mocks base method.
+func (m *MockQueuer) Stats(arg0 string) (*queue.Stats, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "Stats", arg0)
+	ret0, _ := ret[0].(*queue.Stats)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// Stats indicates an expected call of Stats.
+func (mr *MockQueuerMockRecorder) Stats(arg0 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Stats", reflect.TypeOf((*MockQueuer)(nil).Stats), arg0)
+}
+
+// StopAll mocks base method.
+func (m *MockQueuer) StopAll() error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "StopAll")
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// StopAll indicates an expected call of StopAll.
+func (mr *MockQueuerMockRecorder) StopAll() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "StopAll", reflect.TypeOf((*MockQueuer)(nil).StopAll))
+}
+
+// StopOne mocks base method.
+func (m *MockQueuer) StopOne(arg0 string) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "StopOne", arg0)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// StopOne indicates an expected call of StopOne.
+func (mr *MockQueuerMockRecorder) StopOne(arg0 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "StopOne", reflect.TypeOf((*MockQueuer)(nil).StopOne), arg0)
+}
+
+// Update mocks base method.
+func (m *MockQueuer) Update(arg0 context.Context, arg1 queue.QueueOptions) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "Update", arg0, arg1)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// Update indicates an expected call of Update.
+func (mr *MockQueuerMockRecorder) Update(arg0, arg1 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Update", reflect.TypeOf((*MockQueuer)(nil).Update), arg0, arg1)
+}
+
+// Write mocks base method.
+func (m *MockQueuer) Write(arg0 context.Context, arg1, arg2 string, arg3 *queue.Job) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "Write", arg0, arg1, arg2, arg3)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// Write indicates an expected call of Write.
+func (mr *MockQueuerMockRecorder) Write(arg0, arg1, arg2, arg3 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Write", reflect.TypeOf((*MockQueuer)(nil).Write), arg0, arg1, arg2, arg3)
 }

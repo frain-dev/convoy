@@ -4794,8 +4794,14 @@
         "datastore.GroupConfig": {
             "type": "object",
             "properties": {
+                "dedicated_queue": {
+                    "type": "boolean"
+                },
                 "disable_endpoint": {
                     "type": "boolean"
+                },
+                "queue": {
+                    "$ref": "#/definitions/datastore.QueueConfiguration"
                 },
                 "ratelimit": {
                     "$ref": "#/definitions/datastore.RateLimitConfiguration"
@@ -4894,6 +4900,17 @@
                 },
                 "totalPage": {
                     "type": "integer"
+                }
+            }
+        },
+        "datastore.QueueConfiguration": {
+            "type": "object",
+            "properties": {
+                "concurrency": {
+                    "type": "integer"
+                },
+                "type": {
+                    "type": "string"
                 }
             }
         },

@@ -6,7 +6,6 @@ import (
 	"net/http"
 
 	"github.com/frain-dev/convoy/config"
-	"github.com/frain-dev/convoy/queue"
 	"github.com/frain-dev/convoy/server"
 	"github.com/frain-dev/convoy/worker"
 	"github.com/go-chi/chi/v5"
@@ -27,15 +26,13 @@ func addWorkerCommand(a *app) *cobra.Command {
 			if err != nil {
 				return err
 			}
-
-			worker.RegisterNewGroupTask(a.applicationRepo, a.eventDeliveryRepo, a.groupRepo, a.limiter, a.eventRepo, a.cache, a.eventQueue)
+			worker.RegisterNewGroupQueueAndTask(a.applicationRepo, a.eventDeliveryRepo, a.groupRepo, a.limiter, a.eventRepo, a.cache, a.queue)
 			// register worker.
 			ctx := context.Background()
-			producer := worker.NewProducer([]queue.Queuer{a.eventQueue, a.createEventQueue})
-			producer.Start(ctx)
+			a.queue.StartAll(ctx)
 
-			server.RegisterConsumerMetrics(a.eventQueue, cfg)
-			server.RegisterQueueMetrics(a.eventQueue, cfg)
+			server.RegisterConsumerMetrics(a.queue, cfg)
+			server.RegisterQueueMetrics(a.queue, cfg)
 
 			router := chi.NewRouter()
 			router.Handle("/v1/metrics", promhttp.Handler())

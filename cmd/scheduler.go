@@ -13,6 +13,8 @@ import (
 func addSchedulerCommand(a *app) *cobra.Command {
 	var timeInterval string
 	var timer string
+	var queueName string
+
 	cmd := &cobra.Command{
 		Use:   "scheduler",
 		Short: "requeue event deliveries in the background with a scheduler.",
@@ -36,19 +38,19 @@ func addSchedulerCommand(a *app) *cobra.Command {
 				select {
 				case <-ticker.C:
 					go func() {
-						err := worker.RequeueEventDeliveries("Processing", timeInterval, a.eventDeliveryRepo, a.groupRepo, a.eventQueue)
+						err := worker.RequeueEventDeliveries("Processing", timeInterval, a.eventDeliveryRepo, a.groupRepo, queueName, a.queue)
 						if err != nil {
 							log.WithError(err).Errorf("Error requeuing status processing: %v", err)
 						}
 					}()
 					go func() {
-						err := worker.RequeueEventDeliveries("Scheduled", timeInterval, a.eventDeliveryRepo, a.groupRepo, a.eventQueue)
+						err := worker.RequeueEventDeliveries("Scheduled", timeInterval, a.eventDeliveryRepo, a.groupRepo, queueName, a.queue)
 						if err != nil {
 							log.WithError(err).Errorf("Error requeuing status Scheduled: %v", err)
 						}
 					}()
 					go func() {
-						err := worker.RequeueEventDeliveries("Retry", timeInterval, a.eventDeliveryRepo, a.groupRepo, a.eventQueue)
+						err := worker.RequeueEventDeliveries("Retry", timeInterval, a.eventDeliveryRepo, a.groupRepo, queueName, a.queue)
 						if err != nil {
 							log.WithError(err).Errorf("Error requeuing status Retry: %v", err)
 						}
@@ -63,5 +65,6 @@ func addSchedulerCommand(a *app) *cobra.Command {
 
 	cmd.Flags().StringVar(&timeInterval, "time", "", "eventdelivery time interval")
 	cmd.Flags().StringVar(&timer, "timer", "", "schedule timer")
+	cmd.Flags().StringVar(&queueName, "queuename", "EventQueue", "queue name")
 	return cmd
 }

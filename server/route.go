@@ -12,13 +12,13 @@ import (
 	"github.com/frain-dev/convoy/auth"
 	"github.com/frain-dev/convoy/cache"
 	"github.com/frain-dev/convoy/logger"
+	"github.com/frain-dev/convoy/queue"
 	"github.com/frain-dev/convoy/searcher"
 	"github.com/frain-dev/convoy/tracer"
 
 	"github.com/frain-dev/convoy/config"
 	"github.com/frain-dev/convoy/datastore"
 	limiter "github.com/frain-dev/convoy/limiter"
-	"github.com/frain-dev/convoy/queue"
 	"github.com/go-chi/chi/v5/middleware"
 
 	"github.com/go-chi/render"
@@ -388,8 +388,7 @@ func New(cfg config.Configuration,
 	apiKeyRepo datastore.APIKeyRepository,
 	orgRepo datastore.GroupRepository,
 	sourceRepo datastore.SourceRepository,
-	eventQueue queue.Queuer,
-	createEventQueue queue.Queuer,
+	queue queue.Queuer,
 	logger logger.Logger,
 	tracer tracer.Tracer,
 	cache cache.Cache,
@@ -402,8 +401,7 @@ func New(cfg config.Configuration,
 		orgRepo,
 		apiKeyRepo,
 		sourceRepo,
-		eventQueue,
-		createEventQueue,
+		queue,
 		logger,
 		tracer,
 		cache,
@@ -418,8 +416,8 @@ func New(cfg config.Configuration,
 	}
 
 	RegisterDBMetrics(app)
-	RegisterQueueMetrics(eventQueue, cfg)
-	RegisterConsumerMetrics(eventQueue, cfg)
+	RegisterQueueMetrics(queue, cfg)
+	RegisterConsumerMetrics(queue, cfg)
 	prometheus.MustRegister(requestDuration)
 	return srv
 }

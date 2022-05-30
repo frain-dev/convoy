@@ -197,8 +197,10 @@ type GroupConfig struct {
 	RateLimit       RateLimitConfiguration `json:"ratelimit"`
 	Strategy        StrategyConfiguration  `json:"strategy"`
 	Signature       SignatureConfiguration `json:"signature"`
+	Queue           QueueConfiguration     `json:"queue"`
 	DisableEndpoint bool                   `json:"disable_endpoint"`
 	ReplayAttacks   bool                   `json:"replay_attacks"`
+	DedicatedQueue  bool                   `json:"dedicated_queue"`
 }
 
 type RateLimitConfiguration struct {
@@ -215,6 +217,11 @@ type StrategyConfiguration struct {
 type SignatureConfiguration struct {
 	Header config.SignatureHeaderProvider `json:"header" valid:"required~please provide a valid signature header"`
 	Hash   string                         `json:"hash" valid:"required~please provide a valid hash,supported_hash~unsupported hash type"`
+}
+
+type QueueConfiguration struct {
+	Type        string `json:"type" bson:"type"`
+	Concurrency int    `json:"concurrency" bson:"concurrency"`
 }
 
 type SignatureValues struct {

@@ -9,10 +9,12 @@ import (
 	"github.com/frain-dev/convoy"
 	"github.com/frain-dev/convoy/datastore"
 	"github.com/frain-dev/convoy/limiter"
+	"github.com/frain-dev/convoy/queue"
 	"github.com/frain-dev/convoy/server/models"
 	"github.com/frain-dev/convoy/util"
 	"github.com/google/uuid"
 	log "github.com/sirupsen/logrus"
+
 	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
@@ -21,15 +23,17 @@ type GroupService struct {
 	groupRepo         datastore.GroupRepository
 	eventRepo         datastore.EventRepository
 	eventDeliveryRepo datastore.EventDeliveryRepository
+	queue             queue.Queuer
 	limiter           limiter.RateLimiter
 }
 
-func NewGroupService(appRepo datastore.ApplicationRepository, groupRepo datastore.GroupRepository, eventRepo datastore.EventRepository, eventDeliveryRepo datastore.EventDeliveryRepository, limiter limiter.RateLimiter) *GroupService {
+func NewGroupService(appRepo datastore.ApplicationRepository, groupRepo datastore.GroupRepository, eventRepo datastore.EventRepository, eventDeliveryRepo datastore.EventDeliveryRepository, queue queue.Queuer, limiter limiter.RateLimiter) *GroupService {
 	return &GroupService{
 		appRepo:           appRepo,
 		groupRepo:         groupRepo,
 		eventRepo:         eventRepo,
 		eventDeliveryRepo: eventDeliveryRepo,
+		queue:             queue,
 		limiter:           limiter,
 	}
 }
@@ -64,6 +68,21 @@ func (gs *GroupService) CreateGroup(ctx context.Context, newGroup *models.Group)
 
 	if util.IsStringEmpty(newGroup.RateLimitDuration) {
 		newGroup.RateLimitDuration = convoy.RATE_LIMIT_DURATION
+	}
+
+	if c.DedicatedQueue {
+		err := gs.queue.NewQueue(queue.QueueOptions{
+			Name:        groupName,
+			Type:        c.Queue.Type,
+			Concurrency: c.Queue.Concurrency,
+		})
+		if err == nil {
+			err := gs.queue.StartOne(context.Background(), groupName)
+			if err != nil {
+				log.WithError(err).Error("failed to start dedicated queue")
+				gs.queue.Delete(groupName)
+			}
+		}
 	}
 
 	err := util.Validate(newGroup)

@@ -19,7 +19,8 @@ func provideGroupService(ctrl *gomock.Controller) *GroupService {
 	appRepo := mocks.NewMockApplicationRepository(ctrl)
 	eventRepo := mocks.NewMockEventRepository(ctrl)
 	eventDeliveryRepo := mocks.NewMockEventDeliveryRepository(ctrl)
-	return NewGroupService(appRepo, groupRepo, eventRepo, eventDeliveryRepo, nooplimiter.NewNoopLimiter())
+	queue := mocks.NewMockQueuer(ctrl)
+	return NewGroupService(appRepo, groupRepo, eventRepo, eventDeliveryRepo, queue, nooplimiter.NewNoopLimiter())
 }
 
 func TestGroupService_CreateGroup(t *testing.T) {

@@ -2,6 +2,7 @@ package worker
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"sync"
 	"time"
@@ -17,7 +18,7 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
-func RegisterNewGroupTask(applicationRepo datastore.ApplicationRepository, eventDeliveryRepo datastore.EventDeliveryRepository, groupRepo datastore.GroupRepository, rateLimiter limiter.RateLimiter, eventRepo datastore.EventRepository, cache cache.Cache, eventQueue queue.Queuer) {
+func RegisterNewGroupQueueAndTask(applicationRepo datastore.ApplicationRepository, eventDeliveryRepo datastore.EventDeliveryRepository, groupRepo datastore.GroupRepository, rateLimiter limiter.RateLimiter, eventRepo datastore.EventRepository, cache cache.Cache, queuer queue.Queuer) {
 	go func() {
 		for {
 			filter := &datastore.GroupFilter{}
@@ -28,7 +29,20 @@ func RegisterNewGroupTask(applicationRepo datastore.ApplicationRepository, event
 			for _, g := range groups {
 				pEvtDelTask := convoy.EventProcessor.SetPrefix(g.Name)       // process event delivery task
 				pEvtCrtTask := convoy.CreateEventProcessor.SetPrefix(g.Name) // process event create task
-
+				if g.Config.DedicatedQueue {
+					err := queuer.NewQueue(queue.QueueOptions{
+						Name:        g.Name,
+						Type:        g.Config.Queue.Type,
+						Concurrency: g.Config.Queue.Concurrency,
+					})
+					if err == nil {
+						err := queuer.StartOne(context.Background(), g.Name)
+						if err != nil {
+							log.WithError(err).Error("failed to start dedicated queue")
+							queuer.Delete(g.Name)
+						}
+					}
+				}
 				t, _ := disq.Tasks.LoadTask(string(pEvtCrtTask))
 				if t == nil {
 					s, _ := disq.Tasks.LoadTask(string(pEvtDelTask))
@@ -37,17 +51,18 @@ func RegisterNewGroupTask(applicationRepo datastore.ApplicationRepository, event
 						log.Infof("Registering event delivery task handler for %s", g.Name)
 						task.CreateTask(pEvtDelTask, *g, handler)
 
-						eventCreatedhandler := task.ProcessEventCreated(applicationRepo, eventRepo, groupRepo, eventDeliveryRepo, cache, eventQueue)
+						eventCreatedhandler := task.ProcessEventCreated(applicationRepo, eventRepo, groupRepo, eventDeliveryRepo, cache, queuer)
 						log.Infof("Registering event creation task handler for %s", g.Name)
 						task.CreateTask(pEvtCrtTask, *g, eventCreatedhandler)
 					}
 				}
+
 			}
 		}
 	}()
 }
 
-func RequeueEventDeliveries(status string, timeInterval string, eventDeliveryRepo datastore.EventDeliveryRepository, groupRepo datastore.GroupRepository, eventQueue queue.Queuer) error {
+func RequeueEventDeliveries(status string, timeInterval string, eventDeliveryRepo datastore.EventDeliveryRepository, groupRepo datastore.GroupRepository, queueName string, eventQueue queue.Queuer) error {
 	d, err := time.ParseDuration(timeInterval)
 	if err != nil {
 		return fmt.Errorf("failed to parse time duration")
@@ -76,8 +91,8 @@ func RequeueEventDeliveries(status string, timeInterval string, eventDeliveryRep
 	count := 0
 
 	ctx := context.Background()
-	var q *redisqueue.RedisQueue
-	q, ok := eventQueue.(*redisqueue.RedisQueue)
+	var q *redisqueue.RedisQueuer
+	q, ok := eventQueue.(*redisqueue.RedisQueuer)
 	if !ok {
 		return fmt.Errorf("invalid queue type for requeing event deliveries: %T", eventQueue)
 	}
@@ -85,7 +100,7 @@ func RequeueEventDeliveries(status string, timeInterval string, eventDeliveryRep
 	var wg sync.WaitGroup
 
 	wg.Add(1)
-	go ProcessEventDeliveryBatches(ctx, s, eventDeliveryRepo, groupRepo, deliveryChan, q, &wg)
+	go ProcessEventDeliveryBatches(ctx, s, eventDeliveryRepo, groupRepo, deliveryChan, queueName, q, &wg)
 
 	counter, err := eventDeliveryRepo.CountDeliveriesByStatus(ctx, s, searchParams)
 	if err != nil {
@@ -120,7 +135,7 @@ func RequeueEventDeliveries(status string, timeInterval string, eventDeliveryRep
 	return nil
 }
 
-func ProcessEventDeliveryBatches(ctx context.Context, status datastore.EventDeliveryStatus, eventDeliveryRepo datastore.EventDeliveryRepository, groupRepo datastore.GroupRepository, deliveryChan <-chan []datastore.EventDelivery, q *redisqueue.RedisQueue, wg *sync.WaitGroup) {
+func ProcessEventDeliveryBatches(ctx context.Context, status datastore.EventDeliveryStatus, eventDeliveryRepo datastore.EventDeliveryRepository, groupRepo datastore.GroupRepository, deliveryChan <-chan []datastore.EventDelivery, queueName string, q *redisqueue.RedisQueuer, wg *sync.WaitGroup) {
 	defer wg.Done()
 
 	// groups serves as a cache for already fetched groups
@@ -150,13 +165,13 @@ func ProcessEventDeliveryBatches(ctx context.Context, status datastore.EventDeli
 		}
 
 		// remove these event deliveries from the zset
-		err := q.DeleteEventDeliveriesFromZSET(ctx, batchIDs)
+		err := q.DeleteEventDeliveriesFromZSET(ctx, queueName, batchIDs)
 		if err != nil {
 			log.WithError(err).WithField("ids", batchIDs).Errorf("batch %d: failed to delete event deliveries from zset", batchCount)
 		}
 
 		// // remove these event deliveries from the stream
-		err = q.DeleteEventDeliveriesFromStream(ctx, batchIDs)
+		err = q.DeleteEventDeliveriesFromStream(ctx, queueName, batchIDs)
 		if err != nil {
 			log.WithError(err).WithField("ids", batchIDs).Errorf("batch %d: failed to delete event deliveries from stream", batchCount)
 		}
@@ -178,9 +193,10 @@ func ProcessEventDeliveryBatches(ctx context.Context, status datastore.EventDeli
 
 			taskName := convoy.EventProcessor.SetPrefix(group.Name)
 			job := &queue.Job{
-				ID: delivery.UID,
+				Payload: json.RawMessage(delivery.UID),
+				Delay:   1 * time.Second,
 			}
-			err = q.Publish(ctx, taskName, job, 1*time.Second)
+			err = q.Write(ctx, string(taskName), queueName, job)
 			if err != nil {
 				log.WithError(err).Errorf("batch %d: failed to send event delivery %s to the queue", batchCount, delivery.ID)
 			}

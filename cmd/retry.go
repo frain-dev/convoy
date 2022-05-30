@@ -10,7 +10,7 @@ import (
 func addRetryCommand(a *app) *cobra.Command {
 	var status string
 	var timeInterval string
-
+	var queueName string
 	cmd := &cobra.Command{
 		Use:   "retry",
 		Short: "retry event deliveries with a particular status in a timeframe",
@@ -23,7 +23,7 @@ func addRetryCommand(a *app) *cobra.Command {
 				log.WithError(err).Fatalf("Queue type error: Command is available for redis queue only.")
 			}
 
-			err = worker.RequeueEventDeliveries(status, timeInterval, a.eventDeliveryRepo, a.groupRepo, a.eventQueue)
+			err = worker.RequeueEventDeliveries(status, timeInterval, a.eventDeliveryRepo, a.groupRepo, queueName, a.queue)
 			if err != nil {
 				log.WithError(err).Fatalf("Error requeue event deliveries.")
 			}
@@ -32,5 +32,6 @@ func addRetryCommand(a *app) *cobra.Command {
 
 	cmd.Flags().StringVar(&status, "status", "", "Status of event deliveries to requeue")
 	cmd.Flags().StringVar(&timeInterval, "time", "", "Time interval")
+	cmd.Flags().StringVar(&queueName, "queuename", "EventQueue", "queue name")
 	return cmd
 }

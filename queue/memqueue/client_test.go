@@ -2,6 +2,7 @@ package memqueue
 
 import (
 	"context"
+	"encoding/json"
 	"testing"
 
 	"github.com/frain-dev/convoy"
@@ -44,13 +45,22 @@ func TestWrite(t *testing.T) {
 					UID: tc.appID,
 				},
 			}
+			payload := json.RawMessage(eventDelivery.UID)
+
 			job := &queue.Job{
-				ID: eventDelivery.UID,
+				Payload: payload,
+				Delay:   0,
 			}
 			taskName := convoy.TaskName(uuid.NewString())
 			configFile := tc.configFile
-			eventQueue := initializeQueue(configFile, tc.queueName, t)
-			err := eventQueue.Publish(context.TODO(), taskName, job, 0)
+			eventQueue := initializeQueuer(configFile, t)
+			_ = eventQueue.NewQueue(queue.QueueOptions{
+				Name: tc.queueName,
+				Type: "in-memory",
+			})
+
+			err := eventQueue.Write(context.Background(), string(taskName), tc.queueName, job)
+
 			if err != nil {
 				t.Fatalf("Failed to write to queue: %v", err)
 			}
@@ -76,10 +86,17 @@ func TestConsumer(t *testing.T) {
 
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			configFile := tc.configFile
 			ctx := context.Background()
-			eventQueue := initializeQueue(configFile, tc.queueName, t)
-			err := eventQueue.Consume(ctx)
+			opts := queue.QueueOptions{
+				Type: "in-memory",
+			}
+			eventQueue := NewQueuer(opts)
+
+			_ = eventQueue.NewQueue(queue.QueueOptions{
+				Name: tc.queueName,
+				Type: "in-memory",
+			})
+			err := eventQueue.StartOne(ctx, tc.queueName)
 			if err != nil {
 				t.Fatalf("Failed to start consumer: %v", err)
 			}
@@ -87,12 +104,11 @@ func TestConsumer(t *testing.T) {
 	}
 }
 
-func initializeQueue(configFile string, name string, t *testing.T) queue.Queuer {
+func initializeQueuer(configFile string, t *testing.T) queue.Queuer {
 	opts := queue.QueueOptions{
-		Name: name,
 		Type: "in-memory",
 	}
 
-	eventQueue := NewQueue(opts)
+	eventQueue := NewQueuer(opts)
 	return eventQueue
 }

@@ -33,7 +33,8 @@ type SignatureValues struct {
 
 func ProcessEventDelivery(appRepo datastore.ApplicationRepository, eventDeliveryRepo datastore.EventDeliveryRepository, groupRepo datastore.GroupRepository, rateLimiter limiter.RateLimiter) func(*queue.Job) error {
 	return func(job *queue.Job) error {
-		Id := job.ID
+
+		Id := string(job.Payload)
 
 		// Load message from DB and switch state to prevent concurrent processing.
 		m, err := eventDeliveryRepo.FindEventDeliveryByID(context.Background(), Id)

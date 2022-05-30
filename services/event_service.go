@@ -2,6 +2,7 @@ package services
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"net/http"
@@ -23,15 +24,14 @@ type EventService struct {
 	appRepo           datastore.ApplicationRepository
 	eventRepo         datastore.EventRepository
 	eventDeliveryRepo datastore.EventDeliveryRepository
-	eventQueue        queue.Queuer
-	createEventQueue  queue.Queuer
+	queue             queue.Queuer
 	cache             cache.Cache
 	searcher          searcher.Searcher
 }
 
 func NewEventService(appRepo datastore.ApplicationRepository, eventRepo datastore.EventRepository, eventDeliveryRepo datastore.EventDeliveryRepository,
-	eventQueue queue.Queuer, createEventQueue queue.Queuer, cache cache.Cache, seacher searcher.Searcher) *EventService {
-	return &EventService{appRepo: appRepo, eventRepo: eventRepo, eventDeliveryRepo: eventDeliveryRepo, eventQueue: eventQueue, createEventQueue: createEventQueue, cache: cache, searcher: seacher}
+	queue queue.Queuer, cache cache.Cache, seacher searcher.Searcher) *EventService {
+	return &EventService{appRepo: appRepo, eventRepo: eventRepo, eventDeliveryRepo: eventDeliveryRepo, queue: queue, cache: cache, searcher: seacher}
 }
 
 func (e *EventService) CreateAppEvent(ctx context.Context, newMessage *models.Event, g *datastore.Group) (*datastore.Event, error) {
@@ -96,11 +96,14 @@ func (e *EventService) CreateAppEvent(ctx context.Context, newMessage *models.Ev
 	}
 
 	taskName := convoy.CreateEventProcessor.SetPrefix(g.Name)
+	eventByte, _ := json.Marshal(event)
+	payload := json.RawMessage(eventByte)
+
 	job := &queue.Job{
-		ID:    event.UID,
-		Event: event,
+		Payload: payload,
+		Delay:   0,
 	}
-	err = e.createEventQueue.Publish(context.Background(), taskName, job, 0)
+	err = e.queue.Write(context.Background(), string(taskName), string(convoy.CreateEventQueue), job)
 	if err != nil {
 		log.Errorf("Error occurred sending new event to the queue %s", err)
 	}
@@ -284,10 +287,13 @@ func (e *EventService) requeueEventDelivery(ctx context.Context, eventDelivery *
 	}
 
 	taskName := convoy.EventProcessor.SetPrefix(g.Name)
+	payload := json.RawMessage(eventDelivery.UID)
+
 	job := &queue.Job{
-		ID: eventDelivery.UID,
+		Payload: payload,
+		Delay:   1 * time.Second,
 	}
-	err = e.eventQueue.Publish(context.Background(), taskName, job, 1*time.Second)
+	err = e.queue.Write(context.Background(), string(taskName), string(convoy.EventQueue), job)
 	if err != nil {
 		return fmt.Errorf("error occurred re-enqueing old event - %s: %v", eventDelivery.UID, err)
 	}

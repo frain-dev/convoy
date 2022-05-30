@@ -9,11 +9,12 @@ import (
 
 	"github.com/frain-dev/convoy/cache"
 	"github.com/frain-dev/convoy/datastore/badger"
+	"github.com/frain-dev/convoy/queue"
+	memqueue "github.com/frain-dev/convoy/queue/memqueue"
 	"github.com/frain-dev/convoy/searcher"
 	"github.com/go-redis/redis/v8"
 
 	"github.com/frain-dev/convoy/logger"
-	memqueue "github.com/frain-dev/convoy/queue/memqueue"
 	redisqueue "github.com/frain-dev/convoy/queue/redis"
 	"github.com/frain-dev/convoy/tracer"
 	"github.com/getsentry/sentry-go"
@@ -25,7 +26,6 @@ import (
 	"github.com/frain-dev/convoy/config"
 	"github.com/frain-dev/convoy/datastore"
 	"github.com/frain-dev/convoy/limiter"
-	"github.com/frain-dev/convoy/queue"
 	"github.com/spf13/cobra"
 
 	"github.com/frain-dev/convoy/datastore/mongo"
@@ -56,23 +56,6 @@ func main() {
 	}
 }
 
-func NewQueue(opts queue.QueueOptions, name string) queue.Queuer {
-	optsType := opts.Type
-	var convoyQueue queue.Queuer
-	switch optsType {
-	case "in-memory":
-		opts.Name = name
-		convoyQueue = memqueue.NewQueue(opts)
-
-	case "redis":
-		opts.Name = name
-		convoyQueue = redisqueue.NewQueue(opts)
-	default:
-		log.Errorf("Invalid queue type: %v", optsType)
-	}
-	return convoyQueue
-}
-
 type app struct {
 	apiKeyRepo        datastore.APIKeyRepository
 	groupRepo         datastore.GroupRepository
@@ -80,8 +63,7 @@ type app struct {
 	eventRepo         datastore.EventRepository
 	eventDeliveryRepo datastore.EventDeliveryRepository
 	sourceRepo        datastore.SourceRepository
-	eventQueue        queue.Queuer
-	createEventQueue  queue.Queuer
+	queue             queue.Queuer
 	logger            logger.Logger
 	tracer            tracer.Tracer
 	cache             cache.Cache
@@ -159,22 +141,26 @@ func preRun(app *app, db datastore.DatabaseClient) func(cmd *cobra.Command, args
 		var opts queue.QueueOptions
 		var ca cache.Cache
 		var li limiter.RateLimiter
-
+		var q queue.Queuer
 		if cfg.Queue.Type == config.RedisQueueProvider {
 			rC, err = redisqueue.NewClient(cfg)
 			if err != nil {
 				return err
 			}
 			opts = queue.QueueOptions{
+				Name:  string(convoy.EventQueue),
 				Type:  "redis",
 				Redis: rC,
 			}
+			q = redisqueue.NewQueuer(opts)
 		}
 
 		if cfg.Queue.Type == config.InMemoryQueueProvider {
 			opts = queue.QueueOptions{
+				Name: string(convoy.EventQueue),
 				Type: "in-memory",
 			}
+			q = memqueue.NewQueuer(opts)
 		}
 
 		lo, err := logger.NewLogger(cfg.Logger)
@@ -204,16 +190,20 @@ func preRun(app *app, db datastore.DatabaseClient) func(cmd *cobra.Command, args
 			return err
 		}
 
+		_ = q.NewQueue(queue.QueueOptions{
+			Name: "EventQueue",
+		})
+		_ = q.NewQueue(queue.QueueOptions{
+			Name: "CreateEventQueue",
+		})
+
 		app.apiKeyRepo = db.APIRepo()
 		app.groupRepo = db.GroupRepo()
 		app.eventRepo = db.EventRepo()
 		app.applicationRepo = db.AppRepo()
 		app.eventDeliveryRepo = db.EventDeliveryRepo()
 		app.sourceRepo = db.SourceRepo()
-
-		app.eventQueue = NewQueue(opts, "EventQueue")
-		app.createEventQueue = NewQueue(opts, "CreateEventQueue")
-
+		app.queue = q
 		app.logger = lo
 		app.tracer = tr
 		app.cache = ca
@@ -227,7 +217,7 @@ func preRun(app *app, db datastore.DatabaseClient) func(cmd *cobra.Command, args
 func postRun(app *app, db datastore.DatabaseClient) func(cmd *cobra.Command, args []string) error {
 	return func(cmd *cobra.Command, args []string) error {
 		defer func() {
-			err := app.eventQueue.Stop()
+			err := app.queue.StopAll()
 			if err != nil {
 				log.Errorln("failed to close app queue - ", err)
 			}

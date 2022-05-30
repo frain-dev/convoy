@@ -2,6 +2,7 @@ package task
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"time"
 
@@ -17,9 +18,10 @@ import (
 
 func ProcessEventCreated(appRepo datastore.ApplicationRepository, eventRepo datastore.EventRepository, groupRepo datastore.GroupRepository, eventDeliveryRepo datastore.EventDeliveryRepository, cache cache.Cache, eventQueue queue.Queuer) func(job *queue.Job) error {
 	return func(job *queue.Job) error {
-		event := job.Event
-		ctx := context.Background()
+		var event datastore.Event
+		json.Unmarshal(job.Payload, &event)
 
+		ctx := context.Background()
 		var group *datastore.Group
 		var app *datastore.Application
 
@@ -70,7 +72,7 @@ func ProcessEventCreated(appRepo datastore.ApplicationRepository, eventRepo data
 
 		matchedEndpoints := matchEndpointsForDelivery(event.EventType, app.Endpoints, nil)
 		event.MatchedEndpoints = len(matchedEndpoints)
-		err = eventRepo.CreateEvent(ctx, event)
+		err = eventRepo.CreateEvent(ctx, &event)
 		if err != nil {
 			return &disq.Error{Err: err, Delay: 10 * time.Second}
 		}
@@ -123,10 +125,13 @@ func ProcessEventCreated(appRepo datastore.ApplicationRepository, eventRepo data
 
 			taskName := convoy.EventProcessor.SetPrefix(group.Name)
 			if eventDelivery.Status != datastore.DiscardedEventStatus {
+				payload := json.RawMessage(eventDelivery.UID)
+
 				job := &queue.Job{
-					ID: eventDelivery.UID,
+					Payload: payload,
+					Delay:   1 * time.Second,
 				}
-				err = eventQueue.Publish(ctx, taskName, job, 1*time.Second)
+				err = eventQueue.Write(ctx, string(taskName), group.Name, job)
 				if err != nil {
 					log.Errorf("Error occurred sending new event to the queue %s", err)
 				}
