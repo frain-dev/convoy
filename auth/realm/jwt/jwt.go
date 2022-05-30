@@ -109,7 +109,7 @@ func (j *Jwt) ValidateRefreshToken(refreshToken string) (*VerifiedToken, error) 
 
 // A token is considered blacklisted if the base64 encoding
 // of the token exists as a key within the cache
-func (j *Jwt) isBlackListedToken(token string) (bool, error) {
+func (j *Jwt) isTokenBlacklisted(token string) (bool, error) {
 	var exists *string
 
 	key := convoy.TokenCacheKey.Get(j.EncodeToken(token)).String()
@@ -157,7 +157,7 @@ func (j *Jwt) validateToken(accessToken, secret string) (*VerifiedToken, error) 
 	var userId string
 	var expiry float64
 
-	isBlacklisted, err := j.isBlackListedToken(accessToken)
+	isBlacklisted, err := j.isTokenBlacklisted(accessToken)
 	if err != nil {
 		return nil, err
 	}

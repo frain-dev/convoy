@@ -67,7 +67,11 @@ func newApplicationHandler(
 	gs := services.NewGroupService(appRepo, groupRepo, eventRepo, eventDeliveryRepo, limiter)
 	ss := services.NewSecurityService(groupRepo, apiKeyRepo)
 	sos := services.NewSourceService(sourceRepo)
-	us := services.NewUserService(userRepo, cache)
+	us, err := services.NewUserService(userRepo, cache)
+
+	if err!= nil {
+		log.Fatal(err)
+	}
 
 	return &applicationHandler{
 		appService:        as,
