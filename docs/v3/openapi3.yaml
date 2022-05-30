@@ -90,13 +90,6 @@ components:
         username:
           type: string
       type: object
-    datastore.DefaultStrategyConfiguration:
-      properties:
-        intervalSeconds:
-          type: integer
-        retryLimit:
-          type: integer
-      type: object
     datastore.DeliveryAttempt:
       properties:
         api_version:
@@ -241,11 +234,6 @@ components:
         uid:
           type: string
       type: object
-    datastore.ExponentialBackoffStrategyConfiguration:
-      properties:
-        retryLimit:
-          type: integer
-      type: object
     datastore.Group:
       properties:
         config:
@@ -259,11 +247,14 @@ components:
         name:
           type: string
         rate_limit:
+          description: 'TODO(subomi): refactor this into the Instance API.'
           type: integer
         rate_limit_duration:
           type: string
         statistics:
           $ref: '#/components/schemas/datastore.GroupStatistics'
+        type:
+          type: string
         uid:
           type: string
         updated_at:
@@ -273,6 +264,8 @@ components:
       properties:
         disable_endpoint:
           type: boolean
+        ratelimit:
+          $ref: '#/components/schemas/datastore.RateLimitConfiguration'
         replay_attacks:
           type: boolean
         signature:
@@ -341,6 +334,13 @@ components:
         totalPage:
           type: integer
       type: object
+    datastore.RateLimitConfiguration:
+      properties:
+        count:
+          type: integer
+        duration:
+          type: string
+      type: object
     datastore.SignatureConfiguration:
       properties:
         hash:
@@ -350,10 +350,10 @@ components:
       type: object
     datastore.StrategyConfiguration:
       properties:
-        default:
-          $ref: '#/components/schemas/datastore.DefaultStrategyConfiguration'
-        exponentialBackoff:
-          $ref: '#/components/schemas/datastore.ExponentialBackoffStrategyConfiguration'
+        duration:
+          type: integer
+        retry_count:
+          type: integer
         type:
           type: string
       type: object
@@ -451,6 +451,8 @@ components:
         rate_limit:
           type: integer
         rate_limit_duration:
+          type: string
+        type:
           type: string
       type: object
     models.PortalAPIKeyResponse:

@@ -131,17 +131,13 @@ func (s *GroupIntegrationTestSuite) TestCreateGroup() {
 
 	bodyStr := `{
     "name": "test-group",
+	"type": "outgoing",
     "logo_url": "",
     "config": {
         "strategy": {
-            "type": "default",
-            "default": {
-                "intervalSeconds": 10,
-                "retryLimit": 2
-            },
-            "exponentialBackoff": {
-                "retryLimit": 0
-            }
+            "type": "linear",
+            "duration": 10,
+            "retry_count": 2
         },
         "signature": {
             "header": "X-Convoy-Signature",
@@ -184,16 +180,12 @@ func (s *GroupIntegrationTestSuite) TestUpdateGroup() {
 
 	bodyStr := `{
     "name": "group_1",
+	"type": "outgoing",
     "config": {
         "strategy": {
-            "type": "default",
-            "default": {
-                "intervalSeconds": 10,
-                "retryLimit": 2
-            },
-            "exponentialBackoff": {
-                "retryLimit": 0
-            }
+            "type": "exponential",
+            "duration": 10,
+            "retry_count": 2
         },
         "signature": {
             "header": "X-Convoy-Signature",

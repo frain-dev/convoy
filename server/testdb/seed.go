@@ -114,11 +114,9 @@ func SeedDefaultGroup(db datastore.DatabaseClient) (*datastore.Group, error) {
 		Name: "default-group",
 		Config: &datastore.GroupConfig{
 			Strategy: datastore.StrategyConfiguration{
-				Type: config.DefaultStrategyProvider,
-				Default: datastore.DefaultStrategyConfiguration{
-					IntervalSeconds: 10,
-					RetryLimit:      2,
-				},
+				Type:       datastore.DefaultStrategyProvider,
+				Duration:   10,
+				RetryCount: 2,
 			},
 			Signature: datastore.SignatureConfiguration{
 				Header: config.DefaultSignatureHeader,
@@ -180,6 +178,7 @@ func SeedGroup(db datastore.DatabaseClient, uid, name string, cfg *datastore.Gro
 	g := &datastore.Group{
 		UID:               uid,
 		Name:              name,
+		Type:              datastore.OutgoingGroup,
 		Config:            cfg,
 		RateLimit:         convoy.RATE_LIMIT,
 		RateLimitDuration: convoy.RATE_LIMIT_DURATION,

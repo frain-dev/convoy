@@ -8,22 +8,20 @@ import (
 	"time"
 	_ "time/tzdata"
 
-	"github.com/frain-dev/convoy/auth"
 	"github.com/frain-dev/convoy/cache"
 	"github.com/frain-dev/convoy/datastore/badger"
 	"github.com/frain-dev/convoy/searcher"
 	"github.com/go-redis/redis/v8"
+	"github.com/google/uuid"
+	"go.mongodb.org/mongo-driver/bson/primitive"
 
 	"github.com/frain-dev/convoy/logger"
 	memqueue "github.com/frain-dev/convoy/queue/memqueue"
 	redisqueue "github.com/frain-dev/convoy/queue/redis"
 	"github.com/frain-dev/convoy/tracer"
 	"github.com/getsentry/sentry-go"
-	"github.com/google/uuid"
 	prefixed "github.com/x-cray/logrus-prefixed-formatter"
-	"go.mongodb.org/mongo-driver/bson/primitive"
 
-	"github.com/frain-dev/convoy/util"
 	log "github.com/sirupsen/logrus"
 
 	"github.com/frain-dev/convoy"
@@ -78,79 +76,6 @@ func NewQueue(opts queue.QueueOptions, name string) queue.Queuer {
 	return convoyQueue
 }
 
-func ensureDefaultGroup(ctx context.Context, cfg config.Configuration, a *app) error {
-	var filter *datastore.GroupFilter
-	var groups []*datastore.Group
-	var group *datastore.Group
-	var err error
-
-	filter = &datastore.GroupFilter{}
-	groups, err = a.groupRepo.LoadGroups(ctx, filter)
-	if err != nil {
-		return fmt.Errorf("failed to load groups - %w", err)
-	}
-
-	// return if a group already exists or it's a multi tenant app
-	if cfg.MultipleTenants {
-		return nil
-	}
-
-	if len(groups) > 1 {
-		filter = &datastore.GroupFilter{Names: []string{"default-group"}}
-		groups, err = a.groupRepo.LoadGroups(ctx, filter)
-		if err != nil {
-			return fmt.Errorf("failed to load groups - %w", err)
-		}
-	}
-
-	groupCfg := &datastore.GroupConfig{
-		Strategy: datastore.StrategyConfiguration{
-			Type: cfg.GroupConfig.Strategy.Type,
-			Default: datastore.DefaultStrategyConfiguration{
-				IntervalSeconds: cfg.GroupConfig.Strategy.Default.IntervalSeconds,
-				RetryLimit:      cfg.GroupConfig.Strategy.Default.RetryLimit,
-			},
-		},
-		Signature: datastore.SignatureConfiguration{
-			Header: config.SignatureHeaderProvider(cfg.GroupConfig.Signature.Header),
-			Hash:   cfg.GroupConfig.Signature.Hash,
-		},
-		DisableEndpoint: cfg.GroupConfig.DisableEndpoint,
-		ReplayAttacks:   cfg.GroupConfig.ReplayAttacks,
-	}
-
-	if len(groups) == 0 {
-		defaultGroup := &datastore.Group{
-			UID:               uuid.New().String(),
-			Name:              "default-group",
-			Config:            groupCfg,
-			RateLimit:         convoy.RATE_LIMIT,
-			RateLimitDuration: convoy.RATE_LIMIT_DURATION,
-			CreatedAt:         primitive.NewDateTimeFromTime(time.Now()),
-			UpdatedAt:         primitive.NewDateTimeFromTime(time.Now()),
-			DocumentStatus:    datastore.ActiveDocumentStatus,
-		}
-
-		err = a.groupRepo.CreateGroup(ctx, defaultGroup)
-		if err != nil {
-			return fmt.Errorf("failed to create default group - %w", err)
-		}
-
-		groups = append(groups, defaultGroup)
-	}
-
-	group = groups[0]
-
-	group.Config = groupCfg
-	err = a.groupRepo.UpdateGroup(ctx, group)
-	if err != nil {
-		log.WithError(err).Error("Default group update failed.")
-		return err
-	}
-
-	return nil
-}
-
 func ensureDefaultUser(ctx context.Context, a *app) error {
 	pageable := datastore.Pageable{}
 
@@ -173,7 +98,6 @@ func ensureDefaultUser(ctx context.Context, a *app) error {
 		LastName:       "default",
 		Email:          "superuser@default.com",
 		Password:       string(p.Hash),
-		Role:           auth.Role{Type: auth.RoleSuperUser},
 		CreatedAt:      primitive.NewDateTimeFromTime(time.Now()),
 		UpdatedAt:      primitive.NewDateTimeFromTime(time.Now()),
 		DocumentStatus: datastore.ActiveDocumentStatus,
@@ -306,11 +230,6 @@ func preRun(app *app, db datastore.DatabaseClient) func(cmd *cobra.Command, args
 			}
 		}
 
-		if util.IsStringEmpty(string(cfg.GroupConfig.Signature.Header)) {
-			cfg.GroupConfig.Signature.Header = config.DefaultSignatureHeader
-			log.Warnf("signature header is blank. setting default %s", config.DefaultSignatureHeader)
-		}
-
 		ca, err = cache.NewCache(cfg.Cache)
 		if err != nil {
 			return err
@@ -343,12 +262,7 @@ func preRun(app *app, db datastore.DatabaseClient) func(cmd *cobra.Command, args
 		app.limiter = li
 		app.searcher = se
 
-		err = ensureDefaultUser(context.Background(), app)
-		if err != nil {
-			return err
-		}
-
-		return ensureDefaultGroup(context.Background(), cfg, app)
+		return ensureDefaultUser(context.Background(), app)
 	}
 }
 
