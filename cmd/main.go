@@ -90,7 +90,11 @@ func ensureDefaultUser(ctx context.Context, a *app) error {
 	}
 
 	p := datastore.Password{Plaintext: "default"}
-	p.GenerateHash()
+	err = p.GenerateHash()
+
+	if err != nil {
+		return err
+	}
 
 	defaultUser := &datastore.User{
 		UID:            uuid.NewString(),

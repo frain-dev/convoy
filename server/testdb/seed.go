@@ -303,7 +303,10 @@ func SeedSource(db datastore.DatabaseClient, g *datastore.Group, uid string) (*d
 
 func SeedUser(db datastore.DatabaseClient, password string) (*datastore.User, error) {
 	p := &datastore.Password{Plaintext: password}
-	p.GenerateHash()
+	err := p.GenerateHash()
+	if err != nil {
+		return nil, err
+	}
 
 	user := &datastore.User{
 		UID:            uuid.NewString(),
@@ -315,7 +318,7 @@ func SeedUser(db datastore.DatabaseClient, password string) (*datastore.User, er
 	}
 
 	//Seed Data
-	err := db.UserRepo().CreateUser(context.TODO(), user)
+	err = db.UserRepo().CreateUser(context.TODO(), user)
 	if err != nil {
 		return nil, err
 	}
