@@ -39,7 +39,7 @@ func RegisterNewGroupQueueAndTask(applicationRepo datastore.ApplicationRepositor
 						err := queuer.StartOne(context.Background(), g.Name)
 						if err != nil {
 							log.WithError(err).Error("failed to start dedicated queue")
-							queuer.Delete(g.Name)
+							_ = queuer.Delete(g.Name)
 						}
 					}
 				}

@@ -67,7 +67,7 @@ func (p *ProducerIntegrationTestSuite) SetupTest() {
 		Redis: p.RedisClient,
 	})
 
-	p.Queuer.NewQueue(queue.QueueOptions{
+	_ = p.Queuer.NewQueue(queue.QueueOptions{
 		Name:  p.QueuerName,
 		Redis: p.RedisClient,
 	})
@@ -117,7 +117,7 @@ func (p *ProducerIntegrationTestSuite) Test_StartAll() {
 	_ = redisQueuer.Write(ctx, string(taskName), q2, job)
 	_ = redisQueuer.Write(ctx, string(taskName), q3, job)
 
-	redisQueuer.StartAll(ctx)
+	_ = redisQueuer.StartAll(ctx)
 	time.Sleep(time.Duration(1) * time.Second)
 
 	l1, _ := redisQueuer.Length(q1)
@@ -185,8 +185,8 @@ func (p *ProducerIntegrationTestSuite) Test_SendEvent() {
 	ctx := context.Background()
 
 	_ = p.Queuer.Write(ctx, string(taskName), q1, job)
-	p.Queuer.StartOne(ctx, q1)
-	p.Queuer.StartOne(ctx, p.QueuerName)
+	_ = p.Queuer.StartOne(ctx, q1)
+	_ = p.Queuer.StartOne(ctx, p.QueuerName)
 
 	time.Sleep(time.Duration(1) * time.Second)
 	s1, _ := p.Queuer.Stats(q1)
@@ -226,7 +226,7 @@ func (p *ProducerIntegrationTestSuite) Test_StopAll() {
 	_ = redisQueuer.Write(ctx, string(taskName), q2, job)
 	_ = redisQueuer.Write(ctx, string(taskName), q3, job)
 
-	redisQueuer.StartAll(ctx)
+	_ = redisQueuer.StartAll(ctx)
 	time.Sleep(time.Duration(1) * time.Second)
 	_ = redisQueuer.StopAll()
 
@@ -268,7 +268,7 @@ func (p *ProducerIntegrationTestSuite) Test_StopOne() {
 	_ = redisQueuer.Write(ctx, string(taskName), q2, job)
 	_ = redisQueuer.Write(ctx, string(taskName), q3, job)
 
-	redisQueuer.StartAll(ctx)
+	_ = redisQueuer.StartAll(ctx)
 	time.Sleep(time.Duration(1) * time.Second)
 	_ = redisQueuer.StopOne(q2)
 

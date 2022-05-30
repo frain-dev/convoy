@@ -70,7 +70,7 @@ func TestEventService_CreateAppEvent(t *testing.T) {
 				}, nil)
 
 				eq, _ := es.queue.(*mocks.MockQueuer)
-				eq.EXPECT().Write(gomock.Any(), convoy.TaskName("test_group-CreateEventProcessor"), string(convoy.CreateEventQueue), gomock.Any()).
+				eq.EXPECT().Write(gomock.Any(), string(convoy.TaskName("test_group-CreateEventProcessor")), string(convoy.CreateEventQueue), gomock.Any()).
 					Times(1).Return(nil)
 			},
 			args: args{
@@ -137,7 +137,7 @@ func TestEventService_CreateAppEvent(t *testing.T) {
 				}, nil)
 
 				eq, _ := es.queue.(*mocks.MockQueuer)
-				eq.EXPECT().Write(gomock.Any(), convoy.TaskName("test_group-CreateEventProcessor"), string(convoy.CreateEventQueue), gomock.Any()).
+				eq.EXPECT().Write(gomock.Any(), string(convoy.TaskName("test_group-CreateEventProcessor")), string(convoy.CreateEventQueue), gomock.Any()).
 					Times(1).Return(nil)
 			},
 			args: args{
@@ -203,7 +203,7 @@ func TestEventService_CreateAppEvent(t *testing.T) {
 				}, nil)
 
 				eq, _ := es.queue.(*mocks.MockQueuer)
-				eq.EXPECT().Write(gomock.Any(), convoy.TaskName("test_group-CreateEventProcessor"), string(convoy.CreateEventQueue), gomock.Any()).
+				eq.EXPECT().Write(gomock.Any(), string(convoy.TaskName("test_group-CreateEventProcessor")), string(convoy.CreateEventQueue), gomock.Any()).
 					Times(1).Return(nil)
 			},
 			args: args{
@@ -1807,7 +1807,7 @@ func TestEventService_requeueEventDelivery(t *testing.T) {
 					Times(1).Return(nil)
 
 				eq, _ := es.queue.(*mocks.MockQueuer)
-				eq.EXPECT().Write(gomock.Any(), convoy.TaskName("test_group-EventProcessor"), string(convoy.EventQueue), gomock.Any()).
+				eq.EXPECT().Write(gomock.Any(), string(convoy.TaskName("test_group-EventProcessor")), string(convoy.EventQueue), gomock.Any()).
 					Times(1).Return(nil)
 			},
 		},
@@ -1839,7 +1839,7 @@ func TestEventService_requeueEventDelivery(t *testing.T) {
 					Times(1).Return(nil)
 
 				eq, _ := es.queue.(*mocks.MockQueuer)
-				eq.EXPECT().Write(gomock.Any(), convoy.TaskName("test_group-EventProcessor"), convoy.EventQueue, gomock.Any()).
+				eq.EXPECT().Write(gomock.Any(), string(convoy.TaskName("test_group-EventProcessor")), string(convoy.EventQueue), gomock.Any()).
 					Times(1).Return(errors.New("failed"))
 			},
 			wantErr:    true,

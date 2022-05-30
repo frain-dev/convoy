@@ -186,7 +186,11 @@ func StartConvoyServer(a *app, cfg config.Configuration, withWorkers bool) error
 		log.Infof("Starting Convoy workers...")
 		// register worker.
 		ctx := context.Background()
-		a.queue.StartAll(ctx)
+		err = a.queue.StartAll(ctx)
+		if err != nil {
+			log.WithError(err).Error("failed to start worker")
+			return err
+		}
 	}
 
 	log.Infof("Started convoy server in %s", time.Since(start))

@@ -80,7 +80,7 @@ func (gs *GroupService) CreateGroup(ctx context.Context, newGroup *models.Group)
 			err := gs.queue.StartOne(context.Background(), groupName)
 			if err != nil {
 				log.WithError(err).Error("failed to start dedicated queue")
-				gs.queue.Delete(groupName)
+				_ = gs.queue.Delete(groupName)
 			}
 		}
 	}

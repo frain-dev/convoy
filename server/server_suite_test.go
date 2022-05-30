@@ -80,10 +80,17 @@ func getQueueOptions(name string) (queue.QueueOptions, error) {
 func buildApplication() *applicationHandler {
 	var tracer tracer.Tracer
 	var qOpts, cOpts queue.QueueOptions
+	var q queue.Queuer
+
+	defaultOpts, _ = getQueueOptions("EventQueue")
+
+	queue = redisqueue.NewQueuer(opts)
 
 	db := getDB()
-	qOpts, _ = getQueueOptions("EventQueue")
 	cOpts, _ = getQueueOptions("CreateEventQueue")
+
+	_ = queue.NewQueue(defaultOpts)
+	_ = queue.NewQueue(cOpts)
 
 	groupRepo := db.GroupRepo()
 	appRepo := db.AppRepo()
@@ -91,8 +98,6 @@ func buildApplication() *applicationHandler {
 	eventDeliveryRepo := db.EventDeliveryRepo()
 	apiKeyRepo := db.APIRepo()
 	sourceRepo := db.SourceRepo()
-	eventQueue := redisqueue.NewQueue(qOpts)
-	createEventQueue := redisqueue.NewQueue(cOpts)
 	logger := logger.NewNoopLogger()
 	cache := ncache.NewNoopCache()
 	limiter := nooplimiter.NewNoopLimiter()
@@ -101,7 +106,7 @@ func buildApplication() *applicationHandler {
 
 	return newApplicationHandler(
 		eventRepo, eventDeliveryRepo, appRepo,
-		groupRepo, apiKeyRepo, sourceRepo, eventQueue, createEventQueue,
+		groupRepo, apiKeyRepo, sourceRepo, queue,
 		logger, tracer, cache, limiter, searcher,
 	)
 }

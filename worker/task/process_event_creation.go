@@ -19,14 +19,17 @@ import (
 func ProcessEventCreated(appRepo datastore.ApplicationRepository, eventRepo datastore.EventRepository, groupRepo datastore.GroupRepository, eventDeliveryRepo datastore.EventDeliveryRepository, cache cache.Cache, eventQueue queue.Queuer) func(job *queue.Job) error {
 	return func(job *queue.Job) error {
 		var event datastore.Event
-		json.Unmarshal(job.Payload, &event)
+		err := json.Unmarshal(job.Payload, &event)
+		if err != nil {
+			return &disq.Error{Err: err, Delay: defaultDelay}
+		}
 
 		ctx := context.Background()
 		var group *datastore.Group
 		var app *datastore.Application
 
 		appCacheKey := convoy.ApplicationsCacheKey.Get(event.AppMetadata.UID).String()
-		err := cache.Get(ctx, appCacheKey, &app)
+		err = cache.Get(ctx, appCacheKey, &app)
 		if err != nil {
 			return &disq.Error{Err: errors.New("cache error"), Delay: 10 * time.Second}
 		}

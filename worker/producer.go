@@ -28,6 +28,6 @@ func (p *Producer) Stop() error {
 	return p.queue.StopAll()
 }
 
-func (p *Producer) Queuer() error {
-	return p.Queuer()
+func (p *Producer) Queuer() queue.Queuer {
+	return p.queue
 }
