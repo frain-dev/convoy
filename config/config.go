@@ -150,7 +150,6 @@ const (
 
 const (
 	RedisQueueProvider                 QueueProvider           = "redis"
-	InMemoryQueueProvider              QueueProvider           = "in-memory"
 	DefaultStrategyProvider            StrategyProvider        = "linear"
 	ExponentialBackoffStrategyProvider StrategyProvider        = "exponential"
 	DefaultSignatureHeader             SignatureHeaderProvider = "X-Convoy-Signature"
@@ -542,10 +541,6 @@ func ensureQueueConfig(queueCfg QueueConfiguration) error {
 		if queueCfg.Redis.Dsn == "" {
 			return errors.New("redis queue dsn is empty")
 		}
-
-	case InMemoryQueueProvider:
-		return nil
-
 	default:
 		return fmt.Errorf("unsupported queue type: %s", queueCfg.Type)
 	}

@@ -10,7 +10,6 @@ import (
 	"github.com/frain-dev/convoy/cache"
 	"github.com/frain-dev/convoy/datastore/badger"
 	"github.com/frain-dev/convoy/queue"
-	memqueue "github.com/frain-dev/convoy/queue/memqueue"
 	"github.com/frain-dev/convoy/searcher"
 	"github.com/go-redis/redis/v8"
 
@@ -155,14 +154,6 @@ func preRun(app *app, db datastore.DatabaseClient) func(cmd *cobra.Command, args
 			q = redisqueue.NewQueuer(opts)
 		}
 
-		if cfg.Queue.Type == config.InMemoryQueueProvider {
-			opts = queue.QueueOptions{
-				Name: string(convoy.EventQueue),
-				Type: "in-memory",
-			}
-			q = memqueue.NewQueuer(opts)
-		}
-
 		lo, err := logger.NewLogger(cfg.Logger)
 		if err != nil {
 			return err
@@ -237,7 +228,7 @@ func parsePersistentArgs(app *app, cmd *cobra.Command) {
 	var configFile string
 
 	cmd.PersistentFlags().StringVar(&configFile, "config", "./convoy.json", "Configuration file for convoy")
-	cmd.PersistentFlags().StringVar(&queue, "queue", "", "Queue provider (\"redis\" or \"in-memory\")")
+	cmd.PersistentFlags().StringVar(&queue, "queue", "", "Queue provider (\"redis\")")
 	cmd.PersistentFlags().StringVar(&dbDsn, "db", "", "Database dsn or path to in-memory file")
 	cmd.PersistentFlags().StringVar(&redisDsn, "redis", "", "Redis dsn")
 
