@@ -12,7 +12,7 @@ import (
 func provideJwt(t *testing.T) *Jwt {
 	cache, err := cache.NewCache(config.CacheConfiguration{})
 
-	require.NoError(t, err)
+	require.Nil(t, err)
 
 	jwt := NewJwt(&config.JwtRealmOptions{}, cache)
 	return jwt
@@ -23,7 +23,7 @@ func TestJwt_GenerateToken(t *testing.T) {
 	jwt := provideJwt(t)
 
 	token, err := jwt.GenerateToken(user)
-	require.NoError(t, err)
+	require.Nil(t, err)
 
 	require.NotEmpty(t, token.AccessToken)
 	require.NotEmpty(t, token.RefreshToken)
@@ -34,13 +34,13 @@ func TestJwt_ValidateToken(t *testing.T) {
 	jwt := provideJwt(t)
 
 	token, err := jwt.GenerateToken(user)
-	require.NoError(t, err)
+	require.Nil(t, err)
 
 	require.NotEmpty(t, token.AccessToken)
 	require.NotEmpty(t, token.RefreshToken)
 
 	verified, err := jwt.ValidateAccessToken(token.AccessToken)
-	require.NoError(t, err)
+	require.Nil(t, err)
 
 	require.Equal(t, user.UID, verified.UserID)
 }
@@ -50,13 +50,13 @@ func TestJwt_ValidateRefreshToken(t *testing.T) {
 	jwt := provideJwt(t)
 
 	token, err := jwt.GenerateToken(user)
-	require.NoError(t, err)
+	require.Nil(t, err)
 
 	require.NotEmpty(t, token.AccessToken)
 	require.NotEmpty(t, token.RefreshToken)
 
 	verified, err := jwt.ValidateRefreshToken(token.RefreshToken)
-	require.NoError(t, err)
+	require.Nil(t, err)
 
 	require.Equal(t, user.UID, verified.UserID)
 }
@@ -66,15 +66,15 @@ func TestJwt_BlacklistToken(t *testing.T) {
 	jwt := provideJwt(t)
 
 	token, err := jwt.GenerateToken(user)
-	require.NoError(t, err)
+	require.Nil(t, err)
 
 	verified, err := jwt.ValidateAccessToken(token.AccessToken)
-	require.NoError(t, err)
+	require.Nil(t, err)
 
 	err = jwt.BlacklistToken(verified, token.AccessToken)
-	require.NoError(t, err)
+	require.Nil(t, err)
 
 	isBlacklist, err := jwt.isTokenBlacklisted(token.AccessToken)
-	require.NoError(t, err)
+	require.Nil(t, err)
 	require.True(t, isBlacklist)
 }

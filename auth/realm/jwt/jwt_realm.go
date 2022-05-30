@@ -26,7 +26,7 @@ func (j *JwtRealm) Authenticate(ctx context.Context, cred *auth.Credential) (*au
 
 	verified, err := j.jwt.ValidateAccessToken(cred.Token)
 	if err != nil {
-		return nil, err
+		return nil, ErrInvalidToken
 	}
 
 	user, err := j.userRepo.FindUserByID(ctx, verified.UserID)
