@@ -183,7 +183,7 @@ func TestGroupService_CreateGroup(t *testing.T) {
 				RateLimit:         5000,
 				RateLimitDuration: "1m",
 				Config: &datastore.GroupConfig{
-					Signature:       datastore.DefaultIncomingSignatureConfig,
+					Signature:       datastore.DefaultSignatureConfig,
 					Strategy:        datastore.DefaultStrategyConfig,
 					RateLimit:       datastore.DefaultRateLimitConfig,
 					DisableEndpoint: false,
@@ -194,27 +194,7 @@ func TestGroupService_CreateGroup(t *testing.T) {
 			wantErr: false,
 		},
 		{
-			name: "should_fail_to_create_outgoing_group_without_signature",
-			args: args{
-				ctx: ctx,
-				newGroup: &models.Group{
-					Name:    "test_group",
-					Type:    "outgoing",
-					LogoURL: "https://google.com",
-					Config:  datastore.GroupConfig{},
-				},
-			},
-			dbFn: func(gs *GroupService) {
-				a, _ := gs.groupRepo.(*mocks.MockGroupRepository)
-				a.EXPECT().CreateGroup(gomock.Any(), gomock.Any()).
-					Times(0).Return(nil)
-			},
-			wantErr:     true,
-			wantErrCode: http.StatusBadRequest,
-			wantErrMsg:  "Outgoing groups require signature",
-		},
-		{
-			name: "should_create_outgoing_group_with_signature_and_defaults",
+			name: "should_create_outgoing_group_with_defaults",
 			args: args{
 				ctx: ctx,
 				newGroup: &models.Group{
