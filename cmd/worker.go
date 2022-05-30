@@ -30,7 +30,10 @@ func addWorkerCommand(a *app) *cobra.Command {
 			// register worker.
 			ctx := context.Background()
 			a.queue.StartAll(ctx)
-
+			if err != nil {
+				log.WithError(err).Error("failed to start worker")
+				return err
+			}
 			server.RegisterConsumerMetrics(a.queue, cfg)
 			server.RegisterQueueMetrics(a.queue, cfg)
 

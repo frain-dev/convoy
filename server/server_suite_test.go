@@ -82,9 +82,9 @@ func buildApplication() *applicationHandler {
 	var qOpts, cOpts queue.QueueOptions
 	var q queue.Queuer
 
-	defaultOpts, _ = getQueueOptions("EventQueue")
+	defaultOpts, _ := getQueueOptions("EventQueue")
 
-	queue = redisqueue.NewQueuer(opts)
+	queue := redisqueue.NewQueuer(defaultOpts)
 
 	db := getDB()
 	cOpts, _ = getQueueOptions("CreateEventQueue")

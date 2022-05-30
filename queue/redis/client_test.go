@@ -420,7 +420,7 @@ func (p *ProducerIntegrationTestSuite) Test_Stats() {
 	_ = redisQueuer.Write(ctx, string(taskName), q2, job)
 	_ = redisQueuer.Write(ctx, string(taskName), q3, job)
 
-	redisQueuer.StartAll(ctx)
+	_ = redisQueuer.StartAll(ctx)
 	time.Sleep(time.Duration(1) * time.Second)
 
 	s1, _ := redisQueuer.Stats(q1)
