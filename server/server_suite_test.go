@@ -79,8 +79,7 @@ func getQueueOptions(name string) (queue.QueueOptions, error) {
 
 func buildApplication() *applicationHandler {
 	var tracer tracer.Tracer
-	var qOpts, cOpts queue.QueueOptions
-	var q queue.Queuer
+	var cOpts queue.QueueOptions
 
 	defaultOpts, _ := getQueueOptions("EventQueue")
 

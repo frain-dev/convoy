@@ -29,7 +29,7 @@ func addWorkerCommand(a *app) *cobra.Command {
 			worker.RegisterNewGroupQueueAndTask(a.applicationRepo, a.eventDeliveryRepo, a.groupRepo, a.limiter, a.eventRepo, a.cache, a.queue)
 			// register worker.
 			ctx := context.Background()
-			a.queue.StartAll(ctx)
+			err = a.queue.StartAll(ctx)
 			if err != nil {
 				log.WithError(err).Error("failed to start worker")
 				return err
