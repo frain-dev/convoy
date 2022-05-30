@@ -235,25 +235,21 @@ func ProcessEventDelivery(
 		}
 
 		if done && subscription.Status == datastore.PendingEndpointStatus && g.Config.DisableEndpoint {
-			endpoints := []string{endpoint.UID}
-			endpointStatus := datastore.ActiveEndpointStatus
-
-			err := appRepo.UpdateApplicationEndpointsStatus(context.Background(), app.UID, endpoints, endpointStatus)
+			subscriptionStatus := datastore.ActiveEndpointStatus
+			err := subRepo.UpdateSubscriptionsStatus(context.Background(), g.UID, subscription.UID, subscriptionStatus)
 			if err != nil {
 				log.WithError(err).Error("Failed to reactivate endpoint after successful retry")
 			}
 
-			err = sendNotification(context.Background(), appRepo, ed, g, &cfg.SMTP, endpointStatus, false)
+			err = sendNotification(context.Background(), appRepo, ed, g, &cfg.SMTP, subscriptionStatus, false)
 			if err != nil {
 				log.WithError(err).Error("failed to send notification")
 			}
 		}
 
 		if !done && subscription.Status == datastore.PendingEndpointStatus {
-			endpoints := []string{endpoint.UID}
-			endpointStatus := datastore.InactiveEndpointStatus
-
-			err := appRepo.UpdateApplicationEndpointsStatus(context.Background(), app.UID, endpoints, endpointStatus)
+			subscriptionStatus := datastore.InactiveEndpointStatus
+			err := subRepo.UpdateSubscriptionsStatus(context.Background(), g.UID, subscription.UID, subscriptionStatus)
 			if err != nil {
 				log.WithError(err).Error("Failed to reactivate endpoint after successful retry")
 			}
@@ -277,10 +273,9 @@ func ProcessEventDelivery(
 
 			subscriptionStatus := subscription.Status
 			if g.Config.DisableEndpoint && subscription.Status != datastore.PendingEndpointStatus {
-				endpoints := []string{endpoint.UID}
 				subscriptionStatus = datastore.InactiveEndpointStatus
 
-				err := appRepo.UpdateApplicationEndpointsStatus(context.Background(), app.UID, endpoints, subscriptionStatus)
+				err := subRepo.UpdateSubscriptionsStatus(context.Background(), g.UID, subscription.UID, subscriptionStatus)
 				if err != nil {
 					log.WithError(err).Error("Failed to reactivate endpoint after successful retry")
 				}

@@ -152,3 +152,20 @@ func (s *subscriptionRepo) FindSubscriptionBySourceIDs(ctx context.Context, grou
 
 	return subscription, nil
 }
+
+func (s *subscriptionRepo) UpdateSubscriptionsStatus(ctx context.Context, groupId string, subscriptionId string, status datastore.EndpointStatus) error {
+	filter := bson.M{
+		"uid":             subscriptionId,
+		"group_id":        groupId,
+		"document_status": datastore.ActiveDocumentStatus,
+	}
+
+	updatedAt := primitive.NewDateTimeFromTime(time.Now())
+	update := bson.D{primitive.E{Key: "$set", Value: bson.D{
+		primitive.E{Key: "status", Value: status},
+		primitive.E{Key: "updated_at", Value: updatedAt},
+	}}}
+
+	_, err := s.client.UpdateOne(ctx, filter, update)
+	return err
+}

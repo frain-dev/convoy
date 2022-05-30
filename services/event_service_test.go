@@ -23,7 +23,8 @@ func provideEventService(ctrl *gomock.Controller) *EventService {
 	creatEventQueue := mocks.NewMockQueuer(ctrl)
 	cache := mocks.NewMockCache(ctrl)
 	searcher := mocks.NewMockSearcher(ctrl)
-	return NewEventService(appRepo, eventRepo, eventDeliveryRepo, eventQueue, creatEventQueue, cache, searcher)
+	subRepo := mocks.NewMockSubscriptionRepository(ctrl)
+	return NewEventService(appRepo, eventRepo, eventDeliveryRepo, eventQueue, creatEventQueue, cache, searcher, subRepo)
 }
 
 func TestEventService_CreateAppEvent(t *testing.T) {
@@ -1489,10 +1490,12 @@ func TestEventService_RetryEventDelivery(t *testing.T) {
 			name: "should_retry_event_delivery_with_inactive_endpoint",
 			dbFn: func(es *EventService) {
 				a, _ := es.appRepo.(*mocks.MockApplicationRepository)
+				s, _ := es.subRepo.(*mocks.MockSubscriptionRepository)
+
 				a.EXPECT().FindApplicationEndpointByID(gomock.Any(), "ref", "345").
 					Times(1).Return(&datastore.Endpoint{UID: "gbe"}, nil)
 
-				a.EXPECT().UpdateApplicationEndpointsStatus(gomock.Any(), "ref", []string{"345"}, datastore.PendingEndpointStatus).
+				s.EXPECT().UpdateSubscriptionsStatus(gomock.Any(), gomock.Any(), gomock.Any(), datastore.PendingEndpointStatus).
 					Times(1).Return(nil)
 
 				ed, _ := es.eventDeliveryRepo.(*mocks.MockEventDeliveryRepository)
@@ -1515,10 +1518,12 @@ func TestEventService_RetryEventDelivery(t *testing.T) {
 			name: "should_fail_to_retry_event_delivery_with_inactive_endpoint",
 			dbFn: func(es *EventService) {
 				a, _ := es.appRepo.(*mocks.MockApplicationRepository)
+				s, _ := es.subRepo.(*mocks.MockSubscriptionRepository)
+
 				a.EXPECT().FindApplicationEndpointByID(gomock.Any(), "ref", "345").
 					Times(1).Return(&datastore.Endpoint{UID: "gbe"}, nil)
 
-				a.EXPECT().UpdateApplicationEndpointsStatus(gomock.Any(), "ref", []string{"345"}, datastore.PendingEndpointStatus).
+				s.EXPECT().UpdateSubscriptionsStatus(gomock.Any(), gomock.Any(), gomock.Any(), datastore.PendingEndpointStatus).
 					Times(1).Return(errors.New("failed"))
 			},
 			args: args{

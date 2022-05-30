@@ -23,6 +23,7 @@ type EventService struct {
 	appRepo           datastore.ApplicationRepository
 	eventRepo         datastore.EventRepository
 	eventDeliveryRepo datastore.EventDeliveryRepository
+	subRepo           datastore.SubscriptionRepository
 	eventQueue        queue.Queuer
 	createEventQueue  queue.Queuer
 	cache             cache.Cache
@@ -231,25 +232,25 @@ func (e *EventService) RetryEventDelivery(ctx context.Context, eventDelivery *da
 		return errors.New("cannot resend event that did not fail previously")
 	}
 
-	// em := eventDelivery.EndpointMetadata
-	// endpoint, err := e.appRepo.FindApplicationEndpointByID(context.Background(), eventDelivery.AppMetadata.UID, em.UID)
-	// if err != nil {
-	// 	log.WithError(err).Error("failed to find endpoint")
-	// 	return errors.New("cannot find endpoint")
-	// }
+	sub, err := e.subRepo.FindSubscriptionByID(ctx, g.UID, eventDelivery.SubscriptionID)
+	if err != nil {
+		return ErrSubscriptionNotFound
+	}
 
-	// if endpoint.Status == datastore.PendingEndpointStatus {
-	// 	return errors.New("endpoint is being re-activated")
-	// }
+	if sub.Status != datastore.PendingEndpointStatus {
+		return errors.New("force resend to an inactive or pending subscription is not allowed")
+	}
 
-	// if endpoint.Status == datastore.InactiveEndpointStatus {
-	// 	pendingEndpoints := []string{em.UID}
+	if sub.Status == datastore.PendingEndpointStatus {
+		return errors.New("subscription is being re-activated")
+	}
 
-	// 	err = e.appRepo.UpdateApplicationEndpointsStatus(context.Background(), eventDelivery.AppMetadata.UID, pendingEndpoints, datastore.PendingEndpointStatus)
-	// 	if err != nil {
-	// 		return errors.New("failed to update endpoint status")
-	// 	}
-	// }
+	if sub.Status == datastore.InactiveEndpointStatus {
+		err = e.subRepo.UpdateSubscriptionsStatus(context.Background(), eventDelivery.GroupID, eventDelivery.SubscriptionID, datastore.PendingEndpointStatus)
+		if err != nil {
+			return errors.New("failed to update subscription status")
+		}
+	}
 
 	return e.requeueEventDelivery(ctx, eventDelivery, g)
 }
@@ -259,15 +260,14 @@ func (e *EventService) forceResendEventDelivery(ctx context.Context, eventDelive
 		return errors.New("only successful events can be force resent")
 	}
 
-	// em := eventDelivery.EndpointMetadata
-	// endpoint, err := e.appRepo.FindApplicationEndpointByID(context.Background(), eventDelivery.AppMetadata.UID, em.UID)
-	// if err != nil {
-	// 	return errors.New("cannot find endpoint")
-	// }
+	sub, err := e.subRepo.FindSubscriptionByID(ctx, g.UID, eventDelivery.SubscriptionID)
+	if err != nil {
+		return ErrSubscriptionNotFound
+	}
 
-	// if endpoint.Status != datastore.ActiveEndpointStatus {
-	// 	return errors.New("force resend to an inactive or pending endpoint is not allowed")
-	// }
+	if sub.Status != datastore.ActiveEndpointStatus {
+		return errors.New("force resend to an inactive or pending endpoint is not allowed")
+	}
 
 	return e.requeueEventDelivery(ctx, eventDelivery, g)
 }

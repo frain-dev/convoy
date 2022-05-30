@@ -59,7 +59,6 @@ type ApplicationRepository interface {
 	LoadApplicationsPagedByGroupId(context.Context, string, Pageable) ([]Application, PaginationData, error)
 	SearchApplicationsByGroupId(context.Context, string, SearchParams) ([]Application, error)
 	FindApplicationEndpointByID(context.Context, string, string) (*Endpoint, error)
-	UpdateApplicationEndpointsStatus(context.Context, string, []string, EndpointStatus) error
 }
 
 type SubscriptionRepository interface {
@@ -70,6 +69,7 @@ type SubscriptionRepository interface {
 	FindSubscriptionByID(context.Context, string, string) (*Subscription, error)
 	FindSubscriptionByEventType(context.Context, string, string, EventType) ([]Subscription, error)
 	FindSubscriptionBySourceIDs(context.Context, string, string) ([]Subscription, error)
+	UpdateSubscriptionsStatus(context.Context, string, string, EndpointStatus) error
 }
 
 type SourceRepository interface {
