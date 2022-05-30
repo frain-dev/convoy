@@ -144,7 +144,7 @@ func (s *EventIntegrationTestSuite) Test_ReplayAppEvent_Valid_Event() {
 
 	// Just Before.
 	app, _ := testdb.SeedApplication(s.DB, s.DefaultGroup, uuid.NewString(), "", false)
-	_, _ = testdb.SeedEvent(s.DB, app, eventID, "*", []byte(`{}`))
+	_, _ = testdb.SeedEvent(s.DB, app, s.DefaultGroup.UID, eventID, "*", []byte(`{}`))
 
 	url := fmt.Sprintf("/api/v1/events/%s/replay", eventID)
 	req := createRequest(http.MethodPut, url, nil)
