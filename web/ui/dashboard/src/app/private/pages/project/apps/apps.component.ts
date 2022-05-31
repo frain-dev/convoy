@@ -1,5 +1,5 @@
 import { Component, OnInit } from '@angular/core';
-import { Router } from '@angular/router';
+import { ActivatedRoute, Router } from '@angular/router';
 import { APP } from 'src/app/models/app.model';
 import { PAGINATION } from 'src/app/models/global.model';
 import { HTTP_RESPONSE } from 'src/app/models/http.model';
@@ -22,7 +22,6 @@ export class AppsComponent implements OnInit {
 	showDeleteAppModal: boolean = false;
 	showCreateAppModal: boolean = false;
 	isloadingApps: boolean = false;
-	isloadingMoreApps: boolean = false;
 	isDeletingApp: boolean = false;
 	isCreatingNewApp: boolean = false;
 	editAppMode: boolean = false;
@@ -32,14 +31,15 @@ export class AppsComponent implements OnInit {
 	appsDetailsItem?: any;
 	appsPage: number = 1;
 	filteredApps!: APP[];
-	constructor(private router: Router, private generalService:GeneralService, private appService:AppsService) {}
+	constructor(private router: Router, private route: ActivatedRoute, private generalService: GeneralService, private appService: AppsService) {}
 
 	async ngOnInit() {
-		await this.getApps({type: 'apps'})
+		await this.getApps();
 	}
 
-	searchApps(searchDetails: { searchInput?: any; type: 'filter' | 'apps' }) {
+	searchApps(searchDetails: { searchInput?: any }) {
 		const searchString: string = searchDetails?.searchInput?.target?.value || this.appsSearchString;
+		this.getApps({ search: searchString });
 	}
 
 	filterAppByStatus(status: string) {
@@ -50,42 +50,22 @@ export class AppsComponent implements OnInit {
 		this.currentAppId = '';
 	}
 
-	async loadEventsFromAppsTable(appId: string) {
-		this.router.navigate(['/'])
-		// await this.getEvents({ addToURL: true, appId: appId, fromFilter: true });
-		// this.toggleActiveTab('events');
+	loadEventsFromAppsTable(appId: string) {
+		const projectId = this.appService.projectId;
+		this.router.navigate(['/projects/' + projectId + '/events'], { queryParams: { eventsApp: appId } });
 	}
 
-	viewAppDetails() {
-		this.router.navigate(['/projects/1/apps/1'])
-	}
+	deleteApp() {}
 
-	deleteApp(){
-		
-	}
-
-	async getApps(requestDetails?: { search?: string; type: 'filter' | 'apps' }): Promise<HTTP_RESPONSE> {
-		if (this.apps?.pagination?.next === this.appsPage) this.isloadingMoreApps = true;
-		if (requestDetails?.type === 'apps') this.isloadingApps = true;
-
+	async getApps(requestDetails?: { search?: string; page?: number }): Promise<HTTP_RESPONSE> {
+		this.isloadingApps = true;
+		const page = requestDetails?.page || this.route.snapshot.queryParams.page || 1;
 		try {
-			const appsResponse = await this.appService.getApps({ pageNo: this.appsPage || 1, searchString: requestDetails?.search });
+			const appsResponse = await this.appService.getApps({ pageNo: page, searchString: requestDetails?.search });
 
-			if (!requestDetails?.search && this.apps?.pagination?.next === this.appsPage) {
-				const content = [...this.apps.content, ...appsResponse.data.content];
-				const pagination = appsResponse.data.pagination;
-				this.apps = { content, pagination };
-				this.displayedApps = this.generalService.setContentDisplayed(this.apps.content);
-				this.isloadingMoreApps = false;
-				return appsResponse;
-			}
-
-			if (requestDetails?.type === 'apps') {
-				this.apps = appsResponse.data;
-				this.displayedApps = this.generalService.setContentDisplayed(this.apps.content);
-				this.appsDetailsItem = this.apps?.content[0];
-				console.log(this.displayedApps)
-			}
+			this.apps = appsResponse.data;
+			this.displayedApps = this.generalService.setContentDisplayed(this.apps.content);
+			this.appsDetailsItem = this.apps?.content[0];
 
 			if (!this.filteredApps) this.filteredApps = appsResponse.data.content;
 
@@ -95,10 +75,7 @@ export class AppsComponent implements OnInit {
 			return appsResponse;
 		} catch (error: any) {
 			this.isloadingApps = false;
-			this.isloadingMoreApps = false;
 			return error;
 		}
 	}
-
-	
 }

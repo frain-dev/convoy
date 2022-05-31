@@ -65,6 +65,7 @@
 	
 	<div class="flex">
 		<div class="event__table">
+			<convoy-table-loader id="events_loader_loader" [tableHead]="eventsTableHead" *ngIf="isloadingEvents"></convoy-table-loader>
 			<div class="table table--container has-loader" id="events-table-container" *ngIf="displayedEvents && displayedEvents.length > 0">
 				<table id="table">
 					<thead>

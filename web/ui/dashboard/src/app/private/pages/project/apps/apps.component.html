@@ -13,8 +13,8 @@
 	<div class="flex flex__align-items-center">
 		<form class="input__search filter margin-bottom__0px bg__white">
 			<img src="/assets/img/search-icon.svg" alt="search icon" />
-			<input type="search" placeholder="Search apps" [(ngModel)]="appsSearchString" (change)="searchApps({ searchInput: $event, type: 'apps' })" [ngModelOptions]="{ standalone: true }" />
-			<button [class]="'enter-button' + (appsSearchString.length > 0 ? ' show' : '')" (click)="searchApps({ type: 'apps' })">
+			<input type="search" placeholder="Search apps" [(ngModel)]="appsSearchString" (change)="searchApps({ searchInput: $event })" [ngModelOptions]="{ standalone: true }" />
+			<button [class]="'enter-button' + (appsSearchString.length > 0 ? ' show' : '')" (click)="searchApps({ searchInput: $event })">
 				<img src="/assets/img/enter-icon.png" alt="enter icon" />
 			</button>
 		</form>
@@ -51,7 +51,7 @@
 <div class="card">
 	<convoy-table-loader id="events_loader_loader" [tableHead]="appsTableHead" *ngIf="isloadingApps"></convoy-table-loader>
 
-	<div class="table" id="apps-table-container" *ngIf="!isloadingApps">
+	<div class="table" id="apps-table-container" *ngIf="!isloadingApps && displayedApps && displayedApps.length > 0">
 		<div class="table--container">
 			<table id="table">
 				<thead>
@@ -63,7 +63,7 @@
 				</thead>
 
 				<tbody>
-					<ng-container *ngFor="let apps of displayedApps; let i = index" (click)="viewAppDetails()">
+					<ng-container *ngFor="let apps of displayedApps; let i = index">
 						<tr class="table--date-row">
 							<td>
 								<div>{{ apps.date }}</div>
@@ -101,7 +101,6 @@
 								<div>
 									<button
 										title="view events"
-										[routerLink]="'./'"
 										(click)="loadEventsFromAppsTable(app.uid)"
 										[disabled]="app.events <= 0"
 										[class]="'button__retry button--has-icon icon-left'"
@@ -131,8 +130,37 @@
 			</table>
 		</div>
 	</div>
+	<div class="flex flex__column flex__justify-center flex__align-items-center table--container" id="events-empty-state" *ngIf="displayedApps?.length === 0">
+		<img src="/assets/img/empty-state.svg" alt="empty state" class="empty-state-img" />
+		<p class="font__14px font__weight-600 margin-top__0px color__black width__20 text--center">No app to show here</p>
+	</div>
 </div>
-
+<div class="button-container flex flex__align-items-center margin-top__16px">
+	<button
+		class="button button__white button__primary button__outline button--has-icon icon-left padding-y__4px padding-right__16px padding-left__4px"
+		routerLink="./"
+		[queryParams]="{page: apps?.pagination?.prev}"
+		[disabled]="apps?.pagination?.prev === 0"
+		(click)="getApps({ page: apps?.pagination?.prev })"
+	>
+		<svg width="24" height="24" class="margin-right__8px">
+			<use xlink:href="#arrow-left-icon"></use>
+		</svg>
+		Previous
+	</button>
+	<button
+		class="button button__white button__primary button__outline button--has-icon icon-left padding-y__4px padding-left__16px padding-right__4px margin-left__16px"
+		routerLink="./"
+		[queryParams]="{page: apps?.pagination?.next}"
+		[disabled]="apps?.pagination?.next === 0"
+		(click)="getApps({ page: apps?.pagination?.next })"
+	>
+		Next
+		<svg width="24" height="24" class="margin-left__8px" fill="var(--primary-color)">
+			<use xlink:href="#arrow-right-icon"></use>
+		</svg>
+	</button>
+</div>
 <div class="overlay" *ngIf="showOverlay" (click)="currentAppId = ''; showOverlay = false"></div>
 
 <!-- dark overlay  -->
@@ -169,6 +197,6 @@
 		</div>
 	</div>
 	<div class="modal--body padding-all__0px">
-		<app-create-app [editAppMode]="editAppMode" [appsDetailsItem]="appsDetailsItem" (discardCreateApp)="showCreateAppModal = false; getApps({ type: 'apps' })"></app-create-app>
+		<app-create-app [editAppMode]="editAppMode" [appsDetailsItem]="appsDetailsItem" (discardCreateApp)="showCreateAppModal = false; getApps()"></app-create-app>
 	</div>
 </div>

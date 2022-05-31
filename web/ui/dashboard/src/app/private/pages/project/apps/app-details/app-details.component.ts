@@ -1,6 +1,7 @@
+import { Location } from '@angular/common';
 import { Component, OnInit } from '@angular/core';
 import { FormBuilder, FormGroup, Validators } from '@angular/forms';
-import { ActivatedRoute } from '@angular/router';
+import { ActivatedRoute, Router } from '@angular/router';
 import { APP } from 'src/app/models/app.model';
 import { PAGINATION } from 'src/app/models/global.model';
 import { AppDetailsService } from './app-details.service';
@@ -36,16 +37,20 @@ export class AppDetailsComponent implements OnInit {
 	eventTags!: string[];
 	appsDetailsItem!: APP;
 	apps!: { pagination: PAGINATION; content: APP[] };
-	constructor(private formBuilder: FormBuilder, private appDetailsService: AppDetailsService, private route: ActivatedRoute) {}
+	constructor(private formBuilder: FormBuilder, private appDetailsService: AppDetailsService, private route: ActivatedRoute, private location: Location, private router: Router) {}
 
 	ngOnInit() {
 		this.getAppId();
 	}
 
+	goBack() {
+		this.location.back();
+	}
+
 	getAppId() {
 		this.route.params.subscribe(res => {
 			const appId = res.id;
-			this.getAppDetails(appId)
+			this.getAppDetails(appId);
 		});
 	}
 	removeEventTag(tag: string) {
@@ -100,7 +105,7 @@ export class AppDetailsComponent implements OnInit {
 		try {
 			const response = await this.appDetailsService.getApp(appId);
 			this.appsDetailsItem = response.data;
-			this.getAppPortalToken({ redirect: false })
+			this.getAppPortalToken({ redirect: false });
 			this.isLoadingAppDetails = false;
 		} catch {
 			this.isLoadingAppDetails = false;
@@ -128,5 +133,8 @@ export class AppDetailsComponent implements OnInit {
 		});
 	}
 
-	loadEventsFromAppsTable(appId: string) {}
+	loadEventsFromAppsTable(appId: string) {
+		const projectId = this.appDetailsService.projectId;
+		this.router.navigate(['/projects/' + projectId + '/events'], { queryParams: { eventsApp: appId } });
+	}
 }

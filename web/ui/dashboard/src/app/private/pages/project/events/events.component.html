@@ -40,8 +40,8 @@
 			<div class="metric">
 				<div class="font__16px font__weight-500">{{ dashboardData.events_sent }}</div>
 				<div class="color__grey font__14px font__weight-400">
-					Event
-					<span *ngIf="dashboardData.events_sent > 1">s</span>
+					<span class="font__weight-400">Event</span>
+					<span class="font__weight-400" *ngIf="dashboardData.events_sent > 1">s</span>
 					Sent
 				</div>
 			</div>
@@ -51,8 +51,8 @@
 			<div class="metric">
 				<div class="font__16px font__weight-500">{{ dashboardData.apps }}</div>
 				<div class="color__grey font__14px font__weight-400">
-					App
-					<span *ngIf="dashboardData.apps > 1">s</span>
+					<span class="font__weight-400">App</span>
+					<span class="font__weight-400" *ngIf="dashboardData.apps > 1">s</span>
 				</div>
 			</div>
 		</li>

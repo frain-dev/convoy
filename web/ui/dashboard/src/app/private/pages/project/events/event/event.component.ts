@@ -87,6 +87,7 @@ export class EventComponent implements OnInit {
 	) {}
 
 	async ngOnInit() {
+		this.getFiltersFromURL();
 		await this.getEvents();
 	}
 
@@ -165,6 +166,42 @@ export class EventComponent implements OnInit {
 		return { startDate, endDate };
 	}
 
+	setTimeFilterData(dates: { startDate: string; endDate: string }): { startTime: string; endTime: string } {
+		const response = { startTime: '', endTime: '' };
+		if (dates.startDate) {
+			const hour = new Date(dates.startDate).getHours();
+			const minute = new Date(dates.startDate).getMinutes();
+			this.eventsTimerFilter.filterStartHour = hour;
+			this.eventsTimerFilter.filterStartMinute = minute;
+
+			response.startTime = `T${hour}:${minute}:00`;
+		} else {
+			response.startTime = 'T00:00:00';
+		}
+
+		if (dates.endDate) {
+			const hour = new Date(dates.endDate).getHours();
+			const minute = new Date(dates.endDate).getMinutes();
+			this.eventsTimerFilter.filterEndHour = hour;
+			this.eventsTimerFilter.filterEndMinute = minute;
+			response.endTime = `T${hour}:${minute}:59`;
+		} else {
+			response.endTime = 'T23:59:59';
+		}
+
+		return response;
+	}
+	// fetch filters from url
+	getFiltersFromURL() {
+		const filters = this.route.snapshot.queryParams;
+		if (Object.keys(filters).length == 0) return;
+
+		this.eventsFilterDateRange.patchValue({ startDate: filters.eventsStartDate ? new Date(filters.eventsStartDate) : '', endDate: filters.eventsEndDate ? new Date(filters.eventsEndDate) : '' });
+		this.eventApp = filters.eventsApp ?? '';
+		this.eventsSearchString = filters.eventsSearch ?? '';
+		const eventsTimeFilter = this.setTimeFilterData({ startDate: filters?.eventsStartDate, endDate: filters?.eventsEndDate });
+		this.eventsTimeFilterData = { ...eventsTimeFilter };
+	}
 	addFilterToURL() {
 		const currentURLfilters = this.route.snapshot.queryParams;
 		const queryParams: any = {};
@@ -184,7 +221,7 @@ export class EventComponent implements OnInit {
 		if (requestDetails?.addToURL) this.addFilterToURL();
 
 		if (this.eventsSearchString) this.displayedEvents = [];
-
+		console.log(this.eventApp);
 		const { startDate, endDate } = this.setDateForFilter({ ...this.eventsFilterDateRange.value, ...this.eventsTimeFilterData });
 
 		try {
@@ -200,7 +237,7 @@ export class EventComponent implements OnInit {
 			this.eventsDetailsItem = this.events?.content[0];
 			this.getEventDeliveriesForSidebar(this.eventsDetailsItem.uid);
 			this.displayedEvents = await this.generalService.setContentDisplayed(eventsResponse.data.content);
-			this.pushEvents.emit(this.events)
+			this.pushEvents.emit(this.events);
 			this.isloadingEvents = false;
 			return eventsResponse;
 		} catch (error: any) {
@@ -222,6 +259,6 @@ export class EventComponent implements OnInit {
 	}
 
 	openDeliveriesTab(eventId: string) {
-		this.getEventDeliveries.emit(eventId)
+		this.getEventDeliveries.emit(eventId);
 	}
 }

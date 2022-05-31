@@ -1,7 +1,22 @@
+<h1 class="font__12px font__weight-500 flex flex__align-items-center margin-bottom__24px">
+	PROJECTS
+	<svg width="16" height="16" class="margin-x__4px">
+		<use xlink:href="#arrow-right-icon"></use>
+	</svg>
+	PROJECT NAME
+	<svg width="16" height="16" class="margin-x__4px">
+		<use xlink:href="#arrow-right-icon"></use>
+	</svg>
+	<span (click)="goBack()" class="text__uppercase">Apps</span>
+	<svg width="16" height="16" class="margin-x__4px">
+		<use xlink:href="#arrow-right-icon"></use>
+	</svg>
+	<span class="color__primary text__uppercase">{{ appsDetailsItem?.name || 'App' }}</span>
+</h1>
 <div class="page__small margin-bottom__20px padding-all__32px" *ngIf="appsDetailsItem" [ngClass]="{ disabled: appsDetailsItem?.is_disabled }">
 	<div class="flex flex__justify-between flex__align-items-center margin-bottom__24px">
 		<h3>Overview</h3>
-		<button class="button button__white button__small" (click)="loadEventsFromAppsTable(appsDetailsItem.uid)">View Event</button>
+		<button class="button button__white button__small" [disabled]="appsDetailsItem.events <= 0" (click)="loadEventsFromAppsTable(appsDetailsItem.uid)">View Event</button>
 	</div>
 	<div class="flex flex__align-items-center flex__justify-between margin-bottom__32px">
 		<div>
@@ -169,7 +184,6 @@
 					</div>
 					<input type="text" id="tagInput" (input)="addTag()" required />
 				</div>
-
 			</div>
 		</form>
 	</div>
