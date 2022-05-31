@@ -1,4 +1,4 @@
-<div class="page page__small padding-top__28px margin-bottom__20px" *ngIf="appsDetailsItem" [ngClass]="{ disabled: appsDetailsItem?.is_disabled }">
+<div class="page__small margin-bottom__20px padding-all__32px" *ngIf="appsDetailsItem" [ngClass]="{ disabled: appsDetailsItem?.is_disabled }">
 	<div class="flex flex__justify-between flex__align-items-center margin-bottom__24px">
 		<h3>Overview</h3>
 		<button class="button button__white button__small" (click)="loadEventsFromAppsTable(appsDetailsItem.uid)">View Event</button>
@@ -22,7 +22,7 @@
 		</div>
 		<div>
 			<p class="color__grey font__12px font__weight-300">ENDPOINTS</p>
-			<p class="color__black font__14px font__weight-500">{{ appsDetailsItem?.endpoints.length }}</p>
+			<p class="color__black font__14px font__weight-500">{{ appsDetailsItem?.endpoints?.length }}</p>
 		</div>
 	</div>
 	<!-- pending when backend is ready  -->
@@ -44,12 +44,12 @@
 				<div class="flex flex__align-items-center">
 					<button class="button__clear font__12px" (click)="showAddEndpointModal = !showAddEndpointModal">Add Endpoints</button>
 					<div class="line margin-right__16px margin-left__16px border__left"></div>
-					<button class="button__clear font__12px" [disabled]="appsDetailsItem?.endpoints.length == 0" (click)="setEventAppId()">Send Event</button>
+					<button class="button__clear font__12px" [disabled]="appsDetailsItem && appsDetailsItem?.endpoints?.length == 0" (click)="setEventAppId()">Send Event</button>
 				</div>
 			</div>
 			<ul class="margin-top__20px">
 				<ng-container *ngIf="appsDetailsItem?.endpoints">
-					<li class="dashboard--logs--details--endpoints bg__grey-fade padding-all__16px rounded__8px margin-bottom__24px" *ngFor="let endpoint of appsDetailsItem.endpoints">
+					<li class="app-details bg__grey-fade padding-all__16px rounded__8px margin-bottom__24px" *ngFor="let endpoint of appsDetailsItem.endpoints">
 						<div>
 							<div class="flex flex__align-items-center">
 								<h5 class="color__black font__14px font__weight-400">{{ endpoint.description }}</h5>
@@ -69,8 +69,8 @@
 								<div class="tag tag__events" *ngFor="let event of endpoint.events">{{ event == '*' ? 'all events' : event }}</div>
 							</div>
 						</div>
-						<div class="dashboard--logs--details--endpoints--inactive" *ngIf="endpoint.status == 'inactive'">
-							<div class="icon">
+						<div class="app-details--inactive flex flex__align-items-center flex__column flex__justify-center padding-all__24px" *ngIf="endpoint.status == 'inactive'">
+							<div class="icon flex flex__align-items-center flex__justify-center margin-bottom__8px padding-all__10px">
 								<img src="/assets/img/lock.svg" alt="lock icon" />
 							</div>
 							<p class="color__dark font__16px font__weight-600">Endpoint Disabled</p>
@@ -80,7 +80,7 @@
 					</li>
 				</ng-container>
 			</ul>
-			<div class="empty-state smaller-table table--container" *ngIf="appsDetailsItem?.endpoints?.length === 0">
+			<div class="empty-state smaller-table" *ngIf="appsDetailsItem?.endpoints?.length === 0">
 				<img src="/assets/img/empty-state-img.svg" alt="empty state" />
 				<p>No endpoint has been added for selected app yet</p>
 			</div>
@@ -122,17 +122,11 @@
 	</div>
 </div>
 
-
 <!-- dark overlay  -->
-<div
-	class="_overlay"
-	*ngIf="showAddEndpointModal || showAddEventModal || showEndpointSecret"
-	(click)="showAddEndpointModal = false; showAddEventModal = false; showEndpointSecret = false"
-></div>
+<div class="_overlay" *ngIf="showAddEndpointModal || showAddEventModal || showEndpointSecret" (click)="showAddEndpointModal = false; showAddEventModal = false; showEndpointSecret = false"></div>
 
 <!-- create app, add new endpoint, add event modals  -->
 <div class="modal modal__right" *ngIf="showAddEndpointModal || showAddEventModal || showEndpointSecret">
-
 	<!-- add endpoint modal  -->
 	<div class="modal--head" *ngIf="showAddEndpointModal">
 		<h2>Add Endpoint</h2>
@@ -144,8 +138,8 @@
 	<div class="modal--body" *ngIf="showAddEndpointModal">
 		<form [formGroup]="addNewEndpointForm">
 			<div class="input">
-				<input type="text" formControlName="description" [ngClass]="{ danger: addNewEndpointForm.controls.description.touched && addNewEndpointForm.controls.description.invalid }" required />
 				<label for="">Description</label>
+				<input type="text" formControlName="description" [ngClass]="{ danger: addNewEndpointForm.controls.description.touched && addNewEndpointForm.controls.description.invalid }" required />
 				<div class="input__error input__error__danger" *ngIf="addNewEndpointForm.controls.description.touched && addNewEndpointForm.controls.description.invalid">
 					<img src="assets/img/input-error-icon.svg" alt="input error icon" />
 					<span>Please provide a description</span>
@@ -153,8 +147,8 @@
 			</div>
 
 			<div class="input">
-				<input type="text" formControlName="url" [ngClass]="{ danger: addNewEndpointForm.controls.url.touched && addNewEndpointForm.controls.url.invalid }" required />
 				<label for="">Enter URL</label>
+				<input type="text" formControlName="url" [ngClass]="{ danger: addNewEndpointForm.controls.url.touched && addNewEndpointForm.controls.url.invalid }" required />
 				<div class="input__error input__error__danger" *ngIf="addNewEndpointForm.controls.url.touched && addNewEndpointForm.controls.url.invalid">
 					<img src="assets/img/input-error-icon.svg" alt="input error icon" />
 					<span>Endpoint URL is required</span>
@@ -162,6 +156,10 @@
 			</div>
 
 			<div class="input multiple">
+				<label class="flex flex__align-items-center" for="">
+					Events
+					<app-tooltip [size]="'small'" class="margin-left__4px">Add multiple events by seperating them with commas</app-tooltip>
+				</label>
 				<div class="input--multiple" [ngClass]="{ active: eventTags.length > 0 }">
 					<div class="tag" *ngFor="let tag of eventTags">
 						{{ tag }}
@@ -172,11 +170,6 @@
 					<input type="text" id="tagInput" (input)="addTag()" required />
 				</div>
 
-				<label [ngClass]="{ active: eventTags.length > 0 }" for="">Events</label>
-				<div class="input__error input__error__secondary font__12px">
-					<img src="/assets/img/small-info-icon.svg" alt="close icon" />
-					Add multiple events by seperating them with commas
-				</div>
 			</div>
 		</form>
 	</div>
@@ -197,18 +190,18 @@
 	<div class="modal--body" *ngIf="showAddEventModal">
 		<form [formGroup]="sendEventForm">
 			<div class="input">
+				<label for="">App ID</label>
 				<select class="editMode" formControlName="app_id">
 					<option *ngFor="let app of apps?.content" [value]="app.uid">{{ app.name }}</option>
 				</select>
-				<label for="">App ID</label>
 				<div class="input__error input__error__danger" *ngIf="sendEventForm.controls.app_id.touched && sendEventForm.controls.app_id.invalid">
 					<img src="assets/img/input-error-icon.svg" alt="input error icon" />
 					<span>App Id is required</span>
 				</div>
 			</div>
 			<div class="input">
-				<textarea formControlName="data" required cols="5" [ngClass]="{ danger: sendEventForm.controls.data.touched && sendEventForm.controls.data.invalid }"></textarea>
 				<label for="">Data</label>
+				<textarea formControlName="data" required cols="5" [ngClass]="{ danger: sendEventForm.controls.data.touched && sendEventForm.controls.data.invalid }"></textarea>
 				<div class="input__error input__error__danger" *ngIf="sendEventForm.controls.data.touched && sendEventForm.controls.data.invalid">
 					<img src="assets/img/input-error-icon.svg" alt="input error icon" />
 					<span>Data is required</span>
@@ -219,8 +212,8 @@
 				</div>
 			</div>
 			<div class="input">
-				<input type="text" formControlName="event_type" [ngClass]="{ danger: sendEventForm.controls.event_type.touched && sendEventForm.controls.event_type.invalid }" required />
 				<label for="">Event Type</label>
+				<input type="text" formControlName="event_type" [ngClass]="{ danger: sendEventForm.controls.event_type.touched && sendEventForm.controls.event_type.invalid }" required />
 				<div class="input__error input__error__danger" *ngIf="sendEventForm.controls.event_type.touched && sendEventForm.controls.event_type.invalid">
 					<img src="assets/img/input-error-icon.svg" alt="input error icon" />
 					<span>Event type is required</span>
@@ -250,4 +243,3 @@
 		</div>
 	</div>
 </div>
-

@@ -1,10 +1,13 @@
 import { DatePipe } from '@angular/common';
-import { Component, ElementRef, OnInit, ViewChild } from '@angular/core';
+import { Component, ElementRef, Input, OnInit, ViewChild } from '@angular/core';
 import { FormBuilder, FormGroup } from '@angular/forms';
+import { ActivatedRoute, Router } from '@angular/router';
+import { format } from 'date-fns';
 import { Observable } from 'rxjs';
 import { APP } from 'src/app/models/app.model';
 import { EVENT_DELIVERY, EVENT_DELIVERY_ATTEMPT } from 'src/app/models/event.model';
 import { PAGINATION } from 'src/app/models/global.model';
+import { HTTP_RESPONSE } from 'src/app/models/http.model';
 import { GeneralService } from 'src/app/services/general/general.service';
 import { EventsService } from '../events.service';
 
@@ -14,6 +17,7 @@ import { EventsService } from '../events.service';
 	styleUrls: ['../events.component.scss']
 })
 export class EventDeliveriesComponent implements OnInit {
+	@Input() eventDeliveryFilteredByEventId!: string;
 	dateOptions = ['Last Year', 'Last Month', 'Last Week', 'Yesterday'];
 	eventDeliveryStatuses = ['Success', 'Failure', 'Retry', 'Scheduled', 'Processing', 'Discarded'];
 	eventDelTableHead: string[] = ['Status', 'Event Type', 'Attempts', 'Time Created', '', ''];
@@ -24,6 +28,7 @@ export class EventDeliveriesComponent implements OnInit {
 	showOverlay: boolean = false;
 	fetchingCount: boolean = false;
 	isloadingEventDeliveries: boolean = false;
+	isloadingMoreEventDeliveries: boolean = false;
 	isloadingDeliveryAttempts: boolean = false;
 	eventDeliveriesFilterDateRange: FormGroup = this.formBuilder.group({
 		startDate: [{ value: '', disabled: true }],
@@ -31,10 +36,9 @@ export class EventDeliveriesComponent implements OnInit {
 	});
 	selectedEventsDelDateOption: string = '';
 	eventDeliveriesApp!: string;
-	activeProjectId!: string;
-	eventDeliveryFilteredByEventId!: string;
 	eventDelsDetailsItem?: any;
 	eventDeliveryIndex!: number;
+	eventDeliveriesPage: number = 1;
 	selectedEventsFromEventDeliveriesTable: string[] = [];
 	displayedEventDeliveries: { date: string; content: EVENT_DELIVERY[] }[] = [
 		{
@@ -81,11 +85,92 @@ export class EventDeliveriesComponent implements OnInit {
 	eventsDelAppsFilter$!: Observable<APP[]>;
 	filteredApps!: APP[];
 	@ViewChild('eventDelsAppsFilter', { static: true }) eventDelsAppsFilter!: ElementRef;
-	constructor(private formBuilder: FormBuilder, private generalService: GeneralService, private eventsService: EventsService, private datePipe: DatePipe) {}
+	constructor(
+		private formBuilder: FormBuilder,
+		private generalService: GeneralService,
+		private eventsService: EventsService,
+		private datePipe: DatePipe,
+		private route: ActivatedRoute,
+		private router: Router
+	) {}
 
 	ngOnInit(): void {}
 
-	getEventDeliveries(requestDetails?: any) {}
+	async getEventDeliveries(requestDetails?: { addToURL?: boolean; fromFilter?: boolean }): Promise<HTTP_RESPONSE> {
+		this.eventDeliveries && this.eventDeliveries?.pagination?.next === this.eventDeliveriesPage ? (this.isloadingMoreEventDeliveries = true) : (this.isloadingEventDeliveries = true);
+
+		if (requestDetails?.addToURL) this.addFilterToURL();
+		const { startDate, endDate } = this.setDateForFilter({ ...this.eventDeliveriesFilterDateRange.value, ...this.eventDelsTimeFilterData });
+
+		try {
+			const eventDeliveriesResponse = await this.eventDeliveriesRequest({ eventId: this.eventDeliveryFilteredByEventId, startDate, endDate });
+
+			if (this.eventDeliveries && this.eventDeliveries?.pagination?.next === this.eventDeliveriesPage) {
+				const content = [...this.eventDeliveries.content, ...eventDeliveriesResponse.data.content];
+				const pagination = eventDeliveriesResponse.data.pagination;
+				this.eventDeliveries = { content, pagination };
+				this.displayedEventDeliveries = this.generalService.setContentDisplayed(content);
+				this.isloadingMoreEventDeliveries = false;
+				return eventDeliveriesResponse;
+			}
+
+			this.eventDeliveries = eventDeliveriesResponse.data;
+			this.displayedEventDeliveries = this.generalService.setContentDisplayed(eventDeliveriesResponse.data.content);
+
+			// if this is a filter request, set the eventDelsDetailsItem to the first item in the list
+			if (requestDetails?.fromFilter) {
+				this.eventDelsDetailsItem = this.eventDeliveries?.content[0];
+				this.getDelieveryAttempts(this.eventDelsDetailsItem.uid);
+			}
+
+			this.isloadingEventDeliveries = false;
+			return eventDeliveriesResponse;
+		} catch (error: any) {
+			this.isloadingEventDeliveries = false;
+			this.isloadingMoreEventDeliveries = false;
+			return error;
+		}
+	}
+
+	async eventDeliveriesRequest(requestDetails: { eventId?: string; startDate?: string; endDate?: string }): Promise<HTTP_RESPONSE> {
+		let eventDeliveryStatusFilterQuery = '';
+		this.eventDeliveryFilteredByStatus.length > 0 ? (this.eventDeliveriesStatusFilterActive = true) : (this.eventDeliveriesStatusFilterActive = false);
+		this.eventDeliveryFilteredByStatus.forEach((status: string) => (eventDeliveryStatusFilterQuery += `&status=${status}`));
+
+		try {
+			const eventDeliveriesResponse = await this.eventsService.getEventDeliveries({
+				eventId: requestDetails.eventId || '',
+				pageNo: this.eventDeliveriesPage || 1,
+				startDate: requestDetails.startDate,
+				endDate: requestDetails.endDate,
+				appId: this.eventDeliveriesApp,
+				statusQuery: eventDeliveryStatusFilterQuery || ''
+			});
+			return eventDeliveriesResponse;
+		} catch (error: any) {
+			return error;
+		}
+	}
+
+	addFilterToURL() {
+		const currentURLfilters = this.route.snapshot.queryParams;
+		const queryParams: any = {};
+
+		const { startDate, endDate } = this.setDateForFilter({ ...this.eventDeliveriesFilterDateRange.value, ...this.eventDelsTimeFilterData });
+		if (startDate) queryParams.eventDelsStartDate = startDate;
+		if (endDate) queryParams.eventDelsEndDate = endDate;
+		if (this.eventDeliveriesApp) queryParams.eventDelsApp = this.eventDeliveriesApp;
+		queryParams.eventDelsStatus = this.eventDeliveryFilteredByStatus.length > 0 ? JSON.stringify(this.eventDeliveryFilteredByStatus) : '';
+
+		this.router.navigate([], { queryParams: Object.assign({}, currentURLfilters, queryParams) });
+	}
+
+	setDateForFilter(requestDetails: { startDate: Date; endDate: Date; startTime?: string; endTime?: string }) {
+		if (!requestDetails.endDate && !requestDetails.startDate) return { startDate: '', endDate: '' };
+		const startDate = requestDetails.startDate ? `${format(requestDetails.startDate, 'yyyy-MM-dd')}${requestDetails?.startTime || 'T00:00:00'}` : '';
+		const endDate = requestDetails.endDate ? `${format(requestDetails.endDate, 'yyyy-MM-dd')}${requestDetails?.endTime || 'T23:59:59'}` : '';
+		return { startDate, endDate };
+	}
 
 	checkIfEventDeliveryStatusFilterOptionIsSelected(status: string): boolean {
 		return this.eventDeliveryFilteredByStatus?.length > 0 ? this.eventDeliveryFilteredByStatus.includes(status) : false;
@@ -118,7 +203,7 @@ export class EventDeliveriesComponent implements OnInit {
 	fetchRetryCount() {}
 	async getAppsForFilter(search: string): Promise<APP[]> {
 		return await (
-			await this.eventsService.getApps({ activeProjectId: this.activeProjectId, pageNo: 1, searchString: search })
+			await this.eventsService.getApps({ pageNo: 1, searchString: search })
 		).data.content;
 	}
 
@@ -137,7 +222,7 @@ export class EventDeliveriesComponent implements OnInit {
 	async getDelieveryAttempts(eventDeliveryId: string) {
 		this.isloadingDeliveryAttempts = true;
 		try {
-			const deliveryAttemptsResponse = await this.eventsService.getEventDeliveryAttempts({ eventDeliveryId, activeProjectId: this.activeProjectId });
+			const deliveryAttemptsResponse = await this.eventsService.getEventDeliveryAttempts({ eventDeliveryId });
 			this.eventDeliveryAtempt = deliveryAttemptsResponse.data[deliveryAttemptsResponse.data.length - 1];
 			this.isloadingDeliveryAttempts = false;
 

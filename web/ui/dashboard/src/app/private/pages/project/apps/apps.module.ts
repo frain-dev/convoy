@@ -4,6 +4,7 @@ import { AppsComponent } from './apps.component';
 import { RouterModule, Routes } from '@angular/router';
 import { CreateAppModule } from 'src/app/private/components/create-app/create-app.module';
 import { FormsModule } from '@angular/forms';
+import { TableLoaderModule } from 'src/app/private/components/table-loader/table-loader.module';
 
 const routes: Routes = [
 	{
@@ -18,6 +19,6 @@ const routes: Routes = [
 
 @NgModule({
 	declarations: [AppsComponent],
-	imports: [CommonModule, CreateAppModule, FormsModule, RouterModule.forChild(routes)]
+	imports: [CommonModule, CreateAppModule, FormsModule, TableLoaderModule, RouterModule.forChild(routes)]
 })
 export class AppsModule {}

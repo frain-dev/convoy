@@ -1,5 +1,6 @@
 import { Component, OnInit } from '@angular/core';
 import { FormBuilder, FormGroup, Validators } from '@angular/forms';
+import { ActivatedRoute } from '@angular/router';
 import { APP } from 'src/app/models/app.model';
 import { PAGINATION } from 'src/app/models/global.model';
 import { AppDetailsService } from './app-details.service';
@@ -18,6 +19,7 @@ export class AppDetailsComponent implements OnInit {
 	isSendingNewEvent: boolean = false;
 	isCreatingNewEndpoint: boolean = false;
 	loadingAppPotalToken: boolean = false;
+	isLoadingAppDetails: boolean = false;
 
 	addNewEndpointForm: FormGroup = this.formBuilder.group({
 		url: ['', Validators.required],
@@ -31,38 +33,21 @@ export class AppDetailsComponent implements OnInit {
 	});
 	appPortalLink!: string;
 	endpointSecretKey!: string;
-	projectId!: string;
 	eventTags!: string[];
-	appsDetailsItem: any = {
-		created_at: '2022-04-22T12:16:51.86Z',
-		endpoints: [
-			{
-				created_at: '2022-03-03T17:42:32.757Z',
-				description: 'second new app endpoint',
-				events: ['new new endpoint'],
-				http_timeout: '',
-				rate_limit: 0,
-				rate_limit_duration: '',
-				secret: '71GG_jZeYYC--c1Y5a1VMMVULUnoemUhYQ==',
-				status: 'active',
-				target_url: 'https://webhook.site/ac06134f-b969-4388-b663-1e55951a99a4',
-				uid: '2f9c123a-1ae7-4cd5-bbc0-9c08d32cefc1',
-				updated_at: '2022-03-03T17:42:32.757Z'
-			}
-		],
-		events: 0,
-		group_id: 'db78d6fe-b05e-476d-b908-cb6fff26a3ed',
-		is_disabled: false,
-		name: 'App D',
-		support_email: '',
-		uid: '6ab551cb-b6ac-4808-abd2-09e0570028b7',
-		updated_at: '2022-04-22T12:16:51.86Z'
-	};
+	appsDetailsItem!: APP;
 	apps!: { pagination: PAGINATION; content: APP[] };
-	constructor(private formBuilder: FormBuilder, private appDetailsService: AppDetailsService) {}
+	constructor(private formBuilder: FormBuilder, private appDetailsService: AppDetailsService, private route: ActivatedRoute) {}
 
-	ngOnInit(): void {}
+	ngOnInit() {
+		this.getAppId();
+	}
 
+	getAppId() {
+		this.route.params.subscribe(res => {
+			const appId = res.id;
+			this.getAppDetails(appId)
+		});
+	}
 	removeEventTag(tag: string) {
 		this.eventTags = this.eventTags.filter(e => e !== tag);
 	}
@@ -109,11 +94,24 @@ export class AppDetailsComponent implements OnInit {
 		this.endpointSecretKey = secretKey;
 	}
 
+	async getAppDetails(appId: string) {
+		this.isLoadingAppDetails = true;
+
+		try {
+			const response = await this.appDetailsService.getApp(appId);
+			this.appsDetailsItem = response.data;
+			this.getAppPortalToken({ redirect: false })
+			this.isLoadingAppDetails = false;
+		} catch {
+			this.isLoadingAppDetails = false;
+		}
+	}
+
 	async getAppPortalToken(requestDetail: { redirect: boolean }) {
 		this.loadingAppPotalToken = true;
 
 		try {
-			const appTokenResponse = await this.appDetailsService.getAppPortalToken({ appId: this.appsDetailsItem.uid, projectId: this.projectId });
+			const appTokenResponse = await this.appDetailsService.getAppPortalToken({ appId: this.appsDetailsItem.uid });
 			this.appPortalLink = `<iframe style="width: 100%; height: 100vh; border: none;" src="${appTokenResponse.data.url}"></iframe>`;
 			if (requestDetail.redirect) window.open(`${appTokenResponse.data.url}`, '_blank');
 			this.loadingAppPotalToken = false;

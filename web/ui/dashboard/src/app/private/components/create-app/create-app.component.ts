@@ -1,5 +1,8 @@
 import { Component, EventEmitter, Input, OnInit, Output } from '@angular/core';
-import { FormArray, FormBuilder, FormGroup, Validators } from '@angular/forms';
+import { FormArray, FormBuilder, FormControl, FormGroup, Validators } from '@angular/forms';
+import { APP } from 'src/app/models/app.model';
+import { GeneralService } from 'src/app/services/general/general.service';
+import { CreateAppService } from './create-app.service';
 
 @Component({
 	selector: 'app-create-app',
@@ -8,21 +11,26 @@ import { FormArray, FormBuilder, FormGroup, Validators } from '@angular/forms';
 })
 export class CreateAppComponent implements OnInit {
 	@Input() editAppMode: boolean = false;
+	@Input() appsDetailsItem!: APP;
+
 	@Output() discardCreateApp = new EventEmitter<any>();
 	eventTags!: string[];
-	isCreatingNewApp: boolean = false;
+	isSavingApp: boolean = false;
 	addNewAppForm: FormGroup = this.formBuilder.group({
 		name: ['', Validators.required],
 		support_email: [''],
-		secret: [''],
+		slack_webhook_url: [''],
 		description: [''],
-		config: [''],
-		is_disabled: [false],
+		is_disabled: [null],
 		endpoints: this.formBuilder.array([])
 	});
-	constructor(private formBuilder: FormBuilder) {}
+	constructor(private formBuilder: FormBuilder, private createAppService: CreateAppService, private generalService: GeneralService) {}
 
-	ngOnInit(): void {}
+	ngOnInit(): void {
+		if (this.appsDetailsItem && this.editAppMode) {
+			this.updateForm();
+		}
+	}
 
 	get endpoints(): FormArray {
 		return this.addNewAppForm.get('endpoints') as FormArray;
@@ -71,7 +79,42 @@ export class CreateAppComponent implements OnInit {
 		});
 	}
 
-	createNewApp() {}
+	updateForm() {
+		this.addNewAppForm.patchValue({
+			name: this.appsDetailsItem?.name,
+			support_email: this.appsDetailsItem?.support_email,
+			is_disabled: this.appsDetailsItem?.is_disabled
+		});
+	}
+
+	async saveApp() {
+		if (this.addNewAppForm.invalid) {
+			(<any>Object).values(this.addNewAppForm.controls).forEach((control: FormControl) => {
+				control?.markAsTouched();
+			});
+			return;
+		}
+
+		this.isSavingApp = true;
+		// to be reviewed
+		delete this.addNewAppForm.value.endpoints;
+
+		try {
+			const response = this.editAppMode
+				? await this.createAppService.updateApp({ appId: this.appsDetailsItem?.uid, body: this.addNewAppForm.value })
+				: await this.createAppService.createApp({ body: this.addNewAppForm.value });
+
+			this.generalService.showNotification({ message: response.message, style: 'success' });
+			this.addNewAppForm.reset();
+			this.discardCreateApp.emit();
+			this.isSavingApp = false;
+			this.editAppMode = false;
+			return;
+		} catch (error) {
+			this.isSavingApp = false;
+			return;
+		}
+	}
 
 	closeCreateAppInstance() {
 		this.discardCreateApp.emit();

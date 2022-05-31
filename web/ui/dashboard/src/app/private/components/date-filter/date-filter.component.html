@@ -1,0 +1,36 @@
+<div class="dropdown">
+    <button
+        [ngClass]="{ active: (dateRange.value.startDate !== '' && dateRange.value.endDate !== '') || selectedDateOption }"
+        class="button button__filter button--has-icon icon-left icon-right"
+        (click)="showOverlay = true; showDateFilterDropdown = !showDateFilterDropdown"
+    >
+        <img src="/assets/img/calendar-icon.svg" alt="calender icon" />
+        <span class="color__grey margin-right__4px">Date:</span>
+        <span class="color__primary" *ngIf="dateRange.value.startDate === '' && dateRange.value.endDate === ''">All Time</span>
+        <mat-date-range-input [formGroup]="dateRange" [rangePicker]="statsPicker">
+            <input matStartDate formControlName="startDate" placeholder="Start date" />
+            <input
+                matEndDate
+                formControlName="endDate"
+                placeholder="End date"
+                (dateChange)="selectedDateOption = formatDate(dateRange.value.startDate) + ' - ' + formatDate(dateRange.value.endDate); "
+            />
+        </mat-date-range-input>
+        <mat-date-range-picker #statsPicker [disabled]="false"></mat-date-range-picker>
+        <img src="/assets/img/angle-arrow-down.svg" class="margin-right__0px" alt="arrow down icon" />
+    </button>
+
+    <div [ngClass]="{ show: showDateFilterDropdown }" class="dropdown__menu">
+        <ul>
+            <li
+                [ngClass]="{ active: selectedDateOption == dateOption }"
+                *ngFor="let dateOption of dateOptions"
+                (click)="getSelectedDate(dateOption); showDateFilterDropdown = false; showOverlay = false"
+            >
+                From {{ dateOption }}
+            </li>
+            <li (click)="statsPicker.open(); showDateFilterDropdown = false; showOverlay = false">Custom Option</li>
+           
+        </ul>
+    </div>
+</div>

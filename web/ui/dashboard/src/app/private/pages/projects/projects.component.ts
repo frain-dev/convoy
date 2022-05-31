@@ -9,6 +9,8 @@ import { ProjectsService } from './projects.service';
 })
 export class ProjectsComponent implements OnInit {
 	projects!: GROUP[];
+	isLoadingProjects: boolean = false;
+	projectsLoaderIndex: number[] = [0, 1, 2, 3, 4];
 	constructor(private projectsService: ProjectsService) {}
 
 	ngOnInit(): void {
@@ -16,11 +18,14 @@ export class ProjectsComponent implements OnInit {
 	}
 
 	async getProjects() {
+		this.isLoadingProjects = true;
 		try {
 			const projectsResponse = await this.projectsService.getProjects();
 			this.projects = projectsResponse.data;
+			this.isLoadingProjects = false;
 		} catch (error) {
 			console.log(error);
+			this.isLoadingProjects = false;
 		}
 	}
 }

@@ -1,22 +1,22 @@
 import { Injectable } from '@angular/core';
 import { HTTP_RESPONSE } from 'src/app/models/http.model';
 import { HttpService } from 'src/app/services/http/http.service';
-import { ProjectService } from '../../project.service';
+import { ProjectService } from '../../pages/project/project.service';
 
 @Injectable({
 	providedIn: 'root'
 })
-export class AppDetailsService {
+export class CreateAppService {
 	projectId: string = this.projectService.activeProject;
 	constructor(private http: HttpService, private projectService: ProjectService) {}
 
-	async getAppPortalToken(requestDetails: { appId: string }): Promise<HTTP_RESPONSE> {
+	async updateApp(requestDetails: { appId: string; body: any }): Promise<HTTP_RESPONSE> {
 		return new Promise(async (resolve, reject) => {
 			try {
 				const response = await this.http.request({
-					url: `/apps/${requestDetails.appId}/keys?groupId=${this.projectId}`,
-					method: 'post',
-					body: {}
+					url: `/apps/${requestDetails.appId}?groupId=${this.projectId}`,
+					method: 'put',
+					body: requestDetails.body
 				});
 
 				return resolve(response);
@@ -26,12 +26,13 @@ export class AppDetailsService {
 		});
 	}
 
-	async getApp(appId: string): Promise<HTTP_RESPONSE> {
+	async createApp(requestDetails: { body: any }): Promise<HTTP_RESPONSE> {
 		return new Promise(async (resolve, reject) => {
 			try {
 				const response = await this.http.request({
-					url: `/apps/${appId}?groupId=${this.projectId}`,
-					method: 'get'
+					url: `/apps?groupId=${this.projectId}`,
+					method: 'post',
+					body: requestDetails.body
 				});
 
 				return resolve(response);

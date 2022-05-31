@@ -3,7 +3,9 @@ export interface APP {
 		uid: string;
 		created_at: Date;
 		description: string;
+		events: any;
 		status: string;
+		secret: string;
 		target_url: string;
 		updated_at: Date;
 	}[];

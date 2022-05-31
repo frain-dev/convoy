@@ -1,3 +1,35 @@
 .text {
-    max-width: 390px;
+	max-width: 390px;
+}
+.empty-state {
+	min-height: 50vh;
+}
+.line {
+	height: 22px;
+	width: 1px;
+}
+.app-details {
+	position: relative;
+	width: 100%;
+	&--inactive {
+		position: absolute;
+		background: rgba(var(--inactive-state-rgb), 0.6);
+		backdrop-filter: blur(4px);
+		border-radius: 8px;
+		top: 0;
+		width: 100%;
+		height: 100%;
+		margin-left: -15px;
+
+		.icon {
+			background: var(--color-white-100);
+			box-shadow: 0px 2px 8px rgba(var(--drop-shadow), 0.08), 0px 3px 8px -1px rgba(var(--drop-shadow-2), 0.05);
+			border-radius: 4.5px;
+			width: 36px;
+			height: 36px;
+			img {
+				width: 13px;
+			}
+		}
+	}
 }

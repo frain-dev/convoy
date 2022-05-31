@@ -5,8 +5,28 @@
 			<p class="page__head--sub">All your project's summary at a glance</p>
 		</div>
 	</div>
+	<ul class="grid grid__col-3--smaller" *ngIf="isLoadingProjects">
+		<li *ngFor="let index of projectsLoaderIndex">
+			<div class="card rounded__8px border__all bg__white">
+				<div class="padding-x__24px padding-top__24px padding-bottom__14px border__bottom">
+					<div class="skeleton-loader header"></div>
+				</div>
+				<div class="flex flex__align-items-center border__bottom">
+					<div class="border__right padding-y__8px padding-x__24px">
+						<div class="skeleton-loader text"></div>
+					</div>
+					<div class="flex flex__align-items-center flex__justify-between width__60 padding-y__8px padding-x__24px">
+						<div>
+							<div class="skeleton-loader text"></div>
+						</div>
+						<div><div class="skeleton-loader small"></div></div>
+					</div>
+				</div>
+			</div>
+		</li>
+	</ul>
 
-	<ul class="grid grid__col-3--smaller">
+	<ul class="grid grid__col-3--smaller" *ngIf="!isLoadingProjects">
 		<li *ngFor="let project of projects">
 			<a [routerLink]="'/projects/' + project.uid" class="card rounded__8px bg__white display__block">
 				<div class="padding-x__24px padding-y__16px border__bottom flex flex__align-items-center flex__justify-between">
@@ -44,7 +64,7 @@
 				<svg width="22" height="22" class="margin-right__8px" fill="var(--primary-color)">
 					<use xlink:href="#plus-icon"></use>
 				</svg>
-				<span class="color__primary font__weight-500">Creat new project</span>
+				<span class="color__primary font__weight-500">Create new project</span>
 			</a>
 		</li>
 	</ul>
