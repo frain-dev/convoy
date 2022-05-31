@@ -152,7 +152,7 @@ func ProcessEventCreation(
 }
 
 func getEventDeliveryStatus(subscription datastore.Subscription, app *datastore.Application) datastore.EventDeliveryStatus {
-	if app.IsDisabled || subscription.Status != datastore.ActiveEndpointStatus {
+	if app.IsDisabled || subscription.Status != datastore.ActiveSubscriptionStatus {
 		return datastore.DiscardedEventStatus
 	}
 

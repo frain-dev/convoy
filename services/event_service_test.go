@@ -565,7 +565,7 @@ func TestEventService_BatchRetryEventDelivery(t *testing.T) {
 
 				ss.EXPECT().FindSubscriptionByID(gomock.Any(), gomock.Any(), gomock.Any()).
 					Return(&datastore.Subscription{
-						Status: datastore.ActiveEndpointStatus,
+						Status: datastore.ActiveSubscriptionStatus,
 					}, nil).Times(2)
 
 				ed.EXPECT().LoadEventDeliveriesPaged(
@@ -634,7 +634,7 @@ func TestEventService_BatchRetryEventDelivery(t *testing.T) {
 
 				ss.EXPECT().FindSubscriptionByID(gomock.Any(), gomock.Any(), gomock.Any()).
 					Return(&datastore.Subscription{
-						Status: datastore.ActiveEndpointStatus,
+						Status: datastore.ActiveSubscriptionStatus,
 					}, nil).Times(2)
 
 				ed.EXPECT().LoadEventDeliveriesPaged(
@@ -857,7 +857,7 @@ func TestEventService_ForceResendEventDeliveries(t *testing.T) {
 				a, _ := es.subRepo.(*mocks.MockSubscriptionRepository)
 				a.EXPECT().FindSubscriptionByID(gomock.Any(), gomock.Any(), gomock.Any()).
 					Times(2).Return(&datastore.Subscription{
-					Status: datastore.ActiveEndpointStatus,
+					Status: datastore.ActiveSubscriptionStatus,
 				}, nil)
 
 				ed.EXPECT().UpdateStatusOfEventDelivery(gomock.Any(), gomock.Any(), gomock.Any()).
@@ -899,7 +899,7 @@ func TestEventService_ForceResendEventDeliveries(t *testing.T) {
 				a, _ := es.subRepo.(*mocks.MockSubscriptionRepository)
 				a.EXPECT().FindSubscriptionByID(gomock.Any(), gomock.Any(), gomock.Any()).
 					Times(1).Return(&datastore.Subscription{
-					Status: datastore.ActiveEndpointStatus,
+					Status: datastore.ActiveSubscriptionStatus,
 				}, nil)
 
 				ed.EXPECT().UpdateStatusOfEventDelivery(gomock.Any(), gomock.Any(), gomock.Any()).
@@ -1321,7 +1321,7 @@ func TestEventService_ResendEventDelivery(t *testing.T) {
 			dbFn: func(es *EventService) {
 				a, _ := es.subRepo.(*mocks.MockSubscriptionRepository)
 				a.EXPECT().FindSubscriptionByID(gomock.Any(), gomock.Any(), gomock.Any()).
-					Times(1).Return(&datastore.Subscription{Status: datastore.ActiveEndpointStatus}, nil)
+					Times(1).Return(&datastore.Subscription{Status: datastore.ActiveSubscriptionStatus}, nil)
 
 				ed, _ := es.eventDeliveryRepo.(*mocks.MockEventDeliveryRepository)
 				ed.EXPECT().UpdateStatusOfEventDelivery(gomock.Any(), gomock.Any(), datastore.ScheduledEventStatus)
@@ -1488,7 +1488,7 @@ func TestEventService_RetryEventDelivery(t *testing.T) {
 				s, _ := es.subRepo.(*mocks.MockSubscriptionRepository)
 				s.EXPECT().FindSubscriptionByID(gomock.Any(), gomock.Any(), gomock.Any()).
 					Times(1).Return(&datastore.Subscription{
-					Status: datastore.PendingEndpointStatus,
+					Status: datastore.PendingSubscriptionStatus,
 				}, nil)
 			},
 			args: args{
@@ -1508,10 +1508,10 @@ func TestEventService_RetryEventDelivery(t *testing.T) {
 				s, _ := es.subRepo.(*mocks.MockSubscriptionRepository)
 				s.EXPECT().FindSubscriptionByID(gomock.Any(), gomock.Any(), gomock.Any()).
 					Times(1).Return(&datastore.Subscription{
-					Status: datastore.InactiveEndpointStatus,
+					Status: datastore.InactiveSubscriptionStatus,
 				}, nil)
 
-				s.EXPECT().UpdateSubscriptionsStatus(gomock.Any(), gomock.Any(), gomock.Any(), datastore.PendingEndpointStatus).
+				s.EXPECT().UpdateSubscriptionStatus(gomock.Any(), gomock.Any(), gomock.Any(), datastore.PendingSubscriptionStatus).
 					Times(1).Return(nil)
 
 				ed, _ := es.eventDeliveryRepo.(*mocks.MockEventDeliveryRepository)
@@ -1531,14 +1531,14 @@ func TestEventService_RetryEventDelivery(t *testing.T) {
 			},
 		},
 		{
-			name: "should_fail_to_retry_event_delivery_with_inactive_endpoint",
+			name: "should_fail_to_retry_event_delivery_with_inactive_subscription",
 			dbFn: func(es *EventService) {
 				s, _ := es.subRepo.(*mocks.MockSubscriptionRepository)
 
 				s.EXPECT().FindSubscriptionByID(gomock.Any(), gomock.Any(), gomock.Any()).
-					Times(1).Return(&datastore.Subscription{Status: datastore.InactiveEndpointStatus}, nil)
+					Times(1).Return(&datastore.Subscription{Status: datastore.InactiveSubscriptionStatus}, nil)
 
-				s.EXPECT().UpdateSubscriptionsStatus(gomock.Any(), gomock.Any(), gomock.Any(), datastore.PendingEndpointStatus).
+				s.EXPECT().UpdateSubscriptionStatus(gomock.Any(), gomock.Any(), gomock.Any(), datastore.PendingSubscriptionStatus).
 					Times(1).Return(errors.New("failed"))
 			},
 			args: args{
@@ -1595,7 +1595,7 @@ func TestEventService_forceResendEventDelivery(t *testing.T) {
 				s, _ := es.subRepo.(*mocks.MockSubscriptionRepository)
 				s.EXPECT().FindSubscriptionByID(gomock.Any(), gomock.Any(), gomock.Any()).
 					Times(1).Return(&datastore.Subscription{
-					Status: datastore.ActiveEndpointStatus,
+					Status: datastore.ActiveSubscriptionStatus,
 				}, nil)
 
 				ed, _ := es.eventDeliveryRepo.(*mocks.MockEventDeliveryRepository)
@@ -1639,7 +1639,7 @@ func TestEventService_forceResendEventDelivery(t *testing.T) {
 				s, _ := es.subRepo.(*mocks.MockSubscriptionRepository)
 				s.EXPECT().FindSubscriptionByID(gomock.Any(), gomock.Any(), gomock.Any()).
 					Times(1).Return(&datastore.Subscription{
-					Status: datastore.PendingEndpointStatus,
+					Status: datastore.PendingSubscriptionStatus,
 				}, nil)
 			},
 			args: args{

@@ -119,9 +119,9 @@ var (
 )
 
 const (
-	ActiveEndpointStatus   EndpointStatus = "active"
-	InactiveEndpointStatus EndpointStatus = "inactive"
-	PendingEndpointStatus  EndpointStatus = "pending"
+	ActiveSubscriptionStatus   SubscriptionStatus = "active"
+	InactiveSubscriptionStatus SubscriptionStatus = "inactive"
+	PendingSubscriptionStatus  SubscriptionStatus = "pending"
 )
 
 type Application struct {
@@ -143,7 +143,7 @@ type Application struct {
 	DocumentStatus DocumentStatus `json:"-" bson:"document_status"`
 }
 
-type EndpointStatus string
+type SubscriptionStatus string
 
 type Endpoint struct {
 	UID         string `json:"uid" bson:"uid"`
@@ -438,7 +438,7 @@ type Subscription struct {
 	UID        string             `json:"uid" bson:"uid"`
 	Name       string             `json:"name" bson:"name"`
 	Type       string             `json:"type" bson:"type"`
-	Status     EndpointStatus     `json:"status" bson:"status"`
+	Status     SubscriptionStatus `json:"status" bson:"status"`
 	AppID      string             `json:"-" bson:"app_id"`
 	GroupID    string             `json:"-" bson:"group_id"`
 	SourceID   string             `json:"-" bson:"source_id"`

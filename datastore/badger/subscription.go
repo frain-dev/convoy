@@ -11,7 +11,7 @@ type subscriptionRepo struct {
 	client *badgerhold.Store
 }
 
-func (*subscriptionRepo) UpdateSubscriptionsStatus(context.Context, string, string, datastore.EndpointStatus) error {
+func (*subscriptionRepo) UpdateSubscriptionStatus(context.Context, string, string, datastore.SubscriptionStatus) error {
 	return nil
 }
 

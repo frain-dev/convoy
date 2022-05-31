@@ -53,7 +53,7 @@ func (s *SubcriptionService) CreateSubscription(ctx context.Context, groupID str
 		CreatedAt: primitive.NewDateTimeFromTime(time.Now()),
 		UpdatedAt: primitive.NewDateTimeFromTime(time.Now()),
 
-		Status:         datastore.ActiveEndpointStatus,
+		Status:         datastore.ActiveSubscriptionStatus,
 		DocumentStatus: datastore.ActiveDocumentStatus,
 	}
 

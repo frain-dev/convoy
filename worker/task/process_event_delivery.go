@@ -152,7 +152,7 @@ func ProcessEventDelivery(
 			return nil
 		}
 
-		if subscription.Status == datastore.InactiveEndpointStatus {
+		if subscription.Status == datastore.InactiveSubscriptionStatus {
 			log.Debugf("subscription %s is inactive, failing to send.", e.TargetURL)
 			return nil
 		}
@@ -234,9 +234,9 @@ func ProcessEventDelivery(
 			log.Errorf("%s failed. Reason: %s", ed.UID, err)
 		}
 
-		if done && subscription.Status == datastore.PendingEndpointStatus && g.Config.DisableEndpoint {
-			subscriptionStatus := datastore.ActiveEndpointStatus
-			err := subRepo.UpdateSubscriptionsStatus(context.Background(), g.UID, subscription.UID, subscriptionStatus)
+		if done && subscription.Status == datastore.PendingSubscriptionStatus && g.Config.DisableEndpoint {
+			subscriptionStatus := datastore.ActiveSubscriptionStatus
+			err := subRepo.UpdateSubscriptionStatus(context.Background(), g.UID, subscription.UID, subscriptionStatus)
 			if err != nil {
 				log.WithError(err).Error("Failed to reactivate endpoint after successful retry")
 			}
@@ -247,9 +247,9 @@ func ProcessEventDelivery(
 			}
 		}
 
-		if !done && subscription.Status == datastore.PendingEndpointStatus {
-			subscriptionStatus := datastore.InactiveEndpointStatus
-			err := subRepo.UpdateSubscriptionsStatus(context.Background(), g.UID, subscription.UID, subscriptionStatus)
+		if !done && subscription.Status == datastore.PendingSubscriptionStatus {
+			subscriptionStatus := datastore.InactiveSubscriptionStatus
+			err := subRepo.UpdateSubscriptionStatus(context.Background(), g.UID, subscription.UID, subscriptionStatus)
 			if err != nil {
 				log.WithError(err).Error("Failed to reactivate endpoint after successful retry")
 			}
@@ -272,10 +272,10 @@ func ProcessEventDelivery(
 			}
 
 			subscriptionStatus := subscription.Status
-			if g.Config.DisableEndpoint && subscription.Status != datastore.PendingEndpointStatus {
-				subscriptionStatus = datastore.InactiveEndpointStatus
+			if g.Config.DisableEndpoint && subscription.Status != datastore.PendingSubscriptionStatus {
+				subscriptionStatus = datastore.InactiveSubscriptionStatus
 
-				err := subRepo.UpdateSubscriptionsStatus(context.Background(), g.UID, subscription.UID, subscriptionStatus)
+				err := subRepo.UpdateSubscriptionStatus(context.Background(), g.UID, subscription.UID, subscriptionStatus)
 				if err != nil {
 					log.WithError(err).Error("Failed to reactivate endpoint after successful retry")
 				}

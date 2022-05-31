@@ -153,7 +153,7 @@ func (s *subscriptionRepo) FindSubscriptionBySourceIDs(ctx context.Context, grou
 	return subscription, nil
 }
 
-func (s *subscriptionRepo) UpdateSubscriptionsStatus(ctx context.Context, groupId string, subscriptionId string, status datastore.EndpointStatus) error {
+func (s *subscriptionRepo) UpdateSubscriptionStatus(ctx context.Context, groupId string, subscriptionId string, status datastore.SubscriptionStatus) error {
 	filter := bson.M{
 		"uid":             subscriptionId,
 		"group_id":        groupId,

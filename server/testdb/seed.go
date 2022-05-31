@@ -309,7 +309,7 @@ func SeedSubscription(db datastore.DatabaseClient,
 		CreatedAt: primitive.NewDateTimeFromTime(time.Now()),
 		UpdatedAt: primitive.NewDateTimeFromTime(time.Now()),
 
-		Status:         datastore.ActiveEndpointStatus,
+		Status:         datastore.ActiveSubscriptionStatus,
 		DocumentStatus: datastore.ActiveDocumentStatus,
 	}
 

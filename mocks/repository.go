@@ -856,18 +856,18 @@ func (mr *MockSubscriptionRepositoryMockRecorder) UpdateSubscription(arg0, arg1,
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateSubscription", reflect.TypeOf((*MockSubscriptionRepository)(nil).UpdateSubscription), arg0, arg1, arg2)
 }
 
-// UpdateSubscriptionsStatus mocks base method.
-func (m *MockSubscriptionRepository) UpdateSubscriptionsStatus(arg0 context.Context, arg1, arg2 string, arg3 datastore.EndpointStatus) error {
+// UpdateSubscriptionStatus mocks base method.
+func (m *MockSubscriptionRepository) UpdateSubscriptionStatus(arg0 context.Context, arg1, arg2 string, arg3 datastore.SubscriptionStatus) error {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "UpdateSubscriptionsStatus", arg0, arg1, arg2, arg3)
+	ret := m.ctrl.Call(m, "UpdateSubscriptionStatus", arg0, arg1, arg2, arg3)
 	ret0, _ := ret[0].(error)
 	return ret0
 }
 
-// UpdateSubscriptionsStatus indicates an expected call of UpdateSubscriptionsStatus.
-func (mr *MockSubscriptionRepositoryMockRecorder) UpdateSubscriptionsStatus(arg0, arg1, arg2, arg3 interface{}) *gomock.Call {
+// UpdateSubscriptionStatus indicates an expected call of UpdateSubscriptionStatus.
+func (mr *MockSubscriptionRepositoryMockRecorder) UpdateSubscriptionStatus(arg0, arg1, arg2, arg3 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateSubscriptionsStatus", reflect.TypeOf((*MockSubscriptionRepository)(nil).UpdateSubscriptionsStatus), arg0, arg1, arg2, arg3)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateSubscriptionStatus", reflect.TypeOf((*MockSubscriptionRepository)(nil).UpdateSubscriptionStatus), arg0, arg1, arg2, arg3)
 }
 
 // MockSourceRepository is a mock of SourceRepository interface.

@@ -69,7 +69,7 @@ type SubscriptionRepository interface {
 	FindSubscriptionByID(context.Context, string, string) (*Subscription, error)
 	FindSubscriptionByEventType(context.Context, string, string, EventType) ([]Subscription, error)
 	FindSubscriptionBySourceIDs(context.Context, string, string) ([]Subscription, error)
-	UpdateSubscriptionsStatus(context.Context, string, string, EndpointStatus) error
+	UpdateSubscriptionStatus(context.Context, string, string, SubscriptionStatus) error
 }
 
 type SourceRepository interface {
