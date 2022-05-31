@@ -17,6 +17,7 @@ import (
 	"time"
 
 	"github.com/frain-dev/convoy/auth/realm_chain"
+	"github.com/frain-dev/convoy/cache"
 	ncache "github.com/frain-dev/convoy/cache/noop"
 	"github.com/frain-dev/convoy/config"
 	"github.com/frain-dev/convoy/datastore"
@@ -92,6 +93,7 @@ func buildApplication() *applicationHandler {
 	apiKeyRepo := db.APIRepo()
 	sourceRepo := db.SourceRepo()
 	orgRepo := db.OrganisationRepo()
+	userRepo := db.UserRepo()
 	eventQueue := redisqueue.NewQueue(qOpts)
 	createEventQueue := redisqueue.NewQueue(cOpts)
 	logger := logger.NewNoopLogger()
@@ -102,18 +104,18 @@ func buildApplication() *applicationHandler {
 
 	return newApplicationHandler(
 		eventRepo, eventDeliveryRepo, appRepo,
-		groupRepo, apiKeyRepo, sourceRepo, orgRepo, eventQueue, createEventQueue,
+		groupRepo, apiKeyRepo, sourceRepo, orgRepo, userRepo, eventQueue, createEventQueue,
 		logger, tracer, cache, limiter, searcher,
 	)
 }
 
-func initRealmChain(t *testing.T, apiKeyRepo datastore.APIKeyRepository) {
+func initRealmChain(t *testing.T, apiKeyRepo datastore.APIKeyRepository, userRepo datastore.UserRepository, cache cache.Cache) {
 	cfg, err := config.Get()
 	if err != nil {
 		t.Errorf("failed to get config: %v", err)
 	}
 
-	err = realm_chain.Init(&cfg.Auth, apiKeyRepo)
+	err = realm_chain.Init(&cfg.Auth, apiKeyRepo, userRepo, cache)
 	if err != nil {
 		t.Errorf("failed to initialize realm chain : %v", err)
 	}

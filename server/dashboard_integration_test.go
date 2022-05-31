@@ -47,7 +47,7 @@ func (s *DashboardIntegrationTestSuite) SetupTest() {
 	err := config.LoadConfig("./testdata/Auth_Config/full-convoy.json")
 	require.NoError(s.T(), err)
 
-	initRealmChain(s.T(), s.DB.APIRepo())
+	initRealmChain(s.T(), s.DB.APIRepo(), s.DB.UserRepo(), s.ConvoyApp.cache)
 }
 
 func (s *DashboardIntegrationTestSuite) TearDownTest() {
@@ -294,7 +294,7 @@ func (s *DashboardIntegrationTestSuite) TestGetDashboardSummary() {
 			if err != nil {
 				t.Errorf("Failed to load config file: %v", err)
 			}
-			initRealmChain(t, s.DB.APIRepo())
+			initRealmChain(t, s.DB.APIRepo(), s.DB.UserRepo(), s.ConvoyApp.cache)
 
 			req := httptest.NewRequest(tc.method, fmt.Sprintf("/ui/dashboard/summary?startDate=%s&endDate=%s&type=%s&groupId=%s", tc.urlQuery.startDate, tc.urlQuery.endDate, tc.urlQuery.Type, tc.urlQuery.groupID), nil)
 			w := httptest.NewRecorder()

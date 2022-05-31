@@ -10,6 +10,7 @@ import (
 	"github.com/frain-dev/convoy/auth"
 	"github.com/frain-dev/convoy/config"
 	"go.mongodb.org/mongo-driver/bson/primitive"
+	"golang.org/x/crypto/bcrypt"
 )
 
 type Pageable struct {
@@ -122,6 +123,7 @@ var (
 	ErrApplicationNotFound = errors.New("application not found")
 	ErrEndpointNotFound    = errors.New("endpoint not found")
 	ErrSourceNotFound      = errors.New("source not found")
+	ErrUserNotFound        = errors.New("user not found")
 )
 
 const (
@@ -461,6 +463,21 @@ type Source struct {
 	DocumentStatus DocumentStatus `json:"-" bson:"document_status"`
 }
 
+type User struct {
+	ID        primitive.ObjectID `json:"-" bson:"_id"`
+	UID       string             `json:"uid" bson:"uid"`
+	FirstName string             `json:"first_name" bson:"first_name"`
+	LastName  string             `json:"last_name" bson:"last_name"`
+	Email     string             `json:"email" bson:"email"`
+	Password  string             `json:"-" bson:"password"`
+	Role      auth.Role          `json:"role" bson:"role"`
+
+	CreatedAt primitive.DateTime `json:"created_at,omitempty" bson:"created_at"`
+	UpdatedAt primitive.DateTime `json:"updated_at,omitempty" bson:"updated_at"`
+	DeletedAt primitive.DateTime `json:"deleted_at,omitempty" bson:"deleted_at"`
+
+	DocumentStatus DocumentStatus `json:"-" bson:"document_status"`
+}
 type VerifierConfig struct {
 	Type      VerifierType `json:"type,omitempty" bson:"type" valid:"supported_verifier~please provide a valid verifier type,optional"`
 	HMac      HMac         `json:"hmac" bson:"hmac"`
@@ -494,4 +511,33 @@ type Organisation struct {
 	CreatedAt      primitive.DateTime `json:"created_at,omitempty" bson:"created_at,omitempty" swaggertype:"string"`
 	UpdatedAt      primitive.DateTime `json:"updated_at,omitempty" bson:"updated_at,omitempty" swaggertype:"string"`
 	DeletedAt      primitive.DateTime `json:"deleted_at,omitempty" bson:"deleted_at,omitempty" swaggertype:"string"`
+}
+
+type Password struct {
+	Plaintext string
+	Hash      []byte
+}
+
+func (p *Password) GenerateHash() error {
+	hash, err := bcrypt.GenerateFromPassword([]byte(p.Plaintext), 12)
+	if err != nil {
+		return err
+	}
+
+	p.Hash = hash
+	return nil
+}
+
+func (p *Password) Matches() (bool, error) {
+	err := bcrypt.CompareHashAndPassword(p.Hash, []byte(p.Plaintext))
+	if err != nil {
+		switch {
+		case errors.Is(err, bcrypt.ErrMismatchedHashAndPassword):
+			return false, nil
+		default:
+			return false, err
+		}
+	}
+
+	return true, err
 }

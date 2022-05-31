@@ -470,6 +470,34 @@ components:
         type:
           type: string
       type: object
+    models.LoginUser:
+      properties:
+        password:
+          type: string
+        username:
+          type: string
+      type: object
+    models.LoginUserResponse:
+      properties:
+        created_at:
+          type: integer
+        deleted_at:
+          type: integer
+        email:
+          type: string
+        first_name:
+          type: string
+        last_name:
+          type: string
+        role:
+          $ref: '#/components/schemas/auth.Role'
+        token:
+          $ref: '#/components/schemas/models.Token'
+        uid:
+          type: string
+        updated_at:
+          type: integer
+      type: object
     models.Organisation:
       properties:
         name:
@@ -525,6 +553,13 @@ components:
           type: string
         verifier:
           $ref: '#/components/schemas/datastore.VerifierConfig'
+      type: object
+    models.Token:
+      properties:
+        access_token:
+          type: string
+        refresh_token:
+          type: string
       type: object
     server.Stub:
       type: object
@@ -1286,6 +1321,177 @@ paths:
       summary: Update an application endpoint
       tags:
       - Application Endpoints
+  /auth/login:
+    post:
+      description: This endpoint logs in a user
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/models.LoginUser'
+        description: User Details
+        required: true
+        x-originalParamName: user
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                allOf:
+                - $ref: '#/components/schemas/server.serverResponse'
+                - properties:
+                    data:
+                      $ref: '#/components/schemas/models.LoginUserResponse'
+                  type: object
+          description: OK
+        "400":
+          content:
+            application/json:
+              schema:
+                allOf:
+                - $ref: '#/components/schemas/server.serverResponse'
+                - properties:
+                    data:
+                      $ref: '#/components/schemas/server.Stub'
+                  type: object
+          description: Bad Request
+        "401":
+          content:
+            application/json:
+              schema:
+                allOf:
+                - $ref: '#/components/schemas/server.serverResponse'
+                - properties:
+                    data:
+                      $ref: '#/components/schemas/server.Stub'
+                  type: object
+          description: Unauthorized
+        "500":
+          content:
+            application/json:
+              schema:
+                allOf:
+                - $ref: '#/components/schemas/server.serverResponse'
+                - properties:
+                    data:
+                      $ref: '#/components/schemas/server.Stub'
+                  type: object
+          description: Internal Server Error
+      summary: Login a user
+      tags:
+      - User
+  /auth/logout:
+    post:
+      description: This endpoint logs out a user
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                allOf:
+                - $ref: '#/components/schemas/server.serverResponse'
+                - properties:
+                    data:
+                      $ref: '#/components/schemas/server.Stub'
+                  type: object
+          description: OK
+        "400":
+          content:
+            application/json:
+              schema:
+                allOf:
+                - $ref: '#/components/schemas/server.serverResponse'
+                - properties:
+                    data:
+                      $ref: '#/components/schemas/server.Stub'
+                  type: object
+          description: Bad Request
+        "401":
+          content:
+            application/json:
+              schema:
+                allOf:
+                - $ref: '#/components/schemas/server.serverResponse'
+                - properties:
+                    data:
+                      $ref: '#/components/schemas/server.Stub'
+                  type: object
+          description: Unauthorized
+        "500":
+          content:
+            application/json:
+              schema:
+                allOf:
+                - $ref: '#/components/schemas/server.serverResponse'
+                - properties:
+                    data:
+                      $ref: '#/components/schemas/server.Stub'
+                  type: object
+          description: Internal Server Error
+      security:
+      - ApiKeyAuth: []
+      summary: Logs out a user
+      tags:
+      - User
+  /auth/token/refresh:
+    post:
+      description: This endpoint refreshes an access token
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/models.Token'
+        description: Token Details
+        required: true
+        x-originalParamName: token
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                allOf:
+                - $ref: '#/components/schemas/server.serverResponse'
+                - properties:
+                    data:
+                      $ref: '#/components/schemas/models.Token'
+                  type: object
+          description: OK
+        "400":
+          content:
+            application/json:
+              schema:
+                allOf:
+                - $ref: '#/components/schemas/server.serverResponse'
+                - properties:
+                    data:
+                      $ref: '#/components/schemas/server.Stub'
+                  type: object
+          description: Bad Request
+        "401":
+          content:
+            application/json:
+              schema:
+                allOf:
+                - $ref: '#/components/schemas/server.serverResponse'
+                - properties:
+                    data:
+                      $ref: '#/components/schemas/server.Stub'
+                  type: object
+          description: Unauthorized
+        "500":
+          content:
+            application/json:
+              schema:
+                allOf:
+                - $ref: '#/components/schemas/server.serverResponse'
+                - properties:
+                    data:
+                      $ref: '#/components/schemas/server.Stub'
+                  type: object
+          description: Internal Server Error
+      summary: Refresh an access token
+      tags:
+      - User
   /eventdeliveries:
     get:
       description: This endpoint fetch event deliveries.
