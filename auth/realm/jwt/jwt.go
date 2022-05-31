@@ -33,8 +33,8 @@ type VerifiedToken struct {
 const (
 	JwtDefaultSecret        string = "convoy-jwt"
 	JwtDefaultRefreshSecret string = "convoy-refresh-jwt"
-	JwtDefaultExpiry        int    = 1800
-	JwtDefaultRefreshExpiry int    = 86400
+	JwtDefaultExpiry        int    = 1800 //seconds
+	JwtDefaultRefreshExpiry int    = 86400 //seconds
 )
 
 type Jwt struct {
