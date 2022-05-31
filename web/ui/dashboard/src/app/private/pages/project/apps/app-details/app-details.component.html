@@ -173,9 +173,9 @@
 			<div class="input multiple">
 				<label class="flex flex__align-items-center" for="">
 					Events
-					<app-tooltip [size]="'small'" class="margin-left__4px">Add multiple events by seperating them with commas</app-tooltip>
+					<app-tooltip [size]="'small'" position="right" class="margin-left__4px">Add multiple events by seperating them with commas</app-tooltip>
 				</label>
-				<div class="input--multiple" [ngClass]="{ active: eventTags.length > 0 }">
+				<div class="input--multiple">
 					<div class="tag" *ngFor="let tag of eventTags">
 						{{ tag }}
 						<a (click)="removeEventTag(tag)">

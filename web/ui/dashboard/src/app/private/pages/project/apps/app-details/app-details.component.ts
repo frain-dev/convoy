@@ -34,7 +34,7 @@ export class AppDetailsComponent implements OnInit {
 	});
 	appPortalLink!: string;
 	endpointSecretKey!: string;
-	eventTags!: string[];
+	eventTags: string[] = [];
 	appsDetailsItem!: APP;
 	apps!: { pagination: PAGINATION; content: APP[] };
 	constructor(private formBuilder: FormBuilder, private appDetailsService: AppDetailsService, private route: ActivatedRoute, private location: Location, private router: Router) {}
