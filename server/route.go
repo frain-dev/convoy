@@ -66,16 +66,9 @@ func buildRoutes(app *applicationHandler) http.Handler {
 		v1Router.Route("/v1", func(r chi.Router) {
 			r.Use(middleware.AllowContentType("application/json"))
 			r.Use(jsonResponse)
+			r.Use(requireAuth())
 
-			r.Route("/auth", func(authRouter chi.Router) {
-				authRouter.Post("/login", app.LoginUser)
-				authRouter.Post("/token/refresh", app.RefreshToken)
-				authRouter.With(requireAuth()).Post("/logout", app.LogoutUser)
-			})
-			
-			a := r.With(requireAuth())
-
-			a.Route("/groups", func(groupRouter chi.Router) {
+			r.Route("/groups", func(groupRouter chi.Router) {
 				groupRouter.Get("/", app.GetGroups)
 				groupRouter.With(requirePermission(auth.RoleSuperUser)).Post("/", app.CreateGroup)
 
@@ -89,7 +82,7 @@ func buildRoutes(app *applicationHandler) http.Handler {
 				})
 			})
 
-			a.Route("/applications", func(appRouter chi.Router) {
+			r.Route("/applications", func(appRouter chi.Router) {
 				appRouter.Use(requireGroup(app.groupRepo, app.cache))
 				appRouter.Use(rateLimitByGroupID(app.limiter))
 				appRouter.Use(requirePermission(auth.RoleAdmin))
@@ -121,7 +114,7 @@ func buildRoutes(app *applicationHandler) http.Handler {
 				})
 			})
 
-			a.Route("/events", func(eventRouter chi.Router) {
+			r.Route("/events", func(eventRouter chi.Router) {
 				eventRouter.Use(requireGroup(app.groupRepo, app.cache))
 				eventRouter.Use(rateLimitByGroupID(app.limiter))
 				eventRouter.Use(requirePermission(auth.RoleAdmin))
@@ -135,7 +128,7 @@ func buildRoutes(app *applicationHandler) http.Handler {
 				})
 			})
 
-			a.Route("/eventdeliveries", func(eventDeliveryRouter chi.Router) {
+			r.Route("/eventdeliveries", func(eventDeliveryRouter chi.Router) {
 				eventDeliveryRouter.Use(requireGroup(app.groupRepo, app.cache))
 				eventDeliveryRouter.Use(requirePermission(auth.RoleAdmin))
 
@@ -159,7 +152,7 @@ func buildRoutes(app *applicationHandler) http.Handler {
 				})
 			})
 
-			a.Route("/security", func(securityRouter chi.Router) {
+			r.Route("/security", func(securityRouter chi.Router) {
 				securityRouter.Route("/", func(securitySubRouter chi.Router) {
 					securitySubRouter.Use(requirePermission(auth.RoleSuperUser))
 
@@ -179,7 +172,7 @@ func buildRoutes(app *applicationHandler) http.Handler {
 				})
 			})
 
-			a.Route("/sources", func(sourceRouter chi.Router) {
+			r.Route("/sources", func(sourceRouter chi.Router) {
 				sourceRouter.Use(requireGroup(app.groupRepo, app.cache))
 				sourceRouter.Use(requirePermission(auth.RoleAdmin))
 				sourceRouter.Use(requireBaseUrl())
@@ -197,16 +190,15 @@ func buildRoutes(app *applicationHandler) http.Handler {
 	router.Route("/ui", func(uiRouter chi.Router) {
 		uiRouter.Use(jsonResponse)
 		uiRouter.Use(setupCORS)
+		uiRouter.Use(middleware.Maybe(requireAuth(), shouldAuthRoute))
 
 		uiRouter.Route("/auth", func(authRouter chi.Router) {
 			authRouter.Post("/login", app.LoginUser)
 			authRouter.Post("/token/refresh", app.RefreshToken)
-			authRouter.With(requireAuth()).Post("/logout", app.LogoutUser)
+			authRouter.Post("/logout", app.LogoutUser)
 		})
 
-		a := uiRouter.With(requireAuth())
-
-		a.Route("/dashboard", func(dashboardRouter chi.Router) {
+		uiRouter.Route("/dashboard", func(dashboardRouter chi.Router) {
 			dashboardRouter.Use(requireGroup(app.groupRepo, app.cache))
 			dashboardRouter.Use(rateLimitByGroupID(app.limiter))
 
@@ -214,7 +206,7 @@ func buildRoutes(app *applicationHandler) http.Handler {
 			dashboardRouter.Get("/config", app.GetAllConfigDetails)
 		})
 
-		a.Route("/groups", func(groupRouter chi.Router) {
+		uiRouter.Route("/groups", func(groupRouter chi.Router) {
 			groupRouter.Route("/", func(orgSubRouter chi.Router) {
 				groupRouter.With(requirePermission(auth.RoleSuperUser)).Post("/", app.CreateGroup)
 				groupRouter.Get("/", app.GetGroups)
@@ -230,7 +222,7 @@ func buildRoutes(app *applicationHandler) http.Handler {
 			})
 		})
 
-		a.Route("/apps", func(appRouter chi.Router) {
+		uiRouter.Route("/apps", func(appRouter chi.Router) {
 			appRouter.Use(requireGroup(app.groupRepo, app.cache))
 			appRouter.Use(rateLimitByGroupID(app.limiter))
 			appRouter.Use(requirePermission(auth.RoleUIAdmin))
@@ -269,7 +261,7 @@ func buildRoutes(app *applicationHandler) http.Handler {
 			})
 		})
 
-		a.Route("/events", func(eventRouter chi.Router) {
+		uiRouter.Route("/events", func(eventRouter chi.Router) {
 			eventRouter.Use(requireGroup(app.groupRepo, app.cache))
 			eventRouter.Use(rateLimitByGroupID(app.limiter))
 			eventRouter.Use(requirePermission(auth.RoleUIAdmin))
@@ -283,7 +275,7 @@ func buildRoutes(app *applicationHandler) http.Handler {
 			})
 		})
 
-		a.Route("/eventdeliveries", func(eventDeliveryRouter chi.Router) {
+		uiRouter.Route("/eventdeliveries", func(eventDeliveryRouter chi.Router) {
 			eventDeliveryRouter.Use(requireGroup(app.groupRepo, app.cache))
 			eventDeliveryRouter.Use(rateLimitByGroupID(app.limiter))
 			eventDeliveryRouter.Use(requirePermission(auth.RoleUIAdmin))
@@ -308,7 +300,7 @@ func buildRoutes(app *applicationHandler) http.Handler {
 			})
 		})
 
-		a.Route("/sources", func(sourceRouter chi.Router) {
+		uiRouter.Route("/sources", func(sourceRouter chi.Router) {
 			sourceRouter.Use(requireGroup(app.groupRepo, app.cache))
 			sourceRouter.Use(requirePermission(auth.RoleAdmin))
 			sourceRouter.Use(requireBaseUrl())

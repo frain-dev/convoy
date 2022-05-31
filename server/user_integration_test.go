@@ -56,7 +56,7 @@ func (u *UserIntegrationTestSuite) Test_LoginUser() {
 	user, _ := testdb.SeedUser(u.DB, password)
 
 	//Arrange Request
-	url := "/api/v1/auth/login"
+	url := "/ui/auth/login"
 	bodyStr := fmt.Sprintf(`{
 		"username": "%s",
 		"password": "%s"
@@ -87,7 +87,7 @@ func (u *UserIntegrationTestSuite) Test_LoginUser() {
 
 func (u *UserIntegrationTestSuite) Test_LoginUser_Invalid_Username() {
 	//Arrange Request
-	url := "/api/v1/auth/login"
+	url := "/ui/auth/login"
 	bodyStr := fmt.Sprintf(`{
 			"username": "%s",
 			"password": "%s"
@@ -109,7 +109,7 @@ func (u *UserIntegrationTestSuite) Test_LoginUser_Invalid_Password() {
 	user, _ := testdb.SeedUser(u.DB, password)
 
 	//Arrange Request
-	url := "/api/v1/auth/login"
+	url := "/ui/auth/login"
 	bodyStr := fmt.Sprintf(`{
 			"username": "%s",
 			"password": "%s"
@@ -134,7 +134,7 @@ func (u *UserIntegrationTestSuite) Test_RefreshToken() {
 	require.NoError(u.T(), err)
 
 	// Arrange Request
-	url := "/api/v1/auth/token/refresh"
+	url := "/ui/auth/token/refresh"
 	bodyStr := fmt.Sprintf(`{
 		"access_token": "%s",
 		"refresh_token": "%s"
@@ -166,7 +166,7 @@ func (u *UserIntegrationTestSuite) Test_RefreshToken_Invalid_Access_Token() {
 	require.NoError(u.T(), err)
 
 	// Arrange Request
-	url := "/api/v1/auth/token/refresh"
+	url := "/ui/auth/token/refresh"
 	bodyStr := fmt.Sprintf(`{
 		"access_token": "%s",
 		"refresh_token": "%s"
@@ -191,7 +191,7 @@ func (u *UserIntegrationTestSuite) Test_RefreshToken_Invalid_Refresh_Token() {
 	require.NoError(u.T(), err)
 
 	// Arrange Request
-	url := "/api/v1/auth/token/refresh"
+	url := "/ui/auth/token/refresh"
 	bodyStr := fmt.Sprintf(`{
 		"access_token": "%s",
 		"refresh_token": "%s"
@@ -216,7 +216,7 @@ func (u *UserIntegrationTestSuite) Test_LogoutUser() {
 	require.NoError(u.T(), err)
 
 	// Arrange Request
-	url := "/api/v1/auth/logout"
+	url := "/ui/auth/logout"
 	req := httptest.NewRequest(http.MethodPost, url, nil)
 	req.Header.Add("Authorization", fmt.Sprintf("Bearer %s", token.AccessToken))
 	req.Header.Add("Content-Type", "application/json")
@@ -232,7 +232,7 @@ func (u *UserIntegrationTestSuite) Test_LogoutUser() {
 
 func (u *UserIntegrationTestSuite) Test_LogoutUser_Invalid_Access_Token() {
 	// Arrange Request
-	url := "/api/v1/auth/logout"
+	url := "/ui/auth/logout"
 	req := httptest.NewRequest(http.MethodPost, url, nil)
 	req.Header.Add("Authorization", fmt.Sprintf("Bearer %s", uuid.NewString()))
 	req.Header.Add("Content-Type", "application/json")

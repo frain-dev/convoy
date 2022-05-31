@@ -822,6 +822,18 @@ func fetchGroupApps(appRepo datastore.ApplicationRepository) func(next http.Hand
 	}
 }
 
+func shouldAuthRoute(r *http.Request) bool {
+	guestRoutes := []string{"/ui/auth/login", "/ui/auth/token/refresh"}
+
+	for _, route := range guestRoutes {
+		if r.URL.Path == route {
+			return false
+		}
+	}
+
+	return true
+}
+
 func ensurePeriod(start time.Time, end time.Time) error {
 	if start.Unix() > end.Unix() {
 		return errors.New("startDate cannot be greater than endDate")
