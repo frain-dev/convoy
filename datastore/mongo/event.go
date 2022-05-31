@@ -30,8 +30,7 @@ var weeklyIntervalFormat = "%Y-%m"   // 1 week
 var monthlyIntervalFormat = "%Y-%m"  // 1 month
 var yearlyIntervalFormat = "%Y"      // 1 month
 
-func (db *eventRepo) CreateEvent(ctx context.Context,
-	message *datastore.Event) error {
+func (db *eventRepo) CreateEvent(ctx context.Context, message *datastore.Event) error {
 
 	message.ID = primitive.NewObjectID()
 

@@ -134,7 +134,7 @@ func (db *groupRepo) FillGroupsStatistics(ctx context.Context, groups []*datasto
 		{Key: "$lookup", Value: bson.D{
 			{Key: "from", Value: EventCollection},
 			{Key: "localField", Value: "uid"},
-			{Key: "foreignField", Value: "app_metadata.group_id"},
+			{Key: "foreignField", Value: "group_id"},
 			{Key: "as", Value: "group_events"},
 		}},
 	}
