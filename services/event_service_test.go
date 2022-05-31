@@ -300,7 +300,7 @@ func TestEventService_CreateAppEvent(t *testing.T) {
 			wantErrMsg:  "application not found",
 		},
 		{
-			name: "should_error_for_zero_app_endpoints",
+			name: "should_error_for_zero_app_subscriptions",
 			dbFn: func(es *EventService) {
 				c, _ := es.cache.(*mocks.MockCache)
 				c.EXPECT().Get(gomock.Any(), gomock.Any(), gomock.Any())
@@ -1503,7 +1503,7 @@ func TestEventService_RetryEventDelivery(t *testing.T) {
 			wantErrMsg: "subscription is being re-activated",
 		},
 		{
-			name: "should_retry_event_delivery_with_inactive_endpoint",
+			name: "should_retry_event_delivery_with_inactive_subscription",
 			dbFn: func(es *EventService) {
 				s, _ := es.subRepo.(*mocks.MockSubscriptionRepository)
 				s.EXPECT().FindSubscriptionByID(gomock.Any(), gomock.Any(), gomock.Any()).
@@ -1616,7 +1616,7 @@ func TestEventService_forceResendEventDelivery(t *testing.T) {
 			},
 		},
 		{
-			name: "should_fail_to_find_endpoint",
+			name: "should_fail_to_find_subscription",
 			dbFn: func(es *EventService) {
 				s, _ := es.subRepo.(*mocks.MockSubscriptionRepository)
 				s.EXPECT().FindSubscriptionByID(gomock.Any(), gomock.Any(), gomock.Any()).
@@ -1634,7 +1634,7 @@ func TestEventService_forceResendEventDelivery(t *testing.T) {
 			wantErrMsg: "subscription not found",
 		},
 		{
-			name: "should_error_not_active_endpoint",
+			name: "should_error_not_active_subscription",
 			dbFn: func(es *EventService) {
 				s, _ := es.subRepo.(*mocks.MockSubscriptionRepository)
 				s.EXPECT().FindSubscriptionByID(gomock.Any(), gomock.Any(), gomock.Any()).
