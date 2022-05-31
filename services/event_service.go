@@ -108,6 +108,22 @@ func (e *EventService) CreateAppEvent(ctx context.Context, newMessage *models.Ev
 	return event, nil
 }
 
+func (e *EventService) ReplayAppEvent(ctx context.Context, event *datastore.Event, g *datastore.Group) error {
+	taskName := convoy.CreateEventProcessor.SetPrefix(g.Name)
+	job := &queue.Job{
+		ID:    event.UID,
+		Event: event,
+	}
+
+	err := e.createEventQueue.Publish(context.Background(), taskName, job, 0)
+	if err != nil {
+		log.WithError(err).Error("replay_event: failed to write event to the queue")
+		return NewServiceError(http.StatusBadRequest, errors.New("failed to write event to queue"))
+	}
+
+	return nil
+}
+
 func (e *EventService) GetAppEvent(ctx context.Context, id string) (*datastore.Event, error) {
 	event, err := e.eventRepo.FindEventByID(ctx, id)
 	if err != nil {

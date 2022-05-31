@@ -46,6 +46,31 @@ func (a *applicationHandler) CreateAppEvent(w http.ResponseWriter, r *http.Reque
 	_ = render.Render(w, r, newServerResponse("App event created successfully", event, http.StatusCreated))
 }
 
+// ReplayAppEvent
+// @Summary Replay app event
+// @Description This endpoint replays an app event
+// @Tags Events
+// @Accept  json
+// @Produce  json
+// @Param groupId query string true "group id"
+// @Param eventID path string true "event id"
+// @Success 200 {object} serverResponse{data=datastore.Event{data=Stub}}
+// @Failure 400,401,500 {object} serverResponse{data=Stub}
+// @Security ApiKeyAuth
+// @Router /events/{eventID}/replay [put]
+func (a *applicationHandler) ReplayAppEvent(w http.ResponseWriter, r *http.Request) {
+	g := getGroupFromContext(r.Context())
+	event := getEventFromContext(r.Context())
+
+	err := a.eventService.ReplayAppEvent(r.Context(), event, g)
+	if err != nil {
+		_ = render.Render(w, r, newServiceErrResponse(err))
+		return
+	}
+
+	_ = render.Render(w, r, newServerResponse("App event replayed successfully", event, http.StatusOK))
+}
+
 // GetAppEvent
 // @Summary Get app event
 // @Description This endpoint fetches an app event
