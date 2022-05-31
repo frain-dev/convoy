@@ -301,6 +301,32 @@ func SeedSource(db datastore.DatabaseClient, g *datastore.Group, uid string) (*d
 	return source, nil
 }
 
+func SeedUser(db datastore.DatabaseClient, password string) (*datastore.User, error) {
+	p := &datastore.Password{Plaintext: password}
+	err := p.GenerateHash()
+	if err != nil {
+		return nil, err
+	}
+
+	user := &datastore.User{
+		UID:            uuid.NewString(),
+		FirstName:      "test",
+		LastName:       "test",
+		Password:       string(p.Hash),
+		Email:          "test@test.com",
+		DocumentStatus: datastore.ActiveDocumentStatus,
+	}
+
+	//Seed Data
+	err = db.UserRepo().CreateUser(context.TODO(), user)
+	if err != nil {
+		return nil, err
+	}
+
+	return user, nil
+
+}
+
 // PurgeDB is run after every test run and it's used to truncate the DB to have
 // a clean slate in the next run.
 func PurgeDB(db datastore.DatabaseClient) {

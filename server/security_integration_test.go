@@ -44,7 +44,7 @@ func (s *SecurityIntegrationTestSuite) SetupTest() {
 	err := config.LoadConfig("./testdata/Auth_Config/full-convoy-with-native-auth-realm.json")
 	require.NoError(s.T(), err)
 
-	initRealmChain(s.T(), s.DB.APIRepo())
+	initRealmChain(s.T(), s.DB.APIRepo(), s.DB.UserRepo(), s.ConvoyApp.cache)
 }
 
 func (s *SecurityIntegrationTestSuite) Test_CreateAPIKey() {

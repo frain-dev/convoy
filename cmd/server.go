@@ -144,7 +144,7 @@ func StartConvoyServer(a *app, cfg config.Configuration, withWorkers bool) error
 	start := time.Now()
 	log.Info("Starting Convoy server...")
 
-	err := realm_chain.Init(&cfg.Auth, a.apiKeyRepo)
+	err := realm_chain.Init(&cfg.Auth, a.apiKeyRepo, a.userRepo, a.cache)
 	if err != nil {
 		log.WithError(err).Fatal("failed to initialize realm chain")
 	}
@@ -160,6 +160,7 @@ func StartConvoyServer(a *app, cfg config.Configuration, withWorkers bool) error
 		a.apiKeyRepo,
 		a.groupRepo,
 		a.sourceRepo,
+		a.userRepo,
 		a.eventQueue,
 		a.createEventQueue,
 		a.logger,

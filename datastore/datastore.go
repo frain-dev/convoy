@@ -15,4 +15,5 @@ type DatabaseClient interface {
 	AppRepo() ApplicationRepository
 	EventDeliveryRepo() EventDeliveryRepository
 	SourceRepo() SourceRepository
+	UserRepo() UserRepository
 }

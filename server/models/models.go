@@ -68,6 +68,28 @@ type SourceResponse struct {
 	DeletedAt primitive.DateTime `json:"deleted_at,omitempty"`
 }
 
+type LoginUser struct {
+	Username string `json:"username" valid:"required~please provide your username"`
+	Password string `json:"password" valid:"required~please provide your password"`
+}
+
+type LoginUserResponse struct {
+	UID       string    `json:"uid"`
+	FirstName string    `json:"first_name"`
+	LastName  string    `json:"last_name"`
+	Email     string    `json:"email"`
+	Role      auth.Role `json:"role"`
+	Token     Token     `json:"token"`
+
+	CreatedAt primitive.DateTime `json:"created_at,omitempty" bson:"created_at"`
+	UpdatedAt primitive.DateTime `json:"updated_at,omitempty" bson:"updated_at"`
+	DeletedAt primitive.DateTime `json:"deleted_at,omitempty" bson:"deleted_at"`
+}
+
+type Token struct {
+	AccessToken  string `json:"access_token" valid:"required~please provide an access token"`
+	RefreshToken string `json:"refresh_token" valid:"required~please provide a refresh token"`
+}
 type Application struct {
 	AppName         string `json:"name" bson:"name" valid:"required~please provide your appName"`
 	SupportEmail    string `json:"support_email" bson:"support_email" valid:"email~please provide a valid email"`

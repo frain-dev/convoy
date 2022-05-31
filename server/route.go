@@ -190,7 +190,13 @@ func buildRoutes(app *applicationHandler) http.Handler {
 	router.Route("/ui", func(uiRouter chi.Router) {
 		uiRouter.Use(jsonResponse)
 		uiRouter.Use(setupCORS)
-		uiRouter.Use(requireAuth())
+		uiRouter.Use(middleware.Maybe(requireAuth(), shouldAuthRoute))
+
+		uiRouter.Route("/auth", func(authRouter chi.Router) {
+			authRouter.Post("/login", app.LoginUser)
+			authRouter.Post("/token/refresh", app.RefreshToken)
+			authRouter.Post("/logout", app.LogoutUser)
+		})
 
 		uiRouter.Route("/dashboard", func(dashboardRouter chi.Router) {
 			dashboardRouter.Use(requireGroup(app.groupRepo, app.cache))
@@ -201,7 +207,6 @@ func buildRoutes(app *applicationHandler) http.Handler {
 		})
 
 		uiRouter.Route("/groups", func(groupRouter chi.Router) {
-
 			groupRouter.Route("/", func(orgSubRouter chi.Router) {
 				groupRouter.With(requirePermission(auth.RoleSuperUser)).Post("/", app.CreateGroup)
 				groupRouter.Get("/", app.GetGroups)
@@ -388,6 +393,7 @@ func New(cfg config.Configuration,
 	apiKeyRepo datastore.APIKeyRepository,
 	orgRepo datastore.GroupRepository,
 	sourceRepo datastore.SourceRepository,
+	userRepo datastore.UserRepository,
 	eventQueue queue.Queuer,
 	createEventQueue queue.Queuer,
 	logger logger.Logger,
@@ -402,6 +408,7 @@ func New(cfg config.Configuration,
 		orgRepo,
 		apiKeyRepo,
 		sourceRepo,
+		userRepo,
 		eventQueue,
 		createEventQueue,
 		logger,
