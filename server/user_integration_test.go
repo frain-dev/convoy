@@ -42,7 +42,7 @@ func (u *UserIntegrationTestSuite) SetupTest() {
 	config, err := config.Get()
 	require.NoError(u.T(), err)
 
-	u.jwt = jwt.NewJwt(&config.Auth.Native.Jwt, u.ConvoyApp.cache)
+	u.jwt = jwt.NewJwt(&config.Auth.Jwt, u.ConvoyApp.cache)
 
 	initRealmChain(u.T(), u.DB.APIRepo(), u.DB.UserRepo(), u.ConvoyApp.cache)
 }

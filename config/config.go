@@ -59,14 +59,15 @@ type AuthConfiguration struct {
 	RequireAuth bool               `json:"require_auth" envconfig:"CONVOY_REQUIRE_AUTH"`
 	File        FileRealmOption    `json:"file"`
 	Native      NativeRealmOptions `json:"native"`
+	Jwt         JwtRealmOptions    `json:"jwt"`
 }
 
 type NativeRealmOptions struct {
-	Enabled bool            `json:"enabled" envconfig:"CONVOY_NATIVE_REALM_ENABLED"`
-	Jwt     JwtRealmOptions `json:"jwt"`
+	Enabled bool `json:"enabled" envconfig:"CONVOY_NATIVE_REALM_ENABLED"`
 }
 
 type JwtRealmOptions struct {
+	Enabled       bool   `json:"enabled"`
 	Secret        string `json:"secret"`
 	Expiry        int    `json:"expiry"`
 	RefreshSecret string `json:"refresh_secret"`

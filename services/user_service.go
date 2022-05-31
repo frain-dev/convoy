@@ -146,6 +146,6 @@ func (u *UserService) token() (*jwt.Jwt, error) {
 		return &jwt.Jwt{}, err
 	}
 
-	u.jwt = jwt.NewJwt(&config.Auth.Native.Jwt, u.cache)
+	u.jwt = jwt.NewJwt(&config.Auth.Jwt, u.cache)
 	return u.jwt, nil
 }

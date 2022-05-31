@@ -8,7 +8,7 @@
     },
     "auth": {
         "require_auth": true,
-        "native": {
+        "jwt": {
             "enabled": true
         }
     },

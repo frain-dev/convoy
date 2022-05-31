@@ -62,8 +62,10 @@ func Init(authConfig *config.AuthConfiguration, apiKeyRepo datastore.APIKeyRepos
 			if err != nil {
 				return errors.New("failed to register file realm in realm chain")
 			}
+		}
 
-			jr := jwt.NewJwtRealm(userRepo, &authConfig.Native.Jwt, cache)
+		if authConfig.Jwt.Enabled {
+			jr := jwt.NewJwtRealm(userRepo, &authConfig.Jwt, cache)
 			err = rc.RegisterRealm(jr)
 			if err != nil {
 				return errors.New("failed to register jwt realm in realm chain")
