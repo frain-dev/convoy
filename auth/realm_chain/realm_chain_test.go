@@ -318,8 +318,13 @@ func TestInit(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			mockAPIKeyRepo := mocks.NewMockAPIKeyRepository(gomock.NewController(t))
-			err := Init(tt.args.authConfig, mockAPIKeyRepo)
+			ctrl := gomock.NewController(t)
+			defer ctrl.Finish()
+			
+			mockAPIKeyRepo := mocks.NewMockAPIKeyRepository(ctrl)
+			userRepo := mocks.NewMockUserRepository(ctrl)
+			cache := mocks.NewMockCache(ctrl)
+			err := Init(tt.args.authConfig, mockAPIKeyRepo, userRepo, cache)
 			if tt.wantErr {
 				require.Equal(t, tt.wantErrMsg, err.Error())
 				return

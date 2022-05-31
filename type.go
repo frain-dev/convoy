@@ -70,6 +70,7 @@ const (
 	CreateEventProcessor TaskName = "CreateEventProcessor"
 	ApplicationsCacheKey CacheKey = "applications"
 	GroupsCacheKey       CacheKey = "groups"
+	TokenCacheKey        CacheKey = "tokens"
 )
 
 const (

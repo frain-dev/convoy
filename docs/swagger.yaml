@@ -456,6 +456,34 @@ definitions:
       type:
         type: string
     type: object
+  models.LoginUser:
+    properties:
+      password:
+        type: string
+      username:
+        type: string
+    type: object
+  models.LoginUserResponse:
+    properties:
+      created_at:
+        type: integer
+      deleted_at:
+        type: integer
+      email:
+        type: string
+      first_name:
+        type: string
+      last_name:
+        type: string
+      role:
+        $ref: '#/definitions/auth.Role'
+      token:
+        $ref: '#/definitions/models.Token'
+      uid:
+        type: string
+      updated_at:
+        type: integer
+    type: object
   models.PortalAPIKeyResponse:
     properties:
       app_id:
@@ -506,6 +534,13 @@ definitions:
         type: string
       verifier:
         $ref: '#/definitions/datastore.VerifierConfig'
+    type: object
+  models.Token:
+    properties:
+      access_token:
+        type: string
+      refresh_token:
+        type: string
     type: object
   server.Stub:
     type: object
@@ -1189,6 +1224,163 @@ paths:
       summary: Update an application endpoint
       tags:
       - Application Endpoints
+  /auth/login:
+    post:
+      consumes:
+      - application/json
+      description: This endpoint logs in a user
+      parameters:
+      - description: User Details
+        in: body
+        name: user
+        required: true
+        schema:
+          $ref: '#/definitions/models.LoginUser'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/server.serverResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/models.LoginUserResponse'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            allOf:
+            - $ref: '#/definitions/server.serverResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/server.Stub'
+              type: object
+        "401":
+          description: Unauthorized
+          schema:
+            allOf:
+            - $ref: '#/definitions/server.serverResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/server.Stub'
+              type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            allOf:
+            - $ref: '#/definitions/server.serverResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/server.Stub'
+              type: object
+      summary: Login a user
+      tags:
+      - User
+  /auth/logout:
+    post:
+      consumes:
+      - application/json
+      description: This endpoint logs out a user
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/server.serverResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/server.Stub'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            allOf:
+            - $ref: '#/definitions/server.serverResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/server.Stub'
+              type: object
+        "401":
+          description: Unauthorized
+          schema:
+            allOf:
+            - $ref: '#/definitions/server.serverResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/server.Stub'
+              type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            allOf:
+            - $ref: '#/definitions/server.serverResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/server.Stub'
+              type: object
+      security:
+      - ApiKeyAuth: []
+      summary: Logs out a user
+      tags:
+      - User
+  /auth/token/refresh:
+    post:
+      consumes:
+      - application/json
+      description: This endpoint refreshes an access token
+      parameters:
+      - description: Token Details
+        in: body
+        name: token
+        required: true
+        schema:
+          $ref: '#/definitions/models.Token'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/server.serverResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/models.Token'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            allOf:
+            - $ref: '#/definitions/server.serverResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/server.Stub'
+              type: object
+        "401":
+          description: Unauthorized
+          schema:
+            allOf:
+            - $ref: '#/definitions/server.serverResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/server.Stub'
+              type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            allOf:
+            - $ref: '#/definitions/server.serverResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/server.Stub'
+              type: object
+      summary: Refresh an access token
+      tags:
+      - User
   /eventdeliveries:
     get:
       consumes:
