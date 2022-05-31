@@ -31,8 +31,8 @@ type EventService struct {
 }
 
 func NewEventService(appRepo datastore.ApplicationRepository, eventRepo datastore.EventRepository, eventDeliveryRepo datastore.EventDeliveryRepository,
-	eventQueue queue.Queuer, createEventQueue queue.Queuer, cache cache.Cache, seacher searcher.Searcher) *EventService {
-	return &EventService{appRepo: appRepo, eventRepo: eventRepo, eventDeliveryRepo: eventDeliveryRepo, eventQueue: eventQueue, createEventQueue: createEventQueue, cache: cache, searcher: seacher}
+	eventQueue queue.Queuer, createEventQueue queue.Queuer, cache cache.Cache, seacher searcher.Searcher, subRepo datastore.SubscriptionRepository) *EventService {
+	return &EventService{appRepo: appRepo, eventRepo: eventRepo, eventDeliveryRepo: eventDeliveryRepo, eventQueue: eventQueue, createEventQueue: createEventQueue, cache: cache, searcher: seacher, subRepo: subRepo}
 }
 
 func (e *EventService) CreateAppEvent(ctx context.Context, newMessage *models.Event, g *datastore.Group) (*datastore.Event, error) {
@@ -235,10 +235,6 @@ func (e *EventService) RetryEventDelivery(ctx context.Context, eventDelivery *da
 	sub, err := e.subRepo.FindSubscriptionByID(ctx, g.UID, eventDelivery.SubscriptionID)
 	if err != nil {
 		return ErrSubscriptionNotFound
-	}
-
-	if sub.Status != datastore.PendingEndpointStatus {
-		return errors.New("force resend to an inactive or pending subscription is not allowed")
 	}
 
 	if sub.Status == datastore.PendingEndpointStatus {
