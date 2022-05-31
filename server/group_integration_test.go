@@ -6,15 +6,16 @@ package server
 import (
 	"context"
 	"fmt"
+	"net/http"
+	"net/http/httptest"
+	"testing"
+
 	"github.com/frain-dev/convoy/config"
 	"github.com/frain-dev/convoy/datastore"
 	"github.com/frain-dev/convoy/server/testdb"
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/require"
 	"github.com/stretchr/testify/suite"
-	"net/http"
-	"net/http/httptest"
-	"testing"
 )
 
 type GroupIntegrationTestSuite struct {
@@ -52,7 +53,7 @@ func (s *GroupIntegrationTestSuite) TestGetGroup() {
 	group, err := testdb.SeedGroup(s.DB, groupID, "", nil)
 	require.NoError(s.T(), err)
 	app, _ := testdb.SeedApplication(s.DB, group, uuid.NewString(), "test-app", false)
-	_, _ = testdb.SeedEndpoint(s.DB, app, group.UID, []string{"*"})
+	_, _ = testdb.SeedEndpoint(s.DB, app, group.UID)
 	_, _ = testdb.SeedEvent(s.DB, app, group.UID, uuid.NewString(), "*", []byte("{}"))
 
 	url := fmt.Sprintf("/api/v1/groups/%s", group.UID)

@@ -212,7 +212,7 @@ func (s *ApplicationIntegrationTestSuite) Test_UpdateApp_InvalidRequest() {
 
 	// Arrange Request.
 	url := fmt.Sprintf("/api/v1/applications/%s", appID)
-	plainBody := fmt.Sprintf(``)
+	plainBody := ""
 	body := strings.NewReader(plainBody)
 	req := createRequest(http.MethodPut, url, body)
 	w := httptest.NewRecorder()
@@ -364,7 +364,7 @@ func (s *ApplicationIntegrationTestSuite) Test_UpdateAppEndpoint() {
 
 	// Just Before.
 	app, _ := testdb.SeedApplication(s.DB, s.DefaultGroup, appID, "", false)
-	endpoint, _ := testdb.SeedEndpoint(s.DB, app, s.DefaultGroup.UID, []string{"*"})
+	endpoint, _ := testdb.SeedEndpoint(s.DB, app, s.DefaultGroup.UID)
 
 	// Arrange Request
 	url := fmt.Sprintf("/api/v1/applications/%s/endpoints/%s", appID, endpoint.UID)
@@ -393,7 +393,6 @@ func (s *ApplicationIntegrationTestSuite) Test_UpdateAppEndpoint() {
 	require.NoError(s.T(), err)
 	require.Equal(s.T(), dbEndpoint.TargetURL, endpointURL)
 	require.Equal(s.T(), dbEndpoint.Secret, secret)
-	require.Len(s.T(), dbEndpoint.Events, num)
 }
 
 func (s *ApplicationIntegrationTestSuite) Test_GetAppEndpoint() {
@@ -402,7 +401,7 @@ func (s *ApplicationIntegrationTestSuite) Test_GetAppEndpoint() {
 
 	// Just Before.
 	app, _ := testdb.SeedApplication(s.DB, s.DefaultGroup, appID, "", false)
-	endpoint, _ := testdb.SeedEndpoint(s.DB, app, s.DefaultGroup.UID, []string{"*"})
+	endpoint, _ := testdb.SeedEndpoint(s.DB, app, s.DefaultGroup.UID)
 
 	// Arrange Request
 	url := fmt.Sprintf("/api/v1/applications/%s/endpoints/%s", appID, endpoint.UID)
@@ -460,7 +459,7 @@ func (s *ApplicationIntegrationTestSuite) Test_DeleteAppEndpoint() {
 
 	// Just Before.
 	app, _ := testdb.SeedApplication(s.DB, s.DefaultGroup, appID, "", false)
-	endpoint, _ := testdb.SeedEndpoint(s.DB, app, s.DefaultGroup.UID, []string{"*"})
+	endpoint, _ := testdb.SeedEndpoint(s.DB, app, s.DefaultGroup.UID)
 
 	// Arrange Request.
 	url := fmt.Sprintf("/api/v1/applications/%s/endpoints/%s", appID, endpoint.UID)

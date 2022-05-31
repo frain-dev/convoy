@@ -4,7 +4,9 @@
 package server
 
 import (
+	"fmt"
 	"net/http"
+	"net/http/httptest"
 
 	"github.com/frain-dev/convoy/config"
 	"github.com/frain-dev/convoy/datastore"
@@ -54,10 +56,10 @@ func (i *IngestIntegrationTestSuite) Test_IngestEvent_BadMaskID() {
 	w := httptest.NewRecorder()
 
 	// Act.
-	s.Router.ServeHTTP(w, req)
+	i.Router.ServeHTTP(w, req)
 
 	// Assert.
-	require.Equal(s.T(), expectedStatusCode, w.Code)
+	require.Equal(i.T(), expectedStatusCode, w.Code)
 }
 
 func (i *IngestIntegrationTestSuite) Test_IngestEvent_BadRequest() {

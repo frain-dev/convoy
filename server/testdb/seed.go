@@ -65,7 +65,7 @@ func SeedMultipleApplications(db datastore.DatabaseClient, g *datastore.Group, c
 	return nil
 }
 
-func SeedEndpoint(db datastore.DatabaseClient, app *datastore.Application, groupID string, events []string) (*datastore.Endpoint, error) {
+func SeedEndpoint(db datastore.DatabaseClient, app *datastore.Application, groupID string) (*datastore.Endpoint, error) {
 	endpoint := &datastore.Endpoint{
 		UID:            uuid.New().String(),
 		DocumentStatus: datastore.ActiveDocumentStatus,
@@ -220,7 +220,7 @@ func SeedEvent(db datastore.DatabaseClient, app *datastore.Application, groupID 
 }
 
 // SeedEventDelivery creates a random event delivery for integration tests.
-func SeedEventDelivery(db datastore.DatabaseClient, app *datastore.Application, event *datastore.Event, endpoint *datastore.Endpoint, groupID string, uid string, status datastore.EventDeliveryStatus) (*datastore.EventDelivery, error) {
+func SeedEventDelivery(db datastore.DatabaseClient, app *datastore.Application, event *datastore.Event, endpoint *datastore.Endpoint, groupID string, uid string, status datastore.EventDeliveryStatus, subcription *datastore.Subscription) (*datastore.EventDelivery, error) {
 	if util.IsStringEmpty(uid) {
 		uid = uuid.New().String()
 	}
@@ -231,6 +231,8 @@ func SeedEventDelivery(db datastore.DatabaseClient, app *datastore.Application, 
 		EndpointID:     endpoint.UID,
 		Status:         status,
 		AppID:          app.UID,
+		SubscriptionID: subcription.UID,
+		GroupID:        groupID,
 		CreatedAt:      primitive.NewDateTimeFromTime(time.Now()),
 		UpdatedAt:      primitive.NewDateTimeFromTime(time.Now()),
 		DocumentStatus: datastore.ActiveDocumentStatus,
@@ -274,6 +276,49 @@ func SeedSource(db datastore.DatabaseClient, g *datastore.Group, uid string) (*d
 	}
 
 	return source, nil
+}
+
+func SeedSubscription(db datastore.DatabaseClient,
+	app *datastore.Application,
+	g *datastore.Group,
+	uid string,
+	groupType datastore.GroupType,
+	source *datastore.Source,
+	endpoint *datastore.Endpoint,
+	retryConfig *datastore.RetryConfiguration,
+	alertConfig *datastore.AlertConfiguration,
+	filterConfig *datastore.FilterConfiguration,
+) (*datastore.Subscription, error) {
+	if util.IsStringEmpty(uid) {
+		uid = uuid.New().String()
+	}
+
+	subscription := &datastore.Subscription{
+		UID:        uid,
+		GroupID:    g.UID,
+		Name:       "",
+		Type:       string(groupType),
+		AppID:      app.UID,
+		SourceID:   source.UID,
+		EndpointID: endpoint.UID,
+
+		RetryConfig:  retryConfig,
+		AlertConfig:  alertConfig,
+		FilterConfig: filterConfig,
+
+		CreatedAt: primitive.NewDateTimeFromTime(time.Now()),
+		UpdatedAt: primitive.NewDateTimeFromTime(time.Now()),
+
+		Status:         datastore.ActiveEndpointStatus,
+		DocumentStatus: datastore.ActiveDocumentStatus,
+	}
+
+	err := db.SubRepo().CreateSubscription(context.TODO(), g.UID, subscription)
+	if err != nil {
+		return nil, err
+	}
+
+	return subscription, nil
 }
 
 // PurgeDB is run after every test run and it's used to truncate the DB to have
