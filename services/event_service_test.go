@@ -479,6 +479,75 @@ func TestEventService_GetAppEvent(t *testing.T) {
 	}
 }
 
+func TestEventService_ReplayAppEvent(t *testing.T) {
+	ctx := context.Background()
+	type args struct {
+		ctx   context.Context
+		event *datastore.Event
+		g     *datastore.Group
+	}
+	tests := []struct {
+		name        string
+		args        args
+		dbFn        func(es *EventService)
+		wantErr     bool
+		wantErrCode int
+		wantErrMsg  string
+	}{
+		{
+			name: "should_replay_app_event",
+			args: args{
+				ctx:   ctx,
+				event: &datastore.Event{UID: "123"},
+				g:     &datastore.Group{UID: "123", Name: "test_group"},
+			},
+			dbFn: func(es *EventService) {
+				eq, _ := es.createEventQueue.(*mocks.MockQueuer)
+				eq.EXPECT().Publish(gomock.Any(), convoy.TaskName("test_group-CreateEventProcessor"), gomock.Any(), gomock.Any()).
+					Times(1).Return(nil)
+			},
+			wantErr: false,
+		},
+		{
+			name: "should_fail_to_replay_app_event",
+			args: args{
+				ctx:   ctx,
+				event: &datastore.Event{UID: "123"},
+				g:     &datastore.Group{UID: "123", Name: "test_group"},
+			},
+			dbFn: func(es *EventService) {
+				eq, _ := es.createEventQueue.(*mocks.MockQueuer)
+				eq.EXPECT().Publish(gomock.Any(), convoy.TaskName("test_group-CreateEventProcessor"), gomock.Any(), gomock.Any()).
+					Times(1).Return(errors.New("failed"))
+			},
+			wantErr:     true,
+			wantErrCode: http.StatusBadRequest,
+			wantErrMsg:  "failed to write event to queue",
+		},
+	}
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			ctrl := gomock.NewController(t)
+			defer ctrl.Finish()
+			es := provideEventService(ctrl)
+
+			if tc.dbFn != nil {
+				tc.dbFn(es)
+			}
+
+			err := es.ReplayAppEvent(tc.args.ctx, tc.args.event, tc.args.g)
+			if tc.wantErr {
+				require.NotNil(t, err)
+				require.Equal(t, tc.wantErrCode, err.(*ServiceError).ErrCode())
+				require.Equal(t, tc.wantErrMsg, err.(*ServiceError).Error())
+				return
+			}
+
+			require.Nil(t, err)
+		})
+	}
+}
+
 func TestEventService_GetEventDelivery(t *testing.T) {
 	ctx := context.Background()
 

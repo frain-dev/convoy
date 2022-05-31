@@ -456,6 +456,7 @@ func requireGroup(groupRepo datastore.GroupRepository, cache cache.Cache) func(n
 					}
 				}
 			} else {
+				// TODO(all): maybe we should only use default-group if require_auth is false?
 				groupCacheKey := convoy.GroupsCacheKey.Get("default-group").String()
 				err = cache.Get(r.Context(), groupCacheKey, &group)
 				if err != nil {

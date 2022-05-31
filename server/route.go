@@ -125,6 +125,7 @@ func buildRoutes(app *applicationHandler) http.Handler {
 				eventRouter.Route("/{eventID}", func(eventSubRouter chi.Router) {
 					eventSubRouter.Use(requireEvent(app.eventRepo))
 					eventSubRouter.Get("/", app.GetAppEvent)
+					eventSubRouter.Put("/replay", app.ReplayAppEvent)
 				})
 			})
 
@@ -272,6 +273,7 @@ func buildRoutes(app *applicationHandler) http.Handler {
 			eventRouter.Route("/{eventID}", func(eventSubRouter chi.Router) {
 				eventSubRouter.Use(requireEvent(app.eventRepo))
 				eventSubRouter.Get("/", app.GetAppEvent)
+				eventSubRouter.Put("/replay", app.ReplayAppEvent)
 			})
 		})
 
@@ -349,6 +351,7 @@ func buildRoutes(app *applicationHandler) http.Handler {
 			eventRouter.Route("/{eventID}", func(eventSubRouter chi.Router) {
 				eventSubRouter.Use(requireEvent(app.eventRepo))
 				eventSubRouter.Get("/", app.GetAppEvent)
+				eventSubRouter.Put("/replay", app.ReplayAppEvent)
 			})
 		})
 
