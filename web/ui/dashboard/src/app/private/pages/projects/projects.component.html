@@ -5,7 +5,7 @@
 			<p class="page__head--sub">All your project's summary at a glance</p>
 		</div>
 	</div>
-	<ul class="grid grid__col-3--smaller" *ngIf="isLoadingProjects">
+	<ul class="grid projects-grid" *ngIf="isLoadingProjects">
 		<li *ngFor="let index of projectsLoaderIndex">
 			<div class="card rounded__8px border__all bg__white">
 				<div class="padding-x__24px padding-top__24px padding-bottom__14px border__bottom">
@@ -26,7 +26,7 @@
 		</li>
 	</ul>
 
-	<ul class="grid grid__col-3--smaller" *ngIf="!isLoadingProjects">
+	<ul class="grid projects-grid" *ngIf="!isLoadingProjects">
 		<li *ngFor="let project of projects">
 			<a [routerLink]="'/projects/' + project.uid" class="card rounded__8px bg__white display__block">
 				<div class="padding-x__24px padding-y__16px border__bottom flex flex__align-items-center flex__justify-between">
