@@ -1,6 +1,7 @@
 <div class="page layout__sidebar flex padding-left__24px padding-right__24px padding-bottom__40px">
 	<aside class="padding-top__40px border__right position__relative" [ngClass]="{ full: shouldShowFullSideBar }">
 		<button
+			[disabled]="screenWidth < 900"
 			class="sidebar--button button__clear rounded__50px border__all width__32px height__32px flex flex__align-items-center flex__justify-center position__absolute position--top__8px bg__white"
 			(click)="shouldShowFullSideBar = !shouldShowFullSideBar"
 		>

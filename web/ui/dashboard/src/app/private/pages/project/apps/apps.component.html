@@ -1,5 +1,5 @@
-<h1 class="font__12px font__weight-500 flex flex__align-items-center">
-	PROJECTS
+<h1 class="font__12px font__weight-500 flex flex__align-items-center text__uppercase">
+	<span routerLink="/projects" class="font__weight-500 pointer-cursor">Projects</span>
 	<svg width="16" height="16" class="margin-x__4px">
 		<use xlink:href="#arrow-right-icon"></use>
 	</svg>
@@ -7,7 +7,7 @@
 	<svg width="16" height="16" class="margin-x__4px">
 		<use xlink:href="#arrow-right-icon"></use>
 	</svg>
-	<span class="color__primary text__uppercase">Apps</span>
+	<span class="color__primary font__weight-500">Apps</span>
 </h1>
 <div class="flex flex__align-items-center flex__justify-between margin-bottom__24px margin-top__18px">
 	<div class="flex flex__align-items-center">
@@ -78,11 +78,11 @@
 						</tr>
 						<tr *ngFor="let app of apps?.content; let index = index" [id]="'app' + i" [routerLink]="['./' + app.uid]" >
 							<td>
-								<div class="has-retry">
+								<div>
 									<div [class]="app.is_disabled ? 'tag no-margin' : 'tag tag--Success no-margin'">{{ app.is_disabled ? 'Disabled' : 'Enabled' }}</div>
 								</div>
 							</td>
-							<td class="has-long-text">
+							<td>
 								<div>{{ app.name }}</div>
 							</td>
 							<td>

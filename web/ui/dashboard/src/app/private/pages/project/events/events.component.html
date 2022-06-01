@@ -1,5 +1,5 @@
-<h1 class="font__12px font__weight-500 flex flex__align-items-center">
-	PROJECTS
+<h1 class="font__12px font__weight-500 flex flex__align-items-center text__uppercase">
+	<span routerLink="/projects" class="font__weight-500 pointer-cursor">Projects</span>
 	<svg width="16" height="16" class="margin-x__4px">
 		<use xlink:href="#arrow-right-icon"></use>
 	</svg>
@@ -7,7 +7,7 @@
 	<svg width="16" height="16" class="margin-x__4px">
 		<use xlink:href="#arrow-right-icon"></use>
 	</svg>
-	<span class="color__primary text__uppercase">Events</span>
+	<span class="color__primary font__weight-500">Events</span>
 </h1>
 <div class="filter without-padding" [ngClass]="{ 'show-calendar': showFilterCalendar }">
 	<date-filter (selectedDateRange)="getSelectedDateRange($event)"></date-filter>
@@ -59,7 +59,7 @@
 	</ul>
 
 	<div class="border__top padding-all__30px">
-		<canvas id="dahboard_events_chart" width="400" height="200"></canvas>
+		<canvas id="dahboard_events_chart" width="200" height="100"></canvas>
 	</div>
 </div>
 

@@ -1,5 +1,5 @@
 import { Location } from '@angular/common';
-import { Component, OnInit } from '@angular/core';
+import { Component, HostListener, OnInit } from '@angular/core';
 import { FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
 import { APP } from 'src/app/models/app.model';
@@ -21,7 +21,8 @@ export class AppDetailsComponent implements OnInit {
 	isCreatingNewEndpoint: boolean = false;
 	loadingAppPotalToken: boolean = false;
 	isLoadingAppDetails: boolean = false;
-
+	shouldRenderSmallSize:boolean = false;
+	screenWidth = window.innerWidth;
 	addNewEndpointForm: FormGroup = this.formBuilder.group({
 		url: ['', Validators.required],
 		events: [''],
@@ -41,6 +42,7 @@ export class AppDetailsComponent implements OnInit {
 
 	ngOnInit() {
 		this.getAppId();
+		this.checkScreenSize();
 	}
 
 	goBack() {
@@ -136,5 +138,15 @@ export class AppDetailsComponent implements OnInit {
 	loadEventsFromAppsTable(appId: string) {
 		const projectId = this.appDetailsService.projectId;
 		this.router.navigate(['/projects/' + projectId + '/events'], { queryParams: { eventsApp: appId } });
+	}
+
+	checkScreenSize() {
+		this.screenWidth > 900 ? (this.shouldRenderSmallSize = false) : (this.shouldRenderSmallSize = true);
+	}
+
+	@HostListener('window:resize', ['$event'])
+	onWindowResize() {
+		this.screenWidth = window.innerWidth;
+		this.checkScreenSize()
 	}
 }

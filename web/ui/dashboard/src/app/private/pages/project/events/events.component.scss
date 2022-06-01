@@ -20,7 +20,8 @@
 }
 .event {
 	&__table {
-		width: calc(1087px - 380px);
+		max-width: calc(1087px - 380px);
+		width: 100%;
 		border-right: 1px solid var(--line-border);
 		height: 100%;
 		overflow: hidden;
@@ -30,7 +31,8 @@
 		}
 	}
 	&__details {
-		width: 380px;
+		max-width: 380px;
+		width: 100%;
 		max-height: calc(100vh - 950px);
 		min-height: 707px;
 		overflow: auto;

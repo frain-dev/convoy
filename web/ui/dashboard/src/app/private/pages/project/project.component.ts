@@ -1,4 +1,4 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, HostListener, OnInit } from '@angular/core';
 import { ActivatedRoute } from '@angular/router';
 import { ProjectService } from './project.service';
 
@@ -8,6 +8,7 @@ import { ProjectService } from './project.service';
 	styleUrls: ['./project.component.scss']
 })
 export class ProjectComponent implements OnInit {
+	screenWidth = window.innerWidth;
 	sideBarItems = [
 		{
 			name: 'Events',
@@ -36,5 +37,17 @@ export class ProjectComponent implements OnInit {
 		this.projectService.activeProject = this.route.snapshot.params.id;
 	}
 
-	ngOnInit(): void {}
+	ngOnInit() {
+		this.checkScreenSize();
+	}
+
+	checkScreenSize() {
+		this.screenWidth > 900 ? (this.shouldShowFullSideBar = true) : (this.shouldShowFullSideBar = false);
+	}
+
+	@HostListener('window:resize', ['$event'])
+	onWindowResize() {
+		this.screenWidth = window.innerWidth;
+		this.checkScreenSize()
+	}
 }
