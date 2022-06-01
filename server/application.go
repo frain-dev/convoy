@@ -65,7 +65,7 @@ func newApplicationHandler(
 	searcher searcher.Searcher,
 ) *applicationHandler {
 
-	es := services.NewEventService(appRepo, eventRepo, eventDeliveryRepo, eventQueue, createEventQueue, cache, searcher)
+	es := services.NewEventService(appRepo, eventRepo, eventDeliveryRepo, eventQueue, createEventQueue, cache, searcher, subRepo)
 	gs := services.NewGroupService(appRepo, groupRepo, eventRepo, eventDeliveryRepo, limiter)
 	as := services.NewAppService(appRepo, eventRepo, eventDeliveryRepo, eventQueue, cache)
 	ss := services.NewSecurityService(groupRepo, apiKeyRepo)

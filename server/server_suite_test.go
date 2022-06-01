@@ -1,6 +1,3 @@
-//go:build integration
-// +build integration
-
 package server
 
 import (
@@ -31,11 +28,13 @@ import (
 
 // TEST HELPERS.
 func getMongoDSN() string {
-	return os.Getenv("TEST_MONGO_DSN")
+	return "mongodb://localhost:27017/test_db"
+	// return os.Getenv("TEST_MONGO_DSN")
 }
 
 func getRedisDSN() string {
-	return os.Getenv("TEST_REDIS_DSN")
+	return "redis://localhost:6379"
+	// return os.Getenv("TEST_REDIS_DSN")
 }
 
 func getConfig() config.Configuration {
@@ -98,10 +97,11 @@ func buildApplication() *applicationHandler {
 	limiter := nooplimiter.NewNoopLimiter()
 	searcher := noopsearcher.NewNoopSearcher()
 	tracer = nil
+	subRepo := db.SubRepo()
 
 	return newApplicationHandler(
 		eventRepo, eventDeliveryRepo, appRepo,
-		groupRepo, apiKeyRepo, sourceRepo, eventQueue, createEventQueue,
+		groupRepo, apiKeyRepo, subRepo, sourceRepo, eventQueue, createEventQueue,
 		logger, tracer, cache, limiter, searcher,
 	)
 }

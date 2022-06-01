@@ -11,6 +11,10 @@ type subscriptionRepo struct {
 	client *badgerhold.Store
 }
 
+func (*subscriptionRepo) UpdateSubscriptionStatus(context.Context, string, string, datastore.SubscriptionStatus) error {
+	return nil
+}
+
 func (*subscriptionRepo) FindSubscriptionBySourceIDs(context.Context, string, string) ([]datastore.Subscription, error) {
 	return nil, nil
 }

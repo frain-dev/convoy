@@ -19,7 +19,7 @@ func sendNotification(
 	eventDelivery *datastore.EventDelivery,
 	g *datastore.Group,
 	smtpCfg *config.SMTPConfiguration,
-	status datastore.EndpointStatus,
+	status datastore.SubscriptionStatus,
 	failure bool,
 ) error {
 	app, err := appRepo.FindApplicationByID(ctx, eventDelivery.AppID)

@@ -7,12 +7,13 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"github.com/frain-dev/convoy/server/testdb"
-	"github.com/stretchr/testify/suite"
 	"net/http"
 	"net/http/httptest"
 	"testing"
 	"time"
+
+	"github.com/frain-dev/convoy/server/testdb"
+	"github.com/stretchr/testify/suite"
 
 	"github.com/frain-dev/convoy/config"
 	"github.com/frain-dev/convoy/datastore"
@@ -90,15 +91,11 @@ func (s *DashboardIntegrationTestSuite) TestGetDashboardSummary() {
 			MatchedEndpoints: 1,
 			ProviderID:       "provider_id",
 			Data:             json.RawMessage(`{"data":"12345"}`),
-			AppMetadata: &datastore.AppMetadata{
-				UID:          application.UID,
-				Title:        application.Title,
-				GroupID:      group.UID,
-				SupportEmail: application.SupportEmail,
-			},
-			CreatedAt:      primitive.NewDateTimeFromTime(time.Date(2021, time.January, 1, 1, 1, 1, 0, time.UTC)),
-			UpdatedAt:      primitive.NewDateTimeFromTime(time.Date(2021, time.January, 1, 1, 1, 1, 0, time.UTC)),
-			DocumentStatus: datastore.ActiveDocumentStatus,
+			GroupID:          group.UID,
+			AppID:            application.UID,
+			CreatedAt:        primitive.NewDateTimeFromTime(time.Date(2021, time.January, 1, 1, 1, 1, 0, time.UTC)),
+			UpdatedAt:        primitive.NewDateTimeFromTime(time.Date(2021, time.January, 1, 1, 1, 1, 0, time.UTC)),
+			DocumentStatus:   datastore.ActiveDocumentStatus,
 		},
 		{
 			UID:              uuid.New().String(),
@@ -106,15 +103,11 @@ func (s *DashboardIntegrationTestSuite) TestGetDashboardSummary() {
 			MatchedEndpoints: 1,
 			ProviderID:       "provider_id",
 			Data:             json.RawMessage(`{"data":"12345"}`),
-			AppMetadata: &datastore.AppMetadata{
-				UID:          application.UID,
-				Title:        application.Title,
-				GroupID:      group.UID,
-				SupportEmail: application.SupportEmail,
-			},
-			CreatedAt:      primitive.NewDateTimeFromTime(time.Date(2021, time.January, 10, 1, 1, 1, 0, time.UTC)),
-			UpdatedAt:      primitive.NewDateTimeFromTime(time.Date(2021, time.January, 10, 1, 1, 1, 0, time.UTC)),
-			DocumentStatus: datastore.ActiveDocumentStatus,
+			GroupID:          group.UID,
+			AppID:            application.UID,
+			CreatedAt:        primitive.NewDateTimeFromTime(time.Date(2021, time.January, 10, 1, 1, 1, 0, time.UTC)),
+			UpdatedAt:        primitive.NewDateTimeFromTime(time.Date(2021, time.January, 10, 1, 1, 1, 0, time.UTC)),
+			DocumentStatus:   datastore.ActiveDocumentStatus,
 		},
 		{
 			UID:              uuid.New().String(),
@@ -122,15 +115,11 @@ func (s *DashboardIntegrationTestSuite) TestGetDashboardSummary() {
 			MatchedEndpoints: 1,
 			ProviderID:       "provider_id",
 			Data:             json.RawMessage(`{"data":"12345"}`),
-			AppMetadata: &datastore.AppMetadata{
-				UID:          application.UID,
-				Title:        application.Title,
-				GroupID:      group.UID,
-				SupportEmail: application.SupportEmail,
-			},
-			CreatedAt:      primitive.NewDateTimeFromTime(time.Date(2022, time.March, 20, 1, 1, 1, 0, time.UTC)),
-			UpdatedAt:      primitive.NewDateTimeFromTime(time.Date(2022, time.March, 20, 1, 1, 1, 0, time.UTC)),
-			DocumentStatus: datastore.ActiveDocumentStatus,
+			GroupID:          group.UID,
+			AppID:            application.UID,
+			CreatedAt:        primitive.NewDateTimeFromTime(time.Date(2022, time.March, 20, 1, 1, 1, 0, time.UTC)),
+			UpdatedAt:        primitive.NewDateTimeFromTime(time.Date(2022, time.March, 20, 1, 1, 1, 0, time.UTC)),
+			DocumentStatus:   datastore.ActiveDocumentStatus,
 		},
 		{
 			UID:              uuid.New().String(),
@@ -138,15 +127,11 @@ func (s *DashboardIntegrationTestSuite) TestGetDashboardSummary() {
 			MatchedEndpoints: 1,
 			ProviderID:       "provider_id",
 			Data:             json.RawMessage(`{"data":"12345"}`),
-			AppMetadata: &datastore.AppMetadata{
-				UID:          application.UID,
-				Title:        application.Title,
-				GroupID:      group.UID,
-				SupportEmail: application.SupportEmail,
-			},
-			CreatedAt:      primitive.NewDateTimeFromTime(time.Date(2022, time.March, 20, 1, 1, 1, 0, time.UTC)),
-			UpdatedAt:      primitive.NewDateTimeFromTime(time.Date(2022, time.March, 20, 1, 1, 1, 0, time.UTC)),
-			DocumentStatus: datastore.ActiveDocumentStatus,
+			GroupID:          group.UID,
+			AppID:            application.UID,
+			CreatedAt:        primitive.NewDateTimeFromTime(time.Date(2022, time.March, 20, 1, 1, 1, 0, time.UTC)),
+			UpdatedAt:        primitive.NewDateTimeFromTime(time.Date(2022, time.March, 20, 1, 1, 1, 0, time.UTC)),
+			DocumentStatus:   datastore.ActiveDocumentStatus,
 		},
 		{
 			UID:              uuid.New().String(),
@@ -154,15 +139,11 @@ func (s *DashboardIntegrationTestSuite) TestGetDashboardSummary() {
 			MatchedEndpoints: 1,
 			ProviderID:       "provider_id",
 			Data:             json.RawMessage(`{"data":"12345"}`),
-			AppMetadata: &datastore.AppMetadata{
-				UID:          application.UID,
-				Title:        application.Title,
-				GroupID:      group.UID,
-				SupportEmail: application.SupportEmail,
-			},
-			CreatedAt:      primitive.NewDateTimeFromTime(time.Date(2022, time.March, 20, 1, 1, 1, 0, time.UTC)),
-			UpdatedAt:      primitive.NewDateTimeFromTime(time.Date(2022, time.March, 20, 1, 1, 1, 0, time.UTC)),
-			DocumentStatus: datastore.ActiveDocumentStatus,
+			GroupID:          group.UID,
+			AppID:            application.UID,
+			CreatedAt:        primitive.NewDateTimeFromTime(time.Date(2022, time.March, 20, 1, 1, 1, 0, time.UTC)),
+			UpdatedAt:        primitive.NewDateTimeFromTime(time.Date(2022, time.March, 20, 1, 1, 1, 0, time.UTC)),
+			DocumentStatus:   datastore.ActiveDocumentStatus,
 		},
 		{
 			UID:              uuid.New().String(),
@@ -170,15 +151,11 @@ func (s *DashboardIntegrationTestSuite) TestGetDashboardSummary() {
 			MatchedEndpoints: 1,
 			ProviderID:       "provider_id",
 			Data:             json.RawMessage(`{"data":"12345"}`),
-			AppMetadata: &datastore.AppMetadata{
-				UID:          application.UID,
-				Title:        application.Title,
-				GroupID:      group.UID,
-				SupportEmail: application.SupportEmail,
-			},
-			CreatedAt:      primitive.NewDateTimeFromTime(time.Date(2022, time.March, 20, 1, 1, 1, 0, time.UTC)),
-			UpdatedAt:      primitive.NewDateTimeFromTime(time.Date(2022, time.March, 20, 1, 1, 1, 0, time.UTC)),
-			DocumentStatus: datastore.ActiveDocumentStatus,
+			GroupID:          group.UID,
+			AppID:            application.UID,
+			CreatedAt:        primitive.NewDateTimeFromTime(time.Date(2022, time.March, 20, 1, 1, 1, 0, time.UTC)),
+			UpdatedAt:        primitive.NewDateTimeFromTime(time.Date(2022, time.March, 20, 1, 1, 1, 0, time.UTC)),
+			DocumentStatus:   datastore.ActiveDocumentStatus,
 		},
 	}
 

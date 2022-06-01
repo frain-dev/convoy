@@ -21,19 +21,17 @@ func createSubscription() *datastore.Subscription {
 		GroupID:    "group-id-1",
 		SourceID:   "source-id-1",
 		EndpointID: "endpoint-id-1",
-		AlertConfig: datastore.AlertConfiguration{
-			Count: 10,
-			Time:  "1m",
+		AlertConfig: &datastore.AlertConfiguration{
+			Count:     10,
+			Threshold: "1m",
 		},
-		RetryConfig: datastore.RetryConfiguration{
-			Type: "linear",
-			Linear: datastore.LinearStrategyConfiguration{
-				IntervalSeconds: 10,
-				RetryLimit:      10,
-			},
+		RetryConfig: &datastore.RetryConfiguration{
+			Type:       "linear",
+			Duration:   "1m",
+			RetryCount: 10,
 		},
-		FilterConfig: datastore.FilterConfiguration{
-			Events: []string{"some.event"},
+		FilterConfig: &datastore.FilterConfiguration{
+			EventTypes: []string{"some.event"},
 		},
 		DocumentStatus: datastore.ActiveDocumentStatus,
 	}
