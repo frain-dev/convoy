@@ -56,6 +56,14 @@ type OrganisationRepository interface {
 	FetchOrganisationByID(context.Context, string) (*Organisation, error)
 }
 
+type OrganisationMemberRepository interface {
+	LoadOrganisationMembersPaged(ctx context.Context, organisationID string, pageable Pageable) ([]OrganisationMember, PaginationData, error)
+	CreateOrganisationMember(ctx context.Context, member *OrganisationMember) error
+	UpdateOrganisationMember(ctx context.Context, member *OrganisationMember) error
+	DeleteOrganisationMember(ctx context.Context, memberID string) error
+	FetchOrganisationMemberByID(ctx context.Context, memberID string) (*OrganisationMember, error)
+}
+
 type ApplicationRepository interface {
 	CreateApplication(context.Context, *Application, string) error
 	LoadApplicationsPaged(context.Context, string, string, Pageable) ([]Application, PaginationData, error)
