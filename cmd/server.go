@@ -159,6 +159,7 @@ func StartConvoyServer(a *app, cfg config.Configuration, withWorkers bool) error
 		a.applicationRepo,
 		a.apiKeyRepo,
 		a.groupRepo,
+		a.orgRepo,
 		a.sourceRepo,
 		a.userRepo,
 		a.eventQueue,

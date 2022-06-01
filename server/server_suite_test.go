@@ -92,6 +92,7 @@ func buildApplication() *applicationHandler {
 	eventDeliveryRepo := db.EventDeliveryRepo()
 	apiKeyRepo := db.APIRepo()
 	sourceRepo := db.SourceRepo()
+	orgRepo := db.OrganisationRepo()
 	userRepo := db.UserRepo()
 	eventQueue := redisqueue.NewQueue(qOpts)
 	createEventQueue := redisqueue.NewQueue(cOpts)
@@ -103,7 +104,7 @@ func buildApplication() *applicationHandler {
 
 	return newApplicationHandler(
 		eventRepo, eventDeliveryRepo, appRepo,
-		groupRepo, apiKeyRepo, sourceRepo, userRepo, eventQueue, createEventQueue,
+		groupRepo, apiKeyRepo, sourceRepo, orgRepo, userRepo, eventQueue, createEventQueue,
 		logger, tracer, cache, limiter, searcher,
 	)
 }

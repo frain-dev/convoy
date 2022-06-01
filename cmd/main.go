@@ -123,6 +123,7 @@ type app struct {
 	applicationRepo   datastore.ApplicationRepository
 	eventRepo         datastore.EventRepository
 	eventDeliveryRepo datastore.EventDeliveryRepository
+	orgRepo           datastore.OrganisationRepository
 	sourceRepo        datastore.SourceRepository
 	userRepo          datastore.UserRepository
 	eventQueue        queue.Queuer

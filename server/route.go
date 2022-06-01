@@ -223,6 +223,21 @@ func buildRoutes(app *applicationHandler) http.Handler {
 			})
 		})
 
+		uiRouter.Route("/organisations", func(orgRouter chi.Router) {
+			orgRouter.Use(requirePermission(auth.RoleAdmin))
+
+			orgRouter.Post("/", app.CreateOrganisation)
+			orgRouter.With(pagination).Get("/", app.GetOrganisationsPaged)
+
+			orgRouter.Route("/{orgID}", func(orgSubRouter chi.Router) {
+				orgSubRouter.Use(requireOrganisation(app.orgRepo))
+
+				orgSubRouter.Get("/", app.GetOrganisation)
+				orgSubRouter.Put("/", app.UpdateOrganisation)
+				orgSubRouter.Delete("/", app.DeleteOrganisation)
+			})
+		})
+
 		uiRouter.Route("/apps", func(appRouter chi.Router) {
 			appRouter.Use(requireGroup(app.groupRepo, app.cache))
 			appRouter.Use(rateLimitByGroupID(app.limiter))
@@ -394,7 +409,8 @@ func New(cfg config.Configuration,
 	eventDeliveryRepo datastore.EventDeliveryRepository,
 	appRepo datastore.ApplicationRepository,
 	apiKeyRepo datastore.APIKeyRepository,
-	orgRepo datastore.GroupRepository,
+	groupRepo datastore.GroupRepository,
+	orgRepo datastore.OrganisationRepository,
 	sourceRepo datastore.SourceRepository,
 	userRepo datastore.UserRepository,
 	eventQueue queue.Queuer,
@@ -408,9 +424,10 @@ func New(cfg config.Configuration,
 		eventRepo,
 		eventDeliveryRepo,
 		appRepo,
-		orgRepo,
+		groupRepo,
 		apiKeyRepo,
 		sourceRepo,
+		orgRepo,
 		userRepo,
 		eventQueue,
 		createEventQueue,

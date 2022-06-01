@@ -17,11 +17,12 @@ import (
 )
 
 const (
-	GroupCollection  = "groups"
-	AppCollections   = "applications"
-	EventCollection  = "events"
-	SourceCollection = "sources"
-	UserCollection   = "users"
+	GroupCollection        = "groups"
+	OrganisationCollection = "organisations"
+	AppCollections         = "applications"
+	EventCollection        = "events"
+	SourceCollection       = "sources"
+	UserCollection         = "users"
 )
 
 type Client struct {
@@ -32,6 +33,7 @@ type Client struct {
 	applicationRepo   datastore.ApplicationRepository
 	eventDeliveryRepo datastore.EventDeliveryRepository
 	sourceRepo        datastore.SourceRepository
+	orgRepo           datastore.OrganisationRepository
 	userRepo          datastore.UserRepository
 }
 
@@ -71,6 +73,7 @@ func New(cfg config.Configuration) (datastore.DatabaseClient, error) {
 		eventRepo:         NewEventRepository(conn),
 		eventDeliveryRepo: NewEventDeliveryRepository(conn),
 		sourceRepo:        NewSourceRepo(conn),
+		orgRepo:           NewOrgRepo(conn),
 		userRepo:          NewUserRepo(conn),
 	}
 
@@ -113,6 +116,10 @@ func (c *Client) EventDeliveryRepo() datastore.EventDeliveryRepository {
 
 func (c *Client) SourceRepo() datastore.SourceRepository {
 	return c.sourceRepo
+}
+
+func (c *Client) OrganisationRepo() datastore.OrganisationRepository {
+	return c.orgRepo
 }
 
 func (c *Client) UserRepo() datastore.UserRepository {
