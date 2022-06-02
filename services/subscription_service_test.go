@@ -367,3 +367,90 @@ func TestSubscription_LoadSubscriptionsPaged(t *testing.T) {
 		})
 	}
 }
+
+func TestSubscription_DeleteSubscription(t *testing.T) {
+	ctx := context.Background()
+
+	type args struct {
+		ctx             context.Context
+		group           *datastore.Group
+		newSubscription *datastore.Subscription
+	}
+
+	tests := []struct {
+		name        string
+		args        args
+		dbFn        func(so *SubcriptionService)
+		wantErr     bool
+		wantErrCode int
+		wantErrMsg  string
+	}{
+		{
+			name: "should delete subscription",
+			args: args{
+				ctx: ctx,
+				newSubscription: &datastore.Subscription{
+					Name:       "sub 1",
+					Type:       "incoming",
+					AppID:      "app-id-1",
+					SourceID:   "source-id-1",
+					EndpointID: "endpoint-id-1",
+				},
+				group: &datastore.Group{UID: "12345"},
+			},
+			dbFn: func(ss *SubcriptionService) {
+				s, _ := ss.subRepo.(*mocks.MockSubscriptionRepository)
+				s.EXPECT().DeleteSubscription(gomock.Any(), gomock.Any(), gomock.Any()).
+					Times(1).
+					Return(nil)
+			},
+		},
+		{
+			name: "should fail to delete subscription",
+			args: args{
+				ctx: ctx,
+				newSubscription: &datastore.Subscription{
+					Name:       "sub 1",
+					Type:       "incoming",
+					AppID:      "app-id-1",
+					SourceID:   "source-id-1",
+					EndpointID: "endpoint-id-1",
+				},
+				group: &datastore.Group{
+					UID: "12345",
+				},
+			},
+			dbFn: func(ss *SubcriptionService) {
+				s, _ := ss.subRepo.(*mocks.MockSubscriptionRepository)
+				s.EXPECT().DeleteSubscription(gomock.Any(), gomock.Any(), gomock.Any()).
+					Times(1).
+					Return(errors.New("failed"))
+			},
+			wantErr:     true,
+			wantErrCode: http.StatusBadRequest,
+			wantErrMsg:  "failed to delete subscription",
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			ctrl := gomock.NewController(t)
+			defer ctrl.Finish()
+
+			ss := provideSubsctiptionService(ctrl)
+
+			if tc.dbFn != nil {
+				tc.dbFn(ss)
+			}
+
+			err := ss.DeleteSubscription(tc.args.ctx, tc.args.group.UID, tc.args.newSubscription)
+			if tc.wantErr {
+				require.NotNil(t, err)
+				require.Equal(t, tc.wantErrCode, err.(*ServiceError).ErrCode())
+				require.Equal(t, tc.wantErrMsg, err.(*ServiceError).Error())
+				return
+			}
+			require.Nil(t, err)
+		})
+	}
+}
