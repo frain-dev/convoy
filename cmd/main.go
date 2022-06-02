@@ -255,6 +255,7 @@ func preRun(app *app, db datastore.DatabaseClient) func(cmd *cobra.Command, args
 		app.eventRepo = db.EventRepo()
 		app.applicationRepo = db.AppRepo()
 		app.eventDeliveryRepo = db.EventDeliveryRepo()
+		app.orgRepo = db.OrganisationRepo()
 		app.sourceRepo = db.SourceRepo()
 		app.userRepo = db.UserRepo()
 
