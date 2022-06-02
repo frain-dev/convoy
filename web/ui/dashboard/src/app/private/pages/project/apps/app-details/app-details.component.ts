@@ -21,7 +21,7 @@ export class AppDetailsComponent implements OnInit {
 	isCreatingNewEndpoint: boolean = false;
 	loadingAppPotalToken: boolean = false;
 	isLoadingAppDetails: boolean = false;
-	shouldRenderSmallSize:boolean = false;
+	shouldRenderSmallSize: boolean = false;
 	screenWidth = window.innerWidth;
 	addNewEndpointForm: FormGroup = this.formBuilder.group({
 		url: ['', Validators.required],
@@ -141,12 +141,12 @@ export class AppDetailsComponent implements OnInit {
 	}
 
 	checkScreenSize() {
-		this.screenWidth > 900 ? (this.shouldRenderSmallSize = false) : (this.shouldRenderSmallSize = true);
+		this.screenWidth > 1010 ? (this.shouldRenderSmallSize = false) : (this.shouldRenderSmallSize = true);
 	}
 
 	@HostListener('window:resize', ['$event'])
 	onWindowResize() {
 		this.screenWidth = window.innerWidth;
-		this.checkScreenSize()
+		this.checkScreenSize();
 	}
 }
