@@ -1,6 +1,3 @@
-//go:build integration
-// +build integration
-
 package server
 
 import (
@@ -268,7 +265,7 @@ func (s *SourceIntegrationTestSuite) Test_DeleteSource() {
 
 	// Deep Assert.
 	_, err := s.DB.SourceRepo().FindSourceByID(context.Background(), s.DefaultGroup.UID, sourceID)
-	require.Error(s.T(), err, datastore.ErrSourceNotFound)
+	require.ErrorIs(s.T(), err, datastore.ErrSourceNotFound)
 }
 
 func TestSourceIntegrationTestSuite(t *testing.T) {
