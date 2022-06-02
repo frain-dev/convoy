@@ -22,6 +22,10 @@ type OrganisationInviteService struct {
 	orgInviteRepo datastore.OrganisationInviteRepository
 }
 
+func NewOrganisationInviteService(orgRepo datastore.OrganisationRepository, userRepo datastore.UserRepository, orgMemberRepo datastore.OrganisationMemberRepository, orgInviteRepo datastore.OrganisationInviteRepository) *OrganisationInviteService {
+	return &OrganisationInviteService{orgRepo: orgRepo, userRepo: userRepo, orgMemberRepo: orgMemberRepo, orgInviteRepo: orgInviteRepo}
+}
+
 func (oi *OrganisationInviteService) CreateOrganisationMemberInvite(ctx context.Context, org *datastore.Organisation, newIV *models.OrganisationInvite) (*datastore.OrganisationInvite, error) {
 	err := util.Validate(newIV)
 	if err != nil {

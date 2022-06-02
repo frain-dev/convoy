@@ -23,6 +23,11 @@ type Organisation struct {
 	Name string `json:"name" bson:"name" valid:"required~please provide a valid name"`
 }
 
+type OrganisationInvite struct {
+	InviteeEmail string    `json:"invitee_email" valid:"required~please provide a valid invitee email"`
+	Role         auth.Role `json:"role" bson:"role"`
+}
+
 type APIKey struct {
 	Name      string            `json:"name"`
 	Role      auth.Role         `json:"role"`
@@ -94,6 +99,15 @@ type Token struct {
 	AccessToken  string `json:"access_token" valid:"required~please provide an access token"`
 	RefreshToken string `json:"refresh_token" valid:"required~please provide a refresh token"`
 }
+
+type User struct {
+	FirstName string    `json:"first_name"`
+	LastName  string    `json:"last_name"`
+	Email     string    `json:"email"`
+	Password  string    `json:"password"`
+	Role      auth.Role `json:"role" bson:"role"`
+}
+
 type Application struct {
 	AppName         string `json:"name" bson:"name" valid:"required~please provide your appName"`
 	SupportEmail    string `json:"support_email" bson:"support_email" valid:"email~please provide a valid email"`

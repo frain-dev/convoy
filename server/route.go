@@ -224,7 +224,7 @@ func buildRoutes(app *applicationHandler) http.Handler {
 		})
 
 		uiRouter.Route("/organisations", func(orgRouter chi.Router) {
-			orgRouter.Use(requirePermission(auth.RoleAdmin))
+			orgRouter.Use(requireAuthUserMetadata())
 
 			orgRouter.Post("/", app.CreateOrganisation)
 			orgRouter.With(pagination).Get("/", app.GetOrganisationsPaged)
@@ -411,6 +411,8 @@ func New(cfg config.Configuration,
 	apiKeyRepo datastore.APIKeyRepository,
 	groupRepo datastore.GroupRepository,
 	orgRepo datastore.OrganisationRepository,
+	orgMemberRepo datastore.OrganisationMemberRepository,
+	orgInviteRepo datastore.OrganisationInviteRepository,
 	sourceRepo datastore.SourceRepository,
 	userRepo datastore.UserRepository,
 	eventQueue queue.Queuer,
@@ -428,6 +430,8 @@ func New(cfg config.Configuration,
 		apiKeyRepo,
 		sourceRepo,
 		orgRepo,
+		orgMemberRepo,
+		orgInviteRepo,
 		userRepo,
 		eventQueue,
 		createEventQueue,

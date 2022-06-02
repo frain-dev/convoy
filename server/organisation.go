@@ -1,6 +1,7 @@
 package server
 
 import (
+	"github.com/frain-dev/convoy/datastore"
 	"github.com/frain-dev/convoy/server/models"
 	"github.com/frain-dev/convoy/util"
 	"github.com/go-chi/render"
@@ -68,7 +69,15 @@ func (a *applicationHandler) CreateOrganisation(w http.ResponseWriter, r *http.R
 		return
 	}
 
-	organisation, err := a.organisationService.CreateOrganisation(r.Context(), &newOrg)
+	authUser := getAuthUserFromContext(r.Context())
+	user, ok := authUser.Metadata.(*datastore.User)
+	if !ok {
+		log.Error("failed to extract user metadata from authUser")
+		_ = render.Render(w, r, newErrorResponse(err.Error(), http.StatusBadRequest))
+		return
+	}
+
+	organisation, err := a.organisationService.CreateOrganisation(r.Context(), &newOrg, user)
 	if err != nil {
 		_ = render.Render(w, r, newServiceErrResponse(err))
 		return
