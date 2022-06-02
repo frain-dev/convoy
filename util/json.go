@@ -26,6 +26,8 @@ func JsonReMarshalString(s string) (string, error) {
 	return string(output), nil
 }
 
+var ErrEmptyBody = errors.New("body must not be empty")
+
 func ReadJSON(r *http.Request, dst interface{}) error {
 	var syntaxError *json.SyntaxError
 	var unmarshalTypeError *json.UnmarshalTypeError
@@ -44,7 +46,7 @@ func ReadJSON(r *http.Request, dst interface{}) error {
 			return fmt.Errorf("body contains incorrect JSON type (at character %d)", unmarshalTypeError.Offset)
 
 		case errors.Is(err, io.EOF):
-			return errors.New("body must not be empty")
+			return ErrEmptyBody
 
 		default:
 			return err
