@@ -1,5 +1,5 @@
 import { Component, OnInit } from '@angular/core';
-import { GROUP } from 'convoy-dashboard/lib/models/group.model';
+import { GROUP } from 'src/app/models/group.model';
 import { ProjectsService } from './projects.service';
 
 @Component({
