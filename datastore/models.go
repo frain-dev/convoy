@@ -175,6 +175,7 @@ type Endpoint struct {
 
 var ErrGroupNotFound = errors.New("group not found")
 var ErrOrgNotFound = errors.New("organisation not found")
+var ErrOrgInviteNotFound = errors.New("organisation invite not found")
 var ErrOrgMemberNotFound = errors.New("organisation member not found")
 
 type Group struct {
@@ -442,7 +443,7 @@ type APIKey struct {
 	ExpiresAt primitive.DateTime `json:"expires_at,omitempty" bson:"expires_at,omitempty" swaggertype:"string"`
 	CreatedAt primitive.DateTime `json:"created_at,omitempty" bson:"created_at" swaggertype:"string"`
 	UpdatedAt primitive.DateTime `json:"updated_at,omitempty" bson:"updated_at" swaggertype:"string"`
-	DeletedAt primitive.DateTime `json:"delted_at,omitempty" bson:"deleted_at" swaggertype:"string"`
+	DeletedAt primitive.DateTime `json:"deleted_at,omitempty" bson:"deleted_at" swaggertype:"string"`
 
 	DocumentStatus DocumentStatus `json:"-" bson:"document_status"`
 }
@@ -520,6 +521,32 @@ type OrganisationMember struct {
 	OrganisationID string             `json:"organisation_id" bson:"organisation_id"`
 	UserID         string             `json:"user_id" bson:"user_id"`
 	Role           auth.Role          `json:"role" bson:"role"`
+	DocumentStatus DocumentStatus     `json:"-" bson:"document_status"`
+	CreatedAt      primitive.DateTime `json:"created_at,omitempty" bson:"created_at,omitempty" swaggertype:"string"`
+	UpdatedAt      primitive.DateTime `json:"updated_at,omitempty" bson:"updated_at,omitempty" swaggertype:"string"`
+	DeletedAt      primitive.DateTime `json:"deleted_at,omitempty" bson:"deleted_at,omitempty" swaggertype:"string"`
+}
+
+type InviteStatus string
+
+const (
+	InviteStatusAccepted InviteStatus = "accepted"
+	InviteStatusDeclined InviteStatus = "declined"
+	InviteStatusPending  InviteStatus = "pending"
+)
+
+func (i InviteStatus) String() string {
+	return string(i)
+}
+
+type OrganisationInvite struct {
+	ID             primitive.ObjectID `json:"-" bson:"_id"`
+	UID            string             `json:"uid" bson:"uid"`
+	OrganisationID string             `json:"organisation_id" bson:"organisation_id"`
+	InviteeEmail   string             `json:"invitee_email" bson:"invitee_email"`
+	Token          string             `json:"token" bson:"token"`
+	Role           auth.Role          `json:"role" bson:"role"`
+	Status         InviteStatus       `json:"status" bson:"status"`
 	DocumentStatus DocumentStatus     `json:"-" bson:"document_status"`
 	CreatedAt      primitive.DateTime `json:"created_at,omitempty" bson:"created_at,omitempty" swaggertype:"string"`
 	UpdatedAt      primitive.DateTime `json:"updated_at,omitempty" bson:"updated_at,omitempty" swaggertype:"string"`

@@ -19,6 +19,7 @@ import (
 const (
 	GroupCollection               = "groups"
 	OrganisationCollection        = "organisations"
+	OrganisationInvitesCollection = "organisation_invites"
 	OrganisationMembersCollection = "organisation_members"
 	AppCollections                = "applications"
 	EventCollection               = "events"
@@ -36,6 +37,7 @@ type Client struct {
 	sourceRepo        datastore.SourceRepository
 	orgRepo           datastore.OrganisationRepository
 	orgMemberRepo     datastore.OrganisationMemberRepository
+	orgInviteRepo     datastore.OrganisationInviteRepository
 	userRepo          datastore.UserRepository
 }
 
@@ -77,6 +79,7 @@ func New(cfg config.Configuration) (datastore.DatabaseClient, error) {
 		sourceRepo:        NewSourceRepo(conn),
 		orgRepo:           NewOrgRepo(conn),
 		orgMemberRepo:     NewOrgMemberRepo(conn),
+		orgInviteRepo:     NewOrgInviteRepo(conn),
 		userRepo:          NewUserRepo(conn),
 	}
 
@@ -129,6 +132,10 @@ func (c *Client) OrganisationMemberRepo() datastore.OrganisationMemberRepository
 	return c.orgMemberRepo
 }
 
+func (c *Client) OrganisationInviteRepo() datastore.OrganisationInviteRepository {
+	return c.orgInviteRepo
+}
+
 func (c *Client) UserRepo() datastore.UserRepository {
 	return c.userRepo
 }
@@ -140,6 +147,8 @@ func (c *Client) ensureMongoIndices() {
 	c.ensureIndex(EventCollection, "uid", true, nil)
 	c.ensureIndex(EventCollection, "event_type", false, nil)
 	c.ensureIndex(EventCollection, "app_metadata.uid", false, nil)
+	c.ensureIndex(OrganisationCollection, "uid", true, nil)
+	c.ensureIndex(OrganisationMembersCollection, "uid", true, nil)
 	c.ensureIndex(EventCollection, "app_metadata.group_id", false, nil)
 	c.ensureIndex(AppCollections, "group_id", false, nil)
 	c.ensureIndex(EventDeliveryCollection, "status", false, nil)

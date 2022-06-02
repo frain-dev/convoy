@@ -17,5 +17,6 @@ type DatabaseClient interface {
 	SourceRepo() SourceRepository
 	OrganisationRepo() OrganisationRepository
 	OrganisationMemberRepo() OrganisationMemberRepository
+	OrganisationInviteRepo() OrganisationInviteRepository
 	UserRepo() UserRepository
 }
