@@ -3,9 +3,11 @@ package server
 import (
 	"context"
 	"fmt"
+	"math/rand"
 	"net/http"
 	"net/http/httptest"
 	"testing"
+	"time"
 
 	"github.com/frain-dev/convoy/config"
 	"github.com/frain-dev/convoy/datastore"
@@ -172,6 +174,36 @@ func (s *SubscriptionIntegrationTestSuite) Test_GetOneSubscription_ValidSubscrip
 	require.Equal(s.T(), subscription.UID, dbSub.UID)
 	require.Equal(s.T(), subscription.Source.UID, dbSub.SourceID)
 	require.Equal(s.T(), subscription.Endpoint.UID, dbSub.EndpointID)
+}
+
+func (s *SubscriptionIntegrationTestSuite) Test_GetSubscriptions_ValidSubscriptions() {
+	r := rand.New(rand.NewSource(time.Now().Unix()))
+	totalSubs := r.Intn(10)
+
+	for i := 0; i < totalSubs; i++ {
+		// Just Before
+		app, _ := testdb.SeedApplication(s.DB, s.DefaultGroup, uuid.NewString(), "", false)
+		endpoint, _ := testdb.SeedEndpoint(s.DB, app, s.DefaultGroup.UID)
+		source, _ := testdb.SeedSource(s.DB, s.DefaultGroup, uuid.NewString())
+		_, _ = testdb.SeedSubscription(s.DB, app, s.DefaultGroup, uuid.NewString(), datastore.OutgoingGroup, source, endpoint, &datastore.RetryConfiguration{}, &datastore.AlertConfiguration{}, &datastore.FilterConfiguration{})
+	}
+	// Arrange Request
+	url := "/api/v1/subscriptions"
+	req := createRequest(http.MethodGet, url, nil)
+	req.SetBasicAuth("test", "test")
+	w := httptest.NewRecorder()
+
+	// Act
+	s.Router.ServeHTTP(w, req)
+
+	// Assert
+	require.Equal(s.T(), http.StatusOK, w.Code)
+
+	// Deep Assert
+	var resp pagedResponse
+	parseResponse(s.T(), w.Result(), &resp)
+	fmt.Printf("%+v\n", resp.Pagination)
+	require.Equal(s.T(), int64(totalSubs), resp.Pagination.Total)
 }
 
 func (s *SubscriptionIntegrationTestSuite) Test_DeleteSubscription() {

@@ -117,7 +117,6 @@ func (s *SubcriptionService) UpdateSubscription(ctx context.Context, groupId str
 	err = s.subRepo.UpdateSubscription(ctx, groupId, subscription)
 	if err != nil {
 		log.WithError(err).Error(ErrUpateSubscriptionError.Error())
-		println("2....")
 		return nil, NewServiceError(http.StatusBadRequest, ErrUpateSubscriptionError)
 	}
 

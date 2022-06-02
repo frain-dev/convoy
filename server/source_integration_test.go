@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"testing"
+	"time"
 
 	"github.com/frain-dev/convoy/config"
 	"github.com/frain-dev/convoy/datastore"
@@ -92,7 +93,8 @@ func (s *SourceIntegrationTestSuite) Test_GetSourceBy_ValidSource() {
 }
 
 func (s *SourceIntegrationTestSuite) Test_GetSource_ValidSources() {
-	totalSources := rand.Intn(5)
+	r := rand.New(rand.NewSource(time.Now().Unix()))
+	totalSources := r.Intn(5)
 
 	// Just Before
 	for i := 0; i < totalSources; i++ {
