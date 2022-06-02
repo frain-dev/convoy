@@ -16,7 +16,7 @@ import (
 
 var (
 	ErrSubscriptionNotFound         = errors.New("subscription not found")
-	ErrUpateSubscriptionError       = errors.New("failed to create subscription")
+	ErrUpateSubscriptionError       = errors.New("failed to update subscription")
 	ErrCreateSubscriptionError      = errors.New("failed to create subscription")
 	ErrDeletedSubscriptionError     = errors.New("failed to delete subscription")
 	ErrValidateSubscriptionError    = errors.New("failed to validate group update")
@@ -66,10 +66,16 @@ func (s *SubcriptionService) CreateSubscription(ctx context.Context, groupID str
 	return subscription, nil
 }
 
-func (s *SubcriptionService) UpdateSubscription(ctx context.Context, groupId string, subscription *datastore.Subscription, update *models.UpdateSubscription) (*datastore.Subscription, error) {
+func (s *SubcriptionService) UpdateSubscription(ctx context.Context, groupId string, subscriptionId string, update *models.UpdateSubscription) (*datastore.Subscription, error) {
 	if err := util.Validate(update); err != nil {
 		log.WithError(err).Error(ErrValidateSubscriptionError.Error())
 		return nil, NewServiceError(http.StatusBadRequest, err)
+	}
+
+	subscription, err := s.subRepo.FindSubscriptionByID(ctx, groupId, subscriptionId)
+	if err != nil {
+		log.WithError(err).Error(ErrSubscriptionNotFound.Error())
+		return nil, NewServiceError(http.StatusBadRequest, ErrSubscriptionNotFound)
 	}
 
 	if !util.IsStringEmpty(update.Name) {
@@ -84,31 +90,31 @@ func (s *SubcriptionService) UpdateSubscription(ctx context.Context, groupId str
 		subscription.EndpointID = update.EndpointID
 	}
 
-	if update.AlertConfig.Count > 0 {
+	if update.AlertConfig != nil && update.AlertConfig.Count > 0 {
 		subscription.AlertConfig.Count = update.AlertConfig.Count
 	}
 
-	if !util.IsStringEmpty(update.AlertConfig.Threshold) {
+	if update.AlertConfig != nil && !util.IsStringEmpty(update.AlertConfig.Threshold) {
 		subscription.AlertConfig.Threshold = update.AlertConfig.Threshold
 	}
 
-	if !util.IsStringEmpty(string(update.RetryConfig.Type)) {
+	if update.RetryConfig != nil && !util.IsStringEmpty(string(update.RetryConfig.Type)) {
 		subscription.RetryConfig.Type = update.RetryConfig.Type
 	}
 
-	if !util.IsStringEmpty(update.RetryConfig.Duration) {
+	if update.RetryConfig != nil && !util.IsStringEmpty(update.RetryConfig.Duration) {
 		subscription.RetryConfig.Duration = update.RetryConfig.Duration
 	}
 
-	if update.RetryConfig.RetryCount > 0 {
+	if update.RetryConfig != nil && update.RetryConfig.RetryCount > 0 {
 		subscription.RetryConfig.RetryCount = update.RetryConfig.RetryCount
 	}
 
-	if len(update.FilterConfig.EventTypes) > 0 {
+	if update.FilterConfig != nil && len(update.FilterConfig.EventTypes) > 0 {
 		subscription.FilterConfig.EventTypes = update.FilterConfig.EventTypes
 	}
 
-	err := s.subRepo.UpdateSubscription(ctx, groupId, subscription)
+	err = s.subRepo.UpdateSubscription(ctx, groupId, subscription)
 	if err != nil {
 		log.WithError(err).Error(ErrUpateSubscriptionError.Error())
 		return nil, NewServiceError(http.StatusBadRequest, ErrUpateSubscriptionError)

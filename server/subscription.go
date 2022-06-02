@@ -169,11 +169,7 @@ func (a *applicationHandler) UpdateSubscription(w http.ResponseWriter, r *http.R
 	}
 
 	g := getGroupFromContext(r.Context())
-	subscription, err := a.subService.FindSubscriptionByID(r.Context(), g.UID, chi.URLParam(r, "subscriptionID"))
-	if err != nil {
-		_ = render.Render(w, r, newServiceErrResponse(err))
-		return
-	}
+	subscription := chi.URLParam(r, "subscriptionID")
 
 	sub, err := a.subService.UpdateSubscription(r.Context(), g.UID, subscription, &update)
 	if err != nil {
