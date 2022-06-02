@@ -21,7 +21,7 @@ func NewOrganisationService(orgRepo datastore.OrganisationRepository) *Organisat
 	return &OrganisationService{orgRepo: orgRepo}
 }
 
-func (os *OrganisationService) CreateOrganisation(ctx context.Context, newOrg *models.Organisation) (*datastore.Organisation, error) {
+func (os *OrganisationService) CreateOrganisation(ctx context.Context, newOrg *models.Organisation, user *datastore.User) (*datastore.Organisation, error) {
 	err := util.Validate(newOrg)
 	if err != nil {
 		return nil, NewServiceError(http.StatusBadRequest, err)
@@ -29,7 +29,7 @@ func (os *OrganisationService) CreateOrganisation(ctx context.Context, newOrg *m
 
 	org := &datastore.Organisation{
 		UID:            uuid.NewString(),
-		OwnerID:        "", // TODO(daniel): to be completed when the user auth is completed by @dotunj
+		OwnerID:        user.UID,
 		Name:           newOrg.Name,
 		DocumentStatus: datastore.ActiveDocumentStatus,
 		CreatedAt:      primitive.NewDateTimeFromTime(time.Now()),
