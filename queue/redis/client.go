@@ -7,6 +7,7 @@ import (
 	"github.com/frain-dev/convoy/config"
 	"github.com/frain-dev/convoy/queue"
 	"github.com/frain-dev/convoy/util"
+	"github.com/google/uuid"
 	"github.com/hibiken/asynq"
 	"github.com/hibiken/asynqmon"
 )
@@ -42,6 +43,9 @@ func NewQueue(opts queue.QueueOptions) queue.Queuer {
 }
 
 func (q *RedisQueue) Write(taskName convoy.TaskName, queueName convoy.QueueName, job *queue.Job) error {
+	if job.ID == "" {
+		job.ID = uuid.NewString()
+	}
 	t := asynq.NewTask(string(taskName), job.Payload, asynq.Queue(string(queueName)), asynq.TaskID(job.ID), asynq.ProcessIn(job.Delay))
 	_, err := q.opts.Client.Enqueue(t)
 	return err
@@ -71,7 +75,10 @@ func (q *RedisQueue) DeleteEventDeliveriesfromQueue(queuename convoy.QueueName, 
 	for _, id := range ids {
 		taskInfo, err := q.inspector.GetTaskInfo(string(queuename), id)
 		if taskInfo.State == asynq.TaskStateActive {
-			q.inspector.CancelProcessing(id)
+			err = q.inspector.CancelProcessing(id)
+			if err != nil {
+				return err
+			}
 		}
 		if err != nil {
 			return err
