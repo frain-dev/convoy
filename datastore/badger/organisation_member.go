@@ -8,6 +8,10 @@ import (
 
 type orgMemberRepo struct{}
 
+func (o orgMemberRepo) FetchOrganisationMemberByUserID(ctx context.Context, userID string) (*datastore.OrganisationMember, error) {
+	return nil, nil
+}
+
 func NewOrgMemberRepo(db *badgerhold.Store) datastore.OrganisationMemberRepository {
 	return orgMemberRepo{}
 }
