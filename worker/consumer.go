@@ -7,6 +7,7 @@ import (
 	"github.com/frain-dev/convoy"
 	"github.com/frain-dev/convoy/config"
 	"github.com/frain-dev/convoy/worker/task"
+	"github.com/go-redis/redis/v8"
 	"github.com/hibiken/asynq"
 	log "github.com/sirupsen/logrus"
 )
@@ -23,8 +24,9 @@ func NewConsumer(cfg config.Configuration, queues map[string]int) (*Consumer, er
 	}
 
 	dsn := cfg.Queue.Redis.Dsn
+	rOpts, _ := redis.ParseURL(dsn)
 	srv := asynq.NewServer(
-		asynq.RedisClientOpt{Addr: dsn},
+		asynq.RedisClientOpt{Addr: rOpts.Addr},
 		asynq.Config{
 			Concurrency: convoy.Concurrency,
 			Queues:      queues,

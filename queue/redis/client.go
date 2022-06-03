@@ -3,6 +3,8 @@ package redis
 import (
 	"errors"
 
+	"github.com/go-redis/redis/v8"
+
 	"github.com/frain-dev/convoy"
 	"github.com/frain-dev/convoy/config"
 	"github.com/frain-dev/convoy/queue"
@@ -22,17 +24,23 @@ func NewClient(cfg config.Configuration) (*asynq.Client, error) {
 		return nil, errors.New("please select the redis driver in your config")
 	}
 
-	dsn := cfg.Queue.Redis.Dsn
-	if util.IsStringEmpty(dsn) {
+	if util.IsStringEmpty(cfg.Queue.Redis.Dsn) {
 		return nil, errors.New("please provide the Redis DSN")
 	}
+	opts, err := redis.ParseURL(cfg.Queue.Redis.Dsn)
+	if err != nil {
+		return nil, errors.New("error parsing redis dsn")
+	}
 
-	client := asynq.NewClient(asynq.RedisClientOpt{Addr: dsn})
+	client := asynq.NewClient(asynq.RedisClientOpt{Addr: opts.Addr})
 
 	return client, nil
 }
 
 func NewQueue(opts queue.QueueOptions) queue.Queuer {
+	rOpts, _ := redis.ParseURL(opts.Redis)
+	opts.Redis = rOpts.Addr
+
 	inspector := asynq.NewInspector(asynq.RedisClientOpt{
 		Addr: opts.Redis,
 	})
