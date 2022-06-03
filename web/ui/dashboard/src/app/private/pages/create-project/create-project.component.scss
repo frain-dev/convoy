@@ -16,7 +16,7 @@
 		color: var(--grey-color);
 	}
 
-	&:not(:last-of-type){
+	&:not(:last-of-type) {
 		margin-right: 32px;
 	}
 
@@ -45,8 +45,17 @@
 			border-width: 5px;
 		}
 
-		.text{
+		.text {
 			color: var(--color-black);
 		}
 	}
+}
+select {
+	-webkit-appearance: none;
+	-moz-appearance: none;
+	appearance: none;
+	background: transparent url(../../../../assets/img/arrow-down-icon.svg) no-repeat;
+	background-size: 5%;
+	background-position-x: 96%;
+	background-position-y: 15px;
 }

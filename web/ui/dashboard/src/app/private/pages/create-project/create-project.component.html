@@ -124,13 +124,13 @@
 
 					<div class="input">
 						<label for="retry-logic-duration">
-							Duration(seconds)
+							Duration
 							<span class="bg__grey__light rounded__4px padding-x__4px position__absolute position--right__0px font__10px font__weight-400">required</span>
 						</label>
 						<input
 							type="text"
 							id="retry-logic-duration"
-							placeholder="e.g 3000"
+							placeholder="e.g 3s"
 							formControlName="duration"
 							[ngClass]="{ invalid: projectForm.get('strategy.duration')?.touched && projectForm.get('strategy.duration')?.invalid }"
 						/>
@@ -165,7 +165,7 @@
 				</h3>
 				<div class="grid grid__col-2 grid--gap__24px">
 					<div class="input">
-						<label for="retry-logic-duration">
+						<label for="rate-limit-duration">
 							Duration
 							<span class="bg__grey__light rounded__4px padding-x__4px position__absolute position--right__0px font__10px font__weight-400">required</span>
 						</label>
@@ -183,19 +183,19 @@
 						</div>
 					</div>
 					<div class="input">
-						<label for="retry-logic-count">
+						<label for="rate-limit-count">
 							Limit
 							<span class="bg__grey__light rounded__4px padding-x__4px position__absolute position--right__0px font__10px font__weight-400">required</span>
 						</label>
 						<input
 							type="number"
 							id="rate-limit-count"
-							placeholder="e.g 5"
+							placeholder="e.g 5000"
 							formControlName="rate_limit"
-							[ngClass]="{ invalid: projectForm.controls['rate_limit_duration'].touched && projectForm.controls['rate_limit_duration'].invalid }"
+							[ngClass]="{ invalid: projectForm.controls['rate_limit'].touched && projectForm.controls['rate_limit'].invalid }"
 						/>
 
-						<div class="input__error input__error__danger" *ngIf="projectForm.controls['rate_limit_duration'].touched && projectForm.controls['rate_limit_duration'].invalid">
+						<div class="input__error input__error__danger" *ngIf="projectForm.controls['rate_limit'].touched && projectForm.controls['rate_limit'].invalid">
 							<img src="assets/img/input-error-icon.svg" alt="input error icon" />
 							<span>Please enter a rate limit</span>
 						</div>
@@ -222,7 +222,7 @@
 								<div class="checkbox rounded__50px margin-bottom__0px border__all width__16px height__16px animate"></div>
 								<p class="font__14px font__weight-600 margin-left__8px">False</p>
 							</div>
-							<p class="color__grey font__12px font__weight-400">Endpoints are not automatically disabled when they are failing</p>
+							<p class="color__grey font__12px font__weight-400">Endpoints are not automatically disabled when they are failing.</p>
 						</label>
 					</div>
 				</div>

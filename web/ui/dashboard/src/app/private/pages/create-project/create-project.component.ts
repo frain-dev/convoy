@@ -11,7 +11,7 @@ import { CreateProjectService } from './create-project.service';
 	styleUrls: ['./create-project.component.scss']
 })
 export class CreateProjectComponent implements OnInit {
-	projectStage: 'createProject' | 'createSource' | 'createApplication' | 'createSubscription' = 'createApplication';
+	projectStage: 'createProject' | 'createSource' | 'createApplication' | 'createSubscription' = 'createProject';
 	hashAlgorithms = ['SHA256', 'SHA512', 'MD5', 'SHA1', 'SHA224', 'SHA384', 'SHA3_224', 'SHA3_256', 'SHA3_384', 'SHA3_512', 'SHA512_256', 'SHA512_224'];
 	retryLogicTypes = [
 		{ id: 'linear', type: 'Linear time retry' },
@@ -31,8 +31,8 @@ export class CreateProjectComponent implements OnInit {
 			hash: ['', Validators.required]
 		}),
 		type: ['', Validators.required],
-		rate_limit: [''],
-		rate_limit_duration: [''],
+		rate_limit: ['',Validators.required],
+		rate_limit_duration: ['',Validators.required],
 		disable_endpoint: [false, Validators.required]
 	});
 	constructor(private formBuilder: FormBuilder, private createProjectService: CreateProjectService, private generalService: GeneralService, private projectService: ProjectService, private router: Router) {}
@@ -46,13 +46,13 @@ export class CreateProjectComponent implements OnInit {
 			});
 			return;
 		}
-		console.log(this.projectForm.value);
 		const projectType = this.projectForm.value.type;
 		this.isCreatingProject = true;
+		const [digits, word] = this.projectForm.value.strategy.duration.match(/\D+|\d+/g);
+		this.projectForm.value.strategy.duration = parseInt(digits) * 1000;
 		try {
 			const response = await this.createProjectService.createProject(this.projectForm.value);
 			const projectId = response?.data?.uid;
-			console.log(response.data);
 			this.projectService.activeProject = projectId;
 			this.isCreatingProject = false;
 			projectType === 'incoming' ? (this.projectStage = 'createSource') : (this.projectStage = 'createApplication');
