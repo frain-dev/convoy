@@ -100,6 +100,7 @@
 						</div>
 					</div>
 				</div>
+
 				<h3 class="margin-top__24px margin-bottom__16px flex flex__align-items-center">
 					Retry Logic
 					<app-tooltip [size]="'small'" position="right" class="margin-left__4px">
@@ -140,6 +141,7 @@
 							<span>Please enter your retry logic duration</span>
 						</div>
 					</div>
+
 					<div class="input">
 						<label for="retry-logic-count">
 							Limit
@@ -159,6 +161,7 @@
 						</div>
 					</div>
 				</div>
+
 				<h3 class="margin-top__24px margin-bottom__16px flex flex__align-items-center">
 					Rate Limit Parameters
 					<app-tooltip [size]="'small'" position="right" class="margin-left__4px">These are the specifications for how many events are to be sent to an endpoint per time</app-tooltip>
@@ -176,12 +179,12 @@
 							formControlName="rate_limit_duration"
 							[ngClass]="{ invalid: projectForm.controls['rate_limit_duration'].touched && projectForm.controls['rate_limit_duration'].invalid }"
 						/>
-
 						<div class="input__error input__error__danger" *ngIf="projectForm.controls['rate_limit_duration'].touched && projectForm.controls['rate_limit_duration'].invalid">
 							<img src="assets/img/input-error-icon.svg" alt="input error icon" />
 							<span>Please enter your rate limit duration</span>
 						</div>
 					</div>
+
 					<div class="input">
 						<label for="rate-limit-count">
 							Limit
@@ -194,7 +197,6 @@
 							formControlName="rate_limit"
 							[ngClass]="{ invalid: projectForm.controls['rate_limit'].touched && projectForm.controls['rate_limit'].invalid }"
 						/>
-
 						<div class="input__error input__error__danger" *ngIf="projectForm.controls['rate_limit'].touched && projectForm.controls['rate_limit'].invalid">
 							<img src="assets/img/input-error-icon.svg" alt="input error icon" />
 							<span>Please enter a rate limit</span>
