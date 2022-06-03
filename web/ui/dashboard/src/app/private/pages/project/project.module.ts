@@ -29,6 +29,10 @@ const routes: Routes = [
 				path: 'apps',
 				loadChildren: () => import('./apps/apps.module').then(m => m.AppsModule)
 			},
+			{
+				path: 'settings',
+				loadChildren: () => import('./settings/settings.module').then(m => m.SettingsModule)
+			}
 		]
 	}
 ];
