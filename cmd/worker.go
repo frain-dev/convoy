@@ -5,10 +5,10 @@ import (
 	"fmt"
 	"net/http"
 
+	"github.com/frain-dev/convoy"
 	"github.com/frain-dev/convoy/config"
-	"github.com/frain-dev/convoy/queue"
-	"github.com/frain-dev/convoy/server"
 	"github.com/frain-dev/convoy/worker"
+	"github.com/frain-dev/convoy/worker/task"
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/render"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
@@ -27,15 +27,26 @@ func addWorkerCommand(a *app) *cobra.Command {
 			if err != nil {
 				return err
 			}
-
-			worker.RegisterNewGroupTask(a.applicationRepo, a.eventDeliveryRepo, a.groupRepo, a.limiter, a.eventRepo, a.cache, a.eventQueue)
-			// register worker.
 			ctx := context.Background()
-			producer := worker.NewProducer([]queue.Queuer{a.eventQueue, a.createEventQueue})
-			producer.Start(ctx)
 
-			server.RegisterConsumerMetrics(a.eventQueue, cfg)
-			server.RegisterQueueMetrics(a.eventQueue, cfg)
+			consumer, err := worker.NewConsumer(cfg, a.queue.Options().Names)
+			if err != nil {
+				log.WithError(err).Error("failed to create worker")
+			}
+
+			// register tasks.
+			handler := task.ProcessEventDelivery(a.applicationRepo, a.eventDeliveryRepo, a.groupRepo, a.limiter)
+			consumer.RegisterHandlers(convoy.EventProcessor, handler)
+
+			// register tasks.
+			eventCreatedhandler := task.ProcessEventCreated(a.applicationRepo, a.eventRepo, a.groupRepo, a.eventDeliveryRepo, a.cache, a.queue)
+			consumer.RegisterHandlers(convoy.CreateEventProcessor, eventCreatedhandler)
+
+			log.Infof("Starting Convoy workers...")
+			consumer.Start()
+
+			// server.RegisterConsumerMetrics(a.eventQueue, cfg)
+			// server.RegisterQueueMetrics(a.eventQueue, cfg)
 
 			router := chi.NewRouter()
 			router.Handle("/v1/metrics", promhttp.Handler())

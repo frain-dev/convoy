@@ -11,12 +11,11 @@ import (
 	"github.com/frain-dev/convoy/cache"
 	"github.com/frain-dev/convoy/datastore/badger"
 	"github.com/frain-dev/convoy/searcher"
-	"github.com/go-redis/redis/v8"
 	"github.com/google/uuid"
+	"github.com/hibiken/asynq"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 
 	"github.com/frain-dev/convoy/logger"
-	memqueue "github.com/frain-dev/convoy/queue/memqueue"
 	redisqueue "github.com/frain-dev/convoy/queue/redis"
 	"github.com/frain-dev/convoy/tracer"
 	"github.com/getsentry/sentry-go"
@@ -57,23 +56,6 @@ func main() {
 	if err := cli.Execute(); err != nil {
 		log.Fatal(err)
 	}
-}
-
-func NewQueue(opts queue.QueueOptions, name string) queue.Queuer {
-	optsType := opts.Type
-	var convoyQueue queue.Queuer
-	switch optsType {
-	case "in-memory":
-		opts.Name = name
-		convoyQueue = memqueue.NewQueue(opts)
-
-	case "redis":
-		opts.Name = name
-		convoyQueue = redisqueue.NewQueue(opts)
-	default:
-		log.Errorf("Invalid queue type: %v", optsType)
-	}
-	return convoyQueue
 }
 
 func ensureDefaultUser(ctx context.Context, a *app) error {
@@ -126,8 +108,7 @@ type app struct {
 	orgRepo           datastore.OrganisationRepository
 	sourceRepo        datastore.SourceRepository
 	userRepo          datastore.UserRepository
-	eventQueue        queue.Queuer
-	createEventQueue  queue.Queuer
+	queue             queue.Queuer
 	logger            logger.Logger
 	tracer            tracer.Tracer
 	cache             cache.Cache
@@ -200,27 +181,29 @@ func preRun(app *app, db datastore.DatabaseClient) func(cmd *cobra.Command, args
 		sentryHook := convoy.NewSentryHook(convoy.DefaultLevels)
 		log.AddHook(sentryHook)
 
-		var rC *redis.Client
+		var aC *asynq.Client
 		var tr tracer.Tracer
-		var opts queue.QueueOptions
 		var ca cache.Cache
 		var li limiter.RateLimiter
+		var q queue.Queuer
 
 		if cfg.Queue.Type == config.RedisQueueProvider {
-			rC, err = redisqueue.NewClient(cfg)
+			aC, err = redisqueue.NewClient(cfg)
 			if err != nil {
 				return err
 			}
-			opts = queue.QueueOptions{
-				Type:  "redis",
-				Redis: rC,
+			queueNames := map[string]int{
+				string(convoy.PriorityQueue):    6,
+				string(convoy.EventQueue):       2,
+				string(convoy.CreateEventQueue): 2,
 			}
-		}
-
-		if cfg.Queue.Type == config.InMemoryQueueProvider {
-			opts = queue.QueueOptions{
-				Type: "in-memory",
+			opts := queue.QueueOptions{
+				Names:  queueNames,
+				Client: aC,
+				Redis:  cfg.Queue.Redis.Dsn,
+				Type:   string(config.RedisQueueProvider),
 			}
+			q = redisqueue.NewQueue(opts)
 		}
 
 		lo, err := logger.NewLogger(cfg.Logger)
@@ -257,10 +240,7 @@ func preRun(app *app, db datastore.DatabaseClient) func(cmd *cobra.Command, args
 		app.eventDeliveryRepo = db.EventDeliveryRepo()
 		app.sourceRepo = db.SourceRepo()
 		app.userRepo = db.UserRepo()
-
-		app.eventQueue = NewQueue(opts, "EventQueue")
-		app.createEventQueue = NewQueue(opts, "CreateEventQueue")
-
+		app.queue = q
 		app.logger = lo
 		app.tracer = tr
 		app.cache = ca
@@ -273,12 +253,6 @@ func preRun(app *app, db datastore.DatabaseClient) func(cmd *cobra.Command, args
 
 func postRun(app *app, db datastore.DatabaseClient) func(cmd *cobra.Command, args []string) error {
 	return func(cmd *cobra.Command, args []string) error {
-		defer func() {
-			err := app.eventQueue.Stop()
-			if err != nil {
-				log.Errorln("failed to close app queue - ", err)
-			}
-		}()
 		err := db.Disconnect(context.Background())
 		if err == nil {
 			os.Exit(0)
@@ -303,7 +277,6 @@ func parsePersistentArgs(app *app, cmd *cobra.Command) {
 	cmd.AddCommand(addGetComamnd(app))
 	cmd.AddCommand(addServerCommand(app))
 	cmd.AddCommand(addWorkerCommand(app))
-	cmd.AddCommand(addQueueCommand(app))
 	cmd.AddCommand(addRetryCommand(app))
 	cmd.AddCommand(addSchedulerCommand(app))
 	cmd.AddCommand(addUpgradeCommand(app))

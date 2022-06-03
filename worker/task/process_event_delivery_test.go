@@ -1,13 +1,16 @@
 package task
 
 import (
+	"context"
+	"encoding/json"
 	"testing"
 	"time"
 
+	"github.com/frain-dev/convoy"
 	"github.com/frain-dev/convoy/auth/realm_chain"
 	"github.com/frain-dev/convoy/datastore"
-	"github.com/frain-dev/disq"
 	"github.com/go-redis/redis_rate/v9"
+	"github.com/hibiken/asynq"
 
 	"github.com/frain-dev/convoy/config"
 	"github.com/frain-dev/convoy/mocks"
@@ -98,7 +101,7 @@ func TestProcessEventDelivery(t *testing.T) {
 		{
 			name:          "Endpoint does not respond with 2xx",
 			cfgPath:       "./testdata/Config/basic-convoy.json",
-			expectedError: &disq.Error{Err: ErrDeliveryAttemptFailed, Delay: 20 * time.Second},
+			expectedError: &EndpointError{Err: ErrDeliveryAttemptFailed, delay: 20 * time.Second},
 			msg: &datastore.EventDelivery{
 				UID: "",
 			},
@@ -751,11 +754,15 @@ func TestProcessEventDelivery(t *testing.T) {
 
 			processFn := ProcessEventDelivery(appRepo, msgRepo, groupRepo, rateLimiter)
 
+			payload := json.RawMessage(tc.msg.UID)
+
 			job := queue.Job{
-				ID: tc.msg.UID,
+				Payload: payload,
 			}
 
-			err = processFn(&job)
+			task := asynq.NewTask(string(convoy.EventProcessor), job.Payload, asynq.Queue(string(convoy.EventQueue)), asynq.ProcessIn(job.Delay))
+
+			err = processFn(context.Background(), task)
 
 			// Assert.
 			assert.Equal(t, tc.expectedError, err)

@@ -2,8 +2,6 @@ package main
 
 import (
 	"github.com/frain-dev/convoy/config"
-	"github.com/frain-dev/convoy/datastore"
-	"github.com/frain-dev/convoy/worker/task"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 )
@@ -24,8 +22,8 @@ func addRetryCommand(a *app) *cobra.Command {
 				log.WithError(err).Fatalf("Queue type error: Command is available for redis queue only.")
 			}
 
-			statuses := []datastore.EventDeliveryStatus{datastore.EventDeliveryStatus(status)}
-			task.RetryEventDeliveries(statuses, timeInterval, a.eventDeliveryRepo, a.groupRepo, a.eventQueue)
+			// statuses := []datastore.EventDeliveryStatus{datastore.EventDeliveryStatus(status)}
+			// task.RetryEventDeliveries(statuses, timeInterval, a.eventDeliveryRepo, a.groupRepo, a.queue)
 		},
 	}
 
