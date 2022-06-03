@@ -25,7 +25,7 @@ func TestLoadOrganisationsInvitesPaged(t *testing.T) {
 	for i := 1; i < 6; i++ {
 		iv := &datastore.OrganisationInvite{
 			UID:            uuid.NewString(),
-			InviteeEmail:   fmt.Sprintf("%s@gmail.com"),
+			InviteeEmail:   fmt.Sprintf("%s@gmail.com", uuid.NewString()),
 			Token:          uuid.NewString(),
 			Role:           auth.Role{Type: auth.RoleAdmin},
 			Status:         datastore.InviteStatusPending,
@@ -56,7 +56,7 @@ func TestCreateOrganisationInvite(t *testing.T) {
 
 	iv := &datastore.OrganisationInvite{
 		UID:            uuid.NewString(),
-		InviteeEmail:   fmt.Sprintf("%s@gmail.com"),
+		InviteeEmail:   fmt.Sprintf("%s@gmail.com", uuid.NewString()),
 		Token:          uuid.NewString(),
 		Role:           auth.Role{Type: auth.RoleAdmin},
 		Status:         datastore.InviteStatusPending,
@@ -83,7 +83,7 @@ func TestUpdateOrganisationInvite(t *testing.T) {
 
 	iv := &datastore.OrganisationInvite{
 		UID:          uuid.NewString(),
-		InviteeEmail: fmt.Sprintf("%s@gmail.com"),
+		InviteeEmail: fmt.Sprintf("%s@gmail.com", uuid.NewString()),
 		Token:        uuid.NewString(),
 		Role: auth.Role{
 			Type:   auth.RoleAdmin,
@@ -123,7 +123,7 @@ func TestDeleteOrganisationInvite(t *testing.T) {
 
 	org := &datastore.OrganisationInvite{
 		UID:          uuid.NewString(),
-		InviteeEmail: fmt.Sprintf("%s@gmail.com"),
+		InviteeEmail: fmt.Sprintf("%s@gmail.com", uuid.NewString()),
 		Token:        uuid.NewString(),
 		Role: auth.Role{
 			Type:   auth.RoleAdmin,
@@ -155,7 +155,7 @@ func TestFetchOrganisationInviteByID(t *testing.T) {
 	inviteRepo := NewOrgInviteRepo(db)
 	iv := &datastore.OrganisationInvite{
 		UID:          uuid.NewString(),
-		InviteeEmail: fmt.Sprintf("%s@gmail.com"),
+		InviteeEmail: fmt.Sprintf("%s@gmail.com", uuid.NewString()),
 		Token:        uuid.NewString(),
 		Role: auth.Role{
 			Type:   auth.RoleAdmin,
@@ -185,7 +185,7 @@ func TestFetchOrganisationInviteByTokenAndEmail(t *testing.T) {
 	inviteRepo := NewOrgInviteRepo(db)
 	iv := &datastore.OrganisationInvite{
 		UID:          uuid.NewString(),
-		InviteeEmail: fmt.Sprintf("%s@gmail.com"),
+		InviteeEmail: fmt.Sprintf("%s@gmail.com", uuid.NewString()),
 		Token:        uuid.NewString(),
 		Role: auth.Role{
 			Type:   auth.RoleAdmin,
