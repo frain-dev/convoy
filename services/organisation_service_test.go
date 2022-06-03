@@ -24,6 +24,7 @@ func TestOrganisationService_CreateOrganisation(t *testing.T) {
 	type args struct {
 		ctx    context.Context
 		newOrg *models.Organisation
+		user   *datastore.User
 	}
 	tests := []struct {
 		name        string
@@ -39,8 +40,9 @@ func TestOrganisationService_CreateOrganisation(t *testing.T) {
 			args: args{
 				ctx:    ctx,
 				newOrg: &models.Organisation{Name: "new_org"},
+				user:   &datastore.User{UID: "1234"},
 			},
-			want: &datastore.Organisation{Name: "new_org", DocumentStatus: datastore.ActiveDocumentStatus},
+			want: &datastore.Organisation{Name: "new_org", OwnerID: "1234", DocumentStatus: datastore.ActiveDocumentStatus},
 			dbFn: func(os *OrganisationService) {
 				a, _ := os.orgRepo.(*mocks.MockOrganisationRepository)
 				a.EXPECT().CreateOrganisation(gomock.Any(), gomock.Any()).
@@ -53,6 +55,7 @@ func TestOrganisationService_CreateOrganisation(t *testing.T) {
 			args: args{
 				ctx:    ctx,
 				newOrg: &models.Organisation{Name: ""},
+				user:   &datastore.User{UID: "1234"},
 			},
 			wantErr:     true,
 			wantErrCode: http.StatusBadRequest,
@@ -63,6 +66,7 @@ func TestOrganisationService_CreateOrganisation(t *testing.T) {
 			args: args{
 				ctx:    ctx,
 				newOrg: &models.Organisation{Name: "new_org"},
+				user:   &datastore.User{UID: "1234"},
 			},
 			dbFn: func(os *OrganisationService) {
 				a, _ := os.orgRepo.(*mocks.MockOrganisationRepository)
@@ -85,7 +89,7 @@ func TestOrganisationService_CreateOrganisation(t *testing.T) {
 				tt.dbFn(os)
 			}
 
-			org, err := os.CreateOrganisation(tt.args.ctx, tt.args.newOrg)
+			org, err := os.CreateOrganisation(tt.args.ctx, tt.args.newOrg, tt.args.user)
 			if tt.wantErr {
 				require.NotNil(t, err)
 				require.Equal(t, tt.wantErrCode, err.(*ServiceError).ErrCode())
