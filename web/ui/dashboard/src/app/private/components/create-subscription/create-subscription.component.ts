@@ -24,6 +24,8 @@ export class CreateSubscriptionComponent implements OnInit {
 	apps!: APP[];
 	sources!: SOURCE[];
 	endPoints?: ENDPOINT[];
+	showCreateAppModal = false;
+	showCreateSourceModal = false;
 
 	constructor(private formBuilder: FormBuilder, private privateService: PrivateService, private createSubscriptionService: CreateSubscriptionService, private router: Router) {}
 
@@ -66,6 +68,11 @@ export class CreateSubscriptionComponent implements OnInit {
 		this.endPoints = app?.endpoints;
 	}
 
+	async onCreateSource(newSource: SOURCE) {
+		await this.getSources();
+		this.subscriptonForm.patchValue({ source_id: newSource.uid });
+	}
+
 	async createSubscription() {
 		console.log(this.subscriptonForm.value);
 		if (this.subscriptonForm.invalid) return this.subscriptonForm.markAllAsTouched();
@@ -76,5 +83,10 @@ export class CreateSubscriptionComponent implements OnInit {
 		} catch (error) {
 			console.log(error);
 		}
+	}
+
+	async onCreateNewApp(newApp: APP) {
+		await this.getApps();
+		this.subscriptonForm.patchValue({ app_id: newApp.uid });
 	}
 }

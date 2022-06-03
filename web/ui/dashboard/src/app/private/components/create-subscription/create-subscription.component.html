@@ -23,7 +23,7 @@
 				<span>Select or create a source</span>
 			</div>
 		</div>
-		<button class="button button__clear button--has-icon font__12px margin-top__4px margin-bottom__20px" type="button">
+		<button class="button button__clear button--has-icon font__12px margin-top__4px margin-bottom__20px" type="button" (click)="showCreateSourceModal = true">
 			<svg width="14" height="14" class="margin-right__4px" fill="var(--primary-color)">
 				<use xlink:href="#plus-icon"></use>
 			</svg>
@@ -44,7 +44,7 @@
 				<span>Select or create an application</span>
 			</div>
 		</div>
-		<button class="button button__clear button--has-icon font__12px margin-top__4px margin-bottom__20px" type="button">
+		<button class="button button__clear button--has-icon font__12px margin-top__4px margin-bottom__20px" type="button" (click)="showCreateAppModal = true">
 			<svg width="14" height="14" class="margin-right__4px" fill="var(--primary-color)">
 				<use xlink:href="#plus-icon"></use>
 			</svg>
@@ -78,3 +78,25 @@
 		</button>
 	</div>
 </form>
+
+<div class="_overlay" *ngIf="showCreateAppModal || showCreateSourceModal" (click)="showCreateAppModal = !showCreateAppModal; showCreateSourceModal = !showCreateSourceModal"></div>
+<div class="modal modal__right large" *ngIf="showCreateAppModal || showCreateSourceModal">
+	<!-- add endpoint modal  -->
+	<div class="modal--head" *ngIf="showCreateAppModal">
+		<h2>Create New App</h2>
+		<button (click)="showCreateAppModal = false">
+			<img src="/assets/img/modal-close-icon.svg" alt="close icon" />
+		</button>
+	</div>
+	<div class="modal--head" *ngIf="showCreateSourceModal">
+		<h2>Create New Source</h2>
+		<button (click)="showCreateSourceModal = false">
+			<img src="/assets/img/modal-close-icon.svg" alt="close icon" />
+		</button>
+	</div>
+
+	<div class="modal--body">
+		<app-create-app (discardCreateApp)="onCreateNewApp($event); showCreateAppModal = false" *ngIf="showCreateAppModal"></app-create-app>
+		<app-create-source *ngIf="showCreateSourceModal" (onAction)="$event?.action == 'close' ? false : onCreateSource($event); showCreateSourceModal = false"></app-create-source>
+	</div>
+</div>

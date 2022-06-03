@@ -1,4 +1,4 @@
-import { Component, Input, OnInit } from '@angular/core';
+import { Component, EventEmitter, Input, OnInit, Output } from '@angular/core';
 import { FormBuilder, FormControl, FormGroup, Validators } from '@angular/forms';
 import { Router } from '@angular/router';
 import { ProjectService } from '../../pages/project/project.service';
@@ -12,6 +12,7 @@ import { CreateSourceService } from './create-source.service';
 })
 export class CreateSourceComponent implements OnInit {
 	@Input() projectId!: string;
+	@Output() onAction = new EventEmitter<any>();
 	sourceForm: FormGroup = this.formBuilder.group({
 		name: ['', Validators.required],
 		is_disabled: [true, Validators.required],
@@ -65,7 +66,8 @@ export class CreateSourceComponent implements OnInit {
 
 		try {
 			const response = await this.createSourceService.createSource({ sourceData });
-			this.router.navigateByUrl('/projects/' + this.privateService.activeProjectId + '/sources');
+			// this.router.navigateByUrl('/projects/' + this.privateService.activeProjectId + '/sources');
+			this.onAction.emit(response.data);
 		} catch (error) {
 			console.log(error);
 		}
