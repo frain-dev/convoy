@@ -71,6 +71,7 @@ type OrganisationMemberRepository interface {
 	UpdateOrganisationMember(ctx context.Context, member *OrganisationMember) error
 	DeleteOrganisationMember(ctx context.Context, memberID string) error
 	FetchOrganisationMemberByID(ctx context.Context, memberID string) (*OrganisationMember, error)
+	FetchOrganisationMemberByUserID(ctx context.Context, userID string) (*OrganisationMember, error)
 }
 
 type ApplicationRepository interface {

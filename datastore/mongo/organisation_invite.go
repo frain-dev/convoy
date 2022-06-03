@@ -72,7 +72,12 @@ func (db *orgInviteRepo) DeleteOrganisationInvite(ctx context.Context, uid strin
 func (db *orgInviteRepo) FetchOrganisationInviteByID(ctx context.Context, id string) (*datastore.OrganisationInvite, error) {
 	org := &datastore.OrganisationInvite{}
 
-	err := db.inner.FindOne(ctx, bson.M{"uid": id}).Decode(org)
+	filter := bson.M{
+		"uid":             id,
+		"document_status": datastore.ActiveDocumentStatus,
+	}
+
+	err := db.inner.FindOne(ctx, filter).Decode(org)
 	if errors.Is(err, mongo.ErrNoDocuments) {
 		err = datastore.ErrOrgNotFound
 	}
@@ -84,8 +89,9 @@ func (db *orgInviteRepo) FetchOrganisationInviteByTokenAndEmail(ctx context.Cont
 	org := &datastore.OrganisationInvite{}
 
 	filter := bson.M{
-		"token":         token,
-		"invitee_email": email,
+		"token":           token,
+		"invitee_email":   email,
+		"document_status": datastore.ActiveDocumentStatus,
 	}
 
 	err := db.inner.FindOne(ctx, filter).Decode(org)

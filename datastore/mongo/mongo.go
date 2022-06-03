@@ -143,19 +143,31 @@ func (c *Client) UserRepo() datastore.UserRepository {
 func (c *Client) ensureMongoIndices() {
 	c.ensureIndex(GroupCollection, "uid", true, nil)
 	c.ensureIndex(GroupCollection, "name", true, bson.M{"document_status": datastore.ActiveDocumentStatus})
-	c.ensureIndex(AppCollections, "uid", true, nil)
-	c.ensureIndex(EventCollection, "uid", true, nil)
-	c.ensureIndex(EventCollection, "event_type", false, nil)
-	c.ensureIndex(EventCollection, "app_metadata.uid", false, nil)
+
 	c.ensureIndex(OrganisationCollection, "uid", true, nil)
+
+	c.ensureIndex(OrganisationMembersCollection, "organisation_id", false, nil)
+	c.ensureIndex(OrganisationMembersCollection, "user_id", false, nil)
 	c.ensureIndex(OrganisationMembersCollection, "uid", true, nil)
-	c.ensureIndex(EventCollection, "app_metadata.group_id", false, nil)
+
+	c.ensureIndex(OrganisationInvitesCollection, "uid", true, nil)
+	c.ensureIndex(OrganisationInvitesCollection, "token", true, nil)
+
 	c.ensureIndex(AppCollections, "group_id", false, nil)
+	c.ensureIndex(AppCollections, "uid", true, nil)
+
+	c.ensureIndex(EventCollection, "app_metadata.uid", false, nil)
+	c.ensureIndex(EventCollection, "uid", true, nil)
+	c.ensureIndex(EventCollection, "app_metadata.group_id", false, nil)
+	c.ensureIndex(EventCollection, "event_type", false, nil)
 	c.ensureIndex(EventDeliveryCollection, "status", false, nil)
+
 	c.ensureIndex(SourceCollection, "mask_id", true, nil)
-	c.ensureCompoundIndex(AppCollections)
+
 	c.ensureCompoundIndex(EventCollection)
+	c.ensureCompoundIndex(AppCollections)
 	c.ensureCompoundIndex(EventDeliveryCollection)
+	c.ensureCompoundIndex(OrganisationInvitesCollection)
 }
 
 // ensureIndex - ensures an index is created for a specific field in a collection
@@ -356,6 +368,35 @@ func compoundIndices() map[string][]mongo.IndexModel {
 					{Key: "group_id", Value: 1},
 					{Key: "document_status", Value: 1},
 					{Key: "title", Value: 1},
+				},
+				Options: options.Index().SetUnique(true),
+			},
+		},
+
+		OrganisationInvitesCollection: {
+			{
+				Keys: bson.D{
+					{Key: "organisation_id", Value: 1},
+					{Key: "invitee_email", Value: 1},
+					{Key: "document_status", Value: 1},
+				},
+				Options: options.Index().SetUnique(true),
+			},
+			{
+				Keys: bson.D{
+					{Key: "token", Value: 1},
+					{Key: "email", Value: 1},
+					{Key: "document_status", Value: 1},
+				},
+			},
+		},
+
+		OrganisationMembersCollection: {
+			{
+				Keys: bson.D{
+					{Key: "organisation_id", Value: 1},
+					{Key: "user_id", Value: 1},
+					{Key: "document_status", Value: 1},
 				},
 				Options: options.Index().SetUnique(true),
 			},

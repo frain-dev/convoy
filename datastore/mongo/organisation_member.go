@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"github.com/frain-dev/convoy/datastore"
+	"github.com/frain-dev/convoy/util"
 	pager "github.com/gobeam/mongo-go-pagination"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
@@ -24,9 +25,10 @@ func NewOrgMemberRepo(db *mongo.Database) datastore.OrganisationMemberRepository
 }
 
 func (o *orgMemberRepo) LoadOrganisationMembersPaged(ctx context.Context, organisationID string, pageable datastore.Pageable) ([]datastore.OrganisationMember, datastore.PaginationData, error) {
-	filter := bson.M{
-		"document_status": datastore.ActiveDocumentStatus,
-		"organisation_id": organisationID,
+	filter := bson.M{"document_status": datastore.ActiveDocumentStatus}
+
+	if !util.IsStringEmpty(organisationID) {
+		filter["organisation_id"] = organisationID
 	}
 
 	organisations := make([]datastore.OrganisationMember, 0)
@@ -83,7 +85,12 @@ func (o *orgMemberRepo) DeleteOrganisationMember(ctx context.Context, uid string
 func (o *orgMemberRepo) FetchOrganisationMemberByID(ctx context.Context, uid string) (*datastore.OrganisationMember, error) {
 	member := new(datastore.OrganisationMember)
 
-	err := o.inner.FindOne(ctx, bson.M{"uid": uid}).Decode(&member)
+	filter := bson.M{
+		"uid":             uid,
+		"document_status": datastore.ActiveDocumentStatus,
+	}
+
+	err := o.inner.FindOne(ctx, filter).Decode(&member)
 	if errors.Is(err, mongo.ErrNoDocuments) {
 		err = datastore.ErrOrgMemberNotFound
 	}
@@ -91,10 +98,15 @@ func (o *orgMemberRepo) FetchOrganisationMemberByID(ctx context.Context, uid str
 	return member, err
 }
 
-func (o *orgMemberRepo) FetchOrganisationMemberByUserID(ctx context.Context, memberID string) (*datastore.OrganisationMember, error) {
+func (o *orgMemberRepo) FetchOrganisationMemberByUserID(ctx context.Context, userID string) (*datastore.OrganisationMember, error) {
 	member := new(datastore.OrganisationMember)
 
-	err := o.inner.FindOne(ctx, bson.M{"uid": memberID}).Decode(&member)
+	filter := bson.M{
+		"user_id":         userID,
+		"document_status": datastore.ActiveDocumentStatus,
+	}
+
+	err := o.inner.FindOne(ctx, filter).Decode(&member)
 	if errors.Is(err, mongo.ErrNoDocuments) {
 		err = datastore.ErrOrgMemberNotFound
 	}
