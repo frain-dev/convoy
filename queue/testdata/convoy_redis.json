@@ -5,7 +5,7 @@
     "queue": {
         "type": "redis",
         "redis": {
-            "dsn": "localhost:6379"
+            "dsn": "redis://localhost:6379"
         }
     },
     "server": {
