@@ -307,6 +307,18 @@ func buildRoutes(app *applicationHandler) http.Handler {
 			})
 		})
 
+        uiRouter.Route("/subscriptions", func(subsriptionRouter chi.Router) {
+            subsriptionRouter.Use(requireGroup(app.groupRepo, app.cache))
+            subsriptionRouter.Use(rateLimitByGroupID(app.limiter))
+            subsriptionRouter.Use(requirePermission(auth.RoleAdmin))
+
+            subsriptionRouter.Post("/", app.CreateSubscription)
+            subsriptionRouter.With(pagination).Get("/", app.GetSubscriptions)
+            subsriptionRouter.Delete("/", app.DeleteSubscription)
+            subsriptionRouter.Get("/{subscriptionID}", app.GetSubscription)
+            subsriptionRouter.Put("/{subscriptionID}", app.UpdateSubscription)
+        })
+
 		uiRouter.Route("/sources", func(sourceRouter chi.Router) {
 			sourceRouter.Use(requireGroup(app.groupRepo, app.cache))
 			sourceRouter.Use(requirePermission(auth.RoleAdmin))
@@ -382,6 +394,17 @@ func buildRoutes(app *applicationHandler) http.Handler {
 				})
 			})
 		})
+
+        portalRouter.Route("/subscriptions", func(subsriptionRouter chi.Router) {
+            subsriptionRouter.Use(requireAppPortalApplication(app.appRepo))
+			subsriptionRouter.Use(requireAppPortalPermission(auth.RoleUIAdmin))
+
+            subsriptionRouter.Post("/", app.CreateSubscription)
+            subsriptionRouter.With(pagination).Get("/", app.GetSubscriptions)
+            subsriptionRouter.Delete("/", app.DeleteSubscription)
+            subsriptionRouter.Get("/{subscriptionID}", app.GetSubscription)
+            subsriptionRouter.Put("/{subscriptionID}", app.UpdateSubscription)
+        })
 	})
 
 	router.Handle("/v1/metrics", promhttp.Handler())

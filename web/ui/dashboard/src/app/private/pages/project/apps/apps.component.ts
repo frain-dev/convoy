@@ -3,7 +3,9 @@ import { ActivatedRoute, Router } from '@angular/router';
 import { APP } from 'src/app/models/app.model';
 import { PAGINATION } from 'src/app/models/global.model';
 import { HTTP_RESPONSE } from 'src/app/models/http.model';
+import { PrivateService } from 'src/app/private/private.service';
 import { GeneralService } from 'src/app/services/general/general.service';
+import { ProjectService } from '../project.service';
 import { AppsService } from './apps.service';
 
 @Component({
@@ -31,7 +33,15 @@ export class AppsComponent implements OnInit {
 	appsDetailsItem?: any;
 	appsPage: number = 1;
 	filteredApps!: APP[];
-	constructor(private router: Router, private route: ActivatedRoute, private generalService: GeneralService, private appService: AppsService) {}
+
+	constructor(
+		private router: Router,
+		private route: ActivatedRoute,
+		private generalService: GeneralService,
+		private appService: AppsService,
+		private projectService: ProjectService,
+		private privateService: PrivateService
+	) {}
 
 	async ngOnInit() {
 		await this.getApps();
@@ -51,7 +61,7 @@ export class AppsComponent implements OnInit {
 	}
 
 	loadEventsFromAppsTable(appId: string) {
-		const projectId = this.appService.projectId;
+		const projectId = this.privateService.activeProjectId;
 		this.router.navigate(['/projects/' + projectId + '/events'], { queryParams: { eventsApp: appId } });
 	}
 
@@ -61,7 +71,7 @@ export class AppsComponent implements OnInit {
 		this.isloadingApps = true;
 		const page = requestDetails?.page || this.route.snapshot.queryParams.page || 1;
 		try {
-			const appsResponse = await this.appService.getApps({ pageNo: page, searchString: requestDetails?.search });
+			const appsResponse = await this.privateService.getApps({ pageNo: page, searchString: requestDetails?.search });
 
 			this.apps = appsResponse.data;
 			this.displayedApps = this.generalService.setContentDisplayed(this.apps.content);

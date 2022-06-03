@@ -1,5 +1,6 @@
 import { Injectable } from '@angular/core';
 import { HTTP_RESPONSE } from 'src/app/models/http.model';
+import { PrivateService } from 'src/app/private/private.service';
 import { HttpService } from 'src/app/services/http/http.service';
 import { ProjectService } from '../project.service';
 
@@ -7,8 +8,9 @@ import { ProjectService } from '../project.service';
 	providedIn: 'root'
 })
 export class EventsService {
-	activeProjectId: string = this.projectService.activeProject;
-	constructor(private http: HttpService, private projectService:ProjectService) {}
+	activeProjectId: string = this.privateService.activeProjectId;
+
+	constructor(private http: HttpService, private privateService: PrivateService) {}
 
 	async getEvents(requestDetails: { pageNo: number; startDate: string; endDate: string; appId: string; query?: string }): Promise<HTTP_RESPONSE> {
 		return new Promise(async (resolve, reject) => {
@@ -50,7 +52,7 @@ export class EventsService {
 
 				return resolve(response);
 			} catch (error: any) {
-				return reject(error );
+				return reject(error);
 			}
 		});
 	}

@@ -2,6 +2,7 @@ import { Component, OnInit } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
 import { PAGINATION } from 'convoy-app/lib/models/global.model';
 import { SOURCE } from 'src/app/models/group.model';
+import { PrivateService } from 'src/app/private/private.service';
 import { SourcesService } from './sources.service';
 
 @Component({
@@ -14,8 +15,10 @@ export class SourcesComponent implements OnInit {
 	shouldShowCreateSourceModal = this.router.url.split('/')[4] === 'new';
 	activeSource?: SOURCE;
 	sources!: { content: SOURCE[]; pagination: PAGINATION };
+	projectId!: string;
 
-	constructor(private route: ActivatedRoute, private router: Router, private sourcesService: SourcesService) {
+	constructor(private route: ActivatedRoute, private router: Router, private sourcesService: SourcesService, private privateService: PrivateService) {
+		this.projectId = this.privateService.activeProjectId;
 		this.route.queryParams.subscribe(params => {
 			this.activeSource = this.sources?.content.find(source => source.uid === params?.id);
 		});
@@ -28,7 +31,7 @@ export class SourcesComponent implements OnInit {
 	async getSources(requestDetails?: { page?: number }) {
 		const page = requestDetails?.page || this.route.snapshot.queryParams.page || 1;
 		try {
-			const sourcesResponse = await this.sourcesService.getSources({ page });
+			const sourcesResponse = await this.privateService.getSources({ page });
 			this.sources = sourcesResponse.data;
 			this.activeSource = this.sources?.content.find(source => source.uid === this.route.snapshot.queryParams?.id);
 		} catch (error) {
