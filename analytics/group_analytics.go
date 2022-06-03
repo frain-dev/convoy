@@ -11,7 +11,7 @@ type GroupAnalytics struct {
 	client    AnalyticsClient
 }
 
-func NewGroupAnalytics(groupRepo datastore.GroupRepository, client AnalyticsClient) *GroupAnalytics {
+func newGroupAnalytics(groupRepo datastore.GroupRepository, client AnalyticsClient) *GroupAnalytics {
 	return &GroupAnalytics{groupRepo: groupRepo, client: client}
 }
 

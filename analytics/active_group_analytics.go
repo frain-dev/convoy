@@ -13,7 +13,7 @@ type ActiveGroupAnalytics struct {
 	client    AnalyticsClient
 }
 
-func NewActiveGroupAnalytics(groupRepo datastore.GroupRepository, eventRepo datastore.EventRepository, client AnalyticsClient) *ActiveGroupAnalytics {
+func newActiveGroupAnalytics(groupRepo datastore.GroupRepository, eventRepo datastore.EventRepository, client AnalyticsClient) *ActiveGroupAnalytics {
 	return &ActiveGroupAnalytics{groupRepo: groupRepo, eventRepo: eventRepo, client: client}
 }
 

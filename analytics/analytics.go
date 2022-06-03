@@ -1,7 +1,9 @@
 package analytics
 
 import (
+	"context"
 	"encoding/base64"
+	"errors"
 
 	"github.com/dukex/mixpanel"
 	"github.com/frain-dev/convoy/datastore"
@@ -32,10 +34,11 @@ type AnalyticsClient interface {
 type analyticsMap map[string]Tracker
 
 type Repo struct {
-	EventRepo datastore.EventRepository
-	GroupRepo datastore.GroupRepository
-	OrgRepo   datastore.OrganisationRepository
-	UserRepo  datastore.UserRepository
+	ConfigRepo datastore.ConfigurationRepository
+	EventRepo  datastore.EventRepository
+	GroupRepo  datastore.GroupRepository
+	OrgRepo    datastore.OrganisationRepository
+	UserRepo   datastore.UserRepository
 }
 
 type Analytics struct {
@@ -44,7 +47,7 @@ type Analytics struct {
 	client   AnalyticsClient
 }
 
-func NewAnalytics(Repo *Repo) (*Analytics, error) {
+func newAnalytics(Repo *Repo) (*Analytics, error) {
 	client, err := NewMixPanelClient()
 	if err != nil {
 		return nil, err
@@ -56,7 +59,29 @@ func NewAnalytics(Repo *Repo) (*Analytics, error) {
 	return a, nil
 }
 
-func (a *Analytics) TrackDailyAnalytics() {
+func TrackDailyAnalytics(Repo *Repo) {
+	a, err := newAnalytics(Repo)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	a.trackDailyAnalytics()
+}
+
+func (a *Analytics) trackDailyAnalytics() {
+	config, err := a.Repo.ConfigRepo.LoadConfiguration(context.Background())
+	if err != nil {
+		if errors.Is(err, datastore.ErrConfigNotFound) {
+			return
+		}
+
+		log.WithError(err).Error("failed to track metrics")
+	}
+
+	if !config.IsAnalyticsEnabled {
+		return
+	}
+
 	for _, tracker := range a.trackers {
 		go func(tracker Tracker) {
 			err := tracker.Track()
@@ -69,11 +94,11 @@ func (a *Analytics) TrackDailyAnalytics() {
 
 func (a *Analytics) RegisterTrackers() {
 	a.trackers = analyticsMap{
-		DailyEventCount:        NewEventAnalytics(a.Repo.EventRepo, a.client),
-		DailyOrganisationCount: NewOrganisationAnalytics(a.Repo.OrgRepo, a.client),
-		DailyGroupCount:        NewGroupAnalytics(a.Repo.GroupRepo, a.client),
-		DailyActiveGroupCount:  NewActiveGroupAnalytics(a.Repo.GroupRepo, a.Repo.EventRepo, a.client),
-		DailyUserCount:         NewUserAnalytics(a.Repo.UserRepo, a.client),
+		DailyEventCount:        newEventAnalytics(a.Repo.EventRepo, a.client),
+		DailyOrganisationCount: newOrganisationAnalytics(a.Repo.OrgRepo, a.client),
+		DailyGroupCount:        newGroupAnalytics(a.Repo.GroupRepo, a.client),
+		DailyActiveGroupCount:  newActiveGroupAnalytics(a.Repo.GroupRepo, a.Repo.EventRepo, a.client),
+		DailyUserCount:         newUserAnalytics(a.Repo.UserRepo, a.client),
 	}
 
 }

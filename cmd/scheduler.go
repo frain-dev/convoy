@@ -1,6 +1,7 @@
 package main
 
 import (
+	"github.com/frain-dev/convoy/analytics"
 	"github.com/frain-dev/convoy/config"
 	"github.com/frain-dev/convoy/worker"
 	log "github.com/sirupsen/logrus"
@@ -28,6 +29,17 @@ func addSchedulerCommand(a *app) *cobra.Command {
 			// s.AddTask("retry events", 30, func() {
 			// 	  task.RetryEventDeliveries(nil, "", a.eventDeliveryRepo, a.groupRepo, a.eventQueue)
 			// })
+
+			s.AddTask("track analytics", 30, func() {
+				analytics.TrackDailyAnalytics(
+					&analytics.Repo{
+						ConfigRepo: a.configRepo,
+						EventRepo:  a.eventRepo,
+						GroupRepo:  a.groupRepo,
+						OrgRepo:    a.orgRepo,
+						UserRepo:   a.userRepo,
+					})
+			})
 
 			// Start Processing
 			s.Start()

@@ -11,7 +11,7 @@ type OrganisationAnalytics struct {
 	client  AnalyticsClient
 }
 
-func NewOrganisationAnalytics(orgRepo datastore.OrganisationRepository, client AnalyticsClient) *OrganisationAnalytics {
+func newOrganisationAnalytics(orgRepo datastore.OrganisationRepository, client AnalyticsClient) *OrganisationAnalytics {
 	return &OrganisationAnalytics{orgRepo: orgRepo, client: client}
 }
 

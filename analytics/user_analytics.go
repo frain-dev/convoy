@@ -11,7 +11,7 @@ type UserAnalytics struct {
 	client   AnalyticsClient
 }
 
-func NewUserAnalytics(userRepo datastore.UserRepository, client AnalyticsClient) *UserAnalytics {
+func newUserAnalytics(userRepo datastore.UserRepository, client AnalyticsClient) *UserAnalytics {
 	return &UserAnalytics{userRepo: userRepo, client: client}
 }
 

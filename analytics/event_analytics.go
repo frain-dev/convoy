@@ -11,7 +11,7 @@ type EventAnalytics struct {
 	client    AnalyticsClient
 }
 
-func NewEventAnalytics(eventRepo datastore.EventRepository, client AnalyticsClient) *EventAnalytics {
+func newEventAnalytics(eventRepo datastore.EventRepository, client AnalyticsClient) *EventAnalytics {
 	return &EventAnalytics{eventRepo: eventRepo, client: client}
 }
 
