@@ -23,6 +23,10 @@ type Organisation struct {
 	Name string `json:"name" bson:"name" valid:"required~please provide a valid name"`
 }
 
+type Configuration struct {
+	IsAnalyticsEnabled *bool `json:"is_analytics_enabled"`
+}
+
 type APIKey struct {
 	Name      string            `json:"name"`
 	Role      auth.Role         `json:"role"`

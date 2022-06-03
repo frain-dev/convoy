@@ -23,6 +23,7 @@ type Client struct {
 	sourceRepo        datastore.SourceRepository
 	orgRepo           datastore.OrganisationRepository
 	userRepo          datastore.UserRepository
+	configRepo        datastore.ConfigurationRepository
 }
 
 func New(cfg config.Configuration) (datastore.DatabaseClient, error) {
@@ -53,6 +54,7 @@ func New(cfg config.Configuration) (datastore.DatabaseClient, error) {
 		sourceRepo:        NewSourceRepo(st),
 		orgRepo:           NewOrgRepo(st),
 		userRepo:          NewUserRepo(st),
+		configRepo:        NewConfigRepo(st),
 	}
 
 	return c, nil
@@ -100,4 +102,8 @@ func (c *Client) OrganisationRepo() datastore.OrganisationRepository {
 
 func (c *Client) UserRepo() datastore.UserRepository {
 	return c.userRepo
+}
+
+func (c *Client) ConfigurationRepo() datastore.ConfigurationRepository {
+	return c.configRepo
 }

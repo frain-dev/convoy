@@ -85,3 +85,9 @@ type UserRepository interface {
 	FindUserByID(context.Context, string) (*User, error)
 	LoadUsersPaged(context.Context, Pageable) ([]User, PaginationData, error)
 }
+
+type ConfigurationRepository interface {
+	CreateConfiguration(context.Context, *Configuration) error
+	LoadConfiguration(context.Context) (*Configuration, error)
+	UpdateConfiguration(context.Context, *Configuration) error
+}

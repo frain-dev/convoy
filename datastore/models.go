@@ -124,6 +124,7 @@ var (
 	ErrEndpointNotFound    = errors.New("endpoint not found")
 	ErrSourceNotFound      = errors.New("source not found")
 	ErrUserNotFound        = errors.New("user not found")
+	ErrConfigNotFound      = errors.New("config not found")
 )
 
 const (
@@ -511,6 +512,17 @@ type Organisation struct {
 	CreatedAt      primitive.DateTime `json:"created_at,omitempty" bson:"created_at,omitempty" swaggertype:"string"`
 	UpdatedAt      primitive.DateTime `json:"updated_at,omitempty" bson:"updated_at,omitempty" swaggertype:"string"`
 	DeletedAt      primitive.DateTime `json:"deleted_at,omitempty" bson:"deleted_at,omitempty" swaggertype:"string"`
+}
+
+type Configuration struct {
+	ID                 primitive.ObjectID `json:"-" bson:"_id"`
+	UID                string             `json:"uid" bson:"uid"`
+	IsAnalyticsEnabled bool               `json:"is_analytics_enabled" bson:"is_analytics_enabled"`
+	DocumentStatus     DocumentStatus     `json:"-" bson:"document_status"`
+
+	CreatedAt primitive.DateTime `json:"created_at,omitempty" bson:"created_at,omitempty" swaggertype:"string"`
+	UpdatedAt primitive.DateTime `json:"updated_at,omitempty" bson:"updated_at,omitempty" swaggertype:"string"`
+	DeletedAt primitive.DateTime `json:"deleted_at,omitempty" bson:"deleted_at,omitempty" swaggertype:"string"`
 }
 
 type Password struct {
