@@ -52,5 +52,5 @@ func (a *applicationHandler) CreateConfiguration(w http.ResponseWriter, r *http.
 		return
 	}
 
-	_ = render.Render(w, r, newServerResponse("Configuration created successfully", config, http.StatusOK))
+	_ = render.Render(w, r, newServerResponse("Configuration created successfully", config, http.StatusCreated))
 }

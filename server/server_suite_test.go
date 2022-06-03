@@ -94,6 +94,7 @@ func buildApplication() *applicationHandler {
 	sourceRepo := db.SourceRepo()
 	orgRepo := db.OrganisationRepo()
 	userRepo := db.UserRepo()
+	configRepo := db.ConfigurationRepo()
 	eventQueue := redisqueue.NewQueue(qOpts)
 	createEventQueue := redisqueue.NewQueue(cOpts)
 	logger := logger.NewNoopLogger()
@@ -104,7 +105,7 @@ func buildApplication() *applicationHandler {
 
 	return newApplicationHandler(
 		eventRepo, eventDeliveryRepo, appRepo,
-		groupRepo, apiKeyRepo, sourceRepo, orgRepo, userRepo, eventQueue, createEventQueue,
+		groupRepo, apiKeyRepo, sourceRepo, orgRepo, userRepo, configRepo, eventQueue, createEventQueue,
 		logger, tracer, cache, limiter, searcher,
 	)
 }

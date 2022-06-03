@@ -330,6 +330,8 @@ func buildRoutes(app *applicationHandler) http.Handler {
 		})
 
 		uiRouter.Route("/configuration", func(configRouter chi.Router) {
+			configRouter.Use(requirePermission(auth.RoleAdmin))
+			
 			configRouter.Get("/", app.LoadConfiguration)
 			configRouter.Post("/", app.CreateConfiguration)
 		})
