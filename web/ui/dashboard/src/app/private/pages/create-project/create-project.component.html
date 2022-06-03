@@ -102,12 +102,12 @@
 				</div>
 				<h3 class="margin-top__24px margin-bottom__16px flex flex__align-items-center">
 					Retry Logic
-					<app-tooltip [size]="'small'" position="right" class="margin-left__4px">Retry Logic</app-tooltip>
+					<app-tooltip [size]="'small'" position="right" class="margin-left__4px">These are the specifications for the retry mechanism for your endpoints</app-tooltip>
 				</h3>
 				<div class="grid grid__col-2 grid--gap__24px" formGroupName="strategy">
 					<div class="input">
 						<label for="type">
-							Type
+							Mechanism
 							<span class="bg__grey__light rounded__4px padding-x__4px position__absolute position--right__0px font__10px font__weight-400">required</span>
 						</label>
 						<select name="type" id="type" formControlName="type" [ngClass]="{ invalid: projectForm.get('strategy.type')?.touched && projectForm.get('strategy.type')?.invalid }">
@@ -115,13 +115,13 @@
 						</select>
 						<div class="input__error input__error__danger" *ngIf="projectForm.get('strategy.type')?.touched && projectForm.get('strategy.type')?.invalid">
 							<img src="assets/img/input-error-icon.svg" alt="input error icon" />
-							<span>Select retry logic type</span>
+							<span>Select retry logic mechanism</span>
 						</div>
 					</div>
 
 					<div class="input">
 						<label for="retry-logic-duration">
-							Duration
+							Duration(seconds)
 							<span class="bg__grey__light rounded__4px padding-x__4px position__absolute position--right__0px font__10px font__weight-400">required</span>
 						</label>
 						<input
@@ -139,7 +139,7 @@
 					</div>
 					<div class="input">
 						<label for="retry-logic-count">
-							Count
+							Limit
 							<span class="bg__grey__light rounded__4px padding-x__4px position__absolute position--right__0px font__10px font__weight-400">required</span>
 						</label>
 						<input
@@ -152,13 +152,13 @@
 
 						<div class="input__error input__error__danger" *ngIf="projectForm.get('strategy.retry_count')?.touched && projectForm.get('strategy.retry_count')?.invalid">
 							<img src="assets/img/input-error-icon.svg" alt="input error icon" />
-							<span>Enter retry logic count</span>
+							<span>Enter retry logic limit</span>
 						</div>
 					</div>
 				</div>
 				<h3 class="margin-top__24px margin-bottom__16px flex flex__align-items-center">
 					Rate Limit Parameters
-					<app-tooltip [size]="'small'" position="right" class="margin-left__4px">Rate Limit Parameters</app-tooltip>
+					<app-tooltip [size]="'small'" position="right" class="margin-left__4px">These are the specifications for how many events are to be sent to an endpoint per time</app-tooltip>
 				</h3>
 				<div class="grid grid__col-2 grid--gap__24px">
 					<div class="input">
@@ -206,8 +206,9 @@
 						<label for="true" class="border__all padding-all__16px rounded__4px display__block animate">
 							<div class="flex flex__align-items-center">
 								<div class="checkbox rounded__50px margin-bottom__0px border__all width__16px height__16px animate"></div>
-								<p class="font__14px font__weight-600 margin-left__8px">Disable failing endpoints</p>
+								<p class="font__14px font__weight-600 margin-left__8px">True</p>
 							</div>
+							<p class="color__grey font__12px font__weight-400">Disable endpoints when they are failing</p>
 						</label>
 					</div>
 
@@ -216,8 +217,9 @@
 						<label for="false" class="border__all padding-all__16px rounded__4px display__block animate">
 							<div class="flex flex__align-items-center">
 								<div class="checkbox rounded__50px margin-bottom__0px border__all width__16px height__16px animate"></div>
-								<p class="font__14px font__weight-600 margin-left__8px">Do not disable failing endpoints</p>
+								<p class="font__14px font__weight-600 margin-left__8px">False</p>
 							</div>
+							<p class="color__grey font__12px font__weight-400">Do not disable endpoints when they are failing</p>
 						</label>
 					</div>
 				</div>
