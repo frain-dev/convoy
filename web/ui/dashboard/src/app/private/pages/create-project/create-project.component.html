@@ -16,7 +16,7 @@
 	</div>
 
 	<div class="modal--body padding-all__0px">
-		<p class="font__14px color__grey margin-bottom__24px width__80">Your project represents the etiam diam mi, egestas tortor nulla quis consectetur mauris eget. Penatibus placerat massa, lectus lectus</p>
+		<p class="font__14px color__grey margin-bottom__24px">A project represents the top level namespace for grouping event sources, applications, endpoints and events.</p>
 
 		<form [formGroup]="projectForm" *ngIf="projectStage === 'createProject'" (submit)="createProject()">
 			<div class="card card--second-half padding-all__24px margin-top__24px">
@@ -47,7 +47,7 @@
 								<div class="checkbox rounded__50px margin-bottom__0px border__all width__16px height__16px animate"></div>
 								<p class="font__14px font__weight-600 margin-left__8px">Incoming webhooks</p>
 							</div>
-							<p class="color__grey font__12px font__weight-400">Eiam diam mi, egestas tortor nulla quis consectetur mauris eget. Penatibus placerat massa, lectus lectus</p>
+							<p class="color__grey font__12px font__weight-400">Create an incoming webhooks project to proxy events from third-party providers to your endpoints</p>
 						</label>
 					</div>
 
@@ -58,14 +58,14 @@
 								<div class="checkbox rounded__50px margin-bottom__0px border__all width__16px height__16px animate"></div>
 								<p class="font__14px font__weight-600 margin-left__8px">Outgoing webhook</p>
 							</div>
-							<p class="color__grey font__12px font__weight-400">Eiam diam mi, egestas tortor nulla quis consectetur mauris eget. Penatibus placerat massa, lectus lectus</p>
+							<p class="color__grey font__12px font__weight-400">Create an outgoing webhooks project to publish events to your customer-provided endpoints</p>
 						</label>
 					</div>
 				</div>
 
 				<h3 class="margin-top__24px margin-bottom__16px flex flex__align-items-center">
 					Signature Details
-					<app-tooltip [size]="'small'" position="right" class="margin-left__4px">Signature details</app-tooltip>
+					<app-tooltip [size]="'small'" position="right" class="margin-left__4px">This specifies your header and hash function for your project</app-tooltip>
 				</h3>
 				<div class="grid grid__col-2 grid--gap__24px" formGroupName="signature">
 					<div class="input">
@@ -96,13 +96,16 @@
 						</select>
 						<div class="input__error input__error__danger" *ngIf="projectForm.get('signature.hash')?.touched && projectForm.get('signature.hash')?.invalid">
 							<img src="assets/img/input-error-icon.svg" alt="input error icon" />
-							<span>Enter project hash</span>
+							<span>Please select a hash</span>
 						</div>
 					</div>
 				</div>
 				<h3 class="margin-top__24px margin-bottom__16px flex flex__align-items-center">
 					Retry Logic
-					<app-tooltip [size]="'small'" position="right" class="margin-left__4px">These are the specifications for the retry mechanism for your endpoints</app-tooltip>
+					<app-tooltip [size]="'small'" position="right" class="margin-left__4px">
+						These are the specifications for the retry mechanism for your endpoints. In Linear time retry, event retries are done in linear time, while in Exponential back off retry, events are
+						retried progressively increasing the time before the next retry attempt.
+					</app-tooltip>
 				</h3>
 				<div class="grid grid__col-2 grid--gap__24px" formGroupName="strategy">
 					<div class="input">
@@ -115,7 +118,7 @@
 						</select>
 						<div class="input__error input__error__danger" *ngIf="projectForm.get('strategy.type')?.touched && projectForm.get('strategy.type')?.invalid">
 							<img src="assets/img/input-error-icon.svg" alt="input error icon" />
-							<span>Select retry logic mechanism</span>
+							<span>Please select a retry logic mechanism</span>
 						</div>
 					</div>
 
@@ -134,7 +137,7 @@
 
 						<div class="input__error input__error__danger" *ngIf="projectForm.get('strategy.duration')?.touched && projectForm.get('strategy.duration')?.invalid">
 							<img src="assets/img/input-error-icon.svg" alt="input error icon" />
-							<span>Enter retry logic duration</span>
+							<span>Please enter your retry logic duration</span>
 						</div>
 					</div>
 					<div class="input">
@@ -152,7 +155,7 @@
 
 						<div class="input__error input__error__danger" *ngIf="projectForm.get('strategy.retry_count')?.touched && projectForm.get('strategy.retry_count')?.invalid">
 							<img src="assets/img/input-error-icon.svg" alt="input error icon" />
-							<span>Enter retry logic limit</span>
+							<span>Please enter a retry limit</span>
 						</div>
 					</div>
 				</div>
@@ -176,12 +179,12 @@
 
 						<div class="input__error input__error__danger" *ngIf="projectForm.controls['rate_limit_duration'].touched && projectForm.controls['rate_limit_duration'].invalid">
 							<img src="assets/img/input-error-icon.svg" alt="input error icon" />
-							<span>Enter rate limit duration</span>
+							<span>Please enter your rate limit duration</span>
 						</div>
 					</div>
 					<div class="input">
 						<label for="retry-logic-count">
-							Count
+							Limit
 							<span class="bg__grey__light rounded__4px padding-x__4px position__absolute position--right__0px font__10px font__weight-400">required</span>
 						</label>
 						<input
@@ -194,7 +197,7 @@
 
 						<div class="input__error input__error__danger" *ngIf="projectForm.controls['rate_limit_duration'].touched && projectForm.controls['rate_limit_duration'].invalid">
 							<img src="assets/img/input-error-icon.svg" alt="input error icon" />
-							<span>Enter rate limit count</span>
+							<span>Please enter a rate limit</span>
 						</div>
 					</div>
 				</div>
@@ -208,7 +211,7 @@
 								<div class="checkbox rounded__50px margin-bottom__0px border__all width__16px height__16px animate"></div>
 								<p class="font__14px font__weight-600 margin-left__8px">True</p>
 							</div>
-							<p class="color__grey font__12px font__weight-400">Disable endpoints when they are failing</p>
+							<p class="color__grey font__12px font__weight-400">Endpoints would be disabled automatically when they are failing.</p>
 						</label>
 					</div>
 
@@ -219,7 +222,7 @@
 								<div class="checkbox rounded__50px margin-bottom__0px border__all width__16px height__16px animate"></div>
 								<p class="font__14px font__weight-600 margin-left__8px">False</p>
 							</div>
-							<p class="color__grey font__12px font__weight-400">Do not disable endpoints when they are failing</p>
+							<p class="color__grey font__12px font__weight-400">Endpoints are not automatically disabled when they are failing</p>
 						</label>
 					</div>
 				</div>

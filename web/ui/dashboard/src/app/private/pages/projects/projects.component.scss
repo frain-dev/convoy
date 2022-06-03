@@ -4,8 +4,4 @@
 .projects-grid {
 	grid-template-columns: repeat(auto-fit, minmax(333px, 1fr));
 	gap: 24px 32px;
-
-	@media (max-width: 1024px) {
-		grid-template-columns: repeat(auto-fit, minmax(333px, 1fr));
-	}
 }
