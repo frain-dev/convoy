@@ -61,7 +61,5 @@ export class CreateProjectComponent implements OnInit {
 		}
 	}
 
-	toggleActiveStage(){
-
-	}
+	toggleActiveStage() {}
 }
