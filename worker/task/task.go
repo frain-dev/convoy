@@ -32,12 +32,14 @@ func (e *RateLimitError) Delay() time.Duration {
 	return e.delay
 }
 
-func GetRetryDelay(n int, err error, t *asynq.Task) time.Duration {
+func (e *RateLimitError) RateLimit() {
+}
 
+func GetRetryDelay(n int, err error, t *asynq.Task) time.Duration {
 	if endpointError, ok := err.(*EndpointError); ok {
 		return endpointError.Delay()
 	}
-	if rateLimitError, ok := err.(*EndpointError); ok {
+	if rateLimitError, ok := err.(*RateLimitError); ok {
 		return rateLimitError.Delay()
 	}
 	return defaultDelay

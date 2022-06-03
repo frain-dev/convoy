@@ -100,6 +100,7 @@ func (e *EventService) CreateAppEvent(ctx context.Context, newMessage *models.Ev
 	payload := json.RawMessage(eventByte)
 
 	job := &queue.Job{
+		ID:      event.UID,
 		Payload: payload,
 		Delay:   0,
 	}
@@ -117,6 +118,7 @@ func (e *EventService) ReplayAppEvent(ctx context.Context, event *datastore.Even
 	payload := json.RawMessage(eventByte)
 
 	job := &queue.Job{
+		ID:      event.UID,
 		Payload: payload,
 		Delay:   0,
 	}
@@ -307,6 +309,7 @@ func (e *EventService) requeueEventDelivery(ctx context.Context, eventDelivery *
 	taskName := convoy.CreateEventProcessor
 
 	job := &queue.Job{
+		ID:      eventDelivery.UID,
 		Payload: json.RawMessage(eventDelivery.UID),
 		Delay:   1 * time.Second,
 	}

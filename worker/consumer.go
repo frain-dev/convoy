@@ -29,7 +29,10 @@ func NewConsumer(cfg config.Configuration, queues map[string]int) (*Consumer, er
 			Concurrency: convoy.Concurrency,
 			Queues:      queues,
 			IsFailure: func(err error) bool {
-				return err != task.ErrRateLimit
+				if _, ok := err.(*task.RateLimitError); ok {
+					return true
+				}
+				return false
 			},
 			RetryDelayFunc: task.GetRetryDelay,
 		},

@@ -14,7 +14,7 @@ type Queuer interface {
 }
 
 type Job struct {
-	Err     error           `json:"err"`
+	ID      string          `json:"id"`
 	Payload json.RawMessage `json:"payload"`
 	Delay   time.Duration   `json:"delay"`
 }

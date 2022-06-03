@@ -9,6 +9,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/frain-dev/convoy"
 	"github.com/frain-dev/convoy/auth"
 	"github.com/frain-dev/convoy/cache"
 	"github.com/frain-dev/convoy/logger"
@@ -396,8 +397,8 @@ func buildRoutes(app *applicationHandler) http.Handler {
 		})
 	})
 
-	router.Handle("/queue/monitoring/*", app.queue.(*redisqueue.RedisQueue).Telemetry())
-	router.Handle("/v1/metrics", promhttp.Handler())
+	router.Handle("/queue/monitoring/*", app.queue.(*redisqueue.RedisQueue).Monitor())
+	router.Handle("/metrics", promhttp.Handler())
 	router.HandleFunc("/health", func(w http.ResponseWriter, r *http.Request) {
 		_ = render.Render(w, r, newServerResponse("Convoy", nil, http.StatusOK))
 	})
@@ -444,6 +445,7 @@ func New(cfg config.Configuration,
 		Addr:         fmt.Sprintf(":%d", cfg.Server.HTTP.Port),
 	}
 
+	RegisterQueueMetrics(convoy.EventQueue, app.queue, cfg)
 	RegisterDBMetrics(app)
 	prometheus.MustRegister(requestDuration)
 	return srv

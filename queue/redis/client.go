@@ -12,7 +12,8 @@ import (
 )
 
 type RedisQueue struct {
-	opts queue.QueueOptions
+	opts      queue.QueueOptions
+	inspector *asynq.Inspector
 }
 
 func NewClient(cfg config.Configuration) (*asynq.Client, error) {
@@ -31,13 +32,17 @@ func NewClient(cfg config.Configuration) (*asynq.Client, error) {
 }
 
 func NewQueue(opts queue.QueueOptions) queue.Queuer {
+	inspector := asynq.NewInspector(asynq.RedisClientOpt{
+		Addr: opts.Redis,
+	})
 	return &RedisQueue{
-		opts: opts,
+		opts:      opts,
+		inspector: inspector,
 	}
 }
 
 func (q *RedisQueue) Write(taskName convoy.TaskName, queueName convoy.QueueName, job *queue.Job) error {
-	t := asynq.NewTask(string(taskName), job.Payload, asynq.Queue(string(queueName)), asynq.ProcessIn(job.Delay))
+	t := asynq.NewTask(string(taskName), job.Payload, asynq.Queue(string(queueName)), asynq.TaskID(job.ID), asynq.ProcessIn(job.Delay))
 	_, err := q.opts.Client.Enqueue(t)
 	return err
 }
@@ -46,7 +51,7 @@ func (q *RedisQueue) Options() queue.QueueOptions {
 	return q.opts
 }
 
-func (q *RedisQueue) Telemetry() *asynqmon.HTTPHandler {
+func (q *RedisQueue) Monitor() *asynqmon.HTTPHandler {
 	h := asynqmon.New(asynqmon.Options{
 		RootPath: "/queue/monitoring",
 		RedisConnOpt: asynq.RedisClientOpt{
@@ -56,4 +61,25 @@ func (q *RedisQueue) Telemetry() *asynqmon.HTTPHandler {
 		},
 	})
 	return h
+}
+
+func (q *RedisQueue) Inspector() *asynq.Inspector {
+	return q.inspector
+}
+
+func (q *RedisQueue) DeleteEventDeliveriesfromQueue(queuename convoy.QueueName, ids []string) error {
+	for _, id := range ids {
+		taskInfo, err := q.inspector.GetTaskInfo(string(queuename), id)
+		if taskInfo.State == asynq.TaskStateActive {
+			q.inspector.CancelProcessing(id)
+		}
+		if err != nil {
+			return err
+		}
+		err = q.inspector.DeleteTask(string(queuename), id)
+		if err != nil {
+			return err
+		}
+	}
+	return nil
 }

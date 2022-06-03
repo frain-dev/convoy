@@ -82,7 +82,7 @@ func ProcessEventDelivery(appRepo datastore.ApplicationRepository, eventDelivery
 			log.WithError(ErrRateLimit).Error(err.Error())
 
 			var delayDuration time.Duration = retrystrategies.NewRetryStrategyFromMetadata(*m.Metadata).NextDuration(m.Metadata.NumTrials)
-			return &RateLimitError{Err: errors.New("rate limit error"), delay: delayDuration}
+			return &RateLimitError{Err: ErrRateLimit, delay: delayDuration}
 		}
 
 		_, err = rateLimiter.Allow(context.Background(), m.EndpointMetadata.TargetURL, rateLimit, int(rateLimitDuration))

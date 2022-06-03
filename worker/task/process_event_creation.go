@@ -131,6 +131,7 @@ func ProcessEventCreated(appRepo datastore.ApplicationRepository, eventRepo data
 				payload := json.RawMessage(eventDelivery.UID)
 
 				job := &queue.Job{
+					ID:      eventDelivery.UID,
 					Payload: payload,
 					Delay:   1 * time.Second,
 				}
