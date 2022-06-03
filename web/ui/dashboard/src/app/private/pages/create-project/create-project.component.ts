@@ -1,5 +1,6 @@
 import { Component, OnInit } from '@angular/core';
 import { FormBuilder, FormControl, FormGroup, Validators } from '@angular/forms';
+import { Router } from '@angular/router';
 import { GeneralService } from 'src/app/services/general/general.service';
 import { ProjectService } from '../project/project.service';
 import { CreateProjectService } from './create-project.service';
@@ -10,7 +11,7 @@ import { CreateProjectService } from './create-project.service';
 	styleUrls: ['./create-project.component.scss']
 })
 export class CreateProjectComponent implements OnInit {
-	projectStage: 'createProject' | 'createSource' | 'createApplication' | 'createSubscription' = 'createProject';
+	projectStage: 'createProject' | 'createSource' | 'createApplication' | 'createSubscription' = 'createApplication';
 	hashAlgorithms = ['SHA256', 'SHA512', 'MD5', 'SHA1', 'SHA224', 'SHA384', 'SHA3_224', 'SHA3_256', 'SHA3_384', 'SHA3_512', 'SHA512_256', 'SHA512_224'];
 	retryLogicTypes = [
 		{ id: 'linear', type: 'Linear time retry' },
@@ -34,7 +35,7 @@ export class CreateProjectComponent implements OnInit {
 		rate_limit_duration: [''],
 		disable_endpoint: [false, Validators.required]
 	});
-	constructor(private formBuilder: FormBuilder, private createProjectService: CreateProjectService, private generalService: GeneralService, private projectService: ProjectService) {}
+	constructor(private formBuilder: FormBuilder, private createProjectService: CreateProjectService, private generalService: GeneralService, private projectService: ProjectService, private router: Router) {}
 
 	ngOnInit(): void {}
 
@@ -62,4 +63,8 @@ export class CreateProjectComponent implements OnInit {
 	}
 
 	toggleActiveStage() {}
+
+	cancel() {
+		this.router.navigate(['/projects']);
+	}
 }

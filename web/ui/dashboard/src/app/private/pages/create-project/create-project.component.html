@@ -281,6 +281,6 @@
 
 		<app-create-source *ngIf="projectStage === 'createSource'"></app-create-source>
 
-		<app-create-app *ngIf="projectStage === 'createApplication'" (discardCreateApp)="projectStage = 'createSubscription'"></app-create-app>
+		<app-create-app *ngIf="projectStage === 'createApplication'" (discardApp)="cancel()" (createApp)="projectStage = 'createSubscription'"></app-create-app>
 	</div>
 </div>

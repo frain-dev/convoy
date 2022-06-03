@@ -31,32 +31,7 @@
 			<input id="app-slack-url" type="text" formControlName="slack_webhook_url" />
 		</div>
 	</div>
-	<h2 class="margin-bottom__16px">Is app enabled?</h2>
-
-	<div class="grid grid__col-2 grid--gap__20px">
-		<div class="checkbox-option">
-			<input type="radio" id="enabled" formControlName="is_disabled" [value]="false" [checked]="addNewAppForm.value.is_disabled" />
-			<label for="enabled" class="border__all padding-all__16px rounded__4px position__relative display__block animate">
-				<div class="flex flex__align-items-center flex__justify-between position__relative">
-					<div class="flex flex__align-items-center">
-						<div class="checkbox rounded__50px margin-bottom__0px border__all width__16px height__16px animate"></div>
-						<p class="font__14px font__weight-600 margin-left__8px">Yes</p>
-					</div>
-				</div>
-			</label>
-		</div>
-		<div class="checkbox-option">
-			<input type="radio" id="disabled" formControlName="is_disabled" [value]="true" [checked]="addNewAppForm.value.is_disabled" />
-			<label for="disabled" class="border__all padding-all__16px rounded__4px position__relative display__block animate">
-				<div class="flex flex__align-items-center flex__justify-between position__relative">
-					<div class="flex flex__align-items-center">
-						<div class="checkbox rounded__50px margin-bottom__0px border__all width__16px height__16px animate"></div>
-						<p class="font__14px font__weight-600 margin-left__8px">No</p>
-					</div>
-				</div>
-			</label>
-		</div>
-	</div>
+	
 
 	<div *ngIf="!editAppMode" formArrayName="endpoints">
 		<div *ngIf="endpoints.controls.length > 0" class="flex flex__align-items-center flex__justify-between">
@@ -128,7 +103,7 @@
 	</div>
 </form>
 <div class="flex flex__justify-end padding-all__24px">
-	<button class="button button__white button--large" (click)="closeCreateAppInstance(); editAppMode = false; addNewAppForm.reset()">Discard</button>
+	<button class="button button__white button--large" (click)="closeAppInstance(); editAppMode = false; addNewAppForm.reset()">Discard</button>
 	<button id="create-app-button" class="button button__primary margin-left__24px" [disabled]="isSavingApp" (click)="saveApp()">
 		{{ editAppMode ? 'Edit App' : 'Create App' }}
 	</button>
