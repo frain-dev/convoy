@@ -343,18 +343,6 @@ func (em Metadata) Value() (driver.Value, error) {
 	return driver.Value(b.String()), nil
 }
 
-// type EndpointMetadata struct {
-// 	UID               string         `json:"uid" bson:"uid"`
-// 	TargetURL         string         `json:"target_url" bson:"target_url"`
-// 	Status            EndpointStatus `json:"status" bson:"status"`
-// 	Secret            string         `json:"secret" bson:"secret"`
-// 	HttpTimeout       string         `json:"http_timeout" bson:"http_timeout"`
-// 	RateLimit         int            `json:"rate_limit" bson:"rate_limit"`
-// 	RateLimitDuration string         `json:"rate_limit_duration" bson:"rate_limit_duration"`
-
-// 	Sent bool `json:"sent" bson:"sent"`
-// }
-
 type EventIntervalData struct {
 	Interval int64  `json:"index" bson:"index"`
 	Time     string `json:"date" bson:"total_time"`

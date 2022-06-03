@@ -186,7 +186,7 @@ func buildRoutes(app *applicationHandler) http.Handler {
 
 				subsriptionRouter.Post("/", app.CreateSubscription)
 				subsriptionRouter.With(pagination).Get("/", app.GetSubscriptions)
-				subsriptionRouter.Delete("/", app.DeleteSubscription)
+				subsriptionRouter.Delete("/{subscriptionID}", app.DeleteSubscription)
 				subsriptionRouter.Get("/{subscriptionID}", app.GetSubscription)
 				subsriptionRouter.Put("/{subscriptionID}", app.UpdateSubscription)
 			})

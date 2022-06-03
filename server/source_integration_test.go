@@ -1,6 +1,3 @@
-//go:build integration
-// +build integration
-
 package server
 
 import (
@@ -10,6 +7,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"testing"
+	"time"
 
 	"github.com/frain-dev/convoy/config"
 	"github.com/frain-dev/convoy/datastore"
@@ -95,7 +93,8 @@ func (s *SourceIntegrationTestSuite) Test_GetSourceBy_ValidSource() {
 }
 
 func (s *SourceIntegrationTestSuite) Test_GetSource_ValidSources() {
-	totalSources := rand.Intn(5)
+	r := rand.New(rand.NewSource(time.Now().Unix()))
+	totalSources := r.Intn(5)
 
 	// Just Before
 	for i := 0; i < totalSources; i++ {
@@ -268,7 +267,7 @@ func (s *SourceIntegrationTestSuite) Test_DeleteSource() {
 
 	// Deep Assert.
 	_, err := s.DB.SourceRepo().FindSourceByID(context.Background(), s.DefaultGroup.UID, sourceID)
-	require.Error(s.T(), err, datastore.ErrSourceNotFound)
+	require.ErrorIs(s.T(), err, datastore.ErrSourceNotFound)
 }
 
 func TestSourceIntegrationTestSuite(t *testing.T) {

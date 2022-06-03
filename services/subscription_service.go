@@ -137,7 +137,7 @@ func (s *SubcriptionService) FindSubscriptionByID(ctx context.Context, groupId s
 	sub, err := s.subRepo.FindSubscriptionByID(ctx, groupId, subscriptionId)
 	if err != nil {
 		log.WithError(err).Error(ErrSubscriptionNotFound.Error())
-		return nil, NewServiceError(http.StatusBadRequest, ErrSubscriptionNotFound)
+		return nil, NewServiceError(http.StatusNotFound, ErrSubscriptionNotFound)
 	}
 
 	return sub, nil
