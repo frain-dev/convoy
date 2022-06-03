@@ -124,6 +124,8 @@ type app struct {
 	eventRepo         datastore.EventRepository
 	eventDeliveryRepo datastore.EventDeliveryRepository
 	orgRepo           datastore.OrganisationRepository
+	orgMemberRepo     datastore.OrganisationMemberRepository
+	orgInviteRepo     datastore.OrganisationInviteRepository
 	sourceRepo        datastore.SourceRepository
 	userRepo          datastore.UserRepository
 	eventQueue        queue.Queuer
@@ -257,6 +259,9 @@ func preRun(app *app, db datastore.DatabaseClient) func(cmd *cobra.Command, args
 		app.eventDeliveryRepo = db.EventDeliveryRepo()
 		app.sourceRepo = db.SourceRepo()
 		app.userRepo = db.UserRepo()
+		app.orgRepo = db.OrganisationRepo()
+		app.orgMemberRepo = db.OrganisationMemberRepo()
+		app.orgInviteRepo = db.OrganisationInviteRepo()
 
 		app.eventQueue = NewQueue(opts, "EventQueue")
 		app.createEventQueue = NewQueue(opts, "CreateEventQueue")
