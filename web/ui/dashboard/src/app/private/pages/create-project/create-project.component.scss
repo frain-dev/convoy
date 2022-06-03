@@ -7,10 +7,20 @@
 	.line {
 		height: 4px;
 		width: 240px;
-		background: var(--color-primary-500);
+		background: var(--primary-color-500);
+	}
+	.checkbox {
+		border-color: var(--grey-color-400);
+	}
+	.text {
+		color: var(--grey-color);
 	}
 
-	&.next {
+	&:not(:last-of-type) {
+		margin-right: 32px;
+	}
+
+	&.current {
 		.checkbox {
 			border-color: var(--primary-color-300);
 			border-width: 5px;
@@ -19,15 +29,33 @@
 		.line {
 			background: var(--primary-color-300);
 		}
+
+		.text {
+			color: var(--grey-color);
+		}
 	}
 
-	&.active {
+	&.done {
 		.line {
 			background: var(--primary-color);
 		}
 
 		.checkbox {
-			background: var(--primary-color);
+			border-color: var(--primary-color);
+			border-width: 5px;
+		}
+
+		.text {
+			color: var(--color-black);
 		}
 	}
+}
+select {
+	-webkit-appearance: none;
+	-moz-appearance: none;
+	appearance: none;
+	background: transparent url(../../../../assets/img/arrow-down-icon.svg) no-repeat;
+	background-size: 5%;
+	background-position-x: 96%;
+	background-position-y: 15px;
 }
