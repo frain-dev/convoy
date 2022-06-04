@@ -2,42 +2,10 @@
 	<div class="padding-x__16px padding-y__24px border__bottom">
 		<div class="flex flex__align-items-center flex__justify-between">
 			<div class="flex">
-				<div class="dropdown">
-					<button
-						class="button button__filter without-margin button--has-icon icon-right icon-left"
-						[ngClass]="{ active: (eventDeliveriesFilterDateRange.value.startDate !== '' && eventDeliveriesFilterDateRange.value.endDate !== '') || selectedEventsDelDateOption }"
-						(click)="showOverlay = true; showEventDelFilterCalendar = !showEventDelFilterCalendar"
-					>
-						<img class="margin-left__0px" src="/assets/img/calendar-icon.svg" alt="calender icon" />
-						<span class="color__primary font__weight-500" *ngIf="eventDeliveriesFilterDateRange.value.startDate === '' && eventDeliveriesFilterDateRange.value.endDate === ''">All Time</span>
-						<mat-date-range-input [formGroup]="eventDeliveriesFilterDateRange" [rangePicker]="eventDeliveriesFilterPicker">
-							<input matStartDate formControlName="startDate" />
-							<input
-								matEndDate
-								formControlName="endDate"
-								(dateChange)="
-									selectedEventsDelDateOption = formatDate(eventDeliveriesFilterDateRange.value.startDate) + ' - ' + formatDate(eventDeliveriesFilterDateRange.value.endDate);
-									getEventDeliveries({ addToURL: true, fromFilter: true })
-								"
-							/>
-						</mat-date-range-input>
-						<mat-date-range-picker #eventDeliveriesFilterPicker [disabled]="false"></mat-date-range-picker>
-						<img class="margin-right__0px" src="/assets/img/angle-arrow-down.svg" alt="arrow down icon" />
-					</button>
-	
-					<div [ngClass]="{ show: showEventDelFilterCalendar }" class="dropdown__menu large">
-						<ul>
-							<li [ngClass]="{ active: selectedEventsDelDateOption == dateOption }" *ngFor="let dateOption of dateOptions" (click)="getSelectedDate(dateOption); showEventDelFilterCalendar = false">
-								From {{ dateOption }}
-							</li>
-							<li (click)="eventDeliveriesFilterPicker.open(); showEventDelFilterCalendar = false; showOverlay = false">Custom Option</li>
-						</ul>
-					</div>
-				</div>
-	
-				<app-time-filter (applyFilter)="eventDelsTimeFilterData = $event; getEventDeliveries({ addToURL: true, fromFilter: true })" #eventDeliveryTimerFilter></app-time-filter>
-	
-				<div class="dropdown margin-left__24px">
+				<date-filter (selectedDateRange)="getSelectedDateRange($event)"></date-filter>
+				<app-time-filter class="margin-left__14px" (applyFilter)="eventDelsTimeFilterData = $event; getEventDeliveries({ addToURL: true, fromFilter: true })" #eventDeliveryTimerFilter></app-time-filter>
+
+				<div class="dropdown margin-left__14px">
 					<button
 						class="button button__filter button--has-icon icon-left"
 						[ngClass]="{ active: eventDeliveryFilteredByStatus.length > 0 }"
@@ -47,7 +15,7 @@
 						<span class="font__weight-500">Status</span>
 						<img class="margin-left__16px margin-right__0px" src="/assets/img/angle-arrow-down.svg" alt="arrow down icon" />
 					</button>
-	
+
 					<div class="dropdown__menu with-padding small" [ngClass]="{ show: showEventDeliveriesStatusDropdown }">
 						<div class="dropdown__menu__item with-border" *ngFor="let status of eventDeliveryStatuses">
 							<label [for]="status">{{ status || 'None' }}</label>
@@ -60,7 +28,7 @@
 								(change)="updateEventDevliveryStatusFilter(status, $event)"
 							/>
 						</div>
-	
+
 						<div class="flex flex__align-items-center margin-top__10px">
 							<button
 								class="button button__small button__primary font__12px margin-right__10px"
@@ -72,8 +40,8 @@
 						</div>
 					</div>
 				</div>
-	
-				<div class="dropdown margin-left__24px">
+
+				<div class="dropdown margin-left__14px">
 					<button
 						class="button button__filter button--has-icon icon-left"
 						[ngClass]="{ active: !!eventDeliveriesApp }"
@@ -83,13 +51,13 @@
 						<span class="font__weight-500">All Apps</span>
 						<img class="margin-left__16px margin-right__0px" src="/assets/img/angle-arrow-down.svg" alt="arrow down icon" />
 					</button>
-	
+
 					<div class="dropdown__menu large with-padding" [ngClass]="{ show: showEventDeliveriesAppsDropdown }">
 						<div class="input__search">
 							<img src="/assets/img/search-icon.svg" alt="search icon" />
 							<input type="search" placeholder="Search apps here" #eventDelsAppsFilter />
 						</div>
-	
+
 						<div class="dropdown__menu__item with-border" *ngFor="let app of eventsDelAppsFilter$ | async">
 							<label [for]="app.uid + 'eventDel'">{{ app.name }}</label>
 							<input type="checkbox" name="app" [value]="app.uid" [id]="app.uid + 'eventDel'" [checked]="app.uid === eventDeliveriesApp" (change)="updateAppFilter(app.uid, $event)" />
@@ -100,16 +68,16 @@
 						<p *ngIf="filteredApps?.length === 0">No app to display</p>
 					</div>
 				</div>
-	
-				<div class="button__filter active margin-left__24px" *ngIf="eventDeliveryFilteredByEventId !== ''">
+
+				<div class="button__filter active margin-left__14px" *ngIf="eventDeliveryFilteredByEventId !== ''">
 					Event Filtered
-					<button class="button__clear button--has-icon margin-left__8px" (click)="eventDeliveryFilteredByEventId = ''; getEventDeliveries()">
-						<img src="../../../../assets/img/close-icon.svg" alt="close icon" />
+					<button class="button__clear button--has-icon margin-left__4px" (click)="eventDeliveryFilteredByEventId = ''; getEventDeliveries()">
+						<img src="assets/img/close-icon.svg" alt="close icon" />
 					</button>
 				</div>
-	
+
 				<button
-					class="button button__filter margin-left__24px flex__justify-center"
+					class="button button__filter margin-left__14px flex__justify-center"
 					(click)="fetchRetryCount()"
 					[ngClass]="{
 						disabled:
@@ -123,10 +91,10 @@
 					Batch Retry
 				</button>
 			</div>
-	
+
 			<button
-				class="button button__white button__small font__12px margin-right__20px"
-				(click)="clearFilters(); selectedEventsDelDateOption = ''"
+				class="button button__white button__small font__12px"
+				(click)="clearFilters()"
 				[ngClass]="{
 					disabled:
 						(eventDeliveriesFilterDateRange.value.startDate == '' || eventDeliveriesFilterDateRange.value.endDate == '') &&
@@ -142,7 +110,7 @@
 		</div>
 	</div>
 	<div class="event__table width-100">
-		<div class="table table--container has-loader" id="event-deliveries-table-container">
+		<div class="table table--container has-loader" id="event-deliveries-table-container" *ngIf="displayedEventDeliveries && displayedEventDeliveries.length > 0">
 			<table id="table">
 				<thead>
 					<tr class="table--head">
@@ -196,17 +164,14 @@
 										"
 									>
 										<img src="assets/img/refresh-icon-primary.svg" alt="refresh icon" />
-	
+
 										{{ event.status === 'Success' ? 'Force Retry' : 'Retry' }}
 									</button>
 								</div>
 							</td>
 							<td class="width__5">
 								<div>
-									<button
-										class="button__clear button--has-icon icon-right"
-										(click)="eventDelsDetailsItem = event; getDelieveryAttempts(event.uid); eventDeliveryIndex = index"
-									>
+									<button class="button__clear button--has-icon icon-right" (click)="eventDelsDetailsItem = event; getDelieveryAttempts(event.uid); eventDeliveryIndex = index">
 										<img src="assets/img/angle-arrow-right-primary.svg" alt="arrow right" />
 									</button>
 								</div>
@@ -216,5 +181,47 @@
 				</tbody>
 			</table>
 		</div>
+		<div class="flex flex__column flex__justify-center flex__align-items-center table--container" id="events-empty-state" *ngIf="displayedEventDeliveries?.length === 0">
+			<img src="/assets/img/empty-state.svg" alt="empty state" class="empty-state-img" />
+			<p class="font__14px font__weight-600 margin-top__0px color__black width__20 text--center">No event to show here</p>
+		</div>
+	</div>
+</div>
+<div class="button-container flex flex__align-items-center margin-top__16px">
+	<button
+		class="button button__white button__primary button__outline button--has-icon icon-left padding-y__4px padding-right__16px padding-left__4px"
+		routerLink="./"
+		[queryParams]="{ page: eventDeliveries?.pagination?.prev }"
+		[disabled]="eventDeliveries?.pagination?.prev === 0"
+		(click)="getEventDeliveries({ page: eventDeliveries?.pagination?.prev })"
+	>
+		<svg width="24" height="24" class="margin-right__8px">
+			<use xlink:href="#arrow-left-icon"></use>
+		</svg>
+		Previous
+	</button>
+	<button
+		class="button button__white button__primary button__outline button--has-icon icon-left padding-y__4px padding-left__16px padding-right__4px margin-left__16px"
+		routerLink="./"
+		[queryParams]="{ page: eventDeliveries?.pagination?.next }"
+		[disabled]="eventDeliveries?.pagination?.next === 0"
+		(click)="getEventDeliveries({ page: eventDeliveries?.pagination?.next })"
+	>
+		Next
+		<svg width="24" height="24" class="margin-left__8px" fill="var(--primary-color)">
+			<use xlink:href="#arrow-right-icon"></use>
+		</svg>
+	</button>
+</div>
+<div class="overlay" *ngIf="showOverlay" (click)="showOverlay = false; showEventDeliveriesAppsDropdown = false"></div>
+<div class="_overlay" *ngIf="showBatchRetryModal" (click)="showBatchRetryModal = false"></div>
+<!-- batch retry modal  -->
+<div class="modal modal__center" *ngIf="showBatchRetryModal">
+	<div class="modal--body flex flex__column flex__justify-center flex__align-items-center delete">
+		<img src="/assets/img/filter.gif" alt="filter icon" class="filter-img" />
+		<div class="text-center font__20px font__weight-500 color__grey margin-bottom__8px">The filters applied will affect</div>
+		<div class="text-center font__20px font__weight-600 color__black margin-bottom__32px">{{ batchRetryCount || 0 }} event{{ batchRetryCount > 1 ? 's' : '' }}</div>
+		<button class="button button__primary" [disabled]="isRetrying || batchRetryCount == 0" (click)="batchRetryEvent()">{{ isRetrying ? 'Retrying Events...' : 'Yes, Apply' }}</button>
+		<button class="button__primary button__clear margin-top__28px font__weight-600" (click)="showBatchRetryModal = false">No, Cancel</button>
 	</div>
 </div>

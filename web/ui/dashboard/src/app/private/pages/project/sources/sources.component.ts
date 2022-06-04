@@ -1,3 +1,4 @@
+import { Location } from '@angular/common';
 import { Component, OnInit } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
 import { PAGINATION } from 'convoy-app/lib/models/global.model';
@@ -10,29 +11,37 @@ import { SourcesService } from './sources.service';
 	styleUrls: ['./sources.component.scss']
 })
 export class SourcesComponent implements OnInit {
-	eventsTableHead: string[] = ['Source name', 'Source type', 'Verifier', 'URL', 'Date created', ''];
+	sourcesTableHead: string[] = ['Source name', 'Source type', 'Verifier', 'URL', 'Date created', ''];
 	shouldShowCreateSourceModal = this.router.url.split('/')[4] === 'new';
 	activeSource?: SOURCE;
 	sources!: { content: SOURCE[]; pagination: PAGINATION };
+	isLoadingSources = false;
 
-	constructor(private route: ActivatedRoute, private router: Router, private sourcesService: SourcesService) {
+	constructor(private route: ActivatedRoute, private router: Router, private sourcesService: SourcesService, private location: Location) {
 		this.route.queryParams.subscribe(params => {
 			this.activeSource = this.sources?.content.find(source => source.uid === params?.id);
 		});
 	}
 
-	ngOnInit(): void {
+	ngOnInit() {
 		this.getSources();
+	}
+
+	goBack() {
+		this.location.back();
 	}
 
 	async getSources(requestDetails?: { page?: number }) {
 		const page = requestDetails?.page || this.route.snapshot.queryParams.page || 1;
+		this.isLoadingSources = true;
 		try {
 			const sourcesResponse = await this.sourcesService.getSources({ page });
 			this.sources = sourcesResponse.data;
+			this.isLoadingSources = false;
 			this.activeSource = this.sources?.content.find(source => source.uid === this.route.snapshot.queryParams?.id);
 		} catch (error) {
-			console.log(error);
+			this.isLoadingSources = false;
+			return error;
 		}
 	}
 

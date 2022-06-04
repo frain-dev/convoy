@@ -10,6 +10,21 @@ export class AppDetailsService {
 	projectId: string = this.projectService.activeProject;
 	constructor(private http: HttpService, private projectService: ProjectService) {}
 
+	async getApps(): Promise<HTTP_RESPONSE> {
+		return new Promise(async (resolve, reject) => {
+			try {
+				const response = await this.http.request({
+					url: `/apps?groupId=${this.projectId}&sort=AESC&page=1&perPage=50`,
+					method: 'get'
+				});
+
+				return resolve(response);
+			} catch (error: any) {
+				return reject(error);
+			}
+		});
+	}
+
 	async getAppPortalToken(requestDetails: { appId: string }): Promise<HTTP_RESPONSE> {
 		return new Promise(async (resolve, reject) => {
 			try {
@@ -32,6 +47,38 @@ export class AppDetailsService {
 				const response = await this.http.request({
 					url: `/apps/${appId}?groupId=${this.projectId}`,
 					method: 'get'
+				});
+
+				return resolve(response);
+			} catch (error: any) {
+				return reject(error);
+			}
+		});
+	}
+
+	async addNewEndpoint(requestDetails: { appId: string; body: any }): Promise<HTTP_RESPONSE> {
+		return new Promise(async (resolve, reject) => {
+			try {
+				const response = await this.http.request({
+					url: `/apps/${requestDetails.appId}/endpoints?groupId=${this.projectId}`,
+					body: requestDetails.body,
+					method: 'post'
+				});
+
+				return resolve(response);
+			} catch (error: any) {
+				return reject(error);
+			}
+		});
+	}
+
+	async sendEvent(requestDetails: { body: any }): Promise<HTTP_RESPONSE> {
+		return new Promise(async (resolve, reject) => {
+			try {
+				const response = await this.http.request({
+					url: `/events?groupId=${this.projectId}`,
+					body: requestDetails.body,
+					method: 'post'
 				});
 
 				return resolve(response);

@@ -7,14 +7,14 @@ import { ProjectService } from '../project.service';
 	providedIn: 'root'
 })
 export class EventsService {
-	activeProjectId: string = this.projectService.activeProject;
+	projectId: string = this.projectService.activeProject;
 	constructor(private http: HttpService, private projectService:ProjectService) {}
 
 	async getEvents(requestDetails: { pageNo: number; startDate: string; endDate: string; appId: string; query?: string }): Promise<HTTP_RESPONSE> {
 		return new Promise(async (resolve, reject) => {
 			try {
 				const response = await this.http.request({
-					url: `/events?groupId=${this.activeProjectId}&sort=AESC&page=${requestDetails.pageNo}&perPage=20&startDate=${requestDetails.startDate}&endDate=${requestDetails.endDate}&appId=${requestDetails.appId}&query=${requestDetails?.query}`,
+					url: `/events?groupId=${this.projectId}&sort=AESC&page=${requestDetails.pageNo}&perPage=20&startDate=${requestDetails.startDate}&endDate=${requestDetails.endDate}&appId=${requestDetails.appId}&query=${requestDetails?.query}`,
 					method: 'get'
 				});
 
@@ -29,7 +29,7 @@ export class EventsService {
 		return new Promise(async (resolve, reject) => {
 			try {
 				const response = await this.http.request({
-					url: `/eventdeliveries?groupId=${this.activeProjectId}&eventId=${requestDetails.eventId}&page=${requestDetails.pageNo}&startDate=${requestDetails.startDate}&endDate=${requestDetails.endDate}&appId=${requestDetails.appId}${requestDetails.statusQuery}`,
+					url: `/eventdeliveries?groupId=${this.projectId}&eventId=${requestDetails.eventId}&page=${requestDetails.pageNo}&startDate=${requestDetails.startDate}&endDate=${requestDetails.endDate}&appId=${requestDetails.appId}${requestDetails.statusQuery}`,
 					method: 'get'
 				});
 
@@ -44,7 +44,7 @@ export class EventsService {
 		return new Promise(async (resolve, reject) => {
 			try {
 				const response = await this.http.request({
-					url: `/apps?groupId=${this.activeProjectId}&sort=AESC&page=${requestDetails.pageNo}&perPage=20${requestDetails?.searchString ? `&q=${requestDetails?.searchString}` : ''}`,
+					url: `/apps?groupId=${this.projectId}&sort=AESC&page=${requestDetails.pageNo}&perPage=20${requestDetails?.searchString ? `&q=${requestDetails?.searchString}` : ''}`,
 					method: 'get'
 				});
 
@@ -59,7 +59,7 @@ export class EventsService {
 		return new Promise(async (resolve, reject) => {
 			try {
 				const response = await this.http.request({
-					url: `/eventdeliveries/${requestDetails.eventDeliveryId}/deliveryattempts?groupId=${this.activeProjectId}`,
+					url: `/eventdeliveries/${requestDetails.eventDeliveryId}/deliveryattempts?groupId=${this.projectId}`,
 					method: 'get'
 				});
 
@@ -74,7 +74,7 @@ export class EventsService {
 		return new Promise(async (resolve, reject) => {
 			try {
 				const response = await this.http.request({
-					url: `/dashboard/summary?groupId=${this.activeProjectId}&startDate=${requestDetails.startDate}&endDate=${requestDetails.endDate}&type=${requestDetails.frequency}`,
+					url: `/dashboard/summary?groupId=${this.projectId}&startDate=${requestDetails.startDate}&endDate=${requestDetails.endDate}&type=${requestDetails.frequency}`,
 					method: 'get'
 				});
 
@@ -84,4 +84,54 @@ export class EventsService {
 			}
 		});
 	}
+
+	async retryEvent(requestDetails: { eventId: string }): Promise<HTTP_RESPONSE> {
+		return new Promise(async (resolve, reject) => {
+			try {
+				const response = await this.http.request({
+					url: `/eventdeliveries/${requestDetails.eventId}/resend?groupId=${this.projectId}`,
+					method: 'put'
+				});
+
+				return resolve(response);
+			} catch (error: any) {
+				return reject(error);
+			}
+		});
+	}
+
+	async forceRetryEvent(requestDetails: { body: object }): Promise<HTTP_RESPONSE> {
+		return new Promise(async (resolve, reject) => {
+			try {
+				const response = await this.http.request({
+					url: `/eventdeliveries/forceresend?groupId=${this.projectId}`,
+					method: 'post',
+					body: requestDetails.body
+				});
+
+				return resolve(response);
+			} catch (error: any) {
+				return reject(error);
+			}
+		});
+	}
+
+	async batchRetryEvent(requestDetails: { eventId: string; pageNo: number; startDate: string; endDate: string; appId: string; statusQuery?: string }): Promise<HTTP_RESPONSE> {
+		return new Promise(async (resolve, reject) => {
+			try {
+				const response = await this.http.request({
+					url: `/eventdeliveries/batchretry?groupId=${this.projectId}&eventId=${requestDetails.eventId || ''}&page=${requestDetails.pageNo}&startDate=${requestDetails.startDate}&endDate=${
+						requestDetails.endDate
+					}&appId=${requestDetails.appId}${requestDetails.statusQuery || ''}`,
+					method: 'post',
+					body: null
+				});
+
+				return resolve(response);
+			} catch (error: any) {
+				return reject(error);
+			}
+		});
+	}
+
 }

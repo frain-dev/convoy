@@ -1,9 +1,11 @@
 import { Location } from '@angular/common';
 import { Component, HostListener, OnInit } from '@angular/core';
-import { FormBuilder, FormGroup, Validators } from '@angular/forms';
+import { FormBuilder, FormControl, FormGroup, Validators } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
 import { APP } from 'src/app/models/app.model';
 import { PAGINATION } from 'src/app/models/global.model';
+import { HTTP_RESPONSE } from 'src/app/models/http.model';
+import { GeneralService } from 'src/app/services/general/general.service';
 import { AppDetailsService } from './app-details.service';
 
 @Component({
@@ -13,15 +15,16 @@ import { AppDetailsService } from './app-details.service';
 })
 export class AppDetailsComponent implements OnInit {
 	showAddEndpointModal: boolean = false;
-	showAddEventModal: boolean = false;
-	showEndpointSecret: boolean = false;
-	showPublicCopyText: boolean = false;
-	showSecretCopyText: boolean = false;
-	isSendingNewEvent: boolean = false;
-	isCreatingNewEndpoint: boolean = false;
-	loadingAppPotalToken: boolean = false;
-	isLoadingAppDetails: boolean = false;
-	shouldRenderSmallSize: boolean = false;
+	showAddEventModal = false;
+	showEndpointSecret = false;
+	showPublicCopyText = false;
+	showSecretCopyText = false;
+	isSendingNewEvent = false;
+	isCreatingNewEndpoint = false;
+	loadingAppPotalToken = false;
+	isLoadingAppDetails = false;
+	shouldRenderSmallSize = false;
+	showInput = false;
 	screenWidth = window.innerWidth;
 	addNewEndpointForm: FormGroup = this.formBuilder.group({
 		url: ['', Validators.required],
@@ -38,11 +41,17 @@ export class AppDetailsComponent implements OnInit {
 	eventTags: string[] = [];
 	appsDetailsItem!: APP;
 	apps!: { pagination: PAGINATION; content: APP[] };
-	constructor(private formBuilder: FormBuilder, private appDetailsService: AppDetailsService, private route: ActivatedRoute, private location: Location, private router: Router) {}
+	constructor(
+		private formBuilder: FormBuilder,
+		private appDetailsService: AppDetailsService,
+		private generalService: GeneralService,
+		private route: ActivatedRoute,
+		private location: Location,
+		private router: Router
+	) {}
 
-	ngOnInit() {
-		this.getAppId();
-		this.checkScreenSize();
+	async ngOnInit() {
+		await Promise.all([this.checkScreenSize(), this.getAppId(), this.getApps()]);
 	}
 
 	goBack() {
@@ -92,9 +101,65 @@ export class AppDetailsComponent implements OnInit {
 		document.body.removeChild(el);
 	}
 
-	sendNewEvent() {}
+	async sendNewEvent() {
+		if (this.sendEventForm.invalid) {
+			(<any>Object).values(this.sendEventForm.controls).forEach((control: FormControl) => {
+				control?.markAsTouched();
+			});
+			return;
+		}
+		this.isSendingNewEvent = true;
+		try {
+			const response = await this.appDetailsService.sendEvent({ body: this.sendEventForm.value });
 
-	addNewEndpoint() {}
+			this.generalService.showNotification({ message: response.message, style: 'success' });
+			this.sendEventForm.reset();
+			this.showAddEventModal = false;
+			this.isSendingNewEvent = false;
+			const projectId = this.appDetailsService.projectId;
+			this.router.navigate(['/projects/' + projectId + '/events'], { queryParams: { eventsApp: this.appsDetailsItem?.uid } });
+		} catch {
+			this.isSendingNewEvent = false;
+		}
+	}
+
+	async addNewEndpoint() {
+		if (this.addNewEndpointForm.invalid) {
+			(<any>Object).values(this.addNewEndpointForm.controls).forEach((control: FormControl) => {
+				control?.markAsTouched();
+			});
+			return;
+		}
+		this.isCreatingNewEndpoint = true;
+
+		this.addNewEndpointForm.patchValue({
+			events: this.eventTags
+		});
+
+		try {
+			const response = await this.appDetailsService.addNewEndpoint({ appId: this.appsDetailsItem?.uid, body: this.addNewEndpointForm.value });
+			this.generalService.showNotification({ message: response.message, style: 'success' });
+			this.getAppDetails(this.appsDetailsItem?.uid);
+			this.addNewEndpointForm.reset();
+			this.eventTags = [];
+			this.showAddEndpointModal = false;
+			this.isCreatingNewEndpoint = false;
+			return;
+		} catch {
+			this.isCreatingNewEndpoint = false;
+			return;
+		}
+	}
+
+	async getApps() {
+		try {
+			const appsResponse = await this.appDetailsService.getApps();
+
+			this.apps = appsResponse.data;
+		} catch (error: any) {
+			return error;
+		}
+	}
 
 	viewEndpointSecretKey(secretKey: string) {
 		this.showEndpointSecret = !this.showEndpointSecret;

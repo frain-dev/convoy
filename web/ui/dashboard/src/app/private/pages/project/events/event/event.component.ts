@@ -35,7 +35,6 @@ export class EventComponent implements OnInit {
 	showEventsAppsDropdown: boolean = false;
 	isloadingEvents: boolean = false;
 	selectedEventsDateOption: string = '';
-	eventDeliveryFilteredByEventId!: string;
 	filteredApps!: APP[];
 	eventDetailsTabs = [
 		{ id: 'data', label: 'Event' },
@@ -72,7 +71,6 @@ export class EventComponent implements OnInit {
 	eventsDetailsItem: any;
 	sidebarEventDeliveries!: EVENT_DELIVERY[];
 	eventsTimeFilterData: { startTime: string; endTime: string } = { startTime: 'T00:00:00', endTime: 'T23:59:59' };
-	eventDelsTimeFilterData: { startTime: string; endTime: string } = { startTime: 'T00:00:00', endTime: 'T23:59:59' };
 	@ViewChild('eventsTimeFilter', { static: true }) eventsTimerFilter!: TimeFilterComponent;
 	@ViewChild('eventsAppsFilter', { static: true }) eventsAppsFilter!: ElementRef;
 	eventsAppsFilter$!: Observable<APP[]>;
@@ -221,7 +219,6 @@ export class EventComponent implements OnInit {
 		if (requestDetails?.addToURL) this.addFilterToURL();
 
 		if (this.eventsSearchString) this.displayedEvents = [];
-		console.log(this.eventApp);
 		const { startDate, endDate } = this.setDateForFilter({ ...this.eventsFilterDateRange.value, ...this.eventsTimeFilterData });
 
 		try {

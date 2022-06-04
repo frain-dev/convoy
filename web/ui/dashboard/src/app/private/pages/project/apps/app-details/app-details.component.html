@@ -1,5 +1,5 @@
 <h1 class="font__12px font__weight-500 flex flex__align-items-center margin-bottom__24px text__uppercase">
-	PROJECTS
+	<a routerLink="/projects" class="font__weight-500 pointer-cursor">Projects</a>
 	<svg width="16" height="16" class="margin-x__4px">
 		<use xlink:href="#arrow-right-icon"></use>
 	</svg>
@@ -7,7 +7,7 @@
 	<svg width="16" height="16" class="margin-x__4px">
 		<use xlink:href="#arrow-right-icon"></use>
 	</svg>
-	<span class="pointer-cursor font__weight-500" (click)="goBack()">Apps</span>
+	<a class="pointer-cursor font__weight-500" (click)="goBack()">Apps</a>
 	<svg width="16" height="16" class="margin-x__4px">
 		<use xlink:href="#arrow-right-icon"></use>
 	</svg>
@@ -16,7 +16,7 @@
 <div class="card padding-all__32px margin-bottom__20px">
 	<div class="flex flex__justify-between flex__align-items-center margin-bottom__24px">
 		<h3>Overview</h3>
-		<button class="button button__white button__small" [disabled]="appsDetailsItem.events <= 0" (click)="loadEventsFromAppsTable(appsDetailsItem.uid)">View Event</button>
+		<button class="button button__white button__small" [disabled]="appsDetailsItem?.events === 0" (click)="loadEventsFromAppsTable(appsDetailsItem.uid)">View Event</button>
 	</div>
 	<div class="flex flex__align-items-center flex__wrap flex__justify-between margin-bottom__32px">
 		<div>
@@ -80,7 +80,7 @@
 								{{ endpoint.target_url }}
 							</p>
 							<div class="flex margin-top__16px">
-								<div class="tag tag__events" *ngFor="let event of endpoint.events">{{ event == '*' ? 'all events' : event }}</div>
+								<div class="tag tag__events" *ngFor="let event of endpoint?.events">{{ event == '*' ? 'all events' : event }}</div>
 							</div>
 						</div>
 						<div class="app-details--inactive flex flex__align-items-center flex__column flex__justify-center padding-all__24px" *ngIf="endpoint.status == 'inactive'">
@@ -153,8 +153,8 @@
 	<div class="modal--body" *ngIf="showAddEndpointModal">
 		<form [formGroup]="addNewEndpointForm">
 			<div class="input">
-				<label for="">Description</label>
-				<input type="text" formControlName="description" [ngClass]="{ danger: addNewEndpointForm.controls.description.touched && addNewEndpointForm.controls.description.invalid }" required />
+				<label for="description">Description</label>
+				<input id="description" type="text" formControlName="description" [ngClass]="{ danger: addNewEndpointForm.controls.description.touched && addNewEndpointForm.controls.description.invalid }" required />
 				<div class="input__error input__error__danger" *ngIf="addNewEndpointForm.controls.description.touched && addNewEndpointForm.controls.description.invalid">
 					<img src="assets/img/input-error-icon.svg" alt="input error icon" />
 					<span>Please provide a description</span>
@@ -162,8 +162,8 @@
 			</div>
 
 			<div class="input">
-				<label for="">Enter URL</label>
-				<input type="text" formControlName="url" [ngClass]="{ danger: addNewEndpointForm.controls.url.touched && addNewEndpointForm.controls.url.invalid }" required />
+				<label for="endpoint-url">Enter URL</label>
+				<input id="endpoint-url" type="text" formControlName="url" [ngClass]="{ danger: addNewEndpointForm.controls.url.touched && addNewEndpointForm.controls.url.invalid }" required />
 				<div class="input__error input__error__danger" *ngIf="addNewEndpointForm.controls.url.touched && addNewEndpointForm.controls.url.invalid">
 					<img src="assets/img/input-error-icon.svg" alt="input error icon" />
 					<span>Endpoint URL is required</span>
@@ -171,9 +171,9 @@
 			</div>
 
 			<div class="input multiple">
-				<label class="flex flex__align-items-center" for="">
+				<label class="flex flex__align-items-center" for="tagInput">
 					Events
-					<app-tooltip [size]="'small'" position="right" class="margin-left__4px">Add multiple events by seperating them with commas</app-tooltip>
+					<app-tooltip [size]="'small'" position="right" class="margin-left__4px">Add multiple events by separating them with commas.</app-tooltip>
 				</label>
 				<div class="input--multiple">
 					<div class="tag" *ngFor="let tag of eventTags">
@@ -182,7 +182,7 @@
 							<img src="/assets/img/close-icon-black.svg" alt="close icon" />
 						</a>
 					</div>
-					<input type="text" id="tagInput" (input)="addTag()" required />
+					<input type="text" id="tagInput"  (input)="addTag()" required />
 				</div>
 			</div>
 		</form>
