@@ -114,16 +114,14 @@ func TestConfigService_LoadConfiguration(t *testing.T) {
 		name        string
 		args        args
 		dbFn        func(c *ConfigService)
-		wantConfig  []*datastore.Configuration
+		wantConfig  *datastore.Configuration
 		wantErr     bool
 		wantErrCode int
 	}{
 		{
-			name: "should_load_configuration",
-			args: args{ctx: ctx},
-			wantConfig: []*datastore.Configuration{
-				{UID: "12345", IsAnalyticsEnabled: true},
-			},
+			name:       "should_load_configuration",
+			args:       args{ctx: ctx},
+			wantConfig: &datastore.Configuration{UID: "12345", IsAnalyticsEnabled: true},
 			dbFn: func(c *ConfigService) {
 				co, _ := c.configRepo.(*mocks.MockConfigurationRepository)
 				co.EXPECT().LoadConfiguration(gomock.Any()).Times(1).Return(&datastore.Configuration{UID: "12345", IsAnalyticsEnabled: true}, nil)
@@ -131,11 +129,9 @@ func TestConfigService_LoadConfiguration(t *testing.T) {
 		},
 
 		{
-			name: "should_fail_load_configuration",
-			args: args{ctx: ctx},
-			wantConfig: []*datastore.Configuration{
-				{UID: "12345", IsAnalyticsEnabled: true},
-			},
+			name:       "should_fail_load_configuration",
+			args:       args{ctx: ctx},
+			wantConfig: &datastore.Configuration{UID: "12345", IsAnalyticsEnabled: true},
 			dbFn: func(c *ConfigService) {
 				co, _ := c.configRepo.(*mocks.MockConfigurationRepository)
 				co.EXPECT().LoadConfiguration(gomock.Any()).Times(1).Return(nil, errors.New("failed"))

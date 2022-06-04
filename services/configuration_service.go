@@ -21,21 +21,17 @@ func NewConfigService(configRepo datastore.ConfigurationRepository) *ConfigServi
 	return &ConfigService{configRepo: configRepo}
 }
 
-func (c *ConfigService) LoadConfiguration(ctx context.Context) ([]*datastore.Configuration, error) {
-	configResponse := []*datastore.Configuration{}
-
+func (c *ConfigService) LoadConfiguration(ctx context.Context) (*datastore.Configuration, error) {
 	config, err := c.configRepo.LoadConfiguration(ctx)
 	if err != nil {
 		if errors.Is(err, datastore.ErrConfigNotFound) {
-			return configResponse, nil
+			return config, nil
 		}
 
 		return nil, NewServiceError(http.StatusInternalServerError, err)
 	}
 
-	configResponse = append(configResponse, config)
-
-	return configResponse, nil
+	return config, nil
 }
 
 func (c *ConfigService) CreateOrUpdateConfiguration(ctx context.Context, newConfig *models.Configuration) (*datastore.Configuration, error) {

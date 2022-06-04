@@ -37,7 +37,7 @@ func (c *configRepo) LoadConfiguration(ctx context.Context) (*datastore.Configur
 	err := c.client.FindOne(ctx, filter).Decode(&config)
 
 	if errors.Is(err, mongo.ErrNoDocuments) {
-		return config, datastore.ErrConfigNotFound
+		return nil, datastore.ErrConfigNotFound
 	}
 
 	return config, err

@@ -3,6 +3,7 @@ package server
 import (
 	"net/http"
 
+	"github.com/frain-dev/convoy"
 	"github.com/frain-dev/convoy/server/models"
 	"github.com/frain-dev/convoy/util"
 	"github.com/go-chi/render"
@@ -14,7 +15,7 @@ import (
 // @Tags Source
 // @Accept  json
 // @Produce  json
-// @Success 200 {object} serverResponse{data=pagedResponse{content=[]datastore.Configuration}}
+// @Success 200 {object} serverResponse{data=pagedResponse{content=[]models.ConfigurationResponse}}
 // @Failure 400,401,500 {object} serverResponse{data=Stub}
 // @Security ApiKeyAuth
 // @Router /configuration [get]
@@ -25,7 +26,21 @@ func (a *applicationHandler) LoadConfiguration(w http.ResponseWriter, r *http.Re
 		return
 	}
 
-	_ = render.Render(w, r, newServerResponse("Configuration fetched successfully", config, http.StatusOK))
+	configResponse := []*models.ConfigurationResponse{}
+	if config != nil {
+		c := &models.ConfigurationResponse{
+			UID:                config.UID,
+			IsAnalyticsEnabled: config.IsAnalyticsEnabled,
+			ApiVersion:         convoy.GetVersion(),
+			CreatedAt:          config.CreatedAt,
+			UpdatedAt:          config.UpdatedAt,
+			DeletedAt:          config.DeletedAt,
+		}
+
+		configResponse = append(configResponse, c)
+	}
+
+	_ = render.Render(w, r, newServerResponse("Configuration fetched successfully", configResponse, http.StatusOK))
 }
 
 // CreateConfiguration
@@ -35,7 +50,7 @@ func (a *applicationHandler) LoadConfiguration(w http.ResponseWriter, r *http.Re
 // @Accept  json
 // @Produce  json
 // @Param application body models.Configuration true "Configuration Details"
-// @Success 200 {object} serverResponse{data=datastore.Configuration}
+// @Success 200 {object} serverResponse{data=models.ConfigurationResponse}
 // @Failure 400,401,500 {object} serverResponse{data=Stub}
 // @Security ApiKeyAuth
 // @Router /configuration [post]
@@ -52,5 +67,14 @@ func (a *applicationHandler) CreateConfiguration(w http.ResponseWriter, r *http.
 		return
 	}
 
-	_ = render.Render(w, r, newServerResponse("Configuration created successfully", config, http.StatusCreated))
+	c := &models.ConfigurationResponse{
+		UID:                config.UID,
+		IsAnalyticsEnabled: config.IsAnalyticsEnabled,
+		ApiVersion:         convoy.GetVersion(),
+		CreatedAt:          config.CreatedAt,
+		UpdatedAt:          config.UpdatedAt,
+		DeletedAt:          config.DeletedAt,
+	}
+
+	_ = render.Render(w, r, newServerResponse("Configuration created successfully", c, http.StatusCreated))
 }

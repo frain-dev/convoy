@@ -8,8 +8,10 @@ import (
 	"net/http/httptest"
 	"testing"
 
+	"github.com/frain-dev/convoy"
 	"github.com/frain-dev/convoy/config"
 	"github.com/frain-dev/convoy/datastore"
+	"github.com/frain-dev/convoy/server/models"
 	"github.com/frain-dev/convoy/server/testdb"
 	"github.com/stretchr/testify/require"
 	"github.com/stretchr/testify/suite"
@@ -57,12 +59,13 @@ func (c *ConfigurationIntegrationTestSuite) Test_LoadConfiguration() {
 	// Assert
 	require.Equal(c.T(), http.StatusOK, w.Code)
 
-	var newConfig []*datastore.Configuration
+	var newConfig []*models.ConfigurationResponse
 	parseResponse(c.T(), w.Result(), &newConfig)
 
 	require.NotEmpty(c.T(), newConfig[0].UID)
 	require.Equal(c.T(), config.UID, newConfig[0].UID)
 	require.Equal(c.T(), config.IsAnalyticsEnabled, newConfig[0].IsAnalyticsEnabled)
+	require.Equal(c.T(), convoy.GetVersion(), newConfig[0].ApiVersion)
 }
 
 func (c *ConfigurationIntegrationTestSuite) Test_CreateConfiguration() {
