@@ -47,7 +47,6 @@ export class CreateAppComponent implements OnInit {
 		return this.formBuilder.group({
 			url: ['', Validators.required],
 			events: [''],
-			tag: ['', Validators.required],
 			description: ['', Validators.required]
 		});
 	}
@@ -73,15 +72,12 @@ export class CreateAppComponent implements OnInit {
 		addTagInput?.addEventListener('keydown', e => {
 			if (e.which === 188) {
 				if (this.eventTags[i].includes(addTagInputValue?.value)) {
-
 					addTagInputValue.value = '';
 					this.eventTags[i] = this.eventTags[i].filter((e: string) => String(e).trim());
-
 				} else {
-
 					this.eventTags[i].push(addTagInputValue?.value);
 					this.eventTags[i] = this.eventTags[i].filter((e: string) => String(e).trim());
-					
+
 					((this.addNewAppForm.get('endpoints') as FormArray)?.at(i) as FormGroup)?.get('events')?.patchValue(this.eventTags[i]);
 					addTagInputValue.value = '';
 				}
@@ -105,6 +101,10 @@ export class CreateAppComponent implements OnInit {
 			});
 			return;
 		}
+
+		this.addNewAppForm.value.endpoints.forEach((item: any) => {
+			if (item.events === '') item.events = ['*'];
+		});
 
 		this.isSavingApp = true;
 		let requests: any[] = [];
@@ -156,7 +156,7 @@ export class CreateAppComponent implements OnInit {
 		this.discardApp.emit();
 	}
 
-	focusInput(i:number){
-		document.getElementById('tagInput' + i)?.focus()
+	focusInput(i: number) {
+		document.getElementById('tagInput' + i)?.focus();
 	}
 }

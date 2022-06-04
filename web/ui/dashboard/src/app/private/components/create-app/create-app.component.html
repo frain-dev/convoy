@@ -72,26 +72,18 @@
 				</div>
 
 				<div class="input multiple">
-					<label class="flex flex__justify-between" [for]="'tagInput' + i">
-						<div class="flex flex__align-items-center">
-							Events
-							<app-tooltip [size]="'small'" position="right" class="margin-left__4px">Add multiple events by separating them with commas.</app-tooltip>
-						</div>
-						<span class="bg__grey__light rounded__4px padding-x__4px position__absolute position--right__0px font__10px font__weight-400">required</span>
+					<label class="flex flex__align-items-center" [for]="'tagInput' + i">
+						Events
+						<app-tooltip [size]="'small'" position="right" class="margin-left__4px">Add multiple events by separating them with commas.</app-tooltip>
 					</label>
-					<div class="input--multiple" (click)="focusInput(i)" [ngClass]="{ invalid: getSingleEndpoint(i).tag.touched && getSingleEndpoint(i).tag.invalid && eventTags[i]?.length == 0 }">
+					<div class="input--multiple" (click)="focusInput(i)">
 						<div class="tag" *ngFor="let tag of getSingleEndpoint(i)?.events?.value">
 							{{ tag }}
 							<a (click)="removeEventTag(tag, i)">
 								<img src="/assets/img/close-icon-black.svg" alt="close icon" />
 							</a>
 						</div>
-						<input type="text" [id]="'tagInput' + i" (input)="addTag(i)" formControlName="tag" required #eventInput/>
-					</div>
-
-					<div class="input__error input__error__danger" *ngIf="getSingleEndpoint(i).tag.touched && getSingleEndpoint(i).tag.invalid && eventTags[i]?.length == 0">
-						<img src="assets/img/input-error-icon.svg" alt="input error icon" />
-						<span>Please add at least one event</span>
+						<input type="text" [id]="'tagInput' + i" (input)="addTag(i)" />
 					</div>
 				</div>
 			</div>
