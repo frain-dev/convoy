@@ -169,7 +169,7 @@ func authenticateRequest(auth *models.LoginUser) AuthenticatorFn {
 			return err
 		}
 
-		r.Header.Set("Authorization", loginResp.Token.AccessToken)
+		r.Header.Set("Authorization", fmt.Sprintf("BEARER %s", loginResp.Token.AccessToken))
 		return nil
 	}
 }
