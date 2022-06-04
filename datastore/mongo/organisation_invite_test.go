@@ -141,11 +141,8 @@ func TestDeleteOrganisationInvite(t *testing.T) {
 	err = inviteRepo.DeleteOrganisationInvite(context.Background(), org.UID)
 	require.NoError(t, err)
 
-	organisation, err := inviteRepo.FetchOrganisationInviteByID(context.Background(), org.UID)
-	require.NoError(t, err)
-
-	require.True(t, organisation.DeletedAt > 0)
-	require.Equal(t, datastore.DeletedDocumentStatus, organisation.DocumentStatus)
+	_, err = inviteRepo.FetchOrganisationInviteByID(context.Background(), org.UID)
+	require.Equal(t, datastore.ErrOrgInviteNotFound, err)
 }
 
 func TestFetchOrganisationInviteByID(t *testing.T) {
@@ -174,7 +171,7 @@ func TestFetchOrganisationInviteByID(t *testing.T) {
 	require.NoError(t, err)
 
 	require.Equal(t, iv.UID, invite.UID)
-	require.Equal(t, iv.Token, invite.UID)
+	require.Equal(t, iv.Token, invite.Token)
 	require.Equal(t, iv.InviteeEmail, invite.InviteeEmail)
 }
 
@@ -204,6 +201,6 @@ func TestFetchOrganisationInviteByTokenAndEmail(t *testing.T) {
 	require.NoError(t, err)
 
 	require.Equal(t, iv.UID, invite.UID)
-	require.Equal(t, iv.Token, invite.UID)
+	require.Equal(t, iv.Token, invite.Token)
 	require.Equal(t, iv.InviteeEmail, invite.InviteeEmail)
 }

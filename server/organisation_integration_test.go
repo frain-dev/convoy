@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"github.com/frain-dev/convoy/config"
 	"github.com/frain-dev/convoy/datastore"
+	"github.com/frain-dev/convoy/server/models"
 	"github.com/frain-dev/convoy/server/testdb"
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/require"
@@ -20,10 +21,12 @@ import (
 
 type OrganisationIntegrationTestSuite struct {
 	suite.Suite
-	DB           datastore.DatabaseClient
-	Router       http.Handler
-	ConvoyApp    *applicationHandler
-	DefaultGroup *datastore.Group
+	DB              datastore.DatabaseClient
+	Router          http.Handler
+	ConvoyApp       *applicationHandler
+	AuthenticatorFn AuthenticatorFn
+	DefaultGroup    *datastore.Group
+	DefaultUser     *datastore.User
 }
 
 func (s *OrganisationIntegrationTestSuite) SetupSuite() {
@@ -38,8 +41,17 @@ func (s *OrganisationIntegrationTestSuite) SetupTest() {
 	// Setup Default Group.
 	s.DefaultGroup, _ = testdb.SeedDefaultGroup(s.DB)
 
+	user, err := testdb.SeedDefaultUser(s.DB)
+	require.NoError(s.T(), err)
+	s.DefaultUser = user
+
+	s.AuthenticatorFn = authenticateRequest(&models.LoginUser{
+		Username: user.Email,
+		Password: testdb.DefaultUserPassword,
+	})
+
 	// Setup Config.
-	err := config.LoadConfig("./testdata/Auth_Config/full-convoy.json")
+	err = config.LoadConfig("./testdata/Auth_Config/full-convoy.json")
 	require.NoError(s.T(), err)
 
 	initRealmChain(s.T(), s.DB.APIRepo(), s.DB.UserRepo(), s.ConvoyApp.cache)
@@ -56,6 +68,9 @@ func (s *OrganisationIntegrationTestSuite) Test_CreateOrganisation() {
 	// Arrange.
 	url := "/ui/organisations"
 	req := createRequest(http.MethodPost, url, body)
+	err := s.AuthenticatorFn(req, s.Router)
+	require.NoError(s.T(), err)
+
 	w := httptest.NewRecorder()
 
 	// Act.
@@ -80,6 +95,9 @@ func (s *OrganisationIntegrationTestSuite) Test_CreateOrganisation_EmptyOrganisa
 	// Arrange.
 	url := "/ui/organisations"
 	req := createRequest(http.MethodPost, url, body)
+	err := s.AuthenticatorFn(req, s.Router)
+	require.NoError(s.T(), err)
+
 	w := httptest.NewRecorder()
 
 	// Act.
@@ -100,6 +118,9 @@ func (s *OrganisationIntegrationTestSuite) Test_UpdateOrganisation_EmptyOrganisa
 	// Arrange.
 	url := fmt.Sprintf("/ui/organisations/%s", uid)
 	req := createRequest(http.MethodPut, url, body)
+	err = s.AuthenticatorFn(req, s.Router)
+	require.NoError(s.T(), err)
+
 	w := httptest.NewRecorder()
 
 	// Act.
@@ -121,6 +142,9 @@ func (s *OrganisationIntegrationTestSuite) Test_UpdateOrganisation() {
 	// Arrange.
 	url := fmt.Sprintf("/ui/organisations/%s", uid)
 	req := createRequest(http.MethodPut, url, body)
+	err = s.AuthenticatorFn(req, s.Router)
+	require.NoError(s.T(), err)
+
 	w := httptest.NewRecorder()
 
 	// Act.
@@ -144,6 +168,9 @@ func (s *OrganisationIntegrationTestSuite) Test_GetOrganisation() {
 	// Arrange.
 	url := fmt.Sprintf("/ui/organisations/%s", uid)
 	req := createRequest(http.MethodGet, url, nil)
+	err = s.AuthenticatorFn(req, s.Router)
+	require.NoError(s.T(), err)
+
 	w := httptest.NewRecorder()
 
 	// Act.
@@ -171,6 +198,9 @@ func (s *OrganisationIntegrationTestSuite) Test_GetOrganisations() {
 	// Arrange.
 	url := "/ui/organisations?page=2&perPage=2"
 	req := createRequest(http.MethodGet, url, nil)
+	err = s.AuthenticatorFn(req, s.Router)
+	require.NoError(s.T(), err)
+
 	w := httptest.NewRecorder()
 
 	// Act.
@@ -198,6 +228,9 @@ func (s *OrganisationIntegrationTestSuite) Test_DeleteOrganisation() {
 	// Arrange.
 	url := fmt.Sprintf("/ui/organisations/%s", uid)
 	req := createRequest(http.MethodDelete, url, nil)
+	err = s.AuthenticatorFn(req, s.Router)
+	require.NoError(s.T(), err)
+
 	w := httptest.NewRecorder()
 
 	// Act.

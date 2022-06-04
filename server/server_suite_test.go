@@ -4,8 +4,10 @@
 package server
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
+	"github.com/frain-dev/convoy/server/models"
 	"io"
 	"io/ioutil"
 	"math/rand"
@@ -142,6 +144,35 @@ func parseResponse(t *testing.T, r *http.Response, object interface{}) {
 	}
 }
 
+type AuthenticatorFn func(r *http.Request, router http.Handler) error
+
+func authenticateRequest(auth *models.LoginUser) AuthenticatorFn {
+	return func(r *http.Request, router http.Handler) error {
+		body, err := json.Marshal(auth)
+		if err != nil {
+			return err
+		}
+
+		req := createRequest(http.MethodPost, "/ui/auth/login", bytes.NewBuffer(body))
+
+		w := httptest.NewRecorder()
+
+		// Act
+		router.ServeHTTP(w, req)
+		if w.Code != http.StatusOK {
+			return fmt.Errorf("failed to authenticate: reponse body: %s", w.Body.String())
+		}
+
+		loginResp := &models.LoginUserResponse{}
+		err = json.NewDecoder(w.Body).Decode(loginResp)
+		if err != nil {
+			return err
+		}
+
+		r.Header.Set("Authorization", loginResp.Token.AccessToken)
+		return nil
+	}
+}
 func randBool() bool {
 	rand.Seed(time.Now().UnixNano())
 	return rand.Intn(2) == 1

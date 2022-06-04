@@ -142,6 +142,36 @@ func SeedDefaultGroup(db datastore.DatabaseClient) (*datastore.Group, error) {
 	return defaultGroup, nil
 }
 
+const DefaultUserPassword = "password"
+
+// seed default user
+func SeedDefaultUser(db datastore.DatabaseClient) (*datastore.User, error) {
+	p := datastore.Password{Plaintext: DefaultUserPassword}
+	err := p.GenerateHash()
+	if err != nil {
+		return nil, err
+	}
+
+	defaultUser := &datastore.User{
+		UID:            uuid.NewString(),
+		FirstName:      "default",
+		LastName:       "default",
+		Email:          "default@user.com",
+		Password:       string(p.Hash),
+		CreatedAt:      primitive.NewDateTimeFromTime(time.Now()),
+		UpdatedAt:      primitive.NewDateTimeFromTime(time.Now()),
+		DocumentStatus: datastore.ActiveDocumentStatus,
+	}
+
+	// Seed Data.
+	err = db.UserRepo().CreateUser(context.TODO(), defaultUser)
+	if err != nil {
+		return &datastore.User{}, err
+	}
+
+	return defaultUser, nil
+}
+
 // SeedAPIKey creates random api key for integration tests.
 func SeedAPIKey(db datastore.DatabaseClient, g *datastore.Group, uid, name, keyType string) (*datastore.APIKey, error) {
 	if util.IsStringEmpty(uid) {
