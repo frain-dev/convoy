@@ -5,12 +5,13 @@ import (
 	"fmt"
 
 	"github.com/frain-dev/convoy/config"
+	em "github.com/frain-dev/convoy/internal/email"
 	"github.com/frain-dev/convoy/notification"
-	"github.com/frain-dev/convoy/smtp"
+	"github.com/frain-dev/convoy/pkg/smtp"
 )
 
 type Email struct {
-	s *smtp.SmtpClient
+	s smtp.SmtpClient
 }
 
 func NewEmailNotificationSender(smtpCfg *config.SMTPConfiguration) (notification.Sender, error) {
@@ -23,5 +24,21 @@ func NewEmailNotificationSender(smtpCfg *config.SMTPConfiguration) (notification
 }
 
 func (e *Email) SendNotification(ctx context.Context, n *notification.Notification) error {
-	return e.s.SendEmailNotification(n.Email, n.LogoURL, n.TargetURL, n.EndpointStatus)
+	payload := struct {
+		URL     string
+		LogoURL string
+		Status  string
+	}{
+		URL:     n.TargetURL,
+		LogoURL: n.LogoURL,
+		Status:  n.EndpointStatus,
+	}
+
+	newEmail := em.NewEmail(e.s)
+	err := newEmail.Build("endpoint.update", payload)
+	if err != nil {
+		return err
+	}
+
+	return newEmail.Send(n.Email, "Endpoint Status Update")
 }
