@@ -29,7 +29,7 @@
 		<div class="input">
 			<label class="flex flex__align-items-center" for="app-slack-url">
 				Slack webhook url
-				<app-tooltip [size]="'small'" class="margin-left__4px">We use this to send an email notifcation for when a failure happens</app-tooltip>
+				<app-tooltip [size]="'small'" class="margin-left__4px">We use this to send notifications to your slack channel for when a failure happens</app-tooltip>
 			</label>
 			<input id="app-slack-url" type="url" formControlName="slack_webhook_url" />
 		</div>
@@ -79,14 +79,14 @@
 						</div>
 						<span class="bg__grey__light rounded__4px padding-x__4px position__absolute position--right__0px font__10px font__weight-400">required</span>
 					</label>
-					<div class="input--multiple" [ngClass]="{ invalid: getSingleEndpoint(i).tag.touched && getSingleEndpoint(i).tag.invalid && eventTags[i]?.length == 0 }">
+					<div class="input--multiple" (click)="focusInput(i)" [ngClass]="{ invalid: getSingleEndpoint(i).tag.touched && getSingleEndpoint(i).tag.invalid && eventTags[i]?.length == 0 }">
 						<div class="tag" *ngFor="let tag of getSingleEndpoint(i)?.events?.value">
 							{{ tag }}
 							<a (click)="removeEventTag(tag, i)">
 								<img src="/assets/img/close-icon-black.svg" alt="close icon" />
 							</a>
 						</div>
-						<input type="text" [id]="'tagInput' + i" (input)="addTag(i)" formControlName="tag" required />
+						<input type="text" [id]="'tagInput' + i" (input)="addTag(i)" formControlName="tag" required #eventInput/>
 					</div>
 
 					<div class="input__error input__error__danger" *ngIf="getSingleEndpoint(i).tag.touched && getSingleEndpoint(i).tag.invalid && eventTags[i]?.length == 0">

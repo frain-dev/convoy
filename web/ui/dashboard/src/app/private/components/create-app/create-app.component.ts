@@ -72,7 +72,6 @@ export class CreateAppComponent implements OnInit {
 
 		addTagInput?.addEventListener('keydown', e => {
 			if (e.which === 188) {
-
 				if (this.eventTags[i].includes(addTagInputValue?.value)) {
 
 					addTagInputValue.value = '';
@@ -155,5 +154,9 @@ export class CreateAppComponent implements OnInit {
 
 	closeAppInstance() {
 		this.discardApp.emit();
+	}
+
+	focusInput(i:number){
+		document.getElementById('tagInput' + i)?.focus()
 	}
 }
