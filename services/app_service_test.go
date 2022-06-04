@@ -795,6 +795,10 @@ func stripVariableFields(t *testing.T, obj string, v interface{}) {
 		a := v.(*datastore.Organisation)
 		a.UID = ""
 		a.CreatedAt, a.UpdatedAt = 0, 0
+	case "organisation member":
+		a := v.(*datastore.OrganisationMember)
+		a.UID = ""
+		a.CreatedAt, a.UpdatedAt = 0, 0
 	default:
 		t.Errorf("invalid data body - %v of type %T", obj, obj)
 		t.FailNow()

@@ -597,17 +597,17 @@ func (mr *MockOrganisationRepositoryMockRecorder) CreateOrganisation(arg0, arg1 
 }
 
 // DeleteOrganisation mocks base method.
-func (m *MockOrganisationRepository) DeleteOrganisation(ctx context.Context, uid string) error {
+func (m *MockOrganisationRepository) DeleteOrganisation(arg0 context.Context, arg1 string) error {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "DeleteOrganisation", ctx, uid)
+	ret := m.ctrl.Call(m, "DeleteOrganisation", arg0, arg1)
 	ret0, _ := ret[0].(error)
 	return ret0
 }
 
 // DeleteOrganisation indicates an expected call of DeleteOrganisation.
-func (mr *MockOrganisationRepositoryMockRecorder) DeleteOrganisation(ctx, uid interface{}) *gomock.Call {
+func (mr *MockOrganisationRepositoryMockRecorder) DeleteOrganisation(arg0, arg1 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteOrganisation", reflect.TypeOf((*MockOrganisationRepository)(nil).DeleteOrganisation), ctx, uid)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteOrganisation", reflect.TypeOf((*MockOrganisationRepository)(nil).DeleteOrganisation), arg0, arg1)
 }
 
 // FetchOrganisationByID mocks base method.
@@ -653,6 +653,228 @@ func (m *MockOrganisationRepository) UpdateOrganisation(arg0 context.Context, ar
 func (mr *MockOrganisationRepositoryMockRecorder) UpdateOrganisation(arg0, arg1 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateOrganisation", reflect.TypeOf((*MockOrganisationRepository)(nil).UpdateOrganisation), arg0, arg1)
+}
+
+// MockOrganisationInviteRepository is a mock of OrganisationInviteRepository interface.
+type MockOrganisationInviteRepository struct {
+	ctrl     *gomock.Controller
+	recorder *MockOrganisationInviteRepositoryMockRecorder
+}
+
+// MockOrganisationInviteRepositoryMockRecorder is the mock recorder for MockOrganisationInviteRepository.
+type MockOrganisationInviteRepositoryMockRecorder struct {
+	mock *MockOrganisationInviteRepository
+}
+
+// NewMockOrganisationInviteRepository creates a new mock instance.
+func NewMockOrganisationInviteRepository(ctrl *gomock.Controller) *MockOrganisationInviteRepository {
+	mock := &MockOrganisationInviteRepository{ctrl: ctrl}
+	mock.recorder = &MockOrganisationInviteRepositoryMockRecorder{mock}
+	return mock
+}
+
+// EXPECT returns an object that allows the caller to indicate expected use.
+func (m *MockOrganisationInviteRepository) EXPECT() *MockOrganisationInviteRepositoryMockRecorder {
+	return m.recorder
+}
+
+// CreateOrganisationInvite mocks base method.
+func (m *MockOrganisationInviteRepository) CreateOrganisationInvite(ctx context.Context, iv *datastore.OrganisationInvite) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "CreateOrganisationInvite", ctx, iv)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// CreateOrganisationInvite indicates an expected call of CreateOrganisationInvite.
+func (mr *MockOrganisationInviteRepositoryMockRecorder) CreateOrganisationInvite(ctx, iv interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateOrganisationInvite", reflect.TypeOf((*MockOrganisationInviteRepository)(nil).CreateOrganisationInvite), ctx, iv)
+}
+
+// DeleteOrganisationInvite mocks base method.
+func (m *MockOrganisationInviteRepository) DeleteOrganisationInvite(ctx context.Context, uid string) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "DeleteOrganisationInvite", ctx, uid)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// DeleteOrganisationInvite indicates an expected call of DeleteOrganisationInvite.
+func (mr *MockOrganisationInviteRepositoryMockRecorder) DeleteOrganisationInvite(ctx, uid interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteOrganisationInvite", reflect.TypeOf((*MockOrganisationInviteRepository)(nil).DeleteOrganisationInvite), ctx, uid)
+}
+
+// FetchOrganisationInviteByID mocks base method.
+func (m *MockOrganisationInviteRepository) FetchOrganisationInviteByID(ctx context.Context, uid string) (*datastore.OrganisationInvite, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "FetchOrganisationInviteByID", ctx, uid)
+	ret0, _ := ret[0].(*datastore.OrganisationInvite)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// FetchOrganisationInviteByID indicates an expected call of FetchOrganisationInviteByID.
+func (mr *MockOrganisationInviteRepositoryMockRecorder) FetchOrganisationInviteByID(ctx, uid interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "FetchOrganisationInviteByID", reflect.TypeOf((*MockOrganisationInviteRepository)(nil).FetchOrganisationInviteByID), ctx, uid)
+}
+
+// FetchOrganisationInviteByTokenAndEmail mocks base method.
+func (m *MockOrganisationInviteRepository) FetchOrganisationInviteByTokenAndEmail(ctx context.Context, token, email string) (*datastore.OrganisationInvite, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "FetchOrganisationInviteByTokenAndEmail", ctx, token, email)
+	ret0, _ := ret[0].(*datastore.OrganisationInvite)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// FetchOrganisationInviteByTokenAndEmail indicates an expected call of FetchOrganisationInviteByTokenAndEmail.
+func (mr *MockOrganisationInviteRepositoryMockRecorder) FetchOrganisationInviteByTokenAndEmail(ctx, token, email interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "FetchOrganisationInviteByTokenAndEmail", reflect.TypeOf((*MockOrganisationInviteRepository)(nil).FetchOrganisationInviteByTokenAndEmail), ctx, token, email)
+}
+
+// LoadOrganisationsInvitesPaged mocks base method.
+func (m *MockOrganisationInviteRepository) LoadOrganisationsInvitesPaged(ctx context.Context, pageable datastore.Pageable) ([]datastore.OrganisationInvite, datastore.PaginationData, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "LoadOrganisationsInvitesPaged", ctx, pageable)
+	ret0, _ := ret[0].([]datastore.OrganisationInvite)
+	ret1, _ := ret[1].(datastore.PaginationData)
+	ret2, _ := ret[2].(error)
+	return ret0, ret1, ret2
+}
+
+// LoadOrganisationsInvitesPaged indicates an expected call of LoadOrganisationsInvitesPaged.
+func (mr *MockOrganisationInviteRepositoryMockRecorder) LoadOrganisationsInvitesPaged(ctx, pageable interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "LoadOrganisationsInvitesPaged", reflect.TypeOf((*MockOrganisationInviteRepository)(nil).LoadOrganisationsInvitesPaged), ctx, pageable)
+}
+
+// UpdateOrganisationInvite mocks base method.
+func (m *MockOrganisationInviteRepository) UpdateOrganisationInvite(ctx context.Context, iv *datastore.OrganisationInvite) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "UpdateOrganisationInvite", ctx, iv)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// UpdateOrganisationInvite indicates an expected call of UpdateOrganisationInvite.
+func (mr *MockOrganisationInviteRepositoryMockRecorder) UpdateOrganisationInvite(ctx, iv interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateOrganisationInvite", reflect.TypeOf((*MockOrganisationInviteRepository)(nil).UpdateOrganisationInvite), ctx, iv)
+}
+
+// MockOrganisationMemberRepository is a mock of OrganisationMemberRepository interface.
+type MockOrganisationMemberRepository struct {
+	ctrl     *gomock.Controller
+	recorder *MockOrganisationMemberRepositoryMockRecorder
+}
+
+// MockOrganisationMemberRepositoryMockRecorder is the mock recorder for MockOrganisationMemberRepository.
+type MockOrganisationMemberRepositoryMockRecorder struct {
+	mock *MockOrganisationMemberRepository
+}
+
+// NewMockOrganisationMemberRepository creates a new mock instance.
+func NewMockOrganisationMemberRepository(ctrl *gomock.Controller) *MockOrganisationMemberRepository {
+	mock := &MockOrganisationMemberRepository{ctrl: ctrl}
+	mock.recorder = &MockOrganisationMemberRepositoryMockRecorder{mock}
+	return mock
+}
+
+// EXPECT returns an object that allows the caller to indicate expected use.
+func (m *MockOrganisationMemberRepository) EXPECT() *MockOrganisationMemberRepositoryMockRecorder {
+	return m.recorder
+}
+
+// CreateOrganisationMember mocks base method.
+func (m *MockOrganisationMemberRepository) CreateOrganisationMember(ctx context.Context, member *datastore.OrganisationMember) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "CreateOrganisationMember", ctx, member)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// CreateOrganisationMember indicates an expected call of CreateOrganisationMember.
+func (mr *MockOrganisationMemberRepositoryMockRecorder) CreateOrganisationMember(ctx, member interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateOrganisationMember", reflect.TypeOf((*MockOrganisationMemberRepository)(nil).CreateOrganisationMember), ctx, member)
+}
+
+// DeleteOrganisationMember mocks base method.
+func (m *MockOrganisationMemberRepository) DeleteOrganisationMember(ctx context.Context, memberID string) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "DeleteOrganisationMember", ctx, memberID)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// DeleteOrganisationMember indicates an expected call of DeleteOrganisationMember.
+func (mr *MockOrganisationMemberRepositoryMockRecorder) DeleteOrganisationMember(ctx, memberID interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteOrganisationMember", reflect.TypeOf((*MockOrganisationMemberRepository)(nil).DeleteOrganisationMember), ctx, memberID)
+}
+
+// FetchOrganisationMemberByID mocks base method.
+func (m *MockOrganisationMemberRepository) FetchOrganisationMemberByID(ctx context.Context, memberID string) (*datastore.OrganisationMember, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "FetchOrganisationMemberByID", ctx, memberID)
+	ret0, _ := ret[0].(*datastore.OrganisationMember)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// FetchOrganisationMemberByID indicates an expected call of FetchOrganisationMemberByID.
+func (mr *MockOrganisationMemberRepositoryMockRecorder) FetchOrganisationMemberByID(ctx, memberID interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "FetchOrganisationMemberByID", reflect.TypeOf((*MockOrganisationMemberRepository)(nil).FetchOrganisationMemberByID), ctx, memberID)
+}
+
+// FetchOrganisationMemberByUserID mocks base method.
+func (m *MockOrganisationMemberRepository) FetchOrganisationMemberByUserID(ctx context.Context, userID string) (*datastore.OrganisationMember, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "FetchOrganisationMemberByUserID", ctx, userID)
+	ret0, _ := ret[0].(*datastore.OrganisationMember)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// FetchOrganisationMemberByUserID indicates an expected call of FetchOrganisationMemberByUserID.
+func (mr *MockOrganisationMemberRepositoryMockRecorder) FetchOrganisationMemberByUserID(ctx, userID interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "FetchOrganisationMemberByUserID", reflect.TypeOf((*MockOrganisationMemberRepository)(nil).FetchOrganisationMemberByUserID), ctx, userID)
+}
+
+// LoadOrganisationMembersPaged mocks base method.
+func (m *MockOrganisationMemberRepository) LoadOrganisationMembersPaged(ctx context.Context, organisationID string, pageable datastore.Pageable) ([]datastore.OrganisationMember, datastore.PaginationData, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "LoadOrganisationMembersPaged", ctx, organisationID, pageable)
+	ret0, _ := ret[0].([]datastore.OrganisationMember)
+	ret1, _ := ret[1].(datastore.PaginationData)
+	ret2, _ := ret[2].(error)
+	return ret0, ret1, ret2
+}
+
+// LoadOrganisationMembersPaged indicates an expected call of LoadOrganisationMembersPaged.
+func (mr *MockOrganisationMemberRepositoryMockRecorder) LoadOrganisationMembersPaged(ctx, organisationID, pageable interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "LoadOrganisationMembersPaged", reflect.TypeOf((*MockOrganisationMemberRepository)(nil).LoadOrganisationMembersPaged), ctx, organisationID, pageable)
+}
+
+// UpdateOrganisationMember mocks base method.
+func (m *MockOrganisationMemberRepository) UpdateOrganisationMember(ctx context.Context, member *datastore.OrganisationMember) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "UpdateOrganisationMember", ctx, member)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// UpdateOrganisationMember indicates an expected call of UpdateOrganisationMember.
+func (mr *MockOrganisationMemberRepositoryMockRecorder) UpdateOrganisationMember(ctx, member interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateOrganisationMember", reflect.TypeOf((*MockOrganisationMemberRepository)(nil).UpdateOrganisationMember), ctx, member)
 }
 
 // MockApplicationRepository is a mock of ApplicationRepository interface.
