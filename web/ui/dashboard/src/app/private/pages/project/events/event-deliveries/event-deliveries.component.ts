@@ -122,8 +122,6 @@ export class EventDeliveriesComponent implements OnInit {
 			this.eventDeliveries = eventDeliveriesResponse.data;
 			this.displayedEventDeliveries = this.generalService.setContentDisplayed(eventDeliveriesResponse.data.content);
 
-			console.log(this.eventDeliveries);
-			console.log(this.displayedEventDeliveries);
 			// if this is a filter request, set the eventDelsDetailsItem to the first item in the list
 			if (requestDetails?.fromFilter) {
 				this.eventDelsDetailsItem = this.eventDeliveries?.content[0];

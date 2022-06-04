@@ -2,7 +2,10 @@
 	<h2 class="margin-bottom__12px">{{ editAppMode ? 'Edit' : 'Create' }} an application</h2>
 	<div class="grid grid__col-2 grid--gap__20px">
 		<div class="input">
-			<label for="app-name">Enter App Name</label>
+			<label class="flex flex__justify-between" for="app-name">
+				Enter App Name
+				<span class="bg__grey__light rounded__4px padding-x__4px position__absolute position--right__0px font__10px font__weight-400">required</span>
+			</label>
 			<input id="app-name" type="text" formControlName="name" [ngClass]="{ danger: addNewAppForm.controls.name.touched && addNewAppForm.controls.name.invalid }" />
 			<div class="input__error input__error__danger" *ngIf="addNewAppForm.controls.name.touched && addNewAppForm.controls.name.invalid">
 				<img src="assets/img/input-error-icon.svg" alt="input error icon" />
@@ -45,7 +48,10 @@
 			</div>
 			<div class="grid grid__col-2 grid--gap__20px" [formGroupName]="i">
 				<div class="input">
-					<label [for]="'description' + i">Description</label>
+					<label class="flex__justify-between" [for]="'description' + i">
+						Description
+						<span class="bg__grey__light rounded__4px padding-x__4px position__absolute position--right__0px font__10px font__weight-400">required</span>
+					</label>
 					<input [id]="'description' + i" type="text" formControlName="description" required />
 					<div class="input__error input__error__danger" *ngIf="getSingleEndpoint(i).description.touched && getSingleEndpoint(i).description.invalid">
 						<img src="assets/img/input-error-icon.svg" alt="input error icon" />
@@ -54,7 +60,10 @@
 				</div>
 
 				<div class="input">
-					<label [for]="'endpoint-url' + i">Enter Endpoint URL</label>
+					<label class="flex flex__justify-between" [for]="'endpoint-url' + i">
+						Enter Endpoint URL
+						<span class="bg__grey__light rounded__4px padding-x__4px position__absolute position--right__0px font__10px font__weight-400">required</span>
+					</label>
 					<input [id]="'endpoint-url' + i" type="text" formControlName="url" required />
 					<div class="input__error input__error__danger" *ngIf="getSingleEndpoint(i).url.touched && getSingleEndpoint(i).url.invalid">
 						<img src="assets/img/input-error-icon.svg" alt="input error icon" />
@@ -63,9 +72,12 @@
 				</div>
 
 				<div class="input multiple">
-					<label class="flex flex__align-items-center" [for]="'tagInput' + i">
-						Events
-						<app-tooltip [size]="'small'" position="right" class="margin-left__4px">Add multiple events by separating them with commas.</app-tooltip>
+					<label class="flex flex__justify-between" [for]="'tagInput' + i">
+						<div class="flex flex__align-items-center">
+							Events
+							<app-tooltip [size]="'small'" position="right" class="margin-left__4px">Add multiple events by separating them with commas.</app-tooltip>
+						</div>
+						<span class="bg__grey__light rounded__4px padding-x__4px position__absolute position--right__0px font__10px font__weight-400">required</span>
 					</label>
 					<div class="input--multiple" [ngClass]="{ invalid: getSingleEndpoint(i).tag.touched && getSingleEndpoint(i).tag.invalid && eventTags[i]?.length == 0 }">
 						<div class="tag" *ngFor="let tag of getSingleEndpoint(i)?.events?.value">
