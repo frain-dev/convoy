@@ -59,8 +59,6 @@ func Test_Build(t *testing.T) {
 	}
 }
 
-func Test_Send(t *testing.T) {}
-
 func buildClient(ctrl *gomock.Controller) smtp.SmtpClient {
 	return mocks.NewMockSmtpClient(ctrl)
 }
