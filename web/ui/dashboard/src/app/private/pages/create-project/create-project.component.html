@@ -176,7 +176,6 @@
 							formControlName="rate_limit_duration"
 							[ngClass]="{ invalid: projectForm.controls['rate_limit_duration'].touched && projectForm.controls['rate_limit_duration'].invalid }"
 						/>
-
 						<div class="input__error input__error__danger" *ngIf="projectForm.controls['rate_limit_duration'].touched && projectForm.controls['rate_limit_duration'].invalid">
 							<img src="assets/img/input-error-icon.svg" alt="input error icon" />
 							<span>Please enter your rate limit duration</span>
@@ -194,7 +193,6 @@
 							formControlName="rate_limit"
 							[ngClass]="{ invalid: projectForm.controls['rate_limit'].touched && projectForm.controls['rate_limit'].invalid }"
 						/>
-
 						<div class="input__error input__error__danger" *ngIf="projectForm.controls['rate_limit'].touched && projectForm.controls['rate_limit'].invalid">
 							<img src="assets/img/input-error-icon.svg" alt="input error icon" />
 							<span>Please enter a rate limit</span>

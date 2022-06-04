@@ -24,7 +24,6 @@ export class AppDetailsComponent implements OnInit {
 	loadingAppPotalToken = false;
 	isLoadingAppDetails = false;
 	shouldRenderSmallSize = false;
-	showInput = false;
 	screenWidth = window.innerWidth;
 	addNewEndpointForm: FormGroup = this.formBuilder.group({
 		url: ['', Validators.required],
