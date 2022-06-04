@@ -34,11 +34,11 @@ import (
 
 // TEST HELPERS.
 func getMongoDSN() string {
-	return os.Getenv("TEST_MONGO_DSN")
+	return "mongodb+srv://admin:8Jm4UMhfQIDBQUXo@cluster1.eqj2e.mongodb.net/convoy_db_testing"
 }
 
 func getRedisDSN() string {
-	return os.Getenv("TEST_REDIS_DSN")
+	return "redis://localhost:6379"
 }
 
 func getConfig() config.Configuration {
@@ -164,7 +164,12 @@ func authenticateRequest(auth *models.LoginUser) AuthenticatorFn {
 		}
 
 		loginResp := &models.LoginUserResponse{}
-		err = json.NewDecoder(w.Body).Decode(loginResp)
+		resp := &struct {
+			Data interface{} `json:"data"`
+		}{
+			Data: loginResp,
+		}
+		err = json.NewDecoder(w.Body).Decode(resp)
 		if err != nil {
 			return err
 		}

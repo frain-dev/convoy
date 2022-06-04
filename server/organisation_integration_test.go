@@ -51,7 +51,7 @@ func (s *OrganisationIntegrationTestSuite) SetupTest() {
 	})
 
 	// Setup Config.
-	err = config.LoadConfig("./testdata/Auth_Config/full-convoy.json")
+	err = config.LoadConfig("./testdata/Auth_Config/full-convoy-with-jwt-realm.json")
 	require.NoError(s.T(), err)
 
 	initRealmChain(s.T(), s.DB.APIRepo(), s.DB.UserRepo(), s.ConvoyApp.cache)
