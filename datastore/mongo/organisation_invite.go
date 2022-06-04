@@ -79,7 +79,7 @@ func (db *orgInviteRepo) FetchOrganisationInviteByID(ctx context.Context, id str
 
 	err := db.inner.FindOne(ctx, filter).Decode(org)
 	if errors.Is(err, mongo.ErrNoDocuments) {
-		err = datastore.ErrOrgNotFound
+		err = datastore.ErrOrgInviteNotFound
 	}
 
 	return org, err

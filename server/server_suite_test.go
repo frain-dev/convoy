@@ -34,11 +34,11 @@ import (
 
 // TEST HELPERS.
 func getMongoDSN() string {
-	return "mongodb+srv://admin:8Jm4UMhfQIDBQUXo@cluster1.eqj2e.mongodb.net/convoy_db_testing"
+	return os.Getenv("TEST_MONGO_DSN")
 }
 
 func getRedisDSN() string {
-	return "redis://localhost:6379"
+	return os.Getenv("TEST_REDIS_DSN")
 }
 
 func getConfig() config.Configuration {
