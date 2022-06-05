@@ -3,7 +3,7 @@ import { FormBuilder, FormControl, FormGroup, Validators } from '@angular/forms'
 import { Router } from '@angular/router';
 import { GROUP } from 'src/app/models/group.model';
 import { GeneralService } from 'src/app/services/general/general.service';
-import { ProjectService } from '../project/project.service';
+import { PrivateService } from '../../private.service';
 import { CreateProjectService } from './create-project.service';
 
 @Component({

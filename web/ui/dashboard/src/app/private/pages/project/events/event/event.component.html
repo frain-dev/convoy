@@ -16,11 +16,11 @@
 					</button>
 				</form>
 	
-				<date-filter class="margin-left__24px" (selectedDateRange)="getSelectedDateRange($event)"></date-filter>
+				<date-filter class="margin-left__14px" (selectedDateRange)="getSelectedDateRange($event)"></date-filter>
 	
-				<app-time-filter (applyFilter)="eventsTimeFilterData = $event; getEvents({ addToURL: true })" #eventsTimeFilter></app-time-filter>
+				<app-time-filter class="margin-left__14px" (applyFilter)="eventsTimeFilterData = $event; getEvents({ addToURL: true })" #eventsTimeFilter></app-time-filter>
 	
-				<div class="dropdown margin-left__24px">
+				<div class="dropdown margin-left__14px">
 					<button class="button button__filter button--has-icon icon-left" [ngClass]="{ active: !!eventApp }" (click)="showOverlay = true; showEventsAppsDropdown = !showEventsAppsDropdown">
 						<img src="/assets/img/apps-icon-grey.svg" alt="apps filter icon" />
 						<span>All Apps</span>
@@ -48,7 +48,7 @@
 			</div>
 	
 			<button
-				class="button button__white button__small margin-right__20px"
+				class="button button__white button__small"
 				(click)="clearEventFilters(); selectedEventsDateOption = ''"
 				[disabled]="
 					(eventsFilterDateRange.value.startDate == '' || eventsFilterDateRange.value.endDate == '') &&
@@ -104,7 +104,7 @@
 								</td>
 								<td>
 									<div>
-										<button class="button__clear button--has-icon icon-right" (click)="eventDeliveryFilteredByEventId = event.uid">
+										<button class="button__clear button--has-icon icon-right" (click)="openDeliveriesTab(event.uid)">
 											Deliveries
 											<img src="assets/img/angle-arrow-right-primary.svg" alt="arrow right" />
 										</button>

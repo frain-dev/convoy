@@ -1,5 +1,5 @@
 <h1 class="font__12px font__weight-500 flex flex__align-items-center margin-bottom__24px text__uppercase">
-	PROJECTS
+	<a routerLink="/projects" class="font__weight-500 pointer-cursor">Projects</a>
 	<svg width="16" height="16" class="margin-x__4px">
 		<use xlink:href="#arrow-right-icon"></use>
 	</svg>
@@ -7,7 +7,7 @@
 	<svg width="16" height="16" class="margin-x__4px">
 		<use xlink:href="#arrow-right-icon"></use>
 	</svg>
-	<span class="pointer-cursor font__weight-500" (click)="goBack()">Apps</span>
+	<a class="pointer-cursor font__weight-500" (click)="goBack()">Apps</a>
 	<svg width="16" height="16" class="margin-x__4px">
 		<use xlink:href="#arrow-right-icon"></use>
 	</svg>
@@ -16,7 +16,7 @@
 <div class="card padding-all__32px margin-bottom__20px">
 	<div class="flex flex__justify-between flex__align-items-center margin-bottom__24px">
 		<h3>Overview</h3>
-		<button class="button button__white button__small" [disabled]="appsDetailsItem.events <= 0" (click)="loadEventsFromAppsTable(appsDetailsItem.uid)">View Event</button>
+		<button class="button button__white button__small" [disabled]="appsDetailsItem?.events === 0" (click)="loadEventsFromAppsTable(appsDetailsItem.uid)">View Event</button>
 	</div>
 	<div class="flex flex__align-items-center flex__wrap flex__justify-between margin-bottom__32px">
 		<div>
@@ -52,7 +52,7 @@
         </label>
     </div> -->
 	<div class="flex flex__justify-between flex__wrap border__top margin-top__22px">
-		<div class="padding-top__32px" [ngClass]="{'width__50 border__right padding-right__32px': !shouldRenderSmallSize, 'width__100': shouldRenderSmallSize}">
+		<div class="padding-top__32px" [ngClass]="{ 'width__50 border__right padding-right__32px': !shouldRenderSmallSize, width__100: shouldRenderSmallSize }">
 			<div class="flex flex__align-items-center flex__justify-between">
 				<h3>App Event Endpoints</h3>
 				<div class="flex flex__align-items-center">
@@ -80,7 +80,7 @@
 								{{ endpoint.target_url }}
 							</p>
 							<div class="flex margin-top__16px">
-								<div class="tag tag__events" *ngFor="let event of endpoint.events">{{ event == '*' ? 'all events' : event }}</div>
+								<div class="tag tag__events" *ngFor="let event of endpoint?.events">{{ event == '*' ? 'all events' : event }}</div>
 							</div>
 						</div>
 						<div class="app-details--inactive flex flex__align-items-center flex__column flex__justify-center padding-all__24px" *ngIf="endpoint.status == 'inactive'">
@@ -99,7 +99,7 @@
 				<p>No endpoint has been added for selected app yet</p>
 			</div>
 		</div>
-		<div class="padding-top__32px" [ngClass]="{'width__50 padding-left__32px': !shouldRenderSmallSize, 'border__top width__100': shouldRenderSmallSize}">
+		<div class="padding-top__32px" [ngClass]="{ 'width__50 padding-left__32px': !shouldRenderSmallSize, 'border__top width__100': shouldRenderSmallSize }">
 			<div>
 				<h3>App Portal</h3>
 				<ul class="margin-top__10px">
@@ -136,7 +136,6 @@
 	</div>
 </div>
 
-
 <!-- dark overlay  -->
 <div class="_overlay" *ngIf="showAddEndpointModal || showAddEventModal || showEndpointSecret" (click)="showAddEndpointModal = false; showAddEventModal = false; showEndpointSecret = false"></div>
 
@@ -153,8 +152,17 @@
 	<div class="modal--body" *ngIf="showAddEndpointModal">
 		<form [formGroup]="addNewEndpointForm">
 			<div class="input">
-				<label for="">Description</label>
-				<input type="text" formControlName="description" [ngClass]="{ danger: addNewEndpointForm.controls.description.touched && addNewEndpointForm.controls.description.invalid }" required />
+				<label class="flex flex__justify-between" for="description">
+					Description
+					<span class="bg__grey__light rounded__4px padding-x__4px position__absolute position--right__0px font__10px font__weight-400">required</span>
+				</label>
+				<input
+					id="description"
+					type="text"
+					formControlName="description"
+					[ngClass]="{ danger: addNewEndpointForm.controls.description.touched && addNewEndpointForm.controls.description.invalid }"
+					required
+				/>
 				<div class="input__error input__error__danger" *ngIf="addNewEndpointForm.controls.description.touched && addNewEndpointForm.controls.description.invalid">
 					<img src="assets/img/input-error-icon.svg" alt="input error icon" />
 					<span>Please provide a description</span>
@@ -162,8 +170,11 @@
 			</div>
 
 			<div class="input">
-				<label for="">Enter URL</label>
-				<input type="text" formControlName="url" [ngClass]="{ danger: addNewEndpointForm.controls.url.touched && addNewEndpointForm.controls.url.invalid }" required />
+				<label class="flex flex__justify-between" for="endpoint-url">
+					Enter URL
+					<span class="bg__grey__light rounded__4px padding-x__4px position__absolute position--right__0px font__10px font__weight-400">required</span>
+				</label>
+				<input id="endpoint-url" type="text" formControlName="url" [ngClass]="{ danger: addNewEndpointForm.controls.url.touched && addNewEndpointForm.controls.url.invalid }" required />
 				<div class="input__error input__error__danger" *ngIf="addNewEndpointForm.controls.url.touched && addNewEndpointForm.controls.url.invalid">
 					<img src="assets/img/input-error-icon.svg" alt="input error icon" />
 					<span>Endpoint URL is required</span>
@@ -171,9 +182,12 @@
 			</div>
 
 			<div class="input multiple">
-				<label class="flex flex__align-items-center" for="">
-					Events
-					<app-tooltip [size]="'small'" position="right" class="margin-left__4px">Add multiple events by seperating them with commas</app-tooltip>
+				<label class="flex flex__justify-between" for="tagInput">
+					<div class="flex flex__align-items-center">
+						Events
+						<app-tooltip [size]="'small'" position="right" class="margin-left__4px">Add multiple events by separating them with commas.</app-tooltip>
+					</div>
+					<span class="bg__grey__light rounded__4px padding-x__4px position__absolute position--right__0px font__10px font__weight-400">required</span>
 				</label>
 				<div class="input--multiple">
 					<div class="tag" *ngFor="let tag of eventTags">
@@ -204,8 +218,11 @@
 	<div class="modal--body" *ngIf="showAddEventModal">
 		<form [formGroup]="sendEventForm">
 			<div class="input">
-				<label for="">App ID</label>
-				<select class="editMode" formControlName="app_id">
+				<label class="flex flex__align-items-center" for="appId">
+					App ID
+					<span class="bg__grey__light rounded__4px padding-x__4px position__absolute position--right__0px font__10px font__weight-400">required</span>
+				</label>
+				<select id="appId" class="editMode" formControlName="app_id">
 					<option *ngFor="let app of apps?.content" [value]="app.uid">{{ app.name }}</option>
 				</select>
 				<div class="input__error input__error__danger" *ngIf="sendEventForm.controls.app_id.touched && sendEventForm.controls.app_id.invalid">
@@ -214,20 +231,26 @@
 				</div>
 			</div>
 			<div class="input">
-				<label for="">Data</label>
-				<textarea formControlName="data" required cols="5" [ngClass]="{ danger: sendEventForm.controls.data.touched && sendEventForm.controls.data.invalid }"></textarea>
+				<label class="flex flex__justify-between" for="data">
+					<div class="flex flex__align-items-center">
+						Data
+						<app-tooltip [size]="'small'" position="right" class="margin-left__4px">Please enter your data in the format it would be returned.</app-tooltip>
+					</div>
+
+					<span class="bg__grey__light rounded__4px padding-x__4px position__absolute position--right__0px font__10px font__weight-400">required</span>
+				</label>
+				<textarea id="data" formControlName="data" required cols="5" [ngClass]="{ danger: sendEventForm.controls.data.touched && sendEventForm.controls.data.invalid }"></textarea>
 				<div class="input__error input__error__danger" *ngIf="sendEventForm.controls.data.touched && sendEventForm.controls.data.invalid">
 					<img src="assets/img/input-error-icon.svg" alt="input error icon" />
 					<span>Data is required</span>
 				</div>
-				<div class="input__error input__error__secondary font__12px">
-					<img src="/assets/img/small-info-icon.svg" alt="close icon" />
-					Please enter your data in the format it would be returned
-				</div>
 			</div>
 			<div class="input">
-				<label for="">Event Type</label>
-				<input type="text" formControlName="event_type" [ngClass]="{ danger: sendEventForm.controls.event_type.touched && sendEventForm.controls.event_type.invalid }" required />
+				<label class="flex flex__justify-between" for="eventType">
+					Event Type
+					<span class="bg__grey__light rounded__4px padding-x__4px position__absolute position--right__0px font__10px font__weight-400">required</span>
+				</label>
+				<input id="eventType" type="text" formControlName="event_type" [ngClass]="{ danger: sendEventForm.controls.event_type.touched && sendEventForm.controls.event_type.invalid }" required />
 				<div class="input__error input__error__danger" *ngIf="sendEventForm.controls.event_type.touched && sendEventForm.controls.event_type.invalid">
 					<img src="assets/img/input-error-icon.svg" alt="input error icon" />
 					<span>Event type is required</span>

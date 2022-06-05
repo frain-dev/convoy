@@ -30,18 +30,20 @@ export class DateFilterComponent implements OnInit {
 		if (dateOption) {
 			this.selectedDateOption = dateOption;
 			const { startDate, endDate } = this.generalService.getSelectedDate(dateOption);
-      this.dateRange.patchValue({
+			this.dateRange.patchValue({
 				startDate: startDate,
 				endDate: endDate
 			});
 			this.selectedDateRange.emit({ startDate, endDate });
-		}else{
-      const { startDate, endDate } = this.dateRange.value
-      this.dateRange.patchValue({
+		} else {
+			const { startDate, endDate } = this.dateRange.value;
+			this.dateRange.patchValue({
 				startDate: startDate,
 				endDate: endDate
 			});
-      this.selectedDateRange.emit({ startDate, endDate });
-    }
+			this.selectedDateRange.emit({ startDate, endDate });
+		}
 	}
+
+	
 }

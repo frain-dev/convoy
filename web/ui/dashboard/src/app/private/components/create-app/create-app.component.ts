@@ -15,7 +15,8 @@ export class CreateAppComponent implements OnInit {
 
 	@Output() discardApp = new EventEmitter<any>();
 	@Output() createApp = new EventEmitter<any>();
-	eventTags!: string[];
+	eventTags: any[] = [];
+	appUid!: string;
 	isSavingApp: boolean = false;
 	addNewAppForm: FormGroup = this.formBuilder.group({
 		name: ['', Validators.required],
@@ -31,6 +32,7 @@ export class CreateAppComponent implements OnInit {
 		if (this.appsDetailsItem && this.editAppMode) {
 			this.updateForm();
 		}
+		this.endpoints.push(this.newEndpoint());
 	}
 
 	get endpoints(): FormArray {
@@ -45,7 +47,6 @@ export class CreateAppComponent implements OnInit {
 		return this.formBuilder.group({
 			url: ['', Validators.required],
 			events: [''],
-			tag: ['', Validators.required],
 			description: ['', Validators.required]
 		});
 	}
@@ -58,22 +59,27 @@ export class CreateAppComponent implements OnInit {
 		this.endpoints.removeAt(i);
 	}
 
-	removeEventTag(tag: string) {
-		this.eventTags = this.eventTags.filter(e => e !== tag);
+	removeEventTag(tag: string, i: number) {
+		this.eventTags[i] = this.eventTags[i].filter((e: string) => e !== tag);
 	}
 
-	addTag() {
-		const addTagInput = document.getElementById('tagInput');
-		const addTagInputValue = document.getElementById('tagInput') as HTMLInputElement;
+	addTag(i: number) {
+		this.eventTags[i] ? (this.eventTags[i] = this.eventTags[i]) : (this.eventTags[i] = []);
+
+		const addTagInput = document.getElementById('tagInput' + i);
+		const addTagInputValue = document.getElementById('tagInput' + i) as HTMLInputElement;
+
 		addTagInput?.addEventListener('keydown', e => {
 			if (e.which === 188) {
-				if (this.eventTags.includes(addTagInputValue?.value)) {
+				if (this.eventTags[i].includes(addTagInputValue?.value)) {
 					addTagInputValue.value = '';
-					this.eventTags = this.eventTags.filter(e => String(e).trim());
+					this.eventTags[i] = this.eventTags[i].filter((e: string) => String(e).trim());
 				} else {
-					this.eventTags.push(addTagInputValue?.value);
+					this.eventTags[i].push(addTagInputValue?.value);
+					this.eventTags[i] = this.eventTags[i].filter((e: string) => String(e).trim());
+
+					((this.addNewAppForm.get('endpoints') as FormArray)?.at(i) as FormGroup)?.get('events')?.patchValue(this.eventTags[i]);
 					addTagInputValue.value = '';
-					this.eventTags = this.eventTags.filter(e => String(e).trim());
 				}
 				e.preventDefault();
 			}
@@ -96,18 +102,29 @@ export class CreateAppComponent implements OnInit {
 			return;
 		}
 
+		this.addNewAppForm.value.endpoints.forEach((item: any) => {
+			if (item.events === '') item.events = ['*'];
+		});
+
 		this.isSavingApp = true;
-		// to be reviewed
-		delete this.addNewAppForm.value.endpoints;
+		let requests: any[] = [];
 
 		try {
 			const response = this.editAppMode
 				? await this.createAppService.updateApp({ appId: this.appsDetailsItem?.uid, body: this.addNewAppForm.value })
 				: await this.createAppService.createApp({ body: this.addNewAppForm.value });
 
+			if (!this.editAppMode) {
+				this.appUid = response?.data?.uid;
+				const endpointData = this.addNewAppForm.value.endpoints;
+				endpointData.forEach((item: any) => {
+					requests.push(this.addNewEndpoint(item));
+				});
+				this.saveNewEndpoints(requests);
+			}
 			this.generalService.showNotification({ message: response.message, style: 'success' });
 			this.addNewAppForm.reset();
-			this.createApp.emit();
+			this.createApp.emit(response.data);
 			this.addNewAppForm.patchValue({
 				is_disabled: false
 			});
@@ -120,7 +137,26 @@ export class CreateAppComponent implements OnInit {
 		}
 	}
 
+	async addNewEndpoint(endpoint: any) {
+		try {
+			const response = await this.createAppService.addNewEndpoint({ appId: this.appUid, body: endpoint });
+
+			return response;
+		} catch {
+			return;
+		}
+	}
+
+	async saveNewEndpoints(requests: any[]) {
+		const response = await Promise.all(requests);
+		console.log(response);
+	}
+
 	closeAppInstance() {
 		this.discardApp.emit();
+	}
+
+	focusInput(i: number) {
+		document.getElementById('tagInput' + i)?.focus();
 	}
 }

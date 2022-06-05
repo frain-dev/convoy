@@ -3,9 +3,10 @@ import { CommonModule } from '@angular/common';
 
 import { PrivateRoutingModule } from './private-routing.module';
 import { PrivateComponent } from './private.component';
+import { CreateProjectComponent } from './components/create-project/create-project.component';
 
 @NgModule({
-	declarations: [PrivateComponent],
+	declarations: [PrivateComponent, CreateProjectComponent],
 	imports: [CommonModule, PrivateRoutingModule]
 })
 export class PrivateModule {}
