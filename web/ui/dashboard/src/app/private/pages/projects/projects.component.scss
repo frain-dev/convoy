@@ -1,3 +1,7 @@
 .new-project-card {
 	border: 1px dotted var(--primary-color);
 }
+.projects-grid {
+	grid-template-columns: repeat(auto-fit, minmax(333px, 1fr));
+	gap: 24px 32px;
+}

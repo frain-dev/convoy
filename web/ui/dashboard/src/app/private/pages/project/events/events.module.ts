@@ -10,6 +10,9 @@ import { EventComponent } from './event/event.component';
 import { EventDeliveriesComponent } from './event-deliveries/event-deliveries.component';
 import { PrismModule } from 'src/app/private/components/prism/prism.module';
 import { EventDeliveryDetailsComponent } from './event-delivery-details/event-delivery-details.component';
+import { DateFilterModule } from 'src/app/private/components/date-filter/date-filter.module';
+import { LoaderModule } from 'src/app/private/components/loader/loader.module';
+import { TableLoaderModule } from 'src/app/private/components/table-loader/table-loader.module';
 
 const routes: Routes = [
 	{ path: '', component: EventsComponent },
@@ -18,7 +21,7 @@ const routes: Routes = [
 
 @NgModule({
 	declarations: [EventsComponent, EventComponent, EventDeliveriesComponent, EventDeliveryDetailsComponent],
-	imports: [CommonModule, ReactiveFormsModule, FormsModule, MatDatepickerModule, MatNativeDateModule, TimeFilterModule, PrismModule, RouterModule.forChild(routes)],
+	imports: [CommonModule, ReactiveFormsModule, FormsModule, MatDatepickerModule, MatNativeDateModule, DateFilterModule, TimeFilterModule, LoaderModule, TableLoaderModule, PrismModule, RouterModule.forChild(routes)],
 	providers: [DatePipe]
 })
 export class EventsModule {}

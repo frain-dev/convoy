@@ -29,6 +29,18 @@ const routes: Routes = [
 				path: 'apps',
 				loadChildren: () => import('./apps/apps.module').then(m => m.AppsModule)
 			},
+			{
+				path: 'settings',
+				loadChildren: () => import('./settings/settings.module').then(m => m.SettingsModule)
+      },
+      {
+				path: 'subscriptions',
+				loadChildren: () => import('./subscriptions/subscriptions.module').then(m => m.SubscriptionsModule)
+			},
+			{
+				path: 'subscriptions/new',
+				loadChildren: () => import('./subscriptions/subscriptions.module').then(m => m.SubscriptionsModule)
+			}
 		]
 	}
 ];

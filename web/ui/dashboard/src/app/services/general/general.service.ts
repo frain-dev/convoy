@@ -6,7 +6,21 @@ import { environment } from 'src/environments/environment';
 	providedIn: 'root'
 })
 export class GeneralService {
+	alertStatus: BehaviorSubject<{ message: string; style: string; show: boolean }> = new BehaviorSubject<{ message: string; style: string; show: boolean }>({ message: 'testing', style: 'info', show: false });
+
 	constructor() {}
+
+	showNotification(details: { message: string; style: string }) {
+		this.alertStatus.next({ message: details.message, style: details.style, show: true });
+		setTimeout(() => {
+			this.dismissNotification();
+		}, 4000);
+	}
+
+	dismissNotification() {
+		this.alertStatus.next({ message: '', style: '', show: false });
+	}  
+	
 	apiURL(): string {
 		return `${environment.production ? location.origin : 'http://localhost:5005'}`;
 	}
@@ -71,5 +85,26 @@ export class GeneralService {
 		}
 
 		return { startDate, endDate};
+	}
+
+	getDate(date: Date) {
+		const months = ['Jan', 'Feb', 'Mar', 'April', 'May', 'June', 'July', 'Aug', 'Sept', 'Oct', 'Nov', 'Dec'];
+		const _date = new Date(date);
+		const day = _date.getDate();
+		const month = _date.getMonth();
+		const year = _date.getFullYear();
+		return `${day} ${months[month]}, ${year}`;
+	}
+
+	setContentDisplayed(content: { created_at: Date }[]) {
+		const dateCreateds = content.map((item: { created_at: Date }) => this.getDate(item.created_at));
+		const uniqueDateCreateds = [...new Set(dateCreateds)];
+		const displayedItems: any = [];
+		uniqueDateCreateds.forEach(itemDate => {
+			const filteredItemDate = content.filter((item: { created_at: Date }) => this.getDate(item.created_at) === itemDate);
+			const contents = { date: itemDate, content: filteredItemDate };
+			displayedItems.push(contents);
+		});
+		return displayedItems;
 	}
 }

@@ -1,6 +1,9 @@
 nav {
-	margin-left: 151px;
+	margin-left: 130px;
 
+	@media (max-width: 1150px) {
+		margin-left: 20px;
+	}
 	.active {
 		background: var(--primary-color-500);
 		color: var(--primary-color);

@@ -1,7 +1,10 @@
-import { Component, OnInit } from '@angular/core';
-import { FormBuilder, FormGroup, Validators } from '@angular/forms';
+import { Location } from '@angular/common';
+import { Component, HostListener, OnInit } from '@angular/core';
+import { FormBuilder, FormControl, FormGroup, Validators } from '@angular/forms';
+import { ActivatedRoute, Router } from '@angular/router';
 import { APP } from 'src/app/models/app.model';
 import { PAGINATION } from 'src/app/models/global.model';
+import { GeneralService } from 'src/app/services/general/general.service';
 import { AppDetailsService } from './app-details.service';
 
 @Component({
@@ -11,14 +14,16 @@ import { AppDetailsService } from './app-details.service';
 })
 export class AppDetailsComponent implements OnInit {
 	showAddEndpointModal: boolean = false;
-	showAddEventModal: boolean = false;
-	showEndpointSecret: boolean = false;
-	showPublicCopyText: boolean = false;
-	showSecretCopyText: boolean = false;
-	isSendingNewEvent: boolean = false;
-	isCreatingNewEndpoint: boolean = false;
-	loadingAppPotalToken: boolean = false;
-
+	showAddEventModal = false;
+	showEndpointSecret = false;
+	showPublicCopyText = false;
+	showSecretCopyText = false;
+	isSendingNewEvent = false;
+	isCreatingNewEndpoint = false;
+	loadingAppPotalToken = false;
+	isLoadingAppDetails = false;
+	shouldRenderSmallSize = false;
+	screenWidth = window.innerWidth;
 	addNewEndpointForm: FormGroup = this.formBuilder.group({
 		url: ['', Validators.required],
 		events: [''],
@@ -31,38 +36,32 @@ export class AppDetailsComponent implements OnInit {
 	});
 	appPortalLink!: string;
 	endpointSecretKey!: string;
-	projectId!: string;
-	eventTags!: string[];
-	appsDetailsItem: any = {
-		created_at: '2022-04-22T12:16:51.86Z',
-		endpoints: [
-			{
-				created_at: '2022-03-03T17:42:32.757Z',
-				description: 'second new app endpoint',
-				events: ['new new endpoint'],
-				http_timeout: '',
-				rate_limit: 0,
-				rate_limit_duration: '',
-				secret: '71GG_jZeYYC--c1Y5a1VMMVULUnoemUhYQ==',
-				status: 'active',
-				target_url: 'https://webhook.site/ac06134f-b969-4388-b663-1e55951a99a4',
-				uid: '2f9c123a-1ae7-4cd5-bbc0-9c08d32cefc1',
-				updated_at: '2022-03-03T17:42:32.757Z'
-			}
-		],
-		events: 0,
-		group_id: 'db78d6fe-b05e-476d-b908-cb6fff26a3ed',
-		is_disabled: false,
-		name: 'App D',
-		support_email: '',
-		uid: '6ab551cb-b6ac-4808-abd2-09e0570028b7',
-		updated_at: '2022-04-22T12:16:51.86Z'
-	};
+	eventTags: string[] = [];
+	appsDetailsItem!: APP;
 	apps!: { pagination: PAGINATION; content: APP[] };
-	constructor(private formBuilder: FormBuilder, private appDetailsService: AppDetailsService) {}
+	constructor(
+		private formBuilder: FormBuilder,
+		private appDetailsService: AppDetailsService,
+		private generalService: GeneralService,
+		private route: ActivatedRoute,
+		private location: Location,
+		private router: Router
+	) {}
 
-	ngOnInit(): void {}
+	async ngOnInit() {
+		await Promise.all([this.checkScreenSize(), this.getAppId(), this.getApps()]);
+	}
 
+	goBack() {
+		this.location.back();
+	}
+
+	getAppId() {
+		this.route.params.subscribe(res => {
+			const appId = res.id;
+			this.getAppDetails(appId);
+		});
+	}
 	removeEventTag(tag: string) {
 		this.eventTags = this.eventTags.filter(e => e !== tag);
 	}
@@ -100,20 +99,89 @@ export class AppDetailsComponent implements OnInit {
 		document.body.removeChild(el);
 	}
 
-	sendNewEvent() {}
+	async sendNewEvent() {
+		if (this.sendEventForm.invalid) {
+			(<any>Object).values(this.sendEventForm.controls).forEach((control: FormControl) => {
+				control?.markAsTouched();
+			});
+			return;
+		}
+		this.isSendingNewEvent = true;
+		try {
+			const response = await this.appDetailsService.sendEvent({ body: this.sendEventForm.value });
 
-	addNewEndpoint() {}
+			this.generalService.showNotification({ message: response.message, style: 'success' });
+			this.sendEventForm.reset();
+			this.showAddEventModal = false;
+			this.isSendingNewEvent = false;
+			const projectId = this.appDetailsService.projectId;
+			this.router.navigate(['/projects/' + projectId + '/events'], { queryParams: { eventsApp: this.appsDetailsItem?.uid } });
+		} catch {
+			this.isSendingNewEvent = false;
+		}
+	}
+
+	async addNewEndpoint() {
+		if (this.addNewEndpointForm.invalid) {
+			(<any>Object).values(this.addNewEndpointForm.controls).forEach((control: FormControl) => {
+				control?.markAsTouched();
+			});
+			return;
+		}
+		this.isCreatingNewEndpoint = true;
+
+		this.addNewEndpointForm.patchValue({
+			events: this.eventTags
+		});
+
+		try {
+			const response = await this.appDetailsService.addNewEndpoint({ appId: this.appsDetailsItem?.uid, body: this.addNewEndpointForm.value });
+			this.generalService.showNotification({ message: response.message, style: 'success' });
+			this.getAppDetails(this.appsDetailsItem?.uid);
+			this.addNewEndpointForm.reset();
+			this.eventTags = [];
+			this.showAddEndpointModal = false;
+			this.isCreatingNewEndpoint = false;
+			return;
+		} catch {
+			this.isCreatingNewEndpoint = false;
+			return;
+		}
+	}
+
+	async getApps() {
+		try {
+			const appsResponse = await this.appDetailsService.getApps();
+
+			this.apps = appsResponse.data;
+		} catch (error: any) {
+			return error;
+		}
+	}
 
 	viewEndpointSecretKey(secretKey: string) {
 		this.showEndpointSecret = !this.showEndpointSecret;
 		this.endpointSecretKey = secretKey;
 	}
 
+	async getAppDetails(appId: string) {
+		this.isLoadingAppDetails = true;
+
+		try {
+			const response = await this.appDetailsService.getApp(appId);
+			this.appsDetailsItem = response.data;
+			this.getAppPortalToken({ redirect: false });
+			this.isLoadingAppDetails = false;
+		} catch {
+			this.isLoadingAppDetails = false;
+		}
+	}
+
 	async getAppPortalToken(requestDetail: { redirect: boolean }) {
 		this.loadingAppPotalToken = true;
 
 		try {
-			const appTokenResponse = await this.appDetailsService.getAppPortalToken({ appId: this.appsDetailsItem.uid, projectId: this.projectId });
+			const appTokenResponse = await this.appDetailsService.getAppPortalToken({ appId: this.appsDetailsItem.uid });
 			this.appPortalLink = `<iframe style="width: 100%; height: 100vh; border: none;" src="${appTokenResponse.data.url}"></iframe>`;
 			if (requestDetail.redirect) window.open(`${appTokenResponse.data.url}`, '_blank');
 			this.loadingAppPotalToken = false;
@@ -130,5 +198,18 @@ export class AppDetailsComponent implements OnInit {
 		});
 	}
 
-	loadEventsFromAppsTable(appId: string) {}
+	loadEventsFromAppsTable(appId: string) {
+		const projectId = this.appDetailsService.projectId;
+		this.router.navigate(['/projects/' + projectId + '/events'], { queryParams: { eventsApp: appId } });
+	}
+
+	checkScreenSize() {
+		this.screenWidth > 1010 ? (this.shouldRenderSmallSize = false) : (this.shouldRenderSmallSize = true);
+	}
+
+	@HostListener('window:resize', ['$event'])
+	onWindowResize() {
+		this.screenWidth = window.innerWidth;
+		this.checkScreenSize();
+	}
 }

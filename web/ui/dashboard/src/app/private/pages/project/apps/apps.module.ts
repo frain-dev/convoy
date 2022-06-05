@@ -4,13 +4,22 @@ import { AppsComponent } from './apps.component';
 import { RouterModule, Routes } from '@angular/router';
 import { CreateAppModule } from 'src/app/private/components/create-app/create-app.module';
 import { FormsModule } from '@angular/forms';
+import { TableLoaderModule } from 'src/app/private/components/table-loader/table-loader.module';
 
 const routes: Routes = [
 	{
 		path: '',
 		component: AppsComponent
 	},
-  {
+	{
+		path: 'new',
+		component: AppsComponent
+	},
+	{
+		path: 'edit',
+		component: AppsComponent
+	},
+	{
 		path: ':id',
 		loadChildren: () => import('./app-details/app-details.module').then(m => m.AppDetailsModule)
 	}
@@ -18,6 +27,6 @@ const routes: Routes = [
 
 @NgModule({
 	declarations: [AppsComponent],
-	imports: [CommonModule, CreateAppModule, FormsModule, RouterModule.forChild(routes)]
+	imports: [CommonModule, CreateAppModule, FormsModule, TableLoaderModule, RouterModule.forChild(routes)]
 })
 export class AppsModule {}
