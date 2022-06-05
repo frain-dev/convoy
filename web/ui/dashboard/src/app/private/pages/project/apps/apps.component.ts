@@ -6,8 +6,6 @@ import { PAGINATION } from 'src/app/models/global.model';
 import { HTTP_RESPONSE } from 'src/app/models/http.model';
 import { PrivateService } from 'src/app/private/private.service';
 import { GeneralService } from 'src/app/services/general/general.service';
-import { ProjectService } from '../project.service';
-import { AppsService } from './apps.service';
 
 @Component({
 	selector: 'app-apps',
@@ -36,21 +34,14 @@ export class AppsComponent implements OnInit {
 	appsPage: number = 1;
 	filteredApps!: APP[];
 
-	constructor(
-		private router: Router,
-		private route: ActivatedRoute,
-		private generalService: GeneralService,
-		private appService: AppsService,
-		private projectService: ProjectService,
-		private privateService: PrivateService
-	) {}
+	constructor(private router: Router, private route: ActivatedRoute, private generalService: GeneralService, private privateService: PrivateService, private location: Location) {}
 
 	async ngOnInit() {
 		await this.getApps();
 	}
 
-	goBack(){
-		this.location.back()
+	goBack() {
+		this.location.back();
 	}
 
 	searchApps(searchDetails: { searchInput?: any }) {

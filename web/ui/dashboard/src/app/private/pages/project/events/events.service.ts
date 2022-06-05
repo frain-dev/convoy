@@ -8,7 +8,7 @@ import { ProjectService } from '../project.service';
 	providedIn: 'root'
 })
 export class EventsService {
-	activeProjectId: string = this.privateService.activeProjectId;
+	projectId: string = this.privateService.activeProjectId;
 
 	constructor(private http: HttpService, private privateService: PrivateService) {}
 
@@ -135,5 +135,4 @@ export class EventsService {
 			}
 		});
 	}
-
 }

@@ -16,8 +16,9 @@ export class SourcesComponent implements OnInit {
 	activeSource?: SOURCE;
 	sources!: { content: SOURCE[]; pagination: PAGINATION };
 	isLoadingSources = false;
+	projectId = this.privateService.activeProjectId;
 
-	constructor(private route: ActivatedRoute, private router: Router, private sourcesService: SourcesService) {
+	constructor(private route: ActivatedRoute, private router: Router, private sourcesService: SourcesService, private privateService: PrivateService) {
 		this.route.queryParams.subscribe(params => {
 			this.activeSource = this.sources?.content.find(source => source.uid === params?.id);
 		});
