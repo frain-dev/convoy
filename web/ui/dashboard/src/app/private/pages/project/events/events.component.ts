@@ -134,6 +134,6 @@ export class EventsComponent implements OnInit {
 
 	getEventDeliveries(eventId: string){
 		this.eventDeliveryFilteredByEventId = eventId
-		this.toggleActiveTab('event deliveries')
+		this.toggleActiveTab('event deliveries') 
 	}
 }

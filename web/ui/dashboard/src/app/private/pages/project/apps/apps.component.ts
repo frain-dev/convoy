@@ -1,3 +1,4 @@
+import { Location } from '@angular/common';
 import { Component, OnInit } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
 import { APP } from 'src/app/models/app.model';
@@ -22,7 +23,8 @@ export class AppsComponent implements OnInit {
 	showAppStatusDropdown: boolean = false;
 	showAppDetails: boolean = false;
 	showDeleteAppModal: boolean = false;
-	showCreateAppModal: boolean = false;
+	showCreateAppModal = this.router.url.split('/')[4] === 'new';
+	showEditAppModal = this.router.url.split('/')[4] === 'edit';
 	isloadingApps: boolean = false;
 	isDeletingApp: boolean = false;
 	isCreatingNewApp: boolean = false;
@@ -45,6 +47,10 @@ export class AppsComponent implements OnInit {
 
 	async ngOnInit() {
 		await this.getApps();
+	}
+
+	goBack(){
+		this.location.back()
 	}
 
 	searchApps(searchDetails: { searchInput?: any }) {

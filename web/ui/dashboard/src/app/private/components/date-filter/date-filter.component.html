@@ -1,7 +1,7 @@
 <div class="dropdown">
     <button
         [ngClass]="{ active: (dateRange.value.startDate !== '' && dateRange.value.endDate !== '') || selectedDateOption }"
-        class="button button__filter button--has-icon icon-left icon-right"
+        class="button button__filter button--has-icon icon-left"
         (click)="showOverlay = true; showDateFilterDropdown = !showDateFilterDropdown"
     >
         <img src="/assets/img/calendar-icon.svg" alt="calender icon" />

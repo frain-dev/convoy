@@ -42,4 +42,21 @@ export class CreateAppService {
 			}
 		});
 	}
+
+
+	async addNewEndpoint(requestDetails: { appId: string; body: any }): Promise<HTTP_RESPONSE> {
+		return new Promise(async (resolve, reject) => {
+			try {
+				const response = await this.http.request({
+					url: `/apps/${requestDetails.appId}/endpoints?groupId=${this.projectId}`,
+					body: requestDetails.body,
+					method: 'post'
+				});
+
+				return resolve(response);
+			} catch (error: any) {
+				return reject(error);
+			}
+		});
+	}
 }

@@ -11,7 +11,15 @@ const routes: Routes = [
 		path: '',
 		component: AppsComponent
 	},
-  {
+	{
+		path: 'new',
+		component: AppsComponent
+	},
+	{
+		path: 'edit',
+		component: AppsComponent
+	},
+	{
 		path: ':id',
 		loadChildren: () => import('./app-details/app-details.module').then(m => m.AppDetailsModule)
 	}
