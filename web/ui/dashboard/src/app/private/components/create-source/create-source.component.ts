@@ -1,7 +1,5 @@
 import { Component, EventEmitter, Input, OnInit, Output } from '@angular/core';
-import { FormBuilder, FormControl, FormGroup, Validators } from '@angular/forms';
-import { Router } from '@angular/router';
-import { ProjectService } from '../../pages/project/project.service';
+import { FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { PrivateService } from '../../private.service';
 import { CreateSourceService } from './create-source.service';
 
@@ -49,7 +47,7 @@ export class CreateSourceComponent implements OnInit {
 	encodings = ['base64', 'hex'];
 	hashAlgorithms = ['SHA256', 'SHA512', 'MD5', 'SHA1', 'SHA224', 'SHA384', 'SHA3_224', 'SHA3_256', 'SHA3_384', 'SHA3_512', 'SHA512_256', 'SHA512_224'];
 
-	constructor(private formBuilder: FormBuilder, private createSourceService: CreateSourceService, private router: Router, public privateService: PrivateService) {}
+	constructor(private formBuilder: FormBuilder, private createSourceService: CreateSourceService, public privateService: PrivateService) {}
 
 	ngOnInit(): void {}
 
@@ -66,7 +64,6 @@ export class CreateSourceComponent implements OnInit {
 
 		try {
 			const response = await this.createSourceService.createSource({ sourceData });
-			// this.router.navigateByUrl('/projects/' + this.privateService.activeProjectId + '/sources');
 			this.onAction.emit(response.data);
 		} catch (error) {
 			console.log(error);

@@ -4,7 +4,6 @@ import { FormBuilder, FormControl, FormGroup, Validators } from '@angular/forms'
 import { ActivatedRoute, Router } from '@angular/router';
 import { APP } from 'src/app/models/app.model';
 import { PAGINATION } from 'src/app/models/global.model';
-import { HTTP_RESPONSE } from 'src/app/models/http.model';
 import { GeneralService } from 'src/app/services/general/general.service';
 import { AppDetailsService } from './app-details.service';
 

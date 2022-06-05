@@ -170,33 +170,6 @@
 	</button>
 </div>
 
-<!-- <div class="button-container flex flex__align-items-center margin-top__16px">
-	<button
-		class="button button__white button__primary button__outline button--has-icon icon-left padding-y__4px padding-right__16px padding-left__4px"
-		routerLink="./"
-		[queryParams]="activeSubscription?.uid ? { id: activeSubscription?.uid, page: sources?.pagination?.prev } : { page: sources?.pagination?.prev }"
-		[disabled]="sources?.pagination?.prev === 0"
-		(click)="getSources({ page: sources?.pagination?.prev })"
-	>
-		<svg width="24" height="24" class="margin-right__8px">
-			<use xlink:href="#arrow-left-icon"></use>
-		</svg>
-		Previous
-	</button>
-	<button
-		class="button button__white button__primary button__outline button--has-icon icon-left padding-y__4px padding-left__16px padding-right__4px margin-left__16px"
-		routerLink="./"
-		[queryParams]="activeSubscription?.uid ? { id: activeSubscription?.uid, page: sources?.pagination?.next } : { page: sources?.pagination?.next }"
-		[disabled]="sources?.pagination?.next === 0"
-		(click)="getSources({ page: sources?.pagination?.next })"
-	>
-		Next
-		<svg width="24" height="24" class="margin-left__8px" fill="var(--primary-color)">
-			<use xlink:href="#arrow-right-icon"></use>
-		</svg>
-	</button>
-</div> -->
-
 <div class="modal modal__full" *ngIf="shouldShowCreateSubscriptionModal">
 	<div class="modal--head">
 		<div class="flex flex__align-items-center flex__justify-between width__100">
