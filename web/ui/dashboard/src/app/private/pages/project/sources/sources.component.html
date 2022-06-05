@@ -237,7 +237,11 @@
 	<div class="modal--head">
 		<div class="flex flex__align-items-center flex__justify-between width__100">
 			<div class="modal--head--left flex flex__align-items-center">
-				<a (click)="goBack()" class="margin-right__16px width__32px height__32px flex flex__align-items-center flex__justify-center rounded__6px button__clear" tabindex="0">
+				<a
+					[routerLink]="'/projects/' + projectId + '/sources'"
+					class="margin-right__16px width__32px height__32px flex flex__align-items-center flex__justify-center rounded__6px button__clear"
+					tabindex="0"
+				>
 					<img src="/assets/img/modal-close-icon.svg" alt="close icon" />
 				</a>
 				<h2 class="font__16px font__weight-600">Create source</h2>

@@ -1,5 +1,6 @@
 import { Component, HostListener, OnInit } from '@angular/core';
 import { ActivatedRoute } from '@angular/router';
+import { PrivateService } from '../../private.service';
 import { ProjectService } from './project.service';
 
 @Component({
@@ -33,8 +34,8 @@ export class ProjectComponent implements OnInit {
 	];
 	shouldShowFullSideBar = true;
 
-	constructor(private route: ActivatedRoute, private projectService: ProjectService) {
-		this.projectService.activeProject = this.route.snapshot.params.id;
+	constructor(private route: ActivatedRoute, private privateService: PrivateService) {
+		this.privateService.activeProjectId = this.route.snapshot.params.id;
 	}
 
 	ngOnInit() {
@@ -48,6 +49,6 @@ export class ProjectComponent implements OnInit {
 	@HostListener('window:resize', ['$event'])
 	onWindowResize() {
 		this.screenWidth = window.innerWidth;
-		this.checkScreenSize()
+		this.checkScreenSize();
 	}
 }

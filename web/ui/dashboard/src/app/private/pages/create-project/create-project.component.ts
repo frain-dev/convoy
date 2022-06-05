@@ -2,7 +2,7 @@ import { Component, OnInit } from '@angular/core';
 import { FormBuilder, FormControl, FormGroup, Validators } from '@angular/forms';
 import { Router } from '@angular/router';
 import { GeneralService } from 'src/app/services/general/general.service';
-import { ProjectService } from '../project/project.service';
+import { PrivateService } from '../../private.service';
 import { CreateProjectService } from './create-project.service';
 
 @Component({
@@ -31,11 +31,11 @@ export class CreateProjectComponent implements OnInit {
 			hash: ['', Validators.required]
 		}),
 		type: ['', Validators.required],
-		rate_limit: ['',Validators.required],
-		rate_limit_duration: ['',Validators.required],
+		rate_limit: ['', Validators.required],
+		rate_limit_duration: ['', Validators.required],
 		disable_endpoint: [false, Validators.required]
 	});
-	constructor(private formBuilder: FormBuilder, private createProjectService: CreateProjectService, private generalService: GeneralService, private projectService: ProjectService, private router: Router) {}
+	constructor(private formBuilder: FormBuilder, private createProjectService: CreateProjectService, private generalService: GeneralService, private privateService: PrivateService, private router: Router) {}
 
 	ngOnInit(): void {}
 
@@ -53,7 +53,7 @@ export class CreateProjectComponent implements OnInit {
 		try {
 			const response = await this.createProjectService.createProject(this.projectForm.value);
 			const projectId = response?.data?.uid;
-			this.projectService.activeProject = projectId;
+			this.privateService.activeProjectId = projectId;
 			this.isCreatingProject = false;
 			projectType === 'incoming' ? (this.projectStage = 'createSource') : (this.projectStage = 'createApplication');
 			this.generalService.showNotification({ message: 'Project created successfully!', style: 'success' });

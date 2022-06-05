@@ -124,7 +124,7 @@ export class CreateAppComponent implements OnInit {
 			}
 			this.generalService.showNotification({ message: response.message, style: 'success' });
 			this.addNewAppForm.reset();
-			this.createApp.emit();
+			this.createApp.emit(response.data);
 			this.addNewAppForm.patchValue({
 				is_disabled: false
 			});

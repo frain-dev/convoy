@@ -1,14 +1,14 @@
 import { Injectable } from '@angular/core';
 import { HTTP_RESPONSE } from 'src/app/models/http.model';
 import { HttpService } from 'src/app/services/http/http.service';
-import { ProjectService } from '../../pages/project/project.service';
+import { PrivateService } from '../../private.service';
 
 @Injectable({
 	providedIn: 'root'
 })
 export class CreateAppService {
-	projectId: string = this.projectService.activeProject;
-	constructor(private http: HttpService, private projectService: ProjectService) {}
+	projectId: string = this.privateService.activeProjectId;
+	constructor(private http: HttpService, private privateService: PrivateService) {}
 
 	async updateApp(requestDetails: { appId: string; body: any }): Promise<HTTP_RESPONSE> {
 		return new Promise(async (resolve, reject) => {
@@ -41,7 +41,6 @@ export class CreateAppService {
 			}
 		});
 	}
-
 
 	async addNewEndpoint(requestDetails: { appId: string; body: any }): Promise<HTTP_RESPONSE> {
 		return new Promise(async (resolve, reject) => {

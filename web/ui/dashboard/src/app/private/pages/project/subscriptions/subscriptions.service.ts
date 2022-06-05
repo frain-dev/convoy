@@ -1,27 +1,25 @@
 import { Injectable } from '@angular/core';
 import { HTTP_RESPONSE } from 'convoy-app/lib/models/http.model';
-import { SOURCE } from 'src/app/models/group.model';
+import { PrivateService } from 'src/app/private/private.service';
 import { HttpService } from 'src/app/services/http/http.service';
-import { PrivateService } from '../../private.service';
 
 @Injectable({
 	providedIn: 'root'
 })
-export class CreateSourceService {
+export class SubscriptionsService {
 	projectId: string = this.privateService.activeProjectId;
 
 	constructor(private http: HttpService, private privateService: PrivateService) {}
 
-	createSource(requestData: { sourceData: SOURCE }): Promise<HTTP_RESPONSE> {
+	getSubscriptions(requestDetails?: { page?: number }): Promise<HTTP_RESPONSE> {
 		return new Promise(async (resolve, reject) => {
 			try {
-				const sourceResponse = await this.http.request({
-					url: `/sources?groupId=${this.projectId}`,
-					method: 'post',
-					body: requestData.sourceData
+				const subscriptionsResponse = await this.http.request({
+					url: `/subscriptions?groupId=${this.projectId}&page=${requestDetails?.page || 1}`,
+					method: 'get'
 				});
 
-				return resolve(sourceResponse);
+				return resolve(subscriptionsResponse);
 			} catch (error: any) {
 				return reject(error);
 			}
