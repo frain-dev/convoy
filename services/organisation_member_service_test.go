@@ -121,7 +121,7 @@ func TestOrganisationMemberService_CreateOrganisationMember(t *testing.T) {
 			}
 
 			require.Nil(t, err)
-			stripVariableFields(t, "organisation member", member)
+			stripVariableFields(t, "organisation_member", member)
 			require.Equal(t, tt.want, member)
 		})
 	}

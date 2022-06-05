@@ -2,12 +2,13 @@ package server
 
 import (
 	"errors"
+	"net/http"
+	"strconv"
+
 	"github.com/frain-dev/convoy/server/models"
 	"github.com/frain-dev/convoy/util"
 	"github.com/go-chi/render"
 	log "github.com/sirupsen/logrus"
-	"net/http"
-	"strconv"
 )
 
 // InviteUserToOrganisation
@@ -20,7 +21,7 @@ import (
 // @Success 200 {object} serverResponse{data=Stub}
 // @Failure 400,401,500 {object} serverResponse{data=Stub}
 // @Security ApiKeyAuth
-// @Router /organisations/{orgID}/invite_user [get]
+// @Router /organisations/{orgID}/invite_user [post]
 func (a *applicationHandler) InviteUserToOrganisation(w http.ResponseWriter, r *http.Request) {
 	var newIV models.OrganisationInvite
 	err := util.ReadJSON(r, &newIV)
@@ -30,26 +31,26 @@ func (a *applicationHandler) InviteUserToOrganisation(w http.ResponseWriter, r *
 	}
 
 	org := getOrganisationFromContext(r.Context())
-	iv, err := a.organisationInviteService.CreateOrganisationMemberInvite(r.Context(), org, &newIV)
+	_, err = a.organisationInviteService.CreateOrganisationMemberInvite(r.Context(), org, &newIV)
 	if err != nil {
 		log.WithError(err).Error("failed to create organisation member invite")
 		_ = render.Render(w, r, newServiceErrResponse(err))
 		return
 	}
 
-	_ = render.Render(w, r, newServerResponse("invite created successfully", iv, http.StatusCreated))
+	_ = render.Render(w, r, newServerResponse("invite created successfully", nil, http.StatusCreated))
 }
 
 // ProcessOrganisationMemberInvite
 // @Summary Get organisations
-// @Description This endpoint fetches multiple organisations
+// @Description This endpoint process a user's response to an organisation invite
 // @Tags Organisation
 // @Accept  json
 // @Produce  json
-// @Success 200 {object} serverResponse{data=pagedResponse{content=[]datastore.Organisation}}
+// @Success 200 {object} serverResponse{data=Stub}}
 // @Failure 400,401,500 {object} serverResponse{data=Stub}
 // @Security ApiKeyAuth
-// @Router /process_organisation_member_invite [get]
+// @Router /process_organisation_member_invite [post]
 func (a *applicationHandler) ProcessOrganisationMemberInvite(w http.ResponseWriter, r *http.Request) {
 	token := r.URL.Query().Get("token")
 	email := r.URL.Query().Get("email")
@@ -67,7 +68,7 @@ func (a *applicationHandler) ProcessOrganisationMemberInvite(w http.ResponseWrit
 		return
 	}
 
-	err = a.organisationInviteService.AcceptOrganisationMemberInvite(r.Context(), token, email, accepted, newUser)
+	err = a.organisationInviteService.ProcessOrganisationMemberInvite(r.Context(), token, email, accepted, newUser)
 	if err != nil {
 		log.WithError(err).Error("failed to process organisation member invite")
 		_ = render.Render(w, r, newServiceErrResponse(errors.New("")))

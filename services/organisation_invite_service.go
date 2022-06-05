@@ -4,6 +4,9 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"net/http"
+	"time"
+
 	"github.com/dchest/uniuri"
 	"github.com/frain-dev/convoy/datastore"
 	"github.com/frain-dev/convoy/server/models"
@@ -11,8 +14,6 @@ import (
 	"github.com/google/uuid"
 	log "github.com/sirupsen/logrus"
 	"go.mongodb.org/mongo-driver/bson/primitive"
-	"net/http"
-	"time"
 )
 
 type OrganisationInviteService struct {
@@ -26,7 +27,7 @@ func NewOrganisationInviteService(orgRepo datastore.OrganisationRepository, user
 	return &OrganisationInviteService{orgRepo: orgRepo, userRepo: userRepo, orgMemberRepo: orgMemberRepo, orgInviteRepo: orgInviteRepo}
 }
 
-func (oi *OrganisationInviteService) CreateOrganisationMemberInvite(ctx context.Context, org *datastore.Organisation, newIV *models.OrganisationInvite) (*datastore.OrganisationInvite, error) {
+func (ois *OrganisationInviteService) CreateOrganisationMemberInvite(ctx context.Context, org *datastore.Organisation, newIV *models.OrganisationInvite) (*datastore.OrganisationInvite, error) {
 	err := util.Validate(newIV)
 	if err != nil {
 		return nil, NewServiceError(http.StatusBadRequest, err)
@@ -52,7 +53,7 @@ func (oi *OrganisationInviteService) CreateOrganisationMemberInvite(ctx context.
 
 	// TODO(daniel): send invite link to the invitee's email
 
-	err = oi.orgInviteRepo.CreateOrganisationInvite(ctx, iv)
+	err = ois.orgInviteRepo.CreateOrganisationInvite(ctx, iv)
 	if err != nil {
 		log.WithError(err).Error("failed to create organisation member invite")
 		return nil, NewServiceError(http.StatusBadRequest, errors.New("failed to create organisation member invite"))
@@ -61,8 +62,8 @@ func (oi *OrganisationInviteService) CreateOrganisationMemberInvite(ctx context.
 	return iv, nil
 }
 
-func (oi *OrganisationInviteService) AcceptOrganisationMemberInvite(ctx context.Context, token string, email string, accepted bool, newUser *models.User) error {
-	iv, err := oi.orgInviteRepo.FetchOrganisationInviteByTokenAndEmail(ctx, token, email)
+func (ois *OrganisationInviteService) ProcessOrganisationMemberInvite(ctx context.Context, token string, email string, accepted bool, newUser *models.User) error {
+	iv, err := ois.orgInviteRepo.FetchOrganisationInviteByTokenAndEmail(ctx, token, email)
 	if err != nil {
 		log.WithError(err).Error("failed to fetch organisation member invite by token and email")
 		return NewServiceError(http.StatusBadRequest, errors.New("failed to create organisation member invite"))
@@ -72,70 +73,81 @@ func (oi *OrganisationInviteService) AcceptOrganisationMemberInvite(ctx context.
 		return NewServiceError(http.StatusBadRequest, errors.New(fmt.Sprintf("organisation member invite already %s", iv.Status.String())))
 	}
 
-	org, err := oi.orgRepo.FetchOrganisationByID(ctx, iv.OrganisationID)
+	org, err := ois.orgRepo.FetchOrganisationByID(ctx, iv.OrganisationID)
 	if err != nil {
 		log.WithError(err).Error("failed to find organisation by id")
 		return NewServiceError(http.StatusBadRequest, errors.New("failed to find organisation by id"))
 	}
 
-	if accepted {
-		var user *datastore.User
-
-		if newUser != nil { // it is a new user
-			err = newUser.Role.Validate("organisation member")
+	user, err := ois.userRepo.FindUserByEmail(ctx, iv.InviteeEmail)
+	if err != nil {
+		if errors.Is(err, datastore.ErrUserNotFound) {
+			user, err = ois.createNewUser(ctx, newUser, iv.InviteeEmail)
 			if err != nil {
-				log.WithError(err).Error("failed to validate organisation member invite role")
-				return NewServiceError(http.StatusBadRequest, err)
-			}
-
-			p := datastore.Password{Plaintext: newUser.Password}
-			err = p.GenerateHash()
-			if err != nil {
-				log.WithError(err).Error("failed to generate user password hash organisation member invite by token and email")
-				return NewServiceError(http.StatusBadRequest, errors.New("failed to create organisation member invite"))
-			}
-
-			user = &datastore.User{
-				UID:       uuid.NewString(),
-				FirstName: newUser.FirstName,
-				LastName:  newUser.LastName,
-				Email:     email,
-				Password:  string(p.Hash),
-				//Role:          newUser.Role, // TODO(all): this role field shouldn't be in user.
-				DocumentStatus: datastore.ActiveDocumentStatus,
-				CreatedAt:      primitive.NewDateTimeFromTime(time.Now()),
-				UpdatedAt:      primitive.NewDateTimeFromTime(time.Now()),
-			}
-
-			err = oi.userRepo.CreateUser(ctx, user)
-			if err != nil {
-				log.WithError(err).Error("failed to create user")
-				return NewServiceError(http.StatusBadRequest, errors.New("failed to create user"))
+				return err
 			}
 		} else {
-			user, err = oi.userRepo.FindUserByEmail(ctx, email)
-			if err != nil {
-				log.WithError(err).Error("failed to find user by email")
-				return NewServiceError(http.StatusBadRequest, errors.New("failed to find user by email"))
-			}
+			log.WithError(err).Error("failed to find user by email")
+			return NewServiceError(http.StatusBadRequest, errors.New("failed to find user by email"))
 		}
+	}
 
-		_, err = NewOrganisationMemberService(oi.orgMemberRepo).CreateOrganisationMember(ctx, org, user, &iv.Role)
-		if err != nil {
-			log.WithError(err).Error("failed to create organisation member")
-			return NewServiceError(http.StatusBadRequest, errors.New("failed to create organisation member"))
-		}
+	_, err = NewOrganisationMemberService(ois.orgMemberRepo).CreateOrganisationMember(ctx, org, user, &iv.Role)
+	if err != nil {
+		log.WithError(err).Error("failed to create organisation member")
+		return NewServiceError(http.StatusBadRequest, errors.New("failed to create organisation member"))
+	}
 
+	if accepted {
 		iv.Status = datastore.InviteStatusAccepted
 	} else {
 		iv.Status = datastore.InviteStatusDeclined
 	}
 
-	err = oi.orgInviteRepo.UpdateOrganisationInvite(ctx, iv)
+	err = ois.orgInviteRepo.UpdateOrganisationInvite(ctx, iv)
 	if err != nil {
 		log.WithError(err).Error("failed to update organisation invite")
 		return NewServiceError(http.StatusBadRequest, errors.New("failed to update organisation invite"))
 	}
 
 	return nil
+}
+
+func (ois *OrganisationInviteService) createNewUser(ctx context.Context, newUser *models.User, email string) (*datastore.User, error) {
+	if newUser == nil {
+		return nil, errors.New("newUser is nil")
+	}
+
+	err := newUser.Role.Validate("organisation member")
+	if err != nil {
+		log.WithError(err).Error("failed to validate organisation member invite role")
+		return nil, NewServiceError(http.StatusBadRequest, err)
+	}
+
+	p := datastore.Password{Plaintext: newUser.Password}
+	err = p.GenerateHash()
+	if err != nil {
+		log.WithError(err).Error("failed to generate user password hash")
+		return nil, NewServiceError(http.StatusBadRequest, errors.New("failed to create organisation member invite"))
+	}
+
+	user := &datastore.User{
+		UID:       uuid.NewString(),
+		FirstName: newUser.FirstName,
+		LastName:  newUser.LastName,
+		Email:     email,
+		Password:  string(p.Hash),
+		//Role:          newUser.Role, // TODO(all): this role field shouldn't be in user.
+		DocumentStatus: datastore.ActiveDocumentStatus,
+		CreatedAt:      primitive.NewDateTimeFromTime(time.Now()),
+		UpdatedAt:      primitive.NewDateTimeFromTime(time.Now()),
+	}
+
+	err = ois.userRepo.CreateUser(ctx, user)
+	if err != nil {
+		log.WithError(err).Error("failed to create user")
+		return nil, NewServiceError(http.StatusBadRequest, errors.New("failed to create user"))
+	}
+
+	return user, nil
 }
