@@ -76,7 +76,7 @@
 							<td></td>
 							<td></td>
 						</tr>
-						<tr *ngFor="let app of apps?.content; let index = index" [id]="'app' + i" [routerLink]="['./' + app.uid]" >
+						<tr *ngFor="let app of apps?.content; let index = index" [id]="'app' + i" [routerLink]="['./' + app.uid]">
 							<td>
 								<div>
 									<div [class]="app.is_disabled ? 'tag no-margin' : 'tag tag--Success no-margin'">{{ app.is_disabled ? 'Disabled' : 'Enabled' }}</div>
@@ -135,11 +135,12 @@
 		<p class="font__14px font__weight-600 margin-top__0px color__black width__20 text--center">No app to show here</p>
 	</div>
 </div>
+
 <div class="button-container flex flex__align-items-center margin-top__16px">
 	<button
 		class="button button__white button__primary button__outline button--has-icon icon-left padding-y__4px padding-right__16px padding-left__4px"
 		routerLink="./"
-		[queryParams]="{page: apps?.pagination?.prev}"
+		[queryParams]="{ page: apps?.pagination?.prev }"
 		[disabled]="apps?.pagination?.prev === 0"
 		(click)="getApps({ page: apps?.pagination?.prev })"
 	>
@@ -151,7 +152,7 @@
 	<button
 		class="button button__white button__primary button__outline button--has-icon icon-left padding-y__4px padding-left__16px padding-right__4px margin-left__16px"
 		routerLink="./"
-		[queryParams]="{page: apps?.pagination?.next}"
+		[queryParams]="{ page: apps?.pagination?.next }"
 		[disabled]="apps?.pagination?.next === 0"
 		(click)="getApps({ page: apps?.pagination?.next })"
 	>

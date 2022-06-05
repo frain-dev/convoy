@@ -13,7 +13,8 @@ export class CreateAppComponent implements OnInit {
 	@Input() editAppMode: boolean = false;
 	@Input() appsDetailsItem!: APP;
 
-	@Output() discardCreateApp = new EventEmitter<any>();
+	@Output() discardApp = new EventEmitter<any>();
+	@Output() createApp = new EventEmitter<any>();
 	eventTags!: string[];
 	isSavingApp: boolean = false;
 	addNewAppForm: FormGroup = this.formBuilder.group({
@@ -21,7 +22,7 @@ export class CreateAppComponent implements OnInit {
 		support_email: [''],
 		slack_webhook_url: [''],
 		description: [''],
-		is_disabled: [null],
+		is_disabled: [false],
 		endpoints: this.formBuilder.array([])
 	});
 	constructor(private formBuilder: FormBuilder, private createAppService: CreateAppService, private generalService: GeneralService) {}
@@ -106,7 +107,10 @@ export class CreateAppComponent implements OnInit {
 
 			this.generalService.showNotification({ message: response.message, style: 'success' });
 			this.addNewAppForm.reset();
-			this.discardCreateApp.emit(response.data);
+			this.createApp.emit(response.data);
+			this.addNewAppForm.patchValue({
+				is_disabled: false
+			});
 			this.isSavingApp = false;
 			this.editAppMode = false;
 			return;
@@ -116,7 +120,7 @@ export class CreateAppComponent implements OnInit {
 		}
 	}
 
-	closeCreateAppInstance() {
-		this.discardCreateApp.emit();
+	closeAppInstance() {
+		this.discardApp.emit();
 	}
 }

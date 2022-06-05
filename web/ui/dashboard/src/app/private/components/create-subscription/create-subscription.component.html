@@ -96,7 +96,7 @@
 	</div>
 
 	<div class="modal--body">
-		<app-create-app (discardCreateApp)="onCreateNewApp($event); showCreateAppModal = false" *ngIf="showCreateAppModal"></app-create-app>
+		<app-create-app (createApp)="onCreateNewApp($event); showCreateAppModal = false" (discardApp)="showCreateAppModal = false" *ngIf="showCreateAppModal"></app-create-app>
 		<app-create-source *ngIf="showCreateSourceModal" (onAction)="$event?.action == 'close' ? false : onCreateSource($event); showCreateSourceModal = false"></app-create-source>
 	</div>
 </div>

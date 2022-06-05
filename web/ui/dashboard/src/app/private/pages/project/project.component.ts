@@ -43,7 +43,7 @@ export class ProjectComponent implements OnInit {
 	}
 
 	checkScreenSize() {
-		this.screenWidth > 900 ? (this.shouldShowFullSideBar = true) : (this.shouldShowFullSideBar = false);
+		this.screenWidth > 1150 ? (this.shouldShowFullSideBar = true) : (this.shouldShowFullSideBar = false);
 	}
 
 	@HostListener('window:resize', ['$event'])
