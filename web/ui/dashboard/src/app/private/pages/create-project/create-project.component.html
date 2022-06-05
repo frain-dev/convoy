@@ -63,140 +63,142 @@
 					</div>
 				</div>
 
-				<h3 class="margin-top__24px margin-bottom__16px flex flex__align-items-center">
-					Signature Details
-					<app-tooltip [size]="'small'" position="right" class="margin-left__4px">This specifies your header and hash function for your project</app-tooltip>
-				</h3>
-				<div class="grid grid__col-2 grid--gap__24px" formGroupName="signature">
-					<div class="input">
-						<label for="header">
-							Header
-							<span class="bg__grey__light rounded__4px padding-x__4px position__absolute position--right__0px font__10px font__weight-400">required</span>
-						</label>
-						<input
-							type="text"
-							id="header"
-							placeholder="X-Convoy-Signature"
-							formControlName="header"
-							[ngClass]="{ invalid: projectForm.get('signature.header')?.touched && projectForm.get('signature.header')?.invalid }"
-						/>
-						<div class="input__error input__error__danger" *ngIf="projectForm.get('signature.header')?.touched && projectForm.get('signature.header')?.invalid">
-							<img src="assets/img/input-error-icon.svg" alt="input error icon" />
-							<span>Enter header for project requests</span>
+				<div formGroupName="config">
+					<h3 class="margin-top__24px margin-bottom__16px flex flex__align-items-center">
+						Signature Details
+						<app-tooltip [size]="'small'" position="right" class="margin-left__4px">This specifies your header and hash function for your project</app-tooltip>
+					</h3>
+					<div class="grid grid__col-2 grid--gap__24px" formGroupName="signature">
+						<div class="input">
+							<label for="header">
+								Header
+								<span class="bg__grey__light rounded__4px padding-x__4px position__absolute position--right__0px font__10px font__weight-400">required</span>
+							</label>
+							<input
+								type="text"
+								id="header"
+								placeholder="X-Convoy-Signature"
+								formControlName="header"
+								[ngClass]="{ invalid: projectForm.get('config.signature.header')?.touched && projectForm.get('config.signature.header')?.invalid }"
+							/>
+							<div class="input__error input__error__danger" *ngIf="projectForm.get('config.signature.header')?.touched && projectForm.get('config.signature.header')?.invalid">
+								<img src="assets/img/input-error-icon.svg" alt="input error icon" />
+								<span>Enter header for project requests</span>
+							</div>
 						</div>
-					</div>
 
-					<div class="input">
-						<label for="hash">
-							Hash
-							<span class="bg__grey__light rounded__4px padding-x__4px position__absolute position--right__0px font__10px font__weight-400">required</span>
-						</label>
-						<select name="hash" id="hash" formControlName="hash" [ngClass]="{ invalid: projectForm.get('signature.hash')?.touched && projectForm.get('signature.hash')?.invalid }">
-							<option *ngFor="let hash of hashAlgorithms" [value]="hash">{{ hash }}</option>
-						</select>
-						<div class="input__error input__error__danger" *ngIf="projectForm.get('signature.hash')?.touched && projectForm.get('signature.hash')?.invalid">
-							<img src="assets/img/input-error-icon.svg" alt="input error icon" />
-							<span>Please select a hash</span>
+						<div class="input">
+							<label for="hash">
+								Hash
+								<span class="bg__grey__light rounded__4px padding-x__4px position__absolute position--right__0px font__10px font__weight-400">required</span>
+							</label>
+							<select name="hash" id="hash" formControlName="hash" [ngClass]="{ invalid: projectForm.get('config.signature.hash')?.touched && projectForm.get('config.signature.hash')?.invalid }">
+								<option *ngFor="let hash of hashAlgorithms" [value]="hash">{{ hash }}</option>
+							</select>
+							<div class="input__error input__error__danger" *ngIf="projectForm.get('config.signature.hash')?.touched && projectForm.get('config.signature.hash')?.invalid">
+								<img src="assets/img/input-error-icon.svg" alt="input error icon" />
+								<span>Please select a hash</span>
+							</div>
 						</div>
 					</div>
-				</div>
-				<h3 class="margin-top__24px margin-bottom__16px flex flex__align-items-center">
-					Retry Logic
-					<app-tooltip [size]="'small'" position="right" class="margin-left__4px">
-						These are the specifications for the retry mechanism for your endpoints. In Linear time retry, event retries are done in linear time, while in Exponential back off retry, events are
-						retried progressively increasing the time before the next retry attempt.
-					</app-tooltip>
-				</h3>
-				<div class="grid grid__col-2 grid--gap__24px" formGroupName="strategy">
-					<div class="input">
-						<label for="type">
-							Mechanism
-							<span class="bg__grey__light rounded__4px padding-x__4px position__absolute position--right__0px font__10px font__weight-400">required</span>
-						</label>
-						<select name="type" id="type" formControlName="type" [ngClass]="{ invalid: projectForm.get('strategy.type')?.touched && projectForm.get('strategy.type')?.invalid }">
-							<option *ngFor="let type of retryLogicTypes" [value]="type.id">{{ type.type }}</option>
-						</select>
-						<div class="input__error input__error__danger" *ngIf="projectForm.get('strategy.type')?.touched && projectForm.get('strategy.type')?.invalid">
-							<img src="assets/img/input-error-icon.svg" alt="input error icon" />
-							<span>Please select a retry logic mechanism</span>
+					<h3 class="margin-top__24px margin-bottom__16px flex flex__align-items-center">
+						Retry Logic
+						<app-tooltip [size]="'small'" position="right" class="margin-left__4px">
+							These are the specifications for the retry mechanism for your endpoints. In Linear time retry, event retries are done in linear time, while in Exponential back off retry, events are
+							retried progressively increasing the time before the next retry attempt.
+						</app-tooltip>
+					</h3>
+					<div class="grid grid__col-2 grid--gap__24px" formGroupName="strategy">
+						<div class="input">
+							<label for="type">
+								Mechanism
+								<span class="bg__grey__light rounded__4px padding-x__4px position__absolute position--right__0px font__10px font__weight-400">required</span>
+							</label>
+							<select name="type" id="type" formControlName="type" [ngClass]="{ invalid: projectForm.get('config.strategy.type')?.touched && projectForm.get('config.strategy.type')?.invalid }">
+								<option *ngFor="let type of retryLogicTypes" [value]="type.id">{{ type.type }}</option>
+							</select>
+							<div class="input__error input__error__danger" *ngIf="projectForm.get('config.strategy.type')?.touched && projectForm.get('config.strategy.type')?.invalid">
+								<img src="assets/img/input-error-icon.svg" alt="input error icon" />
+								<span>Please select a retry logic mechanism</span>
+							</div>
 						</div>
-					</div>
 
-					<div class="input">
-						<label for="retry-logic-duration">
-							Duration
-							<span class="bg__grey__light rounded__4px padding-x__4px position__absolute position--right__0px font__10px font__weight-400">required</span>
-						</label>
-						<input
-							type="text"
-							id="retry-logic-duration"
-							placeholder="e.g 3s"
-							formControlName="duration"
-							[ngClass]="{ invalid: projectForm.get('strategy.duration')?.touched && projectForm.get('strategy.duration')?.invalid }"
-						/>
+						<div class="input">
+							<label for="retry-logic-duration">
+								Duration
+								<span class="bg__grey__light rounded__4px padding-x__4px position__absolute position--right__0px font__10px font__weight-400">required</span>
+							</label>
+							<input
+								type="text"
+								id="retry-logic-duration"
+								placeholder="e.g 3s"
+								formControlName="duration"
+								[ngClass]="{ invalid: projectForm.get('config.strategy.duration')?.touched && projectForm.get('config.strategy.duration')?.invalid }"
+							/>
 
-						<div class="input__error input__error__danger" *ngIf="projectForm.get('strategy.duration')?.touched && projectForm.get('strategy.duration')?.invalid">
-							<img src="assets/img/input-error-icon.svg" alt="input error icon" />
-							<span>Please enter your retry logic duration</span>
+							<div class="input__error input__error__danger" *ngIf="projectForm.get('config.strategy.duration')?.touched && projectForm.get('config.strategy.duration')?.invalid">
+								<img src="assets/img/input-error-icon.svg" alt="input error icon" />
+								<span>Please enter your retry logic duration</span>
+							</div>
 						</div>
-					</div>
-          
-					<div class="input">
-						<label for="retry-logic-count">
-							Limit
-							<span class="bg__grey__light rounded__4px padding-x__4px position__absolute position--right__0px font__10px font__weight-400">required</span>
-						</label>
-						<input
-							type="text"
-							id="retry-logic-count"
-							placeholder="e.g 5"
-							formControlName="retry_count"
-							[ngClass]="{ invalid: projectForm.get('strategy.retry_count')?.touched && projectForm.get('strategy.retry_count')?.invalid }"
-						/>
 
-						<div class="input__error input__error__danger" *ngIf="projectForm.get('strategy.retry_count')?.touched && projectForm.get('strategy.retry_count')?.invalid">
-							<img src="assets/img/input-error-icon.svg" alt="input error icon" />
-							<span>Please enter a retry limit</span>
+						<div class="input">
+							<label for="retry-logic-count">
+								Limit
+								<span class="bg__grey__light rounded__4px padding-x__4px position__absolute position--right__0px font__10px font__weight-400">required</span>
+							</label>
+							<input
+								type="number"
+								id="retry-logic-count"
+								placeholder="e.g 5"
+								formControlName="retry_count"
+								[ngClass]="{ invalid: projectForm.get('config.strategy.retry_count')?.touched && projectForm.get('config.strategy.retry_count')?.invalid }"
+							/>
+
+							<div class="input__error input__error__danger" *ngIf="projectForm.get('config.strategy.retry_count')?.touched && projectForm.get('config.strategy.retry_count')?.invalid">
+								<img src="assets/img/input-error-icon.svg" alt="input error icon" />
+								<span>Please enter a retry limit</span>
+							</div>
 						</div>
 					</div>
-				</div>
-				<h3 class="margin-top__24px margin-bottom__16px flex flex__align-items-center">
-					Rate Limit Parameters
-					<app-tooltip [size]="'small'" position="right" class="margin-left__4px">These are the specifications for how many events are to be sent to an endpoint per time</app-tooltip>
-				</h3>
-				<div class="grid grid__col-2 grid--gap__24px">
-					<div class="input">
-						<label for="rate-limit-duration">
-							Duration
-							<span class="bg__grey__light rounded__4px padding-x__4px position__absolute position--right__0px font__10px font__weight-400">required</span>
-						</label>
-						<input
-							type="text"
-							id="rate-limit-duration"
-							placeholder="e.g 1m"
-							formControlName="rate_limit_duration"
-							[ngClass]="{ invalid: projectForm.controls['rate_limit_duration'].touched && projectForm.controls['rate_limit_duration'].invalid }"
-						/>
-						<div class="input__error input__error__danger" *ngIf="projectForm.controls['rate_limit_duration'].touched && projectForm.controls['rate_limit_duration'].invalid">
-							<img src="assets/img/input-error-icon.svg" alt="input error icon" />
-							<span>Please enter your rate limit duration</span>
+					<h3 class="margin-top__24px margin-bottom__16px flex flex__align-items-center">
+						Rate Limit Parameters
+						<app-tooltip [size]="'small'" position="right" class="margin-left__4px">These are the specifications for how many events are to be sent to an endpoint per time</app-tooltip>
+					</h3>
+					<div class="grid grid__col-2 grid--gap__24px" formGroupName="rateLimit">
+						<div class="input">
+							<label for="rate-limit-duration">
+								Duration
+								<span class="bg__grey__light rounded__4px padding-x__4px position__absolute position--right__0px font__10px font__weight-400">required</span>
+							</label>
+							<input
+								type="text"
+								id="rate-limit-duration"
+								placeholder="e.g 1m"
+								formControlName="duration"
+								[ngClass]="{ invalid: projectForm.get('config.rateLimit.duration')?.touched && projectForm.get('config.rateLimit.duration')?.invalid }"
+							/>
+							<div class="input__error input__error__danger" *ngIf="projectForm.get('config.rateLimit.duration')?.touched && projectForm.get('config.rateLimit.duration')?.invalid">
+								<img src="assets/img/input-error-icon.svg" alt="input error icon" />
+								<span>Please enter your rate limit duration</span>
+							</div>
 						</div>
-					</div>
-					<div class="input">
-						<label for="rate-limit-count">
-							Limit
-							<span class="bg__grey__light rounded__4px padding-x__4px position__absolute position--right__0px font__10px font__weight-400">required</span>
-						</label>
-						<input
-							type="number"
-							id="rate-limit-count"
-							placeholder="e.g 5000"
-							formControlName="rate_limit"
-							[ngClass]="{ invalid: projectForm.controls['rate_limit'].touched && projectForm.controls['rate_limit'].invalid }"
-						/>
-						<div class="input__error input__error__danger" *ngIf="projectForm.controls['rate_limit'].touched && projectForm.controls['rate_limit'].invalid">
-							<img src="assets/img/input-error-icon.svg" alt="input error icon" />
-							<span>Please enter a rate limit</span>
+						<div class="input">
+							<label for="rate-limit-count">
+								Limit
+								<span class="bg__grey__light rounded__4px padding-x__4px position__absolute position--right__0px font__10px font__weight-400">required</span>
+							</label>
+							<input
+								type="number"
+								id="rate-limit-count"
+								placeholder="e.g 5000"
+								formControlName="count"
+								[ngClass]="{ invalid: projectForm.get('config.rateLimit.count')?.touched && projectForm.get('config.rateLimit.count')?.invalid }"
+							/>
+							<div class="input__error input__error__danger" *ngIf="projectForm.get('config.rateLimit.count')?.touched && projectForm.get('config.rateLimit.count')?.invalid">
+								<img src="assets/img/input-error-icon.svg" alt="input error icon" />
+								<span>Please enter a rate limit</span>
+							</div>
 						</div>
 					</div>
 				</div>

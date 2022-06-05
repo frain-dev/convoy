@@ -21,18 +21,22 @@ export class CreateProjectComponent implements OnInit {
 	projectType: 'incoming' | 'outgoing' = 'outgoing';
 	projectForm: FormGroup = this.formBuilder.group({
 		name: ['', Validators.required],
-		strategy: this.formBuilder.group({
-			duration: ['', Validators.required],
-			retry_count: ['', Validators.required],
-			type: ['', Validators.required]
-		}),
-		signature: this.formBuilder.group({
-			header: ['', Validators.required],
-			hash: ['', Validators.required]
+		config: this.formBuilder.group({
+			strategy: this.formBuilder.group({
+				duration: ['', Validators.required],
+				retry_count: ['', Validators.required],
+				type: ['', Validators.required]
+			}),
+			signature: this.formBuilder.group({
+				header: ['', Validators.required],
+				hash: ['', Validators.required]
+			}),
+			rateLimit: this.formBuilder.group({
+				count: ['', Validators.required],
+				duration: ['', Validators.required]
+			})
 		}),
 		type: ['', Validators.required],
-		rate_limit: ['', Validators.required],
-		rate_limit_duration: ['', Validators.required],
 		disable_endpoint: [false, Validators.required]
 	});
 	constructor(private formBuilder: FormBuilder, private createProjectService: CreateProjectService, private generalService: GeneralService, private privateService: PrivateService, private router: Router) {}
@@ -48,8 +52,8 @@ export class CreateProjectComponent implements OnInit {
 		}
 		const projectType = this.projectForm.value.type;
 		this.isCreatingProject = true;
-		const [digits, word] = this.projectForm.value.strategy.duration.match(/\D+|\d+/g);
-		this.projectForm.value.strategy.duration = parseInt(digits) * 1000;
+		const [digits, word] = this.projectForm.value.config.strategy.duration.match(/\D+|\d+/g);
+		word === 's' ? (this.projectForm.value.config.strategy.duration = parseInt(digits) * 1000) : (this.projectForm.value.config.strategy.duration = parseInt(digits) * 1000000);
 		try {
 			const response = await this.createProjectService.createProject(this.projectForm.value);
 			const projectId = response?.data?.uid;
