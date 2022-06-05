@@ -2,13 +2,21 @@ thead tr th:last-of-type {
 	width: 50px;
 }
 
-tbody tr td div {
-	border-left: 5px solid transparent;
+tbody {
+	tr td div {
+		border-left: 5px solid transparent;
+	}
+
+	td:nth-of-type(4) div {
+		width: 223px;
+		overflow: hidden;
+		text-overflow: ellipsis;
+	}
 }
 
 @media only screen and (max-device-width: 1340px) and (-webkit-min-device-pixel-ratio: 1) {
 	.table--container.smaller table {
-		tbody td:nth-of-type(3) div {
+		tbody td:nth-of-type(4) div {
 			width: 100px;
 			overflow: hidden;
 			text-overflow: ellipsis;
@@ -18,7 +26,7 @@ tbody tr td div {
 
 @media only screen and (max-device-width: 824px) and (-webkit-min-device-pixel-ratio: 1) {
 	table {
-		tbody td:nth-of-type(3) div {
+		tbody td:nth-of-type(4) div {
 			width: 100px;
 			overflow: hidden;
 			text-overflow: ellipsis;

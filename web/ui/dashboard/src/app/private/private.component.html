@@ -1,9 +1,23 @@
 <header class="dashboard--header border__bottom">
 	<div class="dashboard--header--container">
-		<div class="logo">
+		<div class="logo flex flex__align-items-center">
 			<a target="_blank" href="https://getconvoy.io" rel="noreferrer">
 				<img src="/assets/img/logo.svg" alt="convoy logo" />
 			</a>
+
+			<nav>
+				<ul class="flex flex__align-items-center">
+					<li>
+						<a routerLink="/projects" routerLinkActive="active" class="padding-y__8px padding-x__16px margin-right__32px rounded__4px font__14px">Projects</a>
+					</li>
+					<li>
+						<a routerLink="/team" routerLinkActive="active" class="padding-y__8px padding-x__16px margin-right__32px rounded__4px font__14px">Team</a>
+					</li>
+					<li>
+						<a routerLink="/settings" routerLinkActive="active" class="padding-y__8px padding-x__16px rounded__4px font__14px">Settings</a>
+					</li>
+				</ul>
+			</nav>
 		</div>
 
 		<div class="dashboard--header--acounts">
@@ -27,9 +41,4 @@
 	</div>
 </header>
 
-<!-- <div class="page-layout">
-    <aside>
-
-    </aside> -->
 <router-outlet></router-outlet>
-<!-- </div> -->

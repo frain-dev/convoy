@@ -5,40 +5,30 @@
 			<p class="page__head--sub">All your project's summary at a glance</p>
 		</div>
 	</div>
-
-	<ul class="grid grid__col-3--smaller">
-		<li>
-			<a routerLink="/projects/1" class="card rounded__8px bg__white display__block">
-				<div class="padding-x__24px padding-y__16px border__bottom flex flex__align-items-center flex__justify-between">
-					<div class="flex flex__align-items-center">
-						<div class="width__24px height__24px rounded__50px margin-right__8px flex flex__align-items-center flex__justify-center" style="background: var(--primary-color-500)">
-							<svg width="16" height="16" fill="var(--primary-color)" stroke="var(--primary-color)">
-								<use xlink:href="#top-right-icon"></use>
-							</svg>
-						</div>
-						<h4 class="pointer-cursor">Project One</h4>
-					</div>
-
-					<div class="tag">INCOMING</div>
+	<ul class="grid projects-grid" *ngIf="isLoadingProjects">
+		<li *ngFor="let index of projectsLoaderIndex">
+			<div class="card rounded__8px border__all bg__white">
+				<div class="padding-x__24px padding-top__24px padding-bottom__14px border__bottom">
+					<div class="skeleton-loader header"></div>
 				</div>
-
-				<div class="flex flex__align-items-center">
-					<div class="font__12px font__weight-500 color__grey border__right width__50 padding-y__8px padding-x__24px">
-						<span class="color__black margin-right__8px">2</span>
-						<span class="color__grey">Events Sent</span>
+				<div class="flex flex__align-items-center border__bottom">
+					<div class="border__right padding-y__8px padding-x__24px">
+						<div class="skeleton-loader text"></div>
 					</div>
-					<div class="flex flex__align-items-center flex__justify-between width__50 padding-y__8px padding-x__24px">
-						<div class="font__12px font__weight-500 color__grey">
-							<span class="color__black margin-right__8px">5</span>
-							<span class="color__grey">Apps</span>
+					<div class="flex flex__align-items-center flex__justify-between width__60 padding-y__8px padding-x__24px">
+						<div>
+							<div class="skeleton-loader text"></div>
 						</div>
+						<div><div class="skeleton-loader small"></div></div>
 					</div>
 				</div>
-			</a>
+			</div>
 		</li>
+	</ul>
 
-		<li>
-			<a routerLink="/projects/1" class="card rounded__8px bg__white display__block">
+	<ul class="grid projects-grid" *ngIf="!isLoadingProjects">
+		<li *ngFor="let project of projects">
+			<a [routerLink]="'/projects/' + project.uid" class="card rounded__8px bg__white display__block">
 				<div class="padding-x__24px padding-y__16px border__bottom flex flex__align-items-center flex__justify-between">
 					<div class="flex flex__align-items-center">
 						<div class="width__24px height__24px rounded__50px margin-right__8px flex flex__align-items-center flex__justify-center" style="background: var(--primary-color-500)">
@@ -46,22 +36,24 @@
 								<use xlink:href="#top-right-icon"></use>
 							</svg>
 						</div>
-						<h4 class="pointer-cursor">Project One</h4>
+						<h4 class="pointer-cursor">{{ project.name }}</h4>
 					</div>
-
-					<div class="tag">INCOMING</div>
+					<div class="tag tag--Primary font__10px text__uppercase">{{ project.type || '-' }}</div>
 				</div>
 
 				<div class="flex flex__align-items-center">
-					<div class="font__12px font__weight-500 color__grey border__right width__50 padding-y__8px padding-x__24px">
-						<span class="color__black margin-right__8px">2</span>
+					<div class="font__12px font__weight-500 color__grey border__right width__40 padding-y__8px padding-x__24px">
+						<span class="color__black margin-right__8px">{{ project.statistics.messages_sent }}</span>
 						<span class="color__grey">Events Sent</span>
 					</div>
-					<div class="flex flex__align-items-center flex__justify-between width__50 padding-y__8px padding-x__24px">
+					<div class="flex flex__align-items-center flex__justify-between flex__align-items-center width__60 padding-y__8px padding-x__24px">
 						<div class="font__12px font__weight-500 color__grey">
-							<span class="color__black margin-right__8px">5</span>
+							<span class="color__black margin-right__8px">{{ project.statistics.total_apps }}</span>
 							<span class="color__grey">Apps</span>
 						</div>
+						<svg width="20" height="20" fill="var(--primary-color)">
+							<use xlink:href="#arrow-right-icon"></use>
+						</svg>
 					</div>
 				</div>
 			</a>
@@ -72,7 +64,7 @@
 				<svg width="22" height="22" class="margin-right__8px" fill="var(--primary-color)">
 					<use xlink:href="#plus-icon"></use>
 				</svg>
-				<span class="color__primary font__weight-500">Creat new project</span>
+				<span class="color__primary font__weight-500">Create new project</span>
 			</a>
 		</li>
 	</ul>

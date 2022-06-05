@@ -1,6 +1,7 @@
 <div class="page layout__sidebar flex padding-left__24px padding-right__24px padding-bottom__40px">
 	<aside class="padding-top__40px border__right position__relative" [ngClass]="{ full: shouldShowFullSideBar }">
 		<button
+			[disabled]="screenWidth < 1150"
 			class="sidebar--button button__clear rounded__50px border__all width__32px height__32px flex flex__align-items-center flex__justify-center position__absolute position--top__8px bg__white"
 			(click)="shouldShowFullSideBar = !shouldShowFullSideBar"
 		>
@@ -28,7 +29,7 @@
 		<div class="sidebar--bottom border__top padding-top__16px">
 			<ul class="padding-left__8px padding-right__24px">
 				<li>
-					<a routerLink="#" class="flex flex__align-items-center color__grey padding-y__8px padding-left__24px margin-y__8px rounded__8px animate">
+					<a routerLink="./settings" class="flex flex__align-items-center color__grey padding-y__8px padding-left__24px margin-y__8px rounded__8px animate">
 						<svg width="18" height="18" class="margin-right__10px" fill="var(--grey-color)">
 							<use xlink:href="#settings-icon"></use>
 						</svg>
@@ -47,7 +48,7 @@
 		</div>
 	</aside>
 
-	<main class="width__100 margin-left__24px margin-top__28px animate">
+	<main class="width__100 margin-left__24px margin-top__16px animate">
 		<router-outlet></router-outlet>
 	</main>
 </div>

@@ -1,255 +1,64 @@
-<div class="page margin-top__40px padding-left__24px padding-right__24px">
-	<div class="margin-bottom__24px">
-		<div class="font__20px font__weight-600 color__black text--center margin-bottom__8px text__capitalize">Welcome, Boss 🌤</div>
-		<div class="font__14px font__weight-500 color__grey text--center sutext">Here is what you can do to get started with Convoy</div>
-	</div>
-
-	<div class="card card--first-half padding-all__24px">
-		<ul class="setup-steps flex flex__align-items-center flex__justify-between border__bottom padding-bottom__24px">
-			<li class="setup-step--step active">
-				<div class="line"></div>
-				<div class="margin-top__4px flex flex__align-items-center">
-					<div class="checkbox margin-all__0px width__16px height__16px border__all rounded__50px"></div>
-					<div class="text margin-left__8px font__14px font__weight-500">Create Project</div>
-				</div>
-			</li>
-			<li class="setup-step--step next">
-				<div class="line bg__primary"></div>
-				<div class="margin-top__4px flex flex__align-items-center">
-					<div class="checkbox margin-all__0px width__16px height__16px border__all rounded__50px"></div>
-					<div class="text margin-left__8px font__14px font__weight-500">Create Source</div>
-				</div>
-			</li>
-			<li class="setup-step--step">
-				<div class="line bg__primary"></div>
-				<div class="margin-top__4px flex flex__align-items-center">
-					<div class="checkbox margin-all__0px width__16px height__16px border__all rounded__50px"></div>
-					<div class="text margin-left__8px font__14px font__weight-500">Create Application</div>
-				</div>
-			</li>
-			<li class="setup-step--step">
-				<div class="line bg__primary"></div>
-				<div class="margin-top__4px flex flex__align-items-center">
-					<div class="checkbox margin-all__0px width__16px height__16px border__all rounded__50px"></div>
-					<div class="text margin-left__8px font__14px font__weight-500">Create Subscription</div>
-				</div>
-			</li>
-		</ul>
-
-		<h3 class="margin-top__24px font__weight-600 font__18px">Create your first project</h3>
-		<p class="font__14px color__grey margin-top__8px width__80">Your project represents the etiam diam mi, egestas tortor nulla quis consectetur mauris eget. Penatibus placerat massa, lectus lectus</p>
-	</div>
-
-	<div class="card card--second-half padding-all__24px margin-top__24px">
-		<h3 class="margin-bottom__12px font__weight-600 font__18px">Project Name</h3>
-		<form>
-			<div class="input">
-				<label for="project-name">
-					Project name
-					<span class="bg__grey__light rounded__4px padding-x__4px position__absolute position--right__0px font__10px font__weight-400">required</span>
-				</label>
-				<input type="text" id="project-name" placeholder="Name goes here" />
-				<div class="input__error input__error__danger">
-					<img src="assets/img/input-error-icon.svg" alt="input error icon" />
-					<span>Enter new project name</span>
-				</div>
+<div class="modal modal__full margin-bottom__40px">
+	<div class="modal--head">
+		<div class="flex flex__align-items-center flex__justify-between width__100">
+			<div class="modal--head--left flex flex__align-items-center">
+				<a routerLink="/projects" class="margin-right__16px width__32px height__32px flex flex__align-items-center flex__justify-center rounded__6px button__clear" tabindex="0">
+					<img src="/assets/img/modal-close-icon.svg" alt="close icon" />
+				</a>
+				<h2 class="font__16px font__weight-600">Create Project</h2>
 			</div>
 
-			<h3 class="margin-top__24px margin-bottom__16px font__weight-600 font__18px">Select project type</h3>
-			<div class="project-types grid grid__col-2 grid--gap__24px">
-				<div class="project-type checkbox-option">
-					<input type="radio" id="incoming" name="project-type" />
-					<label for="incoming" class="border__all padding-all__16px rounded__4px position__relative display__block animate">
-						<svg width="18" height="18" class="position__absolute position--top__16px position--right__16px">
-							<use xlink:href="#info-icon"></use>
-						</svg>
-						<div class="flex flex__align-items-center margin-bottom__8px">
-							<div class="checkbox rounded__50px margin-bottom__0px border__all width__16px height__16px animate"></div>
-							<p class="font__14px font__weight-600 margin-left__8px">Incoming webhooks</p>
-						</div>
-						<p class="color__grey font__12px font__weight-400">Eiam diam mi, egestas tortor nulla quis consectetur mauris eget. Penatibus placerat massa, lectus lectus</p>
-					</label>
-				</div>
+			<a class="button--has-icon icon-left" target="_blank" href="https://getconvoy.io/docs" rel="noreferrer">
+				<img src="/assets/img/doc-icon-primary.svg" alt="doc icon" />
+				<span class="font__weight-500 font__14px color__primary">Go to docs</span>
+			</a>
+		</div>
+	</div>
 
-				<div class="project-type checkbox-option">
-					<input type="radio" id="outgoing" name="project-type" />
-					<label for="outgoing" class="border__all padding-all__16px rounded__4px position__relative display__block animate">
-						<svg width="18" height="18" class="position__absolute position--top__16px position--right__16px">
-							<use xlink:href="#info-icon"></use>
-						</svg>
-						<div class="flex flex__align-items-center margin-bottom__8px">
-							<div class="checkbox rounded__50px margin-bottom__0px border__all width__16px height__16px animate"></div>
-							<p class="font__14px font__weight-600 margin-left__8px">Outgoing webhook</p>
-						</div>
-						<p class="color__grey font__12px font__weight-400">Eiam diam mi, egestas tortor nulla quis consectetur mauris eget. Penatibus placerat massa, lectus lectus</p>
-					</label>
-				</div>
-			</div>
+	<div class="modal--body padding-all__0px">
+		<app-create-project-component (onAction)="$event.action == 'cancel' ? cancel() : createProject($event)" *ngIf="projectStage === 'createProject'"></app-create-project-component>
 
-			<h3 class="margin-top__24px margin-bottom__16px font__weight-600 font__18px">Signature Details</h3>
-			<div class="grid grid__col-2 grid--gap__24px">
-				<div class="input">
-					<label for="header">
-						Header
-						<span class="bg__grey__light rounded__4px padding-x__4px position__absolute position--right__0px font__10px font__weight-400">required</span>
-					</label>
-					<input type="text" id="header" placeholder="X-Convoy-Signature" />
-					<div class="input__error input__error__danger">
-						<img src="assets/img/input-error-icon.svg" alt="input error icon" />
-						<span>Enter header for project requests</span>
+		<div class="card padding-all__24px margin-bottom__24px" *ngIf="projectStage !== 'createProject'">
+			<ul class="setup-steps flex flex__align-items-center border__bottom padding-bottom__24px">
+				<li class="setup-step--step done" *ngIf="projectType === 'incoming'">
+					<div class="line"></div>
+					<div class="margin-top__4px flex flex__align-items-center">
+						<div class="checkbox margin-all__0px width__16px height__16px border__all rounded__50px"></div>
+						<div class="text margin-left__8px font__14px font__weight-500">Create Source</div>
 					</div>
-				</div>
-
-				<div class="input">
-					<label for="hash">
-						Hash
-						<span class="bg__grey__light rounded__4px padding-x__4px position__absolute position--right__0px font__10px font__weight-400">required</span>
-					</label>
-					<select name="hash" id="hash">
-						<option value="SHA256" selected>SHA256</option>
-					</select>
-					<div class="input__error input__error__danger">
-						<img src="assets/img/input-error-icon.svg" alt="input error icon" />
-						<span>Enter project hash</span>
+				</li>
+				<li class="setup-step--step current">
+					<div class="line bg__primary"></div>
+					<div class="margin-top__4px flex flex__align-items-center">
+						<div class="checkbox margin-all__0px width__16px height__16px border__all rounded__50px"></div>
+						<div class="text margin-left__8px font__14px font__weight-500">Create Application</div>
 					</div>
-				</div>
-			</div>
-		</form>
-	</div>
-
-	<div class="button-container flex flex__justify-center">
-		<button class="button button__primary button--has-icon padding-y__12px rounded__8px margin-top__32px">
-			Save and proceed
-			<svg width="24" height="24" class="margin-left__8px" fill="#FCFCFC">
-				<use xlink:href="#arrow-right-icon"></use>
-			</svg>
-		</button>
-	</div>
-
-	<div class="card padding-all__24px margin-bottom__24px">
-		<ul class="setup-steps flex flex__align-items-center flex__justify-between border__bottom padding-bottom__24px">
-			<li class="setup-step--step active">
-				<div class="line"></div>
-				<div class="margin-top__4px flex flex__align-items-center">
-					<div class="checkbox margin-all__0px width__16px height__16px border__all rounded__50px"></div>
-					<div class="text margin-left__8px font__14px font__weight-500">Create Project</div>
-				</div>
-			</li>
-			<li class="setup-step--step next">
-				<div class="line bg__primary"></div>
-				<div class="margin-top__4px flex flex__align-items-center">
-					<div class="checkbox margin-all__0px width__16px height__16px border__all rounded__50px"></div>
-					<div class="text margin-left__8px font__14px font__weight-500">Create Source</div>
-				</div>
-			</li>
-			<li class="setup-step--step">
-				<div class="line bg__primary"></div>
-				<div class="margin-top__4px flex flex__align-items-center">
-					<div class="checkbox margin-all__0px width__16px height__16px border__all rounded__50px"></div>
-					<div class="text margin-left__8px font__14px font__weight-500">Create Application</div>
-				</div>
-			</li>
-			<li class="setup-step--step">
-				<div class="line bg__primary"></div>
-				<div class="margin-top__4px flex flex__align-items-center">
-					<div class="checkbox margin-all__0px width__16px height__16px border__all rounded__50px"></div>
-					<div class="text margin-left__8px font__14px font__weight-500">Create Subscription</div>
-				</div>
-			</li>
-		</ul>
-
-		<h3 class="margin-top__24px font__weight-600 font__18px">Create your first source</h3>
-		<p class="font__14px color__grey margin-top__8px width__80">Your source represents the etiam diam mi, egestas tortor nulla quis consectetur mauris eget. Penatibus placerat massa, lectus lectus</p>
-	</div>
-
-	<app-create-source></app-create-source>
-
-	<div class="card card--first-half padding-all__24px">
-		<ul class="setup-steps flex flex__align-items-center flex__justify-between border__bottom padding-bottom__24px">
-			<li class="setup-step--step active">
-				<div class="line"></div>
-				<div class="margin-top__4px flex flex__align-items-center">
-					<div class="checkbox margin-all__0px width__16px height__16px border__all rounded__50px"></div>
-					<div class="text margin-left__8px font__14px font__weight-500">Create Project</div>
-				</div>
-			</li>
-			<li class="setup-step--step next">
-				<div class="line bg__primary"></div>
-				<div class="margin-top__4px flex flex__align-items-center">
-					<div class="checkbox margin-all__0px width__16px height__16px border__all rounded__50px"></div>
-					<div class="text margin-left__8px font__14px font__weight-500">Create Source</div>
-				</div>
-			</li>
-			<li class="setup-step--step">
-				<div class="line bg__primary"></div>
-				<div class="margin-top__4px flex flex__align-items-center">
-					<div class="checkbox margin-all__0px width__16px height__16px border__all rounded__50px"></div>
-					<div class="text margin-left__8px font__14px font__weight-500">Create Application</div>
-				</div>
-			</li>
-			<li class="setup-step--step">
-				<div class="line bg__primary"></div>
-				<div class="margin-top__4px flex flex__align-items-center">
-					<div class="checkbox margin-all__0px width__16px height__16px border__all rounded__50px"></div>
-					<div class="text margin-left__8px font__14px font__weight-500">Create Subscription</div>
-				</div>
-			</li>
-		</ul>
-
-		<h3 class="margin-top__24px font__weight-600 font__18px">Create your first application</h3>
-		<p class="font__14px color__grey margin-top__8px width__80">Your application represents the etiam diam mi, egestas tortor nulla quis consectetur mauris eget. Penatibus placerat massa, lectus lectus</p>
-	</div>
-
-	<div class="card card--second-half padding-all__24px margin-top__24px">
-		<form>
-			<h3 class="margin-bottom__12px font__weight-600 font__18px">App Details</h3>
-			<div class="grid grid__col-2 grid--gap__24px">
-				<div class="input">
-					<label for="header">
-						App name
-						<span class="bg__grey__light rounded__4px padding-x__4px position__absolute position--right__0px font__10px font__weight-400">required</span>
-					</label>
-					<input type="text" id="header" placeholder="Your app name" />
-					<div class="input__error input__error__danger">
-						<img src="assets/img/input-error-icon.svg" alt="input error icon" />
-						<span>Enter your app name</span>
+				</li>
+				<li class="setup-step--step">
+					<div class="line bg__primary"></div>
+					<div class="margin-top__4px flex flex__align-items-center">
+						<div class="checkbox margin-all__0px width__16px height__16px border__all rounded__50px"></div>
+						<div class="text margin-left__8px font__14px font__weight-500">Create Subscription</div>
 					</div>
-				</div>
+				</li>
+			</ul>
 
-				<div class="input">
-					<label for="header">Support email</label>
-					<input type="email" id="header" placeholder="you@example.com" />
-				</div>
+			<div *ngIf="projectStage === 'createSource'">
+				<h3 class="margin-top__24px font__weight-600 font__18px">Create your first source</h3>
+				<p class="font__14px color__grey margin-top__8px width__80">
+					Your source represents the etiam diam mi, egestas tortor nulla quis consectetur mauris eget. Penatibus placerat massa, lectus lectus
+				</p>
 			</div>
-
-			<h3 class="margin-top__24px margin-bottom__12px font__weight-600 font__18px">App Endpoints</h3>
-			<div class="grid grid__col-2 grid--gap__24px">
-				<div class="input">
-					<label for="header">
-						Endpoint URL
-						<span class="bg__grey__light rounded__4px padding-x__4px position__absolute position--right__0px font__10px font__weight-400">required</span>
-					</label>
-					<input type="url" id="header" placeholder="Your endpoint URL here" />
-					<div class="input__error input__error__danger">
-						<img src="assets/img/input-error-icon.svg" alt="input error icon" />
-						<span>Enter a valid endpoint url</span>
-					</div>
-				</div>
-
-				<div class="input">
-					<label for="header">Secret key</label>
-					<input type="text" id="header" placeholder="Key goes here" />
-				</div>
+			<div *ngIf="projectStage === 'createApplication'">
+				<h3 class="margin-top__24px font__weight-600 font__18px">Create your first application</h3>
+				<p class="font__14px color__grey margin-top__8px width__80">
+					Your source represents the etiam diam mi, egestas tortor nulla quis consectetur mauris eget. Penatibus placerat massa, lectus lectus
+				</p>
 			</div>
-		</form>
-	</div>
+		</div>
 
-	<div class="button-container flex flex__justify-center">
-		<button class="button button__primary button--has-icon padding-y__12px rounded__8px margin-top__32px">
-			Save and proceed
-			<svg width="24" height="24" class="margin-left__8px" fill="#FCFCFC">
-				<use xlink:href="#arrow-right-icon"></use>
-			</svg>
-		</button>
+		<app-create-source *ngIf="projectStage === 'createSource'"></app-create-source>
+
+		<app-create-app *ngIf="projectStage === 'createApplication'" (discardApp)="cancel()" (createApp)="projectStage = 'createSubscription'"></app-create-app>
 	</div>
 </div>
