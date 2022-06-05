@@ -129,3 +129,13 @@ func (m *MixPanelClient) Export(eventName string, e Event) error {
 
 	return nil
 }
+
+type NoopAnalyticsClient struct{}
+
+func NewNoopAnalyticsClient() *NoopAnalyticsClient {
+	return &NoopAnalyticsClient{}
+}
+
+func (n *NoopAnalyticsClient) Export(eventName string, e Event) error {
+	return nil
+}

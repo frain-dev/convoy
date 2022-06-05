@@ -5,6 +5,7 @@ import (
 	"time"
 
 	"github.com/frain-dev/convoy/datastore"
+	log "github.com/sirupsen/logrus"
 )
 
 type ActiveGroupAnalytics struct {
@@ -33,7 +34,8 @@ func (a *ActiveGroupAnalytics) Track() error {
 
 		events, _, err := a.eventRepo.LoadEventsPaged(context.Background(), group.UID, "", filter, datastore.Pageable{Sort: -1})
 		if err != nil {
-			return err
+			log.WithError(err).Error("failed to load events paged")
+			continue
 		}
 
 		if len(events) > 0 {
