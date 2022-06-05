@@ -3,6 +3,11 @@ export interface GROUP {
 	name: string;
 	logo_url: string;
 	config: {
+		ratelimit: {
+			count: number;
+			duration: string;
+		};
+		disable_endpoint: boolean;
 		Strategy: {
 			type: string;
 			default: {
@@ -15,6 +20,7 @@ export interface GROUP {
 			hash: string;
 		};
 		DisableEndpoint: boolean;
+		replay_attacks: boolean;
 	};
 	statistics: {
 		messages_sent: number;
