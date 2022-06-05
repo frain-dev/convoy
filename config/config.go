@@ -46,6 +46,10 @@ type QueueConfiguration struct {
 	Redis RedisQueueConfiguration `json:"redis"`
 }
 
+type PrometheusConfiguration struct {
+	Dsn string `json:"dsn" envconfig:"CONVOY_PROM_DSN"`
+}
+
 type RedisQueueConfiguration struct {
 	Dsn string `json:"dsn" envconfig:"CONVOY_REDIS_DSN"`
 }
@@ -134,21 +138,22 @@ type TypesenseConfiguration struct {
 }
 
 type Configuration struct {
-	Auth            AuthConfiguration     `json:"auth,omitempty"`
-	Database        DatabaseConfiguration `json:"database"`
-	Sentry          SentryConfiguration   `json:"sentry"`
-	Queue           QueueConfiguration    `json:"queue"`
-	Server          ServerConfiguration   `json:"server"`
-	MaxResponseSize uint64                `json:"max_response_size" envconfig:"CONVOY_MAX_RESPONSE_SIZE"`
-	SMTP            SMTPConfiguration     `json:"smtp"`
-	Environment     string                `json:"env" envconfig:"CONVOY_ENV" required:"true" default:"development"`
-	MultipleTenants bool                  `json:"multiple_tenants"`
-	Logger          LoggerConfiguration   `json:"logger"`
-	Tracer          TracerConfiguration   `json:"tracer"`
-	Cache           CacheConfiguration    `json:"cache"`
-	Limiter         LimiterConfiguration  `json:"limiter"`
-	BaseUrl         string                `json:"base_url" envconfig:"CONVOY_BASE_URL"`
-	Search          SearchConfiguration   `json:"search"`
+	Auth            AuthConfiguration       `json:"auth,omitempty"`
+	Database        DatabaseConfiguration   `json:"database"`
+	Sentry          SentryConfiguration     `json:"sentry"`
+	Queue           QueueConfiguration      `json:"queue"`
+	Prometheus      PrometheusConfiguration `json:"prometheus"`
+	Server          ServerConfiguration     `json:"server"`
+	MaxResponseSize uint64                  `json:"max_response_size" envconfig:"CONVOY_MAX_RESPONSE_SIZE"`
+	SMTP            SMTPConfiguration       `json:"smtp"`
+	Environment     string                  `json:"env" envconfig:"CONVOY_ENV" required:"true" default:"development"`
+	MultipleTenants bool                    `json:"multiple_tenants"`
+	Logger          LoggerConfiguration     `json:"logger"`
+	Tracer          TracerConfiguration     `json:"tracer"`
+	Cache           CacheConfiguration      `json:"cache"`
+	Limiter         LimiterConfiguration    `json:"limiter"`
+	BaseUrl         string                  `json:"base_url" envconfig:"CONVOY_BASE_URL"`
+	Search          SearchConfiguration     `json:"search"`
 }
 
 const (
@@ -299,6 +304,11 @@ func overrideConfigWithEnvVars(c *Configuration, override *Configuration) {
 	// CONVOY_REDIS_DSN
 	if !IsStringEmpty(override.Queue.Redis.Dsn) {
 		c.Queue.Redis.Dsn = override.Queue.Redis.Dsn
+	}
+
+	// CONVOY_PROM_DSN
+	if !IsStringEmpty(override.Queue.Redis.Dsn) {
+		c.Prometheus.Dsn = override.Prometheus.Dsn
 	}
 
 	// CONVOY_REDIS_DSN

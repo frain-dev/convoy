@@ -46,10 +46,10 @@ func addWorkerCommand(a *app) *cobra.Command {
 			log.Infof("Starting Convoy workers...")
 			consumer.Start()
 
-			server.RegisterQueueMetrics(convoy.EventQueue, a.queue, cfg)
+			server.RegisterQueueMetrics(a.queue, cfg)
 
 			router := chi.NewRouter()
-			router.Handle("/metrics", promhttp.Handler())
+			router.Handle("/metrics", promhttp.HandlerFor(server.Reg, promhttp.HandlerOpts{}))
 			router.HandleFunc("/health", func(w http.ResponseWriter, r *http.Request) {
 				render.JSON(w, r, "Convoy")
 			})

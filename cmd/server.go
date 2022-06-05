@@ -40,6 +40,8 @@ func addServerCommand(a *app) *cobra.Command {
 	var newReplicApp string
 	var newReplicKey string
 	var typesenseApiKey string
+	var promaddr string
+
 	var typesenseHost string
 	var apiKeyAuthConfig string
 	var basicAuthConfig string
@@ -117,6 +119,7 @@ func addServerCommand(a *app) *cobra.Command {
 	cmd.Flags().StringVar(&searcher, "searcher", "", "Searcher")
 	cmd.Flags().StringVar(&typesenseHost, "typesense-host", "", "Typesense Host")
 	cmd.Flags().StringVar(&typesenseApiKey, "typesense-api-key", "", "Typesense Api Key")
+	cmd.Flags().StringVar(&promaddr, "promaddr", "", `Prometheus dsn`)
 
 	cmd.Flags().BoolVar(&ssl, "ssl", false, "Configure SSL")
 	cmd.Flags().BoolVar(&requireAuth, "auth", false, "Require authentication")

@@ -640,6 +640,7 @@ github.com/hashicorp/serf v0.8.2/go.mod h1:6hOLApaqBFA1NXqRQAsxw9QxuDEvNxSQRwA/J
 github.com/hibiken/asynq v0.19.0/go.mod h1:tyc63ojaW8SJ5SBm8mvI4DDONsguP5HE85EEl4Qr5Ig=
 github.com/hibiken/asynq v0.23.0 h1:kmKkNFgqiXBatC8oz94Mer6uvKoGn4STlIVDV5wnKyE=
 github.com/hibiken/asynq v0.23.0/go.mod h1:K70jPVx+CAmmQrXot7Dru0D52EO7ob4BIun3ri5z1Qw=
+github.com/hibiken/asynq/x v0.0.0-20211219150637-8dfabfccb3be h1:89J7WrDuoqFaKoQjZwqPczQXgXZ71liWYM+z9a8sILs=
 github.com/hibiken/asynq/x v0.0.0-20211219150637-8dfabfccb3be/go.mod h1:VmxwMfMKyb6gyv8xG0oOBMXIhquWKPx+zPtbVBd2Q1s=
 github.com/hibiken/asynqmon v0.7.1 h1:jmBwYxiht6Yqo6OkdsZKy8QQrT6/gMXmUGvWBzdx/8Y=
 github.com/hibiken/asynqmon v0.7.1/go.mod h1:35Tg9h0C/MIMlZK4ZkDoI7QcIFG6l0VpMTanw3K4mY8=

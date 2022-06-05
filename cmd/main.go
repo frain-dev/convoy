@@ -198,10 +198,11 @@ func preRun(app *app, db datastore.DatabaseClient) func(cmd *cobra.Command, args
 				string(convoy.CreateEventQueue): 2,
 			}
 			opts := queue.QueueOptions{
-				Names:  queueNames,
-				Client: aC,
-				Redis:  cfg.Queue.Redis.Dsn,
-				Type:   string(config.RedisQueueProvider),
+				Names:             queueNames,
+				Client:            aC,
+				RedisAddress:      cfg.Queue.Redis.Dsn,
+				Type:              string(config.RedisQueueProvider),
+				PrometheusAddress: cfg.Prometheus.Dsn,
 			}
 			q = redisqueue.NewQueue(opts)
 		}

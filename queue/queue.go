@@ -20,8 +20,9 @@ type Job struct {
 }
 
 type QueueOptions struct {
-	Names  map[string]int
-	Type   string
-	Client *asynq.Client
-	Redis  string
+	Names             map[string]int
+	Type              string
+	Client            *asynq.Client
+	RedisAddress      string
+	PrometheusAddress string
 }

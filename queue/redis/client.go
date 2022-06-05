@@ -38,11 +38,11 @@ func NewClient(cfg config.Configuration) (*asynq.Client, error) {
 }
 
 func NewQueue(opts queue.QueueOptions) queue.Queuer {
-	rOpts, _ := redis.ParseURL(opts.Redis)
-	opts.Redis = rOpts.Addr
+	rOpts, _ := redis.ParseURL(opts.RedisAddress)
+	opts.RedisAddress = rOpts.Addr
 
 	inspector := asynq.NewInspector(asynq.RedisClientOpt{
-		Addr: opts.Redis,
+		Addr: opts.RedisAddress,
 	})
 	return &RedisQueue{
 		opts:      opts,
@@ -67,10 +67,11 @@ func (q *RedisQueue) Monitor() *asynqmon.HTTPHandler {
 	h := asynqmon.New(asynqmon.Options{
 		RootPath: "/queue/monitoring",
 		RedisConnOpt: asynq.RedisClientOpt{
-			Addr:     q.opts.Redis,
+			Addr:     q.opts.RedisAddress,
 			Password: "",
 			DB:       0,
 		},
+		PrometheusAddress: q.opts.PrometheusAddress,
 	})
 	return h
 }

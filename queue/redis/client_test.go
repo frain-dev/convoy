@@ -88,10 +88,10 @@ func initializeQueue(configFile string, name string, t *testing.T) queue.Queuer 
 		string(convoy.CreateEventQueue): 2,
 	}
 	opts = queue.QueueOptions{
-		Names:  queueNames,
-		Client: rC,
-		Redis:  cfg.Queue.Redis.Dsn,
-		Type:   string(config.RedisQueueProvider),
+		Names:        queueNames,
+		Client:       rC,
+		RedisAddress: cfg.Queue.Redis.Dsn,
+		Type:         string(config.RedisQueueProvider),
 	}
 
 	eventQueue := NewQueue(opts)
