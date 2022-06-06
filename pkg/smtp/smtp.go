@@ -77,7 +77,7 @@ func (s *Client) SendEmail(emailAddr, subject string, body bytes.Buffer) error {
 func (s *Client) setHeaders(email, subject string) *gomail.Message {
 	m := gomail.NewMessage()
 
-	m.SetHeader("From", fmt.Sprintf("Convoy Status <%s>", s.from))
+	m.SetHeader("From", s.from)
 	m.SetHeader("To", email)
 
 	if !util.IsStringEmpty(s.replyTo) {
