@@ -23,7 +23,7 @@ func addSchedulerCommand(a *app) *cobra.Command {
 				log.WithError(err).Fatalf("Queue type error: Command is available for redis queue only.")
 			}
 
-			s := worker.NewScheduler(&a.eventQueue)
+			s := worker.NewScheduler(&a.queue)
 
 			// Register tasks.
 			// s.AddTask("retry events", 30, func() {

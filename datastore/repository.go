@@ -67,14 +67,24 @@ type ApplicationRepository interface {
 	LoadApplicationsPagedByGroupId(context.Context, string, Pageable) ([]Application, PaginationData, error)
 	SearchApplicationsByGroupId(context.Context, string, SearchParams) ([]Application, error)
 	FindApplicationEndpointByID(context.Context, string, string) (*Endpoint, error)
-	UpdateApplicationEndpointsStatus(context.Context, string, []string, EndpointStatus) error
+}
+
+type SubscriptionRepository interface {
+	CreateSubscription(context.Context, string, *Subscription) error
+	UpdateSubscription(context.Context, string, *Subscription) error
+	LoadSubscriptionsPaged(context.Context, string, Pageable) ([]Subscription, PaginationData, error)
+	DeleteSubscription(context.Context, string, *Subscription) error
+	FindSubscriptionByID(context.Context, string, string) (*Subscription, error)
+	FindSubscriptionByEventType(context.Context, string, string, EventType) ([]Subscription, error)
+	FindSubscriptionBySourceIDs(context.Context, string, string) ([]Subscription, error)
+	UpdateSubscriptionStatus(context.Context, string, string, SubscriptionStatus) error
 }
 
 type SourceRepository interface {
 	CreateSource(context.Context, *Source) error
 	UpdateSource(ctx context.Context, groupID string, source *Source) error
 	FindSourceByID(ctx context.Context, groupID string, id string) (*Source, error)
-	FindSourceByMaskID(ctx context.Context, groupID string, maskID string) (*Source, error)
+	FindSourceByMaskID(ctx context.Context, maskID string) (*Source, error)
 	DeleteSourceByID(ctx context.Context, groupID string, id string) error
 	LoadSourcesPaged(ctx context.Context, groupID string, filter *SourceFilter, pageable Pageable) ([]Source, PaginationData, error)
 }

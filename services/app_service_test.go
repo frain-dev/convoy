@@ -17,9 +17,8 @@ func provideAppService(ctrl *gomock.Controller) *AppService {
 	appRepo := mocks.NewMockApplicationRepository(ctrl)
 	eventRepo := mocks.NewMockEventRepository(ctrl)
 	eventDeliveryRepo := mocks.NewMockEventDeliveryRepository(ctrl)
-	eventQueue := mocks.NewMockQueuer(ctrl)
 	cache := mocks.NewMockCache(ctrl)
-	return NewAppService(appRepo, eventRepo, eventDeliveryRepo, eventQueue, cache)
+	return NewAppService(appRepo, eventRepo, eventDeliveryRepo, cache)
 }
 
 func boolPtr(b bool) *bool {
@@ -625,11 +624,9 @@ func TestAppService_CreateAppEndpoint(t *testing.T) {
 						Secret:            "1234",
 						TargetURL:         "https://google.com",
 						Description:       "test_endpoint",
-						Status:            datastore.ActiveEndpointStatus,
 						RateLimit:         5000,
 						RateLimitDuration: "1m0s",
 						DocumentStatus:    datastore.ActiveDocumentStatus,
-						Events:            []string{"payment.created"},
 					},
 				},
 			},
@@ -637,11 +634,9 @@ func TestAppService_CreateAppEndpoint(t *testing.T) {
 				Secret:            "1234",
 				TargetURL:         "https://google.com",
 				Description:       "test_endpoint",
-				Status:            datastore.ActiveEndpointStatus,
 				RateLimit:         5000,
 				RateLimitDuration: "1m0s",
 				DocumentStatus:    datastore.ActiveDocumentStatus,
-				Events:            []string{"payment.created"},
 			},
 			wantErr: false,
 		},
@@ -672,11 +667,9 @@ func TestAppService_CreateAppEndpoint(t *testing.T) {
 						Secret:            "1234",
 						TargetURL:         "https://google.com",
 						Description:       "test_endpoint",
-						Status:            datastore.ActiveEndpointStatus,
 						RateLimit:         100,
 						RateLimitDuration: "1m0s",
 						DocumentStatus:    datastore.ActiveDocumentStatus,
-						Events:            []string{"*"},
 					},
 				},
 			},
@@ -684,11 +677,9 @@ func TestAppService_CreateAppEndpoint(t *testing.T) {
 				Secret:            "1234",
 				TargetURL:         "https://google.com",
 				Description:       "test_endpoint",
-				Status:            datastore.ActiveEndpointStatus,
 				RateLimit:         100,
 				RateLimitDuration: "1m0s",
 				DocumentStatus:    datastore.ActiveDocumentStatus,
-				Events:            []string{"*"},
 			},
 			wantErr: false,
 		},
@@ -857,12 +848,10 @@ func TestAppService_UpdateAppEndpoint(t *testing.T) {
 					},
 					{
 						UID:               "endpoint2",
-						Events:            []string{"payment.created", "payment.success"},
 						TargetURL:         "https://fb.com",
 						Secret:            "newly-generated-secret",
 						RateLimit:         10000,
 						RateLimitDuration: "1m0s",
-						Status:            datastore.ActiveEndpointStatus,
 						HttpTimeout:       "20s",
 					},
 				},
@@ -870,10 +859,8 @@ func TestAppService_UpdateAppEndpoint(t *testing.T) {
 			wantEndpoint: &datastore.Endpoint{
 				Secret:            "newly-generated-secret",
 				UID:               "endpoint2",
-				Events:            []string{"payment.created", "payment.success"},
 				TargetURL:         "https://fb.com",
 				RateLimit:         10000,
-				Status:            datastore.ActiveEndpointStatus,
 				RateLimitDuration: "1m0s",
 				HttpTimeout:       "20s",
 			},

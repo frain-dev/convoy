@@ -27,16 +27,17 @@ type applicationHandler struct {
 	groupService        *services.GroupService
 	securityService     *services.SecurityService
 	sourceService       *services.SourceService
+	subService          *services.SubcriptionService
 	organisationService *services.OrganisationService
 	orgRepo             datastore.OrganisationRepository
 	appRepo             datastore.ApplicationRepository
 	eventRepo           datastore.EventRepository
+	subRepo             datastore.SubscriptionRepository
 	eventDeliveryRepo   datastore.EventDeliveryRepository
 	groupRepo           datastore.GroupRepository
 	apiKeyRepo          datastore.APIKeyRepository
 	sourceRepo          datastore.SourceRepository
-	eventQueue          queue.Queuer
-	createEventQueue    queue.Queuer
+	queue               queue.Queuer
 	logger              logger.Logger
 	tracer              tracer.Tracer
 	cache               cache.Cache
@@ -58,20 +59,21 @@ func newApplicationHandler(
 	appRepo datastore.ApplicationRepository,
 	groupRepo datastore.GroupRepository,
 	apiKeyRepo datastore.APIKeyRepository,
+	subRepo datastore.SubscriptionRepository,
 	sourceRepo datastore.SourceRepository,
 	orgRepo datastore.OrganisationRepository,
 	userRepo datastore.UserRepository,
 	configRepo datastore.ConfigurationRepository,
-	eventQueue queue.Queuer,
-	createEventQueue queue.Queuer,
+	queue queue.Queuer,
 	logger logger.Logger,
 	tracer tracer.Tracer,
 	cache cache.Cache,
 	limiter limiter.RateLimiter, searcher searcher.Searcher) *applicationHandler {
-	as := services.NewAppService(appRepo, eventRepo, eventDeliveryRepo, eventQueue, cache)
-	es := services.NewEventService(appRepo, eventRepo, eventDeliveryRepo, eventQueue, createEventQueue, cache, searcher)
+	as := services.NewAppService(appRepo, eventRepo, eventDeliveryRepo, cache)
+	es := services.NewEventService(appRepo, eventRepo, eventDeliveryRepo, queue, cache, searcher, subRepo)
 	gs := services.NewGroupService(appRepo, groupRepo, eventRepo, eventDeliveryRepo, limiter)
 	ss := services.NewSecurityService(groupRepo, apiKeyRepo)
+	rs := services.NewSubscriptionService(subRepo)
 	os := services.NewOrganisationService(orgRepo)
 	sos := services.NewSourceService(sourceRepo)
 	us := services.NewUserService(userRepo, cache)
@@ -83,6 +85,7 @@ func newApplicationHandler(
 		groupService:        gs,
 		securityService:     ss,
 		organisationService: os,
+		subService:          rs,
 		sourceService:       sos,
 		orgRepo:             orgRepo,
 		eventRepo:           eventRepo,
@@ -91,8 +94,8 @@ func newApplicationHandler(
 		appRepo:             appRepo,
 		groupRepo:           groupRepo,
 		sourceRepo:          sourceRepo,
-		eventQueue:          eventQueue,
-		createEventQueue:    createEventQueue,
+		queue:               queue,
+		subRepo:             subRepo,
 		logger:              logger,
 		tracer:              tracer,
 		cache:               cache,

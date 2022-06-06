@@ -173,8 +173,9 @@ func Test_FillGroupsStatistics(t *testing.T) {
 	require.NoError(t, err)
 
 	event := &datastore.Event{
-		UID:         uuid.NewString(),
-		AppMetadata: &datastore.AppMetadata{UID: app1.UID, GroupID: app1.GroupID},
+		UID:     uuid.NewString(),
+		GroupID: app1.GroupID,
+		AppID:   app1.UID,
 	}
 
 	err = NewEventRepository(db).CreateEvent(context.Background(), event)

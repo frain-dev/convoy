@@ -119,18 +119,10 @@ var (
 	}
 )
 
-var (
-	ErrApplicationNotFound = errors.New("application not found")
-	ErrEndpointNotFound    = errors.New("endpoint not found")
-	ErrSourceNotFound      = errors.New("source not found")
-	ErrUserNotFound        = errors.New("user not found")
-	ErrConfigNotFound      = errors.New("config not found")
-)
-
 const (
-	ActiveEndpointStatus   EndpointStatus = "active"
-	InactiveEndpointStatus EndpointStatus = "inactive"
-	PendingEndpointStatus  EndpointStatus = "pending"
+	ActiveSubscriptionStatus   SubscriptionStatus = "active"
+	InactiveSubscriptionStatus SubscriptionStatus = "inactive"
+	PendingSubscriptionStatus  SubscriptionStatus = "pending"
 )
 
 type Application struct {
@@ -152,20 +144,17 @@ type Application struct {
 	DocumentStatus DocumentStatus `json:"-" bson:"document_status"`
 }
 
-type EndpointStatus string
+type SubscriptionStatus string
 
 type Endpoint struct {
-	UID         string         `json:"uid" bson:"uid"`
-	TargetURL   string         `json:"target_url" bson:"target_url"`
-	Description string         `json:"description" bson:"description"`
-	Status      EndpointStatus `json:"status" bson:"status"`
-	Secret      string         `json:"secret" bson:"secret"`
+	UID         string `json:"uid" bson:"uid"`
+	TargetURL   string `json:"target_url" bson:"target_url"`
+	Description string `json:"description" bson:"description"`
+	Secret      string `json:"secret" bson:"secret"`
 
 	HttpTimeout       string `json:"http_timeout" bson:"http_timeout"`
 	RateLimit         int    `json:"rate_limit" bson:"rate_limit"`
 	RateLimitDuration string `json:"rate_limit_duration" bson:"rate_limit_duration"`
-
-	Events []string `json:"events" bson:"events"`
 
 	CreatedAt primitive.DateTime `json:"created_at,omitempty" bson:"created_at,omitempty" swaggertype:"string"`
 	UpdatedAt primitive.DateTime `json:"updated_at,omitempty" bson:"updated_at,omitempty" swaggertype:"string"`
@@ -174,7 +163,6 @@ type Endpoint struct {
 	DocumentStatus DocumentStatus `json:"-" bson:"document_status"`
 }
 
-var ErrGroupNotFound = errors.New("group not found")
 var ErrOrgNotFound = errors.New("organisation not found")
 
 type Group struct {
@@ -201,8 +189,8 @@ type GroupConfig struct {
 	RateLimit       RateLimitConfiguration `json:"ratelimit"`
 	Strategy        StrategyConfiguration  `json:"strategy"`
 	Signature       SignatureConfiguration `json:"signature"`
-	DisableEndpoint bool                   `json:"disable_endpoint"`
-	ReplayAttacks   bool                   `json:"replay_attacks"`
+	DisableEndpoint bool                   `json:"disable_endpoint" bson:"disable_endpoint"`
+	ReplayAttacks   bool                   `json:"replay_attacks" bson:"replay_attacks"`
 }
 
 type RateLimitConfiguration struct {
@@ -217,8 +205,8 @@ type StrategyConfiguration struct {
 }
 
 type SignatureConfiguration struct {
-	Header config.SignatureHeaderProvider `json:"header" valid:"required~please provide a valid signature header"`
-	Hash   string                         `json:"hash" valid:"required~please provide a valid hash,supported_hash~unsupported hash type"`
+	Header config.SignatureHeaderProvider `json:"header,omitempty" valid:"required~please provide a valid signature header"`
+	Hash   string                         `json:"hash,omitempty" valid:"required~please provide a valid hash,supported_hash~unsupported hash type"`
 }
 
 type SignatureValues struct {
@@ -251,7 +239,19 @@ func (o *Group) IsDeleted() bool { return o.DeletedAt > 0 }
 func (o *Group) IsOwner(a *Application) bool { return o.UID == a.GroupID }
 
 var (
-	ErrEventNotFound = errors.New("event not found")
+	ErrUserNotFound                  = errors.New("user not found")
+	ErrSourceNotFound                = errors.New("source not found")
+	ErrEventNotFound                 = errors.New("event not found")
+	ErrGroupNotFound                 = errors.New("group not found")
+	ErrAPIKeyNotFound                = errors.New("api key not found")
+	ErrEndpointNotFound              = errors.New("endpoint not found")
+	ErrApplicationNotFound           = errors.New("application not found")
+	ErrSubscriptionNotFound          = errors.New("subscription not found")
+	ErrEventDeliveryNotFound         = errors.New("event delivery not found")
+	ErrEventDeliveryAttemptNotFound  = errors.New("event delivery attempt not found")
+	ErrDuplicateAppName              = errors.New("an application with this name exists")
+	ErrNotAuthorisedToAccessDocument = errors.New("your credentials cannot access or modify this resource")
+	ErrConfigNotFound                = errors.New("config not found")
 )
 
 type AppMetadata struct {
@@ -267,7 +267,7 @@ type AppMetadata struct {
 // Makes it easy to filter by a list of events
 type EventType string
 
-//Event defines a payload to be sent to an application
+// Event defines a payload to be sent to an application
 type Event struct {
 	ID               primitive.ObjectID `json:"-" bson:"_id"`
 	UID              string             `json:"uid" bson:"uid"`
@@ -279,12 +279,13 @@ type Event struct {
 	// This is optional
 	// If not provided, we will generate one for you
 	ProviderID string `json:"provider_id" bson:"provider_id"`
+	SourceID   string `json:"source_id" bson:"source_id"`
+	GroupID    string `json:"group_id" bson:"group_id"`
+	AppID      string `json:"app_id" bson:"app_id"`
 
 	// Data is an arbitrary JSON value that gets sent as the body of the
 	// webhook to the endpoints
 	Data json.RawMessage `json:"data" bson:"data"`
-
-	AppMetadata *AppMetadata `json:"app_metadata,omitempty" bson:"app_metadata"`
 
 	CreatedAt primitive.DateTime `json:"created_at,omitempty" bson:"created_at,omitempty" swaggertype:"string"`
 	UpdatedAt primitive.DateTime `json:"updated_at,omitempty" bson:"updated_at,omitempty" swaggertype:"string"`
@@ -295,11 +296,6 @@ type Event struct {
 
 type EventDeliveryStatus string
 type HttpHeader map[string]string
-
-var (
-	ErrEventDeliveryNotFound        = errors.New("event not found")
-	ErrEventDeliveryAttemptNotFound = errors.New("delivery attempt not found")
-)
 
 const (
 	// ScheduledEventStatus : when  a Event has been scheduled for delivery
@@ -352,18 +348,6 @@ func (em Metadata) Value() (driver.Value, error) {
 	return driver.Value(b.String()), nil
 }
 
-type EndpointMetadata struct {
-	UID               string         `json:"uid" bson:"uid"`
-	TargetURL         string         `json:"target_url" bson:"target_url"`
-	Status            EndpointStatus `json:"status" bson:"status"`
-	Secret            string         `json:"secret" bson:"secret"`
-	HttpTimeout       string         `json:"http_timeout" bson:"http_timeout"`
-	RateLimit         int            `json:"rate_limit" bson:"rate_limit"`
-	RateLimitDuration string         `json:"rate_limit_duration" bson:"rate_limit_duration"`
-
-	Sent bool `json:"sent" bson:"sent"`
-}
-
 type EventIntervalData struct {
 	Interval int64  `json:"index" bson:"index"`
 	Time     string `json:"date" bson:"total_time"`
@@ -372,11 +356,6 @@ type EventIntervalData struct {
 type EventInterval struct {
 	Data  EventIntervalData `json:"data" bson:"_id"`
 	Count uint64            `json:"count" bson:"count"`
-}
-
-type EventMetadata struct {
-	UID       string    `json:"uid" bson:"uid"`
-	EventType EventType `json:"name" bson:"name"`
 }
 
 type DeliveryAttempt struct {
@@ -403,18 +382,18 @@ type DeliveryAttempt struct {
 
 //Event defines a payload to be sent to an application
 type EventDelivery struct {
-	ID            primitive.ObjectID `json:"-" bson:"_id"`
-	UID           string             `json:"uid" bson:"uid"`
-	EventMetadata *EventMetadata     `json:"event_metadata" bson:"event_metadata"`
+	ID             primitive.ObjectID `json:"-" bson:"_id"`
+	UID            string             `json:"uid" bson:"uid"`
+	AppID          string             `json:"app_id" bson:"app_id"`
+	GroupID        string             `json:"group_id" bson:"group_id"`
+	EventID        string             `json:"event_id" bson:"event_id"`
+	EndpointID     string             `json:"endpoint_id" bson:"endpoint_id"`
+	SubscriptionID string             `json:"subscription_id" bson:"subscription_id"`
 
-	// Endpoint contains the destination of the event.
-	EndpointMetadata *EndpointMetadata `json:"endpoint" bson:"endpoint"`
-
-	AppMetadata      *AppMetadata        `json:"app_metadata,omitempty" bson:"app_metadata"`
+	DeliveryAttempts []DeliveryAttempt   `json:"-" bson:"attempts"`
+	Status           EventDeliveryStatus `json:"status" bson:"status"`
 	Metadata         *Metadata           `json:"metadata" bson:"metadata"`
 	Description      string              `json:"description,omitempty" bson:"description"`
-	Status           EventDeliveryStatus `json:"status" bson:"status"`
-	DeliveryAttempts []DeliveryAttempt   `json:"-" bson:"attempts"`
 
 	CreatedAt primitive.DateTime `json:"created_at,omitempty" bson:"created_at,omitempty" swaggertype:"string"`
 	UpdatedAt primitive.DateTime `json:"updated_at,omitempty" bson:"updated_at,omitempty" swaggertype:"string"`
@@ -422,11 +401,6 @@ type EventDelivery struct {
 
 	DocumentStatus DocumentStatus `json:"-" bson:"document_status"`
 }
-
-var (
-	ErrAPIKeyNotFound   = errors.New("api key not found")
-	ErrDuplicateAppName = errors.New("an application with this name exists")
-)
 
 type KeyType string
 
@@ -439,7 +413,33 @@ type APIKey struct {
 	Hash      string             `json:"hash,omitempty" bson:"hash"`
 	Salt      string             `json:"salt,omitempty" bson:"salt"`
 	Type      KeyType            `json:"key_type" bson:"key_type"`
-	ExpiresAt primitive.DateTime `json:"expires_at,omitempty" bson:"expires_at,omitempty" swaggertype:"string"`
+	ExpiresAt primitive.DateTime `json:"expires_at,omitempty" bson:"expires_at,omitempty"`
+	CreatedAt primitive.DateTime `json:"created_at,omitempty" bson:"created_at"`
+	UpdatedAt primitive.DateTime `json:"updated_at,omitempty" bson:"updated_at"`
+	DeletedAt primitive.DateTime `json:"deleted_at,omitempty" bson:"deleted_at"`
+
+	DocumentStatus DocumentStatus `json:"-" bson:"document_status"`
+}
+
+type Subscription struct {
+	ID         primitive.ObjectID `json:"-" bson:"_id"`
+	UID        string             `json:"uid" bson:"uid"`
+	Name       string             `json:"name" bson:"name"`
+	Type       string             `json:"type" bson:"type"`
+	Status     SubscriptionStatus `json:"status" bson:"status"`
+	AppID      string             `json:"-" bson:"app_id"`
+	GroupID    string             `json:"-" bson:"group_id"`
+	SourceID   string             `json:"-" bson:"source_id"`
+	EndpointID string             `json:"-" bson:"endpoint_id"`
+
+	Source   *Source   `json:"source"`
+	Endpoint *Endpoint `json:"endpoint"`
+
+	// subscription config
+	AlertConfig  *AlertConfiguration  `json:"alert_config,omitempty" bson:"alert_config,omitempty"`
+	RetryConfig  *RetryConfiguration  `json:"retry_config,omitempty" bson:"retry_config,omitempty"`
+	FilterConfig *FilterConfiguration `json:"filter_config,omitempty" bson:"filter_config,omitempty"`
+
 	CreatedAt primitive.DateTime `json:"created_at,omitempty" bson:"created_at" swaggertype:"string"`
 	UpdatedAt primitive.DateTime `json:"updated_at,omitempty" bson:"updated_at" swaggertype:"string"`
 	DeletedAt primitive.DateTime `json:"delted_at,omitempty" bson:"deleted_at" swaggertype:"string"`
@@ -479,6 +479,22 @@ type User struct {
 
 	DocumentStatus DocumentStatus `json:"-" bson:"document_status"`
 }
+
+type RetryConfiguration struct {
+	Type       config.StrategyProvider `json:"type,omitempty" bson:"type,omitempty" valid:"supported_retry_strategy~please provide a valid retry strategy type"`
+	Duration   string                  `json:"duration,omitempty" bson:"duration,omitempty" valid:"duration~please provide a valid time duration"`
+	RetryCount int                     `json:"retry_count" bson:"retry_count" valid:"int~please provide a valid retry count"`
+}
+
+type AlertConfiguration struct {
+	Count     int    `json:"count" bson:"count,omitempty"`
+	Threshold string `json:"threshold" bson:"threshold,omitempty" valid:"duration~please provide a valid time duration"`
+}
+
+type FilterConfiguration struct {
+	EventTypes []string `json:"event_types" bson:"event_types,omitempty"`
+}
+
 type VerifierConfig struct {
 	Type      VerifierType `json:"type,omitempty" bson:"type" valid:"supported_verifier~please provide a valid verifier type,optional"`
 	HMac      HMac         `json:"hmac" bson:"hmac"`

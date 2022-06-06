@@ -1,18 +1,22 @@
 export interface APP {
-	endpoints: {
-		uid: string;
-		created_at: Date;
-		description: string;
-		status: string;
-		target_url: string;
-		updated_at: Date;
-	}[];
-	events: 2;
+	endpoints: ENDPOINT[];
+	events: number;
 	group_id: string;
 	name: string;
 	secret: string;
 	support_email: string;
+	is_disabled: boolean;
 	created_at: Date;
 	uid: string;
+	updated_at: Date;
+}
+export interface ENDPOINT {
+	uid: string;
+	created_at: Date;
+	description: string;
+	events: any;
+	status: string;
+	secret: string;
+	target_url: string;
 	updated_at: Date;
 }

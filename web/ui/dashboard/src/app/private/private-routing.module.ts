@@ -9,12 +9,20 @@ const routes: Routes = [
 		children: [
 			{
 				path: '',
-				redirectTo: 'dashboard',
+				redirectTo: 'projects',
 				pathMatch: 'full'
 			},
 			{
-				path: 'dashboard',
-				loadChildren: () => import('./pages/dashboard/dashboard.module').then(m => m.DashboardModule)
+				path: 'projects',
+				loadChildren: () => import('./pages/projects/projects.module').then(m => m.ProjectsModule)
+			},
+			{
+				path: 'projects/new',
+				loadChildren: () => import('./pages/create-project/create-project.module').then(m => m.CreateProjectModule)
+			},
+			{
+				path: 'projects/:id',
+				loadChildren: () => import('./pages/project/project.module').then(m => m.ProjectModule)
 			},
 			{
 				path: 'app-portal/:token',

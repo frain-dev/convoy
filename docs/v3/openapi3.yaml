@@ -16,11 +16,11 @@ components:
     datastore.APIKey:
       properties:
         created_at:
-          type: string
-        delted_at:
-          type: string
+          type: integer
+        deleted_at:
+          type: integer
         expires_at:
-          type: string
+          type: integer
         hash:
           type: string
         key_type:
@@ -36,6 +36,13 @@ components:
         uid:
           type: string
         updated_at:
+          type: integer
+      type: object
+    datastore.AlertConfiguration:
+      properties:
+        count:
+          type: integer
+        threshold:
           type: string
       type: object
     datastore.ApiKey:
@@ -43,17 +50,6 @@ components:
         header:
           type: string
         key:
-          type: string
-      type: object
-    datastore.AppMetadata:
-      properties:
-        group_id:
-          type: string
-        support_email:
-          type: string
-        title:
-          type: string
-        uid:
           type: string
       type: object
     datastore.Application:
@@ -133,10 +129,6 @@ components:
           type: string
         description:
           type: string
-        events:
-          items:
-            type: string
-          type: array
         http_timeout:
           type: string
         rate_limit:
@@ -144,8 +136,6 @@ components:
         rate_limit_duration:
           type: string
         secret:
-          type: string
-        status:
           type: string
         target_url:
           type: string
@@ -154,29 +144,10 @@ components:
         updated_at:
           type: string
       type: object
-    datastore.EndpointMetadata:
-      properties:
-        http_timeout:
-          type: string
-        rate_limit:
-          type: integer
-        rate_limit_duration:
-          type: string
-        secret:
-          type: string
-        sent:
-          type: boolean
-        status:
-          type: string
-        target_url:
-          type: string
-        uid:
-          type: string
-      type: object
     datastore.Event:
       properties:
-        app_metadata:
-          $ref: '#/components/schemas/datastore.AppMetadata'
+        app_id:
+          type: string
         created_at:
           type: string
         data:
@@ -190,6 +161,8 @@ components:
           type: string
         event_type:
           type: string
+        group_id:
+          type: string
         matched_endpoints:
           type: integer
         provider_id:
@@ -199,6 +172,8 @@ components:
             This is optional
             If not provided, we will generate one for you
           type: string
+        source_id:
+          type: string
         uid:
           type: string
         updated_at:
@@ -206,33 +181,37 @@ components:
       type: object
     datastore.EventDelivery:
       properties:
-        app_metadata:
-          $ref: '#/components/schemas/datastore.AppMetadata'
+        app_id:
+          type: string
         created_at:
           type: string
         deleted_at:
           type: string
         description:
           type: string
-        endpoint:
-          $ref: '#/components/schemas/datastore.EndpointMetadata'
-        event_metadata:
-          $ref: '#/components/schemas/datastore.EventMetadata'
+        endpoint_id:
+          type: string
+        event_id:
+          type: string
+        group_id:
+          type: string
         metadata:
           $ref: '#/components/schemas/datastore.Metadata'
         status:
+          type: string
+        subscription_id:
           type: string
         uid:
           type: string
         updated_at:
           type: string
       type: object
-    datastore.EventMetadata:
+    datastore.FilterConfiguration:
       properties:
-        name:
-          type: string
-        uid:
-          type: string
+        event_types:
+          items:
+            type: string
+          type: array
       type: object
     datastore.Group:
       properties:
@@ -356,12 +335,44 @@ components:
         duration:
           type: string
       type: object
+    datastore.RetryConfiguration:
+      properties:
+        duration:
+          type: string
+        retry_count:
+          type: integer
+        type:
+          type: string
+      type: object
     datastore.SignatureConfiguration:
       properties:
         hash:
           type: string
         header:
           type: string
+      type: object
+    datastore.Source:
+      properties:
+        created_at:
+          type: string
+        deleted_at:
+          type: string
+        group_id:
+          type: string
+        is_disabled:
+          type: boolean
+        mask_id:
+          type: string
+        name:
+          type: string
+        type:
+          type: string
+        uid:
+          type: string
+        updated_at:
+          type: string
+        verifier:
+          $ref: '#/components/schemas/datastore.VerifierConfig'
       type: object
     datastore.StrategyConfiguration:
       properties:
@@ -370,6 +381,33 @@ components:
         retry_count:
           type: integer
         type:
+          type: string
+      type: object
+    datastore.Subscription:
+      properties:
+        alert_config:
+          $ref: '#/components/schemas/datastore.AlertConfiguration'
+        created_at:
+          type: string
+        delted_at:
+          type: string
+        endpoint:
+          $ref: '#/components/schemas/datastore.Endpoint'
+        filter_config:
+          $ref: '#/components/schemas/datastore.FilterConfiguration'
+        name:
+          type: string
+        retry_config:
+          $ref: '#/components/schemas/datastore.RetryConfiguration'
+        source:
+          $ref: '#/components/schemas/datastore.Source'
+        status:
+          type: string
+        type:
+          type: string
+        uid:
+          type: string
+        updated_at:
           type: string
       type: object
     datastore.VerifierConfig:
@@ -553,6 +591,25 @@ components:
           type: string
         verifier:
           $ref: '#/components/schemas/datastore.VerifierConfig'
+      type: object
+    models.Subscription:
+      properties:
+        alert_config:
+          $ref: '#/components/schemas/datastore.AlertConfiguration'
+        app_id:
+          type: string
+        endpoint_id:
+          type: string
+        filter_config:
+          $ref: '#/components/schemas/datastore.FilterConfiguration'
+        name:
+          type: string
+        retry_config:
+          $ref: '#/components/schemas/datastore.RetryConfiguration'
+        source_id:
+          type: string
+        type:
+          type: string
       type: object
     models.Token:
       properties:
@@ -3719,6 +3776,363 @@ paths:
       summary: Update a source
       tags:
       - Source
+  /subscriptions:
+    get:
+      description: This endpoint fetches all the subscriptions
+      parameters:
+      - description: results per page
+        in: query
+        name: perPage
+        schema:
+          type: string
+      - description: page number
+        in: query
+        name: page
+        schema:
+          type: string
+      - description: sort order
+        in: query
+        name: sort
+        schema:
+          type: string
+      - description: subscription title
+        in: query
+        name: q
+        schema:
+          type: string
+      - description: group id
+        in: query
+        name: groupId
+        required: true
+        schema:
+          type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                allOf:
+                - $ref: '#/components/schemas/server.serverResponse'
+                - properties:
+                    data:
+                      allOf:
+                      - $ref: '#/components/schemas/server.pagedResponse'
+                      - properties:
+                          content:
+                            items:
+                              $ref: '#/components/schemas/datastore.Subscription'
+                            type: array
+                        type: object
+                  type: object
+          description: OK
+        "400":
+          content:
+            application/json:
+              schema:
+                allOf:
+                - $ref: '#/components/schemas/server.serverResponse'
+                - properties:
+                    data:
+                      $ref: '#/components/schemas/server.Stub'
+                  type: object
+          description: Bad Request
+        "401":
+          content:
+            application/json:
+              schema:
+                allOf:
+                - $ref: '#/components/schemas/server.serverResponse'
+                - properties:
+                    data:
+                      $ref: '#/components/schemas/server.Stub'
+                  type: object
+          description: Unauthorized
+        "500":
+          content:
+            application/json:
+              schema:
+                allOf:
+                - $ref: '#/components/schemas/server.serverResponse'
+                - properties:
+                    data:
+                      $ref: '#/components/schemas/server.Stub'
+                  type: object
+          description: Internal Server Error
+      security:
+      - ApiKeyAuth: []
+      summary: Get all subscriptions
+      tags:
+      - Subscriptions
+    post:
+      description: This endpoint creates a subscriptions
+      parameters:
+      - description: group id
+        in: query
+        name: groupId
+        required: true
+        schema:
+          type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                allOf:
+                - $ref: '#/components/schemas/server.serverResponse'
+                - properties:
+                    data:
+                      allOf:
+                      - $ref: '#/components/schemas/server.pagedResponse'
+                      - properties:
+                          content:
+                            items:
+                              $ref: '#/components/schemas/datastore.Subscription'
+                            type: array
+                        type: object
+                  type: object
+          description: OK
+        "400":
+          content:
+            application/json:
+              schema:
+                allOf:
+                - $ref: '#/components/schemas/server.serverResponse'
+                - properties:
+                    data:
+                      $ref: '#/components/schemas/server.Stub'
+                  type: object
+          description: Bad Request
+        "401":
+          content:
+            application/json:
+              schema:
+                allOf:
+                - $ref: '#/components/schemas/server.serverResponse'
+                - properties:
+                    data:
+                      $ref: '#/components/schemas/server.Stub'
+                  type: object
+          description: Unauthorized
+        "500":
+          content:
+            application/json:
+              schema:
+                allOf:
+                - $ref: '#/components/schemas/server.serverResponse'
+                - properties:
+                    data:
+                      $ref: '#/components/schemas/server.Stub'
+                  type: object
+          description: Internal Server Error
+      security:
+      - ApiKeyAuth: []
+      summary: Creates a subscription
+      tags:
+      - Subscriptions
+  /subscriptions/{subscriptionID}:
+    delete:
+      description: This endpoint deletes a subscription
+      parameters:
+      - description: group id
+        in: query
+        name: groupId
+        required: true
+        schema:
+          type: string
+      - description: subscription id
+        in: path
+        name: subscriptionID
+        required: true
+        schema:
+          type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                allOf:
+                - $ref: '#/components/schemas/server.serverResponse'
+                - properties:
+                    data:
+                      $ref: '#/components/schemas/server.Stub'
+                  type: object
+          description: OK
+        "400":
+          content:
+            application/json:
+              schema:
+                allOf:
+                - $ref: '#/components/schemas/server.serverResponse'
+                - properties:
+                    data:
+                      $ref: '#/components/schemas/server.Stub'
+                  type: object
+          description: Bad Request
+        "401":
+          content:
+            application/json:
+              schema:
+                allOf:
+                - $ref: '#/components/schemas/server.serverResponse'
+                - properties:
+                    data:
+                      $ref: '#/components/schemas/server.Stub'
+                  type: object
+          description: Unauthorized
+        "500":
+          content:
+            application/json:
+              schema:
+                allOf:
+                - $ref: '#/components/schemas/server.serverResponse'
+                - properties:
+                    data:
+                      $ref: '#/components/schemas/server.Stub'
+                  type: object
+          description: Internal Server Error
+      security:
+      - ApiKeyAuth: []
+      summary: Delete subscription
+      tags:
+      - Application
+    get:
+      description: This endpoint fetches an Subscription by it's id
+      parameters:
+      - description: group id
+        in: query
+        name: groupId
+        required: true
+        schema:
+          type: string
+      - description: application id
+        in: path
+        name: subscriptionID
+        required: true
+        schema:
+          type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                allOf:
+                - $ref: '#/components/schemas/server.serverResponse'
+                - properties:
+                    data:
+                      $ref: '#/components/schemas/datastore.Subscription'
+                  type: object
+          description: OK
+        "400":
+          content:
+            application/json:
+              schema:
+                allOf:
+                - $ref: '#/components/schemas/server.serverResponse'
+                - properties:
+                    data:
+                      $ref: '#/components/schemas/server.Stub'
+                  type: object
+          description: Bad Request
+        "401":
+          content:
+            application/json:
+              schema:
+                allOf:
+                - $ref: '#/components/schemas/server.serverResponse'
+                - properties:
+                    data:
+                      $ref: '#/components/schemas/server.Stub'
+                  type: object
+          description: Unauthorized
+        "500":
+          content:
+            application/json:
+              schema:
+                allOf:
+                - $ref: '#/components/schemas/server.serverResponse'
+                - properties:
+                    data:
+                      $ref: '#/components/schemas/server.Stub'
+                  type: object
+          description: Internal Server Error
+      security:
+      - ApiKeyAuth: []
+      summary: Gets a subscription
+      tags:
+      - Subscription
+    put:
+      description: This endpoint updates a subscription
+      parameters:
+      - description: group id
+        in: path
+        name: groupId
+        required: true
+        schema:
+          type: string
+      - description: subscription id
+        in: path
+        name: subscriptionID
+        required: true
+        schema:
+          type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/models.Subscription'
+        description: Subscription Details
+        required: true
+        x-originalParamName: subscription
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                allOf:
+                - $ref: '#/components/schemas/server.serverResponse'
+                - properties:
+                    data:
+                      $ref: '#/components/schemas/datastore.Subscription'
+                  type: object
+          description: OK
+        "400":
+          content:
+            application/json:
+              schema:
+                allOf:
+                - $ref: '#/components/schemas/server.serverResponse'
+                - properties:
+                    data:
+                      $ref: '#/components/schemas/server.Stub'
+                  type: object
+          description: Bad Request
+        "401":
+          content:
+            application/json:
+              schema:
+                allOf:
+                - $ref: '#/components/schemas/server.serverResponse'
+                - properties:
+                    data:
+                      $ref: '#/components/schemas/server.Stub'
+                  type: object
+          description: Unauthorized
+        "500":
+          content:
+            application/json:
+              schema:
+                allOf:
+                - $ref: '#/components/schemas/server.serverResponse'
+                - properties:
+                    data:
+                      $ref: '#/components/schemas/server.Stub'
+                  type: object
+          description: Internal Server Error
+      security:
+      - ApiKeyAuth: []
+      summary: Update a subscription
+      tags:
+      - Subscription
 servers:
 - url: https://cloud.staging.getconvoy.io/api/v1
 tags:

@@ -37,14 +37,13 @@ import (
 type contextKey string
 
 const (
-	groupCtx         contextKey = "group"
-	appCtx           contextKey = "app"
-	orgCtx           contextKey = "organisation"
-	endpointCtx      contextKey = "endpoint"
-	eventCtx         contextKey = "event"
-	eventDeliveryCtx contextKey = "eventDelivery"
-	configCtx        contextKey = "configCtx"
-	//authConfigCtx       contextKey = "authConfig"
+	groupCtx            contextKey = "group"
+	appCtx              contextKey = "app"
+	orgCtx              contextKey = "organisation"
+	endpointCtx         contextKey = "endpoint"
+	eventCtx            contextKey = "event"
+	eventDeliveryCtx    contextKey = "eventDelivery"
+	configCtx           contextKey = "configCtx"
 	authLoginCtx        contextKey = "authLogin"
 	authUserCtx         contextKey = "authUser"
 	pageableCtx         contextKey = "pageable"

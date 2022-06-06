@@ -1,6 +1,3 @@
-//go:build integration
-// +build integration
-
 package server
 
 import (
@@ -16,6 +13,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/frain-dev/convoy"
 	"github.com/frain-dev/convoy/auth/realm_chain"
 	"github.com/frain-dev/convoy/cache"
 	ncache "github.com/frain-dev/convoy/cache/noop"
@@ -65,14 +63,21 @@ func getDB() datastore.DatabaseClient {
 
 func getQueueOptions(name string) (queue.QueueOptions, error) {
 	var opts queue.QueueOptions
-	rC, err := redisqueue.NewClient(getConfig())
+	cfg := getConfig()
+	rC, err := redisqueue.NewClient(cfg)
 	if err != nil {
 		return opts, err
 	}
+	queueNames := map[string]int{
+		string(convoy.PriorityQueue):    6,
+		string(convoy.EventQueue):       2,
+		string(convoy.CreateEventQueue): 2,
+	}
 	opts = queue.QueueOptions{
-		Type:  "redis",
-		Name:  name,
-		Redis: rC,
+		Names:        queueNames,
+		Client:       rC,
+		RedisAddress: cfg.Queue.Redis.Dsn,
+		Type:         string(config.RedisQueueProvider),
 	}
 
 	return opts, nil
@@ -80,11 +85,10 @@ func getQueueOptions(name string) (queue.QueueOptions, error) {
 
 func buildApplication() *applicationHandler {
 	var tracer tracer.Tracer
-	var qOpts, cOpts queue.QueueOptions
+	var qOpts queue.QueueOptions
 
 	db := getDB()
 	qOpts, _ = getQueueOptions("EventQueue")
-	cOpts, _ = getQueueOptions("CreateEventQueue")
 
 	groupRepo := db.GroupRepo()
 	appRepo := db.AppRepo()
@@ -95,17 +99,17 @@ func buildApplication() *applicationHandler {
 	orgRepo := db.OrganisationRepo()
 	userRepo := db.UserRepo()
 	configRepo := db.ConfigurationRepo()
-	eventQueue := redisqueue.NewQueue(qOpts)
-	createEventQueue := redisqueue.NewQueue(cOpts)
+	queue := redisqueue.NewQueue(qOpts)
 	logger := logger.NewNoopLogger()
 	cache := ncache.NewNoopCache()
 	limiter := nooplimiter.NewNoopLimiter()
 	searcher := noopsearcher.NewNoopSearcher()
 	tracer = nil
+	subRepo := db.SubRepo()
 
 	return newApplicationHandler(
 		eventRepo, eventDeliveryRepo, appRepo,
-		groupRepo, apiKeyRepo, sourceRepo, orgRepo, userRepo, configRepo, eventQueue, createEventQueue,
+		groupRepo, apiKeyRepo, subRepo, sourceRepo, orgRepo, userRepo, configRepo, queue,
 		logger, tracer, cache, limiter, searcher,
 	)
 }

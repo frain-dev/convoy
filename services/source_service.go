@@ -83,20 +83,6 @@ func (s *SourceService) FindSourceByID(ctx context.Context, g *datastore.Group, 
 	return source, nil
 }
 
-func (s *SourceService) FindSourceByMaskID(ctx context.Context, g *datastore.Group, maskId string) (*datastore.Source, error) {
-	source, err := s.sourceRepo.FindSourceByMaskID(ctx, g.UID, maskId)
-
-	if err != nil {
-		if err == datastore.ErrSourceNotFound {
-			return nil, NewServiceError(http.StatusNotFound, err)
-		}
-
-		return nil, NewServiceError(http.StatusBadRequest, errors.New("error retrieving source"))
-	}
-
-	return source, nil
-}
-
 func (s *SourceService) LoadSourcesPaged(ctx context.Context, g *datastore.Group, filter *datastore.SourceFilter, pageable datastore.Pageable) ([]datastore.Source, datastore.PaginationData, error) {
 	sources, paginationData, err := s.sourceRepo.LoadSourcesPaged(ctx, g.UID, filter, pageable)
 	if err != nil {
