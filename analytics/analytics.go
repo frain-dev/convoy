@@ -6,6 +6,7 @@ import (
 	"errors"
 
 	"github.com/dukex/mixpanel"
+	"github.com/frain-dev/convoy/config"
 	"github.com/frain-dev/convoy/datastore"
 	"github.com/google/uuid"
 	log "github.com/sirupsen/logrus"
@@ -17,7 +18,8 @@ const (
 	DailyGroupCount        string = "Daily Project Count"
 	DailyActiveGroupCount  string = "Daily Active Project Count"
 	DailyUserCount         string = "Daily User Count"
-	MixPanelToken          string = "N2ViYzQ4ZTc4NWMwNmQ5YmYyNjZhYjg3NDZiNmMxNzM="
+	MixPanelDevToken       string = "YTAwYWI1ZWE3OTE2MzQwOWEwMjk4ZTA1NTNkNDQ0M2M="
+	MixPanelProdToken      string = "YWViNzUwYWRmYjM0YTZmZjJkMzg2YTYyYWVhY2M2NWI="
 )
 
 type Tracker interface {
@@ -47,8 +49,8 @@ type Analytics struct {
 	client   AnalyticsClient
 }
 
-func newAnalytics(Repo *Repo) (*Analytics, error) {
-	client, err := NewMixPanelClient()
+func newAnalytics(Repo *Repo, cfg config.Configuration) (*Analytics, error) {
+	client, err := NewMixPanelClient(cfg)
 	if err != nil {
 		return nil, err
 	}
@@ -59,8 +61,8 @@ func newAnalytics(Repo *Repo) (*Analytics, error) {
 	return a, nil
 }
 
-func TrackDailyAnalytics(Repo *Repo) {
-	a, err := newAnalytics(Repo)
+func TrackDailyAnalytics(Repo *Repo, cfg config.Configuration) {
+	a, err := newAnalytics(Repo, cfg)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -107,8 +109,14 @@ type MixPanelClient struct {
 	client mixpanel.Mixpanel
 }
 
-func NewMixPanelClient() (*MixPanelClient, error) {
-	decoded, err := base64.StdEncoding.DecodeString(MixPanelToken)
+func NewMixPanelClient(cfg config.Configuration) (*MixPanelClient, error) {
+	token := MixPanelDevToken
+
+	if cfg.Environment == "prod" {
+		token = MixPanelProdToken
+	}
+
+	decoded, err := base64.StdEncoding.DecodeString(token)
 	if err != nil {
 		return nil, err
 	}

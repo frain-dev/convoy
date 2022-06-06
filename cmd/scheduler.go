@@ -38,7 +38,7 @@ func addSchedulerCommand(a *app) *cobra.Command {
 						GroupRepo:  a.groupRepo,
 						OrgRepo:    a.orgRepo,
 						UserRepo:   a.userRepo,
-					})
+					}, cfg)
 			})
 
 			// Start Processing
