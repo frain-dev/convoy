@@ -96,7 +96,11 @@ func (e *EventService) CreateAppEvent(ctx context.Context, newMessage *models.Ev
 	}
 
 	taskName := convoy.CreateEventProcessor
-	eventByte, _ := json.Marshal(event)
+	eventByte, err := json.Marshal(event)
+	if err != nil {
+		return nil, NewServiceError(http.StatusBadRequest, err)
+	}
+
 	payload := json.RawMessage(eventByte)
 
 	job := &queue.Job{
@@ -114,7 +118,10 @@ func (e *EventService) CreateAppEvent(ctx context.Context, newMessage *models.Ev
 
 func (e *EventService) ReplayAppEvent(ctx context.Context, event *datastore.Event, g *datastore.Group) error {
 	taskName := convoy.CreateEventProcessor
-	eventByte, _ := json.Marshal(event)
+	eventByte, err := json.Marshal(event)
+	if err != nil {
+		return NewServiceError(http.StatusBadRequest, err)
+	}
 	payload := json.RawMessage(eventByte)
 
 	job := &queue.Job{
@@ -122,7 +129,7 @@ func (e *EventService) ReplayAppEvent(ctx context.Context, event *datastore.Even
 		Payload: payload,
 		Delay:   0,
 	}
-	err := e.queue.Write(taskName, convoy.CreateEventQueue, job)
+	err = e.queue.Write(taskName, convoy.CreateEventQueue, job)
 	if err != nil {
 		log.WithError(err).Error("replay_event: failed to write event to the queue")
 		return NewServiceError(http.StatusBadRequest, errors.New("failed to write event to queue"))
