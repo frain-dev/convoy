@@ -57,4 +57,5 @@ func (s *Scheduler) RegisterTaskHandler(taskName convoy.TaskName, taskHandler fu
 
 func (s *Scheduler) Stop() {
 	s.inner.Shutdown()
+	s.consumer.Stop()
 }
