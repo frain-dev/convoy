@@ -9,6 +9,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/frain-dev/convoy"
 	"github.com/frain-dev/convoy/auth"
 	"github.com/frain-dev/convoy/cache"
 	"github.com/frain-dev/convoy/logger"
@@ -60,6 +61,12 @@ func buildRoutes(app *applicationHandler) http.Handler {
 	router.Use(writeRequestIDHeader)
 	router.Use(instrumentRequests(app.tracer))
 	router.Use(logHttpRequest(app.logger))
+
+	// Ingestion API
+	router.Route("/ingest", func(ingestRouter chi.Router) {
+
+		ingestRouter.Post("/{maskID}", app.IngestEvent)
+	})
 
 	// Public API.
 	router.Route("/api", func(v1Router chi.Router) {
@@ -172,6 +179,18 @@ func buildRoutes(app *applicationHandler) http.Handler {
 					securitySubRouter.Use(requireBaseUrl())
 					securitySubRouter.Post("/", app.CreateAppPortalAPIKey)
 				})
+			})
+
+			r.Route("/subscriptions", func(subsriptionRouter chi.Router) {
+				subsriptionRouter.Use(requireGroup(app.groupRepo, app.cache))
+				subsriptionRouter.Use(rateLimitByGroupID(app.limiter))
+				subsriptionRouter.Use(requirePermission(auth.RoleAdmin))
+
+				subsriptionRouter.Post("/", app.CreateSubscription)
+				subsriptionRouter.With(pagination).Get("/", app.GetSubscriptions)
+				subsriptionRouter.Delete("/{subscriptionID}", app.DeleteSubscription)
+				subsriptionRouter.Get("/{subscriptionID}", app.GetSubscription)
+				subsriptionRouter.Put("/{subscriptionID}", app.UpdateSubscription)
 			})
 
 			r.Route("/sources", func(sourceRouter chi.Router) {
@@ -318,6 +337,18 @@ func buildRoutes(app *applicationHandler) http.Handler {
 			})
 		})
 
+		uiRouter.Route("/subscriptions", func(subsriptionRouter chi.Router) {
+			subsriptionRouter.Use(requireGroup(app.groupRepo, app.cache))
+			subsriptionRouter.Use(rateLimitByGroupID(app.limiter))
+			subsriptionRouter.Use(requirePermission(auth.RoleAdmin))
+
+			subsriptionRouter.Post("/", app.CreateSubscription)
+			subsriptionRouter.With(pagination).Get("/", app.GetSubscriptions)
+			subsriptionRouter.Delete("/", app.DeleteSubscription)
+			subsriptionRouter.Get("/{subscriptionID}", app.GetSubscription)
+			subsriptionRouter.Put("/{subscriptionID}", app.UpdateSubscription)
+		})
+
 		uiRouter.Route("/sources", func(sourceRouter chi.Router) {
 			sourceRouter.Use(requireGroup(app.groupRepo, app.cache))
 			sourceRouter.Use(requirePermission(auth.RoleAdmin))
@@ -371,6 +402,17 @@ func buildRoutes(app *applicationHandler) http.Handler {
 			})
 		})
 
+		portalRouter.Route("/subscriptions", func(subsriptionRouter chi.Router) {
+			subsriptionRouter.Use(requireAppPortalApplication(app.appRepo))
+			subsriptionRouter.Use(requireAppPortalPermission(auth.RoleUIAdmin))
+
+			subsriptionRouter.Post("/", app.CreateSubscription)
+			subsriptionRouter.With(pagination).Get("/", app.GetSubscriptions)
+			subsriptionRouter.Delete("/{subscriptionID}", app.DeleteSubscription)
+			subsriptionRouter.Get("/{subscriptionID}", app.GetSubscription)
+			subsriptionRouter.Put("/{subscriptionID}", app.UpdateSubscription)
+		})
+
 		portalRouter.Route("/eventdeliveries", func(eventDeliveryRouter chi.Router) {
 			eventDeliveryRouter.Use(requireAppPortalApplication(app.appRepo))
 			eventDeliveryRouter.Use(requireAppPortalPermission(auth.RoleUIAdmin))
@@ -399,7 +441,7 @@ func buildRoutes(app *applicationHandler) http.Handler {
 	router.Handle("/queue/monitoring/*", app.queue.(*redisqueue.RedisQueue).Monitor())
 	router.Handle("/metrics", promhttp.HandlerFor(Reg, promhttp.HandlerOpts{}))
 	router.HandleFunc("/health", func(w http.ResponseWriter, r *http.Request) {
-		_ = render.Render(w, r, newServerResponse("Convoy", nil, http.StatusOK))
+		_ = render.Render(w, r, newServerResponse(fmt.Sprintf("Convoy %v", convoy.GetVersion()), nil, http.StatusOK))
 	})
 	router.HandleFunc("/*", reactRootHandler)
 
@@ -411,6 +453,7 @@ func New(cfg config.Configuration,
 	eventDeliveryRepo datastore.EventDeliveryRepository,
 	appRepo datastore.ApplicationRepository,
 	apiKeyRepo datastore.APIKeyRepository,
+	subRepo datastore.SubscriptionRepository,
 	groupRepo datastore.GroupRepository,
 	orgRepo datastore.OrganisationRepository,
 	sourceRepo datastore.SourceRepository,
@@ -419,7 +462,9 @@ func New(cfg config.Configuration,
 	logger logger.Logger,
 	tracer tracer.Tracer,
 	cache cache.Cache,
-	limiter limiter.RateLimiter, searcher searcher.Searcher) *http.Server {
+	limiter limiter.RateLimiter,
+	searcher searcher.Searcher,
+) *http.Server {
 
 	app := newApplicationHandler(
 		eventRepo,
@@ -427,6 +472,7 @@ func New(cfg config.Configuration,
 		appRepo,
 		groupRepo,
 		apiKeyRepo,
+		subRepo,
 		sourceRepo,
 		orgRepo,
 		userRepo,
@@ -435,7 +481,8 @@ func New(cfg config.Configuration,
 		tracer,
 		cache,
 		limiter,
-		searcher)
+		searcher,
+	)
 
 	srv := &http.Server{
 		Handler:      buildRoutes(app),

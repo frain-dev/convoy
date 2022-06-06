@@ -27,10 +27,12 @@ type applicationHandler struct {
 	groupService        *services.GroupService
 	securityService     *services.SecurityService
 	sourceService       *services.SourceService
+	subService          *services.SubcriptionService
 	organisationService *services.OrganisationService
 	orgRepo             datastore.OrganisationRepository
 	appRepo             datastore.ApplicationRepository
 	eventRepo           datastore.EventRepository
+	subRepo             datastore.SubscriptionRepository
 	eventDeliveryRepo   datastore.EventDeliveryRepository
 	groupRepo           datastore.GroupRepository
 	apiKeyRepo          datastore.APIKeyRepository
@@ -55,6 +57,7 @@ func newApplicationHandler(
 	appRepo datastore.ApplicationRepository,
 	groupRepo datastore.GroupRepository,
 	apiKeyRepo datastore.APIKeyRepository,
+	subRepo datastore.SubscriptionRepository,
 	sourceRepo datastore.SourceRepository,
 	orgRepo datastore.OrganisationRepository,
 	userRepo datastore.UserRepository,
@@ -64,9 +67,10 @@ func newApplicationHandler(
 	cache cache.Cache,
 	limiter limiter.RateLimiter, searcher searcher.Searcher) *applicationHandler {
 	as := services.NewAppService(appRepo, eventRepo, eventDeliveryRepo, cache)
-	es := services.NewEventService(appRepo, eventRepo, eventDeliveryRepo, queue, cache, searcher)
+	es := services.NewEventService(appRepo, eventRepo, eventDeliveryRepo, queue, cache, searcher, subRepo)
 	gs := services.NewGroupService(appRepo, groupRepo, eventRepo, eventDeliveryRepo, limiter)
 	ss := services.NewSecurityService(groupRepo, apiKeyRepo)
+	rs := services.NewSubscriptionService(subRepo)
 	os := services.NewOrganisationService(orgRepo)
 	sos := services.NewSourceService(sourceRepo)
 	us := services.NewUserService(userRepo, cache)
@@ -77,6 +81,7 @@ func newApplicationHandler(
 		groupService:        gs,
 		securityService:     ss,
 		organisationService: os,
+		subService:          rs,
 		sourceService:       sos,
 		orgRepo:             orgRepo,
 		eventRepo:           eventRepo,
@@ -86,6 +91,7 @@ func newApplicationHandler(
 		groupRepo:           groupRepo,
 		sourceRepo:          sourceRepo,
 		queue:               queue,
+		subRepo:             subRepo,
 		logger:              logger,
 		tracer:              tracer,
 		cache:               cache,

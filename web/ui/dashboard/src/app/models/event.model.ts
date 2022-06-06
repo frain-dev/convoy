@@ -1,12 +1,14 @@
 export interface EVENT {
-	created_at: Date;
+	created_at: string;
 	provider_id: string;
-	status: string;
+	status?: string;
 	uid: string;
-	updated_at: Date;
-	app_id: string;
+	updated_at: string;
+	app_id?: string;
 	event_type: string;
-	metadata: {
+	data: any;
+	matched_endpoints: number;
+	metadata?: {
 		interval_seconds: number;
 		next_send_time: Date;
 		num_trials: number;
@@ -22,15 +24,15 @@ export interface EVENT {
 }
 
 export interface EVENT_DELIVERY {
-	created_at: Date;
+	created_at: string;
 	status: string;
 	uid: string;
-	updated_at: Date;
-	app_id: string;
-	event_id: string;
+	updated_at: string;
+	// app_id: string;
+	// event_id: string;
 	metadata: {
 		interval_seconds: number;
-		next_send_time: Date;
+		next_send_time: string;
 		num_trials: number;
 		retry_limit: number;
 		strategy: string;
@@ -52,4 +54,17 @@ export interface EVENT_DELIVERY {
 		name: string;
 		uid: string;
 	};
+}
+
+export interface EVENT_DELIVERY_ATTEMPT {
+	ip_address: string;
+	http_status: string;
+	api_version: string;
+	updated_at?: string;
+	created_at: string;
+	deleted_at?: number;
+	response_data?: string;
+	response_http_header: any;
+	request_http_header: any;
+	error?: string;
 }

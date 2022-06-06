@@ -27,7 +27,7 @@ func (s *sourceRepo) FindSourceByID(ctx context.Context, groupId string, id stri
 	return nil, nil
 }
 
-func (s *sourceRepo) FindSourceByMaskID(ctx context.Context, groupId string, maskId string) (*datastore.Source, error) {
+func (s *sourceRepo) FindSourceByMaskID(ctx context.Context, maskId string) (*datastore.Source, error) {
 	return nil, nil
 }
 

@@ -25,13 +25,14 @@ type EventService struct {
 	eventRepo         datastore.EventRepository
 	eventDeliveryRepo datastore.EventDeliveryRepository
 	queue             queue.Queuer
+	subRepo           datastore.SubscriptionRepository
 	cache             cache.Cache
 	searcher          searcher.Searcher
 }
 
 func NewEventService(appRepo datastore.ApplicationRepository, eventRepo datastore.EventRepository, eventDeliveryRepo datastore.EventDeliveryRepository,
-	queue queue.Queuer, cache cache.Cache, seacher searcher.Searcher) *EventService {
-	return &EventService{appRepo: appRepo, eventRepo: eventRepo, eventDeliveryRepo: eventDeliveryRepo, queue: queue, cache: cache, searcher: seacher}
+	queue queue.Queuer, cache cache.Cache, seacher searcher.Searcher, subRepo datastore.SubscriptionRepository) *EventService {
+	return &EventService{appRepo: appRepo, eventRepo: eventRepo, eventDeliveryRepo: eventDeliveryRepo, queue: queue, cache: cache, searcher: seacher, subRepo: subRepo}
 }
 
 func (e *EventService) CreateAppEvent(ctx context.Context, newMessage *models.Event, g *datastore.Group) (*datastore.Event, error) {
@@ -78,17 +79,13 @@ func (e *EventService) CreateAppEvent(ctx context.Context, newMessage *models.Ev
 	}
 
 	event := &datastore.Event{
-		UID:       uuid.New().String(),
-		EventType: datastore.EventType(newMessage.EventType),
-		Data:      newMessage.Data,
-		CreatedAt: primitive.NewDateTimeFromTime(time.Now()),
-		UpdatedAt: primitive.NewDateTimeFromTime(time.Now()),
-		AppMetadata: &datastore.AppMetadata{
-			Title:        app.Title,
-			UID:          app.UID,
-			GroupID:      app.GroupID,
-			SupportEmail: app.SupportEmail,
-		},
+		UID:            uuid.New().String(),
+		EventType:      datastore.EventType(newMessage.EventType),
+		Data:           newMessage.Data,
+		CreatedAt:      primitive.NewDateTimeFromTime(time.Now()),
+		UpdatedAt:      primitive.NewDateTimeFromTime(time.Now()),
+		AppID:          app.UID,
+		GroupID:        app.GroupID,
 		DocumentStatus: datastore.ActiveDocumentStatus,
 	}
 	if g.Config.Strategy.Type != datastore.LinearStrategyProvider && g.Config.Strategy.Type != datastore.ExponentialStrategyProvider {
@@ -265,23 +262,19 @@ func (e *EventService) RetryEventDelivery(ctx context.Context, eventDelivery *da
 		return errors.New("cannot resend event that did not fail previously")
 	}
 
-	em := eventDelivery.EndpointMetadata
-	endpoint, err := e.appRepo.FindApplicationEndpointByID(context.Background(), eventDelivery.AppMetadata.UID, em.UID)
+	sub, err := e.subRepo.FindSubscriptionByID(ctx, g.UID, eventDelivery.SubscriptionID)
 	if err != nil {
-		log.WithError(err).Error("failed to find endpoint")
-		return errors.New("cannot find endpoint")
+		return ErrSubscriptionNotFound
 	}
 
-	if endpoint.Status == datastore.PendingEndpointStatus {
-		return errors.New("endpoint is being re-activated")
+	if sub.Status == datastore.PendingSubscriptionStatus {
+		return errors.New("subscription is being re-activated")
 	}
 
-	if endpoint.Status == datastore.InactiveEndpointStatus {
-		pendingEndpoints := []string{em.UID}
-
-		err = e.appRepo.UpdateApplicationEndpointsStatus(context.Background(), eventDelivery.AppMetadata.UID, pendingEndpoints, datastore.PendingEndpointStatus)
+	if sub.Status == datastore.InactiveSubscriptionStatus {
+		err = e.subRepo.UpdateSubscriptionStatus(context.Background(), eventDelivery.GroupID, eventDelivery.SubscriptionID, datastore.PendingSubscriptionStatus)
 		if err != nil {
-			return errors.New("failed to update endpoint status")
+			return errors.New("failed to update subscription status")
 		}
 	}
 
@@ -293,13 +286,12 @@ func (e *EventService) forceResendEventDelivery(ctx context.Context, eventDelive
 		return errors.New("only successful events can be force resent")
 	}
 
-	em := eventDelivery.EndpointMetadata
-	endpoint, err := e.appRepo.FindApplicationEndpointByID(context.Background(), eventDelivery.AppMetadata.UID, em.UID)
+	sub, err := e.subRepo.FindSubscriptionByID(ctx, g.UID, eventDelivery.SubscriptionID)
 	if err != nil {
-		return errors.New("cannot find endpoint")
+		return ErrSubscriptionNotFound
 	}
 
-	if endpoint.Status != datastore.ActiveEndpointStatus {
+	if sub.Status != datastore.ActiveSubscriptionStatus {
 		return errors.New("force resend to an inactive or pending endpoint is not allowed")
 	}
 

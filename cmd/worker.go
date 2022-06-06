@@ -36,11 +36,11 @@ func addWorkerCommand(a *app) *cobra.Command {
 			}
 
 			// register tasks.
-			handler := task.ProcessEventDelivery(a.applicationRepo, a.eventDeliveryRepo, a.groupRepo, a.limiter)
+			handler := task.ProcessEventDelivery(a.applicationRepo, a.eventDeliveryRepo, a.groupRepo, a.limiter, a.subRepo)
 			consumer.RegisterHandlers(convoy.EventProcessor, handler)
 
 			// register tasks.
-			eventCreatedhandler := task.ProcessEventCreated(a.applicationRepo, a.eventRepo, a.groupRepo, a.eventDeliveryRepo, a.cache, a.queue)
+			eventCreatedhandler := task.ProcessEventCreated(a.applicationRepo, a.eventRepo, a.groupRepo, a.eventDeliveryRepo, a.cache, a.queue, a.subRepo)
 			consumer.RegisterHandlers(convoy.CreateEventProcessor, eventCreatedhandler)
 
 			log.Infof("Starting Convoy workers...")

@@ -154,11 +154,13 @@ func StartConvoyServer(a *app, cfg config.Configuration, withWorkers bool) error
 		return errors.New("please provide the HTTP port in the convoy.json file")
 	}
 
-	srv := server.New(cfg,
+	srv := server.New(
+		cfg,
 		a.eventRepo,
 		a.eventDeliveryRepo,
 		a.applicationRepo,
 		a.apiKeyRepo,
+		a.subRepo,
 		a.groupRepo,
 		a.orgRepo,
 		a.sourceRepo,
@@ -168,7 +170,8 @@ func StartConvoyServer(a *app, cfg config.Configuration, withWorkers bool) error
 		a.tracer,
 		a.cache,
 		a.limiter,
-		a.searcher)
+		a.searcher,
+	)
 
 	if withWorkers {
 		// register worker.
@@ -178,11 +181,11 @@ func StartConvoyServer(a *app, cfg config.Configuration, withWorkers bool) error
 		}
 
 		// register tasks.
-		handler := task.ProcessEventDelivery(a.applicationRepo, a.eventDeliveryRepo, a.groupRepo, a.limiter)
+		handler := task.ProcessEventDelivery(a.applicationRepo, a.eventDeliveryRepo, a.groupRepo, a.limiter, a.subRepo)
 		consumer.RegisterHandlers(convoy.EventProcessor, handler)
 
 		// register tasks.
-		eventCreatedhandler := task.ProcessEventCreated(a.applicationRepo, a.eventRepo, a.groupRepo, a.eventDeliveryRepo, a.cache, a.queue)
+		eventCreatedhandler := task.ProcessEventCreated(a.applicationRepo, a.eventRepo, a.groupRepo, a.eventDeliveryRepo, a.cache, a.queue, a.subRepo)
 		consumer.RegisterHandlers(convoy.CreateEventProcessor, eventCreatedhandler)
 
 		log.Infof("Starting Convoy workers...")

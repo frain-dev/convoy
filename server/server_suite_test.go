@@ -1,6 +1,3 @@
-//go:build integration
-// +build integration
-
 package server
 
 import (
@@ -107,10 +104,11 @@ func buildApplication() *applicationHandler {
 	limiter := nooplimiter.NewNoopLimiter()
 	searcher := noopsearcher.NewNoopSearcher()
 	tracer = nil
+	subRepo := db.SubRepo()
 
 	return newApplicationHandler(
 		eventRepo, eventDeliveryRepo, appRepo,
-		groupRepo, apiKeyRepo, sourceRepo, orgRepo, userRepo, queue,
+		groupRepo, apiKeyRepo, subRepo, sourceRepo, orgRepo, userRepo, queue,
 		logger, tracer, cache, limiter, searcher,
 	)
 }

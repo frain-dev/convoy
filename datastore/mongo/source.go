@@ -63,10 +63,10 @@ func (s *sourceRepo) FindSourceByID(ctx context.Context, groupId string, id stri
 	return source, nil
 }
 
-func (s *sourceRepo) FindSourceByMaskID(ctx context.Context, groupId string, maskId string) (*datastore.Source, error) {
+func (s *sourceRepo) FindSourceByMaskID(ctx context.Context, maskId string) (*datastore.Source, error) {
 	source := &datastore.Source{}
 
-	filter := bson.M{"mask_id": maskId, "group_id": groupId, "document_status": datastore.ActiveDocumentStatus}
+	filter := bson.M{"mask_id": maskId, "document_status": datastore.ActiveDocumentStatus}
 
 	err := s.client.FindOne(ctx, filter).Decode(&source)
 

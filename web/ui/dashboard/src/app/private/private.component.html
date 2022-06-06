@@ -1,1 +1,44 @@
+<header class="dashboard--header border__bottom">
+	<div class="dashboard--header--container">
+		<div class="logo flex flex__align-items-center">
+			<a target="_blank" href="https://getconvoy.io" rel="noreferrer">
+				<img src="/assets/img/logo.svg" alt="convoy logo" />
+			</a>
+
+			<nav>
+				<ul class="flex flex__align-items-center">
+					<li>
+						<a routerLink="/projects" routerLinkActive="active" class="padding-y__8px padding-x__16px margin-right__32px rounded__4px font__14px">Projects</a>
+					</li>
+					<li>
+						<a routerLink="/team" routerLinkActive="active" class="padding-y__8px padding-x__16px margin-right__32px rounded__4px font__14px">Team</a>
+					</li>
+					<li>
+						<a routerLink="/settings" routerLinkActive="active" class="padding-y__8px padding-x__16px rounded__4px font__14px">Settings</a>
+					</li>
+				</ul>
+			</nav>
+		</div>
+
+		<div class="dashboard--header--acounts">
+			<a class="button--has-icon icon-left" target="_blank" href="https://getconvoy.io/docs" rel="noreferrer">
+				<img src="/assets/img/doc-icon-primary.svg" alt="doc icon" />
+				<span class="font__weight-400">Go to docs</span>
+			</a>
+			<button class="dropdown user" (click)="showDropdown = !showDropdown" *ngIf="authDetails()">
+				<div>
+					<div class="icon">O</div>
+					<div class="name text--left">{{ authDetails().username }}</div>
+				</div>
+				<img src="/assets/img/angle-arrow-down.svg" alt="arrow down icon" />
+				<div [ngClass]="{ show: showDropdown }" class="dropdown__menu dropdown__menu__nav">
+					<ul>
+						<li class="danger" (click)="logout()">Logout</li>
+					</ul>
+				</div>
+			</button>
+		</div>
+	</div>
+</header>
+
 <router-outlet></router-outlet>

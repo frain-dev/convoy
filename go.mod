@@ -48,7 +48,7 @@ require (
 	github.com/spf13/cast v1.5.0 // indirect
 	github.com/spf13/cobra v1.2.1
 	github.com/stretchr/testify v1.7.1
-	github.com/swaggo/swag v1.7.3
+	github.com/swaggo/swag v1.8.2
 	github.com/timshannon/badgerhold/v4 v4.0.2
 	github.com/typesense/typesense-go v0.4.0
 	github.com/vmihailenco/msgpack/v5 v5.3.5 // indirect
@@ -60,7 +60,6 @@ require (
 	golang.org/x/sync v0.0.0-20220513210516-0976fa681c29 // indirect
 	golang.org/x/sys v0.0.0-20220520151302-bc2c85ada10a // indirect
 	golang.org/x/time v0.0.0-20220411224347-583f2d630306 // indirect
-	golang.org/x/tools v0.1.7 // indirect
 	google.golang.org/protobuf v1.28.0 // indirect
 	gopkg.in/alexcesaro/quotedprintable.v3 v3.0.0-20150716171945-2caba252f4dc // indirect
 	gopkg.in/gomail.v2 v2.0.0-20160411212932-81ebce5c23df

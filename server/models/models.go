@@ -11,7 +11,7 @@ import (
 
 type Group struct {
 	Name              string              `json:"name" bson:"name" valid:"required~please provide a valid name"`
-	Type              datastore.GroupType `json:"type" bson:"type" valid:"required~please provide a valid type"`
+	Type              datastore.GroupType `json:"type" bson:"type" valid:"required~please provide a valid type,in(incoming|outgoing)"`
 	LogoURL           string              `json:"logo_url" bson:"logo_url" valid:"url~please provide a valid logo url,optional"`
 	RateLimit         int                 `json:"rate_limit" bson:"rate_limit" valid:"int~please provide a valid rate limit,optional"`
 	RateLimitDuration string              `json:"rate_limit_duration" bson:"rate_limit_duration" valid:"alphanum~please provide a valid rate limit duration,optional"`
@@ -174,4 +174,27 @@ type DashboardSummary struct {
 type WebhookRequest struct {
 	Event string          `json:"event" bson:"event"`
 	Data  json.RawMessage `json:"data" bson:"data"`
+}
+
+type Subscription struct {
+	Name       string `json:"name" bson:"name" valid:"required~please provide a valid subscription name"`
+	Type       string `json:"type" bson:"type" valid:"required~please provide a valid subscription type"`
+	AppID      string `json:"app_id" bson:"app_id" valid:"required~please provide a valid app id"`
+	SourceID   string `json:"source_id" bson:"source_id" valid:"required~please provide a valid source id"`
+	EndpointID string `json:"endpoint_id" bson:"endpoint_id" valid:"required~please provide a valid endpoint id"`
+
+	AlertConfig  *datastore.AlertConfiguration  `json:"alert_config,omitempty" bson:"alert_config,omitempty"`
+	RetryConfig  *datastore.RetryConfiguration  `json:"retry_config,omitempty" bson:"retry_config,omitempty"`
+	FilterConfig *datastore.FilterConfiguration `json:"filter_config,omitempty" bson:"filter_config,omitempty"`
+}
+
+type UpdateSubscription struct {
+	Name       string `json:"name,omitempty"`
+	AppID      string `json:"app_id,omitempty"`
+	SourceID   string `json:"source_id,omitempty"`
+	EndpointID string `json:"endpoint_id,omitempty"`
+
+	AlertConfig  *datastore.AlertConfiguration  `json:"alert_config,omitempty"`
+	RetryConfig  *datastore.RetryConfiguration  `json:"retry_config,omitempty"`
+	FilterConfig *datastore.FilterConfiguration `json:"filter_config,omitempty"`
 }

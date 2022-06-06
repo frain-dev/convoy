@@ -1,0 +1,197 @@
+<h1 class="font__12px font__weight-500 flex flex__align-items-center text__uppercase">
+	<span routerLink="/projects" class="font__weight-500 pointer-cursor">Projects</span>
+	<svg width="16" height="16" class="margin-x__4px">
+		<use xlink:href="#arrow-right-icon"></use>
+	</svg>
+	PROJECT NAME
+	<svg width="16" height="16" class="margin-x__4px">
+		<use xlink:href="#arrow-right-icon"></use>
+	</svg>
+	<span class="color__primary font__weight-500">SUBSCRIPTIONS</span>
+</h1>
+
+<div class="main--head width__100 flex flex__justify-end flex__align-items-center margin-y__24px">
+	<a routerLink="./new" class="button button__primary padding-y__8px padding-x__28px">Create a Subscription</a>
+</div>
+
+<div>
+	<div class="table has-loader flex flex__align-items-start" id="events-table-container">
+		<div class="table--container" [ngClass]="{ smaller: activeSubscription?.uid }">
+			<div class="card padding-top__16px margin-bottom__16px" *ngFor="let subscription of subscriptions?.content">
+				<a routerLink="./" [queryParams]="{ id: subscription.uid }" class="border__bottom flex flex__align-items-center flex__justify-between padding-bottom__16px border--width__4">
+					<h4 class="padding-left__16px font__14px font__weight-500">
+						{{ subscription.name }}
+						<span [class]="'margin-left__4px tag' + ' tag--' + subscription.status">{{ subscription.status }}</span>
+					</h4>
+					<div class="flex flex__align-items-center">
+						<div class="tags margin-right__16px" *ngIf="subscription.type === 'outgoing'">
+							<span class="tag margin-right__8px">customer.created</span>
+							<span class="tag margin-right__8px">customer.created</span>
+							<span class="tag">customer.created</span>
+						</div>
+						<a class="button button__clear button--has-icon padding-right__16px" [routerLink]="'/projects/' + projectId + '/apps'">
+							<svg width="18" height="18" class="margin-left__8px">
+								<use xlink:href="#arrow-right-icon"></use>
+							</svg>
+						</a>
+					</div>
+				</a>
+
+				<div class="flex flex__align-items-end flex__justify-between padding-bottom__8px padding-left__16px margin-top__8px" [ngClass]="{ border__bottom: subscription.type === 'incoming' }">
+					<div class="width__100">
+						<div class="color__grey font__10px margin-bottom__12px">App</div>
+						<div class="font__12px font__weight-500">App Name</div>
+					</div>
+					<div class="width__100">
+						<span class="tag tag--Success font__12px font__weight-500">enabled</span>
+					</div>
+					<div class="width__100">
+						<div class="font__12px font__weight-500">100 Events Received</div>
+					</div>
+					<div class="flex flex__align-items-center width__50 flex__justify-end">
+						<a class="button button__clear button--has-icon margin-x__16px" [routerLink]="'/projects/' + projectId + '/apps'">
+							<div class="font__12px font__weight-500">Go to app</div>
+							<svg width="18" height="18" class="margin-left__8px" fill="var(--primary-color)">
+								<use xlink:href="#arrow-right-icon"></use>
+							</svg>
+						</a>
+					</div>
+				</div>
+
+				<div class="flex flex__align-items-end flex__justify-between padding-bottom__8px margin-left__16px margin-top__8px" *ngIf="subscription.type === 'incoming'">
+					<div class="width__100">
+						<div class="color__grey font__10px margin-bottom__12px">Source</div>
+						<div class="font__12px font__weight-500">Source Name</div>
+					</div>
+					<div class="width__100">
+						<div class="font__12px font__weight-500">Verifier</div>
+					</div>
+					<div class="width__100">
+						<div class="font__12px font__weight-500">Source Type</div>
+					</div>
+					<div class="flex flex__align-items-center width__50 flex__justify-end">
+						<a class="button button__clear button--has-icon margin-x__16px" [routerLink]="'/projects/' + projectId + '/sources'">
+							<div class="font__12px font__weight-500">Go to source</div>
+							<svg width="18" height="18" class="margin-left__8px" fill="var(--primary-color)">
+								<use xlink:href="#arrow-right-icon"></use>
+							</svg>
+						</a>
+					</div>
+				</div>
+			</div>
+		</div>
+
+		<div class="table--sidebar height__100 bg__white margin-left__8px card show" *ngIf="activeSubscription?.uid">
+			<div class="modal--head--left flex flex__align-items-center flex__justify-between padding-right__24px">
+				<h2 class="padding-top__24px padding-bottom__16px font__16px font__weight-700">{{ activeSubscription?.name }}</h2>
+				<a
+					[routerLink]="['./']"
+					[queryParams]="{}"
+					class="width__32px height__32px flex flex__align-items-center flex__justify-center rounded__6px button__clear"
+					tabindex="0"
+					style="background: var(--primary-color-500)"
+				>
+					<img src="/assets/img/modal-close-icon.svg" alt="close icon" />
+				</a>
+			</div>
+
+			<ul>
+				<li class="list-item list-item__inline padding-right__24px">
+					<div class="width__50 font__14px font__weight-500">Subscription type</div>
+					<div class="width__50 font__14px font__weight-500 color__grey text--right text__capitalize">{{ activeSubscription?.type }}</div>
+				</li>
+				<li class="list-item list-item__inline padding-right__24px">
+					<div class="width__50 font__14px font__weight-500">Status</div>
+					<div class="width__50 font__14px font__weight-500 color__grey text--right">
+						<span [class]="'margin-left__4px tag' + ' tag--' + activeSubscription?.status">{{ activeSubscription?.status }}</span>
+					</div>
+				</li>
+
+				<li class="list-item list-item__inline padding-right__24px">
+					<div class="width__50 font__14px font__weight-500">Endpoint</div>
+					<div class="width__50 font__14px font__weight-500 color__grey text--right">{{ activeSubscription?.endpoint }}</div>
+				</li>
+				<li class="list-item list-item__inline padding-right__24px">
+					<div class="width__50 font__14px font__weight-500">App Name</div>
+					<div class="width__50 font__14px font__weight-500 color__grey text--right">App</div>
+				</li>
+				<li class="list-item list-item__inline padding-right__24px">
+					<div class="width__50 font__14px font__weight-500">Source</div>
+					<div class="width__50 font__14px font__weight-500 color__grey text--right">{{ activeSubscription?.source }}</div>
+				</li>
+				<li class="list-item list-item__inline padding-right__24px">
+					<div class="width__50 font__14px font__weight-500">Created at</div>
+					<div class="width__50 font__14px font__weight-500 color__grey text--right">{{ activeSubscription?.created_at | date }}</div>
+				</li>
+			</ul>
+
+			<div class="button--container margin-top__40px margin-right__24px">
+				<button class="button button__danger button__white button--has-icon icon-right padding-x__12px padding-y__8px color__danger font__12px">
+					Delete Subscription
+					<svg width="18" height="18" class="margin-left__8px">
+						<use xlink:href="#delete-icon"></use>
+					</svg>
+				</button>
+				<button class="button button__primary button--has-icon icon-right padding-x__24px padding-y__8px font__12px margin-left__24px">
+					Edit Subscription
+					<svg width="18" height="18" class="margin-left__8px">
+						<use xlink:href="#edit-icon"></use>
+					</svg>
+				</button>
+			</div>
+		</div>
+	</div>
+</div>
+
+<div class="button-container flex flex__align-items-center margin-top__16px">
+	<button
+		class="button button__white button__primary button__outline button--has-icon icon-left padding-y__4px padding-right__16px padding-left__4px"
+		routerLink="./"
+		[queryParams]="activeSubscription?.uid ? { id: activeSubscription?.uid, page: subscriptions?.pagination?.prev } : { page: subscriptions?.pagination?.prev }"
+		[disabled]="subscriptions?.pagination?.prev === 0"
+		(click)="getSubscriptions({ page: subscriptions?.pagination?.prev })"
+	>
+		<svg width="24" height="24" class="margin-right__8px">
+			<use xlink:href="#arrow-left-icon"></use>
+		</svg>
+		Previous
+	</button>
+	<button
+		class="button button__white button__primary button__outline button--has-icon icon-left padding-y__4px padding-left__16px padding-right__4px margin-left__16px"
+		routerLink="./"
+		[queryParams]="activeSubscription?.uid ? { id: activeSubscription?.uid, page: subscriptions?.pagination?.next } : { page: subscriptions?.pagination?.next }"
+		[disabled]="subscriptions?.pagination?.next === 0"
+		(click)="getSubscriptions({ page: subscriptions?.pagination?.next })"
+	>
+		Next
+		<svg width="24" height="24" class="margin-left__8px" fill="var(--primary-color)">
+			<use xlink:href="#arrow-right-icon"></use>
+		</svg>
+	</button>
+</div>
+
+<div class="modal modal__full" *ngIf="shouldShowCreateSubscriptionModal">
+	<div class="modal--head">
+		<div class="flex flex__align-items-center flex__justify-between width__100">
+			<div class="modal--head--left flex flex__align-items-center">
+				<a
+					[routerLink]="'/projects/' + projectId + '/subscriptions'"
+					class="margin-right__16px width__32px height__32px flex flex__align-items-center flex__justify-center rounded__6px button__clear"
+					tabindex="0"
+				>
+					<img src="/assets/img/modal-close-icon.svg" alt="close icon" />
+				</a>
+				<h2 class="font__16px font__weight-600">Create Subscription</h2>
+			</div>
+
+			<a class="button--has-icon icon-left" target="_blank" href="https://getconvoy.io/docs" rel="noreferrer">
+				<img src="/assets/img/doc-icon-primary.svg" alt="doc icon" />
+				<span class="font__weight-500 font__14px color__primary">Go to docs</span>
+			</a>
+		</div>
+	</div>
+
+	<div class="modal--body padding-all__0px">
+		<app-create-subscription></app-create-subscription>
+	</div>
+</div>
