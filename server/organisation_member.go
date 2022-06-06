@@ -15,6 +15,9 @@ import (
 // @Accept  json
 // @Produce  json
 // @Param orgID path string true "organisation id"
+// @Param perPage query string false "results per page"
+// @Param page query string false "page number"
+// @Param sort query string false "sort order"
 // @Success 200 {object} serverResponse{data=pagedResponse{content=[]datastore.OrganisationMember}}
 // @Failure 400,401,500 {object} serverResponse{data=Stub}
 // @Security ApiKeyAuth
@@ -40,6 +43,8 @@ func (a *applicationHandler) GetOrganisationMembers(w http.ResponseWriter, r *ht
 // @Tags Organisation
 // @Accept  json
 // @Produce  json
+// @Param orgID path string true "organisation id"
+// @Param memberID path string true "organisation member id"
 // @Success 200 {object} serverResponse{data=datastore.OrganisationMember}
 // @Failure 400,401,500 {object} serverResponse{data=Stub}
 // @Security ApiKeyAuth
@@ -51,13 +56,14 @@ func (a *applicationHandler) GetOrganisationMember(w http.ResponseWriter, r *htt
 }
 
 // UpdateOrganisationMember
-// @Summary Update a organisation's member
+// @Summary Update an organisation's member
 // @Description This endpoint updates an organisation's member
 // @Tags Organisation
 // @Accept  json
 // @Produce  json
 // @Param orgID path string true "organisation id"
-// @Param application body models.UpdateOrganisationMember true "Organisation Details"
+// @Param memberID path string true "organisation member id"
+// @Param organisation_member body models.UpdateOrganisationMember true "Organisation member Details"
 // @Success 200 {object} serverResponse{data=datastore.Organisation}
 // @Failure 400,401,500 {object} serverResponse{data=Stub}
 // @Security ApiKeyAuth
@@ -86,6 +92,7 @@ func (a *applicationHandler) UpdateOrganisationMember(w http.ResponseWriter, r *
 // @Accept  json
 // @Produce  json
 // @Param orgID path string true "organisation id"
+// @Param memberID path string true "organisation member id"
 // @Success 200 {object} serverResponse{data=Stub}
 // @Failure 400,401,500 {object} serverResponse{data=Stub}
 // @Security ApiKeyAuth

@@ -18,6 +18,7 @@ import (
 // @Accept  json
 // @Produce  json
 // @Param orgID path string true "organisation id"
+// @Param invite body models.OrganisationInvite true "Organisation Invite Details"
 // @Success 200 {object} serverResponse{data=Stub}
 // @Failure 400,401,500 {object} serverResponse{data=Stub}
 // @Security ApiKeyAuth
@@ -50,7 +51,8 @@ func (a *applicationHandler) InviteUserToOrganisation(w http.ResponseWriter, r *
 // @Param token query string true "invite token"
 // @Param email query string true "email"
 // @Param accepted query string true "email"
-// @Success 200 {object} serverResponse{data=Stub}}
+// @Param user body models.User false "User Details"
+// @Success 200 {object} serverResponse{data=Stub}
 // @Failure 400,401,500 {object} serverResponse{data=Stub}
 // @Security ApiKeyAuth
 // @Router /process_organisation_member_invite [post]
