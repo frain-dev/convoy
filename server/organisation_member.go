@@ -89,7 +89,7 @@ func (a *applicationHandler) UpdateOrganisationMember(w http.ResponseWriter, r *
 // @Success 200 {object} serverResponse{data=Stub}
 // @Failure 400,401,500 {object} serverResponse{data=Stub}
 // @Security ApiKeyAuth
-// @Router /organisations/{orgID}/members/{memberID} [put]
+// @Router /organisations/{orgID}/members/{memberID} [delete]
 func (a *applicationHandler) DeleteOrganisationMember(w http.ResponseWriter, r *http.Request) {
 	member := getOrganisationMemberFromContext(r.Context())
 
