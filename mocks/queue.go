@@ -5,13 +5,10 @@
 package mocks
 
 import (
-	context "context"
 	reflect "reflect"
-	time "time"
 
 	convoy "github.com/frain-dev/convoy"
 	queue "github.com/frain-dev/convoy/queue"
-	disq "github.com/frain-dev/disq"
 	gomock "github.com/golang/mock/gomock"
 )
 
@@ -38,58 +35,30 @@ func (m *MockQueuer) EXPECT() *MockQueuerMockRecorder {
 	return m.recorder
 }
 
-// Broker mocks base method.
-func (m *MockQueuer) Broker() disq.Broker {
+// Options mocks base method.
+func (m *MockQueuer) Options() queue.QueueOptions {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "Broker")
-	ret0, _ := ret[0].(disq.Broker)
+	ret := m.ctrl.Call(m, "Options")
+	ret0, _ := ret[0].(queue.QueueOptions)
 	return ret0
 }
 
-// Broker indicates an expected call of Broker.
-func (mr *MockQueuerMockRecorder) Broker() *gomock.Call {
+// Options indicates an expected call of Options.
+func (mr *MockQueuerMockRecorder) Options() *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Broker", reflect.TypeOf((*MockQueuer)(nil).Broker))
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Options", reflect.TypeOf((*MockQueuer)(nil).Options))
 }
 
-// Consume mocks base method.
-func (m *MockQueuer) Consume(arg0 context.Context) error {
+// Write mocks base method.
+func (m *MockQueuer) Write(arg0 convoy.TaskName, arg1 convoy.QueueName, arg2 *queue.Job) error {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "Consume", arg0)
+	ret := m.ctrl.Call(m, "Write", arg0, arg1, arg2)
 	ret0, _ := ret[0].(error)
 	return ret0
 }
 
-// Consume indicates an expected call of Consume.
-func (mr *MockQueuerMockRecorder) Consume(arg0 interface{}) *gomock.Call {
+// Write indicates an expected call of Write.
+func (mr *MockQueuerMockRecorder) Write(arg0, arg1, arg2 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Consume", reflect.TypeOf((*MockQueuer)(nil).Consume), arg0)
-}
-
-// Publish mocks base method.
-func (m *MockQueuer) Publish(arg0 context.Context, arg1 convoy.TaskName, arg2 *queue.Job, arg3 time.Duration) error {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "Publish", arg0, arg1, arg2, arg3)
-	ret0, _ := ret[0].(error)
-	return ret0
-}
-
-// Publish indicates an expected call of Publish.
-func (mr *MockQueuerMockRecorder) Publish(arg0, arg1, arg2, arg3 interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Publish", reflect.TypeOf((*MockQueuer)(nil).Publish), arg0, arg1, arg2, arg3)
-}
-
-// Stop mocks base method.
-func (m *MockQueuer) Stop() error {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "Stop")
-	ret0, _ := ret[0].(error)
-	return ret0
-}
-
-// Stop indicates an expected call of Stop.
-func (mr *MockQueuerMockRecorder) Stop() *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Stop", reflect.TypeOf((*MockQueuer)(nil).Stop))
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Write", reflect.TypeOf((*MockQueuer)(nil).Write), arg0, arg1, arg2)
 }

@@ -2,6 +2,7 @@ package task
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"time"
 
@@ -9,24 +10,28 @@ import (
 	"github.com/frain-dev/convoy/cache"
 	"github.com/frain-dev/convoy/datastore"
 	"github.com/frain-dev/convoy/queue"
-	"github.com/frain-dev/disq"
 	"github.com/google/uuid"
+	"github.com/hibiken/asynq"
 	log "github.com/sirupsen/logrus"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
-func ProcessEventCreated(appRepo datastore.ApplicationRepository, eventRepo datastore.EventRepository, groupRepo datastore.GroupRepository, eventDeliveryRepo datastore.EventDeliveryRepository, cache cache.Cache, eventQueue queue.Queuer) func(job *queue.Job) error {
-	return func(job *queue.Job) error {
-		event := job.Event
-		ctx := context.Background()
+func ProcessEventCreated(appRepo datastore.ApplicationRepository, eventRepo datastore.EventRepository, groupRepo datastore.GroupRepository, eventDeliveryRepo datastore.EventDeliveryRepository, cache cache.Cache, eventQueue queue.Queuer) func(context.Context, *asynq.Task) error {
+	return func(ctx context.Context, t *asynq.Task) error {
+
+		var event datastore.Event
+		err := json.Unmarshal(t.Payload(), &event)
+		if err != nil {
+			return &EndpointError{Err: err, delay: defaultDelay}
+		}
 
 		var group *datastore.Group
 		var app *datastore.Application
 
 		appCacheKey := convoy.ApplicationsCacheKey.Get(event.AppMetadata.UID).String()
-		err := cache.Get(ctx, appCacheKey, &app)
+		err = cache.Get(ctx, appCacheKey, &app)
 		if err != nil {
-			return &disq.Error{Err: errors.New("cache error"), Delay: 10 * time.Second}
+			return &EndpointError{Err: errors.New("cache error"), delay: 10 * time.Second}
 		}
 
 		// cache miss, load from db
@@ -41,38 +46,38 @@ func ProcessEventCreated(appRepo datastore.ApplicationRepository, eventRepo data
 				}
 
 				log.WithError(err).Error("failed to fetch app")
-				return &disq.Error{Err: errors.New(msg), Delay: 10 * time.Second}
+				return &EndpointError{Err: errors.New(msg), delay: 10 * time.Second}
 			}
 
 			err = cache.Set(ctx, appCacheKey, app, 10*time.Minute)
 			if err != nil {
-				return &disq.Error{Err: err, Delay: 10 * time.Second}
+				return &EndpointError{Err: err, delay: 10 * time.Second}
 			}
 		}
 
 		groupCacheKey := convoy.GroupsCacheKey.Get(event.AppMetadata.GroupID).String()
 		err = cache.Get(ctx, groupCacheKey, &group)
 		if err != nil {
-			return &disq.Error{Err: err, Delay: 10 * time.Second}
+			return &EndpointError{Err: err, delay: 10 * time.Second}
 		}
 
 		if group == nil {
 			group, err = groupRepo.FetchGroupByID(ctx, event.AppMetadata.GroupID)
 			if err != nil {
-				return &disq.Error{Err: err, Delay: 10 * time.Second}
+				return &EndpointError{Err: err, delay: 10 * time.Second}
 			}
 		}
 
 		err = cache.Set(ctx, groupCacheKey, &group, 5*time.Minute)
 		if err != nil {
-			return &disq.Error{Err: err, Delay: 10 * time.Second}
+			return &EndpointError{Err: err, delay: 10 * time.Second}
 		}
 
 		matchedEndpoints := matchEndpointsForDelivery(event.EventType, app.Endpoints, nil)
 		event.MatchedEndpoints = len(matchedEndpoints)
-		err = eventRepo.CreateEvent(ctx, event)
+		err = eventRepo.CreateEvent(ctx, &event)
 		if err != nil {
-			return &disq.Error{Err: err, Delay: 10 * time.Second}
+			return &EndpointError{Err: err, delay: 10 * time.Second}
 		}
 
 		intervalSeconds := group.Config.Strategy.Duration
@@ -121,12 +126,16 @@ func ProcessEventCreated(appRepo datastore.ApplicationRepository, eventRepo data
 				log.WithError(err).Error("error occurred creating event delivery")
 			}
 
-			taskName := convoy.EventProcessor.SetPrefix(group.Name)
+			taskName := convoy.EventProcessor
 			if eventDelivery.Status != datastore.DiscardedEventStatus {
+				payload := json.RawMessage(eventDelivery.UID)
+
 				job := &queue.Job{
-					ID: eventDelivery.UID,
+					ID:      eventDelivery.UID,
+					Payload: payload,
+					Delay:   1 * time.Second,
 				}
-				err = eventQueue.Publish(ctx, taskName, job, 1*time.Second)
+				err = eventQueue.Write(taskName, convoy.EventQueue, job)
 				if err != nil {
 					log.Errorf("Error occurred sending new event to the queue %s", err)
 				}

@@ -35,8 +35,7 @@ type applicationHandler struct {
 	groupRepo           datastore.GroupRepository
 	apiKeyRepo          datastore.APIKeyRepository
 	sourceRepo          datastore.SourceRepository
-	eventQueue          queue.Queuer
-	createEventQueue    queue.Queuer
+	queue               queue.Queuer
 	logger              logger.Logger
 	tracer              tracer.Tracer
 	cache               cache.Cache
@@ -59,14 +58,13 @@ func newApplicationHandler(
 	sourceRepo datastore.SourceRepository,
 	orgRepo datastore.OrganisationRepository,
 	userRepo datastore.UserRepository,
-	eventQueue queue.Queuer,
-	createEventQueue queue.Queuer,
+	queue queue.Queuer,
 	logger logger.Logger,
 	tracer tracer.Tracer,
 	cache cache.Cache,
 	limiter limiter.RateLimiter, searcher searcher.Searcher) *applicationHandler {
-	as := services.NewAppService(appRepo, eventRepo, eventDeliveryRepo, eventQueue, cache)
-	es := services.NewEventService(appRepo, eventRepo, eventDeliveryRepo, eventQueue, createEventQueue, cache, searcher)
+	as := services.NewAppService(appRepo, eventRepo, eventDeliveryRepo, cache)
+	es := services.NewEventService(appRepo, eventRepo, eventDeliveryRepo, queue, cache, searcher)
 	gs := services.NewGroupService(appRepo, groupRepo, eventRepo, eventDeliveryRepo, limiter)
 	ss := services.NewSecurityService(groupRepo, apiKeyRepo)
 	os := services.NewOrganisationService(orgRepo)
@@ -87,8 +85,7 @@ func newApplicationHandler(
 		appRepo:             appRepo,
 		groupRepo:           groupRepo,
 		sourceRepo:          sourceRepo,
-		eventQueue:          eventQueue,
-		createEventQueue:    createEventQueue,
+		queue:               queue,
 		logger:              logger,
 		tracer:              tracer,
 		cache:               cache,
