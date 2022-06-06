@@ -1,0 +1,249 @@
+<div class="page padding-top__60px">
+	<div class="page__head">
+		<div>
+			<h3 class="margin-bottom__8px">Teams</h3>
+			<p class="page__head--sub">View and manage your team members.</p>
+		</div>
+
+		<div class="page__head--search">
+			<form class="input__search filter margin-bottom__0px events-search">
+				<img src="/assets/img/search-icon.svg" alt="search icon" />
+				<input type="search" placeholder="Search team member" [(ngModel)]="searchString" (change)="searchTeam({ addToURL: true, page: 1 })" [ngModelOptions]="{ standalone: true }" />
+				<button [class]="'enter-button' + (searchString && searchString.length > 0 ? ' show' : '')" (click)="searchTeam({ addToURL: true, page: 1 })">
+					<img src="/assets/img/enter-icon.png" alt="enter icon" />
+				</button>
+			</form>
+
+			<button class="button button__small button__primary margin-left__24px" routerLink="./new" (click)="currentId = ''">Add team member</button>
+		</div>
+	</div>
+
+	<div *ngIf="isFetchingTeamMembers || (searchingTeamMembers && searchMode)">
+		<convoy-table-loader [tableClass]="'table__no-style'" [tableHead]="tableHead"></convoy-table-loader>
+	</div>
+
+	<table class="table table__no-style" *ngIf="!isFetchingTeamMembers && !searchingTeamMembers && teams && teams.length > 0">
+		<thead>
+			<tr class="table--head">
+				<th scope="col" *ngFor="let head of tableHead">{{ head }}</th>
+			</tr>
+		</thead>
+		<tbody>
+			<tr *ngFor="let team of teams">
+				<td>
+					<div class="badge badge__dark">
+						<div class="icon">{{ team.firstname.slice(0, 1) }}{{ team.lastname.slice(0, 1) }}</div>
+						<div class="name">{{ team.firstname }} {{ team.lastname }}</div>
+					</div>
+				</td>
+				<td>
+					<div>{{ team.role }}</div>
+				</td>
+				<td>
+					<div>{{ team.groups.length }} Project{{ team.groups.length == 1 ? '' : 's' }}</div>
+				</td>
+				<td>
+					<div>
+						<div class="tag tag--Success" *ngIf="team.status">Active</div>
+						<div class="tag tag--Failure" *ngIf="!team.status">Inactive</div>
+					</div>
+				</td>
+				<td>
+					<div class="dropdown">
+						<button class="button--has-icon button__clear" (click)="showDropdown(team.id)">
+							<img src="/assets/img/nav-bar-more-primary.svg" alt="more icon" />
+						</button>
+						<div [ngClass]="{ show: currentId == team.id }" class="dropdown__menu dropdown__menu__nav large">
+							<ul>
+								<li class="flex flex__justify-center">
+									<button
+										class="button__danger button__clear color__danger"
+										(click)="showDeactivateModal = !showDeactivateModal; showTeamMemberDropdown = false; selectedMember = team; currentId = ''"
+									>
+										Deactivate team member
+									</button>
+								</li>
+							</ul>
+						</div>
+					</div>
+				</td>
+			</tr>
+		</tbody>
+	</table>
+</div>
+
+<div class="page" *ngIf="teams?.length === 0 && (!isFetchingTeamMembers || !searchingTeamMembers)">
+	<div class="card padding-all__24px">
+		<div class="width__30 padding-y__40px margin-auto flex flex__column flex__justify-center flex__align-items-center">
+			<img src="/assets/img/team-empty-img.svg" alt="add team empty" class="empty-state-img" />
+			<h4 class="margin-top__24px">You have no one {{ searchMode ? 'You have no one with the name ' + searchString + ' on your team' : 'on your team yet' }}</h4>
+			<p class="text--center font__14px font__weight-500 color__grey" *ngIf="!searchMode">You can invite team members to join your organization and assign them roles to projects</p>
+			<button *ngIf="!searchMode" class="button button__primary button__small margin-top__30px" routerLink="./new">Add team member</button>
+		</div>
+	</div>
+</div>
+
+<div class="_overlay" *ngIf="showSuccessModal || showDeactivateModal" (click)="showSuccessModal = false; showDeactivateModal = false; showTeamGroupDropdown = false"></div>
+
+
+<div class="modal modal__full" *ngIf="showCreateProjectModal">
+    <div class="modal--head">
+		<div class="flex flex__align-items-center flex__justify-between width__100">
+			<div class="modal--head--left flex flex__align-items-center">
+				<a (click)="goBack()" class="margin-right__16px width__32px height__32px flex flex__align-items-center flex__justify-center rounded__6px button__clear" tabindex="0">
+					<img src="/assets/img/modal-close-icon.svg" alt="close icon" />
+				</a>
+				<h2 class="font__16px font__weight-600">Create New Project</h2>
+			</div>
+
+			<a class="button--has-icon icon-left" target="_blank" href="https://getconvoy.io/docs" rel="noreferrer">
+				<img src="/assets/img/doc-icon-primary.svg" alt="doc icon" />
+				<span class="font__weight-500 font__14px color__primary">Go to docs</span>
+			</a>
+		</div>
+	</div>
+
+	<div class="modal--body padding-all__0px">
+		<app-create-project-component (onAction)="$event.action == 'cancel' ? cancel() : goBack()"></app-create-project-component>
+	</div>
+</div>
+
+<div class="modal modal__full" *ngIf="showInviteTeamMemberModal">
+	<div class="modal--head">
+		<div class="flex flex__align-items-center flex__justify-between width__100">
+			<div class="modal--head--left flex flex__align-items-center">
+				<a (click)="goBack()" class="margin-right__16px width__32px height__32px flex flex__align-items-center flex__justify-center rounded__6px button__clear" tabindex="0">
+					<img src="/assets/img/modal-close-icon.svg" alt="close icon" />
+				</a>
+				<h2 class="font__16px font__weight-600">Add Team Member</h2>
+			</div>
+
+			<a class="button--has-icon icon-left" target="_blank" href="https://getconvoy.io/docs" rel="noreferrer">
+				<img src="/assets/img/doc-icon-primary.svg" alt="doc icon" />
+				<span class="font__weight-500 font__14px color__primary">Go to docs</span>
+			</a>
+		</div>
+	</div>
+
+	<div class="modal--body padding-all__0px" *ngIf="!projects.length">
+		<div class="card padding-all__24px margin-top__24px">
+			<div class="width__50 padding-y__40px margin-auto flex flex__column flex__justify-center flex__align-items-center">
+				<img src="/assets/img/no-group.svg" alt="no project" class="empty-state-img big margin-bottom__24px" />
+				<h4 class="color__black text--center margin-bottom__8px">Create a project to add team member</h4>
+				<p class="color__grey font__14px font__weight-500 text--center margin-bottom__32px">
+					You currently do not have any project and need to have one to add a team member. Create one with the button below
+				</p>
+				<button class="button button__primary button__small" routerLink="./project">Create Project</button>
+			</div>
+		</div>
+	</div>
+	<div class="modal--body padding-all__0px" *ngIf="projects.length">
+		<form [formGroup]="inviteUserForm" (ngSubmit)="inviteUser()">
+			<div class="card padding-all__24px margin-top__24px">
+				<h3>Basic info</h3>
+				<div class="color__grey font__14px font__weight-400 margin-bottom__16px">Invite other members of your team to your organization.</div>
+
+				<div class="flex flex__justify-between">
+					<div class="input smaller">
+						<label for="first-name">First Name</label>
+						<input type="text" id="first-name" formControlName="firstname" [ngClass]="{ danger: inviteUserForm.controls.firstname.touched && inviteUserForm.controls.firstname.invalid }" required />
+						<div class="input__error input__error__danger" *ngIf="inviteUserForm.controls.firstname.touched && inviteUserForm.controls.firstname.invalid">
+							<img src="assets/img/input-error-icon.svg" alt="input error icon" />
+							<span>Firstname is required</span>
+						</div>
+					</div>
+
+					<div class="input smaller">
+						<label for="last-name">Last Name</label>
+						<input type="text" id="last-name" formControlName="lastname" [ngClass]="{ danger: inviteUserForm.controls.lastname.touched && inviteUserForm.controls.lastname.invalid }" required />
+						<div class="input__error input__error__danger" *ngIf="inviteUserForm.controls.lastname.touched && inviteUserForm.controls.lastname.invalid">
+							<img src="assets/img/input-error-icon.svg" alt="input error icon" />
+							<span>Lastname is required</span>
+						</div>
+					</div>
+				</div>
+
+				<div class="input">
+					<label for="email">Email</label>
+					<input type="email" id="email" formControlName="email" [ngClass]="{ danger: inviteUserForm.controls.email.touched && inviteUserForm.controls.email.invalid }" required />
+					<div class="input__error input__error__danger" *ngIf="inviteUserForm.controls.email.touched && inviteUserForm.controls.email.invalid">
+						<img src="assets/img/input-error-icon.svg" alt="input error icon" />
+						<span>Please enter a valid email</span>
+					</div>
+				</div>
+
+				<div class="flex flex__justify-between">
+					<div class="dropdown width__45">
+						<div class="input">
+							<label for="group">Select project</label>
+							<input
+								type="text"
+								id="group"
+								[(ngModel)]="noOfSelectedProjects"
+								[ngModelOptions]="{ standalone: true }"
+								class="editMode"
+								readonly
+								(click)="showTeamGroupDropdown = !showTeamGroupDropdown"
+								[ngClass]="{ danger: noOfSelectedProjects && selectedProjects?.length == 0 }"
+							/>
+
+							<div class="input__error input__error__danger" *ngIf="noOfSelectedProjects && selectedProjects?.length == 0">
+								<img src="assets/img/input-error-icon.svg" alt="input error icon" />
+								<span>Please select at least 1 project</span>
+							</div>
+						</div>
+						<div class="dropdown__menu dropdown__menu__form with-padding large" [ngClass]="{ show: showTeamGroupDropdown }">
+							<div class="input__search">
+								<img src="/assets/img/search-icon.svg" alt="search icon" />
+								<input type="search" placeholder="Search projects here" (input)="searchGroup($event)" />
+							</div>
+							<div *ngIf="filteredProjects.length">
+								<div class="dropdown__menu__item" *ngFor="let group of filteredProjects">
+									<label [for]="group.uid">{{ group.name }}</label>
+									<input type="checkbox" name="app" [id]="group.uid" [checked]="group.selected" (input)="selectGroup(group)" />
+								</div>
+							</div>
+						</div>
+					</div>
+					<div class="input smaller">
+						<label for="role">Select Role</label>
+						<select name="role" id="role" formControlName="role" [ngClass]="{ danger: inviteUserForm.controls.role.touched && inviteUserForm.controls.role.invalid }" required>
+							<option value="Admin">Admin</option>
+							<option value="Dev">Dev</option>
+						</select>
+						<div class="input__error input__error__danger" *ngIf="inviteUserForm.controls.role.touched && inviteUserForm.controls.role.invalid">
+							<img src="assets/img/input-error-icon.svg" alt="input error icon" />
+							<span>Please select a role</span>
+						</div>
+					</div>
+				</div>
+			</div>
+		</form>
+		<div class="flex flex__justify-end padding-top__24px padding-bottom__40px">
+			<button class="button button__white margin-right__16px" (click)="goBack()">Discard</button>
+			<button class="button button__primary" [disabled]="invitingUser" (click)="inviteUser()">{{ invitingUser ? 'Inviting User..' : 'Send Invite' }}</button>
+		</div>
+	</div>
+</div>
+
+<div class="modal modal__center" *ngIf="showSuccessModal">
+	<div class="modal--body flex flex__column flex__justify-center flex__align-items-center deactivate">
+		<img width="140px" src="/assets/img/success.gif" alt="success animation" />
+		<p class="margin-top__12px margin-bottom__32px font__16px color__grey font__weight-400">Team member created succesfully! We sent them an email for onboarding instructions.</p>
+		<button class="button button__white" (click)="showSuccessModal = false">Close</button>
+	</div>
+</div>
+
+<div class="modal modal__center" *ngIf="showDeactivateModal">
+	<div class="modal--body flex flex__column flex__justify-center flex__align-items-center deactivate">
+		<img src="/assets/img/warning.gif" class="img" alt="warning" />
+		<p class="font__20px color__black font__weight-600 margin-bottom__8px margin-top__16px text--center no-width">
+			Are you sure you want to deactivate
+			<span class="text__capitalize font__weight-600">“{{ selectedMember?.firstname }} {{ selectedMember?.lastname }}”</span>
+			?
+		</p>
+		<p class="color__grey font__14px font__weight-500 margin-bottom__12px">This action is irrevesible</p>
+		<button class="button button__deactivate" [disabled]="deactivatingUser" (click)="deactivateMember()">{{ deactivatingUser ? 'Deactivating...' : 'Yes, Deactivate' }}</button>
+		<button class="button__primary button__clear margin-top__28px" (click)="showDeactivateModal = false">No, Cancel</button>
+	</div>
+</div>
