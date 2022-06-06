@@ -559,6 +559,102 @@ func (mr *MockGroupRepositoryMockRecorder) UpdateGroup(arg0, arg1 interface{}) *
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateGroup", reflect.TypeOf((*MockGroupRepository)(nil).UpdateGroup), arg0, arg1)
 }
 
+// MockOrganisationRepository is a mock of OrganisationRepository interface.
+type MockOrganisationRepository struct {
+	ctrl     *gomock.Controller
+	recorder *MockOrganisationRepositoryMockRecorder
+}
+
+// MockOrganisationRepositoryMockRecorder is the mock recorder for MockOrganisationRepository.
+type MockOrganisationRepositoryMockRecorder struct {
+	mock *MockOrganisationRepository
+}
+
+// NewMockOrganisationRepository creates a new mock instance.
+func NewMockOrganisationRepository(ctrl *gomock.Controller) *MockOrganisationRepository {
+	mock := &MockOrganisationRepository{ctrl: ctrl}
+	mock.recorder = &MockOrganisationRepositoryMockRecorder{mock}
+	return mock
+}
+
+// EXPECT returns an object that allows the caller to indicate expected use.
+func (m *MockOrganisationRepository) EXPECT() *MockOrganisationRepositoryMockRecorder {
+	return m.recorder
+}
+
+// CreateOrganisation mocks base method.
+func (m *MockOrganisationRepository) CreateOrganisation(arg0 context.Context, arg1 *datastore.Organisation) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "CreateOrganisation", arg0, arg1)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// CreateOrganisation indicates an expected call of CreateOrganisation.
+func (mr *MockOrganisationRepositoryMockRecorder) CreateOrganisation(arg0, arg1 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateOrganisation", reflect.TypeOf((*MockOrganisationRepository)(nil).CreateOrganisation), arg0, arg1)
+}
+
+// DeleteOrganisation mocks base method.
+func (m *MockOrganisationRepository) DeleteOrganisation(ctx context.Context, uid string) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "DeleteOrganisation", ctx, uid)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// DeleteOrganisation indicates an expected call of DeleteOrganisation.
+func (mr *MockOrganisationRepositoryMockRecorder) DeleteOrganisation(ctx, uid interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteOrganisation", reflect.TypeOf((*MockOrganisationRepository)(nil).DeleteOrganisation), ctx, uid)
+}
+
+// FetchOrganisationByID mocks base method.
+func (m *MockOrganisationRepository) FetchOrganisationByID(arg0 context.Context, arg1 string) (*datastore.Organisation, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "FetchOrganisationByID", arg0, arg1)
+	ret0, _ := ret[0].(*datastore.Organisation)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// FetchOrganisationByID indicates an expected call of FetchOrganisationByID.
+func (mr *MockOrganisationRepositoryMockRecorder) FetchOrganisationByID(arg0, arg1 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "FetchOrganisationByID", reflect.TypeOf((*MockOrganisationRepository)(nil).FetchOrganisationByID), arg0, arg1)
+}
+
+// LoadOrganisationsPaged mocks base method.
+func (m *MockOrganisationRepository) LoadOrganisationsPaged(arg0 context.Context, arg1 datastore.Pageable) ([]datastore.Organisation, datastore.PaginationData, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "LoadOrganisationsPaged", arg0, arg1)
+	ret0, _ := ret[0].([]datastore.Organisation)
+	ret1, _ := ret[1].(datastore.PaginationData)
+	ret2, _ := ret[2].(error)
+	return ret0, ret1, ret2
+}
+
+// LoadOrganisationsPaged indicates an expected call of LoadOrganisationsPaged.
+func (mr *MockOrganisationRepositoryMockRecorder) LoadOrganisationsPaged(arg0, arg1 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "LoadOrganisationsPaged", reflect.TypeOf((*MockOrganisationRepository)(nil).LoadOrganisationsPaged), arg0, arg1)
+}
+
+// UpdateOrganisation mocks base method.
+func (m *MockOrganisationRepository) UpdateOrganisation(arg0 context.Context, arg1 *datastore.Organisation) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "UpdateOrganisation", arg0, arg1)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// UpdateOrganisation indicates an expected call of UpdateOrganisation.
+func (mr *MockOrganisationRepositoryMockRecorder) UpdateOrganisation(arg0, arg1 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateOrganisation", reflect.TypeOf((*MockOrganisationRepository)(nil).UpdateOrganisation), arg0, arg1)
+}
+
 // MockApplicationRepository is a mock of ApplicationRepository interface.
 type MockApplicationRepository struct {
 	ctrl     *gomock.Controller
@@ -979,4 +1075,87 @@ func (m *MockSourceRepository) UpdateSource(ctx context.Context, groupID string,
 func (mr *MockSourceRepositoryMockRecorder) UpdateSource(ctx, groupID, source interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateSource", reflect.TypeOf((*MockSourceRepository)(nil).UpdateSource), ctx, groupID, source)
+}
+
+// MockUserRepository is a mock of UserRepository interface.
+type MockUserRepository struct {
+	ctrl     *gomock.Controller
+	recorder *MockUserRepositoryMockRecorder
+}
+
+// MockUserRepositoryMockRecorder is the mock recorder for MockUserRepository.
+type MockUserRepositoryMockRecorder struct {
+	mock *MockUserRepository
+}
+
+// NewMockUserRepository creates a new mock instance.
+func NewMockUserRepository(ctrl *gomock.Controller) *MockUserRepository {
+	mock := &MockUserRepository{ctrl: ctrl}
+	mock.recorder = &MockUserRepositoryMockRecorder{mock}
+	return mock
+}
+
+// EXPECT returns an object that allows the caller to indicate expected use.
+func (m *MockUserRepository) EXPECT() *MockUserRepositoryMockRecorder {
+	return m.recorder
+}
+
+// CreateUser mocks base method.
+func (m *MockUserRepository) CreateUser(arg0 context.Context, arg1 *datastore.User) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "CreateUser", arg0, arg1)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// CreateUser indicates an expected call of CreateUser.
+func (mr *MockUserRepositoryMockRecorder) CreateUser(arg0, arg1 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateUser", reflect.TypeOf((*MockUserRepository)(nil).CreateUser), arg0, arg1)
+}
+
+// FindUserByEmail mocks base method.
+func (m *MockUserRepository) FindUserByEmail(arg0 context.Context, arg1 string) (*datastore.User, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "FindUserByEmail", arg0, arg1)
+	ret0, _ := ret[0].(*datastore.User)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// FindUserByEmail indicates an expected call of FindUserByEmail.
+func (mr *MockUserRepositoryMockRecorder) FindUserByEmail(arg0, arg1 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "FindUserByEmail", reflect.TypeOf((*MockUserRepository)(nil).FindUserByEmail), arg0, arg1)
+}
+
+// FindUserByID mocks base method.
+func (m *MockUserRepository) FindUserByID(arg0 context.Context, arg1 string) (*datastore.User, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "FindUserByID", arg0, arg1)
+	ret0, _ := ret[0].(*datastore.User)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// FindUserByID indicates an expected call of FindUserByID.
+func (mr *MockUserRepositoryMockRecorder) FindUserByID(arg0, arg1 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "FindUserByID", reflect.TypeOf((*MockUserRepository)(nil).FindUserByID), arg0, arg1)
+}
+
+// LoadUsersPaged mocks base method.
+func (m *MockUserRepository) LoadUsersPaged(arg0 context.Context, arg1 datastore.Pageable) ([]datastore.User, datastore.PaginationData, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "LoadUsersPaged", arg0, arg1)
+	ret0, _ := ret[0].([]datastore.User)
+	ret1, _ := ret[1].(datastore.PaginationData)
+	ret2, _ := ret[2].(error)
+	return ret0, ret1, ret2
+}
+
+// LoadUsersPaged indicates an expected call of LoadUsersPaged.
+func (mr *MockUserRepositoryMockRecorder) LoadUsersPaged(arg0, arg1 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "LoadUsersPaged", reflect.TypeOf((*MockUserRepository)(nil).LoadUsersPaged), arg0, arg1)
 }

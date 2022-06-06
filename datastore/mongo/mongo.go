@@ -18,10 +18,12 @@ import (
 
 const (
 	SubscriptionCollection = "subscriptions"
-	AppCollections         = "applications"
 	GroupCollection        = "groups"
+	OrganisationCollection = "organisations"
+	AppCollections         = "applications"
 	EventCollection        = "events"
 	SourceCollection       = "sources"
+	UserCollection         = "users"
 )
 
 type Client struct {
@@ -33,6 +35,8 @@ type Client struct {
 	subscriptionRepo  datastore.SubscriptionRepository
 	eventDeliveryRepo datastore.EventDeliveryRepository
 	sourceRepo        datastore.SourceRepository
+	orgRepo           datastore.OrganisationRepository
+	userRepo          datastore.UserRepository
 }
 
 func New(cfg config.Configuration) (datastore.DatabaseClient, error) {
@@ -72,6 +76,8 @@ func New(cfg config.Configuration) (datastore.DatabaseClient, error) {
 		eventRepo:         NewEventRepository(conn),
 		eventDeliveryRepo: NewEventDeliveryRepository(conn),
 		sourceRepo:        NewSourceRepo(conn),
+		orgRepo:           NewOrgRepo(conn),
+		userRepo:          NewUserRepo(conn),
 	}
 
 	c.ensureMongoIndices()
@@ -117,6 +123,14 @@ func (c *Client) SubRepo() datastore.SubscriptionRepository {
 
 func (c *Client) SourceRepo() datastore.SourceRepository {
 	return c.sourceRepo
+}
+
+func (c *Client) OrganisationRepo() datastore.OrganisationRepository {
+	return c.orgRepo
+}
+
+func (c *Client) UserRepo() datastore.UserRepository {
+	return c.userRepo
 }
 
 func (c *Client) ensureMongoIndices() {

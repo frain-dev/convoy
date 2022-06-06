@@ -48,6 +48,14 @@ type GroupRepository interface {
 	FillGroupsStatistics(ctx context.Context, groups []*Group) error
 }
 
+type OrganisationRepository interface {
+	LoadOrganisationsPaged(context.Context, Pageable) ([]Organisation, PaginationData, error)
+	CreateOrganisation(context.Context, *Organisation) error
+	UpdateOrganisation(context.Context, *Organisation) error
+	DeleteOrganisation(context.Context, string) error
+	FetchOrganisationByID(context.Context, string) (*Organisation, error)
+}
+
 type ApplicationRepository interface {
 	CreateApplication(context.Context, *Application, string) error
 	LoadApplicationsPaged(context.Context, string, string, Pageable) ([]Application, PaginationData, error)
@@ -79,4 +87,11 @@ type SourceRepository interface {
 	FindSourceByMaskID(ctx context.Context, maskID string) (*Source, error)
 	DeleteSourceByID(ctx context.Context, groupID string, id string) error
 	LoadSourcesPaged(ctx context.Context, groupID string, filter *SourceFilter, pageable Pageable) ([]Source, PaginationData, error)
+}
+
+type UserRepository interface {
+	CreateUser(context.Context, *User) error
+	FindUserByEmail(context.Context, string) (*User, error)
+	FindUserByID(context.Context, string) (*User, error)
+	LoadUsersPaged(context.Context, Pageable) ([]User, PaginationData, error)
 }

@@ -39,6 +39,7 @@ type contextKey string
 const (
 	groupCtx            contextKey = "group"
 	appCtx              contextKey = "app"
+	orgCtx              contextKey = "organisation"
 	endpointCtx         contextKey = "endpoint"
 	eventCtx            contextKey = "event"
 	eventDeliveryCtx    contextKey = "eventDelivery"
@@ -338,6 +339,26 @@ func requireEvent(eventRepo datastore.EventRepository) func(next http.Handler) h
 	}
 }
 
+func requireOrganisation(orgRepo datastore.OrganisationRepository) func(next http.Handler) http.Handler {
+	return func(next http.Handler) http.Handler {
+
+		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+
+			orgID := chi.URLParam(r, "orgID")
+
+			org, err := orgRepo.FetchOrganisationByID(r.Context(), orgID)
+			if err != nil {
+				log.WithError(err).Error("failed to fetch organisation")
+				_ = render.Render(w, r, newErrorResponse("failed to fetch organisation", http.StatusBadRequest))
+				return
+			}
+
+			r = r.WithContext(setOrganisationInContext(r.Context(), org))
+			next.ServeHTTP(w, r)
+		})
+	}
+}
+
 func requireEventDelivery(eventRepo datastore.EventDeliveryRepository) func(next http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -455,6 +476,7 @@ func requireGroup(groupRepo datastore.GroupRepository, cache cache.Cache) func(n
 					}
 				}
 			} else {
+				// TODO(all): maybe we should only use default-group if require_auth is false?
 				groupCacheKey := convoy.GroupsCacheKey.Get("default-group").String()
 				err = cache.Get(r.Context(), groupCacheKey, &group)
 				if err != nil {
@@ -610,14 +632,24 @@ func getAuthFromRequest(r *http.Request) (*auth.Credential, error) {
 			Password: creds[1],
 		}, nil
 	case auth.CredentialTypeAPIKey:
-		if util.IsStringEmpty(authInfo[1]) {
-			return nil, errors.New("empty api key")
+		authToken := authInfo[1]
+
+		if util.IsStringEmpty(authToken) {
+			return nil, errors.New("empty api key or token")
+		}
+
+		prefix := fmt.Sprintf("%s%s", util.Prefix, util.Seperator)
+		if strings.HasPrefix(authToken, prefix) {
+			return &auth.Credential{
+				Type:   auth.CredentialTypeAPIKey,
+				APIKey: authToken,
+			}, nil
 		}
 
 		return &auth.Credential{
-			Type:   auth.CredentialTypeAPIKey,
-			APIKey: authInfo[1],
-		}, nil
+			Type:  auth.CredentialTypeJWT,
+			Token: authToken}, nil
+
 	default:
 		return nil, fmt.Errorf("unknown credential type: %s", credType.String())
 	}
@@ -811,6 +843,18 @@ func fetchGroupApps(appRepo datastore.ApplicationRepository) func(next http.Hand
 	}
 }
 
+func shouldAuthRoute(r *http.Request) bool {
+	guestRoutes := []string{"/ui/auth/login", "/ui/auth/token/refresh"}
+
+	for _, route := range guestRoutes {
+		if r.URL.Path == route {
+			return false
+		}
+	}
+
+	return true
+}
+
 func ensurePeriod(start time.Time, end time.Time) error {
 	if start.Unix() > end.Unix() {
 		return errors.New("startDate cannot be greater than endDate")
@@ -843,6 +887,15 @@ func setApplicationInContext(ctx context.Context,
 
 func getApplicationFromContext(ctx context.Context) *datastore.Application {
 	return ctx.Value(appCtx).(*datastore.Application)
+}
+
+func setOrganisationInContext(ctx context.Context,
+	org *datastore.Organisation) context.Context {
+	return context.WithValue(ctx, orgCtx, org)
+}
+
+func getOrganisationFromContext(ctx context.Context) *datastore.Organisation {
+	return ctx.Value(orgCtx).(*datastore.Organisation)
 }
 
 func setEventInContext(ctx context.Context,

@@ -132,6 +132,7 @@ func buildRoutes(app *applicationHandler) http.Handler {
 				eventRouter.Route("/{eventID}", func(eventSubRouter chi.Router) {
 					eventSubRouter.Use(requireEvent(app.eventRepo))
 					eventSubRouter.Get("/", app.GetAppEvent)
+					eventSubRouter.Put("/replay", app.ReplayAppEvent)
 				})
 			})
 
@@ -209,7 +210,13 @@ func buildRoutes(app *applicationHandler) http.Handler {
 	router.Route("/ui", func(uiRouter chi.Router) {
 		uiRouter.Use(jsonResponse)
 		uiRouter.Use(setupCORS)
-		uiRouter.Use(requireAuth())
+		uiRouter.Use(middleware.Maybe(requireAuth(), shouldAuthRoute))
+
+		uiRouter.Route("/auth", func(authRouter chi.Router) {
+			authRouter.Post("/login", app.LoginUser)
+			authRouter.Post("/token/refresh", app.RefreshToken)
+			authRouter.Post("/logout", app.LogoutUser)
+		})
 
 		uiRouter.Route("/dashboard", func(dashboardRouter chi.Router) {
 			dashboardRouter.Use(requireGroup(app.groupRepo, app.cache))
@@ -220,7 +227,6 @@ func buildRoutes(app *applicationHandler) http.Handler {
 		})
 
 		uiRouter.Route("/groups", func(groupRouter chi.Router) {
-
 			groupRouter.Route("/", func(orgSubRouter chi.Router) {
 				groupRouter.With(requirePermission(auth.RoleSuperUser)).Post("/", app.CreateGroup)
 				groupRouter.Get("/", app.GetGroups)
@@ -233,6 +239,21 @@ func buildRoutes(app *applicationHandler) http.Handler {
 				groupSubRouter.With(requirePermission(auth.RoleUIAdmin)).Get("/", app.GetGroup)
 				groupSubRouter.With(requirePermission(auth.RoleSuperUser)).Put("/", app.UpdateGroup)
 				groupSubRouter.With(requirePermission(auth.RoleSuperUser)).Delete("/", app.DeleteGroup)
+			})
+		})
+
+		uiRouter.Route("/organisations", func(orgRouter chi.Router) {
+			orgRouter.Use(requirePermission(auth.RoleAdmin))
+
+			orgRouter.Post("/", app.CreateOrganisation)
+			orgRouter.With(pagination).Get("/", app.GetOrganisationsPaged)
+
+			orgRouter.Route("/{orgID}", func(orgSubRouter chi.Router) {
+				orgSubRouter.Use(requireOrganisation(app.orgRepo))
+
+				orgSubRouter.Get("/", app.GetOrganisation)
+				orgSubRouter.Put("/", app.UpdateOrganisation)
+				orgSubRouter.Delete("/", app.DeleteOrganisation)
 			})
 		})
 
@@ -286,6 +307,7 @@ func buildRoutes(app *applicationHandler) http.Handler {
 			eventRouter.Route("/{eventID}", func(eventSubRouter chi.Router) {
 				eventSubRouter.Use(requireEvent(app.eventRepo))
 				eventSubRouter.Get("/", app.GetAppEvent)
+				eventSubRouter.Put("/replay", app.ReplayAppEvent)
 			})
 		})
 
@@ -375,6 +397,7 @@ func buildRoutes(app *applicationHandler) http.Handler {
 			eventRouter.Route("/{eventID}", func(eventSubRouter chi.Router) {
 				eventSubRouter.Use(requireEvent(app.eventRepo))
 				eventSubRouter.Get("/", app.GetAppEvent)
+				eventSubRouter.Put("/replay", app.ReplayAppEvent)
 			})
 		})
 
@@ -428,9 +451,11 @@ func New(cfg config.Configuration,
 	eventDeliveryRepo datastore.EventDeliveryRepository,
 	appRepo datastore.ApplicationRepository,
 	apiKeyRepo datastore.APIKeyRepository,
-	orgRepo datastore.GroupRepository,
 	subRepo datastore.SubscriptionRepository,
+	groupRepo datastore.GroupRepository,
+	orgRepo datastore.OrganisationRepository,
 	sourceRepo datastore.SourceRepository,
+	userRepo datastore.UserRepository,
 	eventQueue queue.Queuer,
 	createEventQueue queue.Queuer,
 	logger logger.Logger,
@@ -444,10 +469,12 @@ func New(cfg config.Configuration,
 		eventRepo,
 		eventDeliveryRepo,
 		appRepo,
-		orgRepo,
+		groupRepo,
 		apiKeyRepo,
 		subRepo,
 		sourceRepo,
+		orgRepo,
+		userRepo,
 		eventQueue,
 		createEventQueue,
 		logger,

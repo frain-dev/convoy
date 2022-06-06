@@ -17,6 +17,7 @@ type Credential struct {
 	Username string         `json:"username"`
 	Password string         `json:"password"`
 	APIKey   string         `json:"api_key"`
+	Token    string         `json:"token"`
 }
 
 func (c *Credential) String() string {
@@ -28,6 +29,7 @@ type CredentialType string
 const (
 	CredentialTypeBasic  = CredentialType("BASIC")
 	CredentialTypeAPIKey = CredentialType("BEARER")
+	CredentialTypeJWT    = CredentialType("JWT")
 )
 
 func (c CredentialType) String() string {
