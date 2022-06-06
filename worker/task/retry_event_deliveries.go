@@ -134,13 +134,13 @@ func processEventDeliveryBatch(ctx context.Context, status datastore.EventDelive
 		var group *datastore.Group
 		for i := range batch {
 			delivery := &batch[i]
-			groupID := delivery.AppMetadata.GroupID
+			groupID := delivery.GroupID
 
 			group, ok = groups[groupID]
 			if !ok { // never seen this group before, so fetch and cache
-				group, err = groupRepo.FetchGroupByID(ctx, delivery.AppMetadata.GroupID)
+				group, err = groupRepo.FetchGroupByID(ctx, delivery.GroupID)
 				if err != nil {
-					log.WithError(err).Errorf("batch %d: failed to fetch group %s for delivery %s", batchCount, delivery.AppMetadata.GroupID, delivery.UID)
+					log.WithError(err).Errorf("batch %d: failed to fetch group %s for delivery %s", batchCount, delivery.GroupID, delivery.UID)
 					continue
 				}
 				groups[groupID] = group

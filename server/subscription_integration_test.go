@@ -1,3 +1,6 @@
+//go:build integration
+// +build integration
+
 package server
 
 import (
@@ -41,7 +44,7 @@ func (s *SubscriptionIntegrationTestSuite) SetupTest() {
 	err := config.LoadConfig("./testdata/Auth_Config/full-convoy.json")
 	require.NoError(s.T(), err)
 
-	initRealmChain(s.T(), s.DB.APIRepo())
+	initRealmChain(s.T(), s.DB.APIRepo(), s.DB.UserRepo(), s.ConvoyApp.cache)
 }
 
 func (s *SubscriptionIntegrationTestSuite) TearDownTest() {
