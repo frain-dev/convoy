@@ -196,7 +196,7 @@ func preRun(app *app, db datastore.DatabaseClient) func(cmd *cobra.Command, args
 				string(convoy.PriorityQueue):    5,
 				string(convoy.EventQueue):       2,
 				string(convoy.CreateEventQueue): 2,
-				string(convoy.SchduleQueue):     1,
+				string(convoy.ScheduleQueue):    1,
 			}
 			opts := queue.QueueOptions{
 				Names:             queueNames,

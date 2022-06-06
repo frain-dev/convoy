@@ -80,7 +80,7 @@ const (
 	EventQueue       QueueName = "EventQueue"
 	CreateEventQueue QueueName = "CreateEventQueue"
 	PriorityQueue    QueueName = "PriorityQueue"
-	SchduleQueue     QueueName = "ScheduleQueue"
+	ScheduleQueue    QueueName = "ScheduleQueue"
 )
 const (
 	EventDeliveryIDLength = 12
