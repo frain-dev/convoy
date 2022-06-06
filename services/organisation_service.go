@@ -3,6 +3,7 @@ package services
 import (
 	"context"
 	"errors"
+	"github.com/frain-dev/convoy/auth"
 	"github.com/frain-dev/convoy/datastore"
 	"github.com/frain-dev/convoy/server/models"
 	"github.com/frain-dev/convoy/util"
@@ -14,11 +15,12 @@ import (
 )
 
 type OrganisationService struct {
-	orgRepo datastore.OrganisationRepository
+	orgRepo       datastore.OrganisationRepository
+	orgMemberRepo datastore.OrganisationMemberRepository
 }
 
-func NewOrganisationService(orgRepo datastore.OrganisationRepository) *OrganisationService {
-	return &OrganisationService{orgRepo: orgRepo}
+func NewOrganisationService(orgRepo datastore.OrganisationRepository, orgMemberRepo datastore.OrganisationMemberRepository) *OrganisationService {
+	return &OrganisationService{orgRepo: orgRepo, orgMemberRepo: orgMemberRepo}
 }
 
 func (os *OrganisationService) CreateOrganisation(ctx context.Context, newOrg *models.Organisation, user *datastore.User) (*datastore.Organisation, error) {
@@ -40,6 +42,11 @@ func (os *OrganisationService) CreateOrganisation(ctx context.Context, newOrg *m
 	if err != nil {
 		log.WithError(err).Error("failed to create organisation")
 		return nil, NewServiceError(http.StatusBadRequest, errors.New("failed to create organisation"))
+	}
+
+	_, err = NewOrganisationMemberService(os.orgMemberRepo).CreateOrganisationMember(ctx, org, user, &auth.Role{Type: auth.RoleSuperUser})
+	if err != nil {
+		log.WithError(err).Error("failed to create super_user member for organisation owner")
 	}
 
 	return org, nil

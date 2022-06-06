@@ -15,7 +15,8 @@ import (
 
 func provideOrganisationService(ctrl *gomock.Controller) *OrganisationService {
 	orgRepo := mocks.NewMockOrganisationRepository(ctrl)
-	return NewOrganisationService(orgRepo)
+	orgMemberRepo := mocks.NewMockOrganisationMemberRepository(ctrl)
+	return NewOrganisationService(orgRepo, orgMemberRepo)
 }
 
 func TestOrganisationService_CreateOrganisation(t *testing.T) {
@@ -47,6 +48,9 @@ func TestOrganisationService_CreateOrganisation(t *testing.T) {
 				a, _ := os.orgRepo.(*mocks.MockOrganisationRepository)
 				a.EXPECT().CreateOrganisation(gomock.Any(), gomock.Any()).
 					Times(1).Return(nil)
+
+				om, _ := os.orgMemberRepo.(*mocks.MockOrganisationMemberRepository)
+				om.EXPECT().CreateOrganisationMember(gomock.Any(), gomock.Any()).Times(1).Return(nil)
 			},
 			wantErr: false,
 		},
