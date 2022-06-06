@@ -6556,9 +6556,6 @@
                 "name": {
                     "type": "string"
                 },
-                "owner_id": {
-                    "type": "string"
-                },
                 "uid": {
                     "type": "string"
                 },

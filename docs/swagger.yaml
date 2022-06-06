@@ -328,8 +328,6 @@ definitions:
         type: string
       name:
         type: string
-      owner_id:
-        type: string
       uid:
         type: string
       updated_at:

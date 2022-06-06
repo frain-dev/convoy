@@ -507,7 +507,7 @@ type ApiKey struct {
 type Organisation struct {
 	ID             primitive.ObjectID `json:"-" bson:"_id"`
 	UID            string             `json:"uid" bson:"uid"`
-	OwnerID        string             `json:"owner_id" bson:"owner_id"`
+	OwnerID        string             `json:"-" bson:"owner_id"`
 	Name           string             `json:"name" bson:"name"`
 	DocumentStatus DocumentStatus     `json:"-" bson:"document_status"`
 	CreatedAt      primitive.DateTime `json:"created_at,omitempty" bson:"created_at,omitempty" swaggertype:"string"`
