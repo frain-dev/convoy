@@ -2,6 +2,7 @@ package task
 
 import (
 	"context"
+	"encoding/json"
 	"sync"
 	"time"
 
@@ -93,9 +94,6 @@ func RetryEventDeliveries(statuses []datastore.EventDeliveryStatus, lookBackDura
 func processEventDeliveryBatch(ctx context.Context, status datastore.EventDeliveryStatus, eventDeliveryRepo datastore.EventDeliveryRepository, groupRepo datastore.GroupRepository, deliveryChan <-chan []datastore.EventDelivery, q *redisqueue.RedisQueue, wg *sync.WaitGroup) {
 	defer wg.Done()
 
-	// groups serves as a cache for already fetched groups
-	groups := map[string]*datastore.Group{}
-
 	batchCount := 1
 	for {
 		// ok will return false if the channel is closed and drained(empty), at which point
@@ -119,38 +117,22 @@ func processEventDeliveryBatch(ctx context.Context, status datastore.EventDelive
 			}
 		}
 
-		// remove these event deliveries from the zset
-		err := q.DeleteEventDeliveriesFromZSET(ctx, batchIDs)
+		// remove these event deliveries queue
+		err := q.DeleteEventDeliveriesfromQueue(convoy.EventQueue, batchIDs)
 		if err != nil {
 			log.WithError(err).WithField("ids", batchIDs).Errorf("batch %d: failed to delete event deliveries from zset", batchCount)
 		}
 
-		// // remove these event deliveries from the stream
-		err = q.DeleteEventDeliveriesFromStream(ctx, batchIDs)
-		if err != nil {
-			log.WithError(err).WithField("ids", batchIDs).Errorf("batch %d: failed to delete event deliveries from stream", batchCount)
-		}
-
-		var group *datastore.Group
 		for i := range batch {
 			delivery := &batch[i]
-			groupID := delivery.GroupID
 
-			group, ok = groups[groupID]
-			if !ok { // never seen this group before, so fetch and cache
-				group, err = groupRepo.FetchGroupByID(ctx, delivery.GroupID)
-				if err != nil {
-					log.WithError(err).Errorf("batch %d: failed to fetch group %s for delivery %s", batchCount, delivery.GroupID, delivery.UID)
-					continue
-				}
-				groups[groupID] = group
-			}
-
-			taskName := convoy.EventProcessor.SetPrefix(group.Name)
+			taskName := convoy.EventProcessor
 			job := &queue.Job{
-				ID: delivery.UID,
+				ID:      delivery.UID,
+				Payload: json.RawMessage(delivery.UID),
+				Delay:   1 * time.Second,
 			}
-			err = q.Publish(ctx, taskName, job, 1*time.Second)
+			err := q.Write(taskName, convoy.EventQueue, job)
 			if err != nil {
 				log.WithError(err).Errorf("batch %d: failed to send event delivery %s to the queue", batchCount, delivery.ID)
 			}

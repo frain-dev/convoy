@@ -119,10 +119,6 @@ var (
 	}
 )
 
-var (
-	ErrUserNotFound = errors.New("user not found")
-)
-
 const (
 	ActiveSubscriptionStatus   SubscriptionStatus = "active"
 	InactiveSubscriptionStatus SubscriptionStatus = "inactive"
@@ -243,6 +239,7 @@ func (o *Group) IsDeleted() bool { return o.DeletedAt > 0 }
 func (o *Group) IsOwner(a *Application) bool { return o.UID == a.GroupID }
 
 var (
+	ErrUserNotFound                  = errors.New("user not found")
 	ErrSourceNotFound                = errors.New("source not found")
 	ErrEventNotFound                 = errors.New("event not found")
 	ErrGroupNotFound                 = errors.New("group not found")

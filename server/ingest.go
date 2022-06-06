@@ -1,6 +1,7 @@
 package server
 
 import (
+	"encoding/json"
 	"io"
 	"net/http"
 	"time"
@@ -93,11 +94,19 @@ func (a *applicationHandler) IngestEvent(w http.ResponseWriter, r *http.Request)
 	}
 
 	taskName := convoy.CreateEventProcessor.SetPrefix(g.Name)
-	job := &queue.Job{
-		ID:    event.UID,
-		Event: event,
+	eventByte, err := json.Marshal(event)
+	if err != nil {
+		_ = render.Render(w, r, newErrorResponse(err.Error(), http.StatusBadRequest))
+		return
 	}
-	err = a.createEventQueue.Publish(r.Context(), taskName, job, 0)
+
+	job := &queue.Job{
+		ID:      event.UID,
+		Payload: eventByte,
+		Delay:   0,
+	}
+
+	err = a.queue.Write(taskName, convoy.CreateEventQueue, job)
 	if err != nil {
 		log.Errorf("Error occurred sending new event to the queue %s", err)
 	}

@@ -17,9 +17,8 @@ func provideAppService(ctrl *gomock.Controller) *AppService {
 	appRepo := mocks.NewMockApplicationRepository(ctrl)
 	eventRepo := mocks.NewMockEventRepository(ctrl)
 	eventDeliveryRepo := mocks.NewMockEventDeliveryRepository(ctrl)
-	eventQueue := mocks.NewMockQueuer(ctrl)
 	cache := mocks.NewMockCache(ctrl)
-	return NewAppService(appRepo, eventRepo, eventDeliveryRepo, eventQueue, cache)
+	return NewAppService(appRepo, eventRepo, eventDeliveryRepo, cache)
 }
 
 func boolPtr(b bool) *bool {

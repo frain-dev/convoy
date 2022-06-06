@@ -10,6 +10,8 @@ type HttpMethod string
 
 type TaskName string
 
+type QueueName string
+
 type CacheKey string
 
 type GenericMap map[string]interface{}
@@ -73,16 +75,18 @@ const (
 	TokenCacheKey        CacheKey = "tokens"
 )
 
+//queues
 const (
-	StreamGroup           = "disq:"
+	EventQueue       QueueName = "EventQueue"
+	CreateEventQueue QueueName = "CreateEventQueue"
+	PriorityQueue    QueueName = "PriorityQueue"
+)
+const (
 	EventDeliveryIDLength = 12
 )
 
 const (
-	// Number of messages reserved by a fetcher in the queue in one request.
-	ReservationSize = 1000
-	//Size of the internal buffer
-	BufferSize = 100000
+	Concurrency = 100
 )
 
 var ErrUnsupportedDatebase = fmt.Errorf("unsupported database for search detected, remove search configuration or use a supported database (mongodb)")

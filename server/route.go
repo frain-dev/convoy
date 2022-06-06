@@ -13,6 +13,7 @@ import (
 	"github.com/frain-dev/convoy/auth"
 	"github.com/frain-dev/convoy/cache"
 	"github.com/frain-dev/convoy/logger"
+	redisqueue "github.com/frain-dev/convoy/queue/redis"
 	"github.com/frain-dev/convoy/searcher"
 	"github.com/frain-dev/convoy/tracer"
 
@@ -437,7 +438,8 @@ func buildRoutes(app *applicationHandler) http.Handler {
 		})
 	})
 
-	router.Handle("/v1/metrics", promhttp.Handler())
+	router.Handle("/queue/monitoring/*", app.queue.(*redisqueue.RedisQueue).Monitor())
+	router.Handle("/metrics", promhttp.HandlerFor(Reg, promhttp.HandlerOpts{}))
 	router.HandleFunc("/health", func(w http.ResponseWriter, r *http.Request) {
 		_ = render.Render(w, r, newServerResponse(fmt.Sprintf("Convoy %v", convoy.GetVersion()), nil, http.StatusOK))
 	})
@@ -456,8 +458,7 @@ func New(cfg config.Configuration,
 	orgRepo datastore.OrganisationRepository,
 	sourceRepo datastore.SourceRepository,
 	userRepo datastore.UserRepository,
-	eventQueue queue.Queuer,
-	createEventQueue queue.Queuer,
+	queue queue.Queuer,
 	logger logger.Logger,
 	tracer tracer.Tracer,
 	cache cache.Cache,
@@ -475,8 +476,7 @@ func New(cfg config.Configuration,
 		sourceRepo,
 		orgRepo,
 		userRepo,
-		eventQueue,
-		createEventQueue,
+		queue,
 		logger,
 		tracer,
 		cache,
@@ -491,9 +491,8 @@ func New(cfg config.Configuration,
 		Addr:         fmt.Sprintf(":%d", cfg.Server.HTTP.Port),
 	}
 
+	RegisterQueueMetrics(app.queue, cfg)
 	RegisterDBMetrics(app)
-	RegisterQueueMetrics(eventQueue, cfg)
-	RegisterConsumerMetrics(eventQueue, cfg)
 	prometheus.MustRegister(requestDuration)
 	return srv
 }

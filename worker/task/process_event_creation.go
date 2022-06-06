@@ -2,6 +2,7 @@ package task
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"time"
 
@@ -9,45 +10,41 @@ import (
 	"github.com/frain-dev/convoy/cache"
 	"github.com/frain-dev/convoy/datastore"
 	"github.com/frain-dev/convoy/queue"
-	"github.com/frain-dev/disq"
 	"github.com/google/uuid"
+	"github.com/hibiken/asynq"
 	log "github.com/sirupsen/logrus"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
-func ProcessEventCreation(
-	appRepo datastore.ApplicationRepository,
-	eventRepo datastore.EventRepository,
-	groupRepo datastore.GroupRepository,
-	eventDeliveryRepo datastore.EventDeliveryRepository,
-	cache cache.Cache,
-	eventQueue queue.Queuer,
-	subRepo datastore.SubscriptionRepository,
-) func(job *queue.Job) error {
-	return func(job *queue.Job) error {
-		event := job.Event
-		ctx := context.Background()
+func ProcessEventCreated(appRepo datastore.ApplicationRepository, eventRepo datastore.EventRepository, groupRepo datastore.GroupRepository, eventDeliveryRepo datastore.EventDeliveryRepository, cache cache.Cache, eventQueue queue.Queuer, subRepo datastore.SubscriptionRepository) func(context.Context, *asynq.Task) error {
+	return func(ctx context.Context, t *asynq.Task) error {
+
+		var event datastore.Event
+		err := json.Unmarshal(t.Payload(), &event)
+		if err != nil {
+			return &EndpointError{Err: err, delay: defaultDelay}
+		}
 
 		var group *datastore.Group
+		var subscriptions []datastore.Subscription
+
 		groupCacheKey := convoy.GroupsCacheKey.Get(event.GroupID).String()
-		err := cache.Get(ctx, groupCacheKey, &group)
+		err = cache.Get(ctx, groupCacheKey, &group)
 		if err != nil {
-			return &disq.Error{Err: err, Delay: 10 * time.Second}
+			return &EndpointError{Err: err, delay: 10 * time.Second}
 		}
 
 		if group == nil {
 			group, err = groupRepo.FetchGroupByID(ctx, event.GroupID)
 			if err != nil {
-				return &disq.Error{Err: err, Delay: 10 * time.Second}
+				return &EndpointError{Err: err, delay: 10 * time.Second}
 			}
 
 			err = cache.Set(ctx, groupCacheKey, group, 10*time.Minute)
 			if err != nil {
-				return &disq.Error{Err: err, Delay: 10 * time.Second}
+				return &EndpointError{Err: err, delay: 10 * time.Second}
 			}
 		}
-
-		var subscriptions []datastore.Subscription
 
 		if group.Type == datastore.OutgoingGroup {
 			var app *datastore.Application
@@ -55,37 +52,37 @@ func ProcessEventCreation(
 			appCacheKey := convoy.ApplicationsCacheKey.Get(event.AppID).String()
 			err = cache.Get(ctx, appCacheKey, &app)
 			if err != nil {
-				return &disq.Error{Err: errors.New("cache error"), Delay: 10 * time.Second}
+				return &EndpointError{Err: err, delay: 10 * time.Second}
 			}
 
 			// cache miss, load from db
 			if app == nil {
 				app, err = appRepo.FindApplicationByID(ctx, event.AppID)
 				if err != nil {
-					return &disq.Error{Err: err, Delay: 10 * time.Second}
+					return &EndpointError{Err: err, delay: 10 * time.Second}
 				}
 
 				err = cache.Set(ctx, appCacheKey, app, 10*time.Minute)
 				if err != nil {
-					return &disq.Error{Err: err, Delay: 10 * time.Second}
+					return &EndpointError{Err: err, delay: 10 * time.Second}
 				}
 			}
 
 			subscriptions, err = subRepo.FindSubscriptionByEventType(ctx, group.UID, app.UID, event.EventType)
 			if err != nil {
-				return &disq.Error{Err: errors.New("error fetching subscriptions for event type"), Delay: 10 * time.Second}
+				return &EndpointError{Err: errors.New("error fetching subscriptions for event type"), delay: 10 * time.Second}
 			}
 		} else if group.Type == datastore.IncomingGroup {
 			subscriptions, err = subRepo.FindSubscriptionBySourceIDs(ctx, group.UID, event.SourceID)
 			if err != nil {
-				return &disq.Error{Err: errors.New("error fetching subscriptions for this source"), Delay: 10 * time.Second}
+				return &EndpointError{Err: errors.New("error fetching subscriptions for this source"), delay: 10 * time.Second}
 			}
 		}
 
 		event.MatchedEndpoints = len(subscriptions)
-		err = eventRepo.CreateEvent(ctx, event)
+		err = eventRepo.CreateEvent(ctx, &event)
 		if err != nil {
-			return &disq.Error{Err: err, Delay: 10 * time.Second}
+			return &EndpointError{Err: err, delay: 10 * time.Second}
 		}
 
 		intervalSeconds := group.Config.Strategy.Duration
@@ -94,12 +91,12 @@ func ProcessEventCreation(
 		for _, s := range subscriptions {
 			app, err := appRepo.FindApplicationByID(ctx, s.AppID)
 			if err != nil {
-				return &disq.Error{Err: err, Delay: 10 * time.Second}
+				return &EndpointError{Err: err, delay: 10 * time.Second}
 			}
 
 			endpoint, err := appRepo.FindApplicationEndpointByID(ctx, app.UID, s.EndpointID)
 			if err != nil {
-				return &disq.Error{Err: err, Delay: 10 * time.Second}
+				return &EndpointError{Err: err, delay: 10 * time.Second}
 			}
 
 			s.Endpoint = endpoint
@@ -134,13 +131,16 @@ func ProcessEventCreation(
 				log.WithError(err).Error("error occurred creating event delivery")
 			}
 
-			taskName := convoy.EventProcessor.SetPrefix(group.Name)
+			taskName := convoy.EventProcessor
 			if eventDelivery.Status != datastore.DiscardedEventStatus {
-				job := &queue.Job{
-					ID: eventDelivery.UID,
-				}
+				payload := json.RawMessage(eventDelivery.UID)
 
-				err = eventQueue.Publish(ctx, taskName, job, 1*time.Second)
+				job := &queue.Job{
+					ID:      eventDelivery.UID,
+					Payload: payload,
+					Delay:   1 * time.Second,
+				}
+				err = eventQueue.Write(taskName, convoy.EventQueue, job)
 				if err != nil {
 					log.Errorf("Error occurred sending new event to the queue %s", err)
 				}

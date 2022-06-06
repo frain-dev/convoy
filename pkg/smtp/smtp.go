@@ -4,7 +4,6 @@ import (
 	"bytes"
 	_ "embed"
 	"fmt"
-	"html/template"
 
 	"github.com/frain-dev/convoy/config"
 	"github.com/frain-dev/convoy/util"
@@ -12,20 +11,16 @@ import (
 	"gopkg.in/gomail.v2"
 )
 
-//go:embed endpoint.update.html
-var t string
+type SmtpClient interface {
+	SendEmail(emailAddr, subject string, body bytes.Buffer) error
+}
 
-const (
-	NotificationSubject  = "Endpoint Status Update"
-	NotificationTemplate = "endpoint.update.html"
-)
-
-type SmtpClient struct {
+type Client struct {
 	url, username, password, from, replyTo string
 	port                                   uint32
 }
 
-func New(cfg *config.SMTPConfiguration) (*SmtpClient, error) {
+func New(cfg *config.SMTPConfiguration) (SmtpClient, error) {
 	var err error
 
 	errMsg := "Missing SMTP Config - %s"
@@ -54,7 +49,7 @@ func New(cfg *config.SMTPConfiguration) (*SmtpClient, error) {
 		log.WithError(err).Error()
 	}
 
-	return &SmtpClient{
+	return &Client{
 		url:      cfg.URL,
 		port:     cfg.Port,
 		username: cfg.Username,
@@ -64,51 +59,32 @@ func New(cfg *config.SMTPConfiguration) (*SmtpClient, error) {
 	}, err
 }
 
-func (s *SmtpClient) SendEmailNotification(email, logoURL, targetURL string, status string) error {
+func (s *Client) SendEmail(emailAddr, subject string, body bytes.Buffer) error {
 	// Compose Message
-	m := s.setHeaders(email)
+	m := s.setHeaders(emailAddr, subject)
 
-	// Parse Template
-	templ := template.Must(template.New("notificationEmail").Parse(t))
-
-	// Set data.
-	var body bytes.Buffer
-	err := templ.Execute(&body, struct {
-		URL     string
-		LogoURL string
-		Status  string
-	}{
-		URL:     targetURL,
-		LogoURL: logoURL,
-		Status:  status,
-	})
-
-	if err != nil {
-		log.WithError(err).Error("Failed to build template")
-		return err
-	}
 	m.SetBody("text/html", body.String())
 
 	// Send Email
 	d := gomail.NewDialer(s.url, int(s.port), s.username, s.password)
-	if err = d.DialAndSend(m); err != nil {
+	if err := d.DialAndSend(m); err != nil {
 		return err
 	}
 
 	return nil
 }
 
-func (s *SmtpClient) setHeaders(email string) *gomail.Message {
+func (s *Client) setHeaders(email, subject string) *gomail.Message {
 	m := gomail.NewMessage()
 
-	m.SetHeader("From", fmt.Sprintf("Convoy Status <%s>", s.from))
+	m.SetHeader("From", s.from)
 	m.SetHeader("To", email)
 
 	if !util.IsStringEmpty(s.replyTo) {
 		m.SetHeader("Reply-To", s.replyTo)
 	}
 
-	m.SetHeader("Subject", NotificationSubject)
+	m.SetHeader("Subject", subject)
 
 	return m
 }
