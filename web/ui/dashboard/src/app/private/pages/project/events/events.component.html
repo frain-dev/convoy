@@ -32,6 +32,7 @@
 		</div>
 	</div>
 </div>
+
 <div class="card">
 	<convoy-loader id="dashboard_summary_loader" *ngIf="isloadingDashboardData"></convoy-loader>
 	<ul class="metrics">
@@ -46,6 +47,7 @@
 				</div>
 			</div>
 		</li>
+
 		<li class="apps flex flex__align-items-center padding-x__30px padding-y__16px">
 			<img src="/assets/img/apps-icon.svg" class="margin-right__30px" alt="apps icon" />
 			<div class="metric">
@@ -81,6 +83,7 @@
 		</div>
 	</div>
 </section>
+
 <div [hidden]="activeTab !== 'events'">
 	<app-event (pushEvents)="events = $event" (getEventDeliveries)="getEventDeliveries($event)"></app-event>
 </div>
