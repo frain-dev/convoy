@@ -152,7 +152,7 @@ func TestOrganisationInviteService_CreateOrganisationMemberInvite(t *testing.T) 
 	}
 }
 
-func TestOrganisationInviteService_AcceptOrganisationMemberInvite(t *testing.T) {
+func TestOrganisationInviteService_ProcessOrganisationMemberInvite(t *testing.T) {
 	ctx := context.Background()
 
 	type args struct {
@@ -371,6 +371,194 @@ func TestOrganisationInviteService_AcceptOrganisationMemberInvite(t *testing.T) 
 				om.EXPECT().CreateOrganisationMember(gomock.Any(), gomock.Any()).Times(1).Return(nil)
 			},
 			wantErr: false,
+		},
+		{
+			name: "should_fail_to_create_new_user",
+			args: args{
+				ctx:      ctx,
+				token:    "abcdef",
+				email:    "test@email.com",
+				accepted: true,
+				newUser: &models.User{
+					FirstName: "Daniel",
+					LastName:  "O.J",
+					Email:     "test@gmail.com",
+					Password:  "1234",
+				},
+			},
+			dbFn: func(ois *OrganisationInviteService) {
+				oir, _ := ois.orgInviteRepo.(*mocks.MockOrganisationInviteRepository)
+				oir.EXPECT().FetchOrganisationInviteByTokenAndEmail(gomock.Any(), "abcdef", "test@email.com").
+					Times(1).Return(
+					&datastore.OrganisationInvite{
+						OrganisationID: "123ab",
+						Status:         datastore.InviteStatusPending,
+						InviteeEmail:   "test@email.com",
+						Role: auth.Role{
+							Type:   auth.RoleAdmin,
+							Groups: []string{"ref"},
+							Apps:   nil,
+						},
+					},
+					nil,
+				)
+
+				u, _ := ois.userRepo.(*mocks.MockUserRepository)
+				u.EXPECT().FindUserByEmail(gomock.Any(), "test@email.com").
+					Times(1).Return(nil, datastore.ErrUserNotFound)
+
+				u.EXPECT().CreateUser(gomock.Any(), gomock.Any()).Times(1).Return(errors.New("failed"))
+			},
+			wantErr:     true,
+			wantErrCode: http.StatusBadRequest,
+			wantErrMsg:  "failed to create user",
+		},
+		{
+			name: "should_fail_to_fetch_organisation_by_id",
+			args: args{
+				ctx:      ctx,
+				token:    "abcdef",
+				email:    "test@email.com",
+				accepted: true,
+				newUser:  nil,
+			},
+			dbFn: func(ois *OrganisationInviteService) {
+				oir, _ := ois.orgInviteRepo.(*mocks.MockOrganisationInviteRepository)
+				oir.EXPECT().FetchOrganisationInviteByTokenAndEmail(gomock.Any(), "abcdef", "test@email.com").
+					Times(1).Return(
+					&datastore.OrganisationInvite{
+						OrganisationID: "123ab",
+						Status:         datastore.InviteStatusPending,
+						InviteeEmail:   "test@email.com",
+						Role: auth.Role{
+							Type:   auth.RoleAdmin,
+							Groups: []string{"ref"},
+							Apps:   nil,
+						},
+					},
+					nil,
+				)
+
+				u, _ := ois.userRepo.(*mocks.MockUserRepository)
+				u.EXPECT().FindUserByEmail(gomock.Any(), "test@email.com").Times(1).Return(
+					&datastore.User{
+						UID: "user-123",
+					},
+					nil,
+				)
+
+				o, _ := ois.orgRepo.(*mocks.MockOrganisationRepository)
+				o.EXPECT().FetchOrganisationByID(gomock.Any(), "123ab").
+					Times(1).Return(nil, errors.New("failed"))
+			},
+			wantErr:     true,
+			wantErrCode: http.StatusBadRequest,
+			wantErrMsg:  "failed to fetch organisation by id",
+		},
+		{
+			name: "should_fail_to_create_organisation_member",
+			args: args{
+				ctx:      ctx,
+				token:    "abcdef",
+				email:    "test@email.com",
+				accepted: true,
+				newUser:  nil,
+			},
+			dbFn: func(ois *OrganisationInviteService) {
+				oir, _ := ois.orgInviteRepo.(*mocks.MockOrganisationInviteRepository)
+				oir.EXPECT().FetchOrganisationInviteByTokenAndEmail(gomock.Any(), "abcdef", "test@email.com").
+					Times(1).Return(
+					&datastore.OrganisationInvite{
+						OrganisationID: "123ab",
+						Status:         datastore.InviteStatusPending,
+						InviteeEmail:   "test@email.com",
+						Role: auth.Role{
+							Type:   auth.RoleAdmin,
+							Groups: []string{"ref"},
+							Apps:   nil,
+						},
+					},
+					nil,
+				)
+
+				u, _ := ois.userRepo.(*mocks.MockUserRepository)
+				u.EXPECT().FindUserByEmail(gomock.Any(), "test@email.com").Times(1).Return(
+					&datastore.User{
+						UID: "user-123",
+					},
+					nil,
+				)
+
+				o, _ := ois.orgRepo.(*mocks.MockOrganisationRepository)
+				o.EXPECT().FetchOrganisationByID(gomock.Any(), "123ab").Times(1).Return(
+					&datastore.Organisation{UID: "org-123"},
+					nil,
+				)
+
+				om, _ := ois.orgMemberRepo.(*mocks.MockOrganisationMemberRepository)
+				om.EXPECT().CreateOrganisationMember(gomock.Any(), gomock.Any()).
+					Times(1).Return(errors.New("failed"))
+			},
+			wantErr:     true,
+			wantErrCode: http.StatusBadRequest,
+			wantErrMsg:  "failed to create organisation member",
+		},
+		{
+			name: "should_fail_to_update_organisation_member_invite",
+			args: args{
+				ctx:      ctx,
+				token:    "abcdef",
+				email:    "test@email.com",
+				accepted: true,
+				newUser:  nil,
+			},
+			dbFn: func(ois *OrganisationInviteService) {
+				oir, _ := ois.orgInviteRepo.(*mocks.MockOrganisationInviteRepository)
+				oir.EXPECT().FetchOrganisationInviteByTokenAndEmail(gomock.Any(), "abcdef", "test@email.com").
+					Times(1).Return(
+					&datastore.OrganisationInvite{
+						OrganisationID: "123ab",
+						Status:         datastore.InviteStatusPending,
+						InviteeEmail:   "test@email.com",
+						Role: auth.Role{
+							Type:   auth.RoleAdmin,
+							Groups: []string{"ref"},
+							Apps:   nil,
+						},
+					},
+					nil,
+				)
+				oir.EXPECT().UpdateOrganisationInvite(gomock.Any(), &datastore.OrganisationInvite{
+					OrganisationID: "123ab",
+					Status:         datastore.InviteStatusAccepted,
+					InviteeEmail:   "test@email.com",
+					Role: auth.Role{
+						Type:   auth.RoleAdmin,
+						Groups: []string{"ref"},
+						Apps:   nil,
+					},
+				}).Times(1).Return(errors.New("failed"))
+
+				u, _ := ois.userRepo.(*mocks.MockUserRepository)
+				u.EXPECT().FindUserByEmail(gomock.Any(), "test@email.com").Times(1).Return(
+					&datastore.User{
+						UID: "user-123",
+					},
+					nil,
+				)
+
+				o, _ := ois.orgRepo.(*mocks.MockOrganisationRepository)
+				o.EXPECT().FetchOrganisationByID(gomock.Any(), "123ab").Times(1).Return(
+					&datastore.Organisation{UID: "org-123"},
+					nil,
+				)
+
+				om, _ := ois.orgMemberRepo.(*mocks.MockOrganisationMemberRepository)
+				om.EXPECT().CreateOrganisationMember(gomock.Any(), gomock.Any()).Times(1).Return(nil)
+			},
+			wantErr:     true,
+			wantErrCode: http.StatusBadRequest,
+			wantErrMsg:  "failed to update accepted organisation invite",
 		},
 	}
 	for _, tt := range tests {

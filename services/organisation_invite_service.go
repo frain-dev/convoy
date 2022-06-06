@@ -98,15 +98,14 @@ func (ois *OrganisationInviteService) ProcessOrganisationMemberInvite(ctx contex
 
 	org, err := ois.orgRepo.FetchOrganisationByID(ctx, iv.OrganisationID)
 	if err != nil {
-		log.WithError(err).Error("failed to find organisation by id")
-		return NewServiceError(http.StatusBadRequest, errors.New("failed to find organisation by id"))
+		log.WithError(err).Error("failed to fetch organisation by id")
+		return NewServiceError(http.StatusBadRequest, errors.New("failed to fetch organisation by id"))
 	}
 
 	iv.Status = datastore.InviteStatusAccepted
 	_, err = NewOrganisationMemberService(ois.orgMemberRepo).CreateOrganisationMember(ctx, org, user, &iv.Role)
 	if err != nil {
-		log.WithError(err).Error("failed to create organisation member")
-		return NewServiceError(http.StatusBadRequest, errors.New("failed to create organisation member"))
+		return err
 	}
 
 	err = ois.orgInviteRepo.UpdateOrganisationInvite(ctx, iv)
