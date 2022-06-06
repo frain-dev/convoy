@@ -172,6 +172,67 @@ func SeedDefaultUser(db datastore.DatabaseClient) (*datastore.User, error) {
 	return defaultUser, nil
 }
 
+// seed default organisation
+func SeedDefaultOrganisation(db datastore.DatabaseClient, user *datastore.User) (*datastore.Organisation, error) {
+	p := datastore.Password{Plaintext: DefaultUserPassword}
+	err := p.GenerateHash()
+	if err != nil {
+		return nil, err
+	}
+
+	defaultOrg := &datastore.Organisation{
+		UID:            uuid.NewString(),
+		OwnerID:        user.UID,
+		Name:           "default-org",
+		DocumentStatus: datastore.ActiveDocumentStatus,
+		CreatedAt:      primitive.NewDateTimeFromTime(time.Now()),
+		UpdatedAt:      primitive.NewDateTimeFromTime(time.Now()),
+	}
+
+	// Seed Data.
+	err = db.OrganisationRepo().CreateOrganisation(context.TODO(), defaultOrg)
+	if err != nil {
+		return &datastore.Organisation{}, err
+	}
+
+	member := &datastore.OrganisationMember{
+		UID:            uuid.NewString(),
+		OrganisationID: defaultOrg.UID,
+		UserID:         user.UID,
+		Role:           auth.Role{Type: auth.RoleSuperUser},
+		DocumentStatus: datastore.ActiveDocumentStatus,
+		CreatedAt:      primitive.NewDateTimeFromTime(time.Now()),
+		UpdatedAt:      primitive.NewDateTimeFromTime(time.Now()),
+	}
+
+	err = db.OrganisationMemberRepo().CreateOrganisationMember(context.TODO(), member)
+	if err != nil {
+		return nil, err
+	}
+
+	return defaultOrg, nil
+}
+
+// seed organisation member
+func SeedOrganisationMember(db datastore.DatabaseClient, org *datastore.Organisation, user *datastore.User, role *auth.Role) (*datastore.OrganisationMember, error) {
+	member := &datastore.OrganisationMember{
+		UID:            uuid.NewString(),
+		OrganisationID: org.UID,
+		UserID:         user.UID,
+		Role:           *role,
+		DocumentStatus: datastore.ActiveDocumentStatus,
+		CreatedAt:      primitive.NewDateTimeFromTime(time.Now()),
+		UpdatedAt:      primitive.NewDateTimeFromTime(time.Now()),
+	}
+
+	err := db.OrganisationMemberRepo().CreateOrganisationMember(context.TODO(), member)
+	if err != nil {
+		return nil, err
+	}
+
+	return member, nil
+}
+
 // SeedAPIKey creates random api key for integration tests.
 func SeedAPIKey(db datastore.DatabaseClient, g *datastore.Group, uid, name, keyType string) (*datastore.APIKey, error) {
 	if util.IsStringEmpty(uid) {
