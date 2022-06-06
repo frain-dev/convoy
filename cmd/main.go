@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"errors"
+	"fmt"
 	"os"
 	"time"
 	_ "time/tzdata"
@@ -11,6 +12,8 @@ import (
 	"github.com/frain-dev/convoy/datastore/badger"
 	"github.com/frain-dev/convoy/searcher"
 	"github.com/go-redis/redis/v8"
+	"github.com/google/uuid"
+	"go.mongodb.org/mongo-driver/bson/primitive"
 
 	"github.com/frain-dev/convoy/logger"
 	memqueue "github.com/frain-dev/convoy/queue/memqueue"
@@ -73,6 +76,47 @@ func NewQueue(opts queue.QueueOptions, name string) queue.Queuer {
 	return convoyQueue
 }
 
+func ensureDefaultUser(ctx context.Context, a *app) error {
+	pageable := datastore.Pageable{}
+
+	users, _, err := a.userRepo.LoadUsersPaged(ctx, pageable)
+
+	if err != nil {
+		return fmt.Errorf("failed to load users - %w", err)
+	}
+
+	if len(users) > 0 {
+		return nil
+	}
+
+	p := datastore.Password{Plaintext: "default"}
+	err = p.GenerateHash()
+
+	if err != nil {
+		return err
+	}
+
+	defaultUser := &datastore.User{
+		UID:            uuid.NewString(),
+		FirstName:      "default",
+		LastName:       "default",
+		Email:          "superuser@default.com",
+		Password:       string(p.Hash),
+		CreatedAt:      primitive.NewDateTimeFromTime(time.Now()),
+		UpdatedAt:      primitive.NewDateTimeFromTime(time.Now()),
+		DocumentStatus: datastore.ActiveDocumentStatus,
+	}
+
+	err = a.userRepo.CreateUser(ctx, defaultUser)
+	if err != nil {
+		return fmt.Errorf("failed to create user - %w", err)
+	}
+
+	log.Infof("Created Superuser with username: %s and password: %s", defaultUser.Email, p.Plaintext)
+
+	return nil
+}
+
 type app struct {
 	apiKeyRepo        datastore.APIKeyRepository
 	groupRepo         datastore.GroupRepository
@@ -80,7 +124,9 @@ type app struct {
 	eventRepo         datastore.EventRepository
 	eventDeliveryRepo datastore.EventDeliveryRepository
 	subRepo           datastore.SubscriptionRepository
+	orgRepo           datastore.OrganisationRepository
 	sourceRepo        datastore.SourceRepository
+	userRepo          datastore.UserRepository
 	eventQueue        queue.Queuer
 	createEventQueue  queue.Queuer
 	logger            logger.Logger
@@ -212,6 +258,7 @@ func preRun(app *app, db datastore.DatabaseClient) func(cmd *cobra.Command, args
 		app.applicationRepo = db.AppRepo()
 		app.eventDeliveryRepo = db.EventDeliveryRepo()
 		app.sourceRepo = db.SourceRepo()
+		app.userRepo = db.UserRepo()
 
 		app.eventQueue = NewQueue(opts, "EventQueue")
 		app.createEventQueue = NewQueue(opts, "CreateEventQueue")
@@ -222,7 +269,7 @@ func preRun(app *app, db datastore.DatabaseClient) func(cmd *cobra.Command, args
 		app.limiter = li
 		app.searcher = se
 
-		return nil
+		return ensureDefaultUser(context.Background(), app)
 	}
 }
 

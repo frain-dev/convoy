@@ -10,6 +10,7 @@ import (
 	"github.com/frain-dev/convoy/auth"
 	"github.com/frain-dev/convoy/config"
 	"go.mongodb.org/mongo-driver/bson/primitive"
+	"golang.org/x/crypto/bcrypt"
 )
 
 type Pageable struct {
@@ -118,6 +119,10 @@ var (
 	}
 )
 
+var (
+	ErrUserNotFound = errors.New("user not found")
+)
+
 const (
 	ActiveSubscriptionStatus   SubscriptionStatus = "active"
 	InactiveSubscriptionStatus SubscriptionStatus = "inactive"
@@ -161,6 +166,8 @@ type Endpoint struct {
 
 	DocumentStatus DocumentStatus `json:"-" bson:"document_status"`
 }
+
+var ErrOrgNotFound = errors.New("organisation not found")
 
 type Group struct {
 	ID         primitive.ObjectID `json:"-" bson:"_id"`
@@ -353,11 +360,6 @@ type EventInterval struct {
 	Count uint64            `json:"count" bson:"count"`
 }
 
-// type EventMetadata struct {
-// 	UID       string    `json:"uid" bson:"uid"`
-// 	EventType EventType `json:"name" bson:"name"`
-// }
-
 type DeliveryAttempt struct {
 	ID         primitive.ObjectID `json:"-" bson:"_id"`
 	UID        string             `json:"uid" bson:"uid"`
@@ -440,9 +442,9 @@ type Subscription struct {
 	RetryConfig  *RetryConfiguration  `json:"retry_config,omitempty" bson:"retry_config,omitempty"`
 	FilterConfig *FilterConfiguration `json:"filter_config,omitempty" bson:"filter_config,omitempty"`
 
-	CreatedAt primitive.DateTime `json:"created_at,omitempty" bson:"created_at"`
-	UpdatedAt primitive.DateTime `json:"updated_at,omitempty" bson:"updated_at"`
-	DeletedAt primitive.DateTime `json:"deleted_at,omitempty" bson:"deleted_at"`
+	CreatedAt primitive.DateTime `json:"created_at,omitempty" bson:"created_at" swaggertype:"string"`
+	UpdatedAt primitive.DateTime `json:"updated_at,omitempty" bson:"updated_at" swaggertype:"string"`
+	DeletedAt primitive.DateTime `json:"delted_at,omitempty" bson:"deleted_at" swaggertype:"string"`
 
 	DocumentStatus DocumentStatus `json:"-" bson:"document_status"`
 }
@@ -456,6 +458,22 @@ type Source struct {
 	Type       SourceType         `json:"type" bson:"type"`
 	IsDisabled bool               `json:"is_disabled" bson:"is_disabled"`
 	Verifier   *VerifierConfig    `json:"verifier" bson:"verifier"`
+
+	CreatedAt primitive.DateTime `json:"created_at,omitempty" bson:"created_at" swaggertype:"string"`
+	UpdatedAt primitive.DateTime `json:"updated_at,omitempty" bson:"updated_at" swaggertype:"string"`
+	DeletedAt primitive.DateTime `json:"deleted_at,omitempty" bson:"deleted_at" swaggertype:"string"`
+
+	DocumentStatus DocumentStatus `json:"-" bson:"document_status"`
+}
+
+type User struct {
+	ID        primitive.ObjectID `json:"-" bson:"_id"`
+	UID       string             `json:"uid" bson:"uid"`
+	FirstName string             `json:"first_name" bson:"first_name"`
+	LastName  string             `json:"last_name" bson:"last_name"`
+	Email     string             `json:"email" bson:"email"`
+	Password  string             `json:"-" bson:"password"`
+	Role      auth.Role          `json:"role" bson:"role"`
 
 	CreatedAt primitive.DateTime `json:"created_at,omitempty" bson:"created_at"`
 	UpdatedAt primitive.DateTime `json:"updated_at,omitempty" bson:"updated_at"`
@@ -501,4 +519,44 @@ type BasicAuth struct {
 type ApiKey struct {
 	APIKey       string `json:"key,omitempty" bson:"key"`
 	APIKeyHeader string `json:"header,omitempty" bson:"header"`
+}
+
+type Organisation struct {
+	ID             primitive.ObjectID `json:"-" bson:"_id"`
+	UID            string             `json:"uid" bson:"uid"`
+	OwnerID        string             `json:"owner_id" bson:"owner_id"`
+	Name           string             `json:"name" bson:"name"`
+	DocumentStatus DocumentStatus     `json:"-" bson:"document_status"`
+	CreatedAt      primitive.DateTime `json:"created_at,omitempty" bson:"created_at,omitempty" swaggertype:"string"`
+	UpdatedAt      primitive.DateTime `json:"updated_at,omitempty" bson:"updated_at,omitempty" swaggertype:"string"`
+	DeletedAt      primitive.DateTime `json:"deleted_at,omitempty" bson:"deleted_at,omitempty" swaggertype:"string"`
+}
+
+type Password struct {
+	Plaintext string
+	Hash      []byte
+}
+
+func (p *Password) GenerateHash() error {
+	hash, err := bcrypt.GenerateFromPassword([]byte(p.Plaintext), 12)
+	if err != nil {
+		return err
+	}
+
+	p.Hash = hash
+	return nil
+}
+
+func (p *Password) Matches() (bool, error) {
+	err := bcrypt.CompareHashAndPassword(p.Hash, []byte(p.Plaintext))
+	if err != nil {
+		switch {
+		case errors.Is(err, bcrypt.ErrMismatchedHashAndPassword):
+			return false, nil
+		default:
+			return false, err
+		}
+	}
+
+	return true, err
 }

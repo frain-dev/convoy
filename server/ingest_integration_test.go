@@ -39,7 +39,7 @@ func (i *IngestIntegrationTestSuite) SetupTest() {
 	err := config.LoadConfig("./testdata/Auth_Config/full-convoy.json")
 	require.NoError(i.T(), err)
 
-	initRealmChain(i.T(), i.DB.APIRepo())
+	initRealmChain(i.T(), i.DB.APIRepo(), i.DB.UserRepo(), i.ConvoyApp.cache)
 }
 
 func (i *IngestIntegrationTestSuite) TearDownTest() {

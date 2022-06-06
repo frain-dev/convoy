@@ -16,4 +16,6 @@ type DatabaseClient interface {
 	SubRepo() SubscriptionRepository
 	EventDeliveryRepo() EventDeliveryRepository
 	SourceRepo() SourceRepository
+	OrganisationRepo() OrganisationRepository
+	UserRepo() UserRepository
 }

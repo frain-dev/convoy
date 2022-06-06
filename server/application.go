@@ -22,25 +22,29 @@ import (
 )
 
 type applicationHandler struct {
-	subService        *services.SubcriptionService
-	appService        *services.AppService
-	eventService      *services.EventService
-	groupService      *services.GroupService
-	securityService   *services.SecurityService
-	sourceService     *services.SourceService
-	appRepo           datastore.ApplicationRepository
-	eventRepo         datastore.EventRepository
-	eventDeliveryRepo datastore.EventDeliveryRepository
-	subRepo           datastore.SubscriptionRepository
-	groupRepo         datastore.GroupRepository
-	apiKeyRepo        datastore.APIKeyRepository
-	sourceRepo        datastore.SourceRepository
-	eventQueue        queue.Queuer
-	createEventQueue  queue.Queuer
-	logger            logger.Logger
-	tracer            tracer.Tracer
-	cache             cache.Cache
-	limiter           limiter.RateLimiter
+	appService          *services.AppService
+	eventService        *services.EventService
+	groupService        *services.GroupService
+	securityService     *services.SecurityService
+	sourceService       *services.SourceService
+	subService          *services.SubcriptionService
+	organisationService *services.OrganisationService
+	orgRepo             datastore.OrganisationRepository
+	appRepo             datastore.ApplicationRepository
+	eventRepo           datastore.EventRepository
+	subRepo             datastore.SubscriptionRepository
+	eventDeliveryRepo   datastore.EventDeliveryRepository
+	groupRepo           datastore.GroupRepository
+	apiKeyRepo          datastore.APIKeyRepository
+	sourceRepo          datastore.SourceRepository
+	eventQueue          queue.Queuer
+	createEventQueue    queue.Queuer
+	logger              logger.Logger
+	tracer              tracer.Tracer
+	cache               cache.Cache
+	limiter             limiter.RateLimiter
+	userService         *services.UserService
+	userRepo            datastore.UserRepository
 }
 
 type pagedResponse struct {
@@ -56,6 +60,8 @@ func newApplicationHandler(
 	apiKeyRepo datastore.APIKeyRepository,
 	subRepo datastore.SubscriptionRepository,
 	sourceRepo datastore.SourceRepository,
+	orgRepo datastore.OrganisationRepository,
+	userRepo datastore.UserRepository,
 	eventQueue queue.Queuer,
 	createEventQueue queue.Queuer,
 	logger logger.Logger,
@@ -70,29 +76,34 @@ func newApplicationHandler(
 	as := services.NewAppService(appRepo, eventRepo, eventDeliveryRepo, eventQueue, cache)
 	ss := services.NewSecurityService(groupRepo, apiKeyRepo)
 	rs := services.NewSubscriptionService(subRepo)
+	os := services.NewOrganisationService(orgRepo)
 	sos := services.NewSourceService(sourceRepo)
+	us := services.NewUserService(userRepo, cache)
 
 	return &applicationHandler{
-		appService:        as,
-		eventService:      es,
-		groupService:      gs,
-		securityService:   ss,
-		subService:        rs,
-		sourceService:     sos,
-		eventRepo:         eventRepo,
-		eventDeliveryRepo: eventDeliveryRepo,
-		apiKeyRepo:        apiKeyRepo,
-		groupRepo:         groupRepo,
-		appRepo:           appRepo,
-		subRepo:           subRepo,
-
-		createEventQueue: createEventQueue,
-		eventQueue:       eventQueue,
-		limiter:          limiter,
-		logger:           logger,
-		tracer:           tracer,
-		cache:            cache,
-		sourceRepo:       sourceRepo,
+		appService:          as,
+		eventService:        es,
+		groupService:        gs,
+		securityService:     ss,
+		organisationService: os,
+		subService:          rs,
+		sourceService:       sos,
+		orgRepo:             orgRepo,
+		eventRepo:           eventRepo,
+		eventDeliveryRepo:   eventDeliveryRepo,
+		apiKeyRepo:          apiKeyRepo,
+		appRepo:             appRepo,
+		groupRepo:           groupRepo,
+		sourceRepo:          sourceRepo,
+		subRepo:             subRepo,
+		eventQueue:          eventQueue,
+		createEventQueue:    createEventQueue,
+		logger:              logger,
+		tracer:              tracer,
+		cache:               cache,
+		limiter:             limiter,
+		userService:         us,
+		userRepo:            userRepo,
 	}
 }
 
