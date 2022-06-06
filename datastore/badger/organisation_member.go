@@ -8,7 +8,7 @@ import (
 
 type orgMemberRepo struct{}
 
-func (o orgMemberRepo) FetchOrganisationMemberByUserID(ctx context.Context, userID string) (*datastore.OrganisationMember, error) {
+func (o orgMemberRepo) FetchOrganisationMemberByUserID(ctx context.Context, userID, orgID string) (*datastore.OrganisationMember, error) {
 	return nil, nil
 }
 
@@ -32,6 +32,6 @@ func (o orgMemberRepo) DeleteOrganisationMember(ctx context.Context, memberID st
 	return nil
 }
 
-func (o orgMemberRepo) FetchOrganisationMemberByID(ctx context.Context, memberID string) (*datastore.OrganisationMember, error) {
+func (o orgMemberRepo) FetchOrganisationMemberByID(ctx context.Context, orgID, memberID string) (*datastore.OrganisationMember, error) {
 	return nil, nil
 }

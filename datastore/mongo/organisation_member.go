@@ -82,11 +82,12 @@ func (o *orgMemberRepo) DeleteOrganisationMember(ctx context.Context, uid string
 	return nil
 }
 
-func (o *orgMemberRepo) FetchOrganisationMemberByID(ctx context.Context, uid string) (*datastore.OrganisationMember, error) {
+func (o *orgMemberRepo) FetchOrganisationMemberByID(ctx context.Context, orgID, uid string) (*datastore.OrganisationMember, error) {
 	member := new(datastore.OrganisationMember)
 
 	filter := bson.M{
 		"uid":             uid,
+		"organisation_id": orgID,
 		"document_status": datastore.ActiveDocumentStatus,
 	}
 
@@ -98,15 +99,15 @@ func (o *orgMemberRepo) FetchOrganisationMemberByID(ctx context.Context, uid str
 	return member, err
 }
 
-func (o *orgMemberRepo) FetchOrganisationMemberByUserID(ctx context.Context, userID string) (*datastore.OrganisationMember, error) {
-	member := new(datastore.OrganisationMember)
-
+func (o *orgMemberRepo) FetchOrganisationMemberByUserID(ctx context.Context, orgID, userID string) (*datastore.OrganisationMember, error) {
 	filter := bson.M{
 		"user_id":         userID,
+		"organisation_id": orgID,
 		"document_status": datastore.ActiveDocumentStatus,
 	}
 
-	err := o.inner.FindOne(ctx, filter).Decode(&member)
+	member := new(datastore.OrganisationMember)
+	err := o.inner.FindOne(ctx, filter).Decode(member)
 	if errors.Is(err, mongo.ErrNoDocuments) {
 		err = datastore.ErrOrgMemberNotFound
 	}

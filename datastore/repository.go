@@ -70,8 +70,8 @@ type OrganisationMemberRepository interface {
 	CreateOrganisationMember(ctx context.Context, member *OrganisationMember) error
 	UpdateOrganisationMember(ctx context.Context, member *OrganisationMember) error
 	DeleteOrganisationMember(ctx context.Context, memberID string) error
-	FetchOrganisationMemberByID(ctx context.Context, memberID string) (*OrganisationMember, error)
-	FetchOrganisationMemberByUserID(ctx context.Context, userID string) (*OrganisationMember, error)
+	FetchOrganisationMemberByID(ctx context.Context, organisationID string, memberID string) (*OrganisationMember, error)
+	FetchOrganisationMemberByUserID(ctx context.Context, userID string, organisationID string) (*OrganisationMember, error)
 }
 
 type ApplicationRepository interface {
