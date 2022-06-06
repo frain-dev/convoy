@@ -41,31 +41,10 @@ export class EventComponent implements OnInit {
 		{ id: 'response', label: 'Response' },
 		{ id: 'request', label: 'Request' }
 	];
-	displayedEvents: {
+	displayedEvents!: {
 		date: string;
 		content: EVENT[];
-	}[] = [
-		{
-			date: '28 Mar, 2022',
-			content: [
-				{
-					app_metadata: {
-						group_id: 'db78d6fe-b05e-476d-b908-cb6fff26a3ed',
-						support_email: 'pelumi@mailinator.com',
-						title: 'App B',
-						uid: '73bd4f0e-e987-45b6-bf10-2d6da4ad3fe7'
-					},
-					created_at: '2022-03-28T16:22:51.972Z',
-					data: '{test}',
-					event_type: 'test.create',
-					matched_endpoints: 1,
-					provider_id: '73bd4f0e-e987-45b6-bf10-2d6da4ad3fe7',
-					uid: 'a4495e71-1747-4869-842b-4bed9fb27f47',
-					updated_at: '2022-03-28T16:22:51.972Z'
-				}
-			]
-		}
-	];
+	}[];
 	events!: { pagination: PAGINATION; content: EVENT[] };
 	eventDetailsActiveTab = 'data';
 	eventsDetailsItem: any;
@@ -86,7 +65,7 @@ export class EventComponent implements OnInit {
 
 	async ngOnInit() {
 		this.getFiltersFromURL();
-		await this.getEvents();
+		this.getEvents();
 	}
 
 	ngAfterViewInit() {
@@ -171,8 +150,7 @@ export class EventComponent implements OnInit {
 			const minute = new Date(dates.startDate).getMinutes();
 			this.eventsTimerFilter.filterStartHour = hour;
 			this.eventsTimerFilter.filterStartMinute = minute;
-
-			response.startTime = `T${hour}:${minute}:00`;
+			response.startTime = `T${hour < 10 ? '0' + hour : hour}:${minute < 10 ? '0' + minute : minute}:00`;
 		} else {
 			response.startTime = 'T00:00:00';
 		}
@@ -182,7 +160,7 @@ export class EventComponent implements OnInit {
 			const minute = new Date(dates.endDate).getMinutes();
 			this.eventsTimerFilter.filterEndHour = hour;
 			this.eventsTimerFilter.filterEndMinute = minute;
-			response.endTime = `T${hour}:${minute}:59`;
+			response.endTime = `T${hour < 10 ? '0' + hour : hour}:${minute < 10 ? '0' + minute : minute}:59`;
 		} else {
 			response.endTime = 'T23:59:59';
 		}
@@ -231,9 +209,12 @@ export class EventComponent implements OnInit {
 			});
 
 			this.events = eventsResponse.data;
-			this.eventsDetailsItem = this.events?.content[0];
-			this.getEventDeliveriesForSidebar(this.eventsDetailsItem.uid);
-			this.displayedEvents = await this.generalService.setContentDisplayed(eventsResponse.data.content);
+			if (this.events?.content.length > 0) {
+				this.eventsDetailsItem = this.events?.content[0];
+				this.getEventDeliveriesForSidebar(this.eventsDetailsItem.uid);
+				this.displayedEvents = await this.generalService.setContentDisplayed(eventsResponse.data.content);
+			}
+
 			this.pushEvents.emit(this.events);
 			this.isloadingEvents = false;
 			return eventsResponse;
