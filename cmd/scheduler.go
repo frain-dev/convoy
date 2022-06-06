@@ -2,7 +2,6 @@ package main
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"net/http"
 
@@ -13,7 +12,6 @@ import (
 	"github.com/frain-dev/convoy/worker"
 	"github.com/frain-dev/convoy/worker/task"
 	"github.com/go-chi/chi/v5"
-	"github.com/google/uuid"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
@@ -39,18 +37,11 @@ func addSchedulerCommand(a *app) *cobra.Command {
 			//initialize scheduler
 			s := worker.NewScheduler(a.queue)
 
-			//inititalize and register task handler
+			//inititalize task handler
 			handler := task.TestScheduleTask()
-			s.RegisterTaskHandler(taskName, handler)
-
-			//payload
-			job, err := json.Marshal(uuid.NewString())
-			if err != nil {
-				log.WithError(err)
-			}
 
 			//register task
-			s.RegisterTask(cronspec, taskName, job)
+			s.RegisterTask(cronspec, taskName, handler)
 
 			// Start scheduler
 			s.Start()

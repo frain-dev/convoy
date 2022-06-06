@@ -42,16 +42,12 @@ func (s *Scheduler) Start() {
 	}
 }
 
-func (s *Scheduler) RegisterTask(cronspec string, taskName convoy.TaskName, payload []byte) {
-	task := asynq.NewTask(string(taskName), payload)
-
+func (s *Scheduler) RegisterTask(cronspec string, taskName convoy.TaskName, taskHandler func(context.Context, *asynq.Task) error) {
+	task := asynq.NewTask(string(taskName), nil)
 	_, err := s.inner.Register(cronspec, task, asynq.Queue(string(convoy.ScheduleQueue)))
 	if err != nil {
 		log.WithError(err).Fatalf("Failed to register %s scheduler task", taskName)
 	}
-}
-
-func (s *Scheduler) RegisterTaskHandler(taskName convoy.TaskName, taskHandler func(context.Context, *asynq.Task) error) {
 	s.consumer.RegisterHandlers(taskName, taskHandler)
 }
 
