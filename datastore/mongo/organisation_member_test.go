@@ -66,7 +66,7 @@ func TestCreateOrganisationMember(t *testing.T) {
 	err := organisationMemberRepo.CreateOrganisationMember(context.Background(), m)
 	require.NoError(t, err)
 
-	member, err := organisationMemberRepo.FetchOrganisationMemberByID(context.Background(), m.UID)
+	member, err := organisationMemberRepo.FetchOrganisationMemberByID(context.Background(), m.UID, m.OrganisationID)
 	require.NoError(t, err)
 
 	require.Equal(t, m.UID, member.UID)
@@ -103,7 +103,7 @@ func TestUpdateOrganisationMember(t *testing.T) {
 	err = organisationMemberRepo.UpdateOrganisationMember(context.Background(), m)
 	require.NoError(t, err)
 
-	member, err := organisationMemberRepo.FetchOrganisationMemberByID(context.Background(), m.UID)
+	member, err := organisationMemberRepo.FetchOrganisationMemberByID(context.Background(), m.UID, m.OrganisationID)
 	require.NoError(t, err)
 
 	require.Equal(t, m.UID, member.UID)
@@ -131,7 +131,7 @@ func TestDeleteOrganisationMember(t *testing.T) {
 	err = organisationMemberRepo.DeleteOrganisationMember(context.Background(), m.UID)
 	require.NoError(t, err)
 
-	_, err = organisationMemberRepo.FetchOrganisationMemberByID(context.Background(), m.UID)
+	_, err = organisationMemberRepo.FetchOrganisationMemberByID(context.Background(), m.UID, m.OrganisationID)
 	require.Equal(t, datastore.ErrOrgMemberNotFound, err)
 }
 
@@ -153,7 +153,7 @@ func TestFetchOrganisationMemberByID(t *testing.T) {
 	err := organisationMemberRepo.CreateOrganisationMember(context.Background(), m)
 	require.NoError(t, err)
 
-	member, err := organisationMemberRepo.FetchOrganisationMemberByID(context.Background(), m.UID)
+	member, err := organisationMemberRepo.FetchOrganisationMemberByID(context.Background(), m.UID, m.OrganisationID)
 	require.NoError(t, err)
 
 	require.Equal(t, m.UID, member.UID)
@@ -179,7 +179,7 @@ func TestFetchOrganisationMemberByUserID(t *testing.T) {
 	err := organisationMemberRepo.CreateOrganisationMember(context.Background(), m)
 	require.NoError(t, err)
 
-	member, err := organisationMemberRepo.FetchOrganisationMemberByUserID(context.Background(), m.UserID)
+	member, err := organisationMemberRepo.FetchOrganisationMemberByUserID(context.Background(), m.UserID, m.OrganisationID)
 	require.NoError(t, err)
 
 	require.Equal(t, m.UID, member.UID)

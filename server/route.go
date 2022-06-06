@@ -68,6 +68,8 @@ func buildRoutes(app *applicationHandler) http.Handler {
 			r.Use(jsonResponse)
 			r.Use(requireAuth())
 
+			r.Post("/process_organisation_member_invite", app.ProcessOrganisationMemberInvite)
+
 			r.Route("/groups", func(groupRouter chi.Router) {
 				groupRouter.Get("/", app.GetGroups)
 				groupRouter.With(requirePermission(auth.RoleSuperUser)).Post("/", app.CreateGroup)
@@ -231,10 +233,26 @@ func buildRoutes(app *applicationHandler) http.Handler {
 
 			orgRouter.Route("/{orgID}", func(orgSubRouter chi.Router) {
 				orgSubRouter.Use(requireOrganisation(app.orgRepo))
+				orgSubRouter.Use(requireOrganisationMembership(app.orgMemberRepo))
 
 				orgSubRouter.Get("/", app.GetOrganisation)
-				orgSubRouter.Put("/", app.UpdateOrganisation)
-				orgSubRouter.Delete("/", app.DeleteOrganisation)
+				orgSubRouter.With(requireOrganisationMemberRole(auth.RoleSuperUser)).Put("/", app.UpdateOrganisation)
+				orgSubRouter.With(requireOrganisationMemberRole(auth.RoleSuperUser)).Delete("/", app.DeleteOrganisation)
+				orgSubRouter.With(requireOrganisationMemberRole(auth.RoleSuperUser)).Post("/invite_user", app.InviteUserToOrganisation)
+
+				orgSubRouter.Route("/members", func(orgMemberRouter chi.Router) {
+					orgMemberRouter.Use(requireOrganisationMemberRole(auth.RoleSuperUser))
+
+					orgMemberRouter.Get("/", app.GetOrganisationMembers)
+
+					orgMemberRouter.Route("/{memberID}", func(orgMemberSubRouter chi.Router) {
+
+						orgMemberSubRouter.Get("/", app.GetOrganisationMember)
+						orgMemberSubRouter.Put("/", app.UpdateOrganisationMember)
+						orgMemberSubRouter.Delete("/", app.DeleteOrganisationMember)
+
+					})
+				})
 			})
 		})
 

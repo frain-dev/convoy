@@ -257,6 +257,7 @@ func TestOrganisationMemberService_FindOrganisationMemberByID(t *testing.T) {
 
 	type args struct {
 		ctx context.Context
+		org *datastore.Organisation
 		id  string
 	}
 	tests := []struct {
@@ -272,11 +273,12 @@ func TestOrganisationMemberService_FindOrganisationMemberByID(t *testing.T) {
 			name: "should_find_organisation_member_by_id",
 			args: args{
 				ctx: ctx,
+				org: &datastore.Organisation{UID: "abc"},
 				id:  "123",
 			},
 			dbFn: func(os *OrganisationMemberService) {
 				a, _ := os.orgMemberRepo.(*mocks.MockOrganisationMemberRepository)
-				a.EXPECT().FetchOrganisationMemberByID(gomock.Any(), "123").
+				a.EXPECT().FetchOrganisationMemberByID(gomock.Any(), "abc", "123").
 					Times(1).Return(&datastore.OrganisationMember{UID: "123"}, nil)
 			},
 			want:    &datastore.OrganisationMember{UID: "123"},
@@ -287,10 +289,11 @@ func TestOrganisationMemberService_FindOrganisationMemberByID(t *testing.T) {
 			args: args{
 				ctx: ctx,
 				id:  "123",
+				org: &datastore.Organisation{UID: "abc"},
 			},
 			dbFn: func(os *OrganisationMemberService) {
 				a, _ := os.orgMemberRepo.(*mocks.MockOrganisationMemberRepository)
-				a.EXPECT().FetchOrganisationMemberByID(gomock.Any(), gomock.Any()).
+				a.EXPECT().FetchOrganisationMemberByID(gomock.Any(), "abc", "123").
 					Times(1).Return(nil, errors.New("failed"))
 			},
 			want:        &datastore.OrganisationMember{UID: "123"},
@@ -310,7 +313,7 @@ func TestOrganisationMemberService_FindOrganisationMemberByID(t *testing.T) {
 				tt.dbFn(om)
 			}
 
-			member, err := om.FindOrganisationMemberByID(tt.args.ctx, tt.args.id)
+			member, err := om.FindOrganisationMemberByID(tt.args.ctx, tt.args.org, tt.args.id)
 			if tt.wantErr {
 				require.NotNil(t, err)
 				require.Equal(t, tt.wantErrCode, err.(*ServiceError).ErrCode())

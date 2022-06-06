@@ -35,6 +35,10 @@ type APIKey struct {
 	ExpiresAt time.Time         `json:"expires_at"`
 }
 
+type UpdateOrganisationMember struct {
+	Role auth.Role `json:"role" bson:"role"`
+}
+
 type APIKeyByIDResponse struct {
 	UID       string             `json:"uid"`
 	Name      string             `json:"name"`

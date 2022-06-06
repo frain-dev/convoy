@@ -28,6 +28,7 @@ type applicationHandler struct {
 	securityService           *services.SecurityService
 	sourceService             *services.SourceService
 	organisationService       *services.OrganisationService
+	organisationMemberService *services.OrganisationMemberService
 	organisationInviteService *services.OrganisationInviteService
 	orgRepo                   datastore.OrganisationRepository
 	orgMemberRepo             datastore.OrganisationMemberRepository
@@ -78,7 +79,7 @@ func newApplicationHandler(
 	sos := services.NewSourceService(sourceRepo)
 	us := services.NewUserService(userRepo, cache)
 	ois := services.NewOrganisationInviteService(orgRepo, userRepo, orgMemberRepo, orgInviteRepo)
-
+	om := services.NewOrganisationMemberService(orgMemberRepo)
 	return &applicationHandler{
 		appService:                as,
 		eventService:              es,
@@ -87,6 +88,7 @@ func newApplicationHandler(
 		organisationService:       os,
 		sourceService:             sos,
 		organisationInviteService: ois,
+		organisationMemberService: om,
 		orgInviteRepo:             orgInviteRepo,
 		orgMemberRepo:             orgMemberRepo,
 		orgRepo:                   orgRepo,

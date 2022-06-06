@@ -40,6 +40,7 @@ const (
 	groupCtx         contextKey = "group"
 	appCtx           contextKey = "app"
 	orgCtx           contextKey = "organisation"
+	orgMemberCtx     contextKey = "organisation_member"
 	endpointCtx      contextKey = "endpoint"
 	eventCtx         contextKey = "event"
 	eventDeliveryCtx contextKey = "eventDelivery"
@@ -377,14 +378,39 @@ func requireAuthUserMetadata() func(next http.Handler) http.Handler {
 	}
 }
 
-func requireOrganisationMembership() func(next http.Handler) http.Handler {
+func requireOrganisationMembership(orgMemberRepo datastore.OrganisationMemberRepository) func(next http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			authUser := getAuthUserFromContext(r.Context())
-			_, ok := authUser.Metadata.(*datastore.User)
+			user, ok := authUser.Metadata.(*datastore.User)
 			if !ok {
 				log.Error("metadata missing in auth user object")
+				_ = render.Render(w, r, newErrorResponse("unauthorized", http.StatusUnauthorized))
+				return
+			}
+
+			org := getOrganisationFromContext(r.Context())
+
+			member, err := orgMemberRepo.FetchOrganisationMemberByUserID(r.Context(), user.UID, org.UID)
+			if err != nil {
+				log.WithError(err).Error("failed to find organisation member by user id")
+				_ = render.Render(w, r, newErrorResponse("failed to fetch organisation member", http.StatusBadRequest))
+				return
+			}
+
+			r = r.WithContext(setOrganisationMemberInContext(r.Context(), member))
+			next.ServeHTTP(w, r)
+		})
+	}
+}
+
+func requireOrganisationMemberRole(roleType auth.RoleType) func(next http.Handler) http.Handler {
+	return func(next http.Handler) http.Handler {
+
+		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			member := getOrganisationMemberFromContext(r.Context())
+			if member.Role.Type != roleType {
 				_ = render.Render(w, r, newErrorResponse("unauthorized", http.StatusUnauthorized))
 				return
 			}
@@ -931,6 +957,15 @@ func setOrganisationInContext(ctx context.Context,
 
 func getOrganisationFromContext(ctx context.Context) *datastore.Organisation {
 	return ctx.Value(orgCtx).(*datastore.Organisation)
+}
+
+func setOrganisationMemberInContext(ctx context.Context,
+	organisationMember *datastore.OrganisationMember) context.Context {
+	return context.WithValue(ctx, orgMemberCtx, organisationMember)
+}
+
+func getOrganisationMemberFromContext(ctx context.Context) *datastore.OrganisationMember {
+	return ctx.Value(orgMemberCtx).(*datastore.OrganisationMember)
 }
 
 func setEventInContext(ctx context.Context,

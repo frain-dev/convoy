@@ -65,8 +65,8 @@ func (om *OrganisationMemberService) UpdateOrganisationMember(ctx context.Contex
 	return organisationMember, nil
 }
 
-func (om *OrganisationMemberService) FindOrganisationMemberByID(ctx context.Context, id string) (*datastore.OrganisationMember, error) {
-	member, err := om.orgMemberRepo.FetchOrganisationMemberByID(ctx, id)
+func (om *OrganisationMemberService) FindOrganisationMemberByID(ctx context.Context, org *datastore.Organisation, id string) (*datastore.OrganisationMember, error) {
+	member, err := om.orgMemberRepo.FetchOrganisationMemberByID(ctx, org.UID, id)
 	if err != nil {
 		log.WithError(err).Error("failed to find organisation member by id")
 		return nil, NewServiceError(http.StatusBadRequest, errors.New("failed to find organisation member by id"))
