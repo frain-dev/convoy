@@ -1,7 +1,12 @@
 package task
 
 import (
+	"bytes"
+	"context"
+	"net/http"
 	"time"
+
+	log "github.com/sirupsen/logrus"
 
 	"github.com/hibiken/asynq"
 )
@@ -43,4 +48,19 @@ func GetRetryDelay(n int, err error, t *asynq.Task) time.Duration {
 		return rateLimitError.Delay()
 	}
 	return defaultDelay
+}
+
+func TestScheduleTask() func(context.Context, *asynq.Task) error {
+	return func(ctx context.Context, t *asynq.Task) error {
+		client := &http.Client{}
+		req, _ := http.NewRequest("POST", "http://127.0.0.1:6000/", bytes.NewBuffer(t.Payload()))
+		req.Header.Add("Content-Type", "application/json")
+
+		_, err := client.Do(req)
+		if err != nil {
+			log.WithError(err).Error("error sending request to API endpoint")
+			return nil
+		}
+		return nil
+	}
 }

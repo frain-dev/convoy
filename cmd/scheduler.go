@@ -1,18 +1,29 @@
 package main
 
 import (
+	"context"
+	"encoding/json"
+	"fmt"
+	"net/http"
+
+	"github.com/frain-dev/convoy"
 	"github.com/frain-dev/convoy/config"
+	redisqueue "github.com/frain-dev/convoy/queue/redis"
+	"github.com/frain-dev/convoy/server"
 	"github.com/frain-dev/convoy/worker"
+	"github.com/frain-dev/convoy/worker/task"
+	"github.com/go-chi/chi/v5"
+	"github.com/google/uuid"
+	"github.com/prometheus/client_golang/prometheus/promhttp"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 )
 
 func addSchedulerCommand(a *app) *cobra.Command {
-	var timeInterval string
-	var timer string
+	var cronspec string
 	cmd := &cobra.Command{
 		Use:   "scheduler",
-		Short: "requeue event deliveries in the background with a scheduler.",
+		Short: "schedule a periodic task.",
 		Run: func(cmd *cobra.Command, args []string) {
 			cfg, err := config.Get()
 			if err != nil {
@@ -21,20 +32,46 @@ func addSchedulerCommand(a *app) *cobra.Command {
 			if cfg.Queue.Type != config.RedisQueueProvider {
 				log.WithError(err).Fatalf("Queue type error: Command is available for redis queue only.")
 			}
+			ctx := context.Background()
 
-			s := worker.NewScheduler(&a.queue)
+			taskName := convoy.TaskName("example-schedule")
 
-			// Register tasks.
-			// s.AddTask("retry events", 30, func() {
-			// 	  task.RetryEventDeliveries(nil, "", a.eventDeliveryRepo, a.groupRepo, a.eventQueue)
-			// })
+			//initialize scheduler
+			s := worker.NewScheduler(a.queue)
 
-			// Start Processing
+			//inititalize and register task handler
+			handler := task.TestScheduleTask()
+			s.RegisterTaskHandler(taskName, handler)
+
+			//payload
+			job, err := json.Marshal(uuid.NewString())
+			if err != nil {
+				log.WithError(err)
+			}
+
+			//register task
+			s.RegisterTask(cronspec, taskName, job)
+
+			// Start scheduler
 			s.Start()
+
+			router := chi.NewRouter()
+			router.Handle("/queue/monitoring/*", a.queue.(*redisqueue.RedisQueue).Monitor())
+			router.Handle("/metrics", promhttp.HandlerFor(server.Reg, promhttp.HandlerOpts{}))
+
+			srv := &http.Server{
+				Handler: router,
+				Addr:    fmt.Sprintf(":%d", 5007),
+			}
+
+			e := srv.ListenAndServe()
+			if e != nil {
+				log.Fatal(e)
+			}
+			<-ctx.Done()
 		},
 	}
 
-	cmd.Flags().StringVar(&timeInterval, "time", "", "eventdelivery time interval")
-	cmd.Flags().StringVar(&timer, "timer", "", "schedule timer")
+	cmd.Flags().StringVar(&cronspec, "cronspec", "", "scheduler time interval '@every <duration>'")
 	return cmd
 }

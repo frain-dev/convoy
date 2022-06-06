@@ -193,9 +193,10 @@ func preRun(app *app, db datastore.DatabaseClient) func(cmd *cobra.Command, args
 				return err
 			}
 			queueNames := map[string]int{
-				string(convoy.PriorityQueue):    6,
+				string(convoy.PriorityQueue):    5,
 				string(convoy.EventQueue):       2,
 				string(convoy.CreateEventQueue): 2,
+				string(convoy.SchduleQueue):     1,
 			}
 			opts := queue.QueueOptions{
 				Names:             queueNames,

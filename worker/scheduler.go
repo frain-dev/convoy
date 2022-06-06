@@ -1,32 +1,60 @@
 package worker
 
 import (
-	"time"
+	"context"
 
+	"github.com/frain-dev/convoy"
 	"github.com/frain-dev/convoy/queue"
-	"github.com/go-co-op/gocron"
+	"github.com/hibiken/asynq"
 	log "github.com/sirupsen/logrus"
 )
 
 type Scheduler struct {
-	inner *gocron.Scheduler
-	queue *queue.Queuer
+	queue    queue.Queuer
+	inner    *asynq.Scheduler
+	consumer *Consumer
 }
 
-func NewScheduler(queue *queue.Queuer) *Scheduler {
+func NewScheduler(queue queue.Queuer) *Scheduler {
+	scheduler := asynq.NewScheduler(asynq.RedisClientOpt{
+		Addr:     queue.Options().RedisAddress,
+		Password: "",
+		DB:       0,
+	}, nil)
+
+	w, err := NewConsumer(queue)
+	if err != nil {
+		log.WithError(err).Fatal("error creating consumer")
+	}
+
 	return &Scheduler{
-		inner: gocron.NewScheduler(time.UTC),
-		queue: queue,
+		inner:    scheduler,
+		queue:    queue,
+		consumer: w,
 	}
 }
 
 func (s *Scheduler) Start() {
-	s.inner.StartBlocking()
+	s.consumer.Start()
+
+	if err := s.inner.Start(); err != nil {
+		log.Fatal(err)
+	}
 }
 
-func (s *Scheduler) AddTask(name string, secs int, task interface{}) {
-	_, err := s.inner.Every(secs).Seconds().Do(task)
+func (s *Scheduler) RegisterTask(cronspec string, taskName convoy.TaskName, payload []byte) {
+	task := asynq.NewTask(string(taskName), payload)
+
+	_, err := s.inner.Register(cronspec, task, asynq.Queue(string(convoy.SchduleQueue)))
 	if err != nil {
-		log.WithError(err).Fatalf("Failed to add %s scheduler task", name)
+		log.WithError(err).Fatalf("Failed to register %s scheduler task", taskName)
 	}
+}
+
+func (s *Scheduler) RegisterTaskHandler(taskName convoy.TaskName, taskHandler func(context.Context, *asynq.Task) error) {
+	s.consumer.RegisterHandlers(taskName, taskHandler)
+}
+
+func (s *Scheduler) Stop() {
+	s.inner.Shutdown()
 }
