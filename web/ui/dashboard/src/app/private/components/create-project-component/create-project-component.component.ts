@@ -72,6 +72,8 @@ export class CreateProjectComponent implements OnInit {
 			this.privateService.activeProjectId = projectId;
 			this.isCreatingProject = false;
 			this.generalService.showNotification({ message: 'Project created successfully!', style: 'success' });
+			this.onAction.emit({ action: 'createProject', data: response.data });
+
 		} catch (error) {
 			this.isCreatingProject = false;
 		}
