@@ -47,6 +47,9 @@ func (a *applicationHandler) InviteUserToOrganisation(w http.ResponseWriter, r *
 // @Tags Organisation
 // @Accept  json
 // @Produce  json
+// @Param token query string true "invite token"
+// @Param email query string true "email"
+// @Param accepted query string true "email"
 // @Success 200 {object} serverResponse{data=Stub}}
 // @Failure 400,401,500 {object} serverResponse{data=Stub}
 // @Security ApiKeyAuth

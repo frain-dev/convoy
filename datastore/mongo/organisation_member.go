@@ -99,7 +99,7 @@ func (o *orgMemberRepo) FetchOrganisationMemberByID(ctx context.Context, orgID, 
 	return member, err
 }
 
-func (o *orgMemberRepo) FetchOrganisationMemberByUserID(ctx context.Context, orgID, userID string) (*datastore.OrganisationMember, error) {
+func (o *orgMemberRepo) FetchOrganisationMemberByUserID(ctx context.Context, userID, orgID string) (*datastore.OrganisationMember, error) {
 	filter := bson.M{
 		"user_id":         userID,
 		"organisation_id": orgID,

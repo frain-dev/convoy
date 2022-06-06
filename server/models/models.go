@@ -24,7 +24,7 @@ type Organisation struct {
 }
 
 type OrganisationInvite struct {
-	InviteeEmail string    `json:"invitee_email" valid:"required~please provide a valid invitee email"`
+	InviteeEmail string    `json:"invitee_email" valid:"required~please provide a valid invitee email,email"`
 	Role         auth.Role `json:"role" bson:"role"`
 }
 

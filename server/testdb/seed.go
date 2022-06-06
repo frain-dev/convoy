@@ -3,6 +3,7 @@ package testdb
 import (
 	"context"
 	"fmt"
+	"github.com/dchest/uniuri"
 	"time"
 
 	"github.com/frain-dev/convoy"
@@ -231,6 +232,28 @@ func SeedOrganisationMember(db datastore.DatabaseClient, org *datastore.Organisa
 	}
 
 	return member, nil
+}
+
+// seed organisation invite
+func SeedOrganisationInvite(db datastore.DatabaseClient, org *datastore.Organisation, email string, role *auth.Role) (*datastore.OrganisationInvite, error) {
+	iv := &datastore.OrganisationInvite{
+		UID:            uuid.NewString(),
+		InviteeEmail:   email,
+		OrganisationID: org.UID,
+		Role:           *role,
+		Token:          uniuri.NewLen(64),
+		Status:         datastore.InviteStatusPending,
+		DocumentStatus: datastore.ActiveDocumentStatus,
+		CreatedAt:      primitive.NewDateTimeFromTime(time.Now()),
+		UpdatedAt:      primitive.NewDateTimeFromTime(time.Now()),
+	}
+
+	err := db.OrganisationInviteRepo().CreateOrganisationInvite(context.TODO(), iv)
+	if err != nil {
+		return nil, err
+	}
+
+	return iv, nil
 }
 
 // SeedAPIKey creates random api key for integration tests.
