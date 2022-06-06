@@ -243,7 +243,7 @@ func buildRoutes(app *applicationHandler) http.Handler {
 				orgSubRouter.Route("/members", func(orgMemberRouter chi.Router) {
 					orgMemberRouter.Use(requireOrganisationMemberRole(auth.RoleSuperUser))
 
-					orgMemberRouter.Get("/", app.GetOrganisationMembers)
+					orgMemberRouter.With(pagination).Get("/", app.GetOrganisationMembers)
 
 					orgMemberRouter.Route("/{memberID}", func(orgMemberSubRouter chi.Router) {
 
