@@ -83,14 +83,14 @@ func (q *RedisQueue) Inspector() *asynq.Inspector {
 func (q *RedisQueue) DeleteEventDeliveriesfromQueue(queuename convoy.QueueName, ids []string) error {
 	for _, id := range ids {
 		taskInfo, err := q.inspector.GetTaskInfo(string(queuename), id)
+		if err != nil {
+			return err
+		}
 		if taskInfo.State == asynq.TaskStateActive {
 			err = q.inspector.CancelProcessing(id)
 			if err != nil {
 				return err
 			}
-		}
-		if err != nil {
-			return err
 		}
 		err = q.inspector.DeleteTask(string(queuename), id)
 		if err != nil {

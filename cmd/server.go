@@ -172,7 +172,7 @@ func StartConvoyServer(a *app, cfg config.Configuration, withWorkers bool) error
 
 	if withWorkers {
 		// register worker.
-		consumer, err := worker.NewConsumer(cfg, a.queue.Options().Names)
+		consumer, err := worker.NewConsumer(a.queue)
 		if err != nil {
 			log.WithError(err).Error("failed to create worker")
 		}

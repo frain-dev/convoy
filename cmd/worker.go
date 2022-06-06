@@ -30,7 +30,7 @@ func addWorkerCommand(a *app) *cobra.Command {
 			}
 			ctx := context.Background()
 
-			consumer, err := worker.NewConsumer(cfg, a.queue.Options().Names)
+			consumer, err := worker.NewConsumer(a.queue)
 			if err != nil {
 				log.WithError(err).Error("failed to create worker")
 			}
