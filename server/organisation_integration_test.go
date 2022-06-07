@@ -219,7 +219,7 @@ func (s *OrganisationIntegrationTestSuite) Test_GetOrganisations() {
 	require.NoError(s.T(), err)
 
 	// Arrange.
-	url := "/ui/organisations?page=2&perPage=2"
+	url := "/ui/organisations?page=1&perPage=2"
 	req := createRequest(http.MethodGet, url, nil)
 	err = s.AuthenticatorFn(req, s.Router)
 	require.NoError(s.T(), err)
@@ -238,6 +238,8 @@ func (s *OrganisationIntegrationTestSuite) Test_GetOrganisations() {
 	parseResponse(s.T(), w.Result(), &pagedResp)
 
 	require.Equal(s.T(), 2, len(organisations))
+	require.Equal(s.T(), s.DefaultOrg.UID, organisations[1].UID)
+	require.Equal(s.T(), org.UID, organisations[0].UID)
 }
 
 func (s *OrganisationIntegrationTestSuite) Test_DeleteOrganisation() {
