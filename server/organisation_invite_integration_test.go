@@ -154,7 +154,7 @@ func (s *OrganisationInviteIntegrationTestSuite) Test_InviteUserToOrganisation_E
 func (s *OrganisationInviteIntegrationTestSuite) Test_ProcessOrganisationMemberInvite_AcceptForExistingUser() {
 	expectedStatusCode := http.StatusOK
 
-	user, err := testdb.SeedUser(s.DB, "password")
+	user, err := testdb.SeedUser(s.DB, "invite@test.com", "password")
 	require.NoError(s.T(), err)
 
 	iv, err := testdb.SeedOrganisationInvite(s.DB, s.DefaultOrg, user.Email, &auth.Role{

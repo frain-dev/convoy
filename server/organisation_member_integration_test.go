@@ -39,6 +39,7 @@ func (s *OrganisationMemberIntegrationTestSuite) SetupSuite() {
 
 func (s *OrganisationMemberIntegrationTestSuite) SetupTest() {
 	testdb.PurgeDB(s.DB)
+	s.DB = getDB()
 
 	// Setup Default Group.
 	s.DefaultGroup, _ = testdb.SeedDefaultGroup(s.DB)
@@ -70,11 +71,15 @@ func (s *OrganisationMemberIntegrationTestSuite) TearDownTest() {
 func (s *OrganisationMemberIntegrationTestSuite) Test_GetOrganisationMembers() {
 	expectedStatusCode := http.StatusOK
 
-	_, err := testdb.SeedOrganisationMember(s.DB, s.DefaultOrg, s.DefaultUser, &auth.Role{
+	user, err := testdb.SeedUser(s.DB, "member@test.com", "password")
+	require.NoError(s.T(), err)
+
+	_, err = testdb.SeedOrganisationMember(s.DB, s.DefaultOrg, user, &auth.Role{
 		Type:   auth.RoleAdmin,
 		Groups: []string{uuid.NewString()},
 		Apps:   nil,
 	})
+	require.NoError(s.T(), err)
 
 	// Arrange.
 	url := fmt.Sprintf("/ui/organisations/%s/members", s.DefaultOrg.UID)
@@ -103,7 +108,10 @@ func (s *OrganisationMemberIntegrationTestSuite) Test_GetOrganisationMembers() {
 func (s *OrganisationMemberIntegrationTestSuite) Test_GetOrganisationMember() {
 	expectedStatusCode := http.StatusOK
 
-	member, err := testdb.SeedOrganisationMember(s.DB, s.DefaultOrg, s.DefaultUser, &auth.Role{
+	user, err := testdb.SeedUser(s.DB, "member@test.com", "password")
+	require.NoError(s.T(), err)
+
+	member, err := testdb.SeedOrganisationMember(s.DB, s.DefaultOrg, user, &auth.Role{
 		Type:   auth.RoleAdmin,
 		Groups: []string{uuid.NewString()},
 		Apps:   nil,
@@ -128,17 +136,23 @@ func (s *OrganisationMemberIntegrationTestSuite) Test_GetOrganisationMember() {
 	var m datastore.OrganisationMember
 	parseResponse(s.T(), w.Result(), &m)
 
-	require.Equal(s.T(), member, m)
+	require.Equal(s.T(), member.UID, m.UID)
+	require.Equal(s.T(), member.OrganisationID, m.OrganisationID)
+	require.Equal(s.T(), member.UserID, m.UserID)
 }
 
 func (s *OrganisationMemberIntegrationTestSuite) Test_UpdateOrganisationMember() {
 	expectedStatusCode := http.StatusAccepted
 
-	member, err := testdb.SeedOrganisationMember(s.DB, s.DefaultOrg, s.DefaultUser, &auth.Role{
+	user, err := testdb.SeedUser(s.DB, "member@test.com", "password")
+	require.NoError(s.T(), err)
+
+	member, err := testdb.SeedOrganisationMember(s.DB, s.DefaultOrg, user, &auth.Role{
 		Type:   auth.RoleAdmin,
 		Groups: []string{uuid.NewString()},
 		Apps:   nil,
 	})
+	require.NoError(s.T(), err)
 
 	// Arrange.
 	url := fmt.Sprintf("/ui/organisations/%s/members/%s", s.DefaultOrg.UID, member.UID)
@@ -165,14 +179,18 @@ func (s *OrganisationMemberIntegrationTestSuite) Test_UpdateOrganisationMember()
 	require.Equal(s.T(), auth.Role{Type: auth.RoleAPI, Groups: []string{"123"}}, m.Role)
 }
 
-func (s *OrganisationMemberIntegrationTestSuite) Test_DeleteOrganisation() {
+func (s *OrganisationMemberIntegrationTestSuite) Test_DeleteOrganisationMember() {
 	expectedStatusCode := http.StatusOK
 
-	member, err := testdb.SeedOrganisationMember(s.DB, s.DefaultOrg, s.DefaultUser, &auth.Role{
+	user, err := testdb.SeedUser(s.DB, "member@test.com", "password")
+	require.NoError(s.T(), err)
+
+	member, err := testdb.SeedOrganisationMember(s.DB, s.DefaultOrg, user, &auth.Role{
 		Type:   auth.RoleAdmin,
 		Groups: []string{uuid.NewString()},
 		Apps:   nil,
 	})
+
 	// Arrange.
 	url := fmt.Sprintf("/ui/organisations/%s/members/%s", s.DefaultOrg.UID, member.UID)
 	req := createRequest(http.MethodDelete, url, nil)
@@ -188,7 +206,7 @@ func (s *OrganisationMemberIntegrationTestSuite) Test_DeleteOrganisation() {
 	// Assert.
 	require.Equal(s.T(), expectedStatusCode, w.Code)
 
-	_, err = s.DB.OrganisationRepo().FetchOrganisationByID(context.Background(), member.UID)
+	_, err = s.DB.OrganisationMemberRepo().FetchOrganisationMemberByID(context.Background(), member.UID, s.DefaultOrg.UID)
 	require.Equal(s.T(), datastore.ErrOrgMemberNotFound, err)
 }
 

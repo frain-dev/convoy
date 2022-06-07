@@ -6,6 +6,7 @@ package server
 import (
 	"context"
 	"fmt"
+	"github.com/frain-dev/convoy/auth"
 	"github.com/frain-dev/convoy/config"
 	"github.com/frain-dev/convoy/datastore"
 	"github.com/frain-dev/convoy/server/models"
@@ -25,6 +26,7 @@ type OrganisationIntegrationTestSuite struct {
 	Router          http.Handler
 	ConvoyApp       *applicationHandler
 	AuthenticatorFn AuthenticatorFn
+	DefaultOrg      *datastore.Organisation
 	DefaultGroup    *datastore.Group
 	DefaultUser     *datastore.User
 }
@@ -37,6 +39,7 @@ func (s *OrganisationIntegrationTestSuite) SetupSuite() {
 
 func (s *OrganisationIntegrationTestSuite) SetupTest() {
 	testdb.PurgeDB(s.DB)
+	s.DB = getDB()
 
 	// Setup Default Group.
 	s.DefaultGroup, _ = testdb.SeedDefaultGroup(s.DB)
@@ -44,6 +47,10 @@ func (s *OrganisationIntegrationTestSuite) SetupTest() {
 	user, err := testdb.SeedDefaultUser(s.DB)
 	require.NoError(s.T(), err)
 	s.DefaultUser = user
+
+	org, err := testdb.SeedDefaultOrganisation(s.DB, user)
+	require.NoError(s.T(), err)
+	s.DefaultOrg = org
 
 	s.AuthenticatorFn = authenticateRequest(&models.LoginUser{
 		Username: user.Email,
@@ -111,7 +118,10 @@ func (s *OrganisationIntegrationTestSuite) Test_UpdateOrganisation_EmptyOrganisa
 	expectedStatusCode := http.StatusBadRequest
 
 	uid := uuid.NewString()
-	_, err := testdb.SeedOrganisation(s.DB, uid, "", "new_org")
+	org, err := testdb.SeedOrganisation(s.DB, uid, s.DefaultUser.UID, "new_org")
+	require.NoError(s.T(), err)
+
+	_, err = testdb.SeedOrganisationMember(s.DB, org, s.DefaultUser, &auth.Role{Type: auth.RoleSuperUser})
 	require.NoError(s.T(), err)
 
 	body := strings.NewReader(`{"name":""}`)
@@ -134,7 +144,10 @@ func (s *OrganisationIntegrationTestSuite) Test_UpdateOrganisation() {
 	expectedStatusCode := http.StatusAccepted
 
 	uid := uuid.NewString()
-	_, err := testdb.SeedOrganisation(s.DB, uid, "", "new_org")
+	org, err := testdb.SeedOrganisation(s.DB, uid, s.DefaultUser.UID, "new_org")
+	require.NoError(s.T(), err)
+
+	_, err = testdb.SeedOrganisationMember(s.DB, org, s.DefaultUser, &auth.Role{Type: auth.RoleSuperUser})
 	require.NoError(s.T(), err)
 
 	body := strings.NewReader(`{"name":"update_org"}`)
@@ -153,16 +166,19 @@ func (s *OrganisationIntegrationTestSuite) Test_UpdateOrganisation() {
 	// Assert.
 	require.Equal(s.T(), expectedStatusCode, w.Code)
 
-	org, err := s.DB.OrganisationRepo().FetchOrganisationByID(context.Background(), uid)
+	organisation, err := s.DB.OrganisationRepo().FetchOrganisationByID(context.Background(), uid)
 	require.NoError(s.T(), err)
-	require.Equal(s.T(), "update_org", org.Name)
+	require.Equal(s.T(), "update_org", organisation.Name)
 }
 
 func (s *OrganisationIntegrationTestSuite) Test_GetOrganisation() {
 	expectedStatusCode := http.StatusOK
 
 	uid := uuid.NewString()
-	_, err := testdb.SeedOrganisation(s.DB, uid, "", "new_org")
+	seedOrg, err := testdb.SeedOrganisation(s.DB, uid, s.DefaultUser.UID, "new_org")
+	require.NoError(s.T(), err)
+
+	_, err = testdb.SeedOrganisationMember(s.DB, seedOrg, s.DefaultUser, &auth.Role{Type: auth.RoleSuperUser})
 	require.NoError(s.T(), err)
 
 	// Arrange.
@@ -185,8 +201,8 @@ func (s *OrganisationIntegrationTestSuite) Test_GetOrganisation() {
 
 	org, err := s.DB.OrganisationRepo().FetchOrganisationByID(context.Background(), uid)
 	require.NoError(s.T(), err)
-	require.Equal(s.T(), "new_org", org.Name)
-	require.Equal(s.T(), "new_org", organisation.Name)
+	require.Equal(s.T(), seedOrg.Name, org.Name)
+	require.Equal(s.T(), seedOrg.UID, organisation.UID)
 }
 
 func (s *OrganisationIntegrationTestSuite) Test_GetOrganisations() {
