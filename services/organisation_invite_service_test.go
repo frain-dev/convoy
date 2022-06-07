@@ -224,6 +224,64 @@ func TestOrganisationInviteService_ProcessOrganisationMemberInvite(t *testing.T)
 			wantErr: false,
 		},
 		{
+			name: "should_error_for_invite_already_accepted",
+			args: args{
+				ctx:      ctx,
+				token:    "abcdef",
+				accepted: true,
+				newUser:  nil,
+			},
+			dbFn: func(ois *OrganisationInviteService) {
+				oir, _ := ois.orgInviteRepo.(*mocks.MockOrganisationInviteRepository)
+				oir.EXPECT().FetchOrganisationInviteByToken(gomock.Any(), "abcdef").
+					Times(1).Return(
+					&datastore.OrganisationInvite{
+						OrganisationID: "123ab",
+						Status:         datastore.InviteStatusAccepted,
+						InviteeEmail:   "test@email.com",
+						Role: auth.Role{
+							Type:   auth.RoleAdmin,
+							Groups: []string{"ref"},
+							Apps:   nil,
+						},
+					},
+					nil,
+				)
+			},
+			wantErr:     true,
+			wantErrCode: http.StatusBadRequest,
+			wantErrMsg:  "organisation member invite already accepted",
+		},
+		{
+			name: "should_error_for_invite_already_declined",
+			args: args{
+				ctx:      ctx,
+				token:    "abcdef",
+				accepted: true,
+				newUser:  nil,
+			},
+			dbFn: func(ois *OrganisationInviteService) {
+				oir, _ := ois.orgInviteRepo.(*mocks.MockOrganisationInviteRepository)
+				oir.EXPECT().FetchOrganisationInviteByToken(gomock.Any(), "abcdef").
+					Times(1).Return(
+					&datastore.OrganisationInvite{
+						OrganisationID: "123ab",
+						Status:         datastore.InviteStatusDeclined,
+						InviteeEmail:   "test@email.com",
+						Role: auth.Role{
+							Type:   auth.RoleAdmin,
+							Groups: []string{"ref"},
+							Apps:   nil,
+						},
+					},
+					nil,
+				)
+			},
+			wantErr:     true,
+			wantErrCode: http.StatusBadRequest,
+			wantErrMsg:  "organisation member invite already declined",
+		},
+		{
 			name: "should_fail_to_find_invite_by_token_and_email",
 			args: args{
 				ctx:      ctx,
@@ -365,6 +423,39 @@ func TestOrganisationInviteService_ProcessOrganisationMemberInvite(t *testing.T)
 				om.EXPECT().CreateOrganisationMember(gomock.Any(), gomock.Any()).Times(1).Return(nil)
 			},
 			wantErr: false,
+		},
+		{
+			name: "should_error_for_nil_new_user",
+			args: args{
+				ctx:      ctx,
+				token:    "abcdef",
+				accepted: true,
+				newUser:  nil,
+			},
+			dbFn: func(ois *OrganisationInviteService) {
+				oir, _ := ois.orgInviteRepo.(*mocks.MockOrganisationInviteRepository)
+				oir.EXPECT().FetchOrganisationInviteByToken(gomock.Any(), "abcdef").
+					Times(1).Return(
+					&datastore.OrganisationInvite{
+						OrganisationID: "123ab",
+						Status:         datastore.InviteStatusPending,
+						InviteeEmail:   "test@email.com",
+						Role: auth.Role{
+							Type:   auth.RoleAdmin,
+							Groups: []string{"ref"},
+							Apps:   nil,
+						},
+					},
+					nil,
+				)
+				u, _ := ois.userRepo.(*mocks.MockUserRepository)
+				u.EXPECT().FindUserByEmail(gomock.Any(), "test@email.com").
+					Times(1).Return(nil, datastore.ErrUserNotFound)
+
+			},
+			wantErr:     true,
+			wantErrCode: http.StatusBadRequest,
+			wantErrMsg:  "new user is nil",
 		},
 		{
 			name: "should_fail_to_create_new_user",

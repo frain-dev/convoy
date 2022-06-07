@@ -102,12 +102,12 @@ func (ois *OrganisationInviteService) ProcessOrganisationMemberInvite(ctx contex
 		return NewServiceError(http.StatusBadRequest, errors.New("failed to fetch organisation by id"))
 	}
 
-	iv.Status = datastore.InviteStatusAccepted
 	_, err = NewOrganisationMemberService(ois.orgMemberRepo).CreateOrganisationMember(ctx, org, user, &iv.Role)
 	if err != nil {
 		return err
 	}
 
+	iv.Status = datastore.InviteStatusAccepted
 	err = ois.orgInviteRepo.UpdateOrganisationInvite(ctx, iv)
 	if err != nil {
 		log.WithError(err).Error("failed to update accepted organisation invite")
@@ -119,7 +119,7 @@ func (ois *OrganisationInviteService) ProcessOrganisationMemberInvite(ctx contex
 
 func (ois *OrganisationInviteService) createNewUser(ctx context.Context, newUser *models.User, email string) (*datastore.User, error) {
 	if newUser == nil {
-		return nil, errors.New("newUser is nil")
+		return nil, NewServiceError(http.StatusBadRequest, errors.New("new user is nil"))
 	}
 
 	p := datastore.Password{Plaintext: newUser.Password}
