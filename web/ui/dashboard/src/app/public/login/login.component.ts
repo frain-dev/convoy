@@ -1,6 +1,7 @@
 import { Component, OnInit } from '@angular/core';
-import { FormBuilder, FormGroup, Validators } from '@angular/forms';
+import { FormBuilder, FormControl, FormGroup, Validators } from '@angular/forms';
 import { Router } from '@angular/router';
+import { LoginService } from './login.service';
 
 @Component({
 	selector: 'app-login',
@@ -15,12 +16,28 @@ export class LoginComponent implements OnInit {
 		password: ['', Validators.required]
 	});
 
-	constructor(private formBuilder: FormBuilder, private router: Router) {}
+	constructor(private formBuilder: FormBuilder, private router: Router, private loginService: LoginService) {}
 
 	ngOnInit(): void {}
 
 	async login() {
-		localStorage.setItem('CONVOY_AUTH', JSON.stringify(this.loginForm.value));
-		this.router.navigateByUrl('dashboard');
+		if (this.loginForm.invalid) {
+			(<any>Object).values(this.loginForm.controls).forEach((control: FormControl) => {
+				control?.markAsTouched();
+			});
+			return;
+		}
+
+		this.disableLoginBtn = true;
+		try {
+			const response: any = await this.loginService.login(this.loginForm.value);
+			localStorage.setItem('CONVOY_AUTH', JSON.stringify(response.data));
+			console.log(response);
+
+			this.disableLoginBtn = false;
+			this.router.navigateByUrl('/');
+		} catch {
+			this.disableLoginBtn = false;
+		}
 	}
 }
