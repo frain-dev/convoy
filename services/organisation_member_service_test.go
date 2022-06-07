@@ -278,7 +278,7 @@ func TestOrganisationMemberService_FindOrganisationMemberByID(t *testing.T) {
 			},
 			dbFn: func(os *OrganisationMemberService) {
 				a, _ := os.orgMemberRepo.(*mocks.MockOrganisationMemberRepository)
-				a.EXPECT().FetchOrganisationMemberByID(gomock.Any(), "abc", "123").
+				a.EXPECT().FetchOrganisationMemberByID(gomock.Any(), "123", "abc").
 					Times(1).Return(&datastore.OrganisationMember{UID: "123"}, nil)
 			},
 			want:    &datastore.OrganisationMember{UID: "123"},
@@ -293,7 +293,7 @@ func TestOrganisationMemberService_FindOrganisationMemberByID(t *testing.T) {
 			},
 			dbFn: func(os *OrganisationMemberService) {
 				a, _ := os.orgMemberRepo.(*mocks.MockOrganisationMemberRepository)
-				a.EXPECT().FetchOrganisationMemberByID(gomock.Any(), "abc", "123").
+				a.EXPECT().FetchOrganisationMemberByID(gomock.Any(), "123", "abc").
 					Times(1).Return(nil, errors.New("failed"))
 			},
 			want:        &datastore.OrganisationMember{UID: "123"},

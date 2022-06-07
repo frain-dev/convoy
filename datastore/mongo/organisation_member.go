@@ -82,7 +82,7 @@ func (o *orgMemberRepo) DeleteOrganisationMember(ctx context.Context, uid string
 	return nil
 }
 
-func (o *orgMemberRepo) FetchOrganisationMemberByID(ctx context.Context, orgID, uid string) (*datastore.OrganisationMember, error) {
+func (o *orgMemberRepo) FetchOrganisationMemberByID(ctx context.Context, uid, orgID string) (*datastore.OrganisationMember, error) {
 	member := new(datastore.OrganisationMember)
 
 	filter := bson.M{
