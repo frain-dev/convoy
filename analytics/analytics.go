@@ -9,6 +9,7 @@ import (
 	"github.com/frain-dev/convoy/config"
 	"github.com/frain-dev/convoy/datastore"
 	"github.com/google/uuid"
+	"github.com/hibiken/asynq"
 	log "github.com/sirupsen/logrus"
 )
 
@@ -61,13 +62,17 @@ func newAnalytics(Repo *Repo, cfg config.Configuration) (*Analytics, error) {
 	return a, nil
 }
 
-func TrackDailyAnalytics(Repo *Repo, cfg config.Configuration) {
-	a, err := newAnalytics(Repo, cfg)
-	if err != nil {
-		log.Fatal(err)
-	}
+func TrackDailyAnalytics(Repo *Repo, cfg config.Configuration) func(context.Context, *asynq.Task) error {
+	return func(ctx context.Context, t *asynq.Task) error {
+		a, err := newAnalytics(Repo, cfg)
+		if err != nil {
+			log.Fatal(err)
+		}
 
-	a.trackDailyAnalytics()
+		a.trackDailyAnalytics()
+
+		return nil
+	}
 }
 
 func (a *Analytics) trackDailyAnalytics() {
