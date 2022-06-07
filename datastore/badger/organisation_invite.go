@@ -28,7 +28,7 @@ func (o orgInviteRepo) FetchOrganisationInviteByID(ctx context.Context, uid stri
 	return nil, nil
 }
 
-func (o orgInviteRepo) FetchOrganisationInviteByTokenAndEmail(ctx context.Context, token, email string) (*datastore.OrganisationInvite, error) {
+func (o orgInviteRepo) FetchOrganisationInviteByToken(ctx context.Context, token string) (*datastore.OrganisationInvite, error) {
 	return nil, nil
 }
 

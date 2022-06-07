@@ -3542,12 +3542,6 @@ paths:
           type: string
       - description: email
         in: query
-        name: email
-        required: true
-        schema:
-          type: string
-      - description: email
-        in: query
         name: accepted
         required: true
         schema:

@@ -62,8 +62,8 @@ func (ois *OrganisationInviteService) CreateOrganisationMemberInvite(ctx context
 	return iv, nil
 }
 
-func (ois *OrganisationInviteService) ProcessOrganisationMemberInvite(ctx context.Context, token string, email string, accepted bool, newUser *models.User) error {
-	iv, err := ois.orgInviteRepo.FetchOrganisationInviteByTokenAndEmail(ctx, token, email)
+func (ois *OrganisationInviteService) ProcessOrganisationMemberInvite(ctx context.Context, token string, accepted bool, newUser *models.User) error {
+	iv, err := ois.orgInviteRepo.FetchOrganisationInviteByToken(ctx, token)
 	if err != nil {
 		log.WithError(err).Error("failed to fetch organisation member invite by token and email")
 		return NewServiceError(http.StatusBadRequest, errors.New("failed to fetch organisation member invite"))

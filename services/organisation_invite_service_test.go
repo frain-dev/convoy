@@ -158,7 +158,6 @@ func TestOrganisationInviteService_ProcessOrganisationMemberInvite(t *testing.T)
 	type args struct {
 		ctx      context.Context
 		token    string
-		email    string
 		accepted bool
 		newUser  *models.User
 	}
@@ -175,13 +174,12 @@ func TestOrganisationInviteService_ProcessOrganisationMemberInvite(t *testing.T)
 			args: args{
 				ctx:      ctx,
 				token:    "abcdef",
-				email:    "test@email.com",
 				accepted: true,
 				newUser:  nil,
 			},
 			dbFn: func(ois *OrganisationInviteService) {
 				oir, _ := ois.orgInviteRepo.(*mocks.MockOrganisationInviteRepository)
-				oir.EXPECT().FetchOrganisationInviteByTokenAndEmail(gomock.Any(), "abcdef", "test@email.com").
+				oir.EXPECT().FetchOrganisationInviteByToken(gomock.Any(), "abcdef").
 					Times(1).Return(
 					&datastore.OrganisationInvite{
 						OrganisationID: "123ab",
@@ -230,13 +228,12 @@ func TestOrganisationInviteService_ProcessOrganisationMemberInvite(t *testing.T)
 			args: args{
 				ctx:      ctx,
 				token:    "abcdef",
-				email:    "test@email.com",
 				accepted: true,
 				newUser:  nil,
 			},
 			dbFn: func(ois *OrganisationInviteService) {
 				oir, _ := ois.orgInviteRepo.(*mocks.MockOrganisationInviteRepository)
-				oir.EXPECT().FetchOrganisationInviteByTokenAndEmail(gomock.Any(), "abcdef", "test@email.com").
+				oir.EXPECT().FetchOrganisationInviteByToken(gomock.Any(), "abcdef").
 					Times(1).Return(nil, errors.New("failed"))
 			},
 			wantErr:     true,
@@ -248,13 +245,12 @@ func TestOrganisationInviteService_ProcessOrganisationMemberInvite(t *testing.T)
 			args: args{
 				ctx:      ctx,
 				token:    "abcdef",
-				email:    "test@email.com",
 				accepted: false,
 				newUser:  nil,
 			},
 			dbFn: func(ois *OrganisationInviteService) {
 				oir, _ := ois.orgInviteRepo.(*mocks.MockOrganisationInviteRepository)
-				oir.EXPECT().FetchOrganisationInviteByTokenAndEmail(gomock.Any(), "abcdef", "test@email.com").
+				oir.EXPECT().FetchOrganisationInviteByToken(gomock.Any(), "abcdef").
 					Times(1).Return(
 					&datastore.OrganisationInvite{
 						OrganisationID: "123ab",
@@ -286,13 +282,12 @@ func TestOrganisationInviteService_ProcessOrganisationMemberInvite(t *testing.T)
 			args: args{
 				ctx:      ctx,
 				token:    "abcdef",
-				email:    "test@email.com",
 				accepted: true,
 				newUser:  nil,
 			},
 			dbFn: func(ois *OrganisationInviteService) {
 				oir, _ := ois.orgInviteRepo.(*mocks.MockOrganisationInviteRepository)
-				oir.EXPECT().FetchOrganisationInviteByTokenAndEmail(gomock.Any(), "abcdef", "test@email.com").
+				oir.EXPECT().FetchOrganisationInviteByToken(gomock.Any(), "abcdef").
 					Times(1).Return(
 					&datastore.OrganisationInvite{
 						OrganisationID: "123ab",
@@ -319,7 +314,6 @@ func TestOrganisationInviteService_ProcessOrganisationMemberInvite(t *testing.T)
 			args: args{
 				ctx:      ctx,
 				token:    "abcdef",
-				email:    "test@email.com",
 				accepted: true,
 				newUser: &models.User{
 					FirstName: "Daniel",
@@ -330,7 +324,7 @@ func TestOrganisationInviteService_ProcessOrganisationMemberInvite(t *testing.T)
 			},
 			dbFn: func(ois *OrganisationInviteService) {
 				oir, _ := ois.orgInviteRepo.(*mocks.MockOrganisationInviteRepository)
-				oir.EXPECT().FetchOrganisationInviteByTokenAndEmail(gomock.Any(), "abcdef", "test@email.com").
+				oir.EXPECT().FetchOrganisationInviteByToken(gomock.Any(), "abcdef").
 					Times(1).Return(
 					&datastore.OrganisationInvite{
 						OrganisationID: "123ab",
@@ -377,7 +371,6 @@ func TestOrganisationInviteService_ProcessOrganisationMemberInvite(t *testing.T)
 			args: args{
 				ctx:      ctx,
 				token:    "abcdef",
-				email:    "test@email.com",
 				accepted: true,
 				newUser: &models.User{
 					FirstName: "Daniel",
@@ -388,7 +381,7 @@ func TestOrganisationInviteService_ProcessOrganisationMemberInvite(t *testing.T)
 			},
 			dbFn: func(ois *OrganisationInviteService) {
 				oir, _ := ois.orgInviteRepo.(*mocks.MockOrganisationInviteRepository)
-				oir.EXPECT().FetchOrganisationInviteByTokenAndEmail(gomock.Any(), "abcdef", "test@email.com").
+				oir.EXPECT().FetchOrganisationInviteByToken(gomock.Any(), "abcdef").
 					Times(1).Return(
 					&datastore.OrganisationInvite{
 						OrganisationID: "123ab",
@@ -418,13 +411,12 @@ func TestOrganisationInviteService_ProcessOrganisationMemberInvite(t *testing.T)
 			args: args{
 				ctx:      ctx,
 				token:    "abcdef",
-				email:    "test@email.com",
 				accepted: true,
 				newUser:  nil,
 			},
 			dbFn: func(ois *OrganisationInviteService) {
 				oir, _ := ois.orgInviteRepo.(*mocks.MockOrganisationInviteRepository)
-				oir.EXPECT().FetchOrganisationInviteByTokenAndEmail(gomock.Any(), "abcdef", "test@email.com").
+				oir.EXPECT().FetchOrganisationInviteByToken(gomock.Any(), "abcdef").
 					Times(1).Return(
 					&datastore.OrganisationInvite{
 						OrganisationID: "123ab",
@@ -460,13 +452,12 @@ func TestOrganisationInviteService_ProcessOrganisationMemberInvite(t *testing.T)
 			args: args{
 				ctx:      ctx,
 				token:    "abcdef",
-				email:    "test@email.com",
 				accepted: true,
 				newUser:  nil,
 			},
 			dbFn: func(ois *OrganisationInviteService) {
 				oir, _ := ois.orgInviteRepo.(*mocks.MockOrganisationInviteRepository)
-				oir.EXPECT().FetchOrganisationInviteByTokenAndEmail(gomock.Any(), "abcdef", "test@email.com").
+				oir.EXPECT().FetchOrganisationInviteByToken(gomock.Any(), "abcdef").
 					Times(1).Return(
 					&datastore.OrganisationInvite{
 						OrganisationID: "123ab",
@@ -508,13 +499,12 @@ func TestOrganisationInviteService_ProcessOrganisationMemberInvite(t *testing.T)
 			args: args{
 				ctx:      ctx,
 				token:    "abcdef",
-				email:    "test@email.com",
 				accepted: true,
 				newUser:  nil,
 			},
 			dbFn: func(ois *OrganisationInviteService) {
 				oir, _ := ois.orgInviteRepo.(*mocks.MockOrganisationInviteRepository)
-				oir.EXPECT().FetchOrganisationInviteByTokenAndEmail(gomock.Any(), "abcdef", "test@email.com").
+				oir.EXPECT().FetchOrganisationInviteByToken(gomock.Any(), "abcdef").
 					Times(1).Return(
 					&datastore.OrganisationInvite{
 						OrganisationID: "123ab",
@@ -572,7 +562,7 @@ func TestOrganisationInviteService_ProcessOrganisationMemberInvite(t *testing.T)
 				tt.dbFn(ois)
 			}
 
-			err := ois.ProcessOrganisationMemberInvite(tt.args.ctx, tt.args.token, tt.args.email, tt.args.accepted, tt.args.newUser)
+			err := ois.ProcessOrganisationMemberInvite(tt.args.ctx, tt.args.token, tt.args.accepted, tt.args.newUser)
 			if tt.wantErr {
 				require.NotNil(t, err)
 				require.Equal(t, tt.wantErrCode, err.(*ServiceError).ErrCode())

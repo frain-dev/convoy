@@ -197,7 +197,7 @@ func TestFetchOrganisationInviteByTokenAndEmail(t *testing.T) {
 	err := inviteRepo.CreateOrganisationInvite(context.Background(), iv)
 	require.NoError(t, err)
 
-	invite, err := inviteRepo.FetchOrganisationInviteByTokenAndEmail(context.Background(), iv.Token, iv.InviteeEmail)
+	invite, err := inviteRepo.FetchOrganisationInviteByToken(context.Background(), iv.Token)
 	require.NoError(t, err)
 
 	require.Equal(t, iv.UID, invite.UID)

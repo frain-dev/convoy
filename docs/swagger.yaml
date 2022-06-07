@@ -3268,11 +3268,6 @@ paths:
         type: string
       - description: email
         in: query
-        name: email
-        required: true
-        type: string
-      - description: email
-        in: query
         name: accepted
         required: true
         type: string

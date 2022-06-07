@@ -85,12 +85,11 @@ func (db *orgInviteRepo) FetchOrganisationInviteByID(ctx context.Context, id str
 	return org, err
 }
 
-func (db *orgInviteRepo) FetchOrganisationInviteByTokenAndEmail(ctx context.Context, token, email string) (*datastore.OrganisationInvite, error) {
+func (db *orgInviteRepo) FetchOrganisationInviteByToken(ctx context.Context, token string) (*datastore.OrganisationInvite, error) {
 	org := &datastore.OrganisationInvite{}
 
 	filter := bson.M{
 		"token":           token,
-		"invitee_email":   email,
 		"document_status": datastore.ActiveDocumentStatus,
 	}
 

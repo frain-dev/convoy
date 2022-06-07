@@ -62,7 +62,7 @@ type OrganisationInviteRepository interface {
 	UpdateOrganisationInvite(ctx context.Context, iv *OrganisationInvite) error
 	DeleteOrganisationInvite(ctx context.Context, uid string) error
 	FetchOrganisationInviteByID(ctx context.Context, uid string) (*OrganisationInvite, error)
-	FetchOrganisationInviteByTokenAndEmail(ctx context.Context, token, email string) (*OrganisationInvite, error)
+	FetchOrganisationInviteByToken(ctx context.Context, token string) (*OrganisationInvite, error)
 }
 
 type OrganisationMemberRepository interface {

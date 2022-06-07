@@ -49,7 +49,6 @@ func (a *applicationHandler) InviteUserToOrganisation(w http.ResponseWriter, r *
 // @Accept  json
 // @Produce  json
 // @Param token query string true "invite token"
-// @Param email query string true "email"
 // @Param accepted query string true "email"
 // @Param user body models.User false "User Details"
 // @Success 200 {object} serverResponse{data=Stub}
@@ -58,10 +57,9 @@ func (a *applicationHandler) InviteUserToOrganisation(w http.ResponseWriter, r *
 // @Router /process_organisation_member_invite [post]
 func (a *applicationHandler) ProcessOrganisationMemberInvite(w http.ResponseWriter, r *http.Request) {
 	token := r.URL.Query().Get("token")
-	email := r.URL.Query().Get("email")
 	accepted, err := strconv.ParseBool(r.URL.Query().Get("accepted"))
 	if err != nil {
-		log.WithError(err).Error("failed to load process accepted query")
+		log.WithError(err).Error("failed to process accepted url query")
 		_ = render.Render(w, r, newErrorResponse("badly formed 'accepted' query", http.StatusBadRequest))
 		return
 	}
@@ -73,7 +71,7 @@ func (a *applicationHandler) ProcessOrganisationMemberInvite(w http.ResponseWrit
 		return
 	}
 
-	err = a.organisationInviteService.ProcessOrganisationMemberInvite(r.Context(), token, email, accepted, newUser)
+	err = a.organisationInviteService.ProcessOrganisationMemberInvite(r.Context(), token, accepted, newUser)
 	if err != nil {
 		log.WithError(err).Error("failed to process organisation member invite")
 		_ = render.Render(w, r, newServiceErrResponse(errors.New("")))

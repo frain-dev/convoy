@@ -721,19 +721,19 @@ func (mr *MockOrganisationInviteRepositoryMockRecorder) FetchOrganisationInviteB
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "FetchOrganisationInviteByID", reflect.TypeOf((*MockOrganisationInviteRepository)(nil).FetchOrganisationInviteByID), ctx, uid)
 }
 
-// FetchOrganisationInviteByTokenAndEmail mocks base method.
-func (m *MockOrganisationInviteRepository) FetchOrganisationInviteByTokenAndEmail(ctx context.Context, token, email string) (*datastore.OrganisationInvite, error) {
+// FetchOrganisationInviteByToken mocks base method.
+func (m *MockOrganisationInviteRepository) FetchOrganisationInviteByToken(ctx context.Context, token string) (*datastore.OrganisationInvite, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "FetchOrganisationInviteByTokenAndEmail", ctx, token, email)
+	ret := m.ctrl.Call(m, "FetchOrganisationInviteByToken", ctx, token)
 	ret0, _ := ret[0].(*datastore.OrganisationInvite)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
-// FetchOrganisationInviteByTokenAndEmail indicates an expected call of FetchOrganisationInviteByTokenAndEmail.
-func (mr *MockOrganisationInviteRepositoryMockRecorder) FetchOrganisationInviteByTokenAndEmail(ctx, token, email interface{}) *gomock.Call {
+// FetchOrganisationInviteByToken indicates an expected call of FetchOrganisationInviteByToken.
+func (mr *MockOrganisationInviteRepositoryMockRecorder) FetchOrganisationInviteByToken(ctx, token interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "FetchOrganisationInviteByTokenAndEmail", reflect.TypeOf((*MockOrganisationInviteRepository)(nil).FetchOrganisationInviteByTokenAndEmail), ctx, token, email)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "FetchOrganisationInviteByToken", reflect.TypeOf((*MockOrganisationInviteRepository)(nil).FetchOrganisationInviteByToken), ctx, token)
 }
 
 // LoadOrganisationsInvitesPaged mocks base method.

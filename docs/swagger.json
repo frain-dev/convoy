@@ -4760,13 +4760,6 @@
                     {
                         "type": "string",
                         "description": "email",
-                        "name": "email",
-                        "in": "query",
-                        "required": true
-                    },
-                    {
-                        "type": "string",
-                        "description": "email",
                         "name": "accepted",
                         "in": "query",
                         "required": true
