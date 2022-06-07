@@ -70,7 +70,7 @@ func (ois *OrganisationInviteService) ProcessOrganisationMemberInvite(ctx contex
 	}
 
 	if iv.Status != datastore.InviteStatusPending {
-		return NewServiceError(http.StatusBadRequest, errors.New(fmt.Sprintf("organisation member invite already %s", iv.Status.String())))
+		return NewServiceError(http.StatusBadRequest, fmt.Errorf("organisation member invite already %s", iv.Status.String()))
 	}
 
 	if !accepted {

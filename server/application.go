@@ -40,8 +40,7 @@ type applicationHandler struct {
 	groupRepo                 datastore.GroupRepository
 	apiKeyRepo                datastore.APIKeyRepository
 	sourceRepo                datastore.SourceRepository
-	eventQueue                queue.Queuer
-	createEventQueue          queue.Queuer
+	queue                     queue.Queuer
 	logger                    logger.Logger
 	tracer                    tracer.Tracer
 	cache                     cache.Cache
@@ -102,6 +101,7 @@ func newApplicationHandler(
 		appRepo:                   appRepo,
 		groupRepo:                 groupRepo,
 		sourceRepo:                sourceRepo,
+		queue:                     queue,
 		logger:                    logger,
 		tracer:                    tracer,
 		cache:                     cache,
