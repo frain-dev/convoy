@@ -166,8 +166,9 @@ func (s *OrganisationInviteIntegrationTestSuite) Test_ProcessOrganisationMemberI
 	require.NoError(s.T(), err)
 
 	// Arrange.
-	url := fmt.Sprintf("/process_organisation_member_invite?token=%s&email=%s&accepted=true", iv.Token, iv.InviteeEmail)
+	url := fmt.Sprintf("/ui/organisations/process_invite?token=%s&accepted=true", iv.Token)
 	req := createRequest(http.MethodPost, url, nil)
+	req.Header.Set("Authorization", "")
 
 	w := httptest.NewRecorder()
 
@@ -189,10 +190,37 @@ func (s *OrganisationInviteIntegrationTestSuite) Test_ProcessOrganisationMemberI
 	require.NoError(s.T(), err)
 
 	// Arrange.
-	url := fmt.Sprintf("/process_organisation_member_invite?token=%s&email=%s&accepted=true", iv.Token, iv.InviteeEmail)
+	url := fmt.Sprintf("/ui/organisations/process_invite?token=%s&accepted=true", iv.Token)
 
 	body := strings.NewReader(`{"first_name":"test","last_name":"test","email":"test@invite.com","password":"password"}`)
 	req := createRequest(http.MethodPost, url, body)
+	req.Header.Set("Authorization", "")
+
+	w := httptest.NewRecorder()
+
+	// Act.
+	s.Router.ServeHTTP(w, req)
+
+	// Assert.
+	require.Equal(s.T(), expectedStatusCode, w.Code)
+}
+
+func (s *OrganisationInviteIntegrationTestSuite) Test_ProcessOrganisationMemberInvite_EmptyFirstName() {
+	expectedStatusCode := http.StatusBadRequest
+
+	iv, err := testdb.SeedOrganisationInvite(s.DB, s.DefaultOrg, "test@invite.com", &auth.Role{
+		Type:   auth.RoleAdmin,
+		Groups: []string{uuid.NewString()},
+		Apps:   nil,
+	})
+	require.NoError(s.T(), err)
+
+	// Arrange.
+	url := fmt.Sprintf("/ui/organisations/process_invite?token=%s&accepted=true", iv.Token)
+
+	body := strings.NewReader(`{"first_name":"","last_name":"test","email":"test@invite.com","password":"password"}`)
+	req := createRequest(http.MethodPost, url, body)
+	req.Header.Set("Authorization", "")
 
 	w := httptest.NewRecorder()
 
@@ -214,8 +242,9 @@ func (s *OrganisationInviteIntegrationTestSuite) Test_ProcessOrganisationMemberI
 	require.NoError(s.T(), err)
 
 	// Arrange.
-	url := fmt.Sprintf("/process_organisation_member_invite?token=%s&email=%s&accepted=false", iv.Token, iv.InviteeEmail)
+	url := fmt.Sprintf("/ui/organisations/process_invite?token=%s&accepted=false", iv.Token)
 	req := createRequest(http.MethodPost, url, nil)
+	req.Header.Set("Authorization", "")
 
 	w := httptest.NewRecorder()
 

@@ -2766,7 +2766,7 @@ paths:
       - ApiKeyAuth: []
       summary: Create an organisation
       tags:
-      - Application
+      - Organisation
   /organisations/{orgID}:
     delete:
       consumes:

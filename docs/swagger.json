@@ -3744,7 +3744,7 @@
                     "application/json"
                 ],
                 "tags": [
-                    "Application"
+                    "Organisation"
                 ],
                 "summary": "Create an organisation",
                 "parameters": [

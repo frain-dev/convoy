@@ -903,7 +903,11 @@ func fetchGroupApps(appRepo datastore.ApplicationRepository) func(next http.Hand
 }
 
 func shouldAuthRoute(r *http.Request) bool {
-	guestRoutes := []string{"/ui/auth/login", "/ui/auth/token/refresh"}
+	guestRoutes := []string{
+		"/ui/auth/login",
+		"/ui/auth/token/refresh",
+		"/ui/organisations/process_invite",
+	}
 
 	for _, route := range guestRoutes {
 		if r.URL.Path == route {

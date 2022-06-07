@@ -63,7 +63,7 @@ func (a *applicationHandler) GetOrganisationsPaged(w http.ResponseWriter, r *htt
 // CreateOrganisation
 // @Summary Create an organisation
 // @Description This endpoint creates an organisation
-// @Tags Application
+// @Tags Organisation
 // @Accept  json
 // @Produce  json
 // @Param organisation body models.Organisation true "Organisation Details"

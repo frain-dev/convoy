@@ -2989,7 +2989,7 @@ paths:
       - ApiKeyAuth: []
       summary: Create an organisation
       tags:
-      - Application
+      - Organisation
   /organisations/{orgID}:
     delete:
       description: This endpoint deletes an organisation
