@@ -6,6 +6,7 @@ import (
 	"github.com/frain-dev/convoy/datastore"
 	"github.com/frain-dev/convoy/util"
 	pager "github.com/gobeam/mongo-go-pagination"
+	log "github.com/sirupsen/logrus"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
@@ -46,6 +47,82 @@ func (o *orgMemberRepo) LoadOrganisationMembersPaged(ctx context.Context, organi
 	}
 
 	return organisations, datastore.PaginationData(paginatedData.Pagination), nil
+}
+
+func (o *orgMemberRepo) LoadUserOrganisationsPaged(ctx context.Context, userID string, pageable datastore.Pageable) ([]datastore.Organisation, datastore.PaginationData, error) {
+	matchStage1 := bson.D{
+		{Key: "$match",
+			Value: bson.D{
+				{Key: "user_id", Value: userID},
+				{Key: "document_status", Value: datastore.ActiveDocumentStatus},
+			},
+		},
+	}
+
+	lookupStage := bson.D{
+		{Key: "$lookup", Value: bson.D{
+			{Key: "from", Value: OrganisationCollection},
+			{Key: "localField", Value: "organisation_id"},
+			{Key: "foreignField", Value: "uid"},
+			{Key: "as", Value: "organisations"},
+		}},
+	}
+
+	sortStage := bson.D{
+		{Key: "$sort",
+			Value: bson.D{
+				{Key: "created_at", Value: pageable.Sort},
+			},
+		},
+	}
+
+	limitStage := bson.D{
+		{Key: "$limit", Value: pageable.PerPage * pageable.Page},
+	}
+
+	projectStage := bson.D{
+		{
+			Key: "$project",
+			Value: bson.D{
+				{Key: "orgs",
+					Value: bson.D{
+						{Key: "$filter",
+							Value: bson.D{
+								{Key: "input", Value: "$organisations"},
+								{Key: "as", Value: "organisations_field"},
+								{Key: "cond",
+									Value: bson.D{
+										{Key: "$eq",
+											Value: []interface{}{"$$organisations_field.document_status", datastore.ActiveDocumentStatus},
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+		},
+	}
+
+	data, err := o.inner.Aggregate(ctx, mongo.Pipeline{matchStage1, lookupStage, sortStage, limitStage, projectStage})
+	if err != nil {
+		log.WithError(err).Error("failed to run user organisations aggregation")
+		return nil, datastore.PaginationData{}, err
+	}
+	if err != nil {
+		return nil, datastore.PaginationData{}, err
+	}
+
+	organisations := make([]datastore.Organisation, 0)
+
+	err = data.All(ctx, &organisations)
+	if err != nil {
+		log.WithError(err).Error("failed to run user organisations aggregation")
+		return nil, datastore.PaginationData{}, err
+	}
+
+	return organisations, datastore.PaginationData{}, nil
 }
 
 func (o *orgMemberRepo) CreateOrganisationMember(ctx context.Context, member *datastore.OrganisationMember) error {

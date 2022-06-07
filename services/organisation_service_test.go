@@ -451,3 +451,127 @@ func TestOrganisationService_LoadOrganisationsPaged(t *testing.T) {
 		})
 	}
 }
+
+func TestOrganisationService_LoadUserOrganisationsPaged(t *testing.T) {
+	ctx := context.Background()
+	type args struct {
+		ctx      context.Context
+		pageable datastore.Pageable
+		user     *datastore.User
+	}
+	tests := []struct {
+		name               string
+		dbFn               func(os *OrganisationService)
+		args               args
+		wantOrganisations  []datastore.Organisation
+		wantPaginationData datastore.PaginationData
+		wantErr            bool
+		wantErrCode        int
+		wantErrMsg         string
+	}{
+		{
+			name: "should_load_organisations_paged",
+			args: args{
+				ctx: ctx,
+				pageable: datastore.Pageable{
+					Page:    1,
+					PerPage: 1,
+					Sort:    1,
+				},
+				user: &datastore.User{UID: "123"},
+			},
+			wantOrganisations: []datastore.Organisation{
+				{UID: "123"},
+				{UID: "abc"},
+			},
+			wantPaginationData: datastore.PaginationData{
+				Total:     1,
+				Page:      1,
+				PerPage:   1,
+				Prev:      1,
+				Next:      1,
+				TotalPage: 1,
+			},
+			dbFn: func(os *OrganisationService) {
+				o, _ := os.orgMemberRepo.(*mocks.MockOrganisationMemberRepository)
+				o.EXPECT().LoadUserOrganisationsPaged(gomock.Any(), "123", datastore.Pageable{
+					Page:    1,
+					PerPage: 1,
+					Sort:    1,
+				}).Times(1).Return(
+					[]datastore.Organisation{
+						{UID: "123"},
+						{UID: "abc"},
+					}, datastore.PaginationData{
+						Total:     1,
+						Page:      1,
+						PerPage:   1,
+						Prev:      1,
+						Next:      1,
+						TotalPage: 1,
+					},
+					nil)
+			},
+			wantErr: false,
+		},
+		{
+			name: "should_fail_to_load_organisations_paged",
+			args: args{
+				ctx: ctx,
+				pageable: datastore.Pageable{
+					Page:    1,
+					PerPage: 1,
+					Sort:    1,
+				},
+				user: &datastore.User{UID: "123"},
+			},
+			wantOrganisations: []datastore.Organisation{
+				{UID: "123"},
+				{UID: "abc"},
+			},
+			wantPaginationData: datastore.PaginationData{
+				Total:     1,
+				Page:      1,
+				PerPage:   1,
+				Prev:      1,
+				Next:      1,
+				TotalPage: 1,
+			},
+			dbFn: func(os *OrganisationService) {
+				o, _ := os.orgMemberRepo.(*mocks.MockOrganisationMemberRepository)
+				o.EXPECT().LoadUserOrganisationsPaged(gomock.Any(), "123", datastore.Pageable{
+					Page:    1,
+					PerPage: 1,
+					Sort:    1,
+				}).Times(1).Return(nil, datastore.PaginationData{}, errors.New("failed"))
+			},
+			wantErr:     true,
+			wantErrCode: http.StatusBadRequest,
+			wantErrMsg:  "an error occurred while fetching user organisations",
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			ctrl := gomock.NewController(t)
+			defer ctrl.Finish()
+			os := provideOrganisationService(ctrl)
+
+			// Arrange Expectations
+			if tt.dbFn != nil {
+				tt.dbFn(os)
+			}
+
+			orgs, paginationData, err := os.LoadUserOrganisationsPaged(tt.args.ctx, tt.args.user, tt.args.pageable)
+			if tt.wantErr {
+				require.NotNil(t, err)
+				require.Equal(t, tt.wantErrCode, err.(*ServiceError).ErrCode())
+				require.Equal(t, tt.wantErrMsg, err.(*ServiceError).Error())
+				return
+			}
+
+			require.Nil(t, err)
+			require.Equal(t, tt.wantOrganisations, orgs)
+			require.Equal(t, tt.wantPaginationData, paginationData)
+		})
+	}
+}

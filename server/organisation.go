@@ -41,8 +41,15 @@ func (a *applicationHandler) GetOrganisation(w http.ResponseWriter, r *http.Requ
 // @Router /organisations [get]
 func (a *applicationHandler) GetOrganisationsPaged(w http.ResponseWriter, r *http.Request) { //TODO: change to GetUserOrganisationsPaged
 	pageable := getPageableFromContext(r.Context())
+	authUser := getAuthUserFromContext(r.Context())
+	user, ok := authUser.Metadata.(*datastore.User)
+	if !ok {
+		log.Error("failed to extract user metadata from authUser")
+		_ = render.Render(w, r, newErrorResponse("unauthorized", http.StatusUnauthorized))
+		return
+	}
 
-	organisations, paginationData, err := a.organisationService.LoadOrganisationsPaged(r.Context(), pageable)
+	organisations, paginationData, err := a.organisationService.LoadUserOrganisationsPaged(r.Context(), user, pageable)
 	if err != nil {
 		log.WithError(err).Error("failed to load organisations")
 		_ = render.Render(w, r, newServiceErrResponse(err))
@@ -76,7 +83,7 @@ func (a *applicationHandler) CreateOrganisation(w http.ResponseWriter, r *http.R
 	user, ok := authUser.Metadata.(*datastore.User)
 	if !ok {
 		log.Error("failed to extract user metadata from authUser")
-		_ = render.Render(w, r, newErrorResponse(err.Error(), http.StatusBadRequest))
+		_ = render.Render(w, r, newErrorResponse("unauthorized", http.StatusUnauthorized))
 		return
 	}
 

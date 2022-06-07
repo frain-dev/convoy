@@ -88,6 +88,16 @@ func (os *OrganisationService) LoadOrganisationsPaged(ctx context.Context, pagea
 	return orgs, paginationData, nil
 }
 
+func (os *OrganisationService) LoadUserOrganisationsPaged(ctx context.Context, user *datastore.User, pageable datastore.Pageable) ([]datastore.Organisation, datastore.PaginationData, error) {
+	orgs, paginationData, err := os.orgMemberRepo.LoadUserOrganisationsPaged(ctx, user.UID, pageable)
+	if err != nil {
+		log.WithError(err).Error("failed to fetch user organisations")
+		return nil, datastore.PaginationData{}, NewServiceError(http.StatusBadRequest, errors.New("an error occurred while fetching user organisations"))
+	}
+
+	return orgs, paginationData, nil
+}
+
 func (os *OrganisationService) DeleteOrganisation(ctx context.Context, id string) error {
 	err := os.orgRepo.DeleteOrganisation(ctx, id)
 	if err != nil {

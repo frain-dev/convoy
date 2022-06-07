@@ -8,6 +8,10 @@ import (
 
 type orgMemberRepo struct{}
 
+func (o orgMemberRepo) LoadUserOrganisationsPaged(ctx context.Context, userID string, pageable datastore.Pageable) ([]datastore.Organisation, datastore.PaginationData, error) {
+	return nil, datastore.PaginationData{}, nil
+}
+
 func (o orgMemberRepo) FetchOrganisationMemberByUserID(ctx context.Context, userID, orgID string) (*datastore.OrganisationMember, error) {
 	return nil, nil
 }

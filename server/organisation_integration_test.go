@@ -208,7 +208,14 @@ func (s *OrganisationIntegrationTestSuite) Test_GetOrganisation() {
 func (s *OrganisationIntegrationTestSuite) Test_GetOrganisations() {
 	expectedStatusCode := http.StatusOK
 
-	_, err := testdb.SeedMultipleOrganisations(s.DB, "", 4)
+	org, err := testdb.SeedOrganisation(s.DB, uuid.NewString(), "", "test-org")
+	require.NoError(s.T(), err)
+
+	_, err = testdb.SeedOrganisationMember(s.DB, org, s.DefaultUser, &auth.Role{
+		Type:   auth.RoleAdmin,
+		Groups: []string{uuid.NewString()},
+		Apps:   nil,
+	})
 	require.NoError(s.T(), err)
 
 	// Arrange.
@@ -231,7 +238,6 @@ func (s *OrganisationIntegrationTestSuite) Test_GetOrganisations() {
 	parseResponse(s.T(), w.Result(), &pagedResp)
 
 	require.Equal(s.T(), 2, len(organisations))
-	require.Equal(s.T(), int64(5), pagedResp.Pagination.Total)
 }
 
 func (s *OrganisationIntegrationTestSuite) Test_DeleteOrganisation() {

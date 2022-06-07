@@ -37,14 +37,51 @@ func TestLoadOrganisationMembersPaged(t *testing.T) {
 		require.NoError(t, err)
 	}
 
-	organisationInvites, _, err := organisationMemberRepo.LoadOrganisationMembersPaged(context.Background(), orgID, datastore.Pageable{
+	members, _, err := organisationMemberRepo.LoadOrganisationMembersPaged(context.Background(), orgID, datastore.Pageable{
 		Page:    2,
 		PerPage: 2,
 		Sort:    -1,
 	})
 
 	require.NoError(t, err)
-	require.Equal(t, 2, len(organisationInvites))
+	require.Equal(t, 2, len(members))
+}
+
+func TestLoadUserOrganisationsPaged(t *testing.T) {
+	db, closeFn := getDB(t)
+	defer closeFn()
+
+	organisationMemberRepo := NewOrgMemberRepo(db)
+
+	userID := uuid.NewString()
+	for i := 0; i < 6; i++ {
+		org := &datastore.Organisation{UID: uuid.NewString(), DocumentStatus: datastore.ActiveDocumentStatus}
+
+		err := NewOrgRepo(db).CreateOrganisation(context.Background(), org)
+		require.NoError(t, err)
+
+		member := &datastore.OrganisationMember{
+			UID:            uuid.NewString(),
+			OrganisationID: org.UID,
+			UserID:         userID,
+			Role:           auth.Role{Type: auth.RoleAdmin},
+			DocumentStatus: datastore.ActiveDocumentStatus,
+			CreatedAt:      primitive.NewDateTimeFromTime(time.Now()),
+			UpdatedAt:      primitive.NewDateTimeFromTime(time.Now()),
+		}
+
+		err = organisationMemberRepo.CreateOrganisationMember(context.Background(), member)
+		require.NoError(t, err)
+	}
+
+	organisations, _, err := organisationMemberRepo.LoadUserOrganisationsPaged(context.Background(), userID, datastore.Pageable{
+		Page:    1,
+		PerPage: 10,
+		Sort:    -1,
+	})
+
+	require.NoError(t, err)
+	require.Equal(t, 6, len(organisations))
 }
 
 func TestCreateOrganisationMember(t *testing.T) {
