@@ -458,6 +458,44 @@ func TestOrganisationInviteService_ProcessOrganisationMemberInvite(t *testing.T)
 			wantErrMsg:  "new user is nil",
 		},
 		{
+			name: "should_error_for_failed_to_validate_new_user",
+			args: args{
+				ctx:      ctx,
+				token:    "abcdef",
+				accepted: true,
+				newUser: &models.User{
+					FirstName: "",
+					LastName:  "O.J",
+					Email:     "test@gmail.com",
+					Password:  "1234",
+				},
+			},
+			dbFn: func(ois *OrganisationInviteService) {
+				oir, _ := ois.orgInviteRepo.(*mocks.MockOrganisationInviteRepository)
+				oir.EXPECT().FetchOrganisationInviteByToken(gomock.Any(), "abcdef").
+					Times(1).Return(
+					&datastore.OrganisationInvite{
+						OrganisationID: "123ab",
+						Status:         datastore.InviteStatusPending,
+						InviteeEmail:   "test@email.com",
+						Role: auth.Role{
+							Type:   auth.RoleAdmin,
+							Groups: []string{"ref"},
+							Apps:   nil,
+						},
+					},
+					nil,
+				)
+
+				u, _ := ois.userRepo.(*mocks.MockUserRepository)
+				u.EXPECT().FindUserByEmail(gomock.Any(), "test@email.com").
+					Times(1).Return(nil, datastore.ErrUserNotFound)
+			},
+			wantErr:     true,
+			wantErrCode: http.StatusBadRequest,
+			wantErrMsg:  "first_name:please provide a first name",
+		},
+		{
 			name: "should_fail_to_create_new_user",
 			args: args{
 				ctx:      ctx,

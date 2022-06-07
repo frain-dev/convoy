@@ -105,10 +105,10 @@ type Token struct {
 }
 
 type User struct {
-	FirstName string    `json:"first_name"`
-	LastName  string    `json:"last_name"`
-	Email     string    `json:"email"`
-	Password  string    `json:"password"`
+	FirstName string    `json:"first_name" valid:"required~please provide a first name"`
+	LastName  string    `json:"last_name" valid:"required~please provide a last name"`
+	Email     string    `json:"email" valid:"required~please provide an email,email"`
+	Password  string    `json:"password" valid:"required~please provide a password"`
 	Role      auth.Role `json:"role" bson:"role"`
 }
 

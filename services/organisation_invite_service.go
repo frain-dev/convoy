@@ -122,8 +122,14 @@ func (ois *OrganisationInviteService) createNewUser(ctx context.Context, newUser
 		return nil, NewServiceError(http.StatusBadRequest, errors.New("new user is nil"))
 	}
 
+	err := util.Validate(newUser)
+	if err != nil {
+		log.WithError(err).Error("failed to validate new user information")
+		return nil, NewServiceError(http.StatusBadRequest, err)
+	}
+
 	p := datastore.Password{Plaintext: newUser.Password}
-	err := p.GenerateHash()
+	err = p.GenerateHash()
 	if err != nil {
 		log.WithError(err).Error("failed to generate user password hash")
 		return nil, NewServiceError(http.StatusBadRequest, errors.New("failed to create organisation member invite"))
