@@ -3,6 +3,7 @@ package testdb
 import (
 	"context"
 	"fmt"
+	"github.com/dchest/uniuri"
 	"time"
 
 	"github.com/frain-dev/convoy"
@@ -137,6 +138,124 @@ func SeedDefaultGroup(db datastore.DatabaseClient) (*datastore.Group, error) {
 	}
 
 	return defaultGroup, nil
+}
+
+const DefaultUserPassword = "password"
+
+// seed default user
+func SeedDefaultUser(db datastore.DatabaseClient) (*datastore.User, error) {
+	p := datastore.Password{Plaintext: DefaultUserPassword}
+	err := p.GenerateHash()
+	if err != nil {
+		return nil, err
+	}
+
+	defaultUser := &datastore.User{
+		UID:            uuid.NewString(),
+		FirstName:      "default",
+		LastName:       "default",
+		Email:          "default@user.com",
+		Password:       string(p.Hash),
+		CreatedAt:      primitive.NewDateTimeFromTime(time.Now()),
+		UpdatedAt:      primitive.NewDateTimeFromTime(time.Now()),
+		DocumentStatus: datastore.ActiveDocumentStatus,
+	}
+
+	// Seed Data.
+	err = db.UserRepo().CreateUser(context.TODO(), defaultUser)
+	if err != nil {
+		return &datastore.User{}, err
+	}
+
+	return defaultUser, nil
+}
+
+// seed default organisation
+func SeedDefaultOrganisation(db datastore.DatabaseClient, user *datastore.User) (*datastore.Organisation, error) {
+	p := datastore.Password{Plaintext: DefaultUserPassword}
+	err := p.GenerateHash()
+	if err != nil {
+		return nil, err
+	}
+
+	defaultOrg := &datastore.Organisation{
+		UID:            uuid.NewString(),
+		OwnerID:        user.UID,
+		Name:           "default-org",
+		DocumentStatus: datastore.ActiveDocumentStatus,
+		CreatedAt:      primitive.NewDateTimeFromTime(time.Now()),
+		UpdatedAt:      primitive.NewDateTimeFromTime(time.Now()),
+	}
+
+	// Seed Data.
+	err = db.OrganisationRepo().CreateOrganisation(context.TODO(), defaultOrg)
+	if err != nil {
+		return &datastore.Organisation{}, err
+	}
+
+	member := &datastore.OrganisationMember{
+		UID:            uuid.NewString(),
+		OrganisationID: defaultOrg.UID,
+		UserID:         user.UID,
+		Role:           auth.Role{Type: auth.RoleSuperUser},
+		DocumentStatus: datastore.ActiveDocumentStatus,
+		CreatedAt:      primitive.NewDateTimeFromTime(time.Now()),
+		UpdatedAt:      primitive.NewDateTimeFromTime(time.Now()),
+	}
+
+	err = db.OrganisationMemberRepo().CreateOrganisationMember(context.TODO(), member)
+	if err != nil {
+		return nil, err
+	}
+
+	return defaultOrg, nil
+}
+
+// seed organisation member
+func SeedOrganisationMember(db datastore.DatabaseClient, org *datastore.Organisation, user *datastore.User, role *auth.Role) (*datastore.OrganisationMember, error) {
+	member := &datastore.OrganisationMember{
+		UID:            uuid.NewString(),
+		OrganisationID: org.UID,
+		UserID:         user.UID,
+		Role:           *role,
+		DocumentStatus: datastore.ActiveDocumentStatus,
+		CreatedAt:      primitive.NewDateTimeFromTime(time.Now()),
+		UpdatedAt:      primitive.NewDateTimeFromTime(time.Now()),
+	}
+
+	err := db.OrganisationMemberRepo().CreateOrganisationMember(context.TODO(), member)
+	if err != nil {
+		return nil, err
+	}
+
+	return member, nil
+}
+
+// seed organisation invite
+func SeedOrganisationInvite(db datastore.DatabaseClient, org *datastore.Organisation, email string, role *auth.Role, expiry primitive.DateTime) (*datastore.OrganisationInvite, error) {
+	if expiry == 0 {
+		expiry = primitive.NewDateTimeFromTime(time.Now())
+	}
+
+	iv := &datastore.OrganisationInvite{
+		UID:            uuid.NewString(),
+		InviteeEmail:   email,
+		OrganisationID: org.UID,
+		Role:           *role,
+		Token:          uniuri.NewLen(64),
+		ExpiresAt:      expiry,
+		Status:         datastore.InviteStatusPending,
+		DocumentStatus: datastore.ActiveDocumentStatus,
+		CreatedAt:      primitive.NewDateTimeFromTime(time.Now()),
+		UpdatedAt:      primitive.NewDateTimeFromTime(time.Now()),
+	}
+
+	err := db.OrganisationInviteRepo().CreateOrganisationInvite(context.TODO(), iv)
+	if err != nil {
+		return nil, err
+	}
+
+	return iv, nil
 }
 
 // SeedAPIKey creates random api key for integration tests.
@@ -377,11 +496,15 @@ func SeedSubscription(db datastore.DatabaseClient,
 	return subscription, nil
 }
 
-func SeedUser(db datastore.DatabaseClient, password string) (*datastore.User, error) {
+func SeedUser(db datastore.DatabaseClient, email, password string) (*datastore.User, error) {
 	p := &datastore.Password{Plaintext: password}
 	err := p.GenerateHash()
 	if err != nil {
 		return nil, err
+	}
+
+	if email == "" {
+		email = "test@test.com"
 	}
 
 	user := &datastore.User{
@@ -389,7 +512,7 @@ func SeedUser(db datastore.DatabaseClient, password string) (*datastore.User, er
 		FirstName:      "test",
 		LastName:       "test",
 		Password:       string(p.Hash),
-		Email:          "test@test.com",
+		Email:          email,
 		DocumentStatus: datastore.ActiveDocumentStatus,
 	}
 

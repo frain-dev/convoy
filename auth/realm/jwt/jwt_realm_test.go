@@ -66,6 +66,12 @@ func TestJwtRealm_Authenticate(t *testing.T) {
 					Type:  auth.CredentialTypeJWT,
 					Token: token.AccessToken,
 				},
+				Metadata: &datastore.User{
+					UID:       "123456",
+					FirstName: "test",
+					LastName:  "test",
+					Role:      auth.Role{Type: auth.RoleAdmin},
+				},
 				Role: auth.Role{Type: auth.RoleAdmin},
 			},
 		},

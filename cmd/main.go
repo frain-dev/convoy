@@ -107,6 +107,8 @@ type app struct {
 	eventDeliveryRepo datastore.EventDeliveryRepository
 	subRepo           datastore.SubscriptionRepository
 	orgRepo           datastore.OrganisationRepository
+	orgMemberRepo     datastore.OrganisationMemberRepository
+	orgInviteRepo     datastore.OrganisationInviteRepository
 	sourceRepo        datastore.SourceRepository
 	userRepo          datastore.UserRepository
 	queue             queue.Queuer
@@ -194,9 +196,10 @@ func preRun(app *app, db datastore.DatabaseClient) func(cmd *cobra.Command, args
 				return err
 			}
 			queueNames := map[string]int{
-				string(convoy.PriorityQueue):    6,
+				string(convoy.PriorityQueue):    5,
 				string(convoy.EventQueue):       2,
 				string(convoy.CreateEventQueue): 2,
+				string(convoy.ScheduleQueue):    1,
 			}
 			opts := queue.QueueOptions{
 				Names:             queueNames,
@@ -243,6 +246,9 @@ func preRun(app *app, db datastore.DatabaseClient) func(cmd *cobra.Command, args
 		app.eventDeliveryRepo = db.EventDeliveryRepo()
 		app.sourceRepo = db.SourceRepo()
 		app.userRepo = db.UserRepo()
+		app.orgRepo = db.OrganisationRepo()
+		app.orgMemberRepo = db.OrganisationMemberRepo()
+		app.orgInviteRepo = db.OrganisationInviteRepo()
 
 		app.queue = q
 		app.logger = lo
