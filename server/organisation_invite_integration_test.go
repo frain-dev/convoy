@@ -38,6 +38,7 @@ func (s *OrganisationInviteIntegrationTestSuite) SetupSuite() {
 
 func (s *OrganisationInviteIntegrationTestSuite) SetupTest() {
 	testdb.PurgeDB(s.DB)
+	s.DB = getDB()
 
 	// Setup Default Group.
 	s.DefaultGroup, _ = testdb.SeedDefaultGroup(s.DB)
@@ -67,13 +68,13 @@ func (s *OrganisationInviteIntegrationTestSuite) TearDownTest() {
 }
 
 func (s *OrganisationInviteIntegrationTestSuite) Test_InviteUserToOrganisation() {
-	expectedStatusCode := http.StatusOK
+	expectedStatusCode := http.StatusCreated
 
 	// Arrange.
 	url := fmt.Sprintf("/ui/organisations/%s/invite_user", s.DefaultOrg.UID)
 
 	// TODO(daniel): when the generic mailer is integrated we have to mock it
-	body := strings.NewReader(`{"invitee_email":"test@invite.com",role":{"type":"api", "groups":["123"]}}`)
+	body := strings.NewReader(`{"invitee_email":"test@invite.com","role":{"type":"api", "groups":["123"]}}`)
 	req := createRequest(http.MethodPost, url, body)
 
 	err := s.AuthenticatorFn(req, s.Router)

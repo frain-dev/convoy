@@ -66,7 +66,7 @@ func (o *orgMemberRepo) UpdateOrganisationMember(ctx context.Context, member *da
 	return err
 }
 
-func (o *orgMemberRepo) DeleteOrganisationMember(ctx context.Context, uid string) error {
+func (o *orgMemberRepo) DeleteOrganisationMember(ctx context.Context, uid, orgID string) error {
 	update := bson.M{
 		"$set": bson.M{
 			"deleted_at":      primitive.NewDateTimeFromTime(time.Now()),
@@ -74,7 +74,12 @@ func (o *orgMemberRepo) DeleteOrganisationMember(ctx context.Context, uid string
 		},
 	}
 
-	_, err := o.inner.UpdateOne(ctx, bson.M{"uid": uid}, update)
+	filter := bson.M{
+		"uid":             uid,
+		"organisation_id": orgID,
+	}
+
+	_, err := o.inner.UpdateOne(ctx, filter, update)
 	if err != nil {
 		return err
 	}

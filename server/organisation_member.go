@@ -3,6 +3,7 @@ package server
 import (
 	"github.com/frain-dev/convoy/server/models"
 	"github.com/frain-dev/convoy/util"
+	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/render"
 	log "github.com/sirupsen/logrus"
 	"net/http"
@@ -50,7 +51,14 @@ func (a *applicationHandler) GetOrganisationMembers(w http.ResponseWriter, r *ht
 // @Security ApiKeyAuth
 // @Router /organisations/{orgID}/members/{memberID} [get]
 func (a *applicationHandler) GetOrganisationMember(w http.ResponseWriter, r *http.Request) {
-	member := getOrganisationMemberFromContext(r.Context())
+	memberID := chi.URLParam(r, "memberID")
+	org := getOrganisationFromContext(r.Context())
+
+	member, err := a.organisationMemberService.FindOrganisationMemberByID(r.Context(), org, memberID)
+	if err != nil {
+		_ = render.Render(w, r, newServiceErrResponse(err))
+		return
+	}
 
 	_ = render.Render(w, r, newServerResponse("Organisation member fetched successfully", member, http.StatusOK))
 }
@@ -76,7 +84,16 @@ func (a *applicationHandler) UpdateOrganisationMember(w http.ResponseWriter, r *
 		return
 	}
 
-	organisationMember, err := a.organisationMemberService.UpdateOrganisationMember(r.Context(), getOrganisationMemberFromContext(r.Context()), &roleUpdate.Role)
+	memberID := chi.URLParam(r, "memberID")
+	org := getOrganisationFromContext(r.Context())
+
+	member, err := a.organisationMemberService.FindOrganisationMemberByID(r.Context(), org, memberID)
+	if err != nil {
+		_ = render.Render(w, r, newServiceErrResponse(err))
+		return
+	}
+
+	organisationMember, err := a.organisationMemberService.UpdateOrganisationMember(r.Context(), member, &roleUpdate.Role)
 	if err != nil {
 		_ = render.Render(w, r, newServiceErrResponse(err))
 		return
@@ -98,11 +115,11 @@ func (a *applicationHandler) UpdateOrganisationMember(w http.ResponseWriter, r *
 // @Security ApiKeyAuth
 // @Router /organisations/{orgID}/members/{memberID} [delete]
 func (a *applicationHandler) DeleteOrganisationMember(w http.ResponseWriter, r *http.Request) {
-	member := getOrganisationMemberFromContext(r.Context())
+	memberID := chi.URLParam(r, "memberID")
+	org := getOrganisationFromContext(r.Context())
 
-	err := a.organisationMemberService.DeleteOrganisationMember(r.Context(), member.UID)
+	err := a.organisationMemberService.DeleteOrganisationMember(r.Context(), memberID, org.UID)
 	if err != nil {
-		log.WithError(err).Error("failed to delete organisation member")
 		_ = render.Render(w, r, newServiceErrResponse(err))
 		return
 	}

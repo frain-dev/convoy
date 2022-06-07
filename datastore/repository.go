@@ -69,7 +69,7 @@ type OrganisationMemberRepository interface {
 	LoadOrganisationMembersPaged(ctx context.Context, organisationID string, pageable Pageable) ([]OrganisationMember, PaginationData, error)
 	CreateOrganisationMember(ctx context.Context, member *OrganisationMember) error
 	UpdateOrganisationMember(ctx context.Context, member *OrganisationMember) error
-	DeleteOrganisationMember(ctx context.Context, memberID string) error
+	DeleteOrganisationMember(ctx context.Context, memberID string, orgID string) error
 	FetchOrganisationMemberByID(ctx context.Context, memberID string, organisationID string) (*OrganisationMember, error)
 	FetchOrganisationMemberByUserID(ctx context.Context, userID string, organisationID string) (*OrganisationMember, error)
 }

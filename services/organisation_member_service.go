@@ -84,8 +84,8 @@ func (om *OrganisationMemberService) LoadOrganisationMembersPaged(ctx context.Co
 	return organisationMembers, paginationData, nil
 }
 
-func (om *OrganisationMemberService) DeleteOrganisationMember(ctx context.Context, id string) error {
-	err := om.orgMemberRepo.DeleteOrganisationMember(ctx, id)
+func (om *OrganisationMemberService) DeleteOrganisationMember(ctx context.Context, memberID, orgID string) error {
+	err := om.orgMemberRepo.DeleteOrganisationMember(ctx, memberID, orgID)
 	if err != nil {
 		log.WithError(err).Error("failed to delete organisation member")
 		return NewServiceError(http.StatusBadRequest, errors.New("failed to delete organisation member"))
