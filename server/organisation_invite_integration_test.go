@@ -164,7 +164,7 @@ func (s *OrganisationInviteIntegrationTestSuite) Test_ProcessOrganisationMemberI
 		Type:   auth.RoleAdmin,
 		Groups: []string{uuid.NewString()},
 		Apps:   nil,
-	}, primitive.NewDateTimeFromTime(time.Now()))
+	}, primitive.NewDateTimeFromTime(time.Now().Add(time.Hour)))
 	require.NoError(s.T(), err)
 
 	// Arrange.
@@ -215,7 +215,7 @@ func (s *OrganisationInviteIntegrationTestSuite) Test_ProcessOrganisationMemberI
 		Type:   auth.RoleAdmin,
 		Groups: []string{uuid.NewString()},
 		Apps:   nil,
-	}, primitive.NewDateTimeFromTime(time.Now()))
+	}, primitive.NewDateTimeFromTime(time.Now().Add(time.Hour)))
 	require.NoError(s.T(), err)
 
 	// Arrange.
@@ -241,7 +241,7 @@ func (s *OrganisationInviteIntegrationTestSuite) Test_ProcessOrganisationMemberI
 		Type:   auth.RoleAdmin,
 		Groups: []string{uuid.NewString()},
 		Apps:   nil,
-	}, primitive.NewDateTimeFromTime(time.Now()))
+	}, primitive.NewDateTimeFromTime(time.Now().Add(time.Hour)))
 	require.NoError(s.T(), err)
 
 	// Arrange.
@@ -267,7 +267,7 @@ func (s *OrganisationInviteIntegrationTestSuite) Test_ProcessOrganisationMemberI
 		Type:   auth.RoleAdmin,
 		Groups: []string{uuid.NewString()},
 		Apps:   nil,
-	}, primitive.NewDateTimeFromTime(time.Now()))
+	}, primitive.NewDateTimeFromTime(time.Now().Add(time.Hour)))
 	require.NoError(s.T(), err)
 
 	// Arrange.
