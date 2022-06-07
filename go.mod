@@ -17,7 +17,6 @@ require (
 	github.com/go-chi/chi/v5 v5.0.6
 	github.com/go-chi/httprate v0.5.2
 	github.com/go-chi/render v1.0.1
-	github.com/go-co-op/gocron v1.13.0
 	github.com/go-redis/cache/v8 v8.4.3
 	github.com/go-redis/redis/v8 v8.11.5
 	github.com/go-redis/redis_rate/v9 v9.1.2
