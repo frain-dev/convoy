@@ -57,8 +57,10 @@ func getConfig() config.Configuration {
 
 func getDB() datastore.DatabaseClient {
 
-	db, _ := mongoStore.New(getConfig())
-
+	db, err := mongoStore.New(getConfig())
+	if err != nil {
+		panic(fmt.Sprintf("failed to connect to db: %v", err))
+	}
 	_ = os.Setenv("TZ", "") // Use UTC by default :)
 
 	return db.(*mongoStore.Client)
