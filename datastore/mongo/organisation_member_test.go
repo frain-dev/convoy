@@ -54,8 +54,12 @@ func TestLoadUserOrganisationsPaged(t *testing.T) {
 	organisationMemberRepo := NewOrgMemberRepo(db)
 
 	userID := uuid.NewString()
-	for i := 0; i < 6; i++ {
-		org := &datastore.Organisation{UID: uuid.NewString(), DocumentStatus: datastore.ActiveDocumentStatus}
+	for i := 0; i < 7; i++ {
+		status := datastore.ActiveDocumentStatus
+		if i == 6 {
+			status = datastore.DeletedDocumentStatus
+		}
+		org := &datastore.Organisation{UID: uuid.NewString(), DocumentStatus: status}
 
 		err := NewOrgRepo(db).CreateOrganisation(context.Background(), org)
 		require.NoError(t, err)

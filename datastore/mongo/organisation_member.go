@@ -59,6 +59,26 @@ func (o *orgMemberRepo) LoadUserOrganisationsPaged(ctx context.Context, userID s
 		},
 	}
 
+	sortStage := bson.D{
+		{Key: "$sort",
+			Value: bson.D{
+				{Key: "created_at", Value: pageable.Sort},
+			},
+		},
+	}
+
+	skip := 0
+	if pageable.Page > 1 {
+		skip = pageable.PerPage * pageable.Page
+	}
+	skipStage := bson.D{
+		{Key: "$skip", Value: skip},
+	}
+
+	limitStage := bson.D{
+		{Key: "$limit", Value: pageable.PerPage},
+	}
+
 	lookupStage := bson.D{
 		{Key: "$lookup", Value: bson.D{
 			{Key: "from", Value: OrganisationCollection},
@@ -68,44 +88,27 @@ func (o *orgMemberRepo) LoadUserOrganisationsPaged(ctx context.Context, userID s
 		}},
 	}
 
-	sortStage := bson.D{
-		{Key: "$sort",
+	unwindStage := bson.D{
+		{Key: "$unwind", Value: "$organisations"},
+	}
+
+	replaceRootStage := bson.D{
+		{Key: "$replaceRoot",
 			Value: bson.D{
-				{Key: "created_at", Value: pageable.Sort},
+				{Key: "newRoot", Value: "$organisations"},
 			},
 		},
 	}
 
-	limitStage := bson.D{
-		{Key: "$limit", Value: pageable.PerPage * pageable.Page},
-	}
-
-	projectStage := bson.D{
-		{
-			Key: "$project",
+	matchStage2 := bson.D{
+		{Key: "$match",
 			Value: bson.D{
-				{Key: "orgs",
-					Value: bson.D{
-						{Key: "$filter",
-							Value: bson.D{
-								{Key: "input", Value: "$organisations"},
-								{Key: "as", Value: "organisations_field"},
-								{Key: "cond",
-									Value: bson.D{
-										{Key: "$eq",
-											Value: []interface{}{"$$organisations_field.document_status", datastore.ActiveDocumentStatus},
-										},
-									},
-								},
-							},
-						},
-					},
-				},
+				{Key: "document_status", Value: datastore.ActiveDocumentStatus},
 			},
 		},
 	}
 
-	data, err := o.inner.Aggregate(ctx, mongo.Pipeline{matchStage1, lookupStage, sortStage, limitStage, projectStage})
+	data, err := o.inner.Aggregate(ctx, mongo.Pipeline{matchStage1, sortStage, skipStage, limitStage, lookupStage, unwindStage, replaceRootStage, matchStage2})
 	if err != nil {
 		log.WithError(err).Error("failed to run user organisations aggregation")
 		return nil, datastore.PaginationData{}, err
