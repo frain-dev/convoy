@@ -5820,7 +5820,7 @@
 						"ApiKeyAuth": []
 					}
 				],
-				"summary": "Get an organisation",
+				"summary": "Invite a user to join an organisation",
 				"tags": [
 					"Organisation"
 				]
@@ -6489,7 +6489,7 @@
 						"ApiKeyAuth": []
 					}
 				],
-				"summary": "Get organisations",
+				"summary": "Accept or decline an organisation invite",
 				"tags": [
 					"Organisation"
 				]
@@ -8566,6 +8566,10 @@
 		{
 			"description": "Group related APIs",
 			"name": "Group"
+		},
+		{
+			"description": "Organisation related APIs",
+			"name": "Organisation"
 		}
 	]
 }

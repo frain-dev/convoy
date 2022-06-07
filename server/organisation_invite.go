@@ -12,7 +12,7 @@ import (
 )
 
 // InviteUserToOrganisation
-// @Summary Get an organisation
+// @Summary Invite a user to join an organisation
 // @Description This endpoint invites a user to join an organisation
 // @Tags Organisation
 // @Accept  json
@@ -43,7 +43,7 @@ func (a *applicationHandler) InviteUserToOrganisation(w http.ResponseWriter, r *
 }
 
 // ProcessOrganisationMemberInvite
-// @Summary Get organisations
+// @Summary Accept or decline an organisation invite
 // @Description This endpoint process a user's response to an organisation invite
 // @Tags Organisation
 // @Accept  json

@@ -4165,7 +4165,7 @@
                 "tags": [
                     "Organisation"
                 ],
-                "summary": "Get an organisation",
+                "summary": "Invite a user to join an organisation",
                 "parameters": [
                     {
                         "type": "string",
@@ -4748,7 +4748,7 @@
                 "tags": [
                     "Organisation"
                 ],
-                "summary": "Get organisations",
+                "summary": "Accept or decline an organisation invite",
                 "parameters": [
                     {
                         "type": "string",
@@ -7713,6 +7713,10 @@
         {
             "description": "Group related APIs",
             "name": "Group"
+        },
+        {
+            "description": "Organisation related APIs",
+            "name": "Organisation"
         }
     ]
 }

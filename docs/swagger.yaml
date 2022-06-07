@@ -2994,7 +2994,7 @@ paths:
               type: object
       security:
       - ApiKeyAuth: []
-      summary: Get an organisation
+      summary: Invite a user to join an organisation
       tags:
       - Organisation
   /organisations/{orgID}/members:
@@ -3317,7 +3317,7 @@ paths:
               type: object
       security:
       - ApiKeyAuth: []
-      summary: Get organisations
+      summary: Accept or decline an organisation invite
       tags:
       - Organisation
   /security/applications/{appID}/keys:
@@ -4323,3 +4323,5 @@ tags:
   name: DeliveryAttempts
 - description: Group related APIs
   name: Group
+- description: Organisation related APIs
+  name: Organisation
