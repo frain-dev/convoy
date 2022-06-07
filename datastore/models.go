@@ -564,6 +564,7 @@ type OrganisationInvite struct {
 	Role           auth.Role          `json:"role" bson:"role"`
 	Status         InviteStatus       `json:"status" bson:"status"`
 	DocumentStatus DocumentStatus     `json:"-" bson:"document_status"`
+	ExpiresAt      primitive.DateTime `json:"-" bson:"expires_at"`
 	CreatedAt      primitive.DateTime `json:"created_at,omitempty" bson:"created_at,omitempty" swaggertype:"string"`
 	UpdatedAt      primitive.DateTime `json:"updated_at,omitempty" bson:"updated_at,omitempty" swaggertype:"string"`
 	DeletedAt      primitive.DateTime `json:"deleted_at,omitempty" bson:"deleted_at,omitempty" swaggertype:"string"`

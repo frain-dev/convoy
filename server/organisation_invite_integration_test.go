@@ -13,10 +13,12 @@ import (
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/require"
 	"github.com/stretchr/testify/suite"
+	"go.mongodb.org/mongo-driver/bson/primitive"
 	"net/http"
 	"net/http/httptest"
 	"strings"
 	"testing"
+	"time"
 )
 
 type OrganisationInviteIntegrationTestSuite struct {
@@ -162,7 +164,34 @@ func (s *OrganisationInviteIntegrationTestSuite) Test_ProcessOrganisationMemberI
 		Type:   auth.RoleAdmin,
 		Groups: []string{uuid.NewString()},
 		Apps:   nil,
-	})
+	}, primitive.NewDateTimeFromTime(time.Now()))
+	require.NoError(s.T(), err)
+
+	// Arrange.
+	url := fmt.Sprintf("/ui/organisations/process_invite?token=%s&accepted=true", iv.Token)
+	req := createRequest(http.MethodPost, url, nil)
+	req.Header.Set("Authorization", "")
+
+	w := httptest.NewRecorder()
+
+	// Act.
+	s.Router.ServeHTTP(w, req)
+
+	// Assert.
+	require.Equal(s.T(), expectedStatusCode, w.Code)
+}
+
+func (s *OrganisationInviteIntegrationTestSuite) Test_ProcessOrganisationMemberInvite_InviteExpired() {
+	expectedStatusCode := http.StatusBadRequest
+
+	user, err := testdb.SeedUser(s.DB, "invite@test.com", "password")
+	require.NoError(s.T(), err)
+
+	iv, err := testdb.SeedOrganisationInvite(s.DB, s.DefaultOrg, user.Email, &auth.Role{
+		Type:   auth.RoleAdmin,
+		Groups: []string{uuid.NewString()},
+		Apps:   nil,
+	}, primitive.NewDateTimeFromTime(time.Now().Add(-time.Minute)))
 	require.NoError(s.T(), err)
 
 	// Arrange.
@@ -186,7 +215,7 @@ func (s *OrganisationInviteIntegrationTestSuite) Test_ProcessOrganisationMemberI
 		Type:   auth.RoleAdmin,
 		Groups: []string{uuid.NewString()},
 		Apps:   nil,
-	})
+	}, primitive.NewDateTimeFromTime(time.Now()))
 	require.NoError(s.T(), err)
 
 	// Arrange.
@@ -212,7 +241,7 @@ func (s *OrganisationInviteIntegrationTestSuite) Test_ProcessOrganisationMemberI
 		Type:   auth.RoleAdmin,
 		Groups: []string{uuid.NewString()},
 		Apps:   nil,
-	})
+	}, primitive.NewDateTimeFromTime(time.Now()))
 	require.NoError(s.T(), err)
 
 	// Arrange.
@@ -238,7 +267,7 @@ func (s *OrganisationInviteIntegrationTestSuite) Test_ProcessOrganisationMemberI
 		Type:   auth.RoleAdmin,
 		Groups: []string{uuid.NewString()},
 		Apps:   nil,
-	})
+	}, primitive.NewDateTimeFromTime(time.Now()))
 	require.NoError(s.T(), err)
 
 	// Arrange.

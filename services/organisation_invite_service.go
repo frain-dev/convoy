@@ -46,6 +46,7 @@ func (ois *OrganisationInviteService) CreateOrganisationMemberInvite(ctx context
 		Token:          uniuri.NewLen(64),
 		Role:           newIV.Role,
 		Status:         datastore.InviteStatusPending,
+		ExpiresAt:      primitive.NewDateTimeFromTime(time.Now().Add(time.Hour * 24 * 14)), // expires in 2 weeks
 		DocumentStatus: datastore.ActiveDocumentStatus,
 		CreatedAt:      primitive.NewDateTimeFromTime(time.Now()),
 		UpdatedAt:      primitive.NewDateTimeFromTime(time.Now()),
@@ -71,6 +72,11 @@ func (ois *OrganisationInviteService) ProcessOrganisationMemberInvite(ctx contex
 
 	if iv.Status != datastore.InviteStatusPending {
 		return NewServiceError(http.StatusBadRequest, fmt.Errorf("organisation member invite already %s", iv.Status.String()))
+	}
+
+	now := primitive.NewDateTimeFromTime(time.Now())
+	if now > iv.ExpiresAt {
+		return NewServiceError(http.StatusBadRequest, errors.New("organisation member invite already expired"))
 	}
 
 	if !accepted {

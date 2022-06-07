@@ -7,8 +7,10 @@ import (
 	"github.com/frain-dev/convoy/mocks"
 	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/require"
+	"go.mongodb.org/mongo-driver/bson/primitive"
 	"net/http"
 	"testing"
+	"time"
 
 	"github.com/frain-dev/convoy/datastore"
 	"github.com/frain-dev/convoy/server/models"
@@ -154,6 +156,7 @@ func TestOrganisationInviteService_CreateOrganisationMemberInvite(t *testing.T) 
 
 func TestOrganisationInviteService_ProcessOrganisationMemberInvite(t *testing.T) {
 	ctx := context.Background()
+	expiry := primitive.NewDateTimeFromTime(time.Now().Add(time.Hour))
 
 	type args struct {
 		ctx      context.Context
@@ -184,6 +187,7 @@ func TestOrganisationInviteService_ProcessOrganisationMemberInvite(t *testing.T)
 					&datastore.OrganisationInvite{
 						OrganisationID: "123ab",
 						Status:         datastore.InviteStatusPending,
+						ExpiresAt:      expiry,
 						InviteeEmail:   "test@email.com",
 						Role: auth.Role{
 							Type:   auth.RoleAdmin,
@@ -196,6 +200,7 @@ func TestOrganisationInviteService_ProcessOrganisationMemberInvite(t *testing.T)
 				oir.EXPECT().UpdateOrganisationInvite(gomock.Any(), &datastore.OrganisationInvite{
 					OrganisationID: "123ab",
 					Status:         datastore.InviteStatusAccepted,
+					ExpiresAt:      expiry,
 					InviteeEmail:   "test@email.com",
 					Role: auth.Role{
 						Type:   auth.RoleAdmin,
@@ -282,6 +287,36 @@ func TestOrganisationInviteService_ProcessOrganisationMemberInvite(t *testing.T)
 			wantErrMsg:  "organisation member invite already declined",
 		},
 		{
+			name: "should_error_for_invite_already_expired",
+			args: args{
+				ctx:      ctx,
+				token:    "abcdef",
+				accepted: true,
+				newUser:  nil,
+			},
+			dbFn: func(ois *OrganisationInviteService) {
+				oir, _ := ois.orgInviteRepo.(*mocks.MockOrganisationInviteRepository)
+				oir.EXPECT().FetchOrganisationInviteByToken(gomock.Any(), "abcdef").
+					Times(1).Return(
+					&datastore.OrganisationInvite{
+						OrganisationID: "123ab",
+						Status:         datastore.InviteStatusPending,
+						ExpiresAt:      primitive.NewDateTimeFromTime(time.Now().Add(-time.Minute)),
+						InviteeEmail:   "test@email.com",
+						Role: auth.Role{
+							Type:   auth.RoleAdmin,
+							Groups: []string{"ref"},
+							Apps:   nil,
+						},
+					},
+					nil,
+				)
+			},
+			wantErr:     true,
+			wantErrCode: http.StatusBadRequest,
+			wantErrMsg:  "organisation member invite already expired",
+		},
+		{
 			name: "should_fail_to_find_invite_by_token_and_email",
 			args: args{
 				ctx:      ctx,
@@ -313,6 +348,7 @@ func TestOrganisationInviteService_ProcessOrganisationMemberInvite(t *testing.T)
 					&datastore.OrganisationInvite{
 						OrganisationID: "123ab",
 						Status:         datastore.InviteStatusPending,
+						ExpiresAt:      expiry,
 						InviteeEmail:   "test@email.com",
 						Role: auth.Role{
 							Type:   auth.RoleAdmin,
@@ -325,6 +361,7 @@ func TestOrganisationInviteService_ProcessOrganisationMemberInvite(t *testing.T)
 				oir.EXPECT().UpdateOrganisationInvite(gomock.Any(), &datastore.OrganisationInvite{
 					OrganisationID: "123ab",
 					Status:         datastore.InviteStatusDeclined,
+					ExpiresAt:      expiry,
 					InviteeEmail:   "test@email.com",
 					Role: auth.Role{
 						Type:   auth.RoleAdmin,
@@ -350,6 +387,7 @@ func TestOrganisationInviteService_ProcessOrganisationMemberInvite(t *testing.T)
 					&datastore.OrganisationInvite{
 						OrganisationID: "123ab",
 						Status:         datastore.InviteStatusPending,
+						ExpiresAt:      expiry,
 						InviteeEmail:   "test@email.com",
 						Role: auth.Role{
 							Type:   auth.RoleAdmin,
@@ -387,6 +425,7 @@ func TestOrganisationInviteService_ProcessOrganisationMemberInvite(t *testing.T)
 					&datastore.OrganisationInvite{
 						OrganisationID: "123ab",
 						Status:         datastore.InviteStatusPending,
+						ExpiresAt:      expiry,
 						InviteeEmail:   "test@email.com",
 						Role: auth.Role{
 							Type:   auth.RoleAdmin,
@@ -399,6 +438,7 @@ func TestOrganisationInviteService_ProcessOrganisationMemberInvite(t *testing.T)
 				oir.EXPECT().UpdateOrganisationInvite(gomock.Any(), &datastore.OrganisationInvite{
 					OrganisationID: "123ab",
 					Status:         datastore.InviteStatusAccepted,
+					ExpiresAt:      expiry,
 					InviteeEmail:   "test@email.com",
 					Role: auth.Role{
 						Type:   auth.RoleAdmin,
@@ -439,6 +479,7 @@ func TestOrganisationInviteService_ProcessOrganisationMemberInvite(t *testing.T)
 					&datastore.OrganisationInvite{
 						OrganisationID: "123ab",
 						Status:         datastore.InviteStatusPending,
+						ExpiresAt:      expiry,
 						InviteeEmail:   "test@email.com",
 						Role: auth.Role{
 							Type:   auth.RoleAdmin,
@@ -477,6 +518,7 @@ func TestOrganisationInviteService_ProcessOrganisationMemberInvite(t *testing.T)
 					&datastore.OrganisationInvite{
 						OrganisationID: "123ab",
 						Status:         datastore.InviteStatusPending,
+						ExpiresAt:      expiry,
 						InviteeEmail:   "test@email.com",
 						Role: auth.Role{
 							Type:   auth.RoleAdmin,
@@ -515,6 +557,7 @@ func TestOrganisationInviteService_ProcessOrganisationMemberInvite(t *testing.T)
 					&datastore.OrganisationInvite{
 						OrganisationID: "123ab",
 						Status:         datastore.InviteStatusPending,
+						ExpiresAt:      expiry,
 						InviteeEmail:   "test@email.com",
 						Role: auth.Role{
 							Type:   auth.RoleAdmin,
@@ -550,6 +593,7 @@ func TestOrganisationInviteService_ProcessOrganisationMemberInvite(t *testing.T)
 					&datastore.OrganisationInvite{
 						OrganisationID: "123ab",
 						Status:         datastore.InviteStatusPending,
+						ExpiresAt:      expiry,
 						InviteeEmail:   "test@email.com",
 						Role: auth.Role{
 							Type:   auth.RoleAdmin,
@@ -591,6 +635,7 @@ func TestOrganisationInviteService_ProcessOrganisationMemberInvite(t *testing.T)
 					&datastore.OrganisationInvite{
 						OrganisationID: "123ab",
 						Status:         datastore.InviteStatusPending,
+						ExpiresAt:      expiry,
 						InviteeEmail:   "test@email.com",
 						Role: auth.Role{
 							Type:   auth.RoleAdmin,
@@ -638,6 +683,7 @@ func TestOrganisationInviteService_ProcessOrganisationMemberInvite(t *testing.T)
 					&datastore.OrganisationInvite{
 						OrganisationID: "123ab",
 						Status:         datastore.InviteStatusPending,
+						ExpiresAt:      expiry,
 						InviteeEmail:   "test@email.com",
 						Role: auth.Role{
 							Type:   auth.RoleAdmin,
@@ -650,6 +696,7 @@ func TestOrganisationInviteService_ProcessOrganisationMemberInvite(t *testing.T)
 				oir.EXPECT().UpdateOrganisationInvite(gomock.Any(), &datastore.OrganisationInvite{
 					OrganisationID: "123ab",
 					Status:         datastore.InviteStatusAccepted,
+					ExpiresAt:      expiry,
 					InviteeEmail:   "test@email.com",
 					Role: auth.Role{
 						Type:   auth.RoleAdmin,
