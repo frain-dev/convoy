@@ -491,11 +491,15 @@ func SeedSubscription(db datastore.DatabaseClient,
 	return subscription, nil
 }
 
-func SeedUser(db datastore.DatabaseClient, password string) (*datastore.User, error) {
+func SeedUser(db datastore.DatabaseClient, email, password string) (*datastore.User, error) {
 	p := &datastore.Password{Plaintext: password}
 	err := p.GenerateHash()
 	if err != nil {
 		return nil, err
+	}
+
+	if email == "" {
+		email = "test@test.com"
 	}
 
 	user := &datastore.User{
@@ -503,7 +507,7 @@ func SeedUser(db datastore.DatabaseClient, password string) (*datastore.User, er
 		FirstName:      "test",
 		LastName:       "test",
 		Password:       string(p.Hash),
-		Email:          "test@test.com",
+		Email:          email,
 		DocumentStatus: datastore.ActiveDocumentStatus,
 	}
 
