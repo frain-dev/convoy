@@ -27,6 +27,7 @@ type applicationHandler struct {
 	groupService              *services.GroupService
 	securityService           *services.SecurityService
 	sourceService             *services.SourceService
+	subService                *services.SubcriptionService
 	organisationService       *services.OrganisationService
 	organisationMemberService *services.OrganisationMemberService
 	organisationInviteService *services.OrganisationInviteService
@@ -60,32 +61,35 @@ func newApplicationHandler(
 	appRepo datastore.ApplicationRepository,
 	groupRepo datastore.GroupRepository,
 	apiKeyRepo datastore.APIKeyRepository,
+	subRepo datastore.SubscriptionRepository,
 	sourceRepo datastore.SourceRepository,
 	orgRepo datastore.OrganisationRepository,
 	orgMemberRepo datastore.OrganisationMemberRepository,
 	orgInviteRepo datastore.OrganisationInviteRepository,
 	userRepo datastore.UserRepository,
-	eventQueue queue.Queuer,
-	createEventQueue queue.Queuer,
+	queue queue.Queuer,
 	logger logger.Logger,
 	tracer tracer.Tracer,
 	cache cache.Cache,
 	limiter limiter.RateLimiter, searcher searcher.Searcher) *applicationHandler {
-	as := services.NewAppService(appRepo, eventRepo, eventDeliveryRepo, eventQueue, cache)
-	es := services.NewEventService(appRepo, eventRepo, eventDeliveryRepo, eventQueue, createEventQueue, cache, searcher)
+	as := services.NewAppService(appRepo, eventRepo, eventDeliveryRepo, cache)
+	es := services.NewEventService(appRepo, eventRepo, eventDeliveryRepo, queue, cache, searcher, subRepo)
 	gs := services.NewGroupService(appRepo, groupRepo, eventRepo, eventDeliveryRepo, limiter)
 	ss := services.NewSecurityService(groupRepo, apiKeyRepo)
 	os := services.NewOrganisationService(orgRepo, orgMemberRepo)
+	rs := services.NewSubscriptionService(subRepo)
 	sos := services.NewSourceService(sourceRepo)
 	us := services.NewUserService(userRepo, cache)
 	ois := services.NewOrganisationInviteService(orgRepo, userRepo, orgMemberRepo, orgInviteRepo)
 	om := services.NewOrganisationMemberService(orgMemberRepo)
+
 	return &applicationHandler{
 		appService:                as,
 		eventService:              es,
 		groupService:              gs,
 		securityService:           ss,
 		organisationService:       os,
+		subService:                rs,
 		sourceService:             sos,
 		organisationInviteService: ois,
 		organisationMemberService: om,
@@ -98,8 +102,6 @@ func newApplicationHandler(
 		appRepo:                   appRepo,
 		groupRepo:                 groupRepo,
 		sourceRepo:                sourceRepo,
-		eventQueue:                eventQueue,
-		createEventQueue:          createEventQueue,
 		logger:                    logger,
 		tracer:                    tracer,
 		cache:                     cache,

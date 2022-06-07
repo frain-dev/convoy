@@ -2,6 +2,7 @@ package services
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"net/http"
@@ -23,15 +24,15 @@ type EventService struct {
 	appRepo           datastore.ApplicationRepository
 	eventRepo         datastore.EventRepository
 	eventDeliveryRepo datastore.EventDeliveryRepository
-	eventQueue        queue.Queuer
-	createEventQueue  queue.Queuer
+	queue             queue.Queuer
+	subRepo           datastore.SubscriptionRepository
 	cache             cache.Cache
 	searcher          searcher.Searcher
 }
 
 func NewEventService(appRepo datastore.ApplicationRepository, eventRepo datastore.EventRepository, eventDeliveryRepo datastore.EventDeliveryRepository,
-	eventQueue queue.Queuer, createEventQueue queue.Queuer, cache cache.Cache, seacher searcher.Searcher) *EventService {
-	return &EventService{appRepo: appRepo, eventRepo: eventRepo, eventDeliveryRepo: eventDeliveryRepo, eventQueue: eventQueue, createEventQueue: createEventQueue, cache: cache, searcher: seacher}
+	queue queue.Queuer, cache cache.Cache, seacher searcher.Searcher, subRepo datastore.SubscriptionRepository) *EventService {
+	return &EventService{appRepo: appRepo, eventRepo: eventRepo, eventDeliveryRepo: eventDeliveryRepo, queue: queue, cache: cache, searcher: seacher, subRepo: subRepo}
 }
 
 func (e *EventService) CreateAppEvent(ctx context.Context, newMessage *models.Event, g *datastore.Group) (*datastore.Event, error) {
@@ -78,29 +79,33 @@ func (e *EventService) CreateAppEvent(ctx context.Context, newMessage *models.Ev
 	}
 
 	event := &datastore.Event{
-		UID:       uuid.New().String(),
-		EventType: datastore.EventType(newMessage.EventType),
-		Data:      newMessage.Data,
-		CreatedAt: primitive.NewDateTimeFromTime(time.Now()),
-		UpdatedAt: primitive.NewDateTimeFromTime(time.Now()),
-		AppMetadata: &datastore.AppMetadata{
-			Title:        app.Title,
-			UID:          app.UID,
-			GroupID:      app.GroupID,
-			SupportEmail: app.SupportEmail,
-		},
+		UID:            uuid.New().String(),
+		EventType:      datastore.EventType(newMessage.EventType),
+		Data:           newMessage.Data,
+		CreatedAt:      primitive.NewDateTimeFromTime(time.Now()),
+		UpdatedAt:      primitive.NewDateTimeFromTime(time.Now()),
+		AppID:          app.UID,
+		GroupID:        app.GroupID,
 		DocumentStatus: datastore.ActiveDocumentStatus,
 	}
 	if g.Config.Strategy.Type != datastore.LinearStrategyProvider && g.Config.Strategy.Type != datastore.ExponentialStrategyProvider {
 		return nil, NewServiceError(http.StatusBadRequest, errors.New("retry strategy not defined in configuration"))
 	}
 
-	taskName := convoy.CreateEventProcessor.SetPrefix(g.Name)
-	job := &queue.Job{
-		ID:    event.UID,
-		Event: event,
+	taskName := convoy.CreateEventProcessor
+	eventByte, err := json.Marshal(event)
+	if err != nil {
+		return nil, NewServiceError(http.StatusBadRequest, err)
 	}
-	err = e.createEventQueue.Publish(context.Background(), taskName, job, 0)
+
+	payload := json.RawMessage(eventByte)
+
+	job := &queue.Job{
+		ID:      event.UID,
+		Payload: payload,
+		Delay:   0,
+	}
+	err = e.queue.Write(taskName, convoy.CreateEventQueue, job)
 	if err != nil {
 		log.Errorf("Error occurred sending new event to the queue %s", err)
 	}
@@ -109,13 +114,19 @@ func (e *EventService) CreateAppEvent(ctx context.Context, newMessage *models.Ev
 }
 
 func (e *EventService) ReplayAppEvent(ctx context.Context, event *datastore.Event, g *datastore.Group) error {
-	taskName := convoy.CreateEventProcessor.SetPrefix(g.Name)
-	job := &queue.Job{
-		ID:    event.UID,
-		Event: event,
+	taskName := convoy.CreateEventProcessor
+	eventByte, err := json.Marshal(event)
+	if err != nil {
+		return NewServiceError(http.StatusBadRequest, err)
 	}
+	payload := json.RawMessage(eventByte)
 
-	err := e.createEventQueue.Publish(context.Background(), taskName, job, 0)
+	job := &queue.Job{
+		ID:      event.UID,
+		Payload: payload,
+		Delay:   0,
+	}
+	err = e.queue.Write(taskName, convoy.CreateEventQueue, job)
 	if err != nil {
 		log.WithError(err).Error("replay_event: failed to write event to the queue")
 		return NewServiceError(http.StatusBadRequest, errors.New("failed to write event to queue"))
@@ -251,23 +262,19 @@ func (e *EventService) RetryEventDelivery(ctx context.Context, eventDelivery *da
 		return errors.New("cannot resend event that did not fail previously")
 	}
 
-	em := eventDelivery.EndpointMetadata
-	endpoint, err := e.appRepo.FindApplicationEndpointByID(context.Background(), eventDelivery.AppMetadata.UID, em.UID)
+	sub, err := e.subRepo.FindSubscriptionByID(ctx, g.UID, eventDelivery.SubscriptionID)
 	if err != nil {
-		log.WithError(err).Error("failed to find endpoint")
-		return errors.New("cannot find endpoint")
+		return ErrSubscriptionNotFound
 	}
 
-	if endpoint.Status == datastore.PendingEndpointStatus {
-		return errors.New("endpoint is being re-activated")
+	if sub.Status == datastore.PendingSubscriptionStatus {
+		return errors.New("subscription is being re-activated")
 	}
 
-	if endpoint.Status == datastore.InactiveEndpointStatus {
-		pendingEndpoints := []string{em.UID}
-
-		err = e.appRepo.UpdateApplicationEndpointsStatus(context.Background(), eventDelivery.AppMetadata.UID, pendingEndpoints, datastore.PendingEndpointStatus)
+	if sub.Status == datastore.InactiveSubscriptionStatus {
+		err = e.subRepo.UpdateSubscriptionStatus(context.Background(), eventDelivery.GroupID, eventDelivery.SubscriptionID, datastore.PendingSubscriptionStatus)
 		if err != nil {
-			return errors.New("failed to update endpoint status")
+			return errors.New("failed to update subscription status")
 		}
 	}
 
@@ -279,13 +286,12 @@ func (e *EventService) forceResendEventDelivery(ctx context.Context, eventDelive
 		return errors.New("only successful events can be force resent")
 	}
 
-	em := eventDelivery.EndpointMetadata
-	endpoint, err := e.appRepo.FindApplicationEndpointByID(context.Background(), eventDelivery.AppMetadata.UID, em.UID)
+	sub, err := e.subRepo.FindSubscriptionByID(ctx, g.UID, eventDelivery.SubscriptionID)
 	if err != nil {
-		return errors.New("cannot find endpoint")
+		return ErrSubscriptionNotFound
 	}
 
-	if endpoint.Status != datastore.ActiveEndpointStatus {
+	if sub.Status != datastore.ActiveSubscriptionStatus {
 		return errors.New("force resend to an inactive or pending endpoint is not allowed")
 	}
 
@@ -299,11 +305,14 @@ func (e *EventService) requeueEventDelivery(ctx context.Context, eventDelivery *
 		return errors.New("an error occurred while trying to resend event")
 	}
 
-	taskName := convoy.EventProcessor.SetPrefix(g.Name)
+	taskName := convoy.CreateEventProcessor
+
 	job := &queue.Job{
-		ID: eventDelivery.UID,
+		ID:      eventDelivery.UID,
+		Payload: json.RawMessage(eventDelivery.UID),
+		Delay:   1 * time.Second,
 	}
-	err = e.eventQueue.Publish(context.Background(), taskName, job, 1*time.Second)
+	err = e.queue.Write(taskName, convoy.EventQueue, job)
 	if err != nil {
 		return fmt.Errorf("error occurred re-enqueing old event - %s: %v", eventDelivery.UID, err)
 	}

@@ -84,14 +84,14 @@
 				<convoy-loader id="dashboard_summary_loader" *ngIf="isloadingDashboardData"></convoy-loader>
 
 				<ul class="metrics">
-					<li class="messages">
+					<li class="flex flex__align-items-center padding-x__30px padding-y__16px border__none">
 						<img src="/assets/img/message-icon.svg" alt="message icon" />
 						<div class="metric">
 							<div>{{ dashboardData.events_sent | metric }}</div>
 							<div class="color__grey">Event Sent</div>
 						</div>
 					</li>
-					<li class="apps">
+					<li class="flex flex__align-items-center padding-x__30px padding-y__16px">
 						<img src="/assets/img/apps-icon.svg" alt="apps icon" />
 						<div class="metric">
 							<div>{{ dashboardData.apps | metric }}</div>
@@ -101,7 +101,6 @@
 				</ul>
 
 				<div>
-					<h3>Events Sent</h3>
 					<canvas id="dahboard_events_chart" width="400" height="200"></canvas>
 				</div>
 			</div>

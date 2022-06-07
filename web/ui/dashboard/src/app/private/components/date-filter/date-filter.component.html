@@ -1,0 +1,17 @@
+<div class="dropdown">
+	<button [ngClass]="{ active: dateRange.value.startDate !== '' && dateRange.value.endDate !== '' }" class="button button__filter button--has-icon" (click)="statsPicker.open()">
+		<img src="/assets/img/calendar-icon.svg" class="margin-right__4px" alt="calender icon" />
+		<span class="color__grey margin-right__4px">Date</span>
+		<mat-date-range-input [formGroup]="dateRange" [rangePicker]="statsPicker">
+			<input matStartDate formControlName="startDate" placeholder="Start date" />
+			<input matEndDate formControlName="endDate" placeholder="End date" />
+		</mat-date-range-input>
+		<mat-date-range-picker #statsPicker [disabled]="false">
+			<mat-datepicker-actions class="flex__justify-start">
+				<button mat-raised-button class="button button__primary button__small" matDatepickerApply (click)="setDate()">Apply</button>
+				<button mat-button matDatepickerCancel class="button button__clear button__small margin-left__10px">Clear</button>
+			</mat-datepicker-actions>
+		</mat-date-range-picker>
+		<img src="/assets/img/angle-arrow-down.svg" class="margin-right__0px" alt="arrow down icon" />
+	</button>
+</div>

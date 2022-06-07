@@ -37,15 +37,14 @@ import (
 type contextKey string
 
 const (
-	groupCtx         contextKey = "group"
-	appCtx           contextKey = "app"
-	orgCtx           contextKey = "organisation"
-	orgMemberCtx     contextKey = "organisation_member"
-	endpointCtx      contextKey = "endpoint"
-	eventCtx         contextKey = "event"
-	eventDeliveryCtx contextKey = "eventDelivery"
-	configCtx        contextKey = "configCtx"
-	//authConfigCtx       contextKey = "authConfig"
+	groupCtx            contextKey = "group"
+	appCtx              contextKey = "app"
+	orgCtx              contextKey = "organisation"
+	orgMemberCtx        contextKey = "organisation_member"
+	endpointCtx         contextKey = "endpoint"
+	eventCtx            contextKey = "event"
+	eventDeliveryCtx    contextKey = "eventDelivery"
+	configCtx           contextKey = "configCtx"
 	authLoginCtx        contextKey = "authLogin"
 	authUserCtx         contextKey = "authUser"
 	pageableCtx         contextKey = "pageable"
@@ -551,7 +550,6 @@ func requireGroup(groupRepo datastore.GroupRepository, cache cache.Cache) func(n
 						event := "an error occurred while loading default group"
 						statusCode := http.StatusBadRequest
 
-						// TODO(daniel,subomi): this should be impossible, because we call ensureDefaultGroup on app startup, find a better way to report this?
 						if errors.Is(err, mongo.ErrNoDocuments) {
 							event = err.Error()
 							statusCode = http.StatusNotFound

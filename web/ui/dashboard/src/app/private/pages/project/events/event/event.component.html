@@ -1,0 +1,172 @@
+<div class="card events-card rounded--top-left__none rounded--top-right__none">
+	<div class="padding-x__16px padding-y__24px border__bottom">
+		<div class="flex flex__align-items-center flex__justify-between">
+			<div class="flex">
+				<form class="input__search filter margin-bottom__0px events-search">
+					<img src="/assets/img/search-icon.svg" alt="search icon" />
+					<input type="search" placeholder="Search events" [(ngModel)]="eventsSearchString" (change)="getEvents({ addToURL: true, page: 1 })" [ngModelOptions]="{ standalone: true }" />
+					<button [class]="'enter-button' + (eventsSearchString && eventsSearchString.length > 0 ? ' show' : '')" (click)="getEvents({ addToURL: true, page: 1 })">
+						<img src="/assets/img/enter-icon.png" alt="enter icon" />
+					</button>
+				</form>
+
+				<date-filter class="margin-left__14px" (selectedDateRange)="getSelectedDateRange($event)"></date-filter>
+
+				<app-time-filter class="margin-left__14px" (applyFilter)="eventsTimeFilterData = $event; getEvents({ addToURL: true })" #eventsTimeFilter></app-time-filter>
+
+				<div class="dropdown margin-left__14px">
+					<button class="button button__filter button--has-icon icon-left" [ngClass]="{ active: !!eventApp }" (click)="showOverlay = true; showEventsAppsDropdown = !showEventsAppsDropdown">
+						<img src="/assets/img/apps-icon-grey.svg" alt="apps filter icon" />
+						<span>All Apps</span>
+						<img class="margin-left__30px margin-right__0px" src="/assets/img/angle-arrow-down.svg" alt="arrow down icon" />
+					</button>
+
+					<div class="dropdown__menu with-padding large" [ngClass]="{ show: showEventsAppsDropdown }">
+						<div class="input__search">
+							<img src="/assets/img/search-icon.svg" alt="search icon" />
+							<input type="search" placeholder="Search apps here" #eventsAppsFilter />
+						</div>
+
+						<li class="dropdown__menu__item border__bottom" *ngFor="let app of eventsAppsFilter$ | async">
+							<label [for]="app.uid">{{ app.name }}</label>
+							<input type="checkbox" name="app" [value]="app.uid" [id]="app.uid" [checked]="app.uid === eventApp" (change)="updateAppFilter(app.uid, $event)" />
+						</li>
+
+						<div *ngIf="filteredApps?.length !== 0 && !!eventApp" class="margin-top__10px">
+							<button class="button button__clear button__small" (click)="clearEventFilters(); showEventsAppsDropdown = false">Clear</button>
+						</div>
+
+						<p *ngIf="filteredApps?.length === 0">No app to display</p>
+					</div>
+				</div>
+			</div>
+
+			<button
+				class="button button__white button__small"
+				(click)="clearEventFilters(); selectedEventsDateOption = ''"
+				[disabled]="
+					(eventsFilterDateRange.value.startDate == '' || eventsFilterDateRange.value.endDate == '') &&
+					eventApp == '' &&
+					eventsSearchString.length == 0 &&
+					eventsTimeFilterData.startTime == 'T00:00:00' &&
+					eventsTimeFilterData.endTime == 'T23:59:59'
+				"
+			>
+				Clear Filter
+			</button>
+		</div>
+	</div>
+
+	<div class="flex">
+		<div class="event__table">
+			<convoy-table-loader id="events_loader_loader" [tableHead]="eventsTableHead" *ngIf="isloadingEvents"></convoy-table-loader>
+			<div class="table table--container has-loader" id="events-table-container" *ngIf="displayedEvents && displayedEvents.length > 0">
+				<table id="table">
+					<thead>
+						<tr class="table--head">
+							<th *ngFor="let head of eventsTableHead" scope="col">{{ head }}</th>
+						</tr>
+					</thead>
+					<tbody>
+						<ng-container *ngFor="let eventGroup of displayedEvents; let i = index">
+							<tr class="table--date-row">
+								<td>
+									<div>{{ eventGroup.date }}</div>
+								</td>
+								<td></td>
+								<td></td>
+								<td></td>
+							</tr>
+							<tr
+								*ngFor="let event of eventGroup.content; let index = index"
+								[ngClass]="{ active: event.uid === eventsDetailsItem?.uid, 'last-item': index === eventGroup.content.length - 1 }"
+								[id]="'event' + i"
+								(click)="eventsDetailsItem = event; getEventDeliveriesForSidebar(event.uid)"
+							>
+								<td>
+									<div>
+										<div class="tag tag--Neutral">{{ event.event_type }}</div>
+									</div>
+								</td>
+								<td>
+									<div class="long-text long-text__150px">
+										<span class="underline color__primary">{{ event.app_metadata.title }}</span>
+									</div>
+								</td>
+								<td>
+									<div>{{ event.created_at | date: 'mediumTime' }}</div>
+								</td>
+								<td>
+									<div>
+										<button class="button__clear button--has-icon icon-right" (click)="openDeliveriesTab(event.uid)">
+											Deliveries
+											<img src="assets/img/angle-arrow-right-primary.svg" alt="arrow right" />
+										</button>
+									</div>
+								</td>
+							</tr>
+						</ng-container>
+					</tbody>
+				</table>
+			</div>
+			<div class="flex flex__column flex__justify-center flex__align-items-center table--container" id="events-empty-state" *ngIf="!displayedEvents || displayedEvents?.length === 0">
+				<img src="/assets/img/empty-state.svg" alt="empty state" class="empty-state-img" />
+				<p class="font__14px font__weight-600 margin-top__0px color__black width__20 text--center">No event to show here</p>
+			</div>
+		</div>
+
+		<div class="event__details" *ngIf="displayedEvents && displayedEvents.length > 0">
+			<div class="padding-all__16px">
+				<convoy-loader id="details_section_loader" *ngIf="isloadingEvents"></convoy-loader>
+
+				<ng-container *ngIf="!isloadingEvents">
+					<h3>Details</h3>
+					<div class="dashboard--logs--details--req-res">
+						<div class="dashboard--logs--details--tabs-data show">
+							<h4>Event</h4>
+							<prism language="json" [code]="getCodeSnippetString()"></prism>
+						</div>
+					</div>
+
+					<h4 *ngIf="sidebarEventDeliveries && sidebarEventDeliveries.length > 0">Deliveries Overview</h4>
+					<ul *ngIf="sidebarEventDeliveries && sidebarEventDeliveries.length > 0">
+						<li class="flex flex__align-items-center margin-top__16px border__bottom padding-bottom__10px" *ngFor="let delivery of sidebarEventDeliveries">
+							<div [class]="'margin-top__4px tag tag--' + delivery.status">{{ delivery.status }}</div>
+							<div class="font__14px color__black margin-left__16px long-text long-text__300px" [title]="delivery.endpoint.target_url">
+								{{ delivery.endpoint.target_url }}
+							</div>
+						</li>
+					</ul>
+				</ng-container>
+			</div>
+		</div>
+	</div>
+</div>
+
+<div class="button-container flex flex__align-items-center margin-top__16px">
+	<button
+		class="button button__white button__primary button__outline button--has-icon icon-left padding-y__4px padding-right__16px padding-left__4px"
+		routerLink="./"
+		[queryParams]="{ page: events?.pagination?.prev }"
+		[disabled]="events?.pagination?.prev === 0"
+		(click)="getEvents({ page: events?.pagination?.prev })"
+	>
+		<svg width="24" height="24" class="margin-right__8px">
+			<use xlink:href="#arrow-left-icon"></use>
+		</svg>
+		Previous
+	</button>
+	<button
+		class="button button__white button__primary button__outline button--has-icon icon-left padding-y__4px padding-left__16px padding-right__4px margin-left__16px"
+		routerLink="./"
+		[queryParams]="{ page: events?.pagination?.next }"
+		[disabled]="events?.pagination?.next === 0"
+		(click)="getEvents({ page: events?.pagination?.next })"
+	>
+		Next
+		<svg width="24" height="24" class="margin-left__8px" fill="var(--primary-color)">
+			<use xlink:href="#arrow-right-icon"></use>
+		</svg>
+	</button>
+</div>
+<div class="overlay" *ngIf="showOverlay" (click)="showOverlay = false; showEventsAppsDropdown = false"></div>

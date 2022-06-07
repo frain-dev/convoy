@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"strings"
+	"time"
 
 	"github.com/asaskevich/govalidator"
 	"github.com/frain-dev/convoy/config/algo"
@@ -76,5 +77,24 @@ func init() {
 		}
 
 		return true
+	})
+
+	govalidator.TagMap["supported_retry_strategy"] = govalidator.Validator(func(encoder string) bool {
+		encoders := map[string]bool{
+			string(datastore.LinearStrategyProvider):      true,
+			string(datastore.ExponentialStrategyProvider): true,
+		}
+
+		if _, ok := encoders[encoder]; !ok {
+			return false
+		}
+
+		return true
+	})
+
+	govalidator.TagMap["duration"] = govalidator.Validator(func(duration string) bool {
+		_, err := time.ParseDuration(duration)
+
+		return err == nil
 	})
 }

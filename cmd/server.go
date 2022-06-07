@@ -1,13 +1,11 @@
 package main
 
 import (
-	"context"
 	"errors"
 	"time"
 
 	"github.com/frain-dev/convoy"
 	"github.com/frain-dev/convoy/auth/realm_chain"
-	"github.com/frain-dev/convoy/queue"
 	"github.com/frain-dev/convoy/worker"
 	"github.com/frain-dev/convoy/worker/task"
 
@@ -42,6 +40,8 @@ func addServerCommand(a *app) *cobra.Command {
 	var newReplicApp string
 	var newReplicKey string
 	var typesenseApiKey string
+	var promaddr string
+
 	var typesenseHost string
 	var apiKeyAuthConfig string
 	var basicAuthConfig string
@@ -119,6 +119,7 @@ func addServerCommand(a *app) *cobra.Command {
 	cmd.Flags().StringVar(&searcher, "searcher", "", "Searcher")
 	cmd.Flags().StringVar(&typesenseHost, "typesense-host", "", "Typesense Host")
 	cmd.Flags().StringVar(&typesenseApiKey, "typesense-api-key", "", "Typesense Api Key")
+	cmd.Flags().StringVar(&promaddr, "promaddr", "", `Prometheus dsn`)
 
 	cmd.Flags().BoolVar(&ssl, "ssl", false, "Configure SSL")
 	cmd.Flags().BoolVar(&requireAuth, "auth", false, "Require authentication")
@@ -153,47 +154,44 @@ func StartConvoyServer(a *app, cfg config.Configuration, withWorkers bool) error
 		return errors.New("please provide the HTTP port in the convoy.json file")
 	}
 
-	srv := server.New(cfg,
+	srv := server.New(
+		cfg,
 		a.eventRepo,
 		a.eventDeliveryRepo,
 		a.applicationRepo,
 		a.apiKeyRepo,
+		a.subRepo,
 		a.groupRepo,
 		a.orgRepo,
 		a.orgMemberRepo,
 		a.orgInviteRepo,
 		a.sourceRepo,
 		a.userRepo,
-		a.eventQueue,
-		a.createEventQueue,
+		a.queue,
 		a.logger,
 		a.tracer,
 		a.cache,
 		a.limiter,
-		a.searcher)
+		a.searcher,
+	)
 
 	if withWorkers {
-		// register tasks.
-		handler := task.ProcessEventDelivery(a.applicationRepo, a.eventDeliveryRepo, a.groupRepo, a.limiter)
-		if err := task.CreateTasks(a.groupRepo, convoy.EventProcessor, handler); err != nil {
-			log.WithError(err).Error("failed to register tasks")
-			return err
+		// register worker.
+		consumer, err := worker.NewConsumer(a.queue)
+		if err != nil {
+			log.WithError(err).Error("failed to create worker")
 		}
 
 		// register tasks.
-		eventCreatedhandler := task.ProcessEventCreated(a.applicationRepo, a.eventRepo, a.groupRepo, a.eventDeliveryRepo, a.cache, a.eventQueue)
-		if err := task.CreateTasks(a.groupRepo, convoy.CreateEventProcessor, eventCreatedhandler); err != nil {
-			log.WithError(err).Error("failed to register tasks")
-			return err
-		}
+		handler := task.ProcessEventDelivery(a.applicationRepo, a.eventDeliveryRepo, a.groupRepo, a.limiter, a.subRepo)
+		consumer.RegisterHandlers(convoy.EventProcessor, handler)
 
-		worker.RegisterNewGroupTask(a.applicationRepo, a.eventDeliveryRepo, a.groupRepo, a.limiter, a.eventRepo, a.cache, a.eventQueue)
+		// register tasks.
+		eventCreatedhandler := task.ProcessEventCreated(a.applicationRepo, a.eventRepo, a.groupRepo, a.eventDeliveryRepo, a.cache, a.queue, a.subRepo)
+		consumer.RegisterHandlers(convoy.CreateEventProcessor, eventCreatedhandler)
 
 		log.Infof("Starting Convoy workers...")
-		// register worker.
-		ctx := context.Background()
-		producer := worker.NewProducer([]queue.Queuer{a.createEventQueue, a.eventQueue})
-		producer.Start(ctx)
+		consumer.Start()
 	}
 
 	log.Infof("Started convoy server in %s", time.Since(start))
