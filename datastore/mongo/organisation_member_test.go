@@ -128,7 +128,7 @@ func TestDeleteOrganisationMember(t *testing.T) {
 	err := organisationMemberRepo.CreateOrganisationMember(context.Background(), m)
 	require.NoError(t, err)
 
-	err = organisationMemberRepo.DeleteOrganisationMember(context.Background(), m.UID)
+	err = organisationMemberRepo.DeleteOrganisationMember(context.Background(), m.UID, m.OrganisationID)
 	require.NoError(t, err)
 
 	_, err = organisationMemberRepo.FetchOrganisationMemberByID(context.Background(), m.UID, m.OrganisationID)
