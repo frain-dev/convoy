@@ -1,8 +1,8 @@
 <header class="dashboard--header border__bottom">
 	<div class="dashboard--header--container">
-		<div class="logo flex flex__align-items-center">
+		<div class="flex flex__align-items-center">
 			<a target="_blank" href="https://getconvoy.io" rel="noreferrer">
-				<img src="/assets/img/logo.svg" alt="convoy logo" />
+				<img src="/assets/img/logo.svg" alt="convoy logo" class="logo"/>
 			</a>
 
 			<nav>
@@ -20,25 +20,67 @@
 			</nav>
 		</div>
 
-		<div class="dashboard--header--acounts">
+		<div class="flex flex__align-items-center">
 			<a class="button--has-icon icon-left" target="_blank" href="https://getconvoy.io/docs" rel="noreferrer">
 				<img src="/assets/img/doc-icon-primary.svg" alt="doc icon" />
-				<span class="font__weight-400">Go to docs</span>
+				<span class="font__weight-400 color__primary">Go to docs</span>
 			</a>
-			<button class="dropdown user" (click)="showDropdown = !showDropdown" *ngIf="authDetails()">
-				<div>
-					<div class="icon">O</div>
-					<div class="name text--left">{{ authDetails().username }}</div>
-				</div>
-				<img src="/assets/img/angle-arrow-down.svg" alt="arrow down icon" />
-				<div [ngClass]="{ show: showDropdown }" class="dropdown__menu dropdown__menu__nav">
-					<ul>
-						<li class="danger" (click)="logout()">Logout</li>
+			
+			<div class="dropdown" *ngIf="authDetails()">
+				<button class="button__more with-padding button--has-icon icon-left" (click)="showOrgDropdown = !showOrgDropdown; showOverlay = true">
+					<div class="badge">
+						<div class="icon">{{ userOrganization?.name?.slice(0, 1) }}</div>
+						<div class="name">{{ userOrganization?.name }}</div>
+					</div>
+					<img src="/assets/img/angle-arrow-down.svg" alt="arrow down icon" />
+				</button>
+
+				<div [ngClass]="{ show: showOrgDropdown }" class="dropdown__menu dropdown__menu__nav larger">
+					<div class="title">Your organisations ({{ organisations?.length || 0 }})</div>
+					<ul *ngIf="organisations?.length">
+						<li class="flex flex__justify-between" *ngFor="let organisation of organisations" (click)="selectOrganisation(organisation)">
+							<div class="badge badge__dark">
+								<div class="icon">{{ organisation?.name?.slice(0, 1) }}</div>
+								<p class="name">{{ organisation?.name }}</p>
+							</div>
+							<img *ngIf="organisation.id == userOrganization?.id" src="/assets/img/check-icon-primary.svg" alt="check icon" />
+						</li>
 					</ul>
+					<div class="dropdown--footer">
+						<button class="base-button" (click)="showOrgDropdown = false">
+							<img src="/assets/img/add-circlar-icon.svg" alt="add icon" />
+							Add another Organization
+						</button>
+					</div>
 				</div>
-			</button>
+			</div>
+
+			<div class="dropdown">
+				<button class="button__more with-padding button--has-icon" (click)="showMoreDropdown = !showMoreDropdown; showOverlay = true">
+					<img src="/assets/img/nav-bar-more-primary.svg" alt="more icon" />
+				</button>
+
+				<div [ngClass]="{ show: showMoreDropdown }" class="dropdown__menu dropdown__menu__nav dropdown__menu__secondary large">
+					<div class="border__bottom padding-x__32px padding-top__24px padding-bottom__16px">
+						<h3 class="text__capitalize">{{ authDetails()?.first_name }} {{ authDetails()?.last_name }}</h3>
+						<p class="font__12px color__grey">{{ authDetails()?.email }}</p>
+					</div>
+					<ul>
+						<li routerLink="/user-settings" (click)="showMoreDropdown = false; showOverlay = false">
+							<p class="color__grey padding-left__16px">My account</p>
+						</li>
+						<li routerLink="/organisation-settings" (click)="showMoreDropdown = false; showOverlay = false">
+							<p class="color__grey padding-left__16px">Organization settings</p>
+						</li>
+					</ul>
+					<div class="border__top padding-x__32px padding-bottom__24px padding-top__16px">
+						<a class="color__danger font__weight-600" (click)="logout()">Logout</a>
+					</div>
+				</div>
+			</div>
 		</div>
 	</div>
 </header>
+<div class="overlay" *ngIf="showOverlay" (click)="showOverlay = false; showMoreDropdown = false; showOrgDropdown = false"></div>
 
 <router-outlet></router-outlet>
