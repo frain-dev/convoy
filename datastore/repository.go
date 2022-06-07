@@ -56,6 +56,25 @@ type OrganisationRepository interface {
 	FetchOrganisationByID(context.Context, string) (*Organisation, error)
 }
 
+type OrganisationInviteRepository interface {
+	LoadOrganisationsInvitesPaged(ctx context.Context, pageable Pageable) ([]OrganisationInvite, PaginationData, error)
+	CreateOrganisationInvite(ctx context.Context, iv *OrganisationInvite) error
+	UpdateOrganisationInvite(ctx context.Context, iv *OrganisationInvite) error
+	DeleteOrganisationInvite(ctx context.Context, uid string) error
+	FetchOrganisationInviteByID(ctx context.Context, uid string) (*OrganisationInvite, error)
+	FetchOrganisationInviteByToken(ctx context.Context, token string) (*OrganisationInvite, error)
+}
+
+type OrganisationMemberRepository interface {
+	LoadOrganisationMembersPaged(ctx context.Context, organisationID string, pageable Pageable) ([]OrganisationMember, PaginationData, error)
+	LoadUserOrganisationsPaged(ctx context.Context, userID string, pageable Pageable) ([]Organisation, PaginationData, error)
+	CreateOrganisationMember(ctx context.Context, member *OrganisationMember) error
+	UpdateOrganisationMember(ctx context.Context, member *OrganisationMember) error
+	DeleteOrganisationMember(ctx context.Context, memberID string, orgID string) error
+	FetchOrganisationMemberByID(ctx context.Context, memberID string, organisationID string) (*OrganisationMember, error)
+	FetchOrganisationMemberByUserID(ctx context.Context, userID string, organisationID string) (*OrganisationMember, error)
+}
+
 type ApplicationRepository interface {
 	CreateApplication(context.Context, *Application, string) error
 	LoadApplicationsPaged(context.Context, string, string, Pageable) ([]Application, PaginationData, error)
