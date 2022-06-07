@@ -445,8 +445,9 @@ func TestOrganisationMemberService_DeleteOrganisationMember(t *testing.T) {
 	ctx := context.Background()
 
 	type args struct {
-		ctx context.Context
-		id  string
+		ctx   context.Context
+		id    string
+		orgID string
 	}
 	tests := []struct {
 		name        string
@@ -459,12 +460,13 @@ func TestOrganisationMemberService_DeleteOrganisationMember(t *testing.T) {
 		{
 			name: "should_delete_organisation_member",
 			args: args{
-				ctx: ctx,
-				id:  "123",
+				ctx:   ctx,
+				id:    "123",
+				orgID: "abc",
 			},
 			dbFn: func(os *OrganisationMemberService) {
 				a, _ := os.orgMemberRepo.(*mocks.MockOrganisationMemberRepository)
-				a.EXPECT().DeleteOrganisationMember(gomock.Any(), gomock.Any()).
+				a.EXPECT().DeleteOrganisationMember(gomock.Any(), "123", "abc").
 					Times(1).Return(nil)
 			},
 			wantErr: false,
@@ -472,12 +474,13 @@ func TestOrganisationMemberService_DeleteOrganisationMember(t *testing.T) {
 		{
 			name: "should_fail_to_delete_organisation_member",
 			args: args{
-				ctx: ctx,
-				id:  "123",
+				ctx:   ctx,
+				id:    "123",
+				orgID: "abc",
 			},
 			dbFn: func(os *OrganisationMemberService) {
 				a, _ := os.orgMemberRepo.(*mocks.MockOrganisationMemberRepository)
-				a.EXPECT().DeleteOrganisationMember(gomock.Any(), gomock.Any()).
+				a.EXPECT().DeleteOrganisationMember(gomock.Any(), "123", "abc").
 					Times(1).Return(errors.New("failed"))
 			},
 			wantErr:     true,
@@ -496,7 +499,7 @@ func TestOrganisationMemberService_DeleteOrganisationMember(t *testing.T) {
 				tt.dbFn(om)
 			}
 
-			err := om.DeleteOrganisationMember(tt.args.ctx, tt.args.id)
+			err := om.DeleteOrganisationMember(tt.args.ctx, tt.args.id, tt.args.orgID)
 			if tt.wantErr {
 				require.NotNil(t, err)
 				require.Equal(t, tt.wantErrCode, err.(*ServiceError).ErrCode())

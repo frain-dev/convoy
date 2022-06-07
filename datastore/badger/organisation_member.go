@@ -28,7 +28,7 @@ func (o orgMemberRepo) UpdateOrganisationMember(ctx context.Context, member *dat
 	return nil
 }
 
-func (o orgMemberRepo) DeleteOrganisationMember(ctx context.Context, memberID string) error {
+func (o orgMemberRepo) DeleteOrganisationMember(ctx context.Context, memberID, orgID string) error {
 	return nil
 }
 

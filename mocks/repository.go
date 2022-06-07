@@ -804,32 +804,32 @@ func (mr *MockOrganisationMemberRepositoryMockRecorder) CreateOrganisationMember
 }
 
 // DeleteOrganisationMember mocks base method.
-func (m *MockOrganisationMemberRepository) DeleteOrganisationMember(ctx context.Context, memberID string) error {
+func (m *MockOrganisationMemberRepository) DeleteOrganisationMember(ctx context.Context, memberID, orgID string) error {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "DeleteOrganisationMember", ctx, memberID)
+	ret := m.ctrl.Call(m, "DeleteOrganisationMember", ctx, memberID, orgID)
 	ret0, _ := ret[0].(error)
 	return ret0
 }
 
 // DeleteOrganisationMember indicates an expected call of DeleteOrganisationMember.
-func (mr *MockOrganisationMemberRepositoryMockRecorder) DeleteOrganisationMember(ctx, memberID interface{}) *gomock.Call {
+func (mr *MockOrganisationMemberRepositoryMockRecorder) DeleteOrganisationMember(ctx, memberID, orgID interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteOrganisationMember", reflect.TypeOf((*MockOrganisationMemberRepository)(nil).DeleteOrganisationMember), ctx, memberID)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteOrganisationMember", reflect.TypeOf((*MockOrganisationMemberRepository)(nil).DeleteOrganisationMember), ctx, memberID, orgID)
 }
 
 // FetchOrganisationMemberByID mocks base method.
-func (m *MockOrganisationMemberRepository) FetchOrganisationMemberByID(ctx context.Context, organisationID, memberID string) (*datastore.OrganisationMember, error) {
+func (m *MockOrganisationMemberRepository) FetchOrganisationMemberByID(ctx context.Context, memberID, organisationID string) (*datastore.OrganisationMember, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "FetchOrganisationMemberByID", ctx, organisationID, memberID)
+	ret := m.ctrl.Call(m, "FetchOrganisationMemberByID", ctx, memberID, organisationID)
 	ret0, _ := ret[0].(*datastore.OrganisationMember)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // FetchOrganisationMemberByID indicates an expected call of FetchOrganisationMemberByID.
-func (mr *MockOrganisationMemberRepositoryMockRecorder) FetchOrganisationMemberByID(ctx, organisationID, memberID interface{}) *gomock.Call {
+func (mr *MockOrganisationMemberRepositoryMockRecorder) FetchOrganisationMemberByID(ctx, memberID, organisationID interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "FetchOrganisationMemberByID", reflect.TypeOf((*MockOrganisationMemberRepository)(nil).FetchOrganisationMemberByID), ctx, organisationID, memberID)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "FetchOrganisationMemberByID", reflect.TypeOf((*MockOrganisationMemberRepository)(nil).FetchOrganisationMemberByID), ctx, memberID, organisationID)
 }
 
 // FetchOrganisationMemberByUserID mocks base method.
