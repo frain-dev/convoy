@@ -1061,9 +1061,25 @@ func TestEventService_GetEventsPaged(t *testing.T) {
 						Next:      3,
 						TotalPage: 2,
 					}, nil)
+
+				ap, _ := es.appRepo.(*mocks.MockApplicationRepository)
+				ap.EXPECT().FindApplicationByID(gomock.Any(), gomock.Any()).Return(&datastore.Application{
+					UID:          "abc",
+					Title:        "Title",
+					GroupID:      "123",
+					SupportEmail: "SupportEmail",
+				}, nil).Times(1)
 			},
 			wantEvents: []datastore.Event{
-				{UID: "1234"},
+				{
+					UID: "1234",
+					App: &datastore.Application{
+						UID:          "abc",
+						Title:        "Title",
+						GroupID:      "123",
+						SupportEmail: "SupportEmail",
+					},
+				},
 			},
 			wantPaginationData: datastore.PaginationData{
 				Total:     1,
@@ -1303,9 +1319,55 @@ func TestEventService_GetEventDeliveriesPaged(t *testing.T) {
 						Next:      3,
 						TotalPage: 2,
 					}, nil)
+
+				ap, _ := es.appRepo.(*mocks.MockApplicationRepository)
+				ap.EXPECT().FindApplicationByID(gomock.Any(), gomock.Any()).Return(&datastore.Application{
+					UID:          "abc",
+					Title:        "Title",
+					GroupID:      "123",
+					SupportEmail: "SupportEmail",
+				}, nil).Times(1)
+
+				ev, _ := es.eventRepo.(*mocks.MockEventRepository)
+				ev.EXPECT().FindEventByID(gomock.Any(), gomock.Any()).Return(&datastore.Event{
+					UID:       "123",
+					EventType: "incoming",
+				}, nil)
+
+				en, _ := es.appRepo.(*mocks.MockApplicationRepository)
+				en.EXPECT().FindApplicationEndpointByID(gomock.Any(), gomock.Any(), gomock.Any()).Return(&datastore.Endpoint{
+					UID:               "1234",
+					TargetURL:         "http://localhost.com",
+					DocumentStatus:    "Active",
+					Secret:            "Secret",
+					HttpTimeout:       "30s",
+					RateLimit:         10,
+					RateLimitDuration: "1h",
+				}, nil)
 			},
 			wantEventDeliveries: []datastore.EventDelivery{
-				{UID: "1234"},
+				{
+					UID: "1234",
+					App: &datastore.Application{
+						UID:          "abc",
+						Title:        "Title",
+						GroupID:      "123",
+						SupportEmail: "SupportEmail",
+					},
+					Event: &datastore.Event{
+						UID:       "123",
+						EventType: "incoming",
+					},
+					Endpoint: &datastore.Endpoint{
+						UID:               "1234",
+						TargetURL:         "http://localhost.com",
+						DocumentStatus:    "Active",
+						Secret:            "Secret",
+						HttpTimeout:       "30s",
+						RateLimit:         10,
+						RateLimitDuration: "1h",
+					},
+				},
 			},
 			wantPaginationData: datastore.PaginationData{
 				Total:     1,

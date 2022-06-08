@@ -52,4 +52,8 @@ export class SourcesComponent implements OnInit {
 			console.log(error);
 		}
 	}
+
+	closeCreateSourceModal() {
+		this.router.navigateByUrl('/projects/' + this.projectId + '/sources');
+	}
 }
