@@ -6886,6 +6886,9 @@
                 "app_id": {
                     "type": "string"
                 },
+                "app_metadata": {
+                    "$ref": "#/definitions/datastore.Application"
+                },
                 "created_at": {
                     "type": "string"
                 },
@@ -6929,6 +6932,9 @@
                 "app_id": {
                     "type": "string"
                 },
+                "app_metadata": {
+                    "$ref": "#/definitions/datastore.Application"
+                },
                 "created_at": {
                     "type": "string"
                 },
@@ -6938,11 +6944,17 @@
                 "description": {
                     "type": "string"
                 },
+                "endpoint": {
+                    "$ref": "#/definitions/datastore.Endpoint"
+                },
                 "endpoint_id": {
                     "type": "string"
                 },
                 "event_id": {
                     "type": "string"
+                },
+                "event_metadata": {
+                    "$ref": "#/definitions/datastore.Event"
                 },
                 "group_id": {
                     "type": "string"

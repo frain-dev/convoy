@@ -266,11 +266,8 @@ func (s *OrganisationIntegrationTestSuite) Test_DeleteOrganisation() {
 	// Assert.
 	require.Equal(s.T(), expectedStatusCode, w.Code)
 
-	org, err := s.DB.OrganisationRepo().FetchOrganisationByID(context.Background(), uid)
-	require.NoError(s.T(), err)
-
-	require.NotEmpty(s.T(), org.DeletedAt)
-	require.Equal(s.T(), datastore.DeletedDocumentStatus, org.DocumentStatus)
+	_, err = s.DB.OrganisationRepo().FetchOrganisationByID(context.Background(), uid)
+	require.Equal(s.T(), datastore.ErrOrgNotFound, err)
 }
 
 func TestOrganisationIntegrationTestSuite(t *testing.T) {
