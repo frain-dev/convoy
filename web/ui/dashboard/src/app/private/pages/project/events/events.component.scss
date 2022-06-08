@@ -15,9 +15,10 @@
 		}
 	}
 }
-.events-card{
+.events-card {
 	margin-top: -2px;
 }
+
 .event {
 	&__table {
 		max-width: calc(1087px - 380px);
@@ -25,17 +26,15 @@
 		border-right: 1px solid var(--line-border);
 		height: 100%;
 		overflow: hidden;
-		&.width-100 {
-			width: unset;
-			width: 100%;
-		}
 	}
+
 	&__details {
 		max-width: 380px;
 		width: 100%;
 		max-height: calc(100vh - 950px);
 		min-height: 707px;
 		overflow: auto;
+
 		& > h3 {
 			margin-bottom: 15px;
 		}

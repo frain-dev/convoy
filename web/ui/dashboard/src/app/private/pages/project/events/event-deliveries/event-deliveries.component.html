@@ -1,8 +1,8 @@
-<div class="card events-card rounded--top-left__none rounded--top-right__none">
+<div class="card events-card rounded--top-left__none rounded--top-right__none border__top__none">
 	<div class="padding-x__16px padding-y__24px border__bottom">
 		<div class="flex flex__align-items-center flex__justify-between">
 			<div class="flex">
-				<date-filter (selectedDateRange)="getSelectedDateRange($event)"></date-filter>
+				<date-filter (selectedDateRange)="getSelectedDateRange($event)" [dateRangeValue]="dateFiltersFromURL" (clearDates)="clearFilters('eventsDelDate')"></date-filter>
 				<app-time-filter class="margin-left__14px" (applyFilter)="eventDelsTimeFilterData = $event; getEventDeliveries({ addToURL: true, fromFilter: true })" #eventDeliveryTimerFilter></app-time-filter>
 
 				<div class="dropdown margin-left__14px">
@@ -69,7 +69,7 @@
 					</div>
 				</div>
 
-				<div class="button__filter active margin-left__14px" *ngIf="eventDeliveryFilteredByEventId !== ''">
+				<div class="button__filter active margin-left__14px" *ngIf="eventDeliveryFilteredByEventId">
 					Event Filtered
 					<button class="button__clear button--has-icon margin-left__4px" (click)="eventDeliveryFilteredByEventId = ''; getEventDeliveries()">
 						<img src="assets/img/close-icon.svg" alt="close icon" />
@@ -81,7 +81,7 @@
 					(click)="fetchRetryCount()"
 					[ngClass]="{
 						disabled:
-							((eventDeliveriesFilterDateRange.value.startDate == '' || eventDeliveriesFilterDateRange.value.endDate == '') &&
+							((dateFiltersFromURL.startDate == '' || dateFiltersFromURL.endDate == '') &&
 								eventDeliveriesApp == '' &&
 								eventDeliveryFilteredByEventId == '' &&
 								!eventDeliveriesStatusFilterActive) ||
@@ -97,20 +97,20 @@
 				(click)="clearFilters()"
 				[ngClass]="{
 					disabled:
-						(eventDeliveriesFilterDateRange.value.startDate == '' || eventDeliveriesFilterDateRange.value.endDate == '') &&
-						eventDeliveriesApp == '' &&
-						eventDeliveryFilteredByEventId == '' &&
+						(dateFiltersFromURL.startDate == '' || dateFiltersFromURL.endDate == '') &&
+						(eventDeliveriesApp?.length == 0 || eventDeliveriesApp == undefined) &&
+						(eventDeliveryFilteredByEventId?.length == 0 || eventDeliveryFilteredByEventId == undefined) &&
 						!eventDeliveriesStatusFilterActive &&
 						eventDelsTimeFilterData.startTime == 'T00:00:00' &&
 						eventDelsTimeFilterData.endTime == 'T23:59:59'
 				}"
 			>
-				Clear Filter
+				Clear Filters
 			</button>
 		</div>
 	</div>
 
-	<div class="event__table width-100">
+	<div class="event__table">
 		<convoy-table-loader id="event_deliveries_loader" [tableHead]="eventDelTableHead" *ngIf="isloadingEventDeliveries"></convoy-table-loader>
 
 		<div class="table table--container has-loader" id="event-deliveries-table-container" *ngIf="displayedEventDeliveries && displayedEventDeliveries.length > 0">
@@ -220,7 +220,7 @@
 	</button>
 </div>
 
-<div class="overlay" *ngIf="showOverlay" (click)="showOverlay = false; showEventDeliveriesAppsDropdown = false"></div>
+<div class="overlay" *ngIf="showOverlay" (click)="showOverlay = false; showEventDeliveriesAppsDropdown = false; showEventDeliveriesStatusDropdown = false"></div>
 <div class="_overlay" *ngIf="showBatchRetryModal" (click)="showBatchRetryModal = false"></div>
 <!-- batch retry modal  -->
 <div class="modal modal__center" *ngIf="showBatchRetryModal">

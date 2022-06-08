@@ -1,5 +1,6 @@
-import { Component, EventEmitter, OnInit, Output } from '@angular/core';
+import { Component, EventEmitter, Input, OnInit, Output } from '@angular/core';
 import { FormBuilder, FormGroup } from '@angular/forms';
+import { ActivatedRoute } from '@angular/router';
 
 @Component({
 	selector: 'date-filter',
@@ -8,22 +9,30 @@ import { FormBuilder, FormGroup } from '@angular/forms';
 })
 export class DateFilterComponent implements OnInit {
 	dateRange: FormGroup = this.formBuilder.group({
-		startDate: [{ value: '', disabled: true }],
-		endDate: [{ value: '', disabled: true }]
+		startDate: [{ value: null, disabled: true }],
+		endDate: [{ value: null, disabled: true }]
 	});
 	@Output() selectedDateRange = new EventEmitter<any>();
-	showMatDatepicker = false;
+	@Output() clearDates = new EventEmitter<any>();
+	@Input('dateRangeValue') dateRangeValue?: {
+		startDate: string | Date;
+		endDate: string | Date;
+	};
+	maxDate = new Date();
 
-	constructor(private formBuilder: FormBuilder) {}
+	constructor(private formBuilder: FormBuilder, private route: ActivatedRoute) {}
 
-	ngOnInit(): void {}
+	ngOnInit(): void {
+		if (this.dateRangeValue) this.dateRange.patchValue(this.dateRangeValue);
+	}
 
 	setDate() {
 		this.selectedDateRange.emit(this.dateRange.value);
 	}
 
-	clearDate() {
+	clearDate(event?: any) {
+		event?.stopPropagation();
+		this.clearDates.emit();
 		this.dateRange.patchValue({ startDate: '', endDate: '' });
-		this.setDate();
 	}
 }
