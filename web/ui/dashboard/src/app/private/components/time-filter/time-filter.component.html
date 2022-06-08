@@ -1,8 +1,13 @@
 <div class="dropdown">
-	<button class="button button__filter button--has-icon" (click)="showDropdown = !showDropdown" [ngClass]="{ active: isFilterUpdated }">
+	<button class="button button__filter button--has-icon" (click)="showDropdown = !showDropdown" [ngClass]="{ active: filterIsActive() }">
 		<img src="assets/img/clock.svg" class="mar" alt="time filter icon" />
 		<span>Time</span>
-		<img class="margin-left__16px margin-right__0px" src="/assets/img/angle-arrow-down.svg" alt="arrow down icon" />
+		<img class="margin-left__16px margin-right__0px" src="/assets/img/angle-arrow-down.svg" *ngIf="!filterIsActive()" alt="arrow down icon" />
+		<button class="button button__clear margin-left__12px" *ngIf="filterIsActive()" (click)="clearFilter($event)">
+			<svg width="10" height="10" fill="var(--primary-color)">
+				<use xlink:href="#close-icon"></use>
+			</svg>
+		</button>
 	</button>
 
 	<div class="dropdown__menu time-filter with-padding" [ngClass]="{ show: showDropdown }">
