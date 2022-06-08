@@ -36,12 +36,21 @@ type ConfigurationResponse struct {
 	UpdatedAt primitive.DateTime `json:"updated_at,omitempty"`
 	DeletedAt primitive.DateTime `json:"deleted_at,omitempty"`
 }
+	
+type OrganisationInvite struct {
+	InviteeEmail string    `json:"invitee_email" valid:"required~please provide a valid invitee email,email"`
+	Role         auth.Role `json:"role" bson:"role"`
+}
 
 type APIKey struct {
 	Name      string            `json:"name"`
 	Role      auth.Role         `json:"role"`
 	Type      datastore.KeyType `json:"key_type"`
 	ExpiresAt time.Time         `json:"expires_at"`
+}
+
+type UpdateOrganisationMember struct {
+	Role auth.Role `json:"role" bson:"role"`
 }
 
 type APIKeyByIDResponse struct {
@@ -107,6 +116,15 @@ type Token struct {
 	AccessToken  string `json:"access_token" valid:"required~please provide an access token"`
 	RefreshToken string `json:"refresh_token" valid:"required~please provide a refresh token"`
 }
+
+type User struct {
+	FirstName string    `json:"first_name" valid:"required~please provide a first name"`
+	LastName  string    `json:"last_name" valid:"required~please provide a last name"`
+	Email     string    `json:"email" valid:"required~please provide an email,email"`
+	Password  string    `json:"password" valid:"required~please provide a password"`
+	Role      auth.Role `json:"role" bson:"role"`
+}
+
 type Application struct {
 	AppName         string `json:"name" bson:"name" valid:"required~please provide your appName"`
 	SupportEmail    string `json:"support_email" bson:"support_email" valid:"email~please provide a valid email"`

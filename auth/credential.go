@@ -7,9 +7,10 @@ var (
 )
 
 type AuthenticatedUser struct {
-	AuthenticatedByRealm string     `json:"-"` // Name of realm that authenticated this user
-	Credential           Credential `json:"credential"`
-	Role                 Role       `json:"role"`
+	AuthenticatedByRealm string      `json:"-"` // Name of realm that authenticated this user
+	Credential           Credential  `json:"credential"`
+	Role                 Role        `json:"role"`
+	Metadata             interface{} `json:"-"` // Additional data set by the realm that authenticated the user, see the jwt realm for an example
 }
 
 type Credential struct {

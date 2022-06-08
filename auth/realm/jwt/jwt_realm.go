@@ -38,6 +38,7 @@ func (j *JwtRealm) Authenticate(ctx context.Context, cred *auth.Credential) (*au
 		AuthenticatedByRealm: j.GetName(),
 		Credential:           *cred,
 		Role:                 user.Role,
+		Metadata:             user,
 	}
 
 	return authUser, nil

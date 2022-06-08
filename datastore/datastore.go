@@ -17,6 +17,8 @@ type DatabaseClient interface {
 	EventDeliveryRepo() EventDeliveryRepository
 	SourceRepo() SourceRepository
 	OrganisationRepo() OrganisationRepository
+	OrganisationMemberRepo() OrganisationMemberRepository
+	OrganisationInviteRepo() OrganisationInviteRepository
 	UserRepo() UserRepository
 	ConfigurationRepo() ConfigurationRepository
 }

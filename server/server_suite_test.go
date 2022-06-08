@@ -1,6 +1,10 @@
+//go:build integration
+// +build integration
+
 package server
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -12,6 +16,8 @@ import (
 	"strings"
 	"testing"
 	"time"
+
+	"github.com/frain-dev/convoy/server/models"
 
 	"github.com/frain-dev/convoy"
 	"github.com/frain-dev/convoy/auth/realm_chain"
@@ -54,8 +60,10 @@ func getConfig() config.Configuration {
 
 func getDB() datastore.DatabaseClient {
 
-	db, _ := mongoStore.New(getConfig())
-
+	db, err := mongoStore.New(getConfig())
+	if err != nil {
+		panic(fmt.Sprintf("failed to connect to db: %v", err))
+	}
 	_ = os.Setenv("TZ", "") // Use UTC by default :)
 
 	return db.(*mongoStore.Client)
@@ -97,6 +105,8 @@ func buildApplication() *applicationHandler {
 	apiKeyRepo := db.APIRepo()
 	sourceRepo := db.SourceRepo()
 	orgRepo := db.OrganisationRepo()
+	orgMemberRepo := db.OrganisationMemberRepo()
+	orgInviteRepo := db.OrganisationInviteRepo()
 	userRepo := db.UserRepo()
 	configRepo := db.ConfigurationRepo()
 	queue := redisqueue.NewQueue(qOpts)
@@ -109,8 +119,8 @@ func buildApplication() *applicationHandler {
 
 	return newApplicationHandler(
 		eventRepo, eventDeliveryRepo, appRepo,
-		groupRepo, apiKeyRepo, subRepo, sourceRepo, orgRepo, userRepo, configRepo, queue,
-		logger, tracer, cache, limiter, searcher,
+		groupRepo, apiKeyRepo, subRepo, sourceRepo, orgRepo,
+		orgMemberRepo, orgInviteRepo, userRepo, configRepo, queue, logger, tracer, cache, limiter, searcher,
 	)
 }
 
@@ -144,6 +154,40 @@ func parseResponse(t *testing.T, r *http.Response, object interface{}) {
 	}
 }
 
+type AuthenticatorFn func(r *http.Request, router http.Handler) error
+
+func authenticateRequest(auth *models.LoginUser) AuthenticatorFn {
+	return func(r *http.Request, router http.Handler) error {
+		body, err := json.Marshal(auth)
+		if err != nil {
+			return err
+		}
+
+		req := createRequest(http.MethodPost, "/ui/auth/login", bytes.NewBuffer(body))
+
+		w := httptest.NewRecorder()
+
+		// Act
+		router.ServeHTTP(w, req)
+		if w.Code != http.StatusOK {
+			return fmt.Errorf("failed to authenticate: reponse body: %s", w.Body.String())
+		}
+
+		loginResp := &models.LoginUserResponse{}
+		resp := &struct {
+			Data interface{} `json:"data"`
+		}{
+			Data: loginResp,
+		}
+		err = json.NewDecoder(w.Body).Decode(resp)
+		if err != nil {
+			return err
+		}
+
+		r.Header.Set("Authorization", fmt.Sprintf("BEARER %s", loginResp.Token.AccessToken))
+		return nil
+	}
+}
 func randBool() bool {
 	rand.Seed(time.Now().UnixNano())
 	return rand.Intn(2) == 1

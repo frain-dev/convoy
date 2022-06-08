@@ -17,14 +17,16 @@ import (
 )
 
 const (
-	ConfigCollection       = "configurations"
-	SubscriptionCollection = "subscriptions"
-	GroupCollection        = "groups"
-	OrganisationCollection = "organisations"
-	AppCollections         = "applications"
-	EventCollection        = "events"
-	SourceCollection       = "sources"
-	UserCollection         = "users"
+	ConfigCollection              = "configurations"
+	GroupCollection               = "groups"
+	OrganisationCollection        = "organisations"
+	OrganisationInvitesCollection = "organisation_invites"
+	OrganisationMembersCollection = "organisation_members"
+	AppCollections                = "applications"
+	EventCollection               = "events"
+	SourceCollection              = "sources"
+	UserCollection                = "users"
+	SubscriptionCollection        = "subscriptions"
 )
 
 type Client struct {
@@ -37,6 +39,8 @@ type Client struct {
 	eventDeliveryRepo datastore.EventDeliveryRepository
 	sourceRepo        datastore.SourceRepository
 	orgRepo           datastore.OrganisationRepository
+	orgMemberRepo     datastore.OrganisationMemberRepository
+	orgInviteRepo     datastore.OrganisationInviteRepository
 	userRepo          datastore.UserRepository
 	configRepo        datastore.ConfigurationRepository
 }
@@ -79,6 +83,8 @@ func New(cfg config.Configuration) (datastore.DatabaseClient, error) {
 		eventDeliveryRepo: NewEventDeliveryRepository(conn),
 		sourceRepo:        NewSourceRepo(conn),
 		orgRepo:           NewOrgRepo(conn),
+		orgMemberRepo:     NewOrgMemberRepo(conn),
+		orgInviteRepo:     NewOrgInviteRepo(conn),
 		userRepo:          NewUserRepo(conn),
 		configRepo:        NewConfigRepo(conn),
 	}
@@ -132,6 +138,14 @@ func (c *Client) OrganisationRepo() datastore.OrganisationRepository {
 	return c.orgRepo
 }
 
+func (c *Client) OrganisationMemberRepo() datastore.OrganisationMemberRepository {
+	return c.orgMemberRepo
+}
+
+func (c *Client) OrganisationInviteRepo() datastore.OrganisationInviteRepository {
+	return c.orgInviteRepo
+}
+
 func (c *Client) UserRepo() datastore.UserRepository {
 	return c.userRepo
 }
@@ -143,7 +157,19 @@ func (c *Client) ConfigurationRepo() datastore.ConfigurationRepository {
 func (c *Client) ensureMongoIndices() {
 	c.ensureIndex(GroupCollection, "uid", true, nil)
 	c.ensureIndex(GroupCollection, "name", true, bson.M{"document_status": datastore.ActiveDocumentStatus})
+
+	c.ensureIndex(OrganisationCollection, "uid", true, nil)
+
+	c.ensureIndex(OrganisationMembersCollection, "organisation_id", false, nil)
+	c.ensureIndex(OrganisationMembersCollection, "user_id", false, nil)
+	c.ensureIndex(OrganisationMembersCollection, "uid", true, nil)
+
+	c.ensureIndex(OrganisationInvitesCollection, "uid", true, nil)
+	c.ensureIndex(OrganisationInvitesCollection, "token", true, nil)
+
+	c.ensureIndex(AppCollections, "group_id", false, nil)
 	c.ensureIndex(AppCollections, "uid", true, nil)
+
 	c.ensureIndex(EventCollection, "uid", true, nil)
 	c.ensureIndex(EventCollection, "app_id", false, nil)
 	c.ensureIndex(EventCollection, "group_id", false, nil)
@@ -154,8 +180,13 @@ func (c *Client) ensureMongoIndices() {
 	c.ensureIndex(SubscriptionCollection, "uid", true, nil)
 	c.ensureIndex(SubscriptionCollection, "filter_config.event_type", false, nil)
 	c.ensureCompoundIndex(AppCollections)
+
 	c.ensureCompoundIndex(EventCollection)
+	c.ensureCompoundIndex(UserCollection)
+	c.ensureCompoundIndex(AppCollections)
 	c.ensureCompoundIndex(EventDeliveryCollection)
+	c.ensureCompoundIndex(OrganisationInvitesCollection)
+	c.ensureCompoundIndex(OrganisationMembersCollection)
 }
 
 // ensureIndex - ensures an index is created for a specific field in a collection
@@ -356,6 +387,45 @@ func compoundIndices() map[string][]mongo.IndexModel {
 					{Key: "group_id", Value: 1},
 					{Key: "document_status", Value: 1},
 					{Key: "title", Value: 1},
+				},
+				Options: options.Index().SetUnique(true),
+			},
+		},
+
+		OrganisationInvitesCollection: {
+			{
+				Keys: bson.D{
+					{Key: "organisation_id", Value: 1},
+					{Key: "invitee_email", Value: 1},
+					{Key: "document_status", Value: 1},
+				},
+				Options: options.Index().SetUnique(true),
+			},
+			{
+				Keys: bson.D{
+					{Key: "token", Value: 1},
+					{Key: "email", Value: 1},
+					{Key: "document_status", Value: 1},
+				},
+			},
+		},
+
+		OrganisationMembersCollection: {
+			{
+				Keys: bson.D{
+					{Key: "organisation_id", Value: 1},
+					{Key: "user_id", Value: 1},
+					{Key: "document_status", Value: 1},
+				},
+				Options: options.Index().SetUnique(true),
+			},
+		},
+
+		UserCollection: {
+			{
+				Keys: bson.D{
+					{Key: "email", Value: 1},
+					{Key: "document_status", Value: 1},
 				},
 				Options: options.Index().SetUnique(true),
 			},

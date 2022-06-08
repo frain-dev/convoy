@@ -23,8 +23,18 @@ type Client struct {
 	eventDeliveryRepo datastore.EventDeliveryRepository
 	sourceRepo        datastore.SourceRepository
 	orgRepo           datastore.OrganisationRepository
+	orgMemberRepo     datastore.OrganisationMemberRepository
+	orgInviteRepo     datastore.OrganisationInviteRepository
 	userRepo          datastore.UserRepository
 	configRepo        datastore.ConfigurationRepository
+}
+
+func (c *Client) OrganisationMemberRepo() datastore.OrganisationMemberRepository {
+	return c.orgMemberRepo
+}
+
+func (c *Client) OrganisationInviteRepo() datastore.OrganisationInviteRepository {
+	return c.orgInviteRepo
 }
 
 func New(cfg config.Configuration) (datastore.DatabaseClient, error) {
@@ -56,6 +66,8 @@ func New(cfg config.Configuration) (datastore.DatabaseClient, error) {
 		eventDeliveryRepo: NewEventDeliveryRepository(st),
 		sourceRepo:        NewSourceRepo(st),
 		orgRepo:           NewOrgRepo(st),
+		orgMemberRepo:     NewOrgMemberRepo(st),
+		orgInviteRepo:     NewOrgInviteRepo(st),
 		userRepo:          NewUserRepo(st),
 		configRepo:        NewConfigRepo(st),
 	}

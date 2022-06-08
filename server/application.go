@@ -22,30 +22,33 @@ import (
 )
 
 type applicationHandler struct {
-	appService          *services.AppService
-	eventService        *services.EventService
-	groupService        *services.GroupService
-	securityService     *services.SecurityService
-	sourceService       *services.SourceService
-	subService          *services.SubcriptionService
-	organisationService *services.OrganisationService
-	orgRepo             datastore.OrganisationRepository
-	appRepo             datastore.ApplicationRepository
-	eventRepo           datastore.EventRepository
-	subRepo             datastore.SubscriptionRepository
-	eventDeliveryRepo   datastore.EventDeliveryRepository
-	groupRepo           datastore.GroupRepository
-	apiKeyRepo          datastore.APIKeyRepository
-	sourceRepo          datastore.SourceRepository
-	queue               queue.Queuer
-	logger              logger.Logger
-	tracer              tracer.Tracer
-	cache               cache.Cache
-	limiter             limiter.RateLimiter
-	userService         *services.UserService
-	userRepo            datastore.UserRepository
-	configService       *services.ConfigService
-	configRepo          datastore.ConfigurationRepository
+	appService                *services.AppService
+	eventService              *services.EventService
+	groupService              *services.GroupService
+	securityService           *services.SecurityService
+	sourceService             *services.SourceService
+	subService                *services.SubcriptionService
+	organisationService       *services.OrganisationService
+	organisationMemberService *services.OrganisationMemberService
+	organisationInviteService *services.OrganisationInviteService
+	orgRepo                   datastore.OrganisationRepository
+	orgMemberRepo             datastore.OrganisationMemberRepository
+	orgInviteRepo             datastore.OrganisationInviteRepository
+	appRepo                   datastore.ApplicationRepository
+	eventRepo                 datastore.EventRepository
+	eventDeliveryRepo         datastore.EventDeliveryRepository
+	groupRepo                 datastore.GroupRepository
+	apiKeyRepo                datastore.APIKeyRepository
+	sourceRepo                datastore.SourceRepository
+	queue                     queue.Queuer
+	logger                    logger.Logger
+	tracer                    tracer.Tracer
+	cache                     cache.Cache
+	limiter                   limiter.RateLimiter
+	userService               *services.UserService
+	userRepo                  datastore.UserRepository
+	configService             *services.ConfigService
+	configRepo                datastore.ConfigurationRepository
 }
 
 type pagedResponse struct {
@@ -62,6 +65,8 @@ func newApplicationHandler(
 	subRepo datastore.SubscriptionRepository,
 	sourceRepo datastore.SourceRepository,
 	orgRepo datastore.OrganisationRepository,
+	orgMemberRepo datastore.OrganisationMemberRepository,
+	orgInviteRepo datastore.OrganisationInviteRepository,
 	userRepo datastore.UserRepository,
 	configRepo datastore.ConfigurationRepository,
 	queue queue.Queuer,
@@ -73,37 +78,42 @@ func newApplicationHandler(
 	es := services.NewEventService(appRepo, eventRepo, eventDeliveryRepo, queue, cache, searcher, subRepo)
 	gs := services.NewGroupService(appRepo, groupRepo, eventRepo, eventDeliveryRepo, limiter)
 	ss := services.NewSecurityService(groupRepo, apiKeyRepo)
+	os := services.NewOrganisationService(orgRepo, orgMemberRepo)
 	rs := services.NewSubscriptionService(subRepo)
-	os := services.NewOrganisationService(orgRepo)
 	sos := services.NewSourceService(sourceRepo)
 	us := services.NewUserService(userRepo, cache)
+	ois := services.NewOrganisationInviteService(orgRepo, userRepo, orgMemberRepo, orgInviteRepo)
+	om := services.NewOrganisationMemberService(orgMemberRepo)
 	cs := services.NewConfigService(configRepo)
 
 	return &applicationHandler{
-		appService:          as,
-		eventService:        es,
-		groupService:        gs,
-		securityService:     ss,
-		organisationService: os,
-		subService:          rs,
-		sourceService:       sos,
-		orgRepo:             orgRepo,
-		eventRepo:           eventRepo,
-		eventDeliveryRepo:   eventDeliveryRepo,
-		apiKeyRepo:          apiKeyRepo,
-		appRepo:             appRepo,
-		groupRepo:           groupRepo,
-		sourceRepo:          sourceRepo,
-		queue:               queue,
-		subRepo:             subRepo,
-		logger:              logger,
-		tracer:              tracer,
-		cache:               cache,
-		limiter:             limiter,
-		userService:         us,
-		userRepo:            userRepo,
-		configRepo:          configRepo,
-		configService:       cs,
+		appService:                as,
+		eventService:              es,
+		groupService:              gs,
+		securityService:           ss,
+		organisationService:       os,
+		subService:                rs,
+		sourceService:             sos,
+		organisationInviteService: ois,
+		organisationMemberService: om,
+		orgInviteRepo:             orgInviteRepo,
+		orgMemberRepo:             orgMemberRepo,
+		orgRepo:                   orgRepo,
+		eventRepo:                 eventRepo,
+		eventDeliveryRepo:         eventDeliveryRepo,
+		apiKeyRepo:                apiKeyRepo,
+		appRepo:                   appRepo,
+		groupRepo:                 groupRepo,
+		sourceRepo:                sourceRepo,
+		queue:                     queue,
+		logger:                    logger,
+		tracer:                    tracer,
+		cache:                     cache,
+		limiter:                   limiter,
+		userService:               us,
+		userRepo:                  userRepo,
+		configRepo:                configRepo,
+		configService:             cs,
 	}
 }
 
