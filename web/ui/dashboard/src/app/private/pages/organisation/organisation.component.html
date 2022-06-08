@@ -1,60 +1,61 @@
-<div class="page page__small flex padding-all__0px">
-	<div class="page__small--nav">
-		<div class="page__small--head">
-			<h2>Organisation Settings</h2>
-		</div>
-		<ul class="page__small--nav--items">
-			<li class="page__small--nav--item" [ngClass]="{ active: activePage === 'general settings' }">
-				<button (click)="activePage = 'general settings'" class="button__clear">General Settings</button>
-			</li>
-			<li class="page__small--nav--item" [ngClass]="{ active: activePage === 'billing' }">
-				<button (click)="activePage = 'billing'" class="button__clear">Billing</button>
-			</li>
-			<!-- <li class="page__small--nav--item" [ngClass]="{ active: activePage === 'danger zone' }">
-				<button (click)="activePage = 'danger zone'" class="button__clear">Danger Zone</button>
-			</li> -->
-			<hr class="border__top" />
-			<li class="page__small--nav--item color__danger" (click)="logout()">
-				<a href="">Logout</a>
-			</li>
-		</ul>
-	</div>
-
-	<div class="page__small--view">
-		<ng-container *ngIf="activePage === 'general settings'">
-			<div class="flex flex__justify-between">
-				<div class="margin-bottom__28px">
-					<h2>Organisation Info</h2>
-				</div>
-				<button class="button button__primary button__small" [disabled]="isEditingOrganisation" (click)="updateOrganisation()">Save Changes</button>
+<div class="page">
+	<div class="card flex padding-all__0px">
+		<div class="sidemenu">
+			<div class="border__bottom padding-x__24px padding-top__16px padding-bottom__10px">
+				<h3>Organisation Settings</h3>
 			</div>
+			<ul class="sidemenu--items">
+				<li class="sidemenu--item font__14px" [ngClass]="{ active: activePage === 'general settings' }">
+					<button (click)="activePage = 'general settings'" class="button__clear">General Settings</button>
+				</li>
+				<li class="sidemenu--item font__14px" [ngClass]="{ active: activePage === 'billing' }">
+					<button (click)="activePage = 'billing'" class="button__clear">Billing</button>
+				</li>
+				<!-- <li class="sidemenu--item font__14px" [ngClass]="{ active: activePage === 'danger zone' }">
+					<button (click)="activePage = 'danger zone'" class="button__clear">Danger Zone</button>
+				</li> -->
+				<hr class="border__top" />
+				<li class="sidemenu--item font__14px color__danger font-weight__600" (click)="logout()">
+					<a href="">Logout</a>
+				</li>
+			</ul>
+		</div>
 
-			<form [formGroup]="editOrganisationForm">
-				<div class="input">
-					<label for="organisation-name">Organization name</label>
-					<input type="text" aria-label="Organization name" formControlName="name" id="organisation-name" />
-					<div class="input__error input__error__danger" *ngIf="editOrganisationForm.controls.name.touched && editOrganisationForm.controls.name.invalid">
-						<img src="assets/img/input-error-icon.svg" alt="input error icon" />
-						<span>Please enter a name for your organisation</span>
+		<div class="page__small--view">
+			<ng-container *ngIf="activePage === 'general settings'">
+				<div class="flex flex__justify-between flex__align-items-center margin-bottom__28px">
+					<h3>Organisation Info</h3>
+
+					<button class="button button__primary button__small" [disabled]="isEditingOrganisation" (click)="updateOrganisation()">Save Changes</button>
+				</div>
+
+				<form [formGroup]="editOrganisationForm">
+					<div class="input">
+						<label class="margin-bottom__4px" for="organisation-name">Organisation name</label>
+						<input type="text" aria-label="Organization name" formControlName="name" id="organisation-name" />
+						<div class="input__error input__error__danger" *ngIf="editOrganisationForm.controls.name.touched && editOrganisationForm.controls.name.invalid">
+							<img src="assets/img/input-error-icon.svg" alt="input error icon" />
+							<span>Please enter a name for your organisation</span>
+						</div>
+					</div>
+				</form>
+			</ng-container>
+			<ng-container *ngIf="activePage === 'billing'">
+				<h3 class="margin-bottom__24px">Billing</h3>
+
+				<div class="alert alert__info full-width">
+					<img src="/assets/img/ideas.svg" alt="idea" />
+					<div>
+						<p>You would be billed at $1/10000 events.</p>
+						<p>Usage would be calculated and sent to you via mail along with the payment link monthly.</p>
 					</div>
 				</div>
-			</form>
-		</ng-container>
-		<ng-container *ngIf="activePage === 'billing'">
-			<h2 class="margin-bottom__24px">Billing</h2>
-
-			<div class="alert alert__info full-width">
-				<img src="/assets/img/ideas.svg" alt="idea" />
-				<div>
-					<p>You would be billed at $1/10000 events.</p>
-					<p>Usage would be calculated and sent to you via mail along with the payment link monthly.</p>
-				</div>
-			</div>
-		</ng-container>
-		<!-- <ng-container *ngIf="activePage === 'danger zone'">
-			<h2 class="color__danger margin-bottom__8px">Danger zone</h2>
-			<p class="color__grey font__14px">Deactivating your account means you will lose all workspaces created by you and all your every other account information.</p>
-			<button class="button button__white margin-top__20px" (click)="showDeactivateAccountModal = !showDeactivateAccountModal">Deactivate Account</button>
-		</ng-container> -->
+			</ng-container>
+			<!-- <ng-container *ngIf="activePage === 'danger zone'">
+				<h2 class="color__danger margin-bottom__8px">Danger zone</h2>
+				<p class="color__grey font__14px">Deactivating your account means you will lose all workspaces created by you and all your every other account information.</p>
+				<button class="button button__white margin-top__20px" (click)="showDeactivateAccountModal = !showDeactivateAccountModal">Deactivate Account</button>
+			</ng-container> -->
+		</div>
 	</div>
 </div>
