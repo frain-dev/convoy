@@ -17,7 +17,8 @@
 <div class="card">
 	<div class="table has-loader flex flex__align-items-start" id="events-table-container">
 		<convoy-table-loader id="events_loader_loader" [tableHead]="sourcesTableHead" *ngIf="isLoadingSources"></convoy-table-loader>
-		<div class="table--container" [ngClass]="{ smaller: activeSource?.uid }">
+
+		<div class="table--container" *ngIf="!isLoadingSources && sources.content.length > 0" [ngClass]="{ smaller: activeSource?.uid }">
 			<table id="table">
 				<thead>
 					<tr class="table--head">
@@ -52,6 +53,11 @@
 					</tr>
 				</tbody>
 			</table>
+		</div>
+
+		<div class="flex flex__column flex__justify-center flex__align-items-center table--container" id="events-empty-state" *ngIf="!isLoadingSources && sources?.content?.length == 0">
+			<img src="/assets/img/empty-state.svg" alt="empty state" class="empty-state-img" />
+			<p class="font__14px font__weight-600 margin-top__0px color__black width__20 text--center">No source yet</p>
 		</div>
 
 		<div class="table--sidebar height__100" [ngClass]="{ show: activeSource?.uid }">

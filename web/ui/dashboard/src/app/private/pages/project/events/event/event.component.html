@@ -60,7 +60,7 @@
 	<div class="flex">
 		<div class="event__table">
 			<convoy-table-loader id="events_loader_loader" [tableHead]="eventsTableHead" *ngIf="isloadingEvents"></convoy-table-loader>
-			<div class="table table--container has-loader" id="events-table-container" *ngIf="displayedEvents && displayedEvents.length > 0">
+			<div class="table table--container has-loader" id="events-table-container" *ngIf="!isloadingEvents && displayedEvents && displayedEvents.length > 0">
 				<table id="table">
 					<thead>
 						<tr class="table--head">
@@ -115,7 +115,7 @@
 			</div>
 		</div>
 
-		<div class="event__details" *ngIf="displayedEvents && displayedEvents.length > 0">
+		<div class="event__details position__relative">
 			<div class="padding-all__16px">
 				<convoy-loader id="details_section_loader" *ngIf="isloadingEvents"></convoy-loader>
 

@@ -43,43 +43,7 @@ export class EventDeliveriesComponent implements OnInit {
 	eventDeliveryIndex!: number;
 	eventDeliveriesPage: number = 1;
 	selectedEventsFromEventDeliveriesTable: string[] = [];
-	displayedEventDeliveries: { date: string; content: EVENT_DELIVERY[] }[] = [
-		{
-			date: '28 Mar, 2022',
-			content: [
-				{
-					app_metadata: {
-						group_id: 'db78d6fe-b05e-476d-b908-cb6fff26a3ed',
-						support_email: 'pelumi@mailinator.com',
-						title: 'App A',
-						uid: '41e3683f-2799-434d-ab61-4bfbe7c1ae23'
-					},
-					created_at: '2022-03-04T12:50:37.048Z',
-					endpoint: {
-						secret: 'kRfXPgJU6kAkc35H2-CqXwnrP_6wcEBVzA==',
-						sent: false,
-						status: 'active',
-						target_url: 'https://webhook.site/ac06134f-b969-4388-b663-1e55951a99a4',
-						uid: '8a069124-757e-4ad1-8939-6882a0f3e9bb'
-					},
-					event_metadata: {
-						name: 'three',
-						uid: '5bbca57e-e9df-4668-9208-827b962dc9a1'
-					},
-					metadata: {
-						interval_seconds: 65,
-						next_send_time: '2022-04-22T15:11:16.76Z',
-						num_trials: 5,
-						retry_limit: 5,
-						strategy: 'default'
-					},
-					status: 'Failure',
-					uid: 'b51ebc56-10df-42f1-8e00-6fb9da957bc0',
-					updated_at: '2022-04-22T15:10:11.761Z'
-				}
-			]
-		}
-	];
+	displayedEventDeliveries!: { date: string; content: EVENT_DELIVERY[] }[];
 	eventDeliveries!: { pagination: PAGINATION; content: EVENT_DELIVERY[] };
 	sidebarEventDeliveries!: EVENT_DELIVERY[];
 	eventDeliveryAtempt!: EVENT_DELIVERY_ATTEMPT;
@@ -116,6 +80,7 @@ export class EventDeliveriesComponent implements OnInit {
 		const page = requestDetails?.page || this.route.snapshot.queryParams.page || 1;
 		if (requestDetails?.addToURL) this.addFilterToURL();
 		const { startDate, endDate } = this.setDateForFilter({ ...this.eventDeliveriesFilterDateRange.value, ...this.eventDelsTimeFilterData });
+		this.isloadingEventDeliveries = true;
 
 		try {
 			const eventDeliveriesResponse = await this.eventDeliveriesRequest({ pageNo: page, eventId: this.eventDeliveryFilteredByEventId, startDate, endDate });

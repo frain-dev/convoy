@@ -15,6 +15,8 @@ export class SubscriptionsComponent implements OnInit {
 	shouldShowCreateSubscriptionModal = this.router.url.split('/')[4] === 'new';
 	projectId!: string;
 	subscriptions!: { content: SUBSCRIPTION[]; pagination: PAGINATION };
+	subscriptionsLoaders = [1, 2, 3, 4, 5];
+	isLoadindingSubscriptions = false;
 
 	constructor(private route: ActivatedRoute, private privateService: PrivateService, private router: Router, private subscriptionsService: SubscriptionsService) {
 		this.projectId = this.privateService.activeProjectId;
@@ -27,11 +29,14 @@ export class SubscriptionsComponent implements OnInit {
 	}
 
 	async getSubscriptions(requestDetails?: { page?: number }) {
+		this.isLoadindingSubscriptions = true;
+
 		try {
 			const subscriptionsResponse = await this.subscriptionsService.getSubscriptions({ page: requestDetails?.page });
 			this.subscriptions = subscriptionsResponse.data;
+			this.isLoadindingSubscriptions = false;
 		} catch (error) {
-			console.log(error);
+			this.isLoadindingSubscriptions = false;
 		}
 	}
 }

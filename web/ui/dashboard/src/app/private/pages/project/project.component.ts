@@ -1,5 +1,6 @@
 import { Component, HostListener, OnInit } from '@angular/core';
 import { ActivatedRoute } from '@angular/router';
+import { GROUP } from 'src/app/models/group.model';
 import { PrivateService } from '../../private.service';
 import { ProjectService } from './project.service';
 
@@ -33,6 +34,8 @@ export class ProjectComponent implements OnInit {
 		}
 	];
 	shouldShowFullSideBar = true;
+	projectDetails!: GROUP;
+	isLoadingProjectDetails: boolean = true;
 
 	constructor(private route: ActivatedRoute, private privateService: PrivateService) {
 		this.privateService.activeProjectId = this.route.snapshot.params.id;
@@ -40,6 +43,24 @@ export class ProjectComponent implements OnInit {
 
 	ngOnInit() {
 		this.checkScreenSize();
+		this.getProjectDetails();
+	}
+
+	async getProjectDetails() {
+		this.isLoadingProjectDetails = true;
+
+		try {
+			const projectDetails = await this.privateService.getProjectDetails();
+			this.projectDetails = projectDetails.data;
+			if (this.projectDetails.type === 'outgoing') this.sideBarItems.splice(1, 1);
+			this.isLoadingProjectDetails = false;
+		} catch (error) {
+			this.isLoadingProjectDetails = false;
+		}
+	}
+
+	isOutgoingProject(): boolean {
+		return this.projectDetails.type === 'outgoing';
 	}
 
 	checkScreenSize() {

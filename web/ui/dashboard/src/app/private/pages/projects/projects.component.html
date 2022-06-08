@@ -5,6 +5,7 @@
 			<p class="page__head--sub">All your project's summary at a glance</p>
 		</div>
 	</div>
+
 	<ul class="grid projects-grid" *ngIf="isLoadingProjects">
 		<li *ngFor="let index of projectsLoaderIndex">
 			<div class="card rounded__8px border__all bg__white">
