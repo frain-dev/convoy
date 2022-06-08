@@ -284,6 +284,8 @@ type Event struct {
 	GroupID    string `json:"group_id" bson:"group_id"`
 	AppID      string `json:"app_id" bson:"app_id"`
 
+	App *Application `json:"app_metadata" bson:"-"`
+
 	// Data is an arbitrary JSON value that gets sent as the body of the
 	// webhook to the endpoints
 	Data json.RawMessage `json:"data" bson:"data"`

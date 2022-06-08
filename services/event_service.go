@@ -30,6 +30,8 @@ type EventService struct {
 	searcher          searcher.Searcher
 }
 
+type AppMap map[string]*datastore.Application
+
 func NewEventService(appRepo datastore.ApplicationRepository, eventRepo datastore.EventRepository, eventDeliveryRepo datastore.EventDeliveryRepository,
 	queue queue.Queuer, cache cache.Cache, seacher searcher.Searcher, subRepo datastore.SubscriptionRepository) *EventService {
 	return &EventService{appRepo: appRepo, eventRepo: eventRepo, eventDeliveryRepo: eventDeliveryRepo, queue: queue, cache: cache, searcher: seacher, subRepo: subRepo}
@@ -223,13 +225,29 @@ func (e *EventService) ForceResendEventDeliveries(ctx context.Context, ids []str
 }
 
 func (e *EventService) GetEventsPaged(ctx context.Context, filter *datastore.Filter) ([]datastore.Event, datastore.PaginationData, error) {
-	m, paginationData, err := e.eventRepo.LoadEventsPaged(ctx, filter.Group.UID, filter.AppID, filter.SearchParams, filter.Pageable)
+	events, paginationData, err := e.eventRepo.LoadEventsPaged(ctx, filter.Group.UID, filter.AppID, filter.SearchParams, filter.Pageable)
 	if err != nil {
 		log.WithError(err).Error("failed to fetch events")
 		return nil, datastore.PaginationData{}, NewServiceError(http.StatusInternalServerError, errors.New("an error occurred while fetching events"))
 	}
 
-	return m, paginationData, nil
+	appMap := AppMap{}
+	for i, event := range events {
+		if _, ok := appMap[event.AppID]; !ok {
+			a, _ := e.appRepo.FindApplicationByID(ctx, event.AppID)
+			aa := &datastore.Application{
+				UID:          a.UID,
+				Title:        a.Title,
+				GroupID:      a.GroupID,
+				SupportEmail: a.SupportEmail,
+			}
+			appMap[event.AppID] = aa
+		}
+
+		events[i].App = appMap[event.AppID]
+	}
+
+	return events, paginationData, nil
 }
 
 func (e *EventService) GetEventDeliveriesPaged(ctx context.Context, filter *datastore.Filter) ([]datastore.EventDelivery, datastore.PaginationData, error) {
