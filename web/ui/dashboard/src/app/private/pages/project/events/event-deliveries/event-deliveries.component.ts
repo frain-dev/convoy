@@ -1,6 +1,5 @@
 import { DatePipe } from '@angular/common';
 import { Component, ElementRef, Input, OnInit, ViewChild } from '@angular/core';
-import { FormBuilder, FormGroup } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
 import { format } from 'date-fns';
 import { fromEvent, Observable } from 'rxjs';
@@ -16,7 +15,7 @@ import { EventsService } from '../events.service';
 @Component({
 	selector: 'app-event-deliveries',
 	templateUrl: './event-deliveries.component.html',
-	styleUrls: ['../events.component.scss']
+	styleUrls: ['./event-deliveries.component.scss']
 })
 export class EventDeliveriesComponent implements OnInit {
 	@Input() eventDeliveryFilteredByEventId?: string;
@@ -33,10 +32,6 @@ export class EventDeliveriesComponent implements OnInit {
 	isloadingEventDeliveries = false;
 	isloadingDeliveryAttempts = false;
 	isRetrying = false;
-	// eventDeliveriesFilterDateRange: FormGroup = this.formBuilder.group({
-	// 	startDate: [{ value: '', disabled: true }],
-	// 	endDate: [{ value: '', disabled: true }]
-	// });
 	dateFiltersFromURL: { startDate: string | Date; endDate: string | Date } = { startDate: '', endDate: '' };
 	batchRetryCount!: number;
 	eventDeliveriesApp?: string;
@@ -55,14 +50,8 @@ export class EventDeliveriesComponent implements OnInit {
 	@ViewChild('eventDelsAppsFilter', { static: true }) eventDelsAppsFilter!: ElementRef;
 	@ViewChild('eventDeliveryTimerFilter', { static: true }) eventDeliveryTimerFilter!: TimeFilterComponent;
 
-	constructor(
-		private formBuilder: FormBuilder,
-		private generalService: GeneralService,
-		private eventsService: EventsService,
-		private datePipe: DatePipe,
-		private route: ActivatedRoute,
-		private router: Router
-	) {}
+	constructor(private generalService: GeneralService, private eventsService: EventsService, private datePipe: DatePipe, private route: ActivatedRoute, private router: Router) {}
+
 	ngAfterViewInit() {
 		this.eventsDelAppsFilter$ = fromEvent<any>(this.eventDelsAppsFilter?.nativeElement, 'keyup').pipe(
 			map(event => event.target.value),
