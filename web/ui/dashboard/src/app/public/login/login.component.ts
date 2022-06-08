@@ -16,7 +16,7 @@ export class LoginComponent implements OnInit {
 		password: ['', Validators.required]
 	});
 
-	constructor(private formBuilder: FormBuilder, private router: Router, private loginService:LoginService) {}
+	constructor(private formBuilder: FormBuilder, private router: Router, private loginService: LoginService) {}
 
 	ngOnInit(): void {}
 
@@ -31,11 +31,11 @@ export class LoginComponent implements OnInit {
 		this.disableLoginBtn = true;
 		try {
 			const response: any = await this.loginService.login(this.loginForm.value);
-			localStorage.setItem('CONVOY_AUTH', JSON.stringify(response.data));
-			console.log(response);
-
+			if (response.status === true) {
+				localStorage.setItem('CONVOY_AUTH', JSON.stringify(response.data));
+				this.router.navigateByUrl('/');
+			}
 			this.disableLoginBtn = false;
-			this.router.navigateByUrl('/');
 		} catch {
 			this.disableLoginBtn = false;
 		}
