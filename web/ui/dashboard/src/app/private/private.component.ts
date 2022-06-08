@@ -14,6 +14,7 @@ export class PrivateComponent implements OnInit {
 	showOrgDropdown = false;
 	showMoreDropdown = false;
 	showOverlay = false;
+    showAddOrganisationModal = false;
 	apiURL = this.generalService.apiURL();
 	organisations!: ORGANIZATION_DATA[];
 	userOrganization!: ORGANIZATION_DATA;
@@ -47,7 +48,7 @@ export class PrivateComponent implements OnInit {
     async getOrganizations() {
 		try {
 			const response = await this.privateService.getOrganizations();
-			this.organisations = response.data;
+			this.organisations = response.data.content;
 			const setOrg = localStorage.getItem('ORG_DETAILS');
 			if (!setOrg) {
 				this.selectOrganisation(this.organisations[0]);
@@ -61,7 +62,7 @@ export class PrivateComponent implements OnInit {
 		const userOrganisation = organisation;
 		this.userOrganization = userOrganisation;
 		localStorage.setItem('ORG_DETAILS', JSON.stringify(userOrganisation));
-		const organisationId = userOrganisation?.id;
+		const organisationId = userOrganisation?.uid;
 		localStorage.setItem('orgId', organisationId);
 		const currentUrl = this.router.url;
 		if (currentUrl.includes('/projects/')) {
@@ -72,5 +73,10 @@ export class PrivateComponent implements OnInit {
 			});
 		}
 		this.showOrgDropdown = false;
+	}
+
+    closeAddOrganisationModal() {
+		this.showAddOrganisationModal = false;
+		this.getOrganizations();
 	}
 }

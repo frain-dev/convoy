@@ -2,7 +2,7 @@
 	<div class="dashboard--header--container">
 		<div class="flex flex__align-items-center">
 			<a target="_blank" href="https://getconvoy.io" rel="noreferrer">
-				<img src="/assets/img/logo.svg" alt="convoy logo" class="logo"/>
+				<img src="/assets/img/logo.svg" alt="convoy logo" class="logo" />
 			</a>
 
 			<nav>
@@ -25,7 +25,7 @@
 				<img src="/assets/img/doc-icon-primary.svg" alt="doc icon" />
 				<span class="font__weight-400 color__primary">Go to docs</span>
 			</a>
-			
+
 			<div class="dropdown" *ngIf="authDetails()">
 				<button class="button__more with-padding button--has-icon icon-left" (click)="showOrgDropdown = !showOrgDropdown; showOverlay = true">
 					<div class="badge">
@@ -38,16 +38,18 @@
 				<div [ngClass]="{ show: showOrgDropdown }" class="dropdown__menu dropdown__menu__nav larger">
 					<div class="title">Your organisations ({{ organisations?.length || 0 }})</div>
 					<ul *ngIf="organisations?.length">
-						<li class="flex flex__justify-between" *ngFor="let organisation of organisations" (click)="selectOrganisation(organisation)">
-							<div class="badge badge__dark">
-								<div class="icon">{{ organisation?.name?.slice(0, 1) }}</div>
-								<p class="name">{{ organisation?.name }}</p>
+						<li *ngFor="let organisation of organisations" (click)="selectOrganisation(organisation)">
+							<div class="flex flex__justify-between padding-x__16px padding-bottom__16px">
+								<div class="badge badge__dark">
+									<div class="icon">{{ organisation?.name?.slice(0, 1) }}</div>
+									<p class="name">{{ organisation?.name }}</p>
+								</div>
+								<img *ngIf="organisation.uid == userOrganization?.uid" src="/assets/img/check-icon-primary.svg" alt="check icon" />
 							</div>
-							<img *ngIf="organisation.id == userOrganization?.id" src="/assets/img/check-icon-primary.svg" alt="check icon" />
 						</li>
 					</ul>
 					<div class="dropdown--footer">
-						<button class="base-button" (click)="showOrgDropdown = false">
+						<button class="base-button" (click)="showAddOrganisationModal = true; showOrgDropdown = false">
 							<img src="/assets/img/add-circlar-icon.svg" alt="add icon" />
 							Add another Organization
 						</button>
@@ -82,5 +84,8 @@
 	</div>
 </header>
 <div class="overlay" *ngIf="showOverlay" (click)="showOverlay = false; showMoreDropdown = false; showOrgDropdown = false"></div>
-
+<div class="_overlay z-index--2" *ngIf="showAddOrganisationModal" (click)="showAddOrganisationModal = false"></div>
+<div class="modal modal__right z-index--3" *ngIf="showAddOrganisationModal">
+	<app-create-organisation (closeModal)="closeAddOrganisationModal()"></app-create-organisation>
+</div>
 <router-outlet></router-outlet>
