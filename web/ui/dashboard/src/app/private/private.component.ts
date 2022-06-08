@@ -35,15 +35,6 @@ export class PrivateComponent implements OnInit {
 		return authDetails ? JSON.parse(authDetails) : false;
 	}
 
-	requestToken(): string {
-		if (this.authDetails()) {
-			const { username, password } = this.authDetails();
-			return btoa(`${username + ':' + password}`);
-		} else {
-			return '';
-		}
-	}
-
 	async getOrganizations() {
 		try {
 			const response = await this.privateService.getOrganizations();
