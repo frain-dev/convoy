@@ -14,7 +14,9 @@ export class OrganisationComponent implements OnInit {
 	showDeactivateAccountModal = false;
 	isEditingOrganisation = false;
 	isDeletingOrganisation = false;
+	showDeleteModal = false;
 	organisationId!: string;
+	organisationName!: string;
 	editOrganisationForm: FormGroup = this.formBuilder.group({
 		name: ['', Validators.required]
 	});
@@ -60,6 +62,7 @@ export class OrganisationComponent implements OnInit {
 		if (org) {
 			const organisationDetails = JSON.parse(org);
 			this.organisationId = organisationDetails.uid;
+			this.organisationName = organisationDetails.name;
 			this.editOrganisationForm.patchValue({
 				name: organisationDetails.name
 			});
