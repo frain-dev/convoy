@@ -1,6 +1,5 @@
 import { DatePipe } from '@angular/common';
 import { Component, ElementRef, Input, OnInit, ViewChild } from '@angular/core';
-import { FormBuilder, FormGroup } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
 import { format } from 'date-fns';
 import { fromEvent, Observable } from 'rxjs';
@@ -16,10 +15,10 @@ import { EventsService } from '../events.service';
 @Component({
 	selector: 'app-event-deliveries',
 	templateUrl: './event-deliveries.component.html',
-	styleUrls: ['../events.component.scss']
+	styleUrls: ['./event-deliveries.component.scss']
 })
 export class EventDeliveriesComponent implements OnInit {
-	@Input() eventDeliveryFilteredByEventId!: string;
+	@Input() eventDeliveryFilteredByEventId?: string;
 	dateOptions = ['Last Year', 'Last Month', 'Last Week', 'Yesterday'];
 	eventDeliveryStatuses = ['Success', 'Failure', 'Retry', 'Scheduled', 'Processing', 'Discarded'];
 	eventDelTableHead: string[] = ['Status', 'Event Type', 'Attempts', 'Time Created', '', ''];
@@ -33,53 +32,14 @@ export class EventDeliveriesComponent implements OnInit {
 	isloadingEventDeliveries = false;
 	isloadingDeliveryAttempts = false;
 	isRetrying = false;
-	eventDeliveriesFilterDateRange: FormGroup = this.formBuilder.group({
-		startDate: [{ value: '', disabled: true }],
-		endDate: [{ value: '', disabled: true }]
-	});
+	dateFiltersFromURL: { startDate: string | Date; endDate: string | Date } = { startDate: '', endDate: '' };
 	batchRetryCount!: number;
-	eventDeliveriesApp!: string;
+	eventDeliveriesApp?: string;
 	eventDelsDetailsItem?: any;
 	eventDeliveryIndex!: number;
 	eventDeliveriesPage: number = 1;
 	selectedEventsFromEventDeliveriesTable: string[] = [];
-	displayedEventDeliveries: { date: string; content: EVENT_DELIVERY[] }[] = [
-		{
-			date: '28 Mar, 2022',
-			content: [
-				{
-					app_metadata: {
-						group_id: 'db78d6fe-b05e-476d-b908-cb6fff26a3ed',
-						support_email: 'pelumi@mailinator.com',
-						title: 'App A',
-						uid: '41e3683f-2799-434d-ab61-4bfbe7c1ae23'
-					},
-					created_at: '2022-03-04T12:50:37.048Z',
-					endpoint: {
-						secret: 'kRfXPgJU6kAkc35H2-CqXwnrP_6wcEBVzA==',
-						sent: false,
-						status: 'active',
-						target_url: 'https://webhook.site/ac06134f-b969-4388-b663-1e55951a99a4',
-						uid: '8a069124-757e-4ad1-8939-6882a0f3e9bb'
-					},
-					event_metadata: {
-						name: 'three',
-						uid: '5bbca57e-e9df-4668-9208-827b962dc9a1'
-					},
-					metadata: {
-						interval_seconds: 65,
-						next_send_time: '2022-04-22T15:11:16.76Z',
-						num_trials: 5,
-						retry_limit: 5,
-						strategy: 'default'
-					},
-					status: 'Failure',
-					uid: 'b51ebc56-10df-42f1-8e00-6fb9da957bc0',
-					updated_at: '2022-04-22T15:10:11.761Z'
-				}
-			]
-		}
-	];
+	displayedEventDeliveries!: { date: string; content: EVENT_DELIVERY[] }[];
 	eventDeliveries!: { pagination: PAGINATION; content: EVENT_DELIVERY[] };
 	sidebarEventDeliveries!: EVENT_DELIVERY[];
 	eventDeliveryAtempt!: EVENT_DELIVERY_ATTEMPT;
@@ -90,14 +50,8 @@ export class EventDeliveriesComponent implements OnInit {
 	@ViewChild('eventDelsAppsFilter', { static: true }) eventDelsAppsFilter!: ElementRef;
 	@ViewChild('eventDeliveryTimerFilter', { static: true }) eventDeliveryTimerFilter!: TimeFilterComponent;
 
-	constructor(
-		private formBuilder: FormBuilder,
-		private generalService: GeneralService,
-		private eventsService: EventsService,
-		private datePipe: DatePipe,
-		private route: ActivatedRoute,
-		private router: Router
-	) {}
+	constructor(private generalService: GeneralService, private eventsService: EventsService, private datePipe: DatePipe, private route: ActivatedRoute, private router: Router) {}
+
 	ngAfterViewInit() {
 		this.eventsDelAppsFilter$ = fromEvent<any>(this.eventDelsAppsFilter?.nativeElement, 'keyup').pipe(
 			map(event => event.target.value),
@@ -109,13 +63,27 @@ export class EventDeliveriesComponent implements OnInit {
 	}
 
 	ngOnInit() {
+		this.getFiltersFromURL();
 		this.getEventDeliveries();
+	}
+
+	getFiltersFromURL() {
+		const filters = this.route.snapshot.queryParams;
+		if (Object.keys(filters).length == 0) return;
+
+		this.dateFiltersFromURL = {
+			startDate: filters.eventDelsStartDate ? new Date(filters.eventDelsStartDate) : '',
+			endDate: filters.eventDelsEndDate ? new Date(filters.eventDelsEndDate) : ''
+		};
+		this.eventDeliveriesApp = filters.eventDelsApp ?? '';
+		this.eventDeliveryFilteredByStatus = filters.eventDelsStatus ? JSON.parse(filters.eventDelsStatus) : [];
 	}
 
 	async getEventDeliveries(requestDetails?: { page?: number; addToURL?: boolean; fromFilter?: boolean }): Promise<HTTP_RESPONSE> {
 		const page = requestDetails?.page || this.route.snapshot.queryParams.page || 1;
 		if (requestDetails?.addToURL) this.addFilterToURL();
-		const { startDate, endDate } = this.setDateForFilter({ ...this.eventDeliveriesFilterDateRange.value, ...this.eventDelsTimeFilterData });
+		const { startDate, endDate } = this.setDateForFilter({ ...this.dateFiltersFromURL, ...this.eventDelsTimeFilterData });
+		this.isloadingEventDeliveries = true;
 
 		try {
 			const eventDeliveriesResponse = await this.eventDeliveriesRequest({ pageNo: page, eventId: this.eventDeliveryFilteredByEventId, startDate, endDate });
@@ -147,7 +115,7 @@ export class EventDeliveriesComponent implements OnInit {
 				pageNo: requestDetails.pageNo || 1,
 				startDate: requestDetails.startDate,
 				endDate: requestDetails.endDate,
-				appId: this.eventDeliveriesApp,
+				appId: this.eventDeliveriesApp || '',
 				statusQuery: eventDeliveryStatusFilterQuery || ''
 			});
 			return eventDeliveriesResponse;
@@ -159,8 +127,7 @@ export class EventDeliveriesComponent implements OnInit {
 	addFilterToURL() {
 		const currentURLfilters = this.route.snapshot.queryParams;
 		const queryParams: any = {};
-		console.log(queryParams);
-		const { startDate, endDate } = this.setDateForFilter({ ...this.eventDeliveriesFilterDateRange.value, ...this.eventDelsTimeFilterData });
+		const { startDate, endDate } = this.setDateForFilter({ ...this.dateFiltersFromURL, ...this.eventDelsTimeFilterData });
 		if (startDate) queryParams.eventDelsStartDate = startDate;
 		if (endDate) queryParams.eventDelsEndDate = endDate;
 		if (this.eventDeliveriesApp) queryParams.eventDelsApp = this.eventDeliveriesApp;
@@ -169,7 +136,7 @@ export class EventDeliveriesComponent implements OnInit {
 		this.router.navigate([], { queryParams: Object.assign({}, currentURLfilters, queryParams) });
 	}
 
-	setDateForFilter(requestDetails: { startDate: Date; endDate: Date; startTime?: string; endTime?: string }) {
+	setDateForFilter(requestDetails: { startDate: any; endDate: any; startTime?: string; endTime?: string }) {
 		if (!requestDetails.endDate && !requestDetails.startDate) return { startDate: '', endDate: '' };
 		const startDate = requestDetails.startDate ? `${format(requestDetails.startDate, 'yyyy-MM-dd')}${requestDetails?.startTime || 'T00:00:00'}` : '';
 		const endDate = requestDetails.endDate ? `${format(requestDetails.endDate, 'yyyy-MM-dd')}${requestDetails?.endTime || 'T23:59:59'}` : '';
@@ -178,10 +145,6 @@ export class EventDeliveriesComponent implements OnInit {
 
 	checkIfEventDeliveryStatusFilterOptionIsSelected(status: string): boolean {
 		return this.eventDeliveryFilteredByStatus?.length > 0 ? this.eventDeliveryFilteredByStatus.includes(status) : false;
-	}
-
-	checkIfEventDeliveryAppFilterOptionIsSelected(appId: string): boolean {
-		return appId === this.eventDeliveriesApp;
 	}
 
 	updateEventDevliveryStatusFilter(status: string, isChecked: any) {
@@ -194,37 +157,40 @@ export class EventDeliveriesComponent implements OnInit {
 	}
 
 	getSelectedDateRange(dateRange: { startDate: Date; endDate: Date }) {
-		this.eventDeliveriesFilterDateRange.patchValue({
-			startDate: dateRange.startDate,
-			endDate: dateRange.endDate
-		});
+		this.dateFiltersFromURL = { ...dateRange };
 		this.getEventDeliveries({ addToURL: true });
 	}
 
 	clearFilters(filterType?: 'eventsDelApp' | 'eventsDelDate' | 'eventsDelsStatus') {
 		const activeFilters = Object.assign({}, this.route.snapshot.queryParams);
 		let filterItems: string[] = [];
-		this.eventDeliveriesApp = '';
+		this.eventDeliveriesApp = undefined;
+
 		switch (filterType) {
 			case 'eventsDelApp':
+				this.eventDeliveryFilteredByEventId = undefined;
 				filterItems = ['eventDelsApp'];
 				break;
 			case 'eventsDelDate':
+				this.eventDelsTimeFilterData = { startTime: 'T00:00:00', endTime: 'T23:59:59' };
+				this.dateFiltersFromURL = { startDate: '', endDate: '' };
 				filterItems = ['eventDelsStartDate', 'eventDelsEndDate'];
 				break;
 			case 'eventsDelsStatus':
+				this.eventDeliveryFilteredByStatus = [];
 				filterItems = ['eventDelsStatus'];
 				break;
 			default:
+				this.dateFiltersFromURL = { startDate: '', endDate: '' };
+				this.eventDeliveryFilteredByEventId = undefined;
+				this.eventDeliveryFilteredByStatus = [];
+				this.eventDelsTimeFilterData = { startTime: 'T00:00:00', endTime: 'T23:59:59' };
 				filterItems = ['eventDelsStartDate', 'eventDelsEndDate', 'eventDelsApp', 'eventDelsStatus'];
 				break;
 		}
-		filterItems = ['eventDelsStartDate', 'eventDelsEndDate', 'eventDelsApp', 'eventDelsStatus'];
-		this.eventDeliveriesFilterDateRange.patchValue({ startDate: '', endDate: '' });
-		this.eventDeliveryFilteredByEventId = '';
-		this.eventDeliveryFilteredByStatus = [];
-		this.eventDelsTimeFilterData = { startTime: 'T00:00:00', endTime: 'T23:59:59' };
-		this.getEventDeliveries({ fromFilter: true });
+
+		filterItems.forEach(key => (activeFilters.hasOwnProperty(key) ? delete activeFilters[key] : null));
+		this.router.navigate([], { relativeTo: this.route, queryParams: activeFilters });
 	}
 
 	fetchRetryCount() {}
@@ -238,7 +204,7 @@ export class EventDeliveriesComponent implements OnInit {
 	updateAppFilter(appId: string, isChecked: any) {
 		this.showOverlay = false;
 		this.showEventDeliveriesAppsDropdown = !this.showEventDeliveriesAppsDropdown;
-		isChecked.target.checked ? (this.eventDeliveriesApp = appId) : (this.eventDeliveriesApp = '');
+		isChecked.target.checked ? (this.eventDeliveriesApp = appId) : (this.eventDeliveriesApp = undefined);
 
 		this.getEventDeliveries({ addToURL: true, fromFilter: true });
 	}
@@ -315,17 +281,19 @@ export class EventDeliveriesComponent implements OnInit {
 		let eventDeliveryStatusFilterQuery = '';
 		this.eventDeliveryFilteredByStatus.length > 0 ? (this.eventDeliveriesStatusFilterActive = true) : (this.eventDeliveriesStatusFilterActive = false);
 		this.eventDeliveryFilteredByStatus.forEach((status: string) => (eventDeliveryStatusFilterQuery += `&status=${status}`));
-		const { startDate, endDate } = this.setDateForFilter(this.eventDeliveriesFilterDateRange.value);
+		const { startDate, endDate } = this.setDateForFilter(this.dateFiltersFromURL);
 		this.isRetrying = true;
+
 		try {
 			const response = await this.eventsService.batchRetryEvent({
 				eventId: this.eventDeliveryFilteredByEventId || '',
 				pageNo: this.eventDeliveriesPage || 1,
 				startDate: startDate,
 				endDate: endDate,
-				appId: this.eventDeliveriesApp,
+				appId: this.eventDeliveriesApp || '',
 				statusQuery: eventDeliveryStatusFilterQuery || ''
 			});
+
 			this.generalService.showNotification({ message: response.message, style: 'success' });
 			this.getEventDeliveries();
 			this.showBatchRetryModal = false;

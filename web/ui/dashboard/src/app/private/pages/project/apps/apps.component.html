@@ -99,13 +99,7 @@
 							</td>
 							<td>
 								<div>
-									<button
-										title="view events"
-										(click)="loadEventsFromAppsTable(app.uid)"
-										[disabled]="app.events <= 0"
-										[class]="'button__retry button--has-icon icon-left'"
-										(click)="showAppDetails = false"
-									>
+									<button title="view events" (click)="loadEventsFromAppsTable($event, app.uid)" [disabled]="app.events <= 0" [class]="'button__retry button--has-icon icon-left'">
 										<img src="/assets/img/view-events-icon.svg" alt="view events icon" />
 										View Events
 									</button>
@@ -113,7 +107,7 @@
 							</td>
 							<td>
 								<div class="dropdown">
-									<button class="button__clear button--has-icon" (click)="currentAppId = app.uid; showOverlay = true; showAppDetails = false">
+									<button class="button__clear button--has-icon" (click)="$event.stopPropagation(); currentAppId = app.uid; showOverlay = true; showAppDetails = false">
 										<img src="/assets/img/more-icon-vertical.svg" alt="more icon" />
 									</button>
 									<div [ngClass]="{ show: currentAppId == app.uid }" class="dropdown__menu dropdown__menu__nav small z-index--3">
@@ -130,6 +124,7 @@
 			</table>
 		</div>
 	</div>
+
 	<div class="flex flex__column flex__justify-center flex__align-items-center table--container" id="events-empty-state" *ngIf="displayedApps?.length === 0">
 		<img src="/assets/img/empty-state.svg" alt="empty state" class="empty-state-img" />
 		<p class="font__14px font__weight-600 margin-top__0px color__black width__20 text--center">No app to show here</p>

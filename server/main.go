@@ -43,5 +43,8 @@ package server
 // @tag.name Group
 // @tag.description Group related APIs
 
+// @tag.name Organisation
+// @tag.description Organisation related APIs
+
 // Stub represents empty json or arbitrary json bodies for our doc annotations
 type Stub struct{}

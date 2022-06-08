@@ -213,6 +213,8 @@ func buildRoutes(app *applicationHandler) http.Handler {
 		uiRouter.Use(setupCORS)
 		uiRouter.Use(middleware.Maybe(requireAuth(), shouldAuthRoute))
 
+		uiRouter.Post("/organisations/process_invite", app.ProcessOrganisationMemberInvite)
+
 		uiRouter.Route("/auth", func(authRouter chi.Router) {
 			authRouter.Post("/login", app.LoginUser)
 			authRouter.Post("/token/refresh", app.RefreshToken)
@@ -244,17 +246,33 @@ func buildRoutes(app *applicationHandler) http.Handler {
 		})
 
 		uiRouter.Route("/organisations", func(orgRouter chi.Router) {
-			orgRouter.Use(requirePermission(auth.RoleAdmin))
+			orgRouter.Use(requireAuthUserMetadata())
 
 			orgRouter.Post("/", app.CreateOrganisation)
 			orgRouter.With(pagination).Get("/", app.GetOrganisationsPaged)
 
 			orgRouter.Route("/{orgID}", func(orgSubRouter chi.Router) {
 				orgSubRouter.Use(requireOrganisation(app.orgRepo))
+				orgSubRouter.Use(requireOrganisationMembership(app.orgMemberRepo))
 
 				orgSubRouter.Get("/", app.GetOrganisation)
-				orgSubRouter.Put("/", app.UpdateOrganisation)
-				orgSubRouter.Delete("/", app.DeleteOrganisation)
+				orgSubRouter.With(requireOrganisationMemberRole(auth.RoleSuperUser)).Put("/", app.UpdateOrganisation)
+				orgSubRouter.With(requireOrganisationMemberRole(auth.RoleSuperUser)).Delete("/", app.DeleteOrganisation)
+				orgSubRouter.With(requireOrganisationMemberRole(auth.RoleSuperUser)).Post("/invite_user", app.InviteUserToOrganisation)
+
+				orgSubRouter.Route("/members", func(orgMemberRouter chi.Router) {
+					orgMemberRouter.Use(requireOrganisationMemberRole(auth.RoleSuperUser))
+
+					orgMemberRouter.With(pagination).Get("/", app.GetOrganisationMembers)
+
+					orgMemberRouter.Route("/{memberID}", func(orgMemberSubRouter chi.Router) {
+
+						orgMemberSubRouter.Get("/", app.GetOrganisationMember)
+						orgMemberSubRouter.Put("/", app.UpdateOrganisationMember)
+						orgMemberSubRouter.Delete("/", app.DeleteOrganisationMember)
+
+					})
+				})
 			})
 		})
 
@@ -456,6 +474,8 @@ func New(cfg config.Configuration,
 	subRepo datastore.SubscriptionRepository,
 	groupRepo datastore.GroupRepository,
 	orgRepo datastore.OrganisationRepository,
+	orgMemberRepo datastore.OrganisationMemberRepository,
+	orgInviteRepo datastore.OrganisationInviteRepository,
 	sourceRepo datastore.SourceRepository,
 	userRepo datastore.UserRepository,
 	queue queue.Queuer,
@@ -475,6 +495,8 @@ func New(cfg config.Configuration,
 		subRepo,
 		sourceRepo,
 		orgRepo,
+		orgMemberRepo,
+		orgInviteRepo,
 		userRepo,
 		queue,
 		logger,

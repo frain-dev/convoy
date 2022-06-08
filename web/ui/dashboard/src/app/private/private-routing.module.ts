@@ -31,6 +31,10 @@ const routes: Routes = [
 			{
 				path: 'team',
 				loadChildren: () => import('./pages/teams/teams.module').then(m => m.TeamsModule)
+			},
+			{
+				path: 'organisation-settings',
+				loadChildren: () => import('./pages/organisation/organisation.module').then(m => m.OrganisationModule)
 			}
 		]
 	}

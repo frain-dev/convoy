@@ -34,8 +34,8 @@ export class SourcesComponent implements OnInit {
 		try {
 			const sourcesResponse = await this.privateService.getSources({ page });
 			this.sources = sourcesResponse.data;
+			if (this.sources.pagination.total > 0) this.activeSource = this.sources?.content.find(source => source.uid === this.route.snapshot.queryParams?.id);
 			this.isLoadingSources = false;
-			this.activeSource = this.sources?.content.find(source => source.uid === this.route.snapshot.queryParams?.id);
 		} catch (error) {
 			this.isLoadingSources = false;
 			return error;
@@ -51,5 +51,9 @@ export class SourcesComponent implements OnInit {
 		} catch (error) {
 			console.log(error);
 		}
+	}
+
+	closeCreateSourceModal() {
+		this.router.navigateByUrl('/projects/' + this.projectId + '/sources');
 	}
 }

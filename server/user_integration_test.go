@@ -53,7 +53,7 @@ func (u *UserIntegrationTestSuite) TearDownTest() {
 
 func (u *UserIntegrationTestSuite) Test_LoginUser() {
 	password := "123456"
-	user, _ := testdb.SeedUser(u.DB, password)
+	user, _ := testdb.SeedUser(u.DB, "", password)
 
 	//Arrange Request
 	url := "/ui/auth/login"
@@ -106,7 +106,7 @@ func (u *UserIntegrationTestSuite) Test_LoginUser_Invalid_Username() {
 
 func (u *UserIntegrationTestSuite) Test_LoginUser_Invalid_Password() {
 	password := "123456"
-	user, _ := testdb.SeedUser(u.DB, password)
+	user, _ := testdb.SeedUser(u.DB, "", password)
 
 	//Arrange Request
 	url := "/ui/auth/login"
@@ -128,7 +128,7 @@ func (u *UserIntegrationTestSuite) Test_LoginUser_Invalid_Password() {
 
 func (u *UserIntegrationTestSuite) Test_RefreshToken() {
 	password := "123456"
-	user, _ := testdb.SeedUser(u.DB, password)
+	user, _ := testdb.SeedUser(u.DB, "", password)
 
 	token, err := u.jwt.GenerateToken(user)
 	require.NoError(u.T(), err)
@@ -160,7 +160,7 @@ func (u *UserIntegrationTestSuite) Test_RefreshToken() {
 
 func (u *UserIntegrationTestSuite) Test_RefreshToken_Invalid_Access_Token() {
 	password := "123456"
-	user, _ := testdb.SeedUser(u.DB, password)
+	user, _ := testdb.SeedUser(u.DB, "", password)
 
 	token, err := u.jwt.GenerateToken(user)
 	require.NoError(u.T(), err)
@@ -185,7 +185,7 @@ func (u *UserIntegrationTestSuite) Test_RefreshToken_Invalid_Access_Token() {
 
 func (u *UserIntegrationTestSuite) Test_RefreshToken_Invalid_Refresh_Token() {
 	password := "123456"
-	user, _ := testdb.SeedUser(u.DB, password)
+	user, _ := testdb.SeedUser(u.DB, "", password)
 
 	token, err := u.jwt.GenerateToken(user)
 	require.NoError(u.T(), err)
@@ -210,7 +210,7 @@ func (u *UserIntegrationTestSuite) Test_RefreshToken_Invalid_Refresh_Token() {
 
 func (u *UserIntegrationTestSuite) Test_LogoutUser() {
 	password := "123456"
-	user, _ := testdb.SeedUser(u.DB, password)
+	user, _ := testdb.SeedUser(u.DB, "", password)
 
 	token, err := u.jwt.GenerateToken(user)
 	require.NoError(u.T(), err)

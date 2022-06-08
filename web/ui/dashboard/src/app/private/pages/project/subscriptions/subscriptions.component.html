@@ -16,7 +16,43 @@
 
 <div>
 	<div class="table has-loader flex flex__align-items-start" id="events-table-container">
-		<div class="table--container" [ngClass]="{ smaller: activeSubscription?.uid }">
+		<div class="table--container" *ngIf="isLoadindingSubscriptions">
+			<div class="card padding-top__16px margin-bottom__16px" *ngFor="let subscription of subscriptionsLoaders">
+				<div class="border__bottom flex flex__align-items-center flex__justify-between padding-bottom__16px border--width__4">
+					<div class="padding-left__16px flex">
+						<div class="skeleton-loader width__120px height__20px"></div>
+						<div class="skeleton-loader width__32px height__20px margin-left__8px"></div>
+					</div>
+
+					<div class="flex flex__align-items-center">
+						<div class="tags margin-right__16px flex">
+							<div class="skeleton-loader width__100px height__20px"></div>
+							<div class="skeleton-loader width__100px height__20px margin-left__8px"></div>
+						</div>
+					</div>
+				</div>
+
+				<div class="flex flex__align-items-end flex__justify-between padding-bottom__8px padding-left__16px margin-top__8px">
+					<div class="width__100">
+						<div class="color__grey font__10px margin-bottom__12px">
+							<div class="skeleton-loader width__36px height__20px"></div>
+						</div>
+						<div class="skeleton-loader width__100px height__20px"></div>
+					</div>
+					<div class="width__100">
+						<div class="skeleton-loader width__100px height__20px"></div>
+					</div>
+					<div class="width__100">
+						<div class="skeleton-loader width__100px height__20px"></div>
+					</div>
+					<div class="width__50">
+						<div class="skeleton-loader width__100px height__20px"></div>
+					</div>
+				</div>
+			</div>
+		</div>
+
+		<div class="table--container" *ngIf="!isLoadindingSubscriptions && subscriptions.content.length > 0" [ngClass]="{ smaller: activeSubscription?.uid }">
 			<div class="card padding-top__16px margin-bottom__16px" *ngFor="let subscription of subscriptions?.content">
 				<a routerLink="./" [queryParams]="{ id: subscription.uid }" class="border__bottom flex flex__align-items-center flex__justify-between padding-bottom__16px border--width__4">
 					<h4 class="padding-left__16px font__14px font__weight-500">
@@ -81,7 +117,7 @@
 			</div>
 		</div>
 
-		<div class="table--sidebar height__100 bg__white margin-left__8px card show" *ngIf="activeSubscription?.uid">
+		<div class="table--sidebar height__100 bg__white margin-left__8px card show" *ngIf="!isLoadindingSubscriptions && activeSubscription?.uid">
 			<div class="modal--head--left flex flex__align-items-center flex__justify-between padding-right__24px">
 				<h2 class="padding-top__24px padding-bottom__16px font__16px font__weight-700">{{ activeSubscription?.name }}</h2>
 				<a
@@ -139,6 +175,11 @@
 					</svg>
 				</button>
 			</div>
+		</div>
+
+		<div class="flex flex__column flex__justify-center flex__align-items-center table--container" id="events-empty-state" *ngIf="!isLoadindingSubscriptions && subscriptions.content.length == 0">
+			<img src="/assets/img/empty-state.svg" alt="empty state" class="empty-state-img" />
+			<p class="font__14px font__weight-600 margin-top__0px color__black width__20 text--center">No subscriptions yet</p>
 		</div>
 	</div>
 </div>

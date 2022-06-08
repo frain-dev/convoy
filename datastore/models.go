@@ -132,14 +132,14 @@ type Application struct {
 	Title           string             `json:"name" bson:"title"`
 	SupportEmail    string             `json:"support_email" bson:"support_email"`
 	SlackWebhookURL string             `json:"slack_webhook_url,omitempty" bson:"slack_webhook_url"`
-	IsDisabled      bool               `json:"is_disabled" bson:"is_disabled"`
+	IsDisabled      bool               `json:"is_disabled,omitempty" bson:"is_disabled"`
 
-	Endpoints []Endpoint         `json:"endpoints" bson:"endpoints"`
+	Endpoints []Endpoint         `json:"endpoints,omitempty" bson:"endpoints"`
 	CreatedAt primitive.DateTime `json:"created_at,omitempty" bson:"created_at,omitempty" swaggertype:"string"`
 	UpdatedAt primitive.DateTime `json:"updated_at,omitempty" bson:"updated_at,omitempty" swaggertype:"string"`
 	DeletedAt primitive.DateTime `json:"deleted_at,omitempty" bson:"deleted_at,omitempty" swaggertype:"string"`
 
-	Events int64 `json:"events" bson:"-"`
+	Events int64 `json:"events,omitempty" bson:"-"`
 
 	DocumentStatus DocumentStatus `json:"-" bson:"document_status"`
 }
@@ -164,6 +164,8 @@ type Endpoint struct {
 }
 
 var ErrOrgNotFound = errors.New("organisation not found")
+var ErrOrgInviteNotFound = errors.New("organisation invite not found")
+var ErrOrgMemberNotFound = errors.New("organisation member not found")
 
 type Group struct {
 	ID         primitive.ObjectID `json:"-" bson:"_id"`
@@ -277,14 +279,16 @@ type Event struct {
 	// with your internal systems.
 	// This is optional
 	// If not provided, we will generate one for you
-	ProviderID string `json:"provider_id" bson:"provider_id"`
-	SourceID   string `json:"source_id" bson:"source_id"`
-	GroupID    string `json:"group_id" bson:"group_id"`
-	AppID      string `json:"app_id" bson:"app_id"`
+	ProviderID string `json:"provider_id,omitempty" bson:"provider_id"`
+	SourceID   string `json:"source_id,omitempty" bson:"source_id"`
+	GroupID    string `json:"group_id,omitempty" bson:"group_id"`
+	AppID      string `json:"app_id,omitempty" bson:"app_id"`
+
+	App *Application `json:"app_metadata,omitempty" bson:"-"`
 
 	// Data is an arbitrary JSON value that gets sent as the body of the
 	// webhook to the endpoints
-	Data json.RawMessage `json:"data" bson:"data"`
+	Data json.RawMessage `json:"data,omitempty" bson:"data"`
 
 	CreatedAt primitive.DateTime `json:"created_at,omitempty" bson:"created_at,omitempty" swaggertype:"string"`
 	UpdatedAt primitive.DateTime `json:"updated_at,omitempty" bson:"updated_at,omitempty" swaggertype:"string"`
@@ -383,11 +387,15 @@ type DeliveryAttempt struct {
 type EventDelivery struct {
 	ID             primitive.ObjectID `json:"-" bson:"_id"`
 	UID            string             `json:"uid" bson:"uid"`
-	AppID          string             `json:"app_id" bson:"app_id"`
-	GroupID        string             `json:"group_id" bson:"group_id"`
-	EventID        string             `json:"event_id" bson:"event_id"`
-	EndpointID     string             `json:"endpoint_id" bson:"endpoint_id"`
-	SubscriptionID string             `json:"subscription_id" bson:"subscription_id"`
+	AppID          string             `json:"app_id,omitempty" bson:"app_id"`
+	GroupID        string             `json:"group_id,omitempty" bson:"group_id"`
+	EventID        string             `json:"event_id,omitempty" bson:"event_id"`
+	EndpointID     string             `json:"endpoint_id,omitempty" bson:"endpoint_id"`
+	SubscriptionID string             `json:"subscription_id,omitempty" bson:"subscription_id"`
+
+	Event    *Event       `json:"event_metadata,omitempty" bson:"-"`
+	Endpoint *Endpoint    `json:"endpoint,omitempty" bson:"-"`
+	App      *Application `json:"app_metadata,omitempty" bson:"-"`
 
 	DeliveryAttempts []DeliveryAttempt   `json:"-" bson:"attempts"`
 	Status           EventDeliveryStatus `json:"status" bson:"status"`
@@ -441,7 +449,7 @@ type Subscription struct {
 
 	CreatedAt primitive.DateTime `json:"created_at,omitempty" bson:"created_at" swaggertype:"string"`
 	UpdatedAt primitive.DateTime `json:"updated_at,omitempty" bson:"updated_at" swaggertype:"string"`
-	DeletedAt primitive.DateTime `json:"delted_at,omitempty" bson:"deleted_at" swaggertype:"string"`
+	DeletedAt primitive.DateTime `json:"deleted_at,omitempty" bson:"deleted_at" swaggertype:"string"`
 
 	DocumentStatus DocumentStatus `json:"-" bson:"document_status"`
 }
@@ -472,9 +480,9 @@ type User struct {
 	Password  string             `json:"-" bson:"password"`
 	Role      auth.Role          `json:"role" bson:"role"`
 
-	CreatedAt primitive.DateTime `json:"created_at,omitempty" bson:"created_at"`
-	UpdatedAt primitive.DateTime `json:"updated_at,omitempty" bson:"updated_at"`
-	DeletedAt primitive.DateTime `json:"deleted_at,omitempty" bson:"deleted_at"`
+	CreatedAt primitive.DateTime `json:"created_at,omitempty" bson:"created_at,omitempty" swaggertype:"string"`
+	UpdatedAt primitive.DateTime `json:"updated_at,omitempty" bson:"updated_at,omitempty" swaggertype:"string"`
+	DeletedAt primitive.DateTime `json:"deleted_at,omitempty" bson:"deleted_at,omitempty" swaggertype:"string"`
 
 	DocumentStatus DocumentStatus `json:"-" bson:"document_status"`
 }
@@ -521,9 +529,48 @@ type ApiKey struct {
 type Organisation struct {
 	ID             primitive.ObjectID `json:"-" bson:"_id"`
 	UID            string             `json:"uid" bson:"uid"`
-	OwnerID        string             `json:"owner_id" bson:"owner_id"`
+	OwnerID        string             `json:"-" bson:"owner_id"`
 	Name           string             `json:"name" bson:"name"`
 	DocumentStatus DocumentStatus     `json:"-" bson:"document_status"`
+	CreatedAt      primitive.DateTime `json:"created_at,omitempty" bson:"created_at,omitempty" swaggertype:"string"`
+	UpdatedAt      primitive.DateTime `json:"updated_at,omitempty" bson:"updated_at,omitempty" swaggertype:"string"`
+	DeletedAt      primitive.DateTime `json:"deleted_at,omitempty" bson:"deleted_at,omitempty" swaggertype:"string"`
+}
+
+type OrganisationMember struct {
+	ID             primitive.ObjectID `json:"-" bson:"_id"`
+	UID            string             `json:"uid" bson:"uid"`
+	OrganisationID string             `json:"organisation_id" bson:"organisation_id"`
+	UserID         string             `json:"user_id" bson:"user_id"`
+	Role           auth.Role          `json:"role" bson:"role"`
+	DocumentStatus DocumentStatus     `json:"-" bson:"document_status"`
+	CreatedAt      primitive.DateTime `json:"created_at,omitempty" bson:"created_at,omitempty" swaggertype:"string"`
+	UpdatedAt      primitive.DateTime `json:"updated_at,omitempty" bson:"updated_at,omitempty" swaggertype:"string"`
+	DeletedAt      primitive.DateTime `json:"deleted_at,omitempty" bson:"deleted_at,omitempty" swaggertype:"string"`
+}
+
+type InviteStatus string
+
+const (
+	InviteStatusAccepted InviteStatus = "accepted"
+	InviteStatusDeclined InviteStatus = "declined"
+	InviteStatusPending  InviteStatus = "pending"
+)
+
+func (i InviteStatus) String() string {
+	return string(i)
+}
+
+type OrganisationInvite struct {
+	ID             primitive.ObjectID `json:"-" bson:"_id"`
+	UID            string             `json:"uid" bson:"uid"`
+	OrganisationID string             `json:"organisation_id" bson:"organisation_id"`
+	InviteeEmail   string             `json:"invitee_email" bson:"invitee_email"`
+	Token          string             `json:"token" bson:"token"`
+	Role           auth.Role          `json:"role" bson:"role"`
+	Status         InviteStatus       `json:"status" bson:"status"`
+	DocumentStatus DocumentStatus     `json:"-" bson:"document_status"`
+	ExpiresAt      primitive.DateTime `json:"-" bson:"expires_at"`
 	CreatedAt      primitive.DateTime `json:"created_at,omitempty" bson:"created_at,omitempty" swaggertype:"string"`
 	UpdatedAt      primitive.DateTime `json:"updated_at,omitempty" bson:"updated_at,omitempty" swaggertype:"string"`
 	DeletedAt      primitive.DateTime `json:"deleted_at,omitempty" bson:"deleted_at,omitempty" swaggertype:"string"`
