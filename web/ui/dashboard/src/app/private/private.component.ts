@@ -18,7 +18,7 @@ export class PrivateComponent implements OnInit {
 	organisations!: ORGANIZATION_DATA[];
 	userOrganization!: ORGANIZATION_DATA;
 
-	constructor(private generalService: GeneralService, private router: Router, private privateService:PrivateService) {}
+	constructor(private generalService: GeneralService, private router: Router, private privateService: PrivateService) {}
 
 	ngOnInit() {
 		this.getOrganizations();
@@ -44,24 +44,26 @@ export class PrivateComponent implements OnInit {
 		}
 	}
 
-    async getOrganizations() {
+	async getOrganizations() {
 		try {
 			const response = await this.privateService.getOrganizations();
-			this.organisations = response.data;
+			this.organisations = response.data.content;
 			const setOrg = localStorage.getItem('ORG_DETAILS');
 			if (!setOrg) {
 				this.selectOrganisation(this.organisations[0]);
 			} else {
 				this.userOrganization = JSON.parse(setOrg);
 			}
-		} catch (error) {}
+		} catch (error) {
+			return error;
+		}
 	}
 
 	selectOrganisation(organisation: ORGANIZATION_DATA) {
 		const userOrganisation = organisation;
 		this.userOrganization = userOrganisation;
 		localStorage.setItem('ORG_DETAILS', JSON.stringify(userOrganisation));
-		const organisationId = userOrganisation?.id;
+		const organisationId = userOrganisation?.uid;
 		localStorage.setItem('orgId', organisationId);
 		const currentUrl = this.router.url;
 		if (currentUrl.includes('/projects/')) {

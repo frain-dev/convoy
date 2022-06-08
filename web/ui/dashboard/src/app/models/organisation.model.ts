@@ -1,5 +1,5 @@
 export interface ORGANIZATION_DATA {
-	id: string;
+	uid: string;
 	members: ORGANIZATION_MEMBERS[];
 	name: string;
 }
