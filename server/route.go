@@ -378,6 +378,12 @@ func buildRoutes(app *applicationHandler) http.Handler {
 			sourceRouter.Put("/{sourceID}", app.UpdateSource)
 			sourceRouter.Delete("/{sourceID}", app.DeleteSource)
 		})
+
+		uiRouter.Route("/users", func(userRouter chi.Router) {
+			userRouter.Get("/profile", app.GetUser)
+			userRouter.Put("/profile", app.UpdateUser)
+			userRouter.Put("/password", app.UpdatePassword)
+		})
 	})
 
 	//App Portal API.

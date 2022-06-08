@@ -3,6 +3,7 @@ package server
 import (
 	"net/http"
 
+	"github.com/frain-dev/convoy/datastore"
 	"github.com/frain-dev/convoy/server/models"
 	"github.com/frain-dev/convoy/util"
 	"github.com/go-chi/render"
@@ -96,4 +97,68 @@ func (a *applicationHandler) LogoutUser(w http.ResponseWriter, r *http.Request) 
 	}
 
 	_ = render.Render(w, r, newServerResponse("Logout successful", nil, http.StatusOK))
+}
+
+func (a *applicationHandler) GetUser(w http.ResponseWriter, r *http.Request) {
+	user, ok := getUser(r)
+	if !ok {
+		_ = render.Render(w, r, newErrorResponse("unauthorized", http.StatusUnauthorized))
+		return
+	}
+
+	_ = render.Render(w, r, newServerResponse("User fetched successfully", user, http.StatusOK))
+}
+
+func (a *applicationHandler) UpdateUser(w http.ResponseWriter, r *http.Request) {
+	var userUpdate models.UpdateUser
+	err := util.ReadJSON(r, &userUpdate)
+	if err != nil {
+		_ = render.Render(w, r, newErrorResponse(err.Error(), http.StatusBadRequest))
+		return
+	}
+
+	user, ok := getUser(r)
+	if !ok {
+		_ = render.Render(w, r, newErrorResponse("unauthorized", http.StatusUnauthorized))
+		return
+	}
+
+	user, err = a.userService.UpdateUser(r.Context(), &userUpdate, user)
+	if err != nil {
+		_ = render.Render(w, r, newServiceErrResponse(err))
+		return
+	}
+
+	_ = render.Render(w, r, newServerResponse("User updated successfully", user, http.StatusOK))
+}
+
+func (a *applicationHandler) UpdatePassword(w http.ResponseWriter, r *http.Request) {
+	var updatePassword models.UpdatePassword
+	err := util.ReadJSON(r, &updatePassword)
+	if err != nil {
+		_ = render.Render(w, r, newErrorResponse(err.Error(), http.StatusBadRequest))
+		return
+	}
+
+	user, ok := getUser(r)
+	if !ok {
+		_ = render.Render(w, r, newErrorResponse("unauthorized", http.StatusUnauthorized))
+		return
+	}
+
+	user, err = a.userService.UpdatePassword(r.Context(), &updatePassword, user)
+	if err != nil {
+		_ = render.Render(w, r, newServiceErrResponse(err))
+		return
+	}
+
+	_ = render.Render(w, r, newServerResponse("Password updated successfully", user, http.StatusOK))
+
+}
+
+func getUser(r *http.Request) (*datastore.User, bool) {
+	authUser := getAuthUserFromContext(r.Context())
+	user, ok := authUser.Metadata.(*datastore.User)
+
+	return user, ok
 }

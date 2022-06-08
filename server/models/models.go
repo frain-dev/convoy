@@ -216,3 +216,15 @@ type UpdateSubscription struct {
 	RetryConfig  *datastore.RetryConfiguration  `json:"retry_config,omitempty"`
 	FilterConfig *datastore.FilterConfiguration `json:"filter_config,omitempty"`
 }
+
+type UpdateUser struct {
+	FirstName string `json:"first_name" valid:"required~please provide a first name"`
+	LastName  string `json:"last_name" valid:"required~please provide a last name"`
+	Email     string `json:"email" valid:"required~please provide an email,email"`
+}
+
+type UpdatePassword struct {
+	CurrentPassword      string `json:"current_password" valid:"required~please provide the current password"`
+	Password             string `json:"password" valid:"required~please provide the password field"`
+	PasswordConfirmation string `json:"password_confirmation" valid:"required~please provide the password confirmation field"`
+}
