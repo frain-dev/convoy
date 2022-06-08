@@ -33,7 +33,7 @@ func (ss *SecurityService) CreateAPIKey(ctx context.Context, newApiKey *models.A
 		return nil, "", NewServiceError(http.StatusBadRequest, errors.New("expiry date is invalid"))
 	}
 
-	err := newApiKey.Role.Validate("api key")
+	err := newApiKey.Role.Validate(auth.RoleNameAPIKey)
 	if err != nil {
 		log.WithError(err).Error("invalid api key role")
 		return nil, "", NewServiceError(http.StatusBadRequest, errors.New("invalid api key role"))
@@ -169,7 +169,7 @@ func (ss *SecurityService) UpdateAPIKey(ctx context.Context, uid string, role *a
 		return nil, NewServiceError(http.StatusBadRequest, errors.New("key id is empty"))
 	}
 
-	err := role.Validate("api key")
+	err := role.Validate(auth.RoleNameAPIKey)
 	if err != nil {
 		log.WithError(err).Error("invalid api key role")
 		return nil, NewServiceError(http.StatusBadRequest, errors.New("invalid api key role"))

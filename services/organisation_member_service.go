@@ -22,7 +22,7 @@ func NewOrganisationMemberService(orgMemberRepo datastore.OrganisationMemberRepo
 }
 
 func (om *OrganisationMemberService) CreateOrganisationMember(ctx context.Context, org *datastore.Organisation, user *datastore.User, role *auth.Role) (*datastore.OrganisationMember, error) {
-	err := role.Validate("organisation member")
+	err := role.Validate(auth.RoleNameOrganisationMember)
 	if err != nil {
 		log.WithError(err).Error("failed to validate organisation member role update")
 		return nil, NewServiceError(http.StatusBadRequest, err)
@@ -48,7 +48,7 @@ func (om *OrganisationMemberService) CreateOrganisationMember(ctx context.Contex
 }
 
 func (om *OrganisationMemberService) UpdateOrganisationMember(ctx context.Context, organisationMember *datastore.OrganisationMember, role *auth.Role) (*datastore.OrganisationMember, error) {
-	err := role.Validate("organisation member")
+	err := role.Validate(auth.RoleNameOrganisationMember)
 	if err != nil {
 		log.WithError(err).Error("failed to validate organisation member role update")
 		return nil, NewServiceError(http.StatusBadRequest, err)

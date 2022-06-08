@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"github.com/frain-dev/convoy/auth"
 	"net/http"
 	"time"
 
@@ -33,7 +34,7 @@ func (ois *OrganisationInviteService) CreateOrganisationMemberInvite(ctx context
 		return nil, NewServiceError(http.StatusBadRequest, err)
 	}
 
-	err = newIV.Role.Validate("organisation member")
+	err = newIV.Role.Validate(auth.RoleNameOrganisationMember)
 	if err != nil {
 		log.WithError(err).Error("failed to validate organisation member invite role")
 		return nil, NewServiceError(http.StatusBadRequest, err)

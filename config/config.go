@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/frain-dev/convoy/auth"
 	"os"
 	"strings"
 	"sync/atomic"
@@ -526,7 +527,7 @@ func ensureAuthConfig(authCfg AuthConfiguration) error {
 			return errors.New("username and password are required for basic auth config")
 		}
 
-		err = r.Role.Validate("basic auth")
+		err = r.Role.Validate(auth.RoleNameBasicAuth)
 		if err != nil {
 			return err
 		}
@@ -537,7 +538,7 @@ func ensureAuthConfig(authCfg AuthConfiguration) error {
 			return errors.New("api-key is required for api-key auth config")
 		}
 
-		err = r.Role.Validate("api-key auth")
+		err = r.Role.Validate(auth.RoleNameAPIKeyAuth)
 		if err != nil {
 			return err
 		}
