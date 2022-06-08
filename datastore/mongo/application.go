@@ -215,7 +215,7 @@ func (db *appRepo) FindApplicationByID(ctx context.Context,
 	filter = bson.M{"app_metadata.uid": app.UID, "document_status": datastore.ActiveDocumentStatus}
 	count, err := msgCollection.CountDocuments(ctx, filter)
 	if err != nil {
-		log.Errorf("failed to count events in %s. Reason: %s", app.UID, err)
+		log.WithError(err).Errorf("failed to count events in %s", app.UID)
 		return app, err
 	}
 	app.Events = count

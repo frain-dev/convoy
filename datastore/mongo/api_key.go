@@ -52,13 +52,29 @@ func (db *apiKeyRepo) UpdateAPIKey(ctx context.Context, apiKey *datastore.APIKey
 
 func (db *apiKeyRepo) FindAPIKeyByID(ctx context.Context, uid string) (*datastore.APIKey, error) {
 	apiKey := &datastore.APIKey{}
-	err := db.client.FindOne(ctx, bson.M{"uid": uid}).Decode(apiKey)
+
+	filter := bson.M{
+		"uid":             uid,
+		"document_status": datastore.ActiveDocumentStatus,
+	}
+
+	err := db.client.FindOne(ctx, filter).Decode(apiKey)
+	if errors.Is(err, mongo.ErrNoDocuments) {
+		err = datastore.ErrAPIKeyNotFound
+	}
+
 	return apiKey, err
 }
 
 func (db *apiKeyRepo) FindAPIKeyByMaskID(ctx context.Context, maskID string) (*datastore.APIKey, error) {
 	apiKey := new(datastore.APIKey)
-	err := db.client.FindOne(ctx, bson.M{"mask_id": maskID}).Decode(apiKey)
+
+	filter := bson.M{
+		"mask_id":         maskID,
+		"document_status": datastore.ActiveDocumentStatus,
+	}
+
+	err := db.client.FindOne(ctx, filter).Decode(apiKey)
 
 	if errors.Is(err, mongo.ErrNoDocuments) {
 		err = datastore.ErrAPIKeyNotFound
@@ -85,16 +101,24 @@ func (db *apiKeyRepo) RevokeAPIKeys(ctx context.Context, uids []string) error {
 
 func (db *apiKeyRepo) FindAPIKeyByHash(ctx context.Context, hash string) (*datastore.APIKey, error) {
 	apiKey := &datastore.APIKey{}
-	err := db.client.FindOne(ctx, bson.M{"hash": hash}).Decode(apiKey)
+
+	filter := bson.M{
+		"hash":            hash,
+		"document_status": datastore.ActiveDocumentStatus,
+	}
+
+	err := db.client.FindOne(ctx, filter).Decode(apiKey)
+	if errors.Is(err, mongo.ErrNoDocuments) {
+		err = datastore.ErrAPIKeyNotFound
+	}
+
 	return apiKey, err
 }
 
 func (db *apiKeyRepo) LoadAPIKeysPaged(ctx context.Context, pageable *datastore.Pageable) ([]datastore.APIKey, datastore.PaginationData, error) {
 	var apiKeys []datastore.APIKey
 
-	filter := bson.M{"$or": bson.A{
-		bson.M{"document_status": datastore.ActiveDocumentStatus},
-	}}
+	filter := bson.M{"document_status": datastore.ActiveDocumentStatus}
 
 	paginatedData, err := pager.
 		New(db.client).
