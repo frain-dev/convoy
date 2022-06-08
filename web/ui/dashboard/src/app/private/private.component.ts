@@ -14,7 +14,7 @@ export class PrivateComponent implements OnInit {
 	showOrgDropdown = false;
 	showMoreDropdown = false;
 	showOverlay = false;
-    showAddOrganisationModal = false;
+  showAddOrganisationModal = false;
 	apiURL = this.generalService.apiURL();
 	organisations!: ORGANIZATION_DATA[];
 	userOrganization!: ORGANIZATION_DATA;
@@ -68,8 +68,9 @@ export class PrivateComponent implements OnInit {
 		this.showOrgDropdown = false;
 	}
 
-    closeAddOrganisationModal() {
+  closeAddOrganisationModal() {
 		this.showAddOrganisationModal = false;
 		this.getOrganizations();
 	}
+
 }

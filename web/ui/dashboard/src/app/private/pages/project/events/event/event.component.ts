@@ -1,6 +1,4 @@
-import { DatePipe } from '@angular/common';
 import { Component, ElementRef, EventEmitter, Input, OnInit, Output, ViewChild } from '@angular/core';
-import { FormBuilder, FormGroup } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
 import { format } from 'date-fns';
 import { fromEvent, Observable } from 'rxjs';
@@ -9,6 +7,7 @@ import { APP } from 'src/app/models/app.model';
 import { EVENT, EVENT_DELIVERY } from 'src/app/models/event.model';
 import { PAGINATION } from 'src/app/models/global.model';
 import { HTTP_RESPONSE } from 'src/app/models/http.model';
+import { DateFilterComponent } from 'src/app/private/components/date-filter/date-filter.component';
 import { TimeFilterComponent } from 'src/app/private/components/time-filter/time-filter.component';
 import { GeneralService } from 'src/app/services/general/general.service';
 import { EventsService } from '../events.service';
@@ -22,14 +21,11 @@ export class EventComponent implements OnInit {
 	@Input() activeTab!: string;
 	@Output() getEventDeliveries = new EventEmitter<string>();
 	@Output() pushEvents = new EventEmitter<any>();
-	eventsFilterDateRange: FormGroup = this.formBuilder.group({
-		startDate: [{ value: '', disabled: true }],
-		endDate: [{ value: '', disabled: true }]
-	});
+	eventsDateFilterFromURL: { startDate: string | Date; endDate: string | Date } = { startDate: '', endDate: '' };
 	eventsTableHead: string[] = ['Event Type', 'App Name', 'Time Created', ''];
 	dateOptions = ['Last Year', 'Last Month', 'Last Week', 'Yesterday'];
-	eventsSearchString!: string;
-	eventApp!: string;
+	eventsSearchString?: string;
+	eventApp?: string;
 	showEventFilterCalendar: boolean = false;
 	showOverlay: boolean = false;
 	showEventsAppsDropdown: boolean = false;
@@ -52,16 +48,10 @@ export class EventComponent implements OnInit {
 	eventsTimeFilterData: { startTime: string; endTime: string } = { startTime: 'T00:00:00', endTime: 'T23:59:59' };
 	@ViewChild('eventsTimeFilter', { static: true }) eventsTimerFilter!: TimeFilterComponent;
 	@ViewChild('eventsAppsFilter', { static: true }) eventsAppsFilter!: ElementRef;
+	@ViewChild(DateFilterComponent) dateFilterComponent!: DateFilterComponent;
 	eventsAppsFilter$!: Observable<APP[]>;
 
-	constructor(
-		private formBuilder: FormBuilder,
-		private eventsService: EventsService,
-		private datePipe: DatePipe,
-		private generalService: GeneralService,
-		private route: ActivatedRoute,
-		private router: Router
-	) {}
+	constructor(private eventsService: EventsService, private generalService: GeneralService, private route: ActivatedRoute, private router: Router) {}
 
 	async ngOnInit() {
 		this.getFiltersFromURL();
@@ -78,13 +68,9 @@ export class EventComponent implements OnInit {
 		);
 	}
 
-	async clearEventFilters(filterType?: 'eventsDate' | 'eventsApp' | 'eventsSearch') {
+	clearEventFilters(filterType?: 'eventsDate' | 'eventsApp' | 'eventsSearch') {
 		const activeFilters = Object.assign({}, this.route.snapshot.queryParams);
 		let filterItems: string[] = [];
-
-		this.eventApp = '';
-		this.eventsFilterDateRange.patchValue({ startDate: '', endDate: '' });
-		this.eventsSearchString = '';
 
 		switch (filterType) {
 			case 'eventsApp':
@@ -100,13 +86,16 @@ export class EventComponent implements OnInit {
 				filterItems = ['eventsStartDate', 'eventsEndDate', 'eventsApp', 'eventsSearch'];
 				break;
 		}
-		this.eventsFilterDateRange.patchValue({ startDate: '', endDate: '' });
+
+		this.dateFilterComponent.dateRange.patchValue({ startDate: '', endDate: '' });
+		this.eventsDateFilterFromURL = { startDate: '', endDate: '' };
 		this.eventsTimeFilterData = { startTime: 'T00:00:00', endTime: 'T23:59:59' };
+		this.eventApp = undefined;
+		this.eventsSearchString = undefined;
 		this.eventsTimerFilter.clearFilter();
-		this.getEvents();
 
 		filterItems.forEach(key => (activeFilters.hasOwnProperty(key) ? delete activeFilters[key] : null));
-		await this.router.navigate([], { relativeTo: this.route, queryParams: activeFilters });
+		this.router.navigate([], { relativeTo: this.route, queryParams: activeFilters });
 	}
 
 	async getAppsForFilter(search: string): Promise<APP[]> {
@@ -118,16 +107,13 @@ export class EventComponent implements OnInit {
 	updateAppFilter(appId: string, isChecked: any) {
 		this.showOverlay = false;
 		this.showEventsAppsDropdown = !this.showEventsAppsDropdown;
-		isChecked.target.checked ? (this.eventApp = appId) : (this.eventApp = '');
+		isChecked.target.checked ? (this.eventApp = appId) : (this.eventApp = undefined);
 
 		this.getEvents({ addToURL: true });
 	}
 
 	getSelectedDateRange(dateRange: { startDate: Date; endDate: Date }) {
-		this.eventsFilterDateRange.patchValue({
-			startDate: dateRange.startDate,
-			endDate: dateRange.endDate
-		});
+		this.eventsDateFilterFromURL = { ...dateRange };
 		this.getEvents({ addToURL: true });
 	}
 
@@ -136,7 +122,7 @@ export class EventComponent implements OnInit {
 		return JSON.stringify(this.eventsDetailsItem?.data || this.eventsDetailsItem?.metadata?.data, null, 4).replaceAll(/"([^"]+)":/g, '$1:');
 	}
 
-	setDateForFilter(requestDetails: { startDate: Date; endDate: Date; startTime?: string; endTime?: string }) {
+	setDateForFilter(requestDetails: { startDate: any; endDate: any; startTime?: string; endTime?: string }) {
 		if (!requestDetails.endDate && !requestDetails.startDate) return { startDate: '', endDate: '' };
 		const startDate = requestDetails.startDate ? `${format(requestDetails.startDate, 'yyyy-MM-dd')}${requestDetails?.startTime || 'T00:00:00'}` : '';
 		const endDate = requestDetails.endDate ? `${format(requestDetails.endDate, 'yyyy-MM-dd')}${requestDetails?.endTime || 'T23:59:59'}` : '';
@@ -172,21 +158,22 @@ export class EventComponent implements OnInit {
 		const filters = this.route.snapshot.queryParams;
 		if (Object.keys(filters).length == 0) return;
 
-		this.eventsFilterDateRange.patchValue({ startDate: filters.eventsStartDate ? new Date(filters.eventsStartDate) : '', endDate: filters.eventsEndDate ? new Date(filters.eventsEndDate) : '' });
-		this.eventApp = filters.eventsApp ?? '';
-		this.eventsSearchString = filters.eventsSearch ?? '';
+		this.eventsDateFilterFromURL = { startDate: filters.eventsStartDate ? new Date(filters.eventsStartDate) : '', endDate: filters.eventsEndDate ? new Date(filters.eventsEndDate) : '' };
+		this.eventApp = filters.eventsApp ?? undefined;
+		this.eventsSearchString = filters.eventsSearch ?? undefined;
 		const eventsTimeFilter = this.setTimeFilterData({ startDate: filters?.eventsStartDate, endDate: filters?.eventsEndDate });
 		this.eventsTimeFilterData = { ...eventsTimeFilter };
 	}
+
 	addFilterToURL() {
 		const currentURLfilters = this.route.snapshot.queryParams;
 		const queryParams: any = {};
 
-		const { startDate, endDate } = this.setDateForFilter({ ...this.eventsFilterDateRange.value, ...this.eventsTimeFilterData });
+		const { startDate, endDate } = this.setDateForFilter({ ...this.eventsDateFilterFromURL, ...this.eventsTimeFilterData });
 		if (startDate) queryParams.eventsStartDate = startDate;
 		if (endDate) queryParams.eventsEndDate = endDate;
 		if (this.eventApp) queryParams.eventsApp = this.eventApp;
-		if (this.eventsSearchString) queryParams.eventsSearch = this.eventsSearchString;
+		queryParams.eventsSearch = this.eventsSearchString;
 
 		this.router.navigate([], { queryParams: Object.assign({}, currentURLfilters, queryParams) });
 	}
@@ -197,7 +184,7 @@ export class EventComponent implements OnInit {
 		if (requestDetails?.addToURL) this.addFilterToURL();
 
 		if (this.eventsSearchString) this.displayedEvents = [];
-		const { startDate, endDate } = this.setDateForFilter({ ...this.eventsFilterDateRange.value, ...this.eventsTimeFilterData });
+		const { startDate, endDate } = this.setDateForFilter({ ...this.eventsDateFilterFromURL, ...this.eventsTimeFilterData });
 
 		try {
 			const eventsResponse = await this.eventsService.getEvents({

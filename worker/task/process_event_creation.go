@@ -24,6 +24,7 @@ func ProcessEventCreated(appRepo datastore.ApplicationRepository, eventRepo data
 		if err != nil {
 			return &EndpointError{Err: err, delay: defaultDelay}
 		}
+		event.DocumentStatus = datastore.ActiveDocumentStatus
 
 		var group *datastore.Group
 		var subscriptions []datastore.Subscription

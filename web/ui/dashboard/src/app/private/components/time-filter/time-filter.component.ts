@@ -37,7 +37,13 @@ export class TimeFilterComponent implements OnInit {
 		this.showDropdown = false;
 	}
 
-	clearFilter() {
+	filterIsActive(): boolean {
+		return !(this.filterStartHour === 0 && this.filterStartMinute === 0 && this.filterEndHour === 23 && this.filterEndMinute === 59);
+	}
+
+	clearFilter(event?: any) {
+		event?.stopPropagation();
+
 		this.filterStartHour = 0;
 		this.filterEndHour = 23;
 		this.filterStartMinute = 0;
