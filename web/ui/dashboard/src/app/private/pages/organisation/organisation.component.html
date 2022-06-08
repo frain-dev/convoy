@@ -8,10 +8,10 @@
 				<li class="sidemenu--item font__14px" [ngClass]="{ active: activePage === 'general settings' }">
 					<button (click)="activePage = 'general settings'" class="button__clear">General Settings</button>
 				</li>
-				
-				<!-- <li class="sidemenu--item font__14px" [ngClass]="{ active: activePage === 'danger zone' }">
+
+				<li class="sidemenu--item font__14px" [ngClass]="{ active: activePage === 'danger zone' }">
 					<button (click)="activePage = 'danger zone'" class="button__clear">Danger Zone</button>
-				</li> -->
+				</li>
 				<hr class="border__top" />
 				<li class="sidemenu--item font__14px color__danger font-weight__600" (click)="logout()">
 					<a href="">Logout</a>
@@ -38,12 +38,12 @@
 					</div>
 				</form>
 			</ng-container>
-			
-			<!-- <ng-container *ngIf="activePage === 'danger zone'">
-				<h2 class="color__danger margin-bottom__8px">Danger zone</h2>
-				<p class="color__grey font__14px">Deactivating your account means you will lose all workspaces created by you and all your every other account information.</p>
-				<button class="button button__white margin-top__20px" (click)="showDeactivateAccountModal = !showDeactivateAccountModal">Deactivate Account</button>
-			</ng-container> -->
+
+			<ng-container *ngIf="activePage === 'danger zone'">
+				<h3 class="color__danger margin-bottom__8px">Danger zone</h3>
+				<p class="color__grey font__14px">Deleting your organisation means you will lose all workspaces created by you and all your every other organisation information.</p>
+				<button class="button button__danger button__small margin-top__20px" [disabled]="isDeletingOrganisation" (click)="deleteOrganisation()">Delete Organisation</button>
+			</ng-container>
 		</div>
 	</div>
 </div>

@@ -10,9 +10,10 @@ import { OrganisationService } from './organisation.service';
 	styleUrls: ['./organisation.component.scss']
 })
 export class OrganisationComponent implements OnInit {
-	activePage: 'general settings' | 'billing' = 'general settings';
+	activePage: 'general settings' | 'danger zone' = 'general settings';
 	showDeactivateAccountModal = false;
 	isEditingOrganisation = false;
+	isDeletingOrganisation = false;
 	organisationId!: string;
 	editOrganisationForm: FormGroup = this.formBuilder.group({
 		name: ['', Validators.required]
@@ -62,6 +63,23 @@ export class OrganisationComponent implements OnInit {
 			this.editOrganisationForm.patchValue({
 				name: organisationDetails.name
 			});
+		}
+	}
+
+	async deleteOrganisation() {
+		this.isDeletingOrganisation = true;
+		try {
+			const response = await this.organisationService.deleteOrganisation({ org_id: this.organisationId });
+			if (response.status == true) {
+				this.generalService.showNotification({ style: 'success', message: response.message });
+				localStorage.removeItem('ORG_DETAILS');
+				this.router.navigateByUrl('/').then(() => {
+					window.location.reload();
+				});
+			}
+			this.isDeletingOrganisation = false;
+		} catch {
+			this.isDeletingOrganisation = false;
 		}
 	}
 }

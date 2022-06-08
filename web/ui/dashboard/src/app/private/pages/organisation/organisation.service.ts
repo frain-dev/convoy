@@ -21,12 +21,24 @@ export class OrganisationService {
 		}
 	}
 
-
 	async logout(): Promise<HTTP_RESPONSE> {
 		try {
 			const response = await this.http.request({
 				url: '/auth/logout',
 				method: 'post',
+				body: null
+			});
+			return response;
+		} catch (error: any) {
+			return error;
+		}
+	}
+
+	async deleteOrganisation(requestDetails: { org_id: string }): Promise<HTTP_RESPONSE> {
+		try {
+			const response = await this.http.request({
+				url: `/organisations/${requestDetails.org_id}`,
+				method: 'delete',
 				body: null
 			});
 			return response;
