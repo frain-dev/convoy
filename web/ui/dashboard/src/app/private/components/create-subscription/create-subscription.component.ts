@@ -74,12 +74,10 @@ export class CreateSubscriptionComponent implements OnInit {
 	}
 
 	async createSubscription() {
-		console.log(this.subscriptonForm.value);
 		if (this.subscriptonForm.invalid) return this.subscriptonForm.markAllAsTouched();
 
 		try {
 			const response = await this.createSubscriptionService.createSubscription(this.subscriptonForm.value);
-			this.router.navigateByUrl('/projects/' + this.privateService.activeProjectId + '/subscriptions');
 		} catch (error) {
 			console.log(error);
 		}

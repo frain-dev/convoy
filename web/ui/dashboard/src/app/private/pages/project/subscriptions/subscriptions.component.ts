@@ -39,4 +39,8 @@ export class SubscriptionsComponent implements OnInit {
 			this.isLoadindingSubscriptions = false;
 		}
 	}
+
+	closeModal() {
+		this.router.navigateByUrl('/projects/' + this.privateService.activeProjectId + '/subscriptions');
+	}
 }
