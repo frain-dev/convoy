@@ -20,6 +20,7 @@ import (
 	"github.com/frain-dev/convoy/config"
 	"github.com/frain-dev/convoy/datastore"
 	limiter "github.com/frain-dev/convoy/limiter"
+	"github.com/frain-dev/convoy/notification"
 	"github.com/frain-dev/convoy/queue"
 	"github.com/go-chi/chi/v5/middleware"
 
@@ -247,6 +248,7 @@ func buildRoutes(app *applicationHandler) http.Handler {
 
 		uiRouter.Route("/organisations", func(orgRouter chi.Router) {
 			orgRouter.Use(requireAuthUserMetadata())
+			orgRouter.Use(requireBaseUrl())
 
 			orgRouter.Post("/", app.CreateOrganisation)
 			orgRouter.With(pagination).Get("/", app.GetOrganisationsPaged)
@@ -478,6 +480,7 @@ func New(cfg config.Configuration,
 	orgInviteRepo datastore.OrganisationInviteRepository,
 	sourceRepo datastore.SourceRepository,
 	userRepo datastore.UserRepository,
+	em notification.Sender,
 	queue queue.Queuer,
 	logger logger.Logger,
 	tracer tracer.Tracer,
@@ -498,6 +501,7 @@ func New(cfg config.Configuration,
 		orgMemberRepo,
 		orgInviteRepo,
 		userRepo,
+		em,
 		queue,
 		logger,
 		tracer,
