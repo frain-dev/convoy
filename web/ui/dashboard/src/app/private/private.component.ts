@@ -19,7 +19,7 @@ export class PrivateComponent implements OnInit {
 	organisations!: ORGANIZATION_DATA[];
 	userOrganization!: ORGANIZATION_DATA;
 
-	constructor(private generalService: GeneralService, private router: Router, private privateService:PrivateService) {}
+	constructor(private generalService: GeneralService, private router: Router, private privateService: PrivateService) {}
 
 	ngOnInit() {
 		this.getOrganizations();
@@ -36,16 +36,7 @@ export class PrivateComponent implements OnInit {
 		return authDetails ? JSON.parse(authDetails) : false;
 	}
 
-	requestToken(): string {
-		if (this.authDetails()) {
-			const { username, password } = this.authDetails();
-			return btoa(`${username + ':' + password}`);
-		} else {
-			return '';
-		}
-	}
-
-    async getOrganizations() {
+	async getOrganizations() {
 		try {
 			const response = await this.privateService.getOrganizations();
 			this.organisations = response.data.content;
@@ -55,7 +46,9 @@ export class PrivateComponent implements OnInit {
 			} else {
 				this.userOrganization = JSON.parse(setOrg);
 			}
-		} catch (error) {}
+		} catch (error) {
+			return error;
+		}
 	}
 
 	selectOrganisation(organisation: ORGANIZATION_DATA) {
