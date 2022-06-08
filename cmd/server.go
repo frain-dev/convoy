@@ -2,16 +2,17 @@ package main
 
 import (
 	"errors"
+	"fmt"
 	"time"
 
 	"github.com/frain-dev/convoy"
 	"github.com/frain-dev/convoy/auth/realm_chain"
-	"github.com/frain-dev/convoy/worker"
-	"github.com/frain-dev/convoy/worker/task"
-
 	"github.com/frain-dev/convoy/config"
+	"github.com/frain-dev/convoy/notification/email"
 	"github.com/frain-dev/convoy/server"
 	"github.com/frain-dev/convoy/util"
+	"github.com/frain-dev/convoy/worker"
+	"github.com/frain-dev/convoy/worker/task"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 )
@@ -154,6 +155,11 @@ func StartConvoyServer(a *app, cfg config.Configuration, withWorkers bool) error
 		return errors.New("please provide the HTTP port in the convoy.json file")
 	}
 
+	em, err := email.NewEmailNotificationSender(&cfg.SMTP)
+	if err != nil {
+		return fmt.Errorf("failed to initialize new email notification sender: %v", err)
+	}
+
 	srv := server.New(
 		cfg,
 		a.eventRepo,
@@ -167,6 +173,7 @@ func StartConvoyServer(a *app, cfg config.Configuration, withWorkers bool) error
 		a.orgInviteRepo,
 		a.sourceRepo,
 		a.userRepo,
+		em,
 		a.queue,
 		a.logger,
 		a.tracer,

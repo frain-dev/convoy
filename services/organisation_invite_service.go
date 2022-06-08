@@ -4,7 +4,10 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"github.com/frain-dev/convoy/notification"
+	"github.com/frain-dev/convoy/notification/email"
 	"net/http"
+	"strings"
 	"time"
 
 	"github.com/dchest/uniuri"
@@ -17,17 +20,24 @@ import (
 )
 
 type OrganisationInviteService struct {
+	em            notification.Sender
 	orgRepo       datastore.OrganisationRepository
 	userRepo      datastore.UserRepository
 	orgMemberRepo datastore.OrganisationMemberRepository
 	orgInviteRepo datastore.OrganisationInviteRepository
 }
 
-func NewOrganisationInviteService(orgRepo datastore.OrganisationRepository, userRepo datastore.UserRepository, orgMemberRepo datastore.OrganisationMemberRepository, orgInviteRepo datastore.OrganisationInviteRepository) *OrganisationInviteService {
-	return &OrganisationInviteService{orgRepo: orgRepo, userRepo: userRepo, orgMemberRepo: orgMemberRepo, orgInviteRepo: orgInviteRepo}
+func NewOrganisationInviteService(orgRepo datastore.OrganisationRepository, userRepo datastore.UserRepository, orgMemberRepo datastore.OrganisationMemberRepository, orgInviteRepo datastore.OrganisationInviteRepository, em notification.Sender) *OrganisationInviteService {
+	return &OrganisationInviteService{
+		em:            em,
+		orgRepo:       orgRepo,
+		userRepo:      userRepo,
+		orgMemberRepo: orgMemberRepo,
+		orgInviteRepo: orgInviteRepo,
+	}
 }
 
-func (ois *OrganisationInviteService) CreateOrganisationMemberInvite(ctx context.Context, org *datastore.Organisation, newIV *models.OrganisationInvite) (*datastore.OrganisationInvite, error) {
+func (ois *OrganisationInviteService) CreateOrganisationMemberInvite(ctx context.Context, newIV *models.OrganisationInvite, org *datastore.Organisation, user *datastore.User, baseURL string) (*datastore.OrganisationInvite, error) {
 	err := util.Validate(newIV)
 	if err != nil {
 		return nil, NewServiceError(http.StatusBadRequest, err)
@@ -52,12 +62,27 @@ func (ois *OrganisationInviteService) CreateOrganisationMemberInvite(ctx context
 		UpdatedAt:      primitive.NewDateTimeFromTime(time.Now()),
 	}
 
-	// TODO(daniel): send invite link to the invitee's email
-
 	err = ois.orgInviteRepo.CreateOrganisationInvite(ctx, iv)
 	if err != nil {
 		log.WithError(err).Error("failed to create organisation member invite")
 		return nil, NewServiceError(http.StatusBadRequest, errors.New("failed to create organisation member invite"))
+	}
+
+	if !strings.HasSuffix(baseURL, "/") {
+		baseURL += "/"
+	}
+
+	n := &notification.Notification{
+		Email:             iv.InviteeEmail,
+		EmailTemplateName: email.TemplateOrganisationInvite.String(),
+		InviteURL:         fmt.Sprintf("%s/ui/organisations/process_invite?token=%s", baseURL, iv.Token),
+		OrganisationName:  org.Name,
+		InviterName:       fmt.Sprintf("%s %s", user.FirstName, user.LastName),
+	}
+
+	err = ois.em.SendNotification(ctx, n)
+	if err != nil {
+		return nil, fmt.Errorf("failed to send email notification: %v", err)
 	}
 
 	return iv, nil
