@@ -68,9 +68,9 @@
 	</section>
 
 	<div class="button-container flex flex__justify-end margin-top__32px">
-		<button class="button button__white padding-y__12px padding-x__28px rounded__8px margin-right__16px" type="button">Cancel</button>
+		<button class="button button__white padding-y__12px padding-x__28px rounded__8px margin-right__16px" type="button" (click)="onAction.emit({ action: 'cancel' })">Cancel</button>
 
-		<button class="button button__primary button--has-icon padding-y__12px rounded__8px" type="submit">
+		<button class="button button__primary button--has-icon padding-y__12px rounded__8px" type="submit" [disabled]="isCreatingSubscription">
 			Create Subscription
 			<svg width="24" height="24" class="margin-left__8px" fill="#FCFCFC">
 				<use xlink:href="#arrow-right-icon"></use>

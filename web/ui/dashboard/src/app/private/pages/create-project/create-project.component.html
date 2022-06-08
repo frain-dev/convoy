@@ -60,5 +60,7 @@
 		<app-create-source *ngIf="projectStage === 'createSource'"></app-create-source>
 
 		<app-create-app *ngIf="projectStage === 'createApplication'" (discardApp)="cancel()" (createApp)="projectStage = 'createSubscription'"></app-create-app>
+
+		<app-create-subscription (onAction)="cancel()"></app-create-subscription>
 	</div>
 </div>

@@ -1,4 +1,4 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, EventEmitter, OnInit, Output } from '@angular/core';
 import { FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { Router } from '@angular/router';
 import { APP, ENDPOINT } from 'src/app/models/app.model';
@@ -26,6 +26,8 @@ export class CreateSubscriptionComponent implements OnInit {
 	endPoints?: ENDPOINT[];
 	showCreateAppModal = false;
 	showCreateSourceModal = false;
+	isCreatingSubscription = false;
+	@Output() onAction = new EventEmitter();
 
 	constructor(private formBuilder: FormBuilder, private privateService: PrivateService, private createSubscriptionService: CreateSubscriptionService, private router: Router) {}
 
@@ -75,11 +77,14 @@ export class CreateSubscriptionComponent implements OnInit {
 
 	async createSubscription() {
 		if (this.subscriptonForm.invalid) return this.subscriptonForm.markAllAsTouched();
+		this.isCreatingSubscription = true;
 
 		try {
 			const response = await this.createSubscriptionService.createSubscription(this.subscriptonForm.value);
+			this.isCreatingSubscription = false;
+			this.onAction.emit(response.data);
 		} catch (error) {
-			console.log(error);
+			this.isCreatingSubscription = false;
 		}
 	}
 
