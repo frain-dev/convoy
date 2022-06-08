@@ -179,6 +179,8 @@ export class EventComponent implements OnInit {
 	}
 
 	async getEvents(requestDetails?: { appId?: string; addToURL?: boolean; page?: number }): Promise<HTTP_RESPONSE> {
+		this.isloadingEvents = true;
+
 		const page = requestDetails?.page || this.route.snapshot.queryParams.page || 1;
 		if (requestDetails?.appId) this.eventApp = requestDetails.appId;
 		if (requestDetails?.addToURL) this.addFilterToURL();

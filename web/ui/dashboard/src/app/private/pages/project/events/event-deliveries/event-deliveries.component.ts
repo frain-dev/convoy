@@ -83,6 +83,7 @@ export class EventDeliveriesComponent implements OnInit {
 		const page = requestDetails?.page || this.route.snapshot.queryParams.page || 1;
 		if (requestDetails?.addToURL) this.addFilterToURL();
 		const { startDate, endDate } = this.setDateForFilter({ ...this.dateFiltersFromURL, ...this.eventDelsTimeFilterData });
+		this.isloadingEventDeliveries = true;
 
 		try {
 			const eventDeliveriesResponse = await this.eventDeliveriesRequest({ pageNo: page, eventId: this.eventDeliveryFilteredByEventId, startDate, endDate });

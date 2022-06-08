@@ -53,11 +53,8 @@ export class AppsComponent implements OnInit {
 		this.selectedAppStatus = status;
 	}
 
-	openUpdateAppModal(app: APP) {
-		this.currentAppId = '';
-	}
-
-	loadEventsFromAppsTable(appId: string) {
+	loadEventsFromAppsTable(event: any, appId: string) {
+		event.stopPropagation();
 		const projectId = this.privateService.activeProjectId;
 		this.router.navigate(['/projects/' + projectId + '/events'], { queryParams: { eventsApp: appId } });
 	}
@@ -75,8 +72,6 @@ export class AppsComponent implements OnInit {
 			this.appsDetailsItem = this.apps?.content[0];
 
 			if (!this.filteredApps) this.filteredApps = appsResponse.data.content;
-
-			// if (this.updateAppDetail) this.appsDetailsItem = this.apps.content.find(item => this.appsDetailsItem?.uid == item.uid);
 
 			this.isloadingApps = false;
 			return appsResponse;
