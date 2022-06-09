@@ -119,6 +119,18 @@ func TestCreateOrganisationMember(t *testing.T) {
 	db, closeFn := getDB(t)
 	defer closeFn()
 
+	user := &datastore.User{
+		UID:            uuid.NewString(),
+		FirstName:      fmt.Sprintf("test-%s", uuid.NewString()),
+		LastName:       fmt.Sprintf("test-%s", uuid.NewString()),
+		Email:          fmt.Sprintf("test-%s", uuid.NewString()),
+		Password:       fmt.Sprintf("test-%s", uuid.NewString()),
+		CreatedAt:      primitive.NewDateTimeFromTime(time.Now()),
+		UpdatedAt:      primitive.NewDateTimeFromTime(time.Now()),
+		DocumentStatus: datastore.ActiveDocumentStatus,
+	}
+	require.NoError(t, NewUserRepo(db).CreateUser(context.Background(), user))
+
 	organisationMemberRepo := NewOrgMemberRepo(db)
 
 	m := &datastore.OrganisationMember{
@@ -140,11 +152,29 @@ func TestCreateOrganisationMember(t *testing.T) {
 	require.Equal(t, m.UID, member.UID)
 	require.Equal(t, m.OrganisationID, member.OrganisationID)
 	require.Equal(t, m.UserID, member.UserID)
+	require.Equal(t, datastore.UserMetadata{
+		UserID:    user.UID,
+		FirstName: user.FirstName,
+		LastName:  user.LastName,
+		Email:     user.Email,
+	}, member.UserMetadata)
 }
 
 func TestUpdateOrganisationMember(t *testing.T) {
 	db, closeFn := getDB(t)
 	defer closeFn()
+
+	user := &datastore.User{
+		UID:            uuid.NewString(),
+		FirstName:      fmt.Sprintf("test-%s", uuid.NewString()),
+		LastName:       fmt.Sprintf("test-%s", uuid.NewString()),
+		Email:          fmt.Sprintf("test-%s", uuid.NewString()),
+		Password:       fmt.Sprintf("test-%s", uuid.NewString()),
+		CreatedAt:      primitive.NewDateTimeFromTime(time.Now()),
+		UpdatedAt:      primitive.NewDateTimeFromTime(time.Now()),
+		DocumentStatus: datastore.ActiveDocumentStatus,
+	}
+	require.NoError(t, NewUserRepo(db).CreateUser(context.Background(), user))
 
 	organisationMemberRepo := NewOrgMemberRepo(db)
 
@@ -176,6 +206,12 @@ func TestUpdateOrganisationMember(t *testing.T) {
 
 	require.Equal(t, m.UID, member.UID)
 	require.Equal(t, role, member.Role)
+	require.Equal(t, datastore.UserMetadata{
+		UserID:    user.UID,
+		FirstName: user.FirstName,
+		LastName:  user.LastName,
+		Email:     user.Email,
+	}, member.UserMetadata)
 }
 
 func TestDeleteOrganisationMember(t *testing.T) {

@@ -105,13 +105,11 @@ func (s *OrganisationMemberIntegrationTestSuite) Test_GetOrganisationMembers() {
 
 	metadata := []datastore.UserMetadata{
 		{
-			UserID:    s.DefaultUser.UID,
 			FirstName: s.DefaultUser.FirstName,
 			LastName:  s.DefaultUser.LastName,
 			Email:     s.DefaultUser.Email,
 		},
 		{
-			UserID:    user.UID,
 			FirstName: user.FirstName,
 			LastName:  user.LastName,
 			Email:     user.Email,
@@ -159,7 +157,6 @@ func (s *OrganisationMemberIntegrationTestSuite) Test_GetOrganisationMember() {
 	require.Equal(s.T(), member.UserID, m.UserID)
 
 	require.Equal(s.T(), datastore.UserMetadata{
-		UserID:    user.UID,
 		FirstName: user.FirstName,
 		LastName:  user.LastName,
 		Email:     user.Email,
