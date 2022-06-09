@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/base64"
 	"errors"
+	"strings"
 
 	"github.com/dukex/mixpanel"
 	"github.com/frain-dev/convoy/config"
@@ -13,14 +14,18 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
+type AnalyticsSource string
+
 const (
-	DailyEventCount        string = "Daily Event Count"
-	DailyOrganisationCount string = "Daily Organization Count"
-	DailyGroupCount        string = "Daily Project Count"
-	DailyActiveGroupCount  string = "Daily Active Project Count"
-	DailyUserCount         string = "Daily User Count"
-	MixPanelDevToken       string = "YTAwYWI1ZWE3OTE2MzQwOWEwMjk4ZTA1NTNkNDQ0M2M="
-	MixPanelProdToken      string = "YWViNzUwYWRmYjM0YTZmZjJkMzg2YTYyYWVhY2M2NWI="
+	DailyEventCount        string          = "Daily Event Count"
+	DailyOrganisationCount string          = "Daily Organization Count"
+	DailyGroupCount        string          = "Daily Project Count"
+	DailyActiveGroupCount  string          = "Daily Active Project Count"
+	DailyUserCount         string          = "Daily User Count"
+	MixPanelDevToken       string          = "YTAwYWI1ZWE3OTE2MzQwOWEwMjk4ZTA1NTNkNDQ0M2M="
+	MixPanelProdToken      string          = "YWViNzUwYWRmYjM0YTZmZjJkMzg2YTYyYWVhY2M2NWI="
+	OSSAnalyticsSource     AnalyticsSource = "OSS"
+	CloudAnalyticsSource   AnalyticsSource = "Cloud"
 )
 
 type Tracker interface {
@@ -48,6 +53,7 @@ type Analytics struct {
 	Repo     *Repo
 	trackers analyticsMap
 	client   AnalyticsClient
+	source   AnalyticsSource
 }
 
 func newAnalytics(Repo *Repo, cfg config.Configuration) (*Analytics, error) {
@@ -58,6 +64,7 @@ func newAnalytics(Repo *Repo, cfg config.Configuration) (*Analytics, error) {
 
 	a := &Analytics{Repo: Repo, client: client}
 
+	a.RegisterSource(cfg)
 	a.RegisterTrackers()
 	return a, nil
 }
@@ -101,13 +108,21 @@ func (a *Analytics) trackDailyAnalytics() {
 
 func (a *Analytics) RegisterTrackers() {
 	a.trackers = analyticsMap{
-		DailyEventCount:        newEventAnalytics(a.Repo.EventRepo, a.client),
-		DailyOrganisationCount: newOrganisationAnalytics(a.Repo.OrgRepo, a.client),
-		DailyGroupCount:        newGroupAnalytics(a.Repo.GroupRepo, a.client),
-		DailyActiveGroupCount:  newActiveGroupAnalytics(a.Repo.GroupRepo, a.Repo.EventRepo, a.client),
-		DailyUserCount:         newUserAnalytics(a.Repo.UserRepo, a.client),
+		DailyEventCount:        newEventAnalytics(a.Repo.EventRepo, a.Repo.GroupRepo, a.Repo.OrgRepo, a.client, a.source),
+		DailyOrganisationCount: newOrganisationAnalytics(a.Repo.OrgRepo, a.client, a.source),
+		DailyGroupCount:        newGroupAnalytics(a.Repo.GroupRepo, a.client, a.source),
+		DailyActiveGroupCount:  newActiveGroupAnalytics(a.Repo.GroupRepo, a.Repo.EventRepo, a.client, a.source),
+		DailyUserCount:         newUserAnalytics(a.Repo.UserRepo, a.client, a.source),
 	}
 
+}
+
+func (a *Analytics) RegisterSource(cfg config.Configuration) {
+	a.source = OSSAnalyticsSource
+
+	if strings.Contains(strings.ToLower(cfg.BaseUrl), "cloud.getconvoy.io") {
+		a.source = CloudAnalyticsSource
+	}
 }
 
 type MixPanelClient struct {

@@ -9,10 +9,15 @@ import (
 type OrganisationAnalytics struct {
 	orgRepo datastore.OrganisationRepository
 	client  AnalyticsClient
+	source  AnalyticsSource
 }
 
-func newOrganisationAnalytics(orgRepo datastore.OrganisationRepository, client AnalyticsClient) *OrganisationAnalytics {
-	return &OrganisationAnalytics{orgRepo: orgRepo, client: client}
+func newOrganisationAnalytics(orgRepo datastore.OrganisationRepository, client AnalyticsClient, source AnalyticsSource) *OrganisationAnalytics {
+	return &OrganisationAnalytics{
+		orgRepo: orgRepo,
+		client:  client,
+		source:  source,
+	}
 }
 
 func (o *OrganisationAnalytics) Track() error {
@@ -21,7 +26,7 @@ func (o *OrganisationAnalytics) Track() error {
 		return err
 	}
 
-	return o.client.Export(o.Name(), Event{"Count": pagination.Total})
+	return o.client.Export(o.Name(), Event{"Count": pagination.Total, "Source": o.source})
 }
 
 func (o *OrganisationAnalytics) Name() string {

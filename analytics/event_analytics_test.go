@@ -12,9 +12,11 @@ import (
 
 func provideEventAnalytics(ctrl *gomock.Controller) *EventAnalytics {
 	eventRepo := mocks.NewMockEventRepository(ctrl)
+	groupRepo := mocks.NewMockGroupRepository(ctrl)
+	orgRepo := mocks.NewMockOrganisationRepository(ctrl)
 	client := NewNoopAnalyticsClient()
 
-	return newEventAnalytics(eventRepo, client)
+	return newEventAnalytics(eventRepo, groupRepo, orgRepo, client, OSSAnalyticsSource)
 }
 
 func Test_TrackEventAnalytics(t *testing.T) {
@@ -27,7 +29,9 @@ func Test_TrackEventAnalytics(t *testing.T) {
 		{
 			name: "should_track_event_analytics",
 			dbFn: func(ea *EventAnalytics) {
+				groupRepo := ea.groupRepo.(*mocks.MockGroupRepository)
 				eventRepo := ea.eventRepo.(*mocks.MockEventRepository)
+				groupRepo.EXPECT().LoadGroups(gomock.Any(), gomock.Any()).Return([]*datastore.Group{{UID: "123456", Name: "test-group"}}, nil)
 				eventRepo.EXPECT().LoadEventsPaged(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(nil, datastore.PaginationData{}, nil)
 			},
 		},
@@ -35,8 +39,8 @@ func Test_TrackEventAnalytics(t *testing.T) {
 		{
 			name: "should_fail_to_track_event_analytics",
 			dbFn: func(ea *EventAnalytics) {
-				eventRepo := ea.eventRepo.(*mocks.MockEventRepository)
-				eventRepo.EXPECT().LoadEventsPaged(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(nil, datastore.PaginationData{}, errors.New("failed"))
+				groupRepo := ea.groupRepo.(*mocks.MockGroupRepository)
+				groupRepo.EXPECT().LoadGroups(gomock.Any(), gomock.Any()).Return(nil, errors.New("failed"))
 			},
 			wantErr: true,
 		},

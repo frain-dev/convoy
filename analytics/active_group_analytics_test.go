@@ -15,7 +15,7 @@ func provideActiveGroupAnalytics(ctrl *gomock.Controller) *ActiveGroupAnalytics 
 	eventRepo := mocks.NewMockEventRepository(ctrl)
 	client := NewNoopAnalyticsClient()
 
-	return newActiveGroupAnalytics(groupRepo, eventRepo, client)
+	return newActiveGroupAnalytics(groupRepo, eventRepo, client, OSSAnalyticsSource)
 }
 
 func Test_TrackActiveGroupAnalytics(t *testing.T) {
