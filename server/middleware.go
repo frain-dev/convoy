@@ -653,16 +653,6 @@ func requirePermission(role auth.RoleType) func(next http.Handler) http.Handler 
 }
 
 func getAuthFromRequest(r *http.Request) (*auth.Credential, error) {
-	cfg, err := config.Get()
-	if err != nil {
-		log.WithError(err)
-		return nil, err
-	}
-
-	if !cfg.Auth.RequireAuth {
-		return nil, nil
-	}
-
 	val := r.Header.Get("Authorization")
 	authInfo := strings.Split(val, " ")
 

@@ -267,13 +267,14 @@ func (s *DashboardIntegrationTestSuite) TestGetDashboardSummary() {
 	}
 	for _, tc := range tests {
 		s.T().Run(tc.name, func(t *testing.T) {
-			err := config.LoadConfig("./testdata/Auth_Config/none-convoy.json")
+			err := config.LoadConfig("./testdata/Auth_Config/full-convoy.json")
 			if err != nil {
 				t.Errorf("Failed to load config file: %v", err)
 			}
 			initRealmChain(t, s.DB.APIRepo(), s.DB.UserRepo(), s.ConvoyApp.cache)
 
 			req := httptest.NewRequest(tc.method, fmt.Sprintf("/ui/dashboard/summary?startDate=%s&endDate=%s&type=%s&groupId=%s", tc.urlQuery.startDate, tc.urlQuery.endDate, tc.urlQuery.Type, tc.urlQuery.groupID), nil)
+			req.SetBasicAuth("test", "test")
 			w := httptest.NewRecorder()
 
 			s.Router.ServeHTTP(w, req)
