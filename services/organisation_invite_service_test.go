@@ -89,6 +89,23 @@ func TestOrganisationInviteService_CreateOrganisationMemberInvite(t *testing.T) 
 			wantErrMsg:  "invitee_email:please provide a valid invitee email",
 		},
 		{
+			name: "should_error_for_super_user_role",
+			args: args{
+				ctx: ctx,
+				org: &datastore.Organisation{UID: "123"},
+				newIV: &models.OrganisationInvite{
+					InviteeEmail: "test@example.com",
+					Role: auth.Role{
+						Type:   auth.RoleSuperUser,
+						Groups: []string{"abc"},
+					},
+				},
+			},
+			wantErr:     true,
+			wantErrCode: http.StatusBadRequest,
+			wantErrMsg:  "cannot assign super_user role to invited organisation member",
+		},
+		{
 			name: "should_error_for_invalid_role",
 			args: args{
 				ctx: ctx,

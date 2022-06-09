@@ -75,8 +75,28 @@ func (s *OrganisationInviteIntegrationTestSuite) Test_InviteUserToOrganisation()
 	// Arrange.
 	url := fmt.Sprintf("/ui/organisations/%s/invite_user", s.DefaultOrg.UID)
 
-	// TODO(daniel): when the generic mailer is integrated we have to mock it
 	body := strings.NewReader(`{"invitee_email":"test@invite.com","role":{"type":"api", "groups":["123"]}}`)
+	req := createRequest(http.MethodPost, url, body)
+
+	err := s.AuthenticatorFn(req, s.Router)
+	require.NoError(s.T(), err)
+
+	w := httptest.NewRecorder()
+
+	// Act.
+	s.Router.ServeHTTP(w, req)
+
+	// Assert.
+	require.Equal(s.T(), expectedStatusCode, w.Code)
+}
+
+func (s *OrganisationInviteIntegrationTestSuite) Test_InviteUserToOrganisation_SuperuserRole() {
+	expectedStatusCode := http.StatusBadRequest
+
+	// Arrange.
+	url := fmt.Sprintf("/ui/organisations/%s/invite_user", s.DefaultOrg.UID)
+
+	body := strings.NewReader(`{"invitee_email":"test@invite.com","role":{"type":"super_user", "groups":["123"]}}`)
 	req := createRequest(http.MethodPost, url, body)
 
 	err := s.AuthenticatorFn(req, s.Router)

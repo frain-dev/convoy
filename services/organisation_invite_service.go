@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"github.com/frain-dev/convoy/auth"
 	"net/http"
 	"time"
 
@@ -31,6 +32,10 @@ func (ois *OrganisationInviteService) CreateOrganisationMemberInvite(ctx context
 	err := util.Validate(newIV)
 	if err != nil {
 		return nil, NewServiceError(http.StatusBadRequest, err)
+	}
+
+	if newIV.Role.Type.Is(auth.RoleSuperUser) {
+		return nil, NewServiceError(http.StatusBadRequest, errors.New("cannot assign super_user role to invited organisation member"))
 	}
 
 	err = newIV.Role.Validate("organisation member")
