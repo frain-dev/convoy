@@ -70,7 +70,7 @@ func TestLoadOrganisationMembersPaged(t *testing.T) {
 
 	for _, member := range members {
 		m := userMap[member.UserID]
-		require.Equal(t, m, member.UserMetadata)
+		require.Equal(t, *m, *member.UserMetadata)
 	}
 }
 
@@ -157,7 +157,7 @@ func TestCreateOrganisationMember(t *testing.T) {
 		FirstName: user.FirstName,
 		LastName:  user.LastName,
 		Email:     user.Email,
-	}, member.UserMetadata)
+	}, *member.UserMetadata)
 }
 
 func TestUpdateOrganisationMember(t *testing.T) {
