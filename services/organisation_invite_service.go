@@ -72,6 +72,12 @@ func (ois *OrganisationInviteService) CreateOrganisationMemberInvite(ctx context
 		baseURL += "/"
 	}
 
+	go ois.sendInviteEmail(context.Background(), iv, org, user, baseURL)
+
+	return iv, nil
+}
+
+func (ois *OrganisationInviteService) sendInviteEmail(ctx context.Context, iv *datastore.OrganisationInvite, org *datastore.Organisation, user *datastore.User, baseURL string) {
 	n := &notification.Notification{
 		Email:             iv.InviteeEmail,
 		EmailTemplateName: email.TemplateOrganisationInvite.String(),
@@ -80,12 +86,10 @@ func (ois *OrganisationInviteService) CreateOrganisationMemberInvite(ctx context
 		InviterName:       fmt.Sprintf("%s %s", user.FirstName, user.LastName),
 	}
 
-	err = ois.em.SendNotification(ctx, n)
+	err := ois.em.SendNotification(ctx, n)
 	if err != nil {
-		return nil, fmt.Errorf("failed to send email notification: %v", err)
+		log.WithError(err).Error("failed to send email notification")
 	}
-
-	return iv, nil
 }
 
 func (ois *OrganisationInviteService) ProcessOrganisationMemberInvite(ctx context.Context, token string, accepted bool, newUser *models.User) error {
