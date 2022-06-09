@@ -38,7 +38,6 @@ func Test_FindUserByEmail(t *testing.T) {
 	user := generateUser(t)
 
 	_, err := userRepo.FindUserByEmail(context.Background(), user.Email)
-	
 	require.Error(t, err)
 	require.True(t, errors.Is(err, datastore.ErrUserNotFound))
 
@@ -160,6 +159,34 @@ func Test_LoadUsersPaged(t *testing.T) {
 			require.Equal(t, tc.expected.paginationData.Next, pageable.Next)
 		})
 	}
+}
+
+func Test_UpdateUser(t *testing.T) {
+	db, closeFn := getDB(t)
+	defer closeFn()
+
+	userRepo := NewUserRepo(db)
+	user := generateUser(t)
+
+	require.NoError(t, userRepo.CreateUser(context.Background(), user))
+
+	firstName := fmt.Sprintf("test%s", uuid.NewString())
+	lastName := fmt.Sprintf("test%s", uuid.NewString())
+	email := fmt.Sprintf("%s@test.com", uuid.NewString())
+
+	user.FirstName = firstName
+	user.LastName = lastName
+	user.Email = email
+
+	require.NoError(t, userRepo.UpdateUser(context.Background(), user))
+
+	newUser, err := userRepo.FindUserByID(context.Background(), user.UID)
+	require.NoError(t, err)
+
+	require.Equal(t, firstName, newUser.FirstName)
+	require.Equal(t, lastName, newUser.LastName)
+	require.Equal(t, email, newUser.Email)
+
 }
 
 func generateUser(t *testing.T) *datastore.User {
