@@ -54,4 +54,30 @@ export class PrivateService {
 			}
 		});
 	}
+
+	async getOrganizations(): Promise<HTTP_RESPONSE> {
+		try {
+			const response = await this.http.request({
+				url: `/organisations`,
+				method: 'get'
+			});
+			return response;
+		} catch (error: any) {
+			return error;
+		}
+	}
+
+
+	async logout(): Promise<HTTP_RESPONSE> {
+		try {
+			const response = await this.http.request({
+				url: '/auth/logout',
+				method: 'post',
+				body: null
+			});
+			return response;
+		} catch (error: any) {
+			return error;
+		}
+	}
 }

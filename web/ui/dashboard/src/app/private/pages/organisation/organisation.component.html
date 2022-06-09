@@ -1,0 +1,64 @@
+<div class="page">
+	<div class="card flex padding-all__0px">
+		<div class="sidemenu">
+			<div class="border__bottom padding-x__24px padding-top__16px padding-bottom__10px">
+				<h3>Organisation Settings</h3>
+			</div>
+			<ul class="sidemenu--items">
+				<li class="sidemenu--item font__14px" [ngClass]="{ active: activePage === 'general settings' }">
+					<button (click)="activePage = 'general settings'" class="button__clear">General Settings</button>
+				</li>
+
+				<li class="sidemenu--item font__14px" [ngClass]="{ active: activePage === 'danger zone' }">
+					<button (click)="activePage = 'danger zone'" class="button__clear">Danger Zone</button>
+				</li>
+				<hr class="border__top" />
+				<li class="sidemenu--item font__14px color__danger font-weight__600" (click)="logout()">
+					<a href="">Logout</a>
+				</li>
+			</ul>
+		</div>
+
+		<div class="page__small--view">
+			<ng-container *ngIf="activePage === 'general settings'">
+				<div class="flex flex__justify-between flex__align-items-center margin-bottom__28px">
+					<h3>Organisation Info</h3>
+
+					<button class="button button__primary button__small" [disabled]="isEditingOrganisation" (click)="updateOrganisation()">Save Changes</button>
+				</div>
+
+				<form [formGroup]="editOrganisationForm">
+					<div class="input">
+						<label class="margin-bottom__4px" for="organisation-name">Organisation name</label>
+						<input type="text" aria-label="Organization name" formControlName="name" id="organisation-name" />
+						<div class="input__error input__error__danger" *ngIf="editOrganisationForm.controls.name.touched && editOrganisationForm.controls.name.invalid">
+							<img src="assets/img/input-error-icon.svg" alt="input error icon" />
+							<span>Please enter a name for your organisation</span>
+						</div>
+					</div>
+				</form>
+			</ng-container>
+
+			<ng-container *ngIf="activePage === 'danger zone'">
+				<h3 class="color__danger margin-bottom__8px">Danger zone</h3>
+				<p class="color__grey font__14px">Deleting your organisation means you will lose all workspaces created by you and all your every other organisation information.</p>
+				<button class="button button__danger button__small margin-top__20px" (click)="showDeleteModal = !showDeleteModal">Delete Organisation</button>
+			</ng-container>
+		</div>
+	</div>
+</div>
+<div class="_overlay" *ngIf="showDeleteModal" (click)="showDeleteModal = false"></div>
+
+<div class="modal modal__center" *ngIf="showDeleteModal">
+	<div class="modal--body flex flex__column flex__justify-center flex__align-items-center deactivate">
+		<img src="/assets/img/warning.gif" class="img" alt="warning" />
+		<p class="font__20px color__black font__weight-600 margin-bottom__8px margin-top__16px text--center no-width">
+			Are you sure you want to deactivate
+			<span class="text__capitalize font__weight-600">“{{ organisationName }}”</span>
+			?
+		</p>
+		<p class="color__grey font__14px font__weight-500 margin-bottom__12px">This action is irrevesible</p>
+		<button class="button button__deactivate" [disabled]="isDeletingOrganisation" (click)="deleteOrganisation()">{{ isDeletingOrganisation ? 'Deleting...' : 'Yes, Delete' }}</button>
+		<button class="button__primary button__clear margin-top__28px" (click)="showDeleteModal = false">No, Cancel</button>
+	</div>
+</div>
