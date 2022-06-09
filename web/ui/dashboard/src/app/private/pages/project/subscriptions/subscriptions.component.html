@@ -61,9 +61,7 @@
 					</h4>
 					<div class="flex flex__align-items-center">
 						<div class="tags margin-right__16px" *ngIf="subscription.type === 'outgoing'">
-							<span class="tag margin-right__8px">customer.created</span>
-							<span class="tag margin-right__8px">customer.created</span>
-							<span class="tag">customer.created</span>
+							<span *ngFor="let event of subscription?.filter_config?.event_types" class="tag margin-right__8px">{{event}}</span>
 						</div>
 						<a class="button button__clear button--has-icon padding-right__16px" [routerLink]="'/projects/' + projectId + '/apps'">
 							<svg width="18" height="18" class="margin-left__8px">

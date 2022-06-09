@@ -9,4 +9,9 @@ export interface SUBSCRIPTION {
 	type: 'outgoing' | 'incoming';
 	uid: string;
 	updated_at: string;
+	alert_config?: { count: number; threshold: string };
+	retry_config?: { type: string; retry_count: number };
+	filter_config?: {
+		event_types: string[];
+	};
 }

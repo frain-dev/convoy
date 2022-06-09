@@ -1,9 +1,9 @@
-<form class="padding-bottom__40px" [formGroup]="subscriptonForm" (ngSubmit)="createSubscription()">
+<form class="padding-bottom__40px" [formGroup]="subscriptionForm" (ngSubmit)="createSubscription()">
 	<section class="card padding-all__24px">
 		<div class="input">
 			<label for="source-name">Subscription name</label>
 			<input type="text" id="subscription-name" placeholder="e.g paystack-prod" formControlName="name" />
-			<div class="input__error input__error__danger" *ngIf="subscriptonForm.controls['name'].touched && subscriptonForm.controls['name'].invalid">
+			<div class="input__error input__error__danger" *ngIf="subscriptionForm.controls['name'].touched && subscriptionForm.controls['name'].invalid">
 				<img src="assets/img/input-error-icon.svg" alt="input error icon" />
 				<span>Enter new subscription name</span>
 			</div>
@@ -18,7 +18,7 @@
 				<option value="">Select source</option>
 				<option [value]="source.uid" *ngFor="let source of sources">{{ source.name }}</option>
 			</select>
-			<div class="input__error input__error__danger" *ngIf="subscriptonForm.get('source_id')?.touched && subscriptonForm.get('source_id')?.invalid">
+			<div class="input__error input__error__danger" *ngIf="subscriptionForm.get('source_id')?.touched && subscriptionForm.get('source_id')?.invalid">
 				<img src="assets/img/input-error-icon.svg" alt="input error icon" />
 				<span>Select or create a source</span>
 			</div>
@@ -39,7 +39,7 @@
 				<option value="">Select application</option>
 				<option [value]="app.uid" *ngFor="let app of apps">{{ app.name }}</option>
 			</select>
-			<div class="input__error input__error__danger" *ngIf="subscriptonForm.get('app_id')?.touched && subscriptonForm.get('app_id')?.invalid">
+			<div class="input__error input__error__danger" *ngIf="subscriptionForm.get('app_id')?.touched && subscriptionForm.get('app_id')?.invalid">
 				<img src="assets/img/input-error-icon.svg" alt="input error icon" />
 				<span>Select or create an application</span>
 			</div>
@@ -51,7 +51,7 @@
 			New App
 		</button>
 
-		<div class="input margin-bottom__0px" [ngClass]="{ disabled: subscriptonForm.get('app_id')?.invalid }">
+		<div class="input margin-bottom__0px" [ngClass]="{ disabled: subscriptionForm.get('app_id')?.invalid }">
 			<label for="endpoint" class="position__relative">
 				Endpoint
 				<span class="bg__grey__light rounded__4px padding-x__4px position__absolute position--right__0px font__10px font__weight-400">required</span>
@@ -60,9 +60,109 @@
 				<option value="">Select endpoint</option>
 				<option [value]="endpoint.uid" *ngFor="let endpoint of endPoints">{{ endpoint.target_url }}</option>
 			</select>
-			<div class="input__error input__error__danger" *ngIf="subscriptonForm.get('endpoint_id')?.touched && subscriptonForm.get('endpoint_id')?.invalid">
+			<div class="input__error input__error__danger" *ngIf="subscriptionForm.get('endpoint_id')?.touched && subscriptionForm.get('endpoint_id')?.invalid">
 				<img src="assets/img/input-error-icon.svg" alt="input error icon" />
 				<span>Select an endpoint</span>
+			</div>
+		</div>
+		<h3 class="margin-top__24px margin-bottom__16px flex flex__align-items-center">
+			Retry Logic
+			<app-tooltip [size]="'small'" position="right" class="margin-left__4px">
+				These are the specifications for the retry mechanism for your endpoints. In Linear time retry, event retries are done in linear time, while in Exponential back off retry, events are retried
+				progressively increasing the time before the next retry attempt.
+			</app-tooltip>
+		</h3>
+		<div class="grid grid__col-2 grid--gap__24px" formGroupName="retry_config">
+			<div class="input">
+				<label for="type">
+					Mechanism
+					<span class="bg__grey__light rounded__4px padding-x__4px position__absolute position--right__0px font__10px font__weight-400">required</span>
+				</label>
+				<select name="type" id="type" formControlName="type">
+					<option *ngFor="let type of retryLogicTypes" [value]="type.id">{{ type.type }}</option>
+				</select>
+				<div class="input__error input__error__danger" *ngIf="subscriptionForm.get('retry_config.type')?.touched && subscriptionForm.get('retry_config.type')?.invalid">
+					<img src="assets/img/input-error-icon.svg" alt="input error icon" />
+					<span>Please select a retry logic mechanism</span>
+				</div>
+			</div>
+
+			<div class="input">
+				<label for="retry-logic-duration">
+					Duration
+					<span class="bg__grey__light rounded__4px padding-x__4px position__absolute position--right__0px font__10px font__weight-400">required</span>
+				</label>
+				<input type="text" id="retry-logic-duration" placeholder="e.g 3s" formControlName="interval_seconds" />
+
+				<div class="input__error input__error__danger" *ngIf="subscriptionForm.get('retry_config.interval_seconds')?.touched && subscriptionForm.get('retry_config.interval_seconds')?.invalid">
+					<img src="assets/img/input-error-icon.svg" alt="input error icon" />
+					<span>Please enter your retry logic duration</span>
+				</div>
+			</div>
+
+			<div class="input">
+				<label for="retry-logic-count">
+					Limit
+					<span class="bg__grey__light rounded__4px padding-x__4px position__absolute position--right__0px font__10px font__weight-400">required</span>
+				</label>
+				<input type="number" id="retry-logic-count" placeholder="e.g 5" formControlName="retry_count" />
+
+				<div class="input__error input__error__danger" *ngIf="subscriptionForm.get('retry_config.retry_count')?.touched && subscriptionForm.get('retry_config.retry_count')?.invalid">
+					<img src="assets/img/input-error-icon.svg" alt="input error icon" />
+					<span>Please enter a retry limit</span>
+				</div>
+			</div>
+		</div>
+		<h3 class="margin-top__24px margin-bottom__16px flex flex__align-items-center">
+			Alert Rule
+			<app-tooltip [size]="'small'" position="right" class="margin-left__4px">
+				These are the specifications for the retry mechanism for your endpoints. In Linear time retry, event retries are done in linear time, while in Exponential back off retry, events are retried
+				progressively increasing the time before the next retry attempt.
+			</app-tooltip>
+		</h3>
+		<div class="grid grid__col-2 grid--gap__24px" formGroupName="alert_config">
+			<div class="input">
+				<label for="alert-config-count">
+					Count
+					<span class="bg__grey__light rounded__4px padding-x__4px position__absolute position--right__0px font__10px font__weight-400">required</span>
+				</label>
+				<input type="number" id="alert-config-count" placeholder="e.g 10" formControlName="theshold" />
+
+				<div class="input__error input__error__danger" *ngIf="subscriptionForm.get('alert_config.theshold')?.touched && subscriptionForm.get('alert_config.theshold')?.invalid">
+					<img src="assets/img/input-error-icon.svg" alt="input error icon" />
+					<span>Please enter alert count</span>
+				</div>
+			</div>
+
+			<div class="input">
+				<label for="alert-config-time">
+					Time
+					<span class="bg__grey__light rounded__4px padding-x__4px position__absolute position--right__0px font__10px font__weight-400">required</span>
+				</label>
+				<input type="text" id="alert-config-time" placeholder="e.g 1h" formControlName="time" />
+
+				<div class="input__error input__error__danger" *ngIf="subscriptionForm.get('alert_config.time')?.touched && subscriptionForm.get('alert_config.time')?.invalid">
+					<img src="assets/img/input-error-icon.svg" alt="input error icon" />
+					<span>Please enter a duration for alerts</span>
+				</div>
+			</div>
+		</div>
+		<div class="input multiple">
+			<label class="flex flex__justify-between" for="tagInput">
+				<div class="flex flex__align-items-center">
+					Events
+					<app-tooltip [size]="'small'" position="right" class="margin-left__4px">Add multiple events by separating them with commas.</app-tooltip>
+				</div>
+				<span class="bg__grey__light rounded__4px padding-x__4px position__absolute position--right__0px font__10px font__weight-400">required</span>
+			</label>
+			<div class="input--multiple" (click)="focusInput()">
+				<div class="tag" *ngFor="let tag of eventTags">
+					{{ tag }}
+					<a (click)="removeEventTag(tag)">
+						<img src="/assets/img/close-icon-black.svg" alt="close icon" />
+					</a>
+				</div>
+				<input type="text" id="tagInput" (input)="addTag()" required />
 			</div>
 		</div>
 	</section>
