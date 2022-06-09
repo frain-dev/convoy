@@ -55,12 +55,18 @@
 					Your source represents the etiam diam mi, egestas tortor nulla quis consectetur mauris eget. Penatibus placerat massa, lectus lectus
 				</p>
 			</div>
+			<div *ngIf="projectStage === 'createSubscription'">
+				<h3 class="margin-top__24px font__weight-600 font__18px">Create your first subscription</h3>
+				<p class="font__14px color__grey margin-top__8px width__80">
+					Your subscription represents the etiam diam mi, egestas tortor nulla quis consectetur mauris eget. Penatibus placerat massa, lectus lectus
+				</p>
+			</div>
 		</div>
 
-		<app-create-source *ngIf="projectStage === 'createSource'"></app-create-source>
+		<app-create-source *ngIf="projectStage === 'createSource'" (onAction)="$event?.action == 'cancel' ? cancel() : (projectStage = 'createApplication')"></app-create-source>
 
-		<app-create-app *ngIf="projectStage === 'createApplication'" (discardApp)="cancel()" (createApp)="projectStage = 'createSubscription'"></app-create-app>
+		<app-create-app *ngIf="projectStage === 'createApplication' && privateService.activeProjectId" (discardApp)="cancel()" (createApp)="projectStage = 'createSubscription'"></app-create-app>
 
-		<app-create-subscription (onAction)="cancel()"></app-create-subscription>
+		<app-create-subscription *ngIf="projectStage === 'createSubscription' && privateService.activeProjectId" (onAction)="cancel()"></app-create-subscription>
 	</div>
 </div>
