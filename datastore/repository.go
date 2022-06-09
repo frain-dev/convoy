@@ -114,3 +114,8 @@ type UserRepository interface {
 	FindUserByID(context.Context, string) (*User, error)
 	LoadUsersPaged(context.Context, Pageable) ([]User, PaginationData, error)
 }
+
+type VerificationRepository interface {
+	CreateVerfication(context.Context, *Verification) error
+	FindVerificationByEmail(context.Context, string, string) (*Verification, error)
+}
