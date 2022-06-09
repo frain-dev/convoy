@@ -160,7 +160,7 @@ func (s *OrganisationMemberIntegrationTestSuite) Test_GetOrganisationMember() {
 		FirstName: user.FirstName,
 		LastName:  user.LastName,
 		Email:     user.Email,
-	}, m.UserMetadata)
+	}, *m.UserMetadata)
 }
 
 func (s *OrganisationMemberIntegrationTestSuite) Test_UpdateOrganisationMember() {

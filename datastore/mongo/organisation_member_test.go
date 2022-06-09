@@ -136,7 +136,7 @@ func TestCreateOrganisationMember(t *testing.T) {
 	m := &datastore.OrganisationMember{
 		UID:            uuid.NewString(),
 		OrganisationID: uuid.NewString(),
-		UserID:         uuid.NewString(),
+		UserID:         user.UID,
 		Role:           auth.Role{Type: auth.RoleAdmin},
 		DocumentStatus: datastore.ActiveDocumentStatus,
 		CreatedAt:      primitive.NewDateTimeFromTime(time.Now()),
@@ -181,7 +181,7 @@ func TestUpdateOrganisationMember(t *testing.T) {
 	m := &datastore.OrganisationMember{
 		UID:            uuid.NewString(),
 		OrganisationID: uuid.NewString(),
-		UserID:         uuid.NewString(),
+		UserID:         user.UID,
 		Role:           auth.Role{Type: auth.RoleAdmin},
 		DocumentStatus: datastore.ActiveDocumentStatus,
 		CreatedAt:      primitive.NewDateTimeFromTime(time.Now()),
@@ -280,7 +280,7 @@ func TestFetchOrganisationMemberByID(t *testing.T) {
 		FirstName: user.FirstName,
 		LastName:  user.LastName,
 		Email:     user.Email,
-	}, member.UserMetadata)
+	}, *member.UserMetadata)
 }
 
 func TestFetchOrganisationMemberByUserID(t *testing.T) {
