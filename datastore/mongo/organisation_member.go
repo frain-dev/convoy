@@ -209,12 +209,9 @@ func (o *orgMemberRepo) FetchOrganisationMemberByUserID(ctx context.Context, use
 
 func (o *orgMemberRepo) fillOrgMemberUserMetadata(ctx context.Context, members []*datastore.OrganisationMember) error {
 	userIDs := make([]string, 0, len(members))
-	for i := range members {
-		userIDs = append(userIDs, members[i].UserID)
-	}
-
 	orgIDs := make([]string, 0, len(members))
 	for i := range members {
+		userIDs = append(userIDs, members[i].UserID)
 		orgIDs = append(orgIDs, members[i].OrganisationID)
 	}
 
