@@ -9,6 +9,7 @@
 	</svg>
 	<span class="color__primary font__weight-500">Events</span>
 </h1>
+
 <div class="filter without-padding" [ngClass]="{ 'show-calendar': showFilterCalendar }">
 	<date-filter (selectedDateRange)="getSelectedDateRange($event)"></date-filter>
 	<div class="dropdown">
@@ -33,7 +34,7 @@
 	</div>
 </div>
 
-<div class="card">
+<div class="card position__relative">
 	<convoy-loader id="dashboard_summary_loader" *ngIf="isloadingDashboardData"></convoy-loader>
 	<ul class="metrics">
 		<li class="messages flex flex__align-items-center padding-x__30px padding-y__16px border__right">

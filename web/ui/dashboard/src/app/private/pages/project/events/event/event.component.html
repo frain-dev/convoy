@@ -2,7 +2,7 @@
 	<div class="padding-x__16px padding-y__24px border__bottom">
 		<div class="flex flex__align-items-center flex__justify-between">
 			<div class="flex">
-				<form class="input__search filter margin-bottom__0px events-search">
+				<form class="input__search filter margin-bottom__0px events-search" [ngClass]="{ active: eventsSearchString != undefined && eventsSearchString != '' }">
 					<img src="/assets/img/search-icon.svg" alt="search icon" />
 					<input type="search" placeholder="Search events" [(ngModel)]="eventsSearchString" (change)="getEvents({ addToURL: true, page: 1 })" [ngModelOptions]="{ standalone: true }" />
 					<button [class]="'enter-button' + (eventsSearchString && eventsSearchString.length > 0 ? ' show' : '')" (click)="getEvents({ addToURL: true, page: 1 })">
@@ -10,7 +10,7 @@
 					</button>
 				</form>
 
-				<date-filter class="margin-left__14px" (selectedDateRange)="getSelectedDateRange($event)"></date-filter>
+				<date-filter class="margin-left__14px" (selectedDateRange)="getSelectedDateRange($event)" [dateRangeValue]="eventsDateFilterFromURL" (clearDates)="clearEventFilters('eventsDate')"></date-filter>
 
 				<app-time-filter class="margin-left__14px" (applyFilter)="eventsTimeFilterData = $event; getEvents({ addToURL: true })" #eventsTimeFilter></app-time-filter>
 
@@ -45,9 +45,9 @@
 				class="button button__white button__small"
 				(click)="clearEventFilters(); selectedEventsDateOption = ''"
 				[disabled]="
-					(eventsFilterDateRange.value.startDate == '' || eventsFilterDateRange.value.endDate == '') &&
-					eventApp == '' &&
-					eventsSearchString.length == 0 &&
+					(eventsDateFilterFromURL.startDate == '' || eventsDateFilterFromURL.endDate == '') &&
+					(eventApp?.length == 0 || eventApp == undefined) &&
+					(eventsSearchString?.length == 0 || eventsSearchString == undefined) &&
 					eventsTimeFilterData.startTime == 'T00:00:00' &&
 					eventsTimeFilterData.endTime == 'T23:59:59'
 				"
@@ -60,7 +60,7 @@
 	<div class="flex">
 		<div class="event__table">
 			<convoy-table-loader id="events_loader_loader" [tableHead]="eventsTableHead" *ngIf="isloadingEvents"></convoy-table-loader>
-			<div class="table table--container has-loader" id="events-table-container" *ngIf="displayedEvents && displayedEvents.length > 0">
+			<div class="table table--container has-loader" id="events-table-container" *ngIf="!isloadingEvents && displayedEvents && displayedEvents.length > 0">
 				<table id="table">
 					<thead>
 						<tr class="table--head">
@@ -115,7 +115,7 @@
 			</div>
 		</div>
 
-		<div class="event__details" *ngIf="displayedEvents && displayedEvents.length > 0">
+		<div class="event__details position__relative">
 			<div class="padding-all__16px">
 				<convoy-loader id="details_section_loader" *ngIf="isloadingEvents"></convoy-loader>
 
