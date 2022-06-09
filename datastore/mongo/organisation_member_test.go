@@ -211,7 +211,7 @@ func TestUpdateOrganisationMember(t *testing.T) {
 		FirstName: user.FirstName,
 		LastName:  user.LastName,
 		Email:     user.Email,
-	}, member.UserMetadata)
+	}, *member.UserMetadata)
 }
 
 func TestDeleteOrganisationMember(t *testing.T) {
