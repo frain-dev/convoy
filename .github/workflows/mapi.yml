@@ -1,0 +1,54 @@
+name: mapi
+on:
+    push:
+        branches:
+            - main
+    pull_request:
+
+jobs:
+    test:
+        strategy:
+            matrix:
+                go-version: [1.17.x]
+                redis-version: ["6.2.6"]
+
+        runs-on: ubuntu-latest
+        steps:
+            - name: Set up Go
+              uses: actions/setup-go@v2
+              with:
+                  go-version: ${{ matrix.go-version }}
+
+            - name: Check out code
+              uses: actions/checkout@v2
+
+            - name: Start convoy & run mapi
+              env:
+                  PORT: 5005
+                  CONVOY_BASIC_AUTH_CONFIG: "[{\"username\": \"default\",\"password\": \"default\",\"role\": {\"type\": \"super_user\",\"groups\": []}}]"
+                  CONVOY_DB_TYPE: "in-memory"
+                  CONVOY_REDIS_DSN: "redis://localhost:6379"
+                  CONVOY_QUEUE_PROVIDER: "redis"
+              run: |
+                  go run ./cmd server &
+                  sleep 70
+                  curl -v -H 'Authorization: BASIC ZGVmYXVsdDpkZWZhdWx0' -H 'Content-Type: application/json' -X POST -d '{"name": "test", "type": "incoming"}' localhost:5005/api/v1/groups
+
+            - name: Run Mayhem for API
+              uses: ForAllSecure/mapi-action@v1
+              continue-on-error: true
+              with:
+                mapi-token: ${{ secrets.MAPI_TOKEN }}
+                api-url: http://localhost:5005/api/v1/
+                api-spec: docs/v3/openapi3.json
+                target: mayhemheroes/convoy
+                duration: 1min
+                sarif-report: mapi.sarif
+                run-args: |
+                  --header-auth
+                  Authorization: BASIC ZGVmYXVsdDpkZWZhdWx0
+
+            - name: Upload SARIF file
+              uses: github/codeql-action/upload-sarif@v1
+              with:
+                sarif_file: mapi.sarif
