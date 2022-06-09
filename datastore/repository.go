@@ -110,6 +110,7 @@ type SourceRepository interface {
 
 type UserRepository interface {
 	CreateUser(context.Context, *User) error
+	UpdateUser(ctx context.Context, user *User) error
 	FindUserByEmail(context.Context, string) (*User, error)
 	FindUserByID(context.Context, string) (*User, error)
 	LoadUsersPaged(context.Context, Pageable) ([]User, PaginationData, error)

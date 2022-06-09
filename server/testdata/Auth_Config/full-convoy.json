@@ -7,7 +7,6 @@
         }
     },
     "auth": {
-        "require_auth": true,
         "file": {
             "basic": [
                 {

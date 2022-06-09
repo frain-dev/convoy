@@ -61,10 +61,9 @@ type FileRealmOption struct {
 }
 
 type AuthConfiguration struct {
-	RequireAuth bool               `json:"require_auth" envconfig:"CONVOY_REQUIRE_AUTH"`
-	File        FileRealmOption    `json:"file"`
-	Native      NativeRealmOptions `json:"native"`
-	Jwt         JwtRealmOptions    `json:"jwt"`
+	File   FileRealmOption    `json:"file"`
+	Native NativeRealmOptions `json:"native"`
+	Jwt    JwtRealmOptions    `json:"jwt"`
 }
 
 type NativeRealmOptions struct {
@@ -434,10 +433,6 @@ func overrideConfigWithEnvVars(c *Configuration, override *Configuration) {
 
 	if _, ok := os.LookupEnv("CONVOY_NEWRELIC_CONFIG_ENABLED"); ok {
 		c.Tracer.NewRelic.ConfigEnabled = override.Tracer.NewRelic.ConfigEnabled
-	}
-
-	if _, ok := os.LookupEnv("CONVOY_REQUIRE_AUTH"); ok {
-		c.Auth.RequireAuth = override.Auth.RequireAuth
 	}
 
 	if _, ok := os.LookupEnv("CONVOY_NATIVE_REALM_ENABLED"); ok {

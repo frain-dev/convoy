@@ -48,7 +48,6 @@ func addServerCommand(a *app) *cobra.Command {
 
 	var ssl bool
 	var withWorkers bool
-	var requireAuth bool
 	var disableEndpoint bool
 	var replayAttacks bool
 	var multipleTenants bool
@@ -122,7 +121,6 @@ func addServerCommand(a *app) *cobra.Command {
 	cmd.Flags().StringVar(&promaddr, "promaddr", "", `Prometheus dsn`)
 
 	cmd.Flags().BoolVar(&ssl, "ssl", false, "Configure SSL")
-	cmd.Flags().BoolVar(&requireAuth, "auth", false, "Require authentication")
 	cmd.Flags().BoolVarP(&withWorkers, "with-workers", "w", true, "Should run workers")
 	cmd.Flags().BoolVar(&nativeRealmEnabled, "native", false, "Enable native-realm authentication")
 	cmd.Flags().BoolVar(&disableEndpoint, "disable-endpoint", false, "Disable all application endpoints")
@@ -503,17 +501,6 @@ func loadServerConfigFromCliFlags(cmd *cobra.Command, c *config.Configuration) e
 		}
 
 		c.Tracer.NewRelic.DistributedTracerEnabled = newReplicTracerEnabled
-	}
-
-	// CONVOY_REQUIRE_AUTH
-	isReqAuthSet := cmd.Flags().Changed("auth")
-	if isReqAuthSet {
-		requireAuth, err := cmd.Flags().GetBool("auth")
-		if err != nil {
-			return err
-		}
-
-		c.Auth.RequireAuth = requireAuth
 	}
 
 	// CONVOY_NATIVE_REALM_ENABLED

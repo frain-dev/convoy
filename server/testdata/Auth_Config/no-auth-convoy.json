@@ -6,9 +6,6 @@
             "dsn": "abc"
         }
     },
-    "auth": {
-        "require_auth": false
-    },
     "server": {
         "http": {
             "port": 80
