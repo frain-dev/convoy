@@ -907,6 +907,7 @@ func shouldAuthRoute(r *http.Request) bool {
 		"/ui/auth/login",
 		"/ui/auth/token/refresh",
 		"/ui/organisations/process_invite",
+		"/ui/users/exists",
 	}
 
 	for _, route := range guestRoutes {

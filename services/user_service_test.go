@@ -590,3 +590,84 @@ func TestUserService_UpdatePassword(t *testing.T) {
 		})
 	}
 }
+
+func TestUserService_CheckUserExists(t *testing.T) {
+	ctx := context.Background()
+
+	type args struct {
+		ctx  context.Context
+		data *models.UserExists
+	}
+
+	tests := []struct {
+		name        string
+		args        args
+		exists      bool
+		dbFn        func(u *UserService)
+		wantErr     bool
+		wantErrCode int
+	}{
+		{
+			name: "should_return_user_exists",
+			args: args{
+				ctx:  ctx,
+				data: &models.UserExists{Email: "test@test.com"},
+			},
+			dbFn: func(u *UserService) {
+				ur, _ := u.userRepo.(*mocks.MockUserRepository)
+				ur.EXPECT().FindUserByEmail(gomock.Any(), gomock.Any()).Return(&datastore.User{UID: "123456"}, nil)
+			},
+			exists: true,
+		},
+
+		{
+			name: "should_return_user_does_not_exists",
+			args: args{
+				ctx:  ctx,
+				data: &models.UserExists{Email: "test@test.com"},
+			},
+			dbFn: func(u *UserService) {
+				ur, _ := u.userRepo.(*mocks.MockUserRepository)
+				ur.EXPECT().FindUserByEmail(gomock.Any(), gomock.Any()).Return(nil, datastore.ErrUserNotFound)
+			},
+			exists: false,
+		},
+
+		{
+			name: "should_fail_to_check_user_exists",
+			args: args{
+				ctx:  ctx,
+				data: &models.UserExists{Email: "test@test.com"},
+			},
+			dbFn: func(u *UserService) {
+				ur, _ := u.userRepo.(*mocks.MockUserRepository)
+				ur.EXPECT().FindUserByEmail(gomock.Any(), gomock.Any()).Return(nil, errors.New("failed"))
+			},
+			wantErr:     true,
+			wantErrCode: http.StatusInternalServerError,
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			ctrl := gomock.NewController(t)
+			defer ctrl.Finish()
+
+			u := provideUserService(ctrl, t)
+
+			if tc.dbFn != nil {
+				tc.dbFn(u)
+			}
+
+			exists, err := u.CheckUserExists(tc.args.ctx, tc.args.data)
+			if tc.wantErr {
+				require.NotNil(t, err)
+				require.Equal(t, tc.wantErrCode, err.(*ServiceError).ErrCode())
+				return
+			}
+
+			require.Nil(t, err)
+			require.Equal(t, exists, tc.exists)
+		})
+	}
+}
