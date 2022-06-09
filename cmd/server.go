@@ -188,6 +188,10 @@ func StartConvoyServer(a *app, cfg config.Configuration, withWorkers bool) error
 		eventCreatedhandler := task.ProcessEventCreated(a.applicationRepo, a.eventRepo, a.groupRepo, a.eventDeliveryRepo, a.cache, a.queue, a.subRepo)
 		consumer.RegisterHandlers(convoy.CreateEventProcessor, eventCreatedhandler)
 
+		// register tasks.
+		notificationHandler := task.SendNotification(a.emailNotificationSender)
+		consumer.RegisterHandlers(convoy.NotificationProcessor, notificationHandler)
+
 		log.Infof("Starting Convoy workers...")
 		consumer.Start()
 	}

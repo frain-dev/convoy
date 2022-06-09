@@ -2,10 +2,13 @@ package services
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/frain-dev/convoy"
 	"github.com/frain-dev/convoy/notification"
 	"github.com/frain-dev/convoy/notification/email"
+	"github.com/frain-dev/convoy/queue"
 	"net/http"
 	"strings"
 	"time"
@@ -21,6 +24,7 @@ import (
 
 type OrganisationInviteService struct {
 	em            notification.Sender
+	queue         queue.Queuer
 	orgRepo       datastore.OrganisationRepository
 	userRepo      datastore.UserRepository
 	orgMemberRepo datastore.OrganisationMemberRepository
@@ -72,12 +76,15 @@ func (ois *OrganisationInviteService) CreateOrganisationMemberInvite(ctx context
 		baseURL += "/"
 	}
 
-	go ois.sendInviteEmail(context.Background(), iv, org, user, baseURL)
+	err = ois.sendInviteEmail(context.Background(), iv, org, user, baseURL)
+	if err != nil {
+		return nil, err
+	}
 
 	return iv, nil
 }
 
-func (ois *OrganisationInviteService) sendInviteEmail(ctx context.Context, iv *datastore.OrganisationInvite, org *datastore.Organisation, user *datastore.User, baseURL string) {
+func (ois *OrganisationInviteService) sendInviteEmail(ctx context.Context, iv *datastore.OrganisationInvite, org *datastore.Organisation, user *datastore.User, baseURL string) error {
 	n := &notification.Notification{
 		Email:             iv.InviteeEmail,
 		EmailTemplateName: email.TemplateOrganisationInvite.String(),
@@ -86,10 +93,24 @@ func (ois *OrganisationInviteService) sendInviteEmail(ctx context.Context, iv *d
 		InviterName:       fmt.Sprintf("%s %s", user.FirstName, user.LastName),
 	}
 
-	err := ois.em.SendNotification(ctx, n)
+	buf, err := json.Marshal(n)
 	if err != nil {
-		log.WithError(err).Error("failed to send email notification")
+		log.WithError(err).Error("failed to marshal notification payload")
+		return NewServiceError(http.StatusBadRequest, err)
 	}
+
+	job := &queue.Job{
+		ID:      iv.UID,
+		Payload: json.RawMessage(buf),
+		Delay:   0,
+	}
+
+	err = ois.queue.Write(convoy.NotificationProcessor, convoy.ScheduleQueue, job)
+	if err != nil {
+		log.WithError(err).Error("failed to write new notification to the queue")
+	}
+
+	return nil
 }
 
 func (ois *OrganisationInviteService) ProcessOrganisationMemberInvite(ctx context.Context, token string, accepted bool, newUser *models.User) error {
