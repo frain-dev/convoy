@@ -5,6 +5,7 @@ package mongo
 
 import (
 	"context"
+	"fmt"
 	"github.com/frain-dev/convoy/auth"
 	"testing"
 	"time"
@@ -22,15 +23,36 @@ func TestLoadOrganisationMembersPaged(t *testing.T) {
 	organisationMemberRepo := NewOrgMemberRepo(db)
 	orgID := uuid.NewString()
 
+	userMap := map[string]*datastore.UserMetadata{}
+
 	for i := 1; i < 6; i++ {
+		user := &datastore.User{
+			UID:            uuid.NewString(),
+			FirstName:      fmt.Sprintf("test-%s", uuid.NewString()),
+			LastName:       fmt.Sprintf("test-%s", uuid.NewString()),
+			Email:          fmt.Sprintf("test-%s", uuid.NewString()),
+			Password:       fmt.Sprintf("test-%s", uuid.NewString()),
+			CreatedAt:      primitive.NewDateTimeFromTime(time.Now()),
+			UpdatedAt:      primitive.NewDateTimeFromTime(time.Now()),
+			DocumentStatus: datastore.ActiveDocumentStatus,
+		}
+		require.NoError(t, NewUserRepo(db).CreateUser(context.Background(), user))
+
 		member := &datastore.OrganisationMember{
 			UID:            uuid.NewString(),
 			OrganisationID: orgID,
-			UserID:         uuid.NewString(),
+			UserID:         user.UID,
 			Role:           auth.Role{Type: auth.RoleAdmin},
 			DocumentStatus: datastore.ActiveDocumentStatus,
 			CreatedAt:      primitive.NewDateTimeFromTime(time.Now()),
 			UpdatedAt:      primitive.NewDateTimeFromTime(time.Now()),
+		}
+
+		userMap[user.UID] = &datastore.UserMetadata{
+			UserID:    user.UID,
+			FirstName: user.FirstName,
+			LastName:  user.LastName,
+			Email:     user.Email,
 		}
 
 		err := organisationMemberRepo.CreateOrganisationMember(context.Background(), member)
@@ -45,6 +67,11 @@ func TestLoadOrganisationMembersPaged(t *testing.T) {
 
 	require.NoError(t, err)
 	require.Equal(t, 2, len(members))
+
+	for _, member := range members {
+		m := userMap[member.UserID]
+		require.Equal(t, m, member.UserMetadata)
+	}
 }
 
 func TestLoadUserOrganisationsPaged(t *testing.T) {
@@ -180,11 +207,23 @@ func TestFetchOrganisationMemberByID(t *testing.T) {
 	db, closeFn := getDB(t)
 	defer closeFn()
 
+	user := &datastore.User{
+		UID:            uuid.NewString(),
+		FirstName:      fmt.Sprintf("test-%s", uuid.NewString()),
+		LastName:       fmt.Sprintf("test-%s", uuid.NewString()),
+		Email:          fmt.Sprintf("test-%s", uuid.NewString()),
+		Password:       fmt.Sprintf("test-%s", uuid.NewString()),
+		CreatedAt:      primitive.NewDateTimeFromTime(time.Now()),
+		UpdatedAt:      primitive.NewDateTimeFromTime(time.Now()),
+		DocumentStatus: datastore.ActiveDocumentStatus,
+	}
+	require.NoError(t, NewUserRepo(db).CreateUser(context.Background(), user))
+
 	organisationMemberRepo := NewOrgMemberRepo(db)
 	m := &datastore.OrganisationMember{
 		UID:            uuid.NewString(),
 		OrganisationID: uuid.NewString(),
-		UserID:         uuid.NewString(),
+		UserID:         user.UID,
 		Role:           auth.Role{Type: auth.RoleAdmin},
 		DocumentStatus: datastore.ActiveDocumentStatus,
 		CreatedAt:      primitive.NewDateTimeFromTime(time.Now()),
@@ -200,17 +239,35 @@ func TestFetchOrganisationMemberByID(t *testing.T) {
 	require.Equal(t, m.UID, member.UID)
 	require.Equal(t, m.OrganisationID, member.OrganisationID)
 	require.Equal(t, m.UserID, member.UserID)
+	require.Equal(t, datastore.UserMetadata{
+		UserID:    user.UID,
+		FirstName: user.FirstName,
+		LastName:  user.LastName,
+		Email:     user.Email,
+	}, member.UserMetadata)
 }
 
 func TestFetchOrganisationMemberByUserID(t *testing.T) {
-	db, closeFn := getDB(t)
-	defer closeFn()
+	db, _ := getDB(t)
+	//defer closeFn()
+
+	user := &datastore.User{
+		UID:            uuid.NewString(),
+		FirstName:      fmt.Sprintf("test-%s", uuid.NewString()),
+		LastName:       fmt.Sprintf("test-%s", uuid.NewString()),
+		Email:          uuid.NewString(),
+		Password:       fmt.Sprintf("test-%s", uuid.NewString()),
+		CreatedAt:      primitive.NewDateTimeFromTime(time.Now()),
+		UpdatedAt:      primitive.NewDateTimeFromTime(time.Now()),
+		DocumentStatus: datastore.ActiveDocumentStatus,
+	}
+	require.NoError(t, NewUserRepo(db).CreateUser(context.Background(), user))
 
 	organisationMemberRepo := NewOrgMemberRepo(db)
 	m := &datastore.OrganisationMember{
 		UID:            uuid.NewString(),
 		OrganisationID: uuid.NewString(),
-		UserID:         uuid.NewString(),
+		UserID:         user.UID,
 		Role:           auth.Role{Type: auth.RoleAdmin},
 		DocumentStatus: datastore.ActiveDocumentStatus,
 		CreatedAt:      primitive.NewDateTimeFromTime(time.Now()),
@@ -226,4 +283,10 @@ func TestFetchOrganisationMemberByUserID(t *testing.T) {
 	require.Equal(t, m.UID, member.UID)
 	require.Equal(t, m.OrganisationID, member.OrganisationID)
 	require.Equal(t, m.UserID, member.UserID)
+	require.Equal(t, datastore.UserMetadata{
+		UserID:    user.UID,
+		FirstName: user.FirstName,
+		LastName:  user.LastName,
+		Email:     user.Email,
+	}, *member.UserMetadata)
 }

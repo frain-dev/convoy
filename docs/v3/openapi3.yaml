@@ -148,6 +148,8 @@ components:
       properties:
         app_id:
           type: string
+        app_metadata:
+          $ref: '#/components/schemas/datastore.Application'
         created_at:
           type: string
         data:
@@ -183,16 +185,22 @@ components:
       properties:
         app_id:
           type: string
+        app_metadata:
+          $ref: '#/components/schemas/datastore.Application'
         created_at:
           type: string
         deleted_at:
           type: string
         description:
           type: string
+        endpoint:
+          $ref: '#/components/schemas/datastore.Endpoint'
         endpoint_id:
           type: string
         event_id:
           type: string
+        event_metadata:
+          $ref: '#/components/schemas/datastore.Event'
         group_id:
           type: string
         metadata:
@@ -327,6 +335,8 @@ components:
           type: string
         user_id:
           type: string
+        user_metadata:
+          $ref: '#/components/schemas/datastore.UserMetadata'
       type: object
     datastore.PaginationData:
       properties:
@@ -423,6 +433,15 @@ components:
         uid:
           type: string
         updated_at:
+          type: string
+      type: object
+    datastore.UserMetadata:
+      properties:
+        email:
+          type: string
+        first_name:
+          type: string
+        last_name:
           type: string
       type: object
     datastore.VerifierConfig:

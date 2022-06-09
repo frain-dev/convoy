@@ -148,6 +148,8 @@ definitions:
     properties:
       app_id:
         type: string
+      app_metadata:
+        $ref: '#/definitions/datastore.Application'
       created_at:
         type: string
       data:
@@ -183,16 +185,22 @@ definitions:
     properties:
       app_id:
         type: string
+      app_metadata:
+        $ref: '#/definitions/datastore.Application'
       created_at:
         type: string
       deleted_at:
         type: string
       description:
         type: string
+      endpoint:
+        $ref: '#/definitions/datastore.Endpoint'
       endpoint_id:
         type: string
       event_id:
         type: string
+      event_metadata:
+        $ref: '#/definitions/datastore.Event'
       group_id:
         type: string
       metadata:
@@ -327,6 +335,8 @@ definitions:
         type: string
       user_id:
         type: string
+      user_metadata:
+        $ref: '#/definitions/datastore.UserMetadata'
     type: object
   datastore.PaginationData:
     properties:
@@ -424,6 +434,15 @@ definitions:
       uid:
         type: string
       updated_at:
+        type: string
+    type: object
+  datastore.UserMetadata:
+    properties:
+      email:
+        type: string
+      first_name:
+        type: string
+      last_name:
         type: string
     type: object
   datastore.VerifierConfig:
