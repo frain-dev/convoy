@@ -8,10 +8,10 @@ import { HttpService } from 'src/app/services/http/http.service';
 export class TeamsService {
 	constructor(private http: HttpService) {}
 
-	async getTeamMembers(): Promise<HTTP_RESPONSE> {
+	async getTeamMembers(requestDetails: { org_id: string }): Promise<HTTP_RESPONSE> {
 		try {
 			const response = await this.http.request({
-				url: `/organizations/members`,
+				url: `/organisations/${requestDetails.org_id}/members`,
 				method: 'get'
 			});
 			return response;

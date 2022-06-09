@@ -32,28 +32,28 @@
 			<tr *ngFor="let team of teams">
 				<td>
 					<div class="badge badge__dark">
-						<div class="icon">{{ team.firstname.slice(0, 1) }}{{ team.lastname.slice(0, 1) }}</div>
-						<div class="name">{{ team.firstname }} {{ team.lastname }}</div>
+						<div class="icon">{{ team?.firstname?.slice(0, 1) }}{{ team?.lastname?.slice(0, 1) }}</div>
+						<div class="name">{{ team.firstname || '-' }} {{ team.lastname || '-' }}</div>
 					</div>
 				</td>
 				<td>
-					<div>{{ team.role }}</div>
+					<div>{{ team?.role?.type }}</div>
 				</td>
 				<td>
-					<div>{{ team.groups.length }} Project{{ team.groups.length == 1 ? '' : 's' }}</div>
+					<div>{{ team?.role?.groups?.length || 0 }} Project{{ team?.role?.groups?.length == 1 ? '' : 's' }}</div>
 				</td>
-				<td>
+				<!-- <td>
 					<div>
 						<div class="tag tag--Success" *ngIf="team.status">Active</div>
 						<div class="tag tag--Failure" *ngIf="!team.status">Inactive</div>
 					</div>
-				</td>
+				</td> -->
 				<td>
 					<div class="dropdown">
-						<button class="button--has-icon button__clear" (click)="showDropdown(team.id)">
+						<button class="button--has-icon button__clear" (click)="showDropdown(team.uid); showOverlay = true">
 							<img src="/assets/img/nav-bar-more-primary.svg" alt="more icon" />
 						</button>
-						<div [ngClass]="{ show: currentId == team.id }" class="dropdown__menu dropdown__menu__nav large">
+						<div [ngClass]="{ show: currentId == team.uid }" class="dropdown__menu dropdown__menu__nav large">
 							<ul>
 								<li class="flex flex__justify-center">
 									<button
@@ -85,9 +85,10 @@
 
 <div class="_overlay" *ngIf="showSuccessModal || showDeactivateModal" (click)="showSuccessModal = false; showDeactivateModal = false; showTeamGroupDropdown = false"></div>
 
+<div class="overlay" *ngIf="showOverlay" (click)="showOverlay = false; currentId = ''"></div>
 
 <div class="modal modal__full" *ngIf="showCreateProjectModal">
-    <div class="modal--head">
+	<div class="modal--head">
 		<div class="flex flex__align-items-center flex__justify-between width__100">
 			<div class="modal--head--left flex flex__align-items-center">
 				<a (click)="goBack()" class="margin-right__16px width__32px height__32px flex flex__align-items-center flex__justify-center rounded__6px button__clear" tabindex="0">
@@ -125,104 +126,8 @@
 		</div>
 	</div>
 
-	<div class="modal--body padding-all__0px" *ngIf="!projects.length">
-		<div class="card padding-all__24px margin-top__24px">
-			<div class="width__50 padding-y__40px margin-auto flex flex__column flex__justify-center flex__align-items-center">
-				<img src="/assets/img/no-group.svg" alt="no project" class="empty-state-img big margin-bottom__24px" />
-				<h4 class="color__black text--center margin-bottom__8px">Create a project to add team member</h4>
-				<p class="color__grey font__14px font__weight-500 text--center margin-bottom__32px">
-					You currently do not have any project and need to have one to add a team member. Create one with the button below
-				</p>
-				<button class="button button__primary button__small" routerLink="./project">Create Project</button>
-			</div>
-		</div>
-	</div>
-	<div class="modal--body padding-all__0px" *ngIf="projects.length">
-		<form [formGroup]="inviteUserForm" (ngSubmit)="inviteUser()">
-			<div class="card padding-all__24px margin-top__24px">
-				<h3>Basic info</h3>
-				<div class="color__grey font__14px font__weight-400 margin-bottom__16px">Invite other members of your team to your organization.</div>
-
-				<div class="flex flex__justify-between">
-					<div class="input smaller">
-						<label for="first-name">First Name</label>
-						<input type="text" id="first-name" formControlName="firstname" [ngClass]="{ danger: inviteUserForm.controls.firstname.touched && inviteUserForm.controls.firstname.invalid }" required />
-						<div class="input__error input__error__danger" *ngIf="inviteUserForm.controls.firstname.touched && inviteUserForm.controls.firstname.invalid">
-							<img src="assets/img/input-error-icon.svg" alt="input error icon" />
-							<span>Firstname is required</span>
-						</div>
-					</div>
-
-					<div class="input smaller">
-						<label for="last-name">Last Name</label>
-						<input type="text" id="last-name" formControlName="lastname" [ngClass]="{ danger: inviteUserForm.controls.lastname.touched && inviteUserForm.controls.lastname.invalid }" required />
-						<div class="input__error input__error__danger" *ngIf="inviteUserForm.controls.lastname.touched && inviteUserForm.controls.lastname.invalid">
-							<img src="assets/img/input-error-icon.svg" alt="input error icon" />
-							<span>Lastname is required</span>
-						</div>
-					</div>
-				</div>
-
-				<div class="input">
-					<label for="email">Email</label>
-					<input type="email" id="email" formControlName="email" [ngClass]="{ danger: inviteUserForm.controls.email.touched && inviteUserForm.controls.email.invalid }" required />
-					<div class="input__error input__error__danger" *ngIf="inviteUserForm.controls.email.touched && inviteUserForm.controls.email.invalid">
-						<img src="assets/img/input-error-icon.svg" alt="input error icon" />
-						<span>Please enter a valid email</span>
-					</div>
-				</div>
-
-				<div class="flex flex__justify-between">
-					<div class="dropdown width__45">
-						<div class="input">
-							<label for="group">Select project</label>
-							<input
-								type="text"
-								id="group"
-								[(ngModel)]="noOfSelectedProjects"
-								[ngModelOptions]="{ standalone: true }"
-								class="editMode"
-								readonly
-								(click)="showTeamGroupDropdown = !showTeamGroupDropdown"
-								[ngClass]="{ danger: noOfSelectedProjects && selectedProjects?.length == 0 }"
-							/>
-
-							<div class="input__error input__error__danger" *ngIf="noOfSelectedProjects && selectedProjects?.length == 0">
-								<img src="assets/img/input-error-icon.svg" alt="input error icon" />
-								<span>Please select at least 1 project</span>
-							</div>
-						</div>
-						<div class="dropdown__menu dropdown__menu__form with-padding large" [ngClass]="{ show: showTeamGroupDropdown }">
-							<div class="input__search">
-								<img src="/assets/img/search-icon.svg" alt="search icon" />
-								<input type="search" placeholder="Search projects here" (input)="searchGroup($event)" />
-							</div>
-							<div *ngIf="filteredProjects.length">
-								<div class="dropdown__menu__item" *ngFor="let group of filteredProjects">
-									<label [for]="group.uid">{{ group.name }}</label>
-									<input type="checkbox" name="app" [id]="group.uid" [checked]="group.selected" (input)="selectGroup(group)" />
-								</div>
-							</div>
-						</div>
-					</div>
-					<div class="input smaller">
-						<label for="role">Select Role</label>
-						<select name="role" id="role" formControlName="role" [ngClass]="{ danger: inviteUserForm.controls.role.touched && inviteUserForm.controls.role.invalid }" required>
-							<option value="Admin">Admin</option>
-							<option value="Dev">Dev</option>
-						</select>
-						<div class="input__error input__error__danger" *ngIf="inviteUserForm.controls.role.touched && inviteUserForm.controls.role.invalid">
-							<img src="assets/img/input-error-icon.svg" alt="input error icon" />
-							<span>Please select a role</span>
-						</div>
-					</div>
-				</div>
-			</div>
-		</form>
-		<div class="flex flex__justify-end padding-top__24px padding-bottom__40px">
-			<button class="button button__white margin-right__16px" (click)="goBack()">Discard</button>
-			<button class="button button__primary" [disabled]="invitingUser" (click)="inviteUser()">{{ invitingUser ? 'Inviting User..' : 'Send Invite' }}</button>
-		</div>
+	<div class="modal--body padding-all__0px">
+		<app-add-team-member></app-add-team-member>
 	</div>
 </div>
 

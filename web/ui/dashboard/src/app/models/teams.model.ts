@@ -1,8 +1,10 @@
 export interface TEAMS {
 	firstname: string;
-	role: string;
-	groups: string[];
-	id: string;
+	role: {
+		groups: string[];
+		type: string;
+	};
+	uid: string;
 	lastname: string;
 	status: boolean;
 }
