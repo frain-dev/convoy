@@ -31,7 +31,7 @@ const (
 type Client struct {
 	db                *mongo.Database
 	apiKeyRepo        datastore.APIKeyRepository
-	groupRepo         datastore.GroupRepository
+	groupRepo         datastore.Database
 	eventRepo         datastore.EventRepository
 	applicationRepo   datastore.ApplicationRepository
 	subscriptionRepo  datastore.SubscriptionRepository
@@ -74,7 +74,7 @@ func New(cfg config.Configuration) (datastore.DatabaseClient, error) {
 	c := &Client{
 		db:                conn,
 		apiKeyRepo:        NewApiKeyRepo(conn),
-		groupRepo:         NewGroupRepo(conn),
+		groupRepo:         datastore.New(conn, GroupCollection),
 		subscriptionRepo:  NewSubscriptionRepo(conn),
 		applicationRepo:   NewApplicationRepo(conn),
 		eventRepo:         NewEventRepository(conn),
@@ -107,7 +107,7 @@ func (c *Client) APIRepo() datastore.APIKeyRepository {
 	return c.apiKeyRepo
 }
 
-func (c *Client) GroupRepo() datastore.GroupRepository {
+func (c *Client) GroupRepo() datastore.Database {
 	return c.groupRepo
 }
 

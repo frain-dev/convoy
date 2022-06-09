@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 
+	"github.com/frain-dev/convoy"
 	"github.com/frain-dev/convoy/config"
 	"github.com/frain-dev/convoy/datastore"
 	log "github.com/sirupsen/logrus"
@@ -51,17 +52,18 @@ func updateVersion4ToVersion5() {
 		log.WithError(err).Fatalf("Error connecting to the db.")
 	}
 
-	groups, err := db.GroupRepo().LoadGroups(ctx, &datastore.GroupFilter{})
+	var groups *[]datastore.Group
+	err = db.GroupRepo().FindAll(ctx, convoy.GenericMap{}, nil, &groups)
 	if err != nil {
 		log.WithError(err).Fatalf("Error fetching the groups.")
 	}
 
-	for _, grp := range groups {
-		group := *grp
+	for _, grp := range *groups {
+		group := grp
 		group.RateLimit = 5000
 		group.RateLimitDuration = "1m"
 
-		err = db.GroupRepo().UpdateGroup(ctx, &group)
+		err = db.GroupRepo().UpdateByID(ctx, group.UID, group)
 		if err != nil {
 			log.WithError(err).Fatalf("Error updating group details.")
 		}

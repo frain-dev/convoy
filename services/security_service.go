@@ -16,15 +16,16 @@ import (
 	"github.com/google/uuid"
 	log "github.com/sirupsen/logrus"
 	"github.com/xdg-go/pbkdf2"
+	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
 type SecurityService struct {
-	groupRepo  datastore.GroupRepository
+	groupRepo  datastore.Database
 	apiKeyRepo datastore.APIKeyRepository
 }
 
-func NewSecurityService(groupRepo datastore.GroupRepository, apiKeyRepo datastore.APIKeyRepository) *SecurityService {
+func NewSecurityService(groupRepo datastore.Database, apiKeyRepo datastore.APIKeyRepository) *SecurityService {
 	return &SecurityService{groupRepo: groupRepo, apiKeyRepo: apiKeyRepo}
 }
 
@@ -39,7 +40,14 @@ func (ss *SecurityService) CreateAPIKey(ctx context.Context, newApiKey *models.A
 		return nil, "", NewServiceError(http.StatusBadRequest, errors.New("invalid api key role"))
 	}
 
-	groups, err := ss.groupRepo.FetchGroupsByIDs(ctx, newApiKey.Role.Groups)
+	filter := bson.M{
+		"uid": bson.M{
+			"$in": newApiKey.Role.Groups,
+		},
+	}
+
+	var groups []*datastore.Group
+	err = ss.groupRepo.FindAll(ctx, filter, nil, groups)
 	if err != nil {
 		log.WithError(err).Error("failed to fetch groups by ids")
 		return nil, "", NewServiceError(http.StatusBadRequest, errors.New("invalid group"))
@@ -175,7 +183,14 @@ func (ss *SecurityService) UpdateAPIKey(ctx context.Context, uid string, role *a
 		return nil, NewServiceError(http.StatusBadRequest, errors.New("invalid api key role"))
 	}
 
-	groups, err := ss.groupRepo.FetchGroupsByIDs(ctx, role.Groups)
+	filter := bson.M{
+		"uid": bson.M{
+			"$in": role.Groups,
+		},
+	}
+
+	var groups []*datastore.Group
+	err = ss.groupRepo.FindAll(ctx, filter, nil, groups)
 	if err != nil {
 		return nil, NewServiceError(http.StatusBadRequest, errors.New("invalid group"))
 	}

@@ -3,8 +3,9 @@ package mongo
 import (
 	"context"
 	"errors"
-	log "github.com/sirupsen/logrus"
 	"time"
+
+	log "github.com/sirupsen/logrus"
 
 	"github.com/frain-dev/convoy/datastore"
 	"go.mongodb.org/mongo-driver/bson"
@@ -61,7 +62,6 @@ func (db *groupRepo) LoadGroups(ctx context.Context, f *datastore.GroupFilter) (
 }
 
 func (db *groupRepo) CreateGroup(ctx context.Context, o *datastore.Group) error {
-
 	o.ID = primitive.NewObjectID()
 
 	_, err := db.inner.InsertOne(ctx, o)

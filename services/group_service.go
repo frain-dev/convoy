@@ -18,13 +18,13 @@ import (
 
 type GroupService struct {
 	appRepo           datastore.ApplicationRepository
-	groupRepo         datastore.GroupRepository
+	groupRepo         datastore.Database
 	eventRepo         datastore.EventRepository
 	eventDeliveryRepo datastore.EventDeliveryRepository
 	limiter           limiter.RateLimiter
 }
 
-func NewGroupService(appRepo datastore.ApplicationRepository, groupRepo datastore.GroupRepository, eventRepo datastore.EventRepository, eventDeliveryRepo datastore.EventDeliveryRepository, limiter limiter.RateLimiter) *GroupService {
+func NewGroupService(appRepo datastore.ApplicationRepository, groupRepo datastore.Database, eventRepo datastore.EventRepository, eventDeliveryRepo datastore.EventDeliveryRepository, limiter limiter.RateLimiter) *GroupService {
 	return &GroupService{
 		appRepo:           appRepo,
 		groupRepo:         groupRepo,
@@ -65,6 +65,7 @@ func (gs *GroupService) CreateGroup(ctx context.Context, newGroup *models.Group)
 	}
 
 	group := &datastore.Group{
+		ID:                primitive.NewObjectID(),
 		UID:               uuid.New().String(),
 		Name:              groupName,
 		Type:              newGroup.Type,
@@ -77,7 +78,7 @@ func (gs *GroupService) CreateGroup(ctx context.Context, newGroup *models.Group)
 		DocumentStatus:    datastore.ActiveDocumentStatus,
 	}
 
-	err = gs.groupRepo.CreateGroup(ctx, group)
+	err = gs.groupRepo.Save(ctx, group, nil)
 	if err != nil {
 		log.WithError(err).Error("failed to create group")
 		return nil, NewServiceError(http.StatusBadRequest, errors.New("failed to create group"))
@@ -99,7 +100,7 @@ func (gs *GroupService) UpdateGroup(ctx context.Context, group *datastore.Group,
 		group.LogoURL = update.LogoURL
 	}
 
-	err = gs.groupRepo.UpdateGroup(ctx, group)
+	err = gs.groupRepo.UpdateByID(ctx, group.UID, group)
 	if err != nil {
 		log.WithError(err).Error("failed to to update group")
 		return nil, NewServiceError(http.StatusBadRequest, errors.New("an error occurred while updating Group"))
@@ -109,32 +110,33 @@ func (gs *GroupService) UpdateGroup(ctx context.Context, group *datastore.Group,
 }
 
 func (gs *GroupService) GetGroups(ctx context.Context, filter *datastore.GroupFilter) ([]*datastore.Group, error) {
-	groups, err := gs.groupRepo.LoadGroups(ctx, filter.WithNamesTrimmed())
+	var groups []*datastore.Group
+	err := gs.groupRepo.FindAll(ctx, filter.WithNamesTrimmed().ToGenericMap(), nil, groups)
 	if err != nil {
 		log.WithError(err).Error("failed to load groups")
 		return nil, NewServiceError(http.StatusBadRequest, errors.New("an error occurred while fetching Groups"))
 	}
 
-	err = gs.FillGroupsStatistics(ctx, groups)
-	if err != nil {
-		log.WithError(err).Error("failed to fill statistics of group ")
-	}
+	// err = gs.FillGroupsStatistics(ctx, groups)
+	// if err != nil {
+	// 	log.WithError(err).Error("failed to fill statistics of group ")
+	// }
 
 	return groups, nil
 }
 
 func (gs *GroupService) FillGroupsStatistics(ctx context.Context, groups []*datastore.Group) error {
-	err := gs.groupRepo.FillGroupsStatistics(ctx, groups)
-	if err != nil {
-		log.WithError(err).Error("failed to count group applications")
-		return NewServiceError(http.StatusBadRequest, errors.New("failed to count group statistics"))
-	}
+	// err := gs.groupRepo.FillGroupsStatistics(ctx, groups)
+	// if err != nil {
+	// 	log.WithError(err).Error("failed to count group applications")
+	// 	return NewServiceError(http.StatusBadRequest, errors.New("failed to count group statistics"))
+	// }
 
 	return nil
 }
 
 func (gs *GroupService) DeleteGroup(ctx context.Context, id string) error {
-	err := gs.groupRepo.DeleteGroup(ctx, id)
+	err := gs.groupRepo.DeleteByID(ctx, id)
 	if err != nil {
 		log.WithError(err).Error("failed to delete group")
 		return NewServiceError(http.StatusBadRequest, errors.New("failed to delete group"))

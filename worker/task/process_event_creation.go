@@ -16,7 +16,7 @@ import (
 	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
-func ProcessEventCreated(appRepo datastore.ApplicationRepository, eventRepo datastore.EventRepository, groupRepo datastore.GroupRepository, eventDeliveryRepo datastore.EventDeliveryRepository, cache cache.Cache, eventQueue queue.Queuer, subRepo datastore.SubscriptionRepository) func(context.Context, *asynq.Task) error {
+func ProcessEventCreated(appRepo datastore.ApplicationRepository, eventRepo datastore.EventRepository, groupRepo datastore.Database, eventDeliveryRepo datastore.EventDeliveryRepository, cache cache.Cache, eventQueue queue.Queuer, subRepo datastore.SubscriptionRepository) func(context.Context, *asynq.Task) error {
 	return func(ctx context.Context, t *asynq.Task) error {
 
 		var event datastore.Event
@@ -36,7 +36,7 @@ func ProcessEventCreated(appRepo datastore.ApplicationRepository, eventRepo data
 		}
 
 		if group == nil {
-			group, err = groupRepo.FetchGroupByID(ctx, event.GroupID)
+			err = groupRepo.FindByID(ctx, event.GroupID, nil, group)
 			if err != nil {
 				return &EndpointError{Err: err, delay: 10 * time.Second}
 			}

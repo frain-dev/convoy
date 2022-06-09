@@ -31,7 +31,7 @@ type SignatureValues struct {
 	Timestamp string
 }
 
-func ProcessEventDelivery(appRepo datastore.ApplicationRepository, eventDeliveryRepo datastore.EventDeliveryRepository, groupRepo datastore.GroupRepository, rateLimiter limiter.RateLimiter, subRepo datastore.SubscriptionRepository) func(context.Context, *asynq.Task) error {
+func ProcessEventDelivery(appRepo datastore.ApplicationRepository, eventDeliveryRepo datastore.EventDeliveryRepository, groupRepo datastore.Database, rateLimiter limiter.RateLimiter, subRepo datastore.SubscriptionRepository) func(context.Context, *asynq.Task) error {
 	return func(ctx context.Context, t *asynq.Task) error {
 		Id := string(t.Payload())
 
@@ -161,7 +161,8 @@ func ProcessEventDelivery(appRepo datastore.ApplicationRepository, eventDelivery
 
 		bStr := strings.TrimSuffix(buff.String(), "\n")
 
-		g, err := groupRepo.FetchGroupByID(context.Background(), app.GroupID)
+		var g *datastore.Group
+		err = groupRepo.FindByID(context.Background(), app.GroupID, nil, g)
 		if err != nil {
 			log.WithError(err).Error("could not find error")
 			return &EndpointError{Err: err, delay: delayDuration}

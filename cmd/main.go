@@ -9,7 +9,6 @@ import (
 	_ "time/tzdata"
 
 	"github.com/frain-dev/convoy/cache"
-	"github.com/frain-dev/convoy/datastore/badger"
 	"github.com/frain-dev/convoy/searcher"
 	"github.com/google/uuid"
 	"github.com/hibiken/asynq"
@@ -101,7 +100,7 @@ func ensureDefaultUser(ctx context.Context, a *app) error {
 
 type app struct {
 	apiKeyRepo        datastore.APIKeyRepository
-	groupRepo         datastore.GroupRepository
+	groupRepo         datastore.Database
 	applicationRepo   datastore.ApplicationRepository
 	eventRepo         datastore.EventRepository
 	eventDeliveryRepo datastore.EventDeliveryRepository
@@ -131,12 +130,6 @@ func NewDB(cfg config.Configuration) (datastore.DatabaseClient, error) {
 			return nil, err
 		}
 		return db, nil
-	case config.InMemoryDatabaseProvider:
-		bolt, err := badger.New(cfg)
-		if err != nil {
-			return nil, err
-		}
-		return bolt, nil
 	default:
 		return nil, errors.New("invalid database type")
 	}
@@ -283,8 +276,6 @@ func parsePersistentArgs(app *app, cmd *cobra.Command) {
 	cmd.PersistentFlags().StringVar(&redisDsn, "redis", "", "Redis dsn")
 
 	cmd.AddCommand(addVersionCommand())
-	cmd.AddCommand(addCreateCommand(app))
-	cmd.AddCommand(addGetComamnd(app))
 	cmd.AddCommand(addServerCommand(app))
 	cmd.AddCommand(addWorkerCommand(app))
 	cmd.AddCommand(addRetryCommand(app))

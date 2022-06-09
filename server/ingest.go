@@ -76,7 +76,8 @@ func (a *applicationHandler) IngestEvent(w http.ResponseWriter, r *http.Request)
 	// 3.2 On success
 	// Attach Source to Event.
 	// Write Event to the Ingestion Queue.
-	g, err := a.groupRepo.FetchGroupByID(r.Context(), source.GroupID)
+	var g *datastore.Group
+	err = a.groupRepo.FindByID(r.Context(), source.GroupID, nil, g)
 	if err != nil {
 		log.Errorf("Error occurred retrieving group")
 		return

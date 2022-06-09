@@ -3,8 +3,9 @@ package testdb
 import (
 	"context"
 	"fmt"
-	"github.com/dchest/uniuri"
 	"time"
+
+	"github.com/dchest/uniuri"
 
 	"github.com/frain-dev/convoy"
 	"github.com/frain-dev/convoy/auth"
@@ -132,7 +133,7 @@ func SeedDefaultGroup(db datastore.DatabaseClient) (*datastore.Group, error) {
 
 	// Seed Data.
 	groupRepo := db.GroupRepo()
-	err := groupRepo.CreateGroup(context.TODO(), defaultGroup)
+	err := groupRepo.Save(context.TODO(), defaultGroup, nil)
 	if err != nil {
 		return &datastore.Group{}, err
 	}
@@ -305,7 +306,7 @@ func SeedGroup(db datastore.DatabaseClient, uid, name string, cfg *datastore.Gro
 
 	// Seed Data.
 	groupRepo := db.GroupRepo()
-	err := groupRepo.CreateGroup(context.TODO(), g)
+	err := groupRepo.Save(context.TODO(), g, nil)
 	if err != nil {
 		return &datastore.Group{}, err
 	}
