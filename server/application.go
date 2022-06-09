@@ -11,7 +11,6 @@ import (
 	"github.com/frain-dev/convoy/logger"
 
 	"github.com/frain-dev/convoy/datastore"
-	"github.com/frain-dev/convoy/notification"
 	"github.com/frain-dev/convoy/queue"
 	"github.com/frain-dev/convoy/server/models"
 	"github.com/frain-dev/convoy/tracer"
@@ -67,7 +66,6 @@ func newApplicationHandler(
 	orgMemberRepo datastore.OrganisationMemberRepository,
 	orgInviteRepo datastore.OrganisationInviteRepository,
 	userRepo datastore.UserRepository,
-	em notification.Sender,
 	queue queue.Queuer,
 	logger logger.Logger,
 	tracer tracer.Tracer,
@@ -81,7 +79,7 @@ func newApplicationHandler(
 	rs := services.NewSubscriptionService(subRepo)
 	sos := services.NewSourceService(sourceRepo)
 	us := services.NewUserService(userRepo, cache)
-	ois := services.NewOrganisationInviteService(orgRepo, userRepo, orgMemberRepo, orgInviteRepo, em)
+	ois := services.NewOrganisationInviteService(orgRepo, userRepo, orgMemberRepo, orgInviteRepo, queue)
 	om := services.NewOrganisationMemberService(orgMemberRepo)
 
 	return &applicationHandler{

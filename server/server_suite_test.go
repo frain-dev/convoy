@@ -28,7 +28,6 @@ import (
 	mongoStore "github.com/frain-dev/convoy/datastore/mongo"
 	nooplimiter "github.com/frain-dev/convoy/limiter/noop"
 	"github.com/frain-dev/convoy/logger"
-	noopNotification "github.com/frain-dev/convoy/notification/noop"
 	"github.com/frain-dev/convoy/queue"
 	redisqueue "github.com/frain-dev/convoy/queue/redis"
 	noopsearcher "github.com/frain-dev/convoy/searcher/noop"
@@ -116,12 +115,11 @@ func buildApplication() *applicationHandler {
 	searcher := noopsearcher.NewNoopSearcher()
 	tracer = nil
 	subRepo := db.SubRepo()
-	sender := noopNotification.NewNoopNotificationSender()
 
 	return newApplicationHandler(
 		eventRepo, eventDeliveryRepo, appRepo,
 		groupRepo, apiKeyRepo, subRepo, sourceRepo, orgRepo,
-		orgMemberRepo, orgInviteRepo, userRepo, sender, queue, logger, tracer, cache, limiter, searcher,
+		orgMemberRepo, orgInviteRepo, userRepo, queue, logger, tracer, cache, limiter, searcher,
 	)
 }
 

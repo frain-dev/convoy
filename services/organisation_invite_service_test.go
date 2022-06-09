@@ -5,7 +5,6 @@ import (
 	"errors"
 	"github.com/frain-dev/convoy/auth"
 	"github.com/frain-dev/convoy/mocks"
-	noopNotification "github.com/frain-dev/convoy/notification/noop"
 	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/require"
 	"go.mongodb.org/mongo-driver/bson/primitive"
@@ -22,8 +21,8 @@ func provideOrganisationInviteService(ctrl *gomock.Controller) *OrganisationInvi
 	userRepo := mocks.NewMockUserRepository(ctrl)
 	orgInviteRepo := mocks.NewMockOrganisationInviteRepository(ctrl)
 	orgRepo := mocks.NewMockOrganisationRepository(ctrl)
-	sender := noopNotification.NewNoopNotificationSender()
-	return NewOrganisationInviteService(orgRepo, userRepo, orgMemberRepo, orgInviteRepo, sender)
+	queue := mocks.NewMockQueuer(ctrl)
+	return NewOrganisationInviteService(orgRepo, userRepo, orgMemberRepo, orgInviteRepo, queue)
 }
 
 func TestOrganisationInviteService_CreateOrganisationMemberInvite(t *testing.T) {
@@ -64,6 +63,9 @@ func TestOrganisationInviteService_CreateOrganisationMemberInvite(t *testing.T) 
 				a, _ := ois.orgInviteRepo.(*mocks.MockOrganisationInviteRepository)
 				a.EXPECT().CreateOrganisationInvite(gomock.Any(), gomock.Any()).
 					Times(1).Return(nil)
+
+				q := ois.queue.(*mocks.MockQueuer)
+				q.EXPECT().Write(gomock.Any(), gomock.Any(), gomock.Any()).Return(nil).Times(1)
 			},
 			want: &datastore.OrganisationInvite{
 				OrganisationID: "123",

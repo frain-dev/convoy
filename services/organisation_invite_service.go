@@ -23,7 +23,6 @@ import (
 )
 
 type OrganisationInviteService struct {
-	em            notification.Sender
 	queue         queue.Queuer
 	orgRepo       datastore.OrganisationRepository
 	userRepo      datastore.UserRepository
@@ -31,9 +30,9 @@ type OrganisationInviteService struct {
 	orgInviteRepo datastore.OrganisationInviteRepository
 }
 
-func NewOrganisationInviteService(orgRepo datastore.OrganisationRepository, userRepo datastore.UserRepository, orgMemberRepo datastore.OrganisationMemberRepository, orgInviteRepo datastore.OrganisationInviteRepository, em notification.Sender) *OrganisationInviteService {
+func NewOrganisationInviteService(orgRepo datastore.OrganisationRepository, userRepo datastore.UserRepository, orgMemberRepo datastore.OrganisationMemberRepository, orgInviteRepo datastore.OrganisationInviteRepository, queue queue.Queuer) *OrganisationInviteService {
 	return &OrganisationInviteService{
-		em:            em,
+		queue:         queue,
 		orgRepo:       orgRepo,
 		userRepo:      userRepo,
 		orgMemberRepo: orgMemberRepo,
@@ -96,7 +95,6 @@ func (ois *OrganisationInviteService) sendInviteEmail(ctx context.Context, iv *d
 	buf, err := json.Marshal(n)
 	if err != nil {
 		log.WithError(err).Error("failed to marshal notification payload")
-		return NewServiceError(http.StatusBadRequest, err)
 	}
 
 	job := &queue.Job{
