@@ -289,7 +289,6 @@ func TestInit(t *testing.T) {
 			name: "should_init_successfully",
 			args: args{
 				authConfig: &config.AuthConfiguration{
-					RequireAuth: true,
 					File: config.FileRealmOption{
 						Basic: []config.BasicAuth{
 							{
@@ -302,15 +301,6 @@ func TestInit(t *testing.T) {
 							},
 						},
 					},
-				},
-			},
-			wantErr: false,
-		},
-		{
-			name: "should_init_with_noop_realm_successfully",
-			args: args{
-				authConfig: &config.AuthConfiguration{
-					RequireAuth: false,
 				},
 			},
 			wantErr: false,

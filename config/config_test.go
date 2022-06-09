@@ -221,7 +221,6 @@ func TestLoadConfig(t *testing.T) {
 				},
 				MaxResponseSize: MaxResponseSize,
 				Auth: AuthConfiguration{
-					RequireAuth: true,
 					File: FileRealmOption{
 						Basic: []BasicAuth{
 							{
