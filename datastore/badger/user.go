@@ -30,3 +30,7 @@ func (u *userRepo) FindUserByID(ctx context.Context, id string) (*datastore.User
 func (u *userRepo) LoadUsersPaged(ctx context.Context, pageable datastore.Pageable) ([]datastore.User, datastore.PaginationData, error) {
 	return nil, datastore.PaginationData{}, nil
 }
+
+func (u *userRepo) UpdateUser(ctx context.Context, user *datastore.User) error {
+	return nil
+}

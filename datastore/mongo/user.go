@@ -3,6 +3,7 @@ package mongo
 import (
 	"context"
 	"errors"
+	"time"
 
 	"github.com/frain-dev/convoy/datastore"
 	pager "github.com/gobeam/mongo-go-pagination"
@@ -73,4 +74,21 @@ func (u *userRepo) LoadUsersPaged(ctx context.Context, pageable datastore.Pageab
 	}
 
 	return users, datastore.PaginationData(paginatedData.Pagination), nil
+}
+
+func (u *userRepo) UpdateUser(ctx context.Context, user *datastore.User) error {
+	filter := bson.M{"uid": user.UID, "document_status": datastore.ActiveDocumentStatus}
+
+	update := bson.D{
+		primitive.E{Key: "$set", Value: bson.D{
+			primitive.E{Key: "first_name", Value: user.FirstName},
+			primitive.E{Key: "last_name", Value: user.LastName},
+			primitive.E{Key: "email", Value: user.Email},
+			primitive.E{Key: "password", Value: user.Password},
+			primitive.E{Key: "updated_at", Value: primitive.NewDateTimeFromTime(time.Now())},
+		}},
+	}
+
+	_, err := u.client.UpdateOne(ctx, filter, update)
+	return err
 }
