@@ -46,20 +46,18 @@ export class EventsComponent implements OnInit {
 		return this.datePipe.transform(date, 'dd/MM/yyyy');
 	}
 
-	async fetchDashboardData(): Promise<HTTP_RESPONSE> {
+	async fetchDashboardData() {
 		try {
 			this.isloadingDashboardData = true;
 			const { startDate, endDate } = this.setDateForFilter(this.statsDateRange.value);
 
 			const dashboardResponse = await this.eventsService.dashboardSummary({ startDate: startDate || '', endDate: endDate || '', frequency: this.dashboardFrequency });
 			this.dashboardData = dashboardResponse.data;
-			this.isloadingDashboardData = false;
 			this.initChart(dashboardResponse);
 
-			return dashboardResponse;
+			this.isloadingDashboardData = false;
 		} catch (error: any) {
 			this.isloadingDashboardData = false;
-			return error;
 		}
 	}
 
@@ -132,8 +130,8 @@ export class EventsComponent implements OnInit {
 		}
 	}
 
-	getEventDeliveries(eventId: string){
-		this.eventDeliveryFilteredByEventId = eventId
-		this.toggleActiveTab('event deliveries') 
+	getEventDeliveries(eventId: string) {
+		this.eventDeliveryFilteredByEventId = eventId;
+		this.toggleActiveTab('event deliveries');
 	}
 }

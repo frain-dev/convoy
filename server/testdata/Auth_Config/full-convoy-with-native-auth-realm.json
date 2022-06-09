@@ -8,7 +8,6 @@
     },
     "base_url": "https://app.convoy.io",
     "auth": {
-        "require_auth": true,
         "native": {
             "enabled": true
         },

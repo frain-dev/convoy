@@ -3,20 +3,28 @@
 	<section class="auth-page--container">
 		<form [formGroup]="loginForm" (ngSubmit)="login()">
 			<div class="input">
-				<input type="text" id="username" name="username" autocomplete="username" formControlName="username" required />
 				<label for="username">Username</label>
+				<input type="text" id="username" name="username" autocomplete="username" formControlName="username" required />
+				<div class="input__error input__error__danger" *ngIf="loginForm.controls.username.touched && loginForm.controls.username.invalid">
+					<img src="assets/img/input-error-icon.svg" alt="input error icon" />
+					<span>Please enter your username.</span>
+				</div>
 			</div>
 
 			<div class="input">
+				<label htmlFor="password">Password</label>
 				<div class="input--password">
 					<input [type]="showLoginPassword ? 'text' : 'password'" id="password" name="password" autocomplete="current-password" formControlName="password" required />
-					<label htmlFor="password">Password</label>
 					<button class="input--password__view-toggle" type="button" (click)="showLoginPassword = !showLoginPassword">
 						<img
 							[src]="!showLoginPassword ? '/assets/img/password-invisible-icon.svg' : '/assets/img/password-visible-icon.svg'"
 							alt="showLoginPassword ? 'hide password icon' : 'view password icon'"
 						/>
 					</button>
+				</div>
+				<div class="input__error input__error__danger" *ngIf="loginForm.controls.password.touched && loginForm.controls.password.invalid">
+					<img src="assets/img/input-error-icon.svg" alt="input error icon" />
+					<span>Password is required</span>
 				</div>
 			</div>
 

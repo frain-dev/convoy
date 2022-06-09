@@ -7,6 +7,7 @@ import { Component, Input, OnInit } from '@angular/core';
 })
 export class LoaderComponent implements OnInit {
 	@Input() isTransparent: boolean = false;
+
 	constructor() {}
 
 	ngOnInit(): void {}

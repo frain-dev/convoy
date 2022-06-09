@@ -27,6 +27,10 @@ const routes: Routes = [
 			{
 				path: 'app-portal/:token',
 				loadChildren: () => import('./pages/app/app.module').then(m => m.AppModule)
+			},
+			{
+				path: 'organisation-settings',
+				loadChildren: () => import('./pages/organisation/organisation.module').then(m => m.OrganisationModule)
 			}
 		]
 	}
