@@ -164,42 +164,48 @@ func (s *SubcriptionService) LoadSubscriptionsPaged(ctx context.Context, groupId
 
 	for i, sub := range subscriptions {
 		if _, ok := appMap[sub.AppID]; !ok {
-			a, _ := s.appRepo.FindApplicationByID(ctx, sub.AppID)
-			aa := &datastore.Application{
-				UID:          a.UID,
-				Title:        a.Title,
-				GroupID:      a.GroupID,
-				SupportEmail: a.SupportEmail,
+			a, err := s.appRepo.FindApplicationByID(ctx, sub.AppID)
+			if err == nil {
+				aa := &datastore.Application{
+					UID:          a.UID,
+					Title:        a.Title,
+					GroupID:      a.GroupID,
+					SupportEmail: a.SupportEmail,
+				}
+				appMap[sub.AppID] = aa
 			}
-			appMap[sub.AppID] = aa
 		}
 
 		if _, ok := sourceMap[sub.SourceID]; !ok {
-			ev, _ := s.sourceRepo.FindSourceByID(ctx, sub.GroupID, sub.SourceID)
-			source := &datastore.Source{
-				UID:        ev.UID,
-				Name:       ev.Name,
-				Type:       ev.Type,
-				Verifier:   ev.Verifier,
-				GroupID:    sub.GroupID,
-				MaskID:     ev.MaskID,
-				IsDisabled: ev.IsDisabled,
+			ev, err := s.sourceRepo.FindSourceByID(ctx, sub.GroupID, sub.SourceID)
+			if err == nil {
+				source := &datastore.Source{
+					UID:        ev.UID,
+					Name:       ev.Name,
+					Type:       ev.Type,
+					Verifier:   ev.Verifier,
+					GroupID:    ev.GroupID,
+					MaskID:     ev.MaskID,
+					IsDisabled: ev.IsDisabled,
+				}
+				sourceMap[sub.SourceID] = source
 			}
-			sourceMap[sub.SourceID] = source
 		}
 
 		if _, ok := endpointMap[sub.EndpointID]; !ok {
-			en, _ := s.appRepo.FindApplicationEndpointByID(ctx, sub.AppID, sub.EndpointID)
-			endpoint := &datastore.Endpoint{
-				UID:               en.UID,
-				TargetURL:         en.TargetURL,
-				DocumentStatus:    en.DocumentStatus,
-				Secret:            en.Secret,
-				HttpTimeout:       en.HttpTimeout,
-				RateLimit:         en.RateLimit,
-				RateLimitDuration: en.RateLimitDuration,
+			en, err := s.appRepo.FindApplicationEndpointByID(ctx, sub.AppID, sub.EndpointID)
+			if err == nil {
+				endpoint := &datastore.Endpoint{
+					UID:               en.UID,
+					TargetURL:         en.TargetURL,
+					DocumentStatus:    en.DocumentStatus,
+					Secret:            en.Secret,
+					HttpTimeout:       en.HttpTimeout,
+					RateLimit:         en.RateLimit,
+					RateLimitDuration: en.RateLimitDuration,
+				}
+				endpointMap[sub.EndpointID] = endpoint
 			}
-			endpointMap[sub.EndpointID] = endpoint
 		}
 
 		subscriptions[i].App = appMap[sub.AppID]

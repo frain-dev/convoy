@@ -261,37 +261,43 @@ func (e *EventService) GetEventDeliveriesPaged(ctx context.Context, filter *data
 
 	for i, ed := range deliveries {
 		if _, ok := appMap[ed.AppID]; !ok {
-			a, _ := e.appRepo.FindApplicationByID(ctx, ed.AppID)
-			aa := &datastore.Application{
-				UID:          a.UID,
-				Title:        a.Title,
-				GroupID:      a.GroupID,
-				SupportEmail: a.SupportEmail,
+			a, err := e.appRepo.FindApplicationByID(ctx, ed.AppID)
+			if err == nil {
+				aa := &datastore.Application{
+					UID:          a.UID,
+					Title:        a.Title,
+					GroupID:      a.GroupID,
+					SupportEmail: a.SupportEmail,
+				}
+				appMap[ed.AppID] = aa
 			}
-			appMap[ed.AppID] = aa
 		}
 
 		if _, ok := eventMap[ed.EventID]; !ok {
-			ev, _ := e.eventRepo.FindEventByID(ctx, ed.EventID)
-			event := &datastore.Event{
-				UID:       ev.UID,
-				EventType: ev.EventType,
+			ev, err := e.eventRepo.FindEventByID(ctx, ed.EventID)
+			if err == nil {
+				event := &datastore.Event{
+					UID:       ev.UID,
+					EventType: ev.EventType,
+				}
+				eventMap[ed.EventID] = event
 			}
-			eventMap[ed.EventID] = event
 		}
 
 		if _, ok := endpointMap[ed.EndpointID]; !ok {
-			en, _ := e.appRepo.FindApplicationEndpointByID(ctx, ed.AppID, ed.EndpointID)
-			endpoint := &datastore.Endpoint{
-				UID:               en.UID,
-				TargetURL:         en.TargetURL,
-				DocumentStatus:    en.DocumentStatus,
-				Secret:            en.Secret,
-				HttpTimeout:       en.HttpTimeout,
-				RateLimit:         en.RateLimit,
-				RateLimitDuration: en.RateLimitDuration,
+			en, err := e.appRepo.FindApplicationEndpointByID(ctx, ed.AppID, ed.EndpointID)
+			if err == nil {
+				endpoint := &datastore.Endpoint{
+					UID:               en.UID,
+					TargetURL:         en.TargetURL,
+					DocumentStatus:    en.DocumentStatus,
+					Secret:            en.Secret,
+					HttpTimeout:       en.HttpTimeout,
+					RateLimit:         en.RateLimit,
+					RateLimitDuration: en.RateLimitDuration,
+				}
+				endpointMap[ed.EndpointID] = endpoint
 			}
-			endpointMap[ed.EndpointID] = endpoint
 		}
 
 		deliveries[i].App = appMap[ed.AppID]
@@ -377,4 +383,10 @@ func (e *EventService) requeueEventDelivery(ctx context.Context, eventDelivery *
 		return fmt.Errorf("error occurred re-enqueing old event - %s: %v", eventDelivery.UID, err)
 	}
 	return nil
+}
+
+func (e *EventService) populateEventDeliveries(ctx context.Context, eventDelivery *datastore.EventDelivery) (*datastore.EventDelivery, error) {
+	
+
+	return eventDelivery, nil
 }
