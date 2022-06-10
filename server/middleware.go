@@ -604,36 +604,33 @@ func requireBaseUrl() func(next http.Handler) http.Handler {
 func requirePermission(role auth.RoleType) func(next http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			next.ServeHTTP(w, r)
-			return
+			authUser := getAuthUserFromContext(r.Context())
+			if authUser.Role.Type.Is(auth.RoleSuperUser) {
+				//superuser has access to everything
+				next.ServeHTTP(w, r)
+				return
+			}
 
-			//authUser := getAuthUserFromContext(r.Context())
-			//if authUser.Role.Type.Is(auth.RoleSuperUser) {
-			// superuser has access to everything
-			//	next.ServeHTTP(w, r)
-			//	return
-			//}
+			if !authUser.Role.Type.Is(role) {
+				_ = render.Render(w, r, newErrorResponse("unauthorized role", http.StatusUnauthorized))
+				return
+			}
 
-			//if !authUser.Role.Type.Is(role) {
-			//	_ = render.Render(w, r, newErrorResponse("unauthorized role", http.StatusUnauthorized))
-			//	return
-			//}
+			group := getGroupFromContext(r.Context())
+			for _, v := range authUser.Role.Groups {
+				if group.Name == v || group.UID == v {
 
-			//group := getGroupFromContext(r.Context())
-			//for _, v := range authUser.Role.Groups {
-			//	if group.Name == v || group.UID == v {
+					if len(authUser.Role.Apps) > 0 { //we're dealing with an app portal token at this point
+						_ = render.Render(w, r, newErrorResponse("unauthorized to access group", http.StatusUnauthorized))
+						return
+					}
 
-			//					if len(authUser.Role.Apps) > 0 { //we're dealing with an app portal token at this point
-			//						_ = render.Render(w, r, newErrorResponse("unauthorized to access group", http.StatusUnauthorized))
-			//						return
-			//					}
-			//
-			//					next.ServeHTTP(w, r)
-			//					return
-			//				}
-			//			}
+					next.ServeHTTP(w, r)
+					return
+				}
+			}
 
-			//			_ = render.Render(w, r, newErrorResponse("unauthorized to access group", http.StatusUnauthorized))
+			_ = render.Render(w, r, newErrorResponse("unauthorized to access group", http.StatusUnauthorized))
 		})
 	}
 }
