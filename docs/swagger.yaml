@@ -411,11 +411,13 @@ definitions:
       alert_config:
         $ref: '#/definitions/datastore.AlertConfiguration'
         description: subscription config
+      app_metadata:
+        $ref: '#/definitions/datastore.Application'
       created_at:
         type: string
       deleted_at:
         type: string
-      endpoint:
+      endpoint_metadata:
         $ref: '#/definitions/datastore.Endpoint'
       filter_config:
         $ref: '#/definitions/datastore.FilterConfiguration'
@@ -423,7 +425,7 @@ definitions:
         type: string
       retry_config:
         $ref: '#/definitions/datastore.RetryConfiguration'
-      source:
+      source_metadata:
         $ref: '#/definitions/datastore.Source'
       status:
         type: string
