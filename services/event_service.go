@@ -384,9 +384,3 @@ func (e *EventService) requeueEventDelivery(ctx context.Context, eventDelivery *
 	}
 	return nil
 }
-
-func (e *EventService) populateEventDeliveries(ctx context.Context, eventDelivery *datastore.EventDelivery) (*datastore.EventDelivery, error) {
-	
-
-	return eventDelivery, nil
-}
