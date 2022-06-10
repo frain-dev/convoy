@@ -3,6 +3,7 @@ package server
 import (
 	"net/http"
 
+	"github.com/frain-dev/convoy/datastore"
 	"github.com/frain-dev/convoy/server/models"
 	"github.com/frain-dev/convoy/util"
 	"github.com/go-chi/render"
@@ -96,4 +97,207 @@ func (a *applicationHandler) LogoutUser(w http.ResponseWriter, r *http.Request) 
 	}
 
 	_ = render.Render(w, r, newServerResponse("Logout successful", nil, http.StatusOK))
+}
+
+// GetUser
+// @Summary Gets a user
+// @Description This endpoint fetches a user
+// @Tags User
+// @Accept  json
+// @Produce  json
+// @Success 200 {object} serverResponse{data=datastore.User}
+// @Failure 400,401,500 {object} serverResponse{data=Stub}
+// @Security ApiKeyAuth
+// @Router /users/profile [get]
+func (a *applicationHandler) GetUser(w http.ResponseWriter, r *http.Request) {
+	user, ok := getUser(r)
+	if !ok {
+		_ = render.Render(w, r, newErrorResponse("unauthorized", http.StatusUnauthorized))
+		return
+	}
+
+	_ = render.Render(w, r, newServerResponse("User fetched successfully", user, http.StatusOK))
+}
+
+// UpdateUser
+// @Summary Updates a user
+// @Description This endpoint updates a user
+// @Tags User
+// @Accept  json
+// @Produce  json
+// @Param group body models.UpdateUser true "User Details"
+// @Success 200 {object} serverResponse{data=datastore.User}
+// @Failure 400,401,500 {object} serverResponse{data=Stub}
+// @Security ApiKeyAuth
+// @Router /users/profile [put]
+func (a *applicationHandler) UpdateUser(w http.ResponseWriter, r *http.Request) {
+	var userUpdate models.UpdateUser
+	err := util.ReadJSON(r, &userUpdate)
+	if err != nil {
+		_ = render.Render(w, r, newErrorResponse(err.Error(), http.StatusBadRequest))
+		return
+	}
+
+	user, ok := getUser(r)
+	if !ok {
+		_ = render.Render(w, r, newErrorResponse("unauthorized", http.StatusUnauthorized))
+		return
+	}
+
+	user, err = a.userService.UpdateUser(r.Context(), &userUpdate, user)
+	if err != nil {
+		_ = render.Render(w, r, newServiceErrResponse(err))
+		return
+	}
+
+	_ = render.Render(w, r, newServerResponse("User updated successfully", user, http.StatusOK))
+}
+
+// UpdatePassword
+// @Summary Updates a user's password
+// @Description This endpoint updates a user's password
+// @Tags User
+// @Accept  json
+// @Produce  json
+// @Param group body models.UpdatePassword true "Password Details"
+// @Success 200 {object} serverResponse{data=datastore.User}
+// @Failure 400,401,500 {object} serverResponse{data=Stub}
+// @Security ApiKeyAuth
+// @Router /users/password [put]
+func (a *applicationHandler) UpdatePassword(w http.ResponseWriter, r *http.Request) {
+	var updatePassword models.UpdatePassword
+	err := util.ReadJSON(r, &updatePassword)
+	if err != nil {
+		_ = render.Render(w, r, newErrorResponse(err.Error(), http.StatusBadRequest))
+		return
+	}
+
+	user, ok := getUser(r)
+	if !ok {
+		_ = render.Render(w, r, newErrorResponse("unauthorized", http.StatusUnauthorized))
+		return
+	}
+
+	user, err = a.userService.UpdatePassword(r.Context(), &updatePassword, user)
+	if err != nil {
+		_ = render.Render(w, r, newServiceErrResponse(err))
+		return
+	}
+
+	_ = render.Render(w, r, newServerResponse("Password updated successfully", user, http.StatusOK))
+
+}
+
+// CheckUserExists
+// @Summary Checks If a user exists
+// @Description This endpoint checks if a user exists
+// @Tags User
+// @Accept  json
+// @Produce  json
+// @Param group body models.UserExists true "User Exists Details"
+// @Success 200 {object} serverResponse{data=bool}
+// @Failure 400,401,500 {object} serverResponse{data=Stub}
+// @Security ApiKeyAuth
+// @Router /users/exists [post]
+func (a *applicationHandler) CheckUserExists(w http.ResponseWriter, r *http.Request) {
+	var userExists models.UserExists
+	err := util.ReadJSON(r, &userExists)
+	if err != nil {
+		_ = render.Render(w, r, newErrorResponse(err.Error(), http.StatusBadRequest))
+		return
+	}
+
+	exists, err := a.userService.CheckUserExists(r.Context(), &userExists)
+	if err != nil {
+		_ = render.Render(w, r, newServiceErrResponse(err))
+		return
+	}
+
+	_ = render.Render(w, r, newServerResponse("Checked user exists successfully", exists, http.StatusOK))
+
+}
+
+// GeneratePasswordResetToken
+// @Summary Generate password reset token
+// @Description This endpoint generates a password reset token
+// @Tags User
+// @Accept  json
+// @Produce  json
+// @Param username body models.GeneratePasswordResetToken true "Generate Token Details"
+// @Success 200 {object} serverResponse{data=stub}
+// @Failure 400,401,500 {object} serverResponse{data=Stub}
+// @Router /users/forgotpassword/generatetoken [post]
+func (a *applicationHandler) GeneratePasswordResetToken(w http.ResponseWriter, r *http.Request) {
+	var genPassToken models.GeneratePasswordResetToken
+	err := util.ReadJSON(r, &genPassToken)
+	if err != nil {
+		_ = render.Render(w, r, newErrorResponse(err.Error(), http.StatusBadRequest))
+		return
+	}
+
+	err = a.userService.GeneratePasswordResetToken(r.Context(), &genPassToken)
+	if err != nil {
+		_ = render.Render(w, r, newServiceErrResponse(err))
+		return
+	}
+	_ = render.Render(w, r, newServerResponse("Password reset token generated succesfully", nil, http.StatusOK))
+}
+
+// VerifyPasswordResetToken
+// @Summary Verify password reset token
+// @Description This endpoint verifies password reset token
+// @Tags User
+// @Accept  json
+// @Produce  json
+// @Param token body models.VerifyPasswordResetToken true "Verify Token Details"
+// @Success 200 {object} serverResponse{data=Stub}
+// @Failure 400,401,500 {object} serverResponse{data=Stub}
+// @Router /users/forgotpassword/verifytoken [post]
+func (a *applicationHandler) VerifyPasswordResetToken(w http.ResponseWriter, r *http.Request) {
+	var verPassToken models.VerifyPasswordResetToken
+	err := util.ReadJSON(r, &verPassToken)
+	if err != nil {
+		_ = render.Render(w, r, newErrorResponse(err.Error(), http.StatusBadRequest))
+		return
+	}
+
+	err = a.userService.VerifyPasswordResetToken(r.Context(), &verPassToken)
+	if err != nil {
+		_ = render.Render(w, r, newServiceErrResponse(err))
+		return
+	}
+	_ = render.Render(w, r, newServerResponse("reset token is valid", nil, http.StatusOK))
+}
+
+// ResetPassword
+// @Summary Reset user password
+// @Description This endpoint resets a users password
+// @Tags User
+// @Accept  json
+// @Produce  json
+// @Param password body models.ResetPassword true "Reset Password Details"
+// @Success 200 {object} serverResponse{data=datastore.User}
+// @Failure 400,401,500 {object} serverResponse{data=Stub}
+// @Router /users/password/reset [post]
+func (a *applicationHandler) ResetPassword(w http.ResponseWriter, r *http.Request) {
+	var resetPassword models.ResetPassword
+	err := util.ReadJSON(r, &resetPassword)
+	if err != nil {
+		_ = render.Render(w, r, newErrorResponse(err.Error(), http.StatusBadRequest))
+		return
+	}
+
+	user, err := a.userService.ResetPassword(r.Context(), &resetPassword)
+	if err != nil {
+		_ = render.Render(w, r, newServiceErrResponse(err))
+		return
+	}
+	_ = render.Render(w, r, newServerResponse("password reset succesful", user, http.StatusOK))
+}
+
+func getUser(r *http.Request) (*datastore.User, bool) {
+	authUser := getAuthUserFromContext(r.Context())
+	user, ok := authUser.Metadata.(*datastore.User)
+
+	return user, ok
 }
