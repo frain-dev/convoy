@@ -399,6 +399,25 @@ func requireOrganisationMembership(orgMemberRepo datastore.OrganisationMemberRep
 	}
 }
 
+func requireOrganisationGroupMember() func(next http.Handler) http.Handler {
+	return func(next http.Handler) http.Handler {
+
+		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			group := getGroupFromContext(r.Context())
+			member := getOrganisationMemberFromContext(r.Context())
+
+			for _, g := range member.Role.Groups {
+				if g == group.UID {
+					next.ServeHTTP(w, r)
+					return
+				}
+			}
+
+			_ = render.Render(w, r, newErrorResponse("unauthorized", http.StatusUnauthorized))
+		})
+	}
+}
+
 func requireOrganisationMemberRole(roleType auth.RoleType) func(next http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 

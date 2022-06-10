@@ -25,12 +25,15 @@ import (
 // @Security ApiKeyAuth
 // @Router /security/keys [post]
 func (a *applicationHandler) CreateAPIKey(w http.ResponseWriter, r *http.Request) {
+	authUser := getAuthUserFromContext(r.Context())
 	var newApiKey models.APIKey
 	err := json.NewDecoder(r.Body).Decode(&newApiKey)
 	if err != nil {
 		_ = render.Render(w, r, newErrorResponse("Request is invalid", http.StatusBadRequest))
 		return
 	}
+
+	newApiKey.Role.Groups = authUser.Role.Groups // can only create api key for their previous groups
 
 	apiKey, keyString, err := a.securityService.CreateAPIKey(r.Context(), &newApiKey)
 	if err != nil {

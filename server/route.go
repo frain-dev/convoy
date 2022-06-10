@@ -58,6 +58,7 @@ func buildRoutes(app *applicationHandler) http.Handler {
 	router := chi.NewRouter()
 
 	router.Use(middleware.RequestID)
+	router.Use(middleware.Recoverer)
 	router.Use(writeRequestIDHeader)
 	router.Use(instrumentRequests(app.tracer))
 	router.Use(logHttpRequest(app.logger))
@@ -274,7 +275,7 @@ func buildRoutes(app *applicationHandler) http.Handler {
 						groupSubRouter.Use(requireGroup(app.groupRepo, app.cache))
 						groupSubRouter.Use(rateLimitByGroupID(app.limiter))
 						// TODO(dotun): uncomment this when a group is linked to an organisation
-						// groupSubRouter.Use(requireOrganisationGroupMember())
+						groupSubRouter.Use(requireOrganisationGroupMember())
 
 						groupSubRouter.With(requireOrganisationMemberRole(auth.RoleUIAdmin)).Get("/", app.GetGroup)
 						groupSubRouter.With(requireOrganisationMemberRole(auth.RoleSuperUser)).Put("/", app.UpdateGroup)

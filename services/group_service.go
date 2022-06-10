@@ -3,6 +3,8 @@ package services
 import (
 	"context"
 	"errors"
+	"fmt"
+	"github.com/frain-dev/convoy/auth"
 	"net/http"
 	"time"
 
@@ -17,6 +19,7 @@ import (
 )
 
 type GroupService struct {
+	apiKeyRepo        datastore.APIKeyRepository
 	appRepo           datastore.ApplicationRepository
 	groupRepo         datastore.GroupRepository
 	eventRepo         datastore.EventRepository
@@ -24,8 +27,9 @@ type GroupService struct {
 	limiter           limiter.RateLimiter
 }
 
-func NewGroupService(appRepo datastore.ApplicationRepository, groupRepo datastore.GroupRepository, eventRepo datastore.EventRepository, eventDeliveryRepo datastore.EventDeliveryRepository, limiter limiter.RateLimiter) *GroupService {
+func NewGroupService(apiKeyRepo datastore.APIKeyRepository, appRepo datastore.ApplicationRepository, groupRepo datastore.GroupRepository, eventRepo datastore.EventRepository, eventDeliveryRepo datastore.EventDeliveryRepository, limiter limiter.RateLimiter) *GroupService {
 	return &GroupService{
+		apiKeyRepo:        apiKeyRepo,
 		appRepo:           appRepo,
 		groupRepo:         groupRepo,
 		eventRepo:         eventRepo,
@@ -34,7 +38,7 @@ func NewGroupService(appRepo datastore.ApplicationRepository, groupRepo datastor
 	}
 }
 
-func (gs *GroupService) CreateGroup(ctx context.Context, newGroup *models.Group) (*datastore.Group, error) {
+func (gs *GroupService) CreateGroup(ctx context.Context, newGroup *models.Group, org *datastore.Organisation) (*datastore.Group, *models.APIKeyResponse, error) {
 	groupName := newGroup.Name
 
 	// Apply Defaults
@@ -61,13 +65,14 @@ func (gs *GroupService) CreateGroup(ctx context.Context, newGroup *models.Group)
 
 	err := util.Validate(newGroup)
 	if err != nil {
-		return nil, NewServiceError(http.StatusBadRequest, err)
+		return nil, nil, NewServiceError(http.StatusBadRequest, err)
 	}
 
 	group := &datastore.Group{
 		UID:               uuid.New().String(),
 		Name:              groupName,
 		Type:              newGroup.Type,
+		OrganisationID:    org.UID,
 		Config:            &newGroup.Config,
 		LogoURL:           newGroup.LogoURL,
 		CreatedAt:         primitive.NewDateTimeFromTime(time.Now()),
@@ -80,10 +85,35 @@ func (gs *GroupService) CreateGroup(ctx context.Context, newGroup *models.Group)
 	err = gs.groupRepo.CreateGroup(ctx, group)
 	if err != nil {
 		log.WithError(err).Error("failed to create group")
-		return nil, NewServiceError(http.StatusBadRequest, errors.New("failed to create group"))
+		return nil, nil, NewServiceError(http.StatusBadRequest, errors.New("failed to create group"))
 	}
 
-	return group, nil
+	newAPIKey := &models.APIKey{
+		Name: fmt.Sprintf("%s's default key", group.Name),
+		Role: auth.Role{
+			Type:   auth.RoleSuperUser,
+			Groups: []string{group.UID},
+		},
+	}
+
+	apiKey, keyString, err := NewSecurityService(gs.groupRepo, gs.apiKeyRepo).CreateAPIKey(ctx, newAPIKey)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	resp := &models.APIKeyResponse{
+		APIKey: models.APIKey{
+			Name:      apiKey.Name,
+			Role:      apiKey.Role,
+			Type:      apiKey.Type,
+			ExpiresAt: apiKey.ExpiresAt.Time(),
+		},
+		UID:       apiKey.UID,
+		CreatedAt: apiKey.CreatedAt.Time(),
+		Key:       keyString,
+	}
+
+	return group, resp, nil
 }
 
 func (gs *GroupService) UpdateGroup(ctx context.Context, group *datastore.Group, update *models.Group) (*datastore.Group, error) {

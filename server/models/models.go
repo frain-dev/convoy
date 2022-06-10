@@ -57,6 +57,11 @@ type APIKeyResponse struct {
 	CreatedAt time.Time `json:"created_at"`
 }
 
+type CreateGroupResponse struct {
+	APIKey *APIKeyResponse  `json:"api_key"`
+	Group  *datastore.Group `json:"group"`
+}
+
 type PortalAPIKeyResponse struct {
 	Key     string    `json:"key"`
 	Role    auth.Role `json:"role"`

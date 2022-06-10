@@ -70,7 +70,6 @@ func (a *applicationHandler) DeleteGroup(w http.ResponseWriter, r *http.Request)
 // @Security ApiKeyAuth
 // @Router /groups [post]
 func (a *applicationHandler) CreateGroup(w http.ResponseWriter, r *http.Request) {
-
 	var newGroup models.Group
 	err := util.ReadJSON(r, &newGroup)
 	if err != nil {
@@ -78,13 +77,19 @@ func (a *applicationHandler) CreateGroup(w http.ResponseWriter, r *http.Request)
 		return
 	}
 
-	group, err := a.groupService.CreateGroup(r.Context(), &newGroup)
+	org := getOrganisationFromContext(r.Context())
+	group, apiKey, err := a.groupService.CreateGroup(r.Context(), &newGroup, org)
 	if err != nil {
 		_ = render.Render(w, r, newServiceErrResponse(err))
 		return
 	}
 
-	_ = render.Render(w, r, newServerResponse("Group created successfully", group, http.StatusCreated))
+	resp := &models.CreateGroupResponse{
+		APIKey: apiKey,
+		Group:  group,
+	}
+
+	_ = render.Render(w, r, newServerResponse("Group created successfully", resp, http.StatusCreated))
 }
 
 // UpdateGroup
