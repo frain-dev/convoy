@@ -47,6 +47,7 @@ const (
 	configCtx           contextKey = "configCtx"
 	authLoginCtx        contextKey = "authLogin"
 	authUserCtx         contextKey = "authUser"
+	userCtx             contextKey = "user"
 	pageableCtx         contextKey = "pageable"
 	pageDataCtx         contextKey = "pageData"
 	dashboardCtx        contextKey = "dashboard"
@@ -365,13 +366,14 @@ func requireAuthUserMetadata() func(next http.Handler) http.Handler {
 
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			authUser := getAuthUserFromContext(r.Context())
-			_, ok := authUser.Metadata.(*datastore.User)
+			user, ok := authUser.Metadata.(*datastore.User)
 			if !ok {
 				log.Error("metadata missing in auth user object")
 				_ = render.Render(w, r, newErrorResponse("unauthorized", http.StatusUnauthorized))
 				return
 			}
 
+			r = r.WithContext(setUserInContext(r.Context(), user))
 			next.ServeHTTP(w, r)
 		})
 	}
@@ -381,14 +383,7 @@ func requireOrganisationMembership(orgMemberRepo datastore.OrganisationMemberRep
 	return func(next http.Handler) http.Handler {
 
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			authUser := getAuthUserFromContext(r.Context())
-			user, ok := authUser.Metadata.(*datastore.User)
-			if !ok {
-				log.Error("metadata missing in auth user object")
-				_ = render.Render(w, r, newErrorResponse("unauthorized", http.StatusUnauthorized))
-				return
-			}
-
+			user := getUserFromContext(r.Context())
 			org := getOrganisationFromContext(r.Context())
 
 			member, err := orgMemberRepo.FetchOrganisationMemberByUserID(r.Context(), user.UID, org.UID)
@@ -1053,6 +1048,14 @@ func setAuthUserInContext(ctx context.Context, a *auth.AuthenticatedUser) contex
 
 func getAuthUserFromContext(ctx context.Context) *auth.AuthenticatedUser {
 	return ctx.Value(authUserCtx).(*auth.AuthenticatedUser)
+}
+
+func setUserInContext(ctx context.Context, a *datastore.User) context.Context {
+	return context.WithValue(ctx, userCtx, a)
+}
+
+func getUserFromContext(ctx context.Context) *datastore.User {
+	return ctx.Value(userCtx).(*datastore.User)
 }
 
 func getAuthLoginFromContext(ctx context.Context) *AuthorizedLogin {

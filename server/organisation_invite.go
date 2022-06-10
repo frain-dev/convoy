@@ -31,8 +31,11 @@ func (a *applicationHandler) InviteUserToOrganisation(w http.ResponseWriter, r *
 		return
 	}
 
+	baseUrl := getBaseUrlFromContext(r.Context())
+	user := getUserFromContext(r.Context())
 	org := getOrganisationFromContext(r.Context())
-	_, err = a.organisationInviteService.CreateOrganisationMemberInvite(r.Context(), org, &newIV)
+
+	_, err = a.organisationInviteService.CreateOrganisationMemberInvite(r.Context(), &newIV, org, user, baseUrl)
 	if err != nil {
 		log.WithError(err).Error("failed to create organisation member invite")
 		_ = render.Render(w, r, newServiceErrResponse(err))
