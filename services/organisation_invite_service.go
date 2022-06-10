@@ -62,6 +62,15 @@ func (ois *OrganisationInviteService) CreateOrganisationMemberInvite(ctx context
 
 	return iv, nil
 }
+func (ois *OrganisationInviteService) LoadOrganisationInvitesPaged(ctx context.Context, org *datastore.Organisation, inviteStatus datastore.InviteStatus, pageable datastore.Pageable) ([]datastore.OrganisationInvite, datastore.PaginationData, error) {
+	invites, paginationData, err := ois.orgInviteRepo.LoadOrganisationsInvitesPaged(ctx, org.UID, inviteStatus, pageable)
+	if err != nil {
+		log.WithError(err).Error("failed to load organisation invites")
+		return nil, datastore.PaginationData{}, NewServiceError(http.StatusBadRequest, errors.New("failed to load organisation invites"))
+	}
+
+	return invites, paginationData, nil
+}
 
 func (ois *OrganisationInviteService) ProcessOrganisationMemberInvite(ctx context.Context, token string, accepted bool, newUser *models.User) error {
 	iv, err := ois.orgInviteRepo.FetchOrganisationInviteByToken(ctx, token)

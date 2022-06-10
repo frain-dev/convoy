@@ -19,7 +19,7 @@ import (
 // @Success 200 {object} serverResponse{data=datastore.Organisation}
 // @Failure 400,401,500 {object} serverResponse{data=Stub}
 // @Security ApiKeyAuth
-// @Router /organisations/{orgID} [get]
+// @Router /ui/organisations/{orgID} [get]
 func (a *applicationHandler) GetOrganisation(w http.ResponseWriter, r *http.Request) {
 
 	_ = render.Render(w, r, newServerResponse("Organisation fetched successfully",
@@ -38,7 +38,7 @@ func (a *applicationHandler) GetOrganisation(w http.ResponseWriter, r *http.Requ
 // @Success 200 {object} serverResponse{data=pagedResponse{content=[]datastore.Organisation}}
 // @Failure 400,401,500 {object} serverResponse{data=Stub}
 // @Security ApiKeyAuth
-// @Router /organisations [get]
+// @Router /ui/organisations [get]
 func (a *applicationHandler) GetOrganisationsPaged(w http.ResponseWriter, r *http.Request) { //TODO: change to GetUserOrganisationsPaged
 	pageable := getPageableFromContext(r.Context())
 	authUser := getAuthUserFromContext(r.Context())
@@ -70,7 +70,7 @@ func (a *applicationHandler) GetOrganisationsPaged(w http.ResponseWriter, r *htt
 // @Success 200 {object} serverResponse{data=datastore.Organisation}
 // @Failure 400,401,500 {object} serverResponse{data=Stub}
 // @Security ApiKeyAuth
-// @Router /organisations [post]
+// @Router /ui/organisations [post]
 func (a *applicationHandler) CreateOrganisation(w http.ResponseWriter, r *http.Request) {
 	var newOrg models.Organisation
 	err := util.ReadJSON(r, &newOrg)
@@ -107,7 +107,7 @@ func (a *applicationHandler) CreateOrganisation(w http.ResponseWriter, r *http.R
 // @Success 200 {object} serverResponse{data=datastore.Organisation}
 // @Failure 400,401,500 {object} serverResponse{data=Stub}
 // @Security ApiKeyAuth
-// @Router /organisations/{orgID} [put]
+// @Router /ui/organisations/{orgID} [put]
 func (a *applicationHandler) UpdateOrganisation(w http.ResponseWriter, r *http.Request) {
 	var orgUpdate models.Organisation
 	err := util.ReadJSON(r, &orgUpdate)
@@ -135,7 +135,7 @@ func (a *applicationHandler) UpdateOrganisation(w http.ResponseWriter, r *http.R
 // @Success 200 {object} serverResponse{data=Stub}
 // @Failure 400,401,500 {object} serverResponse{data=Stub}
 // @Security ApiKeyAuth
-// @Router /organisations/{orgID} [delete]
+// @Router /ui/organisations/{orgID} [delete]
 func (a *applicationHandler) DeleteOrganisation(w http.ResponseWriter, r *http.Request) {
 	org := getOrganisationFromContext(r.Context())
 	err := a.organisationService.DeleteOrganisation(r.Context(), org.UID)

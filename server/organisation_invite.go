@@ -2,6 +2,7 @@ package server
 
 import (
 	"errors"
+	"github.com/frain-dev/convoy/datastore"
 	"net/http"
 	"strconv"
 
@@ -22,7 +23,7 @@ import (
 // @Success 200 {object} serverResponse{data=Stub}
 // @Failure 400,401,500 {object} serverResponse{data=Stub}
 // @Security ApiKeyAuth
-// @Router /organisations/{orgID}/invite_user [post]
+// @Router /ui/organisations/{orgID}/invite_user [post]
 func (a *applicationHandler) InviteUserToOrganisation(w http.ResponseWriter, r *http.Request) {
 	var newIV models.OrganisationInvite
 	err := util.ReadJSON(r, &newIV)
@@ -42,6 +43,35 @@ func (a *applicationHandler) InviteUserToOrganisation(w http.ResponseWriter, r *
 	_ = render.Render(w, r, newServerResponse("invite created successfully", nil, http.StatusCreated))
 }
 
+// GetPendingOrganisationInvites
+// @Summary Fetch pending organisation invites
+// @Description This endpoint fetches pending organisation invites
+// @Tags Organisation
+// @Accept  json
+// @Produce  json
+// @Param perPage query string false "results per page"
+// @Param page query string false "page number"
+// @Param sort query string false "sort order"
+// @Param orgID path string true "organisation id"
+// @Success 200 {object} serverResponse{data=Stub}
+// @Failure 400,401,500 {object} serverResponse{data=Stub}
+// @Security ApiKeyAuth
+// @Router /ui/organisations/{orgID}/pending_invites [get]
+func (a *applicationHandler) GetPendingOrganisationInvites(w http.ResponseWriter, r *http.Request) {
+	org := getOrganisationFromContext(r.Context())
+	pageable := getPageableFromContext(r.Context())
+
+	invites, paginationData, err := a.organisationInviteService.LoadOrganisationInvitesPaged(r.Context(), org, datastore.InviteStatusPending, pageable)
+	if err != nil {
+		log.WithError(err).Error("failed to create organisation member invite")
+		_ = render.Render(w, r, newServiceErrResponse(err))
+		return
+	}
+
+	_ = render.Render(w, r, newServerResponse("Invites fetched successfully",
+		pagedResponse{Content: &invites, Pagination: &paginationData}, http.StatusOK))
+}
+
 // ProcessOrganisationMemberInvite
 // @Summary Accept or decline an organisation invite
 // @Description This endpoint process a user's response to an organisation invite
@@ -54,7 +84,7 @@ func (a *applicationHandler) InviteUserToOrganisation(w http.ResponseWriter, r *
 // @Success 200 {object} serverResponse{data=Stub}
 // @Failure 400,401,500 {object} serverResponse{data=Stub}
 // @Security ApiKeyAuth
-// @Router /process_organisation_member_invite [post]
+// @Router /ui/organisations/process_invite [post]
 func (a *applicationHandler) ProcessOrganisationMemberInvite(w http.ResponseWriter, r *http.Request) {
 	token := r.URL.Query().Get("token")
 	accepted, err := strconv.ParseBool(r.URL.Query().Get("accepted"))
@@ -78,5 +108,5 @@ func (a *applicationHandler) ProcessOrganisationMemberInvite(w http.ResponseWrit
 		return
 	}
 
-	_ = render.Render(w, r, newServerResponse("invite created successfully", nil, http.StatusOK))
+	_ = render.Render(w, r, newServerResponse("invite processed successfully", nil, http.StatusOK))
 }

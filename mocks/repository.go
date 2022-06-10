@@ -737,9 +737,9 @@ func (mr *MockOrganisationInviteRepositoryMockRecorder) FetchOrganisationInviteB
 }
 
 // LoadOrganisationsInvitesPaged mocks base method.
-func (m *MockOrganisationInviteRepository) LoadOrganisationsInvitesPaged(ctx context.Context, pageable datastore.Pageable) ([]datastore.OrganisationInvite, datastore.PaginationData, error) {
+func (m *MockOrganisationInviteRepository) LoadOrganisationsInvitesPaged(ctx context.Context, orgID string, inviteStatus datastore.InviteStatus, pageable datastore.Pageable) ([]datastore.OrganisationInvite, datastore.PaginationData, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "LoadOrganisationsInvitesPaged", ctx, pageable)
+	ret := m.ctrl.Call(m, "LoadOrganisationsInvitesPaged", ctx, orgID, inviteStatus, pageable)
 	ret0, _ := ret[0].([]datastore.OrganisationInvite)
 	ret1, _ := ret[1].(datastore.PaginationData)
 	ret2, _ := ret[2].(error)
@@ -747,9 +747,9 @@ func (m *MockOrganisationInviteRepository) LoadOrganisationsInvitesPaged(ctx con
 }
 
 // LoadOrganisationsInvitesPaged indicates an expected call of LoadOrganisationsInvitesPaged.
-func (mr *MockOrganisationInviteRepositoryMockRecorder) LoadOrganisationsInvitesPaged(ctx, pageable interface{}) *gomock.Call {
+func (mr *MockOrganisationInviteRepositoryMockRecorder) LoadOrganisationsInvitesPaged(ctx, orgID, inviteStatus, pageable interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "LoadOrganisationsInvitesPaged", reflect.TypeOf((*MockOrganisationInviteRepository)(nil).LoadOrganisationsInvitesPaged), ctx, pageable)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "LoadOrganisationsInvitesPaged", reflect.TypeOf((*MockOrganisationInviteRepository)(nil).LoadOrganisationsInvitesPaged), ctx, orgID, inviteStatus, pageable)
 }
 
 // UpdateOrganisationInvite mocks base method.

@@ -21,14 +21,43 @@ func TestLoadOrganisationsInvitesPaged(t *testing.T) {
 	defer closeFn()
 
 	inviteRepo := NewOrgInviteRepo(db)
+	org := &datastore.Organisation{
+		UID:            uuid.NewString(),
+		Name:           "test_org",
+		DocumentStatus: datastore.ActiveDocumentStatus,
+		CreatedAt:      primitive.NewDateTimeFromTime(time.Now()),
+		UpdatedAt:      primitive.NewDateTimeFromTime(time.Now()),
+	}
 
-	for i := 1; i < 6; i++ {
+	err := NewOrgRepo(db).CreateOrganisation(context.Background(), org)
+	require.NoError(t, err)
+
+	uids := []string{}
+	for i := 1; i < 3; i++ {
 		iv := &datastore.OrganisationInvite{
 			UID:            uuid.NewString(),
 			InviteeEmail:   fmt.Sprintf("%s@gmail.com", uuid.NewString()),
 			Token:          uuid.NewString(),
+			OrganisationID: org.UID,
 			Role:           auth.Role{Type: auth.RoleAdmin},
 			Status:         datastore.InviteStatusPending,
+			DocumentStatus: datastore.ActiveDocumentStatus,
+			CreatedAt:      primitive.NewDateTimeFromTime(time.Now()),
+			UpdatedAt:      primitive.NewDateTimeFromTime(time.Now()),
+		}
+		uids = append(uids, iv.UID)
+		err := inviteRepo.CreateOrganisationInvite(context.Background(), iv)
+		require.NoError(t, err)
+	}
+
+	for i := 1; i < 3; i++ {
+		iv := &datastore.OrganisationInvite{
+			UID:            uuid.NewString(),
+			InviteeEmail:   fmt.Sprintf("%s@gmail.com", uuid.NewString()),
+			Token:          uuid.NewString(),
+			OrganisationID: org.UID,
+			Role:           auth.Role{Type: auth.RoleAdmin},
+			Status:         datastore.InviteStatusDeclined,
 			DocumentStatus: datastore.ActiveDocumentStatus,
 			CreatedAt:      primitive.NewDateTimeFromTime(time.Now()),
 			UpdatedAt:      primitive.NewDateTimeFromTime(time.Now()),
@@ -38,14 +67,17 @@ func TestLoadOrganisationsInvitesPaged(t *testing.T) {
 		require.NoError(t, err)
 	}
 
-	organisationInvites, _, err := inviteRepo.LoadOrganisationsInvitesPaged(context.Background(), datastore.Pageable{
-		Page:    2,
-		PerPage: 2,
+	organisationInvites, _, err := inviteRepo.LoadOrganisationsInvitesPaged(context.Background(), org.UID, datastore.InviteStatusPending, datastore.Pageable{
+		Page:    1,
+		PerPage: 100,
 		Sort:    -1,
 	})
 
 	require.NoError(t, err)
 	require.Equal(t, 2, len(organisationInvites))
+	for _, invite := range organisationInvites {
+		require.Contains(t, uids, invite.UID)
+	}
 }
 
 func TestCreateOrganisationInvite(t *testing.T) {

@@ -57,7 +57,7 @@ type OrganisationRepository interface {
 }
 
 type OrganisationInviteRepository interface {
-	LoadOrganisationsInvitesPaged(ctx context.Context, pageable Pageable) ([]OrganisationInvite, PaginationData, error)
+	LoadOrganisationsInvitesPaged(ctx context.Context, orgID string, inviteStatus InviteStatus, pageable Pageable) ([]OrganisationInvite, PaginationData, error)
 	CreateOrganisationInvite(ctx context.Context, iv *OrganisationInvite) error
 	UpdateOrganisationInvite(ctx context.Context, iv *OrganisationInvite) error
 	DeleteOrganisationInvite(ctx context.Context, uid string) error

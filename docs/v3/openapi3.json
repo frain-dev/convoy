@@ -5164,1414 +5164,6 @@
 				]
 			}
 		},
-		"/organisations": {
-			"get": {
-				"description": "This endpoint fetches multiple organisations",
-				"parameters": [
-					{
-						"description": "results per page",
-						"in": "query",
-						"name": "perPage",
-						"schema": {
-							"type": "string"
-						}
-					},
-					{
-						"description": "page number",
-						"in": "query",
-						"name": "page",
-						"schema": {
-							"type": "string"
-						}
-					},
-					{
-						"description": "sort order",
-						"in": "query",
-						"name": "sort",
-						"schema": {
-							"type": "string"
-						}
-					}
-				],
-				"responses": {
-					"200": {
-						"content": {
-							"application/json": {
-								"schema": {
-									"allOf": [
-										{
-											"$ref": "#/components/schemas/server.serverResponse"
-										},
-										{
-											"properties": {
-												"data": {
-													"allOf": [
-														{
-															"$ref": "#/components/schemas/server.pagedResponse"
-														},
-														{
-															"properties": {
-																"content": {
-																	"items": {
-																		"$ref": "#/components/schemas/datastore.Organisation"
-																	},
-																	"type": "array"
-																}
-															},
-															"type": "object"
-														}
-													]
-												}
-											},
-											"type": "object"
-										}
-									]
-								}
-							}
-						},
-						"description": "OK"
-					},
-					"400": {
-						"content": {
-							"application/json": {
-								"schema": {
-									"allOf": [
-										{
-											"$ref": "#/components/schemas/server.serverResponse"
-										},
-										{
-											"properties": {
-												"data": {
-													"$ref": "#/components/schemas/server.Stub"
-												}
-											},
-											"type": "object"
-										}
-									]
-								}
-							}
-						},
-						"description": "Bad Request"
-					},
-					"401": {
-						"content": {
-							"application/json": {
-								"schema": {
-									"allOf": [
-										{
-											"$ref": "#/components/schemas/server.serverResponse"
-										},
-										{
-											"properties": {
-												"data": {
-													"$ref": "#/components/schemas/server.Stub"
-												}
-											},
-											"type": "object"
-										}
-									]
-								}
-							}
-						},
-						"description": "Unauthorized"
-					},
-					"500": {
-						"content": {
-							"application/json": {
-								"schema": {
-									"allOf": [
-										{
-											"$ref": "#/components/schemas/server.serverResponse"
-										},
-										{
-											"properties": {
-												"data": {
-													"$ref": "#/components/schemas/server.Stub"
-												}
-											},
-											"type": "object"
-										}
-									]
-								}
-							}
-						},
-						"description": "Internal Server Error"
-					}
-				},
-				"security": [
-					{
-						"ApiKeyAuth": []
-					}
-				],
-				"summary": "Get organisations",
-				"tags": [
-					"Organisation"
-				]
-			},
-			"post": {
-				"description": "This endpoint creates an organisation",
-				"requestBody": {
-					"content": {
-						"application/json": {
-							"schema": {
-								"$ref": "#/components/schemas/models.Organisation"
-							}
-						}
-					},
-					"description": "Organisation Details",
-					"required": true,
-					"x-originalParamName": "organisation"
-				},
-				"responses": {
-					"200": {
-						"content": {
-							"application/json": {
-								"schema": {
-									"allOf": [
-										{
-											"$ref": "#/components/schemas/server.serverResponse"
-										},
-										{
-											"properties": {
-												"data": {
-													"$ref": "#/components/schemas/datastore.Organisation"
-												}
-											},
-											"type": "object"
-										}
-									]
-								}
-							}
-						},
-						"description": "OK"
-					},
-					"400": {
-						"content": {
-							"application/json": {
-								"schema": {
-									"allOf": [
-										{
-											"$ref": "#/components/schemas/server.serverResponse"
-										},
-										{
-											"properties": {
-												"data": {
-													"$ref": "#/components/schemas/server.Stub"
-												}
-											},
-											"type": "object"
-										}
-									]
-								}
-							}
-						},
-						"description": "Bad Request"
-					},
-					"401": {
-						"content": {
-							"application/json": {
-								"schema": {
-									"allOf": [
-										{
-											"$ref": "#/components/schemas/server.serverResponse"
-										},
-										{
-											"properties": {
-												"data": {
-													"$ref": "#/components/schemas/server.Stub"
-												}
-											},
-											"type": "object"
-										}
-									]
-								}
-							}
-						},
-						"description": "Unauthorized"
-					},
-					"500": {
-						"content": {
-							"application/json": {
-								"schema": {
-									"allOf": [
-										{
-											"$ref": "#/components/schemas/server.serverResponse"
-										},
-										{
-											"properties": {
-												"data": {
-													"$ref": "#/components/schemas/server.Stub"
-												}
-											},
-											"type": "object"
-										}
-									]
-								}
-							}
-						},
-						"description": "Internal Server Error"
-					}
-				},
-				"security": [
-					{
-						"ApiKeyAuth": []
-					}
-				],
-				"summary": "Create an organisation",
-				"tags": [
-					"Organisation"
-				]
-			}
-		},
-		"/organisations/{orgID}": {
-			"delete": {
-				"description": "This endpoint deletes an organisation",
-				"parameters": [
-					{
-						"description": "organisation id",
-						"in": "path",
-						"name": "orgID",
-						"required": true,
-						"schema": {
-							"type": "string"
-						}
-					}
-				],
-				"responses": {
-					"200": {
-						"content": {
-							"application/json": {
-								"schema": {
-									"allOf": [
-										{
-											"$ref": "#/components/schemas/server.serverResponse"
-										},
-										{
-											"properties": {
-												"data": {
-													"$ref": "#/components/schemas/server.Stub"
-												}
-											},
-											"type": "object"
-										}
-									]
-								}
-							}
-						},
-						"description": "OK"
-					},
-					"400": {
-						"content": {
-							"application/json": {
-								"schema": {
-									"allOf": [
-										{
-											"$ref": "#/components/schemas/server.serverResponse"
-										},
-										{
-											"properties": {
-												"data": {
-													"$ref": "#/components/schemas/server.Stub"
-												}
-											},
-											"type": "object"
-										}
-									]
-								}
-							}
-						},
-						"description": "Bad Request"
-					},
-					"401": {
-						"content": {
-							"application/json": {
-								"schema": {
-									"allOf": [
-										{
-											"$ref": "#/components/schemas/server.serverResponse"
-										},
-										{
-											"properties": {
-												"data": {
-													"$ref": "#/components/schemas/server.Stub"
-												}
-											},
-											"type": "object"
-										}
-									]
-								}
-							}
-						},
-						"description": "Unauthorized"
-					},
-					"500": {
-						"content": {
-							"application/json": {
-								"schema": {
-									"allOf": [
-										{
-											"$ref": "#/components/schemas/server.serverResponse"
-										},
-										{
-											"properties": {
-												"data": {
-													"$ref": "#/components/schemas/server.Stub"
-												}
-											},
-											"type": "object"
-										}
-									]
-								}
-							}
-						},
-						"description": "Internal Server Error"
-					}
-				},
-				"security": [
-					{
-						"ApiKeyAuth": []
-					}
-				],
-				"summary": "Delete organisation",
-				"tags": [
-					"Organisation"
-				]
-			},
-			"get": {
-				"description": "This endpoint fetches an organisation by its id",
-				"parameters": [
-					{
-						"description": "organisation id",
-						"in": "path",
-						"name": "orgID",
-						"required": true,
-						"schema": {
-							"type": "string"
-						}
-					}
-				],
-				"responses": {
-					"200": {
-						"content": {
-							"application/json": {
-								"schema": {
-									"allOf": [
-										{
-											"$ref": "#/components/schemas/server.serverResponse"
-										},
-										{
-											"properties": {
-												"data": {
-													"$ref": "#/components/schemas/datastore.Organisation"
-												}
-											},
-											"type": "object"
-										}
-									]
-								}
-							}
-						},
-						"description": "OK"
-					},
-					"400": {
-						"content": {
-							"application/json": {
-								"schema": {
-									"allOf": [
-										{
-											"$ref": "#/components/schemas/server.serverResponse"
-										},
-										{
-											"properties": {
-												"data": {
-													"$ref": "#/components/schemas/server.Stub"
-												}
-											},
-											"type": "object"
-										}
-									]
-								}
-							}
-						},
-						"description": "Bad Request"
-					},
-					"401": {
-						"content": {
-							"application/json": {
-								"schema": {
-									"allOf": [
-										{
-											"$ref": "#/components/schemas/server.serverResponse"
-										},
-										{
-											"properties": {
-												"data": {
-													"$ref": "#/components/schemas/server.Stub"
-												}
-											},
-											"type": "object"
-										}
-									]
-								}
-							}
-						},
-						"description": "Unauthorized"
-					},
-					"500": {
-						"content": {
-							"application/json": {
-								"schema": {
-									"allOf": [
-										{
-											"$ref": "#/components/schemas/server.serverResponse"
-										},
-										{
-											"properties": {
-												"data": {
-													"$ref": "#/components/schemas/server.Stub"
-												}
-											},
-											"type": "object"
-										}
-									]
-								}
-							}
-						},
-						"description": "Internal Server Error"
-					}
-				},
-				"security": [
-					{
-						"ApiKeyAuth": []
-					}
-				],
-				"summary": "Get an organisation",
-				"tags": [
-					"Organisation"
-				]
-			},
-			"put": {
-				"description": "This endpoint updates an organisation",
-				"parameters": [
-					{
-						"description": "organisation id",
-						"in": "path",
-						"name": "orgID",
-						"required": true,
-						"schema": {
-							"type": "string"
-						}
-					}
-				],
-				"requestBody": {
-					"content": {
-						"application/json": {
-							"schema": {
-								"$ref": "#/components/schemas/models.Organisation"
-							}
-						}
-					},
-					"description": "Organisation Details",
-					"required": true,
-					"x-originalParamName": "organisation"
-				},
-				"responses": {
-					"200": {
-						"content": {
-							"application/json": {
-								"schema": {
-									"allOf": [
-										{
-											"$ref": "#/components/schemas/server.serverResponse"
-										},
-										{
-											"properties": {
-												"data": {
-													"$ref": "#/components/schemas/datastore.Organisation"
-												}
-											},
-											"type": "object"
-										}
-									]
-								}
-							}
-						},
-						"description": "OK"
-					},
-					"400": {
-						"content": {
-							"application/json": {
-								"schema": {
-									"allOf": [
-										{
-											"$ref": "#/components/schemas/server.serverResponse"
-										},
-										{
-											"properties": {
-												"data": {
-													"$ref": "#/components/schemas/server.Stub"
-												}
-											},
-											"type": "object"
-										}
-									]
-								}
-							}
-						},
-						"description": "Bad Request"
-					},
-					"401": {
-						"content": {
-							"application/json": {
-								"schema": {
-									"allOf": [
-										{
-											"$ref": "#/components/schemas/server.serverResponse"
-										},
-										{
-											"properties": {
-												"data": {
-													"$ref": "#/components/schemas/server.Stub"
-												}
-											},
-											"type": "object"
-										}
-									]
-								}
-							}
-						},
-						"description": "Unauthorized"
-					},
-					"500": {
-						"content": {
-							"application/json": {
-								"schema": {
-									"allOf": [
-										{
-											"$ref": "#/components/schemas/server.serverResponse"
-										},
-										{
-											"properties": {
-												"data": {
-													"$ref": "#/components/schemas/server.Stub"
-												}
-											},
-											"type": "object"
-										}
-									]
-								}
-							}
-						},
-						"description": "Internal Server Error"
-					}
-				},
-				"security": [
-					{
-						"ApiKeyAuth": []
-					}
-				],
-				"summary": "Update an organisation",
-				"tags": [
-					"Organisation"
-				]
-			}
-		},
-		"/organisations/{orgID}/invite_user": {
-			"post": {
-				"description": "This endpoint invites a user to join an organisation",
-				"parameters": [
-					{
-						"description": "organisation id",
-						"in": "path",
-						"name": "orgID",
-						"required": true,
-						"schema": {
-							"type": "string"
-						}
-					}
-				],
-				"requestBody": {
-					"content": {
-						"application/json": {
-							"schema": {
-								"$ref": "#/components/schemas/models.OrganisationInvite"
-							}
-						}
-					},
-					"description": "Organisation Invite Details",
-					"required": true,
-					"x-originalParamName": "invite"
-				},
-				"responses": {
-					"200": {
-						"content": {
-							"application/json": {
-								"schema": {
-									"allOf": [
-										{
-											"$ref": "#/components/schemas/server.serverResponse"
-										},
-										{
-											"properties": {
-												"data": {
-													"$ref": "#/components/schemas/server.Stub"
-												}
-											},
-											"type": "object"
-										}
-									]
-								}
-							}
-						},
-						"description": "OK"
-					},
-					"400": {
-						"content": {
-							"application/json": {
-								"schema": {
-									"allOf": [
-										{
-											"$ref": "#/components/schemas/server.serverResponse"
-										},
-										{
-											"properties": {
-												"data": {
-													"$ref": "#/components/schemas/server.Stub"
-												}
-											},
-											"type": "object"
-										}
-									]
-								}
-							}
-						},
-						"description": "Bad Request"
-					},
-					"401": {
-						"content": {
-							"application/json": {
-								"schema": {
-									"allOf": [
-										{
-											"$ref": "#/components/schemas/server.serverResponse"
-										},
-										{
-											"properties": {
-												"data": {
-													"$ref": "#/components/schemas/server.Stub"
-												}
-											},
-											"type": "object"
-										}
-									]
-								}
-							}
-						},
-						"description": "Unauthorized"
-					},
-					"500": {
-						"content": {
-							"application/json": {
-								"schema": {
-									"allOf": [
-										{
-											"$ref": "#/components/schemas/server.serverResponse"
-										},
-										{
-											"properties": {
-												"data": {
-													"$ref": "#/components/schemas/server.Stub"
-												}
-											},
-											"type": "object"
-										}
-									]
-								}
-							}
-						},
-						"description": "Internal Server Error"
-					}
-				},
-				"security": [
-					{
-						"ApiKeyAuth": []
-					}
-				],
-				"summary": "Invite a user to join an organisation",
-				"tags": [
-					"Organisation"
-				]
-			}
-		},
-		"/organisations/{orgID}/members": {
-			"get": {
-				"description": "This endpoint fetches an organisation's members",
-				"parameters": [
-					{
-						"description": "organisation id",
-						"in": "path",
-						"name": "orgID",
-						"required": true,
-						"schema": {
-							"type": "string"
-						}
-					},
-					{
-						"description": "results per page",
-						"in": "query",
-						"name": "perPage",
-						"schema": {
-							"type": "string"
-						}
-					},
-					{
-						"description": "page number",
-						"in": "query",
-						"name": "page",
-						"schema": {
-							"type": "string"
-						}
-					},
-					{
-						"description": "sort order",
-						"in": "query",
-						"name": "sort",
-						"schema": {
-							"type": "string"
-						}
-					}
-				],
-				"responses": {
-					"200": {
-						"content": {
-							"application/json": {
-								"schema": {
-									"allOf": [
-										{
-											"$ref": "#/components/schemas/server.serverResponse"
-										},
-										{
-											"properties": {
-												"data": {
-													"allOf": [
-														{
-															"$ref": "#/components/schemas/server.pagedResponse"
-														},
-														{
-															"properties": {
-																"content": {
-																	"items": {
-																		"$ref": "#/components/schemas/datastore.OrganisationMember"
-																	},
-																	"type": "array"
-																}
-															},
-															"type": "object"
-														}
-													]
-												}
-											},
-											"type": "object"
-										}
-									]
-								}
-							}
-						},
-						"description": "OK"
-					},
-					"400": {
-						"content": {
-							"application/json": {
-								"schema": {
-									"allOf": [
-										{
-											"$ref": "#/components/schemas/server.serverResponse"
-										},
-										{
-											"properties": {
-												"data": {
-													"$ref": "#/components/schemas/server.Stub"
-												}
-											},
-											"type": "object"
-										}
-									]
-								}
-							}
-						},
-						"description": "Bad Request"
-					},
-					"401": {
-						"content": {
-							"application/json": {
-								"schema": {
-									"allOf": [
-										{
-											"$ref": "#/components/schemas/server.serverResponse"
-										},
-										{
-											"properties": {
-												"data": {
-													"$ref": "#/components/schemas/server.Stub"
-												}
-											},
-											"type": "object"
-										}
-									]
-								}
-							}
-						},
-						"description": "Unauthorized"
-					},
-					"500": {
-						"content": {
-							"application/json": {
-								"schema": {
-									"allOf": [
-										{
-											"$ref": "#/components/schemas/server.serverResponse"
-										},
-										{
-											"properties": {
-												"data": {
-													"$ref": "#/components/schemas/server.Stub"
-												}
-											},
-											"type": "object"
-										}
-									]
-								}
-							}
-						},
-						"description": "Internal Server Error"
-					}
-				},
-				"security": [
-					{
-						"ApiKeyAuth": []
-					}
-				],
-				"summary": "Get organisation members",
-				"tags": [
-					"Organisation"
-				]
-			}
-		},
-		"/organisations/{orgID}/members/{memberID}": {
-			"delete": {
-				"description": "This endpoint deletes an organisation's member",
-				"parameters": [
-					{
-						"description": "organisation id",
-						"in": "path",
-						"name": "orgID",
-						"required": true,
-						"schema": {
-							"type": "string"
-						}
-					},
-					{
-						"description": "organisation member id",
-						"in": "path",
-						"name": "memberID",
-						"required": true,
-						"schema": {
-							"type": "string"
-						}
-					}
-				],
-				"responses": {
-					"200": {
-						"content": {
-							"application/json": {
-								"schema": {
-									"allOf": [
-										{
-											"$ref": "#/components/schemas/server.serverResponse"
-										},
-										{
-											"properties": {
-												"data": {
-													"$ref": "#/components/schemas/server.Stub"
-												}
-											},
-											"type": "object"
-										}
-									]
-								}
-							}
-						},
-						"description": "OK"
-					},
-					"400": {
-						"content": {
-							"application/json": {
-								"schema": {
-									"allOf": [
-										{
-											"$ref": "#/components/schemas/server.serverResponse"
-										},
-										{
-											"properties": {
-												"data": {
-													"$ref": "#/components/schemas/server.Stub"
-												}
-											},
-											"type": "object"
-										}
-									]
-								}
-							}
-						},
-						"description": "Bad Request"
-					},
-					"401": {
-						"content": {
-							"application/json": {
-								"schema": {
-									"allOf": [
-										{
-											"$ref": "#/components/schemas/server.serverResponse"
-										},
-										{
-											"properties": {
-												"data": {
-													"$ref": "#/components/schemas/server.Stub"
-												}
-											},
-											"type": "object"
-										}
-									]
-								}
-							}
-						},
-						"description": "Unauthorized"
-					},
-					"500": {
-						"content": {
-							"application/json": {
-								"schema": {
-									"allOf": [
-										{
-											"$ref": "#/components/schemas/server.serverResponse"
-										},
-										{
-											"properties": {
-												"data": {
-													"$ref": "#/components/schemas/server.Stub"
-												}
-											},
-											"type": "object"
-										}
-									]
-								}
-							}
-						},
-						"description": "Internal Server Error"
-					}
-				},
-				"security": [
-					{
-						"ApiKeyAuth": []
-					}
-				],
-				"summary": "Delete an organisation's member",
-				"tags": [
-					"Organisation"
-				]
-			},
-			"get": {
-				"description": "This endpoint fetches an organisation's member",
-				"parameters": [
-					{
-						"description": "organisation id",
-						"in": "path",
-						"name": "orgID",
-						"required": true,
-						"schema": {
-							"type": "string"
-						}
-					},
-					{
-						"description": "organisation member id",
-						"in": "path",
-						"name": "memberID",
-						"required": true,
-						"schema": {
-							"type": "string"
-						}
-					}
-				],
-				"responses": {
-					"200": {
-						"content": {
-							"application/json": {
-								"schema": {
-									"allOf": [
-										{
-											"$ref": "#/components/schemas/server.serverResponse"
-										},
-										{
-											"properties": {
-												"data": {
-													"$ref": "#/components/schemas/datastore.OrganisationMember"
-												}
-											},
-											"type": "object"
-										}
-									]
-								}
-							}
-						},
-						"description": "OK"
-					},
-					"400": {
-						"content": {
-							"application/json": {
-								"schema": {
-									"allOf": [
-										{
-											"$ref": "#/components/schemas/server.serverResponse"
-										},
-										{
-											"properties": {
-												"data": {
-													"$ref": "#/components/schemas/server.Stub"
-												}
-											},
-											"type": "object"
-										}
-									]
-								}
-							}
-						},
-						"description": "Bad Request"
-					},
-					"401": {
-						"content": {
-							"application/json": {
-								"schema": {
-									"allOf": [
-										{
-											"$ref": "#/components/schemas/server.serverResponse"
-										},
-										{
-											"properties": {
-												"data": {
-													"$ref": "#/components/schemas/server.Stub"
-												}
-											},
-											"type": "object"
-										}
-									]
-								}
-							}
-						},
-						"description": "Unauthorized"
-					},
-					"500": {
-						"content": {
-							"application/json": {
-								"schema": {
-									"allOf": [
-										{
-											"$ref": "#/components/schemas/server.serverResponse"
-										},
-										{
-											"properties": {
-												"data": {
-													"$ref": "#/components/schemas/server.Stub"
-												}
-											},
-											"type": "object"
-										}
-									]
-								}
-							}
-						},
-						"description": "Internal Server Error"
-					}
-				},
-				"security": [
-					{
-						"ApiKeyAuth": []
-					}
-				],
-				"summary": "Get organisation member",
-				"tags": [
-					"Organisation"
-				]
-			},
-			"put": {
-				"description": "This endpoint updates an organisation's member",
-				"parameters": [
-					{
-						"description": "organisation id",
-						"in": "path",
-						"name": "orgID",
-						"required": true,
-						"schema": {
-							"type": "string"
-						}
-					},
-					{
-						"description": "organisation member id",
-						"in": "path",
-						"name": "memberID",
-						"required": true,
-						"schema": {
-							"type": "string"
-						}
-					}
-				],
-				"requestBody": {
-					"content": {
-						"application/json": {
-							"schema": {
-								"$ref": "#/components/schemas/models.UpdateOrganisationMember"
-							}
-						}
-					},
-					"description": "Organisation member Details",
-					"required": true,
-					"x-originalParamName": "organisation_member"
-				},
-				"responses": {
-					"200": {
-						"content": {
-							"application/json": {
-								"schema": {
-									"allOf": [
-										{
-											"$ref": "#/components/schemas/server.serverResponse"
-										},
-										{
-											"properties": {
-												"data": {
-													"$ref": "#/components/schemas/datastore.Organisation"
-												}
-											},
-											"type": "object"
-										}
-									]
-								}
-							}
-						},
-						"description": "OK"
-					},
-					"400": {
-						"content": {
-							"application/json": {
-								"schema": {
-									"allOf": [
-										{
-											"$ref": "#/components/schemas/server.serverResponse"
-										},
-										{
-											"properties": {
-												"data": {
-													"$ref": "#/components/schemas/server.Stub"
-												}
-											},
-											"type": "object"
-										}
-									]
-								}
-							}
-						},
-						"description": "Bad Request"
-					},
-					"401": {
-						"content": {
-							"application/json": {
-								"schema": {
-									"allOf": [
-										{
-											"$ref": "#/components/schemas/server.serverResponse"
-										},
-										{
-											"properties": {
-												"data": {
-													"$ref": "#/components/schemas/server.Stub"
-												}
-											},
-											"type": "object"
-										}
-									]
-								}
-							}
-						},
-						"description": "Unauthorized"
-					},
-					"500": {
-						"content": {
-							"application/json": {
-								"schema": {
-									"allOf": [
-										{
-											"$ref": "#/components/schemas/server.serverResponse"
-										},
-										{
-											"properties": {
-												"data": {
-													"$ref": "#/components/schemas/server.Stub"
-												}
-											},
-											"type": "object"
-										}
-									]
-								}
-							}
-						},
-						"description": "Internal Server Error"
-					}
-				},
-				"security": [
-					{
-						"ApiKeyAuth": []
-					}
-				],
-				"summary": "Update an organisation's member",
-				"tags": [
-					"Organisation"
-				]
-			}
-		},
-		"/process_organisation_member_invite": {
-			"post": {
-				"description": "This endpoint process a user's response to an organisation invite",
-				"parameters": [
-					{
-						"description": "invite token",
-						"in": "query",
-						"name": "token",
-						"required": true,
-						"schema": {
-							"type": "string"
-						}
-					},
-					{
-						"description": "email",
-						"in": "query",
-						"name": "accepted",
-						"required": true,
-						"schema": {
-							"type": "string"
-						}
-					}
-				],
-				"requestBody": {
-					"content": {
-						"application/json": {
-							"schema": {
-								"$ref": "#/components/schemas/models.User"
-							}
-						}
-					},
-					"description": "User Details",
-					"x-originalParamName": "user"
-				},
-				"responses": {
-					"200": {
-						"content": {
-							"application/json": {
-								"schema": {
-									"allOf": [
-										{
-											"$ref": "#/components/schemas/server.serverResponse"
-										},
-										{
-											"properties": {
-												"data": {
-													"$ref": "#/components/schemas/server.Stub"
-												}
-											},
-											"type": "object"
-										}
-									]
-								}
-							}
-						},
-						"description": "OK"
-					},
-					"400": {
-						"content": {
-							"application/json": {
-								"schema": {
-									"allOf": [
-										{
-											"$ref": "#/components/schemas/server.serverResponse"
-										},
-										{
-											"properties": {
-												"data": {
-													"$ref": "#/components/schemas/server.Stub"
-												}
-											},
-											"type": "object"
-										}
-									]
-								}
-							}
-						},
-						"description": "Bad Request"
-					},
-					"401": {
-						"content": {
-							"application/json": {
-								"schema": {
-									"allOf": [
-										{
-											"$ref": "#/components/schemas/server.serverResponse"
-										},
-										{
-											"properties": {
-												"data": {
-													"$ref": "#/components/schemas/server.Stub"
-												}
-											},
-											"type": "object"
-										}
-									]
-								}
-							}
-						},
-						"description": "Unauthorized"
-					},
-					"500": {
-						"content": {
-							"application/json": {
-								"schema": {
-									"allOf": [
-										{
-											"$ref": "#/components/schemas/server.serverResponse"
-										},
-										{
-											"properties": {
-												"data": {
-													"$ref": "#/components/schemas/server.Stub"
-												}
-											},
-											"type": "object"
-										}
-									]
-								}
-							}
-						},
-						"description": "Internal Server Error"
-					}
-				},
-				"security": [
-					{
-						"ApiKeyAuth": []
-					}
-				],
-				"summary": "Accept or decline an organisation invite",
-				"tags": [
-					"Organisation"
-				]
-			}
-		},
 		"/security/applications/{appID}/keys": {
 			"post": {
 				"description": "This endpoint creates an api key that will be used by app portal",
@@ -8606,6 +7198,1553 @@
 				"summary": "Update a subscription",
 				"tags": [
 					"Subscription"
+				]
+			}
+		},
+		"/ui/organisations": {
+			"get": {
+				"description": "This endpoint fetches multiple organisations",
+				"parameters": [
+					{
+						"description": "results per page",
+						"in": "query",
+						"name": "perPage",
+						"schema": {
+							"type": "string"
+						}
+					},
+					{
+						"description": "page number",
+						"in": "query",
+						"name": "page",
+						"schema": {
+							"type": "string"
+						}
+					},
+					{
+						"description": "sort order",
+						"in": "query",
+						"name": "sort",
+						"schema": {
+							"type": "string"
+						}
+					}
+				],
+				"responses": {
+					"200": {
+						"content": {
+							"application/json": {
+								"schema": {
+									"allOf": [
+										{
+											"$ref": "#/components/schemas/server.serverResponse"
+										},
+										{
+											"properties": {
+												"data": {
+													"allOf": [
+														{
+															"$ref": "#/components/schemas/server.pagedResponse"
+														},
+														{
+															"properties": {
+																"content": {
+																	"items": {
+																		"$ref": "#/components/schemas/datastore.Organisation"
+																	},
+																	"type": "array"
+																}
+															},
+															"type": "object"
+														}
+													]
+												}
+											},
+											"type": "object"
+										}
+									]
+								}
+							}
+						},
+						"description": "OK"
+					},
+					"400": {
+						"content": {
+							"application/json": {
+								"schema": {
+									"allOf": [
+										{
+											"$ref": "#/components/schemas/server.serverResponse"
+										},
+										{
+											"properties": {
+												"data": {
+													"$ref": "#/components/schemas/server.Stub"
+												}
+											},
+											"type": "object"
+										}
+									]
+								}
+							}
+						},
+						"description": "Bad Request"
+					},
+					"401": {
+						"content": {
+							"application/json": {
+								"schema": {
+									"allOf": [
+										{
+											"$ref": "#/components/schemas/server.serverResponse"
+										},
+										{
+											"properties": {
+												"data": {
+													"$ref": "#/components/schemas/server.Stub"
+												}
+											},
+											"type": "object"
+										}
+									]
+								}
+							}
+						},
+						"description": "Unauthorized"
+					},
+					"500": {
+						"content": {
+							"application/json": {
+								"schema": {
+									"allOf": [
+										{
+											"$ref": "#/components/schemas/server.serverResponse"
+										},
+										{
+											"properties": {
+												"data": {
+													"$ref": "#/components/schemas/server.Stub"
+												}
+											},
+											"type": "object"
+										}
+									]
+								}
+							}
+						},
+						"description": "Internal Server Error"
+					}
+				},
+				"security": [
+					{
+						"ApiKeyAuth": []
+					}
+				],
+				"summary": "Get organisations",
+				"tags": [
+					"Organisation"
+				]
+			},
+			"post": {
+				"description": "This endpoint creates an organisation",
+				"requestBody": {
+					"content": {
+						"application/json": {
+							"schema": {
+								"$ref": "#/components/schemas/models.Organisation"
+							}
+						}
+					},
+					"description": "Organisation Details",
+					"required": true,
+					"x-originalParamName": "organisation"
+				},
+				"responses": {
+					"200": {
+						"content": {
+							"application/json": {
+								"schema": {
+									"allOf": [
+										{
+											"$ref": "#/components/schemas/server.serverResponse"
+										},
+										{
+											"properties": {
+												"data": {
+													"$ref": "#/components/schemas/datastore.Organisation"
+												}
+											},
+											"type": "object"
+										}
+									]
+								}
+							}
+						},
+						"description": "OK"
+					},
+					"400": {
+						"content": {
+							"application/json": {
+								"schema": {
+									"allOf": [
+										{
+											"$ref": "#/components/schemas/server.serverResponse"
+										},
+										{
+											"properties": {
+												"data": {
+													"$ref": "#/components/schemas/server.Stub"
+												}
+											},
+											"type": "object"
+										}
+									]
+								}
+							}
+						},
+						"description": "Bad Request"
+					},
+					"401": {
+						"content": {
+							"application/json": {
+								"schema": {
+									"allOf": [
+										{
+											"$ref": "#/components/schemas/server.serverResponse"
+										},
+										{
+											"properties": {
+												"data": {
+													"$ref": "#/components/schemas/server.Stub"
+												}
+											},
+											"type": "object"
+										}
+									]
+								}
+							}
+						},
+						"description": "Unauthorized"
+					},
+					"500": {
+						"content": {
+							"application/json": {
+								"schema": {
+									"allOf": [
+										{
+											"$ref": "#/components/schemas/server.serverResponse"
+										},
+										{
+											"properties": {
+												"data": {
+													"$ref": "#/components/schemas/server.Stub"
+												}
+											},
+											"type": "object"
+										}
+									]
+								}
+							}
+						},
+						"description": "Internal Server Error"
+					}
+				},
+				"security": [
+					{
+						"ApiKeyAuth": []
+					}
+				],
+				"summary": "Create an organisation",
+				"tags": [
+					"Organisation"
+				]
+			}
+		},
+		"/ui/organisations/process_invite": {
+			"post": {
+				"description": "This endpoint process a user's response to an organisation invite",
+				"parameters": [
+					{
+						"description": "invite token",
+						"in": "query",
+						"name": "token",
+						"required": true,
+						"schema": {
+							"type": "string"
+						}
+					},
+					{
+						"description": "email",
+						"in": "query",
+						"name": "accepted",
+						"required": true,
+						"schema": {
+							"type": "string"
+						}
+					}
+				],
+				"requestBody": {
+					"content": {
+						"application/json": {
+							"schema": {
+								"$ref": "#/components/schemas/models.User"
+							}
+						}
+					},
+					"description": "User Details",
+					"x-originalParamName": "user"
+				},
+				"responses": {
+					"200": {
+						"content": {
+							"application/json": {
+								"schema": {
+									"allOf": [
+										{
+											"$ref": "#/components/schemas/server.serverResponse"
+										},
+										{
+											"properties": {
+												"data": {
+													"$ref": "#/components/schemas/server.Stub"
+												}
+											},
+											"type": "object"
+										}
+									]
+								}
+							}
+						},
+						"description": "OK"
+					},
+					"400": {
+						"content": {
+							"application/json": {
+								"schema": {
+									"allOf": [
+										{
+											"$ref": "#/components/schemas/server.serverResponse"
+										},
+										{
+											"properties": {
+												"data": {
+													"$ref": "#/components/schemas/server.Stub"
+												}
+											},
+											"type": "object"
+										}
+									]
+								}
+							}
+						},
+						"description": "Bad Request"
+					},
+					"401": {
+						"content": {
+							"application/json": {
+								"schema": {
+									"allOf": [
+										{
+											"$ref": "#/components/schemas/server.serverResponse"
+										},
+										{
+											"properties": {
+												"data": {
+													"$ref": "#/components/schemas/server.Stub"
+												}
+											},
+											"type": "object"
+										}
+									]
+								}
+							}
+						},
+						"description": "Unauthorized"
+					},
+					"500": {
+						"content": {
+							"application/json": {
+								"schema": {
+									"allOf": [
+										{
+											"$ref": "#/components/schemas/server.serverResponse"
+										},
+										{
+											"properties": {
+												"data": {
+													"$ref": "#/components/schemas/server.Stub"
+												}
+											},
+											"type": "object"
+										}
+									]
+								}
+							}
+						},
+						"description": "Internal Server Error"
+					}
+				},
+				"security": [
+					{
+						"ApiKeyAuth": []
+					}
+				],
+				"summary": "Accept or decline an organisation invite",
+				"tags": [
+					"Organisation"
+				]
+			}
+		},
+		"/ui/organisations/{orgID}": {
+			"delete": {
+				"description": "This endpoint deletes an organisation",
+				"parameters": [
+					{
+						"description": "organisation id",
+						"in": "path",
+						"name": "orgID",
+						"required": true,
+						"schema": {
+							"type": "string"
+						}
+					}
+				],
+				"responses": {
+					"200": {
+						"content": {
+							"application/json": {
+								"schema": {
+									"allOf": [
+										{
+											"$ref": "#/components/schemas/server.serverResponse"
+										},
+										{
+											"properties": {
+												"data": {
+													"$ref": "#/components/schemas/server.Stub"
+												}
+											},
+											"type": "object"
+										}
+									]
+								}
+							}
+						},
+						"description": "OK"
+					},
+					"400": {
+						"content": {
+							"application/json": {
+								"schema": {
+									"allOf": [
+										{
+											"$ref": "#/components/schemas/server.serverResponse"
+										},
+										{
+											"properties": {
+												"data": {
+													"$ref": "#/components/schemas/server.Stub"
+												}
+											},
+											"type": "object"
+										}
+									]
+								}
+							}
+						},
+						"description": "Bad Request"
+					},
+					"401": {
+						"content": {
+							"application/json": {
+								"schema": {
+									"allOf": [
+										{
+											"$ref": "#/components/schemas/server.serverResponse"
+										},
+										{
+											"properties": {
+												"data": {
+													"$ref": "#/components/schemas/server.Stub"
+												}
+											},
+											"type": "object"
+										}
+									]
+								}
+							}
+						},
+						"description": "Unauthorized"
+					},
+					"500": {
+						"content": {
+							"application/json": {
+								"schema": {
+									"allOf": [
+										{
+											"$ref": "#/components/schemas/server.serverResponse"
+										},
+										{
+											"properties": {
+												"data": {
+													"$ref": "#/components/schemas/server.Stub"
+												}
+											},
+											"type": "object"
+										}
+									]
+								}
+							}
+						},
+						"description": "Internal Server Error"
+					}
+				},
+				"security": [
+					{
+						"ApiKeyAuth": []
+					}
+				],
+				"summary": "Delete organisation",
+				"tags": [
+					"Organisation"
+				]
+			},
+			"get": {
+				"description": "This endpoint fetches an organisation by its id",
+				"parameters": [
+					{
+						"description": "organisation id",
+						"in": "path",
+						"name": "orgID",
+						"required": true,
+						"schema": {
+							"type": "string"
+						}
+					}
+				],
+				"responses": {
+					"200": {
+						"content": {
+							"application/json": {
+								"schema": {
+									"allOf": [
+										{
+											"$ref": "#/components/schemas/server.serverResponse"
+										},
+										{
+											"properties": {
+												"data": {
+													"$ref": "#/components/schemas/datastore.Organisation"
+												}
+											},
+											"type": "object"
+										}
+									]
+								}
+							}
+						},
+						"description": "OK"
+					},
+					"400": {
+						"content": {
+							"application/json": {
+								"schema": {
+									"allOf": [
+										{
+											"$ref": "#/components/schemas/server.serverResponse"
+										},
+										{
+											"properties": {
+												"data": {
+													"$ref": "#/components/schemas/server.Stub"
+												}
+											},
+											"type": "object"
+										}
+									]
+								}
+							}
+						},
+						"description": "Bad Request"
+					},
+					"401": {
+						"content": {
+							"application/json": {
+								"schema": {
+									"allOf": [
+										{
+											"$ref": "#/components/schemas/server.serverResponse"
+										},
+										{
+											"properties": {
+												"data": {
+													"$ref": "#/components/schemas/server.Stub"
+												}
+											},
+											"type": "object"
+										}
+									]
+								}
+							}
+						},
+						"description": "Unauthorized"
+					},
+					"500": {
+						"content": {
+							"application/json": {
+								"schema": {
+									"allOf": [
+										{
+											"$ref": "#/components/schemas/server.serverResponse"
+										},
+										{
+											"properties": {
+												"data": {
+													"$ref": "#/components/schemas/server.Stub"
+												}
+											},
+											"type": "object"
+										}
+									]
+								}
+							}
+						},
+						"description": "Internal Server Error"
+					}
+				},
+				"security": [
+					{
+						"ApiKeyAuth": []
+					}
+				],
+				"summary": "Get an organisation",
+				"tags": [
+					"Organisation"
+				]
+			},
+			"put": {
+				"description": "This endpoint updates an organisation",
+				"parameters": [
+					{
+						"description": "organisation id",
+						"in": "path",
+						"name": "orgID",
+						"required": true,
+						"schema": {
+							"type": "string"
+						}
+					}
+				],
+				"requestBody": {
+					"content": {
+						"application/json": {
+							"schema": {
+								"$ref": "#/components/schemas/models.Organisation"
+							}
+						}
+					},
+					"description": "Organisation Details",
+					"required": true,
+					"x-originalParamName": "organisation"
+				},
+				"responses": {
+					"200": {
+						"content": {
+							"application/json": {
+								"schema": {
+									"allOf": [
+										{
+											"$ref": "#/components/schemas/server.serverResponse"
+										},
+										{
+											"properties": {
+												"data": {
+													"$ref": "#/components/schemas/datastore.Organisation"
+												}
+											},
+											"type": "object"
+										}
+									]
+								}
+							}
+						},
+						"description": "OK"
+					},
+					"400": {
+						"content": {
+							"application/json": {
+								"schema": {
+									"allOf": [
+										{
+											"$ref": "#/components/schemas/server.serverResponse"
+										},
+										{
+											"properties": {
+												"data": {
+													"$ref": "#/components/schemas/server.Stub"
+												}
+											},
+											"type": "object"
+										}
+									]
+								}
+							}
+						},
+						"description": "Bad Request"
+					},
+					"401": {
+						"content": {
+							"application/json": {
+								"schema": {
+									"allOf": [
+										{
+											"$ref": "#/components/schemas/server.serverResponse"
+										},
+										{
+											"properties": {
+												"data": {
+													"$ref": "#/components/schemas/server.Stub"
+												}
+											},
+											"type": "object"
+										}
+									]
+								}
+							}
+						},
+						"description": "Unauthorized"
+					},
+					"500": {
+						"content": {
+							"application/json": {
+								"schema": {
+									"allOf": [
+										{
+											"$ref": "#/components/schemas/server.serverResponse"
+										},
+										{
+											"properties": {
+												"data": {
+													"$ref": "#/components/schemas/server.Stub"
+												}
+											},
+											"type": "object"
+										}
+									]
+								}
+							}
+						},
+						"description": "Internal Server Error"
+					}
+				},
+				"security": [
+					{
+						"ApiKeyAuth": []
+					}
+				],
+				"summary": "Update an organisation",
+				"tags": [
+					"Organisation"
+				]
+			}
+		},
+		"/ui/organisations/{orgID}/invite_user": {
+			"post": {
+				"description": "This endpoint invites a user to join an organisation",
+				"parameters": [
+					{
+						"description": "organisation id",
+						"in": "path",
+						"name": "orgID",
+						"required": true,
+						"schema": {
+							"type": "string"
+						}
+					}
+				],
+				"requestBody": {
+					"content": {
+						"application/json": {
+							"schema": {
+								"$ref": "#/components/schemas/models.OrganisationInvite"
+							}
+						}
+					},
+					"description": "Organisation Invite Details",
+					"required": true,
+					"x-originalParamName": "invite"
+				},
+				"responses": {
+					"200": {
+						"content": {
+							"application/json": {
+								"schema": {
+									"allOf": [
+										{
+											"$ref": "#/components/schemas/server.serverResponse"
+										},
+										{
+											"properties": {
+												"data": {
+													"$ref": "#/components/schemas/server.Stub"
+												}
+											},
+											"type": "object"
+										}
+									]
+								}
+							}
+						},
+						"description": "OK"
+					},
+					"400": {
+						"content": {
+							"application/json": {
+								"schema": {
+									"allOf": [
+										{
+											"$ref": "#/components/schemas/server.serverResponse"
+										},
+										{
+											"properties": {
+												"data": {
+													"$ref": "#/components/schemas/server.Stub"
+												}
+											},
+											"type": "object"
+										}
+									]
+								}
+							}
+						},
+						"description": "Bad Request"
+					},
+					"401": {
+						"content": {
+							"application/json": {
+								"schema": {
+									"allOf": [
+										{
+											"$ref": "#/components/schemas/server.serverResponse"
+										},
+										{
+											"properties": {
+												"data": {
+													"$ref": "#/components/schemas/server.Stub"
+												}
+											},
+											"type": "object"
+										}
+									]
+								}
+							}
+						},
+						"description": "Unauthorized"
+					},
+					"500": {
+						"content": {
+							"application/json": {
+								"schema": {
+									"allOf": [
+										{
+											"$ref": "#/components/schemas/server.serverResponse"
+										},
+										{
+											"properties": {
+												"data": {
+													"$ref": "#/components/schemas/server.Stub"
+												}
+											},
+											"type": "object"
+										}
+									]
+								}
+							}
+						},
+						"description": "Internal Server Error"
+					}
+				},
+				"security": [
+					{
+						"ApiKeyAuth": []
+					}
+				],
+				"summary": "Invite a user to join an organisation",
+				"tags": [
+					"Organisation"
+				]
+			}
+		},
+		"/ui/organisations/{orgID}/members": {
+			"get": {
+				"description": "This endpoint fetches an organisation's members",
+				"parameters": [
+					{
+						"description": "organisation id",
+						"in": "path",
+						"name": "orgID",
+						"required": true,
+						"schema": {
+							"type": "string"
+						}
+					},
+					{
+						"description": "results per page",
+						"in": "query",
+						"name": "perPage",
+						"schema": {
+							"type": "string"
+						}
+					},
+					{
+						"description": "page number",
+						"in": "query",
+						"name": "page",
+						"schema": {
+							"type": "string"
+						}
+					},
+					{
+						"description": "sort order",
+						"in": "query",
+						"name": "sort",
+						"schema": {
+							"type": "string"
+						}
+					}
+				],
+				"responses": {
+					"200": {
+						"content": {
+							"application/json": {
+								"schema": {
+									"allOf": [
+										{
+											"$ref": "#/components/schemas/server.serverResponse"
+										},
+										{
+											"properties": {
+												"data": {
+													"allOf": [
+														{
+															"$ref": "#/components/schemas/server.pagedResponse"
+														},
+														{
+															"properties": {
+																"content": {
+																	"items": {
+																		"$ref": "#/components/schemas/datastore.OrganisationMember"
+																	},
+																	"type": "array"
+																}
+															},
+															"type": "object"
+														}
+													]
+												}
+											},
+											"type": "object"
+										}
+									]
+								}
+							}
+						},
+						"description": "OK"
+					},
+					"400": {
+						"content": {
+							"application/json": {
+								"schema": {
+									"allOf": [
+										{
+											"$ref": "#/components/schemas/server.serverResponse"
+										},
+										{
+											"properties": {
+												"data": {
+													"$ref": "#/components/schemas/server.Stub"
+												}
+											},
+											"type": "object"
+										}
+									]
+								}
+							}
+						},
+						"description": "Bad Request"
+					},
+					"401": {
+						"content": {
+							"application/json": {
+								"schema": {
+									"allOf": [
+										{
+											"$ref": "#/components/schemas/server.serverResponse"
+										},
+										{
+											"properties": {
+												"data": {
+													"$ref": "#/components/schemas/server.Stub"
+												}
+											},
+											"type": "object"
+										}
+									]
+								}
+							}
+						},
+						"description": "Unauthorized"
+					},
+					"500": {
+						"content": {
+							"application/json": {
+								"schema": {
+									"allOf": [
+										{
+											"$ref": "#/components/schemas/server.serverResponse"
+										},
+										{
+											"properties": {
+												"data": {
+													"$ref": "#/components/schemas/server.Stub"
+												}
+											},
+											"type": "object"
+										}
+									]
+								}
+							}
+						},
+						"description": "Internal Server Error"
+					}
+				},
+				"security": [
+					{
+						"ApiKeyAuth": []
+					}
+				],
+				"summary": "Get organisation members",
+				"tags": [
+					"Organisation"
+				]
+			}
+		},
+		"/ui/organisations/{orgID}/members/{memberID}": {
+			"delete": {
+				"description": "This endpoint deletes an organisation's member",
+				"parameters": [
+					{
+						"description": "organisation id",
+						"in": "path",
+						"name": "orgID",
+						"required": true,
+						"schema": {
+							"type": "string"
+						}
+					},
+					{
+						"description": "organisation member id",
+						"in": "path",
+						"name": "memberID",
+						"required": true,
+						"schema": {
+							"type": "string"
+						}
+					}
+				],
+				"responses": {
+					"200": {
+						"content": {
+							"application/json": {
+								"schema": {
+									"allOf": [
+										{
+											"$ref": "#/components/schemas/server.serverResponse"
+										},
+										{
+											"properties": {
+												"data": {
+													"$ref": "#/components/schemas/server.Stub"
+												}
+											},
+											"type": "object"
+										}
+									]
+								}
+							}
+						},
+						"description": "OK"
+					},
+					"400": {
+						"content": {
+							"application/json": {
+								"schema": {
+									"allOf": [
+										{
+											"$ref": "#/components/schemas/server.serverResponse"
+										},
+										{
+											"properties": {
+												"data": {
+													"$ref": "#/components/schemas/server.Stub"
+												}
+											},
+											"type": "object"
+										}
+									]
+								}
+							}
+						},
+						"description": "Bad Request"
+					},
+					"401": {
+						"content": {
+							"application/json": {
+								"schema": {
+									"allOf": [
+										{
+											"$ref": "#/components/schemas/server.serverResponse"
+										},
+										{
+											"properties": {
+												"data": {
+													"$ref": "#/components/schemas/server.Stub"
+												}
+											},
+											"type": "object"
+										}
+									]
+								}
+							}
+						},
+						"description": "Unauthorized"
+					},
+					"500": {
+						"content": {
+							"application/json": {
+								"schema": {
+									"allOf": [
+										{
+											"$ref": "#/components/schemas/server.serverResponse"
+										},
+										{
+											"properties": {
+												"data": {
+													"$ref": "#/components/schemas/server.Stub"
+												}
+											},
+											"type": "object"
+										}
+									]
+								}
+							}
+						},
+						"description": "Internal Server Error"
+					}
+				},
+				"security": [
+					{
+						"ApiKeyAuth": []
+					}
+				],
+				"summary": "Delete an organisation's member",
+				"tags": [
+					"Organisation"
+				]
+			},
+			"get": {
+				"description": "This endpoint fetches an organisation's member",
+				"parameters": [
+					{
+						"description": "organisation id",
+						"in": "path",
+						"name": "orgID",
+						"required": true,
+						"schema": {
+							"type": "string"
+						}
+					},
+					{
+						"description": "organisation member id",
+						"in": "path",
+						"name": "memberID",
+						"required": true,
+						"schema": {
+							"type": "string"
+						}
+					}
+				],
+				"responses": {
+					"200": {
+						"content": {
+							"application/json": {
+								"schema": {
+									"allOf": [
+										{
+											"$ref": "#/components/schemas/server.serverResponse"
+										},
+										{
+											"properties": {
+												"data": {
+													"$ref": "#/components/schemas/datastore.OrganisationMember"
+												}
+											},
+											"type": "object"
+										}
+									]
+								}
+							}
+						},
+						"description": "OK"
+					},
+					"400": {
+						"content": {
+							"application/json": {
+								"schema": {
+									"allOf": [
+										{
+											"$ref": "#/components/schemas/server.serverResponse"
+										},
+										{
+											"properties": {
+												"data": {
+													"$ref": "#/components/schemas/server.Stub"
+												}
+											},
+											"type": "object"
+										}
+									]
+								}
+							}
+						},
+						"description": "Bad Request"
+					},
+					"401": {
+						"content": {
+							"application/json": {
+								"schema": {
+									"allOf": [
+										{
+											"$ref": "#/components/schemas/server.serverResponse"
+										},
+										{
+											"properties": {
+												"data": {
+													"$ref": "#/components/schemas/server.Stub"
+												}
+											},
+											"type": "object"
+										}
+									]
+								}
+							}
+						},
+						"description": "Unauthorized"
+					},
+					"500": {
+						"content": {
+							"application/json": {
+								"schema": {
+									"allOf": [
+										{
+											"$ref": "#/components/schemas/server.serverResponse"
+										},
+										{
+											"properties": {
+												"data": {
+													"$ref": "#/components/schemas/server.Stub"
+												}
+											},
+											"type": "object"
+										}
+									]
+								}
+							}
+						},
+						"description": "Internal Server Error"
+					}
+				},
+				"security": [
+					{
+						"ApiKeyAuth": []
+					}
+				],
+				"summary": "Get organisation member",
+				"tags": [
+					"Organisation"
+				]
+			},
+			"put": {
+				"description": "This endpoint updates an organisation's member",
+				"parameters": [
+					{
+						"description": "organisation id",
+						"in": "path",
+						"name": "orgID",
+						"required": true,
+						"schema": {
+							"type": "string"
+						}
+					},
+					{
+						"description": "organisation member id",
+						"in": "path",
+						"name": "memberID",
+						"required": true,
+						"schema": {
+							"type": "string"
+						}
+					}
+				],
+				"requestBody": {
+					"content": {
+						"application/json": {
+							"schema": {
+								"$ref": "#/components/schemas/models.UpdateOrganisationMember"
+							}
+						}
+					},
+					"description": "Organisation member Details",
+					"required": true,
+					"x-originalParamName": "organisation_member"
+				},
+				"responses": {
+					"200": {
+						"content": {
+							"application/json": {
+								"schema": {
+									"allOf": [
+										{
+											"$ref": "#/components/schemas/server.serverResponse"
+										},
+										{
+											"properties": {
+												"data": {
+													"$ref": "#/components/schemas/datastore.Organisation"
+												}
+											},
+											"type": "object"
+										}
+									]
+								}
+							}
+						},
+						"description": "OK"
+					},
+					"400": {
+						"content": {
+							"application/json": {
+								"schema": {
+									"allOf": [
+										{
+											"$ref": "#/components/schemas/server.serverResponse"
+										},
+										{
+											"properties": {
+												"data": {
+													"$ref": "#/components/schemas/server.Stub"
+												}
+											},
+											"type": "object"
+										}
+									]
+								}
+							}
+						},
+						"description": "Bad Request"
+					},
+					"401": {
+						"content": {
+							"application/json": {
+								"schema": {
+									"allOf": [
+										{
+											"$ref": "#/components/schemas/server.serverResponse"
+										},
+										{
+											"properties": {
+												"data": {
+													"$ref": "#/components/schemas/server.Stub"
+												}
+											},
+											"type": "object"
+										}
+									]
+								}
+							}
+						},
+						"description": "Unauthorized"
+					},
+					"500": {
+						"content": {
+							"application/json": {
+								"schema": {
+									"allOf": [
+										{
+											"$ref": "#/components/schemas/server.serverResponse"
+										},
+										{
+											"properties": {
+												"data": {
+													"$ref": "#/components/schemas/server.Stub"
+												}
+											},
+											"type": "object"
+										}
+									]
+								}
+							}
+						},
+						"description": "Internal Server Error"
+					}
+				},
+				"security": [
+					{
+						"ApiKeyAuth": []
+					}
+				],
+				"summary": "Update an organisation's member",
+				"tags": [
+					"Organisation"
+				]
+			}
+		},
+		"/ui/organisations/{orgID}/pending_invites": {
+			"get": {
+				"description": "This endpoint fetches pending organisation invites",
+				"parameters": [
+					{
+						"description": "results per page",
+						"in": "query",
+						"name": "perPage",
+						"schema": {
+							"type": "string"
+						}
+					},
+					{
+						"description": "page number",
+						"in": "query",
+						"name": "page",
+						"schema": {
+							"type": "string"
+						}
+					},
+					{
+						"description": "sort order",
+						"in": "query",
+						"name": "sort",
+						"schema": {
+							"type": "string"
+						}
+					},
+					{
+						"description": "organisation id",
+						"in": "path",
+						"name": "orgID",
+						"required": true,
+						"schema": {
+							"type": "string"
+						}
+					}
+				],
+				"responses": {
+					"200": {
+						"content": {
+							"application/json": {
+								"schema": {
+									"allOf": [
+										{
+											"$ref": "#/components/schemas/server.serverResponse"
+										},
+										{
+											"properties": {
+												"data": {
+													"$ref": "#/components/schemas/server.Stub"
+												}
+											},
+											"type": "object"
+										}
+									]
+								}
+							}
+						},
+						"description": "OK"
+					},
+					"400": {
+						"content": {
+							"application/json": {
+								"schema": {
+									"allOf": [
+										{
+											"$ref": "#/components/schemas/server.serverResponse"
+										},
+										{
+											"properties": {
+												"data": {
+													"$ref": "#/components/schemas/server.Stub"
+												}
+											},
+											"type": "object"
+										}
+									]
+								}
+							}
+						},
+						"description": "Bad Request"
+					},
+					"401": {
+						"content": {
+							"application/json": {
+								"schema": {
+									"allOf": [
+										{
+											"$ref": "#/components/schemas/server.serverResponse"
+										},
+										{
+											"properties": {
+												"data": {
+													"$ref": "#/components/schemas/server.Stub"
+												}
+											},
+											"type": "object"
+										}
+									]
+								}
+							}
+						},
+						"description": "Unauthorized"
+					},
+					"500": {
+						"content": {
+							"application/json": {
+								"schema": {
+									"allOf": [
+										{
+											"$ref": "#/components/schemas/server.serverResponse"
+										},
+										{
+											"properties": {
+												"data": {
+													"$ref": "#/components/schemas/server.Stub"
+												}
+											},
+											"type": "object"
+										}
+									]
+								}
+							}
+						},
+						"description": "Internal Server Error"
+					}
+				},
+				"security": [
+					{
+						"ApiKeyAuth": []
+					}
+				],
+				"summary": "Fetch pending organisation invites",
+				"tags": [
+					"Organisation"
 				]
 			}
 		},

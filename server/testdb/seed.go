@@ -232,7 +232,7 @@ func SeedOrganisationMember(db datastore.DatabaseClient, org *datastore.Organisa
 }
 
 // seed organisation invite
-func SeedOrganisationInvite(db datastore.DatabaseClient, org *datastore.Organisation, email string, role *auth.Role, expiry primitive.DateTime) (*datastore.OrganisationInvite, error) {
+func SeedOrganisationInvite(db datastore.DatabaseClient, org *datastore.Organisation, email string, role *auth.Role, expiry primitive.DateTime, status datastore.InviteStatus) (*datastore.OrganisationInvite, error) {
 	if expiry == 0 {
 		expiry = primitive.NewDateTimeFromTime(time.Now())
 	}
@@ -244,7 +244,7 @@ func SeedOrganisationInvite(db datastore.DatabaseClient, org *datastore.Organisa
 		Role:           *role,
 		Token:          uniuri.NewLen(64),
 		ExpiresAt:      expiry,
-		Status:         datastore.InviteStatusPending,
+		Status:         status,
 		DocumentStatus: datastore.ActiveDocumentStatus,
 		CreatedAt:      primitive.NewDateTimeFromTime(time.Now()),
 		UpdatedAt:      primitive.NewDateTimeFromTime(time.Now()),
