@@ -7,7 +7,7 @@ import { PrivateService } from '../../private.service';
 	providedIn: 'root'
 })
 export class CreateAppService {
-	projectId: string = this.privateService.activeProjectId;
+	projectId: string = this.privateService.activeProjectDetails.uid;
 	constructor(private http: HttpService, private privateService: PrivateService) {}
 
 	async updateApp(requestDetails: { appId: string; body: any }): Promise<HTTP_RESPONSE> {

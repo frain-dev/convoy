@@ -1,12 +1,13 @@
 import { Injectable } from '@angular/core';
 import { HTTP_RESPONSE } from 'src/app/models/http.model';
 import { HttpService } from 'src/app/services/http/http.service';
+import { GROUP } from '../models/group.model';
 
 @Injectable({
 	providedIn: 'root'
 })
 export class PrivateService {
-	activeProjectId: string = '';
+	activeProjectDetails!: GROUP;
 
 	constructor(private http: HttpService) {}
 
@@ -14,7 +15,7 @@ export class PrivateService {
 		return new Promise(async (resolve, reject) => {
 			try {
 				const response = await this.http.request({
-					url: `/apps?groupId=${this.activeProjectId}&sort=AESC&page=${requestDetails?.pageNo || 1}&perPage=20${requestDetails?.searchString ? `&q=${requestDetails?.searchString}` : ''}`,
+					url: `/apps?groupId=${this.activeProjectDetails.uid}&sort=AESC&page=${requestDetails?.pageNo || 1}&perPage=20${requestDetails?.searchString ? `&q=${requestDetails?.searchString}` : ''}`,
 					method: 'get'
 				});
 
@@ -29,7 +30,7 @@ export class PrivateService {
 		return new Promise(async (resolve, reject) => {
 			try {
 				const sourcesResponse = await this.http.request({
-					url: `/sources?groupId=${this.activeProjectId}&page=${requestDetails?.page}`,
+					url: `/sources?groupId=${this.activeProjectDetails.uid}&page=${requestDetails?.page}`,
 					method: 'get'
 				});
 
@@ -44,10 +45,11 @@ export class PrivateService {
 		return new Promise(async (resolve, reject) => {
 			try {
 				const projectResponse = await this.http.request({
-					url: `/groups/${this.activeProjectId}`,
+					url: `/groups/${this.activeProjectDetails.uid}`,
 					method: 'get'
 				});
 
+				this.activeProjectDetails = projectResponse.data;
 				return resolve(projectResponse);
 			} catch (error: any) {
 				return reject(error);
@@ -66,7 +68,6 @@ export class PrivateService {
 			return error;
 		}
 	}
-
 
 	async logout(): Promise<HTTP_RESPONSE> {
 		try {

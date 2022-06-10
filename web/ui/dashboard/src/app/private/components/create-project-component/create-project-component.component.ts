@@ -69,13 +69,14 @@ export class CreateProjectComponent implements OnInit {
 
 		try {
 			const response = await this.createProjectService.createProject(this.projectForm.value);
-			const projectId = response?.data?.uid;
-			this.privateService.activeProjectId = projectId;
+			const projectId = response.data.uid;
+			this.privateService.activeProjectDetails.uid = projectId;
 			this.isCreatingProject = false;
 			this.generalService.showNotification({ message: 'Project created successfully!', style: 'success' });
 			this.onAction.emit({ action: 'createProject', data: response.data });
-		} catch (error) {
+		} catch (error: any) {
 			this.isCreatingProject = false;
+			this.generalService.showNotification({ message: error.message, style: 'error' });
 		}
 	}
 

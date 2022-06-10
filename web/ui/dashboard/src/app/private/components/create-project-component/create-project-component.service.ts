@@ -39,7 +39,7 @@ export class CreateProjectComponentService {
 	}): Promise<HTTP_RESPONSE> {
 		try {
 			const response = await this.http.request({
-				url: `/groups/${this.privateService.activeProjectId}`,
+				url: `/groups/${this.privateService.activeProjectDetails.uid}`,
 				body: requestDetails,
 				method: 'put'
 			});

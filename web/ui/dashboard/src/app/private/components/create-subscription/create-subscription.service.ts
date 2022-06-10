@@ -7,7 +7,7 @@ import { PrivateService } from '../../private.service';
 	providedIn: 'root'
 })
 export class CreateSubscriptionService {
-	projectId: string = this.privateService.activeProjectId;
+	projectId: string = this.privateService.activeProjectDetails.uid;
 
 	constructor(private http: HttpService, private privateService: PrivateService) {}
 

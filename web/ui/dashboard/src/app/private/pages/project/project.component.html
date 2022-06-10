@@ -15,25 +15,14 @@
 
 		<nav class="sidebar--content padding-left__8px padding-right__24px">
 			<ul>
-				<ng-container *ngIf="isLoadingProjectDetails">
-					<li *ngFor="let nav of sideBarItems" class="animate">
-						<div class="flex flex__align-items-center color__grey padding-y__8px padding-left__24px margin-y__8px rounded__8px animate">
-							<div class="skeleton-loader width__28px height__24px"></div>
-							<div class="skeleton-loader width__70 height__36px margin-left__8px"></div>
-						</div>
-					</li>
-				</ng-container>
-
-				<ng-container *ngIf="!isLoadingProjectDetails">
-					<li *ngFor="let nav of sideBarItems" class="animate">
-						<a [routerLink]="'.' + nav.route" routerLinkActive="active" class="flex flex__align-items-center color__grey padding-y__8px padding-left__24px margin-y__8px rounded__8px animate">
-							<svg width="18" height="18" class="margin-right__10px" fill="var(--grey-color)">
-								<use [attr.xlink:href]="'#' + nav.icon + '-icon'"></use>
-							</svg>
-							<span class="font__weight-500 font__14px animate">{{ nav.name }}</span>
-						</a>
-					</li>
-				</ng-container>
+				<li *ngFor="let nav of sideBarItems" class="animate">
+					<a [routerLink]="'.' + nav.route" routerLinkActive="active" class="flex flex__align-items-center color__grey padding-y__8px padding-left__24px margin-y__8px rounded__8px animate">
+						<svg width="18" height="18" class="margin-right__10px" fill="var(--grey-color)">
+							<use [attr.xlink:href]="'#' + nav.icon + '-icon'"></use>
+						</svg>
+						<span class="font__weight-500 font__14px animate">{{ nav.name }}</span>
+					</a>
+				</li>
 			</ul>
 		</nav>
 
