@@ -604,6 +604,36 @@ func requireAuth() func(next http.Handler) http.Handler {
 	}
 }
 
+func requireAuthorizedUser(userRepo datastore.UserRepository) func(next http.Handler) http.Handler {
+	return func(next http.Handler) http.Handler {
+		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			authUser := getAuthUserFromContext(r.Context())
+			user, ok := authUser.Metadata.(*datastore.User)
+
+			if !ok {
+				log.Error("metadata missing in auth user object")
+				_ = render.Render(w, r, newErrorResponse("unauthorized", http.StatusUnauthorized))
+				return
+			}
+
+			userID := chi.URLParam(r, "userID")
+			dbUser, err := userRepo.FindUserByID(r.Context(), userID)
+			if err != nil {
+				_ = render.Render(w, r, newErrorResponse("failed to fetch user by id", http.StatusNotFound))
+				return
+			}
+
+			if user.UID != dbUser.UID {
+				_ = render.Render(w, r, newErrorResponse(datastore.ErrNotAuthorisedToAccessDocument.Error(), http.StatusForbidden))
+				return
+			}
+
+			next.ServeHTTP(w, r)
+
+		})
+	}
+}
+
 func requireBaseUrl() func(next http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {

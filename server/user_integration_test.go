@@ -254,7 +254,7 @@ func (u *UserIntegrationTestSuite) Test_GetUser() {
 	require.NoError(u.T(), err)
 
 	// Arrange Request
-	url := "/ui/users/profile"
+	url := fmt.Sprintf("/ui/users/%s/profile", user.UID)
 	req := httptest.NewRequest(http.MethodGet, url, nil)
 	req.Header.Add("Authorization", fmt.Sprintf("Bearer %s", token.AccessToken))
 	req.Header.Add("Content-Type", "application/json")
@@ -287,7 +287,7 @@ func (u *UserIntegrationTestSuite) Test_UpdateUser() {
 	email := fmt.Sprintf("%s@test.com", uuid.New().String())
 
 	// Arrange Request
-	url := "/ui/users/profile"
+	url := fmt.Sprintf("/ui/users/%s/profile", user.UID)
 	bodyStr := fmt.Sprintf(`{
 		"first_name": "%s",
 		"last_name": "%s",
@@ -327,7 +327,7 @@ func (u *UserIntegrationTestSuite) Test_UpdatePassword() {
 	newPassword := "123456789"
 
 	// Arrange Request
-	url := "/ui/users/password"
+	url := fmt.Sprintf("/ui/users/%s/password", user.UID)
 	bodyStr := fmt.Sprintf(`{
 		"current_password": "%s",
 		"password": "%s",
@@ -367,7 +367,7 @@ func (u *UserIntegrationTestSuite) Test_UpdatePassword_Invalid_Current_Password(
 	require.NoError(u.T(), err)
 
 	// Arrange Request
-	url := "/ui/users/password"
+	url := fmt.Sprintf("/ui/users/%s/password", user.UID)
 	bodyStr := fmt.Sprintf(`{
 		"current_password": "new-password",
 		"password": "%s",
@@ -394,7 +394,7 @@ func (u *UserIntegrationTestSuite) Test_UpdatePassword_Invalid_Password_Confirma
 	require.NoError(u.T(), err)
 
 	// Arrange Request
-	url := "/ui/users/password"
+	url := fmt.Sprintf("/ui/users/%s/password", user.UID)
 	bodyStr := fmt.Sprintf(`{
 		"current_password": %s,
 		"password": "%s",

@@ -223,9 +223,15 @@ func buildRoutes(app *applicationHandler) http.Handler {
 		})
 
 		uiRouter.Route("/users", func(userRouter chi.Router) {
-			userRouter.Get("/profile", app.GetUser)
-			userRouter.Put("/profile", app.UpdateUser)
-			userRouter.Put("/password", app.UpdatePassword)
+			userRouter.Use(requireAuthUserMetadata())
+
+			userRouter.Route("/{userID}", func(userSubRouter chi.Router) {
+				userSubRouter.Use(requireAuthorizedUser(app.userRepo))
+
+				userSubRouter.Get("/profile", app.GetUser)
+				userSubRouter.Put("/profile", app.UpdateUser)
+				userSubRouter.Put("/password", app.UpdatePassword)
+			})
 		})
 
 		uiRouter.Route("/organisations", func(orgRouter chi.Router) {
