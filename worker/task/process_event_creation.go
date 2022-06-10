@@ -92,11 +92,13 @@ func ProcessEventCreated(appRepo datastore.ApplicationRepository, eventRepo data
 		for _, s := range subscriptions {
 			app, err := appRepo.FindApplicationByID(ctx, s.AppID)
 			if err != nil {
+				log.Errorf("Error fetching applcation %s", err)
 				return &EndpointError{Err: err, delay: 10 * time.Second}
 			}
 
 			endpoint, err := appRepo.FindApplicationEndpointByID(ctx, app.UID, s.EndpointID)
 			if err != nil {
+				log.Errorf("Error fetching endpoint %s", err)
 				return &EndpointError{Err: err, delay: 10 * time.Second}
 			}
 
@@ -130,6 +132,7 @@ func ProcessEventCreated(appRepo datastore.ApplicationRepository, eventRepo data
 			err = eventDeliveryRepo.CreateEventDelivery(ctx, eventDelivery)
 			if err != nil {
 				log.WithError(err).Error("error occurred creating event delivery")
+				return &EndpointError{Err: err, delay: 10 * time.Second}
 			}
 
 			taskName := convoy.EventProcessor
