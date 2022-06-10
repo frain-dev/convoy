@@ -284,8 +284,8 @@ func TestFetchOrganisationMemberByID(t *testing.T) {
 }
 
 func TestFetchOrganisationMemberByUserID(t *testing.T) {
-	db, _ := getDB(t)
-	//defer closeFn()
+	db, closeFn := getDB(t)
+	defer closeFn()
 
 	user := &datastore.User{
 		UID:            uuid.NewString(),
