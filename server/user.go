@@ -217,6 +217,7 @@ func (a *applicationHandler) CheckUserExists(w http.ResponseWriter, r *http.Requ
 
 }
 
+<<<<<<< HEAD
 // GeneratePasswordResetToken
 // @Summary Generate password reset token
 // @Description This endpoint generates a password reset token
@@ -295,6 +296,8 @@ func (a *applicationHandler) ResetPassword(w http.ResponseWriter, r *http.Reques
 	_ = render.Render(w, r, newServerResponse("password reset succesful", user, http.StatusOK))
 }
 
+=======
+>>>>>>> main
 func getUser(r *http.Request) (*datastore.User, bool) {
 	authUser := getAuthUserFromContext(r.Context())
 	user, ok := authUser.Metadata.(*datastore.User)

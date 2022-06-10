@@ -223,6 +223,7 @@ func (u *UserService) CheckUserExists(ctx context.Context, data *models.UserExis
 	exists = true
 	return exists, nil
 }
+<<<<<<< HEAD
 
 func (u *UserService) GeneratePasswordResetToken(ctx context.Context, data *models.GeneratePasswordResetToken) error {
 	var resetToken string
@@ -300,3 +301,5 @@ func (u *UserService) ResetPassword(ctx context.Context, data *models.ResetPassw
 	}
 	return user, nil
 }
+=======
+>>>>>>> main
