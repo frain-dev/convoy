@@ -30,10 +30,6 @@ type EventService struct {
 	searcher          searcher.Searcher
 }
 
-type EventMap map[string]*datastore.Event
-type AppMap map[string]*datastore.Application
-type EndpointMap map[string]*datastore.Endpoint
-
 func NewEventService(appRepo datastore.ApplicationRepository, eventRepo datastore.EventRepository, eventDeliveryRepo datastore.EventDeliveryRepository,
 	queue queue.Queuer, cache cache.Cache, seacher searcher.Searcher, subRepo datastore.SubscriptionRepository) *EventService {
 	return &EventService{appRepo: appRepo, eventRepo: eventRepo, eventDeliveryRepo: eventDeliveryRepo, queue: queue, cache: cache, searcher: seacher, subRepo: subRepo}
@@ -233,7 +229,7 @@ func (e *EventService) GetEventsPaged(ctx context.Context, filter *datastore.Fil
 		return nil, datastore.PaginationData{}, NewServiceError(http.StatusInternalServerError, errors.New("an error occurred while fetching events"))
 	}
 
-	appMap := AppMap{}
+	appMap := datastore.AppMap{}
 	for i, event := range events {
 		if _, ok := appMap[event.AppID]; !ok {
 			a, _ := e.appRepo.FindApplicationByID(ctx, event.AppID)
@@ -259,9 +255,9 @@ func (e *EventService) GetEventDeliveriesPaged(ctx context.Context, filter *data
 		return nil, datastore.PaginationData{}, NewServiceError(http.StatusInternalServerError, errors.New("an error occurred while fetching event deliveries"))
 	}
 
-	appMap := AppMap{}
-	eventMap := EventMap{}
-	endpointMap := EndpointMap{}
+	appMap := datastore.AppMap{}
+	eventMap := datastore.EventMap{}
+	endpointMap := datastore.EndpointMap{}
 
 	for i, ed := range deliveries {
 		if _, ok := appMap[ed.AppID]; !ok {

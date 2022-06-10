@@ -24,11 +24,13 @@ var (
 )
 
 type SubcriptionService struct {
-	subRepo datastore.SubscriptionRepository
+	subRepo    datastore.SubscriptionRepository
+	appRepo    datastore.ApplicationRepository
+	sourceRepo datastore.SourceRepository
 }
 
-func NewSubscriptionService(subRepo datastore.SubscriptionRepository) *SubcriptionService {
-	return &SubcriptionService{subRepo: subRepo}
+func NewSubscriptionService(subRepo datastore.SubscriptionRepository, appRepo datastore.ApplicationRepository, sourceRepo datastore.SourceRepository) *SubcriptionService {
+	return &SubcriptionService{subRepo: subRepo, sourceRepo: sourceRepo, appRepo: appRepo}
 }
 
 func (s *SubcriptionService) CreateSubscription(ctx context.Context, groupID string, newSubscription *models.Subscription) (*datastore.Subscription, error) {
@@ -154,6 +156,55 @@ func (s *SubcriptionService) LoadSubscriptionsPaged(ctx context.Context, groupId
 
 	if subscriptions == nil {
 		subscriptions = make([]datastore.Subscription, 0)
+	}
+
+	appMap := datastore.AppMap{}
+	sourceMap := datastore.SourceMap{}
+	endpointMap := datastore.EndpointMap{}
+
+	for i, sub := range subscriptions {
+		if _, ok := appMap[sub.AppID]; !ok {
+			a, _ := s.appRepo.FindApplicationByID(ctx, sub.AppID)
+			aa := &datastore.Application{
+				UID:          a.UID,
+				Title:        a.Title,
+				GroupID:      a.GroupID,
+				SupportEmail: a.SupportEmail,
+			}
+			appMap[sub.AppID] = aa
+		}
+
+		if _, ok := sourceMap[sub.SourceID]; !ok {
+			ev, _ := s.sourceRepo.FindSourceByID(ctx, sub.GroupID, sub.SourceID)
+			source := &datastore.Source{
+				UID:        ev.UID,
+				Name:       ev.Name,
+				Type:       ev.Type,
+				Verifier:   ev.Verifier,
+				GroupID:    sub.GroupID,
+				MaskID:     ev.MaskID,
+				IsDisabled: ev.IsDisabled,
+			}
+			sourceMap[sub.SourceID] = source
+		}
+
+		if _, ok := endpointMap[sub.EndpointID]; !ok {
+			en, _ := s.appRepo.FindApplicationEndpointByID(ctx, sub.AppID, sub.EndpointID)
+			endpoint := &datastore.Endpoint{
+				UID:               en.UID,
+				TargetURL:         en.TargetURL,
+				DocumentStatus:    en.DocumentStatus,
+				Secret:            en.Secret,
+				HttpTimeout:       en.HttpTimeout,
+				RateLimit:         en.RateLimit,
+				RateLimitDuration: en.RateLimitDuration,
+			}
+			endpointMap[sub.EndpointID] = endpoint
+		}
+
+		subscriptions[i].App = appMap[sub.AppID]
+		subscriptions[i].Source = sourceMap[sub.SourceID]
+		subscriptions[i].Endpoint = endpointMap[sub.EndpointID]
 	}
 
 	return subscriptions, paginatedData, nil
