@@ -72,6 +72,37 @@ export class AppDetailsService {
 		});
 	}
 
+	async editEndpoint(requestDetails: { appId: string; endpointId: string; body: any }): Promise<HTTP_RESPONSE> {
+		return new Promise(async (resolve, reject) => {
+			try {
+				const response = await this.http.request({
+					url: `/apps/${requestDetails.appId}/endpoints/${requestDetails.endpointId}?groupId=${this.projectId}`,
+					body: requestDetails.body,
+					method: 'put'
+				});
+
+				return resolve(response);
+			} catch (error: any) {
+				return reject(error);
+			}
+		});
+	}
+
+	async deleteEndpoint(requestDetails: { appId: string; endpointId: string }): Promise<HTTP_RESPONSE> {
+		return new Promise(async (resolve, reject) => {
+			try {
+				const response = await this.http.request({
+					url: `/apps/${requestDetails.appId}/endpoints/${requestDetails.endpointId}?groupId=${this.projectId}`,
+					method: 'delete'
+				});
+
+				return resolve(response);
+			} catch (error: any) {
+				return reject(error);
+			}
+		});
+	}
+
 	async sendEvent(requestDetails: { body: any }): Promise<HTTP_RESPONSE> {
 		return new Promise(async (resolve, reject) => {
 			try {
