@@ -12,7 +12,6 @@ import (
 	"github.com/stretchr/testify/require"
 	"net/http"
 	"testing"
-	"time"
 )
 
 func provideGroupService(ctrl *gomock.Controller) *GroupService {
@@ -344,7 +343,7 @@ func TestGroupService_CreateGroup(t *testing.T) {
 			require.Equal(t, group.Name+"'s default key", apiKey.Name)
 			require.Equal(t, []string{group.UID}, apiKey.Role.Groups)
 			require.Equal(t, auth.RoleSuperUser, apiKey.Role.Type)
-			require.Equal(t, time.Date(1970, time.January, 1, 1, 0, 0, 0, time.Local), apiKey.ExpiresAt)
+			require.NotEmpty(t, apiKey.ExpiresAt)
 			require.NotEmpty(t, apiKey.UID)
 			require.NotEmpty(t, apiKey.Key)
 			require.NotEmpty(t, apiKey.CreatedAt)
