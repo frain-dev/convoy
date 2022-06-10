@@ -148,6 +148,8 @@ definitions:
     properties:
       app_id:
         type: string
+      app_metadata:
+        $ref: '#/definitions/datastore.Application'
       created_at:
         type: string
       data:
@@ -183,16 +185,22 @@ definitions:
     properties:
       app_id:
         type: string
+      app_metadata:
+        $ref: '#/definitions/datastore.Application'
       created_at:
         type: string
       deleted_at:
         type: string
       description:
         type: string
+      endpoint:
+        $ref: '#/definitions/datastore.Endpoint'
       endpoint_id:
         type: string
       event_id:
         type: string
+      event_metadata:
+        $ref: '#/definitions/datastore.Event'
       group_id:
         type: string
       metadata:
@@ -695,11 +703,6 @@ definitions:
         type: string
       role:
         $ref: '#/definitions/auth.Role'
-    type: object
-  models.UserExists:
-    properties:
-      email:
-        type: string
     type: object
   server.Stub:
     type: object
@@ -4342,62 +4345,6 @@ paths:
       summary: Update a subscription
       tags:
       - Subscription
-  /users/exists:
-    post:
-      consumes:
-      - application/json
-      description: This endpoint checks if a user exists
-      parameters:
-      - description: User Exists Details
-        in: body
-        name: group
-        required: true
-        schema:
-          $ref: '#/definitions/models.UserExists'
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            allOf:
-            - $ref: '#/definitions/server.serverResponse'
-            - properties:
-                data:
-                  type: boolean
-              type: object
-        "400":
-          description: Bad Request
-          schema:
-            allOf:
-            - $ref: '#/definitions/server.serverResponse'
-            - properties:
-                data:
-                  $ref: '#/definitions/server.Stub'
-              type: object
-        "401":
-          description: Unauthorized
-          schema:
-            allOf:
-            - $ref: '#/definitions/server.serverResponse'
-            - properties:
-                data:
-                  $ref: '#/definitions/server.Stub'
-              type: object
-        "500":
-          description: Internal Server Error
-          schema:
-            allOf:
-            - $ref: '#/definitions/server.serverResponse'
-            - properties:
-                data:
-                  $ref: '#/definitions/server.Stub'
-              type: object
-      security:
-      - ApiKeyAuth: []
-      summary: Checks If a user exists
-      tags:
-      - User
   /users/password:
     put:
       consumes:
@@ -4558,6 +4505,61 @@ paths:
       summary: Updates a user
       tags:
       - User
+  /users/token:
+    get:
+      consumes:
+      - application/json
+      description: This endpoint finds a user by an invite token
+      parameters:
+      - description: invite token
+        in: query
+        name: token
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/server.serverResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/datastore.User'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            allOf:
+            - $ref: '#/definitions/server.serverResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/server.Stub'
+              type: object
+        "401":
+          description: Unauthorized
+          schema:
+            allOf:
+            - $ref: '#/definitions/server.serverResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/server.Stub'
+              type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            allOf:
+            - $ref: '#/definitions/server.serverResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/server.Stub'
+              type: object
+      security:
+      - ApiKeyAuth: []
+      summary: Find user by invite token
+      tags:
+      - Organisation
 schemes:
 - https
 securityDefinitions:
