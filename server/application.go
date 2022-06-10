@@ -73,7 +73,7 @@ func newApplicationHandler(
 	limiter limiter.RateLimiter, searcher searcher.Searcher) *applicationHandler {
 	as := services.NewAppService(appRepo, eventRepo, eventDeliveryRepo, cache)
 	es := services.NewEventService(appRepo, eventRepo, eventDeliveryRepo, queue, cache, searcher, subRepo)
-	gs := services.NewGroupService(appRepo, groupRepo, eventRepo, eventDeliveryRepo, limiter)
+	gs := services.NewGroupService(apiKeyRepo, appRepo, groupRepo, eventRepo, eventDeliveryRepo, limiter)
 	ss := services.NewSecurityService(groupRepo, apiKeyRepo)
 	os := services.NewOrganisationService(orgRepo, orgMemberRepo)
 	rs := services.NewSubscriptionService(subRepo, appRepo, sourceRepo)
