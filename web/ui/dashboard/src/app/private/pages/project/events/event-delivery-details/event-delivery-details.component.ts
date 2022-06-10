@@ -1,5 +1,9 @@
+import { Location } from '@angular/common';
 import { Component, OnInit } from '@angular/core';
+import { ActivatedRoute } from '@angular/router';
 import { EVENT_DELIVERY_ATTEMPT } from 'src/app/models/event.model';
+import { GeneralService } from 'src/app/services/general/general.service';
+import { EventsService } from '../events.service';
 
 @Component({
 	selector: 'app-event-delivery-details',
@@ -7,40 +11,9 @@ import { EVENT_DELIVERY_ATTEMPT } from 'src/app/models/event.model';
 	styleUrls: ['./event-delivery-details.component.scss']
 })
 export class EventDeliveryDetailsComponent implements OnInit {
-	eventDelsDetailsItem: any = {
-		app_metadata: {
-			group_id: 'db78d6fe-b05e-476d-b908-cb6fff26a3ed',
-			support_email: 'pelumi@mailinator.com',
-			title: 'App A',
-			uid: '41e3683f-2799-434d-ab61-4bfbe7c1ae23'
-		},
-		created_at: '2022-03-04T12:50:37.048Z',
-		description: 'Retry limit exceeded',
-		endpoint: {
-			http_timeout: '',
-			rate_limit: 0,
-			rate_limit_duration: '',
-			secret: 'kRfXPgJU6kAkc35H2-CqXwnrP_6wcEBVzA==',
-			sent: false,
-			status: 'active',
-			target_url: 'https://webhook.site/ac06134f-b969-4388-b663-1e55951a99a4',
-			uid: '8a069124-757e-4ad1-8939-6882a0f3e9bb'
-		},
-		event_metadata: {
-			name: 'three',
-			uid: '5bbca57e-e9df-4668-9208-827b962dc9a1'
-		},
-		metadata: {
-			interval_seconds: 65,
-			next_send_time: '2022-04-22T15:11:16.76Z',
-			num_trials: 5,
-			retry_limit: 5,
-			strategy: 'default'
-		},
-		status: 'Failure',
-		uid: 'b51ebc56-10df-42f1-8e00-6fb9da957bc0',
-		updated_at: '2022-04-22T15:10:11.761Z'
-	};
+	isLoadingDeliveryDetails = false;
+	isloadingDeliveryAttempts = false;
+	eventDelsDetailsItem: any;
 	eventDeliveryAtempt: EVENT_DELIVERY_ATTEMPT = {
 		api_version: '2021-08-27',
 		created_at: '2022-03-04T12:50:38.958Z',
@@ -62,9 +35,62 @@ export class EventDeliveryDetailsComponent implements OnInit {
 			'X-Token-Id': 'ac06134f-b969-4388-b663-1e55951a99a4'
 		}
 	};
-	constructor() {}
+	constructor(private route: ActivatedRoute, private eventsService: EventsService, private generalService: GeneralService, private location: Location) {}
 
-	ngOnInit(): void {}
+	ngOnInit() {
+		this.getDeliveryId();
+	}
+
+	getDeliveryId() {
+		this.route.params.subscribe(res => {
+			const deliveryId = res.id;
+			this.getEventDeliveryDetails(deliveryId);
+		});
+	}
+
+	async getEventDeliveryDetails(deliveryId: string) {
+		this.isLoadingDeliveryDetails = true;
+
+		try {
+			const response = await this.eventsService.getDelivery(deliveryId);
+			this.eventDelsDetailsItem = response.data;
+			this.getDeliveryAttempts({ eventId: this.eventDelsDetailsItem.event_id, eventDeliveryId: this.eventDelsDetailsItem.uid });
+			this.isLoadingDeliveryDetails = false;
+		} catch {
+			this.isLoadingDeliveryDetails = false;
+		}
+	}
+
+	async getDeliveryAttempts(requestDetails: { eventId: string; eventDeliveryId: string }) {
+		this.isloadingDeliveryAttempts = true;
+		try {
+			const deliveryAttemptsResponse = await this.eventsService.getEventDeliveryAttempts({ eventId: requestDetails.eventId, eventDeliveryId: requestDetails.eventDeliveryId });
+			this.eventDeliveryAtempt = deliveryAttemptsResponse.data[deliveryAttemptsResponse.data.length - 1];
+			this.isloadingDeliveryAttempts = false;
+
+			return;
+		} catch (error) {
+			this.isloadingDeliveryAttempts = false;
+			return error;
+		}
+	}
+
+	async forceRetryEvent(requestDetails: { e: any; index: number; eventDeliveryId: string }) {
+		requestDetails.e.stopPropagation();
+
+		const payload = {
+			ids: [requestDetails.eventDeliveryId]
+		};
+		try {
+			await this.eventsService.forceRetryEvent({ body: payload });
+			this.generalService.showNotification({ message: 'Force Retry Request Sent', style: 'success' });
+
+		} catch (error: any) {
+			this.generalService.showNotification({ message: `${error?.error?.message ? error?.error?.message : 'An error occured'}`, style: 'error' });
+
+			return error;
+		}
+	}
 
 	getCodeSnippetString(type: 'res_body' | 'event' | 'event_delivery' | 'res_head' | 'req' | 'error') {
 		if (type === 'event_delivery') {
@@ -84,5 +110,9 @@ export class EventDeliveryDetailsComponent implements OnInit {
 			return '';
 		}
 		return '';
+	}
+
+	goBack() {
+		this.location.back();
 	}
 }

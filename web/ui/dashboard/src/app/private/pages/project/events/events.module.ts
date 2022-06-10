@@ -16,7 +16,7 @@ import { TableLoaderModule } from 'src/app/private/components/table-loader/table
 
 const routes: Routes = [
 	{ path: '', component: EventsComponent },
-	{ path: ':eventId/delivery/:id', component: EventDeliveryDetailsComponent }
+	{ path: 'delivery/:id', component: EventDeliveryDetailsComponent }
 ];
 
 @NgModule({

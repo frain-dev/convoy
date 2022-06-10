@@ -1,4 +1,20 @@
-<div class="page page__small padding-top__28px margin-bottom__20px">
+<h1 class="font__12px font__weight-500 flex flex__align-items-center margin-bottom__24px text__uppercase">
+	<a routerLink="/projects" class="font__weight-500 pointer-cursor">Projects</a>
+	<svg width="16" height="16" class="margin-x__4px">
+		<use xlink:href="#arrow-right-icon"></use>
+	</svg>
+	PROJECT NAME
+	<svg width="16" height="16" class="margin-x__4px">
+		<use xlink:href="#arrow-right-icon"></use>
+	</svg>
+	<a class="pointer-cursor font__weight-500" (click)="goBack()">Apps</a>
+	<svg width="16" height="16" class="margin-x__4px">
+		<use xlink:href="#arrow-right-icon"></use>
+	</svg>
+	<span class="font__weight-500 color__primary">{{ eventDelsDetailsItem?.name || 'Event Delivery' }}</span>
+</h1>
+
+<div class="card padding-all__32px margin-bottom__20px">
     <div class="flex flex__justify-between flex__align-items-center margin-bottom__24px">
         <h3>Overview</h3>
         <button
@@ -7,7 +23,7 @@
         >
             <img src="/assets/img/refresh-icon-primary.svg" alt="refresh icon" />
 
-            {{ eventDelsDetailsItem.status === 'Success' ? 'Force Retry' : 'Retry' }}
+            {{ eventDelsDetailsItem?.status === 'Success' ? 'Force Retry' : 'Retry' }}
         </button>
     </div>
     <div class="grid grid__col-5 margin-bottom__24px">
@@ -23,13 +39,13 @@
 
         <div>
             <p class="color__grey font__12px font__weight-300">STATUS</p>
-            <div [class]="'tag tag--' + eventDelsDetailsItem.status">{{ eventDelsDetailsItem?.status }}</div>
+            <div [class]="'tag tag--' + eventDelsDetailsItem?.status">{{ eventDelsDetailsItem?.status }}</div>
         </div>
         <div>
             <p class="color__grey font__12px font__weight-300">IP ADDRESS</p>
             <p class="color__black font__14px font__weight-500">{{ eventDeliveryAtempt?.ip_address || '-' }}</p>
         </div>
-        <div *ngIf="eventDelsDetailsItem.status == 'Success'">
+        <div *ngIf="eventDelsDetailsItem?.status == 'Success'">
             <p class="color__grey font__12px font__weight-300">TIME</p>
             <p class="color__black font__14px font__weight-500">{{ eventDelsDetailsItem?.updated_at | date: 'medium' }}</p>
         </div>
@@ -45,10 +61,10 @@
         </div>
         <div>
             <p class="color__grey font__12px font__weight-300">ENDPOINT</p>
-            <p class="color__primary font__14px font__weight-500 long-text long-text__200px" [title]="eventDelsDetailsItem.endpoint?.target_url">{{ eventDelsDetailsItem.endpoint?.target_url }}</p>
+            <p class="color__primary font__14px font__weight-500 long-text long-text__200px" [title]="eventDelsDetailsItem?.endpoint?.target_url">{{ eventDelsDetailsItem?.endpoint?.target_url }}</p>
         </div>
         <div></div>
-        <div *ngIf="eventDelsDetailsItem.status === 'Success'"></div>
+        <div *ngIf="eventDelsDetailsItem?.status === 'Success'"></div>
     </div>
     <div class="grid border__top grid__col-2">
         <div class="eventDelivery border__right padding-top__40px padding-right__32px padding-bottom__40px width__100">

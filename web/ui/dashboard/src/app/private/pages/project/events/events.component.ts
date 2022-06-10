@@ -5,7 +5,7 @@ import { format } from 'date-fns';
 import { HTTP_RESPONSE } from 'src/app/models/http.model';
 import Chart from 'chart.js/auto';
 import { EventsService } from './events.service';
-import { EVENT } from 'src/app/models/event.model';
+import { EVENT, EVENT_DELIVERY } from 'src/app/models/event.model';
 import { PAGINATION } from 'src/app/models/global.model';
 
 @Component({
@@ -27,6 +27,7 @@ export class EventsComponent implements OnInit {
 	dashboardData = { apps: 0, events_sent: 0 };
 	eventDeliveryFilteredByEventId!: string;
 	events!: { pagination: PAGINATION; content: EVENT[] };
+	eventDeliveries!: { pagination: PAGINATION; content: EVENT_DELIVERY[] };
 	statsDateRange: FormGroup = this.formBuilder.group({
 		startDate: [{ value: new Date(new Date().setDate(new Date().getDate() - 30)), disabled: true }],
 		endDate: [{ value: new Date(), disabled: true }]
