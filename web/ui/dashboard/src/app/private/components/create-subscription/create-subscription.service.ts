@@ -7,15 +7,19 @@ import { PrivateService } from '../../private.service';
 	providedIn: 'root'
 })
 export class CreateSubscriptionService {
-	projectId: string = this.privateService.activeProjectId;
+	projectId: string = this.privateService.projectId;
 
 	constructor(private http: HttpService, private privateService: PrivateService) {}
+
+	getOrgId() {
+		return localStorage.getItem('ORG_ID');
+	}
 
 	createSubscription(requestDetails: any): Promise<HTTP_RESPONSE> {
 		return new Promise(async (resolve, reject) => {
 			try {
 				const projectResponse = await this.http.request({
-					url: `/subscriptions?groupId=${this.projectId}`,
+					url: `/organisations/${this.getOrgId()}/groups/${this.projectId}/subscriptions`,
 					method: 'post',
 					body: requestDetails
 				});

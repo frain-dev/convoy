@@ -55,7 +55,7 @@ export class AppsComponent implements OnInit {
 
 	loadEventsFromAppsTable(event: any, appId: string) {
 		event.stopPropagation();
-		const projectId = this.privateService.activeProjectId;
+		const projectId = this.privateService.projectId;
 		this.router.navigate(['/projects/' + projectId + '/events'], { queryParams: { eventsApp: appId } });
 	}
 

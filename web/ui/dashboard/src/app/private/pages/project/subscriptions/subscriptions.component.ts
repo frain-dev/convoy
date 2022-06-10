@@ -19,7 +19,7 @@ export class SubscriptionsComponent implements OnInit {
 	isLoadindingSubscriptions = false;
 
 	constructor(private route: ActivatedRoute, private privateService: PrivateService, private router: Router, private subscriptionsService: SubscriptionsService) {
-		this.projectId = this.privateService.activeProjectId;
+		this.projectId = this.privateService.projectId;
 	}
 
 	async ngOnInit() {

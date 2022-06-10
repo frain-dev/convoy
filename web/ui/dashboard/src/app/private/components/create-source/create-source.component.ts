@@ -64,7 +64,7 @@ export class CreateSourceComponent implements OnInit {
 
 		try {
 			const response = await this.createSourceService.createSource({ sourceData });
-			this.onAction.emit(response.data);
+			this.onAction.emit({ action: 'createSource', data: response.data });
 		} catch (error) {
 			console.log(error);
 		}

@@ -9,6 +9,9 @@ import { PrivateService } from '../../private.service';
 export class CreateProjectComponentService {
 	constructor(private http: HttpService, private privateService: PrivateService) {}
 
+	getOrgId() {
+		return localStorage.getItem('ORG_ID');
+	}
 	async createProject(requestDetails: {
 		name: string;
 		strategy: { duration: string; retry_count: string; type: string };
@@ -19,7 +22,7 @@ export class CreateProjectComponentService {
 	}): Promise<HTTP_RESPONSE> {
 		try {
 			const response = await this.http.request({
-				url: `/groups`,
+				url: `/organisations/${this.getOrgId()}/groups`,
 				body: requestDetails,
 				method: 'post'
 			});
@@ -39,7 +42,7 @@ export class CreateProjectComponentService {
 	}): Promise<HTTP_RESPONSE> {
 		try {
 			const response = await this.http.request({
-				url: `/groups/${this.privateService.activeProjectId}`,
+				url: `/organisations/${this.getOrgId()}/groups/${this.privateService.projectId}`,
 				body: requestDetails,
 				method: 'put'
 			});

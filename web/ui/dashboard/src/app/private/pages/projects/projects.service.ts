@@ -6,13 +6,14 @@ import { HttpService } from 'src/app/services/http/http.service';
 	providedIn: 'root'
 })
 export class ProjectsService {
-	constructor(private http: HttpService) {}
 
-	getProjects(): Promise<HTTP_RESPONSE> {
+	constructor(private http: HttpService) {}
+	
+	async getProjects(orgId: string): Promise<HTTP_RESPONSE> {
 		return new Promise(async (resolve, reject) => {
 			try {
 				const groupsResponse = await this.http.request({
-					url: '/groups',
+					url: `/organisations/${orgId}/groups`,
 					method: 'get'
 				});
 

@@ -13,6 +13,11 @@ import { CreateProjectService } from './create-project.service';
 })
 export class CreateProjectComponent implements OnInit {
 	projectStage: 'createProject' | 'createSource' | 'createApplication' | 'createSubscription' = 'createProject';
+	projectStages = [
+		{ projectStage: 'Create Source', currentStage: 'pending', id: 'createSource' },
+		{ projectStage: 'Create Application', currentStage: 'pending', id: 'createApplication' },
+		{ projectStage: 'Create Subscription', currentStage: 'pending', id: 'createSubscription' }
+	];
 	hashAlgorithms = ['SHA256', 'SHA512', 'MD5', 'SHA1', 'SHA224', 'SHA384', 'SHA3_224', 'SHA3_256', 'SHA3_384', 'SHA3_512', 'SHA512_256', 'SHA512_224'];
 	retryLogicTypes = [
 		{ id: 'linear', type: 'Linear time retry' },
@@ -25,10 +30,17 @@ export class CreateProjectComponent implements OnInit {
 	ngOnInit(): void {}
 
 	async createProject(newProjectData: GROUP) {
-		newProjectData.type === 'incoming' ? (this.projectStage = 'createSource') : (this.projectStage = 'createApplication');
+		newProjectData.type === 'incoming' ? this.toggleActiveStage({ project: 'createSource' }) : this.toggleActiveStage({ project: 'createApplication' });
 	}
 
-	toggleActiveStage() {}
+	toggleActiveStage(stageDetails: { project: 'createSource' | 'createApplication' | 'createSubscription'; prevStage?: 'createSource' | 'createApplication' | 'createSubscription' }) {
+		this.projectStage = stageDetails.project;
+		this.projectStages.forEach(item => {
+			if (item.id === stageDetails.project) item.currentStage = 'current';
+			if (item.id === stageDetails.prevStage) item.currentStage = 'done';
+		});
+		console.log(this.projectStages);
+	}
 
 	cancel() {
 		this.router.navigate(['/projects']);

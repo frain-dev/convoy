@@ -7,14 +7,18 @@ import { HttpService } from 'src/app/services/http/http.service';
 	providedIn: 'root'
 })
 export class AppDetailsService {
-	projectId: string = this.privateService.activeProjectId;
+	projectId: string = this.privateService.projectId;
 	constructor(private http: HttpService, private privateService: PrivateService) {}
+
+	getOrgId() {
+		return localStorage.getItem('ORG_ID');
+	}
 
 	async getApps(): Promise<HTTP_RESPONSE> {
 		return new Promise(async (resolve, reject) => {
 			try {
 				const response = await this.http.request({
-					url: `/apps?groupId=${this.projectId}&sort=AESC&page=1&perPage=50`,
+					url: `/organisations/${this.getOrgId()}/groups/${this.projectId}/apps?sort=AESC&page=1&perPage=50`,
 					method: 'get'
 				});
 
@@ -29,7 +33,7 @@ export class AppDetailsService {
 		return new Promise(async (resolve, reject) => {
 			try {
 				const response = await this.http.request({
-					url: `/apps/${requestDetails.appId}/keys?groupId=${this.projectId}`,
+					url: `/organisations/${this.getOrgId()}/groups/${this.projectId}/apps/${requestDetails.appId}/keys`,
 					method: 'post',
 					body: {}
 				});
@@ -45,7 +49,7 @@ export class AppDetailsService {
 		return new Promise(async (resolve, reject) => {
 			try {
 				const response = await this.http.request({
-					url: `/apps/${appId}?groupId=${this.projectId}`,
+					url: `/organisations/${this.getOrgId()}/groups/${this.projectId}/apps/${appId}`,
 					method: 'get'
 				});
 
@@ -60,7 +64,7 @@ export class AppDetailsService {
 		return new Promise(async (resolve, reject) => {
 			try {
 				const response = await this.http.request({
-					url: `/apps/${requestDetails.appId}/endpoints?groupId=${this.projectId}`,
+					url: `/organisations/${this.getOrgId()}/groups/${this.projectId}/apps/${requestDetails.appId}/endpoints`,
 					body: requestDetails.body,
 					method: 'post'
 				});
@@ -76,7 +80,7 @@ export class AppDetailsService {
 		return new Promise(async (resolve, reject) => {
 			try {
 				const response = await this.http.request({
-					url: `/events?groupId=${this.projectId}`,
+					url: `/organisations/${this.getOrgId()}/groups/${this.projectId}/events`,
 					body: requestDetails.body,
 					method: 'post'
 				});

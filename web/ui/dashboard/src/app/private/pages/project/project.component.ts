@@ -38,12 +38,16 @@ export class ProjectComponent implements OnInit {
 	isLoadingProjectDetails: boolean = true;
 
 	constructor(private route: ActivatedRoute, private privateService: PrivateService) {
-		this.privateService.activeProjectId = this.route.snapshot.params.id;
+		this.privateService.projectId = this.route.snapshot.params.id;
 	}
 
 	ngOnInit() {
 		this.checkScreenSize();
 		this.getProjectDetails();
+	}
+
+	getOrgId(){
+		
 	}
 
 	async getProjectDetails() {

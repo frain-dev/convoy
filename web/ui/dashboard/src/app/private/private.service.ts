@@ -6,15 +6,21 @@ import { HttpService } from 'src/app/services/http/http.service';
 	providedIn: 'root'
 })
 export class PrivateService {
-	activeProjectId: string = '';
+	projectId: string = '';
 
 	constructor(private http: HttpService) {}
+
+	getOrgId() {
+		return localStorage.getItem('ORG_ID');
+	}
 
 	async getApps(requestDetails?: { pageNo?: number; searchString?: string }): Promise<HTTP_RESPONSE> {
 		return new Promise(async (resolve, reject) => {
 			try {
 				const response = await this.http.request({
-					url: `/apps?groupId=${this.activeProjectId}&sort=AESC&page=${requestDetails?.pageNo || 1}&perPage=20${requestDetails?.searchString ? `&q=${requestDetails?.searchString}` : ''}`,
+					url: `/organisations/${this.getOrgId()}/groups/${this.projectId}/apps?sort=AESC&page=${requestDetails?.pageNo || 1}&perPage=20${
+						requestDetails?.searchString ? `&q=${requestDetails?.searchString}` : ''
+					}`,
 					method: 'get'
 				});
 
@@ -29,7 +35,7 @@ export class PrivateService {
 		return new Promise(async (resolve, reject) => {
 			try {
 				const sourcesResponse = await this.http.request({
-					url: `/sources?groupId=${this.activeProjectId}&page=${requestDetails?.page}`,
+					url: `/organisations/${this.getOrgId()}/groups/${this.projectId}/sources?page=${requestDetails?.page}`,
 					method: 'get'
 				});
 
@@ -44,7 +50,7 @@ export class PrivateService {
 		return new Promise(async (resolve, reject) => {
 			try {
 				const projectResponse = await this.http.request({
-					url: `/groups/${this.activeProjectId}`,
+					url: `/organisations/${this.getOrgId()}/groups/${this.projectId}`,
 					method: 'get'
 				});
 
@@ -66,7 +72,6 @@ export class PrivateService {
 			return error;
 		}
 	}
-
 
 	async logout(): Promise<HTTP_RESPONSE> {
 		try {

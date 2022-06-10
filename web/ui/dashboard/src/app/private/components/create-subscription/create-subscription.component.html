@@ -58,7 +58,7 @@
 			</label>
 			<select id="endpoint" formControlName="endpoint_id">
 				<option value="">Select endpoint</option>
-				<option [value]="endpoint.uid" *ngFor="let endpoint of endPoints">{{ endpoint.target_url }}</option>
+				<option [value]="endpoint.uid" *ngFor="let endpoint of endPoints">{{ endpoint.description }}</option>
 			</select>
 			<div class="input__error input__error__danger" *ngIf="subscriptonForm.get('endpoint_id')?.touched && subscriptonForm.get('endpoint_id')?.invalid">
 				<img src="assets/img/input-error-icon.svg" alt="input error icon" />
@@ -79,7 +79,7 @@
 	</div>
 </form>
 
-<div class="_overlay" *ngIf="showCreateAppModal || showCreateSourceModal" (click)="showCreateAppModal = !showCreateAppModal; showCreateSourceModal = !showCreateSourceModal"></div>
+<div class="_overlay" *ngIf="showCreateAppModal || showCreateSourceModal" (click)="showCreateAppModal = false; showCreateSourceModal = false"></div>
 <div class="modal modal__right large" *ngIf="showCreateAppModal || showCreateSourceModal">
 	<!-- add endpoint modal  -->
 	<div class="modal--head" *ngIf="showCreateAppModal">

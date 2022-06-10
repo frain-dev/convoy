@@ -14,7 +14,7 @@ export class PrivateComponent implements OnInit {
 	showOrgDropdown = false;
 	showMoreDropdown = false;
 	showOverlay = false;
-  showAddOrganisationModal = false;
+	showAddOrganisationModal = false;
 	apiURL = this.generalService.apiURL();
 	organisations!: ORGANIZATION_DATA[];
 	userOrganization!: ORGANIZATION_DATA;
@@ -55,20 +55,16 @@ export class PrivateComponent implements OnInit {
 		const userOrganisation = organisation;
 		this.userOrganization = userOrganisation;
 		localStorage.setItem('ORG_DETAILS', JSON.stringify(userOrganisation));
+		localStorage.setItem('ORG_ID', userOrganisation.uid);
 		const currentUrl = this.router.url;
-		if (currentUrl.includes('/projects/')) {
-			this.router.navigateByUrl('/projects');
-		} else {
-			this.router.navigateByUrl('/', { skipLocationChange: true }).then(() => {
-				this.router.navigate([currentUrl]);
-			});
-		}
+		this.router.navigateByUrl('/', { skipLocationChange: true }).then(() => {
+			this.router.navigate([currentUrl]);
+		});
 		this.showOrgDropdown = false;
 	}
 
-  closeAddOrganisationModal() {
+	closeAddOrganisationModal() {
 		this.showAddOrganisationModal = false;
 		this.getOrganizations();
 	}
-
 }

@@ -1,8 +1,9 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, EventEmitter, Input, OnInit, Output } from '@angular/core';
 import { FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { Router } from '@angular/router';
 import { APP, ENDPOINT } from 'src/app/models/app.model';
 import { GROUP, SOURCE } from 'src/app/models/group.model';
+import { GeneralService } from 'src/app/services/general/general.service';
 import { ProjectService } from '../../pages/project/project.service';
 import { PrivateService } from '../../private.service';
 import { CreateSubscriptionService } from './create-subscription.service';
@@ -13,6 +14,8 @@ import { CreateSubscriptionService } from './create-subscription.service';
 	styleUrls: ['./create-subscription.component.scss']
 })
 export class CreateSubscriptionComponent implements OnInit {
+	@Input() onCreateProjectStep: boolean = false;
+	@Output() onAction = new EventEmitter<any>();
 	subscriptonForm: FormGroup = this.formBuilder.group({
 		name: ['', Validators.required],
 		type: ['', Validators.required],
@@ -27,7 +30,13 @@ export class CreateSubscriptionComponent implements OnInit {
 	showCreateAppModal = false;
 	showCreateSourceModal = false;
 
-	constructor(private formBuilder: FormBuilder, private privateService: PrivateService, private createSubscriptionService: CreateSubscriptionService, private router: Router) {}
+	constructor(
+		private formBuilder: FormBuilder,
+		private privateService: PrivateService,
+		private createSubscriptionService: CreateSubscriptionService,
+		private router: Router,
+		private generalService: GeneralService
+	) {}
 
 	ngOnInit(): void {
 		Promise.all([this.getApps(), this.getSources(), this.getGetProjectDetails()]);
@@ -79,7 +88,8 @@ export class CreateSubscriptionComponent implements OnInit {
 
 		try {
 			const response = await this.createSubscriptionService.createSubscription(this.subscriptonForm.value);
-			this.router.navigateByUrl('/projects/' + this.privateService.activeProjectId + '/subscriptions');
+			this.generalService.showNotification({ message: response.message, style: 'success' });
+			this.onCreateProjectStep ? this.onAction.emit() : this.router.navigateByUrl('/projects/' + this.privateService.projectId + '/subscriptions');
 		} catch (error) {
 			console.log(error);
 		}

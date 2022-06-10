@@ -8,15 +8,21 @@ import { ProjectService } from '../project.service';
 	providedIn: 'root'
 })
 export class EventsService {
-	projectId: string = this.privateService.activeProjectId;
+	projectId: string = this.privateService.projectId;
 
 	constructor(private http: HttpService, private privateService: PrivateService) {}
+
+	getOrgId() {
+		return localStorage.getItem('ORG_ID');
+	}
 
 	async getEvents(requestDetails: { pageNo: number; startDate: string; endDate: string; appId: string; query?: string }): Promise<HTTP_RESPONSE> {
 		return new Promise(async (resolve, reject) => {
 			try {
 				const response = await this.http.request({
-					url: `/events?groupId=${this.projectId}&sort=AESC&page=${requestDetails.pageNo}&perPage=20&startDate=${requestDetails.startDate}&endDate=${requestDetails.endDate}&appId=${requestDetails.appId}&query=${requestDetails?.query}`,
+					url: `/organisations/${this.getOrgId()}/groups/${this.projectId}/events?sort=AESC&page=${requestDetails.pageNo}&perPage=20&startDate=${requestDetails.startDate}&endDate=${
+						requestDetails.endDate
+					}&appId=${requestDetails.appId}&query=${requestDetails?.query}`,
 					method: 'get'
 				});
 
@@ -31,7 +37,9 @@ export class EventsService {
 		return new Promise(async (resolve, reject) => {
 			try {
 				const response = await this.http.request({
-					url: `/eventdeliveries?groupId=${this.projectId}&eventId=${requestDetails.eventId}&page=${requestDetails.pageNo}&startDate=${requestDetails.startDate}&endDate=${requestDetails.endDate}&appId=${requestDetails.appId}${requestDetails.statusQuery}`,
+					url: `/organisations/${this.getOrgId()}/groups/${this.projectId}/eventdeliveries?eventId=${requestDetails.eventId}&page=${requestDetails.pageNo}&startDate=${
+						requestDetails.startDate
+					}&endDate=${requestDetails.endDate}&appId=${requestDetails.appId}${requestDetails.statusQuery}`,
 					method: 'get'
 				});
 
@@ -46,7 +54,9 @@ export class EventsService {
 		return new Promise(async (resolve, reject) => {
 			try {
 				const response = await this.http.request({
-					url: `/apps?groupId=${this.projectId}&sort=AESC&page=${requestDetails.pageNo}&perPage=20${requestDetails?.searchString ? `&q=${requestDetails?.searchString}` : ''}`,
+					url: `/organisations/${this.getOrgId()}/groups/${this.projectId}/apps?sort=AESC&page=${requestDetails.pageNo}&perPage=20${
+						requestDetails?.searchString ? `&q=${requestDetails?.searchString}` : ''
+					}`,
 					method: 'get'
 				});
 
@@ -61,7 +71,7 @@ export class EventsService {
 		return new Promise(async (resolve, reject) => {
 			try {
 				const response = await this.http.request({
-					url: `/eventdeliveries/${requestDetails.eventDeliveryId}/deliveryattempts?groupId=${this.projectId}`,
+					url: `/organisations/${this.getOrgId()}/groups/${this.projectId}/eventdeliveries/${requestDetails.eventDeliveryId}/deliveryattempts`,
 					method: 'get'
 				});
 
@@ -76,7 +86,7 @@ export class EventsService {
 		return new Promise(async (resolve, reject) => {
 			try {
 				const response = await this.http.request({
-					url: `/dashboard/summary?groupId=${this.projectId}&startDate=${requestDetails.startDate}&endDate=${requestDetails.endDate}&type=${requestDetails.frequency}`,
+					url: `/organisations/${this.getOrgId()}/groups/${this.projectId}/dashboard/summary?startDate=${requestDetails.startDate}&endDate=${requestDetails.endDate}&type=${requestDetails.frequency}`,
 					method: 'get'
 				});
 
@@ -91,7 +101,7 @@ export class EventsService {
 		return new Promise(async (resolve, reject) => {
 			try {
 				const response = await this.http.request({
-					url: `/eventdeliveries/${requestDetails.eventId}/resend?groupId=${this.projectId}`,
+					url: `/organisations/${this.getOrgId()}/groups/${this.projectId}/eventdeliveries/${requestDetails.eventId}/resend`,
 					method: 'put'
 				});
 
@@ -106,7 +116,7 @@ export class EventsService {
 		return new Promise(async (resolve, reject) => {
 			try {
 				const response = await this.http.request({
-					url: `/eventdeliveries/forceresend?groupId=${this.projectId}`,
+					url: `/organisations/${this.getOrgId()}/groups/${this.projectId}/eventdeliveries/forceresend`,
 					method: 'post',
 					body: requestDetails.body
 				});
@@ -122,9 +132,9 @@ export class EventsService {
 		return new Promise(async (resolve, reject) => {
 			try {
 				const response = await this.http.request({
-					url: `/eventdeliveries/batchretry?groupId=${this.projectId}&eventId=${requestDetails.eventId || ''}&page=${requestDetails.pageNo}&startDate=${requestDetails.startDate}&endDate=${
-						requestDetails.endDate
-					}&appId=${requestDetails.appId}${requestDetails.statusQuery || ''}`,
+					url: `/organisations/${this.getOrgId()}/groups/${this.projectId}/eventdeliveries/batchretry?eventId=${requestDetails.eventId || ''}&page=${requestDetails.pageNo}&startDate=${
+						requestDetails.startDate
+					}&endDate=${requestDetails.endDate}&appId=${requestDetails.appId}${requestDetails.statusQuery || ''}`,
 					method: 'post',
 					body: null
 				});

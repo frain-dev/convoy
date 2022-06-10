@@ -1,4 +1,4 @@
-<div class="page padding-top__60px">
+<div class="page padding-top__60px" *ngIf="!noData">
 	<div class="page__head">
 		<div>
 			<h3 class="margin-bottom__8px">Projects</h3>
@@ -69,4 +69,14 @@
 			</a>
 		</li>
 	</ul>
+</div>
+<div class="page margin-top__40px" *ngIf="noData && !isLoadingProjects">
+	<div class="page--empty-state">
+		<div class="page--empty-state--img">
+			<img src="/assets/img/group-empty-img.svg" alt="add group empty" />
+		</div>
+		<h3>You have no project yet</h3>
+		<p>All your project's summary at a glance</p>
+		<button class="button button__primary" routerLink="./new">Create Project</button>
+	</div>
 </div>

@@ -8,15 +8,19 @@ import { PrivateService } from '../../private.service';
 	providedIn: 'root'
 })
 export class CreateSourceService {
-	projectId: string = this.privateService.activeProjectId;
+	projectId: string = this.privateService.projectId;
 
 	constructor(private http: HttpService, private privateService: PrivateService) {}
+
+	getOrgId() {
+		return localStorage.getItem('ORG_ID');
+	}
 
 	createSource(requestData: { sourceData: SOURCE }): Promise<HTTP_RESPONSE> {
 		return new Promise(async (resolve, reject) => {
 			try {
 				const sourceResponse = await this.http.request({
-					url: `/sources?groupId=${this.projectId}`,
+					url: `/organisations/${this.getOrgId()}/groups/${this.projectId}/sources`,
 					method: 'post',
 					body: requestData.sourceData
 				});
