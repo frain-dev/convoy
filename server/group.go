@@ -68,7 +68,7 @@ func (a *applicationHandler) DeleteGroup(w http.ResponseWriter, r *http.Request)
 // @Success 200 {object} serverResponse{data=datastore.Group}
 // @Failure 400,401,500 {object} serverResponse{data=Stub}
 // @Security ApiKeyAuth
-// @Router /groups [post]
+// @Router /ui/organisations/{orgID}/groups [post]
 func (a *applicationHandler) CreateGroup(w http.ResponseWriter, r *http.Request) {
 	var newGroup models.Group
 	err := util.ReadJSON(r, &newGroup)

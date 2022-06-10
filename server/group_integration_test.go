@@ -6,6 +6,8 @@ package server
 import (
 	"context"
 	"fmt"
+	"github.com/frain-dev/convoy/auth"
+	"github.com/frain-dev/convoy/server/models"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -20,10 +22,13 @@ import (
 
 type GroupIntegrationTestSuite struct {
 	suite.Suite
-	DB           datastore.DatabaseClient
-	Router       http.Handler
-	ConvoyApp    *applicationHandler
-	DefaultGroup *datastore.Group
+	DB              datastore.DatabaseClient
+	Router          http.Handler
+	ConvoyApp       *applicationHandler
+	AuthenticatorFn AuthenticatorFn
+	DefaultOrg      *datastore.Organisation
+	DefaultGroup    *datastore.Group
+	DefaultUser     *datastore.User
 }
 
 func (s *GroupIntegrationTestSuite) SetupSuite() {
@@ -38,8 +43,21 @@ func (s *GroupIntegrationTestSuite) SetupTest() {
 	// Setup Default Group.
 	s.DefaultGroup, _ = testdb.SeedDefaultGroup(s.DB)
 
+	user, err := testdb.SeedDefaultUser(s.DB)
+	require.NoError(s.T(), err)
+	s.DefaultUser = user
+
+	org, err := testdb.SeedDefaultOrganisation(s.DB, user)
+	require.NoError(s.T(), err)
+	s.DefaultOrg = org
+
+	s.AuthenticatorFn = authenticateRequest(&models.LoginUser{
+		Username: user.Email,
+		Password: testdb.DefaultUserPassword,
+	})
+
 	// Setup Config.
-	err := config.LoadConfig("./testdata/Auth_Config/full-convoy.json")
+	err = config.LoadConfig("./testdata/Auth_Config/full-convoy-with-jwt-realm.json")
 	require.NoError(s.T(), err)
 
 	initRealmChain(s.T(), s.DB.APIRepo(), s.DB.UserRepo(), s.ConvoyApp.cache)
@@ -152,7 +170,12 @@ func (s *GroupIntegrationTestSuite) TestCreateGroup() {
 }`
 
 	body := serialize(bodyStr)
-	req := createRequest(http.MethodPost, "/api/v1/groups", body)
+	url := fmt.Sprintf("/ui/organisations/%s/groups", s.DefaultOrg.UID)
+
+	req := createRequest(http.MethodPost, url, body)
+	err := s.AuthenticatorFn(req, s.Router)
+	require.NoError(s.T(), err)
+
 	w := httptest.NewRecorder()
 
 	// Act.
@@ -161,12 +184,19 @@ func (s *GroupIntegrationTestSuite) TestCreateGroup() {
 	// Assert.
 	require.Equal(s.T(), expectedStatusCode, w.Code)
 
-	var respGroup datastore.Group
+	var respGroup models.CreateGroupResponse
 	parseResponse(s.T(), w.Result(), &respGroup)
-	require.NotEmpty(s.T(), respGroup.UID)
-	require.Equal(s.T(), 5000, respGroup.RateLimit)
-	require.Equal(s.T(), "1m", respGroup.RateLimitDuration)
-	require.Equal(s.T(), "test-group", respGroup.Name)
+	require.NotEmpty(s.T(), respGroup.Group.UID)
+	require.Equal(s.T(), 5000, respGroup.Group.RateLimit)
+	require.Equal(s.T(), "1m", respGroup.Group.RateLimitDuration)
+	require.Equal(s.T(), "test-group", respGroup.Group.Name)
+	require.Equal(s.T(), "test-group's default key'", respGroup.APIKey.Name)
+
+	require.Equal(s.T(), auth.RoleSuperUser, respGroup.APIKey.Role.Type)
+	require.Equal(s.T(), 0, respGroup.APIKey.ExpiresAt)
+	require.Equal(s.T(), []string{respGroup.Group.UID}, respGroup.APIKey.Role.Groups)
+	require.Equal(s.T(), "test-group's default key'", respGroup.APIKey.Name)
+	require.NotEmpty(s.T(), respGroup.APIKey.Key)
 }
 
 func (s *GroupIntegrationTestSuite) TestUpdateGroup() {
