@@ -212,26 +212,28 @@ func buildRoutes(app *applicationHandler) http.Handler {
 		uiRouter.Use(jsonResponse)
 		uiRouter.Use(setupCORS)
 		uiRouter.Use(middleware.Maybe(requireAuth(), shouldAuthRoute))
+		uiRouter.Use(requireBaseUrl())
 
 		uiRouter.Post("/organisations/process_invite", app.ProcessOrganisationMemberInvite)
 		uiRouter.Get("/users/token", app.FindUserByInviteToken)
+
+		uiRouter.Route("/users", func(userRouter chi.Router) {
+			userRouter.Use(requireAuthUserMetadata())
+			userRouter.Route("/{userID}", func(userSubRouter chi.Router) {
+				userSubRouter.Use(requireAuthorizedUser(app.userRepo))
+				userSubRouter.Get("/profile", app.GetUser)
+				userSubRouter.Put("/profile", app.UpdateUser)
+				userSubRouter.Put("/password", app.UpdatePassword)
+			})
+		})
+
+		uiRouter.Post("/users/forgot-password", app.ForgotPassword)
+		uiRouter.Post("/users/reset-password", app.ResetPassword)
 
 		uiRouter.Route("/auth", func(authRouter chi.Router) {
 			authRouter.Post("/login", app.LoginUser)
 			authRouter.Post("/token/refresh", app.RefreshToken)
 			authRouter.Post("/logout", app.LogoutUser)
-		})
-
-		uiRouter.Route("/users", func(userRouter chi.Router) {
-			userRouter.Use(requireAuthUserMetadata())
-
-			userRouter.Route("/{userID}", func(userSubRouter chi.Router) {
-				userSubRouter.Use(requireAuthorizedUser(app.userRepo))
-
-				userSubRouter.Get("/profile", app.GetUser)
-				userSubRouter.Put("/profile", app.UpdateUser)
-				userSubRouter.Put("/password", app.UpdatePassword)
-			})
 		})
 
 		uiRouter.Route("/organisations", func(orgRouter chi.Router) {

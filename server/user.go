@@ -198,7 +198,7 @@ func (a *applicationHandler) UpdatePassword(w http.ResponseWriter, r *http.Reque
 // @Accept  json
 // @Produce  json
 // @Param email body models.ForgotPassword true "Forgot Password Details"
-// @Success 200 {object} serverResponse{data=stub}
+// @Success 200 {object} serverResponse{data=datastore.User}
 // @Failure 400,401,500 {object} serverResponse{data=Stub}
 // @Router /users/forgot-password [post]
 func (a *applicationHandler) ForgotPassword(w http.ResponseWriter, r *http.Request) {
@@ -211,12 +211,12 @@ func (a *applicationHandler) ForgotPassword(w http.ResponseWriter, r *http.Reque
 		return
 	}
 
-	err = a.userService.GeneratePasswordResetToken(r.Context(), baseUrl, &forgotPassword)
+	user, err := a.userService.GeneratePasswordResetToken(r.Context(), baseUrl, &forgotPassword)
 	if err != nil {
 		_ = render.Render(w, r, newServiceErrResponse(err))
 		return
 	}
-	_ = render.Render(w, r, newServerResponse("Password reset token generated succesfully", nil, http.StatusOK))
+	_ = render.Render(w, r, newServerResponse("Password reset token generated succesfully", user, http.StatusOK))
 }
 
 // ResetPassword

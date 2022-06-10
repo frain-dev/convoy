@@ -446,6 +446,10 @@ definitions:
         type: string
       last_name:
         type: string
+      reset_password_expires_at:
+        type: integer
+      reset_password_token:
+        type: string
       role:
         $ref: '#/definitions/auth.Role'
       uid:
@@ -536,6 +540,11 @@ definitions:
       event_type:
         type: string
     type: object
+  models.ForgotPassword:
+    properties:
+      email:
+        type: string
+    type: object
   models.Group:
     properties:
       config:
@@ -604,6 +613,15 @@ definitions:
       role:
         $ref: '#/definitions/auth.Role'
       url:
+        type: string
+    type: object
+  models.ResetPassword:
+    properties:
+      email:
+        type: string
+      password:
+        type: string
+      password_confirmation:
         type: string
     type: object
   models.Source:
@@ -4519,6 +4537,119 @@ paths:
       security:
       - ApiKeyAuth: []
       summary: Updates a user
+      tags:
+      - User
+  /users/forgot-password:
+    post:
+      consumes:
+      - application/json
+      description: This endpoint generates a password reset token
+      parameters:
+      - description: Forgot Password Details
+        in: body
+        name: email
+        required: true
+        schema:
+          $ref: '#/definitions/models.ForgotPassword'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/server.serverResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/datastore.User'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            allOf:
+            - $ref: '#/definitions/server.serverResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/server.Stub'
+              type: object
+        "401":
+          description: Unauthorized
+          schema:
+            allOf:
+            - $ref: '#/definitions/server.serverResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/server.Stub'
+              type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            allOf:
+            - $ref: '#/definitions/server.serverResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/server.Stub'
+              type: object
+      summary: Generate password reset token
+      tags:
+      - User
+  /users/reset-password:
+    post:
+      consumes:
+      - application/json
+      description: This endpoint resets a users password
+      parameters:
+      - description: reset token
+        in: query
+        name: token
+        required: true
+        type: string
+      - description: Reset Password Details
+        in: body
+        name: password
+        required: true
+        schema:
+          $ref: '#/definitions/models.ResetPassword'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/server.serverResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/datastore.User'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            allOf:
+            - $ref: '#/definitions/server.serverResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/server.Stub'
+              type: object
+        "401":
+          description: Unauthorized
+          schema:
+            allOf:
+            - $ref: '#/definitions/server.serverResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/server.Stub'
+              type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            allOf:
+            - $ref: '#/definitions/server.serverResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/server.Stub'
+              type: object
+      summary: Reset user password
       tags:
       - User
   /users/token:
