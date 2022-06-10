@@ -17,6 +17,7 @@ import (
 
 	"github.com/frain-dev/convoy/config"
 	"github.com/frain-dev/convoy/datastore"
+	"github.com/frain-dev/convoy/server/models"
 	"github.com/google/uuid"
 	"github.com/sebdah/goldie/v2"
 	log "github.com/sirupsen/logrus"
@@ -26,10 +27,13 @@ import (
 
 type DashboardIntegrationTestSuite struct {
 	suite.Suite
-	DB           datastore.DatabaseClient
-	Router       http.Handler
-	ConvoyApp    *applicationHandler
-	DefaultGroup *datastore.Group
+	DB              datastore.DatabaseClient
+	Router          http.Handler
+	ConvoyApp       *applicationHandler
+	AuthenticatorFn AuthenticatorFn
+	DefaultUser     *datastore.User
+	DefaultOrg      *datastore.Organisation
+	DefaultGroup    *datastore.Group
 }
 
 func (s *DashboardIntegrationTestSuite) SetupSuite() {
@@ -41,11 +45,26 @@ func (s *DashboardIntegrationTestSuite) SetupSuite() {
 func (s *DashboardIntegrationTestSuite) SetupTest() {
 	testdb.PurgeDB(s.DB)
 
+	// Setup Default User
+	user, err := testdb.SeedDefaultUser(s.DB)
+	require.NoError(s.T(), err)
+	s.DefaultUser = user
+
+	// Setup Default Organisation
+	org, err := testdb.SeedDefaultOrganisation(s.DB, user)
+	require.NoError(s.T(), err)
+	s.DefaultOrg = org
+
 	// Setup Default Group.
 	s.DefaultGroup, _ = testdb.SeedDefaultGroup(s.DB)
 
+	s.AuthenticatorFn = authenticateRequest(&models.LoginUser{
+		Username: user.Email,
+		Password: testdb.DefaultUserPassword,
+	})
+
 	// Setup Config.
-	err := config.LoadConfig("./testdata/Auth_Config/full-convoy.json")
+	err = config.LoadConfig("./testdata/Auth_Config/full-convoy-with-jwt-realm.json")
 	require.NoError(s.T(), err)
 
 	initRealmChain(s.T(), s.DB.APIRepo(), s.DB.UserRepo(), s.ConvoyApp.cache)
@@ -267,14 +286,16 @@ func (s *DashboardIntegrationTestSuite) TestGetDashboardSummary() {
 	}
 	for _, tc := range tests {
 		s.T().Run(tc.name, func(t *testing.T) {
-			err := config.LoadConfig("./testdata/Auth_Config/full-convoy.json")
+			err := config.LoadConfig("./testdata/Auth_Config/full-convoy-with-jwt-realm.json")
 			if err != nil {
 				t.Errorf("Failed to load config file: %v", err)
 			}
 			initRealmChain(t, s.DB.APIRepo(), s.DB.UserRepo(), s.ConvoyApp.cache)
 
-			req := httptest.NewRequest(tc.method, fmt.Sprintf("/ui/dashboard/summary?startDate=%s&endDate=%s&type=%s&groupId=%s", tc.urlQuery.startDate, tc.urlQuery.endDate, tc.urlQuery.Type, tc.urlQuery.groupID), nil)
-			req.SetBasicAuth("test", "test")
+			req := httptest.NewRequest(tc.method, fmt.Sprintf("/ui/organisations/%s/groups/%s/dashboard/summary?startDate=%s&endDate=%s&type=%s", s.DefaultOrg.UID, tc.urlQuery.groupID, tc.urlQuery.startDate, tc.urlQuery.endDate, tc.urlQuery.Type), nil)
+			err = s.AuthenticatorFn(req, s.Router)
+			require.NoError(s.T(), err)
+
 			w := httptest.NewRecorder()
 
 			s.Router.ServeHTTP(w, req)

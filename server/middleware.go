@@ -404,6 +404,12 @@ func requireOrganisationMemberRole(roleType auth.RoleType) func(next http.Handle
 
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			member := getOrganisationMemberFromContext(r.Context())
+			if member.Role.Type.Is(auth.RoleSuperUser) {
+				//superuser has access to everything
+				next.ServeHTTP(w, r)
+				return
+			}
+
 			if member.Role.Type != roleType {
 				_ = render.Render(w, r, newErrorResponse("unauthorized", http.StatusUnauthorized))
 				return
@@ -594,6 +600,36 @@ func requireAuth() func(next http.Handler) http.Handler {
 
 			r = r.WithContext(setAuthUserInContext(r.Context(), authUser))
 			next.ServeHTTP(w, r)
+		})
+	}
+}
+
+func requireAuthorizedUser(userRepo datastore.UserRepository) func(next http.Handler) http.Handler {
+	return func(next http.Handler) http.Handler {
+		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			authUser := getAuthUserFromContext(r.Context())
+			user, ok := authUser.Metadata.(*datastore.User)
+
+			if !ok {
+				log.Error("metadata missing in auth user object")
+				_ = render.Render(w, r, newErrorResponse("unauthorized", http.StatusUnauthorized))
+				return
+			}
+
+			userID := chi.URLParam(r, "userID")
+			dbUser, err := userRepo.FindUserByID(r.Context(), userID)
+			if err != nil {
+				_ = render.Render(w, r, newErrorResponse("failed to fetch user by id", http.StatusNotFound))
+				return
+			}
+
+			if user.UID != dbUser.UID {
+				_ = render.Render(w, r, newErrorResponse(datastore.ErrNotAuthorisedToAccessDocument.Error(), http.StatusForbidden))
+				return
+			}
+
+			next.ServeHTTP(w, r)
+
 		})
 	}
 }
@@ -892,7 +928,7 @@ func shouldAuthRoute(r *http.Request) bool {
 		"/ui/auth/login",
 		"/ui/auth/token/refresh",
 		"/ui/organisations/process_invite",
-		"/ui/users/exists",
+		"/ui/users/token",
 	}
 
 	for _, route := range guestRoutes {
