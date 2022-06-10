@@ -233,18 +233,12 @@ type UserExists struct {
 	Email string `json:"email" valid:"required~please provide an email,email"`
 }
 
-type GeneratePasswordResetToken struct {
+type ForgotPassword struct {
 	Email string `json:"email" valid:"required~please provide an email,email"`
-}
-
-type VerifyPasswordResetToken struct {
-	Email string `json:"email" valid:"required~please provide an email,email"`
-	Token string `json:"token" valid:"required~please provide password reset token"`
 }
 
 type ResetPassword struct {
 	Email                string `json:"email" valid:"required~please provide an email,email"`
-	Token                string `json:"token" valid:"required~please provide password reset token"`
 	Password             string `json:"password" valid:"required~please provide the password field"`
 	PasswordConfirmation string `json:"password_confirmation" valid:"required~please provide the password confirmation field"`
 }

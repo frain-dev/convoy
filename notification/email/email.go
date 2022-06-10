@@ -19,6 +19,7 @@ type TemplateName string
 const (
 	TemplateEndpointUpdate     TemplateName = "endpoint.update"
 	TemplateOrganisationInvite TemplateName = "organisation.invite"
+	TemplateResetPassword      TemplateName = "reset.password"
 )
 
 func (t TemplateName) String() string {

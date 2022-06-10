@@ -217,57 +217,32 @@ func (a *applicationHandler) CheckUserExists(w http.ResponseWriter, r *http.Requ
 
 }
 
-<<<<<<< HEAD
-// GeneratePasswordResetToken
+// ForgotPassword
 // @Summary Generate password reset token
 // @Description This endpoint generates a password reset token
 // @Tags User
 // @Accept  json
 // @Produce  json
-// @Param username body models.GeneratePasswordResetToken true "Generate Token Details"
+// @Param email body models.ForgotPassword true "Forgot Password Details"
 // @Success 200 {object} serverResponse{data=stub}
 // @Failure 400,401,500 {object} serverResponse{data=Stub}
-// @Router /users/forgotpassword/generatetoken [post]
-func (a *applicationHandler) GeneratePasswordResetToken(w http.ResponseWriter, r *http.Request) {
-	var genPassToken models.GeneratePasswordResetToken
-	err := util.ReadJSON(r, &genPassToken)
+// @Router /users/forgot-password [post]
+func (a *applicationHandler) ForgotPassword(w http.ResponseWriter, r *http.Request) {
+	var forgotPassword models.ForgotPassword
+	baseUrl := getBaseUrlFromContext(r.Context())
+
+	err := util.ReadJSON(r, &forgotPassword)
 	if err != nil {
 		_ = render.Render(w, r, newErrorResponse(err.Error(), http.StatusBadRequest))
 		return
 	}
 
-	err = a.userService.GeneratePasswordResetToken(r.Context(), &genPassToken)
+	err = a.userService.GeneratePasswordResetToken(r.Context(), baseUrl, &forgotPassword)
 	if err != nil {
 		_ = render.Render(w, r, newServiceErrResponse(err))
 		return
 	}
 	_ = render.Render(w, r, newServerResponse("Password reset token generated succesfully", nil, http.StatusOK))
-}
-
-// VerifyPasswordResetToken
-// @Summary Verify password reset token
-// @Description This endpoint verifies password reset token
-// @Tags User
-// @Accept  json
-// @Produce  json
-// @Param token body models.VerifyPasswordResetToken true "Verify Token Details"
-// @Success 200 {object} serverResponse{data=Stub}
-// @Failure 400,401,500 {object} serverResponse{data=Stub}
-// @Router /users/forgotpassword/verifytoken [post]
-func (a *applicationHandler) VerifyPasswordResetToken(w http.ResponseWriter, r *http.Request) {
-	var verPassToken models.VerifyPasswordResetToken
-	err := util.ReadJSON(r, &verPassToken)
-	if err != nil {
-		_ = render.Render(w, r, newErrorResponse(err.Error(), http.StatusBadRequest))
-		return
-	}
-
-	err = a.userService.VerifyPasswordResetToken(r.Context(), &verPassToken)
-	if err != nil {
-		_ = render.Render(w, r, newServiceErrResponse(err))
-		return
-	}
-	_ = render.Render(w, r, newServerResponse("reset token is valid", nil, http.StatusOK))
 }
 
 // ResetPassword
@@ -276,11 +251,13 @@ func (a *applicationHandler) VerifyPasswordResetToken(w http.ResponseWriter, r *
 // @Tags User
 // @Accept  json
 // @Produce  json
+// @Param token query string true "reset token"
 // @Param password body models.ResetPassword true "Reset Password Details"
 // @Success 200 {object} serverResponse{data=datastore.User}
 // @Failure 400,401,500 {object} serverResponse{data=Stub}
-// @Router /users/password/reset [post]
+// @Router /users/reset-password [post]
 func (a *applicationHandler) ResetPassword(w http.ResponseWriter, r *http.Request) {
+	token := r.URL.Query().Get("token")
 	var resetPassword models.ResetPassword
 	err := util.ReadJSON(r, &resetPassword)
 	if err != nil {
@@ -288,7 +265,7 @@ func (a *applicationHandler) ResetPassword(w http.ResponseWriter, r *http.Reques
 		return
 	}
 
-	user, err := a.userService.ResetPassword(r.Context(), &resetPassword)
+	user, err := a.userService.ResetPassword(r.Context(), token, &resetPassword)
 	if err != nil {
 		_ = render.Render(w, r, newServiceErrResponse(err))
 		return
@@ -296,8 +273,6 @@ func (a *applicationHandler) ResetPassword(w http.ResponseWriter, r *http.Reques
 	_ = render.Render(w, r, newServerResponse("password reset succesful", user, http.StatusOK))
 }
 
-=======
->>>>>>> main
 func getUser(r *http.Request) (*datastore.User, bool) {
 	authUser := getAuthUserFromContext(r.Context())
 	user, ok := authUser.Metadata.(*datastore.User)

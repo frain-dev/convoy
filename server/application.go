@@ -78,7 +78,7 @@ func newApplicationHandler(
 	os := services.NewOrganisationService(orgRepo, orgMemberRepo)
 	rs := services.NewSubscriptionService(subRepo)
 	sos := services.NewSourceService(sourceRepo)
-	us := services.NewUserService(userRepo, cache)
+	us := services.NewUserService(userRepo, cache, queue)
 	ois := services.NewOrganisationInviteService(orgRepo, userRepo, orgMemberRepo, orgInviteRepo, queue)
 	om := services.NewOrganisationMemberService(orgMemberRepo)
 
