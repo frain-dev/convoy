@@ -4345,12 +4345,17 @@ paths:
       summary: Update a subscription
       tags:
       - Subscription
-  /users/password:
+  /users/{userID}/password:
     put:
       consumes:
       - application/json
       description: This endpoint updates a user's password
       parameters:
+      - description: user id
+        in: path
+        name: userID
+        required: true
+        type: string
       - description: Password Details
         in: body
         name: group
@@ -4401,11 +4406,17 @@ paths:
       summary: Updates a user's password
       tags:
       - User
-  /users/profile:
+  /users/{userID}/profile:
     get:
       consumes:
       - application/json
       description: This endpoint fetches a user
+      parameters:
+      - description: user id
+        in: path
+        name: userID
+        required: true
+        type: string
       produces:
       - application/json
       responses:
@@ -4455,6 +4466,11 @@ paths:
       - application/json
       description: This endpoint updates a user
       parameters:
+      - description: user id
+        in: path
+        name: userID
+        required: true
+        type: string
       - description: User Details
         in: body
         name: group

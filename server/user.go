@@ -105,10 +105,11 @@ func (a *applicationHandler) LogoutUser(w http.ResponseWriter, r *http.Request) 
 // @Tags User
 // @Accept  json
 // @Produce  json
+// @Param userID path string true "user id"
 // @Success 200 {object} serverResponse{data=datastore.User}
 // @Failure 400,401,500 {object} serverResponse{data=Stub}
 // @Security ApiKeyAuth
-// @Router /users/profile [get]
+// @Router /users/{userID}/profile [get]
 func (a *applicationHandler) GetUser(w http.ResponseWriter, r *http.Request) {
 	user, ok := getUser(r)
 	if !ok {
@@ -125,11 +126,12 @@ func (a *applicationHandler) GetUser(w http.ResponseWriter, r *http.Request) {
 // @Tags User
 // @Accept  json
 // @Produce  json
+// @Param userID path string true "user id"
 // @Param group body models.UpdateUser true "User Details"
 // @Success 200 {object} serverResponse{data=datastore.User}
 // @Failure 400,401,500 {object} serverResponse{data=Stub}
 // @Security ApiKeyAuth
-// @Router /users/profile [put]
+// @Router /users/{userID}/profile [put]
 func (a *applicationHandler) UpdateUser(w http.ResponseWriter, r *http.Request) {
 	var userUpdate models.UpdateUser
 	err := util.ReadJSON(r, &userUpdate)
@@ -159,11 +161,12 @@ func (a *applicationHandler) UpdateUser(w http.ResponseWriter, r *http.Request) 
 // @Tags User
 // @Accept  json
 // @Produce  json
+// @Param userID path string true "user id"
 // @Param group body models.UpdatePassword true "Password Details"
 // @Success 200 {object} serverResponse{data=datastore.User}
 // @Failure 400,401,500 {object} serverResponse{data=Stub}
 // @Security ApiKeyAuth
-// @Router /users/password [put]
+// @Router /users/{userID}/password [put]
 func (a *applicationHandler) UpdatePassword(w http.ResponseWriter, r *http.Request) {
 	var updatePassword models.UpdatePassword
 	err := util.ReadJSON(r, &updatePassword)
