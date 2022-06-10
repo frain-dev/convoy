@@ -612,13 +612,16 @@
 					"alert_config": {
 						"$ref": "#/components/schemas/datastore.AlertConfiguration"
 					},
+					"app_metadata": {
+						"$ref": "#/components/schemas/datastore.Application"
+					},
 					"created_at": {
 						"type": "string"
 					},
 					"deleted_at": {
 						"type": "string"
 					},
-					"endpoint": {
+					"endpoint_metadata": {
 						"$ref": "#/components/schemas/datastore.Endpoint"
 					},
 					"filter_config": {
@@ -630,7 +633,7 @@
 					"retry_config": {
 						"$ref": "#/components/schemas/datastore.RetryConfiguration"
 					},
-					"source": {
+					"source_metadata": {
 						"$ref": "#/components/schemas/datastore.Source"
 					},
 					"status": {

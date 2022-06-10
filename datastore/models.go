@@ -440,8 +440,9 @@ type Subscription struct {
 	SourceID   string             `json:"-" bson:"source_id"`
 	EndpointID string             `json:"-" bson:"endpoint_id"`
 
-	Source   *Source   `json:"source"`
-	Endpoint *Endpoint `json:"endpoint"`
+	Source   *Source      `json:"source_metadata,omitempty" bson:"-"`
+	Endpoint *Endpoint    `json:"endpoint_metadata,omitempty" bson:"-"`
+	App      *Application `json:"app_metadata,omitempty" bson:"-"`
 
 	// subscription config
 	AlertConfig  *AlertConfiguration  `json:"alert_config,omitempty" bson:"alert_config,omitempty"`
@@ -605,3 +606,8 @@ func (p *Password) Matches() (bool, error) {
 
 	return true, err
 }
+
+type EventMap map[string]*Event
+type SourceMap map[string]*Source
+type AppMap map[string]*Application
+type EndpointMap map[string]*Endpoint

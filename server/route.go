@@ -148,7 +148,7 @@ func buildRoutes(app *applicationHandler) http.Handler {
 				eventDeliveryRouter.Get("/countbatchretryevents", app.CountAffectedEventDeliveries)
 
 				eventDeliveryRouter.Route("/{eventDeliveryID}", func(eventDeliverySubRouter chi.Router) {
-					eventDeliverySubRouter.Use(requireEventDelivery(app.eventDeliveryRepo))
+					eventDeliverySubRouter.Use(requireEventDelivery(app.eventDeliveryRepo, app.appRepo, app.eventRepo))
 
 					eventDeliverySubRouter.Get("/", app.GetEventDelivery)
 					eventDeliverySubRouter.Put("/resend", app.ResendEventDelivery)
@@ -337,7 +337,7 @@ func buildRoutes(app *applicationHandler) http.Handler {
 							eventDeliveryRouter.Get("/countbatchretryevents", app.CountAffectedEventDeliveries)
 
 							eventDeliveryRouter.Route("/{eventDeliveryID}", func(eventDeliverySubRouter chi.Router) {
-								eventDeliverySubRouter.Use(requireEventDelivery(app.eventDeliveryRepo))
+				        eventDeliverySubRouter.Use(requireEventDelivery(app.eventDeliveryRepo, app.appRepo, app.eventRepo))
 
 								eventDeliverySubRouter.Get("/", app.GetEventDelivery)
 								eventDeliverySubRouter.Put("/resend", app.ResendEventDelivery)
@@ -444,7 +444,7 @@ func buildRoutes(app *applicationHandler) http.Handler {
 			eventDeliveryRouter.Get("/countbatchretryevents", app.CountAffectedEventDeliveries)
 
 			eventDeliveryRouter.Route("/{eventDeliveryID}", func(eventDeliverySubRouter chi.Router) {
-				eventDeliverySubRouter.Use(requireEventDelivery(app.eventDeliveryRepo))
+				eventDeliverySubRouter.Use(requireEventDelivery(app.eventDeliveryRepo, app.appRepo, app.eventRepo))
 
 				eventDeliverySubRouter.Get("/", app.GetEventDelivery)
 				eventDeliverySubRouter.Put("/resend", app.ResendEventDelivery)
