@@ -6670,7 +6670,7 @@
                 "tags": [
                     "User"
                 ],
-                "summary": "Generate password reset token",
+                "summary": "Send password reset token",
                 "parameters": [
                     {
                         "description": "Forgot Password Details",

@@ -433,10 +433,13 @@ func (u *UserIntegrationTestSuite) Test_Forgot_Password_Valid_Token() {
 	// Assert
 	require.Equal(u.T(), http.StatusOK, w.Code)
 
+	dbUser, err := u.DB.UserRepo().FindUserByEmail(context.Background(), user.Email)
+	require.NoError(u.T(), err)
+
 	var response datastore.User
 	parseResponse(u.T(), w.Result(), &response)
 	//Reset password
-	url = fmt.Sprintf("/ui/users/reset-password?token=%s", response.ResetPasswordToken)
+	url = fmt.Sprintf("/ui/users/reset-password?token=%s", dbUser.ResetPasswordToken)
 	bodyStr = fmt.Sprintf(`{
 		"email": "%s",
 		"password": "%s",
@@ -450,7 +453,7 @@ func (u *UserIntegrationTestSuite) Test_Forgot_Password_Valid_Token() {
 	require.Equal(u.T(), http.StatusOK, w.Code)
 	parseResponse(u.T(), w.Result(), &response)
 
-	dbUser, err := u.DB.UserRepo().FindUserByID(context.Background(), user.UID)
+	dbUser, err = u.DB.UserRepo().FindUserByID(context.Background(), user.UID)
 	require.NoError(u.T(), err)
 
 	p := datastore.Password{Plaintext: newPassword, Hash: []byte(dbUser.Password)}
@@ -481,8 +484,6 @@ func (u *UserIntegrationTestSuite) Test_Forgot_Password_Invalid_Token() {
 	// Assert
 	require.Equal(u.T(), http.StatusOK, w.Code)
 
-	var response datastore.User
-	parseResponse(u.T(), w.Result(), &response)
 	//Reset password
 	url = fmt.Sprintf("/ui/users/reset-password?token=%s", "fake-token")
 	bodyStr = fmt.Sprintf(`{

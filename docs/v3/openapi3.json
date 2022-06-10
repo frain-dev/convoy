@@ -8734,7 +8734,7 @@
 						"description": "Internal Server Error"
 					}
 				},
-				"summary": "Generate password reset token",
+				"summary": "Send password reset token",
 				"tags": [
 					"User"
 				]

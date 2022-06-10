@@ -192,7 +192,7 @@ func (a *applicationHandler) UpdatePassword(w http.ResponseWriter, r *http.Reque
 }
 
 // ForgotPassword
-// @Summary Generate password reset token
+// @Summary Send password reset token
 // @Description This endpoint generates a password reset token
 // @Tags User
 // @Accept  json
@@ -211,12 +211,12 @@ func (a *applicationHandler) ForgotPassword(w http.ResponseWriter, r *http.Reque
 		return
 	}
 
-	user, err := a.userService.GeneratePasswordResetToken(r.Context(), baseUrl, &forgotPassword)
+	err = a.userService.GeneratePasswordResetToken(r.Context(), baseUrl, &forgotPassword)
 	if err != nil {
 		_ = render.Render(w, r, newServiceErrResponse(err))
 		return
 	}
-	_ = render.Render(w, r, newServerResponse("Password reset token generated succesfully", user, http.StatusOK))
+	_ = render.Render(w, r, newServerResponse("Password reset token has been sent succesfully", nil, http.StatusOK))
 }
 
 // ResetPassword

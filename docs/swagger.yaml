@@ -4590,7 +4590,7 @@ paths:
                 data:
                   $ref: '#/definitions/server.Stub'
               type: object
-      summary: Generate password reset token
+      summary: Send password reset token
       tags:
       - User
   /users/reset-password:

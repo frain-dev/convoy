@@ -213,32 +213,32 @@ func (u *UserService) UpdatePassword(ctx context.Context, data *models.UpdatePas
 	return user, nil
 }
 
-func (u *UserService) GeneratePasswordResetToken(ctx context.Context, baseURL string, data *models.ForgotPassword) (*datastore.User, error) {
+func (u *UserService) GeneratePasswordResetToken(ctx context.Context, baseURL string, data *models.ForgotPassword) error {
 	var resetToken string
 	if err := util.Validate(data); err != nil {
-		return nil, NewServiceError(http.StatusBadRequest, err)
+		return NewServiceError(http.StatusBadRequest, err)
 	}
 
 	user, err := u.userRepo.FindUserByEmail(ctx, data.Email)
 	if err != nil {
 		if err == datastore.ErrUserNotFound {
-			return nil, NewServiceError(http.StatusUnauthorized, errors.New("invalid username"))
+			return NewServiceError(http.StatusUnauthorized, errors.New("invalid username"))
 		}
 
-		return nil, NewServiceError(http.StatusInternalServerError, err)
+		return NewServiceError(http.StatusInternalServerError, err)
 	}
 	resetToken = uuid.NewString()
 	user.ResetPasswordToken = resetToken
 	user.ResetPasswordExpiresAt = primitive.NewDateTimeFromTime(time.Now().Add(time.Hour * 2))
 	err = u.userRepo.UpdateUser(ctx, user)
 	if err != nil {
-		return nil, NewServiceError(http.StatusInternalServerError, errors.New("an error occurred while updating user"))
+		return NewServiceError(http.StatusInternalServerError, errors.New("an error occurred while updating user"))
 	}
 	err = u.sendPasswordResetEmail(baseURL, resetToken, user)
 	if err != nil {
-		return nil, NewServiceError(http.StatusInternalServerError, err)
+		return NewServiceError(http.StatusInternalServerError, err)
 	}
-	return user, nil
+	return nil
 }
 
 func (u *UserService) sendPasswordResetEmail(baseURL string, token string, user *datastore.User) error {
