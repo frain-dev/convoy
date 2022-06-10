@@ -247,6 +247,7 @@ func buildRoutes(app *applicationHandler) http.Handler {
 
 		uiRouter.Route("/organisations", func(orgRouter chi.Router) {
 			orgRouter.Use(requireAuthUserMetadata())
+			orgRouter.Use(requireBaseUrl())
 
 			orgRouter.Post("/", app.CreateOrganisation)
 			orgRouter.With(pagination).Get("/", app.GetOrganisationsPaged)
