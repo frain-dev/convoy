@@ -7,8 +7,8 @@ import (
 
 	"github.com/frain-dev/convoy"
 	"github.com/frain-dev/convoy/config"
+	"github.com/frain-dev/convoy/internal/pkg/rdb"
 	"github.com/frain-dev/convoy/queue"
-	"github.com/frain-dev/convoy/util"
 	"github.com/google/uuid"
 	"github.com/hibiken/asynq"
 	"github.com/hibiken/asynqmon"
@@ -24,15 +24,12 @@ func NewClient(cfg config.Configuration) (*asynq.Client, error) {
 		return nil, errors.New("please select the redis driver in your config")
 	}
 
-	if util.IsStringEmpty(cfg.Queue.Redis.Dsn) {
-		return nil, errors.New("please provide the Redis DSN")
-	}
-	opts, err := redis.ParseURL(cfg.Queue.Redis.Dsn)
+	rdb, err := rdb.NewClient(cfg.Queue.Redis.Dsn)
 	if err != nil {
-		return nil, errors.New("error parsing redis dsn")
+		return nil, err
 	}
 
-	client := asynq.NewClient(asynq.RedisClientOpt{Addr: opts.Addr})
+	client := asynq.NewClient(rdb)
 
 	return client, nil
 }

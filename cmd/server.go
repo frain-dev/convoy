@@ -451,7 +451,7 @@ func loadServerConfigFromCliFlags(cmd *cobra.Command, c *config.Configuration) e
 	}
 
 	if !util.IsStringEmpty(newReplicKey) {
-		c.Tracer.NewRelic.AppName = newReplicKey
+		c.Tracer.NewRelic.LicenseKey = newReplicKey
 	}
 
 	// CONVOY_SEARCH_TYPE

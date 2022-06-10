@@ -6,8 +6,8 @@ import (
 
 	"github.com/frain-dev/convoy/config"
 	em "github.com/frain-dev/convoy/internal/email"
+	"github.com/frain-dev/convoy/internal/pkg/smtp"
 	"github.com/frain-dev/convoy/notification"
-	"github.com/frain-dev/convoy/pkg/smtp"
 )
 
 type Email struct {
