@@ -285,17 +285,20 @@ func (e *EventService) GetEventDeliveriesPaged(ctx context.Context, filter *data
 		}
 
 		if _, ok := endpointMap[ed.EndpointID]; !ok {
-			en, _ := e.appRepo.FindApplicationEndpointByID(ctx, ed.AppID, ed.EndpointID)
-			endpoint := &datastore.Endpoint{
-				UID:               en.UID,
-				TargetURL:         en.TargetURL,
-				DocumentStatus:    en.DocumentStatus,
-				Secret:            en.Secret,
-				HttpTimeout:       en.HttpTimeout,
-				RateLimit:         en.RateLimit,
-				RateLimitDuration: en.RateLimitDuration,
+			en, err := e.appRepo.FindApplicationEndpointByID(ctx, ed.AppID, ed.EndpointID)
+			if err == nil {
+				endpoint := &datastore.Endpoint{
+					UID:               en.UID,
+					TargetURL:         en.TargetURL,
+					DocumentStatus:    en.DocumentStatus,
+					Secret:            en.Secret,
+					HttpTimeout:       en.HttpTimeout,
+					RateLimit:         en.RateLimit,
+					RateLimitDuration: en.RateLimitDuration,
+				}
+				endpointMap[ed.EndpointID] = endpoint
 			}
-			endpointMap[ed.EndpointID] = endpoint
+			
 		}
 
 		deliveries[i].App = appMap[ed.AppID]
