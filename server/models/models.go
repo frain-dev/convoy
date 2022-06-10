@@ -203,7 +203,7 @@ type Subscription struct {
 	Name       string `json:"name" bson:"name" valid:"required~please provide a valid subscription name"`
 	Type       string `json:"type" bson:"type" valid:"required~please provide a valid subscription type"`
 	AppID      string `json:"app_id" bson:"app_id" valid:"required~please provide a valid app id"`
-	SourceID   string `json:"source_id" bson:"source_id" valid:"required~please provide a valid source id"`
+	SourceID   string `json:"source_id" bson:"source_id"`
 	EndpointID string `json:"endpoint_id" bson:"endpoint_id" valid:"required~please provide a valid endpoint id"`
 
 	AlertConfig  *datastore.AlertConfiguration  `json:"alert_config,omitempty" bson:"alert_config,omitempty"`

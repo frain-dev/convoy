@@ -7715,13 +7715,16 @@ var doc = `{
                     "description": "subscription config",
                     "$ref": "#/definitions/datastore.AlertConfiguration"
                 },
+                "app_metadata": {
+                    "$ref": "#/definitions/datastore.Application"
+                },
                 "created_at": {
                     "type": "string"
                 },
                 "deleted_at": {
                     "type": "string"
                 },
-                "endpoint": {
+                "endpoint_metadata": {
                     "$ref": "#/definitions/datastore.Endpoint"
                 },
                 "filter_config": {
@@ -7733,7 +7736,7 @@ var doc = `{
                 "retry_config": {
                     "$ref": "#/definitions/datastore.RetryConfiguration"
                 },
-                "source": {
+                "source_metadata": {
                     "$ref": "#/definitions/datastore.Source"
                 },
                 "status": {
