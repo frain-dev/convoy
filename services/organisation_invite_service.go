@@ -104,6 +104,7 @@ func (ois *OrganisationInviteService) sendInviteEmail(ctx context.Context, iv *d
 	buf, err := json.Marshal(n)
 	if err != nil {
 		log.WithError(err).Error("failed to marshal notification payload")
+		return nil
 	}
 
 	job := &queue.Job{

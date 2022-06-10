@@ -157,14 +157,14 @@ func (s *OrganisationInviteIntegrationTestSuite) Test_InviteUserToOrganisation_E
 func (s *OrganisationInviteIntegrationTestSuite) Test_GetPendingOrganisationInvites() {
 	expectedStatusCode := http.StatusOK
 
-	_, err := testdb.SeedOrganisationInvite(s.DB, s.DefaultOrg, "invite@test.com", &auth.Role{
+	_, err := testdb.SeedOrganisationInvite(s.DB, s.DefaultOrg, "invite1@test.com", &auth.Role{
 		Type:   auth.RoleAdmin,
 		Groups: []string{uuid.NewString()},
 		Apps:   nil,
 	}, primitive.NewDateTimeFromTime(time.Now().Add(time.Hour)), datastore.InviteStatusPending)
 	require.NoError(s.T(), err)
 
-	_, err = testdb.SeedOrganisationInvite(s.DB, s.DefaultOrg, "invite@test.com", &auth.Role{
+	_, err = testdb.SeedOrganisationInvite(s.DB, s.DefaultOrg, "invite2@test.com", &auth.Role{
 		Type:   auth.RoleAdmin,
 		Groups: []string{uuid.NewString()},
 		Apps:   nil,
