@@ -21,16 +21,19 @@ func provideOrganisationInviteService(ctrl *gomock.Controller) *OrganisationInvi
 	userRepo := mocks.NewMockUserRepository(ctrl)
 	orgInviteRepo := mocks.NewMockOrganisationInviteRepository(ctrl)
 	orgRepo := mocks.NewMockOrganisationRepository(ctrl)
-	return NewOrganisationInviteService(orgRepo, userRepo, orgMemberRepo, orgInviteRepo)
+	queue := mocks.NewMockQueuer(ctrl)
+	return NewOrganisationInviteService(orgRepo, userRepo, orgMemberRepo, orgInviteRepo, queue)
 }
 
 func TestOrganisationInviteService_CreateOrganisationMemberInvite(t *testing.T) {
 	ctx := context.Background()
 
 	type args struct {
-		ctx   context.Context
-		org   *datastore.Organisation
-		newIV *models.OrganisationInvite
+		ctx     context.Context
+		org     *datastore.Organisation
+		newIV   *models.OrganisationInvite
+		user    *datastore.User
+		baseURL string
 	}
 	tests := []struct {
 		name        string
@@ -53,11 +56,16 @@ func TestOrganisationInviteService_CreateOrganisationMemberInvite(t *testing.T) 
 						Groups: []string{"abc"},
 					},
 				},
+				user:    &datastore.User{},
+				baseURL: "https://google.com",
 			},
 			dbFn: func(ois *OrganisationInviteService) {
 				a, _ := ois.orgInviteRepo.(*mocks.MockOrganisationInviteRepository)
 				a.EXPECT().CreateOrganisationInvite(gomock.Any(), gomock.Any()).
 					Times(1).Return(nil)
+
+				q := ois.queue.(*mocks.MockQueuer)
+				q.EXPECT().Write(gomock.Any(), gomock.Any(), gomock.Any()).Return(nil).Times(1)
 			},
 			want: &datastore.OrganisationInvite{
 				OrganisationID: "123",
@@ -83,6 +91,8 @@ func TestOrganisationInviteService_CreateOrganisationMemberInvite(t *testing.T) 
 						Groups: []string{"abc"},
 					},
 				},
+				user:    &datastore.User{},
+				baseURL: "https://google.com",
 			},
 			wantErr:     true,
 			wantErrCode: http.StatusBadRequest,
@@ -99,6 +109,8 @@ func TestOrganisationInviteService_CreateOrganisationMemberInvite(t *testing.T) 
 						Type: auth.RoleAdmin,
 					},
 				},
+				user:    nil,
+				baseURL: "",
 			},
 			wantErr:     true,
 			wantErrCode: http.StatusBadRequest,
@@ -116,6 +128,8 @@ func TestOrganisationInviteService_CreateOrganisationMemberInvite(t *testing.T) 
 						Groups: []string{"abc"},
 					},
 				},
+				user:    nil,
+				baseURL: "",
 			},
 			dbFn: func(ois *OrganisationInviteService) {
 				a, _ := ois.orgInviteRepo.(*mocks.MockOrganisationInviteRepository)
@@ -138,7 +152,7 @@ func TestOrganisationInviteService_CreateOrganisationMemberInvite(t *testing.T) 
 				tt.dbFn(ois)
 			}
 
-			iv, err := ois.CreateOrganisationMemberInvite(tt.args.ctx, tt.args.org, tt.args.newIV)
+			iv, err := ois.CreateOrganisationMemberInvite(tt.args.ctx, tt.args.newIV, tt.args.org, tt.args.user, tt.args.baseURL)
 			if tt.wantErr {
 				require.NotNil(t, err)
 				require.Equal(t, tt.wantErrCode, err.(*ServiceError).ErrCode())
