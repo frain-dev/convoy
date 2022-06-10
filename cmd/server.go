@@ -6,12 +6,11 @@ import (
 
 	"github.com/frain-dev/convoy"
 	"github.com/frain-dev/convoy/auth/realm_chain"
-	"github.com/frain-dev/convoy/worker"
-	"github.com/frain-dev/convoy/worker/task"
-
 	"github.com/frain-dev/convoy/config"
 	"github.com/frain-dev/convoy/server"
 	"github.com/frain-dev/convoy/util"
+	"github.com/frain-dev/convoy/worker"
+	"github.com/frain-dev/convoy/worker/task"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 )
@@ -187,6 +186,10 @@ func StartConvoyServer(a *app, cfg config.Configuration, withWorkers bool) error
 		// register tasks.
 		eventCreatedhandler := task.ProcessEventCreated(a.applicationRepo, a.eventRepo, a.groupRepo, a.eventDeliveryRepo, a.cache, a.queue, a.subRepo)
 		consumer.RegisterHandlers(convoy.CreateEventProcessor, eventCreatedhandler)
+
+		// register tasks.
+		notificationHandler := task.SendNotification(a.emailNotificationSender)
+		consumer.RegisterHandlers(convoy.NotificationProcessor, notificationHandler)
 
 		log.Infof("Starting Convoy workers...")
 		consumer.Start()

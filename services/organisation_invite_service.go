@@ -2,9 +2,15 @@ package services
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/frain-dev/convoy"
+	"github.com/frain-dev/convoy/notification"
+	"github.com/frain-dev/convoy/notification/email"
+	"github.com/frain-dev/convoy/queue"
 	"net/http"
+	"strings"
 	"time"
 
 	"github.com/dchest/uniuri"
@@ -17,17 +23,24 @@ import (
 )
 
 type OrganisationInviteService struct {
+	queue         queue.Queuer
 	orgRepo       datastore.OrganisationRepository
 	userRepo      datastore.UserRepository
 	orgMemberRepo datastore.OrganisationMemberRepository
 	orgInviteRepo datastore.OrganisationInviteRepository
 }
 
-func NewOrganisationInviteService(orgRepo datastore.OrganisationRepository, userRepo datastore.UserRepository, orgMemberRepo datastore.OrganisationMemberRepository, orgInviteRepo datastore.OrganisationInviteRepository) *OrganisationInviteService {
-	return &OrganisationInviteService{orgRepo: orgRepo, userRepo: userRepo, orgMemberRepo: orgMemberRepo, orgInviteRepo: orgInviteRepo}
+func NewOrganisationInviteService(orgRepo datastore.OrganisationRepository, userRepo datastore.UserRepository, orgMemberRepo datastore.OrganisationMemberRepository, orgInviteRepo datastore.OrganisationInviteRepository, queue queue.Queuer) *OrganisationInviteService {
+	return &OrganisationInviteService{
+		queue:         queue,
+		orgRepo:       orgRepo,
+		userRepo:      userRepo,
+		orgMemberRepo: orgMemberRepo,
+		orgInviteRepo: orgInviteRepo,
+	}
 }
 
-func (ois *OrganisationInviteService) CreateOrganisationMemberInvite(ctx context.Context, org *datastore.Organisation, newIV *models.OrganisationInvite) (*datastore.OrganisationInvite, error) {
+func (ois *OrganisationInviteService) CreateOrganisationMemberInvite(ctx context.Context, newIV *models.OrganisationInvite, org *datastore.Organisation, user *datastore.User, baseURL string) (*datastore.OrganisationInvite, error) {
 	err := util.Validate(newIV)
 	if err != nil {
 		return nil, NewServiceError(http.StatusBadRequest, err)
@@ -52,12 +65,19 @@ func (ois *OrganisationInviteService) CreateOrganisationMemberInvite(ctx context
 		UpdatedAt:      primitive.NewDateTimeFromTime(time.Now()),
 	}
 
-	// TODO(daniel): send invite link to the invitee's email
-
 	err = ois.orgInviteRepo.CreateOrganisationInvite(ctx, iv)
 	if err != nil {
 		log.WithError(err).Error("failed to create organisation member invite")
 		return nil, NewServiceError(http.StatusBadRequest, errors.New("failed to create organisation member invite"))
+	}
+
+	if !strings.HasSuffix(baseURL, "/") {
+		baseURL += "/"
+	}
+
+	err = ois.sendInviteEmail(context.Background(), iv, org, user, baseURL)
+	if err != nil {
+		return nil, err
 	}
 
 	return iv, nil
@@ -70,6 +90,34 @@ func (ois *OrganisationInviteService) LoadOrganisationInvitesPaged(ctx context.C
 	}
 
 	return invites, paginationData, nil
+}
+
+func (ois *OrganisationInviteService) sendInviteEmail(ctx context.Context, iv *datastore.OrganisationInvite, org *datastore.Organisation, user *datastore.User, baseURL string) error {
+	n := &notification.Notification{
+		Email:             iv.InviteeEmail,
+		EmailTemplateName: email.TemplateOrganisationInvite.String(),
+		InviteURL:         fmt.Sprintf("%s/ui/organisations/process_invite?token=%s", baseURL, iv.Token),
+		OrganisationName:  org.Name,
+		InviterName:       fmt.Sprintf("%s %s", user.FirstName, user.LastName),
+	}
+
+	buf, err := json.Marshal(n)
+	if err != nil {
+		log.WithError(err).Error("failed to marshal notification payload")
+	}
+
+	job := &queue.Job{
+		ID:      iv.UID,
+		Payload: json.RawMessage(buf),
+		Delay:   0,
+	}
+
+	err = ois.queue.Write(convoy.NotificationProcessor, convoy.ScheduleQueue, job)
+	if err != nil {
+		log.WithError(err).Error("failed to write new notification to the queue")
+	}
+
+	return nil
 }
 
 func (ois *OrganisationInviteService) ProcessOrganisationMemberInvite(ctx context.Context, token string, accepted bool, newUser *models.User) error {

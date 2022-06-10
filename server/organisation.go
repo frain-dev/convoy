@@ -1,7 +1,6 @@
 package server
 
 import (
-	"github.com/frain-dev/convoy/datastore"
 	"github.com/frain-dev/convoy/server/models"
 	"github.com/frain-dev/convoy/util"
 	"github.com/go-chi/render"
@@ -41,13 +40,7 @@ func (a *applicationHandler) GetOrganisation(w http.ResponseWriter, r *http.Requ
 // @Router /ui/organisations [get]
 func (a *applicationHandler) GetOrganisationsPaged(w http.ResponseWriter, r *http.Request) { //TODO: change to GetUserOrganisationsPaged
 	pageable := getPageableFromContext(r.Context())
-	authUser := getAuthUserFromContext(r.Context())
-	user, ok := authUser.Metadata.(*datastore.User)
-	if !ok {
-		log.Error("failed to extract user metadata from authUser")
-		_ = render.Render(w, r, newErrorResponse("unauthorized", http.StatusUnauthorized))
-		return
-	}
+	user := getUserFromContext(r.Context())
 
 	organisations, paginationData, err := a.organisationService.LoadUserOrganisationsPaged(r.Context(), user, pageable)
 	if err != nil {
@@ -79,13 +72,7 @@ func (a *applicationHandler) CreateOrganisation(w http.ResponseWriter, r *http.R
 		return
 	}
 
-	authUser := getAuthUserFromContext(r.Context())
-	user, ok := authUser.Metadata.(*datastore.User)
-	if !ok {
-		log.Error("failed to extract user metadata from authUser")
-		_ = render.Render(w, r, newErrorResponse("unauthorized", http.StatusUnauthorized))
-		return
-	}
+	user := getUserFromContext(r.Context())
 
 	organisation, err := a.organisationService.CreateOrganisation(r.Context(), &newOrg, user)
 	if err != nil {
