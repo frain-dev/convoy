@@ -31,8 +31,11 @@ func (a *applicationHandler) InviteUserToOrganisation(w http.ResponseWriter, r *
 		return
 	}
 
+	baseUrl := getBaseUrlFromContext(r.Context())
+	user := getUserFromContext(r.Context())
 	org := getOrganisationFromContext(r.Context())
-	_, err = a.organisationInviteService.CreateOrganisationMemberInvite(r.Context(), org, &newIV)
+
+	_, err = a.organisationInviteService.CreateOrganisationMemberInvite(r.Context(), &newIV, org, user, baseUrl)
 	if err != nil {
 		log.WithError(err).Error("failed to create organisation member invite")
 		_ = render.Render(w, r, newServiceErrResponse(err))
@@ -79,4 +82,27 @@ func (a *applicationHandler) ProcessOrganisationMemberInvite(w http.ResponseWrit
 	}
 
 	_ = render.Render(w, r, newServerResponse("invite created successfully", nil, http.StatusOK))
+}
+
+// FindUserByInviteToken
+// @Summary Find user by invite token
+// @Description This endpoint finds a user by an invite token
+// @Tags Organisation
+// @Accept  json
+// @Produce  json
+// @Param token query string true "invite token"
+// @Success 200 {object} serverResponse{data=datastore.User}
+// @Failure 400,401,500 {object} serverResponse{data=Stub}
+// @Security ApiKeyAuth
+// @Router /users/token [get]
+func (a *applicationHandler) FindUserByInviteToken(w http.ResponseWriter, r *http.Request) {
+	token := r.URL.Query().Get("token")
+	user, err := a.organisationInviteService.FindUserByInviteToken(r.Context(), token)
+	if err != nil {
+		log.WithError(err).Error("failed to find user by invite token")
+		_ = render.Render(w, r, newServiceErrResponse(err))
+		return
+	}
+
+	_ = render.Render(w, r, newServerResponse("retrieved user", user, http.StatusOK))
 }

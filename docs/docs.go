@@ -6670,14 +6670,14 @@ var doc = `{
                 }
             }
         },
-        "/users/exists": {
-            "post": {
+        "/users/token": {
+            "get": {
                 "security": [
                     {
                         "ApiKeyAuth": []
                     }
                 ],
-                "description": "This endpoint checks if a user exists",
+                "description": "This endpoint finds a user by an invite token",
                 "consumes": [
                     "application/json"
                 ],
@@ -6685,18 +6685,16 @@ var doc = `{
                     "application/json"
                 ],
                 "tags": [
-                    "User"
+                    "Organisation"
                 ],
-                "summary": "Checks If a user exists",
+                "summary": "Find user by invite token",
                 "parameters": [
                     {
-                        "description": "User Exists Details",
-                        "name": "group",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "$ref": "#/definitions/models.UserExists"
-                        }
+                        "type": "string",
+                        "description": "invite token",
+                        "name": "token",
+                        "in": "query",
+                        "required": true
                     }
                 ],
                 "responses": {
@@ -6711,7 +6709,7 @@ var doc = `{
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "type": "boolean"
+                                            "$ref": "#/definitions/datastore.User"
                                         }
                                     }
                                 }
@@ -6775,7 +6773,7 @@ var doc = `{
                 }
             }
         },
-        "/users/password": {
+        "/users/{userID}/password": {
             "put": {
                 "security": [
                     {
@@ -6794,6 +6792,13 @@ var doc = `{
                 ],
                 "summary": "Updates a user's password",
                 "parameters": [
+                    {
+                        "type": "string",
+                        "description": "user id",
+                        "name": "userID",
+                        "in": "path",
+                        "required": true
+                    },
                     {
                         "description": "Password Details",
                         "name": "group",
@@ -6880,7 +6885,7 @@ var doc = `{
                 }
             }
         },
-        "/users/profile": {
+        "/users/{userID}/profile": {
             "get": {
                 "security": [
                     {
@@ -6898,6 +6903,15 @@ var doc = `{
                     "User"
                 ],
                 "summary": "Gets a user",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "user id",
+                        "name": "userID",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
                 "responses": {
                     "200": {
                         "description": "OK",
@@ -6991,6 +7005,13 @@ var doc = `{
                 ],
                 "summary": "Updates a user",
                 "parameters": [
+                    {
+                        "type": "string",
+                        "description": "user id",
+                        "name": "userID",
+                        "in": "path",
+                        "required": true
+                    },
                     {
                         "description": "User Details",
                         "name": "group",
@@ -8136,14 +8157,6 @@ var doc = `{
                 },
                 "role": {
                     "$ref": "#/definitions/auth.Role"
-                }
-            }
-        },
-        "models.UserExists": {
-            "type": "object",
-            "properties": {
-                "email": {
-                    "type": "string"
                 }
             }
         },

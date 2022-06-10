@@ -202,22 +202,3 @@ func (u *UserService) UpdatePassword(ctx context.Context, data *models.UpdatePas
 
 	return user, nil
 }
-
-func (u *UserService) CheckUserExists(ctx context.Context, data *models.UserExists) (bool, error) {
-	exists := false
-	if err := util.Validate(data); err != nil {
-		return exists, NewServiceError(http.StatusBadRequest, err)
-	}
-
-	_, err := u.userRepo.FindUserByEmail(ctx, data.Email)
-	if err != nil {
-		if err == datastore.ErrUserNotFound {
-			return exists, nil
-		}
-
-		return exists, NewServiceError(http.StatusInternalServerError, err)
-	}
-
-	exists = true
-	return exists, nil
-}
