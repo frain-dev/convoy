@@ -253,6 +253,7 @@ var (
 	ErrEventDeliveryAttemptNotFound  = errors.New("event delivery attempt not found")
 	ErrDuplicateAppName              = errors.New("an application with this name exists")
 	ErrNotAuthorisedToAccessDocument = errors.New("your credentials cannot access or modify this resource")
+	ErrDuplicateGroupName            = errors.New("a group with this name already exists")
 )
 
 type AppMetadata struct {
