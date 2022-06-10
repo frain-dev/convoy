@@ -226,7 +226,6 @@ func buildRoutes(app *applicationHandler) http.Handler {
 			userRouter.Get("/profile", app.GetUser)
 			userRouter.Put("/profile", app.UpdateUser)
 			userRouter.Put("/password", app.UpdatePassword)
-			userRouter.Post("/exists", app.CheckUserExists)
 		})
 
 		uiRouter.Route("/organisations", func(orgRouter chi.Router) {

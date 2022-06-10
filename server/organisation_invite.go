@@ -81,6 +81,17 @@ func (a *applicationHandler) ProcessOrganisationMemberInvite(w http.ResponseWrit
 	_ = render.Render(w, r, newServerResponse("invite created successfully", nil, http.StatusOK))
 }
 
+// FindUserByInviteToken
+// @Summary Find user by invite token
+// @Description This endpoint finds a user by an invite token
+// @Tags Organisation
+// @Accept  json
+// @Produce  json
+// @Param token query string true "invite token"
+// @Success 200 {object} serverResponse{data=datastore.User}
+// @Failure 400,401,500 {object} serverResponse{data=Stub}
+// @Security ApiKeyAuth
+// @Router /users/token [get]
 func (a *applicationHandler) FindUserByInviteToken(w http.ResponseWriter, r *http.Request) {
 	token := r.URL.Query().Get("token")
 	user, err := a.organisationInviteService.FindUserByInviteToken(r.Context(), token)

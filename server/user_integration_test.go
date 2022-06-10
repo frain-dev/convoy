@@ -413,53 +413,6 @@ func (u *UserIntegrationTestSuite) Test_UpdatePassword_Invalid_Password_Confirma
 	require.Equal(u.T(), http.StatusBadRequest, w.Code)
 }
 
-func (u *UserIntegrationTestSuite) Test_CheckUserExists() {
-	password := "123456"
-	user, _ := testdb.SeedUser(u.DB, "", password)
-
-	// Arrange Request
-	url := "/ui/users/exists"
-	bodyStr := fmt.Sprintf(`{"email":"%s"}`, user.Email)
-
-	body := serialize(bodyStr)
-	req := createRequest(http.MethodPost, url, body)
-	w := httptest.NewRecorder()
-
-	// Act
-	u.Router.ServeHTTP(w, req)
-
-	// Assert
-	require.Equal(u.T(), http.StatusOK, w.Code)
-
-	var response bool
-	parseResponse(u.T(), w.Result(), &response)
-
-	require.True(u.T(), response)
-}
-
-func (u *UserIntegrationTestSuite) Test_CheckUser_Does_Not_Exists() {
-	email := "random@test.com"
-	
-	// Arrange Request
-	url := "/ui/users/exists"
-	bodyStr := fmt.Sprintf(`{"email":"%s"}`, email)
-
-	body := serialize(bodyStr)
-	req := createRequest(http.MethodPost, url, body)
-	w := httptest.NewRecorder()
-
-	// Act
-	u.Router.ServeHTTP(w, req)
-
-	// Assert
-	require.Equal(u.T(), http.StatusOK, w.Code)
-
-	var response bool
-	parseResponse(u.T(), w.Result(), &response)
-
-	require.False(u.T(), response)
-}
-
 func TestUserIntegrationTestSuite(t *testing.T) {
 	suite.Run(t, new(UserIntegrationTestSuite))
 }

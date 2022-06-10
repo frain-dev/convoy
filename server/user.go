@@ -188,35 +188,6 @@ func (a *applicationHandler) UpdatePassword(w http.ResponseWriter, r *http.Reque
 
 }
 
-// CheckUserExists
-// @Summary Checks If a user exists
-// @Description This endpoint checks if a user exists
-// @Tags User
-// @Accept  json
-// @Produce  json
-// @Param group body models.UserExists true "User Exists Details"
-// @Success 200 {object} serverResponse{data=bool}
-// @Failure 400,401,500 {object} serverResponse{data=Stub}
-// @Security ApiKeyAuth
-// @Router /users/exists [post]
-func (a *applicationHandler) CheckUserExists(w http.ResponseWriter, r *http.Request) {
-	var userExists models.UserExists
-	err := util.ReadJSON(r, &userExists)
-	if err != nil {
-		_ = render.Render(w, r, newErrorResponse(err.Error(), http.StatusBadRequest))
-		return
-	}
-
-	exists, err := a.userService.CheckUserExists(r.Context(), &userExists)
-	if err != nil {
-		_ = render.Render(w, r, newServiceErrResponse(err))
-		return
-	}
-
-	_ = render.Render(w, r, newServerResponse("Checked user exists successfully", exists, http.StatusOK))
-
-}
-
 func getUser(r *http.Request) (*datastore.User, bool) {
 	authUser := getAuthUserFromContext(r.Context())
 	user, ok := authUser.Metadata.(*datastore.User)
