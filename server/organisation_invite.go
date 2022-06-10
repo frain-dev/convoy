@@ -80,3 +80,15 @@ func (a *applicationHandler) ProcessOrganisationMemberInvite(w http.ResponseWrit
 
 	_ = render.Render(w, r, newServerResponse("invite created successfully", nil, http.StatusOK))
 }
+
+func (a *applicationHandler) FindUserByInviteToken(w http.ResponseWriter, r *http.Request) {
+	token := r.URL.Query().Get("token")
+	user, err := a.organisationInviteService.FindUserByInviteToken(r.Context(), token)
+	if err != nil {
+		log.WithError(err).Error("failed to find user by invite token")
+		_ = render.Render(w, r, newServiceErrResponse(err))
+		return
+	}
+
+	_ = render.Render(w, r, newServerResponse("retrieved user", user, http.StatusOK))
+}

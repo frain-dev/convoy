@@ -750,3 +750,117 @@ func TestOrganisationInviteService_ProcessOrganisationMemberInvite(t *testing.T)
 		})
 	}
 }
+
+func TestOrganisationInviteService_FindUserByInviteToken(t *testing.T) {
+	ctx := context.Background()
+
+	type args struct {
+		ctx   context.Context
+		token string
+	}
+
+	tests := []struct {
+		name        string
+		args        args
+		dbFn        func(ois *OrganisationInviteService)
+		wantUser    *datastore.User
+		wantErr     bool
+		wantErrCode int
+		wantErrMsg  string
+	}{
+		{
+			name: "should_find_user_by_invite_token",
+			args: args{
+				ctx:   ctx,
+				token: "abcdef",
+			},
+			dbFn: func(ois *OrganisationInviteService) {
+				oir, _ := ois.orgInviteRepo.(*mocks.MockOrganisationInviteRepository)
+				oir.EXPECT().FetchOrganisationInviteByToken(gomock.Any(), "abcdef").
+					Times(1).Return(
+					&datastore.OrganisationInvite{
+						OrganisationID: "123ab",
+						InviteeEmail:   "test@email.com",
+					},
+					nil,
+				)
+
+				u, _ := ois.userRepo.(*mocks.MockUserRepository)
+				u.EXPECT().FindUserByEmail(gomock.Any(), "test@email.com").Times(1).Return(
+					&datastore.User{
+						UID:   "user-123",
+						Email: "test@email.com",
+					},
+					nil,
+				)
+			},
+			wantUser: &datastore.User{
+				UID:   "user-123",
+				Email: "test@email.com",
+			},
+		},
+
+		{
+			name: "should_not_find_user_by_invite_token",
+			args: args{
+				ctx:   ctx,
+				token: "abcdef",
+			},
+			dbFn: func(ois *OrganisationInviteService) {
+				oir, _ := ois.orgInviteRepo.(*mocks.MockOrganisationInviteRepository)
+				oir.EXPECT().FetchOrganisationInviteByToken(gomock.Any(), "abcdef").
+					Times(1).Return(
+					&datastore.OrganisationInvite{
+						OrganisationID: "123ab",
+						InviteeEmail:   "test@email.com",
+					},
+					nil,
+				)
+
+				u, _ := ois.userRepo.(*mocks.MockUserRepository)
+				u.EXPECT().FindUserByEmail(gomock.Any(), "test@email.com").Times(1).Return(nil, datastore.ErrUserNotFound)
+			},
+			wantUser: nil,
+		},
+
+		{
+			name: "should_fail_to_find_user_by_invite_token",
+			args: args{
+				ctx:   ctx,
+				token: "abcdef",
+			},
+			dbFn: func(ois *OrganisationInviteService) {
+				oir, _ := ois.orgInviteRepo.(*mocks.MockOrganisationInviteRepository)
+				oir.EXPECT().FetchOrganisationInviteByToken(gomock.Any(), "abcdef").
+					Times(1).Return(nil, errors.New("failed"))
+			},
+			wantErr:     true,
+			wantErrCode: http.StatusBadRequest,
+			wantErrMsg:  "failed to fetch organisation member invite",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			ctrl := gomock.NewController(t)
+			defer ctrl.Finish()
+			ois := provideOrganisationInviteService(ctrl)
+
+			// Arrange Expectations
+			if tt.dbFn != nil {
+				tt.dbFn(ois)
+			}
+
+			user, err := ois.FindUserByInviteToken(tt.args.ctx, tt.args.token)
+			if tt.wantErr {
+				require.NotNil(t, err)
+				require.Equal(t, tt.wantErrCode, err.(*ServiceError).ErrCode())
+				require.Equal(t, tt.wantErrMsg, err.(*ServiceError).Error())
+				return
+			}
+
+			require.Nil(t, err)
+			require.Equal(t, user, tt.wantUser)
+		})
+	}
+}

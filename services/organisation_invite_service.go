@@ -161,3 +161,22 @@ func (ois *OrganisationInviteService) createNewUser(ctx context.Context, newUser
 
 	return user, nil
 }
+
+func (ois *OrganisationInviteService) FindUserByInviteToken(ctx context.Context, token string) (*datastore.User, error) {
+	iv, err := ois.orgInviteRepo.FetchOrganisationInviteByToken(ctx, token)
+	if err != nil {
+		log.WithError(err).Error("failed to fetch organisation member invite by token and email")
+		return nil, NewServiceError(http.StatusBadRequest, errors.New("failed to fetch organisation member invite"))
+	}
+
+	user, err := ois.userRepo.FindUserByEmail(ctx, iv.InviteeEmail)
+	if err != nil {
+		if err == datastore.ErrUserNotFound {
+			return nil, nil
+		}
+
+		return nil, NewServiceError(http.StatusInternalServerError, err)
+	}
+
+	return user, nil
+}

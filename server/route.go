@@ -214,6 +214,7 @@ func buildRoutes(app *applicationHandler) http.Handler {
 		uiRouter.Use(middleware.Maybe(requireAuth(), shouldAuthRoute))
 
 		uiRouter.Post("/organisations/process_invite", app.ProcessOrganisationMemberInvite)
+		uiRouter.Get("/users/token", app.FindUserByInviteToken)
 
 		uiRouter.Route("/auth", func(authRouter chi.Router) {
 			authRouter.Post("/login", app.LoginUser)
