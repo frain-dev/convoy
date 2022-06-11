@@ -45,10 +45,11 @@ func TestSourceService_CreateSource(t *testing.T) {
 					Type: datastore.HTTPSource,
 					Verifier: datastore.VerifierConfig{
 						Type: datastore.HMacVerifier,
-						HMac: datastore.HMac{
-							Header: "X-Convoy-Header",
-							Hash:   "SHA512",
-							Secret: "Convoy-Secret",
+						HMac: &datastore.HMac{
+							Encoding: datastore.Base64Encoding,
+							Header:   "X-Convoy-Header",
+							Hash:     "SHA512",
+							Secret:   "Convoy-Secret",
 						},
 					},
 				},
@@ -59,7 +60,7 @@ func TestSourceService_CreateSource(t *testing.T) {
 				Type: datastore.HTTPSource,
 				Verifier: &datastore.VerifierConfig{
 					Type: datastore.HMacVerifier,
-					HMac: datastore.HMac{
+					HMac: &datastore.HMac{
 						Header: "X-Convoy-Header",
 						Hash:   "SHA512",
 						Secret: "Convoy-Secret",
@@ -71,7 +72,6 @@ func TestSourceService_CreateSource(t *testing.T) {
 				s.EXPECT().CreateSource(gomock.Any(), gomock.Any()).Times(1).Return(nil)
 			},
 		},
-
 		{
 			name: "should_fail_to_create_source",
 			args: args{
@@ -81,10 +81,11 @@ func TestSourceService_CreateSource(t *testing.T) {
 					Type: datastore.HTTPSource,
 					Verifier: datastore.VerifierConfig{
 						Type: datastore.HMacVerifier,
-						HMac: datastore.HMac{
-							Header: "X-Convoy-Header",
-							Hash:   "SHA512",
-							Secret: "Convoy-Secret",
+						HMac: &datastore.HMac{
+							Encoding: datastore.Base64Encoding,
+							Header:   "X-Convoy-Header",
+							Hash:     "SHA512",
+							Secret:   "Convoy-Secret",
 						},
 					},
 				},
@@ -99,6 +100,26 @@ func TestSourceService_CreateSource(t *testing.T) {
 			wantErr:     true,
 			wantErrCode: http.StatusBadRequest,
 			wantErrMsg:  "failed to create source",
+		},
+		{
+			name: "should_fail_invalid_source_configuration",
+			args: args{
+				ctx: ctx,
+				newSource: &models.Source{
+					Name: "Convoy-Prod",
+					Type: datastore.HTTPSource,
+					Verifier: datastore.VerifierConfig{
+						Type: datastore.HMacVerifier,
+					},
+				},
+				group: &datastore.Group{
+					UID: "12345",
+				},
+			},
+			dbFn:        func(so *SourceService) {},
+			wantErr:     true,
+			wantErrCode: http.StatusBadRequest,
+			wantErrMsg:  "Invalid verifier config for hmac",
 		},
 	}
 
@@ -161,10 +182,11 @@ func TestSourceService_UpdateSource(t *testing.T) {
 					Type: datastore.HTTPSource,
 					Verifier: datastore.VerifierConfig{
 						Type: datastore.HMacVerifier,
-						HMac: datastore.HMac{
-							Header: "X-Convoy-Header",
-							Hash:   "SHA512",
-							Secret: "Convoy-Secret",
+						HMac: &datastore.HMac{
+							Encoding: datastore.Base64Encoding,
+							Header:   "X-Convoy-Header",
+							Hash:     "SHA512",
+							Secret:   "Convoy-Secret",
 						},
 					},
 				},
@@ -175,10 +197,11 @@ func TestSourceService_UpdateSource(t *testing.T) {
 				Type: datastore.HTTPSource,
 				Verifier: &datastore.VerifierConfig{
 					Type: datastore.HMacVerifier,
-					HMac: datastore.HMac{
-						Header: "X-Convoy-Header",
-						Hash:   "SHA512",
-						Secret: "Convoy-Secret",
+					HMac: &datastore.HMac{
+						Encoding: datastore.Base64Encoding,
+						Header:   "X-Convoy-Header",
+						Hash:     "SHA512",
+						Secret:   "Convoy-Secret",
 					},
 				},
 			},
@@ -198,10 +221,11 @@ func TestSourceService_UpdateSource(t *testing.T) {
 					Type: datastore.HTTPSource,
 					Verifier: datastore.VerifierConfig{
 						Type: datastore.HMacVerifier,
-						HMac: datastore.HMac{
-							Header: "X-Convoy-Header",
-							Hash:   "SHA512",
-							Secret: "Convoy-Secret",
+						HMac: &datastore.HMac{
+							Encoding: datastore.Base64Encoding,
+							Header:   "X-Convoy-Header",
+							Hash:     "SHA512",
+							Secret:   "Convoy-Secret",
 						},
 					},
 				},

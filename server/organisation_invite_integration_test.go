@@ -43,7 +43,7 @@ func (s *OrganisationInviteIntegrationTestSuite) SetupTest() {
 	s.DB = getDB()
 
 	// Setup Default Group.
-	s.DefaultGroup, _ = testdb.SeedDefaultGroup(s.DB)
+	s.DefaultGroup, _ = testdb.SeedDefaultGroup(s.DB, "")
 
 	user, err := testdb.SeedDefaultUser(s.DB)
 	require.NoError(s.T(), err)
@@ -340,8 +340,6 @@ func (s *OrganisationInviteIntegrationTestSuite) Test_FindUserByInviteToken_NewU
 	// Assert.
 	require.Equal(s.T(), expectedStatusCode, w.Code)
 }
-
-
 
 func TestOrganisationInviteIntegrationTestSuite(t *testing.T) {
 	suite.Run(t, new(OrganisationInviteIntegrationTestSuite))
