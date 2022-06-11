@@ -9,14 +9,14 @@ import (
 type OrganisationAnalytics struct {
 	orgRepo datastore.OrganisationRepository
 	client  AnalyticsClient
-	source  AnalyticsSource
+	host    string
 }
 
-func newOrganisationAnalytics(orgRepo datastore.OrganisationRepository, client AnalyticsClient, source AnalyticsSource) *OrganisationAnalytics {
+func newOrganisationAnalytics(orgRepo datastore.OrganisationRepository, client AnalyticsClient, host string) *OrganisationAnalytics {
 	return &OrganisationAnalytics{
 		orgRepo: orgRepo,
 		client:  client,
-		source:  source,
+		host:    host,
 	}
 }
 
@@ -26,7 +26,7 @@ func (o *OrganisationAnalytics) Track() error {
 		return err
 	}
 
-	return o.client.Export(o.Name(), Event{"Count": pagination.Total, "Source": o.source})
+	return o.client.Export(o.Name(), Event{"Count": pagination.Total, "Host": o.host})
 }
 
 func (o *OrganisationAnalytics) Name() string {

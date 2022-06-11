@@ -10,13 +10,15 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
+var TestHost = "http://test-host.com"
+
 func provideEventAnalytics(ctrl *gomock.Controller) *EventAnalytics {
 	eventRepo := mocks.NewMockEventRepository(ctrl)
 	groupRepo := mocks.NewMockGroupRepository(ctrl)
 	orgRepo := mocks.NewMockOrganisationRepository(ctrl)
 	client := NewNoopAnalyticsClient()
 
-	return newEventAnalytics(eventRepo, groupRepo, orgRepo, client, OSSAnalyticsSource)
+	return newEventAnalytics(eventRepo, groupRepo, orgRepo, client, TestHost)
 }
 
 func Test_TrackEventAnalytics(t *testing.T) {

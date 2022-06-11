@@ -9,14 +9,14 @@ import (
 type UserAnalytics struct {
 	userRepo datastore.UserRepository
 	client   AnalyticsClient
-	source   AnalyticsSource
+	host     string
 }
 
-func newUserAnalytics(userRepo datastore.UserRepository, client AnalyticsClient, source AnalyticsSource) *UserAnalytics {
+func newUserAnalytics(userRepo datastore.UserRepository, client AnalyticsClient, host string) *UserAnalytics {
 	return &UserAnalytics{
 		userRepo: userRepo,
 		client:   client,
-		source:   source,
+		host:     host,
 	}
 }
 
@@ -26,7 +26,7 @@ func (u *UserAnalytics) Track() error {
 		return err
 	}
 
-	return u.client.Export(u.Name(), Event{"Count": pagination.Total, "Source": u.source})
+	return u.client.Export(u.Name(), Event{"Count": pagination.Total, "Host": u.host})
 }
 
 func (u *UserAnalytics) Name() string {

@@ -14,7 +14,7 @@ func provideOrganisationAnalytics(ctrl *gomock.Controller) *OrganisationAnalytic
 	orgRepo := mocks.NewMockOrganisationRepository(ctrl)
 	client := NewNoopAnalyticsClient()
 
-	return newOrganisationAnalytics(orgRepo, client, OSSAnalyticsSource)
+	return newOrganisationAnalytics(orgRepo, client, TestHost)
 }
 
 func Test_TrackOrganisationAnalytics(t *testing.T) {
