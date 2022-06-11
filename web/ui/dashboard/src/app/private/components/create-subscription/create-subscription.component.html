@@ -1,4 +1,6 @@
-<form class="padding-bottom__40px" [formGroup]="subscriptonForm" (ngSubmit)="createSubscription()">
+<form class="padding-bottom__40px position__relative" [formGroup]="subscriptonForm" (ngSubmit)="createSubscription()">
+	<convoy-loader *ngIf="isLoadingForm"></convoy-loader>
+
 	<section class="card padding-all__24px">
 		<div class="input">
 			<label for="source-name">Subscription name</label>
@@ -9,26 +11,28 @@
 			</div>
 		</div>
 
-		<div class="input margin-bottom__0px">
-			<label for="source" class="position__relative">
-				Source
-				<span class="bg__grey__light rounded__4px padding-x__4px position__absolute position--right__0px font__10px font__weight-400">required</span>
-			</label>
-			<select id="source" formControlName="source_id">
-				<option value="">Select source</option>
-				<option [value]="source.uid" *ngFor="let source of sources">{{ source.name }}</option>
-			</select>
-			<div class="input__error input__error__danger" *ngIf="subscriptonForm.get('source_id')?.touched && subscriptonForm.get('source_id')?.invalid">
-				<img src="assets/img/input-error-icon.svg" alt="input error icon" />
-				<span>Select or create a source</span>
+		<ng-container *ngIf="projectType === 'incoming'">
+			<div class="input margin-bottom__0px">
+				<label for="source" class="position__relative">
+					Source
+					<span class="bg__grey__light rounded__4px padding-x__4px position__absolute position--right__0px font__10px font__weight-400">required</span>
+				</label>
+				<select id="source" formControlName="source_id">
+					<option value="">Select source</option>
+					<option [value]="source.uid" *ngFor="let source of sources">{{ source.name }}</option>
+				</select>
+				<div class="input__error input__error__danger" *ngIf="subscriptonForm.get('source_id')?.touched && subscriptonForm.get('source_id')?.invalid">
+					<img src="assets/img/input-error-icon.svg" alt="input error icon" />
+					<span>Select or create a source</span>
+				</div>
 			</div>
-		</div>
-		<button class="button button__clear button--has-icon font__12px margin-top__4px margin-bottom__20px" type="button" (click)="showCreateSourceModal = true">
-			<svg width="14" height="14" class="margin-right__4px" fill="var(--primary-color)">
-				<use xlink:href="#plus-icon"></use>
-			</svg>
-			New Source
-		</button>
+			<button class="button button__clear button--has-icon font__12px margin-top__4px margin-bottom__20px" type="button" (click)="showCreateSourceModal = true">
+				<svg width="14" height="14" class="margin-right__4px" fill="var(--primary-color)">
+					<use xlink:href="#plus-icon"></use>
+				</svg>
+				New Source
+			</button>
+		</ng-container>
 
 		<div class="input margin-bottom__0px">
 			<label for="application" class="position__relative">
@@ -68,9 +72,9 @@
 	</section>
 
 	<div class="button-container flex flex__justify-end margin-top__32px">
-		<button class="button button__white padding-y__12px padding-x__28px rounded__8px margin-right__16px" type="button">Cancel</button>
+		<button class="button button__white padding-y__12px padding-x__28px rounded__8px margin-right__16px" type="button" (click)="onAction.emit({ action: 'cancel' })">Cancel</button>
 
-		<button class="button button__primary button--has-icon padding-y__12px rounded__8px" type="submit">
+		<button class="button button__primary button--has-icon padding-y__12px rounded__8px" type="submit" [disabled]="isCreatingSubscription">
 			Create Subscription
 			<svg width="24" height="24" class="margin-left__8px" fill="#FCFCFC">
 				<use xlink:href="#arrow-right-icon"></use>

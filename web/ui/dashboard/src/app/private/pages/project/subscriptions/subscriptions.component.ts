@@ -3,6 +3,7 @@ import { ActivatedRoute, Router } from '@angular/router';
 import { PAGINATION } from 'src/app/models/global.model';
 import { SUBSCRIPTION } from 'src/app/models/subscription';
 import { PrivateService } from 'src/app/private/private.service';
+import { GeneralService } from 'src/app/services/general/general.service';
 import { SubscriptionsService } from './subscriptions.service';
 
 @Component({
@@ -18,8 +19,8 @@ export class SubscriptionsComponent implements OnInit {
 	subscriptionsLoaders = [1, 2, 3, 4, 5];
 	isLoadindingSubscriptions = false;
 
-	constructor(private route: ActivatedRoute, private privateService: PrivateService, private router: Router, private subscriptionsService: SubscriptionsService) {
-		this.projectId = this.privateService.activeProjectId;
+	constructor(private route: ActivatedRoute, public privateService: PrivateService, private router: Router, private subscriptionsService: SubscriptionsService, private generalService: GeneralService) {
+		this.projectId = this.privateService.activeProjectDetails.uid;
 	}
 
 	async ngOnInit() {
@@ -38,5 +39,14 @@ export class SubscriptionsComponent implements OnInit {
 		} catch (error) {
 			this.isLoadindingSubscriptions = false;
 		}
+	}
+
+	closeModal() {
+		this.router.navigateByUrl('/projects/' + this.privateService.activeProjectDetails.uid + '/subscriptions');
+	}
+
+	createSubscription() {
+		this.router.navigateByUrl('/projects/' + this.privateService.activeProjectDetails.uid + '/subscriptions');
+		this.generalService.showNotification({ message: 'Subscription has been created successfully', style: 'success' });
 	}
 }
