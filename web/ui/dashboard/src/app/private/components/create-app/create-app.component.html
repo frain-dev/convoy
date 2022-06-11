@@ -16,8 +16,7 @@
 			<label for="app-description">Description</label>
 			<input type="text" id="app-description" formControlName="description" />
 		</div>
-	</div>
-	<div class="grid grid__col-2 grid--gap__20px">
+
 		<div class="input">
 			<label class="flex flex__align-items-center" for="app-email">
 				Support Email
@@ -71,18 +70,18 @@
 				</div>
 
 				<div class="input multiple">
-					<label class="flex flex__align-items-center" [for]="'tagInput' + i">
-						Events
-						<app-tooltip [size]="'small'" position="right" class="margin-left__4px">Add multiple events by separating them with commas.</app-tooltip>
-					</label>
+					<label class="flex flex__align-items-center" [for]="'tagInput' + i">Events Types</label>
 					<div class="input--multiple" (click)="focusInput(i)">
 						<div class="tag" *ngFor="let tag of getSingleEndpoint(i)?.events?.value">
-							{{ tag }}
-							<a (click)="removeEventTag(tag, i)">
-								<img src="/assets/img/close-icon-black.svg" alt="close icon" />
-							</a>
+							<div class="flex flex__align-items-center font__weight-400">{{ tag }}</div>
+							<button class="button button__clear button--has-icon" (click)="removeEventTag(tag, i)">
+								<img src="/assets/img/close-icon-black.svg" width="12px" class="margin-left__8px" alt="close icon" />
+							</button>
 						</div>
-						<input type="text" [id]="'tagInput' + i" (input)="addTag(i)" />
+						<input type="text" [id]="'tagInput' + i" (input)="addTag(i)" class="font__12px" autocomplete="off" />
+					</div>
+					<div class="input__error input__error__secondary">
+						<span>Separate event types with comma (,)</span>
 					</div>
 				</div>
 			</div>

@@ -61,6 +61,7 @@ export class CreateAppComponent implements OnInit {
 
 	removeEventTag(tag: string, i: number) {
 		this.eventTags[i] = this.eventTags[i].filter((e: string) => e !== tag);
+		(this.addNewAppForm.get('endpoints') as FormArray).controls[i].get('events')?.patchValue(this.eventTags[i]);
 	}
 
 	addTag(i: number) {
@@ -115,7 +116,7 @@ export class CreateAppComponent implements OnInit {
 				: await this.createAppService.createApp({ body: this.addNewAppForm.value });
 
 			if (!this.editAppMode) {
-				this.appUid = response.data.uid;
+				this.appUid = response?.data?.uid;
 				const endpointData = this.addNewAppForm.value.endpoints;
 				endpointData.forEach((item: any) => {
 					requests.push(this.addNewEndpoint(item));
