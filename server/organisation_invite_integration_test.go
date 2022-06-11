@@ -335,7 +335,7 @@ func (s *OrganisationInviteIntegrationTestSuite) Test_FindUserByInviteToken_Exis
 		Type:   auth.RoleAdmin,
 		Groups: []string{uuid.NewString()},
 		Apps:   nil,
-	}, primitive.NewDateTimeFromTime(time.Now().Add(time.Hour)))
+	}, primitive.NewDateTimeFromTime(time.Now().Add(time.Hour)), datastore.InviteStatusPending)
 	require.NoError(s.T(), err)
 
 	// Arrange.
@@ -366,7 +366,7 @@ func (s *OrganisationInviteIntegrationTestSuite) Test_FindUserByInviteToken_NewU
 		Type:   auth.RoleAdmin,
 		Groups: []string{uuid.NewString()},
 		Apps:   nil,
-	}, primitive.NewDateTimeFromTime(time.Now().Add(time.Hour)))
+	}, primitive.NewDateTimeFromTime(time.Now().Add(time.Hour)), datastore.InviteStatusPending)
 	require.NoError(s.T(), err)
 
 	// Arrange.
