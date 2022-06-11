@@ -55,8 +55,8 @@ func (a *applicationHandler) IngestEvent(w http.ResponseWriter, r *http.Request)
 		)
 	case datastore.APIKeyVerifier:
 		v = verifier.NewAPIKeyVerifier(
-			verifierConfig.ApiKey.APIKey,
-			verifierConfig.ApiKey.APIKeyHeader,
+			verifierConfig.ApiKey.HeaderName,
+			verifierConfig.ApiKey.HeaderValue,
 		)
 	default:
 		_ = render.Render(w, r, newErrorResponse("Source must have a valid verifier",

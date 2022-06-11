@@ -524,8 +524,8 @@ type BasicAuth struct {
 }
 
 type ApiKey struct {
-	APIKey       string `json:"key" bson:"key" valid:"required"`
-	APIKeyHeader string `json:"header" bson:"header" valid:"required"`
+	HeaderValue string `json:"header_value" bson:"header_value" valid:"required"`
+	HeaderName  string `json:"header_name" bson:"header_name" valid:"required"`
 }
 
 type Organisation struct {
