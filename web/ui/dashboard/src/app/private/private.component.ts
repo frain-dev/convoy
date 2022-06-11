@@ -41,6 +41,7 @@ export class PrivateComponent implements OnInit {
 			const response = await this.privateService.getOrganizations();
 			this.organisations = response.data.content;
 			const setOrg = localStorage.getItem('CONVOY_ORG');
+
 			if (!setOrg) {
 				this.selectOrganisation(this.organisations[0]);
 			} else {
