@@ -62,9 +62,7 @@
 					</h4>
 					<div class="flex flex__align-items-center">
 						<div class="tags margin-right__16px" *ngIf="subscription.type === 'outgoing'">
-							<span class="tag margin-right__8px">customer.created</span>
-							<span class="tag margin-right__8px">customer.created</span>
-							<span class="tag">customer.created</span>
+							<span *ngFor="let event of subscription?.filter_config?.event_types" class="tag margin-right__8px">{{ event }}</span>
 						</div>
 						<a class="button button__clear button--has-icon padding-right__16px" [routerLink]="'/projects/' + projectId + '/apps'">
 							<svg width="18" height="18" class="margin-left__8px">
@@ -77,7 +75,7 @@
 				<div class="flex flex__align-items-end flex__justify-between padding-bottom__8px padding-left__16px margin-top__8px" [ngClass]="{ border__bottom: subscription.type === 'incoming' }">
 					<div class="width__100">
 						<div class="color__grey font__10px margin-bottom__12px">App</div>
-						<div class="font__12px font__weight-500">App Name</div>
+						<div class="font__12px font__weight-500">{{ subscription?.app_metadata?.name }}</div>
 					</div>
 					<div class="width__100">
 						<span class="tag tag--Success font__12px font__weight-500">enabled</span>
@@ -146,13 +144,13 @@
 
 				<li class="list-item list-item__inline padding-right__24px">
 					<div class="width__50 font__14px font__weight-500">Endpoint</div>
-					<div class="width__50 font__14px font__weight-500 color__grey text--right">{{ activeSubscription?.endpoint }}</div>
+					<div class="width__50 font__14px font__weight-500 color__grey text--right long-text long-text__250px">{{ activeSubscription?.endpoint_metadata?.target_url }}</div>
 				</li>
 				<li class="list-item list-item__inline padding-right__24px">
 					<div class="width__50 font__14px font__weight-500">App Name</div>
-					<div class="width__50 font__14px font__weight-500 color__grey text--right">App</div>
+					<div class="width__50 font__14px font__weight-500 color__grey text--right">{{ activeSubscription?.app_metadata?.name }}</div>
 				</li>
-				<li class="list-item list-item__inline padding-right__24px">
+				<li class="list-item list-item__inline padding-right__24px" *ngIf="activeSubscription?.type === 'incoming'">
 					<div class="width__50 font__14px font__weight-500">Source</div>
 					<div class="width__50 font__14px font__weight-500 color__grey text--right">{{ activeSubscription?.source }}</div>
 				</li>
@@ -162,7 +160,8 @@
 				</li>
 			</ul>
 
-			<div class="button--container margin-top__40px margin-right__24px">
+			<!-- no endpoints yet  -->
+			<!-- <div class="button--container margin-top__40px margin-right__24px">
 				<button class="button button__danger button__white button--has-icon icon-right padding-x__12px padding-y__8px color__danger font__12px">
 					Delete Subscription
 					<svg width="18" height="18" class="margin-left__8px">
@@ -175,7 +174,7 @@
 						<use xlink:href="#edit-icon"></use>
 					</svg>
 				</button>
-			</div>
+			</div> -->
 		</div>
 
 		<div class="card flex flex__column flex__justify-center flex__align-items-center table--container" id="events-empty-state" *ngIf="!isLoadindingSubscriptions && subscriptions.content.length == 0">
@@ -234,6 +233,6 @@
 	</div>
 
 	<div class="modal--body padding-all__0px">
-		<app-create-subscription (onAction)="createSubscription()"></app-create-subscription>
+		<app-create-subscription (onAction)="createSubscription($event.action)"></app-create-subscription>
 	</div>
 </div>
