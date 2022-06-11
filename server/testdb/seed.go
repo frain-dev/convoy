@@ -3,8 +3,9 @@ package testdb
 import (
 	"context"
 	"fmt"
-	"github.com/dchest/uniuri"
 	"time"
+
+	"github.com/dchest/uniuri"
 
 	"github.com/frain-dev/convoy"
 	"github.com/frain-dev/convoy/auth"
@@ -444,7 +445,7 @@ func SeedSource(db datastore.DatabaseClient, g *datastore.Group, uid string) (*d
 		Type:    datastore.HTTPSource,
 		Verifier: &datastore.VerifierConfig{
 			Type: datastore.HMacVerifier,
-			HMac: datastore.HMac{
+			HMac: &datastore.HMac{
 				Header: "X-Convoy-Header",
 				Hash:   "SHA512",
 				Secret: "Convoy-Secret",

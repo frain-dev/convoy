@@ -129,6 +129,7 @@ func (s *SourceIntegrationTestSuite) Test_CreateSource() {
 		"verifier": {
 			"type": "hmac",
 			"hmac": {
+				"encoding": "base64",
 				"header": "X-Convoy-Header",
 				"hash": "SHA512",
 				"secret": "convoy-secret"
@@ -162,6 +163,7 @@ func (s *SourceIntegrationTestSuite) Test_CreateSource_NoName() {
 		"verifier": {
 			"type": "hmac",
 			"hmac": {
+				"encoding": "base64",
 				"header": "X-Convoy-Header",
 				"hash": "SHA512",
 				"secret": "convoy-secret"
@@ -188,6 +190,7 @@ func (s *SourceIntegrationTestSuite) Test_CreateSource_InvalidSourceType() {
 		"verifier": {
 			"type": "hmac",
 			"hmac": {
+				"encoding": "base64",
 				"header": "X-Convoy-Header",
 				"hash": "SHA512",
 				"secret": "convoy-secret"
@@ -223,6 +226,7 @@ func (s *SourceIntegrationTestSuite) Test_UpdateSource() {
 		"verifier": {
 			"type": "hmac",
 			"hmac": {
+				"encoding": "hex",
 				"header": "X-Convoy-Header",
 				"hash": "SHA512",
 				"secret": "convoy-secret"

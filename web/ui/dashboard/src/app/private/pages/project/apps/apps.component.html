@@ -93,10 +93,10 @@
 								<div>{{ app.updated_at | date }}</div>
 							</td>
 							<td>
-								<div>{{ app.events }}</div>
+								<div>{{ app.events || 0 }}</div>
 							</td>
 							<td>
-								<div>{{ app.endpoints.length }}</div>
+								<div>{{ app?.endpoints?.length || 0 }}</div>
 							</td>
 							<td>
 								<div>

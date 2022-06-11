@@ -190,7 +190,7 @@
 					</div>
 					<span class="bg__grey__light rounded__4px padding-x__4px position__absolute position--right__0px font__10px font__weight-400">required</span>
 				</label>
-				<div class="input--multiple">
+				<div class="input--multiple" (click)="focusInput()">
 					<div class="tag" *ngFor="let tag of eventTags">
 						{{ tag }}
 						<a (click)="removeEventTag(tag)">

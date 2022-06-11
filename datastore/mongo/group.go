@@ -94,6 +94,10 @@ func (db *groupRepo) UpdateGroup(ctx context.Context, o *datastore.Group) error 
 	}}}
 
 	_, err := db.inner.UpdateOne(ctx, filter, update)
+	if mongo.IsDuplicateKeyError(err) && isDuplicateNameIndex(err) {
+		return datastore.ErrDuplicateGroupName
+	}
+	
 	return err
 }
 

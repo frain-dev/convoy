@@ -32,6 +32,7 @@ func (a *applicationHandler) IngestEvent(w http.ResponseWriter, r *http.Request)
 	if source.Type != datastore.HTTPSource {
 		_ = render.Render(w, r, newErrorResponse("Source type needs to be HTTP",
 			http.StatusBadRequest))
+		return
 	}
 
 	// 3. Select verifier based of source config.
@@ -54,9 +55,13 @@ func (a *applicationHandler) IngestEvent(w http.ResponseWriter, r *http.Request)
 		)
 	case datastore.APIKeyVerifier:
 		v = verifier.NewAPIKeyVerifier(
-			verifierConfig.ApiKey.APIKey,
-			verifierConfig.ApiKey.APIKeyHeader,
+			verifierConfig.ApiKey.HeaderName,
+			verifierConfig.ApiKey.HeaderValue,
 		)
+	default:
+		_ = render.Render(w, r, newErrorResponse("Source must have a valid verifier",
+			http.StatusBadRequest))
+		return
 	}
 
 	// 3.1 On Failure
