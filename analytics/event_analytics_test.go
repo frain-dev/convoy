@@ -31,8 +31,10 @@ func Test_TrackEventAnalytics(t *testing.T) {
 			dbFn: func(ea *EventAnalytics) {
 				groupRepo := ea.groupRepo.(*mocks.MockGroupRepository)
 				eventRepo := ea.eventRepo.(*mocks.MockEventRepository)
+				orgRepo := ea.orgRepo.(*mocks.MockOrganisationRepository)
 				groupRepo.EXPECT().LoadGroups(gomock.Any(), gomock.Any()).Return([]*datastore.Group{{UID: "123456", Name: "test-group"}}, nil)
 				eventRepo.EXPECT().LoadEventsPaged(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(nil, datastore.PaginationData{}, nil)
+				orgRepo.EXPECT().FetchOrganisationByID(gomock.Any(), gomock.Any()).Return(&datastore.Organisation{UID: "123456", Name: "test-org"}, nil)
 			},
 		},
 

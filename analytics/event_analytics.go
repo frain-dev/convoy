@@ -39,7 +39,13 @@ func (ea *EventAnalytics) Track() error {
 			continue
 		}
 
-		err = ea.client.Export(ea.Name(), Event{"Count": pagination.Total, "Project": group.Name, "Source": ea.source})
+		org, err := ea.orgRepo.FetchOrganisationByID(ctx, group.OrganisationID)
+		if err != nil {
+			log.WithError(err).Error("failed to load fetch organisation")
+			continue
+		}
+
+		err = ea.client.Export(ea.Name(), Event{"Count": pagination.Total, "Project": group.Name, "Organization": org.Name, "Source": ea.source})
 		if err != nil {
 			log.WithError(err).Error("failed to load export metrics")
 			continue
