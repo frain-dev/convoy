@@ -125,6 +125,10 @@ export class AppDetailsComponent implements OnInit {
 		this.screenWidth > 1010 ? (this.shouldRenderSmallSize = false) : (this.shouldRenderSmallSize = true);
 	}
 
+	focusInput() {
+		document.getElementById('tagInput')?.focus();
+	}
+
 	@HostListener('window:resize', ['$event'])
 	onWindowResize() {
 		this.screenWidth = window.innerWidth;

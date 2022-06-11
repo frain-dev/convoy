@@ -168,13 +168,14 @@ var ErrOrgInviteNotFound = errors.New("organisation invite not found")
 var ErrOrgMemberNotFound = errors.New("organisation member not found")
 
 type Group struct {
-	ID         primitive.ObjectID `json:"-" bson:"_id"`
-	UID        string             `json:"uid" bson:"uid"`
-	Name       string             `json:"name" bson:"name"`
-	LogoURL    string             `json:"logo_url" bson:"logo_url"`
-	Type       GroupType          `json:"type" bson:"type"`
-	Config     *GroupConfig       `json:"config" bson:"config"`
-	Statistics *GroupStatistics   `json:"statistics" bson:"-"`
+	ID             primitive.ObjectID `json:"-" bson:"_id"`
+	UID            string             `json:"uid" bson:"uid"`
+	Name           string             `json:"name" bson:"name"`
+	LogoURL        string             `json:"logo_url" bson:"logo_url"`
+	OrganisationID string             `json:"organisation_id" bson:"organisation_id"`
+	Type           GroupType          `json:"type" bson:"type"`
+	Config         *GroupConfig       `json:"config" bson:"config"`
+	Statistics     *GroupStatistics   `json:"statistics" bson:"-"`
 
 	// TODO(subomi): refactor this into the Instance API.
 	RateLimit         int    `json:"rate_limit" bson:"rate_limit"`
@@ -505,27 +506,27 @@ type FilterConfiguration struct {
 }
 
 type VerifierConfig struct {
-	Type      VerifierType `json:"type,omitempty" bson:"type" valid:"supported_verifier~please provide a valid verifier type,optional"`
-	HMac      HMac         `json:"hmac" bson:"hmac"`
-	BasicAuth BasicAuth    `json:"basic_auth" bson:"basic_auth"`
-	ApiKey    ApiKey       `json:"api_key" bson:"api_key"`
+	Type      VerifierType `json:"type,omitempty" bson:"type" valid:"supported_verifier~please provide a valid verifier type,required"`
+	HMac      *HMac        `json:"hmac" bson:"hmac"`
+	BasicAuth *BasicAuth   `json:"basic_auth" bson:"basic_auth"`
+	ApiKey    *ApiKey      `json:"api_key" bson:"api_key"`
 }
 
 type HMac struct {
-	Header   string       `json:"header,omitempty" bson:"header"`
-	Hash     string       `json:"hash,omitempty" bson:"hash" valid:"supported_hash,optional"`
-	Secret   string       `json:"secret,omitempty" bson:"secret"`
-	Encoding EncodingType `json:"encoding,omitempty" bson:"encoding" valid:"supported_encoding~please provide a valid encoding type,optional"`
+	Header   string       `json:"header" bson:"header" valid:"required"`
+	Hash     string       `json:"hash" bson:"hash" valid:"supported_hash,required"`
+	Secret   string       `json:"secret" bson:"secret" valid:"required"`
+	Encoding EncodingType `json:"encoding" bson:"encoding" valid:"supported_encoding~please provide a valid encoding type,required"`
 }
 
 type BasicAuth struct {
-	UserName string `json:"username,omitempty" bson:"username"`
-	Password string `json:"password,omitempty" bson:"password"`
+	UserName string `json:"username" bson:"username" valid:"required" `
+	Password string `json:"password" bson:"password" valid:"required"`
 }
 
 type ApiKey struct {
-	APIKey       string `json:"key,omitempty" bson:"key"`
-	APIKeyHeader string `json:"header,omitempty" bson:"header"`
+	HeaderValue string `json:"header_value" bson:"header_value" valid:"required"`
+	HeaderName  string `json:"header_name" bson:"header_name" valid:"required"`
 }
 
 type Organisation struct {
@@ -545,10 +546,18 @@ type OrganisationMember struct {
 	OrganisationID string             `json:"organisation_id" bson:"organisation_id"`
 	UserID         string             `json:"user_id" bson:"user_id"`
 	Role           auth.Role          `json:"role" bson:"role"`
+	UserMetadata   *UserMetadata      `json:"user_metadata" bson:"-"`
 	DocumentStatus DocumentStatus     `json:"-" bson:"document_status"`
 	CreatedAt      primitive.DateTime `json:"created_at,omitempty" bson:"created_at,omitempty" swaggertype:"string"`
 	UpdatedAt      primitive.DateTime `json:"updated_at,omitempty" bson:"updated_at,omitempty" swaggertype:"string"`
 	DeletedAt      primitive.DateTime `json:"deleted_at,omitempty" bson:"deleted_at,omitempty" swaggertype:"string"`
+}
+
+type UserMetadata struct {
+	UserID    string `json:"-" bson:"user_id"`
+	FirstName string `json:"first_name" bson:"first_name"`
+	LastName  string `json:"last_name" bson:"last_name"`
+	Email     string `json:"email" bson:"email"`
 }
 
 type InviteStatus string

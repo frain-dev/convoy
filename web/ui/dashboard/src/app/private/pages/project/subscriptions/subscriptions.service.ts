@@ -25,4 +25,19 @@ export class SubscriptionsService {
 			}
 		});
 	}
+
+	deleteSubscription(subscriptionId: string): Promise<HTTP_RESPONSE> {
+		return new Promise(async (resolve, reject) => {
+			try {
+				const sourceResponse = await this.http.request({
+					url: `${this.privateService.urlFactory('org_project')}/subscriptions/${subscriptionId}`,
+					method: 'delete'
+				});
+
+				return resolve(sourceResponse);
+			} catch (error: any) {
+				return reject(error);
+			}
+		});
+	}
 }
