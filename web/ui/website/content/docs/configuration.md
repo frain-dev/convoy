@@ -19,8 +19,8 @@ An example configuration is shown below:
 
 ```json[Sample Config]
 {
-  "environment": "development",
-  "base_url": "localhost:5005",
+  "envihronment": "development",
+  "host": "localhost:5005",
   "multiple_tenants": false,
   "database": {
     "type": "mongodb",
@@ -239,7 +239,7 @@ Alternatively, you can configure Convoy using the following environment variable
 - `SSL`
 - `PORT`
 - `WORKER_PORT`
-- `CONVOY_BASE_URL`
+- `CONVOY_HOST`
 - `CONVOY_DB_TYPE`
 - `CONVOY_DB_DSN`
 - `CONVOY_SENTRY_DSN`
