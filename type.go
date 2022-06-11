@@ -67,12 +67,13 @@ func GetVersion() string {
 }
 
 const (
-	EventProcessor       TaskName = "EventProcessor"
-	DeadLetterProcessor  TaskName = "DeadLetterProcessor"
-	CreateEventProcessor TaskName = "CreateEventProcessor"
-	ApplicationsCacheKey CacheKey = "applications"
-	GroupsCacheKey       CacheKey = "groups"
-	TokenCacheKey        CacheKey = "tokens"
+	EventProcessor        TaskName = "EventProcessor"
+	DeadLetterProcessor   TaskName = "DeadLetterProcessor"
+	CreateEventProcessor  TaskName = "CreateEventProcessor"
+	NotificationProcessor TaskName = "NotificationProcessor"
+	ApplicationsCacheKey  CacheKey = "applications"
+	GroupsCacheKey        CacheKey = "groups"
+	TokenCacheKey         CacheKey = "tokens"
 )
 
 //queues

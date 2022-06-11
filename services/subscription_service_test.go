@@ -15,7 +15,9 @@ import (
 
 func provideSubsctiptionService(ctrl *gomock.Controller) *SubcriptionService {
 	subRepo := mocks.NewMockSubscriptionRepository(ctrl)
-	return NewSubscriptionService(subRepo)
+	appRepo := mocks.NewMockApplicationRepository(ctrl)
+	sourceRepo := mocks.NewMockSourceRepository(ctrl)
+	return NewSubscriptionService(subRepo, appRepo, sourceRepo)
 }
 
 func TestSubscription_CreateSubscription(t *testing.T) {
@@ -255,8 +257,72 @@ func TestSubscription_LoadSubscriptionsPaged(t *testing.T) {
 				},
 			},
 			wantSubscription: []datastore.Subscription{
-				{UID: "123"},
-				{UID: "123456"},
+				{
+					UID: "123",
+					Source: &datastore.Source{
+						UID:  "123",
+						Name: "some name",
+						Type: datastore.HTTPSource,
+						Verifier: &datastore.VerifierConfig{
+							Type: datastore.APIKeyVerifier,
+							ApiKey: datastore.ApiKey{
+								APIKey:       "123",
+								APIKeyHeader: "header",
+							},
+						},
+						GroupID:    "123",
+						MaskID:     "mask",
+						IsDisabled: false,
+					},
+					App: &datastore.Application{
+						UID:          "abc",
+						Title:        "Title",
+						GroupID:      "123",
+						SupportEmail: "SupportEmail",
+					},
+					Endpoint: &datastore.Endpoint{
+						UID:               "1234",
+						TargetURL:         "http://localhost.com",
+						DocumentStatus:    "Active",
+						Secret:            "Secret",
+						HttpTimeout:       "30s",
+						RateLimit:         10,
+						RateLimitDuration: "1h",
+					},
+				},
+				{
+					UID: "123456",
+					Source: &datastore.Source{
+						UID:  "123",
+						Name: "some name",
+						Type: datastore.HTTPSource,
+						Verifier: &datastore.VerifierConfig{
+							Type: datastore.APIKeyVerifier,
+							ApiKey: datastore.ApiKey{
+								APIKey:       "123",
+								APIKeyHeader: "header",
+							},
+						},
+						GroupID:    "123",
+						MaskID:     "mask",
+						IsDisabled: false,
+					},
+					App: &datastore.Application{
+						UID:          "abc",
+						Title:        "Title",
+						GroupID:      "123",
+						SupportEmail: "SupportEmail",
+					},
+					Endpoint: &datastore.Endpoint{
+						UID:               "1234",
+						TargetURL:         "http://localhost.com",
+						DocumentStatus:    "Active",
+						Secret:            "Secret",
+						HttpTimeout:       "30s",
+						RateLimit:         10,
+						RateLimitDuration: "1h",
+					},
+				},
 			},
 			wantPaginationData: datastore.PaginationData{
 				Total:     2,
@@ -281,13 +347,49 @@ func TestSubscription_LoadSubscriptionsPaged(t *testing.T) {
 						Next:      2,
 						TotalPage: 3,
 					}, nil)
+
+				ap, _ := ss.appRepo.(*mocks.MockApplicationRepository)
+				ap.EXPECT().FindApplicationByID(gomock.Any(), gomock.Any()).Return(&datastore.Application{
+					UID:          "abc",
+					Title:        "Title",
+					GroupID:      "123",
+					SupportEmail: "SupportEmail",
+				}, nil).Times(1)
+
+				ev, _ := ss.sourceRepo.(*mocks.MockSourceRepository)
+				ev.EXPECT().FindSourceByID(gomock.Any(), gomock.Any(), gomock.Any()).Return(&datastore.Source{
+					UID:  "123",
+					Name: "some name",
+					Type: datastore.HTTPSource,
+					Verifier: &datastore.VerifierConfig{
+						Type: datastore.APIKeyVerifier,
+						ApiKey: datastore.ApiKey{
+							APIKey:       "123",
+							APIKeyHeader: "header",
+						},
+					},
+					GroupID:    "123",
+					MaskID:     "mask",
+					IsDisabled: false,
+				}, nil).Times(1)
+
+				en, _ := ss.appRepo.(*mocks.MockApplicationRepository)
+				en.EXPECT().FindApplicationEndpointByID(gomock.Any(), gomock.Any(), gomock.Any()).Return(&datastore.Endpoint{
+					UID:               "1234",
+					TargetURL:         "http://localhost.com",
+					DocumentStatus:    "Active",
+					Secret:            "Secret",
+					HttpTimeout:       "30s",
+					RateLimit:         10,
+					RateLimitDuration: "1h",
+				}, nil).Times(1)
 			},
 		},
 		{
 			name: "should_fail_load_sources",
 			args: args{
 				ctx:   ctx,
-				group: &datastore.Group{UID: "12345"},
+				group: &datastore.Group{UID: "123"},
 				pageable: datastore.Pageable{
 					Page:    1,
 					PerPage: 10,
@@ -309,7 +411,7 @@ func TestSubscription_LoadSubscriptionsPaged(t *testing.T) {
 			name: "should_load_sources_empty_list",
 			args: args{
 				ctx:   ctx,
-				group: &datastore.Group{UID: "12345"},
+				group: &datastore.Group{UID: "123"},
 				pageable: datastore.Pageable{
 					Page:    1,
 					PerPage: 10,

@@ -34,7 +34,7 @@ export class AppsComponent implements OnInit {
 	appsPage: number = 1;
 	filteredApps!: APP[];
 
-	constructor(private router: Router, private route: ActivatedRoute, private generalService: GeneralService, private privateService: PrivateService, private location: Location) {}
+	constructor(private router: Router, private route: ActivatedRoute, private generalService: GeneralService, public privateService: PrivateService, private location: Location) {}
 
 	async ngOnInit() {
 		await this.getApps();
@@ -55,7 +55,7 @@ export class AppsComponent implements OnInit {
 
 	loadEventsFromAppsTable(event: any, appId: string) {
 		event.stopPropagation();
-		const projectId = this.privateService.activeProjectId;
+		const projectId = this.privateService.activeProjectDetails.uid;
 		this.router.navigate(['/projects/' + projectId + '/events'], { queryParams: { eventsApp: appId } });
 	}
 

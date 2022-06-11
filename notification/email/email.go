@@ -14,6 +14,17 @@ type Email struct {
 	s smtp.SmtpClient
 }
 
+type TemplateName string
+
+const (
+	TemplateEndpointUpdate     TemplateName = "endpoint.update"
+	TemplateOrganisationInvite TemplateName = "organisation.invite"
+)
+
+func (t TemplateName) String() string {
+	return string(t)
+}
+
 func NewEmailNotificationSender(smtpCfg *config.SMTPConfiguration) (notification.Sender, error) {
 	s, err := smtp.New(smtpCfg)
 	if err != nil {
@@ -35,7 +46,7 @@ func (e *Email) SendNotification(ctx context.Context, n *notification.Notificati
 	}
 
 	newEmail := em.NewEmail(e.s)
-	err := newEmail.Build("endpoint.update", payload)
+	err := newEmail.Build(n.EmailTemplateName, payload)
 	if err != nil {
 		return err
 	}

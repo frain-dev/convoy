@@ -2,6 +2,8 @@ import { Location } from '@angular/common';
 import { Component, HostListener, OnInit } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
 import { APP, ENDPOINT } from 'src/app/models/app.model';
+import { PAGINATION } from 'src/app/models/global.model';
+import { PrivateService } from 'src/app/private/private.service';
 import { GeneralService } from 'src/app/services/general/general.service';
 import { AppDetailsService } from './app-details.service';
 
@@ -28,8 +30,16 @@ export class AppDetailsComponent implements OnInit {
 	appPortalLink!: string;
 	endpointSecretKey!: string;
 	appsDetailsItem!: APP;
+	apps!: { pagination: PAGINATION; content: APP[] };
 	selectedEndpoint!: ENDPOINT;
-	constructor(private appDetailsService: AppDetailsService, private generalService: GeneralService, private route: ActivatedRoute, private location: Location, private router: Router) {}
+	constructor(
+		private appDetailsService: AppDetailsService,
+		private generalService: GeneralService,
+		private route: ActivatedRoute,
+		private location: Location,
+		private router: Router,
+		public privateService: PrivateService
+	) {}
 
 	async ngOnInit() {
 		await Promise.all([this.checkScreenSize(), this.getAppId()]);

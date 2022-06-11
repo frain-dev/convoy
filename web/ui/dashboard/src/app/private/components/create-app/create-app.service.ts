@@ -7,14 +7,13 @@ import { PrivateService } from '../../private.service';
 	providedIn: 'root'
 })
 export class CreateAppService {
-	projectId: string = this.privateService.activeProjectId;
 	constructor(private http: HttpService, private privateService: PrivateService) {}
 
 	async updateApp(requestDetails: { appId: string; body: any }): Promise<HTTP_RESPONSE> {
 		return new Promise(async (resolve, reject) => {
 			try {
 				const response = await this.http.request({
-					url: `/apps/${requestDetails.appId}?groupId=${this.projectId}`,
+					url: `${this.privateService.urlFactory('org_project')}/apps/${requestDetails.appId}`,
 					method: 'put',
 					body: requestDetails.body
 				});
@@ -30,7 +29,7 @@ export class CreateAppService {
 		return new Promise(async (resolve, reject) => {
 			try {
 				const response = await this.http.request({
-					url: `/apps?groupId=${this.projectId}`,
+					url: `${this.privateService.urlFactory('org_project')}/apps`,
 					method: 'post',
 					body: requestDetails.body
 				});
@@ -46,7 +45,7 @@ export class CreateAppService {
 		return new Promise(async (resolve, reject) => {
 			try {
 				const response = await this.http.request({
-					url: `/apps/${requestDetails.appId}/endpoints?groupId=${this.projectId}`,
+					url: `${this.privateService.urlFactory('org_project')}/apps/${requestDetails.appId}/endpoints`,
 					body: requestDetails.body,
 					method: 'post'
 				});
