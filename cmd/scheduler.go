@@ -30,16 +30,8 @@ func addSchedulerCommand(a *app) *cobra.Command {
 			}
 			ctx := context.Background()
 
-			// taskName := convoy.TaskName("example-schedule")
-
 			//initialize scheduler
 			s := worker.NewScheduler(a.queue)
-
-			//inititalize task handler
-			// handler := task.TestScheduleTask()
-
-			//register task
-			// s.RegisterTask(cronspec, taskName, handler)
 
 			// Start scheduler
 			s.Start()
