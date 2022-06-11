@@ -61,7 +61,7 @@
 						<span [class]="'margin-left__4px tag' + ' tag--' + subscription.status">{{ subscription.status }}</span>
 					</h4>
 					<div class="flex flex__align-items-center">
-						<div class="tags margin-right__16px" *ngIf="subscription.type === 'outgoing'">
+						<div class="tags margin-right__16px">
 							<span *ngFor="let event of subscription?.filter_config?.event_types" class="tag margin-right__8px">{{ event }}</span>
 						</div>
 
@@ -84,7 +84,7 @@
 					<div class="width__100">
 						<div class="font__12px font__weight-500 position__relative">
 							Endpoint Secret
-							<button class="button button__clear button--has-icon position__absolute" (click)="copyText(subscription.endpoint_metadata.secret, subscription.name)">
+							<button class="button button__clear button--has-icon position__absolute" (click)="copyText(subscription.endpoint_metadata.secret)">
 								<img src="/assets/img/copy-icon.svg" width="16px" alt="copy icon" />
 							</button>
 						</div>
@@ -185,12 +185,16 @@
 						<use xlink:href="#delete-icon"></use>
 					</svg>
 				</button>
-				<button class="button button__primary button--has-icon icon-right padding-x__24px padding-y__8px font__12px margin-left__24px">
+
+				<a
+					[routerLink]="'/projects/' + projectId + '/subscriptions/' + activeSubscription?.uid"
+					class="button button__primary button--has-icon icon-right padding-x__24px padding-y__8px font__12px margin-left__24px"
+				>
 					Edit
 					<svg width="18" height="18" class="margin-left__8px">
 						<use xlink:href="#edit-icon"></use>
 					</svg>
-				</button>
+				</a>
 			</div>
 		</div>
 
@@ -228,7 +232,7 @@
 	</button>
 </div>
 
-<div class="modal modal__full" *ngIf="shouldShowCreateSubscriptionModal">
+<div class="modal modal__full" *ngIf="shouldShowCreateSubscriptionModal || showUpdateSubscription">
 	<div class="modal--head">
 		<div class="flex flex__align-items-center flex__justify-between width__100">
 			<div class="modal--head--left flex flex__align-items-center">
@@ -239,7 +243,7 @@
 				>
 					<img src="/assets/img/modal-close-icon.svg" alt="close icon" />
 				</a>
-				<h2 class="font__16px font__weight-600">Create Subscription</h2>
+				<h2 class="font__16px font__weight-600">{{ showUpdateSubscription ? 'Update Subscription' : 'Create Subscription' }}</h2>
 			</div>
 
 			<a class="button--has-icon icon-left" target="_blank" href="https://getconvoy.io/docs" rel="noreferrer">
@@ -250,6 +254,6 @@
 	</div>
 
 	<div class="modal--body padding-all__0px">
-		<app-create-subscription (onAction)="createSubscription($event.action)"></app-create-subscription>
+		<app-create-subscription (onAction)="createSubscription($event.action)" [action]="showUpdateSubscription ? 'update' : 'create'"></app-create-subscription>
 	</div>
 </div>
