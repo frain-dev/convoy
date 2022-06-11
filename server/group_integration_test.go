@@ -190,7 +190,7 @@ func (s *GroupIntegrationTestSuite) TestCreateGroup() {
 	require.Equal(s.T(), 5000, respGroup.Group.RateLimit)
 	require.Equal(s.T(), "1m", respGroup.Group.RateLimitDuration)
 	require.Equal(s.T(), "test-group", respGroup.Group.Name)
-	require.Equal(s.T(), "test-group's default key'", respGroup.APIKey.Name)
+	require.Equal(s.T(), "test-group's default key", respGroup.APIKey.Name)
 
 	require.Equal(s.T(), auth.RoleSuperUser, respGroup.APIKey.Role.Type)
 	require.Equal(s.T(), 0, respGroup.APIKey.ExpiresAt)

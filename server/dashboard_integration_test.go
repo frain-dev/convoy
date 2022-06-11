@@ -56,7 +56,7 @@ func (s *DashboardIntegrationTestSuite) SetupTest() {
 	s.DefaultOrg = org
 
 	// Setup Default Group.
-	s.DefaultGroup, _ = testdb.SeedDefaultGroup(s.DB, "")
+	s.DefaultGroup, _ = testdb.SeedDefaultGroup(s.DB, s.DefaultOrg.UID)
 
 	s.AuthenticatorFn = authenticateRequest(&models.LoginUser{
 		Username: user.Email,
@@ -75,23 +75,10 @@ func (s *DashboardIntegrationTestSuite) TearDownTest() {
 }
 
 func (s *DashboardIntegrationTestSuite) TestGetDashboardSummary() {
-	group := &datastore.Group{
-		UID:               uuid.New().String(),
-		Name:              "test-group",
-		RateLimit:         3000,
-		RateLimitDuration: "1m",
-		CreatedAt:         primitive.NewDateTimeFromTime(time.Now()),
-		UpdatedAt:         primitive.NewDateTimeFromTime(time.Now()),
-		DocumentStatus:    datastore.ActiveDocumentStatus,
-	}
-
 	ctx := context.Background()
-	err := s.DB.GroupRepo().CreateGroup(ctx, group)
-	require.NoError(s.T(), err)
-
 	application := &datastore.Application{
 		UID:            "abc",
-		GroupID:        group.UID,
+		GroupID:        s.DefaultGroup.UID,
 		Title:          "test-app",
 		SupportEmail:   "test@suport.com",
 		Endpoints:      []datastore.Endpoint{},
@@ -100,7 +87,7 @@ func (s *DashboardIntegrationTestSuite) TestGetDashboardSummary() {
 		DocumentStatus: datastore.ActiveDocumentStatus,
 	}
 
-	err = s.DB.AppRepo().CreateApplication(ctx, application, application.GroupID)
+	err := s.DB.AppRepo().CreateApplication(ctx, application, application.GroupID)
 	require.NoError(s.T(), err)
 
 	events := []datastore.Event{
@@ -110,7 +97,7 @@ func (s *DashboardIntegrationTestSuite) TestGetDashboardSummary() {
 			MatchedEndpoints: 1,
 			ProviderID:       "provider_id",
 			Data:             json.RawMessage(`{"data":"12345"}`),
-			GroupID:          group.UID,
+			GroupID:          s.DefaultGroup.UID,
 			AppID:            application.UID,
 			CreatedAt:        primitive.NewDateTimeFromTime(time.Date(2021, time.January, 1, 1, 1, 1, 0, time.UTC)),
 			UpdatedAt:        primitive.NewDateTimeFromTime(time.Date(2021, time.January, 1, 1, 1, 1, 0, time.UTC)),
@@ -122,7 +109,7 @@ func (s *DashboardIntegrationTestSuite) TestGetDashboardSummary() {
 			MatchedEndpoints: 1,
 			ProviderID:       "provider_id",
 			Data:             json.RawMessage(`{"data":"12345"}`),
-			GroupID:          group.UID,
+			GroupID:          s.DefaultGroup.UID,
 			AppID:            application.UID,
 			CreatedAt:        primitive.NewDateTimeFromTime(time.Date(2021, time.January, 10, 1, 1, 1, 0, time.UTC)),
 			UpdatedAt:        primitive.NewDateTimeFromTime(time.Date(2021, time.January, 10, 1, 1, 1, 0, time.UTC)),
@@ -134,7 +121,7 @@ func (s *DashboardIntegrationTestSuite) TestGetDashboardSummary() {
 			MatchedEndpoints: 1,
 			ProviderID:       "provider_id",
 			Data:             json.RawMessage(`{"data":"12345"}`),
-			GroupID:          group.UID,
+			GroupID:          s.DefaultGroup.UID,
 			AppID:            application.UID,
 			CreatedAt:        primitive.NewDateTimeFromTime(time.Date(2022, time.March, 20, 1, 1, 1, 0, time.UTC)),
 			UpdatedAt:        primitive.NewDateTimeFromTime(time.Date(2022, time.March, 20, 1, 1, 1, 0, time.UTC)),
@@ -146,7 +133,7 @@ func (s *DashboardIntegrationTestSuite) TestGetDashboardSummary() {
 			MatchedEndpoints: 1,
 			ProviderID:       "provider_id",
 			Data:             json.RawMessage(`{"data":"12345"}`),
-			GroupID:          group.UID,
+			GroupID:          s.DefaultGroup.UID,
 			AppID:            application.UID,
 			CreatedAt:        primitive.NewDateTimeFromTime(time.Date(2022, time.March, 20, 1, 1, 1, 0, time.UTC)),
 			UpdatedAt:        primitive.NewDateTimeFromTime(time.Date(2022, time.March, 20, 1, 1, 1, 0, time.UTC)),
@@ -158,7 +145,7 @@ func (s *DashboardIntegrationTestSuite) TestGetDashboardSummary() {
 			MatchedEndpoints: 1,
 			ProviderID:       "provider_id",
 			Data:             json.RawMessage(`{"data":"12345"}`),
-			GroupID:          group.UID,
+			GroupID:          s.DefaultGroup.UID,
 			AppID:            application.UID,
 			CreatedAt:        primitive.NewDateTimeFromTime(time.Date(2022, time.March, 20, 1, 1, 1, 0, time.UTC)),
 			UpdatedAt:        primitive.NewDateTimeFromTime(time.Date(2022, time.March, 20, 1, 1, 1, 0, time.UTC)),
@@ -170,7 +157,7 @@ func (s *DashboardIntegrationTestSuite) TestGetDashboardSummary() {
 			MatchedEndpoints: 1,
 			ProviderID:       "provider_id",
 			Data:             json.RawMessage(`{"data":"12345"}`),
-			GroupID:          group.UID,
+			GroupID:          s.DefaultGroup.UID,
 			AppID:            application.UID,
 			CreatedAt:        primitive.NewDateTimeFromTime(time.Date(2022, time.March, 20, 1, 1, 1, 0, time.UTC)),
 			UpdatedAt:        primitive.NewDateTimeFromTime(time.Date(2022, time.March, 20, 1, 1, 1, 0, time.UTC)),
@@ -201,7 +188,7 @@ func (s *DashboardIntegrationTestSuite) TestGetDashboardSummary() {
 			method:     http.MethodGet,
 			statusCode: http.StatusOK,
 			urlQuery: urlQuery{
-				groupID:   group.UID,
+				groupID:   s.DefaultGroup.UID,
 				startDate: "2021-01-01T00:00:00",
 				endDate:   "2021-01-30T00:00:00",
 				Type:      "yearly",
@@ -212,7 +199,7 @@ func (s *DashboardIntegrationTestSuite) TestGetDashboardSummary() {
 			method:     http.MethodGet,
 			statusCode: http.StatusOK,
 			urlQuery: urlQuery{
-				groupID:   group.UID,
+				groupID:   s.DefaultGroup.UID,
 				startDate: "2021-01-01T00:00:00",
 				endDate:   "2022-12-27T00:00:00",
 				Type:      "monthly",
@@ -223,7 +210,7 @@ func (s *DashboardIntegrationTestSuite) TestGetDashboardSummary() {
 			method:     http.MethodGet,
 			statusCode: http.StatusOK,
 			urlQuery: urlQuery{
-				groupID:   group.UID,
+				groupID:   s.DefaultGroup.UID,
 				startDate: "2021-01-01T00:00:00",
 				endDate:   "2022-12-27T00:00:00",
 				Type:      "weekly",
@@ -234,7 +221,7 @@ func (s *DashboardIntegrationTestSuite) TestGetDashboardSummary() {
 			method:     http.MethodGet,
 			statusCode: http.StatusOK,
 			urlQuery: urlQuery{
-				groupID:   group.UID,
+				groupID:   s.DefaultGroup.UID,
 				startDate: "2021-01-01T00:00:00",
 				endDate:   "2022-12-27T00:00:00",
 				Type:      "daily",
@@ -245,7 +232,7 @@ func (s *DashboardIntegrationTestSuite) TestGetDashboardSummary() {
 			method:     http.MethodGet,
 			statusCode: http.StatusBadRequest,
 			urlQuery: urlQuery{
-				groupID: group.UID,
+				groupID: s.DefaultGroup.UID,
 				endDate: "2022-12-27T00:00:00",
 				Type:    "daily",
 			},
@@ -255,7 +242,7 @@ func (s *DashboardIntegrationTestSuite) TestGetDashboardSummary() {
 			method:     http.MethodGet,
 			statusCode: http.StatusBadRequest,
 			urlQuery: urlQuery{
-				groupID:   group.UID,
+				groupID:   s.DefaultGroup.UID,
 				startDate: "2021-01-01",
 				endDate:   "2022-12-27T00:00:00",
 				Type:      "daily",
@@ -266,7 +253,7 @@ func (s *DashboardIntegrationTestSuite) TestGetDashboardSummary() {
 			method:     http.MethodGet,
 			statusCode: http.StatusBadRequest,
 			urlQuery: urlQuery{
-				groupID:   group.UID,
+				groupID:   s.DefaultGroup.UID,
 				startDate: "2021-01-01T00:00:00",
 				endDate:   "2022-12-27T00:00:00",
 				Type:      "abc",
@@ -277,7 +264,7 @@ func (s *DashboardIntegrationTestSuite) TestGetDashboardSummary() {
 			method:     http.MethodGet,
 			statusCode: http.StatusBadRequest,
 			urlQuery: urlQuery{
-				groupID:   group.UID,
+				groupID:   s.DefaultGroup.UID,
 				startDate: "2021-01-01T00:00:00",
 				endDate:   "2020-12-27T00:00:00",
 				Type:      "daily",
