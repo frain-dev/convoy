@@ -505,27 +505,27 @@ type FilterConfiguration struct {
 }
 
 type VerifierConfig struct {
-	Type      VerifierType `json:"type,omitempty" bson:"type" valid:"supported_verifier~please provide a valid verifier type,optional"`
-	HMac      HMac         `json:"hmac" bson:"hmac"`
-	BasicAuth BasicAuth    `json:"basic_auth" bson:"basic_auth"`
-	ApiKey    ApiKey       `json:"api_key" bson:"api_key"`
+	Type      VerifierType `json:"type,omitempty" bson:"type" valid:"supported_verifier~please provide a valid verifier type,required"`
+	HMac      *HMac        `json:"hmac" bson:"hmac"`
+	BasicAuth *BasicAuth   `json:"basic_auth" bson:"basic_auth"`
+	ApiKey    *ApiKey      `json:"api_key" bson:"api_key"`
 }
 
 type HMac struct {
-	Header   string       `json:"header,omitempty" bson:"header"`
-	Hash     string       `json:"hash,omitempty" bson:"hash" valid:"supported_hash,optional"`
-	Secret   string       `json:"secret,omitempty" bson:"secret"`
-	Encoding EncodingType `json:"encoding,omitempty" bson:"encoding" valid:"supported_encoding~please provide a valid encoding type,optional"`
+	Header   string       `json:"header" bson:"header" valid:"required"`
+	Hash     string       `json:"hash" bson:"hash" valid:"supported_hash,required"`
+	Secret   string       `json:"secret" bson:"secret" valid:"required"`
+	Encoding EncodingType `json:"encoding" bson:"encoding" valid:"supported_encoding~please provide a valid encoding type,required"`
 }
 
 type BasicAuth struct {
-	UserName string `json:"username,omitempty" bson:"username"`
-	Password string `json:"password,omitempty" bson:"password"`
+	UserName string `json:"username" bson:"username" valid:"required" `
+	Password string `json:"password" bson:"password" valid:"required"`
 }
 
 type ApiKey struct {
-	APIKey       string `json:"key,omitempty" bson:"key"`
-	APIKeyHeader string `json:"header,omitempty" bson:"header"`
+	HeaderValue string `json:"header_value" bson:"header_value" valid:"required"`
+	HeaderName  string `json:"header_name" bson:"header_name" valid:"required"`
 }
 
 type Organisation struct {

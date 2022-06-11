@@ -7160,10 +7160,10 @@
         "datastore.ApiKey": {
             "type": "object",
             "properties": {
-                "header": {
+                "header_name": {
                     "type": "string"
                 },
-                "key": {
+                "header_value": {
                     "type": "string"
                 }
             }
