@@ -21,7 +21,6 @@ var src = rand.NewSource(time.Now().UnixNano())
 
 func GenerateRandomString(n int) (string, error) {
 	b := make([]byte, n)
-	// A src.Int63() generates 63 random bits, enough for letterIdxMax characters!
 	for i, cache, remain := n-1, src.Int63(), letterIdxMax; i >= 0; {
 		if remain == 0 {
 			cache, remain = src.Int63(), letterIdxMax
