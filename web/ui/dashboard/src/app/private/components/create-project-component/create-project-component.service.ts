@@ -19,7 +19,7 @@ export class CreateProjectComponentService {
 	}): Promise<HTTP_RESPONSE> {
 		try {
 			const response = await this.http.request({
-				url: `/groups`,
+				url: `${this.privateService.urlFactory('org')}/groups`,
 				body: requestDetails,
 				method: 'post'
 			});
@@ -39,7 +39,7 @@ export class CreateProjectComponentService {
 	}): Promise<HTTP_RESPONSE> {
 		try {
 			const response = await this.http.request({
-				url: `/groups/${this.privateService.activeProjectDetails.uid}`,
+				url: `${this.privateService.urlFactory('org')}/groups/${this.privateService.activeProjectDetails.uid}`,
 				body: requestDetails,
 				method: 'put'
 			});

@@ -15,7 +15,7 @@ export class AppDetailsService {
 		return new Promise(async (resolve, reject) => {
 			try {
 				const response = await this.http.request({
-					url: `/apps?groupId=${this.projectId}&sort=AESC&page=1&perPage=50`,
+					url: `${this.privateService.urlFactory('org_project')}/apps?&sort=AESC&page=1&perPage=50`,
 					method: 'get'
 				});
 
@@ -30,7 +30,7 @@ export class AppDetailsService {
 		return new Promise(async (resolve, reject) => {
 			try {
 				const response = await this.http.request({
-					url: `/apps/${requestDetails.appId}/keys?groupId=${this.projectId}`,
+					url: `${this.privateService.urlFactory('org_project')}/apps/${requestDetails.appId}/keys`,
 					method: 'post',
 					body: {}
 				});
@@ -46,7 +46,7 @@ export class AppDetailsService {
 		return new Promise(async (resolve, reject) => {
 			try {
 				const response = await this.http.request({
-					url: `/apps/${appId}?groupId=${this.projectId}`,
+					url: `${this.privateService.urlFactory('org_project')}/apps/${appId}`,
 					method: 'get'
 				});
 
@@ -61,7 +61,7 @@ export class AppDetailsService {
 		return new Promise(async (resolve, reject) => {
 			try {
 				const response = await this.http.request({
-					url: `/apps/${requestDetails.appId}/endpoints?groupId=${this.projectId}`,
+					url: `${this.privateService.urlFactory('org_project')}/apps/${requestDetails.appId}/endpoints`,
 					body: requestDetails.body,
 					method: 'post'
 				});
@@ -77,7 +77,7 @@ export class AppDetailsService {
 		return new Promise(async (resolve, reject) => {
 			try {
 				const response = await this.http.request({
-					url: `/events?groupId=${this.projectId}`,
+					url: `${this.privateService.urlFactory('org_project')}/events`,
 					body: requestDetails.body,
 					method: 'post'
 				});

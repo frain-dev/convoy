@@ -8,15 +8,13 @@ import { PrivateService } from '../../private.service';
 	providedIn: 'root'
 })
 export class CreateSourceService {
-	projectId: string = this.privateService.activeProjectDetails.uid;
-
 	constructor(private http: HttpService, private privateService: PrivateService) {}
 
 	createSource(requestData: { sourceData: SOURCE }): Promise<HTTP_RESPONSE> {
 		return new Promise(async (resolve, reject) => {
 			try {
 				const sourceResponse = await this.http.request({
-					url: `/sources?groupId=${this.projectId}`,
+					url: `${this.privateService.urlFactory('org_project')}/sources`,
 					method: 'post',
 					body: requestData.sourceData
 				});

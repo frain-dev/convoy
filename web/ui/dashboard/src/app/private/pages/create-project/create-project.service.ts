@@ -1,12 +1,13 @@
 import { Injectable } from '@angular/core';
 import { HTTP_RESPONSE } from 'src/app/models/http.model';
 import { HttpService } from 'src/app/services/http/http.service';
+import { PrivateService } from '../../private.service';
 
 @Injectable({
 	providedIn: 'root'
 })
 export class CreateProjectService {
-	constructor(private http: HttpService) {}
+	constructor(private http: HttpService, private privateService: PrivateService) {}
 
 	async createProject(requestDetails: {
 		name: string;
@@ -18,7 +19,7 @@ export class CreateProjectService {
 	}): Promise<HTTP_RESPONSE> {
 		try {
 			const response = await this.http.request({
-				url: `/groups`,
+				url: `${this.privateService.urlFactory('org')}/groups`,
 				body: requestDetails,
 				method: 'post'
 			});

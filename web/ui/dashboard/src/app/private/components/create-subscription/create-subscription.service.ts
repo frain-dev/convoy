@@ -15,7 +15,7 @@ export class CreateSubscriptionService {
 		return new Promise(async (resolve, reject) => {
 			try {
 				const projectResponse = await this.http.request({
-					url: `/subscriptions?groupId=${this.projectId}`,
+					url: `${this.privateService.urlFactory('org_project')}/subscriptions`,
 					method: 'post',
 					body: requestDetails
 				});
