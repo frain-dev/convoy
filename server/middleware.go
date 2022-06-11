@@ -675,7 +675,7 @@ func requireBaseUrl() func(next http.Handler) http.Handler {
 				return
 			}
 
-			r = r.WithContext(setBaseUrlInContext(r.Context(), cfg.BaseUrl))
+			r = r.WithContext(setBaseUrlInContext(r.Context(), cfg.Host))
 			next.ServeHTTP(w, r)
 		})
 	}

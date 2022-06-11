@@ -6,7 +6,7 @@
             "dsn": "abc"
         }
     },
-    "base_url": "https://app.convoy.io",
+    "host": "https://app.convoy.io",
     "auth": {
         "native": {
             "enabled": true
