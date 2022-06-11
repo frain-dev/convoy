@@ -164,8 +164,8 @@ func buildRoutes(app *applicationHandler) http.Handler {
 
 			r.Route("/security", func(securityRouter chi.Router) {
 				securityRouter.Route("/applications/{appID}/keys", func(securitySubRouter chi.Router) {
-					securitySubRouter.Use(requirePermission(auth.RoleAdmin))
 					securitySubRouter.Use(requireGroup(app.groupRepo, app.cache))
+					securitySubRouter.Use(requirePermission(auth.RoleAdmin))
 					securitySubRouter.Use(requireApp(app.appRepo, app.cache))
 					securitySubRouter.Use(requireBaseUrl())
 					securitySubRouter.Post("/", app.CreateAppPortalAPIKey)
@@ -274,7 +274,6 @@ func buildRoutes(app *applicationHandler) http.Handler {
 					groupRouter.Route("/{groupID}", func(groupSubRouter chi.Router) {
 						groupSubRouter.Use(requireGroup(app.groupRepo, app.cache))
 						groupSubRouter.Use(rateLimitByGroupID(app.limiter))
-						// TODO(dotun): uncomment this when a group is linked to an organisation
 						groupSubRouter.Use(requireOrganisationGroupMember())
 
 						groupSubRouter.With(requireOrganisationMemberRole(auth.RoleUIAdmin)).Get("/", app.GetGroup)

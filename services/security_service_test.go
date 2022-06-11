@@ -153,6 +153,64 @@ func TestSecurityService_CreateAPIKey(t *testing.T) {
 			wantErrMsg:  "failed to fetch group by id",
 		},
 		{
+			name: "should_error_for_organisation_id_mismatch",
+			args: args{
+				ctx: ctx,
+				newApiKey: &models.APIKey{
+					Name: "test_api_key",
+					Type: "api",
+					Role: models.Role{
+						Type:  auth.RoleAdmin,
+						Group: "1234",
+						App:   "1234",
+					},
+					ExpiresAt: expires,
+				},
+				member: &datastore.OrganisationMember{
+					UID:            "abc",
+					OrganisationID: "1234",
+					Role:           auth.Role{Type: auth.RoleSuperUser},
+				},
+			},
+			dbFn: func(ss *SecurityService) {
+				g, _ := ss.groupRepo.(*mocks.MockGroupRepository)
+				g.EXPECT().FetchGroupByID(gomock.Any(), "1234").
+					Times(1).Return(&datastore.Group{UID: "1234", OrganisationID: "555"}, nil)
+			},
+			wantErr:     true,
+			wantErrCode: http.StatusUnauthorized,
+			wantErrMsg:  "unauthorized to access group",
+		},
+		{
+			name: "should_error_for_member_not_authorized_to_access_group",
+			args: args{
+				ctx: ctx,
+				newApiKey: &models.APIKey{
+					Name: "test_api_key",
+					Type: "api",
+					Role: models.Role{
+						Type:  auth.RoleAdmin,
+						Group: "1234",
+						App:   "1234",
+					},
+					ExpiresAt: expires,
+				},
+				member: &datastore.OrganisationMember{
+					UID:            "abc",
+					OrganisationID: "555",
+					Role:           auth.Role{Type: auth.RoleAdmin},
+				},
+			},
+			dbFn: func(ss *SecurityService) {
+				g, _ := ss.groupRepo.(*mocks.MockGroupRepository)
+				g.EXPECT().FetchGroupByID(gomock.Any(), "1234").
+					Times(1).Return(&datastore.Group{UID: "1234", OrganisationID: "555"}, nil)
+			},
+			wantErr:     true,
+			wantErrCode: http.StatusUnauthorized,
+			wantErrMsg:  "unauthorized to access group",
+		},
+		{
 			name: "should_fail_to_create_api_key",
 			args: args{
 				ctx: ctx,

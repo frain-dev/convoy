@@ -58,8 +58,8 @@ func (a *applicationHandler) CreateAPIKey(w http.ResponseWriter, r *http.Request
 	_ = render.Render(w, r, newServerResponse("API Key created successfully", resp, http.StatusCreated))
 }
 
-// CreateAppPortalAPIKey
-// @Summary Create an api key for app portal
+// CreateAppPortalAPIKey - this serves as a duplicate to generate doc for the ui route of this handler
+// @Summary Create an api key for app portal (UI)
 // @Description This endpoint creates an api key that will be used by app portal
 // @Tags APIKey
 // @Accept  json
@@ -69,6 +69,18 @@ func (a *applicationHandler) CreateAPIKey(w http.ResponseWriter, r *http.Request
 // @Failure 400,401,500 {object} serverResponse{data=Stub}
 // @Security ApiKeyAuth
 // @Router /ui/organisations/{orgID}/security/applications/{appID}/keys [post]
+
+// CreateAppPortalAPIKey
+// @Summary Create an api key for app portal (API)
+// @Description This endpoint creates an api key that will be used by app portal
+// @Tags APIKey
+// @Accept  json
+// @Produce  json
+// @Param appID path string true "application ID"
+// @Success 201 {object} serverResponse{data=models.PortalAPIKeyResponse}
+// @Failure 400,401,500 {object} serverResponse{data=Stub}
+// @Security ApiKeyAuth
+// @Router /security/applications/{appID}/keys [post]
 func (a *applicationHandler) CreateAppPortalAPIKey(w http.ResponseWriter, r *http.Request) {
 	group := getGroupFromContext(r.Context())
 	app := getApplicationFromContext(r.Context())

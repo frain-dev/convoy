@@ -338,6 +338,8 @@ definitions:
         type: string
       user_id:
         type: string
+      user_metadata:
+        $ref: '#/definitions/datastore.UserMetadata'
     type: object
   datastore.PaginationData:
     properties:
@@ -456,6 +458,15 @@ definitions:
       uid:
         type: string
       updated_at:
+        type: string
+    type: object
+  datastore.UserMetadata:
+    properties:
+      email:
+        type: string
+      first_name:
+        type: string
+      last_name:
         type: string
     type: object
   datastore.VerifierConfig:
@@ -3455,6 +3466,61 @@ paths:
       summary: Accept or decline an organisation invite
       tags:
       - Organisation
+  /security/applications/{appID}/keys:
+    post:
+      consumes:
+      - application/json
+      description: This endpoint creates an api key that will be used by app portal
+      parameters:
+      - description: application ID
+        in: path
+        name: appID
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            allOf:
+            - $ref: '#/definitions/server.serverResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/models.PortalAPIKeyResponse'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            allOf:
+            - $ref: '#/definitions/server.serverResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/server.Stub'
+              type: object
+        "401":
+          description: Unauthorized
+          schema:
+            allOf:
+            - $ref: '#/definitions/server.serverResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/server.Stub'
+              type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            allOf:
+            - $ref: '#/definitions/server.serverResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/server.Stub'
+              type: object
+      security:
+      - ApiKeyAuth: []
+      summary: Create an api key for app portal (API)
+      tags:
+      - APIKey
   /sources:
     get:
       consumes:
@@ -4147,61 +4213,6 @@ paths:
       summary: Create a group
       tags:
       - Group
-  /ui/organisations/{orgID}/security/applications/{appID}/keys:
-    post:
-      consumes:
-      - application/json
-      description: This endpoint creates an api key that will be used by app portal
-      parameters:
-      - description: application ID
-        in: path
-        name: appID
-        required: true
-        type: string
-      produces:
-      - application/json
-      responses:
-        "201":
-          description: Created
-          schema:
-            allOf:
-            - $ref: '#/definitions/server.serverResponse'
-            - properties:
-                data:
-                  $ref: '#/definitions/models.PortalAPIKeyResponse'
-              type: object
-        "400":
-          description: Bad Request
-          schema:
-            allOf:
-            - $ref: '#/definitions/server.serverResponse'
-            - properties:
-                data:
-                  $ref: '#/definitions/server.Stub'
-              type: object
-        "401":
-          description: Unauthorized
-          schema:
-            allOf:
-            - $ref: '#/definitions/server.serverResponse'
-            - properties:
-                data:
-                  $ref: '#/definitions/server.Stub'
-              type: object
-        "500":
-          description: Internal Server Error
-          schema:
-            allOf:
-            - $ref: '#/definitions/server.serverResponse'
-            - properties:
-                data:
-                  $ref: '#/definitions/server.Stub'
-              type: object
-      security:
-      - ApiKeyAuth: []
-      summary: Create an api key for app portal
-      tags:
-      - APIKey
   /ui/organisations/{orgID}/security/keys:
     get:
       consumes:

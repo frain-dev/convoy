@@ -100,9 +100,25 @@ func (s *OrganisationMemberIntegrationTestSuite) Test_GetOrganisationMembers() {
 	var members []datastore.OrganisationMember
 	pagedResp := pagedResponse{Content: &members}
 	parseResponse(s.T(), w.Result(), &pagedResp)
-
 	require.Equal(s.T(), 2, len(members))
 	require.Equal(s.T(), int64(2), pagedResp.Pagination.Total)
+
+	metadata := []datastore.UserMetadata{
+		{
+			FirstName: s.DefaultUser.FirstName,
+			LastName:  s.DefaultUser.LastName,
+			Email:     s.DefaultUser.Email,
+		},
+		{
+			FirstName: user.FirstName,
+			LastName:  user.LastName,
+			Email:     user.Email,
+		},
+	}
+
+	for _, member := range members {
+		require.Contains(s.T(), metadata, *member.UserMetadata)
+	}
 }
 
 func (s *OrganisationMemberIntegrationTestSuite) Test_GetOrganisationMember() {
@@ -139,6 +155,12 @@ func (s *OrganisationMemberIntegrationTestSuite) Test_GetOrganisationMember() {
 	require.Equal(s.T(), member.UID, m.UID)
 	require.Equal(s.T(), member.OrganisationID, m.OrganisationID)
 	require.Equal(s.T(), member.UserID, m.UserID)
+
+	require.Equal(s.T(), datastore.UserMetadata{
+		FirstName: user.FirstName,
+		LastName:  user.LastName,
+		Email:     user.Email,
+	}, *m.UserMetadata)
 }
 
 func (s *OrganisationMemberIntegrationTestSuite) Test_UpdateOrganisationMember() {

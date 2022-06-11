@@ -2,11 +2,13 @@ package testdb
 
 import (
 	"context"
+	"crypto/sha256"
+	"encoding/base64"
+	"errors"
 	"fmt"
 	"time"
 
 	"github.com/dchest/uniuri"
-
 	"github.com/frain-dev/convoy"
 	"github.com/frain-dev/convoy/auth"
 	"github.com/frain-dev/convoy/config"
@@ -14,6 +16,7 @@ import (
 	"github.com/frain-dev/convoy/util"
 	"github.com/google/uuid"
 	log "github.com/sirupsen/logrus"
+	"github.com/xdg-go/pbkdf2"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
 )
@@ -265,34 +268,39 @@ func SeedOrganisationInvite(db datastore.DatabaseClient, org *datastore.Organisa
 }
 
 // SeedAPIKey creates random api key for integration tests.
-func SeedAPIKey(db datastore.DatabaseClient, g *datastore.Group, uid, name, keyType string) (*datastore.APIKey, error) {
+func SeedAPIKey(db datastore.DatabaseClient, role auth.Role, uid, name, keyType string) (*datastore.APIKey, string, error) {
 	if util.IsStringEmpty(uid) {
 		uid = uuid.New().String()
 	}
 
+	maskID, key := util.GenerateAPIKey()
+	salt, err := util.GenerateSecret()
+	if err != nil {
+		return nil, "", errors.New("failed to generate salt")
+	}
+
+	dk := pbkdf2.Key([]byte(key), []byte(salt), 4096, 32, sha256.New)
+	encodedKey := base64.URLEncoding.EncodeToString(dk)
+
 	apiKey := &datastore.APIKey{
-		UID:    uid,
-		MaskID: fmt.Sprintf("mask-%s", uuid.NewString()),
-		Name:   name,
-		Type:   datastore.KeyType(keyType),
-		Role: auth.Role{
-			Type:   auth.RoleUIAdmin,
-			Groups: []string{g.UID},
-			Apps:   nil,
-		},
-		Hash:           fmt.Sprintf("hash-%s", uuid.NewString()),
-		Salt:           fmt.Sprintf("salt-%s", uuid.NewString()),
+		UID:            uid,
+		MaskID:         maskID,
+		Name:           name,
+		Type:           datastore.KeyType(keyType),
+		Role:           role,
+		Hash:           encodedKey,
+		Salt:           salt,
 		CreatedAt:      primitive.NewDateTimeFromTime(time.Now()),
 		UpdatedAt:      primitive.NewDateTimeFromTime(time.Now()),
 		DocumentStatus: datastore.ActiveDocumentStatus,
 	}
 
-	err := db.APIRepo().CreateAPIKey(context.Background(), apiKey)
+	err = db.APIRepo().CreateAPIKey(context.Background(), apiKey)
 	if err != nil {
-		return nil, err
+		return nil, "", err
 	}
 
-	return apiKey, nil
+	return apiKey, key, nil
 }
 
 // seed default group
