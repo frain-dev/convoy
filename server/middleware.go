@@ -392,6 +392,12 @@ func requireOrganisationMemberRole(roleType auth.RoleType) func(next http.Handle
 
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			member := getOrganisationMemberFromContext(r.Context())
+			if member.Role.Type.Is(auth.RoleSuperUser) {
+				//superuser has access to everything
+				next.ServeHTTP(w, r)
+				return
+			}
+
 			if member.Role.Type != roleType {
 				_ = render.Render(w, r, newErrorResponse("unauthorized", http.StatusUnauthorized))
 				return
@@ -402,12 +408,12 @@ func requireOrganisationMemberRole(roleType auth.RoleType) func(next http.Handle
 	}
 }
 
-func requireEventDelivery(eventRepo datastore.EventDeliveryRepository) func(next http.Handler) http.Handler {
+func requireEventDelivery(eventDeliveryRepo datastore.EventDeliveryRepository, appRepo datastore.ApplicationRepository, eventRepo datastore.EventRepository) func(next http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			eventDeliveryID := chi.URLParam(r, "eventDeliveryID")
 
-			eventDelivery, err := eventRepo.FindEventDeliveryByID(r.Context(), eventDeliveryID)
+			eventDelivery, err := eventDeliveryRepo.FindEventDeliveryByID(r.Context(), eventDeliveryID)
 			if err != nil {
 
 				eventDelivery := "an error occurred while retrieving event delivery details"
@@ -420,6 +426,40 @@ func requireEventDelivery(eventRepo datastore.EventDeliveryRepository) func(next
 
 				_ = render.Render(w, r, newErrorResponse(eventDelivery, statusCode))
 				return
+			}
+
+			a, err := appRepo.FindApplicationByID(r.Context(), eventDelivery.AppID)
+			if err == nil {
+				app := &datastore.Application{
+					UID:          a.UID,
+					Title:        a.Title,
+					GroupID:      a.GroupID,
+					SupportEmail: a.SupportEmail,
+				}
+				eventDelivery.App = app
+			}
+
+			ev, err := eventRepo.FindEventByID(r.Context(), eventDelivery.EventID)
+			if err == nil {
+				event := &datastore.Event{
+					UID:       ev.UID,
+					EventType: ev.EventType,
+				}
+				eventDelivery.Event = event
+			}
+
+			en, err := appRepo.FindApplicationEndpointByID(r.Context(), eventDelivery.AppID, eventDelivery.EndpointID)
+			if err == nil {
+				endpoint := &datastore.Endpoint{
+					UID:               en.UID,
+					TargetURL:         en.TargetURL,
+					DocumentStatus:    en.DocumentStatus,
+					Secret:            en.Secret,
+					HttpTimeout:       en.HttpTimeout,
+					RateLimit:         en.RateLimit,
+					RateLimitDuration: en.RateLimitDuration,
+				}
+				eventDelivery.Endpoint = endpoint
 			}
 
 			r = r.WithContext(setEventDeliveryInContext(r.Context(), eventDelivery))
@@ -582,6 +622,36 @@ func requireAuth() func(next http.Handler) http.Handler {
 
 			r = r.WithContext(setAuthUserInContext(r.Context(), authUser))
 			next.ServeHTTP(w, r)
+		})
+	}
+}
+
+func requireAuthorizedUser(userRepo datastore.UserRepository) func(next http.Handler) http.Handler {
+	return func(next http.Handler) http.Handler {
+		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			authUser := getAuthUserFromContext(r.Context())
+			user, ok := authUser.Metadata.(*datastore.User)
+
+			if !ok {
+				log.Error("metadata missing in auth user object")
+				_ = render.Render(w, r, newErrorResponse("unauthorized", http.StatusUnauthorized))
+				return
+			}
+
+			userID := chi.URLParam(r, "userID")
+			dbUser, err := userRepo.FindUserByID(r.Context(), userID)
+			if err != nil {
+				_ = render.Render(w, r, newErrorResponse("failed to fetch user by id", http.StatusNotFound))
+				return
+			}
+
+			if user.UID != dbUser.UID {
+				_ = render.Render(w, r, newErrorResponse(datastore.ErrNotAuthorisedToAccessDocument.Error(), http.StatusForbidden))
+				return
+			}
+
+			next.ServeHTTP(w, r)
+
 		})
 	}
 }
@@ -882,7 +952,7 @@ func shouldAuthRoute(r *http.Request) bool {
 		"/ui/auth/login",
 		"/ui/auth/token/refresh",
 		"/ui/organisations/process_invite",
-		"/ui/users/exists",
+		"/ui/users/token",
 	}
 
 	for _, route := range guestRoutes {

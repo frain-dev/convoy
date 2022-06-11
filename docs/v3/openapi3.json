@@ -249,6 +249,7 @@
 						"type": "string"
 					},
 					"matched_endpoints": {
+						"description": "TODO(all) remove this field",
 						"type": "integer"
 					},
 					"provider_id": {
@@ -284,11 +285,11 @@
 					"description": {
 						"type": "string"
 					},
-					"endpoint": {
-						"$ref": "#/components/schemas/datastore.Endpoint"
-					},
 					"endpoint_id": {
 						"type": "string"
+					},
+					"endpoint_metadata": {
+						"$ref": "#/components/schemas/datastore.Endpoint"
 					},
 					"event_id": {
 						"type": "string"
@@ -609,13 +610,16 @@
 					"alert_config": {
 						"$ref": "#/components/schemas/datastore.AlertConfiguration"
 					},
+					"app_metadata": {
+						"$ref": "#/components/schemas/datastore.Application"
+					},
 					"created_at": {
 						"type": "string"
 					},
 					"deleted_at": {
 						"type": "string"
 					},
-					"endpoint": {
+					"endpoint_metadata": {
 						"$ref": "#/components/schemas/datastore.Endpoint"
 					},
 					"filter_config": {
@@ -627,7 +631,7 @@
 					"retry_config": {
 						"$ref": "#/components/schemas/datastore.RetryConfiguration"
 					},
-					"source": {
+					"source_metadata": {
 						"$ref": "#/components/schemas/datastore.Source"
 					},
 					"status": {
@@ -1053,14 +1057,6 @@
 					},
 					"role": {
 						"$ref": "#/components/schemas/auth.Role"
-					}
-				},
-				"type": "object"
-			},
-			"models.UserExists": {
-				"properties": {
-					"email": {
-						"type": "string"
 					}
 				},
 				"type": "object"
@@ -8609,21 +8605,20 @@
 				]
 			}
 		},
-		"/users/exists": {
-			"post": {
-				"description": "This endpoint checks if a user exists",
-				"requestBody": {
-					"content": {
-						"application/json": {
-							"schema": {
-								"$ref": "#/components/schemas/models.UserExists"
-							}
+		"/users/token": {
+			"get": {
+				"description": "This endpoint finds a user by an invite token",
+				"parameters": [
+					{
+						"description": "invite token",
+						"in": "query",
+						"name": "token",
+						"required": true,
+						"schema": {
+							"type": "string"
 						}
-					},
-					"description": "User Exists Details",
-					"required": true,
-					"x-originalParamName": "group"
-				},
+					}
+				],
 				"responses": {
 					"200": {
 						"content": {
@@ -8636,7 +8631,7 @@
 										{
 											"properties": {
 												"data": {
-													"type": "boolean"
+													"$ref": "#/components/schemas/datastore.User"
 												}
 											},
 											"type": "object"
@@ -8719,15 +8714,26 @@
 						"ApiKeyAuth": []
 					}
 				],
-				"summary": "Checks If a user exists",
+				"summary": "Find user by invite token",
 				"tags": [
-					"User"
+					"Organisation"
 				]
 			}
 		},
-		"/users/password": {
+		"/users/{userID}/password": {
 			"put": {
 				"description": "This endpoint updates a user's password",
+				"parameters": [
+					{
+						"description": "user id",
+						"in": "path",
+						"name": "userID",
+						"required": true,
+						"schema": {
+							"type": "string"
+						}
+					}
+				],
 				"requestBody": {
 					"content": {
 						"application/json": {
@@ -8841,9 +8847,20 @@
 				]
 			}
 		},
-		"/users/profile": {
+		"/users/{userID}/profile": {
 			"get": {
 				"description": "This endpoint fetches a user",
+				"parameters": [
+					{
+						"description": "user id",
+						"in": "path",
+						"name": "userID",
+						"required": true,
+						"schema": {
+							"type": "string"
+						}
+					}
+				],
 				"responses": {
 					"200": {
 						"content": {
@@ -8946,6 +8963,17 @@
 			},
 			"put": {
 				"description": "This endpoint updates a user",
+				"parameters": [
+					{
+						"description": "user id",
+						"in": "path",
+						"name": "userID",
+						"required": true,
+						"schema": {
+							"type": "string"
+						}
+					}
+				],
 				"requestBody": {
 					"content": {
 						"application/json": {
