@@ -33,7 +33,7 @@ func (i *IngestIntegrationTestSuite) SetupTest() {
 	testdb.PurgeDB(i.DB)
 
 	// Setup Default Group.
-	i.DefaultGroup, _ = testdb.SeedDefaultGroup(i.DB)
+	i.DefaultGroup, _ = testdb.SeedDefaultGroup(i.DB, "")
 
 	// Setup Config.
 	err := config.LoadConfig("./testdata/Auth_Config/full-convoy.json")

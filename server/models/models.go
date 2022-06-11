@@ -37,9 +37,15 @@ type OrganisationInvite struct {
 
 type APIKey struct {
 	Name      string            `json:"name"`
-	Role      auth.Role         `json:"role"`
+	Role      Role              `json:"role"`
 	Type      datastore.KeyType `json:"key_type"`
 	ExpiresAt time.Time         `json:"expires_at"`
+}
+
+type Role struct {
+	Type  auth.RoleType `json:"type"`
+	Group string        `json:"group"`
+	App   string        `json:"app,omitempty"`
 }
 
 type UpdateOrganisationMember struct {
@@ -62,6 +68,11 @@ type APIKeyResponse struct {
 	Key       string    `json:"key"`
 	UID       string    `json:"uid"`
 	CreatedAt time.Time `json:"created_at"`
+}
+
+type CreateGroupResponse struct {
+	APIKey *APIKeyResponse  `json:"api_key"`
+	Group  *datastore.Group `json:"group"`
 }
 
 type PortalAPIKeyResponse struct {
@@ -134,19 +145,17 @@ type UpdateApplication struct {
 }
 
 type Source struct {
-	Name       string               `json:"name" valid:"required~please provide a source name"`
-	Type       datastore.SourceType `json:"type" valid:"required~please provide a type,supported_source~unsupported source type"`
-	IsDisabled bool                 `json:"is_disabled"`
-
-	Verifier datastore.VerifierConfig `json:"verifier"`
+	Name       string                   `json:"name" valid:"required~please provide a source name"`
+	Type       datastore.SourceType     `json:"type" valid:"required~please provide a type,supported_source~unsupported source type"`
+	IsDisabled bool                     `json:"is_disabled"`
+	Verifier   datastore.VerifierConfig `json:"verifier" valid:"required~please provide a verifier"`
 }
 
 type UpdateSource struct {
-	Name       *string              `json:"name" valid:"required~please provide a source name"`
-	Type       datastore.SourceType `json:"type" valid:"required~please provide a type,supported_source~unsupported source type"`
-	IsDisabled *bool                `json:"is_disabled"`
-
-	Verifier datastore.VerifierConfig `json:"verifier"`
+	Name       *string                  `json:"name" valid:"required~please provide a source name"`
+	Type       datastore.SourceType     `json:"type" valid:"required~please provide a type,supported_source~unsupported source type"`
+	IsDisabled *bool                    `json:"is_disabled"`
+	Verifier   datastore.VerifierConfig `json:"verifier" valid:"required~please provide a verifier"`
 }
 
 type Event struct {
