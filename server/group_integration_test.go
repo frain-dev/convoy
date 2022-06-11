@@ -7,17 +7,16 @@ import (
 	"context"
 	"fmt"
 	"github.com/frain-dev/convoy/auth"
-	"github.com/frain-dev/convoy/server/models"
-	"net/http"
-	"net/http/httptest"
-	"testing"
-
 	"github.com/frain-dev/convoy/config"
 	"github.com/frain-dev/convoy/datastore"
+	"github.com/frain-dev/convoy/server/models"
 	"github.com/frain-dev/convoy/server/testdb"
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/require"
 	"github.com/stretchr/testify/suite"
+	"net/http"
+	"net/http/httptest"
+	"testing"
 )
 
 type GroupIntegrationTestSuite struct {
@@ -193,7 +192,6 @@ func (s *GroupIntegrationTestSuite) TestCreateGroup() {
 	require.Equal(s.T(), "test-group's default key", respGroup.APIKey.Name)
 
 	require.Equal(s.T(), auth.RoleSuperUser, respGroup.APIKey.Role.Type)
-	require.Equal(s.T(), 0, respGroup.APIKey.ExpiresAt)
 	require.Equal(s.T(), respGroup.Group.UID, respGroup.APIKey.Role.Group)
 	require.Equal(s.T(), "test-group's default key", respGroup.APIKey.Name)
 	require.NotEmpty(s.T(), respGroup.APIKey.Key)
