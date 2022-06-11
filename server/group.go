@@ -100,7 +100,7 @@ func (a *applicationHandler) CreateGroup(w http.ResponseWriter, r *http.Request)
 // @Security ApiKeyAuth
 // @Router /groups/{groupID} [put]
 func (a *applicationHandler) UpdateGroup(w http.ResponseWriter, r *http.Request) {
-	var update models.Group
+	var update models.UpdateGroup
 	err := util.ReadJSON(r, &update)
 	if err != nil {
 		_ = render.Render(w, r, newErrorResponse(err.Error(), http.StatusBadRequest))

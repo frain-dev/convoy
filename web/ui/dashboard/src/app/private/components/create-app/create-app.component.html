@@ -45,29 +45,57 @@
 					</button>
 				</div>
 			</div>
-			<div class="grid grid__col-2 grid--gap__20px" [formGroupName]="i">
-				<div class="input">
-					<label class="flex__justify-between" [for]="'description' + i">
-						Description
-						<span class="bg__grey__light rounded__4px padding-x__4px position__absolute position--right__0px font__10px font__weight-400">required</span>
-					</label>
-					<input [id]="'description' + i" type="text" formControlName="description" required />
-					<div class="input__error input__error__danger" *ngIf="getSingleEndpoint(i).description.touched && getSingleEndpoint(i).description.invalid">
-						<img src="assets/img/input-error-icon.svg" alt="input error icon" />
-						<span>Please provide a description</span>
+			<div [formGroupName]="i">
+				<div class="grid grid__col-2 grid--gap__20px">
+					<div class="input">
+						<label class="flex__justify-between" [for]="'description' + i">
+							Description
+							<span class="bg__grey__light rounded__4px padding-x__4px position__absolute position--right__0px font__10px font__weight-400">required</span>
+						</label>
+						<input [id]="'description' + i" type="text" formControlName="description" required />
+						<div class="input__error input__error__danger" *ngIf="getSingleEndpoint(i).description.touched && getSingleEndpoint(i).description.invalid">
+							<img src="assets/img/input-error-icon.svg" alt="input error icon" />
+							<span>Please provide a description</span>
+						</div>
 					</div>
-				</div>
 
-				<div class="input">
-					<label class="flex flex__justify-between" [for]="'endpoint-url' + i">
-						Enter Endpoint URL
-						<span class="bg__grey__light rounded__4px padding-x__4px position__absolute position--right__0px font__10px font__weight-400">required</span>
-					</label>
-					<input [id]="'endpoint-url' + i" type="text" formControlName="url" required />
-					<div class="input__error input__error__danger" *ngIf="getSingleEndpoint(i).url.touched && getSingleEndpoint(i).url.invalid">
-						<img src="assets/img/input-error-icon.svg" alt="input error icon" />
-						<span>Please provide enter endpoint URL</span>
+					<div class="input">
+						<label class="flex flex__justify-between" [for]="'endpoint-url' + i">
+							Enter Endpoint URL
+							<span class="bg__grey__light rounded__4px padding-x__4px position__absolute position--right__0px font__10px font__weight-400">required</span>
+						</label>
+						<input [id]="'endpoint-url' + i" type="text" formControlName="url" required />
+						<div class="input__error input__error__danger" *ngIf="getSingleEndpoint(i).url.touched && getSingleEndpoint(i).url.invalid">
+							<img src="assets/img/input-error-icon.svg" alt="input error icon" />
+							<span>Please provide enter endpoint URL</span>
+						</div>
 					</div>
+					
+					<div class="input">
+						<label for="rate-limit-count">Rate Limit</label>
+						<input type="number" id="rate-limit-count" placeholder="e.g 5000" formControlName="rate_limit" />
+					</div>
+					
+					<div class="input">
+						<label for="rate-limit-duration">Rate Limit Duration</label>
+						<input type="text" id="rate-limit-duration" placeholder="e.g 1m" formControlName="rate_limit_duration" />
+					</div>
+
+					<!-- <div class="input multiple">
+						<label class="flex flex__align-items-center" [for]="'tagInput' + i">
+							Events
+							<app-tooltip [size]="'small'" position="right" class="margin-left__4px">Add multiple events by separating them with commas.</app-tooltip>
+						</label>
+						<div class="input--multiple" (click)="focusInput(i)">
+							<div class="tag" *ngFor="let tag of getSingleEndpoint(i)?.events?.value">
+								{{ tag }}
+								<a (click)="removeEventTag(tag, i)">
+									<img src="/assets/img/close-icon-black.svg" alt="close icon" />
+								</a>
+							</div>
+							<input type="text" [id]="'tagInput' + i" (input)="addTag(i)" />
+						</div>
+					</div> -->
 				</div>
 				<div class="input">
 					<label class="flex flex__align-items-center" for="http-timeout">
@@ -76,30 +104,6 @@
 					</label>
 					<input id="http-timeout" type="text" formControlName="http_timeout" placeholder="e.g. 10s" />
 				</div>
-				<div class="input">
-					<label for="rate-limit-duration">Duration</label>
-					<input type="text" id="rate-limit-duration" placeholder="e.g 1m" formControlName="rate_limit_duration" />
-				</div>
-				<div class="input">
-					<label for="rate-limit-count">Limit</label>
-					<input type="number" id="rate-limit-count" placeholder="e.g 5000" formControlName="rate_limit" />
-				</div>
-
-				<!-- <div class="input multiple">
-					<label class="flex flex__align-items-center" [for]="'tagInput' + i">
-						Events
-						<app-tooltip [size]="'small'" position="right" class="margin-left__4px">Add multiple events by separating them with commas.</app-tooltip>
-					</label>
-					<div class="input--multiple" (click)="focusInput(i)">
-						<div class="tag" *ngFor="let tag of getSingleEndpoint(i)?.events?.value">
-							{{ tag }}
-							<a (click)="removeEventTag(tag, i)">
-								<img src="/assets/img/close-icon-black.svg" alt="close icon" />
-							</a>
-						</div>
-						<input type="text" [id]="'tagInput' + i" (input)="addTag(i)" />
-					</div>
-				</div> -->
 			</div>
 		</div>
 		<div>

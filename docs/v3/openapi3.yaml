@@ -166,6 +166,7 @@ components:
         group_id:
           type: string
         matched_endpoints:
+          description: TODO(all) remove this field
           type: integer
         provider_id:
           description: |-
@@ -193,10 +194,10 @@ components:
           type: string
         description:
           type: string
-        endpoint:
-          $ref: '#/components/schemas/datastore.Endpoint'
         endpoint_id:
           type: string
+        endpoint_metadata:
+          $ref: '#/components/schemas/datastore.Endpoint'
         event_id:
           type: string
         event_metadata:
@@ -704,11 +705,6 @@ components:
           type: string
         role:
           $ref: '#/components/schemas/auth.Role'
-      type: object
-    models.UserExists:
-      properties:
-        email:
-          type: string
       type: object
     server.Stub:
       type: object
@@ -4735,70 +4731,16 @@ paths:
       summary: Update a subscription
       tags:
       - Subscription
-  /users/exists:
-    post:
-      description: This endpoint checks if a user exists
-      requestBody:
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/models.UserExists'
-        description: User Exists Details
-        required: true
-        x-originalParamName: group
-      responses:
-        "200":
-          content:
-            application/json:
-              schema:
-                allOf:
-                - $ref: '#/components/schemas/server.serverResponse'
-                - properties:
-                    data:
-                      type: boolean
-                  type: object
-          description: OK
-        "400":
-          content:
-            application/json:
-              schema:
-                allOf:
-                - $ref: '#/components/schemas/server.serverResponse'
-                - properties:
-                    data:
-                      $ref: '#/components/schemas/server.Stub'
-                  type: object
-          description: Bad Request
-        "401":
-          content:
-            application/json:
-              schema:
-                allOf:
-                - $ref: '#/components/schemas/server.serverResponse'
-                - properties:
-                    data:
-                      $ref: '#/components/schemas/server.Stub'
-                  type: object
-          description: Unauthorized
-        "500":
-          content:
-            application/json:
-              schema:
-                allOf:
-                - $ref: '#/components/schemas/server.serverResponse'
-                - properties:
-                    data:
-                      $ref: '#/components/schemas/server.Stub'
-                  type: object
-          description: Internal Server Error
-      security:
-      - ApiKeyAuth: []
-      summary: Checks If a user exists
-      tags:
-      - User
-  /users/password:
+  /users/{userID}/password:
     put:
       description: This endpoint updates a user's password
+      parameters:
+      - description: user id
+        in: path
+        name: userID
+        required: true
+        schema:
+          type: string
       requestBody:
         content:
           application/json:
@@ -4857,9 +4799,16 @@ paths:
       summary: Updates a user's password
       tags:
       - User
-  /users/profile:
+  /users/{userID}/profile:
     get:
       description: This endpoint fetches a user
+      parameters:
+      - description: user id
+        in: path
+        name: userID
+        required: true
+        schema:
+          type: string
       responses:
         "200":
           content:
@@ -4912,6 +4861,13 @@ paths:
       - User
     put:
       description: This endpoint updates a user
+      parameters:
+      - description: user id
+        in: path
+        name: userID
+        required: true
+        schema:
+          type: string
       requestBody:
         content:
           application/json:
@@ -4970,6 +4926,66 @@ paths:
       summary: Updates a user
       tags:
       - User
+  /users/token:
+    get:
+      description: This endpoint finds a user by an invite token
+      parameters:
+      - description: invite token
+        in: query
+        name: token
+        required: true
+        schema:
+          type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                allOf:
+                - $ref: '#/components/schemas/server.serverResponse'
+                - properties:
+                    data:
+                      $ref: '#/components/schemas/datastore.User'
+                  type: object
+          description: OK
+        "400":
+          content:
+            application/json:
+              schema:
+                allOf:
+                - $ref: '#/components/schemas/server.serverResponse'
+                - properties:
+                    data:
+                      $ref: '#/components/schemas/server.Stub'
+                  type: object
+          description: Bad Request
+        "401":
+          content:
+            application/json:
+              schema:
+                allOf:
+                - $ref: '#/components/schemas/server.serverResponse'
+                - properties:
+                    data:
+                      $ref: '#/components/schemas/server.Stub'
+                  type: object
+          description: Unauthorized
+        "500":
+          content:
+            application/json:
+              schema:
+                allOf:
+                - $ref: '#/components/schemas/server.serverResponse'
+                - properties:
+                    data:
+                      $ref: '#/components/schemas/server.Stub'
+                  type: object
+          description: Internal Server Error
+      security:
+      - ApiKeyAuth: []
+      summary: Find user by invite token
+      tags:
+      - Organisation
 servers:
 - url: https://cloud.staging.getconvoy.io/api/v1
 tags:

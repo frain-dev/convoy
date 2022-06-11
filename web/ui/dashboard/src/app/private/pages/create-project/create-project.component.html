@@ -16,7 +16,7 @@
 	</div>
 
 	<div class="modal--body padding-all__0px">
-		<app-create-project-component (onAction)="$event.action == 'cancel' ? cancel() : createProject($event?.data)" *ngIf="projectStage === 'createProject'"></app-create-project-component>
+		<app-create-project-component (onAction)="$event?.action == 'cancel' ? cancel() : createProject($event)" *ngIf="projectStage === 'createProject'"></app-create-project-component>
 
 		<div class="card padding-all__24px margin-bottom__24px" [hidden]="projectStage === 'createProject'">
 			<ul class="setup-steps flex flex__align-items-center border__bottom padding-bottom__24px">
@@ -47,7 +47,7 @@
 
 		<app-create-source
 			*ngIf="projectStage === 'createSource' && privateService.activeProjectDetails.uid"
-			(onAction)="$event?.action == 'cancel' ? cancel() : projectType == 'incoming' ? onProjectOnboardingComplete() : toggleActiveStage({ project: 'createApplication', prevStage: 'createSource' })"
+			(onAction)="$event?.action == 'cancel' ? cancel() : toggleActiveStage({ project: 'createApplication', prevStage: 'createSource' })"
 		></app-create-source>
 
 		<app-create-app
