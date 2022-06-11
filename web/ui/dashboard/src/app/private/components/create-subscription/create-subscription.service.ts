@@ -26,4 +26,35 @@ export class CreateSubscriptionService {
 			}
 		});
 	}
+
+	updateSubscription(requestDetails: { data: any; id: string }): Promise<HTTP_RESPONSE> {
+		return new Promise(async (resolve, reject) => {
+			try {
+				const projectResponse = await this.http.request({
+					url: `${this.privateService.urlFactory('org_project')}/subscriptions/${requestDetails.id}`,
+					method: 'put',
+					body: requestDetails
+				});
+
+				return resolve(projectResponse);
+			} catch (error: any) {
+				return reject(error);
+			}
+		});
+	}
+
+	getSubscriptionDetail(subscriptionId: string): Promise<HTTP_RESPONSE> {
+		return new Promise(async (resolve, reject) => {
+			try {
+				const projectResponse = await this.http.request({
+					url: `${this.privateService.urlFactory('org_project')}/subscriptions/${subscriptionId}`,
+					method: 'get'
+				});
+
+				return resolve(projectResponse);
+			} catch (error: any) {
+				return reject(error);
+			}
+		});
+	}
 }

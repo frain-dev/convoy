@@ -58,4 +58,15 @@ export class SourcesComponent implements OnInit {
 		this.generalService.showNotification({ message: 'Source created successfully', style: 'success' });
 		this.router.navigateByUrl('/projects/' + this.projectId + '/sources');
 	}
+
+	copyText(text: string, sourceName: string, event: any) {
+		event.stopPropagation();
+		const el = document.createElement('textarea');
+		el.value = text;
+		document.body.appendChild(el);
+		el.select();
+		document.execCommand('copy');
+		this.generalService.showNotification({ message: `${sourceName} URL has been copied to clipboard`, style: 'info' });
+		document.body.removeChild(el);
+	}
 }
