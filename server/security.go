@@ -23,7 +23,7 @@ import (
 // @Success 200 {object} serverResponse{data=models.APIKeyResponse}
 // @Failure 400,401,500 {object} serverResponse{data=Stub}
 // @Security ApiKeyAuth
-// @Router /security/keys [post]
+// @Router /ui/organisations/{orgID}/security/keys [post]
 func (a *applicationHandler) CreateAPIKey(w http.ResponseWriter, r *http.Request) {
 	var newApiKey models.APIKey
 	err := json.NewDecoder(r.Body).Decode(&newApiKey)
@@ -32,16 +32,21 @@ func (a *applicationHandler) CreateAPIKey(w http.ResponseWriter, r *http.Request
 		return
 	}
 
-	apiKey, keyString, err := a.securityService.CreateAPIKey(r.Context(), &newApiKey)
+	member := getOrganisationMemberFromContext(r.Context())
+	apiKey, keyString, err := a.securityService.CreateAPIKey(r.Context(), member, &newApiKey)
 	if err != nil {
+		log.WithError(err).Error("fff")
 		_ = render.Render(w, r, newServiceErrResponse(err))
 		return
 	}
 
 	resp := &models.APIKeyResponse{
 		APIKey: models.APIKey{
-			Name:      apiKey.Name,
-			Role:      apiKey.Role,
+			Name: apiKey.Name,
+			Role: models.Role{
+				Type:  apiKey.Role.Type,
+				Group: apiKey.Role.Groups[0],
+			},
 			Type:      apiKey.Type,
 			ExpiresAt: apiKey.ExpiresAt.Time(),
 		},
@@ -63,7 +68,7 @@ func (a *applicationHandler) CreateAPIKey(w http.ResponseWriter, r *http.Request
 // @Success 201 {object} serverResponse{data=models.PortalAPIKeyResponse}
 // @Failure 400,401,500 {object} serverResponse{data=Stub}
 // @Security ApiKeyAuth
-// @Router /security/applications/{appID}/keys [post]
+// @Router /ui/organisations/{orgID}/security/applications/{appID}/keys [post]
 func (a *applicationHandler) CreateAppPortalAPIKey(w http.ResponseWriter, r *http.Request) {
 	group := getGroupFromContext(r.Context())
 	app := getApplicationFromContext(r.Context())
@@ -98,7 +103,7 @@ func (a *applicationHandler) CreateAppPortalAPIKey(w http.ResponseWriter, r *htt
 // @Success 200 {object} serverResponse{data=Stub}
 // @Failure 400,401,500 {object} serverResponse{data=Stub}
 // @Security ApiKeyAuth
-// @Router /security/keys/{keyID}/revoke [put]
+// @Router /ui/organisations/{orgID}/security/keys/{keyID}/revoke [put]
 func (a *applicationHandler) RevokeAPIKey(w http.ResponseWriter, r *http.Request) {
 	err := a.securityService.RevokeAPIKey(r.Context(), chi.URLParam(r, "keyID"))
 	if err != nil {
@@ -119,7 +124,7 @@ func (a *applicationHandler) RevokeAPIKey(w http.ResponseWriter, r *http.Request
 // @Success 200 {object} serverResponse{data=datastore.APIKey}
 // @Failure 400,401,500 {object} serverResponse{data=Stub}
 // @Security ApiKeyAuth
-// @Router /security/keys/{keyID} [get]
+// @Router /ui/organisations/{orgID}/security/keys/{keyID} [get]
 func (a *applicationHandler) GetAPIKeyByID(w http.ResponseWriter, r *http.Request) {
 	apiKey, err := a.securityService.GetAPIKeyByID(r.Context(), chi.URLParam(r, "keyID"))
 	if err != nil {
@@ -149,7 +154,7 @@ func (a *applicationHandler) GetAPIKeyByID(w http.ResponseWriter, r *http.Reques
 // @Success 200 {object} serverResponse{data=datastore.APIKey}
 // @Failure 400,401,500 {object} serverResponse{data=Stub}
 // @Security ApiKeyAuth
-// @Router /security/keys/{keyID} [put]
+// @Router /ui/organisations/{orgID}/security/keys/{keyID} [put]
 func (a *applicationHandler) UpdateAPIKey(w http.ResponseWriter, r *http.Request) {
 	var updateApiKey struct {
 		Role auth.Role `json:"role"`
@@ -192,7 +197,7 @@ func (a *applicationHandler) UpdateAPIKey(w http.ResponseWriter, r *http.Request
 // @Success 200 {object} serverResponse{data=pagedResponse{content=[]datastore.APIKey}}
 // @Failure 400,401,500 {object} serverResponse{data=Stub}
 // @Security ApiKeyAuth
-// @Router /security/keys [get]
+// @Router /ui/organisations/{orgID}/security/keys [get]
 func (a *applicationHandler) GetAPIKeys(w http.ResponseWriter, r *http.Request) {
 	pageable := getPageableFromContext(r.Context())
 

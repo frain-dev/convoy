@@ -168,13 +168,14 @@ var ErrOrgInviteNotFound = errors.New("organisation invite not found")
 var ErrOrgMemberNotFound = errors.New("organisation member not found")
 
 type Group struct {
-	ID         primitive.ObjectID `json:"-" bson:"_id"`
-	UID        string             `json:"uid" bson:"uid"`
-	Name       string             `json:"name" bson:"name"`
-	LogoURL    string             `json:"logo_url" bson:"logo_url"`
-	Type       GroupType          `json:"type" bson:"type"`
-	Config     *GroupConfig       `json:"config" bson:"config"`
-	Statistics *GroupStatistics   `json:"statistics" bson:"-"`
+	ID             primitive.ObjectID `json:"-" bson:"_id"`
+	UID            string             `json:"uid" bson:"uid"`
+	Name           string             `json:"name" bson:"name"`
+	LogoURL        string             `json:"logo_url" bson:"logo_url"`
+	OrganisationID string             `json:"organisation_id" bson:"organisation_id"`
+	Type           GroupType          `json:"type" bson:"type"`
+	Config         *GroupConfig       `json:"config" bson:"config"`
+	Statistics     *GroupStatistics   `json:"statistics" bson:"-"`
 
 	// TODO(subomi): refactor this into the Instance API.
 	RateLimit         int    `json:"rate_limit" bson:"rate_limit"`
