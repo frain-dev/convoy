@@ -6,6 +6,7 @@ package server
 import (
 	"context"
 	"fmt"
+	"github.com/frain-dev/convoy/auth"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -98,6 +99,28 @@ func (s *SecurityIntegrationTestSuite) Test_CreateAPIKey() {
 func (s *SecurityIntegrationTestSuite) Test_CreateAppPortalAPIKey() {
 	expectedStatusCode := http.StatusCreated
 
+	// Switch to the native realm
+	err := config.LoadConfig("./testdata/Auth_Config/full-convoy-with-native-auth-realm.json")
+	require.NoError(s.T(), err)
+
+	initRealmChain(s.T(), s.DB.APIRepo(), s.DB.UserRepo(), s.ConvoyApp.cache)
+
+	member, err := testdb.SeedOrganisationMember(s.DB, s.DefaultOrg, s.DefaultUser, &auth.Role{
+		Type:   auth.RoleAdmin,
+		Groups: []string{s.DefaultGroup.UID},
+	})
+
+	newAPIKey := &models.APIKey{
+		Name: s.DefaultOrg.Name + "'s default key",
+		Role: models.Role{
+			Type:  auth.RoleAdmin,
+			Group: s.DefaultGroup.UID,
+		},
+	}
+
+	_, keyString, err := s.ConvoyApp.securityService.CreateAPIKey(context.Background(), member, newAPIKey)
+	require.NoError(s.T(), err)
+
 	// Just Before.
 	app, _ := testdb.SeedApplication(s.DB, s.DefaultGroup, uuid.NewString(), "test-app", true)
 
@@ -108,6 +131,7 @@ func (s *SecurityIntegrationTestSuite) Test_CreateAppPortalAPIKey() {
 	url := fmt.Sprintf("/api/v1/security/applications/%s/keys", app.UID)
 
 	req := createRequest(http.MethodPost, url, body)
+	req.Header.Set("Authorization", fmt.Sprintf("BEARER %s", keyString))
 	w := httptest.NewRecorder()
 
 	// Act.

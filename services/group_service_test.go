@@ -320,6 +320,71 @@ func TestGroupService_CreateGroup(t *testing.T) {
 			wantErrCode: http.StatusBadRequest,
 			wantErrMsg:  "failed to create group",
 		},
+		{
+			name: "should_fail_to_create_default_api_key_for_group",
+			args: args{
+				ctx: ctx,
+				newGroup: &models.Group{
+					Name:    "test_group_1",
+					Type:    "incoming",
+					LogoURL: "https://google.com",
+					Config:  &datastore.GroupConfig{},
+				},
+				org: &datastore.Organisation{UID: "1234"},
+				member: &datastore.OrganisationMember{
+					UID:            "abc",
+					OrganisationID: "1234",
+					Role:           auth.Role{Type: auth.RoleSuperUser},
+				},
+			},
+			dbFn: func(gs *GroupService) {
+				a, _ := gs.groupRepo.(*mocks.MockGroupRepository)
+				a.EXPECT().CreateGroup(gomock.Any(), gomock.Any()).
+					Times(1).Return(nil)
+
+				a.EXPECT().FetchGroupByID(gomock.Any(), gomock.Any()).Times(1).Return(&datastore.Group{UID: "abc", OrganisationID: "1234"}, nil)
+
+				apiKeyRepo, _ := gs.apiKeyRepo.(*mocks.MockAPIKeyRepository)
+				apiKeyRepo.EXPECT().CreateAPIKey(gomock.Any(), gomock.Any()).Times(1).Return(errors.New("failed"))
+			},
+			wantErr:     true,
+			wantErrCode: http.StatusBadRequest,
+			wantErrMsg:  "failed to create api key",
+		},
+		{
+			name: "should_error_for_duplicate_group_name",
+			args: args{
+				ctx: ctx,
+				newGroup: &models.Group{
+					Name:    "test_group",
+					Type:    "incoming",
+					LogoURL: "https://google.com",
+					Config: &datastore.GroupConfig{
+						Signature: &datastore.SignatureConfiguration{
+							Header: "X-Convoy-Signature",
+							Hash:   "SHA256",
+						},
+						Strategy: &datastore.StrategyConfiguration{
+							Type:       "linear",
+							Duration:   20,
+							RetryCount: 4,
+						},
+						DisableEndpoint: true,
+						ReplayAttacks:   true,
+					},
+				},
+				org:    &datastore.Organisation{UID: "1234"},
+				member: &datastore.OrganisationMember{},
+			},
+			dbFn: func(gs *GroupService) {
+				a, _ := gs.groupRepo.(*mocks.MockGroupRepository)
+				a.EXPECT().CreateGroup(gomock.Any(), gomock.Any()).
+					Times(1).Return(datastore.ErrDuplicateGroupName)
+			},
+			wantErr:     true,
+			wantErrCode: http.StatusBadRequest,
+			wantErrMsg:  "a group with this name already exists",
+		},
 	}
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
