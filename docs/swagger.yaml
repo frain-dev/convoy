@@ -166,6 +166,7 @@ definitions:
       group_id:
         type: string
       matched_endpoints:
+        description: TODO(all) remove this field
         type: integer
       provider_id:
         description: |-
@@ -193,10 +194,10 @@ definitions:
         type: string
       description:
         type: string
-      endpoint:
-        $ref: '#/definitions/datastore.Endpoint'
       endpoint_id:
         type: string
+      endpoint_metadata:
+        $ref: '#/definitions/datastore.Endpoint'
       event_id:
         type: string
       event_metadata:

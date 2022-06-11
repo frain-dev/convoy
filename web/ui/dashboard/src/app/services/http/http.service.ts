@@ -13,7 +13,7 @@ export class HttpService {
 
 	authDetails() {
 		const authDetails = localStorage.getItem('CONVOY_AUTH');
-		if (authDetails && authDetails !== "undefined") {
+		if (authDetails && authDetails !== 'undefined') {
 			const { token } = JSON.parse(authDetails);
 			return { token: token.access_token, authState: true };
 		} else {

@@ -1,10 +1,8 @@
 import { Component, OnInit } from '@angular/core';
-import { FormBuilder, FormControl, FormGroup, Validators } from '@angular/forms';
 import { Router } from '@angular/router';
 import { GROUP } from 'src/app/models/group.model';
 import { GeneralService } from 'src/app/services/general/general.service';
 import { PrivateService } from '../../private.service';
-import { CreateProjectService } from './create-project.service';
 
 @Component({
 	selector: 'app-create-project',
@@ -20,17 +18,21 @@ export class CreateProjectComponent implements OnInit {
 	];
 	projectType: 'incoming' | 'outgoing' = 'outgoing';
 
-	constructor(private router: Router) {}
+	constructor(private router: Router, public privateService: PrivateService, private generalService: GeneralService) {}
 
 	ngOnInit(): void {}
 
 	async createProject(newProjectData: GROUP) {
-		newProjectData.type === 'incoming' ? (this.projectStage = 'createSource') : (this.projectStage = 'createApplication');
+		this.projectType = newProjectData.type;
+		this.projectStage = 'createApplication';
 	}
-
-	toggleActiveStage() {}
 
 	cancel() {
 		this.router.navigate(['/projects']);
+	}
+
+	onProjectOnboardingComplete() {
+		this.generalService.showNotification({ message: 'Project setup complete', style: 'success' });
+		this.router.navigateByUrl('/projects/' + this.privateService.activeProjectDetails.uid);
 	}
 }
