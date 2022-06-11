@@ -49,16 +49,16 @@ func TestGroupService_CreateGroup(t *testing.T) {
 					RateLimit:         1000,
 					RateLimitDuration: "1m",
 					Config: &datastore.GroupConfig{
-						Signature: datastore.SignatureConfiguration{
+						Signature: &datastore.SignatureConfiguration{
 							Header: "X-Convoy-Signature",
 							Hash:   "SHA256",
 						},
-						Strategy: datastore.StrategyConfiguration{
+						Strategy: &datastore.StrategyConfiguration{
 							Type:       "linear",
 							Duration:   20,
 							RetryCount: 4,
 						},
-						RateLimit: datastore.RateLimitConfiguration{
+						RateLimit: &datastore.RateLimitConfiguration{
 							Count:    1000,
 							Duration: "1m",
 						},
@@ -79,16 +79,16 @@ func TestGroupService_CreateGroup(t *testing.T) {
 				RateLimit:         1000,
 				RateLimitDuration: "1m",
 				Config: &datastore.GroupConfig{
-					Signature: datastore.SignatureConfiguration{
+					Signature: &datastore.SignatureConfiguration{
 						Header: "X-Convoy-Signature",
 						Hash:   "SHA256",
 					},
-					Strategy: datastore.StrategyConfiguration{
+					Strategy: &datastore.StrategyConfiguration{
 						Type:       "linear",
 						Duration:   20,
 						RetryCount: 4,
 					},
-					RateLimit: datastore.RateLimitConfiguration{
+					RateLimit: &datastore.RateLimitConfiguration{
 						Count:    1000,
 						Duration: "1m",
 					},
@@ -110,16 +110,16 @@ func TestGroupService_CreateGroup(t *testing.T) {
 					RateLimit:         1000,
 					RateLimitDuration: "1m",
 					Config: &datastore.GroupConfig{
-						Signature: datastore.SignatureConfiguration{
+						Signature: &datastore.SignatureConfiguration{
 							Header: "X-Convoy-Signature",
 							Hash:   "SHA256",
 						},
-						Strategy: datastore.StrategyConfiguration{
+						Strategy: &datastore.StrategyConfiguration{
 							Type:       "linear",
 							Duration:   20,
 							RetryCount: 4,
 						},
-						RateLimit: datastore.RateLimitConfiguration{
+						RateLimit: &datastore.RateLimitConfiguration{
 							Count:    1000,
 							Duration: "1m",
 						},
@@ -140,16 +140,16 @@ func TestGroupService_CreateGroup(t *testing.T) {
 				RateLimit:         1000,
 				RateLimitDuration: "1m",
 				Config: &datastore.GroupConfig{
-					Signature: datastore.SignatureConfiguration{
+					Signature: &datastore.SignatureConfiguration{
 						Header: "X-Convoy-Signature",
 						Hash:   "SHA256",
 					},
-					Strategy: datastore.StrategyConfiguration{
+					Strategy: &datastore.StrategyConfiguration{
 						Type:       "linear",
 						Duration:   20,
 						RetryCount: 4,
 					},
-					RateLimit: datastore.RateLimitConfiguration{
+					RateLimit: &datastore.RateLimitConfiguration{
 						Count:    1000,
 						Duration: "1m",
 					},
@@ -183,9 +183,9 @@ func TestGroupService_CreateGroup(t *testing.T) {
 				RateLimit:         5000,
 				RateLimitDuration: "1m",
 				Config: &datastore.GroupConfig{
-					Signature:       datastore.DefaultSignatureConfig,
-					Strategy:        datastore.DefaultStrategyConfig,
-					RateLimit:       datastore.DefaultRateLimitConfig,
+					Signature:       &datastore.DefaultSignatureConfig,
+					Strategy:        &datastore.DefaultStrategyConfig,
+					RateLimit:       &datastore.DefaultRateLimitConfig,
 					DisableEndpoint: false,
 					ReplayAttacks:   false,
 				},
@@ -202,7 +202,7 @@ func TestGroupService_CreateGroup(t *testing.T) {
 					Type:    "outgoing",
 					LogoURL: "https://google.com",
 					Config: &datastore.GroupConfig{
-						Signature: datastore.SignatureConfiguration{
+						Signature: &datastore.SignatureConfiguration{
 							Header: "X-Convoy-Signature",
 							Hash:   "SHA256",
 						},
@@ -221,12 +221,12 @@ func TestGroupService_CreateGroup(t *testing.T) {
 				RateLimit:         5000,
 				RateLimitDuration: "1m",
 				Config: &datastore.GroupConfig{
-					Signature: datastore.SignatureConfiguration{
+					Signature: &datastore.SignatureConfiguration{
 						Header: "X-Convoy-Signature",
 						Hash:   "SHA256",
 					},
-					Strategy:        datastore.DefaultStrategyConfig,
-					RateLimit:       datastore.DefaultRateLimitConfig,
+					Strategy:        &datastore.DefaultStrategyConfig,
+					RateLimit:       &datastore.DefaultRateLimitConfig,
 					DisableEndpoint: false,
 					ReplayAttacks:   false,
 				},
@@ -243,11 +243,11 @@ func TestGroupService_CreateGroup(t *testing.T) {
 					Type:    "incoming",
 					LogoURL: "https://google.com",
 					Config: &datastore.GroupConfig{
-						Signature: datastore.SignatureConfiguration{
+						Signature: &datastore.SignatureConfiguration{
 							Header: "X-Convoy-Signature",
 							Hash:   "SHA256",
 						},
-						Strategy: datastore.StrategyConfiguration{
+						Strategy: &datastore.StrategyConfiguration{
 							Type:       "linear",
 							Duration:   20,
 							RetryCount: 4,
@@ -326,16 +326,16 @@ func TestGroupService_UpdateGroup(t *testing.T) {
 					Type:    "incoming",
 					LogoURL: "https://google.com",
 					Config: &datastore.GroupConfig{
-						Signature: datastore.SignatureConfiguration{
+						Signature: &datastore.SignatureConfiguration{
 							Header: "X-Convoy-Signature",
 							Hash:   "SHA256",
 						},
-						Strategy: datastore.StrategyConfiguration{
+						Strategy: &datastore.StrategyConfiguration{
 							Type:       "linear",
 							Duration:   20,
 							RetryCount: 4,
 						},
-						RateLimit:       datastore.DefaultRateLimitConfig,
+						RateLimit:       &datastore.DefaultRateLimitConfig,
 						DisableEndpoint: true,
 						ReplayAttacks:   true,
 					},
@@ -345,16 +345,16 @@ func TestGroupService_UpdateGroup(t *testing.T) {
 					Name:    "test_group",
 					LogoURL: "https://google.com",
 					Config: &datastore.GroupConfig{
-						Signature: datastore.SignatureConfiguration{
+						Signature: &datastore.SignatureConfiguration{
 							Header: "X-Convoy-Signature",
 							Hash:   "SHA256",
 						},
-						Strategy: datastore.StrategyConfiguration{
+						Strategy: &datastore.StrategyConfiguration{
 							Type:       "linear",
 							Duration:   20,
 							RetryCount: 4,
 						},
-						RateLimit:       datastore.DefaultRateLimitConfig,
+						RateLimit:       &datastore.DefaultRateLimitConfig,
 						DisableEndpoint: true,
 						ReplayAttacks:   true,
 					},
@@ -366,16 +366,16 @@ func TestGroupService_UpdateGroup(t *testing.T) {
 				Type:    "incoming",
 				LogoURL: "https://google.com",
 				Config: &datastore.GroupConfig{
-					Signature: datastore.SignatureConfiguration{
+					Signature: &datastore.SignatureConfiguration{
 						Header: "X-Convoy-Signature",
 						Hash:   "SHA256",
 					},
-					Strategy: datastore.StrategyConfiguration{
+					Strategy: &datastore.StrategyConfiguration{
 						Type:       "linear",
 						Duration:   20,
 						RetryCount: 4,
 					},
-					RateLimit:       datastore.DefaultRateLimitConfig,
+					RateLimit:       &datastore.DefaultRateLimitConfig,
 					DisableEndpoint: true,
 					ReplayAttacks:   true,
 				},
@@ -398,11 +398,11 @@ func TestGroupService_UpdateGroup(t *testing.T) {
 					Name:    "",
 					LogoURL: "https://google.com",
 					Config: &datastore.GroupConfig{
-						Signature: datastore.SignatureConfiguration{
+						Signature: &datastore.SignatureConfiguration{
 							Header: "X-Convoy-Signature",
 							Hash:   "SHA256",
 						},
-						Strategy: datastore.StrategyConfiguration{
+						Strategy: &datastore.StrategyConfiguration{
 							Type:       "linear",
 							Duration:   20,
 							RetryCount: 4,
@@ -425,11 +425,11 @@ func TestGroupService_UpdateGroup(t *testing.T) {
 					Name:    "test_group",
 					LogoURL: "https://google.com",
 					Config: &datastore.GroupConfig{
-						Signature: datastore.SignatureConfiguration{
+						Signature: &datastore.SignatureConfiguration{
 							Header: "X-Convoy-Signature",
 							Hash:   "SHA256",
 						},
-						Strategy: datastore.StrategyConfiguration{
+						Strategy: &datastore.StrategyConfiguration{
 							Type:       "linear",
 							Duration:   20,
 							RetryCount: 4,

@@ -38,20 +38,31 @@ func NewGroupService(appRepo datastore.ApplicationRepository, groupRepo datastor
 }
 
 func (gs *GroupService) CreateGroup(ctx context.Context, newGroup *models.Group) (*datastore.Group, error) {
+	err := util.Validate(newGroup)
+	if err != nil {
+		return nil, NewServiceError(http.StatusBadRequest, err)
+	}
+
 	groupName := newGroup.Name
 
-	// Apply Defaults
-	c := newGroup.Config
-	if c.Signature == (datastore.SignatureConfiguration{}) {
-		c.Signature = datastore.DefaultSignatureConfig
-	}
+	config := newGroup.Config
+	if newGroup.Config == nil {
+		config = &datastore.GroupConfig{}
+		config.Signature = &datastore.DefaultSignatureConfig
+		config.Strategy = &datastore.DefaultStrategyConfig
+		config.RateLimit = &datastore.DefaultRateLimitConfig
+	} else {
+		if newGroup.Config.Signature == nil {
+			config.Signature = &datastore.DefaultSignatureConfig
+		}
 
-	if c.Strategy == (datastore.StrategyConfiguration{}) {
-		c.Strategy = datastore.DefaultStrategyConfig
-	}
+		if newGroup.Config.Strategy == nil {
+			config.Strategy = &datastore.DefaultStrategyConfig
+		}
 
-	if c.RateLimit == (datastore.RateLimitConfiguration{}) {
-		c.RateLimit = datastore.DefaultRateLimitConfig
+		if newGroup.Config.RateLimit == nil {
+			config.RateLimit = &datastore.DefaultRateLimitConfig
+		}
 	}
 
 	if newGroup.RateLimit == 0 {
@@ -62,16 +73,11 @@ func (gs *GroupService) CreateGroup(ctx context.Context, newGroup *models.Group)
 		newGroup.RateLimitDuration = convoy.RATE_LIMIT_DURATION
 	}
 
-	err := util.Validate(newGroup)
-	if err != nil {
-		return nil, NewServiceError(http.StatusBadRequest, err)
-	}
-
 	group := &datastore.Group{
 		UID:               uuid.New().String(),
 		Name:              groupName,
 		Type:              newGroup.Type,
-		Config:            newGroup.Config,
+		Config:            config,
 		LogoURL:           newGroup.LogoURL,
 		CreatedAt:         primitive.NewDateTimeFromTime(time.Now()),
 		UpdatedAt:         primitive.NewDateTimeFromTime(time.Now()),

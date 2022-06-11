@@ -88,7 +88,10 @@ func (e *EventService) CreateAppEvent(ctx context.Context, newMessage *models.Ev
 		GroupID:        app.GroupID,
 		DocumentStatus: datastore.ActiveDocumentStatus,
 	}
-	if g.Config.Strategy.Type != datastore.LinearStrategyProvider && g.Config.Strategy.Type != datastore.ExponentialStrategyProvider {
+	fmt.Printf("%+v", g)
+
+	if (g.Config == nil || g.Config.Strategy == nil) ||
+		(g.Config.Strategy != nil && g.Config.Strategy.Type != datastore.LinearStrategyProvider && g.Config.Strategy.Type != datastore.ExponentialStrategyProvider) {
 		return nil, NewServiceError(http.StatusBadRequest, errors.New("retry strategy not defined in configuration"))
 	}
 
