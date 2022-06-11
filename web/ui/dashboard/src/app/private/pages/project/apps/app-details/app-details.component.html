@@ -17,7 +17,7 @@
 <div class="card padding-all__32px margin-bottom__20px">
 	<div class="flex flex__justify-between flex__align-items-center margin-bottom__24px">
 		<h3>Overview</h3>
-		<button class="button button__white button__small" [disabled]="appsDetailsItem?.events === 0" (click)="loadEventsFromAppsTable(appsDetailsItem.uid)">View Event</button>
+		<button class="button button__white button__small" [disabled]="appsDetailsItem?.events === 0" (click)="loadEventsFromAppsTable(appsDetailsItem.uid)">View Events</button>
 	</div>
 	<div class="flex flex__align-items-center flex__wrap flex__justify-between margin-bottom__32px">
 		<div>
@@ -190,7 +190,7 @@
 					</div>
 					<span class="bg__grey__light rounded__4px padding-x__4px position__absolute position--right__0px font__10px font__weight-400">required</span>
 				</label>
-				<div class="input--multiple">
+				<div class="input--multiple" (click)="focusInput()">
 					<div class="tag" *ngFor="let tag of eventTags">
 						{{ tag }}
 						<a (click)="removeEventTag(tag)">

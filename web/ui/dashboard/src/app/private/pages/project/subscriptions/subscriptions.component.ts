@@ -18,9 +18,12 @@ export class SubscriptionsComponent implements OnInit {
 	subscriptions!: { content: SUBSCRIPTION[]; pagination: PAGINATION };
 	subscriptionsLoaders = [1, 2, 3, 4, 5];
 	isLoadindingSubscriptions = false;
+	isDeletingSubscription = false;
+	showUpdateSubscription = false;
 
 	constructor(private route: ActivatedRoute, public privateService: PrivateService, private router: Router, private subscriptionsService: SubscriptionsService, private generalService: GeneralService) {
 		this.projectId = this.privateService.activeProjectDetails.uid;
+		this.showUpdateSubscription = !!route.snapshot.params.id;
 	}
 
 	async ngOnInit() {
@@ -45,8 +48,32 @@ export class SubscriptionsComponent implements OnInit {
 		this.router.navigateByUrl('/projects/' + this.privateService.activeProjectDetails.uid + '/subscriptions');
 	}
 
-	createSubscription() {
+	createSubscription(action: any) {
 		this.router.navigateByUrl('/projects/' + this.privateService.activeProjectDetails.uid + '/subscriptions');
-		this.generalService.showNotification({ message: 'Subscription has been created successfully', style: 'success' });
+		if (action !== 'cancel') this.generalService.showNotification({ message: 'Subscription has been created successfully', style: 'success' });
+	}
+
+	copyText(text?: string) {
+		if (!text) return;
+		const el = document.createElement('textarea');
+		el.value = text;
+		document.body.appendChild(el);
+		el.select();
+		document.execCommand('copy');
+		this.generalService.showNotification({ message: `Endpoint secret has been copied to clipboard`, style: 'info' });
+		document.body.removeChild(el);
+	}
+
+	async deleteSubscripton() {
+		this.isDeletingSubscription = true;
+
+		try {
+			const response = await this.subscriptionsService.deleteSubscription(this.activeSubscription?.uid || '');
+			this.generalService.showNotification({ message: response?.message, style: 'success' });
+			this.router.navigateByUrl('/projects');
+			this.isDeletingSubscription = false;
+		} catch (error) {
+			this.isDeletingSubscription = false;
+		}
 	}
 }

@@ -62,20 +62,34 @@ func (a *applicationHandler) GetSubscription(w http.ResponseWriter, r *http.Requ
 		return
 	}
 
-	source, err := a.sourceService.FindSourceByID(r.Context(), group, subscription.SourceID)
-	if err != nil {
-		_ = render.Render(w, r, newServiceErrResponse(err))
-		return
+	if subscription.SourceID != "" {
+		source, err := a.sourceService.FindSourceByID(r.Context(), group, subscription.SourceID)
+		if err != nil {
+			_ = render.Render(w, r, newServiceErrResponse(err))
+			return
+		}
+		subscription.Source = source
 	}
 
-	endpoint, err := a.appRepo.FindApplicationEndpointByID(r.Context(), subscription.AppID, subscription.EndpointID)
-	if err != nil {
-		_ = render.Render(w, r, newServiceErrResponse(err))
-		return
+	if subscription.EndpointID != "" {
+		endpoint, err := a.appRepo.FindApplicationEndpointByID(r.Context(), subscription.AppID, subscription.EndpointID)
+		if err != nil {
+			_ = render.Render(w, r, newServiceErrResponse(err))
+			return
+		}
+
+		subscription.Endpoint = endpoint
 	}
 
-	subscription.Source = source
-	subscription.Endpoint = endpoint
+	if subscription.AppID != "" {
+		app, err := a.appRepo.FindApplicationByID(r.Context(), subscription.AppID)
+		if err != nil {
+			_ = render.Render(w, r, newServiceErrResponse(err))
+			return
+		}
+
+		subscription.App = app
+	}
 
 	_ = render.Render(w, r, newServerResponse("Subscription fetched successfully", subscription, http.StatusOK))
 }

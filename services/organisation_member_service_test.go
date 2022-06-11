@@ -339,7 +339,7 @@ func TestOrganisationMemberService_LoadOrganisationMembersPaged(t *testing.T) {
 		name               string
 		args               args
 		dbFn               func(os *OrganisationMemberService)
-		wantMembers        []datastore.OrganisationMember
+		wantMembers        []*datastore.OrganisationMember
 		wantPaginationData datastore.PaginationData
 		wantErr            bool
 		wantErrCode        int
@@ -362,7 +362,7 @@ func TestOrganisationMemberService_LoadOrganisationMembersPaged(t *testing.T) {
 					Page:    1,
 					PerPage: 1,
 					Sort:    1,
-				}).Times(1).Return([]datastore.OrganisationMember{
+				}).Times(1).Return([]*datastore.OrganisationMember{
 					{UID: "123"},
 					{UID: "345"},
 					{UID: "abc"},
@@ -376,7 +376,7 @@ func TestOrganisationMemberService_LoadOrganisationMembersPaged(t *testing.T) {
 				},
 					nil)
 			},
-			wantMembers: []datastore.OrganisationMember{
+			wantMembers: []*datastore.OrganisationMember{
 				{UID: "123"},
 				{UID: "345"},
 				{UID: "abc"},
