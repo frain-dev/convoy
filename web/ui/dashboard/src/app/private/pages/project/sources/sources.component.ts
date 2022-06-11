@@ -3,6 +3,7 @@ import { ActivatedRoute, Router } from '@angular/router';
 import { PAGINATION } from 'convoy-app/lib/models/global.model';
 import { SOURCE } from 'src/app/models/group.model';
 import { PrivateService } from 'src/app/private/private.service';
+import { GeneralService } from 'src/app/services/general/general.service';
 import { SourcesService } from './sources.service';
 
 @Component({
@@ -18,7 +19,7 @@ export class SourcesComponent implements OnInit {
 	isLoadingSources = false;
 	projectId = this.privateService.activeProjectDetails.uid;
 
-	constructor(private route: ActivatedRoute, private router: Router, private sourcesService: SourcesService, public privateService: PrivateService) {
+	constructor(private route: ActivatedRoute, private router: Router, private sourcesService: SourcesService, public privateService: PrivateService, private generalService: GeneralService) {
 		this.route.queryParams.subscribe(params => {
 			this.activeSource = this.sources?.content.find(source => source.uid === params?.id);
 		});
@@ -54,6 +55,7 @@ export class SourcesComponent implements OnInit {
 	}
 
 	closeCreateSourceModal() {
+		this.generalService.showNotification({ message: 'Source created successfully', style: 'success' });
 		this.router.navigateByUrl('/projects/' + this.projectId + '/sources');
 	}
 }
