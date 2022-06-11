@@ -4,12 +4,13 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"github.com/frain-dev/convoy/notification"
-	"github.com/frain-dev/convoy/notification/email"
-	"github.com/frain-dev/convoy/notification/noop"
 	"os"
 	"time"
 	_ "time/tzdata"
+
+	"github.com/frain-dev/convoy/notification"
+	"github.com/frain-dev/convoy/notification/email"
+	"github.com/frain-dev/convoy/notification/noop"
 
 	"github.com/frain-dev/convoy/cache"
 	"github.com/frain-dev/convoy/datastore/badger"

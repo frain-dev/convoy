@@ -18,7 +18,7 @@ import (
 func addServerCommand(a *app) *cobra.Command {
 
 	var env string
-	var baseUrl string
+	var host string
 	var sentry string
 	var limiter string
 	var cache string
@@ -97,7 +97,7 @@ func addServerCommand(a *app) *cobra.Command {
 	cmd.Flags().StringVar(&logLevel, "log-level", "info", "Log level")
 	cmd.Flags().StringVar(&logger, "logger", "info", "Logger")
 	cmd.Flags().StringVar(&env, "env", "development", "Convoy environment")
-	cmd.Flags().StringVar(&baseUrl, "base-url", "", "Base Url - Used for the app portal")
+	cmd.Flags().StringVar(&host, "host", "", "Host - The application host name")
 	cmd.Flags().StringVar(&cache, "cache", "redis", `Cache Provider ("redis" or "in-memory")`)
 	cmd.Flags().StringVar(&limiter, "limiter", "redis", `Rate limiter provider ("redis" or "in-memory")`)
 	cmd.Flags().StringVar(&sentry, "sentry", "", "Sentry DSN")
@@ -219,14 +219,14 @@ func loadServerConfigFromCliFlags(cmd *cobra.Command, c *config.Configuration) e
 		c.Environment = env
 	}
 
-	// CONVOY_BASE_URL
-	baseUrl, err := cmd.Flags().GetString("base-url")
+	// CONVOY_HOST
+	host, err := cmd.Flags().GetString("host")
 	if err != nil {
 		return err
 	}
 
-	if !util.IsStringEmpty(baseUrl) {
-		c.BaseUrl = baseUrl
+	if !util.IsStringEmpty(host) {
+		c.Host = host
 	}
 
 	// CONVOY_SENTRY_DSN
