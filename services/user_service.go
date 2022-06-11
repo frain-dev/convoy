@@ -246,7 +246,7 @@ func (u *UserService) sendPasswordResetEmail(baseURL string, token string, user 
 		Email:             user.Email,
 		EmailTemplateName: email.TemplateResetPassword.String(),
 		Subject:           "Convoy Password Reset",
-		PasswordResetURL:  fmt.Sprintf("%s/ui/reset-password?token=%s", baseURL, token),
+		PasswordResetURL:  fmt.Sprintf("%s/ui/user/reset-password?token=%s", baseURL, token),
 		RecipientName:     user.FirstName,
 		ExpiresAt:         user.ResetPasswordExpiresAt.Time().String(),
 	}
