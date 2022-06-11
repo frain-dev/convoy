@@ -224,3 +224,20 @@
 		<button class="button button__primary padding-y__12px padding-x__28px rounded__8px" [disabled]="isCreatingProject" *ngIf="action === 'update'">Update Project</button>
 	</div>
 </form>
+<div class="_overlay" *ngIf="showApiKey"></div>
+<div class="modal modal__right" *ngIf="showApiKey">
+	<div class="modal--body delete no-padding flex flex__column flex__align-items-center">
+		<img src="/assets/img/success.gif" class="img" alt="success" />
+		<h2 class="font__weight-600 color__black margin-top__16px">Project Created Successfully</h2>
+		<p class="font__14px color__grey font-weight-400 text--center margin-bottom__16px margin-top__8px">Your API Key has also been created. Please copy this key and save it somewhere safe.</p>
+		<p class="font__14px color__danger margin-bottom__40px text--center">For security reasons, we cannot show it to you again</p>
+		<div class="key margin-bottom__32px">
+			<span>{{ apiKey }}</span>
+			<button (click)="copyKey(apiKey, 'secret')">
+				<img src="/assets/img/copy.svg" alt="copy" />
+				<small *ngIf="showSecretCopyText">Copied!</small>
+			</button>
+		</div>
+		<button class="button button__primary" (click)="onAction.emit({ action: 'createProject', data: projectDetails })">Done</button>
+	</div>
+</div>

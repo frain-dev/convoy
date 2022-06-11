@@ -18,10 +18,10 @@
 	<div class="modal--body padding-all__0px">
 		<app-create-project-component (onAction)="$event?.action == 'cancel' ? cancel() : createProject($event)" *ngIf="projectStage === 'createProject'"></app-create-project-component>
 
-		<div class="card padding-all__24px margin-bottom__24px" [hidden]="projectStage === 'createProject'">
+		<div class="card padding-all__24px margin-bottom__24px" *ngIf="projectStage !== 'createProject'">
 			<ul class="setup-steps flex flex__align-items-center border__bottom padding-bottom__24px">
 				<li [class]="'setup-step--step ' + stage.currentStage" *ngFor="let stage of projectStages">
-					<div [hidden]="projectType !== 'incoming' && stage.id === 'createSource'">
+					<div>
 						<div class="line"></div>
 						<div class="margin-top__4px flex flex__align-items-center">
 							<div class="checkbox margin-all__0px width__16px height__16px border__all rounded__50px"></div>
@@ -47,7 +47,7 @@
 
 		<app-create-source
 			*ngIf="projectStage === 'createSource' && privateService.activeProjectDetails.uid"
-			(onAction)="$event?.action == 'cancel' ? cancel() : toggleActiveStage({ project: 'createApplication', prevStage: 'createSource' })"
+			(onAction)="$event?.action == 'cancel' ? cancel() : toggleActiveStage({ project: 'createSubscription', prevStage: 'createSource' })"
 		></app-create-source>
 
 		<app-create-app
