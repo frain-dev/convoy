@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/frain-dev/convoy"
+	"github.com/frain-dev/convoy/cache"
 	"github.com/frain-dev/convoy/datastore"
 	"github.com/frain-dev/convoy/limiter"
 	"github.com/frain-dev/convoy/server/models"
@@ -22,33 +23,46 @@ type GroupService struct {
 	eventRepo         datastore.EventRepository
 	eventDeliveryRepo datastore.EventDeliveryRepository
 	limiter           limiter.RateLimiter
+	cache             cache.Cache
 }
 
-func NewGroupService(appRepo datastore.ApplicationRepository, groupRepo datastore.GroupRepository, eventRepo datastore.EventRepository, eventDeliveryRepo datastore.EventDeliveryRepository, limiter limiter.RateLimiter) *GroupService {
+func NewGroupService(appRepo datastore.ApplicationRepository, groupRepo datastore.GroupRepository, eventRepo datastore.EventRepository, eventDeliveryRepo datastore.EventDeliveryRepository, limiter limiter.RateLimiter, cache cache.Cache) *GroupService {
 	return &GroupService{
 		appRepo:           appRepo,
 		groupRepo:         groupRepo,
 		eventRepo:         eventRepo,
 		eventDeliveryRepo: eventDeliveryRepo,
 		limiter:           limiter,
+		cache:             cache,
 	}
 }
 
 func (gs *GroupService) CreateGroup(ctx context.Context, newGroup *models.Group) (*datastore.Group, error) {
+	err := util.Validate(newGroup)
+	if err != nil {
+		return nil, NewServiceError(http.StatusBadRequest, err)
+	}
+
 	groupName := newGroup.Name
 
-	// Apply Defaults
-	c := &newGroup.Config
-	if c.Signature == (datastore.SignatureConfiguration{}) {
-		c.Signature = datastore.DefaultSignatureConfig
-	}
+	config := newGroup.Config
+	if newGroup.Config == nil {
+		config = &datastore.GroupConfig{}
+		config.Signature = &datastore.DefaultSignatureConfig
+		config.Strategy = &datastore.DefaultStrategyConfig
+		config.RateLimit = &datastore.DefaultRateLimitConfig
+	} else {
+		if newGroup.Config.Signature == nil {
+			config.Signature = &datastore.DefaultSignatureConfig
+		}
 
-	if c.Strategy == (datastore.StrategyConfiguration{}) {
-		c.Strategy = datastore.DefaultStrategyConfig
-	}
+		if newGroup.Config.Strategy == nil {
+			config.Strategy = &datastore.DefaultStrategyConfig
+		}
 
-	if c.RateLimit == (datastore.RateLimitConfiguration{}) {
-		c.RateLimit = datastore.DefaultRateLimitConfig
+		if newGroup.Config.RateLimit == nil {
+			config.RateLimit = &datastore.DefaultRateLimitConfig
+		}
 	}
 
 	if newGroup.RateLimit == 0 {
@@ -59,16 +73,11 @@ func (gs *GroupService) CreateGroup(ctx context.Context, newGroup *models.Group)
 		newGroup.RateLimitDuration = convoy.RATE_LIMIT_DURATION
 	}
 
-	err := util.Validate(newGroup)
-	if err != nil {
-		return nil, NewServiceError(http.StatusBadRequest, err)
-	}
-
 	group := &datastore.Group{
 		UID:               uuid.New().String(),
 		Name:              groupName,
 		Type:              newGroup.Type,
-		Config:            &newGroup.Config,
+		Config:            config,
 		LogoURL:           newGroup.LogoURL,
 		CreatedAt:         primitive.NewDateTimeFromTime(time.Now()),
 		UpdatedAt:         primitive.NewDateTimeFromTime(time.Now()),
@@ -80,21 +89,32 @@ func (gs *GroupService) CreateGroup(ctx context.Context, newGroup *models.Group)
 	err = gs.groupRepo.CreateGroup(ctx, group)
 	if err != nil {
 		log.WithError(err).Error("failed to create group")
+
+		if err == datastore.ErrDuplicateGroupName {
+			return nil, NewServiceError(http.StatusBadRequest, err)
+		}
+
 		return nil, NewServiceError(http.StatusBadRequest, errors.New("failed to create group"))
 	}
 
 	return group, nil
 }
 
-func (gs *GroupService) UpdateGroup(ctx context.Context, group *datastore.Group, update *models.Group) (*datastore.Group, error) {
+func (gs *GroupService) UpdateGroup(ctx context.Context, group *datastore.Group, update *models.UpdateGroup) (*datastore.Group, error) {
 	err := util.Validate(update)
 	if err != nil {
 		log.WithError(err).Error("failed to validate group update")
 		return nil, NewServiceError(http.StatusBadRequest, err)
 	}
 
-	group.Name = update.Name
-	group.Config = &update.Config
+	if !util.IsStringEmpty(update.Name) {
+		group.Name = update.Name
+	}
+
+	if update.Config != nil {
+		group.Config = update.Config
+	}
+
 	if !util.IsStringEmpty(update.LogoURL) {
 		group.LogoURL = update.LogoURL
 	}
@@ -102,7 +122,13 @@ func (gs *GroupService) UpdateGroup(ctx context.Context, group *datastore.Group,
 	err = gs.groupRepo.UpdateGroup(ctx, group)
 	if err != nil {
 		log.WithError(err).Error("failed to to update group")
-		return nil, NewServiceError(http.StatusBadRequest, errors.New("an error occurred while updating Group"))
+		return nil, NewServiceError(http.StatusBadRequest, err)
+	}
+
+	groupCacheKey := convoy.GroupsCacheKey.Get(group.UID).String()
+	err = gs.cache.Set(ctx, groupCacheKey, &group, time.Minute*5)
+	if err != nil {
+		return nil, NewServiceError(http.StatusBadRequest, err)
 	}
 
 	return group, nil

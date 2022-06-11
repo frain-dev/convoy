@@ -48,7 +48,7 @@ export class OrganisationComponent implements OnInit {
 			const response = await this.organisationService.updateOrganisation({ org_id: this.organisationId, body: this.editOrganisationForm.value });
 			if (response.status == true) {
 				this.generalService.showNotification({ style: 'success', message: response.message });
-				localStorage.setItem('ORG_DETAILS', JSON.stringify(response.data));
+				localStorage.setItem('CONVOY_ORG', JSON.stringify(response.data));
 				window.location.reload();
 			}
 			this.isEditingOrganisation = false;
@@ -58,7 +58,7 @@ export class OrganisationComponent implements OnInit {
 	}
 
 	getOrganisationDetails() {
-		const org = localStorage.getItem('ORG_DETAILS');
+		const org = localStorage.getItem('CONVOY_ORG');
 		if (org) {
 			const organisationDetails = JSON.parse(org);
 			this.organisationId = organisationDetails.uid;
@@ -75,7 +75,7 @@ export class OrganisationComponent implements OnInit {
 			const response = await this.organisationService.deleteOrganisation({ org_id: this.organisationId });
 			if (response.status == true) {
 				this.generalService.showNotification({ style: 'success', message: response.message });
-				localStorage.removeItem('ORG_DETAILS');
+				localStorage.removeItem('CONVOY_ORG');
 				this.router.navigateByUrl('/').then(() => {
 					window.location.reload();
 				});

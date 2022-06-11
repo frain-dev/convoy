@@ -65,9 +65,7 @@ export class CreateSourceComponent implements OnInit {
 		try {
 			const response = await this.createSourceService.createSource({ sourceData });
 			this.onAction.emit(response.data);
-		} catch (error) {
-			console.log(error);
-		}
+		} catch (error) {}
 	}
 
 	isSourceFormValid(): boolean {

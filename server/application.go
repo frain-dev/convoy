@@ -73,13 +73,13 @@ func newApplicationHandler(
 	limiter limiter.RateLimiter, searcher searcher.Searcher) *applicationHandler {
 	as := services.NewAppService(appRepo, eventRepo, eventDeliveryRepo, cache)
 	es := services.NewEventService(appRepo, eventRepo, eventDeliveryRepo, queue, cache, searcher, subRepo)
-	gs := services.NewGroupService(appRepo, groupRepo, eventRepo, eventDeliveryRepo, limiter)
+	gs := services.NewGroupService(appRepo, groupRepo, eventRepo, eventDeliveryRepo, limiter, cache)
 	ss := services.NewSecurityService(groupRepo, apiKeyRepo)
 	os := services.NewOrganisationService(orgRepo, orgMemberRepo)
-	rs := services.NewSubscriptionService(subRepo)
+	rs := services.NewSubscriptionService(subRepo, appRepo, sourceRepo)
 	sos := services.NewSourceService(sourceRepo)
 	us := services.NewUserService(userRepo, cache)
-	ois := services.NewOrganisationInviteService(orgRepo, userRepo, orgMemberRepo, orgInviteRepo)
+	ois := services.NewOrganisationInviteService(orgRepo, userRepo, orgMemberRepo, orgInviteRepo, queue)
 	om := services.NewOrganisationMemberService(orgMemberRepo)
 
 	return &applicationHandler{
@@ -293,7 +293,6 @@ func (a *applicationHandler) CreateAppEndpoint(w http.ResponseWriter, r *http.Re
 // @Security ApiKeyAuth
 // @Router /applications/{appID}/endpoints/{endpointID} [get]
 func (a *applicationHandler) GetAppEndpoint(w http.ResponseWriter, r *http.Request) {
-
 	_ = render.Render(w, r, newServerResponse("App endpoint fetched successfully",
 		*getApplicationEndpointFromContext(r.Context()), http.StatusOK))
 }
