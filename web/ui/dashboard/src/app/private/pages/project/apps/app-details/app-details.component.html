@@ -34,11 +34,11 @@
 		</div>
 		<div>
 			<p class="color__grey font__12px font__weight-300">EVENTS</p>
-			<p class="color__black font__14px font__weight-500">{{ appsDetailsItem?.events }}</p>
+			<p class="color__black font__14px font__weight-500">{{ appsDetailsItem?.events || 0 }}</p>
 		</div>
 		<div>
 			<p class="color__grey font__12px font__weight-300">ENDPOINTS</p>
-			<p class="color__black font__14px font__weight-500">{{ appsDetailsItem?.endpoints?.length }}</p>
+			<p class="color__black font__14px font__weight-500">{{ appsDetailsItem?.endpoints?.length || 0 }}</p>
 		</div>
 	</div>
 	<!-- pending when backend is ready  -->
@@ -150,7 +150,6 @@
 
 <!-- create app, add new endpoint, add event modals  -->
 <div class="modal modal__right" *ngIf="showAddEndpointModal || showAddEventModal || showEndpointSecret">
-	
 	<!-- add endpoint modal  -->
 	<app-create-endpoint
 		[editMode]="editMode"

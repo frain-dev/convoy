@@ -13,7 +13,7 @@ import { AppDetailsService } from './app-details.service';
 	styleUrls: ['./app-details.component.scss']
 })
 export class AppDetailsComponent implements OnInit {
-	showAddEndpointModal: boolean = false;
+	showAddEndpointModal = false;
 	showAddEventModal = false;
 	showEndpointSecret = false;
 	showPublicCopyText = false;

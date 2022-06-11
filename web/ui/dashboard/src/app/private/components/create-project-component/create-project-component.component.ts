@@ -64,17 +64,23 @@ export class CreateProjectComponent implements OnInit {
 		if (this.projectForm.invalid) return this.projectForm.markAllAsTouched();
 
 		this.isCreatingProject = true;
-		const [digits, word] = this.projectForm.value.config.strategy.duration.match(/\D+|\d+/g);
-		word === 's' ? (this.projectForm.value.config.strategy.duration = parseInt(digits) * 1000) : (this.projectForm.value.config.strategy.duration = parseInt(digits) * 1000000);
-
+		let duration = this.projectForm.value.config.strategy.duration
+		const [digits, word] = duration.match(/\D+|\d+/g);
+		word === 's' ? (duration = parseInt(digits) * 1000) : (duration = parseInt(digits) * 1000000);
+		this.projectForm.value.config.strategy.duration = duration;
 		try {
 			const response = await this.createProjectService.createProject(this.projectForm.value);
 			this.privateService.activeProjectDetails = response.data;
 			this.isCreatingProject = false;
-			this.generalService.showNotification({ message: 'Project created successfully!', style: 'success' });
-			this.onAction.emit({ action: 'createProject', data: response.data });
+			if(response.status === true){
+				this.generalService.showNotification({ message: response.message, style: 'success' });
+				this.onAction.emit({ action: 'createProject', data: response.data });
+			}else{
+				this.generalService.showNotification({ message: response?.error?.message, style: 'error' });
+			}
 		} catch (error: any) {
 			this.isCreatingProject = false;
+			console.log(error)
 			this.generalService.showNotification({ message: error.message, style: 'error' });
 		}
 	}

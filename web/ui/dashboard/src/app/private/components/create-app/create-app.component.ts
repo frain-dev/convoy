@@ -46,8 +46,10 @@ export class CreateAppComponent implements OnInit {
 	newEndpoint(): FormGroup {
 		return this.formBuilder.group({
 			url: ['', Validators.required],
-			events: [''],
-			description: ['', Validators.required]
+			description: ['', Validators.required],
+			http_timeout: [''],
+			rate_limit: [''],
+			rate_limit_duration: ['']
 		});
 	}
 
@@ -78,7 +80,7 @@ export class CreateAppComponent implements OnInit {
 					this.eventTags[i].push(addTagInputValue?.value);
 					this.eventTags[i] = this.eventTags[i].filter((e: string) => String(e).trim());
 
-					((this.addNewAppForm.get('endpoints') as FormArray)?.at(i) as FormGroup)?.get('events')?.patchValue(this.eventTags[i]);
+					// ((this.addNewAppForm.get('endpoints') as FormArray)?.at(i) as FormGroup)?.get('events')?.patchValue(this.eventTags[i]);
 					addTagInputValue.value = '';
 				}
 				e.preventDefault();

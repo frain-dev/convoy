@@ -18,29 +18,15 @@
 	<div class="modal--body padding-all__0px">
 		<app-create-project-component (onAction)="$event.action == 'cancel' ? cancel() : createProject($event?.data)" *ngIf="projectStage === 'createProject'"></app-create-project-component>
 
-		<div class="card padding-all__24px margin-bottom__24px" *ngIf="projectStage !== 'createProject'">
+		<div class="card padding-all__24px margin-bottom__24px" [hidden]="projectStage === 'createProject'">
 			<ul class="setup-steps flex flex__align-items-center border__bottom padding-bottom__24px">
-				<li class="setup-step--step" *ngIf="projectType === 'incoming'" [ngClass]="{ done: projectStage !== 'createSource', current: projectStage == 'createSource' }">
-					<div class="line"></div>
-					<div class="margin-top__4px flex flex__align-items-center">
-						<div class="checkbox margin-all__0px width__16px height__16px border__all rounded__50px"></div>
-						<div class="text margin-left__8px font__14px font__weight-500">Create Source</div>
-					</div>
-				</li>
-
-				<li class="setup-step--step" [ngClass]="{ done: projectStage == 'createSubscription', current: projectStage == 'createApplication' }">
-					<div class="line bg__primary"></div>
-					<div class="margin-top__4px flex flex__align-items-center">
-						<div class="checkbox margin-all__0px width__16px height__16px border__all rounded__50px"></div>
-						<div class="text margin-left__8px font__14px font__weight-500">Create Application</div>
-					</div>
-				</li>
-
-				<li class="setup-step--step" [ngClass]="{ current: projectStage == 'createSubscription' }">
-					<div class="line bg__primary"></div>
-					<div class="margin-top__4px flex flex__align-items-center">
-						<div class="checkbox margin-all__0px width__16px height__16px border__all rounded__50px"></div>
-						<div class="text margin-left__8px font__14px font__weight-500">Create Subscription</div>
+				<li [class]="'setup-step--step ' + stage.currentStage" *ngFor="let stage of projectStages">
+					<div [hidden]="projectType !== 'incoming' && stage.id === 'createSource'">
+						<div class="line"></div>
+						<div class="margin-top__4px flex flex__align-items-center">
+							<div class="checkbox margin-all__0px width__16px height__16px border__all rounded__50px"></div>
+							<div class="text margin-left__8px font__14px font__weight-500">{{ stage.projectStage }}</div>
+						</div>
 					</div>
 				</li>
 			</ul>
@@ -61,13 +47,15 @@
 
 		<app-create-source
 			*ngIf="projectStage === 'createSource' && privateService.activeProjectDetails.uid"
-			(onAction)="$event?.action == 'cancel' ? cancel() : projectType == 'incoming' ? onProjectOnboardingComplete() : (projectStage = 'createApplication')"
+			(onAction)="$event?.action == 'cancel' ? cancel() : projectType == 'incoming' ? onProjectOnboardingComplete() : toggleActiveStage({ project: 'createApplication', prevStage: 'createSource' })"
 		></app-create-source>
 
 		<app-create-app
 			*ngIf="projectStage === 'createApplication' && privateService.activeProjectDetails.uid"
 			(discardApp)="cancel()"
-			(createApp)="projectType == 'incoming' ? (projectStage = 'createSource') : (projectStage = 'createSubscription')"
+			(createApp)="
+				projectType == 'incoming' ? toggleActiveStage({ project: 'createSource', prevStage: 'createApplication' }) : toggleActiveStage({ project: 'createSubscription', prevStage: 'createApplication' })
+			"
 		></app-create-app>
 
 		<app-create-subscription *ngIf="projectStage === 'createSubscription' && privateService.activeProjectDetails.uid" (onAction)="onProjectOnboardingComplete()"></app-create-subscription>

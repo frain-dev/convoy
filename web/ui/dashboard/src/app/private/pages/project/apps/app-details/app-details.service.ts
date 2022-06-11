@@ -77,7 +77,7 @@ export class AppDetailsService {
 		return new Promise(async (resolve, reject) => {
 			try {
 				const response = await this.http.request({
-					url: `/apps/${requestDetails.appId}/endpoints/${requestDetails.endpointId}?groupId=${this.projectId}`,
+					url: `${this.privateService.urlFactory('org_project')}/apps/${requestDetails.appId}/endpoints/${requestDetails.endpointId}`,
 					body: requestDetails.body,
 					method: 'put'
 				});
@@ -93,7 +93,7 @@ export class AppDetailsService {
 		return new Promise(async (resolve, reject) => {
 			try {
 				const response = await this.http.request({
-					url: `/apps/${requestDetails.appId}/endpoints/${requestDetails.endpointId}?groupId=${this.projectId}`,
+					url: `${this.privateService.urlFactory('org_project')}/apps/${requestDetails.appId}/endpoints/${requestDetails.endpointId}`,
 					method: 'delete'
 				});
 
