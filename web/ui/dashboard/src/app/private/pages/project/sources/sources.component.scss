@@ -8,9 +8,20 @@ tbody {
 	}
 
 	td:nth-of-type(4) div {
-		width: 223px;
+		width: 237px;
 		overflow: hidden;
 		text-overflow: ellipsis;
+		padding-right: 14px;
+
+		button {
+			top: 50%;
+			transform: translate(0, -50%);
+			right: -10px;
+
+			img {
+				width: 16px;
+			}
+		}
 	}
 }
 
