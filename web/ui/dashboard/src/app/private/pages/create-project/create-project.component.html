@@ -16,25 +16,27 @@
 	</div>
 
 	<div class="modal--body padding-all__0px">
-		<app-create-project-component (onAction)="$event.action == 'cancel' ? cancel() : createProject($event)" *ngIf="projectStage === 'createProject'"></app-create-project-component>
+		<app-create-project-component (onAction)="$event?.action == 'cancel' ? cancel() : createProject($event)" *ngIf="projectStage === 'createProject'"></app-create-project-component>
 
 		<div class="card padding-all__24px margin-bottom__24px" *ngIf="projectStage !== 'createProject'">
 			<ul class="setup-steps flex flex__align-items-center border__bottom padding-bottom__24px">
-				<li class="setup-step--step done" *ngIf="projectType === 'incoming'">
-					<div class="line"></div>
-					<div class="margin-top__4px flex flex__align-items-center">
-						<div class="checkbox margin-all__0px width__16px height__16px border__all rounded__50px"></div>
-						<div class="text margin-left__8px font__14px font__weight-500">Create Source</div>
-					</div>
-				</li>
-				<li class="setup-step--step current">
+				<li class="setup-step--step" [ngClass]="{ done: projectStage != 'createApplication', current: projectStage == 'createApplication' }">
 					<div class="line bg__primary"></div>
 					<div class="margin-top__4px flex flex__align-items-center">
 						<div class="checkbox margin-all__0px width__16px height__16px border__all rounded__50px"></div>
 						<div class="text margin-left__8px font__14px font__weight-500">Create Application</div>
 					</div>
 				</li>
-				<li class="setup-step--step">
+
+				<li class="setup-step--step" *ngIf="projectType === 'incoming'" [ngClass]="{ done: projectStage == 'createSubscription', current: projectStage == 'createSource' }">
+					<div class="line"></div>
+					<div class="margin-top__4px flex flex__align-items-center">
+						<div class="checkbox margin-all__0px width__16px height__16px border__all rounded__50px"></div>
+						<div class="text margin-left__8px font__14px font__weight-500">Create Source</div>
+					</div>
+				</li>
+
+				<li class="setup-step--step" [ngClass]="{ current: projectStage == 'createSubscription' }">
 					<div class="line bg__primary"></div>
 					<div class="margin-top__4px flex flex__align-items-center">
 						<div class="checkbox margin-all__0px width__16px height__16px border__all rounded__50px"></div>
@@ -45,20 +47,29 @@
 
 			<div *ngIf="projectStage === 'createSource'">
 				<h3 class="margin-top__24px font__weight-600 font__18px">Create your first source</h3>
-				<p class="font__14px color__grey margin-top__8px width__80">
-					Your source represents the etiam diam mi, egestas tortor nulla quis consectetur mauris eget. Penatibus placerat massa, lectus lectus
-				</p>
+				<p class="font__14px color__grey margin-top__8px width__80">Create a source that'll triger a webhook event in your project</p>
 			</div>
 			<div *ngIf="projectStage === 'createApplication'">
 				<h3 class="margin-top__24px font__weight-600 font__18px">Create your first application</h3>
-				<p class="font__14px color__grey margin-top__8px width__80">
-					Your source represents the etiam diam mi, egestas tortor nulla quis consectetur mauris eget. Penatibus placerat massa, lectus lectus
-				</p>
+				<p class="font__14px color__grey margin-top__8px width__80">Create and aplication and endpoint(s) that'll listen to events on this project</p>
+			</div>
+			<div *ngIf="projectStage === 'createSubscription'">
+				<h3 class="margin-top__24px font__weight-600 font__18px">Create your first subscription</h3>
+				<p class="font__14px color__grey margin-top__8px width__80">Create a subscription that'll listen to events from your source</p>
 			</div>
 		</div>
 
-		<app-create-source *ngIf="projectStage === 'createSource'"></app-create-source>
+		<app-create-source
+			*ngIf="projectStage === 'createSource' && privateService.activeProjectDetails.uid"
+			(onAction)="$event?.action == 'cancel' ? cancel() : (projectStage = 'createSubscription')"
+		></app-create-source>
 
-		<app-create-app *ngIf="projectStage === 'createApplication'" (discardApp)="cancel()" (createApp)="projectStage = 'createSubscription'"></app-create-app>
+		<app-create-app
+			*ngIf="projectStage === 'createApplication' && privateService.activeProjectDetails.uid"
+			(discardApp)="cancel()"
+			(createApp)="projectType == 'incoming' ? (projectStage = 'createSource') : (projectStage = 'createSubscription')"
+		></app-create-app>
+
+		<app-create-subscription *ngIf="projectStage === 'createSubscription' && privateService.activeProjectDetails.uid" (onAction)="onProjectOnboardingComplete()"></app-create-subscription>
 	</div>
 </div>

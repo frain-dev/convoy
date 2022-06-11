@@ -6,8 +6,8 @@
             "dsn": "abc"
         }
     },
+    "base_url": "https://app.convoy.io",
     "auth": {
-        "require_auth": true,
         "jwt": {
             "enabled": true
         },

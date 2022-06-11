@@ -1,5 +1,5 @@
 import { Component, EventEmitter, Input, OnInit, Output } from '@angular/core';
-import { FormGroup, Validators, FormBuilder, FormControl } from '@angular/forms';
+import { FormGroup, Validators, FormBuilder } from '@angular/forms';
 import { GROUP } from 'src/app/models/group.model';
 import { GeneralService } from 'src/app/services/general/general.service';
 import { PrivateService } from '../../private.service';
@@ -69,13 +69,13 @@ export class CreateProjectComponent implements OnInit {
 
 		try {
 			const response = await this.createProjectService.createProject(this.projectForm.value);
-			const projectId = response?.data?.uid;
-			this.privateService.activeProjectId = projectId;
+			this.privateService.activeProjectDetails = response.data;
 			this.isCreatingProject = false;
 			this.generalService.showNotification({ message: 'Project created successfully!', style: 'success' });
-			this.onAction.emit({ action: 'createProject', data: response.data });
-		} catch (error) {
+			this.onAction.emit(response.data);
+		} catch (error: any) {
 			this.isCreatingProject = false;
+			this.generalService.showNotification({ message: error.message, style: 'error' });
 		}
 	}
 
@@ -90,7 +90,7 @@ export class CreateProjectComponent implements OnInit {
 		try {
 			const response = await this.createProjectService.updateProject(this.projectForm.value);
 			this.generalService.showNotification({ message: 'Project updated successfully!', style: 'success' });
-			this.onAction.emit({ action: 'updateProject', data: response.data });
+			this.onAction.emit(response.data);
 			this.isCreatingProject = false;
 		} catch (error) {
 			this.isCreatingProject = false;

@@ -168,13 +168,14 @@ var ErrOrgInviteNotFound = errors.New("organisation invite not found")
 var ErrOrgMemberNotFound = errors.New("organisation member not found")
 
 type Group struct {
-	ID         primitive.ObjectID `json:"-" bson:"_id"`
-	UID        string             `json:"uid" bson:"uid"`
-	Name       string             `json:"name" bson:"name"`
-	LogoURL    string             `json:"logo_url" bson:"logo_url"`
-	Type       GroupType          `json:"type" bson:"type"`
-	Config     *GroupConfig       `json:"config" bson:"config"`
-	Statistics *GroupStatistics   `json:"statistics" bson:"-"`
+	ID             primitive.ObjectID `json:"-" bson:"_id"`
+	UID            string             `json:"uid" bson:"uid"`
+	Name           string             `json:"name" bson:"name"`
+	LogoURL        string             `json:"logo_url" bson:"logo_url"`
+	OrganisationID string             `json:"organisation_id" bson:"organisation_id"`
+	Type           GroupType          `json:"type" bson:"type"`
+	Config         *GroupConfig       `json:"config" bson:"config"`
+	Statistics     *GroupStatistics   `json:"statistics" bson:"-"`
 
 	// TODO(subomi): refactor this into the Instance API.
 	RateLimit         int    `json:"rate_limit" bson:"rate_limit"`
@@ -188,11 +189,11 @@ type Group struct {
 }
 
 type GroupConfig struct {
-	RateLimit       RateLimitConfiguration `json:"ratelimit"`
-	Strategy        StrategyConfiguration  `json:"strategy"`
-	Signature       SignatureConfiguration `json:"signature"`
-	DisableEndpoint bool                   `json:"disable_endpoint" bson:"disable_endpoint"`
-	ReplayAttacks   bool                   `json:"replay_attacks" bson:"replay_attacks"`
+	RateLimit       *RateLimitConfiguration `json:"ratelimit"`
+	Strategy        *StrategyConfiguration  `json:"strategy"`
+	Signature       *SignatureConfiguration `json:"signature"`
+	DisableEndpoint bool                    `json:"disable_endpoint" bson:"disable_endpoint"`
+	ReplayAttacks   bool                    `json:"replay_attacks" bson:"replay_attacks"`
 }
 
 type RateLimitConfiguration struct {
@@ -254,6 +255,7 @@ var (
 	ErrDuplicateAppName              = errors.New("an application with this name exists")
 	ErrNotAuthorisedToAccessDocument = errors.New("your credentials cannot access or modify this resource")
 	ErrConfigNotFound                = errors.New("config not found")
+	ErrDuplicateGroupName            = errors.New("a group with this name already exists")
 )
 
 type AppMetadata struct {
@@ -274,7 +276,7 @@ type Event struct {
 	ID               primitive.ObjectID `json:"-" bson:"_id"`
 	UID              string             `json:"uid" bson:"uid"`
 	EventType        EventType          `json:"event_type" bson:"event_type"`
-	MatchedEndpoints int                `json:"matched_endpoints" bson:"matched_enpoints"`
+	MatchedEndpoints int                `json:"matched_endpoints" bson:"matched_enpoints"` // TODO(all) remove this field
 
 	// ProviderID is a custom ID that can be used to reconcile this Event
 	// with your internal systems.
@@ -395,7 +397,7 @@ type EventDelivery struct {
 	SubscriptionID string             `json:"subscription_id,omitempty" bson:"subscription_id"`
 
 	Event    *Event       `json:"event_metadata,omitempty" bson:"-"`
-	Endpoint *Endpoint    `json:"endpoint,omitempty" bson:"-"`
+	Endpoint *Endpoint    `json:"endpoint_metadata,omitempty" bson:"-"`
 	App      *Application `json:"app_metadata,omitempty" bson:"-"`
 
 	DeliveryAttempts []DeliveryAttempt   `json:"-" bson:"attempts"`
@@ -440,8 +442,9 @@ type Subscription struct {
 	SourceID   string             `json:"-" bson:"source_id"`
 	EndpointID string             `json:"-" bson:"endpoint_id"`
 
-	Source   *Source   `json:"source"`
-	Endpoint *Endpoint `json:"endpoint"`
+	Source   *Source      `json:"source_metadata,omitempty" bson:"-"`
+	Endpoint *Endpoint    `json:"endpoint_metadata,omitempty" bson:"-"`
+	App      *Application `json:"app_metadata,omitempty" bson:"-"`
 
 	// subscription config
 	AlertConfig  *AlertConfiguration  `json:"alert_config,omitempty" bson:"alert_config,omitempty"`
@@ -504,27 +507,27 @@ type FilterConfiguration struct {
 }
 
 type VerifierConfig struct {
-	Type      VerifierType `json:"type,omitempty" bson:"type" valid:"supported_verifier~please provide a valid verifier type,optional"`
-	HMac      HMac         `json:"hmac" bson:"hmac"`
-	BasicAuth BasicAuth    `json:"basic_auth" bson:"basic_auth"`
-	ApiKey    ApiKey       `json:"api_key" bson:"api_key"`
+	Type      VerifierType `json:"type,omitempty" bson:"type" valid:"supported_verifier~please provide a valid verifier type,required"`
+	HMac      *HMac        `json:"hmac" bson:"hmac"`
+	BasicAuth *BasicAuth   `json:"basic_auth" bson:"basic_auth"`
+	ApiKey    *ApiKey      `json:"api_key" bson:"api_key"`
 }
 
 type HMac struct {
-	Header   string       `json:"header,omitempty" bson:"header"`
-	Hash     string       `json:"hash,omitempty" bson:"hash" valid:"supported_hash,optional"`
-	Secret   string       `json:"secret,omitempty" bson:"secret"`
-	Encoding EncodingType `json:"encoding,omitempty" bson:"encoding" valid:"supported_encoding~please provide a valid encoding type,optional"`
+	Header   string       `json:"header" bson:"header" valid:"required"`
+	Hash     string       `json:"hash" bson:"hash" valid:"supported_hash,required"`
+	Secret   string       `json:"secret" bson:"secret" valid:"required"`
+	Encoding EncodingType `json:"encoding" bson:"encoding" valid:"supported_encoding~please provide a valid encoding type,required"`
 }
 
 type BasicAuth struct {
-	UserName string `json:"username,omitempty" bson:"username"`
-	Password string `json:"password,omitempty" bson:"password"`
+	UserName string `json:"username" bson:"username" valid:"required" `
+	Password string `json:"password" bson:"password" valid:"required"`
 }
 
 type ApiKey struct {
-	APIKey       string `json:"key,omitempty" bson:"key"`
-	APIKeyHeader string `json:"header,omitempty" bson:"header"`
+	HeaderValue string `json:"header_value" bson:"header_value" valid:"required"`
+	HeaderName  string `json:"header_name" bson:"header_name" valid:"required"`
 }
 
 type Organisation struct {
@@ -548,7 +551,7 @@ type Configuration struct {
 	UpdatedAt primitive.DateTime `json:"updated_at,omitempty" bson:"updated_at,omitempty" swaggertype:"string"`
 	DeletedAt primitive.DateTime `json:"deleted_at,omitempty" bson:"deleted_at,omitempty" swaggertype:"string"`
 }
-	
+
 type OrganisationMember struct {
 	ID             primitive.ObjectID `json:"-" bson:"_id"`
 	UID            string             `json:"uid" bson:"uid"`
@@ -616,3 +619,8 @@ func (p *Password) Matches() (bool, error) {
 
 	return true, err
 }
+
+type EventMap map[string]*Event
+type SourceMap map[string]*Source
+type AppMap map[string]*Application
+type EndpointMap map[string]*Endpoint

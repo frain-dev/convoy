@@ -149,3 +149,56 @@ func (u *UserService) token() (*jwt.Jwt, error) {
 	u.jwt = jwt.NewJwt(&config.Auth.Jwt, u.cache)
 	return u.jwt, nil
 }
+
+func (u *UserService) UpdateUser(ctx context.Context, data *models.UpdateUser, user *datastore.User) (*datastore.User, error) {
+	if err := util.Validate(data); err != nil {
+		return nil, NewServiceError(http.StatusBadRequest, err)
+	}
+
+	user.FirstName = data.FirstName
+	user.LastName = data.LastName
+	user.Email = data.Email
+
+	err := u.userRepo.UpdateUser(ctx, user)
+	if err != nil {
+		return nil, NewServiceError(http.StatusInternalServerError, errors.New("an error occurred while updating user"))
+	}
+
+	return user, nil
+}
+
+func (u *UserService) UpdatePassword(ctx context.Context, data *models.UpdatePassword, user *datastore.User) (*datastore.User, error) {
+	if err := util.Validate(data); err != nil {
+		return nil, NewServiceError(http.StatusBadRequest, err)
+	}
+
+	p := datastore.Password{Plaintext: data.CurrentPassword, Hash: []byte(user.Password)}
+	match, err := p.Matches()
+
+	if err != nil {
+		return nil, NewServiceError(http.StatusInternalServerError, err)
+	}
+
+	if !match {
+		return nil, NewServiceError(http.StatusBadRequest, errors.New("current password is invalid"))
+	}
+
+	if data.Password != data.PasswordConfirmation {
+		return nil, NewServiceError(http.StatusBadRequest, errors.New("password confirmation doesn't match password"))
+	}
+
+	p.Plaintext = data.Password
+	err = p.GenerateHash()
+
+	if err != nil {
+		return nil, NewServiceError(http.StatusBadRequest, err)
+	}
+
+	user.Password = string(p.Hash)
+	err = u.userRepo.UpdateUser(ctx, user)
+	if err != nil {
+		return nil, NewServiceError(http.StatusInternalServerError, errors.New("an error occurred while updating user"))
+	}
+
+	return user, nil
+}

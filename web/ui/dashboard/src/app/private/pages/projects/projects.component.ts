@@ -1,5 +1,8 @@
 import { Component, OnInit } from '@angular/core';
+import { Router } from '@angular/router';
 import { GROUP } from 'src/app/models/group.model';
+import { ORGANIZATION_DATA } from 'src/app/models/organisation.model';
+import { PrivateService } from '../../private.service';
 import { ProjectsService } from './projects.service';
 
 @Component({
@@ -8,24 +11,50 @@ import { ProjectsService } from './projects.service';
 	styleUrls: ['./projects.component.scss']
 })
 export class ProjectsComponent implements OnInit {
-	projects!: GROUP[];
+	projects: GROUP[] = [];
 	isLoadingProjects: boolean = false;
 	projectsLoaderIndex: number[] = [0, 1, 2, 3, 4];
-	constructor(private projectsService: ProjectsService) {}
+	organisations: ORGANIZATION_DATA[] = [];
+	showOrganisationModal = false;
+	isloadingOrganisations = false;
 
-	ngOnInit(): void {
-		this.getProjects();
+	constructor(private projectsService: ProjectsService, private privateService: PrivateService) {}
+
+	async ngOnInit() {
+		this.isloadingOrganisations = true;
+		this.getOrganisations();
+	}
+
+	async getOrganisations() {
+		this.isloadingOrganisations = true;
+		this.isLoadingProjects = true;
+
+		try {
+			const organisations = await this.privateService.getOrganizations();
+			this.organisations = organisations.data.content;
+			this.isloadingOrganisations = false;
+			if (this.organisations.length > 0) return this.getProjects();
+		} catch (error) {
+			this.isloadingOrganisations = true;
+			this.isLoadingProjects = false;
+		}
 	}
 
 	async getProjects() {
-		this.isLoadingProjects = true;
 		try {
 			const projectsResponse = await this.projectsService.getProjects();
 			this.projects = projectsResponse.data;
 			this.isLoadingProjects = false;
 		} catch (error) {
-			console.log(error);
 			this.isLoadingProjects = false;
 		}
+	}
+
+	async setOrganisation() {
+		localStorage.setItem('CONVOY_ORG', JSON.stringify(this.organisations[0]));
+		this.showOrganisationModal = false;
+
+		// temporary fix for reloading page
+		location.reload();
 	}
 }

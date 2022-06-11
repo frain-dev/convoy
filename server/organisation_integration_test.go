@@ -42,7 +42,7 @@ func (s *OrganisationIntegrationTestSuite) SetupTest() {
 	s.DB = getDB()
 
 	// Setup Default Group.
-	s.DefaultGroup, _ = testdb.SeedDefaultGroup(s.DB)
+	s.DefaultGroup, _ = testdb.SeedDefaultGroup(s.DB, "")
 
 	user, err := testdb.SeedDefaultUser(s.DB)
 	require.NoError(s.T(), err)
@@ -238,8 +238,11 @@ func (s *OrganisationIntegrationTestSuite) Test_GetOrganisations() {
 	parseResponse(s.T(), w.Result(), &pagedResp)
 
 	require.Equal(s.T(), 2, len(organisations))
-	require.Equal(s.T(), s.DefaultOrg.UID, organisations[1].UID)
-	require.Equal(s.T(), org.UID, organisations[0].UID)
+
+	uids := []string{s.DefaultOrg.UID, org.UID}
+	for _, org := range organisations {
+		require.Contains(s.T(), uids, org.UID)
+	}
 }
 
 func (s *OrganisationIntegrationTestSuite) Test_DeleteOrganisation() {

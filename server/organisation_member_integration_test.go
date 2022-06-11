@@ -42,7 +42,7 @@ func (s *OrganisationMemberIntegrationTestSuite) SetupTest() {
 	s.DB = getDB()
 
 	// Setup Default Group.
-	s.DefaultGroup, _ = testdb.SeedDefaultGroup(s.DB)
+	s.DefaultGroup, _ = testdb.SeedDefaultGroup(s.DB, "")
 
 	user, err := testdb.SeedDefaultUser(s.DB)
 	require.NoError(s.T(), err)

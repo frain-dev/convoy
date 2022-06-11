@@ -4,6 +4,9 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"github.com/frain-dev/convoy/notification"
+	"github.com/frain-dev/convoy/notification/email"
+	"github.com/frain-dev/convoy/notification/noop"
 	"os"
 	"time"
 	_ "time/tzdata"
@@ -100,24 +103,25 @@ func ensureDefaultUser(ctx context.Context, a *app) error {
 }
 
 type app struct {
-	apiKeyRepo        datastore.APIKeyRepository
-	groupRepo         datastore.GroupRepository
-	applicationRepo   datastore.ApplicationRepository
-	eventRepo         datastore.EventRepository
-	eventDeliveryRepo datastore.EventDeliveryRepository
-	subRepo           datastore.SubscriptionRepository
-	orgRepo           datastore.OrganisationRepository
-	orgMemberRepo     datastore.OrganisationMemberRepository
-	orgInviteRepo     datastore.OrganisationInviteRepository
-	sourceRepo        datastore.SourceRepository
-	userRepo          datastore.UserRepository
-	configRepo        datastore.ConfigurationRepository
-	queue             queue.Queuer
-	logger            logger.Logger
-	tracer            tracer.Tracer
-	cache             cache.Cache
-	limiter           limiter.RateLimiter
-	searcher          searcher.Searcher
+	apiKeyRepo              datastore.APIKeyRepository
+	groupRepo               datastore.GroupRepository
+	applicationRepo         datastore.ApplicationRepository
+	eventRepo               datastore.EventRepository
+	eventDeliveryRepo       datastore.EventDeliveryRepository
+	subRepo                 datastore.SubscriptionRepository
+	orgRepo                 datastore.OrganisationRepository
+	orgMemberRepo           datastore.OrganisationMemberRepository
+	orgInviteRepo           datastore.OrganisationInviteRepository
+	sourceRepo              datastore.SourceRepository
+	userRepo                datastore.UserRepository
+	configRepo              datastore.ConfigurationRepository
+	emailNotificationSender notification.Sender
+	queue                   queue.Queuer
+	logger                  logger.Logger
+	tracer                  tracer.Tracer
+	cache                   cache.Cache
+	limiter                 limiter.RateLimiter
+	searcher                searcher.Searcher
 }
 
 func getCtx() (context.Context, context.CancelFunc) {
@@ -239,6 +243,14 @@ func preRun(app *app, db datastore.DatabaseClient) func(cmd *cobra.Command, args
 			return err
 		}
 
+		em := noop.NewNoopNotificationSender()
+		if (cfg.SMTP != config.SMTPConfiguration{}) {
+			em, err = email.NewEmailNotificationSender(&cfg.SMTP)
+			if err != nil {
+				return fmt.Errorf("failed to initialize new email notification sender: %v", err)
+			}
+		}
+
 		app.subRepo = db.SubRepo()
 		app.apiKeyRepo = db.APIRepo()
 		app.groupRepo = db.GroupRepo()
@@ -258,6 +270,7 @@ func preRun(app *app, db datastore.DatabaseClient) func(cmd *cobra.Command, args
 		app.cache = ca
 		app.limiter = li
 		app.searcher = se
+		app.emailNotificationSender = em
 
 		return ensureDefaultUser(context.Background(), app)
 	}

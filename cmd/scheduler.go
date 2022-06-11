@@ -11,7 +11,6 @@ import (
 	redisqueue "github.com/frain-dev/convoy/queue/redis"
 	"github.com/frain-dev/convoy/server"
 	"github.com/frain-dev/convoy/worker"
-	"github.com/frain-dev/convoy/worker/task"
 	"github.com/go-chi/chi/v5"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	log "github.com/sirupsen/logrus"
@@ -33,16 +32,9 @@ func addSchedulerCommand(a *app) *cobra.Command {
 			}
 			ctx := context.Background()
 
-			taskName := convoy.TaskName("example-schedule")
-
 			//initialize scheduler
 			s := worker.NewScheduler(a.queue)
 
-			//inititalize task handler
-			handler := task.TestScheduleTask()
-
-			//register task
-			s.RegisterTask(cronspec, taskName, handler)
 			s.RegisterTask("55 23 * * *", convoy.TaskName("daily analytics"), analytics.TrackDailyAnalytics(&analytics.Repo{
 				ConfigRepo: a.configRepo,
 				EventRepo:  a.eventRepo,
