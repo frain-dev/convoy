@@ -143,6 +143,44 @@ func (s *SecurityIntegrationTestSuite) Test_CreateAppPortalAPIKey() {
 	require.Equal(s.T(), apiKeyResponse.AppID, app.UID)
 }
 
+func (s *SecurityIntegrationTestSuite) Test_CreateAppPortalAPIKey_AppDoesNotBelongToGroup() {
+	expectedStatusCode := http.StatusBadRequest
+
+	// Switch to the native realm
+	err := config.LoadConfig("./testdata/Auth_Config/full-convoy-with-native-auth-realm.json")
+	require.NoError(s.T(), err)
+
+	initRealmChain(s.T(), s.DB.APIRepo(), s.DB.UserRepo(), s.ConvoyApp.cache)
+
+	// Just Before.
+	app, _ := testdb.SeedApplication(s.DB, &datastore.Group{UID: uuid.NewString()}, uuid.NewString(), "test-app", true)
+
+	role := auth.Role{
+		Type:   auth.RoleAdmin,
+		Groups: []string{s.DefaultGroup.UID},
+	}
+
+	// Generate api key for this group, use the key to authenticate for this request later on
+	_, keyString, err := testdb.SeedAPIKey(s.DB, role, uuid.NewString(), "test", "api")
+	require.NoError(s.T(), err)
+
+	// Arrange Request.
+	bodyStr := `{"name":"default_api_key","role":{"type":"ui_admin","group":"%s"},"key_type":"api_key","expires_at":"%s"}"`
+	body := serialize(bodyStr, s.DefaultGroup.UID, time.Now().Add(time.Hour))
+
+	url := fmt.Sprintf("/api/v1/security/applications/%s/keys", app.UID)
+
+	req := createRequest(http.MethodPost, url, body)
+	req.Header.Set("Authorization", fmt.Sprintf("BEARER %s", keyString)) // authenticate with previously generated key
+	w := httptest.NewRecorder()
+
+	// Act.
+	s.Router.ServeHTTP(w, req)
+
+	// Assert.
+	require.Equal(s.T(), expectedStatusCode, w.Code)
+}
+
 func (s *SecurityIntegrationTestSuite) Test_RevokeAPIKey() {
 	expectedStatusCode := http.StatusOK
 
