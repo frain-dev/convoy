@@ -268,9 +268,9 @@ func (s *GroupIntegrationTestSuite) TestGetGroups_FilterByName() {
 	expectedStatusCode := http.StatusOK
 
 	// Just Before.
-	group1, _ := testdb.SeedGroup(s.DB, uuid.NewString(), "", "abcdef", nil)
-	_, _ = testdb.SeedGroup(s.DB, uuid.NewString(), "", "test-group-2", nil)
-	_, _ = testdb.SeedGroup(s.DB, uuid.NewString(), "", "test-group-3", nil)
+	group1, _ := testdb.SeedGroup(s.DB, uuid.NewString(), "abcdef", "", nil)
+	_, _ = testdb.SeedGroup(s.DB, uuid.NewString(), "test-group-2", "", nil)
+	_, _ = testdb.SeedGroup(s.DB, uuid.NewString(), "test-group-3", "", nil)
 
 	url := fmt.Sprintf("/api/v1/groups?name=%s", group1.Name)
 	req := createRequest(http.MethodGet, url, nil)
