@@ -7598,6 +7598,9 @@ var doc = `{
                 },
                 "user_id": {
                     "type": "string"
+                },
+                "user_metadata": {
+                    "$ref": "#/definitions/datastore.UserMetadata"
                 }
             }
         },
@@ -7779,6 +7782,20 @@ var doc = `{
                     "type": "string"
                 },
                 "updated_at": {
+                    "type": "string"
+                }
+            }
+        },
+        "datastore.UserMetadata": {
+            "type": "object",
+            "properties": {
+                "email": {
+                    "type": "string"
+                },
+                "first_name": {
+                    "type": "string"
+                },
+                "last_name": {
                     "type": "string"
                 }
             }

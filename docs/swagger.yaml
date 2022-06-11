@@ -338,6 +338,8 @@ definitions:
         type: string
       user_id:
         type: string
+      user_metadata:
+        $ref: '#/definitions/datastore.UserMetadata'
     type: object
   datastore.PaginationData:
     properties:
@@ -456,6 +458,15 @@ definitions:
       uid:
         type: string
       updated_at:
+        type: string
+    type: object
+  datastore.UserMetadata:
+    properties:
+      email:
+        type: string
+      first_name:
+        type: string
+      last_name:
         type: string
     type: object
   datastore.VerifierConfig:

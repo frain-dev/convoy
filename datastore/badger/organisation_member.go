@@ -20,7 +20,7 @@ func NewOrgMemberRepo(db *badgerhold.Store) datastore.OrganisationMemberReposito
 	return orgMemberRepo{}
 }
 
-func (o orgMemberRepo) LoadOrganisationMembersPaged(ctx context.Context, organisationID string, pageable datastore.Pageable) ([]datastore.OrganisationMember, datastore.PaginationData, error) {
+func (o orgMemberRepo) LoadOrganisationMembersPaged(ctx context.Context, organisationID string, pageable datastore.Pageable) ([]*datastore.OrganisationMember, datastore.PaginationData, error) {
 	return nil, datastore.PaginationData{}, nil
 }
 
