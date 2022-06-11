@@ -73,6 +73,17 @@ func (s *SourceService) UpdateSource(ctx context.Context, g *datastore.Group, so
 		source.IsDisabled = *sourceUpdate.IsDisabled
 	}
 
+	if sourceUpdate.Verifier.Type == datastore.HMacVerifier && sourceUpdate.Verifier.HMac == nil {
+		return nil, NewServiceError(http.StatusBadRequest, errors.New("Invalid verifier config for hmac"))
+	}
+
+	if sourceUpdate.Verifier.Type == datastore.APIKeyVerifier && sourceUpdate.Verifier.ApiKey == nil {
+		return nil, NewServiceError(http.StatusBadRequest, errors.New("Invalid verifier config for api key"))
+	}
+
+	if sourceUpdate.Verifier.Type == datastore.BasicAuthVerifier && sourceUpdate.Verifier.BasicAuth == nil {
+		return nil, NewServiceError(http.StatusBadRequest, errors.New("Invalid verifier config for basic auth"))
+	}
 	err := s.sourceRepo.UpdateSource(ctx, g.UID, source)
 	if err != nil {
 		return nil, NewServiceError(http.StatusBadRequest, errors.New("an error occurred while updating source"))
