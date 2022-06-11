@@ -189,7 +189,7 @@ func Test_LoadSourcesPaged(t *testing.T) {
 					Type:    datastore.HTTPSource,
 					Verifier: &datastore.VerifierConfig{
 						Type: datastore.HMacVerifier,
-						HMac: datastore.HMac{
+						HMac: &datastore.HMac{
 							Header: "X-Paystack-Signature",
 							Hash:   "SHA512",
 							Secret: "Paystack Secret",
@@ -223,7 +223,7 @@ func generateSource(t *testing.T) *datastore.Source {
 		Type:    datastore.HTTPSource,
 		Verifier: &datastore.VerifierConfig{
 			Type: datastore.HMacVerifier,
-			HMac: datastore.HMac{
+			HMac: &datastore.HMac{
 				Header: "X-Paystack-Signature",
 				Hash:   "SHA512",
 				Secret: "Paystack Secret",

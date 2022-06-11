@@ -265,7 +265,7 @@ func TestSubscription_LoadSubscriptionsPaged(t *testing.T) {
 						Type: datastore.HTTPSource,
 						Verifier: &datastore.VerifierConfig{
 							Type: datastore.APIKeyVerifier,
-							ApiKey: datastore.ApiKey{
+							ApiKey: &datastore.ApiKey{
 								APIKey:       "123",
 								APIKeyHeader: "header",
 							},
@@ -298,7 +298,7 @@ func TestSubscription_LoadSubscriptionsPaged(t *testing.T) {
 						Type: datastore.HTTPSource,
 						Verifier: &datastore.VerifierConfig{
 							Type: datastore.APIKeyVerifier,
-							ApiKey: datastore.ApiKey{
+							ApiKey: &datastore.ApiKey{
 								APIKey:       "123",
 								APIKeyHeader: "header",
 							},
@@ -363,7 +363,7 @@ func TestSubscription_LoadSubscriptionsPaged(t *testing.T) {
 					Type: datastore.HTTPSource,
 					Verifier: &datastore.VerifierConfig{
 						Type: datastore.APIKeyVerifier,
-						ApiKey: datastore.ApiKey{
+						ApiKey: &datastore.ApiKey{
 							APIKey:       "123",
 							APIKeyHeader: "header",
 						},

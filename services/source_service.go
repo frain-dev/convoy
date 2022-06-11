@@ -28,6 +28,18 @@ func (s *SourceService) CreateSource(ctx context.Context, newSource *models.Sour
 		return nil, NewServiceError(http.StatusBadRequest, err)
 	}
 
+	if newSource.Verifier.Type == datastore.HMacVerifier && newSource.Verifier.HMac == nil {
+		return nil, NewServiceError(http.StatusBadRequest, errors.New("Invalid verifier config for hmac"))
+	}
+
+	if newSource.Verifier.Type == datastore.APIKeyVerifier && newSource.Verifier.ApiKey == nil {
+		return nil, NewServiceError(http.StatusBadRequest, errors.New("Invalid verifier config for api key"))
+	}
+
+	if newSource.Verifier.Type == datastore.BasicAuthVerifier && newSource.Verifier.BasicAuth == nil {
+		return nil, NewServiceError(http.StatusBadRequest, errors.New("Invalid verifier config for basic auth"))
+	}
+
 	source := &datastore.Source{
 		UID:            uuid.New().String(),
 		GroupID:        g.UID,
