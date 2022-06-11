@@ -24,7 +24,7 @@ export class CreateProjectComponent implements OnInit {
 
 	async createProject(newProjectData: GROUP) {
 		this.projectType = newProjectData.type;
-		newProjectData.type === 'incoming' ? (this.projectStage = 'createSource') : (this.projectStage = 'createApplication');
+		this.projectStage = 'createApplication';
 	}
 
 	cancel() {
