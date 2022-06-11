@@ -19,7 +19,7 @@ An example configuration is shown below:
 
 ```json[Sample Config]
 {
-  "envihronment": "development",
+  "environment": "development",
   "host": "localhost:5005",
   "multiple_tenants": false,
   "database": {
