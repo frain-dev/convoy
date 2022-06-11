@@ -18,14 +18,14 @@
 		</div>
 	</div>
 	<div class="grid grid__col-2 grid--gap__20px">
-		<div class="input">
+		<div class="input margin-bottom__0px">
 			<label class="flex flex__align-items-center" for="app-email">
 				Support Email
 				<app-tooltip [position]="'right'" [size]="'small'" class="margin-left__4px">We use this to send an email notifcation for when a failure happens</app-tooltip>
 			</label>
 			<input type="email" id="app-email" formControlName="support_email" />
 		</div>
-		<div class="input">
+		<div class="input margin-bottom__0px">
 			<label class="flex flex__align-items-center" for="app-slack-url">
 				Slack webhook url
 				<app-tooltip [size]="'small'" class="margin-left__4px">We use this to send notifications to your slack channel for when a failure happens</app-tooltip>
@@ -35,7 +35,7 @@
 	</div>
 
 	<div class="margin-top__32px" *ngIf="!editAppMode" formArrayName="endpoints">
-		<div *ngFor="let endpoint of endpoints.controls; let i = index">
+		<div class="margin-top__40px" *ngFor="let endpoint of endpoints.controls; let i = index">
 			<div class="flex flex__align-items-center flex__justify-between margin-bottom__12px">
 				<h3>Endpoint {{ i > 0 ? i + 1 : '' }}</h3>
 				<div class="flex flex__justify-end margin-bottom__16px">
