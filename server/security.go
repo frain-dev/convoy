@@ -59,7 +59,7 @@ func (a *applicationHandler) CreateAPIKey(w http.ResponseWriter, r *http.Request
 }
 
 // CreateAppPortalAPIKey - this serves as a duplicate to generate doc for the ui route of this handler
-// @Summary Create an api key for app portal
+// @Summary Create an api key for app portal (UI)
 // @Description This endpoint creates an api key that will be used by app portal
 // @Tags APIKey
 // @Accept  json
@@ -71,7 +71,7 @@ func (a *applicationHandler) CreateAPIKey(w http.ResponseWriter, r *http.Request
 // @Router /ui/organisations/{orgID}/security/applications/{appID}/keys [post]
 
 // CreateAppPortalAPIKey
-// @Summary Create an api key for app portal
+// @Summary Create an api key for app portal (API)
 // @Description This endpoint creates an api key that will be used by app portal
 // @Tags APIKey
 // @Accept  json

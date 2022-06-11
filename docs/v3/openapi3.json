@@ -6580,7 +6580,7 @@
 						"ApiKeyAuth": []
 					}
 				],
-				"summary": "Create an api key for app portal",
+				"summary": "Create an api key for app portal (API)",
 				"tags": [
 					"APIKey"
 				]
