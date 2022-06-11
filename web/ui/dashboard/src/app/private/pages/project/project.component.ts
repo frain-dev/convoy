@@ -38,7 +38,8 @@ export class ProjectComponent implements OnInit {
 	isLoadingProjectDetails: boolean = true;
 
 	constructor(private route: ActivatedRoute, private privateService: PrivateService) {
-		this.privateService.activeProjectId = this.route.snapshot.params.id;
+		const uid = { uid: this.route.snapshot.params.id };
+		this.privateService.activeProjectDetails = { ...this.privateService.activeProjectDetails, ...uid };
 	}
 
 	ngOnInit() {

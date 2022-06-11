@@ -7544,6 +7544,7 @@
                     "type": "string"
                 },
                 "matched_endpoints": {
+                    "description": "TODO(all) remove this field",
                     "type": "integer"
                 },
                 "provider_id": {
@@ -7579,11 +7580,11 @@
                 "description": {
                     "type": "string"
                 },
-                "endpoint": {
-                    "$ref": "#/definitions/datastore.Endpoint"
-                },
                 "endpoint_id": {
                     "type": "string"
+                },
+                "endpoint_metadata": {
+                    "$ref": "#/definitions/datastore.Endpoint"
                 },
                 "event_id": {
                     "type": "string"
@@ -7905,13 +7906,16 @@
                     "description": "subscription config",
                     "$ref": "#/definitions/datastore.AlertConfiguration"
                 },
+                "app_metadata": {
+                    "$ref": "#/definitions/datastore.Application"
+                },
                 "created_at": {
                     "type": "string"
                 },
                 "deleted_at": {
                     "type": "string"
                 },
-                "endpoint": {
+                "endpoint_metadata": {
                     "$ref": "#/definitions/datastore.Endpoint"
                 },
                 "filter_config": {
@@ -7923,7 +7927,7 @@
                 "retry_config": {
                     "$ref": "#/definitions/datastore.RetryConfiguration"
                 },
-                "source": {
+                "source_metadata": {
                     "$ref": "#/definitions/datastore.Source"
                 },
                 "status": {

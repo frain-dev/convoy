@@ -10,13 +10,20 @@ import (
 )
 
 type Group struct {
-	Name              string              `json:"name" bson:"name" valid:"required~please provide a valid name"`
-	Type              datastore.GroupType `json:"type" bson:"type" valid:"required~please provide a valid type,in(incoming|outgoing)"`
-	LogoURL           string              `json:"logo_url" bson:"logo_url" valid:"url~please provide a valid logo url,optional"`
-	RateLimit         int                 `json:"rate_limit" bson:"rate_limit" valid:"int~please provide a valid rate limit,optional"`
-	RateLimitDuration string              `json:"rate_limit_duration" bson:"rate_limit_duration" valid:"alphanum~please provide a valid rate limit duration,optional"`
+	Name              string                 `json:"name" bson:"name" valid:"required~please provide a valid name"`
+	Type              datastore.GroupType    `json:"type" bson:"type" valid:"required~please provide a valid type,in(incoming|outgoing)"`
+	LogoURL           string                 `json:"logo_url" bson:"logo_url" valid:"url~please provide a valid logo url,optional"`
+	RateLimit         int                    `json:"rate_limit" bson:"rate_limit" valid:"int~please provide a valid rate limit,optional"`
+	RateLimitDuration string                 `json:"rate_limit_duration" bson:"rate_limit_duration" valid:"alphanum~please provide a valid rate limit duration,optional"`
+	Config            *datastore.GroupConfig `json:"config"`
+}
 
-	Config datastore.GroupConfig
+type UpdateGroup struct {
+	Name              string                 `json:"name" bson:"name" valid:"required~please provide a valid name"`
+	LogoURL           string                 `json:"logo_url" bson:"logo_url" valid:"url~please provide a valid logo url,optional"`
+	RateLimit         int                    `json:"rate_limit" bson:"rate_limit" valid:"int~please provide a valid rate limit,optional"`
+	RateLimitDuration string                 `json:"rate_limit_duration" bson:"rate_limit_duration" valid:"alphanum~please provide a valid rate limit duration,optional"`
+	Config            *datastore.GroupConfig `json:"config" valid:"optional"`
 }
 
 type Organisation struct {
@@ -198,7 +205,7 @@ type Subscription struct {
 	Name       string `json:"name" bson:"name" valid:"required~please provide a valid subscription name"`
 	Type       string `json:"type" bson:"type" valid:"required~please provide a valid subscription type"`
 	AppID      string `json:"app_id" bson:"app_id" valid:"required~please provide a valid app id"`
-	SourceID   string `json:"source_id" bson:"source_id" valid:"required~please provide a valid source id"`
+	SourceID   string `json:"source_id" bson:"source_id"`
 	EndpointID string `json:"endpoint_id" bson:"endpoint_id" valid:"required~please provide a valid endpoint id"`
 
 	AlertConfig  *datastore.AlertConfiguration  `json:"alert_config,omitempty" bson:"alert_config,omitempty"`

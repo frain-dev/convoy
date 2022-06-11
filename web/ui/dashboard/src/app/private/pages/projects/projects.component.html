@@ -1,72 +1,92 @@
-<div class="page padding-top__60px">
-	<div class="page__head">
-		<div>
-			<h3 class="margin-bottom__8px">Projects</h3>
-			<p class="page__head--sub">All your project's summary at a glance</p>
-		</div>
-	</div>
+<convoy-loader *ngIf="isloadingOrganisations"></convoy-loader>
 
-	<ul class="grid projects-grid" *ngIf="isLoadingProjects">
-		<li *ngFor="let index of projectsLoaderIndex">
-			<div class="card rounded__8px border__all bg__white">
-				<div class="padding-x__24px padding-top__24px padding-bottom__14px border__bottom">
-					<div class="skeleton-loader header"></div>
-				</div>
-				<div class="flex flex__align-items-center border__bottom">
-					<div class="border__right padding-y__8px padding-x__24px">
-						<div class="skeleton-loader text"></div>
+<ng-container *ngIf="!isloadingOrganisations && organisations.length > 0">
+	<div class="page padding-top__60px">
+		<div class="page__head">
+			<div>
+				<h3 class="margin-bottom__8px">Projects</h3>
+				<p class="page__head--sub">All your project's summary at a glance</p>
+			</div>
+		</div>
+
+		<ul class="grid projects-grid" *ngIf="isLoadingProjects">
+			<li *ngFor="let index of projectsLoaderIndex">
+				<div class="card rounded__8px border__all bg__white">
+					<div class="padding-x__24px padding-top__24px padding-bottom__14px border__bottom">
+						<div class="skeleton-loader header"></div>
 					</div>
-					<div class="flex flex__align-items-center flex__justify-between width__60 padding-y__8px padding-x__24px">
-						<div>
+					<div class="flex flex__align-items-center border__bottom">
+						<div class="border__right padding-y__8px padding-x__24px">
 							<div class="skeleton-loader text"></div>
 						</div>
-						<div><div class="skeleton-loader small"></div></div>
+						<div class="flex flex__align-items-center flex__justify-between width__60 padding-y__8px padding-x__24px">
+							<div>
+								<div class="skeleton-loader text"></div>
+							</div>
+							<div><div class="skeleton-loader small"></div></div>
+						</div>
 					</div>
 				</div>
-			</div>
-		</li>
-	</ul>
+			</li>
+		</ul>
 
-	<ul class="grid projects-grid" *ngIf="!isLoadingProjects">
-		<li *ngFor="let project of projects">
-			<a [routerLink]="'/projects/' + project.uid" class="card rounded__8px bg__white display__block">
-				<div class="padding-x__24px padding-y__16px border__bottom flex flex__align-items-center flex__justify-between">
+		<ul class="grid projects-grid" *ngIf="!isLoadingProjects">
+			<li *ngFor="let project of projects">
+				<a [routerLink]="'/projects/' + project.uid" class="card rounded__8px bg__white display__block">
+					<div class="padding-x__24px padding-y__16px border__bottom flex flex__align-items-center flex__justify-between">
+						<div class="flex flex__align-items-center">
+							<div class="width__24px height__24px rounded__50px margin-right__8px flex flex__align-items-center flex__justify-center" style="background: var(--primary-color-500)">
+								<svg width="16" height="16" fill="var(--primary-color)" stroke="var(--primary-color)">
+									<use xlink:href="#top-right-icon"></use>
+								</svg>
+							</div>
+							<h4 class="pointer-cursor">{{ project.name }}</h4>
+						</div>
+						<div class="tag tag--Primary font__10px text__uppercase">{{ project.type || '-' }}</div>
+					</div>
+
 					<div class="flex flex__align-items-center">
-						<div class="width__24px height__24px rounded__50px margin-right__8px flex flex__align-items-center flex__justify-center" style="background: var(--primary-color-500)">
-							<svg width="16" height="16" fill="var(--primary-color)" stroke="var(--primary-color)">
-								<use xlink:href="#top-right-icon"></use>
+						<div class="font__12px font__weight-500 color__grey border__right width__40 padding-y__8px padding-x__24px">
+							<span class="color__black margin-right__8px">{{ project.statistics.messages_sent }}</span>
+							<span class="color__grey">Events Sent</span>
+						</div>
+						<div class="flex flex__align-items-center flex__justify-between flex__align-items-center width__60 padding-y__8px padding-x__24px">
+							<div class="font__12px font__weight-500 color__grey">
+								<span class="color__black margin-right__8px">{{ project.statistics.total_apps }}</span>
+								<span class="color__grey">Apps</span>
+							</div>
+							<svg width="20" height="20" fill="var(--primary-color)">
+								<use xlink:href="#arrow-right-icon"></use>
 							</svg>
 						</div>
-						<h4 class="pointer-cursor">{{ project.name }}</h4>
 					</div>
-					<div class="tag tag--Primary font__10px text__uppercase">{{ project.type || '-' }}</div>
-				</div>
+				</a>
+			</li>
 
-				<div class="flex flex__align-items-center">
-					<div class="font__12px font__weight-500 color__grey border__right width__40 padding-y__8px padding-x__24px">
-						<span class="color__black margin-right__8px">{{ project.statistics.messages_sent }}</span>
-						<span class="color__grey">Events Sent</span>
-					</div>
-					<div class="flex flex__align-items-center flex__justify-between flex__align-items-center width__60 padding-y__8px padding-x__24px">
-						<div class="font__12px font__weight-500 color__grey">
-							<span class="color__black margin-right__8px">{{ project.statistics.total_apps }}</span>
-							<span class="color__grey">Apps</span>
-						</div>
-						<svg width="20" height="20" fill="var(--primary-color)">
-							<use xlink:href="#arrow-right-icon"></use>
-						</svg>
-					</div>
-				</div>
-			</a>
-		</li>
+			<li>
+				<a routerLink="./new" class="card new-project-card rounded__8px bg__white flex flex__align-items-center flex__justify-center padding-y__32px">
+					<svg width="22" height="22" class="margin-right__8px" fill="var(--primary-color)">
+						<use xlink:href="#plus-icon"></use>
+					</svg>
+					<span class="color__primary font__weight-500">Create new project</span>
+				</a>
+			</li>
+		</ul>
+	</div>
+</ng-container>
 
-		<li>
-			<a routerLink="./new" class="card new-project-card rounded__8px bg__white flex flex__align-items-center flex__justify-center padding-y__32px">
-				<svg width="22" height="22" class="margin-right__8px" fill="var(--primary-color)">
-					<use xlink:href="#plus-icon"></use>
-				</svg>
-				<span class="color__primary font__weight-500">Create new project</span>
-			</a>
-		</li>
-	</ul>
+<div class="page padding-top__60px" *ngIf="organisations.length == 0">
+	<div class="page--empty-state">
+		<div class="page--empty-state--img">
+			<img src="/assets/img/org-empty-img.svg" alt="add group empty" />
+		</div>
+		<h3>You have no organisation yet</h3>
+		<p>Create an organisation to get started with sending/receiving webhooks</p>
+		<button class="button button__primary" (click)="showOrganisationModal = true">Create Organisation</button>
+	</div>
+</div>
+
+<div class="_overlay z-index--2" *ngIf="showOrganisationModal" (click)="showOrganisationModal = false"></div>
+<div class="modal modal__right z-index--3" *ngIf="showOrganisationModal">
+	<app-create-organisation (closeModal)="setOrganisation()"></app-create-organisation>
 </div>

@@ -81,12 +81,12 @@ func TestEventService_CreateAppEvent(t *testing.T) {
 					UID:  "abc",
 					Name: "test_group",
 					Config: &datastore.GroupConfig{
-						Strategy: datastore.StrategyConfiguration{
+						Strategy: &datastore.StrategyConfiguration{
 							Type:       "linear",
 							Duration:   1000,
 							RetryCount: 10,
 						},
-						Signature:       datastore.SignatureConfiguration{},
+						Signature:       &datastore.SignatureConfiguration{},
 						DisableEndpoint: false,
 						ReplayAttacks:   false,
 					},
@@ -140,7 +140,7 @@ func TestEventService_CreateAppEvent(t *testing.T) {
 					UID:  "abc",
 					Name: "test_group",
 					Config: &datastore.GroupConfig{
-						Strategy: datastore.StrategyConfiguration{
+						Strategy: &datastore.StrategyConfiguration{
 							Type:       "exponential",
 							Duration:   1000,
 							RetryCount: 10,
@@ -157,7 +157,6 @@ func TestEventService_CreateAppEvent(t *testing.T) {
 				DocumentStatus:   datastore.ActiveDocumentStatus,
 			},
 		},
-
 		{
 			name: "should_create_event_for_disabled_app",
 			dbFn: func(es *EventService) {
@@ -198,12 +197,12 @@ func TestEventService_CreateAppEvent(t *testing.T) {
 					UID:  "abc",
 					Name: "test_group",
 					Config: &datastore.GroupConfig{
-						Strategy: datastore.StrategyConfiguration{
+						Strategy: &datastore.StrategyConfiguration{
 							Type:       "linear",
 							Duration:   1000,
 							RetryCount: 10,
 						},
-						Signature:       datastore.SignatureConfiguration{},
+						Signature:       &datastore.SignatureConfiguration{},
 						DisableEndpoint: false,
 						ReplayAttacks:   false,
 					},

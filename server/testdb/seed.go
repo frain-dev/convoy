@@ -111,12 +111,12 @@ func SeedDefaultGroup(db datastore.DatabaseClient) (*datastore.Group, error) {
 		Name: "default-group",
 		Type: "outgoing",
 		Config: &datastore.GroupConfig{
-			Strategy: datastore.StrategyConfiguration{
+			Strategy: &datastore.StrategyConfiguration{
 				Type:       datastore.DefaultStrategyProvider,
 				Duration:   10,
 				RetryCount: 2,
 			},
-			Signature: datastore.SignatureConfiguration{
+			Signature: &datastore.SignatureConfiguration{
 				Header: config.DefaultSignatureHeader,
 				Hash:   "SHA512",
 			},

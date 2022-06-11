@@ -51,7 +51,7 @@ func TestDispatcher_SendRequest(t *testing.T) {
 				group: &datastore.Group{
 					UID: "12345",
 					Config: &datastore.GroupConfig{
-						Signature: datastore.SignatureConfiguration{
+						Signature: &datastore.SignatureConfiguration{
 							Header: configSignature,
 						},
 						ReplayAttacks: false,
@@ -96,7 +96,7 @@ func TestDispatcher_SendRequest(t *testing.T) {
 				group: &datastore.Group{
 					UID: "12345",
 					Config: &datastore.GroupConfig{
-						Signature: datastore.SignatureConfiguration{
+						Signature: &datastore.SignatureConfiguration{
 							Header: configSignature,
 						},
 						ReplayAttacks: false,
@@ -141,7 +141,7 @@ func TestDispatcher_SendRequest(t *testing.T) {
 				group: &datastore.Group{
 					UID: "12345",
 					Config: &datastore.GroupConfig{
-						Signature: datastore.SignatureConfiguration{
+						Signature: &datastore.SignatureConfiguration{
 							Header: configSignature,
 						},
 						ReplayAttacks: false,
@@ -175,7 +175,7 @@ func TestDispatcher_SendRequest(t *testing.T) {
 				group: &datastore.Group{
 					UID: "12345",
 					Config: &datastore.GroupConfig{
-						Signature: datastore.SignatureConfiguration{
+						Signature: &datastore.SignatureConfiguration{
 							Header: configSignature,
 						},
 						ReplayAttacks: false,
@@ -205,7 +205,7 @@ func TestDispatcher_SendRequest(t *testing.T) {
 				group: &datastore.Group{
 					UID: "12345",
 					Config: &datastore.GroupConfig{
-						Signature: datastore.SignatureConfiguration{
+						Signature: &datastore.SignatureConfiguration{
 							Header: configSignature,
 						},
 						ReplayAttacks: true,
@@ -235,7 +235,7 @@ func TestDispatcher_SendRequest(t *testing.T) {
 				group: &datastore.Group{
 					UID: "12345",
 					Config: &datastore.GroupConfig{
-						Signature: datastore.SignatureConfiguration{
+						Signature: &datastore.SignatureConfiguration{
 							Header: config.SignatureHeaderProvider(""),
 						},
 						ReplayAttacks: false,

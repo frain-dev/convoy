@@ -110,6 +110,7 @@ func Test_CreateGroup(t *testing.T) {
 				if i > 0 && tc.isDuplicate {
 					err := groupRepo.CreateGroup(context.Background(), newOrg)
 					require.Error(t, err)
+					require.ErrorIs(t, err, datastore.ErrDuplicateGroupName)
 				}
 
 				if i > 0 && !tc.isDuplicate {

@@ -3,7 +3,8 @@
 	<svg width="16" height="16" class="margin-x__4px">
 		<use xlink:href="#arrow-right-icon"></use>
 	</svg>
-	PROJECT NAME
+	{{ privateService.activeProjectDetails?.name }}
+
 	<svg width="16" height="16" class="margin-x__4px">
 		<use xlink:href="#arrow-right-icon"></use>
 	</svg>
@@ -177,7 +178,7 @@
 			</div>
 		</div>
 
-		<div class="flex flex__column flex__justify-center flex__align-items-center table--container" id="events-empty-state" *ngIf="!isLoadindingSubscriptions && subscriptions.content.length == 0">
+		<div class="card flex flex__column flex__justify-center flex__align-items-center table--container" id="events-empty-state" *ngIf="!isLoadindingSubscriptions && subscriptions.content.length == 0">
 			<img src="/assets/img/empty-state.svg" alt="empty state" class="empty-state-img" />
 			<p class="font__14px font__weight-600 margin-top__0px color__black width__20 text--center">No subscriptions yet</p>
 		</div>
@@ -233,6 +234,6 @@
 	</div>
 
 	<div class="modal--body padding-all__0px">
-		<app-create-subscription></app-create-subscription>
+		<app-create-subscription (onAction)="createSubscription()"></app-create-subscription>
 	</div>
 </div>

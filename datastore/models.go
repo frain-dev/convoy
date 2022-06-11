@@ -188,11 +188,11 @@ type Group struct {
 }
 
 type GroupConfig struct {
-	RateLimit       RateLimitConfiguration `json:"ratelimit"`
-	Strategy        StrategyConfiguration  `json:"strategy"`
-	Signature       SignatureConfiguration `json:"signature"`
-	DisableEndpoint bool                   `json:"disable_endpoint" bson:"disable_endpoint"`
-	ReplayAttacks   bool                   `json:"replay_attacks" bson:"replay_attacks"`
+	RateLimit       *RateLimitConfiguration `json:"ratelimit"`
+	Strategy        *StrategyConfiguration  `json:"strategy"`
+	Signature       *SignatureConfiguration `json:"signature"`
+	DisableEndpoint bool                    `json:"disable_endpoint" bson:"disable_endpoint"`
+	ReplayAttacks   bool                    `json:"replay_attacks" bson:"replay_attacks"`
 }
 
 type RateLimitConfiguration struct {
@@ -253,6 +253,7 @@ var (
 	ErrEventDeliveryAttemptNotFound  = errors.New("event delivery attempt not found")
 	ErrDuplicateAppName              = errors.New("an application with this name exists")
 	ErrNotAuthorisedToAccessDocument = errors.New("your credentials cannot access or modify this resource")
+	ErrDuplicateGroupName            = errors.New("a group with this name already exists")
 )
 
 type AppMetadata struct {
@@ -273,7 +274,7 @@ type Event struct {
 	ID               primitive.ObjectID `json:"-" bson:"_id"`
 	UID              string             `json:"uid" bson:"uid"`
 	EventType        EventType          `json:"event_type" bson:"event_type"`
-	MatchedEndpoints int                `json:"matched_endpoints" bson:"matched_enpoints"`
+	MatchedEndpoints int                `json:"matched_endpoints" bson:"matched_enpoints"` // TODO(all) remove this field
 
 	// ProviderID is a custom ID that can be used to reconcile this Event
 	// with your internal systems.
@@ -394,7 +395,7 @@ type EventDelivery struct {
 	SubscriptionID string             `json:"subscription_id,omitempty" bson:"subscription_id"`
 
 	Event    *Event       `json:"event_metadata,omitempty" bson:"-"`
-	Endpoint *Endpoint    `json:"endpoint,omitempty" bson:"-"`
+	Endpoint *Endpoint    `json:"endpoint_metadata,omitempty" bson:"-"`
 	App      *Application `json:"app_metadata,omitempty" bson:"-"`
 
 	DeliveryAttempts []DeliveryAttempt   `json:"-" bson:"attempts"`
@@ -439,8 +440,9 @@ type Subscription struct {
 	SourceID   string             `json:"-" bson:"source_id"`
 	EndpointID string             `json:"-" bson:"endpoint_id"`
 
-	Source   *Source   `json:"source"`
-	Endpoint *Endpoint `json:"endpoint"`
+	Source   *Source      `json:"source_metadata,omitempty" bson:"-"`
+	Endpoint *Endpoint    `json:"endpoint_metadata,omitempty" bson:"-"`
+	App      *Application `json:"app_metadata,omitempty" bson:"-"`
 
 	// subscription config
 	AlertConfig  *AlertConfiguration  `json:"alert_config,omitempty" bson:"alert_config,omitempty"`
@@ -605,3 +607,8 @@ func (p *Password) Matches() (bool, error) {
 
 	return true, err
 }
+
+type EventMap map[string]*Event
+type SourceMap map[string]*Source
+type AppMap map[string]*Application
+type EndpointMap map[string]*Endpoint

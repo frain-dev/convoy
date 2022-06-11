@@ -166,6 +166,7 @@ components:
         group_id:
           type: string
         matched_endpoints:
+          description: TODO(all) remove this field
           type: integer
         provider_id:
           description: |-
@@ -193,10 +194,10 @@ components:
           type: string
         description:
           type: string
-        endpoint:
-          $ref: '#/components/schemas/datastore.Endpoint'
         endpoint_id:
           type: string
+        endpoint_metadata:
+          $ref: '#/components/schemas/datastore.Endpoint'
         event_id:
           type: string
         event_metadata:
@@ -410,11 +411,13 @@ components:
       properties:
         alert_config:
           $ref: '#/components/schemas/datastore.AlertConfiguration'
+        app_metadata:
+          $ref: '#/components/schemas/datastore.Application'
         created_at:
           type: string
         deleted_at:
           type: string
-        endpoint:
+        endpoint_metadata:
           $ref: '#/components/schemas/datastore.Endpoint'
         filter_config:
           $ref: '#/components/schemas/datastore.FilterConfiguration'
@@ -422,7 +425,7 @@ components:
           type: string
         retry_config:
           $ref: '#/components/schemas/datastore.RetryConfiguration'
-        source:
+        source_metadata:
           $ref: '#/components/schemas/datastore.Source'
         status:
           type: string
