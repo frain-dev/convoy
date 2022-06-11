@@ -18,8 +18,6 @@ import (
 
 	"github.com/frain-dev/convoy/auth"
 
-	"go.mongodb.org/mongo-driver/mongo"
-
 	"github.com/felixge/httpsnoop"
 	"github.com/frain-dev/convoy/auth/realm_chain"
 	"github.com/frain-dev/convoy/config"
@@ -561,36 +559,6 @@ func requireGroup(groupRepo datastore.GroupRepository, cache cache.Cache) func(n
 					group, err = groupRepo.FetchGroupByID(r.Context(), groupID)
 					if err != nil {
 						_ = render.Render(w, r, newErrorResponse("failed to fetch group by id", http.StatusNotFound))
-						return
-					}
-
-					err = cache.Set(r.Context(), groupCacheKey, &group, time.Minute*5)
-					if err != nil {
-						_ = render.Render(w, r, newErrorResponse(err.Error(), http.StatusBadRequest))
-						return
-					}
-				}
-			} else {
-				// TODO(all): maybe we should only use default-group if require_auth is false?
-				groupCacheKey := convoy.GroupsCacheKey.Get("default-group").String()
-				err = cache.Get(r.Context(), groupCacheKey, &group)
-				if err != nil {
-					_ = render.Render(w, r, newErrorResponse(err.Error(), http.StatusNotFound))
-					return
-				}
-
-				if group == nil {
-					group, err = getDefaultGroup(r, groupRepo)
-					if err != nil {
-						event := "an error occurred while loading default group"
-						statusCode := http.StatusBadRequest
-
-						if errors.Is(err, mongo.ErrNoDocuments) {
-							event = err.Error()
-							statusCode = http.StatusNotFound
-						}
-
-						_ = render.Render(w, r, newErrorResponse(event, statusCode))
 						return
 					}
 

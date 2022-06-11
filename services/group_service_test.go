@@ -19,7 +19,8 @@ func provideGroupService(ctrl *gomock.Controller) *GroupService {
 	appRepo := mocks.NewMockApplicationRepository(ctrl)
 	eventRepo := mocks.NewMockEventRepository(ctrl)
 	eventDeliveryRepo := mocks.NewMockEventDeliveryRepository(ctrl)
-	return NewGroupService(appRepo, groupRepo, eventRepo, eventDeliveryRepo, nooplimiter.NewNoopLimiter())
+	cache := mocks.NewMockCache(ctrl)
+	return NewGroupService(appRepo, groupRepo, eventRepo, eventDeliveryRepo, nooplimiter.NewNoopLimiter(), cache)
 }
 
 func TestGroupService_CreateGroup(t *testing.T) {
@@ -47,7 +48,7 @@ func TestGroupService_CreateGroup(t *testing.T) {
 					LogoURL:           "https://google.com",
 					RateLimit:         1000,
 					RateLimitDuration: "1m",
-					Config: datastore.GroupConfig{
+					Config: &datastore.GroupConfig{
 						Signature: datastore.SignatureConfiguration{
 							Header: "X-Convoy-Signature",
 							Hash:   "SHA256",
@@ -108,7 +109,7 @@ func TestGroupService_CreateGroup(t *testing.T) {
 					LogoURL:           "https://google.com",
 					RateLimit:         1000,
 					RateLimitDuration: "1m",
-					Config: datastore.GroupConfig{
+					Config: &datastore.GroupConfig{
 						Signature: datastore.SignatureConfiguration{
 							Header: "X-Convoy-Signature",
 							Hash:   "SHA256",
@@ -167,7 +168,7 @@ func TestGroupService_CreateGroup(t *testing.T) {
 					Name:    "test_group_1",
 					Type:    "incoming",
 					LogoURL: "https://google.com",
-					Config:  datastore.GroupConfig{},
+					Config:  &datastore.GroupConfig{},
 				},
 			},
 			dbFn: func(gs *GroupService) {
@@ -200,7 +201,7 @@ func TestGroupService_CreateGroup(t *testing.T) {
 					Name:    "test_group",
 					Type:    "outgoing",
 					LogoURL: "https://google.com",
-					Config: datastore.GroupConfig{
+					Config: &datastore.GroupConfig{
 						Signature: datastore.SignatureConfiguration{
 							Header: "X-Convoy-Signature",
 							Hash:   "SHA256",
@@ -241,7 +242,7 @@ func TestGroupService_CreateGroup(t *testing.T) {
 					Name:    "test_group",
 					Type:    "incoming",
 					LogoURL: "https://google.com",
-					Config: datastore.GroupConfig{
+					Config: &datastore.GroupConfig{
 						Signature: datastore.SignatureConfiguration{
 							Header: "X-Convoy-Signature",
 							Hash:   "SHA256",
@@ -304,7 +305,7 @@ func TestGroupService_UpdateGroup(t *testing.T) {
 	type args struct {
 		ctx    context.Context
 		group  *datastore.Group
-		update *models.Group
+		update *models.UpdateGroup
 	}
 	tests := []struct {
 		name        string
@@ -340,11 +341,10 @@ func TestGroupService_UpdateGroup(t *testing.T) {
 					},
 					DocumentStatus: datastore.ActiveDocumentStatus,
 				},
-				update: &models.Group{
+				update: &models.UpdateGroup{
 					Name:    "test_group",
-					Type:    "incoming",
 					LogoURL: "https://google.com",
-					Config: datastore.GroupConfig{
+					Config: &datastore.GroupConfig{
 						Signature: datastore.SignatureConfiguration{
 							Header: "X-Convoy-Signature",
 							Hash:   "SHA256",
@@ -384,6 +384,9 @@ func TestGroupService_UpdateGroup(t *testing.T) {
 			dbFn: func(gs *GroupService) {
 				a, _ := gs.groupRepo.(*mocks.MockGroupRepository)
 				a.EXPECT().UpdateGroup(gomock.Any(), gomock.Any()).Times(1).Return(nil)
+
+				c, _ := gs.cache.(*mocks.MockCache)
+				c.EXPECT().Set(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Times(1)
 			},
 		},
 		{
@@ -391,11 +394,10 @@ func TestGroupService_UpdateGroup(t *testing.T) {
 			args: args{
 				ctx:   ctx,
 				group: &datastore.Group{UID: "12345"},
-				update: &models.Group{
+				update: &models.UpdateGroup{
 					Name:    "",
-					Type:    "outgoing",
 					LogoURL: "https://google.com",
-					Config: datastore.GroupConfig{
+					Config: &datastore.GroupConfig{
 						Signature: datastore.SignatureConfiguration{
 							Header: "X-Convoy-Signature",
 							Hash:   "SHA256",
@@ -419,11 +421,10 @@ func TestGroupService_UpdateGroup(t *testing.T) {
 			args: args{
 				ctx:   ctx,
 				group: &datastore.Group{UID: "12345"},
-				update: &models.Group{
+				update: &models.UpdateGroup{
 					Name:    "test_group",
-					Type:    "incoming",
 					LogoURL: "https://google.com",
-					Config: datastore.GroupConfig{
+					Config: &datastore.GroupConfig{
 						Signature: datastore.SignatureConfiguration{
 							Header: "X-Convoy-Signature",
 							Hash:   "SHA256",
@@ -444,7 +445,7 @@ func TestGroupService_UpdateGroup(t *testing.T) {
 			},
 			wantErr:     true,
 			wantErrCode: http.StatusBadRequest,
-			wantErrMsg:  "an error occurred while updating Group",
+			wantErrMsg:  "failed",
 		},
 	}
 	for _, tc := range tests {
