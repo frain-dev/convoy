@@ -848,10 +848,10 @@ func (mr *MockOrganisationMemberRepositoryMockRecorder) FetchOrganisationMemberB
 }
 
 // LoadOrganisationMembersPaged mocks base method.
-func (m *MockOrganisationMemberRepository) LoadOrganisationMembersPaged(ctx context.Context, organisationID string, pageable datastore.Pageable) ([]datastore.OrganisationMember, datastore.PaginationData, error) {
+func (m *MockOrganisationMemberRepository) LoadOrganisationMembersPaged(ctx context.Context, organisationID string, pageable datastore.Pageable) ([]*datastore.OrganisationMember, datastore.PaginationData, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "LoadOrganisationMembersPaged", ctx, organisationID, pageable)
-	ret0, _ := ret[0].([]datastore.OrganisationMember)
+	ret0, _ := ret[0].([]*datastore.OrganisationMember)
 	ret1, _ := ret[1].(datastore.PaginationData)
 	ret2, _ := ret[2].(error)
 	return ret0, ret1, ret2

@@ -43,7 +43,7 @@ func (s *OrganisationInviteIntegrationTestSuite) SetupTest() {
 	s.DB = getDB()
 
 	// Setup Default Group.
-	s.DefaultGroup, _ = testdb.SeedDefaultGroup(s.DB)
+	s.DefaultGroup, _ = testdb.SeedDefaultGroup(s.DB, "")
 
 	user, err := testdb.SeedDefaultUser(s.DB)
 	require.NoError(s.T(), err)
@@ -315,6 +315,63 @@ func (s *OrganisationInviteIntegrationTestSuite) Test_ProcessOrganisationMemberI
 	url := fmt.Sprintf("/ui/organisations/process_invite?token=%s&accepted=false", iv.Token)
 	req := createRequest(http.MethodPost, url, nil)
 	req.Header.Set("Authorization", "")
+
+	w := httptest.NewRecorder()
+
+	// Act.
+	s.Router.ServeHTTP(w, req)
+
+	// Assert.
+	require.Equal(s.T(), expectedStatusCode, w.Code)
+}
+
+func (s *OrganisationInviteIntegrationTestSuite) Test_FindUserByInviteToken_ExistingUser() {
+	expectedStatusCode := http.StatusOK
+
+	user, err := testdb.SeedUser(s.DB, "invite@test.com", "password")
+	require.NoError(s.T(), err)
+
+	iv, err := testdb.SeedOrganisationInvite(s.DB, s.DefaultOrg, user.Email, &auth.Role{
+		Type:   auth.RoleAdmin,
+		Groups: []string{uuid.NewString()},
+		Apps:   nil,
+	}, primitive.NewDateTimeFromTime(time.Now().Add(time.Hour)))
+	require.NoError(s.T(), err)
+
+	// Arrange.
+	url := fmt.Sprintf("/ui/users/token?token=%s", iv.Token)
+	req := createRequest(http.MethodGet, url, nil)
+
+	w := httptest.NewRecorder()
+
+	// Act.
+	s.Router.ServeHTTP(w, req)
+
+	// Assert.
+	require.Equal(s.T(), expectedStatusCode, w.Code)
+
+	var response datastore.User
+	parseResponse(s.T(), w.Result(), &response)
+
+	require.Equal(s.T(), user.UID, response.UID)
+	require.Equal(s.T(), user.FirstName, response.FirstName)
+	require.Equal(s.T(), user.LastName, response.LastName)
+	require.Equal(s.T(), user.Email, response.Email)
+}
+
+func (s *OrganisationInviteIntegrationTestSuite) Test_FindUserByInviteToken_NewUser() {
+	expectedStatusCode := http.StatusOK
+
+	iv, err := testdb.SeedOrganisationInvite(s.DB, s.DefaultOrg, "invite@test.com", &auth.Role{
+		Type:   auth.RoleAdmin,
+		Groups: []string{uuid.NewString()},
+		Apps:   nil,
+	}, primitive.NewDateTimeFromTime(time.Now().Add(time.Hour)))
+	require.NoError(s.T(), err)
+
+	// Arrange.
+	url := fmt.Sprintf("/ui/users/token?token=%s", iv.Token)
+	req := createRequest(http.MethodGet, url, nil)
 
 	w := httptest.NewRecorder()
 
