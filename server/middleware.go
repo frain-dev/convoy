@@ -592,6 +592,12 @@ func requireGroup(groupRepo datastore.GroupRepository, cache cache.Cache) func(n
 						return
 					}
 				}
+
+				err = cache.Set(r.Context(), groupCacheKey, &group, time.Minute*5)
+				if err != nil {
+					_ = render.Render(w, r, newErrorResponse(err.Error(), http.StatusBadRequest))
+					return
+				}
 			}
 
 			r = r.WithContext(setGroupInContext(r.Context(), group))
