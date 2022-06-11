@@ -7,6 +7,7 @@ type Notification struct {
 	Email             string `json:"email,omitempty"`
 	LogoURL           string `json:"logo_url,omitempty"`
 	TargetURL         string `json:"target_url,omitempty"`
+	Subject           string `json:"subject,omitempty"`
 	EndpointStatus    string `json:"endpoint_status,omitempty"`
 	EmailTemplateName string `json:"email_template_name,omitempty"`
 	InviteURL         string `json:"invite_url,omitempty"`

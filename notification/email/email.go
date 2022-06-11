@@ -52,5 +52,5 @@ func (e *Email) SendNotification(ctx context.Context, n *notification.Notificati
 		return err
 	}
 
-	return newEmail.Send(n.Email, "Endpoint Status Update")
+	return newEmail.Send(n.Email, n.Subject)
 }
