@@ -81,21 +81,6 @@
 						<input type="text" id="rate-limit-duration" placeholder="e.g 1m" formControlName="rate_limit_duration" />
 					</div>
 
-					<!-- <div class="input multiple">
-						<label class="flex flex__align-items-center" [for]="'tagInput' + i">
-							Events
-							<app-tooltip [size]="'small'" position="right" class="margin-left__4px">Add multiple events by separating them with commas.</app-tooltip>
-						</label>
-						<div class="input--multiple" (click)="focusInput(i)">
-							<div class="tag" *ngFor="let tag of getSingleEndpoint(i)?.events?.value">
-								{{ tag }}
-								<a (click)="removeEventTag(tag, i)">
-									<img src="/assets/img/close-icon-black.svg" alt="close icon" />
-								</a>
-							</div>
-							<input type="text" [id]="'tagInput' + i" (input)="addTag(i)" />
-						</div>
-					</div> -->
 				</div>
 				<div class="input">
 					<label class="flex flex__align-items-center" for="http-timeout">
