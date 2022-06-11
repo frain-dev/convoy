@@ -188,11 +188,11 @@ type Group struct {
 }
 
 type GroupConfig struct {
-	RateLimit       RateLimitConfiguration `json:"ratelimit"`
-	Strategy        StrategyConfiguration  `json:"strategy"`
-	Signature       SignatureConfiguration `json:"signature"`
-	DisableEndpoint bool                   `json:"disable_endpoint" bson:"disable_endpoint"`
-	ReplayAttacks   bool                   `json:"replay_attacks" bson:"replay_attacks"`
+	RateLimit       *RateLimitConfiguration `json:"ratelimit"`
+	Strategy        *StrategyConfiguration  `json:"strategy"`
+	Signature       *SignatureConfiguration `json:"signature"`
+	DisableEndpoint bool                    `json:"disable_endpoint" bson:"disable_endpoint"`
+	ReplayAttacks   bool                    `json:"replay_attacks" bson:"replay_attacks"`
 }
 
 type RateLimitConfiguration struct {
