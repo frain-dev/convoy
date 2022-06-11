@@ -38,7 +38,7 @@ func NewGroupService(apiKeyRepo datastore.APIKeyRepository, appRepo datastore.Ap
 	}
 }
 
-func (gs *GroupService) CreateGroup(ctx context.Context, newGroup *models.Group, org *datastore.Organisation) (*datastore.Group, *models.APIKeyResponse, error) {
+func (gs *GroupService) CreateGroup(ctx context.Context, newGroup *models.Group, org *datastore.Organisation, member *datastore.OrganisationMember) (*datastore.Group, *models.APIKeyResponse, error) {
 	groupName := newGroup.Name
 
 	// Apply Defaults
@@ -90,21 +90,24 @@ func (gs *GroupService) CreateGroup(ctx context.Context, newGroup *models.Group,
 
 	newAPIKey := &models.APIKey{
 		Name: fmt.Sprintf("%s's default key", group.Name),
-		Role: auth.Role{
-			Type:   auth.RoleSuperUser,
-			Groups: []string{group.UID},
+		Role: models.Role{
+			Type:  auth.RoleSuperUser,
+			Group: group.UID,
 		},
 	}
 
-	apiKey, keyString, err := NewSecurityService(gs.groupRepo, gs.apiKeyRepo).CreateAPIKey(ctx, newAPIKey)
+	apiKey, keyString, err := NewSecurityService(gs.groupRepo, gs.apiKeyRepo).CreateAPIKey(ctx, member, newAPIKey)
 	if err != nil {
 		return nil, nil, err
 	}
 
 	resp := &models.APIKeyResponse{
 		APIKey: models.APIKey{
-			Name:      apiKey.Name,
-			Role:      apiKey.Role,
+			Name: apiKey.Name,
+			Role: models.Role{
+				Type:  apiKey.Role.Type,
+				Group: apiKey.Role.Groups[0],
+			},
 			Type:      apiKey.Type,
 			ExpiresAt: apiKey.ExpiresAt.Time(),
 		},

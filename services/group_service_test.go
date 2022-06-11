@@ -29,6 +29,7 @@ func TestGroupService_CreateGroup(t *testing.T) {
 		ctx      context.Context
 		newGroup *models.Group
 		org      *datastore.Organisation
+		member   *datastore.OrganisationMember
 	}
 	tests := []struct {
 		name        string
@@ -68,18 +69,19 @@ func TestGroupService_CreateGroup(t *testing.T) {
 					},
 				},
 				org: &datastore.Organisation{UID: "1234"},
+				member: &datastore.OrganisationMember{
+					UID:            "abc",
+					OrganisationID: "1234",
+					Role:           auth.Role{Type: auth.RoleSuperUser},
+				},
 			},
 			dbFn: func(gs *GroupService) {
 				a, _ := gs.groupRepo.(*mocks.MockGroupRepository)
 				a.EXPECT().CreateGroup(gomock.Any(), gomock.Any()).
 					Times(1).Return(nil)
 
-				a.EXPECT().FetchGroupsByIDs(gomock.Any(), gomock.Any()).Times(1).Return(
-					[]datastore.Group{
-						{UID: "abc"},
-					},
-					nil,
-				)
+				a.EXPECT().FetchGroupByID(gomock.Any(), gomock.Any()).Times(1).Return(&datastore.Group{UID: "abc", OrganisationID: "1234"}, nil)
+
 				apiKeyRepo, _ := gs.apiKeyRepo.(*mocks.MockAPIKeyRepository)
 				apiKeyRepo.EXPECT().CreateAPIKey(gomock.Any(), gomock.Any()).Times(1).Return(nil)
 			},
@@ -140,18 +142,19 @@ func TestGroupService_CreateGroup(t *testing.T) {
 					},
 				},
 				org: &datastore.Organisation{UID: "1234"},
+				member: &datastore.OrganisationMember{
+					UID:            "abc",
+					OrganisationID: "1234",
+					Role:           auth.Role{Type: auth.RoleSuperUser},
+				},
 			},
 			dbFn: func(gs *GroupService) {
 				a, _ := gs.groupRepo.(*mocks.MockGroupRepository)
 				a.EXPECT().CreateGroup(gomock.Any(), gomock.Any()).
 					Times(1).Return(nil)
 
-				a.EXPECT().FetchGroupsByIDs(gomock.Any(), gomock.Any()).Times(1).Return(
-					[]datastore.Group{
-						{UID: "abc"},
-					},
-					nil,
-				)
+				a.EXPECT().FetchGroupByID(gomock.Any(), gomock.Any()).Times(1).Return(&datastore.Group{UID: "abc", OrganisationID: "1234"}, nil)
+
 				apiKeyRepo, _ := gs.apiKeyRepo.(*mocks.MockAPIKeyRepository)
 				apiKeyRepo.EXPECT().CreateAPIKey(gomock.Any(), gomock.Any()).Times(1).Return(nil)
 			},
@@ -194,18 +197,19 @@ func TestGroupService_CreateGroup(t *testing.T) {
 					Config:  datastore.GroupConfig{},
 				},
 				org: &datastore.Organisation{UID: "1234"},
+				member: &datastore.OrganisationMember{
+					UID:            "abc",
+					OrganisationID: "1234",
+					Role:           auth.Role{Type: auth.RoleSuperUser},
+				},
 			},
 			dbFn: func(gs *GroupService) {
 				a, _ := gs.groupRepo.(*mocks.MockGroupRepository)
 				a.EXPECT().CreateGroup(gomock.Any(), gomock.Any()).
 					Times(1).Return(nil)
 
-				a.EXPECT().FetchGroupsByIDs(gomock.Any(), gomock.Any()).Times(1).Return(
-					[]datastore.Group{
-						{UID: "abc"},
-					},
-					nil,
-				)
+				a.EXPECT().FetchGroupByID(gomock.Any(), gomock.Any()).Times(1).Return(&datastore.Group{UID: "abc", OrganisationID: "1234"}, nil)
+
 				apiKeyRepo, _ := gs.apiKeyRepo.(*mocks.MockAPIKeyRepository)
 				apiKeyRepo.EXPECT().CreateAPIKey(gomock.Any(), gomock.Any()).Times(1).Return(nil)
 			},
@@ -243,18 +247,19 @@ func TestGroupService_CreateGroup(t *testing.T) {
 					},
 				},
 				org: &datastore.Organisation{UID: "1234"},
+				member: &datastore.OrganisationMember{
+					UID:            "abc",
+					OrganisationID: "1234",
+					Role:           auth.Role{Type: auth.RoleSuperUser},
+				},
 			},
 			dbFn: func(gs *GroupService) {
 				a, _ := gs.groupRepo.(*mocks.MockGroupRepository)
 				a.EXPECT().CreateGroup(gomock.Any(), gomock.Any()).
 					Times(1).Return(nil)
 
-				a.EXPECT().FetchGroupsByIDs(gomock.Any(), gomock.Any()).Times(1).Return(
-					[]datastore.Group{
-						{UID: "abc"},
-					},
-					nil,
-				)
+				a.EXPECT().FetchGroupByID(gomock.Any(), gomock.Any()).Times(1).Return(&datastore.Group{UID: "abc", OrganisationID: "1234"}, nil)
+
 				apiKeyRepo, _ := gs.apiKeyRepo.(*mocks.MockAPIKeyRepository)
 				apiKeyRepo.EXPECT().CreateAPIKey(gomock.Any(), gomock.Any()).Times(1).Return(nil)
 			},
@@ -301,7 +306,8 @@ func TestGroupService_CreateGroup(t *testing.T) {
 						ReplayAttacks:   true,
 					},
 				},
-				org: &datastore.Organisation{UID: "1234"},
+				org:    &datastore.Organisation{UID: "1234"},
+				member: &datastore.OrganisationMember{},
 			},
 			dbFn: func(gs *GroupService) {
 				a, _ := gs.groupRepo.(*mocks.MockGroupRepository)
@@ -324,7 +330,7 @@ func TestGroupService_CreateGroup(t *testing.T) {
 				tc.dbFn(gs)
 			}
 
-			group, apiKey, err := gs.CreateGroup(tc.args.ctx, tc.args.newGroup, tc.args.org)
+			group, apiKey, err := gs.CreateGroup(tc.args.ctx, tc.args.newGroup, tc.args.org, tc.args.member)
 			if tc.wantErr {
 				require.NotNil(t, err)
 				require.Equal(t, tc.wantErrCode, err.(*ServiceError).ErrCode())
@@ -341,7 +347,7 @@ func TestGroupService_CreateGroup(t *testing.T) {
 			require.Empty(t, group.DeletedAt)
 
 			require.Equal(t, group.Name+"'s default key", apiKey.Name)
-			require.Equal(t, []string{group.UID}, apiKey.Role.Groups)
+			require.Equal(t, group.UID, apiKey.Role.Group)
 			require.Equal(t, auth.RoleSuperUser, apiKey.Role.Type)
 			require.NotEmpty(t, apiKey.ExpiresAt)
 			require.NotEmpty(t, apiKey.UID)

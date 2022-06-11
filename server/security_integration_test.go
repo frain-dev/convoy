@@ -22,10 +22,13 @@ import (
 
 type SecurityIntegrationTestSuite struct {
 	suite.Suite
-	DB           datastore.DatabaseClient
-	Router       http.Handler
-	ConvoyApp    *applicationHandler
-	DefaultGroup *datastore.Group
+	DB              datastore.DatabaseClient
+	Router          http.Handler
+	ConvoyApp       *applicationHandler
+	AuthenticatorFn AuthenticatorFn
+	DefaultOrg      *datastore.Organisation
+	DefaultGroup    *datastore.Group
+	DefaultUser     *datastore.User
 }
 
 func (s *SecurityIntegrationTestSuite) SetupSuite() {
@@ -40,8 +43,21 @@ func (s *SecurityIntegrationTestSuite) SetupTest() {
 	// Setup Default Group.
 	s.DefaultGroup, _ = testdb.SeedDefaultGroup(s.DB)
 
+	user, err := testdb.SeedDefaultUser(s.DB)
+	require.NoError(s.T(), err)
+	s.DefaultUser = user
+
+	org, err := testdb.SeedDefaultOrganisation(s.DB, user)
+	require.NoError(s.T(), err)
+	s.DefaultOrg = org
+
+	s.AuthenticatorFn = authenticateRequest(&models.LoginUser{
+		Username: user.Email,
+		Password: testdb.DefaultUserPassword,
+	})
+
 	// Setup Config.
-	err := config.LoadConfig("./testdata/Auth_Config/full-convoy-with-native-auth-realm.json")
+	err = config.LoadConfig("./testdata/Auth_Config/full-convoy-with-native-auth-realm.json")
 	require.NoError(s.T(), err)
 
 	initRealmChain(s.T(), s.DB.APIRepo(), s.DB.UserRepo(), s.ConvoyApp.cache)
@@ -54,7 +70,12 @@ func (s *SecurityIntegrationTestSuite) Test_CreateAPIKey() {
 	bodyStr := `{"name":"default_api_key","role":{"type":"ui_admin","groups":["%s"]},"key_type":"api_key","expires_at":"%s"}`
 	body := serialize(bodyStr, s.DefaultGroup.UID, time.Now().Add(time.Hour).Format(time.RFC3339))
 
-	req := createRequest(http.MethodPost, "/api/v1/security/keys", body)
+	url := fmt.Sprintf("/ui/organisations/%s/security/keys", s.DefaultOrg.UID)
+
+	req := createRequest(http.MethodPost, url, body)
+	err := s.AuthenticatorFn(req, s.Router)
+	require.NoError(s.T(), err)
+
 	w := httptest.NewRecorder()
 
 	// Act.
@@ -110,9 +131,12 @@ func (s *SecurityIntegrationTestSuite) Test_RevokeAPIKey() {
 	// Just Before.
 	apiKey, _ := testdb.SeedAPIKey(s.DB, s.DefaultGroup, uuid.NewString(), "test", "api")
 
-	url := fmt.Sprintf("/api/v1/security/keys/%s/revoke", apiKey.UID)
+	url := fmt.Sprintf("/ui/organisations/%s/security/keys/%s/revoke", s.DefaultOrg.UID, apiKey.UID)
 
 	req := createRequest(http.MethodPut, url, nil)
+	err := s.AuthenticatorFn(req, s.Router)
+	require.NoError(s.T(), err)
+
 	w := httptest.NewRecorder()
 
 	// Act.
@@ -134,8 +158,12 @@ func (s *SecurityIntegrationTestSuite) Test_GetAPIKeyByID() {
 	// Just Before.
 	apiKey, _ := testdb.SeedAPIKey(s.DB, s.DefaultGroup, uuid.NewString(), "test", "api")
 
-	url := fmt.Sprintf("/api/v1/security/keys/%s", apiKey.UID)
+	url := fmt.Sprintf("/ui/organisations/%s/security/keys/%s", s.DefaultOrg.UID, apiKey.UID)
+
 	req := createRequest(http.MethodGet, url, nil)
+	err := s.AuthenticatorFn(req, s.Router)
+	require.NoError(s.T(), err)
+
 	w := httptest.NewRecorder()
 
 	// Act.
@@ -153,8 +181,12 @@ func (s *SecurityIntegrationTestSuite) Test_GetAPIKeyByID() {
 func (s *SecurityIntegrationTestSuite) Test_GetAPIKeyByID_APIKeyNotFound() {
 	expectedStatusCode := http.StatusBadRequest
 
-	url := fmt.Sprintf("/api/v1/security/keys/%s", uuid.NewString())
+	url := fmt.Sprintf("/ui/organisations/%s/security/keys/%s/revoke", s.DefaultOrg.UID, uuid.NewString())
+
 	req := createRequest(http.MethodGet, url, nil)
+	err := s.AuthenticatorFn(req, s.Router)
+	require.NoError(s.T(), err)
+
 	w := httptest.NewRecorder()
 
 	// Act.
@@ -173,8 +205,11 @@ func (s *SecurityIntegrationTestSuite) Test_UpdateAPIKey() {
 	bodyStr := `{"role":{"type":"api","groups":["%s"]}}`
 	body := serialize(bodyStr, s.DefaultGroup.UID)
 
-	url := fmt.Sprintf("/api/v1/security/keys/%s", apiKey.UID)
+	url := fmt.Sprintf("/ui/organisations/%s/security/keys/%s", s.DefaultOrg.UID, apiKey.UID)
 	req := createRequest(http.MethodPut, url, body)
+	err := s.AuthenticatorFn(req, s.Router)
+	require.NoError(s.T(), err)
+
 	w := httptest.NewRecorder()
 
 	// Act.
@@ -199,9 +234,12 @@ func (s *SecurityIntegrationTestSuite) Test_UpdateAPIKey_APIKeyNotFound() {
 	bodyStr := `{"role":{"type":"api","groups":["%s"]}}`
 	body := serialize(bodyStr, s.DefaultGroup.UID)
 
-	url := fmt.Sprintf("/api/v1/security/keys/%s", uuid.NewString())
+	url := fmt.Sprintf("/ui/organisations/%s/security/keys/%s", s.DefaultOrg.UID, uuid.NewString())
 
 	req := createRequest(http.MethodPut, url, body)
+	err := s.AuthenticatorFn(req, s.Router)
+	require.NoError(s.T(), err)
+
 	w := httptest.NewRecorder()
 
 	// Act.
@@ -222,7 +260,11 @@ func (s *SecurityIntegrationTestSuite) Test_GetAPIKeys() {
 	bodyStr := `{"role":{"type":"api","groups":["%s"]}}`
 	body := serialize(bodyStr, uuid.NewString())
 
-	req := createRequest(http.MethodGet, "/api/v1/security/keys", body)
+	url := fmt.Sprintf("/ui/organisations/%s/security/keys", s.DefaultOrg.UID)
+	req := createRequest(http.MethodGet, url, body)
+	err := s.AuthenticatorFn(req, s.Router)
+	require.NoError(s.T(), err)
+
 	w := httptest.NewRecorder()
 
 	// Act.

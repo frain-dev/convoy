@@ -78,7 +78,8 @@ func (a *applicationHandler) CreateGroup(w http.ResponseWriter, r *http.Request)
 	}
 
 	org := getOrganisationFromContext(r.Context())
-	group, apiKey, err := a.groupService.CreateGroup(r.Context(), &newGroup, org)
+	member := getOrganisationMemberFromContext(r.Context())
+	group, apiKey, err := a.groupService.CreateGroup(r.Context(), &newGroup, org, member)
 	if err != nil {
 		_ = render.Render(w, r, newServiceErrResponse(err))
 		return

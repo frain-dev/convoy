@@ -17,10 +17,7 @@
                     "username": "test",
                     "password": "test",
                     "role": {
-                        "type": "super_user",
-                        "groups": [
-                            "123"
-                        ]
+                        "type": "super_user"
                     }
                 }
             ]

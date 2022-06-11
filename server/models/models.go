@@ -30,9 +30,15 @@ type OrganisationInvite struct {
 
 type APIKey struct {
 	Name      string            `json:"name"`
-	Role      auth.Role         `json:"role"`
+	Role      Role              `json:"role"`
 	Type      datastore.KeyType `json:"key_type"`
 	ExpiresAt time.Time         `json:"expires_at"`
+}
+
+type Role struct {
+	Type  auth.RoleType `json:"type"`
+	Group string        `json:"group"`
+	App   string        `json:"app,omitempty"`
 }
 
 type UpdateOrganisationMember struct {

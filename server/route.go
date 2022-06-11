@@ -163,16 +163,6 @@ func buildRoutes(app *applicationHandler) http.Handler {
 			})
 
 			r.Route("/security", func(securityRouter chi.Router) {
-				securityRouter.Route("/", func(securitySubRouter chi.Router) {
-					securitySubRouter.Use(requirePermission(auth.RoleSuperUser))
-
-					securitySubRouter.Post("/keys", app.CreateAPIKey)
-					securitySubRouter.With(pagination).Get("/keys", app.GetAPIKeys)
-					securitySubRouter.Get("/keys/{keyID}", app.GetAPIKeyByID)
-					securitySubRouter.Put("/keys/{keyID}", app.UpdateAPIKey)
-					securitySubRouter.Put("/keys/{keyID}/revoke", app.RevokeAPIKey)
-				})
-
 				securityRouter.Route("/applications/{appID}/keys", func(securitySubRouter chi.Router) {
 					securitySubRouter.Use(requirePermission(auth.RoleAdmin))
 					securitySubRouter.Use(requireGroup(app.groupRepo, app.cache))
@@ -265,6 +255,16 @@ func buildRoutes(app *applicationHandler) http.Handler {
 					})
 				})
 
+				orgSubRouter.Route("/security", func(securityRouter chi.Router) {
+					securityRouter.Use(requireOrganisationMemberRole(auth.RoleSuperUser))
+
+					securityRouter.Post("/keys", app.CreateAPIKey)
+					securityRouter.With(pagination).Get("/keys", app.GetAPIKeys)
+					securityRouter.Get("/keys/{keyID}", app.GetAPIKeyByID)
+					securityRouter.Put("/keys/{keyID}", app.UpdateAPIKey)
+					securityRouter.Put("/keys/{keyID}/revoke", app.RevokeAPIKey)
+				})
+
 				orgSubRouter.Route("/groups", func(groupRouter chi.Router) {
 					groupRouter.Route("/", func(orgSubRouter chi.Router) {
 						groupRouter.With(requireOrganisationMemberRole(auth.RoleSuperUser)).Post("/", app.CreateGroup)
@@ -337,7 +337,7 @@ func buildRoutes(app *applicationHandler) http.Handler {
 							eventDeliveryRouter.Get("/countbatchretryevents", app.CountAffectedEventDeliveries)
 
 							eventDeliveryRouter.Route("/{eventDeliveryID}", func(eventDeliverySubRouter chi.Router) {
-				        eventDeliverySubRouter.Use(requireEventDelivery(app.eventDeliveryRepo, app.appRepo, app.eventRepo))
+								eventDeliverySubRouter.Use(requireEventDelivery(app.eventDeliveryRepo, app.appRepo, app.eventRepo))
 
 								eventDeliverySubRouter.Get("/", app.GetEventDelivery)
 								eventDeliverySubRouter.Put("/resend", app.ResendEventDelivery)
