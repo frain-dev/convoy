@@ -72,20 +72,19 @@
 
 		<div class="input multiple">
 			<label class="flex flex__justify-between" for="tagInput">
-				<div class="flex flex__align-items-center">
-					Event types
-					<app-tooltip [size]="'small'" position="right" class="margin-left__4px">Add multiple event types by separating them with commas.</app-tooltip>
-				</div>
-				<span class="bg__grey__light rounded__4px padding-x__4px position__absolute position--right__0px font__10px font__weight-400">required</span>
+				<div class="flex flex__align-items-center">Event types</div>
 			</label>
 			<div class="input--multiple" (click)="focusInput()">
 				<div class="tag" *ngFor="let tag of eventTags">
-					{{ tag }}
-					<a (click)="removeEventTag(tag)">
-						<img src="/assets/img/close-icon-black.svg" alt="close icon" />
-					</a>
+					<div class="flex flex__align-items-center font__weight-400">{{ tag }}</div>
+					<button class="button button__clear button--has-icon" (click)="removeEventTag(tag)">
+						<img src="/assets/img/close-icon-black.svg" width="12px" class="margin-left__8px" alt="close icon" />
+					</button>
 				</div>
-				<input type="text" id="tagInput" (input)="addTag()" required />
+				<input type="text" id="tagInput" (input)="addTag()" required class="font__12px" autocomplete="off" />
+			</div>
+			<div class="input__error input__error__secondary">
+				<span>Separate event types with comma (,)</span>
 			</div>
 		</div>
 

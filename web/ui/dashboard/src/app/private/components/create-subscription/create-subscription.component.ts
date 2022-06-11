@@ -149,7 +149,7 @@ export class CreateSubscriptionComponent implements OnInit {
 			const key = e.keyCode || e.charCode;
 			if (key == 8) {
 				e.stopImmediatePropagation();
-				if (this.eventTags.length > 0) this.eventTags.splice(-1);
+				if (this.eventTags.length > 0 && !addTagInputValue?.value) this.eventTags.splice(-1);
 			}
 			if (e.which === 188 || e.key == ' ') {
 				if (this.eventTags.includes(addTagInputValue?.value)) {
