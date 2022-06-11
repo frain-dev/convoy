@@ -88,7 +88,6 @@ func (e *EventService) CreateAppEvent(ctx context.Context, newMessage *models.Ev
 		GroupID:        app.GroupID,
 		DocumentStatus: datastore.ActiveDocumentStatus,
 	}
-	fmt.Printf("%+v", g)
 
 	if (g.Config == nil || g.Config.Strategy == nil) ||
 		(g.Config.Strategy != nil && g.Config.Strategy.Type != datastore.LinearStrategyProvider && g.Config.Strategy.Type != datastore.ExponentialStrategyProvider) {

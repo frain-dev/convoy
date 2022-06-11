@@ -1,6 +1,6 @@
-import { Component, EventEmitter, OnInit, Output } from '@angular/core';
+import { Component, EventEmitter, Input, OnInit, Output } from '@angular/core';
 import { FormBuilder, FormGroup, Validators } from '@angular/forms';
-import { Router } from '@angular/router';
+import { ActivatedRoute, Router } from '@angular/router';
 import { APP, ENDPOINT } from 'src/app/models/app.model';
 import { GROUP, SOURCE } from 'src/app/models/group.model';
 import { ProjectService } from '../../pages/project/project.service';
@@ -14,23 +14,23 @@ import { CreateSubscriptionService } from './create-subscription.service';
 })
 export class CreateSubscriptionComponent implements OnInit {
 	subscriptionForm: FormGroup = this.formBuilder.group({
-		name: ['', Validators.required],
-		type: ['', Validators.required],
-		app_id: ['', Validators.required],
-		source_id: ['', Validators.required],
-		endpoint_id: ['', Validators.required],
-		group_id: ['', Validators.required],
+		name: [null, Validators.required],
+		type: [null, Validators.required],
+		app_id: [null, Validators.required],
+		source_id: [null, Validators.required],
+		endpoint_id: [null, Validators.required],
+		group_id: [null, Validators.required],
 		alert_config: this.formBuilder.group({
-			theshold: [''],
-			time: ['']
+			theshold: [null],
+			time: [null]
 		}),
 		retry_config: this.formBuilder.group({
-			type: [''],
-			retry_count: [''],
-			interval_seconds: ['']
+			type: [null],
+			retry_count: [null],
+			interval_seconds: [null]
 		}),
 		filter_config: this.formBuilder.group({
-			event_types: ['']
+			event_types: [null]
 		})
 	});
 	apps!: APP[];
@@ -46,15 +46,32 @@ export class CreateSubscriptionComponent implements OnInit {
 	];
 	isCreatingSubscription = false;
 	@Output() onAction = new EventEmitter();
+	@Input('action') action: 'update' | 'create' = 'create';
 	projectType: 'incoming' | 'outgoing' = 'incoming';
 	isLoadingForm = true;
 
-	constructor(private formBuilder: FormBuilder, private privateService: PrivateService, private createSubscriptionService: CreateSubscriptionService, private router: Router) {}
+	constructor(private formBuilder: FormBuilder, private privateService: PrivateService, private createSubscriptionService: CreateSubscriptionService, private route: ActivatedRoute) {}
 
 	async ngOnInit() {
 		this.isLoadingForm = true;
 		await Promise.all([this.getApps(), this.getSources(), this.getGetProjectDetails()]);
+		await this.getSubscriptionDetails();
 		this.isLoadingForm = false;
+	}
+
+	async getSubscriptionDetails() {
+		if (this.action !== 'update') return;
+
+		try {
+			const response = await this.createSubscriptionService.getSubscriptionDetail(this.route.snapshot.params.id);
+			this.subscriptionForm.patchValue(response.data);
+			this.subscriptionForm.patchValue({ source_id: response.data?.source_metadata?.uid, app_id: response.data?.app_metadata?.uid, endpoint_id: response.data?.endpoint_metadata?.uid });
+			this.onUpdateAppSelection();
+			this.eventTags = response.data.filter_config.event_types;
+			return;
+		} catch (error) {
+			return error;
+		}
 	}
 
 	async getApps() {
@@ -125,7 +142,10 @@ export class CreateSubscriptionComponent implements OnInit {
 		this.isCreatingSubscription = true;
 
 		try {
-			const response = await this.createSubscriptionService.createSubscription(this.subscriptionForm.value);
+			const response =
+				this.action == 'update'
+					? await this.createSubscriptionService.updateSubscription({ data: this.subscriptionForm.value, id: this.route.snapshot.params.id })
+					: await this.createSubscriptionService.createSubscription(this.subscriptionForm.value);
 			this.isCreatingSubscription = false;
 			this.onAction.emit(response.data);
 		} catch (error) {
