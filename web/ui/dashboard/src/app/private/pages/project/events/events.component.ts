@@ -7,6 +7,7 @@ import Chart from 'chart.js/auto';
 import { EventsService } from './events.service';
 import { EVENT } from 'src/app/models/event.model';
 import { PAGINATION } from 'src/app/models/global.model';
+import { PrivateService } from 'src/app/private/private.service';
 
 @Component({
 	selector: 'app-events',
@@ -32,7 +33,7 @@ export class EventsComponent implements OnInit {
 		endDate: [{ value: new Date(), disabled: true }]
 	});
 
-	constructor(private formBuilder: FormBuilder, private datePipe: DatePipe, private eventsService: EventsService) {}
+	constructor(private formBuilder: FormBuilder, private datePipe: DatePipe, private eventsService: EventsService, public privateService: PrivateService) {}
 
 	async ngOnInit() {
 		await this.fetchDashboardData();

@@ -80,6 +80,11 @@ func (gs *GroupService) CreateGroup(ctx context.Context, newGroup *models.Group)
 	err = gs.groupRepo.CreateGroup(ctx, group)
 	if err != nil {
 		log.WithError(err).Error("failed to create group")
+
+		if err == datastore.ErrDuplicateGroupName {
+			return nil, NewServiceError(http.StatusBadRequest, err)
+		}
+		
 		return nil, NewServiceError(http.StatusBadRequest, errors.New("failed to create group"))
 	}
 

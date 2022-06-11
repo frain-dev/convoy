@@ -284,6 +284,65 @@ func (s *OrganisationInviteIntegrationTestSuite) Test_ProcessOrganisationMemberI
 	require.Equal(s.T(), expectedStatusCode, w.Code)
 }
 
+func (s *OrganisationInviteIntegrationTestSuite) Test_FindUserByInviteToken_ExistingUser() {
+	expectedStatusCode := http.StatusOK
+
+	user, err := testdb.SeedUser(s.DB, "invite@test.com", "password")
+	require.NoError(s.T(), err)
+
+	iv, err := testdb.SeedOrganisationInvite(s.DB, s.DefaultOrg, user.Email, &auth.Role{
+		Type:   auth.RoleAdmin,
+		Groups: []string{uuid.NewString()},
+		Apps:   nil,
+	}, primitive.NewDateTimeFromTime(time.Now().Add(time.Hour)))
+	require.NoError(s.T(), err)
+
+	// Arrange.
+	url := fmt.Sprintf("/ui/users/token?token=%s", iv.Token)
+	req := createRequest(http.MethodGet, url, nil)
+
+	w := httptest.NewRecorder()
+
+	// Act.
+	s.Router.ServeHTTP(w, req)
+
+	// Assert.
+	require.Equal(s.T(), expectedStatusCode, w.Code)
+
+	var response datastore.User
+	parseResponse(s.T(), w.Result(), &response)
+
+	require.Equal(s.T(), user.UID, response.UID)
+	require.Equal(s.T(), user.FirstName, response.FirstName)
+	require.Equal(s.T(), user.LastName, response.LastName)
+	require.Equal(s.T(), user.Email, response.Email)
+}
+
+func (s *OrganisationInviteIntegrationTestSuite) Test_FindUserByInviteToken_NewUser() {
+	expectedStatusCode := http.StatusOK
+
+	iv, err := testdb.SeedOrganisationInvite(s.DB, s.DefaultOrg, "invite@test.com", &auth.Role{
+		Type:   auth.RoleAdmin,
+		Groups: []string{uuid.NewString()},
+		Apps:   nil,
+	}, primitive.NewDateTimeFromTime(time.Now().Add(time.Hour)))
+	require.NoError(s.T(), err)
+
+	// Arrange.
+	url := fmt.Sprintf("/ui/users/token?token=%s", iv.Token)
+	req := createRequest(http.MethodGet, url, nil)
+
+	w := httptest.NewRecorder()
+
+	// Act.
+	s.Router.ServeHTTP(w, req)
+
+	// Assert.
+	require.Equal(s.T(), expectedStatusCode, w.Code)
+}
+
+
+
 func TestOrganisationInviteIntegrationTestSuite(t *testing.T) {
 	suite.Run(t, new(OrganisationInviteIntegrationTestSuite))
 }

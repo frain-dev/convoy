@@ -1,4 +1,4 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, EventEmitter, OnInit, Output } from '@angular/core';
 import { FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { Router } from '@angular/router';
 import { APP, ENDPOINT } from 'src/app/models/app.model';
@@ -43,19 +43,26 @@ export class CreateSubscriptionComponent implements OnInit {
 		{ id: 'linear', type: 'Linear time retry' },
 		{ id: 'exponential', type: 'Exponential time backoff' }
 	];
+	isCreatingSubscription = false;
+	@Output() onAction = new EventEmitter();
+	projectType: 'incoming' | 'outgoing' = 'incoming';
+	isLoadingForm = true;
 
 	constructor(private formBuilder: FormBuilder, private privateService: PrivateService, private createSubscriptionService: CreateSubscriptionService, private router: Router) {}
 
-	ngOnInit(): void {
-		Promise.all([this.getApps(), this.getSources(), this.getGetProjectDetails()]);
+	async ngOnInit() {
+		this.isLoadingForm = true;
+		await Promise.all([this.getApps(), this.getSources(), this.getGetProjectDetails()]);
+		this.isLoadingForm = false;
 	}
 
 	async getApps() {
 		try {
 			const appsResponse = await this.privateService.getApps();
 			this.apps = appsResponse.data.content;
+			return;
 		} catch (error) {
-			console.log(error);
+			return error;
 		}
 	}
 
@@ -63,8 +70,9 @@ export class CreateSubscriptionComponent implements OnInit {
 		try {
 			const sourcesResponse = await this.privateService.getSources();
 			this.sources = sourcesResponse.data.content;
+			return;
 		} catch (error) {
-			console.log(error);
+			return;
 		}
 	}
 
@@ -75,8 +83,10 @@ export class CreateSubscriptionComponent implements OnInit {
 				group_id: response.data.uid,
 				type: 'incoming'
 			});
+			this.projectType = response.data.type;
+			return;
 		} catch (error) {
-			console.log(error);
+			return;
 		}
 	}
 
@@ -91,18 +101,27 @@ export class CreateSubscriptionComponent implements OnInit {
 	}
 
 	async createSubscription() {
-		console.log(this.subscriptionForm.value);
-		this.subscriptionForm.patchValue({
-			filter_config: { event_types: this.eventTags }
-		});
+		if (this.projectType === 'incoming' && this.subscriptionForm.invalid) return this.subscriptionForm.markAllAsTouched();
+		if (
+			this.subscriptionForm.get('name')?.invalid &&
+			this.subscriptionForm.get('type')?.invalid &&
+			this.subscriptionForm.get('app_id')?.invalid &&
+			this.subscriptionForm.get('endpoint_id')?.invalid &&
+			this.subscriptionForm.get('group_id')?.invalid
+		) {
+			return this.subscriptionForm.markAllAsTouched();
+		}
 
-		if (this.subscriptionForm.invalid) return this.subscriptionForm.markAllAsTouched();
+		const subscription = this.subscriptionForm.value;
+		if (this.projectType === 'outgoing') delete subscription.source_id;
+		this.isCreatingSubscription = true;
 
 		try {
 			const response = await this.createSubscriptionService.createSubscription(this.subscriptionForm.value);
-			this.router.navigateByUrl('/projects/' + this.privateService.activeProjectId + '/subscriptions');
+			this.isCreatingSubscription = false;
+			this.onAction.emit(response.data);
 		} catch (error) {
-			console.log(error);
+			this.isCreatingSubscription = false;
 		}
 	}
 

@@ -4,6 +4,7 @@ import { FormBuilder, FormControl, FormGroup, Validators } from '@angular/forms'
 import { ActivatedRoute, Router } from '@angular/router';
 import { APP } from 'src/app/models/app.model';
 import { PAGINATION } from 'src/app/models/global.model';
+import { PrivateService } from 'src/app/private/private.service';
 import { GeneralService } from 'src/app/services/general/general.service';
 import { AppDetailsService } from './app-details.service';
 
@@ -39,13 +40,15 @@ export class AppDetailsComponent implements OnInit {
 	eventTags: string[] = [];
 	appsDetailsItem!: APP;
 	apps!: { pagination: PAGINATION; content: APP[] };
+
 	constructor(
 		private formBuilder: FormBuilder,
 		private appDetailsService: AppDetailsService,
 		private generalService: GeneralService,
 		private route: ActivatedRoute,
 		private location: Location,
-		private router: Router
+		private router: Router,
+		public privateService: PrivateService
 	) {}
 
 	async ngOnInit() {

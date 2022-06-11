@@ -3,7 +3,7 @@
 	<svg width="16" height="16" class="margin-x__4px">
 		<use xlink:href="#arrow-right-icon"></use>
 	</svg>
-	PROJECT NAME
+	{{ privateService.activeProjectDetails?.name }}
 	<svg width="16" height="16" class="margin-x__4px">
 		<use xlink:href="#arrow-right-icon"></use>
 	</svg>
@@ -13,6 +13,7 @@
 	</svg>
 	<span class="font__weight-500 color__primary">{{ appsDetailsItem?.name || 'App' }}</span>
 </h1>
+
 <div class="card padding-all__32px margin-bottom__20px">
 	<div class="flex flex__justify-between flex__align-items-center margin-bottom__24px">
 		<h3>Overview</h3>

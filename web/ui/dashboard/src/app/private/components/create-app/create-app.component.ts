@@ -115,7 +115,7 @@ export class CreateAppComponent implements OnInit {
 				: await this.createAppService.createApp({ body: this.addNewAppForm.value });
 
 			if (!this.editAppMode) {
-				this.appUid = response?.data?.uid;
+				this.appUid = response.data.uid;
 				const endpointData = this.addNewAppForm.value.endpoints;
 				endpointData.forEach((item: any) => {
 					requests.push(this.addNewEndpoint(item));
