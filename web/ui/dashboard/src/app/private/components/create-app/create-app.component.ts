@@ -15,7 +15,6 @@ export class CreateAppComponent implements OnInit {
 
 	@Output() discardApp = new EventEmitter<any>();
 	@Output() createApp = new EventEmitter<any>();
-	eventTags: any[] = [];
 	appUid!: string;
 	isSavingApp: boolean = false;
 	addNewAppForm: FormGroup = this.formBuilder.group({
@@ -61,33 +60,6 @@ export class CreateAppComponent implements OnInit {
 		this.endpoints.removeAt(i);
 	}
 
-	removeEventTag(tag: string, i: number) {
-		this.eventTags[i] = this.eventTags[i].filter((e: string) => e !== tag);
-	}
-
-	addTag(i: number) {
-		this.eventTags[i] ? (this.eventTags[i] = this.eventTags[i]) : (this.eventTags[i] = []);
-
-		const addTagInput = document.getElementById('tagInput' + i);
-		const addTagInputValue = document.getElementById('tagInput' + i) as HTMLInputElement;
-
-		addTagInput?.addEventListener('keydown', e => {
-			if (e.which === 188) {
-				if (this.eventTags[i].includes(addTagInputValue?.value)) {
-					addTagInputValue.value = '';
-					this.eventTags[i] = this.eventTags[i].filter((e: string) => String(e).trim());
-				} else {
-					this.eventTags[i].push(addTagInputValue?.value);
-					this.eventTags[i] = this.eventTags[i].filter((e: string) => String(e).trim());
-
-					// ((this.addNewAppForm.get('endpoints') as FormArray)?.at(i) as FormGroup)?.get('events')?.patchValue(this.eventTags[i]);
-					addTagInputValue.value = '';
-				}
-				e.preventDefault();
-			}
-		});
-	}
-
 	updateForm() {
 		this.addNewAppForm.patchValue({
 			name: this.appsDetailsItem?.name,
@@ -103,10 +75,6 @@ export class CreateAppComponent implements OnInit {
 			});
 			return;
 		}
-
-		this.addNewAppForm.value.endpoints.forEach((item: any) => {
-			if (item.events === '') item.events = ['*'];
-		});
 
 		this.isSavingApp = true;
 		let requests: any[] = [];
@@ -149,16 +117,11 @@ export class CreateAppComponent implements OnInit {
 		}
 	}
 
-	async saveNewEndpoints(requests: any[]) {
-		const response = await Promise.all(requests);
-		console.log(response);
+	saveNewEndpoints(requests: any[]) {
+		Promise.all(requests);
 	}
 
 	closeAppInstance() {
 		this.discardApp.emit();
-	}
-
-	focusInput(i: number) {
-		document.getElementById('tagInput' + i)?.focus();
 	}
 }
