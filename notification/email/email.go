@@ -36,18 +36,8 @@ func NewEmailNotificationSender(smtpCfg *config.SMTPConfiguration) (notification
 }
 
 func (e *Email) SendNotification(ctx context.Context, n *notification.Notification) error {
-	payload := struct {
-		URL     string
-		LogoURL string
-		Status  string
-	}{
-		URL:     n.TargetURL,
-		LogoURL: n.LogoURL,
-		Status:  n.EndpointStatus,
-	}
-
 	newEmail := em.NewEmail(e.s)
-	err := newEmail.Build(n.EmailTemplateName, payload)
+	err := newEmail.Build(n.EmailTemplateName, n)
 	if err != nil {
 		return err
 	}

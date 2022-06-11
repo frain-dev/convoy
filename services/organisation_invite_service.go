@@ -92,6 +92,7 @@ func (ois *OrganisationInviteService) sendInviteEmail(ctx context.Context, iv *d
 		InviteURL:         fmt.Sprintf("%s/ui/organisations/process_invite?token=%s", baseURL, iv.Token),
 		OrganisationName:  org.Name,
 		InviterName:       fmt.Sprintf("%s %s", user.FirstName, user.LastName),
+		ExpiresAt:         iv.ExpiresAt.Time().String(),
 	}
 
 	buf, err := json.Marshal(n)
