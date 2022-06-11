@@ -41,7 +41,7 @@ func (s *GroupIntegrationTestSuite) SetupTest() {
 	testdb.PurgeDB(s.DB)
 
 	// Setup Default Group.
-	s.DefaultGroup, _ = testdb.SeedDefaultGroup(s.DB)
+	s.DefaultGroup, _ = testdb.SeedDefaultGroup(s.DB, "")
 
 	user, err := testdb.SeedDefaultUser(s.DB)
 	require.NoError(s.T(), err)
@@ -68,7 +68,7 @@ func (s *GroupIntegrationTestSuite) TestGetGroup() {
 	expectedStatusCode := http.StatusOK
 
 	// Just Before.
-	group, err := testdb.SeedGroup(s.DB, groupID, "", nil)
+	group, err := testdb.SeedGroup(s.DB, groupID, "", "", nil)
 	require.NoError(s.T(), err)
 	app, _ := testdb.SeedApplication(s.DB, group, uuid.NewString(), "test-app", false)
 	_, _ = testdb.SeedEndpoint(s.DB, app, group.UID)
@@ -112,7 +112,7 @@ func (s *GroupIntegrationTestSuite) TestDeleteGroup() {
 	expectedStatusCode := http.StatusOK
 
 	// Just Before.
-	group, err := testdb.SeedGroup(s.DB, groupID, "", nil)
+	group, err := testdb.SeedGroup(s.DB, groupID, "", "", nil)
 	require.NoError(s.T(), err)
 
 	url := fmt.Sprintf("/api/v1/groups/%s", group.UID)
@@ -204,7 +204,7 @@ func (s *GroupIntegrationTestSuite) TestUpdateGroup() {
 	expectedStatusCode := http.StatusAccepted
 
 	// Just Before.
-	group, err := testdb.SeedGroup(s.DB, groupID, "test-group", nil)
+	group, err := testdb.SeedGroup(s.DB, groupID, "", "test-group", nil)
 	require.NoError(s.T(), err)
 
 	url := fmt.Sprintf("/api/v1/groups/%s", group.UID)
@@ -243,9 +243,9 @@ func (s *GroupIntegrationTestSuite) TestGetGroups() {
 	expectedStatusCode := http.StatusOK
 
 	// Just Before.
-	group1, _ := testdb.SeedGroup(s.DB, uuid.NewString(), "test-group-1", nil)
-	group2, _ := testdb.SeedGroup(s.DB, uuid.NewString(), "test-group-2", nil)
-	group3, _ := testdb.SeedGroup(s.DB, uuid.NewString(), "test-group-3", nil)
+	group1, _ := testdb.SeedGroup(s.DB, uuid.NewString(), "", "test-group-1", nil)
+	group2, _ := testdb.SeedGroup(s.DB, uuid.NewString(), "", "test-group-2", nil)
+	group3, _ := testdb.SeedGroup(s.DB, uuid.NewString(), "", "test-group-3", nil)
 
 	req := createRequest(http.MethodGet, "/api/v1/groups", nil)
 	w := httptest.NewRecorder()
@@ -270,9 +270,9 @@ func (s *GroupIntegrationTestSuite) TestGetGroups_FilterByName() {
 	expectedStatusCode := http.StatusOK
 
 	// Just Before.
-	group1, _ := testdb.SeedGroup(s.DB, uuid.NewString(), "abcdef", nil)
-	_, _ = testdb.SeedGroup(s.DB, uuid.NewString(), "test-group-2", nil)
-	_, _ = testdb.SeedGroup(s.DB, uuid.NewString(), "test-group-3", nil)
+	group1, _ := testdb.SeedGroup(s.DB, uuid.NewString(), "", "abcdef", nil)
+	_, _ = testdb.SeedGroup(s.DB, uuid.NewString(), "", "test-group-2", nil)
+	_, _ = testdb.SeedGroup(s.DB, uuid.NewString(), "", "test-group-3", nil)
 
 	url := fmt.Sprintf("/api/v1/groups?name=%s", group1.Name)
 	req := createRequest(http.MethodGet, url, nil)

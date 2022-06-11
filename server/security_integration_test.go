@@ -40,9 +40,6 @@ func (s *SecurityIntegrationTestSuite) SetupSuite() {
 func (s *SecurityIntegrationTestSuite) SetupTest() {
 	testdb.PurgeDB(s.DB)
 
-	// Setup Default Group.
-	s.DefaultGroup, _ = testdb.SeedDefaultGroup(s.DB)
-
 	user, err := testdb.SeedDefaultUser(s.DB)
 	require.NoError(s.T(), err)
 	s.DefaultUser = user
@@ -51,13 +48,16 @@ func (s *SecurityIntegrationTestSuite) SetupTest() {
 	require.NoError(s.T(), err)
 	s.DefaultOrg = org
 
+	//Setup Default Group.
+	s.DefaultGroup, _ = testdb.SeedDefaultGroup(s.DB, s.DefaultOrg.UID)
+
 	s.AuthenticatorFn = authenticateRequest(&models.LoginUser{
 		Username: user.Email,
 		Password: testdb.DefaultUserPassword,
 	})
 
 	// Setup Config.
-	err = config.LoadConfig("./testdata/Auth_Config/full-convoy-with-native-auth-realm.json")
+	err = config.LoadConfig("./testdata/Auth_Config/full-convoy-with-jwt-realm.json")
 	require.NoError(s.T(), err)
 
 	initRealmChain(s.T(), s.DB.APIRepo(), s.DB.UserRepo(), s.ConvoyApp.cache)
@@ -67,7 +67,7 @@ func (s *SecurityIntegrationTestSuite) Test_CreateAPIKey() {
 	expectedStatusCode := http.StatusCreated
 
 	// Arrange Request.
-	bodyStr := `{"name":"default_api_key","role":{"type":"ui_admin","groups":["%s"]},"key_type":"api_key","expires_at":"%s"}`
+	bodyStr := `{"name":"default_api_key","role":{"type":"ui_admin","group":"%s"},"key_type":"api_key","expires_at":"%s"}`
 	body := serialize(bodyStr, s.DefaultGroup.UID, time.Now().Add(time.Hour).Format(time.RFC3339))
 
 	url := fmt.Sprintf("/ui/organisations/%s/security/keys", s.DefaultOrg.UID)
@@ -102,7 +102,7 @@ func (s *SecurityIntegrationTestSuite) Test_CreateAppPortalAPIKey() {
 	app, _ := testdb.SeedApplication(s.DB, s.DefaultGroup, uuid.NewString(), "test-app", true)
 
 	// Arrange Request.
-	bodyStr := `{"name":"default_api_key","role":{"type":"ui_admin","groups":["%s"]},"key_type":"api_key","expires_at":"%s"}"`
+	bodyStr := `{"name":"default_api_key","role":{"type":"ui_admin","group":"%s"},"key_type":"api_key","expires_at":"%s"}"`
 	body := serialize(bodyStr, s.DefaultGroup.UID, time.Now().Add(time.Hour))
 
 	url := fmt.Sprintf("/api/v1/security/applications/%s/keys", app.UID)
@@ -181,7 +181,7 @@ func (s *SecurityIntegrationTestSuite) Test_GetAPIKeyByID() {
 func (s *SecurityIntegrationTestSuite) Test_GetAPIKeyByID_APIKeyNotFound() {
 	expectedStatusCode := http.StatusBadRequest
 
-	url := fmt.Sprintf("/ui/organisations/%s/security/keys/%s/revoke", s.DefaultOrg.UID, uuid.NewString())
+	url := fmt.Sprintf("/ui/organisations/%s/security/keys/%s", s.DefaultOrg.UID, uuid.NewString())
 
 	req := createRequest(http.MethodGet, url, nil)
 	err := s.AuthenticatorFn(req, s.Router)

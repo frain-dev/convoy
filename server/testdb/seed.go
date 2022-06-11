@@ -105,11 +105,16 @@ func SeedMultipleEndpoints(db datastore.DatabaseClient, app *datastore.Applicati
 }
 
 // seed default group
-func SeedDefaultGroup(db datastore.DatabaseClient) (*datastore.Group, error) {
+func SeedDefaultGroup(db datastore.DatabaseClient, orgID string) (*datastore.Group, error) {
+	if orgID == "" {
+		orgID = uuid.NewString()
+	}
+
 	defaultGroup := &datastore.Group{
-		UID:  uuid.New().String(),
-		Name: "default-group",
-		Type: "outgoing",
+		UID:            uuid.New().String(),
+		Name:           "default-group",
+		Type:           "outgoing",
+		OrganisationID: orgID,
 		Config: &datastore.GroupConfig{
 			Strategy: &datastore.StrategyConfiguration{
 				Type:       datastore.DefaultStrategyProvider,
@@ -290,12 +295,16 @@ func SeedAPIKey(db datastore.DatabaseClient, g *datastore.Group, uid, name, keyT
 }
 
 // seed default group
-func SeedGroup(db datastore.DatabaseClient, uid, name string, cfg *datastore.GroupConfig) (*datastore.Group, error) {
+func SeedGroup(db datastore.DatabaseClient, uid, name, orgID string, cfg *datastore.GroupConfig) (*datastore.Group, error) {
+	if orgID == "" {
+		orgID = uuid.NewString()
+	}
 	g := &datastore.Group{
 		UID:               uid,
 		Name:              name,
 		Type:              datastore.OutgoingGroup,
 		Config:            cfg,
+		OrganisationID:    orgID,
 		RateLimit:         convoy.RATE_LIMIT,
 		RateLimitDuration: convoy.RATE_LIMIT_DURATION,
 		CreatedAt:         primitive.NewDateTimeFromTime(time.Now()),

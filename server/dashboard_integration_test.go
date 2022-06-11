@@ -56,7 +56,7 @@ func (s *DashboardIntegrationTestSuite) SetupTest() {
 	s.DefaultOrg = org
 
 	// Setup Default Group.
-	s.DefaultGroup, _ = testdb.SeedDefaultGroup(s.DB)
+	s.DefaultGroup, _ = testdb.SeedDefaultGroup(s.DB, "")
 
 	s.AuthenticatorFn = authenticateRequest(&models.LoginUser{
 		Username: user.Email,
