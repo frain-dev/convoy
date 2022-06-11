@@ -25,9 +25,9 @@ export class CreateSubscriptionComponent implements OnInit {
 			time: ['']
 		}),
 		retry_config: this.formBuilder.group({
-			type: ['', Validators.required],
-			retry_count: ['', Validators.required],
-			interval_seconds: ['', Validators.required]
+			type: [''],
+			retry_count: [''],
+			interval_seconds: ['']
 		}),
 		filter_config: this.formBuilder.group({
 			event_types: ['']
@@ -39,6 +39,7 @@ export class CreateSubscriptionComponent implements OnInit {
 	eventTags: string[] = [];
 	showCreateAppModal = false;
 	showCreateSourceModal = false;
+	enableMoreConfig = false;
 	retryLogicTypes = [
 		{ id: 'linear', type: 'Linear time retry' },
 		{ id: 'exponential', type: 'Exponential time backoff' }
@@ -101,6 +102,9 @@ export class CreateSubscriptionComponent implements OnInit {
 	}
 
 	async createSubscription() {
+		this.subscriptionForm.patchValue({
+			filter_config: { event_types: this.eventTags }
+		});
 		if (this.projectType === 'incoming' && this.subscriptionForm.invalid) return this.subscriptionForm.markAllAsTouched();
 		if (
 			this.subscriptionForm.get('name')?.invalid &&
@@ -114,6 +118,10 @@ export class CreateSubscriptionComponent implements OnInit {
 
 		const subscription = this.subscriptionForm.value;
 		if (this.projectType === 'outgoing') delete subscription.source_id;
+		if (!this.enableMoreConfig) {
+			delete subscription.alert_config;
+			delete subscription.retry_config;
+		}
 		this.isCreatingSubscription = true;
 
 		try {
@@ -138,7 +146,12 @@ export class CreateSubscriptionComponent implements OnInit {
 		const addTagInput = document.getElementById('tagInput');
 		const addTagInputValue = document.getElementById('tagInput') as HTMLInputElement;
 		addTagInput?.addEventListener('keydown', e => {
-			if (e.which === 188) {
+			const key = e.keyCode || e.charCode;
+			if (key == 8) {
+				e.stopImmediatePropagation();
+				if (this.eventTags.length > 0) this.eventTags.splice(-1);
+			}
+			if (e.which === 188 || e.key == ' ') {
 				if (this.eventTags.includes(addTagInputValue?.value)) {
 					addTagInputValue.value = '';
 					this.eventTags = this.eventTags.filter(e => String(e).trim());

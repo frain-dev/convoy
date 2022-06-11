@@ -45,8 +45,8 @@ export class SubscriptionsComponent implements OnInit {
 		this.router.navigateByUrl('/projects/' + this.privateService.activeProjectDetails.uid + '/subscriptions');
 	}
 
-	createSubscription() {
+	createSubscription(action: any) {
 		this.router.navigateByUrl('/projects/' + this.privateService.activeProjectDetails.uid + '/subscriptions');
-		this.generalService.showNotification({ message: 'Subscription has been created successfully', style: 'success' });
+		if (action !== 'cancel') this.generalService.showNotification({ message: 'Subscription has been created successfully', style: 'success' });
 	}
 }

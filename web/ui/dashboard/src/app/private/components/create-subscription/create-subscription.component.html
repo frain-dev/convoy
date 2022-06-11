@@ -55,102 +55,21 @@
 			New App
 		</button>
 
-		<div class="input margin-bottom__0px" [ngClass]="{ disabled: subscriptionForm.get('app_id')?.invalid }">
+		<div class="input" [ngClass]="{ disabled: subscriptionForm.get('app_id')?.invalid }">
 			<label for="endpoint" class="position__relative">
 				Endpoint
 				<span class="bg__grey__light rounded__4px padding-x__4px position__absolute position--right__0px font__10px font__weight-400">required</span>
 			</label>
 			<select id="endpoint" formControlName="endpoint_id">
 				<option value="">Select endpoint</option>
-				<option [value]="endpoint.uid" *ngFor="let endpoint of endPoints">{{ endpoint.target_url }}</option>
+				<option [value]="endpoint.uid" *ngFor="let endpoint of endPoints">{{ endpoint.description }}</option>
 			</select>
 			<div class="input__error input__error__danger" *ngIf="subscriptionForm.get('endpoint_id')?.touched && subscriptionForm.get('endpoint_id')?.invalid">
 				<img src="assets/img/input-error-icon.svg" alt="input error icon" />
 				<span>Select an endpoint</span>
 			</div>
 		</div>
-		<h3 class="margin-top__24px margin-bottom__16px flex flex__align-items-center">
-			Retry Logic
-			<app-tooltip [size]="'small'" position="right" class="margin-left__4px">
-				These are the specifications for the retry mechanism for your endpoints. In Linear time retry, event retries are done in linear time, while in Exponential back off retry, events are retried
-				progressively increasing the time before the next retry attempt.
-			</app-tooltip>
-		</h3>
-		<div class="grid grid__col-2 grid--gap__24px" formGroupName="retry_config">
-			<div class="input">
-				<label for="type">
-					Mechanism
-					<span class="bg__grey__light rounded__4px padding-x__4px position__absolute position--right__0px font__10px font__weight-400">required</span>
-				</label>
-				<select name="type" id="type" formControlName="type">
-					<option *ngFor="let type of retryLogicTypes" [value]="type.id">{{ type.type }}</option>
-				</select>
-				<div class="input__error input__error__danger" *ngIf="subscriptionForm.get('retry_config.type')?.touched && subscriptionForm.get('retry_config.type')?.invalid">
-					<img src="assets/img/input-error-icon.svg" alt="input error icon" />
-					<span>Please select a retry logic mechanism</span>
-				</div>
-			</div>
 
-			<div class="input">
-				<label for="retry-logic-duration">
-					Duration
-					<span class="bg__grey__light rounded__4px padding-x__4px position__absolute position--right__0px font__10px font__weight-400">required</span>
-				</label>
-				<input type="text" id="retry-logic-duration" placeholder="e.g 3s" formControlName="interval_seconds" />
-
-				<div class="input__error input__error__danger" *ngIf="subscriptionForm.get('retry_config.interval_seconds')?.touched && subscriptionForm.get('retry_config.interval_seconds')?.invalid">
-					<img src="assets/img/input-error-icon.svg" alt="input error icon" />
-					<span>Please enter your retry logic duration</span>
-				</div>
-			</div>
-
-			<div class="input">
-				<label for="retry-logic-count">
-					Limit
-					<span class="bg__grey__light rounded__4px padding-x__4px position__absolute position--right__0px font__10px font__weight-400">required</span>
-				</label>
-				<input type="number" id="retry-logic-count" placeholder="e.g 5" formControlName="retry_count" />
-
-				<div class="input__error input__error__danger" *ngIf="subscriptionForm.get('retry_config.retry_count')?.touched && subscriptionForm.get('retry_config.retry_count')?.invalid">
-					<img src="assets/img/input-error-icon.svg" alt="input error icon" />
-					<span>Please enter a retry limit</span>
-				</div>
-			</div>
-		</div>
-		<h3 class="margin-top__24px margin-bottom__16px flex flex__align-items-center">
-			Alert Rule
-			<app-tooltip [size]="'small'" position="right" class="margin-left__4px">
-				These are the specifications for the retry mechanism for your endpoints. In Linear time retry, event retries are done in linear time, while in Exponential back off retry, events are retried
-				progressively increasing the time before the next retry attempt.
-			</app-tooltip>
-		</h3>
-		<div class="grid grid__col-2 grid--gap__24px" formGroupName="alert_config">
-			<div class="input">
-				<label for="alert-config-count">
-					Count
-					<span class="bg__grey__light rounded__4px padding-x__4px position__absolute position--right__0px font__10px font__weight-400">required</span>
-				</label>
-				<input type="number" id="alert-config-count" placeholder="e.g 10" formControlName="theshold" />
-
-				<div class="input__error input__error__danger" *ngIf="subscriptionForm.get('alert_config.theshold')?.touched && subscriptionForm.get('alert_config.theshold')?.invalid">
-					<img src="assets/img/input-error-icon.svg" alt="input error icon" />
-					<span>Please enter alert count</span>
-				</div>
-			</div>
-
-			<div class="input">
-				<label for="alert-config-time">
-					Time
-					<span class="bg__grey__light rounded__4px padding-x__4px position__absolute position--right__0px font__10px font__weight-400">required</span>
-				</label>
-				<input type="text" id="alert-config-time" placeholder="e.g 1h" formControlName="time" />
-
-				<div class="input__error input__error__danger" *ngIf="subscriptionForm.get('alert_config.time')?.touched && subscriptionForm.get('alert_config.time')?.invalid">
-					<img src="assets/img/input-error-icon.svg" alt="input error icon" />
-					<span>Please enter a duration for alerts</span>
-				</div>
-			</div>
-		</div>
 		<div class="input multiple">
 			<label class="flex flex__justify-between" for="tagInput">
 				<div class="flex flex__align-items-center">
@@ -169,6 +88,58 @@
 				<input type="text" id="tagInput" (input)="addTag()" required />
 			</div>
 		</div>
+
+		<div [hidden]="!enableMoreConfig">
+			<h3 class="margin-top__24px margin-bottom__16px flex flex__align-items-center">
+				Retry Logic
+				<app-tooltip [size]="'small'" position="right" class="margin-left__4px">
+					These are the specifications for the retry mechanism for your endpoints under this subscription. In Linear time retry, event retries are done in linear time, while in Exponential back off
+					retry, events are retried progressively increasing the time before the next retry attempt.
+				</app-tooltip>
+			</h3>
+			<div class="grid grid__col-2 grid--gap__24px" formGroupName="retry_config">
+				<div class="input">
+					<label for="type">Mechanism</label>
+					<select name="type" id="type" formControlName="type">
+						<option *ngFor="let type of retryLogicTypes" [value]="type.id">{{ type.type }}</option>
+					</select>
+				</div>
+
+				<div class="input">
+					<label for="retry-logic-duration">Duration</label>
+					<input type="text" id="retry-logic-duration" placeholder="e.g 3s" formControlName="interval_seconds" />
+				</div>
+
+				<div class="input">
+					<label for="retry-logic-count">Limit</label>
+					<input type="number" id="retry-logic-count" placeholder="e.g 5" formControlName="retry_count" />
+				</div>
+			</div>
+			<h3 class="margin-top__24px margin-bottom__16px flex flex__align-items-center">
+				Alert Rule
+				<app-tooltip [size]="'small'" position="right" class="margin-left__4px">
+					This specifies the frequency at which notifications(emails, slack messages) would be sent when something happens to your subscirption.
+				</app-tooltip>
+			</h3>
+			<div class="grid grid__col-2 grid--gap__24px" formGroupName="alert_config">
+				<div class="input">
+					<label for="alert-config-count">Count</label>
+					<input type="number" id="alert-config-count" placeholder="e.g 10" formControlName="theshold" />
+				</div>
+
+				<div class="input">
+					<label for="alert-config-time">Time</label>
+					<input type="text" id="alert-config-time" placeholder="e.g 1h" formControlName="time" />
+				</div>
+			</div>
+		</div>
+		<div class="flex flex__justify-end">
+			<label class="toggle">
+				<span class="toggle-label">Add more configurations</span>
+				<input class="toggle-checkbox" type="checkbox" (change)="enableMoreConfig = !enableMoreConfig" [checked]="enableMoreConfig" />
+				<div class="toggle-switch"></div>
+			</label>
+		</div>
 	</section>
 
 	<div class="button-container flex flex__justify-end margin-top__32px">
@@ -183,7 +154,7 @@
 	</div>
 </form>
 
-<div class="_overlay" *ngIf="showCreateAppModal || showCreateSourceModal" (click)="showCreateAppModal = !showCreateAppModal; showCreateSourceModal = !showCreateSourceModal"></div>
+<div class="_overlay" *ngIf="showCreateAppModal || showCreateSourceModal" (click)="showCreateAppModal = false; showCreateSourceModal = false"></div>
 <div class="modal modal__right large" *ngIf="showCreateAppModal || showCreateSourceModal">
 	<!-- add endpoint modal  -->
 	<div class="modal--head" *ngIf="showCreateAppModal">
