@@ -203,7 +203,7 @@ func (a *applicationHandler) UpdatePassword(w http.ResponseWriter, r *http.Reque
 // @Router /users/forgot-password [post]
 func (a *applicationHandler) ForgotPassword(w http.ResponseWriter, r *http.Request) {
 	var forgotPassword models.ForgotPassword
-	baseUrl := getBaseUrlFromContext(r.Context())
+	baseUrl := getHostFromContext(r.Context())
 
 	err := util.ReadJSON(r, &forgotPassword)
 	if err != nil {
