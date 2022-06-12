@@ -8,6 +8,7 @@ import { EventsService } from './events.service';
 import { EVENT, EVENT_DELIVERY } from 'src/app/models/event.model';
 import { PAGINATION } from 'src/app/models/global.model';
 import { PrivateService } from 'src/app/private/private.service';
+import { ActivatedRoute, Router } from '@angular/router';
 
 @Component({
 	selector: 'app-events',
@@ -34,14 +35,31 @@ export class EventsComponent implements OnInit {
 		endDate: [{ value: new Date(), disabled: true }]
 	});
 
-	constructor(private formBuilder: FormBuilder, private datePipe: DatePipe, private eventsService: EventsService, public privateService: PrivateService) {}
+	constructor(
+		private formBuilder: FormBuilder,
+		private datePipe: DatePipe,
+		private eventsService: EventsService,
+		public privateService: PrivateService,
+		private route: ActivatedRoute,
+		private router: Router
+	) {}
 
 	async ngOnInit() {
+		this.toggleActiveTab(this.route.snapshot.queryParams?.activeTab ?? 'events');
 		await this.fetchDashboardData();
 	}
 
+	addTabToUrl() {
+		const currentURLfilters = this.route.snapshot.queryParams;
+		const queryParams: any = {};
+
+		queryParams.activeTab = this.activeTab;
+		this.router.navigate([], { queryParams: Object.assign({}, currentURLfilters, queryParams) });
+	}
+	
 	toggleActiveTab(tab: 'events' | 'event deliveries') {
 		this.activeTab = tab;
+		this.addTabToUrl();
 	}
 
 	formatDate(date: Date) {
