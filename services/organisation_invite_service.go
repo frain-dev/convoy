@@ -82,6 +82,15 @@ func (ois *OrganisationInviteService) CreateOrganisationMemberInvite(ctx context
 
 	return iv, nil
 }
+func (ois *OrganisationInviteService) LoadOrganisationInvitesPaged(ctx context.Context, org *datastore.Organisation, inviteStatus datastore.InviteStatus, pageable datastore.Pageable) ([]datastore.OrganisationInvite, datastore.PaginationData, error) {
+	invites, paginationData, err := ois.orgInviteRepo.LoadOrganisationsInvitesPaged(ctx, org.UID, inviteStatus, pageable)
+	if err != nil {
+		log.WithError(err).Error("failed to load organisation invites")
+		return nil, datastore.PaginationData{}, NewServiceError(http.StatusBadRequest, errors.New("failed to load organisation invites"))
+	}
+
+	return invites, paginationData, nil
+}
 
 func (ois *OrganisationInviteService) sendInviteEmail(ctx context.Context, iv *datastore.OrganisationInvite, org *datastore.Organisation, user *datastore.User, baseURL string) error {
 	n := &notification.Notification{
@@ -95,6 +104,7 @@ func (ois *OrganisationInviteService) sendInviteEmail(ctx context.Context, iv *d
 	buf, err := json.Marshal(n)
 	if err != nil {
 		log.WithError(err).Error("failed to marshal notification payload")
+		return nil
 	}
 
 	job := &queue.Job{

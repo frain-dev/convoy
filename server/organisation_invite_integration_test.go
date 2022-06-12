@@ -154,6 +154,47 @@ func (s *OrganisationInviteIntegrationTestSuite) Test_InviteUserToOrganisation_E
 	require.Equal(s.T(), expectedStatusCode, w.Code)
 }
 
+func (s *OrganisationInviteIntegrationTestSuite) Test_GetPendingOrganisationInvites() {
+	expectedStatusCode := http.StatusOK
+
+	_, err := testdb.SeedOrganisationInvite(s.DB, s.DefaultOrg, "invite1@test.com", &auth.Role{
+		Type:   auth.RoleAdmin,
+		Groups: []string{uuid.NewString()},
+		Apps:   nil,
+	}, primitive.NewDateTimeFromTime(time.Now().Add(time.Hour)), datastore.InviteStatusPending)
+	require.NoError(s.T(), err)
+
+	_, err = testdb.SeedOrganisationInvite(s.DB, s.DefaultOrg, "invite2@test.com", &auth.Role{
+		Type:   auth.RoleAdmin,
+		Groups: []string{uuid.NewString()},
+		Apps:   nil,
+	}, primitive.NewDateTimeFromTime(time.Now().Add(time.Hour)), datastore.InviteStatusPending)
+	require.NoError(s.T(), err)
+
+	// Arrange.
+	url := fmt.Sprintf("/ui/organisations/%s/pending_invites", s.DefaultOrg.UID)
+	req := createRequest(http.MethodGet, url, nil)
+
+	err = s.AuthenticatorFn(req, s.Router)
+	require.NoError(s.T(), err)
+
+	w := httptest.NewRecorder()
+
+	// Act.
+	s.Router.ServeHTTP(w, req)
+
+	// Assert.
+	require.Equal(s.T(), expectedStatusCode, w.Code)
+
+	// Deep Assert.
+	var invites []datastore.OrganisationInvite
+	pagedResp := pagedResponse{Content: &invites}
+	parseResponse(s.T(), w.Result(), &pagedResp)
+
+	require.Equal(s.T(), 2, len(invites))
+	require.Equal(s.T(), int64(2), pagedResp.Pagination.Total)
+}
+
 func (s *OrganisationInviteIntegrationTestSuite) Test_ProcessOrganisationMemberInvite_AcceptForExistingUser() {
 	expectedStatusCode := http.StatusOK
 
@@ -164,7 +205,7 @@ func (s *OrganisationInviteIntegrationTestSuite) Test_ProcessOrganisationMemberI
 		Type:   auth.RoleAdmin,
 		Groups: []string{uuid.NewString()},
 		Apps:   nil,
-	}, primitive.NewDateTimeFromTime(time.Now().Add(time.Hour)))
+	}, primitive.NewDateTimeFromTime(time.Now().Add(time.Hour)), datastore.InviteStatusPending)
 	require.NoError(s.T(), err)
 
 	// Arrange.
@@ -191,7 +232,7 @@ func (s *OrganisationInviteIntegrationTestSuite) Test_ProcessOrganisationMemberI
 		Type:   auth.RoleAdmin,
 		Groups: []string{uuid.NewString()},
 		Apps:   nil,
-	}, primitive.NewDateTimeFromTime(time.Now().Add(-time.Minute)))
+	}, primitive.NewDateTimeFromTime(time.Now().Add(-time.Minute)), datastore.InviteStatusPending)
 	require.NoError(s.T(), err)
 
 	// Arrange.
@@ -215,7 +256,7 @@ func (s *OrganisationInviteIntegrationTestSuite) Test_ProcessOrganisationMemberI
 		Type:   auth.RoleAdmin,
 		Groups: []string{uuid.NewString()},
 		Apps:   nil,
-	}, primitive.NewDateTimeFromTime(time.Now().Add(time.Hour)))
+	}, primitive.NewDateTimeFromTime(time.Now().Add(time.Hour)), datastore.InviteStatusPending)
 	require.NoError(s.T(), err)
 
 	// Arrange.
@@ -241,7 +282,7 @@ func (s *OrganisationInviteIntegrationTestSuite) Test_ProcessOrganisationMemberI
 		Type:   auth.RoleAdmin,
 		Groups: []string{uuid.NewString()},
 		Apps:   nil,
-	}, primitive.NewDateTimeFromTime(time.Now().Add(time.Hour)))
+	}, primitive.NewDateTimeFromTime(time.Now().Add(time.Hour)), datastore.InviteStatusPending)
 	require.NoError(s.T(), err)
 
 	// Arrange.
@@ -267,7 +308,7 @@ func (s *OrganisationInviteIntegrationTestSuite) Test_ProcessOrganisationMemberI
 		Type:   auth.RoleAdmin,
 		Groups: []string{uuid.NewString()},
 		Apps:   nil,
-	}, primitive.NewDateTimeFromTime(time.Now().Add(time.Hour)))
+	}, primitive.NewDateTimeFromTime(time.Now().Add(time.Hour)), datastore.InviteStatusPending)
 	require.NoError(s.T(), err)
 
 	// Arrange.
@@ -294,7 +335,7 @@ func (s *OrganisationInviteIntegrationTestSuite) Test_FindUserByInviteToken_Exis
 		Type:   auth.RoleAdmin,
 		Groups: []string{uuid.NewString()},
 		Apps:   nil,
-	}, primitive.NewDateTimeFromTime(time.Now().Add(time.Hour)))
+	}, primitive.NewDateTimeFromTime(time.Now().Add(time.Hour)), datastore.InviteStatusPending)
 	require.NoError(s.T(), err)
 
 	// Arrange.
@@ -325,7 +366,7 @@ func (s *OrganisationInviteIntegrationTestSuite) Test_FindUserByInviteToken_NewU
 		Type:   auth.RoleAdmin,
 		Groups: []string{uuid.NewString()},
 		Apps:   nil,
-	}, primitive.NewDateTimeFromTime(time.Now().Add(time.Hour)))
+	}, primitive.NewDateTimeFromTime(time.Now().Add(time.Hour)), datastore.InviteStatusPending)
 	require.NoError(s.T(), err)
 
 	// Arrange.
