@@ -164,7 +164,6 @@ func (a *applicationHandler) DeleteSubscription(w http.ResponseWriter, r *http.R
 // @Tags Subscription
 // @Accept json
 // @Produce json
-// @Param groupId path string true "group id"
 // @Param subscriptionID path string true "subscription id"
 // @Param subscription body models.Subscription true "Subscription Details"
 // @Success 200 {object} serverResponse{data=datastore.Subscription}

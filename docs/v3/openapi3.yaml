@@ -522,6 +522,26 @@ components:
         support_email:
           type: string
       type: object
+    models.Configuration:
+      properties:
+        is_analytics_enabled:
+          type: boolean
+      type: object
+    models.ConfigurationResponse:
+      properties:
+        api_version:
+          type: string
+        created_at:
+          type: integer
+        deleted_at:
+          type: integer
+        is_analytics_enabled:
+          type: boolean
+        uid:
+          type: string
+        updated_at:
+          type: integer
+      type: object
     models.Endpoint:
       properties:
         description:
@@ -1677,6 +1697,126 @@ paths:
       summary: Refresh an access token
       tags:
       - User
+  /configuration:
+    get:
+      description: This endpoint fetches configuration
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                allOf:
+                - $ref: '#/components/schemas/server.serverResponse'
+                - properties:
+                    data:
+                      allOf:
+                      - $ref: '#/components/schemas/server.pagedResponse'
+                      - properties:
+                          content:
+                            items:
+                              $ref: '#/components/schemas/models.ConfigurationResponse'
+                            type: array
+                        type: object
+                  type: object
+          description: OK
+        "400":
+          content:
+            application/json:
+              schema:
+                allOf:
+                - $ref: '#/components/schemas/server.serverResponse'
+                - properties:
+                    data:
+                      $ref: '#/components/schemas/server.Stub'
+                  type: object
+          description: Bad Request
+        "401":
+          content:
+            application/json:
+              schema:
+                allOf:
+                - $ref: '#/components/schemas/server.serverResponse'
+                - properties:
+                    data:
+                      $ref: '#/components/schemas/server.Stub'
+                  type: object
+          description: Unauthorized
+        "500":
+          content:
+            application/json:
+              schema:
+                allOf:
+                - $ref: '#/components/schemas/server.serverResponse'
+                - properties:
+                    data:
+                      $ref: '#/components/schemas/server.Stub'
+                  type: object
+          description: Internal Server Error
+      security:
+      - ApiKeyAuth: []
+      summary: Fetch configuration
+      tags:
+      - Source
+    post:
+      description: This endpoint creates a configuration
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/models.Configuration'
+        description: Configuration Details
+        required: true
+        x-originalParamName: application
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                allOf:
+                - $ref: '#/components/schemas/server.serverResponse'
+                - properties:
+                    data:
+                      $ref: '#/components/schemas/models.ConfigurationResponse'
+                  type: object
+          description: OK
+        "400":
+          content:
+            application/json:
+              schema:
+                allOf:
+                - $ref: '#/components/schemas/server.serverResponse'
+                - properties:
+                    data:
+                      $ref: '#/components/schemas/server.Stub'
+                  type: object
+          description: Bad Request
+        "401":
+          content:
+            application/json:
+              schema:
+                allOf:
+                - $ref: '#/components/schemas/server.serverResponse'
+                - properties:
+                    data:
+                      $ref: '#/components/schemas/server.Stub'
+                  type: object
+          description: Unauthorized
+        "500":
+          content:
+            application/json:
+              schema:
+                allOf:
+                - $ref: '#/components/schemas/server.serverResponse'
+                - properties:
+                    data:
+                      $ref: '#/components/schemas/server.Stub'
+                  type: object
+          description: Internal Server Error
+      security:
+      - ApiKeyAuth: []
+      summary: Create a configuration
+      tags:
+      - Application
   /eventdeliveries:
     get:
       description: This endpoint fetch event deliveries.
@@ -3576,12 +3716,6 @@ paths:
     put:
       description: This endpoint updates a subscription
       parameters:
-      - description: group id
-        in: path
-        name: groupId
-        required: true
-        schema:
-          type: string
       - description: subscription id
         in: path
         name: subscriptionID
@@ -3971,6 +4105,13 @@ paths:
   /ui/organisations/{orgID}/groups:
     post:
       description: This endpoint creates a group
+      parameters:
+      - description: Organisation id
+        in: path
+        name: orgID
+        required: true
+        schema:
+          type: string
       requestBody:
         content:
           application/json:
@@ -4462,6 +4603,12 @@ paths:
     get:
       description: This endpoint fetches multiple api keys
       parameters:
+      - description: Organisation id
+        in: path
+        name: orgID
+        required: true
+        schema:
+          type: string
       - description: results per page
         in: query
         name: perPage
@@ -4537,6 +4684,13 @@ paths:
     post:
       description: This endpoint creates an api key that will be used by the native
         auth realm
+      parameters:
+      - description: Organisation id
+        in: path
+        name: orgID
+        required: true
+        schema:
+          type: string
       requestBody:
         content:
           application/json:
@@ -4599,6 +4753,12 @@ paths:
     get:
       description: This endpoint fetches an api key by its id
       parameters:
+      - description: Organisation id
+        in: path
+        name: orgID
+        required: true
+        schema:
+          type: string
       - description: API Key id
         in: path
         name: keyID
@@ -4658,6 +4818,12 @@ paths:
     put:
       description: This endpoint updates an api key
       parameters:
+      - description: Organisation id
+        in: path
+        name: orgID
+        required: true
+        schema:
+          type: string
       - description: API Key id
         in: path
         name: keyID
@@ -4718,6 +4884,12 @@ paths:
     put:
       description: This endpoint revokes an api key
       parameters:
+      - description: Organisation id
+        in: path
+        name: orgID
+        required: true
+        schema:
+          type: string
       - description: API Key id
         in: path
         name: keyID
