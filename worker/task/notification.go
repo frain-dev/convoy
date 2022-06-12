@@ -56,7 +56,7 @@ func sendNotification(
 	if !util.IsStringEmpty(app.SlackWebhookURL) {
 		err = sendSlackNotification(ctx, app.SlackWebhookURL, n)
 		if err != nil {
-			return fmt.Errorf("failed to send email notification: %v", err)
+			return fmt.Errorf("failed to send slack notification: %v", err)
 		}
 	}
 

@@ -3,6 +3,7 @@ package email
 import (
 	"bytes"
 	"embed"
+	"fmt"
 	"html/template"
 	"strings"
 
@@ -31,13 +32,13 @@ func NewEmail(c smtp.SmtpClient) *Email {
 func (e *Email) Build(glob string, params interface{}) error {
 	templ, err := e.templ.ParseFS(templateDir, e.buildGlob(glob))
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to parse template fs: %v", err)
 	}
 	e.templ = templ
 
 	err = e.templ.Execute(&e.body, params)
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to execute template: %v", err)
 	}
 
 	return nil
@@ -46,7 +47,7 @@ func (e *Email) Build(glob string, params interface{}) error {
 func (e *Email) Send(emailAddr, subject string) error {
 	err := e.client.SendEmail(emailAddr, subject, e.body)
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to send email: %v", err)
 	}
 
 	return nil
