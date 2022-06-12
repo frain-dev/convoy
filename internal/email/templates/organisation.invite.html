@@ -94,29 +94,15 @@
                                 <!-- <p>For any enquiry or complaint, kindly send an email to info@frain.dev</p> -->
                             </div>
                             <h3>Hi there,</h3>
-                            {{if eq .Status "active"}}
-                                <p>
-                                    Please note your endpoint has been enabled. See details:
-                                </p>
-                                <ul>
-                                    <li><strong>URL:</strong> {{.URL}}</li>
-                                </ul>
-                                <p>
-                                    <strong>Important:</strong> Congrats! Your endpoint as been restored successfully. Please head over to your dashboard to retry 
-                                    all failed and discarded events. 
-                                </p>
-                            {{else}}
-                                <p>
-                                    Please note your endpoint has been disabled. See details:
-                                </p>
-                                <ul>
-                                    <li><strong>URL:</strong> {{.URL}}</li>
-                                </ul>
-                                <p>
-                                    <strong>Important:</strong> You're receiving this email because your endpoint has consecutively failed to receive events, and 
-                                    needs to be checked. To re-activate your endpoint please head over to your dashboard and retry any failed event.
-                                </p>
-                            {{end}}
+                            <p> 
+                            You have been invited to {{.RecipientName}}'s team , you can accept it through the link below.
+                            </p>
+                            
+                            <p><a href={{.InviteURL}}>{{.InviteURL}}</a></p>
+                            
+                            <p>
+                                <strong>Important:</strong> This invite link will expire at {{.ExpiresAt}}. 
+                            </p>
 
                             <p class="issue-text">
                                 For any enquiry or complaint, you can reply to this email.

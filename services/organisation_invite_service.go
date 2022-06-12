@@ -5,13 +5,14 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"net/http"
+	"strings"
+	"time"
+
 	"github.com/frain-dev/convoy"
 	"github.com/frain-dev/convoy/notification"
 	"github.com/frain-dev/convoy/notification/email"
 	"github.com/frain-dev/convoy/queue"
-	"net/http"
-	"strings"
-	"time"
 
 	"github.com/dchest/uniuri"
 	"github.com/frain-dev/convoy/datastore"
@@ -96,9 +97,11 @@ func (ois *OrganisationInviteService) sendInviteEmail(ctx context.Context, iv *d
 	n := &notification.Notification{
 		Email:             iv.InviteeEmail,
 		EmailTemplateName: email.TemplateOrganisationInvite.String(),
+		Subject:           "Convoy Organization Invite",
 		InviteURL:         fmt.Sprintf("%s/ui/organisations/process_invite?token=%s", baseURL, iv.Token),
 		OrganisationName:  org.Name,
 		InviterName:       fmt.Sprintf("%s %s", user.FirstName, user.LastName),
+		ExpiresAt:         iv.ExpiresAt.Time().String(),
 	}
 
 	buf, err := json.Marshal(n)

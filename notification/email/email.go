@@ -19,6 +19,7 @@ type TemplateName string
 const (
 	TemplateEndpointUpdate     TemplateName = "endpoint.update"
 	TemplateOrganisationInvite TemplateName = "organisation.invite"
+	TemplateResetPassword      TemplateName = "reset.password"
 )
 
 func (t TemplateName) String() string {
@@ -35,21 +36,11 @@ func NewEmailNotificationSender(smtpCfg *config.SMTPConfiguration) (notification
 }
 
 func (e *Email) SendNotification(ctx context.Context, n *notification.Notification) error {
-	payload := struct {
-		URL     string
-		LogoURL string
-		Status  string
-	}{
-		URL:     n.TargetURL,
-		LogoURL: n.LogoURL,
-		Status:  n.EndpointStatus,
-	}
-
 	newEmail := em.NewEmail(e.s)
-	err := newEmail.Build(n.EmailTemplateName, payload)
+	err := newEmail.Build(n.EmailTemplateName, n)
 	if err != nil {
 		return err
 	}
 
-	return newEmail.Send(n.Email, "Endpoint Status Update")
+	return newEmail.Send(n.Email, n.Subject)
 }

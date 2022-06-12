@@ -261,3 +261,13 @@ type UpdatePassword struct {
 type UserExists struct {
 	Email string `json:"email" valid:"required~please provide an email,email"`
 }
+
+type ForgotPassword struct {
+	Email string `json:"email" valid:"required~please provide an email,email"`
+}
+
+type ResetPassword struct {
+	Email                string `json:"email" valid:"required~please provide an email,email"`
+	Password             string `json:"password" valid:"required~please provide the password field"`
+	PasswordConfirmation string `json:"password_confirmation" valid:"required~please provide the password confirmation field"`
+}
