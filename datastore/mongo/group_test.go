@@ -57,12 +57,14 @@ func Test_CreateGroup(t *testing.T) {
 			groups: []datastore.Group{
 				{
 					Name:           "group 2",
+					OrganisationID: "123abc",
 					UID:            uuid.NewString(),
 					DocumentStatus: datastore.ActiveDocumentStatus,
 				},
 
 				{
 					Name:           "group 2",
+					OrganisationID: "123abc",
 					UID:            uuid.NewString(),
 					DocumentStatus: datastore.ActiveDocumentStatus,
 				},
@@ -75,12 +77,32 @@ func Test_CreateGroup(t *testing.T) {
 			groups: []datastore.Group{
 				{
 					Name:           "group 3",
+					OrganisationID: "abc",
 					UID:            uuid.NewString(),
 					DocumentStatus: datastore.DeletedDocumentStatus,
 				},
 
 				{
 					Name:           "group 3",
+					OrganisationID: "abc",
+					UID:            uuid.NewString(),
+					DocumentStatus: datastore.ActiveDocumentStatus,
+				},
+			},
+		},
+		{
+			name: "can create group with existing name in a different organisation",
+			groups: []datastore.Group{
+				{
+					Name:           "group 3",
+					OrganisationID: uuid.NewString(),
+					UID:            uuid.NewString(),
+					DocumentStatus: datastore.DeletedDocumentStatus,
+				},
+
+				{
+					Name:           "group 3",
+					OrganisationID: uuid.NewString(),
 					UID:            uuid.NewString(),
 					DocumentStatus: datastore.ActiveDocumentStatus,
 				},
@@ -93,28 +115,28 @@ func Test_CreateGroup(t *testing.T) {
 			groupRepo := NewGroupRepo(db)
 
 			for i, group := range tc.groups {
-				newOrg := &datastore.Group{
+				newGroup := &datastore.Group{
 					Name:           group.Name,
 					UID:            group.UID,
 					DocumentStatus: group.DocumentStatus,
 				}
 
 				if i == 0 {
-					require.NoError(t, groupRepo.CreateGroup(context.Background(), newOrg))
+					require.NoError(t, groupRepo.CreateGroup(context.Background(), newGroup))
 
-					org, err := groupRepo.FetchGroupByID(context.Background(), newOrg.UID)
+					g, err := groupRepo.FetchGroupByID(context.Background(), newGroup.UID)
 					require.NoError(t, err)
-					require.Equal(t, org.UID, newOrg.UID)
+					require.Equal(t, g.UID, newGroup.UID)
 				}
 
 				if i > 0 && tc.isDuplicate {
-					err := groupRepo.CreateGroup(context.Background(), newOrg)
+					err := groupRepo.CreateGroup(context.Background(), newGroup)
 					require.Error(t, err)
 					require.ErrorIs(t, err, datastore.ErrDuplicateGroupName)
 				}
 
 				if i > 0 && !tc.isDuplicate {
-					require.NoError(t, groupRepo.CreateGroup(context.Background(), newOrg))
+					require.NoError(t, groupRepo.CreateGroup(context.Background(), newGroup))
 				}
 			}
 
