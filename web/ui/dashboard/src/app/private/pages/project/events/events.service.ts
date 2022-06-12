@@ -60,7 +60,7 @@ export class EventsService {
 		});
 	}
 
-	async getEventDeliveryAttempts(requestDetails: { eventDeliveryId: string; eventId: string }): Promise<HTTP_RESPONSE> {
+	async getEventDeliveryAttempts(requestDetails: { eventDeliveryId: string }): Promise<HTTP_RESPONSE> {
 		return new Promise(async (resolve, reject) => {
 			try {
 				const response = await this.http.request({
@@ -143,7 +143,7 @@ export class EventsService {
 		return new Promise(async (resolve, reject) => {
 			try {
 				const response = await this.http.request({
-					url: `/eventdeliveries/countbatchretryevents?groupId=${this.projectId}&eventId=${requestDetails.eventId}&page=${requestDetails.pageNo}&startDate=${requestDetails.startDate}&endDate=${
+					url: `${this.privateService.urlFactory('org_project')}/eventdeliveries/countbatchretryevents?eventId=${requestDetails.eventId}&page=${requestDetails.pageNo}&startDate=${requestDetails.startDate}&endDate=${
 						requestDetails.endDate
 					}&appId=${requestDetails.appId}${requestDetails.statusQuery || ''}`,
 					method: 'get'
@@ -160,7 +160,7 @@ export class EventsService {
 		return new Promise(async (resolve, reject) => {
 			try {
 				const response = await this.http.request({
-					url: `/eventdeliveries/${eventDeliveryId}?groupId=${this.projectId}`,
+					url: `${this.privateService.urlFactory('org_project')}/eventdeliveries/${eventDeliveryId}`,
 					method: 'get'
 				});
 

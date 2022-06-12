@@ -3,95 +3,101 @@
 	<svg width="16" height="16" class="margin-x__4px">
 		<use xlink:href="#arrow-right-icon"></use>
 	</svg>
-	PROJECT NAME
+	{{ privateService.activeProjectDetails?.name }}
 	<svg width="16" height="16" class="margin-x__4px">
 		<use xlink:href="#arrow-right-icon"></use>
 	</svg>
-	<a class="pointer-cursor font__weight-500" (click)="goBack()">Apps</a>
+	<a class="pointer-cursor font__weight-500" (click)="goBack()">Events</a>
 	<svg width="16" height="16" class="margin-x__4px">
 		<use xlink:href="#arrow-right-icon"></use>
 	</svg>
-	<span class="font__weight-500 color__primary">{{ eventDelsDetailsItem?.name || 'Event Delivery' }}</span>
+	<span class="font__weight-500 color__primary">{{ eventDelsDetailsItem?.event_metadata?.event_type || 'Event Delivery' }}</span>
 </h1>
 
 <div class="card padding-all__32px margin-bottom__20px">
-    <div class="flex flex__justify-between flex__align-items-center margin-bottom__24px">
-        <h3>Overview</h3>
-        <button
-            [disabled]="eventDelsDetailsItem?.status !== 'Failure' && eventDelsDetailsItem?.status !== 'Success'"
-            [class]="'button__retry button--has-icon icon-left '"
-        >
-            <img src="/assets/img/refresh-icon-primary.svg" alt="refresh icon" />
+	<div class="flex flex__justify-between flex__align-items-center margin-bottom__24px">
+		<h3>Overview</h3>
+		<button
+			[disabled]="eventDelsDetailsItem?.status !== 'Failure' && eventDelsDetailsItem?.status !== 'Success'"
+			[class]="'button__retry button--has-icon icon-left '"
+			(click)="
+				eventDelsDetailsItem.status === 'Success'
+					? forceRetryEvent({ e: $event, eventDeliveryId: eventDelsDetailsItem.uid })
+					: retryEvent({ e: $event, eventDeliveryId: eventDelsDetailsItem.uid })
+			"
+		>
+			<img src="/assets/img/refresh-icon-primary.svg" alt="refresh icon" />
 
-            {{ eventDelsDetailsItem?.status === 'Success' ? 'Force Retry' : 'Retry' }}
-        </button>
-    </div>
-    <div class="grid grid__col-5 margin-bottom__24px">
-        <div>
-            <p class="color__grey font__12px font__weight-300">EVENT TYPE</p>
-            <p class="color__black font__14px font__weight-500">{{ eventDelsDetailsItem?.event_metadata?.name }}</p>
-        </div>
+			{{ eventDelsDetailsItem?.status === 'Success' ? 'Force Retry' : 'Retry' }}
+		</button>
+	</div>
+	<div class="grid grid__col-5 margin-bottom__24px">
+		<div>
+			<p class="color__grey font__12px font__weight-300">EVENT TYPE</p>
+			<p class="color__black font__14px font__weight-500">{{ eventDelsDetailsItem?.event_metadata?.event_type }}</p>
+		</div>
 
-        <div>
-            <p class="color__grey font__12px font__weight-300">ATTEMPTS</p>
-            <p class="color__black font__14px font__weight-500">{{ eventDelsDetailsItem?.metadata?.num_trials }}</p>
-        </div>
+		<div>
+			<p class="color__grey font__12px font__weight-300">ATTEMPTS</p>
+			<p class="color__black font__14px font__weight-500">{{ eventDelsDetailsItem?.metadata?.num_trials }}</p>
+		</div>
 
-        <div>
-            <p class="color__grey font__12px font__weight-300">STATUS</p>
-            <div [class]="'tag tag--' + eventDelsDetailsItem?.status">{{ eventDelsDetailsItem?.status }}</div>
-        </div>
-        <div>
-            <p class="color__grey font__12px font__weight-300">IP ADDRESS</p>
-            <p class="color__black font__14px font__weight-500">{{ eventDeliveryAtempt?.ip_address || '-' }}</p>
-        </div>
-        <div *ngIf="eventDelsDetailsItem?.status == 'Success'">
-            <p class="color__grey font__12px font__weight-300">TIME</p>
-            <p class="color__black font__14px font__weight-500">{{ eventDelsDetailsItem?.updated_at | date: 'medium' }}</p>
-        </div>
-    </div>
-    <div class="grid grid__col-5 margin-bottom__32px">
-        <div>
-            <p class="color__grey font__12px font__weight-300">HTTP STATUS</p>
-            <p class="color__black font__14px font__weight-500">{{ eventDeliveryAtempt?.http_status || '-' }}</p>
-        </div>
-        <div>
-            <p class="color__grey font__12px font__weight-300">API VERSION</p>
-            <p class="color__black font__14px font__weight-500">{{ eventDeliveryAtempt?.api_version || '-' }}</p>
-        </div>
-        <div>
-            <p class="color__grey font__12px font__weight-300">ENDPOINT</p>
-            <p class="color__primary font__14px font__weight-500 long-text long-text__200px" [title]="eventDelsDetailsItem?.endpoint?.target_url">{{ eventDelsDetailsItem?.endpoint?.target_url }}</p>
-        </div>
-        <div></div>
-        <div *ngIf="eventDelsDetailsItem?.status === 'Success'"></div>
-    </div>
-    <div class="grid border__top grid__col-2">
-        <div class="eventDelivery border__right padding-top__40px padding-right__32px padding-bottom__40px width__100">
-            <h3 class="margin-bottom__16px color__black">Event Payload</h3>
-            <prism language="json" [code]="getCodeSnippetString('event_delivery')"></prism>
-        </div>
-        <div class="eventDelivery padding-left__32px padding-top__40px padding-bottom__40px width__100">
-            <h3 class="margin-bottom__16px color__black">Response Header</h3>
-            <prism language="json" [code]="getCodeSnippetString('res_head')"></prism>
-        </div>
-    </div>
-    <div class="grid border__top grid__col-2">
-        <ng-container *ngIf="eventDeliveryAtempt?.error">
-            <div class="eventDelivery padding-top__40px padding-right__32px padding-bottom__40px width__100">
-                <h3 class="margin-bottom__16px color__black">Error</h3>
-                <prism language="json" [code]="getCodeSnippetString('error')"></prism>
-            </div>
-        </ng-container>
-        <ng-container *ngIf="!eventDeliveryAtempt?.error">
-            <div class="eventDelivery padding-top__40px padding-right__32px padding-bottom__40px width__100">
-                <h3 class="margin-bottom__16px color__black">Response Body</h3>
-                <prism language="json" [code]="getCodeSnippetString('res_body')"></prism>
-            </div>
-        </ng-container>
-        <div class="eventDelivery padding-top__40px padding-left__32px padding-bottom__40px width__100">
-            <h3 class="margin-bottom__16px color__black">Request Header</h3>
-            <prism language="json" [code]="getCodeSnippetString('req')"></prism>
-        </div>
-    </div>
+		<div>
+			<p class="color__grey font__12px font__weight-300">STATUS</p>
+			<div [class]="'tag tag--' + eventDelsDetailsItem?.status">{{ eventDelsDetailsItem?.status }}</div>
+		</div>
+		<div>
+			<p class="color__grey font__12px font__weight-300">IP ADDRESS</p>
+			<p class="color__black font__14px font__weight-500">{{ eventDeliveryAtempt?.ip_address || '-' }}</p>
+		</div>
+		<div *ngIf="eventDelsDetailsItem?.status == 'Success'">
+			<p class="color__grey font__12px font__weight-300">TIME</p>
+			<p class="color__black font__14px font__weight-500">{{ eventDelsDetailsItem?.updated_at | date: 'medium' }}</p>
+		</div>
+	</div>
+	<div class="grid grid__col-5 margin-bottom__32px">
+		<div>
+			<p class="color__grey font__12px font__weight-300">HTTP STATUS</p>
+			<p class="color__black font__14px font__weight-500">{{ eventDeliveryAtempt?.http_status || '-' }}</p>
+		</div>
+		<div>
+			<p class="color__grey font__12px font__weight-300">API VERSION</p>
+			<p class="color__black font__14px font__weight-500">{{ eventDeliveryAtempt?.api_version || '-' }}</p>
+		</div>
+		<div>
+			<p class="color__grey font__12px font__weight-300">ENDPOINT</p>
+			<p class="color__primary font__14px font__weight-500 long-text long-text__200px" [title]="eventDelsDetailsItem?.endpoint_metadata?.target_url">
+				{{ eventDelsDetailsItem?.endpoint_metadata?.target_url }}
+			</p>
+		</div>
+		<div></div>
+		<div *ngIf="eventDelsDetailsItem?.status === 'Success'"></div>
+	</div>
+
+	<div class="flex flex__justify-between flex__wrap border__top">
+		<div class="padding-y__32px" [ngClass]="{ 'width__50 border__right padding-right__32px': !shouldRenderSmallSize, width__100: shouldRenderSmallSize }">
+			<h3 class="margin-bottom__16px color__black">Event Payload</h3>
+			<prism language="json" [code]="getCodeSnippetString('event_delivery')"></prism>
+		</div>
+		<div class="padding-y__32px" [ngClass]="{ 'width__50 padding-left__32px': !shouldRenderSmallSize, 'border__top width__100': shouldRenderSmallSize }">
+			<h3 class="margin-bottom__16px color__black">Response Header</h3>
+			<prism language="json" [code]="getCodeSnippetString('res_head')"></prism>
+		</div>
+	</div>
+	<div class="flex flex__justify-between flex__wrap border__top">
+		<div class="padding-y__32px" [ngClass]="{ 'width__50 padding-right__32px': !shouldRenderSmallSize, width__100: shouldRenderSmallSize }">
+			<ng-container *ngIf="eventDeliveryAtempt?.error">
+				<h3 class="margin-bottom__16px color__black">Error</h3>
+				<prism language="json" [code]="getCodeSnippetString('error')"></prism>
+			</ng-container>
+			<ng-container *ngIf="!eventDeliveryAtempt?.error">
+				<h3 class="margin-bottom__16px color__black">Response Body</h3>
+				<prism language="json" [code]="getCodeSnippetString('res_body')"></prism>
+			</ng-container>
+		</div>
+		<div class="padding-y__32px" [ngClass]="{ 'width__50 padding-left__32px': !shouldRenderSmallSize, 'border__top width__100': shouldRenderSmallSize }">
+			<h3 class="margin-bottom__16px color__black">Request Header</h3>
+			<prism language="json" [code]="getCodeSnippetString('req')"></prism>
+		</div>
+	</div>
 </div>
