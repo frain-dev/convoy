@@ -32,7 +32,6 @@ export class CreateProjectComponent implements OnInit {
 		newProjectData.data.type === 'incoming' ? (this.projectType = 'incoming') : (this.projectType = 'outgoing');
 		if (newProjectData.data.type === 'outgoing') this.projectStages = this.projectStages.filter(e => e.id !== 'createSource');
 		this.toggleActiveStage({ project: 'createApplication' });
-		console.log(newProjectData.data.type === 'outgoing');
 	}
 
 	cancel() {
