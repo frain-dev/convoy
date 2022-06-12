@@ -47,6 +47,8 @@ type applicationHandler struct {
 	limiter                   limiter.RateLimiter
 	userService               *services.UserService
 	userRepo                  datastore.UserRepository
+	configService             *services.ConfigService
+	configRepo                datastore.ConfigurationRepository
 }
 
 type pagedResponse struct {
@@ -66,6 +68,7 @@ func newApplicationHandler(
 	orgMemberRepo datastore.OrganisationMemberRepository,
 	orgInviteRepo datastore.OrganisationInviteRepository,
 	userRepo datastore.UserRepository,
+	configRepo datastore.ConfigurationRepository,
 	queue queue.Queuer,
 	logger logger.Logger,
 	tracer tracer.Tracer,
@@ -81,6 +84,7 @@ func newApplicationHandler(
 	us := services.NewUserService(userRepo, cache)
 	ois := services.NewOrganisationInviteService(orgRepo, userRepo, orgMemberRepo, orgInviteRepo, queue)
 	om := services.NewOrganisationMemberService(orgMemberRepo)
+	cs := services.NewConfigService(configRepo)
 
 	return &applicationHandler{
 		appService:                as,
@@ -108,6 +112,8 @@ func newApplicationHandler(
 		limiter:                   limiter,
 		userService:               us,
 		userRepo:                  userRepo,
+		configRepo:                configRepo,
+		configService:             cs,
 	}
 }
 

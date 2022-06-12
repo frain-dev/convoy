@@ -1411,3 +1411,69 @@ func (mr *MockUserRepositoryMockRecorder) UpdateUser(ctx, user interface{}) *gom
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateUser", reflect.TypeOf((*MockUserRepository)(nil).UpdateUser), ctx, user)
 }
+
+// MockConfigurationRepository is a mock of ConfigurationRepository interface.
+type MockConfigurationRepository struct {
+	ctrl     *gomock.Controller
+	recorder *MockConfigurationRepositoryMockRecorder
+}
+
+// MockConfigurationRepositoryMockRecorder is the mock recorder for MockConfigurationRepository.
+type MockConfigurationRepositoryMockRecorder struct {
+	mock *MockConfigurationRepository
+}
+
+// NewMockConfigurationRepository creates a new mock instance.
+func NewMockConfigurationRepository(ctrl *gomock.Controller) *MockConfigurationRepository {
+	mock := &MockConfigurationRepository{ctrl: ctrl}
+	mock.recorder = &MockConfigurationRepositoryMockRecorder{mock}
+	return mock
+}
+
+// EXPECT returns an object that allows the caller to indicate expected use.
+func (m *MockConfigurationRepository) EXPECT() *MockConfigurationRepositoryMockRecorder {
+	return m.recorder
+}
+
+// CreateConfiguration mocks base method.
+func (m *MockConfigurationRepository) CreateConfiguration(arg0 context.Context, arg1 *datastore.Configuration) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "CreateConfiguration", arg0, arg1)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// CreateConfiguration indicates an expected call of CreateConfiguration.
+func (mr *MockConfigurationRepositoryMockRecorder) CreateConfiguration(arg0, arg1 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateConfiguration", reflect.TypeOf((*MockConfigurationRepository)(nil).CreateConfiguration), arg0, arg1)
+}
+
+// LoadConfiguration mocks base method.
+func (m *MockConfigurationRepository) LoadConfiguration(arg0 context.Context) (*datastore.Configuration, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "LoadConfiguration", arg0)
+	ret0, _ := ret[0].(*datastore.Configuration)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// LoadConfiguration indicates an expected call of LoadConfiguration.
+func (mr *MockConfigurationRepositoryMockRecorder) LoadConfiguration(arg0 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "LoadConfiguration", reflect.TypeOf((*MockConfigurationRepository)(nil).LoadConfiguration), arg0)
+}
+
+// UpdateConfiguration mocks base method.
+func (m *MockConfigurationRepository) UpdateConfiguration(arg0 context.Context, arg1 *datastore.Configuration) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "UpdateConfiguration", arg0, arg1)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// UpdateConfiguration indicates an expected call of UpdateConfiguration.
+func (mr *MockConfigurationRepositoryMockRecorder) UpdateConfiguration(arg0, arg1 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateConfiguration", reflect.TypeOf((*MockConfigurationRepository)(nil).UpdateConfiguration), arg0, arg1)
+}

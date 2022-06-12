@@ -30,6 +30,20 @@ type Organisation struct {
 	Name string `json:"name" bson:"name" valid:"required~please provide a valid name"`
 }
 
+type Configuration struct {
+	IsAnalyticsEnabled *bool `json:"is_analytics_enabled"`
+}
+
+type ConfigurationResponse struct {
+	UID                string `json:"uid"`
+	IsAnalyticsEnabled bool   `json:"is_analytics_enabled"`
+	ApiVersion         string `json:"api_version"`
+
+	CreatedAt primitive.DateTime `json:"created_at,omitempty"`
+	UpdatedAt primitive.DateTime `json:"updated_at,omitempty"`
+	DeletedAt primitive.DateTime `json:"deleted_at,omitempty"`
+}
+	
 type OrganisationInvite struct {
 	InviteeEmail string    `json:"invitee_email" valid:"required~please provide a valid invitee email,email"`
 	Role         auth.Role `json:"role" bson:"role"`
@@ -62,7 +76,6 @@ type APIKeyByIDResponse struct {
 	UpdatedAt primitive.DateTime `json:"updated_at,omitempty"`
 	DeletedAt primitive.DateTime `json:"deleted_at,omitempty"`
 }
-
 type APIKeyResponse struct {
 	APIKey
 	Key       string    `json:"key"`

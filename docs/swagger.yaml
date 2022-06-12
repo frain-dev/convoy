@@ -519,6 +519,26 @@ definitions:
       support_email:
         type: string
     type: object
+  models.Configuration:
+    properties:
+      is_analytics_enabled:
+        type: boolean
+    type: object
+  models.ConfigurationResponse:
+    properties:
+      api_version:
+        type: string
+      created_at:
+        type: integer
+      deleted_at:
+        type: integer
+      is_analytics_enabled:
+        type: boolean
+      uid:
+        type: string
+      updated_at:
+        type: integer
+    type: object
   models.Endpoint:
     properties:
       description:
@@ -1568,6 +1588,117 @@ paths:
       summary: Refresh an access token
       tags:
       - User
+  /configuration:
+    get:
+      consumes:
+      - application/json
+      description: This endpoint fetches configuration
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/server.serverResponse'
+            - properties:
+                data:
+                  allOf:
+                  - $ref: '#/definitions/server.pagedResponse'
+                  - properties:
+                      content:
+                        items:
+                          $ref: '#/definitions/models.ConfigurationResponse'
+                        type: array
+                    type: object
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            allOf:
+            - $ref: '#/definitions/server.serverResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/server.Stub'
+              type: object
+        "401":
+          description: Unauthorized
+          schema:
+            allOf:
+            - $ref: '#/definitions/server.serverResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/server.Stub'
+              type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            allOf:
+            - $ref: '#/definitions/server.serverResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/server.Stub'
+              type: object
+      security:
+      - ApiKeyAuth: []
+      summary: Fetch configuration
+      tags:
+      - Source
+    post:
+      consumes:
+      - application/json
+      description: This endpoint creates a configuration
+      parameters:
+      - description: Configuration Details
+        in: body
+        name: application
+        required: true
+        schema:
+          $ref: '#/definitions/models.Configuration'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/server.serverResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/models.ConfigurationResponse'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            allOf:
+            - $ref: '#/definitions/server.serverResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/server.Stub'
+              type: object
+        "401":
+          description: Unauthorized
+          schema:
+            allOf:
+            - $ref: '#/definitions/server.serverResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/server.Stub'
+              type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            allOf:
+            - $ref: '#/definitions/server.serverResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/server.Stub'
+              type: object
+      security:
+      - ApiKeyAuth: []
+      summary: Create a configuration
+      tags:
+      - Application
   /eventdeliveries:
     get:
       consumes:

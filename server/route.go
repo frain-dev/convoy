@@ -381,6 +381,13 @@ func buildRoutes(app *applicationHandler) http.Handler {
 				})
 			})
 		})
+
+		uiRouter.Route("/configuration", func(configRouter chi.Router) {
+			configRouter.Use(requirePermission(auth.RoleAdmin))
+
+			configRouter.Get("/", app.LoadConfiguration)
+			configRouter.Post("/", app.CreateConfiguration)
+		})
 	})
 
 	//App Portal API.
@@ -481,6 +488,7 @@ func New(cfg config.Configuration,
 	orgInviteRepo datastore.OrganisationInviteRepository,
 	sourceRepo datastore.SourceRepository,
 	userRepo datastore.UserRepository,
+	configRepo datastore.ConfigurationRepository,
 	queue queue.Queuer,
 	logger logger.Logger,
 	tracer tracer.Tracer,
@@ -501,6 +509,7 @@ func New(cfg config.Configuration,
 		orgMemberRepo,
 		orgInviteRepo,
 		userRepo,
+		configRepo,
 		queue,
 		logger,
 		tracer,

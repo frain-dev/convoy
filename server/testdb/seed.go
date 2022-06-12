@@ -543,6 +543,22 @@ func SeedUser(db datastore.DatabaseClient, email, password string) (*datastore.U
 	return user, nil
 }
 
+func SeedConfiguration(db datastore.DatabaseClient) (*datastore.Configuration, error) {
+	config := &datastore.Configuration{
+		UID:                uuid.NewString(),
+		IsAnalyticsEnabled: true,
+		DocumentStatus:     datastore.ActiveDocumentStatus,
+	}
+
+	//Seed Data
+	err := db.ConfigurationRepo().CreateConfiguration(context.TODO(), config)
+	if err != nil {
+		return nil, err
+	}
+
+	return config, nil
+}
+
 // PurgeDB is run after every test run and it's used to truncate the DB to have
 // a clean slate in the next run.
 func PurgeDB(db datastore.DatabaseClient) {
