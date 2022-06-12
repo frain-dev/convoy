@@ -22,7 +22,7 @@ const routes: Routes = [
 				loadChildren: () => import('./sources/sources.module').then(m => m.SourcesModule)
 			},
 			{
-				path: 'sources/new',
+				path: 'sources/:id',
 				loadChildren: () => import('./sources/sources.module').then(m => m.SourcesModule)
 			},
 			{
@@ -35,10 +35,6 @@ const routes: Routes = [
 			},
 			{
 				path: 'subscriptions',
-				loadChildren: () => import('./subscriptions/subscriptions.module').then(m => m.SubscriptionsModule)
-			},
-			{
-				path: 'subscriptions/new',
 				loadChildren: () => import('./subscriptions/subscriptions.module').then(m => m.SubscriptionsModule)
 			},
 			{

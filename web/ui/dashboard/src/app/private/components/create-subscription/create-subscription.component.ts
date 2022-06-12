@@ -49,6 +49,7 @@ export class CreateSubscriptionComponent implements OnInit {
 	@Input('action') action: 'update' | 'create' = 'create';
 	projectType: 'incoming' | 'outgoing' = 'incoming';
 	isLoadingForm = true;
+	subscriptionId = this.route.snapshot.params.id;
 
 	constructor(private formBuilder: FormBuilder, private privateService: PrivateService, private createSubscriptionService: CreateSubscriptionService, private route: ActivatedRoute) {}
 
@@ -63,7 +64,7 @@ export class CreateSubscriptionComponent implements OnInit {
 		if (this.action !== 'update') return;
 
 		try {
-			const response = await this.createSubscriptionService.getSubscriptionDetail(this.route.snapshot.params.id);
+			const response = await this.createSubscriptionService.getSubscriptionDetail(this.subscriptionId);
 			this.subscriptionForm.patchValue(response.data);
 			this.subscriptionForm.patchValue({ source_id: response.data?.source_metadata?.uid, app_id: response.data?.app_metadata?.uid, endpoint_id: response.data?.endpoint_metadata?.uid });
 			this.onUpdateAppSelection();
@@ -144,7 +145,7 @@ export class CreateSubscriptionComponent implements OnInit {
 		try {
 			const response =
 				this.action == 'update'
-					? await this.createSubscriptionService.updateSubscription({ data: this.subscriptionForm.value, id: this.route.snapshot.params.id })
+					? await this.createSubscriptionService.updateSubscription({ data: this.subscriptionForm.value, id: this.subscriptionId })
 					: await this.createSubscriptionService.createSubscription(this.subscriptionForm.value);
 			this.isCreatingSubscription = false;
 			this.onAction.emit(response.data);

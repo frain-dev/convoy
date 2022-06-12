@@ -25,12 +25,16 @@ tbody {
 	}
 }
 
+.table--container.smaller table {
+	tbody td:nth-of-type(4) div {
+		width: 197px;
+	}
+}
+
 @media only screen and (max-device-width: 1340px) and (-webkit-min-device-pixel-ratio: 1) {
 	.table--container.smaller table {
 		tbody td:nth-of-type(4) div {
 			width: 100px;
-			overflow: hidden;
-			text-overflow: ellipsis;
 		}
 	}
 }
@@ -39,8 +43,6 @@ tbody {
 	table {
 		tbody td:nth-of-type(4) div {
 			width: 100px;
-			overflow: hidden;
-			text-overflow: ellipsis;
 		}
 	}
 }
