@@ -91,12 +91,6 @@ export class EventDeliveriesComponent implements OnInit {
 			this.eventDeliveries = eventDeliveriesResponse.data;
 			this.displayedEventDeliveries = this.generalService.setContentDisplayed(eventDeliveriesResponse.data.content);
 
-			// if this is a filter request, set the eventDelsDetailsItem to the first item in the list
-			// if (requestDetails?.fromFilter) {
-			// 	this.eventDelsDetailsItem = this.eventDeliveries?.content[0];
-			// 	this.getDelieveryAttempts(this.eventDelsDetailsItem.uid);
-			// }
-
 			this.pushEventDeliveries.emit(this.eventDeliveries);
 
 			this.isloadingEventDeliveries = false;
@@ -238,20 +232,6 @@ export class EventDeliveriesComponent implements OnInit {
 	formatDate(date: Date) {
 		return this.datePipe.transform(date, 'dd/MM/yyyy');
 	}
-
-	// async getDelieveryAttempts(eventDeliveryId: string) {
-	// 	this.isloadingDeliveryAttempts = true;
-	// 	try {
-	// 		const deliveryAttemptsResponse = await this.eventsService.getEventDeliveryAttempts({ eventDeliveryId });
-	// 		this.eventDeliveryAtempt = deliveryAttemptsResponse.data[deliveryAttemptsResponse.data.length - 1];
-	// 		this.isloadingDeliveryAttempts = false;
-
-	// 		return;
-	// 	} catch (error) {
-	// 		this.isloadingDeliveryAttempts = false;
-	// 		return error;
-	// 	}
-	// }
 
 	async retryEvent(requestDetails: { e: any; index: number; eventDeliveryId: string }) {
 		requestDetails.e.stopPropagation();
