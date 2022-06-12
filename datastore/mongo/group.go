@@ -3,8 +3,10 @@ package mongo
 import (
 	"context"
 	"errors"
-	log "github.com/sirupsen/logrus"
+	"strings"
 	"time"
+
+	log "github.com/sirupsen/logrus"
 
 	"github.com/frain-dev/convoy/datastore"
 	"go.mongodb.org/mongo-driver/bson"
@@ -16,6 +18,10 @@ import (
 type groupRepo struct {
 	innerDB *mongo.Database
 	inner   *mongo.Collection
+}
+
+func isDuplicateNameIndex(err error) bool {
+	return strings.Contains(err.Error(), "name")
 }
 
 func NewGroupRepo(db *mongo.Database) datastore.GroupRepository {
@@ -65,6 +71,11 @@ func (db *groupRepo) CreateGroup(ctx context.Context, o *datastore.Group) error 
 	o.ID = primitive.NewObjectID()
 
 	_, err := db.inner.InsertOne(ctx, o)
+
+	// check if the error string contains the index called "name"
+	if mongo.IsDuplicateKeyError(err) && isDuplicateNameIndex(err) {
+		return datastore.ErrDuplicateGroupName
+	}
 	return err
 }
 
@@ -83,6 +94,10 @@ func (db *groupRepo) UpdateGroup(ctx context.Context, o *datastore.Group) error 
 	}}}
 
 	_, err := db.inner.UpdateOne(ctx, filter, update)
+	if mongo.IsDuplicateKeyError(err) && isDuplicateNameIndex(err) {
+		return datastore.ErrDuplicateGroupName
+	}
+	
 	return err
 }
 

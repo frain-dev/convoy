@@ -40,11 +40,11 @@ func (t *Typesense) Search(collection string, f *datastore.Filter) ([]string, da
 	queryByBuilder := new(strings.Builder)
 	filterByBuilder := new(strings.Builder)
 
-	filterByBuilder.WriteString(fmt.Sprintf("app_metadata.group_id:=%s", f.Group.UID))
+	filterByBuilder.WriteString(fmt.Sprintf("group_id:=%s", f.Group.UID))
 
 	hasAppFilter := !util.IsStringEmpty(f.AppID)
 	if hasAppFilter {
-		filterByBuilder.WriteString(fmt.Sprintf(" && app_metadata.uid:=%s", f.Group.UID))
+		filterByBuilder.WriteString(fmt.Sprintf(" && app_id:=%s", f.Group.UID))
 	}
 
 	// CreatedAtEnd and CreatedAtStart are in epoch seconds, but the search records are indexed in milliseconds

@@ -32,6 +32,7 @@ func (a *applicationHandler) IngestEvent(w http.ResponseWriter, r *http.Request)
 	if source.Type != datastore.HTTPSource {
 		_ = render.Render(w, r, newErrorResponse("Source type needs to be HTTP",
 			http.StatusBadRequest))
+		return
 	}
 
 	// 3. Select verifier based of source config.
@@ -54,9 +55,13 @@ func (a *applicationHandler) IngestEvent(w http.ResponseWriter, r *http.Request)
 		)
 	case datastore.APIKeyVerifier:
 		v = verifier.NewAPIKeyVerifier(
-			verifierConfig.ApiKey.APIKey,
-			verifierConfig.ApiKey.APIKeyHeader,
+			verifierConfig.ApiKey.HeaderName,
+			verifierConfig.ApiKey.HeaderValue,
 		)
+	default:
+		_ = render.Render(w, r, newErrorResponse("Source must have a valid verifier",
+			http.StatusBadRequest))
+		return
 	}
 
 	// 3.1 On Failure
@@ -76,12 +81,6 @@ func (a *applicationHandler) IngestEvent(w http.ResponseWriter, r *http.Request)
 	// 3.2 On success
 	// Attach Source to Event.
 	// Write Event to the Ingestion Queue.
-	g, err := a.groupRepo.FetchGroupByID(r.Context(), source.GroupID)
-	if err != nil {
-		log.Errorf("Error occurred retrieving group")
-		return
-	}
-
 	event := &datastore.Event{
 		UID:            uuid.New().String(),
 		EventType:      datastore.EventType(maskID),
@@ -93,7 +92,6 @@ func (a *applicationHandler) IngestEvent(w http.ResponseWriter, r *http.Request)
 		DocumentStatus: datastore.ActiveDocumentStatus,
 	}
 
-	taskName := convoy.CreateEventProcessor.SetPrefix(g.Name)
 	eventByte, err := json.Marshal(event)
 	if err != nil {
 		_ = render.Render(w, r, newErrorResponse(err.Error(), http.StatusBadRequest))
@@ -106,7 +104,7 @@ func (a *applicationHandler) IngestEvent(w http.ResponseWriter, r *http.Request)
 		Delay:   0,
 	}
 
-	err = a.queue.Write(taskName, convoy.CreateEventQueue, job)
+	err = a.queue.Write(convoy.CreateEventProcessor, convoy.CreateEventQueue, job)
 	if err != nil {
 		log.Errorf("Error occurred sending new event to the queue %s", err)
 	}

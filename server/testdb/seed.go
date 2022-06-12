@@ -2,10 +2,13 @@ package testdb
 
 import (
 	"context"
+	"crypto/sha256"
+	"encoding/base64"
+	"errors"
 	"fmt"
-	"github.com/dchest/uniuri"
 	"time"
 
+	"github.com/dchest/uniuri"
 	"github.com/frain-dev/convoy"
 	"github.com/frain-dev/convoy/auth"
 	"github.com/frain-dev/convoy/config"
@@ -13,6 +16,7 @@ import (
 	"github.com/frain-dev/convoy/util"
 	"github.com/google/uuid"
 	log "github.com/sirupsen/logrus"
+	"github.com/xdg-go/pbkdf2"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
 )
@@ -105,18 +109,23 @@ func SeedMultipleEndpoints(db datastore.DatabaseClient, app *datastore.Applicati
 }
 
 // seed default group
-func SeedDefaultGroup(db datastore.DatabaseClient) (*datastore.Group, error) {
+func SeedDefaultGroup(db datastore.DatabaseClient, orgID string) (*datastore.Group, error) {
+	if orgID == "" {
+		orgID = uuid.NewString()
+	}
+
 	defaultGroup := &datastore.Group{
-		UID:  uuid.New().String(),
-		Name: "default-group",
-		Type: "outgoing",
+		UID:            uuid.New().String(),
+		Name:           "default-group",
+		Type:           "outgoing",
+		OrganisationID: orgID,
 		Config: &datastore.GroupConfig{
-			Strategy: datastore.StrategyConfiguration{
+			Strategy: &datastore.StrategyConfiguration{
 				Type:       datastore.DefaultStrategyProvider,
 				Duration:   10,
 				RetryCount: 2,
 			},
-			Signature: datastore.SignatureConfiguration{
+			Signature: &datastore.SignatureConfiguration{
 				Header: config.DefaultSignatureHeader,
 				Hash:   "SHA512",
 			},
@@ -232,7 +241,7 @@ func SeedOrganisationMember(db datastore.DatabaseClient, org *datastore.Organisa
 }
 
 // seed organisation invite
-func SeedOrganisationInvite(db datastore.DatabaseClient, org *datastore.Organisation, email string, role *auth.Role, expiry primitive.DateTime) (*datastore.OrganisationInvite, error) {
+func SeedOrganisationInvite(db datastore.DatabaseClient, org *datastore.Organisation, email string, role *auth.Role, expiry primitive.DateTime, status datastore.InviteStatus) (*datastore.OrganisationInvite, error) {
 	if expiry == 0 {
 		expiry = primitive.NewDateTimeFromTime(time.Now())
 	}
@@ -244,7 +253,7 @@ func SeedOrganisationInvite(db datastore.DatabaseClient, org *datastore.Organisa
 		Role:           *role,
 		Token:          uniuri.NewLen(64),
 		ExpiresAt:      expiry,
-		Status:         datastore.InviteStatusPending,
+		Status:         status,
 		DocumentStatus: datastore.ActiveDocumentStatus,
 		CreatedAt:      primitive.NewDateTimeFromTime(time.Now()),
 		UpdatedAt:      primitive.NewDateTimeFromTime(time.Now()),
@@ -259,43 +268,52 @@ func SeedOrganisationInvite(db datastore.DatabaseClient, org *datastore.Organisa
 }
 
 // SeedAPIKey creates random api key for integration tests.
-func SeedAPIKey(db datastore.DatabaseClient, g *datastore.Group, uid, name, keyType string) (*datastore.APIKey, error) {
+func SeedAPIKey(db datastore.DatabaseClient, role auth.Role, uid, name, keyType string) (*datastore.APIKey, string, error) {
 	if util.IsStringEmpty(uid) {
 		uid = uuid.New().String()
 	}
 
+	maskID, key := util.GenerateAPIKey()
+	salt, err := util.GenerateSecret()
+	if err != nil {
+		return nil, "", errors.New("failed to generate salt")
+	}
+
+	dk := pbkdf2.Key([]byte(key), []byte(salt), 4096, 32, sha256.New)
+	encodedKey := base64.URLEncoding.EncodeToString(dk)
+
 	apiKey := &datastore.APIKey{
-		UID:    uid,
-		MaskID: fmt.Sprintf("mask-%s", uuid.NewString()),
-		Name:   name,
-		Type:   datastore.KeyType(keyType),
-		Role: auth.Role{
-			Type:   auth.RoleUIAdmin,
-			Groups: []string{g.UID},
-			Apps:   nil,
-		},
-		Hash:           fmt.Sprintf("hash-%s", uuid.NewString()),
-		Salt:           fmt.Sprintf("salt-%s", uuid.NewString()),
+		UID:            uid,
+		MaskID:         maskID,
+		Name:           name,
+		Type:           datastore.KeyType(keyType),
+		Role:           role,
+		Hash:           encodedKey,
+		Salt:           salt,
 		CreatedAt:      primitive.NewDateTimeFromTime(time.Now()),
 		UpdatedAt:      primitive.NewDateTimeFromTime(time.Now()),
 		DocumentStatus: datastore.ActiveDocumentStatus,
 	}
 
-	err := db.APIRepo().CreateAPIKey(context.Background(), apiKey)
+	err = db.APIRepo().CreateAPIKey(context.Background(), apiKey)
 	if err != nil {
-		return nil, err
+		return nil, "", err
 	}
 
-	return apiKey, nil
+	return apiKey, key, nil
 }
 
 // seed default group
-func SeedGroup(db datastore.DatabaseClient, uid, name string, cfg *datastore.GroupConfig) (*datastore.Group, error) {
+func SeedGroup(db datastore.DatabaseClient, uid, name, orgID string, cfg *datastore.GroupConfig) (*datastore.Group, error) {
+	if orgID == "" {
+		orgID = uuid.NewString()
+	}
 	g := &datastore.Group{
 		UID:               uid,
 		Name:              name,
 		Type:              datastore.OutgoingGroup,
 		Config:            cfg,
+		OrganisationID:    orgID,
 		RateLimit:         convoy.RATE_LIMIT,
 		RateLimitDuration: convoy.RATE_LIMIT_DURATION,
 		CreatedAt:         primitive.NewDateTimeFromTime(time.Now()),
@@ -435,7 +453,7 @@ func SeedSource(db datastore.DatabaseClient, g *datastore.Group, uid string) (*d
 		Type:    datastore.HTTPSource,
 		Verifier: &datastore.VerifierConfig{
 			Type: datastore.HMacVerifier,
-			HMac: datastore.HMac{
+			HMac: &datastore.HMac{
 				Header: "X-Convoy-Header",
 				Hash:   "SHA512",
 				Secret: "Convoy-Secret",
@@ -523,6 +541,22 @@ func SeedUser(db datastore.DatabaseClient, email, password string) (*datastore.U
 	}
 
 	return user, nil
+}
+
+func SeedConfiguration(db datastore.DatabaseClient) (*datastore.Configuration, error) {
+	config := &datastore.Configuration{
+		UID:                uuid.NewString(),
+		IsAnalyticsEnabled: true,
+		DocumentStatus:     datastore.ActiveDocumentStatus,
+	}
+
+	//Seed Data
+	err := db.ConfigurationRepo().CreateConfiguration(context.TODO(), config)
+	if err != nil {
+		return nil, err
+	}
+
+	return config, nil
 }
 
 // PurgeDB is run after every test run and it's used to truncate the DB to have

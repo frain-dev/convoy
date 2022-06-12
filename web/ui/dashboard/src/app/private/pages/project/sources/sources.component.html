@@ -3,7 +3,7 @@
 	<svg width="16" height="16" class="margin-x__4px">
 		<use xlink:href="#arrow-right-icon"></use>
 	</svg>
-	Project name
+	{{ privateService.activeProjectDetails?.name }}
 	<svg width="16" height="16" class="margin-x__4px">
 		<use xlink:href="#arrow-right-icon"></use>
 	</svg>
@@ -38,10 +38,15 @@
 							<div class="text__uppercase">{{ source.verifier.type }}</div>
 						</td>
 						<td>
-							<div>{{ source.url }}{{ source.url }}</div>
+							<div class="position__relative">
+								{{ source.url }}
+								<button class="button button__clear button--has-icon position__absolute" (click)="copyText(source.url, source.name, $event)">
+									<img src="/assets/img/copy-icon.svg" width="16px" alt="copy icon" />
+								</button>
+							</div>
 						</td>
 						<td>
-							<div>May 12, 2022</div>
+							<div>{{ source.created_at | date }}</div>
 						</td>
 						<td>
 							<div class="flex flex__align-items-center">

@@ -6,24 +6,28 @@ package server
 import (
 	"context"
 	"fmt"
-	"net/http"
-	"net/http/httptest"
-	"testing"
-
+	"github.com/frain-dev/convoy/auth"
 	"github.com/frain-dev/convoy/config"
 	"github.com/frain-dev/convoy/datastore"
+	"github.com/frain-dev/convoy/server/models"
 	"github.com/frain-dev/convoy/server/testdb"
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/require"
 	"github.com/stretchr/testify/suite"
+	"net/http"
+	"net/http/httptest"
+	"testing"
 )
 
 type GroupIntegrationTestSuite struct {
 	suite.Suite
-	DB           datastore.DatabaseClient
-	Router       http.Handler
-	ConvoyApp    *applicationHandler
-	DefaultGroup *datastore.Group
+	DB              datastore.DatabaseClient
+	Router          http.Handler
+	ConvoyApp       *applicationHandler
+	AuthenticatorFn AuthenticatorFn
+	DefaultOrg      *datastore.Organisation
+	DefaultGroup    *datastore.Group
+	DefaultUser     *datastore.User
 }
 
 func (s *GroupIntegrationTestSuite) SetupSuite() {
@@ -36,10 +40,23 @@ func (s *GroupIntegrationTestSuite) SetupTest() {
 	testdb.PurgeDB(s.DB)
 
 	// Setup Default Group.
-	s.DefaultGroup, _ = testdb.SeedDefaultGroup(s.DB)
+	s.DefaultGroup, _ = testdb.SeedDefaultGroup(s.DB, "")
+
+	user, err := testdb.SeedDefaultUser(s.DB)
+	require.NoError(s.T(), err)
+	s.DefaultUser = user
+
+	org, err := testdb.SeedDefaultOrganisation(s.DB, user)
+	require.NoError(s.T(), err)
+	s.DefaultOrg = org
+
+	s.AuthenticatorFn = authenticateRequest(&models.LoginUser{
+		Username: user.Email,
+		Password: testdb.DefaultUserPassword,
+	})
 
 	// Setup Config.
-	err := config.LoadConfig("./testdata/Auth_Config/full-convoy.json")
+	err = config.LoadConfig("./testdata/Auth_Config/full-convoy-with-jwt-realm.json")
 	require.NoError(s.T(), err)
 
 	initRealmChain(s.T(), s.DB.APIRepo(), s.DB.UserRepo(), s.ConvoyApp.cache)
@@ -50,7 +67,7 @@ func (s *GroupIntegrationTestSuite) TestGetGroup() {
 	expectedStatusCode := http.StatusOK
 
 	// Just Before.
-	group, err := testdb.SeedGroup(s.DB, groupID, "", nil)
+	group, err := testdb.SeedGroup(s.DB, groupID, "", "", nil)
 	require.NoError(s.T(), err)
 	app, _ := testdb.SeedApplication(s.DB, group, uuid.NewString(), "test-app", false)
 	_, _ = testdb.SeedEndpoint(s.DB, app, group.UID)
@@ -94,7 +111,7 @@ func (s *GroupIntegrationTestSuite) TestDeleteGroup() {
 	expectedStatusCode := http.StatusOK
 
 	// Just Before.
-	group, err := testdb.SeedGroup(s.DB, groupID, "", nil)
+	group, err := testdb.SeedGroup(s.DB, groupID, "", "", nil)
 	require.NoError(s.T(), err)
 
 	url := fmt.Sprintf("/api/v1/groups/%s", group.UID)
@@ -152,7 +169,12 @@ func (s *GroupIntegrationTestSuite) TestCreateGroup() {
 }`
 
 	body := serialize(bodyStr)
-	req := createRequest(http.MethodPost, "/api/v1/groups", body)
+	url := fmt.Sprintf("/ui/organisations/%s/groups", s.DefaultOrg.UID)
+
+	req := createRequest(http.MethodPost, url, body)
+	err := s.AuthenticatorFn(req, s.Router)
+	require.NoError(s.T(), err)
+
 	w := httptest.NewRecorder()
 
 	// Act.
@@ -161,12 +183,18 @@ func (s *GroupIntegrationTestSuite) TestCreateGroup() {
 	// Assert.
 	require.Equal(s.T(), expectedStatusCode, w.Code)
 
-	var respGroup datastore.Group
+	var respGroup models.CreateGroupResponse
 	parseResponse(s.T(), w.Result(), &respGroup)
-	require.NotEmpty(s.T(), respGroup.UID)
-	require.Equal(s.T(), 5000, respGroup.RateLimit)
-	require.Equal(s.T(), "1m", respGroup.RateLimitDuration)
-	require.Equal(s.T(), "test-group", respGroup.Name)
+	require.NotEmpty(s.T(), respGroup.Group.UID)
+	require.Equal(s.T(), 5000, respGroup.Group.RateLimit)
+	require.Equal(s.T(), "1m", respGroup.Group.RateLimitDuration)
+	require.Equal(s.T(), "test-group", respGroup.Group.Name)
+	require.Equal(s.T(), "test-group's default key", respGroup.APIKey.Name)
+
+	require.Equal(s.T(), auth.RoleSuperUser, respGroup.APIKey.Role.Type)
+	require.Equal(s.T(), respGroup.Group.UID, respGroup.APIKey.Role.Group)
+	require.Equal(s.T(), "test-group's default key", respGroup.APIKey.Name)
+	require.NotEmpty(s.T(), respGroup.APIKey.Key)
 }
 
 func (s *GroupIntegrationTestSuite) TestUpdateGroup() {
@@ -174,7 +202,7 @@ func (s *GroupIntegrationTestSuite) TestUpdateGroup() {
 	expectedStatusCode := http.StatusAccepted
 
 	// Just Before.
-	group, err := testdb.SeedGroup(s.DB, groupID, "test-group", nil)
+	group, err := testdb.SeedGroup(s.DB, groupID, "", "test-group", nil)
 	require.NoError(s.T(), err)
 
 	url := fmt.Sprintf("/api/v1/groups/%s", group.UID)
@@ -213,9 +241,9 @@ func (s *GroupIntegrationTestSuite) TestGetGroups() {
 	expectedStatusCode := http.StatusOK
 
 	// Just Before.
-	group1, _ := testdb.SeedGroup(s.DB, uuid.NewString(), "test-group-1", nil)
-	group2, _ := testdb.SeedGroup(s.DB, uuid.NewString(), "test-group-2", nil)
-	group3, _ := testdb.SeedGroup(s.DB, uuid.NewString(), "test-group-3", nil)
+	group1, _ := testdb.SeedGroup(s.DB, uuid.NewString(), "", "test-group-1", nil)
+	group2, _ := testdb.SeedGroup(s.DB, uuid.NewString(), "", "test-group-2", nil)
+	group3, _ := testdb.SeedGroup(s.DB, uuid.NewString(), "", "test-group-3", nil)
 
 	req := createRequest(http.MethodGet, "/api/v1/groups", nil)
 	w := httptest.NewRecorder()
@@ -240,9 +268,9 @@ func (s *GroupIntegrationTestSuite) TestGetGroups_FilterByName() {
 	expectedStatusCode := http.StatusOK
 
 	// Just Before.
-	group1, _ := testdb.SeedGroup(s.DB, uuid.NewString(), "abcdef", nil)
-	_, _ = testdb.SeedGroup(s.DB, uuid.NewString(), "test-group-2", nil)
-	_, _ = testdb.SeedGroup(s.DB, uuid.NewString(), "test-group-3", nil)
+	group1, _ := testdb.SeedGroup(s.DB, uuid.NewString(), "abcdef", "", nil)
+	_, _ = testdb.SeedGroup(s.DB, uuid.NewString(), "test-group-2", "", nil)
+	_, _ = testdb.SeedGroup(s.DB, uuid.NewString(), "test-group-3", "", nil)
 
 	url := fmt.Sprintf("/api/v1/groups?name=%s", group1.Name)
 	req := createRequest(http.MethodGet, url, nil)

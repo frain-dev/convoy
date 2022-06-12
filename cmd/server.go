@@ -6,12 +6,11 @@ import (
 
 	"github.com/frain-dev/convoy"
 	"github.com/frain-dev/convoy/auth/realm_chain"
-	"github.com/frain-dev/convoy/worker"
-	"github.com/frain-dev/convoy/worker/task"
-
 	"github.com/frain-dev/convoy/config"
 	"github.com/frain-dev/convoy/server"
 	"github.com/frain-dev/convoy/util"
+	"github.com/frain-dev/convoy/worker"
+	"github.com/frain-dev/convoy/worker/task"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 )
@@ -19,7 +18,7 @@ import (
 func addServerCommand(a *app) *cobra.Command {
 
 	var env string
-	var baseUrl string
+	var host string
 	var sentry string
 	var limiter string
 	var cache string
@@ -48,7 +47,6 @@ func addServerCommand(a *app) *cobra.Command {
 
 	var ssl bool
 	var withWorkers bool
-	var requireAuth bool
 	var disableEndpoint bool
 	var replayAttacks bool
 	var multipleTenants bool
@@ -99,7 +97,7 @@ func addServerCommand(a *app) *cobra.Command {
 	cmd.Flags().StringVar(&logLevel, "log-level", "info", "Log level")
 	cmd.Flags().StringVar(&logger, "logger", "info", "Logger")
 	cmd.Flags().StringVar(&env, "env", "development", "Convoy environment")
-	cmd.Flags().StringVar(&baseUrl, "base-url", "", "Base Url - Used for the app portal")
+	cmd.Flags().StringVar(&host, "host", "", "Host - The application host name")
 	cmd.Flags().StringVar(&cache, "cache", "redis", `Cache Provider ("redis" or "in-memory")`)
 	cmd.Flags().StringVar(&limiter, "limiter", "redis", `Rate limiter provider ("redis" or "in-memory")`)
 	cmd.Flags().StringVar(&sentry, "sentry", "", "Sentry DSN")
@@ -122,7 +120,6 @@ func addServerCommand(a *app) *cobra.Command {
 	cmd.Flags().StringVar(&promaddr, "promaddr", "", `Prometheus dsn`)
 
 	cmd.Flags().BoolVar(&ssl, "ssl", false, "Configure SSL")
-	cmd.Flags().BoolVar(&requireAuth, "auth", false, "Require authentication")
 	cmd.Flags().BoolVarP(&withWorkers, "with-workers", "w", true, "Should run workers")
 	cmd.Flags().BoolVar(&nativeRealmEnabled, "native", false, "Enable native-realm authentication")
 	cmd.Flags().BoolVar(&disableEndpoint, "disable-endpoint", false, "Disable all application endpoints")
@@ -167,6 +164,7 @@ func StartConvoyServer(a *app, cfg config.Configuration, withWorkers bool) error
 		a.orgInviteRepo,
 		a.sourceRepo,
 		a.userRepo,
+		a.configRepo,
 		a.queue,
 		a.logger,
 		a.tracer,
@@ -189,6 +187,10 @@ func StartConvoyServer(a *app, cfg config.Configuration, withWorkers bool) error
 		// register tasks.
 		eventCreatedhandler := task.ProcessEventCreated(a.applicationRepo, a.eventRepo, a.groupRepo, a.eventDeliveryRepo, a.cache, a.queue, a.subRepo)
 		consumer.RegisterHandlers(convoy.CreateEventProcessor, eventCreatedhandler)
+
+		// register tasks.
+		notificationHandler := task.SendNotification(a.emailNotificationSender)
+		consumer.RegisterHandlers(convoy.NotificationProcessor, notificationHandler)
 
 		log.Infof("Starting Convoy workers...")
 		consumer.Start()
@@ -217,14 +219,14 @@ func loadServerConfigFromCliFlags(cmd *cobra.Command, c *config.Configuration) e
 		c.Environment = env
 	}
 
-	// CONVOY_BASE_URL
-	baseUrl, err := cmd.Flags().GetString("base-url")
+	// CONVOY_HOST
+	host, err := cmd.Flags().GetString("host")
 	if err != nil {
 		return err
 	}
 
-	if !util.IsStringEmpty(baseUrl) {
-		c.BaseUrl = baseUrl
+	if !util.IsStringEmpty(host) {
+		c.Host = host
 	}
 
 	// CONVOY_SENTRY_DSN
@@ -503,17 +505,6 @@ func loadServerConfigFromCliFlags(cmd *cobra.Command, c *config.Configuration) e
 		}
 
 		c.Tracer.NewRelic.DistributedTracerEnabled = newReplicTracerEnabled
-	}
-
-	// CONVOY_REQUIRE_AUTH
-	isReqAuthSet := cmd.Flags().Changed("auth")
-	if isReqAuthSet {
-		requireAuth, err := cmd.Flags().GetBool("auth")
-		if err != nil {
-			return err
-		}
-
-		c.Auth.RequireAuth = requireAuth
 	}
 
 	// CONVOY_NATIVE_REALM_ENABLED

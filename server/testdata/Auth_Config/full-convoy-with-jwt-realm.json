@@ -1,4 +1,5 @@
 {
+    "host": "https://app.convoy.io",
     "multiple_tenants": false,
     "queue": {
         "type": "redis",
@@ -6,8 +7,8 @@
             "dsn": "abc"
         }
     },
+    "base_url": "https://app.convoy.io",
     "auth": {
-        "require_auth": true,
         "jwt": {
             "enabled": true
         },
@@ -24,9 +25,7 @@
                     "username": "test-group-filter",
                     "password": "test-group-filter",
                     "role": {
-                        "groups": [
-                            "abcdef"
-                        ],
+                        "groups": ["abcdef"],
                         "type": "super_user"
                     }
                 }

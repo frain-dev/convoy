@@ -14,7 +14,7 @@ export class PrivateComponent implements OnInit {
 	showOrgDropdown = false;
 	showMoreDropdown = false;
 	showOverlay = false;
-  showAddOrganisationModal = false;
+	showAddOrganisationModal = false;
 	apiURL = this.generalService.apiURL();
 	organisations!: ORGANIZATION_DATA[];
 	userOrganization!: ORGANIZATION_DATA;
@@ -40,7 +40,8 @@ export class PrivateComponent implements OnInit {
 		try {
 			const response = await this.privateService.getOrganizations();
 			this.organisations = response.data.content;
-			const setOrg = localStorage.getItem('ORG_DETAILS');
+			const setOrg = localStorage.getItem('CONVOY_ORG');
+
 			if (!setOrg) {
 				this.selectOrganisation(this.organisations[0]);
 			} else {
@@ -52,23 +53,17 @@ export class PrivateComponent implements OnInit {
 	}
 
 	selectOrganisation(organisation: ORGANIZATION_DATA) {
-		const userOrganisation = organisation;
-		this.userOrganization = userOrganisation;
-		localStorage.setItem('ORG_DETAILS', JSON.stringify(userOrganisation));
-		const currentUrl = this.router.url;
-		if (currentUrl.includes('/projects/')) {
-			this.router.navigateByUrl('/projects');
-		} else {
-			this.router.navigateByUrl('/', { skipLocationChange: true }).then(() => {
-				this.router.navigate([currentUrl]);
-			});
-		}
+		this.userOrganization = organisation;
+		localStorage.setItem('CONVOY_ORG', JSON.stringify(organisation));
+
+		this.router.navigateByUrl('/', { skipLocationChange: true }).then(() => {
+			this.router.navigate([this.router.url]);
+		});
 		this.showOrgDropdown = false;
 	}
 
-  closeAddOrganisationModal() {
+	closeAddOrganisationModal() {
 		this.showAddOrganisationModal = false;
 		this.getOrganizations();
 	}
-
 }

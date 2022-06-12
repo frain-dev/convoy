@@ -38,7 +38,7 @@ func (s *SubscriptionIntegrationTestSuite) SetupTest() {
 	testdb.PurgeDB(s.DB)
 
 	// Setup Default Group.
-	s.DefaultGroup, _ = testdb.SeedDefaultGroup(s.DB)
+	s.DefaultGroup, _ = testdb.SeedDefaultGroup(s.DB, "")
 
 	// Setup Config.
 	err := config.LoadConfig("./testdata/Auth_Config/full-convoy.json")
@@ -205,7 +205,6 @@ func (s *SubscriptionIntegrationTestSuite) Test_GetSubscriptions_ValidSubscripti
 	// Deep Assert
 	var resp pagedResponse
 	parseResponse(s.T(), w.Result(), &resp)
-	fmt.Printf("%+v\n", resp.Pagination)
 	require.Equal(s.T(), int64(totalSubs), resp.Pagination.Total)
 }
 

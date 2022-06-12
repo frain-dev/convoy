@@ -3,12 +3,13 @@
 	<svg width="16" height="16" class="margin-x__4px">
 		<use xlink:href="#arrow-right-icon"></use>
 	</svg>
-	Project name
+	{{ privateService.activeProjectDetails?.name }}
 	<svg width="16" height="16" class="margin-x__4px">
 		<use xlink:href="#arrow-right-icon"></use>
 	</svg>
 	<span class="color__primary font__weight-500">Apps</span>
 </h1>
+
 <div class="flex flex__align-items-center flex__justify-between margin-bottom__24px margin-top__18px">
 	<div class="flex flex__align-items-center">
 		<form class="input__search filter margin-bottom__0px bg__white">
@@ -92,10 +93,10 @@
 								<div>{{ app.updated_at | date }}</div>
 							</td>
 							<td>
-								<div>{{ app.events }}</div>
+								<div>{{ app.events || 0 }}</div>
 							</td>
 							<td>
-								<div>{{ app.endpoints.length }}</div>
+								<div>{{ app?.endpoints?.length || 0 }}</div>
 							</td>
 							<td>
 								<div>

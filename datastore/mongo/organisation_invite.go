@@ -3,6 +3,7 @@ package mongo
 import (
 	"context"
 	"errors"
+	"github.com/frain-dev/convoy/util"
 	"time"
 
 	"github.com/frain-dev/convoy/datastore"
@@ -24,8 +25,16 @@ func NewOrgInviteRepo(db *mongo.Database) datastore.OrganisationInviteRepository
 	}
 }
 
-func (db *orgInviteRepo) LoadOrganisationsInvitesPaged(ctx context.Context, pageable datastore.Pageable) ([]datastore.OrganisationInvite, datastore.PaginationData, error) {
+func (db *orgInviteRepo) LoadOrganisationsInvitesPaged(ctx context.Context, orgID string, inviteStatus datastore.InviteStatus, pageable datastore.Pageable) ([]datastore.OrganisationInvite, datastore.PaginationData, error) {
 	filter := bson.M{"document_status": datastore.ActiveDocumentStatus}
+
+	if !util.IsStringEmpty(orgID) {
+		filter["organisation_id"] = orgID
+	}
+
+	if !util.IsStringEmpty(inviteStatus.String()) {
+		filter["status"] = inviteStatus
+	}
 
 	organisations := make([]datastore.OrganisationInvite, 0)
 	paginatedData, err := pager.New(db.inner).Context(ctx).Limit(int64(pageable.PerPage)).Page(int64(pageable.Page)).Sort("created_at", pageable.Sort).Filter(filter).Decode(&organisations).Find()
