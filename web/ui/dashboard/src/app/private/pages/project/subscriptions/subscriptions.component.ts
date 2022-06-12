@@ -13,23 +13,25 @@ import { SubscriptionsService } from './subscriptions.service';
 })
 export class SubscriptionsComponent implements OnInit {
 	activeSubscription?: SUBSCRIPTION;
-	shouldShowCreateSubscriptionModal = this.router.url.split('/')[4] === 'new';
+	shouldShowCreateSubscriptionModal = false;
 	projectId!: string;
 	subscriptions!: { content: SUBSCRIPTION[]; pagination: PAGINATION };
 	subscriptionsLoaders = [1, 2, 3, 4, 5];
 	isLoadindingSubscriptions = false;
 	isDeletingSubscription = false;
-	showUpdateSubscription = false;
+	showUpdateSubscriptionModal = false;
 
 	constructor(private route: ActivatedRoute, public privateService: PrivateService, private router: Router, private subscriptionsService: SubscriptionsService, private generalService: GeneralService) {
+		this.route.queryParams.subscribe(params => (this.activeSubscription = this.subscriptions?.content.find(source => source.uid === params?.id)));
 		this.projectId = this.privateService.activeProjectDetails.uid;
-		this.showUpdateSubscription = !!route.snapshot.params.id;
+
+		const urlParam = route.snapshot.params.id;
+		if (urlParam && urlParam === 'new') this.shouldShowCreateSubscriptionModal = true;
+		if (urlParam && urlParam !== 'new') this.showUpdateSubscriptionModal = true;
 	}
 
 	async ngOnInit() {
 		await this.getSubscriptions();
-
-		this.route.queryParams.subscribe(params => (this.activeSubscription = this.subscriptions?.content.find(source => source.uid === params?.id)));
 	}
 
 	async getSubscriptions(requestDetails?: { page?: number }) {
