@@ -12,7 +12,8 @@ import { ProjectsService } from './projects.service';
 })
 export class ProjectsComponent implements OnInit {
 	projects: GROUP[] = [];
-	isLoadingProjects: boolean = false;
+	isLoadingProjects = false;
+	noData = false;
 	projectsLoaderIndex: number[] = [0, 1, 2, 3, 4];
 	organisations: ORGANIZATION_DATA[] = [];
 	showOrganisationModal = false;
@@ -43,6 +44,7 @@ export class ProjectsComponent implements OnInit {
 	async getProjects() {
 		try {
 			const projectsResponse = await this.projectsService.getProjects();
+			projectsResponse.data.length > 0 ? (this.noData = false) : (this.noData = true);
 			this.projects = projectsResponse.data;
 			this.isLoadingProjects = false;
 		} catch (error) {

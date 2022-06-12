@@ -18,7 +18,7 @@ export interface EVENT {
 	app_metadata: {
 		group_id: string;
 		support_email: string;
-		title: string;
+		name: string;
 		uid: string;
 	};
 }
