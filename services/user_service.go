@@ -214,7 +214,6 @@ func (u *UserService) UpdatePassword(ctx context.Context, data *models.UpdatePas
 }
 
 func (u *UserService) GeneratePasswordResetToken(ctx context.Context, baseURL string, data *models.ForgotPassword) error {
-	var resetToken string
 	if err := util.Validate(data); err != nil {
 		return NewServiceError(http.StatusBadRequest, err)
 	}
@@ -227,7 +226,7 @@ func (u *UserService) GeneratePasswordResetToken(ctx context.Context, baseURL st
 
 		return NewServiceError(http.StatusInternalServerError, err)
 	}
-	resetToken = uuid.NewString()
+	resetToken := uuid.NewString()
 	user.ResetPasswordToken = resetToken
 	user.ResetPasswordExpiresAt = primitive.NewDateTimeFromTime(time.Now().Add(time.Hour * 2))
 	err = u.userRepo.UpdateUser(ctx, user)
