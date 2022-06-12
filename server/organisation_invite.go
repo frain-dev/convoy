@@ -32,7 +32,7 @@ func (a *applicationHandler) InviteUserToOrganisation(w http.ResponseWriter, r *
 		return
 	}
 
-	baseUrl := getBaseUrlFromContext(r.Context())
+	baseUrl := getHostFromContext(r.Context())
 	user := getUserFromContext(r.Context())
 	org := getOrganisationFromContext(r.Context())
 

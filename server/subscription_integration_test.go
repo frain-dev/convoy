@@ -205,7 +205,6 @@ func (s *SubscriptionIntegrationTestSuite) Test_GetSubscriptions_ValidSubscripti
 	// Deep Assert
 	var resp pagedResponse
 	parseResponse(s.T(), w.Result(), &resp)
-	fmt.Printf("%+v\n", resp.Pagination)
 	require.Equal(s.T(), int64(totalSubs), resp.Pagination.Total)
 }
 

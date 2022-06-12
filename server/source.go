@@ -38,7 +38,7 @@ func (a *applicationHandler) CreateSource(w http.ResponseWriter, r *http.Request
 		return
 	}
 
-	baseUrl := getBaseUrlFromContext(r.Context())
+	baseUrl := getHostFromContext(r.Context())
 	s := sourceResponse(source, baseUrl)
 	_ = render.Render(w, r, newServerResponse("Source created successfully", s, http.StatusCreated))
 }
@@ -64,7 +64,7 @@ func (a *applicationHandler) GetSourceByID(w http.ResponseWriter, r *http.Reques
 		return
 	}
 
-	baseUrl := getBaseUrlFromContext(r.Context())
+	baseUrl := getHostFromContext(r.Context())
 	s := sourceResponse(source, baseUrl)
 
 	_ = render.Render(w, r, newServerResponse("Source fetched successfully", s, http.StatusOK))
@@ -104,7 +104,7 @@ func (a *applicationHandler) UpdateSource(w http.ResponseWriter, r *http.Request
 		return
 	}
 
-	baseUrl := getBaseUrlFromContext(r.Context())
+	baseUrl := getHostFromContext(r.Context())
 	s := sourceResponse(source, baseUrl)
 
 	_ = render.Render(w, r, newServerResponse("Source updated successfully", s, http.StatusAccepted))
@@ -167,7 +167,7 @@ func (a *applicationHandler) LoadSourcesPaged(w http.ResponseWriter, r *http.Req
 	}
 
 	sourcesResponse := []*models.SourceResponse{}
-	baseUrl := getBaseUrlFromContext(r.Context())
+	baseUrl := getHostFromContext(r.Context())
 
 	for _, source := range sources {
 		s := sourceResponse(&source, baseUrl)
