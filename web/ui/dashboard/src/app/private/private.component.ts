@@ -52,14 +52,17 @@ export class PrivateComponent implements OnInit {
 		}
 	}
 
-	selectOrganisation(organisation: ORGANIZATION_DATA) {
+	async selectOrganisation(organisation: ORGANIZATION_DATA) {
 		this.userOrganization = organisation;
 		localStorage.setItem('CONVOY_ORG', JSON.stringify(organisation));
-
-		this.router.navigateByUrl('/', { skipLocationChange: true }).then(() => {
-			this.router.navigate([this.router.url]);
-		});
 		this.showOrgDropdown = false;
+		if (this.router.url.includes('/projects/')) {
+			this.router.navigateByUrl('/projects');
+		} else {
+			this.router.navigateByUrl('/', { skipLocationChange: true }).then(() => {
+				this.router.navigateByUrl(this.router.url);
+			});
+		}
 	}
 
 	closeAddOrganisationModal() {

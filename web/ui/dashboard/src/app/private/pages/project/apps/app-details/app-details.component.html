@@ -34,11 +34,11 @@
 		</div>
 		<div>
 			<p class="color__grey font__12px font__weight-300">EVENTS</p>
-			<p class="color__black font__14px font__weight-500">{{ appsDetailsItem?.events }}</p>
+			<p class="color__black font__14px font__weight-500">{{ appsDetailsItem?.events || 0 }}</p>
 		</div>
 		<div>
 			<p class="color__grey font__12px font__weight-300">ENDPOINTS</p>
-			<p class="color__black font__14px font__weight-500">{{ appsDetailsItem?.endpoints?.length }}</p>
+			<p class="color__black font__14px font__weight-500">{{ appsDetailsItem?.endpoints?.length || 0 }}</p>
 		</div>
 	</div>
 	<!-- pending when backend is ready  -->
@@ -59,7 +59,7 @@
 				<div class="flex flex__align-items-center">
 					<button class="button__clear font__12px" (click)="showAddEndpointModal = !showAddEndpointModal">Add Endpoints</button>
 					<div class="line margin-right__16px margin-left__16px border__left"></div>
-					<button class="button__clear font__12px" [disabled]="appsDetailsItem && appsDetailsItem?.endpoints?.length == 0" (click)="setEventAppId()">Send Event</button>
+					<button class="button__clear font__12px" [disabled]="appsDetailsItem && appsDetailsItem?.endpoints?.length == 0" (click)="showAddEventModal = true">Send Event</button>
 				</div>
 			</div>
 			<ul class="margin-top__20px">
@@ -80,8 +80,11 @@
 								<img src="/assets/img/link-icon.svg" alt="link icon" class="margin-right__8px" />
 								{{ endpoint.target_url }}
 							</p>
-							<div class="flex margin-top__16px">
-								<div class="tag tag__events" *ngFor="let event of endpoint?.events">{{ event == '*' ? 'all events' : event }}</div>
+
+							<div class="flex flex__align-items-center margin-top__16px">
+								<button class="button__clear font__12px" (click)="selectedEndpoint = endpoint; editMode = true; showAddEndpointModal = true">Edit</button>
+								<div class="line margin-right__16px margin-left__16px border__left"></div>
+								<button class="button__clear font__12px" (click)="selectedEndpoint = endpoint; showDeleteModal = true">Delete</button>
 							</div>
 						</div>
 						<div class="app-details--inactive flex flex__align-items-center flex__column flex__justify-center padding-all__24px" *ngIf="endpoint.status == 'inactive'">
@@ -89,6 +92,7 @@
 								<img src="/assets/img/lock.svg" alt="lock icon" />
 							</div>
 							<p class="color__dark font__16px font__weight-600">Endpoint Disabled</p>
+
 							<!-- pending till this is figured out by backend -->
 							<!-- <a class="color__primary font__14px font__weight-500 margin-bottom__10px">Click here to learn how to enable this endpoint</a> -->
 						</div>
@@ -138,131 +142,29 @@
 </div>
 
 <!-- dark overlay  -->
-<div class="_overlay" *ngIf="showAddEndpointModal || showAddEventModal || showEndpointSecret" (click)="showAddEndpointModal = false; showAddEventModal = false; showEndpointSecret = false"></div>
+<div
+	class="_overlay"
+	*ngIf="showAddEndpointModal || showAddEventModal || showEndpointSecret || showDeleteModal"
+	(click)="showAddEndpointModal = false; showAddEventModal = false; showEndpointSecret = false; showDeleteModal = false"
+></div>
 
 <!-- create app, add new endpoint, add event modals  -->
 <div class="modal modal__right" *ngIf="showAddEndpointModal || showAddEventModal || showEndpointSecret">
 	<!-- add endpoint modal  -->
-	<div class="modal--head" *ngIf="showAddEndpointModal">
-		<h2>Add Endpoint</h2>
-		<a (click)="showAddEndpointModal = false">
-			<img src="/assets/img/modal-close-icon.svg" alt="close icon" />
-		</a>
-	</div>
-
-	<div class="modal--body" *ngIf="showAddEndpointModal">
-		<form [formGroup]="addNewEndpointForm">
-			<div class="input">
-				<label class="flex flex__justify-between" for="description">
-					Description
-					<span class="bg__grey__light rounded__4px padding-x__4px position__absolute position--right__0px font__10px font__weight-400">required</span>
-				</label>
-				<input
-					id="description"
-					type="text"
-					formControlName="description"
-					[ngClass]="{ danger: addNewEndpointForm.controls.description.touched && addNewEndpointForm.controls.description.invalid }"
-					required
-				/>
-				<div class="input__error input__error__danger" *ngIf="addNewEndpointForm.controls.description.touched && addNewEndpointForm.controls.description.invalid">
-					<img src="assets/img/input-error-icon.svg" alt="input error icon" />
-					<span>Please provide a description</span>
-				</div>
-			</div>
-
-			<div class="input">
-				<label class="flex flex__justify-between" for="endpoint-url">
-					Enter URL
-					<span class="bg__grey__light rounded__4px padding-x__4px position__absolute position--right__0px font__10px font__weight-400">required</span>
-				</label>
-				<input id="endpoint-url" type="text" formControlName="url" [ngClass]="{ danger: addNewEndpointForm.controls.url.touched && addNewEndpointForm.controls.url.invalid }" required />
-				<div class="input__error input__error__danger" *ngIf="addNewEndpointForm.controls.url.touched && addNewEndpointForm.controls.url.invalid">
-					<img src="assets/img/input-error-icon.svg" alt="input error icon" />
-					<span>Endpoint URL is required</span>
-				</div>
-			</div>
-
-			<div class="input multiple">
-				<label class="flex flex__justify-between" for="tagInput">
-					<div class="flex flex__align-items-center">
-						Events
-						<app-tooltip [size]="'small'" position="right" class="margin-left__4px">Add multiple events by separating them with commas.</app-tooltip>
-					</div>
-					<span class="bg__grey__light rounded__4px padding-x__4px position__absolute position--right__0px font__10px font__weight-400">required</span>
-				</label>
-				<div class="input--multiple" (click)="focusInput()">
-					<div class="tag" *ngFor="let tag of eventTags">
-						{{ tag }}
-						<a (click)="removeEventTag(tag)">
-							<img src="/assets/img/close-icon-black.svg" alt="close icon" />
-						</a>
-					</div>
-					<input type="text" id="tagInput" (input)="addTag()" required />
-				</div>
-			</div>
-		</form>
-	</div>
-
-	<div class="modal--footer modal--footer__with-shadow" *ngIf="showAddEndpointModal">
-		<button class="button button__white margin-right__24px" (click)="showAddEndpointModal = false">Discard</button>
-		<button class="button button__primary button--full-100" [disabled]="isCreatingNewEndpoint" (click)="addNewEndpoint()">{{ isCreatingNewEndpoint ? 'Adding Endpoint..' : 'Add Endpoint' }}</button>
-	</div>
+	<app-create-endpoint
+		[editMode]="editMode"
+		[selectedEndpoint]="selectedEndpoint"
+		[appId]="appsDetailsItem.uid"
+		(onAction)="$event.action == 'cancel' ? (showAddEndpointModal = false) : getAppDetails(appsDetailsItem.uid); showAddEndpointModal = false"
+		*ngIf="showAddEndpointModal"
+	></app-create-endpoint>
 
 	<!-- add event modal  -->
-	<div class="modal--head" *ngIf="showAddEventModal">
-		<h2>Add Event</h2>
-		<a (click)="showAddEventModal = false">
-			<img src="/assets/img/modal-close-icon.svg" alt="close icon" />
-		</a>
-	</div>
-
-	<div class="modal--body" *ngIf="showAddEventModal">
-		<form [formGroup]="sendEventForm">
-			<div class="input">
-				<label class="flex flex__align-items-center" for="appId">
-					App ID
-					<span class="bg__grey__light rounded__4px padding-x__4px position__absolute position--right__0px font__10px font__weight-400">required</span>
-				</label>
-				<select id="appId" class="editMode" formControlName="app_id">
-					<option *ngFor="let app of apps?.content" [value]="app.uid">{{ app.name }}</option>
-				</select>
-				<div class="input__error input__error__danger" *ngIf="sendEventForm.controls.app_id.touched && sendEventForm.controls.app_id.invalid">
-					<img src="assets/img/input-error-icon.svg" alt="input error icon" />
-					<span>App Id is required</span>
-				</div>
-			</div>
-			<div class="input">
-				<label class="flex flex__justify-between" for="data">
-					<div class="flex flex__align-items-center">
-						Data
-						<app-tooltip [size]="'small'" position="right" class="margin-left__4px">Please enter your data in the format it would be returned.</app-tooltip>
-					</div>
-
-					<span class="bg__grey__light rounded__4px padding-x__4px position__absolute position--right__0px font__10px font__weight-400">required</span>
-				</label>
-				<textarea id="data" formControlName="data" required cols="5" [ngClass]="{ danger: sendEventForm.controls.data.touched && sendEventForm.controls.data.invalid }"></textarea>
-				<div class="input__error input__error__danger" *ngIf="sendEventForm.controls.data.touched && sendEventForm.controls.data.invalid">
-					<img src="assets/img/input-error-icon.svg" alt="input error icon" />
-					<span>Data is required</span>
-				</div>
-			</div>
-			<div class="input">
-				<label class="flex flex__justify-between" for="eventType">
-					Event Type
-					<span class="bg__grey__light rounded__4px padding-x__4px position__absolute position--right__0px font__10px font__weight-400">required</span>
-				</label>
-				<input id="eventType" type="text" formControlName="event_type" [ngClass]="{ danger: sendEventForm.controls.event_type.touched && sendEventForm.controls.event_type.invalid }" required />
-				<div class="input__error input__error__danger" *ngIf="sendEventForm.controls.event_type.touched && sendEventForm.controls.event_type.invalid">
-					<img src="assets/img/input-error-icon.svg" alt="input error icon" />
-					<span>Event type is required</span>
-				</div>
-			</div>
-		</form>
-	</div>
-	<div class="modal--footer modal--footer__with-shadow" *ngIf="showAddEventModal">
-		<button class="button button__white margin-right__24px" (click)="showAddEventModal = false">Discard</button>
-		<button class="button button__primary button--full-100" [disabled]="isSendingNewEvent" (click)="sendNewEvent()">{{ isSendingNewEvent ? 'Adding Event..' : 'Add Event' }}</button>
-	</div>
+	<app-send-event
+		*ngIf="showAddEventModal"
+		[appId]="appsDetailsItem.uid"
+		(onAction)="$event.action == 'cancel' ? (showAddEventModal = false) : getAppDetails(appsDetailsItem.uid); showAddEventModal = false"
+	></app-send-event>
 
 	<!-- endpoint secret modal  -->
 	<div class="modal--head" *ngIf="showEndpointSecret">
@@ -279,5 +181,19 @@
 				<small *ngIf="showSecretCopyText">Copied!</small>
 			</button>
 		</div>
+	</div>
+</div>
+
+<div class="modal modal__center" *ngIf="showDeleteModal">
+	<div class="modal--body flex flex__column flex__justify-center flex__align-items-center deactivate">
+		<img src="/assets/img/warning.gif" class="img" alt="warning" />
+		<p class="font__20px color__black font__weight-600 margin-bottom__8px margin-top__16px text--center no-width">
+			Are you sure you want to delete
+			<span class="text__capitalize font__weight-600">“{{ selectedEndpoint.description }}”</span>
+			?
+		</p>
+		<p class="color__grey font__14px font__weight-500 margin-bottom__12px">This action is irrevesible</p>
+		<button class="button button__deactivate" [disabled]="isDeletingEndpoint" (click)="deleteEndpoint()">{{ isDeletingEndpoint ? 'Deleting...' : 'Yes, Delete' }}</button>
+		<button class="button__primary button__clear margin-top__28px" (click)="showDeleteModal = false">No, Cancel</button>
 	</div>
 </div>

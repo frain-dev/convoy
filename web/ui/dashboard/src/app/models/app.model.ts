@@ -19,4 +19,7 @@ export interface ENDPOINT {
 	secret: string;
 	target_url: string;
 	updated_at: Date;
+	rate_limit?: number;
+	rate_limit_duration?: string;
+	http_timeout?: string;
 }
