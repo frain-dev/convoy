@@ -94,19 +94,20 @@ func Test_CreateGroup(t *testing.T) {
 			name: "can create group with existing name in a different organisation",
 			groups: []datastore.Group{
 				{
-					Name:           "group 3",
+					Name:           "group 4",
 					OrganisationID: uuid.NewString(),
 					UID:            uuid.NewString(),
-					DocumentStatus: datastore.DeletedDocumentStatus,
+					DocumentStatus: datastore.ActiveDocumentStatus,
 				},
 
 				{
-					Name:           "group 3",
+					Name:           "group 4",
 					OrganisationID: uuid.NewString(),
 					UID:            uuid.NewString(),
 					DocumentStatus: datastore.ActiveDocumentStatus,
 				},
 			},
+			isDuplicate: true,
 		},
 	}
 
