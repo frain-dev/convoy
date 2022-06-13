@@ -20,11 +20,13 @@ func SendNotification(notificationSender notification.Sender) func(ctx context.C
 		err := json.Unmarshal(buf, n)
 		if err != nil {
 			log.WithError(err).Error("failed to unmarshal notification payload")
+			return &EndpointError{Err: err, delay: defaultDelay}
 		}
 
 		err = notificationSender.SendNotification(ctx, n)
 		if err != nil {
 			log.WithError(err).Error("failed to send email notification")
+			return &EndpointError{Err: err, delay: defaultDelay}
 		}
 		return nil
 	}
