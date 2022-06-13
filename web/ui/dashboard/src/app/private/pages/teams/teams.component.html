@@ -8,84 +8,195 @@
 		<div class="page__head--search">
 			<form class="input__search filter margin-bottom__0px events-search">
 				<img src="/assets/img/search-icon.svg" alt="search icon" />
-				<input type="search" placeholder="Search team member" [(ngModel)]="searchString" (change)="searchTeam({ addToURL: true, page: 1 })" [ngModelOptions]="{ standalone: true }" />
-				<button [class]="'enter-button' + (searchString && searchString.length > 0 ? ' show' : '')" (click)="searchTeam({ addToURL: true, page: 1 })">
+				<input type="search" placeholder="Search team member" [(ngModel)]="searchString" (change)="searchTeam({ searchInput: $event })" [ngModelOptions]="{ standalone: true }" />
+				<button [class]="'enter-button' + (searchString && searchString.length > 0 ? ' show' : '')" (click)="searchTeam({ searchInput: $event })">
 					<img src="/assets/img/enter-icon.png" alt="enter icon" />
 				</button>
 			</form>
 
+			<div class="dropdown">
+				<button class="button button__filter button--has-icon icon-right margin-left__16px" (click)="showFilterDropdown = !showFilterDropdown; showOverlay = true">
+					<span class="color__grey margin-right__4px">Filter By:</span>
+					<span class="color__primary text__capitalize">{{ selectedFilterOption }} Invites</span>
+					<img src="/assets/img/angle-arrow-down.svg" alt="arrow down icon" />
+				</button>
+
+				<div class="dropdown__menu dropdown__menu__push-left" [ngClass]="{ show: showFilterDropdown }">
+					<ul>
+						<li
+							class="text__capitalize"
+							[ngClass]="{ active: filterOption == filterOption }"
+							*ngFor="let filterOption of filterOptions"
+							(click)="showFilterDropdown = false; showOverlay = false; toggleFilter(filterOption)"
+						>
+							{{ filterOption }} Invites
+						</li>
+					</ul>
+				</div>
+			</div>
 			<button class="button button__small button__primary margin-left__24px" routerLink="./new" (click)="currentId = ''">Add team member</button>
 		</div>
 	</div>
 
-	<div *ngIf="isFetchingTeamMembers || (searchingTeamMembers && searchMode)">
+	<div *ngIf="isFetchingTeamMembers || isFetchingPendingInvites">
 		<convoy-table-loader [tableClass]="'table__no-style'" [tableHead]="tableHead"></convoy-table-loader>
 	</div>
 
-	<table class="table table__no-style" *ngIf="!isFetchingTeamMembers && !searchingTeamMembers && teams && teams.length > 0">
-		<thead>
-			<tr class="table--head">
-				<th scope="col" *ngFor="let head of tableHead">{{ head }}</th>
-			</tr>
-		</thead>
-		<tbody>
-			<tr *ngFor="let team of teams">
-				<td>
-					<div class="badge badge__dark">
-						<div class="icon">{{ team?.firstname?.slice(0, 1) }}{{ team?.lastname?.slice(0, 1) }}</div>
-						<div class="name">{{ team.firstname || '-' }} {{ team.lastname || '-' }}</div>
-					</div>
-				</td>
-				<td>
-					<div>{{ team?.role?.type }}</div>
-				</td>
-				<td>
-					<div>{{ team?.role?.groups?.length || 0 }} Project{{ team?.role?.groups?.length == 1 ? '' : 's' }}</div>
-				</td>
-				<!-- <td>
-					<div>
-						<div class="tag tag--Success" *ngIf="team.status">Active</div>
-						<div class="tag tag--Failure" *ngIf="!team.status">Inactive</div>
-					</div>
-				</td> -->
-				<td>
-					<div class="dropdown">
-						<button class="button--has-icon button__clear" (click)="showDropdown(team.uid); showOverlay = true">
-							<img src="/assets/img/nav-bar-more-primary.svg" alt="more icon" />
-						</button>
-						<div [ngClass]="{ show: currentId == team.uid }" class="dropdown__menu dropdown__menu__nav large">
-							<ul>
-								<li class="flex flex__justify-center">
-									<button
-										class="button__danger button__clear color__danger"
-										(click)="showDeactivateModal = !showDeactivateModal; showTeamMemberDropdown = false; selectedMember = team; currentId = ''"
-									>
-										Deactivate team member
-									</button>
-								</li>
-							</ul>
+	<ng-container *ngIf="selectedFilterOption === 'active' && !isFetchingTeamMembers && !noData">
+		<table class="table table__no-style">
+			<thead>
+				<tr class="table--head">
+					<th scope="col" *ngFor="let head of tableHead">{{ head }}</th>
+				</tr>
+			</thead>
+			<tbody>
+				<tr *ngFor="let team of teams.content">
+					<td>
+						<div class="badge badge__dark">
+							<div class="icon">{{ team?.user_metadata?.first_name?.slice(0, 1) }}{{ team?.user_metadata?.last_name?.slice(0, 1) }}</div>
+							<div class="name">{{ team.user_metadata.first_name || '-' }} {{ team.user_metadata.last_name || '-' }}</div>
 						</div>
-					</div>
-				</td>
-			</tr>
-		</tbody>
-	</table>
+					</td>
+					<td>
+						<div>{{ team?.role?.type }}</div>
+					</td>
+					<td>
+						<div>{{ team?.role?.groups?.length || 0 }} Project{{ team?.role?.groups?.length == 1 ? '' : 's' }}</div>
+					</td>
+					<td>
+						<div class="dropdown">
+							<button class="button--has-icon button__clear" (click)="showDropdown(team.uid); showOverlay = true">
+								<img src="/assets/img/nav-bar-more-primary.svg" alt="more icon" />
+							</button>
+							<div [ngClass]="{ show: currentId == team.uid }" class="dropdown__menu dropdown__menu__nav large">
+								<ul>
+									<li class="flex flex__justify-center">
+										<button
+											class="button__danger button__clear color__danger"
+											(click)="showDeactivateModal = !showDeactivateModal; showTeamMemberDropdown = false; selectedMember = team; currentId = ''"
+										>
+											Deactivate team member
+										</button>
+									</li>
+								</ul>
+							</div>
+						</div>
+					</td>
+				</tr>
+			</tbody>
+		</table>
+		<div class="button-container flex flex__align-items-center margin-top__16px">
+			<button
+				class="button button__white button__primary button__outline button--has-icon icon-left padding-y__4px padding-right__16px padding-left__4px"
+				routerLink="./"
+				[queryParams]="{ page: teams?.pagination?.prev }"
+				[disabled]="teams?.pagination?.prev === 0"
+				(click)="fetchTeamMembers({ page: teams?.pagination?.prev })"
+			>
+				<svg width="24" height="24" class="margin-right__8px">
+					<use xlink:href="#arrow-left-icon"></use>
+				</svg>
+				Previous
+			</button>
+			<button
+				class="button button__white button__primary button__outline button--has-icon icon-left padding-y__4px padding-left__16px padding-right__4px margin-left__16px"
+				routerLink="./"
+				[queryParams]="{ page: teams?.pagination?.next }"
+				[disabled]="teams?.pagination?.next === 0"
+				(click)="fetchTeamMembers({ page: teams?.pagination?.next })"
+			>
+				Next
+				<svg width="24" height="24" class="margin-left__8px" fill="var(--primary-color)">
+					<use xlink:href="#arrow-right-icon"></use>
+				</svg>
+			</button>
+		</div>
+	</ng-container>
+	<ng-container *ngIf="selectedFilterOption === 'pending' && !isFetchingPendingInvites && !noInvitesData">
+		<table class="table table__no-style">
+			<thead>
+				<tr class="table--head">
+					<th scope="col" *ngFor="let head of tableHead">{{ head }}</th>
+				</tr>
+			</thead>
+			<tbody>
+				<tr *ngFor="let team of pendingInvites.content">
+					<td>
+						<div>{{ team.invitee_email }}</div>
+					</td>
+					<td>
+						<div class="text__capitalize">{{ team.role.type === 'ui_admin' ? 'UI Admin' : team.role.type }}</div>
+					</td>
+					<td>
+						<div>{{ team?.role?.groups?.length || 0 }} Project{{ team?.role?.groups?.length == 1 ? '' : 's' }}</div>
+					</td>
+					<td>
+						<div class="dropdown">
+							<button class="button--has-icon button__clear" (click)="showDropdown(team.uid); showOverlay = true">
+								<img src="/assets/img/nav-bar-more-primary.svg" alt="more icon" />
+							</button>
+							<div [ngClass]="{ show: currentId == team.uid }" class="dropdown__menu dropdown__menu__nav large">
+								<ul>
+									<li class="flex flex__justify-center">
+										<button
+											class="button__danger button__clear color__danger"
+											(click)="showDeactivateModal = !showDeactivateModal; showTeamMemberDropdown = false; selectedMember = team; currentId = ''"
+										>
+											Delete Invite
+										</button>
+									</li>
+								</ul>
+							</div>
+						</div>
+					</td>
+				</tr>
+			</tbody>
+		</table>
+		<div class="button-container flex flex__align-items-center margin-top__16px">
+			<button
+				class="button button__white button__primary button__outline button--has-icon icon-left padding-y__4px padding-right__16px padding-left__4px"
+				routerLink="./"
+				[queryParams]="{ pendingInvitePage: pendingInvites?.pagination?.prev }"
+				[disabled]="pendingInvites?.pagination?.prev === 0"
+				(click)="fetchPendingTeamMembers({ page: pendingInvites?.pagination?.prev })"
+			>
+				<svg width="24" height="24" class="margin-right__8px">
+					<use xlink:href="#arrow-left-icon"></use>
+				</svg>
+				Previous
+			</button>
+			<button
+				class="button button__white button__primary button__outline button--has-icon icon-left padding-y__4px padding-left__16px padding-right__4px margin-left__16px"
+				routerLink="./"
+				[queryParams]="{ pendingInvitePage: pendingInvites?.pagination?.next }"
+				[disabled]="pendingInvites?.pagination?.next === 0"
+				(click)="fetchPendingTeamMembers({ page: pendingInvites?.pagination?.next })"
+			>
+				Next
+				<svg width="24" height="24" class="margin-left__8px" fill="var(--primary-color)">
+					<use xlink:href="#arrow-right-icon"></use>
+				</svg>
+			</button>
+		</div>
+	</ng-container>
 </div>
 
-<div class="page" *ngIf="teams?.length === 0 && (!isFetchingTeamMembers || !searchingTeamMembers)">
+<div class="page" *ngIf="(selectedFilterOption === 'active' && noData || selectedFilterOption === 'pending' && noInvitesData) && (!isFetchingTeamMembers || !isFetchingPendingInvites)">
 	<div class="card padding-all__24px">
 		<div class="width__30 padding-y__40px margin-auto flex flex__column flex__justify-center flex__align-items-center">
 			<img src="/assets/img/team-empty-img.svg" alt="add team empty" class="empty-state-img" />
-			<h4 class="margin-top__24px">You have no one {{ searchMode ? 'You have no one with the name ' + searchString + ' on your team' : 'on your team yet' }}</h4>
-			<p class="text--center font__14px font__weight-500 color__grey" *ngIf="!searchMode">You can invite team members to join your organization and assign them roles to projects</p>
-			<button *ngIf="!searchMode" class="button button__primary button__small margin-top__30px" routerLink="./new">Add team member</button>
+			<h4 class="margin-top__24px">
+				You have no {{ searchString ? 'one with the name ' + searchString + ' on your team' : selectedFilterOption === 'active' ? 'one on your team yet' : 'pending invites' }}
+			</h4>
+			<p class="text--center font__14px font__weight-500 color__grey" *ngIf="!searchString">You can invite team members to join your organization and assign them roles to projects</p>
+			<button *ngIf="!searchString" class="button button__primary button__small margin-top__30px" routerLink="./new">Add team member</button>
 		</div>
 	</div>
 </div>
 
 <div class="_overlay" *ngIf="showSuccessModal || showDeactivateModal" (click)="showSuccessModal = false; showDeactivateModal = false; showTeamGroupDropdown = false"></div>
 
-<div class="overlay" *ngIf="showOverlay" (click)="showOverlay = false; currentId = ''"></div>
+<div class="overlay" *ngIf="showOverlay" (click)="showOverlay = false; showFilterDropdown = false; currentId = ''"></div>
 
 <div class="modal modal__full" *ngIf="showCreateProjectModal">
 	<div class="modal--head">
@@ -105,7 +216,7 @@
 	</div>
 
 	<div class="modal--body padding-all__0px">
-		<app-create-project-component (onAction)="$event.action == 'cancel' ? cancel() : goBack()"></app-create-project-component>
+		<app-create-project-component (onAction)="goBack()"></app-create-project-component>
 	</div>
 </div>
 
@@ -144,7 +255,7 @@
 		<img src="/assets/img/warning.gif" class="img" alt="warning" />
 		<p class="font__20px color__black font__weight-600 margin-bottom__8px margin-top__16px text--center no-width">
 			Are you sure you want to deactivate
-			<span class="text__capitalize font__weight-600">“{{ selectedMember?.firstname }} {{ selectedMember?.lastname }}”</span>
+			<span class="text__capitalize font__weight-600">“{{ selectedMember?.user_metadata?.first_name }} {{ selectedMember?.user_metadata?.last_name }}”</span>
 			?
 		</p>
 		<p class="color__grey font__14px font__weight-500 margin-bottom__12px">This action is irrevesible</p>

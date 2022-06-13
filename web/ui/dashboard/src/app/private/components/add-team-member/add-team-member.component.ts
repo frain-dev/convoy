@@ -1,6 +1,7 @@
 import { Location } from '@angular/common';
 import { Component, OnInit } from '@angular/core';
 import { FormBuilder, FormControl, FormGroup, Validators } from '@angular/forms';
+import { Router } from '@angular/router';
 import { APP } from 'src/app/models/app.model';
 import { GROUP } from 'src/app/models/group.model';
 import { GeneralService } from 'src/app/services/general/general.service';
@@ -34,7 +35,7 @@ export class AddTeamMemberComponent implements OnInit {
 		})
 	});
 
-	constructor(private formBuilder: FormBuilder, private generalService: GeneralService, private addTeamService: AddTeamMemberService, private location: Location) {}
+	constructor(private formBuilder: FormBuilder, private generalService: GeneralService, private addTeamService: AddTeamMemberService, private location: Location, private router:Router) {}
 
 	async ngOnInit() {
 		await Promise.all([this.getOrganisation(), this.getProjects()]);
@@ -120,6 +121,10 @@ export class AddTeamMemberComponent implements OnInit {
 			const organisationDetails = JSON.parse(organisation);
 			this.organisationId = organisationDetails.uid;
 		}
+	}
+
+	createNewProject(){
+		this.router.navigateByUrl('/team/new/project');
 	}
 
 	goBack() {

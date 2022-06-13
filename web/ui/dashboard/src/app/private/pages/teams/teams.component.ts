@@ -1,8 +1,7 @@
 import { Location } from '@angular/common';
 import { Component, OnInit } from '@angular/core';
-import { FormBuilder, FormControl, FormGroup, Validators } from '@angular/forms';
-import { Router } from '@angular/router';
-import { GROUP } from 'src/app/models/group.model';
+import { ActivatedRoute, Router } from '@angular/router';
+import { PAGINATION } from 'src/app/models/global.model';
 import { TEAMS } from 'src/app/models/teams.model';
 import { GeneralService } from 'src/app/services/general/general.service';
 import { TeamsService } from './teams.service';
@@ -14,7 +13,8 @@ import { TeamsService } from './teams.service';
 })
 export class TeamsComponent implements OnInit {
 	tableHead: string[] = ['Name', 'Role', 'Projects', ''];
-	showInviteTeamMemberModal = this.router.url.split('/')[2] === 'new' && !this.router.url.split('/')[3];
+	filterOptions: ['active', 'pending'] = ['active', 'pending'];
+	showInviteTeamMemberModal = this.router.url.split('/')[2]?.includes('new') && !this.router.url.split('/')[3];
 	showCreateProjectModal = this.router.url.split('/')[3] === 'project';
 	showTeamMemberDropdown = false;
 	showTeamGroupDropdown = false;
@@ -22,55 +22,60 @@ export class TeamsComponent implements OnInit {
 	showDeactivateModal = false;
 	selectedMember!: TEAMS;
 	isFetchingTeamMembers = false;
-	searchMode = false;
+	isFetchingPendingInvites = false;
 	deactivatingUser = false;
-	searchingTeamMembers = false;
 	searchString!: string;
 	organisationId!: string;
-	teams: TEAMS[] = [];
+	teams!: { pagination: PAGINATION; content: TEAMS[] };
+	pendingInvites!: { pagination: PAGINATION; content: TEAMS[] };
 	currentId!: string;
+	selectedFilterOption: 'active' | 'pending' = 'active';
 	showOverlay = false;
 	noData = false;
+	noInvitesData = false;
+	showFilterDropdown = false;
 
-	constructor(private formBuilder: FormBuilder, private generalService: GeneralService, private router: Router, private teamService: TeamsService, private location: Location) {}
+	constructor(private generalService: GeneralService, private router: Router, private route: ActivatedRoute, private teamService: TeamsService, private location: Location) {}
 
-	async ngOnInit() {
-		await this.fetchTeamMembers();
+	ngOnInit() {
+		this.toggleFilter(this.route.snapshot.queryParams?.inviteType ?? 'active');
 	}
 
-	async fetchTeamMembers() {
-		const organisation = localStorage.getItem('ORG_DETAILS');
-		if (organisation) {
-			const organisationDetails = JSON.parse(organisation);
-			this.organisationId = organisationDetails.uid;
-		}
+	async fetchTeamMembers(requestDetails?: { searchString?: string; page?: number }) {
 		this.isFetchingTeamMembers = true;
-		this.searchMode = false;
+		const page = requestDetails?.page || this.route.snapshot.queryParams.page || 1;
 		try {
-			const response = await this.teamService.getTeamMembers({ org_id: this.organisationId });
-			if (response.data.content.length) this.teams = response.data.content;
-			response.data.content.length > 0 ? (this.noData = false) : (this.noData = true);
+			const response = await this.teamService.getTeamMembers({ pageNo: page, searchString: requestDetails?.searchString });
+			this.teams = response.data;
+			response.data.content.length === 0 ? (this.noData = true) : (this.noData = false);
+
 			this.isFetchingTeamMembers = false;
 		} catch {
 			this.isFetchingTeamMembers = false;
 		}
 	}
 
-	async searchTeam(searchInput: any) {
-		this.searchMode = true;
-		const searchString = searchInput;
-		this.searchString = searchString;
-		const requestOptions = {
-			query: `?query=${searchString}`
-		};
-		this.searchingTeamMembers = true;
+	toggleFilter(selectedFilter: 'active' | 'pending') {
+		this.selectedFilterOption = selectedFilter;
+		this.selectedFilterOption === 'active' ? this.fetchTeamMembers() : this.fetchPendingTeamMembers();
+		if(!this.router.url.split('/')[2]) this.addFilterToUrl();
+	}
+	async fetchPendingTeamMembers(requestDetails?: { page?: number }) {
+		this.isFetchingPendingInvites = true;
+		const page = requestDetails?.page || this.route.snapshot.queryParams.pendingInvites || 1;
 		try {
-			const response = await this.teamService.searchTeamMembers(requestOptions);
-			if (response.data.length) this.teams = response.data;
-			this.searchingTeamMembers = false;
+			const response = await this.teamService.getPendingTeamMembers({ pageNo: page });
+			this.pendingInvites = response.data;
+			response.data.content.length === 0 ? (this.noInvitesData = true) : (this.noInvitesData = false);
+			this.isFetchingPendingInvites = false;
 		} catch {
-			this.searchingTeamMembers = false;
+			this.isFetchingPendingInvites = false;
 		}
+	}
+
+	searchTeam(searchDetails: { searchInput?: any }) {
+		const searchString: string = searchDetails?.searchInput?.target?.value || this.searchString;
+		this.fetchTeamMembers({ searchString: searchString });
 	}
 
 	async deactivateMember() {
@@ -97,7 +102,12 @@ export class TeamsComponent implements OnInit {
 	goBack() {
 		this.location.back();
 	}
-	cancel() {
-		this.router.navigate(['/team']);
+	
+	addFilterToUrl() {
+		const currentURLfilters = this.route.snapshot.queryParams;
+		const queryParams: any = {};
+
+		queryParams.inviteType = this.selectedFilterOption;
+		this.router.navigate([], { queryParams: Object.assign({}, currentURLfilters, queryParams) });
 	}
 }

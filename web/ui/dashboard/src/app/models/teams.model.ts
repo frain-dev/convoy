@@ -1,10 +1,14 @@
 export interface TEAMS {
-	firstname: string;
 	role: {
 		groups: string[];
 		type: string;
 	};
 	uid: string;
-	lastname: string;
-	status: boolean;
+	status?: boolean;
+	invitee_email?: string;
+	user_metadata: {
+		first_name: string;
+		last_name: string;
+		email: string;
+	};
 }
