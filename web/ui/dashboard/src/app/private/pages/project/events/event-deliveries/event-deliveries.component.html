@@ -78,7 +78,7 @@
 
 				<button
 					class="button button__filter margin-left__14px flex__justify-center"
-					(click)="fetchRetryCount()"
+					(click)="fetchRetryCount(); showBatchRetryModal = true"
 					[ngClass]="{
 						disabled:
 							((dateFiltersFromURL.startDate == '' || dateFiltersFromURL.endDate == '') &&
@@ -110,7 +110,7 @@
 		</div>
 	</div>
 
-	<div class="event__table">
+	<div class="event__table width-100">
 		<convoy-table-loader id="event_deliveries_loader" [tableHead]="eventDelTableHead" *ngIf="isloadingEventDeliveries"></convoy-table-loader>
 
 		<div class="table table--container has-loader" id="event-deliveries-table-container" *ngIf="displayedEventDeliveries && displayedEventDeliveries.length > 0">
@@ -146,7 +146,7 @@
 							</td>
 							<td>
 								<div>
-									<div class="tag tag--Neutral">{{ event.event_metadata.event_type }}</div>
+									<div class="tag tag--Neutral">{{ event?.event_metadata?.event_type }}</div>
 								</div>
 							</td>
 							<td>
@@ -177,7 +177,7 @@
 							</td>
 							<td class="width__5">
 								<div>
-									<button class="button__clear button--has-icon icon-right" (click)="eventDelsDetailsItem = event; getDelieveryAttempts(event.uid); eventDeliveryIndex = index">
+									<button class="button__clear button--has-icon icon-right" [routerLink]="'./delivery/' + event.uid">
 										<img src="assets/img/angle-arrow-right-primary.svg" alt="arrow right" />
 									</button>
 								</div>

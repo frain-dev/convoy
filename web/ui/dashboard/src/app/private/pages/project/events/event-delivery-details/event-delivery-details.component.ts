@@ -1,9 +1,11 @@
 import { Location } from '@angular/common';
-import { Component, OnInit } from '@angular/core';
+import { Component, HostListener, OnInit } from '@angular/core';
 import { ActivatedRoute } from '@angular/router';
-import { EVENT_DELIVERY_ATTEMPT } from 'src/app/models/event.model';
+import { EVENT_DELIVERY, EVENT_DELIVERY_ATTEMPT } from 'src/app/models/event.model';
 import { PrivateService } from 'src/app/private/private.service';
 import { EventDeliveryDetailsService } from './event-delivery-details.service';
+import { GeneralService } from 'src/app/services/general/general.service';
+import { EventsService } from '../events.service';
 
 @Component({
 	selector: 'app-event-delivery-details',
@@ -11,10 +13,21 @@ import { EventDeliveryDetailsService } from './event-delivery-details.service';
 	styleUrls: ['./event-delivery-details.component.scss']
 })
 export class EventDeliveryDetailsComponent implements OnInit {
-	eventDelsDetails: any;
+	eventDelsDetails!: EVENT_DELIVERY;
 	eventDeliveryAtempt!: EVENT_DELIVERY_ATTEMPT;
+	isLoadingDeliveryDetails = false;
+	isloadingDeliveryAttempts = false;
+	shouldRenderSmallSize = false;
+	screenWidth = window.innerWidth;
 
-	constructor(public privateService: PrivateService, private route: ActivatedRoute, private eventDeliveryDetailsService: EventDeliveryDetailsService, private location: Location) {}
+	constructor(
+		public privateService: PrivateService,
+		private route: ActivatedRoute,
+		private eventDeliveryDetailsService: EventDeliveryDetailsService,
+		private location: Location,
+		private generalService: GeneralService,
+		private eventsService: EventsService
+	) {}
 
 	ngOnInit(): void {
 		const eventDeliveryId = this.route.snapshot.params.id;
@@ -22,25 +35,53 @@ export class EventDeliveryDetailsComponent implements OnInit {
 		this.getEventDeliveryAttempts(eventDeliveryId);
 	}
 
-	goBack() {
-		this.location.back();
-	}
-
 	async getEventDeliveryDetails(id: string) {
+		this.isLoadingDeliveryDetails = true;
+
 		try {
 			const response = await this.eventDeliveryDetailsService.getEventDeliveryDetails(id);
 			this.eventDelsDetails = response.data;
+			this.isLoadingDeliveryDetails = false;
 		} catch (error) {
-			console.log(error);
+			this.isLoadingDeliveryDetails = false;
+		}
+	}
+
+	async forceRetryEvent(requestDetails: { e: any; eventDeliveryId: string }) {
+		const payload = {
+			ids: [requestDetails.eventDeliveryId]
+		};
+
+		try {
+			await this.eventsService.forceRetryEvent({ body: payload });
+			this.getEventDeliveryDetails(this.eventDelsDetails.uid);
+			this.generalService.showNotification({ message: 'Force Retry Request Sent', style: 'success' });
+		} catch (error: any) {
+			this.generalService.showNotification({ message: `${error?.error?.message ? error?.error?.message : 'An error occured'}`, style: 'error' });
+			return error;
+		}
+	}
+
+	async retryEvent(requestDetails: { e: any; eventDeliveryId: string }) {
+		try {
+			await this.eventsService.retryEvent({ eventId: requestDetails.eventDeliveryId });
+			this.getEventDeliveryDetails(this.eventDelsDetails.uid);
+			this.generalService.showNotification({ message: 'Retry Request Sent', style: 'success' });
+		} catch (error: any) {
+			this.generalService.showNotification({ message: `${error?.error?.message ? error?.error?.message : 'An error occured'}`, style: 'error' });
+			return error;
 		}
 	}
 
 	async getEventDeliveryAttempts(eventId: string) {
+		this.isloadingDeliveryAttempts = true;
+
 		try {
 			const response = await this.eventDeliveryDetailsService.getEventDeliveryAttempts(eventId);
 			this.eventDeliveryAtempt = response.data[response.data.length - 1];
+			this.isloadingDeliveryAttempts = false;
 		} catch (error) {
-			console.log(error);
+			this.isloadingDeliveryAttempts = false;
 		}
 	}
 
@@ -62,5 +103,19 @@ export class EventDeliveryDetailsComponent implements OnInit {
 			return '';
 		}
 		return '';
+	}
+
+	goBack() {
+		this.location.back();
+	}
+
+	checkScreenSize() {
+		this.screenWidth > 1010 ? (this.shouldRenderSmallSize = false) : (this.shouldRenderSmallSize = true);
+	}
+
+	@HostListener('window:resize', ['$event'])
+	onWindowResize() {
+		this.screenWidth = window.innerWidth;
+		this.checkScreenSize();
 	}
 }

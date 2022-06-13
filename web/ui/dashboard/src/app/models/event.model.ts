@@ -31,6 +31,7 @@ export interface EVENT_DELIVERY {
 		num_trials: number;
 		retry_limit: number;
 		strategy: string;
+		data: any;
 	};
 	endpoint_metadata: ENDPOINT;
 	app_metadata: APP;

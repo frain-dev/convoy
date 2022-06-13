@@ -138,4 +138,36 @@ export class EventsService {
 			}
 		});
 	}
+
+	async getRetryCount(requestDetails: { appId: string; eventId: string; pageNo: number; startDate: string; endDate: string; statusQuery: string }): Promise<HTTP_RESPONSE> {
+		return new Promise(async (resolve, reject) => {
+			try {
+				const response = await this.http.request({
+					url: `${this.privateService.urlFactory('org_project')}/eventdeliveries/countbatchretryevents?eventId=${requestDetails.eventId}&page=${requestDetails.pageNo}&startDate=${requestDetails.startDate}&endDate=${
+						requestDetails.endDate
+					}&appId=${requestDetails.appId}${requestDetails.statusQuery || ''}`,
+					method: 'get'
+				});
+
+				return resolve(response);
+			} catch (error: any) {
+				return reject(error);
+			}
+		});
+	}
+
+	async getDelivery(eventDeliveryId: string): Promise<HTTP_RESPONSE> {
+		return new Promise(async (resolve, reject) => {
+			try {
+				const response = await this.http.request({
+					url: `${this.privateService.urlFactory('org_project')}/eventdeliveries/${eventDeliveryId}`,
+					method: 'get'
+				});
+
+				return resolve(response);
+			} catch (error: any) {
+				return reject(error);
+			}
+		});
+	}
 }

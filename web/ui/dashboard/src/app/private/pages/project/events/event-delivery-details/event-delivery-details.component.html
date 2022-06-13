@@ -17,7 +17,11 @@
 <div class="card padding-all__32px margin-bottom__20px">
 	<div class="flex flex__justify-between flex__align-items-center margin-bottom__24px">
 		<h3>Overview</h3>
-		<button [disabled]="eventDelsDetails?.status !== 'Failure' && eventDelsDetails?.status !== 'Success'" [class]="'button__retry button--has-icon icon-left '">
+		<button
+			[disabled]="eventDelsDetails?.status !== 'Failure' && eventDelsDetails?.status !== 'Success'"
+			[class]="'button__retry button--has-icon icon-left '"
+			(click)="eventDelsDetails.status === 'Success' ? forceRetryEvent({ e: $event, eventDeliveryId: eventDelsDetails.uid }) : retryEvent({ e: $event, eventDeliveryId: eventDelsDetails.uid })"
+		>
 			<img src="/assets/img/refresh-icon-primary.svg" alt="refresh icon" />
 
 			{{ eventDelsDetails?.status === 'Success' ? 'Force Retry' : 'Retry' }}
@@ -58,25 +62,26 @@
 		</div>
 		<div>
 			<p class="color__grey font__12px font__weight-300">ENDPOINT</p>
-			<p class="color__primary font__14px font__weight-500 long-text long-text__200px" [title]="eventDelsDetails?.endpoint_metadata?.target_url">{{ eventDelsDetails?.endpoint_metadata?.target_url }}</p>
+			<p class="color__primary font__14px font__weight-500 long-text long-text__200px" [title]="eventDelsDetails?.endpoint_metadata?.target_url">
+				{{ eventDelsDetails?.endpoint_metadata?.target_url }}
+			</p>
 		</div>
 		<div></div>
 		<div *ngIf="eventDelsDetails?.status === 'Success'"></div>
 	</div>
 
-	<div class="grid border__top grid__col-2">
-		<div class="eventDelivery border__right padding-top__40px padding-right__32px padding-bottom__40px width__100">
+	<div class="flex flex__justify-between flex__wrap border__top">
+		<div class="padding-y__32px" [ngClass]="{ 'width__50 border__right padding-right__32px': !shouldRenderSmallSize, width__100: shouldRenderSmallSize }">
 			<h3 class="margin-bottom__16px color__black">Event Payload</h3>
 			<prism language="json" [code]="getCodeSnippetString('event_delivery')"></prism>
 		</div>
-		<div class="eventDelivery padding-left__32px padding-top__40px padding-bottom__40px width__100">
+		<div class="padding-y__32px" [ngClass]="{ 'width__50 padding-left__32px': !shouldRenderSmallSize, 'border__top width__100': shouldRenderSmallSize }">
 			<h3 class="margin-bottom__16px color__black">Response Header</h3>
 			<prism language="json" [code]="getCodeSnippetString('res_head')"></prism>
 		</div>
 	</div>
-
-	<div class="grid border__top grid__col-2">
-		<div class="eventDelivery border__right padding-top__40px padding-right__32px padding-bottom__40px width__100">
+	<div class="flex flex__justify-between flex__wrap border__top">
+		<div class="padding-y__32px" [ngClass]="{ 'width__50 padding-right__32px': !shouldRenderSmallSize, width__100: shouldRenderSmallSize }">
 			<ng-container *ngIf="eventDeliveryAtempt?.error">
 				<h3 class="margin-bottom__16px color__black">Error</h3>
 				<prism language="json" [code]="getCodeSnippetString('error')"></prism>
@@ -86,7 +91,7 @@
 				<prism language="json" [code]="getCodeSnippetString('res_body')"></prism>
 			</ng-container>
 		</div>
-		<div class="eventDelivery padding-top__40px padding-left__32px padding-bottom__40px width__100">
+		<div class="padding-y__32px" [ngClass]="{ 'width__50 padding-left__32px': !shouldRenderSmallSize, 'border__top width__100': shouldRenderSmallSize }">
 			<h3 class="margin-bottom__16px color__black">Request Header</h3>
 			<prism language="json" [code]="getCodeSnippetString('req')"></prism>
 		</div>

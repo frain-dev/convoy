@@ -5,9 +5,10 @@ import { format } from 'date-fns';
 import { HTTP_RESPONSE } from 'src/app/models/http.model';
 import Chart from 'chart.js/auto';
 import { EventsService } from './events.service';
-import { EVENT } from 'src/app/models/event.model';
+import { EVENT, EVENT_DELIVERY } from 'src/app/models/event.model';
 import { PAGINATION } from 'src/app/models/global.model';
 import { PrivateService } from 'src/app/private/private.service';
+import { ActivatedRoute, Router } from '@angular/router';
 
 @Component({
 	selector: 'app-events',
@@ -28,19 +29,37 @@ export class EventsComponent implements OnInit {
 	dashboardData = { apps: 0, events_sent: 0 };
 	eventDeliveryFilteredByEventId!: string;
 	events!: { pagination: PAGINATION; content: EVENT[] };
+	eventDeliveries!: { pagination: PAGINATION; content: EVENT_DELIVERY[] };
 	statsDateRange: FormGroup = this.formBuilder.group({
 		startDate: [{ value: new Date(new Date().setDate(new Date().getDate() - 30)), disabled: true }],
 		endDate: [{ value: new Date(), disabled: true }]
 	});
 
-	constructor(private formBuilder: FormBuilder, private datePipe: DatePipe, private eventsService: EventsService, public privateService: PrivateService) {}
+	constructor(
+		private formBuilder: FormBuilder,
+		private datePipe: DatePipe,
+		private eventsService: EventsService,
+		public privateService: PrivateService,
+		private route: ActivatedRoute,
+		private router: Router
+	) {}
 
 	async ngOnInit() {
+		this.toggleActiveTab(this.route.snapshot.queryParams?.activeTab ?? 'events');
 		await this.fetchDashboardData();
 	}
 
+	addTabToUrl() {
+		const currentURLfilters = this.route.snapshot.queryParams;
+		const queryParams: any = {};
+
+		queryParams.activeTab = this.activeTab;
+		this.router.navigate([], { queryParams: Object.assign({}, currentURLfilters, queryParams) });
+	}
+	
 	toggleActiveTab(tab: 'events' | 'event deliveries') {
 		this.activeTab = tab;
+		this.addTabToUrl();
 	}
 
 	formatDate(date: Date) {
