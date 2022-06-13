@@ -1,0 +1,125 @@
+<div class="auth-page">
+	<img src="/assets/img/logo.svg" class="logo" alt="convoy logo" />
+	<h3>Join your team to start managing webhooks</h3>
+	<p class="text--center">Please fill in your details below to create your account and join your team</p>
+	<section class="auth-page--container">
+		<form [formGroup]="acceptInviteForm" (ngSubmit)="acceptInvite()">
+			<div class="grid grid__col-2 grid--gap__20px">
+                <div class="input">
+                    <label for="firstname">Firstname</label>
+                    <input type="text" id="firstname" formControlName="first_name" readonly required />
+                    <div class="input__error input__error__danger" *ngIf="acceptInviteForm.controls.first_name.touched && acceptInviteForm.controls.first_name.invalid">
+                        <img src="assets/img/input-error-icon.svg" alt="input error icon" />
+                        <span>Firstname is required</span>
+                    </div>
+                </div>
+                
+                <div class="input">
+                    <label for="lastname">Lastname</label>
+                    <input type="text" id="lastname" formControlName="last_name" class="editMode" readonly required />
+                    <div class="input__error input__error__danger" *ngIf="acceptInviteForm.controls.last_name.touched && acceptInviteForm.controls.last_name.invalid">
+                        <img src="assets/img/input-error-icon.svg" alt="input error icon" />
+                        <span>Lastname is required</span>
+                    </div>
+                </div>
+            </div>
+
+			<div class="input">
+				<label for="email">Email Address</label>
+				<input type="email" autocomplete="email" formControlName="email" class="editMode" readonly required />
+				<div class="input__error input__error__danger" *ngIf="acceptInviteForm.controls.email.touched && acceptInviteForm.controls.email.invalid">
+					<img src="assets/img/input-error-icon.svg" alt="input error icon" />
+					<span>Email is required</span>
+				</div>
+			</div>
+			<div class="input">
+				<label for="password">Create Password</label>
+				<div class="input--password">
+					<input
+						[type]="showPassword ? 'text' : 'password'"
+						autocomplete="new-password"
+						formControlName="password"
+						id="password"
+						[ngClass]="{ danger: acceptInviteForm.controls.password.touched && acceptInviteForm.controls.password.invalid }"
+						required
+					/>
+					<button class="input--password__view-toggle" (click)="showPassword = !showPassword" type="button">
+						<img [src]="!showPassword ? '/assets/img/password-invisible-icon.svg' : '/assets/img/password-visible-icon.svg'" alt="showPassword ? 'hide password icon' : 'view password icon'" />
+					</button>
+				</div>
+				<div class="input__error input__error__danger" *ngIf="acceptInviteForm.controls.password.touched && acceptInviteForm.controls.password.invalid">
+					<img src="assets/img/input-error-icon.svg" alt="input error icon" />
+					<span>Password is required</span>
+				</div>
+				<div
+					class="input__error input__error__danger"
+					*ngIf="acceptInviteForm.controls.password.touched && acceptInviteForm.controls.password.invalid && acceptInviteForm.controls.password.errors?.['minlength']"
+				>
+					<img src="assets/img/input-error-icon.svg" alt="input error icon" />
+					<span>Password should be at least 8 characters</span>
+				</div>
+				<div class="input__error input__error__danger" *ngIf="acceptInviteForm.controls.password.touched && !checkForNumber(acceptInviteForm.value.password)">
+					<img src="assets/img/input-error-icon.svg" alt="input error icon" />
+					<span>Password should have at least one number</span>
+				</div>
+				<div class="input__error input__error__danger" *ngIf="acceptInviteForm.controls.password.touched && !checkForSpecialCharacter(acceptInviteForm.value.password)">
+					<img src="assets/img/input-error-icon.svg" alt="input error icon" />
+					<span>Password should have at least one special character</span>
+				</div>
+			</div>
+			<div class="input">
+				<label for="confirm_password">Confirm Password</label>
+				<div class="input--password">
+					<input
+						[type]="showConfirmPassword ? 'text' : 'password'"
+						autocomplete="confirm-password"
+						formControlName="password_confirmation"
+						id="confirm_password"
+						[ngClass]="{
+							danger:
+								(acceptInviteForm.controls.password_confirmation.touched && acceptInviteForm.controls.password_confirmation.invalid) ||
+								(acceptInviteForm.controls.password.valid && acceptInviteForm.controls.password_confirmation.valid && acceptInviteForm.controls.password_confirmation.touched && !checkPassword())
+						}"
+						required
+					/>
+					<button class="input--password__view-toggle" (click)="showConfirmPassword = !showConfirmPassword" type="button">
+						<img
+							[src]="!showConfirmPassword ? '/assets/img/password-invisible-icon.svg' : '/assets/img/password-visible-icon.svg'"
+							alt="showPassword ? 'hide password icon' : 'view password icon'"
+						/>
+					</button>
+				</div>
+				<div class="input__error input__error__danger" *ngIf="acceptInviteForm.controls.password_confirmation.touched && acceptInviteForm.controls.password_confirmation.invalid">
+					<img src="assets/img/input-error-icon.svg" alt="input error icon" />
+					<span>Confirm new password</span>
+				</div>
+
+				<div
+					class="input__error input__error__danger"
+					*ngIf="acceptInviteForm.controls.password.valid && acceptInviteForm.controls.password_confirmation.valid && acceptInviteForm.controls.password_confirmation.touched && !checkPassword()"
+				>
+					<img src="assets/img/input-error-icon.svg" alt="input error icon" />
+					<span>Passwords do not match</span>
+				</div>
+			</div>
+
+			<div class="flex flex__align-items-center margin-bottom__36px">
+				<img (click)="acceptTerms = !acceptTerms" [src]="acceptTerms ? '/assets/img/Checkbox.svg' : '/assets/img/square-check.svg'" [alt]="acceptTerms ? 'accept icon' : 'accept icon'" />
+				<label for="termsCondition" class="margin-left__16px" (click)="acceptTerms = !acceptTerms">
+					<div class="font__14px color__dark">
+						I have read, understood and I agree to Convoy’s
+						<a target="_blank" href="/assets/pdf/Privacy Policy and Data Processing Agreement.pdf" class="color__primary">Privacy Policy</a>
+						, and
+						<a target="blank" href="/assets/pdf/Terms of Use - Frain Technology.pdf" class="color__primary">Terms & Conditions</a>
+						.
+					</div>
+				</label>
+			</div>
+
+			<button class="button button__primary--without-gradient button--has-icon icon-center button--full-100" [disabled]="loading || !acceptTerms" (click)="acceptInvite()">
+				<span *ngIf="!loading">Join your team</span>
+				<img *ngIf="loading" src="assets/img/button-loader.gif" alt="loader" />
+			</button>
+		</form>
+	</section>
+</div>
