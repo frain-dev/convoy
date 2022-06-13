@@ -28,8 +28,8 @@ export interface EVENT_DELIVERY {
 	status: string;
 	uid: string;
 	updated_at: string;
-	// app_id: string;
-	// event_id: string;
+	app_id?: string;
+	event_id?: string;
 	metadata: {
 		interval_seconds: number;
 		next_send_time: string;
@@ -51,8 +51,9 @@ export interface EVENT_DELIVERY {
 		uid: string;
 	};
 	event_metadata: {
-		name: string;
+		event_type: string;
 		uid: string;
+		matched_endpoints: number;
 	};
 }
 
