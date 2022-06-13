@@ -10,7 +10,6 @@ import { AppDetailsService } from '../app-details.service';
 	styleUrls: ['./create-endpoint.component.scss']
 })
 export class CreateEndpointComponent implements OnInit {
-	// @Input() editMode: boolean = false;
 	@Input() appId!: string;
 	@Input() selectedEndpoint?: ENDPOINT;
 	@Output() onAction = new EventEmitter<any>();
