@@ -21,7 +21,7 @@ export class EventDeliveriesComponent implements OnInit {
 	@Input() eventDeliveryFilteredByEventId?: string;
 	dateOptions = ['Last Year', 'Last Month', 'Last Week', 'Yesterday'];
 	eventDeliveryStatuses = ['Success', 'Failure', 'Retry', 'Scheduled', 'Processing', 'Discarded'];
-	eventDelTableHead: string[] = ['Status', 'Event Type', 'Attempts', 'Time Created', '', ''];
+	eventDelTableHead: string[] = ['Status', 'Event Type', 'Attempts', 'Max Attempts', 'Time Created', '', ''];
 	showEventDelFilterCalendar = false;
 	showEventDeliveriesStatusDropdown = false;
 	eventDeliveriesStatusFilterActive = false;

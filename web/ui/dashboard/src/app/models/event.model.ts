@@ -1,3 +1,5 @@
+import { APP, ENDPOINT } from './app.model';
+
 export interface EVENT {
 	created_at: string;
 	provider_id: string;
@@ -15,12 +17,7 @@ export interface EVENT {
 		retry_limit: number;
 		strategy: string;
 	};
-	app_metadata: {
-		group_id: string;
-		support_email: string;
-		name: string;
-		uid: string;
-	};
+	app_metadata: APP;
 }
 
 export interface EVENT_DELIVERY {
@@ -28,8 +25,6 @@ export interface EVENT_DELIVERY {
 	status: string;
 	uid: string;
 	updated_at: string;
-	// app_id: string;
-	// event_id: string;
 	metadata: {
 		interval_seconds: number;
 		next_send_time: string;
@@ -37,23 +32,9 @@ export interface EVENT_DELIVERY {
 		retry_limit: number;
 		strategy: string;
 	};
-	endpoint: {
-		secret: string;
-		sent: boolean;
-		status: string;
-		target_url: string;
-		uid: string;
-	};
-	app_metadata: {
-		group_id: string;
-		support_email: string;
-		title: string;
-		uid: string;
-	};
-	event_metadata: {
-		name: string;
-		uid: string;
-	};
+	endpoint_metadata: ENDPOINT;
+	app_metadata: APP;
+	event_metadata: EVENT;
 }
 
 export interface EVENT_DELIVERY_ATTEMPT {

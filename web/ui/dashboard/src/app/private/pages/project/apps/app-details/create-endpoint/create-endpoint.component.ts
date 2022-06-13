@@ -10,9 +10,9 @@ import { AppDetailsService } from '../app-details.service';
 	styleUrls: ['./create-endpoint.component.scss']
 })
 export class CreateEndpointComponent implements OnInit {
-	@Input() editMode: boolean = false;
+	// @Input() editMode: boolean = false;
 	@Input() appId!: string;
-	@Input() selectedEndpoint!: ENDPOINT;
+	@Input() selectedEndpoint?: ENDPOINT;
 	@Output() onAction = new EventEmitter<any>();
 	savingEndpoint = false;
 	addNewEndpointForm: FormGroup = this.formBuilder.group({
@@ -22,11 +22,12 @@ export class CreateEndpointComponent implements OnInit {
 		rate_limit_duration: [''],
 		description: ['', Validators.required]
 	});
+
 	constructor(private formBuilder: FormBuilder, private generalService: GeneralService, private appDetailsService: AppDetailsService) {}
 
 	ngOnInit() {
-    if(this.editMode && this.selectedEndpoint) this.updateEndpointForm()
-  }
+		if (this.selectedEndpoint) this.updateEndpointForm();
+	}
 
 	async saveEndpoint() {
 		if (this.addNewEndpointForm.invalid) {
@@ -38,8 +39,8 @@ export class CreateEndpointComponent implements OnInit {
 		this.savingEndpoint = true;
 
 		try {
-			const response = this.editMode
-				? await this.appDetailsService.editEndpoint({ appId: this.appId, endpointId: this.selectedEndpoint?.uid, body: this.addNewEndpointForm.value })
+			const response = this.selectedEndpoint
+				? await this.appDetailsService.editEndpoint({ appId: this.appId, endpointId: this.selectedEndpoint?.uid || '', body: this.addNewEndpointForm.value })
 				: await this.appDetailsService.addNewEndpoint({ appId: this.appId, body: this.addNewEndpointForm.value });
 			this.generalService.showNotification({ message: response.message, style: 'success' });
 			this.onAction.emit({ action: 'savedEndpoint' });
@@ -51,14 +52,17 @@ export class CreateEndpointComponent implements OnInit {
 			return;
 		}
 	}
+
 	updateEndpointForm() {
-		this.addNewEndpointForm.patchValue({
-			url: this.selectedEndpoint.target_url,
-			description: this.selectedEndpoint.description,
-			http_timeout: this.selectedEndpoint.http_timeout,
-			rate_limit: this.selectedEndpoint.rate_limit,
-			rate_limit_duration: this.selectedEndpoint.rate_limit_duration
-		});
+		if (this.selectedEndpoint) {
+			this.addNewEndpointForm.patchValue({
+				url: this.selectedEndpoint.target_url,
+				description: this.selectedEndpoint.description,
+				http_timeout: this.selectedEndpoint.http_timeout,
+				rate_limit: this.selectedEndpoint.rate_limit,
+				rate_limit_duration: this.selectedEndpoint.rate_limit_duration
+			});
+		}
 	}
 
 	cancel() {
