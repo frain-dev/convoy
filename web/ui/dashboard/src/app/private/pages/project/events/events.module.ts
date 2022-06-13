@@ -16,12 +16,24 @@ import { TableLoaderModule } from 'src/app/private/components/table-loader/table
 
 const routes: Routes = [
 	{ path: '', component: EventsComponent },
-	{ path: 'delivery/:id', component: EventDeliveryDetailsComponent }
+	{ path: 'event-deliveries/:id', component: EventDeliveryDetailsComponent }
 ];
 
 @NgModule({
 	declarations: [EventsComponent, EventComponent, EventDeliveriesComponent, EventDeliveryDetailsComponent],
-	imports: [CommonModule, ReactiveFormsModule, FormsModule, MatDatepickerModule, MatNativeDateModule, DateFilterModule, TimeFilterModule, LoaderModule, TableLoaderModule, PrismModule, RouterModule.forChild(routes)],
+	imports: [
+		CommonModule,
+		ReactiveFormsModule,
+		FormsModule,
+		MatDatepickerModule,
+		MatNativeDateModule,
+		DateFilterModule,
+		TimeFilterModule,
+		LoaderModule,
+		TableLoaderModule,
+		PrismModule,
+		RouterModule.forChild(routes)
+	],
 	providers: [DatePipe]
 })
 export class EventsModule {}
