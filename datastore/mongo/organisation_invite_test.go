@@ -135,7 +135,12 @@ func TestUpdateOrganisationInvite(t *testing.T) {
 		Groups: []string{uuid.NewString()},
 		Apps:   nil,
 	}
+	status := datastore.InviteStatusAccepted
+	updatedAt := primitive.NewDateTimeFromTime(time.Now())
+
 	iv.Role = role
+	iv.Status = status
+	iv.UpdatedAt = updatedAt
 
 	err = inviteRepo.UpdateOrganisationInvite(context.Background(), iv)
 	require.NoError(t, err)
@@ -143,8 +148,10 @@ func TestUpdateOrganisationInvite(t *testing.T) {
 	invite, err := inviteRepo.FetchOrganisationInviteByID(context.Background(), iv.UID)
 	require.NoError(t, err)
 
-	require.Equal(t, invite.Role, role)
 	require.Equal(t, invite.UID, iv.UID)
+	require.Equal(t, invite.Role, role)
+	require.Equal(t, invite.UpdatedAt, updatedAt)
+	require.Equal(t, invite.Status, status)
 }
 
 func TestDeleteOrganisationInvite(t *testing.T) {
