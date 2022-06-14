@@ -232,7 +232,7 @@
 	</button>
 </div>
 
-<div class="modal modal__full" *ngIf="shouldShowCreateSubscriptionModal || showUpdateSubscription">
+<div class="modal modal__full" *ngIf="shouldShowCreateSubscriptionModal || showUpdateSubscriptionModal">
 	<div class="modal--head">
 		<div class="flex flex__align-items-center flex__justify-between width__100">
 			<div class="modal--head--left flex flex__align-items-center">
@@ -243,7 +243,7 @@
 				>
 					<img src="/assets/img/modal-close-icon.svg" alt="close icon" />
 				</a>
-				<h2 class="font__16px font__weight-600">{{ showUpdateSubscription ? 'Update Subscription' : 'Create Subscription' }}</h2>
+				<h2 class="font__16px font__weight-600">{{ showUpdateSubscriptionModal ? 'Update Subscription' : 'Create Subscription' }}</h2>
 			</div>
 
 			<a class="button--has-icon icon-left" target="_blank" href="https://getconvoy.io/docs" rel="noreferrer">
@@ -254,6 +254,6 @@
 	</div>
 
 	<div class="modal--body padding-all__0px">
-		<app-create-subscription (onAction)="createSubscription($event.action)" [action]="showUpdateSubscription ? 'update' : 'create'"></app-create-subscription>
+		<app-create-subscription (onAction)="createSubscription($event.action)" [action]="showUpdateSubscriptionModal ? 'update' : 'create'"></app-create-subscription>
 	</div>
 </div>

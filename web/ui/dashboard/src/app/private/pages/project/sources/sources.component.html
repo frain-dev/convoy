@@ -32,10 +32,10 @@
 							<div>{{ source.name }}</div>
 						</td>
 						<td>
-							<div class="text__uppercase">{{ source.type }}</div>
+							<div>{{ getDataReadableValue('sourceType', source.type)?.viewValue }}</div>
 						</td>
 						<td>
-							<div class="text__uppercase">{{ source.verifier.type }}</div>
+							<div>{{ getDataReadableValue('verifier', source.verifier.type)?.viewValue }}</div>
 						</td>
 						<td>
 							<div class="position__relative">
@@ -138,7 +138,10 @@
 						<use xlink:href="#delete-icon"></use>
 					</svg>
 				</button>
-				<button class="button button__primary button--has-icon icon-right padding-x__24px padding-y__8px font__12px margin-left__24px">
+				<button
+					class="button button__primary button--has-icon icon-right padding-x__24px padding-y__8px font__12px margin-left__24px"
+					[routerLink]="'/projects/' + projectId + '/sources/' + activeSource?.uid"
+				>
 					Edit source
 					<svg width="18" height="18" class="margin-left__8px">
 						<use xlink:href="#edit-icon"></use>
@@ -176,7 +179,7 @@
 	</button>
 </div>
 
-<div class="modal modal__full" *ngIf="shouldShowCreateSourceModal">
+<div class="modal modal__full" *ngIf="shouldShowCreateSourceModal || shouldShowUpdateSourceModal">
 	<div class="modal--head">
 		<div class="flex flex__align-items-center flex__justify-between width__100">
 			<div class="modal--head--left flex flex__align-items-center">
@@ -187,7 +190,7 @@
 				>
 					<img src="/assets/img/modal-close-icon.svg" alt="close icon" />
 				</a>
-				<h2 class="font__16px font__weight-600">Create source</h2>
+				<h2 class="font__16px font__weight-600">{{ shouldShowUpdateSourceModal ? 'Update Source' : 'Create source' }}</h2>
 			</div>
 
 			<a class="button--has-icon icon-left" target="_blank" href="https://getconvoy.io/docs" rel="noreferrer">
@@ -198,6 +201,6 @@
 	</div>
 
 	<div class="modal--body padding-all__0px">
-		<app-create-source (onAction)="closeCreateSourceModal()"></app-create-source>
+		<app-create-source (onAction)="closeCreateSourceModal()" [action]="shouldShowUpdateSourceModal ? 'update' : 'create'"></app-create-source>
 	</div>
 </div>

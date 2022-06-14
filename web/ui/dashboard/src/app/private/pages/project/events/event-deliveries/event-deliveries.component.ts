@@ -1,5 +1,5 @@
 import { DatePipe } from '@angular/common';
-import { Component, ElementRef, Input, OnInit, ViewChild } from '@angular/core';
+import { Component, ElementRef, EventEmitter, Input, OnInit, Output, ViewChild } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
 import { format } from 'date-fns';
 import { fromEvent, Observable } from 'rxjs';
@@ -18,10 +18,11 @@ import { EventsService } from '../events.service';
 	styleUrls: ['./event-deliveries.component.scss']
 })
 export class EventDeliveriesComponent implements OnInit {
+	@Output() pushEventDeliveries = new EventEmitter<any>();
 	@Input() eventDeliveryFilteredByEventId?: string;
 	dateOptions = ['Last Year', 'Last Month', 'Last Week', 'Yesterday'];
 	eventDeliveryStatuses = ['Success', 'Failure', 'Retry', 'Scheduled', 'Processing', 'Discarded'];
-	eventDelTableHead: string[] = ['Status', 'Event Type', 'Attempts', 'Time Created', '', ''];
+	eventDelTableHead: string[] = ['Status', 'Event Type', 'Attempts', 'Max Attempts', 'Time Created', '', ''];
 	showEventDelFilterCalendar = false;
 	showEventDeliveriesStatusDropdown = false;
 	eventDeliveriesStatusFilterActive = false;
@@ -90,11 +91,7 @@ export class EventDeliveriesComponent implements OnInit {
 			this.eventDeliveries = eventDeliveriesResponse.data;
 			this.displayedEventDeliveries = this.generalService.setContentDisplayed(eventDeliveriesResponse.data.content);
 
-			// if this is a filter request, set the eventDelsDetailsItem to the first item in the list
-			if (requestDetails?.fromFilter) {
-				this.eventDelsDetailsItem = this.eventDeliveries?.content[0];
-				this.getDelieveryAttempts(this.eventDelsDetailsItem.uid);
-			}
+			this.pushEventDeliveries.emit(this.eventDeliveries);
 
 			this.isloadingEventDeliveries = false;
 			return eventDeliveriesResponse;
@@ -193,7 +190,30 @@ export class EventDeliveriesComponent implements OnInit {
 		this.router.navigate([], { relativeTo: this.route, queryParams: activeFilters });
 	}
 
-	fetchRetryCount() {}
+	async fetchRetryCount() {
+		let eventDeliveryStatusFilterQuery = '';
+		this.eventDeliveryFilteredByStatus.length > 0 ? (this.eventDeliveriesStatusFilterActive = true) : (this.eventDeliveriesStatusFilterActive = false);
+		this.eventDeliveryFilteredByStatus.forEach((status: string) => (eventDeliveryStatusFilterQuery += `&status=${status}`));
+		const { startDate, endDate } = this.setDateForFilter(this.dateFiltersFromURL);
+		this.fetchingCount = true;
+		try {
+			const response = await this.eventsService.getRetryCount({
+				eventId: this.eventDeliveryFilteredByEventId || '',
+				pageNo: this.eventDeliveriesPage || 1,
+				startDate: startDate,
+				endDate: endDate,
+				appId: this.eventDeliveriesApp || '',
+				statusQuery: eventDeliveryStatusFilterQuery || ''
+			});
+
+			this.batchRetryCount = response.data.num;
+			this.fetchingCount = false;
+			this.showBatchRetryModal = true;
+		} catch (error: any) {
+			this.fetchingCount = false;
+			this.generalService.showNotification({ message: error.error.message, style: 'error' });
+		}
+	}
 
 	async getAppsForFilter(search: string): Promise<APP[]> {
 		return await (
@@ -211,20 +231,6 @@ export class EventDeliveriesComponent implements OnInit {
 
 	formatDate(date: Date) {
 		return this.datePipe.transform(date, 'dd/MM/yyyy');
-	}
-
-	async getDelieveryAttempts(eventDeliveryId: string) {
-		this.isloadingDeliveryAttempts = true;
-		try {
-			const deliveryAttemptsResponse = await this.eventsService.getEventDeliveryAttempts({ eventDeliveryId });
-			this.eventDeliveryAtempt = deliveryAttemptsResponse.data[deliveryAttemptsResponse.data.length - 1];
-			this.isloadingDeliveryAttempts = false;
-
-			return;
-		} catch (error) {
-			this.isloadingDeliveryAttempts = false;
-			return error;
-		}
 	}
 
 	async retryEvent(requestDetails: { e: any; index: number; eventDeliveryId: string }) {

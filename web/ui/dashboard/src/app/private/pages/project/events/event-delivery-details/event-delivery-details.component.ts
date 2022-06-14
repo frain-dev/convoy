@@ -1,5 +1,11 @@
-import { Component, OnInit } from '@angular/core';
-import { EVENT_DELIVERY_ATTEMPT } from 'src/app/models/event.model';
+import { Location } from '@angular/common';
+import { Component, HostListener, OnInit } from '@angular/core';
+import { ActivatedRoute } from '@angular/router';
+import { EVENT_DELIVERY, EVENT_DELIVERY_ATTEMPT } from 'src/app/models/event.model';
+import { PrivateService } from 'src/app/private/private.service';
+import { EventDeliveryDetailsService } from './event-delivery-details.service';
+import { GeneralService } from 'src/app/services/general/general.service';
+import { EventsService } from '../events.service';
 
 @Component({
 	selector: 'app-event-delivery-details',
@@ -7,82 +13,109 @@ import { EVENT_DELIVERY_ATTEMPT } from 'src/app/models/event.model';
 	styleUrls: ['./event-delivery-details.component.scss']
 })
 export class EventDeliveryDetailsComponent implements OnInit {
-	eventDelsDetailsItem: any = {
-		app_metadata: {
-			group_id: 'db78d6fe-b05e-476d-b908-cb6fff26a3ed',
-			support_email: 'pelumi@mailinator.com',
-			title: 'App A',
-			uid: '41e3683f-2799-434d-ab61-4bfbe7c1ae23'
-		},
-		created_at: '2022-03-04T12:50:37.048Z',
-		description: 'Retry limit exceeded',
-		endpoint: {
-			http_timeout: '',
-			rate_limit: 0,
-			rate_limit_duration: '',
-			secret: 'kRfXPgJU6kAkc35H2-CqXwnrP_6wcEBVzA==',
-			sent: false,
-			status: 'active',
-			target_url: 'https://webhook.site/ac06134f-b969-4388-b663-1e55951a99a4',
-			uid: '8a069124-757e-4ad1-8939-6882a0f3e9bb'
-		},
-		event_metadata: {
-			name: 'three',
-			uid: '5bbca57e-e9df-4668-9208-827b962dc9a1'
-		},
-		metadata: {
-			interval_seconds: 65,
-			next_send_time: '2022-04-22T15:11:16.76Z',
-			num_trials: 5,
-			retry_limit: 5,
-			strategy: 'default'
-		},
-		status: 'Failure',
-		uid: 'b51ebc56-10df-42f1-8e00-6fb9da957bc0',
-		updated_at: '2022-04-22T15:10:11.761Z'
-	};
-	eventDeliveryAtempt: EVENT_DELIVERY_ATTEMPT = {
-		api_version: '2021-08-27',
-		created_at: '2022-03-04T12:50:38.958Z',
-		http_status: '200 OK',
-		ip_address: '46.4.105.116:443',
-		request_http_header: {
-			'Content-Type': 'application/json',
-			'User-Agent': 'Convoy/v0.4.14',
-			'X-Project-Signature-Y': '265557169ef78545c75bfdc5c751f44765bd4cc16315bc1c3411413a'
-		},
-		response_data: '{"success":false,"error":{"message":"Token not found","id":null}}',
-		response_http_header: {
-			'Cache-Control': 'no-cache, private',
-			'Content-Type': 'text/plain; charset=UTF-8',
-			Date: 'Fri, 04 Mar 2022 12:50:38 GMT',
-			Server: 'nginx',
-			Vary: 'Accept-Encoding',
-			'X-Request-Id': '03fbb49b-80a1-4bd6-bde2-32ddf30b80f9',
-			'X-Token-Id': 'ac06134f-b969-4388-b663-1e55951a99a4'
-		}
-	};
-	constructor() {}
+	eventDelsDetails!: EVENT_DELIVERY;
+	eventDeliveryAtempt!: EVENT_DELIVERY_ATTEMPT;
+	isLoadingDeliveryDetails = false;
+	isloadingDeliveryAttempts = false;
+	shouldRenderSmallSize = false;
+	screenWidth = window.innerWidth;
 
-	ngOnInit(): void {}
+	constructor(
+		public privateService: PrivateService,
+		private route: ActivatedRoute,
+		private eventDeliveryDetailsService: EventDeliveryDetailsService,
+		private location: Location,
+		private generalService: GeneralService,
+		private eventsService: EventsService
+	) {}
+
+	ngOnInit(): void {
+		const eventDeliveryId = this.route.snapshot.params.id;
+		this.getEventDeliveryDetails(eventDeliveryId);
+		this.getEventDeliveryAttempts(eventDeliveryId);
+	}
+
+	async getEventDeliveryDetails(id: string) {
+		this.isLoadingDeliveryDetails = true;
+
+		try {
+			const response = await this.eventDeliveryDetailsService.getEventDeliveryDetails(id);
+			this.eventDelsDetails = response.data;
+			this.isLoadingDeliveryDetails = false;
+		} catch (error) {
+			this.isLoadingDeliveryDetails = false;
+		}
+	}
+
+	async forceRetryEvent(requestDetails: { e: any; eventDeliveryId: string }) {
+		const payload = {
+			ids: [requestDetails.eventDeliveryId]
+		};
+
+		try {
+			await this.eventsService.forceRetryEvent({ body: payload });
+			this.getEventDeliveryDetails(this.eventDelsDetails.uid);
+			this.generalService.showNotification({ message: 'Force Retry Request Sent', style: 'success' });
+		} catch (error: any) {
+			this.generalService.showNotification({ message: `${error?.error?.message ? error?.error?.message : 'An error occured'}`, style: 'error' });
+			return error;
+		}
+	}
+
+	async retryEvent(requestDetails: { e: any; eventDeliveryId: string }) {
+		try {
+			await this.eventsService.retryEvent({ eventId: requestDetails.eventDeliveryId });
+			this.getEventDeliveryDetails(this.eventDelsDetails.uid);
+			this.generalService.showNotification({ message: 'Retry Request Sent', style: 'success' });
+		} catch (error: any) {
+			this.generalService.showNotification({ message: `${error?.error?.message ? error?.error?.message : 'An error occured'}`, style: 'error' });
+			return error;
+		}
+	}
+
+	async getEventDeliveryAttempts(eventId: string) {
+		this.isloadingDeliveryAttempts = true;
+
+		try {
+			const response = await this.eventDeliveryDetailsService.getEventDeliveryAttempts(eventId);
+			this.eventDeliveryAtempt = response.data[response.data.length - 1];
+			this.isloadingDeliveryAttempts = false;
+		} catch (error) {
+			this.isloadingDeliveryAttempts = false;
+		}
+	}
 
 	getCodeSnippetString(type: 'res_body' | 'event' | 'event_delivery' | 'res_head' | 'req' | 'error') {
 		if (type === 'event_delivery') {
-			if (!this.eventDelsDetailsItem?.metadata?.data) return 'No event data was sent';
-			return JSON.stringify(this.eventDelsDetailsItem.metadata.data, null, 4).replaceAll(/"([^"]+)":/g, '$1:');
+			if (!this.eventDelsDetails?.metadata?.data) return 'No event data was sent';
+			return JSON.stringify(this.eventDelsDetails.metadata.data, null, 4).replaceAll(/"([^"]+)":/g, '$1:');
 		} else if (type === 'res_body') {
-			if (!this.eventDeliveryAtempt) return 'No response body was sent';
-			return this.eventDeliveryAtempt.response_data;
+			if (!this.eventDeliveryAtempt || !this.eventDeliveryAtempt?.response_data) return 'No response body was sent';
+			return this.eventDeliveryAtempt?.response_data;
 		} else if (type === 'res_head') {
-			if (!this.eventDeliveryAtempt) return 'No response header was sent';
+			if (!this.eventDeliveryAtempt || !this.eventDeliveryAtempt?.response_http_header) return 'No response header was sent';
 			return JSON.stringify(this.eventDeliveryAtempt.response_http_header, null, 4).replaceAll(/"([^"]+)":/g, '$1:');
 		} else if (type === 'req') {
-			if (!this.eventDeliveryAtempt) return 'No request header was sent';
+			if (!this.eventDeliveryAtempt || !this.eventDeliveryAtempt?.request_http_header) return 'No request header was sent';
 			return JSON.stringify(this.eventDeliveryAtempt.request_http_header, null, 4).replaceAll(/"([^"]+)":/g, '$1:');
 		} else if (type === 'error') {
 			if (this.eventDeliveryAtempt?.error) return JSON.stringify(this.eventDeliveryAtempt.error, null, 4).replaceAll(/"([^"]+)":/g, '$1:');
 			return '';
 		}
 		return '';
+	}
+
+	goBack() {
+		this.location.back();
+	}
+
+	checkScreenSize() {
+		this.screenWidth > 1010 ? (this.shouldRenderSmallSize = false) : (this.shouldRenderSmallSize = true);
+	}
+
+	@HostListener('window:resize', ['$event'])
+	onWindowResize() {
+		this.screenWidth = window.innerWidth;
+		this.checkScreenSize();
 	}
 }

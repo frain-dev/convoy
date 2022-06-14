@@ -4,6 +4,10 @@
 
 	svg {
 		fill: var(--primary-color);
+
+		&#subscriptions {
+			stroke: var(--primary-color);
+		}
 	}
 }
 
