@@ -350,13 +350,16 @@ func (s *OrganisationInviteIntegrationTestSuite) Test_FindUserByInviteToken_Exis
 	// Assert.
 	require.Equal(s.T(), expectedStatusCode, w.Code)
 
-	var response datastore.User
+	var response models.UserInviteTokenResponse
 	parseResponse(s.T(), w.Result(), &response)
 
-	require.Equal(s.T(), user.UID, response.UID)
-	require.Equal(s.T(), user.FirstName, response.FirstName)
-	require.Equal(s.T(), user.LastName, response.LastName)
-	require.Equal(s.T(), user.Email, response.Email)
+	require.Equal(s.T(), user.UID, response.User.UID)
+	require.Equal(s.T(), user.FirstName, response.User.FirstName)
+	require.Equal(s.T(), user.LastName, response.User.LastName)
+	require.Equal(s.T(), user.Email, response.User.Email)
+	require.Equal(s.T(), iv.UID, response.Token.UID)
+	require.Equal(s.T(), iv.InviteeEmail, response.Token.InviteeEmail)
+	require.Equal(s.T(), iv.Token, response.Token.Token)
 }
 
 func (s *OrganisationInviteIntegrationTestSuite) Test_FindUserByInviteToken_NewUser() {
@@ -380,6 +383,14 @@ func (s *OrganisationInviteIntegrationTestSuite) Test_FindUserByInviteToken_NewU
 
 	// Assert.
 	require.Equal(s.T(), expectedStatusCode, w.Code)
+
+	var response models.UserInviteTokenResponse
+	parseResponse(s.T(), w.Result(), &response)
+
+	require.Equal(s.T(), iv.UID, response.Token.UID)
+	require.Equal(s.T(), iv.InviteeEmail, response.Token.InviteeEmail)
+	require.Equal(s.T(), iv.Token, response.Token.Token)
+	require.Nil(s.T(), response.User)
 }
 
 func TestOrganisationInviteIntegrationTestSuite(t *testing.T) {
