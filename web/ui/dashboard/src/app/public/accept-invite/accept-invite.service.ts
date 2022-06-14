@@ -11,7 +11,7 @@ export class AcceptInviteService {
 	async acceptInvite(requestDetails: { token: string; body: { first_name: string; last_name: string; password: string; password_confirmation: string; roles: any } }): Promise<HTTP_RESPONSE> {
 		try {
 			const response = await this.http.request({
-				url: `/users/process_invite?accepted=true&token=${requestDetails.token}`,
+				url: `/organisations/process_invite?accepted=true&token=${requestDetails.token}`,
 				body: requestDetails.body,
 				method: 'post'
 			});

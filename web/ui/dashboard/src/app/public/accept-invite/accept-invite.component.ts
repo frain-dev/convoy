@@ -10,12 +10,13 @@ import { AcceptInviteService } from './accept-invite.service';
 	styleUrls: ['./accept-invite.component.scss']
 })
 export class AcceptInviteComponent implements OnInit {
-	showPassword: boolean = false;
-	showConfirmPassword: boolean = false;
-	loading: boolean = false;
+	showPassword = false;
+	showConfirmPassword = false;
+	loading = false;
 	token!: string;
-	fetchingDetails: boolean = false;
-	acceptTerms: boolean = false;
+	fetchingDetails = false;
+	acceptTerms = false;
+	userDetailsAvailable = false;
 	acceptInviteForm: FormGroup = this.formBuilder.group({
 		first_name: ['', Validators.required],
 		last_name: ['', Validators.required],
@@ -38,12 +39,15 @@ export class AcceptInviteComponent implements OnInit {
 		this.fetchingDetails = true;
 		try {
 			const response = await this.acceptInviteService.getUserDetails(token);
-			const userDetails = response.data;
-			// this.acceptInviteForm.patchValue({
-			// 	firstname: userDetails.profile.firstname,
-			// 	lastname: userDetails.profile.lastname,
-			// 	email: userDetails.email
-			// });
+			response.data.user ? (this.userDetailsAvailable = true) : (this.userDetailsAvailable = false);
+			const inviteeDetails = response.data.token;
+			const userDetails = response.data.user;
+			this.acceptInviteForm.patchValue({
+				first_name: userDetails?.first_name ? userDetails.first_name : '',
+				last_name: userDetails?.last_name ? userDetails.last_name : '',
+				email: inviteeDetails.invitee_email,
+				role: { type: inviteeDetails.role.type }
+			});
 			this.fetchingDetails = false;
 		} catch {
 			this.fetchingDetails = false;
@@ -62,7 +66,7 @@ export class AcceptInviteComponent implements OnInit {
 			this.loading = false;
 			if (response.status === true) {
 				this.generalService.showNotification({ style: 'success', message: response.message });
-				// this.router.navigateByUrl('login');
+				this.router.navigateByUrl('login');
 			}
 		} catch (error: any) {
 			this.loading = false;

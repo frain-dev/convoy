@@ -2,32 +2,32 @@
 <div class="auth-page" *ngIf="!fetchingDetails">
 	<img src="/assets/img/logo.svg" class="logo" alt="convoy logo" />
 	<h3>Join your team to start managing webhooks</h3>
-	<p class="text--center">Please fill in your details below to create your account and join your team</p>
+	<p class="text--center">Please fill in your {{userDetailsAvailable ? 'password details below to': 'details below to create your account and'}} join your team</p>
 	<section class="auth-page--container">
 		<form [formGroup]="acceptInviteForm" (ngSubmit)="acceptInvite()">
 			<div class="grid grid__col-2 grid--gap__20px">
-                <div class="input">
-                    <label for="firstname">Firstname</label>
-                    <input type="text" id="firstname" formControlName="first_name"  required />
-                    <div class="input__error input__error__danger" *ngIf="acceptInviteForm.controls.first_name.touched && acceptInviteForm.controls.first_name.invalid">
-                        <img src="assets/img/input-error-icon.svg" alt="input error icon" />
-                        <span>Firstname is required</span>
-                    </div>
-                </div>
-                
-                <div class="input">
-                    <label for="lastname">Lastname</label>
-                    <input type="text" id="lastname" formControlName="last_name" class="editMode"  required />
-                    <div class="input__error input__error__danger" *ngIf="acceptInviteForm.controls.last_name.touched && acceptInviteForm.controls.last_name.invalid">
-                        <img src="assets/img/input-error-icon.svg" alt="input error icon" />
-                        <span>Lastname is required</span>
-                    </div>
-                </div>
-            </div>
+				<div class="input">
+					<label for="firstname">Firstname</label>
+					<input type="text" id="firstname" formControlName="first_name" [readonly]="userDetailsAvailable" required />
+					<div class="input__error input__error__danger" *ngIf="acceptInviteForm.controls.first_name.touched && acceptInviteForm.controls.first_name.invalid">
+						<img src="assets/img/input-error-icon.svg" alt="input error icon" />
+						<span>Firstname is required</span>
+					</div>
+				</div>
+
+				<div class="input">
+					<label for="lastname">Lastname</label>
+					<input type="text" id="lastname" formControlName="last_name" class="editMode" [readonly]="userDetailsAvailable" required />
+					<div class="input__error input__error__danger" *ngIf="acceptInviteForm.controls.last_name.touched && acceptInviteForm.controls.last_name.invalid">
+						<img src="assets/img/input-error-icon.svg" alt="input error icon" />
+						<span>Lastname is required</span>
+					</div>
+				</div>
+			</div>
 
 			<div class="input">
 				<label for="email">Email Address</label>
-				<input type="email" autocomplete="email" formControlName="email" class="editMode"  required />
+				<input type="email" autocomplete="email" formControlName="email" class="editMode" readonly required />
 				<div class="input__error input__error__danger" *ngIf="acceptInviteForm.controls.email.touched && acceptInviteForm.controls.email.invalid">
 					<img src="assets/img/input-error-icon.svg" alt="input error icon" />
 					<span>Email is required</span>
