@@ -162,7 +162,7 @@
 	</ng-container>
 </div>
 
-<div class="page" *ngIf="(selectedFilterOption === 'active' && noData || selectedFilterOption === 'pending' && noInvitesData) && (!isFetchingTeamMembers || !isFetchingPendingInvites)">
+<div class="page" *ngIf="((selectedFilterOption === 'active' && noData) || (selectedFilterOption === 'pending' && noInvitesData)) && (!isFetchingTeamMembers || !isFetchingPendingInvites)">
 	<div class="card padding-all__24px">
 		<div class="width__30 padding-y__40px margin-auto flex flex__column flex__justify-center flex__align-items-center">
 			<img src="/assets/img/team-empty-img.svg" alt="add team empty" class="empty-state-img" />
@@ -179,33 +179,11 @@
 
 <div class="overlay" *ngIf="showOverlay" (click)="showOverlay = false; showFilterDropdown = false; currentId = ''"></div>
 
-<div class="modal modal__full" *ngIf="showCreateProjectModal">
-	<div class="modal--head">
-		<div class="flex flex__align-items-center flex__justify-between width__100">
-			<div class="modal--head--left flex flex__align-items-center">
-				<a (click)="goBack()" class="margin-right__16px width__32px height__32px flex flex__align-items-center flex__justify-center rounded__6px button__clear" tabindex="0">
-					<img src="/assets/img/modal-close-icon.svg" alt="close icon" />
-				</a>
-				<h2 class="font__16px font__weight-600">Create New Project</h2>
-			</div>
-
-			<a class="button--has-icon icon-left" target="_blank" href="https://getconvoy.io/docs" rel="noreferrer">
-				<img src="/assets/img/doc-icon-primary.svg" alt="doc icon" />
-				<span class="font__weight-500 font__14px color__primary">Go to docs</span>
-			</a>
-		</div>
-	</div>
-
-	<div class="modal--body padding-all__0px">
-		<app-create-project-component (onAction)="goBack()"></app-create-project-component>
-	</div>
-</div>
-
 <div class="modal modal__full" *ngIf="showInviteTeamMemberModal">
 	<div class="modal--head">
 		<div class="flex flex__align-items-center flex__justify-between width__100">
 			<div class="modal--head--left flex flex__align-items-center">
-				<a (click)="goBack()" class="margin-right__16px width__32px height__32px flex flex__align-items-center flex__justify-center rounded__6px button__clear" tabindex="0">
+				<a routerLink="/team" class="margin-right__16px width__32px height__32px flex flex__align-items-center flex__justify-center rounded__6px button__clear" tabindex="0">
 					<img src="/assets/img/modal-close-icon.svg" alt="close icon" />
 				</a>
 				<h2 class="font__16px font__weight-600">Add Team Member</h2>
@@ -219,7 +197,25 @@
 	</div>
 
 	<div class="modal--body padding-all__0px">
-		<app-add-team-member></app-add-team-member>
+		<form [formGroup]="inviteUserForm" (ngSubmit)="inviteUser()">
+			<div class="card padding-all__24px margin-top__24px">
+				<h3>Basic info</h3>
+				<div class="color__grey font__14px font__weight-400 margin-bottom__16px">Invite other members of your team to your organisation.</div>
+
+				<div class="input">
+					<label for="email">Email</label>
+					<input type="email" id="email" formControlName="invitee_email" required />
+					<div class="input__error input__error__danger" *ngIf="inviteUserForm.controls.invitee_email.touched && inviteUserForm.controls.invitee_email.invalid">
+						<img src="assets/img/input-error-icon.svg" alt="input error icon" />
+						<span>Please enter a valid email</span>
+					</div>
+				</div>
+			</div>
+		</form>
+		<div class="flex flex__justify-end padding-top__24px padding-bottom__40px">
+			<button class="button button__white margin-right__16px" routerLink="/team">Discard</button>
+			<button class="button button__primary" [disabled]="invitingUser" (click)="inviteUser()">{{ invitingUser ? 'Inviting User..' : 'Send Invite' }}</button>
+		</div>
 	</div>
 </div>
 

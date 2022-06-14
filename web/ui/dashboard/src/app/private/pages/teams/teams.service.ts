@@ -57,16 +57,4 @@ export class TeamsService {
 			return error;
 		}
 	}
-
-	async getProjects(): Promise<HTTP_RESPONSE> {
-		try {
-			const response = await this.http.request({
-				url: `${this.privateService.urlFactory('org')}/groups`,
-				method: 'get'
-			});
-			return response;
-		} catch (error: any) {
-			return error;
-		}
-	}
 }
