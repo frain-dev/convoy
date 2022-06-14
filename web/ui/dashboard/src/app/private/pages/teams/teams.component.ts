@@ -106,11 +106,9 @@ export class TeamsComponent implements OnInit {
 	}
 	
 	addFilterToUrl() {
-		const currentURLfilters = this.route.snapshot.queryParams;
 		const queryParams: any = {};
-
 		queryParams.inviteType = this.selectedFilterOption;
-		this.router.navigate([], { queryParams: Object.assign({}, currentURLfilters, queryParams) });
+		this.router.navigate([], { queryParams: Object.assign({}, queryParams) });
 	}
 
 	async inviteUser() {
