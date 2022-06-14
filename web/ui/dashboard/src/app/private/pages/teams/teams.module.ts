@@ -9,8 +9,7 @@ import { AddTeamMemberModule } from '../../components/add-team-member/add-team-m
 
 const routes: Routes = [
 	{ path: '', component: TeamsComponent },
-	{ path: 'new', component: TeamsComponent },
-	{ path: 'new/project', component: TeamsComponent }
+	{ path: 'new', component: TeamsComponent }
 ];
 
 @NgModule({

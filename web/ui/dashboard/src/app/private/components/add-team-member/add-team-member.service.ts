@@ -21,11 +21,11 @@ export class AddTeamMemberService {
 		}
 	}
 
-	async inviteUserToOrganisation(requestDetails: { org_id: string; body: { invitee_email: string; role: { groups: string[]; type: string } } }): Promise<HTTP_RESPONSE> {
+	async inviteUserToOrganisation(requestDetails: { invitee_email: string; role: { groups: string[]; type: string } }): Promise<HTTP_RESPONSE> {
 		try {
 			const response = await this.http.request({
 				url: `${this.privateService.urlFactory('org')}/invite_user`,
-				body: requestDetails.body,
+				body: requestDetails,
 				method: 'post'
 			});
 			return response;

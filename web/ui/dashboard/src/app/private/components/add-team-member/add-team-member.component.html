@@ -1,16 +1,4 @@
-<div class="" *ngIf="!projects.length">
-	<div class="card padding-all__24px margin-top__24px">
-		<div class="width__50 padding-y__40px margin-auto flex flex__column flex__justify-center flex__align-items-center">
-			<img src="/assets/img/no-group.svg" alt="no project" class="empty-state-img big margin-bottom__24px" />
-			<h4 class="color__black text--center margin-bottom__8px">Create a project to add team member</h4>
-			<p class="color__grey font__14px font__weight-500 text--center margin-bottom__32px">
-				You currently do not have any project and need to have one to add a team member. Create one with the button below
-			</p>
-			<button class="button button__primary button__small" (click)="createNewProject()">Create Project</button>
-		</div>
-	</div>
-</div>
-<div class="" *ngIf="projects.length">
+<div class="">
 	<form [formGroup]="inviteUserForm" (ngSubmit)="inviteUser()">
 		<div class="card padding-all__24px margin-top__24px">
 			<h3>Basic info</h3>
@@ -25,51 +13,6 @@
 				</div>
 			</div>
 
-			<div class="flex flex__justify-between" formGroupName="role">
-				<div class="dropdown width__45">
-					<div class="input">
-						<label for="group">Select project</label>
-						<input
-							type="text"
-							id="group"
-							[(ngModel)]="noOfSelectedProjects"
-							[ngModelOptions]="{ standalone: true }"
-							class="editMode"
-							readonly
-							(click)="showProjectsDropdown = !showProjectsDropdown"
-							[ngClass]="{ danger: noOfSelectedProjects && selectedProjects?.length == 0 }"
-						/>
-
-						<div class="input__error input__error__danger" *ngIf="noOfSelectedProjects && selectedProjects?.length == 0">
-							<img src="assets/img/input-error-icon.svg" alt="input error icon" />
-							<span>Please select at least 1 project</span>
-						</div>
-					</div>
-					<div class="dropdown__menu dropdown__menu__form with-padding large" [ngClass]="{ show: showProjectsDropdown }">
-						<div class="input__search">
-							<img src="/assets/img/search-icon.svg" alt="search icon" />
-							<input type="search" placeholder="Search projects here" (input)="searchProjects($event)" />
-						</div>
-						<div *ngIf="filteredProjects.length">
-							<div class="dropdown__menu__item" *ngFor="let project of filteredProjects">
-								<label [for]="project.uid">{{ project.name }}</label>
-								<input type="checkbox" name="app" [id]="project.uid" [checked]="project.selected" (input)="selectProject(project)" />
-							</div>
-						</div>
-					</div>
-				</div>
-
-				<div class="input smaller">
-					<label for="role-type">Select Role</label>
-					<select name="type" id="role-type" formControlName="type">
-						<option *ngFor="let role of roleTypes" [value]="role.id">{{ role.role }}</option>
-					</select>
-					<div class="input__error input__error__danger" *ngIf="inviteUserForm.get('role.type')?.touched && inviteUserForm.get('role.type')?.invalid">
-						<img src="assets/img/input-error-icon.svg" alt="input error icon" />
-						<span>Please select a role</span>
-					</div>
-				</div>
-			</div>
 		</div>
 	</form>
 	<div class="flex flex__justify-end padding-top__24px padding-bottom__40px">

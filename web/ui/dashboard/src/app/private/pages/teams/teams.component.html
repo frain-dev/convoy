@@ -58,10 +58,10 @@
 						</div>
 					</td>
 					<td>
-						<div>{{ team?.role?.type }}</div>
+						<div>{{ team.role.type === 'super_user' ? 'Super user' : team.role.type }}</div>
 					</td>
 					<td>
-						<div>{{ team?.role?.groups?.length || 0 }} Project{{ team?.role?.groups?.length == 1 ? '' : 's' }}</div>
+						<div>All projects</div>
 					</td>
 					<td>
 						<div class="dropdown">
@@ -116,7 +116,7 @@
 		<table class="table table__no-style">
 			<thead>
 				<tr class="table--head">
-					<th scope="col" *ngFor="let head of tableHead">{{ head }}</th>
+					<th scope="col" *ngFor="let head of tableHead">{{ selectedFilterOption === 'pending' && head === 'Name' ? 'Email' : head }}</th>
 				</tr>
 			</thead>
 			<tbody>
@@ -125,29 +125,10 @@
 						<div>{{ team.invitee_email }}</div>
 					</td>
 					<td>
-						<div class="text__capitalize">{{ team.role.type === 'ui_admin' ? 'UI Admin' : team.role.type }}</div>
+						<div class="text__capitalize">{{ team.role.type === 'super_user' ? 'Super user' : team.role.type }}</div>
 					</td>
 					<td>
-						<div>{{ team?.role?.groups?.length || 0 }} Project{{ team?.role?.groups?.length == 1 ? '' : 's' }}</div>
-					</td>
-					<td>
-						<div class="dropdown">
-							<button class="button--has-icon button__clear" (click)="showDropdown(team.uid); showOverlay = true">
-								<img src="/assets/img/nav-bar-more-primary.svg" alt="more icon" />
-							</button>
-							<div [ngClass]="{ show: currentId == team.uid }" class="dropdown__menu dropdown__menu__nav large">
-								<ul>
-									<li class="flex flex__justify-center">
-										<button
-											class="button__danger button__clear color__danger"
-											(click)="showDeactivateModal = !showDeactivateModal; showTeamMemberDropdown = false; selectedMember = team; currentId = ''"
-										>
-											Delete Invite
-										</button>
-									</li>
-								</ul>
-							</div>
-						</div>
+						<div>All projects</div>
 					</td>
 				</tr>
 			</tbody>
