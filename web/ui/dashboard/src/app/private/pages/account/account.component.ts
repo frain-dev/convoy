@@ -10,9 +10,9 @@ import { AccountService } from './account.service';
 	styleUrls: ['./account.component.scss']
 })
 export class AccountComponent implements OnInit {
-	activePage: 'profile' | 'security' | 'billing' = 'profile';
-	savingDetails = false;
-	changingPassword = false;
+	activePage: 'profile' | 'security' = 'profile';
+	isSavingUserDetails = false;
+	isUpdatingPassword = false;
 	isFetchingUserDetails = false;
 	userId!: string;
 	passwordToggle = { oldPassword: false, newPassword: false, confirmPassword: false };
@@ -67,14 +67,14 @@ export class AccountComponent implements OnInit {
 			});
 			return;
 		}
-		this.savingDetails = true;
+		this.isSavingUserDetails = true;
 		try {
 			const response = await this.accountService.editBasicInfo({ userId: this.userId, body: this.editBasicInfoForm.value });
 			this.generalService.showNotification({ style: 'success', message: 'Changes saved successfully!' });
 			this.getUserDetails(this.userId);
-			this.savingDetails = false;
+			this.isSavingUserDetails = false;
 		} catch {
-			this.savingDetails = false;
+			this.isSavingUserDetails = false;
 		}
 	}
 
@@ -85,16 +85,16 @@ export class AccountComponent implements OnInit {
 			});
 			return;
 		}
-		this.changingPassword = true;
+		this.isUpdatingPassword = true;
 		try {
 			const response = await this.accountService.changePassword({ userId: this.userId, body: this.changePasswordForm.value });
 			if (response.status === true) {
 				this.generalService.showNotification({ style: 'success', message: response.message });
 				this.changePasswordForm.reset();
 			}
-			this.changingPassword = false;
+			this.isUpdatingPassword = false;
 		} catch {
-			this.changingPassword = false;
+			this.isUpdatingPassword = false;
 		}
 	}
 

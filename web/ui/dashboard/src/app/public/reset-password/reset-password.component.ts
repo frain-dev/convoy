@@ -18,7 +18,7 @@ export class ResetPasswordComponent implements OnInit {
 	showPassword: boolean = false;
 	showCofirmPassword: boolean = false;
 	resetingPassword: boolean = false;
-	activePage: 'reset-password' | 'success' = 'reset-password';
+	activePage: 'resetPassword' | 'success' = 'resetPassword';
 	token!: string;
 
 	constructor(private formBuilder: FormBuilder, private resetPasswordService: ResetPasswordService, private route: ActivatedRoute, private generalService: GeneralService) {}

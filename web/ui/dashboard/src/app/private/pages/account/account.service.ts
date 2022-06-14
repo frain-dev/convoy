@@ -45,6 +45,7 @@ export class AccountService {
 			return error;
 		}
 	}
+	
 	async changePassword(requestDetails: { userId: string; body: { current_password: string; password: string; password_confirmation: string } }) {
 		try {
 			const response = await this.http.request({

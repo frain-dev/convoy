@@ -23,7 +23,7 @@
 				<div class="flex flex__justify-between flex__align-items-center margin-bottom__28px">
 					<h3>Basic Info</h3>
 
-					<button class="button button__primary button__small" [disabled]="savingDetails" (click)="editBasicUserInfo()">{{ savingDetails ? 'Saving changes...' : 'Save Changes' }}</button>
+					<button class="button button__primary button__small" [disabled]="isSavingUserDetails" (click)="editBasicUserInfo()">{{ isSavingUserDetails ? 'Saving changes...' : 'Save Changes' }}</button>
 				</div>
 				<hr class="margin-bottom__22px" />
 
@@ -57,13 +57,15 @@
 			</ng-container>
 
 			<ng-container *ngIf="activePage === 'security'">
-				<div class="flex flex__justify-between margin-bottom__32px">
+				<div class="grid grid__col-2 margin-bottom__28px">
 					<div>
 						<h2 class="margin-bottom__8px color__black">Change Password</h2>
 						<p class="color__grey font__14px">Here you can change your password incase you’ve been compromised</p>
 					</div>
 
-					<button class="button button__primary button__small" [disabled]="changingPassword" (click)="changePassword()">{{ changingPassword ? 'Saving changes...' : 'Save Changes' }}</button>
+					<div class="flex flex__justify-end">
+                        <button class="button button__primary button__small " [disabled]="isUpdatingPassword" (click)="changePassword()">{{ isUpdatingPassword ? 'Saving changes...' : 'Save Changes' }}</button>
+                    </div>
 				</div>
 				<form [formGroup]="changePasswordForm" (ngSubmit)="changePassword()">
 					<div class="input margin-bottom__0px">
