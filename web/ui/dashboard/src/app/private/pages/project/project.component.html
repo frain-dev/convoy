@@ -17,7 +17,14 @@
 			<ul>
 				<li *ngFor="let nav of sideBarItems" class="animate">
 					<a [routerLink]="'.' + nav.route" routerLinkActive="active" class="flex flex__align-items-center color__grey padding-y__8px padding-left__24px margin-y__8px rounded__8px animate">
-						<svg width="18" height="18" class="margin-right__10px" fill="var(--grey-color)">
+						<svg
+							width="18"
+							height="18"
+							class="margin-right__10px"
+							[attr.xlink:fill]="nav.icon == 'subscriptions' ? '' : 'var(--grey-color)'"
+							[attr.stroke]="nav.icon == 'subscriptions' ? 'var(--grey-color)' : ''"
+							[id]="nav.icon"
+						>
 							<use [attr.xlink:href]="'#' + nav.icon + '-icon'"></use>
 						</svg>
 						<span class="font__weight-500 font__14px animate">{{ nav.name }}</span>
@@ -48,7 +55,7 @@
 		</div>
 	</aside>
 
-	<main class="width__100 margin-left__24px margin-top__16px animate">
+	<main class="width__100 margin-left__24px margin-top__16px animate position__relative">
 		<router-outlet></router-outlet>
 	</main>
 </div>

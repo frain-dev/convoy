@@ -18,11 +18,12 @@ import (
 func provideUserService(ctrl *gomock.Controller, t *testing.T) *UserService {
 	userRepo := mocks.NewMockUserRepository(ctrl)
 	cache := mocks.NewMockCache(ctrl)
+	queue := mocks.NewMockQueuer(ctrl)
 
 	err := config.LoadConfig("./testdata/Auth_Config/full-convoy.json")
 	require.Nil(t, err)
 
-	userService := NewUserService(userRepo, cache)
+	userService := NewUserService(userRepo, cache, queue)
 	return userService
 }
 

@@ -108,6 +108,7 @@ func buildApplication() *applicationHandler {
 	orgMemberRepo := db.OrganisationMemberRepo()
 	orgInviteRepo := db.OrganisationInviteRepo()
 	userRepo := db.UserRepo()
+	configRepo := db.ConfigurationRepo()
 	queue := redisqueue.NewQueue(qOpts)
 	logger := logger.NewNoopLogger()
 	cache := ncache.NewNoopCache()
@@ -119,7 +120,7 @@ func buildApplication() *applicationHandler {
 	return newApplicationHandler(
 		eventRepo, eventDeliveryRepo, appRepo,
 		groupRepo, apiKeyRepo, subRepo, sourceRepo, orgRepo,
-		orgMemberRepo, orgInviteRepo, userRepo, queue, logger, tracer, cache, limiter, searcher,
+		orgMemberRepo, orgInviteRepo, userRepo, configRepo, queue, logger, tracer, cache, limiter, searcher,
 	)
 }
 

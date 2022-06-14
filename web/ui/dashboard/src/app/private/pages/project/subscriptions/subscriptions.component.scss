@@ -5,3 +5,22 @@
 .width__100px {
 	width: 100px;
 }
+
+.url {
+	max-width: 220px;
+	overflow: hidden;
+	white-space: nowrap;
+	text-overflow: ellipsis;
+}
+
+.smaller .url {
+	max-width: 158px;
+}
+
+.position__relative {
+	button {
+		top: 50%;
+		transform: translate(0, -50%);
+		left: 93px;
+	}
+}

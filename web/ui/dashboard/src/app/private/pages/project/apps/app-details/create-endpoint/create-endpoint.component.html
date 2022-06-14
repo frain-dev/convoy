@@ -1,0 +1,69 @@
+<div class="modal--head">
+	<h2>{{ selectedEndpoint ? 'Edit' : 'Add' }} Endpoint</h2>
+	<a (click)="cancel()">
+		<img src="/assets/img/modal-close-icon.svg" alt="close icon" />
+	</a>
+</div>
+
+<div class="modal--body">
+	<form [formGroup]="addNewEndpointForm">
+		<div class="input">
+			<label class="flex flex__justify-between" for="description">
+				Description
+				<span class="bg__grey__light rounded__4px padding-x__4px position__absolute position--right__0px font__10px font__weight-400">required</span>
+			</label>
+			<input
+				id="description"
+				type="text"
+				formControlName="description"
+				[ngClass]="{ danger: addNewEndpointForm.controls.description.touched && addNewEndpointForm.controls.description.invalid }"
+				required
+			/>
+			<div class="input__error input__error__danger" *ngIf="addNewEndpointForm.controls.description.touched && addNewEndpointForm.controls.description.invalid">
+				<img src="assets/img/input-error-icon.svg" alt="input error icon" />
+				<span>Please provide a description</span>
+			</div>
+		</div>
+
+		<div class="input">
+			<label class="flex flex__justify-between" for="endpoint-url">
+				Enter URL
+				<span class="bg__grey__light rounded__4px padding-x__4px position__absolute position--right__0px font__10px font__weight-400">required</span>
+			</label>
+			<input id="endpoint-url" type="text" formControlName="url" [ngClass]="{ danger: addNewEndpointForm.controls.url.touched && addNewEndpointForm.controls.url.invalid }" required />
+			<div class="input__error input__error__danger" *ngIf="addNewEndpointForm.controls.url.touched && addNewEndpointForm.controls.url.invalid">
+				<img src="assets/img/input-error-icon.svg" alt="input error icon" />
+				<span>Endpoint URL is required</span>
+			</div>
+		</div>
+
+		<div class="grid grid__col-2 grid--gap__20px">
+			<div class="input">
+				<label for="rate-limit-count">Rate Limit</label>
+				<input type="number" id="rate-limit-count" placeholder="e.g 5000" formControlName="rate_limit" />
+			</div>
+			<div class="input">
+				<label for="rate-limit-duration">Rate Limit Duration</label>
+				<input type="text" id="rate-limit-duration" placeholder="e.g 1m" formControlName="rate_limit_duration" />
+			</div>
+		</div>
+
+		<div class="input">
+			<label class="flex flex__align-items-center" for="http-timeout">
+				HTTP Timeout
+				<app-tooltip [size]="'small'" position="right" class="margin-left__4px">This specifies how long the socket stays open in the absense of a response.</app-tooltip>
+			</label>
+			<input id="http-timeout" type="text" formControlName="http_timeout" placeholder="e.g. 10s" />
+		</div>
+	</form>
+</div>
+
+<div class="modal--footer modal--footer__with-shadow">
+	<button class="button button__white margin-right__24px" (click)="cancel()">Discard</button>
+	<button *ngIf="!selectedEndpoint" class="button button__primary button--full-100" [disabled]="savingEndpoint" (click)="saveEndpoint()">
+		{{ savingEndpoint ? 'Adding Endpoint..' : 'Add Endpoint' }}
+	</button>
+	<button *ngIf="selectedEndpoint" class="button button__primary button--full-100" [disabled]="savingEndpoint" (click)="saveEndpoint()">
+		{{ savingEndpoint ? 'Editing Endpoint..' : 'Edit Endpoint' }}
+	</button>
+</div>

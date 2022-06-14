@@ -5,13 +5,14 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"net/http"
+	"strings"
+	"time"
+
 	"github.com/frain-dev/convoy"
 	"github.com/frain-dev/convoy/notification"
 	"github.com/frain-dev/convoy/notification/email"
 	"github.com/frain-dev/convoy/queue"
-	"net/http"
-	"strings"
-	"time"
 
 	"github.com/dchest/uniuri"
 	"github.com/frain-dev/convoy/datastore"
@@ -82,19 +83,31 @@ func (ois *OrganisationInviteService) CreateOrganisationMemberInvite(ctx context
 
 	return iv, nil
 }
+func (ois *OrganisationInviteService) LoadOrganisationInvitesPaged(ctx context.Context, org *datastore.Organisation, inviteStatus datastore.InviteStatus, pageable datastore.Pageable) ([]datastore.OrganisationInvite, datastore.PaginationData, error) {
+	invites, paginationData, err := ois.orgInviteRepo.LoadOrganisationsInvitesPaged(ctx, org.UID, inviteStatus, pageable)
+	if err != nil {
+		log.WithError(err).Error("failed to load organisation invites")
+		return nil, datastore.PaginationData{}, NewServiceError(http.StatusBadRequest, errors.New("failed to load organisation invites"))
+	}
+
+	return invites, paginationData, nil
+}
 
 func (ois *OrganisationInviteService) sendInviteEmail(ctx context.Context, iv *datastore.OrganisationInvite, org *datastore.Organisation, user *datastore.User, baseURL string) error {
 	n := &notification.Notification{
 		Email:             iv.InviteeEmail,
 		EmailTemplateName: email.TemplateOrganisationInvite.String(),
+		Subject:           "Convoy Organization Invite",
 		InviteURL:         fmt.Sprintf("%s/ui/organisations/process_invite?token=%s", baseURL, iv.Token),
 		OrganisationName:  org.Name,
 		InviterName:       fmt.Sprintf("%s %s", user.FirstName, user.LastName),
+		ExpiresAt:         iv.ExpiresAt.Time().String(),
 	}
 
 	buf, err := json.Marshal(n)
 	if err != nil {
 		log.WithError(err).Error("failed to marshal notification payload")
+		return nil
 	}
 
 	job := &queue.Job{
@@ -210,21 +223,21 @@ func (ois *OrganisationInviteService) createNewUser(ctx context.Context, newUser
 	return user, nil
 }
 
-func (ois *OrganisationInviteService) FindUserByInviteToken(ctx context.Context, token string) (*datastore.User, error) {
+func (ois *OrganisationInviteService) FindUserByInviteToken(ctx context.Context, token string) (*datastore.User, *datastore.OrganisationInvite, error) {
 	iv, err := ois.orgInviteRepo.FetchOrganisationInviteByToken(ctx, token)
 	if err != nil {
 		log.WithError(err).Error("failed to fetch organisation member invite by token and email")
-		return nil, NewServiceError(http.StatusBadRequest, errors.New("failed to fetch organisation member invite"))
+		return nil, nil, NewServiceError(http.StatusBadRequest, errors.New("failed to fetch organisation member invite"))
 	}
 
 	user, err := ois.userRepo.FindUserByEmail(ctx, iv.InviteeEmail)
 	if err != nil {
 		if err == datastore.ErrUserNotFound {
-			return nil, nil
+			return nil, iv, nil
 		}
 
-		return nil, NewServiceError(http.StatusInternalServerError, err)
+		return nil, nil, NewServiceError(http.StatusInternalServerError, err)
 	}
 
-	return user, nil
+	return user, iv, nil
 }

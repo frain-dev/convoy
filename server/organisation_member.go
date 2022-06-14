@@ -22,7 +22,7 @@ import (
 // @Success 200 {object} serverResponse{data=pagedResponse{content=[]datastore.OrganisationMember}}
 // @Failure 400,401,500 {object} serverResponse{data=Stub}
 // @Security ApiKeyAuth
-// @Router /organisations/{orgID}/members [get]
+// @Router /ui/organisations/{orgID}/members [get]
 func (a *applicationHandler) GetOrganisationMembers(w http.ResponseWriter, r *http.Request) {
 	pageable := getPageableFromContext(r.Context())
 	org := getOrganisationFromContext(r.Context())
@@ -49,7 +49,7 @@ func (a *applicationHandler) GetOrganisationMembers(w http.ResponseWriter, r *ht
 // @Success 200 {object} serverResponse{data=datastore.OrganisationMember}
 // @Failure 400,401,500 {object} serverResponse{data=Stub}
 // @Security ApiKeyAuth
-// @Router /organisations/{orgID}/members/{memberID} [get]
+// @Router /ui/organisations/{orgID}/members/{memberID} [get]
 func (a *applicationHandler) GetOrganisationMember(w http.ResponseWriter, r *http.Request) {
 	memberID := chi.URLParam(r, "memberID")
 	org := getOrganisationFromContext(r.Context())
@@ -75,7 +75,7 @@ func (a *applicationHandler) GetOrganisationMember(w http.ResponseWriter, r *htt
 // @Success 200 {object} serverResponse{data=datastore.Organisation}
 // @Failure 400,401,500 {object} serverResponse{data=Stub}
 // @Security ApiKeyAuth
-// @Router /organisations/{orgID}/members/{memberID} [put]
+// @Router /ui/organisations/{orgID}/members/{memberID} [put]
 func (a *applicationHandler) UpdateOrganisationMember(w http.ResponseWriter, r *http.Request) {
 	var roleUpdate models.UpdateOrganisationMember
 	err := util.ReadJSON(r, &roleUpdate)
@@ -113,7 +113,7 @@ func (a *applicationHandler) UpdateOrganisationMember(w http.ResponseWriter, r *
 // @Success 200 {object} serverResponse{data=Stub}
 // @Failure 400,401,500 {object} serverResponse{data=Stub}
 // @Security ApiKeyAuth
-// @Router /organisations/{orgID}/members/{memberID} [delete]
+// @Router /ui/organisations/{orgID}/members/{memberID} [delete]
 func (a *applicationHandler) DeleteOrganisationMember(w http.ResponseWriter, r *http.Request) {
 	memberID := chi.URLParam(r, "memberID")
 	org := getOrganisationFromContext(r.Context())

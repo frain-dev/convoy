@@ -3,17 +3,17 @@ package services
 import (
 	"context"
 	"errors"
-	"github.com/frain-dev/convoy/auth"
-	"github.com/frain-dev/convoy/mocks"
-	"github.com/golang/mock/gomock"
-	"github.com/stretchr/testify/require"
-	"go.mongodb.org/mongo-driver/bson/primitive"
 	"net/http"
 	"testing"
 	"time"
 
+	"github.com/frain-dev/convoy/auth"
 	"github.com/frain-dev/convoy/datastore"
+	"github.com/frain-dev/convoy/mocks"
 	"github.com/frain-dev/convoy/server/models"
+	"github.com/golang/mock/gomock"
+	"github.com/stretchr/testify/require"
+	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
 func provideOrganisationInviteService(ctrl *gomock.Controller) *OrganisationInviteService {
@@ -765,6 +765,122 @@ func TestOrganisationInviteService_ProcessOrganisationMemberInvite(t *testing.T)
 	}
 }
 
+func TestOrganisationInviteService_LoadOrganisationInvitesPaged(t *testing.T) {
+	ctx := context.Background()
+
+	type args struct {
+		ctx          context.Context
+		org          *datastore.Organisation
+		inviteStatus datastore.InviteStatus
+		pageable     datastore.Pageable
+	}
+	tests := []struct {
+		name               string
+		args               args
+		wantInvites        []datastore.OrganisationInvite
+		wantPaginationData datastore.PaginationData
+		dbFn               func(ois *OrganisationInviteService)
+		wantErr            bool
+		wantErrCode        int
+		wantErrMsg         string
+	}{
+		{
+			name: "should_load_organisation_invites",
+			args: args{
+				ctx:          ctx,
+				org:          &datastore.Organisation{UID: "123"},
+				inviteStatus: datastore.InviteStatusAccepted,
+				pageable: datastore.Pageable{
+					Page:    1,
+					PerPage: 1,
+					Sort:    1,
+				},
+			},
+			dbFn: func(ois *OrganisationInviteService) {
+				o, _ := ois.orgInviteRepo.(*mocks.MockOrganisationInviteRepository)
+				o.EXPECT().LoadOrganisationsInvitesPaged(gomock.Any(), "123", datastore.InviteStatusAccepted, datastore.Pageable{
+					Page:    1,
+					PerPage: 1,
+					Sort:    1,
+				}).Times(1).Return(
+					[]datastore.OrganisationInvite{
+						{UID: "abc"},
+					},
+					datastore.PaginationData{
+						Total:     1,
+						Page:      1,
+						PerPage:   1,
+						Prev:      1,
+						Next:      1,
+						TotalPage: 1,
+					},
+					nil,
+				)
+			},
+			wantInvites: []datastore.OrganisationInvite{
+				{UID: "abc"},
+			},
+			wantPaginationData: datastore.PaginationData{
+				Total:     1,
+				Page:      1,
+				PerPage:   1,
+				Prev:      1,
+				Next:      1,
+				TotalPage: 1,
+			},
+			wantErr: false,
+		},
+		{
+			name: "should_fail_to_load_organisation_invites",
+			args: args{
+				ctx:          ctx,
+				org:          &datastore.Organisation{UID: "123"},
+				inviteStatus: datastore.InviteStatusAccepted,
+				pageable: datastore.Pageable{
+					Page:    1,
+					PerPage: 1,
+					Sort:    1,
+				},
+			},
+			dbFn: func(ois *OrganisationInviteService) {
+				o, _ := ois.orgInviteRepo.(*mocks.MockOrganisationInviteRepository)
+				o.EXPECT().LoadOrganisationsInvitesPaged(gomock.Any(), "123", datastore.InviteStatusAccepted, datastore.Pageable{
+					Page:    1,
+					PerPage: 1,
+					Sort:    1,
+				}).Times(1).Return(nil, datastore.PaginationData{}, errors.New("failed"))
+			},
+			wantErr:     true,
+			wantErrCode: http.StatusBadRequest,
+			wantErrMsg:  "failed to load organisation invites",
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			ctrl := gomock.NewController(t)
+			defer ctrl.Finish()
+			ois := provideOrganisationInviteService(ctrl)
+
+			// Arrange Expectations
+			if tt.dbFn != nil {
+				tt.dbFn(ois)
+			}
+
+			invites, paginationData, err := ois.LoadOrganisationInvitesPaged(tt.args.ctx, tt.args.org, tt.args.inviteStatus, tt.args.pageable)
+			if tt.wantErr {
+				require.NotNil(t, err)
+				require.Equal(t, tt.wantErrCode, err.(*ServiceError).ErrCode())
+				require.Equal(t, tt.wantErrMsg, err.(*ServiceError).Error())
+				return
+			}
+
+			require.Nil(t, err)
+			require.Equal(t, tt.wantInvites, invites)
+			require.Equal(t, tt.wantPaginationData, paginationData)
+		})
+	}
+}
+
 func TestOrganisationInviteService_FindUserByInviteToken(t *testing.T) {
 	ctx := context.Background()
 
@@ -778,6 +894,7 @@ func TestOrganisationInviteService_FindUserByInviteToken(t *testing.T) {
 		args        args
 		dbFn        func(ois *OrganisationInviteService)
 		wantUser    *datastore.User
+		wantInvite  *datastore.OrganisationInvite
 		wantErr     bool
 		wantErrCode int
 		wantErrMsg  string
@@ -812,6 +929,10 @@ func TestOrganisationInviteService_FindUserByInviteToken(t *testing.T) {
 				UID:   "user-123",
 				Email: "test@email.com",
 			},
+			wantInvite: &datastore.OrganisationInvite{
+				OrganisationID: "123ab",
+				InviteeEmail:   "test@email.com",
+			},
 		},
 
 		{
@@ -835,6 +956,10 @@ func TestOrganisationInviteService_FindUserByInviteToken(t *testing.T) {
 				u.EXPECT().FindUserByEmail(gomock.Any(), "test@email.com").Times(1).Return(nil, datastore.ErrUserNotFound)
 			},
 			wantUser: nil,
+			wantInvite: &datastore.OrganisationInvite{
+				OrganisationID: "123ab",
+				InviteeEmail:   "test@email.com",
+			},
 		},
 
 		{
@@ -865,7 +990,7 @@ func TestOrganisationInviteService_FindUserByInviteToken(t *testing.T) {
 				tt.dbFn(ois)
 			}
 
-			user, err := ois.FindUserByInviteToken(tt.args.ctx, tt.args.token)
+			user, iv, err := ois.FindUserByInviteToken(tt.args.ctx, tt.args.token)
 			if tt.wantErr {
 				require.NotNil(t, err)
 				require.Equal(t, tt.wantErrCode, err.(*ServiceError).ErrCode())
@@ -875,6 +1000,7 @@ func TestOrganisationInviteService_FindUserByInviteToken(t *testing.T) {
 
 			require.Nil(t, err)
 			require.Equal(t, user, tt.wantUser)
+			require.Equal(t, iv, tt.wantInvite)
 		})
 	}
 }

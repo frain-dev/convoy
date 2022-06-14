@@ -16,10 +16,9 @@ import (
 	"github.com/frain-dev/convoy/logger"
 	"github.com/frain-dev/convoy/tracer"
 	"github.com/newrelic/go-agent/v3/newrelic"
+	"go.mongodb.org/mongo-driver/mongo"
 
 	"github.com/frain-dev/convoy/auth"
-
-	"go.mongodb.org/mongo-driver/mongo"
 
 	"github.com/felixge/httpsnoop"
 	"github.com/frain-dev/convoy/auth/realm_chain"
@@ -53,7 +52,7 @@ const (
 	pageDataCtx         contextKey = "pageData"
 	dashboardCtx        contextKey = "dashboard"
 	deliveryAttemptsCtx contextKey = "deliveryAttempts"
-	baseUrlCtx          contextKey = "baseUrl"
+	hostCtx             contextKey = "host"
 	appIdCtx            contextKey = "appId"
 )
 
@@ -387,6 +386,30 @@ func requireOrganisationMembership(orgMemberRepo datastore.OrganisationMemberRep
 	}
 }
 
+func requireOrganisationGroupMember() func(next http.Handler) http.Handler {
+	return func(next http.Handler) http.Handler {
+
+		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			member := getOrganisationMemberFromContext(r.Context())
+			if member.Role.Type.Is(auth.RoleSuperUser) {
+				//superuser has access to everything
+				next.ServeHTTP(w, r)
+				return
+			}
+
+			group := getGroupFromContext(r.Context())
+			for _, g := range member.Role.Groups {
+				if g == group.UID {
+					next.ServeHTTP(w, r)
+					return
+				}
+			}
+
+			_ = render.Render(w, r, newErrorResponse("unauthorized", http.StatusUnauthorized))
+		})
+	}
+}
+
 func requireOrganisationMemberRole(roleType auth.RoleType) func(next http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 
@@ -551,7 +574,6 @@ func requireGroup(groupRepo datastore.GroupRepository, cache cache.Cache) func(n
 						_ = render.Render(w, r, newErrorResponse("failed to fetch group by id", http.StatusNotFound))
 						return
 					}
-
 					err = cache.Set(r.Context(), groupCacheKey, &group, time.Minute*5)
 					if err != nil {
 						_ = render.Render(w, r, newErrorResponse(err.Error(), http.StatusBadRequest))
@@ -581,12 +603,12 @@ func requireGroup(groupRepo datastore.GroupRepository, cache cache.Cache) func(n
 						_ = render.Render(w, r, newErrorResponse(event, statusCode))
 						return
 					}
+				}
 
-					err = cache.Set(r.Context(), groupCacheKey, &group, time.Minute*5)
-					if err != nil {
-						_ = render.Render(w, r, newErrorResponse(err.Error(), http.StatusBadRequest))
-						return
-					}
+				err = cache.Set(r.Context(), groupCacheKey, &group, time.Minute*5)
+				if err != nil {
+					_ = render.Render(w, r, newErrorResponse(err.Error(), http.StatusBadRequest))
+					return
 				}
 			}
 
@@ -665,7 +687,7 @@ func requireBaseUrl() func(next http.Handler) http.Handler {
 				return
 			}
 
-			r = r.WithContext(setBaseUrlInContext(r.Context(), cfg.BaseUrl))
+			r = r.WithContext(setHostInContext(r.Context(), cfg.Host))
 			next.ServeHTTP(w, r)
 		})
 	}
@@ -953,6 +975,8 @@ func shouldAuthRoute(r *http.Request) bool {
 		"/ui/auth/token/refresh",
 		"/ui/organisations/process_invite",
 		"/ui/users/token",
+		"/ui/users/forgot-password",
+		"/ui/users/reset-password",
 	}
 
 	for _, route := range guestRoutes {
@@ -1130,12 +1154,12 @@ func getConfigFromContext(ctx context.Context) *ViewableConfiguration {
 	return ctx.Value(configCtx).(*ViewableConfiguration)
 }
 
-func setBaseUrlInContext(ctx context.Context, baseUrl string) context.Context {
-	return context.WithValue(ctx, baseUrlCtx, baseUrl)
+func setHostInContext(ctx context.Context, baseUrl string) context.Context {
+	return context.WithValue(ctx, hostCtx, baseUrl)
 }
 
-func getBaseUrlFromContext(ctx context.Context) string {
-	return ctx.Value(baseUrlCtx).(string)
+func getHostFromContext(ctx context.Context) string {
+	return ctx.Value(hostCtx).(string)
 }
 
 func setAppIDInContext(ctx context.Context, appId string) context.Context {

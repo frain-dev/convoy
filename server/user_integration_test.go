@@ -413,6 +413,92 @@ func (u *UserIntegrationTestSuite) Test_UpdatePassword_Invalid_Password_Confirma
 	require.Equal(u.T(), http.StatusBadRequest, w.Code)
 }
 
+func (u *UserIntegrationTestSuite) Test_Forgot_Password_Valid_Token() {
+	password := "123456"
+	user, _ := testdb.SeedUser(u.DB, "", password)
+
+	newPassword := "123456789"
+
+	// Arrange Request
+	url := "/ui/users/forgot-password"
+	bodyStr := fmt.Sprintf(`{"email":"%s"}`, user.Email)
+
+	req := httptest.NewRequest(http.MethodPost, url, serialize(bodyStr))
+	req.Header.Add("Content-Type", "application/json")
+	w := httptest.NewRecorder()
+
+	// Act
+	u.Router.ServeHTTP(w, req)
+
+	// Assert
+	require.Equal(u.T(), http.StatusOK, w.Code)
+
+	dbUser, err := u.DB.UserRepo().FindUserByEmail(context.Background(), user.Email)
+	require.NoError(u.T(), err)
+
+	var response datastore.User
+	parseResponse(u.T(), w.Result(), &response)
+	//Reset password
+	url = fmt.Sprintf("/ui/users/reset-password?token=%s", dbUser.ResetPasswordToken)
+	bodyStr = fmt.Sprintf(`{
+		"email": "%s",
+		"password": "%s",
+		"password_confirmation": "%s"
+	}`, user.Email, newPassword, newPassword)
+
+	req = httptest.NewRequest(http.MethodPost, url, serialize(bodyStr))
+	req.Header.Add("Content-Type", "application/json")
+	w = httptest.NewRecorder()
+	u.Router.ServeHTTP(w, req)
+	require.Equal(u.T(), http.StatusOK, w.Code)
+	parseResponse(u.T(), w.Result(), &response)
+
+	dbUser, err = u.DB.UserRepo().FindUserByID(context.Background(), user.UID)
+	require.NoError(u.T(), err)
+
+	p := datastore.Password{Plaintext: newPassword, Hash: []byte(dbUser.Password)}
+	isMatch, err := p.Matches()
+
+	require.NoError(u.T(), err)
+	require.Equal(u.T(), dbUser.UID, response.UID)
+	require.True(u.T(), isMatch)
+}
+
+func (u *UserIntegrationTestSuite) Test_Forgot_Password_Invalid_Token() {
+	password := "123456"
+	user, _ := testdb.SeedUser(u.DB, "", password)
+
+	newPassword := "123456789"
+
+	// Arrange Request
+	url := "/ui/users/forgot-password"
+	bodyStr := fmt.Sprintf(`{"email":"%s"}`, user.Email)
+
+	req := httptest.NewRequest(http.MethodPost, url, serialize(bodyStr))
+	req.Header.Add("Content-Type", "application/json")
+	w := httptest.NewRecorder()
+
+	// Act
+	u.Router.ServeHTTP(w, req)
+
+	// Assert
+	require.Equal(u.T(), http.StatusOK, w.Code)
+
+	//Reset password
+	url = fmt.Sprintf("/ui/users/reset-password?token=%s", "fake-token")
+	bodyStr = fmt.Sprintf(`{
+		"email": "%s",
+		"password": "%s",
+		"password_confirmation": "%s"
+	}`, user.Email, newPassword, newPassword)
+
+	req = httptest.NewRequest(http.MethodPost, url, serialize(bodyStr))
+	req.Header.Add("Content-Type", "application/json")
+	w = httptest.NewRecorder()
+	u.Router.ServeHTTP(w, req)
+	require.Equal(u.T(), http.StatusBadRequest, w.Code)
+}
+
 func TestUserIntegrationTestSuite(t *testing.T) {
 	suite.Run(t, new(UserIntegrationTestSuite))
 }

@@ -129,7 +129,7 @@ func (baV *BasicAuthVerifier) VerifyRequest(r *http.Request, payload []byte) err
 		return ErrInvalidAuthLength
 	}
 
-	if creds[0] != baV.username && creds[1] != baV.password {
+	if creds[0] != baV.username || creds[1] != baV.password {
 		return ErrAuthHeader
 	}
 

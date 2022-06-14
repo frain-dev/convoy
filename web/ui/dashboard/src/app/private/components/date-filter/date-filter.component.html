@@ -1,6 +1,6 @@
 <div class="dropdown">
 	<button [ngClass]="{ active: dateRange.value.startDate && dateRange.value.endDate }" class="button button__filter button--has-icon" (click)="statsPicker.open()">
-		<img src="/assets/img/calendar-icon.svg" class="margin-right__4px" alt="calender icon" />
+		<img src="/assets/img/calendar-icon.svg" class="margin-right__10px" alt="calender icon" />
 		<span class="color__grey margin-right__4px">Date</span>
 
 		<mat-date-range-input [formGroup]="dateRange" [max]="maxDate" [rangePicker]="statsPicker">
@@ -15,7 +15,7 @@
 			</mat-datepicker-actions>
 		</mat-date-range-picker>
 
-		<img src="/assets/img/angle-arrow-down.svg" class="margin-right__0px" alt="arrow down icon" *ngIf="!dateRange.value.startDate && !dateRange.value.endDate" />
+		<img src="/assets/img/angle-arrow-down.svg" class="margin-left__16px margin-right__0px" alt="arrow down icon" *ngIf="!dateRange.value.startDate && !dateRange.value.endDate" />
 		<button class="button button__clear" *ngIf="dateRange.value.startDate && dateRange.value.endDate" (click)="clearDate($event)">
 			<svg width="10" height="10" fill="var(--primary-color)">
 				<use xlink:href="#close-icon"></use>

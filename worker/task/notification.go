@@ -35,6 +35,7 @@ func sendNotification(
 	n := &notification.Notification{
 		LogoURL:           g.LogoURL,
 		TargetURL:         endpoint.TargetURL,
+		Subject:           "Endpoint Status Update",
 		EndpointStatus:    string(status),
 		EmailTemplateName: email.TemplateEndpointUpdate.String(),
 	}

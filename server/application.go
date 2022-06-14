@@ -47,6 +47,8 @@ type applicationHandler struct {
 	limiter                   limiter.RateLimiter
 	userService               *services.UserService
 	userRepo                  datastore.UserRepository
+	configService             *services.ConfigService
+	configRepo                datastore.ConfigurationRepository
 }
 
 type pagedResponse struct {
@@ -66,6 +68,7 @@ func newApplicationHandler(
 	orgMemberRepo datastore.OrganisationMemberRepository,
 	orgInviteRepo datastore.OrganisationInviteRepository,
 	userRepo datastore.UserRepository,
+	configRepo datastore.ConfigurationRepository,
 	queue queue.Queuer,
 	logger logger.Logger,
 	tracer tracer.Tracer,
@@ -73,14 +76,15 @@ func newApplicationHandler(
 	limiter limiter.RateLimiter, searcher searcher.Searcher) *applicationHandler {
 	as := services.NewAppService(appRepo, eventRepo, eventDeliveryRepo, cache)
 	es := services.NewEventService(appRepo, eventRepo, eventDeliveryRepo, queue, cache, searcher, subRepo)
-	gs := services.NewGroupService(appRepo, groupRepo, eventRepo, eventDeliveryRepo, limiter)
+	gs := services.NewGroupService(apiKeyRepo, appRepo, groupRepo, eventRepo, eventDeliveryRepo, limiter, cache)
 	ss := services.NewSecurityService(groupRepo, apiKeyRepo)
 	os := services.NewOrganisationService(orgRepo, orgMemberRepo)
 	rs := services.NewSubscriptionService(subRepo, appRepo, sourceRepo)
 	sos := services.NewSourceService(sourceRepo)
-	us := services.NewUserService(userRepo, cache)
+	us := services.NewUserService(userRepo, cache, queue)
 	ois := services.NewOrganisationInviteService(orgRepo, userRepo, orgMemberRepo, orgInviteRepo, queue)
 	om := services.NewOrganisationMemberService(orgMemberRepo)
+	cs := services.NewConfigService(configRepo)
 
 	return &applicationHandler{
 		appService:                as,
@@ -108,6 +112,8 @@ func newApplicationHandler(
 		limiter:                   limiter,
 		userService:               us,
 		userRepo:                  userRepo,
+		configRepo:                configRepo,
+		configService:             cs,
 	}
 }
 

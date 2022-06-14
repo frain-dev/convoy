@@ -1,5 +1,5 @@
 import { Component, EventEmitter, Input, OnInit, Output } from '@angular/core';
-import { FormGroup, Validators, FormBuilder, FormControl } from '@angular/forms';
+import { FormGroup, Validators, FormBuilder } from '@angular/forms';
 import { GROUP } from 'src/app/models/group.model';
 import { GeneralService } from 'src/app/services/general/general.service';
 import { PrivateService } from '../../private.service';
@@ -32,6 +32,10 @@ export class CreateProjectComponent implements OnInit {
 		type: ['', Validators.required]
 	});
 	isCreatingProject = false;
+	showApiKey = false;
+	showPublicCopyText = false;
+	showSecretCopyText = false;
+	apiKey!: string;
 	hashAlgorithms = ['SHA256', 'SHA512', 'MD5', 'SHA1', 'SHA224', 'SHA384', 'SHA3_224', 'SHA3_256', 'SHA3_384', 'SHA3_512', 'SHA512_256', 'SHA512_224'];
 	retryLogicTypes = [
 		{ id: 'linear', type: 'Linear time retry' },
@@ -64,15 +68,22 @@ export class CreateProjectComponent implements OnInit {
 		if (this.projectForm.invalid) return this.projectForm.markAllAsTouched();
 
 		this.isCreatingProject = true;
-		const [digits, word] = this.projectForm.value.config.strategy.duration.match(/\D+|\d+/g);
-		word === 's' ? (this.projectForm.value.config.strategy.duration = parseInt(digits) * 1000) : (this.projectForm.value.config.strategy.duration = parseInt(digits) * 1000000);
-
+		let duration = this.projectForm.value.config.strategy.duration;
+		const [digits, word] = duration.match(/\D+|\d+/g);
+		word === 's' ? (duration = parseInt(digits) * 1000) : (duration = parseInt(digits) * 1000000);
+		this.projectForm.value.config.strategy.duration = duration;
 		try {
 			const response = await this.createProjectService.createProject(this.projectForm.value);
-			this.privateService.activeProjectDetails = response.data;
 			this.isCreatingProject = false;
-			this.generalService.showNotification({ message: 'Project created successfully!', style: 'success' });
-			this.onAction.emit({ action: 'createProject', data: response.data });
+			if (response.status === true) {
+				this.privateService.activeProjectDetails = response.data.group;
+				this.generalService.showNotification({ message: 'Project created successfully!', style: 'success' });
+				this.apiKey = response.data.api_key.key;
+				this.projectDetails = response.data.group;
+				this.showApiKey = true;
+			} else {
+				this.generalService.showNotification({ message: response?.error?.message, style: 'error' });
+			}
 		} catch (error: any) {
 			this.isCreatingProject = false;
 			this.generalService.showNotification({ message: error.message, style: 'error' });
@@ -90,10 +101,24 @@ export class CreateProjectComponent implements OnInit {
 		try {
 			const response = await this.createProjectService.updateProject(this.projectForm.value);
 			this.generalService.showNotification({ message: 'Project updated successfully!', style: 'success' });
-			this.onAction.emit({ action: 'updateProject', data: response.data });
+			this.onAction.emit(response.data);
 			this.isCreatingProject = false;
 		} catch (error) {
 			this.isCreatingProject = false;
 		}
+	}
+
+	copyKey(key: string, type: 'public' | 'secret') {
+		const text = key;
+		const el = document.createElement('textarea');
+		el.value = text;
+		document.body.appendChild(el);
+		el.select();
+		document.execCommand('copy');
+		type === 'public' ? (this.showPublicCopyText = true) : (this.showSecretCopyText = true);
+		setTimeout(() => {
+			type === 'public' ? (this.showPublicCopyText = false) : (this.showSecretCopyText = false);
+		}, 3000);
+		document.body.removeChild(el);
 	}
 }

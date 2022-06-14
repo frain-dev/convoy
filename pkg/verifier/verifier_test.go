@@ -236,6 +236,22 @@ func Test_BasicAuthVerifier_VerifyRequest(t *testing.T) {
 			},
 			expectedError: ErrInvalidHeaderStructure,
 		},
+		"one_invalid_credential": {
+			opts: map[string]string{
+				"username": "convoy-ingester",
+				"password": "convoy-password",
+			},
+			payload: []byte(`Test Payload Body`),
+			requestFn: func(t *testing.T, c map[string]string) *http.Request {
+				req, err := http.NewRequest("POST", "URL", strings.NewReader(``))
+				require.NoError(t, err)
+
+				req.SetBasicAuth("bad-username", c["password"])
+
+				return req
+			},
+			expectedError: ErrAuthHeader,
+		},
 	}
 
 	for name, tc := range tests {

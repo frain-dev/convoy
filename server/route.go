@@ -58,6 +58,7 @@ func buildRoutes(app *applicationHandler) http.Handler {
 	router := chi.NewRouter()
 
 	router.Use(middleware.RequestID)
+	router.Use(middleware.Recoverer)
 	router.Use(writeRequestIDHeader)
 	router.Use(instrumentRequests(app.tracer))
 	router.Use(logHttpRequest(app.logger))
@@ -78,7 +79,7 @@ func buildRoutes(app *applicationHandler) http.Handler {
 
 			r.Route("/groups", func(groupRouter chi.Router) {
 				groupRouter.Get("/", app.GetGroups)
-				groupRouter.With(requirePermission(auth.RoleSuperUser)).Post("/", app.CreateGroup)
+				//groupRouter.With(requirePermission(auth.RoleSuperUser)).Post("/", app.CreateGroup)
 
 				groupRouter.Route("/{groupID}", func(groupSubRouter chi.Router) {
 					groupSubRouter.Use(requireGroup(app.groupRepo, app.cache))
@@ -162,19 +163,9 @@ func buildRoutes(app *applicationHandler) http.Handler {
 			})
 
 			r.Route("/security", func(securityRouter chi.Router) {
-				securityRouter.Route("/", func(securitySubRouter chi.Router) {
-					securitySubRouter.Use(requirePermission(auth.RoleSuperUser))
-
-					securitySubRouter.Post("/keys", app.CreateAPIKey)
-					securitySubRouter.With(pagination).Get("/keys", app.GetAPIKeys)
-					securitySubRouter.Get("/keys/{keyID}", app.GetAPIKeyByID)
-					securitySubRouter.Put("/keys/{keyID}", app.UpdateAPIKey)
-					securitySubRouter.Put("/keys/{keyID}/revoke", app.RevokeAPIKey)
-				})
-
 				securityRouter.Route("/applications/{appID}/keys", func(securitySubRouter chi.Router) {
-					securitySubRouter.Use(requirePermission(auth.RoleAdmin))
 					securitySubRouter.Use(requireGroup(app.groupRepo, app.cache))
+					securitySubRouter.Use(requirePermission(auth.RoleAdmin))
 					securitySubRouter.Use(requireApp(app.appRepo, app.cache))
 					securitySubRouter.Use(requireBaseUrl())
 					securitySubRouter.Post("/", app.CreateAppPortalAPIKey)
@@ -212,26 +203,28 @@ func buildRoutes(app *applicationHandler) http.Handler {
 		uiRouter.Use(jsonResponse)
 		uiRouter.Use(setupCORS)
 		uiRouter.Use(middleware.Maybe(requireAuth(), shouldAuthRoute))
+		uiRouter.Use(requireBaseUrl())
 
 		uiRouter.Post("/organisations/process_invite", app.ProcessOrganisationMemberInvite)
 		uiRouter.Get("/users/token", app.FindUserByInviteToken)
+
+		uiRouter.Route("/users", func(userRouter chi.Router) {
+			userRouter.Use(requireAuthUserMetadata())
+			userRouter.Route("/{userID}", func(userSubRouter chi.Router) {
+				userSubRouter.Use(requireAuthorizedUser(app.userRepo))
+				userSubRouter.Get("/profile", app.GetUser)
+				userSubRouter.Put("/profile", app.UpdateUser)
+				userSubRouter.Put("/password", app.UpdatePassword)
+			})
+		})
+
+		uiRouter.Post("/users/forgot-password", app.ForgotPassword)
+		uiRouter.Post("/users/reset-password", app.ResetPassword)
 
 		uiRouter.Route("/auth", func(authRouter chi.Router) {
 			authRouter.Post("/login", app.LoginUser)
 			authRouter.Post("/token/refresh", app.RefreshToken)
 			authRouter.Post("/logout", app.LogoutUser)
-		})
-
-		uiRouter.Route("/users", func(userRouter chi.Router) {
-			userRouter.Use(requireAuthUserMetadata())
-
-			userRouter.Route("/{userID}", func(userSubRouter chi.Router) {
-				userSubRouter.Use(requireAuthorizedUser(app.userRepo))
-
-				userSubRouter.Get("/profile", app.GetUser)
-				userSubRouter.Put("/profile", app.UpdateUser)
-				userSubRouter.Put("/password", app.UpdatePassword)
-			})
 		})
 
 		uiRouter.Route("/organisations", func(orgRouter chi.Router) {
@@ -249,6 +242,7 @@ func buildRoutes(app *applicationHandler) http.Handler {
 				orgSubRouter.With(requireOrganisationMemberRole(auth.RoleSuperUser)).Put("/", app.UpdateOrganisation)
 				orgSubRouter.With(requireOrganisationMemberRole(auth.RoleSuperUser)).Delete("/", app.DeleteOrganisation)
 				orgSubRouter.With(requireOrganisationMemberRole(auth.RoleSuperUser)).Post("/invite_user", app.InviteUserToOrganisation)
+				orgSubRouter.With(requireOrganisationMemberRole(auth.RoleSuperUser)).With(pagination).Get("/pending_invites", app.GetPendingOrganisationInvites)
 
 				orgSubRouter.Route("/members", func(orgMemberRouter chi.Router) {
 					orgMemberRouter.Use(requireOrganisationMemberRole(auth.RoleSuperUser))
@@ -264,6 +258,16 @@ func buildRoutes(app *applicationHandler) http.Handler {
 					})
 				})
 
+				orgSubRouter.Route("/security", func(securityRouter chi.Router) {
+					securityRouter.Use(requireOrganisationMemberRole(auth.RoleSuperUser))
+
+					securityRouter.Post("/keys", app.CreateAPIKey)
+					securityRouter.With(pagination).Get("/keys", app.GetAPIKeys)
+					securityRouter.Get("/keys/{keyID}", app.GetAPIKeyByID)
+					securityRouter.Put("/keys/{keyID}", app.UpdateAPIKey)
+					securityRouter.Put("/keys/{keyID}/revoke", app.RevokeAPIKey)
+				})
+
 				orgSubRouter.Route("/groups", func(groupRouter chi.Router) {
 					groupRouter.Route("/", func(orgSubRouter chi.Router) {
 						groupRouter.With(requireOrganisationMemberRole(auth.RoleSuperUser)).Post("/", app.CreateGroup)
@@ -273,8 +277,7 @@ func buildRoutes(app *applicationHandler) http.Handler {
 					groupRouter.Route("/{groupID}", func(groupSubRouter chi.Router) {
 						groupSubRouter.Use(requireGroup(app.groupRepo, app.cache))
 						groupSubRouter.Use(rateLimitByGroupID(app.limiter))
-						// TODO(dotun): uncomment this when a group is linked to an organisation
-						// groupSubRouter.Use(requireOrganisationGroupMember())
+						groupSubRouter.Use(requireOrganisationGroupMember())
 
 						groupSubRouter.With(requireOrganisationMemberRole(auth.RoleUIAdmin)).Get("/", app.GetGroup)
 						groupSubRouter.With(requireOrganisationMemberRole(auth.RoleSuperUser)).Put("/", app.UpdateGroup)
@@ -336,7 +339,7 @@ func buildRoutes(app *applicationHandler) http.Handler {
 							eventDeliveryRouter.Get("/countbatchretryevents", app.CountAffectedEventDeliveries)
 
 							eventDeliveryRouter.Route("/{eventDeliveryID}", func(eventDeliverySubRouter chi.Router) {
-				        eventDeliverySubRouter.Use(requireEventDelivery(app.eventDeliveryRepo, app.appRepo, app.eventRepo))
+								eventDeliverySubRouter.Use(requireEventDelivery(app.eventDeliveryRepo, app.appRepo, app.eventRepo))
 
 								eventDeliverySubRouter.Get("/", app.GetEventDelivery)
 								eventDeliverySubRouter.Put("/resend", app.ResendEventDelivery)
@@ -379,6 +382,13 @@ func buildRoutes(app *applicationHandler) http.Handler {
 
 				})
 			})
+		})
+
+		uiRouter.Route("/configuration", func(configRouter chi.Router) {
+			configRouter.Use(requirePermission(auth.RoleAdmin))
+
+			configRouter.Get("/", app.LoadConfiguration)
+			configRouter.Post("/", app.CreateConfiguration)
 		})
 	})
 
@@ -480,6 +490,7 @@ func New(cfg config.Configuration,
 	orgInviteRepo datastore.OrganisationInviteRepository,
 	sourceRepo datastore.SourceRepository,
 	userRepo datastore.UserRepository,
+	configRepo datastore.ConfigurationRepository,
 	queue queue.Queuer,
 	logger logger.Logger,
 	tracer tracer.Tracer,
@@ -500,6 +511,7 @@ func New(cfg config.Configuration,
 		orgMemberRepo,
 		orgInviteRepo,
 		userRepo,
+		configRepo,
 		queue,
 		logger,
 		tracer,
