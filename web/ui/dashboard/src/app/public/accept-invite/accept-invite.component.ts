@@ -21,8 +21,7 @@ export class AcceptInviteComponent implements OnInit {
 		last_name: ['', Validators.required],
 		email: ['', Validators.required],
 		role: this.formBuilder.group({
-			type: [''],
-			groups: [null]
+			type: ['super_user']
 		}),
 		password: ['', Validators.compose([Validators.minLength(8), Validators.required])],
 		password_confirmation: ['', Validators.required]
@@ -31,14 +30,8 @@ export class AcceptInviteComponent implements OnInit {
 	constructor(private formBuilder: FormBuilder, private acceptInviteService: AcceptInviteService, private route: ActivatedRoute, private router: Router, private generalService: GeneralService) {}
 
 	ngOnInit() {
-		this.getToken();
-	}
-
-	getToken() {
-		this.route.queryParams.subscribe(res => {
-			if (res) this.getUserDetails(res.invitation_token);
-			this.token = res.invitation_token;
-		});
+		this.token = this.route.snapshot.queryParams.token;
+		this.getUserDetails(this.token);
 	}
 
 	async getUserDetails(token: string) {
@@ -46,11 +39,11 @@ export class AcceptInviteComponent implements OnInit {
 		try {
 			const response = await this.acceptInviteService.getUserDetails(token);
 			const userDetails = response.data;
-			this.acceptInviteForm.patchValue({
-				firstname: userDetails.profile.firstname,
-				lastname: userDetails.profile.lastname,
-				email: userDetails.email
-			});
+			// this.acceptInviteForm.patchValue({
+			// 	firstname: userDetails.profile.firstname,
+			// 	lastname: userDetails.profile.lastname,
+			// 	email: userDetails.email
+			// });
 			this.fetchingDetails = false;
 		} catch {
 			this.fetchingDetails = false;
@@ -67,9 +60,9 @@ export class AcceptInviteComponent implements OnInit {
 		try {
 			const response = await this.acceptInviteService.acceptInvite({ token: this.token, body: this.acceptInviteForm.value });
 			this.loading = false;
-			if (response.data) {
+			if (response.status === true) {
 				this.generalService.showNotification({ style: 'success', message: response.message });
-				this.router.navigateByUrl('login');
+				// this.router.navigateByUrl('login');
 			}
 		} catch (error: any) {
 			this.loading = false;
