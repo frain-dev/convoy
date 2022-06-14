@@ -11,6 +11,7 @@ import { ResetPasswordService } from './reset-password.service';
 })
 export class ResetPasswordComponent implements OnInit {
 	resetPasswordForm: FormGroup = this.formBuilder.group({
+		email: ['', Validators.compose([Validators.required, Validators.email])],
 		password: ['', Validators.required],
 		password_confirmation: ['', Validators.required]
 	});

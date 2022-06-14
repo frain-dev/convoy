@@ -11,9 +11,9 @@ export class ResetPasswordService {
 	async resetPassword(requestDetails: { token: string; body: { email: string; password: string; password_confirmation: string } }): Promise<HTTP_RESPONSE> {
 		try {
 			const response = await this.http.request({
-				url: `users/reset-password?token=${requestDetails.token}`,
+				url: `/users/reset-password?token=${requestDetails.token}`,
 				body: requestDetails.body,
-				method: 'put'
+				method: 'post'
 			});
 			return response;
 		} catch (error: any) {
