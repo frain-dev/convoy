@@ -1160,6 +1160,21 @@ func (mr *MockSubscriptionRepositoryMockRecorder) FindSubscriptionBySourceIDs(ar
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "FindSubscriptionBySourceIDs", reflect.TypeOf((*MockSubscriptionRepository)(nil).FindSubscriptionBySourceIDs), arg0, arg1, arg2)
 }
 
+// FindSubscriptionsByAppID mocks base method.
+func (m *MockSubscriptionRepository) FindSubscriptionsByAppID(ctx context.Context, groupId, appID string) ([]datastore.Subscription, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "FindSubscriptionsByAppID", ctx, groupId, appID)
+	ret0, _ := ret[0].([]datastore.Subscription)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// FindSubscriptionsByAppID indicates an expected call of FindSubscriptionsByAppID.
+func (mr *MockSubscriptionRepositoryMockRecorder) FindSubscriptionsByAppID(ctx, groupId, appID interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "FindSubscriptionsByAppID", reflect.TypeOf((*MockSubscriptionRepository)(nil).FindSubscriptionsByAppID), ctx, groupId, appID)
+}
+
 // LoadSubscriptionsPaged mocks base method.
 func (m *MockSubscriptionRepository) LoadSubscriptionsPaged(arg0 context.Context, arg1 string, arg2 datastore.Pageable) ([]datastore.Subscription, datastore.PaginationData, error) {
 	m.ctrl.T.Helper()
