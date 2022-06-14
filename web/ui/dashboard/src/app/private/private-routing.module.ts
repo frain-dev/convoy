@@ -31,7 +31,11 @@ const routes: Routes = [
 			{
 				path: 'organisation-settings',
 				loadChildren: () => import('./pages/organisation/organisation.module').then(m => m.OrganisationModule)
-			}
+			},
+			{
+				path: 'account',
+				loadChildren: () => import('./pages/account/account.module').then(m => m.AccountModule)
+			},
 		]
 	}
 ];
