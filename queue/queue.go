@@ -5,7 +5,7 @@ import (
 	"time"
 
 	"github.com/frain-dev/convoy"
-	"github.com/hibiken/asynq"
+	"github.com/frain-dev/convoy/internal/pkg/rdb"
 )
 
 type Queuer interface {
@@ -22,7 +22,7 @@ type Job struct {
 type QueueOptions struct {
 	Names             map[string]int
 	Type              string
-	Client            *asynq.Client
+	RedisClient       *rdb.Redis
 	RedisAddress      string
 	PrometheusAddress string
 }
