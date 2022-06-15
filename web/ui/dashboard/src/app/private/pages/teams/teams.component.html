@@ -50,7 +50,7 @@
 				</tr>
 			</thead>
 			<tbody>
-				<tr *ngFor="let team of teams.content">
+				<tr *ngFor="let team of teams?.content">
 					<td>
 						<div class="badge badge__dark">
 							<div class="icon">{{ team?.user_metadata?.first_name?.slice(0, 1) }}{{ team?.user_metadata?.last_name?.slice(0, 1) }}</div>
@@ -120,7 +120,7 @@
 				</tr>
 			</thead>
 			<tbody>
-				<tr *ngFor="let team of pendingInvites.content">
+				<tr *ngFor="let team of pendingInvites?.content">
 					<td>
 						<div>{{ team.invitee_email }}</div>
 					</td>
