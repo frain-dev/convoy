@@ -160,7 +160,7 @@ func (s *SubscriptionIntegrationTestSuite) Test_GetOneSubscription_OutgoingGroup
 	_, _ = testdb.SeedSubscription(s.DB, app, group, subscriptionId, group.Type, source, endpoint, &datastore.RetryConfiguration{}, &datastore.AlertConfiguration{}, &datastore.FilterConfiguration{})
 
 	// Arrange Request
-	url := fmt.Sprintf("/api/v1/subscriptions/%s", subscriptionId)
+	url := fmt.Sprintf("/api/v1/subscriptions/%s?groupID=%s", subscriptionId, group.UID)
 	req := createRequest(http.MethodGet, url, nil)
 	req.SetBasicAuth("test", "test")
 	w := httptest.NewRecorder()
@@ -175,7 +175,7 @@ func (s *SubscriptionIntegrationTestSuite) Test_GetOneSubscription_OutgoingGroup
 	var subscription *datastore.Subscription
 	parseResponse(s.T(), w.Result(), &subscription)
 
-	dbSub, err := s.DB.SubRepo().FindSubscriptionByID(context.Background(), s.DefaultGroup.UID, subscriptionId)
+	dbSub, err := s.DB.SubRepo().FindSubscriptionByID(context.Background(), group.UID, subscriptionId)
 	require.NoError(s.T(), err)
 	require.Equal(s.T(), subscription.UID, dbSub.UID)
 	require.Equal(s.T(), subscription.Endpoint.UID, dbSub.EndpointID)
@@ -194,7 +194,7 @@ func (s *SubscriptionIntegrationTestSuite) Test_GetOneSubscription_IncomingGroup
 	_, _ = testdb.SeedSubscription(s.DB, app, group, subscriptionId, group.Type, source, endpoint, &datastore.RetryConfiguration{}, &datastore.AlertConfiguration{}, &datastore.FilterConfiguration{})
 
 	// Arrange Request
-	url := fmt.Sprintf("/api/v1/subscriptions/%s", subscriptionId)
+	url := fmt.Sprintf("/api/v1/subscriptions/%s?groupID=%s", subscriptionId, group.UID)
 	req := createRequest(http.MethodGet, url, nil)
 	req.SetBasicAuth("test", "test")
 	w := httptest.NewRecorder()
@@ -209,7 +209,7 @@ func (s *SubscriptionIntegrationTestSuite) Test_GetOneSubscription_IncomingGroup
 	var subscription *datastore.Subscription
 	parseResponse(s.T(), w.Result(), &subscription)
 
-	dbSub, err := s.DB.SubRepo().FindSubscriptionByID(context.Background(), s.DefaultGroup.UID, subscriptionId)
+	dbSub, err := s.DB.SubRepo().FindSubscriptionByID(context.Background(), group.UID, subscriptionId)
 	require.NoError(s.T(), err)
 	require.Equal(s.T(), subscription.UID, dbSub.UID)
 	require.Equal(s.T(), subscription.Source.UID, dbSub.SourceID)
