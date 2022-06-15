@@ -5,13 +5,10 @@
 package mocks
 
 import (
-	context "context"
 	reflect "reflect"
-	time "time"
 
 	convoy "github.com/frain-dev/convoy"
-	datastore "github.com/frain-dev/convoy/datastore"
-	taskq "github.com/frain-dev/taskq/v3"
+	queue "github.com/frain-dev/convoy/queue"
 	gomock "github.com/golang/mock/gomock"
 )
 
@@ -38,58 +35,30 @@ func (m *MockQueuer) EXPECT() *MockQueuerMockRecorder {
 	return m.recorder
 }
 
-// Close mocks base method.
-func (m *MockQueuer) Close() error {
+// Options mocks base method.
+func (m *MockQueuer) Options() queue.QueueOptions {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "Close")
+	ret := m.ctrl.Call(m, "Options")
+	ret0, _ := ret[0].(queue.QueueOptions)
+	return ret0
+}
+
+// Options indicates an expected call of Options.
+func (mr *MockQueuerMockRecorder) Options() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Options", reflect.TypeOf((*MockQueuer)(nil).Options))
+}
+
+// Write mocks base method.
+func (m *MockQueuer) Write(arg0 convoy.TaskName, arg1 convoy.QueueName, arg2 *queue.Job) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "Write", arg0, arg1, arg2)
 	ret0, _ := ret[0].(error)
 	return ret0
 }
 
-// Close indicates an expected call of Close.
-func (mr *MockQueuerMockRecorder) Close() *gomock.Call {
+// Write indicates an expected call of Write.
+func (mr *MockQueuerMockRecorder) Write(arg0, arg1, arg2 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Close", reflect.TypeOf((*MockQueuer)(nil).Close))
-}
-
-// Consumer mocks base method.
-func (m *MockQueuer) Consumer() taskq.QueueConsumer {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "Consumer")
-	ret0, _ := ret[0].(taskq.QueueConsumer)
-	return ret0
-}
-
-// Consumer indicates an expected call of Consumer.
-func (mr *MockQueuerMockRecorder) Consumer() *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Consumer", reflect.TypeOf((*MockQueuer)(nil).Consumer))
-}
-
-// WriteEvent mocks base method.
-func (m *MockQueuer) WriteEvent(arg0 context.Context, arg1 convoy.TaskName, arg2 *datastore.Event, arg3 time.Duration) error {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "WriteEvent", arg0, arg1, arg2, arg3)
-	ret0, _ := ret[0].(error)
-	return ret0
-}
-
-// WriteEvent indicates an expected call of WriteEvent.
-func (mr *MockQueuerMockRecorder) WriteEvent(arg0, arg1, arg2, arg3 interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "WriteEvent", reflect.TypeOf((*MockQueuer)(nil).WriteEvent), arg0, arg1, arg2, arg3)
-}
-
-// WriteEventDelivery mocks base method.
-func (m *MockQueuer) WriteEventDelivery(arg0 context.Context, arg1 convoy.TaskName, arg2 *datastore.EventDelivery, arg3 time.Duration) error {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "WriteEventDelivery", arg0, arg1, arg2, arg3)
-	ret0, _ := ret[0].(error)
-	return ret0
-}
-
-// WriteEventDelivery indicates an expected call of WriteEventDelivery.
-func (mr *MockQueuerMockRecorder) WriteEventDelivery(arg0, arg1, arg2, arg3 interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "WriteEventDelivery", reflect.TypeOf((*MockQueuer)(nil).WriteEventDelivery), arg0, arg1, arg2, arg3)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Write", reflect.TypeOf((*MockQueuer)(nil).Write), arg0, arg1, arg2)
 }

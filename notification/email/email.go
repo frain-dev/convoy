@@ -5,12 +5,25 @@ import (
 	"fmt"
 
 	"github.com/frain-dev/convoy/config"
+	em "github.com/frain-dev/convoy/internal/email"
 	"github.com/frain-dev/convoy/notification"
-	"github.com/frain-dev/convoy/smtp"
+	"github.com/frain-dev/convoy/pkg/smtp"
 )
 
 type Email struct {
-	s *smtp.SmtpClient
+	s smtp.SmtpClient
+}
+
+type TemplateName string
+
+const (
+	TemplateEndpointUpdate     TemplateName = "endpoint.update"
+	TemplateOrganisationInvite TemplateName = "organisation.invite"
+	TemplateResetPassword      TemplateName = "reset.password"
+)
+
+func (t TemplateName) String() string {
+	return string(t)
 }
 
 func NewEmailNotificationSender(smtpCfg *config.SMTPConfiguration) (notification.Sender, error) {
@@ -23,5 +36,11 @@ func NewEmailNotificationSender(smtpCfg *config.SMTPConfiguration) (notification
 }
 
 func (e *Email) SendNotification(ctx context.Context, n *notification.Notification) error {
-	return e.s.SendEmailNotification(n.Email, n.LogoURL, n.TargetURL, n.EndpointStatus)
+	newEmail := em.NewEmail(e.s)
+	err := newEmail.Build(n.EmailTemplateName, n)
+	if err != nil {
+		return err
+	}
+
+	return newEmail.Send(n.Email, n.Subject)
 }

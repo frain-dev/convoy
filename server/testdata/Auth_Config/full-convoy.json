@@ -1,4 +1,6 @@
 {
+    "host": "https://app.convoy.io",
+    "multiple_tenants": false,
     "queue": {
         "type": "redis",
         "redis": {
@@ -6,28 +8,21 @@
         }
     },
     "auth": {
-        "require_auth": true,
         "file": {
             "basic": [
                 {
                     "username": "test",
                     "password": "test",
                     "role": {
-                        "type": "admin",
-                        "groups": [
-                            "sendcash-pay"
-                        ]
+                        "type": "super_user"
                     }
-                }
-            ],
-            "api_key": [
+                },
                 {
-                    "api_key": "avcbajbwrohw@##Q39uekvsmbvxc.fdjhd",
+                    "username": "test-group-filter",
+                    "password": "test-group-filter",
                     "role": {
-                        "type": "ui_admin",
-                        "groups": [
-                            "sendcash-pay"
-                        ]
+                        "groups": ["abcdef"],
+                        "type": "super_user"
                     }
                 }
             ]

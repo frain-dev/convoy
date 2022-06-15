@@ -1,0 +1,99 @@
+<h1 class="font__12px font__weight-500 flex flex__align-items-center text__uppercase">
+	<a routerLink="/projects" class="font__weight-500 pointer-cursor">Projects</a>
+	<svg width="16" height="16" class="margin-x__4px">
+		<use xlink:href="#arrow-right-icon"></use>
+	</svg>
+	{{ privateService.activeProjectDetails?.name }}
+	<svg width="16" height="16" class="margin-x__4px">
+		<use xlink:href="#arrow-right-icon"></use>
+	</svg>
+	<span class="color__primary font__weight-500">Events</span>
+</h1>
+
+<div class="filter without-padding" [ngClass]="{ 'show-calendar': showFilterCalendar }">
+	<date-filter (selectedDateRange)="getSelectedDateRange($event)"></date-filter>
+	<div class="dropdown">
+		<button class="button button__filter button--has-icon icon-right margin-left__16px" (click)="showFilterDropdown = !showFilterDropdown; showOverlay = true">
+			<span class="color__grey margin-right__4px">Filter By:</span>
+			<span class="color__primary text__capitalize">{{ dashboardFrequency }}</span>
+			<img src="/assets/img/angle-arrow-down.svg" alt="arrow down icon" />
+		</button>
+
+		<div class="dropdown__menu dropdown__menu__push-left" [ngClass]="{ show: showFilterDropdown }">
+			<ul>
+				<li
+					class="text__capitalize"
+					[ngClass]="{ active: dashboardFrequency == filterOption }"
+					*ngFor="let filterOption of filterOptions"
+					(click)="dashboardFrequency = filterOption; fetchDashboardData(); showFilterDropdown = false; showOverlay = false"
+				>
+					{{ filterOption }}
+				</li>
+			</ul>
+		</div>
+	</div>
+</div>
+
+<div class="card position__relative">
+	<convoy-loader id="dashboard_summary_loader" *ngIf="isloadingDashboardData"></convoy-loader>
+	<ul class="metrics">
+		<li class="messages flex flex__align-items-center padding-x__30px padding-y__16px border__right">
+			<img src="/assets/img/message-icon.svg" class="margin-right__30px" alt="message icon" />
+			<div class="metric">
+				<div class="font__16px font__weight-500">{{ dashboardData.events_sent }}</div>
+				<div class="color__grey font__14px font__weight-400">
+					<span class="font__weight-400">Event</span>
+					<span class="font__weight-400" *ngIf="dashboardData.events_sent > 1">s</span>
+					Sent
+				</div>
+			</div>
+		</li>
+
+		<li class="apps flex flex__align-items-center padding-x__30px padding-y__16px">
+			<img src="/assets/img/apps-icon.svg" class="margin-right__30px" alt="apps icon" />
+			<div class="metric">
+				<div class="font__16px font__weight-500">{{ dashboardData.apps }}</div>
+				<div class="color__grey font__14px font__weight-400">
+					<span class="font__weight-400">App</span>
+					<span class="font__weight-400" *ngIf="dashboardData.apps > 1">s</span>
+				</div>
+			</div>
+		</li>
+	</ul>
+
+	<div class="border__top padding-all__30px">
+		<canvas id="dahboard_events_chart" width="200" height="100"></canvas>
+	</div>
+</div>
+
+<section class="card margin-top__24px rounded--bottom-left__none rounded--bottom-right__none">
+	<div class="flex flex__align-items-center flex__justify-center">
+		<div class="tabs flex__align-items-center">
+			<li *ngFor="let tab of tabs" (click)="toggleActiveTab(tab)">
+				<button [ngClass]="{ active: activeTab === tab }">
+					<span>{{ tab }}</span>
+				</button>
+			</li>
+			<div class="color__grey font__14px font__weight-500 font--nowrap margin-left--auto padding-right__14px">
+				<span *ngIf="events" [hidden]="activeTab !== 'events'">
+					{{ events && events.pagination.total > 0 ? 1 : 0 }} - {{ events && events.pagination.total < 20 ? events.pagination.total : events?.content?.length }}
+					<strong>of</strong>
+					{{ events?.pagination?.total || 0 }}
+				</span>
+				<span *ngIf="eventDeliveries" [hidden]="activeTab !== 'event deliveries'">
+					{{ eventDeliveries && eventDeliveries.pagination.total > 0 ? 1 : 0 }} -
+					{{ eventDeliveries && eventDeliveries.pagination.total < 20 ? eventDeliveries.pagination.total : eventDeliveries?.content?.length }}
+					<strong>of</strong>
+					{{ eventDeliveries?.pagination?.total || 0 }}
+				</span>
+			</div>
+		</div>
+	</div>
+</section>
+
+<div [hidden]="activeTab !== 'events'">
+	<app-event (pushEvents)="events = $event" (getEventDeliveries)="getEventDeliveries($event)"></app-event>
+</div>
+<div [hidden]="activeTab !== 'event deliveries'">
+	<app-event-deliveries (pushEventDeliveries)="eventDeliveries = $event" [eventDeliveryFilteredByEventId]="eventDeliveryFilteredByEventId"></app-event-deliveries>
+</div>

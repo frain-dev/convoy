@@ -1,0 +1,207 @@
+//go:build integration
+// +build integration
+
+package server
+
+import (
+	"bytes"
+	"encoding/json"
+	"fmt"
+	"io"
+	"io/ioutil"
+	"math/rand"
+	"net/http"
+	"net/http/httptest"
+	"os"
+	"strings"
+	"testing"
+	"time"
+
+	"github.com/frain-dev/convoy/server/models"
+
+	"github.com/frain-dev/convoy"
+	"github.com/frain-dev/convoy/auth/realm_chain"
+	"github.com/frain-dev/convoy/cache"
+	ncache "github.com/frain-dev/convoy/cache/noop"
+	"github.com/frain-dev/convoy/config"
+	"github.com/frain-dev/convoy/datastore"
+	mongoStore "github.com/frain-dev/convoy/datastore/mongo"
+	nooplimiter "github.com/frain-dev/convoy/limiter/noop"
+	"github.com/frain-dev/convoy/logger"
+	"github.com/frain-dev/convoy/queue"
+	redisqueue "github.com/frain-dev/convoy/queue/redis"
+	noopsearcher "github.com/frain-dev/convoy/searcher/noop"
+	"github.com/frain-dev/convoy/tracer"
+)
+
+// TEST HELPERS.
+func getMongoDSN() string {
+	return os.Getenv("TEST_MONGO_DSN")
+}
+
+func getRedisDSN() string {
+	return os.Getenv("TEST_REDIS_DSN")
+}
+
+func getConfig() config.Configuration {
+	return config.Configuration{
+		Queue: config.QueueConfiguration{
+			Type: config.RedisQueueProvider,
+			Redis: config.RedisQueueConfiguration{
+				Dsn: getRedisDSN(),
+			},
+		},
+		Database: config.DatabaseConfiguration{
+			Type: config.MongodbDatabaseProvider,
+			Dsn:  getMongoDSN(),
+		},
+	}
+}
+
+func getDB() datastore.DatabaseClient {
+
+	db, err := mongoStore.New(getConfig())
+	if err != nil {
+		panic(fmt.Sprintf("failed to connect to db: %v", err))
+	}
+	_ = os.Setenv("TZ", "") // Use UTC by default :)
+
+	return db.(*mongoStore.Client)
+}
+
+func getQueueOptions(name string) (queue.QueueOptions, error) {
+	var opts queue.QueueOptions
+	cfg := getConfig()
+	rC, err := redisqueue.NewClient(cfg)
+	if err != nil {
+		return opts, err
+	}
+	queueNames := map[string]int{
+		string(convoy.PriorityQueue):    6,
+		string(convoy.EventQueue):       2,
+		string(convoy.CreateEventQueue): 2,
+	}
+	opts = queue.QueueOptions{
+		Names:        queueNames,
+		Client:       rC,
+		RedisAddress: cfg.Queue.Redis.Dsn,
+		Type:         string(config.RedisQueueProvider),
+	}
+
+	return opts, nil
+}
+
+func buildApplication() *applicationHandler {
+	var tracer tracer.Tracer
+	var qOpts queue.QueueOptions
+
+	db := getDB()
+	qOpts, _ = getQueueOptions("EventQueue")
+
+	groupRepo := db.GroupRepo()
+	appRepo := db.AppRepo()
+	eventRepo := db.EventRepo()
+	eventDeliveryRepo := db.EventDeliveryRepo()
+	apiKeyRepo := db.APIRepo()
+	sourceRepo := db.SourceRepo()
+	orgRepo := db.OrganisationRepo()
+	orgMemberRepo := db.OrganisationMemberRepo()
+	orgInviteRepo := db.OrganisationInviteRepo()
+	userRepo := db.UserRepo()
+	configRepo := db.ConfigurationRepo()
+	queue := redisqueue.NewQueue(qOpts)
+	logger := logger.NewNoopLogger()
+	cache := ncache.NewNoopCache()
+	limiter := nooplimiter.NewNoopLimiter()
+	searcher := noopsearcher.NewNoopSearcher()
+	tracer = nil
+	subRepo := db.SubRepo()
+
+	return newApplicationHandler(
+		eventRepo, eventDeliveryRepo, appRepo,
+		groupRepo, apiKeyRepo, subRepo, sourceRepo, orgRepo,
+		orgMemberRepo, orgInviteRepo, userRepo, configRepo, queue, logger, tracer, cache, limiter, searcher,
+	)
+}
+
+func initRealmChain(t *testing.T, apiKeyRepo datastore.APIKeyRepository, userRepo datastore.UserRepository, cache cache.Cache) {
+	cfg, err := config.Get()
+	if err != nil {
+		t.Errorf("failed to get config: %v", err)
+	}
+
+	err = realm_chain.Init(&cfg.Auth, apiKeyRepo, userRepo, cache)
+	if err != nil {
+		t.Errorf("failed to initialize realm chain : %v", err)
+	}
+}
+
+func parseResponse(t *testing.T, r *http.Response, object interface{}) {
+	body, err := ioutil.ReadAll(r.Body)
+	if err != nil {
+		t.Fatalf("err: %s", err)
+	}
+
+	var sR serverResponse
+	err = json.Unmarshal(body, &sR)
+	if err != nil {
+		t.Fatalf("err: %s", err)
+	}
+
+	err = json.Unmarshal(sR.Data, object)
+	if err != nil {
+		t.Fatalf("err: %s", err)
+	}
+}
+
+type AuthenticatorFn func(r *http.Request, router http.Handler) error
+
+func authenticateRequest(auth *models.LoginUser) AuthenticatorFn {
+	return func(r *http.Request, router http.Handler) error {
+		body, err := json.Marshal(auth)
+		if err != nil {
+			return err
+		}
+
+		req := createRequest(http.MethodPost, "/ui/auth/login", bytes.NewBuffer(body))
+
+		w := httptest.NewRecorder()
+
+		// Act
+		router.ServeHTTP(w, req)
+		if w.Code != http.StatusOK {
+			return fmt.Errorf("failed to authenticate: reponse body: %s", w.Body.String())
+		}
+
+		loginResp := &models.LoginUserResponse{}
+		resp := &struct {
+			Data interface{} `json:"data"`
+		}{
+			Data: loginResp,
+		}
+		err = json.NewDecoder(w.Body).Decode(resp)
+		if err != nil {
+			return err
+		}
+
+		r.Header.Set("Authorization", fmt.Sprintf("BEARER %s", loginResp.Token.AccessToken))
+		return nil
+	}
+}
+func randBool() bool {
+	rand.Seed(time.Now().UnixNano())
+	return rand.Intn(2) == 1
+}
+
+func createRequest(method string, url string, body io.Reader) *http.Request {
+	req := httptest.NewRequest(method, url, body)
+	req.SetBasicAuth("test", "test")
+	req.Header.Add("Content-Type", "application/json")
+
+	return req
+}
+
+func serialize(r string, args ...interface{}) io.Reader {
+	v := fmt.Sprintf(r, args...)
+	return strings.NewReader(v)
+}

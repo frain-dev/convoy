@@ -18,28 +18,10 @@ func Test_EnvironmentTakesPrecedence(t *testing.T) {
 		envConfig string
 	}{
 		{
-			name:      "Signature Header (string)",
-			key:       "CONVOY_SIGNATURE_HEADER",
-			testType:  "string",
-			envConfig: "X-Convoy-Test-Signature",
-		},
-		{
 			name:      "Port (number)",
 			key:       "PORT",
 			testType:  "number",
 			envConfig: "8080",
-		},
-		{
-			name:      "Disable Endpoint (boolean)",
-			key:       "CONVOY_DISABLE_ENDPOINT",
-			testType:  "boolean",
-			envConfig: "false",
-		},
-		{
-			name:      "Enable Replay Attacks Feature (boolean)",
-			key:       "CONVOY_REPLAY_ATTACKS",
-			testType:  "boolean",
-			envConfig: "false",
 		},
 		{
 			name:      "Basic Auth (interface)",
@@ -62,24 +44,10 @@ func Test_EnvironmentTakesPrecedence(t *testing.T) {
 
 			// Assert.
 			switch tc.testType {
-			case "string":
-				require.Equal(t, tc.envConfig, string(cfg.GroupConfig.Signature.Header))
 			case "number":
 				port, e := strconv.ParseInt(tc.envConfig, 10, 64)
 				require.NoError(t, e)
 				require.Equal(t, port, int64(cfg.Server.HTTP.Port))
-			case "boolean":
-				switch tc.key {
-				case "CONVOY_DISABLE_ENDPOINT":
-					disable_endpoint, e := strconv.ParseBool(tc.envConfig)
-					require.NoError(t, e)
-					require.Equal(t, disable_endpoint, cfg.GroupConfig.DisableEndpoint)
-
-				case "CONVOY_REPLAY_ATTACKS":
-					replay_attacks, e := strconv.ParseBool(tc.envConfig)
-					require.NoError(t, e)
-					require.Equal(t, replay_attacks, cfg.GroupConfig.ReplayAttacks)
-				}
 			case "interface":
 				basicAuth := BasicAuthConfig{}
 				e := basicAuth.Decode(tc.envConfig)
@@ -99,32 +67,11 @@ func Test_NilEnvironmentVariablesDontOverride(t *testing.T) {
 		expected  string
 	}{
 		{
-			name:      "Signature Header (string)",
-			key:       "CONVOY_SIGNATURE_HEADER",
-			testType:  "string",
-			envConfig: "",
-			expected:  "x-test-signature",
-		},
-		{
 			name:      "Port (number)",
 			key:       "PORT",
 			testType:  "number",
 			envConfig: "0",
 			expected:  "8080",
-		},
-		{
-			name:      "Disable Endpoint (boolean)",
-			key:       "CONVOY_DISABLE_ENDPOINT",
-			testType:  "boolean",
-			envConfig: "",
-			expected:  "true",
-		},
-		{
-			name:      "Enable Replay Attacks Feature (boolean)",
-			key:       "CONVOY_REPLAY_ATTACKS",
-			testType:  "boolean",
-			envConfig: "",
-			expected:  "true",
 		},
 		{
 			name:      "Basic Auth (interface)",
@@ -146,23 +93,10 @@ func Test_NilEnvironmentVariablesDontOverride(t *testing.T) {
 
 			// Assert.
 			switch tc.testType {
-			case "string":
-				require.Equal(t, tc.expected, string(cfg.GroupConfig.Signature.Header))
 			case "number":
 				port, e := strconv.ParseInt(tc.expected, 10, 64)
 				require.NoError(t, e)
 				require.Equal(t, port, int64(cfg.Server.HTTP.Port))
-			case "boolean":
-				switch tc.key {
-				case "CONVOY_DISABLE_ENDPOINT":
-					disable_endpoint, e := strconv.ParseBool(tc.expected)
-					require.NoError(t, e)
-					require.Equal(t, disable_endpoint, cfg.GroupConfig.DisableEndpoint)
-				case "CONVOY_REPLAY_ATTACKS":
-					replay_attacks, e := strconv.ParseBool(tc.expected)
-					require.NoError(t, e)
-					require.Equal(t, replay_attacks, cfg.GroupConfig.ReplayAttacks)
-				}
 			case "interface":
 				basicAuth := BasicAuthConfig{}
 				e := basicAuth.Decode(tc.expected)
@@ -190,6 +124,7 @@ func TestLoadConfig(t *testing.T) {
 				path: "./testdata/Config/valid-convoy.json",
 			},
 			wantCfg: Configuration{
+				Host: "localhost",
 				Database: DatabaseConfiguration{
 					Dsn: "mongodb://inside-config-file",
 				},
@@ -205,20 +140,6 @@ func TestLoadConfig(t *testing.T) {
 					},
 				},
 				MaxResponseSize: 40 * 1024,
-				GroupConfig: GroupConfig{
-					Strategy: StrategyConfiguration{
-						Type: "default",
-						Default: DefaultStrategyConfiguration{
-							IntervalSeconds: 125,
-							RetryLimit:      15,
-						},
-					},
-					Signature: SignatureConfiguration{
-						Header: DefaultSignatureHeader,
-						Hash:   "SHA256",
-					},
-					DisableEndpoint: false,
-				},
 				Environment:     DevelopmentEnvironment,
 				MultipleTenants: false,
 			},
@@ -231,6 +152,7 @@ func TestLoadConfig(t *testing.T) {
 				path: "./testdata/Config/too-large-max-response-size-convoy.json",
 			},
 			wantCfg: Configuration{
+				Host: "localhost",
 				Database: DatabaseConfiguration{
 					Dsn: "mongodb://inside-config-file",
 				},
@@ -246,20 +168,6 @@ func TestLoadConfig(t *testing.T) {
 					},
 				},
 				MaxResponseSize: MaxResponseSize,
-				GroupConfig: GroupConfig{
-					Strategy: StrategyConfiguration{
-						Type: "default",
-						Default: DefaultStrategyConfiguration{
-							IntervalSeconds: 125,
-							RetryLimit:      15,
-						},
-					},
-					Signature: SignatureConfiguration{
-						Header: DefaultSignatureHeader,
-						Hash:   "SHA256",
-					},
-					DisableEndpoint: false,
-				},
 				Environment:     DevelopmentEnvironment,
 				MultipleTenants: false,
 			},
@@ -272,6 +180,7 @@ func TestLoadConfig(t *testing.T) {
 				path: "./testdata/Config/zero-max-response-size-convoy.json",
 			},
 			wantCfg: Configuration{
+				Host: "localhost",
 				Database: DatabaseConfiguration{
 					Dsn: "mongodb://inside-config-file",
 				},
@@ -287,20 +196,6 @@ func TestLoadConfig(t *testing.T) {
 					},
 				},
 				MaxResponseSize: MaxResponseSize,
-				GroupConfig: GroupConfig{
-					Strategy: StrategyConfiguration{
-						Type: "default",
-						Default: DefaultStrategyConfiguration{
-							IntervalSeconds: 125,
-							RetryLimit:      15,
-						},
-					},
-					Signature: SignatureConfiguration{
-						Header: DefaultSignatureHeader,
-						Hash:   "SHA256",
-					},
-					DisableEndpoint: false,
-				},
 				Environment:     DevelopmentEnvironment,
 				MultipleTenants: false,
 			},
@@ -313,6 +208,7 @@ func TestLoadConfig(t *testing.T) {
 				path: "./testdata/Config/zero-groups-for-superuser.json",
 			},
 			wantCfg: Configuration{
+				Host: "localhost",
 				Database: DatabaseConfiguration{
 					Dsn: "mongodb://inside-config-file",
 				},
@@ -329,7 +225,6 @@ func TestLoadConfig(t *testing.T) {
 				},
 				MaxResponseSize: MaxResponseSize,
 				Auth: AuthConfiguration{
-					RequireAuth: true,
 					File: FileRealmOption{
 						Basic: []BasicAuth{
 							{
@@ -341,73 +236,6 @@ func TestLoadConfig(t *testing.T) {
 							},
 						},
 					},
-				},
-				GroupConfig: GroupConfig{
-					Strategy: StrategyConfiguration{
-						Type: "default",
-						Default: DefaultStrategyConfiguration{
-							IntervalSeconds: 125,
-							RetryLimit:      15,
-						},
-					},
-					Signature: SignatureConfiguration{
-						Header: DefaultSignatureHeader,
-						Hash:   "SHA256",
-					},
-					DisableEndpoint: false,
-				},
-				Environment:     DevelopmentEnvironment,
-				MultipleTenants: false,
-			},
-			wantErr: false,
-		},
-		{
-			name: "should_support_exponential_backoff",
-			args: args{
-				path: "./testdata/Config/exponential-backoff-config.json",
-			},
-			wantCfg: Configuration{
-				Database: DatabaseConfiguration{
-					Dsn: "mongodb://inside-config-file",
-				},
-				Queue: QueueConfiguration{
-					Type: RedisQueueProvider,
-					Redis: RedisQueueConfiguration{
-						Dsn: "redis://localhost:8379",
-					},
-				},
-				Server: ServerConfiguration{
-					HTTP: HTTPServerConfiguration{
-						Port: 80,
-					},
-				},
-				MaxResponseSize: MaxResponseSize,
-				Auth: AuthConfiguration{
-					RequireAuth: true,
-					File: FileRealmOption{
-						Basic: []BasicAuth{
-							{
-								Username: "123",
-								Password: "abc",
-								Role: auth.Role{
-									Type: "super_user",
-								},
-							},
-						},
-					},
-				},
-				GroupConfig: GroupConfig{
-					Strategy: StrategyConfiguration{
-						Type: "exponential-backoff",
-						ExponentialBackoff: ExponentialBackoffStrategyConfiguration{
-							RetryLimit: 15,
-						},
-					},
-					Signature: SignatureConfiguration{
-						Header: DefaultSignatureHeader,
-						Hash:   "SHA256",
-					},
-					DisableEndpoint: false,
 				},
 				Environment:     DevelopmentEnvironment,
 				MultipleTenants: false,
@@ -440,50 +268,6 @@ func TestLoadConfig(t *testing.T) {
 			wantCfg:    Configuration{},
 			wantErr:    true,
 			wantErrMsg: "both cert_file and key_file are required for ssl",
-		},
-		{
-			name: "should_error_for_invalid_signature_hash",
-			args: args{
-				path: "./testdata/Config/invalid-signature-hash.json",
-			},
-			wantCfg:    Configuration{},
-			wantErr:    true,
-			wantErrMsg: "invalid hash algorithm - 'SHA100', must be one of [MD5 SHA1 SHA224 SHA256 SHA384 SHA512 SHA3_224 SHA3_256 SHA3_384 SHA3_512 SHA512_224 SHA512_256]",
-		},
-		{
-			name: "should_error_for_zero_interval_seconds",
-			args: args{
-				path: "./testdata/Config/zero-interval-seconds.json",
-			},
-			wantCfg:    Configuration{},
-			wantErr:    true,
-			wantErrMsg: "both interval seconds and retry limit are required for default strategy configuration",
-		},
-		{
-			name: "should_error_for_zero_retry_limit",
-			args: args{
-				path: "./testdata/Config/zero-retry-limit.json",
-			},
-			wantCfg:    Configuration{},
-			wantErr:    true,
-			wantErrMsg: "both interval seconds and retry limit are required for default strategy configuration",
-		},
-		{
-			name: "should_error_for_zero_retry_limit_exponential_backoff",
-			args: args{
-				path: "./testdata/Config/zero-retry-limit-exponential.json",
-			},
-			wantCfg:    Configuration{},
-			wantErr:    true,
-			wantErrMsg: "retry limit is required for exponential backoff retry strategy configuration",
-		},
-		{
-			name: "should_error_for_unsupported_strategy_type",
-			args: args{
-				path: "./testdata/Config/unknown-strategy-type.json",
-			},
-			wantErr:    true,
-			wantErrMsg: "unsupported strategy type: abc",
 		},
 		{
 			name: "should_error_for_empty_redis_dsn",

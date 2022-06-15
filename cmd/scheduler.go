@@ -2,20 +2,26 @@ package main
 
 import (
 	"context"
-	"time"
+	"fmt"
+	"net/http"
 
+	"github.com/frain-dev/convoy"
+	"github.com/frain-dev/convoy/analytics"
 	"github.com/frain-dev/convoy/config"
+	redisqueue "github.com/frain-dev/convoy/queue/redis"
+	"github.com/frain-dev/convoy/server"
 	"github.com/frain-dev/convoy/worker"
+	"github.com/go-chi/chi/v5"
+	"github.com/prometheus/client_golang/prometheus/promhttp"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 )
 
 func addSchedulerCommand(a *app) *cobra.Command {
-	var timeInterval string
-	var timer string
+	var cronspec string
 	cmd := &cobra.Command{
 		Use:   "scheduler",
-		Short: "requeue event deliveries in the background with a scheduler.",
+		Short: "schedule a periodic task.",
 		Run: func(cmd *cobra.Command, args []string) {
 			cfg, err := config.Get()
 			if err != nil {
@@ -24,44 +30,39 @@ func addSchedulerCommand(a *app) *cobra.Command {
 			if cfg.Queue.Type != config.RedisQueueProvider {
 				log.WithError(err).Fatalf("Queue type error: Command is available for redis queue only.")
 			}
-			d, err := time.ParseDuration(timer)
-			if err != nil {
-				log.WithError(err).Fatalf("failed to parse time duration")
-			}
-
-			ticker := time.NewTicker(d)
 			ctx := context.Background()
 
-			for {
-				select {
-				case <-ticker.C:
-					go func() {
-						err := worker.RequeueEventDeliveries("Processing", timeInterval, a.eventDeliveryRepo, a.groupRepo, a.eventQueue)
-						if err != nil {
-							log.WithError(err).Errorf("Error requeuing status processing: %v", err)
-						}
-					}()
-					go func() {
-						err := worker.RequeueEventDeliveries("Scheduled", timeInterval, a.eventDeliveryRepo, a.groupRepo, a.eventQueue)
-						if err != nil {
-							log.WithError(err).Errorf("Error requeuing status Scheduled: %v", err)
-						}
-					}()
-					go func() {
-						err := worker.RequeueEventDeliveries("Retry", timeInterval, a.eventDeliveryRepo, a.groupRepo, a.eventQueue)
-						if err != nil {
-							log.WithError(err).Errorf("Error requeuing status Retry: %v", err)
-						}
-					}()
-				case <-ctx.Done():
-					ticker.Stop()
-					return
-				}
+			//initialize scheduler
+			s := worker.NewScheduler(a.queue)
+
+			s.RegisterTask("55 23 * * *", convoy.TaskName("daily analytics"), analytics.TrackDailyAnalytics(&analytics.Repo{
+				ConfigRepo: a.configRepo,
+				EventRepo:  a.eventRepo,
+				GroupRepo:  a.groupRepo,
+				OrgRepo:    a.orgRepo,
+				UserRepo:   a.userRepo,
+			}, cfg))
+
+			// Start scheduler
+			s.Start()
+
+			router := chi.NewRouter()
+			router.Handle("/queue/monitoring/*", a.queue.(*redisqueue.RedisQueue).Monitor())
+			router.Handle("/metrics", promhttp.HandlerFor(server.Reg, promhttp.HandlerOpts{}))
+
+			srv := &http.Server{
+				Handler: router,
+				Addr:    fmt.Sprintf(":%d", 5007),
 			}
+
+			e := srv.ListenAndServe()
+			if e != nil {
+				log.Fatal(e)
+			}
+			<-ctx.Done()
 		},
 	}
 
-	cmd.Flags().StringVar(&timeInterval, "time", "", "eventdelivery time interval")
-	cmd.Flags().StringVar(&timer, "timer", "", "schedule timer")
+	cmd.Flags().StringVar(&cronspec, "cronspec", "", "scheduler time interval '@every <duration>'")
 	return cmd
 }

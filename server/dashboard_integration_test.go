@@ -9,54 +9,76 @@ import (
 	"fmt"
 	"net/http"
 	"net/http/httptest"
-	"os"
 	"testing"
 	"time"
 
-	"github.com/google/uuid"
+	"github.com/frain-dev/convoy/server/testdb"
+	"github.com/stretchr/testify/suite"
 
-	mcache "github.com/frain-dev/convoy/cache/memory"
 	"github.com/frain-dev/convoy/config"
 	"github.com/frain-dev/convoy/datastore"
-	mongoStore "github.com/frain-dev/convoy/datastore/mongo"
-	"github.com/golang/mock/gomock"
+	"github.com/frain-dev/convoy/server/models"
+	"github.com/google/uuid"
+	"github.com/sebdah/goldie/v2"
 	log "github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/require"
 	"go.mongodb.org/mongo-driver/bson/primitive"
-	"go.mongodb.org/mongo-driver/mongo"
 )
 
-func TestGetDashboardSummary(t *testing.T) {
-	ctrl := gomock.NewController(t)
-	defer ctrl.Finish()
-	app := provideApplication(ctrl)
+type DashboardIntegrationTestSuite struct {
+	suite.Suite
+	DB              datastore.DatabaseClient
+	Router          http.Handler
+	ConvoyApp       *applicationHandler
+	AuthenticatorFn AuthenticatorFn
+	DefaultUser     *datastore.User
+	DefaultOrg      *datastore.Organisation
+	DefaultGroup    *datastore.Group
+}
 
-	db, closeFn := getDB(t)
-	defer closeFn()
+func (s *DashboardIntegrationTestSuite) SetupSuite() {
+	s.DB = getDB()
+	s.ConvoyApp = buildApplication()
+	s.Router = buildRoutes(s.ConvoyApp)
+}
 
-	app.groupRepo = mongoStore.NewGroupRepo(db)
-	app.appRepo = mongoStore.NewApplicationRepo(db)
-	app.eventRepo = mongoStore.NewEventRepository(db)
-	app.groupRepo = mongoStore.NewGroupRepo(db)
-	app.cache = mcache.NewMemoryCache()
+func (s *DashboardIntegrationTestSuite) SetupTest() {
+	testdb.PurgeDB(s.DB)
 
-	group := &datastore.Group{
-		UID:               uuid.New().String(),
-		Name:              "test-group",
-		RateLimit:         3000,
-		RateLimitDuration: "1m",
-		CreatedAt:         primitive.NewDateTimeFromTime(time.Now()),
-		UpdatedAt:         primitive.NewDateTimeFromTime(time.Now()),
-		DocumentStatus:    datastore.ActiveDocumentStatus,
-	}
+	// Setup Default User
+	user, err := testdb.SeedDefaultUser(s.DB)
+	require.NoError(s.T(), err)
+	s.DefaultUser = user
 
+	// Setup Default Organisation
+	org, err := testdb.SeedDefaultOrganisation(s.DB, user)
+	require.NoError(s.T(), err)
+	s.DefaultOrg = org
+
+	// Setup Default Group.
+	s.DefaultGroup, _ = testdb.SeedDefaultGroup(s.DB, s.DefaultOrg.UID)
+
+	s.AuthenticatorFn = authenticateRequest(&models.LoginUser{
+		Username: user.Email,
+		Password: testdb.DefaultUserPassword,
+	})
+
+	// Setup Config.
+	err = config.LoadConfig("./testdata/Auth_Config/full-convoy-with-jwt-realm.json")
+	require.NoError(s.T(), err)
+
+	initRealmChain(s.T(), s.DB.APIRepo(), s.DB.UserRepo(), s.ConvoyApp.cache)
+}
+
+func (s *DashboardIntegrationTestSuite) TearDownTest() {
+	testdb.PurgeDB(s.DB)
+}
+
+func (s *DashboardIntegrationTestSuite) TestGetDashboardSummary() {
 	ctx := context.Background()
-	err := app.groupRepo.CreateGroup(ctx, group)
-	require.NoError(t, err)
-
 	application := &datastore.Application{
 		UID:            "abc",
-		GroupID:        group.UID,
+		GroupID:        s.DefaultGroup.UID,
 		Title:          "test-app",
 		SupportEmail:   "test@suport.com",
 		Endpoints:      []datastore.Endpoint{},
@@ -65,8 +87,8 @@ func TestGetDashboardSummary(t *testing.T) {
 		DocumentStatus: datastore.ActiveDocumentStatus,
 	}
 
-	err = app.appRepo.CreateApplication(ctx, application)
-	require.NoError(t, err)
+	err := s.DB.AppRepo().CreateApplication(ctx, application, application.GroupID)
+	require.NoError(s.T(), err)
 
 	events := []datastore.Event{
 		{
@@ -75,15 +97,11 @@ func TestGetDashboardSummary(t *testing.T) {
 			MatchedEndpoints: 1,
 			ProviderID:       "provider_id",
 			Data:             json.RawMessage(`{"data":"12345"}`),
-			AppMetadata: &datastore.AppMetadata{
-				UID:          application.UID,
-				Title:        application.Title,
-				GroupID:      group.UID,
-				SupportEmail: application.SupportEmail,
-			},
-			CreatedAt:      primitive.NewDateTimeFromTime(time.Date(2021, time.January, 1, 1, 1, 1, 0, time.UTC)),
-			UpdatedAt:      primitive.NewDateTimeFromTime(time.Date(2021, time.January, 1, 1, 1, 1, 0, time.UTC)),
-			DocumentStatus: datastore.ActiveDocumentStatus,
+			GroupID:          s.DefaultGroup.UID,
+			AppID:            application.UID,
+			CreatedAt:        primitive.NewDateTimeFromTime(time.Date(2021, time.January, 1, 1, 1, 1, 0, time.UTC)),
+			UpdatedAt:        primitive.NewDateTimeFromTime(time.Date(2021, time.January, 1, 1, 1, 1, 0, time.UTC)),
+			DocumentStatus:   datastore.ActiveDocumentStatus,
 		},
 		{
 			UID:              uuid.New().String(),
@@ -91,15 +109,11 @@ func TestGetDashboardSummary(t *testing.T) {
 			MatchedEndpoints: 1,
 			ProviderID:       "provider_id",
 			Data:             json.RawMessage(`{"data":"12345"}`),
-			AppMetadata: &datastore.AppMetadata{
-				UID:          application.UID,
-				Title:        application.Title,
-				GroupID:      group.UID,
-				SupportEmail: application.SupportEmail,
-			},
-			CreatedAt:      primitive.NewDateTimeFromTime(time.Date(2021, time.January, 10, 1, 1, 1, 0, time.UTC)),
-			UpdatedAt:      primitive.NewDateTimeFromTime(time.Date(2021, time.January, 10, 1, 1, 1, 0, time.UTC)),
-			DocumentStatus: datastore.ActiveDocumentStatus,
+			GroupID:          s.DefaultGroup.UID,
+			AppID:            application.UID,
+			CreatedAt:        primitive.NewDateTimeFromTime(time.Date(2021, time.January, 10, 1, 1, 1, 0, time.UTC)),
+			UpdatedAt:        primitive.NewDateTimeFromTime(time.Date(2021, time.January, 10, 1, 1, 1, 0, time.UTC)),
+			DocumentStatus:   datastore.ActiveDocumentStatus,
 		},
 		{
 			UID:              uuid.New().String(),
@@ -107,15 +121,11 @@ func TestGetDashboardSummary(t *testing.T) {
 			MatchedEndpoints: 1,
 			ProviderID:       "provider_id",
 			Data:             json.RawMessage(`{"data":"12345"}`),
-			AppMetadata: &datastore.AppMetadata{
-				UID:          application.UID,
-				Title:        application.Title,
-				GroupID:      group.UID,
-				SupportEmail: application.SupportEmail,
-			},
-			CreatedAt:      primitive.NewDateTimeFromTime(time.Date(2022, time.March, 20, 1, 1, 1, 0, time.UTC)),
-			UpdatedAt:      primitive.NewDateTimeFromTime(time.Date(2022, time.March, 20, 1, 1, 1, 0, time.UTC)),
-			DocumentStatus: datastore.ActiveDocumentStatus,
+			GroupID:          s.DefaultGroup.UID,
+			AppID:            application.UID,
+			CreatedAt:        primitive.NewDateTimeFromTime(time.Date(2022, time.March, 20, 1, 1, 1, 0, time.UTC)),
+			UpdatedAt:        primitive.NewDateTimeFromTime(time.Date(2022, time.March, 20, 1, 1, 1, 0, time.UTC)),
+			DocumentStatus:   datastore.ActiveDocumentStatus,
 		},
 		{
 			UID:              uuid.New().String(),
@@ -123,15 +133,11 @@ func TestGetDashboardSummary(t *testing.T) {
 			MatchedEndpoints: 1,
 			ProviderID:       "provider_id",
 			Data:             json.RawMessage(`{"data":"12345"}`),
-			AppMetadata: &datastore.AppMetadata{
-				UID:          application.UID,
-				Title:        application.Title,
-				GroupID:      group.UID,
-				SupportEmail: application.SupportEmail,
-			},
-			CreatedAt:      primitive.NewDateTimeFromTime(time.Date(2022, time.March, 20, 1, 1, 1, 0, time.UTC)),
-			UpdatedAt:      primitive.NewDateTimeFromTime(time.Date(2022, time.March, 20, 1, 1, 1, 0, time.UTC)),
-			DocumentStatus: datastore.ActiveDocumentStatus,
+			GroupID:          s.DefaultGroup.UID,
+			AppID:            application.UID,
+			CreatedAt:        primitive.NewDateTimeFromTime(time.Date(2022, time.March, 20, 1, 1, 1, 0, time.UTC)),
+			UpdatedAt:        primitive.NewDateTimeFromTime(time.Date(2022, time.March, 20, 1, 1, 1, 0, time.UTC)),
+			DocumentStatus:   datastore.ActiveDocumentStatus,
 		},
 		{
 			UID:              uuid.New().String(),
@@ -139,15 +145,11 @@ func TestGetDashboardSummary(t *testing.T) {
 			MatchedEndpoints: 1,
 			ProviderID:       "provider_id",
 			Data:             json.RawMessage(`{"data":"12345"}`),
-			AppMetadata: &datastore.AppMetadata{
-				UID:          application.UID,
-				Title:        application.Title,
-				GroupID:      group.UID,
-				SupportEmail: application.SupportEmail,
-			},
-			CreatedAt:      primitive.NewDateTimeFromTime(time.Date(2022, time.March, 20, 1, 1, 1, 0, time.UTC)),
-			UpdatedAt:      primitive.NewDateTimeFromTime(time.Date(2022, time.March, 20, 1, 1, 1, 0, time.UTC)),
-			DocumentStatus: datastore.ActiveDocumentStatus,
+			GroupID:          s.DefaultGroup.UID,
+			AppID:            application.UID,
+			CreatedAt:        primitive.NewDateTimeFromTime(time.Date(2022, time.March, 20, 1, 1, 1, 0, time.UTC)),
+			UpdatedAt:        primitive.NewDateTimeFromTime(time.Date(2022, time.March, 20, 1, 1, 1, 0, time.UTC)),
+			DocumentStatus:   datastore.ActiveDocumentStatus,
 		},
 		{
 			UID:              uuid.New().String(),
@@ -155,21 +157,17 @@ func TestGetDashboardSummary(t *testing.T) {
 			MatchedEndpoints: 1,
 			ProviderID:       "provider_id",
 			Data:             json.RawMessage(`{"data":"12345"}`),
-			AppMetadata: &datastore.AppMetadata{
-				UID:          application.UID,
-				Title:        application.Title,
-				GroupID:      group.UID,
-				SupportEmail: application.SupportEmail,
-			},
-			CreatedAt:      primitive.NewDateTimeFromTime(time.Date(2022, time.March, 20, 1, 1, 1, 0, time.UTC)),
-			UpdatedAt:      primitive.NewDateTimeFromTime(time.Date(2022, time.March, 20, 1, 1, 1, 0, time.UTC)),
-			DocumentStatus: datastore.ActiveDocumentStatus,
+			GroupID:          s.DefaultGroup.UID,
+			AppID:            application.UID,
+			CreatedAt:        primitive.NewDateTimeFromTime(time.Date(2022, time.March, 20, 1, 1, 1, 0, time.UTC)),
+			UpdatedAt:        primitive.NewDateTimeFromTime(time.Date(2022, time.March, 20, 1, 1, 1, 0, time.UTC)),
+			DocumentStatus:   datastore.ActiveDocumentStatus,
 		},
 	}
 
 	for i := range events {
-		err = app.eventRepo.CreateEvent(ctx, &events[i])
-		require.NoError(t, err)
+		err = s.DB.EventRepo().CreateEvent(ctx, &events[i])
+		require.NoError(s.T(), err)
 	}
 
 	type urlQuery struct {
@@ -190,7 +188,7 @@ func TestGetDashboardSummary(t *testing.T) {
 			method:     http.MethodGet,
 			statusCode: http.StatusOK,
 			urlQuery: urlQuery{
-				groupID:   group.UID,
+				groupID:   s.DefaultGroup.UID,
 				startDate: "2021-01-01T00:00:00",
 				endDate:   "2021-01-30T00:00:00",
 				Type:      "yearly",
@@ -201,7 +199,7 @@ func TestGetDashboardSummary(t *testing.T) {
 			method:     http.MethodGet,
 			statusCode: http.StatusOK,
 			urlQuery: urlQuery{
-				groupID:   group.UID,
+				groupID:   s.DefaultGroup.UID,
 				startDate: "2021-01-01T00:00:00",
 				endDate:   "2022-12-27T00:00:00",
 				Type:      "monthly",
@@ -212,7 +210,7 @@ func TestGetDashboardSummary(t *testing.T) {
 			method:     http.MethodGet,
 			statusCode: http.StatusOK,
 			urlQuery: urlQuery{
-				groupID:   group.UID,
+				groupID:   s.DefaultGroup.UID,
 				startDate: "2021-01-01T00:00:00",
 				endDate:   "2022-12-27T00:00:00",
 				Type:      "weekly",
@@ -223,7 +221,7 @@ func TestGetDashboardSummary(t *testing.T) {
 			method:     http.MethodGet,
 			statusCode: http.StatusOK,
 			urlQuery: urlQuery{
-				groupID:   group.UID,
+				groupID:   s.DefaultGroup.UID,
 				startDate: "2021-01-01T00:00:00",
 				endDate:   "2022-12-27T00:00:00",
 				Type:      "daily",
@@ -234,7 +232,7 @@ func TestGetDashboardSummary(t *testing.T) {
 			method:     http.MethodGet,
 			statusCode: http.StatusBadRequest,
 			urlQuery: urlQuery{
-				groupID: group.UID,
+				groupID: s.DefaultGroup.UID,
 				endDate: "2022-12-27T00:00:00",
 				Type:    "daily",
 			},
@@ -244,7 +242,7 @@ func TestGetDashboardSummary(t *testing.T) {
 			method:     http.MethodGet,
 			statusCode: http.StatusBadRequest,
 			urlQuery: urlQuery{
-				groupID:   group.UID,
+				groupID:   s.DefaultGroup.UID,
 				startDate: "2021-01-01",
 				endDate:   "2022-12-27T00:00:00",
 				Type:      "daily",
@@ -255,7 +253,7 @@ func TestGetDashboardSummary(t *testing.T) {
 			method:     http.MethodGet,
 			statusCode: http.StatusBadRequest,
 			urlQuery: urlQuery{
-				groupID:   group.UID,
+				groupID:   s.DefaultGroup.UID,
 				startDate: "2021-01-01T00:00:00",
 				endDate:   "2022-12-27T00:00:00",
 				Type:      "abc",
@@ -266,7 +264,7 @@ func TestGetDashboardSummary(t *testing.T) {
 			method:     http.MethodGet,
 			statusCode: http.StatusBadRequest,
 			urlQuery: urlQuery{
-				groupID:   group.UID,
+				groupID:   s.DefaultGroup.UID,
 				startDate: "2021-01-01T00:00:00",
 				endDate:   "2020-12-27T00:00:00",
 				Type:      "daily",
@@ -274,18 +272,20 @@ func TestGetDashboardSummary(t *testing.T) {
 		},
 	}
 	for _, tc := range tests {
-		t.Run(tc.name, func(t *testing.T) {
-			err := config.LoadConfig("./testdata/Auth_Config/none-convoy.json")
+		s.T().Run(tc.name, func(t *testing.T) {
+			err := config.LoadConfig("./testdata/Auth_Config/full-convoy-with-jwt-realm.json")
 			if err != nil {
 				t.Errorf("Failed to load config file: %v", err)
 			}
-			initRealmChain(t, app.apiKeyRepo)
+			initRealmChain(t, s.DB.APIRepo(), s.DB.UserRepo(), s.ConvoyApp.cache)
 
-			req := httptest.NewRequest(tc.method, fmt.Sprintf("/ui/dashboard/summary?startDate=%s&endDate=%s&type=%s&groupId=%s", tc.urlQuery.startDate, tc.urlQuery.endDate, tc.urlQuery.Type, tc.urlQuery.groupID), nil)
+			req := httptest.NewRequest(tc.method, fmt.Sprintf("/ui/organisations/%s/groups/%s/dashboard/summary?startDate=%s&endDate=%s&type=%s", s.DefaultOrg.UID, tc.urlQuery.groupID, tc.urlQuery.startDate, tc.urlQuery.endDate, tc.urlQuery.Type), nil)
+			err = s.AuthenticatorFn(req, s.Router)
+			require.NoError(s.T(), err)
+
 			w := httptest.NewRecorder()
 
-			router := buildRoutes(app)
-			router.ServeHTTP(w, req)
+			s.Router.ServeHTTP(w, req)
 
 			if w.Code != tc.statusCode {
 				log.Error(tc.name, w.Body)
@@ -297,30 +297,14 @@ func TestGetDashboardSummary(t *testing.T) {
 	}
 }
 
-func getDSN() string {
-	return os.Getenv("TEST_MONGO_DSN")
+func TestDashboardIntegrationTestSuiteTest(t *testing.T) {
+	suite.Run(t, new(DashboardIntegrationTestSuite))
 }
 
-func getConfig() config.Configuration {
-
-	return config.Configuration{
-		Database: config.DatabaseConfiguration{
-			Type: config.MongodbDatabaseProvider,
-			Dsn:  getDSN(),
-		},
-	}
-}
-
-func getDB(t *testing.T) (*mongo.Database, func()) {
-
-	db, err := mongoStore.New(getConfig())
-	require.NoError(t, err)
-
-	err = os.Setenv("TZ", "") // Use UTC by default :)
-	require.NoError(t, err)
-
-	return db.Client().(*mongo.Database), func() {
-		require.NoError(t, db.Client().(*mongo.Database).Drop(context.Background()))
-		require.NoError(t, db.Disconnect(context.Background()))
-	}
+func verifyMatch(t *testing.T, w httptest.ResponseRecorder) {
+	g := goldie.New(
+		t,
+		goldie.WithDiffEngine(goldie.ColoredDiff),
+	)
+	g.Assert(t, t.Name(), w.Body.Bytes())
 }

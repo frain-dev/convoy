@@ -22,11 +22,29 @@ func NewApplicationRepo(db *badgerhold.Store) datastore.ApplicationRepository {
 	return &appRepo{db: db}
 }
 
-func (a *appRepo) CreateApplication(ctx context.Context, app *datastore.Application) error {
+func (a *appRepo) CreateApplication(ctx context.Context, app *datastore.Application, groupID string) error {
+	err := a.assertUniqueAppTitle(ctx, app, groupID)
+	if err != nil {
+		if errors.Is(err, datastore.ErrDuplicateAppName) {
+			return err
+		}
+
+		return fmt.Errorf("failed to check if application name is unique: %v", err)
+	}
+
 	return a.db.Upsert(app.UID, app)
 }
 
-func (a *appRepo) UpdateApplication(ctx context.Context, app *datastore.Application) error {
+func (a *appRepo) UpdateApplication(ctx context.Context, app *datastore.Application, groupID string) error {
+	err := a.assertUniqueAppTitle(ctx, app, groupID)
+	if err != nil {
+		if errors.Is(err, datastore.ErrDuplicateAppName) {
+			return err
+		}
+
+		return fmt.Errorf("failed to check if application name is unique: %v", err)
+	}
+
 	return a.db.Update(app.UID, app)
 }
 
@@ -95,6 +113,26 @@ func (a *appRepo) LoadApplicationsPaged(ctx context.Context, gid, q string, page
 	return apps, data, err
 }
 
+func (a *appRepo) assertUniqueAppTitle(ctx context.Context, app *datastore.Application, groupID string) error {
+	count, err := a.db.Count(
+		&datastore.Application{},
+		badgerhold.Where("Title").Eq(app.Title).
+			And("UID").Ne(app.UID).
+			And("GroupID").Eq(groupID).
+			And("DocumentStatus").Eq(datastore.ActiveDocumentStatus),
+	)
+
+	if err != nil {
+		return err
+	}
+
+	if count != 0 {
+		return datastore.ErrDuplicateAppName
+	}
+
+	return nil
+}
+
 func (a *appRepo) LoadApplicationsPagedByGroupId(ctx context.Context, gid string, pageable datastore.Pageable) ([]datastore.Application, datastore.PaginationData, error) {
 	return a.LoadApplicationsPaged(ctx, gid, "", pageable)
 }
@@ -152,31 +190,6 @@ func (a *appRepo) FindApplicationEndpointByID(ctx context.Context, appID string,
 
 func (a *appRepo) DeleteApplication(ctx context.Context, app *datastore.Application) error {
 	return a.db.Delete(app.UID, app)
-}
-
-func (a *appRepo) UpdateApplicationEndpointsStatus(ctx context.Context, aid string, endpointIds []string, status datastore.EndpointStatus) error {
-	endpointMap := make(map[string]bool)
-	var application *datastore.Application
-
-	for i := 0; i < len(endpointIds); i++ {
-		endpointMap[endpointIds[i]] = true
-	}
-
-	err := a.db.Get(aid, &application)
-
-	if err != nil && errors.Is(err, badgerhold.ErrNotFound) {
-		return datastore.ErrApplicationNotFound
-	}
-
-	for i := 0; i < len(application.Endpoints); i++ {
-		if _, ok := endpointMap[application.Endpoints[i].UID]; ok {
-			application.Endpoints[i].Status = status
-		}
-	}
-
-	err = a.UpdateApplication(ctx, application)
-
-	return err
 }
 
 func (a *appRepo) DeleteGroupApps(ctx context.Context, gid string) error {

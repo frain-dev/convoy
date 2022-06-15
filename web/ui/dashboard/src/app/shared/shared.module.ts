@@ -6,8 +6,9 @@ import 'prismjs/components/prism-scss';
 import 'prismjs/components/prism-json';
 import 'prismjs/plugins/line-numbers/prism-line-numbers';
 import { SharedComponent } from './shared.component';
+import { MetricPipe } from './pipes/metric/metric.pipe';
 @NgModule({
-	declarations: [SharedComponent],
+	declarations: [SharedComponent, MetricPipe],
 	imports: [CommonModule],
 	exports: [SharedComponent]
 })

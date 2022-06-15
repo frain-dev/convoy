@@ -19,24 +19,31 @@ func sendNotification(
 	eventDelivery *datastore.EventDelivery,
 	g *datastore.Group,
 	smtpCfg *config.SMTPConfiguration,
-	status datastore.EndpointStatus,
+	status datastore.SubscriptionStatus,
 	failure bool,
 ) error {
-	app, err := appRepo.FindApplicationByID(ctx, eventDelivery.AppMetadata.UID)
+	app, err := appRepo.FindApplicationByID(ctx, eventDelivery.AppID)
 	if err != nil {
 		return fmt.Errorf("failed to fetch application: %v", err)
 	}
 
+	endpoint, err := appRepo.FindApplicationEndpointByID(ctx, eventDelivery.AppID, eventDelivery.EndpointID)
+	if err != nil {
+		return fmt.Errorf("failed to fetch application endpoint: %v", err)
+	}
+
 	n := &notification.Notification{
-		LogoURL:        g.LogoURL,
-		TargetURL:      eventDelivery.EndpointMetadata.TargetURL,
-		EndpointStatus: string(status),
+		LogoURL:           g.LogoURL,
+		TargetURL:         endpoint.TargetURL,
+		Subject:           "Endpoint Status Update",
+		EndpointStatus:    string(status),
+		EmailTemplateName: email.TemplateEndpointUpdate.String(),
 	}
 
 	if failure {
-		n.Text = fmt.Sprintf("failed to send event delivery (%s) to endpoint url (%s) after retry limit was hit, endpoint status is now %s", eventDelivery.UID, eventDelivery.EndpointMetadata.TargetURL, status)
+		n.Text = fmt.Sprintf("failed to send event delivery (%s) to endpoint url (%s) after retry limit was hit, endpoint status is now %s", eventDelivery.UID, endpoint.TargetURL, status)
 	} else {
-		n.Text = fmt.Sprintf("endpoint url (%s) which was formerly dectivated has now been reactivated, endpoint status is now %s", eventDelivery.EndpointMetadata.TargetURL, status)
+		n.Text = fmt.Sprintf("endpoint url (%s) which was formerly dectivated has now been reactivated, endpoint status is now %s", endpoint.TargetURL, status)
 	}
 
 	if !util.IsStringEmpty(app.SupportEmail) {

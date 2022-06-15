@@ -8,8 +8,9 @@ import (
 
 	"github.com/frain-dev/convoy/auth"
 	"github.com/frain-dev/convoy/auth/realm/file"
+	"github.com/frain-dev/convoy/auth/realm/jwt"
 	"github.com/frain-dev/convoy/auth/realm/native"
-	"github.com/frain-dev/convoy/auth/realm/noop"
+	"github.com/frain-dev/convoy/cache"
 	"github.com/frain-dev/convoy/config"
 	"github.com/frain-dev/convoy/datastore"
 	log "github.com/sirupsen/logrus"
@@ -39,33 +40,33 @@ func Get() (*RealmChain, error) {
 	return rc, nil
 }
 
-func Init(authConfig *config.AuthConfiguration, apiKeyRepo datastore.APIKeyRepository) error {
+func Init(authConfig *config.AuthConfiguration, apiKeyRepo datastore.APIKeyRepository, userRepo datastore.UserRepository, cache cache.Cache) error {
 	rc := newRealmChain()
 
 	// validate authentication realms
-	if authConfig.RequireAuth {
-		fr, err := file.NewFileRealm(&authConfig.File)
-		if err != nil {
-			return err
-		}
+	fr, err := file.NewFileRealm(&authConfig.File)
+	if err != nil {
+		return err
+	}
 
-		err = rc.RegisterRealm(fr)
+	err = rc.RegisterRealm(fr)
+	if err != nil {
+		return errors.New("failed to register file realm in realm chain")
+	}
+
+	if authConfig.Native.Enabled {
+		nr := native.NewNativeRealm(apiKeyRepo)
+		err = rc.RegisterRealm(nr)
 		if err != nil {
 			return errors.New("failed to register file realm in realm chain")
 		}
+	}
 
-		if authConfig.Native.Enabled {
-			nr := native.NewNativeRealm(apiKeyRepo)
-			err = rc.RegisterRealm(nr)
-			if err != nil {
-				return errors.New("failed to register file realm in realm chain")
-			}
-		}
-	} else {
-		log.Warnf("using noop realm for authentication: all requests will be authenticated with super_user role")
-		err := rc.RegisterRealm(noop.NewNoopRealm())
+	if authConfig.Jwt.Enabled {
+		jr := jwt.NewJwtRealm(userRepo, &authConfig.Jwt, cache)
+		err = rc.RegisterRealm(jr)
 		if err != nil {
-			return errors.New("failed to register noop realm in realm chain")
+			return errors.New("failed to register jwt realm in realm chain")
 		}
 	}
 

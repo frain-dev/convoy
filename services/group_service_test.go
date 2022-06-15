@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"testing"
 
+	"github.com/frain-dev/convoy/auth"
 	"github.com/frain-dev/convoy/datastore"
 	nooplimiter "github.com/frain-dev/convoy/limiter/noop"
 	"github.com/frain-dev/convoy/mocks"
@@ -19,7 +20,9 @@ func provideGroupService(ctrl *gomock.Controller) *GroupService {
 	appRepo := mocks.NewMockApplicationRepository(ctrl)
 	eventRepo := mocks.NewMockEventRepository(ctrl)
 	eventDeliveryRepo := mocks.NewMockEventDeliveryRepository(ctrl)
-	return NewGroupService(appRepo, groupRepo, eventRepo, eventDeliveryRepo, nooplimiter.NewNoopLimiter())
+	apiKeyRepo := mocks.NewMockAPIKeyRepository(ctrl)
+	cache := mocks.NewMockCache(ctrl)
+	return NewGroupService(apiKeyRepo, appRepo, groupRepo, eventRepo, eventDeliveryRepo, nooplimiter.NewNoopLimiter(), cache)
 }
 
 func TestGroupService_CreateGroup(t *testing.T) {
@@ -27,6 +30,8 @@ func TestGroupService_CreateGroup(t *testing.T) {
 	type args struct {
 		ctx      context.Context
 		newGroup *models.Group
+		org      *datastore.Organisation
+		member   *datastore.OrganisationMember
 	}
 	tests := []struct {
 		name        string
@@ -38,52 +43,70 @@ func TestGroupService_CreateGroup(t *testing.T) {
 		wantErrMsg  string
 	}{
 		{
-			name: "should_create_group",
+			name: "should_create_outgoing_group",
 			args: args{
 				ctx: ctx,
 				newGroup: &models.Group{
 					Name:              "test_group",
+					Type:              "outgoing",
 					LogoURL:           "https://google.com",
 					RateLimit:         1000,
 					RateLimitDuration: "1m",
-					Config: datastore.GroupConfig{
-						Signature: datastore.SignatureConfiguration{
+					Config: &datastore.GroupConfig{
+						Signature: &datastore.SignatureConfiguration{
 							Header: "X-Convoy-Signature",
 							Hash:   "SHA256",
 						},
-						Strategy: datastore.StrategyConfiguration{
-							Type: "default",
-							Default: datastore.DefaultStrategyConfiguration{
-								IntervalSeconds: 20,
-								RetryLimit:      4,
-							},
+						Strategy: &datastore.StrategyConfiguration{
+							Type:       "linear",
+							Duration:   20,
+							RetryCount: 4,
+						},
+						RateLimit: &datastore.RateLimitConfiguration{
+							Count:    1000,
+							Duration: "1m",
 						},
 						DisableEndpoint: true,
 						ReplayAttacks:   true,
 					},
+				},
+				org: &datastore.Organisation{UID: "1234"},
+				member: &datastore.OrganisationMember{
+					UID:            "abc",
+					OrganisationID: "1234",
+					Role:           auth.Role{Type: auth.RoleSuperUser},
 				},
 			},
 			dbFn: func(gs *GroupService) {
 				a, _ := gs.groupRepo.(*mocks.MockGroupRepository)
 				a.EXPECT().CreateGroup(gomock.Any(), gomock.Any()).
 					Times(1).Return(nil)
+
+				a.EXPECT().FetchGroupByID(gomock.Any(), gomock.Any()).Times(1).Return(&datastore.Group{UID: "abc", OrganisationID: "1234"}, nil)
+
+				apiKeyRepo, _ := gs.apiKeyRepo.(*mocks.MockAPIKeyRepository)
+				apiKeyRepo.EXPECT().CreateAPIKey(gomock.Any(), gomock.Any()).Times(1).Return(nil)
 			},
 			wantGroup: &datastore.Group{
 				Name:              "test_group",
+				Type:              "outgoing",
 				LogoURL:           "https://google.com",
 				RateLimit:         1000,
+				OrganisationID:    "1234",
 				RateLimitDuration: "1m",
 				Config: &datastore.GroupConfig{
-					Signature: datastore.SignatureConfiguration{
+					Signature: &datastore.SignatureConfiguration{
 						Header: "X-Convoy-Signature",
 						Hash:   "SHA256",
 					},
-					Strategy: datastore.StrategyConfiguration{
-						Type: "default",
-						Default: datastore.DefaultStrategyConfiguration{
-							IntervalSeconds: 20,
-							RetryLimit:      4,
-						},
+					Strategy: &datastore.StrategyConfiguration{
+						Type:       "linear",
+						Duration:   20,
+						RetryCount: 4,
+					},
+					RateLimit: &datastore.RateLimitConfiguration{
+						Count:    1000,
+						Duration: "1m",
 					},
 					DisableEndpoint: true,
 					ReplayAttacks:   true,
@@ -93,53 +116,171 @@ func TestGroupService_CreateGroup(t *testing.T) {
 			wantErr: false,
 		},
 		{
-			name: "should_create_group_with_rate_limit_defaults",
+			name: "should_create_incoming_group",
 			args: args{
 				ctx: ctx,
 				newGroup: &models.Group{
-					Name:    "test_group_1",
-					LogoURL: "https://google.com",
-					Config: datastore.GroupConfig{
-						Signature: datastore.SignatureConfiguration{
+					Name:              "test_group",
+					Type:              "incoming",
+					LogoURL:           "https://google.com",
+					RateLimit:         1000,
+					RateLimitDuration: "1m",
+					Config: &datastore.GroupConfig{
+						Signature: &datastore.SignatureConfiguration{
 							Header: "X-Convoy-Signature",
 							Hash:   "SHA256",
 						},
-						Strategy: datastore.StrategyConfiguration{
-							Type: "default",
-							Default: datastore.DefaultStrategyConfiguration{
-								IntervalSeconds: 20,
-								RetryLimit:      4,
-							},
+						Strategy: &datastore.StrategyConfiguration{
+							Type:       "linear",
+							Duration:   20,
+							RetryCount: 4,
+						},
+						RateLimit: &datastore.RateLimitConfiguration{
+							Count:    1000,
+							Duration: "1m",
 						},
 						DisableEndpoint: true,
 						ReplayAttacks:   true,
 					},
+				},
+				org: &datastore.Organisation{UID: "1234"},
+				member: &datastore.OrganisationMember{
+					UID:            "abc",
+					OrganisationID: "1234",
+					Role:           auth.Role{Type: auth.RoleSuperUser},
 				},
 			},
 			dbFn: func(gs *GroupService) {
 				a, _ := gs.groupRepo.(*mocks.MockGroupRepository)
 				a.EXPECT().CreateGroup(gomock.Any(), gomock.Any()).
 					Times(1).Return(nil)
+
+				a.EXPECT().FetchGroupByID(gomock.Any(), gomock.Any()).Times(1).Return(&datastore.Group{UID: "abc", OrganisationID: "1234"}, nil)
+
+				apiKeyRepo, _ := gs.apiKeyRepo.(*mocks.MockAPIKeyRepository)
+				apiKeyRepo.EXPECT().CreateAPIKey(gomock.Any(), gomock.Any()).Times(1).Return(nil)
 			},
 			wantGroup: &datastore.Group{
-				Name:              "test_group_1",
+				Name:              "test_group",
+				Type:              "incoming",
 				LogoURL:           "https://google.com",
-				RateLimit:         5000,
+				OrganisationID:    "1234",
+				RateLimit:         1000,
 				RateLimitDuration: "1m",
 				Config: &datastore.GroupConfig{
-					Signature: datastore.SignatureConfiguration{
+					Signature: &datastore.SignatureConfiguration{
 						Header: "X-Convoy-Signature",
 						Hash:   "SHA256",
 					},
-					Strategy: datastore.StrategyConfiguration{
-						Type: "default",
-						Default: datastore.DefaultStrategyConfiguration{
-							IntervalSeconds: 20,
-							RetryLimit:      4,
-						},
+					Strategy: &datastore.StrategyConfiguration{
+						Type:       "linear",
+						Duration:   20,
+						RetryCount: 4,
+					},
+					RateLimit: &datastore.RateLimitConfiguration{
+						Count:    1000,
+						Duration: "1m",
 					},
 					DisableEndpoint: true,
 					ReplayAttacks:   true,
+				},
+				DocumentStatus: datastore.ActiveDocumentStatus,
+			},
+			wantErr: false,
+		},
+		{
+			name: "should_create_incoming_group_with_defaults",
+			args: args{
+				ctx: ctx,
+				newGroup: &models.Group{
+					Name:    "test_group_1",
+					Type:    "incoming",
+					LogoURL: "https://google.com",
+					Config:  &datastore.GroupConfig{},
+				},
+				org: &datastore.Organisation{UID: "1234"},
+				member: &datastore.OrganisationMember{
+					UID:            "abc",
+					OrganisationID: "1234",
+					Role:           auth.Role{Type: auth.RoleSuperUser},
+				},
+			},
+			dbFn: func(gs *GroupService) {
+				a, _ := gs.groupRepo.(*mocks.MockGroupRepository)
+				a.EXPECT().CreateGroup(gomock.Any(), gomock.Any()).
+					Times(1).Return(nil)
+
+				a.EXPECT().FetchGroupByID(gomock.Any(), gomock.Any()).Times(1).Return(&datastore.Group{UID: "abc", OrganisationID: "1234"}, nil)
+
+				apiKeyRepo, _ := gs.apiKeyRepo.(*mocks.MockAPIKeyRepository)
+				apiKeyRepo.EXPECT().CreateAPIKey(gomock.Any(), gomock.Any()).Times(1).Return(nil)
+			},
+			wantGroup: &datastore.Group{
+				Name:              "test_group_1",
+				Type:              "incoming",
+				LogoURL:           "https://google.com",
+				OrganisationID:    "1234",
+				RateLimit:         5000,
+				RateLimitDuration: "1m",
+				Config: &datastore.GroupConfig{
+					Signature:       &datastore.DefaultSignatureConfig,
+					Strategy:        &datastore.DefaultStrategyConfig,
+					RateLimit:       &datastore.DefaultRateLimitConfig,
+					DisableEndpoint: false,
+					ReplayAttacks:   false,
+				},
+				DocumentStatus: datastore.ActiveDocumentStatus,
+			},
+			wantErr: false,
+		},
+		{
+			name: "should_create_outgoing_group_with_defaults",
+			args: args{
+				ctx: ctx,
+				newGroup: &models.Group{
+					Name:    "test_group",
+					Type:    "outgoing",
+					LogoURL: "https://google.com",
+					Config: &datastore.GroupConfig{
+						Signature: &datastore.SignatureConfiguration{
+							Header: "X-Convoy-Signature",
+							Hash:   "SHA256",
+						},
+					},
+				},
+				org: &datastore.Organisation{UID: "1234"},
+				member: &datastore.OrganisationMember{
+					UID:            "abc",
+					OrganisationID: "1234",
+					Role:           auth.Role{Type: auth.RoleSuperUser},
+				},
+			},
+			dbFn: func(gs *GroupService) {
+				a, _ := gs.groupRepo.(*mocks.MockGroupRepository)
+				a.EXPECT().CreateGroup(gomock.Any(), gomock.Any()).
+					Times(1).Return(nil)
+
+				a.EXPECT().FetchGroupByID(gomock.Any(), gomock.Any()).Times(1).Return(&datastore.Group{UID: "abc", OrganisationID: "1234"}, nil)
+
+				apiKeyRepo, _ := gs.apiKeyRepo.(*mocks.MockAPIKeyRepository)
+				apiKeyRepo.EXPECT().CreateAPIKey(gomock.Any(), gomock.Any()).Times(1).Return(nil)
+			},
+			wantGroup: &datastore.Group{
+				Name:              "test_group",
+				Type:              "outgoing",
+				LogoURL:           "https://google.com",
+				RateLimit:         5000,
+				OrganisationID:    "1234",
+				RateLimitDuration: "1m",
+				Config: &datastore.GroupConfig{
+					Signature: &datastore.SignatureConfiguration{
+						Header: "X-Convoy-Signature",
+						Hash:   "SHA256",
+					},
+					Strategy:        &datastore.DefaultStrategyConfig,
+					RateLimit:       &datastore.DefaultRateLimitConfig,
+					DisableEndpoint: false,
+					ReplayAttacks:   false,
 				},
 				DocumentStatus: datastore.ActiveDocumentStatus,
 			},
@@ -151,23 +292,24 @@ func TestGroupService_CreateGroup(t *testing.T) {
 				ctx: ctx,
 				newGroup: &models.Group{
 					Name:    "test_group",
+					Type:    "incoming",
 					LogoURL: "https://google.com",
-					Config: datastore.GroupConfig{
-						Signature: datastore.SignatureConfiguration{
+					Config: &datastore.GroupConfig{
+						Signature: &datastore.SignatureConfiguration{
 							Header: "X-Convoy-Signature",
 							Hash:   "SHA256",
 						},
-						Strategy: datastore.StrategyConfiguration{
-							Type: "default",
-							Default: datastore.DefaultStrategyConfiguration{
-								IntervalSeconds: 20,
-								RetryLimit:      4,
-							},
+						Strategy: &datastore.StrategyConfiguration{
+							Type:       "linear",
+							Duration:   20,
+							RetryCount: 4,
 						},
 						DisableEndpoint: true,
 						ReplayAttacks:   true,
 					},
 				},
+				org:    &datastore.Organisation{UID: "1234"},
+				member: &datastore.OrganisationMember{},
 			},
 			dbFn: func(gs *GroupService) {
 				a, _ := gs.groupRepo.(*mocks.MockGroupRepository)
@@ -177,6 +319,71 @@ func TestGroupService_CreateGroup(t *testing.T) {
 			wantErr:     true,
 			wantErrCode: http.StatusBadRequest,
 			wantErrMsg:  "failed to create group",
+		},
+		{
+			name: "should_fail_to_create_default_api_key_for_group",
+			args: args{
+				ctx: ctx,
+				newGroup: &models.Group{
+					Name:    "test_group_1",
+					Type:    "incoming",
+					LogoURL: "https://google.com",
+					Config:  &datastore.GroupConfig{},
+				},
+				org: &datastore.Organisation{UID: "1234"},
+				member: &datastore.OrganisationMember{
+					UID:            "abc",
+					OrganisationID: "1234",
+					Role:           auth.Role{Type: auth.RoleSuperUser},
+				},
+			},
+			dbFn: func(gs *GroupService) {
+				a, _ := gs.groupRepo.(*mocks.MockGroupRepository)
+				a.EXPECT().CreateGroup(gomock.Any(), gomock.Any()).
+					Times(1).Return(nil)
+
+				a.EXPECT().FetchGroupByID(gomock.Any(), gomock.Any()).Times(1).Return(&datastore.Group{UID: "abc", OrganisationID: "1234"}, nil)
+
+				apiKeyRepo, _ := gs.apiKeyRepo.(*mocks.MockAPIKeyRepository)
+				apiKeyRepo.EXPECT().CreateAPIKey(gomock.Any(), gomock.Any()).Times(1).Return(errors.New("failed"))
+			},
+			wantErr:     true,
+			wantErrCode: http.StatusBadRequest,
+			wantErrMsg:  "failed to create api key",
+		},
+		{
+			name: "should_error_for_duplicate_group_name",
+			args: args{
+				ctx: ctx,
+				newGroup: &models.Group{
+					Name:    "test_group",
+					Type:    "incoming",
+					LogoURL: "https://google.com",
+					Config: &datastore.GroupConfig{
+						Signature: &datastore.SignatureConfiguration{
+							Header: "X-Convoy-Signature",
+							Hash:   "SHA256",
+						},
+						Strategy: &datastore.StrategyConfiguration{
+							Type:       "linear",
+							Duration:   20,
+							RetryCount: 4,
+						},
+						DisableEndpoint: true,
+						ReplayAttacks:   true,
+					},
+				},
+				org:    &datastore.Organisation{UID: "1234"},
+				member: &datastore.OrganisationMember{},
+			},
+			dbFn: func(gs *GroupService) {
+				a, _ := gs.groupRepo.(*mocks.MockGroupRepository)
+				a.EXPECT().CreateGroup(gomock.Any(), gomock.Any()).
+					Times(1).Return(datastore.ErrDuplicateGroupName)
+			},
+			wantErr:     true,
+			wantErrCode: http.StatusBadRequest,
+			wantErrMsg:  "a group with this name already exists",
 		},
 	}
 	for _, tc := range tests {
@@ -190,7 +397,7 @@ func TestGroupService_CreateGroup(t *testing.T) {
 				tc.dbFn(gs)
 			}
 
-			group, err := gs.CreateGroup(tc.args.ctx, tc.args.newGroup)
+			group, apiKey, err := gs.CreateGroup(tc.args.ctx, tc.args.newGroup, tc.args.org, tc.args.member)
 			if tc.wantErr {
 				require.NotNil(t, err)
 				require.Equal(t, tc.wantErrCode, err.(*ServiceError).ErrCode())
@@ -198,12 +405,21 @@ func TestGroupService_CreateGroup(t *testing.T) {
 				return
 			}
 
+			//fmt.Println("eee", err.Error())
 			require.Nil(t, err)
 			require.NotEmpty(t, group.UID)
 			require.NotEmpty(t, group.ID)
 			require.NotEmpty(t, group.CreatedAt)
 			require.NotEmpty(t, group.UpdatedAt)
 			require.Empty(t, group.DeletedAt)
+
+			require.Equal(t, group.Name+"'s default key", apiKey.Name)
+			require.Equal(t, group.UID, apiKey.Role.Group)
+			require.Equal(t, auth.RoleSuperUser, apiKey.Role.Type)
+			require.NotEmpty(t, apiKey.ExpiresAt)
+			require.NotEmpty(t, apiKey.UID)
+			require.NotEmpty(t, apiKey.Key)
+			require.NotEmpty(t, apiKey.CreatedAt)
 
 			stripVariableFields(t, "group", group)
 			require.Equal(t, tc.wantGroup, group)
@@ -217,7 +433,7 @@ func TestGroupService_UpdateGroup(t *testing.T) {
 	type args struct {
 		ctx    context.Context
 		group  *datastore.Group
-		update *models.Group
+		update *models.UpdateGroup
 	}
 	tests := []struct {
 		name        string
@@ -231,23 +447,42 @@ func TestGroupService_UpdateGroup(t *testing.T) {
 		{
 			name: "should_update_group",
 			args: args{
-				ctx:   ctx,
-				group: &datastore.Group{UID: "12345"},
-				update: &models.Group{
+				ctx: ctx,
+				group: &datastore.Group{
+					UID:     "12345",
 					Name:    "test_group",
+					Type:    "incoming",
 					LogoURL: "https://google.com",
-					Config: datastore.GroupConfig{
-						Signature: datastore.SignatureConfiguration{
+					Config: &datastore.GroupConfig{
+						Signature: &datastore.SignatureConfiguration{
 							Header: "X-Convoy-Signature",
 							Hash:   "SHA256",
 						},
-						Strategy: datastore.StrategyConfiguration{
-							Type: "default",
-							Default: datastore.DefaultStrategyConfiguration{
-								IntervalSeconds: 20,
-								RetryLimit:      4,
-							},
+						Strategy: &datastore.StrategyConfiguration{
+							Type:       "linear",
+							Duration:   20,
+							RetryCount: 4,
 						},
+						RateLimit:       &datastore.DefaultRateLimitConfig,
+						DisableEndpoint: true,
+						ReplayAttacks:   true,
+					},
+					DocumentStatus: datastore.ActiveDocumentStatus,
+				},
+				update: &models.UpdateGroup{
+					Name:    "test_group",
+					LogoURL: "https://google.com",
+					Config: &datastore.GroupConfig{
+						Signature: &datastore.SignatureConfiguration{
+							Header: "X-Convoy-Signature",
+							Hash:   "SHA256",
+						},
+						Strategy: &datastore.StrategyConfiguration{
+							Type:       "linear",
+							Duration:   20,
+							RetryCount: 4,
+						},
+						RateLimit:       &datastore.DefaultRateLimitConfig,
 						DisableEndpoint: true,
 						ReplayAttacks:   true,
 					},
@@ -256,26 +491,30 @@ func TestGroupService_UpdateGroup(t *testing.T) {
 			wantGroup: &datastore.Group{
 				UID:     "12345",
 				Name:    "test_group",
+				Type:    "incoming",
 				LogoURL: "https://google.com",
 				Config: &datastore.GroupConfig{
-					Signature: datastore.SignatureConfiguration{
+					Signature: &datastore.SignatureConfiguration{
 						Header: "X-Convoy-Signature",
 						Hash:   "SHA256",
 					},
-					Strategy: datastore.StrategyConfiguration{
-						Type: "default",
-						Default: datastore.DefaultStrategyConfiguration{
-							IntervalSeconds: 20,
-							RetryLimit:      4,
-						},
+					Strategy: &datastore.StrategyConfiguration{
+						Type:       "linear",
+						Duration:   20,
+						RetryCount: 4,
 					},
+					RateLimit:       &datastore.DefaultRateLimitConfig,
 					DisableEndpoint: true,
 					ReplayAttacks:   true,
 				},
+				DocumentStatus: datastore.ActiveDocumentStatus,
 			},
 			dbFn: func(gs *GroupService) {
 				a, _ := gs.groupRepo.(*mocks.MockGroupRepository)
 				a.EXPECT().UpdateGroup(gomock.Any(), gomock.Any()).Times(1).Return(nil)
+
+				c, _ := gs.cache.(*mocks.MockCache)
+				c.EXPECT().Set(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Times(1)
 			},
 		},
 		{
@@ -283,20 +522,18 @@ func TestGroupService_UpdateGroup(t *testing.T) {
 			args: args{
 				ctx:   ctx,
 				group: &datastore.Group{UID: "12345"},
-				update: &models.Group{
+				update: &models.UpdateGroup{
 					Name:    "",
 					LogoURL: "https://google.com",
-					Config: datastore.GroupConfig{
-						Signature: datastore.SignatureConfiguration{
+					Config: &datastore.GroupConfig{
+						Signature: &datastore.SignatureConfiguration{
 							Header: "X-Convoy-Signature",
 							Hash:   "SHA256",
 						},
-						Strategy: datastore.StrategyConfiguration{
-							Type: "default",
-							Default: datastore.DefaultStrategyConfiguration{
-								IntervalSeconds: 20,
-								RetryLimit:      4,
-							},
+						Strategy: &datastore.StrategyConfiguration{
+							Type:       "linear",
+							Duration:   20,
+							RetryCount: 4,
 						},
 						DisableEndpoint: true,
 						ReplayAttacks:   true,
@@ -312,20 +549,18 @@ func TestGroupService_UpdateGroup(t *testing.T) {
 			args: args{
 				ctx:   ctx,
 				group: &datastore.Group{UID: "12345"},
-				update: &models.Group{
+				update: &models.UpdateGroup{
 					Name:    "test_group",
 					LogoURL: "https://google.com",
-					Config: datastore.GroupConfig{
-						Signature: datastore.SignatureConfiguration{
+					Config: &datastore.GroupConfig{
+						Signature: &datastore.SignatureConfiguration{
 							Header: "X-Convoy-Signature",
 							Hash:   "SHA256",
 						},
-						Strategy: datastore.StrategyConfiguration{
-							Type: "default",
-							Default: datastore.DefaultStrategyConfiguration{
-								IntervalSeconds: 20,
-								RetryLimit:      4,
-							},
+						Strategy: &datastore.StrategyConfiguration{
+							Type:       "linear",
+							Duration:   20,
+							RetryCount: 4,
 						},
 						DisableEndpoint: true,
 						ReplayAttacks:   true,
@@ -338,7 +573,7 @@ func TestGroupService_UpdateGroup(t *testing.T) {
 			},
 			wantErr:     true,
 			wantErrCode: http.StatusBadRequest,
-			wantErrMsg:  "an error occurred while updating Group",
+			wantErrMsg:  "failed",
 		},
 	}
 	for _, tc := range tests {
@@ -401,11 +636,18 @@ func TestGroupService_GetGroups(t *testing.T) {
 					{UID: "abc"},
 				}, nil)
 
-				a, _ := gs.appRepo.(*mocks.MockApplicationRepository)
-				a.EXPECT().CountGroupApplications(gomock.Any(), gomock.Any()).Times(2).Return(int64(1), nil)
+				g.EXPECT().FillGroupsStatistics(gomock.Any(), gomock.Any()).Times(1).DoAndReturn(func(ctx context.Context, groups []*datastore.Group) error {
+					groups[0].Statistics = &datastore.GroupStatistics{
+						MessagesSent: 1,
+						TotalApps:    1,
+					}
 
-				e, _ := gs.eventRepo.(*mocks.MockEventRepository)
-				e.EXPECT().CountGroupMessages(gomock.Any(), gomock.Any()).Times(2).Return(int64(1), nil)
+					groups[1].Statistics = &datastore.GroupStatistics{
+						MessagesSent: 1,
+						TotalApps:    1,
+					}
+					return nil
+				})
 			},
 			wantGroups: []*datastore.Group{
 				{
@@ -439,11 +681,18 @@ func TestGroupService_GetGroups(t *testing.T) {
 					{UID: "abc"},
 				}, nil)
 
-				a, _ := gs.appRepo.(*mocks.MockApplicationRepository)
-				a.EXPECT().CountGroupApplications(gomock.Any(), gomock.Any()).Times(2).Return(int64(1), nil)
+				g.EXPECT().FillGroupsStatistics(gomock.Any(), gomock.Any()).Times(1).DoAndReturn(func(ctx context.Context, groups []*datastore.Group) error {
+					groups[0].Statistics = &datastore.GroupStatistics{
+						MessagesSent: 1,
+						TotalApps:    1,
+					}
 
-				e, _ := gs.eventRepo.(*mocks.MockEventRepository)
-				e.EXPECT().CountGroupMessages(gomock.Any(), gomock.Any()).Times(2).Return(int64(1), nil)
+					groups[1].Statistics = &datastore.GroupStatistics{
+						MessagesSent: 1,
+						TotalApps:    1,
+					}
+					return nil
+				})
 			},
 			wantGroups: []*datastore.Group{
 				{
@@ -477,11 +726,18 @@ func TestGroupService_GetGroups(t *testing.T) {
 					{UID: "abc"},
 				}, nil)
 
-				a, _ := gs.appRepo.(*mocks.MockApplicationRepository)
-				a.EXPECT().CountGroupApplications(gomock.Any(), gomock.Any()).Times(2).Return(int64(1), nil)
+				g.EXPECT().FillGroupsStatistics(gomock.Any(), gomock.Any()).Times(1).DoAndReturn(func(ctx context.Context, groups []*datastore.Group) error {
+					groups[0].Statistics = &datastore.GroupStatistics{
+						MessagesSent: 1,
+						TotalApps:    1,
+					}
 
-				e, _ := gs.eventRepo.(*mocks.MockEventRepository)
-				e.EXPECT().CountGroupMessages(gomock.Any(), gomock.Any()).Times(2).Return(int64(1), nil)
+					groups[1].Statistics = &datastore.GroupStatistics{
+						MessagesSent: 1,
+						TotalApps:    1,
+					}
+					return nil
+				})
 			},
 			wantGroups: []*datastore.Group{
 				{
@@ -543,7 +799,7 @@ func TestGroupService_GetGroups(t *testing.T) {
 	}
 }
 
-func TestGroupService_FillGroupStatistics(t *testing.T) {
+func TestGroupService_FillGroupsStatistics(t *testing.T) {
 	ctx := context.Background()
 
 	type args struct {
@@ -566,11 +822,14 @@ func TestGroupService_FillGroupStatistics(t *testing.T) {
 				g:   &datastore.Group{UID: "1234"},
 			},
 			dbFn: func(gs *GroupService) {
-				a, _ := gs.appRepo.(*mocks.MockApplicationRepository)
-				a.EXPECT().CountGroupApplications(gomock.Any(), "1234").Times(1).Return(int64(1), nil)
-
-				e, _ := gs.eventRepo.(*mocks.MockEventRepository)
-				e.EXPECT().CountGroupMessages(gomock.Any(), "1234").Times(1).Return(int64(1), nil)
+				g, _ := gs.groupRepo.(*mocks.MockGroupRepository)
+				g.EXPECT().FillGroupsStatistics(gomock.Any(), gomock.Any()).Times(1).DoAndReturn(func(ctx context.Context, groups []*datastore.Group) error {
+					groups[0].Statistics = &datastore.GroupStatistics{
+						MessagesSent: 1,
+						TotalApps:    1,
+					}
+					return nil
+				})
 			},
 			wantGroup: &datastore.Group{
 				UID: "1234",
@@ -582,33 +841,14 @@ func TestGroupService_FillGroupStatistics(t *testing.T) {
 			wantErr: false,
 		},
 		{
-			name: "should_fail_to_count_group_messages",
+			name: "should_fail_to_fill_group_statistics",
 			args: args{
 				ctx: ctx,
 				g:   &datastore.Group{UID: "1234"},
 			},
 			dbFn: func(gs *GroupService) {
-				a, _ := gs.appRepo.(*mocks.MockApplicationRepository)
-				a.EXPECT().CountGroupApplications(gomock.Any(), "1234").Times(1).Return(int64(1), nil)
-
-				e, _ := gs.eventRepo.(*mocks.MockEventRepository)
-				e.EXPECT().CountGroupMessages(gomock.Any(), "1234").
-					Times(1).Return(int64(1), errors.New("failed"))
-			},
-			wantErr:     true,
-			wantErrCode: http.StatusBadRequest,
-			wantErrMsg:  "failed to count group statistics",
-		},
-		{
-			name: "should_fail_to_count_group_apps",
-			args: args{
-				ctx: ctx,
-				g:   &datastore.Group{UID: "1234"},
-			},
-			dbFn: func(gs *GroupService) {
-				a, _ := gs.appRepo.(*mocks.MockApplicationRepository)
-				a.EXPECT().CountGroupApplications(gomock.Any(), "1234").
-					Times(1).Return(int64(1), errors.New("failed"))
+				g, _ := gs.groupRepo.(*mocks.MockGroupRepository)
+				g.EXPECT().FillGroupsStatistics(gomock.Any(), gomock.Any()).Times(1).Return(errors.New("failed"))
 			},
 			wantErr:     true,
 			wantErrCode: http.StatusBadRequest,
@@ -626,7 +866,7 @@ func TestGroupService_FillGroupStatistics(t *testing.T) {
 				tc.dbFn(gs)
 			}
 
-			err := gs.FillGroupStatistics(tc.args.ctx, tc.args.g)
+			err := gs.FillGroupsStatistics(tc.args.ctx, []*datastore.Group{tc.args.g})
 			if tc.wantErr {
 				require.NotNil(t, err)
 				require.Equal(t, tc.wantErrCode, err.(*ServiceError).ErrCode())

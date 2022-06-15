@@ -1,0 +1,28 @@
+.input__search {
+	max-width: 350px;
+	width: 100%;
+	input {
+		max-width: 290px;
+		width: 100%;
+	}
+}
+
+@media only screen and (max-device-width: 1440px) and (-webkit-min-device-pixel-ratio: 1) {
+	.table--container table {
+		tbody td:nth-of-type(2) div {
+			width: 100px;
+			overflow: hidden;
+			text-overflow: ellipsis;
+		}
+	}
+}
+
+@media only screen and (max-device-width: 824px) and (-webkit-min-device-pixel-ratio: 1) {
+	.table--container table {
+		tbody td:nth-of-type(2) div {
+			width: 50px;
+			overflow: hidden;
+			text-overflow: ellipsis;
+		}
+	}
+}

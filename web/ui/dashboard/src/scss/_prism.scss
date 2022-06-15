@@ -1,7 +1,7 @@
 code[class*='language-'],
 pre[class*='language-'] {
-	color: #737a91;
-	background: 0 0;
+	color: #000624;
+	background: rgb(220, 220, 220, 0.1);
 	font-size: 1em;
 	text-align: left;
 	white-space: pre;
@@ -46,7 +46,7 @@ pre[class*='language-'] {
 }
 
 .token.punctuation {
-	color: #737a91;
+	color: #000624;
 }
 
 .token.namespace {
@@ -72,7 +72,7 @@ pre[class*='language-'] {
 .token.inserted,
 .token.selector,
 .token.string {
-	color: var(--primary-color);
+	color: #4c6fff;
 }
 
 .language-css .token.string,
@@ -118,6 +118,13 @@ pre.line-numbers {
 	position: relative;
 	padding-left: 3.8em;
 	counter-reset: linenumber;
+}
+.eventDelivery {
+	pre.line-numbers {
+		max-width: 474px;
+		max-height: 350px;
+		min-height: 250px;
+	}
 }
 
 pre.line-numbers > code {

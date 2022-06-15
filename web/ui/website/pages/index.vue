@@ -5,7 +5,7 @@
 
 			<section class="hero-section">
 				<div class="hero-section--cta">
-					<h1>A Cloud native Webhook Service</h1>
+					<h1>An Open-Source Webhook Service</h1>
 					<p>With out-of-the-box security, reliability and scalability for your webhooks infrastructure.</p>
 
 					<a target="_blank" rel="noopener noreferrer" href="https://app.getconvoy.io/signup" class="primary">Get Started</a>

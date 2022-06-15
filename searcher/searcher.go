@@ -1,6 +1,7 @@
 package searcher
 
 import (
+	"github.com/frain-dev/convoy"
 	"github.com/frain-dev/convoy/config"
 	"github.com/frain-dev/convoy/datastore"
 	noopsearcher "github.com/frain-dev/convoy/searcher/noop"
@@ -8,12 +9,17 @@ import (
 )
 
 type Searcher interface {
-	Search(groupId, query string, pageable datastore.Pageable) ([]string, datastore.PaginationData, error)
+	Search(collection string, filter *datastore.Filter) ([]string, datastore.PaginationData, error)
+	Index(collection string, document convoy.GenericMap) error
 }
 
-func NewSearchClient(searchConfig config.SearchConfiguration) (Searcher, error) {
-	if searchConfig.Type == config.SearchProvider("typesense") {
-		client, err := typesense.NewTypesenseClient(searchConfig)
+func NewSearchClient(c config.Configuration) (Searcher, error) {
+	if c.Search.Type == config.SearchProvider("typesense") {
+		if c.Database.Type != "mongodb" {
+			return nil, convoy.ErrUnsupportedDatebase
+		}
+
+		client, err := typesense.NewTypesenseClient(c)
 		return client, err
 	}
 

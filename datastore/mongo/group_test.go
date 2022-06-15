@@ -110,6 +110,7 @@ func Test_CreateGroup(t *testing.T) {
 				if i > 0 && tc.isDuplicate {
 					err := groupRepo.CreateGroup(context.Background(), newOrg)
 					require.Error(t, err)
+					require.ErrorIs(t, err, datastore.ErrDuplicateGroupName)
 				}
 
 				if i > 0 && !tc.isDuplicate {
@@ -130,5 +131,70 @@ func Test_LoadGroups(t *testing.T) {
 	orgs, err := orgRepo.LoadGroups(context.Background(), &datastore.GroupFilter{})
 	require.NoError(t, err)
 
-	require.True(t, len(orgs) > 0)
+	require.True(t, len(orgs) == 0)
+}
+
+func Test_FillGroupsStatistics(t *testing.T) {
+	db, closeFn := getDB(t)
+	defer closeFn()
+
+	groupRepo := NewGroupRepo(db)
+
+	group1 := &datastore.Group{
+		Name: "group1",
+		UID:  uuid.NewString(),
+	}
+
+	group2 := &datastore.Group{
+		Name: "group2",
+		UID:  uuid.NewString(),
+	}
+
+	err := groupRepo.CreateGroup(context.Background(), group1)
+	require.NoError(t, err)
+
+	err = groupRepo.CreateGroup(context.Background(), group2)
+	require.NoError(t, err)
+
+	app1 := &datastore.Application{
+		UID:     uuid.NewString(),
+		GroupID: group1.UID,
+	}
+
+	app2 := &datastore.Application{
+		UID:     uuid.NewString(),
+		GroupID: group2.UID,
+	}
+
+	appRepo := NewApplicationRepo(db)
+	err = appRepo.CreateApplication(context.Background(), app1, group1.UID)
+	require.NoError(t, err)
+
+	err = appRepo.CreateApplication(context.Background(), app2, group2.UID)
+	require.NoError(t, err)
+
+	event := &datastore.Event{
+		UID:     uuid.NewString(),
+		GroupID: app1.GroupID,
+		AppID:   app1.UID,
+	}
+
+	err = NewEventRepository(db).CreateEvent(context.Background(), event)
+	require.NoError(t, err)
+
+	groups := []*datastore.Group{group1, group2}
+	err = groupRepo.FillGroupsStatistics(context.Background(), groups)
+	require.NoError(t, err)
+
+	require.Equal(t, *group1.Statistics, datastore.GroupStatistics{
+		GroupID:      group1.UID,
+		MessagesSent: 1,
+		TotalApps:    1,
+	})
+
+	require.Equal(t, *group2.Statistics, datastore.GroupStatistics{
+		GroupID:      group2.UID,
+		MessagesSent: 0,
+		TotalApps:    1,
+	})
 }

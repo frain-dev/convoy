@@ -28,6 +28,24 @@ func (r RoleType) IsValid() bool {
 	}
 }
 
+func (r *Role) HasGroup(groupID string) bool {
+	for _, id := range r.Groups {
+		if id == groupID {
+			return true
+		}
+	}
+	return false
+}
+
+func (r *Role) HasApp(appID string) bool {
+	for _, id := range r.Apps {
+		if id == appID {
+			return true
+		}
+	}
+	return false
+}
+
 func (r RoleType) String() string {
 	return string(r)
 }

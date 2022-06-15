@@ -74,7 +74,7 @@ func createEndpointCommand(a *app) *cobra.Command {
 			ctx, cancelFn = getCtx()
 			defer cancelFn()
 
-			err = a.applicationRepo.UpdateApplication(ctx, app)
+			err = a.applicationRepo.UpdateApplication(ctx, app, app.GroupID)
 			if err != nil {
 				return fmt.Errorf("could not add endpoint...%w", err)
 			}
@@ -148,7 +148,7 @@ func createApplicationCommand(a *app) *cobra.Command {
 				DocumentStatus: datastore.ActiveDocumentStatus,
 			}
 
-			err = a.applicationRepo.CreateApplication(context.Background(), app)
+			err = a.applicationRepo.CreateApplication(context.Background(), app, app.GroupID)
 			if err != nil {
 				return err
 			}
@@ -282,17 +282,10 @@ func createMessageCommand(a *app) *cobra.Command {
 				return errors.New("app has no configured endpoints")
 			}
 
-			activeEndpoints := util.ParseMetadataFromActiveEndpoints(appData.Endpoints)
-			if len(activeEndpoints) == 0 {
-				return errors.New("app has no enabled endpoints")
-			}
-
-			log.Println("Event ", string(d))
 			msg := &datastore.Event{
-				UID: uuid.New().String(),
-				AppMetadata: &datastore.AppMetadata{
-					UID: appData.UID,
-				},
+				UID:       uuid.New().String(),
+				AppID:     appData.UID,
+				GroupID:   appData.GroupID,
 				EventType: datastore.EventType(eventType),
 				Data:      d,
 

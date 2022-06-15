@@ -1,18 +1,16 @@
 package main
 
 import (
-	"context"
 	"errors"
 	"time"
 
 	"github.com/frain-dev/convoy"
 	"github.com/frain-dev/convoy/auth/realm_chain"
-	"github.com/frain-dev/convoy/worker"
-	"github.com/frain-dev/convoy/worker/task"
-
 	"github.com/frain-dev/convoy/config"
 	"github.com/frain-dev/convoy/server"
 	"github.com/frain-dev/convoy/util"
+	"github.com/frain-dev/convoy/worker"
+	"github.com/frain-dev/convoy/worker/task"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 )
@@ -20,11 +18,12 @@ import (
 func addServerCommand(a *app) *cobra.Command {
 
 	var env string
-	var baseUrl string
+	var host string
 	var sentry string
 	var limiter string
 	var cache string
 	var logger string
+	var searcher string
 	var logLevel string
 	var sslKeyFile string
 	var sslCertFile string
@@ -39,12 +38,15 @@ func addServerCommand(a *app) *cobra.Command {
 	var smtpFrom string
 	var newReplicApp string
 	var newReplicKey string
+	var typesenseApiKey string
+	var promaddr string
+
+	var typesenseHost string
 	var apiKeyAuthConfig string
 	var basicAuthConfig string
 
 	var ssl bool
 	var withWorkers bool
-	var requireAuth bool
 	var disableEndpoint bool
 	var replayAttacks bool
 	var multipleTenants bool
@@ -95,7 +97,7 @@ func addServerCommand(a *app) *cobra.Command {
 	cmd.Flags().StringVar(&logLevel, "log-level", "info", "Log level")
 	cmd.Flags().StringVar(&logger, "logger", "info", "Logger")
 	cmd.Flags().StringVar(&env, "env", "development", "Convoy environment")
-	cmd.Flags().StringVar(&baseUrl, "base-url", "", "Base Url - Used for the app portal")
+	cmd.Flags().StringVar(&host, "host", "", "Host - The application host name")
 	cmd.Flags().StringVar(&cache, "cache", "redis", `Cache Provider ("redis" or "in-memory")`)
 	cmd.Flags().StringVar(&limiter, "limiter", "redis", `Rate limiter provider ("redis" or "in-memory")`)
 	cmd.Flags().StringVar(&sentry, "sentry", "", "Sentry DSN")
@@ -112,9 +114,12 @@ func addServerCommand(a *app) *cobra.Command {
 	cmd.Flags().StringVar(&smtpReplyTo, "smtp-reply-to", "", "Email address to reply to")
 	cmd.Flags().StringVar(&newReplicApp, "new-relic-app", "", "NewRelic application name")
 	cmd.Flags().StringVar(&newReplicKey, "new-relic-key", "", "NewRelic application license key")
+	cmd.Flags().StringVar(&searcher, "searcher", "", "Searcher")
+	cmd.Flags().StringVar(&typesenseHost, "typesense-host", "", "Typesense Host")
+	cmd.Flags().StringVar(&typesenseApiKey, "typesense-api-key", "", "Typesense Api Key")
+	cmd.Flags().StringVar(&promaddr, "promaddr", "", `Prometheus dsn`)
 
 	cmd.Flags().BoolVar(&ssl, "ssl", false, "Configure SSL")
-	cmd.Flags().BoolVar(&requireAuth, "auth", false, "Require authentication")
 	cmd.Flags().BoolVarP(&withWorkers, "with-workers", "w", true, "Should run workers")
 	cmd.Flags().BoolVar(&nativeRealmEnabled, "native", false, "Enable native-realm authentication")
 	cmd.Flags().BoolVar(&disableEndpoint, "disable-endpoint", false, "Disable all application endpoints")
@@ -137,12 +142,7 @@ func StartConvoyServer(a *app, cfg config.Configuration, withWorkers bool) error
 	start := time.Now()
 	log.Info("Starting Convoy server...")
 
-	if util.IsStringEmpty(string(cfg.GroupConfig.Signature.Header)) {
-		cfg.GroupConfig.Signature.Header = config.DefaultSignatureHeader
-		log.Warnf("signature header is blank. setting default %s", config.DefaultSignatureHeader)
-	}
-
-	err := realm_chain.Init(&cfg.Auth, a.apiKeyRepo)
+	err := realm_chain.Init(&cfg.Auth, a.apiKeyRepo, a.userRepo, a.cache)
 	if err != nil {
 		log.WithError(err).Fatal("failed to initialize realm chain")
 	}
@@ -151,50 +151,49 @@ func StartConvoyServer(a *app, cfg config.Configuration, withWorkers bool) error
 		return errors.New("please provide the HTTP port in the convoy.json file")
 	}
 
-	srv := server.New(cfg,
+	srv := server.New(
+		cfg,
 		a.eventRepo,
 		a.eventDeliveryRepo,
 		a.applicationRepo,
 		a.apiKeyRepo,
+		a.subRepo,
 		a.groupRepo,
-		a.eventQueue,
-		a.createEventQueue,
+		a.orgRepo,
+		a.orgMemberRepo,
+		a.orgInviteRepo,
+		a.sourceRepo,
+		a.userRepo,
+		a.configRepo,
+		a.queue,
 		a.logger,
 		a.tracer,
 		a.cache,
 		a.limiter,
-		a.searcher)
+		a.searcher,
+	)
 
 	if withWorkers {
-		// register tasks.
-		handler := task.ProcessEventDelivery(a.applicationRepo, a.eventDeliveryRepo, a.groupRepo, a.limiter)
-		if err := task.CreateTasks(a.groupRepo, convoy.EventProcessor, handler); err != nil {
-			log.WithError(err).Error("failed to register tasks")
-			return err
+		// register worker.
+		consumer, err := worker.NewConsumer(a.queue)
+		if err != nil {
+			log.WithError(err).Error("failed to create worker")
 		}
 
 		// register tasks.
-		eventCreatedhandler := task.ProcessEventCreated(a.applicationRepo, a.eventRepo, a.groupRepo, a.eventDeliveryRepo, a.cache, a.createEventQueue)
-		if err := task.CreateTasks(a.groupRepo, convoy.CreateEventProcessor, eventCreatedhandler); err != nil {
-			log.WithError(err).Error("failed to register tasks")
-			return err
-		}
+		handler := task.ProcessEventDelivery(a.applicationRepo, a.eventDeliveryRepo, a.groupRepo, a.limiter, a.subRepo)
+		consumer.RegisterHandlers(convoy.EventProcessor, handler)
 
-		worker.RegisterNewGroupTask(a.applicationRepo, a.eventDeliveryRepo, a.groupRepo, a.limiter, a.eventRepo, a.cache, a.eventQueue)
+		// register tasks.
+		eventCreatedhandler := task.ProcessEventCreated(a.applicationRepo, a.eventRepo, a.groupRepo, a.eventDeliveryRepo, a.cache, a.queue, a.subRepo)
+		consumer.RegisterHandlers(convoy.CreateEventProcessor, eventCreatedhandler)
+
+		// register tasks.
+		notificationHandler := task.SendNotification(a.emailNotificationSender)
+		consumer.RegisterHandlers(convoy.NotificationProcessor, notificationHandler)
 
 		log.Infof("Starting Convoy workers...")
-
-		// register workers.
-		ctx := context.Background()
-		producer := worker.NewProducer(a.eventQueue)
-		if cfg.Queue.Type != config.InMemoryQueueProvider {
-			producer.Start(ctx)
-		}
-
-		eventCreationProducer := worker.NewProducer(a.createEventQueue)
-		if cfg.Queue.Type != config.InMemoryQueueProvider {
-			eventCreationProducer.Start(ctx)
-		}
+		consumer.Start()
 	}
 
 	log.Infof("Started convoy server in %s", time.Since(start))
@@ -220,14 +219,14 @@ func loadServerConfigFromCliFlags(cmd *cobra.Command, c *config.Configuration) e
 		c.Environment = env
 	}
 
-	// CONVOY_BASE_URL
-	baseUrl, err := cmd.Flags().GetString("base-url")
+	// CONVOY_HOST
+	host, err := cmd.Flags().GetString("host")
 	if err != nil {
 		return err
 	}
 
-	if !util.IsStringEmpty(baseUrl) {
-		c.BaseUrl = baseUrl
+	if !util.IsStringEmpty(host) {
+		c.Host = host
 	}
 
 	// CONVOY_SENTRY_DSN
@@ -354,80 +353,6 @@ func loadServerConfigFromCliFlags(cmd *cobra.Command, c *config.Configuration) e
 		c.Server.HTTP.SSLCertFile = sslCertFile
 	}
 
-	// CONVOY_STRATEGY_TYPE
-	retryStrategy, err := cmd.Flags().GetString("retry-strategy")
-	if err != nil {
-		return err
-	}
-
-	if !util.IsStringEmpty(retryStrategy) {
-		c.GroupConfig.Strategy.Type = config.StrategyProvider(retryStrategy)
-	}
-
-	// CONVOY_SIGNATURE_HASH
-	signatureHash, err := cmd.Flags().GetString("signature-hash")
-	if err != nil {
-		return err
-	}
-
-	if !util.IsStringEmpty(signatureHash) {
-		c.GroupConfig.Signature.Hash = signatureHash
-	}
-
-	// CONVOY_SIGNATURE_HEADER
-	signatureHeader, err := cmd.Flags().GetString("signature-header")
-	if err != nil {
-		return err
-	}
-
-	if !util.IsStringEmpty(signatureHeader) {
-		c.GroupConfig.Signature.Header = config.SignatureHeaderProvider(signatureHeader)
-	} else if util.IsStringEmpty(c.GroupConfig.Signature.Header.String()) {
-		c.GroupConfig.Signature.Header = config.DefaultSignatureHeader
-	}
-
-	// CONVOY_DISABLE_ENDPOINT
-	isDisableEndpointSet := cmd.Flags().Changed("disable-endpoint")
-	if isDisableEndpointSet {
-		disableEndpoint, err := cmd.Flags().GetBool("disable-endpoint")
-		if err != nil {
-			return err
-		}
-
-		c.GroupConfig.DisableEndpoint = disableEndpoint
-	}
-
-	// CONVOY_REPLAY_ATTACKS
-	isReplayAttacksSet := cmd.Flags().Changed("replay-attacks")
-	if isReplayAttacksSet {
-		replayAttacks, err := cmd.Flags().GetBool("replay-attacks")
-		if err != nil {
-			return err
-		}
-
-		c.GroupConfig.ReplayAttacks = replayAttacks
-	}
-
-	// CONVOY_INTERVAL_SECONDS
-	retryInterval, err := cmd.Flags().GetUint64("retry-interval")
-	if err != nil {
-		return err
-	}
-
-	if retryInterval != 0 {
-		c.GroupConfig.Strategy.Default.IntervalSeconds = retryInterval
-	}
-
-	// CONVOY_RETRY_LIMIT
-	retryLimit, err := cmd.Flags().GetUint64("retry-limit")
-	if err != nil {
-		return err
-	}
-
-	if retryLimit != 0 {
-		c.GroupConfig.Strategy.Default.RetryLimit = retryLimit
-	}
-
 	// CONVOY_SMTP_PROVIDER
 	smtpProvider, err := cmd.Flags().GetString("smtp-provider")
 	if err != nil {
@@ -517,7 +442,7 @@ func loadServerConfigFromCliFlags(cmd *cobra.Command, c *config.Configuration) e
 	}
 
 	if !util.IsStringEmpty(newReplicApp) {
-		c.NewRelic.AppName = newReplicApp
+		c.Tracer.NewRelic.AppName = newReplicApp
 	}
 
 	// CONVOY_NEWRELIC_LICENSE_KEY
@@ -527,7 +452,37 @@ func loadServerConfigFromCliFlags(cmd *cobra.Command, c *config.Configuration) e
 	}
 
 	if !util.IsStringEmpty(newReplicKey) {
-		c.NewRelic.AppName = newReplicKey
+		c.Tracer.NewRelic.AppName = newReplicKey
+	}
+
+	// CONVOY_SEARCH_TYPE
+	searcher, err := cmd.Flags().GetString("searcher")
+	if err != nil {
+		return err
+	}
+
+	if !util.IsStringEmpty(searcher) {
+		c.Search.Type = config.SearchProvider(searcher)
+	}
+
+	// CONVOY_TYPESENSE_HOST
+	typesenseHost, err := cmd.Flags().GetString("typesense-host")
+	if err != nil {
+		return err
+	}
+
+	if !util.IsStringEmpty(typesenseHost) {
+		c.Search.Typesense.Host = typesenseHost
+	}
+
+	// CONVOY_TYPESENSE_API_KEY
+	typesenseApiKey, err := cmd.Flags().GetString("typesense-api-key")
+	if err != nil {
+		return err
+	}
+
+	if !util.IsStringEmpty(typesenseApiKey) {
+		c.Search.Typesense.ApiKey = typesenseApiKey
 	}
 
 	// CONVOY_NEWRELIC_CONFIG_ENABLED
@@ -538,7 +493,7 @@ func loadServerConfigFromCliFlags(cmd *cobra.Command, c *config.Configuration) e
 			return err
 		}
 
-		c.NewRelic.ConfigEnabled = newReplicConfigEnabled
+		c.Tracer.NewRelic.ConfigEnabled = newReplicConfigEnabled
 	}
 
 	// CONVOY_NEWRELIC_DISTRIBUTED_TRACER_ENABLED
@@ -549,18 +504,7 @@ func loadServerConfigFromCliFlags(cmd *cobra.Command, c *config.Configuration) e
 			return err
 		}
 
-		c.NewRelic.DistributedTracerEnabled = newReplicTracerEnabled
-	}
-
-	// CONVOY_REQUIRE_AUTH
-	isReqAuthSet := cmd.Flags().Changed("auth")
-	if isReqAuthSet {
-		requireAuth, err := cmd.Flags().GetBool("auth")
-		if err != nil {
-			return err
-		}
-
-		c.Auth.RequireAuth = requireAuth
+		c.Tracer.NewRelic.DistributedTracerEnabled = newReplicTracerEnabled
 	}
 
 	// CONVOY_NATIVE_REALM_ENABLED
