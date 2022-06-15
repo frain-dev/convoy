@@ -3,8 +3,6 @@ package redis
 import (
 	"errors"
 
-	"github.com/go-redis/redis/v8"
-
 	"github.com/frain-dev/convoy"
 	"github.com/frain-dev/convoy/config"
 	"github.com/frain-dev/convoy/internal/pkg/rdb"
@@ -16,6 +14,7 @@ import (
 
 type RedisQueue struct {
 	opts      queue.QueueOptions
+	client    *asynq.Client
 	inspector *asynq.Inspector
 }
 
@@ -35,13 +34,10 @@ func NewClient(cfg config.Configuration) (*asynq.Client, error) {
 }
 
 func NewQueue(opts queue.QueueOptions) queue.Queuer {
-	rOpts, _ := redis.ParseURL(opts.RedisAddress)
-	opts.RedisAddress = rOpts.Addr
-
-	inspector := asynq.NewInspector(asynq.RedisClientOpt{
-		Addr: opts.RedisAddress,
-	})
+	client := asynq.NewClient(opts.RedisClient)
+	inspector := asynq.NewInspector(opts.RedisClient)
 	return &RedisQueue{
+		client:    client,
 		opts:      opts,
 		inspector: inspector,
 	}
@@ -52,7 +48,7 @@ func (q *RedisQueue) Write(taskName convoy.TaskName, queueName convoy.QueueName,
 		job.ID = uuid.NewString()
 	}
 	t := asynq.NewTask(string(taskName), job.Payload, asynq.Queue(string(queueName)), asynq.TaskID(job.ID), asynq.ProcessIn(job.Delay))
-	_, err := q.opts.Client.Enqueue(t)
+	_, err := q.client.Enqueue(t)
 	return err
 }
 
@@ -62,12 +58,8 @@ func (q *RedisQueue) Options() queue.QueueOptions {
 
 func (q *RedisQueue) Monitor() *asynqmon.HTTPHandler {
 	h := asynqmon.New(asynqmon.Options{
-		RootPath: "/queue/monitoring",
-		RedisConnOpt: asynq.RedisClientOpt{
-			Addr:     q.opts.RedisAddress,
-			Password: "",
-			DB:       0,
-		},
+		RootPath:          "/queue/monitoring",
+		RedisConnOpt:      q.opts.RedisClient,
 		PrometheusAddress: q.opts.PrometheusAddress,
 	})
 	return h

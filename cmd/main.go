@@ -15,9 +15,9 @@ import (
 	"github.com/frain-dev/convoy/cache"
 	"github.com/frain-dev/convoy/datastore/badger"
 	"github.com/frain-dev/convoy/internal/pkg/apm"
+	"github.com/frain-dev/convoy/internal/pkg/rdb"
 	"github.com/frain-dev/convoy/searcher"
 	"github.com/google/uuid"
-	"github.com/hibiken/asynq"
 	"github.com/newrelic/go-agent/v3/newrelic"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 
@@ -190,14 +190,13 @@ func preRun(app *app, db datastore.DatabaseClient) func(cmd *cobra.Command, args
 			return err
 		}
 
-		var aC *asynq.Client
 		var tr tracer.Tracer
 		var ca cache.Cache
 		var li limiter.RateLimiter
 		var q queue.Queuer
 
 		if cfg.Queue.Type == config.RedisQueueProvider {
-			aC, err = redisqueue.NewClient(cfg)
+			rdb, err := rdb.NewClient(cfg.Queue.Redis.Dsn)
 			if err != nil {
 				return err
 			}
@@ -209,7 +208,7 @@ func preRun(app *app, db datastore.DatabaseClient) func(cmd *cobra.Command, args
 			}
 			opts := queue.QueueOptions{
 				Names:             queueNames,
-				Client:            aC,
+				RedisClient:       rdb,
 				RedisAddress:      cfg.Queue.Redis.Dsn,
 				Type:              string(config.RedisQueueProvider),
 				PrometheusAddress: cfg.Prometheus.Dsn,
