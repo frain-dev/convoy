@@ -9,6 +9,14 @@ const routes: Routes = [
 	{
 		path: 'login',
 		loadChildren: () => import('./public/login/login.module').then(m => m.LoginModule)
+	},
+	{
+		path: 'app/:token',
+		loadChildren: () => import('./public/app/app.module').then(m => m.AppModule)
+	},
+	{
+		path: 'app/:token/event-deliveries/:id',
+		loadChildren: () => import('./public/event-delivery/event-delivery.module').then(m => m.EventDeliveryModule)
 	}
 ];
 

@@ -11,7 +11,7 @@
 			</div>
 		</div>
 
-		<ng-container *ngIf="projectType === 'incoming'">
+		<ng-container *ngIf="projectType === 'incoming' && !token">
 			<div class="input margin-bottom__0px">
 				<label for="source" class="position__relative">
 					Source
@@ -34,26 +34,28 @@
 			</button>
 		</ng-container>
 
-		<div class="input margin-bottom__0px">
-			<label for="application" class="position__relative">
-				Application
-				<span class="bg__grey__light rounded__4px padding-x__4px position__absolute position--right__0px font__10px font__weight-400">required</span>
-			</label>
-			<select id="application" formControlName="app_id" (change)="onUpdateAppSelection()">
-				<option value="">Select application</option>
-				<option [value]="app.uid" *ngFor="let app of apps">{{ app.name }}</option>
-			</select>
-			<div class="input__error input__error__danger" *ngIf="subscriptionForm.get('app_id')?.touched && subscriptionForm.get('app_id')?.invalid">
-				<img src="assets/img/input-error-icon.svg" alt="input error icon" />
-				<span>Select or create an application</span>
+		<ng-container *ngIf="!token">
+			<div class="input margin-bottom__0px">
+				<label for="application" class="position__relative">
+					Application
+					<span class="bg__grey__light rounded__4px padding-x__4px position__absolute position--right__0px font__10px font__weight-400">required</span>
+				</label>
+				<select id="application" formControlName="app_id" (change)="onUpdateAppSelection()">
+					<option value="">Select application</option>
+					<option [value]="app.uid" *ngFor="let app of apps">{{ app.name }}</option>
+				</select>
+				<div class="input__error input__error__danger" *ngIf="subscriptionForm.get('app_id')?.touched && subscriptionForm.get('app_id')?.invalid">
+					<img src="assets/img/input-error-icon.svg" alt="input error icon" />
+					<span>Select or create an application</span>
+				</div>
 			</div>
-		</div>
-		<button class="button button__clear button--has-icon font__12px margin-top__4px margin-bottom__20px" type="button" (click)="showCreateAppModal = true">
-			<svg width="14" height="14" class="margin-right__4px" fill="var(--primary-color)">
-				<use xlink:href="#plus-icon"></use>
-			</svg>
-			New App
-		</button>
+			<button class="button button__clear button--has-icon font__12px margin-top__4px margin-bottom__20px" type="button" (click)="showCreateAppModal = true">
+				<svg width="14" height="14" class="margin-right__4px" fill="var(--primary-color)">
+					<use xlink:href="#plus-icon"></use>
+				</svg>
+				New App
+			</button>
+		</ng-container>
 
 		<div class="input" [ngClass]="{ disabled: subscriptionForm.get('app_id')?.invalid }">
 			<label for="endpoint" class="position__relative">
@@ -68,6 +70,12 @@
 				<img src="assets/img/input-error-icon.svg" alt="input error icon" />
 				<span>Select an endpoint</span>
 			</div>
+			<button class="button button__clear button--has-icon font__12px margin-top__4px margin-bottom__20px" type="button" (click)="showCreateEndpointModal = true">
+				<svg width="14" height="14" class="margin-right__4px" fill="var(--primary-color)">
+					<use xlink:href="#plus-icon"></use>
+				</svg>
+				New Endpoint
+			</button>
 		</div>
 
 		<div class="input multiple">
@@ -153,8 +161,8 @@
 	</div>
 </form>
 
-<div class="_overlay" *ngIf="showCreateAppModal || showCreateSourceModal" (click)="showCreateAppModal = false; showCreateSourceModal = false"></div>
-<div class="modal modal__right large" *ngIf="showCreateAppModal || showCreateSourceModal">
+<div class="_overlay" *ngIf="showCreateAppModal || showCreateSourceModal || showCreateEndpointModal" (click)="showCreateAppModal = false; showCreateSourceModal = false; showCreateEndpointModal = false"></div>
+<div class="modal modal__right large" *ngIf="showCreateAppModal || showCreateSourceModal || showCreateEndpointModal">
 	<!-- add endpoint modal  -->
 	<div class="modal--head" *ngIf="showCreateAppModal">
 		<h2>Create New App</h2>
@@ -168,9 +176,16 @@
 			<img src="/assets/img/modal-close-icon.svg" alt="close icon" />
 		</button>
 	</div>
+	<div class="modal--head" *ngIf="showCreateEndpointModal">
+		<h2>Create New Endpoint</h2>
+		<button (click)="showCreateEndpointModal = false">
+			<img src="/assets/img/modal-close-icon.svg" alt="close icon" />
+		</button>
+	</div>
 
 	<div class="modal--body">
 		<app-create-app (createApp)="onCreateNewApp($event); showCreateAppModal = false" (discardApp)="showCreateAppModal = false" *ngIf="showCreateAppModal"></app-create-app>
 		<app-create-source *ngIf="showCreateSourceModal" (onAction)="$event?.action == 'close' ? false : onCreateSource($event); showCreateSourceModal = false"></app-create-source>
+		<app-create-endpoint [appId]="subscriptionForm.value.app_id" (onAction)="$event.action == 'cancel' ? false : getApps(); showCreateEndpointModal = false"></app-create-endpoint>
 	</div>
 </div>

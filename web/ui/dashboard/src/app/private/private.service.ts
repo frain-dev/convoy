@@ -22,7 +22,7 @@ export class PrivateService {
 			case 'org':
 				return `/organisations/${this.getOrganisation().uid}`;
 			case 'org_project':
-				return `/organisations/${this.getOrganisation().uid}/groups/${this.activeProjectDetails.uid}`;
+				return `/organisations/${this.getOrganisation().uid}/groups/${this.activeProjectDetails?.uid}`;
 			default:
 				return '';
 		}

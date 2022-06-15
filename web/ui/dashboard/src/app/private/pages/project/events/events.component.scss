@@ -21,7 +21,7 @@
 
 .event {
 	&__table {
-		max-width: calc(1087px - 380px);
+		min-width: calc(1087px - 380px);
 		width: 100%;
 		border-right: 1px solid var(--line-border);
 		height: 100%;

@@ -7,17 +7,16 @@ import { PrivateService } from '../../private.service';
 	providedIn: 'root'
 })
 export class CreateSubscriptionService {
-	projectId: string = this.privateService.activeProjectDetails.uid;
-
 	constructor(private http: HttpService, private privateService: PrivateService) {}
 
-	createSubscription(requestDetails: any): Promise<HTTP_RESPONSE> {
+	createSubscription(requestDetails: any, token?: string): Promise<HTTP_RESPONSE> {
 		return new Promise(async (resolve, reject) => {
 			try {
 				const projectResponse = await this.http.request({
-					url: `${this.privateService.urlFactory('org_project')}/subscriptions`,
+					url: `${token ? '' : this.privateService.urlFactory('org_project')}/subscriptions`,
 					method: 'post',
-					body: requestDetails
+					body: requestDetails,
+					token
 				});
 
 				return resolve(projectResponse);
@@ -27,13 +26,14 @@ export class CreateSubscriptionService {
 		});
 	}
 
-	updateSubscription(requestDetails: { data: any; id: string }): Promise<HTTP_RESPONSE> {
+	updateSubscription(requestDetails: { data: any; id: string; token?: string }): Promise<HTTP_RESPONSE> {
 		return new Promise(async (resolve, reject) => {
 			try {
 				const projectResponse = await this.http.request({
-					url: `${this.privateService.urlFactory('org_project')}/subscriptions/${requestDetails.id}`,
+					url: `${requestDetails.token ? '' : this.privateService.urlFactory('org_project')}/subscriptions/${requestDetails.id}`,
 					method: 'put',
-					body: requestDetails
+					body: requestDetails,
+					token: requestDetails.token
 				});
 
 				return resolve(projectResponse);
@@ -43,15 +43,32 @@ export class CreateSubscriptionService {
 		});
 	}
 
-	getSubscriptionDetail(subscriptionId: string): Promise<HTTP_RESPONSE> {
+	getSubscriptionDetail(subscriptionId: string, token?: string): Promise<HTTP_RESPONSE> {
 		return new Promise(async (resolve, reject) => {
 			try {
 				const projectResponse = await this.http.request({
-					url: `${this.privateService.urlFactory('org_project')}/subscriptions/${subscriptionId}`,
-					method: 'get'
+					url: `${token ? '' : this.privateService.urlFactory('org_project')}/subscriptions/${subscriptionId}`,
+					method: 'get',
+					token
 				});
 
 				return resolve(projectResponse);
+			} catch (error: any) {
+				return reject(error);
+			}
+		});
+	}
+
+	async getAppPortalApp(token: string): Promise<HTTP_RESPONSE> {
+		return new Promise(async (resolve, reject) => {
+			try {
+				const response = await this.http.request({
+					url: `/apps`,
+					method: 'get',
+					token
+				});
+
+				return resolve(response);
 			} catch (error: any) {
 				return reject(error);
 			}
