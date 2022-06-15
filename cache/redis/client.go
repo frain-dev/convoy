@@ -5,8 +5,8 @@ import (
 	"errors"
 	"time"
 
+	"github.com/frain-dev/convoy/internal/pkg/rdb"
 	"github.com/go-redis/cache/v8"
-	"github.com/go-redis/redis/v8"
 )
 
 type RedisCache struct {
@@ -14,16 +14,14 @@ type RedisCache struct {
 }
 
 func NewRedisCache(dsn string) (*RedisCache, error) {
-	opts, err := redis.ParseURL(dsn)
+	rdb, err := rdb.NewClient(dsn)
 
 	if err != nil {
 		return nil, err
 	}
 
-	client := redis.NewClient(opts)
-
 	c := cache.New(&cache.Options{
-		Redis: client,
+		Redis: rdb.Client(),
 	})
 
 	r := &RedisCache{cache: c}
