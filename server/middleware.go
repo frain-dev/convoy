@@ -12,6 +12,7 @@ import (
 
 	"github.com/frain-dev/convoy"
 	"github.com/frain-dev/convoy/cache"
+	"github.com/frain-dev/convoy/internal/pkg/apm"
 	"github.com/frain-dev/convoy/logger"
 	"github.com/frain-dev/convoy/tracer"
 	"github.com/newrelic/go-agent/v3/newrelic"
@@ -68,21 +69,8 @@ func instrumentPath(path string) func(http.Handler) http.Handler {
 func instrumentRequests(tr tracer.Tracer) func(next http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			cfg, err := config.Get()
-
-			if err != nil {
-				log.WithError(err).Error("failed to load configuration")
-				return
-			}
-
-			if cfg.Tracer.Type == config.NewRelicTracerProvider {
-				txn := tr.StartTransaction(r.URL.Path)
-				defer txn.End()
-
-				tr.SetWebRequestHTTP(r, txn)
-				w = tr.SetWebResponse(w, txn)
-				r = tr.RequestWithTransactionContext(r, txn)
-			}
+			txn, r, w := apm.StartWebTransaction(r.URL.Path, r, w)
+			defer txn.End()
 
 			next.ServeHTTP(w, r)
 		})
@@ -710,7 +698,7 @@ func requirePermission(role auth.RoleType) func(next http.Handler) http.Handler 
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			authUser := getAuthUserFromContext(r.Context())
 			if authUser.Role.Type.Is(auth.RoleSuperUser) {
-				// superuser has access to everything
+				//superuser has access to everything
 				next.ServeHTTP(w, r)
 				return
 			}
@@ -744,7 +732,9 @@ func getAuthFromRequest(r *http.Request) (*auth.Credential, error) {
 	authInfo := strings.Split(val, " ")
 
 	if len(authInfo) != 2 {
-		return nil, errors.New("invalid header structure")
+		err := errors.New("invalid header structure")
+		apm.NoticeError(r.Context(), err)
+		return nil, err
 	}
 
 	credType := auth.CredentialType(strings.ToUpper(authInfo[0]))

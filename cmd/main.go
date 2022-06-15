@@ -14,15 +14,16 @@ import (
 
 	"github.com/frain-dev/convoy/cache"
 	"github.com/frain-dev/convoy/datastore/badger"
+	"github.com/frain-dev/convoy/internal/pkg/apm"
+	"github.com/frain-dev/convoy/internal/pkg/rdb"
 	"github.com/frain-dev/convoy/searcher"
 	"github.com/google/uuid"
-	"github.com/hibiken/asynq"
+	"github.com/newrelic/go-agent/v3/newrelic"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 
 	"github.com/frain-dev/convoy/logger"
 	redisqueue "github.com/frain-dev/convoy/queue/redis"
 	"github.com/frain-dev/convoy/tracer"
-	"github.com/getsentry/sentry-go"
 	prefixed "github.com/x-cray/logrus-prefixed-formatter"
 
 	log "github.com/sirupsen/logrus"
@@ -170,34 +171,32 @@ func preRun(app *app, db datastore.DatabaseClient) func(cmd *cobra.Command, args
 			return err
 		}
 
+		nwCfg := cfg.Tracer.NewRelic
+		nRApp, err := newrelic.NewApplication(
+			newrelic.ConfigAppName(nwCfg.AppName),
+			newrelic.ConfigLicense(nwCfg.LicenseKey),
+			newrelic.ConfigDistributedTracerEnabled(nwCfg.DistributedTracerEnabled),
+			newrelic.ConfigEnabled(nwCfg.ConfigEnabled),
+		)
+
+		if err != nil {
+			return err
+		}
+
+		apm.SetApplication(nRApp)
+
 		db, err := NewDB(cfg)
 		if err != nil {
 			return err
 		}
 
-		err = sentry.Init(sentry.ClientOptions{
-			Debug:       true,
-			Dsn:         cfg.Sentry.Dsn,
-			Environment: cfg.Environment,
-		})
-		if err != nil {
-			return err
-		}
-
-		defer sentry.Recover()              // recover any panic and report to sentry
-		defer sentry.Flush(2 * time.Second) // send any events in sentry before exiting
-
-		sentryHook := convoy.NewSentryHook(convoy.DefaultLevels)
-		log.AddHook(sentryHook)
-
-		var aC *asynq.Client
 		var tr tracer.Tracer
 		var ca cache.Cache
 		var li limiter.RateLimiter
 		var q queue.Queuer
 
 		if cfg.Queue.Type == config.RedisQueueProvider {
-			aC, err = redisqueue.NewClient(cfg)
+			rdb, err := rdb.NewClient(cfg.Queue.Redis.Dsn)
 			if err != nil {
 				return err
 			}
@@ -209,7 +208,7 @@ func preRun(app *app, db datastore.DatabaseClient) func(cmd *cobra.Command, args
 			}
 			opts := queue.QueueOptions{
 				Names:             queueNames,
-				Client:            aC,
+				RedisClient:       rdb,
 				RedisAddress:      cfg.Queue.Redis.Dsn,
 				Type:              string(config.RedisQueueProvider),
 				PrometheusAddress: cfg.Prometheus.Dsn,

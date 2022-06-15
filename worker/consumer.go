@@ -17,9 +17,8 @@ type Consumer struct {
 }
 
 func NewConsumer(q queue.Queuer) (*Consumer, error) {
-	dsn := q.Options().RedisAddress
 	srv := asynq.NewServer(
-		asynq.RedisClientOpt{Addr: dsn},
+		q.Options().RedisClient,
 		asynq.Config{
 			Concurrency: convoy.Concurrency,
 			Queues:      q.Options().Names,
