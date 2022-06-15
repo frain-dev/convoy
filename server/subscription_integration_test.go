@@ -117,7 +117,7 @@ func (s *SubscriptionIntegrationTestSuite) Test_CreateSubscription_InvalidBody()
 			"event_types": [
 				"user.created",
 				"user.updated"
-			]	
+			]
 		}
 	}`
 
@@ -147,14 +147,51 @@ func (s *SubscriptionIntegrationTestSuite) Test_GetOneSubscription_SubscriptionN
 	require.Equal(s.T(), http.StatusNotFound, w.Code)
 }
 
-func (s *SubscriptionIntegrationTestSuite) Test_GetOneSubscription_ValidSubscription() {
+func (s *SubscriptionIntegrationTestSuite) Test_GetOneSubscription_OutgoingGroup_ValidSubscription() {
 	subscriptionId := "123456789"
 
+	group, err := testdb.SeedGroup(s.DB, uuid.NewString(), "test-group", "", datastore.OutgoingGroup, nil)
+	require.NoError(s.T(), err)
+
 	// Just Before
-	app, _ := testdb.SeedApplication(s.DB, s.DefaultGroup, uuid.NewString(), "", false)
-	endpoint, _ := testdb.SeedEndpoint(s.DB, app, s.DefaultGroup.UID)
-	source, _ := testdb.SeedSource(s.DB, s.DefaultGroup, uuid.NewString())
-	_, _ = testdb.SeedSubscription(s.DB, app, s.DefaultGroup, subscriptionId, datastore.OutgoingGroup, source, endpoint, &datastore.RetryConfiguration{}, &datastore.AlertConfiguration{}, &datastore.FilterConfiguration{})
+	app, _ := testdb.SeedApplication(s.DB, group, uuid.NewString(), "", false)
+	endpoint, _ := testdb.SeedEndpoint(s.DB, app, group.UID)
+	source, _ := testdb.SeedSource(s.DB, group, uuid.NewString())
+	_, _ = testdb.SeedSubscription(s.DB, app, group, subscriptionId, group.Type, source, endpoint, &datastore.RetryConfiguration{}, &datastore.AlertConfiguration{}, &datastore.FilterConfiguration{})
+
+	// Arrange Request
+	url := fmt.Sprintf("/api/v1/subscriptions/%s", subscriptionId)
+	req := createRequest(http.MethodGet, url, nil)
+	req.SetBasicAuth("test", "test")
+	w := httptest.NewRecorder()
+
+	// Act
+	s.Router.ServeHTTP(w, req)
+
+	// Assert
+	require.Equal(s.T(), http.StatusOK, w.Code)
+
+	// Deep Assert
+	var subscription *datastore.Subscription
+	parseResponse(s.T(), w.Result(), &subscription)
+
+	dbSub, err := s.DB.SubRepo().FindSubscriptionByID(context.Background(), s.DefaultGroup.UID, subscriptionId)
+	require.NoError(s.T(), err)
+	require.Equal(s.T(), subscription.UID, dbSub.UID)
+	require.Equal(s.T(), subscription.Endpoint.UID, dbSub.EndpointID)
+}
+
+func (s *SubscriptionIntegrationTestSuite) Test_GetOneSubscription_IncomingGroup_ValidSubscription() {
+	subscriptionId := "123456789"
+
+	group, err := testdb.SeedGroup(s.DB, uuid.NewString(), "test-group", "", datastore.IncomingGroup, nil)
+	require.NoError(s.T(), err)
+
+	// Just Before
+	app, _ := testdb.SeedApplication(s.DB, group, uuid.NewString(), "", false)
+	endpoint, _ := testdb.SeedEndpoint(s.DB, app, group.UID)
+	source, _ := testdb.SeedSource(s.DB, group, uuid.NewString())
+	_, _ = testdb.SeedSubscription(s.DB, app, group, subscriptionId, group.Type, source, endpoint, &datastore.RetryConfiguration{}, &datastore.AlertConfiguration{}, &datastore.FilterConfiguration{})
 
 	// Arrange Request
 	url := fmt.Sprintf("/api/v1/subscriptions/%s", subscriptionId)
@@ -258,7 +295,7 @@ func (s *SubscriptionIntegrationTestSuite) Test_UpdateSubscription() {
 			"event_types": [
 				"user.created",
 				"user.updated"
-			]	
+			]
 		}
 	}`
 

@@ -6,6 +6,10 @@ package server
 import (
 	"context"
 	"fmt"
+	"net/http"
+	"net/http/httptest"
+	"testing"
+
 	"github.com/frain-dev/convoy/auth"
 	"github.com/frain-dev/convoy/config"
 	"github.com/frain-dev/convoy/datastore"
@@ -14,9 +18,6 @@ import (
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/require"
 	"github.com/stretchr/testify/suite"
-	"net/http"
-	"net/http/httptest"
-	"testing"
 )
 
 type GroupIntegrationTestSuite struct {
@@ -67,7 +68,7 @@ func (s *GroupIntegrationTestSuite) TestGetGroup() {
 	expectedStatusCode := http.StatusOK
 
 	// Just Before.
-	group, err := testdb.SeedGroup(s.DB, groupID, "", "", nil)
+	group, err := testdb.SeedGroup(s.DB, groupID, "", "", datastore.OutgoingGroup, nil)
 	require.NoError(s.T(), err)
 	app, _ := testdb.SeedApplication(s.DB, group, uuid.NewString(), "test-app", false)
 	_, _ = testdb.SeedEndpoint(s.DB, app, group.UID)
@@ -111,7 +112,7 @@ func (s *GroupIntegrationTestSuite) TestDeleteGroup() {
 	expectedStatusCode := http.StatusOK
 
 	// Just Before.
-	group, err := testdb.SeedGroup(s.DB, groupID, "", "", nil)
+	group, err := testdb.SeedGroup(s.DB, groupID, "", "", datastore.OutgoingGroup, nil)
 	require.NoError(s.T(), err)
 
 	url := fmt.Sprintf("/api/v1/groups/%s", group.UID)
@@ -202,7 +203,7 @@ func (s *GroupIntegrationTestSuite) TestUpdateGroup() {
 	expectedStatusCode := http.StatusAccepted
 
 	// Just Before.
-	group, err := testdb.SeedGroup(s.DB, groupID, "", "test-group", nil)
+	group, err := testdb.SeedGroup(s.DB, groupID, "", "test-group", datastore.OutgoingGroup, nil)
 	require.NoError(s.T(), err)
 
 	url := fmt.Sprintf("/api/v1/groups/%s", group.UID)
@@ -241,9 +242,9 @@ func (s *GroupIntegrationTestSuite) TestGetGroups() {
 	expectedStatusCode := http.StatusOK
 
 	// Just Before.
-	group1, _ := testdb.SeedGroup(s.DB, uuid.NewString(), "", "test-group-1", nil)
-	group2, _ := testdb.SeedGroup(s.DB, uuid.NewString(), "", "test-group-2", nil)
-	group3, _ := testdb.SeedGroup(s.DB, uuid.NewString(), "", "test-group-3", nil)
+	group1, _ := testdb.SeedGroup(s.DB, uuid.NewString(), "", "test-group-1", datastore.OutgoingGroup, nil)
+	group2, _ := testdb.SeedGroup(s.DB, uuid.NewString(), "", "test-group-2", datastore.OutgoingGroup, nil)
+	group3, _ := testdb.SeedGroup(s.DB, uuid.NewString(), "", "test-group-3", datastore.OutgoingGroup, nil)
 
 	req := createRequest(http.MethodGet, "/api/v1/groups", nil)
 	w := httptest.NewRecorder()
@@ -268,9 +269,9 @@ func (s *GroupIntegrationTestSuite) TestGetGroups_FilterByName() {
 	expectedStatusCode := http.StatusOK
 
 	// Just Before.
-	group1, _ := testdb.SeedGroup(s.DB, uuid.NewString(), "abcdef", "", nil)
-	_, _ = testdb.SeedGroup(s.DB, uuid.NewString(), "test-group-2", "", nil)
-	_, _ = testdb.SeedGroup(s.DB, uuid.NewString(), "test-group-3", "", nil)
+	group1, _ := testdb.SeedGroup(s.DB, uuid.NewString(), "abcdef", "", datastore.OutgoingGroup, nil)
+	_, _ = testdb.SeedGroup(s.DB, uuid.NewString(), "test-group-2", "", datastore.OutgoingGroup, nil)
+	_, _ = testdb.SeedGroup(s.DB, uuid.NewString(), "test-group-3", "", datastore.OutgoingGroup, nil)
 
 	url := fmt.Sprintf("/api/v1/groups?name=%s", group1.Name)
 	req := createRequest(http.MethodGet, url, nil)
