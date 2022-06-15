@@ -59,7 +59,7 @@ func TestProcessEventCreated(t *testing.T) {
 		wantDelay  time.Duration
 	}{
 		{
-			name: "should_process_event",
+			name: "should_process_event_for_outgoing_group",
 			event: &datastore.Event{
 				UID:        uuid.NewString(),
 				EventType:  "*",
@@ -116,6 +116,77 @@ func TestProcessEventCreated(t *testing.T) {
 					},
 				}
 				s.EXPECT().FindSubscriptionsByAppID(gomock.Any(), "group-id-1", "app-id-1").Times(1).Return(subscriptions, nil)
+
+				e, _ := args.eventRepo.(*mocks.MockEventRepository)
+				e.EXPECT().CreateEvent(gomock.Any(), gomock.Any()).Times(1).Return(nil)
+
+				a.EXPECT().FindApplicationByID(gomock.Any(), "app-id-1").Times(1).Return(app, nil)
+
+				endpoint := &datastore.Endpoint{UID: "098", TargetURL: "https://google.com"}
+				a.EXPECT().FindApplicationEndpointByID(gomock.Any(), "app-id-1", "098").
+					Times(1).Return(endpoint, nil)
+
+				ed, _ := args.eventDeliveryRepo.(*mocks.MockEventDeliveryRepository)
+				ed.EXPECT().CreateEventDelivery(gomock.Any(), gomock.Any()).Times(1).Return(nil)
+
+				q, _ := args.eventQueue.(*mocks.MockQueuer)
+				q.EXPECT().Write(convoy.EventProcessor, convoy.EventQueue, gomock.Any()).Times(1).Return(nil)
+			},
+			wantErr: false,
+		},
+		{
+			name: "should_process_event_for_incoming_group",
+			event: &datastore.Event{
+				UID:        uuid.NewString(),
+				EventType:  "*",
+				ProviderID: uuid.NewString(),
+				SourceID:   "source-id-1",
+				GroupID:    "group-id-1",
+				AppID:      "app-id-1",
+				Data:       []byte(`{}`),
+				CreatedAt:  primitive.NewDateTimeFromTime(time.Now()),
+				UpdatedAt:  primitive.NewDateTimeFromTime(time.Now()),
+			},
+			dbFn: func(args *args) {
+				mockCache, _ := args.cache.(*mocks.MockCache)
+				var gr *datastore.Group
+				mockCache.EXPECT().Get(gomock.Any(), "groups:group-id-1", &gr).Times(1).Return(nil)
+
+				group := &datastore.Group{
+					UID:  "group-id-1",
+					Type: datastore.IncomingGroup,
+					Config: &datastore.GroupConfig{
+						Strategy: &datastore.StrategyConfiguration{
+							Type:       datastore.LinearStrategyProvider,
+							Duration:   10,
+							RetryCount: 3,
+						},
+					},
+				}
+
+				g, _ := args.groupRepo.(*mocks.MockGroupRepository)
+				g.EXPECT().FetchGroupByID(gomock.Any(), "group-id-1").Times(1).Return(
+					group,
+					nil,
+				)
+				mockCache.EXPECT().Set(gomock.Any(), "groups:group-id-1", group, 10*time.Minute).Times(1).Return(nil)
+
+				a, _ := args.appRepo.(*mocks.MockApplicationRepository)
+				app := &datastore.Application{UID: "app-id-1"}
+
+				s, _ := args.subRepo.(*mocks.MockSubscriptionRepository)
+				subscriptions := []datastore.Subscription{
+					{
+						UID:        "456",
+						AppID:      "app-id-1",
+						EndpointID: "098",
+						Status:     datastore.ActiveSubscriptionStatus,
+						FilterConfig: &datastore.FilterConfiguration{
+							EventTypes: []string{"*"},
+						},
+					},
+				}
+				s.EXPECT().FindSubscriptionBySourceIDs(gomock.Any(), "group-id-1", "source-id-1").Times(1).Return(subscriptions, nil)
 
 				e, _ := args.eventRepo.(*mocks.MockEventRepository)
 				e.EXPECT().CreateEvent(gomock.Any(), gomock.Any()).Times(1).Return(nil)
