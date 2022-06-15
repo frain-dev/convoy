@@ -1,7 +1,7 @@
 <template>
 	<div class="docs-search">
 		<form>
-			<div class="input">
+			<div class="input__search">
 				<img src="~/assets/images/search-icon.svg" alt="search icon" />
 				<input v-model="searchQuery" autocomplete="off" type="search" aria-label="search" id="search" name="search" placeholder="Search documentation" />
 			</div>
@@ -73,25 +73,5 @@ export default {
 	}
 }
 
-.input {
-	display: flex;
-	align-items: center;
-	background: #ffffff;
-	border: 1px solid rgba(115, 122, 145, 0.16);
-	box-sizing: border-box;
-	border-radius: 4px;
-	padding: 11px 16px;
-	width: 100%;
 
-	img {
-		width: 18px;
-	}
-
-	input {
-		border: none;
-		margin-left: 10px;
-		width: 100%;
-		outline: none;
-	}
-}
 </style>

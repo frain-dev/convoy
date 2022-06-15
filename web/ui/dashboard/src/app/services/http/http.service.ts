@@ -13,9 +13,9 @@ export class HttpService {
 
 	authDetails() {
 		const authDetails = localStorage.getItem('CONVOY_AUTH');
-		if (authDetails) {
-			const { username, password } = JSON.parse(authDetails);
-			return { token: btoa(`${username + ':' + password}`), authState: true };
+		if (authDetails && authDetails !== 'undefined') {
+			const { token } = JSON.parse(authDetails);
+			return { token: token.access_token, authState: true };
 		} else {
 			return { authState: false };
 		}
@@ -25,7 +25,7 @@ export class HttpService {
 		return new Promise(async (resolve, reject) => {
 			try {
 				const requestHeader = new HttpHeaders({
-					Authorization: `Basic ${this.authDetails().token}`
+					Authorization: `Bearer ${this.authDetails()?.token}`
 				});
 				const requestResponse: any = await this.httpClient.request(requestDetails.method, this.APIURL + requestDetails.url, { headers: requestHeader, body: requestDetails.body }).toPromise();
 				return resolve(requestResponse);

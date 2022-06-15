@@ -6,8 +6,105 @@ import { environment } from 'src/environments/environment';
 	providedIn: 'root'
 })
 export class GeneralService {
+	alertStatus: BehaviorSubject<{ message: string; style: string; show: boolean }> = new BehaviorSubject<{ message: string; style: string; show: boolean }>({ message: 'testing', style: 'info', show: false });
+
 	constructor() {}
+
+	showNotification(details: { message: string; style: string }) {
+		this.alertStatus.next({ message: details.message, style: details.style, show: true });
+		setTimeout(() => {
+			this.dismissNotification();
+		}, 4000);
+	}
+
+	dismissNotification() {
+		this.alertStatus.next({ message: '', style: '', show: false });
+	}  
+	
 	apiURL(): string {
 		return `${environment.production ? location.origin : 'http://localhost:5005'}`;
+	}
+
+	getSelectedDate(dateOption: string) {
+		const _date = new Date();
+		let startDate, endDate, currentDayOfTheWeek;
+		switch (dateOption) {
+			case 'Last Year':
+				startDate = new Date(_date.getFullYear() - 1, 0, 1);
+				endDate = new Date(_date.getFullYear(), _date.getMonth(), _date.getDate());
+				break;
+			case 'Last Month':
+				startDate = new Date(_date.getFullYear(), _date.getMonth() == 0 ? 11 : _date.getMonth() - 1, 1);
+				endDate = new Date(_date.getFullYear(), _date.getMonth(), _date.getDate());
+				break;
+			case 'Last Week':
+				currentDayOfTheWeek = _date.getDay();
+				switch (currentDayOfTheWeek) {
+					case 0:
+						startDate = new Date(_date.getFullYear(), _date.getMonth(), _date.getDate() - 7);
+						endDate = new Date(_date.getFullYear(), _date.getMonth(), _date.getDate());
+						break;
+					case 1:
+						startDate = new Date(_date.getFullYear(), _date.getMonth(), _date.getDate() - 8);
+						endDate = new Date(_date.getFullYear(), _date.getMonth(), _date.getDate());
+						break;
+					case 2:
+						startDate = new Date(_date.getFullYear(), _date.getMonth(), _date.getDate() - 9);
+						endDate = new Date(_date.getFullYear(), _date.getMonth(), _date.getDate());
+						break;
+					case 3:
+						startDate = new Date(_date.getFullYear(), _date.getMonth(), _date.getDate() - 10);
+						endDate = new Date(_date.getFullYear(), _date.getMonth(), _date.getDate());
+						break;
+					case 4:
+						startDate = new Date(_date.getFullYear(), _date.getMonth(), _date.getDate() - 11);
+						endDate = new Date(_date.getFullYear(), _date.getMonth(), _date.getDate());
+						break;
+					case 4:
+						startDate = new Date(_date.getFullYear(), _date.getMonth(), _date.getDate() - 12);
+						endDate = new Date(_date.getFullYear(), _date.getMonth(), _date.getDate());
+						break;
+					case 5:
+						startDate = new Date(_date.getFullYear(), _date.getMonth(), _date.getDate() - 13);
+						endDate = new Date(_date.getFullYear(), _date.getMonth(), _date.getDate());
+						break;
+					case 6:
+						startDate = new Date(_date.getFullYear(), _date.getMonth(), _date.getDate() - 14);
+						endDate = new Date(_date.getFullYear(), _date.getMonth(), _date.getDate());
+						break;
+					default:
+						break;
+				}
+				break;
+			case 'Yesterday':
+				startDate = new Date(_date.getFullYear(), _date.getMonth(), _date.getDate() - 1);
+				endDate = new Date(_date.getFullYear(), _date.getMonth(), _date.getDate());
+				break;
+			default:
+				break;
+		}
+
+		return { startDate, endDate};
+	}
+
+	getDate(date: Date) {
+		const months = ['Jan', 'Feb', 'Mar', 'April', 'May', 'June', 'July', 'Aug', 'Sept', 'Oct', 'Nov', 'Dec'];
+		const _date = new Date(date);
+		const day = _date.getDate();
+		const month = _date.getMonth();
+		const year = _date.getFullYear();
+		return `${day} ${months[month]}, ${year}`;
+	}
+
+	setContentDisplayed(content: { created_at: Date }[]) {
+		const dateCreateds = content.map((item: { created_at: Date }) => this.getDate(item.created_at));
+		const uniqueDateCreateds = [...new Set(dateCreateds)];
+		const displayedItems: any = [];
+		uniqueDateCreateds.forEach(itemDate => {
+			const filteredItemDate = content.filter((item: { created_at: Date }) => this.getDate(item.created_at) === itemDate);
+			const contents = { date: itemDate, content: filteredItemDate };
+			displayedItems.push(contents);
+		});
+		return displayedItems;
 	}
 }

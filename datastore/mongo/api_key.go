@@ -76,7 +76,7 @@ func (db *apiKeyRepo) RevokeAPIKeys(ctx context.Context, uids []string) error {
 
 	updateAsDeleted := bson.D{primitive.E{Key: "$set", Value: bson.D{
 		primitive.E{Key: "deleted_at", Value: primitive.NewDateTimeFromTime(time.Now())},
-		primitive.E{Key: "document_status", Value: datastore.ActiveDocumentStatus},
+		primitive.E{Key: "document_status", Value: datastore.DeletedDocumentStatus},
 	}}}
 
 	_, err := db.client.UpdateMany(ctx, filter, updateAsDeleted)

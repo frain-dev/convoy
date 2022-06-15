@@ -516,6 +516,20 @@ func (mr *MockGroupRepositoryMockRecorder) FetchGroupsByIDs(arg0, arg1 interface
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "FetchGroupsByIDs", reflect.TypeOf((*MockGroupRepository)(nil).FetchGroupsByIDs), arg0, arg1)
 }
 
+// FillGroupsStatistics mocks base method.
+func (m *MockGroupRepository) FillGroupsStatistics(ctx context.Context, groups []*datastore.Group) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "FillGroupsStatistics", ctx, groups)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// FillGroupsStatistics indicates an expected call of FillGroupsStatistics.
+func (mr *MockGroupRepositoryMockRecorder) FillGroupsStatistics(ctx, groups interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "FillGroupsStatistics", reflect.TypeOf((*MockGroupRepository)(nil).FillGroupsStatistics), ctx, groups)
+}
+
 // LoadGroups mocks base method.
 func (m *MockGroupRepository) LoadGroups(arg0 context.Context, arg1 *datastore.GroupFilter) ([]*datastore.Group, error) {
 	m.ctrl.T.Helper()
@@ -543,6 +557,340 @@ func (m *MockGroupRepository) UpdateGroup(arg0 context.Context, arg1 *datastore.
 func (mr *MockGroupRepositoryMockRecorder) UpdateGroup(arg0, arg1 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateGroup", reflect.TypeOf((*MockGroupRepository)(nil).UpdateGroup), arg0, arg1)
+}
+
+// MockOrganisationRepository is a mock of OrganisationRepository interface.
+type MockOrganisationRepository struct {
+	ctrl     *gomock.Controller
+	recorder *MockOrganisationRepositoryMockRecorder
+}
+
+// MockOrganisationRepositoryMockRecorder is the mock recorder for MockOrganisationRepository.
+type MockOrganisationRepositoryMockRecorder struct {
+	mock *MockOrganisationRepository
+}
+
+// NewMockOrganisationRepository creates a new mock instance.
+func NewMockOrganisationRepository(ctrl *gomock.Controller) *MockOrganisationRepository {
+	mock := &MockOrganisationRepository{ctrl: ctrl}
+	mock.recorder = &MockOrganisationRepositoryMockRecorder{mock}
+	return mock
+}
+
+// EXPECT returns an object that allows the caller to indicate expected use.
+func (m *MockOrganisationRepository) EXPECT() *MockOrganisationRepositoryMockRecorder {
+	return m.recorder
+}
+
+// CreateOrganisation mocks base method.
+func (m *MockOrganisationRepository) CreateOrganisation(arg0 context.Context, arg1 *datastore.Organisation) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "CreateOrganisation", arg0, arg1)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// CreateOrganisation indicates an expected call of CreateOrganisation.
+func (mr *MockOrganisationRepositoryMockRecorder) CreateOrganisation(arg0, arg1 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateOrganisation", reflect.TypeOf((*MockOrganisationRepository)(nil).CreateOrganisation), arg0, arg1)
+}
+
+// DeleteOrganisation mocks base method.
+func (m *MockOrganisationRepository) DeleteOrganisation(arg0 context.Context, arg1 string) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "DeleteOrganisation", arg0, arg1)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// DeleteOrganisation indicates an expected call of DeleteOrganisation.
+func (mr *MockOrganisationRepositoryMockRecorder) DeleteOrganisation(arg0, arg1 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteOrganisation", reflect.TypeOf((*MockOrganisationRepository)(nil).DeleteOrganisation), arg0, arg1)
+}
+
+// FetchOrganisationByID mocks base method.
+func (m *MockOrganisationRepository) FetchOrganisationByID(arg0 context.Context, arg1 string) (*datastore.Organisation, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "FetchOrganisationByID", arg0, arg1)
+	ret0, _ := ret[0].(*datastore.Organisation)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// FetchOrganisationByID indicates an expected call of FetchOrganisationByID.
+func (mr *MockOrganisationRepositoryMockRecorder) FetchOrganisationByID(arg0, arg1 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "FetchOrganisationByID", reflect.TypeOf((*MockOrganisationRepository)(nil).FetchOrganisationByID), arg0, arg1)
+}
+
+// LoadOrganisationsPaged mocks base method.
+func (m *MockOrganisationRepository) LoadOrganisationsPaged(arg0 context.Context, arg1 datastore.Pageable) ([]datastore.Organisation, datastore.PaginationData, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "LoadOrganisationsPaged", arg0, arg1)
+	ret0, _ := ret[0].([]datastore.Organisation)
+	ret1, _ := ret[1].(datastore.PaginationData)
+	ret2, _ := ret[2].(error)
+	return ret0, ret1, ret2
+}
+
+// LoadOrganisationsPaged indicates an expected call of LoadOrganisationsPaged.
+func (mr *MockOrganisationRepositoryMockRecorder) LoadOrganisationsPaged(arg0, arg1 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "LoadOrganisationsPaged", reflect.TypeOf((*MockOrganisationRepository)(nil).LoadOrganisationsPaged), arg0, arg1)
+}
+
+// UpdateOrganisation mocks base method.
+func (m *MockOrganisationRepository) UpdateOrganisation(arg0 context.Context, arg1 *datastore.Organisation) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "UpdateOrganisation", arg0, arg1)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// UpdateOrganisation indicates an expected call of UpdateOrganisation.
+func (mr *MockOrganisationRepositoryMockRecorder) UpdateOrganisation(arg0, arg1 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateOrganisation", reflect.TypeOf((*MockOrganisationRepository)(nil).UpdateOrganisation), arg0, arg1)
+}
+
+// MockOrganisationInviteRepository is a mock of OrganisationInviteRepository interface.
+type MockOrganisationInviteRepository struct {
+	ctrl     *gomock.Controller
+	recorder *MockOrganisationInviteRepositoryMockRecorder
+}
+
+// MockOrganisationInviteRepositoryMockRecorder is the mock recorder for MockOrganisationInviteRepository.
+type MockOrganisationInviteRepositoryMockRecorder struct {
+	mock *MockOrganisationInviteRepository
+}
+
+// NewMockOrganisationInviteRepository creates a new mock instance.
+func NewMockOrganisationInviteRepository(ctrl *gomock.Controller) *MockOrganisationInviteRepository {
+	mock := &MockOrganisationInviteRepository{ctrl: ctrl}
+	mock.recorder = &MockOrganisationInviteRepositoryMockRecorder{mock}
+	return mock
+}
+
+// EXPECT returns an object that allows the caller to indicate expected use.
+func (m *MockOrganisationInviteRepository) EXPECT() *MockOrganisationInviteRepositoryMockRecorder {
+	return m.recorder
+}
+
+// CreateOrganisationInvite mocks base method.
+func (m *MockOrganisationInviteRepository) CreateOrganisationInvite(ctx context.Context, iv *datastore.OrganisationInvite) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "CreateOrganisationInvite", ctx, iv)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// CreateOrganisationInvite indicates an expected call of CreateOrganisationInvite.
+func (mr *MockOrganisationInviteRepositoryMockRecorder) CreateOrganisationInvite(ctx, iv interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateOrganisationInvite", reflect.TypeOf((*MockOrganisationInviteRepository)(nil).CreateOrganisationInvite), ctx, iv)
+}
+
+// DeleteOrganisationInvite mocks base method.
+func (m *MockOrganisationInviteRepository) DeleteOrganisationInvite(ctx context.Context, uid string) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "DeleteOrganisationInvite", ctx, uid)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// DeleteOrganisationInvite indicates an expected call of DeleteOrganisationInvite.
+func (mr *MockOrganisationInviteRepositoryMockRecorder) DeleteOrganisationInvite(ctx, uid interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteOrganisationInvite", reflect.TypeOf((*MockOrganisationInviteRepository)(nil).DeleteOrganisationInvite), ctx, uid)
+}
+
+// FetchOrganisationInviteByID mocks base method.
+func (m *MockOrganisationInviteRepository) FetchOrganisationInviteByID(ctx context.Context, uid string) (*datastore.OrganisationInvite, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "FetchOrganisationInviteByID", ctx, uid)
+	ret0, _ := ret[0].(*datastore.OrganisationInvite)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// FetchOrganisationInviteByID indicates an expected call of FetchOrganisationInviteByID.
+func (mr *MockOrganisationInviteRepositoryMockRecorder) FetchOrganisationInviteByID(ctx, uid interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "FetchOrganisationInviteByID", reflect.TypeOf((*MockOrganisationInviteRepository)(nil).FetchOrganisationInviteByID), ctx, uid)
+}
+
+// FetchOrganisationInviteByToken mocks base method.
+func (m *MockOrganisationInviteRepository) FetchOrganisationInviteByToken(ctx context.Context, token string) (*datastore.OrganisationInvite, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "FetchOrganisationInviteByToken", ctx, token)
+	ret0, _ := ret[0].(*datastore.OrganisationInvite)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// FetchOrganisationInviteByToken indicates an expected call of FetchOrganisationInviteByToken.
+func (mr *MockOrganisationInviteRepositoryMockRecorder) FetchOrganisationInviteByToken(ctx, token interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "FetchOrganisationInviteByToken", reflect.TypeOf((*MockOrganisationInviteRepository)(nil).FetchOrganisationInviteByToken), ctx, token)
+}
+
+// LoadOrganisationsInvitesPaged mocks base method.
+func (m *MockOrganisationInviteRepository) LoadOrganisationsInvitesPaged(ctx context.Context, orgID string, inviteStatus datastore.InviteStatus, pageable datastore.Pageable) ([]datastore.OrganisationInvite, datastore.PaginationData, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "LoadOrganisationsInvitesPaged", ctx, orgID, inviteStatus, pageable)
+	ret0, _ := ret[0].([]datastore.OrganisationInvite)
+	ret1, _ := ret[1].(datastore.PaginationData)
+	ret2, _ := ret[2].(error)
+	return ret0, ret1, ret2
+}
+
+// LoadOrganisationsInvitesPaged indicates an expected call of LoadOrganisationsInvitesPaged.
+func (mr *MockOrganisationInviteRepositoryMockRecorder) LoadOrganisationsInvitesPaged(ctx, orgID, inviteStatus, pageable interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "LoadOrganisationsInvitesPaged", reflect.TypeOf((*MockOrganisationInviteRepository)(nil).LoadOrganisationsInvitesPaged), ctx, orgID, inviteStatus, pageable)
+}
+
+// UpdateOrganisationInvite mocks base method.
+func (m *MockOrganisationInviteRepository) UpdateOrganisationInvite(ctx context.Context, iv *datastore.OrganisationInvite) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "UpdateOrganisationInvite", ctx, iv)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// UpdateOrganisationInvite indicates an expected call of UpdateOrganisationInvite.
+func (mr *MockOrganisationInviteRepositoryMockRecorder) UpdateOrganisationInvite(ctx, iv interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateOrganisationInvite", reflect.TypeOf((*MockOrganisationInviteRepository)(nil).UpdateOrganisationInvite), ctx, iv)
+}
+
+// MockOrganisationMemberRepository is a mock of OrganisationMemberRepository interface.
+type MockOrganisationMemberRepository struct {
+	ctrl     *gomock.Controller
+	recorder *MockOrganisationMemberRepositoryMockRecorder
+}
+
+// MockOrganisationMemberRepositoryMockRecorder is the mock recorder for MockOrganisationMemberRepository.
+type MockOrganisationMemberRepositoryMockRecorder struct {
+	mock *MockOrganisationMemberRepository
+}
+
+// NewMockOrganisationMemberRepository creates a new mock instance.
+func NewMockOrganisationMemberRepository(ctrl *gomock.Controller) *MockOrganisationMemberRepository {
+	mock := &MockOrganisationMemberRepository{ctrl: ctrl}
+	mock.recorder = &MockOrganisationMemberRepositoryMockRecorder{mock}
+	return mock
+}
+
+// EXPECT returns an object that allows the caller to indicate expected use.
+func (m *MockOrganisationMemberRepository) EXPECT() *MockOrganisationMemberRepositoryMockRecorder {
+	return m.recorder
+}
+
+// CreateOrganisationMember mocks base method.
+func (m *MockOrganisationMemberRepository) CreateOrganisationMember(ctx context.Context, member *datastore.OrganisationMember) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "CreateOrganisationMember", ctx, member)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// CreateOrganisationMember indicates an expected call of CreateOrganisationMember.
+func (mr *MockOrganisationMemberRepositoryMockRecorder) CreateOrganisationMember(ctx, member interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateOrganisationMember", reflect.TypeOf((*MockOrganisationMemberRepository)(nil).CreateOrganisationMember), ctx, member)
+}
+
+// DeleteOrganisationMember mocks base method.
+func (m *MockOrganisationMemberRepository) DeleteOrganisationMember(ctx context.Context, memberID, orgID string) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "DeleteOrganisationMember", ctx, memberID, orgID)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// DeleteOrganisationMember indicates an expected call of DeleteOrganisationMember.
+func (mr *MockOrganisationMemberRepositoryMockRecorder) DeleteOrganisationMember(ctx, memberID, orgID interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteOrganisationMember", reflect.TypeOf((*MockOrganisationMemberRepository)(nil).DeleteOrganisationMember), ctx, memberID, orgID)
+}
+
+// FetchOrganisationMemberByID mocks base method.
+func (m *MockOrganisationMemberRepository) FetchOrganisationMemberByID(ctx context.Context, memberID, organisationID string) (*datastore.OrganisationMember, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "FetchOrganisationMemberByID", ctx, memberID, organisationID)
+	ret0, _ := ret[0].(*datastore.OrganisationMember)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// FetchOrganisationMemberByID indicates an expected call of FetchOrganisationMemberByID.
+func (mr *MockOrganisationMemberRepositoryMockRecorder) FetchOrganisationMemberByID(ctx, memberID, organisationID interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "FetchOrganisationMemberByID", reflect.TypeOf((*MockOrganisationMemberRepository)(nil).FetchOrganisationMemberByID), ctx, memberID, organisationID)
+}
+
+// FetchOrganisationMemberByUserID mocks base method.
+func (m *MockOrganisationMemberRepository) FetchOrganisationMemberByUserID(ctx context.Context, userID, organisationID string) (*datastore.OrganisationMember, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "FetchOrganisationMemberByUserID", ctx, userID, organisationID)
+	ret0, _ := ret[0].(*datastore.OrganisationMember)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// FetchOrganisationMemberByUserID indicates an expected call of FetchOrganisationMemberByUserID.
+func (mr *MockOrganisationMemberRepositoryMockRecorder) FetchOrganisationMemberByUserID(ctx, userID, organisationID interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "FetchOrganisationMemberByUserID", reflect.TypeOf((*MockOrganisationMemberRepository)(nil).FetchOrganisationMemberByUserID), ctx, userID, organisationID)
+}
+
+// LoadOrganisationMembersPaged mocks base method.
+func (m *MockOrganisationMemberRepository) LoadOrganisationMembersPaged(ctx context.Context, organisationID string, pageable datastore.Pageable) ([]*datastore.OrganisationMember, datastore.PaginationData, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "LoadOrganisationMembersPaged", ctx, organisationID, pageable)
+	ret0, _ := ret[0].([]*datastore.OrganisationMember)
+	ret1, _ := ret[1].(datastore.PaginationData)
+	ret2, _ := ret[2].(error)
+	return ret0, ret1, ret2
+}
+
+// LoadOrganisationMembersPaged indicates an expected call of LoadOrganisationMembersPaged.
+func (mr *MockOrganisationMemberRepositoryMockRecorder) LoadOrganisationMembersPaged(ctx, organisationID, pageable interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "LoadOrganisationMembersPaged", reflect.TypeOf((*MockOrganisationMemberRepository)(nil).LoadOrganisationMembersPaged), ctx, organisationID, pageable)
+}
+
+// LoadUserOrganisationsPaged mocks base method.
+func (m *MockOrganisationMemberRepository) LoadUserOrganisationsPaged(ctx context.Context, userID string, pageable datastore.Pageable) ([]datastore.Organisation, datastore.PaginationData, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "LoadUserOrganisationsPaged", ctx, userID, pageable)
+	ret0, _ := ret[0].([]datastore.Organisation)
+	ret1, _ := ret[1].(datastore.PaginationData)
+	ret2, _ := ret[2].(error)
+	return ret0, ret1, ret2
+}
+
+// LoadUserOrganisationsPaged indicates an expected call of LoadUserOrganisationsPaged.
+func (mr *MockOrganisationMemberRepositoryMockRecorder) LoadUserOrganisationsPaged(ctx, userID, pageable interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "LoadUserOrganisationsPaged", reflect.TypeOf((*MockOrganisationMemberRepository)(nil).LoadUserOrganisationsPaged), ctx, userID, pageable)
+}
+
+// UpdateOrganisationMember mocks base method.
+func (m *MockOrganisationMemberRepository) UpdateOrganisationMember(ctx context.Context, member *datastore.OrganisationMember) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "UpdateOrganisationMember", ctx, member)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// UpdateOrganisationMember indicates an expected call of UpdateOrganisationMember.
+func (mr *MockOrganisationMemberRepositoryMockRecorder) UpdateOrganisationMember(ctx, member interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateOrganisationMember", reflect.TypeOf((*MockOrganisationMemberRepository)(nil).UpdateOrganisationMember), ctx, member)
 }
 
 // MockApplicationRepository is a mock of ApplicationRepository interface.
@@ -584,17 +932,17 @@ func (mr *MockApplicationRepositoryMockRecorder) CountGroupApplications(ctx, gro
 }
 
 // CreateApplication mocks base method.
-func (m *MockApplicationRepository) CreateApplication(arg0 context.Context, arg1 *datastore.Application) error {
+func (m *MockApplicationRepository) CreateApplication(arg0 context.Context, arg1 *datastore.Application, arg2 string) error {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "CreateApplication", arg0, arg1)
+	ret := m.ctrl.Call(m, "CreateApplication", arg0, arg1, arg2)
 	ret0, _ := ret[0].(error)
 	return ret0
 }
 
 // CreateApplication indicates an expected call of CreateApplication.
-func (mr *MockApplicationRepositoryMockRecorder) CreateApplication(arg0, arg1 interface{}) *gomock.Call {
+func (mr *MockApplicationRepositoryMockRecorder) CreateApplication(arg0, arg1, arg2 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateApplication", reflect.TypeOf((*MockApplicationRepository)(nil).CreateApplication), arg0, arg1)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateApplication", reflect.TypeOf((*MockApplicationRepository)(nil).CreateApplication), arg0, arg1, arg2)
 }
 
 // DeleteApplication mocks base method.
@@ -703,29 +1051,429 @@ func (mr *MockApplicationRepositoryMockRecorder) SearchApplicationsByGroupId(arg
 }
 
 // UpdateApplication mocks base method.
-func (m *MockApplicationRepository) UpdateApplication(arg0 context.Context, arg1 *datastore.Application) error {
+func (m *MockApplicationRepository) UpdateApplication(arg0 context.Context, arg1 *datastore.Application, arg2 string) error {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "UpdateApplication", arg0, arg1)
+	ret := m.ctrl.Call(m, "UpdateApplication", arg0, arg1, arg2)
 	ret0, _ := ret[0].(error)
 	return ret0
 }
 
 // UpdateApplication indicates an expected call of UpdateApplication.
-func (mr *MockApplicationRepositoryMockRecorder) UpdateApplication(arg0, arg1 interface{}) *gomock.Call {
+func (mr *MockApplicationRepositoryMockRecorder) UpdateApplication(arg0, arg1, arg2 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateApplication", reflect.TypeOf((*MockApplicationRepository)(nil).UpdateApplication), arg0, arg1)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateApplication", reflect.TypeOf((*MockApplicationRepository)(nil).UpdateApplication), arg0, arg1, arg2)
 }
 
-// UpdateApplicationEndpointsStatus mocks base method.
-func (m *MockApplicationRepository) UpdateApplicationEndpointsStatus(arg0 context.Context, arg1 string, arg2 []string, arg3 datastore.EndpointStatus) error {
+// MockSubscriptionRepository is a mock of SubscriptionRepository interface.
+type MockSubscriptionRepository struct {
+	ctrl     *gomock.Controller
+	recorder *MockSubscriptionRepositoryMockRecorder
+}
+
+// MockSubscriptionRepositoryMockRecorder is the mock recorder for MockSubscriptionRepository.
+type MockSubscriptionRepositoryMockRecorder struct {
+	mock *MockSubscriptionRepository
+}
+
+// NewMockSubscriptionRepository creates a new mock instance.
+func NewMockSubscriptionRepository(ctrl *gomock.Controller) *MockSubscriptionRepository {
+	mock := &MockSubscriptionRepository{ctrl: ctrl}
+	mock.recorder = &MockSubscriptionRepositoryMockRecorder{mock}
+	return mock
+}
+
+// EXPECT returns an object that allows the caller to indicate expected use.
+func (m *MockSubscriptionRepository) EXPECT() *MockSubscriptionRepositoryMockRecorder {
+	return m.recorder
+}
+
+// CreateSubscription mocks base method.
+func (m *MockSubscriptionRepository) CreateSubscription(arg0 context.Context, arg1 string, arg2 *datastore.Subscription) error {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "UpdateApplicationEndpointsStatus", arg0, arg1, arg2, arg3)
+	ret := m.ctrl.Call(m, "CreateSubscription", arg0, arg1, arg2)
 	ret0, _ := ret[0].(error)
 	return ret0
 }
 
-// UpdateApplicationEndpointsStatus indicates an expected call of UpdateApplicationEndpointsStatus.
-func (mr *MockApplicationRepositoryMockRecorder) UpdateApplicationEndpointsStatus(arg0, arg1, arg2, arg3 interface{}) *gomock.Call {
+// CreateSubscription indicates an expected call of CreateSubscription.
+func (mr *MockSubscriptionRepositoryMockRecorder) CreateSubscription(arg0, arg1, arg2 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateApplicationEndpointsStatus", reflect.TypeOf((*MockApplicationRepository)(nil).UpdateApplicationEndpointsStatus), arg0, arg1, arg2, arg3)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateSubscription", reflect.TypeOf((*MockSubscriptionRepository)(nil).CreateSubscription), arg0, arg1, arg2)
+}
+
+// DeleteSubscription mocks base method.
+func (m *MockSubscriptionRepository) DeleteSubscription(arg0 context.Context, arg1 string, arg2 *datastore.Subscription) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "DeleteSubscription", arg0, arg1, arg2)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// DeleteSubscription indicates an expected call of DeleteSubscription.
+func (mr *MockSubscriptionRepositoryMockRecorder) DeleteSubscription(arg0, arg1, arg2 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteSubscription", reflect.TypeOf((*MockSubscriptionRepository)(nil).DeleteSubscription), arg0, arg1, arg2)
+}
+
+// FindSubscriptionByEventType mocks base method.
+func (m *MockSubscriptionRepository) FindSubscriptionByEventType(arg0 context.Context, arg1, arg2 string, arg3 datastore.EventType) ([]datastore.Subscription, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "FindSubscriptionByEventType", arg0, arg1, arg2, arg3)
+	ret0, _ := ret[0].([]datastore.Subscription)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// FindSubscriptionByEventType indicates an expected call of FindSubscriptionByEventType.
+func (mr *MockSubscriptionRepositoryMockRecorder) FindSubscriptionByEventType(arg0, arg1, arg2, arg3 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "FindSubscriptionByEventType", reflect.TypeOf((*MockSubscriptionRepository)(nil).FindSubscriptionByEventType), arg0, arg1, arg2, arg3)
+}
+
+// FindSubscriptionByID mocks base method.
+func (m *MockSubscriptionRepository) FindSubscriptionByID(arg0 context.Context, arg1, arg2 string) (*datastore.Subscription, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "FindSubscriptionByID", arg0, arg1, arg2)
+	ret0, _ := ret[0].(*datastore.Subscription)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// FindSubscriptionByID indicates an expected call of FindSubscriptionByID.
+func (mr *MockSubscriptionRepositoryMockRecorder) FindSubscriptionByID(arg0, arg1, arg2 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "FindSubscriptionByID", reflect.TypeOf((*MockSubscriptionRepository)(nil).FindSubscriptionByID), arg0, arg1, arg2)
+}
+
+// FindSubscriptionBySourceIDs mocks base method.
+func (m *MockSubscriptionRepository) FindSubscriptionBySourceIDs(arg0 context.Context, arg1, arg2 string) ([]datastore.Subscription, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "FindSubscriptionBySourceIDs", arg0, arg1, arg2)
+	ret0, _ := ret[0].([]datastore.Subscription)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// FindSubscriptionBySourceIDs indicates an expected call of FindSubscriptionBySourceIDs.
+func (mr *MockSubscriptionRepositoryMockRecorder) FindSubscriptionBySourceIDs(arg0, arg1, arg2 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "FindSubscriptionBySourceIDs", reflect.TypeOf((*MockSubscriptionRepository)(nil).FindSubscriptionBySourceIDs), arg0, arg1, arg2)
+}
+
+// LoadSubscriptionsPaged mocks base method.
+func (m *MockSubscriptionRepository) LoadSubscriptionsPaged(arg0 context.Context, arg1 string, arg2 datastore.Pageable) ([]datastore.Subscription, datastore.PaginationData, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "LoadSubscriptionsPaged", arg0, arg1, arg2)
+	ret0, _ := ret[0].([]datastore.Subscription)
+	ret1, _ := ret[1].(datastore.PaginationData)
+	ret2, _ := ret[2].(error)
+	return ret0, ret1, ret2
+}
+
+// LoadSubscriptionsPaged indicates an expected call of LoadSubscriptionsPaged.
+func (mr *MockSubscriptionRepositoryMockRecorder) LoadSubscriptionsPaged(arg0, arg1, arg2 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "LoadSubscriptionsPaged", reflect.TypeOf((*MockSubscriptionRepository)(nil).LoadSubscriptionsPaged), arg0, arg1, arg2)
+}
+
+// UpdateSubscription mocks base method.
+func (m *MockSubscriptionRepository) UpdateSubscription(arg0 context.Context, arg1 string, arg2 *datastore.Subscription) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "UpdateSubscription", arg0, arg1, arg2)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// UpdateSubscription indicates an expected call of UpdateSubscription.
+func (mr *MockSubscriptionRepositoryMockRecorder) UpdateSubscription(arg0, arg1, arg2 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateSubscription", reflect.TypeOf((*MockSubscriptionRepository)(nil).UpdateSubscription), arg0, arg1, arg2)
+}
+
+// UpdateSubscriptionStatus mocks base method.
+func (m *MockSubscriptionRepository) UpdateSubscriptionStatus(arg0 context.Context, arg1, arg2 string, arg3 datastore.SubscriptionStatus) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "UpdateSubscriptionStatus", arg0, arg1, arg2, arg3)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// UpdateSubscriptionStatus indicates an expected call of UpdateSubscriptionStatus.
+func (mr *MockSubscriptionRepositoryMockRecorder) UpdateSubscriptionStatus(arg0, arg1, arg2, arg3 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateSubscriptionStatus", reflect.TypeOf((*MockSubscriptionRepository)(nil).UpdateSubscriptionStatus), arg0, arg1, arg2, arg3)
+}
+
+// MockSourceRepository is a mock of SourceRepository interface.
+type MockSourceRepository struct {
+	ctrl     *gomock.Controller
+	recorder *MockSourceRepositoryMockRecorder
+}
+
+// MockSourceRepositoryMockRecorder is the mock recorder for MockSourceRepository.
+type MockSourceRepositoryMockRecorder struct {
+	mock *MockSourceRepository
+}
+
+// NewMockSourceRepository creates a new mock instance.
+func NewMockSourceRepository(ctrl *gomock.Controller) *MockSourceRepository {
+	mock := &MockSourceRepository{ctrl: ctrl}
+	mock.recorder = &MockSourceRepositoryMockRecorder{mock}
+	return mock
+}
+
+// EXPECT returns an object that allows the caller to indicate expected use.
+func (m *MockSourceRepository) EXPECT() *MockSourceRepositoryMockRecorder {
+	return m.recorder
+}
+
+// CreateSource mocks base method.
+func (m *MockSourceRepository) CreateSource(arg0 context.Context, arg1 *datastore.Source) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "CreateSource", arg0, arg1)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// CreateSource indicates an expected call of CreateSource.
+func (mr *MockSourceRepositoryMockRecorder) CreateSource(arg0, arg1 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateSource", reflect.TypeOf((*MockSourceRepository)(nil).CreateSource), arg0, arg1)
+}
+
+// DeleteSourceByID mocks base method.
+func (m *MockSourceRepository) DeleteSourceByID(ctx context.Context, groupID, id string) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "DeleteSourceByID", ctx, groupID, id)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// DeleteSourceByID indicates an expected call of DeleteSourceByID.
+func (mr *MockSourceRepositoryMockRecorder) DeleteSourceByID(ctx, groupID, id interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteSourceByID", reflect.TypeOf((*MockSourceRepository)(nil).DeleteSourceByID), ctx, groupID, id)
+}
+
+// FindSourceByID mocks base method.
+func (m *MockSourceRepository) FindSourceByID(ctx context.Context, groupID, id string) (*datastore.Source, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "FindSourceByID", ctx, groupID, id)
+	ret0, _ := ret[0].(*datastore.Source)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// FindSourceByID indicates an expected call of FindSourceByID.
+func (mr *MockSourceRepositoryMockRecorder) FindSourceByID(ctx, groupID, id interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "FindSourceByID", reflect.TypeOf((*MockSourceRepository)(nil).FindSourceByID), ctx, groupID, id)
+}
+
+// FindSourceByMaskID mocks base method.
+func (m *MockSourceRepository) FindSourceByMaskID(ctx context.Context, maskID string) (*datastore.Source, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "FindSourceByMaskID", ctx, maskID)
+	ret0, _ := ret[0].(*datastore.Source)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// FindSourceByMaskID indicates an expected call of FindSourceByMaskID.
+func (mr *MockSourceRepositoryMockRecorder) FindSourceByMaskID(ctx, maskID interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "FindSourceByMaskID", reflect.TypeOf((*MockSourceRepository)(nil).FindSourceByMaskID), ctx, maskID)
+}
+
+// LoadSourcesPaged mocks base method.
+func (m *MockSourceRepository) LoadSourcesPaged(ctx context.Context, groupID string, filter *datastore.SourceFilter, pageable datastore.Pageable) ([]datastore.Source, datastore.PaginationData, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "LoadSourcesPaged", ctx, groupID, filter, pageable)
+	ret0, _ := ret[0].([]datastore.Source)
+	ret1, _ := ret[1].(datastore.PaginationData)
+	ret2, _ := ret[2].(error)
+	return ret0, ret1, ret2
+}
+
+// LoadSourcesPaged indicates an expected call of LoadSourcesPaged.
+func (mr *MockSourceRepositoryMockRecorder) LoadSourcesPaged(ctx, groupID, filter, pageable interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "LoadSourcesPaged", reflect.TypeOf((*MockSourceRepository)(nil).LoadSourcesPaged), ctx, groupID, filter, pageable)
+}
+
+// UpdateSource mocks base method.
+func (m *MockSourceRepository) UpdateSource(ctx context.Context, groupID string, source *datastore.Source) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "UpdateSource", ctx, groupID, source)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// UpdateSource indicates an expected call of UpdateSource.
+func (mr *MockSourceRepositoryMockRecorder) UpdateSource(ctx, groupID, source interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateSource", reflect.TypeOf((*MockSourceRepository)(nil).UpdateSource), ctx, groupID, source)
+}
+
+// MockUserRepository is a mock of UserRepository interface.
+type MockUserRepository struct {
+	ctrl     *gomock.Controller
+	recorder *MockUserRepositoryMockRecorder
+}
+
+// MockUserRepositoryMockRecorder is the mock recorder for MockUserRepository.
+type MockUserRepositoryMockRecorder struct {
+	mock *MockUserRepository
+}
+
+// NewMockUserRepository creates a new mock instance.
+func NewMockUserRepository(ctrl *gomock.Controller) *MockUserRepository {
+	mock := &MockUserRepository{ctrl: ctrl}
+	mock.recorder = &MockUserRepositoryMockRecorder{mock}
+	return mock
+}
+
+// EXPECT returns an object that allows the caller to indicate expected use.
+func (m *MockUserRepository) EXPECT() *MockUserRepositoryMockRecorder {
+	return m.recorder
+}
+
+// CreateUser mocks base method.
+func (m *MockUserRepository) CreateUser(arg0 context.Context, arg1 *datastore.User) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "CreateUser", arg0, arg1)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// CreateUser indicates an expected call of CreateUser.
+func (mr *MockUserRepositoryMockRecorder) CreateUser(arg0, arg1 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateUser", reflect.TypeOf((*MockUserRepository)(nil).CreateUser), arg0, arg1)
+}
+
+// FindUserByEmail mocks base method.
+func (m *MockUserRepository) FindUserByEmail(arg0 context.Context, arg1 string) (*datastore.User, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "FindUserByEmail", arg0, arg1)
+	ret0, _ := ret[0].(*datastore.User)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// FindUserByEmail indicates an expected call of FindUserByEmail.
+func (mr *MockUserRepositoryMockRecorder) FindUserByEmail(arg0, arg1 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "FindUserByEmail", reflect.TypeOf((*MockUserRepository)(nil).FindUserByEmail), arg0, arg1)
+}
+
+// FindUserByID mocks base method.
+func (m *MockUserRepository) FindUserByID(arg0 context.Context, arg1 string) (*datastore.User, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "FindUserByID", arg0, arg1)
+	ret0, _ := ret[0].(*datastore.User)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// FindUserByID indicates an expected call of FindUserByID.
+func (mr *MockUserRepositoryMockRecorder) FindUserByID(arg0, arg1 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "FindUserByID", reflect.TypeOf((*MockUserRepository)(nil).FindUserByID), arg0, arg1)
+}
+
+// LoadUsersPaged mocks base method.
+func (m *MockUserRepository) LoadUsersPaged(arg0 context.Context, arg1 datastore.Pageable) ([]datastore.User, datastore.PaginationData, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "LoadUsersPaged", arg0, arg1)
+	ret0, _ := ret[0].([]datastore.User)
+	ret1, _ := ret[1].(datastore.PaginationData)
+	ret2, _ := ret[2].(error)
+	return ret0, ret1, ret2
+}
+
+// LoadUsersPaged indicates an expected call of LoadUsersPaged.
+func (mr *MockUserRepositoryMockRecorder) LoadUsersPaged(arg0, arg1 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "LoadUsersPaged", reflect.TypeOf((*MockUserRepository)(nil).LoadUsersPaged), arg0, arg1)
+}
+
+// UpdateUser mocks base method.
+func (m *MockUserRepository) UpdateUser(ctx context.Context, user *datastore.User) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "UpdateUser", ctx, user)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// UpdateUser indicates an expected call of UpdateUser.
+func (mr *MockUserRepositoryMockRecorder) UpdateUser(ctx, user interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateUser", reflect.TypeOf((*MockUserRepository)(nil).UpdateUser), ctx, user)
+}
+
+// MockConfigurationRepository is a mock of ConfigurationRepository interface.
+type MockConfigurationRepository struct {
+	ctrl     *gomock.Controller
+	recorder *MockConfigurationRepositoryMockRecorder
+}
+
+// MockConfigurationRepositoryMockRecorder is the mock recorder for MockConfigurationRepository.
+type MockConfigurationRepositoryMockRecorder struct {
+	mock *MockConfigurationRepository
+}
+
+// NewMockConfigurationRepository creates a new mock instance.
+func NewMockConfigurationRepository(ctrl *gomock.Controller) *MockConfigurationRepository {
+	mock := &MockConfigurationRepository{ctrl: ctrl}
+	mock.recorder = &MockConfigurationRepositoryMockRecorder{mock}
+	return mock
+}
+
+// EXPECT returns an object that allows the caller to indicate expected use.
+func (m *MockConfigurationRepository) EXPECT() *MockConfigurationRepositoryMockRecorder {
+	return m.recorder
+}
+
+// CreateConfiguration mocks base method.
+func (m *MockConfigurationRepository) CreateConfiguration(arg0 context.Context, arg1 *datastore.Configuration) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "CreateConfiguration", arg0, arg1)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// CreateConfiguration indicates an expected call of CreateConfiguration.
+func (mr *MockConfigurationRepositoryMockRecorder) CreateConfiguration(arg0, arg1 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateConfiguration", reflect.TypeOf((*MockConfigurationRepository)(nil).CreateConfiguration), arg0, arg1)
+}
+
+// LoadConfiguration mocks base method.
+func (m *MockConfigurationRepository) LoadConfiguration(arg0 context.Context) (*datastore.Configuration, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "LoadConfiguration", arg0)
+	ret0, _ := ret[0].(*datastore.Configuration)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// LoadConfiguration indicates an expected call of LoadConfiguration.
+func (mr *MockConfigurationRepositoryMockRecorder) LoadConfiguration(arg0 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "LoadConfiguration", reflect.TypeOf((*MockConfigurationRepository)(nil).LoadConfiguration), arg0)
+}
+
+// UpdateConfiguration mocks base method.
+func (m *MockConfigurationRepository) UpdateConfiguration(arg0 context.Context, arg1 *datastore.Configuration) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "UpdateConfiguration", arg0, arg1)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// UpdateConfiguration indicates an expected call of UpdateConfiguration.
+func (mr *MockConfigurationRepositoryMockRecorder) UpdateConfiguration(arg0, arg1 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateConfiguration", reflect.TypeOf((*MockConfigurationRepository)(nil).UpdateConfiguration), arg0, arg1)
 }

@@ -3,10 +3,14 @@ package services
 import (
 	"context"
 	"errors"
+	"fmt"
 	"net/http"
 	"time"
 
+	"github.com/frain-dev/convoy/auth"
+
 	"github.com/frain-dev/convoy"
+	"github.com/frain-dev/convoy/cache"
 	"github.com/frain-dev/convoy/datastore"
 	"github.com/frain-dev/convoy/limiter"
 	"github.com/frain-dev/convoy/server/models"
@@ -17,28 +21,53 @@ import (
 )
 
 type GroupService struct {
+	apiKeyRepo        datastore.APIKeyRepository
 	appRepo           datastore.ApplicationRepository
 	groupRepo         datastore.GroupRepository
 	eventRepo         datastore.EventRepository
 	eventDeliveryRepo datastore.EventDeliveryRepository
 	limiter           limiter.RateLimiter
+	cache             cache.Cache
 }
 
-func NewGroupService(appRepo datastore.ApplicationRepository, groupRepo datastore.GroupRepository, eventRepo datastore.EventRepository, eventDeliveryRepo datastore.EventDeliveryRepository, limiter limiter.RateLimiter) *GroupService {
+func NewGroupService(apiKeyRepo datastore.APIKeyRepository, appRepo datastore.ApplicationRepository, groupRepo datastore.GroupRepository, eventRepo datastore.EventRepository, eventDeliveryRepo datastore.EventDeliveryRepository, limiter limiter.RateLimiter, cache cache.Cache) *GroupService {
 	return &GroupService{
+		apiKeyRepo:        apiKeyRepo,
 		appRepo:           appRepo,
 		groupRepo:         groupRepo,
 		eventRepo:         eventRepo,
 		eventDeliveryRepo: eventDeliveryRepo,
 		limiter:           limiter,
+		cache:             cache,
 	}
 }
 
-func (gs *GroupService) CreateGroup(ctx context.Context, newGroup *models.Group) (*datastore.Group, error) {
-	groupName := newGroup.Name
+func (gs *GroupService) CreateGroup(ctx context.Context, newGroup *models.Group, org *datastore.Organisation, member *datastore.OrganisationMember) (*datastore.Group, *models.APIKeyResponse, error) {
 	err := util.Validate(newGroup)
 	if err != nil {
-		return nil, NewServiceError(http.StatusBadRequest, err)
+		return nil, nil, NewServiceError(http.StatusBadRequest, err)
+	}
+
+	groupName := newGroup.Name
+
+	config := newGroup.Config
+	if newGroup.Config == nil {
+		config = &datastore.GroupConfig{}
+		config.Signature = &datastore.DefaultSignatureConfig
+		config.Strategy = &datastore.DefaultStrategyConfig
+		config.RateLimit = &datastore.DefaultRateLimitConfig
+	} else {
+		if newGroup.Config.Signature == nil {
+			config.Signature = &datastore.DefaultSignatureConfig
+		}
+
+		if newGroup.Config.Strategy == nil {
+			config.Strategy = &datastore.DefaultStrategyConfig
+		}
+
+		if newGroup.Config.RateLimit == nil {
+			config.RateLimit = &datastore.DefaultRateLimitConfig
+		}
 	}
 
 	if newGroup.RateLimit == 0 {
@@ -52,7 +81,9 @@ func (gs *GroupService) CreateGroup(ctx context.Context, newGroup *models.Group)
 	group := &datastore.Group{
 		UID:               uuid.New().String(),
 		Name:              groupName,
-		Config:            &newGroup.Config,
+		Type:              newGroup.Type,
+		OrganisationID:    org.UID,
+		Config:            config,
 		LogoURL:           newGroup.LogoURL,
 		CreatedAt:         primitive.NewDateTimeFromTime(time.Now()),
 		UpdatedAt:         primitive.NewDateTimeFromTime(time.Now()),
@@ -64,21 +95,59 @@ func (gs *GroupService) CreateGroup(ctx context.Context, newGroup *models.Group)
 	err = gs.groupRepo.CreateGroup(ctx, group)
 	if err != nil {
 		log.WithError(err).Error("failed to create group")
-		return nil, NewServiceError(http.StatusBadRequest, errors.New("failed to create group"))
+		if err == datastore.ErrDuplicateGroupName {
+			return nil, nil, NewServiceError(http.StatusBadRequest, err)
+		}
+
+		return nil, nil, NewServiceError(http.StatusBadRequest, errors.New("failed to create group"))
 	}
 
-	return group, nil
+	newAPIKey := &models.APIKey{
+		Name: fmt.Sprintf("%s's default key", group.Name),
+		Role: models.Role{
+			Type:  auth.RoleSuperUser,
+			Group: group.UID,
+		},
+	}
+
+	apiKey, keyString, err := NewSecurityService(gs.groupRepo, gs.apiKeyRepo).CreateAPIKey(ctx, member, newAPIKey)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	resp := &models.APIKeyResponse{
+		APIKey: models.APIKey{
+			Name: apiKey.Name,
+			Role: models.Role{
+				Type:  apiKey.Role.Type,
+				Group: apiKey.Role.Groups[0],
+			},
+			Type:      apiKey.Type,
+			ExpiresAt: apiKey.ExpiresAt.Time(),
+		},
+		UID:       apiKey.UID,
+		CreatedAt: apiKey.CreatedAt.Time(),
+		Key:       keyString,
+	}
+
+	return group, resp, nil
 }
 
-func (gs *GroupService) UpdateGroup(ctx context.Context, group *datastore.Group, update *models.Group) (*datastore.Group, error) {
+func (gs *GroupService) UpdateGroup(ctx context.Context, group *datastore.Group, update *models.UpdateGroup) (*datastore.Group, error) {
 	err := util.Validate(update)
 	if err != nil {
 		log.WithError(err).Error("failed to validate group update")
 		return nil, NewServiceError(http.StatusBadRequest, err)
 	}
 
-	group.Name = update.Name
-	group.Config = &update.Config
+	if !util.IsStringEmpty(update.Name) {
+		group.Name = update.Name
+	}
+
+	if update.Config != nil {
+		group.Config = update.Config
+	}
+
 	if !util.IsStringEmpty(update.LogoURL) {
 		group.LogoURL = update.LogoURL
 	}
@@ -86,7 +155,13 @@ func (gs *GroupService) UpdateGroup(ctx context.Context, group *datastore.Group,
 	err = gs.groupRepo.UpdateGroup(ctx, group)
 	if err != nil {
 		log.WithError(err).Error("failed to to update group")
-		return nil, NewServiceError(http.StatusBadRequest, errors.New("an error occurred while updating Group"))
+		return nil, NewServiceError(http.StatusBadRequest, err)
+	}
+
+	groupCacheKey := convoy.GroupsCacheKey.Get(group.UID).String()
+	err = gs.cache.Set(ctx, groupCacheKey, &group, time.Minute*5)
+	if err != nil {
+		return nil, NewServiceError(http.StatusBadRequest, err)
 	}
 
 	return group, nil
@@ -99,32 +174,21 @@ func (gs *GroupService) GetGroups(ctx context.Context, filter *datastore.GroupFi
 		return nil, NewServiceError(http.StatusBadRequest, errors.New("an error occurred while fetching Groups"))
 	}
 
-	for _, group := range groups {
-		err = gs.FillGroupStatistics(ctx, group)
-		if err != nil {
-			log.WithError(err).Errorf("failed to fill statistics of group %s", group.UID)
-		}
+	err = gs.FillGroupsStatistics(ctx, groups)
+	if err != nil {
+		log.WithError(err).Error("failed to fill statistics of group ")
 	}
+
 	return groups, nil
 }
 
-func (gs *GroupService) FillGroupStatistics(ctx context.Context, g *datastore.Group) error {
-	appCount, err := gs.appRepo.CountGroupApplications(ctx, g.UID)
+func (gs *GroupService) FillGroupsStatistics(ctx context.Context, groups []*datastore.Group) error {
+	err := gs.groupRepo.FillGroupsStatistics(ctx, groups)
 	if err != nil {
 		log.WithError(err).Error("failed to count group applications")
 		return NewServiceError(http.StatusBadRequest, errors.New("failed to count group statistics"))
 	}
 
-	msgCount, err := gs.eventRepo.CountGroupMessages(ctx, g.UID)
-	if err != nil {
-		log.WithError(err).Error("failed to count group messages")
-		return NewServiceError(http.StatusBadRequest, errors.New("failed to count group statistics"))
-	}
-
-	g.Statistics = &datastore.GroupStatistics{
-		MessagesSent: msgCount,
-		TotalApps:    appCount,
-	}
 	return nil
 }
 

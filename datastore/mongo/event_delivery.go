@@ -243,15 +243,15 @@ func getFilter(groupID string, appID string, eventID string, status []datastore.
 	hasStatusFilter := len(status) > 0
 
 	if hasAppFilter {
-		filter["app_metadata.uid"] = appID
+		filter["app_id"] = appID
 	}
 
 	if hasGroupFilter {
-		filter["app_metadata.group_id"] = groupID
+		filter["group_id"] = groupID
 	}
 
 	if hasEventFilter {
-		filter["event_metadata.uid"] = eventID
+		filter["event_id"] = eventID
 	}
 
 	if hasStatusFilter {

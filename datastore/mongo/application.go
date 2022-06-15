@@ -3,6 +3,7 @@ package mongo
 import (
 	"context"
 	"errors"
+	"fmt"
 	"time"
 
 	"github.com/frain-dev/convoy/datastore"
@@ -27,12 +28,18 @@ func NewApplicationRepo(db *mongo.Database) datastore.ApplicationRepository {
 	}
 }
 
-func (db *appRepo) CreateApplication(ctx context.Context,
-	app *datastore.Application) error {
+func (db *appRepo) CreateApplication(ctx context.Context, app *datastore.Application, groupID string) error {
+	err := db.assertUniqueAppTitle(ctx, app, groupID)
+	if err != nil {
+		if errors.Is(err, datastore.ErrDuplicateAppName) {
+			return err
+		}
+
+		return fmt.Errorf("failed to check if application name is unique: %v", err)
+	}
 
 	app.ID = primitive.NewObjectID()
-
-	_, err := db.client.InsertOne(ctx, app)
+	_, err = db.client.InsertOne(ctx, app)
 	return err
 }
 
@@ -59,7 +66,7 @@ func (db *appRepo) LoadApplicationsPaged(ctx context.Context, groupID, q string,
 
 	msgCollection := db.innerDB.Collection(EventCollection)
 	for i, app := range apps {
-		filter = bson.M{"app_metadata.uid": app.UID, "document_status": datastore.ActiveDocumentStatus}
+		filter = bson.M{"app_id": app.UID, "document_status": datastore.ActiveDocumentStatus}
 		count, err := msgCollection.CountDocuments(ctx, filter)
 		if err != nil {
 			log.Errorf("failed to count events in %s. Reason: %s", app.UID, err)
@@ -69,6 +76,26 @@ func (db *appRepo) LoadApplicationsPaged(ctx context.Context, groupID, q string,
 	}
 
 	return apps, datastore.PaginationData(paginatedData.Pagination), nil
+}
+
+func (db *appRepo) assertUniqueAppTitle(ctx context.Context, app *datastore.Application, groupID string) error {
+	f := bson.M{
+		"uid":             bson.M{"$ne": app.UID},
+		"title":           app.Title,
+		"group_id":        groupID,
+		"document_status": datastore.ActiveDocumentStatus,
+	}
+
+	count, err := db.client.CountDocuments(ctx, f)
+	if err != nil {
+		return err
+	}
+
+	if count != 0 {
+		return datastore.ErrDuplicateAppName
+	}
+
+	return nil
 }
 
 func (db *appRepo) LoadApplicationsPagedByGroupId(ctx context.Context, groupID string, pageable datastore.Pageable) ([]datastore.Application, datastore.PaginationData, error) {
@@ -90,7 +117,7 @@ func (db *appRepo) LoadApplicationsPagedByGroupId(ctx context.Context, groupID s
 
 	msgCollection := db.innerDB.Collection(EventCollection)
 	for i, app := range applications {
-		filter = bson.M{"app_metadata.uid": app.UID, "document_status": datastore.ActiveDocumentStatus}
+		filter = bson.M{"app_id": app.UID, "document_status": datastore.ActiveDocumentStatus}
 		count, err := msgCollection.CountDocuments(ctx, filter)
 		if err != nil {
 			log.Errorf("failed to count events in %s. Reason: %s", app.UID, err)
@@ -158,7 +185,7 @@ func (db *appRepo) SearchApplicationsByGroupId(ctx context.Context, groupId stri
 
 	msgCollection := db.innerDB.Collection(EventCollection)
 	for i, app := range apps {
-		filter = bson.M{"app_metadata.uid": app.UID, "document_status": datastore.ActiveDocumentStatus}
+		filter = bson.M{"app_id": app.UID, "document_status": datastore.ActiveDocumentStatus}
 		count, err := msgCollection.CountDocuments(ctx, filter)
 		if err != nil {
 			log.Errorf("failed to count events in %s. Reason: %s", app.UID, err)
@@ -185,7 +212,7 @@ func (db *appRepo) FindApplicationByID(ctx context.Context,
 	}
 
 	msgCollection := db.innerDB.Collection(EventCollection)
-	filter = bson.M{"app_metadata.uid": app.UID, "document_status": datastore.ActiveDocumentStatus}
+	filter = bson.M{"app_id": app.UID, "document_status": datastore.ActiveDocumentStatus}
 	count, err := msgCollection.CountDocuments(ctx, filter)
 	if err != nil {
 		log.Errorf("failed to count events in %s. Reason: %s", app.UID, err)
@@ -215,8 +242,15 @@ func findEndpoint(endpoints *[]datastore.Endpoint, id string) (*datastore.Endpoi
 	return nil, datastore.ErrEndpointNotFound
 }
 
-func (db *appRepo) UpdateApplication(ctx context.Context,
-	app *datastore.Application) error {
+func (db *appRepo) UpdateApplication(ctx context.Context, app *datastore.Application, groupID string) error {
+	err := db.assertUniqueAppTitle(ctx, app, groupID)
+	if err != nil {
+		if errors.Is(err, datastore.ErrDuplicateAppName) {
+			return err
+		}
+
+		return fmt.Errorf("failed to check if application name is unique: %v", err)
+	}
 
 	app.UpdatedAt = primitive.NewDateTimeFromTime(time.Now())
 
@@ -230,7 +264,7 @@ func (db *appRepo) UpdateApplication(ctx context.Context,
 		primitive.E{Key: "is_disabled", Value: app.IsDisabled},
 	}}}
 
-	_, err := db.client.UpdateOne(ctx, filter, update)
+	_, err = db.client.UpdateOne(ctx, filter, update)
 	return err
 }
 
@@ -239,7 +273,7 @@ func (db *appRepo) DeleteGroupApps(ctx context.Context, groupID string) error {
 	update := bson.M{
 		"$set": bson.M{
 			"deleted_at":      primitive.NewDateTimeFromTime(time.Now()),
-			"document_status": datastore.ActiveDocumentStatus,
+			"document_status": datastore.DeletedDocumentStatus,
 		},
 	}
 
@@ -256,7 +290,7 @@ func (db *appRepo) DeleteApplication(ctx context.Context,
 
 	updateAsDeleted := bson.D{primitive.E{Key: "$set", Value: bson.D{
 		primitive.E{Key: "deleted_at", Value: primitive.NewDateTimeFromTime(time.Now())},
-		primitive.E{Key: "document_status", Value: datastore.ActiveDocumentStatus},
+		primitive.E{Key: "document_status", Value: datastore.DeletedDocumentStatus},
 	}}}
 
 	err := db.updateMessagesInApp(ctx, app, updateAsDeleted)
@@ -286,7 +320,7 @@ func (db *appRepo) updateMessagesInApp(ctx context.Context, app *datastore.Appli
 	var msgOperations []mongo.WriteModel
 
 	updateMessagesOperation := mongo.NewUpdateManyModel()
-	msgFilter := bson.M{"app_metadata.uid": app.UID}
+	msgFilter := bson.M{"app_id": app.UID}
 	updateMessagesOperation.SetFilter(msgFilter)
 	updateMessagesOperation.SetUpdate(update)
 	msgOperations = append(msgOperations, updateMessagesOperation)
@@ -316,40 +350,4 @@ func (db *appRepo) deleteApp(ctx context.Context, app *datastore.Application, up
 	}
 	log.Infof("results of app op: %+v", res)
 	return nil
-}
-
-func (db *appRepo) UpdateApplicationEndpointsStatus(ctx context.Context, appId string, endpointIds []string, status datastore.EndpointStatus) error {
-	app := new(datastore.Application)
-
-	filter := bson.M{"uid": appId, "document_status": datastore.ActiveDocumentStatus}
-
-	err := db.client.FindOne(ctx, filter).
-		Decode(&app)
-	if errors.Is(err, mongo.ErrNoDocuments) {
-		err = datastore.ErrApplicationNotFound
-		return err
-	}
-
-	m := parseMapOfUIDs(endpointIds)
-	for i := 0; i < len(app.Endpoints); i++ {
-		if _, ok := m[app.Endpoints[i].UID]; ok {
-			app.Endpoints[i].Status = status
-		}
-	}
-
-	update := bson.D{primitive.E{Key: "$set", Value: bson.D{
-		primitive.E{Key: "endpoints", Value: app.Endpoints},
-		primitive.E{Key: "updated_at", Value: app.UpdatedAt},
-	}}}
-
-	_, err = db.client.UpdateOne(ctx, filter, update)
-	return err
-}
-
-func parseMapOfUIDs(ids []string) map[string]bool {
-	elementMap := make(map[string]bool)
-	for i := 0; i < len(ids); i++ {
-		elementMap[ids[i]] = true
-	}
-	return elementMap
 }

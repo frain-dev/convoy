@@ -11,7 +11,6 @@ import (
 	"github.com/frain-dev/convoy"
 	"github.com/frain-dev/convoy/cache"
 	"github.com/frain-dev/convoy/datastore"
-	"github.com/frain-dev/convoy/queue"
 	"github.com/frain-dev/convoy/server/models"
 	"github.com/frain-dev/convoy/util"
 	"github.com/google/uuid"
@@ -23,12 +22,11 @@ type AppService struct {
 	appRepo           datastore.ApplicationRepository
 	eventRepo         datastore.EventRepository
 	eventDeliveryRepo datastore.EventDeliveryRepository
-	eventQueue        queue.Queuer
 	cache             cache.Cache
 }
 
-func NewAppService(appRepo datastore.ApplicationRepository, eventRepo datastore.EventRepository, eventDeliveryRepo datastore.EventDeliveryRepository, eventQueue queue.Queuer, cache cache.Cache) *AppService {
-	return &AppService{appRepo: appRepo, eventRepo: eventRepo, eventDeliveryRepo: eventDeliveryRepo, eventQueue: eventQueue, cache: cache}
+func NewAppService(appRepo datastore.ApplicationRepository, eventRepo datastore.EventRepository, eventDeliveryRepo datastore.EventDeliveryRepository, cache cache.Cache) *AppService {
+	return &AppService{appRepo: appRepo, eventRepo: eventRepo, eventDeliveryRepo: eventDeliveryRepo, cache: cache}
 }
 
 func (a *AppService) CreateApp(ctx context.Context, newApp *models.Application, g *datastore.Group) (*datastore.Application, error) {
@@ -49,10 +47,14 @@ func (a *AppService) CreateApp(ctx context.Context, newApp *models.Application, 
 		DocumentStatus:  datastore.ActiveDocumentStatus,
 	}
 
-	err := a.appRepo.CreateApplication(ctx, app)
+	err := a.appRepo.CreateApplication(ctx, app, app.GroupID)
 	if err != nil {
-		log.WithError(err).Error("failed to create application")
-		return nil, NewServiceError(http.StatusBadRequest, errors.New("failed to create application"))
+		msg := "failed to create application"
+		if err == datastore.ErrDuplicateAppName {
+			msg = fmt.Sprintf("%v: %s", datastore.ErrDuplicateAppName, app.Title)
+		}
+		log.WithError(err).Error(msg)
+		return nil, NewServiceError(http.StatusBadRequest, errors.New(msg))
 	}
 
 	appCacheKey := convoy.ApplicationsCacheKey.Get(app.UID).String()
@@ -97,10 +99,14 @@ func (a *AppService) UpdateApplication(ctx context.Context, appUpdate *models.Up
 		app.SupportEmail = *appUpdate.SupportEmail
 	}
 
-	err := a.appRepo.UpdateApplication(ctx, app)
+	err := a.appRepo.UpdateApplication(ctx, app, app.GroupID)
 	if err != nil {
-		log.WithError(err).Error("failed to update application")
-		return NewServiceError(http.StatusBadRequest, errors.New("an error occurred while updating app"))
+		msg := "an error occurred while updating app"
+		if err == datastore.ErrDuplicateAppName {
+			msg = fmt.Sprintf("%v: %s", datastore.ErrDuplicateAppName, app.Title)
+		}
+		log.WithError(err).Error(msg)
+		return NewServiceError(http.StatusBadRequest, errors.New(msg))
 	}
 
 	appCacheKey := convoy.ApplicationsCacheKey.Get(app.UID).String()
@@ -154,9 +160,7 @@ func (a *AppService) CreateAppEndpoint(ctx context.Context, e models.Endpoint, a
 		UID:               uuid.New().String(),
 		TargetURL:         e.URL,
 		Description:       e.Description,
-		Events:            e.Events,
 		Secret:            e.Secret,
-		Status:            datastore.ActiveEndpointStatus,
 		RateLimit:         e.RateLimit,
 		RateLimitDuration: duration.String(),
 		CreatedAt:         primitive.NewDateTimeFromTime(time.Now()),
@@ -173,7 +177,7 @@ func (a *AppService) CreateAppEndpoint(ctx context.Context, e models.Endpoint, a
 
 	app.Endpoints = append(app.Endpoints, *endpoint)
 
-	err = a.appRepo.UpdateApplication(ctx, app)
+	err = a.appRepo.UpdateApplication(ctx, app, app.GroupID)
 	if err != nil {
 		log.WithError(err).Error("failed to update application")
 		return nil, NewServiceError(http.StatusBadRequest, fmt.Errorf("an error occurred while adding app endpoint"))
@@ -196,7 +200,7 @@ func (a *AppService) UpdateAppEndpoint(ctx context.Context, e models.Endpoint, e
 	}
 
 	app.Endpoints = *endpoints
-	err = a.appRepo.UpdateApplication(ctx, app)
+	err = a.appRepo.UpdateApplication(ctx, app, app.GroupID)
 	if err != nil {
 		return endpoint, NewServiceError(http.StatusBadRequest, errors.New("an error occurred while updating app endpoints"))
 	}
@@ -219,7 +223,7 @@ func (a *AppService) DeleteAppEndpoint(ctx context.Context, e *datastore.Endpoin
 		}
 	}
 
-	err := a.appRepo.UpdateApplication(ctx, app)
+	err := a.appRepo.UpdateApplication(ctx, app, app.GroupID)
 	if err != nil {
 		log.WithError(err).Error("failed to delete app endpoint")
 		return NewServiceError(http.StatusBadRequest, errors.New("an error occurred while deleting app endpoint"))
@@ -239,17 +243,6 @@ func updateEndpointIfFound(endpoints *[]datastore.Endpoint, id string, e models.
 		if endpoint.UID == id && endpoint.DeletedAt == 0 {
 			endpoint.TargetURL = e.URL
 			endpoint.Description = e.Description
-
-			// Events being empty means it wasn't passed at all, which automatically
-			// translates into a accept all scenario. This is quite different from
-			// an empty array which signifies a blacklist all events -- no events
-			// will be sent to such endpoints.
-			// TODO(daniel): this should be e.Events == nil
-			if len(e.Events) == 0 {
-				endpoint.Events = []string{"*"}
-			} else {
-				endpoint.Events = e.Events
-			}
 
 			if e.RateLimit != 0 {
 				endpoint.RateLimit = e.RateLimit
@@ -272,7 +265,6 @@ func updateEndpointIfFound(endpoints *[]datastore.Endpoint, id string, e models.
 				endpoint.Secret = e.Secret
 			}
 
-			endpoint.Status = datastore.ActiveEndpointStatus
 			endpoint.UpdatedAt = primitive.NewDateTimeFromTime(time.Now())
 			(*endpoints)[i] = endpoint
 			return endpoints, &endpoint, nil

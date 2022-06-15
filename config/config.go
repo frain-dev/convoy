@@ -8,7 +8,6 @@ import (
 	"strings"
 	"sync/atomic"
 
-	"github.com/frain-dev/convoy/config/algo"
 	"github.com/kelseyhightower/envconfig"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
@@ -17,6 +16,7 @@ import (
 const (
 	MaxResponseSizeKb = 50                       // in kilobytes
 	MaxResponseSize   = MaxResponseSizeKb * 1024 // in bytes
+	MaxRequestSize    = MaxResponseSize
 )
 
 var cfgSingleton atomic.Value
@@ -47,6 +47,10 @@ type QueueConfiguration struct {
 	Redis RedisQueueConfiguration `json:"redis"`
 }
 
+type PrometheusConfiguration struct {
+	Dsn string `json:"dsn" envconfig:"CONVOY_PROM_DSN"`
+}
+
 type RedisQueueConfiguration struct {
 	Dsn string `json:"dsn" envconfig:"CONVOY_REDIS_DSN"`
 }
@@ -57,13 +61,21 @@ type FileRealmOption struct {
 }
 
 type AuthConfiguration struct {
-	RequireAuth bool               `json:"require_auth" envconfig:"CONVOY_REQUIRE_AUTH"`
-	File        FileRealmOption    `json:"file"`
-	Native      NativeRealmOptions `json:"native"`
+	File   FileRealmOption    `json:"file"`
+	Native NativeRealmOptions `json:"native"`
+	Jwt    JwtRealmOptions    `json:"jwt"`
 }
 
 type NativeRealmOptions struct {
 	Enabled bool `json:"enabled" envconfig:"CONVOY_NATIVE_REALM_ENABLED"`
+}
+
+type JwtRealmOptions struct {
+	Enabled       bool   `json:"enabled"`
+	Secret        string `json:"secret"`
+	Expiry        int    `json:"expiry"`
+	RefreshSecret string `json:"refresh_secret"`
+	RefreshExpiry int    `json:"refresh_expiry"`
 }
 
 type SMTPConfiguration struct {
@@ -86,7 +98,8 @@ type LoggerConfiguration struct {
 }
 
 type TracerConfiguration struct {
-	Type TracerProvider `json:"type" envconfig:"CONVOY_TRACER_PROVIDER"`
+	Type     TracerProvider        `json:"type" envconfig:"CONVOY_TRACER_PROVIDER"`
+	NewRelic NewRelicConfiguration `json:"new_relic"`
 }
 
 type CacheConfiguration struct {
@@ -125,23 +138,22 @@ type TypesenseConfiguration struct {
 }
 
 type Configuration struct {
-	Auth            AuthConfiguration     `json:"auth,omitempty"`
-	Database        DatabaseConfiguration `json:"database"`
-	Sentry          SentryConfiguration   `json:"sentry"`
-	Queue           QueueConfiguration    `json:"queue"`
-	Server          ServerConfiguration   `json:"server"`
-	MaxResponseSize uint64                `json:"max_response_size" envconfig:"CONVOY_MAX_RESPONSE_SIZE"`
-	GroupConfig     GroupConfig           `json:"group"`
-	SMTP            SMTPConfiguration     `json:"smtp"`
-	Environment     string                `json:"env" envconfig:"CONVOY_ENV" required:"true" default:"development"`
-	MultipleTenants bool                  `json:"multiple_tenants"`
-	Logger          LoggerConfiguration   `json:"logger"`
-	Tracer          TracerConfiguration   `json:"tracer"`
-	NewRelic        NewRelicConfiguration `json:"new_relic"`
-	Cache           CacheConfiguration    `json:"cache"`
-	Limiter         LimiterConfiguration  `json:"limiter"`
-	BaseUrl         string                `json:"base_url" envconfig:"CONVOY_BASE_URL"`
-	Search          SearchConfiguration   `json:"search"`
+	Auth            AuthConfiguration       `json:"auth,omitempty"`
+	Database        DatabaseConfiguration   `json:"database"`
+	Sentry          SentryConfiguration     `json:"sentry"`
+	Queue           QueueConfiguration      `json:"queue"`
+	Prometheus      PrometheusConfiguration `json:"prometheus"`
+	Server          ServerConfiguration     `json:"server"`
+	MaxResponseSize uint64                  `json:"max_response_size" envconfig:"CONVOY_MAX_RESPONSE_SIZE"`
+	SMTP            SMTPConfiguration       `json:"smtp"`
+	Environment     string                  `json:"env" envconfig:"CONVOY_ENV" required:"true" default:"development"`
+	MultipleTenants bool                    `json:"multiple_tenants"`
+	Logger          LoggerConfiguration     `json:"logger"`
+	Tracer          TracerConfiguration     `json:"tracer"`
+	Cache           CacheConfiguration      `json:"cache"`
+	Limiter         LimiterConfiguration    `json:"limiter"`
+	Host            string                  `json:"host" envconfig:"CONVOY_HOST"`
+	Search          SearchConfiguration     `json:"search"`
 }
 
 const (
@@ -152,9 +164,8 @@ const (
 
 const (
 	RedisQueueProvider                 QueueProvider           = "redis"
-	InMemoryQueueProvider              QueueProvider           = "in-memory"
-	DefaultStrategyProvider            StrategyProvider        = "default"
-	ExponentialBackoffStrategyProvider StrategyProvider        = "exponential-backoff"
+	DefaultStrategyProvider            StrategyProvider        = "linear"
+	ExponentialBackoffStrategyProvider StrategyProvider        = "exponential"
 	DefaultSignatureHeader             SignatureHeaderProvider = "X-Convoy-Signature"
 	ConsoleLoggerProvider              LoggerProvider          = "console"
 	NewRelicTracerProvider             TracerProvider          = "new_relic"
@@ -163,33 +174,6 @@ const (
 	MongodbDatabaseProvider            DatabaseProvider        = "mongodb"
 	InMemoryDatabaseProvider           DatabaseProvider        = "in-memory"
 )
-
-type GroupConfig struct {
-	Strategy        StrategyConfiguration  `json:"strategy"`
-	Signature       SignatureConfiguration `json:"signature"`
-	DisableEndpoint bool                   `json:"disable_endpoint" envconfig:"CONVOY_DISABLE_ENDPOINT"`
-	ReplayAttacks   bool                   `json:"replay_attacks" envconfig:"CONVOY_REPLAY_ATTACKS"`
-}
-
-type StrategyConfiguration struct {
-	Type               StrategyProvider                        `json:"type" envconfig:"CONVOY_STRATEGY_TYPE"`
-	Default            DefaultStrategyConfiguration            `json:"default"`
-	ExponentialBackoff ExponentialBackoffStrategyConfiguration `json:"exponentialBackoff,omitempty"`
-}
-
-type DefaultStrategyConfiguration struct {
-	IntervalSeconds uint64 `json:"intervalSeconds" envconfig:"CONVOY_INTERVAL_SECONDS"`
-	RetryLimit      uint64 `json:"retryLimit" envconfig:"CONVOY_RETRY_LIMIT"`
-}
-
-type ExponentialBackoffStrategyConfiguration struct {
-	RetryLimit uint64 `json:"retryLimit" envconfig:"CONVOY_RETRY_LIMIT"`
-}
-
-type SignatureConfiguration struct {
-	Header SignatureHeaderProvider `json:"header" envconfig:"CONVOY_SIGNATURE_HEADER"`
-	Hash   string                  `json:"hash" envconfig:"CONVOY_SIGNATURE_HASH"`
-}
 
 type AuthProvider string
 type QueueProvider string
@@ -272,9 +256,9 @@ func overrideConfigWithEnvVars(c *Configuration, override *Configuration) {
 		c.Environment = override.Environment
 	}
 
-	// CONVOY_BASE_URL
-	if !IsStringEmpty(override.BaseUrl) {
-		c.BaseUrl = override.BaseUrl
+	// CONVOY_HOST
+	if !IsStringEmpty(override.Host) {
+		c.Host = override.Host
 	}
 
 	// CONVOY_DB_TYPE
@@ -322,6 +306,11 @@ func overrideConfigWithEnvVars(c *Configuration, override *Configuration) {
 		c.Queue.Redis.Dsn = override.Queue.Redis.Dsn
 	}
 
+	// CONVOY_PROM_DSN
+	if !IsStringEmpty(override.Queue.Redis.Dsn) {
+		c.Prometheus.Dsn = override.Prometheus.Dsn
+	}
+
 	// CONVOY_REDIS_DSN
 	if !IsStringEmpty(override.Queue.Redis.Dsn) {
 		c.Queue.Redis.Dsn = override.Queue.Redis.Dsn
@@ -355,36 +344,6 @@ func overrideConfigWithEnvVars(c *Configuration, override *Configuration) {
 	// CONVOY_SSL_KEY_FILE
 	if !IsStringEmpty(override.Server.HTTP.SSLKeyFile) {
 		c.Server.HTTP.SSLKeyFile = override.Server.HTTP.SSLKeyFile
-	}
-
-	// CONVOY_STRATEGY_TYPE
-	if !IsStringEmpty(string(override.GroupConfig.Strategy.Type)) {
-		c.GroupConfig.Strategy.Type = override.GroupConfig.Strategy.Type
-	}
-
-	// CONVOY_SIGNATURE_HASH
-	if !IsStringEmpty(override.GroupConfig.Signature.Hash) {
-		c.GroupConfig.Signature.Hash = override.GroupConfig.Signature.Hash
-	}
-
-	// CONVOY_SIGNATURE_HEADER
-	if !IsStringEmpty(string(override.GroupConfig.Signature.Header)) {
-		c.GroupConfig.Signature.Header = override.GroupConfig.Signature.Header
-	}
-
-	// CONVOY_INTERVAL_SECONDS
-	if override.GroupConfig.Strategy.Default.IntervalSeconds != 0 {
-		c.GroupConfig.Strategy.Default.IntervalSeconds = override.GroupConfig.Strategy.Default.IntervalSeconds
-	}
-
-	// CONVOY_RETRY_LIMIT
-	if override.GroupConfig.Strategy.Default.RetryLimit != 0 {
-		c.GroupConfig.Strategy.Default.RetryLimit = override.GroupConfig.Strategy.Default.RetryLimit
-	}
-
-	// CONVOY_RETRY_LIMIT
-	if override.GroupConfig.Strategy.ExponentialBackoff.RetryLimit != 0 {
-		c.GroupConfig.Strategy.ExponentialBackoff.RetryLimit = override.GroupConfig.Strategy.ExponentialBackoff.RetryLimit
 	}
 
 	// CONVOY_SMTP_PROVIDER
@@ -428,13 +387,28 @@ func overrideConfigWithEnvVars(c *Configuration, override *Configuration) {
 	}
 
 	// CONVOY_NEWRELIC_APP_NAME
-	if !IsStringEmpty(override.NewRelic.AppName) {
-		c.NewRelic.AppName = override.NewRelic.AppName
+	if !IsStringEmpty(override.Tracer.NewRelic.AppName) {
+		c.Tracer.NewRelic.AppName = override.Tracer.NewRelic.AppName
+	}
+
+	// CONVOY_SEARCH_TYPE
+	if !IsStringEmpty(string(override.Search.Type)) {
+		c.Search.Type = override.Search.Type
+	}
+
+	// CONVOY_TYPESENSE_HOST
+	if !IsStringEmpty(override.Search.Typesense.Host) {
+		c.Search.Typesense.Host = override.Search.Typesense.Host
+	}
+
+	// CONVOY_TYPESENSE_API_KEY
+	if !IsStringEmpty(override.Search.Typesense.ApiKey) {
+		c.Search.Typesense.ApiKey = override.Search.Typesense.ApiKey
 	}
 
 	// CONVOY_NEWRELIC_LICENSE_KEY
-	if !IsStringEmpty(override.NewRelic.LicenseKey) {
-		c.NewRelic.LicenseKey = override.NewRelic.LicenseKey
+	if !IsStringEmpty(override.Tracer.NewRelic.LicenseKey) {
+		c.Tracer.NewRelic.LicenseKey = override.Tracer.NewRelic.LicenseKey
 	}
 
 	// CONVOY_API_KEY_CONFIG
@@ -457,20 +431,8 @@ func overrideConfigWithEnvVars(c *Configuration, override *Configuration) {
 		c.Server.HTTP.SSL = override.Server.HTTP.SSL
 	}
 
-	if _, ok := os.LookupEnv("CONVOY_DISABLE_ENDPOINT"); ok {
-		c.GroupConfig.DisableEndpoint = override.GroupConfig.DisableEndpoint
-	}
-
-	if _, ok := os.LookupEnv("CONVOY_REPLAY_ATTACKS"); ok {
-		c.GroupConfig.ReplayAttacks = override.GroupConfig.ReplayAttacks
-	}
-
 	if _, ok := os.LookupEnv("CONVOY_NEWRELIC_CONFIG_ENABLED"); ok {
-		c.NewRelic.ConfigEnabled = override.NewRelic.ConfigEnabled
-	}
-
-	if _, ok := os.LookupEnv("CONVOY_REQUIRE_AUTH"); ok {
-		c.Auth.RequireAuth = override.Auth.RequireAuth
+		c.Tracer.NewRelic.ConfigEnabled = override.Tracer.NewRelic.ConfigEnabled
 	}
 
 	if _, ok := os.LookupEnv("CONVOY_NATIVE_REALM_ENABLED"); ok {
@@ -519,6 +481,10 @@ func SetServerConfigDefaults(c *Configuration) error {
 		c.Environment = DevelopmentEnvironment
 	}
 
+	if c.Host == "" {
+		c.Host = "localhost"
+	}
+
 	if c.Server.HTTP.Port == 0 {
 		return errors.New("http port cannot be zero")
 	}
@@ -526,16 +492,6 @@ func SetServerConfigDefaults(c *Configuration) error {
 	err := ensureSSL(c.Server)
 	if err != nil {
 		return err
-	}
-
-	err = ensureSignature(c.GroupConfig.Signature)
-	if err != nil {
-		return err
-	}
-
-	if c.GroupConfig.Signature.Header == "" {
-		c.GroupConfig.Signature.Header = DefaultSignatureHeader
-		log.Warnf("using default signature header: %s", DefaultSignatureHeader)
 	}
 
 	kb := c.MaxResponseSize * 1024 // to kilobyte
@@ -546,11 +502,6 @@ func SetServerConfigDefaults(c *Configuration) error {
 		c.MaxResponseSize = MaxResponseSize
 	} else {
 		c.MaxResponseSize = kb
-	}
-
-	err = ensureStrategyConfig(c.GroupConfig.Strategy)
-	if err != nil {
-		return err
 	}
 
 	err = ensureQueueConfig(c.Queue)
@@ -594,14 +545,6 @@ func ensureAuthConfig(authCfg AuthConfiguration) error {
 	return nil
 }
 
-func ensureSignature(signature SignatureConfiguration) error {
-	_, ok := algo.M[signature.Hash]
-	if !ok {
-		return fmt.Errorf("invalid hash algorithm - '%s', must be one of %s", signature.Hash, algo.Algos)
-	}
-	return nil
-}
-
 func ensureSSL(s ServerConfiguration) error {
 	if s.HTTP.SSL {
 		if s.HTTP.SSLCertFile == "" || s.HTTP.SSLKeyFile == "" {
@@ -618,27 +561,8 @@ func ensureQueueConfig(queueCfg QueueConfiguration) error {
 			return errors.New("redis queue dsn is empty")
 		}
 
-	case InMemoryQueueProvider:
-		return nil
-
 	default:
 		return fmt.Errorf("unsupported queue type: %s", queueCfg.Type)
-	}
-	return nil
-}
-
-func ensureStrategyConfig(strategyCfg StrategyConfiguration) error {
-	switch strategyCfg.Type {
-	case DefaultStrategyProvider:
-		if strategyCfg.Default.IntervalSeconds == 0 || strategyCfg.Default.RetryLimit == 0 {
-			return errors.New("both interval seconds and retry limit are required for default strategy configuration")
-		}
-	case ExponentialBackoffStrategyProvider:
-		if strategyCfg.ExponentialBackoff.RetryLimit == 0 {
-			return errors.New("retry limit is required for exponential backoff retry strategy configuration")
-		}
-	default:
-		return fmt.Errorf("unsupported strategy type: %s", strategyCfg.Type)
 	}
 	return nil
 }

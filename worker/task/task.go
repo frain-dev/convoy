@@ -1,43 +1,46 @@
 package task
 
 import (
-	"context"
+	"time"
 
-	"github.com/frain-dev/convoy"
-	"github.com/frain-dev/convoy/datastore"
-	"github.com/frain-dev/taskq/v3"
-	log "github.com/sirupsen/logrus"
+	"github.com/hibiken/asynq"
 )
 
-func CreateTask(name convoy.TaskName, group datastore.Group, handler interface{}) *taskq.Task {
-
-	options := taskq.TaskOptions{
-		Name:       string(name),
-		RetryLimit: int(group.Config.Strategy.Default.RetryLimit),
-		Handler:    handler,
-	}
-
-	return taskq.RegisterTask(&options)
+type EndpointError struct {
+	delay time.Duration
+	Err   error
 }
 
-func CreateTasks(groupRepo datastore.GroupRepository, taskname convoy.TaskName, handler interface{}) error {
-	var name convoy.TaskName
-	filter := &datastore.GroupFilter{}
+func (e *EndpointError) Error() string {
+	return e.Err.Error()
+}
 
-	groups, err := groupRepo.LoadGroups(context.Background(), filter)
-	if err != nil {
-		log.WithError(err).Error("Monitor failed to load groups.")
-		return err
+func (e *EndpointError) Delay() time.Duration {
+	return e.delay
+}
+
+type RateLimitError struct {
+	delay time.Duration
+	Err   error
+}
+
+func (e *RateLimitError) Error() string {
+	return e.Err.Error()
+}
+
+func (e *RateLimitError) Delay() time.Duration {
+	return e.delay
+}
+
+func (e *RateLimitError) RateLimit() {
+}
+
+func GetRetryDelay(n int, err error, t *asynq.Task) time.Duration {
+	if endpointError, ok := err.(*EndpointError); ok {
+		return endpointError.Delay()
 	}
-
-	for _, g := range groups {
-		name = taskname.SetPrefix(g.Name)
-
-		if t := taskq.Tasks.Get(string(name)); t == nil {
-			log.Infof("Registering task handler for %s", g.Name)
-			CreateTask(name, *g, handler)
-		}
+	if rateLimitError, ok := err.(*RateLimitError); ok {
+		return rateLimitError.Delay()
 	}
-
-	return nil
+	return defaultDelay
 }
