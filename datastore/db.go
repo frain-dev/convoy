@@ -19,7 +19,7 @@ type mongoStore struct {
 }
 
 type Database interface {
-	Save(ctx context.Context, payload interface{}, out interface{}) error
+	Save(ctx context.Context, payload interface{}, result interface{}) error
 	SaveMany(ctx context.Context, payload []interface{}) error
 
 	FindByID(ctx context.Context, id string, projection map[string]interface{}, result interface{}) error
@@ -48,6 +48,8 @@ type Database interface {
 	Count(ctx context.Context, filter map[string]interface{}) (int64, error)
 	CountWithDeletedAt(ctx context.Context, filter map[string]interface{}) (int64, error)
 }
+
+// mongodb driver -> store (database) -> repo -> service -> handler
 
 var _ Database = &mongoStore{}
 
@@ -131,7 +133,7 @@ func (d *mongoStore) FindByID(ctx context.Context, id string, projection map[str
 		ops.Projection = projection
 	}
 
-	if err := d.Collection.FindOne(ctx, bson.M{"_id": id, "document_status": ActiveDocumentStatus}, ops).Decode(result); err != nil {
+	if err := d.Collection.FindOne(ctx, bson.M{"uid": id, "document_status": ActiveDocumentStatus}, ops).Decode(result); err != nil {
 		return err
 	}
 	return nil
@@ -243,7 +245,11 @@ func (d *mongoStore) FindAll(ctx context.Context, filter map[string]interface{},
 		return errors.New("results param should not be a nil pointer")
 	}
 
-	ops := options.Find().SetSort(bson.M{"_id": -1})
+	if filter == nil {
+		filter = map[string]interface{}{}
+	}
+
+	ops := options.Find().SetSort(bson.M{"created_at": -1})
 
 	if projection != nil {
 		ops.Projection = projection
@@ -256,26 +262,7 @@ func (d *mongoStore) FindAll(ctx context.Context, filter map[string]interface{},
 		return err
 	}
 
-	var output []map[string]interface{}
-	for cursor.Next(ctx) {
-		var item map[string]interface{}
-		if err := cursor.Decode(&item); err != nil {
-			return err
-		}
-
-		output = append(output, item)
-	}
-
-	b, err := json.Marshal(output)
-	if err != nil {
-		return err
-	}
-
-	if err := json.Unmarshal(b, &results); err != nil {
-		return err
-	}
-
-	return nil
+	return cursor.All(ctx, results)
 }
 
 // FindAllAdminRecords retrieves all records including soft deleted data
@@ -314,7 +301,7 @@ func (d *mongoStore) FindAllAdminRecords(ctx context.Context, results interface{
  * return: error
  */
 func (d *mongoStore) UpdateByID(ctx context.Context, id string, payload interface{}) error {
-	result := d.Collection.FindOneAndUpdate(ctx, bson.M{"_id": id}, bson.M{"$set": payload}, options.FindOneAndUpdate().SetUpsert(true))
+	result := d.Collection.FindOneAndUpdate(ctx, bson.M{"uid": id}, bson.M{"$set": payload}, options.FindOneAndUpdate().SetUpsert(true))
 
 	err := result.Err()
 	if err != nil {
@@ -392,12 +379,12 @@ func (d *mongoStore) DeleteByID(ctx context.Context, id string) error {
 	opts.Upsert = &up
 
 	payload := map[string]interface{}{
-		"document_status": ActiveDocumentStatus,
+		"document_status": DeletedDocumentStatus,
 	}
 
-	if err := d.Collection.FindOneAndUpdate(ctx, bson.M{"_id": id}, bson.M{
-		"$set": payload,
-	}).Decode(&u); err != nil {
+	if err := d.Collection.
+		FindOneAndUpdate(ctx, bson.M{"uid": id}, bson.M{"$set": payload}).
+		Decode(&u); err != nil {
 		return err
 	}
 	return nil
@@ -407,7 +394,7 @@ func (d *mongoStore) DeleteByID(ctx context.Context, id string) error {
 func (d *mongoStore) DestroyById(ctx context.Context, id interface{}) error {
 	var u map[string]interface{}
 	if e := d.Collection.FindOneAndDelete(ctx, bson.M{
-		"_id": id,
+		"uid": id,
 	}).Decode(&u); e != nil {
 		return e
 	}

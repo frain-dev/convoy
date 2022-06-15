@@ -110,8 +110,16 @@ func (gs *GroupService) UpdateGroup(ctx context.Context, group *datastore.Group,
 }
 
 func (gs *GroupService) GetGroups(ctx context.Context, filter *datastore.GroupFilter) ([]*datastore.Group, error) {
-	var groups []*datastore.Group
-	err := gs.groupRepo.FindAll(ctx, filter.WithNamesTrimmed().ToGenericMap(), nil, groups)
+	groups := make([]*datastore.Group, 0)
+
+	var f map[string]interface{}
+	if len(filter.Names) == 0 {
+		f = nil
+	} else {
+		f = filter.WithNamesTrimmed().ToGenericMap()
+	}
+
+	err := gs.groupRepo.FindAll(ctx, f, nil, &groups)
 	if err != nil {
 		log.WithError(err).Error("failed to load groups")
 		return nil, NewServiceError(http.StatusBadRequest, errors.New("an error occurred while fetching Groups"))
