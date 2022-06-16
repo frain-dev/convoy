@@ -25,7 +25,7 @@
 					<ul>
 						<li
 							class="text__capitalize"
-							[ngClass]="{ active: filterOption == filterOption }"
+							[ngClass]="{ active: selectedFilterOption == filterOption }"
 							*ngFor="let filterOption of filterOptions"
 							(click)="showFilterDropdown = false; showOverlay = false; toggleFilter(filterOption)"
 						>
@@ -34,11 +34,11 @@
 					</ul>
 				</div>
 			</div>
-			<button class="button button__small button__primary margin-left__24px" routerLink="./new" (click)="currentId = ''">Add team member</button>
+			<button class="button button__small button__primary margin-left__16px" routerLink="./new" (click)="currentId = ''">Add team member</button>
 		</div>
 	</div>
 
-	<div *ngIf="isFetchingTeamMembers || isFetchingPendingInvites">
+	<div *ngIf="(selectedFilterOption === 'active' && isFetchingTeamMembers) || (selectedFilterOption === 'pending' && isFetchingPendingInvites)">
 		<convoy-table-loader [tableClass]="'table__no-style'" [tableHead]="tableHead"></convoy-table-loader>
 	</div>
 
