@@ -65,7 +65,7 @@
 							<span *ngFor="let event of subscription?.filter_config?.event_types" class="tag margin-right__8px">{{ event }}</span>
 						</div>
 
-						<a class="button button__clear button--has-icon padding-right__16px" [routerLink]="'/projects/' + projectId + '/apps'">
+						<a class="button button__clear button--has-icon padding-right__16px" routerLink="./" [queryParams]="{ id: subscription.uid }">
 							<svg width="18" height="18" class="margin-left__8px">
 								<use xlink:href="#arrow-right-icon"></use>
 							</svg>
@@ -86,6 +86,7 @@
 							Endpoint Secret
 							<button class="button button__clear button--has-icon position__absolute" (click)="copyText(subscription.endpoint_metadata.secret)">
 								<img src="/assets/img/copy-icon.svg" width="16px" alt="copy icon" />
+								<small *ngIf="textCopied">Copied!</small>
 							</button>
 						</div>
 					</div>

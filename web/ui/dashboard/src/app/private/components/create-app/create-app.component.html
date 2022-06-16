@@ -67,7 +67,7 @@
 						<input [id]="'endpoint-url' + i" type="text" formControlName="url" required />
 						<div class="input__error input__error__danger" *ngIf="getSingleEndpoint(i).url.touched && getSingleEndpoint(i).url.invalid">
 							<img src="assets/img/input-error-icon.svg" alt="input error icon" />
-							<span>Please provide enter endpoint URL</span>
+							<span>Please provide an endpoint URL</span>
 						</div>
 					</div>
 					

@@ -113,7 +113,7 @@
 									</button>
 									<div [ngClass]="{ show: currentAppId == app.uid }" class="dropdown__menu dropdown__menu__nav small z-index--3">
 										<ul>
-											<li routerLink="./edit" (click)="editAppMode = true; appsDetailsItem = app; currentAppId = ''">Update</li>
+											<li (click)="appsDetailsItem = app; currentAppId = ''" routerLink="./edit">Update</li>
 											<li (click)="showDeleteAppModal = !showDeleteAppModal; currentAppId = ''" class="danger">Delete</li>
 										</ul>
 									</div>
@@ -180,7 +180,7 @@
 				<a (click)="goBack()" class="margin-right__16px width__32px height__32px flex flex__align-items-center flex__justify-center rounded__6px button__clear" tabindex="0">
 					<img src="/assets/img/modal-close-icon.svg" alt="close icon" />
 				</a>
-				<h2 class="font__16px font__weight-600">{{ editAppMode ? 'Edit App' : 'Create App' }}</h2>
+				<h2 class="font__16px font__weight-600">{{ showEditAppModal ? 'Edit App' : 'Create App' }}</h2>
 			</div>
 
 			<a class="button--has-icon icon-left" target="_blank" href="https://getconvoy.io/docs" rel="noreferrer">
@@ -190,6 +190,6 @@
 		</div>
 	</div>
 	<div class="modal--body padding-all__0px">
-		<app-create-app [editAppMode]="editAppMode" [appsDetailsItem]="appsDetailsItem" (discardApp)="goBack()" (createApp)="goBack(); getApps()"></app-create-app>
+		<app-create-app [editAppMode]="showEditAppModal" [appsDetailsItem]="appsDetailsItem" (discardApp)="goBack()" (createApp)="goBack(); getApps()"></app-create-app>
 	</div>
 </div>

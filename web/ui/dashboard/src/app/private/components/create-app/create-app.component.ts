@@ -27,7 +27,8 @@ export class CreateAppComponent implements OnInit {
 	});
 	constructor(private formBuilder: FormBuilder, private createAppService: CreateAppService, private generalService: GeneralService) {}
 
-	ngOnInit(): void {
+	ngOnInit() {
+		console.log(this.appsDetailsItem)
 		if (this.appsDetailsItem && this.editAppMode) {
 			this.updateForm();
 		}

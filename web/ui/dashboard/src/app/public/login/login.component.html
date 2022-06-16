@@ -29,8 +29,9 @@
 			</div>
 
 			<div class="button-container margin-top">
-				<button [disabled]="disableLoginBtn" class="button button__primary button--full-100">
-					{{ disableLoginBtn ? 'loading....' : 'Login to Dashboard' }}
+				<button [disabled]="disableLoginBtn" class="button button__primary--without-gradient button--has-icon icon-center button--full-100">
+					<span *ngIf="!disableLoginBtn">Login</span>
+					<img *ngIf="disableLoginBtn" src="assets/img/button-loader.gif" alt="loader" />
 				</button>
 			</div>
 		</form>
