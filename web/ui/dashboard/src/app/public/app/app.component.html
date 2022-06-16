@@ -113,16 +113,13 @@
 <div class="modal modal__full large border__all" *ngIf="showCreateSubscriptionModal || subscriptionId">
 	<div class="modal--head">
 		<h2>{{ subscriptionId ? 'Update' : 'Create New' }} Subscription</h2>
-		<button class="modal--close button__clear" (click)="showCreateSubscriptionModal = false" *ngIf="!subscriptionId">
+		<button class="modal--close button__clear" (click)="closeCreateSubscriptionModal()">
 			<img src="/assets/img/modal-close-icon.svg" alt="close icon" />
 		</button>
-		<a class="modal--close button__clear" [routerLink]="'/app/' + token" *ngIf="subscriptionId">
-			<img src="/assets/img/modal-close-icon.svg" alt="close icon" />
-		</a>
 	</div>
 
 	<div class="modal--body">
-		<app-create-subscription [action]="subscriptionId ? 'update' : 'create'" (onAction)="getSubscripions()"></app-create-subscription>
+		<app-create-subscription [action]="subscriptionId ? 'update' : 'create'" (onAction)="$event?.action === 'cancel' ? closeCreateSubscriptionModal() : getSubscripions()"></app-create-subscription>
 	</div>
 </div>
 
@@ -352,3 +349,5 @@
 		</defs>
 	</symbol>
 </svg>
+
+<div id="convoy-app"></div>

@@ -19,6 +19,10 @@ const routes: Routes = [
 		loadChildren: () => import('./public/event-delivery/event-delivery.module').then(m => m.EventDeliveryModule)
 	},
 	{
+		path: 'app/:token/subscriptions/new',
+		loadChildren: () => import('./public/create-subscription/create-subscription.module').then(m => m.CreateSubscriptionPublicModule)
+	},
+	{
 		path: 'app/:token/subscriptions/:id',
 		loadChildren: () => import('./public/app/app.module').then(m => m.AppModule)
 	}

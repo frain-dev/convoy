@@ -1,5 +1,5 @@
 import { Component, OnInit } from '@angular/core';
-import { ActivatedRoute } from '@angular/router';
+import { ActivatedRoute, Router } from '@angular/router';
 import { EVENT, EVENT_DELIVERY } from 'src/app/models/event.model';
 import { PAGINATION } from 'src/app/models/global.model';
 import { SUBSCRIPTION } from 'src/app/models/subscription';
@@ -25,7 +25,7 @@ export class AppComponent implements OnInit {
 	showCreateSubscriptionModal = false;
 	subscriptionId = this.route.snapshot.params.id;
 
-	constructor(private appService: AppService, private route: ActivatedRoute) {}
+	constructor(private appService: AppService, private route: ActivatedRoute, private router: Router) {}
 
 	ngOnInit(): void {
 		this.getSubscripions();
@@ -59,5 +59,10 @@ export class AppComponent implements OnInit {
 		} catch (error) {
 			console.log(error);
 		}
+	}
+
+	closeCreateSubscriptionModal() {
+		this.showCreateSubscriptionModal = false;
+		this.router.navigate(['/app', this.token]);
 	}
 }

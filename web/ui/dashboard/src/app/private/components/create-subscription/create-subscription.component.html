@@ -166,19 +166,19 @@
 	<!-- add endpoint modal  -->
 	<div class="modal--head" *ngIf="showCreateAppModal">
 		<h2>Create New App</h2>
-		<button (click)="showCreateAppModal = false">
+		<button class="modal--close button__clear" (click)="showCreateAppModal = false">
 			<img src="/assets/img/modal-close-icon.svg" alt="close icon" />
 		</button>
 	</div>
 	<div class="modal--head" *ngIf="showCreateSourceModal">
 		<h2>Create New Source</h2>
-		<button (click)="showCreateSourceModal = false">
+		<button class="modal--close button__clear" (click)="showCreateSourceModal = false">
 			<img src="/assets/img/modal-close-icon.svg" alt="close icon" />
 		</button>
 	</div>
 	<div class="modal--head" *ngIf="showCreateEndpointModal">
 		<h2>Create New Endpoint</h2>
-		<button (click)="showCreateEndpointModal = false">
+		<button class="modal--close button__clear" (click)="showCreateEndpointModal = false">
 			<img src="/assets/img/modal-close-icon.svg" alt="close icon" />
 		</button>
 	</div>
