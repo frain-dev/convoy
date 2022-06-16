@@ -156,7 +156,6 @@ func (c *Client) ConfigurationRepo() datastore.ConfigurationRepository {
 
 func (c *Client) ensureMongoIndices() {
 	c.ensureIndex(GroupCollection, "uid", true, nil)
-	c.ensureIndex(GroupCollection, "name", true, bson.M{"document_status": datastore.ActiveDocumentStatus})
 
 	c.ensureIndex(OrganisationCollection, "uid", true, nil)
 
@@ -179,11 +178,11 @@ func (c *Client) ensureMongoIndices() {
 	c.ensureIndex(SourceCollection, "mask_id", true, nil)
 	c.ensureIndex(SubscriptionCollection, "uid", true, nil)
 	c.ensureIndex(SubscriptionCollection, "filter_config.event_type", false, nil)
-	c.ensureCompoundIndex(AppCollections)
 
 	c.ensureCompoundIndex(EventCollection)
 	c.ensureCompoundIndex(UserCollection)
 	c.ensureCompoundIndex(AppCollections)
+	c.ensureCompoundIndex(GroupCollection)
 	c.ensureCompoundIndex(EventDeliveryCollection)
 	c.ensureCompoundIndex(OrganisationInvitesCollection)
 	c.ensureCompoundIndex(OrganisationMembersCollection)
@@ -242,6 +241,16 @@ func (c *Client) ensureCompoundIndex(collectionName string) bool {
 
 func compoundIndices() map[string][]mongo.IndexModel {
 	compoundIndices := map[string][]mongo.IndexModel{
+		GroupCollection: {
+			{
+				Keys: bson.D{
+					{Key: "organisation_id", Value: 1},
+					{Key: "name", Value: 1},
+					{Key: "document_status", Value: 1},
+				},
+				Options: options.Index().SetUnique(true),
+			},
+		},
 		EventCollection: {
 			{
 				Keys: bson.D{
