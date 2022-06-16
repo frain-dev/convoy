@@ -41,7 +41,7 @@
 					</div>
 				</div>
 
-				<div class="dropdown margin-left__14px">
+				<div class="dropdown margin-left__14px" [hidden]="appPortalToken">
 					<button
 						class="button button__filter button--has-icon icon-left"
 						[ngClass]="{ active: !!eventDeliveriesApp }"
@@ -81,11 +81,12 @@
 					(click)="fetchRetryCount(); showBatchRetryModal = true"
 					[ngClass]="{
 						disabled:
-							((dateFiltersFromURL.startDate == '' || dateFiltersFromURL.endDate == '') &&
-								eventDeliveriesApp == '' &&
-								eventDeliveryFilteredByEventId == '' &&
-								!eventDeliveriesStatusFilterActive) ||
-							fetchingCount
+							(dateFiltersFromURL.startDate == '' || dateFiltersFromURL.endDate == '') &&
+							(eventDeliveriesApp?.length == 0 || eventDeliveriesApp == undefined) &&
+							(eventDeliveryFilteredByEventId?.length == 0 || eventDeliveryFilteredByEventId == undefined) &&
+							!eventDeliveriesStatusFilterActive &&
+							eventDelsTimeFilterData.startTime == 'T00:00:00' &&
+							eventDelsTimeFilterData.endTime == 'T23:59:59'
 					}"
 				>
 					Batch Retry

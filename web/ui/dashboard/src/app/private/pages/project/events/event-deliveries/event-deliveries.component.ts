@@ -165,33 +165,30 @@ export class EventDeliveriesComponent implements OnInit {
 	clearFilters(filterType?: 'eventsDelApp' | 'eventsDelDate' | 'eventsDelsStatus') {
 		const activeFilters = Object.assign({}, this.route.snapshot.queryParams);
 		let filterItems: string[] = [];
-		this.eventDeliveriesApp = undefined;
 
 		switch (filterType) {
 			case 'eventsDelApp':
-				this.eventDeliveryFilteredByEventId = undefined;
-				filterItems = ['eventDelsApp'];
 				break;
 			case 'eventsDelDate':
-				this.eventDelsTimeFilterData = { startTime: 'T00:00:00', endTime: 'T23:59:59' };
-				this.dateFiltersFromURL = { startDate: '', endDate: '' };
 				filterItems = ['eventDelsStartDate', 'eventDelsEndDate'];
 				break;
 			case 'eventsDelsStatus':
-				this.eventDeliveryFilteredByStatus = [];
 				filterItems = ['eventDelsStatus'];
 				break;
 			default:
-				this.dateFiltersFromURL = { startDate: '', endDate: '' };
-				this.eventDeliveryFilteredByEventId = undefined;
-				this.eventDeliveryFilteredByStatus = [];
-				this.eventDelsTimeFilterData = { startTime: 'T00:00:00', endTime: 'T23:59:59' };
 				filterItems = ['eventDelsStartDate', 'eventDelsEndDate', 'eventDelsApp', 'eventDelsStatus'];
 				break;
 		}
 
+		this.eventDeliveriesApp = undefined;
+		this.dateFiltersFromURL = { startDate: '', endDate: '' };
+		this.eventDeliveryFilteredByEventId = undefined;
+		this.eventDeliveryFilteredByStatus = [];
+		this.eventDelsTimeFilterData = { startTime: 'T00:00:00', endTime: 'T23:59:59' };
+
 		filterItems.forEach(key => (activeFilters.hasOwnProperty(key) ? delete activeFilters[key] : null));
-		this.router.navigate([], { relativeTo: this.route, queryParams: activeFilters });
+		this.router.navigate(['./'], { relativeTo: this.route, queryParams: activeFilters });
+		this.getEventDeliveries();
 	}
 
 	async fetchRetryCount() {
