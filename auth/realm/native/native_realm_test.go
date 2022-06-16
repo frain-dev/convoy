@@ -7,8 +7,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/frain-dev/convoy/datastore"
 	"github.com/frain-dev/convoy/auth"
+	"github.com/frain-dev/convoy/datastore"
 	"github.com/frain-dev/convoy/mocks"
 	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/require"
@@ -47,7 +47,7 @@ func TestNativeRealm_Authenticate(t *testing.T) {
 					Times(1).Return(&datastore.APIKey{
 					UID: "abcd",
 					Role: auth.Role{
-						Type:   auth.RoleUIAdmin,
+						Type:   auth.RoleAdmin,
 						Groups: []string{"paystack"},
 					},
 					MaskID:    "DkwB9HnZxy4DqZMi",
@@ -64,7 +64,7 @@ func TestNativeRealm_Authenticate(t *testing.T) {
 					APIKey: "CO.DkwB9HnZxy4DqZMi.0JUxUfnQJ7NHqvD2ikHsHFx4Wd5nnlTMgsOfUs4eW8oU2G7dA75BWrHfFYYvrash",
 				},
 				Role: auth.Role{
-					Type:   auth.RoleUIAdmin,
+					Type:   auth.RoleAdmin,
 					Groups: []string{"paystack"},
 				},
 			},
@@ -96,7 +96,7 @@ func TestNativeRealm_Authenticate(t *testing.T) {
 					Times(1).Return(&datastore.APIKey{
 					UID: "abcd",
 					Role: auth.Role{
-						Type:   auth.RoleUIAdmin,
+						Type:   auth.RoleAdmin,
 						Groups: []string{"paystack"},
 					},
 					MaskID:    "DkwB9HnZxy4DqZMi",
@@ -137,7 +137,7 @@ func TestNativeRealm_Authenticate(t *testing.T) {
 					Times(1).Return(&datastore.APIKey{
 					UID: "abcd",
 					Role: auth.Role{
-						Type:   auth.RoleUIAdmin,
+						Type:   auth.RoleAdmin,
 						Groups: []string{"paystackx"},
 					},
 					MaskID:    "DkwB9HnZxy4DqZMi",

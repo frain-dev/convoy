@@ -12,6 +12,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/frain-dev/convoy/auth"
 	"github.com/frain-dev/convoy/config"
 	"github.com/frain-dev/convoy/datastore"
 	"github.com/frain-dev/convoy/server/testdb"
@@ -26,6 +27,7 @@ type SubscriptionIntegrationTestSuite struct {
 	Router       http.Handler
 	ConvoyApp    *applicationHandler
 	DefaultGroup *datastore.Group
+	APIKey       string
 }
 
 func (s *SubscriptionIntegrationTestSuite) SetupSuite() {
@@ -39,6 +41,14 @@ func (s *SubscriptionIntegrationTestSuite) SetupTest() {
 
 	// Setup Default Group.
 	s.DefaultGroup, _ = testdb.SeedDefaultGroup(s.DB, "")
+
+	// Seed Auth
+	role := auth.Role{
+		Type:   auth.RoleAdmin,
+		Groups: []string{s.DefaultGroup.UID},
+	}
+
+	_, s.APIKey, _ = testdb.SeedAPIKey(s.DB, role, "", "test", "")
 
 	// Setup Config.
 	err := config.LoadConfig("./testdata/Auth_Config/full-convoy.json")
@@ -80,7 +90,7 @@ func (s *SubscriptionIntegrationTestSuite) Test_CreateSubscription() {
 	}`, source.UID, app.UID, s.DefaultGroup.UID, endpoint.UID)
 
 	body := serialize(bodyStr)
-	req := createRequest(http.MethodPost, "/api/v1/subscriptions", body)
+	req := createRequest(http.MethodPost, "/api/v1/subscriptions", s.APIKey, body)
 	w := httptest.NewRecorder()
 
 	// Act
@@ -122,7 +132,7 @@ func (s *SubscriptionIntegrationTestSuite) Test_CreateSubscription_InvalidBody()
 	}`
 
 	body := serialize(bodyStr)
-	req := createRequest(http.MethodPost, "/api/v1/subscriptions", body)
+	req := createRequest(http.MethodPost, "/api/v1/subscriptions", s.APIKey, body)
 	w := httptest.NewRecorder()
 
 	// Act
@@ -137,7 +147,7 @@ func (s *SubscriptionIntegrationTestSuite) Test_GetOneSubscription_SubscriptionN
 
 	// Arrange Request
 	url := fmt.Sprintf("/api/v1/subscriptions/%s", subscriptionId)
-	req := createRequest(http.MethodGet, url, nil)
+	req := createRequest(http.MethodGet, url, s.APIKey, nil)
 	w := httptest.NewRecorder()
 
 	// Act
@@ -150,8 +160,7 @@ func (s *SubscriptionIntegrationTestSuite) Test_GetOneSubscription_SubscriptionN
 func (s *SubscriptionIntegrationTestSuite) Test_GetOneSubscription_OutgoingGroup_ValidSubscription() {
 	subscriptionId := "123456789"
 
-	group, err := testdb.SeedGroup(s.DB, uuid.NewString(), "test-group", "", datastore.OutgoingGroup, nil)
-	require.NoError(s.T(), err)
+	group := s.DefaultGroup
 
 	// Just Before
 	app, _ := testdb.SeedApplication(s.DB, group, uuid.NewString(), "", false)
@@ -160,9 +169,8 @@ func (s *SubscriptionIntegrationTestSuite) Test_GetOneSubscription_OutgoingGroup
 	_, _ = testdb.SeedSubscription(s.DB, app, group, subscriptionId, group.Type, source, endpoint, &datastore.RetryConfiguration{}, &datastore.AlertConfiguration{}, &datastore.FilterConfiguration{})
 
 	// Arrange Request
-	url := fmt.Sprintf("/api/v1/subscriptions/%s?groupID=%s", subscriptionId, group.UID)
-	req := createRequest(http.MethodGet, url, nil)
-	req.SetBasicAuth("test", "test")
+	url := fmt.Sprintf("/api/v1/subscriptions/%s", subscriptionId)
+	req := createRequest(http.MethodGet, url, s.APIKey, nil)
 	w := httptest.NewRecorder()
 
 	// Act
@@ -187,16 +195,23 @@ func (s *SubscriptionIntegrationTestSuite) Test_GetOneSubscription_IncomingGroup
 	group, err := testdb.SeedGroup(s.DB, uuid.NewString(), "test-group", "", datastore.IncomingGroup, nil)
 	require.NoError(s.T(), err)
 
+	// Seed Auth
+	role := auth.Role{
+		Type:   auth.RoleAdmin,
+		Groups: []string{group.UID},
+	}
+
+	_, apiKey, _ := testdb.SeedAPIKey(s.DB, role, "", "test", "")
+
 	// Just Before
 	app, _ := testdb.SeedApplication(s.DB, group, uuid.NewString(), "", false)
 	endpoint, _ := testdb.SeedEndpoint(s.DB, app, group.UID)
 	source, _ := testdb.SeedSource(s.DB, group, uuid.NewString())
-	_, _ = testdb.SeedSubscription(s.DB, app, group, subscriptionId, group.Type, source, endpoint, &datastore.RetryConfiguration{}, &datastore.AlertConfiguration{}, &datastore.FilterConfiguration{})
+	_, _ = testdb.SeedSubscription(s.DB, app, group, subscriptionId, "incoming", source, endpoint, &datastore.RetryConfiguration{}, &datastore.AlertConfiguration{}, &datastore.FilterConfiguration{})
 
 	// Arrange Request
-	url := fmt.Sprintf("/api/v1/subscriptions/%s?groupID=%s", subscriptionId, group.UID)
-	req := createRequest(http.MethodGet, url, nil)
-	req.SetBasicAuth("test", "test")
+	url := fmt.Sprintf("/api/v1/subscriptions/%s", subscriptionId)
+	req := createRequest(http.MethodGet, url, apiKey, nil)
 	w := httptest.NewRecorder()
 
 	// Act
@@ -229,8 +244,7 @@ func (s *SubscriptionIntegrationTestSuite) Test_GetSubscriptions_ValidSubscripti
 	}
 	// Arrange Request
 	url := "/api/v1/subscriptions"
-	req := createRequest(http.MethodGet, url, nil)
-	req.SetBasicAuth("test", "test")
+	req := createRequest(http.MethodGet, url, s.APIKey, nil)
 	w := httptest.NewRecorder()
 
 	// Act
@@ -256,7 +270,7 @@ func (s *SubscriptionIntegrationTestSuite) Test_DeleteSubscription() {
 
 	// Arrange Request.
 	url := fmt.Sprintf("/api/v1/subscriptions/%s", subscriptionId)
-	req := createRequest(http.MethodDelete, url, nil)
+	req := createRequest(http.MethodDelete, url, s.APIKey, nil)
 	w := httptest.NewRecorder()
 
 	// Act.
@@ -300,7 +314,7 @@ func (s *SubscriptionIntegrationTestSuite) Test_UpdateSubscription() {
 	}`
 
 	body := serialize(bodyStr)
-	req := createRequest(http.MethodPut, url, body)
+	req := createRequest(http.MethodPut, url, s.APIKey, body)
 	w := httptest.NewRecorder()
 
 	// Act

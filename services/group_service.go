@@ -105,7 +105,7 @@ func (gs *GroupService) CreateGroup(ctx context.Context, newGroup *models.Group,
 	newAPIKey := &models.APIKey{
 		Name: fmt.Sprintf("%s's default key", group.Name),
 		Role: models.Role{
-			Type:  auth.RoleSuperUser,
+			Type:  auth.RoleAdmin,
 			Group: group.UID,
 		},
 	}

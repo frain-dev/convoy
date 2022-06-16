@@ -14,14 +14,13 @@ type RoleType string
 
 const (
 	RoleSuperUser = RoleType("super_user")
-	RoleUIAdmin   = RoleType("ui_admin")
 	RoleAdmin     = RoleType("admin")
 	RoleAPI       = RoleType("api")
 )
 
 func (r RoleType) IsValid() bool {
 	switch r {
-	case RoleSuperUser, RoleUIAdmin, RoleAdmin, RoleAPI:
+	case RoleSuperUser, RoleAdmin, RoleAPI:
 		return true
 	default:
 		return false

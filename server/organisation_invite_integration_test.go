@@ -77,7 +77,7 @@ func (s *OrganisationInviteIntegrationTestSuite) Test_InviteUserToOrganisation()
 
 	// TODO(daniel): when the generic mailer is integrated we have to mock it
 	body := strings.NewReader(`{"invitee_email":"test@invite.com","role":{"type":"api", "groups":["123"]}}`)
-	req := createRequest(http.MethodPost, url, body)
+	req := createRequest(http.MethodPost, url, "", body)
 
 	err := s.AuthenticatorFn(req, s.Router)
 	require.NoError(s.T(), err)
@@ -98,7 +98,7 @@ func (s *OrganisationInviteIntegrationTestSuite) Test_InviteUserToOrganisation_I
 	url := fmt.Sprintf("/ui/organisations/%s/invite_user", s.DefaultOrg.UID)
 
 	body := strings.NewReader(`{"invitee_email":"test@invite.com",role":{"type":"api"}}`)
-	req := createRequest(http.MethodPost, url, body)
+	req := createRequest(http.MethodPost, url, "", body)
 
 	err := s.AuthenticatorFn(req, s.Router)
 	require.NoError(s.T(), err)
@@ -119,7 +119,7 @@ func (s *OrganisationInviteIntegrationTestSuite) Test_InviteUserToOrganisation_I
 	url := fmt.Sprintf("/ui/organisations/%s/invite_user", s.DefaultOrg.UID)
 
 	body := strings.NewReader(`{"invitee_email":"test_invite.com",role":{"type":"api","groups":["123"]}}`)
-	req := createRequest(http.MethodPost, url, body)
+	req := createRequest(http.MethodPost, url, "", body)
 
 	err := s.AuthenticatorFn(req, s.Router)
 	require.NoError(s.T(), err)
@@ -140,7 +140,7 @@ func (s *OrganisationInviteIntegrationTestSuite) Test_InviteUserToOrganisation_E
 	url := fmt.Sprintf("/ui/organisations/%s/invite_user", s.DefaultOrg.UID)
 
 	body := strings.NewReader(`{"invitee_email":"",role":{"type":"api","groups":["123"]}}`)
-	req := createRequest(http.MethodPost, url, body)
+	req := createRequest(http.MethodPost, url, "", body)
 
 	err := s.AuthenticatorFn(req, s.Router)
 	require.NoError(s.T(), err)
@@ -173,7 +173,7 @@ func (s *OrganisationInviteIntegrationTestSuite) Test_GetPendingOrganisationInvi
 
 	// Arrange.
 	url := fmt.Sprintf("/ui/organisations/%s/pending_invites", s.DefaultOrg.UID)
-	req := createRequest(http.MethodGet, url, nil)
+	req := createRequest(http.MethodGet, url, "", nil)
 
 	err = s.AuthenticatorFn(req, s.Router)
 	require.NoError(s.T(), err)
@@ -210,7 +210,7 @@ func (s *OrganisationInviteIntegrationTestSuite) Test_ProcessOrganisationMemberI
 
 	// Arrange.
 	url := fmt.Sprintf("/ui/organisations/process_invite?token=%s&accepted=true", iv.Token)
-	req := createRequest(http.MethodPost, url, nil)
+	req := createRequest(http.MethodPost, url, "", nil)
 	req.Header.Set("Authorization", "")
 
 	w := httptest.NewRecorder()
@@ -237,7 +237,7 @@ func (s *OrganisationInviteIntegrationTestSuite) Test_ProcessOrganisationMemberI
 
 	// Arrange.
 	url := fmt.Sprintf("/ui/organisations/process_invite?token=%s&accepted=true", iv.Token)
-	req := createRequest(http.MethodPost, url, nil)
+	req := createRequest(http.MethodPost, url, "", nil)
 	req.Header.Set("Authorization", "")
 
 	w := httptest.NewRecorder()
@@ -263,7 +263,7 @@ func (s *OrganisationInviteIntegrationTestSuite) Test_ProcessOrganisationMemberI
 	url := fmt.Sprintf("/ui/organisations/process_invite?token=%s&accepted=true", iv.Token)
 
 	body := strings.NewReader(`{"first_name":"test","last_name":"test","email":"test@invite.com","password":"password"}`)
-	req := createRequest(http.MethodPost, url, body)
+	req := createRequest(http.MethodPost, url, "", body)
 	req.Header.Set("Authorization", "")
 
 	w := httptest.NewRecorder()
@@ -289,7 +289,7 @@ func (s *OrganisationInviteIntegrationTestSuite) Test_ProcessOrganisationMemberI
 	url := fmt.Sprintf("/ui/organisations/process_invite?token=%s&accepted=true", iv.Token)
 
 	body := strings.NewReader(`{"first_name":"","last_name":"test","email":"test@invite.com","password":"password"}`)
-	req := createRequest(http.MethodPost, url, body)
+	req := createRequest(http.MethodPost, url, "", body)
 	req.Header.Set("Authorization", "")
 
 	w := httptest.NewRecorder()
@@ -313,7 +313,7 @@ func (s *OrganisationInviteIntegrationTestSuite) Test_ProcessOrganisationMemberI
 
 	// Arrange.
 	url := fmt.Sprintf("/ui/organisations/process_invite?token=%s&accepted=false", iv.Token)
-	req := createRequest(http.MethodPost, url, nil)
+	req := createRequest(http.MethodPost, url, "", nil)
 	req.Header.Set("Authorization", "")
 
 	w := httptest.NewRecorder()
@@ -340,7 +340,7 @@ func (s *OrganisationInviteIntegrationTestSuite) Test_FindUserByInviteToken_Exis
 
 	// Arrange.
 	url := fmt.Sprintf("/ui/users/token?token=%s", iv.Token)
-	req := createRequest(http.MethodGet, url, nil)
+	req := createRequest(http.MethodGet, url, "", nil)
 
 	w := httptest.NewRecorder()
 
@@ -374,7 +374,7 @@ func (s *OrganisationInviteIntegrationTestSuite) Test_FindUserByInviteToken_NewU
 
 	// Arrange.
 	url := fmt.Sprintf("/ui/users/token?token=%s", iv.Token)
-	req := createRequest(http.MethodGet, url, nil)
+	req := createRequest(http.MethodGet, url, "", nil)
 
 	w := httptest.NewRecorder()
 
