@@ -104,20 +104,7 @@
 				</div>
 			</div>
 
-			<div class="flex flex__align-items-center margin-bottom__36px">
-				<img (click)="acceptTerms = !acceptTerms" [src]="acceptTerms ? '/assets/img/Checkbox.svg' : '/assets/img/square-check.svg'" [alt]="acceptTerms ? 'accept icon' : 'accept icon'" />
-				<label for="termsCondition" class="margin-left__16px" (click)="acceptTerms = !acceptTerms">
-					<div class="font__14px color__dark">
-						I have read, understood and I agree to Convoy’s
-						<a target="_blank" href="/assets/pdf/Privacy Policy and Data Processing Agreement.pdf" class="color__primary">Privacy Policy</a>
-						, and
-						<a target="blank" href="/assets/pdf/Terms of Use - Frain Technology.pdf" class="color__primary">Terms & Conditions</a>
-						.
-					</div>
-				</label>
-			</div>
-
-			<button class="button button__primary--without-gradient button--has-icon icon-center button--full-100" [disabled]="loading || !acceptTerms" (click)="acceptInvite()">
+			<button class="button button__primary--without-gradient button--has-icon icon-center button--full-100" [disabled]="loading" (click)="acceptInvite()">
 				<span *ngIf="!loading">Join your team</span>
 				<img *ngIf="loading" src="assets/img/button-loader.gif" alt="loader" />
 			</button>

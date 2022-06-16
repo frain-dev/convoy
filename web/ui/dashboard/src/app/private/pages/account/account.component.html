@@ -57,15 +57,10 @@
 			</ng-container>
 
 			<ng-container *ngIf="activePage === 'security'">
-				<div class="grid grid__col-2 margin-bottom__28px">
-					<div>
-						<h2 class="margin-bottom__8px color__black">Change Password</h2>
-						<p class="color__grey font__14px">Here you can change your password incase you’ve been compromised</p>
-					</div>
-
-					<div class="flex flex__justify-end">
-                        <button class="button button__primary button__small " [disabled]="isUpdatingPassword" (click)="changePassword()">{{ isUpdatingPassword ? 'Saving changes...' : 'Save Changes' }}</button>
-                    </div>
+				<div class="flex flex__justify-between flex__align-items-center margin-bottom__28px">
+					<h2 class="color__black">Change Password</h2>
+				
+					<button class="button button__primary button__small " [disabled]="isUpdatingPassword" (click)="changePassword()">{{ isUpdatingPassword ? 'Saving changes...' : 'Save Changes' }}</button>
 				</div>
 				<form [formGroup]="changePasswordForm" (ngSubmit)="changePassword()">
 					<div class="input margin-bottom__0px">
@@ -84,9 +79,9 @@
 							<span>Enter current password</span>
 						</div>
 					</div>
-					<p class="color__black font__14px margin-top__8px">
+					<p class="color__black font__12px margin-top__8px">
 						Forgot password?
-						<button class="button__clear color__primary" type="button" [routerLink]="['/forgot-password']">Reset it here</button>
+						<button class="button__clear color__primary font__12px" type="button" [routerLink]="['/forgot-password']">Reset it here</button>
 					</p>
 					<div class="input margin-top__24px">
 						<label for="password">New Password</label>

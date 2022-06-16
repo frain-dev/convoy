@@ -15,7 +15,6 @@ export class AcceptInviteComponent implements OnInit {
 	loading = false;
 	token!: string;
 	fetchingDetails = false;
-	acceptTerms = false;
 	userDetailsAvailable = false;
 	acceptInviteForm: FormGroup = this.formBuilder.group({
 		first_name: ['', Validators.required],
