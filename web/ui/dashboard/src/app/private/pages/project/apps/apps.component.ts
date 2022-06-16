@@ -17,21 +17,20 @@ export class AppsComponent implements OnInit {
 	appsSearchString: string = '';
 	selectedAppStatus: string = 'All';
 	appStatuses: string[] = ['All', 'Enabled', 'Disabled'];
-	showOverlay: boolean = false;
-	showAppStatusDropdown: boolean = false;
-	showAppDetails: boolean = false;
-	showDeleteAppModal: boolean = false;
+	showOverlay = false;
+	showAppStatusDropdown = false;
+	showAppDetails = false;
+	showDeleteAppModal = false;
 	showCreateAppModal = this.router.url.split('/')[4] === 'new';
-	showEditAppModal = this.router.url.split('/')[4] === 'edit';
-	isloadingApps: boolean = false;
-	isDeletingApp: boolean = false;
-	isCreatingNewApp: boolean = false;
-	editAppMode: boolean = false;
+	showEditAppModal = this.router.url.split('/')[5] === 'edit';
+	isloadingApps = false;
+	isDeletingApp = false;
+	isCreatingNewApp = false;
+	editAppMode = false;
 	currentAppId!: string;
 	apps!: { pagination: PAGINATION; content: APP[] };
 	displayedApps: { date: string; content: APP[] }[] = [];
 	appsDetailsItem?: any;
-	appsPage: number = 1;
 	filteredApps!: APP[];
 
 	constructor(private router: Router, private route: ActivatedRoute, private generalService: GeneralService, public privateService: PrivateService, private location: Location) {}

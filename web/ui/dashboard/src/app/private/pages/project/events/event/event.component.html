@@ -132,8 +132,8 @@
 					<ul *ngIf="sidebarEventDeliveries && sidebarEventDeliveries.length > 0">
 						<li class="flex flex__align-items-center margin-top__16px border__bottom padding-bottom__10px" *ngFor="let delivery of sidebarEventDeliveries">
 							<div [class]="'margin-top__4px tag tag--' + delivery.status">{{ delivery.status }}</div>
-							<div class="font__14px color__black margin-left__16px long-text long-text__300px" [title]="delivery.endpoint.target_url">
-								{{ delivery.endpoint.target_url }}
+							<div class="font__14px color__black margin-left__16px long-text long-text__300px" [title]="delivery?.endpoint?.target_url">
+								{{ delivery?.endpoint?.target_url }}
 							</div>
 						</li>
 					</ul>

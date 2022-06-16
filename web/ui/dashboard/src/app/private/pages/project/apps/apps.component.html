@@ -113,7 +113,9 @@
 									</button>
 									<div [ngClass]="{ show: currentAppId == app.uid }" class="dropdown__menu dropdown__menu__nav small z-index--3">
 										<ul>
-											<li (click)="appsDetailsItem = app; currentAppId = ''" routerLink="./edit">Update</li>
+											<li (click)="appsDetailsItem = app; currentAppId = ''" [routerLink]="'/projects/' + privateService.activeProjectDetails?.uid + '/apps/' + app.uid + '/edit'">
+												Update
+											</li>
 											<li (click)="showDeleteAppModal = !showDeleteAppModal; currentAppId = ''" class="danger">Delete</li>
 										</ul>
 									</div>
@@ -190,6 +192,6 @@
 		</div>
 	</div>
 	<div class="modal--body padding-all__0px">
-		<app-create-app [editAppMode]="showEditAppModal" [appsDetailsItem]="appsDetailsItem" (discardApp)="goBack()" (createApp)="goBack(); getApps()"></app-create-app>
+		<app-create-app [editAppMode]="showEditAppModal" (discardApp)="goBack()" (createApp)="goBack(); getApps()"></app-create-app>
 	</div>
 </div>

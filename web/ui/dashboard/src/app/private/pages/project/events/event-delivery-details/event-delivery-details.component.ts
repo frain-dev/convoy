@@ -15,28 +15,22 @@ export class EventDeliveryDetailsComponent implements OnInit {
 	isLoadingDeliveryDetails = false;
 	isloadingDeliveryAttempts = false;
 	shouldRenderSmallSize = false;
-	eventDeliveryId!: string;
+	eventDeliveryId = this.route.snapshot.params?.id;
 	eventDelsDetailsItem: any;
 	eventDeliveryAtempt!: EVENT_DELIVERY_ATTEMPT;
 	screenWidth = window.innerWidth;
 	constructor(private route: ActivatedRoute, private eventsService: EventsService, private generalService: GeneralService, private location: Location, public privateService: PrivateService) {}
 
-	ngOnInit() {
-		this.getDeliveryId();
+	async ngOnInit() {
+		this.isLoadingDeliveryDetails = true;
+		await this.getEventDeliveryDetails();
 	}
 
-	getDeliveryId() {
-		this.route.params.subscribe(res => {
-			this.eventDeliveryId = res.id;
-			this.getEventDeliveryDetails(this.eventDeliveryId);
-		});
-	}
-
-	async getEventDeliveryDetails(deliveryId: string) {
+	async getEventDeliveryDetails() {
 		this.isLoadingDeliveryDetails = true;
 
 		try {
-			const response = await this.eventsService.getDelivery(deliveryId);
+			const response = await this.eventsService.getDelivery(this.eventDeliveryId);
 			this.eventDelsDetailsItem = response.data;
 			this.getDeliveryAttempts({ eventDeliveryId: this.eventDelsDetailsItem.uid });
 			this.isLoadingDeliveryDetails = false;
@@ -67,7 +61,7 @@ export class EventDeliveryDetailsComponent implements OnInit {
 		};
 		try {
 			await this.eventsService.forceRetryEvent({ body: payload });
-			this.getEventDeliveryDetails(this.eventDeliveryId);
+			this.getEventDeliveryDetails();
 			this.generalService.showNotification({ message: 'Force Retry Request Sent', style: 'success' });
 		} catch (error: any) {
 			this.generalService.showNotification({ message: `${error?.error?.message ? error?.error?.message : 'An error occured'}`, style: 'error' });
@@ -80,7 +74,7 @@ export class EventDeliveryDetailsComponent implements OnInit {
 
 		try {
 			await this.eventsService.retryEvent({ eventId: requestDetails.eventDeliveryId });
-			this.getEventDeliveryDetails(this.eventDeliveryId);
+			this.getEventDeliveryDetails();
 			this.generalService.showNotification({ message: 'Retry Request Sent', style: 'success' });
 		} catch (error: any) {
 			this.generalService.showNotification({ message: `${error?.error?.message ? error?.error?.message : 'An error occured'}`, style: 'error' });
