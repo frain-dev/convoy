@@ -57,7 +57,7 @@ type OrganisationRepository interface {
 }
 
 type OrganisationInviteRepository interface {
-	LoadOrganisationsInvitesPaged(ctx context.Context, pageable Pageable) ([]OrganisationInvite, PaginationData, error)
+	LoadOrganisationsInvitesPaged(ctx context.Context, orgID string, inviteStatus InviteStatus, pageable Pageable) ([]OrganisationInvite, PaginationData, error)
 	CreateOrganisationInvite(ctx context.Context, iv *OrganisationInvite) error
 	UpdateOrganisationInvite(ctx context.Context, iv *OrganisationInvite) error
 	DeleteOrganisationInvite(ctx context.Context, uid string) error
@@ -66,7 +66,7 @@ type OrganisationInviteRepository interface {
 }
 
 type OrganisationMemberRepository interface {
-	LoadOrganisationMembersPaged(ctx context.Context, organisationID string, pageable Pageable) ([]OrganisationMember, PaginationData, error)
+	LoadOrganisationMembersPaged(ctx context.Context, organisationID string, pageable Pageable) ([]*OrganisationMember, PaginationData, error)
 	LoadUserOrganisationsPaged(ctx context.Context, userID string, pageable Pageable) ([]Organisation, PaginationData, error)
 	CreateOrganisationMember(ctx context.Context, member *OrganisationMember) error
 	UpdateOrganisationMember(ctx context.Context, member *OrganisationMember) error
@@ -114,4 +114,10 @@ type UserRepository interface {
 	FindUserByEmail(context.Context, string) (*User, error)
 	FindUserByID(context.Context, string) (*User, error)
 	LoadUsersPaged(context.Context, Pageable) ([]User, PaginationData, error)
+}
+
+type ConfigurationRepository interface {
+	CreateConfiguration(context.Context, *Configuration) error
+	LoadConfiguration(context.Context) (*Configuration, error)
+	UpdateConfiguration(context.Context, *Configuration) error
 }

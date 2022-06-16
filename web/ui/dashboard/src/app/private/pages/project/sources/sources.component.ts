@@ -3,6 +3,7 @@ import { ActivatedRoute, Router } from '@angular/router';
 import { PAGINATION } from 'convoy-app/lib/models/global.model';
 import { SOURCE } from 'src/app/models/group.model';
 import { PrivateService } from 'src/app/private/private.service';
+import { GeneralService } from 'src/app/services/general/general.service';
 import { SourcesService } from './sources.service';
 
 @Component({
@@ -11,17 +12,41 @@ import { SourcesService } from './sources.service';
 	styleUrls: ['./sources.component.scss']
 })
 export class SourcesComponent implements OnInit {
-	sourcesTableHead: string[] = ['Source name', 'Source type', 'Verifier', 'URL', 'Date created', ''];
-	shouldShowCreateSourceModal = this.router.url.split('/')[4] === 'new';
+	sourcesTableHead: string[] = ['Name', 'Type', 'Verifier', 'URL', 'Date created', ''];
+	shouldShowCreateSourceModal = false;
+	shouldShowUpdateSourceModal = false;
 	activeSource?: SOURCE;
 	sources!: { content: SOURCE[]; pagination: PAGINATION };
 	isLoadingSources = false;
-	projectId = this.privateService.activeProjectId;
+	projectId = this.privateService.activeProjectDetails.uid;
+	sourceTypes = [
+		{ value: 'http', viewValue: 'http' },
+		{ value: 'rest_api', viewValue: 'Rest API' },
+		{ value: 'pub_sub', viewValue: 'Pub/Sub' },
+		{ value: 'db_change_stream', viewValue: 'Database' }
+	];
+	httpTypes = [
+		{ value: 'hmac', viewValue: 'HMAC' },
+		{ value: 'basic_auth', viewValue: 'Basic Auth' },
+		{ value: 'api_key', viewValue: 'API Key' }
+	];
 
-	constructor(private route: ActivatedRoute, private router: Router, private sourcesService: SourcesService, private privateService: PrivateService) {
-		this.route.queryParams.subscribe(params => {
-			this.activeSource = this.sources?.content.find(source => source.uid === params?.id);
-		});
+	constructor(private route: ActivatedRoute, private router: Router, private sourcesService: SourcesService, public privateService: PrivateService, private generalService: GeneralService) {
+		this.route.queryParams.subscribe(params => (this.activeSource = this.sources?.content.find(source => source.uid === params?.id)));
+
+		const urlParam = route.snapshot.params.id;
+		if (urlParam && urlParam === 'new') this.shouldShowCreateSourceModal = true;
+		if (urlParam && urlParam !== 'new') this.shouldShowUpdateSourceModal = true;
+	}
+
+	getDataReadableValue(type: 'sourceType' | 'verifier', value: string): { value: string; viewValue: string } | null {
+		if (type === 'sourceType') {
+			return this.sourceTypes.find(source => source.value === value)!;
+		}
+		if (type === 'verifier') {
+			return this.httpTypes.find(source => source.value === value)!;
+		}
+		return null;
 	}
 
 	ngOnInit() {
@@ -54,6 +79,18 @@ export class SourcesComponent implements OnInit {
 	}
 
 	closeCreateSourceModal() {
+		this.generalService.showNotification({ message: `Source ${this.shouldShowUpdateSourceModal ? 'updat' : 'creat'}ed successfully`, style: 'success' });
 		this.router.navigateByUrl('/projects/' + this.projectId + '/sources');
+	}
+
+	copyText(text: string, sourceName: string, event: any) {
+		event.stopPropagation();
+		const el = document.createElement('textarea');
+		el.value = text;
+		document.body.appendChild(el);
+		el.select();
+		document.execCommand('copy');
+		this.generalService.showNotification({ message: `${sourceName} URL has been copied to clipboard`, style: 'info' });
+		document.body.removeChild(el);
 	}
 }

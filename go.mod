@@ -9,6 +9,7 @@ require (
 	github.com/dchest/uniuri v0.0.0-20200228104902-7aecb25e1fe5
 	github.com/dgraph-io/badger/v3 v3.2103.1
 	github.com/dgryski/go-farm v0.0.0-20200201041132-a6ae2369ad13 // indirect
+	github.com/dukex/mixpanel v0.0.0-20220410140740-e82251311162
 	github.com/felixge/httpsnoop v1.0.2
 	github.com/fsnotify/fsnotify v1.5.1 // indirect
 	github.com/getkin/kin-openapi v0.80.0
@@ -37,6 +38,7 @@ require (
 	github.com/newrelic/go-agent/v3 v3.15.2
 	github.com/newrelic/go-agent/v3/integrations/nrlogrus v1.0.1
 	github.com/newrelic/go-agent/v3/integrations/nrmongo v1.0.2
+	github.com/newrelic/go-agent/v3/integrations/nrredis-v8 v1.0.0 // indirect
 	github.com/olekukonko/tablewriter v0.0.5
 	github.com/onsi/gomega v1.19.0 // indirect
 	github.com/pkg/errors v0.9.1

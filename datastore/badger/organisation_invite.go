@@ -8,7 +8,7 @@ import (
 
 type orgInviteRepo struct{}
 
-func (o orgInviteRepo) LoadOrganisationsInvitesPaged(ctx context.Context, pageable datastore.Pageable) ([]datastore.OrganisationInvite, datastore.PaginationData, error) {
+func (o orgInviteRepo) LoadOrganisationsInvitesPaged(ctx context.Context, orgID string, inviteStatus datastore.InviteStatus, pageable datastore.Pageable) ([]datastore.OrganisationInvite, datastore.PaginationData, error) {
 	return nil, datastore.PaginationData{}, nil
 }
 

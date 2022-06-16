@@ -151,11 +151,11 @@ func TestProcessEventDelivery(t *testing.T) {
 					Return(&datastore.Group{
 						LogoURL: "",
 						Config: &datastore.GroupConfig{
-							Signature: datastore.SignatureConfiguration{
+							Signature: &datastore.SignatureConfiguration{
 								Header: config.SignatureHeaderProvider("X-Convoy-Signature"),
 								Hash:   "SHA256",
 							},
-							Strategy: datastore.StrategyConfiguration{
+							Strategy: &datastore.StrategyConfiguration{
 								Type:       datastore.LinearStrategyProvider,
 								Duration:   60,
 								RetryCount: 1,
@@ -236,11 +236,11 @@ func TestProcessEventDelivery(t *testing.T) {
 					Return(&datastore.Group{
 						LogoURL: "",
 						Config: &datastore.GroupConfig{
-							Signature: datastore.SignatureConfiguration{
+							Signature: &datastore.SignatureConfiguration{
 								Header: config.SignatureHeaderProvider("X-Convoy-Signature"),
 								Hash:   "SHA256",
 							},
-							Strategy: datastore.StrategyConfiguration{
+							Strategy: &datastore.StrategyConfiguration{
 								Type:       datastore.LinearStrategyProvider,
 								Duration:   60,
 								RetryCount: 1,
@@ -325,11 +325,11 @@ func TestProcessEventDelivery(t *testing.T) {
 					Return(&datastore.Group{
 						LogoURL: "",
 						Config: &datastore.GroupConfig{
-							Signature: datastore.SignatureConfiguration{
+							Signature: &datastore.SignatureConfiguration{
 								Header: config.SignatureHeaderProvider("X-Convoy-Signature"),
 								Hash:   "SHA256",
 							},
-							Strategy: datastore.StrategyConfiguration{
+							Strategy: &datastore.StrategyConfiguration{
 								Type:       datastore.LinearStrategyProvider,
 								Duration:   60,
 								RetryCount: 1,
@@ -410,11 +410,11 @@ func TestProcessEventDelivery(t *testing.T) {
 					Return(&datastore.Group{
 						LogoURL: "",
 						Config: &datastore.GroupConfig{
-							Signature: datastore.SignatureConfiguration{
+							Signature: &datastore.SignatureConfiguration{
 								Header: config.SignatureHeaderProvider("X-Convoy-Signature"),
 								Hash:   "SHA256",
 							},
-							Strategy: datastore.StrategyConfiguration{
+							Strategy: &datastore.StrategyConfiguration{
 								Type:       datastore.StrategyProvider("default"),
 								Duration:   60,
 								RetryCount: 1,
@@ -499,11 +499,11 @@ func TestProcessEventDelivery(t *testing.T) {
 					Return(&datastore.Group{
 						LogoURL: "",
 						Config: &datastore.GroupConfig{
-							Signature: datastore.SignatureConfiguration{
+							Signature: &datastore.SignatureConfiguration{
 								Header: config.SignatureHeaderProvider("X-Convoy-Signature"),
 								Hash:   "SHA256",
 							},
-							Strategy: datastore.StrategyConfiguration{
+							Strategy: &datastore.StrategyConfiguration{
 								Type:       datastore.LinearStrategyProvider,
 								Duration:   60,
 								RetryCount: 1,
@@ -584,11 +584,11 @@ func TestProcessEventDelivery(t *testing.T) {
 					Return(&datastore.Group{
 						LogoURL: "",
 						Config: &datastore.GroupConfig{
-							Signature: datastore.SignatureConfiguration{
+							Signature: &datastore.SignatureConfiguration{
 								Header: config.SignatureHeaderProvider("X-Convoy-Signature"),
 								Hash:   "SHA256",
 							},
-							Strategy: datastore.StrategyConfiguration{
+							Strategy: &datastore.StrategyConfiguration{
 								Type:       datastore.LinearStrategyProvider,
 								Duration:   60,
 								RetryCount: 1,
@@ -671,11 +671,11 @@ func TestProcessEventDelivery(t *testing.T) {
 					Return(&datastore.Group{
 						LogoURL: "",
 						Config: &datastore.GroupConfig{
-							Signature: datastore.SignatureConfiguration{
+							Signature: &datastore.SignatureConfiguration{
 								Header: config.SignatureHeaderProvider("X-Convoy-Signature"),
 								Hash:   "SHA256",
 							},
-							Strategy: datastore.StrategyConfiguration{
+							Strategy: &datastore.StrategyConfiguration{
 								Type:       datastore.LinearStrategyProvider,
 								Duration:   60,
 								RetryCount: 1,

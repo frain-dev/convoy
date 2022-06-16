@@ -6,7 +6,7 @@ import (
 	"html/template"
 	"strings"
 
-	"github.com/frain-dev/convoy/pkg/smtp"
+	"github.com/frain-dev/convoy/internal/pkg/smtp"
 )
 
 //go:embed templates/*
@@ -24,8 +24,7 @@ type Email struct {
 }
 
 func NewEmail(c smtp.SmtpClient) *Email {
-	templ := template.New("convoyMailer")
-	return &Email{client: c, templ: templ}
+	return &Email{client: c}
 }
 
 // TODO(subomi): glob pattern must not match more than one template

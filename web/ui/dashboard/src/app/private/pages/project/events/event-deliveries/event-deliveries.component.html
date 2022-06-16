@@ -78,7 +78,7 @@
 
 				<button
 					class="button button__filter margin-left__14px flex__justify-center"
-					(click)="fetchRetryCount()"
+					(click)="fetchRetryCount(); showBatchRetryModal = true"
 					[ngClass]="{
 						disabled:
 							((dateFiltersFromURL.startDate == '' || dateFiltersFromURL.endDate == '') &&
@@ -110,7 +110,7 @@
 		</div>
 	</div>
 
-	<div class="event__table">
+	<div class="event__table width-100">
 		<convoy-table-loader id="event_deliveries_loader" [tableHead]="eventDelTableHead" *ngIf="isloadingEventDeliveries"></convoy-table-loader>
 
 		<div class="table table--container has-loader" id="event-deliveries-table-container" *ngIf="displayedEventDeliveries && displayedEventDeliveries.length > 0">
@@ -136,7 +136,7 @@
 							*ngFor="let event of eventDeliveriesGroup.content; let index = index"
 							[ngClass]="{ 'last-item': index === eventDeliveriesGroup.content.length - 1, active: event.uid === eventDelsDetailsItem?.uid }"
 							[id]="'eventDel' + i"
-							(click)="eventDelsDetailsItem = event; getDelieveryAttempts(event.uid); eventDeliveryIndex = index"
+							[routerLink]="['./event-deliveries/' + event.uid]"
 						>
 							<td>
 								<div class="has-retry">
@@ -146,11 +146,14 @@
 							</td>
 							<td>
 								<div>
-									<div class="tag tag--Neutral">{{ event.event_metadata.name }}</div>
+									<div class="tag tag--Neutral">{{ event?.event_metadata?.event_type }}</div>
 								</div>
 							</td>
 							<td>
 								<div>{{ event.metadata?.num_trials }}</div>
+							</td>
+							<td>
+								<div>{{ event.metadata?.retry_limit }}</div>
 							</td>
 							<td>
 								<div>{{ event.created_at | date: 'mediumTime' }}</div>
@@ -159,7 +162,7 @@
 								<div>
 									<button
 										[disabled]="event.status !== 'Failure' && event.status !== 'Success'"
-										[class]="'button__retry button--has-icon icon-left '"
+										class="button__retry button--has-icon icon-left font__12px"
 										(click)="
 											event.status === 'Success'
 												? forceRetryEvent({ e: $event, index: this.index, eventDeliveryId: event.uid })
@@ -174,7 +177,7 @@
 							</td>
 							<td class="width__5">
 								<div>
-									<button class="button__clear button--has-icon icon-right" (click)="eventDelsDetailsItem = event; getDelieveryAttempts(event.uid); eventDeliveryIndex = index">
+									<button class="button__clear button--has-icon icon-right" [routerLink]="'./delivery/' + event.uid">
 										<img src="assets/img/angle-arrow-right-primary.svg" alt="arrow right" />
 									</button>
 								</div>

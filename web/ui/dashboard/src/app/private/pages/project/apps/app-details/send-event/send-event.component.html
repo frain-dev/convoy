@@ -1,0 +1,55 @@
+<!-- add event modal  -->
+<div class="modal--head">
+    <h2>Add Event</h2>
+    <a (click)="cancel()">
+        <img src="/assets/img/modal-close-icon.svg" alt="close icon" />
+    </a>
+</div>
+
+<div class="modal--body">
+    <form [formGroup]="sendEventForm">
+        <div class="input">
+            <label class="flex flex__align-items-center" for="appId">
+                App ID
+                <span class="bg__grey__light rounded__4px padding-x__4px position__absolute position--right__0px font__10px font__weight-400">required</span>
+            </label>
+            <select id="appId" class="editMode" formControlName="app_id">
+                <option *ngFor="let app of apps?.content" [value]="app.uid">{{ app.name }}</option>
+            </select>
+            <div class="input__error input__error__danger" *ngIf="sendEventForm.controls.app_id.touched && sendEventForm.controls.app_id.invalid">
+                <img src="assets/img/input-error-icon.svg" alt="input error icon" />
+                <span>App Id is required</span>
+            </div>
+        </div>
+        <div class="input">
+            <label class="flex flex__justify-between" for="data">
+                <div class="flex flex__align-items-center">
+                    Data
+                    <app-tooltip [size]="'small'" position="right" class="margin-left__4px">Please enter your data in the format it would be returned.</app-tooltip>
+                </div>
+
+                <span class="bg__grey__light rounded__4px padding-x__4px position__absolute position--right__0px font__10px font__weight-400">required</span>
+            </label>
+            <textarea id="data" formControlName="data" required cols="5" [ngClass]="{ danger: sendEventForm.controls.data.touched && sendEventForm.controls.data.invalid }"></textarea>
+            <div class="input__error input__error__danger" *ngIf="sendEventForm.controls.data.touched && sendEventForm.controls.data.invalid">
+                <img src="assets/img/input-error-icon.svg" alt="input error icon" />
+                <span>Data is required</span>
+            </div>
+        </div>
+        <div class="input">
+            <label class="flex flex__justify-between" for="eventType">
+                Event Type
+                <span class="bg__grey__light rounded__4px padding-x__4px position__absolute position--right__0px font__10px font__weight-400">required</span>
+            </label>
+            <input id="eventType" type="text" formControlName="event_type" [ngClass]="{ danger: sendEventForm.controls.event_type.touched && sendEventForm.controls.event_type.invalid }" required />
+            <div class="input__error input__error__danger" *ngIf="sendEventForm.controls.event_type.touched && sendEventForm.controls.event_type.invalid">
+                <img src="assets/img/input-error-icon.svg" alt="input error icon" />
+                <span>Event type is required</span>
+            </div>
+        </div>
+    </form>
+</div>
+<div class="modal--footer modal--footer__with-shadow">
+    <button class="button button__white margin-right__24px" (click)="cancel()">Discard</button>
+    <button class="button button__primary button--full-100" [disabled]="isSendingNewEvent" (click)="sendNewEvent()">{{ isSendingNewEvent ? 'Adding Event..' : 'Add Event' }}</button>
+</div>

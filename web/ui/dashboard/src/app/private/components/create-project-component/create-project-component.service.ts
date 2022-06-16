@@ -1,5 +1,5 @@
 import { Injectable } from '@angular/core';
-import { HTTP_RESPONSE } from 'convoy-app/lib/models/http.model';
+import { HTTP_RESPONSE } from 'src/app/models/http.model';
 import { HttpService } from 'src/app/services/http/http.service';
 import { PrivateService } from '../../private.service';
 
@@ -19,7 +19,7 @@ export class CreateProjectComponentService {
 	}): Promise<HTTP_RESPONSE> {
 		try {
 			const response = await this.http.request({
-				url: `/groups`,
+				url: `${this.privateService.urlFactory('org')}/groups`,
 				body: requestDetails,
 				method: 'post'
 			});
@@ -39,7 +39,7 @@ export class CreateProjectComponentService {
 	}): Promise<HTTP_RESPONSE> {
 		try {
 			const response = await this.http.request({
-				url: `/groups/${this.privateService.activeProjectId}`,
+				url: `${this.privateService.urlFactory('org')}/groups/${this.privateService.activeProjectDetails.uid}`,
 				body: requestDetails,
 				method: 'put'
 			});

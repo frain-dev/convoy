@@ -2,13 +2,12 @@ import { Injectable } from '@angular/core';
 import { HTTP_RESPONSE } from 'src/app/models/http.model';
 import { PrivateService } from 'src/app/private/private.service';
 import { HttpService } from 'src/app/services/http/http.service';
-import { ProjectService } from '../project.service';
 
 @Injectable({
 	providedIn: 'root'
 })
 export class EventsService {
-	projectId: string = this.privateService.activeProjectId;
+	projectId: string = this.privateService.activeProjectDetails.uid;
 
 	constructor(private http: HttpService, private privateService: PrivateService) {}
 
@@ -16,7 +15,9 @@ export class EventsService {
 		return new Promise(async (resolve, reject) => {
 			try {
 				const response = await this.http.request({
-					url: `/events?groupId=${this.projectId}&sort=AESC&page=${requestDetails.pageNo}&perPage=20&startDate=${requestDetails.startDate}&endDate=${requestDetails.endDate}&appId=${requestDetails.appId}&query=${requestDetails?.query}`,
+					url: `${this.privateService.urlFactory('org_project')}/events?sort=AESC&page=${requestDetails.pageNo}&perPage=20&startDate=${requestDetails.startDate}&endDate=${
+						requestDetails.endDate
+					}&appId=${requestDetails.appId}&query=${requestDetails?.query}`,
 					method: 'get'
 				});
 
@@ -31,7 +32,9 @@ export class EventsService {
 		return new Promise(async (resolve, reject) => {
 			try {
 				const response = await this.http.request({
-					url: `/eventdeliveries?groupId=${this.projectId}&eventId=${requestDetails.eventId}&page=${requestDetails.pageNo}&startDate=${requestDetails.startDate}&endDate=${requestDetails.endDate}&appId=${requestDetails.appId}${requestDetails.statusQuery}`,
+					url: `${this.privateService.urlFactory('org_project')}/eventdeliveries?eventId=${requestDetails.eventId}&page=${requestDetails.pageNo}&startDate=${requestDetails.startDate}&endDate=${
+						requestDetails.endDate
+					}&appId=${requestDetails.appId}${requestDetails.statusQuery}`,
 					method: 'get'
 				});
 
@@ -46,7 +49,7 @@ export class EventsService {
 		return new Promise(async (resolve, reject) => {
 			try {
 				const response = await this.http.request({
-					url: `/apps?groupId=${this.projectId}&sort=AESC&page=${requestDetails.pageNo}&perPage=20${requestDetails?.searchString ? `&q=${requestDetails?.searchString}` : ''}`,
+					url: `${this.privateService.urlFactory('org_project')}/apps?sort=AESC&page=${requestDetails.pageNo}&perPage=20${requestDetails?.searchString ? `&q=${requestDetails?.searchString}` : ''}`,
 					method: 'get'
 				});
 
@@ -61,7 +64,7 @@ export class EventsService {
 		return new Promise(async (resolve, reject) => {
 			try {
 				const response = await this.http.request({
-					url: `/eventdeliveries/${requestDetails.eventDeliveryId}/deliveryattempts?groupId=${this.projectId}`,
+					url: `${this.privateService.urlFactory('org_project')}/eventdeliveries/${requestDetails.eventDeliveryId}/deliveryattempts`,
 					method: 'get'
 				});
 
@@ -76,7 +79,7 @@ export class EventsService {
 		return new Promise(async (resolve, reject) => {
 			try {
 				const response = await this.http.request({
-					url: `/dashboard/summary?groupId=${this.projectId}&startDate=${requestDetails.startDate}&endDate=${requestDetails.endDate}&type=${requestDetails.frequency}`,
+					url: `${this.privateService.urlFactory('org_project')}/dashboard/summary?startDate=${requestDetails.startDate}&endDate=${requestDetails.endDate}&type=${requestDetails.frequency}`,
 					method: 'get'
 				});
 
@@ -91,7 +94,7 @@ export class EventsService {
 		return new Promise(async (resolve, reject) => {
 			try {
 				const response = await this.http.request({
-					url: `/eventdeliveries/${requestDetails.eventId}/resend?groupId=${this.projectId}`,
+					url: `${this.privateService.urlFactory('org_project')}/eventdeliveries/${requestDetails.eventId}/resend`,
 					method: 'put'
 				});
 
@@ -106,7 +109,7 @@ export class EventsService {
 		return new Promise(async (resolve, reject) => {
 			try {
 				const response = await this.http.request({
-					url: `/eventdeliveries/forceresend?groupId=${this.projectId}`,
+					url: `${this.privateService.urlFactory('org_project')}/eventdeliveries/forceresend`,
 					method: 'post',
 					body: requestDetails.body
 				});
@@ -122,11 +125,43 @@ export class EventsService {
 		return new Promise(async (resolve, reject) => {
 			try {
 				const response = await this.http.request({
-					url: `/eventdeliveries/batchretry?groupId=${this.projectId}&eventId=${requestDetails.eventId || ''}&page=${requestDetails.pageNo}&startDate=${requestDetails.startDate}&endDate=${
-						requestDetails.endDate
-					}&appId=${requestDetails.appId}${requestDetails.statusQuery || ''}`,
+					url: `${this.privateService.urlFactory('org_project')}/eventdeliveries/batchretry?eventId=${requestDetails.eventId || ''}&page=${requestDetails.pageNo}&startDate=${
+						requestDetails.startDate
+					}&endDate=${requestDetails.endDate}&appId=${requestDetails.appId}${requestDetails.statusQuery || ''}`,
 					method: 'post',
 					body: null
+				});
+
+				return resolve(response);
+			} catch (error: any) {
+				return reject(error);
+			}
+		});
+	}
+
+	async getRetryCount(requestDetails: { appId: string; eventId: string; pageNo: number; startDate: string; endDate: string; statusQuery: string }): Promise<HTTP_RESPONSE> {
+		return new Promise(async (resolve, reject) => {
+			try {
+				const response = await this.http.request({
+					url: `${this.privateService.urlFactory('org_project')}/eventdeliveries/countbatchretryevents?eventId=${requestDetails.eventId}&page=${requestDetails.pageNo}&startDate=${requestDetails.startDate}&endDate=${
+						requestDetails.endDate
+					}&appId=${requestDetails.appId}${requestDetails.statusQuery || ''}`,
+					method: 'get'
+				});
+
+				return resolve(response);
+			} catch (error: any) {
+				return reject(error);
+			}
+		});
+	}
+
+	async getDelivery(eventDeliveryId: string): Promise<HTTP_RESPONSE> {
+		return new Promise(async (resolve, reject) => {
+			try {
+				const response = await this.http.request({
+					url: `${this.privateService.urlFactory('org_project')}/eventdeliveries/${eventDeliveryId}`,
+					method: 'get'
 				});
 
 				return resolve(response);

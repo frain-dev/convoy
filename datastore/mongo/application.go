@@ -66,7 +66,7 @@ func (db *appRepo) LoadApplicationsPaged(ctx context.Context, groupID, q string,
 
 	msgCollection := db.innerDB.Collection(EventCollection)
 	for i, app := range apps {
-		filter = bson.M{"app_metadata.uid": app.UID, "document_status": datastore.ActiveDocumentStatus}
+		filter = bson.M{"app_id": app.UID, "document_status": datastore.ActiveDocumentStatus}
 		count, err := msgCollection.CountDocuments(ctx, filter)
 		if err != nil {
 			log.Errorf("failed to count events in %s. Reason: %s", app.UID, err)
@@ -117,7 +117,7 @@ func (db *appRepo) LoadApplicationsPagedByGroupId(ctx context.Context, groupID s
 
 	msgCollection := db.innerDB.Collection(EventCollection)
 	for i, app := range applications {
-		filter = bson.M{"app_metadata.uid": app.UID, "document_status": datastore.ActiveDocumentStatus}
+		filter = bson.M{"app_id": app.UID, "document_status": datastore.ActiveDocumentStatus}
 		count, err := msgCollection.CountDocuments(ctx, filter)
 		if err != nil {
 			log.Errorf("failed to count events in %s. Reason: %s", app.UID, err)
@@ -185,7 +185,7 @@ func (db *appRepo) SearchApplicationsByGroupId(ctx context.Context, groupId stri
 
 	msgCollection := db.innerDB.Collection(EventCollection)
 	for i, app := range apps {
-		filter = bson.M{"app_metadata.uid": app.UID, "document_status": datastore.ActiveDocumentStatus}
+		filter = bson.M{"app_id": app.UID, "document_status": datastore.ActiveDocumentStatus}
 		count, err := msgCollection.CountDocuments(ctx, filter)
 		if err != nil {
 			log.Errorf("failed to count events in %s. Reason: %s", app.UID, err)
@@ -212,7 +212,7 @@ func (db *appRepo) FindApplicationByID(ctx context.Context,
 	}
 
 	msgCollection := db.innerDB.Collection(EventCollection)
-	filter = bson.M{"app_metadata.uid": app.UID, "document_status": datastore.ActiveDocumentStatus}
+	filter = bson.M{"app_id": app.UID, "document_status": datastore.ActiveDocumentStatus}
 	count, err := msgCollection.CountDocuments(ctx, filter)
 	if err != nil {
 		log.WithError(err).Errorf("failed to count events in %s", app.UID)
@@ -320,7 +320,7 @@ func (db *appRepo) updateMessagesInApp(ctx context.Context, app *datastore.Appli
 	var msgOperations []mongo.WriteModel
 
 	updateMessagesOperation := mongo.NewUpdateManyModel()
-	msgFilter := bson.M{"app_metadata.uid": app.UID}
+	msgFilter := bson.M{"app_id": app.UID}
 	updateMessagesOperation.SetFilter(msgFilter)
 	updateMessagesOperation.SetUpdate(update)
 	msgOperations = append(msgOperations, updateMessagesOperation)

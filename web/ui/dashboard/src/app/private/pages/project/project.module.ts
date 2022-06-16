@@ -22,7 +22,7 @@ const routes: Routes = [
 				loadChildren: () => import('./sources/sources.module').then(m => m.SourcesModule)
 			},
 			{
-				path: 'sources/new',
+				path: 'sources/:id',
 				loadChildren: () => import('./sources/sources.module').then(m => m.SourcesModule)
 			},
 			{
@@ -32,13 +32,13 @@ const routes: Routes = [
 			{
 				path: 'settings',
 				loadChildren: () => import('./settings/settings.module').then(m => m.SettingsModule)
-      },
-      {
+			},
+			{
 				path: 'subscriptions',
 				loadChildren: () => import('./subscriptions/subscriptions.module').then(m => m.SubscriptionsModule)
 			},
 			{
-				path: 'subscriptions/new',
+				path: 'subscriptions/:id',
 				loadChildren: () => import('./subscriptions/subscriptions.module').then(m => m.SubscriptionsModule)
 			}
 		]

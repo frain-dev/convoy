@@ -68,9 +68,8 @@ func (a *applicationHandler) DeleteGroup(w http.ResponseWriter, r *http.Request)
 // @Success 200 {object} serverResponse{data=datastore.Group}
 // @Failure 400,401,500 {object} serverResponse{data=Stub}
 // @Security ApiKeyAuth
-// @Router /groups [post]
+// @Router /ui/organisations/{orgID}/groups [post]
 func (a *applicationHandler) CreateGroup(w http.ResponseWriter, r *http.Request) {
-
 	var newGroup models.Group
 	err := util.ReadJSON(r, &newGroup)
 	if err != nil {
@@ -78,13 +77,20 @@ func (a *applicationHandler) CreateGroup(w http.ResponseWriter, r *http.Request)
 		return
 	}
 
-	group, err := a.groupService.CreateGroup(r.Context(), &newGroup)
+	org := getOrganisationFromContext(r.Context())
+	member := getOrganisationMemberFromContext(r.Context())
+	group, apiKey, err := a.groupService.CreateGroup(r.Context(), &newGroup, org, member)
 	if err != nil {
 		_ = render.Render(w, r, newServiceErrResponse(err))
 		return
 	}
 
-	_ = render.Render(w, r, newServerResponse("Group created successfully", group, http.StatusCreated))
+	resp := &models.CreateGroupResponse{
+		APIKey: apiKey,
+		Group:  group,
+	}
+
+	_ = render.Render(w, r, newServerResponse("Group created successfully", resp, http.StatusCreated))
 }
 
 // UpdateGroup
@@ -100,7 +106,7 @@ func (a *applicationHandler) CreateGroup(w http.ResponseWriter, r *http.Request)
 // @Security ApiKeyAuth
 // @Router /groups/{groupID} [put]
 func (a *applicationHandler) UpdateGroup(w http.ResponseWriter, r *http.Request) {
-	var update models.Group
+	var update models.UpdateGroup
 	err := util.ReadJSON(r, &update)
 	if err != nil {
 		_ = render.Render(w, r, newErrorResponse(err.Error(), http.StatusBadRequest))

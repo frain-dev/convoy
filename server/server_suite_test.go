@@ -17,6 +17,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/frain-dev/convoy/internal/pkg/rdb"
 	"github.com/frain-dev/convoy/server/models"
 
 	"github.com/frain-dev/convoy"
@@ -72,7 +73,7 @@ func getDB() datastore.DatabaseClient {
 func getQueueOptions(name string) (queue.QueueOptions, error) {
 	var opts queue.QueueOptions
 	cfg := getConfig()
-	rC, err := redisqueue.NewClient(cfg)
+	rdb, err := rdb.NewClient(cfg.Queue.Redis.Dsn)
 	if err != nil {
 		return opts, err
 	}
@@ -83,7 +84,7 @@ func getQueueOptions(name string) (queue.QueueOptions, error) {
 	}
 	opts = queue.QueueOptions{
 		Names:        queueNames,
-		Client:       rC,
+		RedisClient:  rdb,
 		RedisAddress: cfg.Queue.Redis.Dsn,
 		Type:         string(config.RedisQueueProvider),
 	}
@@ -108,6 +109,7 @@ func buildApplication() *applicationHandler {
 	orgMemberRepo := db.OrganisationMemberRepo()
 	orgInviteRepo := db.OrganisationInviteRepo()
 	userRepo := db.UserRepo()
+	configRepo := db.ConfigurationRepo()
 	queue := redisqueue.NewQueue(qOpts)
 	logger := logger.NewNoopLogger()
 	cache := ncache.NewNoopCache()
@@ -119,7 +121,7 @@ func buildApplication() *applicationHandler {
 	return newApplicationHandler(
 		eventRepo, eventDeliveryRepo, appRepo,
 		groupRepo, apiKeyRepo, subRepo, sourceRepo, orgRepo,
-		orgMemberRepo, orgInviteRepo, userRepo, queue, logger, tracer, cache, limiter, searcher,
+		orgMemberRepo, orgInviteRepo, userRepo, configRepo, queue, logger, tracer, cache, limiter, searcher,
 	)
 }
 

@@ -94,12 +94,12 @@
                                 <!-- <p>For any enquiry or complaint, kindly send an email to info@frain.dev</p> -->
                             </div>
                             <h3>Hi there,</h3>
-                            {{if eq .Status "active"}}
+                            {{if eq .EndpointStatus "active"}}
                                 <p>
                                     Please note your endpoint has been enabled. See details:
                                 </p>
                                 <ul>
-                                    <li><strong>URL:</strong> {{.URL}}</li>
+                                    <li><strong>URL:</strong> {{.TargetURL}}</li>
                                 </ul>
                                 <p>
                                     <strong>Important:</strong> Congrats! Your endpoint as been restored successfully. Please head over to your dashboard to retry 
@@ -110,7 +110,7 @@
                                     Please note your endpoint has been disabled. See details:
                                 </p>
                                 <ul>
-                                    <li><strong>URL:</strong> {{.URL}}</li>
+                                    <li><strong>URL:</strong> {{.TargetURL}}</li>
                                 </ul>
                                 <p>
                                     <strong>Important:</strong> You're receiving this email because your endpoint has consecutively failed to receive events, and 

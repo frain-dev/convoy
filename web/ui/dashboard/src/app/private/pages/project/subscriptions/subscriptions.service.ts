@@ -1,5 +1,5 @@
 import { Injectable } from '@angular/core';
-import { HTTP_RESPONSE } from 'convoy-app/lib/models/http.model';
+import { HTTP_RESPONSE } from 'src/app/models/http.model';
 import { PrivateService } from 'src/app/private/private.service';
 import { HttpService } from 'src/app/services/http/http.service';
 
@@ -7,7 +7,7 @@ import { HttpService } from 'src/app/services/http/http.service';
 	providedIn: 'root'
 })
 export class SubscriptionsService {
-	projectId: string = this.privateService.activeProjectId;
+	projectId: string = this.privateService.activeProjectDetails.uid;
 
 	constructor(private http: HttpService, private privateService: PrivateService) {}
 
@@ -15,11 +15,26 @@ export class SubscriptionsService {
 		return new Promise(async (resolve, reject) => {
 			try {
 				const subscriptionsResponse = await this.http.request({
-					url: `/subscriptions?groupId=${this.projectId}&page=${requestDetails?.page || 1}`,
+					url: `${this.privateService.urlFactory('org_project')}/subscriptions?page=${requestDetails?.page || 1}`,
 					method: 'get'
 				});
 
 				return resolve(subscriptionsResponse);
+			} catch (error: any) {
+				return reject(error);
+			}
+		});
+	}
+
+	deleteSubscription(subscriptionId: string): Promise<HTTP_RESPONSE> {
+		return new Promise(async (resolve, reject) => {
+			try {
+				const sourceResponse = await this.http.request({
+					url: `${this.privateService.urlFactory('org_project')}/subscriptions/${subscriptionId}`,
+					method: 'delete'
+				});
+
+				return resolve(sourceResponse);
 			} catch (error: any) {
 				return reject(error);
 			}

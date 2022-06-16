@@ -3,7 +3,7 @@
 	<svg width="16" height="16" class="margin-x__4px">
 		<use xlink:href="#arrow-right-icon"></use>
 	</svg>
-	PROJECT NAME
+	{{ privateService.activeProjectDetails?.name }}
 	<svg width="16" height="16" class="margin-x__4px">
 		<use xlink:href="#arrow-right-icon"></use>
 	</svg>
@@ -80,6 +80,12 @@
 					<strong>of</strong>
 					{{ events?.pagination?.total || 0 }}
 				</span>
+				<span *ngIf="eventDeliveries" [hidden]="activeTab !== 'event deliveries'">
+					{{ eventDeliveries && eventDeliveries.pagination.total > 0 ? 1 : 0 }} -
+					{{ eventDeliveries && eventDeliveries.pagination.total < 20 ? eventDeliveries.pagination.total : eventDeliveries?.content?.length }}
+					<strong>of</strong>
+					{{ eventDeliveries?.pagination?.total || 0 }}
+				</span>
 			</div>
 		</div>
 	</div>
@@ -89,5 +95,5 @@
 	<app-event (pushEvents)="events = $event" (getEventDeliveries)="getEventDeliveries($event)"></app-event>
 </div>
 <div [hidden]="activeTab !== 'event deliveries'">
-	<app-event-deliveries [eventDeliveryFilteredByEventId]="eventDeliveryFilteredByEventId"></app-event-deliveries>
+	<app-event-deliveries (pushEventDeliveries)="eventDeliveries = $event" [eventDeliveryFilteredByEventId]="eventDeliveryFilteredByEventId"></app-event-deliveries>
 </div>

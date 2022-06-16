@@ -130,8 +130,8 @@ func (a *applicationHandler) GetAllConfigDetails(w http.ResponseWriter, r *http.
 	g := getGroupFromContext(r.Context())
 
 	viewableConfig := ViewableConfiguration{
-		Strategy:  g.Config.Strategy,
-		Signature: g.Config.Signature,
+		Strategy:  *g.Config.Strategy,
+		Signature: *g.Config.Signature,
 	}
 
 	_ = render.Render(w, r, newServerResponse("Config details fetched successfully",

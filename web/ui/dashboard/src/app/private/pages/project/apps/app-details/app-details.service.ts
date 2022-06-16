@@ -7,14 +7,15 @@ import { HttpService } from 'src/app/services/http/http.service';
 	providedIn: 'root'
 })
 export class AppDetailsService {
-	projectId: string = this.privateService.activeProjectId;
+	projectId: string = this.privateService.activeProjectDetails.uid;
+
 	constructor(private http: HttpService, private privateService: PrivateService) {}
 
 	async getApps(): Promise<HTTP_RESPONSE> {
 		return new Promise(async (resolve, reject) => {
 			try {
 				const response = await this.http.request({
-					url: `/apps?groupId=${this.projectId}&sort=AESC&page=1&perPage=50`,
+					url: `${this.privateService.urlFactory('org_project')}/apps?&sort=AESC&page=1&perPage=50`,
 					method: 'get'
 				});
 
@@ -29,7 +30,7 @@ export class AppDetailsService {
 		return new Promise(async (resolve, reject) => {
 			try {
 				const response = await this.http.request({
-					url: `/apps/${requestDetails.appId}/keys?groupId=${this.projectId}`,
+					url: `${this.privateService.urlFactory('org_project')}/apps/${requestDetails.appId}/keys`,
 					method: 'post',
 					body: {}
 				});
@@ -45,7 +46,7 @@ export class AppDetailsService {
 		return new Promise(async (resolve, reject) => {
 			try {
 				const response = await this.http.request({
-					url: `/apps/${appId}?groupId=${this.projectId}`,
+					url: `${this.privateService.urlFactory('org_project')}/apps/${appId}`,
 					method: 'get'
 				});
 
@@ -60,9 +61,40 @@ export class AppDetailsService {
 		return new Promise(async (resolve, reject) => {
 			try {
 				const response = await this.http.request({
-					url: `/apps/${requestDetails.appId}/endpoints?groupId=${this.projectId}`,
+					url: `${this.privateService.urlFactory('org_project')}/apps/${requestDetails.appId}/endpoints`,
 					body: requestDetails.body,
 					method: 'post'
+				});
+
+				return resolve(response);
+			} catch (error: any) {
+				return reject(error);
+			}
+		});
+	}
+
+	async editEndpoint(requestDetails: { appId: string; endpointId: string; body: any }): Promise<HTTP_RESPONSE> {
+		return new Promise(async (resolve, reject) => {
+			try {
+				const response = await this.http.request({
+					url: `${this.privateService.urlFactory('org_project')}/apps/${requestDetails.appId}/endpoints/${requestDetails.endpointId}`,
+					body: requestDetails.body,
+					method: 'put'
+				});
+
+				return resolve(response);
+			} catch (error: any) {
+				return reject(error);
+			}
+		});
+	}
+
+	async deleteEndpoint(requestDetails: { appId: string; endpointId: string }): Promise<HTTP_RESPONSE> {
+		return new Promise(async (resolve, reject) => {
+			try {
+				const response = await this.http.request({
+					url: `${this.privateService.urlFactory('org_project')}/apps/${requestDetails.appId}/endpoints/${requestDetails.endpointId}`,
+					method: 'delete'
 				});
 
 				return resolve(response);
@@ -76,7 +108,7 @@ export class AppDetailsService {
 		return new Promise(async (resolve, reject) => {
 			try {
 				const response = await this.http.request({
-					url: `/events?groupId=${this.projectId}`,
+					url: `${this.privateService.urlFactory('org_project')}/events`,
 					body: requestDetails.body,
 					method: 'post'
 				});

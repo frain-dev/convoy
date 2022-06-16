@@ -72,7 +72,7 @@ pre[class*='language-'] {
 .token.inserted,
 .token.selector,
 .token.string {
-	color: #4C6FFF;
+	color: #4c6fff;
 }
 
 .language-css .token.string,
@@ -119,10 +119,11 @@ pre.line-numbers {
 	padding-left: 3.8em;
 	counter-reset: linenumber;
 }
-.eventDelivery{
-	pre.line-numbers{
-		max-width: 395px;
-		max-height: 288px;
+.eventDelivery {
+	pre.line-numbers {
+		max-width: 474px;
+		max-height: 350px;
+		min-height: 250px;
 	}
 }
 
