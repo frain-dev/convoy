@@ -38,6 +38,34 @@
 								<span class="tag">{{ subscription.status }}</span>
 							</div>
 						</td>
+						<td>
+							<div>
+								<div class="dropdown margin-left__14px">
+									<button class="button__clear button--has-icon" (click)="subscription.active_menu = true">
+										<img src="/assets/img/more-icon-vertical.svg" alt="more icon" />
+									</button>
+
+									<ul class="dropdown__menu dropdown__menu__nav large with-padding" [ngClass]="{ show: subscription.active_menu }">
+										<li class="dropdown__menu__item with-border">
+											<a class="button button__clear button--has-icon" (click)="subscription.active_menu = false" [routerLink]="'./subscriptions/' + subscription.uid">
+												<svg width="17" height="16" class="margin-right__8px" fill="var(--primary-color)">
+													<use xlink:href="#edit-icon"></use>
+												</svg>
+												Edit Subscription
+											</a>
+										</li>
+										<li class="dropdown__menu__item with-border">
+											<button class="button button__clear button--has-icon color__danger" (click)="subscription.active_menu = false; deleteSubscription(subscription.uid)">
+												<svg width="16" height="16" class="margin-right__8px">
+													<use xlink:href="#delete-icon"></use>
+												</svg>
+												Delete Subscription
+											</button>
+										</li>
+									</ul>
+								</div>
+							</div>
+						</td>
 					</tr>
 				</tbody>
 			</table>
@@ -82,16 +110,19 @@
 	</div>
 </div>
 
-<div class="modal modal__full large border__all" *ngIf="showCreateSubscriptionModal">
+<div class="modal modal__full large border__all" *ngIf="showCreateSubscriptionModal || subscriptionId">
 	<div class="modal--head">
-		<h2>Create New Subscription</h2>
-		<button (click)="showCreateSubscriptionModal = false">
+		<h2>{{ subscriptionId ? 'Update' : 'Create New' }} Subscription</h2>
+		<button class="modal--close button__clear" (click)="showCreateSubscriptionModal = false" *ngIf="!subscriptionId">
 			<img src="/assets/img/modal-close-icon.svg" alt="close icon" />
 		</button>
+		<a class="modal--close button__clear" [routerLink]="'/app/' + token" *ngIf="subscriptionId">
+			<img src="/assets/img/modal-close-icon.svg" alt="close icon" />
+		</a>
 	</div>
 
 	<div class="modal--body">
-		<app-create-subscription (onAction)="getSubscripions()"></app-create-subscription>
+		<app-create-subscription [action]="subscriptionId ? 'update' : 'create'" (onAction)="getSubscripions()"></app-create-subscription>
 	</div>
 </div>
 

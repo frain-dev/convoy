@@ -17,6 +17,10 @@ const routes: Routes = [
 	{
 		path: 'app/:token/event-deliveries/:id',
 		loadChildren: () => import('./public/event-delivery/event-delivery.module').then(m => m.EventDeliveryModule)
+	},
+	{
+		path: 'app/:token/subscriptions/:id',
+		loadChildren: () => import('./public/app/app.module').then(m => m.AppModule)
 	}
 ];
 

@@ -55,7 +55,6 @@ export class EventComponent implements OnInit {
 	constructor(private eventsService: EventsService, private generalService: GeneralService, private route: ActivatedRoute, private router: Router) {}
 
 	async ngOnInit() {
-		console.log(this.route.snapshot.params.token);
 		this.getFiltersFromURL();
 		this.getEvents();
 	}

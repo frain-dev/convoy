@@ -13,7 +13,7 @@ type PAGE_TABS = 'events' | 'event deliveries';
 	styleUrls: ['./app.component.scss']
 })
 export class AppComponent implements OnInit {
-	tableHead = ['Name', 'Endpoint', 'Created At', 'Updated At', 'Event Types', 'Status'];
+	tableHead = ['Name', 'Endpoint', 'Created At', 'Updated At', 'Event Types', 'Status', ''];
 	token: string = this.route.snapshot.params.token;
 	subscriptions!: { content: SUBSCRIPTION[]; pagination: PAGINATION };
 	tabs: ['events', 'event deliveries'] = ['events', 'event deliveries'];
@@ -22,7 +22,8 @@ export class AppComponent implements OnInit {
 	eventDeliveries!: { content: EVENT_DELIVERY[]; pagination: PAGINATION };
 	eventDeliveryFilteredByEventId!: string;
 	isloadingSubscriptions = false;
-	showCreateSubscriptionModal = true;
+	showCreateSubscriptionModal = false;
+	subscriptionId = this.route.snapshot.params.id;
 
 	constructor(private appService: AppService, private route: ActivatedRoute) {}
 
@@ -49,5 +50,14 @@ export class AppComponent implements OnInit {
 	getEventDeliveries(eventId: string) {
 		this.eventDeliveryFilteredByEventId = eventId;
 		this.toggleActiveTab('event deliveries');
+	}
+
+	async deleteSubscription(subscriptionId: string) {
+		try {
+			await this.appService.deleteSubscription(this.token, subscriptionId);
+			this.getSubscripions();
+		} catch (error) {
+			console.log(error);
+		}
 	}
 }

@@ -19,4 +19,5 @@ export interface SUBSCRIPTION {
 	retry_config?: { type: string; retry_count: number };
 	source_metadata: SOURCE;
 	filter_config: { event_types: string[] };
+	active_menu?: boolean;
 }

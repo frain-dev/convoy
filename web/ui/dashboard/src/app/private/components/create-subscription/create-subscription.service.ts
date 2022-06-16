@@ -32,7 +32,7 @@ export class CreateSubscriptionService {
 				const projectResponse = await this.http.request({
 					url: `${requestDetails.token ? '' : this.privateService.urlFactory('org_project')}/subscriptions/${requestDetails.id}`,
 					method: 'put',
-					body: requestDetails,
+					body: requestDetails.data,
 					token: requestDetails.token
 				});
 

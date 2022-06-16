@@ -16,4 +16,13 @@ export class AppService {
 			return error;
 		}
 	}
+
+	async deleteSubscription(token: string, subscriptionId: string): Promise<HTTP_RESPONSE> {
+		try {
+			const response = await this.http.request({ url: `/subscriptions/${subscriptionId}`, method: 'delete', token });
+			return response;
+		} catch (error: any) {
+			return error;
+		}
+	}
 }
