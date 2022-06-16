@@ -29,8 +29,8 @@
 						"polyfills": "src/polyfills.ts",
 						"tsConfig": "tsconfig.app.json",
 						"inlineStyleLanguage": "scss",
-						"assets": ["src/favicon.ico", "src/assets", "src/dist"],
-						"styles": ["src/styles.scss", "/Users/emmanuelaina/projects/ui-library/css/main.css"],
+						"assets": ["src/favicon.ico", "src/assets"],
+						"styles": ["src/styles.scss"],
 						"scripts": [],
 						"preserveSymlinks": true
 					},
