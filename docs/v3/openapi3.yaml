@@ -194,8 +194,6 @@ components:
           type: string
         description:
           type: string
-        endpoint:
-          $ref: '#/components/schemas/datastore.Endpoint'
         endpoint_id:
           type: string
         endpoint_metadata:

@@ -194,8 +194,6 @@ definitions:
         type: string
       description:
         type: string
-      endpoint:
-        $ref: '#/definitions/datastore.Endpoint'
       endpoint_id:
         type: string
       endpoint_metadata:
