@@ -17,6 +17,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/frain-dev/convoy/internal/pkg/rdb"
 	"github.com/frain-dev/convoy/server/models"
 
 	"github.com/frain-dev/convoy"
@@ -72,7 +73,7 @@ func getDB() datastore.DatabaseClient {
 func getQueueOptions(name string) (queue.QueueOptions, error) {
 	var opts queue.QueueOptions
 	cfg := getConfig()
-	rC, err := redisqueue.NewClient(cfg)
+	rdb, err := rdb.NewClient(cfg.Queue.Redis.Dsn)
 	if err != nil {
 		return opts, err
 	}
@@ -83,7 +84,7 @@ func getQueueOptions(name string) (queue.QueueOptions, error) {
 	}
 	opts = queue.QueueOptions{
 		Names:        queueNames,
-		Client:       rC,
+		RedisClient:  rdb,
 		RedisAddress: cfg.Queue.Redis.Dsn,
 		Type:         string(config.RedisQueueProvider),
 	}

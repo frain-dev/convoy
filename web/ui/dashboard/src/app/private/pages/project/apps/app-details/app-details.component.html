@@ -183,7 +183,7 @@
 							</p>
 
 							<div class="flex flex__align-items-center margin-top__16px">
-								<button class="button__clear font__12px" (click)="selectedEndpoint = endpoint; editMode = true; showAddEndpointModal = true">Edit</button>
+								<button class="button__clear font__12px" (click)="selectedEndpoint = endpoint; showAddEndpointModal = true">Edit</button>
 								<div class="line margin-right__16px margin-left__16px border__left"></div>
 								<button class="button__clear font__12px" (click)="selectedEndpoint = endpoint; showDeleteModal = true">Delete</button>
 							</div>
@@ -254,7 +254,6 @@
 <div class="modal modal__right" *ngIf="showAddEndpointModal || showAddEventModal || showEndpointSecret">
 	<!-- add endpoint modal  -->
 	<app-create-endpoint
-		[editMode]="editMode"
 		[selectedEndpoint]="selectedEndpoint"
 		[appId]="appsDetailsItem.uid"
 		(onAction)="$event.action == 'cancel' ? (showAddEndpointModal = false) : getAppDetails(appsDetailsItem.uid); showAddEndpointModal = false"
@@ -291,7 +290,7 @@
 		<img src="/assets/img/warning.gif" class="img" alt="warning" />
 		<p class="font__20px color__black font__weight-600 margin-bottom__8px margin-top__16px text--center no-width">
 			Are you sure you want to delete
-			<span class="text__capitalize font__weight-600">“{{ selectedEndpoint.description }}”</span>
+			<span class="text__capitalize font__weight-600">“{{ selectedEndpoint?.description }}”</span>
 			?
 		</p>
 		<p class="color__grey font__14px font__weight-500 margin-bottom__12px">This action is irrevesible</p>

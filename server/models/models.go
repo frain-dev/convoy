@@ -43,7 +43,7 @@ type ConfigurationResponse struct {
 	UpdatedAt primitive.DateTime `json:"updated_at,omitempty"`
 	DeletedAt primitive.DateTime `json:"deleted_at,omitempty"`
 }
-	
+
 type OrganisationInvite struct {
 	InviteeEmail string    `json:"invitee_email" valid:"required~please provide a valid invitee email,email"`
 	Role         auth.Role `json:"role" bson:"role"`
@@ -128,6 +128,11 @@ type LoginUserResponse struct {
 	CreatedAt primitive.DateTime `json:"created_at,omitempty" bson:"created_at"`
 	UpdatedAt primitive.DateTime `json:"updated_at,omitempty" bson:"updated_at"`
 	DeletedAt primitive.DateTime `json:"deleted_at,omitempty" bson:"deleted_at"`
+}
+
+type UserInviteTokenResponse struct {
+	Token *datastore.OrganisationInvite `json:"token"`
+	User  *datastore.User               `json:"user"`
 }
 
 type Token struct {

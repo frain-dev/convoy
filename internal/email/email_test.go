@@ -3,8 +3,8 @@ package email
 import (
 	"testing"
 
+	"github.com/frain-dev/convoy/internal/pkg/smtp"
 	"github.com/frain-dev/convoy/mocks"
-	"github.com/frain-dev/convoy/pkg/smtp"
 	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/require"
 )

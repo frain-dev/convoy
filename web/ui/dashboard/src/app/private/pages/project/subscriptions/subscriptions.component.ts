@@ -73,8 +73,7 @@ export class SubscriptionsComponent implements OnInit {
 		try {
 			const response = await this.subscriptionsService.deleteSubscription(this.activeSubscription?.uid || '');
 			this.generalService.showNotification({ message: response?.message, style: 'success' });
-			this.router.navigateByUrl('/projects');
-			this.isDeletingSubscription = false;
+			this.getSubscriptions();
 		} catch (error) {
 			this.isDeletingSubscription = false;
 		}

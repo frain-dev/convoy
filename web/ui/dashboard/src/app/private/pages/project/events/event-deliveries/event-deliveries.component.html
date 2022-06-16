@@ -136,7 +136,7 @@
 							*ngFor="let event of eventDeliveriesGroup.content; let index = index"
 							[ngClass]="{ 'last-item': index === eventDeliveriesGroup.content.length - 1, active: event.uid === eventDelsDetailsItem?.uid }"
 							[id]="'eventDel' + i"
-							[routerLink]="'./delivery/' + event.uid"
+							[routerLink]="['./event-deliveries/' + event.uid]"
 						>
 							<td>
 								<div class="has-retry">
@@ -153,13 +153,16 @@
 								<div>{{ event.metadata?.num_trials }}</div>
 							</td>
 							<td>
+								<div>{{ event.metadata?.retry_limit }}</div>
+							</td>
+							<td>
 								<div>{{ event.created_at | date: 'mediumTime' }}</div>
 							</td>
 							<td>
 								<div>
 									<button
 										[disabled]="event.status !== 'Failure' && event.status !== 'Success'"
-										[class]="'button__retry button--has-icon icon-left '"
+										class="button__retry button--has-icon icon-left font__12px"
 										(click)="
 											event.status === 'Success'
 												? forceRetryEvent({ e: $event, index: this.index, eventDeliveryId: event.uid })

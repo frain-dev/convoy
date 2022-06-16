@@ -3,6 +3,8 @@ package server
 import (
 	"net/http"
 
+	"github.com/frain-dev/convoy/datastore"
+
 	"github.com/frain-dev/convoy/server/models"
 	"github.com/frain-dev/convoy/util"
 	"github.com/go-chi/chi/v5"
@@ -62,7 +64,8 @@ func (a *applicationHandler) GetSubscription(w http.ResponseWriter, r *http.Requ
 		return
 	}
 
-	if subscription.SourceID != "" {
+	// only incoming groups have sources
+	if group.Type == datastore.IncomingGroup && subscription.SourceID != "" {
 		source, err := a.sourceService.FindSourceByID(r.Context(), group, subscription.SourceID)
 		if err != nil {
 			_ = render.Render(w, r, newServiceErrResponse(err))

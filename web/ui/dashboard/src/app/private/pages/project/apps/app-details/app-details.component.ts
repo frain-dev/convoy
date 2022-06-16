@@ -23,7 +23,6 @@ export class AppDetailsComponent implements OnInit {
 	isLoadingAppDetails = false;
 	shouldRenderSmallSize = false;
 	showDeleteModal = false;
-	editMode = false;
 	isDeletingEndpoint = false;
 	screenWidth = window.innerWidth;
 	appPortalLink!: string;
@@ -31,7 +30,8 @@ export class AppDetailsComponent implements OnInit {
 	appId!: string;
 	appsDetailsItem!: APP;
 	apps!: { pagination: PAGINATION; content: APP[] };
-	selectedEndpoint!: ENDPOINT;
+	selectedEndpoint?: ENDPOINT;
+
 	constructor(
 		private appDetailsService: AppDetailsService,
 		private generalService: GeneralService,
@@ -43,9 +43,8 @@ export class AppDetailsComponent implements OnInit {
 
 	async ngOnInit() {
 		this.isLoadingAppDetails = true;
-		const appId = this.route.snapshot.params?.id;
 		this.checkScreenSize();
-		await this.getAppDetails(appId);
+		await this.getAppDetails(this.route.snapshot.params.id);
 	}
 
 	goBack() {
@@ -73,6 +72,7 @@ export class AppDetailsComponent implements OnInit {
 	}
 
 	async getAppDetails(appId: string) {
+		this.selectedEndpoint = undefined;
 		this.isLoadingAppDetails = true;
 
 		try {
@@ -107,7 +107,7 @@ export class AppDetailsComponent implements OnInit {
 	async deleteEndpoint() {
 		this.isDeletingEndpoint = true;
 		try {
-			const response = await this.appDetailsService.deleteEndpoint({ appId: this.appsDetailsItem?.uid, endpointId: this.selectedEndpoint.uid });
+			const response = await this.appDetailsService.deleteEndpoint({ appId: this.appsDetailsItem?.uid, endpointId: this.selectedEndpoint?.uid || '' });
 			this.generalService.showNotification({ style: 'success', message: response.message });
 			this.showDeleteModal = false;
 			this.isDeletingEndpoint = false;

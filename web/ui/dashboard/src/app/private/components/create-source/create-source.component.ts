@@ -34,10 +34,10 @@ export class CreateSourceComponent implements OnInit {
 		})
 	});
 	sourceTypes = [
-		{ value: 'http', viewValue: 'Ingestion HTTP', description: 'Etiam diam mi, egestas tortor nulla quis' },
-		{ value: 'rest_api', viewValue: 'REST API', description: 'Etiam diam mi, egestas tortor nulla quis' },
-		{ value: 'pub_sub', viewValue: 'Pub/Sub', description: 'Etiam diam mi, egestas tortor nulla quis' },
-		{ value: 'db_change_stream', viewValue: 'Database Change Stream', description: 'Etiam diam mi, egestas tortor nulla quis' }
+		{ value: 'http', viewValue: 'Ingestion HTTP', description: 'Trigger webhook event from a thirdparty webhook event' },
+		{ value: 'rest_api', viewValue: 'REST API (Coming Soon)', description: 'Trigger webhook event from a REST API request' },
+		{ value: 'pub_sub', viewValue: 'Pub/Sub (Coming Soon)', description: 'Trigger webhook event from your Pub/Sub messaging system' },
+		{ value: 'db_change_stream', viewValue: 'DB Change Stream (Coming Soon)', description: 'Trigger webhook event from your DB change stream' }
 	];
 	httpTypes = [
 		{ value: 'hmac', viewValue: 'HMAC' },
