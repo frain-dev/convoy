@@ -894,6 +894,7 @@ func TestOrganisationInviteService_FindUserByInviteToken(t *testing.T) {
 		args        args
 		dbFn        func(ois *OrganisationInviteService)
 		wantUser    *datastore.User
+		wantInvite  *datastore.OrganisationInvite
 		wantErr     bool
 		wantErrCode int
 		wantErrMsg  string
@@ -928,6 +929,10 @@ func TestOrganisationInviteService_FindUserByInviteToken(t *testing.T) {
 				UID:   "user-123",
 				Email: "test@email.com",
 			},
+			wantInvite: &datastore.OrganisationInvite{
+				OrganisationID: "123ab",
+				InviteeEmail:   "test@email.com",
+			},
 		},
 
 		{
@@ -951,6 +956,10 @@ func TestOrganisationInviteService_FindUserByInviteToken(t *testing.T) {
 				u.EXPECT().FindUserByEmail(gomock.Any(), "test@email.com").Times(1).Return(nil, datastore.ErrUserNotFound)
 			},
 			wantUser: nil,
+			wantInvite: &datastore.OrganisationInvite{
+				OrganisationID: "123ab",
+				InviteeEmail:   "test@email.com",
+			},
 		},
 
 		{
@@ -981,7 +990,7 @@ func TestOrganisationInviteService_FindUserByInviteToken(t *testing.T) {
 				tt.dbFn(ois)
 			}
 
-			user, err := ois.FindUserByInviteToken(tt.args.ctx, tt.args.token)
+			user, iv, err := ois.FindUserByInviteToken(tt.args.ctx, tt.args.token)
 			if tt.wantErr {
 				require.NotNil(t, err)
 				require.Equal(t, tt.wantErrCode, err.(*ServiceError).ErrCode())
@@ -991,6 +1000,7 @@ func TestOrganisationInviteService_FindUserByInviteToken(t *testing.T) {
 
 			require.Nil(t, err)
 			require.Equal(t, user, tt.wantUser)
+			require.Equal(t, iv, tt.wantInvite)
 		})
 	}
 }

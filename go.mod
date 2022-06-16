@@ -38,6 +38,7 @@ require (
 	github.com/newrelic/go-agent/v3 v3.15.2
 	github.com/newrelic/go-agent/v3/integrations/nrlogrus v1.0.1
 	github.com/newrelic/go-agent/v3/integrations/nrmongo v1.0.2
+	github.com/newrelic/go-agent/v3/integrations/nrredis-v8 v1.0.0 // indirect
 	github.com/olekukonko/tablewriter v0.0.5
 	github.com/onsi/gomega v1.19.0 // indirect
 	github.com/pkg/errors v0.9.1

@@ -7,7 +7,7 @@ import (
 	"html/template"
 	"strings"
 
-	"github.com/frain-dev/convoy/pkg/smtp"
+	"github.com/frain-dev/convoy/internal/pkg/smtp"
 )
 
 //go:embed templates/*

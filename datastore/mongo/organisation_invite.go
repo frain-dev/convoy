@@ -55,6 +55,7 @@ func (db *orgInviteRepo) UpdateOrganisationInvite(ctx context.Context, iv *datas
 	iv.UpdatedAt = primitive.NewDateTimeFromTime(time.Now())
 	update := bson.D{primitive.E{Key: "$set", Value: bson.D{
 		primitive.E{Key: "role", Value: iv.Role},
+		primitive.E{Key: "status", Value: iv.Status},
 		primitive.E{Key: "updated_at", Value: iv.UpdatedAt},
 	}}}
 

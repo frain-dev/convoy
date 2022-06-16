@@ -25,7 +25,6 @@
 
 						<app-tooltip>{{ sourceType.description }}</app-tooltip>
 					</div>
-					<p class="color__grey font__12px font__weight-400 margin-top__8px">Etiam diam mi, egestas tortor nulla quis</p>
 				</label>
 			</div>
 		</div>
@@ -57,10 +56,7 @@
 			<div class="grid grid__col-2 grid--gap__24px">
 				<div class="input margin-bottom__0px">
 					<label for="key-header" class="position__relative flex flex__justify-between flex__align-items-center">
-						<div class="flex flex__justify-between flex__align-items-center">
-							API Key Header
-							<app-tooltip size="small" position="right" class="margin-left__4px">This is a tip to help you accomplish a task.</app-tooltip>
-						</div>
+						<div class="flex flex__justify-between flex__align-items-center">Header Name</div>
 						<span class="bg__grey__light rounded__4px padding-x__4px font__10px font__weight-400">required</span>
 					</label>
 					<input type="text" id="key-header" placeholder="Header goes here" formControlName="header" />
@@ -72,7 +68,7 @@
 
 				<div class="input margin-bottom__0px">
 					<label for="key-header" class="position__relative">
-						API Key
+						Header Value
 						<span class="bg__grey__light rounded__4px padding-x__4px position__absolute position--right__0px font__10px">required</span>
 					</label>
 					<input type="text" id="key-header" placeholder="Key goes here" formControlName="key" />

@@ -162,6 +162,7 @@ func (a *AppService) CreateAppEndpoint(ctx context.Context, e models.Endpoint, a
 		Description:       e.Description,
 		Secret:            e.Secret,
 		RateLimit:         e.RateLimit,
+		HttpTimeout:       e.HttpTimeout,
 		RateLimitDuration: duration.String(),
 		CreatedAt:         primitive.NewDateTimeFromTime(time.Now()),
 		UpdatedAt:         primitive.NewDateTimeFromTime(time.Now()),
