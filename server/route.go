@@ -77,20 +77,6 @@ func buildRoutes(app *applicationHandler) http.Handler {
 			r.Use(jsonResponse)
 			r.Use(requireAuth())
 
-			r.Route("/groups", func(groupRouter chi.Router) {
-				groupRouter.Get("/", app.GetGroups)
-				//groupRouter.With(requirePermission(auth.RoleSuperUser)).Post("/", app.CreateGroup)
-
-				groupRouter.Route("/{groupID}", func(groupSubRouter chi.Router) {
-					groupSubRouter.Use(requireGroup(app.groupRepo, app.cache))
-					groupSubRouter.Use(rateLimitByGroupID(app.limiter))
-
-					groupSubRouter.With(requirePermission(auth.RoleAdmin)).Get("/", app.GetGroup)
-					groupSubRouter.With(requirePermission(auth.RoleSuperUser)).Put("/", app.UpdateGroup)
-					groupSubRouter.With(requirePermission(auth.RoleSuperUser)).Delete("/", app.DeleteGroup)
-				})
-			})
-
 			r.Route("/applications", func(appRouter chi.Router) {
 				appRouter.Use(requireGroup(app.groupRepo, app.cache))
 				appRouter.Use(rateLimitByGroupID(app.limiter))

@@ -24,7 +24,7 @@ type appRepo struct {
 func NewApplicationRepo(db *mongo.Database) datastore.ApplicationRepository {
 	return &appRepo{
 		innerDB: db,
-		client:  db.Collection(AppCollections, nil),
+		client:  db.Collection(AppCollection, nil),
 	}
 }
 
