@@ -15,9 +15,8 @@
 </div>
 
 <div class="card">
+	<convoy-table-loader id="events_loader_loader" [tableHead]="sourcesTableHead" *ngIf="isLoadingSources"></convoy-table-loader>
 	<div class="table has-loader flex flex__align-items-start" id="events-table-container">
-		<convoy-table-loader id="events_loader_loader" [tableHead]="sourcesTableHead" *ngIf="isLoadingSources"></convoy-table-loader>
-
 		<div class="table--container" *ngIf="!isLoadingSources && sources.content.length > 0" [ngClass]="{ smaller: activeSource?.uid }">
 			<table id="table">
 				<thead>

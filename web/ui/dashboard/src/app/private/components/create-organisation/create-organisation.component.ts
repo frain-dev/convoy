@@ -34,7 +34,7 @@ export class CreateOrganisationComponent implements OnInit {
 			const response = await this.createOrganisationService.addOrganisation(this.addOrganisationForm.value);
 			if (response.status == true) {
 				this.generalService.showNotification({ style: 'success', message: response.message });
-				this.closeModal.emit();
+				this.closeModal.emit({ action: 'created' });
 			}
 			this.loading = false;
 		} catch {

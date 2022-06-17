@@ -62,7 +62,7 @@
 					</h4>
 					<div class="flex flex__align-items-center">
 						<div class="tags margin-right__16px">
-							<span *ngFor="let event of subscription?.filter_config?.event_types" class="tag margin-right__8px">{{ event }}</span>
+							<span *ngFor="let event of subscription?.filter_config?.event_types" class="tag margin-right__8px">{{ event === '*' ? 'all events' : event }}</span>
 						</div>
 
 						<a class="button button__clear button--has-icon padding-right__16px" [routerLink]="'/projects/' + projectId + '/apps'">
