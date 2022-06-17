@@ -7,7 +7,7 @@ import { Component, Input, OnInit } from '@angular/core';
 })
 export class TableLoaderComponent implements OnInit {
 	@Input() tableHead!: string[];
-
+	@Input() tableClass!: string;
 	constructor() {}
 
 	ngOnInit(): void {}

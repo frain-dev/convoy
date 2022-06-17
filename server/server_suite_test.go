@@ -17,6 +17,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/frain-dev/convoy/internal/pkg/rdb"
 	"github.com/frain-dev/convoy/server/models"
 
 	"github.com/frain-dev/convoy"
@@ -72,7 +73,7 @@ func getDB() datastore.DatabaseClient {
 func getQueueOptions(name string) (queue.QueueOptions, error) {
 	var opts queue.QueueOptions
 	cfg := getConfig()
-	rC, err := redisqueue.NewClient(cfg)
+	rdb, err := rdb.NewClient(cfg.Queue.Redis.Dsn)
 	if err != nil {
 		return opts, err
 	}
@@ -83,7 +84,7 @@ func getQueueOptions(name string) (queue.QueueOptions, error) {
 	}
 	opts = queue.QueueOptions{
 		Names:        queueNames,
-		Client:       rC,
+		RedisClient:  rdb,
 		RedisAddress: cfg.Queue.Redis.Dsn,
 		Type:         string(config.RedisQueueProvider),
 	}
@@ -136,8 +137,8 @@ func initRealmChain(t *testing.T, apiKeyRepo datastore.APIKeyRepository, userRep
 	}
 }
 
-func parseResponse(t *testing.T, r *http.Response, object interface{}) {
-	body, err := ioutil.ReadAll(r.Body)
+func parseResponse(t *testing.T, w *http.Response, object interface{}) {
+	body, err := ioutil.ReadAll(w.Body)
 	if err != nil {
 		t.Fatalf("err: %s", err)
 	}
@@ -163,7 +164,7 @@ func authenticateRequest(auth *models.LoginUser) AuthenticatorFn {
 			return err
 		}
 
-		req := createRequest(http.MethodPost, "/ui/auth/login", bytes.NewBuffer(body))
+		req := createRequest(http.MethodPost, "/ui/auth/login", "", bytes.NewBuffer(body))
 
 		w := httptest.NewRecorder()
 
@@ -188,15 +189,16 @@ func authenticateRequest(auth *models.LoginUser) AuthenticatorFn {
 		return nil
 	}
 }
+
 func randBool() bool {
 	rand.Seed(time.Now().UnixNano())
 	return rand.Intn(2) == 1
 }
 
-func createRequest(method string, url string, body io.Reader) *http.Request {
+func createRequest(method, url, auth string, body io.Reader) *http.Request {
 	req := httptest.NewRequest(method, url, body)
-	req.SetBasicAuth("test", "test")
 	req.Header.Add("Content-Type", "application/json")
+	req.Header.Add("Authorization", fmt.Sprintf("Bearer %s", auth))
 
 	return req
 }

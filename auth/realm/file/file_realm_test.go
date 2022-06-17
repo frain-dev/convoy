@@ -24,7 +24,7 @@ var fileRealmOpt = &config.FileRealmOption{
 			Username: "username2",
 			Password: "password2",
 			Role: auth.Role{
-				Type:   auth.RoleUIAdmin,
+				Type:   auth.RoleAdmin,
 				Groups: []string{"buycoins"},
 			},
 		},
@@ -49,7 +49,7 @@ var fileRealmOpt = &config.FileRealmOption{
 		{
 			APIKey: "avcbajbwrohw@##Q39uekvsmbvxc.fdjhd",
 			Role: auth.Role{
-				Type:   auth.RoleUIAdmin,
+				Type:   auth.RoleAdmin,
 				Groups: []string{"sendcash-pay"},
 			},
 		},
@@ -112,7 +112,7 @@ func TestFileRealm_Authenticate(t *testing.T) {
 					APIKey: "avcbajbwrohw@##Q39uekvsmbvxc.fdjhd",
 				},
 				Role: auth.Role{
-					Type:   auth.RoleUIAdmin,
+					Type:   auth.RoleAdmin,
 					Groups: []string{"sendcash-pay"},
 				},
 			},
@@ -226,7 +226,7 @@ func TestNewFileRealm(t *testing.T) {
 						Username: "username2",
 						Password: "password2",
 						Role: auth.Role{
-							Type:   auth.RoleUIAdmin,
+							Type:   auth.RoleAdmin,
 							Groups: []string{"buycoins"},
 						},
 					},
@@ -251,7 +251,7 @@ func TestNewFileRealm(t *testing.T) {
 					{
 						APIKey: "avcbajbwrohw@##Q39uekvsmbvxc.fdjhd",
 						Role: auth.Role{
-							Type:   auth.RoleUIAdmin,
+							Type:   auth.RoleAdmin,
 							Groups: []string{"sendcash-pay"},
 						},
 					},

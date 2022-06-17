@@ -25,6 +25,18 @@ const routes: Routes = [
 	{
 		path: 'app/:token/subscriptions/:id',
 		loadChildren: () => import('./public/app/app.module').then(m => m.AppModule)
+  },
+  {
+		path: 'forgot-password',
+		loadChildren: () => import('./public/forgot-password/forgot-password.module').then(m => m.ForgotPasswordModule)
+	},
+	{
+		path: 'reset-password',
+		loadChildren: () => import('./public/reset-password/reset-password.module').then(m => m.ResetPasswordModule)
+	},
+	{
+		path: 'accept-invite',
+		loadChildren: () => import('./public/accept-invite/accept-invite.module').then(m => m.AcceptInviteModule)
 	}
 ];
 

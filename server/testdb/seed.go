@@ -304,14 +304,14 @@ func SeedAPIKey(db datastore.DatabaseClient, role auth.Role, uid, name, keyType 
 }
 
 // seed default group
-func SeedGroup(db datastore.DatabaseClient, uid, name, orgID string, cfg *datastore.GroupConfig) (*datastore.Group, error) {
+func SeedGroup(db datastore.DatabaseClient, uid, name, orgID string, groupType datastore.GroupType, cfg *datastore.GroupConfig) (*datastore.Group, error) {
 	if orgID == "" {
 		orgID = uuid.NewString()
 	}
 	g := &datastore.Group{
 		UID:               uid,
 		Name:              name,
-		Type:              datastore.OutgoingGroup,
+		Type:              groupType,
 		Config:            cfg,
 		OrganisationID:    orgID,
 		RateLimit:         convoy.RATE_LIMIT,

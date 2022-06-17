@@ -12,6 +12,7 @@ import (
 
 	"github.com/google/uuid"
 
+	"github.com/frain-dev/convoy/auth"
 	"github.com/frain-dev/convoy/config"
 	"github.com/frain-dev/convoy/datastore"
 	"github.com/frain-dev/convoy/server/testdb"
@@ -25,6 +26,7 @@ type EventIntegrationTestSuite struct {
 	Router       http.Handler
 	ConvoyApp    *applicationHandler
 	DefaultGroup *datastore.Group
+	APIKey       string
 }
 
 func (s *EventIntegrationTestSuite) SetupSuite() {
@@ -38,6 +40,14 @@ func (s *EventIntegrationTestSuite) SetupTest() {
 
 	// Setup Default Group.
 	s.DefaultGroup, _ = testdb.SeedDefaultGroup(s.DB, "")
+
+	// Seed Auth
+	role := auth.Role{
+		Type:   auth.RoleAdmin,
+		Groups: []string{s.DefaultGroup.UID},
+	}
+
+	_, s.APIKey, _ = testdb.SeedAPIKey(s.DB, role, "", "test", "")
 
 	// Setup Config.
 	err := config.LoadConfig("./testdata/Auth_Config/full-convoy.json")
@@ -61,7 +71,7 @@ func (s *EventIntegrationTestSuite) Test_CreateAppEvent_Valid_Event() {
 	bodyStr := `{"app_id":"%s", "event_type":"*", "data":{"level":"test"}}`
 	body := serialize(bodyStr, appID)
 
-	req := createRequest(http.MethodPost, "/api/v1/events", body)
+	req := createRequest(http.MethodPost, "/api/v1/events", s.APIKey, body)
 	w := httptest.NewRecorder()
 	// Act.
 	s.Router.ServeHTTP(w, req)
@@ -87,7 +97,7 @@ func (s *EventIntegrationTestSuite) Test_CreateAppEvent_App_has_no_endpoint() {
 	bodyStr := `{"app_id":"%s", "event_type":"*", "data":{"level":"test"}}`
 	body := serialize(bodyStr, appID)
 
-	req := createRequest(http.MethodPost, "/api/v1/events", body)
+	req := createRequest(http.MethodPost, "/api/v1/events", s.APIKey, body)
 	w := httptest.NewRecorder()
 	// Act.
 	s.Router.ServeHTTP(w, req)
@@ -107,7 +117,7 @@ func (s *EventIntegrationTestSuite) Test_CreateAppEvent_App_is_disabled() {
 	bodyStr := `{"app_id":"%s", "event_type":"*", "data":{"level":"test"}}`
 	body := serialize(bodyStr, appID)
 
-	req := createRequest(http.MethodPost, "/api/v1/events", body)
+	req := createRequest(http.MethodPost, "/api/v1/events", s.APIKey, body)
 	w := httptest.NewRecorder()
 	// Act.
 	s.Router.ServeHTTP(w, req)
@@ -125,7 +135,7 @@ func (s *EventIntegrationTestSuite) Test_GetAppEvent_Valid_Event() {
 	event, _ := testdb.SeedEvent(s.DB, app, s.DefaultGroup.UID, eventID, "*", []byte(`{}`))
 
 	url := fmt.Sprintf("/api/v1/events/%s", eventID)
-	req := createRequest(http.MethodGet, url, nil)
+	req := createRequest(http.MethodGet, url, s.APIKey, nil)
 	w := httptest.NewRecorder()
 
 	// Act.
@@ -149,7 +159,7 @@ func (s *EventIntegrationTestSuite) Test_ReplayAppEvent_Valid_Event() {
 	_, _ = testdb.SeedEvent(s.DB, app, s.DefaultGroup.UID, eventID, "*", []byte(`{}`))
 
 	url := fmt.Sprintf("/api/v1/events/%s/replay", eventID)
-	req := createRequest(http.MethodPut, url, nil)
+	req := createRequest(http.MethodPut, url, s.APIKey, nil)
 	w := httptest.NewRecorder()
 
 	// Act.
@@ -164,7 +174,7 @@ func (s *EventIntegrationTestSuite) Test_GetAppEvent_Event_not_found() {
 	expectedStatusCode := http.StatusNotFound
 
 	url := fmt.Sprintf("/api/v1/events/%s", eventID)
-	req := createRequest(http.MethodGet, url, nil)
+	req := createRequest(http.MethodGet, url, s.APIKey, nil)
 	w := httptest.NewRecorder()
 
 	// Act.
@@ -183,7 +193,7 @@ func (s *EventIntegrationTestSuite) Test_GetEventDelivery_Valid_EventDelivery() 
 	eventDelivery, _ := testdb.SeedEventDelivery(s.DB, app, &datastore.Event{}, &datastore.Endpoint{}, s.DefaultGroup.UID, eventDeliveryID, datastore.SuccessEventStatus, &datastore.Subscription{})
 
 	url := fmt.Sprintf("/api/v1/eventdeliveries/%s", eventDeliveryID)
-	req := createRequest(http.MethodGet, url, nil)
+	req := createRequest(http.MethodGet, url, s.APIKey, nil)
 	w := httptest.NewRecorder()
 
 	// Act.
@@ -203,7 +213,7 @@ func (s *EventIntegrationTestSuite) Test_GetEventDelivery_Event_not_found() {
 	expectedStatusCode := http.StatusNotFound
 
 	url := fmt.Sprintf("/api/v1/eventdeliveries/%s", eventDeliveryID)
-	req := createRequest(http.MethodGet, url, nil)
+	req := createRequest(http.MethodGet, url, s.APIKey, nil)
 	w := httptest.NewRecorder()
 
 	// Act.
@@ -224,7 +234,7 @@ func (s *EventIntegrationTestSuite) Test_ResendEventDelivery_Valid_Resend() {
 	eventDelivery, _ := testdb.SeedEventDelivery(s.DB, app, &datastore.Event{}, &app.Endpoints[0], s.DefaultGroup.UID, eventDeliveryID, datastore.FailureEventStatus, subscription)
 
 	url := fmt.Sprintf("/api/v1/eventdeliveries/%s/resend", eventDeliveryID)
-	req := createRequest(http.MethodPut, url, nil)
+	req := createRequest(http.MethodPut, url, s.APIKey, nil)
 	w := httptest.NewRecorder()
 
 	// Act.
@@ -253,7 +263,7 @@ func (s *EventIntegrationTestSuite) Test_BatchRetryEventDelivery_Valid_EventDeli
 	_, _ = testdb.SeedEventDelivery(s.DB, app, event, &app.Endpoints[0], s.DefaultGroup.UID, eventDeliveryID, datastore.FailureEventStatus, &datastore.Subscription{})
 
 	url := fmt.Sprintf("/api/v1/eventdeliveries/batchretry?appId=%s&eventId=%s&status=%s", app.UID, event.UID, datastore.FailureEventStatus)
-	req := createRequest(http.MethodPost, url, nil)
+	req := createRequest(http.MethodPost, url, s.APIKey, nil)
 	w := httptest.NewRecorder()
 
 	// Act.
@@ -277,7 +287,7 @@ func (s *EventIntegrationTestSuite) Test_CountAffectedEventDeliveries_Valid_Filt
 	_, _ = testdb.SeedEventDelivery(s.DB, app, event, &app.Endpoints[0], s.DefaultGroup.UID, eventDeliveryID, datastore.FailureEventStatus, subscription)
 
 	url := fmt.Sprintf("/api/v1/eventdeliveries/countbatchretryevents?appId=%s&eventId=%s&status=%s", app.UID, event.UID, datastore.FailureEventStatus)
-	req := createRequest(http.MethodGet, url, nil)
+	req := createRequest(http.MethodGet, url, s.APIKey, nil)
 	w := httptest.NewRecorder()
 
 	// Act.
@@ -312,7 +322,7 @@ func (s *EventIntegrationTestSuite) Test_ForceResendEventDeliveries_Valid_EventD
 	bodyStr := `{"ids":["%s", "%s", "%s"]}`
 	body := serialize(bodyStr, e1.UID, e2.UID, e3.UID)
 
-	req := createRequest(http.MethodPost, url, body)
+	req := createRequest(http.MethodPost, url, s.APIKey, body)
 	w := httptest.NewRecorder()
 
 	// Act.
@@ -341,7 +351,7 @@ func (s *EventIntegrationTestSuite) Test_GetEventsPaged() {
 	_, _ = testdb.SeedEvent(s.DB, app2, s.DefaultGroup.UID, eventID, "*", []byte(`{}`))
 
 	url := fmt.Sprintf("/api/v1/events?appId=%s", app1.UID)
-	req := createRequest(http.MethodGet, url, nil)
+	req := createRequest(http.MethodGet, url, s.APIKey, nil)
 	w := httptest.NewRecorder()
 
 	// Act.
@@ -378,7 +388,7 @@ func (s *EventIntegrationTestSuite) GetEventDeliveriesPaged() {
 	_, _ = testdb.SeedEventDelivery(s.DB, app2, event2, &app2.Endpoints[0], s.DefaultGroup.UID, eventDeliveryID, datastore.FailureEventStatus, &datastore.Subscription{})
 
 	url := fmt.Sprintf("/api/v1/eventdeliveries?appId=%s", app1.UID)
-	req := createRequest(http.MethodGet, url, nil)
+	req := createRequest(http.MethodGet, url, s.APIKey, nil)
 	w := httptest.NewRecorder()
 
 	// Act.

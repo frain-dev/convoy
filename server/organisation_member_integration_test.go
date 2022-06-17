@@ -83,7 +83,7 @@ func (s *OrganisationMemberIntegrationTestSuite) Test_GetOrganisationMembers() {
 
 	// Arrange.
 	url := fmt.Sprintf("/ui/organisations/%s/members", s.DefaultOrg.UID)
-	req := createRequest(http.MethodGet, url, nil)
+	req := createRequest(http.MethodGet, url, "", nil)
 
 	err = s.AuthenticatorFn(req, s.Router)
 	require.NoError(s.T(), err)
@@ -135,7 +135,7 @@ func (s *OrganisationMemberIntegrationTestSuite) Test_GetOrganisationMember() {
 
 	// Arrange.
 	url := fmt.Sprintf("/ui/organisations/%s/members/%s", s.DefaultOrg.UID, member.UID)
-	req := createRequest(http.MethodGet, url, nil)
+	req := createRequest(http.MethodGet, url, "", nil)
 
 	err = s.AuthenticatorFn(req, s.Router)
 	require.NoError(s.T(), err)
@@ -180,7 +180,7 @@ func (s *OrganisationMemberIntegrationTestSuite) Test_UpdateOrganisationMember()
 	url := fmt.Sprintf("/ui/organisations/%s/members/%s", s.DefaultOrg.UID, member.UID)
 
 	body := strings.NewReader(`{"role":{ "type":"api", "groups":["123"]}}`)
-	req := createRequest(http.MethodPut, url, body)
+	req := createRequest(http.MethodPut, url, "", body)
 
 	err = s.AuthenticatorFn(req, s.Router)
 	require.NoError(s.T(), err)
@@ -215,7 +215,7 @@ func (s *OrganisationMemberIntegrationTestSuite) Test_DeleteOrganisationMember()
 
 	// Arrange.
 	url := fmt.Sprintf("/ui/organisations/%s/members/%s", s.DefaultOrg.UID, member.UID)
-	req := createRequest(http.MethodDelete, url, nil)
+	req := createRequest(http.MethodDelete, url, "", nil)
 
 	err = s.AuthenticatorFn(req, s.Router)
 	require.NoError(s.T(), err)
