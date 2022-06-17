@@ -224,11 +224,12 @@ type GroupStatistics struct {
 }
 
 type GroupFilter struct {
+	OrgID string   `json:"org_id" bson:"org_id"`
 	Names []string `json:"name" bson:"name"`
 }
 
 func (g *GroupFilter) WithNamesTrimmed() *GroupFilter {
-	f := GroupFilter{[]string{}}
+	f := GroupFilter{OrgID: g.OrgID, Names: []string{}}
 
 	for _, s := range g.Names {
 		f.Names = append(f.Names, strings.TrimSpace(s))

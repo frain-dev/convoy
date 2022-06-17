@@ -52,7 +52,7 @@ func (i *IngestIntegrationTestSuite) Test_IngestEvent_BadMaskID() {
 
 	// Arrange Request.
 	url := fmt.Sprintf("/ingest/%s", maskID)
-	req := createRequest(http.MethodPost, url, nil)
+	req := createRequest(http.MethodPost, url, "", nil)
 	w := httptest.NewRecorder()
 
 	// Act.

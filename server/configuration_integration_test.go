@@ -19,9 +19,13 @@ import (
 
 type ConfigurationIntegrationTestSuite struct {
 	suite.Suite
-	DB        datastore.DatabaseClient
-	Router    http.Handler
-	ConvoyApp *applicationHandler
+	DB              datastore.DatabaseClient
+	Router          http.Handler
+	ConvoyApp       *applicationHandler
+	AuthenticatorFn AuthenticatorFn
+	DefaultOrg      *datastore.Organisation
+	DefaultGroup    *datastore.Group
+	DefaultUser     *datastore.User
 }
 
 func (c *ConfigurationIntegrationTestSuite) SetupSuite() {
@@ -33,8 +37,24 @@ func (c *ConfigurationIntegrationTestSuite) SetupSuite() {
 func (c *ConfigurationIntegrationTestSuite) SetupTest() {
 	testdb.PurgeDB(c.DB)
 
+	// Setup Default Group
+	c.DefaultGroup, _ = testdb.SeedDefaultGroup(c.DB, "")
+
+	user, err := testdb.SeedDefaultUser(c.DB)
+	require.NoError(c.T(), err)
+	c.DefaultUser = user
+
+	org, err := testdb.SeedDefaultOrganisation(c.DB, user)
+	require.NoError(c.T(), err)
+	c.DefaultOrg = org
+
+	c.AuthenticatorFn = authenticateRequest(&models.LoginUser{
+		Username: user.Email,
+		Password: testdb.DefaultUserPassword,
+	})
+
 	// Setup Config.
-	err := config.LoadConfig("./testdata/Auth_Config/full-convoy.json")
+	err = config.LoadConfig("./testdata/Auth_Config/full-convoy-with-jwt-realm.json")
 	require.NoError(c.T(), err)
 
 	initRealmChain(c.T(), c.DB.APIRepo(), c.DB.UserRepo(), c.ConvoyApp.cache)
@@ -50,7 +70,10 @@ func (c *ConfigurationIntegrationTestSuite) Test_LoadConfiguration() {
 
 	// Arrange Request
 	url := "/ui/configuration"
-	req := createRequest(http.MethodGet, url, nil)
+	req := createRequest(http.MethodGet, url, "", nil)
+	err = c.AuthenticatorFn(req, c.Router)
+	require.NoError(c.T(), err)
+
 	w := httptest.NewRecorder()
 
 	// Act
@@ -75,7 +98,9 @@ func (c *ConfigurationIntegrationTestSuite) Test_CreateConfiguration() {
 	}`
 
 	body := serialize(bodyStr)
-	req := createRequest(http.MethodPost, "/ui/configuration", body)
+	req := createRequest(http.MethodPost, "/ui/configuration", "", body)
+	err := c.AuthenticatorFn(req, c.Router)
+	require.NoError(c.T(), err)
 	w := httptest.NewRecorder()
 
 	// Act

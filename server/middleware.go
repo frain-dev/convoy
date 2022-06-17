@@ -697,11 +697,6 @@ func requirePermission(role auth.RoleType) func(next http.Handler) http.Handler 
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			authUser := getAuthUserFromContext(r.Context())
-			if authUser.Role.Type.Is(auth.RoleSuperUser) {
-				//superuser has access to everything
-				next.ServeHTTP(w, r)
-				return
-			}
 
 			if !authUser.Role.Type.Is(role) {
 				_ = render.Render(w, r, newErrorResponse("unauthorized role", http.StatusUnauthorized))
@@ -709,20 +704,17 @@ func requirePermission(role auth.RoleType) func(next http.Handler) http.Handler 
 			}
 
 			group := getGroupFromContext(r.Context())
-			for _, v := range authUser.Role.Groups {
-				if group.Name == v || group.UID == v {
-
-					if len(authUser.Role.Apps) > 0 { //we're dealing with an app portal token at this point
-						_ = render.Render(w, r, newErrorResponse("unauthorized to access group", http.StatusUnauthorized))
-						return
-					}
-
-					next.ServeHTTP(w, r)
-					return
-				}
+			if group == nil {
+				_ = render.Render(w, r, newErrorResponse("unauthorized role", http.StatusUnauthorized))
+				return
 			}
 
-			_ = render.Render(w, r, newErrorResponse("unauthorized to access group", http.StatusUnauthorized))
+			if !authUser.Role.HasGroup(group.UID) {
+				_ = render.Render(w, r, newErrorResponse("unauthorized to access group", http.StatusUnauthorized))
+				return
+			}
+
+			next.ServeHTTP(w, r)
 		})
 	}
 }

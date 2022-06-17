@@ -11,7 +11,7 @@
 				</div>
 			</div>
 
-			<div class="input">
+			<div class="input margin-bottom__0px">
 				<label htmlFor="password">Password</label>
 				<div class="input--password">
 					<input [type]="showLoginPassword ? 'text' : 'password'" id="password" name="password" autocomplete="current-password" formControlName="password" required />
@@ -26,6 +26,10 @@
 					<img src="assets/img/input-error-icon.svg" alt="input error icon" />
 					<span>Password is required</span>
 				</div>
+			</div>
+			<div class="flex flex__align-items-center font__12px margin-bottom__20px margin-top__4px">
+				Forgot password?
+				<button class="button__clear color__primary font__12px margin-left__6px" type="button" [routerLink]="['/forgot-password']">Reset it here</button>
 			</div>
 
 			<div class="button-container margin-top">
