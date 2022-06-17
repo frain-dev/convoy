@@ -16,6 +16,7 @@ export class AcceptInviteComponent implements OnInit {
 	token!: string;
 	fetchingDetails = false;
 	userDetailsAvailable = false;
+	isInviteAccepted = false;
 	acceptInviteForm: FormGroup = this.formBuilder.group({
 		first_name: ['', Validators.required],
 		last_name: ['', Validators.required],
@@ -23,8 +24,7 @@ export class AcceptInviteComponent implements OnInit {
 		role: this.formBuilder.group({
 			type: ['super_user']
 		}),
-		password: ['', Validators.compose([Validators.minLength(8), Validators.required])],
-		password_confirmation: ['', Validators.required]
+		password: ['', Validators.compose([Validators.minLength(8), Validators.required])]
 	});
 
 	constructor(private formBuilder: FormBuilder, private acceptInviteService: AcceptInviteService, private route: ActivatedRoute, private router: Router, private generalService: GeneralService) {}
@@ -40,6 +40,7 @@ export class AcceptInviteComponent implements OnInit {
 			const response = await this.acceptInviteService.getUserDetails(token);
 			response.data.user ? (this.userDetailsAvailable = true) : (this.userDetailsAvailable = false);
 			const inviteeDetails = response.data.token;
+			inviteeDetails.status === 'accepted' ? (this.isInviteAccepted = true) : (this.isInviteAccepted = false);
 			const userDetails = response.data.user;
 			this.acceptInviteForm.patchValue({
 				first_name: userDetails?.first_name ? userDetails.first_name : '',
@@ -70,16 +71,6 @@ export class AcceptInviteComponent implements OnInit {
 		} catch (error: any) {
 			this.loading = false;
 			this.generalService.showNotification({ style: 'error', message: error.error.message });
-		}
-	}
-
-	checkPassword(): boolean {
-		const newPassword = this.acceptInviteForm.value.password;
-		const confirmPassword = this.acceptInviteForm.value.password_confirmation;
-		if (newPassword === confirmPassword) {
-			return true;
-		} else {
-			return false;
 		}
 	}
 
