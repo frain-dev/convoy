@@ -1,0 +1,45 @@
+.page {
+	margin-top: 80px;
+	max-width: calc(834px + 48px);
+	width: 100%;
+}
+.sidemenu {
+	border-right: 1px solid var(--line-border);
+	max-width: 260px;
+	width: 100%;
+
+	&--item {
+		margin: 30px 0;
+		padding-left: 22px;
+
+		button {
+			color: var(--grey-color);
+		}
+
+		&.active {
+			color: var(--primary-color);
+			position: relative;
+
+			&::before {
+				position: absolute;
+				content: '';
+				width: 3px;
+				height: 16px;
+				background-color: var(--primary-color);
+				left: 0;
+				top: 50%;
+				transform: translate(0, -50%);
+				border-radius: 100px;
+			}
+
+			button {
+				font-weight: 600;
+				color: var(--primary-color);
+			}
+		}
+	}
+}
+
+.alert__info img {
+    margin-right: 10px;
+}

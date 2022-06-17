@@ -39,6 +39,7 @@ func (db *groupRepo) LoadGroups(ctx context.Context, f *datastore.GroupFilter) (
 		"document_status": datastore.ActiveDocumentStatus,
 		"organisation_id": f.OrgID,
 	}
+	f = f.WithNamesTrimmed()
 
 	if len(f.Names) > 0 {
 		filter["name"] = bson.M{"$in": f.Names}
@@ -104,25 +105,20 @@ func (db *groupRepo) UpdateGroup(ctx context.Context, o *datastore.Group) error 
 	return err
 }
 
-func (db *groupRepo) FetchGroupByID(ctx context.Context,
-	id string) (*datastore.Group, error) {
-	org := new(datastore.Group)
+func (db *groupRepo) FetchGroupByID(ctx context.Context, id string) (*datastore.Group, error) {
+	group := new(datastore.Group)
 
-	filter := bson.D{
-		primitive.E{
-			Key:   "uid",
-			Value: id,
-		},
+	filter := bson.M{
+		"uid":             id,
+		"document_status": datastore.ActiveDocumentStatus,
 	}
 
-	err := db.inner.FindOne(ctx, filter).
-		Decode(&org)
-
+	err := db.inner.FindOne(ctx, filter).Decode(group)
 	if errors.Is(err, mongo.ErrNoDocuments) {
 		err = datastore.ErrGroupNotFound
 	}
 
-	return org, err
+	return group, err
 }
 
 func (db *groupRepo) FillGroupsStatistics(ctx context.Context, groups []*datastore.Group) error {

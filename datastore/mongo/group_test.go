@@ -19,8 +19,9 @@ func Test_FetchGroupByID(t *testing.T) {
 	groupRepo := NewGroupRepo(db)
 
 	newOrg := &datastore.Group{
-		Name: "Yet another group",
-		UID:  uuid.NewString(),
+		Name:           "Yet another group",
+		UID:            uuid.NewString(),
+		DocumentStatus: datastore.ActiveDocumentStatus,
 	}
 
 	require.NoError(t, groupRepo.CreateGroup(context.Background(), newOrg))
@@ -124,10 +125,6 @@ func Test_CreateGroup(t *testing.T) {
 
 				if i == 0 {
 					require.NoError(t, groupRepo.CreateGroup(context.Background(), newGroup))
-
-					g, err := groupRepo.FetchGroupByID(context.Background(), newGroup.UID)
-					require.NoError(t, err)
-					require.Equal(t, g.UID, newGroup.UID)
 				}
 
 				if i > 0 && tc.isDuplicate {

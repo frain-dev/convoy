@@ -130,11 +130,8 @@ func (s *GroupIntegrationTestSuite) TestDeleteGroup() {
 
 	// Assert.
 	require.Equal(s.T(), expectedStatusCode, w.Code)
-	g, err := s.DB.GroupRepo().FetchGroupByID(context.Background(), group.UID)
-	require.NoError(s.T(), err)
-
-	require.Equal(s.T(), datastore.DeletedDocumentStatus, g.DocumentStatus)
-	require.True(s.T(), g.DeletedAt > 0)
+	_, err = s.DB.GroupRepo().FetchGroupByID(context.Background(), group.UID)
+	require.Equal(s.T(), datastore.ErrGroupNotFound, err)
 }
 
 func (s *GroupIntegrationTestSuite) TestDeleteGroup_GroupNotFound() {
