@@ -232,7 +232,11 @@ func (g *GroupFilter) WithNamesTrimmed() *GroupFilter {
 	f := GroupFilter{OrgID: g.OrgID, Names: []string{}}
 
 	for _, s := range g.Names {
-		f.Names = append(f.Names, strings.TrimSpace(s))
+		s = strings.TrimSpace(s)
+		if len(s) == 0 {
+			continue
+		}
+		f.Names = append(f.Names, s)
 	}
 
 	return &f

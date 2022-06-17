@@ -66,10 +66,11 @@ func TestUpdateOrganisation(t *testing.T) {
 
 	orgRepo := NewOrgRepo(db)
 	org := &datastore.Organisation{
-		UID:       uuid.NewString(),
-		Name:      fmt.Sprintf("new org"),
-		CreatedAt: primitive.NewDateTimeFromTime(time.Now()),
-		UpdatedAt: primitive.NewDateTimeFromTime(time.Now()),
+		UID:            uuid.NewString(),
+		Name:           fmt.Sprintf("new org"),
+		DocumentStatus: datastore.ActiveDocumentStatus,
+		CreatedAt:      primitive.NewDateTimeFromTime(time.Now()),
+		UpdatedAt:      primitive.NewDateTimeFromTime(time.Now()),
 	}
 
 	err := orgRepo.CreateOrganisation(context.Background(), org)
@@ -93,10 +94,11 @@ func TestFetchOrganisationByID(t *testing.T) {
 
 	orgRepo := NewOrgRepo(db)
 	org := &datastore.Organisation{
-		UID:       uuid.NewString(),
-		Name:      fmt.Sprintf("new org"),
-		CreatedAt: primitive.NewDateTimeFromTime(time.Now()),
-		UpdatedAt: primitive.NewDateTimeFromTime(time.Now()),
+		UID:            uuid.NewString(),
+		Name:           fmt.Sprintf("new org"),
+		DocumentStatus: datastore.ActiveDocumentStatus,
+		CreatedAt:      primitive.NewDateTimeFromTime(time.Now()),
+		UpdatedAt:      primitive.NewDateTimeFromTime(time.Now()),
 	}
 
 	err := orgRepo.CreateOrganisation(context.Background(), org)
@@ -114,10 +116,11 @@ func TestDeleteOrganisation(t *testing.T) {
 
 	orgRepo := NewOrgRepo(db)
 	org := &datastore.Organisation{
-		UID:       uuid.NewString(),
-		Name:      fmt.Sprintf("new org"),
-		CreatedAt: primitive.NewDateTimeFromTime(time.Now()),
-		UpdatedAt: primitive.NewDateTimeFromTime(time.Now()),
+		UID:            uuid.NewString(),
+		Name:           fmt.Sprintf("new org"),
+		DocumentStatus: datastore.ActiveDocumentStatus,
+		CreatedAt:      primitive.NewDateTimeFromTime(time.Now()),
+		UpdatedAt:      primitive.NewDateTimeFromTime(time.Now()),
 	}
 
 	err := orgRepo.CreateOrganisation(context.Background(), org)
@@ -126,9 +129,6 @@ func TestDeleteOrganisation(t *testing.T) {
 	err = orgRepo.DeleteOrganisation(context.Background(), org.UID)
 	require.NoError(t, err)
 
-	organisation, err := orgRepo.FetchOrganisationByID(context.Background(), org.UID)
-	require.NoError(t, err)
-
-	require.True(t, organisation.DeletedAt > 0)
-	require.Equal(t, datastore.DeletedDocumentStatus, organisation.DocumentStatus)
+	_, err = orgRepo.FetchOrganisationByID(context.Background(), org.UID)
+	require.Equal(t, datastore.ErrOrgNotFound, err)
 }

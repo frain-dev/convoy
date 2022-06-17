@@ -63,6 +63,7 @@ func (a *applicationHandler) DeleteGroup(w http.ResponseWriter, r *http.Request)
 // @Tags Group
 // @Accept  json
 // @Produce  json
+// @Param orgID path string true "Organisation id"
 // @Param group body models.Group true "Group Details"
 // @Success 200 {object} serverResponse{data=datastore.Group}
 // @Failure 400,401,500 {object} serverResponse{data=Stub}
