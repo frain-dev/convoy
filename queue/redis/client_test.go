@@ -10,9 +10,9 @@ import (
 	"github.com/frain-dev/convoy"
 	"github.com/frain-dev/convoy/config"
 	"github.com/frain-dev/convoy/datastore"
+	"github.com/frain-dev/convoy/internal/pkg/rdb"
 	"github.com/frain-dev/convoy/queue"
 	"github.com/google/uuid"
-	"github.com/hibiken/asynq"
 )
 
 func TestWrite(t *testing.T) {
@@ -70,10 +70,9 @@ func initializeQueue(configFile string, name string, t *testing.T) queue.Queuer 
 
 	}
 
-	var rC *asynq.Client
 	var opts queue.QueueOptions
 
-	rC, err = NewClient(cfg)
+	rdb, err := rdb.NewClient(cfg.Queue.Redis.Dsn)
 	if err != nil {
 		t.Fatalf("Failed to load new client: %v", err)
 	}
@@ -84,7 +83,7 @@ func initializeQueue(configFile string, name string, t *testing.T) queue.Queuer 
 	}
 	opts = queue.QueueOptions{
 		Names:        queueNames,
-		Client:       rC,
+		RedisClient:  rdb,
 		RedisAddress: cfg.Queue.Redis.Dsn,
 		Type:         string(config.RedisQueueProvider),
 	}

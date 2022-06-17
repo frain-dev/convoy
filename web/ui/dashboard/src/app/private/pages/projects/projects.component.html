@@ -1,6 +1,6 @@
 <convoy-loader *ngIf="isloadingOrganisations"></convoy-loader>
 
-<ng-container *ngIf="!isloadingOrganisations && organisations.length > 0">
+<ng-container *ngIf="!isloadingOrganisations && organisations.length > 0 && !noData">
 	<div class="page padding-top__60px">
 		<div class="page__head">
 			<div>
