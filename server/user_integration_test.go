@@ -64,7 +64,7 @@ func (u *UserIntegrationTestSuite) Test_LoginUser() {
 	}`, user.Email, password)
 
 	body := serialize(bodyStr)
-	req := createRequest(http.MethodPost, url, body)
+	req := createRequest(http.MethodPost, url, "", body)
 	w := httptest.NewRecorder()
 
 	// Act
@@ -95,7 +95,7 @@ func (u *UserIntegrationTestSuite) Test_LoginUser_Invalid_Username() {
 		}`, "random@test.com", "123456")
 
 	body := serialize(bodyStr)
-	req := createRequest(http.MethodPost, url, body)
+	req := createRequest(http.MethodPost, url, "", body)
 	w := httptest.NewRecorder()
 
 	// Act
@@ -117,7 +117,7 @@ func (u *UserIntegrationTestSuite) Test_LoginUser_Invalid_Password() {
 		}`, user.Email, "12345")
 
 	body := serialize(bodyStr)
-	req := createRequest(http.MethodPost, url, body)
+	req := createRequest(http.MethodPost, url, "", body)
 	w := httptest.NewRecorder()
 
 	// Act
@@ -142,7 +142,7 @@ func (u *UserIntegrationTestSuite) Test_RefreshToken() {
 	}`, token.AccessToken, token.RefreshToken)
 
 	body := serialize(bodyStr)
-	req := createRequest(http.MethodPost, url, body)
+	req := createRequest(http.MethodPost, url, "", body)
 	w := httptest.NewRecorder()
 
 	// Act
@@ -174,7 +174,7 @@ func (u *UserIntegrationTestSuite) Test_RefreshToken_Invalid_Access_Token() {
 	}`, uuid.NewString(), token.RefreshToken)
 
 	body := serialize(bodyStr)
-	req := createRequest(http.MethodPost, url, body)
+	req := createRequest(http.MethodPost, url, "", body)
 	w := httptest.NewRecorder()
 
 	// Act
@@ -199,7 +199,7 @@ func (u *UserIntegrationTestSuite) Test_RefreshToken_Invalid_Refresh_Token() {
 	}`, token.AccessToken, uuid.NewString())
 
 	body := serialize(bodyStr)
-	req := createRequest(http.MethodPost, url, body)
+	req := createRequest(http.MethodPost, url, "", body)
 	w := httptest.NewRecorder()
 
 	// Act

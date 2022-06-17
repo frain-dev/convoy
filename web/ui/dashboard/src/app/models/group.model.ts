@@ -29,6 +29,7 @@ export interface GROUP {
 	created_at: Date;
 	updated_at: Date;
 	type: 'incoming' | 'outgoing';
+	selected?: boolean;
 }
 
 export interface SOURCE {

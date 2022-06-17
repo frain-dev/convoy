@@ -8,15 +8,12 @@
 			</a>
 
 			<nav>
-				<ul class="flex flex__align-items-center">
+				<ul class="flex flex__align-items-center" *ngIf="organisations?.length">
 					<li>
 						<a routerLink="/projects" routerLinkActive="active" class="padding-y__8px padding-x__16px margin-right__32px rounded__4px font__14px">Projects</a>
 					</li>
 					<li>
 						<a routerLink="/team" routerLinkActive="active" class="padding-y__8px padding-x__16px margin-right__32px rounded__4px font__14px">Team</a>
-					</li>
-					<li>
-						<a routerLink="/settings" routerLinkActive="active" class="padding-y__8px padding-x__16px rounded__4px font__14px">Settings</a>
 					</li>
 				</ul>
 			</nav>
@@ -29,7 +26,7 @@
 			</a>
 
 
-			<div class="dropdown" *ngIf="authDetails()">
+			<div class="dropdown" *ngIf="organisations?.length">
 				<button class="button__more with-padding button--has-icon icon-left" (click)="showOrgDropdown = !showOrgDropdown; showOverlay = true">
 					<div class="badge">
 						<div class="icon">{{ userOrganization?.name?.slice(0, 1) }}</div>
@@ -61,7 +58,7 @@
 				</div>
 			</div>
 
-			<div class="dropdown">
+			<div class="dropdown" *ngIf="authDetails()">
 				<button class="button__more with-padding button--has-icon" (click)="showMoreDropdown = !showMoreDropdown; showOverlay = true">
 					<img src="/assets/img/nav-bar-more-primary.svg" alt="more icon" />
 				</button>
@@ -75,7 +72,7 @@
 						<li routerLink="/user-settings" (click)="showMoreDropdown = false; showOverlay = false">
 							<p class="color__grey padding-left__16px">My account</p>
 						</li>
-						<li routerLink="/organisation-settings" (click)="showMoreDropdown = false; showOverlay = false">
+						<li *ngIf="organisations?.length" routerLink="/organisation-settings" (click)="showMoreDropdown = false; showOverlay = false">
 
 							<p class="color__grey padding-left__16px">Organisation settings</p>
 
