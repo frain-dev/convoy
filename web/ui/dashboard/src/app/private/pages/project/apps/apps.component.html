@@ -128,7 +128,7 @@
 		</div>
 	</div>
 
-	<div class="flex flex__column flex__justify-center flex__align-items-center table--container" id="events-empty-state" *ngIf="displayedApps?.length === 0">
+	<div class="flex flex__column flex__justify-center flex__align-items-center table--container" id="events-empty-state" *ngIf="!isloadingApps && displayedApps?.length === 0">
 		<img src="/assets/img/empty-state.svg" alt="empty state" class="empty-state-img" />
 		<p class="font__14px font__weight-600 margin-top__0px color__black width__20 text--center">No app to show here</p>
 	</div>
