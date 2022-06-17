@@ -6,11 +6,12 @@ package server
 import (
 	"context"
 	"fmt"
-	"github.com/frain-dev/convoy/auth"
 	"net/http"
 	"net/http/httptest"
 	"testing"
 	"time"
+
+	"github.com/frain-dev/convoy/auth"
 
 	"github.com/frain-dev/convoy/config"
 	"github.com/frain-dev/convoy/datastore"
@@ -206,10 +207,8 @@ func (s *SecurityIntegrationTestSuite) Test_RevokeAPIKey() {
 	require.Equal(s.T(), expectedStatusCode, w.Code)
 
 	// Deep assert
-	a, err := s.DB.APIRepo().FindAPIKeyByID(context.Background(), apiKey.UID)
-	require.NoError(s.T(), err)
-	require.Equal(s.T(), datastore.DeletedDocumentStatus, a.DocumentStatus)
-	require.True(s.T(), a.DeletedAt > 0)
+	_, err = s.DB.APIRepo().FindAPIKeyByID(context.Background(), apiKey.UID)
+	require.Equal(s.T(), datastore.ErrAPIKeyNotFound, err)
 }
 
 func (s *SecurityIntegrationTestSuite) Test_GetAPIKeyByID() {

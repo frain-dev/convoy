@@ -72,7 +72,9 @@ func (db *orgRepo) DeleteOrganisation(ctx context.Context, uid string) error {
 func (db *orgRepo) FetchOrganisationByID(ctx context.Context, id string) (*datastore.Organisation, error) {
 	org := new(datastore.Organisation)
 
-	err := db.inner.FindOne(ctx, bson.M{"uid": id}).Decode(&org)
+	filter := bson.M{"uid": id, "document_status": datastore.ActiveDocumentStatus}
+
+	err := db.inner.FindOne(ctx, filter).Decode(&org)
 	if errors.Is(err, mongo.ErrNoDocuments) {
 		err = datastore.ErrOrgNotFound
 	}

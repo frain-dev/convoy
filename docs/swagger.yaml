@@ -3438,11 +3438,6 @@ paths:
       - application/json
       description: This endpoint updates a subscription
       parameters:
-      - description: group id
-        in: path
-        name: groupId
-        required: true
-        type: string
       - description: subscription id
         in: path
         name: subscriptionID
@@ -3797,6 +3792,11 @@ paths:
       - application/json
       description: This endpoint creates a group
       parameters:
+      - description: Organisation id
+        in: path
+        name: orgID
+        required: true
+        type: string
       - description: Group Details
         in: body
         name: group
@@ -4239,6 +4239,11 @@ paths:
       - application/json
       description: This endpoint fetches multiple api keys
       parameters:
+      - description: Organisation id
+        in: path
+        name: orgID
+        required: true
+        type: string
       - description: results per page
         in: query
         name: perPage
@@ -4308,6 +4313,11 @@ paths:
       description: This endpoint creates an api key that will be used by the native
         auth realm
       parameters:
+      - description: Organisation id
+        in: path
+        name: orgID
+        required: true
+        type: string
       - description: API Key
         in: body
         name: apiKey
@@ -4364,6 +4374,11 @@ paths:
       - application/json
       description: This endpoint fetches an api key by its id
       parameters:
+      - description: Organisation id
+        in: path
+        name: orgID
+        required: true
+        type: string
       - description: API Key id
         in: path
         name: keyID
@@ -4418,6 +4433,11 @@ paths:
       - application/json
       description: This endpoint updates an api key
       parameters:
+      - description: Organisation id
+        in: path
+        name: orgID
+        required: true
+        type: string
       - description: API Key id
         in: path
         name: keyID
@@ -4473,6 +4493,11 @@ paths:
       - application/json
       description: This endpoint revokes an api key
       parameters:
+      - description: Organisation id
+        in: path
+        name: orgID
+        required: true
+        type: string
       - description: API Key id
         in: path
         name: keyID
