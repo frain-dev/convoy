@@ -308,7 +308,7 @@ func TestSecurityService_CreateAppPortalAPIKey(t *testing.T) {
 				Name: "test_app",
 				Type: "app_portal",
 				Role: auth.Role{
-					Type:   auth.RoleUIAdmin,
+					Type:   auth.RoleAdmin,
 					Groups: []string{"1234"},
 					Apps:   []string{"abc"},
 				},

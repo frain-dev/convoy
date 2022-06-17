@@ -22,7 +22,7 @@ const (
 	OrganisationCollection        = "organisations"
 	OrganisationInvitesCollection = "organisation_invites"
 	OrganisationMembersCollection = "organisation_members"
-	AppCollections                = "applications"
+	AppCollection                 = "applications"
 	EventCollection               = "events"
 	SourceCollection              = "sources"
 	UserCollection                = "users"
@@ -166,22 +166,22 @@ func (c *Client) ensureMongoIndices() {
 	c.ensureIndex(OrganisationInvitesCollection, "uid", true, nil)
 	c.ensureIndex(OrganisationInvitesCollection, "token", true, nil)
 
-	c.ensureIndex(AppCollections, "group_id", false, nil)
-	c.ensureIndex(AppCollections, "uid", true, nil)
+	c.ensureIndex(AppCollection, "group_id", false, nil)
+	c.ensureIndex(UserCollection, "uid", true, nil)
+	c.ensureIndex(AppCollection, "uid", true, nil)
 
 	c.ensureIndex(EventCollection, "uid", true, nil)
 	c.ensureIndex(EventCollection, "app_id", false, nil)
 	c.ensureIndex(EventCollection, "group_id", false, nil)
-	c.ensureIndex(AppCollections, "group_id", false, nil)
+	c.ensureIndex(AppCollection, "group_id", false, nil)
 	c.ensureIndex(EventDeliveryCollection, "status", false, nil)
 	c.ensureIndex(SourceCollection, "uid", true, nil)
 	c.ensureIndex(SourceCollection, "mask_id", true, nil)
 	c.ensureIndex(SubscriptionCollection, "uid", true, nil)
 	c.ensureIndex(SubscriptionCollection, "filter_config.event_type", false, nil)
-
+	c.ensureCompoundIndex(AppCollection)
 	c.ensureCompoundIndex(EventCollection)
 	c.ensureCompoundIndex(UserCollection)
-	c.ensureCompoundIndex(AppCollections)
 	c.ensureCompoundIndex(GroupCollection)
 	c.ensureCompoundIndex(EventDeliveryCollection)
 	c.ensureCompoundIndex(OrganisationInvitesCollection)
@@ -383,7 +383,7 @@ func compoundIndices() map[string][]mongo.IndexModel {
 			},
 		},
 
-		AppCollections: {
+		AppCollection: {
 			{
 				Keys: bson.D{
 					{Key: "group_id", Value: 1},
