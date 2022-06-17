@@ -14,7 +14,7 @@
 		<h2 class="margin-bottom__16px">Select source type</h2>
 
 		<div class="source-types grid grid__col-2 grid--gap__24px">
-			<div class="source-type checkbox-option" *ngFor="let sourceType of sourceTypes">
+			<div class="source-type checkbox-option pointer-cursor" *ngFor="let sourceType of sourceTypes" [ngClass]="{ disabled: sourceType.value !== 'http' }">
 				<input type="radio" [id]="sourceType.value" formControlName="type" [value]="sourceType.value" [checked]="sourceForm.value.type === sourceType.value" />
 				<label [for]="sourceType.value" class="border__all padding-all__16px rounded__4px position__relative display__block animate">
 					<div class="flex flex__align-items-center flex__justify-between position__relative">
@@ -23,7 +23,7 @@
 							<p class="font__14px font__weight-600 margin-left__8px">{{ sourceType.viewValue }}</p>
 						</div>
 
-						<app-tooltip>{{ sourceType.description }}</app-tooltip>
+						<app-tooltip *ngIf="sourceType.value === 'http'">{{ sourceType.description }}</app-tooltip>
 					</div>
 				</label>
 			</div>
@@ -59,7 +59,7 @@
 						<div class="flex flex__justify-between flex__align-items-center">Header Name</div>
 						<span class="bg__grey__light rounded__4px padding-x__4px font__10px font__weight-400">required</span>
 					</label>
-					<input type="text" id="key-header" placeholder="Header goes here" formControlName="header" />
+					<input type="text" id="key-header" placeholder="Header goes here" formControlName="header_name" />
 					<div class="input__error input__error__danger" *ngIf="sourceForm.get('verifier.api_key.header')?.touched && sourceForm.get('verifier.api_key.header')?.invalid">
 						<img src="assets/img/input-error-icon.svg" alt="input error icon" />
 						<span>Enter api key header</span>
@@ -71,7 +71,7 @@
 						Header Value
 						<span class="bg__grey__light rounded__4px padding-x__4px position__absolute position--right__0px font__10px">required</span>
 					</label>
-					<input type="text" id="key-header" placeholder="Key goes here" formControlName="key" />
+					<input type="text" id="key-header" placeholder="Key goes here" formControlName="header_value" />
 					<div class="input__error input__error__danger" *ngIf="sourceForm.get('verifier.api_key.key')?.touched && sourceForm.get('verifier.api_key.key')?.invalid">
 						<img src="assets/img/input-error-icon.svg" alt="input error icon" />
 						<span>Enter api key</span>

@@ -28,6 +28,7 @@ export class PrivateComponent implements OnInit {
 	async logout() {
 		await this.privateService.logout();
 		localStorage.removeItem('CONVOY_AUTH');
+		localStorage.removeItem('CONVOY_ORG');
 		this.router.navigateByUrl('/login');
 	}
 
@@ -42,8 +43,11 @@ export class PrivateComponent implements OnInit {
 			this.organisations = response.data.content;
 			const setOrg = localStorage.getItem('CONVOY_ORG');
 			if (!setOrg || setOrg === 'undefined') {
-				this.selectOrganisation(this.organisations[0]);
+				this.privateService.organisationDetails = this.organisations[0];
+				this.userOrganization = this.organisations[0];
+				localStorage.setItem('CONVOY_ORG', JSON.stringify(this.organisations[0]));
 			} else {
+				this.privateService.organisationDetails = JSON.parse(setOrg);
 				this.userOrganization = JSON.parse(setOrg);
 			}
 		} catch (error) {
@@ -55,17 +59,12 @@ export class PrivateComponent implements OnInit {
 		this.userOrganization = organisation;
 		localStorage.setItem('CONVOY_ORG', JSON.stringify(organisation));
 		this.showOrgDropdown = false;
-		if (this.router.url.includes('/projects/')) {
-			this.router.navigateByUrl('/projects');
-		} else {
-			this.router.navigateByUrl('/', { skipLocationChange: true }).then(() => {
-				this.router.navigateByUrl(this.router.url);
-			});
-		}
+		location.reload();
 	}
 
-	closeAddOrganisationModal() {
+	closeAddOrganisationModal(event?: { action: 'created' | 'cancel' }) {
 		this.showAddOrganisationModal = false;
 		this.getOrganizations();
+		if (event?.action === 'created') this.selectOrganisation(this.userOrganization);
 	}
 }

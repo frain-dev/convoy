@@ -70,7 +70,7 @@
 			</div>
 		</div>
 
-		<div class="input multiple">
+		<div class="input multiple" *ngIf="projectType === 'outgoing'">
 			<label class="flex flex__justify-between" for="tagInput">
 				<div class="flex flex__align-items-center">Event types</div>
 			</label>
@@ -84,7 +84,7 @@
 				<input type="text" id="tagInput" (input)="addTag()" required class="font__12px" autocomplete="off" />
 			</div>
 			<div class="input__error input__error__secondary">
-				<span>Separate event types with comma (,)</span>
+				<span>Separate event types with comma (,) or space</span>
 			</div>
 		</div>
 
