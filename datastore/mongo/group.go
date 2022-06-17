@@ -39,6 +39,7 @@ func (db *groupRepo) LoadGroups(ctx context.Context, f *datastore.GroupFilter) (
 		"document_status": datastore.ActiveDocumentStatus,
 		"organisation_id": f.OrgID,
 	}
+	f = f.WithNamesTrimmed()
 
 	if len(f.Names) > 0 {
 		filter["name"] = bson.M{"$in": f.Names}
