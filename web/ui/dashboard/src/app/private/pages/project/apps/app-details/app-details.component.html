@@ -14,12 +14,12 @@
 	<span class="font__weight-500 color__primary">{{ appsDetailsItem?.name || 'App' }}</span>
 </h1>
 
-<div class="card padding-all__32px margin-bottom__20px" *ngIf="isLoadingAppDetails">
+<div class="card padding-all__32px margin-bottom__20px">
 	<div class="flex flex__justify-between flex__align-items-center margin-bottom__24px">
 		<h3>Overview</h3>
-		<div class="skeleton-loader width__120px height__20px"></div>
+		<button class="button button__white button__small" [disabled]="appsDetailsItem?.events === 0" (click)="loadEventsFromAppsTable(appsDetailsItem.uid)">View Events</button>
 	</div>
-	<div class="flex flex__align-items-center flex__wrap flex__justify-between margin-bottom__32px">
+	<div class="flex flex__align-items-center flex__wrap flex__justify-between margin-bottom__32px" *ngIf="isLoadingAppDetails">
 		<div>
 			<p class="color__grey font__12px font__weight-300">DATE CREATED</p>
 			<div class="skeleton-loader margin-top__10px width__120px height__20px"></div>
@@ -41,9 +41,42 @@
 			<div class="skeleton-loader margin-top__10px width__120px height__20px"></div>
 		</div>
 	</div>
+	<div class="flex flex__align-items-center flex__wrap flex__justify-between margin-bottom__32px" *ngIf="!isLoadingAppDetails">
+		<div>
+			<p class="color__grey font__12px font__weight-300">DATE CREATED</p>
+			<p class="color__black font__14px font__weight-500">{{ appsDetailsItem?.created_at | date: 'mediumDate' }}</p>
+		</div>
+		<div>
+			<p class="color__grey font__12px font__weight-300">SUPPORT EMAIL</p>
+			<p class="color__black font__14px font__weight-500">{{ appsDetailsItem?.support_email || '...no support email provided' }}</p>
+		</div>
+		<div>
+			<p class="color__grey font__12px font__weight-300">UPDATED</p>
+			<p class="color__black font__14px font__weight-500">{{ appsDetailsItem?.updated_at | date: 'mediumDate' }}</p>
+		</div>
+		<div>
+			<p class="color__grey font__12px font__weight-300">EVENTS</p>
+			<p class="color__black font__14px font__weight-500">{{ appsDetailsItem?.events || 0 }}</p>
+		</div>
+		<div>
+			<p class="color__grey font__12px font__weight-300">ENDPOINTS</p>
+			<p class="color__black font__14px font__weight-500">{{ appsDetailsItem?.endpoints?.length || 0 }}</p>
+		</div>
+	</div>
+	<!-- pending when backend is ready  -->
+	<!-- <div>
+        <p class="flex flex__align-items-center font__14px font__weight-500 margin-bottom__8px">
+            Enable Notification
+            <img src="/assets/img/primary-info-icon.svg" class="margin-left__10px" alt="info icon" />
+        </p>
+        <label class="toggle">
+            <input class="toggle-checkbox" type="checkbox" (change)="editAppStatus(appsDetailsItem)" [checked]="!appsDetailsItem?.is_disabled" />
+            <div class="toggle-switch"></div>
+        </label>
+    </div> -->
 	<div class="flex flex__justify-between flex__wrap border__top margin-top__22px">
 		<div class="padding-top__32px" [ngClass]="{ 'width__50 border__right padding-right__32px': !shouldRenderSmallSize, width__100: shouldRenderSmallSize }">
-			<div class="flex flex__align-items-center flex__justify-between">
+			<div class="flex flex__align-items-center flex__justify-between" *ngIf="isLoadingAppDetails">
 				<h3>App Event Endpoints</h3>
 				<div class="flex flex__align-items-center">
 					<div class="skeleton-loader margin-top__10px width__100px height__20px"></div>
@@ -51,7 +84,15 @@
 					<div class="skeleton-loader margin-top__10px width__100px height__20px"></div>
 				</div>
 			</div>
-			<ul class="margin-top__20px">
+			<div class="flex flex__align-items-center flex__justify-between" *ngIf="!isLoadingAppDetails">
+				<h3>App Event Endpoints</h3>
+				<div class="flex flex__align-items-center">
+					<button class="button__clear font__12px" (click)="showAddEndpointModal = !showAddEndpointModal">Add Endpoints</button>
+					<div class="line margin-right__16px margin-left__16px border__left"></div>
+					<button class="button__clear font__12px" [disabled]="appsDetailsItem && appsDetailsItem?.endpoints?.length == 0" (click)="showAddEventModal = true">Send Event</button>
+				</div>
+			</div>
+			<ul class="margin-top__20px" *ngIf="isLoadingAppDetails">
 				<li class="app-details bg__grey-fade padding-all__16px rounded__8px margin-bottom__24px">
 					<div>
 						<div class="flex flex__align-items-center margin-bottom__16px">
@@ -91,79 +132,7 @@
 					</div>
 				</li>
 			</ul>
-		</div>
-		<div class="padding-top__32px" [ngClass]="{ 'width__50 padding-left__32px': !shouldRenderSmallSize, 'border__top width__100': shouldRenderSmallSize }">
-			<div>
-				<h3>App Portal</h3>
-				<ul class="margin-top__10px">
-					<li class="list-item__inline">
-						<div class="list-item__inline--label">App Page</div>
-						<div class="skeleton-loader width__80px height__20px"></div>
-					</li>
-					<li class="list-item__inline">
-						<div class="list-item__inline--label">Embed into your platform</div>
-						<div class="skeleton-loader width__100px height__20px"></div>
-					</li>
-					<li class="list-item__inline">
-						<div class="list-item__inline--label">Embed Iframe portal</div>
-						<div class="list-item__inline--item"></div>
-					</li>
-					<div class="skeleton-loader code margin-top__16px"></div>
-				</ul>
-			</div>
-		</div>
-	</div>
-</div>
-
-<div class="card padding-all__32px margin-bottom__20px" *ngIf="!isLoadingAppDetails">
-	<div class="flex flex__justify-between flex__align-items-center margin-bottom__24px">
-		<h3>Overview</h3>
-		<button class="button button__white button__small" [disabled]="appsDetailsItem?.events === 0" (click)="loadEventsFromAppsTable(appsDetailsItem.uid)">View Events</button>
-	</div>
-	<div class="flex flex__align-items-center flex__wrap flex__justify-between margin-bottom__32px">
-		<div>
-			<p class="color__grey font__12px font__weight-300">DATE CREATED</p>
-			<p class="color__black font__14px font__weight-500">{{ appsDetailsItem?.created_at | date: 'mediumDate' }}</p>
-		</div>
-		<div>
-			<p class="color__grey font__12px font__weight-300">SUPPORT EMAIL</p>
-			<p class="color__black font__14px font__weight-500">{{ appsDetailsItem?.support_email || '...no support email provided' }}</p>
-		</div>
-		<div>
-			<p class="color__grey font__12px font__weight-300">UPDATED</p>
-			<p class="color__black font__14px font__weight-500">{{ appsDetailsItem?.updated_at | date: 'mediumDate' }}</p>
-		</div>
-		<div>
-			<p class="color__grey font__12px font__weight-300">EVENTS</p>
-			<p class="color__black font__14px font__weight-500">{{ appsDetailsItem?.events || 0 }}</p>
-		</div>
-		<div>
-			<p class="color__grey font__12px font__weight-300">ENDPOINTS</p>
-			<p class="color__black font__14px font__weight-500">{{ appsDetailsItem?.endpoints?.length || 0 }}</p>
-		</div>
-	</div>
-	<!-- pending when backend is ready  -->
-	<!-- <div>
-        <p class="flex flex__align-items-center font__14px font__weight-500 margin-bottom__8px">
-            Enable Notification
-            <img src="/assets/img/primary-info-icon.svg" class="margin-left__10px" alt="info icon" />
-        </p>
-        <label class="toggle">
-            <input class="toggle-checkbox" type="checkbox" (change)="editAppStatus(appsDetailsItem)" [checked]="!appsDetailsItem?.is_disabled" />
-            <div class="toggle-switch"></div>
-        </label>
-    </div> -->
-	<div class="flex flex__justify-between flex__wrap border__top margin-top__22px">
-		<div class="padding-top__32px" [ngClass]="{ 'width__50 border__right padding-right__32px': !shouldRenderSmallSize, width__100: shouldRenderSmallSize }">
-			<div class="flex flex__align-items-center flex__justify-between">
-				<h3>App Event Endpoints</h3>
-				<div class="flex flex__align-items-center">
-					<button class="button__clear font__12px" (click)="showAddEndpointModal = !showAddEndpointModal">Add Endpoints</button>
-					<div class="line margin-right__16px margin-left__16px border__left"></div>
-					<button class="button__clear font__12px" [disabled]="appsDetailsItem && appsDetailsItem?.endpoints?.length == 0" (click)="showAddEventModal = true">Send Event</button>
-				</div>
-			</div>
-			<ul class="margin-top__20px">
+			<ul class="margin-top__20px" *ngIf="!isLoadingAppDetails">
 				<ng-container *ngIf="appsDetailsItem?.endpoints">
 					<li class="app-details bg__grey-fade padding-all__16px rounded__8px margin-bottom__24px" *ngFor="let endpoint of appsDetailsItem.endpoints">
 						<div>
@@ -200,13 +169,31 @@
 					</li>
 				</ng-container>
 			</ul>
-			<div class="empty-state smaller-table" *ngIf="appsDetailsItem?.endpoints?.length === 0">
+			<div class="empty-state smaller-table" *ngIf="!isLoadingAppDetails && appsDetailsItem?.endpoints?.length === 0">
 				<img src="/assets/img/empty-state-img.svg" alt="empty state" />
 				<p>No endpoint has been added for selected app yet</p>
 			</div>
 		</div>
 		<div class="padding-top__32px" [ngClass]="{ 'width__50 padding-left__32px': !shouldRenderSmallSize, 'border__top width__100': shouldRenderSmallSize }">
-			<div>
+			<div *ngIf="loadingAppPotalToken">
+				<h3>App Portal</h3>
+				<ul class="margin-top__10px">
+					<li class="list-item__inline">
+						<div class="list-item__inline--label">App Page</div>
+						<div class="skeleton-loader width__80px height__20px"></div>
+					</li>
+					<li class="list-item__inline">
+						<div class="list-item__inline--label">Embed into your platform</div>
+						<div class="skeleton-loader width__100px height__20px"></div>
+					</li>
+					<li class="list-item__inline">
+						<div class="list-item__inline--label">Embed Iframe portal</div>
+						<div class="list-item__inline--item"></div>
+					</li>
+					<div class="skeleton-loader code margin-top__16px"></div>
+				</ul>
+			</div>
+			<div *ngIf="!loadingAppPotalToken">
 				<h3>App Portal</h3>
 				<ul class="margin-top__10px">
 					<li class="list-item__inline">
@@ -227,8 +214,7 @@
 						<div class="list-item__inline--label">Embed Iframe portal</div>
 						<div class="list-item__inline--item"></div>
 					</li>
-					<div class="skeleton-loader code margin-top__16px" *ngIf="loadingAppPotalToken"></div>
-					<div class="bg__white-100 border__all__2 rounded__10px padding-all__16px margin-top__16px" *ngIf="!loadingAppPotalToken">
+					<div class="bg__white-100 border__all__2 rounded__10px padding-all__16px margin-top__16px">
 						<div class="text font__14px color__grey overflow--scroll__x">{{ appPortalLink }}</div>
 						<div class="flex flex__justify-end">
 							<button class="button__clear button--has-icon icon-left" (click)="copyText(appPortalLink)">

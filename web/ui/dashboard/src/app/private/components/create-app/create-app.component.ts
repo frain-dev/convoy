@@ -67,10 +67,8 @@ export class CreateAppComponent implements OnInit {
 			(<any>Object).values(this.addNewAppForm.controls).forEach((control: FormControl) => {
 				control?.markAsTouched();
 			});
-			console.log(this.addNewAppForm.controls);
 			return;
 		}
-		console.log(this.addNewAppForm.controls);
 
 		this.isSavingApp = true;
 		let requests: any[] = [];
