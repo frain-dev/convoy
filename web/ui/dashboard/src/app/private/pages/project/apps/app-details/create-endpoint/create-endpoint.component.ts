@@ -16,9 +16,9 @@ export class CreateEndpointComponent implements OnInit {
 	savingEndpoint = false;
 	addNewEndpointForm: FormGroup = this.formBuilder.group({
 		url: ['', Validators.required],
-		http_timeout: [''],
-		rate_limit: [''],
-		rate_limit_duration: [''],
+		http_timeout: [null],
+		rate_limit: [null],
+		rate_limit_duration: [null],
 		description: ['', Validators.required]
 	});
 

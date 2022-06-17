@@ -1,7 +1,7 @@
 import { APP, ENDPOINT } from './app.model';
 
 export interface EVENT {
-	created_at: string;
+	created_at: Date;
 	provider_id: string;
 	status?: string;
 	uid: string;
