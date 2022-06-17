@@ -33,6 +33,7 @@ export class ProjectsComponent implements OnInit {
 		try {
 			const organisations = await this.privateService.getOrganizations();
 			this.organisations = organisations.data.content;
+			this.privateService.organisationDetails = this.organisations[0];
 			this.isloadingOrganisations = false;
 			if (this.organisations.length > 0) return this.getProjects();
 		} catch (error) {

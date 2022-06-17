@@ -17,8 +17,8 @@ export class CreateSourceComponent implements OnInit {
 		type: ['', Validators.required],
 		verifier: this.formBuilder.group({
 			api_key: this.formBuilder.group({
-				header: ['', Validators.required],
-				key: ['', Validators.required]
+				header_name: ['', Validators.required],
+				header_value: ['', Validators.required]
 			}),
 			basic_auth: this.formBuilder.group({
 				password: ['', Validators.required],
@@ -35,7 +35,6 @@ export class CreateSourceComponent implements OnInit {
 	});
 	sourceTypes = [
 		{ value: 'http', viewValue: 'Ingestion HTTP', description: 'Trigger webhook event from a thirdparty webhook event' },
-		{ value: 'rest_api', viewValue: 'REST API (Coming Soon)', description: 'Trigger webhook event from a REST API request' },
 		{ value: 'pub_sub', viewValue: 'Pub/Sub (Coming Soon)', description: 'Trigger webhook event from your Pub/Sub messaging system' },
 		{ value: 'db_change_stream', viewValue: 'DB Change Stream (Coming Soon)', description: 'Trigger webhook event from your DB change stream' }
 	];
@@ -66,7 +65,6 @@ export class CreateSourceComponent implements OnInit {
 	}
 
 	async saveSource() {
-		this.isloading = true;
 		if (!this.isSourceFormValid()) return this.sourceForm.markAllAsTouched();
 
 		const sourceData = {
@@ -77,6 +75,7 @@ export class CreateSourceComponent implements OnInit {
 			}
 		};
 
+		this.isloading = true;
 		try {
 			const response = this.action === 'update' ? await this.createSourceService.updateSource({ data: sourceData, id: this.sourceId }) : await this.createSourceService.createSource({ sourceData });
 			this.isloading = false;
@@ -87,7 +86,7 @@ export class CreateSourceComponent implements OnInit {
 	}
 
 	isSourceFormValid(): boolean {
-		if (this.sourceForm.get('name')?.invalid || this.sourceForm.get('is_disabled')?.invalid || this.sourceForm.get('type')?.invalid) return false;
+		if (this.sourceForm.get('name')?.invalid || this.sourceForm.get('type')?.invalid) return false;
 
 		if (this.sourceForm.get('verifier')?.value.type === 'api_key' && this.sourceForm.get('verifier.api_key')?.valid) {
 			return true;
