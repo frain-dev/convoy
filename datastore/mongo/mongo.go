@@ -168,6 +168,7 @@ func (c *Client) ensureMongoIndices() {
 
 	c.ensureIndex(AppCollection, "group_id", false, nil)
 	c.ensureIndex(UserCollection, "uid", true, nil)
+	c.ensureIndex(UserCollection, "reset_password_token", true, nil)
 	c.ensureIndex(AppCollection, "uid", true, nil)
 
 	c.ensureIndex(EventCollection, "uid", true, nil)

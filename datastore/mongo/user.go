@@ -94,3 +94,17 @@ func (u *userRepo) UpdateUser(ctx context.Context, user *datastore.User) error {
 	_, err := u.client.UpdateOne(ctx, filter, update)
 	return err
 }
+
+func (u *userRepo) FindUserByToken(ctx context.Context, token string) (*datastore.User, error) {
+	user := &datastore.User{}
+
+	filter := bson.M{"reset_password_token": token, "document_status": datastore.ActiveDocumentStatus}
+
+	err := u.client.FindOne(ctx, filter).Decode(&user)
+
+	if errors.Is(err, mongo.ErrNoDocuments) {
+		return user, datastore.ErrUserNotFound
+	}
+
+	return user, nil
+}

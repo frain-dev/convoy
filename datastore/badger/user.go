@@ -27,6 +27,10 @@ func (u *userRepo) FindUserByID(ctx context.Context, id string) (*datastore.User
 	return nil, nil
 }
 
+func (u *userRepo) FindUserByToken(ctx context.Context, id string) (*datastore.User, error) {
+	return nil, nil
+}
+
 func (u *userRepo) LoadUsersPaged(ctx context.Context, pageable datastore.Pageable) ([]datastore.User, datastore.PaginationData, error) {
 	return nil, datastore.PaginationData{}, nil
 }
