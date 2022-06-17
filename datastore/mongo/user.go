@@ -7,6 +7,7 @@ import (
 
 	"github.com/frain-dev/convoy/datastore"
 	pager "github.com/gobeam/mongo-go-pagination"
+	"github.com/google/uuid"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
@@ -26,6 +27,7 @@ func NewUserRepo(db *mongo.Database) datastore.UserRepository {
 
 func (u *userRepo) CreateUser(ctx context.Context, user *datastore.User) error {
 	user.ID = primitive.NewObjectID()
+	user.ResetPasswordToken = uuid.NewString()
 
 	_, err := u.client.InsertOne(ctx, user)
 	return err
