@@ -6676,15 +6676,6 @@
 				"description": "This endpoint updates a subscription",
 				"parameters": [
 					{
-						"description": "group id",
-						"in": "path",
-						"name": "groupId",
-						"required": true,
-						"schema": {
-							"type": "string"
-						}
-					},
-					{
 						"description": "subscription id",
 						"in": "path",
 						"name": "subscriptionID",
@@ -7557,6 +7548,17 @@
 		"/ui/organisations/{orgID}/groups": {
 			"post": {
 				"description": "This endpoint creates a group",
+				"parameters": [
+					{
+						"description": "Organisation id",
+						"in": "path",
+						"name": "orgID",
+						"required": true,
+						"schema": {
+							"type": "string"
+						}
+					}
+				],
 				"requestBody": {
 					"content": {
 						"application/json": {
@@ -8475,6 +8477,15 @@
 				"description": "This endpoint fetches multiple api keys",
 				"parameters": [
 					{
+						"description": "Organisation id",
+						"in": "path",
+						"name": "orgID",
+						"required": true,
+						"schema": {
+							"type": "string"
+						}
+					},
+					{
 						"description": "results per page",
 						"in": "query",
 						"name": "perPage",
@@ -8616,6 +8627,17 @@
 			},
 			"post": {
 				"description": "This endpoint creates an api key that will be used by the native auth realm",
+				"parameters": [
+					{
+						"description": "Organisation id",
+						"in": "path",
+						"name": "orgID",
+						"required": true,
+						"schema": {
+							"type": "string"
+						}
+					}
+				],
 				"requestBody": {
 					"content": {
 						"application/json": {
@@ -8734,6 +8756,15 @@
 				"description": "This endpoint fetches an api key by its id",
 				"parameters": [
 					{
+						"description": "Organisation id",
+						"in": "path",
+						"name": "orgID",
+						"required": true,
+						"schema": {
+							"type": "string"
+						}
+					},
+					{
 						"description": "API Key id",
 						"in": "path",
 						"name": "keyID",
@@ -8846,6 +8877,15 @@
 			"put": {
 				"description": "This endpoint updates an api key",
 				"parameters": [
+					{
+						"description": "Organisation id",
+						"in": "path",
+						"name": "orgID",
+						"required": true,
+						"schema": {
+							"type": "string"
+						}
+					},
 					{
 						"description": "API Key id",
 						"in": "path",
@@ -8961,6 +9001,15 @@
 			"put": {
 				"description": "This endpoint revokes an api key",
 				"parameters": [
+					{
+						"description": "Organisation id",
+						"in": "path",
+						"name": "orgID",
+						"required": true,
+						"schema": {
+							"type": "string"
+						}
+					},
 					{
 						"description": "API Key id",
 						"in": "path",

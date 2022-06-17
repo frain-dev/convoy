@@ -4788,13 +4788,6 @@ var doc = `{
                 "parameters": [
                     {
                         "type": "string",
-                        "description": "group id",
-                        "name": "groupId",
-                        "in": "path",
-                        "required": true
-                    },
-                    {
-                        "type": "string",
                         "description": "subscription id",
                         "name": "subscriptionID",
                         "in": "path",
@@ -5678,6 +5671,13 @@ var doc = `{
                 "summary": "Create a group",
                 "parameters": [
                     {
+                        "type": "string",
+                        "description": "Organisation id",
+                        "name": "orgID",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
                         "description": "Group Details",
                         "name": "group",
                         "in": "body",
@@ -6488,6 +6488,13 @@ var doc = `{
                 "parameters": [
                     {
                         "type": "string",
+                        "description": "Organisation id",
+                        "name": "orgID",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
                         "description": "results per page",
                         "name": "perPage",
                         "in": "query"
@@ -6614,6 +6621,13 @@ var doc = `{
                 "summary": "Create an api key",
                 "parameters": [
                     {
+                        "type": "string",
+                        "description": "Organisation id",
+                        "name": "orgID",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
                         "description": "API Key",
                         "name": "apiKey",
                         "in": "body",
@@ -6720,6 +6734,13 @@ var doc = `{
                 "parameters": [
                     {
                         "type": "string",
+                        "description": "Organisation id",
+                        "name": "orgID",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
                         "description": "API Key id",
                         "name": "keyID",
                         "in": "path",
@@ -6819,6 +6840,13 @@ var doc = `{
                 ],
                 "summary": "update api key",
                 "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Organisation id",
+                        "name": "orgID",
+                        "in": "path",
+                        "required": true
+                    },
                     {
                         "type": "string",
                         "description": "API Key id",
@@ -6922,6 +6950,13 @@ var doc = `{
                 ],
                 "summary": "Revoke API Key",
                 "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Organisation id",
+                        "name": "orgID",
+                        "in": "path",
+                        "required": true
+                    },
                     {
                         "type": "string",
                         "description": "API Key id",
