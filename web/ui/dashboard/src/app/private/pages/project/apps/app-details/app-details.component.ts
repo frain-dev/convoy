@@ -41,10 +41,10 @@ export class AppDetailsComponent implements OnInit {
 		public privateService: PrivateService
 	) {}
 
-	async ngOnInit() {
+	ngOnInit() {
 		this.isLoadingAppDetails = true;
 		this.checkScreenSize();
-		await this.getAppDetails(this.route.snapshot.params.id);
+		this.getAppDetails(this.route.snapshot.params.id);
 	}
 
 	goBack() {

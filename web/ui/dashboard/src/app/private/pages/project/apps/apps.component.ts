@@ -35,8 +35,8 @@ export class AppsComponent implements OnInit {
 
 	constructor(private router: Router, private route: ActivatedRoute, private generalService: GeneralService, public privateService: PrivateService, private location: Location) {}
 
-	async ngOnInit() {
-		await this.getApps();
+	ngOnInit() {
+		this.getApps();
 	}
 
 	goBack() {
