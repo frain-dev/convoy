@@ -125,10 +125,6 @@ func Test_CreateGroup(t *testing.T) {
 
 				if i == 0 {
 					require.NoError(t, groupRepo.CreateGroup(context.Background(), newGroup))
-
-					g, err := groupRepo.FetchGroupByID(context.Background(), newGroup.UID)
-					require.NoError(t, err)
-					require.Equal(t, g.UID, newGroup.UID)
 				}
 
 				if i > 0 && tc.isDuplicate {
