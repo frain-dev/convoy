@@ -78,7 +78,7 @@ var fileRealmOpt = &config.FileRealmOption{
 			Username: "username2",
 			Password: "password2",
 			Role: auth.Role{
-				Type:   auth.RoleUIAdmin,
+				Type:   auth.RoleAdmin,
 				Groups: []string{"buycoins"},
 			},
 		},
@@ -103,7 +103,7 @@ var fileRealmOpt = &config.FileRealmOption{
 		{
 			APIKey: "avcbajbwrohw@##Q39uekvsmbvxc.fdjhd",
 			Role: auth.Role{
-				Type:   auth.RoleUIAdmin,
+				Type:   auth.RoleAdmin,
 				Groups: []string{"sendcash-pay"},
 			},
 		},
@@ -310,7 +310,7 @@ func TestInit(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			ctrl := gomock.NewController(t)
 			defer ctrl.Finish()
-			
+
 			mockAPIKeyRepo := mocks.NewMockAPIKeyRepository(ctrl)
 			userRepo := mocks.NewMockUserRepository(ctrl)
 			cache := mocks.NewMockCache(ctrl)

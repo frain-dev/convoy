@@ -74,7 +74,7 @@ func (s *OrganisationIntegrationTestSuite) Test_CreateOrganisation() {
 	body := strings.NewReader(`{"name":"new_org"}`)
 	// Arrange.
 	url := "/ui/organisations"
-	req := createRequest(http.MethodPost, url, body)
+	req := createRequest(http.MethodPost, url, "", body)
 	err := s.AuthenticatorFn(req, s.Router)
 	require.NoError(s.T(), err)
 
@@ -101,7 +101,7 @@ func (s *OrganisationIntegrationTestSuite) Test_CreateOrganisation_EmptyOrganisa
 	body := strings.NewReader(`{"name":""}`)
 	// Arrange.
 	url := "/ui/organisations"
-	req := createRequest(http.MethodPost, url, body)
+	req := createRequest(http.MethodPost, url, "", body)
 	err := s.AuthenticatorFn(req, s.Router)
 	require.NoError(s.T(), err)
 
@@ -127,7 +127,7 @@ func (s *OrganisationIntegrationTestSuite) Test_UpdateOrganisation_EmptyOrganisa
 	body := strings.NewReader(`{"name":""}`)
 	// Arrange.
 	url := fmt.Sprintf("/ui/organisations/%s", uid)
-	req := createRequest(http.MethodPut, url, body)
+	req := createRequest(http.MethodPut, url, "", body)
 	err = s.AuthenticatorFn(req, s.Router)
 	require.NoError(s.T(), err)
 
@@ -154,7 +154,7 @@ func (s *OrganisationIntegrationTestSuite) Test_UpdateOrganisation() {
 
 	// Arrange.
 	url := fmt.Sprintf("/ui/organisations/%s", uid)
-	req := createRequest(http.MethodPut, url, body)
+	req := createRequest(http.MethodPut, url, "", body)
 	err = s.AuthenticatorFn(req, s.Router)
 	require.NoError(s.T(), err)
 
@@ -183,7 +183,7 @@ func (s *OrganisationIntegrationTestSuite) Test_GetOrganisation() {
 
 	// Arrange.
 	url := fmt.Sprintf("/ui/organisations/%s", uid)
-	req := createRequest(http.MethodGet, url, nil)
+	req := createRequest(http.MethodGet, url, "", nil)
 	err = s.AuthenticatorFn(req, s.Router)
 	require.NoError(s.T(), err)
 
@@ -220,7 +220,7 @@ func (s *OrganisationIntegrationTestSuite) Test_GetOrganisations() {
 
 	// Arrange.
 	url := "/ui/organisations?page=1&perPage=2"
-	req := createRequest(http.MethodGet, url, nil)
+	req := createRequest(http.MethodGet, url, "", nil)
 	err = s.AuthenticatorFn(req, s.Router)
 	require.NoError(s.T(), err)
 
@@ -257,7 +257,7 @@ func (s *OrganisationIntegrationTestSuite) Test_DeleteOrganisation() {
 
 	// Arrange.
 	url := fmt.Sprintf("/ui/organisations/%s", uid)
-	req := createRequest(http.MethodDelete, url, nil)
+	req := createRequest(http.MethodDelete, url, "", nil)
 	err = s.AuthenticatorFn(req, s.Router)
 	require.NoError(s.T(), err)
 
