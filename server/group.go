@@ -3,7 +3,6 @@ package server
 import (
 	"net/http"
 
-	"github.com/frain-dev/convoy/auth"
 	"github.com/frain-dev/convoy/datastore"
 	"github.com/frain-dev/convoy/server/models"
 	"github.com/frain-dev/convoy/util"
@@ -64,6 +63,7 @@ func (a *applicationHandler) DeleteGroup(w http.ResponseWriter, r *http.Request)
 // @Tags Group
 // @Accept  json
 // @Produce  json
+// @Param orgID path string true "Organisation id"
 // @Param group body models.Group true "Group Details"
 // @Success 200 {object} serverResponse{data=datastore.Group}
 // @Failure 400,401,500 {object} serverResponse{data=Stub}
@@ -135,29 +135,11 @@ func (a *applicationHandler) UpdateGroup(w http.ResponseWriter, r *http.Request)
 // @Security ApiKeyAuth
 // @Router /groups [get]
 func (a *applicationHandler) GetGroups(w http.ResponseWriter, r *http.Request) {
-	user := getAuthUserFromContext(r.Context())
+	org := getOrganisationFromContext(r.Context())
 	name := r.URL.Query().Get("name")
-	userGroups := user.Role.Groups
 
-	var filter *datastore.GroupFilter
-
-	if !util.IsStringEmpty(name) {
-		for _, g := range userGroups {
-			if name == g {
-				filter = &datastore.GroupFilter{Names: []string{name}}
-				break
-			}
-		}
-
-		if filter == nil {
-			_ = render.Render(w, r, newErrorResponse("invalid group access", http.StatusForbidden))
-			return
-		}
-	} else if user.Role.Type == auth.RoleSuperUser {
-		filter = &datastore.GroupFilter{}
-	} else {
-		filter = &datastore.GroupFilter{Names: userGroups}
-	}
+	filter := &datastore.GroupFilter{OrgID: org.UID}
+	filter.Names = append(filter.Names, name)
 
 	groups, err := a.groupService.GetGroups(r.Context(), filter)
 	if err != nil {

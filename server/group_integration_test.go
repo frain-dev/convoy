@@ -68,14 +68,16 @@ func (s *GroupIntegrationTestSuite) TestGetGroup() {
 	expectedStatusCode := http.StatusOK
 
 	// Just Before.
-	group, err := testdb.SeedGroup(s.DB, groupID, "", "", datastore.OutgoingGroup, nil)
+	group, err := testdb.SeedGroup(s.DB, groupID, "", s.DefaultOrg.UID, datastore.OutgoingGroup, nil)
 	require.NoError(s.T(), err)
 	app, _ := testdb.SeedApplication(s.DB, group, uuid.NewString(), "test-app", false)
 	_, _ = testdb.SeedEndpoint(s.DB, app, group.UID)
 	_, _ = testdb.SeedEvent(s.DB, app, group.UID, uuid.NewString(), "*", []byte("{}"))
 
-	url := fmt.Sprintf("/api/v1/groups/%s", group.UID)
-	req := createRequest(http.MethodGet, url, nil)
+	url := fmt.Sprintf("/ui/organisations/%s/groups/%s", s.DefaultOrg.UID, group.UID)
+	req := createRequest(http.MethodGet, url, "", nil)
+	err = s.AuthenticatorFn(req, s.Router)
+	require.NoError(s.T(), err)
 	w := httptest.NewRecorder()
 
 	// Act.
@@ -96,8 +98,10 @@ func (s *GroupIntegrationTestSuite) TestGetGroup() {
 func (s *GroupIntegrationTestSuite) TestGetGroup_GroupNotFound() {
 	expectedStatusCode := http.StatusNotFound
 
-	url := fmt.Sprintf("/api/v1/groups/%s", uuid.NewString())
-	req := createRequest(http.MethodGet, url, nil)
+	url := fmt.Sprintf("/ui/organisations/%s/groups/%s", s.DefaultOrg.UID, uuid.NewString())
+	req := createRequest(http.MethodGet, url, "", nil)
+	err := s.AuthenticatorFn(req, s.Router)
+	require.NoError(s.T(), err)
 	w := httptest.NewRecorder()
 
 	// Act.
@@ -115,8 +119,10 @@ func (s *GroupIntegrationTestSuite) TestDeleteGroup() {
 	group, err := testdb.SeedGroup(s.DB, groupID, "", "", datastore.OutgoingGroup, nil)
 	require.NoError(s.T(), err)
 
-	url := fmt.Sprintf("/api/v1/groups/%s", group.UID)
-	req := createRequest(http.MethodDelete, url, nil)
+	url := fmt.Sprintf("/ui/organisations/%s/groups/%s", s.DefaultOrg.UID, group.UID)
+	req := createRequest(http.MethodDelete, url, "", nil)
+	err = s.AuthenticatorFn(req, s.Router)
+	require.NoError(s.T(), err)
 	w := httptest.NewRecorder()
 
 	// Act.
@@ -131,8 +137,10 @@ func (s *GroupIntegrationTestSuite) TestDeleteGroup() {
 func (s *GroupIntegrationTestSuite) TestDeleteGroup_GroupNotFound() {
 	expectedStatusCode := http.StatusNotFound
 
-	url := fmt.Sprintf("/api/v1/groups/%s", uuid.NewString())
-	req := createRequest(http.MethodDelete, url, nil)
+	url := fmt.Sprintf("/ui/organisations/%s/groups/%s", s.DefaultOrg.UID, uuid.NewString())
+	req := createRequest(http.MethodDelete, url, "", nil)
+	err := s.AuthenticatorFn(req, s.Router)
+	require.NoError(s.T(), err)
 	w := httptest.NewRecorder()
 
 	// Act.
@@ -169,7 +177,7 @@ func (s *GroupIntegrationTestSuite) TestCreateGroup() {
 	body := serialize(bodyStr)
 	url := fmt.Sprintf("/ui/organisations/%s/groups", s.DefaultOrg.UID)
 
-	req := createRequest(http.MethodPost, url, body)
+	req := createRequest(http.MethodPost, url, "", body)
 	err := s.AuthenticatorFn(req, s.Router)
 	require.NoError(s.T(), err)
 
@@ -189,7 +197,7 @@ func (s *GroupIntegrationTestSuite) TestCreateGroup() {
 	require.Equal(s.T(), "test-group", respGroup.Group.Name)
 	require.Equal(s.T(), "test-group's default key", respGroup.APIKey.Name)
 
-	require.Equal(s.T(), auth.RoleSuperUser, respGroup.APIKey.Role.Type)
+	require.Equal(s.T(), auth.RoleAdmin, respGroup.APIKey.Role.Type)
 	require.Equal(s.T(), respGroup.Group.UID, respGroup.APIKey.Role.Group)
 	require.Equal(s.T(), "test-group's default key", respGroup.APIKey.Name)
 	require.NotEmpty(s.T(), respGroup.APIKey.Key)
@@ -203,7 +211,7 @@ func (s *GroupIntegrationTestSuite) TestUpdateGroup() {
 	group, err := testdb.SeedGroup(s.DB, groupID, "", "test-group", datastore.OutgoingGroup, nil)
 	require.NoError(s.T(), err)
 
-	url := fmt.Sprintf("/api/v1/groups/%s", group.UID)
+	url := fmt.Sprintf("/ui/organisations/%s/groups/%s", s.DefaultOrg.UID, group.UID)
 
 	bodyStr := `{
     "name": "group_1",
@@ -222,7 +230,9 @@ func (s *GroupIntegrationTestSuite) TestUpdateGroup() {
         "replay_attacks": false
     }
 }`
-	req := createRequest(http.MethodPut, url, serialize(bodyStr))
+	req := createRequest(http.MethodPut, url, "", serialize(bodyStr))
+	err = s.AuthenticatorFn(req, s.Router)
+	require.NoError(s.T(), err)
 	w := httptest.NewRecorder()
 
 	// Act.
@@ -239,11 +249,14 @@ func (s *GroupIntegrationTestSuite) TestGetGroups() {
 	expectedStatusCode := http.StatusOK
 
 	// Just Before.
-	group1, _ := testdb.SeedGroup(s.DB, uuid.NewString(), "", "test-group-1", datastore.OutgoingGroup, nil)
-	group2, _ := testdb.SeedGroup(s.DB, uuid.NewString(), "", "test-group-2", datastore.OutgoingGroup, nil)
-	group3, _ := testdb.SeedGroup(s.DB, uuid.NewString(), "", "test-group-3", datastore.OutgoingGroup, nil)
+	group1, _ := testdb.SeedGroup(s.DB, uuid.NewString(), "", s.DefaultOrg.UID, datastore.OutgoingGroup, nil)
+	group2, _ := testdb.SeedGroup(s.DB, uuid.NewString(), "", s.DefaultOrg.UID, datastore.OutgoingGroup, nil)
+	group3, _ := testdb.SeedGroup(s.DB, uuid.NewString(), "", s.DefaultOrg.UID, datastore.OutgoingGroup, nil)
 
-	req := createRequest(http.MethodGet, "/api/v1/groups", nil)
+	url := fmt.Sprintf("/ui/organisations/%s/groups", s.DefaultOrg.UID)
+	req := createRequest(http.MethodGet, url, "", nil)
+	err := s.AuthenticatorFn(req, s.Router)
+	require.NoError(s.T(), err)
 	w := httptest.NewRecorder()
 
 	// Act.
@@ -254,25 +267,27 @@ func (s *GroupIntegrationTestSuite) TestGetGroups() {
 
 	var groups []*datastore.Group
 	parseResponse(s.T(), w.Result(), &groups)
-	require.Equal(s.T(), 4, len(groups))
+	require.Equal(s.T(), 3, len(groups))
 
-	v := []*datastore.Group{s.DefaultGroup, group1, group2, group3}
-	for i, group := range groups {
-		require.Equal(s.T(), v[i].UID, group.UID)
-	}
+	v := []string{group1.UID, group2.UID, group3.UID}
+	require.Contains(s.T(), v, group1.UID)
+	require.Contains(s.T(), v, group2.UID)
+	require.Contains(s.T(), v, group3.UID)
+
 }
 
 func (s *GroupIntegrationTestSuite) TestGetGroups_FilterByName() {
 	expectedStatusCode := http.StatusOK
 
 	// Just Before.
-	group1, _ := testdb.SeedGroup(s.DB, uuid.NewString(), "abcdef", "", datastore.OutgoingGroup, nil)
+	group1, _ := testdb.SeedGroup(s.DB, uuid.NewString(), "abcdef", s.DefaultOrg.UID, datastore.OutgoingGroup, nil)
 	_, _ = testdb.SeedGroup(s.DB, uuid.NewString(), "test-group-2", "", datastore.OutgoingGroup, nil)
 	_, _ = testdb.SeedGroup(s.DB, uuid.NewString(), "test-group-3", "", datastore.OutgoingGroup, nil)
 
-	url := fmt.Sprintf("/api/v1/groups?name=%s", group1.Name)
-	req := createRequest(http.MethodGet, url, nil)
-	req.SetBasicAuth("test-group-filter", "test-group-filter") // override previous auth in createRequest
+	url := fmt.Sprintf("/ui/organisations/%s/groups?name=%s", s.DefaultOrg.UID, group1.Name)
+	req := createRequest(http.MethodGet, url, "", nil)
+	err := s.AuthenticatorFn(req, s.Router)
+	require.NoError(s.T(), err)
 	w := httptest.NewRecorder()
 
 	// Act.
@@ -281,7 +296,7 @@ func (s *GroupIntegrationTestSuite) TestGetGroups_FilterByName() {
 	// Assert.
 	require.Equal(s.T(), expectedStatusCode, w.Code)
 
-	var groups []datastore.Group
+	var groups []*datastore.Group
 	parseResponse(s.T(), w.Result(), &groups)
 	require.Equal(s.T(), 1, len(groups))
 
@@ -292,6 +307,6 @@ func (s *GroupIntegrationTestSuite) TearDownTest() {
 	testdb.PurgeDB(s.DB)
 }
 
-func TestGroupIntegrationTestSuiteTest(t *testing.T) {
+func TestGroupIntegrationTestSuite(t *testing.T) {
 	suite.Run(t, new(GroupIntegrationTestSuite))
 }

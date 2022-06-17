@@ -12,6 +12,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/frain-dev/convoy/auth"
 	"github.com/frain-dev/convoy/config"
 	"github.com/frain-dev/convoy/datastore"
 	"github.com/frain-dev/convoy/server/testdb"
@@ -26,6 +27,7 @@ type SourceIntegrationTestSuite struct {
 	Router       http.Handler
 	ConvoyApp    *applicationHandler
 	DefaultGroup *datastore.Group
+	APIKey       string
 }
 
 func (s *SourceIntegrationTestSuite) SetupSuite() {
@@ -39,6 +41,14 @@ func (s *SourceIntegrationTestSuite) SetupTest() {
 
 	// Setup Default Group.
 	s.DefaultGroup, _ = testdb.SeedDefaultGroup(s.DB, "")
+
+	// Seed Auth
+	role := auth.Role{
+		Type:   auth.RoleAdmin,
+		Groups: []string{s.DefaultGroup.UID},
+	}
+
+	_, s.APIKey, _ = testdb.SeedAPIKey(s.DB, role, "", "test", "")
 
 	// Setup Config.
 	err := config.LoadConfig("./testdata/Auth_Config/full-convoy.json")
@@ -56,7 +66,7 @@ func (s *SourceIntegrationTestSuite) Test_GetSourceByID_SourceNotFound() {
 
 	// Arrange Request
 	url := fmt.Sprintf("/api/v1/sources/%s", sourceID)
-	req := createRequest(http.MethodGet, url, nil)
+	req := createRequest(http.MethodGet, url, s.APIKey, nil)
 	w := httptest.NewRecorder()
 
 	// Act
@@ -74,8 +84,7 @@ func (s *SourceIntegrationTestSuite) Test_GetSourceBy_ValidSource() {
 
 	// Arrange Request
 	url := fmt.Sprintf("/api/v1/sources/%s", sourceID)
-	req := createRequest(http.MethodGet, url, nil)
-	req.SetBasicAuth("test", "test")
+	req := createRequest(http.MethodGet, url, s.APIKey, nil)
 	w := httptest.NewRecorder()
 
 	// Act
@@ -106,7 +115,7 @@ func (s *SourceIntegrationTestSuite) Test_GetSource_ValidSources() {
 
 	// Arrange Request
 	url := "/api/v1/sources"
-	req := createRequest(http.MethodGet, url, nil)
+	req := createRequest(http.MethodGet, url, s.APIKey, nil)
 	w := httptest.NewRecorder()
 
 	// Act
@@ -138,7 +147,7 @@ func (s *SourceIntegrationTestSuite) Test_CreateSource() {
 	}`
 
 	body := serialize(bodyStr)
-	req := createRequest(http.MethodPost, "/api/v1/sources", body)
+	req := createRequest(http.MethodPost, "/api/v1/sources", s.APIKey, body)
 	w := httptest.NewRecorder()
 
 	// Act
@@ -172,7 +181,7 @@ func (s *SourceIntegrationTestSuite) Test_CreateSource_NoName() {
 	}`
 
 	body := serialize(bodyStr)
-	req := createRequest(http.MethodPost, "/api/v1/sources", body)
+	req := createRequest(http.MethodPost, "/api/v1/sources", s.APIKey, body)
 	w := httptest.NewRecorder()
 
 	// Act
@@ -199,7 +208,7 @@ func (s *SourceIntegrationTestSuite) Test_CreateSource_InvalidSourceType() {
 	}`
 
 	body := serialize(bodyStr)
-	req := createRequest(http.MethodPost, "/api/v1/sources", body)
+	req := createRequest(http.MethodPost, "/api/v1/sources", s.APIKey, body)
 	w := httptest.NewRecorder()
 
 	// Act
@@ -235,7 +244,7 @@ func (s *SourceIntegrationTestSuite) Test_UpdateSource() {
 	}`, name, !isDisabled)
 
 	body := serialize(bodyStr)
-	req := createRequest(http.MethodPut, url, body)
+	req := createRequest(http.MethodPut, url, s.APIKey, body)
 	w := httptest.NewRecorder()
 
 	// Act
@@ -263,7 +272,7 @@ func (s *SourceIntegrationTestSuite) Test_DeleteSource() {
 
 	// Arrange Request.
 	url := fmt.Sprintf("/api/v1/sources/%s", sourceID)
-	req := createRequest(http.MethodDelete, url, nil)
+	req := createRequest(http.MethodDelete, url, s.APIKey, nil)
 	w := httptest.NewRecorder()
 
 	// Act.

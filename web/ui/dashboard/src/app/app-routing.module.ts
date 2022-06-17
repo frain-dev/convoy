@@ -9,6 +9,18 @@ const routes: Routes = [
 	{
 		path: 'login',
 		loadChildren: () => import('./public/login/login.module').then(m => m.LoginModule)
+	},
+	{
+		path: 'forgot-password',
+		loadChildren: () => import('./public/forgot-password/forgot-password.module').then(m => m.ForgotPasswordModule)
+	},
+	{
+		path: 'reset-password',
+		loadChildren: () => import('./public/reset-password/reset-password.module').then(m => m.ResetPasswordModule)
+	},
+	{
+		path: 'accept-invite',
+		loadChildren: () => import('./public/accept-invite/accept-invite.module').then(m => m.AcceptInviteModule)
 	}
 ];
 

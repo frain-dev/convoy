@@ -69,12 +69,12 @@ func (s *SecurityIntegrationTestSuite) Test_CreateAPIKey() {
 	expectedStatusCode := http.StatusCreated
 
 	// Arrange Request.
-	bodyStr := `{"name":"default_api_key","role":{"type":"ui_admin","group":"%s"},"key_type":"api_key","expires_at":"%s"}`
+	bodyStr := `{"name":"default_api_key","role":{"type":"admin","group":"%s"},"key_type":"api_key","expires_at":"%s"}`
 	body := serialize(bodyStr, s.DefaultGroup.UID, time.Now().Add(time.Hour).Format(time.RFC3339))
 
 	url := fmt.Sprintf("/ui/organisations/%s/security/keys", s.DefaultOrg.UID)
 
-	req := createRequest(http.MethodPost, url, body)
+	req := createRequest(http.MethodPost, url, "", body)
 	err := s.AuthenticatorFn(req, s.Router)
 	require.NoError(s.T(), err)
 
@@ -119,12 +119,12 @@ func (s *SecurityIntegrationTestSuite) Test_CreateAppPortalAPIKey() {
 	require.NoError(s.T(), err)
 
 	// Arrange Request.
-	bodyStr := `{"name":"default_api_key","role":{"type":"ui_admin","group":"%s"},"key_type":"api_key","expires_at":"%s"}"`
+	bodyStr := `{"name":"default_api_key","role":{"type":"admin","group":"%s"},"key_type":"api_key","expires_at":"%s"}"`
 	body := serialize(bodyStr, s.DefaultGroup.UID, time.Now().Add(time.Hour))
 
 	url := fmt.Sprintf("/api/v1/security/applications/%s/keys", app.UID)
 
-	req := createRequest(http.MethodPost, url, body)
+	req := createRequest(http.MethodPost, url, "", body)
 	req.Header.Set("Authorization", fmt.Sprintf("BEARER %s", keyString)) // authenticate with previously generated key
 	w := httptest.NewRecorder()
 
@@ -166,12 +166,12 @@ func (s *SecurityIntegrationTestSuite) Test_CreateAppPortalAPIKey_AppDoesNotBelo
 	require.NoError(s.T(), err)
 
 	// Arrange Request.
-	bodyStr := `{"name":"default_api_key","role":{"type":"ui_admin","group":"%s"},"key_type":"api_key","expires_at":"%s"}"`
+	bodyStr := `{"name":"default_api_key","role":{"type":"admin","group":"%s"},"key_type":"api_key","expires_at":"%s"}"`
 	body := serialize(bodyStr, s.DefaultGroup.UID, time.Now().Add(time.Hour))
 
 	url := fmt.Sprintf("/api/v1/security/applications/%s/keys", app.UID)
 
-	req := createRequest(http.MethodPost, url, body)
+	req := createRequest(http.MethodPost, url, "", body)
 	req.Header.Set("Authorization", fmt.Sprintf("BEARER %s", keyString)) // authenticate with previously generated key
 	w := httptest.NewRecorder()
 
@@ -194,7 +194,7 @@ func (s *SecurityIntegrationTestSuite) Test_RevokeAPIKey() {
 
 	url := fmt.Sprintf("/ui/organisations/%s/security/keys/%s/revoke", s.DefaultOrg.UID, apiKey.UID)
 
-	req := createRequest(http.MethodPut, url, nil)
+	req := createRequest(http.MethodPut, url, "", nil)
 	err := s.AuthenticatorFn(req, s.Router)
 	require.NoError(s.T(), err)
 
@@ -223,7 +223,7 @@ func (s *SecurityIntegrationTestSuite) Test_GetAPIKeyByID() {
 
 	url := fmt.Sprintf("/ui/organisations/%s/security/keys/%s", s.DefaultOrg.UID, apiKey.UID)
 
-	req := createRequest(http.MethodGet, url, nil)
+	req := createRequest(http.MethodGet, url, "", nil)
 	err := s.AuthenticatorFn(req, s.Router)
 	require.NoError(s.T(), err)
 
@@ -246,7 +246,7 @@ func (s *SecurityIntegrationTestSuite) Test_GetAPIKeyByID_APIKeyNotFound() {
 
 	url := fmt.Sprintf("/ui/organisations/%s/security/keys/%s", s.DefaultOrg.UID, uuid.NewString())
 
-	req := createRequest(http.MethodGet, url, nil)
+	req := createRequest(http.MethodGet, url, "", nil)
 	err := s.AuthenticatorFn(req, s.Router)
 	require.NoError(s.T(), err)
 
@@ -273,7 +273,7 @@ func (s *SecurityIntegrationTestSuite) Test_UpdateAPIKey() {
 	body := serialize(bodyStr, s.DefaultGroup.UID)
 
 	url := fmt.Sprintf("/ui/organisations/%s/security/keys/%s", s.DefaultOrg.UID, apiKey.UID)
-	req := createRequest(http.MethodPut, url, body)
+	req := createRequest(http.MethodPut, url, "", body)
 	err := s.AuthenticatorFn(req, s.Router)
 	require.NoError(s.T(), err)
 
@@ -303,7 +303,7 @@ func (s *SecurityIntegrationTestSuite) Test_UpdateAPIKey_APIKeyNotFound() {
 
 	url := fmt.Sprintf("/ui/organisations/%s/security/keys/%s", s.DefaultOrg.UID, uuid.NewString())
 
-	req := createRequest(http.MethodPut, url, body)
+	req := createRequest(http.MethodPut, url, "", body)
 	err := s.AuthenticatorFn(req, s.Router)
 	require.NoError(s.T(), err)
 
@@ -332,7 +332,7 @@ func (s *SecurityIntegrationTestSuite) Test_GetAPIKeys() {
 	body := serialize(bodyStr, uuid.NewString())
 
 	url := fmt.Sprintf("/ui/organisations/%s/security/keys", s.DefaultOrg.UID)
-	req := createRequest(http.MethodGet, url, body)
+	req := createRequest(http.MethodGet, url, "", body)
 	err := s.AuthenticatorFn(req, s.Router)
 	require.NoError(s.T(), err)
 

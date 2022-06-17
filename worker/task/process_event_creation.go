@@ -69,10 +69,12 @@ func ProcessEventCreated(appRepo datastore.ApplicationRepository, eventRepo data
 				}
 			}
 
-			subscriptions, err = subRepo.FindSubscriptionByEventType(ctx, group.UID, app.UID, event.EventType)
+			subs, err := subRepo.FindSubscriptionsByAppID(ctx, group.UID, app.UID)
 			if err != nil {
 				return &EndpointError{Err: errors.New("error fetching subscriptions for event type"), delay: 10 * time.Second}
 			}
+
+			subscriptions = matchSubscriptions(string(event.EventType), subs)
 		} else if group.Type == datastore.IncomingGroup {
 			subscriptions, err = subRepo.FindSubscriptionBySourceIDs(ctx, group.UID, event.SourceID)
 			if err != nil {
@@ -153,6 +155,19 @@ func ProcessEventCreated(appRepo datastore.ApplicationRepository, eventRepo data
 
 		return nil
 	}
+}
+
+func matchSubscriptions(eventType string, subscriptions []datastore.Subscription) []datastore.Subscription {
+	var matched []datastore.Subscription
+	for _, sub := range subscriptions {
+		for _, ev := range sub.FilterConfig.EventTypes {
+			if ev == eventType || ev == "*" { // if this event type matches, or is *, add the subscription to matched
+				matched = append(matched, sub)
+			}
+		}
+	}
+
+	return matched
 }
 
 func getEventDeliveryStatus(subscription datastore.Subscription, app *datastore.Application) datastore.EventDeliveryStatus {

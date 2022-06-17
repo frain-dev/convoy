@@ -19,6 +19,7 @@ import (
 // @Tags APIKey
 // @Accept  json
 // @Produce  json
+// @Param orgID path string true "Organisation id"
 // @Param apiKey body models.APIKey true "API Key"
 // @Success 200 {object} serverResponse{data=models.APIKeyResponse}
 // @Failure 400,401,500 {object} serverResponse{data=Stub}
@@ -64,6 +65,7 @@ func (a *applicationHandler) CreateAPIKey(w http.ResponseWriter, r *http.Request
 // @Tags APIKey
 // @Accept  json
 // @Produce  json
+// @Param orgID path string true "Organisation id"
 // @Param appID path string true "application ID"
 // @Success 201 {object} serverResponse{data=models.PortalAPIKeyResponse}
 // @Failure 400,401,500 {object} serverResponse{data=Stub}
@@ -111,6 +113,7 @@ func (a *applicationHandler) CreateAppPortalAPIKey(w http.ResponseWriter, r *htt
 // @Tags APIKey
 // @Accept  json
 // @Produce  json
+// @Param orgID path string true "Organisation id"
 // @Param keyID path string true "API Key id"
 // @Success 200 {object} serverResponse{data=Stub}
 // @Failure 400,401,500 {object} serverResponse{data=Stub}
@@ -132,6 +135,7 @@ func (a *applicationHandler) RevokeAPIKey(w http.ResponseWriter, r *http.Request
 // @Tags APIKey
 // @Accept  json
 // @Produce  json
+// @Param orgID path string true "Organisation id"
 // @Param keyID path string true "API Key id"
 // @Success 200 {object} serverResponse{data=datastore.APIKey}
 // @Failure 400,401,500 {object} serverResponse{data=Stub}
@@ -162,6 +166,7 @@ func (a *applicationHandler) GetAPIKeyByID(w http.ResponseWriter, r *http.Reques
 // @Tags APIKey
 // @Accept  json
 // @Produce  json
+// @Param orgID path string true "Organisation id"
 // @Param keyID path string true "API Key id"
 // @Success 200 {object} serverResponse{data=datastore.APIKey}
 // @Failure 400,401,500 {object} serverResponse{data=Stub}
@@ -203,6 +208,7 @@ func (a *applicationHandler) UpdateAPIKey(w http.ResponseWriter, r *http.Request
 // @Tags APIKey
 // @Accept  json
 // @Produce  json
+// @Param orgID path string true "Organisation id"
 // @Param perPage query string false "results per page"
 // @Param page query string false "page number"
 // @Param sort query string false "sort order"

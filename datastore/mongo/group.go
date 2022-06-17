@@ -35,7 +35,11 @@ func (db *groupRepo) LoadGroups(ctx context.Context, f *datastore.GroupFilter) (
 	groups := make([]*datastore.Group, 0)
 
 	opts := &options.FindOptions{Collation: &options.Collation{Locale: "en", Strength: 2}}
-	filter := bson.M{"document_status": datastore.ActiveDocumentStatus}
+	filter := bson.M{
+		"document_status": datastore.ActiveDocumentStatus,
+		"organisation_id": f.OrgID,
+	}
+	f = f.WithNamesTrimmed()
 
 	if len(f.Names) > 0 {
 		filter["name"] = bson.M{"$in": f.Names}
@@ -97,7 +101,7 @@ func (db *groupRepo) UpdateGroup(ctx context.Context, o *datastore.Group) error 
 	if mongo.IsDuplicateKeyError(err) && isDuplicateNameIndex(err) {
 		return datastore.ErrDuplicateGroupName
 	}
-	
+
 	return err
 }
 
@@ -133,7 +137,7 @@ func (db *groupRepo) FillGroupsStatistics(ctx context.Context, groups []*datasto
 
 	lookupStage1 := bson.D{
 		{Key: "$lookup", Value: bson.D{
-			{Key: "from", Value: AppCollections},
+			{Key: "from", Value: AppCollection},
 			{Key: "localField", Value: "uid"},
 			{Key: "foreignField", Value: "group_id"},
 			{Key: "as", Value: "group_apps"},
