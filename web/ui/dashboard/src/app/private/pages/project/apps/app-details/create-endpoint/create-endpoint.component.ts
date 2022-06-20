@@ -1,5 +1,6 @@
 import { Component, EventEmitter, Input, OnInit, Output } from '@angular/core';
 import { FormBuilder, FormControl, FormGroup, Validators } from '@angular/forms';
+import { ActivatedRoute } from '@angular/router';
 import { ENDPOINT } from 'src/app/models/app.model';
 import { GeneralService } from 'src/app/services/general/general.service';
 import { AppDetailsService } from '../app-details.service';
@@ -21,8 +22,9 @@ export class CreateEndpointComponent implements OnInit {
 		rate_limit_duration: [null],
 		description: ['', Validators.required]
 	});
+	token: string = this.route.snapshot.params.token;
 
-	constructor(private formBuilder: FormBuilder, private generalService: GeneralService, private appDetailsService: AppDetailsService) {}
+	constructor(private formBuilder: FormBuilder, private generalService: GeneralService, private appDetailsService: AppDetailsService, private route: ActivatedRoute) {}
 
 	ngOnInit() {
 		if (this.selectedEndpoint) this.updateEndpointForm();
@@ -39,8 +41,8 @@ export class CreateEndpointComponent implements OnInit {
 
 		try {
 			const response = this.selectedEndpoint
-				? await this.appDetailsService.editEndpoint({ appId: this.appId, endpointId: this.selectedEndpoint?.uid || '', body: this.addNewEndpointForm.value })
-				: await this.appDetailsService.addNewEndpoint({ appId: this.appId, body: this.addNewEndpointForm.value });
+				? await this.appDetailsService.editEndpoint({ appId: this.appId, endpointId: this.selectedEndpoint?.uid || '', body: this.addNewEndpointForm.value, token: this.token })
+				: await this.appDetailsService.addNewEndpoint({ appId: this.appId, body: this.addNewEndpointForm.value, token: this.token });
 			this.generalService.showNotification({ message: response.message, style: 'success' });
 			this.onAction.emit({ action: 'savedEndpoint' });
 			this.addNewEndpointForm.reset();

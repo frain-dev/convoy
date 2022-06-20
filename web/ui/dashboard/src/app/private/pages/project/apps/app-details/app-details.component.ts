@@ -26,6 +26,7 @@ export class AppDetailsComponent implements OnInit {
 	isDeletingEndpoint = false;
 	screenWidth = window.innerWidth;
 	appPortalLink!: string;
+	appPortalIframe!: string;
 	endpointSecretKey!: string;
 	appId!: string;
 	appsDetailsItem!: APP;
@@ -90,7 +91,8 @@ export class AppDetailsComponent implements OnInit {
 
 		try {
 			const appTokenResponse = await this.appDetailsService.getAppPortalToken({ appId: this.appsDetailsItem.uid });
-			this.appPortalLink = `<iframe style="width: 100%; height: 100vh; border: none;" src="${appTokenResponse.data.url}"></iframe>`;
+			this.appPortalLink = appTokenResponse.data.url;
+			this.appPortalIframe = `<iframe style="width: 100%; height: 98%; border: none;" frameborder="0" src="${appTokenResponse.data.url}"></iframe>`;
 			if (requestDetail.redirect) window.open(`${appTokenResponse.data.url}`, '_blank');
 			this.loadingAppPotalToken = false;
 		} catch (error) {

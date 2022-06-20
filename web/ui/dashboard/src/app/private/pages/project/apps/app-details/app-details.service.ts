@@ -7,7 +7,7 @@ import { HttpService } from 'src/app/services/http/http.service';
 	providedIn: 'root'
 })
 export class AppDetailsService {
-	projectId: string = this.privateService.activeProjectDetails.uid;
+	projectId: string = this.privateService.activeProjectDetails?.uid;
 
 	constructor(private http: HttpService, private privateService: PrivateService) {}
 
@@ -57,13 +57,14 @@ export class AppDetailsService {
 		});
 	}
 
-	async addNewEndpoint(requestDetails: { appId: string; body: any }): Promise<HTTP_RESPONSE> {
+	async addNewEndpoint(requestDetails: { appId: string; body: any; token?: string }): Promise<HTTP_RESPONSE> {
 		return new Promise(async (resolve, reject) => {
 			try {
 				const response = await this.http.request({
-					url: `${this.privateService.urlFactory('org_project')}/apps/${requestDetails.appId}/endpoints`,
+					url: requestDetails.token ? '/apps/endpoints' : this.privateService.urlFactory('org_project') + `/apps/${requestDetails.appId}/endpoints`,
 					body: requestDetails.body,
-					method: 'post'
+					method: 'post',
+					token: requestDetails?.token
 				});
 
 				return resolve(response);
@@ -73,13 +74,14 @@ export class AppDetailsService {
 		});
 	}
 
-	async editEndpoint(requestDetails: { appId: string; endpointId: string; body: any }): Promise<HTTP_RESPONSE> {
+	async editEndpoint(requestDetails: { appId: string; endpointId: string; body: any; token?: string }): Promise<HTTP_RESPONSE> {
 		return new Promise(async (resolve, reject) => {
 			try {
 				const response = await this.http.request({
-					url: `${this.privateService.urlFactory('org_project')}/apps/${requestDetails.appId}/endpoints/${requestDetails.endpointId}`,
+					url: `${requestDetails.token ? '' : this.privateService.urlFactory('org_project')}/apps/${requestDetails.appId}/endpoints/${requestDetails.endpointId}`,
 					body: requestDetails.body,
-					method: 'put'
+					method: 'put',
+					token: requestDetails?.token
 				});
 
 				return resolve(response);

@@ -1,8 +1,6 @@
-import { Location } from '@angular/common';
 import { Component, HostListener, OnInit } from '@angular/core';
 import { ActivatedRoute } from '@angular/router';
 import { EVENT_DELIVERY, EVENT_DELIVERY_ATTEMPT } from 'src/app/models/event.model';
-import { PrivateService } from 'src/app/private/private.service';
 import { EventDeliveryDetailsService } from './event-delivery-details.service';
 import { GeneralService } from 'src/app/services/general/general.service';
 import { EventsService } from '../events.service';
@@ -20,15 +18,9 @@ export class EventDeliveryDetailsComponent implements OnInit {
 	shouldRenderSmallSize = false;
 	eventDeliveryId = this.route.snapshot.params?.id;
 	screenWidth = window.innerWidth;
+	appPortalToken = this.route.snapshot.params?.token;
 
-	constructor(
-		public privateService: PrivateService,
-		private route: ActivatedRoute,
-		private eventDeliveryDetailsService: EventDeliveryDetailsService,
-		private location: Location,
-		private generalService: GeneralService,
-		private eventsService: EventsService
-	) {}
+	constructor(private route: ActivatedRoute, private eventDeliveryDetailsService: EventDeliveryDetailsService, private generalService: GeneralService, private eventsService: EventsService) {}
 
 	ngOnInit(): void {
 		const eventDeliveryId = this.route.snapshot.params.id;
@@ -40,7 +32,7 @@ export class EventDeliveryDetailsComponent implements OnInit {
 		this.isLoadingDeliveryDetails = true;
 
 		try {
-			const response = await this.eventDeliveryDetailsService.getEventDeliveryDetails(id);
+			const response = await this.eventDeliveryDetailsService.getEventDeliveryDetails(id, this.appPortalToken);
 			this.eventDelsDetails = response.data;
 			this.isLoadingDeliveryDetails = false;
 		} catch (error) {
@@ -54,7 +46,7 @@ export class EventDeliveryDetailsComponent implements OnInit {
 		};
 
 		try {
-			await this.eventsService.forceRetryEvent({ body: payload });
+			await this.eventsService.forceRetryEvent({ body: payload, token: this.appPortalToken });
 			this.getEventDeliveryDetails(this.eventDelsDetails.uid);
 			this.generalService.showNotification({ message: 'Force Retry Request Sent', style: 'success' });
 		} catch (error: any) {
@@ -65,7 +57,7 @@ export class EventDeliveryDetailsComponent implements OnInit {
 
 	async retryEvent(requestDetails: { e: any; eventDeliveryId: string }) {
 		try {
-			await this.eventsService.retryEvent({ eventId: requestDetails.eventDeliveryId });
+			await this.eventsService.retryEvent({ eventId: requestDetails.eventDeliveryId, token: this.appPortalToken });
 			this.getEventDeliveryDetails(this.eventDelsDetails.uid);
 			this.generalService.showNotification({ message: 'Retry Request Sent', style: 'success' });
 		} catch (error: any) {
@@ -78,7 +70,7 @@ export class EventDeliveryDetailsComponent implements OnInit {
 		this.isloadingDeliveryAttempts = true;
 
 		try {
-			const response = await this.eventDeliveryDetailsService.getEventDeliveryAttempts(eventId);
+			const response = await this.eventDeliveryDetailsService.getEventDeliveryAttempts(eventId, this.appPortalToken);
 			this.eventDeliveryAtempt = response.data[response.data.length - 1];
 			this.isloadingDeliveryAttempts = false;
 		} catch (error) {
@@ -104,10 +96,6 @@ export class EventDeliveryDetailsComponent implements OnInit {
 			return '';
 		}
 		return '';
-	}
-
-	goBack() {
-		this.location.back();
 	}
 
 	checkScreenSize() {

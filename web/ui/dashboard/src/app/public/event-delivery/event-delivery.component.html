@@ -1,0 +1,11 @@
+<div class="page">
+	<h1 class="font__12px font__weight-500 flex flex__align-items-center margin-bottom__24px text__uppercase">
+		<a [routerLink]="'/app/' + appPortalToken" class="font__weight-500 pointer-cursor color__primary">Events</a>
+		<svg width="16" height="16" class="margin-x__4px">
+			<use xlink:href="#arrow-right-icon"></use>
+		</svg>
+		<span class="font__weight-500">Event Delivery</span>
+	</h1>
+
+	<app-event-delivery-details></app-event-delivery-details>
+</div>

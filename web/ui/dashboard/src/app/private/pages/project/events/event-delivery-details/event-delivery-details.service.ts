@@ -9,12 +9,13 @@ import { HttpService } from 'src/app/services/http/http.service';
 export class EventDeliveryDetailsService {
 	constructor(private http: HttpService, private privateService: PrivateService) {}
 
-	async getEventDeliveryDetails(eventId: string): Promise<HTTP_RESPONSE> {
+	async getEventDeliveryDetails(eventId: string, token?: string): Promise<HTTP_RESPONSE> {
 		return new Promise(async (resolve, reject) => {
 			try {
 				const response = await this.http.request({
-					url: `${this.privateService.urlFactory('org_project')}/eventdeliveries/${eventId}`,
-					method: 'get'
+					url: `${token ? '' : this.privateService.urlFactory('org_project')}/eventdeliveries/${eventId}`,
+					method: 'get',
+					token
 				});
 
 				return resolve(response);
@@ -24,12 +25,13 @@ export class EventDeliveryDetailsService {
 		});
 	}
 
-	async getEventDeliveryAttempts(eventId: string): Promise<HTTP_RESPONSE> {
+	async getEventDeliveryAttempts(eventId: string, token?: string): Promise<HTTP_RESPONSE> {
 		return new Promise(async (resolve, reject) => {
 			try {
 				const response = await this.http.request({
-					url: `${this.privateService.urlFactory('org_project')}/eventdeliveries/${eventId}/deliveryattempts`,
-					method: 'get'
+					url: `${token ? '' : this.privateService.urlFactory('org_project')}/eventdeliveries/${eventId}/deliveryattempts`,
+					method: 'get',
+					token
 				});
 
 				return resolve(response);

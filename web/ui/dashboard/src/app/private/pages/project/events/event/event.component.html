@@ -14,7 +14,7 @@
 
 				<app-time-filter class="margin-left__14px" (applyFilter)="eventsTimeFilterData = $event; getEvents({ addToURL: true })" #eventsTimeFilter></app-time-filter>
 
-				<div class="dropdown margin-left__14px">
+				<div class="dropdown margin-left__14px" [hidden]="appPortalToken">
 					<button class="button button__filter button--has-icon icon-left" [ngClass]="{ active: !!eventApp }" (click)="showOverlay = true; showEventsAppsDropdown = !showEventsAppsDropdown">
 						<img src="/assets/img/apps-icon-grey.svg" alt="apps filter icon" />
 						<span>All Apps</span>
