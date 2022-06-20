@@ -33,7 +33,7 @@ func NewSubscriptionService(subRepo datastore.SubscriptionRepository, appRepo da
 	return &SubcriptionService{subRepo: subRepo, sourceRepo: sourceRepo, appRepo: appRepo}
 }
 
-func (s *SubcriptionService) CreateSubscription(ctx context.Context, groupID string, newSubscription *models.Subscription) (*datastore.Subscription, error) {
+func (s *SubcriptionService) CreateSubscription(ctx context.Context, group *datastore.Group, newSubscription *models.Subscription) (*datastore.Subscription, error) {
 	if err := util.Validate(newSubscription); err != nil {
 		log.WithError(err).Error(ErrValidateSubscriptionError.Error())
 		return nil, NewServiceError(http.StatusBadRequest, err)
@@ -45,7 +45,7 @@ func (s *SubcriptionService) CreateSubscription(ctx context.Context, groupID str
 		return nil, NewServiceError(http.StatusBadRequest, errors.New("failed to find application by id"))
 	}
 
-	if app.GroupID != groupID {
+	if app.GroupID != group.UID {
 		return nil, NewServiceError(http.StatusUnauthorized, errors.New("app does not belong to group"))
 	}
 
@@ -55,8 +55,16 @@ func (s *SubcriptionService) CreateSubscription(ctx context.Context, groupID str
 		return nil, NewServiceError(http.StatusBadRequest, err)
 	}
 
+	if group.Type == datastore.IncomingGroup {
+		_, err = s.sourceRepo.FindSourceByID(ctx, group.UID, newSubscription.SourceID)
+		if err != nil {
+			log.WithError(err).Error("failed to find source by id")
+			return nil, NewServiceError(http.StatusBadRequest, errors.New("failed to find source by id"))
+		}
+	}
+
 	subscription := &datastore.Subscription{
-		GroupID:    groupID,
+		GroupID:    group.UID,
 		UID:        uuid.New().String(),
 		Name:       newSubscription.Name,
 		Type:       newSubscription.Type,
@@ -75,7 +83,7 @@ func (s *SubcriptionService) CreateSubscription(ctx context.Context, groupID str
 		DocumentStatus: datastore.ActiveDocumentStatus,
 	}
 
-	err = s.subRepo.CreateSubscription(ctx, groupID, subscription)
+	err = s.subRepo.CreateSubscription(ctx, group.UID, subscription)
 	if err != nil {
 		log.WithError(err).Error(ErrCreateSubscriptionError.Error())
 		return nil, NewServiceError(http.StatusBadRequest, ErrCreateSubscriptionError)
