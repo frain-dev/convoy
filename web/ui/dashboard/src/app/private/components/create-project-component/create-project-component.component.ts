@@ -95,13 +95,14 @@ export class CreateProjectComponent implements OnInit {
 
 		this.isCreatingProject = true;
 
-		//  Please review, throwing an error
-		// const [digits, word] = this.projectForm.value.config.strategy.duration.match(/\D+|\d+/g);
-		// word === 's' ? (this.projectForm.value.config.strategy.duration = parseInt(digits) * 1000) : (this.projectForm.value.config.strategy.duration = parseInt(digits) * 1000000);
 		try {
 			const response = await this.createProjectService.updateProject(this.projectForm.value);
-			this.generalService.showNotification({ message: 'Project updated successfully!', style: 'success' });
-			this.onAction.emit(response.data);
+			if (response.status === true) {
+				this.generalService.showNotification({ message: 'Project updated successfully!', style: 'success' });
+				this.onAction.emit(response.data);
+			} else {
+				this.generalService.showNotification({ message: response?.error?.message, style: 'error' });
+			}
 			this.isCreatingProject = false;
 		} catch (error) {
 			this.isCreatingProject = false;
