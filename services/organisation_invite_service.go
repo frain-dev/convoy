@@ -162,6 +162,10 @@ func (ois *OrganisationInviteService) ProcessOrganisationMemberInvite(ctx contex
 			return NewServiceError(http.StatusBadRequest, errors.New("failed to find user by email"))
 		}
 	} else { // user was found
+		if newUser.Password == "" {
+			return NewServiceError(http.StatusBadRequest, errors.New("empty user password"))
+		}
+
 		// it's an existing user, so we require the password to match
 		p := datastore.Password{Plaintext: newUser.Password, Hash: []byte(user.Password)}
 		match, err := p.Matches()

@@ -428,6 +428,51 @@ func TestOrganisationInviteService_ProcessOrganisationMemberInvite(t *testing.T)
 			wantErrMsg:  "failed to find user by email",
 		},
 		{
+			name: "should_error_for_empty_user_password",
+			args: args{
+				ctx:      ctx,
+				token:    "abcdef",
+				accepted: true,
+				newUser:  &models.User{Password: ""},
+			},
+			dbFn: func(ois *OrganisationInviteService) {
+				oir, _ := ois.orgInviteRepo.(*mocks.MockOrganisationInviteRepository)
+				oir.EXPECT().FetchOrganisationInviteByToken(gomock.Any(), "abcdef").
+					Times(1).Return(
+					&datastore.OrganisationInvite{
+						OrganisationID: "123ab",
+						Status:         datastore.InviteStatusPending,
+						ExpiresAt:      expiry,
+						InviteeEmail:   "test@email.com",
+						Role: auth.Role{
+							Type:   auth.RoleAdmin,
+							Groups: []string{"ref"},
+							Apps:   nil,
+						},
+					},
+					nil,
+				)
+
+				p := datastore.Password{Plaintext: "password"}
+				err := p.GenerateHash()
+				if err != nil {
+					log.WithError(err).Fatal("failed to generate password hash")
+				}
+
+				u, _ := ois.userRepo.(*mocks.MockUserRepository)
+				u.EXPECT().FindUserByEmail(gomock.Any(), "test@email.com").Times(1).Return(
+					&datastore.User{
+						UID:      "user-123",
+						Password: string(p.Hash),
+					},
+					nil,
+				)
+			},
+			wantErr:     true,
+			wantErrCode: http.StatusBadRequest,
+			wantErrMsg:  "empty user password",
+		},
+		{
 			name: "should_process_and_accept_organisation_member_invite_for_new_user",
 			args: args{
 				ctx:      ctx,
