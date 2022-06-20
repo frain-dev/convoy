@@ -161,6 +161,17 @@ func (ois *OrganisationInviteService) ProcessOrganisationMemberInvite(ctx contex
 			log.WithError(err).Error("failed to find user by email")
 			return NewServiceError(http.StatusBadRequest, errors.New("failed to find user by email"))
 		}
+	} else { // user was found
+		// it's an existing user, so we require the password to match
+		p := datastore.Password{Plaintext: newUser.Password, Hash: []byte(user.Password)}
+		match, err := p.Matches()
+		if err != nil {
+			return NewServiceError(http.StatusInternalServerError, err)
+		}
+
+		if !match {
+			return NewServiceError(http.StatusUnauthorized, errors.New("invalid password"))
+		}
 	}
 
 	org, err := ois.orgRepo.FetchOrganisationByID(ctx, iv.OrganisationID)

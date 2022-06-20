@@ -5,6 +5,12 @@ package server
 
 import (
 	"fmt"
+	"net/http"
+	"net/http/httptest"
+	"strings"
+	"testing"
+	"time"
+
 	"github.com/frain-dev/convoy/auth"
 	"github.com/frain-dev/convoy/config"
 	"github.com/frain-dev/convoy/datastore"
@@ -14,11 +20,6 @@ import (
 	"github.com/stretchr/testify/require"
 	"github.com/stretchr/testify/suite"
 	"go.mongodb.org/mongo-driver/bson/primitive"
-	"net/http"
-	"net/http/httptest"
-	"strings"
-	"testing"
-	"time"
 )
 
 type OrganisationInviteIntegrationTestSuite struct {
@@ -340,7 +341,8 @@ func (s *OrganisationInviteIntegrationTestSuite) Test_FindUserByInviteToken_Exis
 
 	// Arrange.
 	url := fmt.Sprintf("/ui/users/token?token=%s", iv.Token)
-	req := createRequest(http.MethodGet, url, "", nil)
+	body := strings.NewReader(`{"password":"password"}`)
+	req := createRequest(http.MethodGet, url, "", body)
 
 	w := httptest.NewRecorder()
 

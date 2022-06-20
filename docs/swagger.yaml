@@ -454,8 +454,6 @@ definitions:
       last_name:
         type: string
       reset_password_expires_at:
-        type: integer
-      reset_password_token:
         type: string
       role:
         $ref: '#/definitions/auth.Role'

@@ -12,6 +12,7 @@ import (
 	"github.com/frain-dev/convoy/mocks"
 	"github.com/frain-dev/convoy/server/models"
 	"github.com/golang/mock/gomock"
+	log "github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/require"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 )
@@ -192,7 +193,7 @@ func TestOrganisationInviteService_ProcessOrganisationMemberInvite(t *testing.T)
 				ctx:      ctx,
 				token:    "abcdef",
 				accepted: true,
-				newUser:  nil,
+				newUser:  &models.User{Password: "password"},
 			},
 			dbFn: func(ois *OrganisationInviteService) {
 				oir, _ := ois.orgInviteRepo.(*mocks.MockOrganisationInviteRepository)
@@ -223,10 +224,17 @@ func TestOrganisationInviteService_ProcessOrganisationMemberInvite(t *testing.T)
 					},
 				}).Times(1).Return(nil)
 
+				p := datastore.Password{Plaintext: "password"}
+				err := p.GenerateHash()
+				if err != nil {
+					log.WithError(err).Fatal("failed to generate password hash")
+				}
+
 				u, _ := ois.userRepo.(*mocks.MockUserRepository)
 				u.EXPECT().FindUserByEmail(gomock.Any(), "test@email.com").Times(1).Return(
 					&datastore.User{
-						UID: "user-123",
+						UID:      "user-123",
+						Password: string(p.Hash),
 					},
 					nil,
 				)
@@ -598,7 +606,7 @@ func TestOrganisationInviteService_ProcessOrganisationMemberInvite(t *testing.T)
 				ctx:      ctx,
 				token:    "abcdef",
 				accepted: true,
-				newUser:  nil,
+				newUser:  &models.User{Password: "password"},
 			},
 			dbFn: func(ois *OrganisationInviteService) {
 				oir, _ := ois.orgInviteRepo.(*mocks.MockOrganisationInviteRepository)
@@ -618,10 +626,17 @@ func TestOrganisationInviteService_ProcessOrganisationMemberInvite(t *testing.T)
 					nil,
 				)
 
+				p := datastore.Password{Plaintext: "password"}
+				err := p.GenerateHash()
+				if err != nil {
+					log.WithError(err).Fatal("failed to generate password hash")
+				}
+
 				u, _ := ois.userRepo.(*mocks.MockUserRepository)
 				u.EXPECT().FindUserByEmail(gomock.Any(), "test@email.com").Times(1).Return(
 					&datastore.User{
-						UID: "user-123",
+						UID:      "user-123",
+						Password: string(p.Hash),
 					},
 					nil,
 				)
@@ -640,7 +655,7 @@ func TestOrganisationInviteService_ProcessOrganisationMemberInvite(t *testing.T)
 				ctx:      ctx,
 				token:    "abcdef",
 				accepted: true,
-				newUser:  nil,
+				newUser:  &models.User{Password: "password"},
 			},
 			dbFn: func(ois *OrganisationInviteService) {
 				oir, _ := ois.orgInviteRepo.(*mocks.MockOrganisationInviteRepository)
@@ -660,10 +675,17 @@ func TestOrganisationInviteService_ProcessOrganisationMemberInvite(t *testing.T)
 					nil,
 				)
 
+				p := datastore.Password{Plaintext: "password"}
+				err := p.GenerateHash()
+				if err != nil {
+					log.WithError(err).Fatal("failed to generate password hash")
+				}
+
 				u, _ := ois.userRepo.(*mocks.MockUserRepository)
 				u.EXPECT().FindUserByEmail(gomock.Any(), "test@email.com").Times(1).Return(
 					&datastore.User{
-						UID: "user-123",
+						UID:      "user-123",
+						Password: string(p.Hash),
 					},
 					nil,
 				)
@@ -688,7 +710,7 @@ func TestOrganisationInviteService_ProcessOrganisationMemberInvite(t *testing.T)
 				ctx:      ctx,
 				token:    "abcdef",
 				accepted: true,
-				newUser:  nil,
+				newUser:  &models.User{Password: "password"},
 			},
 			dbFn: func(ois *OrganisationInviteService) {
 				oir, _ := ois.orgInviteRepo.(*mocks.MockOrganisationInviteRepository)
@@ -719,10 +741,17 @@ func TestOrganisationInviteService_ProcessOrganisationMemberInvite(t *testing.T)
 					},
 				}).Times(1).Return(errors.New("failed"))
 
+				p := datastore.Password{Plaintext: "password"}
+				err := p.GenerateHash()
+				if err != nil {
+					log.WithError(err).Fatal("failed to generate password hash")
+				}
+
 				u, _ := ois.userRepo.(*mocks.MockUserRepository)
 				u.EXPECT().FindUserByEmail(gomock.Any(), "test@email.com").Times(1).Return(
 					&datastore.User{
-						UID: "user-123",
+						UID:      "user-123",
+						Password: string(p.Hash),
 					},
 					nil,
 				)
