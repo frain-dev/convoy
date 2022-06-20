@@ -488,11 +488,11 @@ type User struct {
 	Email                  string             `json:"email" bson:"email"`
 	Password               string             `json:"-" bson:"password"`
 	Role                   auth.Role          `json:"role" bson:"role"`
-	ResetPasswordToken     string             `json:"reset_password_token" bson:"reset_password_token"`
+	ResetPasswordToken     string             `json:"-" bson:"reset_password_token"`
 	CreatedAt              primitive.DateTime `json:"created_at,omitempty" bson:"created_at,omitempty" swaggertype:"string"`
 	UpdatedAt              primitive.DateTime `json:"updated_at,omitempty" bson:"updated_at,omitempty" swaggertype:"string"`
 	DeletedAt              primitive.DateTime `json:"deleted_at,omitempty" bson:"deleted_at,omitempty" swaggertype:"string"`
-	ResetPasswordExpiresAt primitive.DateTime `json:"reset_password_expires_at,omitempty" bson:"reset_password_expires_at,omitempty"`
+	ResetPasswordExpiresAt primitive.DateTime `json:"reset_password_expires_at,omitempty" bson:"reset_password_expires_at,omitempty" swaggertype:"string"`
 
 	DocumentStatus DocumentStatus `json:"-" bson:"document_status"`
 }

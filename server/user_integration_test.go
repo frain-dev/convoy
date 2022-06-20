@@ -441,10 +441,9 @@ func (u *UserIntegrationTestSuite) Test_Forgot_Password_Valid_Token() {
 	//Reset password
 	url = fmt.Sprintf("/ui/users/reset-password?token=%s", dbUser.ResetPasswordToken)
 	bodyStr = fmt.Sprintf(`{
-		"email": "%s",
 		"password": "%s",
 		"password_confirmation": "%s"
-	}`, user.Email, newPassword, newPassword)
+	}`, newPassword, newPassword)
 
 	req = httptest.NewRequest(http.MethodPost, url, serialize(bodyStr))
 	req.Header.Add("Content-Type", "application/json")
@@ -487,10 +486,9 @@ func (u *UserIntegrationTestSuite) Test_Forgot_Password_Invalid_Token() {
 	//Reset password
 	url = fmt.Sprintf("/ui/users/reset-password?token=%s", "fake-token")
 	bodyStr = fmt.Sprintf(`{
-		"email": "%s",
 		"password": "%s",
 		"password_confirmation": "%s"
-	}`, user.Email, newPassword, newPassword)
+	}`, newPassword, newPassword)
 
 	req = httptest.NewRequest(http.MethodPost, url, serialize(bodyStr))
 	req.Header.Add("Content-Type", "application/json")

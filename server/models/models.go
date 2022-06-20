@@ -272,7 +272,6 @@ type ForgotPassword struct {
 }
 
 type ResetPassword struct {
-	Email                string `json:"email" valid:"required~please provide an email,email"`
 	Password             string `json:"password" valid:"required~please provide the password field"`
 	PasswordConfirmation string `json:"password_confirmation" valid:"required~please provide the password confirmation field"`
 }

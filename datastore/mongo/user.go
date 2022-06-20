@@ -7,6 +7,7 @@ import (
 
 	"github.com/frain-dev/convoy/datastore"
 	pager "github.com/gobeam/mongo-go-pagination"
+	"github.com/google/uuid"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
@@ -26,6 +27,7 @@ func NewUserRepo(db *mongo.Database) datastore.UserRepository {
 
 func (u *userRepo) CreateUser(ctx context.Context, user *datastore.User) error {
 	user.ID = primitive.NewObjectID()
+	user.ResetPasswordToken = uuid.NewString()
 
 	_, err := u.client.InsertOne(ctx, user)
 	return err
@@ -93,4 +95,18 @@ func (u *userRepo) UpdateUser(ctx context.Context, user *datastore.User) error {
 
 	_, err := u.client.UpdateOne(ctx, filter, update)
 	return err
+}
+
+func (u *userRepo) FindUserByToken(ctx context.Context, token string) (*datastore.User, error) {
+	user := &datastore.User{}
+
+	filter := bson.M{"reset_password_token": token, "document_status": datastore.ActiveDocumentStatus}
+
+	err := u.client.FindOne(ctx, filter).Decode(&user)
+
+	if errors.Is(err, mongo.ErrNoDocuments) {
+		return user, datastore.ErrUserNotFound
+	}
+
+	return user, nil
 }
