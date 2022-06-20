@@ -1,6 +1,6 @@
-<!-- add event modal  -->
+<!-- send event modal  -->
 <div class="modal--head">
-    <h2>Add Event</h2>
+    <h2>Send Event</h2>
     <a (click)="cancel()">
         <img src="/assets/img/modal-close-icon.svg" alt="close icon" />
     </a>
@@ -51,5 +51,5 @@
 </div>
 <div class="modal--footer modal--footer__with-shadow">
     <button class="button button__white margin-right__24px" (click)="cancel()">Discard</button>
-    <button class="button button__primary button--full-100" [disabled]="isSendingNewEvent" (click)="sendNewEvent()">{{ isSendingNewEvent ? 'Adding Event..' : 'Add Event' }}</button>
+    <button class="button button__primary button--full-100" [disabled]="isSendingNewEvent" (click)="sendNewEvent()">{{ isSendingNewEvent ? 'Sending Event..' : 'Send Event' }}</button>
 </div>

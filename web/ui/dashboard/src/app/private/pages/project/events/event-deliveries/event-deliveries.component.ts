@@ -1,5 +1,5 @@
 import { DatePipe } from '@angular/common';
-import { Component, ElementRef, EventEmitter, Input, OnInit, Output, ViewChild } from '@angular/core';
+import { Component, ElementRef, EventEmitter, Input, OnInit, Output, SimpleChanges, ViewChild } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
 import { format } from 'date-fns';
 import { fromEvent, Observable } from 'rxjs';
@@ -66,6 +66,12 @@ export class EventDeliveriesComponent implements OnInit {
 	ngOnInit() {
 		this.getFiltersFromURL();
 		this.getEventDeliveries();
+	}
+
+	ngOnChanges(changes: SimpleChanges) {
+		const prevValue = changes?.eventDeliveryFilteredByEventId.previousValue
+		const currentValue = changes?.eventDeliveryFilteredByEventId.currentValue
+		if(currentValue !== prevValue) this.getEventDeliveries();
 	}
 
 	getFiltersFromURL() {

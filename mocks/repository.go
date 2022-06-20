@@ -1397,6 +1397,21 @@ func (mr *MockUserRepositoryMockRecorder) FindUserByID(arg0, arg1 interface{}) *
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "FindUserByID", reflect.TypeOf((*MockUserRepository)(nil).FindUserByID), arg0, arg1)
 }
 
+// FindUserByToken mocks base method.
+func (m *MockUserRepository) FindUserByToken(arg0 context.Context, arg1 string) (*datastore.User, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "FindUserByToken", arg0, arg1)
+	ret0, _ := ret[0].(*datastore.User)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// FindUserByToken indicates an expected call of FindUserByToken.
+func (mr *MockUserRepositoryMockRecorder) FindUserByToken(arg0, arg1 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "FindUserByToken", reflect.TypeOf((*MockUserRepository)(nil).FindUserByToken), arg0, arg1)
+}
+
 // LoadUsersPaged mocks base method.
 func (m *MockUserRepository) LoadUsersPaged(arg0 context.Context, arg1 datastore.Pageable) ([]datastore.User, datastore.PaginationData, error) {
 	m.ctrl.T.Helper()

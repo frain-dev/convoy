@@ -114,6 +114,7 @@ type UserRepository interface {
 	UpdateUser(ctx context.Context, user *User) error
 	FindUserByEmail(context.Context, string) (*User, error)
 	FindUserByID(context.Context, string) (*User, error)
+	FindUserByToken(context.Context, string) (*User, error)
 	LoadUsersPaged(context.Context, Pageable) ([]User, PaginationData, error)
 }
 

@@ -18,6 +18,7 @@ export class EventDeliveryDetailsComponent implements OnInit {
 	isLoadingDeliveryDetails = false;
 	isloadingDeliveryAttempts = false;
 	shouldRenderSmallSize = false;
+	eventDeliveryId = this.route.snapshot.params?.id;
 	screenWidth = window.innerWidth;
 
 	constructor(

@@ -1,5 +1,6 @@
 import { Component, EventEmitter, Input, OnInit, Output } from '@angular/core';
 import { FormArray, FormBuilder, FormControl, FormGroup, Validators } from '@angular/forms';
+import { ActivatedRoute } from '@angular/router';
 import { APP } from 'src/app/models/app.model';
 import { GeneralService } from 'src/app/services/general/general.service';
 import { CreateAppService } from './create-app.service';
@@ -11,12 +12,13 @@ import { CreateAppService } from './create-app.service';
 })
 export class CreateAppComponent implements OnInit {
 	@Input() editAppMode: boolean = false;
-	@Input() appsDetailsItem!: APP;
 
 	@Output() discardApp = new EventEmitter<any>();
 	@Output() createApp = new EventEmitter<any>();
-	appUid!: string;
-	isSavingApp: boolean = false;
+	appUid = this.route.snapshot.params.id;
+	isSavingApp = false;
+	isLoadingAppDetails = false;
+	appsDetailsItem!: APP;
 	addNewAppForm: FormGroup = this.formBuilder.group({
 		name: ['', Validators.required],
 		support_email: [''],
@@ -25,13 +27,11 @@ export class CreateAppComponent implements OnInit {
 		is_disabled: [false],
 		endpoints: this.formBuilder.array([])
 	});
-	constructor(private formBuilder: FormBuilder, private createAppService: CreateAppService, private generalService: GeneralService) {}
+	constructor(private formBuilder: FormBuilder, private createAppService: CreateAppService, private generalService: GeneralService, private route: ActivatedRoute) {}
 
-	ngOnInit(): void {
-		if (this.appsDetailsItem && this.editAppMode) {
-			this.updateForm();
-		}
-		this.endpoints.push(this.newEndpoint());
+	async ngOnInit() {
+		if(!this.editAppMode) this.endpoints.push(this.newEndpoint());
+		if (this.editAppMode) await this.getAppDetails();
 	}
 
 	get endpoints(): FormArray {
@@ -60,15 +60,9 @@ export class CreateAppComponent implements OnInit {
 		this.endpoints.removeAt(i);
 	}
 
-	updateForm() {
-		this.addNewAppForm.patchValue({
-			name: this.appsDetailsItem?.name,
-			support_email: this.appsDetailsItem?.support_email,
-			is_disabled: this.appsDetailsItem?.is_disabled
-		});
-	}
-
 	async saveApp() {
+		if (this.editAppMode) delete this.addNewAppForm.value.endpoints;
+
 		if (this.addNewAppForm.invalid) {
 			(<any>Object).values(this.addNewAppForm.controls).forEach((control: FormControl) => {
 				control?.markAsTouched();
@@ -119,6 +113,19 @@ export class CreateAppComponent implements OnInit {
 
 	saveNewEndpoints(requests: any[]) {
 		Promise.all(requests);
+	}
+
+	async getAppDetails() {
+		this.isLoadingAppDetails = true;
+
+		try {
+			const response = await this.createAppService.getApp(this.appUid);
+			this.appsDetailsItem = response.data;
+			this.addNewAppForm.patchValue(response.data);
+			this.isLoadingAppDetails = false;
+		} catch {
+			this.isLoadingAppDetails = false;
+		}
 	}
 
 	closeAppInstance() {
