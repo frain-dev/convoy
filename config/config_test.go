@@ -124,7 +124,7 @@ func TestLoadConfig(t *testing.T) {
 				path: "./testdata/Config/valid-convoy.json",
 			},
 			wantCfg: Configuration{
-				Host: "localhost",
+				Host: "localhost:80",
 				Database: DatabaseConfiguration{
 					Dsn: "mongodb://inside-config-file",
 				},
@@ -152,7 +152,7 @@ func TestLoadConfig(t *testing.T) {
 				path: "./testdata/Config/too-large-max-response-size-convoy.json",
 			},
 			wantCfg: Configuration{
-				Host: "localhost",
+				Host: "localhost:80",
 				Database: DatabaseConfiguration{
 					Dsn: "mongodb://inside-config-file",
 				},
@@ -180,7 +180,7 @@ func TestLoadConfig(t *testing.T) {
 				path: "./testdata/Config/zero-max-response-size-convoy.json",
 			},
 			wantCfg: Configuration{
-				Host: "localhost",
+				Host: "localhost:80",
 				Database: DatabaseConfiguration{
 					Dsn: "mongodb://inside-config-file",
 				},
@@ -208,7 +208,7 @@ func TestLoadConfig(t *testing.T) {
 				path: "./testdata/Config/zero-groups-for-superuser.json",
 			},
 			wantCfg: Configuration{
-				Host: "localhost",
+				Host: "localhost:80",
 				Database: DatabaseConfiguration{
 					Dsn: "mongodb://inside-config-file",
 				},

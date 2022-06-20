@@ -2,9 +2,7 @@
 	<div class="dashboard--header--container">
 		<div class="flex flex__align-items-center">
 			<a target="_blank" href="https://getconvoy.io" rel="noreferrer">
-
 				<img src="/assets/img/logo.svg" alt="convoy logo" class="logo" />
-
 			</a>
 
 			<nav>
@@ -25,7 +23,6 @@
 				<span class="font__weight-400 color__primary">Go to docs</span>
 			</a>
 
-
 			<div class="dropdown" *ngIf="organisations?.length">
 				<button class="button__more with-padding button--has-icon icon-left" (click)="showOrgDropdown = !showOrgDropdown; showOverlay = true">
 					<div class="badge">
@@ -38,7 +35,7 @@
 				<div [ngClass]="{ show: showOrgDropdown }" class="dropdown__menu dropdown__menu__nav larger">
 					<div class="title">Your organisations ({{ organisations?.length || 0 }})</div>
 					<ul *ngIf="organisations?.length">
-						<li *ngFor="let organisation of organisations" (click)="selectOrganisation(organisation)">
+						<button class="button button__clear" *ngFor="let organisation of organisations" (click)="selectOrganisation(organisation)">
 							<div class="flex flex__justify-between padding-x__16px padding-bottom__16px">
 								<div class="badge badge__dark">
 									<div class="icon">{{ organisation?.name?.slice(0, 1) }}</div>
@@ -46,11 +43,10 @@
 								</div>
 								<img *ngIf="organisation.uid == userOrganization?.uid" src="/assets/img/check-icon-primary.svg" alt="check icon" />
 							</div>
-						</li>
+						</button>
 					</ul>
 					<div class="dropdown--footer">
 						<button class="base-button" (click)="showAddOrganisationModal = true; showOrgDropdown = false">
-
 							<img src="/assets/img/add-circlar-icon.svg" alt="add icon" />
 							Add another Organization
 						</button>
@@ -73,9 +69,7 @@
 							<p class="color__grey padding-left__16px">My account</p>
 						</li>
 						<li *ngIf="organisations?.length" routerLink="/organisation-settings" (click)="showMoreDropdown = false; showOverlay = false">
-
 							<p class="color__grey padding-left__16px">Organisation settings</p>
-
 						</li>
 					</ul>
 					<div class="border__top padding-x__32px padding-bottom__24px padding-top__16px">
@@ -90,7 +84,7 @@
 
 <div class="_overlay z-index--2" *ngIf="showAddOrganisationModal" (click)="showAddOrganisationModal = false"></div>
 <div class="modal modal__right z-index--3" *ngIf="showAddOrganisationModal">
-	<app-create-organisation (closeModal)="closeAddOrganisationModal()"></app-create-organisation>
+	<app-create-organisation (closeModal)="closeAddOrganisationModal($event)"></app-create-organisation>
 </div>
 
 <router-outlet></router-outlet>

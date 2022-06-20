@@ -245,7 +245,7 @@ func (u *UserService) sendPasswordResetEmail(baseURL string, token string, user 
 		Email:             user.Email,
 		EmailTemplateName: email.TemplateResetPassword.String(),
 		Subject:           "Convoy Password Reset",
-		PasswordResetURL:  fmt.Sprintf("%s/ui/user/reset-password?token=%s", baseURL, token),
+		PasswordResetURL:  fmt.Sprintf("%s/reset-password?token=%s", baseURL, token),
 		RecipientName:     user.FirstName,
 		ExpiresAt:         user.ResetPasswordExpiresAt.Time().String(),
 	}
@@ -270,19 +270,16 @@ func (u *UserService) sendPasswordResetEmail(baseURL string, token string, user 
 }
 
 func (u *UserService) ResetPassword(ctx context.Context, token string, data *models.ResetPassword) (*datastore.User, error) {
-	user, err := u.userRepo.FindUserByEmail(ctx, data.Email)
+	user, err := u.userRepo.FindUserByToken(ctx, token)
 	if err != nil {
 		if err == datastore.ErrUserNotFound {
-			return nil, NewServiceError(http.StatusUnauthorized, errors.New("invalid username"))
+			return nil, NewServiceError(http.StatusBadRequest, errors.New("invalid password reset token"))
 		}
 		return nil, NewServiceError(http.StatusInternalServerError, err)
 	}
 	now := primitive.NewDateTimeFromTime(time.Now())
 	if now > user.ResetPasswordExpiresAt {
 		return nil, NewServiceError(http.StatusBadRequest, errors.New("password reset token has expired"))
-	}
-	if token != user.ResetPasswordToken {
-		return nil, NewServiceError(http.StatusBadRequest, errors.New("invalid password reset token"))
 	}
 	if data.Password != data.PasswordConfirmation {
 		return nil, NewServiceError(http.StatusBadRequest, errors.New("password confirmation doesn't match password"))

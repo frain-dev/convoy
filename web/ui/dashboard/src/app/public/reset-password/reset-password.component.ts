@@ -1,5 +1,5 @@
 import { Component, OnInit } from '@angular/core';
-import { FormBuilder, FormGroup, Validators } from '@angular/forms';
+import { FormBuilder, FormControl, FormGroup, Validators } from '@angular/forms';
 import { ActivatedRoute } from '@angular/router';
 import { GeneralService } from 'src/app/services/general/general.service';
 import { ResetPasswordService } from './reset-password.service';
@@ -28,6 +28,13 @@ export class ResetPasswordComponent implements OnInit {
 	}
 
 	async resetPassword() {
+		if (this.resetPasswordForm.invalid) {
+			(<any>Object).values(this.resetPasswordForm.controls).forEach((control: FormControl) => {
+				control?.markAsTouched();
+			});
+			return;
+		}
+		
 		this.resetingPassword = true;
 		try {
 			const response = await this.resetPasswordService.resetPassword({ token: this.token, body: this.resetPasswordForm.value });

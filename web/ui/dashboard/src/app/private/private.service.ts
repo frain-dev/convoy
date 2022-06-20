@@ -9,20 +9,23 @@ import { ORGANIZATION_DATA } from '../models/organisation.model';
 })
 export class PrivateService {
 	activeProjectDetails!: GROUP;
+	organisationDetails!: ORGANIZATION_DATA;
 
 	constructor(private http: HttpService) {}
 
 	getOrganisation(): ORGANIZATION_DATA {
+		if (this.organisationDetails) return this.organisationDetails;
 		let org = localStorage.getItem('CONVOY_ORG');
 		return org ? JSON.parse(org) : null;
 	}
 
 	urlFactory(level: 'org' | 'org_project'): string {
+		const orgId = this.getOrganisation().uid;
 		switch (level) {
 			case 'org':
-				return `/organisations/${this.getOrganisation().uid}`;
+				return `/organisations/${orgId}`;
 			case 'org_project':
-				return `/organisations/${this.getOrganisation().uid}/groups/${this.activeProjectDetails.uid}`;
+				return `/organisations/${orgId}/groups/${this.activeProjectDetails.uid}`;
 			default:
 				return '';
 		}

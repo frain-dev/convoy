@@ -481,12 +481,12 @@ func SetServerConfigDefaults(c *Configuration) error {
 		c.Environment = DevelopmentEnvironment
 	}
 
-	if c.Host == "" {
-		c.Host = "localhost"
-	}
-
 	if c.Server.HTTP.Port == 0 {
 		return errors.New("http port cannot be zero")
+	}
+
+	if c.Host == "" {
+		c.Host = fmt.Sprint("localhost:", c.Server.HTTP.Port)
 	}
 
 	err := ensureSSL(c.Server)

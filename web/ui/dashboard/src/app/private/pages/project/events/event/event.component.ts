@@ -196,13 +196,10 @@ export class EventComponent implements OnInit {
 				appId: this.eventApp || '',
 				query: this.eventsSearchString || ''
 			});
-
 			this.events = eventsResponse.data;
-			if (this.events?.content.length > 0) {
-				this.eventsDetailsItem = this.events?.content[0];
-				this.getEventDeliveriesForSidebar(this.eventsDetailsItem.uid);
-				this.displayedEvents = await this.generalService.setContentDisplayed(eventsResponse.data.content);
-			}
+			this.displayedEvents = await this.generalService.setContentDisplayed(eventsResponse.data.content);
+			this.eventsDetailsItem = this.events?.content[0];
+			this.getEventDeliveriesForSidebar(this.eventsDetailsItem.uid);
 
 			this.pushEvents.emit(this.events);
 			this.isloadingEvents = false;
