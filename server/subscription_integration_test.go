@@ -127,7 +127,7 @@ func (s *SubscriptionIntegrationTestSuite) Test_CreateSubscription_IncomingGroup
 		"name": "sub-1",
 		"type": "incoming",
 		"app_id": "%s",
-        "source_id":%s,
+        "source_id":"%s",
 		"group_id": "%s",
 		"endpoint_id": "%s",
 		"alert_config": {
@@ -145,7 +145,7 @@ func (s *SubscriptionIntegrationTestSuite) Test_CreateSubscription_IncomingGroup
 				"user.updated"
 			]
 		}
-	}`, source.UID, app.UID, group.UID, endpoint.UID)
+	}`, app.UID, source.UID, group.UID, endpoint.UID)
 
 	body := serialize(bodyStr)
 	req := createRequest(http.MethodPost, "/api/v1/subscriptions", apiKey, body)
@@ -161,8 +161,8 @@ func (s *SubscriptionIntegrationTestSuite) Test_CreateSubscription_IncomingGroup
 	parseResponse(s.T(), w.Result(), &subscription)
 
 	dbSub, err := s.DB.SubRepo().FindSubscriptionByID(context.Background(), group.UID, subscription.UID)
-
 	require.NoError(s.T(), err)
+
 	require.NotEmpty(s.T(), subscription.UID)
 	require.Equal(s.T(), dbSub.Name, subscription.Name)
 	require.Equal(s.T(), len(dbSub.FilterConfig.EventTypes), len(subscription.FilterConfig.EventTypes))
