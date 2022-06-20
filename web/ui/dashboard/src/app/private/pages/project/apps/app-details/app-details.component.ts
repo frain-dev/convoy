@@ -16,20 +16,19 @@ export class AppDetailsComponent implements OnInit {
 	showAddEndpointModal = false;
 	showAddEventModal = false;
 	showEndpointSecret = false;
-	showPublicCopyText = false;
-	showSecretCopyText = false;
+	textCopied = false;
 	isSendingNewEvent = false;
 	savingEndpoint = false;
 	loadingAppPotalToken = false;
 	isLoadingAppDetails = false;
 	shouldRenderSmallSize = false;
 	showDeleteModal = false;
-	editMode = false;
 	isDeletingEndpoint = false;
 	screenWidth = window.innerWidth;
 	appPortalLink!: string;
 	appPortalIframe!: string;
 	endpointSecretKey!: string;
+	appId!: string;
 	appsDetailsItem!: APP;
 	apps!: { pagination: PAGINATION; content: APP[] };
 	selectedEndpoint?: ENDPOINT;
@@ -44,25 +43,26 @@ export class AppDetailsComponent implements OnInit {
 	) {}
 
 	ngOnInit() {
-		this.getAppDetails(this.route.snapshot.params.id);
+		this.isLoadingAppDetails = true;
 		this.checkScreenSize();
+		this.getAppDetails(this.route.snapshot.params.id);
 	}
 
 	goBack() {
 		this.location.back();
 	}
 
-	// copy code snippet
-	copyKey(key: string, type: 'public' | 'secret') {
+
+	copyText(key: string) {
 		const text = key;
 		const el = document.createElement('textarea');
 		el.value = text;
 		document.body.appendChild(el);
 		el.select();
 		document.execCommand('copy');
-		type === 'public' ? (this.showPublicCopyText = true) : (this.showSecretCopyText = true);
+		this.textCopied = true;
 		setTimeout(() => {
-			type === 'public' ? (this.showPublicCopyText = false) : (this.showSecretCopyText = false);
+			this.textCopied = false;
 		}, 3000);
 		document.body.removeChild(el);
 	}
@@ -74,7 +74,6 @@ export class AppDetailsComponent implements OnInit {
 
 	async getAppDetails(appId: string) {
 		this.selectedEndpoint = undefined;
-		this.editMode = false;
 		this.isLoadingAppDetails = true;
 
 		try {

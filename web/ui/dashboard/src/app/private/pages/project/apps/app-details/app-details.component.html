@@ -19,7 +19,29 @@
 		<h3>Overview</h3>
 		<button class="button button__white button__small" [disabled]="appsDetailsItem?.events === 0" (click)="loadEventsFromAppsTable(appsDetailsItem.uid)">View Events</button>
 	</div>
-	<div class="flex flex__align-items-center flex__wrap flex__justify-between margin-bottom__32px">
+	<div class="flex flex__align-items-center flex__wrap flex__justify-between margin-bottom__32px" *ngIf="isLoadingAppDetails">
+		<div>
+			<p class="color__grey font__12px font__weight-300">DATE CREATED</p>
+			<div class="skeleton-loader margin-top__10px width__120px height__20px"></div>
+		</div>
+		<div>
+			<p class="color__grey font__12px font__weight-300">SUPPORT EMAIL</p>
+			<div class="skeleton-loader margin-top__10px width__120px height__20px"></div>
+		</div>
+		<div>
+			<p class="color__grey font__12px font__weight-300">UPDATED</p>
+			<div class="skeleton-loader margin-top__10px width__120px height__20px"></div>
+		</div>
+		<div>
+			<p class="color__grey font__12px font__weight-300">EVENTS</p>
+			<div class="skeleton-loader margin-top__10px width__120px height__20px"></div>
+		</div>
+		<div>
+			<p class="color__grey font__12px font__weight-300">ENDPOINTS</p>
+			<div class="skeleton-loader margin-top__10px width__120px height__20px"></div>
+		</div>
+	</div>
+	<div class="flex flex__align-items-center flex__wrap flex__justify-between margin-bottom__32px" *ngIf="!isLoadingAppDetails">
 		<div>
 			<p class="color__grey font__12px font__weight-300">DATE CREATED</p>
 			<p class="color__black font__14px font__weight-500">{{ appsDetailsItem?.created_at | date: 'mediumDate' }}</p>
@@ -56,7 +78,15 @@
 
 	<div class="flex flex__justify-between flex__wrap border__top margin-top__22px">
 		<div class="padding-top__32px" [ngClass]="{ 'width__50 border__right padding-right__32px': !shouldRenderSmallSize, width__100: shouldRenderSmallSize }">
-			<div class="flex flex__align-items-center flex__justify-between">
+			<div class="flex flex__align-items-center flex__justify-between" *ngIf="isLoadingAppDetails">
+				<h3>App Event Endpoints</h3>
+				<div class="flex flex__align-items-center">
+					<div class="skeleton-loader margin-top__10px width__100px height__20px"></div>
+					<div class="line margin-right__16px margin-left__16px border__left"></div>
+					<div class="skeleton-loader margin-top__10px width__100px height__20px"></div>
+				</div>
+			</div>
+			<div class="flex flex__align-items-center flex__justify-between" *ngIf="!isLoadingAppDetails">
 				<h3>App Event Endpoints</h3>
 				<div class="flex flex__align-items-center">
 					<button class="button__clear font__12px" (click)="showAddEndpointModal = !showAddEndpointModal">Add Endpoints</button>
@@ -64,7 +94,47 @@
 					<button class="button__clear font__12px" [disabled]="appsDetailsItem && appsDetailsItem?.endpoints?.length == 0" (click)="showAddEventModal = true">Send Event</button>
 				</div>
 			</div>
-			<ul class="margin-top__20px">
+			<ul class="margin-top__20px" *ngIf="isLoadingAppDetails">
+				<li class="app-details bg__grey-fade padding-all__16px rounded__8px margin-bottom__24px">
+					<div>
+						<div class="flex flex__align-items-center margin-bottom__16px">
+							<div class="skeleton-loader endpoint width__100px height__20px"></div>
+							<div class="skeleton-loader endpoint width__80px height__20px margin-left__14px"></div>
+						</div>
+
+						<div class="flex flex__align-items-center">
+							<img src="/assets/img/link-icon.svg" alt="link icon" class="margin-right__8px" />
+							<div class="skeleton-loader endpoint width__80 height__20px"></div>
+						</div>
+
+						<div class="flex flex__align-items-center margin-top__16px">
+							<div class="skeleton-loader endpoint width__100px height__20px"></div>
+							<div class="line margin-right__16px margin-left__16px border__left"></div>
+							<div class="skeleton-loader endpoint width__100px height__20px"></div>
+						</div>
+					</div>
+				</li>
+				<li class="app-details bg__grey-fade padding-all__16px rounded__8px margin-bottom__24px">
+					<div>
+						<div class="flex flex__align-items-center margin-bottom__16px">
+							<div class="skeleton-loader endpoint width__100px height__20px"></div>
+							<div class="skeleton-loader endpoint width__80px height__20px margin-left__14px"></div>
+						</div>
+
+						<div class="flex flex__align-items-center">
+							<img src="/assets/img/link-icon.svg" alt="link icon" class="margin-right__8px" />
+							<div class="skeleton-loader endpoint width__80 height__20px"></div>
+						</div>
+
+						<div class="flex flex__align-items-center margin-top__16px">
+							<div class="skeleton-loader endpoint width__100px height__20px"></div>
+							<div class="line margin-right__16px margin-left__16px border__left"></div>
+							<div class="skeleton-loader endpoint width__100px height__20px"></div>
+						</div>
+					</div>
+				</li>
+			</ul>
+			<ul class="margin-top__20px" *ngIf="!isLoadingAppDetails">
 				<ng-container *ngIf="appsDetailsItem?.endpoints">
 					<li class="app-details bg__grey-fade padding-all__16px rounded__8px margin-bottom__24px" *ngFor="let endpoint of appsDetailsItem.endpoints">
 						<div>
@@ -101,13 +171,31 @@
 					</li>
 				</ng-container>
 			</ul>
-			<div class="empty-state smaller-table" *ngIf="appsDetailsItem?.endpoints?.length === 0">
+			<div class="empty-state smaller-table" *ngIf="!isLoadingAppDetails && appsDetailsItem?.endpoints?.length === 0">
 				<img src="/assets/img/empty-state-img.svg" alt="empty state" />
 				<p>No endpoint has been added for selected app yet</p>
 			</div>
 		</div>
 		<div class="padding-top__32px" [ngClass]="{ 'width__50 padding-left__32px': !shouldRenderSmallSize, 'border__top width__100': shouldRenderSmallSize }">
-			<div>
+			<div *ngIf="loadingAppPotalToken">
+				<h3>App Portal</h3>
+				<ul class="margin-top__10px">
+					<li class="list-item__inline">
+						<div class="list-item__inline--label">App Page</div>
+						<div class="skeleton-loader width__80px height__20px"></div>
+					</li>
+					<li class="list-item__inline">
+						<div class="list-item__inline--label">Embed into your platform</div>
+						<div class="skeleton-loader width__100px height__20px"></div>
+					</li>
+					<li class="list-item__inline">
+						<div class="list-item__inline--label">Embed Iframe portal</div>
+						<div class="list-item__inline--item"></div>
+					</li>
+					<div class="skeleton-loader code margin-top__16px"></div>
+				</ul>
+			</div>
+			<div *ngIf="!loadingAppPotalToken">
 				<h3>App Portal</h3>
 				<ul class="margin-top__10px">
 					<li class="list-item__inline">
@@ -127,9 +215,9 @@
 					<div class="bg__white-100 border__all__2 rounded__10px padding-all__16px margin-top__16px">
 						<div class="text font__14px color__grey overflow--scroll__x">{{ appPortalIframe }}</div>
 						<div class="flex flex__justify-end">
-							<button class="button__clear button--has-icon icon-left" (click)="copyKey(appPortalIframe, 'secret')">
+							<button class="button__clear button--has-icon icon-left" (click)="copyText(appPortalLink)">
 								<img src="/assets/img/copy.svg" alt="copy" />
-								<small *ngIf="showSecretCopyText">Copied!</small>
+								<small *ngIf="textCopied">Copied!</small>
 							</button>
 						</div>
 					</div>
@@ -180,9 +268,9 @@
 	<div class="modal--body" *ngIf="showEndpointSecret">
 		<div class="key">
 			<span>{{ endpointSecretKey }}</span>
-			<button (click)="copyKey(endpointSecretKey, 'secret')">
+			<button (click)="copyText(endpointSecretKey)">
 				<img src="/assets/img/copy.svg" alt="copy" />
-				<small *ngIf="showSecretCopyText">Copied!</small>
+				<small *ngIf="textCopied">Copied!</small>
 			</button>
 		</div>
 	</div>
