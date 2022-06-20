@@ -110,6 +110,122 @@ func (s *SubscriptionIntegrationTestSuite) Test_CreateSubscription() {
 	require.Equal(s.T(), len(dbSub.FilterConfig.EventTypes), len(subscription.FilterConfig.EventTypes))
 }
 
+func (s *SubscriptionIntegrationTestSuite) Test_CreateSubscription_AppNotFound() {
+	app, _ := testdb.SeedApplication(s.DB, &datastore.Group{UID: uuid.NewString()}, uuid.NewString(), "", false)
+	endpoint, _ := testdb.SeedEndpoint(s.DB, app, s.DefaultGroup.UID)
+	source, _ := testdb.SeedSource(s.DB, s.DefaultGroup, uuid.NewString())
+	bodyStr := fmt.Sprintf(`{
+		"name": "sub-1",
+		"type": "incoming",
+		"source_id": "%s",
+		"app_id": "%s",
+		"group_id": "%s",
+		"endpoint_id": "%s",
+		"alert_config": {
+			"threshold": "1h",
+			"count": 10
+		},
+		"retry_config": {
+			"type": "linear",
+			"retry_count": 2,
+			"interval_seconds": 10
+		},
+		"filter_config": {
+			"event_types": [
+				"user.created",
+				"user.updated"
+			]
+		}
+	}`, source.UID, uuid.NewString(), s.DefaultGroup.UID, endpoint.UID)
+
+	body := serialize(bodyStr)
+	req := createRequest(http.MethodPost, "/api/v1/subscriptions", s.APIKey, body)
+	w := httptest.NewRecorder()
+
+	// Act
+	s.Router.ServeHTTP(w, req)
+
+	// Assert
+	require.Equal(s.T(), http.StatusBadRequest, w.Code)
+}
+
+func (s *SubscriptionIntegrationTestSuite) Test_CreateSubscription_AppDoesNotBelongToGroup() {
+	app, _ := testdb.SeedApplication(s.DB, &datastore.Group{UID: uuid.NewString()}, uuid.NewString(), "", false)
+	endpoint, _ := testdb.SeedEndpoint(s.DB, app, s.DefaultGroup.UID)
+	source, _ := testdb.SeedSource(s.DB, s.DefaultGroup, uuid.NewString())
+	bodyStr := fmt.Sprintf(`{
+		"name": "sub-1",
+		"type": "incoming",
+		"source_id": "%s",
+		"app_id": "%s",
+		"group_id": "%s",
+		"endpoint_id": "%s",
+		"alert_config": {
+			"threshold": "1h",
+			"count": 10
+		},
+		"retry_config": {
+			"type": "linear",
+			"retry_count": 2,
+			"interval_seconds": 10
+		},
+		"filter_config": {
+			"event_types": [
+				"user.created",
+				"user.updated"
+			]
+		}
+	}`, source.UID, app.UID, s.DefaultGroup.UID, endpoint.UID)
+
+	body := serialize(bodyStr)
+	req := createRequest(http.MethodPost, "/api/v1/subscriptions", s.APIKey, body)
+	w := httptest.NewRecorder()
+
+	// Act
+	s.Router.ServeHTTP(w, req)
+
+	// Assert
+	require.Equal(s.T(), http.StatusUnauthorized, w.Code)
+}
+
+func (s *SubscriptionIntegrationTestSuite) Test_CreateSubscription_EndpointNotFound() {
+	app, _ := testdb.SeedApplication(s.DB, s.DefaultGroup, uuid.NewString(), "", false)
+	source, _ := testdb.SeedSource(s.DB, s.DefaultGroup, uuid.NewString())
+	bodyStr := fmt.Sprintf(`{
+		"name": "sub-1",
+		"type": "incoming",
+		"source_id": "%s",
+		"app_id": "%s",
+		"group_id": "%s",
+		"endpoint_id": "%s",
+		"alert_config": {
+			"threshold": "1h",
+			"count": 10
+		},
+		"retry_config": {
+			"type": "linear",
+			"retry_count": 2,
+			"interval_seconds": 10
+		},
+		"filter_config": {
+			"event_types": [
+				"user.created",
+				"user.updated"
+			]
+		}
+	}`, source.UID, app.UID, s.DefaultGroup.UID, uuid.NewString())
+
+	body := serialize(bodyStr)
+	req := createRequest(http.MethodPost, "/api/v1/subscriptions", s.APIKey, body)
+	w := httptest.NewRecorder()
+
+	// Act
+	s.Router.ServeHTTP(w, req)
+
+	// Assert
+	require.Equal(s.T(), http.StatusBadRequest, w.Code)
+}
+
 func (s *SubscriptionIntegrationTestSuite) Test_CreateSubscription_InvalidBody() {
 	bodyStr := `{
 		"name": "sub-1",

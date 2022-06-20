@@ -63,7 +63,122 @@ func TestSubscription_CreateSubscription(t *testing.T) {
 				s.EXPECT().CreateSubscription(gomock.Any(), gomock.Any(), gomock.Any()).
 					Times(1).
 					Return(nil)
+
+				a, _ := ss.appRepo.(*mocks.MockApplicationRepository)
+				a.EXPECT().FindApplicationByID(gomock.Any(), "app-id-1").
+					Times(1).Return(
+					&datastore.Application{
+						GroupID: "12345",
+						Endpoints: []datastore.Endpoint{
+							{UID: "endpoint-id-1"},
+						},
+					},
+					nil,
+				)
 			},
+		},
+		{
+			name: "should_fail_to_find_application",
+			args: args{
+				ctx: ctx,
+				newSubscription: &models.Subscription{
+					Name:       "sub 1",
+					Type:       "incoming",
+					AppID:      "app-id-1",
+					SourceID:   "source-id-1",
+					EndpointID: "endpoint-id-1",
+				},
+				group: &datastore.Group{UID: "12345"},
+			},
+			wantSubscription: &datastore.Subscription{
+				Name:       "sub 1",
+				Type:       "incoming",
+				AppID:      "app-id-1",
+				SourceID:   "source-id-1",
+				EndpointID: "endpoint-id-1",
+			},
+			dbFn: func(ss *SubcriptionService) {
+				a, _ := ss.appRepo.(*mocks.MockApplicationRepository)
+				a.EXPECT().FindApplicationByID(gomock.Any(), "app-id-1").
+					Times(1).Return(nil, errors.New("failed"))
+			},
+			wantErr:     true,
+			wantErrCode: http.StatusBadRequest,
+			wantErrMsg:  "failed to find application by id",
+		},
+		{
+			name: "should_error_for_application_does_not_belong_to_group",
+			args: args{
+				ctx: ctx,
+				newSubscription: &models.Subscription{
+					Name:       "sub 1",
+					Type:       "incoming",
+					AppID:      "app-id-1",
+					SourceID:   "source-id-1",
+					EndpointID: "endpoint-id-1",
+				},
+				group: &datastore.Group{UID: "12345"},
+			},
+			wantSubscription: &datastore.Subscription{
+				Name:       "sub 1",
+				Type:       "incoming",
+				AppID:      "app-id-1",
+				SourceID:   "source-id-1",
+				EndpointID: "endpoint-id-1",
+			},
+			dbFn: func(ss *SubcriptionService) {
+				a, _ := ss.appRepo.(*mocks.MockApplicationRepository)
+				a.EXPECT().FindApplicationByID(gomock.Any(), "app-id-1").
+					Times(1).Return(
+					&datastore.Application{
+						GroupID: "abb",
+						Endpoints: []datastore.Endpoint{
+							{UID: "endpoint-id-1"},
+						},
+					},
+					nil,
+				)
+			},
+			wantErr:     true,
+			wantErrCode: http.StatusUnauthorized,
+			wantErrMsg:  "app does not belong to group",
+		},
+		{
+			name: "should_error_for_failed_to_find_endpoint",
+			args: args{
+				ctx: ctx,
+				newSubscription: &models.Subscription{
+					Name:       "sub 1",
+					Type:       "incoming",
+					AppID:      "app-id-1",
+					SourceID:   "source-id-1",
+					EndpointID: "endpoint-id-1",
+				},
+				group: &datastore.Group{UID: "12345"},
+			},
+			wantSubscription: &datastore.Subscription{
+				Name:       "sub 1",
+				Type:       "incoming",
+				AppID:      "app-id-1",
+				SourceID:   "source-id-1",
+				EndpointID: "endpoint-id-1",
+			},
+			dbFn: func(ss *SubcriptionService) {
+				a, _ := ss.appRepo.(*mocks.MockApplicationRepository)
+				a.EXPECT().FindApplicationByID(gomock.Any(), "app-id-1").
+					Times(1).Return(
+					&datastore.Application{
+						GroupID: "12345",
+						Endpoints: []datastore.Endpoint{
+							{UID: "endpoint-id"},
+						},
+					},
+					nil,
+				)
+			},
+			wantErr:     true,
+			wantErrCode: http.StatusBadRequest,
+			wantErrMsg:  "endpoint not found",
 		},
 		{
 			name: "should fail to create subscription",
@@ -85,6 +200,18 @@ func TestSubscription_CreateSubscription(t *testing.T) {
 				s.EXPECT().CreateSubscription(gomock.Any(), gomock.Any(), gomock.Any()).
 					Times(1).
 					Return(errors.New("failed"))
+
+				a, _ := ss.appRepo.(*mocks.MockApplicationRepository)
+				a.EXPECT().FindApplicationByID(gomock.Any(), "app-id-1").
+					Times(1).Return(
+					&datastore.Application{
+						GroupID: "12345",
+						Endpoints: []datastore.Endpoint{
+							{UID: "endpoint-id-1"},
+						},
+					},
+					nil,
+				)
 			},
 			wantErr:     true,
 			wantErrCode: http.StatusBadRequest,

@@ -52,7 +52,7 @@ func (s *SubcriptionService) CreateSubscription(ctx context.Context, groupID str
 	_, err = findAppEndpoint(app.Endpoints, newSubscription.EndpointID)
 	if err != nil {
 		log.WithError(err).Error("failed to find app endpoint")
-		return nil, NewServiceError(http.StatusBadRequest, errors.New("failed to find app endpoint"))
+		return nil, NewServiceError(http.StatusBadRequest, err)
 	}
 
 	subscription := &datastore.Subscription{
