@@ -120,9 +120,9 @@ func (s *SubscriptionIntegrationTestSuite) Test_CreateSubscription_IncomingGroup
 
 	_, apiKey, _ := testdb.SeedAPIKey(s.DB, role, "", "test", "")
 
-	app, _ := testdb.SeedApplication(s.DB, s.DefaultGroup, uuid.NewString(), "", false)
-	source, _ := testdb.SeedSource(s.DB, s.DefaultGroup, uuid.NewString())
-	endpoint, _ := testdb.SeedEndpoint(s.DB, app, s.DefaultGroup.UID)
+	app, _ := testdb.SeedApplication(s.DB, group, uuid.NewString(), "", false)
+	source, _ := testdb.SeedSource(s.DB, group, uuid.NewString())
+	endpoint, _ := testdb.SeedEndpoint(s.DB, app, group.UID)
 	bodyStr := fmt.Sprintf(`{
 		"name": "sub-1",
 		"type": "incoming",
@@ -145,7 +145,7 @@ func (s *SubscriptionIntegrationTestSuite) Test_CreateSubscription_IncomingGroup
 				"user.updated"
 			]
 		}
-	}`, source.UID, app.UID, s.DefaultGroup.UID, endpoint.UID)
+	}`, source.UID, app.UID, group.UID, endpoint.UID)
 
 	body := serialize(bodyStr)
 	req := createRequest(http.MethodPost, "/api/v1/subscriptions", apiKey, body)
@@ -160,7 +160,7 @@ func (s *SubscriptionIntegrationTestSuite) Test_CreateSubscription_IncomingGroup
 	var subscription *datastore.Subscription
 	parseResponse(s.T(), w.Result(), &subscription)
 
-	dbSub, err := s.DB.SubRepo().FindSubscriptionByID(context.Background(), s.DefaultGroup.UID, subscription.UID)
+	dbSub, err := s.DB.SubRepo().FindSubscriptionByID(context.Background(), group.UID, subscription.UID)
 
 	require.NoError(s.T(), err)
 	require.NotEmpty(s.T(), subscription.UID)
