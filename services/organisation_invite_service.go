@@ -6,7 +6,6 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
-	"strings"
 	"time"
 
 	"github.com/frain-dev/convoy"
@@ -72,10 +71,6 @@ func (ois *OrganisationInviteService) CreateOrganisationMemberInvite(ctx context
 		return nil, NewServiceError(http.StatusBadRequest, errors.New("failed to create organisation member invite"))
 	}
 
-	if !strings.HasSuffix(baseURL, "/") {
-		baseURL += "/"
-	}
-
 	err = ois.sendInviteEmail(context.Background(), iv, org, user, baseURL)
 	if err != nil {
 		return nil, err
@@ -98,7 +93,7 @@ func (ois *OrganisationInviteService) sendInviteEmail(ctx context.Context, iv *d
 		Email:             iv.InviteeEmail,
 		EmailTemplateName: email.TemplateOrganisationInvite.String(),
 		Subject:           "Convoy Organization Invite",
-		InviteURL:         fmt.Sprintf("%s/ui/organisations/process_invite?token=%s", baseURL, iv.Token),
+		InviteURL:         fmt.Sprintf("%s/accept-invite?token=%s", baseURL, iv.Token),
 		OrganisationName:  org.Name,
 		InviterName:       fmt.Sprintf("%s %s", user.FirstName, user.LastName),
 		ExpiresAt:         iv.ExpiresAt.Time().String(),
@@ -111,7 +106,6 @@ func (ois *OrganisationInviteService) sendInviteEmail(ctx context.Context, iv *d
 	}
 
 	job := &queue.Job{
-		ID:      iv.UID,
 		Payload: json.RawMessage(buf),
 		Delay:   0,
 	}
@@ -240,4 +234,40 @@ func (ois *OrganisationInviteService) FindUserByInviteToken(ctx context.Context,
 	}
 
 	return user, iv, nil
+}
+
+func (ois *OrganisationInviteService) ResendOrganisationMemberInvite(ctx context.Context, inviteID string, org *datastore.Organisation, user *datastore.User, baseURL string) (*datastore.OrganisationInvite, error) {
+	iv, err := ois.orgInviteRepo.FetchOrganisationInviteByID(ctx, inviteID)
+	if err != nil {
+		log.WithError(err).Error("failed to fetch organisation by invitee id")
+		return nil, NewServiceError(http.StatusBadRequest, errors.New("failed to fetch organisation by invitee id"))
+	}
+	iv.ExpiresAt = primitive.NewDateTimeFromTime(time.Now().Add(time.Hour * 24 * 14)) // expires in 2 weeks
+
+	err = ois.orgInviteRepo.UpdateOrganisationInvite(ctx, iv)
+	if err != nil {
+		log.WithError(err).Error("failed to update organisation member invite")
+		return nil, NewServiceError(http.StatusBadRequest, errors.New("failed to update organisation member invite"))
+	}
+
+	err = ois.sendInviteEmail(context.Background(), iv, org, user, baseURL)
+	if err != nil {
+		return nil, err
+	}
+	return iv, nil
+}
+
+func (ois *OrganisationInviteService) CancelOrganisationMemberInvite(ctx context.Context, inviteID string) error {
+	iv, err := ois.orgInviteRepo.FetchOrganisationInviteByID(ctx, inviteID)
+	if err != nil {
+		log.WithError(err).Error("failed to fetch organisation by invitee id")
+		return NewServiceError(http.StatusBadRequest, errors.New("failed to fetch organisation by invitee id"))
+	}
+
+	err = ois.orgInviteRepo.DeleteOrganisationInvite(ctx, iv.UID)
+	if err != nil {
+		log.WithError(err).Error("failed to delete organisation invite")
+		return NewServiceError(http.StatusBadRequest, errors.New("failed to delete organisation invite"))
+	}
+	return nil
 }
