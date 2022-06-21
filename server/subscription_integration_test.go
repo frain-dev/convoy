@@ -528,9 +528,7 @@ func (s *SubscriptionIntegrationTestSuite) Test_ToggleSubscriptionStatus_ActiveS
 
 	dbSub, err := s.DB.SubRepo().FindSubscriptionByID(context.Background(), s.DefaultGroup.UID, subscriptionId)
 	require.NoError(s.T(), err)
-	require.Equal(s.T(), 2, len(dbSub.FilterConfig.EventTypes))
-	require.Equal(s.T(), "1h", dbSub.AlertConfig.Threshold)
-	require.Equal(s.T(), "1h", dbSub.RetryConfig.Duration)
+	require.Equal(s.T(), subscriptionId, dbSub.UID)
 	require.Equal(s.T(), datastore.InactiveSubscriptionStatus, dbSub.Status)
 }
 
@@ -560,10 +558,8 @@ func (s *SubscriptionIntegrationTestSuite) Test_ToggleSubscriptionStatus_Inactiv
 
 	dbSub, err := s.DB.SubRepo().FindSubscriptionByID(context.Background(), s.DefaultGroup.UID, subscriptionId)
 	require.NoError(s.T(), err)
-	require.Equal(s.T(), 2, len(dbSub.FilterConfig.EventTypes))
-	require.Equal(s.T(), "1h", dbSub.AlertConfig.Threshold)
-	require.Equal(s.T(), "1h", dbSub.RetryConfig.Duration)
-	require.Equal(s.T(), datastore.ActiveDocumentStatus, dbSub.Status)
+	require.Equal(s.T(), subscriptionId, dbSub.UID)
+	require.Equal(s.T(), datastore.ActiveSubscriptionStatus, dbSub.Status)
 }
 
 func (s *SubscriptionIntegrationTestSuite) Test_ToggleSubscriptionStatus_PendingStatus() {
