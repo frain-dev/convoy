@@ -50,17 +50,20 @@ export class EventDeliveriesComponent implements OnInit {
 	filteredApps!: APP[];
 	@ViewChild('eventDelsAppsFilter', { static: true }) eventDelsAppsFilter!: ElementRef;
 	@ViewChild('eventDeliveryTimerFilter', { static: true }) eventDeliveryTimerFilter!: TimeFilterComponent;
+	appPortalToken = this.route.snapshot.params?.token;
 
 	constructor(private generalService: GeneralService, private eventsService: EventsService, private datePipe: DatePipe, private route: ActivatedRoute, private router: Router) {}
 
 	ngAfterViewInit() {
-		this.eventsDelAppsFilter$ = fromEvent<any>(this.eventDelsAppsFilter?.nativeElement, 'keyup').pipe(
-			map(event => event.target.value),
-			startWith(''),
-			debounceTime(500),
-			distinctUntilChanged(),
-			switchMap(search => this.getAppsForFilter(search))
-		);
+		if (!this.appPortalToken) {
+			this.eventsDelAppsFilter$ = fromEvent<any>(this.eventDelsAppsFilter?.nativeElement, 'keyup').pipe(
+				map(event => event.target.value),
+				startWith(''),
+				debounceTime(500),
+				distinctUntilChanged(),
+				switchMap(search => this.getAppsForFilter(search))
+			);
+		}
 	}
 
 	ngOnInit() {
@@ -119,7 +122,8 @@ export class EventDeliveriesComponent implements OnInit {
 				startDate: requestDetails.startDate,
 				endDate: requestDetails.endDate,
 				appId: this.eventDeliveriesApp || '',
-				statusQuery: eventDeliveryStatusFilterQuery || ''
+				statusQuery: eventDeliveryStatusFilterQuery || '',
+				token: this.appPortalToken
 			});
 			return eventDeliveriesResponse;
 		} catch (error: any) {
@@ -167,33 +171,30 @@ export class EventDeliveriesComponent implements OnInit {
 	clearFilters(filterType?: 'eventsDelApp' | 'eventsDelDate' | 'eventsDelsStatus') {
 		const activeFilters = Object.assign({}, this.route.snapshot.queryParams);
 		let filterItems: string[] = [];
-		this.eventDeliveriesApp = undefined;
 
 		switch (filterType) {
 			case 'eventsDelApp':
-				this.eventDeliveryFilteredByEventId = undefined;
-				filterItems = ['eventDelsApp'];
 				break;
 			case 'eventsDelDate':
-				this.eventDelsTimeFilterData = { startTime: 'T00:00:00', endTime: 'T23:59:59' };
-				this.dateFiltersFromURL = { startDate: '', endDate: '' };
 				filterItems = ['eventDelsStartDate', 'eventDelsEndDate'];
 				break;
 			case 'eventsDelsStatus':
-				this.eventDeliveryFilteredByStatus = [];
 				filterItems = ['eventDelsStatus'];
 				break;
 			default:
-				this.dateFiltersFromURL = { startDate: '', endDate: '' };
-				this.eventDeliveryFilteredByEventId = undefined;
-				this.eventDeliveryFilteredByStatus = [];
-				this.eventDelsTimeFilterData = { startTime: 'T00:00:00', endTime: 'T23:59:59' };
 				filterItems = ['eventDelsStartDate', 'eventDelsEndDate', 'eventDelsApp', 'eventDelsStatus'];
 				break;
 		}
 
+		this.eventDeliveriesApp = undefined;
+		this.dateFiltersFromURL = { startDate: '', endDate: '' };
+		this.eventDeliveryFilteredByEventId = undefined;
+		this.eventDeliveryFilteredByStatus = [];
+		this.eventDelsTimeFilterData = { startTime: 'T00:00:00', endTime: 'T23:59:59' };
+
 		filterItems.forEach(key => (activeFilters.hasOwnProperty(key) ? delete activeFilters[key] : null));
-		this.router.navigate([], { relativeTo: this.route, queryParams: activeFilters });
+		this.router.navigate(['./'], { relativeTo: this.route, queryParams: activeFilters });
+		this.getEventDeliveries();
 	}
 
 	async fetchRetryCount() {
@@ -209,7 +210,8 @@ export class EventDeliveriesComponent implements OnInit {
 				startDate: startDate,
 				endDate: endDate,
 				appId: this.eventDeliveriesApp || '',
-				statusQuery: eventDeliveryStatusFilterQuery || ''
+				statusQuery: eventDeliveryStatusFilterQuery || '',
+				token: this.appPortalToken
 			});
 
 			this.batchRetryCount = response.data.num;
@@ -247,7 +249,7 @@ export class EventDeliveriesComponent implements OnInit {
 			retryButton.disabled = true;
 		}
 		try {
-			await this.eventsService.retryEvent({ eventId: requestDetails.eventDeliveryId });
+			await this.eventsService.retryEvent({ eventId: requestDetails.eventDeliveryId, token: this.appPortalToken });
 			this.generalService.showNotification({ message: 'Retry Request Sent', style: 'success' });
 			retryButton.classList.remove(['spin', 'disabled']);
 			retryButton.disabled = false;
@@ -274,7 +276,7 @@ export class EventDeliveriesComponent implements OnInit {
 			ids: [requestDetails.eventDeliveryId]
 		};
 		try {
-			await this.eventsService.forceRetryEvent({ body: payload });
+			await this.eventsService.forceRetryEvent({ body: payload, token: this.appPortalToken });
 			this.generalService.showNotification({ message: 'Force Retry Request Sent', style: 'success' });
 			retryButton.classList.remove(['spin', 'disabled']);
 			retryButton.disabled = false;
@@ -303,7 +305,8 @@ export class EventDeliveriesComponent implements OnInit {
 				startDate: startDate,
 				endDate: endDate,
 				appId: this.eventDeliveriesApp || '',
-				statusQuery: eventDeliveryStatusFilterQuery || ''
+				statusQuery: eventDeliveryStatusFilterQuery || '',
+				token: this.appPortalToken
 			});
 
 			this.generalService.showNotification({ message: response.message, style: 'success' });

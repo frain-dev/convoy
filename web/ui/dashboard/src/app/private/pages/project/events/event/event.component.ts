@@ -50,6 +50,7 @@ export class EventComponent implements OnInit {
 	@ViewChild('eventsAppsFilter', { static: true }) eventsAppsFilter!: ElementRef;
 	@ViewChild(DateFilterComponent) dateFilterComponent!: DateFilterComponent;
 	eventsAppsFilter$!: Observable<APP[]>;
+	appPortalToken = this.route.snapshot.params?.token;
 
 	constructor(private eventsService: EventsService, private generalService: GeneralService, private route: ActivatedRoute, private router: Router) {}
 
@@ -59,13 +60,15 @@ export class EventComponent implements OnInit {
 	}
 
 	ngAfterViewInit() {
-		this.eventsAppsFilter$ = fromEvent<any>(this.eventsAppsFilter?.nativeElement, 'keyup').pipe(
-			map(event => event.target.value),
-			startWith(''),
-			debounceTime(500),
-			distinctUntilChanged(),
-			switchMap(search => this.getAppsForFilter(search))
-		);
+		if (!this.appPortalToken) {
+			this.eventsAppsFilter$ = fromEvent<any>(this.eventsAppsFilter?.nativeElement, 'keyup').pipe(
+				map(event => event.target.value),
+				startWith(''),
+				debounceTime(500),
+				distinctUntilChanged(),
+				switchMap(search => this.getAppsForFilter(search))
+			);
+		}
 	}
 
 	clearEventFilters(filterType?: 'eventsDate' | 'eventsApp' | 'eventsSearch') {
@@ -159,7 +162,7 @@ export class EventComponent implements OnInit {
 		if (Object.keys(filters).length == 0) return;
 
 		this.eventsDateFilterFromURL = { startDate: filters.eventsStartDate ? new Date(filters.eventsStartDate) : '', endDate: filters.eventsEndDate ? new Date(filters.eventsEndDate) : '' };
-		this.eventApp = filters.eventsApp ?? undefined;
+		if (!this.appPortalToken) this.eventApp = filters.eventsApp ?? undefined;
 		this.eventsSearchString = filters.eventsSearch ?? undefined;
 		const eventsTimeFilter = this.setTimeFilterData({ startDate: filters?.eventsStartDate, endDate: filters?.eventsEndDate });
 		this.eventsTimeFilterData = { ...eventsTimeFilter };
@@ -194,7 +197,8 @@ export class EventComponent implements OnInit {
 				startDate,
 				endDate,
 				appId: this.eventApp || '',
-				query: this.eventsSearchString || ''
+				query: this.eventsSearchString || '',
+				token: this.appPortalToken
 			});
 			this.events = eventsResponse.data;
 			this.displayedEvents = await this.generalService.setContentDisplayed(eventsResponse.data.content);
@@ -217,7 +221,8 @@ export class EventComponent implements OnInit {
 			endDate: '',
 			pageNo: 1,
 			appId: '',
-			statusQuery: ''
+			statusQuery: '',
+			token: this.appPortalToken
 		});
 		this.sidebarEventDeliveries = response.data.content;
 	}

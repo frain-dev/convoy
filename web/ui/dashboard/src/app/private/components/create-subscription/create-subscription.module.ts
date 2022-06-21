@@ -6,10 +6,11 @@ import { CreateAppModule } from '../create-app/create-app.module';
 import { CreateSourceModule } from '../create-source/create-source.module';
 import { TooltipModule } from '../tooltip/tooltip.module';
 import { LoaderModule } from '../loader/loader.module';
+import { CreateEndpointModule } from '../../pages/project/apps/app-details/create-endpoint/create-endpoint.module';
 
 @NgModule({
 	declarations: [CreateSubscriptionComponent],
-	imports: [CommonModule, ReactiveFormsModule, CreateAppModule, CreateSourceModule, TooltipModule, LoaderModule],
+	imports: [CommonModule, ReactiveFormsModule, CreateAppModule, CreateSourceModule, TooltipModule, LoaderModule, CreateEndpointModule],
 	exports: [CreateSubscriptionComponent]
 })
 export class CreateSubscriptionModule {}
