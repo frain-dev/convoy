@@ -168,6 +168,7 @@ func buildRoutes(app *applicationHandler) http.Handler {
 				subsriptionRouter.Delete("/{subscriptionID}", app.DeleteSubscription)
 				subsriptionRouter.Get("/{subscriptionID}", app.GetSubscription)
 				subsriptionRouter.Put("/{subscriptionID}", app.UpdateSubscription)
+				subsriptionRouter.Put("/{subscriptionID}/toggle_status", app.ToggleSubscriptionStatus)
 			})
 
 			r.Route("/sources", func(sourceRouter chi.Router) {
