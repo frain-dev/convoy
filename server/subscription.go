@@ -120,10 +120,10 @@ func (a *applicationHandler) CreateSubscription(w http.ResponseWriter, r *http.R
 
 	s.Type = string(group.Type)
 
-	subscription, err := a.subService.CreateSubscription(r.Context(), group.UID, &s)
+	subscription, err := a.subService.CreateSubscription(r.Context(), group, &s)
 	if err != nil {
 		log.WithError(err).Error("failed to create subscription")
-		_ = render.Render(w, r, newErrorResponse("an error occurred while creating subscription. Error: "+err.Error(), http.StatusBadRequest))
+		_ = render.Render(w, r, newServiceErrResponse(err))
 		return
 	}
 
