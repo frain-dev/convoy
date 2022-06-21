@@ -307,6 +307,48 @@ func TestSubscription_CreateSubscription(t *testing.T) {
 			wantErrCode: http.StatusBadRequest,
 			wantErrMsg:  "failed to create subscription",
 		},
+		{
+			name: "create subscription for outgoing group - should set default event types array",
+			args: args{
+				ctx: ctx,
+				newSubscription: &models.Subscription{
+					Name:       "sub 1",
+					Type:       "incoming",
+					AppID:      "app-id-1",
+					SourceID:   "source-id-1",
+					EndpointID: "endpoint-id-1",
+				},
+				group: &datastore.Group{UID: "12345", Type: datastore.OutgoingGroup},
+			},
+			wantSubscription: &datastore.Subscription{
+				Name:       "sub 1",
+				Type:       "incoming",
+				AppID:      "app-id-1",
+				SourceID:   "source-id-1",
+				EndpointID: "endpoint-id-1",
+				FilterConfig: &datastore.FilterConfiguration{
+					EventTypes: []string{"*"},
+				},
+			},
+			dbFn: func(ss *SubcriptionService) {
+				s, _ := ss.subRepo.(*mocks.MockSubscriptionRepository)
+				s.EXPECT().CreateSubscription(gomock.Any(), gomock.Any(), gomock.Any()).
+					Times(1).
+					Return(nil)
+
+				a, _ := ss.appRepo.(*mocks.MockApplicationRepository)
+				a.EXPECT().FindApplicationByID(gomock.Any(), "app-id-1").
+					Times(1).Return(
+					&datastore.Application{
+						GroupID: "12345",
+						Endpoints: []datastore.Endpoint{
+							{UID: "endpoint-id-1"},
+						},
+					},
+					nil,
+				)
+			},
+		},
 	}
 
 	for _, tc := range tests {
@@ -332,6 +374,11 @@ func TestSubscription_CreateSubscription(t *testing.T) {
 
 			require.Equal(t, subscription.Name, tc.wantSubscription.Name)
 			require.Equal(t, subscription.Type, tc.wantSubscription.Type)
+
+			if tc.wantSubscription.FilterConfig != nil {
+				require.Equal(t, subscription.FilterConfig.EventTypes,
+					tc.wantSubscription.FilterConfig.EventTypes)
+			}
 		})
 	}
 }

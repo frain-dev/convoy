@@ -63,6 +63,12 @@ func (s *SubcriptionService) CreateSubscription(ctx context.Context, group *data
 		}
 	}
 
+	if newSubscription.FilterConfig == nil ||
+		newSubscription.FilterConfig.EventTypes == nil ||
+		len(newSubscription.FilterConfig.EventTypes) == 0 {
+		newSubscription.FilterConfig = &datastore.FilterConfiguration{EventTypes: []string{"*"}}
+	}
+
 	subscription := &datastore.Subscription{
 		GroupID:    group.UID,
 		UID:        uuid.New().String(),
