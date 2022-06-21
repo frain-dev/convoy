@@ -35,15 +35,15 @@
 				<div [ngClass]="{ show: showOrgDropdown }" class="dropdown__menu dropdown__menu__nav larger">
 					<div class="title">Your organisations ({{ organisations?.length || 0 }})</div>
 					<ul *ngIf="organisations?.length">
-						<button class="button button__clear" *ngFor="let organisation of organisations" (click)="selectOrganisation(organisation)">
-							<div class="flex flex__justify-between padding-x__16px padding-bottom__16px">
+						<li *ngFor="let organisation of organisations" (click)="selectOrganisation(organisation)">
+							<a class="flex flex__justify-between padding-x__16px padding-y__8px">
 								<div class="badge badge__dark">
 									<div class="icon">{{ organisation?.name?.slice(0, 1) }}</div>
 									<p class="name">{{ organisation?.name }}</p>
 								</div>
 								<img *ngIf="organisation.uid == userOrganization?.uid" src="/assets/img/check-icon-primary.svg" alt="check icon" />
-							</div>
-						</button>
+							</a>
+						</li>
 					</ul>
 					<div class="dropdown--footer">
 						<button class="base-button" (click)="showAddOrganisationModal = true; showOrgDropdown = false">

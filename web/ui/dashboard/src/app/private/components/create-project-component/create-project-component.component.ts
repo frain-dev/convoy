@@ -33,7 +33,6 @@ export class CreateProjectComponent implements OnInit {
 	});
 	isCreatingProject = false;
 	showApiKey = false;
-	showPublicCopyText = false;
 	showSecretCopyText = false;
 	apiKey!: string;
 	hashAlgorithms = ['SHA256', 'SHA512', 'MD5', 'SHA1', 'SHA224', 'SHA384', 'SHA3_224', 'SHA3_256', 'SHA3_384', 'SHA3_512', 'SHA512_256', 'SHA512_224'];
@@ -109,17 +108,18 @@ export class CreateProjectComponent implements OnInit {
 		}
 	}
 
-	copyKey(key: string, type: 'public' | 'secret') {
+	copyKey(key: string) {
 		const text = key;
 		const el = document.createElement('textarea');
 		el.value = text;
 		document.body.appendChild(el);
 		el.select();
 		document.execCommand('copy');
-		type === 'public' ? (this.showPublicCopyText = true) : (this.showSecretCopyText = true);
+		this.showSecretCopyText = true;
 		setTimeout(() => {
-			type === 'public' ? (this.showPublicCopyText = false) : (this.showSecretCopyText = false);
+			this.showSecretCopyText = false
 		}, 3000);
+		
 		document.body.removeChild(el);
 	}
 }
