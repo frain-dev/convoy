@@ -242,6 +242,11 @@ func (g *GroupFilter) WithNamesTrimmed() *GroupFilter {
 	return &f
 }
 
+func (g *GroupFilter) ToGenericMap() map[string]interface{} {
+	m := map[string]interface{}{"name": g.Names}
+	return m
+}
+
 func (o *Group) IsDeleted() bool { return o.DeletedAt > 0 }
 
 func (o *Group) IsOwner(a *Application) bool { return o.UID == a.GroupID }

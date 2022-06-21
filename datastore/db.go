@@ -58,14 +58,14 @@ var _ Store = &mongoStore{}
  * This initialises a new MongoDB repo for the collection
  */
 func New(database *mongo.Database, collection string) Store {
-	mongoStore := mongoStore{
+	mongoStore := &mongoStore{
 		IsConnected:    true,
 		CollectionName: collection,
 		Collection:     database.Collection(collection),
 		Database:       database,
 	}
 
-	return &mongoStore
+	return mongoStore
 }
 
 func IsValidPointer(i interface{}) bool {
@@ -372,7 +372,6 @@ func (d *mongoStore) UpdateMany(ctx context.Context, filter, payload map[string]
  * The record is not completed deleted, only the status is changed.
  */
 func (d *mongoStore) DeleteByID(ctx context.Context, id string) error {
-
 	var u map[string]interface{}
 	opts := options.FindOneAndUpdate()
 	up := true
@@ -387,6 +386,7 @@ func (d *mongoStore) DeleteByID(ctx context.Context, id string) error {
 		Decode(&u); err != nil {
 		return err
 	}
+
 	return nil
 }
 

@@ -72,11 +72,12 @@ func New(cfg config.Configuration) (datastore.DatabaseClient, error) {
 
 	dbName := strings.TrimPrefix(u.Path, "/")
 	conn := client.Database(dbName, nil)
+	groups := datastore.New(conn, "groups")
 
 	c := &Client{
 		db:                conn,
 		apiKeyRepo:        NewApiKeyRepo(conn),
-		groupRepo:         NewGroupRepo(conn),
+		groupRepo:         NewGroupRepo(conn, groups),
 		subscriptionRepo:  NewSubscriptionRepo(conn),
 		applicationRepo:   NewApplicationRepo(conn),
 		eventRepo:         NewEventRepository(conn),
