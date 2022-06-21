@@ -2,9 +2,10 @@ package server
 
 import (
 	"errors"
-	"github.com/frain-dev/convoy/datastore"
 	"net/http"
 	"strconv"
+
+	"github.com/frain-dev/convoy/datastore"
 
 	"github.com/frain-dev/convoy/server/models"
 	"github.com/frain-dev/convoy/util"
@@ -135,6 +136,70 @@ func (a *applicationHandler) FindUserByInviteToken(w http.ResponseWriter, r *htt
 	}
 
 	res := models.UserInviteTokenResponse{Token: iv, User: user}
-	
+
 	_ = render.Render(w, r, newServerResponse("retrieved user", res, http.StatusOK))
+}
+
+// ResendOrganizationInvite
+// @Summary resend organization invite
+// @Description This endpoint resends the organization invite to a user
+// @Tags Organisation
+// @Accept  json
+// @Produce  json
+// @Param orgID path string true "organisation id"
+// @Param invite body models.OrganisationInvite true "Organisation Invite Details"
+// @Success 200 {object} serverResponse{data=Stub}
+// @Failure 400,401,500 {object} serverResponse{data=Stub}
+// @Security ApiKeyAuth
+// @Router /ui/organisations/{orgID}/resend_invite [post]
+func (a *applicationHandler) ResendOrganizationInvite(w http.ResponseWriter, r *http.Request) {
+	var newIV models.OrganisationInvite
+	err := util.ReadJSON(r, &newIV)
+	if err != nil {
+		_ = render.Render(w, r, newErrorResponse(err.Error(), http.StatusBadRequest))
+		return
+	}
+
+	baseUrl := getHostFromContext(r.Context())
+	user := getUserFromContext(r.Context())
+	org := getOrganisationFromContext(r.Context())
+
+	_, err = a.organisationInviteService.ResendOrganisationMemberInvite(r.Context(), &newIV, org, user, baseUrl)
+	if err != nil {
+		log.WithError(err).Error("failed to resend organisation member invite")
+		_ = render.Render(w, r, newServiceErrResponse(err))
+		return
+	}
+
+	_ = render.Render(w, r, newServerResponse("invite resent successfully", nil, http.StatusOK))
+}
+
+// CancelOrganizationInvite
+// @Summary cancel organization invite
+// @Description This endpoint cancels an organization invite
+// @Tags Organisation
+// @Accept  json
+// @Produce  json
+// @Param orgID path string true "organisation id"
+// @Param invite body models.OrganisationInvite true "Organisation Invite Details"
+// @Success 200 {object} serverResponse{data=Stub}
+// @Failure 400,401,500 {object} serverResponse{data=Stub}
+// @Security ApiKeyAuth
+// @Router /ui/organisations/{orgID}/cancel_invite [post]
+func (a *applicationHandler) CancelOrganizationInvite(w http.ResponseWriter, r *http.Request) {
+	var newIV models.OrganisationInvite
+	err := util.ReadJSON(r, &newIV)
+	if err != nil {
+		_ = render.Render(w, r, newErrorResponse(err.Error(), http.StatusBadRequest))
+		return
+	}
+
+	err = a.organisationInviteService.CancelOrganisationMemberInvite(r.Context(), &newIV)
+	if err != nil {
+		log.WithError(err).Error("failed to cancel organisation member invite")
+		_ = render.Render(w, r, newServiceErrResponse(err))
+		return
+	}
+
+	_ = render.Render(w, r, newServerResponse("invite cancelled successfully", nil, http.StatusOK))
 }

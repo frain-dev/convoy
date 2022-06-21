@@ -1004,3 +1004,177 @@ func TestOrganisationInviteService_FindUserByInviteToken(t *testing.T) {
 		})
 	}
 }
+
+func TestOrganisationInviteService_ResendOrganisationMemberInvite(t *testing.T) {
+	ctx := context.Background()
+	expiry := primitive.NewDateTimeFromTime(time.Now().Add(time.Hour))
+	type args struct {
+		ctx     context.Context
+		org     *datastore.Organisation
+		newIV   *models.OrganisationInvite
+		user    *datastore.User
+		baseURL string
+	}
+	tests := []struct {
+		name        string
+		args        args
+		dbFn        func(ois *OrganisationInviteService)
+		want        *datastore.OrganisationInvite
+		wantErr     bool
+		wantErrCode int
+		wantErrMsg  string
+	}{
+		{
+			name: "should_resend_organisation_member_invite",
+			args: args{
+				ctx: ctx,
+				org: &datastore.Organisation{UID: "123"},
+				newIV: &models.OrganisationInvite{
+					InviteeEmail: "test@example.com",
+					Role: auth.Role{
+						Type:   auth.RoleAdmin,
+						Groups: []string{"ref"},
+					},
+				},
+				user:    &datastore.User{},
+				baseURL: "https://google.com",
+			},
+			dbFn: func(ois *OrganisationInviteService) {
+				a, _ := ois.orgInviteRepo.(*mocks.MockOrganisationInviteRepository)
+				a.EXPECT().FetchOrganisationInviteByEmail(gomock.Any(), gomock.Any()).
+					Times(1).Return(
+					&datastore.OrganisationInvite{
+						OrganisationID: "123",
+						Status:         datastore.InviteStatusPending,
+						ExpiresAt:      expiry,
+						InviteeEmail:   "test@example.com",
+						Role: auth.Role{
+							Type:   auth.RoleAdmin,
+							Groups: []string{"ref"},
+							Apps:   nil,
+						},
+					}, nil)
+
+				a.EXPECT().UpdateOrganisationInvite(gomock.Any(), gomock.Any()).
+					Times(1).Return(nil)
+
+				q := ois.queue.(*mocks.MockQueuer)
+				q.EXPECT().Write(gomock.Any(), gomock.Any(), gomock.Any()).Return(nil).Times(1)
+			},
+			want: &datastore.OrganisationInvite{
+				OrganisationID: "123",
+				InviteeEmail:   "test@example.com",
+				Role: auth.Role{
+					Type:   auth.RoleAdmin,
+					Groups: []string{"ref"},
+				},
+				Status: datastore.InviteStatusPending,
+			},
+			wantErr: false,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			ctrl := gomock.NewController(t)
+			defer ctrl.Finish()
+			ois := provideOrganisationInviteService(ctrl)
+
+			// Arrange Expectations
+			if tt.dbFn != nil {
+				tt.dbFn(ois)
+			}
+
+			iv, err := ois.ResendOrganisationMemberInvite(tt.args.ctx, tt.args.newIV, tt.args.org, tt.args.user, tt.args.baseURL)
+			if tt.wantErr {
+				require.NotNil(t, err)
+				require.Equal(t, tt.wantErrCode, err.(*ServiceError).ErrCode())
+				require.Equal(t, tt.wantErrMsg, err.(*ServiceError).Error())
+				return
+			}
+
+			require.Nil(t, err)
+			stripVariableFields(t, "organisation_invite", iv)
+			require.Equal(t, tt.want, iv)
+		})
+	}
+}
+
+func TestOrganisationInviteService_CancelOrganisationMemberInvite(t *testing.T) {
+	ctx := context.Background()
+	expiry := primitive.NewDateTimeFromTime(time.Now().Add(time.Hour))
+	type args struct {
+		ctx     context.Context
+		org     *datastore.Organisation
+		newIV   *models.OrganisationInvite
+		user    *datastore.User
+		baseURL string
+	}
+	tests := []struct {
+		name        string
+		args        args
+		dbFn        func(ois *OrganisationInviteService)
+		want        *datastore.OrganisationInvite
+		wantErr     bool
+		wantErrCode int
+		wantErrMsg  string
+	}{
+		{
+			name: "should_cancel_organisation_member_invite",
+			args: args{
+				ctx: ctx,
+				org: &datastore.Organisation{UID: "123"},
+				newIV: &models.OrganisationInvite{
+					InviteeEmail: "test@example.com",
+					Role: auth.Role{
+						Type:   auth.RoleAdmin,
+						Groups: []string{"ref"},
+					},
+				},
+				user:    &datastore.User{},
+				baseURL: "https://google.com",
+			},
+			dbFn: func(ois *OrganisationInviteService) {
+				a, _ := ois.orgInviteRepo.(*mocks.MockOrganisationInviteRepository)
+				a.EXPECT().FetchOrganisationInviteByEmail(gomock.Any(), gomock.Any()).
+					Times(1).Return(
+					&datastore.OrganisationInvite{
+						OrganisationID: "123",
+						Status:         datastore.InviteStatusPending,
+						ExpiresAt:      expiry,
+						InviteeEmail:   "test@example.com",
+						Role: auth.Role{
+							Type:   auth.RoleAdmin,
+							Groups: []string{"ref"},
+							Apps:   nil,
+						},
+					}, nil)
+
+				a.EXPECT().DeleteOrganisationInvite(gomock.Any(), gomock.Any()).
+					Times(1).Return(nil)
+			},
+			wantErr: false,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			ctrl := gomock.NewController(t)
+			defer ctrl.Finish()
+			ois := provideOrganisationInviteService(ctrl)
+
+			// Arrange Expectations
+			if tt.dbFn != nil {
+				tt.dbFn(ois)
+			}
+
+			err := ois.CancelOrganisationMemberInvite(tt.args.ctx, tt.args.newIV)
+			if tt.wantErr {
+				require.NotNil(t, err)
+				require.Equal(t, tt.wantErrCode, err.(*ServiceError).ErrCode())
+				require.Equal(t, tt.wantErrMsg, err.(*ServiceError).Error())
+				return
+			}
+
+			require.Nil(t, err)
+		})
+	}
+}

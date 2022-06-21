@@ -2,6 +2,7 @@ package badger
 
 import (
 	"context"
+
 	"github.com/frain-dev/convoy/datastore"
 	"github.com/timshannon/badgerhold/v4"
 )
@@ -29,6 +30,10 @@ func (o orgInviteRepo) FetchOrganisationInviteByID(ctx context.Context, uid stri
 }
 
 func (o orgInviteRepo) FetchOrganisationInviteByToken(ctx context.Context, token string) (*datastore.OrganisationInvite, error) {
+	return nil, nil
+}
+
+func (o orgInviteRepo) FetchOrganisationInviteByEmail(ctx context.Context, email string) (*datastore.OrganisationInvite, error) {
 	return nil, nil
 }
 

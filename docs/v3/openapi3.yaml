@@ -453,8 +453,6 @@ components:
         last_name:
           type: string
         reset_password_expires_at:
-          type: integer
-        reset_password_token:
           type: string
         role:
           $ref: '#/components/schemas/auth.Role'
@@ -4100,6 +4098,74 @@ paths:
       summary: Update an organisation
       tags:
       - Organisation
+  /ui/organisations/{orgID}/cancel_invite:
+    post:
+      description: This endpoint cancels an organization invite
+      parameters:
+      - description: organisation id
+        in: path
+        name: orgID
+        required: true
+        schema:
+          type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/models.OrganisationInvite'
+        description: Organisation Invite Details
+        required: true
+        x-originalParamName: invite
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                allOf:
+                - $ref: '#/components/schemas/server.serverResponse'
+                - properties:
+                    data:
+                      $ref: '#/components/schemas/server.Stub'
+                  type: object
+          description: OK
+        "400":
+          content:
+            application/json:
+              schema:
+                allOf:
+                - $ref: '#/components/schemas/server.serverResponse'
+                - properties:
+                    data:
+                      $ref: '#/components/schemas/server.Stub'
+                  type: object
+          description: Bad Request
+        "401":
+          content:
+            application/json:
+              schema:
+                allOf:
+                - $ref: '#/components/schemas/server.serverResponse'
+                - properties:
+                    data:
+                      $ref: '#/components/schemas/server.Stub'
+                  type: object
+          description: Unauthorized
+        "500":
+          content:
+            application/json:
+              schema:
+                allOf:
+                - $ref: '#/components/schemas/server.serverResponse'
+                - properties:
+                    data:
+                      $ref: '#/components/schemas/server.Stub'
+                  type: object
+          description: Internal Server Error
+      security:
+      - ApiKeyAuth: []
+      summary: cancel organization invite
+      tags:
+      - Organisation
   /ui/organisations/{orgID}/groups:
     post:
       description: This endpoint creates a group
@@ -4595,6 +4661,74 @@ paths:
       security:
       - ApiKeyAuth: []
       summary: Fetch pending organisation invites
+      tags:
+      - Organisation
+  /ui/organisations/{orgID}/resend_invite:
+    post:
+      description: This endpoint resends the organization invite to a user
+      parameters:
+      - description: organisation id
+        in: path
+        name: orgID
+        required: true
+        schema:
+          type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/models.OrganisationInvite'
+        description: Organisation Invite Details
+        required: true
+        x-originalParamName: invite
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                allOf:
+                - $ref: '#/components/schemas/server.serverResponse'
+                - properties:
+                    data:
+                      $ref: '#/components/schemas/server.Stub'
+                  type: object
+          description: OK
+        "400":
+          content:
+            application/json:
+              schema:
+                allOf:
+                - $ref: '#/components/schemas/server.serverResponse'
+                - properties:
+                    data:
+                      $ref: '#/components/schemas/server.Stub'
+                  type: object
+          description: Bad Request
+        "401":
+          content:
+            application/json:
+              schema:
+                allOf:
+                - $ref: '#/components/schemas/server.serverResponse'
+                - properties:
+                    data:
+                      $ref: '#/components/schemas/server.Stub'
+                  type: object
+          description: Unauthorized
+        "500":
+          content:
+            application/json:
+              schema:
+                allOf:
+                - $ref: '#/components/schemas/server.serverResponse'
+                - properties:
+                    data:
+                      $ref: '#/components/schemas/server.Stub'
+                  type: object
+          description: Internal Server Error
+      security:
+      - ApiKeyAuth: []
+      summary: resend organization invite
       tags:
       - Organisation
   /ui/organisations/{orgID}/security/keys:

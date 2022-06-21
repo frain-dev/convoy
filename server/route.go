@@ -228,6 +228,8 @@ func buildRoutes(app *applicationHandler) http.Handler {
 				orgSubRouter.With(requireOrganisationMemberRole(auth.RoleSuperUser)).Put("/", app.UpdateOrganisation)
 				orgSubRouter.With(requireOrganisationMemberRole(auth.RoleSuperUser)).Delete("/", app.DeleteOrganisation)
 				orgSubRouter.With(requireOrganisationMemberRole(auth.RoleSuperUser)).Post("/invite_user", app.InviteUserToOrganisation)
+				orgSubRouter.With(requireOrganisationMemberRole(auth.RoleSuperUser)).Post("/resend_invite", app.ResendOrganizationInvite)
+				orgSubRouter.With(requireOrganisationMemberRole(auth.RoleSuperUser)).Post("/cancel_invite", app.CancelOrganizationInvite)
 				orgSubRouter.With(requireOrganisationMemberRole(auth.RoleSuperUser)).With(pagination).Get("/pending_invites", app.GetPendingOrganisationInvites)
 
 				orgSubRouter.Route("/members", func(orgMemberRouter chi.Router) {

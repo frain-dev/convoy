@@ -5,6 +5,12 @@ package server
 
 import (
 	"fmt"
+	"net/http"
+	"net/http/httptest"
+	"strings"
+	"testing"
+	"time"
+
 	"github.com/frain-dev/convoy/auth"
 	"github.com/frain-dev/convoy/config"
 	"github.com/frain-dev/convoy/datastore"
@@ -14,11 +20,6 @@ import (
 	"github.com/stretchr/testify/require"
 	"github.com/stretchr/testify/suite"
 	"go.mongodb.org/mongo-driver/bson/primitive"
-	"net/http"
-	"net/http/httptest"
-	"strings"
-	"testing"
-	"time"
 )
 
 type OrganisationInviteIntegrationTestSuite struct {
@@ -391,6 +392,66 @@ func (s *OrganisationInviteIntegrationTestSuite) Test_FindUserByInviteToken_NewU
 	require.Equal(s.T(), iv.InviteeEmail, response.Token.InviteeEmail)
 	require.Equal(s.T(), iv.Token, response.Token.Token)
 	require.Nil(s.T(), response.User)
+}
+
+func (s *OrganisationInviteIntegrationTestSuite) Test_ResendInvite() {
+	url := fmt.Sprintf("/ui/organisations/%s/invite_user", s.DefaultOrg.UID)
+
+	body := strings.NewReader(`{"invitee_email":"test@invite.com","role":{"type":"api", "groups":["123"]}}`)
+	req := createRequest(http.MethodPost, url, "", body)
+
+	err := s.AuthenticatorFn(req, s.Router)
+	require.NoError(s.T(), err)
+
+	w := httptest.NewRecorder()
+
+	s.Router.ServeHTTP(w, req)
+
+	require.Equal(s.T(), http.StatusCreated, w.Code)
+
+	url = fmt.Sprintf("/ui/organisations/%s/resend_invite", s.DefaultOrg.UID)
+
+	body = strings.NewReader(`{"invitee_email":"test@invite.com","role":{"type":"api", "groups":["123"]}}`)
+	req = createRequest(http.MethodPost, url, "", body)
+
+	err = s.AuthenticatorFn(req, s.Router)
+	require.NoError(s.T(), err)
+
+	w = httptest.NewRecorder()
+
+	s.Router.ServeHTTP(w, req)
+
+	require.Equal(s.T(), http.StatusOK, w.Code)
+}
+
+func (s *OrganisationInviteIntegrationTestSuite) Test_CancelInvite() {
+	url := fmt.Sprintf("/ui/organisations/%s/invite_user", s.DefaultOrg.UID)
+
+	body := strings.NewReader(`{"invitee_email":"test@invite.com","role":{"type":"api", "groups":["123"]}}`)
+	req := createRequest(http.MethodPost, url, "", body)
+
+	err := s.AuthenticatorFn(req, s.Router)
+	require.NoError(s.T(), err)
+
+	w := httptest.NewRecorder()
+
+	s.Router.ServeHTTP(w, req)
+
+	require.Equal(s.T(), http.StatusCreated, w.Code)
+
+	url = fmt.Sprintf("/ui/organisations/%s/cancel_invite", s.DefaultOrg.UID)
+
+	body = strings.NewReader(`{"invitee_email":"test@invite.com","role":{"type":"api", "groups":["123"]}}`)
+	req = createRequest(http.MethodPost, url, "", body)
+
+	err = s.AuthenticatorFn(req, s.Router)
+	require.NoError(s.T(), err)
+
+	w = httptest.NewRecorder()
+
+	s.Router.ServeHTTP(w, req)
+
+	require.Equal(s.T(), http.StatusOK, w.Code)
 }
 
 func TestOrganisationInviteIntegrationTestSuite(t *testing.T) {
