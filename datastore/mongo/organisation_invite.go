@@ -112,18 +112,3 @@ func (db *orgInviteRepo) FetchOrganisationInviteByToken(ctx context.Context, tok
 
 	return org, err
 }
-
-func (db *orgInviteRepo) FetchOrganisationInviteByEmail(ctx context.Context, email string) (*datastore.OrganisationInvite, error) {
-	org := &datastore.OrganisationInvite{}
-
-	filter := bson.M{
-		"invitee_email":   email,
-		"document_status": datastore.ActiveDocumentStatus,
-	}
-
-	err := db.inner.FindOne(ctx, filter).Decode(org)
-	if errors.Is(err, mongo.ErrNoDocuments) {
-		err = datastore.ErrOrgInviteNotFound
-	}
-	return org, err
-}

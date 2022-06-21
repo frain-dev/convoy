@@ -33,10 +33,6 @@ func (o orgInviteRepo) FetchOrganisationInviteByToken(ctx context.Context, token
 	return nil, nil
 }
 
-func (o orgInviteRepo) FetchOrganisationInviteByEmail(ctx context.Context, email string) (*datastore.OrganisationInvite, error) {
-	return nil, nil
-}
-
 func NewOrgInviteRepo(db *badgerhold.Store) datastore.OrganisationInviteRepository {
 	return orgInviteRepo{}
 }

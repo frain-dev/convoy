@@ -236,22 +236,11 @@ func (ois *OrganisationInviteService) FindUserByInviteToken(ctx context.Context,
 	return user, iv, nil
 }
 
-func (ois *OrganisationInviteService) ResendOrganisationMemberInvite(ctx context.Context, newIV *models.OrganisationInvite, org *datastore.Organisation, user *datastore.User, baseURL string) (*datastore.OrganisationInvite, error) {
-	err := util.Validate(newIV)
+func (ois *OrganisationInviteService) ResendOrganisationMemberInvite(ctx context.Context, inviteID string, org *datastore.Organisation, user *datastore.User, baseURL string) (*datastore.OrganisationInvite, error) {
+	iv, err := ois.orgInviteRepo.FetchOrganisationInviteByID(ctx, inviteID)
 	if err != nil {
-		return nil, NewServiceError(http.StatusBadRequest, err)
-	}
-
-	err = newIV.Role.Validate("organisation member")
-	if err != nil {
-		log.WithError(err).Error("failed to validate organisation member invite role")
-		return nil, NewServiceError(http.StatusBadRequest, err)
-	}
-
-	iv, err := ois.orgInviteRepo.FetchOrganisationInviteByEmail(ctx, newIV.InviteeEmail)
-	if err != nil {
-		log.WithError(err).Error("failed to fetch organisation by invitee email")
-		return nil, NewServiceError(http.StatusBadRequest, errors.New("failed to fetch organisation by invitee email"))
+		log.WithError(err).Error("failed to fetch organisation by invitee id")
+		return nil, NewServiceError(http.StatusBadRequest, errors.New("failed to fetch organisation by invitee id"))
 	}
 	iv.ExpiresAt = primitive.NewDateTimeFromTime(time.Now().Add(time.Hour * 24 * 14)) // expires in 2 weeks
 
@@ -268,22 +257,11 @@ func (ois *OrganisationInviteService) ResendOrganisationMemberInvite(ctx context
 	return iv, nil
 }
 
-func (ois *OrganisationInviteService) CancelOrganisationMemberInvite(ctx context.Context, newIV *models.OrganisationInvite) error {
-	err := util.Validate(newIV)
+func (ois *OrganisationInviteService) CancelOrganisationMemberInvite(ctx context.Context, inviteID string) error {
+	iv, err := ois.orgInviteRepo.FetchOrganisationInviteByID(ctx, inviteID)
 	if err != nil {
-		return NewServiceError(http.StatusBadRequest, err)
-	}
-
-	err = newIV.Role.Validate("organisation member")
-	if err != nil {
-		log.WithError(err).Error("failed to validate organisation member invite role")
-		return NewServiceError(http.StatusBadRequest, err)
-	}
-
-	iv, err := ois.orgInviteRepo.FetchOrganisationInviteByEmail(ctx, newIV.InviteeEmail)
-	if err != nil {
-		log.WithError(err).Error("failed to fetch organisation by invitee email")
-		return NewServiceError(http.StatusBadRequest, errors.New("failed to fetch organisation by invitee email"))
+		log.WithError(err).Error("failed to fetch organisation by invitee id")
+		return NewServiceError(http.StatusBadRequest, errors.New("failed to fetch organisation by invitee id"))
 	}
 
 	err = ois.orgInviteRepo.DeleteOrganisationInvite(ctx, iv.UID)

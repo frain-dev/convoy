@@ -9,6 +9,7 @@ import (
 
 	"github.com/frain-dev/convoy/server/models"
 	"github.com/frain-dev/convoy/util"
+	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/render"
 	log "github.com/sirupsen/logrus"
 )
@@ -24,7 +25,7 @@ import (
 // @Success 200 {object} serverResponse{data=Stub}
 // @Failure 400,401,500 {object} serverResponse{data=Stub}
 // @Security ApiKeyAuth
-// @Router /ui/organisations/{orgID}/invite_user [post]
+// @Router /ui/organisations/{orgID}/invites [post]
 func (a *applicationHandler) InviteUserToOrganisation(w http.ResponseWriter, r *http.Request) {
 	var newIV models.OrganisationInvite
 	err := util.ReadJSON(r, &newIV)
@@ -60,7 +61,7 @@ func (a *applicationHandler) InviteUserToOrganisation(w http.ResponseWriter, r *
 // @Success 200 {object} serverResponse{data=Stub}
 // @Failure 400,401,500 {object} serverResponse{data=Stub}
 // @Security ApiKeyAuth
-// @Router /ui/organisations/{orgID}/pending_invites [get]
+// @Router /ui/organisations/{orgID}/invites/pending [get]
 func (a *applicationHandler) GetPendingOrganisationInvites(w http.ResponseWriter, r *http.Request) {
 	org := getOrganisationFromContext(r.Context())
 	pageable := getPageableFromContext(r.Context())
@@ -147,24 +148,17 @@ func (a *applicationHandler) FindUserByInviteToken(w http.ResponseWriter, r *htt
 // @Accept  json
 // @Produce  json
 // @Param orgID path string true "organisation id"
-// @Param invite body models.OrganisationInvite true "Organisation Invite Details"
+// @Param inviteID path string true "invite id"
 // @Success 200 {object} serverResponse{data=Stub}
 // @Failure 400,401,500 {object} serverResponse{data=Stub}
 // @Security ApiKeyAuth
-// @Router /ui/organisations/{orgID}/resend_invite [post]
+// @Router /ui/organisations/{orgID}/invites/{inviteID}/resend [post]
 func (a *applicationHandler) ResendOrganizationInvite(w http.ResponseWriter, r *http.Request) {
-	var newIV models.OrganisationInvite
-	err := util.ReadJSON(r, &newIV)
-	if err != nil {
-		_ = render.Render(w, r, newErrorResponse(err.Error(), http.StatusBadRequest))
-		return
-	}
-
 	baseUrl := getHostFromContext(r.Context())
 	user := getUserFromContext(r.Context())
 	org := getOrganisationFromContext(r.Context())
 
-	_, err = a.organisationInviteService.ResendOrganisationMemberInvite(r.Context(), &newIV, org, user, baseUrl)
+	_, err := a.organisationInviteService.ResendOrganisationMemberInvite(r.Context(), chi.URLParam(r, "inviteID"), org, user, baseUrl)
 	if err != nil {
 		log.WithError(err).Error("failed to resend organisation member invite")
 		_ = render.Render(w, r, newServiceErrResponse(err))
@@ -181,20 +175,13 @@ func (a *applicationHandler) ResendOrganizationInvite(w http.ResponseWriter, r *
 // @Accept  json
 // @Produce  json
 // @Param orgID path string true "organisation id"
-// @Param invite body models.OrganisationInvite true "Organisation Invite Details"
+// @Param inviteID path string true "invite id"
 // @Success 200 {object} serverResponse{data=Stub}
 // @Failure 400,401,500 {object} serverResponse{data=Stub}
 // @Security ApiKeyAuth
-// @Router /ui/organisations/{orgID}/cancel_invite [post]
+// @Router /ui/organisations/{orgID}/invites/{inviteID}/cancel [post]
 func (a *applicationHandler) CancelOrganizationInvite(w http.ResponseWriter, r *http.Request) {
-	var newIV models.OrganisationInvite
-	err := util.ReadJSON(r, &newIV)
-	if err != nil {
-		_ = render.Render(w, r, newErrorResponse(err.Error(), http.StatusBadRequest))
-		return
-	}
-
-	err = a.organisationInviteService.CancelOrganisationMemberInvite(r.Context(), &newIV)
+	err := a.organisationInviteService.CancelOrganisationMemberInvite(r.Context(), chi.URLParam(r, "inviteID"))
 	if err != nil {
 		log.WithError(err).Error("failed to cancel organisation member invite")
 		_ = render.Render(w, r, newServiceErrResponse(err))

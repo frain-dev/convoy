@@ -12,6 +12,7 @@ import (
 	"github.com/frain-dev/convoy/mocks"
 	"github.com/frain-dev/convoy/server/models"
 	"github.com/golang/mock/gomock"
+	"github.com/google/uuid"
 	"github.com/stretchr/testify/require"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 )
@@ -1011,7 +1012,7 @@ func TestOrganisationInviteService_ResendOrganisationMemberInvite(t *testing.T) 
 	type args struct {
 		ctx     context.Context
 		org     *datastore.Organisation
-		newIV   *models.OrganisationInvite
+		ivID    string
 		user    *datastore.User
 		baseURL string
 	}
@@ -1027,21 +1028,15 @@ func TestOrganisationInviteService_ResendOrganisationMemberInvite(t *testing.T) 
 		{
 			name: "should_resend_organisation_member_invite",
 			args: args{
-				ctx: ctx,
-				org: &datastore.Organisation{UID: "123"},
-				newIV: &models.OrganisationInvite{
-					InviteeEmail: "test@example.com",
-					Role: auth.Role{
-						Type:   auth.RoleAdmin,
-						Groups: []string{"ref"},
-					},
-				},
+				ctx:     ctx,
+				org:     &datastore.Organisation{UID: "123"},
+				ivID:    "abcd",
 				user:    &datastore.User{},
 				baseURL: "https://google.com",
 			},
 			dbFn: func(ois *OrganisationInviteService) {
 				a, _ := ois.orgInviteRepo.(*mocks.MockOrganisationInviteRepository)
-				a.EXPECT().FetchOrganisationInviteByEmail(gomock.Any(), gomock.Any()).
+				a.EXPECT().FetchOrganisationInviteByID(gomock.Any(), gomock.Any()).
 					Times(1).Return(
 					&datastore.OrganisationInvite{
 						OrganisationID: "123",
@@ -1084,7 +1079,7 @@ func TestOrganisationInviteService_ResendOrganisationMemberInvite(t *testing.T) 
 				tt.dbFn(ois)
 			}
 
-			iv, err := ois.ResendOrganisationMemberInvite(tt.args.ctx, tt.args.newIV, tt.args.org, tt.args.user, tt.args.baseURL)
+			iv, err := ois.ResendOrganisationMemberInvite(tt.args.ctx, tt.args.ivID, tt.args.org, tt.args.user, tt.args.baseURL)
 			if tt.wantErr {
 				require.NotNil(t, err)
 				require.Equal(t, tt.wantErrCode, err.(*ServiceError).ErrCode())
@@ -1103,11 +1098,9 @@ func TestOrganisationInviteService_CancelOrganisationMemberInvite(t *testing.T) 
 	ctx := context.Background()
 	expiry := primitive.NewDateTimeFromTime(time.Now().Add(time.Hour))
 	type args struct {
-		ctx     context.Context
-		org     *datastore.Organisation
-		newIV   *models.OrganisationInvite
-		user    *datastore.User
-		baseURL string
+		ctx  context.Context
+		org  *datastore.Organisation
+		ivID string
 	}
 	tests := []struct {
 		name        string
@@ -1121,21 +1114,13 @@ func TestOrganisationInviteService_CancelOrganisationMemberInvite(t *testing.T) 
 		{
 			name: "should_cancel_organisation_member_invite",
 			args: args{
-				ctx: ctx,
-				org: &datastore.Organisation{UID: "123"},
-				newIV: &models.OrganisationInvite{
-					InviteeEmail: "test@example.com",
-					Role: auth.Role{
-						Type:   auth.RoleAdmin,
-						Groups: []string{"ref"},
-					},
-				},
-				user:    &datastore.User{},
-				baseURL: "https://google.com",
+				ctx:  ctx,
+				org:  &datastore.Organisation{UID: "123"},
+				ivID: uuid.NewString(),
 			},
 			dbFn: func(ois *OrganisationInviteService) {
 				a, _ := ois.orgInviteRepo.(*mocks.MockOrganisationInviteRepository)
-				a.EXPECT().FetchOrganisationInviteByEmail(gomock.Any(), gomock.Any()).
+				a.EXPECT().FetchOrganisationInviteByID(gomock.Any(), gomock.Any()).
 					Times(1).Return(
 					&datastore.OrganisationInvite{
 						OrganisationID: "123",
@@ -1166,7 +1151,7 @@ func TestOrganisationInviteService_CancelOrganisationMemberInvite(t *testing.T) 
 				tt.dbFn(ois)
 			}
 
-			err := ois.CancelOrganisationMemberInvite(tt.args.ctx, tt.args.newIV)
+			err := ois.CancelOrganisationMemberInvite(tt.args.ctx, tt.args.ivID)
 			if tt.wantErr {
 				require.NotNil(t, err)
 				require.Equal(t, tt.wantErrCode, err.(*ServiceError).ErrCode())
