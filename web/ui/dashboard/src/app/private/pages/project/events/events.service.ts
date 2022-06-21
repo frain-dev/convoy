@@ -7,18 +7,17 @@ import { HttpService } from 'src/app/services/http/http.service';
 	providedIn: 'root'
 })
 export class EventsService {
-	projectId: string = this.privateService.activeProjectDetails.uid;
-
 	constructor(private http: HttpService, private privateService: PrivateService) {}
 
-	async getEvents(requestDetails: { pageNo: number; startDate: string; endDate: string; appId: string; query?: string }): Promise<HTTP_RESPONSE> {
+	async getEvents(requestDetails: { pageNo: number; startDate: string; endDate: string; appId: string; query?: string; token?: string }): Promise<HTTP_RESPONSE> {
 		return new Promise(async (resolve, reject) => {
 			try {
 				const response = await this.http.request({
-					url: `${this.privateService.urlFactory('org_project')}/events?sort=AESC&page=${requestDetails.pageNo}&perPage=20&startDate=${requestDetails.startDate}&endDate=${
+					url: `${requestDetails.token ? '' : this.privateService.urlFactory('org_project')}/events?sort=AESC&page=${requestDetails.pageNo}&perPage=20&startDate=${requestDetails.startDate}&endDate=${
 						requestDetails.endDate
 					}&appId=${requestDetails.appId}&query=${requestDetails?.query}`,
-					method: 'get'
+					method: 'get',
+					token: requestDetails.token
 				});
 
 				return resolve(response);
@@ -28,14 +27,15 @@ export class EventsService {
 		});
 	}
 
-	async getEventDeliveries(requestDetails: { pageNo: number; startDate?: string; endDate?: string; appId?: string; eventId: string; statusQuery: string }): Promise<HTTP_RESPONSE> {
+	async getEventDeliveries(requestDetails: { pageNo: number; startDate?: string; endDate?: string; appId?: string; eventId: string; statusQuery: string; token?: string }): Promise<HTTP_RESPONSE> {
 		return new Promise(async (resolve, reject) => {
 			try {
 				const response = await this.http.request({
-					url: `${this.privateService.urlFactory('org_project')}/eventdeliveries?eventId=${requestDetails.eventId}&page=${requestDetails.pageNo}&startDate=${requestDetails.startDate}&endDate=${
-						requestDetails.endDate
-					}&appId=${requestDetails.appId}${requestDetails.statusQuery}`,
-					method: 'get'
+					url: `${requestDetails.token ? '' : this.privateService.urlFactory('org_project')}/eventdeliveries?eventId=${requestDetails.eventId}&page=${requestDetails.pageNo}&startDate=${
+						requestDetails.startDate
+					}&endDate=${requestDetails.endDate}&appId=${requestDetails.appId}${requestDetails.statusQuery}`,
+					method: 'get',
+					token: requestDetails.token
 				});
 
 				return resolve(response);
@@ -60,12 +60,13 @@ export class EventsService {
 		});
 	}
 
-	async getEventDeliveryAttempts(requestDetails: { eventDeliveryId: string }): Promise<HTTP_RESPONSE> {
+	async getEventDeliveryAttempts(requestDetails: { eventDeliveryId: string; token?: string }): Promise<HTTP_RESPONSE> {
 		return new Promise(async (resolve, reject) => {
 			try {
 				const response = await this.http.request({
-					url: `${this.privateService.urlFactory('org_project')}/eventdeliveries/${requestDetails.eventDeliveryId}/deliveryattempts`,
-					method: 'get'
+					url: `${requestDetails.token ? '' : this.privateService.urlFactory('org_project')}/eventdeliveries/${requestDetails.eventDeliveryId}/deliveryattempts`,
+					method: 'get',
+					token: requestDetails.token
 				});
 
 				return resolve(response);
@@ -90,12 +91,13 @@ export class EventsService {
 		});
 	}
 
-	async retryEvent(requestDetails: { eventId: string }): Promise<HTTP_RESPONSE> {
+	async retryEvent(requestDetails: { eventId: string; token?: string }): Promise<HTTP_RESPONSE> {
 		return new Promise(async (resolve, reject) => {
 			try {
 				const response = await this.http.request({
-					url: `${this.privateService.urlFactory('org_project')}/eventdeliveries/${requestDetails.eventId}/resend`,
-					method: 'put'
+					url: `${requestDetails.token ? '' : this.privateService.urlFactory('org_project')}/eventdeliveries/${requestDetails.eventId}/resend`,
+					method: 'put',
+					token: requestDetails.token
 				});
 
 				return resolve(response);
@@ -105,13 +107,14 @@ export class EventsService {
 		});
 	}
 
-	async forceRetryEvent(requestDetails: { body: object }): Promise<HTTP_RESPONSE> {
+	async forceRetryEvent(requestDetails: { body: object; token?: string }): Promise<HTTP_RESPONSE> {
 		return new Promise(async (resolve, reject) => {
 			try {
 				const response = await this.http.request({
-					url: `${this.privateService.urlFactory('org_project')}/eventdeliveries/forceresend`,
+					url: `${requestDetails.token ? '' : this.privateService.urlFactory('org_project')}/eventdeliveries/forceresend`,
 					method: 'post',
-					body: requestDetails.body
+					body: requestDetails.body,
+					token: requestDetails.token
 				});
 
 				return resolve(response);
@@ -121,15 +124,16 @@ export class EventsService {
 		});
 	}
 
-	async batchRetryEvent(requestDetails: { eventId: string; pageNo: number; startDate: string; endDate: string; appId: string; statusQuery?: string }): Promise<HTTP_RESPONSE> {
+	async batchRetryEvent(requestDetails: { eventId: string; pageNo: number; startDate: string; endDate: string; appId: string; statusQuery?: string; token?: string }): Promise<HTTP_RESPONSE> {
 		return new Promise(async (resolve, reject) => {
 			try {
 				const response = await this.http.request({
-					url: `${this.privateService.urlFactory('org_project')}/eventdeliveries/batchretry?eventId=${requestDetails.eventId || ''}&page=${requestDetails.pageNo}&startDate=${
-						requestDetails.startDate
-					}&endDate=${requestDetails.endDate}&appId=${requestDetails.appId}${requestDetails.statusQuery || ''}`,
+					url: `${requestDetails.token ? '' : this.privateService.urlFactory('org_project')}/eventdeliveries/batchretry?eventId=${requestDetails.eventId || ''}&page=${
+						requestDetails.pageNo
+					}&startDate=${requestDetails.startDate}&endDate=${requestDetails.endDate}&appId=${requestDetails.appId}${requestDetails.statusQuery || ''}`,
 					method: 'post',
-					body: null
+					body: null,
+					token: requestDetails.token
 				});
 
 				return resolve(response);
@@ -139,14 +143,15 @@ export class EventsService {
 		});
 	}
 
-	async getRetryCount(requestDetails: { appId: string; eventId: string; pageNo: number; startDate: string; endDate: string; statusQuery: string }): Promise<HTTP_RESPONSE> {
+	async getRetryCount(requestDetails: { appId: string; eventId: string; pageNo: number; startDate: string; endDate: string; statusQuery: string; token?: string }): Promise<HTTP_RESPONSE> {
 		return new Promise(async (resolve, reject) => {
 			try {
 				const response = await this.http.request({
-					url: `${this.privateService.urlFactory('org_project')}/eventdeliveries/countbatchretryevents?eventId=${requestDetails.eventId}&page=${requestDetails.pageNo}&startDate=${requestDetails.startDate}&endDate=${
-						requestDetails.endDate
-					}&appId=${requestDetails.appId}${requestDetails.statusQuery || ''}`,
-					method: 'get'
+					url: `${requestDetails.token ? '' : this.privateService.urlFactory('org_project')}/eventdeliveries/countbatchretryevents?eventId=${requestDetails.eventId}&page=${
+						requestDetails.pageNo
+					}&startDate=${requestDetails.startDate}&endDate=${requestDetails.endDate}&appId=${requestDetails.appId}${requestDetails.statusQuery || ''}`,
+					method: 'get',
+					token: requestDetails.token
 				});
 
 				return resolve(response);

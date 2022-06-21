@@ -8,6 +8,7 @@ import { environment } from 'src/environments/environment';
 })
 export class HttpService {
 	APIURL = `${environment.production ? location.origin : 'http://localhost:5005'}/ui`;
+	APP_PORTAL_APIURL = `${environment.production ? location.origin : 'http://localhost:5005'}/portal`;
 
 	constructor(private httpClient: HttpClient) {}
 
@@ -21,13 +22,15 @@ export class HttpService {
 		}
 	}
 
-	request(requestDetails: { url: string; body?: any; method: 'get' | 'post' | 'delete' | 'put' }): Promise<HTTP_RESPONSE> {
+	request(requestDetails: { url: string; body?: any; method: 'get' | 'post' | 'delete' | 'put'; token?: string }): Promise<HTTP_RESPONSE> {
 		return new Promise(async (resolve, reject) => {
 			try {
 				const requestHeader = new HttpHeaders({
-					Authorization: `Bearer ${this.authDetails()?.token}`
+					Authorization: `Bearer ${requestDetails.token ?? this.authDetails()?.token}`
 				});
-				const requestResponse: any = await this.httpClient.request(requestDetails.method, this.APIURL + requestDetails.url, { headers: requestHeader, body: requestDetails.body }).toPromise();
+				const requestResponse: any = await this.httpClient
+					.request(requestDetails.method, (requestDetails.token ? this.APP_PORTAL_APIURL : this.APIURL) + requestDetails.url, { headers: requestHeader, body: requestDetails.body })
+					.toPromise();
 				return resolve(requestResponse);
 			} catch (error) {
 				return reject(error);

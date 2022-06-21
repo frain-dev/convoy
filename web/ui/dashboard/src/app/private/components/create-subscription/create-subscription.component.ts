@@ -2,8 +2,7 @@ import { Component, EventEmitter, Input, OnInit, Output } from '@angular/core';
 import { FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
 import { APP, ENDPOINT } from 'src/app/models/app.model';
-import { GROUP, SOURCE } from 'src/app/models/group.model';
-import { ProjectService } from '../../pages/project/project.service';
+import { SOURCE } from 'src/app/models/group.model';
 import { PrivateService } from '../../private.service';
 import { CreateSubscriptionService } from './create-subscription.service';
 
@@ -39,6 +38,7 @@ export class CreateSubscriptionComponent implements OnInit {
 	eventTags: string[] = [];
 	showCreateAppModal = false;
 	showCreateSourceModal = false;
+	showCreateEndpointModal = false;
 	enableMoreConfig = false;
 	retryLogicTypes = [
 		{ id: 'linear', type: 'Linear time retry' },
@@ -47,27 +47,43 @@ export class CreateSubscriptionComponent implements OnInit {
 	isCreatingSubscription = false;
 	@Output() onAction = new EventEmitter();
 	@Input('action') action: 'update' | 'create' = 'create';
-	projectType: 'incoming' | 'outgoing' = 'incoming';
+	projectType!: 'incoming' | 'outgoing';
 	isLoadingForm = true;
 	subscriptionId = this.route.snapshot.params.id;
+	isloadingAppPortalAppDetails = false;
+	token: string = this.route.snapshot.params.token;
 
 	constructor(private formBuilder: FormBuilder, private privateService: PrivateService, private createSubscriptionService: CreateSubscriptionService, private route: ActivatedRoute) {}
 
 	async ngOnInit() {
 		this.isLoadingForm = true;
-		await Promise.all([this.getApps(), this.getSources(), this.getGetProjectDetails()]);
-		await this.getSubscriptionDetails();
+		await Promise.all([this.getApps(), this.getSources(), this.getGetProjectDetails(), this.getSubscriptionDetails()]);
 		this.isLoadingForm = false;
+	}
+
+	async getAppPortalApp() {
+		this.isloadingAppPortalAppDetails = true;
+
+		try {
+			const apps = await this.createSubscriptionService.getAppPortalApp(this.token);
+			this.subscriptionForm.patchValue({ app_id: apps.data.uid, group_id: apps.data.group_id });
+			this.endPoints = apps.data.endpoints;
+			this.isloadingAppPortalAppDetails = false;
+			return;
+		} catch (error) {
+			this.isloadingAppPortalAppDetails = false;
+			return error;
+		}
 	}
 
 	async getSubscriptionDetails() {
 		if (this.action !== 'update') return;
 
 		try {
-			const response = await this.createSubscriptionService.getSubscriptionDetail(this.subscriptionId);
+			const response = await this.createSubscriptionService.getSubscriptionDetail(this.subscriptionId, this.token);
 			this.subscriptionForm.patchValue(response.data);
 			this.subscriptionForm.patchValue({ source_id: response.data?.source_metadata?.uid, app_id: response.data?.app_metadata?.uid, endpoint_id: response.data?.endpoint_metadata?.uid });
-			this.onUpdateAppSelection();
+			if (!this.token) this.onUpdateAppSelection();
 			this.eventTags = response.data.filter_config.event_types;
 			return;
 		} catch (error) {
@@ -76,9 +92,17 @@ export class CreateSubscriptionComponent implements OnInit {
 	}
 
 	async getApps() {
+		if (this.token) {
+			await this.getAppPortalApp();
+			return;
+		}
+		if (this.privateService.activeProjectDetails.type === 'incoming') return;
+
 		try {
 			const appsResponse = await this.privateService.getApps();
 			this.apps = appsResponse.data.content;
+
+			if (this.subscriptionForm.value.app_id) this.endPoints = this.apps.find(app => app.uid === this.subscriptionForm.value.app_id)?.endpoints;
 			return;
 		} catch (error) {
 			return error;
@@ -86,6 +110,8 @@ export class CreateSubscriptionComponent implements OnInit {
 	}
 
 	async getSources() {
+		if (this.privateService.activeProjectDetails?.type === 'outgoing' || this.token) return;
+
 		try {
 			const sourcesResponse = await this.privateService.getSources();
 			this.sources = sourcesResponse.data.content;
@@ -96,11 +122,13 @@ export class CreateSubscriptionComponent implements OnInit {
 	}
 
 	async getGetProjectDetails() {
+		if (this.token) return;
+
 		try {
 			const response = await this.privateService.getProjectDetails();
 			this.subscriptionForm.patchValue({
 				group_id: response.data.uid,
-				type: 'incoming'
+				type: response.data.type
 			});
 			this.projectType = response.data.type;
 			return;
@@ -119,16 +147,22 @@ export class CreateSubscriptionComponent implements OnInit {
 		this.subscriptionForm.patchValue({ source_id: newSource.uid });
 	}
 
-	async createSubscription() {
+	async saveSubscription() {
 		this.subscriptionForm.patchValue({
 			filter_config: { event_types: this.eventTags }
 		});
 		if (this.projectType === 'incoming' && this.subscriptionForm.invalid) return this.subscriptionForm.markAllAsTouched();
 		if (
-			this.subscriptionForm.get('name')?.invalid &&
-			this.subscriptionForm.get('type')?.invalid &&
-			this.subscriptionForm.get('app_id')?.invalid &&
-			this.subscriptionForm.get('endpoint_id')?.invalid &&
+			this.token &&
+			(this.subscriptionForm.get('name')?.invalid || this.subscriptionForm.get('app_id')?.invalid || this.subscriptionForm.get('endpoint_id')?.invalid || this.subscriptionForm.get('group_id')?.invalid)
+		) {
+			return this.subscriptionForm.markAllAsTouched();
+		}
+		if (
+			this.subscriptionForm.get('name')?.invalid ||
+			this.subscriptionForm.get('type')?.invalid ||
+			this.subscriptionForm.get('app_id')?.invalid ||
+			this.subscriptionForm.get('endpoint_id')?.invalid ||
 			this.subscriptionForm.get('group_id')?.invalid
 		) {
 			return this.subscriptionForm.markAllAsTouched();
@@ -145,8 +179,8 @@ export class CreateSubscriptionComponent implements OnInit {
 		try {
 			const response =
 				this.action == 'update'
-					? await this.createSubscriptionService.updateSubscription({ data: this.subscriptionForm.value, id: this.subscriptionId })
-					: await this.createSubscriptionService.createSubscription(this.subscriptionForm.value);
+					? await this.createSubscriptionService.updateSubscription({ data: this.subscriptionForm.value, id: this.subscriptionId, token: this.token })
+					: await this.createSubscriptionService.createSubscription(this.subscriptionForm.value, this.token);
 			this.isCreatingSubscription = false;
 			this.onAction.emit(response.data);
 		} catch (error) {

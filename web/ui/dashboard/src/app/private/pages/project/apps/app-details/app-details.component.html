@@ -63,6 +63,7 @@
 			<p class="color__black font__14px font__weight-500">{{ appsDetailsItem?.endpoints?.length || 0 }}</p>
 		</div>
 	</div>
+
 	<!-- pending when backend is ready  -->
 	<!-- <div>
         <p class="flex flex__align-items-center font__14px font__weight-500 margin-bottom__8px">
@@ -74,6 +75,7 @@
             <div class="toggle-switch"></div>
         </label>
     </div> -->
+
 	<div class="flex flex__justify-between flex__wrap border__top margin-top__22px">
 		<div class="padding-top__32px" [ngClass]="{ 'width__50 border__right padding-right__32px': !shouldRenderSmallSize, width__100: shouldRenderSmallSize }">
 			<div class="flex flex__align-items-center flex__justify-between" *ngIf="isLoadingAppDetails">
@@ -198,10 +200,10 @@
 				<ul class="margin-top__10px">
 					<li class="list-item__inline">
 						<div class="list-item__inline--label">App Page</div>
-						<div class="list-item__inline--item link" (click)="getAppPortalToken({ redirect: true })">
+						<a class="list-item__inline--item link" [routerLink]="appPortalLink" target="_blank">
 							Open Link
 							<img src="/assets/img/arrow-up-right.svg" alt="link out" />
-						</div>
+						</a>
 					</li>
 					<li class="list-item__inline">
 						<div class="list-item__inline--label">Embed into your platform</div>
@@ -210,12 +212,8 @@
 							<img src="/assets/img/arrow-up-right.svg" alt="link out" />
 						</a>
 					</li>
-					<li class="list-item__inline">
-						<div class="list-item__inline--label">Embed Iframe portal</div>
-						<div class="list-item__inline--item"></div>
-					</li>
 					<div class="bg__white-100 border__all__2 rounded__10px padding-all__16px margin-top__16px">
-						<div class="text font__14px color__grey overflow--scroll__x">{{ appPortalLink }}</div>
+						<div class="text font__14px color__grey overflow--scroll__x">{{ appPortalIframe }}</div>
 						<div class="flex flex__justify-end">
 							<button class="button__clear button--has-icon icon-left" (click)="copyText(appPortalLink)">
 								<img src="/assets/img/copy.svg" alt="copy" />
@@ -239,12 +237,19 @@
 <!-- create app, add new endpoint, add event modals  -->
 <div class="modal modal__right" *ngIf="showAddEndpointModal || showAddEventModal || showEndpointSecret">
 	<!-- add endpoint modal  -->
-	<app-create-endpoint
-		[selectedEndpoint]="selectedEndpoint"
-		[appId]="appsDetailsItem.uid"
-		(onAction)="$event.action == 'cancel' ? (showAddEndpointModal = false) : getAppDetails(appsDetailsItem.uid); showAddEndpointModal = false"
-		*ngIf="showAddEndpointModal"
-	></app-create-endpoint>
+	<ng-container *ngIf="showAddEndpointModal">
+		<div class="modal--head">
+			<h2>{{ selectedEndpoint ? 'Edit' : 'Add' }} Endpoint</h2>
+			<a (click)="showAddEndpointModal = false">
+				<img src="/assets/img/modal-close-icon.svg" alt="close icon" />
+			</a>
+		</div>
+		<app-create-endpoint
+			[selectedEndpoint]="selectedEndpoint"
+			[appId]="appsDetailsItem.uid"
+			(onAction)="$event.action == 'cancel' ? (showAddEndpointModal = false) : getAppDetails(appsDetailsItem.uid); showAddEndpointModal = false"
+		></app-create-endpoint>
+	</ng-container>
 
 	<!-- add event modal  -->
 	<app-send-event
