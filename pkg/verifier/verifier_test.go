@@ -18,10 +18,10 @@ func Test_HmacVerifier_VerifyRequest(t *testing.T) {
 	}{
 		"invalid_signature": {
 			opts: &HmacOptions{
-				header:   "X-Convoy-Signature",
-				hash:     "SHA512",
-				secret:   "Convoy",
-				encoding: "hex",
+				Header:   "X-Convoy-Signature",
+				Hash:     "SHA512",
+				Secret:   "Convoy",
+				Encoding: "hex",
 			},
 			payload: []byte(`Test Payload Body`),
 			requestFn: func(t *testing.T) *http.Request {
@@ -37,10 +37,10 @@ func Test_HmacVerifier_VerifyRequest(t *testing.T) {
 		},
 		"invalid_hex_encoding": {
 			opts: &HmacOptions{
-				header:   "X-Convoy-Signature",
-				hash:     "SHA512",
-				secret:   "Convoy",
-				encoding: "hex",
+				Header:   "X-Convoy-Signature",
+				Hash:     "SHA512",
+				Secret:   "Convoy",
+				Encoding: "hex",
 			},
 			payload: []byte(`Test Payload Body`),
 			requestFn: func(t *testing.T) *http.Request {
@@ -56,10 +56,10 @@ func Test_HmacVerifier_VerifyRequest(t *testing.T) {
 		},
 		"invalid_base64_encoding": {
 			opts: &HmacOptions{
-				header:   "X-Convoy-Signature",
-				hash:     "SHA512",
-				secret:   "Convoy",
-				encoding: "base64",
+				Header:   "X-Convoy-Signature",
+				Hash:     "SHA512",
+				Secret:   "Convoy",
+				Encoding: "base64",
 			},
 			payload: []byte(`Test Payload Body`),
 			requestFn: func(t *testing.T) *http.Request {
@@ -75,10 +75,10 @@ func Test_HmacVerifier_VerifyRequest(t *testing.T) {
 		},
 		"empty_signature": {
 			opts: &HmacOptions{
-				header:   "X-Convoy-Signature",
-				hash:     "SHA512",
-				secret:   "Convoy",
-				encoding: "base64",
+				Header:   "X-Convoy-Signature",
+				Hash:     "SHA512",
+				Secret:   "Convoy",
+				Encoding: "base64",
 			},
 			payload: []byte(`Test Payload Body`),
 			requestFn: func(t *testing.T) *http.Request {
@@ -92,10 +92,10 @@ func Test_HmacVerifier_VerifyRequest(t *testing.T) {
 		},
 		"valid_hex_request": {
 			opts: &HmacOptions{
-				header:   "X-Convoy-Signature",
-				hash:     "SHA512",
-				secret:   "Convoy",
-				encoding: "hex",
+				Header:   "X-Convoy-Signature",
+				Hash:     "SHA512",
+				Secret:   "Convoy",
+				Encoding: "hex",
 			},
 			payload: []byte(`Test Payload Body`),
 			requestFn: func(t *testing.T) *http.Request {
@@ -112,10 +112,10 @@ func Test_HmacVerifier_VerifyRequest(t *testing.T) {
 		},
 		"valid_base64_request": {
 			opts: &HmacOptions{
-				header:   "X-Convoy-Signature",
-				hash:     "SHA512",
-				secret:   "Convoy",
-				encoding: "base64",
+				Header:   "X-Convoy-Signature",
+				Hash:     "SHA512",
+				Secret:   "Convoy",
+				Encoding: "base64",
 			},
 			payload: []byte(`Test Payload Body`),
 			requestFn: func(t *testing.T) *http.Request {
@@ -132,10 +132,10 @@ func Test_HmacVerifier_VerifyRequest(t *testing.T) {
 		},
 		"custom_get_signature_fn": {
 			opts: &HmacOptions{
-				header:   "X-Github-Signature",
-				hash:     "SHA512",
-				secret:   "Convoy",
-				encoding: "base64",
+				Header:   "X-Github-Signature",
+				Hash:     "SHA512",
+				Secret:   "Convoy",
+				Encoding: "base64",
 				GetSignature: func(sig string) string {
 					return strings.Split(sig, "sha256=")[1]
 				},
