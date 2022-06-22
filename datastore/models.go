@@ -117,6 +117,17 @@ var (
 		Count:    1000,
 		Duration: "1m",
 	}
+
+	DefaultRetryConfig = RetryConfiguration{
+		Type:       LinearStrategyProvider,
+		Duration:   "10s",
+		RetryCount: 3,
+	}
+
+	DefaultAlertConfig = AlertConfiguration{
+		Count:     4,
+		Threshold: "1h",
+	}
 )
 
 const (
