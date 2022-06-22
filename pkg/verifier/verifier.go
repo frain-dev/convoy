@@ -7,7 +7,6 @@ import (
 	"encoding/base64"
 	"encoding/hex"
 	"errors"
-	"fmt"
 	"hash"
 	"net/http"
 	"strings"
@@ -56,7 +55,6 @@ func (hV *HmacVerifier) VerifyRequest(r *http.Request, payload []byte) error {
 
 	signature := r.Header.Get(hV.opts.Header)
 
-	fmt.Printf("SIG: %v\n", signature)
 	if hV.opts.GetSignature != nil {
 		signature = hV.opts.GetSignature(signature)
 	}
