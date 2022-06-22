@@ -83,10 +83,12 @@
 <div class="overlay" *ngIf="showOverlay" (click)="showOverlay = false; showMoreDropdown = false; showOrgDropdown = false"></div>
 
 <div class="_overlay z-index--2" *ngIf="showAddOrganisationModal || showAddAnalytics" (click)="showAddOrganisationModal = false; showAddAnalytics = false"></div>
-<div class="modal modal__right z-index--3" *ngIf="showAddOrganisationModal || showAddAnalytics">
+<div class="modal modal__right z-index--3" *ngIf="showAddOrganisationModal">
 	<app-create-organisation *ngIf="showAddOrganisationModal" (closeModal)="closeAddOrganisationModal($event)"></app-create-organisation>
+</div>
 
-	<app-add-analytics *ngIf="showAddAnalytics" (closeModal)="showAddAnalytics = false"></app-add-analytics>
+<div class="modal modal__center large z-index--3" *ngIf="showAddAnalytics">
+	<app-add-analytics *ngIf="showAddAnalytics" [authDetails]="authDetails()" (closeModal)="showAddAnalytics = false"></app-add-analytics>
 </div>
 
 <router-outlet></router-outlet>
