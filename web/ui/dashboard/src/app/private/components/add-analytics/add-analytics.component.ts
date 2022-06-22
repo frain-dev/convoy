@@ -1,4 +1,4 @@
-import { Component, EventEmitter, OnInit, Output } from '@angular/core';
+import { Component, EventEmitter, Input, OnInit, Output } from '@angular/core';
 import { FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { AddAnalyticsService } from './add-analytics.service';
 
@@ -9,6 +9,7 @@ import { AddAnalyticsService } from './add-analytics.service';
 })
 export class AddAnalyticsComponent implements OnInit {
 	@Output() closeModal = new EventEmitter<any>();
+	@Input() authDetails: any;
 	loading: boolean = false;
 	addAnalyticsForm: FormGroup = this.formBuilder.group({
 		is_analytics_enabled: [null, Validators.required]
