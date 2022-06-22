@@ -15,14 +15,16 @@ export class PrivateComponent implements OnInit {
 	showMoreDropdown = false;
 	showOverlay = false;
 	showAddOrganisationModal = false;
+	showAddAnalytics = false;
 	apiURL = this.generalService.apiURL();
 	organisations!: ORGANIZATION_DATA[];
 	userOrganization!: ORGANIZATION_DATA;
 
 	constructor(private generalService: GeneralService, private router: Router, private privateService: PrivateService) {}
 
-	ngOnInit() {
-		this.getOrganizations();
+	async ngOnInit() {
+		this.getConfiguration();
+		await this.getOrganizations();
 	}
 
 	async logout() {
@@ -35,6 +37,13 @@ export class PrivateComponent implements OnInit {
 	authDetails() {
 		const authDetails = localStorage.getItem('CONVOY_AUTH');
 		return authDetails ? JSON.parse(authDetails) : false;
+	}
+
+	async getConfiguration() {
+		try {
+			const response = await this.privateService.getConfiguration();
+			if (response.data.length === 0) this.showAddAnalytics = true;
+		} catch {}
 	}
 
 	async getOrganizations() {
@@ -56,6 +65,7 @@ export class PrivateComponent implements OnInit {
 	}
 
 	async selectOrganisation(organisation: ORGANIZATION_DATA) {
+		this.privateService.organisationDetails = organisation;
 		this.userOrganization = organisation;
 		localStorage.setItem('CONVOY_ORG', JSON.stringify(organisation));
 		this.showOrgDropdown = false;

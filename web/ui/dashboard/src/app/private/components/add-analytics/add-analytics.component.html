@@ -1,0 +1,41 @@
+<div class="modal--head">
+	<h1>Add Analytics</h1>
+	<button class="modal--close button__clear" (click)="closeModal.emit()">
+		<img src="/assets/img/modal-close-icon.svg" alt="close icon" />
+	</button>
+</div>
+
+<div class="modal--body">
+	<form [formGroup]="addAnalyticsForm" (ngSubmit)="addAnalytics()">
+		<h3 class="margin-top__24px margin-bottom__16px flex flex__align-items-center">
+			Enable Analytics
+			<app-tooltip [size]="'small'" position="right" class="margin-left__4px">These are the specifications for how many events are to be sent to an endpoint per time</app-tooltip>
+		</h3>
+		<div class="grid grid__col-2 grid--gap__24px">
+			<div class="checkbox-option">
+				<input type="radio" id="true" name="is_analytics_enabled" [value]="true" formControlName="is_analytics_enabled" />
+				<label for="true" class="border__all padding-all__16px rounded__4px display__block animate">
+					<div class="flex flex__align-items-center">
+						<div class="checkbox rounded__50px margin-bottom__0px border__all width__16px height__16px animate"></div>
+						<p class="font__14px font__weight-600 margin-left__8px">True</p>
+					</div>
+				</label>
+			</div>
+
+			<div class="checkbox-option">
+				<input type="radio" id="false" name="is_analytics_enabled" [value]="false" formControlName="is_analytics_enabled" />
+				<label for="false" class="border__all padding-all__16px rounded__4px display__block animate">
+					<div class="flex flex__align-items-center">
+						<div class="checkbox rounded__50px margin-bottom__0px border__all width__16px height__16px animate"></div>
+						<p class="font__14px font__weight-600 margin-left__8px">False</p>
+					</div>
+				</label>
+			</div>
+		</div>
+
+		<div class="flex flex__justify-end margin-top__40px">
+			<button class="button button__white margin-right__24px" type="button" (click)="closeModal.emit()">Discard</button>
+			<button class="button button__primary" [disabled]="loading">Save</button>
+		</div>
+	</form>
+</div>

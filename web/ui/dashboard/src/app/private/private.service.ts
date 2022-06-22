@@ -31,6 +31,21 @@ export class PrivateService {
 		}
 	}
 
+	getConfiguration(): Promise<HTTP_RESPONSE> {
+		return new Promise(async (resolve, reject) => {
+			try {
+				const response = await this.http.request({
+					url: `/configuration`,
+					method: 'get'
+				});
+
+				return resolve(response);
+			} catch (error: any) {
+				return reject(error);
+			}
+		});
+	}
+
 	async getApps(requestDetails?: { pageNo?: number; searchString?: string }): Promise<HTTP_RESPONSE> {
 		return new Promise(async (resolve, reject) => {
 			try {
