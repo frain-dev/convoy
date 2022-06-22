@@ -454,8 +454,6 @@ definitions:
       last_name:
         type: string
       reset_password_expires_at:
-        type: integer
-      reset_password_token:
         type: string
       role:
         $ref: '#/definitions/auth.Role'
@@ -3845,7 +3843,7 @@ paths:
       summary: Create a group
       tags:
       - Group
-  /ui/organisations/{orgID}/invite_user:
+  /ui/organisations/{orgID}/invites:
     post:
       consumes:
       - application/json
@@ -3904,6 +3902,193 @@ paths:
       security:
       - ApiKeyAuth: []
       summary: Invite a user to join an organisation
+      tags:
+      - Organisation
+  /ui/organisations/{orgID}/invites/{inviteID}/cancel:
+    post:
+      consumes:
+      - application/json
+      description: This endpoint cancels an organization invite
+      parameters:
+      - description: organisation id
+        in: path
+        name: orgID
+        required: true
+        type: string
+      - description: invite id
+        in: path
+        name: inviteID
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/server.serverResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/server.Stub'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            allOf:
+            - $ref: '#/definitions/server.serverResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/server.Stub'
+              type: object
+        "401":
+          description: Unauthorized
+          schema:
+            allOf:
+            - $ref: '#/definitions/server.serverResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/server.Stub'
+              type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            allOf:
+            - $ref: '#/definitions/server.serverResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/server.Stub'
+              type: object
+      security:
+      - ApiKeyAuth: []
+      summary: cancel organization invite
+      tags:
+      - Organisation
+  /ui/organisations/{orgID}/invites/{inviteID}/resend:
+    post:
+      consumes:
+      - application/json
+      description: This endpoint resends the organization invite to a user
+      parameters:
+      - description: organisation id
+        in: path
+        name: orgID
+        required: true
+        type: string
+      - description: invite id
+        in: path
+        name: inviteID
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/server.serverResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/server.Stub'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            allOf:
+            - $ref: '#/definitions/server.serverResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/server.Stub'
+              type: object
+        "401":
+          description: Unauthorized
+          schema:
+            allOf:
+            - $ref: '#/definitions/server.serverResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/server.Stub'
+              type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            allOf:
+            - $ref: '#/definitions/server.serverResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/server.Stub'
+              type: object
+      security:
+      - ApiKeyAuth: []
+      summary: resend organization invite
+      tags:
+      - Organisation
+  /ui/organisations/{orgID}/invites/pending:
+    get:
+      consumes:
+      - application/json
+      description: This endpoint fetches pending organisation invites
+      parameters:
+      - description: results per page
+        in: query
+        name: perPage
+        type: string
+      - description: page number
+        in: query
+        name: page
+        type: string
+      - description: sort order
+        in: query
+        name: sort
+        type: string
+      - description: organisation id
+        in: path
+        name: orgID
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/server.serverResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/server.Stub'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            allOf:
+            - $ref: '#/definitions/server.serverResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/server.Stub'
+              type: object
+        "401":
+          description: Unauthorized
+          schema:
+            allOf:
+            - $ref: '#/definitions/server.serverResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/server.Stub'
+              type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            allOf:
+            - $ref: '#/definitions/server.serverResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/server.Stub'
+              type: object
+      security:
+      - ApiKeyAuth: []
+      summary: Fetch pending organisation invites
       tags:
       - Organisation
   /ui/organisations/{orgID}/members:
@@ -4162,73 +4347,6 @@ paths:
       security:
       - ApiKeyAuth: []
       summary: Update an organisation's member
-      tags:
-      - Organisation
-  /ui/organisations/{orgID}/pending_invites:
-    get:
-      consumes:
-      - application/json
-      description: This endpoint fetches pending organisation invites
-      parameters:
-      - description: results per page
-        in: query
-        name: perPage
-        type: string
-      - description: page number
-        in: query
-        name: page
-        type: string
-      - description: sort order
-        in: query
-        name: sort
-        type: string
-      - description: organisation id
-        in: path
-        name: orgID
-        required: true
-        type: string
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            allOf:
-            - $ref: '#/definitions/server.serverResponse'
-            - properties:
-                data:
-                  $ref: '#/definitions/server.Stub'
-              type: object
-        "400":
-          description: Bad Request
-          schema:
-            allOf:
-            - $ref: '#/definitions/server.serverResponse'
-            - properties:
-                data:
-                  $ref: '#/definitions/server.Stub'
-              type: object
-        "401":
-          description: Unauthorized
-          schema:
-            allOf:
-            - $ref: '#/definitions/server.serverResponse'
-            - properties:
-                data:
-                  $ref: '#/definitions/server.Stub'
-              type: object
-        "500":
-          description: Internal Server Error
-          schema:
-            allOf:
-            - $ref: '#/definitions/server.serverResponse'
-            - properties:
-                data:
-                  $ref: '#/definitions/server.Stub'
-              type: object
-      security:
-      - ApiKeyAuth: []
-      summary: Fetch pending organisation invites
       tags:
       - Organisation
   /ui/organisations/{orgID}/security/keys:

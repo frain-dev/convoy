@@ -117,7 +117,7 @@ func SeedDefaultGroup(db datastore.DatabaseClient, orgID string) (*datastore.Gro
 	defaultGroup := &datastore.Group{
 		UID:            uuid.New().String(),
 		Name:           "default-group",
-		Type:           "outgoing",
+		Type:           datastore.OutgoingGroup,
 		OrganisationID: orgID,
 		Config: &datastore.GroupConfig{
 			Strategy: &datastore.StrategyConfiguration{
