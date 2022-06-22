@@ -87,7 +87,7 @@ func ensureDefaultUser(ctx context.Context, a *app) error {
 		UID:            uuid.NewString(),
 		FirstName:      "default",
 		LastName:       "default",
-		Email:          "onipelumi25@gmail.com",
+		Email:          "superuser@default.com",
 		Password:       string(p.Hash),
 		CreatedAt:      primitive.NewDateTimeFromTime(time.Now()),
 		UpdatedAt:      primitive.NewDateTimeFromTime(time.Now()),

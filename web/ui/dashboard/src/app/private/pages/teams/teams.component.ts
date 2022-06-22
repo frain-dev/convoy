@@ -15,10 +15,9 @@ export class TeamsComponent implements OnInit {
 	tableHead: string[] = ['Name', 'Role', 'Projects', ''];
 	filterOptions: ['active', 'pending'] = ['active', 'pending'];
 	showInviteTeamMemberModal = this.router.url.split('/')[2]?.includes('new');
-	showTeamMemberDropdown = false;
-	showTeamGroupDropdown = false;
-	showSuccessModal = false;
 	showDeactivateModal = false;
+	showCancelInviteModal = false;
+	cancelingInvite = false;
 	selectedMember!: TEAMS;
 	isFetchingTeamMembers = false;
 	isFetchingPendingInvites = false;
@@ -34,6 +33,7 @@ export class TeamsComponent implements OnInit {
 	noInvitesData = false;
 	showFilterDropdown = false;
 	invitingUser = false;
+	showPendingInvitesDropdown = false;
 	inviteUserForm: FormGroup = this.formBuilder.group({
 		invitee_email: ['', Validators.compose([Validators.required, Validators.email])],
 		role: this.formBuilder.group({
@@ -41,7 +41,7 @@ export class TeamsComponent implements OnInit {
 		})
 	});
 
-	constructor(private generalService: GeneralService, private router: Router, private route: ActivatedRoute, private teamService: TeamsService, private formBuilder:FormBuilder) {}
+	constructor(private generalService: GeneralService, private router: Router, private route: ActivatedRoute, private teamService: TeamsService, private formBuilder: FormBuilder) {}
 
 	ngOnInit() {
 		this.toggleFilter(this.route.snapshot.queryParams?.inviteType ?? 'active');
@@ -64,7 +64,7 @@ export class TeamsComponent implements OnInit {
 	toggleFilter(selectedFilter: 'active' | 'pending') {
 		this.selectedFilterOption = selectedFilter;
 		this.selectedFilterOption === 'active' ? this.fetchTeamMembers() : this.fetchPendingTeamMembers();
-		if(!this.router.url.split('/')[2]) this.addFilterToUrl();
+		if (!this.router.url.split('/')[2]) this.addFilterToUrl();
 	}
 	async fetchPendingTeamMembers(requestDetails?: { page?: number }) {
 		this.isFetchingPendingInvites = true;
@@ -100,10 +100,6 @@ export class TeamsComponent implements OnInit {
 		}
 	}
 
-	showDropdown(id: string) {
-		this.showOverlay = false;
-		this.currentId == id ? (this.currentId = '') : (this.currentId = id);
-	}
 	
 	addFilterToUrl() {
 		const queryParams: any = {};
@@ -127,6 +123,28 @@ export class TeamsComponent implements OnInit {
 			this.router.navigate(['/team'], { queryParams: { inviteType: 'pending' } });
 		} catch {
 			this.invitingUser = false;
+		}
+	}
+
+	async resendInvite(inviteId: string) {
+		try {
+			const response = await this.teamService.resendPendingInvite(inviteId);
+			this.generalService.showNotification({ message: response.message, style: 'success' });
+			this.fetchPendingTeamMembers();
+		} catch {}
+	}
+
+	async cancelInvite() {
+		this.cancelingInvite = true;
+		try {
+			const response = await this.teamService.cancelPendingInvite(this.currentId);
+			this.generalService.showNotification({ message: response.message, style: 'success' });
+			this.fetchPendingTeamMembers();
+			this.currentId = '';
+			this.showCancelInviteModal = false;
+			this.cancelingInvite = false;
+		} catch {
+			this.cancelingInvite = false;
 		}
 	}
 }

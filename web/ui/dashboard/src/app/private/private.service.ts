@@ -14,7 +14,6 @@ export class PrivateService {
 	constructor(private http: HttpService) {}
 
 	getOrganisation(): ORGANIZATION_DATA {
-		if (this.organisationDetails) return this.organisationDetails;
 		let org = localStorage.getItem('CONVOY_ORG');
 		return org ? JSON.parse(org) : null;
 	}
