@@ -100,7 +100,6 @@ export class TeamsComponent implements OnInit {
 		}
 	}
 
-	
 	addFilterToUrl() {
 		const queryParams: any = {};
 		queryParams.inviteType = this.selectedFilterOption;
