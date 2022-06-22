@@ -7,6 +7,7 @@ import (
 	"encoding/base64"
 	"encoding/hex"
 	"errors"
+	"fmt"
 	"hash"
 	"net/http"
 	"strings"
@@ -29,49 +30,54 @@ type Verifier interface {
 	VerifyRequest(r *http.Request, payload []byte) error
 }
 
-type HmacVerifier struct {
-	header   string
-	hash     string
-	secret   string
-	encoding string
+type HmacOptions struct {
+	Header       string
+	GetSignature func(string) string
+	Hash         string
+	Secret       string
+	Encoding     string
 }
 
-func NewHmacVerifier(header, hash, secret, encoding string) *HmacVerifier {
+type HmacVerifier struct {
+	opts *HmacOptions
+}
+
+func NewHmacVerifier(opts *HmacOptions) *HmacVerifier {
 	// TODO(subomi): assert that they're all non-nil values.
 
-	return &HmacVerifier{
-		header:   header,
-		hash:     hash,
-		secret:   secret,
-		encoding: encoding,
-	}
+	return &HmacVerifier{opts}
 }
 
 func (hV *HmacVerifier) VerifyRequest(r *http.Request, payload []byte) error {
-	hash, err := hV.getHashFunction(hV.hash)
+	hash, err := hV.getHashFunction(hV.opts.Hash)
 	if err != nil {
 		return err
 	}
 
-	rHeader := r.Header.Get(hV.header)
+	signature := r.Header.Get(hV.opts.Header)
 
-	if len(strings.TrimSpace(rHeader)) == 0 {
+	fmt.Printf("SIG: %v\n", signature)
+	if hV.opts.GetSignature != nil {
+		signature = hV.opts.GetSignature(signature)
+	}
+
+	if len(strings.TrimSpace(signature)) == 0 {
 		return ErrSignatureCannotBeEmpty
 	}
 
-	mac := hmac.New(hash, []byte(hV.secret))
+	mac := hmac.New(hash, []byte(hV.opts.Secret))
 	mac.Write(payload)
 	computedMAC := mac.Sum(nil)
 
 	var sentMAC []byte
 
-	if hV.encoding == "hex" {
-		sentMAC, err = hex.DecodeString(rHeader)
+	if hV.opts.Encoding == "hex" {
+		sentMAC, err = hex.DecodeString(signature)
 		if err != nil {
 			return ErrCannotDecodeHexEncodedMACHeader
 		}
-	} else if hV.encoding == "base64" {
-		sentMAC, err = base64.StdEncoding.DecodeString(rHeader)
+	} else if hV.opts.Encoding == "base64" {
+		sentMAC, err = base64.StdEncoding.DecodeString(signature)
 		if err != nil {
 			return ErrCannotDecodeBase64EncodedMACHeader
 		}
@@ -178,4 +184,30 @@ func (aV *APIKeyVerifier) VerifyRequest(r *http.Request, payload []byte) error {
 	}
 
 	return nil
+}
+
+type GithubVerifier struct {
+	HmacOpts *HmacOptions
+}
+
+func NewGithubVerifier(secret string) *GithubVerifier {
+	gv := &GithubVerifier{}
+	gv.HmacOpts = &HmacOptions{
+		Header:       "X-Hub-Signature-256",
+		Hash:         "SHA256",
+		GetSignature: gv.getSignature,
+		Secret:       secret,
+		Encoding:     "hex",
+	}
+
+	return gv
+}
+
+func (gV *GithubVerifier) VerifyRequest(r *http.Request, payload []byte) error {
+	v := HmacVerifier{gV.HmacOpts}
+	return v.VerifyRequest(r, payload)
+}
+
+func (gV *GithubVerifier) getSignature(sig string) string {
+	return strings.Split(sig, "sha256=")[1]
 }

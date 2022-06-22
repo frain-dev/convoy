@@ -46,6 +46,7 @@ func (s *SourceService) CreateSource(ctx context.Context, newSource *models.Sour
 		MaskID:         uniuri.NewLen(16),
 		Name:           newSource.Name,
 		Type:           newSource.Type,
+		Provider:       datastore.SourceProvider(newSource.Provider),
 		Verifier:       &newSource.Verifier,
 		CreatedAt:      primitive.NewDateTimeFromTime(time.Now()),
 		UpdatedAt:      primitive.NewDateTimeFromTime(time.Now()),

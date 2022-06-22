@@ -393,6 +393,8 @@ definitions:
         type: string
       name:
         type: string
+      provider:
+        type: string
       type:
         type: string
       uid:
@@ -671,6 +673,8 @@ definitions:
         type: boolean
       name:
         type: string
+      provider:
+        type: string
       type:
         type: string
       verifier:
@@ -689,6 +693,8 @@ definitions:
       mask_id:
         type: string
       name:
+        type: string
+      provider:
         type: string
       type:
         type: string

@@ -11,6 +11,7 @@ import (
 	"github.com/frain-dev/convoy/datastore"
 	"github.com/frain-dev/convoy/pkg/verifier"
 	"github.com/frain-dev/convoy/queue"
+	"github.com/frain-dev/convoy/util"
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/render"
 	"github.com/google/uuid"
@@ -40,28 +41,41 @@ func (a *applicationHandler) IngestEvent(w http.ResponseWriter, r *http.Request)
 	var v verifier.Verifier
 	verifierConfig := source.Verifier
 
-	switch verifierConfig.Type {
-	case datastore.HMacVerifier:
-		v = verifier.NewHmacVerifier(
-			verifierConfig.HMac.Header,
-			verifierConfig.HMac.Hash,
-			verifierConfig.HMac.Secret,
-			string(verifierConfig.HMac.Encoding),
-		)
-	case datastore.BasicAuthVerifier:
-		v = verifier.NewBasicAuthVerifier(
-			verifierConfig.BasicAuth.UserName,
-			verifierConfig.BasicAuth.Password,
-		)
-	case datastore.APIKeyVerifier:
-		v = verifier.NewAPIKeyVerifier(
-			verifierConfig.ApiKey.HeaderValue,
-			verifierConfig.ApiKey.HeaderName,
-		)
-	default:
-		_ = render.Render(w, r, newErrorResponse("Source must have a valid verifier",
-			http.StatusBadRequest))
-		return
+	if !util.IsStringEmpty(string(source.Provider)) {
+		switch source.Provider {
+		case datastore.GithubSourceProvider:
+			v = verifier.NewGithubVerifier(verifierConfig.HMac.Secret)
+		default:
+			_ = render.Render(w, r, newErrorResponse("Provider type undefined",
+				http.StatusBadRequest))
+			return
+		}
+	} else {
+		switch verifierConfig.Type {
+		case datastore.HMacVerifier:
+			opts := &verifier.HmacOptions{
+				Header:   verifierConfig.HMac.Header,
+				Hash:     verifierConfig.HMac.Hash,
+				Secret:   verifierConfig.HMac.Secret,
+				Encoding: string(verifierConfig.HMac.Encoding),
+			}
+			v = verifier.NewHmacVerifier(opts)
+
+		case datastore.BasicAuthVerifier:
+			v = verifier.NewBasicAuthVerifier(
+				verifierConfig.BasicAuth.UserName,
+				verifierConfig.BasicAuth.Password,
+			)
+		case datastore.APIKeyVerifier:
+			v = verifier.NewAPIKeyVerifier(
+				verifierConfig.ApiKey.HeaderValue,
+				verifierConfig.ApiKey.HeaderName,
+			)
+		default:
+			_ = render.Render(w, r, newErrorResponse("Source must have a valid verifier",
+				http.StatusBadRequest))
+			return
+		}
 	}
 
 	// 3.1 On Failure
