@@ -46,7 +46,7 @@ func (db *groupRepo) LoadGroups(ctx context.Context, f *datastore.GroupFilter) (
 		filter["name"] = bson.M{"$in": f.Names}
 	}
 
-	err := db.store.FindAll(ctx, f.ToGenericMap(), nil, groups)
+	err := db.store.FindAll(ctx, f.ToGenericMap(), nil, &groups)
 
 	return groups, err
 }
@@ -86,7 +86,7 @@ func (db *groupRepo) UpdateGroup(ctx context.Context, o *datastore.Group) error 
 func (db *groupRepo) FetchGroupByID(ctx context.Context, id string) (*datastore.Group, error) {
 	group := new(datastore.Group)
 
-	err := db.store.FindByID(ctx, group.UID, nil, &group)
+	err := db.store.FindByID(ctx, id, nil, &group)
 	if errors.Is(err, mongo.ErrNoDocuments) {
 		err = datastore.ErrGroupNotFound
 	}
@@ -135,16 +135,11 @@ func (db *groupRepo) FillGroupsStatistics(ctx context.Context, groups []*datasto
 				{Key: "messages_sent", Value: bson.D{{Key: "$size", Value: "$group_events"}}},
 			}},
 	}
+	var stats []datastore.GroupStatistics
 
-	data, err := db.inner.Aggregate(ctx, mongo.Pipeline{matchStage, lookupStage1, lookupStage2, projectStage})
+	err := db.store.Aggregate(ctx, mongo.Pipeline{matchStage, lookupStage1, lookupStage2, projectStage}, &stats, false)
 	if err != nil {
 		log.WithError(err).Error("failed to run group statistics aggregation")
-		return err
-	}
-
-	var stats []datastore.GroupStatistics
-	if err = data.All(ctx, &stats); err != nil {
-		log.WithError(err).Error("failed to marshal group statistics")
 		return err
 	}
 
@@ -179,18 +174,9 @@ func (db *groupRepo) FetchGroupsByIDs(ctx context.Context, ids []string) ([]data
 
 	groups := make([]datastore.Group, 0)
 
-	cur, err := db.inner.Find(ctx, filter, nil)
+	err := db.store.FindMany(ctx, filter, nil, nil, 0, 0, groups)
 	if err != nil {
-		return groups, err
-	}
-
-	for cur.Next(ctx) {
-		var group datastore.Group
-		if err := cur.Decode(&group); err != nil {
-			return groups, err
-		}
-
-		groups = append(groups, group)
+		return nil, err
 	}
 
 	return groups, err

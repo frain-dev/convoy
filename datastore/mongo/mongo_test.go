@@ -5,10 +5,11 @@ package mongo
 
 import (
 	"context"
-    "os"
+	"os"
 	"testing"
 
 	"github.com/frain-dev/convoy/config"
+	"github.com/frain-dev/convoy/datastore"
 	"github.com/stretchr/testify/require"
 	"go.mongodb.org/mongo-driver/mongo"
 )
@@ -38,4 +39,10 @@ func getDB(t *testing.T) (*mongo.Database, func()) {
 		require.NoError(t, client.Drop(context.TODO()))
 		require.NoError(t, db.Disconnect(context.Background()))
 	}
+}
+
+func getStore(db *mongo.Database, collection string) datastore.Store {
+
+	store := datastore.New(db, collection)
+	return store
 }

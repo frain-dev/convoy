@@ -16,7 +16,9 @@ func Test_FetchGroupByID(t *testing.T) {
 	db, closeFn := getDB(t)
 	defer closeFn()
 
-	groupRepo := NewGroupRepo(db)
+	store := getStore(db, GroupCollection)
+
+	groupRepo := NewGroupRepo(db, store)
 
 	newOrg := &datastore.Group{
 		Name:           "Yet another group",
@@ -36,6 +38,8 @@ func Test_FetchGroupByID(t *testing.T) {
 func Test_CreateGroup(t *testing.T) {
 	db, closeFn := getDB(t)
 	defer closeFn()
+
+	store := getStore(db, GroupCollection)
 
 	tt := []struct {
 		name        string
@@ -114,7 +118,7 @@ func Test_CreateGroup(t *testing.T) {
 
 	for _, tc := range tt {
 		t.Run(tc.name, func(t *testing.T) {
-			groupRepo := NewGroupRepo(db)
+			groupRepo := NewGroupRepo(db, store)
 
 			for i, group := range tc.groups {
 				newGroup := &datastore.Group{
@@ -145,8 +149,9 @@ func Test_CreateGroup(t *testing.T) {
 func Test_LoadGroups(t *testing.T) {
 	db, closeFn := getDB(t)
 	defer closeFn()
+	store := getStore(db, GroupCollection)
 
-	orgRepo := NewGroupRepo(db)
+	orgRepo := NewGroupRepo(db, store)
 
 	orgs, err := orgRepo.LoadGroups(context.Background(), &datastore.GroupFilter{})
 	require.NoError(t, err)
@@ -158,7 +163,10 @@ func Test_FillGroupsStatistics(t *testing.T) {
 	db, closeFn := getDB(t)
 	defer closeFn()
 
-	groupRepo := NewGroupRepo(db)
+	groupStore := getStore(db, GroupCollection)
+	eventStore := getStore(db, EventCollection)
+
+	groupRepo := NewGroupRepo(db, groupStore)
 
 	group1 := &datastore.Group{
 		Name: "group1",
@@ -199,7 +207,7 @@ func Test_FillGroupsStatistics(t *testing.T) {
 		AppID:   app1.UID,
 	}
 
-	err = NewEventRepository(db).CreateEvent(context.Background(), event)
+	err = NewEventRepository(db, eventStore).CreateEvent(context.Background(), event)
 	require.NoError(t, err)
 
 	groups := []*datastore.Group{group1, group2}
