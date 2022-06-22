@@ -64,12 +64,6 @@ func (s *SubcriptionService) CreateSubscription(ctx context.Context, group *data
 		}
 	}
 
-	if newSubscription.FilterConfig == nil ||
-		newSubscription.FilterConfig.EventTypes == nil ||
-		len(newSubscription.FilterConfig.EventTypes) == 0 {
-		newSubscription.FilterConfig = &datastore.FilterConfiguration{EventTypes: []string{"*"}}
-	}
-
 	subscription := &datastore.Subscription{
 		GroupID:    group.UID,
 		UID:        uuid.New().String(),
@@ -88,6 +82,20 @@ func (s *SubcriptionService) CreateSubscription(ctx context.Context, group *data
 
 		Status:         datastore.ActiveSubscriptionStatus,
 		DocumentStatus: datastore.ActiveDocumentStatus,
+	}
+
+	if subscription.FilterConfig == nil ||
+		subscription.FilterConfig.EventTypes == nil ||
+		len(subscription.FilterConfig.EventTypes) == 0 {
+		subscription.FilterConfig = &datastore.FilterConfiguration{EventTypes: []string{"*"}}
+	}
+
+	if subscription.AlertConfig == nil {
+		subscription.AlertConfig = &datastore.DefaultAlertConfig
+	}
+
+	if subscription.RetryConfig == nil {
+		subscription.RetryConfig = &datastore.DefaultRetryConfig
 	}
 
 	err = s.subRepo.CreateSubscription(ctx, group.UID, subscription)
