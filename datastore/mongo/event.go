@@ -149,9 +149,7 @@ func (db *eventRepo) LoadEventIntervals(ctx context.Context, groupID string, sea
 func (db *eventRepo) FindEventByID(ctx context.Context, id string) (*datastore.Event, error) {
 	m := new(datastore.Event)
 
-	filter := bson.M{"uid": id, "document_status": datastore.ActiveDocumentStatus}
-
-	err := db.store.FindOne(ctx, filter, nil, &m)
+	err := db.store.FindByID(ctx, id, nil, &m)
 
 	if errors.Is(err, mongo.ErrNoDocuments) {
 		err = datastore.ErrEventNotFound

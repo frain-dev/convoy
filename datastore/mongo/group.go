@@ -46,7 +46,7 @@ func (db *groupRepo) LoadGroups(ctx context.Context, f *datastore.GroupFilter) (
 		filter["name"] = bson.M{"$in": f.Names}
 	}
 
-	err := db.store.FindAll(ctx, f.ToGenericMap(), nil, &groups)
+	err := db.store.FindAll(ctx, filter, nil, &groups)
 
 	return groups, err
 }
@@ -66,14 +66,13 @@ func (db *groupRepo) CreateGroup(ctx context.Context, o *datastore.Group) error 
 
 func (db *groupRepo) UpdateGroup(ctx context.Context, o *datastore.Group) error {
 	o.UpdatedAt = primitive.NewDateTimeFromTime(time.Now())
-	update := bson.D{primitive.E{Key: "$set", Value: bson.D{
-		primitive.E{Key: "name", Value: o.Name},
+	update := bson.D{primitive.E{Key: "name", Value: o.Name},
 		primitive.E{Key: "logo_url", Value: o.LogoURL},
 		primitive.E{Key: "updated_at", Value: o.UpdatedAt},
 		primitive.E{Key: "config", Value: o.Config},
 		primitive.E{Key: "rate_limit", Value: o.RateLimit},
 		primitive.E{Key: "rate_limit_duration", Value: o.RateLimitDuration},
-	}}}
+	}
 
 	err := db.store.UpdateByID(ctx, o.UID, update)
 	if mongo.IsDuplicateKeyError(err) && isDuplicateNameIndex(err) {
@@ -174,7 +173,7 @@ func (db *groupRepo) FetchGroupsByIDs(ctx context.Context, ids []string) ([]data
 
 	groups := make([]datastore.Group, 0)
 
-	err := db.store.FindMany(ctx, filter, nil, nil, 0, 0, groups)
+	err := db.store.FindAll(ctx, filter, nil, &groups)
 	if err != nil {
 		return nil, err
 	}

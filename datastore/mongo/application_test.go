@@ -16,8 +16,9 @@ import (
 func Test_UpdateApplication(t *testing.T) {
 	db, closeFn := getDB(t)
 	defer closeFn()
+	store := getStore(db, GroupCollection)
 
-	groupRepo := NewGroupRepo(db)
+	groupRepo := NewGroupRepo(db, store)
 	appRepo := NewApplicationRepo(db)
 
 	newGroup := &datastore.Group{
@@ -60,8 +61,9 @@ func Test_UpdateApplication(t *testing.T) {
 func Test_CreateApplication(t *testing.T) {
 	db, closeFn := getDB(t)
 	defer closeFn()
+	store := getStore(db, GroupCollection)
 
-	groupRepo := NewGroupRepo(db)
+	groupRepo := NewGroupRepo(db, store)
 	appRepo := NewApplicationRepo(db)
 
 	newOrg := &datastore.Group{
@@ -109,6 +111,7 @@ func Test_LoadApplicationsPaged(t *testing.T) {
 func Test_FindApplicationByID(t *testing.T) {
 	db, closeFn := getDB(t)
 	defer closeFn()
+	store := getStore(db, GroupCollection)
 
 	appRepo := NewApplicationRepo(db)
 
@@ -117,7 +120,7 @@ func Test_FindApplicationByID(t *testing.T) {
 
 	require.True(t, errors.Is(err, datastore.ErrApplicationNotFound))
 
-	groupRepo := NewGroupRepo(db)
+	groupRepo := NewGroupRepo(db, store)
 
 	newGroup := &datastore.Group{
 		Name: "Yet another Random new group",
