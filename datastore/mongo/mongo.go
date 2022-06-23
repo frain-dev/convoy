@@ -75,7 +75,6 @@ func New(cfg config.Configuration) (datastore.DatabaseClient, error) {
 	groups := datastore.New(conn, GroupCollection)
 	events := datastore.New(conn, EventCollection)
 	apps := datastore.New(conn, AppCollection)
-=======
 	subscriptions := datastore.New(conn, SubscriptionCollection)
 	orgs := datastore.New(conn, OrganisationCollection)
 	org_member := datastore.New(conn, OrganisationMembersCollection)
