@@ -18,6 +18,10 @@ type appRepo struct {
 	db *badgerhold.Store
 }
 
+func (*appRepo) CreateApplicationEndpoint(context.Context, string, string, *datastore.Endpoint) error {
+	return nil
+}
+
 func NewApplicationRepo(db *badgerhold.Store) datastore.ApplicationRepository {
 	return &appRepo{db: db}
 }

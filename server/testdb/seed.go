@@ -37,6 +37,7 @@ func SeedApplication(db datastore.DatabaseClient, g *datastore.Group, uid, title
 		GroupID:        g.UID,
 		IsDisabled:     disabled,
 		DocumentStatus: datastore.ActiveDocumentStatus,
+		Endpoints:      []datastore.Endpoint{},
 	}
 
 	// Seed Data.
