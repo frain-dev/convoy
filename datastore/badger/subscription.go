@@ -19,11 +19,11 @@ func (*subscriptionRepo) UpdateSubscriptionStatus(context.Context, string, strin
 	return nil
 }
 
-func (*subscriptionRepo) FindSubscriptionBySourceIDs(context.Context, string, string) ([]datastore.Subscription, error) {
+func (*subscriptionRepo) FindSubscriptionsBySourceIDs(context.Context, string, string) ([]datastore.Subscription, error) {
 	return nil, nil
 }
 
-func (*subscriptionRepo) FindSubscriptionByEventType(context.Context, string, string, datastore.EventType) ([]datastore.Subscription, error) {
+func (*subscriptionRepo) FindSubscriptionsByEventType(context.Context, string, string, datastore.EventType) ([]datastore.Subscription, error) {
 	return nil, nil
 }
 
