@@ -176,14 +176,13 @@ func (a *AppService) CreateAppEndpoint(ctx context.Context, e models.Endpoint, a
 		}
 	}
 
-	app.Endpoints = append(app.Endpoints, *endpoint)
-
-	err = a.appRepo.UpdateApplication(ctx, app, app.GroupID)
+	err = a.appRepo.CreateApplicationEndpoint(ctx, app.GroupID, app.UID, endpoint)
 	if err != nil {
-		log.WithError(err).Error("failed to update application")
+		log.WithError(err).Error("failed to create application endpoint")
 		return nil, NewServiceError(http.StatusBadRequest, fmt.Errorf("an error occurred while adding app endpoint"))
 	}
 
+	app.Endpoints = append(app.Endpoints, *endpoint)
 	appCacheKey := convoy.ApplicationsCacheKey.Get(app.UID).String()
 	err = a.cache.Set(ctx, appCacheKey, &app, time.Minute*5)
 	if err != nil {

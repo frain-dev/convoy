@@ -268,6 +268,22 @@ func (db *appRepo) UpdateApplication(ctx context.Context, app *datastore.Applica
 	return err
 }
 
+func (db *appRepo) CreateApplicationEndpoint(ctx context.Context, groupID string, appID string, endpoint *datastore.Endpoint) error {
+	filter := bson.M{"uid": appID, "document_status": datastore.ActiveDocumentStatus}
+
+	update := bson.M{
+		"$push": bson.M{
+			"endpoints": endpoint,
+		},
+		"$set": bson.M{
+			"updated_at": primitive.NewDateTimeFromTime(time.Now()),
+		},
+	}
+
+	_, err := db.client.UpdateOne(ctx, filter, update)
+	return err
+}
+
 func (db *appRepo) DeleteGroupApps(ctx context.Context, groupID string) error {
 
 	update := bson.M{
@@ -285,8 +301,7 @@ func (db *appRepo) DeleteGroupApps(ctx context.Context, groupID string) error {
 	return nil
 }
 
-func (db *appRepo) DeleteApplication(ctx context.Context,
-	app *datastore.Application) error {
+func (db *appRepo) DeleteApplication(ctx context.Context, app *datastore.Application) error {
 
 	updateAsDeleted := bson.D{primitive.E{Key: "$set", Value: bson.D{
 		primitive.E{Key: "deleted_at", Value: primitive.NewDateTimeFromTime(time.Now())},

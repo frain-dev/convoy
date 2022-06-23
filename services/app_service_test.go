@@ -612,7 +612,7 @@ func TestAppService_CreateAppEndpoint(t *testing.T) {
 			},
 			dbFn: func(app *AppService) {
 				a, _ := app.appRepo.(*mocks.MockApplicationRepository)
-				a.EXPECT().UpdateApplication(gomock.Any(), gomock.Any(), gomock.Any()).Times(1).Return(nil)
+				a.EXPECT().CreateApplicationEndpoint(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Times(1).Return(nil)
 
 				c, _ := app.cache.(*mocks.MockCache)
 				c.EXPECT().Set(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any())
@@ -655,7 +655,7 @@ func TestAppService_CreateAppEndpoint(t *testing.T) {
 			},
 			dbFn: func(app *AppService) {
 				a, _ := app.appRepo.(*mocks.MockApplicationRepository)
-				a.EXPECT().UpdateApplication(gomock.Any(), gomock.Any(), gomock.Any()).Times(1).Return(nil)
+				a.EXPECT().CreateApplicationEndpoint(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Times(1).Return(nil)
 
 				c, _ := app.cache.(*mocks.MockCache)
 				c.EXPECT().Set(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any())
@@ -715,7 +715,7 @@ func TestAppService_CreateAppEndpoint(t *testing.T) {
 			},
 			dbFn: func(app *AppService) {
 				a, _ := app.appRepo.(*mocks.MockApplicationRepository)
-				a.EXPECT().UpdateApplication(gomock.Any(), gomock.Any(), gomock.Any()).Times(1).Return(errors.New("failed"))
+				a.EXPECT().CreateApplicationEndpoint(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Times(1).Return(errors.New("failed"))
 			},
 			wantErr:     true,
 			wantErrCode: http.StatusBadRequest,
