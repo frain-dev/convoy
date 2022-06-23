@@ -77,6 +77,7 @@ func New(cfg config.Configuration) (datastore.DatabaseClient, error) {
 	orgs := datastore.New(conn, OrganisationCollection)
 	org_member := datastore.New(conn, OrganisationMembersCollection)
 	org_invite := datastore.New(conn, OrganisationInvitesCollection)
+	users := datastore.New(conn, UserCollection)
 
 	c := &Client{
 		db:                conn,
@@ -90,7 +91,7 @@ func New(cfg config.Configuration) (datastore.DatabaseClient, error) {
 		orgRepo:           NewOrgRepo(conn, orgs),
 		orgMemberRepo:     NewOrgMemberRepo(conn, org_member),
 		orgInviteRepo:     NewOrgInviteRepo(conn, org_invite),
-		userRepo:          NewUserRepo(conn),
+		userRepo:          NewUserRepo(conn, users),
 		configRepo:        NewConfigRepo(conn),
 	}
 
