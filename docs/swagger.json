@@ -4974,6 +4974,109 @@
                 }
             }
         },
+        "/subscriptions/{subscriptionID}/toggle_status": {
+            "put": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "This endpoint updates a subscription",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Subscription"
+                ],
+                "summary": "Toggles a subscription's status from active \u003c-\u003e inactive",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "subscription id",
+                        "name": "subscriptionID",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/server.serverResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/datastore.Subscription"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/server.serverResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/server.Stub"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/server.serverResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/server.Stub"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/server.serverResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/server.Stub"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    }
+                }
+            }
+        },
         "/ui/organisations": {
             "get": {
                 "security": [
@@ -8467,6 +8570,9 @@
                 "name": {
                     "type": "string"
                 },
+                "provider": {
+                    "type": "string"
+                },
                 "type": {
                     "type": "string"
                 },
@@ -8891,6 +8997,9 @@
                 "name": {
                     "type": "string"
                 },
+                "provider": {
+                    "type": "string"
+                },
                 "type": {
                     "type": "string"
                 },
@@ -8918,6 +9027,9 @@
                     "type": "string"
                 },
                 "name": {
+                    "type": "string"
+                },
+                "provider": {
                     "type": "string"
                 },
                 "type": {

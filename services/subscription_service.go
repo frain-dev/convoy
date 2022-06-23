@@ -3,6 +3,7 @@ package services
 import (
 	"context"
 	"errors"
+	"fmt"
 	"net/http"
 	"time"
 
@@ -63,12 +64,6 @@ func (s *SubcriptionService) CreateSubscription(ctx context.Context, group *data
 		}
 	}
 
-	if newSubscription.FilterConfig == nil ||
-		newSubscription.FilterConfig.EventTypes == nil ||
-		len(newSubscription.FilterConfig.EventTypes) == 0 {
-		newSubscription.FilterConfig = &datastore.FilterConfiguration{EventTypes: []string{"*"}}
-	}
-
 	subscription := &datastore.Subscription{
 		GroupID:    group.UID,
 		UID:        uuid.New().String(),
@@ -87,6 +82,20 @@ func (s *SubcriptionService) CreateSubscription(ctx context.Context, group *data
 
 		Status:         datastore.ActiveSubscriptionStatus,
 		DocumentStatus: datastore.ActiveDocumentStatus,
+	}
+
+	if subscription.FilterConfig == nil ||
+		subscription.FilterConfig.EventTypes == nil ||
+		len(subscription.FilterConfig.EventTypes) == 0 {
+		subscription.FilterConfig = &datastore.FilterConfiguration{EventTypes: []string{"*"}}
+	}
+
+	if subscription.AlertConfig == nil {
+		subscription.AlertConfig = &datastore.DefaultAlertConfig
+	}
+
+	if subscription.RetryConfig == nil {
+		subscription.RetryConfig = &datastore.DefaultRetryConfig
 	}
 
 	err = s.subRepo.CreateSubscription(ctx, group.UID, subscription)
@@ -159,6 +168,33 @@ func (s *SubcriptionService) UpdateSubscription(ctx context.Context, groupId str
 	if err != nil {
 		log.WithError(err).Error(ErrUpateSubscriptionError.Error())
 		return nil, NewServiceError(http.StatusBadRequest, ErrUpateSubscriptionError)
+	}
+
+	return subscription, nil
+}
+
+func (s *SubcriptionService) ToggleSubscriptionStatus(ctx context.Context, groupId string, subscriptionId string) (*datastore.Subscription, error) {
+	subscription, err := s.subRepo.FindSubscriptionByID(ctx, groupId, subscriptionId)
+	if err != nil {
+		log.WithError(err).Error(ErrSubscriptionNotFound.Error())
+		return nil, NewServiceError(http.StatusBadRequest, ErrSubscriptionNotFound)
+	}
+
+	switch subscription.Status {
+	case datastore.ActiveSubscriptionStatus:
+		subscription.Status = datastore.InactiveSubscriptionStatus
+	case datastore.InactiveSubscriptionStatus:
+		subscription.Status = datastore.ActiveSubscriptionStatus
+	case datastore.PendingSubscriptionStatus:
+		return nil, NewServiceError(http.StatusBadRequest, errors.New("subscription is in pending status"))
+	default:
+		return nil, NewServiceError(http.StatusBadRequest, fmt.Errorf("unknown subscription status: %s", subscription.Status))
+	}
+
+	err = s.subRepo.UpdateSubscriptionStatus(ctx, groupId, subscription.UID, subscription.Status)
+	if err != nil {
+		log.WithError(err).Error("failed to update subscription status")
+		return nil, NewServiceError(http.StatusBadRequest, errors.New("failed to update subscription status"))
 	}
 
 	return subscription, nil

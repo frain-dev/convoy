@@ -184,6 +184,7 @@ func sourceResponse(s *datastore.Source, baseUrl string) *models.SourceResponse 
 		GroupID:    s.GroupID,
 		Name:       s.Name,
 		Type:       s.Type,
+		Provider:   s.Provider,
 		URL:        fmt.Sprintf("%s/ingest/%s", baseUrl, s.MaskID),
 		IsDisabled: s.IsDisabled,
 		Verifier:   s.Verifier,

@@ -68,6 +68,8 @@ type GroupType string
 
 type SourceType string
 
+type SourceProvider string
+
 type VerifierType string
 
 type EncodingType string
@@ -77,6 +79,10 @@ const (
 	RestApiSource  SourceType = "rest_api"
 	PubSubSource   SourceType = "pub_sub"
 	DBChangeStream SourceType = "db_change_stream"
+)
+
+const (
+	GithubSourceProvider SourceProvider = "github"
 )
 
 const (
@@ -116,6 +122,17 @@ var (
 	DefaultRateLimitConfig = RateLimitConfiguration{
 		Count:    1000,
 		Duration: "1m",
+	}
+
+	DefaultRetryConfig = RetryConfiguration{
+		Type:       LinearStrategyProvider,
+		Duration:   "10s",
+		RetryCount: 3,
+	}
+
+	DefaultAlertConfig = AlertConfiguration{
+		Count:     4,
+		Threshold: "1h",
 	}
 )
 
@@ -470,6 +487,7 @@ type Source struct {
 	MaskID     string             `json:"mask_id" bson:"mask_id"`
 	Name       string             `json:"name" bson:"name"`
 	Type       SourceType         `json:"type" bson:"type"`
+	Provider   SourceProvider     `json:"provider" bson:"provider"`
 	IsDisabled bool               `json:"is_disabled" bson:"is_disabled"`
 	Verifier   *VerifierConfig    `json:"verifier" bson:"verifier"`
 
