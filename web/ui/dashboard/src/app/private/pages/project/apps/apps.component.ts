@@ -91,7 +91,7 @@ export class AppsComponent implements OnInit {
 		}
 	}
 
-	deleteApplication(event: MouseEvent, app: APP) {
+	promptDeleteModal(event: MouseEvent, app: APP) {
 		event.stopPropagation();
 		this.appsDetailsItem = app;
 		this.currentAppId = '';

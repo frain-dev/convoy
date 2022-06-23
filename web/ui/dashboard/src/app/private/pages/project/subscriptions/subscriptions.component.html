@@ -256,7 +256,7 @@
 </div>
 
 <div class="_overlay" *ngIf="showDeleteSubscriptionModal" (click)="showDeleteSubscriptionModal = false"></div>
-<div class="modal modal__center" *ngIf="showDeleteSubscriptionModal">
+<div class="modal modal__center small" *ngIf="showDeleteSubscriptionModal">
 	<app-delete-modal
 		[isLoading]="isDeletingSubscription"
 		[deleteText]="'“' + activeSubscription?.name + '”'"

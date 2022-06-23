@@ -113,10 +113,12 @@
 									</button>
 									<div [ngClass]="{ show: currentAppId == app.uid }" class="dropdown__menu dropdown__menu__nav small z-index--3">
 										<ul>
-											<li (click)="currentAppId = ''" [routerLink]="'/projects/' + privateService.activeProjectDetails?.uid + '/apps/' + app.uid + '/edit'">
-												Update
+											<li>
+												<a (click)="currentAppId = ''" [routerLink]="'/projects/' + privateService.activeProjectDetails?.uid + '/apps/' + app.uid + '/edit'">Update</a>
 											</li>
-											<li (click)="deleteApplication($event, app)" class="danger">Delete</li>
+											<li>
+												<a (click)="promptDeleteModal($event, app)" class="color__danger">Delete</a>
+											</li>
 										</ul>
 									</div>
 								</div>
@@ -165,13 +167,8 @@
 <!-- dark overlay  -->
 <div class="_overlay" *ngIf="showDeleteAppModal" (click)="showDeleteAppModal = false"></div>
 <!-- delete app modal  -->
-<div class="modal modal__center" *ngIf="showDeleteAppModal">
-	<app-delete-modal
-		[isLoading]="isDeletingApp"
-		[deleteText]="'“' + appsDetailsItem?.name + '”'"
-		(closeModal)="showDeleteAppModal = false"
-		(deleteData)="deleteApp()"
-	></app-delete-modal>
+<div class="modal modal__center small" *ngIf="showDeleteAppModal">
+	<app-delete-modal [isLoading]="isDeletingApp" [deleteText]="'“' + appsDetailsItem?.name + '”'" (closeModal)="showDeleteAppModal = false" (deleteData)="deleteApp()"></app-delete-modal>
 </div>
 
 <div class="modal modal__full" *ngIf="showCreateAppModal || showEditAppModal">

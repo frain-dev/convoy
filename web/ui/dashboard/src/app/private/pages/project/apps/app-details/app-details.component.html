@@ -276,7 +276,7 @@
 	</div>
 </div>
 
-<div class="modal modal__center" *ngIf="showDeleteModal">
+<div class="modal modal__center small" *ngIf="showDeleteModal">
 	<app-delete-modal
 		[isLoading]="isDeletingEndpoint"
 		[deleteText]="'“' + selectedEndpoint?.description + '”'"

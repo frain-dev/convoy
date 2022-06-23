@@ -21,13 +21,8 @@
 
 		<div class="dropdown__menu dropdown__menu__push-left" [ngClass]="{ show: showFilterDropdown }">
 			<ul>
-				<li
-					class="text__capitalize"
-					[ngClass]="{ active: dashboardFrequency == filterOption }"
-					*ngFor="let filterOption of filterOptions"
-					(click)="dashboardFrequency = filterOption; fetchDashboardData(); showFilterDropdown = false; showOverlay = false"
-				>
-					{{ filterOption }}
+				<li class="text__capitalize" [ngClass]="{ active: dashboardFrequency == filterOption }" *ngFor="let filterOption of filterOptions">
+					<a (click)="dashboardFrequency = filterOption; fetchDashboardData(); showFilterDropdown = false; showOverlay = false">{{ filterOption }}</a>
 				</li>
 			</ul>
 		</div>

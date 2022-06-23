@@ -35,8 +35,8 @@
 				<div [ngClass]="{ show: showOrgDropdown }" class="dropdown__menu dropdown__menu__nav larger">
 					<div class="title">Your organisations ({{ organisations?.length || 0 }})</div>
 					<ul *ngIf="organisations?.length">
-						<li *ngFor="let organisation of organisations" (click)="selectOrganisation(organisation)">
-							<a class="flex flex__justify-between padding-x__16px padding-y__8px">
+						<li *ngFor="let organisation of organisations">
+							<a (click)="selectOrganisation(organisation)" class="flex flex__justify-between padding-x__16px padding-y__8px">
 								<div class="badge badge__dark">
 									<div class="icon">{{ organisation?.name?.slice(0, 1) }}</div>
 									<p class="name">{{ organisation?.name }}</p>
@@ -65,11 +65,11 @@
 						<p class="font__12px color__grey">{{ authDetails()?.email }}</p>
 					</div>
 					<ul>
-						<li routerLink="/user-settings" (click)="showMoreDropdown = false; showOverlay = false">
-							<p class="color__grey padding-left__16px">My account</p>
+						<li>
+							<a routerLink="/user-settings" (click)="showMoreDropdown = false; showOverlay = false" class="color__grey padding-left__16px">My account</a>
 						</li>
-						<li *ngIf="organisations?.length" routerLink="/organisation-settings" (click)="showMoreDropdown = false; showOverlay = false">
-							<p class="color__grey padding-left__16px">Organisation settings</p>
+						<li *ngIf="organisations?.length" routerLink="/organisation-settings">
+							<a (click)="showMoreDropdown = false; showOverlay = false" class="color__grey padding-left__16px">Organisation settings</a>
 						</li>
 					</ul>
 					<div class="border__top padding-x__32px padding-bottom__24px padding-top__16px">
@@ -87,7 +87,7 @@
 	<app-create-organisation *ngIf="showAddOrganisationModal" (closeModal)="closeAddOrganisationModal($event)"></app-create-organisation>
 </div>
 
-<div class="modal modal__center large z-index--3" *ngIf="showAddAnalytics">
+<div class="modal modal__center small z-index--3" *ngIf="showAddAnalytics">
 	<app-add-analytics *ngIf="showAddAnalytics" [authDetails]="authDetails()" (closeModal)="showAddAnalytics = false"></app-add-analytics>
 </div>
 
