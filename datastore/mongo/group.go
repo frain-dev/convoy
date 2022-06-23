@@ -85,7 +85,7 @@ func (db *groupRepo) UpdateGroup(ctx context.Context, o *datastore.Group) error 
 func (db *groupRepo) FetchGroupByID(ctx context.Context, id string) (*datastore.Group, error) {
 	group := new(datastore.Group)
 
-	err := db.store.FindByID(ctx, id, nil, &group)
+	err := db.store.FindByID(ctx, id, nil, group)
 	if errors.Is(err, mongo.ErrNoDocuments) {
 		err = datastore.ErrGroupNotFound
 	}
