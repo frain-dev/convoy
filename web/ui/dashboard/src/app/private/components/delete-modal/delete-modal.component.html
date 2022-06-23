@@ -1,0 +1,7 @@
+<div class="modal--body flex flex__column flex__justify-center flex__align-items-center delete">
+	<img src="/assets/img/warning.gif" class="img" alt="warning" />
+	<p class="font__16px font__weight-600 color__black margin-bottom__8px text--center">Are you sure you want to delete {{ deleteText }}?</p>
+	<p class="font__14px font__weight-500 color__grey margin-bottom__12px">This action is irrevesible.</p>
+	<button class="button button__deactivate margin-bottom__24px" [disabled]="isLoading" (click)="deleteData.emit()">{{ isLoading ? 'Deleting...' : 'Yes, Delete' }}</button>
+	<button class="button__primary button__clear font__weight-600 cancel" (click)="closeModal.emit()">No, Cancel</button>
+</div>

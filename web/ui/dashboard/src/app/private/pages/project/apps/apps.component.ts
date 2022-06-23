@@ -61,12 +61,11 @@ export class AppsComponent implements OnInit {
 	async deleteApp() {
 		this.isDeletingApp = true;
 		try {
-			const response = await this.privateService.deleteApp(this.currentAppId);
+			const response = await this.privateService.deleteApp(this.appsDetailsItem?.uid);
 			this.generalService.showNotification({ message: response.message, style: 'success' });
 			this.getApps();
 			this.isDeletingApp = false;
 			this.showDeleteAppModal = false;
-			this.currentAppId = '';
 		} catch {
 			this.isDeletingApp = false;
 		}
@@ -92,8 +91,10 @@ export class AppsComponent implements OnInit {
 		}
 	}
 
-	deleteApplication(event: MouseEvent) {
+	deleteApplication(event: MouseEvent, app: APP) {
 		event.stopPropagation();
+		this.appsDetailsItem = app;
+		this.currentAppId = '';
 		this.showDeleteAppModal = true;
 	}
 }

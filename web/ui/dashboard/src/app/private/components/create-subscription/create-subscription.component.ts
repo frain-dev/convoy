@@ -192,6 +192,7 @@ export class CreateSubscriptionComponent implements OnInit {
 	async onCreateNewApp(newApp: APP) {
 		await this.getApps();
 		this.subscriptionForm.patchValue({ app_id: newApp.uid });
+		this.onUpdateAppSelection()
 	}
 
 	removeEventTag(tag: string) {

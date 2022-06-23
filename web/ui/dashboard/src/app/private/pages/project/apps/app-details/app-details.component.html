@@ -277,15 +277,10 @@
 </div>
 
 <div class="modal modal__center" *ngIf="showDeleteModal">
-	<div class="modal--body flex flex__column flex__justify-center flex__align-items-center deactivate">
-		<img src="/assets/img/warning.gif" class="img" alt="warning" />
-		<p class="font__20px color__black font__weight-600 margin-bottom__8px margin-top__16px text--center no-width">
-			Are you sure you want to delete
-			<span class="text__capitalize font__weight-600">“{{ selectedEndpoint?.description }}”</span>
-			?
-		</p>
-		<p class="color__grey font__14px font__weight-500 margin-bottom__12px">This action is irrevesible</p>
-		<button class="button button__deactivate" [disabled]="isDeletingEndpoint" (click)="deleteEndpoint()">{{ isDeletingEndpoint ? 'Deleting...' : 'Yes, Delete' }}</button>
-		<button class="button__primary button__clear margin-top__28px" (click)="showDeleteModal = false">No, Cancel</button>
-	</div>
+	<app-delete-modal
+		[isLoading]="isDeletingEndpoint"
+		[deleteText]="'“' + selectedEndpoint?.description + '”'"
+		(closeModal)="showDeleteModal = false"
+		(deleteData)="deleteEndpoint()"
+	></app-delete-modal>
 </div>
