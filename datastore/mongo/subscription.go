@@ -98,7 +98,7 @@ func (s *subscriptionRepo) DeleteSubscription(ctx context.Context, groupId strin
 }
 
 func (s *subscriptionRepo) FindSubscriptionByID(ctx context.Context, groupId string, uid string) (*datastore.Subscription, error) {
-	var subscription *datastore.Subscription
+	subscription := &datastore.Subscription{}
 
 	filter := bson.M{"uid": uid, "group_id": groupId, "document_status": datastore.ActiveDocumentStatus}
 	err := s.store.FindOne(ctx, filter, nil, subscription)
