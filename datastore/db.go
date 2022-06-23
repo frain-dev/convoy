@@ -145,11 +145,13 @@ func (d *mongoStore) FindByID(ctx context.Context, id string, projection map[str
  */
 func (d *mongoStore) FindOne(ctx context.Context, filter, projection map[string]interface{}, result interface{}) error {
 	if result == nil {
-		if !IsValidPointer(result) {
-			return errors.New("result param is not a valid pointer")
-		}
 		return errors.New("result param should not be a nil pointer")
 	}
+
+	if !IsValidPointer(result) {
+		return errors.New("result param is not a valid pointer")
+	}
+
 	
 	ops := options.FindOne()
 	ops.Projection = projection
