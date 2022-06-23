@@ -77,6 +77,7 @@ func New(cfg config.Configuration) (datastore.DatabaseClient, error) {
 	orgs := datastore.New(conn, OrganisationCollection)
 	org_member := datastore.New(conn, OrganisationMembersCollection)
 	org_invite := datastore.New(conn, OrganisationInvitesCollection)
+	config := datastore.New(conn, ConfigCollection)
 
 	c := &Client{
 		db:                conn,
@@ -91,7 +92,7 @@ func New(cfg config.Configuration) (datastore.DatabaseClient, error) {
 		orgMemberRepo:     NewOrgMemberRepo(conn, org_member),
 		orgInviteRepo:     NewOrgInviteRepo(conn, org_invite),
 		userRepo:          NewUserRepo(conn),
-		configRepo:        NewConfigRepo(conn),
+		configRepo:        NewConfigRepo(conn, config),
 	}
 
 	c.ensureMongoIndices()
