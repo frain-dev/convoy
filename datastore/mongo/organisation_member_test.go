@@ -22,6 +22,7 @@ func TestLoadOrganisationMembersPaged(t *testing.T) {
 	defer closeFn()
 
 	store := getStore(db, OrganisationMembersCollection)
+	userStore := getStore(db, UserCollection)
 	organisationMemberRepo := NewOrgMemberRepo(db, store)
 	orgID := uuid.NewString()
 
@@ -38,7 +39,7 @@ func TestLoadOrganisationMembersPaged(t *testing.T) {
 			UpdatedAt:      primitive.NewDateTimeFromTime(time.Now()),
 			DocumentStatus: datastore.ActiveDocumentStatus,
 		}
-		require.NoError(t, NewUserRepo(db).CreateUser(context.Background(), user))
+		require.NoError(t, NewUserRepo(db, userStore).CreateUser(context.Background(), user))
 
 		member := &datastore.OrganisationMember{
 			UID:            uuid.NewString(),
@@ -123,6 +124,7 @@ func TestCreateOrganisationMember(t *testing.T) {
 	db, closeFn := getDB(t)
 	defer closeFn()
 
+	userStore := getStore(db, UserCollection)
 	user := &datastore.User{
 		UID:            uuid.NewString(),
 		FirstName:      fmt.Sprintf("test-%s", uuid.NewString()),
@@ -133,7 +135,7 @@ func TestCreateOrganisationMember(t *testing.T) {
 		UpdatedAt:      primitive.NewDateTimeFromTime(time.Now()),
 		DocumentStatus: datastore.ActiveDocumentStatus,
 	}
-	require.NoError(t, NewUserRepo(db).CreateUser(context.Background(), user))
+	require.NoError(t, NewUserRepo(db, userStore).CreateUser(context.Background(), user))
 
 	orgMemberStore := getStore(db, OrganisationMembersCollection)
 	organisationMemberRepo := NewOrgMemberRepo(db, orgMemberStore)
@@ -169,6 +171,7 @@ func TestUpdateOrganisationMember(t *testing.T) {
 	db, closeFn := getDB(t)
 	defer closeFn()
 
+	userStore := getStore(db, UserCollection)
 	user := &datastore.User{
 		UID:            uuid.NewString(),
 		FirstName:      fmt.Sprintf("test-%s", uuid.NewString()),
@@ -179,7 +182,7 @@ func TestUpdateOrganisationMember(t *testing.T) {
 		UpdatedAt:      primitive.NewDateTimeFromTime(time.Now()),
 		DocumentStatus: datastore.ActiveDocumentStatus,
 	}
-	require.NoError(t, NewUserRepo(db).CreateUser(context.Background(), user))
+	require.NoError(t, NewUserRepo(db, userStore).CreateUser(context.Background(), user))
 
 	orgMemberStore := getStore(db, OrganisationMembersCollection)
 	organisationMemberRepo := NewOrgMemberRepo(db, orgMemberStore)
@@ -250,6 +253,7 @@ func TestFetchOrganisationMemberByID(t *testing.T) {
 	db, closeFn := getDB(t)
 	defer closeFn()
 
+	userStore := getStore(db, UserCollection)
 	user := &datastore.User{
 		UID:            uuid.NewString(),
 		FirstName:      fmt.Sprintf("test-%s", uuid.NewString()),
@@ -260,7 +264,7 @@ func TestFetchOrganisationMemberByID(t *testing.T) {
 		UpdatedAt:      primitive.NewDateTimeFromTime(time.Now()),
 		DocumentStatus: datastore.ActiveDocumentStatus,
 	}
-	require.NoError(t, NewUserRepo(db).CreateUser(context.Background(), user))
+	require.NoError(t, NewUserRepo(db, userStore).CreateUser(context.Background(), user))
 	orgMemberStore := getStore(db, OrganisationMembersCollection)
 	organisationMemberRepo := NewOrgMemberRepo(db, orgMemberStore)
 
@@ -295,6 +299,7 @@ func TestFetchOrganisationMemberByUserID(t *testing.T) {
 	db, closeFn := getDB(t)
 	defer closeFn()
 
+	userStore := getStore(db, UserCollection)
 	user := &datastore.User{
 		UID:            uuid.NewString(),
 		FirstName:      fmt.Sprintf("test-%s", uuid.NewString()),
@@ -305,7 +310,7 @@ func TestFetchOrganisationMemberByUserID(t *testing.T) {
 		UpdatedAt:      primitive.NewDateTimeFromTime(time.Now()),
 		DocumentStatus: datastore.ActiveDocumentStatus,
 	}
-	require.NoError(t, NewUserRepo(db).CreateUser(context.Background(), user))
+	require.NoError(t, NewUserRepo(db, userStore).CreateUser(context.Background(), user))
 
 	orgMemberStore := getStore(db, OrganisationMembersCollection)
 	organisationMemberRepo := NewOrgMemberRepo(db, orgMemberStore)
