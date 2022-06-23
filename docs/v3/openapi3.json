@@ -582,6 +582,9 @@
 					"name": {
 						"type": "string"
 					},
+					"provider": {
+						"type": "string"
+					},
 					"type": {
 						"type": "string"
 					},
@@ -1005,6 +1008,9 @@
 					"name": {
 						"type": "string"
 					},
+					"provider": {
+						"type": "string"
+					},
 					"type": {
 						"type": "string"
 					},
@@ -1032,6 +1038,9 @@
 						"type": "string"
 					},
 					"name": {
+						"type": "string"
+					},
+					"provider": {
 						"type": "string"
 					},
 					"type": {
