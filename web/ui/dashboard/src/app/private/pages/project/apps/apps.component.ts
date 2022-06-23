@@ -58,7 +58,19 @@ export class AppsComponent implements OnInit {
 		this.router.navigate(['/projects/' + projectId + '/events'], { queryParams: { eventsApp: appId } });
 	}
 
-	deleteApp() {}
+	async deleteApp() {
+		this.isDeletingApp = true;
+		try {
+			const response = await this.privateService.deleteApp(this.currentAppId);
+			this.generalService.showNotification({ message: response.message, style: 'success' });
+			this.getApps();
+			this.isDeletingApp = false;
+			this.showDeleteAppModal = false;
+			this.currentAppId = '';
+		} catch {
+			this.isDeletingApp = false;
+		}
+	}
 
 	async getApps(requestDetails?: { search?: string; page?: number }): Promise<HTTP_RESPONSE> {
 		this.isloadingApps = true;
@@ -78,5 +90,10 @@ export class AppsComponent implements OnInit {
 			this.isloadingApps = false;
 			return error;
 		}
+	}
+
+	deleteApplication(event: MouseEvent) {
+		event.stopPropagation();
+		this.showDeleteAppModal = true;
 	}
 }

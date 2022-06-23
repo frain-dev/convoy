@@ -111,12 +111,12 @@
 									<button class="button__clear button--has-icon" (click)="$event.stopPropagation(); currentAppId = app.uid; showOverlay = true; showAppDetails = false">
 										<img src="/assets/img/more-icon-vertical.svg" alt="more icon" />
 									</button>
-									<div [ngClass]="{ show: currentAppId == app.uid }" class="dropdown__menu dropdown__menu__nav small z-index--3">
+									<div [ngClass]="{ show: currentAppId == app.uid && !showDeleteAppModal }" class="dropdown__menu dropdown__menu__nav small z-index--3">
 										<ul>
 											<li (click)="appsDetailsItem = app; currentAppId = ''" [routerLink]="'/projects/' + privateService.activeProjectDetails?.uid + '/apps/' + app.uid + '/edit'">
 												Update
 											</li>
-											<li (click)="showDeleteAppModal = !showDeleteAppModal; currentAppId = ''" class="danger">Delete</li>
+											<li (click)="deleteApplication($event)" class="danger">Delete</li>
 										</ul>
 									</div>
 								</div>
@@ -168,7 +168,7 @@
 <div class="modal modal__center" *ngIf="showDeleteAppModal">
 	<div class="modal--body flex flex__column flex__justify-center flex__align-items-center delete">
 		<img src="/assets/img/warning.gif" class="img" alt="warning" />
-		<p class="font__16px font__weight-600 color__black margin-bottom__8px">Are you sure you want to delete “{{ appsDetailsItem?.name }}”?</p>
+		<p class="font__16px font__weight-600 color__black margin-bottom__8px text--center">Are you sure you want to delete “{{ appsDetailsItem?.name }}”?</p>
 		<p class="font__14px font__weight-500 color__grey margin-bottom__12px">This action is irrevesible</p>
 		<button class="button button__deactivate margin-bottom__24px" [disabled]="isDeletingApp" (click)="deleteApp()">{{ isDeletingApp ? 'Deleting App...' : 'Yes, Delete' }}</button>
 		<button class="button__primary button__clear font__weight-600 cancel" (click)="showDeleteAppModal = false">No, Cancel</button>

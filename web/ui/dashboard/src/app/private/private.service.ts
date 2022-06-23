@@ -60,6 +60,21 @@ export class PrivateService {
 		});
 	}
 
+	async deleteApp(appID:string): Promise<HTTP_RESPONSE> {
+		return new Promise(async (resolve, reject) => {
+			try {
+				const response = await this.http.request({
+					url: `${this.urlFactory('org_project')}/apps/${appID}`,
+					method: 'delete'
+				});
+
+				return resolve(response);
+			} catch (error: any) {
+				return reject(error);
+			}
+		});
+	}
+
 	getSources(requestDetails?: { page?: number }): Promise<HTTP_RESPONSE> {
 		return new Promise(async (resolve, reject) => {
 			try {
