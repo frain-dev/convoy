@@ -270,7 +270,6 @@ func (db *appRepo) UpdateApplication(ctx context.Context, app *datastore.Applica
 
 func (db *appRepo) CreateApplicationEndpoint(ctx context.Context, groupID string, appID string, endpoint *datastore.Endpoint) error {
 	filter := bson.M{"uid": appID, "document_status": datastore.ActiveDocumentStatus}
-
 	update := bson.M{
 		"$push": bson.M{
 			"endpoints": endpoint,

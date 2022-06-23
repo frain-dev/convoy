@@ -182,7 +182,12 @@ func (a *AppService) CreateAppEndpoint(ctx context.Context, e models.Endpoint, a
 		return nil, NewServiceError(http.StatusBadRequest, fmt.Errorf("an error occurred while adding app endpoint"))
 	}
 
-	app.Endpoints = append(app.Endpoints, *endpoint)
+	app, err = a.appRepo.FindApplicationByID(ctx, app.UID)
+	if err != nil {
+		log.WithError(err).Error("failed to find application")
+		return nil, NewServiceError(http.StatusBadRequest, fmt.Errorf("failed to fetch application to update cache"))
+	}
+
 	appCacheKey := convoy.ApplicationsCacheKey.Get(app.UID).String()
 	err = a.cache.Set(ctx, appCacheKey, &app, time.Minute*5)
 	if err != nil {

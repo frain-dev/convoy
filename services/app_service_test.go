@@ -614,6 +614,9 @@ func TestAppService_CreateAppEndpoint(t *testing.T) {
 				a, _ := app.appRepo.(*mocks.MockApplicationRepository)
 				a.EXPECT().CreateApplicationEndpoint(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Times(1).Return(nil)
 
+				a.EXPECT().FindApplicationByID(gomock.Any(), gomock.Any()).
+					Return(&datastore.Application{UID: "abc"}, nil)
+					
 				c, _ := app.cache.(*mocks.MockCache)
 				c.EXPECT().Set(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any())
 			},
@@ -656,6 +659,9 @@ func TestAppService_CreateAppEndpoint(t *testing.T) {
 			dbFn: func(app *AppService) {
 				a, _ := app.appRepo.(*mocks.MockApplicationRepository)
 				a.EXPECT().CreateApplicationEndpoint(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Times(1).Return(nil)
+
+				a.EXPECT().FindApplicationByID(gomock.Any(), gomock.Any()).
+					Return(&datastore.Application{UID: "abc"}, nil)
 
 				c, _ := app.cache.(*mocks.MockCache)
 				c.EXPECT().Set(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any())
@@ -749,12 +755,6 @@ func TestAppService_CreateAppEndpoint(t *testing.T) {
 
 			stripVariableFields(t, "endpoint", appEndpoint)
 			require.Equal(t, tc.wantEndpoint, appEndpoint)
-
-			for i := range tc.args.app.Endpoints {
-				stripVariableFields(t, "endpoint", &tc.args.app.Endpoints[i])
-			}
-
-			require.Equal(t, tc.wantApp, tc.args.app)
 		})
 	}
 }
