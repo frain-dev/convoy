@@ -41,7 +41,8 @@ export class CreateSourceComponent implements OnInit {
 	httpTypes = [
 		{ value: 'hmac', viewValue: 'HMAC' },
 		{ value: 'basic_auth', viewValue: 'Basic Auth' },
-		{ value: 'api_key', viewValue: 'API Key' }
+		{ value: 'api_key', viewValue: 'API Key' },
+		{ value: 'github', viewValue: 'Github' }
 	];
 	encodings = ['base64', 'hex'];
 	hashAlgorithms = ['SHA256', 'SHA512', 'MD5', 'SHA1', 'SHA224', 'SHA384', 'SHA3_224', 'SHA3_256', 'SHA3_384', 'SHA3_512', 'SHA512_256', 'SHA512_224'];
@@ -65,13 +66,16 @@ export class CreateSourceComponent implements OnInit {
 	}
 
 	async saveSource() {
+		const verifier = this.sourceForm.get('verifier.type')?.value === 'github' ? 'hmac' : this.sourceForm.get('verifier.type')?.value;
+		if (this.sourceForm.get('verifier.type')?.value === 'github') this.sourceForm.get('verifier.hmac')?.patchValue({ encoding: 'hex', header: 'X-Hub-Signature-256', hash: 'SHA256' });
 		if (!this.isSourceFormValid()) return this.sourceForm.markAllAsTouched();
 
 		const sourceData = {
 			...this.sourceForm.value,
+			provider: this.sourceForm.get('verifier.type')?.value === 'github' ? 'github' : '',
 			verifier: {
-				type: this.sourceForm.get('verifier.type')?.value,
-				[this.sourceForm.get('verifier.type')?.value]: { ...this.sourceForm.get('verifier.' + this.sourceForm.get('verifier.type')?.value)?.value }
+				type: verifier,
+				[verifier]: { ...this.sourceForm.get('verifier.' + verifier)?.value }
 			}
 		};
 
@@ -96,7 +100,7 @@ export class CreateSourceComponent implements OnInit {
 			return true;
 		}
 
-		if (this.sourceForm.get('verifier')?.value.type === 'hmac' && this.sourceForm.get('verifier.hmac')?.valid) {
+		if ((this.sourceForm.get('verifier')?.value.type === 'hmac' || this.sourceForm.get('verifier')?.value.type === 'github') && this.sourceForm.get('verifier.hmac')?.valid) {
 			return true;
 		}
 
