@@ -1,11 +1,11 @@
 <div class="padding-x__30px padding-y__40px">
-	<h3>Welcome, {{ authDetails?.first_name }} 🌤</h3>
+	<h3>Welcome 🌤</h3>
 	
 	<form [formGroup]="addAnalyticsForm" (ngSubmit)="addAnalytics()">
 		<h3 class="margin-top__24px">
 			Would you like to enable analytics?
 		</h3>
-		<p class="font__14px color__grey margin-bottom__20px width__80">Enabling Analytics would allow anonymous metrics to be taken to see how Convoy is being used.</p>
+		<p class="font__14px color__grey margin-bottom__20px width__90"> Enabling analytics will provide anonymous metrics to help us understand how you use Convoy, so we can make it even better for you.</p>
 		<div class="grid grid__col-2 grid--gap__24px">
 			<div class="checkbox-option">
 				<input type="radio" id="true" name="is_analytics_enabled" [value]="true" formControlName="is_analytics_enabled" />
