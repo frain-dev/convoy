@@ -71,7 +71,7 @@ func New(database *mongo.Database, collection string) Store {
 }
 
 func IsValidPointer(i interface{}) bool {
-	return reflect.ValueOf(i).Type().Kind() == reflect.Struct
+	return reflect.ValueOf(i).Type().Elem().Kind() == reflect.Struct
 }
 
 /**
@@ -124,10 +124,11 @@ func (d *mongoStore) SaveMany(ctx context.Context, payload []interface{}) error 
  */
 func (d *mongoStore) FindByID(ctx context.Context, id string, projection map[string]interface{}, result interface{}) error {
 	if result == nil {
-		if !IsValidPointer(result) {
-			return errors.New("result param is not a valid pointer")
-		}
 		return errors.New("result param should not be a nil pointer")
+	}
+
+	if !IsValidPointer(result) {
+		return errors.New("result param is not a valid pointer")
 	}
 
 	ops := options.FindOne()

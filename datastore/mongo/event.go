@@ -63,10 +63,8 @@ func (db *eventRepo) CountGroupMessages(ctx context.Context, groupID string) (in
 
 func (db *eventRepo) DeleteGroupEvents(ctx context.Context, groupID string) error {
 	update := bson.M{
-		"$set": bson.M{
-			"deleted_at":      primitive.NewDateTimeFromTime(time.Now()),
-			"document_status": datastore.ActiveDocumentStatus,
-		},
+		"deleted_at":      primitive.NewDateTimeFromTime(time.Now()),
+		"document_status": datastore.ActiveDocumentStatus,
 	}
 
 	filter := bson.M{"group_id": groupID}
@@ -149,7 +147,7 @@ func (db *eventRepo) LoadEventIntervals(ctx context.Context, groupID string, sea
 func (db *eventRepo) FindEventByID(ctx context.Context, id string) (*datastore.Event, error) {
 	m := new(datastore.Event)
 
-	err := db.store.FindByID(ctx, id, nil, &m)
+	err := db.store.FindByID(ctx, id, nil, m)
 
 	if errors.Is(err, mongo.ErrNoDocuments) {
 		err = datastore.ErrEventNotFound
