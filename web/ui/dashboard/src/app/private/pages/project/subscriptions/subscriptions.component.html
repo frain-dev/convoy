@@ -176,12 +176,8 @@
 			</ul>
 
 			<div class="button--container margin-top__40px margin-right__24px">
-				<button
-					class="button button__danger button__white button--has-icon icon-right padding-x__12px padding-y__8px color__danger font__12px"
-					(click)="deleteSubscripton()"
-					[disabled]="isDeletingSubscription"
-				>
-					{{ isDeletingSubscription ? 'Delete...' : 'Delete' }}
+				<button class="button button__danger button__white button--has-icon icon-right padding-x__12px padding-y__8px color__danger font__12px" (click)="showDeleteSubscriptionModal = true">
+					Delete
 					<svg width="18" height="18" class="margin-left__8px">
 						<use xlink:href="#delete-icon"></use>
 					</svg>
@@ -257,4 +253,14 @@
 	<div class="modal--body padding-all__0px">
 		<app-create-subscription (onAction)="createSubscription($event.action)" [action]="showUpdateSubscriptionModal ? 'update' : 'create'"></app-create-subscription>
 	</div>
+</div>
+
+<div class="_overlay" *ngIf="showDeleteSubscriptionModal" (click)="showDeleteSubscriptionModal = false"></div>
+<div class="modal modal__center small" *ngIf="showDeleteSubscriptionModal">
+	<app-delete-modal
+		[isLoading]="isDeletingSubscription"
+		[deleteText]="'“' + activeSubscription?.name + '”'"
+		(closeModal)="showDeleteSubscriptionModal = false"
+		(deleteData)="deleteSubscripton()"
+	></app-delete-modal>
 </div>

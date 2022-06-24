@@ -307,6 +307,48 @@ func TestSubscription_CreateSubscription(t *testing.T) {
 			wantErrCode: http.StatusBadRequest,
 			wantErrMsg:  "failed to create subscription",
 		},
+		{
+			name: "create subscription for outgoing group - should set default event types array",
+			args: args{
+				ctx: ctx,
+				newSubscription: &models.Subscription{
+					Name:       "sub 1",
+					Type:       "incoming",
+					AppID:      "app-id-1",
+					SourceID:   "source-id-1",
+					EndpointID: "endpoint-id-1",
+				},
+				group: &datastore.Group{UID: "12345", Type: datastore.OutgoingGroup},
+			},
+			wantSubscription: &datastore.Subscription{
+				Name:       "sub 1",
+				Type:       "incoming",
+				AppID:      "app-id-1",
+				SourceID:   "source-id-1",
+				EndpointID: "endpoint-id-1",
+				FilterConfig: &datastore.FilterConfiguration{
+					EventTypes: []string{"*"},
+				},
+			},
+			dbFn: func(ss *SubcriptionService) {
+				s, _ := ss.subRepo.(*mocks.MockSubscriptionRepository)
+				s.EXPECT().CreateSubscription(gomock.Any(), gomock.Any(), gomock.Any()).
+					Times(1).
+					Return(nil)
+
+				a, _ := ss.appRepo.(*mocks.MockApplicationRepository)
+				a.EXPECT().FindApplicationByID(gomock.Any(), "app-id-1").
+					Times(1).Return(
+					&datastore.Application{
+						GroupID: "12345",
+						Endpoints: []datastore.Endpoint{
+							{UID: "endpoint-id-1"},
+						},
+					},
+					nil,
+				)
+			},
+		},
 	}
 
 	for _, tc := range tests {
@@ -332,6 +374,11 @@ func TestSubscription_CreateSubscription(t *testing.T) {
 
 			require.Equal(t, subscription.Name, tc.wantSubscription.Name)
 			require.Equal(t, subscription.Type, tc.wantSubscription.Type)
+
+			if tc.wantSubscription.FilterConfig != nil {
+				require.Equal(t, subscription.FilterConfig.EventTypes,
+					tc.wantSubscription.FilterConfig.EventTypes)
+			}
 		})
 	}
 }
@@ -770,6 +817,133 @@ func TestSubscription_DeleteSubscription(t *testing.T) {
 				return
 			}
 			require.Nil(t, err)
+		})
+	}
+}
+
+func TestSubcriptionService_ToggleSubscriptionStatus(t *testing.T) {
+	ctx := context.Background()
+
+	type args struct {
+		ctx            context.Context
+		groupId        string
+		subscriptionId string
+	}
+	tests := []struct {
+		name        string
+		args        args
+		dbFn        func(ss *SubcriptionService)
+		want        *datastore.Subscription
+		wantErr     bool
+		wantErrCode int
+		wantErrMsg  string
+	}{
+		{
+			name: "should_toggle_subscription_status_to_inactive",
+			args: args{
+				ctx:            ctx,
+				groupId:        "1234",
+				subscriptionId: "abc",
+			},
+			dbFn: func(ss *SubcriptionService) {
+				s, _ := ss.subRepo.(*mocks.MockSubscriptionRepository)
+				s.EXPECT().FindSubscriptionByID(gomock.Any(), "1234", "abc").
+					Times(1).Return(&datastore.Subscription{UID: "abc", Status: datastore.ActiveSubscriptionStatus}, nil)
+
+				s.EXPECT().UpdateSubscriptionStatus(gomock.Any(), "1234", "abc", datastore.InactiveSubscriptionStatus).Times(1).Return(nil)
+			},
+			want:    &datastore.Subscription{UID: "abc", Status: datastore.InactiveSubscriptionStatus},
+			wantErr: false,
+		},
+		{
+			name: "should_toggle_subscription_status_to_active",
+			args: args{
+				ctx:            ctx,
+				groupId:        "1234",
+				subscriptionId: "abc",
+			},
+			dbFn: func(ss *SubcriptionService) {
+				s, _ := ss.subRepo.(*mocks.MockSubscriptionRepository)
+				s.EXPECT().FindSubscriptionByID(gomock.Any(), "1234", "abc").
+					Times(1).Return(&datastore.Subscription{UID: "abc", Status: datastore.InactiveSubscriptionStatus}, nil)
+
+				s.EXPECT().UpdateSubscriptionStatus(gomock.Any(), "1234", "abc", datastore.ActiveSubscriptionStatus).Times(1).Return(nil)
+			},
+			want:    &datastore.Subscription{UID: "abc", Status: datastore.ActiveSubscriptionStatus},
+			wantErr: false,
+		},
+		{
+			name: "should_error_for_pending_subscription_status",
+			args: args{
+				ctx:            ctx,
+				groupId:        "1234",
+				subscriptionId: "abc",
+			},
+			dbFn: func(ss *SubcriptionService) {
+				s, _ := ss.subRepo.(*mocks.MockSubscriptionRepository)
+				s.EXPECT().FindSubscriptionByID(gomock.Any(), "1234", "abc").
+					Times(1).Return(&datastore.Subscription{UID: "abc", Status: datastore.PendingSubscriptionStatus}, nil)
+			},
+			wantErr:     true,
+			wantErrCode: http.StatusBadRequest,
+			wantErrMsg:  "subscription is in pending status",
+		},
+		{
+			name: "should_error_for_unknown_subscription_status",
+			args: args{
+				ctx:            ctx,
+				groupId:        "1234",
+				subscriptionId: "abc",
+			},
+			dbFn: func(ss *SubcriptionService) {
+				s, _ := ss.subRepo.(*mocks.MockSubscriptionRepository)
+				s.EXPECT().FindSubscriptionByID(gomock.Any(), "1234", "abc").
+					Times(1).Return(&datastore.Subscription{UID: "abc", Status: "ddd"}, nil)
+			},
+			wantErr:     true,
+			wantErrCode: http.StatusBadRequest,
+			wantErrMsg:  "unknown subscription status: ddd",
+		},
+		{
+			name: "should_fail_to_update_subscription_status",
+			args: args{
+				ctx:            ctx,
+				groupId:        "1234",
+				subscriptionId: "abc",
+			},
+			dbFn: func(ss *SubcriptionService) {
+				s, _ := ss.subRepo.(*mocks.MockSubscriptionRepository)
+				s.EXPECT().FindSubscriptionByID(gomock.Any(), "1234", "abc").
+					Times(1).Return(&datastore.Subscription{UID: "abc", Status: datastore.InactiveSubscriptionStatus}, nil)
+
+				s.EXPECT().UpdateSubscriptionStatus(gomock.Any(), "1234", "abc", datastore.ActiveSubscriptionStatus).Times(1).Return(errors.New("failed"))
+			},
+			wantErr:     true,
+			wantErrCode: http.StatusBadRequest,
+			wantErrMsg:  "failed to update subscription status",
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			ctrl := gomock.NewController(t)
+			defer ctrl.Finish()
+
+			ss := provideSubsctiptionService(ctrl)
+
+			if tt.dbFn != nil {
+				tt.dbFn(ss)
+			}
+
+			got, err := ss.ToggleSubscriptionStatus(tt.args.ctx, tt.args.groupId, tt.args.subscriptionId)
+			if tt.wantErr {
+				require.NotNil(t, err)
+				require.Equal(t, tt.wantErrCode, err.(*ServiceError).ErrCode())
+				require.Equal(t, tt.wantErrMsg, err.(*ServiceError).Error())
+				return
+			}
+
+			require.Nil(t, err)
+			require.Equal(t, tt.want, got)
 		})
 	}
 }

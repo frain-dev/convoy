@@ -33,7 +33,6 @@ export class CreateProjectComponent implements OnInit {
 	});
 	isCreatingProject = false;
 	showApiKey = false;
-	showPublicCopyText = false;
 	showSecretCopyText = false;
 	apiKey!: string;
 	hashAlgorithms = ['SHA256', 'SHA512', 'MD5', 'SHA1', 'SHA224', 'SHA384', 'SHA3_224', 'SHA3_256', 'SHA3_384', 'SHA3_512', 'SHA512_256', 'SHA512_224'];
@@ -95,30 +94,32 @@ export class CreateProjectComponent implements OnInit {
 
 		this.isCreatingProject = true;
 
-		//  Please review, throwing an error
-		// const [digits, word] = this.projectForm.value.config.strategy.duration.match(/\D+|\d+/g);
-		// word === 's' ? (this.projectForm.value.config.strategy.duration = parseInt(digits) * 1000) : (this.projectForm.value.config.strategy.duration = parseInt(digits) * 1000000);
 		try {
 			const response = await this.createProjectService.updateProject(this.projectForm.value);
-			this.generalService.showNotification({ message: 'Project updated successfully!', style: 'success' });
-			this.onAction.emit(response.data);
+			if (response.status === true) {
+				this.generalService.showNotification({ message: 'Project updated successfully!', style: 'success' });
+				this.onAction.emit(response.data);
+			} else {
+				this.generalService.showNotification({ message: response?.error?.message, style: 'error' });
+			}
 			this.isCreatingProject = false;
 		} catch (error) {
 			this.isCreatingProject = false;
 		}
 	}
 
-	copyKey(key: string, type: 'public' | 'secret') {
+	copyKey(key: string) {
 		const text = key;
 		const el = document.createElement('textarea');
 		el.value = text;
 		document.body.appendChild(el);
 		el.select();
 		document.execCommand('copy');
-		type === 'public' ? (this.showPublicCopyText = true) : (this.showSecretCopyText = true);
+		this.showSecretCopyText = true;
 		setTimeout(() => {
-			type === 'public' ? (this.showPublicCopyText = false) : (this.showSecretCopyText = false);
+			this.showSecretCopyText = false
 		}, 3000);
+		
 		document.body.removeChild(el);
 	}
 }

@@ -5,6 +5,12 @@ package server
 
 import (
 	"fmt"
+	"net/http"
+	"net/http/httptest"
+	"strings"
+	"testing"
+	"time"
+
 	"github.com/frain-dev/convoy/auth"
 	"github.com/frain-dev/convoy/config"
 	"github.com/frain-dev/convoy/datastore"
@@ -14,11 +20,6 @@ import (
 	"github.com/stretchr/testify/require"
 	"github.com/stretchr/testify/suite"
 	"go.mongodb.org/mongo-driver/bson/primitive"
-	"net/http"
-	"net/http/httptest"
-	"strings"
-	"testing"
-	"time"
 )
 
 type OrganisationInviteIntegrationTestSuite struct {
@@ -73,7 +74,7 @@ func (s *OrganisationInviteIntegrationTestSuite) Test_InviteUserToOrganisation()
 	expectedStatusCode := http.StatusCreated
 
 	// Arrange.
-	url := fmt.Sprintf("/ui/organisations/%s/invite_user", s.DefaultOrg.UID)
+	url := fmt.Sprintf("/ui/organisations/%s/invites", s.DefaultOrg.UID)
 
 	// TODO(daniel): when the generic mailer is integrated we have to mock it
 	body := strings.NewReader(`{"invitee_email":"test@invite.com","role":{"type":"api", "groups":["123"]}}`)
@@ -95,7 +96,7 @@ func (s *OrganisationInviteIntegrationTestSuite) Test_InviteUserToOrganisation_I
 	expectedStatusCode := http.StatusBadRequest
 
 	// Arrange.
-	url := fmt.Sprintf("/ui/organisations/%s/invite_user", s.DefaultOrg.UID)
+	url := fmt.Sprintf("/ui/organisations/%s/invites", s.DefaultOrg.UID)
 
 	body := strings.NewReader(`{"invitee_email":"test@invite.com",role":{"type":"api"}}`)
 	req := createRequest(http.MethodPost, url, "", body)
@@ -116,7 +117,7 @@ func (s *OrganisationInviteIntegrationTestSuite) Test_InviteUserToOrganisation_I
 	expectedStatusCode := http.StatusBadRequest
 
 	// Arrange.
-	url := fmt.Sprintf("/ui/organisations/%s/invite_user", s.DefaultOrg.UID)
+	url := fmt.Sprintf("/ui/organisations/%s/invites", s.DefaultOrg.UID)
 
 	body := strings.NewReader(`{"invitee_email":"test_invite.com",role":{"type":"api","groups":["123"]}}`)
 	req := createRequest(http.MethodPost, url, "", body)
@@ -137,7 +138,7 @@ func (s *OrganisationInviteIntegrationTestSuite) Test_InviteUserToOrganisation_E
 	expectedStatusCode := http.StatusBadRequest
 
 	// Arrange.
-	url := fmt.Sprintf("/ui/organisations/%s/invite_user", s.DefaultOrg.UID)
+	url := fmt.Sprintf("/ui/organisations/%s/invites", s.DefaultOrg.UID)
 
 	body := strings.NewReader(`{"invitee_email":"",role":{"type":"api","groups":["123"]}}`)
 	req := createRequest(http.MethodPost, url, "", body)
@@ -172,7 +173,7 @@ func (s *OrganisationInviteIntegrationTestSuite) Test_GetPendingOrganisationInvi
 	require.NoError(s.T(), err)
 
 	// Arrange.
-	url := fmt.Sprintf("/ui/organisations/%s/pending_invites", s.DefaultOrg.UID)
+	url := fmt.Sprintf("/ui/organisations/%s/invites/pending", s.DefaultOrg.UID)
 	req := createRequest(http.MethodGet, url, "", nil)
 
 	err = s.AuthenticatorFn(req, s.Router)
@@ -391,6 +392,50 @@ func (s *OrganisationInviteIntegrationTestSuite) Test_FindUserByInviteToken_NewU
 	require.Equal(s.T(), iv.InviteeEmail, response.Token.InviteeEmail)
 	require.Equal(s.T(), iv.Token, response.Token.Token)
 	require.Nil(s.T(), response.User)
+}
+
+func (s *OrganisationInviteIntegrationTestSuite) Test_ResendInvite() {
+	iv, err := testdb.SeedOrganisationInvite(s.DB, s.DefaultOrg, "invite1@test.com", &auth.Role{
+		Type:   auth.RoleAdmin,
+		Groups: []string{uuid.NewString()},
+		Apps:   nil,
+	}, primitive.NewDateTimeFromTime(time.Now().Add(time.Hour)), datastore.InviteStatusPending)
+	require.NoError(s.T(), err)
+
+	url := fmt.Sprintf("/ui/organisations/%s/invites/%s/resend", s.DefaultOrg.UID, iv.UID)
+
+	req := createRequest(http.MethodPost, url, "", nil)
+
+	err = s.AuthenticatorFn(req, s.Router)
+	require.NoError(s.T(), err)
+
+	w := httptest.NewRecorder()
+
+	s.Router.ServeHTTP(w, req)
+
+	require.Equal(s.T(), http.StatusOK, w.Code)
+}
+
+func (s *OrganisationInviteIntegrationTestSuite) Test_CancelInvite() {
+	iv, err := testdb.SeedOrganisationInvite(s.DB, s.DefaultOrg, "invite1@test.com", &auth.Role{
+		Type:   auth.RoleAdmin,
+		Groups: []string{uuid.NewString()},
+		Apps:   nil,
+	}, primitive.NewDateTimeFromTime(time.Now().Add(time.Hour)), datastore.InviteStatusPending)
+	require.NoError(s.T(), err)
+
+	url := fmt.Sprintf("/ui/organisations/%s/invites/%s/cancel", s.DefaultOrg.UID, iv.UID)
+
+	req := createRequest(http.MethodPost, url, "", nil)
+
+	err = s.AuthenticatorFn(req, s.Router)
+	require.NoError(s.T(), err)
+
+	w := httptest.NewRecorder()
+
+	s.Router.ServeHTTP(w, req)
+
+	require.Equal(s.T(), http.StatusOK, w.Code)
 }
 
 func TestOrganisationInviteIntegrationTestSuite(t *testing.T) {

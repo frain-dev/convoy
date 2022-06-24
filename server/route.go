@@ -168,6 +168,7 @@ func buildRoutes(app *applicationHandler) http.Handler {
 				subsriptionRouter.Delete("/{subscriptionID}", app.DeleteSubscription)
 				subsriptionRouter.Get("/{subscriptionID}", app.GetSubscription)
 				subsriptionRouter.Put("/{subscriptionID}", app.UpdateSubscription)
+				subsriptionRouter.Put("/{subscriptionID}/toggle_status", app.ToggleSubscriptionStatus)
 			})
 
 			r.Route("/sources", func(sourceRouter chi.Router) {
@@ -227,8 +228,13 @@ func buildRoutes(app *applicationHandler) http.Handler {
 				orgSubRouter.Get("/", app.GetOrganisation)
 				orgSubRouter.With(requireOrganisationMemberRole(auth.RoleSuperUser)).Put("/", app.UpdateOrganisation)
 				orgSubRouter.With(requireOrganisationMemberRole(auth.RoleSuperUser)).Delete("/", app.DeleteOrganisation)
-				orgSubRouter.With(requireOrganisationMemberRole(auth.RoleSuperUser)).Post("/invite_user", app.InviteUserToOrganisation)
-				orgSubRouter.With(requireOrganisationMemberRole(auth.RoleSuperUser)).With(pagination).Get("/pending_invites", app.GetPendingOrganisationInvites)
+
+				orgSubRouter.Route("/invites", func(orgInvitesRouter chi.Router) {
+					orgInvitesRouter.With(requireOrganisationMemberRole(auth.RoleSuperUser)).Post("/", app.InviteUserToOrganisation)
+					orgInvitesRouter.With(requireOrganisationMemberRole(auth.RoleSuperUser)).Post("/{inviteID}/resend", app.ResendOrganizationInvite)
+					orgInvitesRouter.With(requireOrganisationMemberRole(auth.RoleSuperUser)).Post("/{inviteID}/cancel", app.CancelOrganizationInvite)
+					orgInvitesRouter.With(requireOrganisationMemberRole(auth.RoleSuperUser)).With(pagination).Get("/pending", app.GetPendingOrganisationInvites)
+				})
 
 				orgSubRouter.Route("/members", func(orgMemberRouter chi.Router) {
 					orgMemberRouter.Use(requireOrganisationMemberRole(auth.RoleSuperUser))

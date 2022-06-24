@@ -24,8 +24,34 @@ export class TeamsService {
 	async getPendingTeamMembers(requestDetails: { pageNo?: number }): Promise<HTTP_RESPONSE> {
 		try {
 			const response = await this.http.request({
-				url: `${this.privateService.urlFactory('org')}/pending_invites?sort=AESC&page=${requestDetails?.pageNo || 1}&perPage=20`,
+				url: `${this.privateService.urlFactory('org')}/invites/pending?sort=AESC&page=${requestDetails?.pageNo || 1}&perPage=20`,
 				method: 'get'
+			});
+			return response;
+		} catch (error: any) {
+			return error;
+		}
+	}
+
+	async resendPendingInvite(inviteID: string): Promise<HTTP_RESPONSE> {
+		try {
+			const response = await this.http.request({
+				url: `${this.privateService.urlFactory('org')}/invites/${inviteID}/resend`,
+				method: 'post',
+				body: null
+			});
+			return response;
+		} catch (error: any) {
+			return error;
+		}
+	}
+
+	async cancelPendingInvite(inviteID: string): Promise<HTTP_RESPONSE> {
+		try {
+			const response = await this.http.request({
+				url: `${this.privateService.urlFactory('org')}/invites/${inviteID}/cancel`,
+				method: 'post',
+				body: null
 			});
 			return response;
 		} catch (error: any) {
@@ -36,7 +62,7 @@ export class TeamsService {
 	async inviteUserToOrganisation(requestDetails: { firstname: string; lastname: string; email: string; role: string; groups: string[] }): Promise<HTTP_RESPONSE> {
 		try {
 			const response = await this.http.request({
-				url: `${this.privateService.urlFactory('org')}/invite_user`,
+				url: `${this.privateService.urlFactory('org')}/invites`,
 				body: requestDetails,
 				method: 'post'
 			});

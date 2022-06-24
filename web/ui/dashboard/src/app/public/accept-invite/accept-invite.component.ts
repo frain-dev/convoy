@@ -54,20 +54,17 @@ export class AcceptInviteComponent implements OnInit {
 		}
 	}
 	async acceptInvite() {
-		if (this.acceptInviteForm.invalid) {
-			(<any>Object).values(this.acceptInviteForm.controls).forEach((control: FormControl) => {
-				control?.markAsTouched();
-			});
-			return;
+		if (!this.userDetailsAvailable && this.acceptInviteForm.invalid) return this.acceptInviteForm.markAllAsTouched();
+		if (this.userDetailsAvailable) {
+			delete this.acceptInviteForm.value.password;
 		}
 		this.loading = true;
 		try {
 			const response = await this.acceptInviteService.acceptInvite({ token: this.token, body: this.acceptInviteForm.value });
 			this.loading = false;
-			if (response.status === true) {
-				this.generalService.showNotification({ style: 'success', message: response.message });
-				this.router.navigateByUrl('login');
-			}
+			const authDetails = localStorage.getItem('CONVOY_AUTH');
+			this.generalService.showNotification({ style: 'success', message: response.message });
+			this.userDetailsAvailable && authDetails !== 'undefined' ? this.router.navigateByUrl('projects') : this.router.navigateByUrl('login');
 		} catch (error: any) {
 			this.loading = false;
 			this.generalService.showNotification({ style: 'error', message: error.error.message });
