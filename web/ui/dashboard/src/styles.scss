@@ -46,3 +46,6 @@ $convoy-ng-theme: mat.define-light-theme(
 @import './scss/material-design-reset';
 @import '~prismjs/plugins/toolbar/prism-toolbar.css';
 
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
