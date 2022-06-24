@@ -5,8 +5,10 @@ import (
 	"encoding/json"
 	"errors"
 	"reflect"
+	"time"
 
 	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 )
@@ -190,6 +192,7 @@ func (d *mongoStore) FindMany(ctx context.Context, filter, projection map[string
 	if err != nil {
 		return err
 	}
+	defer cursor.Close(ctx)
 
 	var output []map[string]interface{}
 	for cursor.Next(ctx) { // there was nil here before
@@ -226,6 +229,7 @@ func (d *mongoStore) FindManyWithDeletedAt(ctx context.Context, filter, projecti
 	if err != nil {
 		return err
 	}
+	defer cursor.Close(ctx)
 
 	var output []map[string]interface{}
 	for cursor.Next(ctx) {
@@ -264,6 +268,7 @@ func (d *mongoStore) FindAll(ctx context.Context, filter map[string]interface{},
 	if err != nil {
 		return err
 	}
+	defer cursor.Close(ctx)
 
 	return cursor.All(ctx, results)
 }
@@ -304,14 +309,8 @@ func (d *mongoStore) FindAllAdminRecords(ctx context.Context, results interface{
  * return: error
  */
 func (d *mongoStore) UpdateByID(ctx context.Context, id string, payload interface{}) error {
-	result := d.Collection.FindOneAndUpdate(ctx, bson.M{"uid": id}, bson.M{"$set": payload}, options.FindOneAndUpdate().SetUpsert(true))
-
-	err := result.Err()
-	if err != nil {
-		return err
-	}
-
-	return nil
+	_, err := d.Collection.UpdateOne(ctx, bson.M{"uid": id}, bson.M{"$set": payload}, nil)
+	return err
 }
 
 /**
@@ -339,12 +338,13 @@ func (d *mongoStore) UpsertOne(ctx context.Context, filter map[string]interface{
 
 //
 func (d *mongoStore) UpdateOne(ctx context.Context, filter map[string]interface{}, payload interface{}) error {
-	return d.Collection.FindOneAndUpdate(ctx, filter, bson.M{"$set": payload}).Err()
+	_, err := d.Collection.UpdateOne(ctx, filter, bson.M{"$set": payload})
+	return err
 }
 
 func (d *mongoStore) Inc(ctx context.Context, filter map[string]interface{}, payload interface{}) error {
-	result := d.Collection.FindOneAndUpdate(ctx, filter, bson.M{"$inc": payload})
-	return result.Err()
+	_, err := d.Collection.UpdateOne(ctx, filter, bson.M{"$inc": payload})
+	return err
 }
 
 /**
@@ -376,11 +376,9 @@ func (d *mongoStore) UpdateMany(ctx context.Context, filter, payload map[string]
  */
 func (d *mongoStore) DeleteByID(ctx context.Context, id string) error {
 	var u map[string]interface{}
-	opts := options.FindOneAndUpdate()
-	up := true
-	opts.Upsert = &up
 
-	payload := map[string]interface{}{
+	payload := bson.M{
+		"deleted_at":      primitive.NewDateTimeFromTime(time.Now()),
 		"document_status": DeletedDocumentStatus,
 	}
 
@@ -414,22 +412,13 @@ func (d *mongoStore) DestroyById(ctx context.Context, id interface{}) error {
  * The record is not completed deleted, only the status is changed.
  */
 func (d *mongoStore) DeleteOne(ctx context.Context, filter map[string]interface{}) error {
-	var u map[string]interface{}
-	opts := options.FindOneAndUpdate()
-	up := true
-	opts.Upsert = &up
-
-	payload := map[string]interface{}{
-		"document_status": ActiveDocumentStatus,
+	payload := bson.M{
+		"deleted_at":      primitive.NewDateTimeFromTime(time.Now()),
+		"document_status": DeletedDocumentStatus,
 	}
 
-	if err := d.Collection.FindOneAndUpdate(ctx, filter, bson.M{
-		"$set": payload,
-	}).Decode(&u); err != nil {
-		return err
-	}
-
-	return nil
+	_, err := d.Collection.UpdateOne(ctx, filter, bson.M{"$set": payload})
+	return err
 }
 
 func (d *mongoStore) DestroyOne(ctx context.Context, filter map[string]interface{}) error {

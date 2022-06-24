@@ -194,7 +194,7 @@ func Test_FillGroupsStatistics(t *testing.T) {
 		GroupID: group2.UID,
 	}
 
-	appRepo := NewApplicationRepo(db)
+	appRepo := NewApplicationRepo(db, getStore(db, AppCollection))
 	err = appRepo.CreateApplication(context.Background(), app1, group1.UID)
 	require.NoError(t, err)
 

@@ -186,7 +186,7 @@ func TestProcessEventCreated(t *testing.T) {
 						},
 					},
 				}
-				s.EXPECT().FindSubscriptionBySourceIDs(gomock.Any(), "group-id-1", "source-id-1").Times(1).Return(subscriptions, nil)
+				s.EXPECT().FindSubscriptionsBySourceIDs(gomock.Any(), "group-id-1", "source-id-1").Times(1).Return(subscriptions, nil)
 
 				e, _ := args.eventRepo.(*mocks.MockEventRepository)
 				e.EXPECT().CreateEvent(gomock.Any(), gomock.Any()).Times(1).Return(nil)
