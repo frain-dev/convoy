@@ -69,7 +69,7 @@ export class PrivateComponent implements OnInit {
 		this.userOrganization = organisation;
 		localStorage.setItem('CONVOY_ORG', JSON.stringify(organisation));
 		this.showOrgDropdown = false;
-		location.reload();
+		this.router.url.includes('/projects/') ? this.router.navigateByUrl('/projects') : location.reload();
 	}
 
 	closeAddOrganisationModal(event?: { action: 'created' | 'cancel' }) {

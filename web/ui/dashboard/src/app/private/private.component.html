@@ -36,13 +36,13 @@
 					<div class="title">Your organisations ({{ organisations?.length || 0 }})</div>
 					<ul *ngIf="organisations?.length">
 						<li *ngFor="let organisation of organisations">
-							<a (click)="selectOrganisation(organisation)" class="flex flex__justify-between padding-x__16px padding-y__8px">
+							<button (click)="selectOrganisation(organisation)" class="flex flex__justify-between padding-x__16px padding-y__8px button__clear color__black width__100">
 								<div class="badge badge__dark">
 									<div class="icon">{{ organisation?.name?.slice(0, 1) }}</div>
 									<p class="name">{{ organisation?.name }}</p>
 								</div>
 								<img *ngIf="organisation.uid == userOrganization?.uid" src="/assets/img/check-icon-primary.svg" alt="check icon" />
-							</a>
+							</button>
 						</li>
 					</ul>
 					<div class="dropdown--footer">
@@ -68,12 +68,12 @@
 						<li>
 							<a routerLink="/user-settings" (click)="showMoreDropdown = false; showOverlay = false" class="color__grey padding-left__16px">My account</a>
 						</li>
-						<li *ngIf="organisations?.length" routerLink="/organisation-settings">
-							<a (click)="showMoreDropdown = false; showOverlay = false" class="color__grey padding-left__16px">Organisation settings</a>
+						<li *ngIf="organisations?.length">
+							<a routerLink="/organisation-settings" (click)="showMoreDropdown = false; showOverlay = false" class="color__grey padding-left__16px">Organisation settings</a>
 						</li>
 					</ul>
 					<div class="border__top padding-x__32px padding-bottom__24px padding-top__16px">
-						<a class="color__danger font__weight-600" (click)="logout()">Logout</a>
+						<button class="button__clear color__danger font__weight-600" (click)="logout()">Logout</button>
 					</div>
 				</div>
 			</div>

@@ -114,10 +114,10 @@
 									<div [ngClass]="{ show: currentAppId == app.uid }" class="dropdown__menu dropdown__menu__nav small z-index--3">
 										<ul>
 											<li>
-												<a (click)="currentAppId = ''" [routerLink]="'/projects/' + privateService.activeProjectDetails?.uid + '/apps/' + app.uid + '/edit'">Update</a>
+												<a [routerLink]="'/projects/' + privateService.activeProjectDetails?.uid + '/apps/' + app.uid + '/edit'" class="padding-x__8px">Update</a>
 											</li>
 											<li>
-												<a (click)="promptDeleteModal($event, app)" class="color__danger">Delete</a>
+												<button (click)="promptDeleteModal($event, app)" class="button__clear color__danger">Delete</button>
 											</li>
 										</ul>
 									</div>
