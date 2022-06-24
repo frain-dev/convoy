@@ -114,7 +114,7 @@
 
 				<div class="input margin-bottom__0px">
 					<label for="retry-logic-duration">Duration</label>
-					<input type="text" id="retry-logic-duration" placeholder="e.g 3s" formControlName="interval_seconds" />
+					<input type="text" id="retry-logic-duration" placeholder="e.g 3s" formControlName="duration" />
 				</div>
 
 				<div class="input margin-bottom__0px">
@@ -131,12 +131,12 @@
 			<div class="grid grid__col-2 grid--gap__24px" formGroupName="alert_config">
 				<div class="input">
 					<label for="alert-config-count">Count</label>
-					<input type="number" id="alert-config-count" placeholder="e.g 10" formControlName="theshold" />
+					<input type="number" id="alert-config-count" placeholder="e.g 10" formControlName="count" />
 				</div>
 
 				<div class="input">
 					<label for="alert-config-time">Time</label>
-					<input type="text" id="alert-config-time" placeholder="e.g 1h" formControlName="time" />
+					<input type="text" id="alert-config-time" placeholder="e.g 1h" formControlName="threshold" />
 				</div>
 			</div>
 		</div>
@@ -186,6 +186,6 @@
 	<div class="modal--body">
 		<app-create-app (createApp)="onCreateNewApp($event); showCreateAppModal = false" (discardApp)="showCreateAppModal = false" *ngIf="showCreateAppModal"></app-create-app>
 		<app-create-source *ngIf="showCreateSourceModal" (onAction)="$event?.action == 'close' ? false : onCreateSource($event); showCreateSourceModal = false"></app-create-source>
-		<app-create-endpoint [appId]="subscriptionForm.value.app_id" (onAction)="$event.action == 'cancel' ? false : getApps(); showCreateEndpointModal = false"></app-create-endpoint>
+		<app-create-endpoint *ngIf="showCreateEndpointModal" [appId]="subscriptionForm.value.app_id" (onAction)="$event.action == 'cancel' ? false : getApps(); showCreateEndpointModal = false"></app-create-endpoint>
 	</div>
 </div>

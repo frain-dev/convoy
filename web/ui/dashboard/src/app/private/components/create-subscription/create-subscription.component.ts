@@ -20,13 +20,13 @@ export class CreateSubscriptionComponent implements OnInit {
 		endpoint_id: [null, Validators.required],
 		group_id: [null, Validators.required],
 		alert_config: this.formBuilder.group({
-			theshold: [null],
-			time: [null]
+			threshold: [null],
+			count: [null]
 		}),
 		retry_config: this.formBuilder.group({
 			type: [null],
 			retry_count: [null],
-			interval_seconds: [null]
+			duration: [null]
 		}),
 		filter_config: this.formBuilder.group({
 			event_types: [null]
@@ -84,7 +84,8 @@ export class CreateSubscriptionComponent implements OnInit {
 			this.subscriptionForm.patchValue(response.data);
 			this.subscriptionForm.patchValue({ source_id: response.data?.source_metadata?.uid, app_id: response.data?.app_metadata?.uid, endpoint_id: response.data?.endpoint_metadata?.uid });
 			if (!this.token) this.onUpdateAppSelection();
-			this.eventTags = response.data.filter_config.event_types;
+			response.data.filter_config?.event_types ? (this.eventTags = response.data.filter_config?.event_types) : (this.eventTags = []);
+
 			return;
 		} catch (error) {
 			return error;
@@ -149,7 +150,7 @@ export class CreateSubscriptionComponent implements OnInit {
 
 	async saveSubscription() {
 		this.subscriptionForm.patchValue({
-			filter_config: { event_types: this.eventTags }
+			filter_config: { event_types: this.eventTags.length > 0 ? this.eventTags : ['*'] }
 		});
 		if (this.projectType === 'incoming' && this.subscriptionForm.invalid) return this.subscriptionForm.markAllAsTouched();
 		if (
@@ -191,6 +192,7 @@ export class CreateSubscriptionComponent implements OnInit {
 	async onCreateNewApp(newApp: APP) {
 		await this.getApps();
 		this.subscriptionForm.patchValue({ app_id: newApp.uid });
+		this.onUpdateAppSelection()
 	}
 
 	removeEventTag(tag: string) {

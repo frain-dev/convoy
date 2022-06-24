@@ -3,8 +3,9 @@ package mongo
 import (
 	"context"
 	"errors"
-	"github.com/frain-dev/convoy/util"
 	"time"
+
+	"github.com/frain-dev/convoy/util"
 
 	"github.com/frain-dev/convoy/datastore"
 	pager "github.com/gobeam/mongo-go-pagination"
@@ -57,6 +58,7 @@ func (db *orgInviteRepo) UpdateOrganisationInvite(ctx context.Context, iv *datas
 		primitive.E{Key: "role", Value: iv.Role},
 		primitive.E{Key: "status", Value: iv.Status},
 		primitive.E{Key: "updated_at", Value: iv.UpdatedAt},
+		primitive.E{Key: "expires_at", Value: iv.ExpiresAt},
 	}}}
 
 	_, err := db.inner.UpdateOne(ctx, bson.M{"uid": iv.UID}, update)

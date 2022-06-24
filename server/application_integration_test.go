@@ -337,7 +337,6 @@ func (s *ApplicationIntegrationTestSuite) Test_CreateAppEndpoint() {
 	plainBody := fmt.Sprintf(`{
 		"url": "%s",
 		"secret": "%s",
-		"events": [ "*" ],
 		"description": "default endpoint"
 	}`, endpointURL, secret)
 	body := strings.NewReader(plainBody)

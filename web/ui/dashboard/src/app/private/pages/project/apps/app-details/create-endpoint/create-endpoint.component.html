@@ -57,6 +57,6 @@
 		{{ savingEndpoint ? 'Adding Endpoint..' : 'Add Endpoint' }}
 	</button>
 	<button *ngIf="selectedEndpoint" class="button button__primary button--full-100" [disabled]="savingEndpoint" (click)="saveEndpoint()">
-		{{ savingEndpoint ? 'Editing Endpoint..' : 'Edit Endpoint' }}
+		{{ savingEndpoint ? 'Updating Endpoint..' : 'Update Endpoint' }}
 	</button>
 </div>

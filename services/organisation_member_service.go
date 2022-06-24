@@ -84,8 +84,19 @@ func (om *OrganisationMemberService) LoadOrganisationMembersPaged(ctx context.Co
 	return organisationMembers, paginationData, nil
 }
 
-func (om *OrganisationMemberService) DeleteOrganisationMember(ctx context.Context, memberID, orgID string) error {
-	err := om.orgMemberRepo.DeleteOrganisationMember(ctx, memberID, orgID)
+func (om *OrganisationMemberService) DeleteOrganisationMember(ctx context.Context, memberID string, org *datastore.Organisation) error {
+	member, err := om.orgMemberRepo.FetchOrganisationMemberByID(ctx, memberID, org.UID)
+
+	if err != nil {
+		log.WithError(err).Error("failed to find organisation member by id")
+		return NewServiceError(http.StatusBadRequest, errors.New("failed to find organisation member by id"))
+	}
+
+	if member.UserID == org.OwnerID {
+		return NewServiceError(http.StatusForbidden, errors.New("cannot deactivate organisation owner"))
+	}
+
+	err = om.orgMemberRepo.DeleteOrganisationMember(ctx, memberID, org.UID)
 	if err != nil {
 		log.WithError(err).Error("failed to delete organisation member")
 		return NewServiceError(http.StatusBadRequest, errors.New("failed to delete organisation member"))

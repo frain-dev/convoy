@@ -233,7 +233,7 @@
 		<p class="font__14px color__danger margin-bottom__40px text--center">For security reasons, we cannot show it to you again</p>
 		<div class="key margin-bottom__32px">
 			<span>{{ apiKey }}</span>
-			<button (click)="copyKey(apiKey, 'secret')">
+			<button (click)="copyKey(apiKey)">
 				<img src="/assets/img/copy.svg" alt="copy" />
 				<small *ngIf="showSecretCopyText">Copied!</small>
 			</button>
