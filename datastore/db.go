@@ -190,6 +190,7 @@ func (d *mongoStore) FindMany(ctx context.Context, filter, projection map[string
 	if err != nil {
 		return err
 	}
+	defer cursor.Close(ctx)
 
 	var output []map[string]interface{}
 	for cursor.Next(ctx) { // there was nil here before
@@ -226,6 +227,7 @@ func (d *mongoStore) FindManyWithDeletedAt(ctx context.Context, filter, projecti
 	if err != nil {
 		return err
 	}
+	defer cursor.Close(ctx)
 
 	var output []map[string]interface{}
 	for cursor.Next(ctx) {
@@ -264,6 +266,7 @@ func (d *mongoStore) FindAll(ctx context.Context, filter map[string]interface{},
 	if err != nil {
 		return err
 	}
+	defer cursor.Close(ctx)
 
 	return cursor.All(ctx, results)
 }
@@ -304,14 +307,8 @@ func (d *mongoStore) FindAllAdminRecords(ctx context.Context, results interface{
  * return: error
  */
 func (d *mongoStore) UpdateByID(ctx context.Context, id string, payload interface{}) error {
-	result := d.Collection.FindOneAndUpdate(ctx, bson.M{"uid": id}, bson.M{"$set": payload}, options.FindOneAndUpdate().SetUpsert(true))
-
-	err := result.Err()
-	if err != nil {
-		return err
-	}
-
-	return nil
+	_, err := d.Collection.UpdateOne(ctx, bson.M{"uid": id}, bson.M{"$set": payload}, nil)
+	return err
 }
 
 /**

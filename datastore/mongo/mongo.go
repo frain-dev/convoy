@@ -74,6 +74,7 @@ func New(cfg config.Configuration) (datastore.DatabaseClient, error) {
 	conn := client.Database(dbName, nil)
 	groups := datastore.New(conn, GroupCollection)
 	events := datastore.New(conn, EventCollection)
+	apps := datastore.New(conn, AppCollection)
 	subscriptions := datastore.New(conn, SubscriptionCollection)
 	orgs := datastore.New(conn, OrganisationCollection)
 	org_member := datastore.New(conn, OrganisationMembersCollection)
@@ -85,8 +86,8 @@ func New(cfg config.Configuration) (datastore.DatabaseClient, error) {
 		db:                conn,
 		apiKeyRepo:        NewApiKeyRepo(conn),
 		groupRepo:         NewGroupRepo(conn, groups),
+		applicationRepo:   NewApplicationRepo(conn, apps),
 		subscriptionRepo:  NewSubscriptionRepo(conn, subscriptions),
-		applicationRepo:   NewApplicationRepo(conn),
 		eventRepo:         NewEventRepository(conn, events),
 		eventDeliveryRepo: NewEventDeliveryRepository(conn),
 		sourceRepo:        NewSourceRepo(conn),

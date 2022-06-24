@@ -19,12 +19,14 @@ import (
 type appRepo struct {
 	innerDB *mongo.Database
 	client  *mongo.Collection
+	store   datastore.Store
 }
 
-func NewApplicationRepo(db *mongo.Database) datastore.ApplicationRepository {
+func NewApplicationRepo(db *mongo.Database, store datastore.Store) datastore.ApplicationRepository {
 	return &appRepo{
 		innerDB: db,
 		client:  db.Collection(AppCollection, nil),
+		store:   store,
 	}
 }
 
@@ -39,7 +41,7 @@ func (db *appRepo) CreateApplication(ctx context.Context, app *datastore.Applica
 	}
 
 	app.ID = primitive.NewObjectID()
-	_, err = db.client.InsertOne(ctx, app)
+	err = db.store.Save(ctx, app, nil)
 	return err
 }
 
@@ -161,25 +163,8 @@ func (db *appRepo) SearchApplicationsByGroupId(ctx context.Context, groupId stri
 	}
 
 	apps := make([]datastore.Application, 0)
-	cur, err := db.client.Find(ctx, filter)
+	err := db.store.FindMany(ctx, filter, nil, nil, 0, 0, &apps)
 	if err != nil {
-		return apps, err
-	}
-
-	for cur.Next(ctx) {
-		var app datastore.Application
-		if err := cur.Decode(&app); err != nil {
-			return apps, err
-		}
-
-		apps = append(apps, app)
-	}
-
-	if err := cur.Err(); err != nil {
-		return nil, err
-	}
-
-	if err := cur.Close(ctx); err != nil {
 		return apps, err
 	}
 
@@ -202,17 +187,14 @@ func (db *appRepo) FindApplicationByID(ctx context.Context,
 
 	app := new(datastore.Application)
 
-	filter := bson.M{"uid": id, "document_status": datastore.ActiveDocumentStatus}
-
-	err := db.client.FindOne(ctx, filter).
-		Decode(&app)
+	err := db.store.FindByID(ctx, id, nil, app)
 	if errors.Is(err, mongo.ErrNoDocuments) {
 		err = datastore.ErrApplicationNotFound
 		return app, err
 	}
 
 	msgCollection := db.innerDB.Collection(EventCollection)
-	filter = bson.M{"app_id": app.UID, "document_status": datastore.ActiveDocumentStatus}
+	filter := bson.M{"app_id": app.UID, "document_status": datastore.ActiveDocumentStatus}
 	count, err := msgCollection.CountDocuments(ctx, filter)
 	if err != nil {
 		log.WithError(err).Errorf("failed to count events in %s", app.UID)
@@ -254,35 +236,24 @@ func (db *appRepo) UpdateApplication(ctx context.Context, app *datastore.Applica
 
 	app.UpdatedAt = primitive.NewDateTimeFromTime(time.Now())
 
-	filter := bson.M{"uid": app.UID, "document_status": datastore.ActiveDocumentStatus}
+	update := bson.M{
+		"endpoints":     app.Endpoints,
+		"updated_at":    app.UpdatedAt,
+		"title":         app.Title,
+		"support_email": app.SupportEmail,
+		"is_disabled":   app.IsDisabled,
+	}
 
-	update := bson.D{primitive.E{Key: "$set", Value: bson.D{
-		primitive.E{Key: "endpoints", Value: app.Endpoints},
-		primitive.E{Key: "updated_at", Value: app.UpdatedAt},
-		primitive.E{Key: "title", Value: app.Title},
-		primitive.E{Key: "support_email", Value: app.SupportEmail},
-		primitive.E{Key: "is_disabled", Value: app.IsDisabled},
-	}}}
-
-	_, err = db.client.UpdateOne(ctx, filter, update)
-	return err
+	return db.store.UpdateByID(ctx, app.UID, update)
 }
 
 func (db *appRepo) DeleteGroupApps(ctx context.Context, groupID string) error {
-
 	update := bson.M{
-		"$set": bson.M{
-			"deleted_at":      primitive.NewDateTimeFromTime(time.Now()),
-			"document_status": datastore.DeletedDocumentStatus,
-		},
+		"deleted_at":      primitive.NewDateTimeFromTime(time.Now()),
+		"document_status": datastore.DeletedDocumentStatus,
 	}
 
-	_, err := db.client.UpdateMany(ctx, bson.M{"group_id": groupID}, update)
-	if err != nil {
-		return err
-	}
-
-	return nil
+	return db.store.UpdateMany(ctx, bson.M{"group_id": groupID}, update)
 }
 
 func (db *appRepo) DeleteApplication(ctx context.Context,
