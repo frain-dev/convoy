@@ -29,6 +29,7 @@ func TestSecurityService_CreateAPIKey(t *testing.T) {
 	type args struct {
 		ctx       context.Context
 		newApiKey *models.APIKey
+		member    *datastore.OrganisationMember
 	}
 	expires := time.Now().Add(time.Hour)
 	tests := []struct {
@@ -47,12 +48,16 @@ func TestSecurityService_CreateAPIKey(t *testing.T) {
 				newApiKey: &models.APIKey{
 					Name: "test_api_key",
 					Type: "api",
-					Role: auth.Role{
-						Type:   auth.RoleAdmin,
-						Groups: []string{"1234"},
-						Apps:   []string{"1234"},
+					Role: models.Role{
+						Type:  auth.RoleAdmin,
+						Group: "1234",
 					},
 					ExpiresAt: expires,
+				},
+				member: &datastore.OrganisationMember{
+					UID:            "abc",
+					OrganisationID: "1234",
+					Role:           auth.Role{Type: auth.RoleSuperUser},
 				},
 			},
 			wantAPIKey: &datastore.APIKey{
@@ -61,15 +66,13 @@ func TestSecurityService_CreateAPIKey(t *testing.T) {
 				Role: auth.Role{
 					Type:   auth.RoleAdmin,
 					Groups: []string{"1234"},
-					Apps:   []string{"1234"},
 				},
 				ExpiresAt:      primitive.NewDateTimeFromTime(expires),
 				DocumentStatus: datastore.ActiveDocumentStatus,
 			},
 			dbFn: func(ss *SecurityService) {
 				g, _ := ss.groupRepo.(*mocks.MockGroupRepository)
-				g.EXPECT().FetchGroupsByIDs(gomock.Any(), []string{"1234"}).
-					Times(1).Return([]datastore.Group{{UID: "1234"}}, nil)
+				g.EXPECT().FetchGroupByID(gomock.Any(), gomock.Any()).Times(1).Return(&datastore.Group{UID: "abc", OrganisationID: "1234"}, nil)
 
 				a, _ := ss.apiKeyRepo.(*mocks.MockAPIKeyRepository)
 				a.EXPECT().CreateAPIKey(gomock.Any(), gomock.Any()).
@@ -83,12 +86,17 @@ func TestSecurityService_CreateAPIKey(t *testing.T) {
 				newApiKey: &models.APIKey{
 					Name: "test_api_key",
 					Type: "api",
-					Role: auth.Role{
-						Type:   auth.RoleAdmin,
-						Groups: []string{"1234"},
-						Apps:   []string{"1234"},
+					Role: models.Role{
+						Type:  auth.RoleAdmin,
+						Group: "1234",
+						App:   "1234",
 					},
 					ExpiresAt: expires.Add(-2 * time.Hour),
+				},
+				member: &datastore.OrganisationMember{
+					UID:            "abc",
+					OrganisationID: "1234",
+					Role:           auth.Role{Type: auth.RoleSuperUser},
 				},
 			},
 			wantErr:     true,
@@ -102,76 +110,105 @@ func TestSecurityService_CreateAPIKey(t *testing.T) {
 				newApiKey: &models.APIKey{
 					Name: "test_api_key",
 					Type: "api",
-					Role: auth.Role{
-						Type:   "abc",
-						Groups: []string{"1234"},
-						Apps:   []string{"1234"},
+					Role: models.Role{
+						Type:  "abc",
+						Group: "1234",
+						App:   "1234",
 					},
 					ExpiresAt: expires,
 				},
+				member: nil,
 			},
 			wantErr:     true,
 			wantErrCode: http.StatusBadRequest,
 			wantErrMsg:  "invalid api key role",
 		},
 		{
-			name: "should_fail_to_fetch_groups",
+			name: "should_fail_to_fetch_group",
 			args: args{
 				ctx: ctx,
 				newApiKey: &models.APIKey{
 					Name: "test_api_key",
 					Type: "api",
-					Role: auth.Role{
-						Type:   auth.RoleAdmin,
-						Groups: []string{"1234"},
-						Apps:   []string{"1234"},
+					Role: models.Role{
+						Type:  auth.RoleAdmin,
+						Group: "1234",
+						App:   "1234",
 					},
 					ExpiresAt: expires,
+				},
+				member: &datastore.OrganisationMember{
+					UID:            "abc",
+					OrganisationID: "1234",
+					Role:           auth.Role{Type: auth.RoleSuperUser},
 				},
 			},
 			dbFn: func(ss *SecurityService) {
 				g, _ := ss.groupRepo.(*mocks.MockGroupRepository)
-				g.EXPECT().FetchGroupsByIDs(gomock.Any(), []string{"1234"}).
+				g.EXPECT().FetchGroupByID(gomock.Any(), "1234").
 					Times(1).Return(nil, errors.New("failed"))
 			},
 			wantErr:     true,
 			wantErrCode: http.StatusBadRequest,
-			wantErrMsg:  "invalid group",
+			wantErrMsg:  "failed to fetch group by id",
 		},
 		{
-			name: "should_error_for_group_length_mismatch",
+			name: "should_error_for_organisation_id_mismatch",
 			args: args{
 				ctx: ctx,
 				newApiKey: &models.APIKey{
 					Name: "test_api_key",
 					Type: "api",
-					Role: auth.Role{
-						Type:   auth.RoleAdmin,
-						Groups: []string{"1234"},
-						Apps:   []string{"1234"},
+					Role: models.Role{
+						Type:  auth.RoleAdmin,
+						Group: "1234",
+						App:   "1234",
 					},
 					ExpiresAt: expires,
 				},
-			},
-			wantAPIKey: &datastore.APIKey{
-				Name: "test_api_key",
-				Type: "api",
-				Role: auth.Role{
-					Type:   auth.RoleAdmin,
-					Groups: []string{"1234"},
-					Apps:   []string{"1234"},
+				member: &datastore.OrganisationMember{
+					UID:            "abc",
+					OrganisationID: "1234",
+					Role:           auth.Role{Type: auth.RoleSuperUser},
 				},
-				ExpiresAt:      primitive.NewDateTimeFromTime(expires),
-				DocumentStatus: datastore.ActiveDocumentStatus,
 			},
 			dbFn: func(ss *SecurityService) {
 				g, _ := ss.groupRepo.(*mocks.MockGroupRepository)
-				g.EXPECT().FetchGroupsByIDs(gomock.Any(), []string{"1234"}).
-					Times(1).Return([]datastore.Group{}, nil)
+				g.EXPECT().FetchGroupByID(gomock.Any(), "1234").
+					Times(1).Return(&datastore.Group{UID: "1234", OrganisationID: "555"}, nil)
 			},
 			wantErr:     true,
-			wantErrCode: http.StatusBadRequest,
-			wantErrMsg:  "cannot find group",
+			wantErrCode: http.StatusUnauthorized,
+			wantErrMsg:  "unauthorized to access group",
+		},
+		{
+			name: "should_error_for_member_not_authorized_to_access_group",
+			args: args{
+				ctx: ctx,
+				newApiKey: &models.APIKey{
+					Name: "test_api_key",
+					Type: "api",
+					Role: models.Role{
+						Type:  auth.RoleAdmin,
+						Group: "1234",
+						App:   "1234",
+					},
+					ExpiresAt: expires,
+				},
+				member: &datastore.OrganisationMember{
+					UID:            "abc",
+					OrganisationID: "555",
+					Role:           auth.Role{Type: auth.RoleAdmin},
+				},
+			},
+			dbFn: func(ss *SecurityService) {
+				g, _ := ss.groupRepo.(*mocks.MockGroupRepository)
+				g.EXPECT().FetchGroupByID(gomock.Any(), "1234").
+					Times(1).Return(&datastore.Group{UID: "1234", OrganisationID: "555"}, nil)
+			},
+			wantErr:     true,
+			wantErrCode: http.StatusUnauthorized,
+			wantErrMsg:  "unauthorized to access group",
 		},
 		{
 			name: "should_fail_to_create_api_key",
@@ -180,18 +217,23 @@ func TestSecurityService_CreateAPIKey(t *testing.T) {
 				newApiKey: &models.APIKey{
 					Name: "test_api_key",
 					Type: "api",
-					Role: auth.Role{
-						Type:   auth.RoleAdmin,
-						Groups: []string{"1234"},
-						Apps:   []string{"1234"},
+					Role: models.Role{
+						Type:  auth.RoleAdmin,
+						Group: "1234",
+						App:   "1234",
 					},
 					ExpiresAt: expires,
+				},
+				member: &datastore.OrganisationMember{
+					UID:            "abc",
+					OrganisationID: "1234",
+					Role:           auth.Role{Type: auth.RoleSuperUser},
 				},
 			},
 			dbFn: func(ss *SecurityService) {
 				g, _ := ss.groupRepo.(*mocks.MockGroupRepository)
-				g.EXPECT().FetchGroupsByIDs(gomock.Any(), []string{"1234"}).
-					Times(1).Return([]datastore.Group{{UID: "1234"}}, nil)
+				g.EXPECT().FetchGroupByID(gomock.Any(), "1234").
+					Times(1).Return(&datastore.Group{UID: "1234", OrganisationID: "1234"}, nil)
 
 				a, _ := ss.apiKeyRepo.(*mocks.MockAPIKeyRepository)
 				a.EXPECT().CreateAPIKey(gomock.Any(), gomock.Any()).
@@ -212,7 +254,7 @@ func TestSecurityService_CreateAPIKey(t *testing.T) {
 				tc.dbFn(ss)
 			}
 
-			apiKey, keyString, err := ss.CreateAPIKey(tc.args.ctx, tc.args.newApiKey)
+			apiKey, keyString, err := ss.CreateAPIKey(tc.args.ctx, tc.args.member, tc.args.newApiKey)
 			if tc.wantErr {
 				require.NotNil(t, err)
 				require.Equal(t, tc.wantErrCode, err.(*ServiceError).ErrCode())
@@ -266,7 +308,7 @@ func TestSecurityService_CreateAppPortalAPIKey(t *testing.T) {
 				Name: "test_app",
 				Type: "app_portal",
 				Role: auth.Role{
-					Type:   auth.RoleUIAdmin,
+					Type:   auth.RoleAdmin,
 					Groups: []string{"1234"},
 					Apps:   []string{"abc"},
 				},

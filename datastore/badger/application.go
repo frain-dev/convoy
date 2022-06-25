@@ -18,6 +18,10 @@ type appRepo struct {
 	db *badgerhold.Store
 }
 
+func (*appRepo) CreateApplicationEndpoint(context.Context, string, string, *datastore.Endpoint) error {
+	return nil
+}
+
 func NewApplicationRepo(db *badgerhold.Store) datastore.ApplicationRepository {
 	return &appRepo{db: db}
 }
@@ -190,31 +194,6 @@ func (a *appRepo) FindApplicationEndpointByID(ctx context.Context, appID string,
 
 func (a *appRepo) DeleteApplication(ctx context.Context, app *datastore.Application) error {
 	return a.db.Delete(app.UID, app)
-}
-
-func (a *appRepo) UpdateApplicationEndpointsStatus(ctx context.Context, aid string, endpointIds []string, status datastore.EndpointStatus) error {
-	endpointMap := make(map[string]bool)
-	var application *datastore.Application
-
-	for i := 0; i < len(endpointIds); i++ {
-		endpointMap[endpointIds[i]] = true
-	}
-
-	err := a.db.Get(aid, &application)
-
-	if err != nil && errors.Is(err, badgerhold.ErrNotFound) {
-		return datastore.ErrApplicationNotFound
-	}
-
-	for i := 0; i < len(application.Endpoints); i++ {
-		if _, ok := endpointMap[application.Endpoints[i].UID]; ok {
-			application.Endpoints[i].Status = status
-		}
-	}
-
-	err = a.UpdateApplication(ctx, application, application.GroupID)
-
-	return err
 }
 
 func (a *appRepo) DeleteGroupApps(ctx context.Context, gid string) error {

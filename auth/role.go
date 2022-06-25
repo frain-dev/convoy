@@ -14,18 +14,35 @@ type RoleType string
 
 const (
 	RoleSuperUser = RoleType("super_user")
-	RoleUIAdmin   = RoleType("ui_admin")
 	RoleAdmin     = RoleType("admin")
 	RoleAPI       = RoleType("api")
 )
 
 func (r RoleType) IsValid() bool {
 	switch r {
-	case RoleSuperUser, RoleUIAdmin, RoleAdmin, RoleAPI:
+	case RoleSuperUser, RoleAdmin, RoleAPI:
 		return true
 	default:
 		return false
 	}
+}
+
+func (r *Role) HasGroup(groupID string) bool {
+	for _, id := range r.Groups {
+		if id == groupID {
+			return true
+		}
+	}
+	return false
+}
+
+func (r *Role) HasApp(appID string) bool {
+	for _, id := range r.Apps {
+		if id == appID {
+			return true
+		}
+	}
+	return false
 }
 
 func (r RoleType) String() string {

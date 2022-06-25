@@ -30,13 +30,12 @@ var weeklyIntervalFormat = "%Y-%m"   // 1 week
 var monthlyIntervalFormat = "%Y-%m"  // 1 month
 var yearlyIntervalFormat = "%Y"      // 1 month
 
-func (db *eventRepo) CreateEvent(ctx context.Context,
-	message *datastore.Event) error {
+func (db *eventRepo) CreateEvent(ctx context.Context, message *datastore.Event) error {
 
 	message.ID = primitive.NewObjectID()
 
 	if util.IsStringEmpty(message.ProviderID) {
-		message.ProviderID = message.AppMetadata.UID
+		message.ProviderID = message.AppID
 	}
 	if util.IsStringEmpty(message.UID) {
 		message.UID = uuid.New().String()
@@ -48,8 +47,8 @@ func (db *eventRepo) CreateEvent(ctx context.Context,
 
 func (db *eventRepo) CountGroupMessages(ctx context.Context, groupID string) (int64, error) {
 	filter := bson.M{
-		"app_metadata.group_id": groupID,
-		"document_status":       datastore.ActiveDocumentStatus,
+		"group_id":        groupID,
+		"document_status": datastore.ActiveDocumentStatus,
 	}
 
 	count, err := db.inner.CountDocuments(ctx, filter)
@@ -68,7 +67,7 @@ func (db *eventRepo) DeleteGroupEvents(ctx context.Context, groupID string) erro
 		},
 	}
 
-	filter := bson.M{"app_metadata.group_id": groupID}
+	filter := bson.M{"group_id": groupID}
 	_, err := db.inner.UpdateMany(ctx, filter, update)
 	if err != nil {
 		return err
@@ -86,7 +85,7 @@ func (db *eventRepo) LoadEventIntervals(ctx context.Context, groupID string, sea
 	}
 
 	matchStage := bson.D{{Key: "$match", Value: bson.D{
-		{Key: "app_metadata.group_id", Value: groupID},
+		{Key: "group_id", Value: groupID},
 		{Key: "document_status", Value: datastore.ActiveDocumentStatus},
 		{Key: "created_at", Value: bson.D{
 			{Key: "$gte", Value: primitive.NewDateTimeFromTime(time.Unix(start, 0))},
@@ -188,13 +187,13 @@ func (db *eventRepo) LoadEventsPaged(ctx context.Context, groupID string, appId 
 	hasGroupFilter := !util.IsStringEmpty(groupID)
 
 	if hasAppFilter && hasGroupFilter {
-		filter = bson.M{"app_metadata.group_id": groupID, "app_metadata.uid": appId, "document_status": datastore.ActiveDocumentStatus,
+		filter = bson.M{"group_id": groupID, "app_id": appId, "document_status": datastore.ActiveDocumentStatus,
 			"created_at": getCreatedDateFilter(searchParams)}
 	} else if hasAppFilter {
-		filter = bson.M{"app_metadata.uid": appId, "document_status": datastore.ActiveDocumentStatus,
+		filter = bson.M{"app_id": appId, "document_status": datastore.ActiveDocumentStatus,
 			"created_at": getCreatedDateFilter(searchParams)}
 	} else if hasGroupFilter {
-		filter = bson.M{"app_metadata.group_id": groupID, "document_status": datastore.ActiveDocumentStatus,
+		filter = bson.M{"group_id": groupID, "document_status": datastore.ActiveDocumentStatus,
 			"created_at": getCreatedDateFilter(searchParams)}
 	}
 

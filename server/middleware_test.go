@@ -59,7 +59,7 @@ func TestRequirePermission_Basic(t *testing.T) {
 			if err != nil {
 				t.Errorf("Failed to load config file: %v", err)
 			}
-			initRealmChain(t, nil)
+			initRealmChain(t, nil, nil, nil)
 
 			ctrl := gomock.NewController(t)
 			defer ctrl.Finish()
@@ -97,24 +97,24 @@ func TestRequirePermission_Noop(t *testing.T) {
 	}{
 		{
 			name:       "credentials not provided",
-			statusCode: http.StatusOK,
+			statusCode: http.StatusUnauthorized,
 			cfgPath:    "./testdata/Auth_Config/none-convoy.json",
 		},
 		{
 			name:        "invalid credentials",
-			statusCode:  http.StatusOK,
+			statusCode:  http.StatusUnauthorized,
 			credentials: "--",
 			cfgPath:     "./testdata/Auth_Config/none-convoy.json",
 		},
 		{
 			name:        "authorization failed",
-			statusCode:  http.StatusOK,
+			statusCode:  http.StatusUnauthorized,
 			credentials: "YWRtaW46dGVzdA==",
 			cfgPath:     "./testdata/Auth_Config/none-convoy.json",
 		},
 		{
 			name:        "valid credentials",
-			statusCode:  http.StatusOK,
+			statusCode:  http.StatusUnauthorized,
 			credentials: "dGVzdDp0ZXN0",
 			cfgPath:     "./testdata/Auth_Config/none-convoy.json",
 		},
@@ -126,13 +126,13 @@ func TestRequirePermission_Noop(t *testing.T) {
 			if err != nil {
 				t.Errorf("Failed to load config file: %v", err)
 			}
-			initRealmChain(t, nil)
+			initRealmChain(t, nil, nil, nil)
 
 			ctrl := gomock.NewController(t)
 			defer ctrl.Finish()
 
 			fn := requireAuth()(http.HandlerFunc(func(rw http.ResponseWriter, r *http.Request) {
-				rw.WriteHeader(http.StatusOK)
+				rw.WriteHeader(http.StatusUnauthorized)
 
 				_, err := rw.Write([]byte(`Hello`))
 				require.NoError(t, err)

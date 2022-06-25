@@ -1,0 +1,12 @@
+
+.modal--body {
+	min-height: 100%;
+}
+.empty-state-img {
+	height: 110px;
+	width: 100px;
+	&.big {
+		height: 130px;
+		width: 120px;
+	}
+}

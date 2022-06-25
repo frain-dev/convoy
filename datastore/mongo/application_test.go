@@ -103,7 +103,7 @@ func Test_LoadApplicationsPaged(t *testing.T) {
 	})
 	require.NoError(t, err)
 
-	require.True(t, len(apps) > 0)
+	require.True(t, len(apps) == 0)
 }
 
 func Test_FindApplicationByID(t *testing.T) {

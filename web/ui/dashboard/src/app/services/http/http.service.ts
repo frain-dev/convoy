@@ -8,26 +8,29 @@ import { environment } from 'src/environments/environment';
 })
 export class HttpService {
 	APIURL = `${environment.production ? location.origin : 'http://localhost:5005'}/ui`;
+	APP_PORTAL_APIURL = `${environment.production ? location.origin : 'http://localhost:5005'}/portal`;
 
 	constructor(private httpClient: HttpClient) {}
 
 	authDetails() {
 		const authDetails = localStorage.getItem('CONVOY_AUTH');
-		if (authDetails) {
-			const { username, password } = JSON.parse(authDetails);
-			return { token: btoa(`${username + ':' + password}`), authState: true };
+		if (authDetails && authDetails !== 'undefined') {
+			const { token } = JSON.parse(authDetails);
+			return { token: token.access_token, authState: true };
 		} else {
 			return { authState: false };
 		}
 	}
 
-	request(requestDetails: { url: string; body?: any; method: 'get' | 'post' | 'delete' | 'put' }): Promise<HTTP_RESPONSE> {
+	request(requestDetails: { url: string; body?: any; method: 'get' | 'post' | 'delete' | 'put'; token?: string }): Promise<HTTP_RESPONSE> {
 		return new Promise(async (resolve, reject) => {
 			try {
 				const requestHeader = new HttpHeaders({
-					Authorization: `Basic ${this.authDetails().token}`
+					Authorization: `Bearer ${requestDetails.token ?? this.authDetails()?.token}`
 				});
-				const requestResponse: any = await this.httpClient.request(requestDetails.method, this.APIURL + requestDetails.url, { headers: requestHeader, body: requestDetails.body }).toPromise();
+				const requestResponse: any = await this.httpClient
+					.request(requestDetails.method, (requestDetails.token ? this.APP_PORTAL_APIURL : this.APIURL) + requestDetails.url, { headers: requestHeader, body: requestDetails.body })
+					.toPromise();
 				return resolve(requestResponse);
 			} catch (error) {
 				return reject(error);

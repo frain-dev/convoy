@@ -10,19 +10,60 @@ import (
 )
 
 type Group struct {
-	Name              string `json:"name" bson:"name" valid:"required~please provide a valid name"`
-	LogoURL           string `json:"logo_url" bson:"logo_url" valid:"url~please provide a valid logo url,optional"`
-	RateLimit         int    `json:"rate_limit" bson:"rate_limit" valid:"int~please provide a valid rate limit,optional"`
-	RateLimitDuration string `json:"rate_limit_duration" bson:"rate_limit_duration" valid:"alphanum~please provide a valid rate limit duration,optional"`
+	Name              string                 `json:"name" bson:"name" valid:"required~please provide a valid name"`
+	Type              datastore.GroupType    `json:"type" bson:"type" valid:"required~please provide a valid type,in(incoming|outgoing)"`
+	LogoURL           string                 `json:"logo_url" bson:"logo_url" valid:"url~please provide a valid logo url,optional"`
+	RateLimit         int                    `json:"rate_limit" bson:"rate_limit" valid:"int~please provide a valid rate limit,optional"`
+	RateLimitDuration string                 `json:"rate_limit_duration" bson:"rate_limit_duration" valid:"alphanum~please provide a valid rate limit duration,optional"`
+	Config            *datastore.GroupConfig `json:"config"`
+}
 
-	Config datastore.GroupConfig
+type UpdateGroup struct {
+	Name              string                 `json:"name" bson:"name" valid:"required~please provide a valid name"`
+	LogoURL           string                 `json:"logo_url" bson:"logo_url" valid:"url~please provide a valid logo url,optional"`
+	RateLimit         int                    `json:"rate_limit" bson:"rate_limit" valid:"int~please provide a valid rate limit,optional"`
+	RateLimitDuration string                 `json:"rate_limit_duration" bson:"rate_limit_duration" valid:"alphanum~please provide a valid rate limit duration,optional"`
+	Config            *datastore.GroupConfig `json:"config" valid:"optional"`
+}
+
+type Organisation struct {
+	Name string `json:"name" bson:"name" valid:"required~please provide a valid name"`
+}
+
+type Configuration struct {
+	IsAnalyticsEnabled *bool `json:"is_analytics_enabled"`
+}
+
+type ConfigurationResponse struct {
+	UID                string `json:"uid"`
+	IsAnalyticsEnabled bool   `json:"is_analytics_enabled"`
+	ApiVersion         string `json:"api_version"`
+
+	CreatedAt primitive.DateTime `json:"created_at,omitempty"`
+	UpdatedAt primitive.DateTime `json:"updated_at,omitempty"`
+	DeletedAt primitive.DateTime `json:"deleted_at,omitempty"`
+}
+
+type OrganisationInvite struct {
+	InviteeEmail string    `json:"invitee_email" valid:"required~please provide a valid invitee email,email"`
+	Role         auth.Role `json:"role" bson:"role"`
 }
 
 type APIKey struct {
 	Name      string            `json:"name"`
-	Role      auth.Role         `json:"role"`
+	Role      Role              `json:"role"`
 	Type      datastore.KeyType `json:"key_type"`
 	ExpiresAt time.Time         `json:"expires_at"`
+}
+
+type Role struct {
+	Type  auth.RoleType `json:"type"`
+	Group string        `json:"group"`
+	App   string        `json:"app,omitempty"`
+}
+
+type UpdateOrganisationMember struct {
+	Role auth.Role `json:"role" bson:"role"`
 }
 
 type APIKeyByIDResponse struct {
@@ -35,12 +76,16 @@ type APIKeyByIDResponse struct {
 	UpdatedAt primitive.DateTime `json:"updated_at,omitempty"`
 	DeletedAt primitive.DateTime `json:"deleted_at,omitempty"`
 }
-
 type APIKeyResponse struct {
 	APIKey
 	Key       string    `json:"key"`
 	UID       string    `json:"uid"`
 	CreatedAt time.Time `json:"created_at"`
+}
+
+type CreateGroupResponse struct {
+	APIKey *APIKeyResponse  `json:"api_key"`
+	Group  *datastore.Group `json:"group"`
 }
 
 type PortalAPIKeyResponse struct {
@@ -61,10 +106,47 @@ type SourceResponse struct {
 	URL        string                    `json:"url"`
 	IsDisabled bool                      `json:"is_disabled"`
 	Verifier   *datastore.VerifierConfig `json:"verifier"`
+	Provider   datastore.SourceProvider  `json:"provider"`
 
 	CreatedAt primitive.DateTime `json:"created_at,omitempty"`
 	UpdatedAt primitive.DateTime `json:"updated_at,omitempty"`
 	DeletedAt primitive.DateTime `json:"deleted_at,omitempty"`
+}
+
+type LoginUser struct {
+	Username string `json:"username" valid:"required~please provide your username"`
+	Password string `json:"password" valid:"required~please provide your password"`
+}
+
+type LoginUserResponse struct {
+	UID       string    `json:"uid"`
+	FirstName string    `json:"first_name"`
+	LastName  string    `json:"last_name"`
+	Email     string    `json:"email"`
+	Role      auth.Role `json:"role"`
+	Token     Token     `json:"token"`
+
+	CreatedAt primitive.DateTime `json:"created_at,omitempty" bson:"created_at"`
+	UpdatedAt primitive.DateTime `json:"updated_at,omitempty" bson:"updated_at"`
+	DeletedAt primitive.DateTime `json:"deleted_at,omitempty" bson:"deleted_at"`
+}
+
+type UserInviteTokenResponse struct {
+	Token *datastore.OrganisationInvite `json:"token"`
+	User  *datastore.User               `json:"user"`
+}
+
+type Token struct {
+	AccessToken  string `json:"access_token" valid:"required~please provide an access token"`
+	RefreshToken string `json:"refresh_token" valid:"required~please provide a refresh token"`
+}
+
+type User struct {
+	FirstName string    `json:"first_name" valid:"required~please provide a first name"`
+	LastName  string    `json:"last_name" valid:"required~please provide a last name"`
+	Email     string    `json:"email" valid:"required~please provide an email,email"`
+	Password  string    `json:"password" valid:"required~please provide a password"`
+	Role      auth.Role `json:"role" bson:"role"`
 }
 
 type Application struct {
@@ -82,19 +164,18 @@ type UpdateApplication struct {
 }
 
 type Source struct {
-	Name       string               `json:"name" valid:"required~please provide a source name"`
-	Type       datastore.SourceType `json:"type" valid:"required~please provide a type,supported_source~unsupported source type"`
-	IsDisabled bool                 `json:"is_disabled"`
-
-	Verifier datastore.VerifierConfig `json:"verifier"`
+	Name       string                   `json:"name" valid:"required~please provide a source name"`
+	Type       datastore.SourceType     `json:"type" valid:"required~please provide a type,supported_source~unsupported source type"`
+	Provider   datastore.SourceProvider `json:"provider"`
+	IsDisabled bool                     `json:"is_disabled"`
+	Verifier   datastore.VerifierConfig `json:"verifier" valid:"required~please provide a verifier"`
 }
 
 type UpdateSource struct {
-	Name       *string              `json:"name" valid:"required~please provide a source name"`
-	Type       datastore.SourceType `json:"type" valid:"required~please provide a type,supported_source~unsupported source type"`
-	IsDisabled *bool                `json:"is_disabled"`
-
-	Verifier datastore.VerifierConfig `json:"verifier"`
+	Name       *string                  `json:"name" valid:"required~please provide a source name"`
+	Type       datastore.SourceType     `json:"type" valid:"required~please provide a type,supported_source~unsupported source type"`
+	IsDisabled *bool                    `json:"is_disabled"`
+	Verifier   datastore.VerifierConfig `json:"verifier" valid:"required~please provide a verifier"`
 }
 
 type Event struct {
@@ -147,4 +228,52 @@ type DashboardSummary struct {
 type WebhookRequest struct {
 	Event string          `json:"event" bson:"event"`
 	Data  json.RawMessage `json:"data" bson:"data"`
+}
+
+type Subscription struct {
+	Name       string `json:"name" bson:"name" valid:"required~please provide a valid subscription name"`
+	Type       string `json:"type" bson:"type" valid:"required~please provide a valid subscription type"`
+	AppID      string `json:"app_id" bson:"app_id" valid:"required~please provide a valid app id"`
+	SourceID   string `json:"source_id" bson:"source_id"`
+	EndpointID string `json:"endpoint_id" bson:"endpoint_id" valid:"required~please provide a valid endpoint id"`
+
+	AlertConfig  *datastore.AlertConfiguration  `json:"alert_config,omitempty" bson:"alert_config,omitempty"`
+	RetryConfig  *datastore.RetryConfiguration  `json:"retry_config,omitempty" bson:"retry_config,omitempty"`
+	FilterConfig *datastore.FilterConfiguration `json:"filter_config,omitempty" bson:"filter_config,omitempty"`
+}
+
+type UpdateSubscription struct {
+	Name       string `json:"name,omitempty"`
+	AppID      string `json:"app_id,omitempty"`
+	SourceID   string `json:"source_id,omitempty"`
+	EndpointID string `json:"endpoint_id,omitempty"`
+
+	AlertConfig  *datastore.AlertConfiguration  `json:"alert_config,omitempty"`
+	RetryConfig  *datastore.RetryConfiguration  `json:"retry_config,omitempty"`
+	FilterConfig *datastore.FilterConfiguration `json:"filter_config,omitempty"`
+}
+
+type UpdateUser struct {
+	FirstName string `json:"first_name" valid:"required~please provide a first name"`
+	LastName  string `json:"last_name" valid:"required~please provide a last name"`
+	Email     string `json:"email" valid:"required~please provide an email,email"`
+}
+
+type UpdatePassword struct {
+	CurrentPassword      string `json:"current_password" valid:"required~please provide the current password"`
+	Password             string `json:"password" valid:"required~please provide the password field"`
+	PasswordConfirmation string `json:"password_confirmation" valid:"required~please provide the password confirmation field"`
+}
+
+type UserExists struct {
+	Email string `json:"email" valid:"required~please provide an email,email"`
+}
+
+type ForgotPassword struct {
+	Email string `json:"email" valid:"required~please provide an email,email"`
+}
+
+type ResetPassword struct {
+	Password             string `json:"password" valid:"required~please provide the password field"`
+	PasswordConfirmation string `json:"password_confirmation" valid:"required~please provide the password confirmation field"`
 }

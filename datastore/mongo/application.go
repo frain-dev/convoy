@@ -24,7 +24,7 @@ type appRepo struct {
 func NewApplicationRepo(db *mongo.Database) datastore.ApplicationRepository {
 	return &appRepo{
 		innerDB: db,
-		client:  db.Collection(AppCollections, nil),
+		client:  db.Collection(AppCollection, nil),
 	}
 }
 
@@ -66,7 +66,7 @@ func (db *appRepo) LoadApplicationsPaged(ctx context.Context, groupID, q string,
 
 	msgCollection := db.innerDB.Collection(EventCollection)
 	for i, app := range apps {
-		filter = bson.M{"app_metadata.uid": app.UID, "document_status": datastore.ActiveDocumentStatus}
+		filter = bson.M{"app_id": app.UID, "document_status": datastore.ActiveDocumentStatus}
 		count, err := msgCollection.CountDocuments(ctx, filter)
 		if err != nil {
 			log.Errorf("failed to count events in %s. Reason: %s", app.UID, err)
@@ -117,7 +117,7 @@ func (db *appRepo) LoadApplicationsPagedByGroupId(ctx context.Context, groupID s
 
 	msgCollection := db.innerDB.Collection(EventCollection)
 	for i, app := range applications {
-		filter = bson.M{"app_metadata.uid": app.UID, "document_status": datastore.ActiveDocumentStatus}
+		filter = bson.M{"app_id": app.UID, "document_status": datastore.ActiveDocumentStatus}
 		count, err := msgCollection.CountDocuments(ctx, filter)
 		if err != nil {
 			log.Errorf("failed to count events in %s. Reason: %s", app.UID, err)
@@ -185,7 +185,7 @@ func (db *appRepo) SearchApplicationsByGroupId(ctx context.Context, groupId stri
 
 	msgCollection := db.innerDB.Collection(EventCollection)
 	for i, app := range apps {
-		filter = bson.M{"app_metadata.uid": app.UID, "document_status": datastore.ActiveDocumentStatus}
+		filter = bson.M{"app_id": app.UID, "document_status": datastore.ActiveDocumentStatus}
 		count, err := msgCollection.CountDocuments(ctx, filter)
 		if err != nil {
 			log.Errorf("failed to count events in %s. Reason: %s", app.UID, err)
@@ -212,10 +212,10 @@ func (db *appRepo) FindApplicationByID(ctx context.Context,
 	}
 
 	msgCollection := db.innerDB.Collection(EventCollection)
-	filter = bson.M{"app_metadata.uid": app.UID, "document_status": datastore.ActiveDocumentStatus}
+	filter = bson.M{"app_id": app.UID, "document_status": datastore.ActiveDocumentStatus}
 	count, err := msgCollection.CountDocuments(ctx, filter)
 	if err != nil {
-		log.Errorf("failed to count events in %s. Reason: %s", app.UID, err)
+		log.WithError(err).Errorf("failed to count events in %s", app.UID)
 		return app, err
 	}
 	app.Events = count
@@ -268,6 +268,21 @@ func (db *appRepo) UpdateApplication(ctx context.Context, app *datastore.Applica
 	return err
 }
 
+func (db *appRepo) CreateApplicationEndpoint(ctx context.Context, groupID string, appID string, endpoint *datastore.Endpoint) error {
+	filter := bson.M{"uid": appID, "document_status": datastore.ActiveDocumentStatus}
+	update := bson.M{
+		"$push": bson.M{
+			"endpoints": endpoint,
+		},
+		"$set": bson.M{
+			"updated_at": primitive.NewDateTimeFromTime(time.Now()),
+		},
+	}
+
+	_, err := db.client.UpdateOne(ctx, filter, update)
+	return err
+}
+
 func (db *appRepo) DeleteGroupApps(ctx context.Context, groupID string) error {
 
 	update := bson.M{
@@ -285,8 +300,7 @@ func (db *appRepo) DeleteGroupApps(ctx context.Context, groupID string) error {
 	return nil
 }
 
-func (db *appRepo) DeleteApplication(ctx context.Context,
-	app *datastore.Application) error {
+func (db *appRepo) DeleteApplication(ctx context.Context, app *datastore.Application) error {
 
 	updateAsDeleted := bson.D{primitive.E{Key: "$set", Value: bson.D{
 		primitive.E{Key: "deleted_at", Value: primitive.NewDateTimeFromTime(time.Now())},
@@ -320,7 +334,7 @@ func (db *appRepo) updateMessagesInApp(ctx context.Context, app *datastore.Appli
 	var msgOperations []mongo.WriteModel
 
 	updateMessagesOperation := mongo.NewUpdateManyModel()
-	msgFilter := bson.M{"app_metadata.uid": app.UID}
+	msgFilter := bson.M{"app_id": app.UID}
 	updateMessagesOperation.SetFilter(msgFilter)
 	updateMessagesOperation.SetUpdate(update)
 	msgOperations = append(msgOperations, updateMessagesOperation)
@@ -350,40 +364,4 @@ func (db *appRepo) deleteApp(ctx context.Context, app *datastore.Application, up
 	}
 	log.Infof("results of app op: %+v", res)
 	return nil
-}
-
-func (db *appRepo) UpdateApplicationEndpointsStatus(ctx context.Context, appId string, endpointIds []string, status datastore.EndpointStatus) error {
-	app := new(datastore.Application)
-
-	filter := bson.M{"uid": appId, "document_status": datastore.ActiveDocumentStatus}
-
-	err := db.client.FindOne(ctx, filter).
-		Decode(&app)
-	if errors.Is(err, mongo.ErrNoDocuments) {
-		err = datastore.ErrApplicationNotFound
-		return err
-	}
-
-	m := parseMapOfUIDs(endpointIds)
-	for i := 0; i < len(app.Endpoints); i++ {
-		if _, ok := m[app.Endpoints[i].UID]; ok {
-			app.Endpoints[i].Status = status
-		}
-	}
-
-	update := bson.D{primitive.E{Key: "$set", Value: bson.D{
-		primitive.E{Key: "endpoints", Value: app.Endpoints},
-		primitive.E{Key: "updated_at", Value: app.UpdatedAt},
-	}}}
-
-	_, err = db.client.UpdateOne(ctx, filter, update)
-	return err
-}
-
-func parseMapOfUIDs(ids []string) map[string]bool {
-	elementMap := make(map[string]bool)
-	for i := 0; i < len(ids); i++ {
-		elementMap[ids[i]] = true
-	}
-	return elementMap
 }

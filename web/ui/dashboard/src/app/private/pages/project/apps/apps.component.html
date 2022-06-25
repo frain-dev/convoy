@@ -1,0 +1,193 @@
+<h1 class="font__12px font__weight-500 flex flex__align-items-center text__uppercase">
+	<a routerLink="/projects" class="font__weight-500 pointer-cursor">Projects</a>
+	<svg width="16" height="16" class="margin-x__4px">
+		<use xlink:href="#arrow-right-icon"></use>
+	</svg>
+	{{ privateService.activeProjectDetails?.name }}
+	<svg width="16" height="16" class="margin-x__4px">
+		<use xlink:href="#arrow-right-icon"></use>
+	</svg>
+	<span class="color__primary font__weight-500">Apps</span>
+</h1>
+
+<div class="flex flex__align-items-center flex__justify-between margin-bottom__24px margin-top__18px">
+	<div class="flex flex__align-items-center">
+		<form class="input__search filter margin-bottom__0px bg__white">
+			<img src="/assets/img/search-icon.svg" alt="search icon" />
+			<input type="search" placeholder="Search apps" [(ngModel)]="appsSearchString" (change)="searchApps({ searchInput: $event })" [ngModelOptions]="{ standalone: true }" />
+			<button [class]="'enter-button' + (appsSearchString.length > 0 ? ' show' : '')" (click)="searchApps({ searchInput: $event })">
+				<img src="/assets/img/enter-icon.png" alt="enter icon" />
+			</button>
+		</form>
+
+		<!-- app status filter  -->
+		<!-- <div class="dropdown margin-left__24px">
+			<button
+				class="button button__filter button--has-icon icon-right icon-left"
+				[ngClass]="{ active: selectedAppStatus !== 'All' }"
+				(click)="showOverlay = true; showAppStatusDropdown = !showAppStatusDropdown"
+			>
+				<img class="margin-left__0px" src="/assets/img/status-filter-icon.svg" alt="status filter icon" />
+				<span>Status</span>
+				<span class="color__grey">:</span>
+				<span class="color__primary font__14px font__weight-500 margin-left__8px" *ngIf="selectedAppStatus">{{ selectedAppStatus }}</span>
+				<img class="margin-right__0px" src="/assets/img/angle-arrow-down.svg" alt="arrow down icon" />
+			</button>
+
+			<div class="dropdown__menu with-padding small" [ngClass]="{ show: showAppStatusDropdown }">
+				<div class="dropdown__menu__item with-border" *ngFor="let status of appStatuses">
+					<label [for]="status">{{ status || 'None' }}</label>
+					<input type="checkbox" name="status" [value]="status" [id]="status" [checked]="selectedAppStatus == status" (change)="filterAppByStatus(status)" />
+				</div>
+
+				<div class="flex flex__align-items-center margin-top__10px">
+					<button class="button__clear" (click)="showAppStatusDropdown = false; showOverlay = false">Clear</button>
+				</div>
+			</div>
+		</div> -->
+	</div>
+	<button class="button button__primary button__small" id="create-app-modal-button" routerLink="./new">Create An App</button>
+</div>
+
+<div class="card">
+	<convoy-table-loader id="events_loader_loader" [tableHead]="appsTableHead" *ngIf="isloadingApps"></convoy-table-loader>
+
+	<div class="table" id="apps-table-container" *ngIf="!isloadingApps && displayedApps && displayedApps.length > 0">
+		<div class="table--container">
+			<table id="table">
+				<thead>
+					<tr class="table--head">
+						<th *ngFor="let head of appsTableHead" scope="col">{{ head }}</th>
+						<th scope="col"></th>
+						<th scope="col"></th>
+					</tr>
+				</thead>
+
+				<tbody>
+					<ng-container *ngFor="let apps of displayedApps; let i = index">
+						<tr class="table--date-row">
+							<td>
+								<div>{{ apps.date }}</div>
+							</td>
+							<td></td>
+							<td></td>
+							<td></td>
+							<td></td>
+							<td></td>
+							<td></td>
+							<td></td>
+						</tr>
+						<tr *ngFor="let app of apps?.content; let index = index" [id]="'app' + i" [routerLink]="['./' + app.uid]">
+							<td>
+								<div>
+									<div [class]="app.is_disabled ? 'tag no-margin' : 'tag tag--Success no-margin'">{{ app.is_disabled ? 'Disabled' : 'Enabled' }}</div>
+								</div>
+							</td>
+							<td>
+								<div>{{ app.name }}</div>
+							</td>
+							<td>
+								<div>{{ app.created_at | date: 'hh:mm:ss a' }}</div>
+							</td>
+							<td>
+								<div>{{ app.updated_at | date }}</div>
+							</td>
+							<td>
+								<div>{{ app.events || 0 }}</div>
+							</td>
+							<td>
+								<div>{{ app?.endpoints?.length || 0 }}</div>
+							</td>
+							<td>
+								<div>
+									<button title="view events" (click)="loadEventsFromAppsTable($event, app.uid)" [disabled]="app.events <= 0" [class]="'button__retry button--has-icon icon-left'">
+										<img src="/assets/img/view-events-icon.svg" alt="view events icon" />
+										View Events
+									</button>
+								</div>
+							</td>
+							<td>
+								<div class="dropdown">
+									<button class="button__clear button--has-icon" (click)="$event.stopPropagation(); currentAppId = app.uid; showOverlay = true; showAppDetails = false">
+										<img src="/assets/img/more-icon-vertical.svg" alt="more icon" />
+									</button>
+									<div [ngClass]="{ show: currentAppId == app.uid }" class="dropdown__menu dropdown__menu__nav small z-index--3">
+										<ul>
+											<li>
+												<a [routerLink]="'/projects/' + privateService.activeProjectDetails?.uid + '/apps/' + app.uid + '/edit'" class="padding-x__8px">Update</a>
+											</li>
+											<li>
+												<button (click)="promptDeleteModal($event, app)" class="button__clear color__danger">Delete</button>
+											</li>
+										</ul>
+									</div>
+								</div>
+							</td>
+						</tr>
+					</ng-container>
+				</tbody>
+			</table>
+		</div>
+	</div>
+
+	<div class="flex flex__column flex__justify-center flex__align-items-center table--container" id="events-empty-state" *ngIf="!isloadingApps && displayedApps?.length === 0">
+		<img src="/assets/img/empty-state.svg" alt="empty state" class="empty-state-img" />
+		<p class="font__14px font__weight-600 margin-top__0px color__black width__20 text--center">No app to show here</p>
+	</div>
+</div>
+
+<div class="button-container flex flex__align-items-center margin-top__16px">
+	<button
+		class="button button__white button__primary button__outline button--has-icon icon-left padding-y__4px padding-right__16px padding-left__4px"
+		routerLink="./"
+		[queryParams]="{ page: apps?.pagination?.prev }"
+		[disabled]="apps?.pagination?.prev === 0"
+		(click)="getApps({ page: apps?.pagination?.prev })"
+	>
+		<svg width="24" height="24" class="margin-right__8px">
+			<use xlink:href="#arrow-left-icon"></use>
+		</svg>
+		Previous
+	</button>
+	<button
+		class="button button__white button__primary button__outline button--has-icon icon-left padding-y__4px padding-left__16px padding-right__4px margin-left__16px"
+		routerLink="./"
+		[queryParams]="{ page: apps?.pagination?.next }"
+		[disabled]="apps?.pagination?.next === 0"
+		(click)="getApps({ page: apps?.pagination?.next })"
+	>
+		Next
+		<svg width="24" height="24" class="margin-left__8px" fill="var(--primary-color)">
+			<use xlink:href="#arrow-right-icon"></use>
+		</svg>
+	</button>
+</div>
+<div class="overlay" *ngIf="showOverlay" (click)="currentAppId = ''; showOverlay = false"></div>
+
+<!-- dark overlay  -->
+<div class="_overlay" *ngIf="showDeleteAppModal" (click)="showDeleteAppModal = false"></div>
+<!-- delete app modal  -->
+<div class="modal modal__center small" *ngIf="showDeleteAppModal">
+	<app-delete-modal [isLoading]="isDeletingApp" [deleteText]="'“' + appsDetailsItem?.name + '”'" (closeModal)="showDeleteAppModal = false" (deleteData)="deleteApp()"></app-delete-modal>
+</div>
+
+<div class="modal modal__full" *ngIf="showCreateAppModal || showEditAppModal">
+	<div class="modal--head">
+		<div class="flex flex__align-items-center flex__justify-between width__100">
+			<div class="modal--head--left flex flex__align-items-center">
+				<a (click)="goBack()" class="margin-right__16px width__32px height__32px flex flex__align-items-center flex__justify-center rounded__6px button__clear" tabindex="0">
+					<img src="/assets/img/modal-close-icon.svg" alt="close icon" />
+				</a>
+				<h2 class="font__16px font__weight-600">{{ showEditAppModal ? 'Edit App' : 'Create App' }}</h2>
+			</div>
+
+			<a class="button--has-icon icon-left" target="_blank" href="https://getconvoy.io/docs" rel="noreferrer">
+				<img src="/assets/img/doc-icon-primary.svg" alt="doc icon" />
+				<span class="font__weight-500 font__14px color__primary">Go to docs</span>
+			</a>
+		</div>
+	</div>
+	<div class="modal--body padding-all__0px">
+		<app-create-app [editAppMode]="showEditAppModal" (discardApp)="goBack()" (createApp)="goBack(); getApps()"></app-create-app>
+	</div>
+</div>
