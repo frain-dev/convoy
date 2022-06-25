@@ -43,5 +43,9 @@ $convoy-ng-theme: mat.define-light-theme(
 @include mat.all-component-themes($convoy-ng-theme);
 
 @import './scss/prism';
+@import './scss/material-design-reset';
 @import '~prismjs/plugins/toolbar/prism-toolbar.css';
 
+.modal__center.small {
+	width: 386px;
+}

@@ -19,8 +19,9 @@ func Test_FetchGroupByID(t *testing.T) {
 	groupRepo := NewGroupRepo(db)
 
 	newOrg := &datastore.Group{
-		Name: "Yet another group",
-		UID:  uuid.NewString(),
+		Name:           "Yet another group",
+		UID:            uuid.NewString(),
+		DocumentStatus: datastore.ActiveDocumentStatus,
 	}
 
 	require.NoError(t, groupRepo.CreateGroup(context.Background(), newOrg))
@@ -57,12 +58,14 @@ func Test_CreateGroup(t *testing.T) {
 			groups: []datastore.Group{
 				{
 					Name:           "group 2",
+					OrganisationID: "123abc",
 					UID:            uuid.NewString(),
 					DocumentStatus: datastore.ActiveDocumentStatus,
 				},
 
 				{
 					Name:           "group 2",
+					OrganisationID: "123abc",
 					UID:            uuid.NewString(),
 					DocumentStatus: datastore.ActiveDocumentStatus,
 				},
@@ -75,16 +78,37 @@ func Test_CreateGroup(t *testing.T) {
 			groups: []datastore.Group{
 				{
 					Name:           "group 3",
+					OrganisationID: "abc",
 					UID:            uuid.NewString(),
 					DocumentStatus: datastore.DeletedDocumentStatus,
 				},
 
 				{
 					Name:           "group 3",
+					OrganisationID: "abc",
 					UID:            uuid.NewString(),
 					DocumentStatus: datastore.ActiveDocumentStatus,
 				},
 			},
+		},
+		{
+			name: "can create group with existing name in a different organisation",
+			groups: []datastore.Group{
+				{
+					Name:           "group 4",
+					OrganisationID: uuid.NewString(),
+					UID:            uuid.NewString(),
+					DocumentStatus: datastore.ActiveDocumentStatus,
+				},
+
+				{
+					Name:           "group 4",
+					OrganisationID: uuid.NewString(),
+					UID:            uuid.NewString(),
+					DocumentStatus: datastore.ActiveDocumentStatus,
+				},
+			},
+			isDuplicate: true,
 		},
 	}
 
@@ -93,27 +117,24 @@ func Test_CreateGroup(t *testing.T) {
 			groupRepo := NewGroupRepo(db)
 
 			for i, group := range tc.groups {
-				newOrg := &datastore.Group{
+				newGroup := &datastore.Group{
 					Name:           group.Name,
 					UID:            group.UID,
 					DocumentStatus: group.DocumentStatus,
 				}
 
 				if i == 0 {
-					require.NoError(t, groupRepo.CreateGroup(context.Background(), newOrg))
-
-					org, err := groupRepo.FetchGroupByID(context.Background(), newOrg.UID)
-					require.NoError(t, err)
-					require.Equal(t, org.UID, newOrg.UID)
+					require.NoError(t, groupRepo.CreateGroup(context.Background(), newGroup))
 				}
 
 				if i > 0 && tc.isDuplicate {
-					err := groupRepo.CreateGroup(context.Background(), newOrg)
+					err := groupRepo.CreateGroup(context.Background(), newGroup)
 					require.Error(t, err)
+					require.ErrorIs(t, err, datastore.ErrDuplicateGroupName)
 				}
 
 				if i > 0 && !tc.isDuplicate {
-					require.NoError(t, groupRepo.CreateGroup(context.Background(), newOrg))
+					require.NoError(t, groupRepo.CreateGroup(context.Background(), newGroup))
 				}
 			}
 
@@ -130,7 +151,7 @@ func Test_LoadGroups(t *testing.T) {
 	orgs, err := orgRepo.LoadGroups(context.Background(), &datastore.GroupFilter{})
 	require.NoError(t, err)
 
-	require.True(t, len(orgs) > 0)
+	require.True(t, len(orgs) == 0)
 }
 
 func Test_FillGroupsStatistics(t *testing.T) {
@@ -173,8 +194,9 @@ func Test_FillGroupsStatistics(t *testing.T) {
 	require.NoError(t, err)
 
 	event := &datastore.Event{
-		UID:         uuid.NewString(),
-		AppMetadata: &datastore.AppMetadata{UID: app1.UID, GroupID: app1.GroupID},
+		UID:     uuid.NewString(),
+		GroupID: app1.GroupID,
+		AppID:   app1.UID,
 	}
 
 	err = NewEventRepository(db).CreateEvent(context.Background(), event)

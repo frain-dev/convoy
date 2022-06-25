@@ -11,7 +11,6 @@ import (
 	"github.com/frain-dev/convoy"
 	"github.com/frain-dev/convoy/cache"
 	"github.com/frain-dev/convoy/datastore"
-	"github.com/frain-dev/convoy/queue"
 	"github.com/frain-dev/convoy/server/models"
 	"github.com/frain-dev/convoy/util"
 	"github.com/google/uuid"
@@ -23,12 +22,11 @@ type AppService struct {
 	appRepo           datastore.ApplicationRepository
 	eventRepo         datastore.EventRepository
 	eventDeliveryRepo datastore.EventDeliveryRepository
-	eventQueue        queue.Queuer
 	cache             cache.Cache
 }
 
-func NewAppService(appRepo datastore.ApplicationRepository, eventRepo datastore.EventRepository, eventDeliveryRepo datastore.EventDeliveryRepository, eventQueue queue.Queuer, cache cache.Cache) *AppService {
-	return &AppService{appRepo: appRepo, eventRepo: eventRepo, eventDeliveryRepo: eventDeliveryRepo, eventQueue: eventQueue, cache: cache}
+func NewAppService(appRepo datastore.ApplicationRepository, eventRepo datastore.EventRepository, eventDeliveryRepo datastore.EventDeliveryRepository, cache cache.Cache) *AppService {
+	return &AppService{appRepo: appRepo, eventRepo: eventRepo, eventDeliveryRepo: eventDeliveryRepo, cache: cache}
 }
 
 func (a *AppService) CreateApp(ctx context.Context, newApp *models.Application, g *datastore.Group) (*datastore.Application, error) {
@@ -162,10 +160,9 @@ func (a *AppService) CreateAppEndpoint(ctx context.Context, e models.Endpoint, a
 		UID:               uuid.New().String(),
 		TargetURL:         e.URL,
 		Description:       e.Description,
-		Events:            e.Events,
 		Secret:            e.Secret,
-		Status:            datastore.ActiveEndpointStatus,
 		RateLimit:         e.RateLimit,
+		HttpTimeout:       e.HttpTimeout,
 		RateLimitDuration: duration.String(),
 		CreatedAt:         primitive.NewDateTimeFromTime(time.Now()),
 		UpdatedAt:         primitive.NewDateTimeFromTime(time.Now()),
@@ -179,12 +176,16 @@ func (a *AppService) CreateAppEndpoint(ctx context.Context, e models.Endpoint, a
 		}
 	}
 
-	app.Endpoints = append(app.Endpoints, *endpoint)
-
-	err = a.appRepo.UpdateApplication(ctx, app, app.GroupID)
+	err = a.appRepo.CreateApplicationEndpoint(ctx, app.GroupID, app.UID, endpoint)
 	if err != nil {
-		log.WithError(err).Error("failed to update application")
+		log.WithError(err).Error("failed to create application endpoint")
 		return nil, NewServiceError(http.StatusBadRequest, fmt.Errorf("an error occurred while adding app endpoint"))
+	}
+
+	app, err = a.appRepo.FindApplicationByID(ctx, app.UID)
+	if err != nil {
+		log.WithError(err).Error("failed to find application")
+		return nil, NewServiceError(http.StatusBadRequest, fmt.Errorf("failed to fetch application to update cache"))
 	}
 
 	appCacheKey := convoy.ApplicationsCacheKey.Get(app.UID).String()
@@ -248,17 +249,6 @@ func updateEndpointIfFound(endpoints *[]datastore.Endpoint, id string, e models.
 			endpoint.TargetURL = e.URL
 			endpoint.Description = e.Description
 
-			// Events being empty means it wasn't passed at all, which automatically
-			// translates into a accept all scenario. This is quite different from
-			// an empty array which signifies a blacklist all events -- no events
-			// will be sent to such endpoints.
-			// TODO(daniel): this should be e.Events == nil
-			if len(e.Events) == 0 {
-				endpoint.Events = []string{"*"}
-			} else {
-				endpoint.Events = e.Events
-			}
-
 			if e.RateLimit != 0 {
 				endpoint.RateLimit = e.RateLimit
 			}
@@ -280,7 +270,6 @@ func updateEndpointIfFound(endpoints *[]datastore.Endpoint, id string, e models.
 				endpoint.Secret = e.Secret
 			}
 
-			endpoint.Status = datastore.ActiveEndpointStatus
 			endpoint.UpdatedAt = primitive.NewDateTimeFromTime(time.Now())
 			(*endpoints)[i] = endpoint
 			return endpoints, &endpoint, nil

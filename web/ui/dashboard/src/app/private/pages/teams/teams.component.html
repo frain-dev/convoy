@@ -1,0 +1,259 @@
+<div class="page padding-top__60px">
+	<div class="page__head">
+		<div>
+			<h3 class="margin-bottom__8px">Teams</h3>
+			<p class="page__head--sub">View and manage your team members.</p>
+		</div>
+
+		<div class="page__head--search">
+			<form class="input__search filter margin-bottom__0px events-search">
+				<img src="/assets/img/search-icon.svg" alt="search icon" />
+				<input type="search" placeholder="Search team member" [(ngModel)]="searchString" (change)="searchTeam({ searchInput: $event })" [ngModelOptions]="{ standalone: true }" />
+				<button [class]="'enter-button' + (searchString && searchString.length > 0 ? ' show' : '')" (click)="searchTeam({ searchInput: $event })">
+					<img src="/assets/img/enter-icon.png" alt="enter icon" />
+				</button>
+			</form>
+
+			<div class="dropdown">
+				<button class="button button__filter button--has-icon icon-right margin-left__16px" (click)="showFilterDropdown = !showFilterDropdown; showOverlay = true">
+					<span class="color__grey margin-right__4px">Filter By:</span>
+					<span class="color__primary text__capitalize">{{ selectedFilterOption }} Invites</span>
+					<img src="/assets/img/angle-arrow-down.svg" alt="arrow down icon" />
+				</button>
+
+				<div class="dropdown__menu dropdown__menu__push-left" [ngClass]="{ show: showFilterDropdown }">
+					<ul>
+						<li
+							class="text__capitalize"
+							[ngClass]="{ active: selectedFilterOption == filterOption }"
+							*ngFor="let filterOption of filterOptions"
+							(click)="showFilterDropdown = false; showOverlay = false; toggleFilter(filterOption)"
+						>
+							{{ filterOption }} Invites
+						</li>
+					</ul>
+				</div>
+			</div>
+			<button class="button button__small button__primary margin-left__16px" routerLink="./new" (click)="currentId = ''">Add team member</button>
+		</div>
+	</div>
+
+	<div *ngIf="(selectedFilterOption === 'active' && isFetchingTeamMembers) || (selectedFilterOption === 'pending' && isFetchingPendingInvites)">
+		<convoy-table-loader [tableClass]="'table__no-style'" [tableHead]="tableHead"></convoy-table-loader>
+	</div>
+
+	<ng-container *ngIf="selectedFilterOption === 'active' && !isFetchingTeamMembers && !noData">
+		<div class="table--container">
+			<table class="table table__no-style">
+				<thead>
+					<tr class="table--head">
+						<th scope="col" *ngFor="let head of tableHead">{{ head }}</th>
+					</tr>
+				</thead>
+				<tbody>
+					<tr *ngFor="let team of teams?.content">
+						<td>
+							<div class="badge badge__dark">
+								<div class="icon">{{ team?.user_metadata?.first_name?.slice(0, 1) }}{{ team?.user_metadata?.last_name?.slice(0, 1) }}</div>
+								<div class="name">{{ team.user_metadata.first_name || '-' }} {{ team.user_metadata.last_name || '-' }}</div>
+							</div>
+						</td>
+						<td>
+							<div>{{ team.role.type === 'super_user' ? 'Super user' : team.role.type }}</div>
+						</td>
+						<td>
+							<div>All projects</div>
+						</td>
+						<td>
+							<div class="dropdown">
+								<button class="button--has-icon button__clear" (click)="currentId = team.uid; showOverlay = true">
+									<img src="/assets/img/nav-bar-more-primary.svg" alt="more icon" />
+								</button>
+								<div [ngClass]="{ show: currentId == team.uid }" class="dropdown__menu dropdown__menu__nav large">
+									<ul>
+										<li class="flex flex__justify-center">
+											<button
+												class="button__danger button__clear color__danger"
+												(click)="showDeactivateModal = !showDeactivateModal; selectedMember = team; currentId = ''; showOverlay = false"
+											>
+												Deactivate team member
+											</button>
+										</li>
+									</ul>
+								</div>
+							</div>
+						</td>
+					</tr>
+				</tbody>
+			</table>
+		</div>
+		<div class="button-container flex flex__align-items-center margin-top__16px">
+			<button
+				class="button button__white button__primary button__outline button--has-icon icon-left padding-y__4px padding-right__16px padding-left__4px"
+				routerLink="./"
+				[queryParams]="{ page: teams?.pagination?.prev }"
+				[disabled]="teams?.pagination?.prev === 0"
+				(click)="fetchTeamMembers({ page: teams?.pagination?.prev })"
+			>
+				<svg width="24" height="24" class="margin-right__8px">
+					<use xlink:href="#arrow-left-icon"></use>
+				</svg>
+				Previous
+			</button>
+			<button
+				class="button button__white button__primary button__outline button--has-icon icon-left padding-y__4px padding-left__16px padding-right__4px margin-left__16px"
+				routerLink="./"
+				[queryParams]="{ page: teams?.pagination?.next }"
+				[disabled]="teams?.pagination?.next === 0"
+				(click)="fetchTeamMembers({ page: teams?.pagination?.next })"
+			>
+				Next
+				<svg width="24" height="24" class="margin-left__8px" fill="var(--primary-color)">
+					<use xlink:href="#arrow-right-icon"></use>
+				</svg>
+			</button>
+		</div>
+	</ng-container>
+	<ng-container *ngIf="selectedFilterOption === 'pending' && !isFetchingPendingInvites && !noInvitesData">
+		<div class="table--container">
+			<table class="table table__no-style">
+				<thead>
+					<tr class="table--head">
+						<th scope="col" *ngFor="let head of tableHead">{{ selectedFilterOption === 'pending' && head === 'Name' ? 'Email' : head }}</th>
+					</tr>
+				</thead>
+				<tbody>
+					<tr *ngFor="let team of pendingInvites?.content">
+						<td>
+							<div>{{ team.invitee_email }}</div>
+						</td>
+						<td>
+							<div class="text__capitalize">{{ team.role.type === 'super_user' ? 'Super user' : team.role.type }}</div>
+						</td>
+						<td>
+							<div>All projects</div>
+						</td>
+						<td>
+							<div class="dropdown">
+								<button class="button--has-icon button__clear" (click)="currentId = team.uid; showPendingInvitesDropdown = true; showOverlay = true">
+									<img src="/assets/img/nav-bar-more-primary.svg" alt="more icon" />
+								</button>
+								<div [ngClass]="{ show: currentId === team.uid && showPendingInvitesDropdown }" class="dropdown__menu dropdown__menu__nav large">
+									<ul>
+										<li>
+											<button class="button__clear" (click)="resendInvite(team.uid); currentId = ''; showOverlay = false">Resend Invite</button>
+										</li>
+										<li>
+											<button class="button__clear color__danger" (click)="showCancelInviteModal = true; selectedMember = team; showPendingInvitesDropdown = false; showOverlay = false">
+												Cancel Invite
+											</button>
+										</li>
+									</ul>
+								</div>
+							</div>
+						</td>
+					</tr>
+				</tbody>
+			</table>
+		</div>
+		<div class="button-container flex flex__align-items-center margin-top__16px">
+			<button
+				class="button button__white button__primary button__outline button--has-icon icon-left padding-y__4px padding-right__16px padding-left__4px"
+				routerLink="./"
+				[queryParams]="{ pendingInvitePage: pendingInvites?.pagination?.prev }"
+				[disabled]="pendingInvites?.pagination?.prev === 0"
+				(click)="fetchPendingTeamMembers({ page: pendingInvites?.pagination?.prev })"
+			>
+				<svg width="24" height="24" class="margin-right__8px">
+					<use xlink:href="#arrow-left-icon"></use>
+				</svg>
+				Previous
+			</button>
+			<button
+				class="button button__white button__primary button__outline button--has-icon icon-left padding-y__4px padding-left__16px padding-right__4px margin-left__16px"
+				routerLink="./"
+				[queryParams]="{ pendingInvitePage: pendingInvites?.pagination?.next }"
+				[disabled]="pendingInvites?.pagination?.next === 0"
+				(click)="fetchPendingTeamMembers({ page: pendingInvites?.pagination?.next })"
+			>
+				Next
+				<svg width="24" height="24" class="margin-left__8px" fill="var(--primary-color)">
+					<use xlink:href="#arrow-right-icon"></use>
+				</svg>
+			</button>
+		</div>
+	</ng-container>
+</div>
+
+<div class="page" *ngIf="((selectedFilterOption === 'active' && noData) || (selectedFilterOption === 'pending' && noInvitesData)) && (!isFetchingTeamMembers || !isFetchingPendingInvites)">
+	<div class="card padding-all__24px">
+		<div class="width__30 padding-y__40px margin-auto flex flex__column flex__justify-center flex__align-items-center">
+			<img src="/assets/img/team-empty-img.svg" alt="add team empty" class="empty-state-img" />
+			<h4 class="margin-top__24px">
+				You have no {{ searchString ? 'one with the name ' + searchString + ' on your team' : selectedFilterOption === 'active' ? 'one on your team yet' : 'pending invites' }}
+			</h4>
+			<p class="text--center font__14px font__weight-500 color__grey" *ngIf="!searchString">You can invite team members to join your organization and assign them roles to projects</p>
+			<button *ngIf="!searchString" class="button button__primary button__small margin-top__30px" routerLink="./new">Add team member</button>
+		</div>
+	</div>
+</div>
+
+<div class="_overlay" *ngIf="showDeactivateModal || showCancelInviteModal" (click)="showDeactivateModal = false; showCancelInviteModal = false"></div>
+
+<div class="overlay" *ngIf="showOverlay" (click)="showOverlay = false; showFilterDropdown = false; showPendingInvitesDropdown = false; currentId = ''"></div>
+
+<div class="modal modal__full" *ngIf="showInviteTeamMemberModal">
+	<div class="modal--head">
+		<div class="flex flex__align-items-center flex__justify-between width__100">
+			<div class="modal--head--left flex flex__align-items-center">
+				<a routerLink="/team" class="margin-right__16px width__32px height__32px flex flex__align-items-center flex__justify-center rounded__6px button__clear" tabindex="0">
+					<img src="/assets/img/modal-close-icon.svg" alt="close icon" />
+				</a>
+				<h2 class="font__16px font__weight-600">Add Team Member</h2>
+			</div>
+
+			<a class="button--has-icon icon-left" target="_blank" href="https://getconvoy.io/docs" rel="noreferrer">
+				<img src="/assets/img/doc-icon-primary.svg" alt="doc icon" />
+				<span class="font__weight-500 font__14px color__primary">Go to docs</span>
+			</a>
+		</div>
+	</div>
+
+	<div class="modal--body padding-all__0px">
+		<form [formGroup]="inviteUserForm" (ngSubmit)="inviteUser()">
+			<div class="card padding-all__24px margin-top__24px">
+				<h3>Basic info</h3>
+				<div class="color__grey font__14px font__weight-400 margin-bottom__16px">Invite other members of your team to your organisation.</div>
+
+				<div class="input">
+					<label for="email">Email</label>
+					<input type="email" id="email" formControlName="invitee_email" required />
+					<div class="input__error input__error__danger" *ngIf="inviteUserForm.controls.invitee_email.touched && inviteUserForm.controls.invitee_email.invalid">
+						<img src="assets/img/input-error-icon.svg" alt="input error icon" />
+						<span>Please enter a valid email</span>
+					</div>
+				</div>
+			</div>
+		</form>
+		<div class="flex flex__justify-end padding-top__24px padding-bottom__40px">
+			<button class="button button__white margin-right__16px" routerLink="/team">Discard</button>
+			<button class="button button__primary" [disabled]="invitingUser" (click)="inviteUser()">{{ invitingUser ? 'Inviting User..' : 'Send Invite' }}</button>
+		</div>
+	</div>
+</div>
+
+<div class="modal modal__center" *ngIf="showDeactivateModal || showCancelInviteModal">
+	<div class="modal--body flex flex__column flex__justify-center flex__align-items-center deactivate">
+		<img src="/assets/img/warning.gif" class="img" alt="warning" />
+		<p class="font__20px color__black font__weight-600 margin-bottom__8px margin-top__16px text--center no-width">
+			Are you sure you want to {{ showCancelInviteModal ? 'cancel this invite?' : 'deactivate' }}
+			<span *ngIf="showDeactivateModal" class="text__capitalize font__weight-600">“{{ selectedMember?.user_metadata?.first_name }} {{ selectedMember?.user_metadata?.last_name }}”?</span>
+		</p>
+		<p class="color__grey font__14px font__weight-500 margin-bottom__12px">This action is irrevesible</p>
+		<button class="button button__deactivate" *ngIf="showDeactivateModal" [disabled]="deactivatingUser" (click)="deactivateMember()">{{ deactivatingUser ? 'Deactivating...' : 'Yes, Deactivate' }}</button>
+		<button class="button button__deactivate" *ngIf="showCancelInviteModal" [disabled]="cancelingInvite" (click)="cancelInvite()">
+			{{ cancelingInvite ? 'Canceling Invite...' : 'Yes, Cancel Invite' }}
+		</button>
+		<button class="button__primary button__clear margin-top__28px" (click)="showDeactivateModal = false; showCancelInviteModal = false">No, Discard</button>
+	</div>
+</div>

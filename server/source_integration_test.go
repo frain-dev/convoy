@@ -10,7 +10,9 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"testing"
+	"time"
 
+	"github.com/frain-dev/convoy/auth"
 	"github.com/frain-dev/convoy/config"
 	"github.com/frain-dev/convoy/datastore"
 	"github.com/frain-dev/convoy/server/testdb"
@@ -25,6 +27,7 @@ type SourceIntegrationTestSuite struct {
 	Router       http.Handler
 	ConvoyApp    *applicationHandler
 	DefaultGroup *datastore.Group
+	APIKey       string
 }
 
 func (s *SourceIntegrationTestSuite) SetupSuite() {
@@ -37,13 +40,21 @@ func (s *SourceIntegrationTestSuite) SetupTest() {
 	testdb.PurgeDB(s.DB)
 
 	// Setup Default Group.
-	s.DefaultGroup, _ = testdb.SeedDefaultGroup(s.DB)
+	s.DefaultGroup, _ = testdb.SeedDefaultGroup(s.DB, "")
+
+	// Seed Auth
+	role := auth.Role{
+		Type:   auth.RoleAdmin,
+		Groups: []string{s.DefaultGroup.UID},
+	}
+
+	_, s.APIKey, _ = testdb.SeedAPIKey(s.DB, role, "", "test", "")
 
 	// Setup Config.
 	err := config.LoadConfig("./testdata/Auth_Config/full-convoy.json")
 	require.NoError(s.T(), err)
 
-	initRealmChain(s.T(), s.DB.APIRepo())
+	initRealmChain(s.T(), s.DB.APIRepo(), s.DB.UserRepo(), s.ConvoyApp.cache)
 }
 
 func (s *SourceIntegrationTestSuite) TearDownTest() {
@@ -55,7 +66,7 @@ func (s *SourceIntegrationTestSuite) Test_GetSourceByID_SourceNotFound() {
 
 	// Arrange Request
 	url := fmt.Sprintf("/api/v1/sources/%s", sourceID)
-	req := createRequest(http.MethodGet, url, nil)
+	req := createRequest(http.MethodGet, url, s.APIKey, nil)
 	w := httptest.NewRecorder()
 
 	// Act
@@ -73,8 +84,7 @@ func (s *SourceIntegrationTestSuite) Test_GetSourceBy_ValidSource() {
 
 	// Arrange Request
 	url := fmt.Sprintf("/api/v1/sources/%s", sourceID)
-	req := createRequest(http.MethodGet, url, nil)
-	req.SetBasicAuth("test", "test")
+	req := createRequest(http.MethodGet, url, s.APIKey, nil)
 	w := httptest.NewRecorder()
 
 	// Act
@@ -95,7 +105,8 @@ func (s *SourceIntegrationTestSuite) Test_GetSourceBy_ValidSource() {
 }
 
 func (s *SourceIntegrationTestSuite) Test_GetSource_ValidSources() {
-	totalSources := rand.Intn(5)
+	r := rand.New(rand.NewSource(time.Now().Unix()))
+	totalSources := r.Intn(5)
 
 	// Just Before
 	for i := 0; i < totalSources; i++ {
@@ -104,7 +115,7 @@ func (s *SourceIntegrationTestSuite) Test_GetSource_ValidSources() {
 
 	// Arrange Request
 	url := "/api/v1/sources"
-	req := createRequest(http.MethodGet, url, nil)
+	req := createRequest(http.MethodGet, url, s.APIKey, nil)
 	w := httptest.NewRecorder()
 
 	// Act
@@ -127,6 +138,7 @@ func (s *SourceIntegrationTestSuite) Test_CreateSource() {
 		"verifier": {
 			"type": "hmac",
 			"hmac": {
+				"encoding": "base64",
 				"header": "X-Convoy-Header",
 				"hash": "SHA512",
 				"secret": "convoy-secret"
@@ -135,7 +147,7 @@ func (s *SourceIntegrationTestSuite) Test_CreateSource() {
 	}`
 
 	body := serialize(bodyStr)
-	req := createRequest(http.MethodPost, "/api/v1/sources", body)
+	req := createRequest(http.MethodPost, "/api/v1/sources", s.APIKey, body)
 	w := httptest.NewRecorder()
 
 	// Act
@@ -160,6 +172,7 @@ func (s *SourceIntegrationTestSuite) Test_CreateSource_NoName() {
 		"verifier": {
 			"type": "hmac",
 			"hmac": {
+				"encoding": "base64",
 				"header": "X-Convoy-Header",
 				"hash": "SHA512",
 				"secret": "convoy-secret"
@@ -168,7 +181,7 @@ func (s *SourceIntegrationTestSuite) Test_CreateSource_NoName() {
 	}`
 
 	body := serialize(bodyStr)
-	req := createRequest(http.MethodPost, "/api/v1/sources", body)
+	req := createRequest(http.MethodPost, "/api/v1/sources", s.APIKey, body)
 	w := httptest.NewRecorder()
 
 	// Act
@@ -186,6 +199,7 @@ func (s *SourceIntegrationTestSuite) Test_CreateSource_InvalidSourceType() {
 		"verifier": {
 			"type": "hmac",
 			"hmac": {
+				"encoding": "base64",
 				"header": "X-Convoy-Header",
 				"hash": "SHA512",
 				"secret": "convoy-secret"
@@ -194,7 +208,7 @@ func (s *SourceIntegrationTestSuite) Test_CreateSource_InvalidSourceType() {
 	}`
 
 	body := serialize(bodyStr)
-	req := createRequest(http.MethodPost, "/api/v1/sources", body)
+	req := createRequest(http.MethodPost, "/api/v1/sources", s.APIKey, body)
 	w := httptest.NewRecorder()
 
 	// Act
@@ -221,6 +235,7 @@ func (s *SourceIntegrationTestSuite) Test_UpdateSource() {
 		"verifier": {
 			"type": "hmac",
 			"hmac": {
+				"encoding": "hex",
 				"header": "X-Convoy-Header",
 				"hash": "SHA512",
 				"secret": "convoy-secret"
@@ -229,7 +244,7 @@ func (s *SourceIntegrationTestSuite) Test_UpdateSource() {
 	}`, name, !isDisabled)
 
 	body := serialize(bodyStr)
-	req := createRequest(http.MethodPut, url, body)
+	req := createRequest(http.MethodPut, url, s.APIKey, body)
 	w := httptest.NewRecorder()
 
 	// Act
@@ -257,7 +272,7 @@ func (s *SourceIntegrationTestSuite) Test_DeleteSource() {
 
 	// Arrange Request.
 	url := fmt.Sprintf("/api/v1/sources/%s", sourceID)
-	req := createRequest(http.MethodDelete, url, nil)
+	req := createRequest(http.MethodDelete, url, s.APIKey, nil)
 	w := httptest.NewRecorder()
 
 	// Act.
@@ -268,7 +283,7 @@ func (s *SourceIntegrationTestSuite) Test_DeleteSource() {
 
 	// Deep Assert.
 	_, err := s.DB.SourceRepo().FindSourceByID(context.Background(), s.DefaultGroup.UID, sourceID)
-	require.Error(s.T(), err, datastore.ErrSourceNotFound)
+	require.ErrorIs(s.T(), err, datastore.ErrSourceNotFound)
 }
 
 func TestSourceIntegrationTestSuite(t *testing.T) {

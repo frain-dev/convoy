@@ -78,7 +78,7 @@ var fileRealmOpt = &config.FileRealmOption{
 			Username: "username2",
 			Password: "password2",
 			Role: auth.Role{
-				Type:   auth.RoleUIAdmin,
+				Type:   auth.RoleAdmin,
 				Groups: []string{"buycoins"},
 			},
 		},
@@ -103,7 +103,7 @@ var fileRealmOpt = &config.FileRealmOption{
 		{
 			APIKey: "avcbajbwrohw@##Q39uekvsmbvxc.fdjhd",
 			Role: auth.Role{
-				Type:   auth.RoleUIAdmin,
+				Type:   auth.RoleAdmin,
 				Groups: []string{"sendcash-pay"},
 			},
 		},
@@ -289,7 +289,6 @@ func TestInit(t *testing.T) {
 			name: "should_init_successfully",
 			args: args{
 				authConfig: &config.AuthConfiguration{
-					RequireAuth: true,
 					File: config.FileRealmOption{
 						Basic: []config.BasicAuth{
 							{
@@ -306,20 +305,16 @@ func TestInit(t *testing.T) {
 			},
 			wantErr: false,
 		},
-		{
-			name: "should_init_with_noop_realm_successfully",
-			args: args{
-				authConfig: &config.AuthConfiguration{
-					RequireAuth: false,
-				},
-			},
-			wantErr: false,
-		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			mockAPIKeyRepo := mocks.NewMockAPIKeyRepository(gomock.NewController(t))
-			err := Init(tt.args.authConfig, mockAPIKeyRepo)
+			ctrl := gomock.NewController(t)
+			defer ctrl.Finish()
+
+			mockAPIKeyRepo := mocks.NewMockAPIKeyRepository(ctrl)
+			userRepo := mocks.NewMockUserRepository(ctrl)
+			cache := mocks.NewMockCache(ctrl)
+			err := Init(tt.args.authConfig, mockAPIKeyRepo, userRepo, cache)
 			if tt.wantErr {
 				require.Equal(t, tt.wantErrMsg, err.Error())
 				return

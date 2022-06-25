@@ -14,6 +14,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/frain-dev/convoy/auth"
 	"github.com/frain-dev/convoy/config"
 	"github.com/frain-dev/convoy/datastore"
 	"github.com/frain-dev/convoy/server/testdb"
@@ -29,6 +30,7 @@ type ApplicationIntegrationTestSuite struct {
 	Router       http.Handler
 	ConvoyApp    *applicationHandler
 	DefaultGroup *datastore.Group
+	APIKey       string
 }
 
 func (s *ApplicationIntegrationTestSuite) SetupSuite() {
@@ -41,13 +43,21 @@ func (s *ApplicationIntegrationTestSuite) SetupTest() {
 	testdb.PurgeDB(s.DB)
 
 	// Setup Default Group.
-	s.DefaultGroup, _ = testdb.SeedDefaultGroup(s.DB)
+	s.DefaultGroup, _ = testdb.SeedDefaultGroup(s.DB, "")
+
+	// Seed Auth
+	role := auth.Role{
+		Type:   auth.RoleAdmin,
+		Groups: []string{s.DefaultGroup.UID},
+	}
+
+	_, s.APIKey, _ = testdb.SeedAPIKey(s.DB, role, "", "test", "")
 
 	// Setup Config.
 	err := config.LoadConfig("./testdata/Auth_Config/full-convoy.json")
 	require.NoError(s.T(), err)
 
-	initRealmChain(s.T(), s.DB.APIRepo())
+	initRealmChain(s.T(), s.DB.APIRepo(), s.DB.UserRepo(), s.ConvoyApp.cache)
 }
 
 func (s *ApplicationIntegrationTestSuite) TearDownTest() {
@@ -60,7 +70,7 @@ func (s *ApplicationIntegrationTestSuite) Test_GetApp_AppNotFound() {
 
 	// Arrange Request.
 	url := fmt.Sprintf("/api/v1/applications/%s", appID)
-	req := createRequest(http.MethodGet, url, nil)
+	req := createRequest(http.MethodGet, url, s.APIKey, nil)
 	w := httptest.NewRecorder()
 
 	// Act.
@@ -79,9 +89,7 @@ func (s *ApplicationIntegrationTestSuite) Test_GetApp_ValidApplication() {
 
 	// Arrange Request.
 	url := fmt.Sprintf("/api/v1/applications/%s", appID)
-	req := createRequest(http.MethodGet, url, nil)
-	req.SetBasicAuth("test", "test")
-	req.Header.Add("Content-Type", "application/json")
+	req := createRequest(http.MethodGet, url, s.APIKey, nil)
 	w := httptest.NewRecorder()
 
 	// Act.
@@ -111,7 +119,7 @@ func (s *ApplicationIntegrationTestSuite) Test_GetApps_ValidApplications() {
 
 	// Arrange.
 	url := "/api/v1/applications"
-	req := createRequest(http.MethodGet, url, nil)
+	req := createRequest(http.MethodGet, url, s.APIKey, nil)
 	w := httptest.NewRecorder()
 
 	// Act.
@@ -140,7 +148,7 @@ func (s *ApplicationIntegrationTestSuite) Test_CreateApp() {
 		"name": "%s"
 	}`, appTitle)
 	body := strings.NewReader(plainBody)
-	req := createRequest(http.MethodPost, url, body)
+	req := createRequest(http.MethodPost, url, s.APIKey, body)
 	w := httptest.NewRecorder()
 
 	// Act.
@@ -169,7 +177,7 @@ func (s *ApplicationIntegrationTestSuite) Test_CreateApp_NoName() {
 		"name": "%s"
 	}`, appTitle)
 	body := strings.NewReader(plainBody)
-	req := createRequest(http.MethodPost, url, body)
+	req := createRequest(http.MethodPost, url, s.APIKey, body)
 	w := httptest.NewRecorder()
 
 	// Act.
@@ -193,7 +201,7 @@ func (s *ApplicationIntegrationTestSuite) Test_CreateApp_NameNotUnique() {
 		"name": "%s"
 	}`, s.DefaultGroup.UID, appTitle)
 	body := strings.NewReader(plainBody)
-	req := createRequest(http.MethodPost, url, body)
+	req := createRequest(http.MethodPost, url, s.APIKey, body)
 	w := httptest.NewRecorder()
 
 	// Act.
@@ -212,9 +220,9 @@ func (s *ApplicationIntegrationTestSuite) Test_UpdateApp_InvalidRequest() {
 
 	// Arrange Request.
 	url := fmt.Sprintf("/api/v1/applications/%s", appID)
-	plainBody := fmt.Sprintf(``)
+	plainBody := ""
 	body := strings.NewReader(plainBody)
-	req := createRequest(http.MethodPut, url, body)
+	req := createRequest(http.MethodPut, url, s.APIKey, body)
 	w := httptest.NewRecorder()
 
 	// Act.
@@ -240,7 +248,7 @@ func (s *ApplicationIntegrationTestSuite) Test_UpdateApp_DuplicateNames() {
 		"support_email": "%s"
 	}`, appTitle, "10xengineer@getconvoy.io")
 	body := strings.NewReader(plainBody)
-	req := createRequest(http.MethodPut, url, body)
+	req := createRequest(http.MethodPut, url, s.APIKey, body)
 	w := httptest.NewRecorder()
 
 	// Act.
@@ -268,7 +276,7 @@ func (s *ApplicationIntegrationTestSuite) Test_UpdateApp() {
 		"is_disabled": %t
 	}`, title, supportEmail, !isDisabled)
 	body := strings.NewReader(plainBody)
-	req := createRequest(http.MethodPut, url, body)
+	req := createRequest(http.MethodPut, url, s.APIKey, body)
 	w := httptest.NewRecorder()
 
 	// Act.
@@ -299,7 +307,7 @@ func (s *ApplicationIntegrationTestSuite) Test_DeleteApp() {
 
 	// Arrange Request.
 	url := fmt.Sprintf("/api/v1/applications/%s", appID)
-	req := createRequest(http.MethodDelete, url, nil)
+	req := createRequest(http.MethodDelete, url, s.APIKey, nil)
 	w := httptest.NewRecorder()
 
 	// Act.
@@ -329,11 +337,10 @@ func (s *ApplicationIntegrationTestSuite) Test_CreateAppEndpoint() {
 	plainBody := fmt.Sprintf(`{
 		"url": "%s",
 		"secret": "%s",
-		"events": [ "*" ],
 		"description": "default endpoint"
 	}`, endpointURL, secret)
 	body := strings.NewReader(plainBody)
-	req := createRequest(http.MethodPost, url, body)
+	req := createRequest(http.MethodPost, url, s.APIKey, body)
 	w := httptest.NewRecorder()
 
 	// Act.
@@ -364,7 +371,7 @@ func (s *ApplicationIntegrationTestSuite) Test_UpdateAppEndpoint() {
 
 	// Just Before.
 	app, _ := testdb.SeedApplication(s.DB, s.DefaultGroup, appID, "", false)
-	endpoint, _ := testdb.SeedEndpoint(s.DB, app, s.DefaultGroup.UID, []string{"*"})
+	endpoint, _ := testdb.SeedEndpoint(s.DB, app, s.DefaultGroup.UID)
 
 	// Arrange Request
 	url := fmt.Sprintf("/api/v1/applications/%s/endpoints/%s", appID, endpoint.UID)
@@ -375,7 +382,7 @@ func (s *ApplicationIntegrationTestSuite) Test_UpdateAppEndpoint() {
 		"description": "default endpoint"
 	}`, endpointURL, secret, eventTypes)
 	body := strings.NewReader(plainBody)
-	req := createRequest(http.MethodPut, url, body)
+	req := createRequest(http.MethodPut, url, s.APIKey, body)
 	w := httptest.NewRecorder()
 
 	// Act.
@@ -393,7 +400,6 @@ func (s *ApplicationIntegrationTestSuite) Test_UpdateAppEndpoint() {
 	require.NoError(s.T(), err)
 	require.Equal(s.T(), dbEndpoint.TargetURL, endpointURL)
 	require.Equal(s.T(), dbEndpoint.Secret, secret)
-	require.Len(s.T(), dbEndpoint.Events, num)
 }
 
 func (s *ApplicationIntegrationTestSuite) Test_GetAppEndpoint() {
@@ -402,11 +408,11 @@ func (s *ApplicationIntegrationTestSuite) Test_GetAppEndpoint() {
 
 	// Just Before.
 	app, _ := testdb.SeedApplication(s.DB, s.DefaultGroup, appID, "", false)
-	endpoint, _ := testdb.SeedEndpoint(s.DB, app, s.DefaultGroup.UID, []string{"*"})
+	endpoint, _ := testdb.SeedEndpoint(s.DB, app, s.DefaultGroup.UID)
 
 	// Arrange Request
 	url := fmt.Sprintf("/api/v1/applications/%s/endpoints/%s", appID, endpoint.UID)
-	req := createRequest(http.MethodGet, url, nil)
+	req := createRequest(http.MethodGet, url, s.APIKey, nil)
 	w := httptest.NewRecorder()
 
 	// Act.
@@ -438,7 +444,7 @@ func (s *ApplicationIntegrationTestSuite) Test_GetAppEndpoints() {
 
 	// Arrange Request
 	url := fmt.Sprintf("/api/v1/applications/%s/endpoints", appID)
-	req := createRequest(http.MethodGet, url, nil)
+	req := createRequest(http.MethodGet, url, s.APIKey, nil)
 	w := httptest.NewRecorder()
 
 	// Act.
@@ -460,11 +466,11 @@ func (s *ApplicationIntegrationTestSuite) Test_DeleteAppEndpoint() {
 
 	// Just Before.
 	app, _ := testdb.SeedApplication(s.DB, s.DefaultGroup, appID, "", false)
-	endpoint, _ := testdb.SeedEndpoint(s.DB, app, s.DefaultGroup.UID, []string{"*"})
+	endpoint, _ := testdb.SeedEndpoint(s.DB, app, s.DefaultGroup.UID)
 
 	// Arrange Request.
 	url := fmt.Sprintf("/api/v1/applications/%s/endpoints/%s", appID, endpoint.UID)
-	req := createRequest(http.MethodDelete, url, nil)
+	req := createRequest(http.MethodDelete, url, s.APIKey, nil)
 	w := httptest.NewRecorder()
 
 	// Act.

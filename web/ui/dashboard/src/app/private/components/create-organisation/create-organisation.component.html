@@ -1,0 +1,24 @@
+<div class="modal--head">
+	<h1>Add an Organization</h1>
+	<button class="modal--close button__clear" (click)="close()">
+		<img src="/assets/img/modal-close-icon.svg" alt="close icon" />
+	</button>
+</div>
+
+<div class="modal--body">
+	<form [formGroup]="addOrganisationForm" (ngSubmit)="addNewOrganisation()">
+		<div class="input">
+			<label for="organisation">Organisation Name</label>
+			<input type="text" id="organisation" formControlName="name" required />
+			<div class="input__error input__error__danger" *ngIf="addOrganisationForm.controls.name.touched && addOrganisationForm.controls.name.invalid">
+				<img src="assets/img/input-error-icon.svg" alt="input error icon" />
+				<span>Organisation name is required</span>
+			</div>
+		</div>
+
+		<div class="flex flex__justify-end margin-top__40px">
+			<button class="button button__white margin-right__24px" type="button" (click)="close()">Discard</button>
+			<button class="button button__primary" [disabled]="loading">{{ loading ? 'Adding Organisation' : 'Create Organisation' }}</button>
+		</div>
+	</form>
+</div>

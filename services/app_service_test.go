@@ -17,9 +17,8 @@ func provideAppService(ctrl *gomock.Controller) *AppService {
 	appRepo := mocks.NewMockApplicationRepository(ctrl)
 	eventRepo := mocks.NewMockEventRepository(ctrl)
 	eventDeliveryRepo := mocks.NewMockEventDeliveryRepository(ctrl)
-	eventQueue := mocks.NewMockQueuer(ctrl)
 	cache := mocks.NewMockCache(ctrl)
-	return NewAppService(appRepo, eventRepo, eventDeliveryRepo, eventQueue, cache)
+	return NewAppService(appRepo, eventRepo, eventDeliveryRepo, cache)
 }
 
 func boolPtr(b bool) *bool {
@@ -613,8 +612,11 @@ func TestAppService_CreateAppEndpoint(t *testing.T) {
 			},
 			dbFn: func(app *AppService) {
 				a, _ := app.appRepo.(*mocks.MockApplicationRepository)
-				a.EXPECT().UpdateApplication(gomock.Any(), gomock.Any(), gomock.Any()).Times(1).Return(nil)
+				a.EXPECT().CreateApplicationEndpoint(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Times(1).Return(nil)
 
+				a.EXPECT().FindApplicationByID(gomock.Any(), gomock.Any()).
+					Return(&datastore.Application{UID: "abc"}, nil)
+					
 				c, _ := app.cache.(*mocks.MockCache)
 				c.EXPECT().Set(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any())
 			},
@@ -625,11 +627,9 @@ func TestAppService_CreateAppEndpoint(t *testing.T) {
 						Secret:            "1234",
 						TargetURL:         "https://google.com",
 						Description:       "test_endpoint",
-						Status:            datastore.ActiveEndpointStatus,
 						RateLimit:         5000,
 						RateLimitDuration: "1m0s",
 						DocumentStatus:    datastore.ActiveDocumentStatus,
-						Events:            []string{"payment.created"},
 					},
 				},
 			},
@@ -637,11 +637,9 @@ func TestAppService_CreateAppEndpoint(t *testing.T) {
 				Secret:            "1234",
 				TargetURL:         "https://google.com",
 				Description:       "test_endpoint",
-				Status:            datastore.ActiveEndpointStatus,
 				RateLimit:         5000,
 				RateLimitDuration: "1m0s",
 				DocumentStatus:    datastore.ActiveDocumentStatus,
-				Events:            []string{"payment.created"},
 			},
 			wantErr: false,
 		},
@@ -660,7 +658,10 @@ func TestAppService_CreateAppEndpoint(t *testing.T) {
 			},
 			dbFn: func(app *AppService) {
 				a, _ := app.appRepo.(*mocks.MockApplicationRepository)
-				a.EXPECT().UpdateApplication(gomock.Any(), gomock.Any(), gomock.Any()).Times(1).Return(nil)
+				a.EXPECT().CreateApplicationEndpoint(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Times(1).Return(nil)
+
+				a.EXPECT().FindApplicationByID(gomock.Any(), gomock.Any()).
+					Return(&datastore.Application{UID: "abc"}, nil)
 
 				c, _ := app.cache.(*mocks.MockCache)
 				c.EXPECT().Set(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any())
@@ -672,11 +673,9 @@ func TestAppService_CreateAppEndpoint(t *testing.T) {
 						Secret:            "1234",
 						TargetURL:         "https://google.com",
 						Description:       "test_endpoint",
-						Status:            datastore.ActiveEndpointStatus,
 						RateLimit:         100,
 						RateLimitDuration: "1m0s",
 						DocumentStatus:    datastore.ActiveDocumentStatus,
-						Events:            []string{"*"},
 					},
 				},
 			},
@@ -684,11 +683,9 @@ func TestAppService_CreateAppEndpoint(t *testing.T) {
 				Secret:            "1234",
 				TargetURL:         "https://google.com",
 				Description:       "test_endpoint",
-				Status:            datastore.ActiveEndpointStatus,
 				RateLimit:         100,
 				RateLimitDuration: "1m0s",
 				DocumentStatus:    datastore.ActiveDocumentStatus,
-				Events:            []string{"*"},
 			},
 			wantErr: false,
 		},
@@ -724,7 +721,7 @@ func TestAppService_CreateAppEndpoint(t *testing.T) {
 			},
 			dbFn: func(app *AppService) {
 				a, _ := app.appRepo.(*mocks.MockApplicationRepository)
-				a.EXPECT().UpdateApplication(gomock.Any(), gomock.Any(), gomock.Any()).Times(1).Return(errors.New("failed"))
+				a.EXPECT().CreateApplicationEndpoint(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Times(1).Return(errors.New("failed"))
 			},
 			wantErr:     true,
 			wantErrCode: http.StatusBadRequest,
@@ -758,12 +755,6 @@ func TestAppService_CreateAppEndpoint(t *testing.T) {
 
 			stripVariableFields(t, "endpoint", appEndpoint)
 			require.Equal(t, tc.wantEndpoint, appEndpoint)
-
-			for i := range tc.args.app.Endpoints {
-				stripVariableFields(t, "endpoint", &tc.args.app.Endpoints[i])
-			}
-
-			require.Equal(t, tc.wantApp, tc.args.app)
 		})
 	}
 }
@@ -791,6 +782,19 @@ func stripVariableFields(t *testing.T, obj string, v interface{}) {
 		a := v.(*datastore.APIKey)
 		a.UID, a.MaskID, a.Salt, a.Hash = "", "", "", ""
 		a.CreatedAt, a.UpdatedAt = 0, 0
+	case "organisation":
+		a := v.(*datastore.Organisation)
+		a.UID = ""
+		a.CreatedAt, a.UpdatedAt = 0, 0
+	case "organisation_member":
+		a := v.(*datastore.OrganisationMember)
+		a.UID = ""
+		a.CreatedAt, a.UpdatedAt = 0, 0
+	case "organisation_invite":
+		a := v.(*datastore.OrganisationInvite)
+		a.UID = ""
+		a.Token = ""
+		a.CreatedAt, a.UpdatedAt, a.ExpiresAt = 0, 0, 0
 	default:
 		t.Errorf("invalid data body - %v of type %T", obj, obj)
 		t.FailNow()
@@ -853,12 +857,10 @@ func TestAppService_UpdateAppEndpoint(t *testing.T) {
 					},
 					{
 						UID:               "endpoint2",
-						Events:            []string{"payment.created", "payment.success"},
 						TargetURL:         "https://fb.com",
 						Secret:            "newly-generated-secret",
 						RateLimit:         10000,
 						RateLimitDuration: "1m0s",
-						Status:            datastore.ActiveEndpointStatus,
 						HttpTimeout:       "20s",
 					},
 				},
@@ -866,10 +868,8 @@ func TestAppService_UpdateAppEndpoint(t *testing.T) {
 			wantEndpoint: &datastore.Endpoint{
 				Secret:            "newly-generated-secret",
 				UID:               "endpoint2",
-				Events:            []string{"payment.created", "payment.success"},
 				TargetURL:         "https://fb.com",
 				RateLimit:         10000,
-				Status:            datastore.ActiveEndpointStatus,
 				RateLimitDuration: "1m0s",
 				HttpTimeout:       "20s",
 			},

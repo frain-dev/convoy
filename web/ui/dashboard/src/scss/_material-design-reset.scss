@@ -1,0 +1,46 @@
+.mat-date-range-input-container {
+	max-width: 157px;
+}
+
+.table .filter--button .mat-date-range-input-container {
+	max-width: 180px;
+}
+
+.mat-date-range-input-start-wrapper .mat-date-range-input-inner {
+	position: initial !important;
+}
+
+.mat-date-range-input-start-wrapper {
+	overflow: unset;
+}
+
+.filter .filter--button div {
+	margin: 0;
+}
+
+.mat-date-range-input-separator {
+	color: transparent;
+	display: none;
+}
+
+.mat-date-range-input-inner[disabled] {
+	color: #477db3;
+}
+
+.mat-date-range-input-end-wrapper,
+.mat-date-range-input-start-wrapper {
+	width: 63px;
+}
+
+.mat-date-range-input {
+	width: 0 !important;
+	overflow: hidden !important;
+}
+
+.mat-datepicker-content .mat-calendar {
+	height: unset !important;
+}
+
+.mat-datepicker-actions {
+	justify-content: unset !important;
+}

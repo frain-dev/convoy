@@ -28,25 +28,36 @@ func NewSecurityService(groupRepo datastore.GroupRepository, apiKeyRepo datastor
 	return &SecurityService{groupRepo: groupRepo, apiKeyRepo: apiKeyRepo}
 }
 
-func (ss *SecurityService) CreateAPIKey(ctx context.Context, newApiKey *models.APIKey) (*datastore.APIKey, string, error) {
+func (ss *SecurityService) CreateAPIKey(ctx context.Context, member *datastore.OrganisationMember, newApiKey *models.APIKey) (*datastore.APIKey, string, error) {
 	if newApiKey.ExpiresAt != (time.Time{}) && newApiKey.ExpiresAt.Before(time.Now()) {
 		return nil, "", NewServiceError(http.StatusBadRequest, errors.New("expiry date is invalid"))
 	}
 
-	err := newApiKey.Role.Validate("api key")
+	role := &auth.Role{
+		Type:   newApiKey.Role.Type,
+		Groups: []string{newApiKey.Role.Group},
+	}
+
+	err := role.Validate("api key")
 	if err != nil {
 		log.WithError(err).Error("invalid api key role")
 		return nil, "", NewServiceError(http.StatusBadRequest, errors.New("invalid api key role"))
 	}
 
-	groups, err := ss.groupRepo.FetchGroupsByIDs(ctx, newApiKey.Role.Groups)
+	group, err := ss.groupRepo.FetchGroupByID(ctx, newApiKey.Role.Group)
 	if err != nil {
-		log.WithError(err).Error("failed to fetch groups by ids")
-		return nil, "", NewServiceError(http.StatusBadRequest, errors.New("invalid group"))
+		log.WithError(err).Error("failed to fetch group by id")
+		return nil, "", NewServiceError(http.StatusBadRequest, errors.New("failed to fetch group by id"))
 	}
 
-	if len(groups) != len(newApiKey.Role.Groups) {
-		return nil, "", NewServiceError(http.StatusBadRequest, errors.New("cannot find group"))
+	// does the group belong to the member's organisation?
+	if group.OrganisationID != member.OrganisationID {
+		return nil, "", NewServiceError(http.StatusUnauthorized, errors.New("unauthorized to access group"))
+	}
+
+	// does the organisation member have access to this group they're trying to create an api key for?
+	if !member.Role.Type.Is(auth.RoleSuperUser) && !member.Role.HasGroup(group.UID) {
+		return nil, "", NewServiceError(http.StatusUnauthorized, errors.New("unauthorized to access group"))
 	}
 
 	maskID, key := util.GenerateAPIKey()
@@ -65,7 +76,7 @@ func (ss *SecurityService) CreateAPIKey(ctx context.Context, newApiKey *models.A
 		MaskID:         maskID,
 		Name:           newApiKey.Name,
 		Type:           newApiKey.Type,
-		Role:           newApiKey.Role,
+		Role:           *role,
 		Hash:           encodedKey,
 		Salt:           salt,
 		CreatedAt:      primitive.NewDateTimeFromTime(time.Now()),
@@ -92,7 +103,7 @@ func (ss *SecurityService) CreateAppPortalAPIKey(ctx context.Context, group *dat
 	}
 
 	role := auth.Role{
-		Type:   auth.RoleUIAdmin,
+		Type:   auth.RoleAdmin,
 		Groups: []string{group.UID},
 		Apps:   []string{app.UID},
 	}

@@ -1,32 +1,28 @@
 package queue
 
 import (
-	"context"
+	"encoding/json"
 	"time"
 
 	"github.com/frain-dev/convoy"
-	"github.com/frain-dev/convoy/datastore"
-	"github.com/frain-dev/disq"
-	"github.com/go-redis/redis/v8"
+	"github.com/frain-dev/convoy/internal/pkg/rdb"
 )
 
 type Queuer interface {
-	Broker() disq.Broker
-	Publish(context.Context, convoy.TaskName, *Job, time.Duration) error
-	Consume(context.Context) error
-	Stop() error
+	Write(convoy.TaskName, convoy.QueueName, *Job) error
+	Options() QueueOptions
 }
 
 type Job struct {
-	Err   error            `json:"err"`
-	ID    string           `json:"id"`
-	Event *datastore.Event `json:"event"`
+	ID      string          `json:"id"`
+	Payload json.RawMessage `json:"payload"`
+	Delay   time.Duration   `json:"delay"`
 }
 
 type QueueOptions struct {
-	Name string
-
-	Type string
-
-	Redis *redis.Client
+	Names             map[string]int
+	Type              string
+	RedisClient       *rdb.Redis
+	RedisAddress      string
+	PrometheusAddress string
 }

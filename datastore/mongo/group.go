@@ -3,8 +3,10 @@ package mongo
 import (
 	"context"
 	"errors"
-	log "github.com/sirupsen/logrus"
+	"strings"
 	"time"
+
+	log "github.com/sirupsen/logrus"
 
 	"github.com/frain-dev/convoy/datastore"
 	"go.mongodb.org/mongo-driver/bson"
@@ -18,6 +20,10 @@ type groupRepo struct {
 	inner   *mongo.Collection
 }
 
+func isDuplicateNameIndex(err error) bool {
+	return strings.Contains(err.Error(), "name")
+}
+
 func NewGroupRepo(db *mongo.Database) datastore.GroupRepository {
 	return &groupRepo{
 		innerDB: db,
@@ -29,7 +35,11 @@ func (db *groupRepo) LoadGroups(ctx context.Context, f *datastore.GroupFilter) (
 	groups := make([]*datastore.Group, 0)
 
 	opts := &options.FindOptions{Collation: &options.Collation{Locale: "en", Strength: 2}}
-	filter := bson.M{"document_status": datastore.ActiveDocumentStatus}
+	filter := bson.M{
+		"document_status": datastore.ActiveDocumentStatus,
+		"organisation_id": f.OrgID,
+	}
+	f = f.WithNamesTrimmed()
 
 	if len(f.Names) > 0 {
 		filter["name"] = bson.M{"$in": f.Names}
@@ -65,11 +75,15 @@ func (db *groupRepo) CreateGroup(ctx context.Context, o *datastore.Group) error 
 	o.ID = primitive.NewObjectID()
 
 	_, err := db.inner.InsertOne(ctx, o)
+
+	// check if the error string contains the index called "name"
+	if mongo.IsDuplicateKeyError(err) && isDuplicateNameIndex(err) {
+		return datastore.ErrDuplicateGroupName
+	}
 	return err
 }
 
 func (db *groupRepo) UpdateGroup(ctx context.Context, o *datastore.Group) error {
-
 	o.UpdatedAt = primitive.NewDateTimeFromTime(time.Now())
 
 	filter := bson.D{primitive.E{Key: "uid", Value: o.UID}}
@@ -84,28 +98,27 @@ func (db *groupRepo) UpdateGroup(ctx context.Context, o *datastore.Group) error 
 	}}}
 
 	_, err := db.inner.UpdateOne(ctx, filter, update)
+	if mongo.IsDuplicateKeyError(err) && isDuplicateNameIndex(err) {
+		return datastore.ErrDuplicateGroupName
+	}
+
 	return err
 }
 
-func (db *groupRepo) FetchGroupByID(ctx context.Context,
-	id string) (*datastore.Group, error) {
-	org := new(datastore.Group)
+func (db *groupRepo) FetchGroupByID(ctx context.Context, id string) (*datastore.Group, error) {
+	group := new(datastore.Group)
 
-	filter := bson.D{
-		primitive.E{
-			Key:   "uid",
-			Value: id,
-		},
+	filter := bson.M{
+		"uid":             id,
+		"document_status": datastore.ActiveDocumentStatus,
 	}
 
-	err := db.inner.FindOne(ctx, filter).
-		Decode(&org)
-
+	err := db.inner.FindOne(ctx, filter).Decode(group)
 	if errors.Is(err, mongo.ErrNoDocuments) {
 		err = datastore.ErrGroupNotFound
 	}
 
-	return org, err
+	return group, err
 }
 
 func (db *groupRepo) FillGroupsStatistics(ctx context.Context, groups []*datastore.Group) error {
@@ -124,7 +137,7 @@ func (db *groupRepo) FillGroupsStatistics(ctx context.Context, groups []*datasto
 
 	lookupStage1 := bson.D{
 		{Key: "$lookup", Value: bson.D{
-			{Key: "from", Value: AppCollections},
+			{Key: "from", Value: AppCollection},
 			{Key: "localField", Value: "uid"},
 			{Key: "foreignField", Value: "group_id"},
 			{Key: "as", Value: "group_apps"},
@@ -135,7 +148,7 @@ func (db *groupRepo) FillGroupsStatistics(ctx context.Context, groups []*datasto
 		{Key: "$lookup", Value: bson.D{
 			{Key: "from", Value: EventCollection},
 			{Key: "localField", Value: "uid"},
-			{Key: "foreignField", Value: "app_metadata.group_id"},
+			{Key: "foreignField", Value: "group_id"},
 			{Key: "as", Value: "group_events"},
 		}},
 	}

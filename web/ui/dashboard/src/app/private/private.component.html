@@ -1,1 +1,94 @@
+<header class="dashboard--header border__bottom">
+	<div class="dashboard--header--container">
+		<div class="flex flex__align-items-center">
+			<a target="_blank" href="https://getconvoy.io" rel="noreferrer">
+				<img src="/assets/img/logo.svg" alt="convoy logo" class="logo" />
+			</a>
+
+			<nav>
+				<ul class="flex flex__align-items-center" *ngIf="organisations?.length">
+					<li>
+						<a routerLink="/projects" routerLinkActive="active" class="padding-y__8px padding-x__16px margin-right__32px rounded__4px font__14px">Projects</a>
+					</li>
+					<li>
+						<a routerLink="/team" routerLinkActive="active" class="padding-y__8px padding-x__16px margin-right__32px rounded__4px font__14px">Team</a>
+					</li>
+				</ul>
+			</nav>
+		</div>
+
+		<div class="flex flex__align-items-center">
+			<a class="button--has-icon icon-left" target="_blank" href="https://getconvoy.io/docs" rel="noreferrer">
+				<img src="/assets/img/doc-icon-primary.svg" alt="doc icon" />
+				<span class="font__weight-400 color__primary">Go to docs</span>
+			</a>
+
+			<div class="dropdown" *ngIf="organisations?.length">
+				<button class="button__more with-padding button--has-icon icon-left" (click)="showOrgDropdown = !showOrgDropdown; showOverlay = true">
+					<div class="badge">
+						<div class="icon">{{ userOrganization?.name?.slice(0, 1) }}</div>
+						<div class="name">{{ userOrganization?.name }}</div>
+					</div>
+					<img src="/assets/img/angle-arrow-down.svg" alt="arrow down icon" />
+				</button>
+
+				<div [ngClass]="{ show: showOrgDropdown }" class="dropdown__menu dropdown__menu__nav larger">
+					<div class="title">Your organisations ({{ organisations?.length || 0 }})</div>
+					<ul *ngIf="organisations?.length">
+						<li *ngFor="let organisation of organisations">
+							<button (click)="selectOrganisation(organisation)" class="flex flex__justify-between padding-x__16px padding-y__8px button__clear color__black width__100">
+								<div class="badge badge__dark">
+									<div class="icon">{{ organisation?.name?.slice(0, 1) }}</div>
+									<p class="name">{{ organisation?.name }}</p>
+								</div>
+								<img *ngIf="organisation.uid == userOrganization?.uid" src="/assets/img/check-icon-primary.svg" alt="check icon" />
+							</button>
+						</li>
+					</ul>
+					<div class="dropdown--footer">
+						<button class="base-button" (click)="showAddOrganisationModal = true; showOrgDropdown = false">
+							<img src="/assets/img/add-circlar-icon.svg" alt="add icon" />
+							Add another Organization
+						</button>
+					</div>
+				</div>
+			</div>
+
+			<div class="dropdown" *ngIf="authDetails()">
+				<button class="button__more with-padding button--has-icon" (click)="showMoreDropdown = !showMoreDropdown; showOverlay = true">
+					<img src="/assets/img/nav-bar-more-primary.svg" alt="more icon" />
+				</button>
+
+				<div [ngClass]="{ show: showMoreDropdown }" class="dropdown__menu dropdown__menu__nav dropdown__menu__secondary large">
+					<div class="border__bottom padding-x__32px padding-top__24px padding-bottom__16px">
+						<h3 class="text__capitalize">{{ authDetails()?.first_name }} {{ authDetails()?.last_name }}</h3>
+						<p class="font__12px color__grey">{{ authDetails()?.email }}</p>
+					</div>
+					<ul>
+						<li>
+							<a routerLink="/user-settings" (click)="showMoreDropdown = false; showOverlay = false" class="color__grey padding-left__16px">My account</a>
+						</li>
+						<li *ngIf="organisations?.length">
+							<a routerLink="/organisation-settings" (click)="showMoreDropdown = false; showOverlay = false" class="color__grey padding-left__16px">Organisation settings</a>
+						</li>
+					</ul>
+					<div class="border__top padding-x__32px padding-bottom__24px padding-top__16px">
+						<button class="button__clear color__danger font__weight-600" (click)="logout()">Logout</button>
+					</div>
+				</div>
+			</div>
+		</div>
+	</div>
+</header>
+<div class="overlay" *ngIf="showOverlay" (click)="showOverlay = false; showMoreDropdown = false; showOrgDropdown = false"></div>
+
+<div class="_overlay z-index--2" *ngIf="showAddOrganisationModal || showAddAnalytics" (click)="showAddOrganisationModal = false; showAddAnalytics = false"></div>
+<div class="modal modal__right z-index--3" *ngIf="showAddOrganisationModal">
+	<app-create-organisation *ngIf="showAddOrganisationModal" (closeModal)="closeAddOrganisationModal($event)"></app-create-organisation>
+</div>
+
+<div class="modal modal__center small z-index--3" *ngIf="showAddAnalytics">
+	<app-add-analytics *ngIf="showAddAnalytics" [authDetails]="authDetails()" (closeModal)="showAddAnalytics = false"></app-add-analytics>
+</div>
+
 <router-outlet></router-outlet>
