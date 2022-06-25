@@ -11,7 +11,7 @@ mkdir $UIDIR
 cd ./web/ui/dashboard
 
 # Install dependencies
-npm install
+npm ci
 
 # Run production build
 npm run build
