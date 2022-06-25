@@ -10,8 +10,9 @@ mockgen:
 setup: init-hooks
 
 ui_install: 
-	chmod +x ./scripts/build.sh
-	./scripts/build.sh
+	cd web/ui/dashboard && \
+	npm ci && \
+ 	 npm run build
 
 integration_tests:
 	go test -tags integration -p 1 ./...
