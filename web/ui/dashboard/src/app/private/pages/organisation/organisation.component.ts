@@ -1,5 +1,5 @@
 import { Component, OnInit } from '@angular/core';
-import { FormBuilder, FormControl, FormGroup, Validators } from '@angular/forms';
+import { FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { Router } from '@angular/router';
 import { GeneralService } from 'src/app/services/general/general.service';
 import { OrganisationService } from './organisation.service';
@@ -37,12 +37,7 @@ export class OrganisationComponent implements OnInit {
 	}
 
 	async updateOrganisation() {
-		if (this.editOrganisationForm.invalid) {
-			(<any>this.editOrganisationForm).values(this.editOrganisationForm.controls).forEach((control: FormControl) => {
-				control?.markAsTouched();
-			});
-			return;
-		}
+		if (this.editOrganisationForm.invalid) return this.editOrganisationForm.markAllAsTouched();
 		this.isEditingOrganisation = true;
 		try {
 			const response = await this.organisationService.updateOrganisation({ org_id: this.organisationId, body: this.editOrganisationForm.value });

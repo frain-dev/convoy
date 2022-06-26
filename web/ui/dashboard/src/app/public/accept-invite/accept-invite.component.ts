@@ -54,12 +54,7 @@ export class AcceptInviteComponent implements OnInit {
 		}
 	}
 	async acceptInvite() {
-		if (this.acceptInviteForm.invalid) {
-			(<any>Object).values(this.acceptInviteForm.controls).forEach((control: FormControl) => {
-				control?.markAsTouched();
-			});
-			return;
-		}
+		if (this.acceptInviteForm.invalid) return this.acceptInviteForm.markAsTouched();
 		this.loading = true;
 		try {
 			const response = await this.acceptInviteService.acceptInvite({ token: this.token, body: this.acceptInviteForm.value });

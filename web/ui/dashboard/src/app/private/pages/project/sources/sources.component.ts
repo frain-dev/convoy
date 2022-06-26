@@ -1,6 +1,6 @@
 import { Component, OnInit } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
-import { PAGINATION } from 'convoy-app/lib/models/global.model';
+import { PAGINATION } from 'src/app/models/global.model';
 import { SOURCE } from 'src/app/models/group.model';
 import { PrivateService } from 'src/app/private/private.service';
 import { GeneralService } from 'src/app/services/general/general.service';

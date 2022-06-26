@@ -41,7 +41,7 @@ export class TeamsComponent implements OnInit {
 		})
 	});
 
-	constructor(private generalService: GeneralService, private router: Router, private route: ActivatedRoute, private teamService: TeamsService, private formBuilder:FormBuilder) {}
+	constructor(private generalService: GeneralService, private router: Router, private route: ActivatedRoute, private teamService: TeamsService, private formBuilder: FormBuilder) {}
 
 	ngOnInit() {
 		this.toggleFilter(this.route.snapshot.queryParams?.inviteType ?? 'active');
@@ -64,7 +64,7 @@ export class TeamsComponent implements OnInit {
 	toggleFilter(selectedFilter: 'active' | 'pending') {
 		this.selectedFilterOption = selectedFilter;
 		this.selectedFilterOption === 'active' ? this.fetchTeamMembers() : this.fetchPendingTeamMembers();
-		if(!this.router.url.split('/')[2]) this.addFilterToUrl();
+		if (!this.router.url.split('/')[2]) this.addFilterToUrl();
 	}
 	async fetchPendingTeamMembers(requestDetails?: { page?: number }) {
 		this.isFetchingPendingInvites = true;
@@ -104,7 +104,7 @@ export class TeamsComponent implements OnInit {
 		this.showOverlay = false;
 		this.currentId == id ? (this.currentId = '') : (this.currentId = id);
 	}
-	
+
 	addFilterToUrl() {
 		const queryParams: any = {};
 		queryParams.inviteType = this.selectedFilterOption;
@@ -112,12 +112,7 @@ export class TeamsComponent implements OnInit {
 	}
 
 	async inviteUser() {
-		if (this.inviteUserForm.invalid) {
-			(<any>this.inviteUserForm).values(this.inviteUserForm.controls).forEach((control: FormControl) => {
-				control?.markAsTouched();
-			});
-			return;
-		}
+		if (this.inviteUserForm.invalid) return this.inviteUserForm.markAsTouched();
 		this.invitingUser = true;
 		try {
 			const response = await this.teamService.inviteUserToOrganisation(this.inviteUserForm.value);

@@ -56,7 +56,7 @@ export class EventsComponent implements OnInit {
 		queryParams.activeTab = this.activeTab;
 		this.router.navigate([], { queryParams: Object.assign({}, currentURLfilters, queryParams) });
 	}
-	
+
 	toggleActiveTab(tab: 'events' | 'event deliveries') {
 		this.activeTab = tab;
 		this.addTabToUrl();

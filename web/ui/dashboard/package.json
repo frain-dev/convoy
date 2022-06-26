@@ -14,17 +14,17 @@
 	},
 	"private": true,
 	"dependencies": {
-		"@angular/animations": "~13.0.0",
+		"@angular/animations": "^14.0.3",
 		"@angular/cdk": "^13.0.0",
-		"@angular/common": "~13.0.0",
-		"@angular/compiler": "~13.0.0",
-		"@angular/core": "~13.0.0",
-		"@angular/elements": "^13.1.0",
-		"@angular/forms": "~13.0.0",
+		"@angular/common": "^14.0.3",
+		"@angular/compiler": "^14.0.3",
+		"@angular/core": "^14.0.3",
+		"@angular/elements": "^14.0.3",
+		"@angular/forms": "^14.0.3",
 		"@angular/material": "^13.0.0",
-		"@angular/platform-browser": "~13.0.0",
-		"@angular/platform-browser-dynamic": "~13.0.0",
-		"@angular/router": "~13.0.0",
+		"@angular/platform-browser": "^14.0.3",
+		"@angular/platform-browser-dynamic": "^14.0.3",
+		"@angular/router": "^14.0.3",
 		"angular-prism": "^0.1.20",
 		"chart.js": "^3.6.0",
 		"convoy-ui": "^0.0.11",
@@ -37,9 +37,9 @@
 		"zone.js": "~0.11.4"
 	},
 	"devDependencies": {
-		"@angular-devkit/build-angular": "^13.2.1",
-		"@angular/cli": "~13.0.1",
-		"@angular/compiler-cli": "~13.0.0",
+		"@angular-devkit/build-angular": "^14.0.3",
+		"@angular/cli": "^14.0.3",
+		"@angular/compiler-cli": "^14.0.3",
 		"@babel/core": "^7.18.5",
 		"@compodoc/compodoc": "^1.1.19",
 		"@storybook/addon-actions": "^6.5.9",
@@ -64,6 +64,6 @@
 		"postcss": "^8.4.14",
 		"purgecss": "^4.0.3",
 		"tailwindcss": "^3.1.4",
-		"typescript": "~4.4.4"
+		"typescript": "~4.7.4"
 	}
 }
