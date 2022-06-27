@@ -15,12 +15,14 @@ import (
 type orgRepo struct {
 	innerDB *mongo.Database
 	inner   *mongo.Collection
+	store   datastore.Store
 }
 
-func NewOrgRepo(db *mongo.Database) datastore.OrganisationRepository {
+func NewOrgRepo(db *mongo.Database, store datastore.Store) datastore.OrganisationRepository {
 	return &orgRepo{
 		innerDB: db,
 		inner:   db.Collection(OrganisationCollection),
+		store:   store,
 	}
 }
 
@@ -38,30 +40,28 @@ func (db *orgRepo) LoadOrganisationsPaged(ctx context.Context, pageable datastor
 
 func (db *orgRepo) CreateOrganisation(ctx context.Context, org *datastore.Organisation) error {
 	org.ID = primitive.NewObjectID()
-	_, err := db.inner.InsertOne(ctx, org)
+	err := db.store.Save(ctx, org, nil)
 	return err
 }
 
 func (db *orgRepo) UpdateOrganisation(ctx context.Context, org *datastore.Organisation) error {
 	org.UpdatedAt = primitive.NewDateTimeFromTime(time.Now())
-	update := bson.D{primitive.E{Key: "$set", Value: bson.D{
+	update := bson.D{
 		primitive.E{Key: "name", Value: org.Name},
 		primitive.E{Key: "updated_at", Value: org.UpdatedAt},
-	}}}
+	}
 
-	_, err := db.inner.UpdateOne(ctx, bson.M{"uid": org.UID}, update)
+	err := db.store.UpdateOne(ctx, bson.M{"uid": org.UID}, update)
 	return err
 }
 
 func (db *orgRepo) DeleteOrganisation(ctx context.Context, uid string) error {
 	update := bson.M{
-		"$set": bson.M{
-			"deleted_at":      primitive.NewDateTimeFromTime(time.Now()),
-			"document_status": datastore.DeletedDocumentStatus,
-		},
+		"deleted_at":      primitive.NewDateTimeFromTime(time.Now()),
+		"document_status": datastore.DeletedDocumentStatus,
 	}
 
-	_, err := db.inner.UpdateOne(ctx, bson.M{"uid": uid}, update)
+	err := db.store.UpdateOne(ctx, bson.M{"uid": uid}, update)
 	if err != nil {
 		return err
 	}
@@ -72,9 +72,7 @@ func (db *orgRepo) DeleteOrganisation(ctx context.Context, uid string) error {
 func (db *orgRepo) FetchOrganisationByID(ctx context.Context, id string) (*datastore.Organisation, error) {
 	org := new(datastore.Organisation)
 
-	filter := bson.M{"uid": id, "document_status": datastore.ActiveDocumentStatus}
-
-	err := db.inner.FindOne(ctx, filter).Decode(&org)
+	err := db.store.FindByID(ctx, id, nil, org)
 	if errors.Is(err, mongo.ErrNoDocuments) {
 		err = datastore.ErrOrgNotFound
 	}
