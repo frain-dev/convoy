@@ -153,6 +153,8 @@ func (d *mongoStore) FindOne(ctx context.Context, filter, projection map[string]
 	if !IsValidPointer(result) {
 		return errors.New("result param is not a valid pointer")
 	}
+
+	
 	ops := options.FindOne()
 	ops.Projection = projection
 
