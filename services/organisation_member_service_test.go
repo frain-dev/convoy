@@ -445,9 +445,9 @@ func TestOrganisationMemberService_DeleteOrganisationMember(t *testing.T) {
 	ctx := context.Background()
 
 	type args struct {
-		ctx   context.Context
-		id    string
-		orgID string
+		ctx context.Context
+		id  string
+		org *datastore.Organisation
 	}
 	tests := []struct {
 		name        string
@@ -460,26 +460,52 @@ func TestOrganisationMemberService_DeleteOrganisationMember(t *testing.T) {
 		{
 			name: "should_delete_organisation_member",
 			args: args{
-				ctx:   ctx,
-				id:    "123",
-				orgID: "abc",
+				ctx: ctx,
+				id:  "123",
+				org: &datastore.Organisation{
+					UID:     "abc",
+					OwnerID: "12345",
+				},
 			},
 			dbFn: func(os *OrganisationMemberService) {
 				a, _ := os.orgMemberRepo.(*mocks.MockOrganisationMemberRepository)
+				a.EXPECT().FetchOrganisationMemberByID(gomock.Any(), "123", "abc").Times(1).Return(&datastore.OrganisationMember{UID: "12345", UserID: "123"}, nil)
 				a.EXPECT().DeleteOrganisationMember(gomock.Any(), "123", "abc").
 					Times(1).Return(nil)
 			},
 			wantErr: false,
 		},
 		{
-			name: "should_fail_to_delete_organisation_member",
+			name: "should_fail_to_delete_organisation_owner",
 			args: args{
-				ctx:   ctx,
-				id:    "123",
-				orgID: "abc",
+				ctx: ctx,
+				id:  "123",
+				org: &datastore.Organisation{
+					UID:     "abc",
+					OwnerID: "123",
+				},
 			},
 			dbFn: func(os *OrganisationMemberService) {
 				a, _ := os.orgMemberRepo.(*mocks.MockOrganisationMemberRepository)
+				a.EXPECT().FetchOrganisationMemberByID(gomock.Any(), "123", "abc").Times(1).Return(&datastore.OrganisationMember{UID: "12345", UserID: "123"}, nil)
+			},
+			wantErr:     true,
+			wantErrCode: http.StatusForbidden,
+			wantErrMsg:  "cannot deactivate organisation owner",
+		},
+		{
+			name: "should_fail_to_delete_organisation_member",
+			args: args{
+				ctx: ctx,
+				id:  "123",
+				org: &datastore.Organisation{
+					UID:     "abc",
+					OwnerID: "12345",
+				},
+			},
+			dbFn: func(os *OrganisationMemberService) {
+				a, _ := os.orgMemberRepo.(*mocks.MockOrganisationMemberRepository)
+				a.EXPECT().FetchOrganisationMemberByID(gomock.Any(), "123", "abc").Times(1).Return(&datastore.OrganisationMember{UID: "12345", UserID: "123"}, nil)
 				a.EXPECT().DeleteOrganisationMember(gomock.Any(), "123", "abc").
 					Times(1).Return(errors.New("failed"))
 			},
@@ -499,7 +525,7 @@ func TestOrganisationMemberService_DeleteOrganisationMember(t *testing.T) {
 				tt.dbFn(om)
 			}
 
-			err := om.DeleteOrganisationMember(tt.args.ctx, tt.args.id, tt.args.orgID)
+			err := om.DeleteOrganisationMember(tt.args.ctx, tt.args.id, tt.args.org)
 			if tt.wantErr {
 				require.NotNil(t, err)
 				require.Equal(t, tt.wantErrCode, err.(*ServiceError).ErrCode())

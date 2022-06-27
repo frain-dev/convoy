@@ -60,7 +60,8 @@ func (db *orgInviteRepo) UpdateOrganisationInvite(ctx context.Context, iv *datas
 		primitive.E{Key: "role", Value: iv.Role},
 		primitive.E{Key: "status", Value: iv.Status},
 		primitive.E{Key: "updated_at", Value: iv.UpdatedAt},
-	}
+		primitive.E{Key: "expires_at", Value: iv.ExpiresAt},
+	}}}
 
 	err := db.store.UpdateOne(ctx, bson.M{"uid": iv.UID}, update)
 	return err

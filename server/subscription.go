@@ -120,10 +120,10 @@ func (a *applicationHandler) CreateSubscription(w http.ResponseWriter, r *http.R
 
 	s.Type = string(group.Type)
 
-	subscription, err := a.subService.CreateSubscription(r.Context(), group.UID, &s)
+	subscription, err := a.subService.CreateSubscription(r.Context(), group, &s)
 	if err != nil {
 		log.WithError(err).Error("failed to create subscription")
-		_ = render.Render(w, r, newErrorResponse("an error occurred while creating subscription. Error: "+err.Error(), http.StatusBadRequest))
+		_ = render.Render(w, r, newServiceErrResponse(err))
 		return
 	}
 
@@ -192,4 +192,28 @@ func (a *applicationHandler) UpdateSubscription(w http.ResponseWriter, r *http.R
 	}
 
 	_ = render.Render(w, r, newServerResponse("Subscription updated successfully", sub, http.StatusAccepted))
+}
+
+// ToggleSubscriptionStatus
+// @Summary Toggles a subscription's status from active <-> inactive
+// @Description This endpoint updates a subscription
+// @Tags Subscription
+// @Accept json
+// @Produce json
+// @Param subscriptionID path string true "subscription id"
+// @Success 200 {object} serverResponse{data=datastore.Subscription}
+// @Failure 400,401,500 {object} serverResponse{data=Stub}
+// @Security ApiKeyAuth
+// @Router /subscriptions/{subscriptionID}/toggle_status [put]
+func (a *applicationHandler) ToggleSubscriptionStatus(w http.ResponseWriter, r *http.Request) {
+	g := getGroupFromContext(r.Context())
+	subscription := chi.URLParam(r, "subscriptionID")
+
+	sub, err := a.subService.ToggleSubscriptionStatus(r.Context(), g.UID, subscription)
+	if err != nil {
+		_ = render.Render(w, r, newServiceErrResponse(err))
+		return
+	}
+
+	_ = render.Render(w, r, newServerResponse("Subscription status updated successfully", sub, http.StatusAccepted))
 }

@@ -37,6 +37,7 @@ func SeedApplication(db datastore.DatabaseClient, g *datastore.Group, uid, title
 		GroupID:        g.UID,
 		IsDisabled:     disabled,
 		DocumentStatus: datastore.ActiveDocumentStatus,
+		Endpoints:      []datastore.Endpoint{},
 	}
 
 	// Seed Data.
@@ -117,7 +118,7 @@ func SeedDefaultGroup(db datastore.DatabaseClient, orgID string) (*datastore.Gro
 	defaultGroup := &datastore.Group{
 		UID:            uuid.New().String(),
 		Name:           "default-group",
-		Type:           "outgoing",
+		Type:           datastore.OutgoingGroup,
 		OrganisationID: orgID,
 		Config: &datastore.GroupConfig{
 			Strategy: &datastore.StrategyConfiguration{
@@ -481,9 +482,14 @@ func SeedSubscription(db datastore.DatabaseClient,
 	retryConfig *datastore.RetryConfiguration,
 	alertConfig *datastore.AlertConfiguration,
 	filterConfig *datastore.FilterConfiguration,
+	status datastore.SubscriptionStatus,
 ) (*datastore.Subscription, error) {
 	if util.IsStringEmpty(uid) {
 		uid = uuid.New().String()
+	}
+
+	if status == "" {
+		status = datastore.ActiveSubscriptionStatus
 	}
 
 	subscription := &datastore.Subscription{
@@ -502,7 +508,7 @@ func SeedSubscription(db datastore.DatabaseClient,
 		CreatedAt: primitive.NewDateTimeFromTime(time.Now()),
 		UpdatedAt: primitive.NewDateTimeFromTime(time.Now()),
 
-		Status:         datastore.ActiveSubscriptionStatus,
+		Status:         status,
 		DocumentStatus: datastore.ActiveDocumentStatus,
 	}
 

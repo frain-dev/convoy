@@ -11,6 +11,7 @@ import { SettingsService } from './settings.service';
 })
 export class SettingsComponent implements OnInit {
 	isloading = false;
+	showDeleteProjectModal = false;
 
 	constructor(public privateService: PrivateService, private settingsService: SettingsService, private router: Router, private generalService: GeneralService) {}
 

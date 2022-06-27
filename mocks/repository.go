@@ -945,6 +945,20 @@ func (mr *MockApplicationRepositoryMockRecorder) CreateApplication(arg0, arg1, a
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateApplication", reflect.TypeOf((*MockApplicationRepository)(nil).CreateApplication), arg0, arg1, arg2)
 }
 
+// CreateApplicationEndpoint mocks base method.
+func (m *MockApplicationRepository) CreateApplicationEndpoint(arg0 context.Context, arg1, arg2 string, arg3 *datastore.Endpoint) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "CreateApplicationEndpoint", arg0, arg1, arg2, arg3)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// CreateApplicationEndpoint indicates an expected call of CreateApplicationEndpoint.
+func (mr *MockApplicationRepositoryMockRecorder) CreateApplicationEndpoint(arg0, arg1, arg2, arg3 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateApplicationEndpoint", reflect.TypeOf((*MockApplicationRepository)(nil).CreateApplicationEndpoint), arg0, arg1, arg2, arg3)
+}
+
 // DeleteApplication mocks base method.
 func (m *MockApplicationRepository) DeleteApplication(arg0 context.Context, arg1 *datastore.Application) error {
 	m.ctrl.T.Helper()

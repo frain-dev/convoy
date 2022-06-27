@@ -113,10 +113,12 @@
 									</button>
 									<div [ngClass]="{ show: currentAppId == app.uid }" class="dropdown__menu dropdown__menu__nav small z-index--3">
 										<ul>
-											<li (click)="appsDetailsItem = app; currentAppId = ''" [routerLink]="'/projects/' + privateService.activeProjectDetails?.uid + '/apps/' + app.uid + '/edit'">
-												Update
+											<li>
+												<a [routerLink]="'/projects/' + privateService.activeProjectDetails?.uid + '/apps/' + app.uid + '/edit'" class="padding-x__8px">Update</a>
 											</li>
-											<li (click)="showDeleteAppModal = !showDeleteAppModal; currentAppId = ''" class="danger">Delete</li>
+											<li>
+												<button (click)="promptDeleteModal($event, app)" class="button__clear color__danger">Delete</button>
+											</li>
 										</ul>
 									</div>
 								</div>
@@ -165,14 +167,8 @@
 <!-- dark overlay  -->
 <div class="_overlay" *ngIf="showDeleteAppModal" (click)="showDeleteAppModal = false"></div>
 <!-- delete app modal  -->
-<div class="modal modal__center" *ngIf="showDeleteAppModal">
-	<div class="modal--body flex flex__column flex__justify-center flex__align-items-center delete">
-		<img src="/assets/img/warning.gif" class="img" alt="warning" />
-		<p class="font__16px font__weight-600 color__black margin-bottom__8px">Are you sure you want to delete “{{ appsDetailsItem?.name }}”?</p>
-		<p class="font__14px font__weight-500 color__grey margin-bottom__12px">This action is irrevesible</p>
-		<button class="button button__deactivate margin-bottom__24px" [disabled]="isDeletingApp" (click)="deleteApp()">{{ isDeletingApp ? 'Deleting App...' : 'Yes, Delete' }}</button>
-		<button class="button__primary button__clear font__weight-600 cancel" (click)="showDeleteAppModal = false">No, Cancel</button>
-	</div>
+<div class="modal modal__center small" *ngIf="showDeleteAppModal">
+	<app-delete-modal [isLoading]="isDeletingApp" [deleteText]="'“' + appsDetailsItem?.name + '”'" (closeModal)="showDeleteAppModal = false" (deleteData)="deleteApp()"></app-delete-modal>
 </div>
 
 <div class="modal modal__full" *ngIf="showCreateAppModal || showEditAppModal">

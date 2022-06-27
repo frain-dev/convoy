@@ -118,7 +118,7 @@ func (a *applicationHandler) DeleteOrganisationMember(w http.ResponseWriter, r *
 	memberID := chi.URLParam(r, "memberID")
 	org := getOrganisationFromContext(r.Context())
 
-	err := a.organisationMemberService.DeleteOrganisationMember(r.Context(), memberID, org.UID)
+	err := a.organisationMemberService.DeleteOrganisationMember(r.Context(), memberID, org)
 	if err != nil {
 		_ = render.Render(w, r, newServiceErrResponse(err))
 		return

@@ -1,0 +1,36 @@
+<div class="padding-x__30px padding-y__40px">
+	<h3>Welcome 🌤</h3>
+
+	<form [formGroup]="addAnalyticsForm" (ngSubmit)="addAnalytics()">
+		<h5 class="margin-top__24px font__weight-500">Would you like to enable analytics?</h5>
+		<p class="font__14px color__grey margin-bottom__20px margin-top__4px">
+			Enabling analytics will provide anonymous metrics to help us understand how you use Convoy, so we can make it even better for you.
+		</p>
+		<div class="grid grid__col-2 grid--gap__24px margin-bottom__50px">
+			<div class="checkbox-option">
+				<input type="radio" id="true" name="is_analytics_enabled" [value]="true" formControlName="is_analytics_enabled" />
+				<label for="true" class="border__all padding-all__10px rounded__4px display__block animate">
+					<div class="flex flex__align-items-center">
+						<div class="checkbox rounded__50px margin-bottom__0px border__all width__16px height__16px animate"></div>
+						<p class="font__14px font__weight-600 margin-left__8px">Yes</p>
+					</div>
+				</label>
+			</div>
+
+			<div class="checkbox-option">
+				<input type="radio" id="false" name="is_analytics_enabled" [value]="false" formControlName="is_analytics_enabled" />
+				<label for="false" class="border__all padding-all__10px rounded__4px display__block animate">
+					<div class="flex flex__align-items-center">
+						<div class="checkbox rounded__50px margin-bottom__0px border__all width__16px height__16px animate"></div>
+						<p class="font__14px font__weight-600 margin-left__8px">No</p>
+					</div>
+				</label>
+			</div>
+		</div>
+
+		<div class="flex flex__column flex__justify-center width__50 margin-auto">
+			<button class="button button__primary" [disabled]="loading">Save option</button>
+			<button class="button__primary button__clear font__weight-500 margin-top__20px" (click)="closeModal.emit()">Discard</button>
+		</div>
+	</form>
+</div>

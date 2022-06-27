@@ -80,11 +80,11 @@
 			</div>
 		</section>
 
-		<section class="card padding-all__24px margin-top__24px" *ngIf="sourceForm.value.verifier.type === 'hmac'" formGroupName="hmac">
-			<h2 class="margin-bottom__12px">Configure HMAC</h2>
+		<section class="card padding-all__24px margin-top__24px" *ngIf="sourceForm.value.verifier.type === 'hmac' || sourceForm.value.verifier.type === 'github'" formGroupName="hmac">
+			<h2 class="margin-bottom__12px">{{ sourceForm.value.verifier.type === 'github' ? 'Github Credentials' : 'Configure HMAC' }}</h2>
 
 			<div class="grid grid__col-2 grid--gap__24px">
-				<div class="input margin-bottom__0px">
+				<div class="input margin-bottom__0px" *ngIf="sourceForm.value.verifier.type === 'hmac'">
 					<label for="encoding" class="position__relative">
 						Encoding
 						<span class="bg__grey__light rounded__4px padding-x__4px position__absolute position--right__0px font__10px font__weight-400">required</span>
@@ -98,7 +98,7 @@
 					</div>
 				</div>
 
-				<div class="input margin-bottom__0px">
+				<div class="input margin-bottom__0px" *ngIf="sourceForm.value.verifier.type === 'hmac'">
 					<label for="algorithm" class="position__relative">
 						Hash Algorithm
 						<span class="bg__grey__light rounded__4px padding-x__4px position__absolute position--right__0px font__10px font__weight-400">required</span>
@@ -112,7 +112,7 @@
 					</div>
 				</div>
 
-				<div class="input margin-bottom__0px">
+				<div class="input margin-bottom__0px" *ngIf="sourceForm.value.verifier.type === 'hmac'">
 					<label for="header-key" class="position__relative">
 						Signature header key
 						<span class="bg__grey__light rounded__4px padding-x__4px position__absolute position--right__0px font__10px font__weight-400">required</span>

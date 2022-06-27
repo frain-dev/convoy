@@ -233,6 +233,28 @@ func (s *OrganisationMemberIntegrationTestSuite) Test_DeleteOrganisationMember()
 	require.Equal(s.T(), datastore.ErrOrgMemberNotFound, err)
 }
 
+func (s *OrganisationMemberIntegrationTestSuite) Test_CannotDeleteOrganisationOwner() {
+	expectedStatusCode := http.StatusForbidden
+
+	member, err := s.DB.OrganisationMemberRepo().FetchOrganisationMemberByUserID(context.Background(), s.DefaultUser.UID, s.DefaultOrg.UID)
+
+	// Arrange.
+	url := fmt.Sprintf("/ui/organisations/%s/members/%s", s.DefaultOrg.UID, member.UID)
+	req := createRequest(http.MethodDelete, url, "", nil)
+
+	err = s.AuthenticatorFn(req, s.Router)
+	require.NoError(s.T(), err)
+
+	w := httptest.NewRecorder()
+
+	// Act.
+	s.Router.ServeHTTP(w, req)
+
+	// Assert.
+	require.Equal(s.T(), expectedStatusCode, w.Code)
+
+}
+
 func TestOrganisationMemberIntegrationTestSuite(t *testing.T) {
 	suite.Run(t, new(OrganisationMemberIntegrationTestSuite))
 }
