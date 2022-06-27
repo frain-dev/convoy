@@ -2,7 +2,6 @@ package datastore
 
 import (
 	"context"
-	"encoding/json"
 	"errors"
 	"reflect"
 	"time"
@@ -24,31 +23,24 @@ type Store interface {
 	Save(ctx context.Context, payload interface{}, result interface{}) error
 	SaveMany(ctx context.Context, payload []interface{}) error
 
-	FindByID(ctx context.Context, id string, projection map[string]interface{}, result interface{}) error
-	FindOne(ctx context.Context, filter, projection map[string]interface{}, result interface{}) error
-	FindMany(ctx context.Context, filter, projection map[string]interface{}, sort interface{}, limit, skip int64, results interface{}) error
-	FindManyWithDeletedAt(ctx context.Context, filter, projection map[string]interface{}, sort interface{}, limit, skip int64, results interface{}) error
-	FindAll(ctx context.Context, filter map[string]interface{}, projection, results interface{}) error
-	FindAllAdminRecords(ctx context.Context, results interface{}) error
+	FindByID(ctx context.Context, id string, projection bson.M, result interface{}) error
+	FindOne(ctx context.Context, filter, projection bson.M, result interface{}) error
+	FindMany(ctx context.Context, filter, projection bson.M, sort interface{}, limit, skip int64, results interface{}) error
+	FindManyWithDeletedAt(ctx context.Context, filter, projection bson.M, sort interface{}, limit, skip int64, results interface{}) error
+	FindAll(ctx context.Context, filter bson.M, sort interface{}, projection, results interface{}) error
 
 	UpdateByID(ctx context.Context, id string, payload interface{}) error
-	UpdateOne(ctx context.Context, filter map[string]interface{}, payload interface{}) error
-	UpsertOne(ctx context.Context, filter map[string]interface{}, payload interface{}) error
-	UpdateMany(ctx context.Context, filter, payload map[string]interface{}) error
+	UpdateOne(ctx context.Context, filter bson.M, payload interface{}) error
+	UpdateMany(ctx context.Context, filter, payload bson.M) error
 
-	Inc(ctx context.Context, filter map[string]interface{}, payload interface{}) error
+	Inc(ctx context.Context, filter bson.M, payload interface{}) error
 
 	DeleteByID(ctx context.Context, id string) error
-	DeleteOne(ctx context.Context, filter map[string]interface{}) error
-	DeleteMany(ctx context.Context, filter map[string]interface{}) error
-
-	DestroyById(ctx context.Context, id interface{}) error
-	DestroyOne(ctx context.Context, filter map[string]interface{}) error
-
-	Aggregate(ctx context.Context, pipelines interface{}, result interface{}, allowDiskUse bool) error
+	DeleteOne(ctx context.Context, filter bson.M) error
 
 	Count(ctx context.Context, filter map[string]interface{}) (int64, error)
-	CountWithDeletedAt(ctx context.Context, filter map[string]interface{}) (int64, error)
+
+	Aggregate(ctx context.Context, pipeline mongo.Pipeline, result interface{}, allowDiskUse bool) error
 }
 
 // mongodb driver -> store (database) -> repo -> service -> handler
@@ -70,8 +62,13 @@ func New(database *mongo.Database, collection string) Store {
 	return mongoStore
 }
 
+var (
+	ErrInvalidPtr = errors.New("out param is not a valid pointer")
+)
+
 func IsValidPointer(i interface{}) bool {
-	return reflect.ValueOf(i).Type().Elem().Kind() == reflect.Struct
+	v := reflect.ValueOf(i)
+	return v.Type().Kind() == reflect.Ptr && !v.IsNil()
 }
 
 /**
@@ -90,7 +87,7 @@ func (d *mongoStore) Save(ctx context.Context, payload interface{}, out interfac
 	}
 
 	if !IsValidPointer(out) {
-		return errors.New("out param is not a valid pointer")
+		return ErrInvalidPtr
 	}
 
 	return d.Collection.FindOne(ctx, bson.M{"_id": result.InsertedID}).Decode(out)
@@ -105,12 +102,7 @@ func (d *mongoStore) Save(ctx context.Context, payload interface{}, out interfac
  */
 func (d *mongoStore) SaveMany(ctx context.Context, payload []interface{}) error {
 	_, err := d.Collection.InsertMany(ctx, payload)
-
-	if err != nil {
-		return err
-	}
-
-	return nil
+	return err
 }
 
 /**
@@ -119,16 +111,12 @@ func (d *mongoStore) SaveMany(ctx context.Context, payload []interface{}) error 
  * returns nil if record is not found.
  *
  * param: interface{}            id
- * param: map[string]interface{} projection
- * return: map[string]interface{}
+ * param: bson.M projection
+ * return: bson.M
  */
-func (d *mongoStore) FindByID(ctx context.Context, id string, projection map[string]interface{}, result interface{}) error {
-	if result == nil {
-		return errors.New("result param should not be a nil pointer")
-	}
-
+func (d *mongoStore) FindByID(ctx context.Context, id string, projection bson.M, result interface{}) error {
 	if !IsValidPointer(result) {
-		return errors.New("result param is not a valid pointer")
+		return ErrInvalidPtr
 	}
 
 	ops := options.FindOne()
@@ -136,25 +124,17 @@ func (d *mongoStore) FindByID(ctx context.Context, id string, projection map[str
 		ops.Projection = projection
 	}
 
-	if err := d.Collection.FindOne(ctx, bson.M{"uid": id, "document_status": ActiveDocumentStatus}, ops).Decode(result); err != nil {
-		return err
-	}
-	return nil
+	return d.Collection.FindOne(ctx, bson.M{"uid": id, "document_status": ActiveDocumentStatus}, ops).Decode(result)
 }
 
 /**
  * Find One by
  */
-func (d *mongoStore) FindOne(ctx context.Context, filter, projection map[string]interface{}, result interface{}) error {
-	if result == nil {
-		return errors.New("result param should not be a nil pointer")
-	}
-
+func (d *mongoStore) FindOne(ctx context.Context, filter, projection bson.M, result interface{}) error {
 	if !IsValidPointer(result) {
-		return errors.New("result param is not a valid pointer")
+		return ErrInvalidPtr
 	}
 
-	
 	ops := options.FindOne()
 	ops.Projection = projection
 
@@ -163,13 +143,9 @@ func (d *mongoStore) FindOne(ctx context.Context, filter, projection map[string]
 	return d.Collection.FindOne(ctx, filter, ops).Decode(result)
 }
 
-func (d *mongoStore) FindMany(ctx context.Context, filter, projection map[string]interface{}, sort interface{}, limit, skip int64, results interface{}) error {
-	if results == nil {
-		return errors.New("results param should not be a nil pointer")
-	}
-
+func (d *mongoStore) FindMany(ctx context.Context, filter, projection bson.M, sort interface{}, limit, skip int64, results interface{}) error {
 	if !IsValidPointer(results) {
-		return errors.New("results param is not a valid pointer")
+		return ErrInvalidPtr
 	}
 
 	ops := options.Find()
@@ -192,112 +168,64 @@ func (d *mongoStore) FindMany(ctx context.Context, filter, projection map[string
 	if err != nil {
 		return err
 	}
-	defer cursor.Close(ctx)
-
-	var output []map[string]interface{}
-	for cursor.Next(ctx) { // there was nil here before
-		var item map[string]interface{}
-		_ = cursor.Decode(&item)
-		output = append(output, item)
-	}
-
-	if b, e := json.Marshal(output); e == nil {
-		_ = json.Unmarshal(b, &results)
-	} else {
-		return e
-	}
-
-	return nil
-}
-
-func (d *mongoStore) FindManyWithDeletedAt(ctx context.Context, filter, projection map[string]interface{}, sort interface{}, limit, skip int64, results interface{}) error {
-	ops := options.Find()
-	if limit > 0 {
-		ops.Limit = &limit
-	}
-	if skip > 0 {
-		ops.Skip = &skip
-	}
-	if projection != nil {
-		ops.Projection = projection
-	}
-	if sort != nil {
-		ops.Sort = sort
-	}
-
-	cursor, err := d.Collection.Find(ctx, filter, ops)
-	if err != nil {
-		return err
-	}
-	defer cursor.Close(ctx)
-
-	var output []map[string]interface{}
-	for cursor.Next(ctx) {
-		var item map[string]interface{}
-		_ = cursor.Decode(&item)
-		output = append(output, item)
-	}
-
-	if b, e := json.Marshal(output); e == nil {
-		_ = json.Unmarshal(b, &results)
-	} else {
-		return e
-	}
-
-	return nil
-}
-
-func (d *mongoStore) FindAll(ctx context.Context, filter map[string]interface{}, projection, results interface{}) error {
-	if results == nil {
-		return errors.New("results param should not be a nil pointer")
-	}
-
-	if filter == nil {
-		filter = map[string]interface{}{}
-	}
-
-	ops := options.Find().SetSort(bson.M{"created_at": -1})
-
-	if projection != nil {
-		ops.Projection = projection
-	}
-
-	filter["document_status"] = ActiveDocumentStatus
-
-	cursor, err := d.Collection.Find(ctx, filter, ops)
-	if err != nil {
-		return err
-	}
-	defer cursor.Close(ctx)
 
 	return cursor.All(ctx, results)
 }
 
-// FindAllAdminRecords retrieves all records including soft deleted data
-// for admin
-// Note: This is for admin use.
-func (d *mongoStore) FindAllAdminRecords(ctx context.Context, results interface{}) error {
+func (d *mongoStore) FindManyWithDeletedAt(ctx context.Context, filter, projection bson.M, sort interface{}, limit, skip int64, results interface{}) error {
+	if !IsValidPointer(results) {
+		return ErrInvalidPtr
+	}
 
 	ops := options.Find()
+	if limit > 0 {
+		ops.Limit = &limit
+	}
+	if skip > 0 {
+		ops.Skip = &skip
+	}
+	if projection != nil {
+		ops.Projection = projection
+	}
+	if sort != nil {
+		ops.Sort = sort
+	}
 
-	cursor, err := d.Collection.Find(ctx, bson.D{}, ops)
+	cursor, err := d.Collection.Find(ctx, filter, ops)
 	if err != nil {
 		return err
 	}
 
-	var output []map[string]interface{}
-	for cursor.Next(ctx) {
-		var item map[string]interface{}
-		_ = cursor.Decode(&item)
-		output = append(output, item)
+	return cursor.All(ctx, results)
+}
+
+func (d *mongoStore) FindAll(ctx context.Context, filter bson.M, sort interface{}, projection, results interface{}) error {
+	if !IsValidPointer(results) {
+		return ErrInvalidPtr
 	}
 
-	if b, e := json.Marshal(output); e == nil {
-		_ = json.Unmarshal(b, &results)
-	} else {
-		return e
+	ops := options.Find()
+
+	if projection != nil {
+		ops.Projection = projection
 	}
-	return nil
+
+	if sort != nil {
+		ops.Sort = sort
+	}
+
+	if filter == nil {
+		filter = bson.M{}
+	}
+
+	filter["document_status"] = ActiveDocumentStatus
+
+	cursor, err := d.Collection.Find(ctx, filter, ops)
+	if err != nil {
+		return err
+	}
+
+	return cursor.All(ctx, results)
 }
 
 /**
@@ -313,36 +241,12 @@ func (d *mongoStore) UpdateByID(ctx context.Context, id string, payload interfac
 	return err
 }
 
-/**
- * UpsertOne
- *
- * Updates one item in the mongoStore using filter as the criteria.
- * If document does not exist in mongo, a new documents is automatically generated.
- *
- * param: map[string]interface{} filter
- * param: interface{}            payload
- * return: error
- */
-func (d *mongoStore) UpsertOne(ctx context.Context, filter map[string]interface{}, payload interface{}) error {
-	result := d.Collection.FindOneAndUpdate(ctx, filter, bson.M{
-		"$set": payload,
-	}, options.FindOneAndUpdate().SetUpsert(true))
-
-	// If result gives a document does not exist error, record is inserted.
-	if err := result.Err(); err != nil && err != mongo.ErrNoDocuments {
-		return err
-	}
-
-	return nil
-}
-
-//
-func (d *mongoStore) UpdateOne(ctx context.Context, filter map[string]interface{}, payload interface{}) error {
+func (d *mongoStore) UpdateOne(ctx context.Context, filter bson.M, payload interface{}) error {
 	_, err := d.Collection.UpdateOne(ctx, filter, bson.M{"$set": payload})
 	return err
 }
 
-func (d *mongoStore) Inc(ctx context.Context, filter map[string]interface{}, payload interface{}) error {
+func (d *mongoStore) Inc(ctx context.Context, filter bson.M, payload interface{}) error {
 	_, err := d.Collection.UpdateOne(ctx, filter, bson.M{"$inc": payload})
 	return err
 }
@@ -353,17 +257,13 @@ func (d *mongoStore) Inc(ctx context.Context, filter map[string]interface{}, pay
  * `filter` this is the search criteria
  * `payload` this is the update payload.
  *
- * param: map[string]interface{} filter
+ * param: bson.M filter
  * param: interface{}            payload
  * return: error
  */
-func (d *mongoStore) UpdateMany(ctx context.Context, filter, payload map[string]interface{}) error {
-	if _, err := d.Collection.UpdateMany(ctx, filter, bson.M{
-		"$set": payload,
-	}); err != nil {
-		return err
-	}
-	return nil
+func (d *mongoStore) UpdateMany(ctx context.Context, filter, payload bson.M) error {
+	_, err := d.Collection.UpdateMany(ctx, filter, bson.M{"$set": payload})
+	return err
 }
 
 /**
@@ -375,43 +275,24 @@ func (d *mongoStore) UpdateMany(ctx context.Context, filter, payload map[string]
  * The record is not completed deleted, only the status is changed.
  */
 func (d *mongoStore) DeleteByID(ctx context.Context, id string) error {
-	var u map[string]interface{}
-
 	payload := bson.M{
 		"deleted_at":      primitive.NewDateTimeFromTime(time.Now()),
 		"document_status": DeletedDocumentStatus,
 	}
 
-	if err := d.Collection.
-		FindOneAndUpdate(ctx, bson.M{"uid": id}, bson.M{"$set": payload}).
-		Decode(&u); err != nil {
-		return err
-	}
-
-	return nil
-}
-
-// DestroyById removes the record permanently from the db, should be used by admin only
-func (d *mongoStore) DestroyById(ctx context.Context, id interface{}) error {
-	var u map[string]interface{}
-	if e := d.Collection.FindOneAndDelete(ctx, bson.M{
-		"uid": id,
-	}).Decode(&u); e != nil {
-		return e
-	}
-
-	return nil
+	_, err := d.Collection.UpdateOne(ctx, bson.M{"uid": id}, bson.M{"$set": payload}, nil)
+	return err
 }
 
 /**
  * DeleteOne
  * Deletes one item from the mongoStore using filter a hash map to properly filter what is to be deleted.
  *
- * param: map[string]interface{} filter
+ * param: bson.M filter
  * return: error
  * The record is not completed deleted, only the status is changed.
  */
-func (d *mongoStore) DeleteOne(ctx context.Context, filter map[string]interface{}) error {
+func (d *mongoStore) DeleteOne(ctx context.Context, filter bson.M) error {
 	payload := bson.M{
 		"deleted_at":      primitive.NewDateTimeFromTime(time.Now()),
 		"document_status": DeletedDocumentStatus,
@@ -421,52 +302,25 @@ func (d *mongoStore) DeleteOne(ctx context.Context, filter map[string]interface{
 	return err
 }
 
-func (d *mongoStore) DestroyOne(ctx context.Context, filter map[string]interface{}) error {
-	_, err := d.Collection.DeleteOne(ctx, filter)
-	if err != nil {
-		return err
-	}
-
-	return nil
-}
-
-/**
- * Delete Many items from the mongoStore
- *
- * param: map[string]interface{} filter
- * return: error
- * The record is deleted completed here
- */
-func (d *mongoStore) DeleteMany(ctx context.Context, filter map[string]interface{}) error {
-	_, err := d.Collection.DeleteMany(ctx, filter)
-	if err != nil {
-		return err
-	}
-
-	return nil
-}
-
 func (d *mongoStore) Count(ctx context.Context, filter map[string]interface{}) (int64, error) {
 	filter["document_status"] = ActiveDocumentStatus
 	return d.Collection.CountDocuments(ctx, filter)
 }
 
-func (d *mongoStore) CountWithDeletedAt(ctx context.Context, filter map[string]interface{}) (int64, error) {
-	return d.Collection.CountDocuments(ctx, filter)
-}
+func (d *mongoStore) Aggregate(ctx context.Context, pipeline mongo.Pipeline, output interface{}, allowDiskUse bool) error {
+	if !IsValidPointer(output) {
+		return ErrInvalidPtr
+	}
 
-func (d *mongoStore) Aggregate(ctx context.Context, pipeline interface{}, output interface{}, allowDiskUse bool) error {
 	opts := options.Aggregate()
 	if allowDiskUse {
 		opts.SetAllowDiskUse(true)
 	}
-	C, err := d.Collection.Aggregate(ctx, pipeline, opts)
+
+	cur, err := d.Collection.Aggregate(ctx, pipeline, opts)
 	if err != nil {
 		return err
 	}
-	if err := C.All(ctx, output); err != nil {
-		return err
-	}
 
-	return nil
+	return cur.All(ctx, output)
 }

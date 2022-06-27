@@ -46,7 +46,8 @@ func (db *groupRepo) LoadGroups(ctx context.Context, f *datastore.GroupFilter) (
 		filter["name"] = bson.M{"$in": f.Names}
 	}
 
-	err := db.store.FindAll(ctx, filter, nil, &groups)
+	sort := bson.M{"created_at": 1}
+	err := db.store.FindAll(ctx, filter, sort, nil, &groups)
 
 	return groups, err
 }
@@ -172,8 +173,8 @@ func (db *groupRepo) FetchGroupsByIDs(ctx context.Context, ids []string) ([]data
 	}
 
 	groups := make([]datastore.Group, 0)
-
-	err := db.store.FindAll(ctx, filter, nil, &groups)
+	sort := bson.M{"created_at": 1}
+	err := db.store.FindAll(ctx, filter, sort, nil, &groups)
 	if err != nil {
 		return nil, err
 	}
