@@ -18,8 +18,6 @@ export class CreateEndpointComponent implements OnInit {
 	addNewEndpointForm: FormGroup = this.formBuilder.group({
 		url: ['', Validators.required],
 		http_timeout: [null],
-		rate_limit: [null],
-		rate_limit_duration: [null],
 		description: ['', Validators.required]
 	});
 	token: string = this.route.snapshot.params.token;

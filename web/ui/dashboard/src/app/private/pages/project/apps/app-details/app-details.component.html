@@ -247,7 +247,7 @@
 		<app-create-endpoint
 			[selectedEndpoint]="selectedEndpoint"
 			[appId]="appsDetailsItem.uid"
-			(onAction)="$event.action == 'cancel' ? (showAddEndpointModal = false) : getAppDetails(appsDetailsItem.uid); showAddEndpointModal = false"
+			(onAction)="$event.action == 'cancel' ? closeEditEndpointModal() : getAppDetails(appsDetailsItem.uid); closeEditEndpointModal()"
 		></app-create-endpoint>
 	</ng-container>
 
@@ -277,10 +277,5 @@
 </div>
 
 <div class="modal modal__center small" *ngIf="showDeleteModal">
-	<app-delete-modal
-		[isLoading]="isDeletingEndpoint"
-		[deleteText]="'“' + selectedEndpoint?.description + '”'"
-		(closeModal)="showDeleteModal = false"
-		(deleteData)="deleteEndpoint()"
-	></app-delete-modal>
+	<app-delete-modal [isLoading]="isDeletingEndpoint" [deleteText]="'“' + selectedEndpoint?.description + '”'" (closeModal)="showDeleteModal = false" (deleteData)="deleteEndpoint()"></app-delete-modal>
 </div>
