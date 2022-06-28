@@ -97,7 +97,6 @@ export class CreateSubscriptionComponent implements OnInit {
 			await this.getAppPortalApp();
 			return;
 		}
-		if (this.privateService.activeProjectDetails.type === 'incoming') return;
 
 		try {
 			const appsResponse = await this.privateService.getApps();
