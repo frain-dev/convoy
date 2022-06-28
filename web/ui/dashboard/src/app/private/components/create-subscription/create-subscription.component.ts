@@ -85,7 +85,7 @@ export class CreateSubscriptionComponent implements OnInit {
 			this.subscriptionForm.patchValue({ source_id: response.data?.source_metadata?.uid, app_id: response.data?.app_metadata?.uid, endpoint_id: response.data?.endpoint_metadata?.uid });
 			if (!this.token) this.onUpdateAppSelection();
 			response.data.filter_config?.event_types ? (this.eventTags = response.data.filter_config?.event_types) : (this.eventTags = []);
-
+			if (this.token) this.projectType = 'outgoing';
 			return;
 		} catch (error) {
 			return error;
@@ -148,7 +148,6 @@ export class CreateSubscriptionComponent implements OnInit {
 	}
 
 	async saveSubscription() {
-
 		this.subscriptionForm.patchValue({
 			filter_config: { event_types: this.eventTags.length > 0 ? this.eventTags : ['*'] }
 		});
@@ -160,8 +159,6 @@ export class CreateSubscriptionComponent implements OnInit {
 			return this.subscriptionForm.markAllAsTouched();
 		}
 
-		console.log(this.subscriptionForm.value);
-
 		if (
 			this.subscriptionForm.get('name')?.invalid ||
 			this.subscriptionForm.get('type')?.invalid ||
@@ -171,8 +168,6 @@ export class CreateSubscriptionComponent implements OnInit {
 		) {
 			return this.subscriptionForm.markAllAsTouched();
 		}
-
-
 
 		const subscription = this.subscriptionForm.value;
 		if (this.projectType === 'outgoing') delete subscription.source_id;
