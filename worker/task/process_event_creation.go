@@ -78,6 +78,7 @@ func ProcessEventCreated(appRepo datastore.ApplicationRepository, eventRepo data
 		} else if group.Type == datastore.IncomingGroup {
 			subscriptions, err = subRepo.FindSubscriptionsBySourceIDs(ctx, group.UID, event.SourceID)
 			if err != nil {
+				log.Errorf("error fetching subscriptions for this source %s", err)
 				return &EndpointError{Err: errors.New("error fetching subscriptions for this source"), delay: 10 * time.Second}
 			}
 		}

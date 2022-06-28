@@ -141,7 +141,7 @@ func (s *subscriptionRepo) FindSubscriptionsBySourceIDs(ctx context.Context, gro
 	var subscriptions []datastore.Subscription
 	filter := bson.M{"group_id": groupId, "source_id": sourceId, "document_status": datastore.ActiveDocumentStatus}
 
-	err := s.store.FindMany(ctx, filter, nil, nil, 0, 0, subscriptions)
+	err := s.store.FindMany(ctx, filter, nil, nil, 0, 0, &subscriptions)
 	if err != nil {
 		return nil, err
 	}
