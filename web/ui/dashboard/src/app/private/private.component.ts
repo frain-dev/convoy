@@ -42,7 +42,7 @@ export class PrivateComponent implements OnInit {
 	async getConfiguration() {
 		try {
 			const response = await this.privateService.getConfiguration();
-			if (response.data.length === 0) this.showAddAnalytics = true;
+			if (response.data.length === 0 && !this.router.url.includes('/app-portal/')) this.showAddAnalytics = true;
 		} catch {}
 	}
 

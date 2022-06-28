@@ -123,6 +123,10 @@ export class AppDetailsComponent implements OnInit {
 		this.screenWidth > 1010 ? (this.shouldRenderSmallSize = false) : (this.shouldRenderSmallSize = true);
 	}
 
+	closeEditEndpointModal(){
+		this.showAddEndpointModal = false;
+		this.selectedEndpoint = undefined
+	}
 	focusInput() {
 		document.getElementById('tagInput')?.focus();
 	}

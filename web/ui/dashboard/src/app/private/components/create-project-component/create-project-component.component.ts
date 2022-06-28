@@ -15,21 +15,21 @@ export class CreateProjectComponent implements OnInit {
 		name: ['', Validators.required],
 		config: this.formBuilder.group({
 			strategy: this.formBuilder.group({
-				duration: ['', Validators.required],
-				retry_count: ['', Validators.required],
-				type: ['', Validators.required]
+				duration: [null],
+				retry_count: [null],
+				type: [null]
 			}),
 			signature: this.formBuilder.group({
-				header: ['', Validators.required],
-				hash: ['', Validators.required]
+				header: [null],
+				hash: [null]
 			}),
 			ratelimit: this.formBuilder.group({
-				count: [null, Validators.required],
-				duration: [null, Validators.required]
+				count: [null],
+				duration: [null]
 			}),
-			disable_endpoint: [false, Validators.required]
+			disable_endpoint: [null]
 		}),
-		type: ['', Validators.required]
+		type: [null, Validators.required]
 	});
 	isCreatingProject = false;
 	showApiKey = false;
@@ -65,12 +65,9 @@ export class CreateProjectComponent implements OnInit {
 
 	async createProject() {
 		if (this.projectForm.invalid) return this.projectForm.markAllAsTouched();
-
+		this.checkProjectConfig();
 		this.isCreatingProject = true;
-		let duration = this.projectForm.value.config.strategy.duration;
-		const [digits, word] = duration.match(/\D+|\d+/g);
-		word === 's' ? (duration = parseInt(digits) * 1000) : (duration = parseInt(digits) * 1000000);
-		this.projectForm.value.config.strategy.duration = duration;
+
 		try {
 			const response = await this.createProjectService.createProject(this.projectForm.value);
 			this.isCreatingProject = false;
@@ -93,7 +90,6 @@ export class CreateProjectComponent implements OnInit {
 		if (this.projectForm.invalid) return this.projectForm.markAllAsTouched();
 
 		this.isCreatingProject = true;
-
 		try {
 			const response = await this.createProjectService.updateProject(this.projectForm.value);
 			if (response.status === true) {
@@ -117,9 +113,25 @@ export class CreateProjectComponent implements OnInit {
 		document.execCommand('copy');
 		this.showSecretCopyText = true;
 		setTimeout(() => {
-			this.showSecretCopyText = false
+			this.showSecretCopyText = false;
 		}, 3000);
-		
+
 		document.body.removeChild(el);
+	}
+
+	checkProjectConfig() {
+		const configDetails = this.projectForm.value.config;
+		const configKeys = Object.keys(configDetails).slice(0, -1);
+		configKeys.forEach(configKey => {
+			const configKeyValues = Object.values(configDetails[configKey]);
+			if (configKeyValues.every(item => item === null)) delete this.projectForm.value.config[configKey];
+			if (configKey === 'strategy' && configDetails?.strategy?.duration && this.action !== 'update') {
+				let duration = configDetails.strategy.duration;
+				const [digits, word] = duration.match(/\D+|\d+/g);
+				word === 's' ? (duration = parseInt(digits) * 1000) : (duration = parseInt(digits) * 1000000);
+				this.projectForm.value.config.strategy.duration = duration;
+			}
+		});
+		if (this.projectForm.value.config.disable_endpoint === null) delete this.projectForm.value.config.disable_endpoint;
 	}
 }
