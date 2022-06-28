@@ -48,7 +48,7 @@
 					<div class="dropdown--footer">
 						<button class="base-button" (click)="showAddOrganisationModal = true; showOrgDropdown = false">
 							<img src="/assets/img/add-circlar-icon.svg" alt="add icon" />
-							Add another Organization
+							Add {{ organisations?.length ? 'another' : 'an' }} Organization
 						</button>
 					</div>
 				</div>
