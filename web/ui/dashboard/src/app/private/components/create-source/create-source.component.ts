@@ -58,7 +58,9 @@ export class CreateSourceComponent implements OnInit {
 	async getSourceDetails() {
 		try {
 			const response = await this.createSourceService.getSourceDetails(this.sourceId);
+			const sourceProvider = response.data?.provider;
 			this.sourceForm.patchValue(response.data);
+			if (sourceProvider === 'github') this.sourceForm.patchValue({ verifier: { type: 'github' } });
 			return;
 		} catch (error) {
 			return error;

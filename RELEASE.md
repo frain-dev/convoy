@@ -1,10 +1,13 @@
 # Releases
-This page describes the release process for hookcamp.
+
+This page describes the release process for convoy.
 
 ## How to cut an Individual release
+
 These instruction is currently only valid for this repo.
 
 ### Branch management and versioning strategy
+
 We use [Semantic Versioning](https://semver.org/).
 
 We maintain a separate branch for each minor release, named `release-<major>.<minor>`, e.g. `release-1.1`, `release-2.0`.
@@ -18,6 +21,7 @@ If a bug fix got accidentally merged into main after non-bug-fix changes in main
 Maintaining the release branches for older minor releases happens on a best effort basis.
 
 ### 0. Updating dependencies
+
 A few days before a major or minor release, consider updating the dependencies.
 
 Then create a pull request against the main branch.
@@ -32,9 +36,11 @@ case, you have to create an issue or pull request in the GitHub project for
 later follow-up.
 
 #### Updating Go dependencies
+
 TBD.
 
 #### Updating React dependencies
+
 TBD.
 
 ### 1. Prepare your release
@@ -51,10 +57,10 @@ For release candidates still update `CHANGELOG.md`, but when you cut the final r
 
 Entries in the `CHANGELOG.md` are meant to be in this order:
 
-* `[CHANGE]`
-* `[FEATURE]`
-* `[ENHANCEMENT]`
-* `[BUGFIX]`
+-   `[CHANGE]`
+-   `[FEATURE]`
+-   `[ENHANCEMENT]`
+-   `[BUGFIX]`
 
 ### 2. Draft the new release
 
@@ -75,9 +81,8 @@ Optionally, you can use this handy `.gitconfig` alias.
 
 Then release with `git tag-release`.
 
-Once a tag is created, the release process through Github actions will take care of the rest. 
+Once a tag is created, the release process through Github actions will take care of the rest.
 
 TODO: A missing step here which should be later automated. A release needs to be created before the assets can be uploaded to match the tag. :)
 
 Finally, wait for the build step for the tag to finish. The point here is to wait for tarballs to be uploaded to the Github release and the container images to be pushed to the Docker Hub and Quay.io. Once that has happened, click _Publish release_, which will make the release publicly visible and create a GitHub notification.
-

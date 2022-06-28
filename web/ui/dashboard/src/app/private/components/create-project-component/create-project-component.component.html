@@ -44,6 +44,10 @@
 				</label>
 			</div>
 		</div>
+		<div class="input__error input__error__danger" *ngIf="projectForm.controls['type'].touched && projectForm.controls['type'].invalid">
+			<img src="assets/img/input-error-icon.svg" alt="input error icon" />
+			<span>Please select a project type</span>
+		</div>
 
 		<div formGroupName="config">
 			<h3 class="margin-top__24px margin-bottom__16px flex flex__align-items-center">
@@ -111,7 +115,7 @@
 						<span class="bg__grey__light rounded__4px padding-x__4px position__absolute position--right__0px font__10px font__weight-400">required</span>
 					</label>
 					<input
-						type="text"
+						[type]="action === 'update' ? 'number' : 'text'"
 						id="retry-logic-duration"
 						placeholder="e.g 3s"
 						formControlName="duration"

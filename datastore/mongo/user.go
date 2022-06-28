@@ -16,12 +16,14 @@ import (
 type userRepo struct {
 	innerDB *mongo.Database
 	client  *mongo.Collection
+	store   datastore.Store
 }
 
-func NewUserRepo(db *mongo.Database) datastore.UserRepository {
+func NewUserRepo(db *mongo.Database, store datastore.Store) datastore.UserRepository {
 	return &userRepo{
 		innerDB: db,
 		client:  db.Collection(UserCollection),
+		store:   store,
 	}
 }
 
@@ -29,16 +31,16 @@ func (u *userRepo) CreateUser(ctx context.Context, user *datastore.User) error {
 	user.ID = primitive.NewObjectID()
 	user.ResetPasswordToken = uuid.NewString()
 
-	_, err := u.client.InsertOne(ctx, user)
+	err := u.store.Save(ctx, user, nil)
 	return err
 }
 
 func (u *userRepo) FindUserByEmail(ctx context.Context, email string) (*datastore.User, error) {
 	user := &datastore.User{}
 
-	filter := bson.M{"email": email, "document_status": datastore.ActiveDocumentStatus}
+	filter := bson.M{"email": email}
 
-	err := u.client.FindOne(ctx, filter).Decode(&user)
+	err := u.store.FindOne(ctx, filter, nil, user)
 
 	if errors.Is(err, mongo.ErrNoDocuments) {
 		return user, datastore.ErrUserNotFound
@@ -50,9 +52,7 @@ func (u *userRepo) FindUserByEmail(ctx context.Context, email string) (*datastor
 func (u *userRepo) FindUserByID(ctx context.Context, id string) (*datastore.User, error) {
 	user := &datastore.User{}
 
-	filter := bson.M{"uid": id, "document_status": datastore.ActiveDocumentStatus}
-
-	err := u.client.FindOne(ctx, filter).Decode(&user)
+	err := u.store.FindByID(ctx, id, nil, user)
 
 	if errors.Is(err, mongo.ErrNoDocuments) {
 		return user, datastore.ErrUserNotFound
@@ -79,31 +79,26 @@ func (u *userRepo) LoadUsersPaged(ctx context.Context, pageable datastore.Pageab
 }
 
 func (u *userRepo) UpdateUser(ctx context.Context, user *datastore.User) error {
-	filter := bson.M{"uid": user.UID, "document_status": datastore.ActiveDocumentStatus}
-
 	update := bson.D{
-		primitive.E{Key: "$set", Value: bson.D{
-			primitive.E{Key: "first_name", Value: user.FirstName},
-			primitive.E{Key: "last_name", Value: user.LastName},
-			primitive.E{Key: "email", Value: user.Email},
-			primitive.E{Key: "password", Value: user.Password},
-			primitive.E{Key: "updated_at", Value: primitive.NewDateTimeFromTime(time.Now())},
-			primitive.E{Key: "reset_password_token", Value: user.ResetPasswordToken},
-			primitive.E{Key: "reset_password_expires_at", Value: user.ResetPasswordExpiresAt},
-		}},
+		primitive.E{Key: "first_name", Value: user.FirstName},
+		primitive.E{Key: "last_name", Value: user.LastName},
+		primitive.E{Key: "email", Value: user.Email},
+		primitive.E{Key: "password", Value: user.Password},
+		primitive.E{Key: "updated_at", Value: primitive.NewDateTimeFromTime(time.Now())},
+		primitive.E{Key: "reset_password_token", Value: user.ResetPasswordToken},
+		primitive.E{Key: "reset_password_expires_at", Value: user.ResetPasswordExpiresAt},
 	}
 
-	_, err := u.client.UpdateOne(ctx, filter, update)
+	err := u.store.UpdateByID(ctx, user.UID, update)
 	return err
 }
 
 func (u *userRepo) FindUserByToken(ctx context.Context, token string) (*datastore.User, error) {
 	user := &datastore.User{}
 
-	filter := bson.M{"reset_password_token": token, "document_status": datastore.ActiveDocumentStatus}
+	filter := bson.M{"reset_password_token": token}
 
-	err := u.client.FindOne(ctx, filter).Decode(&user)
-
+	err := u.store.FindOne(ctx, filter, nil, user)
 	if errors.Is(err, mongo.ErrNoDocuments) {
 		return user, datastore.ErrUserNotFound
 	}
