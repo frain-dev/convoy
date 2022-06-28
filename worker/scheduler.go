@@ -16,11 +16,7 @@ type Scheduler struct {
 }
 
 func NewScheduler(queue queue.Queuer) *Scheduler {
-	scheduler := asynq.NewScheduler(asynq.RedisClientOpt{
-		Addr:     queue.Options().RedisAddress,
-		Password: "",
-		DB:       0,
-	}, nil)
+	scheduler := asynq.NewScheduler(queue.Options().RedisClient, nil)
 
 	w, err := NewConsumer(queue)
 	if err != nil {
