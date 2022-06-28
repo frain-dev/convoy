@@ -23,9 +23,9 @@
 				<span class="font__weight-400 color__primary">Go to docs</span>
 			</a>
 
-			<div class="dropdown" *ngIf="organisations?.length">
+			<div class="dropdown">
 				<button class="button__more with-padding button--has-icon icon-left" (click)="showOrgDropdown = !showOrgDropdown; showOverlay = true">
-					<div class="badge">
+					<div class="badge" *ngIf="organisations?.length">
 						<div class="icon">{{ userOrganization?.name?.slice(0, 1) }}</div>
 						<div class="name">{{ userOrganization?.name }}</div>
 					</div>
