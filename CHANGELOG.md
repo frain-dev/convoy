@@ -1,3 +1,11 @@
+## v0.6.0-rc.2
+
+-   [Bugfix] Dereference slice when finding source subscriptions #808
+-   [Bugfix] Use redis client in scheduler #807
+-   [Bugfix] Fixed an issue where the source type would not be updated when updating a Github source
+-   [Bugfix] Fixed an issue where the application details would not be loaded when creating a subscription
+-   [Bugfix] Fixed an issue where an organization created by a user would not show on the top bar to be selected
+
 ## v0.6.0-rc.1
 
 -   [Change] Introduce organisations to partition different sets of projects.
