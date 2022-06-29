@@ -243,17 +243,11 @@
 </div>
 
 <div class="modal modal__center" *ngIf="showDeactivateModal || showCancelInviteModal">
-	<div class="modal--body flex flex__column flex__justify-center flex__align-items-center deactivate">
-		<img src="/assets/img/warning.gif" class="img" alt="warning" />
-		<p class="font__20px color__black font__weight-600 margin-bottom__8px margin-top__16px text--center no-width">
-			Are you sure you want to {{ showCancelInviteModal ? 'cancel this invite?' : 'deactivate' }}
-			<span *ngIf="showDeactivateModal" class="text__capitalize font__weight-600">“{{ selectedMember?.user_metadata?.first_name }} {{ selectedMember?.user_metadata?.last_name }}”?</span>
-		</p>
-		<p class="color__grey font__14px font__weight-500 margin-bottom__12px">This action is irrevesible</p>
-		<button class="button button__deactivate" *ngIf="showDeactivateModal" [disabled]="deactivatingUser" (click)="deactivateMember()">{{ deactivatingUser ? 'Deactivating...' : 'Yes, Deactivate' }}</button>
-		<button class="button button__deactivate" *ngIf="showCancelInviteModal" [disabled]="cancelingInvite" (click)="cancelInvite()">
-			{{ cancelingInvite ? 'Canceling Invite...' : 'Yes, Cancel Invite' }}
-		</button>
-		<button class="button__primary button__clear margin-top__28px" (click)="showDeactivateModal = false; showCancelInviteModal = false">No, Discard</button>
-	</div>
+	<app-delete-modal
+		[isLoading]="deactivatingUser || cancelingInvite"
+		[deleteText]="showCancelInviteModal ? 'cancel this invite' : 'deactivate “' + selectedMember?.user_metadata?.first_name + ' ' + selectedMember?.user_metadata?.last_name + '”'"
+		[deleteButtonText]="showCancelInviteModal ? 'Cancel Invite' : 'Deactivate'"
+		(closeModal)="showDeactivateModal = false; showCancelInviteModal = false"
+		(deleteData)="showCancelInviteModal ? cancelInvite() : deactivateMember()"
+	></app-delete-modal>
 </div>
