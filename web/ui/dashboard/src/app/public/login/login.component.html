@@ -18,7 +18,7 @@
 					<button class="input--password__view-toggle" type="button" (click)="showLoginPassword = !showLoginPassword">
 						<img
 							[src]="!showLoginPassword ? '/assets/img/password-invisible-icon.svg' : '/assets/img/password-visible-icon.svg'"
-							alt="showLoginPassword ? 'hide password icon' : 'view password icon'"
+							[alt]="showLoginPassword ? 'hide password icon' : 'view password icon'"
 						/>
 					</button>
 				</div>
