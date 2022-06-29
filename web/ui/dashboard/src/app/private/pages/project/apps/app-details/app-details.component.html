@@ -176,7 +176,7 @@
 				<p>No endpoint has been added for selected app yet</p>
 			</div>
 		</div>
-		<div class="padding-top__32px" *ngIf="privateService.activeProjectDetails?.type === 'outgoing'" [ngClass]="{ 'width__50 padding-left__32px': !shouldRenderSmallSize, 'border__top width__100': shouldRenderSmallSize }">
+		<div class="padding-top__32px" [hidden]="privateService.activeProjectDetails?.type === 'incoming'" [ngClass]="{ 'width__50 padding-left__32px': !shouldRenderSmallSize, 'border__top width__100': shouldRenderSmallSize }">
 			<div *ngIf="loadingAppPotalToken">
 				<h3>App Portal</h3>
 				<ul class="margin-top__10px">
@@ -277,5 +277,5 @@
 </div>
 
 <div class="modal modal__center small" *ngIf="showDeleteModal">
-	<app-delete-modal [isLoading]="isDeletingEndpoint" [deleteText]="'“' + selectedEndpoint?.description + '”'" (closeModal)="showDeleteModal = false" (deleteData)="deleteEndpoint()"></app-delete-modal>
+	<app-delete-modal [isLoading]="isDeletingEndpoint" [deleteText]="'delete “' + selectedEndpoint?.description + '”'" (closeModal)="showDeleteModal = false" (deleteData)="deleteEndpoint()"></app-delete-modal>
 </div>
