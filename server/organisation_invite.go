@@ -176,8 +176,8 @@ func (a *applicationHandler) ResendOrganizationInvite(w http.ResponseWriter, r *
 // @Produce  json
 // @Param orgID path string true "organisation id"
 // @Param inviteID path string true "invite id"
-// @Success 200 {object} serverResponse{data=Stub}
-// @Failure 400,401,500 {object} serverResponse{data=datastore.OrganisationInvite}
+// @Success 200 {object} serverResponse{data=datastore.OrganisationInvite}
+// @Failure 400,401,500 {object} serverResponse{data=Stub}
 // @Security ApiKeyAuth
 // @Router /ui/organisations/{orgID}/invites/{inviteID}/cancel [post]
 func (a *applicationHandler) CancelOrganizationInvite(w http.ResponseWriter, r *http.Request) {

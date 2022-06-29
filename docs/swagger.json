@@ -6132,7 +6132,7 @@
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/server.Stub"
+                                            "$ref": "#/definitions/datastore.OrganisationInvite"
                                         }
                                     }
                                 }
@@ -6150,7 +6150,7 @@
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/datastore.OrganisationInvite"
+                                            "$ref": "#/definitions/server.Stub"
                                         }
                                     }
                                 }
@@ -6168,7 +6168,7 @@
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/datastore.OrganisationInvite"
+                                            "$ref": "#/definitions/server.Stub"
                                         }
                                     }
                                 }
@@ -6186,7 +6186,7 @@
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/datastore.OrganisationInvite"
+                                            "$ref": "#/definitions/server.Stub"
                                         }
                                     }
                                 }

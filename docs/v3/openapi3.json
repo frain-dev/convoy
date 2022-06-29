@@ -8123,7 +8123,7 @@
 										{
 											"properties": {
 												"data": {
-													"$ref": "#/components/schemas/server.Stub"
+													"$ref": "#/components/schemas/datastore.OrganisationInvite"
 												}
 											},
 											"type": "object"
@@ -8145,7 +8145,7 @@
 										{
 											"properties": {
 												"data": {
-													"$ref": "#/components/schemas/datastore.OrganisationInvite"
+													"$ref": "#/components/schemas/server.Stub"
 												}
 											},
 											"type": "object"
@@ -8167,7 +8167,7 @@
 										{
 											"properties": {
 												"data": {
-													"$ref": "#/components/schemas/datastore.OrganisationInvite"
+													"$ref": "#/components/schemas/server.Stub"
 												}
 											},
 											"type": "object"
@@ -8189,7 +8189,7 @@
 										{
 											"properties": {
 												"data": {
-													"$ref": "#/components/schemas/datastore.OrganisationInvite"
+													"$ref": "#/components/schemas/server.Stub"
 												}
 											},
 											"type": "object"

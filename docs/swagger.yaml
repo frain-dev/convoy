@@ -4012,7 +4012,7 @@ paths:
             - $ref: '#/definitions/server.serverResponse'
             - properties:
                 data:
-                  $ref: '#/definitions/server.Stub'
+                  $ref: '#/definitions/datastore.OrganisationInvite'
               type: object
         "400":
           description: Bad Request
@@ -4021,7 +4021,7 @@ paths:
             - $ref: '#/definitions/server.serverResponse'
             - properties:
                 data:
-                  $ref: '#/definitions/datastore.OrganisationInvite'
+                  $ref: '#/definitions/server.Stub'
               type: object
         "401":
           description: Unauthorized
@@ -4030,7 +4030,7 @@ paths:
             - $ref: '#/definitions/server.serverResponse'
             - properties:
                 data:
-                  $ref: '#/definitions/datastore.OrganisationInvite'
+                  $ref: '#/definitions/server.Stub'
               type: object
         "500":
           description: Internal Server Error
@@ -4039,7 +4039,7 @@ paths:
             - $ref: '#/definitions/server.serverResponse'
             - properties:
                 data:
-                  $ref: '#/definitions/datastore.OrganisationInvite'
+                  $ref: '#/definitions/server.Stub'
               type: object
       security:
       - ApiKeyAuth: []
