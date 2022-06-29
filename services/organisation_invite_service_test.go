@@ -1134,8 +1134,18 @@ func TestOrganisationInviteService_CancelOrganisationMemberInvite(t *testing.T) 
 						},
 					}, nil)
 
-				a.EXPECT().DeleteOrganisationInvite(gomock.Any(), gomock.Any()).
+				a.EXPECT().UpdateOrganisationInvite(gomock.Any(), gomock.Any()).
 					Times(1).Return(nil)
+			},
+			want: &datastore.OrganisationInvite{
+				OrganisationID: "123",
+				Status:         datastore.InviteStatusCancelled,
+				InviteeEmail:   "test@example.com",
+				Role: auth.Role{
+					Type:   auth.RoleAdmin,
+					Groups: []string{"ref"},
+					Apps:   nil,
+				},
 			},
 			wantErr: false,
 		},
@@ -1151,7 +1161,7 @@ func TestOrganisationInviteService_CancelOrganisationMemberInvite(t *testing.T) 
 				tt.dbFn(ois)
 			}
 
-			err := ois.CancelOrganisationMemberInvite(tt.args.ctx, tt.args.ivID)
+			iv, err := ois.CancelOrganisationMemberInvite(tt.args.ctx, tt.args.ivID)
 			if tt.wantErr {
 				require.NotNil(t, err)
 				require.Equal(t, tt.wantErrCode, err.(*ServiceError).ErrCode())
@@ -1160,6 +1170,8 @@ func TestOrganisationInviteService_CancelOrganisationMemberInvite(t *testing.T) 
 			}
 
 			require.Nil(t, err)
+			stripVariableFields(t, "organisation_invite", iv)
+			require.Equal(t, tt.want, iv)
 		})
 	}
 }
