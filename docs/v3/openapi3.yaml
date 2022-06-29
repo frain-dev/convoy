@@ -322,6 +322,27 @@ components:
         updated_at:
           type: string
       type: object
+    datastore.OrganisationInvite:
+      properties:
+        created_at:
+          type: string
+        deleted_at:
+          type: string
+        invitee_email:
+          type: string
+        organisation_id:
+          type: string
+        role:
+          $ref: '#/components/schemas/auth.Role'
+        status:
+          type: string
+        token:
+          type: string
+        uid:
+          type: string
+        updated_at:
+          type: string
+      type: object
     datastore.OrganisationMember:
       properties:
         created_at:
@@ -4336,7 +4357,7 @@ paths:
                 - $ref: '#/components/schemas/server.serverResponse'
                 - properties:
                     data:
-                      $ref: '#/components/schemas/server.Stub'
+                      $ref: '#/components/schemas/datastore.OrganisationInvite'
                   type: object
           description: Bad Request
         "401":
@@ -4347,7 +4368,7 @@ paths:
                 - $ref: '#/components/schemas/server.serverResponse'
                 - properties:
                     data:
-                      $ref: '#/components/schemas/server.Stub'
+                      $ref: '#/components/schemas/datastore.OrganisationInvite'
                   type: object
           description: Unauthorized
         "500":
@@ -4358,7 +4379,7 @@ paths:
                 - $ref: '#/components/schemas/server.serverResponse'
                 - properties:
                     data:
-                      $ref: '#/components/schemas/server.Stub'
+                      $ref: '#/components/schemas/datastore.OrganisationInvite'
                   type: object
           description: Internal Server Error
       security:

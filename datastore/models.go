@@ -604,9 +604,10 @@ type UserMetadata struct {
 type InviteStatus string
 
 const (
-	InviteStatusAccepted InviteStatus = "accepted"
-	InviteStatusDeclined InviteStatus = "declined"
-	InviteStatusPending  InviteStatus = "pending"
+	InviteStatusAccepted  InviteStatus = "accepted"
+	InviteStatusDeclined  InviteStatus = "declined"
+	InviteStatusPending   InviteStatus = "pending"
+	InviteStatusCancelled InviteStatus = "cancelled"
 )
 
 func (i InviteStatus) String() string {

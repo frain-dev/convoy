@@ -322,6 +322,27 @@ definitions:
       updated_at:
         type: string
     type: object
+  datastore.OrganisationInvite:
+    properties:
+      created_at:
+        type: string
+      deleted_at:
+        type: string
+      invitee_email:
+        type: string
+      organisation_id:
+        type: string
+      role:
+        $ref: '#/definitions/auth.Role'
+      status:
+        type: string
+      token:
+        type: string
+      uid:
+        type: string
+      updated_at:
+        type: string
+    type: object
   datastore.OrganisationMember:
     properties:
       created_at:
@@ -4000,7 +4021,7 @@ paths:
             - $ref: '#/definitions/server.serverResponse'
             - properties:
                 data:
-                  $ref: '#/definitions/server.Stub'
+                  $ref: '#/definitions/datastore.OrganisationInvite'
               type: object
         "401":
           description: Unauthorized
@@ -4009,7 +4030,7 @@ paths:
             - $ref: '#/definitions/server.serverResponse'
             - properties:
                 data:
-                  $ref: '#/definitions/server.Stub'
+                  $ref: '#/definitions/datastore.OrganisationInvite'
               type: object
         "500":
           description: Internal Server Error
@@ -4018,7 +4039,7 @@ paths:
             - $ref: '#/definitions/server.serverResponse'
             - properties:
                 data:
-                  $ref: '#/definitions/server.Stub'
+                  $ref: '#/definitions/datastore.OrganisationInvite'
               type: object
       security:
       - ApiKeyAuth: []

@@ -436,6 +436,11 @@ func (s *OrganisationInviteIntegrationTestSuite) Test_CancelInvite() {
 	s.Router.ServeHTTP(w, req)
 
 	require.Equal(s.T(), http.StatusOK, w.Code)
+
+	var response datastore.OrganisationInvite
+	parseResponse(s.T(), w.Result(), &response)
+	require.Equal(s.T(), datastore.InviteStatusCancelled, response.Status)
+
 }
 
 func TestOrganisationInviteIntegrationTestSuite(t *testing.T) {
