@@ -18,7 +18,7 @@ export class ProjectsService {
 				});
 
 				return resolve(groupsResponse);
-			} catch (error: any) {
+			} catch (error) {
 				return reject(error);
 			}
 		});

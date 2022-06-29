@@ -20,7 +20,7 @@ export class CreateSourceService {
 				});
 
 				return resolve(sourceResponse);
-			} catch (error: any) {
+			} catch (error) {
 				return reject(error);
 			}
 		});
@@ -36,7 +36,7 @@ export class CreateSourceService {
 				});
 
 				return resolve(projectResponse);
-			} catch (error: any) {
+			} catch (error) {
 				return reject(error);
 			}
 		});
@@ -51,7 +51,7 @@ export class CreateSourceService {
 				});
 
 				return resolve(projectResponse);
-			} catch (error: any) {
+			} catch (error) {
 				return reject(error);
 			}
 		});

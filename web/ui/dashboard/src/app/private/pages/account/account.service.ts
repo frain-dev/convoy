@@ -21,41 +21,47 @@ export class AccountService {
 		}
 	}
 
-	async getUserDetails(requestDetails: { userId: string }): Promise<HTTP_RESPONSE> {
-		try {
-			const response = await this.http.request({
-				url: `/users/${requestDetails.userId}/profile`,
-				method: 'get'
-			});
-			return response;
-		} catch (error: any) {
-			return error;
-		}
+	getUserDetails(requestDetails: { userId: string }): Promise<HTTP_RESPONSE> {
+		return new Promise(async (resolve, reject) => {
+			try {
+				const response = await this.http.request({
+					url: `/users/${requestDetails.userId}/profile`,
+					method: 'get'
+				});
+				return resolve(response);
+			} catch (error) {
+				return reject(error);
+			}
+		});
 	}
 
-	async editBasicInfo(requestDetails: { userId: string; body: { first_name: string; last_name: string; email: string } }): Promise<HTTP_RESPONSE> {
-		try {
-			const response = await this.http.request({
-				url: `/users/${requestDetails.userId}/profile`,
-				body: requestDetails.body,
-				method: 'put'
-			});
-			return response;
-		} catch (error: any) {
-			return error;
-		}
+	editBasicInfo(requestDetails: { userId: string; body: { first_name: string; last_name: string; email: string } }): Promise<HTTP_RESPONSE> {
+		return new Promise(async (resolve, reject) => {
+			try {
+				const response = await this.http.request({
+					url: `/users/${requestDetails.userId}/profile`,
+					body: requestDetails.body,
+					method: 'put'
+				});
+				return resolve(response);
+			} catch (error) {
+				return reject(error);
+			}
+		});
 	}
-	
-	async changePassword(requestDetails: { userId: string; body: { current_password: string; password: string; password_confirmation: string } }) {
-		try {
-			const response = await this.http.request({
-				url: `/users/${requestDetails.userId}/password`,
-				body: requestDetails.body,
-				method: 'put'
-			});
-			return response;
-		} catch (error: any) {
-			return error;
-		}
+
+	changePassword(requestDetails: { userId: string; body: { current_password: string; password: string; password_confirmation: string } }): Promise<HTTP_RESPONSE> {
+		return new Promise(async (resolve, reject) => {
+			try {
+				const response = await this.http.request({
+					url: `/users/${requestDetails.userId}/password`,
+					body: requestDetails.body,
+					method: 'put'
+				});
+				return resolve(response);
+			} catch (error) {
+				return reject(error);
+			}
+		});
 	}
 }
