@@ -45,16 +45,18 @@ export class SendEventComponent implements OnInit {
 			});
 			return;
 		}
+
+		if (!this.convertStringToJson(this.sendEventForm.value.data)) return;
+
+		this.sendEventForm.value.data = this.convertStringToJson(this.sendEventForm.value.data);
 		this.isSendingNewEvent = true;
 		try {
 			const response = await this.appDetailsService.sendEvent({ body: this.sendEventForm.value });
-
 			this.generalService.showNotification({ message: response.message, style: 'success' });
 			this.sendEventForm.reset();
 			this.onAction.emit({ action: 'sentEvent' });
 			this.isSendingNewEvent = false;
-			const projectId = this.appDetailsService.projectId;
-			this.router.navigate(['/projects/' + projectId + '/events'], { queryParams: { eventsApp: this.appId } });
+			this.router.navigate(['/projects/' + this.appDetailsService.projectId + '/events'], { queryParams: { eventsApp: this.appId } });
 		} catch {
 			this.isSendingNewEvent = false;
 		}
@@ -65,8 +67,18 @@ export class SendEventComponent implements OnInit {
 			const appsResponse = await this.appDetailsService.getApps();
 
 			this.apps = appsResponse.data;
-		} catch (error: any) {
+		} catch (error) {
 			return error;
+		}
+	}
+
+	convertStringToJson(str: string) {
+		try {
+			const jsonObject = JSON.parse(str);
+			return jsonObject;
+		} catch {
+			this.generalService.showNotification({ message: 'Event data is not entered in correct JSON format', style: 'error' });
+			return false;
 		}
 	}
 }

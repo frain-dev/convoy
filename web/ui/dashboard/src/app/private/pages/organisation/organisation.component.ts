@@ -46,11 +46,9 @@ export class OrganisationComponent implements OnInit {
 		this.isEditingOrganisation = true;
 		try {
 			const response = await this.organisationService.updateOrganisation({ org_id: this.organisationId, body: this.editOrganisationForm.value });
-			if (response.status == true) {
-				this.generalService.showNotification({ style: 'success', message: response.message });
-				localStorage.setItem('CONVOY_ORG', JSON.stringify(response.data));
-				window.location.reload();
-			}
+			this.generalService.showNotification({ style: 'success', message: response.message });
+			localStorage.setItem('CONVOY_ORG', JSON.stringify(response.data));
+			window.location.reload();
 			this.isEditingOrganisation = false;
 		} catch {
 			this.isEditingOrganisation = false;
@@ -73,13 +71,11 @@ export class OrganisationComponent implements OnInit {
 		this.isDeletingOrganisation = true;
 		try {
 			const response = await this.organisationService.deleteOrganisation({ org_id: this.organisationId });
-			if (response.status == true) {
-				this.generalService.showNotification({ style: 'success', message: response.message });
-				localStorage.removeItem('CONVOY_ORG');
-				this.router.navigateByUrl('/').then(() => {
-					window.location.reload();
-				});
-			}
+			this.generalService.showNotification({ style: 'success', message: response.message });
+			localStorage.removeItem('CONVOY_ORG');
+			this.router.navigateByUrl('/').then(() => {
+				window.location.reload();
+			});
 			this.isDeletingOrganisation = false;
 		} catch {
 			this.isDeletingOrganisation = false;

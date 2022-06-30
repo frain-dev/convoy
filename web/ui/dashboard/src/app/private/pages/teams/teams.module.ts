@@ -4,6 +4,7 @@ import { TeamsComponent } from './teams.component';
 import { FormsModule, ReactiveFormsModule } from '@angular/forms';
 import { RouterModule, Routes } from '@angular/router';
 import { TableLoaderModule } from '../../components/table-loader/table-loader.module';
+import { DeleteModalModule } from '../../components/delete-modal/delete-modal.module';
 
 const routes: Routes = [
 	{ path: '', component: TeamsComponent },
@@ -12,6 +13,6 @@ const routes: Routes = [
 
 @NgModule({
 	declarations: [TeamsComponent],
-	imports: [CommonModule, FormsModule, TableLoaderModule, ReactiveFormsModule, RouterModule.forChild(routes)]
+	imports: [CommonModule, FormsModule, TableLoaderModule, ReactiveFormsModule, DeleteModalModule, RouterModule.forChild(routes)]
 })
 export class TeamsModule {}

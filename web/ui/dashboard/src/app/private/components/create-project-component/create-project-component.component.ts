@@ -34,6 +34,7 @@ export class CreateProjectComponent implements OnInit {
 	isCreatingProject = false;
 	showApiKey = false;
 	showSecretCopyText = false;
+	enableMoreConfig = false;
 	apiKey!: string;
 	hashAlgorithms = ['SHA256', 'SHA512', 'MD5', 'SHA1', 'SHA224', 'SHA384', 'SHA3_224', 'SHA3_256', 'SHA3_384', 'SHA3_512', 'SHA512_256', 'SHA512_224'];
 	retryLogicTypes = [
@@ -51,6 +52,7 @@ export class CreateProjectComponent implements OnInit {
 	}
 
 	async getProjectDetails() {
+		this.enableMoreConfig = true;
 		try {
 			const response = await this.privateService.getProjectDetails();
 			this.projectDetails = response.data;
@@ -65,24 +67,21 @@ export class CreateProjectComponent implements OnInit {
 
 	async createProject() {
 		if (this.projectForm.invalid) return this.projectForm.markAllAsTouched();
-		this.checkProjectConfig();
+
+		this.enableMoreConfig ? this.checkProjectConfig() : delete this.projectForm.value.config;
+
 		this.isCreatingProject = true;
 
 		try {
 			const response = await this.createProjectService.createProject(this.projectForm.value);
 			this.isCreatingProject = false;
-			if (response.status === true) {
-				this.privateService.activeProjectDetails = response.data.group;
-				this.generalService.showNotification({ message: 'Project created successfully!', style: 'success' });
-				this.apiKey = response.data.api_key.key;
-				this.projectDetails = response.data.group;
-				this.showApiKey = true;
-			} else {
-				this.generalService.showNotification({ message: response?.error?.message, style: 'error' });
-			}
-		} catch (error: any) {
+			this.privateService.activeProjectDetails = response.data.group;
+			this.generalService.showNotification({ message: 'Project created successfully!', style: 'success' });
+			this.apiKey = response.data.api_key.key;
+			this.projectDetails = response.data.group;
+			this.showApiKey = true;
+		} catch (error) {
 			this.isCreatingProject = false;
-			this.generalService.showNotification({ message: error.message, style: 'error' });
 		}
 	}
 
@@ -92,12 +91,8 @@ export class CreateProjectComponent implements OnInit {
 		this.isCreatingProject = true;
 		try {
 			const response = await this.createProjectService.updateProject(this.projectForm.value);
-			if (response.status === true) {
-				this.generalService.showNotification({ message: 'Project updated successfully!', style: 'success' });
-				this.onAction.emit(response.data);
-			} else {
-				this.generalService.showNotification({ message: response?.error?.message, style: 'error' });
-			}
+			this.generalService.showNotification({ message: 'Project updated successfully!', style: 'success' });
+			this.onAction.emit(response.data);
 			this.isCreatingProject = false;
 		} catch (error) {
 			this.isCreatingProject = false;

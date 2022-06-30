@@ -26,5 +26,5 @@
 <div class="_overlay" *ngIf="showDeleteProjectModal" (click)="showDeleteProjectModal = false"></div>
 
 <div class="modal modal__center small" *ngIf="showDeleteProjectModal">
-	<app-delete-modal [isLoading]="isloading" [deleteText]="'this project'" (closeModal)="showDeleteProjectModal = false" (deleteData)="deleteProject()"></app-delete-modal>
+	<app-delete-modal [isLoading]="isloading" [deleteText]="'delete this project'" (closeModal)="showDeleteProjectModal = false" (deleteData)="deleteProject()"></app-delete-modal>
 </div>

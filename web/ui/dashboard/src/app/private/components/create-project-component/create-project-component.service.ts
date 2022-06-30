@@ -9,7 +9,7 @@ import { PrivateService } from '../../private.service';
 export class CreateProjectComponentService {
 	constructor(private http: HttpService, private privateService: PrivateService) {}
 
-	async createProject(requestDetails: {
+	createProject(requestDetails: {
 		name: string;
 		strategy: { duration: string; retry_count: string; type: string };
 		signature: { header: string; hash: string };
@@ -17,19 +17,21 @@ export class CreateProjectComponentService {
 		rate_limit: number;
 		rate_limit_duration: string;
 	}): Promise<HTTP_RESPONSE> {
-		try {
-			const response = await this.http.request({
-				url: `${this.privateService.urlFactory('org')}/groups`,
-				body: requestDetails,
-				method: 'post'
-			});
-			return response;
-		} catch (error: any) {
-			return error;
-		}
+		return new Promise(async (resolve, reject) => {
+			try {
+				const response = await this.http.request({
+					url: `${this.privateService.urlFactory('org')}/groups`,
+					body: requestDetails,
+					method: 'post'
+				});
+				return resolve(response);
+			} catch (error) {
+				return reject(error);
+			}
+		});
 	}
 
-	async updateProject(requestDetails: {
+	updateProject(requestDetails: {
 		name: string;
 		strategy: { duration: string; retry_count: string; type: string };
 		signature: { header: string; hash: string };
@@ -37,15 +39,17 @@ export class CreateProjectComponentService {
 		rate_limit: number;
 		rate_limit_duration: string;
 	}): Promise<HTTP_RESPONSE> {
-		try {
-			const response = await this.http.request({
-				url: `${this.privateService.urlFactory('org')}/groups/${this.privateService.activeProjectDetails.uid}`,
-				body: requestDetails,
-				method: 'put'
-			});
-			return response;
-		} catch (error: any) {
-			return error;
-		}
+		return new Promise(async (resolve, reject) => {
+			try {
+				const response = await this.http.request({
+					url: `${this.privateService.urlFactory('org')}/groups/${this.privateService.activeProjectDetails.uid}`,
+					body: requestDetails,
+					method: 'put'
+				});
+				return resolve(response);
+			} catch (error) {
+				return reject(error);
+			}
+		});
 	}
 }

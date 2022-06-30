@@ -9,78 +9,90 @@ import { PrivateService } from '../../private.service';
 export class TeamsService {
 	constructor(private http: HttpService, private privateService: PrivateService) {}
 
-	async getTeamMembers(requestDetails: { searchString?: string; pageNo?: number }): Promise<HTTP_RESPONSE> {
-		try {
-			const response = await this.http.request({
-				url: `${this.privateService.urlFactory('org')}/members?sort=AESC&page=${requestDetails?.pageNo || 1}&perPage=20${requestDetails?.searchString ? `&q=${requestDetails?.searchString}` : ''}`,
-				method: 'get'
-			});
-			return response;
-		} catch (error: any) {
-			return error;
-		}
+	getTeamMembers(requestDetails: { searchString?: string; pageNo?: number }): Promise<HTTP_RESPONSE> {
+		return new Promise(async (resolve, reject) => {
+			try {
+				const response = await this.http.request({
+					url: `${this.privateService.urlFactory('org')}/members?sort=AESC&page=${requestDetails?.pageNo || 1}&perPage=20${requestDetails?.searchString ? `&q=${requestDetails?.searchString}` : ''}`,
+					method: 'get'
+				});
+				return resolve(response);
+			} catch (error) {
+				return reject(error);
+			}
+		});
 	}
 
-	async getPendingTeamMembers(requestDetails: { pageNo?: number }): Promise<HTTP_RESPONSE> {
-		try {
-			const response = await this.http.request({
-				url: `${this.privateService.urlFactory('org')}/invites/pending?sort=AESC&page=${requestDetails?.pageNo || 1}&perPage=20`,
-				method: 'get'
-			});
-			return response;
-		} catch (error: any) {
-			return error;
-		}
+	getPendingTeamMembers(requestDetails: { pageNo?: number }): Promise<HTTP_RESPONSE> {
+		return new Promise(async (resolve, reject) => {
+			try {
+				const response = await this.http.request({
+					url: `${this.privateService.urlFactory('org')}/invites/pending?sort=AESC&page=${requestDetails?.pageNo || 1}&perPage=20`,
+					method: 'get'
+				});
+				return resolve(response);
+			} catch (error) {
+				return reject(error);
+			}
+		});
 	}
 
-	async resendPendingInvite(inviteID: string): Promise<HTTP_RESPONSE> {
-		try {
-			const response = await this.http.request({
-				url: `${this.privateService.urlFactory('org')}/invites/${inviteID}/resend`,
-				method: 'post',
-				body: null
-			});
-			return response;
-		} catch (error: any) {
-			return error;
-		}
+	resendPendingInvite(inviteID: string): Promise<HTTP_RESPONSE> {
+		return new Promise(async (resolve, reject) => {
+			try {
+				const response = await this.http.request({
+					url: `${this.privateService.urlFactory('org')}/invites/${inviteID}/resend`,
+					method: 'post',
+					body: null
+				});
+				return resolve(response);
+			} catch (error) {
+				return reject(error);
+			}
+		});
 	}
 
-	async cancelPendingInvite(inviteID: string): Promise<HTTP_RESPONSE> {
-		try {
-			const response = await this.http.request({
-				url: `${this.privateService.urlFactory('org')}/invites/${inviteID}/cancel`,
-				method: 'post',
-				body: null
-			});
-			return response;
-		} catch (error: any) {
-			return error;
-		}
+	cancelPendingInvite(inviteID: string): Promise<HTTP_RESPONSE> {
+		return new Promise(async (resolve, reject) => {
+			try {
+				const response = await this.http.request({
+					url: `${this.privateService.urlFactory('org')}/invites/${inviteID}/cancel`,
+					method: 'post',
+					body: null
+				});
+				return resolve(response);
+			} catch (error) {
+				return reject(error);
+			}
+		});
 	}
 
-	async inviteUserToOrganisation(requestDetails: { firstname: string; lastname: string; email: string; role: string; groups: string[] }): Promise<HTTP_RESPONSE> {
-		try {
-			const response = await this.http.request({
-				url: `${this.privateService.urlFactory('org')}/invites`,
-				body: requestDetails,
-				method: 'post'
-			});
-			return response;
-		} catch (error: any) {
-			return error;
-		}
+	inviteUserToOrganisation(requestDetails: { firstname: string; lastname: string; email: string; role: string; groups: string[] }): Promise<HTTP_RESPONSE> {
+		return new Promise(async (resolve, reject) => {
+			try {
+				const response = await this.http.request({
+					url: `${this.privateService.urlFactory('org')}/invites`,
+					body: requestDetails,
+					method: 'post'
+				});
+				return resolve(response);
+			} catch (error) {
+				return reject(error);
+			}
+		});
 	}
 
-	async deactivateTeamMember(requestOptions: { memberId: string }) {
-		try {
-			const response = await this.http.request({
-				url: `${this.privateService.urlFactory('org')}/members/${requestOptions.memberId}`,
-				method: 'delete'
-			});
-			return response;
-		} catch (error: any) {
-			return error;
-		}
+	deactivateTeamMember(requestOptions: { memberId: string }): Promise<HTTP_RESPONSE> {
+		return new Promise(async (resolve, reject) => {
+			try {
+				const response = await this.http.request({
+					url: `${this.privateService.urlFactory('org')}/members/${requestOptions.memberId}`,
+					method: 'delete'
+				});
+				return resolve(response);
+			} catch (error) {
+				return reject(error);
+			}
+		});
 	}
 }

@@ -20,7 +20,7 @@ export class CreateSubscriptionService {
 				});
 
 				return resolve(projectResponse);
-			} catch (error: any) {
+			} catch (error) {
 				return reject(error);
 			}
 		});
@@ -37,7 +37,7 @@ export class CreateSubscriptionService {
 				});
 
 				return resolve(projectResponse);
-			} catch (error: any) {
+			} catch (error) {
 				return reject(error);
 			}
 		});
@@ -53,7 +53,7 @@ export class CreateSubscriptionService {
 				});
 
 				return resolve(projectResponse);
-			} catch (error: any) {
+			} catch (error) {
 				return reject(error);
 			}
 		});
@@ -69,7 +69,7 @@ export class CreateSubscriptionService {
 				});
 
 				return resolve(response);
-			} catch (error: any) {
+			} catch (error) {
 				return reject(error);
 			}
 		});

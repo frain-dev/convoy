@@ -31,10 +31,8 @@ export class LoginComponent implements OnInit {
 		this.disableLoginBtn = true;
 		try {
 			const response: any = await this.loginService.login(this.loginForm.value);
-			if (response.status === true) {
-				localStorage.setItem('CONVOY_AUTH', JSON.stringify(response.data));
-				this.router.navigateByUrl('/');
-			}
+			localStorage.setItem('CONVOY_AUTH', JSON.stringify(response.data));
+			this.router.navigateByUrl('/');
 			this.disableLoginBtn = false;
 		} catch {
 			this.disableLoginBtn = false;

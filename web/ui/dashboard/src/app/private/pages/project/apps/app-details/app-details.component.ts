@@ -44,6 +44,7 @@ export class AppDetailsComponent implements OnInit {
 
 	ngOnInit() {
 		this.isLoadingAppDetails = true;
+		if (this.privateService.activeProjectDetails?.type === 'outgoing') this.loadingAppPotalToken = true;
 		this.checkScreenSize();
 		this.getAppDetails(this.route.snapshot.params.id);
 	}
@@ -51,7 +52,6 @@ export class AppDetailsComponent implements OnInit {
 	goBack() {
 		this.location.back();
 	}
-
 
 	copyText(key: string) {
 		const text = key;
@@ -87,6 +87,8 @@ export class AppDetailsComponent implements OnInit {
 	}
 
 	async getAppPortalToken(requestDetail: { redirect: boolean }) {
+		if (this.privateService.activeProjectDetails?.type === 'incoming') return;
+		
 		this.loadingAppPotalToken = true;
 
 		try {
@@ -123,9 +125,9 @@ export class AppDetailsComponent implements OnInit {
 		this.screenWidth > 1010 ? (this.shouldRenderSmallSize = false) : (this.shouldRenderSmallSize = true);
 	}
 
-	closeEditEndpointModal(){
+	closeEditEndpointModal() {
 		this.showAddEndpointModal = false;
-		this.selectedEndpoint = undefined
+		this.selectedEndpoint = undefined;
 	}
 	focusInput() {
 		document.getElementById('tagInput')?.focus();
