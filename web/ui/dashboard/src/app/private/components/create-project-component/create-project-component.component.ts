@@ -34,6 +34,7 @@ export class CreateProjectComponent implements OnInit {
 	isCreatingProject = false;
 	showApiKey = false;
 	showSecretCopyText = false;
+	enableMoreConfig = false;
 	apiKey!: string;
 	hashAlgorithms = ['SHA256', 'SHA512', 'MD5', 'SHA1', 'SHA224', 'SHA384', 'SHA3_224', 'SHA3_256', 'SHA3_384', 'SHA3_512', 'SHA512_256', 'SHA512_224'];
 	retryLogicTypes = [
@@ -51,6 +52,7 @@ export class CreateProjectComponent implements OnInit {
 	}
 
 	async getProjectDetails() {
+		this.enableMoreConfig = true;
 		try {
 			const response = await this.privateService.getProjectDetails();
 			this.projectDetails = response.data;
@@ -65,7 +67,9 @@ export class CreateProjectComponent implements OnInit {
 
 	async createProject() {
 		if (this.projectForm.invalid) return this.projectForm.markAllAsTouched();
-		this.checkProjectConfig();
+
+		this.enableMoreConfig ? this.checkProjectConfig() : delete this.projectForm.value.config;
+
 		this.isCreatingProject = true;
 
 		try {

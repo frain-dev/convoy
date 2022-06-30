@@ -44,7 +44,7 @@ export class AppDetailsComponent implements OnInit {
 
 	ngOnInit() {
 		this.isLoadingAppDetails = true;
-		this.loadingAppPotalToken = true;
+		if (this.privateService.activeProjectDetails?.type === 'outgoing') this.loadingAppPotalToken = true;
 		this.checkScreenSize();
 		this.getAppDetails(this.route.snapshot.params.id);
 	}
