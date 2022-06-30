@@ -1,43 +1,28 @@
-<div class="auth-page">
+<div class="auth-page bg-[url('/assets/img/background-pattern.svg')] bg-center min-h-screen flex items-center bg-cover">
 	<img src="/assets/img/logo.svg" alt="convoy logo" class="mb-28px" />
-	<section class="auth-page--container">
-		<form [formGroup]="loginForm" (ngSubmit)="login()">
-			<div class="input">
-				<label for="username">Username</label>
-				<input type="text" id="username" name="username" autocomplete="username" formControlName="username" required />
-				<div class="input__error input__error__danger" *ngIf="loginForm.controls.username.touched && loginForm.controls.username.invalid">
-					<img src="assets/img/input-error-icon.svg" alt="input error icon" />
-					<span>Please enter your username.</span>
-				</div>
-			</div>
+	<section class="max-w-[445px] mx-auto my-0 px-60px py-24px w-full bg-white-100 shadow-default rounded-8px">
+		<form [formGroup]="loginForm" (ngSubmit)="login()" class="mt-30px">
+			<convoy-input
+				type="text"
+				autocomplete="username"
+				name="username"
+				formControlName="username"
+				errorMessage="Please enter your username"
+				label="Username"
+				placeholder="super@default.com"
+			></convoy-input>
 
-			<div class="input margin-bottom__0px">
-				<label htmlFor="password">Password</label>
-				<div class="input--password">
-					<input [type]="showLoginPassword ? 'text' : 'password'" id="password" name="password" autocomplete="current-password" formControlName="password" required />
-					<button class="input--password__view-toggle" type="button" (click)="showLoginPassword = !showLoginPassword">
-						<img
-							[src]="!showLoginPassword ? '/assets/img/password-invisible-icon.svg' : '/assets/img/password-visible-icon.svg'"
-							alt="showLoginPassword ? 'hide password icon' : 'view password icon'"
-						/>
-					</button>
-				</div>
-				<div class="input__error input__error__danger" *ngIf="loginForm.controls.password.touched && loginForm.controls.password.invalid">
-					<img src="assets/img/input-error-icon.svg" alt="input error icon" />
-					<span>Password is required</span>
-				</div>
-			</div>
-			<div class="flex flex__align-items-center font__12px margin-bottom__20px margin-top__4px">
+			<convoy-input type="password" formControlName="password" name="password" errorMessage="Password is required" label="Password"></convoy-input>
+
+			<div class="flex items-center text-12 mb-20px -mt-18px">
 				Forgot password?
-				<button class="button__clear color__primary font__12px margin-left__6px" type="button" [routerLink]="['/forgot-password']">Reset it here</button>
+				<a [routerLink]="['/forgot-password']" class="text-12 text-primary-100 ml-6px">Reset it here</a>
 			</div>
 
-			<div class="button-container margin-top">
-				<button [disabled]="disableLoginBtn" class="button button__primary--without-gradient button--has-icon icon-center button--full-100">
-					<span *ngIf="!disableLoginBtn">Login</span>
-					<img *ngIf="disableLoginBtn" src="assets/img/button-loader.gif" alt="loader" />
-				</button>
-			</div>
+			<convoy-button [disable]="disableLoginBtn" size="full">
+				<span class="text-14" *ngIf="!disableLoginBtn">Login</span>
+				<img *ngIf="disableLoginBtn" src="assets/img/button-loader.gif" alt="loader" />
+			</convoy-button>
 		</form>
 	</section>
 </div>
